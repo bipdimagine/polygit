@@ -1,0 +1,16 @@
+
+[project]
+all:dejavu,quality_check;
+diag:dejavu,coverage,quality_check;
+quality_check:"quality_check;
+
+[chromosomes]
+all:store_ids,store_annotations,check_store_annotations,strict_denovo,loh,polyviewer;
+diag:store_ids,store_annotations,check_store_annotations,strict_denovo,loh,polyviewer;
+polyviewer:polyviewer;
+
+[transcripts]
+all:transcripts_coverage,transcripts_dude,genes_dude;
+diag:transcripts_coverage,transcripts_dude,genes_dude";
+dude:transcripts_dude,genes_dude;
+transcripts_coverage:transcripts_coverage";

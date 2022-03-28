@@ -1,0 +1,105 @@
+#!/usr/bin/env bds
+
+string project  help your projects name should be seprate by ","
+int fork  help  amount of core 
+string type  help  which type of cache 
+string[] chromosomes = ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y","MT"]
+
+projects := project.split(",");
+types := type.split(",");
+
+string cache_vector(string project_name) {
+
+	for (string i :chromosomes){ 
+		print i;
+		
+	  pid := task ( cpus := fork, taskName := i+" vector  " ) {
+		sys echo "start $i => $project_name"
+        	sys perl /bip-d/perl/polymorphism-cgi/cache_nodb/cache.pl -fork=$fork -project=$project_name -project=$project_name -fork=$fork  -type=vector -chr=$i -force=1;
+		sys echo "end $i => project_name"	  
+		}
+	
+    }
+	
+return "ok";
+
+}
+string cache_coverage (string project_name) {
+
+		
+	  pid := task ( cpus := fork, taskName := project_name+" coverage  " ) {
+		sys echo "start  => $project_name coverage"
+        	sys perl /bip-d/perl/polymorphism-cgi/cache_nodb/cache.pl -fork=$fork -project=$project_name -project=$project_name -fork=$fork  -type=coverage;
+		sys perl /bip-d/perl/polymorphism-cgi/cache_nodb/cache.pl -fork=$fork -project=$project_name -project=$project_name -fork=$fork  -type=cnv;
+		sys echo "end coverage => project_name coverage"	  
+		
+	
+    }
+	
+return "ok";
+
+}
+
+string cache_polydiag (string project_name) {
+
+	
+	  pid := task ( cpus := fork, taskName := project_name+" polydiag  " ) {
+		sys echo "start  => $project_name"
+      	sys perl /bip-d/perl/polymorphism-cgi/cache_nodb/cache.pl -fork=$fork -project=$project_name -project=$project_name -fork=$fork  -type=polydiag -force=1;
+		sys echo "end polydiag  => project_name"	  
+		
+	
+  }
+	
+return "ok";
+
+}
+
+string cache_polyweb (string project_name) {
+
+	
+	  pid := task ( cpus := fork, taskName := project_name+" polyweb  " ) {
+		sys echo "start  => $project_name"
+    	sys perl /bip-d/perl/polymorphism-cgi/cache_nodb/cache.pl -fork=$fork -project=$project_name -project=$project_name -fork=$fork  -type=polyweb;
+		sys echo "end polyweb => project_name"	  
+		
+	
+}
+	
+return "ok";
+
+}
+
+string cache_dejavu (string project_name) {
+
+	
+	  pid := task ( cpus := fork, taskName := project_name+" dejavu  " ) {
+		sys echo "start  => $project_name"
+  	sys perl /bip-d/perl/polymorphism-cgi/cache_nodb/cache.pl -fork=$fork -project=$project_name -project=$project_name -fork=$fork  -type=dejavu;
+		sys echo "end dejavu => project_name"	  
+		
+	
+}
+	
+return "ok";
+
+}
+
+
+
+
+
+for (string project_name : projects){
+		
+	cache_vector(project_name);
+	cache_polydiag(project_name);
+	cache_coverage(project_name);
+	cache_dejavu(project_name);
+	
+
+}
+
+wait
+print "VECTOR OK \n";
+
+
