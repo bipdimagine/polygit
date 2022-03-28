@@ -15,7 +15,7 @@ GBuffer provides a set of functions to create a buffer and get informations from
 package BioTools;
 use Carp;
 use Moose;
-use strict;
+use strict ;
 
 my $hcomplement = {
 A=>'T',
