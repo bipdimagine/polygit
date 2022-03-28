@@ -557,7 +557,7 @@ sub alamut {
 	my $a0 = $self->variant->ref_allele;
 	my $a1 = $self->variant->allele;
 	my $chr_name = $self->variant->chromosome;
-	#war "cocucou"
+	#war "test"
 	my $qq5 = qq{	<button    class="alamutView3" onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']);"></button>};
 	return $qq5;
 #	die();
