@@ -180,6 +180,56 @@ method run_alignment_pe (Str :$filein!){
 		
 }
 
+method pipeline_genome (Str :$filein!){
+		
+		my $method = $self->patient()->alignmentMethod();
+		 $self->patient()->project->genome_version("HG38_CNG");
+		my $name = $self->patient()->name();
+		my ($dirin) = $self->patient()->getSequencesDirectory();
+		my $project_name =  $self->project->name();
+		my $run = $self->patient->getRun();
+		my $ppn = 40;# if $self->nocluster;
+
+	my $files_pe1 = file_util::find_file_pe($self->patient,"");
+	my $count_lane = scalar(@$files_pe1);
+	my $nb_bam =1;
+	my $already =0;
+	my @cmds;
+	my @bams;
+	my $files;
+	my @jobs;
+	print $self->patient->name().":\n";
+	my @af1;
+	my @af2;
+	foreach my $cp (@$files_pe1){
+		push(@af1,$dirin."/".$cp->{R1});
+		push(@af2,$dirin."/".$cp->{R2});
+	}
+		my $bin_dev = $self->script_dir();
+		my $f1 = join(",",@af1);
+		my $f2 = join(",",@af2);
+		my $cmd = qq{cd $bin_dev;perl $bin_dev/genome/bwa2.pl -file1=$f1 -file2=$f2  -dir=$dirin -project=$project_name -patient=$name -fork=$ppn };
+		 my $dir_out = $self->patient()->project->getCallingPipelineDir("genome")."/$name";
+ 		system("mkdir -p $dir_out");
+ 		
+ 		my $fileout = $self->patient()->project->getAlignmentPipelineDir("bwa2") . "/" .$name . ".align.bam";
+		my $type = "genome";
+		my $stepname = $self->patient->name."@".$type;
+	
+		 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$f1,$f2],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,sample_name=>$name,project_name=>$project_name,software=>$method);
+		$self->current_sample->add_job(job=>$job_bds);
+		push(@jobs,$job_bds);
+			$nb_bam ++;
+		if ($self->unforce() && -e $fileout){# or -e  $self->patient()->getBamFileName())){
+		 		$job_bds->skip();
+		}
+	return ($fileout);
+		
+}
+
+
+
+
 method run_alignment_umi (Str :$filein!){
 		
 	my $method = $self->patient()->alignmentMethod();
