@@ -962,7 +962,11 @@ has nb_deja_vu_projects =>(
 	default => sub {
 		my $self = shift;
 		my $h = $self->getProject->getDejaVuInfos($self->id);
-		delete $h->{$self->getProject->name()};
+		my $nb = 0;
+		foreach my $k (keys %$h){
+			$nb += $h->{$k}->{nb};
+		}
+		$self->{nb_deja_vu_samples} = $nb;
 		return scalar (keys %{$h});
 	},
 );
@@ -973,8 +977,8 @@ has nb_deja_vu_samples=>(
 	default => sub {
 		my $self = shift;
 		my $h = $self->getProject->getDejaVuInfos($self->id);
-		delete $h->{$self->getProject->name()};
-		my $nb =0;
+		$self->{nb_deja_vu_projects} = scalar (keys %{$h});
+		my $nb = 0;
 		foreach my $k (keys %$h){
 			$nb += $h->{$k}->{nb};
 		}
