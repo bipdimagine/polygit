@@ -649,11 +649,13 @@ sub software {
 sub software_version {
 		my ($self,$name,$nodie) = @_;
 		my $prog =  $self->getSoftware($name,1);
+		warn Dumper $prog;
 		return {"name" => $prog,"not_avalaible"=>1} unless $prog;
 		my $rp = abs_path($prog);
 		my @p = split("/",$rp);
 		pop @p;
 		my $version_json = join("/",@p)."/version.json";
+		warn $version_json." ".$prog;
 		if ($nodie){
 		return {} unless  -e $version_json;
 		}

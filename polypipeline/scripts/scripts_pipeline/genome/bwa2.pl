@@ -22,24 +22,32 @@ my $fastq1;
 my $fastq2;
 my $dirin;
 my $patient_name;
+my $hg38;
+my $bam;
 GetOptions(
 	'project=s' => \$project_name,
 	'patient=s' => \$patient_name,
 	'file1=s' => \$fastq1,
 	'file2=s' => \$fastq2,
-#	'bam=s'=> \$bam,
+	'bam=s'=> \$bam,
 	'dir=s' => \$dirin,
 	'fork=s' => \$fork,
+	'hg38=s' => \$hg38,
+	
 );
 die("hey man,  no fork ") unless $fork;
  my @f1 = split(",",$fastq1);
  my @f2 = split(",",$fastq2);
+  my $project = $buffer->newProject( -name 			=> $project_name );
+ 	
+ 
+ if($hg38){
+ 	$project->genome_version("HG38_CNG");
+ 	$project->version("HG38_CNG");
+ }
 
- 
- 
- my $project = $buffer->newProject( -name 			=> $project_name );
- $project->genome_version("HG38_CNG");
- $project->version("HG38_CNG");
+# $project->genome_version("HG38_CNG");
+ #$project->version("HG38_CNG");
  my $patient = $project->getPatient($patient_name);
  my $bwa2 = $buffer->software("bwa2");
  my $elprep5 = $buffer->software("elprep5");
@@ -48,8 +56,9 @@ die("hey man,  no fork ") unless $fork;
  my $ref =  $project->getGenomeFasta;
  my $ref_bwa =  $project->dirGenome().$project->buffer->index("bwa2");
  my $ref_elprep =  $project->dirGenome().$project->buffer->index("elprep");
-
- my $dir_out = $project->getCallingPipelineDir("genome")."/$patient_name";
+my @t = split("/",$bam);
+my $f = pop(@t);
+my $dir_out  = join("/",@t);
  system("mkdir -p $dir_out");
  
   my $fr1 = $dir_out."/$patient_name.R1.fastq.gz";
