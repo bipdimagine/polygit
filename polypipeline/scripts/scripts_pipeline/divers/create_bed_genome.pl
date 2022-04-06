@@ -27,17 +27,15 @@ my $bamout;
 my $version;
 GetOptions(
 	'project=s' => \$project_name,
-	'patient=s' => \$patient_name,
-	'bamin=s' => \$bamin,
-	'bamout=s' => \$bamout,
-	'fork=s' => \$fork,
 	'version=s' => \$version,
 );
-die("hey man,  no fork ") unless $fork;
 
  my $project = $buffer->newProject( -name 			=> $project_name,-version=>$version );
  
-
+ foreach my $chr (@{$project->getChromosomes}){
+ 	print $chr->fasta_name."\t"."1\t".$chr->length."\n";
+ }
+ exit(0);
  my $patient = $project->getPatient($patient_name);
  my $bwa2 = $buffer->software("bwa2");
  my $elprep5 = $buffer->software("elprep5");

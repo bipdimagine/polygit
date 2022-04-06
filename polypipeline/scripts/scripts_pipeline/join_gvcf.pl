@@ -25,6 +25,7 @@ my $list_patients;
 my $fork;
 my $now = time;
 my $file;
+my $version;
 GetOptions(
 	'project=s'   => \$project_name,
 	"log=s" =>\$log_file,
@@ -33,12 +34,18 @@ GetOptions(
 	"patient=s"=>\$list_patients,
 	"fork=s" =>\$fork,
 	"file=s"=>\$file,
+	"version" => \$version,
 );
 
 my $date = `date`;
 chomp($date);
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name,-version=>$version );
+ if ($version){
+ 	$project->genome_version("$version");
+ 	$project->version("$version");
+ }
+ 
 my $gatk  = $project->getSoftware('gatk');
 my $java = $project->getSoftware('java');
 my $vcffirstheader = $buffer->software("vcffirstheader");

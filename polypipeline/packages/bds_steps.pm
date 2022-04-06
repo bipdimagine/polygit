@@ -208,7 +208,12 @@ method bwa2 (Str :$filein!){
 		my $f1 = join(",",@af1);
 		my $f2 = join(",",@af2);
 		my $version = $self->patient()->project->genome_version();
+
+
 		my $cmd = qq{cd $bin_dev;perl $bin_dev/bwa2/bwa2.pl -file1=$f1 -file2=$f2  -bam=$fileout -project=$project_name -patient=$name -fork=$ppn -version=$version};
+		open (OUT,">>/home/bds/list.txt");
+		print OUT $cmd."\n";
+		close OUT;
 		my $dir_out = $self->patient()->project->getCallingPipelineDir("genome")."/$name";
  		system("mkdir -p $dir_out");
  		
@@ -220,9 +225,12 @@ method bwa2 (Str :$filein!){
 		$self->current_sample->add_job(job=>$job_bds);
 		push(@jobs,$job_bds);
 			$nb_bam ++;
-		if ($self->unforce() && -e $fileout){# or -e  $self->patient()->getBamFileName())){
+			warn  $self->patient()->getBamFileName;
+			warn $fileout;
+		if ($self->unforce() && (-e $fileout or -e  $self->patient()->getBamFileName )){
 		 		$job_bds->skip();
 		}
+		
 	return ($fileout);
 		
 }
@@ -231,7 +239,7 @@ method elprep5_genome  (Str :$filein!){
 	my $name = $self->patient()->name();
 	my $method = "elprep";
 	my $fileout = $filein;
-	$fileout =~ s/bam/elprep\.bam/;
+	$fileout =~ s/bam/sort\.rmdup\.bam/;
 	
 	my $project = $self->project;
 	my $project_name = $project->name;
@@ -241,14 +249,70 @@ method elprep5_genome  (Str :$filein!){
 	
 	 my $type = "gelprep";
 	 my $stepname = $self->patient->name."@".$type;
-	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"elprep",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
+	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"elprep5",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
 	$self->current_sample->add_job(job=>$job_bds);
 	if ($self->unforce() && (-e $fileout or  -e  $self->patient()->getBamFileName()) ){
 		 		$job_bds->skip();
 	}
+	else {
+			
+			open (OUT,">>/home/bds/$project_name.elprep.txt");
+			print OUT $cmd."\n";
+			close OUT;
+		}
 	return ($fileout);
 }
 
+#method elprep5_target (Str :$filein! ){
+#	my $project = $self->project;
+#	my $name = $project->name();
+#	my $arg = $self->argument_patient(); 
+#	my $patient = $self->patient();
+#	my $dir_out_vcf= $project->getCallingPipelineDir("haplotypecaller4");
+#	my $bamin= $patient->getBamFileName();
+#	my $dir_out= $self->project->getCallingPipelineDir($self->method_calling);
+#	my $bamout= $dir_out."/".$patient->name()."_elprep5.bam" ;
+#	my $fileout = $project->getGvcfDir."/haplotypecaller4/".$patient->name.".g.vcf.gz";
+#	my $type = "elprep5";
+#	my $stepname =$patient->name()."@".$type;	
+#	my $fork =$self->nproc;
+#	my $bin_dev = $self->script_dir();
+#	my $cmd = "perl $bin_dev/elprep/elprep5_target.pl -project=".$name." -gvcf=".$fileout." -patients=".$patient->name()." -bamin=".$bamin." -bamout=".$bamout ;
+#	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->argument_patient(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$fork,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+#	 
+#	$self->current_sample->add_job(job=>$job_bds);
+#	if ($self->unforce() && -e $fileout){
+#	  	$job_bds->skip();
+#	}
+#	return ($fileout);
+#}
+
+method elprep5_target  (Str :$filein!){
+	my $name = $self->patient()->name();
+	my $method = "elprep";
+	my $fileout = $filein;
+	$fileout =~ s/bam/sort\.rmdup\.bam/;
+	
+	my $project = $self->project;
+	my $project_name = $project->name;
+ 	my $bin_dev = $self->script_dir;
+ 	my $ppn = 20;
+	my $cmd = qq{perl $bin_dev/elprep/elprep5_target.pl  -project=$project_name -patient=$name -bamin=$filein  -bamout=$fileout -fork=$ppn };
+	 my $type = "telprep";
+	 my $stepname = $self->patient->name."@".$type;
+	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"elprep5",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
+	$self->current_sample->add_job(job=>$job_bds);
+	if ($self->unforce() && (-e $fileout or  -e  $self->patient()->getBamFileName()) ){
+		 		$job_bds->skip();
+	}
+	else {
+			
+			open (OUT,">>/home/bds/$project_name.elprep.txt");
+			print OUT $cmd."\n";
+			close OUT;
+		}
+	return ($fileout);
+}
 
 method sortdedup (Str :$filein!){
 		
@@ -2359,19 +2423,24 @@ method calling_gvcf4  (Str :$filein! ){
 	$filein = $self->patient()->getBamFileName() ;#unless $filein !~/bam/;
 
 	my $dir_gvcf_out  = $project->getGvcfDir("haplotypecaller4");
+	my $dir_prod  = $project->getGvcfDir("haplotypecaller4");
+	#my $fileout = $dir_prod."/".$name.".end";
  	my $fileout = $dir_gvcf_out."/".$name.".g.vcf.gz";
  	print  "$name \n " unless -e $dir_gvcf_out."/".$name.".g.vcf.gz";
 	#probleme du fichier de log non défini dans le pipeline lancé sans pbs
 #	my $cmd = "" ;
 	my $ppn = $self->nproc ;# if $self->nocluster;
+	$ppn =40;
 	my $real_ppn = $ppn;#int($self->nproc / 2);
-	 $real_ppn = $ppn  if $self->host eq "morgan";
+	 $real_ppn = 20  if $self->host eq "morgan";
 	die("-".$filein) unless $filein;
 #	die($filein. " is empty") if (-z $filein);
 	my $bin_dev = $self->script_dir;
-	
-	my $cmd = "perl $bin_dev/gatk-4/calling_individual_gvcf.pl -project=$project_name  -patient=$name -fork=$real_ppn -out=$fileout -window=5_000_000  ";
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/gatk-4/calling_individual_gvcf.pl -version=$version -project=$project_name  -patient=$name -fork=$real_ppn -out=$fileout -window=5_000_000  ";
 	my $type = "gvcf4";
+	warn $cmd;
+
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"gatk4",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
 	$self->current_sample->add_job(job=>$job_bds);
@@ -2582,7 +2651,6 @@ method genes_dude (Str :$filein){
 	my $bin_dev = $self->script_dir;
 	
 	my $cmd = qq{perl $bin_dev/transcripts/genes_level_dude.pl -patient=$name  -fork=$ppn  -project=$project_name };
-	warn $cmd;
 	my $type = "genes_dude";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -3151,29 +3219,7 @@ method merge_vcfs (ArrayRef :$filein) {
 
 
 
-method elprep5_target (Str :$filein! ){
-	my $project = $self->project;
-	my $name = $project->name();
-	my $arg = $self->argument_patient(); 
-	my $patient = $self->patient();
-	my $dir_out_vcf= $project->getCallingPipelineDir("haplotypecaller4");
-	my $bamin= $patient->getBamFileName();
-	my $dir_out= $self->project->getCallingPipelineDir($self->method_calling);
-	my $bamout= $dir_out."/".$patient->name()."_elprep5.bam" ;
-	my $fileout = $project->getGvcfDir."/haplotypecaller4/".$patient->name.".g.vcf.gz";
-	my $type = "elprep5";
-	my $stepname =$patient->name()."@".$type;	
-	my $fork =$self->nproc;
-	my $bin_dev = $self->script_dir();
-	my $cmd = "perl $bin_dev/elprep/elprep5_target.pl -project=".$name." -gvcf=".$fileout." -patients=".$patient->name()." -bamin=".$bamin." -bamout=".$bamout ;
-	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->argument_patient(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$fork,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	 
-	$self->current_sample->add_job(job=>$job_bds);
-	if ($self->unforce() && -e $fileout){
-	  	$job_bds->skip();
-	}
-	return ($fileout);
-}
+
 	
 	
 

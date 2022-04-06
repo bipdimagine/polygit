@@ -39,6 +39,7 @@ my $region_name;
 my $fork =1;
 my $window_length;
 my $file;
+my $version;
 GetOptions(
 	'project=s'   => \$project_name,
 	"fork=s"  => \$fork,
@@ -51,6 +52,7 @@ GetOptions(
 	#"region=s"=>\$region_name,
 	#"fork=s" =>\$fork,
 	"window=s" => \$window_length,
+	"version=s" => \$version,
 );
 my $date = `date`;
 chomp($date);
@@ -73,7 +75,8 @@ my $samtools = $project->getSoftware('samtools');
 my $javac = $project->getSoftware('java');
 $javac = "java" unless -e $javac;
 my $gatk  = $project->getSoftware('gatk');
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name, -version=>$version );
+
 my $chrs = $project->getChromosomes();
 my $reference = $project->getGenomeFasta;
 my $bgzip = $buffer->software("bgzip");
@@ -83,7 +86,6 @@ my $tabix = $buffer->software("tabix");
 
 my $patient = $project->getPatientOrControl($patient_name);
 
-my $reference = $project->genomeFasta();
 
 
 

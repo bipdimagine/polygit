@@ -30,13 +30,13 @@ GetOptions(
 	'file2=s' => \$fastq2,
 	'bamout=s'=> \$bamout,
 	'fork=s' => \$fork,
-	'version' => \$version,
+	'version=s' => \$version,
 	
 );
 die("hey man,  no fork ") unless $fork;
  my @f1 = split(",",$fastq1);
  my @f2 = split(",",$fastq2);
- my $project = $buffer->newProject( -name 			=> $project_name );
+ my $project = $buffer->newProject( -name 			=> $project_name,-version=>$version );
  if ($version){
  	$project->genome_version("$version");
  	$project->version("$version");
@@ -52,7 +52,9 @@ die("hey man,  no fork ") unless $fork;
  system("mkdir -p $dir_out");
  
   my $fr1 = $dir_out."/$patient_name.R1.fastq.gz";
+  $fr1 = "/tmp/$patient_name.R1.fastq.gz";
   my $fr2 = $dir_out."/$patient_name.R2.fastq.gz";
+  $fr2 = "/tmp/$patient_name.R2.fastq.gz";
   unlink $fr1 if -e $fr1;
   unlink $fr2 if -e $fr2;
   my $readgroup = qq{\@RG\\tID:$patient_name\\tSM:$patient_name\\tPL:ILLUMINA\\tDS:$patient_name\\tPG:bwa-mem2};

@@ -32,7 +32,7 @@ GetOptions(
 	"log=s" =>\$log_file,
 	"patient=s" => \$patient_name,
 	"fork=s" => \$fork,
-	'version' => \$version,
+	'version=s' => \$version,
 );
 $fork =1 unless $fork;
 
