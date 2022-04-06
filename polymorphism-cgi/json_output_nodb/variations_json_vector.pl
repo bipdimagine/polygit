@@ -10,7 +10,6 @@ use lib "$Bin/../packages/layout";
 use lib "$Bin/../packages/pedigree";
 
 use GBuffer;
-use GenBoStorable;
 use Data::Dumper;
 use export_excel;  
 use export_data;
