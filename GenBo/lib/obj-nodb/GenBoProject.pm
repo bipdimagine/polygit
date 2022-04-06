@@ -1984,7 +1984,6 @@ has genomeFai => (
 			next if $chr =~ /^GL/;
 			next if $chr =~ /^hs37d5/;
 			next if $chr =~ /^NC_007605/;
-			next if $chr =~ /^KI/;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -4889,24 +4888,11 @@ sub getCacheDir {
 	my $self           = shift;
 	return $self->{cache_dir} if (exists $self->{cache_dir} and $self->{cache_dir});
 	my $genome_version = $self->genome_version();
-	if ( $genome_version =~ /HG/ ) {
-		my $annot_version = $self->annotation_version();
-		$self->{cache_dir} =
-			$self->buffer()->getDataDirectory("cache") . "/"
-		  . $genome_version . '.'
-		  . $annot_version . "/"
-		  . $self->name();
-
-#		$self->{cache_dir} = $self->buffer()->getDataDirectory("cache")."/".$genome_version.'/'.$annot_version."/".$self->name();
-	}
-	else {
-		$self->{cache_dir} =
-			$self->buffer()->getDataDirectory("cache") . "/"
-		  . $genome_version . "/"
-		  . $self->name();
-	}
+	my $annot_version = $self->annotation_version();
+	$self->{cache_dir} = $self->buffer()->getDataDirectory("cache")."/".$genome_version;
+	$self->{cache_dir} .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
+	$self->{cache_dir} .= "/".$self->name();
 	return $self->{cache_dir} if ( -d $self->{cache_dir} );
-
 	system( "mkdir -p " . $self->{cache_dir} );
 	system( "chmod a+rwx " . $self->{cache_dir} );
 	return $self->{cache_dir};
