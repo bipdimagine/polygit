@@ -293,10 +293,10 @@ sub run_cache_polydiag_cache {
 
 
 sub run_cache_polydiag {
-	my ( $project_name, $patient_name, $tbundle ) = @_;
+	my ( $project_name, $patient_name, $tbundle,$version ) = @_;
 	my $buffer1 = new GBuffer;
 	#my $project = $buffer1->newProject( -name => $project_name, -verbose => 1 );
-	my $project = $buffer1->newProjectCache( -name => $project_name );
+	my $project = $buffer1->newProjectCache( -name => $project_name ,-version=>$version);
 
 	my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,

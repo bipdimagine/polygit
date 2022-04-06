@@ -18,6 +18,7 @@ my $chr_name;
 my $ppn;
 my $set;
 my $name;
+my $version;
 
 GetOptions(
 	'project=s' => \$project_name,
@@ -25,6 +26,7 @@ GetOptions(
 	'fork=s' => \$ppn,
 	'set=s' => \$ppn,
 	'fork=s' => \$ppn,
+	'version=s' => \$version,
 	#'fork=s' => \$ppn,
 );
 my @list;
@@ -40,7 +42,7 @@ die() unless @list;
 
 foreach my $project_name (@list){
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name,-version=> $version );
 my $chr = $project->getChromosome($chr_name);
 my $hash_cmd;
 my $cmd_perl = "/usr/bin/perl $Bin/../../../../polymorphism-cgi/cache_nodb/scripts";

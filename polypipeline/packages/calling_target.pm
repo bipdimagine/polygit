@@ -1136,7 +1136,7 @@ sub return_all_beds_without_primers {
 			$intspan_primers = $intspan_primers->union( $p->intspan_pcr );
 		}
 		my $intspan_temp =
-		  $intspans->{ $chr->fasta_name }->diff($intspan_primers);
+		$intspans->{ $chr->fasta_name }->diff($intspan_primers);
 
 		push( @beds, $project->buffer->intspanToBed( $chr, $intspan_temp ) );
 	}

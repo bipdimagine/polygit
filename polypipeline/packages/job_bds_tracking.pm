@@ -21,6 +21,7 @@ has 'project_name' => (
 	is =>'ro',
 
 );
+
 has 'pipeline_id' => (
 	is =>'ro',
 
@@ -45,8 +46,7 @@ sub return_start_tracking {
 	my $name = $self->sample_name();
 	my $uuid = $self->uuid;
 	die() unless $uuid;
-	
-	my $cmd = "perl ".$self->script_tacking_dir."/start_step_sqlite.pl -status=running -run_id=$uuid -project=$project_name -patient=$name -step=\"$step_name\" -prog=$prog -cmd=\"$cmd_line\"";
+	my $cmd = "perl ".$self->script_tacking_dir."/start_step_sqlite.pl -version= -status=running -run_id=$uuid -project=$project_name -patient=$name -step=\"$step_name\" -prog=$prog -cmd=\"$cmd_line\"";
 	return $cmd;
 }
 

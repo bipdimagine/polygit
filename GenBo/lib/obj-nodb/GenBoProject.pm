@@ -1167,22 +1167,26 @@ has pipeline_tmp_dir => (
 	default => sub {
 		my $self = shift;
 		my $tmp1 = "/tmp/pipeline/";
-		system("mkdir /tmp/pipeline;chmod a+rwx  /tmp/pipeline")
-		  unless -e $tmp1;
+		system("mkdir /tmp/pipeline;chmod a+rwx  /tmp/pipeline") unless -e $tmp1;
 		my $tmp = File::Temp::tempdir(
 			TEMPLATE => $self->name . ".XXXXXXXX",
 			DIR      => "$tmp1"
 		);
+		system("date > $tmp/test.out");
+		$self->{tmp_dir} = 1;
+		warn $tmp;
 		return $tmp;
 	},
 );
 
 sub destroy_tmp_dir {
-	my $self = @_;
+	my $self = shift;
 	if ( exists $self->{pipeline_tmp_dir} ) {
-		my $dir = $self->pipeline_tmp_dir();
+		my $dir = $self->{pipeline_tmp_dir};
+		return unless -e $dir;
 		confess() unless $dir =~ /pipeline/;
-		system("find /tmp/pipeline -type f  -exec rm -f {} \ ; rmdir $dir ");
+		system("find $dir -type f  -exec rm -f {} \ ; rmdir $dir ");
+		delete $self->{pipeline_tmp_dir};
 	}
 }
 
@@ -1745,6 +1749,7 @@ has genome_version_generic => (
 		my $self    = shift;
 		my $version = $self->getVersion();
 		$version = "HG19" if $version =~ /HG19/;
+		
 		return $version;
 	}
 );
@@ -1982,8 +1987,12 @@ has genomeFai => (
 			my $ochr = $chr;
 			$chr = $self->buffer()->ucsc2ensembl($chr);
 			next if $chr =~ /^GL/;
+			next if $chr =~ /^Un_/;
 			next if $chr =~ /^hs37d5/;
 			next if $chr =~ /^NC_007605/;
+			next if $chr =~ /KI/;
+			next if $chr =~ /GL/;
+			next if $chr =~ /EBV/;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -3750,7 +3759,7 @@ sub getCellRangerDir {
 
 sub getPipelineTrackingDir {
 	my ($self) = @_;
-	my $path = $self->project_path . "/tracking/";
+	my $path = $self->getProjectRootPath() . "/tracking/";
 	return $self->makedir($path);
 }
 

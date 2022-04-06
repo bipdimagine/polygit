@@ -23,9 +23,11 @@ use GBuffer;
 
 my $fork = 1;
 my ($project_name, $chr_name);
+my $version;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
+	'version=s'    => \$version,
 );
 
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
@@ -34,7 +36,7 @@ unless ($project_name) { confess("\n\nERROR: -project option missing... confess.
 warn "\n### Cache For Deja Vu\n";
 my $buffer1 = new GBuffer;
 $buffer1->vmtouch(1);
-my $project = $buffer1->newProject( -name => $project_name, -verbose => 1 );
+my $project = $buffer1->newProject( -name => $project_name, -verbose => 1 ,-version=>$version);
 my $root_dir = $project->deja_vu_lite_dir() . "/projects/";
 mkdir $root_dir unless -e $root_dir;
 unlink $root_dir . "/" . $project_name . ".lite" if -e $root_dir . "/" . $project_name . ".lite";

@@ -70,7 +70,7 @@ my $intspan;
 #else {
 	#die();
 	foreach my $chr (@{$project->getChromosomes}) {
-	 $intspan->{$chr->ucsc_name} = $chr->getIntSpanCaptureForCalling(300);
+	 $intspan->{$chr->fasta_name} = $chr->getIntSpanCaptureForCalling(300);
 }
 #	die("error callable region - file .freeze is absent");
 

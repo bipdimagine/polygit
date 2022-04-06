@@ -48,15 +48,21 @@ GetOptions(
 	"bamin=s" =>\$bamin,
 	"bamout=s" => \$bamout,
 	"gvcf=s" => \$gvcf,
+	"fork=s" => \$fork,
 	);
+die() unless $fork;
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
 my $patient = $project->getPatient($patient_name);
-my $elprep = "/software/distrib/elprep5/elprep ";#$project->getSoftware('java');	
+my $elprep = $buffer->software("elprep5");#$project->getSoftware('java');	
 $bamin = $patient->getBamFile() unless $bamin;
 my $type_elprep = "filter";
 my $tmp_dir = "";
 my $target_bed;
+
+my $dir_prod  = $patient->project->getGvcfDir("haplotypecaller");
+my $final_gvcf = $dir_prod."/".$patient->name.".g.vcf.gz";
+unlink $final_gvcf if -e $final_gvcf;
 my $tmpdir = $project->getCallingPipelineDir("elprep5_gvcf");
 $tmpdir.= "/".$patient->name.".".time."/";
 unless (-e $tmpdir){
@@ -89,11 +95,13 @@ unless ($project->isGenome){
 	
 	$target_bed = " --target-regions $bedfile  ";
 }
-
+ unlink $final_gvcf if -e $final_gvcf;
 my $ref =  $project->dirGenome().$project->buffer->index("elprep");
-my $cmd = qq { $elprep filter $bamin $bamout -mark-duplicates --sorting-order coordinate  --reference $ref   --haplotypecaller $gvcf  $target_bed};
-warn $cmd;
+my $cmd = qq { $elprep filter $bamin $bamout --nr-of-threads $fork -mark-duplicates --sorting-order coordinate  --reference $ref   --haplotypecaller  $final_gvcf  $target_bed};
+;
 my $t = time; 
 system($cmd);
+my $tabix = $buffer->software("tabix");
+system("$tabix -p vcf $final_gvcf");
 warn "TIME : ".abs(time - $t);
  

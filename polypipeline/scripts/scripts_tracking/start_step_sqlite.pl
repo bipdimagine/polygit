@@ -33,7 +33,6 @@ my $patient_name;
 my $step_name;
 my $prog_name ="";
 my $run_id;
-
 GetOptions(
 	'project=s' => \$project_name,
 	'patient=s' => \$patient_name,

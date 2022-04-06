@@ -2037,6 +2037,7 @@ sub set_statistics_coverage {
 	my ( $self, $chr, $id, $start, $end ) = @_;
 
 	my $span = Set::IntSpan::Fast::XS->new( $start . "-" . $end );
+	
 	my $gc;
 	my $inter = $chr->intspan_duplicate_region->intersection($span);
 	if ( $inter->is_empty ) {
@@ -2130,7 +2131,7 @@ sub mean {
 	#	warn $obj->start." ".$obj->end;
 	$self->set_statistics_coverage( $obj->getChromosome, $obj->id, $obj->start,
 		$obj->end );
-	die($self->name) unless exists $self->{statistics}->{$id}->{mean};
+	die($self->name." ".$obj->getChromosome->name) unless exists $self->{statistics}->{$id}->{mean};
 	return $self->{statistics}->{$id}->{mean};
 }
 
