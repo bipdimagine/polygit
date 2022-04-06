@@ -504,6 +504,7 @@ my $array;
 $array = ["high"];
 $array = ["high","medium"] if $quality == 2 ;
 $array = ["high","medium","low"] if $quality == 3 ;
+$array = ["high","medium","low"] if $project->isDiagnostic;
 $buffer->disconnect();
 my $fork =10;
 print qq{<div style="display: none">};
