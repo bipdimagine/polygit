@@ -98,6 +98,7 @@ $predef_steps->{getFastqFromBam}=["bam_to_fastq"];
 #$predef_steps->{calling_rna_seq} =["alignment", "rmdup","splitntrim","covariate","move_bam","gvcf4","callable_regions"];
 my $filename_cfg;
 my $limit;
+my $HG38;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -110,6 +111,7 @@ GetOptions(
 	'nocluster=s' => \$nocluster,
 	'config=s' => \$filename_cfg,
 	'limit=s' => \$limit,
+	'HG38=s' => \$HG38,
 	#'low_calling=s' => \$low_calling,
 );
 $patients_name = "all" unless $patients_name;
@@ -126,8 +128,10 @@ unless ($projectName) {
 	usage();
 }
 my $project = $buffer->newProject( -name => $projectName );
-
-	
+if($HG38) {
+	$project->genome_version("HG38_CNG");
+	$project->version("HG38_CNG");
+}
 my $pipeline = bds_steps->new( project=>$project,argument_patient=>$patients_name,nocluster=>$nocluster);
 if ($limit) {
 	$pipeline->limit($limit);
@@ -250,7 +254,11 @@ my $steps = {
 				"merge_bam_ubam" => sub {$pipeline->merge_ubam(@_)},
 				#umi tools
 				"nudup" => sub {$pipeline->nudup(@_)},
-				
+				"pipeline_genome" => sub {$pipeline->pipeline_genome(@_)},
+				"cnvnator" => sub {$pipeline->cnvnator(@_)},
+				"sortdedup" => sub {$pipeline->sortdedup(@_)},
+				"bwa2" => sub {$pipeline->bwa2(@_)},
+				"elprep5_genome" => sub {$pipeline->elprep5_genome(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');

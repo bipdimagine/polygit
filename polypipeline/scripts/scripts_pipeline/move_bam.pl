@@ -24,14 +24,15 @@ my $log_file;
 my $vcf_final;
 my $type;
 my $fork;
-
+my $version;
 
 GetOptions(
 	'project=s'   => \$project_name,
 	'bam=s' => \$bam_file,
 	"log=s" =>\$log_file,
 	"patient=s" => \$patient_name,
-	"fork=s" => \$fork
+	"fork=s" => \$fork,
+	'version=s' => \$version,
 );
 $fork =1 unless $fork;
 
@@ -45,6 +46,12 @@ my $buffer = GBuffer->new();
  my $dir_trash =  $buffer->config->{project_data}->{root}."/TRASH/";
  system("mkdir -p $dir_trash && chmod a+rwx $dir_trash") unless -e $dir_trash;
 my $project = $buffer->newProject( -name => $project_name );
+
+ if ($version){
+ 	$project->genome_version("$version");
+ 	$project->version("$version");
+ }
+ 
 my $patient = $project->getPatientOrControl($patient_name);
 my$m = $patient->alignmentMethod();
 my $dir_prod = $project->getAlignmentDir($m);

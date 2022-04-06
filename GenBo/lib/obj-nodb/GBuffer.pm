@@ -491,12 +491,17 @@ sub newProject {
 										release	=> $release,
 										test	=> $test,
 										buffer	=> $self );
+									
 	$self->genome_version($project->genome_version);	
 	$self->annotation_genome_version($project->annotation_genome_version);
 	if ($project->gencode_version > -1){
 		$self->annotation_version($project->annotation_version);
 	 	$self->public_data_version($project->public_database_version);	
 	}
+	if (exists $args->{-version} && $args->{-version}){ 
+ 			$project->genome_version( $args->{-version});
+ 			$project->version( $args->{-version});
+	}	
 	#if ($project->annotation_version) { $self->lmdb_public_dir($project->annotation_public_path); }	
 	return $project;
 }
@@ -649,11 +654,13 @@ sub software {
 sub software_version {
 		my ($self,$name,$nodie) = @_;
 		my $prog =  $self->getSoftware($name,1);
+		warn Dumper $prog;
 		return {"name" => $prog,"not_avalaible"=>1} unless $prog;
 		my $rp = abs_path($prog);
 		my @p = split("/",$rp);
 		pop @p;
 		my $version_json = join("/",@p)."/version.json";
+		warn $version_json." ".$prog;
 		if ($nodie){
 		return {} unless  -e $version_json;
 		}
