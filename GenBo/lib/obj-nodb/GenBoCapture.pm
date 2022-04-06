@@ -232,8 +232,8 @@ sub setChromosomes {
 	my $project = $self->getProject();
 	
 	my $captureFileName = $self->gzFileName();
-	
 	my $captureTabixFileName = $captureFileName . '.tbi';
+	
 	if (not -e $captureTabixFileName) { die("\n\nERROR: $captureTabixFileName doesn't exist !! die...\n\n"); }
 	my $tabix = new Tabix(-data  => $captureFileName);
 	my @chrnames = $tabix->getnames();
@@ -304,8 +304,9 @@ sub contains {
 
 sub getCaptureChromosomesName {
 	my ($self) = @_;
+	
 	return $self->{chr_name} if exists  $self->{chr_name};
-		my $captureFileName = $self->gzFileName();
+	my $captureFileName = $self->gzFileName();
 	my $captureTabixFileName = $captureFileName . '.tbi';
 	#if (not -e $captureTabixFileName) { die("\n\nERROR: $captureTabixFileName doesn't exist !! die...\n\n"); }
 	my $tabix = new Tabix(-data  => $captureFileName);
@@ -330,7 +331,7 @@ sub getIntSpanForChromosome {
 	my $end = $GenBoChrom->end();
 	my $tabix = new Tabix(-data  => $captureFileName);
 	
-	my ($find) = grep {$_ eq $GenBoChrom->fasta_name} @{$self->getCaptureChromosomesName};
+	my ($find) = grep {$_ eq $GenBoChrom->name or $_ eq $GenBoChrom->ucsc_name} @{$self->getCaptureChromosomesName};
 	return $intSpan unless $find;
 	my $res = $tabix->query($find);
 	
@@ -1018,7 +1019,7 @@ foreach my $line (@lines){
 		chomp($line);
 		my (@toto) = split(" ",$line);
 			
-			#die($toto[1]) if $toto[1] eq 70181901;
+		#die($toto[1]) if $toto[1] eq 70181901;
 		if (abs($toto[1]-$toto[2]) < 5 ){
 				$toto[1] -= 15;
 				$toto[2] +=15;

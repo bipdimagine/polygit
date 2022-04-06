@@ -20,10 +20,12 @@ use Text::Table;
 
 my $fork = 1;
 my ($project_name, $chr_name,$patient_name);
+my $version;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
 	'patient=s'    => \$patient_name,
+	'version=s'    => \$version,
 );
 
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
@@ -34,7 +36,7 @@ $| = 1;
 
 	my $buffer = new GBuffer();
 	$buffer->vmtouch(1);
-	my $project = $buffer->newProject( -name => $project_name, -verbose => 1 );
+	my $project = $buffer->newProject( -name => $project_name, -verbose => 1 , -version=>$version);
 	my $patients = $project->getPatients();
 	if ($patient_name) {
 		
@@ -60,9 +62,7 @@ $| = 1;
 	my $error;
 	$pm->run_on_finish(
 		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump,
-				$data_structure_reference )
-			  = @_;
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data_structure_reference ) = @_;
 			  if($exit_code ne 0){
 			  	$error =1;
 			  }
@@ -81,7 +81,7 @@ $| = 1;
 
 		#next if $pname ne "AS1502552";
 		my $pid = $pm->start and next;
-		my $resp = polydiag::run_cache_polydiag( $project_name, $p->name, $tbundle );
+		my $resp = polydiag::run_cache_polydiag( $project_name, $p->name, $tbundle,$version );
 		$resp = $resp + 0;
 		$pm->finish( 0, \$resp );
 	}

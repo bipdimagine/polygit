@@ -39,6 +39,7 @@ my $chr;
 my $region_name;
 my $fork =1;
 my $window_length;
+my $version;
 GetOptions(
 	'project=s'   => \$project_name,
 	"fork=s"  => \$fork,
@@ -50,6 +51,7 @@ GetOptions(
 	#"region=s"=>\$region_name,
 	#"fork=s" =>\$fork,
 	"window=s" => \$window_length,
+	"version=s" => $version,
 );
 my $date = `date`;
 chomp($date);
@@ -73,6 +75,11 @@ my $javac = $project->getSoftware('java');
 $javac = "java" unless -e $javac;
 my $gatk  = $project->getSoftware('gatk');
 my $project = $buffer->newProject( -name => $project_name );
+ if ($version){
+ 	$project->genome_version("$version");
+ 	$project->version("$version");
+ }
+ 
 my $chrs = $project->getChromosomes();
 my $reference = $project->getGenomeFasta;
 my $bgzip = $buffer->software("bgzip");
@@ -120,7 +127,7 @@ my $file_freeze = $dir_out_gvcf."/$patient_name.regions.$window_length.freeze";
 warn "$Bin/construct_regions_freeze.pl -project=$project_name -patient=$patient_name -window=$window_length -file=$file_freeze ";
 unlink $file_freeze if -e $file_freeze;
 
-system("$Bin/construct_regions_freeze.pl -project=$project_name -patient=$patient_name -window=$window_length -file=$file_freeze ") unless -e $file_freeze;
+system("$Bin/construct_regions_freeze.pl -version=$version -project=$project_name -patient=$patient_name -window=$window_length -file=$file_freeze ") unless -e $file_freeze;
 my $all_windows;
 die() unless -e $file_freeze;
 my $all_windows = retrieve($file_freeze);
@@ -225,7 +232,7 @@ unlink $final_gvcf_tbi if -e $final_gvcf_tbi;
 my $log_p = "";
  $log_p = "-log=$log_file" if $log_file;
 warn "$Bin/join_gvcf.pl -project=$project_name -patient=$patient_name -window=$window_length  -fork=$fork  -file=$file_freeze && rm  $dir_out_gvcf"."/* && rmdir $dir_out_gvcf";
-system("$Bin/join_gvcf.pl -project=$project_name -patient=$patient_name -window=$window_length  -fork=$fork  -file=$file_freeze && rm  $dir_out_gvcf"."/* && rmdir $dir_out_gvcf");
+system("$Bin/join_gvcf.pl -version=$version -project=$project_name -patient=$patient_name -window=$window_length  -fork=$fork  -file=$file_freeze && rm  $dir_out_gvcf"."/* && rmdir $dir_out_gvcf");
 
 
 

@@ -785,7 +785,7 @@ sub getWindow {
 
 sub getIntSpanCaptureForCalling {
 	my ( $self, $span_limit ) = @_;
-
+warn "coucou";
 	#confess() if $patient;
 	my $span_chr = Set::IntSpan::Fast::XS->new( "1-" . $self->length );
 	my $project  = $self->getProject();
@@ -795,7 +795,6 @@ sub getIntSpanCaptureForCalling {
 			$capture->getIntSpanForChromosome( $self, $span_limit ) );
 	}
 	if ( $project->isDiagnostic ) {
-
 		#my $span3 = Set::IntSpan::Fast::XS->new() ;
 		my $trs;
 		foreach my $capture ( @{ $project->getCaptures } ) {
@@ -831,10 +830,8 @@ sub getIntSpanCaptureForCalling {
 		$span = $span->union($span_primers);
 	}
 	else {
-		my $span3 =
-		  $self->project->liteIntervalTree->get_intspan( "transcripts_padding",
-			$self->name );
-		$span = $span->union($span3);
+		#my $span3 = $self->project->liteIntervalTree->get_intspan( "transcripts_padding",$self->name );
+		#$span = $span->union($span3);
 	}
 	return $span_chr->intersection($span);
 
