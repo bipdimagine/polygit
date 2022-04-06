@@ -25,6 +25,7 @@ my $list_patients;
 my $fork;
 my $now = time;
 my $file;
+my $version;
 GetOptions(
 	'project=s'   => \$project_name,
 	"log=s" =>\$log_file,
@@ -33,12 +34,13 @@ GetOptions(
 	"patient=s"=>\$list_patients,
 	"fork=s" =>\$fork,
 	"file=s"=>\$file,
+	"version=s" => \$version
 );
 
 my $date = `date`;
 chomp($date);
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name, -version=>$version );
 my $gatk  = $project->getSoftware('gatk');
 my $java = $project->getSoftware('java');
 my $vcffirstheader = $buffer->software("vcffirstheader");
@@ -56,28 +58,10 @@ if ($log_file){
 
 	my $ref =  $project->genomeFasta();
 
-my $dir_gvcf_out= $project->getCallingPipelineDir("gvcf4");
+
 
 my $patient = $project->getPatient($list_patients);
 
-my $final_gvcf = $dir_gvcf_out."/".$patient->name.".g.vcf";
-
-my $gz = $final_gvcf.".gz";
-my $tbi = $final_gvcf.".gz.tbi";
-warn $final_gvcf;
-if (-e $final_gvcf){
-	unlink $final_gvcf;
-#	system(" $tabix -p vcf $gz") unless -e $gz.".tbi";
-	#confess() unless -e $gz.".tbi";
-	#exit(0);
-}
-
-if (-e $final_gvcf){
-	#system("$bgzip $final_gvcf && $tabix -p vcf $gz");	
-	#confess() unless -e $gz;
-	#confess() unless -e $gz.".tbi";
-	#exit(0);
-}
 
 die("problem with $file") unless -e $file;
 my $all_windows = retrieve($file);
@@ -131,7 +115,7 @@ $pm->run_on_finish(
 				next unless $windows;
 				my $intspan0 = $chr->getIntSpanCaptureForCalling(0);
 				#warn $chr->name;
-				my $chr_gvcf = $final_gvcf.".".$chr->name;
+			#	my $chr_gvcf = $final_gvcf.".".$chr->name;
 			
 				foreach my $window (@{$windows}){
 					
@@ -147,7 +131,19 @@ $pm->run_on_finish(
 				 my $size  = scalar($callable_intspan->as_array);
 				
 				 my %h;
-				my $ok_file = $outfile."ok";
+				my $ok_file = $outfile.".ok";
+				
+				if (-e  $ok_file ){
+					$h{file} = $outfile;
+					$pm->finish(0,\%h);
+				}
+				
+				
+		
+			
+			
+				
+				
 				unless (-e $outfile){
 						$h{error} = $outfile;
 					print "MISSING FILE  : $outfile \n";
@@ -243,6 +239,7 @@ $pm->run_on_finish(
 				}
 				else {
 					$h{file} = $outfile;
+					system("touch $ok_file");
 					unlink $outfile.".gz.tbi";
 					system("gunzip $outfile.gz");
 				}
@@ -264,19 +261,23 @@ $pm->run_on_finish(
 				print " \t problem with file : $f \n";
 				next unless -e $f;
 				unlink $f;
-				#print " problem with file : $f \n";
+				print " problem with file : $f \n";
 				
 			}
-			die();
 		}
 			$now = time;
+			
+			my $dir_gvcf_out= $project->pipeline_tmp_dir();
+		my $final_gvcf = $dir_gvcf_out."/".$patient->name.".g.vcf";
+		my $gz = $final_gvcf.".gz";
+		my $tbi = $final_gvcf.".gz.tbi";
 				
 			my $total = scalar(@$files);
 			my $step = int($total/10)+1;
 			my $eta = Time::ETA->new(
     				milestones =>$total,
 				);
-			my $nb =0;	
+			 $nb =0;	
 				open(GLOBAL, " | $vcffirstheader | $vcfstreamsort | $vcfuniq > $final_gvcf");
 			
 	 			my @all_vcfs;
@@ -321,7 +322,8 @@ my @t = `$bcftools query -l $gz`;
 chomp(@t);
 confess('BIG BIG AND REBIG PROBLEM ') if $t[0] ne $patient->name();
 print " END ".$patient->name." join \n";
-	exit(0);
+$project->destroy_tmp_dir();
+exit(0);
  
 sub check_callable {
 	 			my ($chr,$window,$bam,$intspan0) = @_;
@@ -355,3 +357,6 @@ sub check_callable {
 				 return $size > 100;
  					
 }	
+DESTROY {
+	$project->destroy_tmp_dir();
+}

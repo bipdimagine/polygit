@@ -61,7 +61,7 @@ $project->gencode_version($gencode);# if $gencode;
 	 my $out;
 	# my  @transcripts_cgi = @{$project->bundle_transcripts() } ;
 	 my $padding = 1;
-	 my $bed_file= "./design/$name.bed.gz";
+	 my $bed_file= "/data-isilon/public-data/design/$name.bed.gz";
 	 my $hcapture_intspan ;#=  Set::IntSpan::Fast::XS->new();
 	 open (BED,"zcat $bed_file | ");
 	 	
@@ -76,7 +76,7 @@ $project->gencode_version($gencode);# if $gencode;
 	 }
 	 
 	
-	my @list_transcripts = `cat ./design/$name.list`;
+	my @list_transcripts = `cat /data-isilon/public-data/design/$name.list`;
 	 chomp(@list_transcripts);
 	 
 	 my $problem;
