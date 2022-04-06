@@ -403,10 +403,12 @@ else {
 my $hAllIds;
 my (@lVarObj, @lHashStatsGenes, $h_all_genes_name);
 my $nb_chr = 0;
+
+my @l_genome_fai = @{$project->getGenomeFai};
 foreach my $chr_id (split(',', $filter_chromosome)) {
 	# Cas genome MT uniquement par exemple
 	my $chr_found;
-	foreach my $h_fai (@{$project->getGenomeFai}) {
+	foreach my $h_fai (@l_genome_fai) {
 		$chr_found = 1 if (exists $h_fai->{chromosomes_object}->{$chr_id});
 		last if $chr_found;
 	}
@@ -2734,7 +2736,9 @@ sub writeHeader_byVar {
 		my $path_polyweb;
 		if (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../polyweb/'; }
 		elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
-		else { warn $Bin; die; }
+		elsif (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
+		elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
+		else { warn "\n\n$Bin\n\n"; die; }
 		my $icon = "$path_polyweb/images/polyicons/bullet_green.png";
 		$icon = "$path_polyweb/images/polyicons/pill2.png" if ($status eq 'affected');
 		$xls_pat->insert_image(0, $j, $icon);
