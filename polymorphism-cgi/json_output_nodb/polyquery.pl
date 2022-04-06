@@ -2736,7 +2736,7 @@ sub writeHeader_byVar {
 		my $path_polyweb;
 		if (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../polyweb/'; }
 		elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
-		elsif (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
+		elsif (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
 		elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
 		else { warn "\n\n$Bin\n\n"; die; }
 		my $icon = "$path_polyweb/images/polyicons/bullet_green.png";
