@@ -404,6 +404,15 @@ my $hAllIds;
 my (@lVarObj, @lHashStatsGenes, $h_all_genes_name);
 my $nb_chr = 0;
 foreach my $chr_id (split(',', $filter_chromosome)) {
+	# Cas genome MT uniquement par exemple
+	if (not exists $project->getGenomeFai->[0]->{chromosomes_object}->{$chr_id})  {
+		next if ($export_vcf_for or $detail_project or $xls_by_regions_ho);
+		my $hashRes;
+		$hashRes->{'label'} = 'name';
+		$hashRes->{'items'} = launchStatsProjectAll_chromosomes_null();
+		printJson($hashRes);
+		exit(0);
+	}
 	my $chr = $project->getChromosome($chr_id);
 	$nb_chr++;
 	if ($chr->not_used()) {
@@ -414,14 +423,6 @@ foreach my $chr_id (split(',', $filter_chromosome)) {
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	checkEssentialsCategoriesInChr($chr);
-	
-	#TODO: a enlever
-#	my $vector_global_fam_denovo = $chr->getNewVector();
-#	$chr->save_model_variants_all_patients('init');
-#	$vector_global_fam_denovo += $chr->getModelVector_fam_denovo();
-#	$chr->save_model_variants_all_patients('denovo');
-#	$chr->load_init_variants_all_patients('init');
-	
 	
 	if ($export_vcf_for) {}
 	elsif ($detail_project) {}

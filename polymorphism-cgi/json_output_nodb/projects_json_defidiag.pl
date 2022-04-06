@@ -117,7 +117,9 @@ sub getProjectListsDefidiag {
 		my @trio = grep{$_->{status} == 2 && ($_->{mother} or $_->{father})} @samples;
 		my $dir = $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
 		my $dir_polyviewer =   $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
-		
+		if ($pro->{genome} eq 'MT') {
+			$dir_polyviewer =   $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/MT";
+		}
 		$pro->{polyviewer} = 2;
 		$pro->{polyviewer} = 1 if @samples && -e "$dir_polyviewer/".$samples[0]->{name}.".variants-genes.polyviewer";
 #		warn $pro->{polyviewer} if $pro->{name} eq "NGS2020_3165";
