@@ -1326,6 +1326,8 @@ sub writeHeader_byVar {
 		my $path_polyweb;
 		if (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../polyweb/'; }
 		elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
+		if (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
+		elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
 		else { warn $Bin; die; }
 		my $icon = "$path_polyweb/images/polyicons/bullet_green.png";
 		$icon = "$path_polyweb/images/polyicons/pill2.png" if ($status eq 'affected');

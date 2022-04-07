@@ -715,6 +715,8 @@ sub get_variants_infos_from_projects {
 							my $path_polyweb;
 							if (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../polyweb/'; }
 							elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
+							if (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
+							elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
 							else { warn $Bin; die; }
 							my $html_icon = $p->return_icon();
 							$html_icon =~ s/<img src='//;
