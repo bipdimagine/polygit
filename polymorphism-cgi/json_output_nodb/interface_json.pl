@@ -1326,7 +1326,13 @@ sub writeHeader_byVar {
 		my $path_polyweb;
 		if (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../polyweb/'; }
 		elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
-		else { warn $Bin; die; }
+		if (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
+		elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
+		else {
+			warn $Bin;
+			warn "\n\nPath polyweb not found. die.\n\n";
+			die;
+		}
 		my $icon = "$path_polyweb/images/polyicons/bullet_green.png";
 		$icon = "$path_polyweb/images/polyicons/pill2.png" if ($status eq 'affected');
 		$xls_pat->insert_image(0, $j, $icon);
