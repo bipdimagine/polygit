@@ -58,7 +58,7 @@ foreach my $p (@$lp){
 }
 
 
-my $last_genecode = $buffer->getQuery->getCurrentGenesReleasesAnntotations();
+my $last_genecode = $buffer->getQuery->getMaxGencodeVersion();
 my $last_annot = $buffer->getQuery()->getMaxPublicDatabaseVersion();
 my $last_version_annot = $last_genecode.'.'.$last_annot;
 $hashRes->{global}->{projects}->{last_annot_version} = $last_version_annot;
@@ -77,7 +77,9 @@ $hashRes->{user}->{projects}->{all} = scalar(keys %projects);
 my @lItems;
 my $project = $buffer->newProject(-name => $lAllProj[0]);
 my $hGenecode = $buffer->getQuery->getHashAllGenesReleasesAnntotations();
+
 foreach my $genecode_id (sort {$a <=> $b} keys %{$hGenecode}) {
+	next if $genecode_id > $last_genecode;
 	my $genecode_version = $hGenecode->{$genecode_id}->{name};
 	next if ($genecode_version < 19);
 	my $h = undef;
