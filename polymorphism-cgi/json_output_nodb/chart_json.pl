@@ -10,14 +10,14 @@ use lib "$Bin/../GenBo/lib/GenBoDB/writeDB";
 use lib "$Bin/../packages/electro";
 
 #use ABI;  
-use GenBoCacheQuery;  
+#use GenBoCacheQuery;  
 use electro;  
 use GBuffer;
 use Getopt::Long;
 use Data::Dumper;
 use Carp;
 use JSON::XS;
-use util_file;
+#use util_file;
 use Storable qw/retrieve/;
 use Bio::DB::Sam;
 use Set::IntSpan::Fast::XS ;
