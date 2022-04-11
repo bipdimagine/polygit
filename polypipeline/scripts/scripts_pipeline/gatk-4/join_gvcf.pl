@@ -41,6 +41,7 @@ my $date = `date`;
 chomp($date);
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name, -version=>$version );
+
 my $gatk  = $project->getSoftware('gatk');
 my $java = $project->getSoftware('java');
 my $vcffirstheader = $buffer->software("vcffirstheader");
