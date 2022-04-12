@@ -98,7 +98,7 @@ $predef_steps->{getFastqFromBam}=["bam_to_fastq"];
 #$predef_steps->{calling_rna_seq} =["alignment", "rmdup","splitntrim","covariate","move_bam","gvcf4","callable_regions"];
 my $filename_cfg;
 my $limit;
-my $HG38;
+my $version;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -111,7 +111,7 @@ GetOptions(
 	'nocluster=s' => \$nocluster,
 	'config=s' => \$filename_cfg,
 	'limit=s' => \$limit,
-	'HG38=s' => \$HG38,
+	'version=s' => \$version,
 	#'low_calling=s' => \$low_calling,
 );
 $patients_name = "all" unless $patients_name;
@@ -127,11 +127,12 @@ read_config $filename_cfg =>  %{$define_steps};
 unless ($projectName) {
 	usage();
 }
-my $project = $buffer->newProject( -name => $projectName );
-if($HG38) {
-	$project->genome_version("HG38_CNG");
-	$project->version("HG38_CNG");
-}
+my $project = $buffer->newProject( -name => $projectName, -version=>$version );
+
+#if($HG38) {
+#	$project->genome_version("HG38_CNG");
+#	$project->version("HG38_CNG");
+#}
 my $pipeline = bds_steps->new( project=>$project,argument_patient=>$patients_name,nocluster=>$nocluster);
 if ($limit) {
 	$pipeline->limit($limit);

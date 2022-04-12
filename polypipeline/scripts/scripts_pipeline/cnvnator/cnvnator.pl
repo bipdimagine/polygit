@@ -36,7 +36,7 @@ GetOptions(
 die("hey man,  no fork ") unless $fork;
 
 
- my $project = $buffer->newProject( -name 			=> $project_name,version=> $version );
+ my $project = $buffer->newProject( -name 			=> $project_name,-version=> $version );
  my $patient = $project->getPatient($patient_name);
   my $name = $patient->name;
  my $cnvnator_singularity = $buffer->software("cnvnator-singularity");

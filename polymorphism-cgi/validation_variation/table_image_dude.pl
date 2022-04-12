@@ -127,7 +127,6 @@ my $genes_arg       = $cgi->param('genes');
 my $filter;
 my @selected_patients;
 
-
 if ($value_quality and not $genes_arg) {
 	my $p   = $cgi->param('patients');
 	my $pat = $project->getPatient($p);
@@ -241,18 +240,14 @@ if ( scalar(@transcripts_cgi) == 1 and $transcripts_cgi[0] eq 'all' ) {
 	@transcripts = @{ $project->getTranscripts() };
 }
 else {
-	warn "cuciui";
 	@transcripts = @{ $project->newTranscripts( \@transcripts_cgi ) };
-	warn "done ".scalar(@transcripts);
 }
-warn "sort";
 
 @transcripts = sort {
 		 $a->getChromosome->id <=> $b->getChromosome->id
 	  || $a->start <=> $b->start
 } @transcripts;
 
-warn "end";
 my $nbgenes = 0;
 my $nbt     = scalar(@transcripts);
 
