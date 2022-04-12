@@ -75,7 +75,7 @@ foreach my $v (@$vs){
 	 next unless $hintspan_global->{$v->getChromosome->name}->contains($v->start);
 	# next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 10;
 	$nb_total_indels ++;
-	next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 15;
+	next if $p->meanDepth($v->getChromosome->name,$v->start+5,$v->end+5) < 15;
 	next if $v->sequencing_details($p)->{hap}->{pourcent} < 20;
 		 $nb ++;
 	#warn $v->name;
@@ -106,7 +106,8 @@ foreach my $v (@$vs){
 	 next unless $hintspan_global->{$v->getChromosome->name}->contains($v->start);
 	 $nb_total_vars ++;
 	 #	 next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 50;
-	 	next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 15;
+	
+	 	next if $p->meanDepth($v->getChromosome->name,$v->start-2,$v->end+2) < 15;
 	#	warn Dumper ($v->sequencing_details($p))." ".$v->id if $v->sequencing_details($p)->{hap}->{pourcent} == undef;
 		next if $v->sequencing_details($p)->{hap}->{pourcent} < 1;
 		#if ($v->id eq  "9_215057_T_C"){
@@ -206,7 +207,7 @@ $results->{global}->{substitution}->{nb} = $nb_total_vars;
 
 $results->{patient}= $p->name();
 $results->{date}= time;
-$results->{stats}= "variations ".($nb2v+$nb2vindel)." bases $nb_bases <br> ";
+$results->{stats}= "variations ".($nb_total_vars+$nb_total_indels)." bases $nb_bases <br> ";
 $results->{errors}= \@errors;
 
 my $file = $dir_out."/".$project->name.".giab.json";
@@ -214,8 +215,8 @@ my $file = $dir_out."/".$project->name.".giab.json";
 open (JSON,">$file");
 print JSON encode_json $results;
 close(JSON);
-print "true negative Substitutions $nb2fv /  $nb2v \n";
-print "true negative Indels $nb2findel /  $nb2vindel \n";
+print "false negative Substitutions $nb2fv /  $nb2v \n";
+print "false negative Indels $nb2findel /  $nb2vindel \n";
 print "nb de bases : $nb_bases\n";
 
 
@@ -269,13 +270,34 @@ sub print_variant_false {
 	$vh->{event} = "false negative";
 	$vh->{id} = $v->id;
 	$vh->{type} = "Indel";
-	$vh->{type} = "SNP" if $v->isVariant;
+	$vh->{type} = "SNP" if $v->isVariation;
 	$vh->{vtype} = $v->type;
 	$vh->{locus} = $v->getChromosome->fasta_name.":".$v->start."-".$v->end;
 	push(@vs,$v->getChromosome->name);
 	#push(@vs,$v->start);
 	push(@vs,$v->id);
 	my @t= split("_",$v->id);
+	warn "coucou ".$v->type;
+	#unless ($v->type){
+		warn "cuicuiu";
+		my $chr = $v->getChromosome();
+		my $vid = $v->vector_id;
+		$vid++;
+		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+		 #warn $gid." ".$vid." ".$id;
+		 my $obj = $chr->cache_lmdb_variations->get($gid);
+		 warn $obj->sequence;
+		 warn $v->sequence;
+		 $vid-=2;
+		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+		 #warn $gid." ".$vid." ".$id;
+		 my $obj = $chr->cache_lmdb_variations->get($gid);
+		 warn $obj->sequence;
+		 warn $v->sequence;
+	#	 die();
+		
+		
+	#} 
 	my $seqref = $v->getChromosome()->getSequence($v->start,$v->start);
 	my $seqalt = $v->sequence();
 	$seqalt = $v->alternate_allele if $seqalt eq "-";
@@ -318,7 +340,23 @@ sub print_variant {
 	$vh->{giab} = "./.";
 	$vh->{control} = $v->sequencing_details($p)->{hap}->{nb_ref}."/".$v->sequencing_details($p)->{hap}->{nb_alt};
 	$vh->{control_depth} = $p->depth($v->getChromosome->name,$v->start,$v->end)->[0];
-	
+	warn "coucou ".$v->type;
+	#unless ($v->type){
+		warn "cuicuiu";
+		my $chr = $v->getChromosome();
+		my $vid = $v->vector_id;
+		$vid++;
+		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+		 #warn $gid." ".$vid." ".$id;
+		 my $obj = $chr->cache_lmdb_variations->get($gid);
+		 warn $obj->sequence;
+		 warn $v->sequence;
+		 $vid-=2;
+		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+		 #warn $gid." ".$vid." ".$id;
+		 my $obj = $chr->cache_lmdb_variations->get($gid);
+		 warn $obj->sequence;
+		 warn $v->sequence;
 	
 	push(@$tab,$vh);
  	push(@vs,"./.");

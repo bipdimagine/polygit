@@ -1101,7 +1101,6 @@ sub horizontal_image_cnv {
 
 sub image_cache_cnv {
 	 my ($patients,$transcript,$primers) = @_;
-
  $primers = $transcript->project->getPrimersByObjects($transcript) unless $primers;
 
 my $hrun_id;
@@ -1170,6 +1169,7 @@ my $hdata;
 	
 	my @color_background  = (223, 255, 216);
  @color_background =(127, 255, 27) if ($max_event >=2);
+ my @array_ho;
 for  (my $i = 0 ; $i<@$primers;$i++ ){
 	my $primer = $primers->[$i];
 	my (@find) = grep{exists $hrun_id->{$_->id}} @{$primer->getRuns};
@@ -1219,6 +1219,7 @@ for  (my $i = 0 ; $i<@$primers;$i++ ){
 				elsif ($level == 1){
 						@colors =(229, 40, 76);
 						@colors =(255, 64, 64);
+						@colors =(255, 0, 0) if $vscore < 0.15;
 				}
 				elsif ($level==4){
 					my $colorr =int (50*(0.6-$score))+205;
@@ -1252,6 +1253,18 @@ for  (my $i = 0 ; $i<@$primers;$i++ ){
 				unless (exists $hcolors->{$id_color}){
 					$hcolors->{$id_color} = $image->colorAllocate(@colors);
 				}
+				
+				
+
+				if ( $vscore < 0.2 ) {
+					my $x1 = $x;
+					my $x2 = $x + ( $size + 1 );
+					my $y1 = $y;
+					my $y2 = $y + $size;
+					push( @array_ho, [ $x1 - 1, $y1 - 1, $x2, $y2 ] );
+
+				}
+				
 			
 				$image->rectangle($x-1,$y-1,$x+$nb_col*($size+2)+1,$y+$size+1,$black);
 				$image->filledRectangle($x,$y,$x+$nb_col*($size+2),$y+$size,$hcolors->{$id_color} );
@@ -1262,6 +1275,12 @@ for  (my $i = 0 ; $i<@$primers;$i++ ){
 				$x+=$size+2
 			}
 		$y+=$size+2;
+	}
+	my $point    = $image->colorAllocate( 255, 255, 251 );
+	foreach my $ho (@array_ho) {
+		$image->rectangle( @$ho, $point );
+
+		#last;
 	}
 	#next unless $exon->{exon} ==1;
 $image->rectangle(0,0,$w,$h,$black);

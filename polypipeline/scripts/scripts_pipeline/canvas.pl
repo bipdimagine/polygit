@@ -24,10 +24,12 @@ use List::Util qw(sum);
  my $patient_name;
  #my $low_calling;
  my $method;
+ my $version;
 GetOptions(
 	'project=s'   => \$project_name,
 	"fork=s"  => \$fork,
 	"patient=s" => \$patient_name,
+	"version=s" => \$version,
 );
 
 
@@ -37,7 +39,7 @@ GetOptions(
 
 my $buffer = GBuffer->new();
 
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name,-version=>$version);
 my $canvas  = $project->getSoftware('canvas');
 my $tabix  = $project->getSoftware('tabix');
 my $ref =  $project->genomeFasta();

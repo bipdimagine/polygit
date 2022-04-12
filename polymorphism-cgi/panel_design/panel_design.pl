@@ -52,7 +52,7 @@ my $buffer = GBuffer->new();
  my $fsize = "font-size:10px";
 my $cgi          = new CGI();
 my $gencode = $cgi->param('gencode');
-my $name = $cgi->param('$name');
+my $name = $cgi->param('name');
 
 my $project = $buffer->newProjectCache( -name 			=> "NGS2021_4169");
 $project->gencode_version($gencode);# if $gencode;
