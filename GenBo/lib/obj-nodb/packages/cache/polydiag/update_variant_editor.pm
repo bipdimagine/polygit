@@ -2834,7 +2834,7 @@ sub table_cnv_genes_transcripts {
 
 
 sub get_hash_genes_dude {
-	my ($patient, $by_names_or_ids, $list_type, $panel) = @_;
+	my ($patient, $by_names_or_ids, $list_type, $panel,$noprint) = @_;
 	my ($h_type_levels, $h_panels_tr);
 	#unless ($list_type) { push(@$list_type, 'high'); }
 	#push(@$list_type, 'medium');
@@ -2923,10 +2923,11 @@ sub get_hash_genes_dude {
 			my $hGenes_dude_tmp;
 			$hGenes_dude_tmp->{'not'}++;
 		 	foreach my $t (@ltr_tmp){
-		 		print "/";
 		 		$xp++;
+		 		unless ($noprint){
 				print "." if ($xp % 20 == 0 and $patient->getProject->cgi_object());
 				$patient->getProject->print_dot(50);
+		 		}
 		 		my $g_name_id;
 		 		$g_name_id = $t->gene_external_name() if ($by_names_or_ids eq 'names');
 		 		$g_name_id = $t->getGene->id() if ($by_names_or_ids eq 'ids');

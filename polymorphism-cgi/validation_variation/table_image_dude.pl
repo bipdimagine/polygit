@@ -139,7 +139,7 @@ if ($value_quality and not $genes_arg) {
 	if ($value_quality == 4) { @lTypes = ('high','medium', 'low'); }
 	my $this_types = join(', ', @lTypes);
 	if ($project->isDiagnostic()) { @lTypes = ('high','medium', 'low'); }
-	my $hRes = update_variant_editor::get_hash_genes_dude($pat, 'ids', \@lTypes);
+	my $hRes = update_variant_editor::get_hash_genes_dude($pat, 'ids', \@lTypes,undef,1);
 	if ($project->isDiagnostic()) { 
 		foreach my $g_id (keys %{$hRes}) {
 			if ($value_quality == 1 and not exists $hRes->{$g_id}->{'high'}) {
@@ -264,7 +264,6 @@ my $size   = "";
 html::print_cgi_header($cgi);
 print $CSS;
 my $images = uri_image( $project, \@transcripts, $force_visualisation);
-warn Dumper $images;
 #warn scalar(@transcripts);
 my $nb_images;
 foreach my $t (@transcripts) {
@@ -305,7 +304,6 @@ my $nb       = 0;
 my @problem_transcripts;
 
 @transcripts = grep { exists $images->{ $_->id } } @transcripts;
-warn scalar (@transcripts);
 my $nbc = 0;
 for ( my $i = 0 ; $i < @transcripts ; $i++ ) {
 	if ( $nbc % $col == 0 && $nbc > 0 ) {
@@ -316,7 +314,6 @@ for ( my $i = 0 ; $i < @transcripts ; $i++ ) {
 	}
 
 	my $tname = $transcripts[$i]->name;
-	warn $tname;
 	# 	my $class = "nobg";
 	# $class ="th1" if $z%2 ==0;
 	my $chr_name = $transcripts[$i]->getChromosome()->name();
