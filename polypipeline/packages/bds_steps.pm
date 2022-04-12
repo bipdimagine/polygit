@@ -2220,8 +2220,8 @@ method cnvnator  (Str :$filein){
 	die("-".$filein) unless $filein;
 
 	my $bin_dev = $self->script_dir;
-	
-	my $cmd = "perl $bin_dev/cnvnator/cnvnator.pl -project=$project_name  -patient=$name -fork=$ppn";
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/cnvnator/cnvnator.pl -project=$project_name  -patient=$name -fork=$ppn -version=$version";
 	my $type = "cnvnator";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"cnvnator",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -2247,8 +2247,8 @@ method canvas  (Str :$filein){
 	die("-".$filein) unless $filein;
 
 	my $bin_dev = $self->script_dir;
-	
-	my $cmd = "perl $bin_dev/canvas.pl -project=$project_name  -patient=$name -fork=$ppn";
+		my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/canvas.pl -project=$project_name  -patient=$name -fork=$ppn -version=$version";
 	my $type = "canvas-calling";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"canvas",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -2302,8 +2302,8 @@ method manta  (Str :$filein){
 	die("-".$filein) unless $filein;
 
 	my $bin_dev = $self->script_dir;
-	
-	my $cmd = "perl $bin_dev/manta.pl -project=$project_name  -patient=$name -fork=$ppn";
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/manta.pl -project=$project_name  -patient=$name -fork=$ppn -version=$version";
 	my $type = "manta-calling";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"manta",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);

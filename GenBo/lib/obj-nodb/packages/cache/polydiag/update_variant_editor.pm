@@ -2863,7 +2863,6 @@ sub get_hash_genes_dude {
 			$no->close();
 			next;
 		}
-		print "/ ".scalar(@$list_tr_high);
 		if (scalar(@$list_tr_high) >= 250 and scalar keys %$h_type_levels == 1) {
 			$hGenes_dude->{too_much} = 1;
 			return $hGenes_dude;

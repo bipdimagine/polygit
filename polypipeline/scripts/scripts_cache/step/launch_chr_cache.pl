@@ -44,6 +44,7 @@ foreach my $project_name (@list){
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name,-version=> $version );
 my $chr = $project->getChromosome($chr_name);
+$chr_name = $chr->name;
 my $hash_cmd;
 my $cmd_perl = "/usr/bin/perl $Bin/../../../../polymorphism-cgi/cache_nodb/scripts";
 push(@$hash_cmd, {
@@ -108,8 +109,8 @@ foreach my $hc (@$hash_cmd){
 		unlink $error;
 	}
 	
-	die($cmd) unless -e  $hc->{fileout};
-	die() unless -e $ok;
+	die($cmd." ".$hc->{fileout}) unless -e  $hc->{fileout};
+	die("cocucuou") unless -e $ok;
 	unlink $ok
 } 
 }

@@ -1,0 +1,13 @@
+chrX	HAVANA	gene	153406101	153406340	.	+	.	ID=rLCR;gene_id=rLCR;gene_type=regulatory_region;gene_name=gdloop-1;description=regulatory region OPN1LW OPN1MW;tag=basic
+chrX	HAVANA	transcript	153406101	153406340	.	+	.	ID=LCR;Parent=rLCR;transcript_type=regulatory_region;gene_name=rLCR;gene_id=rLCR;tag=basic
+chrX	HAVANA	exon	153406101	153406340	.	+	.	Parent=LCR
+chrM	HAVANA	gene	1	576	.	+	.	ID=gdloop-1;gene_id=gdloop-1;gene_type=pseudogene;gene_name=gdloop-1;description=Dloop part 1;
+chrM	HAVANA	transcript	1 	576	.	+	.	ID=dloop-1;Parent=gdloop-1;gene_id=gdloop-1;transcript_id=dloop-1;gene_type=pseudogene;gene_name=dloop-1;transcript_type=processed_transcript;transcript_name=dloop-1;tag=basic
+chrM	HAVANA	exon	1	576	.	+	.	ID=exon:dloop-1:1;Parent=dloop-1;gene_id=gdloop-1;transcript_id=dloop-1;gene_type=pseudogene;gene_name=gdloop-1;transcript_type=processed_transcript;transcript_name=gdloop;exon_number=1;tag=basic;
+chrM	HAVANA	gene	16024	16569	.	+	.	ID=gdloop-2;gene_id=gdloop-2;gene_type=pseudogene;gene_name=gdloop-2;description=Dloop part 2;
+chrM	HAVANA	transcript	16024 	16569	.	+	.	ID=dloop-2;Parent=gdloop-2;gene_id=gdloop-2;transcript_id=dloop-2;gene_type=pseudogene;gene_name=dloop-2;transcript_type=processed_transcript;transcript_name=dloop-2;tag=basic
+chrM	HAVANA	exon	16024	16569	.	+	.	Parent=dloop-2
+
+
+
+
