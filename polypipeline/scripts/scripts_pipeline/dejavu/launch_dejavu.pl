@@ -10,18 +10,23 @@ use Email::Simple::Creator;
  
 
  my @chromosomes = (1..22,'X','Y','MT');
- 
- 
- my $dir_tmp = "/data-isilon/tmp/dejavu/";
+  my $dir_tmp = "/data-isilon/tmp/dejavu/";
  my $filetmp =  "/data-isilon/tmp/dejavu/cmd.".time;
+ system("$Bin/dejavu_project_lite.pl && touch $filetmp.project");
+ unless (-e "$filetmp.project"){
+ 	unlink "$filetmp.project";
+ 	error("DEJAVU :::problem cretae projext dejavu ");
+ 	exit(0);
+ }
+
  open(CMD,">$filetmp");
  
  foreach my $chr (@chromosomes){
- 	print CMD "$Bin//dejavu_lite_memory.pl -chr=$chr -fork=10 \n"; 
+ 	print CMD "$Bin//dejavu_lite_memory.pl -chr=$chr -fork=10 -noprint=1 \n"; 
  	
  }
  
- system("cat $filetmp | run_cluster.pl -cpu=10 && touch $filetmp.ok");
+ system("cat $filetmp | /software/bin/run_cluster.pl -cpu=10  -noprint=1 && touch $filetmp.ok");
  
  if (-e "$filetmp.ok"){
  	system("$Bin/check_dejavu.pl  && touch $filetmp.check ");
@@ -29,11 +34,12 @@ use Email::Simple::Creator;
  		unlink $filetmp;
  		unlink  "$filetmp.ok";
  		unlink  "$filetmp.check";
- 		error ("dejavu OK");
+ 		my $d = scalar localtime time;
+ 		error ("DEJAVU :::  OK ".$d);
  		exit(0);
  	}
  	else {
- 		error("problem check dejavu ");
+ 		error("DEJAVU ::: problem check dejavu ");
  	}
  }
  

@@ -24,17 +24,19 @@ my $dirin;
 my $patient_name;
 my $bamin;
 my $bamout;
+my $version;
 GetOptions(
 	'project=s' => \$project_name,
 	'patient=s' => \$patient_name,
 	'bamin=s' => \$bamin,
 	'bamout=s' => \$bamout,
 	'fork=s' => \$fork,
+	'version=s' =>\$version,
 );
 die("hey man,  no fork ") unless $fork;
 
 
- my $project = $buffer->newProject( -name 			=> $project_name );
+ my $project = $buffer->newProject( -name 			=> $project_name,version=> $version );
  my $patient = $project->getPatient($patient_name);
   my $name = $patient->name;
  my $cnvnator_singularity = $buffer->software("cnvnator-singularity");

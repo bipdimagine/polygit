@@ -77,6 +77,7 @@ $SIG{'INT'} = sub {
 	exit(0);
 	die();
 };
+
 my $dir_prod = "/data-isilon/tmp/dejavu/";
 
 my %exclude;
@@ -102,7 +103,7 @@ system("mkdir -p $dir_tmp && chmod a+rwx $dir_tmp") unless -e $dir_tmp;
 my @projects = grep { !( exists $exclude{$_} ) } @{ $buffer->listProjectsForDejaVu() };
   my $id = time;
  my $dbfile = "$dir_tmp/$chr.$id.sqlite";
-  create_projects_sqlite() if $chr == 1;
+ my $txtfile = "$dir_tmp/$chr.$id.txt";
 create_first_sqlite($dbfile) unless -e $dbfile;
 create_dejavu_lite($dbfile);
 
@@ -112,36 +113,6 @@ create_dejavu_lite($dbfile);
 
 
 exit(0);
-
-sub create_projects_sqlite {
-	
-	my $pr = String::ProgressBar->new( max => scalar(@projects) );
-
-my $noprojects = GenBoNoSqlDejaVu->new( dir => $dir_prod, mode => "c" );
-warn $dir_prod;
-
-foreach my $project_name ( sort @projects ) {
-	next unless -e $dir_projects . "/$project_name.lite";
-	next if -z $dir_projects . "/$project_name.lite";
-	my $patient;
-	my %h2;
-	eval {
-	my $notodo  = GenBoNoSql->new( dir => $dir_projects, mode => "r" );
-	 $patient = $notodo->get( $project_name, "patients" );
-	next unless $patient;
-	 %h2 = reverse %$patient;
-	$noprojects->put( "projects", $project_name, \%h2 );
-	};
-	#if ($@) {
-	#	$noprojects->put( "projects", $project_name, \%h2 );
-	#}
-
-}
-
-warn "first step";
-$noprojects->close();
-#die();	
-}
 
 
 sub create_first_sqlite {
@@ -186,7 +157,8 @@ $pm->run_on_finish(
     		push(@files,$h->{file});
     		my $f = $h->{file};
     		my $t = time;
-    		warn $dbfile;
+    		#warn $dbfile;
+    		#system("cat $f >> $txtfile ");
     		system(qq{sqlite3 $dbfile ".import $f tablines "});
     		warn "\t end import $dbfile $f ".abs(time -$t);
 			unlink $f;
@@ -228,7 +200,7 @@ $pm->run_on_finish(
 			$notodo->close();
 			};
 			if ($@){
-				warn "PLANTAGE ";
+				warn "PLANTAGE $project_name";
 				next;
 			}
 			my ($y,$n) = split("_",$project_name);
@@ -241,6 +213,7 @@ $pm->run_on_finish(
 				my ($chr,$pos,$a,$b) = split("_",$vid);
 				my $line = $project_name . ";" . $vh->{$vid};
 				my($chr,$start,$seq1,$seq2) = split("_",$vid);
+				print $project_name ." ".$vh->{$vid}."\n" if $start == 3243;
 				my $end = $start+1;
 				my $type = "S";
 				
@@ -311,8 +284,9 @@ $pm->run_on_finish(
 	#}
 $pm->wait_all_children();
 die() if keys %$running_jobs;
-warn "end step 1 ".abs(time - $tloop);
-
+#warn "end step 1 ".abs(time - $tloop);
+#warn $txtfile;
+#die();
 my $tindex = time;
  $dbh = DBI->connect( "dbi:SQLite:dbname=$dbfile", "", "",
 		{ sqlite_use_immediate_transaction => 0, } );
@@ -373,14 +347,13 @@ while ( my @row = $sth2->fetchrow_array ) {
 	my $start = $row[3];
 	my $end = $row[4];
 	my $tp;
-	
 	#foreach my $l (split("!",$text)) {
 	#		my($p,$info) = split(";",$l);
 	#		$tp->{$p} = $info;
 	#	}
 	#my $z = compress($text);
 	$sth4->execute($rowid,$start,$end);
-	warn $text if $id  eq "12_80655799_G_A";
+	warn $text if $start  eq "3243";
 	$sth3->execute($nodejavu->encode($text),$id);
 }
 warn "end compress ".($tcompress -time);
