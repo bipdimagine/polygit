@@ -66,7 +66,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Sift', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA');
+		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Sift', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -112,6 +112,7 @@ has hash_except_category_rowspan => (
 		$h->{'cds_pos'}			= undef;
 		$h->{'protein'}			= undef;
 		$h->{'protein_xref'}	= undef;
+		$h->{'nomenclature'}	= undef;
 		$h->{'aa'}				= undef;
 		$h->{'family'}			= undef;
 		$h->{'patient'}			= undef;
@@ -1107,6 +1108,7 @@ sub prepare_generic_datas_variants {
 						$h2->{'cds_Pos'}         = $h_tr->{'cds_position'};
 						$h2->{'protein'}         = $h_tr->{'protein'};
 						$h2->{'protein_xref'}    = $h_tr->{'protein_xref'};
+						$h2->{'nomenclature'}    = $h_tr->{'nomenclature'};
 						$h2->{'polyphen'}        = $h_tr->{'polyphen_status'};
 						$h2->{'sift'}            = $h_tr->{'sift_status'};
 						$h2->{'aa'}              = $h_tr->{'aa'};
