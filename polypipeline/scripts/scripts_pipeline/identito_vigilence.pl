@@ -54,10 +54,10 @@ foreach my $var_id (@list) {
 		push(@{$id_bc->{$patient->name}->{coverage}},"mc");
 	}
 	}
-	my $ps = $v->getPatients();
-	foreach my $p (@{$ps}){
-		warn $p->name;
-	}
+#	my $ps = $v->getPatients();
+#	foreach my $p (@{$ps}){
+#		warn $p->name;
+#	}
 	my $chr = $v->getChromosome();
 	#next;
 	unless (defined $v->vector_id){
