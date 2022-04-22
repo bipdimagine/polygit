@@ -1852,7 +1852,7 @@ sub score_spliceAI {
 
 		
 	}
-	return undef;
+		return 0 ;
 }
 
 sub score_gene_spliceAI {
