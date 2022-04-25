@@ -9,7 +9,6 @@ use lib "$Bin/../GenBo/lib/obj-nodb";
 use lib "$Bin/../GenBo/lib/GenBoDB/writeDB";
 use GBuffer;
 use Data::Dumper;
-use GenBoFilter;
 
 my $cgi = new CGI;
 print $cgi->header();
