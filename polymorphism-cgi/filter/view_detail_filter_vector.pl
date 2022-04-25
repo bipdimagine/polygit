@@ -10,7 +10,6 @@ use lib "$Bin/../GenBo/lib/GenBoDB/writeDB";
 use lib "$Bin/../packages/export";
 use GBuffer;
 use Data::Dumper;
-use GenBoFilter;
 use export_data;
 
 my $cgi = new CGI;
