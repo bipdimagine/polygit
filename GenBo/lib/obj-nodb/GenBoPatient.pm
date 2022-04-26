@@ -492,7 +492,7 @@ has 'compute_sex' => (
 		return 2 if $covm < 5;
 
 		return 1 if $covm > $covh->{mean} * 0.15;
-		if ( $covh->{mean} > 300 ) {
+		if ( $covh->{mean} > 200 ) {
 			return 1 if $covm > $covh->{mean} * 0.10;
 		}
 
