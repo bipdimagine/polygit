@@ -42,7 +42,7 @@ if($name){
 elsif($project_name){
 	push(@list,$project_name);
 }
-die() unless @list;
+die("../../../../defidiag/project/$name/$set.txt") unless @list;
 
 
 
@@ -95,6 +95,7 @@ foreach my $cmd (@allcmd){
 }
 
 }
+
 system("$Bin/add_defidiag_phentoype.pl -project=$solo");
 warn "ADD PHENOTYPE AND CALLING METHODS !!!!!!";
 exit(0);

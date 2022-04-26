@@ -5,6 +5,7 @@ use Moose;
 use Data::Dumper;
 
 
+
 sub parseGnomadTable {
 	my ($self,$html,$h) = @_;
 	my $hpatients;
@@ -261,6 +262,8 @@ has other_genes  => (
 
 
 #GNOMAD 
+
+
 has gnomad_id => (
 	is		=> 'rw',
 );
@@ -316,9 +319,13 @@ has dejavu_similar_patients_ho => (
 has dejavu_this_run_patients => (
 	is		=> 'rw',
 );
+
+
 has transcripts => (
 	is		=> 'rw',
 );
+
+
 has gene => (
 	is		=> 'rw',
 	
@@ -595,6 +602,7 @@ sub setLmdbVariant {
 
 }
 
+
 sub setOldVariant {
 	my ($self,$vh,$project,$patient,$gene) = @_; 
 		$self->gene($gene);
@@ -608,7 +616,7 @@ sub setOldVariant {
 		$self->isCnv($vh->{value}->{is_cnv});
 		if ($self->isCnv) {
 			foreach my $caller (@{$vh->{value}->{caller}}) {
-				$self->isDude(1) if ($caller eq 'dud');
+				$self->isDude(1) if ($caller =~ /dud/);
 			}
 			if (exists $vh->{value}->{manta} and exists $vh->{value}->{manta}->{is_imprecise}) {
 				$self->isMantaImprecise(1) if ($vh->{value}->{manta}->{is_imprecise});
@@ -658,38 +666,17 @@ sub setOldVariant {
 		######
 		$self->parseGnomadTable($vh->{html}->{gnomad},$vh);
 
-		
-#		$self->gnomad_ac($vh->{value}->{ac});
-#		unless ($self->gnomad_ac){
-#			
-#		}
-#		
-#	$self->gnomad_an($vh->{value}->{an});
-#	
-#	my ($v1,$v2) = split(":",$vh->{value}->{html});
-#	#warn Dumper $vh unless $v1;
-#	#die() unless $v1;
-#	$self->gnomad_min_pop_name($v1);
-#	$self->gnomad_min_pop($v2);
-#	($v1,$v2) = split(":",$vh->{value}->{max_pop});
-#	$self->gnomad_max_pop_name($v1);
-#	$self->gnomad_max_pop($v2);
-#	($v1,$v2) = split(":",$vh->{value}->{ac_ho});
-#	$self->gnomad_ho($v1);
-#	$self->gnomad_ho_male($v2);
+
 	
 	#########
 	# DEJAVU
 	#########
 	$self->parseDejaVuTable($vh->{html}->{deja_vu},$vh);
 	$self->dejavu_this_run_patients($vh->{value}->{this_run_patients});# = '-';
-#	$self->dejavu_other_projects($vh->{value}->{other_project});# = $v->other_projects();
-#	$self->dejavu_other_patients($vh->{value}->{other_patients});# = $v->other_patients();
-#	$self->dejavu_other_patients_ho($vh->{value}->{other_patients_ho});# = $v->other_patients_ho();
-#	$self->dejavu_similar_projects($vh->{value}->{similar_projects} );#= $v->similar_projects();
-#	$self->dejavu_similar_patients($vh->{value}->{similar_patients});# = $v->similar_patients();
-#	$self->dejavu_similar_patients_ho($vh->{value}->{similar_patients_ho});# = $v->similar_patients_ho();
-#	
+	
+	#########
+	# caller
+	#########
 	$self->text_caller($vh->{value}->{ngs});
 	
 	#warn Dumper $vh->{transmission_model};

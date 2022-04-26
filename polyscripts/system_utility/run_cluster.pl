@@ -151,7 +151,9 @@ while (keys %$runnings_jobs ){
 		$jobs->{$jobid}->{status} = $stat;
 		
 		$hstatus->{$stat}->{$jobid} ++;
-	
+		if (lc($stat) eq "failed"){
+			system("mv slurm-".$jobid."out"." slurm-".$jobid."failed")
+		}
 		if (lc($stat) eq "completed"){
 			delete $runnings_jobs->{$jobid};
 			unlink "slurm-".$jobid.".out";
@@ -176,6 +178,7 @@ while (keys %$runnings_jobs ){
 			unlink "slurm-".$jobid."out";
 			$status->update()  ;
 		}
+		
 		else {
 			delete $runnings_jobs->{$jobid};
 			if (@$commands){

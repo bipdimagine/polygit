@@ -602,7 +602,7 @@ has primers_lines =>(
 		}
 		
 		my $multiplex_file = $self->multiplexFile();
-			die("unable to find $multiplex_file, I'm dyiiiiiinnnng." ) unless -e $multiplex_file;
+			die("unable to find $multiplex_file , I'm dyiiiiiinnnng." ) unless -e $multiplex_file;
 			my @lines;
 			if ($multiplex_file =~/\.gz/){
 		 @lines = `zcat $multiplex_file`;

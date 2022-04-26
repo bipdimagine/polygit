@@ -53,19 +53,23 @@ problem("problem read group $z") if $z ne 1;
 my $nb = 3000 + int(rand(1000));
 my $cmd_head = "head -".$nb;
 my ($md1) = `samtools view -f 19 $file1 | cut -f1 | $cmd_head | sort -u | md5sum`;
+warn "samtools view -f 19 $file1 | cut -f1 | $cmd_head | sort -u | md5sum";
 my ($md2) = `samtools view -f 19 $file2 | cut -f1 | $cmd_head | sort -u | md5sum`;
+warn "samtools view -f 19 $file2 | cut -f1 | $cmd_head | sort -u | md5sum";
 chomp($md1);
 chomp($md2);
 warn $md1." $nb ".$md2;
  $nb = 4000 +  int(rand(1000));;
  $cmd_head = "head -".$nb;
+ my $c1;
 if ($md1 ne $md2){
  ($md1) = `samtools view -f 19 $file1 | cut -f1 | $cmd_head | sort -u | md5sum`;
+ $c1 = "samtools view -f 19 $file1 | cut -f1 | $cmd_head | sort -u | md5sum";
  ($md2) = `samtools view -f 19 $file2 | cut -f1 | $cmd_head | sort -u | md5sum`;
 chomp($md1);
 chomp($md2);
 }
-problem($md1." ".$md2) if $md1 ne $md2; 
+problem($md1." ".$md2." cmd: $c1") if $md1 ne $md2; 
 warn "test read name OK \n $md1 $md2 \n $file1 $file2";
 #my @aa = `samtools view -f 3  $file1 | cut -f1 | head -200 | sort -b`;
 #chomp(@aa);
