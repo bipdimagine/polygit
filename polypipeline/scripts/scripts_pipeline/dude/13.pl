@@ -59,7 +59,7 @@ my $chromosomes = $project->getChromosomes();
 	
 			my $run_id = $run->id;
 			my $debug;
-			if ($primer->id =~ /chrX_41200018/){
+			if ($primer->id =~ /chr12_22089390/){
 				$debug =1;
 		}
 		#next unless $debug;

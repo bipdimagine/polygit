@@ -36,17 +36,19 @@ my $project = $buffer->newProject( -name => $project_name,-version=>"HG19" );
 my $buffer_v = GBuffer->new();
 my $project_v = $buffer_v->newProject( -name => $project_name,-version=>$version );
  my $dir_out = $project->getCallingPipelineDir("cmd");
-# open(CMD,">$dir_out/cmd1.list");
-#foreach my $p (@{$project->getPatients}){
-#	my $patient_name = $p->name;
-#	print CMD "$Bin/mito_remapping.pl -project=$project_name -patient=$patient_name -version=$version -fork=10 \n";
-#}
-#close (CMD);
+ open(CMD,">$dir_out/cmd1.list");
+foreach my $p (@{$project->getPatients}){
+	my $patient_name = $p->name;
+	print CMD "$Bin/mito_remapping.pl -project=$project_name -patient=$patient_name -version=$version -fork=10 \n";
+}
+close (CMD);
+
 my $dir1;
 my $dir_v;
-#system("cat $dir_out/cmd1.list | run_cluster.pl -cpu=10");
+system("cat $dir_out/cmd1.list | run_cluster.pl -cpu=10");
 #warn "***** END MAPPING *******";
-
+warn scalar(@{$project->getPatients});
+exit(0);
 unlink "$dir_out/cmd1.list";
 warn " copy dude";
  $dir1  = $project->getVariationsDir("dude");

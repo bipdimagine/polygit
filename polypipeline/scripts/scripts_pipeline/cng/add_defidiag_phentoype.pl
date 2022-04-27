@@ -37,7 +37,7 @@ update_defidiag($dbh,$project->id);
 update_phenotype($dbh,$project->id);
 warn "WARNING UPDATE defidiag and phenotype";
 $dbh->commit();
-
+	system("add_calling_method.sh -project=$project_name -method=canvas,manta,wisecondor");
 
 sub update_defidiag{
 	my ($dbh,$project_id) = @_;
