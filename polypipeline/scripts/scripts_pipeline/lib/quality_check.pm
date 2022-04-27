@@ -12,7 +12,6 @@ sub mendelian_statistics {
 	my $res;
 	$res  = {};
 	$fork = 1 unless $fork;
-
 	#$fork=1;
 	my $pm = new Parallel::ForkManager($fork);
 	my $results;
@@ -40,7 +39,6 @@ sub mendelian_statistics {
 	foreach my $f ( @{ $project->getFamilies } ) {
 		$f->getMembers();
 
-		next unless $f->name eq "MOU";
 		$pid = $pm->start and next;
 
 		$project->buffer->dbh_reconnect();
@@ -48,7 +46,6 @@ sub mendelian_statistics {
 		#	next if scalar(@$ps) > 1;
 		my $vcf = concatVcf( $project, $f );
 
-		warn "---->".$vcf;
 		my $hres;
 		$hres->{data} = fast_plink( $project, $vcf, $f );
 
