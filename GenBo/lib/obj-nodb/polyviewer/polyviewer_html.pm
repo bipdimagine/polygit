@@ -393,7 +393,7 @@ sub calling_cnv {
 	  	}
 	  }
 	  else {
-	  	$html.= "\n".$self->html_parent_line_variant_cnv($self->patient,$gene_name);
+	  	$html.= "\n".$self->html_parent_line_variant_cnv($samples->{$self->patient->id},$self->patient,$gene_name);
 	  }
 	  if ($self->variant->isMantaImprecise) {
 	  	$html .=  $self->cgi->start_Tr({style=>"font-size:09px;position:sticky;z-index:8;top:0;background-color:#fd8253;color:white;"}).$self->cgi->th({style=>"text-align: center;",colspan=>8}, 'IS IMPRECISE')."".$self->cgi->end_Tr();
