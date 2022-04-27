@@ -156,7 +156,8 @@ sub move_patient{
   my (@bam) = grep {/bam$/} @files;
    my (@vcf) = grep {/vcf.gz$/} @files;
  #   my (@vcf) = grep {/.gz$/} @files;
-  
+  warn Dumper @files;
+  warn $dir1." $pn";
  if (scalar(@bam) ne 1 || scalar(@vcf) < 2){
  	colored::stabilo("red","----------------$pn problem with files---------------");
 	colored::stabilo("red","----------------".join(",",@bam)." bam file  ---------------");

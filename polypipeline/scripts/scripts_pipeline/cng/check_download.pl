@@ -4,6 +4,7 @@ use FindBin qw($Bin);
 use Getopt::Long;
 use Data::Dumper;
 use  Parallel::ForkManager;
+use Term::ANSIColor;
 
 my $name;
 #my $password;
@@ -28,63 +29,99 @@ my $dir = "/data-isilon/download/$type/www.cnrgh.fr/data/$name/alignements/$set/
 
 my @bams = `ls $dir/*.bam`;
 chomp(@bams);
-warn 'end';
-my @reload;
+warn "verif download MD5  bam";
+verif_download_md5(\@bams);
+ warn  colored(['bright_green on_black'],"Download MD5 OK");
+compute_md5(\@bams);
 
-my $pm = new Parallel::ForkManager(5);
-$pm->run_on_finish(
-    sub { 
-    	my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$h)=@_;
-  
-    	unless (defined($h) or $exit_code > 0) {
-				print qq|No message received from child process $exit_code $pid!\n|;
-				die();
-				return;
-			}
-			if (exists $h->{reload}){
-				push(@reload, $h->{reload});
-			}
-    }
-	);
-
-foreach my $bam (@bams){
-	#next unless $bam =~/C001NBU/;
-	#warn $bam;
-	next if -e "$bam.ok";
-	my $pid = $pm->start and next;
-	next unless -e "$bam.md5";
-	my @t = `cat $bam.md5`;
-	chomp(@t);
-	my ($md5_2,$f) = split(" ",$t[0]);
-	my $s = `md5sum $bam`;
-	chomp($s);
-	my ($md5,$f2) = split(" ",$s);
-	my $res = {};
-	if ($md5 ne $md5_2){
-		warn $md5.' '.$md5_2;
-		warn $bam;
-		$bam =~ s/\/data-isilon\/download\/$type\///;
-		my $cmd_bam="wget -c -N --recursive --no-parent --user $name --no-check-certificate  --password   $password https://$bam -R cram";  
-		warn $cmd_bam;
-		#system($cmd_bam);
-		$res->{reload} = $cmd_bam;
-		#push(@reload,$bam);
+my $problem = compare_md5(\@bams);
+ if(@$problem){
+ 	warn  colored(['bright_red on_black'],"_______________________________________________")."\n" ;
+ 	warn  colored(['bright_red on_black'],"-- START DOWNLOAD BAM : ".scalar(@$problem)."--")."\n" ;
+ 	warn  colored(['bright_red on_black'],"_______________________________________________")."\n" ;
+ 	sleep(2);
+	redownload($problem);# if @$problem;
+	compute_md5(\@bams);
+	$problem = compare_md5(\@bams);
+	warn  colored(['bright_red on_black'],"START COMPLETE DOWNLOAD BAM : ".scalar(@$problem)) ;
+ 	sleep(2);
+	if ($problem){
+		redownload($problem);
+		compute_md5(\@bams);
+		$problem = compare_md5(\@bams);
+		if ($problem){
+			warn Dumper $problem;
+			warn  colored(['bright_red on_black'],"-----------------------------------");
+			warn  colored(['bright_red on_black'],"!!!!!!!! YOU HAVE PROBLEM !!!!!!!! ");
+			warn  colored(['bright_red on_black'],"-----------------------------------");
+			die();
+		}
 	}
-	else {
-		system("touch $bam.ok");
-	}
-	$pm->finish(0,$res);
-	}
-	$pm->wait_all_children();
-	
-	
-my $pm2 = new Parallel::ForkManager(2);
-foreach my $cmd (@reload) {
-	my $pid = $pm2->start and next;
-	 system($cmd);
-	$pm2->finish(0,{});
-	}
-	$pm2->wait_all_children();
-
+ }
+ warn  colored(['bright_green on_black'],"################################")."\n";
+ warn  colored(['bright_green on_black'],"#Everything seems OK let's go  #")."\n";
+ warn  colored(['bright_green on_black'],"################################")."\n";
 exit(0);
+sub compute_md5 {
+	my ($bams) = @_;
+	open (RUN , ">$Bin/$name.$set.check ");
+	my $nb=0;
+	foreach my $bam (@$bams){
+		
+		next if -e $bam.".local.md5";
+		$nb ++;
+		print RUN "md5sum $bam > $bam.local.md5\n";
+	}
+	close (RUN);
+	return if $nb ==0;
+	system("cat $name.$set.check | run_cluster.pl -cpu=5");
+}
 
+sub verif_download_md5 {
+	my ($bams) = @_;
+	foreach my $bam (@$bams){
+		next if -e -e  "$bam.md5";
+			my $bam2 = $bam;
+			$bam2 =~ s/\/data-isilon\/download\/$type\///;
+			my $cmd_bam="cd /data-isilon/download/$type;wget -c -N --recursive --no-parent --user $name --no-check-certificate  --password   $password https://$bam2.md5 -R cram >/dev/null";  
+			warn "download $bam.md5";
+			system($cmd_bam);
+		die("$bam.md5") unless -e "$bam.md5";
+	}
+}
+
+sub compare_md5 {
+	my ($bams) = @_;
+	my @problem;
+	foreach my $bam (@$bams){
+		my @m1 = `cat $bam.local.md5 $bam.md5 | cut -f 1 -d " "`;
+		chomp (@m1);
+		die("not md5 $bam") if scalar(@m1)!=2;
+		system("touch $bam.ok") if $m1[0] eq $m1[1]; 
+		next if $m1[0] eq $m1[1];
+		push(@problem,$bam);
+	}
+	return \@problem;
+}
+
+sub redownload {
+	my ($bams) = @_;
+	return unless @$bams;
+	open (RUN , ">$Bin/$name.$set.download ");
+	foreach my $bam (@$bams){
+		#unlink $bam;
+		if (-e "$bam.reload"){
+			warn "big probleme with $bam";
+			unlink $bam;
+		}
+		unlink $bam.'.local.md5';
+		my $bam2 = $bam;
+		$bam2 =~ s/\/data-isilon\/download\/$type\///;
+		my $cmd_bam="cd /data-isilon/download/$type;wget -c -N --recursive --no-parent --user $name --no-check-certificate  --password   $password https://$bam2 -R cram ";  
+		print RUN $cmd_bam."\n";
+		system("touch $bam.reload");
+		#warn $cmd_bam;
+	}
+	system("cat $name.$set.download | run_cluster.pl -cpu=5 -limit=3");
+}
+	

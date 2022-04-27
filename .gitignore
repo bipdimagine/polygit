@@ -1,2 +1,3 @@
 *.out*
 *.error*
+/polypipeline/

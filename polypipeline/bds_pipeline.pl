@@ -99,11 +99,12 @@ $predef_steps->{getFastqFromBam}=["bam_to_fastq"];
 my $filename_cfg;
 my $limit;
 my $version;
+my $arg_steps;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
 	'exclude=s' => \$exclude_patients,
-	'pipeline=s' => \$steps_name,
+	'steps=s' => \$arg_steps,
 	'force=s' => \$force,
 	'type=s' => \$type,
 	'max_cpu=s' => \$max_cpu,
@@ -260,11 +261,25 @@ my $steps = {
 				"sortdedup" => sub {$pipeline->sortdedup(@_)},
 				"bwa2" => sub {$pipeline->bwa2(@_)},
 				"elprep5_genome" => sub {$pipeline->elprep5_genome(@_)},
+				"muc1" => sub {$pipeline->muc1(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');
 my $list_steps;
 my $list_steps_types;
+if ($arg_steps){
+	my $type = "pipeline";
+	my $x;
+	foreach my $n (split(",",$arg_steps)){
+		die() unless exists $steps->{$n};
+		push (@$x,$n);
+		
+	}
+	 push(@$list_steps,$x);
+	 push(@$list_steps_types,$type);
+	
+}
+else {
 foreach  my $type (@types_steps){
 	my @list = sort {$a cmp $b} keys %{$define_steps->{$type}};
 	push(@list,'none');
@@ -278,7 +293,7 @@ foreach  my $type (@types_steps){
    push(@$list_steps,[split(",",$define_steps->{$type}->{$steps_name})]);
    push(@$list_steps_types,$type);
 }
-
+}
 $pipeline->priority_name($list_steps_types);
 my $dir_bds =$pipeline->dir_bds();
 #$pipeline->fastq_extend($fastq_ext) if $fastq_ext;
