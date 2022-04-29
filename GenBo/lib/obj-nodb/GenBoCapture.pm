@@ -449,9 +449,10 @@ has files =>(
 		$files->{hotspot} = $file2;
 		
 		$files->{hotspot} =~ s/bed/hotspot.bed/;
-		if ($self->primers_filename){
-		$files->{primers} =  $dir . "/" . $self->type . "/" .$self->primers_filename;
-		
+		if (-s $self->primers_filename){
+			 
+			$files->{primers} =  $dir . "/" . $self->type . "/" .$self->primers_filename;
+			warn $files->{primers};
 		}
 		else {
 			$files->{primers} = $files->{gz};
