@@ -449,9 +449,10 @@ has files =>(
 		$files->{hotspot} = $file2;
 		
 		$files->{hotspot} =~ s/bed/hotspot.bed/;
-		if ($self->primers_filename){
-		$files->{primers} =  $dir . "/" . $self->type . "/" .$self->primers_filename;
-		
+		if (-s $self->primers_filename){
+			 
+			$files->{primers} =  $dir . "/" . $self->type . "/" .$self->primers_filename;
+			warn $files->{primers};
 		}
 		else {
 			$files->{primers} = $files->{gz};
@@ -605,7 +606,8 @@ has primers_lines =>(
 			die("unable to find $multiplex_file , I'm dyiiiiiinnnng." ) unless -e $multiplex_file;
 			my @lines;
 			if ($multiplex_file =~/\.gz/){
-		 @lines = `zcat $multiplex_file`;
+				my $bedtools = $self->buffer->software("bedtools");
+		 		@lines = `$bedtools makewindows -b $multiplex_file -w 500 `;
 			}
 			else {
 				@lines = `cat $multiplex_file`;
@@ -1024,8 +1026,8 @@ foreach my $line (@lines){
 				$toto[1] -= 15;
 				$toto[2] +=15;
 				#warn "coucou";
-				
 			}
+			
 		#	die($toto[1]) if $toto[1] eq 70181901;
 			my ($chrname,$startf,$endf,$startr,$endr,$plex) ;
 			my $start_id;

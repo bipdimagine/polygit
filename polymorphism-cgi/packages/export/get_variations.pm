@@ -5,7 +5,6 @@ use CGI qw/:standard :html3/;
 
 package get_variations;
 use strict;
-use GenBoStorable;
 use Data::Dumper;
 #use KyotoCabinet;
 use Storable qw/freeze thaw nfreeze nstore_fd nstore retrieve/;
