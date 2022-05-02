@@ -286,8 +286,11 @@ sub construct_vector {
 	 		 	}
 	 		 }
 	 		 
-	 		
-	 		 if (scalar(@{$v->getGenes}) >0 ) {
+	 		 #if (scalar(@{$v->getGenes}) >0 ) {
+	 		 my @genes;
+	 		 eval { @genes = @{$v->getGenes()}; };
+	 		 if ($@) {}
+	 		 if (scalar(@genes) >0 ) {
 	 		 	 addBit($vector_categories_chromosomes,$chr,"genes",$v->{index_lmdb});
 	 		 	  foreach my $g (@{$v->getGenes}) {
 	 		 		next unless exists $g->panels_name->{'ACMG-Actionable'};

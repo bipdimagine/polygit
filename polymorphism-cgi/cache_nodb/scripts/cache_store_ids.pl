@@ -63,9 +63,15 @@ $buffer->config->{'public_data_annotation'}->{root} = $pbd[rand @pbd];
 warn $buffer->config->{'public_data_annotation'}->{root};
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
+
+$project->{gencode_version} ='34';
+
+
+
 if ($annot_version) {
-	$project->changeAnnotationVersion($annot_version);
+	$project->changeAnnotationVersion($annot_version, 1);
 }
+warn 'Project annotation '.$project->annotation_version();
 if ($no_verbose) {
 	$project->cache_verbose(0);
 }
@@ -304,6 +310,11 @@ sub get_ids {
 	 $buffer->vmtouch(1);
 	$buffer->config->{'public_data_annotation'}->{root} = $pbd[0];
 	my $project = $buffer->newProject( -name => $project_name );
+	
+	
+	
+	$project->{gencode_version} = '34';
+	
 	$project->preload_patients();
 	$project->buffer->disconnect();
 	#$project->buffer->{dbh} ="-";

@@ -469,6 +469,7 @@ sub getCurrentDiagProjectReleasesAnntotations {
 
 sub getCurrentGenomeProjectReleasesAnntotations {
 	my ($self, $project_id) = @_;
+	confess();
 	my $dbh = $self->getDbh();
 	my $sth = $dbh->prepare($self->sql_cmd_get_current_genome_project_releases_annotations());
 	$sth->execute();

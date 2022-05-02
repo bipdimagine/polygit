@@ -173,6 +173,44 @@ sub print_link_dejavu {
 	return qq{<td><a class="btn btn-primary btn-xs" onClick="$cmd_link" style="min-width:40px;border-color:transparent;background-color:transparent;color:black;"><center><u>DejaVu</u></center></a></td>};
 }
 
+sub print_link_dejavu_cnvs {
+	my ($cmd_link, $gene) = @_;
+	
+	my $h_res = $gene->get_hash_dejavu_cnvs_values();
+	my $nb_proj_dup = $gene->get_nb_projects_dejavu_cnvs_dup();
+	my $nb_proj_del = $gene->get_nb_projects_dejavu_cnvs_del();
+	my $is_disabled;
+	$is_disabled = "opacity: 0.4;" if ($nb_proj_dup == 0 && $nb_proj_del == 0);
+	
+	my $nb_var_text = $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"text-align:center;max-width:300px;box-shadow: 1px 1px 6px grey;font-size: 8px;font-family:  Verdana;margin-bottom:0px;$is_disabled"});
+	$nb_var_text .= $cgi->start_Tr();
+	foreach my $td ('', 'Proj', 'Pat', 'Wisec.', 'Canvas', 'Manta', 'IGV' ) { $nb_var_text .= "<td><b>".$td."</b></td>"; }
+	$nb_var_text .= $cgi->end_Tr();
+	
+	
+	$nb_var_text .= $cgi->start_Tr();
+	$nb_var_text .= "<td><b>Dup</b></td>";
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:green;background-color:green;color:white;font-size:9px;">}.$nb_proj_dup.qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:green;background-color:green;color:white;font-size:9px;">}.$gene->get_nb_patients_dejavu_cnvs_dup().qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:grey;background-color:grey;color:white;font-size:9px;">}.$gene->get_nb_wisecondor_dejavu_cnvs_dup().qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:grey;background-color:grey;color:white;font-size:9px;">}.$gene->get_nb_canvas_dejavu_cnvs_dup().qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:grey;background-color:grey;color:white;font-size:9px;">}.$gene->get_nb_manta_dejavu_cnvs_dup().qq{</span></td>};
+	$nb_var_text .= qq{<td rowspan=2><button class='igvIcon2' onclick="$cmd_link"></button></td>};
+	$nb_var_text .= $cgi->end_Tr();
+	
+	$nb_var_text .= $cgi->start_Tr();
+	$nb_var_text .= "<td><b>Del</b></td>";
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:green;background-color:green;color:white;font-size:9px;">}.$nb_proj_del.qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:green;background-color:green;color:white;font-size:9px;">}.$gene->get_nb_patients_dejavu_cnvs_del().qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:grey;background-color:grey;color:white;font-size:9px;">}.$gene->get_nb_wisecondor_dejavu_cnvs_del().qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:grey;background-color:grey;color:white;font-size:9px;">}.$gene->get_nb_canvas_dejavu_cnvs_del().qq{</span></td>};
+	$nb_var_text .= qq{<td><span class="badge badge-success badge-xs" style="border-color:grey;background-color:grey;color:white;font-size:9px;">}.$gene->get_nb_manta_dejavu_cnvs_del().qq{</span></td>};
+	$nb_var_text .= $cgi->end_Tr();
+	
+	$nb_var_text .= $cgi->end_table();
+	return qq{<td><a class="btn btn-primary btn-xs" style="min-width:40px;border-color:transparent;background-color:transparent;color:black;"><center><u>$nb_var_text</u></center></a></td>};
+}
+
 sub print_link_dejavu_with_locus {
 	my ($cmd_link, $hash_locus_intervals) = @_;
 	my $html = qq{<center><td>};

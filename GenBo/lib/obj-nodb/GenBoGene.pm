@@ -574,6 +574,110 @@ has hash_variants_dejavu => (
 	 },
 );
 
+has seuilOverlapGene_cnvs_dejavu => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => 1,
+);
+
+
+
+has seuilOverlapCNV_cnvs_dejavu => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => 10,
+);
+
+sub get_hash_dejavu_cnvs {
+	my ($self, $type) = @_;
+	confess("\n\nERROR: type must be DEL or DUP. Die...\n\n") if ($type ne 'DUP' and $type ne 'DEL');
+	my $dejavumax = "all"; 
+	my $seuilOverlapGene = $self->seuilOverlapGene_cnvs_dejavu(); 
+	my $seuilOverlapCNV = $self->seuilOverlapCNV_cnvs_dejavu();
+	my $no = $self->getProject->dejavuSV();
+	return $no->get_cnv_overlaping_gene($self->getChromosome->id(),$self->start(),$self->end(),$type,$dejavumax,$seuilOverlapGene,$seuilOverlapCNV);
+}
+
+has get_hash_dejavu_cnvs_values => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub { 
+		my $self = shift;
+		my $hres;
+		foreach my $type ('DUP', 'DEL') {
+			my $hashdv = $self->get_hash_dejavu_cnvs($type);
+			$hres->{$type}->{nb_projects} = 0;
+			$hres->{$type}->{nb_patients} = 0;
+			$hres->{$type}->{nb_wisecondor} = 0;
+			$hres->{$type}->{nb_canvas} = 0;
+			$hres->{$type}->{nb_manta} = 0;
+			foreach my $project_name (keys %{$hashdv}) {
+				$hres->{$type}->{nb_projects} ++;
+				foreach my $pname (keys %{$hashdv->{$project_name}}) {
+#					next if ( ($project_name eq  $TheProjectName) && ($pname eq  $ThePatientName) );
+					$hres->{$type}->{nb_patients}++;
+					foreach my $caller (keys %{$hashdv->{$project_name}->{$pname}}) {
+						$hres->{$type}->{nb_wisecondor}++ if $caller eq "wisecondor";
+						$hres->{$type}->{nb_canvas}++ if $caller eq "canvas";
+						$hres->{$type}->{nb_manta}++ if $caller eq "manta";
+					}
+				}
+			}
+		}
+		return $hres;
+	 },
+);
+
+sub get_nb_projects_dejavu_cnvs_dup {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DUP}->{nb_projects};
+}
+
+sub get_nb_patients_dejavu_cnvs_dup {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DUP}->{nb_patients};
+}
+
+sub get_nb_wisecondor_dejavu_cnvs_dup {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DUP}->{nb_wisecondor};
+}
+
+sub get_nb_canvas_dejavu_cnvs_dup {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DUP}->{nb_canvas};
+}
+
+sub get_nb_manta_dejavu_cnvs_dup {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DUP}->{nb_manta};
+}
+
+sub get_nb_projects_dejavu_cnvs_del {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DEL}->{nb_projects};
+}
+
+sub get_nb_patients_dejavu_cnvs_del {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DEL}->{nb_patients};
+}
+
+sub get_nb_wisecondor_dejavu_cnvs_del {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DEL}->{nb_wisecondor};
+}
+
+sub get_nb_canvas_dejavu_cnvs_del {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DEL}->{nb_canvas};
+}
+
+sub get_nb_manta_dejavu_cnvs_del {
+	my ($self) = @_;
+	return $self->get_hash_dejavu_cnvs_values->{DEL}->{nb_manta};
+}
+
 sub setPhenotypes {
 	my $self = shift;
 	my %hids;
@@ -675,7 +779,7 @@ sub score {
 sub raw_score {
 	my ($self) = @_;
 	my $debug;
-	$debug = 1 if  $self->external_name eq "MED12";
+	#$debug = 1 if  $self->external_name eq "MED12";
 		my $score = 0;
 		$score += 0.5 if $self->pLI ne "-" && $self->pLI > 0.95;
 		my $gpheno = $self->phenotypes();

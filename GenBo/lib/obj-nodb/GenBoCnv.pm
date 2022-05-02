@@ -228,7 +228,7 @@ has split_read_infos =>(
 				}
 				else {
 					unless ( exists $self->annex()->{$patient->id()}->{sr}) {
-						warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name;
+#						warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name;
 						$hash->{$pid} = ["-1","-1","-1","-1",$srq_end,$srq_start,$equality];
 						
 					}

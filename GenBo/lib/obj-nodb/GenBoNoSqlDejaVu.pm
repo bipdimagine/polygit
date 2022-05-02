@@ -345,6 +345,37 @@ sub get_hohe_nbprojects {
  	my $aray_ref = $self->dbh($key1)->selectall_arrayref("select ho,projects from $table_name where _key ='$id' ");
 	return ($aray_ref->[0]);
 }
+
+sub get_cnv_overlaping_gene {
+	my ($self,$chr,$gstart,$gend,$type,$dejavu,$seuil_overlapGene,$seuil_overlapCNV) = @_;
+	my $table_name = $self->create_table($chr);
+	my $T2 = $table_name."POSITION";
+	$self->prepare_cnv($chr)->execute($gstart,$gend,$type);
+	my $x;
+	my $nb;
+	# retrieve one row
+	while (my @row = $self->prepare_cnv($chr)->fetchrow_array){ 
+		my $start1 = $row[2];
+		my $end1 = $row[3];
+		# pourcentage du gene overlappe
+		my $overlapgene = ( min($end1,$gend) - max($start1, $gstart) ) / ($gend-$gstart) * 100;
+		my $overlapcnv = ( min($end1,$gend) - max($start1, $gstart) ) / ($end1-$start1) * 100;
+		next  if ($overlapcnv < $seuil_overlapCNV);
+		next  if ($overlapgene < $seuil_overlapGene);
+		$nb++;
+		my $z = $self->decode($row[-1]);
+		foreach my $zz (keys %$z){
+		foreach my $zzz (keys %{$z->{$zz}}) {
+		foreach my $zzzz (keys %{$z->{$zz}->{$zzz}}) {
+			$x->{$zz}->{$zzz}->{$zzzz} = $start1."_".$end1."_".$overlapgene;
+		}
+	}
+	unless ($dejavu eq "all") { last if scalar(keys %$x) > $dejavu+1}; }
+	unless ($dejavu eq "all") {last if scalar(keys %$x) > $dejavu+1}; }
+	return $x;
+}
+
+
 sub DESTROY {
 	my ($self) = @_;
 	unlink  $self->dir."/".$self->lmdb_extension."/lock.mdb"  if -e $self->dir."/".$self->lmdb_extension."/lock.mdb" ;

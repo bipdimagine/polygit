@@ -1024,22 +1024,26 @@ sub transcripts_variants {
 	 }
 	 
 	 my $spliceAI = $self->variant->spliceAI;
-	 
+	 my $b_spliceai = qq{<table><td>};
 	 my $cat = $self->variant->spliceAI_cat;
 	 unless ($spliceAI){
 	 	$spliceAI = -1;
 	 }
 	 unless ($spliceAI == -1){
-			my $text = $cat.':'.$spliceAI;
-			if ($spliceAI == 0) { $text = '0'; }
-			my $text_alert = "";
-			
-			$spliceAI = $self->printButtonWithAlert($spliceAI,[0.5, 0.9],$text,$text_alert);
+		my $text = $cat.':'.$spliceAI;
+		if ($spliceAI == 0) { $text = '0'; }
+		my $text_alert = "";
+		$spliceAI = $self->printButtonWithAlert($spliceAI,[0.5, 0.9],$text,$text_alert);
 	 }
 	 else {
-	 	$spliceAI = $minus;
+		$spliceAI = $minus;
 	 }
-	 
+	 $b_spliceai .= "$spliceAI</td><td style='padding-left:5px;'>";
+	my $var_spliceai_id = 'chr'.$self->variant->id();
+	$var_spliceai_id =~ s/_/-/g;
+	my $cmd_btn = qq{onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=$var_spliceai_id&hg=37&distance=50&mask=0&precomputed=0','_blank')"};
+	$b_spliceai .= $self->printButtonWithCmd(0,[0.5, 0.9],"<span class='glyphicon glyphicon-pencil' aria-hidden='true'/>",$cmd_btn)."</td></table>";
+
 	my $level = 2;
 	my $cgi          = $self->cgi;
 	#my $value = $atr->[0]->{value}->{impact_score};
@@ -1105,7 +1109,7 @@ sub transcripts_variants {
 		 $html.= $cgi->td($cadd);
 		 $html.= $cgi->td($revel);
 		 $html.= $cgi->td($dbscsnv);
-		 $html.= $cgi->td($spliceAI);
+		 $html.= $cgi->td($b_spliceai);
 		 
 		 
 		 $html.= $cgi->end_Tr();

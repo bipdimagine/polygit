@@ -88,6 +88,7 @@ foreach my $ft (keys %$ftype){
 	foreach my $f (@files){
 		if ($f =~/$fname/){
 			$find =1;
+			warn 'OK '.$fname;
 			$ftype->{$ft}->{file} = $f;
 			push(@tfiles,$f);
 			push(@md5,file_md5_hex( $f));

@@ -246,6 +246,15 @@ my $t = time;
 foreach my $lmdb_id (@array) {
 	my $v = $no3->get_index($lmdb_id);
 	my $results = $tree->fetch( $v->{start}, $v->{end} + 1 );
+	
+	unless (@$results) {
+		next;
+		warn "\n";
+		warn Dumper $v;
+		warn $v->{start}.' - '.$v->{end} + 1;
+		warn 'nb: '.scalar(@$results);
+	}
+	
 	confess() unless @$results;
 	confess() if scalar(@$results) > 1;
 	my $interid = $results->[0];
@@ -398,10 +407,27 @@ sub get_annotations {
 		################
 		#	get Genes annotations prediction and functional
 		###############
-		my $genes = $variation->getGenes();
+		#my $genes = $variation->getGenes();
+		my $genes;
+		eval { $genes = $variation->getGenes(); };
+		if($@) {}
 		my $debug;
 		$debug =1 if  $variation->name eq "rs747758472";
 		foreach my $g (@$genes) {
+			
+			#TODO: souci gene
+#			if ($g->external_name() eq 'DOP1B') {
+#				warn "\n\n";
+#				warn $project->annotation_version();
+#				warn $g->external_name();
+#				foreach my $t (@{$g->getTranscripts()}) {
+#					warn '  -> '.ref($t).' - '.$t->id();
+#				}
+#				die;
+#			}
+#			next if $g->external_name() eq 'DOP1B';
+#			next if $g->external_name() eq 'DYRK1A';
+			
 			unless ( exists $intspan_genes_categories->{ $g->id } ) {
 				$intspan_genes_categories->{ $g->id } = init_genes_intspan();
 			}
@@ -439,6 +465,11 @@ sub get_annotations {
 				confess( $cons_text . " " . $c ) unless exists $intspan_genes_categories->{ $g->id }->{$c};
 				$intspan_genes_categories->{ $g->id }->{$c}->add($lmdb_index);
 				warn 	$intspan_genes_categories->{ $g->id }->{$c}->as_string if $debug;
+				
+#				warn "\n\n";
+#				warn $variation->id();
+#				warn $g->id().' - '.$g->external_name();
+				
 				my $prediction = $variation->categorie_frequency_predicion($g);
 				$intspan_genes_categories->{ $g->id }->{$prediction}->add($lmdb_index);
 			}
@@ -450,7 +481,7 @@ sub get_annotations {
 			# construct one intspan for intergenic region : $intspan_region_intergenic later I will intersect this region with real genomic intergenic region
 			# and of course I also get the index in another intspan
 			###############
-			confess("intergenic problem") unless ( $variation->getChromosome()->intergenic_intspan()->contains( $variation->start ) );
+#			confess("intergenic problem") unless ( $variation->getChromosome()->intergenic_intspan()->contains( $variation->start ) );
 			$intspan_region_intergenic->add_range( $variation->start - 100_000, $variation->end + 100_000 );
 			$id_intergenic->add($lmdb_index);
 		}

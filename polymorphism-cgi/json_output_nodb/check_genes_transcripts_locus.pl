@@ -16,6 +16,7 @@ use lib "$Bin/../packages/layout";
 use lib "$Bin/../packages/validation_variation";
 use lib "$Bin/../cache_nodb/scripts/";
 use lib "$Bin/../GenBo/lib/obj-nodb/packages";
+use List::MoreUtils qw{ natatime };
 use GBuffer;
 use export_data;
 use JSON;
@@ -61,6 +62,9 @@ else {
 }
 
 
+print $cgi->header('text/json-comment-filtered');
+print "{\"progress\":\".";
+
 if ($use_phenotype_score) {
 	my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($use_phenotype_score);
 	confess("\n\nERROR: $use_phenotype_score not found in our DB. die.\n\n") unless (exists $h_pheno_infos->{$use_phenotype_score});
@@ -94,20 +98,30 @@ if ($phenotype) {
 if ($capture) {
 	push(@lSearched, 'Capture ' . $capture);
 	my ( $hCapture, $hTr );
-	foreach my $this_capture ( split( ';', $capture ) ) {
-		$hCapture->{ lc($this_capture) } = undef;
-	}
 	my $buffer_tmp  = GBuffer->new();
 	my $project_tmp = $buffer_tmp->newProject( -name => $use_project );
-	foreach my $c ( @{ $project_tmp->getCaptures() } ) {
-		next if ( not exists $hCapture->{ lc( $c->name() ) } );
-		foreach my $tr_name ( @{ $c->transcripts_name() } ) {
-			$hTr->{$tr_name} = undef;
+	if ($capture eq 'acmg') {
+		my $panel_name = 'ACMG-Actionable';
+		$panel_name = 'ACMG-Defidiag' if ($project_tmp->isDefidiag() or $project_tmp->isDefidiagSolo());
+		my $panel = $project->getPanel($panel_name);
+		foreach my $gene (@{$panel->getGenes()}) {
+			$h_genes->{$gene->id()} = $gene->id();
+		}
+	}
+	else {
+		foreach my $this_capture ( split( ';', $capture ) ) {
+			$hCapture->{ lc($this_capture) } = undef;
+		}
+		foreach my $c ( @{ $project_tmp->getCaptures() } ) {
+			next if ( not exists $hCapture->{ lc( $c->name() ) } );
+			foreach my $tr_name ( @{ $c->transcripts_name() } ) {
+				$hTr->{$tr_name} = undef;
+			}
 		}
 	}
 	$transcripts = join( ',', keys %$hTr );
-	$project_tmp        = undef;
-	$buffer_tmp         = undef;
+	$project_tmp = undef;
+	$buffer_tmp  = undef;
 }
 
 if ($genes) {
@@ -132,13 +146,15 @@ if ($locus) {
 			$start = $end;
 			$end = $t;
 		}
+		print 'start_locus';
 		my $chr = $project->getChromosome($chr_name);
 		foreach my $gene ( @{ $chr->getGenesByPosition( $start, $end ) } ) {
+			print '.';
 			$h_found_by_locus->{$gene->external_name()}->{$init_this_locus} = undef;
 			next if (exists $h_genes->{$gene->external_name()});
 			$h_genes->{$gene->external_name()} = $gene->id();
-			
 		}
+		print 'end_locus';
 	}
 }
 
@@ -220,7 +236,7 @@ my $last_genecode = $buffer->getQuery->getMaxGencodeVersion();
 my $proj_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
 my $out;
 $out .= "<div style='text-align:center;font-size:12px;width:100%;overflow-x:scroll;'>";
-$out .= "<table id='table_hgmd_genes' class='table table-striped table-bordered' style='text-align:center;font-size:12px;width:100%;overflow-x:scroll;'>";
+$out .= qq{<table id='table_hgmd_genes'  data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true'  class='table table-striped table-bordered' style='text-align:center;font-size:12px;width:100%;overflow-x:scroll;'>};
 $out .= "<thead>";
 $out .= $cgi->start_Tr( { style => "font-size:11px;" } );
 
@@ -236,13 +252,13 @@ if ($trio_project and $trio_patient) {
 	$out .= $cgi->start_Tr({style=>"font-size:12px;"});
 	$out .= $cgi->th({colspan=>8, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>GENE Informations</b>");
 	$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>HGMD</b>") if ( $buffer->hasHgmdAccess($user) );
-	#$out .= $cgi->th({colspan=>2, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>POLYWEB</b>");
+	$out .= $cgi->th({colspan=>2, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>POLYWEB</b>");
 	$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>POLYWEB</b>");
 	$out .= $cgi->th({colspan=>2, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>HGMD</b>") if ( $buffer->hasHgmdAccess($user) );
 	$out .= $cgi->end_Tr();
 	$out .= $cgi->start_Tr({style=>"font-size:11px;"});
-	#@headers = ( 'Gene Score', qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus},  qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','Concept(s)', 'DejaVu', 'Variants', 'Total Mut', 'Total New Mut' );
-	@headers = ( 'Gene Score', qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus},  qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','Concept(s)', 'Variants', 'Total Mut', 'Total New Mut' );
+	@headers = ( 'Gene Score', qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus},  qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','Concept(s)', 'DejaVu CNVs', 'Variants', 'Total Mut', 'Total New Mut' );
+	#@headers = ( 'Gene Score', qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus},  qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','Concept(s)', 'Variants', 'Total Mut', 'Total New Mut' );
 }
 else {
 	if ( $buffer->hasHgmdAccess($user) ) {
@@ -291,221 +307,274 @@ $out .= $cgi->end_Tr();
 $out .= "</thead>";
 $out .= "<tbody>";
 
-if ($trio_project and $trio_patient) {
+#if ($trio_project and $trio_patient) {
 	$sort = 'gene_score' unless $sort;
-}
+#}
 
 my $h_lines_sorted;
 my $nb_genes_error = 0;
 my $last_gene_name;
 if ($h_genes) {
-	foreach my $gene_key_name ( sort keys %$h_genes ) {
-		my $gene;
-		my $gene_id = $h_genes->{$gene_key_name};
-		eval { $gene = $project->newGene($gene_id); };
-		if ( $@ or not defined($gene) ) {
-			$hRes->{$gene_key_name} = 'NOT;' . $annotation;
-			
-			my $out_line = $cgi->start_Tr({ style => "background-color:#f5a260;font-size:11px;max-height:60px;overflow-y: auto;" });
-			$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:red;font-size:12px;">Not Found Genecode $last_genecode</span>});
-			if ($gene_key_name ne $gene_id) {
-				$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>$gene_key_name / $gene_id</strike></span>});
+	my $fork = 5;
+	my $nb_genes = scalar(keys %$h_genes);
+	my $nb = int( $nb_genes / ($fork*2) + 1 );
+	$nb = 100 if ($nb > 100);
+	$nb = $nb_genes if ($nb_genes < 20);
+	my $iter = natatime( $nb,  keys %$h_genes );
+	
+	
+	my $pm = new Parallel::ForkManager($fork);
+	$pm->run_on_finish(
+		sub {
+			my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $hRes) = @_;
+			unless (defined($hRes) or $exit_code > 0) {
+				print qq|No message received from child process $exit_code $pid!\n|;
+				return;
 			}
-			else {
-				$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>$gene_key_name</strike></span>});
-			}
-			if ($trio_project and $trio_patient) {
-				$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>-</strike></span>});
-			}
-			if ( $buffer->hasHgmdAccess($user) ) {
-				$out_line .= $cgi->td({ rowspan => 1, colspan => 9, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, '');
-			}
-			else {
-				$out_line .= $cgi->td({ rowspan => 1, colspan => 6, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, '');
-			}
-			$out_line .= $cgi->end_Tr();
-			
-			if ($sort and $sort eq 'locus') {
-				$h_lines_sorted->{999999}->{$nb_genes_error}->{$nb_genes_error} = $out_line;
-			}
-			elsif ($sort and $sort eq 'gene_score') {
-				$h_lines_sorted->{-999}->{$nb_genes_error} = $out_line;
-			}
-			else {
-				$h_lines_sorted->{$gene_key_name} = $out_line;
-			}
-			$nb_genes_error++;
-			next;
-		}
-
-		my ( $hResGene, @lAllVar );
-		my $external_name = $gene->external_name();
-		
-		my ( $nb_concepts, $concept_list, $total_mut, $total_new );
-		if ( $gene->hgmd() ) {
-			$total_mut = $buffer->queryHgmd->get_gene_mut_total($external_name);
-			$total_new = $buffer->queryHgmd->get_gene_new_mut_total($external_name);
-			my $h_concepts = $buffer->queryHgmd->get_gene_concept($external_name);
-			$concept_list = "<center><b><u>Concept(s) for gene $external_name</b></u><br><br>";
-			foreach my $concept_name ( sort keys %{$h_concepts} ) {
-				next if ( $h_concepts->{$concept_name}->{num_matching} eq '0' );
-				$concept_list .= $concept_name . "<br>";
-				$nb_concepts++;
-			}
-			$concept_list .= "</center>";
-		}
-		my $gene_name = $external_name;
-		$last_gene_name                             = $external_name;
-		$hResGene->{$gene_name}->{id}               = $gene->id;
-		$hResGene->{$gene_name}->{external_name}    = $external_name;
-		$hResGene->{$gene_name}->{pLI}              = $gene->pLI();
-		$hResGene->{$gene_name}->{omim_id}          = $gene->omim_id();
-		$hResGene->{$gene_name}->{omim_inheritance} = $gene->omim_inheritance();
-		$hResGene->{$gene_name}->{variants}         = \@lAllVar;
-		my ( $pheno, $nb_other_terms ) = $gene->polyviewer_phentotypes();
-		$hResGene->{$gene_name}->{phenotypes}->{pheno} = $pheno;
-		$hResGene->{$gene_name}->{phenotypes}->{nb_other_terms} = $nb_other_terms;
-		my $cmd_link = qq{launch_for_gene('$gene_id');};
-		$hResGene->{$gene_name}->{specific_cmd} = '';
-		$hResGene->{$gene_name}->{max_score}    = $gene->score() * 1.0;
-		my $description_gene = $gene->description();
-		eval {
-			foreach my $panel ( @{ $gene->getPanels() } ) {
-				$hResGene->{$gene_name}->{panels}->{ $panel->name() }->{phenotype} = $panel->getPhenotypes()->[0]->name();
-			}
-		};
-		if ($@) { $hResGene->{$gene_name}->{panels} = undef; }
-		
-		my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;"} );
-		
-		my $gene_score;
-		if ($trio_project and $trio_patient) {
-			$sort = 'gene_score' unless $sort;
-			$gene_score = get_gene_score($gene);
-			$out_line .= html_polygenescout::print_gene_score($gene_score);
-			$out_line .= html_polygenescout::print_locus($gene);
-			$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name}, $trio_phenotype);
-			if ( $buffer->hasHgmdAccess($user) ) {
-				$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
-			}
-#			$out_line .= html_polygenescout::print_link_dejavu($cmd_link);
-			$out_line .= html_polygenescout::print_tab_variants_project($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes);
-			
-			if ( $buffer->hasHgmdAccess($user) ) {
-				$out_line .= html_polygenescout::print_hgmd_total_mut($total_mut, $external_name);
-				$out_line .= html_polygenescout::print_hgmd_total_new($total_new, $external_name);
-			}
-			
-		}
-		else {
-			if ($use_phenotype_score) {
-				$sort = 'gene_score' unless $sort;
-				$gene_score = get_gene_score($gene);
-				#$gene_score = get_gene_score_from_phenotype($external_name, $use_phenotype_score);
-				$out_line .= html_polygenescout::print_gene_score($gene_score);
-			}
-			$out_line .= html_polygenescout::print_locus($gene);
-			if ($use_phenotype_score) {
-				$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name}, $use_phenotype_score);
-			}
-			else {
-				$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name});
-			}
-			if ( $buffer->hasHgmdAccess($user) ) {
-				
-				if ($use_phenotype_score) {
-					$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
+			foreach my $gene_id (keys %$hRes) {
+				my $chr_id = $hRes->{$gene_id}->{chr_id};
+				my $start = $hRes->{$gene_id}->{start};
+				my $end = $hRes->{$gene_id}->{end};
+				my $external_name = $hRes->{$gene_id}->{external_name};
+				my $gene_score = $hRes->{$gene_id}->{gene_score};
+				my $out_line = $hRes->{$gene_id}->{out_line};
+				if ($sort and $sort eq 'locus') {
+					$chr_id = '23' if ($chr_id eq 'X');
+					$chr_id = '24' if ($chr_id eq 'Y');
+					$chr_id = '25' if ($chr_id eq 'M');
+					$chr_id = '25' if ($chr_id eq 'MT');
+					$h_lines_sorted->{$chr_id}->{$start}->{$end} = $out_line;
+				}
+				elsif ($sort and $sort eq 'gene_score') {
+					$h_lines_sorted->{$gene_score}->{$external_name} = $out_line;
 				}
 				else {
-					$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list);
+					$h_lines_sorted->{$external_name} = $out_line;
 				}
 			}
-			my $hash_locus_intervals;
-			my $gene_chr = $gene->getChromosome->id();
-			my $gene_start = $gene->start();
-			my $gene_end = $gene->end();
-			if ($gene_start > $gene_end){
-				my $t = $gene_start;
-				$gene_start = $gene_end;
-				$gene_end = $t;
-			}
-			if ($transcripts) {
-				my @list_transcripts  = keys %{$h_found_by_transcript->{$external_name}};
-				foreach my $tr_name (sort @list_transcripts) {
-					my $this_locus = $h_found_by_transcript->{$external_name}->{$tr_name};
-#					my ( $locus_chr, $locus_start, $locus_end ) = split( '_', $this_locus );
-#					$locus_end = $locus_start + 1 unless ($locus_end);
-#					next if ($gene_chr ne $locus_chr);
-#					next if ($gene_start > $locus_end);
-#					next if ($gene_end < $locus_start);
-#					next if ($gene_start > $locus_start and $gene_start < $locus_end and $gene_end > $locus_start and $gene_end < $locus_end);
-#					my $intspan_locus = Set::IntSpan::Fast::XS->new();
-#					$intspan_locus->add_range($locus_start, $locus_end);
-#					my $intspan_gene = Set::IntSpan::Fast::XS->new();
-#					$intspan_gene->add_range($gene_start, $gene_end);
-#					my $in = $intspan_locus->intersection( $intspan_gene );
-#					my $new_locus = $gene_chr.':'.$in->as_string();
-#					$new_locus =~ s/_/-/;
-					my $cmd_link_locus = qq{launch_for_gene('$gene_id','$this_locus', '$tr_name');};
-					$hash_locus_intervals->{$tr_name} = $cmd_link_locus;
+		}
+	);
+	$project->disconnect();
+	
+	while ( my @tmp = $iter->() ) {
+		my $pid = $pm->start and next;
+		$project->buffer->dbh_reconnect();
+	
+		#foreach my $gene_key_name ( sort keys %$h_genes ) {
+			
+		my $hout;
+		foreach my $gene_key_name (@tmp) {
+			$project->buffer->dbh_reconnect();
+			print '.';
+			my $gene;
+			my $gene_id = $h_genes->{$gene_key_name};
+			eval { $gene = $project->newGene($gene_id); };
+			if ( $@ or not defined($gene) ) {
+				$hRes->{$gene_key_name} = 'NOT;' . $annotation;
+				
+				my $out_line = $cgi->start_Tr({ style => "background-color:#f5a260;font-size:11px;max-height:60px;overflow-y: auto;" });
+				$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:red;font-size:12px;">Not Found Genecode $last_genecode</span>});
+				if ($gene_key_name ne $gene_id) {
+					$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>$gene_key_name / $gene_id</strike></span>});
 				}
-			}
-			if ($locus) {
-				my @list_locus = keys %{$h_found_by_locus->{$external_name}};
-				foreach my $this_locus (sort @list_locus) {
-					$this_locus =~ s/chr//g;
-					$this_locus =~ s/:/_/g;
-					$this_locus =~ s/-/_/g;
-					my ( $locus_chr, $locus_start, $locus_end ) = split( '_', $this_locus );
-					$locus_end = $locus_start + 1 unless ($locus_end);
-					if ($locus_start > $locus_end){
-						my $t = $locus_start;
-						$locus_start = $locus_end;
-						$locus_end = $t;
-					}
-					next if ($gene_chr ne $locus_chr);
-					next if ($gene_start > $locus_end);
-					next if ($gene_end < $locus_start);
-					next if ($gene_start > $locus_start and $gene_start < $locus_end and $gene_end > $locus_start and $gene_end < $locus_end);
-					my $intspan_locus = Set::IntSpan::Fast::XS->new();
-					$intspan_locus->add_range($locus_start, $locus_end);
-					my $intspan_gene = Set::IntSpan::Fast::XS->new();
-					$intspan_gene->add_range($gene_start, $gene_end);
-					my $in = $intspan_locus->intersection( $intspan_gene );
-					my $new_locus = $gene_chr.':'.$in->as_string();
-					$new_locus =~ s/_/-/;
-					my $cmd_link_locus = qq{launch_for_gene('$gene_id','$new_locus');};
-					$hash_locus_intervals->{$new_locus} = $cmd_link_locus;
+				else {
+					$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>$gene_key_name</strike></span>});
 				}
+				if ($trio_project and $trio_patient) {
+					$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>-</strike></span>});
+				}
+				if ( $buffer->hasHgmdAccess($user) ) {
+					$out_line .= $cgi->td({ rowspan => 1, colspan => 10, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, '');
+				}
+				else {
+					$out_line .= $cgi->td({ rowspan => 1, colspan => 7, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, '');
+				}
+				$out_line .= $cgi->end_Tr();
+				
+				if ($sort and $sort eq 'locus') {
+					$h_lines_sorted->{999999}->{$nb_genes_error}->{$nb_genes_error} = $out_line;
+				}
+				elsif ($sort and $sort eq 'gene_score') {
+					$h_lines_sorted->{-999}->{$nb_genes_error} = $out_line;
+				}
+				else {
+					$h_lines_sorted->{$gene_key_name} = $out_line;
+				}
+				$nb_genes_error++;
+				next;
 			}
-			if ($hash_locus_intervals) {
-				$out_line .= html_polygenescout::print_link_dejavu_with_locus($cmd_link, $hash_locus_intervals);
+	
+			my ( $hResGene, @lAllVar );
+			my $external_name = $gene->external_name();
+			
+			my ( $nb_concepts, $concept_list, $total_mut, $total_new );
+			if ( $gene->hgmd() ) {
+				$total_mut = $buffer->queryHgmd->get_gene_mut_total($external_name);
+				$total_new = $buffer->queryHgmd->get_gene_new_mut_total($external_name);
+				my $h_concepts = $buffer->queryHgmd->get_gene_concept($external_name);
+				$concept_list = "<center><b><u>Concept(s) for gene $external_name</b></u><br><br>";
+				foreach my $concept_name ( sort keys %{$h_concepts} ) {
+					next if ( $h_concepts->{$concept_name}->{num_matching} eq '0' );
+					$concept_list .= $concept_name . "<br>";
+					$nb_concepts++;
+				}
+				$concept_list .= "</center>";
+			}
+			my $gene_name = $external_name;
+			$last_gene_name                             = $external_name;
+			$hResGene->{$gene_name}->{id}               = $gene->id;
+			$hResGene->{$gene_name}->{external_name}    = $external_name;
+			$hResGene->{$gene_name}->{pLI}              = $gene->pLI();
+			$hResGene->{$gene_name}->{omim_id}          = $gene->omim_id();
+			$hResGene->{$gene_name}->{omim_inheritance} = $gene->omim_inheritance();
+			$hResGene->{$gene_name}->{variants}         = \@lAllVar;
+			my ( $pheno, $nb_other_terms ) = $gene->polyviewer_phentotypes();
+			$hResGene->{$gene_name}->{phenotypes}->{pheno} = $pheno;
+			$hResGene->{$gene_name}->{phenotypes}->{nb_other_terms} = $nb_other_terms;
+			my $cmd_link = qq{launch_for_gene('$gene_id');};
+			$hResGene->{$gene_name}->{specific_cmd} = '';
+			$hResGene->{$gene_name}->{max_score}    = $gene->score() * 1.0;
+			my $description_gene = $gene->description();
+			eval {
+				foreach my $panel ( @{ $gene->getPanels() } ) {
+					$hResGene->{$gene_name}->{panels}->{ $panel->name() }->{phenotype} = $panel->getPhenotypes()->[0]->name();
+				}
+			};
+			if ($@) { $hResGene->{$gene_name}->{panels} = undef; }
+			
+			my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;"} );
+			
+			my $gene_score;
+			if ($trio_project and $trio_patient) {
+				$sort = 'gene_score' unless $sort;
+				$gene_score = get_gene_score($gene);
+				$out_line .= html_polygenescout::print_gene_score($gene_score);
+				$out_line .= html_polygenescout::print_locus($gene);
+				$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name}, $trio_phenotype);
+				if ( $buffer->hasHgmdAccess($user) ) {
+					$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
+				}
+				$cmd_link = qq{alert('manue choisira son HTML :)');};
+				$out_line .= html_polygenescout::print_link_dejavu_cnvs($cmd_link, $gene);
+				$out_line .= html_polygenescout::print_tab_variants_project($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes);
+				
+				if ( $buffer->hasHgmdAccess($user) ) {
+					$out_line .= html_polygenescout::print_hgmd_total_mut($total_mut, $external_name);
+					$out_line .= html_polygenescout::print_hgmd_total_new($total_new, $external_name);
+				}
+				
 			}
 			else {
-				$out_line .= html_polygenescout::print_link_dejavu($cmd_link);
+				if ($use_phenotype_score) {
+					$sort = 'gene_score' unless $sort;
+					$gene_score = get_gene_score($gene);
+					#$gene_score = get_gene_score_from_phenotype($external_name, $use_phenotype_score);
+					$out_line .= html_polygenescout::print_gene_score($gene_score);
+				}
+				$out_line .= html_polygenescout::print_locus($gene);
+				if ($use_phenotype_score) {
+					$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name}, $use_phenotype_score);
+				}
+				else {
+					$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name});
+				}
+				if ( $buffer->hasHgmdAccess($user) ) {
+					
+					if ($use_phenotype_score) {
+						$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
+					}
+					else {
+						$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list);
+					}
+				}
+				my $hash_locus_intervals;
+				my $gene_chr = $gene->getChromosome->id();
+				my $gene_start = $gene->start();
+				my $gene_end = $gene->end();
+				if ($gene_start > $gene_end){
+					my $t = $gene_start;
+					$gene_start = $gene_end;
+					$gene_end = $t;
+				}
+				if ($transcripts) {
+					my @list_transcripts  = keys %{$h_found_by_transcript->{$external_name}};
+					foreach my $tr_name (sort @list_transcripts) {
+						my $this_locus = $h_found_by_transcript->{$external_name}->{$tr_name};
+	#					my ( $locus_chr, $locus_start, $locus_end ) = split( '_', $this_locus );
+	#					$locus_end = $locus_start + 1 unless ($locus_end);
+	#					next if ($gene_chr ne $locus_chr);
+	#					next if ($gene_start > $locus_end);
+	#					next if ($gene_end < $locus_start);
+	#					next if ($gene_start > $locus_start and $gene_start < $locus_end and $gene_end > $locus_start and $gene_end < $locus_end);
+	#					my $intspan_locus = Set::IntSpan::Fast::XS->new();
+	#					$intspan_locus->add_range($locus_start, $locus_end);
+	#					my $intspan_gene = Set::IntSpan::Fast::XS->new();
+	#					$intspan_gene->add_range($gene_start, $gene_end);
+	#					my $in = $intspan_locus->intersection( $intspan_gene );
+	#					my $new_locus = $gene_chr.':'.$in->as_string();
+	#					$new_locus =~ s/_/-/;
+						my $cmd_link_locus = qq{launch_for_gene('$gene_id','$this_locus', '$tr_name');};
+						$hash_locus_intervals->{$tr_name} = $cmd_link_locus;
+					}
+				}
+				if ($locus) {
+					my @list_locus = keys %{$h_found_by_locus->{$external_name}};
+					foreach my $this_locus (sort @list_locus) {
+						$this_locus =~ s/chr//g;
+						$this_locus =~ s/:/_/g;
+						$this_locus =~ s/-/_/g;
+						my ( $locus_chr, $locus_start, $locus_end ) = split( '_', $this_locus );
+						$locus_end = $locus_start + 1 unless ($locus_end);
+						if ($locus_start > $locus_end){
+							my $t = $locus_start;
+							$locus_start = $locus_end;
+							$locus_end = $t;
+						}
+						next if ($gene_chr ne $locus_chr);
+						next if ($gene_start > $locus_end);
+						next if ($gene_end < $locus_start);
+						next if ($gene_start > $locus_start and $gene_start < $locus_end and $gene_end > $locus_start and $gene_end < $locus_end);
+						my $intspan_locus = Set::IntSpan::Fast::XS->new();
+						$intspan_locus->add_range($locus_start, $locus_end);
+						my $intspan_gene = Set::IntSpan::Fast::XS->new();
+						$intspan_gene->add_range($gene_start, $gene_end);
+						my $in = $intspan_locus->intersection( $intspan_gene );
+						my $new_locus = $gene_chr.':'.$in->as_string();
+						$new_locus =~ s/_/-/;
+						my $cmd_link_locus = qq{launch_for_gene('$gene_id','$new_locus');};
+						$hash_locus_intervals->{$new_locus} = $cmd_link_locus;
+					}
+				}
+				if ($hash_locus_intervals) {
+					$out_line .= html_polygenescout::print_link_dejavu_with_locus($cmd_link, $hash_locus_intervals);
+				}
+				else {
+					$out_line .= html_polygenescout::print_link_dejavu($cmd_link);
+				}
+				if ( $buffer->hasHgmdAccess($user) ) {
+					$out_line .= html_polygenescout::print_hgmd_total_mut($total_mut, $external_name);
+					$out_line .= html_polygenescout::print_hgmd_total_new($total_new, $external_name);
+				}
 			}
-			if ( $buffer->hasHgmdAccess($user) ) {
-				$out_line .= html_polygenescout::print_hgmd_total_mut($total_mut, $external_name);
-				$out_line .= html_polygenescout::print_hgmd_total_new($total_new, $external_name);
-			}
+			$out_line .= $cgi->end_Tr();
+			$gene_score = 0 unless ($gene_score);
+			
+			$hout->{$gene->id()}->{chr_id} = $gene->getChromosome->id();
+			$hout->{$gene->id()}->{start} = $gene->start();
+			$hout->{$gene->id()}->{end} = $gene->end();
+			$hout->{$gene->id()}->{external_name} = $external_name;
+			$hout->{$gene->id()}->{gene_score} = $gene_score;
+			$hout->{$gene->id()}->{out_line} = $out_line;
+			
+			$project->disconnect();
+			delete $project->buffer->{query};
+			delete $project->buffer->{queryPanel};
+			delete $project->buffer->{queryPhenotype};
+			delete $project->buffer->{queryHgmd};
 		}
-		$out_line .= $cgi->end_Tr();
-		$gene_score = 0 unless ($gene_score);
-		if ($sort and $sort eq 'locus') {
-			my $chr_id = $gene->getChromosome->id();
-			$chr_id = '23' if ($chr_id eq 'X');
-			$chr_id = '24' if ($chr_id eq 'Y');
-			$chr_id = '25' if ($chr_id eq 'M');
-			$chr_id = '25' if ($chr_id eq 'MT');
-			$h_lines_sorted->{$chr_id}->{$gene->start()}->{$gene->end()} = $out_line;
-		}
-		elsif ($sort and $sort eq 'gene_score') {
-			$h_lines_sorted->{$gene_score}->{$external_name} = $out_line;
-		}
-		else {
-			$h_lines_sorted->{$external_name} = $out_line;
-		}
+		$pm->finish( 0, $hout );
 	}
+	$pm->wait_all_children();
 }
 
 if ($sort and $sort eq 'locus') {
@@ -535,8 +604,9 @@ $hRes->{html} = $out;
 $hRes->{nb_genes} = scalar(keys %$h_genes);
 $hRes->{nb_genes_error} = $nb_genes_error if ( $nb_genes_error > 0 );
 
-print $cgi->header('text/json-comment-filtered');
 my $json_encode = encode_json $hRes;
+print ".\",";
+$json_encode =~ s/{//;
 print $json_encode;
 exit(0);
 

@@ -1073,6 +1073,9 @@ sub filtreCNV
 				$hGroupedCNV->{$global_id}->{'SCORE_GENES'}=$max;
 				$hGroupedCNV->{$global_id}->{'GENES'} =join(" ",@names);
 				$hGroupedCNV->{$global_id}->{'GENES'} = $maxname.":".$max.":".$nb." ".$hGroupedCNV->{$global_id}->{'GENES'};
+				#locus a la place de genes name pour le chargement de genescout
+				$hGroupedCNV->{$global_id}->{'GENES'} .= ';'.$chr->id().':'.$gdeb.'-'.$gend;
+
 
 			# filtre sur une liste de genes
 			my @tabgenes_annot = split(/ /,$hGroupedCNV->{$global_id}->{"GENES"} );

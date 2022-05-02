@@ -16,6 +16,20 @@ sub filter_vector_ratio {
 	my $vector_ok = $chr->getNewVector();
 	foreach my $patient (@{$chr->getPatients()}) {
 		next if ($patient->in_the_attic());
+		
+		if ($limit_ratio eq '30' and $filter_type_ratio eq 'min') {
+			my $vquality = $chr->getVectorScore($patient->name()."_ratio_40");
+			my $vquality_tmp = $chr->getVectorScore($patient->name()."_ratio_20");
+			$vquality_tmp -= $vquality;
+			foreach my $v (@{$chr->getListVarObjects($vquality_tmp)}) {
+				my $ratio = $v->getRatio($patient);
+				next if ($ratio eq '-');
+				if ($ratio >= 30) { $vquality += $v->vector_id(); }
+			}
+			$vector_ok += $vquality;
+			next;
+		}
+		
 		my $vector_ratio_name = $patient->name()."_ratio_".$limit_ratio;
 		my $vquality = $chr->getVectorScore($vector_ratio_name);
 		if (lc($filter_type_ratio) eq 'max') {
