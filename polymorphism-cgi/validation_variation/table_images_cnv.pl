@@ -228,10 +228,9 @@ sub print_lines {
 sub select_transcripts {
 	my ( $project, $list_transcripts ) = @_;
 
-
-
 	my $fork = 3;
 	my $nb   = int( scalar(@$list_transcripts) / ( $fork + 1 ) );
+	$nb =1 if $nb ==0;
 	my $pm   = new Parallel::ForkManager($fork);
 	my $iter = natatime $nb, @$list_transcripts;
 	my @t_final;
@@ -261,6 +260,7 @@ sub select_transcripts {
 	my $t = time;
 	while ( my @tmp = $iter->() ) {
 		my $pid         = $pm->start and next;
+		warn Dumper @tmp;
 		my $transcripts = $project->newTranscripts( \@tmp );
 		my $himages;
 		$project->buffer->dbh_reconnect();

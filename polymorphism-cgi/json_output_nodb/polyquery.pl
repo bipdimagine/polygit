@@ -403,7 +403,23 @@ else {
 my $hAllIds;
 my (@lVarObj, @lHashStatsGenes, $h_all_genes_name);
 my $nb_chr = 0;
+
+my @l_genome_fai = @{$project->getGenomeFai};
 foreach my $chr_id (split(',', $filter_chromosome)) {
+	# Cas genome MT uniquement par exemple
+	my $chr_found;
+	foreach my $h_fai (@l_genome_fai) {
+		$chr_found = 1 if (exists $h_fai->{chromosomes_object}->{$chr_id});
+		last if $chr_found;
+	}
+	if (not $chr_found)  {
+		next if ($export_vcf_for or $detail_project or $xls_by_regions_ho);
+		my $hashRes;
+		$hashRes->{'label'} = 'name';
+		$hashRes->{'items'} = launchStatsProjectAll_chromosomes_null();
+		printJson($hashRes);
+		exit(0);
+	}
 	my $chr = $project->getChromosome($chr_id);
 	$nb_chr++;
 	if ($chr->not_used()) {
@@ -414,14 +430,6 @@ foreach my $chr_id (split(',', $filter_chromosome)) {
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	checkEssentialsCategoriesInChr($chr);
-	
-	#TODO: a enlever
-#	my $vector_global_fam_denovo = $chr->getNewVector();
-#	$chr->save_model_variants_all_patients('init');
-#	$vector_global_fam_denovo += $chr->getModelVector_fam_denovo();
-#	$chr->save_model_variants_all_patients('denovo');
-#	$chr->load_init_variants_all_patients('init');
-	
 	
 	if ($export_vcf_for) {}
 	elsif ($detail_project) {}
@@ -2728,7 +2736,9 @@ sub writeHeader_byVar {
 		my $path_polyweb;
 		if (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../polyweb/'; }
 		elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
-		else { warn $Bin; die; }
+		elsif (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
+		elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
+		else { warn "\n\n$Bin\n\n"; die; }
 		my $icon = "$path_polyweb/images/polyicons/bullet_green.png";
 		$icon = "$path_polyweb/images/polyicons/pill2.png" if ($status eq 'affected');
 		$xls_pat->insert_image(0, $j, $icon);

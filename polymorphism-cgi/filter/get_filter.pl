@@ -11,7 +11,6 @@ use lib "$Bin/../packages/export";
 use lib "$Bin/../packages/layout";
 use GBuffer;
 use Data::Dumper;
-use GenBoFilter;
 use export_data;
 
 my $cgi = new CGI;

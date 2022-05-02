@@ -36,6 +36,12 @@ has session_id => (
 	default => undef,
 );
 
+has session_expiration => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default => "1d",
+);
+
 has session => (
 	is		=> 'rw',
 	lazy 	=> 1,

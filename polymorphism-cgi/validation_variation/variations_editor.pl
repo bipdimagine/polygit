@@ -72,6 +72,8 @@ use HTML::TableExtract ;
 use Storable qw( freeze );
 use xls_export;
 use session_export;
+use session_export_test;
+
 
 ##########################################
 #VAriaable definition 
@@ -2316,7 +2318,9 @@ sub save_session_for_test {
 	my ($list_datas_annotations) = $xls_export->prepare_generic_datas_variants();
 	my ($list_datas_annotations_cnvs) = $xls_export->prepare_generic_datas_cnvs();
 	
-	my $session_test = new session_export();
+	my $session_test;
+	$session_test = new session_export() if ($session_base_name eq 'dev');
+	$session_test = new session_export_test() if ($session_base_name eq 'prod');
 	$session_test->load_session($session_id);
 	$session_test->save( $session_base_name.'_annot_var', $list_datas_annotations );
 	$session_test->save( $session_base_name.'_annot_cnvs', $list_datas_annotations_cnvs );
