@@ -13,7 +13,6 @@ use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";
 
-
 has name => (
 	is		=> 'ro',
 	lazy	=> 1,

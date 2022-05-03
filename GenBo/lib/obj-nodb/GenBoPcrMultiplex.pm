@@ -179,7 +179,7 @@ sub count_multiplex {
 	  $self->{multiplex}->{$multi}->{$run_id}->{sum} = $sum;
 	return  $self->{multiplex}->{$multi}->{$run_id}->{sum} ;
 }
-
+  
 sub parsePrimers{
 	my ($self,$list) = @_;
 	my $primers;
