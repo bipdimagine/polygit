@@ -42,9 +42,7 @@ use draw_cnv;
 use infos_coverage_exons;
 use image_coverage;
 use preload_coverage;
-
 $| = 1;
-
 my $cgi = new CGI();
 
 html::print_cgi_header($cgi);
@@ -70,11 +68,9 @@ if ( $project->isDude ) {
 }
 
 
-
 #CAS MAJ annotations dans le cache. Evite de relancer le CNV_LITE qui n est pas lie a l annotation 
 delete $project->{noSqlCnvsDir};
 $project->noSqlCnvsDir();
-
 
 my $panel = $cgi->param('panel');
 $project->setPanel("$panel") if $panel;
@@ -232,10 +228,9 @@ sub print_lines {
 sub select_transcripts {
 	my ( $project, $list_transcripts ) = @_;
 
-
-
 	my $fork = 3;
 	my $nb   = int( scalar(@$list_transcripts) / ( $fork + 1 ) );
+	$nb =1 if $nb ==0;
 	my $pm   = new Parallel::ForkManager($fork);
 	my $iter = natatime $nb, @$list_transcripts;
 	my @t_final;
@@ -265,6 +260,7 @@ sub select_transcripts {
 	my $t = time;
 	while ( my @tmp = $iter->() ) {
 		my $pid         = $pm->start and next;
+		warn Dumper @tmp;
 		my $transcripts = $project->newTranscripts( \@tmp );
 		my $himages;
 		$project->buffer->dbh_reconnect();
@@ -274,7 +270,7 @@ sub select_transcripts {
 			my $tr_objs;
 			print ".";
 			my $debug;
-			$debug = 1 if ( $tr->name eq "ENST00000254457" );
+			$debug = 1 ;#if ( $tr->name eq "ENST00000254457" );
 			my $primers = $project->getPrimersByObjects($tr);
 			my $find;
 			my $max_length = 0;

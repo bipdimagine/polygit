@@ -40,11 +40,9 @@ sub mendelian_statistics {
 	foreach my $f ( @{ $project->getFamilies } ) {
 		$f->getMembers();
 
-		next unless $f->name eq "MOU";
 		$pid = $pm->start and next;
 
 		$project->buffer->dbh_reconnect();
-
 		#my $ps = $f->getMembers();
 		#	next if scalar(@$ps) > 1;
 		my $vcf = concatVcf( $project, $f );

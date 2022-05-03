@@ -20,23 +20,55 @@ my $fork;
 my $project_name;
 my $debug;
 my $type;
+my $set;
 GetOptions(
 	'project=s' => \$project_name,
 	'debug=s' => \$debug,
 	'name=s' => \$type,
+	'set=s' => \$set,
 );
+
+my @list = `cat /software/polyweb/poly-disk/poly-src/defidiag/project/download/list.txt`;
+chomp(@list);
+my ($l) = grep{$_ =~ /$type/} @list;
+die() unless $l;
+
+my($name,$password,$type2) = split(" ",$l);
 
 my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name 			=> $project_name );
 
-my $dir_in = "/data-isilon/download/defidiag/www.cnrgh.fr/data/".$type;
-$dir_in = "/data-isilon/download/devodecode/www.cnrgh.fr/data/".$type if lc($type) =~/devo/;
+my $dir_in = "/data-isilon/download/$type2/www.cnrgh.fr/data/".$type;
+$dir_in = "/data-isilon/download/$type2/www.cnrgh.fr/data/".$type if lc($type) =~/devo/;
 my $bcftools = $buffer->software("bcftools");
-
+foreach my $patient (@{$project->getPatients}){
+	my $bc = $patient->barcode();
+	my @files = `find $dir_in -name *$bc*`;
+	warn "find $dir_in -name *$bc*";
+	chomp(@files);
+	
+	my ($tar) = grep{$_=~ /tar.gz$/} @files;
+	warn "\t".$tar;
+	next if -e $tar;
+		
+	 ($tar) = grep{$_=~ /tar$/} @files;
+	next if -e $tar;
+	
+	my $dir = "/data-isilon/download/$type2/";
+	my $cmd_var="wget  -N  --recursive --no-parent --user $name  --no-check-certificate --password  $password https://www.cnrgh.fr/data/$name/variants/$set/ -A \"*$bc*\" -R cram";  
+	system("cd $dir && $cmd_var");
+	 @files = `find $dir_in -name *$bc*`;
+	chomp(@files);
+	 ($tar) = grep{$_=~ /tar.gz$/} @files;
+	die($tar) unless -e $tar;
+	#die() unless -e 
+}
+warn "untar";
 untar();
-
+warn "bcftools";
 bcftools();
 exit(0);
+
 
 foreach my $patient (@{$project->getPatients}){
 	my $bc = $patient->barcode();
@@ -55,7 +87,9 @@ foreach my $patient (@{$project->getPatients}){
 	
 	}
 	else {
-		die($bc." ==> ".$patient->name) unless $tar;
+		die();
+		
+	#	die($bc." ==> ".$patient->name) unless $tar;
 	}
 	
 	
@@ -117,7 +151,7 @@ sub bcftools {
 		my @files = `find $dir_in -name '*$bc*'`;
 		chomp(@files);
 		
-		my ($manta) = grep{$_=~ /diploidSV.vcf.gz$/} @files;
+	my ($manta) = grep{$_=~ /diploidSV.vcf.gz$/} @files;
 	die(Dumper @files." ----- ".$manta) unless $manta;
 	my $ff = $dir_in."/".$bc.".txt";
 	#push(@cmd,"echo ".$patient->name.">".$ff);
@@ -145,6 +179,7 @@ sub untar {
 	foreach my $patient (@{$project->getPatients}){
 	my $bc = $patient->barcode();
 	warn $bc." ".$patient->name;
+	warn $patient->gvcfFileName("haplotypecaller4");
 	next if -e $patient->gvcfFileName("haplotypecaller4");
 	my $files;
 	warn qq{find $dir_in -name \'*$bc*\'};

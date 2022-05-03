@@ -3,8 +3,8 @@ $|=1;
 use CGI qw/:standard :html3/;
 use strict;
 use FindBin qw($Bin);
-use lib "$Bin/../GenBo";
-use lib "$Bin/../GenBo/lib/obj-nodb";
+use lib "$Bin/../../GenBo";
+use lib "$Bin/../../GenBo/lib/obj-nodb";
 
 
 use connect;
@@ -56,17 +56,21 @@ sub print_resume_project {
 	
 	my @lCaptures;
 	foreach my $c (@{$project->getCaptures()}) { push(@lCaptures, $c->name()); }
-	my $captures_names = join(@lCaptures, ', ');
-	
+	my $capture_name = $project->getCaptures()->[0]->name;
+	my $type = $project->getCaptures()->[0]->infos->{type};
+	my $infos  = join (",",keys %{$project->getCaptures()->[0]->infos});
+	my $value  = join (",",values %{$project->getCaptures()->[0]->infos});
 	my $html = qq{<table>};
+	$html .= qq{<tr><td style="color:red;"><i><b> $capture_name - $type </b>  </i></td></tr>};
 	$html .= qq{<tr><td style="color:blue;"><b><u>$project_name</b></u></td></tr>};
 	$html .= qq{<tr><td><i><b>Description:</b> $description</i></td></tr>};
-	$html .= qq{<tr><td><i><b>Stats:</b> $stat</i></td></tr>};
+
+		$html .= qq{<tr><td><i><b>Stats:</b> $stat</i></td></tr>};
 	#$html .= qq{<tr><td><i><b>Capture(s):</b> $captures_names</i></td></tr>};
 	$html .= qq{</table>};
 	$html .= qq{<hr>};
 	$html .= qq{<table class="table table-sm table-striped table-condensed table-bordered table-primary" style="width:40%"><tr style="background-color:#363945;color:white">};
-	$html .= qq{<th>Type</th>}.qq{<th>False positive</th>}.qq{<th>true negative</th>}.qq{<th>total</th>};
+	$html .= qq{<th>Type</th>}.qq{<th>False positive</th>}.qq{<th>false negative</th>}.qq{<th>total in GIAB </th>};
 	$html .= qq{</tr><tr>};
 	$html.= "<td>Indels</td><td>".$global->{indels}->{fp}."</td><td>".$global->{indels}->{fn}."</td><td>".$global->{indels}->{nb}."</td></tr><tr>";
 	$html.= "<td>Substitutions</td><td>".$global->{substitution}->{fp}."</td><td>".$global->{substitution}->{fn}."</td><td>".$global->{substitution}->{nb}."</td></tr></table>";

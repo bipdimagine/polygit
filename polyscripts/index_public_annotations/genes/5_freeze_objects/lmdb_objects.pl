@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib $Bin;
-use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../../../../../lib/obj-nodb/";
 use GBuffer;
 #use lib "/bip-d/perl/ensembl64/ensembl/modules";
 use Bio::SearchIO;
@@ -154,10 +154,10 @@ $pm->run_on_finish(
  					$z->{$id}->{id} = $z->{$id}->{genbo_id};
  				}
  			
- #				warn 'cpoucou $id' if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
+ 				warn 'cpoucou $id' if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
      	 	my $obj = create($z->{$id},"transcript");
- #    	 	warn Dumper $obj if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
-#     	 	die() if $z->{$id}->{genbo_id} eq 'ENST00000628650_2';
+     	 	warn Dumper $obj if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
+     	 	die() if $z->{$id}->{genbo_id} eq 'ENST00000628650_2';
      	 	#next;
      	 $obj->{object_type} ="transcript";
  			

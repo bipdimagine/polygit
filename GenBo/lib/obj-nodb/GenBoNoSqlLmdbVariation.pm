@@ -14,6 +14,11 @@ use Storable qw/thaw freeze dclone/;
 extends "GenBoNoSqlLmdb";
 use POSIX;
 
+ my $himpact_sorted = {
+	"high" => "4",
+	"moderate" =>"3",
+	"low" =>"1",
+};
 
 sub nb_keys {
 	my ($self) = @_;
@@ -65,6 +70,39 @@ has array_for_string => (
 		unless ($for_string){
 			confess() if $self->mode() ne "c";
 		 	$for_string =  "name,gnomad_id,id,vcf_sequence,type_object,type_public_db,structuralTypeObject,ref_allele,min_pop_name,check_id,vcf_id,max_pop_name,var_allele,structuralType,validation_method,rs_name,sequence";
+		 	 $self->save_string("for_string",$for_string);
+		}
+		my @toto = split(",",$for_string);
+		return \@toto;
+	},
+);
+
+has array_for_string2 => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $for_string = $self->read_string("for_string");
+		
+		unless ($for_string){
+			confess() if $self->mode() ne "c";
+		 	$for_string =  "name,gnomad_id,id,vcf_sequence,ref_allele,check_id,vcf_id,var_allele,rs_name,sequence";
+		 	 $self->save_string("for_string",$for_string);
+		}
+		my @toto = split(",",$for_string);
+		return \@toto;
+	},
+);
+has array_for_index_string => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $for_string = $self->read_string("for_string");
+		
+		unless ($for_string){
+			confess() if $self->mode() ne "c";
+		 	$for_string =  "type_object,type_public_db,structuralTypeObject,min_pop_name,max_pop_name,structuralType,validation_method";
 		 	 $self->save_string("for_string",$for_string);
 		}
 		my @toto = split(",",$for_string);
@@ -198,7 +236,21 @@ has array_for_dejavu => (
 	},
 );
 
-
+#has array_for_gnomad => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $for_annot =  $self->read_string("for_gnomad");
+#		unless ($for_annot){
+#		confess() if $self->mode() ne "c";
+#		 $for_annot =",gnomad_ac:w,gnomad_an:w,gnomad_ho:w,gnomad_ho_male:w,gnomad_min_pop:w,gnomad_max_pop:w,gnomad_min_pop_name:ti,gnomad_max_pop_name:ti";
+#		 $self->save_string("for_dejavu",$for_annot);
+#		}
+#		my @toto =  split(",",$for_annot);
+#		return \@toto;
+#	},
+#);
 
 	
 	
@@ -353,7 +405,6 @@ sub decode_calling_information {
 		delete $variation->{s1};
 #		use Test::More tests => 1000;
 #		warn "TEST 4 ";
-#		die(Dumper ($variation->{seq})."\n".Dumper($variation->{seq1})." ".Dumper($variation->{s1})." ".$variation->{id})  unless is_deeply($variation->{seq}, $variation->{seq1}, 'data structures should be the same');
 	#	warn Dumper  $variation->{seq1};
 	#	warn Dumper  $variation->{seq};
 	#	die();
@@ -508,10 +559,27 @@ sub encode {
 		$variation->{st_float} =$st_float;
 		
 		###########
-		#STRING ######
+		#STRING INDEX ###
+		###########
+		my @int1;
+		foreach my $id (@{$self->array_for_index_string}){
+		#	next if $id =~ /id/;
+			#warn $id." ".$variation->{$id}."\n";
+			
+			 $variation->{$id} = "" unless $variation->{$id};
+			 #warn $variation->{$id}." ".$sid;
+		# my $sid = $self->get_object_index($variation->{$id});
+			#delete $variation->{$id};
+			#$variation->{f} .= pack("s",$variation->{$id});
+			#push(@{$variation->{f}} ,$sid);
+		}
+		#$variation->{fsti} = pack("w".scalar(@int1),@int1);
+		###########
+		#STRING ###
 		###########
 		my $t;
 		foreach my $id (@{$self->array_for_string}){
+		#next unless exists $variation->{$id};
 		#	next if $id =~ /id/;
 			#warn $id." ".$variation->{$id}."\n";
 			 $variation->{$id} = "" unless $variation->{$id};
@@ -522,8 +590,13 @@ sub encode {
 		}
 		
 		$variation->{fst} = join("!",@{$variation->{fs}});
-	#	delete $variation->{fst} ;
-	delete $variation->{fs};
+		delete $variation->{fs};
+		
+	#foreach my $id (@{$self->array_for_string2}){
+	#				delete $variation->{$id}
+	#	}
+		
+	
 		                                                                                                   
 		#die();
 	##############	
@@ -547,21 +620,14 @@ sub encode {
 	} 
 	$variation->{st_dejavu} = $string;
 	delete $variation->{dejaVuInfosForDiag2};
-		
-
-	#$variation->{objects}->{all} = $id ++;
 	my $hash_oid;
 	my $array =[];
-#	$variation->{values}->{annotation} = dclone $variation->{annotation} if $debug;
 	my $toto;
-#		$variation->{values}->{annotation} = dclone $variation->{annotation};
 foreach my $o (keys %{$variation->{annotation}}) {
 		my $id = $self->get_object_index($o);
 		$toto = 1 if (exists $variation->{annotation}->{$o}->{coding}->{sequences});
 		delete $variation->{annotation}->{$o}->{coding} unless (exists $variation->{annotation}->{$o}->{coding}->{sequences});
 		$variation->{annotation}->{$id} = delete $variation->{annotation}->{$o};
-		
-#
 }
 
 	$variation->{ano} = join(";",@$array);
@@ -573,12 +639,10 @@ foreach my $o (keys %{$variation->{annotation_polyviewer}}) {
 	my $id = $self->get_object_index($o);
 	$hgenes->{id} = pack("w",$id);
 	$variation->{annotation_polyviewer}->{$id} = delete $variation->{annotation_polyviewer}->{$o};
-	#$variation->{annotation_polyviewer}->{$id}->{spliceAI_score} =0 unless $variation->{annotation_polyviewer}->{$id}->{spliceAI_score};
 	my $nb  = int($variation->{annotation_polyviewer}->{$id}->{spliceAI_score} *100);
 	$hgenes->{sai} = pack("c",$nb);
 	my $tid= $self->get_object_index($variation->{annotation_polyviewer}->{$id}->{spliceAI_cat});
 	$hgenes->{sai} .= pack("w",$tid);
-	#pack("C",ceil($variation->{annotation_polyviewer}->{$gene->id}->{spliceAI_score}*100));
 	my $array =  delete  $variation->{annotation_polyviewer}->{$id}->{trs};
 	my $nx = scalar(@{$self->array_for_transcript_name});
 	my $key = "st_name;prot_pos;codons;codons_AA;sift;polyphen;exon;nomenclature";
@@ -587,8 +651,6 @@ foreach my $o (keys %{$variation->{annotation_polyviewer}}) {
 	foreach my $tr (@$array){
 			my $pack_string ="";
 			my @tt;
-			#warn Dumper $tr if $first ==1;
-		
 			foreach my $ki  (@{$self->array_for_transcript_keys_by_type}){
 				my $k = $ki->[0];
 				my $si = $ki->[1];
@@ -609,7 +671,6 @@ foreach my $o (keys %{$variation->{annotation_polyviewer}}) {
 					push(@tt, $id1);
 				}
 				elsif ($si eq "wi"){
-					#my $id1 = $self->get_object_index($value);
 					push(@tt, $value);
 				}
 				else {
@@ -887,38 +948,11 @@ sub decode {
 	}
 	}
 	
-	
-	###############################
-	#c SEQUENCUNG  INFO
-	##################################
-	
-#	$self->decode_calling_information($variation);
-	
 	###################################
 	# ANNEX 		patients_object
 	#####################################
 	delete $variation->{annex};
-#		foreach my $p (keys %{$variation->{patients_object}}){
-#			$variation->{annex}->{$p} ={};
-#			#$variation->{ax} = pack("w",$p);
-#			#my $vannex = $variation->{annex}->{$p};
-#			my $key = "a".pack("w",$p);
-#			
-#
-#			foreach my $v2 (@{$variation->{$key}}) {
-#				if(defined $v2->[2]){
-#					$variation->{annex}->{$p}->{method_calling}->{$v2->[2]} = {};
-#					$self->decode_annex($v2->[0],$v2->[1],$variation->{annex}->{$p}->{method_calling}->{$v2->[2]});
-#				
-#				}
-#				else {
-#						$self->decode_annex($v2->[0],$v2->[1],$variation->{annex}->{$p});
-#				}				
-#			
-#			}
-#			delete $variation->{$key};
-#		}
-#
+
 
 
 
@@ -953,30 +987,6 @@ delete $variation->{age};
 
 
 
-#my $hash_oid;
-#	foreach my $id (split (";",$variation->{ano})) {
-#		my $o = $self->array_dictionary->[$id];
-#		$variation->{annotation}->{$o}->{mask} = unpack("w",$variation->{"m"."$id"}) if exists $variation->{"m"."$id"};;
-#		
-#		if (exists $variation->{"c".$id}){
-#			my @values = unpack($variation->{"c".$id}->[0],$variation->{"c".$id}->[1]);
-#			die($variation->{"c".$id}->[0]) if scalar(@values) ne scalar(@{$self->array_for_annotation});
-#			delete $variation->{"c".$id};
-#			my $i =0;
-#			foreach my $a (@{$self->array_for_annotation}){
-#				my($v,$t) = split(":",$a);
-#				 if ($values[$i] eq "&"){
-#					$variation->{annotation}->{$o}->{coding}->{sequences}->{$v} = undef ;
-#					next;
-#				 }
-#				$variation->{annotation}->{$o}->{coding}->{sequences}->{$v} = $values[$i] if $values[$i] ne "-" &&  $values[$i] ne "!";
-#				$i++;
-#			}
-#			
-#		}
-#		delete $variation->{"m"."$id"};
-#		delete $variation->{"c".$id};
-#	}
  if (exists $variation->{values}){
  	die(Dumper($variation->{annotation})." ".Dumper($variation->{values}->{annotation})) unless is_deeply($variation->{values}->{annotation}, $variation->{annotation}, 'data structures should be the same');
  }
@@ -1013,8 +1023,116 @@ delete $variation->{age};
 	
 }
 
+
+sub getPolyViewerVariant {
+	my ($self,$v,$vp,$project,$gene,$patient) = @_;
+	
+	############################
+	# General
+	############################
+	#$vp->gene($gene);
+	$vp->id($v->id);
+	$vp->start($v->start);
+	$vp->end($v->end);
+	$vp->ref_allele($v->ref_allele);	
+	$vp->allele($v->alternate_allele);	
+	$vp->gnomad_id($v->gnomad_id);
+	$vp->chromosome($v->getChromosome->name);
+	$vp->name($v->name);
+	$vp->type($v->type);
+	
+	#######################
+	# HGMD CLINVAR
+	#######################
+		
+		$vp->hgmd($v->hgmd_class);
+		$vp->hgmd_id($v->hgmd_id);
+		if (exists $v->genes_pathogenic_DM->{$gene->{id}} && $v->genes_pathogenic_DM->{$gene->{id}}->{DM} ){
+				$vp->dm($v->isDM);
+				$vp->hgmd_phenotype($v->hgmd_phenotype);
+			}
+		
+		
+		$vp->clinvar_id($v->clinvar_id);
+		$vp->clinvar($v->clinvar_class);
+		if (exists $v->genes_pathogenic_DM->{$gene->{id}} && $v->genes_pathogenic_DM->{$gene->{id}}->{pathogenic} ){
+				$vp->clinvar_pathogenic($v->isClinvarPathogenic);
+		}
+	
+	############################
+	# Calling
+	############################
+	
+		$vp->isCnv($v->isCnv);
+		
+		my $hpatients;
+		#if ($v->isDude){
+		#	$vp->setDudeValues($v->getChromosome,$patient,$v);
+		#}
+		#elsif ($v->isCnv){
+		#	$vp->setCnvValues($v->getChromosome,$patient,$v);
+		#}
+		#else {
+			foreach my $p (@{$patient->getFamily()->getMembers}) {
+				$hpatients->{ $p->id }->{gt} = $v->getSequencingGenotype($p);
+				$hpatients->{ $p->id }->{pc} = $v->getRatio($p);
+				$hpatients->{ $p->id }->{dp} = $v->getDP($p);
+				$hpatients->{ $p->id }->{model} = $v->getTransmissionModelType($p->getFamily(),$p);
+			}
+		#}
+	
+	$vp->patients_calling($hpatients);
+	##################
+	# gnomad
+	##################
+		
+	$vp->gnomad_ac($v->getGnomadAC);
+	$vp->gnomad_an($v->getGnomadAN);
+	$vp->gnomad_min_pop_name($v->min_pop_name);
+	$vp->gnomad_min_pop($v->min_pop_freq);
+	$vp->gnomad_max_pop_name($v->max_pop_name);
+	$vp->gnomad_max_pop($v->max_pop_freq);
+	$vp->gnomad_ho($v->getGnomadHO);
+	$vp->gnomad_ho_male($v->getGnomadAC_Male);
+	#########
+	# DEJAVU
+	#########
+	$vp->dejavu_other_projects($v->other_projects());
+	$vp->dejavu_other_patients($v->other_patients());
+	$vp->dejavu_other_patients_ho($v->other_patients_ho());
+	$vp->dejavu_similar_projects( $v->similar_projects());
+	$vp->dejavu_similar_patients($v->similar_patients());
+	$vp->dejavu_similar_patients_ho($v->similar_patients_ho());
+	$vp->dejavu_this_run_patients($v->in_this_run_patients);# = '-';
+	#############
+	# SCORE
+	############
+	#spliceAI
+	$vp->spliceAI($v->max_spliceAI_score($gene));
+	$vp->spliceAI_cat($v->max_spliceAI_categorie($gene));
+	$vp->cadd($v->cadd_score);
+	$vp->revel($v->revel_score);
+	$vp->rf( $v->dbscsnv_rf);
+	$vp->ada( $v->dbscsnv_ada);
+	################
+	# transcripts
+	##################
+	my $tgene = delete $v->{annotation_polyviewer}->{$gene->{id}};
+	
+	
+	#$hvariation->{genes} = delete $v->{annotation_polyviewer};
+	
+	my $gene_id = $gene->id;
+	
+	#$vp->transcripts([]);
+	$vp->transcripts($tgene->{trs});	
+	return $vp;
+	
+} 
+
 sub transforminHash {
 	my ($self,$v,$patient) = @_;
+	
 	my $project = $patient->project;
 	my $hvariation;
 	$hvariation->{value} = delete $v->{value};
@@ -1051,18 +1169,9 @@ sub transforminHash {
 	$hvariation->{value}->{ac_ho} = $v->getGnomadHO;
 	$hvariation->{value}->{ac_ho_Male} = $v->getGnomadAC_Male;
 	
-	 	####################
+	####################
 	#DEJAVU
 	#####################
-#	$hvariation->{value}->{other_project} = $v->other_projects();
-#	$hvariation->{value}->{other_patients} = $v->other_patients();
-#	$hvariation->{value}->{other_patients_ho} = $v->other_patients_ho();
-#	$hvariation->{value}->{similar_projects} = $v->similar_projects();
-#	$hvariation->{value}->{similar_patients} = $v->similar_patients();
-#	$hvariation->{value}->{similar_patients_ho} = $v->similar_patients_ho();ƒ
-#	$hvariation->{value}->{this_run_project} = '-';
-	#$hvariation->{value}->{this_run_patients} = $v->in_this_run_patients()."/".scalar(@{$project->getPatients});
-
 
 	if ($v->isCnv()) {
 		$hvariation->{value}->{is_cnv} = 1;
@@ -1073,10 +1182,6 @@ sub transforminHash {
 		}
 	
 	}
-
-
-
-
 #	$v->getTranscripts();
 ##############
 ## SCORE
@@ -1087,31 +1192,6 @@ sub transforminHash {
 	 $hvariation->{value}->{ada} = $v->dbscsnv_ada();
 	 $hvariation->{value}->{large_evt} = 1 if $v->isLargeDeletion or $v->isLargeDuplication;
 	 $hvariation->{genes} = delete $v->{annotation_polyviewer};
-	# if ($v->md5_id eq "ad441b5a0700ab160d1016c410d160b8"){
-	 #	warn Dumper $v->{seq};
-	 #	warn $v->getChromosome()->name;
-	 #	die();
-	# }
-#	  foreach my $sid (keys %{$v->{seq}}){
-#	  	my $patient = $project->{objects}->{patients}->{$sid};
-#	  	  $v->{seq}->{$sid}->{gt} = "he";# $hvariation->{patients}->{$sid}->{genotype};
-#	 	  $v->{seq}->{$sid}->{pc} = $v->{seq}->{$sid}->{ratio};
-#	 	  $v->{seq}->{$sid}->{dp} =  $v->{seq}->{$sid}->{depth}  ;
-#	 	  $v->{seq}->{$sid}->{sr} =  $v->sr($patient)  ;
-#	 	  $v->{seq}->{$sid}->{pr} =  $v->pr($patient)  ;
-#	 	   $v->{seq}->{$sid}->{infos_text} =    $v->{seq}->{$sid}->{text} if exists $v->{seq}->{$sid}->{text}  ;
-##	 	    $v->{seq}->{$sid}->{pr} =  $v->pr($patient)  ;
-#	  }
-#	 $hvariation->{patients} = delete $v->{seq};
-	# foreach my $sid (keys %{$hvariation->{patients}}){
-	 #	$hvariation->{patients}->{$sid}->{gt} = "he";# $hvariation->{patients}->{$sid}->{genotype};
-	 #	$hvariation->{patients}->{$sid}->{pc} = $hvariation->{patients}->{$sid}->{ratio};
-	 #	 $hvariation->{patients}->{$sid}->{dp} =  $hvariation->{patients}->{$sid}->{depth}  ;
-	 #	  $hvariation->{patients}->{$sid}->{dp} =  $hvariation->{patients}->{$sid}->{depth}  ;
-	 #}
-	 
-	 
-	 
 	return $hvariation;
 }
 

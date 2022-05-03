@@ -1285,6 +1285,7 @@ sub get_lmdb_annex {
 	return $no2;
 }
 
+
 sub get_lmdb_variations {
 	my ( $self, $modefull,$toto ) = @_;
 	my $hindex = "variations_";
@@ -1310,37 +1311,30 @@ sub get_lmdb_variations {
 
 	}
 	else {
-		#if ($modefull eq "r"){
-#				$no2 = GenBoNoSqlLmdb->new(
-#			dir         => $dir_out,
-#			mode        => $mode,
-#			is_index    => 1,
-#			name        => $self->name."",
-#			is_compress => 1,
-#			vmtouch     => $self->buffer->vmtouch
-#		);
-		#}
-		#else {
-			if ($mode eq "c"){
-#			$no2 = GenBoNoSqlLmdbVariation->new(
-#			dir         => $dir_out,
-#			mode        => $mode,
-#			is_index    => 1,
-#			name        => $self->name.".lmdb_var",
-#			is_compress => 1,
-#			vmtouch     => $self->buffer->vmtouch
-#			);
-			$no2 = GenBoNoSqlLmdb->new(
-			dir         => $dir_out,
-			mode        => $mode,
-			is_index    => 1,
-			name        => $self->name,
-			is_compress => 1,
-			vmtouch     => $self->buffer->vmtouch
-			);
+		if ($mode eq "c"){
+			if ($toto){
+		   		$no2 = GenBoNoSqlLmdbVariation->new(
+					dir         => $dir_out,
+					mode        => $mode,
+					is_index    => 1,
+					name        => $self->name.".lmdb_var",
+					is_compress => 1,
+					vmtouch     => $self->buffer->vmtouch
+				);	
 			}
-			elsif (-e $dir_out."/".$self->name.".lmdb_var" && !$toto){
-#			warn "VARIAION -----------------------> LMDB *";
+			else {
+				$no2 = GenBoNoSqlLmdb->new(
+				dir         => $dir_out,
+				mode        => $mode,
+				is_index    => 1,
+				name        => $self->name,
+				is_compress => 1,
+				vmtouch     => $self->buffer->vmtouch
+				);
+			}
+			}
+		elsif (-e $dir_out."/".$self->name.".lmdb_var"){
+			warn "WORK WITH LMDB_VARIATION";
 			$no2 = GenBoNoSqlLmdbVariation->new(
 			dir         => $dir_out,
 			mode        => $mode,
@@ -1350,9 +1344,9 @@ sub get_lmdb_variations {
 			vmtouch     => $self->buffer->vmtouch
 			);
 				
-			}
-			else {
-#			warn "VARIAION ___________ Normal _______________ $hindex ".$self->name;
+		}
+		else {
+			warn "WORK WITH OLD ".$dir_out."/".$self->name.".lmdb_var";
 			$no2 = GenBoNoSqlLmdb->new(
 			dir         => $dir_out,
 			mode        => $mode,
@@ -1852,7 +1846,7 @@ sub score_spliceAI {
 
 		
 	}
-	return undef;
+		return 0 ;
 }
 
 sub score_gene_spliceAI {

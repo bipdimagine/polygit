@@ -150,7 +150,9 @@ foreach my $patient (@{$project->getPatients}){
 				
 				push(@$primers,$primer->id);
 				my $level = $primer->level($patient);
+				
 				my $score = $primer->cnv_score($patient);
+				warn $level." ".$score;
 				next if $level ne  2 and $level ne 1;
 				next if $score == -1;
 				

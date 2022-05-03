@@ -35,7 +35,8 @@ my $project = $buffer->newProject( -name => $project_name );
 system("./add_methods.pl -project=$project_name");
 my $fams = $project->getFamilies();
 shift(@$fams);
-
+update_defidiag($dbh,$project->id);
+update_phenotype($dbh,$project->id);
 foreach my $fam (@$fams){
 	
 	my $pid = create_project($dbh,$fam->name);
