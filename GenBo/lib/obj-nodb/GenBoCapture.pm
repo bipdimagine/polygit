@@ -507,7 +507,7 @@ has hotspots_filename => (
 		
 	},
 ); 
-
+  
 has hotspots => (
 	is		=> 'ro',
 	lazy	=> 1,
