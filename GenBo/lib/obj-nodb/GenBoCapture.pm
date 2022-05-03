@@ -1118,7 +1118,7 @@ has sd_controls_dude => (
 	lazy => 1,
 	default => sub {
 		my $self = shift;
-		
+		 
 	 	$self->{control_nosql} =  GenBoBinaryFile->new(name=>"controls_sd",dir=>$self->dir_capture_controls_dude,mode=>"r");
 		return $self->{control_nosql};
 	},
