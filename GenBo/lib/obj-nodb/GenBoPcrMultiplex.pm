@@ -50,45 +50,10 @@ has isCapture =>(
 	},
 
 );
-
-has files =>(
-	is		=> 'ro',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $project = $self->getProject();
-		my $version = $project->getVersion();
-		$version = "HG19" if $version =~/HG19/;
-		my  $dir = $self->project->capture_dir;
-		my $return = {};
-		my $files;
-		my $file = $dir . "/" . $self->type . "/" . $self->file_name . ".gz";
-		confess("Unable to find capture file :" .$file."\n") unless -e $file;
-		$files->{gz} = $file;
-		my $file2 = $dir . "/" . $self->type . "/" . $self->file_name;
-		$files->{bed} = $file2;
-		
-		$files->{hotspot} = $file2;
-		
-		$files->{hotspot} =~ s/bed/hotspot.bed/;
-		my $fp =  $dir . "/" . $self->type . "/" . $self->primers_filename;
-		
-		if (-s $fp){
-			$files->{primers} =  $dir . "/" . $self->type . "/" .$self->primers_filename;
-		}
-		else {
-			confess();
-		}
-		return $files;
-	}
-);
-
-
-
-
 sub getPrimersByMultiplex {
 	my ($self,$multi) = @_;
 	return $self->{multiplexes}->{$multi}->{primers} if exists $self->{multiplexes}->{$multi}->{primers};
+	
 	$self->{multiplexes}->{$multi}->{primers}  = $self->parsePrimersForMultiplex($multi);
 	return $self->{multiplexes}->{$multi}->{primers} ;
 }

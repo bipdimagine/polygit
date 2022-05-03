@@ -422,7 +422,7 @@ has description => (
 has file_name => (
 	is		=> 'ro',
 	lazy	=> 1,
-	default => sub { 
+	default => sub {
 		my $self = shift;
 		return $self->infos()->{filename};
 	}
