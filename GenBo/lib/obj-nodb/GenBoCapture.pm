@@ -13,7 +13,6 @@ use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";
 
-
 has name => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -449,15 +448,16 @@ has files =>(
 		$files->{hotspot} = $file2;
 		
 		$files->{hotspot} =~ s/bed/hotspot.bed/;
-		if (-s $self->primers_filename){
-			 
-			$files->{primers} =  $dir . "/" . $self->type . "/" .$self->primers_filename;
-			warn $files->{primers};
-		}
-		else {
-			$files->{primers} = $files->{gz};
-		}
+		my $fp =  $dir . "/" . $self->type . "/" . $self->primers_filename;
 		
+	#	if (-s $fp){
+			 
+	#		$files->{primers} =  $dir . "/" . $self->type . "/" .$self->primers_filename;
+	#		warn $files->{primers};
+	#	}
+	#	else {
+			$files->{primers} = $files->{gz};
+	#	}
 		return $files;
 	}
 );
@@ -507,7 +507,7 @@ has hotspots_filename => (
 		
 	},
 ); 
-  
+
 has hotspots => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -602,15 +602,15 @@ has primers_lines =>(
 			return \@lines;	
 		}
 		
-		my $multiplex_file = $self->multiplexFile();
-			die("unable to find $multiplex_file , I'm dyiiiiiinnnng." ) unless -e $multiplex_file;
+		my $capture_file = $self->gzFileName();
+		die("unable to find $capture_file , I'm dyiiiiiinnnng." ) unless -e $capture_file;
 			my @lines;
-			if ($multiplex_file =~/\.gz/){
+			if ($capture_file =~/\.gz/){
 				my $bedtools = $self->buffer->software("bedtools");
-		 		@lines = `$bedtools makewindows -b $multiplex_file -w 500 `;
+		 		@lines = `$bedtools makewindows -b $capture_file -w 500 `;
 			}
 			else {
-				@lines = `cat $multiplex_file`;
+				confess();
 			}
 		chomp(@lines);
 		return \@lines;
