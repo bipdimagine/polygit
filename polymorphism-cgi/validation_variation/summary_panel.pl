@@ -641,8 +641,8 @@ sub check_level {
 			#print $cgi->td($class,$hsex->{$sex});
 			my $style_btn_name= qq{style ="background-color:#FFEBED;color:black"}  ;
 			$style_btn_name= qq{style ="background-color:#C6E7F6;color:black"}  if $p->sex() == 1;
-			warn $sex_eval ." ".$p->sex();
-			die();
+#			warn $sex_eval ." ".$p->sex();
+#			die();
 			if ($sex_eval ne $p->sex() && $sex_eval ne -1){
 				# $class->{class}= "danger";
 				  $style_btn_name= qq{style ="background-color:#E74C3C;color:white"};
