@@ -1041,7 +1041,7 @@ sub transcripts_variants {
 	 $b_spliceai .= "$spliceAI</td><td style='padding-left:5px;'>";
 	my $var_spliceai_id = 'chr'.$self->variant->id();
 	$var_spliceai_id =~ s/_/-/g;
-	my $cmd_btn = qq{onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=$var_spliceai_id&hg=37&distance=50&mask=0&precomputed=0','_blank')"};
+	my $cmd_btn = qq{onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=$var_spliceai_id&hg=37&distance=1000&mask=0&precomputed=0','_blank')"};
 	$b_spliceai .= $self->printButtonWithCmd(0,[0.5, 0.9],"<span class='glyphicon glyphicon-pencil' aria-hidden='true'/>",$cmd_btn)."</td></table>";
 
 	my $level = 2;
