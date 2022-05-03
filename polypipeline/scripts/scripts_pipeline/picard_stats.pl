@@ -68,10 +68,10 @@ warn "  -> reference_bwa: $reference_bwa\n";
 warn "\n\n";
 
 
-
 if (-e $bam_prod ){
 	my $cmd = qq{$picard CollectHsMetrics BAIT_INTERVALS=$metricsFile VALIDATION_STRINGENCY=LENIENT TARGET_INTERVALS=$metricsFile INPUT=$bam_prod OUTPUT=$fileout REFERENCE_SEQUENCE=$reference_bwa };
 	warn 'CMD: '.$cmd ;
+	die();
 	system($cmd);
 }
 else {die("can't find bam file ") ;}

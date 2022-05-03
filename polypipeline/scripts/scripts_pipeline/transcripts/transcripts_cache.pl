@@ -55,7 +55,6 @@ warn "end";
 #	 warn Dumper $no;
 #	 die ();
 my $lists = $project->getListTranscripts();
-
 my $tmp1 = "/tmp/pipeline/";
 system("mkdir /tmp/pipeline;chmod a+rwx  /tmp/pipeline") unless -e $tmp1;
 
@@ -158,7 +157,9 @@ sub run_on_finish_dude {
 			my $dir = $no->dir;
 			
 			foreach my $id (keys %{$h}){
+				warn $id;
 				my $v = $h->{$id}->{event};
+	
 				$no->put($id,$h->{$id});
 				if ($v >= 3){
 					push (@{$array->{$hid."_high"}},$id) ;
@@ -176,6 +177,7 @@ sub run_on_finish_dude {
  				push (@{$array->{$hid."_low"}},$id) if ($v  >= 1);
 			
 			}
+			#warn Dumper $array;
 		#	my $no = $chr->lmdb_image_transcripts_uri("w");
 			$no->close();
 	return 1;
@@ -185,7 +187,7 @@ sub run_on_finish_dude {
 
 sub uri_image {
 	my ($transcripts,$patient_name,$tmp) = @_;
-		my $patients = $project->getPatients();
+	my $patients = $project->getPatients();
 	my $patient = $project->getPatient( $patient_name);
 	#my $fork = 10;
 	my $nb = int(scalar(@$transcripts)/(100*1))+1;
@@ -219,6 +221,7 @@ sub uri_image {
 				warn Dumper $process;
 				return;
 			}
+
 			run_on_finish_dude($patient,$h->{dude});
 			run_on_finish_coverage($patient,$h->{coverage},$harray);
 			warn $h->{end_process};
@@ -254,6 +257,7 @@ sub uri_image {
 			my $t = time;
 			
 			my $ts = $project->newTranscripts(\@tmp);
+			
 			my $z;
 			
 #			warn "get Transcripts :".abs($t -time)." ".scalar(@$ts); 
@@ -265,7 +269,7 @@ sub uri_image {
 			 my $t0 = time; 
 			warn "start  pp$id $pid ";
 		foreach my $transcript (@$ts){
-
+			warn $transcript->id;
 			#warn $xx."/".scalar(@$ts)." ".abs($t0 -time) if $xx % 1000 ==0;
 			$t0 = time if $xx % 1000 ==0;
 			$xx++;
@@ -298,7 +302,7 @@ sub end_coverage {
 	my $f1 = $no->filename;
 	foreach my $k (keys %$harray){
 		
-			warn $k." ".scalar(@{$harray->{$k}});
+#			warn $k." ".scalar(@{$harray->{$k}});
 			$no->put( $k ,$harray->{$k});
 	}
 	$no->put( "toto","titi");
@@ -318,6 +322,7 @@ sub end_dude {
 	my ($patient) = @_;
 	 my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
 	my $hid = $patient->id;
+	warn Dumper $array;
 	$no->put("high",$array->{$hid."_high"});		
 	$no->put("medium",$array->{$hid."_med"});	
 	$no->put("low",$array->{$hid."_low"});
@@ -603,11 +608,13 @@ sub matrix_data_dude {
 	foreach my $primer (sort{$a->end*$strand <=> $b->end *$strand} @$primers) {
 		push(@$names,$primer->name);
 		$alert ++ if $primer->cnv_score($patient) < 0.7 &&  $primer->cnv_score($patient) > -1;
+		
 		my $score = int(($primer->cnv_score($patient)+0.01)*100);
 #		warn $score if $score < 0;
 		$score = 0 if $score < 0 ;
 		push( @$scores,int($score) );
 		my $level = $primer->level($patient) +1;
+		
 		push( @$levels,$level);
 		#push( @$zscores,$primer->zscore($patient));
 		warn $patient->name." ".$primer->id." level ".$primer->level($patient)." score ".$primer->cnv_score($patient)." save ".$score if $debug;
