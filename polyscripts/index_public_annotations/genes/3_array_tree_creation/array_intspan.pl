@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib $Bin;
-use lib "$Bin/../../../../../lib/obj-nodb/";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../packages/";
 #use lib "/bip-d/perl/ensembl64/ensembl/modules";
 use Bio::SearchIO;
 use strict;
