@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+# permet de renvoyer petit a petit les print et non pas de tout mettre en buffer et tout sortir a la fin du script
+$|=1;
 use CGI qw/:standard :html3/;
 use FindBin qw($Bin); 
 use strict;
@@ -23,7 +25,6 @@ use html;
 #use Parallel::ForkManager;
 
 my $cgi          = new CGI();
-$|=1;
 
 my $projectName = $cgi->param('project');
 my $cov_limit =$cgi->param('covlimit'); 
@@ -92,7 +93,7 @@ my $t = time;
 		#last if $patient->name() ne "GUE_Gil";
 			$hrun->{$id} ++;
 			$id ++;
-			print ".>".$patient->name;
+			print ".".$patient->name;
 			my $pid = $pm->start and next;
 			my $line;
 			$line =  "<br><b>".$patient->name()."</b><br>";
@@ -113,6 +114,7 @@ my $t = time;
 			my $intspan = Set::IntSpan::Fast::XS->new();
 			print "=";
 			foreach my $exon (sort{$a->end*$a->strand <=> $b->end*$b->strand } @$exons){
+				print '-';
 				$nb ++;
 				my $s1 = $exon->getGenomicSpan()->intersection($capture_intspan);
 			 	next  if $s1->is_empty;
