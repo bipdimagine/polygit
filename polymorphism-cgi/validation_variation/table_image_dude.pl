@@ -397,7 +397,6 @@ print $out;
 exit(0);
 sub uri_image {
 	my ( $projects, $transcripts, $force_visualisation) = @_;
-	die();
 	my $patients = $project->getPatients();
 	my $fork     = 16;
 	my $nb       = int( scalar(@$transcripts) / ( $fork * 2 ) ) + 1;
@@ -463,7 +462,7 @@ sub uri_image {
 		my $nbtp = 0;
 
 		foreach my $tr1 (@tmp) {
-			warn $tr1;
+#			warn $tr1;
 			print "." if $znb % 20 == 0;
 			my $debug;
 
