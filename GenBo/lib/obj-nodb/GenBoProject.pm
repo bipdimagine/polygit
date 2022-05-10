@@ -5342,13 +5342,12 @@ sub getDejaVuInfosForDiag {
 	$res->{in_this_run_patients} = 0;
 	$res->{in_this_run_patients} += scalar(@{$v->getPatients});
 	return $res unless ($h);
-        	
 	foreach my $l (split("!",$h)) {
 		my($p,$nho,$nhe,$info) = split(":",$l);
 		$p = "NGS20".$p;
 		next if $p eq $self->name();
-		#IN THIS RUN 
 		if (exists $in_this_run_patients->{$p}){
+			
 			my (@samples) = split(",",$info);
 			foreach my $s (@samples){
 				if (exists $in_this_run_patients->{$p}->{$s}){
