@@ -94,6 +94,7 @@ my $intspan;
 			"eif6_freebayes" => { "method" => sub{calling_target::eif6_freebayes(@_)}, priority =>3}, 
 			"mutect2" => { "method" => sub{calling_target::mutect2(@_)}, priority =>3}, 
 			"lofreq" => { "method" => sub{calling_target::lofreq(@_)}, priority =>3}, 
+			"deepvariant" => { "method" => sub{calling_target::deepvariant(@_)}, priority =>3}, 
 };
 die($method) unless exists  $methods->{$method};
 warn $method;

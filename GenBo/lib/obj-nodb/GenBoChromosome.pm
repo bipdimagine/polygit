@@ -785,7 +785,6 @@ sub getWindow {
 
 sub getIntSpanCaptureForCalling {
 	my ( $self, $span_limit ) = @_;
-warn "coucou";
 	#confess() if $patient;
 	my $span_chr = Set::IntSpan::Fast::XS->new( "1-" . $self->length );
 	my $project  = $self->getProject();
@@ -1346,7 +1345,7 @@ sub get_lmdb_variations {
 				
 		}
 		else {
-			warn "WORK WITH OLD ".$dir_out."/".$self->name.".lmdb_var";
+#			warn "WORK WITH OLD ".$dir_out."/".$self->name.".lmdb_var";
 			$no2 = GenBoNoSqlLmdb->new(
 			dir         => $dir_out,
 			mode        => $mode,

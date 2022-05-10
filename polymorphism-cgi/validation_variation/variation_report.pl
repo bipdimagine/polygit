@@ -58,7 +58,7 @@ my $project = $buffer->newProject(-name=>$project_name);
 my $patients = $project->getPatients();
 my $CSS;
 my $out_global;
-
+$| =1;
 html::print_header_polydiag($cgi,"$vid");
 
 print $out_global;
@@ -89,22 +89,24 @@ my @header = ("ngs","ratio");
 my $samtools = $buffer->software('samtools');
 my $region = $variation->getChromosome->ucsc_name.":".$variation->start."-".$variation->end;	
 my @letters = ("A","T","C","G","\\*");
-foreach my $p (@$patients){
+my $ps = $project->in_this_run_patients();
+delete $ps->{total};
+foreach my $pr2 (keys %$ps){
+	my @listp = map{$ps->{$pr2}->{$_}} keys %{$ps->{$pr2}};
+	my $buffer2 = GBuffer->new();
+	my $project2 = $buffer->newProject(-name=>$pr2);
+	my $patients2 = $project2->get_list_patients(join(",",@listp),",");
+	foreach my $p (@$patients2){
 	
-	my $bam = $p->getBamFile;
-	#my ($res) = `$samtools mpileup $bam -r $region 2>/dev/null | cut -f 4-5`;
-	my ($res) = `$samtools depth -d 50000   $bam -r $region  | cut -f 3`;
-	chomp($res);
-	my $d =$res;;
-	#my $pileup;
-	#($d,$pileup) = split(" ",$res);
-	#$pileup= uc($pileup);
-	my $hvariation = utility::return_hash_variant($project,$vid,$transcript,$p,$vquery);
-	if($hvariation){
-	print $cgi->start_Tr({class=>"infos"},{style=>"vertical-align:middle"});
-	}
-	else {
-		
+		my $bam = $p->getBamFile;
+		my ($res) = `$samtools depth -d 50000   $bam -r $region  | cut -f 3`;
+		chomp($res);
+		my $d =$res;;
+		my $hvariation = utility::return_hash_variant($project,$vid,$transcript,$p,$vquery);
+		if ($hvariation){
+		print $cgi->start_Tr({class=>"infos"},{style=>"vertical-align:middle"});
+		}
+		else {
 		foreach my $i (@header){
 			$hvariation->{$i} = "-";
 		}
@@ -112,8 +114,7 @@ foreach my $p (@$patients){
 	}
 	print $cgi->td($p->name);
 	foreach my $i (@header){
-		
-	print $cgi->td($hvariation->{$i}) ;
+		print $cgi->td($hvariation->{$i}) ;
 	}
 	
 	print $cgi->td($d);
@@ -125,6 +126,7 @@ foreach my $p (@$patients){
 	
 	
 	print $cgi->end_Tr();
+	}
 }
 print $cgi->end_table();
 print $cgi->end_div();
