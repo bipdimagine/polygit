@@ -3,7 +3,7 @@ use strict;
 use FindBin qw($Bin);
 use lib "$Bin";
 use Storable qw/thaw freeze/;
-use BioTools;
+#use BioTools;
 use POSIX;
 use Time::Piece;
  use List::Util qw( max min sum);
@@ -11,26 +11,35 @@ use Time::Piece;
  use Data::Printer;
  use JSON::XS;
  
+ our $fts = "8px";
+ our $print =0;
  
  my $himpact_sorted = {
 	"high" => "4",
 	"moderate" =>"3",
 	"low" =>"1",
 };
+
+#F1DC97
+
 sub printBadge {
 	my ($value,$types) = @_;
 	my $color = "#4CAF50";
 	 #$color = "#D62C1A" if $value > $type[0] ;
 	 $color = "#FF8800" if $value > $types->[0] ;
 	 $color = "#FF0025" if $value > $types->[1] ;
-	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
+	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :$fts;">$value</span>} ;
 
 }
 
 sub printSimpleBadge {
-	my ($value) = @_;
+	my ($value, $type) = @_;
+	return $value if $print;
 	my $color = "black";
-	 return qq{<span class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
+	 return qq{<span class="badge badge-success badge-xs" style="font-weight:550;border-color:white;background-color:#EFF7EB;color:black;font-size :$fts;border-style: solid;border-width: 0px;font-family:verdana">$value</span>} if $type ==1;
+	 return qq{<span class="badge badge-success badge-xs" style="font-weight:550;border-color:black;background-color:#EDF1F7;color:black;font-size :$fts;border-style: solid;border-width: 0px;font-family:verdana">$value</span>} if $type ==2;
+	 return qq{<span class="badge badge-success badge-xs" style="font-weight:550;border-color:#2C3E50;background-color:#F7EEEE;color:black;font-size :$fts;border-style: solid;border-width: 0px;font-family:verdana">$value</span>} if $type ==3;
+	 return qq{<span class="badge badge-success badge-xs" style="font-weight:550;border-color:#E8B5CE;background-color:#FFFFFF;color:$color;font-size :$fts;border-style: solid;border-width: 0px;font-family:verdana">$value</span>} ;
 }
 
 sub printInvBadge {
@@ -44,27 +53,29 @@ sub printInvBadge {
 	 $value ="-" unless defined $value;
 	 $color = "#FF0025" if $value eq "-" ;
 	
-	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
+	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :$fts;">$value</span>} ;
 }
+
 sub printInvButton {
 	my ($value,$types,$text,$othercss) = @_;
-	my $btn_class  = qq{class= "btn btn-xs btn-primary " style="background-color: #D0D0D0;font-size: 7px;font-family:  Verdana;color:black"};
-	$btn_class = qq{class= "btn btn-xs btn-primary " style="background-color: #FF8800;font-size: 7px;font-family:  Verdana;;color:black"} if $value <  $types->[0] ;
-	$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: #e74c3c;font-size: 7px;font-family:  Verdana;color:white"}  if $value < $types->[1] ;
+	return $value if $print;
+	my $btn_class  = qq{class= "btn btn-xs btn-primary " style="background-color: #D0D0D0;font-size: $fts;font-family:Verdana;color:black"};
+	$btn_class = qq{class= "btn btn-xs btn-primary " style="background-color: #FF8800;font-size: $fts;font-family:Verdana;;color:black"} if $value <  $types->[0] ;
+	$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: #e74c3c;font-size: $fts;font-family:Verdana;color:white"}  if $value < $types->[1] ;
 	 $value ="-" unless defined $value;
-	$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: #e74c3c;font-size: 7px;font-family:  Verdana;"}  if $value eq "-" ;
+	$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: #e74c3c;font-size: $fts;font-family:Verdana;"}  if $value eq "-" ;
 	$text  = $value unless $text;
 	return  qq{<button type="button" $btn_class $othercss>$text</button>};
 }
 sub printButton {
 	my ($value,$types,$text,$othercss) = @_;
-
-	my $btn_class  = qq{class= "btn btn-xs btn-primary " style="background-color: #D0D0D0;font-size: 7px;font-family:  Verdana;color:black"};
-	$btn_class = qq{class= "btn btn-xs btn-primary " style="background-color: #FF8800;font-size: 7px;font-family:  Verdana;;color:white"} if $value >=  $types->[0] ;
-	$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: #e74c3c;font-size: 7px;font-family:  Verdana;color:white"}  if $value >=  $types->[1] ;
+	return $text if $print;
+	my $btn_class  = qq{class= "btn btn-sm btn-primary " style="background-color: #D0D0D0;font-size: $fts;font-family:Verdana;color:black;border-style: solid;border-width: 1px;border-color:white"};
+	$btn_class = qq{class= "btn btn-sm btn-primary " style="background-color: #FA6800;font-size: $fts;font-family:Verdana;;color:white;border-style: solid;border-width: 1px;border-color:white"} if $value >=  $types->[0] ;
+	$btn_class = qq{class= "btn btn-sm  btn-primary" style="background-color: #AA00FF;font-size: $fts;font-family:Verdana;color:white;border-style: solid;border-width: 1px;border-color:white"}  if $value >=  $types->[1] ;
 	 $value ="-" unless defined $value;
 	 
-	$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: red;font-size: 7px;font-family:  Verdana;"}  if $value eq "-" ;
+	$btn_class = qq{class= "btn btn-sm  btn-primary" style="background-color: red;font-size: $fts;font-family:Verdana;"}  if $value eq "-" ;
 	$text  = $value unless $text;
 	return  qq{<button type="button" $btn_class $othercss>$text</button>};
 }
@@ -105,7 +116,7 @@ sub construct_table_transcript {
 	my ($v,$cgi,$header_transcripts,$level,$gene,$only_one) = @_;
 
 	my  $transcripts = $v->getTranscripts();
-	my $html= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
+	my $html= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"font-size: $fts;font-family:  Verdana;margin-bottom:0px"});
 	$html.= $cgi->start_Tr();
 	$html.=$cgi->th($header_transcripts);
 	$html.= $cgi->end_Tr();
@@ -145,9 +156,6 @@ sub construct_table_transcript {
 	
 		$hvariation->{impact_score} = $himpact_sorted->{$v->effectImpact($tr1)};
 	
-	 my $btn_class  = qq{class= "btn btn-xs btn-primary " style="background-color: #D0D0D0;font-size: 8px;font-family:  Verdana;"};
-	 		$btn_class = qq{class= "btn btn-xs btn-primary " style="background-color: #FF8800;font-size: 8px;font-family:  Verdana;"} if $hvariation->{impact_score} == 3 ;
-			$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: red;font-size: 8px;font-family:  Verdana;"}   if $hvariation->{impact_score} == 4 ;
 	# return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
 		$hvariation->{ccds} ="-" unless $hvariation->{ccds};
 		$hvariation->{appris} =$tr1->appris_type;
@@ -211,7 +219,7 @@ sub construct_table_transcript2 {
 	my ($v,$cgi,$header_transcripts,$level,$gene) = @_;
 
 	my  $transcripts = $v->getTranscripts();
-	my $html= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
+	my $html= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"font-size: $fts;font-family:  Verdana;margin-bottom:0px"});
 	$html.= $cgi->start_Tr();
 	$html.=$cgi->th($header_transcripts);
 	$html.= $cgi->end_Tr();
@@ -305,9 +313,7 @@ sub construct_table_transcript2 {
 		$hvariation->{ccds} ="-" unless $hvariation->{ccds};
 		$hvariation->{impact_score} = $himpact_sorted->{$v->effectImpact($tr1)};
 	
-	 	my $btn_class  = qq{class= "btn btn-xs btn-primary " style="background-color: #D0D0D0;font-size: 8px;font-family:  Verdana;"};
-	 		$btn_class = qq{class= "btn btn-xs btn-primary " style="background-color: #FF8800;font-size: 8px;font-family:  Verdana;"} if $hvariation->{impact_score} == 3 ;
-			$btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: red;font-size: 8px;font-family:  Verdana;"}   if $hvariation->{impact_score} == 4 ;
+
 	# return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
 		
 		$hvariation->{appris} =$tr1->appris_type;
@@ -587,7 +593,7 @@ sub valamut_igv {
 sub vgnomad {
 	my ($v,$hvariation) = @_;
 	 
-
+		die();
 	 	my $max  ="-";
 	 	$max = $v->max_pop_name.":".sprintf("%.4f", $v->max_pop_freq ) if $v->max_pop_name;
 	 	value_html($hvariation,"max_pop",$max, printSimpleBadge($max));
@@ -644,7 +650,6 @@ sub vclinvar {
 	 	my $a = qq{<a href="$uc" target="_blank" style="color:white">}.$v->text_clinvar()."</a>"; 
 	 	my $oc = qq{onClick='window.open("$uc")'};
 	 	value_html($hvariation,"clinvar",$v->text_clinvar(),  printButton($v,[3,4],$v->text_clinvar(),$oc));
-	 
 	 	if (($v == 4 || $v==5)    ){
 	 		$alert  = 4  if $hvariation->{value}->{freq_level} <= 2 ;
 	 		$alert ++;
@@ -1162,7 +1167,7 @@ sub populations {
 	 	$hvariation->{max_pop} = printSimpleBadge($hvariation->{max_pop});
 	 	$hvariation->{min_pop} = "-";
 		$hvariation->{min_pop} = $v->min_pop_name.":".sprintf("%.4f", $v->min_pop_freq ) if $v->min_pop_name;
-			$hvariation->{min_pop} = printSimpleBadge($hvariation->{min_pop});
+		$hvariation->{min_pop} = printSimpleBadge($hvariation->{min_pop});
 		$hvariation->{freq_ho} = "-"; 
 		$hvariation->{freq_ho} = sprintf("%.4f", $v->frequency_homozygote ) if $v->frequency_homozygote ;
 	 	$hvariation->{ac} = $v->getGnomadAC;
@@ -1186,7 +1191,7 @@ sub populations {
 sub clinvar {
 	 my ($project,$hvariation) = @_;
 	
-	 return if exists $hvariation->{clinvar};
+	 #return if exists $hvariation->{clinvar};
 	 unless ($hvariation->{obj}){
 	 
 	 	 $hvariation->{obj} = $project->_newVariant($hvariation->{id});
@@ -1195,7 +1200,6 @@ sub clinvar {
 	 
 	 
 	 my $debug;
-	 
 	 
 	 my $v = $hvariation->{obj}->score_clinvar();
 	   $hvariation->{clinvar}  = "" ;
@@ -1224,7 +1228,6 @@ sub hgmd {
 	 	 $hvariation->{obj} = $project->_newVariant($hvariation->{id});
 	 #	confess();
 	 }
-	 
 	 
 	 
 	 
@@ -1332,7 +1335,7 @@ sub trio {
 #	  		$hvariation->{trio} ="-";
 #	  		return ;
 #	  	}
-	  	my $html =$cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
+	  	my $html =$cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"font-size: $fts;font-family:  Verdana;margin-bottom:0px"});
 		my $html_line;
 		my $type = "-";
 	
@@ -1531,20 +1534,20 @@ sub deja_vu{
 		my $nb_pat =0;
 		my $pname = $project->name();
 		my $proj_dejavu =0;
-		$hvariation->{sim_deja_vu} =$hres->{similar_patient};
-		$hvariation->{sim_proj_deja_vu} = $hres->{similar_project};
+		$hvariation->{sim_deja_vu} =$hres->{similar_patients};
+		$hvariation->{sim_proj_deja_vu} = $hres->{similar_projects};
 	
 	
 		my ($nb_dejavu, $nb_ho) = $project->getDejaVuThisProject($vid);
 		die() if $nb_dejavu eq 0;
-		$hvariation->{this_deja_vu} =$nb_dejavu;
-		$hvariation->{diff_project_deja_vu} =$hres->{other_project}  ; 
-		$hvariation->{diff_patient_deja_vu} =$hres->{other_patient}  ;
-		$hvariation->{project_deja_vu} = $hres->{other_project} + $hres->{similar_project}; 
-		$hvariation->{deja_vu} =  printInvButton($hres->{other_project},[50,10],$hres->{other_project}.":". $hres->{other_patient});;#printBadge($hres->{other_project}.":".$hres->{other_patient});;
-		 $hvariation->{deja_vu_value} = $hres->{other_project}.":".$hres->{other_patient};
-		$hvariation->{in_this_run} = $nb_dejavu."/". scalar(@{$project->getPatients});
-		$hvariation->{similar_projects} =  printInvButton($hres->{similar_patient},[20,10],$hres->{similar_project}.":". $hres->{similar_patient});; #printBadge($hres->{similar_project}.":". $hres->{similar_patient});
+		$hvariation->{this_deja_vu} = $hres->{in_this_run_patients};
+		$hvariation->{diff_project_deja_vu} =$hres->{other_projects}  ; 
+		$hvariation->{diff_patient_deja_vu} =$hres->{other_patients}  ;
+		$hvariation->{project_deja_vu} = $hres->{other_projects} + $hres->{similar_projects}; 
+		$hvariation->{deja_vu} =  $hres->{other_projects}.":". $hres->{other_patients};#printBadge($hres->{other_project}.":".$hres->{other_patient});;
+		 $hvariation->{deja_vu_value} = $hres->{other_projects}.":".$hres->{other_patients};
+		$hvariation->{in_this_run} =  $hres->{in_this_run_patients}."/". $hres->{total_in_this_run_patients};
+		$hvariation->{similar_projects} =  $hres->{similar_projects}.":". $hres->{similar_patients}; #printBadge($hres->{similar_project}.":". $hres->{similar_patient});
 		my $freq_score;
 		my $freq_level;
 		
@@ -1665,5 +1668,19 @@ sub edit {
 	 
 }
  
+ sub tclinical_local {
+		my ($project,$hvariation,$patient,$gene) = @_;
+		
+	 my $val_id = $gene->id."!".$hvariation->{id};
+	 my $local_validation = $patient->project->getValidationVariation($val_id,$patient);
+	
+		if ($local_validation){
+				my $saved = $local_validation->{validation};
+				$hvariation->{"local"} = $patient->buffer->value_validation->{$saved};
+				$hvariation->{"local"} = printButton($saved,[3,5],$patient->buffer->value_validation->{$saved},$saved) ;
+				$hvariation->{clinical_local} ++;
+		}
+		
+}
  1;
  
