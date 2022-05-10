@@ -16,8 +16,9 @@ use lib "$Bin/../packages/validation_variation_old";
 use lib "$Bin/../packages/cache"; 
 
 use lib "$Bin/../GenBo/lib/obj-nodb/packages";
+use lib "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag";
 use draw_cnv; 
-require "$Bin/../GenBo/lib/obj-nodb/packages_old/cache/polydiag/update.pm";
+use update;
 require "$Bin/../GenBo/lib/obj-nodb/packages_old/cache/polydiag/utility.pm";
 use html; 
 use infos_coverage_exons;
@@ -49,6 +50,7 @@ use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
 
+$update::fts = "8px";
 
 my $w = "500px";
 
@@ -327,6 +329,10 @@ my $project_name = $cgi->param('project');
 my $force_cache =  $cgi->param('force_cache');
 #my $project = $buffer->newProject(-name=>$project_name);
 my $print =  $cgi->param('print');
+$update::print = $cgi->param('print');
+if($print){
+	$update::fts = "7px";
+}
 my $user = $cgi->param('user_name');
 my $hgmd = $buffer->queryHgmd()->getHGMD($user);
 
@@ -338,15 +344,14 @@ my $project;
 #		$project = $buffer->newProject( -name 			=> $project_name, -typeFilters=>'individual' ,-cgi_object=>1);
 
 #}
-my @headers = ("gene","var_name","sanger","ngs","ratio","caller","trio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
-#@headers = ("gene","var_name","sanger","ngs","ratio","caller","trio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd") unless $hgmd ==1;
+my @headers = ("gene","var_name","ngs","trio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 
 if ($project->isSomatic){
 	@headers = ("gene","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","cosmic","clinvar","local","freq","freq_ho","max_pop","min_pop","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 }
 if ($print == 1){
-	@headers = ("var_name","ngs","ratio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
-@headers = ("var_name","ngs","ratio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd") unless $hgmd ==1;
+	@headers = ("var_name","ngs","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
+@headers = ("var_name","ngs","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd") unless $hgmd ==1;
 
 	$style_score ={
 		1=> {style=>"background-color:#95A5A6;color:#FFFFFF"},#E43725#95A5A6
@@ -445,6 +450,7 @@ my $vimpact = $cgi->param('impact');
 my $this_run = $cgi->param('this');
 
 $this_run=6 unless $this_run;
+
 my $never =  $cgi->param('never');
 
 
@@ -468,9 +474,8 @@ my $cgi_transcript =  $cgi->param('transcripts');
 my $name =  $cgi->param('name');
 
 $patient_name ="all" unless $patient_name;
-my $patient1s = $project->getPatients();
-my $nb_patients = scalar(@{$project->getPatients()});
-
+my $patients = $project->get_list_patients($patient_name,",");
+my $nb_patients = scalar @{$patients->[0]->getRun->getAllPatientsInfos()};
 
 #define limit for in this run
 
@@ -657,10 +662,10 @@ sub construct_htranscripts {
 					update::clinvar($project,$hvariation); 
 					update::hgmd($project,$hvariation); 
 					update::tclinical_local($project,$hvariation,$patient,$htranscript->{obj}->getGene);
-					
+					update::deja_vu($project,$tr1,$hvariation,$debug);
 		
 					my $zfilter = 1;
-						$zfilter = undef if $hvariation->{clinvar_alert} ;	
+					$zfilter = undef if $hvariation->{clinvar_alert} ;	
 					$zfilter = undef if $hvariation->{clinical_local} ;
 					#$zfilter = undef if $hvariation->{hgmd} ;
 					$zfilter = undef if  $hvariation->{type} ne "other";	
@@ -668,7 +673,6 @@ sub construct_htranscripts {
 					my $debug;
 					$debug = 1 if $hvariation->{var_name} eq "17_1940466_T_G";
 				
-					
 					if ($zfilter){
 						next  if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
 						#next if $hvariation->{impact_score} < $impact_score_limit;
@@ -681,14 +685,16 @@ sub construct_htranscripts {
 						my @t = grep{$_>=$limit_ratio} @all_nums;
 						next unless @t;
 					}
+				update::deja_vu($project,$tr1,$hvariation,$debug);
+				if ($zfilter){
+						next  if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
+					}
 				
 				update::trio($project,$tr,$hvariation,$patient,$cgi,$print);
-				warn $hvariation->{transmission_model} if $debug;
 				if (exists $hvariation->{transmission_model} and  $hvariation->{transmission_model}=~ /strict_denovo/){
 						 $hvariation->{transmission_model} = "strict_denovo";
 				}
 				
-				warn $hvariation->{transmission_model} if $debug;
  				if ( exists $hvariation->{transmission_model}){
 					my $t = $hvariation->{transmission_model};
 #					#$t ='strict_denovo' unless exists $list_transmission->{$t};
@@ -702,7 +708,7 @@ sub construct_htranscripts {
 	
 				update::annotations($project,$hvariation);
 	
-				update::deja_vu($project,$tr1,$hvariation,$debug);
+			
 				$hvariation->{freq} = sprintf("%.5f",$hvariation->{freq}) if $hvariation->{freq} ne "-";
 				
 				unless  (exists $hvariation->{edit}) {
@@ -763,7 +769,7 @@ sub construct_htranscripts {
 				#push(@{$hpatient->{variations}->{$hvariation->{id}}},$hvariation );
 				#warn Dumper $hvariation->{obj};
 				delete $hvariation->{obj};
-			
+				warn $hvariation->{hgmd} if $hvariation->{hgmd};
 				push(@{$htranscript->{all}},$hvariation);
 				
 			}
@@ -1036,12 +1042,9 @@ sub construct_data1 {
 					}
 				
 				update::trio($project,$tr,$hvariation,$patient,$cgi,$print);
-				warn $hvariation->{transmission_model} if $debug;
 				if (exists $hvariation->{transmission_model} and  $hvariation->{transmission_model}=~ /strict_denovo/){
 						 $hvariation->{transmission_model} = "strict_denovo";
 				}
-				
-				warn $hvariation->{transmission_model} if $debug;
  				if ( exists $hvariation->{transmission_model}){
 					my $t = $hvariation->{transmission_model};
 #					#$t ='strict_denovo' unless exists $list_transmission->{$t};
@@ -2306,9 +2309,58 @@ sub print_variation_td_edit{
 					}
 				
 					else {
-						$text = qq{$text};
+						$text = update::printSimpleBadge(qq{$text});
 					}
 					
+				}
+				if($cat eq "ngs"){
+					my @t = split("<br>",$text);
+					 $text = "<table style='background-color:white;color:black;border-color:black;font-size:".$update::fts.";width:auto'> <col style='width: 20%;' /> <col style='width: 10%;' /> <col style='width: 40%;' /> <col style='width: 30%;' /><tr>";
+					my @a;
+					my $r;
+					my @color= ("#ECF7F8","#F9F9F9");
+					my $z=0;
+					foreach my $l (@t){
+						$z++;
+						$text .= "<tr>";
+						($a[0],$r) = split(":",$l);
+						($a[1],$r) = split(/\(/,$r);
+						$r =~ s/\)//;
+						$a[2] = $r;
+						
+						my ($a1,$a2,$r3) = split("/",$r);
+						$a[3] = int(($a2/($a1+$a2))*100)."%";
+						 $text .=$cgi->td({style=>"text-align: center;background-color:".$color[$z%2].";border-style:solid;border-width:1px;padding:2px;border-color:#DAEFF1"},\@a)."</tr>";
+					} 
+					 $text .="</table>";
+				}
+				if  ($cat eq "hgmd") {
+					$text = update::printSimpleBadge(qq{$text});
+				}
+				if  ($cat eq "gene"  ) {
+					$text = update::printSimpleBadge(qq{$text});
+				}
+				if  ($cat eq "freq" or $cat eq "freq_ho" ) {
+					$text = update::printSimpleBadge(qq{$text},1);
+				}
+				if ($cat eq "genomique" ){
+					$text = update::printSimpleBadge(qq{$text});
+				}
+				if ($cat eq "transcript" or $cat eq "exon" or $cat eq "nomenclature" or $cat eq "consequence" or $cat eq "codons_AA" or $cat eq "codons"){
+					$text = update::printSimpleBadge(qq{$text},2);
+				}
+				if ($cat eq "similar_projects" ){
+					$text  =~ s/<[^>]*>//gs;
+					$text = update::printSimpleBadge(qq{$text},3);
+				}
+				if ($cat eq "polyphen"  or  $cat eq "sift" ){
+					$text = update::printSimpleBadge(qq{$text});
+				}
+				if ($cat eq "min_pop" or $cat eq "max_pop" ){
+					#($plain_text = $html_text) =~ s/<[^>]*>//gs; 
+					$text  =~ s/<[^>]*>//gs;
+					$text = update::printSimpleBadge(qq{$text},1);
+					#$text = update::printSimpleBadge(qq{$text});
 				}
 				if ($cat eq "igv"){
 					my $fam = $patient->{obj}->getFamily();
@@ -2334,7 +2386,8 @@ sub print_variation_td_edit{
 					}
 					$text = join("<BR>",@terms);
 				}
-				elsif ($cat eq "deja_vu" or $cat eq "similar_projects"){
+				
+				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ){
 					my $url = $deja_vu_url.$variation->{id};
 					 if (exists $variation->{dup}){
 					 	$text = qq{<a href="$url" target="_blank" style="color:white;font-weight:bold">$text</a>};
@@ -2342,8 +2395,12 @@ sub print_variation_td_edit{
 					 else {
 					$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
 					 }
+					 $text = update::printSimpleBadge(qq{$text},3);
 					
 				}	
+				if ( $cat eq "in_this_run"){
+					 $text = update::printSimpleBadge(qq{$text},3);
+				}
 		if (exists $variation->{dup}){
 			
 			$variation->{scaled_score} = 99;
@@ -2385,7 +2442,6 @@ sub print_variation_td_edit{
 sub printVariationsOther {
 	my ($patient,$title,$type,$nobutton) = @_;
 	$nobutton =1 if $print;
-	warn $type;
 	my $out;
 	my @buttons = ("igv","alamut","align");
  	@buttons = () unless $edit_mode;
@@ -2456,14 +2512,26 @@ sub printVariationsOther {
 			$name.= "&nbsp; $minus &nbsp;".$obj_gene->omim_inheritance if $obj_gene->omim_inheritance ;
 			$name.= "&nbsp; $minus &nbsp;".$obj_gene->short_phenotypes if $obj_gene->short_phenotypes ;
 			$out .= $cgi->end_table();
-			$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;"});
+			$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;width:100%"});
 			$out.= $cgi->start_Tr();
 			$out.= $cgi->th({style=>"vertical-align:middle;background:#D9C7ED;border: 2px solid black;",colspan=>scalar(@infos)},"$name");
-			
 			$out.= $cgi->end_Tr();
 			
 		
 	my $t = scalar(@infos);
+	my $pc = int(100/$t);
+		foreach my $c (@infos){
+			if($c eq "var_name" or $c eq "ngs" or $c eq "transcript" or $c eq "clinvar" or $c eq "genomique"  ){
+				$out.= qq{<col width="5%"\>};
+			}
+			elsif ($c eq "nomenclature" or $c eq "codons" or $c eq "consequence" or $c eq "max_pop" or $c eq "min_pop" or $c eq "hgmd" or $c eq "local"){
+				$out.= qq{<col width="3%"\>};
+			}
+			else {
+				$out.= qq{<col width="2%"\>};
+			}
+			
+	}
 my $nbv =0;
 $out.= $cgi->start_Tr();
 	foreach my $c (@infos){
@@ -2944,7 +3012,6 @@ sub printTableGenesXls {
 
 sub printTableGenes {
 	my ($patient,$title,$type,$nobutton) = @_;
-	
 	my $out ="";
 
 	my $s_id=$patient->{name};
@@ -2952,7 +3019,7 @@ sub printTableGenes {
 	my $nb_line = 0;
 	my $first_line = 0;
 	my @buttons = ("status","igv","alamut","align");
-	my @infos = @headers; ("gene","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","cosmic","freq","freq_ho","max_pop","min_pop","clinvar","hgmd","deja_vu","similar_projects","in_this_run", ,"polyphen","sift","cadd");
+	my @infos = @headers; ("gene","var_name","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","cosmic","freq","freq_ho","max_pop","min_pop","clinvar","hgmd","deja_vu","similar_projects","in_this_run", ,"polyphen","sift","cadd");
 	my @edit_buttons=("Validation");
 	@infos = (@buttons,@infos);
 	my $bilan;
@@ -3256,7 +3323,7 @@ foreach my $gene (sort{$bilan->{$b}->{max_score} <=>$bilan->{$a}->{max_score} ||
 	#  panel table
 	$out .=  $cgi->start_div({class=>"panel-body panel-collapse  collapse",style=>"font-size: 09px;font-family:  Verdana;",id=>$panel_id});
 		$out.="\n";
-		$out .= $cgi->start_table({"data-toggle"=>"table","data-search"=>"true",class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;"});
+		$out .= $cgi->start_table({"data-toggle"=>"table","data-search"=>"true",class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"vertical-align:middle;text-align: center;font-size: 7px;font-family:  Verdana;"});
 		#$out .= $cgi->start_table({"data-toggle"=>"table","data-search"=>"true",style=>"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;"});
 	
 		$out.= $cgi->start_Tr();
