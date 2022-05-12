@@ -768,6 +768,7 @@ my $hcolors;
 	my $capture_intspan = $transcript->getChromosome->getIntSpanCapture();
 		my $no =  $transcript->project->noSqlCoverage();
 		my $raw_data;
+		
 	foreach my $exon (sort{$a->end*$a->strand <=> $b->end*$b->strand } @$exons) {
 		
 	$x =2;
@@ -785,10 +786,12 @@ my $hcolors;
  	
   
 	foreach my $patient (sort{$a->name cmp $b->name} @$patients){
-	
+	 	my $spanTr = $no->get($patients->[0]->name,$transcript->id."_spandup");	
+	 	$spanTr = Set::IntSpan::Fast::XS->new() unless $spanTr; 
 		my $dir = $patient->project->getVariationsDir("duplicate_region_calling")."/regions";
 		my $filebed =  $patient->project->getVariationsDir("duplicate_region_calling")."/regions/".$patient->name().".dup.bed";
-	
+		my $span =$exon->getGenomicSpan->intersection($spanTr);#->intersection($exon->getGenomicSpan);
+		
 		if ($exon->isExon() && $exon->is_noncoding && $utr ==1 ){
 			next;
 		}
@@ -817,9 +820,32 @@ my $hcolors;
 			my $color2 = $green;
 			my $color = $green;
 			my $colors = [];
+		unless ($span->is_empty){
+			my $gc =  $no->get($patient->name,$transcript->id."_raw");
+			#warn Dumper ($gc);
+			 my $cover = $gc->coverage($exon->start,$exon->end);
+			  $data->{$exon->id}->{$patient->id}->{raw_min} = $cover->{min};
+			 $data->{$exon->id}->{$patient->id}->{raw_mean} = $cover->{mean};
+			if ($exon->isExon() && $exon->is_noncoding && $utr ne 1 && $exon->intspan_no_utr->is_empty) {
+				$color = $grey;
+				$color2=$grey;
+				 $data->{$exon->id}->{$patient->id}->{green}=0;
+			}
+			elsif ($cover->{min} < $limit) {
+			$color = $red;
+			$color2= $yellow;
+			$data->{$exon->id}->{$patient->id}->{red} = 1;
+			 $data->{$exon->id}->{$patient->id}->{green}=0;
+			}
+			else {
+			$color = $purple;
+			$color2=$purple;
+			 $data->{$exon->id}->{$patient->id}->{green}=0;
 			
+			}
+		}	
 			
-		if ($exon->isExon() && $exon->is_noncoding && $utr ne 1 && $exon->intspan_no_utr->is_empty) {
+		elsif ($exon->isExon() && $exon->is_noncoding && $utr ne 1 && $exon->intspan_no_utr->is_empty) {
 			$color = $grey;
 			$color2=$grey;
 			 $data->{$exon->id}->{$patient->id}->{green}=0;
@@ -994,7 +1020,7 @@ my $hcolors;
 			my $colors = [];
 			
 			my $span =$exon->getGenomicSpan->intersection($spanTr);#->intersection($exon->getGenomicSpan);
-			unless ($span->is_empty){
+		unless ($span->is_empty){
 			my $gc =  $no->get($patient->name,$transcript->id."_raw");
 			#warn Dumper ($gc);
 			$color = $purple;
