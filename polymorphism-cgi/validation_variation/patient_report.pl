@@ -769,7 +769,6 @@ sub construct_htranscripts {
 				#push(@{$hpatient->{variations}->{$hvariation->{id}}},$hvariation );
 				#warn Dumper $hvariation->{obj};
 				delete $hvariation->{obj};
-				warn $hvariation->{hgmd} if $hvariation->{hgmd};
 				push(@{$htranscript->{all}},$hvariation);
 				
 			}
@@ -2329,7 +2328,9 @@ sub print_variation_td_edit{
 						$a[2] = $r;
 						
 						my ($a1,$a2,$r3) = split("/",$r);
+						$a1 =1 if ($a1+$a2) ==0;
 						$a[3] = int(($a2/($a1+$a2))*100)."%";
+						
 						 $text .=$cgi->td({style=>"text-align: center;background-color:".$color[$z%2].";border-style:solid;border-width:1px;padding:2px;border-color:#DAEFF1"},\@a)."</tr>";
 					} 
 					 $text .="</table>";
