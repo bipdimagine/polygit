@@ -2240,7 +2240,6 @@ sub print_variation_td{
 			#	warn $cat;
 			#	if ($cat eq "consequence"){
 			#		$text = $buffer->get_annotation_terms($text);
-			#		die();
 			#	}
 				
 				if ($variation->{sanger} =~ /todo/ && $nobutton ne 2 ) {
