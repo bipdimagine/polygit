@@ -816,7 +816,7 @@ my $hcolors;
 			$data->{$exon->id}->{$patient->id}->{covered} = $covered;
 			$data->{$exon->id}->{$patient->id}->{red} = 0;
 			$data->{$exon->id}->{$patient->id}->{green} = 1;
-
+#add purple
 			my $color2 = $green;
 			my $color = $green;
 			my $colors = [];
