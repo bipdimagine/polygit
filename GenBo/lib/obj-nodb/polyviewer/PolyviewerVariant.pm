@@ -757,12 +757,10 @@ sub get_variants_same_position {
 	my $i = $vector_id;
 	my $j = $vector_id;
 	my $var = $chr->getVarObject($vector_id);
+	$check_before_done = 1 if ($vector_id == 0);
+	$check_after_done = 1 if ($vector_id == ($chr->getVariantsVector->Size() -1) );
 	while ($check_before_done == 0) {
 		$i--;
-		if ($i < 0) {
-			$check_before_done = 1;
-			next;
-		}
 		my $var_before = $chr->getVarObject($i);
 		if ($var_before->start() == $var->start()) {
 			foreach my $patient (@{$var_before->getPatients()}) {
@@ -771,6 +769,7 @@ sub get_variants_same_position {
 			}
 		}
 		else { $check_before_done = 1; }
+		$check_before_done = 1 if ($i == 0);
 	}
 	while ($check_after_done == 0) {
 		$j++;
@@ -782,6 +781,7 @@ sub get_variants_same_position {
 			}
 		}
 		else { $check_after_done = 1; }
+		$check_after_done = 1 if ($vector_id == ($chr->getVariantsVector->Size() - 1));
 	}
 	return \@lVar_same_pos;
 }
