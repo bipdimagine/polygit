@@ -362,7 +362,8 @@ sub calling_dude {
 	  	}
 	  }
 	  else {
-	  		$html.= "\n".$self->html_parent_line_variant_dude($self->patient,$gene_name);
+	  		my $hsample = $samples->{$self->patient->id};
+	  		$html.= "\n".$self->html_parent_line_variant_dude($hsample,$self->patient,$gene_name);
 	  }
 	  $html .= $self->cgi->end_table();
 	  $html .= qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$id_info',position:['after']"><div style="min-width:300px;width:auto;height:auto;"><center><b><u>Patient $patient_name</b></u><br><br>};
