@@ -350,9 +350,9 @@ if ($project->isSomatic){
 	@headers = ("gene","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","cosmic","clinvar","local","freq","freq_ho","max_pop","min_pop","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 }
 if ($print == 1){
-	@headers = ("var_name","ngs","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
-@headers = ("var_name","ngs","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd") unless $hgmd ==1;
-
+	@headers = ("var_name","ngs","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
+	@headers = ("var_name","ngs","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd") unless $hgmd ==1;
+	
 	$style_score ={
 		1=> {style=>"background-color:#95A5A6;color:#FFFFFF"},#E43725#95A5A6
 		2 => {style=>"background-color:#EFB73E;"},#F2DEDE#F7CCC8
@@ -2226,8 +2226,9 @@ sub print_variation_td{
 #				}
 	}
 				if ($cat eq "var_name"){
-				
+					
 						$text = qq{$text};
+						
 				
 				}
 				if ($cat eq "consequence"){
@@ -2313,7 +2314,10 @@ sub print_variation_td_edit{
 				}
 				if($cat eq "ngs"){
 					my @t = split("<br>",$text);
-					 $text = "<table style='background-color:white;color:black;border-color:black;font-size:".$update::fts.";width:auto'> <col style='width: 20%;' /> <col style='width: 10%;' /> <col style='width: 40%;' /> <col style='width: 30%;' /><tr>";
+				 	$text = "<table style='background-color:white;color:black;border-color:black;font-size:".$update::fts.";width:auto'> <col style='width: 20%;' /> <col style='width: 10%;' /> <col style='width: 40%;' /> <col style='width: 30%;' /><tr>";
+					if ($print){
+					 $text = "<table  style='border-width:0px!important;padding:1px!important;border-style:none!important;background-color:white;color:black;border-color:black;font-size:".($update::fts-1).";width:auto!important '> <col style='width: 15%;' /> <col style='width: 15%!important;' /> <col style='width: 40%;' /> <col style='width: 30%;' /><tr>";
+					}	
 					my @a;
 					my $r;
 					my @color= ("#ECF7F8","#F9F9F9");
@@ -2329,8 +2333,17 @@ sub print_variation_td_edit{
 						my ($a1,$a2,$r3) = split("/",$r);
 						$a1 =1 if ($a1+$a2) ==0;
 						$a[3] = int(($a2/($a1+$a2))*100)."%";
-						
-						 $text .=$cgi->td({style=>"text-align: center;background-color:".$color[$z%2].";border-style:solid;border-width:1px;padding:2px;border-color:#DAEFF1"},\@a)."</tr>";
+						#
+							
+		
+						#				}
+						if ($print){
+							$text .=$cgi->td({style=>"border-top-right:0px!;border-top-left:0px!;border-top-width:1px!;border-bottom-width:1px!;border-style:solid!important;text-align: center;background-color:".$color[$z%2].";padding:1px!important;border-color:#DAEFF1"},\@a)."</tr>";
+		
+								}
+								else {
+									$text .=$cgi->td({style=>"text-align: center;background-color:".$color[$z%2].";border-style:solid;border-width:1px;padding:2px;border-color:#DAEFF1"},\@a)."</tr>";
+								}
 					} 
 					 $text .="</table>";
 				}
@@ -2445,16 +2458,11 @@ sub printVariationsOther {
 	my $out;
 	my @buttons = ("igv","alamut","align");
  	@buttons = () unless $edit_mode;
-	my @infos = @headers;#("gene","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","deja_vu","similar_projects","in_this_run", "polyphen","sift");
-	#my @infos = ("var_name","sanger","ngs","ratio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","deja_vu","similar_projects","in_this_project", "polyphen","sift");
+	my @infos = @headers;
 	
 	my @edit_buttons=("Validation");
 	@infos = (@buttons,@infos);
-	# my @infos = ("gene","var_name","sanger","ngs","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","deja_vu","in_this_project", "polyphen","sift");
 
-	#	if ($type eq "all" && $nobutton ne 2){
-	#		@infos = ("impact","type","var_name","sanger","ngs","genomique","exon","nomenclature","consequence","codons","codons_AA","freq","deja_vu","in_this_project", "polyphen","sift");
-	#	}
 	my $s_id=$patient->{name};
 	my %genes;
 	my %nm;
@@ -2512,7 +2520,7 @@ sub printVariationsOther {
 			$name.= "&nbsp; $minus &nbsp;".$obj_gene->omim_inheritance if $obj_gene->omim_inheritance ;
 			$name.= "&nbsp; $minus &nbsp;".$obj_gene->short_phenotypes if $obj_gene->short_phenotypes ;
 			$out .= $cgi->end_table();
-			$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;width:100%"});
+			$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"vertical-align:middle;text-align: center;font-size:".$update::fts.";font-family:  Verdana;width:auto"});
 			$out.= $cgi->start_Tr();
 			$out.= $cgi->th({style=>"vertical-align:middle;background:#D9C7ED;border: 2px solid black;",colspan=>scalar(@infos)},"$name");
 			$out.= $cgi->end_Tr();
