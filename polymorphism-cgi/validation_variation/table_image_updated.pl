@@ -60,6 +60,7 @@ $url_image =~ s/$prg/image_coverage.pl/;
 my $order = $cgi->param('order');
 
 my $project_name = $cgi->param('project');
+warn $project_name;
 my $only_low;
  $only_low = 1 if $cgi->param('only_low') ==1;
 my $project = $buffer->newProjectCache(-name=>$project_name);
@@ -274,7 +275,6 @@ sub uri_image {
 			my $nbtp = 0;
 			
  	 	foreach my $tr1  ( @tmp){ 
- 	 		warn $tr1;
 #<<<<<<< .mine
 # 	 		
 # 	 			print "." if $znb %20 == 0;
