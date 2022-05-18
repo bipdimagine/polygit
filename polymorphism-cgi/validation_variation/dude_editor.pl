@@ -499,7 +499,7 @@ $patient->validation_status();
 $patient->getLatestValidationStatus($user);
 
 die() unless $patient;
-
+ 
 my $array;
 $array = ["high"];
 $array = ["high","medium"] if $quality == 2 ;
@@ -517,6 +517,7 @@ foreach my $l (@$lists){
 	$t{$l->{description}->{external_name}} ++;
 	push(@$l2,$l);
 }
+
 my $x= table_dude::get_images($patient,$l2,$fork,1);
 print qq{</div>};
 table_dude::print_dude_genes($patient,$x,$fork,1);
