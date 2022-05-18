@@ -510,9 +510,8 @@ my $fork =10;
 print qq{<div style="display: none">};
 my $lists = table_dude::getListGenes($patient,$array,$fork,1);
 
-warn scalar(@$lists);
 my %t ;
-my $l2;
+my $l2 = [];
 foreach my $l (@$lists){
 	#next if exists  $t{$l->{description}->{external_name}};
 	$t{$l->{description}->{external_name}} ++;
