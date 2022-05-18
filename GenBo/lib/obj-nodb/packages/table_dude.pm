@@ -105,7 +105,7 @@ sub print_by_position {
 sub print_dude_genes {
 	my ( $patient, $lists,$print,$text) = @_;
 	unless ($lists){
-		print "NONE";
+		print "NONE 2";
 		return;
 	}
 	my $project = $patient->getProject;
