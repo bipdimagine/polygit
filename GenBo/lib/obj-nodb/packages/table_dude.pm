@@ -105,7 +105,7 @@ sub print_by_position {
 sub print_dude_genes {
 	my ( $patient, $lists,$print,$text) = @_;
 	unless ($lists){
-		print "NONE 2";
+		print "NONE <a target='_blank' href='https://icons8.com/icon/8350/no-gmo'>No GMO</a>";
 		return;
 	}
 	my $project = $patient->getProject;
