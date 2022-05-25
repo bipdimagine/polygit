@@ -486,14 +486,15 @@ has 'compute_sex' => (
 	default => sub {
 		my $self = shift;
 		my $covm = $self->coverage_SRY();
+		warn $covm;
 		return -1 if $covm == -1;
 		my $covh = $self->coverage();
 		$covh->{mean} += 0;
 		return 2 if $covm < 5;
-
-		return 1 if $covm > $covh->{mean} * 0.15;
+		return 1 if $covm > $covh->{mean} * 0.10;
+		return 2 if $covm < $covh->{mean} * 0.05;
 		if ( $covh->{mean} > 300 ) {
-			return 1 if $covm > $covh->{mean} * 0.10;
+			return 1 if $covm > $covh->{mean} * 0.8;
 		}
 
 		#return 1 if $covm > 70;
