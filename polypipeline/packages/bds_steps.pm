@@ -3440,7 +3440,7 @@ method muc1  (Str :$filein){
 	$filein = $self->patient()->getBamFileName();# unless $filein;
 
 	
-	my $ppn = 5 ;
+	my $ppn = 4 ;
 
 	$ppn = int($self->nproc/2) if $self->nocluster;
 	die("-".$filein) unless $filein;
