@@ -508,7 +508,7 @@ my $dev;
  warn join(";",@$key_quality);
  
  $header = undef  if $dev or $cgi->param('force') == 1;
- $header = undef;
+ #$header = undef;
  $no_cache->close();
 $project->getChromosomes();
 $project->getPatients();
