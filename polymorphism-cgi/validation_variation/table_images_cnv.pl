@@ -319,7 +319,7 @@ sub select_transcripts {
 				#transpose
 
 				#warn Dumper $tr_objs->[0] if $debug;
-
+  
 				#image_cnv_no_cache($patients,$transcript,$cgi);
 				my $res;
 				$res =
@@ -341,7 +341,8 @@ sub select_transcripts {
 
 	print "</div>\n";
 	 if (keys %$proc){
-	 	print "<h1>ERROR !!!!!!!</h1>"
+	 	print "<h1>ERROR !!!!!!!</h1>";
+	 	exit(0);
 	 }
 	return keys %images;
 }
