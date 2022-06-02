@@ -177,7 +177,6 @@ for ( my $i = 0 ; $i < @transcripts ; $i++ ) {
 		  . $project_name
 		  . "&limit=$limit&span=$padding&utr=$utr&intronic=$intronic&patients=$patient_names&run_id=$r&transcript=";
 		my $url2 = $url_image_tmp . $transcripts[$i]->id();
-		warn $url2;
 		my $toto = $images{ $transcripts[$i]->id() };
 
 		#$ret->{image}->png;
@@ -235,6 +234,7 @@ sub select_transcripts {
 	my $iter = natatime $nb, @$list_transcripts;
 	my @t_final;
 	print qq{<div style="visibility: hidden">};
+	my $proc;
 	$pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
@@ -244,6 +244,8 @@ sub select_transcripts {
 				  qq|No message received from child process $exit_code $pid!\n|;
 				return;
 			}
+			my $id = delete $h->{proc};
+			delete $proc->{$id};
 			foreach my $k ( keys %{$h} ) {
 				$images{$k} = $h->{$k};
 
@@ -258,9 +260,12 @@ sub select_transcripts {
 	$project->buffer->dbh_deconnect();
 	$| = 1;
 	my $t = time;
+	my $id = time;
+	
 	while ( my @tmp = $iter->() ) {
+		$proc->{$id} ++;
+		$id++;
 		my $pid         = $pm->start and next;
-		warn Dumper @tmp;
 		my $transcripts = $project->newTranscripts( \@tmp );
 		my $himages;
 		$project->buffer->dbh_reconnect();
@@ -270,7 +275,7 @@ sub select_transcripts {
 			my $tr_objs;
 			print ".";
 			my $debug;
-			$debug = 1 ;#if ( $tr->name eq "ENST00000254457" );
+		#	$debug = 1 ;#if ( $tr->name eq "ENST00000254457" );
 			my $primers = $project->getPrimersByObjects($tr);
 			my $find;
 			my $max_length = 0;
@@ -326,6 +331,7 @@ sub select_transcripts {
 				$himages->{ $tr->id } = $uri;
 			}
 		}
+		$himages->{proc} = $id;
 		$pm->finish( 0, $himages );
 	}
 	$pm->wait_all_children();
@@ -334,5 +340,8 @@ sub select_transcripts {
 	#warn abs(time -$t);
 
 	print "</div>\n";
+	 if (keys %$proc){
+	 	print "<h1>ERROR !!!!!!!</h1>"
+	 }
 	return keys %images;
 }
