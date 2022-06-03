@@ -245,6 +245,7 @@ sub select_transcripts {
 				return;
 			}
 			my $id = delete $h->{proc};
+			warn "del->".$id;
 			delete $proc->{$id};
 			foreach my $k ( keys %{$h} ) {
 				$images{$k} = $h->{$k};
@@ -263,8 +264,8 @@ sub select_transcripts {
 	my $id = time;
 	
 	while ( my @tmp = $iter->() ) {
-		$proc->{$id} ++;
 		$id++;
+		$proc->{$id} ++;
 		my $pid         = $pm->start and next;
 		my $transcripts = $project->newTranscripts( \@tmp );
 		my $himages;
@@ -341,7 +342,8 @@ sub select_transcripts {
 
 	print "</div>\n";
 	 if (keys %$proc){
-	 	print "<h1>ERROR !!!!!!!</h1>";
+	 	print "<h1>ERROR !!!!!!! </h1>";
+	 	warn Dumper %$proc;
 	 	exit(0);
 	 }
 	return keys %images;
