@@ -110,8 +110,10 @@ warn "\t*******************".scalar (@hps2);
 		my $project1 = $buffer1->newProjectCache( -name 			=> $pr );
 		#next() if $project1->name() eq "NGS2018_2286";
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
-					
+		
 			my $patient = $project1->getPatient($p->{patient});
+			my $b = $patient->getBamFileName();
+			next unless -e $b;		
 			my $scompute = &compute_sex($patient);
 			my $cov_file = $patient->fileNoSqlDepth;
 			if ($project1->name eq $project_name && !( -e $cov_file) ){
