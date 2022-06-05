@@ -41,7 +41,13 @@ my $project = $buffer->newProject( -name 			=> $project_name );
 my $f1 = $project->getCacheDir() . "/coverage_lite/primers.lite";
 warn $f1;
 unlink $f1  if -e $f1;
-
+my $dir_out   =$project->noSqlCnvsDir;
+my $f11 = "$dir_out/primers.bed.gz";
+unlink $f11 if -e $f11;
+my $f2 = "$dir_out/primers.lite";
+unlink $f2 if -e $f2;
+my $f3 = "$dir_out/raw_data.lite";
+unlink $f3 if -e $f3;
 
 my $pm2 = new Parallel::ForkManager($fork);
 
@@ -54,7 +60,6 @@ my $pm2 = new Parallel::ForkManager($fork);
 			$total->{ $data->{chr} } = $data->{primers};
 		}
 	);
-	my $dir_out   =$project->noSqlCnvsDir;
 	foreach my $chr ( @{ $project->getChromosomes } ) {
 		#next if $chr->name() ne "4";
 		my $chr_name = $chr->name();
