@@ -24,17 +24,9 @@ use strict;
 use Set::IntSpan::Fast::XS;
 use Data::Dumper;
 use GBuffer;
-use Getopt::Long;
-use Carp;
-use Set::Intersection;
-use Tabix;
 use Storable qw/thaw/;
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use coverage;
-use Spreadsheet::WriteExcel;
-use POSIX;
 use validationQuery;
-use Date::Tiny;
 use lib "$Bin/../packages/validation_variation";
 use draw_cnv;
 use infos_coverage_exons;
@@ -192,13 +184,13 @@ if ($genes_arg) {
 			@{ $gene->getTranscripts } )
 		{
 
-			#my $matrix = $no->get( $t->id );
+			my $matrix = $no->get( $t->id );
 
-			#next unless $matrix;
+			next unless ($matrix && ($project->isDiagnostic));
 			#	next unless $t->ccds_name;
 			$tt++;
 			push( @transcripts_cgi, $t->id );
-			last if $tt > $limit ;
+			#last if $tt > $limit ;
 			
 		}
 		
