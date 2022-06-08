@@ -58,6 +58,8 @@ sub getProjectLists {
 	#renvoit tous les origin associés au login et au mdp spécifié
 	
 	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
+	#warn Dumper $res;
+	#die();
 	my $db_name = $buffer->{config}->{server}->{status};
 	
 	my $nb_project = scalar(@{$buffer->listProjects()});
@@ -105,7 +107,6 @@ sub getProjectLists {
 		$project->{isDude} = 1 if ($project2->isDude());
 		#warn 
 		unless ($buffer->getQuery()->isUserMagic($login)){
-		
 		$buffer->getQuery()->writeLatestInfos($project2->id,$login);
 		$viewer ="polyDiag" unless  $viewer;
 		$buffer->getQuery->updateLastConnectionUserProject($login, $project2->id(),$viewer);# unless ($test or $get_bundles or $check_genes);
@@ -125,32 +126,42 @@ sub getProjectLists {
 	 }
 	export_data::print_simpleJson($cgi,$res) if $project_query;
 	}
+	
 	my (@res2, $h_proj_new_path);
+	my @test;
+	my @test2;
+	foreach my $project (sort {$b->{name} cmp $a->{name}} @$res) {
+		next unless	 $project->{name} =~ /NGS/;
+		push(@test, "\"".$project->{name}."\"");
+		push(@test2,$project->{id});
+	}
+	 my $phname = $buffer->getQuery()->fast_getProjectByName(join(",",@test));
+	 my $phpatients = $buffer->getQuery()->fast_getPatients(join(",",@test2));
+	# warn Dumper $phpatients;
+	 my $cptinfos;
 	foreach my $project (sort {$b->{name} cmp $a->{name}} @$res) {
 		next unless	 $project->{name} =~ /NGS/;
 		my $husers = $buffer->getQuery()->getOwnerProject($project->{id});
-		my $ph = $buffer->getQuery()->getProjectByName($project->{name});
-		
-		
-		
-#	 	my $buffer2 = GBuffer->new;
-#	 	my $project2 = $buffer2->newProjectCache( -name => $project->{name} );
-#	 	$project->{date_last_analyse} = $project2->cache_date();
-		
-#	 	my $captures = $project2->getCaptures();
-#	 	next unless @{$captures->{0}->transcripts_name};
-		
-		$project->{genome_version} = $ph->{version};#join(",",map{$_->{name}}@$release);
-		$project->{db_name} = $db_name; 
-		if (lc($project->{dbname}) eq "polyexome" || lc($project->{dbname}) eq "polyrock"){
-			$project->{dbname} = $project->{dbname}."_".$ph->{version};
+		my $groups = $buffer->getQuery()->getUserGroupsForProject($project->{id});
+		$project->{users} = "";
+		if (@$groups){
+			$project->{users} = join(";",@$groups);
 		}
+		
+		my $ph;
+		 $ph =  $phname->{$project->{name}};
+	
+		my $patients =$phpatients->{$project->{id}};
+	
+		$project->{genome_version} = $ph->{version};#join(",",map{$_->{name}}@$release);
+		
 		my $nb_p = 0;
-		my ($name_database,$junk) = split("_",$project->{dbname});
 		$project->{nb_total} = 0;#$database_nb->{$name_database}->{NB};
-		$project->{users} = join("\n",map{$_->{email}} @$husers);
-		$project->{users} = scalar(@$husers)." users " if scalar(@$husers) > 6;		
-		my $patients = 	$buffer->getQuery()->getPatients($project->{id});
+		$project->{users} .= join("\n",map{$_->{email}} @$husers);
+		$project->{users} .= scalar(@$husers)." users " if scalar(@$husers) > 6;	
+		if ($project->{users} eq "") {
+			$project->{users} = qq{--??!!!!!!!!??--};
+		}
 		my %captures_id;
 		foreach my $p (@$patients){
 			$captures_id{$p->{capture_id}} ++;
@@ -161,10 +172,17 @@ sub getProjectLists {
 		my $nb =0;
 	
 		foreach my $cid (keys %captures_id){
-			my $capt =  $buffer->getQuery()->getCaptureInfos($cid);
+			my $capt;
+			if (exists $cptinfos->{$cid}){
+				$capt = $cptinfos->{$cid};
+			}
+			else {
+			 $capt =  $buffer->getQuery()->getCaptureInfos($cid);
+			}
 			push(@c,$capt->{name});
 			push(@t,$capt->{type});
-			$find=1 if $capt->{analyse} ne "exome";
+			$find=1 if $capt->{analyse} ne "exome" && $capt->{analyse} ne "genome";
+			#$find=1 if $capt->{analyse} ne "other";
 			#$find=1 if $capt->{transcripts} ne "";
 			$nb += split(";",$capt->{transcripts} );
 			
@@ -189,28 +207,28 @@ sub getProjectLists {
 		#on compte un certains nombres d'objets pour afficher des infos générelaes relatives au projet
 		map {$project->{patient_name}.=$_->{name}.";"} @$patients;
 		$project->{patient}  = scalar(@$patients);
-
-	 	my $list_resume = get_values_new_hgmd($buffer, $project->{name});
-		my $versions = $buffer->config->{polybtf_default_releases}->{default};
-		my @lVersions = (split(',', $versions));
-		my $i = 0;
-	 	foreach my $resume_new_pathogenic (@$list_resume) {
-	 		if (exists $project->{new_pathogenic}) { $project->{new_pathogenic} .= ';'; }
-			my ($nb_red, $nb_coral, $nb_orange, $nb_yellow, $nb_grey) = split(';', $resume_new_pathogenic);
-			if ($resume_new_pathogenic eq '?') { $project->{new_pathogenic} .= 'F'; }
-			elsif ($nb_red)    { $project->{new_pathogenic} .= 'A::'.$project->{name}.'::New+++'; }
-			elsif ($nb_coral)  { $project->{new_pathogenic} .= 'B::'.$project->{name}.'::New++'; }
-			elsif ($nb_orange) { $project->{new_pathogenic} .= 'C::'.$project->{name}.'::New+'; }
-			elsif ($nb_yellow) { $project->{new_pathogenic} .= 'D::'.$project->{name}.'::New+'; }
-			elsif ($nb_grey)   { $project->{new_pathogenic} .= 'E::'.$project->{name}.'::New'; }
-			else               { $project->{new_pathogenic} .= 'F'; }
-			$project->{new_pathogenic} .= '::'.$lVersions[$i];
-			$i++;
-	 	}
+		 $project->{new_pathogenic} ="-";
+#		next;
+#	 	my $list_resume = get_values_new_hgmd($buffer, $project->{name});
+#		my $versions = $buffer->config->{polybtf_default_releases}->{default};
+#		my @lVersions = (split(',', $versions));
+#		my $i = 0;
+#	 	foreach my $resume_new_pathogenic (@$list_resume) {
+#	 		if (exists $project->{new_pathogenic}) { $project->{new_pathogenic} .= ';'; }
+#			my ($nb_red, $nb_coral, $nb_orange, $nb_yellow, $nb_grey) = split(';', $resume_new_pathogenic);
+#			if ($resume_new_pathogenic eq '?') { $project->{new_pathogenic} .= 'F'; }
+#			elsif ($nb_red)    { $project->{new_pathogenic} .= 'A::'.$project->{name}.'::New+++'; }
+#			elsif ($nb_coral)  { $project->{new_pathogenic} .= 'B::'.$project->{name}.'::New++'; }
+#			elsif ($nb_orange) { $project->{new_pathogenic} .= 'C::'.$project->{name}.'::New+'; }
+#			elsif ($nb_yellow) { $project->{new_pathogenic} .= 'D::'.$project->{name}.'::New+'; }
+#			elsif ($nb_grey)   { $project->{new_pathogenic} .= 'E::'.$project->{name}.'::New'; }
+#			else               { $project->{new_pathogenic} .= 'F'; }
+#			$project->{new_pathogenic} .= '::'.$lVersions[$i];
+#			$i++;
+#	 	}
 		push(@res2, $project);
 		
 	}
-	
 	if ($export_xls) { 
  		export_xls($res);
  		exit(0);
