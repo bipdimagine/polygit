@@ -681,7 +681,61 @@ sub insertGencodeVersion {
 
 
 
+sub prepare {
+	my ($self,$query) = @_;
+	return $self->{prepare}->{$query} if exists $self->{prepare}->{$query};
+	my $dbh = $self->getDbh();
+	$self->{prepare}->{$query} = $dbh->prepare($query);
+	return $self->{prepare}->{$query};
+}
 
+sub getUserGroupsForProject {
+		my ($self, $pid) = @_;
+	  	my $query =  qq{select ug.name FROM PolyprojectNGS.ugroup_projects G, bipd_users.UGROUP ug  
+		where G.project_id=? and ug.ugroup_id=G.UGROUP_ID ;};
+		my $sth = $self->prepare($query);
+		$sth->execute($pid);
+		my $res = $sth->fetchall_hashref("name");
+		delete $res->{STAFF};
+		return [keys %$res];
+}
+
+sub fast_getProjectByName {
+	my ($self, $name, $verbose) = @_;
+	confess() unless $name;
+	my $dbh = $self->getDbh();
+	my $config = $self->getConfig();
+	#$self->project_name($name);
+	my $query = qq{select o.project_id as id, o.name as name,o.creation_date as creation_date,o.description as description,o.validation_db as validation_db,  pt.type_project_id as projectTypeId, pt.name as projectType,r.name as version, o.somatic as is_somatic from PolyprojectNGS.projects o, PolyprojectNGS.project_release pr , PolyprojectNGS.releases r, PolyprojectNGS.project_types pt
+		 where o.name IN ($name) 
+		   and pr.project_id=o.project_id and pr.release_id = r.release_id and pr.default=1 and o.type_project_id=pt.type_project_id;};
+		 
+		   
+	my $sth = $dbh->prepare($query);
+	$sth->execute();
+	my $res = $sth->fetchall_hashref("name");
+	
+	return $res;
+
+}
+
+sub fast_getPatients {
+	my ($self, $project_id) = @_;
+	my $dbh = $self->getDbh();
+	my $query = qq{select * from PolyprojectNGS.patient g where project_id IN ($project_id) };
+	my $sth = $dbh->prepare($query);
+	$sth->execute();
+	my $s = $sth->fetchall_hashref('patient_id');
+	my $res;
+	foreach my $p (values %$s){
+		my $pid = $p->{project_id};
+		push(@{$res->{$pid}},$p);
+	}
+	#warn Dumper $res;
+	#die();
+	#die($project_id);
+	return $res;
+}
 
 sub getProjectByName {
 	my ($self, $name, $verbose) = @_;
@@ -689,7 +743,7 @@ sub getProjectByName {
 	my $dbh = $self->getDbh();
 	my $config = $self->getConfig();
 	#$self->project_name($name);
-	my $sth = $dbh->prepare($self->sql_cmd_project_by_name);
+	my $sth = $self->prepare($self->sql_cmd_project_by_name);
 	$sth->execute("$name");
 	my $res = $sth->fetchall_hashref("dbname");
 
@@ -757,7 +811,7 @@ sub getPatients {
 	my ($self, $project_id) = @_;
 	my $dbh = $self->getDbh();
 
-	my $sth = $dbh->prepare($self->sql_get_patients);
+	my $sth = $self->prepare($self->sql_get_patients);
 	$sth->execute($project_id);
 	my $s = $sth->fetchall_hashref('name');
 	return [values %$s];
@@ -766,7 +820,6 @@ sub getPatients {
 sub getGroups {
 	my ($self, $project_id) = @_;
 	my $dbh = $self->getDbh();
-
 	my $sth = $dbh->prepare($self->sql_get_groups);
 	$sth->execute($project_id);
 	my $s = $sth->fetchall_hashref('pname');
@@ -972,6 +1025,7 @@ sub getProjectListForUser {
 	my @toto =  values %$res;
 	return \@toto; 
 }
+
 
 sub getProjectHashForGroup {
 	my ($self,$login,$pwd)=@_;
