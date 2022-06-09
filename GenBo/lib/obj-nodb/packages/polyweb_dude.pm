@@ -494,8 +494,6 @@ sub html_table {
 	my $patients   = $self->patients;
 	my $data       = $self->levels_matrix;
 	my $data_score = $self->scores_matrix;
-	warn Dumper $data_score;
-	warn Dumper $data;
 	my $tid = $self->transcript->id;
 	my $out;
 	my $blue = $self->blue_rgb;
@@ -589,14 +587,10 @@ qq{<div class="btn   btn-xs btn-info " style="font-size:7px;min-width:30px,posit
 		my $end   = $primer->end;
 
 		#my $s1 = $exon->getGenomicSpan()->intersection($capture);
-		my $click_exon_patients =
-		  qq{load_graph_one_exon_all_patients('$tr_name','$ename');};
+		my $click_exon_patients = qq{load_graph_one_exon_all_patients('$tr_name','$ename');};
 		my $pid = $primer->id;
-		my $text =
-qq{<div class="btn   btn-xs btn-info " style="font-size:8px;min-width:30px,position:relative;" '  style="border : 1px" onClick= "$click_exon_patients">$ename [$start-$end] </div>	$pid};
-		$out .= $cgi->td(
-			{ style => "padding: 3px;position:sticky;z-index:9;left:0;" },
-			$text );
+		my $text  = qq{<div class="btn   btn-xs btn-info " style="font-size:8px;min-width:30px,position:relative;" '  style="border : 1px" onClick= "$click_exon_patients">$ename [$start-$end] </div>	$pid};
+		$out .= $cgi->td({ style => "padding: 3px;position:sticky;z-index:9;left:0;" },$text );
 
 		#my $line_levels = $data_levels->[$i];
 		my $nbr = grep { $_ == 2 } @{$min_line};
@@ -830,22 +824,28 @@ sub control_dup {
 
 sub control_line2 {
 	my ( $self, $patient, $i, $debug ) = @_;
+	
 	my $primer = $self->transcript->getPrimer( $self->names->[$i] );
+	
+	#my $no =  $patient->project->noSqlCnvs("r");
+
 	my $ps     = $patient->getFamily->getMembers();
 	my @v;
 	my %fid;
 	my $z = $primer->{cnv};
 	foreach my $p (@$ps) {
-		delete $z->{ $p->id };
+		delete $z->{ $p->id } if $p->name eq $patient->name();
+		
 	}
+	
 	my @t = values %{$z};
-	warn Dumper @t if $debug;
+	#warn Dumper @t if $debug;
 	my $stat = new Statistics::Descriptive::Full;
 	$stat->add_data(@t);
 	my $sd   = $stat->standard_deviation();
 	my $mean = $stat->mean();
-	warn $stat->quantile(3) - $stat->quantile(1) if $debug;
-	warn $sd . " " . $mean if $debug;
+#	warn $stat->quantile(3) - $stat->quantile(1) if $debug;
+#	warn $sd . " " . $mean if $debug;
 
 	# warn "---------------";
 	return 1 if ( $mean > 0.75 && $sd < 0.3 && $mean < 1.2 );
@@ -987,7 +987,7 @@ sub control_transmission {
 
 	}
 	warn "---- $nb_f ++ $nb_m ++ $recessive $denovo" if $debug;
-	if ( $uni > 0 ) {
+	if ( $uni > 0 && $denovo < $uni ) {
 		return "unisomy";
 	}
 	elsif ( $recessive > 0 ) {
