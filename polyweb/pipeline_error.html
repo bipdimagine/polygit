@@ -1,0 +1,322 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<title>PolyDiag</title>
+		<style type="text/css">
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/resources/dojo.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dijit/themes/claro/claro.css";
+			 @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/resources/claroGrid.css";
+			@import  "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/editor/plugins/resources/css/Save.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/widget/Dialog/Dialog.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/enhanced/resources/claro/EnhancedGrid.css";
+		 	@import "css/polycss/button.css";
+		 	@import "css/polycss/button2.css";
+		 	@import "css/polydiag/polydiag.css";
+			@import "css/polycss/login.css";
+			@import "css/polycss/header-footer.css";
+			@import "//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/claro.css";
+     		@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/document.css";
+     		 @import "//maxcdn.bootstrapcdn.com/bootswatch/3.3.4/flatly/bootstrap.min.css";
+      		/*@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3//dijit/tests/css/dijitTests.css";*/
+      		@import "js/cbtree/themes/claro/claro.css";
+      		@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css";
+      		@import "css/polycss/myMblSwitch.css";
+      		@import "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css";
+      		@import "js/igv/igv-1.0.9.css";
+
+	html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+.claro .demoLayout .edgePanel {
+    background-color: #d0e9fc;
+}
+
+.tundra #navMenuCoverage.dijitToolbar {
+				background-image:none;
+		
+		
+				background-repeat: repeat-x;
+              
+                }
+                
+           .spinner {
+  margin: 2px auto 0;
+  width: 70px;
+  text-align: center;
+}
+
+.spinner > div {
+  width: 18px;
+  height: 18px;
+  background-color: #FFFFFF;
+
+  border-radius: 100%;
+  display: inline-block;
+  -webkit-animation: bouncedelay 1.4s infinite ease-in-out;
+  animation: bouncedelay 1.4s infinite ease-in-out;
+  /* Prevent first frame from flickering when animation starts */
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
+
+.spinner .bounce1 {
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+
+.spinner .bounce2 {
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+
+@-webkit-keyframes bouncedelay {
+  0%, 80%, 100% { -webkit-transform: scale(0.0) }
+  40% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes bouncedelay {
+  0%, 80%, 100% { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  } 40% { 
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}     
+  </style>
+        <script type="text/javascript" src="../js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>
+		      <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		      	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+			        <script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+		  	<script type="text/javascript" src="js/polyjs/include.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/Utility/vp.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad:true"></script>
+		   		   	<script type="text/javascript" src="js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="http://www.dojotoolkit-fr.org/wp-content/uploads/dojo-adapter.js"></script>
+		  	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+		  	 <script type="text/javascript" src="js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>     	
+        	 <script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad: true" type="text/javascript"></script>
+
+
+<style>
+label {
+display: inline-block;
+width: 5em;
+}
+</style>
+
+  <script>
+ // var capture_name = "idefix";
+ dojo.require("dojox.widget.Dialog");
+ dojo.require("dijit.Dialog");
+	var capture_name = param('capture'); 
+  //var url_miss = "http://darwin.bipd.fr/cgi-bin/pnitschk/polymorphism-cgi/problem_capture/report_problem.pl?";
+  dojo.addOnLoad(function() {	
+	  if (capture_name == ""){
+		  capture_name="idefix";
+	  }
+	  else {
+		  dojo.setStyle("select1", "display", "none");
+	  }
+	  
+	  editor();
+		
+});
+  function editor(mode,type){
+  		var url = url_problem+"?capture="+capture_name+"&impact="+dijit.byId("slider_consequence").value+"&frequence="+dijit.byId("slider_frequence").value+"&allele_quality="+dijit.byId("slider_allele_quality").value;
+  		 summary.setHref(url);
+  }
+  function collapse(name,label){
+	    var d = document.getElementById(name);
+	    var l;
+	     l = document.getElementById(label);
+	    if (d.classList.contains("in")) {
+	        d.classList.remove("in");
+	     if (l){
+	           l.classList.remove("glyphicon-triangle-bottom");
+	           l.classList.add("glyphicon-triangle-right");
+	        }
+	    }
+	    else {
+	        d.classList.add("in");
+	            l.classList.remove("glyphicon-triangle-right");
+	             l.classList.add("glyphicon-triangle-bottom");
+	        
+	    }
+	}
+  function change_capture(value){
+
+	  capture_name = value;  
+	  }
+  function load_polydiag(project,name,transcript){
+	  popup_polydiag.show();
+	  var url = url_polydiag+"?edit_mode=1&report_mode=1&project_summary=1&never=1&this=6&impact="+dijit.byId("slider_consequence").value+"&frequence="+dijit.byId("slider_frequence").value+"&allele_quality="+dijit.byId("slider_allele_quality").value+"&project="+project+"&patients="+name+"&transcripts="+transcript
+	  div_popup_polydiag.setHref(url);
+
+  }
+  
+  function launch_web_igv(project,name,file,locus,variant) {
+	  dialog_igv.set('title', project+" "+name+" "+locus+" "+variant); 
+	    load_web_igv('dialog_igv', 'div_igv', locus);
+	    setTimeout(function() {
+	        add_igv_track(file, 'bam', name, project);
+	    }, 1000);
+	}
+
+  </script>
+      <body class="claro" style ="font-size : 11px;">
+    <div dojoType="dijit.Dialog"  jsId="dialog_igv" id="dialog_igv" title="IGV View" style="background-color:white;overflow: auto;" >
+    	
+            <div class="container-fluid" id="div_igv" style="height:99%;width:95%;"></div>
+        </div>  
+
+						<div data-dojo-type="dijit/Toolbar" id="navEditor" data-dojo-props="splitter:false, region:'top'"  style ="height: 40px;font-size : 11px;">
+						<table><td>
+						
+						<div data-dojo-type="dijit/form/Button" onClick='editor(1,0);' data-dojo-props="iconClass:'refreshIcon'">
+                            refresh
+                        </div>
+                       
+						<span data-dojo-type="dijit/ToolbarSeparator"></span>
+						</td>
+						<td style ="valign:bottom">
+							
+						</td>
+						<td style ="valign:bottom">
+							
+					<div id="slider_consequence" jsId="slider_consequence" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:2,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:100px; height: 10px;"'>
+				<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
+				<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+					<li>High</li>
+					<li>medium</li>
+					<li>all</li>
+				</ol>
+				<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em; ">
+        			<li>Impact</li>
+    			</ol>
+				
+				</div>
+				</td>
+				<td>
+				<div id="slider_frequence" jsId="slider_frequence" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:140px; height: 10px;"'>
+                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:4, style:{height:"5px"}'> </div>
+                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+                    <li>unique</li>
+                    <li>rare</li>
+                    <li>occasional</li>
+                    <li>all</li>
+                </ol>
+                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em; ">
+                    <li>Frequency</li>
+                </ol>
+                
+                </div>
+                </td>
+        
+		<td>
+				    <span data-dojo-type="dijit/ToolbarSeparator"></span>
+				</td>
+				<td>
+				    
+				   
+				<div id="slider_allele_quality" jsId="slider_allele_quality" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 4" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:140px; height: 10px;"'>
+                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
+                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+                     <li> 80 </li>
+                    <li> 40 </li>
+                    <li> 20</li>
+                     <li> 10</li>
+                    <li>all</li>
+                </ol>
+                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em; ">
+                    <li>% Ratio</li>
+                </ol>
+                
+                </div>
+                
+                </td>
+				<td>
+		<span data-dojo-type="dijit/ToolbarSeparator"></span>
+		<select name="select1" id="select1" jsId="select1" data-dojo-type="dijit/form/Select" data-dojo-props="
+						
+						onChange: function(value){change_capture(value)}"  >
+<option value="CDGDC">CDGDC</option>
+<option value="AS">AS</option>
+<option value="ciliome">ciliome</option>
+<option value="OHLAImATL">OHLAImATL</option>
+<option value="MvtDis">MvtDis</option>
+<option value="OI">OI</option>
+<option value="Surdite">Surdite</option>
+<option value="FSGS">FSGS</option>
+<option value="idefix">idefix</option>
+<option value="Alport">Alport</option>
+<option value="IRD">IRD</option>
+<option value="Hypothyseq">Hypothyseq</option>
+<option value="Mitome">Mitome</option>
+<option value="CakutomeBaits">CakutomeBaits</option>
+<option value="HLHbaits">HLHbaits</option>
+<option value="MCN">MCN</option>
+<option value="hirschsprome">hirschsprome</option>
+<option value="entheropathies">entheropathies</option>
+<option value="CD">CD</option>
+<option value="ureeAO">ureeAO</option>
+<option value="MCD">MCD</option>
+<option value="Lupus">Lupus</option>
+<option value="DefIm">DefIm</option>
+<option value="ATLv1">ATLv1</option>
+<option value="epileptome">epileptome</option>
+<option value="Vitreoretinopathies">Vitreoretinopathies</option>
+<option value="Polycomb">Polycomb</option>
+<option value="PanelCommun">PanelCommun</option>
+<option value="Panel_B">Panel_B</option>
+<option value="cervelet">cervelet</option>
+<option value="DMD">DMD</option>
+<option value="Keratine">Keratine</option>
+<option value="MOC">MOC</option>
+<option value="CFTRDPNI">CFTRDPNI</option>
+<option value="NMNAT">NMNAT</option>
+<option value="PanelTv2">PanelTv2</option>
+<option value="semaphorine">semaphorine</option>
+<option value="BAIT">BAIT</option>
+<option value="HBBHBD">HBBHBD</option>
+<option value="Amylose">Amylose</option>
+<option value="DystrophieAmyloide">DystrophieAmyloide</option>
+<option value="EVC2">EVC2</option>
+<option value="DSA">DSA</option>
+<option value="14GenesOphtalmo">14GenesOphtalmo</option>
+<option value="OncoMM1groupe">OncoMM1groupe</option>
+<option value="dermatome">dermatome</option>
+<option value="PTEN">PTEN</option>
+<option value="CilDiag">CilDiag</option>
+<option value="TUBB">TUBB</option>
+
+
+		</select>
+
+					</td>
+
+                <td>
+					<span data-dojo-type="dijit/ToolbarSeparator"></span>
+					
+					</td>
+             
+		</table>
+					</div>
+				<!--<div id="gridBam"  data-dojo-props="splitter:false, region:'center'" style ="height: 100px; width:100%; font-size : 100px;" >Coucou</div>--> 
+				<div id="summary"  jsId="summary" data-dojo-type="dijit/layout/ContentPane" >
+				</div>
+				
+	<div id="popup_polydiag"  jsId="popup_polydiag"  dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" > 
+        <div  id="div_popup_polydiag" jsId="div_popup_polydiag" data-dojo-type="dijit/layout/ContentPane"  >	
+        	
+ 		</div>	
+
+	</div>
+		
+      </body>        
