@@ -38,7 +38,7 @@ my $tname = "/tmp/dude.".time.".".rand(time);
 open (TOTO,">$tname");
 
 foreach my $pr (@projects){
-	print TOTO "$Bin/scripts/scripts_pipeline/dude/dude.pl -project=$pr -fork=20\n";
+	print TOTO "$Bin/../scripts/scripts_pipeline/dude/dude.pl -project=$pr -fork=20\n";
 	
 }
 

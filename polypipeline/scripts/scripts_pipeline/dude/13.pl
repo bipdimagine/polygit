@@ -123,7 +123,7 @@ my $chromosomes = $project->getChromosomes();
 				$primer->{zscore}->{$patient->id} = $zscore;
 				if ($debug){
 					warn "level ".$patient->name;
-					warn "level ::".$primer->compute_level($patient,$debug);
+					warn "level :: ".$primer->compute_level($patient,$debug);
 					#die();
 				}
 				$primer->{level}->{$patient->id} = $primer->compute_level($patient);

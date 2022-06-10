@@ -67,7 +67,7 @@ foreach my $patient (@{$project->getPatients}){
 			my $r = $patient->getRun();
 			my $cov_file = $patient->fileNoSqlDepth;
 			my $p;
-			die() unless -e $cov_file;
+			die($patient->name." ".$cov_file) unless -e $cov_file;
 			next if exists $list_controls->{$patient->id};
 			$patient_runs->{$patient->id} = $r->id;
 			$p->{file_depth} = $cov_file;
