@@ -118,7 +118,7 @@ my $transcripts_arg = $cgi->param('transcripts');
 my $genes_arg       = $cgi->param('genes');
 my $filter;
 my @selected_patients;
-#test for git
+#test for git1
 if ($value_quality and not $genes_arg) {
 	my $p   = $cgi->param('patients');
 	my $pat = $project->getPatient($p);
