@@ -15,6 +15,7 @@ use polyweb_dude;
 use List::MoreUtils qw{ natatime };
 use JSON::XS;
 
+#my $VERSION = "23.09.20222";
 my $VERSION = "23.09.2021";
 my $level_value = { "high" => 3, "medium" => 2, "low" => 1 };
 
