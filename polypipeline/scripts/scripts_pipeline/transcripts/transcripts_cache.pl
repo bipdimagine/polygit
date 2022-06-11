@@ -159,8 +159,10 @@ sub run_on_finish_dude {
 			
 			foreach my $id (keys %{$h}){
 				my $v = $h->{$id}->{event};
+				warn "******************* event ".$v." ".$id if $id =~ /ENST00000314358/;
 				$no->put($id,$h->{$id});
 				if ($v >= 3){
+					warn "******************* CPOUOUOU HIGH ".$v." ".$id if $id =~ /ENST00000314358/;
 					push (@{$array->{$hid."_high"}},$id) ;
 					$hgene->{high}->{$hid."_".$h->{gene}}++;
 				}
@@ -185,7 +187,9 @@ sub run_on_finish_dude {
 
 sub uri_image {
 	my ($transcripts,$patient_name,$tmp) = @_;
-		my $patients = $project->getPatients();
+	#warn Dumper $transcripts;
+	$transcripts = ["ENST00000314358_5"];
+	my $patients = $project->getPatients();
 	my $patient = $project->getPatient( $patient_name);
 	#my $fork = 10;
 	my $nb = int(scalar(@$transcripts)/(100*1))+1;
@@ -273,6 +277,7 @@ sub uri_image {
  	 		$res->{coverage}->{$transcript->id} = matrix_data_coverage($patient,$transcript,$id);
  	 		$res->{dude}->{$transcript->id} = matrix_data_dude($patient,$transcript,$id);
  	 		
+ 	 		
  	 	}
  	 	warn "finish ".abs($t -time)." pp$id $pid";
  	 	$res->{end_process} = $id;
@@ -298,7 +303,6 @@ sub end_coverage {
 	my $f1 = $no->filename;
 	foreach my $k (keys %$harray){
 		
-			warn $k." ".scalar(@{$harray->{$k}});
 			$no->put( $k ,$harray->{$k});
 	}
 	$no->put( "toto","titi");
@@ -345,7 +349,7 @@ sub matrix_data_coverage {
  	   "non_coding_transcript" => 128,
 };
 	my $debug;
-	$debug =1 if $transcript->name eq "ENST00000368474";
+	#$debug =1 if $transcript->name eq "ENST00000368474";
 	my $padding = 50;
 	my $exons ;
 	my $intronic=1;
@@ -580,9 +584,9 @@ sub between {
 sub matrix_data_dude {
 	my ($patient,$transcript,$id) = @_;
 	my $debug;
-	$debug =1 if $transcript->id eq "ENST00000644074_X";
 	#next unless $debug;
 #	warn $transcript.' '.$transcript->id;
+	$debug =1;
 	my $chr = $transcript->getChromosome();
 	my $no = $chr->get_lmdb_cnvs("r");
 	my $res = $project->tabix_primers->query($transcript->getChromosome->ucsc_name,$transcript->start,$transcript->end);
@@ -601,6 +605,7 @@ sub matrix_data_dude {
 	my $nb =0;
 	my $names;
 	foreach my $primer (sort{$a->end*$strand <=> $b->end *$strand} @$primers) {
+	#	next unless $transcript->getGenomicSpan->contains_all_range( $primer->start, $primer->end);
 		push(@$names,$primer->name);
 		$alert ++ if $primer->cnv_score($patient) < 0.7 &&  $primer->cnv_score($patient) > -1;
 		my $score = int(($primer->cnv_score($patient)+0.01)*100);
@@ -610,7 +615,7 @@ sub matrix_data_dude {
 		my $level = $primer->level($patient) +1;
 		push( @$levels,$level);
 		#push( @$zscores,$primer->zscore($patient));
-		warn $patient->name." ".$primer->id." level ".$primer->level($patient)." score ".$primer->cnv_score($patient)." save ".$score if $debug;
+#		warn $patient->name." ".$primer->id." level ".$primer->level($patient)." score ".$primer->cnv_score($patient)." save ".$score if $debug;
 		push( @$positions,$primer->start);
 		
 		
@@ -625,6 +630,7 @@ sub matrix_data_dude {
 	my $max = 0;
 	foreach (my $i=0;$i<@$levels;$i++){
 		next if $levels->[$i] == 0 ;
+	#	warn $i." ".$levels->[$i];
 			if ($levels->[$i]<= 1) {
 				
 				if  ($levels->[$i] == 0 or between($data_smoothed1->[$i],70,140) ) {
@@ -639,7 +645,7 @@ sub matrix_data_dude {
 	#$max = 99 if ($max > 0.75 * @$levels);
 	my $h;
 	$h->{scores} = pack("w".scalar(@$scores),@$scores);
-	warn Dumper unpack("w".scalar(@$scores),$h->{scores}) if $debug;
+	#warn Dumper unpack("w".scalar(@$scores),$h->{scores}) if $debug;
 	$h->{event} =$max;
 	
 	$h->{level} = pack("w".scalar(@$levels),@$levels);
@@ -650,7 +656,6 @@ sub matrix_data_dude {
 	$h->{names} =$names;
 	$h->{gene} = $transcript->gene_id;
 	#warn Dumper $h if $debug;
-	#warn Dumper $h;
 	return $h;
 }
 
