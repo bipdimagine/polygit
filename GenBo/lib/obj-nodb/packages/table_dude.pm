@@ -177,14 +177,13 @@ sub print_dude_genes {
 	my @colors = ( "#F9F6FF", "#F7F7F7", "#A9A9D9" );
 	my @colors = ( "#FCFCFC", "#F6F6F6", "#A9A9D9" );
 	my @finale2;
-#	if ($text){
+	if ($text){
 		 @finale2 = sort { $b->{chr} <=> $a->{chr}  or $a->{start} <=> $b->{start}} @$final ;
-#	}
-#	else {
+	}
+	else {
 		@finale2 = sort { $b->{score} <=> $a->{score} } @$final;
-		
-#	}
-	foreach my $hg (  sort { $b->{score} <=> $a->{score} } @finale2 ) {
+	}
+	foreach my $hg ( @finale2 ) {
 #	foreach my $hg ( sort { $b->{score} <=> $a->{score} } @$final ) {
 		$nb++;
 		my $hide;
@@ -336,7 +335,7 @@ sub line_dude_gene {
 		$hgene_dude->{score} += $nb_del * $coef;
 		$hgene_dude->{score} += $nb_ho ;
 	}
-
+#
 
 
 	$html = $cgi->start_Tr( { id => $rid, style => "border: 1px solid;background-color:COLCOL;XDXD" } );
