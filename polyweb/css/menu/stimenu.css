@@ -1,0 +1,103 @@
+/*Sliding Text and Icon Menu Style*/
+.sti-logo{
+	width:700px;
+	position:relative;
+	margin:20px auto 0 auto;
+}
+.sti-logo li{
+	float:left;
+	width:200px;
+	height:300px;
+	margin:1px;
+}
+
+.sti-menu{
+	width:1010px;
+	position:relative;
+	margin:20px auto 0 auto;
+}
+.sti-menu li{
+	float:left;
+	width:200px;
+	height:300px;
+	margin:1px;
+}
+.sti-menu li a{
+	display:block;
+	overflow:hidden;
+	background:#fff;
+	text-align:center;
+	height:100%;
+	width:100%;
+	position:relative;
+	-moz-box-shadow:1px 1px 2px #ddd;
+	-webkit-box-shadow:1px 1px 2px #ddd;
+	box-shadow:1px 1px 2px #ddd;
+}
+.sti-menu li a h2{
+	color:#000;
+	font-family: 'Wire One', arial, serif; 
+	font-size:42px;
+	font-weight:bold;
+	text-transform:uppercase;
+	position:absolute;
+	padding:10px;
+	width:180px;
+	top:140px;
+	left:0px;
+	text-shadow: 0px 1px 1px black;
+}
+.sti-menu li a h3{
+	font-family: Baskerville, "Hoefler Text", Garamond, "Times New Roman", serif; 
+	font-size:18px;
+	font-style:italic;
+	color: #111;
+	position:absolute;
+	top:248px;
+	left:0px;
+	width:180px;
+	padding:10px;
+}
+.sti-icon{
+	width:100px;
+	height:100px;
+	position:absolute;
+	background-position:top left;
+	background-repeat:no-repeat;
+	background-color:transparent;
+	left:50px;
+	top:30px;
+}
+.sti-icon-diag{
+	background-image:url(../../images/menu/polydiag2.png);
+}
+.sti-icon-viewer{
+	background-image:url(../../images/menu/viewer.png);
+}
+.sti-icon-linkage{
+	background-image:url(../../images/menu/polylinkage.png);
+}
+.sti-icon-tools{
+	background-image:url(../../images/menu/polytools.png);
+}
+.sti-icon-project{
+	background-image:url(../../images/menu/polyproject.png);
+}
+.sti-icon-scout{
+	background-image:url(../../images/menu/polyscout.png);
+}
+.sti-icon-run{
+	background-image:url(../..//images/menu/polyrun.png);
+}
+.sti-icon-deja{
+	background-image:url(../../images/menu/polydejavu.png);
+}
+.sti-icon-projectlinkage{
+	background-image:url(../../images/menu/polylinkproject.png);
+}
+.sti-icon-alternative{
+	background-image:url(../../images/menu/alternative.png);
+}
+.sti-icon-family{
+	background-image:url(../../images/menu/polyexome.png);
+}

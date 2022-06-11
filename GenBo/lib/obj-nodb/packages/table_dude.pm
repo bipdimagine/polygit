@@ -660,7 +660,7 @@ sub get_transcripts {
 	my $id_level;
 	foreach my $z (@$final) {
 		my $gene_id = $z->{gene_id};
-		
+
 		unless ( exists $zz->{$gene_id} ) {
 			$zz->{$gene_id}->{id}          = $gene_id;
 			$zz->{$gene_id}->{level}       = $z->{new_level};
@@ -792,7 +792,7 @@ sub update_level {
 		my $nb_del = $hcov->{ $patient->name() }->{del};
 		my $nb_del_ho += $hcov->{ $patient->name() }->{del_ho};
 		my $debug;
-		$debug = 1 if $gene->external_name() eq "KDM3B";
+		#$debug = 1 if $gene->external_name() eq "KITLG";
 		warn $current_level if $debug;
 		if ( $nb_del_ho > 0 ) {
 			warn "HO =====" if $debug;
@@ -849,14 +849,14 @@ sub update_level {
 		if ( $nb_dup == 0 && $nb_del == 0 ) {
 			$h1->{new_level} = "low";
 		}
-		
+
 		if ( $patient->isChild ) {
 			warn "TRANS -------------------- " if $debug;
 			$h1->{transmission} = $coverage->control_transmission($patient,$patient->getFamily->getMother,$patient->getFamily->getFather, $debug);
 			warn "trans ".$h1->{transmission} if $debug;
 			warn "---------------- -------------------- " if $debug;
 		}
-		warn $h1->{new_level}."----------------- $nb_del_ho" if $debug;
+		warn $h1->{new_level}."-----------------" if $debug;
 		if ( $nb_del_ho > 0 ) {
 			if ( $perc_noise > 40 ) {
 				$h1->{new_level} = "low";
@@ -870,22 +870,19 @@ sub update_level {
 			else { $h1->{new_level} = "high"; }
 			next;
 		}
-		
 		my $level = $current_level;
-		
 		warn " $level-----------------" if $debug;
 		$h1->{new_level} = adjust_high_level( $nb_dup, $nb_del, $perc, $perc_grey, $perc_noise, $perc_gene_dup, $perc_gene_del ) if $current_level eq "high";
-		
 			warn $h1->{new_level}." $level-----------------" if $debug;
 		$h1->{new_level} =   adjust_medium_level( $nb_dup, $nb_del, $perc, $perc_grey, $perc_noise, $perc_gene_dup, $perc_gene_del ) if $current_level eq "medium";
 		$h1->{new_level} =   adjust_low_level( $nb_dup, $nb_del, $perc, $perc_grey, $perc_noise,$perc_gene_dup, $perc_gene_del ) if $current_level eq "low";
-		warn $h1->{new_level}."-> $level -----------------" if $debug;
+		warn $h1->{new_level}."-----------------" if $debug;
 		#$h1->{new_level} = "low";
 		
 		if ( $nb_del > 0 && $nb_del < 50 && $nb_dup == 0 ) {
-			
 			my $znb = $coverage->control_del($patient,$debug);
 			warn $znb if $debug;
+			die() if $debug;
 	#		die() if $debug;
 			if ( $znb < 1 ) {
 				$h1->{new_level} = "low";
@@ -901,8 +898,8 @@ sub update_level {
 
 			#warn $nb_dup." ==> ".$znb if $debug;
 		}
-		
-		warn $h1->{new_level}."---- new level-------------" if $debug;
+		warn $h1->{new_level}."-----------------" if $debug;
+		die() if $debug;
 			warn "OCUCU" if $debug;
 				
 

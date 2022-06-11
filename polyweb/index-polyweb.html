@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Polyweb Imagine</title>
+		<meta charset="UTF-8" />
+        <meta name="description" content="Polyweb " />
+        <link rel="stylesheet" type="text/css" href="polyweb/css/menu/style.css" />
+		<link rel="stylesheet" type="text/css" href="polyweb/css/menu/stimenu.css" />
+		<link href='//fonts.googleapis.com/css?family=PT+Sans+Narrow&v1' rel='stylesheet' type='text/css' />
+		<link href='//fonts.googleapis.com/css?family=Wire+One&v1' rel='stylesheet' type='text/css' />
+		<link rel="stylesheet" type="text/css" href="polyweb/css/login/style.css" />
+		<script src="js/login/modernizr.custom.63321.js"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js"   type="text/javascript" ></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/Utility/vp.js" ></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/include.js"  ></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/Utility/vp.js" ></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/include.js"  ></script>
+        <link rel="stylesheet" type="text/css" href="polyweb/install/css/black.css" />
+        <link rel="stylesheet" type="text/css" href="polyweb/install/css/imagine_descartes.css" />
+        
+        <!--FOR DEV-->
+        <!--
+        <link rel="stylesheet" type="text/css" href="css/menu/style.css" />
+        <link rel="stylesheet" type="text/css" href="css/menu/stimenu.css" />
+        <link rel="stylesheet" type="text/css" href="css/login/style.css" />
+        <script type="text/javascript" src="js/polyjs/Utility/vp.js" ></script>
+        <script type="text/javascript" src="js/polyjs/include.js"  ></script>
+        <script type="text/javascript" src="js/polyjs/Utility/vp.js" ></script>
+        <script type="text/javascript" src="js/polyjs/include.js"  ></script>
+        <link rel="stylesheet" type="text/css" href="install/css/black.css" />
+        <link rel="stylesheet" type="text/css" href="install/css/imagine_descartes.css" />
+        -->
+        
+        <style>
+			  .tb { border-collapse: collapse; width:700px;font-size:11px;text-align:center;background-color:white;visibility:hidden; }
+			  .tb th, .tb td { padding: 2px; border: solid 1px #777;text-align:center; }
+			  .tb th { background-color: black;color:white; }
+		</style>
+        
+		<script>
+		dojo.require("dojo.cookie");
+		dojo.require("dojo.data.ItemFileWriteStore");
+		
+      	var fadeinloginArgs = {
+       			 	node: "login",
+       			 	beforeBegin: function(){
+             			dojo.style("login","visibility","visible");
+         			 },
+        			duration: 5000,
+      		};	
+      		var fadeoutloginArgs = {
+       			 	node: "login",
+        			duration: 2000,
+        			onEnd: function(){
+             			//dojo.style("login","visibility","hidden");
+         			 },
+      		};	
+      		var fademenuArgs = {
+       			 	node: "sti-menu",
+        			duration: 2000,
+        			beforeBegin: function(){
+             			dojo.style("sti-menu","visibility","visible");
+         			 },
+      			};
+		var fadewaitingArgs = {
+       			 	node: "waiting",
+        			duration: 1000,
+      			};
+      	var fadetitleArgs = {
+       			 	node: "title",
+        			duration: 4000,
+        			beforeBegin: function(){
+             			dojo.style("title","visibility","visible");
+         			 },
+      			};	
+      	var fadefooterArgs = {
+       			 	node: "footer",
+        			duration: 4000,
+        				beforeBegin: function(){
+             			dojo.style("footer","visibility","visible");
+         			 },
+      	};		
+      	
+      var fadeheaderArgs = {
+       			 	node: "header",
+       			 	beforeBegin: function(){
+             			dojo.style("header","visibility","visible");
+         			 },
+        			duration: 4000,
+      	};		
+			  function setPasswordlocal(){
+                var passwd = document.getElementById('passwd').value;
+                var username = document.getElementById('username').value;	
+				dojo.cookie("username", username, { expires: 1 });
+				dojo.cookie("passwd", passwd, { expires: 1 });
+				dojo.fadeOut(fadeoutloginArgs).play();
+				dojo.fadeIn(fadewaitingArgs).play();
+				
+				checkPassword("*",okfunction);
+  				}
+  				
+  				
+  			/* ONLOAD*/	
+  				dojo.addOnLoad(function(){ 
+  					
+  			
+  					dojo.style("footer", "opacity", "0");
+  					dojo.style("header", "opacity", "0");
+  					dojo.style("title", "opacity", "0");
+  					dojo.style("sti-menu", "opacity", "0");
+  					dojo.style("waiting", "opacity", "0");
+  				
+  					dojo.fadeIn(fadefooterArgs).play();
+  					dojo.fadeIn(fadewaitingArgs).play();
+  					dojo.fadeIn(fadetitleArgs).play();
+  					dojo.fadeIn(fadeheaderArgs).play();
+  					getServerName();
+  					checkPassword("*",okfunction);});
+  					
+            function getServerName() {
+                var urlCgi = url_path + "json_output_nodb/get_server_name.pl";
+                var store_infos = new dojo.data.ItemFileWriteStore({ url: urlCgi });
+                store_infos.fetch ({
+                   onComplete : function(objs){ 
+                        var value = store_infos.getValues(objs[0], 'name');
+                        document.getElementById("server_name").textContent = value;
+                    } 
+                });
+            } 
+  					
+  			function okfunction (items, request){
+  			 		dojo.style("waiting", "opacity", "0");
+					
+  						if (items.length==0) {
+  							dojo.style("login","opacity","1");
+  							 
+  							
+  							dojo.fadeIn(fadeinloginArgs).play();
+  						
+						return;
+					};
+					if (items[0].team == 6){
+						  dojo.style("polyrun","visibility","visible");
+						  dojo.style("polyproject","visibility","visible");
+						  dojo.style("polytools","visibility","visible");
+					}
+					if (items[0].team == 34){
+						 dojo.style("polyrun","visibility","visible");
+					}
+
+				 dojo.style("login","visibility","hidden");
+				 dojo.style("table_formation","visibility","visible");
+
+				dojo.fadeIn(fademenuArgs).play();
+				dojo.fadeOut(fadewaitingArgs).play();
+				
+				
+  				}	
+  				
+  	
+			
+		</script>
+		
+    </head>
+    <body>
+
+		<div class="container" style="width=100%;margin=20px;">
+		    <br><br>
+		    <center>
+		    <table style="width=100%;">
+		        <tr style="width=100%;">
+                    <td style="width=100%;">
+                        <div id ="title" style="visibility:hidden;">
+                            <center>
+                            <table>
+                                <!--FOR DEV-->
+                                <!--
+                                <td>
+                                    <span>
+                                        <img src="install/images/imagine.png">
+                                    </span>
+                                </td>
+                                <td>
+                                    <span>
+                                        <center><h4><br></h4></center>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span>
+                                        <img src="install/images/paris_descartes.png">
+                                    </span>
+                                </td>
+                                -->
+                                <td>
+                                    <span>
+                                        <img src="polyweb/install/images/imagine.png">
+                                    </span>
+                                </td>
+                                <td>
+                                    <span>
+                                        <center><h4><br></h4></center>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span>
+                                        <img src="polyweb/install/images/paris_descartes.png">
+                                    </span>
+                                </td>
+                            </table>
+                            </center>
+                        </div>
+                    </td>
+                    </td>
+		        </tr>
+                <tr style="width:100%;">
+                    <td style="width:100%;">
+                        <div style="display: flex;flex-direction: row;justify-content:center;gap: 10px;row-gap: 10px;">
+                            <ul id="sti-menu" class="sti-menu" style="visibility:hidden;">
+                                <li data-hovercolor="#37c5e9">
+                                    <a href="polyweb/index.html">
+                                        <h2 data-type="mText" class="sti-item">PolyQuery</h2>
+                                        <h3 data-type="sText" class="sti-item"> </h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-family sti-item"></span>
+                                    </a>
+                                </li>
+                                <li data-hovercolor="#45B8AC">
+                                    <a href="polyweb/index-polyviewer.html">
+                                        <h2 data-type="mText" class="sti-item">PolyViewer</h2>
+                                        <h3 data-type="sText" class="sti-item"> (New) Explore Patient Genome </h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-viewer sti-item"></span>
+                                    </a>
+                                </li>
+                                <li data-hovercolor="#ff395e">
+                                    <a href="polyweb/polyDiag.html">
+                                        <h2 data-type="mText" class="sti-item">PolyDiag</h2>
+                                        <h3 data-type="sText" class="sti-item">Explore Genes target project</h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-diag sti-item"></span>
+                                        
+                                    </a>
+                                </li>
+      							 <li data-hovercolor="#57e676">
+                                    <a href="polyweb/polydejavu/dejavu.html">
+                                        <h2 data-type="mText" class="sti-item">PolyDejaVu</h2>
+                                        <h3 data-type="sText" class="sti-item">Explore "Dejavu" database</h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-deja sti-item"></span>
+                                    </a>
+                                </li>
+                                <li data-hovercolor="#14A3F5">
+                                    <a href="polyweb/vector/get_variants_from_all_my_projects.html">
+                                        <h2 data-type="mText" class="sti-item">PolyGeneScout</h2>
+                                        <h3 data-type="sText" class="sti-item">(New) Explore Genes </h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-scout sti-item"></span>
+                                    </a>
+                                </li>
+   
+
+                         
+                                <li data-hovercolor="#d869b2">
+                                    <a href="//www.bipd.fr/PM/indexLogin.html">
+                                        <h2 data-type="mText" class="sti-item">PolyLinkage</h2>
+                                        <h3 data-type="sText" class="sti-item">Explore "Linkage" project</h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-linkage sti-item"></span>
+                                    </a>
+                                </li>
+
+ 							<li data-hovercolor="#ffdd3f">
+                                    <a href="/polyprojectNGS/index.html" id="polyproject" style="visibility:hidden">
+                                        <h2 data-type="mText" class="sti-item">PolyProject</h2>
+                                        <h3 data-type="sText" class="sti-item">Ngs project database</h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-project sti-item"></span>
+                                    </a>
+                                </li>
+                                <li data-hovercolor="#ff395e" id="polyprojectLink" >
+                                    <a href="/polyRun/index.html">
+                                        <h2 data-type="mText" class="sti-item">PolyProjectLink</h2>
+                                        <h3 data-type="sText" class="sti-item">Linkage project</h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-projectlinkage sti-item"></span>
+                                    </a>
+                                </li>
+                                <li data-hovercolor="#d869b2" id="polyrun" style="visibility:hidden">
+                                    <a href="/polyRun/index.html">
+                                        <h2 data-type="mText" class="sti-item">PolyRun</h2>
+                                        <h3 data-type="sText" class="sti-item">PolyRun</h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-run sti-item"></span>
+                                    </a>
+                                </li>
+                            
+                                <li data-hovercolor="#ffdd3f">
+                                    <a href="polyweb/index-polytools.html" id="polytools" style="visibility:hidden">
+                                        <h2 data-type="mText" class="sti-item">PolyMonop</h2>
+                                        <h3 data-type="sText" class="sti-item">Useful utilities</h3>
+                                        <span data-type="icon" class="sti-icon sti-icon-tools sti-item"></span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+		    </table>
+		    <br>
+			<div>
+			    <table id="table_formation" class='tb'>
+					<tr>
+						<th>Documentation PolyWeb</th>
+						<th>Last Update</th>
+						<th>PDF</th>
+						<th>VIDEO</th>
+					</tr>
+			    	<tr>
+			    		<td>PolyQuery</td>
+			    		<td>10/01/2020</td>
+	    				<td><a target="_blank" href="https://drive.google.com/file/d/1xXRqcsMGc9gcG84vzWH-B80mnR318Kds/view" style="color:red;">PDF</a></td>
+	    				<td></td>
+			    	</tr>
+			    	<tr>
+			    		<td>PolyDiag</td>
+			    		<td>09/04/2021</td>
+	    				<td><a target="_blank" href="https://drive.google.com/file/d/1Y3v1OyZTjYSuIcPucKhf2tE7fh4leIg2/view?usp=sharing" style="color:red;">PDF</a></td>
+	    				<td><a target="_blank" href="https://drive.google.com/file/d/1WMJqelVMg651E-OSEzw0H36DKp5J4ka3/view?usp=sharing" style="color:blue;">VIDEO</a></td>
+			    	</tr>
+			    	<tr>
+			    		<td>PolyViewer</td>
+			    		<td>21/03/2022</td>
+			    		<td><a target="_blank" href="https://drive.google.com/file/d/1wmEFF-5YBO9Q4IdD0dsLO63woY7z_w_r/view?usp=sharing" style="color:red;">PDF</a></td>
+			    		<td><a target="_blank" href="https://drive.google.com/file/d/1zxjYVZZ57RQLXBvzsmIEr6XurCnJ5fmv/view?usp=sharing" style="color:blue;">VIDEO</a></td>
+			    	</tr>
+			    	<tr>
+			    		<td>PolyCyto</td>
+			    		<td>21/03/2022</td>
+			    		<td><a target="_blank" href="https://drive.google.com/file/d/1zxjYVZZ57RQLXBvzsmIEr6XurCnJ5fmv/view?usp=sharing" style="color:red;">PDF</a></td>
+			    		<td><a target="_blank" href="https://drive.google.com/file/d/1zxjYVZZ57RQLXBvzsmIEr6XurCnJ5fmv/view?usp=sharing" style="color:blue;">VIDEO</a></td>
+			    	</tr>
+			    	<tr>
+			    		<td>PolyBTF</td>
+			    		<td>27/05/2020</td>
+	    				<td><a target="_blank" href="https://drive.google.com/file/d/1sXjofmHutwpd7ifFaiYrm8V2mtkN0WeE/view?usp=sharing" style="color:red;">PDF</a></td>
+	    				<td></td>
+			    	</tr>
+			    </table>
+		    <div>
+		    </center>
+			<div id="waiting" style="visibility:hidden" >
+				&nbsp;
+			</div>
+				<section class="main" style="visibility:hidden">
+					<div id="login" class="form-3" action="#" >
+				    <p class="clearfix">
+				        <label for="login">Username</label>
+				        <input type="text" name="login" id="username" placeholder="Username">
+				    </p>
+				    <p class="clearfix">
+				        <label for="password">Password</label>
+				        <input type="password" name="password" id="passwd" placeholder="Password"> 
+				    </p>
+				    <p class="clearfix">
+				    	&nbsp;
+				    </p>
+				     <p class="clearfix">
+				        <input type="submit" name="submit" value="Sign in" onclick="setPasswordlocal();">
+				    </p>      
+				</div>
+				
+			</section>
+
+			<div class="footer2" id ="footer"  style="visibility:hidden">
+				<span class="left_ab">
+				    <!--FOR DEV-->
+                    <!--
+                        <img src="images/polyicons/logo-descartes-white.png">
+                    -->
+                    <img src="polyweb/images/polyicons/logo-descartes-white.png">
+				</span>
+				<span class="right_ab">
+				    <!--FOR DEV-->
+					<!--
+                        <img src="images/polyicons/logo-imagine-white.png">
+                    -->
+                    <img src="polyweb/images/polyicons/logo-imagine-white.png">
+				</span>
+			</div>
+			<div class="footer" id ="header"  style="visibility:hidden">
+				
+					<a href="#" data-hovercolor="#ff395e"><span> BioInformatics Paris Descartes</span></a>
+					
+			
+					
+				
+				<span class="right_ab">
+					<a href="//www.univ-paris5.fr/" target="_blank">Paris Descartes University</a>
+					<a href="//www.institutimagine.org/">Imagine Institute</a>
+					<a id="server_name"></a>
+				</span>
+			</div>
+			<br><br><br><br>
+		
+		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.14/jquery-ui.min.js"></script>
+        <script type="text/javascript" src="polyweb/js/menu/jquery.easing.1.3.js"></script>
+        <script type="text/javascript" src="polyweb/js/menu/jquery.iconmenu.js"></script>
+        <!--FOR DEV-->
+        <!--
+        <script type="text/javascript" src="js/menu/jquery.easing.1.3.js"></script>
+        <script type="text/javascript" src="js/menu/jquery.iconmenu.js"></script>
+        -->
+		<script type="text/javascript">
+			$(function() {
+				$('#sti-menu').iconmenu();
+			});
+		</script>
+    </body>
+</html>

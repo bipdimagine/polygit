@@ -5919,6 +5919,25 @@ has dir_controls_dude => (
 	},
 );
 
+has get_path_rna_seq_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analisys/";
+		return $path;
+	},
+);
+
+sub get_path_rna_seq_analyse {
+	my ($self, $analyse_name) = @_;
+	confess("\n\nERROR: analyse name mandatory. Die\n\n") unless ($analyse_name);
+	my $path = $self->get_path_rna_seq_root();
+	my $path_analyse = $path.'/'.$analyse_name.'/';
+	confess("\n\nERROR: analyse $analyse_name not found in $path. Die\n\n") unless (-d $path_analyse);
+	return $path_analyse;
+}
+
 
 1;
 
