@@ -1,0 +1,265 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>dojox.Grid with Dojo.Data via binding</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"\>
+		<!-- chargement des feuilles de styles necessaires  l'affichage -->
+        <style type="text/css">
+        	 @import "//ajax.googleapis.com/ajax/libs/dojo/1.2.3/dijit/themes/tundra/tundra.css";
+        	@import "//ajax.googleapis.com/ajax/libs/dojo/1.2.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.2.3/dojox/grid/_grid/tundraGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.2.3/dojox/grid/resources/Grid.css";
+            @import "css/polycss/button.css";
+            @import "css/polycss/filter.css";
+				
+            #grid, #griddocs {
+                width: 650px;
+                height: 250px;
+                padding: 1px;
+            }
+            
+            html, body {
+                height: 100%;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            
+            body .medium {
+                width: 10em;
+                height: 30px;
+            }
+            
+            .person_name {
+                padding: 3px 3px 3px 25px;
+                font-size: 23px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #ff5500;
+                font-weight: bold;
+                text-align: center;
+            }
+            
+            .titre {
+                padding: 1px 1px 1px 25px;
+                margin-left: 100px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(/icons/myicons2/report_edit.png) no-repeat center left;
+            }
+            
+            .run {
+                padding: 1px 1px 1px 25px;
+                margin-left: 50px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(/icons/myicons2/lightning.png) no-repeat center left;
+            }
+        </style>
+		
+		<!-- chargement de scrits necessaires
+			<SCRIPT TYPE="text/javascript" src="../../dojo-release-1.3.2/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+			 -->
+	<SCRIPT TYPE="text/javascript" src="//ajax.googleapis.com/ajax/libs/dojo/1.4/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
+ 
+		 <script type="text/javascript" src="./Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/changeStatus.js"></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/Utility/utilGrid.js"> </script>
+		<script type="text/javascript" src="polyweb/js/polyjs/electro.js"></script>
+        <script type="text/javascript" src="polyweb/js/polyjs//Utility/TableFilter.js"></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+		<script type="text/javascript" src="polyweb/js/polyjs/consequence.js"></script>
+        <script type="text/javascript" src="polyweb/js/polyjs/layoutVar.js" djConfig="parseOnLoad: true"> </script>
+        <script type="text/javascript">
+        	
+		//chargement de modules dojo necessaires
+        dojo.require("dijit.layout.ContentPane");
+        dojo.require("dojox.grid.Grid");
+        dojo.require("dijit.layout.TabContainer");
+        dojo.require("dijit.Dialog");
+        dojo.require("dojox.grid.DataGrid");
+        dojo.require("dojo.data.ItemFileReadStore");
+        dojo.require("dojo.data.ItemFileWriteStore");
+        dojo.require("dojo.parser");
+        dojo.require("dojo.io.iframe");
+        dojo.require("dijit.layout.TabContainer");
+	    dojo.require("dijit.layout.LayoutContainer");
+        dojo.require("dojo.data.ItemFileReadStore");
+        dojo.require("dojox.grid.Grid");
+        dojo.require("dojox.gfx");
+				
+          
+		//recupration des valeurs renseigns par les scripts prcdents (input cachs contenus dans le fichier title.html		
+		var patName = parent.haut.document.getElementById('namepatient').value;
+		var projectName=parent.haut.document.getElementById('project_name').value;
+		var referenceName=parent.haut.document.getElementById('nameref').value;
+		var selectGene = parent.haut.document.getElementById('namegene').value;
+		
+		
+        var paturl;
+        var urlData;
+		var urlExportData;
+		
+		//charge tous les lments pour affichage de la page html 
+        function init(){
+            document.getElementById("titre").textContent = "Patient Name : "+patName;
+			urlData = url_query+"?type=byPatient&var=1&patientName="+patName+"&projectName="+projectName+"&referenceName="+referenceName+"&selectGene="+selectGene;
+			urlExportData=url_query+"?type=byPatient&patientName="+patName+"&projectName="+projectName+"&xls=1&referenceName="+referenceName+"&selectGene="+selectGene ;
+            urlpat = url_query+"?type=byPatient&var=1&projectName="+projectName+"&patientName="+patName+"&referenceName="+referenceName+"&selectGene="+selectGene;	
+			dojo.connect(gridVar,'onMouseOver' ,over);
+			dojo.connect(gridVar,'onMouseOut' ,out);
+			dijit.byId('waiting').show();
+        }
+           
+		//charge tout ce qui est dans la fonction init  l'ouverture de la page html 			
+        dojo.addOnLoad(init);
+            				
+//        dojo.addOnLoad(function(){
+//        });
+            				
+        //fonction contenant les instructions  executer au chargement de la page 				
+        dataLoad = function () {
+        	var paturl = url_query+"?type=byPatient&patientName="+patName+"&projectName="+projectName+"&referenceName="+referenceName+"&selectGene="+selectGene;
+			initConsequence(paturl);
+			createFilter(paturl, ["group","consequence"],gridVar,"filterTableDetailPatient",{name: "Variation name",	start: "Position",valid: "Valid",consequence: "Consequence"});
+			initChrom2(paturl);			
+        };
+		
+        //charge tout ce qui est dans la fonction dataLoad  l'ouverture de la page html
+        dojo.addOnLoad(dataLoad);
+        
+		//fonction pour revenir la liste des projets    				
+        function goBack(){
+            parent.bas.location.href ="detailProject.html";
+        }
+        
+		//recherche les consequence pour les variations retournes par url	
+        function initConsequence(url){
+			var store = readStore(url);
+			store.fetch({onComplete: buildConsequenceUrl,onError: gotError});
+		}
+		
+		var url_consequence ;
+		
+		//construit url pour rechercher les consequences des data passes en paramtre
+		function buildConsequenceUrl(data,t) {
+			var st ="";
+			for(var i in data){
+				if (data[i].variation_name) {
+					st = st + data[i].variation_name + ",";
+				}
+			}
+			url_consequence = url_query + "?type=consequence&var=1"+ "&projectName=" + projectName+"&variationName="+st ;
+			refreshTable(url_consequence,gridConsequence);
+		}	
+		
+	   //fonction  executer quand souris passe sur une ligne du tableau
+       function over (e){
+	   		overTabVariation(e);
+			consequenceOver(e);
+	   }      
+            				
+                    
+        </script>
+		
+		
+    </head>
+    <body class="tundra">
+    	
+	<!-- formulaire pour exporter les donns du tableau -->
+   	<form id="formexport" name="formexport" enctype="multipart/form-data"  action="/polymorphism-cgi/authentification.pl" method="post">
+ 		<input name="type"  value="export" type = "hidden">
+		<input id="filename"  name="filename"  value="zzz" type = "hidden">
+ 	</form>
+	
+	<!-- div pour afficher message indiquant le chargement des donnes -->
+    <div dojoType="dijit.Dialog" jsId="waiting" id="waiting" style="height:80px">
+        <center>
+        Loading Data <img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle">
+        </center>
+    </div>
+	
+	   <!-- table pour les filtres  appliquer sur le tableau-->
+    	<table id="filterTableDetailPatient"></table>
+		
+		<!-- div pour organiser les donnes dans la page html : les variations par patients  gauche et les graph  droite -->
+		<div dojoType="dijit.layout.LayoutContainer" style="width: 2000px; height: 530px; padding: 0; margin: 0; border: 0;">
+			<!--  gauche -->
+			<div dojoType="dijit.layout.ContentPane" layoutAlign="left">
+				<!-- div pour le tableau de donnes -->
+		        <div id="gridVar" style="height:300px"dojoType="dojox.Grid" elasticView="2" jsId="gridVar" structure="layoutVar" rowcount="10000" autowidth="true">
+        		</div>
+			</div>
+			
+			<!-- div pour les chromatogrammes -->
+			<div dojoType="dijit.layout.ContentPane" layoutAlign="client" id="chrom">
+                <input type="hidden" id="tab_seq" class="tab_seq"> </input>
+                <table id="tableElectro" border = "1" > </table>
+			</div>
+		</div>
+		
+		<!-- div au dessus du tableau -->	
+   		<div dojoType="dijit.layout.ContentPane" region="top">
+    		<div  style="background-color:lightGrey" >
+    			<!-- bouton pour revenir  la liste des projets -->
+       		 <button id="1465" dojoType="dijit.form.Button" onClick='history.back()' iconClass="plusIcon2">
+           		Back 
+        	</button>
+			<!-- bouton pour valider la variation -->
+            <button id="1467" dojoType="dijit.form.Button" onClick='changeStatus("valid",gridVar,url_query+"?type=byPatient&projectName="+projectName+"&patientName="+patName+"&referenceName="+referenceName+"&selectGene="+selectGene,"relation");' iconClass="validIcon">
+                Validate variation
+            </button>
+			<!-- bouton pour valider la variation comme homozygote -->
+			 <button id="1470" dojoType="dijit.form.Button" onClick='changeStatus("homozygote",gridVar,url_query+"?type=byPatient&projectName="+projectName+"&patientName="+patName+"&referenceName="+referenceName+"&selectGene="+selectGene,"relation");' iconClass="validIcon">
+                Homozygote
+            </button>
+			<!-- bouton pour valider la variation comme heterozygote -->
+			<button id="1471" dojoType="dijit.form.Button" onClick='changeStatus("heterozygote",gridVar,url_query+"?type=byPatient&projectName="+projectName+"&patientName="+patName+"&referenceName="+referenceName+"&selectGene="+selectGene,"relation");' iconClass="validIcon">
+                Heterozygote
+            </button>
+			<!-- bouton pour invalider la variation -->
+            <button id="1468" dojoType="dijit.form.Button" onClick='changeStatus("unvalid",gridVar,url_query+"?type=byPatient&projectName="+projectName+"&patientName="+patName+"&referenceName="+referenceName+"&selectGene="+selectGene,"relation");' iconClass="unvalidIcon">
+                Unvalidate variation
+            </button>
+			<!-- bouton pour marquer incertain la variation -->
+            <button id="1469" dojoType="dijit.form.Button" onClick='changeStatus("uncertain",gridVar,url_query+"?type=byPatient&projectName="+projectName+"&patientName="+patName+"&referenceName="+referenceName+"&selectGene="+selectGene,"relation");' iconClass="uncertainIcon">
+                Marked as uncertain
+            </button>
+			<!-- bouton pour exporter les donnes du tableau -->
+			<button id="1472" dojoType="dijit.form.Button" onClick='window.location=urlExportData' iconClass="exportIcon">
+               Export
+            </button>
+           
+       		</div>
+		
+		<!-- afficher le nom du projet -->
+        <span id="titre" class="titre">xxxx</span>
+    </div>
+	
+	<center>
+		<!-- afficher le nom de la variation -->
+		<span  class="titre">Variation Name : <span id="variation_select"></span></span>
+		<!-- afficher les consquences de la variation -->
+		<span  class="titre"> Consequence : <span id="consequence_select"></span></span>
+	</center>
+	<hr>
+	<!--afficher le tableau des consequences de la variation -->
+	 <div id="gridConsequence"  dojoType="dojox.Grid" elasticView="2" jsId="gridConsequence" rowcount="10000" autowidth="true" structure="layoutConsequence">
+     </div>
+	
+		<!-- formulaire pour modifier le status de la variation (cf changeStatus.js-->
+		<form id="statusForm" style="border: 1px solid ;" enctype="multipart/form-data" action="#" method="post">
+            <input id="id" name="id" value="" type="hidden"><input id="objet" name="objet" value="" type="hidden"><input id="mother_id" name="mother_id" value="" type="hidden"><input id="type" name="type" value="" type="hidden">
+        </form>
+   
+</body>
+</html>
