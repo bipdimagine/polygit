@@ -1,0 +1,423 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<link rel="icon" type="image/png" href="images/polyicons/application_view_tile.png">
+    <style type="text/css">
+    	@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/Grid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/widget/Dialog/Dialog.css";
+        @import "../../css/polycss/general.css";
+        @import "../../css/polycss/button.css"; 
+        
+		html, body {
+    		width: 100%;
+    		height: 100%;
+    		margin: 0;
+    		overflow : hidden;
+		}    
+   
+
+          .spinner {
+  margin: 2px auto 0;
+  width: 70px;
+  text-align: center;
+}
+
+.spinner > div {
+  width: 18px;
+  height: 18px;
+  background-color: #FFFFFF;
+  border-radius: 100%;
+  display: inline-block;
+  -webkit-animation: bouncedelay 1.4s infinite ease-in-out;
+  animation: bouncedelay 1.4s infinite ease-in-out;
+  /* Prevent first frame from flickering when animation starts */
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
+
+.spinner .bounce1 {
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+
+.spinner .bounce2 {
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+
+.spinner .bounce3 {
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+
+@-webkit-keyframes bouncedelay {
+  0%, 80%, 100% { -webkit-transform: scale(0.0) }
+  40% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes bouncedelay {
+  0% 
+   { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  }
+  80%
+  { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+   
+  }
+  
+   100% { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+    
+  } 40% { 
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}     
+
+ </style> 	
+	<!-- <LINK rel="stylesheet" type="text/css" href="../css/dejavu/dejavu.css"> -->
+	<link rel="icon" type="image/png" href="images/polyicons/igv_button_small.png">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="../../js/polyjs/alamut_methods.js" djConfig="parseOnLoad: true"></script>
+	<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+	<script type="text/javascript" src="../../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+	<script type="text/javascript" src="../../js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyviewer/methods_polyviewer.js" djConfig="parseOnLoad: true"></script> 
+	<script type="text/javascript" src="../../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	<script src='https://kit.fontawesome.com/a076d05399.js'></script>
+	
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript">
+			dojo.require("dojo.store");
+	</script>
+	
+	<!-- <script type="text/javascript" src="../js/polyjs/Utility/vp.js" ></script> -->
+	<script	type="text/javascript">
+			dojo.require("dojo.cookie");
+			dojo.require("dijit.Dialog");
+			dojo.require("dojo.parser");
+			dojo.require("dojo.store.Memory");
+			dojo.require("dojo.data.ItemFileReadStore");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dojox.grid.DataGrid");
+			dojo.require("dijit.TitlePane");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.layout.AccordionContainer");
+			dojo.require("dijit.form.TextBox");
+			dojo.require("dijit.layout.ContentPane");
+			dojo.require("dijit.Toolbar");
+			dojo.require("dijit.form.NumberTextBox");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dijit.form.Select");
+			dojo.require("dijit.form.FilteringSelect");
+			dojo.require("dijit.form.ComboBox");
+			dojo.require("dijit.form.Form");
+			dojo.require("dojox.grid.EnhancedGrid");
+			dojo.require("dojox.grid.enhanced.plugins.NestedSorting");
+			dojo.require("dijit.form.DropDownButton");
+			dojo.require("dijit.form.MultiSelect");
+			dojo.require("dijit.form.CheckBox");
+			dojo.require("dojox.charting.Chart2D");
+			dojo.require("dojox.charting.Chart3D");
+			dojo.require("dojox.charting.plot3d.Base");
+			dojo.require("dojox.charting.plot3d.Bars");
+			dojo.require("dojox.data.AndOrReadStore");
+			dojo.require("dojox.widget.Standby");
+
+			require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/TabContainer","dijit/layout/ContentPane"]);
+			require([ "dojo/_base/xhr","dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+			require(["dijit/form/Select", "dojo/data/ObjectStore","dojo/store/Memory","dojo/domReady!"]);
+		    require(["dijit/form/HorizontalSlider", "dijit/form/HorizontalRuleLabels", "dijit/form/HorizontalRule", "dojo/parser"]);
+	</script> 
+ 
+  	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+ 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  	
+  	
+  	<script type="text/javascript" src="../../js/manta/PolyCyto.js" djConfig="parseOnLoad: true"></script> 
+  	<script type="text/javascript" src="../../js/manta/PolyCytoPlots.js" djConfig="parseOnLoad: true"></script> 		
+  	
+    <script>
+			var parameters = location.search.split("&");
+			var par0 = parameters[0].split("=");
+			var par1 = parameters[1].split("=");
+			var par2 = parameters[2].split("=");
+			
+			var transloc = par2[1];
+   			var titre="PolyCyto:" + par0[1]+"/"+par1[1];
+   			document.title=titre;
+	</script>
+	<title></title>
+</head>
+
+
+
+<body onload="launchAnalyse(transloc);" onclick="refresh_grids();">
+	<center>
+		<div id="titre"style="height:10%;width:95%" ></div>
+ 	</center>
+ 
+<br>
+<div class="container" style="height:98%;width:98%;background-color:white;">
+	<center>
+	<div class="table-responsive" style="height=80%;width:70%;">
+ 			 <table class="table" >
+ 			 <center><tr>
+ 	
+					<td style=" border: 1px solid grey;box-shadow: 1px 1px 6px black;padding:5px;">
+
+					 	<center><table class="table-responsive" >
+ 			 			<tr>
+							<td style="width:5%;font-size:12px;border-top-color:white;color:orange;padding:5px;"><label>  DejaVu  </label>
+								<select class="form-control" id="dejavu" name="dejavu" style="color:orange;font-size:12px;padding:5px;">
+									<option value= 0 style="color:black;">  0  </option>
+									<option value= 1 style="color:black;">  1  </option>
+									<option value= 2 style="color:black;">  2  </option>
+									<option value= 3 style="color:black;">  3  </option>
+									<option value= 4 style="color:black;">  4  </option>
+									<option value= 5  style="color:black;">  5  </option>
+									<option value= 10 style="color:black;">  10  </option>
+									<option value= 20 selected="selected" style="color:black;">  20 </option>
+									<option value= 50 style="color:black;">  50 </option>
+									<option value= 100 style="color:black;">  100 </option>
+									<option value= all  style="color:black;">  all  </option>
+								</select>
+							</td>
+							
+					<td style="width:8%;font-size:12px;border-top-color:white;color:orange;padding:5px;"><label>  Score Event  </label>
+								<select class="form-control" id="scoreEvent" name="scoreEvent" style="color:orange;font-size:12px;padding:5px;">
+									<option value= 0 style="color:black;">  High (best ones) </option>
+									<option value= 1 selected="selected" style="color:black;"> Medium  </option>
+									<option value= 2 style="color:black;">  Low (all) </option>
+								</select>
+					</td>
+		
+					<td style="width:5%;font-size:12px;border-top-color:white;padding:5px;"><label>  Chromosome </label>
+						<select class="form-control" id="chromSelect" name="chromSelect" style="font-size:10px;padding:5px;">
+						<option value="all" selected="selected"  >  all  </option>
+						<option value="noXY" > all but XY  </option>
+						<option value="1">  1  </option>
+						<option value="2">  2 </option>
+						<option value="3">  3  </option>
+						<option value="4">  4  </option>
+						<option value="5">  5  </option>
+						<option value="6">  6  </option>
+						<option value="7">  7  </option>
+						<option value="8">  8  </option>
+						<option value="9">  9  </option>
+						<option value="10">  10  </option>
+						<option value="11">  11 </option>
+						<option value="12">  12  </option>
+						<option value="13">  13  </option>
+						<option value="14">  14  </option>
+						<option value="15">  15  </option>
+						<option value="16">  16  </option>
+						<option value="17">  17  </option>
+						<option value="18">  18  </option>
+						<option value="19">  19  </option>
+						<option value="20">  20  </option>
+						<option value="21">  21  </option>
+						<option value="22">  22  </option>
+						<option value="23">  X  </option>
+						<option value="24">  Y  </option>
+						</select>
+				</td>
+				<td style="width:6%;font-size:12px;border-top-color:white;padding:5px;"><label> Transmission </label>
+						<select class="form-control" id="transmissionSelect" name="maxlengthSelect" style="font-size:10px;padding:5px;">
+							<option value= "all" selected="selected" >  all  </option>
+							<option value= "denovo" >  denovo  </option>
+							<option value= "mother" > mother  </option>
+							<option value= "father" >  father  </option>
+							<option value= "both" >  both  </option>
+						</select>
+				</td>
+				
+				<td style="width:8%;font-size:12px;border-top-color:white;padding:5px;"><label>  Gene </label>
+						<input type="text"  class="form-control" id="geneSelect" name="geneSelect" value="all" style="font-size:10px;padding:5px;"></input>
+				</td>
+					<td style="width:6%;font-size:12px;"><label> Min Length</label>
+								<select class="form-control" id="minlengthSelect" name="minlengthSelect" style="width:80%; font-size:10px;padding:5px;">
+									<option value=1000  selected="selected">  1kb  </option>
+									<option value=5000>  5kb  </option>
+									<option value=10000 >  10kb </option>
+									<option value=50000>  	50 kb  </option>
+									<option value=100000 >  100 kb  </option>
+									<option value=200000 >  200 kb  </option>
+									<option value=300000>  300 kb  </option>
+									<option value=400000>  400 kb  </option>
+									<option value=500000 >  500 kb  </option>
+								</select>
+						</td>
+		
+				<td style="width:8%;font-size:14px;color:orange;border-top-color:white;padding:10px;">
+						<br><label>  OMIM only  </label>
+						<input style="width:15%;color:red" type="checkbox" id="OMIMSelect">
+				</td>
+				<td style=" width:6%;  font-size:12px; color:white;border-top-color:white;padding:5px;"><label></label>
+						 <center><div><button  type="button" class="btn-sm  btn-warning" onclick="GetAllCNV();GetSVeq();" >   RUN  </button></div></center>
+				</td>
+			</tr></table></center>	
+			</td></tr></table></div></center>
+
+ 	<ul class="nav nav-tabs">
+   		 	<li class="active" onmouseout="refresh_grids();"><a data-toggle="tab" href="#CNV"><span id='span_cnv_dup_del'> CNV (DUP/DEL) </span></a></li>
+		  	<li id="id_transloc" style="visibility:hidden;" onmouseenter="refresh_grids();" onmouseout="refresh_grids();"><a data-toggle="tab" href="#TRANSLOC"><span id='span_transloc_inv'> TRANSLOC/INV  </span></a></li>
+ 		</ul>
+ 		<div class="tab-content" style="height:90%;width:100%">
+
+ 		<div id="CNV" class="tab-pane fade in active" style="height:90%;width:100%">
+ 			<br>
+ 	 	  	<center style="height:6%">
+ 	 	  			<div class="container" id="chrView" style="height=5%;width:100%;"></div>
+ 			</center><br>
+ 			
+ 	
+ 		<div  class="table-responsive" id="tab1" style="height:70%;width:100%;margin-top:8px;border: 2px solid grey;">
+      	 <span dojoType="dojo.data.ItemFileReadStore" jsId="jsonDetails"></span>
+      	 <table class="table-responsive"
+            			border="1" 
+             			style="overflow:auto;background-color:white;"
+             			dojoType="dojox.grid.DataGrid"
+                        id    = "SVCompare_gridDetails"
+                        jsId  = "SVCompare_gridDetails"
+                        store = "jsonDetails"  
+                        query = "{ id: '*' }" >
+             	<thead>
+             	<tr>
+    
+             			<th width="3%" field="TYPE" formatter="formaterDUPDEL" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Type</b></center></th>            			
+             			 <th width="2%" field="CHROM" formatter="formaterCHROM_int" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Chr</b></center></th>
+ 			            <th width="4%" field="CYTOBAND" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><img src="../../images/polyicons/cytoband.png" alt="cytoband"></th>
+			             <th width="8%" field="LOCUS"  formatter="formaterLocus" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Start - End </b> </center></th>	
+             			 <th width="6%" field="LEN" formatter="formaterLength" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Length</b></center></th>
+              			 <th width="3%" field="DUPSEG"  formatter="formaterDUPSEG" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Dup Seg </b></center></th>
+             			 
+             			 <th width="3%" field="RATIO"  formatter="formaterRatio" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Ratio </b></center></th>
+
+      		 			 <th width="3%" field="SCORECNV"  formatter="formaterScore" styles="text-align:center;font-size:9px;background-color:white;"><center>Score CNV</center></th>  
+             			 			             			           
+						<th width="3%" field="wisecondor_elementary"   formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> WC </b></center></th>	
+						<th width="3%"  field="canvas_elementary"  formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Canvas </b></center></th>	
+						<th width="3%" field="manta_elementary"   formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Manta </b></center></th>	
+						
+						<th width="3%" field="PR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> PR (ref/alt) </b></center></th>
+          				<th width="3%" field="SR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> SR (ref/alt) </b></center></th>
+					    
+						<th width="4%" field="TRANSMISSION"    formatter="formaterTransmission" styles="text-align:center;font-size:9px;background-color:white;"><center><img src="../../images/polyicons/family256_24779.png"></center></th>			
+						<th width="12%" field="DEJAVU_G"  formatter="formaterDejavuCNV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DejaVu  </b></center></th>			
+								
+						<th width="3%" field="SCORE_GENES" formatter="formaterScore" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Score Gene </b></center></th>
+						<th width="4%" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:9px;background-color:white;"><center><b> AnnotSV Ranking</b></center></th>					
+						<th width="8%" field="GENES" formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Genes </b></center></th>
+						<th width="3%" field="OMIN_MG" formatter="formaterOmin" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Omin </b></center></th>
+					
+						<th width="4%" field="PLOT"  formatter="formaterPlot" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Plot  </b> </center></th>		
+						<th width="4%" field="IGV"   formatter="formater_infoPATIENTIGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> IGV </b></center></th>						
+						<th width="3%" field="DGV" formatter="formaterDGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DGV</b></center></th>			 								
+						<th width="5%" field="gnomAD" formatter="formatergnomAD" styles="text-align:center;font-size:9px;background-color:white;"><center><b> gnomAD</b></center></th>
+						<th width="8%" field="BPManta"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta  <img src="../../images/polyicons/iconfinder_baby-boy_d.png"> </b></center></th>
+						<th width="8%" field="BPManta_mother"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta <img src="../../images/polyicons/icons8-person-female-24.png" > </b></center></th>
+						<th width="8%" field="BPManta_father"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta <img src="../../images/polyicons/icons8-person-24.png"> </b></center></th>
+						<th width="3%" field="GOLD_G_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DGV G-freq </b></center></th>   
+						<th width="3%" field="GOLD_L_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DGV L-freq </b></center></th> 
+						<th width="4%" field="dbVar_status"  formatter="formaterdbvarStatus" styles="text-align:center;font-size:9px;background-color:white;"><center><b> dbVar status</b></center></th>		
+
+				</tr>
+				</thead>
+             </table>
+			</div></center>
+ 	</div>
+ 		
+ 		
+ 		
+ 
+ 	<div id="TRANSLOC" class="tab-pane fade active" style="height:90%;width:100%;">
+ 		<br>
+ 		<center  style="height:100%;">
+ 		<div    id="tab2" style="height:80%;width:100%;margin-top:8px;background-color:white;border: 1px solid grey; box-shadow: 1px 1px 6px black;">
+      	 <span dojoType="dojo.data.ItemFileReadStore" jsId="jsonDetails" ></span>    
+            <table class="table-responsive"
+            			border="1" 
+             			style="overflow:auto;background-color:white;"
+             			dojoType="dojox.grid.DataGrid"
+	                    id    = "TRANS_gridDetails" 
+                        jsId  = "TRANS_gridDetails"
+                        store = "jsonDetails"  
+                        query = "{ id: '*' }"> 
+             	<thead>
+             	<tr>
+          			<th width="8%" field="TRANSLOC"  formatter="formaterTransloc" styles="text-align:center;font-size:10px;background-color:white;"><center><b> SVeq  </b></center></th>	
+          			<th width="3%" field="SCORE_EVENT"  styles="text-align:center;font-size:10px;background-color:white;"><center><b> Score Event  </b></center></th>
+          			
+          			<th width="4%" field="LENGTH"  formatter="formaterLength" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Length  </b></center></th>
+          			<th width="3%" field="TYPE"   formatter="formaterTypeInv"styles="text-align:center;font-size:9px;background-color:white;"><center><b> Type  </b></center></th>
+          			
+             		<th width="6%" field="CYTOBAND1" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob1<img src="../../images/polyicons/cytoband.png"> </b></center></th>
+		        	<th width="8%" field="POS1" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BreakPoint Start </b></center></th>
+			        <th width="5%" field="GENES1" formatter="formaterGENESBND"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes </b></center></th>
+			        <th width="3%" field="OMIM1" formatter="formaterOMIMBND"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
+			        
+					<th width="6%" field="CYTOBAND2" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob2<img src="../../images/polyicons/cytoband.png"> </b></center></th>	
+			        <th width="8%" field="POS2" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BreakPoint END </b></center></th>
+			        <th width="5%" field="GENES2" formatter="formaterGENESBND" styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes </b></center></th>
+			        <th width="3%" field="OMIM2" formatter="formaterOMIMBND"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
+			        			        
+			         <th width="3%" field="QUAL"  styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Qual </b></center></th> 					        
+			       	<th width="3%" field="PR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> PR (ref/alt) </b></center></th>
+          			<th width="3%" field="SR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> SR (ref/alt) </b></center></th>
+	
+	
+					<th width="5%" field="IGV" formatter="formater_BND_IGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> IGV  </b></center></th> 
+					<th width="5%" field="TRANSMISSION"    formatter="formaterTransmissionBND" styles="text-align:center;font-size:9px;background-color:white;"><center><img src="../../images/polyicons/family256_24779.png"></center></th>		
+					<th width="8%" field="CNV"   formatter="formaterCNVlinked" styles="text-align:center;font-size:9px;background-color:white;"><center><b> CNV <img src="../../images/polyicons/iconfinder_baby-boy_d.png"> </b></center></th>	
+					
+					<th width="8%" field="CNV_mother"   formatter="formaterCNVlinked" styles="text-align:center;font-size:9px;background-color:white;"><center><b> CNV <img src="../../images/polyicons/icons8-person-female-24.png" > </b></center></th>
+					<th width="8%" field="CNV_father"   formatter="formaterCNVlinked" styles="text-align:center;font-size:9px;background-color:white;"><center><b> CNV <img src="../../images/polyicons/icons8-person-24.png"> </b></center></th> 			
+							
+					<th width="8%" field="dejavu" formatter="formaterDejavuSVeq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> dejavu  </b></center></th>  				
+				</tr></thead>
+             	</table>
+			</div>
+
+		</center>
+	</div>
+	</div>
+	
+	
+
+	</div> 
+</div> 
+
+<div id="dialog_dejavu_polycyto" dojoType="dijit.Dialog"  style="font-size:16px;color:white;background-color:orange; border:1px solid black">
+        <div  id="content_dejavu_polycyto" jsId="content_dejavu_polycyto" data-dojo-type="dijit/layout/ContentPane"  style="overflow:auto;font-size:12px;color:black;background-color:Snow;border: 1px solid black">
+        </div>	
+</div>
+
+<div dojoType="dijit.Dialog" jsId="waiting" id="waiting" style="width:190px;height:40px;background-color:lightgrey; " >
+           <div class="panel panel-primary" id="pwaiting1" style="height:100%">
+                <div class="panel-heading"  id="pwaiting" style="background-color:#1079B2">
+                     <h2 class="panel-title" style="font-size: 10px"> Loading  
+						<div class="spinner pull-right">
+                            <div class="bounce1"></div>
+                            <div class="bounce2"></div>
+                            <div class="bounce3"></div>
+						</div>
+					</h2>
+                </div>
+			</div>
+</div>
+
+
+ </body>
+ </html>
+                 
