@@ -176,23 +176,19 @@ sub print_dude_genes {
 	my @colors = ( "#F9F6FF", "#F7F7F7", "#A9A9D9" );
 	my @colors = ( "#FCFCFC", "#F6F6F6", "#A9A9D9" );
 	my @finale2;
-	if ($text){
+#	if ($text){
 		 @finale2 = sort { $b->{chr} <=> $a->{chr}  or $a->{start} <=> $b->{start}} @$final ;
-	}
-	else {
+#	}
+#	else {
 		@finale2 = sort { $b->{score} <=> $a->{score} } @$final;
 		
-	}
+#	}
 	foreach my $hg (  sort { $b->{score} <=> $a->{score} } @finale2 ) {
 #	foreach my $hg ( sort { $b->{score} <=> $a->{score} } @$final ) {
 		$nb++;
 		my $hide;
 		$hide = "";
-	#	warn $hg->{score};
-		if ($hg->{id} =~/ENSG00000120733/){
-	#	warn Dumper $hg;
-		#die();
-		}
+
 		if ( $nb > 500 && $hg->{score} < 1 && $hg->{nb_del_ho} == 0 ) {
 			$hide = "display:none;";
 			push( @$rids, $hg->{rid} );
@@ -320,7 +316,7 @@ sub line_dude_gene {
 	$lmax = $nb_patients if $lmax < $nb_patients;
 	my $type_scale = "height";
 	 $type_scale = "width" if $lmax < $nb_patients;
-	$hgene_dude->{score} = $gene->score;
+	$hgene_dude->{score} = $gene->score*1.5;
 	
 
 	my $width = ($nb_patients+2) *3;
@@ -332,7 +328,11 @@ sub line_dude_gene {
 		$height = undef;
 	}
 	if ( $nb_dup == 0 && $nb_del > 2 && $hgene_dude->{level} eq "high" ) {
-		$hgene_dude->{score} += $nb_del * 0.5;
+		$nb_del = 10 if $nb_del >10;
+		my $coef = 0.3;
+		$coef = 0.5 if $hgene_dude->{transmission} =~ /strict/;
+		$coef = 0.5 if $hgene_dude->{transmission} =~ /rece/;
+		$hgene_dude->{score} += $nb_del * $coef;
 		$hgene_dude->{score} += $nb_ho ;
 	}
 
@@ -476,8 +476,6 @@ qq{<a class="btn btn-xs" role="button" onclick="$cmd_var" style="background-colo
 	}
 
 	my $no3 = $patient->getGenesDude("r");
-		warn $hgene_dude->{best_transcript};
-		warn $uri_key;
 	my $uri_text = $no3->get( $hgene_dude->{best_transcript} . $uri_key."-$VERSION" );
 	if ($uri_text) {
 		my $url2 = $uri_text;
@@ -571,8 +569,8 @@ qq{<button type="button" class="btn btn-danger btn-xs" style="background-color:w
 
 	#$html.= $cgi->td("<center>".$b_gtex."</center>");
 	$html .= $cgi->td( "<center>" . $b_pli . "</center>" );
-	$html .= $cgi->td( "<center>" . $b_cnv . "</center>" );
-	$html .= $cgi->td( "<center>" . $b_var . "</center>" );
+	$html .= $cgi->td( "<center>" . $b_cnv . "</center>$nb_ho" );
+	$html .= $cgi->td( "<center>" . $b_var . "</center>$nb_del ".$hgene_dude->{score} );
 
 	$html .= $cgi->end_Tr();
 
@@ -1021,10 +1019,8 @@ sub get_images {
 		$pm->finish( 0, { array => $new_lists } );
 	}
 	$pm->wait_all_children();
-	warn "end save iamge";
 	save_images( $patient, $save );
 	print "</div>";
-	warn "end";
 	return $final;
 
 }
@@ -1033,14 +1029,14 @@ sub save_images {
 	my ( $patient, $uri ) = @_;
 	eval {
 		my $no3 = $patient->getGenesDude("w");
-		warn "SAVE :" . scalar( keys %$uri );
+#		warn "SAVE :" . scalar( keys %$uri );
 		my $nb =0;
 		foreach my $l ( keys %$uri ) {
-			warn "s:$nb\n" if $nb %100 ==0;
+#			warn "s:$nb\n" if $nb %100 ==0;
 			$nb ++;
 			$no3->put( $l . $uri_key."-$VERSION", $uri->{$l} );
 		}
-		warn "close" ;
+#		warn "close" ;
 		$no3->close();
 	};
 }
