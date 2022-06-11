@@ -118,11 +118,12 @@ my $transcripts_arg = $cgi->param('transcripts');
 my $genes_arg       = $cgi->param('genes');
 my $filter;
 my @selected_patients;
+
 if ($value_quality and not $genes_arg) {
 	my $p   = $cgi->param('patients');
 	my $pat = $project->getPatient($p);
 	
-	
+	  
 	my @lTypes;
 	if ($value_quality == 1) { @lTypes = ('high'); }
 	if ($value_quality == 2) { @lTypes = ('high','medium'); }
@@ -185,8 +186,9 @@ if ($genes_arg) {
 		{
 
 			my $matrix = $no->get( $t->id );
-
-			next unless ($matrix && ($project->isDiagnostic));
+			next unless $matrix;
+			#if ($project->isDiagnostic)
+			#next unless ($matrix && ($project->isDiagnostic));
 			#	next unless $t->ccds_name;
 			$tt++;
 			push( @transcripts_cgi, $t->id );
