@@ -2844,6 +2844,7 @@ sub get_hash_genes_dude {
 	}
 	#$h_type_levels->{medium} = 1;
 	if ($panel) { $h_panels_tr = $panel->genes_id(); }
+
 	$by_names_or_ids = 'names' unless ($by_names_or_ids);
 	my $hGenes_dude = {};
 	my $no = $patient->getTranscriptsDude("r");
@@ -2854,6 +2855,8 @@ sub get_hash_genes_dude {
 	foreach my $type (@$list_type) {
 		
 		my $list_tr_high = $no->get($type);
+		warn $type;
+		warn Dumper $list_tr_high;
 		#ENST00000631057
 #		my ($toto) = grep {$_ =~/ENST/ } @$list_tr_high;
 	#	warn Dumper $list_tr_high;

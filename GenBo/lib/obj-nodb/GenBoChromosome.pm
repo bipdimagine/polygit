@@ -1333,7 +1333,7 @@ sub get_lmdb_variations {
 			}
 			}
 		elsif (-e $dir_out."/".$self->name.".lmdb_var"){
-			warn "WORK WITH LMDB_VARIATION";
+#			warn "WORK WITH LMDB_VARIATION";
 			$no2 = GenBoNoSqlLmdbVariation->new(
 			dir         => $dir_out,
 			mode        => $mode,

@@ -1061,10 +1061,10 @@ sub image {
 	my @primer_ids;
 	my $cname = $capture->name;
 	for ( my $i = 0 ; $i < @$data_levels ; $i++ ) {
-
+		
 		#for ( my $i = @$data_levels - 1 ; $i > -1 ; $i-- ) {
 		my $primer = $self->transcript->getPrimer( $self->names->[$i] );
-
+#		warn $primer->name;
 		#		 warn $primer->name;
 		my $vt = join( ":", map { $_->name } @{ $primer->getCaptures } );
 		push( @primer_ids, $i ) if $vt =~ /$cname/;

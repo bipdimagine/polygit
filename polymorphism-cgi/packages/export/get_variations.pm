@@ -566,6 +566,8 @@ sub getIds_onlive {
 					my $is_he_ho = 'he';
 					my $base = $var->getGenotype($patient);
 					push(@lBases, $base);
+					
+					
 					foreach my $v_other (@lVar_same_pos) {
 						my $h_infos_var_other = $v_other->sequencing_infos->{$patient->id()};
 						next unless ($h_infos_var_other);
@@ -577,33 +579,9 @@ sub getIds_onlive {
 							$is_he_ho .= '  ho';
 						}
 						push(@lBases, $base_alt);
-						
-						my $nb_all_other_mut;
-						foreach my $caller (keys %{$h_infos_var_other}) {
-							next unless exists $h_infos_var_other->{$caller}->{nb_all_other_mut};
-							if ($h_infos_var_other->{$caller}->{nb_all_other_mut} > 0) {
-								$nb_all_other_mut = $h_infos_var_other->{$caller}->{nb_all_other_mut};
-							}
-							last;
-						}
-						
-#						if ($nb_all_other_mut) { $nb_all_ref .= ';'.$v_other->{annex}->{$pat_id}->{'nb_all_ref'}.'+'.$nb_all_other_mut; }
-#						else { $nb_all_ref .= ';'.$v_other->{annex}->{$pat_id}->{'nb_all_ref'}; }
-#						$nb_all_mut .= ';'.$v_other->{annex}->{$pat_id}->{'nb_all_mut'};
-
-						if ($nb_all_other_mut) { $nb_all_ref = $nb_all_other_mut; }
-						#else { $nb_all_ref = $v_other->sequencing_infos->{$patient->id()}->{'nb_all_ref'}; }
-						#$nb_all_mut = $v_other->sequencing_infos->{$patient->id()}->{'nb_all_mut'};
 					}
 					push(@{$hash->{'patient_unifiedgenotyperheho'}}, $is_he_ho);
-					if (scalar @lBases > 1) {
-						my @lBases2;
-						foreach my $this_base (@lBases) {
-							my @t = split('/', $this_base);
-							push(@lBases2, $t[1]);
-						}
-						$base = join('/', @lBases2);
-					}
+					$base = join(' / ', @lBases) if (scalar @lBases > 1);
 					push(@{$hash->{'patient_base'}}, $base);
 				}
 				if ($var->isHomozygote($patient)) {
@@ -616,33 +594,11 @@ sub getIds_onlive {
 						next unless ($h_infos_var_other);
 						if ($v_other->isHeterozygote($patient)) { $is_he_ho .= '  he'; };
 						if ($v_other->isHomozygote($patient)) { $is_he_ho .= '  ho'; };
-						#$base .= '  '.$v_other->{'ref_allele'}.'/'.$v_other->{annex}->{$pat_id}->{'var_allele'};
 						my $base_alt = $v_other->getGenotype($patient);
 						push(@lBases, $base_alt);
-						my $nb_all_other_mut;
-						foreach my $caller (keys %{$h_infos_var_other}) {
-							next unless exists $h_infos_var_other->{$caller}->{nb_all_other_mut};
-							if ($h_infos_var_other->{$caller}->{nb_all_other_mut} > 0) {
-								$nb_all_other_mut = $h_infos_var_other->{$caller}->{nb_all_other_mut};
-							}
-							last;
-						}
-#						if ($nb_all_other_mut) { $nb_all_ref .= ';'.$v_other->{annex}->{$pat_id}->{'nb_all_ref'}.'+'.$nb_all_other_mut; }
-#						else { $nb_all_ref .= ';'.$v_other->{annex}->{$pat_id}->{'nb_all_ref'};}
-#						$nb_all_mut .= ';'.$v_other->{annex}->{$pat_id}->{'nb_all_mut'};
-						if ($nb_all_other_mut) { $nb_all_ref = $nb_all_other_mut; }
-#						else { $nb_all_ref = $v_other->sequencing_infos->{$patient->id()}->{'nb_all_ref'}; }
-#						$nb_all_mut = $v_other->sequencing_infos->{$patient->id()}->{'nb_all_mut'};
 					}
 					push(@{$hash->{'patient_unifiedgenotyperheho'}}, $is_he_ho);
-					if (scalar @lBases > 1) {
-						my @lBases2;
-						foreach my $this_base (@lBases) {
-							my @t = split('/', $this_base);
-							push(@lBases2, $t[1]);
-						}
-						$base = join('/', @lBases2);
-					}
+					$base = join(' / ', @lBases) if (scalar @lBases > 1);
 					push(@{$hash->{'patient_base'}}, $base);
 				}
 				push(@{$hash->{'patient_unifiedgenotyper2'} }, $nb_all_ref);

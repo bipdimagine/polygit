@@ -1,0 +1,1807 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>PolyGeneScout</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+        <!-- chargement des feuilles de styles necessaires a l'affichage -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+        <style type="text/css">
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/claro/claro.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/claroGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/widget/Dialog/Dialog.css";
+			@import "../css/polycss/login.css";
+      		@import "../css/polycss/button.css";
+    
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+    
+            #borderContainer {
+                width: 100%;
+                height: 100%;
+            }
+    
+            .testDialog {
+                font-size: 8pt;
+            }
+    
+            .dojoxGrid-row-odd td {
+                background: #e8f2ff;
+            }
+    
+            .name {
+                color: #2962A7;
+                font-weight: bold;
+            }
+    
+            .pconseq {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_blue.png);
+                padding: 1em;
+                width: 1200px;
+                min-width: 400px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .ptranscript {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_grey.png);
+                padding: 1em;
+                min-width: 100px;
+                height: 15px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .pconseq .gridconseq {
+                background: #fff;
+                height: 150px;
+                position: float;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .partsContainerSmall {
+                background: rgb(192,80,77);
+                padding: 1em;
+                background-image: url(../images/polyicons/bckgrdsmall.png);
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .titleSmall {
+                font-family: Verdana, Arial, Helvetica, sans-serif;
+                padding: 0.5em 0.5em 0 0.5em;
+                color: #000000;
+                background: rgb(192,80,77);
+                font-weight: normal;
+                -moz-border-radius-topleft: 8px;
+                -moz-border-radius-topright: 8px;
+                -webkit-border-top-left-radius: 8px;
+                -webkit-border-top-right-radius: 8px;
+                -webkit-box-shadow: 2px 2px 11px #888;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+            }
+    
+            .partsContainerSmall .gridContainerSmall {
+                background: #fff;
+                height: 150px;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .person_name {
+                padding: 3px 3px 3px 25px;
+                font-size: 23px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #ff5500;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .titre {
+                padding: 1px 5px 1px 25px;
+                margin-left: 70px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 12px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .run {
+                padding: 1px 1px 1px 25px;
+                margin-left: 50px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(../images/polyicons/lightning.png) no-repeat center left;
+            }
+    
+            .span_desc {
+                font-family: arial;
+                font-size: 10px;
+                padding: 8px 1px 1px 25px;
+                background: url(../images/polyicons/star.png) no-repeat center left;
+            }
+    
+            .alternateDock {
+                position: absolute;
+                background-color: #000000;
+                right: 0px;
+                top: 0px;
+                border-left: 1px solid #ccc;
+                height: 100%;
+            }
+    
+            #alternateDock ul.dojoxDockList {
+                display: block;
+            }
+    
+            .td_align {
+                border: 2px solid;
+            }
+    
+            .tundra #toolbar.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar2.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar3.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+            
+            table.dataTable thead .sorting:before, table.dataTable thead .sorting:after, table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+               padding: 5px;
+            }
+            .dataTables_wrapper .mdb-select {
+                border: none;
+                float: left;
+            }
+            .dataTables_wrapper .mdb-select.form-control {
+                padding-top: 0;
+                margin-top: -1rem;
+                margin-left: 0.7rem;
+                margin-right: 0.7rem;
+                width: 100px;
+            }
+            .dataTables_length label {
+                float: left;
+            }
+            table.dataTable {
+                margin-bottom: 3rem!important;
+            }
+            div.dataTables_wrapper div.dataTables_info {
+                padding-top: 0;
+            }
+            
+            table #grid_var {
+                border-collapse: collapse;   
+            }
+            #grid_var tr:hover {
+                background-color: #ccc;
+            }
+            #grid_var th {
+                background-color: #fff;
+            }
+            #grid_var th, #example td {
+                padding: 3px 5px;
+            }
+            #grid_var td:hover {
+                cursor: pointer;
+            }
+            
+            table #tab_transcripts {
+                border-collapse: collapse;   
+            }
+            #tab_transcripts tr:hover {
+                background-color: #ccc;
+            }
+            #tab_transcripts th {
+                background-color: #fff;
+            }
+            #tab_transcripts th, #example td {
+                padding: 3px 5px;
+            }
+            #tab_transcripts td:hover {
+                cursor: pointer;
+            }
+            
+			.collapsing{
+			 	-webkit-transition:height .01s ease;
+			  	transition:height .01s ease
+			}
+			
+			.loader {
+				border-top: 16px solid #F5F5F5;
+				border-right: 16px solid #A9A9A9;
+				border-bottom: 16px solid #808080;
+				border-left: 16px solid #000000;
+				border-radius: 50%;
+			    width: 120px;
+			    height: 120px;
+  				-webkit-animation: spin 2s linear infinite;
+			    animation: spin 2s linear infinite;
+			}
+			
+			.nav-tabs {
+			  overflow-x: auto;
+			  overflow-y: hidden;
+			  display: -webkit-box;
+			  display: -moz-box;
+			}
+			.nav-tabs>li {
+			  float: none;
+			}
+			
+			@-webkit-keyframes spin {
+				0% { -webkit-transform: rotate(0deg); }
+				100% { -webkit-transform: rotate(360deg); }
+			}
+			
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+			
+			#text_search_polyquery_var {
+			    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+			    background-position: 10px 12px; /* Position the search icon */
+			    background-repeat: no-repeat; /* Do not repeat the icon image */
+			    width: 100%; /* Full-width */
+			    font-size: 16px; /* Increase font-size */
+			    padding: 12px 20px 12px 40px; /* Add some padding */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    margin-bottom: 12px; /* Add some space below the input */
+			}
+			
+			#myTable {
+			    border-collapse: collapse; /* Collapse borders */
+			    width: 100%; /* Full-width */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    font-size: 18px; /* Increase font-size */
+			}
+			
+			#myTable th, #myTable td {
+			    text-align: left; /* Left-align text */
+			    padding: 12px; /* Add padding */
+			}
+			
+			#myTable tr {
+			    /* Add a bottom border to all table rows */
+			    border-bottom: 1px solid #ddd;
+			}
+			
+			#myTable tr.header, #myTable tr:hover {
+			    /* Add a grey background color to the table header and on hover */
+			    background-color: #f1f1f1;
+			}
+			 
+			.visible {
+			  visibility: visible;
+			}
+			
+			.invisible {
+			  visibility: hidden;
+			}
+			
+			.progress_chr {
+				opacity: 0;
+				-webkit-transition: opacity 2s ease-in;
+				-moz-transition: opacity 2s ease-in;
+				-o-transition: opacity 2s ease-in;
+				-ms-transition: opacity 2s ease-in;
+				transition: opacity 2s ease-in;
+			}
+			
+			.progress_chr.load {
+			    opacity: 1;
+			}
+			
+			.dijitSliderLeftBumper {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderProgressBar {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderImageHandle {
+				border: 6px solid #cfe5fa;
+			}
+			
+			.dijitCheckBoxInput {
+				opacity:10;
+			}
+			
+			.checkbox {
+				margin: 0px 0 0;
+				margin-top: 1px \9;
+				line-height: normal;
+			}
+	
+			.badge1 {
+			  display: block;
+			  position: absolute;
+			  top: -13px;
+			  right: -2px;
+			  line-height: 16px;
+			  height: 16px;
+			  padding: 0 5px;
+			  font-family: Arial, sans-serif;
+			  color: white;
+			  text-shadow: 0 1px rgba(0, 0, 0, 0.25);
+			  border: 1px solid;
+			  border-radius: 10px;
+			  -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			
+			.badge1.green {
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			 .badge1.yellow {
+			  background: #FFFF56;
+			  border-color: #FFFF88;
+			  color:black;
+			  background-image: -webkit-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -moz-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -o-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: linear-gradient(to bottom, #FFFF88, #FFFF56);
+			}
+			 .badge1.red {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: -moz-linear-gradient(top, #AA0000, #FF0066);
+			  background-image: -o-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: linear-gradient(to bottom, #fc9f8a, #FF0066);
+			}
+			
+			 .badge1.grey {
+			  background: #EEE;
+			  border-color: white;
+			  background-image: -webkit-linear-gradient(top, #EEE,beige);
+			  background-image: -moz-linear-gradient(top, #EEE,beige);
+			  background-image: -o-linear-gradient(top, #EEE,beige);
+			  background-image: linear-gradient(to bottom, #EEE,beige);
+			  color:#555
+			}	
+			 .badge1.orange {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -moz-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -o-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: linear-gradient(to bottom, #FFC04C,#FFA500);
+			}
+			.badge1.coral {
+			;	//#FF7061
+			  background:#FF7061;# #FF7F50;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -moz-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -o-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: linear-gradient(to bottom, #FF7F50,#FF7061);
+			}
+        </style>
+        
+        <style type="text/css" media="print">
+			@page { size: landscape; }
+			
+			.row {
+				-webkit-print-color-adjust: exact;
+			}
+		</style>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+		<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		<script type="text/javascript" src="../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+	  	<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	   	<script type="text/javascript" src="../js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+		<script type="text/javascript" src="../js/polyviewer/methods_polyviewer.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.quicksearch/2.3.1/jquery.quicksearch.js"></script>
+		
+         
+        <style type="text/css">
+        	input[type="checkbox"], input[type="radio"] { margin: 0px 0 0 !important; }
+        </style>
+        
+        <script type="text/javascript">
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dojo.cookie");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dijit.form.CheckBox");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            
+            var input = param("input");
+            var input_user = param("user");
+            
+            var polyquery_filters;
+            var list_projects_names = [];
+            var list_panels = [];
+            
+            var username, pwd, project_name;
+            var release_annotation = '34';
+            var use_session_id = '';
+            $(document).ready(function () {
+	            setTimeout(function() {
+					show_waiting('Checking User / Password / Projects');
+	    			if  (input) {
+						document.getElementById("div_search_control").style.display = "block";
+						document.getElementById("div_panels_control").style.display = "block";
+						document.getElementById("div_genes_phenotypes").style.display = "block";
+			    		dijit.byId('dialog_dejavu_filters').show();
+			    		dijit.byId('dialog_dejavu_filters').hide();
+			    		if (input) {
+			    			document.getElementById("content_res_gene").innerHTML = "Please wait...";
+			    			launch_gene_search(input);
+		    			}
+	    			}
+	    			else {
+		    			document.getElementById("editor_stack").style.display = "block";
+		    			document.getElementById("navbar_polygenescout").style.display = "block";
+	    			
+						var cookie_user = dojo.cookie("username");
+						var cookie_pwd = dojo.cookie("passwd");
+		            	if (cookie_user && cookie_pwd) {
+		            		setTimeout(function() {
+		            			checkPassword(cookie_user, cookie_pwd);
+		            		}, 500);
+		            	}
+		            	else { relogin(); }
+		            }
+				}, 3000);
+	    	});
+	    	
+	    	function relogin() {
+	    		dijit.byId('login').show();
+	    	}
+	    	
+	    	function show_waiting(text) {
+	    		document.getElementById("waiting_text").innerHTML = "Loading Data...";
+	    		if (text) {
+	    			document.getElementById("waiting_text").innerHTML = text;
+	    		}
+	    		dijit.byId('waiting').show();
+	    	}
+	    	
+	    	var hgmd_access = 0;
+			function checkPassword(cookie_user, cookie_pwd) {
+	    		dijit.byId('login').hide();
+				document.getElementById("span_nb_projects").innerHTML = "<img src='../images/polyicons/wait18trans.gif' align='absmiddle'>";
+				document.getElementById("span_login").innerHTML = "<img src='../images/polyicons/wait18trans.gif' align='absmiddle'>";
+				var this_username, this_pwd;
+				if (cookie_user && cookie_pwd) {
+					this_username = cookie_user;
+					this_pwd = cookie_pwd;
+				}
+				else {
+					this_username = document.getElementById("username").value;
+					this_pwd = document.getElementById("passwd").value;
+				}
+				var url_hgmd_access = url_listProject + "?pwd=" + this_pwd + "&login=" + this_username + "&action=check_hgmd_access";
+			    $.getJSON( url_hgmd_access, function( data ) {
+			    	hgmd_access = data.hgmd_access;
+			    	if (hgmd_access == 1) {
+						document.getElementById("span_b_view_genes_hgmd").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'>";
+						document.getElementById("div_hgmd_control").style.display = "block";
+						var url = url_path + "polydejavu/get_updated_genes_pathgenic.pl?get_list_concepts=1&user=" + username + "&pwd=" + pwd;
+					    $.getJSON( url, function( data ) {
+					    	$.each( data, function( key, val ) {
+					    		if (key == 'html') {
+									var myNode = document.getElementById("content_list_concept_init");
+							    	var myPanel = $(val);
+									myPanel.appendTo(myNode);
+									document.getElementById("span_b_view_genes_hgmd").innerHTML = "GET List Genes";
+								}
+							});
+						});
+			    	}
+			    });
+				var urlpasswd = url_listProject + "?type=login&pwd=" + this_pwd + "&login=" + this_username + "&action=list";
+			    $.getJSON( urlpasswd, function( data ) {
+			    	var i = 0;
+			    	$.each( data.items, function( key, val ) { i++; });
+			    	//dijit.byId('waiting').hide();
+			    	if (i > 0) {
+			    		ok_login(this_username, this_pwd);
+			    		get_lists_projects();
+			    	}
+			    	else { error_login(); }
+			    });
+			}
+			
+			function get_lists_projects(sort_by) {
+				document.getElementById("span_nb_projects").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'>";
+				document.getElementById("content_res_projects").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'> Please wait...";
+				var url2 = url_path + "polydejavu/deja_list_projects.pl?user=" + username + "&pwd=" + pwd;
+				if (sort_by == 'sort_by_captures') {
+					url2 += "&sort_by_captures=1";
+				}
+	    		$.getJSON( url2, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html_projects') {
+							document.getElementById("content_res_projects").innerHTML = "";
+							var myNode = document.getElementById("content_res_projects");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							document.getElementById("content_res_projects").style.display = "block";
+							dijit.byId('waiting').hide();
+			    		}
+			    		if (key == 'list_projects') {
+			    			list_projects_names = $(val);
+			    		}
+			    		if (key == 'html_list_captures') {
+							var myNode = document.getElementById("content_list_my_captures");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							document.getElementById("div_b_view_my_captures").classList.remove("disabled");
+			    		}
+			    		if (key == 'html_list_phenotypes') {
+							var myNode = document.getElementById("content_list_phenotypes");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							document.getElementById("div_b_view_genes_phenotypes").classList.remove("disabled");
+			    		}
+  					});
+	    			ckeck_list_all_projects();
+	    			update_nb_projects_selected();
+			    });
+			}
+			
+			function update_nb_projects_selected() {
+				var nb_ok = 0;
+				var nb_total = 0;
+    			for(i=0; i<list_projects_names.length; i++) {
+		    		var proj_name = list_projects_names[i];
+		    		var b_id = "b_proj_" + proj_name;
+    				if (document.getElementById(b_id).checked == true) { nb_ok++; }
+    				nb_total++;
+		    	}
+    			document.getElementById("span_nb_projects").innerHTML = 'Found Projects';
+			}
+			
+			function ckeck_list_all_projects() {
+				var i = 0;
+    			for(i=0; i<list_projects_names.length; i++) {
+		    		var proj_name = list_projects_names[i];
+		    		var b_id = "b_proj_" + proj_name;
+		    		$("#"+b_id).attr("checked", true);
+		    	}
+			}
+			
+			function unckeck_list_all_projects() {
+				var i = 0;
+    			for(i=0; i<list_projects_names.length; i++) {
+		    		var proj_name = list_projects_names[i];
+		    		var b_id = "b_proj_" + proj_name;
+		    		$("#"+b_id).attr("checked", false);
+		    	}
+			}
+			
+			var init_nb_tr = 0;
+			function ok_login(this_username, this_pwd) {
+				username = this_username;
+				pwd = this_pwd;
+				dojo.cookie("username", this_username, { expires: 1 });
+				dojo.cookie("passwd", this_pwd, { expires: 1 });
+				document.getElementById("span_login").innerHTML = this_username;
+				document.getElementById("div_b_search_icon").classList.remove("disabled");
+				document.getElementById("div_b_view_genes_hgmd").classList.remove("disabled");
+				dijit.byId('login').hide();
+				init_nb_tr = ($('tr:visible').length-1);
+				document.getElementById("div_search_control").style.display = "block";
+				document.getElementById("div_panels_control").style.display = "block";
+				document.getElementById("div_genes_phenotypes").style.display = "block";
+	    		dijit.byId('dialog_dejavu_filters').show();
+	    		dijit.byId('dialog_dejavu_filters').hide();
+	    		if (input) {
+	    			document.getElementById("content_res_gene").innerHTML = "Please wait...";
+	    			launch_gene_search(input);
+    			}
+			}
+			
+			function error_login() {
+				alert('Login / Passwd failed...');
+				dijit.byId('login').show();
+			}
+			
+			function change_hgmd_version() {
+				var hgmd_version = document.getElementById("form_hgmd_versions").value;
+				var url = last_url_genes + '&previous_hgmd_db=' + hgmd_version;
+	    		show_waiting('Search FROM ' + hgmd_version + '...');
+    			document.getElementById("span_nb_genes_filters").innerHTML = "";
+    			document.getElementById("span_nb_genes_errors").innerHTML = "";
+				document.getElementById("resume_nb_genes_selected").innerHTML = "";
+				document.getElementById("content_res_gene").style.visibilty = "hidden";
+				document.getElementById("content_res_gene").innerHTML = "";
+				document.getElementById("content_gene_selection").innerHTML = "";
+			    $.getJSON( url, function( data ) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var i = 1;
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_gene_selection");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+	    					dijit.byId('waiting').hide();
+			    		}
+			    		if (key == 'filter_concept') {
+			    			document.getElementById("resume_f_concept").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_selected') {
+			    			document.getElementById("span_nb_genes_filters").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_total') {
+			    			total_genes = val;
+			    			total_genes = total_genes.replace(' genes', '');
+			    			document.getElementById("resume_nb_genes_selected").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_errors') {
+			    			if (val == 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; } 
+			    			else if (val > 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; }
+			    		}
+  					});
+			    });
+			}
+			
+			function reload_and_sort(type) {
+				var url = last_url_genes + '&sort=' + type;
+	    		show_waiting('Sorting by ' + type + '...');
+    			document.getElementById("span_nb_genes_filters").innerHTML = "";
+    			document.getElementById("span_nb_genes_errors").innerHTML = "";
+				document.getElementById("resume_nb_genes_selected").innerHTML = "";
+				document.getElementById("content_res_gene").style.visibilty = "hidden";
+				document.getElementById("content_res_gene").innerHTML = "";
+				document.getElementById("content_gene_selection").innerHTML = "";
+			    $.getJSON( url, function( data ) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var i = 1;
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_gene_selection");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+	    					dijit.byId('waiting').hide();
+			    		}
+			    		if (key == 'filter_concept') {
+			    			document.getElementById("resume_f_concept").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_selected') {
+			    			document.getElementById("span_nb_genes_filters").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_total') {
+			    			total_genes = val;
+			    			total_genes = total_genes.replace(' genes', '');
+			    			document.getElementById("resume_nb_genes_selected").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_errors') {
+			    			if (val == 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; } 
+			    			else if (val > 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; }
+			    		}
+  					});
+			    });
+			}
+	    	
+	    	function get_search_args(value) {
+		    	value = value.replaceAll(' ', '');
+		    	var list = value.split(/[\s+,\+]/);
+		    	var list_genes = [];
+		    	var list_transcripts = [];
+		    	var list_locus = [];
+	    		var is_locus_search = 0;
+	    		var is_transcript = 0;
+	    		var is_gene = 0;
+		    	
+		    	for (var i = 0; i < list.length; i++) {
+		    		var this_value = list[i];
+		    		var regex = /:/;
+		    		var regex2 = /ENST[0-9]+/;
+		    		if (this_value.match(regex)) {
+		    			is_locus_search = 1;
+		    			list_locus.push(this_value);
+		    		}
+		    		else if (this_value.match(regex2)) {
+		    			is_transcript = 1;
+		    			list_transcripts.push(this_value);
+		    		}
+		    		else {
+		    			is_gene = 1;
+		    			list_genes.push(this_value);
+		    		}
+			    }
+			    var args = '';
+			    var search_text_wait = 'Checking...';
+			    if (is_gene == 1) {
+			    	args += "&genes=" + list_genes.join(',');
+			    	search_text_wait += ' gene';
+			    	if (list_genes.length > 1) { search_text_wait += 's'; }
+			    }
+			    if (is_transcript == 1) {
+			    	args += "&transcripts=" + list_transcripts.join(',');
+			    	search_text_wait += ' transcript';
+			    	if (list_transcripts.length > 1) { search_text_wait += 's'; }
+			    }
+			    if (is_locus_search == 1) {
+			    	args += "&locus=" + list_locus.join(',');
+			    	search_text_wait += ' locus';
+			    }
+			    search_text_wait += '!';
+			    show_waiting(search_text_wait);
+			    return args;
+	    	}	
+	    	
+	    	var last_url_genes;
+	    	var gene_id_ok_old = 'FIRSTFIRST';
+	    	var gene_id_old = '';
+	    	function launch_gene_search(use_input) {
+		    	var value;
+				var project = param("project");
+				var patient = param("patient");
+		    	if (use_input) {
+		    		value = use_input;
+		    		if (project && patient) {
+	    				document.title = 'PolyCyto - Gene(s) List';
+    				}
+		    	}
+		    	else { value = document.getElementById("input_search").value; }
+		    	if (value == '') { return; }
+	    		if (value == gene_id_old) {
+	    			launch_for_gene(gene_id_ok_old);
+	    		}
+	    		else {
+		    		show_waiting('Checking...');
+	    			document.getElementById("span_nb_genes_filters").innerHTML = "";
+	    			document.getElementById("span_nb_genes_errors").innerHTML = "";
+    				document.getElementById("resume_nb_genes_selected").innerHTML = "";
+    				if (use_input) {
+		    			document.getElementById("content_gene_selection").innerHTML = "<div align='center'><i>Running. Please wait...</i> <img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'></div>";
+    				}
+    				else {
+						document.getElementById("content_res_gene").style.visibilty = "hidden";
+						document.getElementById("content_res_gene").innerHTML = "";
+						document.getElementById("content_gene_selection").innerHTML = "";
+					}
+		    		var is_locus_search = 0;
+		    		var is_transcript = 0;
+		    		var url = url_path + "json_output_nodb/check_genes_transcripts_locus.pl";
+		    		if (input_user) {
+		    			url += "?user=" + input_user + "";
+		    		}
+		    		else {
+		    			url += "?user=" + username + "";
+		    		}
+		    		url += get_search_args(value);
+					if (project) { url += "&project=" + project; }
+					if (patient) { url += "&patient=" + patient; }
+		    		last_url_genes = url;
+			    	var html_table;
+				    $.getJSON( url, function( data ) {
+				    	var nb_ok = 0;
+				    	var nb_not = 0;
+				    	var i = 1;
+				    	$.each( data, function( key, val ) {
+				    		if (key == 'html') {
+								document.getElementById("content_res").innerHTML = "";
+								document.getElementById("content_gene_selection").innerHTML = "";
+								var myNode = document.getElementById("content_gene_selection");
+						    	var myPanel = $(val);
+								myPanel.appendTo(myNode);
+		    					dijit.byId('waiting').hide();
+				    		}
+	  					});
+				    });
+			    }
+	    	}
+	    	
+	    	function reload_score_gene (use_args) {
+			    show_waiting("Updating gene(s) score(s) !");
+				document.getElementById("content_res").innerHTML = "";
+				document.getElementById("content_gene_selection").innerHTML = "";
+	    		var url = url_path + "json_output_nodb/check_genes_transcripts_locus.pl?" + use_args;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							document.getElementById("content_gene_selection").innerHTML = "";
+							var myNode = document.getElementById("content_gene_selection");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+	    					dijit.byId('waiting').hide();
+			    		}
+  					});
+			    });
+	    	}
+	    	
+	    	function launch_genes_hgmd(filters_args) {
+    			show_waiting('Checking... HGMD DB!');
+				document.getElementById("input_search").setAttribute('value', '');
+    			document.getElementById("span_nb_genes_filters").innerHTML = "";
+    			document.getElementById("span_nb_genes_errors").innerHTML = "";
+    			document.getElementById("resume_nb_genes_selected").innerHTML = "";
+    			document.getElementById("resume_f_concept").innerHTML = "";
+				document.getElementById("content_res_gene").innerHTML = "";
+				document.getElementById("content_gene_selection").innerHTML = "";
+		    	var url = url_path + "polydejavu/get_updated_genes_pathgenic.pl?user=" + username + "&pwd=" + pwd;
+		    	if (filters_args) {
+		    		url += filters_args;
+		    	}
+		    	var concept_filter = document.getElementById("form_concepts_init").value;
+				if (concept_filter == '') {
+			    	dijit.byId('waiting').hide();	
+					alert('Please, select a concept first.');
+					return;
+				}
+		    	if (concept_filter == 'all') {}
+		    	else { url += "&filter_concept=" + concept_filter; }
+				if (document.getElementById('b_only_new_concepts_filters').checked == true) { url += "&filter_only_new=1"; }
+				if (document.getElementById('b_only_new_dm_concepts_filters').checked == true) {}
+				else { url += "&get_all_genes=1"; }
+	    		last_url_genes = url;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							var myNode = document.getElementById("content_gene_selection");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							myPanel.appendTo(myNode);
+			    			dijit.byId('waiting').hide();
+			    			$("#id_search").quicksearch("table#table_hgmd_genes tbody tr", {
+								noResults: '#noresults',
+								stripeRows: ['odd', 'even'],
+								minValLength: 3,
+								onAfter: (function() {
+									var nb = ($('tr.hgmd_gene:visible')).length;
+									document.getElementById("span_nb_genes_filters").innerHTML = "";
+									document.getElementById("span_nb_genes_filters").innerHTML = nb + ' selected';
+								})
+							});
+			    			$("#form_panels").quicksearch("table#table_hgmd_genes tbody tr", {
+								noResults: '#noresults',
+								stripeRows: ['odd', 'even'],
+								minValLength: 3,
+								onBefore: (function() {
+									$("#id_search").val("");
+								}),
+								onAfter: (function() {
+									document.getElementById("resume_f_panel").innerHTML = ""; 
+									var panel_name = document.getElementById("form_panels").value;
+									panel_name = panel_name.toLowerCase();
+									var init_name = panel_name;
+									
+									$("#id_search").val("");
+									var elements = document.getElementsByClassName('hgmd_gene')
+								    for (var i = 0; i < elements.length; i++){
+								    	if (elements[i].classList.contains('hidden')) { }
+								        else { elements[i].classList.add("hidden"); }
+										elements[i].style.display = 'table-row';
+								    }
+								    if (panel_name == 'hgmd_gene') {
+									    for (var i = 0; i < elements.length; i++){
+									        elements[i].classList.remove("hidden");
+											elements[i].style.display = 'table-row';
+									    }
+								    }
+							    	else {
+										var elements2 = document.getElementsByClassName(panel_name)
+									    for (var i = 0; i < elements2.length; i++){
+									        elements2[i].classList.remove("hidden");
+											elements2[i].style.display = 'table-row';
+									    }
+							    	}
+								    if (init_name == 'hgmd_gene') {}
+						    		else {
+						    		 	if (init_name.length > 20) {init_name = init_name.substring(0, 20)+'...';  }
+						    			document.getElementById("resume_f_panel").innerHTML = "only "+init_name;
+						    		}
+									var nb = ($('tr.hgmd_gene:visible')).length;
+									document.getElementById("span_nb_genes_filters").innerHTML = "";
+									document.getElementById("span_nb_genes_filters").innerHTML = nb + ' selected';
+								})
+							});
+		    			}
+			    		if (key == 'filter_concept') {
+			    			document.getElementById("resume_f_concept").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_selected') {
+			    			document.getElementById("span_nb_genes_filters").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_total') {
+			    			total_genes = val;
+			    			total_genes = total_genes.replace(' genes', '');
+			    			document.getElementById("resume_nb_genes_selected").innerHTML = val;
+			    		}
+			    		if (key == 'nb_genes_errors') {
+			    			if (val == 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; } 
+			    			else if (val > 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; }
+			    		}
+	    			});
+	    		});
+    		}
+    		
+    		var hgmd_gene_name_selected = '';
+    		var is_hgmd_only_dm = 0;
+    		var is_hgmd_only_new = 0;
+    		function get_variants_from_hgmd_gene_filters(gene_name, only_new, only_dm) {
+	    		is_hgmd_only_dm = 0;
+	    		is_hgmd_only_new = 0;
+	    		hgmd_gene_name_selected = gene_name;
+    			if (only_dm == 1) {
+    				is_hgmd_only_dm = 1;
+	    			document.getElementById("span_gene_dialog_hgmd_types").innerHTML = '(ONLY new DM variants)';
+    			}
+    			else if (only_new == 1) {
+    				is_hgmd_only_new = 1;
+	    			document.getElementById("span_gene_dialog_hgmd_types").innerHTML = '(ONLY new variants)';
+    			}
+    			else {
+	    			document.getElementById("span_gene_dialog_hgmd_types").innerHTML = '(ALL variants)';
+    			}
+	    		document.getElementById("span_gene_dialog_hgmd_filters").innerHTML = gene_name;
+	    		dijit.byId('dialog_hgmd_filters').show();
+	    		return;
+    		}
+    		
+    		function get_variants_from_hgmd_gene(with_filters) {
+	    		dijit.byId('dialog_hgmd_filters').hide();
+    			show_waiting('Checking... HGMD DB!<br><i>-> A new page will open...</i>');
+				document.getElementById("content_hgmd_variants").innerHTML = "";
+		    	var url = url_path + "polydejavu/get_variants_infos_from_hgmd_gene.pl?gene_name=" + hgmd_gene_name_selected;
+		    	if (is_hgmd_only_new == 1) {
+		    		url += '&only_new=1';
+		    	}
+	    		if (is_hgmd_only_dm == 1) {
+	    			url += '&only_dm=1';
+	    		}
+
+				if (with_filters == 1) {
+					if (dijit.byId("slider_hgmd_dv_pv").get("value") == 1) { url += "&dejavu=5"; }
+					if (dijit.byId("slider_hgmd_dv_pv").get("value") == 2) { url += "&dejavu=10"; }
+					if (dijit.byId("slider_hgmd_dv_pv").get("value") == 3) { url += "&dejavu=50"; }
+					if (dijit.byId("slider_hgmd_dv_pv").get("value") == 4) { url += "&dejavu=100"; }
+					if (dijit.byId("slider_hgmd_dv_pv").get("value") == 5) { url += "&dejavu=1000"; }
+					
+					if (dijit.byId("slider_hgmd_dv_ho_pv").get("value") == 1) { url += "&dejavu_ho=5"; }
+					if (dijit.byId("slider_hgmd_dv_ho_pv").get("value") == 2) { url += "&dejavu_ho=10"; }
+					if (dijit.byId("slider_hgmd_dv_ho_pv").get("value") == 3) { url += "&dejavu_ho=50"; }
+					if (dijit.byId("slider_hgmd_dv_ho_pv").get("value") == 4) { url += "&dejavu_ho=100"; }
+					if (dijit.byId("slider_hgmd_dv_ho_pv").get("value") == 5) { url += "&dejavu_ho=1000"; }
+			    	
+					if (dijit.byId("slider_hgmd_gnomad_ac_pv").get("value") == 1) { url += "&gnomad=5"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_pv").get("value") == 2) { url += "&gnomad=10"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_pv").get("value") == 3) { url += "&gnomad=50"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_pv").get("value") == 4) { url += "&gnomad=100"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_pv").get("value") == 5) { url += "&gnomad=1000"; }
+			    	
+					if (dijit.byId("slider_hgmd_gnomad_ac_ho_pv").get("value") == 1) { url += "&gnomad_ho=5"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_ho_pv").get("value") == 2) { url += "&gnomad_ho=10"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_ho_pv").get("value") == 3) { url += "&gnomad_ho=50"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_ho_pv").get("value") == 4) { url += "&gnomad_ho=100"; }
+					if (dijit.byId("slider_hgmd_gnomad_ac_ho_pv").get("value") == 5) { url += "&gnomad_ho=1000"; }
+			    	
+			    	var l_filters = [];
+					if (document.getElementById('filter_hgmd_maturemirna').checked == true) {
+						l_filters.push('mature-mirna');
+						//l_filters.push('mature_mirna');
+					}
+					if (document.getElementById('filter_hgmd_essential_splicing').checked == true) {
+						l_filters.push('splice_acc/don');
+						l_filters.push('splice_acceptor/donor');
+					}
+					if (document.getElementById('filter_hgmd_frameshift').checked == true) { l_filters.push('frameshift'); }
+					if (document.getElementById('filter_hgmd_stop').checked == true) { l_filters.push('stop-gained'); }
+					if (document.getElementById('filter_hgmd_phase').checked == true) { l_filters.push('(start/stop)-lost'); }
+					
+					if (document.getElementById('filter_hgmd_ncrna').checked == true) { l_filters.push('ncrna'); }
+					if (document.getElementById('filter_hgmd_nonsynonymous').checked == true) { l_filters.push('missense'); }
+					if (document.getElementById('filter_hgmd_nonframeshift').checked == true) { l_filters.push('no-frameshift'); }
+					if (document.getElementById('filter_hgmd_splice_site').checked == true) { l_filters.push('splice_region'); }
+					if (document.getElementById('filter_hgmd_predicted_splice_site').checked == true) { l_filters.push('predicted_splice_region'); }
+					
+					if (document.getElementById('filter_hgmd_pseudogene').checked == true) { l_filters.push('pseudogene'); }
+					if (document.getElementById('filter_hgmd_utr').checked == true) { l_filters.push('utr'); }
+					if (document.getElementById('filter_hgmd_silent').checked == true) { l_filters.push('synonymous'); }
+					if (document.getElementById('filter_hgmd_upstream_downstream').checked == true) {
+						l_filters.push('upstream');
+						l_filters.push('downstream');
+					}
+					if (document.getElementById('filter_hgmd_intronic').checked == true) { l_filters.push('intronic'); }
+//					if (document.getElementById('filter_hgmd_intergenic').checked == true) { l_filters.push('intergenic'); }
+			    	url += "&filters_cons=" + l_filters.join(',');
+			    	if (l_filters.length == 0) {
+						alert ("Please select one or multiple annotation(s) in filters first...");
+						dijit.byId('waiting').hide();
+						return;
+					}
+				}
+	    		
+    			$.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'session_id') {
+							dijit.byId('waiting').hide();
+			    			use_session_id = data.session_id;
+			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
+			    			window.open(window_url, '_blank').focus();
+			    			
+			    		}
+  					});
+			    });
+    		}
+    		
+    		var use_only_interval;
+    		var use_only_transcript;
+	    	var use_project_name;
+	    	var use_patient_name;
+	    	var last_url_launch_for_gene = '';
+	    	function launch_for_gene(gene_id, use_this_interval, transcript_name) {
+	    		document.getElementById("span_gene_dialog_dejavu_filters").innerHTML = gene_id;
+	    		use_project_name = '';
+	    		use_patient_name = '';
+	    		use_only_interval = '';
+	    		use_only_transcript = '';
+				document.getElementById("content_list_tr_exons_introns").innerHTML = "";
+		    	document.getElementById("td_slider_projects").style.display = "block";
+		    	document.getElementById("td_hgmd_transcripts_exons").style.display = "block";
+	    		if (use_this_interval) {
+	    			use_only_interval = use_this_interval;
+	    			if (transcript_name) {
+	    				use_only_transcript = transcript_name;
+	    				document.getElementById("content_list_tr_exons_introns").innerHTML = "<span style='color:red;'>only " + transcript_name + "</span>";
+	    			}
+	    			else {
+	    				document.getElementById("content_list_tr_exons_introns").innerHTML = "<span style='color:red;'>interval " + use_only_interval + "</span>";
+	    			}
+		    		dijit.byId('dialog_dejavu_filters').show();
+		    		return;
+	    		}
+    			show_waiting('Checking... gene!</i>');
+	    		var url = url_path + "polydejavu/get_gene_transcritps_exons_introns.pl?gene=" + gene_id;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'transcripts_exons') {
+			    		
+			    		}
+			    		if (key == 'html_list') {
+							var myNode = document.getElementById("content_list_tr_exons_introns");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							dijit.byId('waiting').hide();
+	    					dijit.byId('dialog_dejavu_filters').show();
+			    			return;
+			    		}
+  					});
+			    });
+	    	}
+	    	
+	    	function launch_for_gene_project_patient(gene_id, use_this_project_name, use_this_patient_name) {
+	    		use_project_name = use_this_project_name;
+	    		use_patient_name = use_this_patient_name;
+	    		last_url_launch_for_gene = '';
+	    		var gene_id_alt = document.getElementById("input_search").value;
+    			show_waiting('Checking... variants gene!<br><i>-> A new page will open...</i>');
+		    	//var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&gene=" + gene_id + "&gene_alt=" + gene_id_alt;
+		    	var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&gene=" + gene_id;
+		    	document.getElementById("span_gene_dialog_dejavu_filters").innerHTML = ""; 
+	    		url += "&project=" + use_this_project_name;
+	    		url += "&patient=" + use_this_patient_name;
+		    	url += "&models=strict_denovo,denovo,recessive,both,any_parent,solo";
+				last_url_launch_for_gene = url;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'session_id') {
+							dijit.byId('waiting').hide();
+			    			use_session_id = data.session_id;
+			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
+			    			window.open(window_url, '_blank').focus();
+			    		}
+  					});
+			    });
+	    	}
+	    	
+	    	function launch_for_gene_filters() {
+	    		dijit.byId('dialog_dejavu_filters').hide();
+	    		var gene_id = document.getElementById("span_gene_dialog_dejavu_filters").innerHTML;
+	    		last_url_launch_for_gene = '';
+	    		var gene_id_alt = document.getElementById("input_search").value;
+	    		
+    			show_waiting('Checking... variants gene!<br><i>-> A new page will open...</i>');
+		    	//var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&gene=" + gene_id + "&gene_alt=" + gene_id_alt;
+		    	var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&gene=" + gene_id;
+		    	
+		    	document.getElementById("span_gene_dialog_dejavu_filters").innerHTML = ""; 
+		    	if (use_project_name && use_patient_name) {
+		    		url += "&project=" + use_project_name;
+		    		url += "&patient=" + use_patient_name;
+		    	}
+				if (dijit.byId("slider_dv_pv").get("value") == 1) { url += "&dejavu=5"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 2) { url += "&dejavu=10"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 3) { url += "&dejavu=50"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 4) { url += "&dejavu=100"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 5) { url += "&dejavu=1000"; }
+				
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 1) { url += "&dejavu_ho=5"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 2) { url += "&dejavu_ho=10"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 3) { url += "&dejavu_ho=50"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 4) { url += "&dejavu_ho=100"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 5) { url += "&dejavu_ho=1000"; }
+		    	
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 1) { url += "&gnomad=5"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 2) { url += "&gnomad=10"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 3) { url += "&gnomad=50"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 4) { url += "&gnomad=100"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 5) { url += "&gnomad=1000"; }
+		    	
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 1) { url += "&gnomad_ho=5"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 2) { url += "&gnomad_ho=10"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 3) { url += "&gnomad_ho=50"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 4) { url += "&gnomad_ho=100"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 5) { url += "&gnomad_ho=1000"; }
+		    	
+		    	var l_filters = [];
+				if (document.getElementById('filter_maturemirna').checked == true) {
+					l_filters.push('mature-mirna');
+					//l_filters.push('mature_mirna');
+				}
+				if (document.getElementById('filter_essential_splicing').checked == true) {
+					l_filters.push('splice_acc/don');
+					l_filters.push('splice_acceptor/donor');
+				}
+				if (document.getElementById('filter_frameshift').checked == true) { l_filters.push('frameshift'); }
+				if (document.getElementById('filter_stop').checked == true) { l_filters.push('stop-gained'); }
+				if (document.getElementById('filter_phase').checked == true) { l_filters.push('(start/stop)-lost'); }
+				
+				if (document.getElementById('filter_ncrna').checked == true) { l_filters.push('ncrna'); }
+				if (document.getElementById('filter_nonsynonymous').checked == true) { l_filters.push('missense'); }
+				if (document.getElementById('filter_nonframeshift').checked == true) { l_filters.push('no-frameshift'); }
+				if (document.getElementById('filter_splice_site').checked == true) { l_filters.push('splice_region'); }
+				if (document.getElementById('filter_predicted_splice_site').checked == true) { l_filters.push('predicted_splice_region'); }
+				
+				if (document.getElementById('filter_pseudogene').checked == true) { l_filters.push('pseudogene'); }
+				if (document.getElementById('filter_utr').checked == true) { l_filters.push('utr'); }
+				if (document.getElementById('filter_silent').checked == true) { l_filters.push('synonymous'); }
+				if (document.getElementById('filter_upstream_downstream').checked == true) {
+					l_filters.push('upstream');
+					l_filters.push('downstream');
+				}
+				if (document.getElementById('filter_intronic').checked == true) { l_filters.push('intronic'); }
+//				if (document.getElementById('filter_intergenic').checked == true) { l_filters.push('intergenic'); }
+		    	url += "&filters_cons=" + l_filters.join(',');
+		    	if (l_filters.length == 0) {
+					alert ("Please select one or multiple annotation(s) in filters first...");
+					dijit.byId('waiting').hide();
+					return;
+				}
+		    	
+				if (document.getElementById('b_only_pat_ill').checked == true) { url += "&only_ill=1"; }
+				if (document.getElementById('b_only_my_projects').checked == true) { url += "&only_my_projects=1"; }
+				
+				var l_models = [];
+				if (document.getElementById('strict_denovo').checked == true) { l_models.push('strict_denovo'); }
+				if (document.getElementById('denovo').checked == true) { l_models.push('denovo'); }
+				if (document.getElementById('recessive').checked == true) { l_models.push('recessive'); }
+				if (document.getElementById('both').checked == true) { l_models.push('both'); }
+				if (document.getElementById('any_parent').checked == true) { l_models.push('any_parent'); }
+				if (document.getElementById('solo').checked == true) { l_models.push('solo'); }
+		    	url += "&models=" + l_models.join(',');
+				
+				var l_proj_excluded = [];
+    			for(i=0; i<list_projects_names.length; i++) {
+		    		var proj_name = list_projects_names[i];
+		    		var b_id = "b_proj_" + proj_name;
+		    		if (document.getElementById(b_id).checked == false) { l_proj_excluded.push(proj_name); }
+		    	}
+		    	if (l_proj_excluded.length > 0) {
+		    		url += "&proj_excluded=" + l_proj_excluded.join(',');
+		    	}
+				
+				if (l_models.length == 0) {
+					alert ("Please select one or multiple model(s) in filters first...");
+					dijit.byId('waiting').hide();
+					return;
+				}
+				
+				var ratio_allelic = document.getElementById('htoto').value * 1;
+				if (ratio_allelic != '-' && ratio_allelic > 0) {
+					url += "&min_perc_all="+ratio_allelic;
+				}
+				
+				if (use_only_interval != '') {
+					url += "&only_interval="+use_only_interval;
+					if (use_only_transcript != '') {
+						url += "&only_transcript="+use_only_transcript;
+					}
+				}
+				else {
+			    	var locus_filter = document.getElementById("form_transcripts_exons_introns").value;
+					if (locus_filter != '') {
+				    	url += "&only_interval="+locus_filter;
+					}
+				}
+				last_url_launch_for_gene = url;
+				
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'session_id') {
+							dijit.byId('waiting').hide();
+			    			use_session_id = data.session_id;
+			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
+			    			window.open(window_url, '_blank').focus();
+			    		}
+  					});
+			    });
+    		}
+            
+		    function launch() {
+		    	document.getElementById("content_res").innerHTML = "<div align='center'><i>Running. Please wait...</i> <img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'></div>";
+		    	document.getElementById("span_ok").innerHTML = "";
+		    	document.getElementById("span_not").innerHTML = "";
+		    	var value = document.getElementById("text_list_genes").value;
+		    	var list_tr = value.split("\n");
+		    	var url = url_path + "json_output_nodb/check_genes_transcripts_locus.pl?user=" + username + "&annotation=" + release_annotation + "&tr=" + list_tr.join(',');
+		    	var html_table = "<table class='table'>";
+				html_table += "<thead>";
+				html_table += "<tr>";
+				html_table += "<th scope='col'>#</th>";
+				html_table += "<th scope='col'>Transcript Name</th>";
+				html_table += "<th scope='col'>Gene Name</th>";
+				html_table += "<th scope='col'>Status</th>";
+				html_table += "<th scope='col'>Ensembl URL</th>";
+				html_table += "</tr>";
+				html_table += "</thead>";
+				html_table += "<tbody>";
+			    $.getJSON( url, function( data ) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var i = 1;
+			    	$.each( data, function( key, val ) {
+			    		var color = 'green';
+			    		var list_res = String(val).split(';');
+			    		var status = list_res[0];
+			    		var release = list_res[1];
+			    		var gene_name = list_res[2];
+			    		if (status == 'NOT') {
+			    			status = 'NOT FOUND in ' + release;
+			    			color = 'red';
+			    			nb_not++;
+			    		}
+			    		else {
+			    			nb_ok++;
+			    			status = 'FOUND in ' + release;
+			    		}
+			    		var url_now = 'http://www.ensembl.org/Homo_sapiens/Transcript/Idhistory?t=' + key;
+			    		html_table += "<tr style='color:" + color + "'>";
+						html_table += "<th scope='row'>" + i + "</th>";
+						html_table += "<td>" + key + "</td>";
+						html_table += "<td>" + gene_name + "</td>";
+						html_table += "<td>" + status + "</td>";
+						html_table += "<td>";
+						html_table += "<table>";
+						html_table += "<td><a href='" + url_now + "' target='_blank'>url</a></td>";
+						html_table += "</table>";
+						html_table += "</td>";
+			    		html_table += "</tr>";
+			    		i++;
+  					});
+					html_table += "</tbody>";
+					html_table += "</table>";
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(html_table);
+					myPanel.appendTo(myNode);
+					var nb_total = nb_ok + nb_not;
+					document.getElementById("span_ok").innerHTML  = "<font color='#00CC00'>OK: " + nb_ok + " / " + nb_total + "</font>";
+					document.getElementById("span_not").innerHTML = "<font color='red'>ERROR: " + nb_not + " / " + nb_total + "</font>";
+			    });
+		    }
+		    
+		    function change_annotation(annot) {
+		    	release_annotation = annot;
+		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + annot + "</b></font>";
+		    }
+		    
+		    function show_this_validation(table_html) {
+				document.getElementById("content_validation").innerHTML = "";
+		    	var myPanel = $(table_html);
+				var myNode = document.getElementById("content_validation");
+				myPanel.appendTo(myNode);
+				dijit.byId('dialog_validation').show();
+		    }
+
+			function view_variation_validation(id){
+				var argsPost = new Array();
+			    argsPost["no_css"] = 1;
+			    argsPost["project"] = project_name;
+			 	argsPost["vid"] = id;
+				post_show_popup_dude(argsPost,url_view__variations_validations);
+			}
+			
+			function select_cons_filters(type) {
+				document.getElementById('b_check_mirna').checked = true;
+				document.getElementById('b_check_splice_acc_don').checked = true;
+				document.getElementById('b_check_frameshift').checked = true;
+				document.getElementById('b_check_stop_gained').checked = true;
+				document.getElementById('b_check_start_stop_lost').checked = true;
+				document.getElementById('b_check_ncrna').checked = false;
+				document.getElementById('b_check_missense').checked = false;
+				document.getElementById('b_check_no_frameshift').checked = false;
+				document.getElementById('b_check_splice_region').checked = false;
+				document.getElementById('b_check_predicted_splice_region').checked = false;
+				document.getElementById('b_check_pseudogene').checked = false;
+				document.getElementById('b_check_utr').checked = false;
+				document.getElementById('b_check_synonymous').checked = false;
+				document.getElementById('b_check_up_downstream').checked = false;
+				document.getElementById('b_check_intronic').checked = false;
+//				document.getElementById('b_check_intergenic').checked = false;
+				if (type == 'medium') {
+					document.getElementById('b_check_ncrna').checked = true;
+					document.getElementById('b_check_missense').checked = true;
+					document.getElementById('b_check_no_frameshift').checked = true;
+					document.getElementById('b_check_splice_region').checked = true;
+					document.getElementById('b_check_predicted_splice_region').checked = true;
+				}
+				if (type == 'low') {
+					document.getElementById('b_check_ncrna').checked = true;
+					document.getElementById('b_check_missense').checked = true;
+					document.getElementById('b_check_no_frameshift').checked = true;
+					document.getElementById('b_check_splice_region').checked = true;
+					document.getElementById('b_check_predicted_splice_region').checked = true;
+					document.getElementById('b_check_pseudogene').checked = true;
+					document.getElementById('b_check_utr').checked = true;
+					document.getElementById('b_check_synonymous').checked = true;
+					document.getElementById('b_check_up_downstream').checked = true;
+					document.getElementById('b_check_intronic').checked = true;
+				}
+			}
+			
+			function view_var_from_proj_gene_pat(project_name, gene_tr_name, patient_name, keep_var_id, only_model) {
+				if (launch_new_var_proj_gene_pat == 1) { return; }
+				document.getElementById("content_res").innerHTML = "Loading...";
+				dijit.byId('dialog_hgmd').show();
+				dijit.byId('waiting_variants').show();
+				launch_new_var_proj_gene_pat = 1;
+				var url = url_path + "json_output_nodb/view_all_var_from_project_patient_gene.pl";
+				url += "?project=" + project_name;
+				if (String(gene_tr_name).match(/ENST/)) {
+					url += "&gene_transcript=" + gene_tr_name;
+				}
+				else {
+					url += "&gene=" + gene_tr_name;
+				}
+				url += "&patient=" + patient_name;
+				if (keep_var_id) {
+					url += "&keep=" + keep_var_id;
+				}
+				url += "&skip_header=2";
+				if (only_model && only_model != 'total') {
+					url += "&only_model=" + only_model;
+					url += "&hide_filtred_model=1";
+				}
+			    $.getJSON( url, function( data ) {
+					
+			    	dijit.byId('waiting_variants').hide();
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html_table') {
+							const regex = /max-height:300px;/g;
+							var new_size = "max-height:580px;";
+							val = val.replace(regex, new_size);
+							document.getElementById("content_res").innerHTML = val;
+			    		}
+					});
+					//view_new_var_proj_gene_pat();
+			        setTimeout(function() {
+						if (only_model == 'mother') { select_tr('table_variants', 'tr_variant', 'tr_mother') }
+						if (only_model == 'father') { select_tr('table_variants', 'tr_variant', 'tr_father') }
+			        }, 1000);
+					launch_new_var_proj_gene_pat = 0;
+			    });
+			}
+			
+			function update_grid_gene_phenotypes(gene_id) {
+				document.getElementById("content_table_phenotypes").innerHTML = '';
+				document.getElementById("container_wordcloud").innerHTML = '';
+    			show_waiting('Checking... phenotype(s)!');
+				get_gene_phenotypes(gene_id);
+				dijit.byId('waiting').hide();
+				dijit.byId('dialog_list_phenotypes').show();
+			}
+			
+			function launch_genes_phenotypes() {
+				var value_phenotype = document.getElementById("form_phenotypes").value;
+				if (value_phenotype == '') {
+			    	dijit.byId('waiting').hide();
+					alert('Please, select a phenotype first.');
+					return;
+				}
+				var l_tmp = value_phenotype.split(';');
+				var phenotype_name = l_tmp[0];
+				var hgmd_concept_name = l_tmp[1];
+				
+    			show_waiting('Checking... phenotype!');
+    			document.getElementById("span_nb_genes_filters").innerHTML = "";
+    			document.getElementById("span_nb_genes_errors").innerHTML = "";
+				document.getElementById("resume_nb_genes_selected").innerHTML = "";
+				document.getElementById("content_res_gene").style.visibilty = "hidden";
+				document.getElementById("content_res_gene").innerHTML = "";
+				document.getElementById("content_gene_selection").innerHTML = "";
+	    		var url = url_path + "json_output_nodb/check_genes_transcripts_locus.pl";
+	    		url += "?user=" + username + "&phenotype=" + phenotype_name;
+				if (document.getElementById('b_include_concepts_hgmd').checked == true && hgmd_concept_name) {
+	    			url += "&hgmd_concept=" + hgmd_concept_name;
+	    		}
+	    		
+	    		last_url_genes = url;
+		    	var html_table;
+			    $.getJSON( url, function( data ) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var i = 1;
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_gene_selection");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+	    					dijit.byId('waiting').hide();
+			    		}
+			    		if (key == 'nb_genes') {
+    						document.getElementById("resume_nb_genes_selected").innerHTML = val + ' genes';
+			    		}
+			    		if (key == 'nb_genes_error') {
+    						document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found';
+			    		}
+  					});
+			    });
+			}
+						
+			function launch_genes_capture() {
+				var value_capture = document.getElementById("form_my_captures").value;
+				if (value_capture == '') {
+			    	dijit.byId('waiting').hide();
+					alert('Please, select a capture first.');
+					return;
+				}
+				var l_tmp = value_capture.split(';');
+				var capture_name = l_tmp[0];
+				var use_project = l_tmp[1];
+				
+    			show_waiting('Checking... capture!');
+    			document.getElementById("span_nb_genes_filters").innerHTML = "";
+    			document.getElementById("span_nb_genes_errors").innerHTML = "";
+				document.getElementById("resume_nb_genes_selected").innerHTML = "";
+				document.getElementById("content_res_gene").style.visibilty = "hidden";
+				document.getElementById("content_res_gene").innerHTML = "";
+				document.getElementById("content_gene_selection").innerHTML = "";
+	    		var url = url_path + "json_output_nodb/check_genes_transcripts_locus.pl";
+	    		url += "?user=" + username + "&capture=" + capture_name + "&use_project=" + use_project;;
+	    		
+	    		last_url_genes = url;
+		    	var html_table;
+			    $.getJSON( url, function( data ) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var i = 1;
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_gene_selection");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+	    					dijit.byId('waiting').hide();
+			    		}
+  					});
+			    });
+			}
+			
+			function check_slider_cat_hgmd_annotations() {
+				var value = parseInt(dijit.byId("slider_hgmd_impact_pv").get('value'));
+				dijit.byId("filter_hgmd_intergenic").set('checked', false);
+				dijit.byId("filter_hgmd_intronic").set('checked', false);
+				dijit.byId("filter_hgmd_upstream_downstream").set('checked', false);
+				dijit.byId("filter_hgmd_silent").set('checked', false);
+				dijit.byId("filter_hgmd_utr").set('checked', false);
+				dijit.byId("filter_hgmd_pseudogene").set('checked', false);
+				dijit.byId("filter_hgmd_nonframeshift").set('checked', false);
+				dijit.byId("filter_hgmd_nonsynonymous").set('checked', false);
+				dijit.byId("filter_hgmd_nonsynonymous").set('checked', false);
+				dijit.byId("filter_hgmd_splice_site").set('checked', false);
+				dijit.byId("filter_hgmd_ncrna").set('checked', false);
+				dijit.byId("filter_hgmd_phase").set('checked', false);
+				dijit.byId("filter_hgmd_stop").set('checked', false);
+				dijit.byId("filter_hgmd_frameshift").set('checked', false);
+				dijit.byId("filter_hgmd_essential_splicing").set('checked', false);
+				dijit.byId("filter_hgmd_maturemirna").set('checked', false);
+				
+				if (value == 1) {
+					dijit.byId("filter_hgmd_phase").set('checked', true);
+					dijit.byId("filter_hgmd_stop").set('checked', true);
+					dijit.byId("filter_hgmd_frameshift").set('checked', true);
+					dijit.byId("filter_hgmd_essential_splicing").set('checked', true);
+					dijit.byId("filter_hgmd_maturemirna").set('checked', true);
+				
+				}
+				else if (value == 2) {
+					dijit.byId("filter_hgmd_nonframeshift").set('checked', true);
+					dijit.byId("filter_hgmd_nonsynonymous").set('checked', true);
+					dijit.byId("filter_hgmd_splice_site").set('checked', true);
+					dijit.byId("filter_hgmd_phase").set('checked', true);
+					dijit.byId("filter_hgmd_stop").set('checked', true);
+					dijit.byId("filter_hgmd_frameshift").set('checked', true);
+					dijit.byId("filter_hgmd_essential_splicing").set('checked', true);
+					dijit.byId("filter_hgmd_maturemirna").set('checked', true);
+				}
+				else if (value == 3) {
+					dijit.byId("filter_hgmd_ncrna").set('checked', true);
+					dijit.byId("filter_hgmd_intronic").set('checked', true);
+					dijit.byId("filter_hgmd_upstream_downstream").set('checked', true);
+					dijit.byId("filter_hgmd_silent").set('checked', true);
+					dijit.byId("filter_hgmd_utr").set('checked', true);
+					dijit.byId("filter_hgmd_pseudogene").set('checked', true);
+					dijit.byId("filter_hgmd_nonframeshift").set('checked', true);
+					dijit.byId("filter_hgmd_nonsynonymous").set('checked', true);
+					dijit.byId("filter_hgmd_splice_site").set('checked', true);
+					dijit.byId("filter_hgmd_ncrna").set('checked', true);
+					dijit.byId("filter_hgmd_phase").set('checked', true);
+					dijit.byId("filter_hgmd_stop").set('checked', true);
+					dijit.byId("filter_hgmd_frameshift").set('checked', true);
+					dijit.byId("filter_hgmd_essential_splicing").set('checked', true);
+					dijit.byId("filter_hgmd_maturemirna").set('checked', true);
+				}
+				else if (value == 4) {
+					dijit.byId("filter_hgmd_ncrna").set('checked', true);
+					dijit.byId("filter_hgmd_intronic").set('checked', true);
+					dijit.byId("filter_hgmd_intergenic").set('checked', true);
+					dijit.byId("filter_hgmd_upstream_downstream").set('checked', true);
+					dijit.byId("filter_hgmd_silent").set('checked', true);
+					dijit.byId("filter_hgmd_utr").set('checked', true);
+					dijit.byId("filter_hgmd_pseudogene").set('checked', true);
+					dijit.byId("filter_hgmd_nonframeshift").set('checked', true);
+					dijit.byId("filter_hgmd_nonsynonymous").set('checked', true);
+					dijit.byId("filter_hgmd_splice_site").set('checked', true);
+					dijit.byId("filter_hgmd_ncrna").set('checked', true);
+					dijit.byId("filter_hgmd_phase").set('checked', true);
+					dijit.byId("filter_hgmd_stop").set('checked', true);
+					dijit.byId("filter_hgmd_frameshift").set('checked', true);
+					dijit.byId("filter_hgmd_essential_splicing").set('checked', true);
+					dijit.byId("filter_hgmd_maturemirna").set('checked', true);
+				}
+			}
+			
+		</script>
+    </head>
+	<body class="container-fluid" style="overflow-y:scroll;">
+		<nav id="navbar_polygenescout" class="navbar navbar-inverse" style="background-color:#363945;" hidden>
+			<div class="container-fluid">
+				<div class="navbar-header"> <table>
+					<tr><td><a class="navbar-brand" href="https://www.polyweb.fr/" style="padding-top: 5px;padding-bottom: 5px;"><img src='/icons/Polyicons/logo_polyweb_white2.png' width='170px' height='33px' ></a></td></tr>
+					<tr><td style="color:white;font-size:10px;text-align:center"> <span  style="color:#B1268B;font-size:12px;text-align:center">Imagine Institute</span> - <span>University Of Paris</span ></td></tr>
+					</table>
+				</div>
+				<ul class="nav navbar-nav">
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">PolyGeneScout</span></a></li>
+					<li><a><span id="resume_nb_genes_selected" style="color:#5cea5c"></span></a></li>
+					<li><a><span id="span_nb_genes_filters" style="color:orange"></span></a></li>
+					<li><a><span id="span_nb_genes_errors" style="color:red"></span></a></li>
+					<li><a><span id="resume_f_concept" style="color:#60b6f5;"></span></a></li>
+					<li><a><span id="resume_f_panel" style="color:#60b6f5;"></span></a></li>
+				</ul>
+					<ul class="nav navbar-nav navbar-right">
+					<li><a href="#"><div onClick="dijit.byId('dialog_projects').show();"><span class="glyphicon glyphicon-user" style="color:#449D44"></span><span style="margin-left: 5px;color:#449D44;" id="span_nb_projects"></span></div></a></li>
+					<li>
+						<button class=" btn btn-success  " onClick='relogin();' style="float:right;margin-top: 9px;margin-left: 2px;margin-right: 10px;" >
+			 				<b><i class="fa fa-sign-in pull-left" ></i><span class="glyphicon glyphicon-log-in" style="color:#449D44"></span> <span  style="margin-left: 5px;color:#449D44;" id="span_login">Login</span></b>
+			 			</button>
+					</li>
+				</ul>
+				
+			</div>
+		</nav>
+		
+		<div id="editor_stack" jsid="editor_stack" data-dojo-type="dijit/layout/ContentPane" href="../include_html/diag/editor_container_dejavu_gene.html" style="font-size:9px;width:100%;overflow-x:auto;overflow-y:hidden;margin: 0 auto;" hidden></div>
+		
+		<div style="font-size:11px;" id='content_gene_selection'></div>
+		<div style="padding-top:10px;background-color:#607D8B;" class='container-fluid' id='content_res_gene' hidden></div>
+		
+		<div id="dialog_validation" dojoType="dojox.widget.Dialog" dimensions="[800,300]" title="USER Validation">
+	        <div id="content_validation" jsId="content_validation" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
+				
+		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle"/> <span id="waiting_text">Loading Data...</span>
+				</div> 
+			</div>
+		</div>
+		
+		<div id="login" dojoType="dojox.widget.Dialog" dimensions="[265,160]" title="Login"> 
+			<div class="container" style="min-width:250px;max-width:250px;margin-left: auto ;margin-right: auto ;">
+				<div class="panel panel-success">
+					<div class="panel-body">     
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-user text-success" id="sizing-addon1"></span>
+							<label for="username" class="sr-only">Email address</label>
+							<input type="text"  id="username" name="username" class="form-control text-primary"  autocomplete="on" placeholder="bipd login" required autofocus aria-describedby="sizing-addon1">
+						</div>
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-lock text-success" id="sizing-addon2"></span>
+							<label for="passwd" class="sr-only">Password</label>
+							<input type="password" id="passwd" name="password" class="form-control  text-primary" placeholder="Password" required aria-describedby="sizing-addon2">
+						</div> 
+						<button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" onClick="checkPassword();" >Sign in</button>
+					</div>
+				</div> 
+			</div>
+		</div>
+    
+		<div id="dialog_dejavu_var_infos" dojoType="dojox.widget.Dialog" dimensions="[800,650]" title="DejaVu Infos">
+			<center><a id="url_dejavu_var" href="polydejavu/dejavu.html" target="_blank"><i><u>Go to PolyDejaVu Interface</i></u></a></center>
+	        <div  id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
+       
+		<div dojoType="dojox.widget.Dialog"  jsId="popup_hgmd" id="popup_hgmd" dimensions="[700,600]" title="HGMD Infos" style="background-color:white;overflow:auto;width:70%;height:70%;" >
+            <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane"></div>	
+        </div>
+        
+        <div id="popup_dude" dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" > 
+        	<div  id="div_popup_dude" jsId="div_popup_dude" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
+       
+		<div id="dialog_igv" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">
+            <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
+        </div> 
+       
+		<div dojoType="dojox.widget.Dialog" onHide="update_nb_projects_selected()" onClose="update_nb_projects_selected()" jsId="dialog_projects" id="dialog_projects" dimensions="[800,800]" title="IGV View" style="background-color:white;overflow: auto;" >
+	        <div style="height:99%;width:99%;" id="content_res_projects" jsId="content_res_projects" data-dojo-type="dijit/layout/ContentPane"></div>	
+        </div> 
+        
+		<div dojoType="dojox.widget.Dialog"  jsId="dialog_list_panels" dimensions="[700,600]" id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
+			 <span id="span_list_panels"></span>
+		</div>
+        
+		<div dojoType="dojox.widget.Dialog"  jsId="dialog_list_hgmd_variants"  id="dialog_list_hgmd_variants" title="HGMD Variants" style="sizeToViewport:true;background-color:white;overflow:auto;min-width:250px;" >
+			 <center><b>GENE Name:</b> <span id="span_hgmd_gene_variants"></span></center>
+			 <br><br>
+			 <div class="container-fluid" id="content_hgmd_variants" style="height:99%;width:99%;"></div>
+		</div>
+				
+		<div id="waiting_variants" dojoType="dojox.widget.Dialog" dimensions="[150,120]" title="Waiting"> 
+			<div class="container" style="min-width:200px;max-width:150px;margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<span id="waiting_text">Loading Data...</span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
+				</div> 
+			</div>
+		</div>
+		<div id="dialog_hgmd" dimensions=[1000,650] dojoType="dojox.widget.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:#AAB7B8;">
+	        <div class="container" id="content_res" style="height:99%;width:99%;"></div>
+		</div>
+		
+		<div id="dialog_list_phenotypes" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="List Phenotype(s)"> 
+			 <table class="table">
+				<tbody>
+					<tr>
+						<td><div id="container_wordcloud" style="height:450px;border: solid black 1px;"></div></td>
+					</tr>
+				</tbody>
+			</table>
+			<br>
+			<div class="container-fluid" id="content_table_phenotypes" style="height:99%;width:99%;"></div>
+		</div>
+		
+		<div id="dialog_dejavu_filters" dojoType="dojox.widget.Dialog" dimensions="[1050,230]" title="DejaVu Filters"> 
+			<center><u><b>DejaVu Filters for Gene <span id="span_gene_dialog_dejavu_filters"></span></u></i>
+			<br>
+			<div id="editor_dejavu_filters" jsid="editor_dejavu_filters" data-dojo-type="dijit/layout/ContentPane" href="../include_html/diag/editor_container_dejavu_gene_filters.html" style="padding:15px;font-size:9px;height:150px;width:100%;overflow-x:scroll;overflow-y:hidden;margin: 0 auto;"></div>
+			<center><span id="span_use_project_patient"></span><button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" style="width:70px;" onClick="launch_for_gene_filters();" >Launch</button></center>
+		</div>
+		
+		<div id="dialog_hgmd_filters" dojoType="dojox.widget.Dialog" dimensions="[1050,230]" title="HGMD Filters"> 
+			<center><u><b>HGMD <span id="span_gene_dialog_hgmd_types"></span> Filters for Gene <span id="span_gene_dialog_hgmd_filters"></span></u></i>
+			<br>
+			<div id="editor_hgmd_filters" jsid="editor_hgmd_filters" data-dojo-type="dijit/layout/ContentPane" href="../include_html/diag/editor_container_hgmd_gene_filters.html" style="padding:15px;font-size:9px;height:150px;width:100%;overflow-x:scroll;overflow-y:hidden;margin: 0 auto;"></div>
+			<center><button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" style="width:70px;" onClick="get_variants_from_hgmd_gene(1);" >Launch</button></center>
+		</div>
+		
+		<form id="TheForm" method="post" action="global_search_variants_results.html" target="TheWindow">
+		<input type="hidden" name="type" value="type" />
+		<input type="hidden" name="url_to_launch" value="url_to_launch" />
+		</form>
+	</body>
+</html>
+
+
