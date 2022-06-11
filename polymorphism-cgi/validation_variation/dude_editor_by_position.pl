@@ -502,7 +502,7 @@ die() unless $patient;
 my $array;
 $array = ["high"];
 $array = ["high","medium"] if $quality == 2 ;
-$array = ["high","medium","low"] if $quality == 3 ;
+$array = ["high","medium","low"] ;#if $quality == 3 ;
 $buffer->disconnect();
 my $fork =10;
 my $chr_name = $cgi->param('chr');;
@@ -529,10 +529,18 @@ foreach my $gene (@$genes){
 	next unless $gene->getMainTranscripts();
 	next unless @{$gene->getMainTranscripts()};
 	my $max = -1;
-	my$mtrs;
-	
-
+	my $mtrs;
+	my ($zz) = grep {$_->{id} eq $gene->id} @$lists;
+	if ($zz){
+		$t{$zz->{description}->{external_name}} ++;
+		push(@$l2,$zz);
+		next;
+	}
 	foreach my $tr1 (@{$gene->getTranscripts}){
+		if ($tr1->id eq $zz->{best_transcript}){
+			$mtrs = $tr1;
+			last;
+		}
 		my $primers = $tr1->getPrimers();
 		my $span =  Set::IntSpan::Fast::XS->new();
 		map{$span->add_range($_->start,$_->end)} @{$tr1->getPrimers()};
@@ -544,7 +552,7 @@ foreach my $gene (@$genes){
 		}
 	} 
 	
-	my @transcripts = sort{$b->length <=> $a->length }  grep{$_->getProteins}  @{$gene->getMainTranscripts()};
+	my @transcripts = sort{$b->length <=> $a->length }  grep{$_->ccds_name} grep{$_->getProteins}  @{$gene->getMainTranscripts()};
 	#next unless @transcripts;
 	my $tr = $mtrs;#$transcripts[0];
 	#warn $transcripts[0]->name;

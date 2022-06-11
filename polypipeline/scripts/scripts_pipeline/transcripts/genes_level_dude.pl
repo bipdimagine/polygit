@@ -66,21 +66,20 @@ exit(0);
 		my $no2 = $patient->getTranscriptsDude("r");
 		warn $no2->filename;
 		my $no3 = $patient->getGenesDude("c");
-		my @levels =("low","medium","high");
+		my @levels =("high");
 		foreach my $l (@levels){
 			get_list_genes($l,$no2,$no3);
 		}
 		warn $no3->filename;
-		warn Dumper $no3->get("ENSG00000170835_9");
+		warn Dumper $no3->get("ENSG00000120733_5");
 		$no3->close();
 		$no2->close();
 	}
 	sub get_list_genes {
 		my ($level,$no2,$no3 ) = @_;
-		warn Dumper $level;
 		my $array = $no2->get("$level");
 		
-		#warn Dumper 	$array ." ".$level;
+		warn Dumper $array;#." ".$level;
 		my $ts = $project->newTranscripts($array);
 		my $h;
 		foreach my $t (@$ts){
@@ -109,9 +108,11 @@ exit(0);
 			 }
 			 
 			$type = "del" if $h->{$g}->{del} >= $h->{$g}->{dup};
+			warn "$level:$type";
 			$no3->put($g,"$level:$type"); 
 			
 		}
+		warn Dumper $h;
 		$no3->put("genes_".$level,$h);
 	}
 	
