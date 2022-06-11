@@ -118,12 +118,12 @@ my $transcripts_arg = $cgi->param('transcripts');
 my $genes_arg       = $cgi->param('genes');
 my $filter;
 my @selected_patients;
-
+#test for git
 if ($value_quality and not $genes_arg) {
 	my $p   = $cgi->param('patients');
 	my $pat = $project->getPatient($p);
 	
-	
+	  
 	my @lTypes;
 	if ($value_quality == 1) { @lTypes = ('high'); }
 	if ($value_quality == 2) { @lTypes = ('high','medium'); }
