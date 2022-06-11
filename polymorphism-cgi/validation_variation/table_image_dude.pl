@@ -185,8 +185,9 @@ if ($genes_arg) {
 		{
 
 			my $matrix = $no->get( $t->id );
-
-			next unless ($matrix && ($project->isDiagnostic));
+			next unless $matrix;
+			#if ($project->isDiagnostic)
+			#next unless ($matrix && ($project->isDiagnostic));
 			#	next unless $t->ccds_name;
 			$tt++;
 			push( @transcripts_cgi, $t->id );
