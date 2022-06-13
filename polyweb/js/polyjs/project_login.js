@@ -9,6 +9,28 @@ var layoutProject = [
 	{ field: "new_pathogenic", formatter: formaterBadges, name: "PolyBTF", width: "120px", styles: 'text-align:center;' },
 ];
 
+
+var layoutProjectRNA = [
+	{
+		cells: [
+			{ field: "name", name: "Name", width: "15%", styles: 'text-align:center;'},
+			{ field: "description", name: "Description", width: "35%", styles: 'text-align:center;' },
+			{ field: "samples", name: "samples",formatter: formaterSample, width: "7%", styles: 'text-align:center;' },
+			{ field: "capture_name", name: "Capture", width: "15%", styles: 'text-align:center;' },
+			//{ field: "phenotype", name: "phenotype", width: "15%", styles: 'text-align:center;' },
+			{ field: "genome", name: "genome", width: "10%", styles: 'text-align:center;' },
+			//{ field: "version", name: "annotation",formatter: formaterVersion, width: "10%", styles: 'text-align:center;'},
+			{ field: "creation_date", name: "creation date", width: "10%", styles: 'text-align:center;'},
+			//{ field: "annotation_date", name: "annotation date", width: "10%", styles: 'text-align:center;' },
+			//{ field: "latest_view", name: "latest view ", width: "10%", styles: 'text-align:center;' },
+			//{ field: "latest_view", name: "latest view", width: "100px",  formatter: formaterGenome,styles: 'text-align:center;'},
+			//{ field: "new_pathogenic", formatter: formaterBadgesV, name: "PolyBTF", width: "60px", styles: 'text-align:center;'},
+			//{ field: "acmg", name: "Latest Validation", width: "20%", styles: 'text-align:center;', formatter:formaterValidation},
+			{ field: "button", name: "Viewer ", width: "10%", styles: 'text-align:center;',formatter:formaterButtonRNA },
+		],
+	}
+	];
+
 var layoutProjectPolyviewer = [
 	{
 		cells: [
@@ -81,6 +103,10 @@ var layoutProjectDefidiag = [
 ];
 */
 
+function view_rna(prj) {
+	window.open("rna/rna.html?project="+prj, '_blank');
+}
+
 function view_polyviewer(prj, type) {
     //attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
 	window.open("polyviewer.html?project="+prj, '_blank');
@@ -92,6 +118,20 @@ function view_polyquery(prj, type) {
     //attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
    //  this.location.href = "polyviewer.html?project="+prj;
  }
+ 
+function formaterButtonRNA(this_value) {
+	var list = this_value.split('::');
+	var tt = " ";
+	var dd = " disabled ";
+	var style =" style='margin-top: 3px ;opacity: 0.25;' ";
+	if (list[0] == 1) {
+		tt = " onClick=view_rna('" + list[1]+"') ";
+		style =" style='margin-top: 3px ' ";
+		dd = ""
+		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >RNA-Analyse</div></td></tr></table></center>";
+	} 
+	return '';
+}
 
 function formaterButton(this_value) {
 	var list = this_value.split('::');

@@ -85,6 +85,7 @@ var json_out = "/json_output_nodb";
 var url_listProject = url_path+json_out+"/projects_json.pl";
 var url_listProjectDefidiag = url_path+json_out+"/projects_json_defidiag.pl";
 var url_listProject_vector = url_path+json_out+"/projects_json_vector.pl";
+var url_listProject_rna = url_path+json_out+"/projects_json_rna_analysis.pl";
 
 
 //Filter url 
