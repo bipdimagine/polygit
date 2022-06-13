@@ -110,7 +110,7 @@ $html_table_patients .= qq{</table>};
 my $path_analysis = $project->get_path_rna_seq_analyse($analyse_name);
 my $path_analysis_all = $path_analysis.'/AllRes/';
 
-warn $path_analysis_all;
+#warn $path_analysis_all;
 
 confess("\n\nERROR: $path_analysis_all not found. Die\n\n") unless (-d $path_analysis_all);
 my $file_all_RI = $path_analysis_all.'/AllresRI_f.txt';
@@ -215,7 +215,7 @@ sub get_sashimi_plot_file {
 			mkdir $path;
 			`chmod 755 $path`;
 		}
-		my $cmd = "/data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/ggsashimi.py";
+		my $cmd = $patient->getProject->buffer->software('ggsashimi');
 		$cmd .= " -b $path_analysis/$ensg/rmdup/$patient_name\_$project_name\_rmdup.bam";
 		$cmd .= " -c chr".$locus;
 		$cmd .= " -o ".$outfile;
