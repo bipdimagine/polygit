@@ -171,7 +171,8 @@ exit(0);
 sub transform_results_file {
 	my ($type_analyse_name, $file_name, $path_analysis) = @_;
 	my ($h_header, $list_res) = parse_results_file($file_name);
-	my ($table_id, $html) = add_table_results($type_analyse_name, $h_header, $list_res, $path_analysis);
+	my ($list_sort) = sort_results($list_res);
+	my ($table_id, $html) = add_table_results($type_analyse_name, $h_header, $list_sort, $path_analysis);
 	return ($table_id, $html);
 }
 
@@ -207,7 +208,6 @@ sub get_sashimi_plot_file {
 	my $patient_name = $patient->name();
 	my $path = $patient->getProject->getProjectPath.'/align/sashimi_plots/';
 	my $outfile = $path.'/sashimi_'.$patient_name.'.'.$ensg.'.'.$locus_text.'.pdf';
-#	warn $outfile;
 	return $outfile if (-e $outfile);
 	
 	if ($cgi->param('update_sashimi')) {
@@ -216,7 +216,6 @@ sub get_sashimi_plot_file {
 			`chmod 755 $path`;
 		}
 		my $cmd = "/data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/ggsashimi.py";
-		#$cmd .= " -b ".$patient->getBamFile();
 		$cmd .= " -b $path_analysis/$ensg/rmdup/$patient_name\_$project_name\_rmdup.bam";
 		$cmd .= " -c chr".$locus;
 		$cmd .= " -o ".$outfile;
@@ -226,12 +225,12 @@ sub get_sashimi_plot_file {
 		else { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/black.txt"; }
 		$cmd .= " -C 1";
 		$cmd .= " --shrink --alpha 0.25 --base-size=20 --ann-height=4 --height=3 --width=18";
-	#	$cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/examples/palette.txt";
+		#$cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/examples/palette.txt";
 		$cmd .= " -g /data-isilon/public-data/repository/HG38/gtf/ensembl/genes.gtf";
 		#$cmd .= " -g /data-isilon/public-data/repository/HG38/gtf/ensembl/gencode.v40.annotation.gtf";
-		warn "\n$cmd\n";
+		#warn "\n$cmd\n";
 		`$cmd`;
-	#	die;
+		#die;
 		return $outfile;
 	}
 	return;
@@ -308,24 +307,20 @@ sub add_table_results {
 		}
 		$svg_legend = 'Patient '.$patient_name.' - '.$h_res->{Gene}.' ('.$h_res->{ENSID}.') - '.$locus;
 		my $svg_patient = $path_svg.'/juncPairPos_'.$h_res->{ENSID}.'_'.$h_res->{Chr}.'_'.$patient_name.'_'.$project_name.'.svg';
+		my $color;
+		$color = 'lightgrey';
+		$color = 'palegreen' if ($h_res->{score} > 1);
+		$color = 'moccasin' if ($h_res->{score} > 10);
+		$color = 'lightcoral' if ($h_res->{score} > 100);
 		if (-e $svg_patient) {
 			$svg_patient =~ s/\/\//\//g;
-			$svg_patient =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;#glyphicon glyphicon-zoom-in
-			my $color = 'lightgrey';
-			$color = 'palegreen' if ($h_res->{score} > 1);
-			$color = 'moccasin' if ($h_res->{score} > 10);
-			$color = 'lightcoral' if ($h_res->{score} > 100);
-			$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;"><img src="$svg_patient" alt="N.A." width="55px"></img><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></td>};
+			$svg_patient =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+			$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;"><img src="$svg_patient" alt="Pb" width="55px"></img><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></td>};
 		}
 		else {
 			$tr .= qq{<td>N.A.</td>};
 		}
 		my $ensg = $h_res->{ENSID};
-		my $score = int($h_res->{score});
-		my $color = 'lightgrey';
-		$color = 'palegreen' if ($score > 1);
-		$color = 'moccasin' if ($score > 10);
-		$color = 'lightcoral' if ($score > 100);
 		
 #		$tr .= qq{<td><center><button type="button" class="btn btn-default" onClick="view_sashimi('$analyse_name','$patient_name','$ensg','$locus_extended','$score')" style="text-align:center;padding:2px;background-color:$color;"><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></center></td>};
 		
@@ -345,7 +340,7 @@ sub add_table_results {
 			$tr .= qq{</center></td>};
 		}
 		else {
-			$tr .= qq{<td><center>N.A.</center></td>};
+			$tr .= qq{<td><center>.</center></td>};
 		}
 		
 		
@@ -393,6 +388,36 @@ sub add_table_results {
 	$html .= qq{</table>};
 	
 	return ($table_id, $html);
+}
+
+sub sort_results {
+	my ($list_res) = @_;
+	my ($h, @list_sort);
+	foreach my $this_h (@$list_res) {
+		my $score = $this_h->{score} * 100;
+		my $nb;
+		$nb = $this_h->{Junc_RI_Count} if (exists $this_h->{Junc_RI_Count});
+		$nb = $this_h->{Junc_SE_Count} if (exists $this_h->{Junc_SE_Count});
+		my ($start, $end);
+		if (exists $h->{Junc_RI_Start}) {
+			$start = $h->{Junc_RI_Start};
+			$end = $h->{Junc_RI_End};
+		}
+		else {
+			$start = $h->{Junc_SE_Start};
+			$end = $h->{Junc_SE_End};
+		}
+		my $name = $this_h->{Sample}.'_'.$this_h->{Junc_RI}.'_'.$start.'_'.$end;
+		$h->{$score}->{$nb}->{$name} = $this_h;
+	}
+	foreach my $score (sort {$b <=> $a} keys %$h) {
+		foreach my $nb (sort {$b <=> $a} keys %{$h->{$score}}) {
+			foreach my $name (sort keys %{$h->{$score}->{$nb}}) {
+				push(@list_sort, $h->{$score}->{$nb}->{$name});
+			}
+		}
+	}
+	return \@list_sort;
 }
 
 sub parse_results_file {
