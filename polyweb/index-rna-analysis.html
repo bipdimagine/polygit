@@ -150,45 +150,37 @@ footer{
   		var project_name = '';
         var option_url ="";
         var cookie_username;
-      	
-      	 function init_gridProject(url1){
-                   var username = dojo.cookie("username");
-                   cookie_username = username;
-                   var passwd = dojo.cookie("passwd");
-                     if (!username) {
-                         dijit.byId('login').show();
-                     }
-                     else {
-                 	
-                     var url1 = url_listProject_rna+"?type=login&pwd="+passwd+"&login="+username+"&action=list"+option_url;
-                     var jsonStore = new dojox.data.AndOrReadStore({ url: url1 });
-                     gridProject.setStore(jsonStore);
-                     var url_stat_polyweb1 =url_stat_polyweb+"?user="+username+"&pwd="+passwd;
-                     dojo.xhrGet({
-                         url:url_stat_polyweb1, handleAs:"json",
-                         load: function(data){
-                          document.getElementById("span_projects").innerHTML = data.user.projects.all+"/"+data.global.projects.all;
-                          document.getElementById("span_samples").innerHTML = data.user.patients.all+"/"+data.global.patients.all;
-                  }
-                 });
-
-                 
-                 
-                     LoginOk = 1;
-                    
-                     }
-                     
-                 setTitle(username);
-                 }
-      	
-      	
-      	
-      	
+      	      	
         dojo.addOnLoad(function(){
             init_gridProject();
-//            document.getElementById('filter_old').checked = false;
-//           document.getElementById('filter_new').checked = true;
         });
+      	
+		function init_gridProject(url1){
+			var username = dojo.cookie("username");
+			cookie_username = username;
+			var passwd = dojo.cookie("passwd");
+			if (!username) {
+				dijit.byId('login').show();
+			}
+			else {
+				var url1 = url_listProject_rna+"?type=login&pwd="+passwd+"&login="+username+"&action=list"+option_url;
+				var jsonStore = new dojox.data.AndOrReadStore({ url: url1 });
+				gridProject.setStore(jsonStore);
+				var url_stat_polyweb1 =url_stat_polyweb+"?user="+username+"&pwd="+passwd;
+				dojo.xhrGet({
+					url:url_stat_polyweb1, handleAs:"json",
+					load: function(data){
+						document.getElementById("span_projects").innerHTML = data.user.projects.all+"/"+data.global.projects.all;
+						document.getElementById("span_samples").innerHTML = data.user.patients.all+"/"+data.global.patients.all;
+					}
+				});
+				LoginOk = 1;
+			}
+		}
+      	
+      	function dblclickGrid() {
+      		return;
+      	}
         
         function showTranscripts(array_cell,row){
 	    	dojo.forEach(array_cell, function(cell, i){
