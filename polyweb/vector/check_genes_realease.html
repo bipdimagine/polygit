@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>PolyMonop</title>
+        <title>PolyWeb - Check Genes</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -14,6 +14,18 @@
             @import "../css/dejavu/dejavu.css";
             @import "../css/polycss/header.css";
             @import "../css/polycss/header-footer.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/claro/claro.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/claroGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/soriaGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/soria/soria.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/Grid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/nihiloGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/nihilo/nihilo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/tundraGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/tundra/tundra.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/layout/resources/ExpandoPane.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/widget/Dialog/Dialog.css";
     
             html, body {
                 width: 100%;
@@ -347,14 +359,146 @@
 				-webkit-print-color-adjust: exact;
 			}
 		</style>
+        
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/dojo.js" djConfig="parseOnLoad: true" type="text/javascript"></script>
         <script type="text/javascript" src="https://www.google.com/jsapi"></script>
         
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
         
         
+        <script type="text/javascript" src="../js/polyjs/include.js"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/my_formatter_vector.js"></script>
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js"></script>
+        <script type="text/javascript" src="../js/polyjs/alamut_methods.js"></script>
+        <script type="text/javascript" src="../js/dejavu/dejavu.js"></script>
+        <script type="text/javascript" src="../js/igv/igv-1.0.9.js"></script>
+    	<script type="text/javascript" src="../js/polyjs/igv_methods.js"  ></script>
+    	<script type="text/javascript" src="../js/polyjs/consequence.js"> </script>
+        <script type="text/javascript" src="../js/polyjs//Utility/my_formatter_vector.js" djConfig="parseOnLoad: true"></script>
+        
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" type="text/javascript"></script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+        
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+		<script type="text/javascript" src="../../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+		<script type="text/javascript" src="../../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+        
         <script type="text/javascript">
+			dojo.require("dojo.cookie");
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dijit.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dijit.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.CheckBox");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            
+            
+            var release_annotation = '40';
+            $(document).ready(function () {
+            	document.getElementById("text_list_genes").value = "";
+		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + release_annotation + "</b></font>";
+	    	});
+	    	
+	    	function eraseText() {
+			    document.getElementById("text_list_genes").value = "";
+			}
+	    	
+		    function launch() {
+		    	document.getElementById("content_res").innerHTML = "<div align='center'><i>Running. Please wait...</i> <img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'></div>";
+		    	document.getElementById("span_ok").innerHTML = "";
+		    	document.getElementById("span_not").innerHTML = "";
+		    	var value = document.getElementById("text_list_genes").value;
+		    	var list_tr = value.split("\n");
+		    	var url = url_path + "json_output_nodb/check_transcripts_annotation.pl?annotation=" + release_annotation + "&genes=" + list_tr.join(',');
+		    	var html_table = "<table class='table'>";
+				html_table += "<thead>";
+				html_table += "<tr>";
+				html_table += "<th scope='col'>#</th>";
+				html_table += "<th scope='col'>Transcript Name</th>";
+				html_table += "<th scope='col'>Gene Name</th>";
+				html_table += "<th scope='col'>Status</th>";
+				html_table += "<th scope='col'>Ensembl URL</th>";
+				html_table += "</tr>";
+				html_table += "</thead>";
+				html_table += "<tbody>";
+			    $.getJSON( url, function( data ) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var i = 1;
+			    	$.each( data, function( key, val ) {
+			    		var color = 'green';
+			    		var list_res = String(val).split(';');
+			    		var status = list_res[0];
+			    		var release = list_res[1];
+			    		var gene_name = list_res[2];
+			    		if (status == 'NOT') {
+			    			status = 'NOT FOUND in ' + release;
+			    			color = 'red';
+			    			nb_not++;
+			    		}
+			    		else {
+			    			nb_ok++;
+			    			status = 'FOUND in ' + release;
+			    		}
+			    		var url_now = 'http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=' + key;
+			    		html_table += "<tr style='color:" + color + "'>";
+						html_table += "<th scope='row'>" + i + "</th>";
+						html_table += "<td>" + key + "</td>";
+						html_table += "<td>" + gene_name + "</td>";
+						html_table += "<td>" + status + "</td>";
+						html_table += "<td>";
+						html_table += "<table>";
+						html_table += "<td><a href='" + url_now + "' target='_blank'>url</a></td>";
+						html_table += "</table>";
+						html_table += "</td>";
+			    		html_table += "</tr>";
+			    		i++;
+  					});
+					html_table += "</tbody>";
+					html_table += "</table>";
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(html_table);
+					myPanel.appendTo(myNode);
+					var nb_total = nb_ok + nb_not;
+					document.getElementById("span_ok").innerHTML  = "<font color='#00CC00'>OK: " + nb_ok + " / " + nb_total + "</font>";
+					document.getElementById("span_not").innerHTML = "<font color='red'>ERROR: " + nb_not + " / " + nb_total + "</font>";
+			    });
+		    }
+		    
+		    function change_annotation(annot) {
+		    	release_annotation = annot;
+		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + annot + "</b></font>";
+		    }
 		    
 		</script>
     </head>
@@ -368,69 +512,56 @@
 				        <span class="icon-bar"></span>                        
 	      			</button>
 	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">PolyWeb</span></a>
-	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">PolyMonop</span></a>
+	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">Check Genes / Release</span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_1"></span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_2"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_ok"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_not"></span></a>
 	    		</div>
 	  		</div>
 		</nav>
 		
 		<center>
-		<table class='table' style="width:100%;">
-			<thead>
-				<tr>
-					<th scope='col'>#</th>
-					<th scope='col'>Tool Name</th>
-					<th scope='col'>Descriptif</th>
-					<th scope='col'>Prod / Dev</th>
-					<th scope='col'>Link</th>
-				</tr>
-			</thead>
-			<tbody>
-	    		<tr>
-					<td scope='row'>0</th>
-					<td>Cahier de Laboratoire</td>
-					<td>BIPD Plateforme</td>
-					<td><font color='blue'>LINK</font></td>
-					<td><a href="https://drive.google.com/drive/u/2/folders/1JR5P3jJYFx7PHNakynV1AZcouOEzmBex" target="_blank">Google Drive</a></td>
-	    		</tr>
-	    		<tr>
-					<td scope='row'>1</th>
-					<td>Check <span style='color:red;'>Transcripts</span> Release</td>
-					<td>Interface allowing to check if transcripts are found in a specific release genome annotation</td>
-					<td><font color='green'>PROD</font></td>
-					<td><a href="./vector/check_transcripts_realease.html" target="_blank">Tool Link</a></td>
-	    		</tr>
-	    		<tr>
-					<td scope='row'>2</th>
-					<td>Check <span style='color:red;'>Genes</span> Release</td>
-					<td>Interface allowing to check if genes are found in a specific release genome annotation</td>
-					<td><font color='green'>PROD</font></td>
-					<td><a href="./vector/check_genes_realease.html" target="_blank">Tool Link</a></td>
-	    		</tr>
-	    		<tr>
-					<td scope='row'>3</th>
-					<td>Plot var patients comparaison</td>
-					<td>Plot ALL common (or not) variants between 2 patients in same project</td>
-					<td><font color='green'>PROD</font></td>
-					<td><a href="./vector/compare_patients_chromosome.html?#" target="_blank">Tool Link</a></td>
-	    		</tr>
-	    		<tr>
-					<td scope='row'>4</th>
-					<td>Control GIAB</td>
-					<td>Interface control GIAB projects</td>
-					<td><font color='green'>PROD</font></td>
-					<td><a href="./control_giab_view.html" target="_blank">Tool Link</a></td>
-	    		</tr>
-	    		<tr>
-					<td scope='row'>5</th>
-					<td>Demultiplex VIEW</td>
-					<td>View HTML file generated for each demultiplex RUN</td>
-					<td><font color='red'>DEV</font></td>
-					<td><a href="./demultiplex_view/demultiplex_view.html" target="_blank">Tool Link</a></td>
-	    		</tr>
-			</tbody>
-		</table>
+		<div class="row" style="height:900px;width:98%;">
+			<div class="col-sm-3" style="height:100%;padding:5px;">
+				<b>COPY / PASTE Gene(s) List</b>
+				<br>
+				<textarea jsId="text_list_genes" id='text_list_genes' dojoType="dijit.form.SimpleTextarea"  style="align:center;width:100%;height:97%;resize:none;border-radius:0;font-size:16px;"></textarea>
+			</div>
+			
+			<div class="col-sm-2" vertical-align="center" style="height:900px;">
+				<div class="dropdown" style="padding-top:25px;">
+					<ul class="list-group" style="max-width:100px;">
+						<li class="list-group-item list-group-item-info dropdown-toggle" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							Release<br>Annotation<br><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+						</li>
+						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+							<a class="dropdown-item" href="#" onClick="change_annotation('40')"><center>HG19 / Gencode 40</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('39')"><center>HG19 / Gencode 39</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('38')"><center>HG19 / Gencode 38</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('34')"><center>HG19 / Gencode 34</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('33')"><center>HG19 / Gencode 33</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('31')"><center>HG19 / Gencode 31</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('19')"><center>HG19 / Gencode 19</center></a>
+						</div>
+						<li class="list-group-item"><span id="span_release_annotation">40</span></li>
+					</ul>
+				</div>
+				<br>
+				<button type='button' onClick="javascript:eraseText()" class='btn btn-danger'>Clear</button>
+				<button type='button' onClick="launch()" class='btn btn-info'>Launch</button>
+			</div>
+			
+			<div class="col-sm-7" style="height:100%;padding:5px;"
+				<div class="row" style="width:100%;height:880px;">
+					<div class="col-sm-12" align='left'>
+						<div class="row" id="content_res" style="width:99%;"></div>
+						<br>
+					</div>
+				</div>
+			</div>
+		</div>
+		
 	</body>
 </html>
 
