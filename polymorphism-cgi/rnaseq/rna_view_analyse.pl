@@ -134,7 +134,7 @@ my ($table_id_se, $html_table_se) = transform_results_file('SE', $file_all_SE, $
 
 my $html;
 $html .= qq{<ul class="nav nav-tabs">};
-$html .= qq{<li><a id='a_PATIENTS' data-toggle="tab" href="#PATIENTS">LIST Patients</a></li>};
+$html .= qq{<li><a id='a_PATIENTS' data-toggle="tab" href="#PATIENTS"><span style="color:red;">LIST Patients</span></a></li>};
 $html .= qq{<li><a id='a_RI' data-toggle="tab" href="#RI">RI Analysis</a></li>};
 $html .= qq{<li><a id='a_SE' data-toggle="tab" href="#SE">SE Analysis</a></li>};
 $html .= qq{</ul>};
