@@ -533,10 +533,40 @@
 	            setTimeout(function() {
 					document.getElementById("span_project_name").innerHTML = "Project "+project_name;
 					document.title = "RNA Analysis [" + project_name + "]";
-					if (patient_name) { launch(patient_name); }
-					else { launch(); }
-				}, 1500);
+					checkPassword();
+				}, 1000);
 	    	});
+	    	
+	    	var is_checking = 0;
+			function checkPassword(){
+				if (is_checking == 1) { return; }
+				is_checking = 1;
+				dijit.byId('login').hide();
+				show_waiting('Checking Login / Passwd...');
+				var username = dojo.cookie("username");
+				var passwd = dojo.cookie("passwd");
+				var found = 0;
+				urlpasswd = url_listProject_rna+"?type=login&pwd="+passwd+"&login="+username+"&action=list"+"&project="+project_name;
+				$.getJSON( urlpasswd, function( data ) {
+					$.each( data.items, function(val) {
+						var this_project = data.items[val].name;
+						if (this_project == project_name) {
+							found = 1;
+						}
+					});
+					dijit.byId('waiting').hide();
+					is_checking = 0;
+					if (found == 1) { return run_after_check_login_OK(); }
+					else { dijit.byId('login').show(); }
+			    })
+			    return;
+			}
+			
+			function run_after_check_login_OK() {
+				dijit.byId('login').hide();
+				if (patient_name) { launch(patient_name); }
+				else { launch(); }
+			}
 	    	
 	    	function show_waiting(text) {
 	    		document.getElementById("waiting_text").innerHTML = "Loading Data...";
@@ -738,7 +768,26 @@
 		<div id="dialog_sashimi" dojoType="dojox.widget.Dialog" dimensions="[920,600]" title="Sashimi PLOT"></div>
         
         <div id="dialog_svg" dojoType="dijit.Dialog" onClick="dijit.byId('dialog_svg').hide();" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;"></div>
-        
+
+      	<div id="login" dojoType="dojox.widget.Dialog" dimensions="[265,160]"   title="Help" onHide="checkPassword();"> 
+			<div class="container" style="min-width:250px;max-width:250px;margin-left: auto ;margin-right: auto ;">
+				<div class="panel panel-success">
+					<div class="panel-body">     
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-user text-success" id="sizing-addon1"></span>
+							<label for="username" class="sr-only">Email address</label>
+							<input type="text"  id="username" name="username" class="form-control text-primary"  autocomplete="on" placeholder="bipd login" required autofocus aria-describedby="sizing-addon1">
+						</div>
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-lock text-success" id="sizing-addon2"></span>
+							<label for="passwd" class="sr-only">Password</label>
+							<input type="password" id="passwd" name="password" class="form-control  text-primary" placeholder="Password" required aria-describedby="sizing-addon2">
+						</div> 
+						<button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" onClick="checkPassword();" >Sign in</button>
+					</div>
+				</div> 
+			</div>
+		</div>
 	</body>
 </html>
 
