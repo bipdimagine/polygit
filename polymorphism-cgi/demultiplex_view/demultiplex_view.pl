@@ -23,10 +23,19 @@ my $h_files;
 my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
 my ($list_paths_found) = list_html_files_in_dir($origin_path);
 
+foreach my $this_path (@$list_paths_found) {
+	if (-d $this_path.'/html/') {
+		list_html_files_in_dir($this_path.'/html/');
+	}
+	else {
+		list_html_files_in_dir($this_path);
+	}
+}
+
 my $html_table = qq{<table id="table_demultiplex" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
 $html_table .= qq{<thead>};
 $html_table .= qq{<th data-field="path" data-sortable="true" data-filter-control='input'><b>Path</b></th>};
-$html_table .= qq{<th data-field="file" data-sortable="true" data-filter-control='select'><b>File</b></th>};
+$html_table .= qq{<th data-field="file" data-sortable="true" data-filter-control='input'><b>File</b></th>};
 $html_table .= qq{<th data-field="view"><b>View</b></th>};
 $html_table .= qq{</thead>};
 $html_table .= qq{<tbody>};
@@ -35,6 +44,7 @@ foreach my $file (sort keys %$h_files) {
 	$path_file_origin =~ s/$origin_path/https:\/\/www.polyweb.fr\/NGS\/demultiplex/;
 	my $path_file = $h_files->{$file};
 	$path_file =~ s/$origin_path/DEMULTIPLEX/;
+	$path_file =~ s/$file//;
 	my $tr = qq{<tr>};
 	$tr .= qq{<td>$path_file</td>};
 	$tr .= qq{<td>$file</td>};
@@ -75,7 +85,14 @@ sub list_html_files_in_dir {
 		}
 		elsif (-e $path_file) {
 			next unless ($file =~ /\.html/);
-			$h_files->{$file} = $path_file;
+			next if ($file =~ /tree\.html/);
+			
+			my $name = $path_file;
+			$name =~ s/$file//;
+			$name =~ s/html//;
+			$name =~ s/\/\//\//;
+			my @ltmp = split('/', $name);
+			$h_files->{$ltmp[-1].'-'.$file} = $path_file;
 		}
 	}
 	return (\@lDir);
