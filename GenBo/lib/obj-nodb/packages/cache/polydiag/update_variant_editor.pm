@@ -2853,16 +2853,16 @@ sub get_hash_genes_dude {
  	push(@selected_patients, $patient);
  	my $nb_genes_done = 0;
 	foreach my $type (@$list_type) {
-		
-		my $list_tr_high = $no->get($type);
-		warn $type;
-		warn Dumper $list_tr_high;
+		my $list_tr_high;
+		eval { $list_tr_high = $no->get($type); };
+		if($@) {}
+#		warn $type;
+#		warn Dumper $list_tr_high;
 		#ENST00000631057
 #		my ($toto) = grep {$_ =~/ENST/ } @$list_tr_high;
 	#	warn Dumper $list_tr_high;
 	#	die();
 		unless ($list_tr_high) {
-			
 			$no->close();
 			next;
 		}
