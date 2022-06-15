@@ -65,9 +65,13 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	my $path_file = $h_files->{$file};
 	$path_file =~ s/$origin_path/DEMULTIPLEX/;
 	$path_file =~ s/$file//;
-	
+	$path_file =~ s/\/\///g;
+	my @l_path = split('/', $path_file);
+	$path_file = $l_path[0].'/'.$l_path[1];
 	$path_file =~ s/(run[0-9]+)/<span style='color:red;'>$1<\/span>/;
+	
 	$file =~ s/(run[0-9]+)/<span style='color:red;'>$1<\/span>/;
+	$file =~ s/^\.//;
 	
 	my $tr = qq{<tr>};
 	#$tr .= qq{<td>$date</td>};
