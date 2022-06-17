@@ -20,6 +20,7 @@ my $cgi    = new CGI;
 my $project_name = $cgi->param('project');
 my $use_patient = $cgi->param('patient');
 my $fork = $cgi->param('fork');
+my $fileout = $cgi->param('fileout');
 $fork = 1 unless $fork;
 
 my $buffer = GBuffer->new;
@@ -473,5 +474,10 @@ sub printJson {
 	print ".\",";
 	$json_encode =~ s/{//;
 	print $json_encode;
+	if ($fileout) {
+		open (FILE, ">$fileout");
+		print FILE $json_encode;
+		close (FILE);
+	}
 	exit(0);
 }
