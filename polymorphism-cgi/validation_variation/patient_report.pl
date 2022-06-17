@@ -574,7 +574,9 @@ sub construct_htranscripts {
 	my ($list_transcripts,$patient) = @_;
 	my $hpatient;
 	my @res;
+
 	foreach my $tr (@$list_transcripts) {
+		my $utr = $cgi->param('utr')+0;
 		print "+";
 	my $tr_id = $tr;
 			my $tr1;
@@ -582,6 +584,7 @@ sub construct_htranscripts {
 
 				if ($tr ne "intergenic"){
 				 $tr1 = $project->newTranscript($tr);
+				 $utr =1 if $tr1->getChromosome()->name eq "MT";
 				$tr_id = $tr1->id;
 				$htranscript->{name} = $tr1->getGene->external_name();
 				$htranscript->{mean} = $tr1->mean_coding_coverage($patient);
@@ -621,7 +624,7 @@ sub construct_htranscripts {
 			}
 			
 			my $exons_todo = $vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name});		
-			my $show_utr = $cgi->param('utr') +0;
+			my $show_utr = $utr +0;
 			my $intronic =  $cgi->param('intronic') +0;
 			
 			my $kyoto_id = join("_",("all",$tr,$show_utr,$intronic,$cov_limit,$padding,"data"));
