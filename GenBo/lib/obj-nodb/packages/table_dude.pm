@@ -87,7 +87,6 @@ sub print_by_position {
 	print header_dude_genes2($chr->name,scalar(@slists));	
 	my $rids = [];	
 	foreach my $hg ( sort { $a->{start} <=> $b->{start} } @slists ) {
-		warn "1";
 		$nb++;
 		my $hide;
 		$hide = "";
@@ -181,8 +180,11 @@ sub print_dude_genes {
 		 @finale2 = sort { $b->{chr} <=> $a->{chr}  or $a->{start} <=> $b->{start}} @$final ;
 	}
 	else {
+		die();
 		@finale2 = sort { $b->{score} <=> $a->{score} } @$final;
 	}
+	#@finale2 = sort { $b->{score} <=> $a->{score} or  $b->{chr} <=> $a->{chr} or  $a->{start} <=> $b->{start}} @$final;
+	 @finale2 = sort { $b->{score} <=> $a->{score} or $b->{start} <=> $a->{start}  or $a->{chr} <=> $b->{chr} } @$final ;
 	foreach my $hg ( @finale2 ) {
 #	foreach my $hg ( sort { $b->{score} <=> $a->{score} } @$final ) {
 		$nb++;
