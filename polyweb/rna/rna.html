@@ -538,13 +538,25 @@
 	    	});
 	    	
 	    	var is_checking = 0;
-			function checkPassword(){
+			function checkPassword(new_log){
 				if (is_checking == 1) { return; }
 				is_checking = 1;
 				dijit.byId('login').hide();
 				show_waiting('Checking Login / Passwd...');
-				var username = dojo.cookie("username");
-				var passwd = dojo.cookie("passwd");
+				var username;
+				var passwd;
+				if (new_log == 1) {
+	                var midnight = new Date();
+	                midnight.setHours(23,59,59,0);
+	                passwd = document.getElementById('passwd').value;
+	                username = document.getElementById('username').value;
+					dojo.cookie("username", username, { expires:midnight ,path: "/" });
+					dojo.cookie("passwd", passwd, { expires: midnight,path: "/" });
+				}
+				else {
+					username = dojo.cookie("username");
+					passwd = dojo.cookie("passwd");
+					}
 				var found = 0;
 				urlpasswd = url_listProject_rna+"?type=login&pwd="+passwd+"&login="+username+"&action=list"+"&project="+project_name;
 				$.getJSON( urlpasswd, function( data ) {
@@ -783,7 +795,7 @@
 							<label for="passwd" class="sr-only">Password</label>
 							<input type="password" id="passwd" name="password" class="form-control  text-primary" placeholder="Password" required aria-describedby="sizing-addon2">
 						</div> 
-						<button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" onClick="checkPassword();" >Sign in</button>
+						<button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" onClick="checkPassword(1);" >Sign in</button>
 					</div>
 				</div> 
 			</div>
