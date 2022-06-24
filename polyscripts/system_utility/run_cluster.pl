@@ -31,11 +31,13 @@ my $jobs;
 $| =1;
 my $limit;
 my $noprint;
+my $row =1;
 GetOptions(
 	'cpu=s' => \$cpus,
 	'cmd=s' => \$cmd,
 	'fork=s' => \$fork,
 	'limit=s' => \$limit,
+	'row=s' => \$row,
 );
 
 
@@ -106,6 +108,7 @@ my $status = new Term::StatusBar (
                    showTime=>1,
                    subTextAlign =>"center",
                     totalItems => scalar(@$commands),  ## Equiv to $status->setItems(10)
+                    startRow => $row,
                    
  );
  $status->{maxCol} = 200;
