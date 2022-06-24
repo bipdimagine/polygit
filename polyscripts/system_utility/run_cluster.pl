@@ -39,9 +39,12 @@ GetOptions(
 	'limit=s' => \$limit,
 	'row=s' => \$row,
 );
-
-
-
+unless ($noprint){
+for  (my $i=$row;$i<($row+5);$i++){
+	print "\033[$i;0H\033[2K";
+} 
+system("clear") if $row ==0;
+}
 
 my $pm = new Parallel::ForkManager($fork);
 my $running_jobs ={};
@@ -102,7 +105,7 @@ foreach my $cmd (@cmds){
 
 
 my $file = "/tmp/tmp.".time."cmd";
-	my $t;
+	my $t =0;
 my $status = new Term::StatusBar (
                     label => 'jobs Done : ',
                    showTime=>1,
@@ -128,7 +131,7 @@ while (@$commands) {
 sleep(1);
 #warn "end submitted";
 $|=1;
-system("clear") unless $noprint;
+#system("clear") unless $noprint;
 $status->start() unless $noprint;
 my $completed ;
 my $failed ;	
