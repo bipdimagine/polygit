@@ -31,7 +31,7 @@ my $jobs;
 $| =1;
 my $limit;
 my $noprint;
-my $row =1;
+my $row =0;
 GetOptions(
 	'cpu=s' => \$cpus,
 	'cmd=s' => \$cmd,
@@ -200,7 +200,9 @@ while (keys %$runnings_jobs ){
 		$status->subText(colored(['bright_yellow on_black'],$ttt->pretty));
 		
 		my $FH = $status->{fh};
-		print $FH "\033[4;0H", (' 'x(5))."total: ".colored(['bright_cyan on_black'],$nb_jobs)." Pending: ".colored(['bright_blue on_black'],$pending)." Running: ".colored(['bright_magenta on_black'],$running)." OK: ".colored(['bright_green on_black'],$ok)."  Failed: ".colored(['bright_red on_black'],$failed)."  ";
+		my $r = 4;
+		$r = ($row -1) + $r if $row > 0;
+		print $FH "\033[$r;0H", (' 'x(5))."total: ".colored(['bright_cyan on_black'],$nb_jobs)." Pending: ".colored(['bright_blue on_black'],$pending)." Running: ".colored(['bright_magenta on_black'],$running)." OK: ".colored(['bright_green on_black'],$ok)."  Failed: ".colored(['bright_red on_black'],$failed)."  ";
 		
 		#print $FH "\033[5;0H", (' 'x(25)).colored(['bright_yellow on_black'],$ttt->pretty).color('reset');
 		#
@@ -231,7 +233,6 @@ DESTROY {
 
 
 sub end {
-	warn "end";
 	foreach my $c (keys %$runnings_jobs){
 		$cancel->{$c} ++;
 		unlink "slurm-".$c."out";
