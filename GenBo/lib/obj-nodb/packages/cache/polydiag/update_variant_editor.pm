@@ -2221,7 +2221,7 @@ my $string_label = join(";",@$all_label);
 		print qq{<div id="group_buttons_time_exec" class="btn-group-vertical  btn-sm clearfix pull-left" style="padding:20px;min-width:200px;">};
 		
 		my (@lButtons_times, @lButtons_times_id);
-		foreach my $cat (split(' ', $ztime)) {
+		foreach my $cat (sort split(' ', $ztime)) {
 			my ($cat_name, $time) = split(':', $cat);
 			my $b_id = 'b_time_exec_'.$cat_name.'_'.$patient->name();
 			push(@lButtons_times_id, $b_id);
@@ -2286,11 +2286,11 @@ my $string_label = join(";",@$all_label);
 	};
 	
 	print qq{<div class="btn-group-vertical  btn-sm clearfix pull-right" style="color:black;padding:20px;width:200px;">};
-	foreach my $name (keys %$version){
+	foreach my $name (sort keys %$version){
 		my $v = $version->{$name}->{version};
 		print qq{<button type="button" class="btn btn-success btn-xs" style="font-size: 10px;"><span style="float:left">$name</span> <span class="badge badge-alert" style="font-size: 10px;float:right;">$v </span></button>	};
 	}
-	foreach my $name (keys %$date){
+	foreach my $name (sort keys %$date){
 		my $v = $date->{$name};
 		print qq{<button type="button" class="btn btn-primary btn-xs" style="font-size: 10px;"><span style="float:left">$name</span> <span class="badge badge-alert" style="font-size: 10px;float:right;">$v </span></button>	};
 	}
