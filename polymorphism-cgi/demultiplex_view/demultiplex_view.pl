@@ -128,7 +128,7 @@ sub convert_csv_to_html {
 	open (CSV, "$csv_file");
 	print HTML qq{<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">}."\n";
 	print HTML qq{<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">}."\n";
-	print HTML qq{<body><table width="100%" class="table table-striped">}."\n";
+	print HTML qq{<body><table width="100%" class="table table-striped table-hover table-condensed">}."\n";
 	my $i = 0;
 	while (<CSV>) {
 		chomp($_);
