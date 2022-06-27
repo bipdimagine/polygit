@@ -25,7 +25,12 @@ my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
 my ($list_paths_found) = list_html_files_in_dir($origin_path);
 
 foreach my $this_path (@$list_paths_found) {
-	if (-d $this_path.'/html/') {
+	if (-e $this_path.'/Demultiplex_Stats.csv') {
+		mkdir $this_path.'/html/' if (not -d $this_path.'/html/');
+		convert_csv_to_html($this_path.'/Demultiplex_Stats.csv', $this_path.'/html/laneBarcode.html') if (not -e $this_path.'/html/laneBarcode.html');
+		add_file_html($this_path.'/html/laneBarcode.html', 'laneBarcode.html');
+	}
+	elsif (-d $this_path.'/html/') {
 		opendir my ($dir), $this_path.'/html/';
 		my @found_files = readdir $dir;
 		closedir $dir;
@@ -82,6 +87,10 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
 	$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
 	
+	$substring =~ s/_/\./;
+	$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
+	$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
+	
 	$file =~ s/\/\//\//;
 	$file =~ s/^\.//;
 	$file =~ s/^-//;
@@ -112,6 +121,42 @@ print $json_encode;
 exit(0);
 
 
+
+sub convert_csv_to_html {
+	my ($csv_file, $html_file) = @_;
+	open (HTML, ">$html_file");
+	open (CSV, "$csv_file");
+	print HTML qq{<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">}."\n";
+	print HTML qq{<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">}."\n";
+	print HTML qq{<body><table width="100%" class="table table-striped">}."\n";
+	my $i = 0;
+	while (<CSV>) {
+		chomp($_);
+		my $line = $_;
+		my @lCol = split(',', $line);
+		if ($i == 0) {
+			print HTML "<thead>\n";
+			foreach my $cat (@lCol) {
+				print HTML "<th data-field='".lc($cat)."' ><center><b>$cat</b></center></th>\n";
+			}
+			print HTML "</thead>\n";
+			print HTML "<thead>\n";
+			print HTML "<tbody>\n";
+		}
+		else {
+			print HTML "<tr>\n";
+			foreach my $val (@lCol) {
+				print HTML "<td><center>".$val."</center></td>\n";
+			}
+			print HTML "</tr>\n";
+		}
+		$i++;
+	}
+	print HTML "</tbody>\n";
+	print HTML "</table>\n";
+	close (CSV);
+	close(HTML);
+}
 
 sub list_html_files_in_dir {
 	my ($path) = @_;
