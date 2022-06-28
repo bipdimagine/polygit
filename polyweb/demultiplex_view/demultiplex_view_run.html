@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>PolyDemultiplex</title>
+        <title>PolyDemultiplex RUN</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -519,12 +519,8 @@
             dojo.require("dijit.form.CheckBox");
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
-            var project_name = param("project");
-            var patient_name = param("patient");
+            var json_file = param("json");
             
-            var polyquery_filters;
-            var list_projects_names = [];
-            var list_panels = [];
             
             var username, pwd, project_name;
             var release_annotation = '34';
@@ -535,31 +531,6 @@
 				}, 1000);
 	    	});
 	    	
-	    	var is_checking = 0;
-			function checkPassword(){
-				if (is_checking == 1) { return; }
-				is_checking = 1;
-				dijit.byId('login').hide();
-				show_waiting('Checking Login / Passwd...');
-				var username = dojo.cookie("username");
-				var passwd = dojo.cookie("passwd");
-				var found = 0;
-				urlpasswd = url_listProject_rna+"?type=login&pwd="+passwd+"&login="+username+"&action=list"+"&project="+project_name;
-				$.getJSON( urlpasswd, function( data ) {
-					$.each( data.items, function(val) {
-						var this_project = data.items[val].name;
-						if (this_project == project_name) {
-							found = 1;
-						}
-					});
-					dijit.byId('waiting').hide();
-					is_checking = 0;
-					if (found == 1) { return run_after_check_login_OK(); }
-					else { dijit.byId('login').show(); }
-			    })
-			    return;
-			}
-		    	
 	    	function enable_table_search(id) {
 	    		$('#'+id).bootstrapTable();
 			}
@@ -579,21 +550,27 @@
 	    	}
 	    	
 	    	function launch() {
-	    		var text_loading = 'Checking HTML Files';
+	    		document.getElementById("span_run_name").innerHTML = param("name");
+	    		var text_loading = 'Checking RUN Datas';
 				show_waiting(text_loading);
-				var url = url_path + "/demultiplex_view/demultiplex_view.pl";
+				var url = json_file;
 			    $.getJSON( url, function( data ) {
 			    	var i = 1;
-			    	$.each( data, function( key, val ) {
-			    		if (key == 'html') {
-							document.getElementById("content_res").innerHTML = "";
-							var myNode = document.getElementById("content_res");
-					    	var myPanel = $(val);
-							myPanel.appendTo(myNode);
-							enable_table_search(data.table_id);
-	    					dijit.byId('waiting').hide();
-						}
+			    	$.each( data, function( file, data ) {
+						var myNode = document.getElementById("content_res");
+				    	var nav = "<ul class='nav nav-tabs' style='padding-top:20px;'>";
+						nav += "<li><a data-toggle='tab' href='#" + file + "'><b>" + file + "</b></a></li>";
+						nav += "</ul>";
+						$(nav).appendTo(myNode);
+			    	
+				    	var myPanel = $(data.html);
+						myPanel.appendTo(myNode);
+		    			var table_id = data.table_id;
+						enable_table_search(table_id);
+						i++;
 					});
+					dijit.byId('waiting').hide();
+					is_checking = 0;
 			    })
 			}
 			
@@ -608,7 +585,7 @@
 					</table>
 				</div>
 				<ul class="nav navbar-nav">
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">Demultiplex VIEW</span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">Demultiplex VIEW RUN</span> <span id="span_run_name" style="color:white;font-size:15px"></span></a></li>
 				</ul>
 			</div>
 		</nav>
