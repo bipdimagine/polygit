@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>RNA Analysis</title>
+        <title>RNA Junctions</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -532,7 +532,7 @@
             $(document).ready(function () {
 	            setTimeout(function() {
 					document.getElementById("span_project_name").innerHTML = "Project "+project_name;
-					document.title = "RNA Analysis [" + project_name + "]";
+					document.title = "RNA Junctions [" + project_name + "]";
 					checkPassword();
 				}, 1000);
 	    	});
@@ -542,7 +542,7 @@
 				if (is_checking == 1) { return; }
 				is_checking = 1;
 				dijit.byId('login').hide();
-				show_waiting('Checking Login / Passwd...');
+				show_waiting('Checking Login / Password...');
 				var username;
 				var passwd;
 				if (new_log == 1) {
@@ -575,6 +575,7 @@
 			}
 			
 			function run_after_check_login_OK() {
+				getGencodeTrackForProject(project_name);
 				dijit.byId('login').hide();
 				if (patient_name) { launch(patient_name); }
 				else { launch(); }
@@ -592,7 +593,7 @@
 	    		var text_loading = 'Loading datas';
 	    		if (use_patient) { text_loading += ' - ' + use_patient; }
 				show_waiting(text_loading);
-				var url = url_path + "/rnaseq/rna_view_analyse.pl";
+				var url = url_path + "/rnaseq/rna_junctions_analyse.pl";
 				url += "?project=" + project_name;
 				if (use_patient) { url += "&patient=" + use_patient; }
 			    $.getJSON( url, function( data ) {
@@ -716,6 +717,7 @@
 			}
 	
 			function launch_web_igv_js(project, patients_names, bams_files, locus){
+//				alert ('HERE begin 1');
 				var locus2 = locus.replace(':', ';');
 				locus2 = locus2.replace('-', ';');
 				var lTmp = locus2.split(';');
@@ -724,14 +726,41 @@
 				var end = start;
 				if (lTmp.length == 3) { end = lTmp[2]; }
 				var list_bams_files = [];
+				var list_patients_names = [];
+				
+//				alert ('HERE !!');
+				
 				if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 				else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
 				else { list_bams_files.push(bams_files); }
+				
+				if (patients_names.match(/,/)) { list_patients_names = patients_names.split(','); }
+				else if (patients_names.match(/;/)) { list_patients_names = patients_names.split(';'); }
+				else { list_patients_names.push(patients_names); }
+				
+				
 				displayListBamInIgvApp(list_bams_files);
 				displayInIGV(chr, start, end);
+				var array_name = [];
+	            var url_igv = "/polyweb/html/manta/Url_CNV_Viewer.html?titre=RNA_Junction_"+locus;
+	            var var_length = (end - start);
+            	url_igv += "&locusstart=" + chr + ":" + (parseInt(start)-100) + "-" + (parseInt(end)+100);
+            	url_igv += "&locusend=";
+            	
+	            url_igv += "&bamfile=" + list_bams_files.join(',');
+	            url_igv += "&patient_name=" + list_patients_names.join(',');
+	            url_igv += "&taille=" + var_length + "pb";
+	            if (typeof url_gene_bed !== 'undefined') {
+	            	url_igv += "&genes_bed=" + url_gene_bed;
+	        	}
+	            if (typeof url_fasta !== 'undefined') {
+	            	url_igv += "&fasta=" + url_fasta;
+	        	}
+	            window.open(url_igv);
 			}
 			
 			function add_bam_igv (bams_files) {
+//				alert ('HERE begin 2');
 				var list_bams_files = [];
 				if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 				else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
@@ -754,7 +783,7 @@
 					</table>
 				</div>
 				<ul class="nav navbar-nav">
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">RNA Analysis</span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">RNA Analysis - Junction</span></a></li>
 				</ul>
 				<ul class="nav navbar-nav">
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>

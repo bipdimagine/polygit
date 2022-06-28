@@ -716,6 +716,15 @@ function launch_web_igv_js(project, patients_names, bams_files, locus){
 function LoadIGVPatient_editor (patients, bams) {
 }
 
+var url_gene_bed, url_fasta, url_cyto;
+function getGencodeTrackForProject(project_name) {
+	var url = url_path + "igv/get_url_files_igv.pl?project=" + project_name;
+	$.getJSON( url, function( data ) {
+		url_gene_bed = data.url_gene_bed;
+		url_fasta = data.url_genome_fasta;
+    })
+}
+
 function displayListBamInIgvApp(list_bams) {
 	for(var i = 0; i < list_bams.length; i++) {
 		var bam = window.location.origin + list_bams[i];

@@ -5,10 +5,10 @@
 // TODO: step 4 - appel methode               ->  view_web_igv_bam("dialog_igv", "div_igv", locus, bams, names, genome)
 
 
+var url_gene_bed, url_fasta, url_cyto;
 var is_waiting = false;
 
 function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
-
 	var array_bam, array_name;
 	if   (file.match(';')) { array_bam = file.split(";"); }
 	else                   { array_bam = file.split(","); }
@@ -18,18 +18,21 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
 	var div = document.getElementById(div_name);
 	div.innerHTML = "";
 
-	var url_fasta;
-	var url_gene_bed;
-	var url_cyto;
 	if (genome){
-		url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa";
-		url_gene_bed =  "/public-data/"+genome+"/igv/gencode.gtf.gz";
-		url_cyto =  "/public-data/"+genome+"/igv/cytoband.txt";
+		if (url_gene_bed) {}
+		else { url_gene_bed = "/public-data/"+genome+"/igv/gencode.gtf.gz"; }
+		if (url_fasta) {}
+		else { url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa"; }
+		if (url_cyto) {}
+		else { url_cyto = "/public-data/"+genome+"/igv/cytoband.txt"; }
 	} 
 	else {
-		url_fasta = "/public-data/HG19/genome/fasta/all.fa";
-		url_gene_bed =  "/public-data/HG19/igv/gencode.gtf.gz";
-		url_cyto =  "/public-data/HG19/igv/cytoband.txt";
+		if (url_gene_bed) {}
+		else { url_gene_bed = "/public-data/HG19/igv/gencode.gtf.gz"; }
+		if (url_fasta) {}
+		else { url_fasta = "/public-data/HG19/genome/fasta/all.fa"; }
+		if (url_cyto) {}
+		else { url_cyto = "/public-data/HG19/igv/cytoband.txt"; }
 	}
 	
 	var list_tracks = [];
@@ -124,18 +127,21 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
 	
 	setTimeout(function() { dijit.byId(dialog_name).show(); }, 200);
 	
-	var url_fasta;
-	var url_gene_bed;
-	var url_cyto;
 	if (genome){
-		url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa";
-		url_gene_bed =  "/public-data/"+genome+"/igv/gencode.gtf.gz";
-		url_cyto =  "/public-data/"+genome+"/igv/cytoband.txt";
+		if (url_gene_bed) {}
+		else { url_gene_bed = "/public-data/"+genome+"/igv/gencode.gtf.gz"; }
+		if (url_fasta) {}
+		else { url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa"; }
+		if (url_cyto) {}
+		else { url_cyto = "/public-data/"+genome+"/igv/cytoband.txt"; }
 	} 
 	else {
-		url_fasta = "/public-data/HG19/genome/fasta/all.fa";
-		url_gene_bed =  "/public-data/HG19/igv/gencode.gtf.gz";
-		url_cyto =  "/public-data/HG19/igv/cytoband.txt";
+		if (url_gene_bed) {}
+		else { url_gene_bed = "/public-data/HG19/igv/gencode.gtf.gz"; }
+		if (url_fasta) {}
+		else { url_fasta = "/public-data/HG19/genome/fasta/all.fa"; }
+		if (url_cyto) {}
+		else { url_cyto = "/public-data/HG19/igv/cytoband.txt"; }
 	}
 	
 	var list_tracks = [];

@@ -103,8 +103,8 @@ var layoutProjectDefidiag = [
 ];
 */
 
-function view_rna(prj) {
-	window.open("rna/rna.html?project="+prj, '_blank');
+function view_rna_junctions(prj) {
+	window.open("rna/rna_junctions.html?project="+prj, '_blank');
 }
 
 function view_polyviewer(prj, type) {
@@ -124,11 +124,12 @@ function formaterButtonRNA(this_value) {
 	var tt = " ";
 	var dd = " disabled ";
 	var style =" style='margin-top: 3px ;opacity: 0.25;' ";
+	// 1 for junctions analyse
 	if (list[0] == 1) {
-		tt = " onClick=view_rna('" + list[1]+"') ";
+		tt = " onClick=view_rna_junctions('" + list[1]+"') ";
 		style =" style='margin-top: 3px ' ";
 		dd = ""
-		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >RNA-Analyse</div></td></tr></table></center>";
+		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >Junctions-Analyse</div></td></tr></table></center>";
 	} 
 	return '';
 }

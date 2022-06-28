@@ -326,6 +326,8 @@ function hideShowWait(){
 					dijit.byId('login').show();
 					return;
 					};
+					
+				getGencodeTrackForProject(projectName);
            change_loading_button("pwaiting","#336699");
 				//document.getElementById("stat_project").textContent= projectName;
 				//document.getElementById("stat_description").textContent= "\""+items[0].description+"\"";	

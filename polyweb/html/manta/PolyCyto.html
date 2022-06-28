@@ -153,6 +153,9 @@
 			var par1 = parameters[1].split("=");
 			var par2 = parameters[2].split("=");
 			
+			var url_gene_bed, url_fasta, url_cyto;
+			getGencodeTrackForProject(par0[1]);
+			
 			var transloc = par2[1];
    			var titre="PolyCyto:" + par0[1]+"/"+par1[1];
    			document.title=titre;

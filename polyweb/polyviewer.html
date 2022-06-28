@@ -343,6 +343,8 @@ function onSearchAll_polyviewer (input,name){
 					dijit.byId('login').show();
 					return;
 					};
+					
+				getGencodeTrackForProject(projectName);
 				var url1 = construct_url(url_fast_patients);
 			
 				 storeP = new dojo.data.ItemFileWriteStore({
@@ -375,7 +377,6 @@ function onSearchAll_polyviewer (input,name){
 		  			dojo.byId("gridDivPatients").appendChild(grid.domNode);
 		  
 		   			grid.startup();	
-					
 		 		
 		   			
 						

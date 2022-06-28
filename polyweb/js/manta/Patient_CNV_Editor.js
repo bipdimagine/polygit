@@ -797,21 +797,14 @@ function formaterdbvarStatus(value)
 
 function igv_view_SV()
 {
-
-	var parameters = location.search.split("&");
-	var par0 = parameters[0].split("=");
-	var par1 = parameters[1].split("=");
-   	var par2 = parameters[2].split("=");
-   	var par3 = parameters[3].split("=");
-   	var par4 = parameters[4].split("=");
-   	var par5 = parameters[5].split("=");
-   	
-   	var titre=par0[1];
-   	var locusstart=par1[1];
-   	var locusend=par2[1];
-	var bamfile=par3[1];
-	var patient_name=par4[1];
-	var taille=par5[1];
+   	var titre = param("titre");
+   	var locusstart = param("locusstart");
+   	var locusend = param("locusend");
+	var bamfile = param("bamfile");
+	var patient_name = param("patient_name");
+	var taille = param("taille");
+	var genes_bed = param("genes_bed");
+	var fasta = param("fasta");
 	
 	if (taille == 1)
 	{
@@ -824,37 +817,34 @@ function igv_view_SV()
 	
 	document.getElementById('titre').innerHTML=titre;
 	
+	if (genes_bed) { url_gene_bed = genes_bed; }
+	if (fasta) { url_fasta = fasta; }
 	view_web_igv_bam_simple('div_igv_start', locusstart, bamfile, patient_name);
 	view_web_igv_bam_simple('div_igv_end', locusend, bamfile, patient_name);
 }
 
 function igv_view_CNV()
 {
-
-	var parameters = location.search.split("&");
-	var par0 = parameters[0].split("=");
-	var par1 = parameters[1].split("=");
-   	var par2 = parameters[2].split("=");
-   	var par3 = parameters[3].split("=");
-   	var par4 = parameters[4].split("=");
-   	var par5 = parameters[5].split("=");
-   	
-   	var titre=par0[1];
-   	var locusstart=par1[1];
-   	var locusend=par2[1];
-	var bamfile=par3[1];
-	var patient_name=par4[1];
-	var taille=par5[1];
+   	var titre = param("titre");
+   	var locusstart = param("locusstart");
+   	var locusend = param("locusend");
+	var bamfile = param("bamfile");
+	var patient_name = param("patient_name");
+	var taille = param("taille");
+	var genes_bed = param("genes_bed");
+	var fasta = param("fasta");
 	
-	if (taille != 1)
-	{
+	if (taille != 1){
 		titre = patient_name + "  :  " + titre + "  (" + taille + ")";
 	}
+	if (bamfile.match(/HG19/)) { document.getElementById('release').innerHTML = "<span style='color:red;'>Release HG19</span>"; }
+	else if (bamfile.match(/HG38/)) { document.getElementById('release').innerHTML = "<span style='color:red;'>!!! Release HG38 !!!</span>"; }
 	
 	document.getElementById('titre').innerHTML=titre;
 	var locus = locusstart + " " + locusend;
 
-	
+	if (genes_bed) { url_gene_bed = genes_bed; }
+	if (fasta) { url_fasta = fasta; }
 	view_web_igv_bam_simple('div_igv_start',locus, bamfile, patient_name);
 	
 }
@@ -877,7 +867,10 @@ function igv_view_CNV()
 		taille = v[4];
 	} 
 	
+	
 	var url_viewer = "Url_CNV_Viewer.html?titre=" + titre + "&locusstart=" + locusstart + "&locusend=" + locusend + "&bamfile=" + bamfile + "&patient_name=" + patient_name + "&taille=" + taille;
+	if (url_gene_bed) { url_viewer += "&genes_bed=" + url_gene_bed; }
+	if (url_fasta) { url_viewer += "&fasta=" + url_fasta; }
 	var myWindow = window.open(url_viewer,"_blank",""); 
  
  }

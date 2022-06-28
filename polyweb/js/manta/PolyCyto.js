@@ -1531,6 +1531,8 @@ function launch_web_igv_start_and_end(value)
 	
 	// pour lancer web_igv
 	var url_viewer = "PolyCyto_IGV_Viewer.html?titre=" + titre + "&locusstart=" + locusstart + "&locusend=" + locusend + "&bamfile=" + bamfile + "&patient_name=" + patient_name + "&taille=" + taille;
+	if (url_gene_bed) { url_viewer += "&genes_bed=" + url_gene_bed; }
+	if (url_fasta) { url_viewer += "&fasta=" + url_fasta; }
 	var myWindow = window.open(url_viewer,"_blank",""); 
  
  	// pour lancer appli IGV si elle est ouverte
@@ -1545,30 +1547,21 @@ function launch_web_igv_start_and_end(value)
  
  function igv_view_SV()
 {
-	var parameters = location.search.split("&");
-	var par0 = parameters[0].split("=");
-	var par1 = parameters[1].split("=");
-   	var par2 = parameters[2].split("=");
-   	var par3 = parameters[3].split("=");
-   	var par4 = parameters[4].split("=");
-   	var par5 = parameters[5].split("=");
-   	
-   	var titre=par0[1];
-   	var locusstart=par1[1];
-   	var locusend=par2[1];
-	var bamfile=par3[1];
-	var patient_name=par4[1];
+   	var titre = param("titre");
+   	var locusstart = param("locusstart");
+   	var locusend = param("locusend");
+	var bamfile = param("bamfile");
+	var patient_name = param("patient_name");
+	var taille = param("taille");
+	var genes_bed = param("genes_bed");
+	var fasta = param("fasta");
 	
-	if (parameters.length > 4) 
-	{
-		var taille=par5[1];
-	
-		if (taille != 1)
-		{
-			titre = patient_name + "  :  " + titre + "  (" + taille + ")";
-		}
+	if (taille != 1) {
+		titre = patient_name + "  :  " + titre + "  (" + taille + ")";
 	}
 	
+	if (genes_bed) { url_gene_bed = genes_bed; }
+	if (fasta) { url_fasta = fasta; }
 	document.getElementById('titre').innerHTML=titre;
 	var locus = locusstart + " " + locusend;
 	view_web_igv_bam_simple('div_igv_start',locus, bamfile, patient_name);
