@@ -27,8 +27,30 @@ my ($list_paths_found) = list_html_files_in_dir($origin_path);
 foreach my $this_path (@$list_paths_found) {
 	if (-e $this_path.'/Demultiplex_Stats.csv') {
 		mkdir $this_path.'/html/' if (not -d $this_path.'/html/');
-		convert_csv_to_html($this_path.'/Demultiplex_Stats.csv', $this_path.'/html/laneBarcode.html') if (not -e $this_path.'/html/laneBarcode.html');
-		add_file_html($this_path.'/html/laneBarcode.html', 'laneBarcode.html');
+		if (-e $this_path.'/Demultiplex_Stats.csv' && -e $this_path.'/Top_Unknown_Barcodes.csv' ) {
+			my @lFiles = ('Demultiplex_Stats.csv', 'Top_Unknown_Barcodes.csv');
+			my $json_file = convert_csv_to_json($this_path, \@lFiles);
+			my $json_path = $json_file;
+			$json_file =~ s/\/\//\//g;
+			$json_file =~ s/.+\/ngs\//https:\/\/www.polyweb.fr\/NGS\//;
+			my $name = $json_file;
+			if ($name =~ /.+\/NGS\/demultiplex\/(.+)\/json.+/) {
+				$name = $1;
+			}
+			next if ($name eq 'test_xths');
+			next if ($name =~ /run1[0-9]+/);
+			add_file_json('https://www.polyweb.fr/mbras/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file, $json_path, $name);
+		}
+		elsif (-e $this_path.'/Demultiplex_Stats.csv') {
+			convert_csv_to_html($this_path.'/Demultiplex_Stats.csv', $this_path.'/html/laneBarcode.html') if (not -e $this_path.'/html/laneBarcode.html');
+			add_file_html($this_path.'/html/laneBarcode.html', 'laneBarcode.html');
+		}
+		elsif (-e $this_path.'/Top_Unknown_Barcodes.csv') {
+			convert_csv_to_html($this_path.'/Top_Unknown_Barcodes.csv', $this_path.'/html/top_unknown_barcodes.html') if (not -e $this_path.'/html/top_unknown_barcodes.html');
+			add_file_html($this_path.'/html/top_unknown_barcodes.html', 'top_unknown_barcodes.html');
+		}
+		
+		
 	}
 	elsif (-d $this_path.'/html/') {
 		opendir my ($dir), $this_path.'/html/';
@@ -39,7 +61,6 @@ foreach my $this_path (@$list_paths_found) {
 			next if $file eq '.';
 			next if $file eq '..';
 			if (-d $this_path.'/html/'.$file) {
-				
 				if (-e $this_path.'/html/'.$file.'/all/laneBarcode.html') { add_file_html($this_path.'/html/'.$file.'/all/laneBarcode.html', 'laneBarcode.html'); }
 				elsif (-e $this_path.'/html/'.$file.'/all/all/laneBarcode.html') { add_file_html($this_path.'/html/'.$file.'/all/all/laneBarcode.html', 'laneBarcode.html'); }
 				elsif (-e $this_path.'/html/'.$file.'/all/all/all/laneBarcode.html') { add_file_html($this_path.'/html/'.$file.'/all/all/all/laneBarcode.html', 'laneBarcode.html'); }
@@ -62,38 +83,45 @@ $html_table .= qq{</thead>};
 $html_table .= qq{<tbody>};
 
 
+
 foreach my $date (reverse sort keys %$h_files_date) {
-#foreach my $file (sort keys %$h_files) {
 	my $file = $h_files_date->{$date};
 	my $path_file_origin = $h_files->{$file};
 	$path_file_origin =~ s/$origin_path/https:\/\/www.polyweb.fr\/NGS\/demultiplex/;
 	my $path_file = $h_files->{$file};
-	$path_file =~ s/$origin_path/DEMULTIPLEX/;
-	$path_file =~ s/$file//;
-	$path_file =~ s/\/\///g;
-	my @l_path = split('/', $path_file);
-	$path_file = $l_path[0].'/'.$l_path[1];
 	my ($substring, $color);
-	if ($path_file =~ /(run[0-9]+.*$)/) {
-		$substring = $1;
-		$color = 'red';
+	if ($path_file =~ /$origin_path/) {
+		$path_file =~ s/$origin_path/DEMULTIPLEX/;
+		$path_file =~ s/$file//;
+		$path_file =~ s/\/\///g;
+		my @l_path = split('/', $path_file);
+		$path_file = $l_path[0].'/'.$l_path[1];
+		if ($path_file =~ /(run[0-9]+.*$)/) {
+			$substring = $1;
+			$color = 'red';
+		}
+		elsif ($path_file =~ /\/(.+)$/) {
+			$substring = $1;
+			$color = 'green';
+		}
+		$path_file =~ s/$substring/\/<span style='color:$color;'>$substring<\/span>/;
+		$path_file =~ s/\/\//\//;
+		$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
+		$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
+		
+		$substring =~ s/_/\./;
+		$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
+		$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
+		
+		$file =~ s/\/\//\//;
+		$file =~ s/^\.//;
+		$file =~ s/^-//;
 	}
-	elsif ($path_file =~ /\/(.+)$/) {
-		$substring = $1;
-		$color = 'green';
+	else {
+		$path_file = qq{DRAGEN/<span style='color:red;'>$file</span>};
+		$file = qq{<span style='color:red;'>$file</span>};
 	}
-	$path_file =~ s/$substring/\/<span style='color:$color;'>$substring<\/span>/;
-	$path_file =~ s/\/\//\//;
-	$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
-	$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
 	
-	$substring =~ s/_/\./;
-	$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
-	$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
-	
-	$file =~ s/\/\//\//;
-	$file =~ s/^\.//;
-	$file =~ s/^-//;
 	
 	my $tr = qq{<tr>};
 	#$tr .= qq{<td>$date</td>};
@@ -121,6 +149,99 @@ print $json_encode;
 exit(0);
 
 
+
+sub convert_csv_to_json {
+	my ($path, $list_files) = @_;
+	my $path_out = $path.'/json/';
+	mkdir $path_out unless (-d $path_out);
+	my $file_out = "$path_out/demultiplex.json";
+	return $file_out if (-e $file_out);
+	my $h;
+	foreach my $file (@$list_files) {
+		my $csv_file = $path.'/'.$file;
+		my $table_id = 'table_'.$file;
+		$table_id =~ s/\.csv//;
+		my $html = qq{<table style="width:100%;" data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="15" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped' style='font-size:13px;'>};
+		open (CSV, "$csv_file");
+		my $i = 0;
+		while (<CSV>) {
+			chomp($_);
+			my $line = $_;
+			my @lCol = split(',', $line);
+			if ($i == 0) {
+				$h->{$file}->{header} = \@lCol;
+				$html .= "<thead>\n";
+				foreach my $cat (@lCol) {
+					my $cat_name = $cat;
+					$cat_name =~ s/# /n_/;
+					$cat_name =~ s/% /p_/;
+					my $sortable = qq{ data-sortable='true' data-filter-control='input'} if (not $cat =~ /[#%]/);
+					$html .= "<th $sortable data-field='".lc($cat_name)."' ><center><b>$cat</b></center></th>\n";
+				}
+				$html .= "</thead>\n";
+				$html .= "<tbody>\n";
+			}
+			else {
+				my $j = 0;
+				my $id = $lCol[0].'_'.$lCol[1];
+#				my $tr_id = 'tr_'.$file.'_'.$id;
+#				$html .= "<tr id=\"$tr_id\">\n";
+				foreach my $value (@lCol) {
+					my $cat = $h->{$file}->{header}[$j];
+					$h->{$file}->{values}->{$id}->{$cat} = $value;
+					$h->{$file}->{values}->{$id}->{$j} = $value;
+#					my $td_id = 'td_'.$file.'_'.$id.'_'.$j;
+#					$html .= "<td id=\"$td_id\"><center>".$value."</center></td>\n";
+					$j++;
+				}
+#				$html .= "</tr>\n";
+			}
+			$i++;
+		}
+		close(CSV);
+		
+		foreach my $id (sort keys %{$h->{$file}->{values}}) {
+			next if ($id =~ /.+_RC/);
+			my $tr_id = 'tr_'.$file.'_'.$id;
+			my $html_tr;
+			my $j = 0;
+			my $with_problem = 0;
+			while ($j >= 0) {
+				my $cat = $h->{$file}->{header}[$j];
+				my $td_id = 'td_'.$file.'_'.$id.'_'.$j;
+				my $value = $h->{$file}->{values}->{$id}->{$j};
+				if ($cat =~ /[#%]/ && exists $h->{$file}->{values}->{$id.'_RC'}) {
+					my $value_RC = $h->{$file}->{values}->{$id.'_RC'}->{$j};
+					$html_tr .= "<td id=\"$td_id\"><center>";
+					$html_tr .= "<table><tr><td><b>Norm</b></td><td style='padding-left:5px;'><center>$value</center></td></tr><tr><td><b>RC</b></td><td style='padding-left:5px;'><center>$value_RC</center></td></tr></table>";
+					$html_tr .= "</center></td>\n";
+					if ($cat eq '# Reads') {
+						$with_problem++ if ($value_RC >= $value);
+					}
+				}
+				else {
+					$html_tr .= "<td id=\"$td_id\"><center>".$value."</center></td>\n";
+				}
+				$j++;
+				$j = -1 if (not exists $h->{$file}->{values}->{$id}->{$j});
+			}
+			$html_tr .= "</tr>\n";
+			if ($with_problem > 0) { $html_tr = "<tr style='background-color:red;color:white;' id=\"$tr_id\">\n".$html_tr; }
+			elsif (lc($id) =~ /undetermined/) { $html_tr = "<tr style='color:red;' id=\"$tr_id\">\n".$html_tr; }
+			else { $html_tr = "<tr id=\"$tr_id\">\n".$html_tr; }
+			$html .= $html_tr;
+		}
+		
+		$html .= "</tbody>\n";
+		$html .= "</table>\n";
+		$h->{$file}->{html} = $html;
+		$h->{$file}->{table_id} = $table_id;
+	}
+	open (JSON, ">$file_out");
+	print JSON encode_json $h;
+	close (JSON);
+	return $file_out;
+}
 
 sub convert_csv_to_html {
 	my ($csv_file, $html_file) = @_;
@@ -176,6 +297,21 @@ sub list_html_files_in_dir {
 		}
 	}
 	return (\@lDir);
+}
+
+sub add_file_json {
+	my ($url, $path, $name) = @_;
+	$h_files->{$name} = $url;
+	my $date_stat = (stat ($path))[9];
+	if (exists $h_files_date->{$date_stat}) {
+		my $is_ok = 0;
+		while ($is_ok == 0) {
+			$date_stat++;
+			next if (exists $h_files_date->{$date_stat});
+			$is_ok = 1;
+		}
+	}
+	$h_files_date->{$date_stat} = $name;
 }
 
 sub add_file_html {
