@@ -284,16 +284,18 @@ sub add_table_results {
 		my $gn = $project->getVersion();
 		my $v1 = "/";
 		my $bam_files = $project->getPatient($patient_name)->bamUrl();
+		my $bam_names = $patient_name;
 		
 		my $nb_control = 0;
 		foreach my $other_pat (@{$project->getPatients()}) {
 			next if $other_pat->name eq $patient_name;
 			$bam_files .= ";".$other_pat->bamUrl();
+			$bam_names .= ';'.$other_pat->name();
 			$nb_control++;
 			last if $nb_control == 3;
 		}
 		
-		my $igv_link = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$patient_name","$bam_files","$locus","v1","$gn")' style="color:black"></button>};
+		my $igv_link = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$bam_names","$bam_files","$locus","v1","$gn")' style="color:black"></button>};
 		$tr .= qq{<td>$igv_link</td>};
 		
 		my $path_svg = $path_analysis.'/'.$h_res->{ENSID}.'/SpliceRes/Figs/';

@@ -682,6 +682,7 @@
                 dijit.byId('login').show();
                 return;
             };
+            getGencodeTrackForProject(projectName);
             document.getElementById("stat_project").textContent= projectName;
             document.getElementById("stat_description").textContent= "\""+items[0].description+"\"";
         
@@ -1101,7 +1102,7 @@
         	displayInIGV(item_var.chromosome, item_var.start, item_var.start);
         	var var_id = String(item_var.id).substring(0, 60); 
         	if (var_id.length >= 60) { var_id = var_id + '...'; }
-            var url_igv = "https://www.polyweb.fr/polyweb/html/manta/Url_CNV_Viewer.html?titre=" + var_id;
+            var url_igv = "/polyweb/html/manta/Url_CNV_Viewer.html?titre=" + var_id;
             var var_length = (item_var.end - item_var.start + 1);
             if (String(item_var.structural_type).match(/cnv/)) {
             	url_igv += "&locusstart=" + item_var.chromosome + ":" + (parseInt(item_var.start)-100) + "-" + (parseInt(item_var.end)+100);
@@ -1115,6 +1116,12 @@
             url_igv += "&bamfile=" + array_bam.join(',');
             url_igv += "&patient_name=" + array_name.join(',');
             url_igv += "&taille=" + var_length + "pb";
+            if (typeof url_gene_bed !== 'undefined') {
+            	url_igv += "&genes_bed=" + url_gene_bed;
+        	}
+            if (typeof url_fasta !== 'undefined') {
+            	url_igv += "&fasta=" + url_fasta;
+        	}
             window.open(url_igv);
             return;
         }
