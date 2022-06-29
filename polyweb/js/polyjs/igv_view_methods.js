@@ -35,6 +35,7 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
 		else { url_cyto = "/public-data/HG19/igv/cytoband.txt"; }
 	}
 	
+	var list_bams = [];
 	var list_tracks = [];
 	var track = {};
 	track['name'] = "Genes";
@@ -61,6 +62,7 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
         track['visibilityWindow'] = 1000000;
         track['colorBy'] = "pairOrientation";
 		list_tracks.push(track);
+		list_bams.push(window.location.origin + array_bam[i]);
 	}
 
     if (typeof locus === 'undefined') { locus = 'chr1:1-249,250,621'; }
@@ -105,6 +107,8 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
     setTimeout(function() {
 		igv.createBrowser(div, options).then(function (browser) {
 		    browser.search(locus);
+		    var tracks = list_bams.join(',') + ',' + window.location.origin + '/' + url_gene_bed;
+		    launch_igv_tool(window.location.origin + '/' + url_fasta, tracks, locus);
 		    is_waiting = false;
 		});
     }, 500);
@@ -144,6 +148,7 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
 		else { url_cyto = "/public-data/HG19/igv/cytoband.txt"; }
 	}
 	
+	var list_bams = [];
 	var list_tracks = [];
 	var track = {};
 	track['name'] = "Genes";
@@ -170,6 +175,7 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
         track['visibilityWindow'] = 1000000;
         track['colorBy'] = "strand";
 		list_tracks.push(track);
+		list_bams.push(window.location.origin + array_bam[i]);
 	}
 
 	
@@ -216,9 +222,12 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
 		igv.createBrowser(div, options).then(function (browser) {
 		    browser.search(locus);
 		    is_waiting = false;
+		    var tracks = list_bams.join(',') + ',' + window.location.origin + '/' + url_gene_bed;
+		    launch_igv_tool(window.location.origin + '/' + url_fasta, tracks, locus);
 		});
     }, 500);
 }
+
 /*
 function getTrackGenesAnnotations() {
 	var track = {};
