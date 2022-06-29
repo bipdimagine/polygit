@@ -156,6 +156,7 @@ function launch_igv_tool(fasta, tracks, locus) {
 	url += "?genome=" + fasta;
 	url += "&file=" + tracks;
 	url += "&locus=" + locus;
+	url += "&merge=false";
     console.dir(url);
     httpGetFocusOn(url);
 	return 1;
