@@ -31,15 +31,20 @@ my $jobs;
 $| =1;
 my $limit;
 my $noprint;
+my $row =0;
 GetOptions(
 	'cpu=s' => \$cpus,
 	'cmd=s' => \$cmd,
 	'fork=s' => \$fork,
 	'limit=s' => \$limit,
+	'row=s' => \$row,
 );
-
-
-
+unless ($noprint){
+for  (my $i=$row;$i<($row+5);$i++){
+	print "\033[$i;0H\033[2K";
+} 
+system("clear") if $row ==0;
+}
 
 my $pm = new Parallel::ForkManager($fork);
 my $running_jobs ={};
@@ -100,12 +105,13 @@ foreach my $cmd (@cmds){
 
 
 my $file = "/tmp/tmp.".time."cmd";
-	my $t;
+	my $t =0;
 my $status = new Term::StatusBar (
                     label => 'jobs Done : ',
                    showTime=>1,
                    subTextAlign =>"center",
                     totalItems => scalar(@$commands),  ## Equiv to $status->setItems(10)
+                    startRow => $row,
                    
  );
  $status->{maxCol} = 200;
@@ -125,7 +131,7 @@ while (@$commands) {
 sleep(1);
 #warn "end submitted";
 $|=1;
-system("clear") unless $noprint;
+#system("clear") unless $noprint;
 $status->start() unless $noprint;
 my $completed ;
 my $failed ;	
@@ -197,7 +203,9 @@ while (keys %$runnings_jobs ){
 		$status->subText(colored(['bright_yellow on_black'],$ttt->pretty));
 		
 		my $FH = $status->{fh};
-		print $FH "\033[4;0H", (' 'x(5))."total: ".colored(['bright_cyan on_black'],$nb_jobs)." Pending: ".colored(['bright_blue on_black'],$pending)." Running: ".colored(['bright_magenta on_black'],$running)." OK: ".colored(['bright_green on_black'],$ok)."  Failed: ".colored(['bright_red on_black'],$failed)."  ";
+		my $r = 4;
+		$r = ($row -1) + $r if $row > 0;
+		print $FH "\033[$r;0H", (' 'x(5))."total: ".colored(['bright_cyan on_black'],$nb_jobs)." Pending: ".colored(['bright_blue on_black'],$pending)." Running: ".colored(['bright_magenta on_black'],$running)." OK: ".colored(['bright_green on_black'],$ok)."  Failed: ".colored(['bright_red on_black'],$failed)."  ";
 		
 		#print $FH "\033[5;0H", (' 'x(25)).colored(['bright_yellow on_black'],$ttt->pretty).color('reset');
 		#
@@ -228,7 +236,6 @@ DESTROY {
 
 
 sub end {
-	warn "end";
 	foreach my $c (keys %$runnings_jobs){
 		$cancel->{$c} ++;
 		unlink "slurm-".$c."out";
