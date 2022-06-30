@@ -5,8 +5,10 @@ use Net::SSH::Perl;
 use Getopt::Long;
 use Proc::Simple;
 my $cmd;
+my $pwd;
 GetOptions(
 	'cmd=s' => \$cmd,
+	'pwd=s' => \$pwd,
 );
 my $file_lock = "/data-dragen/lock";
 
@@ -20,13 +22,12 @@ sub tsktsk {
 
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
  my $ssh = Net::SSH::Perl->new("10.1.2.9");
-$ssh->login("$username");
+$ssh->login("$username",$pwd);
 my @cmds;
 
 unless ($cmd){
   @cmds = <STDIN>;
 	chomp(@cmds);
-	
 }
 else {
   push(@cmds,split(",",$cmd));	
