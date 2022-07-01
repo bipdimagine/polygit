@@ -658,7 +658,7 @@ sub setOldVariant {
 		if (exists $vh->{value}->{cnv_details_genes}) {
 			$self->cnv_details_genes($vh->{value}->{cnv_details_genes});
 		}
-		$self->update_clinvar($project,$gene) if $update;
+		$self->update_clinvar($project,$gene) if $update; 
 		unless ($self->name)
 		{
 			my ($a,$b,$c,$d) = split("-",$self->gnomad_id);
