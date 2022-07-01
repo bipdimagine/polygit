@@ -664,7 +664,7 @@ sub setOldVariant {
 			my ($a,$b,$c,$d) = split("-",$self->gnomad_id);
 			my $l1 = length($c) -1;
 			my $l2 = length($d) -1;
-			if ($l1>15){
+			if ($l1>15){ 
 				$self->name($a."-".$b."-del-".$l1);
 			}
 			elsif ($l2>15){
