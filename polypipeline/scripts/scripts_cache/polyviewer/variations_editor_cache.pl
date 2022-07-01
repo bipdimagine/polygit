@@ -29,7 +29,7 @@ use File::Temp qw/ tempfile tempdir /;
 warn "*_*_*_*_*_".$host."*_*_*_*_*_";
 #use Cache_Commons;
 
-my ($project_name);
+my ($project_name );
 my $patient_name;
 GetOptions(
 	'project=s'    => \$project_name,
