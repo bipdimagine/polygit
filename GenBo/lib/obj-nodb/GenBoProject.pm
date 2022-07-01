@@ -1816,7 +1816,6 @@ has dirCytoManue => (
 
 );
 
-
 has gtf_file => (
 	is      => 'rw',
 	lazy    => 1,
@@ -5918,6 +5917,39 @@ has dir_controls_dude => (
 		return $dir;
 	},
 );
+
+has get_path_rna_seq_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analisys/";
+		return $path;
+	},
+);
+
+sub get_path_rna_seq_analyse {
+	my ($self, $analyse_name) = @_;
+	confess("\n\nERROR: analyse name mandatory. Die\n\n") unless ($analyse_name);
+	my $path = $self->get_path_rna_seq_root();
+	my $path_analyse = $path.'/'.$analyse_name.'/';
+	confess("\n\nERROR: analyse $analyse_name not found in $path. Die\n\n") unless (-d $path_analyse);
+	return $path_analyse;
+}
+
+sub get_gtf_genes_annotations_igv {
+	my ($self) = @_;
+	if ($self->getVersion() =~ /HG19/) {
+		my $igv_dir = $self->buffer->config->{'public_data_annotation'}->{root}.'/igv/';
+		if (defined $self->gencode_version() && $self->gencode_version() ne '-1') {
+			my $file = $igv_dir.'/gencode.'.$self->gencode_version().'.gtf.gz';
+			return $file if (-e $file);
+		}
+		my $file = $igv_dir.'/gencode.gtf.gz';
+		return $file;
+	}
+	return $self->buffer->config->{'public_data_annotation'}->{root}."/".$self->getVersion()."/igv/gencode.gtf.gz";
+}
 
 
 1;
