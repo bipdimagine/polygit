@@ -607,12 +607,24 @@ sub setLmdbVariant {
 	$self->dejavu_similar_patients_ho($vh->similar_patients_ho());
 	$self->dejavu_this_run_patients($vh->in_this_run_patients);# = '-';
 	$self->text_caller([]);
-
+}
+sub update_clinvar {
+	my ($self,$project,$gene) = @_;
+		my $vh = $project->_newVariant($self->id);
+		 	
+		 #	die();
+	
+		$self->clinvar_id($vh->clinvar_id);
+		return unless $vh->clinvar_id;
+		$self->clinvar($vh->clinvar_class) ;
+		if (exists $vh->genes_pathogenic_DM->{$gene->{id}} && $vh->genes_pathogenic_DM->{$gene->{id}}->{pathogenic} ){
+				$self->clinvar_pathogenic($vh->isClinvarPathogenic);
+		}
+	
 }
 
-
 sub setOldVariant {
-	my ($self,$vh,$project,$patient,$gene) = @_; 
+	my ($self,$vh,$project,$patient,$gene,$update) = @_; 
 		$self->gene($gene);
 		$self->id($vh->{value}->{id});
 		$self->start($vh->{value}->{start});
@@ -636,7 +648,9 @@ sub setOldVariant {
 		$self->check_is_hgmd_dm_for_gene($vh,$project,$gene);
 		$self->hgmd_dm_for_gene($vh->{value}->{dm_for_this_gene});
 		$self->check_is_clinvar_pathogenic_for_gene($vh,$project,$gene);
+		
 		$self->clinvar_pathogenic_for_gene($vh->{value}->{clinvar_pathogenic_for_this_gene});
+		
 		$self->dm($vh->{value}->{dm});
 		$self->clinvar_pathogenic($vh->{value}->{clinvar_pathogenic});
 		$self->hgmd_id($vh->{value}->{hgmd_id});
@@ -652,14 +666,14 @@ sub setOldVariant {
 		if (exists $vh->{value}->{cnv_details_genes}) {
 			$self->cnv_details_genes($vh->{value}->{cnv_details_genes});
 		}
-
+		$self->update_clinvar($project,$gene) if $update; 
 		unless ($self->name)
 		{
 			my ($a,$b,$c,$d) = split("-",$self->gnomad_id);
 			my $l1 = length($c) -1;
 			my $l2 = length($d) -1;
-			if ($l1>15){
-				$self->name($a."-".$b."-del-".$l1);
+			if ($l1>15){  
+				$self->name($a."- ".$b."-del-".$l1);
 			}
 			elsif ($l2>15){
 				$self->name($a."-".$b."-ins-".$l2);

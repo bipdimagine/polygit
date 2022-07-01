@@ -219,7 +219,13 @@ my $project = $buffer->newProjectCache(
 my $version_db =  $project->public_database_version;
 if($version_db>=13){
 	$VERSION = $VERSION."-".$version_db."1";
+	
 }
+if($version_db == 15){
+	$VERSION = $VERSION."-".$version_db."clinvar";
+	$buffer->public_data_version(16);
+}
+
 my $patient = $project->getPatient($patient_name);
 my $fam = $patient->getFamily();
 my $print_html = polyviewer_html->new( project => $project, patient => $patient );
@@ -251,7 +257,6 @@ if ($gene_name_filtering){
 	}
 }
 my $force;
-
 my $no_cache;
 if ($force == 1) {
  $dev = 2;	
@@ -262,8 +267,7 @@ my $keys = return_uniq_keys($patient,$cgi);
 my $level_dude = 'high,medium';
 
 
-my $cache_dude_id =
-  "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
+my $cache_dude_id = "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
 my $cache_id = join( ";", @$keys );
 my $text = $no_cache->get_cache($cache_id);
 $text = "" if $dev;
@@ -280,7 +284,6 @@ if($text){
 	  	$no_cache->close();
 	  	exit(0);
 }
-
 
 $project->cgi_user($user);
 $cgi->param(-name=>'user_name',-value=>'');
@@ -575,12 +578,10 @@ print $ztime;
 
 };
 
-warn "write cache";
 
 $no_cache->put_cache_text($cache_id,$stdout.$stdout_nav_bar.$stdoutcnv.$stdout_end,2400) ;#unless $dev;
 
 $no_cache->close();
- warn "END";
 exit(0);
 
 
@@ -774,8 +775,7 @@ sub refine_heterozygote_composite_score_fork {
 		$res->{time} = time;
 		$project->buffer->dbh_reconnect();
 
-		( $res->{genes}, $res->{total_time} ) =
-		  new_refine_heterozygote_composite_score_old( $project, \@tmp, $vid );
+		( $res->{genes}, $res->{total_time} ) = new_refine_heterozygote_composite_score_old( $project, \@tmp, $vid );
 
 		$res->{run_id} = $vid;
 		$pm->finish( 0, $res );
@@ -1165,6 +1165,7 @@ sub refine_heterozygote_composite_score_one {
 			update_variant_editor::alamut_link_js( $v, $patient );
 			update_variant_editor::table_validation( $patient, $v, $g );
 			$v->{id} = $vid;
+			die();
 			update_variant_editor::table_dejavu_live( $v, $patient->project,$patient,$g );
 			my $t = time;
 
@@ -1388,6 +1389,7 @@ sub new_refine_heterozygote_composite_score_old {
 			my $vh = $no->get($vid);
 			my $vp =  PolyviewerVariant->new();
 			$vp->setOldVariant($vh,$project,$patient,$g);
+			
 			#$vp->setLmdbVariant($vh,$project,$g,$patient);
 			$print_html->variant($vp);
 			
