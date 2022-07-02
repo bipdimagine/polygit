@@ -225,6 +225,9 @@ if($version_db == 15){
 	$VERSION = $VERSION."-".$version_db."clinvar";
 	$buffer->public_data_version(16);
 }
+else {
+	$version_db = undef;
+}
 
 my $patient = $project->getPatient($patient_name);
 my $fam = $patient->getFamily();
@@ -1384,7 +1387,8 @@ sub new_refine_heterozygote_composite_score_old {
 		#	my $v  = $noV->get($vid);
 			my $vh = $no->get($vid);
 			my $vp =  PolyviewerVariant->new();
-			$vp->setOldVariant($vh,$project,$patient,$g);
+			
+			$vp->setOldVariant($vh,$project,$patient,$g,$version_db);
 			
 			#$vp->setLmdbVariant($vh,$project,$g,$patient);
 			$print_html->variant($vp);
