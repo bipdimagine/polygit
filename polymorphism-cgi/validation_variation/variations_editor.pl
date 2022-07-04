@@ -215,6 +215,7 @@ my $project = $buffer->newProjectCache(
 	-typeFilters => 'individual',
 	-cgi_object  => 1
 );
+#my $clinvar_lmdb =  $project->getChromosome->get_lmdb_database("clinvar",$project->type_public_db);
 
 my $version_db =  $project->public_database_version;
 if($version_db>=13){
@@ -224,6 +225,8 @@ if($version_db>=13){
 if($version_db == 15){
 	$VERSION = $VERSION."-".$version_db."clinvar";
 	$buffer->public_data_version(16);
+	$project->public_database_version(16);
+	
 }
 else {
 	$version_db = undef;
@@ -562,7 +565,7 @@ $myproc->kill();
 #warn "ok *** $exit_status ";
 #exit(0);
 my $stdout_end = tee_stdout {
-warn "genes:".scalar(@$genes);
+#warn "genes:".scalar(@$genes);
 if (@$genes){
 $genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
 #warn "genes fin:".scalar(@$genes);
@@ -648,6 +651,10 @@ sub calculate_max_score {
 		$class->{mother}    = [];
 		$class->{father}    = [];
 		foreach my $k ( keys %{ $hgene->{all_variants} } ) {
+			if ($version_db){
+				$hgene->{score} += update_score_clinvar($k);
+			}
+			#my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
 			if ( exists $h_all_variants_validations->{ $gid . '!' . $k } ) {
 				my $score_validation = $h_all_variants_validations->{ $gid . '!' . $k }->[0]->{validation};
 				$hgene->{score} += 0.5 if ( $score_validation == 3 );
@@ -2336,4 +2343,12 @@ sub save_session_for_test {
 	$session_test->save( $session_base_name.'_annot_cnvs', $list_datas_annotations_cnvs );
 	
 	exit(0);
+}
+
+sub update_score_clinvar {
+	my ($id) = @_;
+	my $vh = $project->_newVariant($id);
+	return 1 if $vh->isClinvarPathogenic();
+	return 0;
+	
 }
