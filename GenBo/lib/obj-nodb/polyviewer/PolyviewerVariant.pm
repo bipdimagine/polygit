@@ -18,10 +18,12 @@ sub parseGnomadTable {
 			my @rows = $table->rows;
 			my $zmodel;
 			shift (@rows);
-			
+		
 		foreach my $l (@rows) {
 		#next if lc($l->[0]) eq "ac";
 			my $z =0;	
+			my $hemi;
+			$hemi =1  if $self->chromosome eq "X" or $self->chromosome eq "Y";
 			
 			my $an = pop(@$l);
 			$self->gnomad_an($an);
@@ -31,7 +33,7 @@ sub parseGnomadTable {
 			$self->gnomad_ho($l->[$z]);
 			
 			$z++;
-			if(scalar(@$l)>5){
+			if($hemi){
 				$self->gnomad_ho_male($l->[$z]);
 				$z++;
 			}
