@@ -276,7 +276,7 @@ sub polyquery_phenotypes {
 	push(@lPhen, 'Omim: '.join(', ', @{$self->omim->{phenotypes}->{omim}}) ) if (exists $self->omim->{phenotypes}->{omim});
 	push(@lPhen, 'Hgmd: '.join(', ', @{$self->hgmd_disease}) ) if ($self->hgmd and $self->hgmd_disease);
 	push(@lPhen, 'Ddg2p: '.join(', ', @{$self->omim->{phenotypes}->{ddg2p}}) ) if (exists $self->omim->{phenotypes}->{ddg2p});
-	push(@lPhen, 'Hpo: '.sort join(', ', @{$self->hpo_phenotypes_names()})) if ($self->hpo());
+	push(@lPhen, 'Hpo: '.join(', ', @{$self->hpo_phenotypes_names()})) if ($self->hpo());
 	return join(' ; ',@lPhen);
 }
 
