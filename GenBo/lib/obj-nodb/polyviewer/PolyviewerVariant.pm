@@ -171,19 +171,19 @@ sub check_is_clinvar_pathogenic_for_gene  {
 	my ($self,$hvariation,$project,$gene) = @_;
 	return $hvariation->{value}->{clinvar_pathogenic_for_this_gene} if (exists $hvariation->{value}->{clinvar_pathogenic_for_this_gene});
 	if ($hvariation->{value}->{clinvar_pathogenic}) {
-		my $chr = $project->getChromosome($hvariation->{value}->{chromosome});
-		my $clinvar_id = $hvariation->{value}->{clinvar_id};
-		my $g = $project->newGene($gene->{id});
-		if ($chr->is_clinvar_pathogenic_for_gene($clinvar_id, $g)) {
+		#my $chr = $project->getChromosome($hvariation->{value}->{chromosome});
+		#my $clinvar_id = $hvariation->{value}->{clinvar_id};
+		#my $g = $project->newGene($gene->{id});
+		#if ($chr->is_clinvar_pathogenic_for_gene($clinvar_id, $g)) {
 			$hvariation->{value}->{clinvar_pathogenic_for_this_gene} = 1;
 			return 1;
-		}
-		else {
-			$hvariation->{value}->{clinvar_pathogenic_for_this_gene} = undef;
-			$hvariation->{value}->{clinvar_pathogenic} = undef;
-			$hvariation->{value}->{clinvar} = '';
-			$hvariation->{html}->{clinvar} = '';
-		}
+		#}
+		#else {
+		#	$hvariation->{value}->{clinvar_pathogenic_for_this_gene} = undef;
+		#	$hvariation->{value}->{clinvar_pathogenic} = undef;
+		#	$hvariation->{value}->{clinvar} = '';
+		#	$hvariation->{html}->{clinvar} = '';
+		#}
 	}
 	return;
 }
