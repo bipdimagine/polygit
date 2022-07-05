@@ -157,78 +157,148 @@ sub convert_csv_to_json {
 	my $file_out = "$path_out/demultiplex.json";
 	return $file_out if (-e $file_out);
 	my $h;
-	foreach my $file (@$list_files) {
+	foreach my $file (sort @$list_files) {
 		my $csv_file = $path.'/'.$file;
 		my $table_id = 'table_'.$file;
 		$table_id =~ s/\.csv//;
-		my $html = qq{<table style="width:100%;" data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="15" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped' style='font-size:13px;'>};
+		
+		my $sorted_col = "data-sort-name='n_reads' data-sort-order='desc'";
+		$sorted_col = "data-sort-name='p_of_unknown_barcodes' data-sort-order='desc'" if (lc($table_id) =~ /top_/);
+		
 		open (CSV, "$csv_file");
 		my $i = 0;
+		my $has_RC;
+		my $max_nb_header;
 		while (<CSV>) {
 			chomp($_);
 			my $line = $_;
 			my @lCol = split(',', $line);
 			if ($i == 0) {
 				$h->{$file}->{header} = \@lCol;
-				$html .= "<thead>\n";
-				foreach my $cat (@lCol) {
-					my $cat_name = $cat;
-					$cat_name =~ s/# /n_/;
-					$cat_name =~ s/% /p_/;
-					my $sortable = qq{ data-sortable='true' data-filter-control='input'} if (not $cat =~ /[#%]/);
-					$html .= "<th $sortable data-field='".lc($cat_name)."' ><center><b>$cat</b></center></th>\n";
-				}
-				$html .= "</thead>\n";
-				$html .= "<tbody>\n";
+				$max_nb_header = scalar(@{$h->{$file}->{header}});
 			}
 			else {
 				my $j = 0;
 				my $id = $lCol[0].'_'.$lCol[1];
-#				my $tr_id = 'tr_'.$file.'_'.$id;
-#				$html .= "<tr id=\"$tr_id\">\n";
+				if ($id =~ /(.+)_RC/) {
+					$has_RC ++ if (exists $h->{$file}->{values}->{$1});
+				}
 				foreach my $value (@lCol) {
 					my $cat = $h->{$file}->{header}[$j];
+					$value = $value * 100 if ($cat =~ /\%/);
 					$h->{$file}->{values}->{$id}->{$cat} = $value;
 					$h->{$file}->{values}->{$id}->{$j} = $value;
-#					my $td_id = 'td_'.$file.'_'.$id.'_'.$j;
-#					$html .= "<td id=\"$td_id\"><center>".$value."</center></td>\n";
+					if ($cat eq '# Reads') {
+						$h->{$file}->{values}->{$id}->{'# Reads Norm Only'} = int($value);
+						$h->{$file}->{values}->{$id}->{$max_nb_header} = int($value);
+					}
 					$j++;
 				}
-#				$html .= "</tr>\n";
 			}
 			$i++;
 		}
 		close(CSV);
+		
+		if ($has_RC) {
+			$sorted_col = "data-sort-name='n_reads_norm_only' data-sort-order='desc'";
+			push(@{$h->{$file}->{header}}, '# Reads Norm Only');
+		}
+		my $html = qq{<table style="width:100%;" $sorted_col data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="15" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped sortable-table' style='font-size:13px;'>};
+		$html .= "<thead>\n";
+		foreach my $cat (@{$h->{$file}->{header}}) {
+			my $cat_name = $cat;
+			$cat_name =~ s/# /n_/;
+			$cat_name =~ s/% /p_/;
+			$cat_name =~ s/ /_/g;
+			my $sortable;
+			if ($cat =~ /[#%]/) {
+				if (lc($table_id) =~ /top_unknown/) {
+					if (lc($cat_name) eq 'p_of_unknown_barcodes') {
+						$sortable = qq{ data-sortable='true' data-order='desc' class='numeric-sort'};
+					}
+					else {
+						$sortable = qq{ data-sortable='true' class='numeric-sort'};
+					}
+				}
+				if (lc($table_id) =~ /demultiplex/) {
+					if ($has_RC) {
+						if (lc($cat_name) eq 'n_reads_norm_only') {
+							$sortable = qq{ data-sortable='true' data-order='desc' class='numeric-sort'};
+						}
+					}
+					else {
+						if (lc($cat_name) eq 'n_reads') {
+							$sortable = qq{ data-sortable='true' data-order='desc' class='numeric-sort'};
+						}
+						else {
+							$sortable = qq{ data-sortable='true' class='numeric-sort'};
+						}
+					}
+					
+				}
+			}
+			else { $sortable = qq{ data-sortable='true' data-filter-control='input' }; }
+			$html .= "<th $sortable data-field='".lc($cat_name)."' ><center><b>$cat</b></center></th>\n";
+		}
+		
+		$html .= "</thead>\n";
+		$html .= "<tbody>\n";
+		
+		my $nb_values = scalar(keys %{$h->{$file}->{values}});
+		my $limit_errors_perc_reads = 0;
+		$limit_errors_perc_reads = (100 / $nb_values) * 10 if ($nb_values);
 		
 		foreach my $id (sort keys %{$h->{$file}->{values}}) {
 			next if ($id =~ /.+_RC/);
 			my $tr_id = 'tr_'.$file.'_'.$id;
 			my $html_tr;
 			my $j = 0;
+			my $index_barcode_sequence;
 			my $with_problem = 0;
+			my $with_ambigous = 0;
 			while ($j >= 0) {
 				my $cat = $h->{$file}->{header}[$j];
+				$index_barcode_sequence = $j if (lc($cat) eq 'index');
 				my $td_id = 'td_'.$file.'_'.$id.'_'.$j;
 				my $value = $h->{$file}->{values}->{$id}->{$j};
-				if ($cat =~ /[#%]/ && exists $h->{$file}->{values}->{$id.'_RC'}) {
+				if ($cat ne '# Reads Norm Only' and $cat =~ /[#%]/ && exists $h->{$file}->{values}->{$id.'_RC'}) {
+					if ($cat eq '# Reads') {
+						$h->{$file}->{header}[$j] = '# Reads Only';
+					}
 					my $value_RC = $h->{$file}->{values}->{$id.'_RC'}->{$j};
+					if ($cat eq '% Reads' and int($value) >= $limit_errors_perc_reads) {
+						$with_problem++;
+					}
 					$html_tr .= "<td id=\"$td_id\"><center>";
 					$html_tr .= "<table><tr><td><b>Norm</b></td><td style='padding-left:5px;'><center>$value</center></td></tr><tr><td><b>RC</b></td><td style='padding-left:5px;'><center>$value_RC</center></td></tr></table>";
 					$html_tr .= "</center></td>\n";
-					if ($cat eq '# Reads') {
+					if (lc($cat) eq '# reads') {
 						$with_problem++ if ($value_RC >= $value);
 					}
 				}
 				else {
-					$html_tr .= "<td id=\"$td_id\"><center>".$value."</center></td>\n";
+					if (lc($cat) eq '% reads') {
+						$with_problem++ if ($value >= $limit_errors_perc_reads);
+					}
+					$html_tr .= "<td id=\"$td_id\">".$value."</td>\n";
+				}
+				if (lc($cat) eq '% of unknown barcodes') {
+					if ($value >= 15) {
+						if ($h->{$file}->{values}->{$id}->{$index_barcode_sequence} =~ /^A+$/) { $with_ambigous++; }
+						elsif ($h->{$file}->{values}->{$id}->{$index_barcode_sequence} =~ /^T+$/) { $with_ambigous++; }
+						elsif ($h->{$file}->{values}->{$id}->{$index_barcode_sequence} =~ /^G+$/) { $with_ambigous++; }
+						elsif ($h->{$file}->{values}->{$id}->{$index_barcode_sequence} =~ /^C+$/) { $with_ambigous++; }
+						else { $with_problem++; }
+					}
 				}
 				$j++;
-				$j = -1 if (not exists $h->{$file}->{values}->{$id}->{$j});
+				$j = -1 if (not exists $h->{$file}->{header}[$j] or  not exists $h->{$file}->{values}->{$id}->{$j});
 			}
 			$html_tr .= "</tr>\n";
-			if ($with_problem > 0) { $html_tr = "<tr style='background-color:red;color:white;' id=\"$tr_id\">\n".$html_tr; }
-			elsif (lc($id) =~ /undetermined/) { $html_tr = "<tr style='color:red;' id=\"$tr_id\">\n".$html_tr; }
-			else { $html_tr = "<tr id=\"$tr_id\">\n".$html_tr; }
+			if ($with_problem > 0)     { $html_tr = "<tr style='text-align:center;background-color:red;color:white;' id=\"$tr_id\">\n".$html_tr; }
+			elsif ($with_ambigous > 0) { $html_tr = "<tr style='text-align:center;background-color:orange;color:white;' id=\"$tr_id\">\n".$html_tr; }
+			elsif (lc($id) =~ /undetermined/) { $html_tr = "<tr style='text-align:center;color:red;' id=\"$tr_id\">\n".$html_tr; }
+			else { $html_tr = "<tr style='text-align:center;' id=\"$tr_id\">\n".$html_tr; }
 			$html .= $html_tr;
 		}
 		
