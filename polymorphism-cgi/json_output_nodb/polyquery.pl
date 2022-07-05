@@ -1345,8 +1345,12 @@ sub launchStatsGene {
 	$hashStats->{'chromosome'} 	= $gene->chromosome->id();
 	warn '  -> stats chromosome_id: '.$hashStats->{'chromosome'} if ($debug);
 	#$hashStats->{'description'} = $gene->phenotypes();
-	$hashStats->{'phenotype'} = $gene->phenotypes();
-	$hashStats->{'description'} = $gene->description();
+	$hashStats->{'phenotype'} = $gene->polyquery_phenotypes();
+	$hashStats->{'description'} = $gene->description() if ($gene->description());
+	#my ($pheno,$nb_other_terms) = $gene->polyviewer_phentotypes();
+	#$hashStats->{'description'} = "$pheno + $nb_other_terms terms";
+	
+	
 	my @lIds = @{$gene->getIdsBitOn($gene->getVariantsVector())};
 	$hashStats->{'vector_ids'}	= join(',', @lIds);
 	my ($hashCount, $hGetFam, $hAllPat, @lGetPat);
