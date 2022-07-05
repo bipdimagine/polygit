@@ -151,6 +151,7 @@ function format_phenotype(value) {
 		value = value.replace("Hpo: ", "<span style='color:red;'>Hpo: </span>");
 		value = value.replace("Hgmd: ", "<span style='color:red;'>Hgmd: </span>");
 		value = value.replace("Ens: ", "<span style='color:red;'>Ens: </span>");
+		value = value.replace("Ddg2p: ", "<span style='color:red;'>Ddg2p: </span>");
 		value = value.replace("Omim: ", "<span style='color:red;'>Omim: </span>");
 		return "<span style='color: #29b6f6;'>" + value + "</span>";
 	}

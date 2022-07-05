@@ -550,6 +550,7 @@
 	    	}
 	    	
 	    	function launch() {
+	    		document.title = "PolyDemultiplex " + param("name");
 	    		document.getElementById("span_run_name").innerHTML = param("name");
 	    		var text_loading = 'Checking RUN Datas';
 				show_waiting(text_loading);
