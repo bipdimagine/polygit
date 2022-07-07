@@ -28,7 +28,7 @@ my @l_cmds;
 foreach my $patient (@{$project->getPatients}) {
 	my $patient_name = $patient->name();
 	print "\n\n### PATIENT $patient_name ###\n\n";
-	my $cmd = "$Bin/rna_view_analyse.pl project=$project_name patient=$patient_name update_sashimi=1 fork=$fork"; 
+	my $cmd = "$Bin/rna_junctions_analyse.pl project=$project_name patient=$patient_name update_sashimi=1 fork=$fork"; 
 	`$cmd`;
 }
 

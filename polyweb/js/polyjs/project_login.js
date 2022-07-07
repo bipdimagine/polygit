@@ -131,6 +131,12 @@ function formaterButtonRNA(this_value) {
 		dd = ""
 		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >Junctions-Analyse</div></td></tr></table></center>";
 	} 
+	if (list[0] == 2) {
+		tt = " onClick=\"alert('JANE todo !!')\" ";
+		style =" style='margin-top: 3px ' ";
+		dd = ""
+		return "<center><table><tr><td><div style='background-color:#ca4ff8;color:white;' class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolyRnaSeq-Analyse</div></td></tr></table></center>";
+	} 
 	return '';
 }
 

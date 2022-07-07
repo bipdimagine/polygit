@@ -1154,6 +1154,7 @@ has sql_cmd_get_quick_patients_list_from_project_id => (
 			SELECT
 		        a.patient_id,
 		        a.name as name,
+		        a.type as type,
 		        r.run_id,
 				C.name as capName,
 				C.analyse as capAnalyse,
@@ -1191,6 +1192,32 @@ has sql_cmd_get_quick_patients_list_from_project_id => (
 	},
 );
 
+has sql_cmd_get_projects_ids_with_patients_type_rna => (
+	is	 => 'ro',
+	isa	 => 'Str',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT distinct(project_id) FROM PolyprojectNGS.patient
+				where type='rna'; 
+		};
+		return $sql;
+	},
+);
+
+has sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name => (
+	is	 => 'ro',
+	isa	 => 'Str',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT pr.project_id as id, pr.name as name, pr.creation_date as cDate FROM PolyprojectNGS.patient as pa, PolyprojectNGS.projects as pr
+				where pa.type='rna' and pa.project_id=pr.project_id and pr.name=?;
+		};
+		return $sql;
+	},
+);
+
 sub isLoginSTAFF {
 	my ($self, $name) = @_;
 	my $dbh = $self->getDbh();
@@ -1206,22 +1233,44 @@ sub getListProjectsRnaSeq {
 	my ($self, $project_name) = @_;
 	my @l_res;
 	my $dbh = $self->getDbh();
-	my $sql;
-	if ($project_name) { $sql = $self->sql_cmd_check_project_RNA(); }
-	else { $sql = $self->sql_cmd_get_quick_projects_list_RNA(); }
+	my ($sql, $sql2);
+	if ($project_name) {
+		$sql = $self->sql_cmd_check_project_RNA();
+		$sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name();
+	}
+	else {
+		$sql = $self->sql_cmd_get_quick_projects_list_RNA();
+		$sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna();
+	}
 	my $sth = $dbh->prepare($sql);
-	if ($project_name) { $sth->execute($project_name); }
-	else { $sth->execute(); }
+	my $sth2 = $dbh->prepare($sql2);
+	if ($project_name) {
+		$sth->execute($project_name);
+		$sth2->execute($project_name);
+	}
+	else {
+		$sth->execute();
+		$sth2->execute();
+	}
 	my $h = $sth->fetchall_hashref('id');
-	foreach my $project_id (sort {$b <=> $a} keys %$h) {
+	my $h2 = $sth2->fetchall_hashref('id');
+	
+	my @l_projects_ids = keys %$h;
+	foreach my $pr_id (keys %$h2) {
+		push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});
+	}
+	
+	foreach my $project_id (sort {$b <=> $a} @l_projects_ids) {
+		next if ($project_id == 0);
 		my $sql2 = $self->sql_cmd_get_quick_patients_list_from_project_id();
 		my $sth2 = $dbh->prepare($sql2);
 		$sth2->execute($project_id);
 		my $h_patients = $sth2->fetchall_hashref('name');
 		my ($is_rna, $h_captures);
 		foreach my $patient_name (keys %$h_patients) {
+			$is_rna = 1 if ($h_patients->{$patient_name}->{type} eq 'rna');
 			$is_rna = 1 if ($h_patients->{$patient_name}->{capAnalyse} eq 'rnaseq');
-			$h_captures->{$h_patients->{$patient_name}->{capName}} = undef
+			$h_captures->{$h_patients->{$patient_name}->{capName}} = undef;
 		}
 		next unless ($is_rna);
 		my @l_versions = split(' ', $h->{$project_id}->{ppversionid});
@@ -1260,5 +1309,30 @@ sub getAlamutApiKeyFromUserName {
 	my $h = $sth->fetchall_hashref('login');
 	return $h->{$user_name};
 }
+
+has sql_cmd_get_runid_from_samplename => (
+	is       => 'ro',
+	isa      => 'Str',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+		my $query = qq{
+			SELECT * FROM PolyprojectNGS.patient where name=?;
+		};
+		return $query;
+	},
+);
+
+sub getHashRunIdFromSampleName {
+	my ($self, $sample_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = $self->sql_cmd_get_runid_from_samplename();
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($sample_name);
+	my $h = $sth->fetchall_hashref('run_id');
+	return $h;
+}
+
+
 
 1;

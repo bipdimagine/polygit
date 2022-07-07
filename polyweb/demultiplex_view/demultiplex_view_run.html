@@ -549,6 +549,14 @@
 	    		dijit.byId('waiting').show();
 	    	}
 	    	
+	    	function force_reload_view(url) {
+	    		var text_loading = 'Reloading ' + param('name');
+				show_waiting(text_loading);
+			    $.getJSON( url, function( data ) {
+			    	location.reload();
+			    });
+	    	}
+	    	
 	    	function launch() {
 	    		document.title = "PolyDemultiplex " + param("name");
 	    		document.getElementById("span_run_name").innerHTML = param("name");
@@ -558,9 +566,20 @@
 			    $.getJSON( url, function( data ) {
 			    	var i = 1;
 			    	$.each( data, function( file, data ) {
+			    		
+			    		var path_run = json_file;
+			    		json_file = json_file.replace("json/demultiplex.json", "");
+			    		
+						var url_force = url_path + "/demultiplex_view/demultiplex_view.pl";
+						url_force += "?force=1";
+						url_force += "&run=" + param('name');
+						
+			    		var cmd = "force_reload_view('" + url_force + "')";
+			    	
 						var myNode = document.getElementById("content_res");
 				    	var nav = "<ul class='nav nav-tabs' style='padding-top:20px;'>";
 						nav += "<li><a data-toggle='tab' href='#" + file + "'><b>" + file + "</b></a></li>";
+						nav += "<li><a data-toggle='tab' href='#" + file + "'  style='color:red;'><button onclick=\"" + cmd + " \"><b><span class='glyphicon glyphicon-refresh'></span> Force Reload</b></button></a></li>";
 						nav += "</ul>";
 						$(nav).appendTo(myNode);
 			    	
