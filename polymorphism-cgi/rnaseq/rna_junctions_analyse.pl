@@ -36,7 +36,7 @@ foreach my $patient (@{$project->getPatients}) {
 	$h_patient_analisys->{$patient->name()} = undef;
 }
 
-my $path_analisys = $project->get_path_rna_seq_root();
+my $path_analisys = $project->get_path_rna_seq_junctions_root();
 opendir my ($dir), $path_analisys;
 my @found_files = readdir $dir;
 closedir $dir;
@@ -61,19 +61,17 @@ my $analyse_name;
 if ($use_patient) {
 	$analyse_name = $h_patient_analisys->{$use_patient};
 }
-else {
-	foreach my $patient_name (sort keys %$h_patient_analisys) {
-		if ($h_patient_analisys->{$patient_name}) {
-			$use_patient = $patient_name;
-			$analyse_name = $h_patient_analisys->{$patient_name};
-			last;
-		}
-	}
-}
-#warn $path_analisys;
-#warn Dumper $h_patient_analisys;
+#else {
+#	foreach my $patient_name (sort keys %$h_patient_analisys) {
+#		if ($h_patient_analisys->{$patient_name}) {
+#			$use_patient = $patient_name;
+#			$analyse_name = $h_patient_analisys->{$patient_name};
+#			last;
+#		}
+#	}
+#}
 
-my $html_table_patients = qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
+my $html_table_patients = qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
 $html_table_patients .= qq{<thead>};
 $html_table_patients .= qq{<th data-field="name" data-sortable="true"><b>Patient Name</b></th>};
 $html_table_patients .= qq{<th data-field="analyse" data-sortable="true"><b>Analyse Name</b></th>};
@@ -81,21 +79,16 @@ $html_table_patients .= qq{<th data-field="view"><b>View</b></th>};
 $html_table_patients .= qq{<th data-field="bam_igv"><b>Add BAM in IGV</b></th>};
 $html_table_patients .= qq{</thead>};
 $html_table_patients .= qq{<tbody>};
+
 foreach my $patient_name (sort keys %$h_patient_analisys) {
 	my $analyse = $h_patient_analisys->{$patient_name};
-	my $tr = qq{<tr>};
+	my $tr = qq{<tr style="text-align:center;font-size:11px;">};
 	$tr .= qq{<td>$patient_name</td>};
 	$tr .= qq{<td>$analyse</td>};
 	
-	
-#	warn "\n\n";
-#	warn $path_analisys.'/'.$analyse.'/AllRes/';
-#	warn '-> FOUND!' if (-d )
-#	warn "\n\n";
-	
 	if ($patient_name eq $use_patient) { $tr .= qq{<td><button onClick="document.getElementById('a_RI').click();">View</button></td>}; }
 	elsif ($analyse and -d $path_analisys.'/'.$analyse.'/AllRes/') { $tr .= qq{<td><button onClick="launch('$patient_name')">View</button></td>}; }
-	else { $tr .= qq{<td>N.A.</td>}; }
+	else { $tr .= qq{<td>N.A. !$analyse!</td>}; }
 	my $bam_file = $project->getPatient($patient_name)->bamUrl();
 	my $igv_link = qq{<button class='igvIcon2' onclick='add_bam_igv("$bam_file")' style="color:black"></button>};
 	$tr .= qq{<td>$igv_link</td>};
@@ -105,62 +98,77 @@ foreach my $patient_name (sort keys %$h_patient_analisys) {
 $html_table_patients .= qq{</tbody>};
 $html_table_patients .= qq{</table>};
 
-#die;
-
-
-my $path_analysis = $project->get_path_rna_seq_analyse($analyse_name);
-my $path_analysis_all = $path_analysis.'/AllRes/';
-
-#warn $path_analysis_all;
-
-confess("\n\nERROR: $path_analysis_all not found. Die\n\n") unless (-d $path_analysis_all);
-my $file_all_RI = $path_analysis_all.'/AllresRI_f.txt';
-confess("\n\nERROR: $file_all_RI not found. Die\n\n") unless (-e $file_all_RI);
-my $file_all_SE = $path_analysis_all.'/AllresSE_f.txt';
-confess("\n\nERROR: $file_all_SE not found. Die\n\n") unless (-e $file_all_SE);
-
-
+my ($html, $hash);
 my $h_header_filters_col;
-#$h_header_filters_col->{Junc_RI} = "data-filter-control='select'";
-$h_header_filters_col->{ENSID} = "data-filter-control='select'";
-$h_header_filters_col->{Chr} = "data-filter-control='select'";
-$h_header_filters_col->{Gene} = "data-filter-control='select'";
-$h_header_filters_col->{Junc_Normale} = "data-filter-control='select'";
-$h_header_filters_col->{Type} = "data-filter-control='select'";
-$h_header_filters_col->{Com_ou_Spe} = "data-filter-control='select'";
-$h_header_filters_col->{Sample} = "data-filter-control='select'";
+if ($analyse_name) {
 
-my ($table_id_ri, $html_table_ri) = transform_results_file('RI', $file_all_RI, $path_analysis);
-my ($table_id_se, $html_table_se) = transform_results_file('SE', $file_all_SE, $path_analysis);
-
-my $html;
-$html .= qq{<ul class="nav nav-tabs">};
-$html .= qq{<li><a id='a_PATIENTS' data-toggle="tab" href="#PATIENTS"><span style="color:red;">LIST Patients</span></a></li>};
-$html .= qq{<li><a id='a_RI' data-toggle="tab" href="#RI">RI Analysis</a></li>};
-$html .= qq{<li><a id='a_SE' data-toggle="tab" href="#SE">SE Analysis</a></li>};
-$html .= qq{</ul>};
-
-my $onclick_ri = qq{document.getElementById("$table_id_ri").contentWindow.location.reload(true);};
-my $onclick_se = qq{document.getElementById("$table_id_se").contentWindow.location.reload(true);};
-my $onclick_patients = qq{document.getElementById("table_id_patients").contentWindow.location.reload(true);};
-
-$html .= qq{<div class="tab-content">};
-$html .= qq{<div id="PATIENTS" class="tab-pane" onClick=$onclick_patients>};
-$html .= qq{$html_table_patients};
-$html .= qq{</div>};
-$html .= qq{<div id="RI" class="tab-pane" onClick=$onclick_ri>};
-$html .= qq{$html_table_ri};
-$html .= qq{</div>};
-$html .= qq{<div id="SE" class="tab-pane" onClick=$onclick_se>};
-$html .= qq{$html_table_se};
-$html .= qq{</div>};
-$html .= qq{</div>};
-
-my $hash;
-$hash->{html} = $html;
-$hash->{analyse} = $analyse_name;
-$hash->{patient_name} = $use_patient;
-$hash->{tables_ids} = $table_id_ri.';'.$table_id_se.';table_id_patients';
+	my $path_analysis = $project->get_path_rna_seq_analyse($analyse_name);
+	my $path_analysis_all = $path_analysis.'/AllRes/';
+	
+	confess("\n\nERROR: $path_analysis_all not found. Die\n\n") unless (-d $path_analysis_all);
+	my $file_all_RI = $path_analysis_all.'/AllresRI_f.txt';
+	confess("\n\nERROR: $file_all_RI not found. Die\n\n") unless (-e $file_all_RI);
+	my $file_all_SE = $path_analysis_all.'/AllresSE_f.txt';
+	confess("\n\nERROR: $file_all_SE not found. Die\n\n") unless (-e $file_all_SE);
+	
+	#$h_header_filters_col->{Junc_RI} = "data-filter-control='input'";
+	$h_header_filters_col->{ENSID} = "data-filter-control='input'";
+	$h_header_filters_col->{Chr} = "data-filter-control='input'";
+	$h_header_filters_col->{Gene} = "data-filter-control='input'";
+	$h_header_filters_col->{Junc_Normale} = "data-filter-control='input'";
+	$h_header_filters_col->{Type} = "data-filter-control='input'";
+	$h_header_filters_col->{Com_ou_Spe} = "data-filter-control='input'";
+	$h_header_filters_col->{Sample} = "data-filter-control='input'";
+	
+	my ($table_id_ri, $html_table_ri) = transform_results_file('RI', $file_all_RI, $path_analysis);
+	my ($table_id_se, $html_table_se) = transform_results_file('SE', $file_all_SE, $path_analysis);
+	
+	$html .= qq{<ul class="nav nav-tabs">};
+	$html .= qq{<li><a id='a_PATIENTS' data-toggle="tab" href="#PATIENTS"><span style="color:red;">LIST Patients</span></a></li>};
+	$html .= qq{<li><a id='a_RI' data-toggle="tab" href="#RI">RI Analysis</a></li>};
+	$html .= qq{<li><a id='a_SE' data-toggle="tab" href="#SE">SE Analysis</a></li>};
+	$html .= qq{</ul>};
+	
+	my $onclick_ri = qq{document.getElementById("$table_id_ri").contentWindow.location.reload(true);};
+	my $onclick_se = qq{document.getElementById("$table_id_se").contentWindow.location.reload(true);};
+	my $onclick_patients = qq{document.getElementById("table_id_patients").contentWindow.location.reload(true);};
+	
+	$html .= qq{<div class="tab-content">};
+	$html .= qq{<div id="PATIENTS" class="tab-pane" onClick=$onclick_patients>};
+	$html .= qq{$html_table_patients};
+	$html .= qq{</div>};
+	$html .= qq{<div id="RI" class="tab-pane" onClick=$onclick_ri>};
+	$html .= qq{$html_table_ri};
+	$html .= qq{</div>};
+	$html .= qq{<div id="SE" class="tab-pane" onClick=$onclick_se>};
+	$html .= qq{$html_table_se};
+	$html .= qq{</div>};
+	$html .= qq{</div>};
+	
+	
+	$hash->{html} = $html;
+	$hash->{analyse} = $analyse_name;
+	$hash->{patient_name} = $use_patient;
+	$hash->{tables_ids} = $table_id_ri.';'.$table_id_se.';table_id_patients';
+}
+else {
+	$html .= qq{<ul class="nav nav-tabs">};
+	$html .= qq{<li><a id='a_PATIENTS' data-toggle="tab" href="#PATIENTS"><span style="color:red;">LIST Patients</span></a></li>};
+	$html .= qq{</ul>};
+	
+	my $onclick_patients = qq{document.getElementById("table_id_patients").contentWindow.location.reload(true);};
+	
+	$html .= qq{<div class="tab-content">};
+	$html .= qq{<div id="PATIENTS" class="tab-pane" onClick=$onclick_patients>};
+	$html .= qq{$html_table_patients};
+	$html .= qq{</div>};
+	$html .= qq{</div>};
+	
+	$hash->{html} = $html;
+	$hash->{analyse} = '';
+	$hash->{patient_name} = '';
+	$hash->{tables_ids} = 'table_id_patients';
+}
 
 #my @list_default_hidden_ri = ("b_ri_ENSID","b_ri_score","b_ri_minMoyNcountParJunc","b_ri_maxMoyNcountParJunc","b_ri_Sample","b_ri_ScoreCorrige","b_ri_pvalFisher","b_ri_Nctrls","b_ri_ratioScores.P_vs_Ctrl.","b_ri_deltaScores.P_vs_Ctrl.","b_ri_pvalCorr","b_ri_MoyScoreCtrlsCorr","b_ri_ratioScores.P_vs_Ctrl.Corr","b_ri_deltaScores.P_vs_Ctrl.Corr");
 #$hash->{default_hidden_ri} = join(';', @list_default_hidden_ri);
@@ -172,8 +180,8 @@ exit(0);
 sub transform_results_file {
 	my ($type_analyse_name, $file_name, $path_analysis) = @_;
 	my ($h_header, $list_res) = parse_results_file($file_name);
-	my ($list_sort) = sort_results($list_res);
-	my ($table_id, $html) = add_table_results($type_analyse_name, $h_header, $list_sort, $path_analysis);
+	#my ($list_sort) = sort_results($list_res);
+	my ($table_id, $html) = add_table_results($type_analyse_name, $h_header, $list_res, $path_analysis);
 	return ($table_id, $html);
 }
 
@@ -270,9 +278,10 @@ sub add_table_results {
 		$pm->wait_all_children();
 	}
 	
+	my $nb_res = scalar (@$list_res);
 	foreach my $h_res (@$list_res) {
 		print ".";
-		my $tr = qq{<tr>};
+		my $tr = qq{<tr style="text-align:center;font-size:11px;">};
 		my $locus;
 		if (exists $h_res->{Junc_RI_Start}) {
 			$locus = $h_res->{Chr}.':'.($h_res->{Junc_RI_Start} - 100).'-'.($h_res->{Junc_RI_End} + 100);
@@ -318,7 +327,12 @@ sub add_table_results {
 		if (-e $svg_patient) {
 			$svg_patient =~ s/\/\//\//g;
 			$svg_patient =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
-			$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;"><img src="$svg_patient" alt="Pb" width="55px"></img><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></td>};
+			if ($nb_res <= 100) {
+				$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;"><img src="$svg_patient" alt="Pb" width="55px"></img><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></td>};
+			}
+			else {
+				$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;"><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></td>};
+			}
 		}
 		else {
 			$tr .= qq{<td>N.A.</td>};
@@ -358,6 +372,10 @@ sub add_table_results {
 	}
 	my $table_id = 'table_'.$type_analyse_name;
 	
+	
+	my $sorted_col = "data-sort-name='Junc_RI_Count' data-sort-order='desc'";
+	$sorted_col = "data-sort-name='Junc_SE_Count' data-sort-order='desc'" if ($table_id =~ /SE/);
+	
 	my $b_filters_id = 'button_filters_'.$type_analyse_name;
 	my $html = qq{<h3><div style="text-align: center;">$analyse_name - <span style='color:red'>$type_analyse_name analyse</span></div></h3>};
 	$html .= qq{<div style="font-size:10px;">};
@@ -371,8 +389,8 @@ sub add_table_results {
 	$html .= qq{<div id="$b_filters_id" class="collapse">}.join(' | ', @lcolumns).qq{</div>};
 	$html .= qq{</i></div>};
 	
-	$html .= qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped' style='font-size:11px;'>};
-	$html .= qq{<thead>};
+	$html .= qq{<table $sorted_col data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped' style='font-size:11px;'>};
+	$html .= qq{<thead style="text-align:center;">};
 	$html .= qq{<th data-field="igv"><b>IGV</b></th>};
 	$html .= qq{<th data-field="figs"><b>Figure</b></th>};
 	$html .= qq{<th data-field="sashimi"><b>Sashimi Plot</b></th>};

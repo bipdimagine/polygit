@@ -20,14 +20,22 @@ use session_export;
 my $cgi = new CGI;
 print $cgi->header('text/json-comment-filtered');
 
+
+my $force = $cgi->param('force');
+my $run_name = $cgi->param('run');
+
 my ($h_files, $h_files_date);
 my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
 my ($list_paths_found) = list_html_files_in_dir($origin_path);
+my $buffer = new GBuffer;
 
 foreach my $this_path (@$list_paths_found) {
+	if ($run_name) {
+		next unless ($this_path =~ /$run_name/);
+	}
 	if (-e $this_path.'/Demultiplex_Stats.csv') {
 		mkdir $this_path.'/html/' if (not -d $this_path.'/html/');
-		if (-e $this_path.'/Demultiplex_Stats.csv' && -e $this_path.'/Top_Unknown_Barcodes.csv' ) {
+		if (-e $this_path.'/Demultiplex_Stats.csv' && -e $this_path.'/Top_Unknown_Barcodes.csv') {
 			my @lFiles = ('Demultiplex_Stats.csv', 'Top_Unknown_Barcodes.csv');
 			my $json_file = convert_csv_to_json($this_path, \@lFiles);
 			my $json_path = $json_file;
@@ -42,11 +50,11 @@ foreach my $this_path (@$list_paths_found) {
 			add_file_json('https://www.polyweb.fr/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file, $json_path, $name);
 		}
 		elsif (-e $this_path.'/Demultiplex_Stats.csv') {
-			convert_csv_to_html($this_path.'/Demultiplex_Stats.csv', $this_path.'/html/laneBarcode.html') if (not -e $this_path.'/html/laneBarcode.html');
+			convert_csv_to_html($this_path.'/Demultiplex_Stats.csv', $this_path.'/html/laneBarcode.html') if (not -e $this_path.'/html/laneBarcode.html' || $force);
 			add_file_html($this_path.'/html/laneBarcode.html', 'laneBarcode.html');
 		}
 		elsif (-e $this_path.'/Top_Unknown_Barcodes.csv') {
-			convert_csv_to_html($this_path.'/Top_Unknown_Barcodes.csv', $this_path.'/html/top_unknown_barcodes.html') if (not -e $this_path.'/html/top_unknown_barcodes.html');
+			convert_csv_to_html($this_path.'/Top_Unknown_Barcodes.csv', $this_path.'/html/top_unknown_barcodes.html') if (not -e $this_path.'/html/top_unknown_barcodes.html' || $force);
 			add_file_html($this_path.'/html/top_unknown_barcodes.html', 'top_unknown_barcodes.html');
 		}
 		
@@ -148,22 +156,27 @@ my $json_encode = encode_json $hash;
 print $json_encode;
 exit(0);
 
-
+sub check_run_id_from_sample_name {
+	my $sample_name = shift;
+	my $h_runs = $buffer->getQuery->getHashRunIdFromSampleName($sample_name);
+	return $h_runs;
+}
 
 sub convert_csv_to_json {
 	my ($path, $list_files) = @_;
 	my $path_out = $path.'/json/';
 	mkdir $path_out unless (-d $path_out);
 	my $file_out = "$path_out/demultiplex.json";
-	return $file_out if (-e $file_out);
+	return $file_out if (-e $file_out and not $force);
 	my $h;
+	
 	foreach my $file (sort @$list_files) {
 		my $csv_file = $path.'/'.$file;
 		my $table_id = 'table_'.$file;
 		$table_id =~ s/\.csv//;
 		
 		my $sorted_col = "data-sort-name='n_reads' data-sort-order='desc'";
-		$sorted_col = "data-sort-name='p_of_unknown_barcodes' data-sort-order='desc'" if (lc($table_id) =~ /top_/);
+		#$sorted_col = "data-sort-name='p_of_unknown_barcodes' data-sort-order='desc'" if (lc($table_id) =~ /top_/);
 		
 		open (CSV, "$csv_file");
 		my $i = 0;
@@ -183,26 +196,61 @@ sub convert_csv_to_json {
 				if ($id =~ /(.+)_RC/) {
 					$has_RC ++ if (exists $h->{$file}->{values}->{$1});
 				}
+				my $sample_id;
 				foreach my $value (@lCol) {
 					my $cat = $h->{$file}->{header}[$j];
 					$value = $value * 100 if ($cat =~ /\%/);
 					$h->{$file}->{values}->{$id}->{$cat} = $value;
 					$h->{$file}->{values}->{$id}->{$j} = $value;
+					if ($cat eq 'SampleID') {
+						$sample_id = $value;
+						my ($run_id, @l_runs_id);
+						if (exists $h->{$file}->{runs_ids} and exists $h->{$file}->{runs_ids}->{$value}) {
+							@l_runs_id = sort keys %{$h->{$file}->{runs_ids}->{$value}};
+						}
+						else {
+							my $h_runs_infos = check_run_id_from_sample_name($value) if (lc($value) ne 'undetermined');
+							@l_runs_id = sort keys %{$h_runs_infos};
+							foreach my $r (@l_runs_id) {
+								$h->{$file}->{runs_ids}->{$value}->{$r} = undef;
+								$h->{$file}->{runs_ids}->{$r}->{$value} = undef;
+							}
+						}
+						my $runs = join(' ', reverse @l_runs_id);
+						$runs = 'no_run_info' unless ($runs);
+						$h->{$file}->{values}->{$id}->{'RunID'} = $runs;
+						$h->{$file}->{values}->{$id}->{$max_nb_header} = $runs;
+						#$h->{$file}->{values}->{$id}->{'RunID'} = $run_id;
+						#$h->{$file}->{values}->{$id}->{$max_nb_header} = $run_id;
+					}
 					if ($cat eq '# Reads') {
 						$h->{$file}->{values}->{$id}->{'# Reads Norm Only'} = int($value);
-						$h->{$file}->{values}->{$id}->{$max_nb_header} = int($value);
+						$h->{$file}->{values}->{$id}->{$max_nb_header+1} = int($value);
+						#TODO: prendre les valeurs par RUN et Patient pour faire les ratio
+#						if (exists $h->{$file}->{runs_ids} and exists $h->{$file}->{runs_ids}->{$sample_id}) {
+#							foreach my $run_id (keys %{$h->{$file}->{runs_ids}->{$value}}) {
+#								
+#							}
+#						}
 					}
+					
 					$j++;
 				}
 			}
 			$i++;
 		}
 		close(CSV);
+
+		if (lc($file) =~ /demultiplex/) {
+			
+			push(@{$h->{$file}->{header}}, 'RunID');
+		}
 		
 		if ($has_RC) {
 			$sorted_col = "data-sort-name='n_reads_norm_only' data-sort-order='desc'";
 			push(@{$h->{$file}->{header}}, '# Reads Norm Only');
 		}
+		
 		my $html = qq{<table style="width:100%;" $sorted_col data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="15" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped sortable-table' style='font-size:13px;'>};
 		$html .= "<thead>\n";
 		foreach my $cat (@{$h->{$file}->{header}}) {
@@ -237,6 +285,7 @@ sub convert_csv_to_json {
 					
 				}
 			}
+			elsif ($cat eq 'RunID') { $sortable = qq{ data-sortable='true' data-filter-control='select' }; }
 			else { $sortable = qq{ data-sortable='true' data-filter-control='input' }; }
 			$html .= "<th $sortable data-field='".lc($cat_name)."' ><center><b>$cat</b></center></th>\n";
 		}

@@ -60,6 +60,7 @@ sub getProjectListsRNA {
 	my ( $buffer, $login, $pwd, $project_name ) = @_;
 	my $is_BIPD_login = $buffer->getQuery->isLoginSTAFF($login);
 	my $list_proj = $buffer->getQuery->getListProjectsRnaSeq($project_name);
+	
 	my @list_res;
 	foreach my $h (@$list_proj) {
 		my $h_users;
@@ -71,7 +72,10 @@ sub getProjectListsRNA {
 		my $b1 = GBuffer->new;
 		my $p1 = $b1->newProject( -name => $name );
 		$h->{button} = '';
-		$h->{button} = '1::'.$h->{name} if (-d $p1->get_path_rna_seq_root());
+		$h->{button} = '1::'.$h->{name} if (-d $p1->get_path_rna_seq_junctions_root());
+		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
+		
+		
 		push (@list_res, $h);
 	}
 	export_data::print_simpleJson($cgi, \@list_res);
