@@ -604,7 +604,6 @@
 						var myNode = document.getElementById("content_res");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
-	    					dijit.byId('waiting').hide();
 	    					
 	    					var tables_ids = data.tables_ids;
 	    					var list = tables_ids.split(';');
@@ -663,6 +662,7 @@
 								$(this).attr('status', 'hidden');
 								$(this).attr('style', 'text-decoration:line-through;');
 						    }
+	    					dijit.byId('waiting').hide();
 						}, 1000);
 					}
 				});
