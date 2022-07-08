@@ -373,8 +373,8 @@ sub add_table_results {
 	my $table_id = 'table_'.$type_analyse_name;
 	
 	
-	my $sorted_col = "data-sort-name='Junc_RI_Count' data-sort-order='desc'";
-	$sorted_col = "data-sort-name='Junc_SE_Count' data-sort-order='desc'" if ($table_id =~ /SE/);
+	my $sorted_col = "data-sort-name='score' data-sort-order='desc'";
+	#$sorted_col = "data-sort-name='Junc_SE_Count' data-sort-order='desc'" if ($table_id =~ /SE/);
 	
 	my $b_filters_id = 'button_filters_'.$type_analyse_name;
 	my $html = qq{<h3><div style="text-align: center;">$analyse_name - <span style='color:red'>$type_analyse_name analyse</span></div></h3>};
