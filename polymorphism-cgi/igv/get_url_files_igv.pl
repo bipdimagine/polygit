@@ -20,18 +20,8 @@ my $url_genome_fasta = $project->getGenomeFasta();
 $url_genome_fasta =~ s/\/data-isilon//;
 
 my $hash;
-if ($project->isDefidiag()) {
-	if ($url_genome_fasta =~ /HG19_CNG/) {
-		$hash->{'url_genome_fasta'} = 'https://defidiag.polyweb.fr/public-data/HG19_CNG/genome/fasta/all.fa';
-	}
-	elsif ($url_genome_fasta =~ /HG19/) {
-		$hash->{'url_genome_fasta'} = 'https://defidiag.polyweb.fr/public-data/HG19/genome/fasta/all.fa';
-	}
-}
-else {
-	$hash->{'url_gene_bed'} = $url_gene_bed;
-	$hash->{'url_genome_fasta'} = $url_genome_fasta;
-}
+$hash->{'url_gene_bed'} = $url_gene_bed;
+$hash->{'url_genome_fasta'} = $url_genome_fasta;
 
 print $cgi->header('text/json-comment-filtered');
 print encode_json $hash;
