@@ -647,6 +647,23 @@
 								$(this).attr('style', '');
 							}
 						});
+						
+						var array_RI = ['Type','Junc_Normale','Junc_Normale_Start','Junc_Normale_End','minMoyNcountParJunc','maxMoyNcountParJunc','Sample','TotCountJuncs','ScoreCorrige','pvalFisher','pval','MoyScoreCtrls','Nctrls','ratioScores.P_vs_Ctrl.','deltaScores.P_vs_Ctrl.','pvalCorr','MoyScoreCtrlsCorr','ratioScores.P_vs_Ctrl.Corr','deltaScores.P_vs_Ctrl.Corr','Com_ou_Spe'];
+						var array_SE = ['Type','NbreSkippedExons','SkippedExonsID','TranscritsID','Junc_Normale','minMoyNcountParJunc','maxMoyNcountParJunc','Sample','TotCountJuncs','ScoreCorrige','pvalFisher','pval','MoyScoreCtrls','Nctrls','ratioScores.P_vs_Ctrl.','deltaScores.P_vs_Ctrl.','pvalCorr','MoyScoreCtrlsCorr','ratioScores.P_vs_Ctrl.Corr','deltaScores.P_vs_Ctrl.Corr','Com_ou_Spe'];
+			            setTimeout(function() {
+							for (var i = 0; i < array_RI.length; i++){
+								var cat_name = array_RI[i];
+								$('#table_RI').bootstrapTable('hideColumn', cat_name);
+								$(this).attr('status', 'hidden');
+								$(this).attr('style', 'text-decoration:line-through;');
+						    }
+							for (var i = 0; i < array_SE.length; i++){
+								var cat_name = array_SE[i];
+								$('#table_SE').bootstrapTable('hideColumn', cat_name);
+								$(this).attr('status', 'hidden');
+								$(this).attr('style', 'text-decoration:line-through;');
+						    }
+						}, 1000);
 					}
 				});
 			    })
