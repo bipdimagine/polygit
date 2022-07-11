@@ -527,7 +527,10 @@
             var use_session_id = '';
             $(document).ready(function () {
 	            setTimeout(function() {
-					launch();
+	            	if (param("force")) {
+						load_first_view();
+	            	}
+					else { launch(); }
 				}, 1000);
 	    	});
 	    	
@@ -549,10 +552,23 @@
 	    		dijit.byId('waiting').show();
 	    	}
 	    	
+	    	function load_first_view() {
+	    		var text_loading = 'First launch for ' + param('name');
+				var url = url_path + "/demultiplex_view/demultiplex_view.pl";
+				url += "?force=1";
+				url += "&run=" + param('name');
+				show_waiting(text_loading);
+			    $.getJSON( url, function( data ) {
+					dijit.byId('waiting').hide();
+			    	launch();
+			    });
+	    	}
+	    	
 	    	function force_reload_view(url) {
 	    		var text_loading = 'Reloading ' + param('name');
 				show_waiting(text_loading);
 			    $.getJSON( url, function( data ) {
+			    	window.location.href = url_force;
 			    	location.reload();
 			    });
 	    	}
