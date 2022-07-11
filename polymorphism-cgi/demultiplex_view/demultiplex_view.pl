@@ -47,7 +47,11 @@ foreach my $this_path (@$list_paths_found) {
 			}
 			next if ($name eq 'test_xths');
 			next if ($name =~ /run1[0-9]+/);
-			add_file_json('https://www.polyweb.fr/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file, $json_path, $name);
+			my $cmd = 'https://www.polyweb.fr/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file;
+			if (not -e $json_file and $run_name){
+				$cmd .= $cmd.'&force=1';
+			}
+			add_file_json($cmd, $json_path, $name);
 		}
 #		elsif (-e $this_path.'/Demultiplex_Stats.csv') {
 #			convert_csv_to_html($this_path.'/Demultiplex_Stats.csv', $this_path.'/html/laneBarcode.html') if (not -e $this_path.'/html/laneBarcode.html' || $force);
@@ -171,6 +175,7 @@ sub convert_csv_to_json {
 	}
 	my $file_out = "$path_out/demultiplex.json";
 	return $file_out if (-e $file_out and not $force);
+	return $file_out if (not $run_name);
 	my $h;
 	
 	foreach my $file (sort @$list_files) {
