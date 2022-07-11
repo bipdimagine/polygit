@@ -39,6 +39,8 @@ foreach my $this_path (@$list_paths_found) {
 			my @lFiles = ('Demultiplex_Stats.csv', 'Top_Unknown_Barcodes.csv');
 			my $json_file = convert_csv_to_json($this_path, \@lFiles);
 			my $json_path = $json_file;
+			my $use_force;
+			$use_force = 1 if (not -e $json_file);
 			$json_file =~ s/\/\//\//g;
 			$json_file =~ s/.+\/ngs\//https:\/\/www.polyweb.fr\/NGS\//;
 			my $name = $json_file;
@@ -48,9 +50,7 @@ foreach my $this_path (@$list_paths_found) {
 			next if ($name eq 'test_xths');
 			next if ($name =~ /run1[0-9]+/);
 			my $cmd = 'https://www.polyweb.fr/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file;
-			if (not -e $json_file){
-				$cmd .= '&force=1';
-			}
+			$cmd .= '&force=1' if ($use_force);
 			add_file_json($cmd, $json_path, $name);
 		}
 #		elsif (-e $this_path.'/Demultiplex_Stats.csv') {
