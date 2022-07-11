@@ -734,46 +734,14 @@
 			}
 	
 			function launch_web_igv_js(project, patients_names, bams_files, locus){
-//				alert ('HERE begin 1');
-				var locus2 = locus.replace(':', ';');
-				locus2 = locus2.replace('-', ';');
-				var lTmp = locus2.split(';');
-				var chr = 'chr' + lTmp[0];
-				var start = lTmp[1];
-				var end = start;
-				if (lTmp.length == 3) { end = lTmp[2]; }
-				var list_bams_files = [];
-				var list_patients_names = [];
-				
-//				alert ('HERE !!');
-				
-				if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
-				else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
-				else { list_bams_files.push(bams_files); }
-				
-				if (patients_names.match(/,/)) { list_patients_names = patients_names.split(','); }
-				else if (patients_names.match(/;/)) { list_patients_names = patients_names.split(';'); }
-				else { list_patients_names.push(patients_names); }
-				
-				
-				displayListBamInIgvApp(list_bams_files);
-				displayInIGV(chr, start, end);
-				var array_name = [];
-	            var url_igv = "/polyweb/html/manta/Url_CNV_Viewer.html?titre=RNA_Junction_"+locus;
-	            var var_length = (end - start);
-            	url_igv += "&locusstart=" + chr + ":" + (parseInt(start)-100) + "-" + (parseInt(end)+100);
-            	url_igv += "&locusend=";
-            	
-	            url_igv += "&bamfile=" + list_bams_files.join(',');
-	            url_igv += "&patient_name=" + list_patients_names.join(',');
-	            url_igv += "&taille=" + var_length + "pb";
-	            if (typeof url_gene_bed !== 'undefined') {
-	            	url_igv += "&genes_bed=" + url_gene_bed;
+				if (typeof url_fasta !== 'undefined') {
+					var l_files = bams_files.split(';');
+	            	if (typeof url_gene_bed !== 'undefined') { l_files.push(url_gene_bed); }
+	            	var tracks = window.location.origin + '/' + l_files.join(',' + window.location.origin + '/')
+	            	launch_igv_tool(window.location.origin+'/' + url_fasta, tracks, locus);
+	            	return;
 	        	}
-	            if (typeof url_fasta !== 'undefined') {
-	            	url_igv += "&fasta=" + url_fasta;
-	        	}
-	            window.open(url_igv);
+				return;
 			}
 			
 			function add_bam_igv (bams_files) {
