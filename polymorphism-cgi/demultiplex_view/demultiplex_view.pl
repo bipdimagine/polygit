@@ -48,8 +48,8 @@ foreach my $this_path (@$list_paths_found) {
 			next if ($name eq 'test_xths');
 			next if ($name =~ /run1[0-9]+/);
 			my $cmd = 'https://www.polyweb.fr/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file;
-			if (not -e $json_file and $run_name){
-				$cmd .= $cmd.'&force=1';
+			if (not -e $json_file){
+				$cmd .= '&force=1';
 			}
 			add_file_json($cmd, $json_path, $name);
 		}
@@ -271,10 +271,12 @@ sub convert_csv_to_json {
 		}
 		
 		if ($has_RC) {
-			$sorted_col = "data-sort-name='n_reads_norm_only' data-sort-order='desc'";
 			push(@{$h->{$file}->{header}}, '# Reads Norm Only');
 		}
-		push(@{$h->{$file}->{header}}, 'Seems Ok') if ($is_demultiplex_file);
+		if ($is_demultiplex_file) {
+			push(@{$h->{$file}->{header}}, 'Seems Ok');
+			$sorted_col = "data-sort-name='seems_ok' data-sort-order='desc'";
+		}
 		
 		my $html = qq{<table style="width:100%;" $sorted_col data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped sortable-table' style='font-size:13px;'>};
 		$html .= "<thead>\n";
@@ -516,15 +518,19 @@ sub list_html_files_in_dir {
 sub add_file_json {
 	my ($url, $path, $name) = @_;
 	$h_files->{$name} = $url;
-	my $date_stat = (stat ($path))[9];
-	if (exists $h_files_date->{$date_stat}) {
-		my $is_ok = 0;
-		while ($is_ok == 0) {
-			$date_stat++;
-			next if (exists $h_files_date->{$date_stat});
-			$is_ok = 1;
+	my $date_stat;
+	if (-e $path) {
+		$date_stat = (stat ($path))[9];
+		if (exists $h_files_date->{$date_stat}) {
+			my $is_ok = 0;
+			while ($is_ok == 0) {
+				$date_stat++;
+				next if (exists $h_files_date->{$date_stat});
+				$is_ok = 1;
+			}
 		}
 	}
+	else { $date_stat = '99999999'; }
 	$h_files_date->{$date_stat} = $name;
 }
 
