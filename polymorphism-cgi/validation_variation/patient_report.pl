@@ -3004,6 +3004,12 @@ sub printTableGenesXls {
 				}
 				my $cat = $infos[$ind];
 					my $text = $variation->{$cat};
+					
+				if (lc($cat) eq 'var_name') {
+					my @lCol = split('-', $text);
+					$text = $lCol[1].$lCol[3];
+				}
+					
 				$text =~ s|<.+?>||g;
 				$worksheet->write($row,$ind,$text);
 		
