@@ -108,7 +108,14 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
 		igv.createBrowser(div, options).then(function (browser) {
 		    browser.search(locus);
 		    var tracks = list_bams.join(',') + ',' + window.location.origin + '/' + url_gene_bed;
-		    launch_igv_tool(window.location.origin + '/' + url_fasta, tracks, locus);
+		    if (url_fasta.match(/HG19/)) {
+		    	launch_igv_tool('', tracks, locus);
+		    }
+		    else if (url_fasta) {
+		    	url_fasta = window.location.origin + '/' + url_fasta;
+		    	launch_igv_tool(url_fasta, tracks, locus);
+		    }
+		    else { launch_igv_tool('', tracks, locus); }
 		    is_waiting = false;
 		});
     }, 500);
@@ -223,7 +230,14 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
 		    browser.search(locus);
 		    is_waiting = false;
 		    var tracks = list_bams.join(',') + ',' + window.location.origin + '/' + url_gene_bed;
-		    launch_igv_tool(window.location.origin + '/' + url_fasta, tracks, locus);
+		    if (url_fasta.match(/HG19/)) {
+		    	launch_igv_tool('', tracks, locus);
+		    }
+		    else if (url_fasta) {
+		    	url_fasta = window.location.origin + '/' + url_fasta;
+		    	launch_igv_tool(url_fasta, tracks, locus);
+		    }
+		    else { launch_igv_tool('', tracks, locus); }
 		});
     }, 500);
 }
