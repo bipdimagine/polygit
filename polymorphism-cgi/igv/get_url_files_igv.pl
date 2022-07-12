@@ -21,7 +21,7 @@ $url_genome_fasta =~ s/\/data-isilon//;
 
 my $hash;
 $hash->{'url_gene_bed'} = $url_gene_bed;
-$hash->{'url_genome_fasta'} = $url_genome_fasta;
+$hash->{'url_genome_fasta'} = $url_genome_fasta if (not $url_genome_fasta =~ /HG19/);
 
 print $cgi->header('text/json-comment-filtered');
 print encode_json $hash;
