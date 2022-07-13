@@ -61,8 +61,6 @@ foreach my $this_path (@$list_paths_found) {
 #			convert_csv_to_html($this_path.'/Top_Unknown_Barcodes.csv', $this_path.'/html/top_unknown_barcodes.html') if (not -e $this_path.'/html/top_unknown_barcodes.html' || $force);
 #			add_file_html($this_path.'/html/top_unknown_barcodes.html', 'top_unknown_barcodes.html');
 #		}
-		
-		
 	}
 	elsif (-d $this_path.'/html/') {
 		opendir my ($dir), $this_path.'/html/';

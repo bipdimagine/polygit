@@ -7,7 +7,6 @@ use lib "$Bin/../../GenBo";
 use lib "$Bin/../../GenBo/lib/obj-nodb";
 use lib "$Bin/../GenBo/lib/obj-nodb/packages";
 
-
 use connect;
 use GBuffer;
 use Getopt::Long;
@@ -21,6 +20,7 @@ my $project_name = $cgi->param('project');
 my $use_patient = $cgi->param('patient');
 my $fork = $cgi->param('fork');
 my $fileout = $cgi->param('fileout');
+my $isChrome = $cgi->param('is_chrome');
 $fork = 1 unless $fork;
 
 my $buffer = GBuffer->new;
@@ -324,18 +324,16 @@ sub add_table_results {
 		$color = 'palegreen' if ($h_res->{score} > 1);
 		$color = 'moccasin' if ($h_res->{score} > 10);
 		$color = 'lightcoral' if ($h_res->{score} > 100);
-		if (-e $svg_patient) {
-			$svg_patient =~ s/\/\//\//g;
-			$svg_patient =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
-			if ($nb_res <= 100) {
-				$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;"><img src="$svg_patient" alt="Pb" width="55px"></img><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></td>};
+		
+		if (not $isChrome) {
+			if (-e $svg_patient) {
+				$svg_patient =~ s/\/\//\//g;
+				$svg_patient =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+				$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;max-height:60px;max-width:130px;"><img loading="lazy" src="$svg_patient" alt="Pb" width="100%"></img></button></td>};
 			}
 			else {
-				$tr .= qq{<td><button type="button" class="btn btn-default" onClick="zoom_file('$svg_legend', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;"><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button></td>};
+				$tr .= qq{<td>N.A.</td>};
 			}
-		}
-		else {
-			$tr .= qq{<td>N.A.</td>};
 		}
 		my $ensg = $h_res->{ENSID};
 		
@@ -352,8 +350,15 @@ sub add_table_results {
 				$sashimi_plot_file =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
 				push(@lFiles, $sashimi_plot_file);
 			}
+			
 			my $files = join(';', @lFiles);
-			$tr .= qq{<button type="button" class="btn btn-default" onClick="view_pdf_list_files('$files')" style="text-align:center;padding:2px;background-color:$color;"><span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button>};
+			if ($isChrome) {
+				my $pdf = $lFiles[0].'#toolbar=0&navpanes=0&scrollbar=0&embedded=true';
+				$tr .= qq{<button type="button" class="btn btn-default" style="text-align:center;padding:2px;background-color:$color;max-height:90px;" onClick="view_pdf_list_files('$files')"><table><td><iframe onClick="view_pdf_list_files('$files')" loading="lazy" loading="lazy" width="200" height="70" src="$pdf"></iframe></td><td><span style="writing-mode:vertical-lr !important; font: 9spx Verdana, sans-serif;padding-left:2px;letter-spacing: 1px;">Zoom</span></td></table> </button>};
+			}
+			else {
+				$tr .= qq{<button type="button" class="btn btn-default" onClick="view_pdf_list_files('$files')" style="text-align:center;padding:2px;background-color:$color;"> PDF <span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button>};
+			}
 			$tr .= qq{</center></td>};
 		}
 		else {
@@ -392,7 +397,7 @@ sub add_table_results {
 	$html .= qq{<table $sorted_col data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped' style='font-size:11px;'>};
 	$html .= qq{<thead style="text-align:center;">};
 	$html .= qq{<th data-field="igv"><b>IGV</b></th>};
-	$html .= qq{<th data-field="figs"><b>Figure</b></th>};
+	$html .= qq{<th data-field="figs"><b>Figure</b></th>} if (not $isChrome);
 	$html .= qq{<th data-field="sashimi"><b>Sashimi Plot</b></th>};
 	foreach my $nb (sort {$a <=> $b} keys %{$h_header}) {
 		my $cat = $h_header->{$nb};
