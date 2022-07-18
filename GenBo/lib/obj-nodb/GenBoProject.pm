@@ -175,8 +175,12 @@ has isFamilial => (
 			  or exists $self->pedigree_details()->{$_}->{father}
 		} keys %{ $self->pedigree_details() };
 		return 1 if scalar(@t) >= 1;
+		foreach my $fam_name (keys %{$self->pedigree_details()}) {
+			my $nb_childs = 0;
+			$nb_childs = scalar(keys %{$self->pedigree_details()->{$fam_name}->{children}}) if (exists $self->pedigree_details()->{$fam_name}->{children});
+			return 1 if ($nb_childs > 1);
+		}
 		return;
-
 #	return 1 if (scalar( grep {exists $self->pedigree_details()->{$_}->{mother} }keys %{$self->pedigree_details()}) ne scalar(@{$self->getPatients}));
 #	return;
 	},
