@@ -312,7 +312,7 @@ sub getCaptureChromosomesName {
 	my @l_tabix_chr_names = $tabix->getnames();
 	my @t;
 	if ($l_tabix_chr_names[0] =~ /chr/) { @t = map {$self->project->getChromosome($_)->ucsc_name}  @l_tabix_chr_names; }
-	else { @t = map {$self->project->getChromosome($_)->fasta_name}  @l_tabix_chr_names; }
+	else { @t = map {$self->project->getChromosome($_)->id}  @l_tabix_chr_names; }
 	$self->{chr_name} = \@t;
 	return $self->{chr_name};
 }
