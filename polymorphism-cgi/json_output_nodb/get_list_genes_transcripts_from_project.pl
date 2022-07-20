@@ -150,6 +150,7 @@ foreach my $c (@{$project->getCaptures()}) {
 }
 $hash->{capture} = join(', ', sort @lCapturesNames);
 $hash->{export_csv} = \@lExportCsv;
+$hash->{gencode} = $project->gencode_version();
 
 printJson($hash);
 exit(0);
