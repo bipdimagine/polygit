@@ -527,6 +527,7 @@
 	    	function eraseText() {
 			    document.getElementById("project_name").value = "";
 				document.getElementById("content_res").innerHTML = "";
+				document.getElementById("span_gencode").innerHTML = "";
 				document.getElementById("span_description").innerHTML = "";
 				document.getElementById("span_captures").innerHTML = "";
     			export_csv_datas = '';
@@ -555,6 +556,7 @@
 		    function launch() {
     			export_csv_datas = '';
 				document.getElementById("content_res").innerHTML = "";
+				document.getElementById("span_gencode").innerHTML = "";
 				document.getElementById("span_description").innerHTML = "";
 				document.getElementById("span_captures").innerHTML = "";
 		    	document.getElementById("content_res").innerHTML = "<div align='center'><i>Running. Please wait...</i> <img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'></div>";
@@ -570,6 +572,7 @@
 						    	var myPanel = $(val);
 								myPanel.appendTo(myNode);
 								enable_table_search(data.table_id);
+								document.getElementById("span_gencode").innerHTML = "<b>Gencode version: </b>" + data.gencode;
 								document.getElementById("span_description").innerHTML = "<b>Description: </b>" + data.description;
 								document.getElementById("span_captures").innerHTML = "<b>Capture(s): </b>" + data.capture;
 								export_csv_datas = data.export_csv;
@@ -616,6 +619,7 @@
 				
 			</div>
 			<div class="col-sm-6">
+				<span id="span_gencode"></span><br>
 				<span id="span_description"></span><br>
 				<span id="span_captures"></span>
 			</div>
