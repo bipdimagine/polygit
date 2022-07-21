@@ -36,7 +36,6 @@ unless ($specie) {
 
 my $url_link;
 my $found_port = read_log_file();
-$found_port = undef;
 if ($found_port) {
 	$url_link = $buffer->get_base_url_polyrna().':'.$found_port;
 	return_json($url_link);
