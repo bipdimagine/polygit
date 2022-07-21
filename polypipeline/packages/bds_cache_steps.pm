@@ -521,7 +521,7 @@ method sashimi_plots (Str :$filein){
 	my $ppn = $self->nproc;
 	$ppn = int($self->nproc/2) if $self->nocluster;
 	my $bin_dev = $self->script_dir;
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_analyse.pl project=$project_name patient=$name update_sashimi=1 fork=$ppn fileout=$fileout";
+	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_sashimi_plot.pl -project=$project_name -patient=$name -fork=$ppn -fileout=$fileout";
 	my $type = "sashimi_plots";
 	my $stepname = $self->patient->name."@".$type;
 	$ppn =20;

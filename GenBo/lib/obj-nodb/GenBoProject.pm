@@ -47,6 +47,7 @@ use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
+use GenBoJunction;
 use Storable qw(store retrieve freeze dclone thaw);
 
 #use LMDB_File qw(:flags :cursor_op);
@@ -3353,6 +3354,11 @@ sub myflushobjects {
 				$id = $obj->id;
 				confess($type." ".$id) unless exists $self->{objects}->{$type}->{$obj->id};
 			}
+			elsif ( $type eq 'junctions' ) {
+				my $obj = $self->createObject( $type, { id => $id } );
+				$id = $obj->id;
+				confess($type." ".$id) unless exists $self->{objects}->{$type}->{$obj->id};
+			}
 			else {
 				warn "\n\nproblem... no $type";
 				confess("je fais quoi ici $type");
@@ -3473,7 +3479,8 @@ has hashTypeObject => (
 			'somatic_groups'     => 'GenBoSomaticGroup',
 			'svduplications'     => 'GenBoSVDup',
 			'svdeletions'        => 'GenBoSVDel',
-			'regulatory_regions'        => 'GenBoRegulatoryRegion',
+			'regulatory_regions' => 'GenBoRegulatoryRegion',
+			'junctions'			 => 'GenBoJunction',
 		};
 		return $hashTypeObject;
 	}
@@ -5927,7 +5934,7 @@ has get_path_rna_seq_polyrna_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/Outputs/";
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
 		return $path;
 	},
 );
@@ -5937,7 +5944,7 @@ has get_path_rna_seq_junctions_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analisys/";
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
 		return $path;
 	},
 );

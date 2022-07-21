@@ -589,8 +589,96 @@
 			function run_after_check_login_OK() {
 				getGencodeTrackForProject(project_name);
 				dijit.byId('login').hide();
-				if (patient_name) { launch(patient_name); }
-				else { launch(); }
+				launch_project();
+			}
+			
+			var html_resume = '';
+			function launch_project() {
+				if (html_resume == '') {
+		    		var text_loading = 'Loading project';
+					show_waiting(text_loading);
+					var url = url_path + "/rnaseq/rna_junctions_project.pl";
+					url += "?project=" + project_name;
+				    $.getJSON( url, function( data ) {
+				    	$.each( data, function( key, val ) {
+				    		if (key == 'html') {
+				    			html_resume = val;
+								document.getElementById("content_res").innerHTML = "";
+								var myNode = document.getElementById("content_res");
+						    	var myPanel = $(val);
+								myPanel.appendTo(myNode);
+								dijit.byId('waiting').hide();
+							}
+							if (key == 'patients') {
+								var panel = "";
+								panel += "<nav id='navbar_project' class='navbar navbar-light' style='background-color: #e3f2fd;'>";
+								panel += "<div id='container_list_patients' class='container-fluid'>";
+								panel += "<div class='navbar-header'>";
+								panel += "</div>";
+								panel += "<ul class='nav navbar-nav'>";
+								panel += "<li onclick='launch_project()'><a href='#' ><span style='font-size:18px'>RESUME</span></a></li>";
+								var list_patients = val.split(';');
+								for (var i = 0; i < list_patients.length; i++){
+									var name = list_patients[i];
+									var cmd = "launch_patient(\"" + name + "\")";
+									var span_name = 'span_' + name;
+									panel += "<ul class='nav navbar-nav' onclick='" + cmd + "'><li><a href='#' ><span id='" + span_name + "' style='color:black;font-size:11px'>";
+									panel += name;
+									panel += "</span></a></li></ul>";
+							    }
+								panel += "</ul>";
+								panel += "</div>";
+								panel += "</nav>";
+								var myNode = document.getElementById("content_nav");
+						    	var myPanel = $(panel);
+								myPanel.appendTo(myNode);
+							}
+						});
+				    })
+				}
+				else {
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(html_resume);
+					myPanel.appendTo(myNode);
+				}    
+			}
+			
+			var dict_results_patients = {};
+			var dict_table_patients_name = {};
+			function launch_patient(patient_name) {
+	    		var text_loading = 'Loading patient ' + patient_name;
+				show_waiting(text_loading);
+				if (patient_name in dict_results_patients) {
+					var val = dict_results_patients[patient_name];
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(val);
+					myPanel.appendTo(myNode);
+					enable_table_search(dict_table_patients_name[patient_name]);
+					dijit.byId('waiting').hide();
+				}
+				else {
+					var url = url_path + "/rnaseq/rna_junctions_patient.pl";
+					url += "?project=" + project_name;
+					url += "&patient=" + patient_name;
+					if (isChrome) { url += "&is_chrome=1"; }
+				    $.getJSON( url, function( data ) {
+				    	$.each( data, function( key, val ) {
+				    		if (key == 'html') {
+								document.getElementById("content_res").innerHTML = "";
+								var myNode = document.getElementById("content_res");
+						    	var myPanel = $(val);
+								myPanel.appendTo(myNode);
+								dict_results_patients[patient_name] = val;
+								document.getElementById('span_'+patient_name).setAttribute("style", "color:red;font-size:11px;");
+								enable_table_search(data.table_id);
+								dict_table_patients_name[patient_name] = data.table_id;
+								dijit.byId('waiting').hide();
+							}
+						});
+				    })
+			    }
 			}
 	    	
 	    	function show_waiting(text) {
@@ -600,87 +688,6 @@
 	    		}
 	    		dijit.byId('waiting').show();
 	    	}
-	    	
-	    	function launch(use_patient) {
-	    		var text_loading = 'Loading datas';
-	    		if (use_patient) { text_loading += ' - ' + use_patient; }
-				show_waiting(text_loading);
-				var url = url_path + "/rnaseq/rna_junctions_analyse.pl";
-				url += "?project=" + project_name;
-				if (isChrome) { url += "&is_chrome=1"; }
-				if (use_patient) { url += "&patient=" + use_patient; }
-			    $.getJSON( url, function( data ) {
-			    	var i = 1;
-			    	$.each( data, function( key, val ) {
-			    		if (key == 'html') {
-						document.getElementById("content_res").innerHTML = "";
-						var myNode = document.getElementById("content_res");
-					    	var myPanel = $(val);
-							myPanel.appendTo(myNode);
-	    					
-	    					var tables_ids = data.tables_ids;
-	    					var list = tables_ids.split(';');
-	    					for (var i = 0; i < list.length; i++){
-						    	enable_table_search(list[i]);
-						    }
-						if (use_patient) { document.getElementById('a_RI').click(); }
-						else { document.getElementById('a_PATIENTS').click(); }
-						
-						document.getElementById("span_patient_name").innerHTML = "Patient " + data.patient_name;
-			    		
-						$('a.toggle-vis-RI').on('click', function (e) {
-       						e.preventDefault();
-       						var cat_name = $(this).attr('name');
-       						var cat_status = $(this).attr('status');
-       						if (cat_status == 'show') {
-								$('#table_RI').bootstrapTable('hideColumn', cat_name);
-								$(this).attr('status', 'hidden');
-								$(this).attr('style', 'text-decoration:line-through;');
-							}
-							else {
-								$('#table_RI').bootstrapTable('showColumn', cat_name);
-								$(this).attr('status', 'show');
-								$(this).attr('style', '');
-							}
-						});
-			    		
-						$('a.toggle-vis-SE').on('click', function (e) {
-       						e.preventDefault();
-       						var cat_name = $(this).attr('name');
-       						var cat_status = $(this).attr('status');
-       						if (cat_status == 'show') {
-								$('#table_SE').bootstrapTable('hideColumn', cat_name);
-								$(this).attr('status', 'hidden');
-								$(this).attr('style', 'text-decoration:line-through;');
-							}
-							else {
-								$('#table_SE').bootstrapTable('showColumn', cat_name);
-								$(this).attr('status', 'show');
-								$(this).attr('style', '');
-							}
-						});
-						
-						var array_RI = ['Type','Junc_RI','Junc_Normale','Junc_Normale_Start','Junc_Normale_End','minMoyNcountParJunc','maxMoyNcountParJunc','Sample','TotCountJuncs','ScoreCorrige','pvalFisher','pval','MoyScoreCtrls','Nctrls','ratioScores.P_vs_Ctrl.','deltaScores.P_vs_Ctrl.','pvalCorr','MoyScoreCtrlsCorr','ratioScores.P_vs_Ctrl.Corr','deltaScores.P_vs_Ctrl.Corr','Com_ou_Spe'];
-						var array_SE = ['Type','Junc_RI','Junc_Normale','NbreSkippedExons','SkippedExonsID','TranscritsID','Junc_Normale','minMoyNcountParJunc','maxMoyNcountParJunc','Sample','TotCountJuncs','ScoreCorrige','pvalFisher','pval','MoyScoreCtrls','Nctrls','ratioScores.P_vs_Ctrl.','deltaScores.P_vs_Ctrl.','pvalCorr','MoyScoreCtrlsCorr','ratioScores.P_vs_Ctrl.Corr','deltaScores.P_vs_Ctrl.Corr','Com_ou_Spe'];
-			            setTimeout(function() {
-							for (var i = 0; i < array_RI.length; i++){
-								var cat_name = array_RI[i];
-								$('#table_RI').bootstrapTable('hideColumn', cat_name);
-								$(this).attr('status', 'hidden');
-								$(this).attr('style', 'text-decoration:line-through;');
-						    }
-							for (var i = 0; i < array_SE.length; i++){
-								var cat_name = array_SE[i];
-								$('#table_SE').bootstrapTable('hideColumn', cat_name);
-								$(this).attr('status', 'hidden');
-								$(this).attr('style', 'text-decoration:line-through;');
-						    }
-	    					dijit.byId('waiting').hide();
-						}, 1000);
-					}
-				});
-			    })
-			}
 			
 			function zoom_file(svg_legend, svg_file) {
 				var span = document.createElement("span");
@@ -746,19 +753,7 @@
 				dijit.byId('dialog_sashimi').show();
 			}
 	
-			function launch_web_igv_js(project, patients_names, bams_files, locus){
-				if (typeof url_fasta !== 'undefined') {
-					var l_files = bams_files.split(';');
-	            	if (typeof url_gene_bed !== 'undefined') { l_files.push(url_gene_bed); }
-	            	var tracks = window.location.origin + '/' + l_files.join(',' + window.location.origin + '/')
-	            	launch_igv_tool(window.location.origin+'/' + url_fasta, tracks, locus);
-	            	return;
-	        	}
-				return;
-			}
-			
 			function add_bam_igv (bams_files) {
-//				alert ('HERE begin 2');
 				var list_bams_files = [];
 				if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 				else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
@@ -789,6 +784,9 @@
 				</ul>
 			</div>
 		</nav>
+		
+		
+		<div class='container-fluid' id='content_nav'></div>
 		<div class='container-fluid' id='content_res'></div>
 		
 		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 

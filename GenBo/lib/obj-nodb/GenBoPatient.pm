@@ -8,6 +8,7 @@ use Config::Std;
 use GenBoCapture;
 use GenBoPcrMultiplex;
 use QueryVcf;
+use QueryJunctionFile;
 use File::Util;
 use Bio::DB::Sam;
 use Storable;
@@ -2993,6 +2994,82 @@ sub get_string_validations {
 			$stv =~ s/_/-/g;
 			return $self->name.":".$stv if $stv;
 			return $stv;
+}
+
+sub getQueryJunction {
+	my ($self, $fileName, $method) = @_;
+	my %args;
+	$args{patient} = $self;
+	$args{file}    = $fileName;
+	if ($method eq 'RI') { $args{isRI} = 1; }
+	elsif ($method eq 'SE') { $args{isSE} = 1; }
+	else { confess(); }
+	my $queryJunction = QueryJunctionFile->new( \%args );
+	return $queryJunction;
+}
+
+sub getJunctionsAnalysePath {
+	my ($self) = @_;
+	my $path_analisys_root = $self->getProject->get_path_rna_seq_junctions_root();
+	my $path_analisys;
+	opendir my ($dir), $path_analisys_root;
+	my @found_files = readdir $dir;
+	closedir $dir;
+	my $pat_name = $self->name();
+	foreach my $file (@found_files) {
+		next if $file eq '.';
+		next if $file eq '..';
+		if ($file =~ /$pat_name/) {
+			$path_analisys = $path_analisys_root.'/'.$file;
+			last;
+		}
+	}
+	confess("\n\nERROR: PATH $path_analisys not found. Die.\n\n") unless (-d $path_analisys);
+	$path_analisys .= '/AllRes/';
+	return $path_analisys;
+}
+
+sub setJunctions {
+	my ($self) = @_;
+	my $h_ids;
+	my $path_analyse = $self->getJunctionsAnalysePath();
+	my $path_RI_file = $path_analyse.'/AllresRI_f.txt';
+	if (-e $path_RI_file) {
+		foreach my $hres (@{$self->getQueryJunction($path_RI_file, 'RI')->parse_file()}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{patients_object}->{$self->id()} = undef;
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	my $path_SE_file = $path_analyse.'/AllresSE_f.txt';
+	if (-e $path_SE_file) {
+		foreach my $hres (@{$self->getQueryJunction($path_SE_file, 'SE')->parse_file()}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{patients_object}->{$self->id()} = undef;
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	return $h_ids;
+}
+
+sub getJunctionsRI {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isRI();
+		push (@lObj, $obj);
+	}
+	return \@lObj;
+}
+
+sub getJunctionsSE {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isSE();
+		push (@lObj, $obj);
+	}
+	return \@lObj;
 }
 
 1;

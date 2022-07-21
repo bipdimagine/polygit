@@ -107,6 +107,10 @@ function view_rna_junctions(prj) {
 	window.open("rna/rna_junctions.html?project="+prj, '_blank');
 }
 
+function view_rna_shiny(prj) {
+	window.open("rna/launcher_polyrna.html?project="+prj, '_blank');
+}
+
 function view_polyviewer(prj, type) {
     //attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
 	window.open("polyviewer.html?project="+prj, '_blank');
@@ -129,10 +133,15 @@ function formaterButtonRNA(this_value) {
 		tt = " onClick=view_rna_junctions('" + list[1]+"') ";
 		style =" style='margin-top: 3px ' ";
 		dd = ""
+		if (list[1] == 'disabled') {
+			tt = "disabled";
+		}
+		style =" style='margin-top: 3px ' ";
+		dd = ""
 		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >Junctions-Analyse</div></td></tr></table></center>";
 	} 
 	if (list[0] == 2) {
-		tt = " onClick=\"alert('JANE todo !!')\" ";
+		tt = " onClick=view_rna_shiny('" + list[1]+"') ";
 		style =" style='margin-top: 3px ' ";
 		dd = ""
 		return "<center><table><tr><td><div style='background-color:#ca4ff8;color:white;' class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolyRnaSeq-Analyse</div></td></tr></table></center>";

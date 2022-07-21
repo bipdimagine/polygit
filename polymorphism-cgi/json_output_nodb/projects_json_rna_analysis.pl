@@ -72,10 +72,15 @@ sub getProjectListsRNA {
 		my $b1 = GBuffer->new;
 		my $p1 = $b1->newProject( -name => $name );
 		$h->{button} = '';
+#		if (-d $p1->get_path_rna_seq_junctions_root()) {
+#			my $project_name = $h->{name};
+#			#my $path_function_ok = $p1->get_path_rna_seq_junctions_root().'/AllRes/';
+#			#$project_name = 'disabled' if (not -d $path_function_ok);
+#			$h->{button} = '1::'.$project_name;
+#		}
+#		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
 		$h->{button} = '1::'.$h->{name} if (-d $p1->get_path_rna_seq_junctions_root());
 		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
-		
-		
 		push (@list_res, $h);
 	}
 	export_data::print_simpleJson($cgi, \@list_res);
