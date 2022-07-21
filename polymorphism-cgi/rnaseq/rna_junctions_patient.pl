@@ -31,7 +31,11 @@ print "{\"progress\":\".";
 
 my $patient_name = $patient->name();
 my $table_id = 'table_'.$patient_name;
-my $html = qq{<center><span style='color:red;font-size:13px'>Patient $patient_name</span></center>};
+my $html;
+if (not $isChrome) {
+	$html .= qq{<center><span style='color:green;font-size:15px'><u><i><b>TIPS:</b></u> use Chrome web navigator for a best experience :)</i></span></center><br>};
+}
+$html .= qq{<center><span style='color:red;font-size:13px'>Patient $patient_name</span></center>};
 $html .= qq{<table id='$table_id' data-sort-name='score' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
