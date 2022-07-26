@@ -5,7 +5,7 @@ use Moose;
 #use MooseX::Method::Signatures;
 use Data::Dumper;
 
-use Tabix;
+#use Tabix;
 use Clone 'clone';
 use IPC::Open2;
 use List::MoreUtils  qw( uniq );
@@ -13,6 +13,7 @@ use List::MoreUtils  qw( uniq );
  use Storable qw/thaw freeze/;
  use Scalar::Util qw(looks_like_number);
  use Align::NW;
+use Bio::DB::HTS::Tabix;
  use Time::HiRes qw ( time alarm sleep );;
 my %REV_IUB = (A	=> 'A',
 				T	=> 'T',
@@ -77,7 +78,7 @@ has tabix => (
 	lazy =>1,
 	default => sub{ 
 		my $self = shift;
-		my $tabix = new Tabix(-data =>$self->file());
+		my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 		return $tabix;
 	}
 );
@@ -107,24 +108,7 @@ sub getThisChromosome {
 	return $self->project->getChromosome($chr_name);
 }
 
-sub query {
-		my ($self, $chromosome,$start,$end) = @_;
-		my $chr_name;
-		if (exists $self->chromosomes->{$chromosome->ucsc_name}){
-			$chr_name = $chromosome->ucsc_name;
-		}
-		elsif (exists $self->chromosomes->{$chromosome->name}){
-			$chr_name = $chromosome->name;
-		}
-		else {
-			return undef;
-		}
-			
-		
-		return $self->tabix->query($chr_name,$start,$end);
-	
-		
-} 
+
 
 has  chromosomes  =>(
 	is		=> 'ro',
@@ -134,7 +118,7 @@ has  chromosomes  =>(
 	my ($self) = @_;
 	my %chromosomes;
 
-	foreach my $chr_id ($self->tabix->getnames()) {
+	foreach my $chr_id (@{$self->tabix->seqnames()}) {
 		my $chr_tmp = $chr_id;
 		$chr_tmp =~s/chr//;
 		if ($chr_tmp eq 'M' || $chr_tmp eq 'MT' || $chr_tmp eq 'X' || $chr_tmp eq 'Y'){
@@ -231,15 +215,17 @@ sub parseVcfFileForReference {
 sub parseLid {
 	my ($self, $reference) = @_;
 	#return {};
+	confess("change tabix query");
  	my $project = $self->getPatient()->getProject();
  	my $file = $self->file();
  	my $chromosome = $reference->getChromosome();
- 	my $res = $self->query($chromosome,$reference->start,$reference->end);
+ 	
+ 	my $res =  $self->tabix->query($chromosome->fasta_name.":.".$reference->start."-".$reference->end);
  	return {} unless $res;
  	my @data;
 	my %hashRes;
 	my $patient_id =  $self->getPatient()->id;
-	while(my $line = $self->tabix->read($res)){
+	while(my $line = $res->next){
 		#22	38540870	38540989	1/1	dup	ENSG00000184381-PLA2G6	2.66	1.1;0.8;0.9;1.2;0.7;0.8;1.3;1.0;0.7;1.0;1.0;1.3	117	45;30;36;48;26;41;63;49;25;34;39;41
 		my ($chr_name,$start,$end,$status,$type,$gene,$score1,$a,$score2,$b) = split(" ",$line);
 		if($project->isGenome){
@@ -345,12 +331,12 @@ sub parseBed {
 
  	 my $chromosome = $reference->getChromosome();
  		return {} if $chromosome->name eq "Y";
- 	 my $res = $self->query($chromosome,$reference->start,$reference->end);
+ 	 my $res = $self->query_full($chromosome,$reference->start,$reference->end);
  	 return {} unless $res;
 		 my @data;
 		 my %hashRes;
 		 my $patient_id =  $self->getPatient()->id;
-		 while(my $line = $self->tabix->read($res)){
+		 while(my $line = $res->next){
 		 	my ($chr_name,$start,$end,$score1,$score2) = split(" ",$line);
 		 	$score1 =  0 unless $score1;
 		 	$score2 =0 unless $score2;
@@ -408,7 +394,7 @@ sub parseVcfFileForReference_gatk{
 	unless ($useFilter) { $useFilter = 0; }
 #	my $project = $self->getPatient()->getProject(); 
 	return {} if $self->isUcsc() eq "empty";
-
+	
 	my $t = time;
 
 
@@ -418,8 +404,11 @@ sub parseVcfFileForReference_gatk{
  	my $xtime = 0;
 	my (%hashRes, $chr, $idchr, $vcf);
 	my $file = $self->file();
+		warn "coucou";
+	
 #	warn $self->$self->getPatient()->name();
 	if ($reference) {
+		warn "coucou +++ ";
 		$chr = $reference->getChromosome();
 		$idchr = $chr->name();
 		$idchr = $chr->ucsc_name() if $self->isUcsc();
@@ -427,9 +416,10 @@ sub parseVcfFileForReference_gatk{
 		$vcf = Vcf -> new (file=>$file, region=>$idchr.":".$reference->start."-".$reference->end,tabix=>$self->buffer->software("tabix"));
 	} 
 	else {
+			warn "coucou ---";
 		$vcf = Vcf -> new (file=>$file, tabix=>$self->buffer->software("tabix"));
 	}
-	
+	warn $reference." ==> ".$self->method." ".$file." ".$idchr.":".$reference->start."-".$reference->end;
 #	$chr = $reference->getProject->getChromosome('21');
 #	$vcf = Vcf -> new (file=>$file, region=>'21:38858930-38858940',tabix=>$self->buffer->software("tabix"));
 	
@@ -447,8 +437,11 @@ sub parseVcfFileForReference_gatk{
 	$hash_alleles->{insertion} = [];
 	$hash_alleles->{deletion} = [];
 	$hash_alleles->{indel} = [];	
+	warn "START ";
 		while (my $x = $vcf->next_data_hash()) {
+			my $debug;
 			if ($self->method() eq 'manta') {
+				$debug = 1 if $$x{'POS'} == 50251556;#18770711;#50251556;
 				my $type_found = $$x{'INFO'}->{'SVTYPE'};
 				next if ($type_found ne 'DUP' and $type_found ne 'DEL');
 				next if (abs($$x{'INFO'}->{'SVLEN'}) < 50);
@@ -470,9 +463,12 @@ sub parseVcfFileForReference_gatk{
 				elsif ($type_found eq 'DEL') {
 					$$x{'REF'} = $alt;
 					$$x{'ALT'} = [$ref];
+					warn $alt." ".$ref." ".$x->{POS}." ".$x->{INFO}->{CIGAR} if $debug;
+				#warn $ref->sequence($$x{'POS'},)
 					$$x{'INFO'}->{'CIGAR'} = '1M'.abs($$x{'INFO'}->{'SVLEN'}).'D';
 				}
 			}
+			
 			if (($useFilter == 1) and (exists $$x{'FILTER'})) {
 				die();
 				my ($find) = grep {uc($_) ne "PASS"} @{$x->{'FILTER'}};
@@ -480,9 +476,6 @@ sub parseVcfFileForReference_gatk{
 			}
 				my $chrom = $$x{'CHROM'};
 				my $varStart = $$x{'POS'};
-				my $debug;
-				#$debug = 1 if $varStart == 11186599;
-				#warn Dumper $x if $varStart eq 49354473;
 				
 				
 				my $varEnd;
@@ -513,14 +506,7 @@ sub parseVcfFileForReference_gatk{
 				else {
 					$gtypes = $x->{gtypes}->{$pat_name} unless ($self->noPatient());
 				}
-				
-#				if ($x->{POS} eq "128532445" or $x->{POS} eq '47036576') {
-#					warn "\n\n";
-#					warn Dumper $x;
-#					warn "\n";
-#					warn Dumper $gtypes;
-#					warn "\n\n";
-#				}
+
 				
 				unless ($gtypes){
 					my @agtypes = values %{$x->{gtypes}};
@@ -752,16 +738,7 @@ sub parseVcfFileForReference_gatk{
 				}
 			my $set = "";
 			$set = $x->{'INFO'}->{set} if exists $x->{'INFO'}->{set};
-			
-			
-#			warn Dumper $x;
-			
-#			my $max = $gt_allele[-1];
-#			for (my $i=0$i<=$max;$i++){
-#				
-#			}
-			#$hash_alleles->{deletion} = [];
-			#warn Dumper $gtypes;
+
 				ALLELE: foreach my $num_allele (@gt_allele){
 				
 					next if $num_allele eq 0;
@@ -769,13 +746,9 @@ sub parseVcfFileForReference_gatk{
 					my $index = $num_allele -1;
 				
 					my $vcfVarAllele;
-#					if ($self->method() eq 'manta') {
-#						$vcfVarAllele = $varAllele;
-#					}
-#					else {
+
 						$vcfVarAllele = $varAllele->[$index];
 						next if $vcfVarAllele eq "*";
-#					}
 					my $freebayes_type = $types_variation[$index];
 					my $allele;
 					if ($self->method() eq 'HGMD') {
@@ -796,8 +769,8 @@ sub parseVcfFileForReference_gatk{
 					$allele->{is_imprecise} = undef;
 					my ($type,$len, $ht);
 					if ($self->method() eq 'manta') {
-						if ($$x{'INFO'}->{'SVTYPE'} eq 'DEL') { $type = 'i'; }
-						if ($$x{'INFO'}->{'SVTYPE'} eq 'DUP') { $type = 'i'; }
+						if ($$x{'INFO'}->{'SVTYPE'} eq 'DEL') { $type = 'i';  $$x{'INFO'}->{'SVLEN'} = abs($$x{'INFO'}->{'SVLEN'}) * -1 ; }
+						if ($$x{'INFO'}->{'SVTYPE'} eq 'DUP') { $type = 'i'; $$x{'INFO'}->{'SVLEN'} = abs($$x{'INFO'}->{'SVLEN'});}
 						$len = $$x{'INFO'}->{'SVLEN'};
 						$ht = $$x{'ALT'}[0];
 						$allele->{is_imprecise} = 1 if (exists $$x{'INFO'}->{'IMPRECISE'});
@@ -809,7 +782,7 @@ sub parseVcfFileForReference_gatk{
 					else { ($type,$len, $ht) = $vcf->event_type($vcfRefAllele, $vcfVarAllele); }
 					
 					my $htype;
-					
+					warn "LEN ==>".$len." type : $type " if $debug;
 					if ($type eq 's' && length ($vcfVarAllele) == 1){
 						$htype = "snp";
 					}
@@ -909,15 +882,19 @@ sub parseVcfFileForReference_gatk{
 					}
 					
 					#warn Dumper $allele;
-					
+					if ($debug) {warn Dumper $allele;warn $htype};
+				die() if $debug;
 					push(@{$hash_alleles->{$htype}},compress(freeze $allele));
 					$index++;
 				}
+			
+				
 		}
 	$vcf->close();
 	############
 	# Complexes
 	############
+	
 	while (@{$hash_alleles->{indel}}){
 		my $debug ;
 	
@@ -1325,7 +1302,7 @@ foreach my $type (keys %{$hash_alleles}){
 					$hashRes{$structType}->{$id}->{'var_allele'} = $allele->{sequence};
 					$hashRes{$structType}->{$id}->{'line_infos'} = "-";#$allele->{vcf_parse};
 					$hashRes{$structType}->{$id}->{'vcf_position'} = $allele->{vcf_parse}->{POS};
-					$hashRes{$structType}->{$id}->{'vcf_sequence'} =  $allele->{vcf_parse}->{ALT}->[0]."";
+					#$hashRes{$structType}->{$id}->{'vcf_sequence'} =  $allele->{vcf_parse}->{ALT}->[0]."";
 					$hashRes{$structType}->{$id}->{'is_imprecise'} = $allele->{is_imprecise};
 				 
 					#warn Dumper $hashRes{$structType}->{$id}->{'line_infos'};
@@ -2041,7 +2018,7 @@ sub parse_homozygote {
 
 sub parseCasavaFile{
 	my ($self, $reference, $useFilter) = @_;
-	
+	confess();
 	my $file = $self->file();
 	my $chr = $reference->getChromosome();
 	my $chrRef = $reference->getChromosome()->name();
@@ -2058,13 +2035,13 @@ sub parseCasavaFile{
 	warn "can't find $idchr $file " unless $find; 
 	return {} unless $find;
 	my $region = $idchr.":".$reference->start."-".$reference->end;
-	my $res = $tabix->query($idchr,$reference->start,$reference->end);
+	my $res = $tabix->query_full($idchr,$reference->start,$reference->end);
 	my %verif_type;
 	my $nb;
 	my $line_skip;
 	my $nb_variation;
 	my %hashRes;
-	while(my $line_file = $tabix->read($res)){
+	while(my $line_file = $res->next){
 		next if $line_file =~ /^#/;
 		chomp($line_file);
 		my @data = split(" ",$line_file);
