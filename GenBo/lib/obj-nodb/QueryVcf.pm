@@ -404,11 +404,9 @@ sub parseVcfFileForReference_gatk{
  	my $xtime = 0;
 	my (%hashRes, $chr, $idchr, $vcf);
 	my $file = $self->file();
-		warn "coucou";
 	
 #	warn $self->$self->getPatient()->name();
 	if ($reference) {
-		warn "coucou +++ ";
 		$chr = $reference->getChromosome();
 		$idchr = $chr->name();
 		$idchr = $chr->ucsc_name() if $self->isUcsc();
@@ -416,7 +414,6 @@ sub parseVcfFileForReference_gatk{
 		$vcf = Vcf -> new (file=>$file, region=>$idchr.":".$reference->start."-".$reference->end,tabix=>$self->buffer->software("tabix"));
 	} 
 	else {
-			warn "coucou ---";
 		$vcf = Vcf -> new (file=>$file, tabix=>$self->buffer->software("tabix"));
 	}
 	warn $reference." ==> ".$self->method." ".$file." ".$idchr.":".$reference->start."-".$reference->end;
@@ -437,7 +434,6 @@ sub parseVcfFileForReference_gatk{
 	$hash_alleles->{insertion} = [];
 	$hash_alleles->{deletion} = [];
 	$hash_alleles->{indel} = [];	
-	warn "START ";
 		while (my $x = $vcf->next_data_hash()) {
 			my $debug;
 			if ($self->method() eq 'manta') {
@@ -463,7 +459,6 @@ sub parseVcfFileForReference_gatk{
 				elsif ($type_found eq 'DEL') {
 					$$x{'REF'} = $alt;
 					$$x{'ALT'} = [$ref];
-					warn $alt." ".$ref." ".$x->{POS}." ".$x->{INFO}->{CIGAR} if $debug;
 				#warn $ref->sequence($$x{'POS'},)
 					$$x{'INFO'}->{'CIGAR'} = '1M'.abs($$x{'INFO'}->{'SVLEN'}).'D';
 				}
@@ -882,8 +877,6 @@ sub parseVcfFileForReference_gatk{
 					}
 					
 					#warn Dumper $allele;
-					if ($debug) {warn Dumper $allele;warn $htype};
-				die() if $debug;
 					push(@{$hash_alleles->{$htype}},compress(freeze $allele));
 					$index++;
 				}
