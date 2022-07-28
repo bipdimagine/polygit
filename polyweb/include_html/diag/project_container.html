@@ -1,7 +1,7 @@
 <div data-dojo-type="dijit/layout/BorderContainer" style ="font-size : 12px;" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true">
  
 <div data-dojo-type="dijit.Toolbar" id="navMenuPatient" data-dojo-props="splitter:false, region:'top'"  >
-                        <div data-dojo-type="dijit.form.Button" onClick='reload_project();' data-dojo-props="iconClass:'refreshIcon'">
+                        <div data-dojo-type="dijit.form.Button" onClick='reload_project(1);' data-dojo-props="iconClass:'refreshIcon'">
                             refresh
                         </div>
                          <div data-dojo-type="dijit.form.Button" onClick="printer('all')" data-dojo-props="iconClass:'patientReportIcon'">
@@ -111,11 +111,15 @@
 				<button type="button" class="btn btn-danger btn-xs"
 									id="" onclick="dijit.byId('popup_patients').show();" style="background-color:#6C4F3D;border-color:#6C4F3D;margin-left: 15px;">
 									<span style="font-size:12px">Select Sample </span><i class="fa fa-user" aria-hidden="true" style="font-size:12px"></i> 
-								</button>	
+								</button>
+						<!--	<div style = "float: right;">		
+								<input id="checkigv" name="checkigv" data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="save_checkbox_igv(this);" /> <label for="mycheck">IGV JS</label>               
+      						</div>
+      					-->	
                     </div><!-- end toolbar-->
-                    
-                    
+     	              
                       <div id="summary" jsId="summary" data-dojo-type="dijit/layout/ContentPane"  data-dojo-props="selected:true, region:'center'" style="width=100%" >
     </div>  
+
                     
 </div>
