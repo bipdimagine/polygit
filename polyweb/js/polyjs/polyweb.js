@@ -695,7 +695,7 @@ function launch_web_igv_add_bam_and_locus(project, name, file, locus){
 	LoadIGVPatient_editor(name, file);
 	launch_web_igv_js(project, name, file, locus);
 }
-
+var previous_bams = "";
 function launch_web_igv_js(project, patients_names, bams_files, locus){
 	var locus2 = locus.replace(':', ';');
 	locus2 = locus2.replace('-', ';');
@@ -708,9 +708,15 @@ function launch_web_igv_js(project, patients_names, bams_files, locus){
 	if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 	else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
 	else { list_bams_files.push(bams_files); }
-	displayListBamInIgvApp(list_bams_files);
-	displayInIGV(chr, start, end);
+	if (previous_bams == bams_files){
+		displayInIGV(chr, start, end);
+		view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
+		return;
+	}
+	//displayListBamInIgvApp(list_bams_files);
+	//displayInIGV(chr, start, end);
 	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
+	previous_bams = bams_files;
 }
 
 function LoadIGVPatient_editor (patients, bams) {
@@ -768,3 +774,5 @@ function getViewPortSize() {
 		heigth: viewPortHeight
 	};
 }
+
+
