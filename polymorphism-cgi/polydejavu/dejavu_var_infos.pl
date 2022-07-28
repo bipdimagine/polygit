@@ -111,7 +111,7 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 		my $pp;
 		eval { $pp = $thisProject->getPatient($patName); };
 		if ($@) { next; }
-		#next if exists $solo_fam->{$pp->getFamily()->name} ;
+		next if exists $solo_fam->{$pp->getFamily()->name} ;
 		#die();
 		my $hash;
 		$hash->{id} = $id;
