@@ -258,8 +258,8 @@ function zoomHgmd(p,hid,vid){
 
 function open_dejavu_infos(value,pname,is_in_this_run) {
 	var this_url = url_path + "polydejavu/dejavu_var_infos.pl";
-	this_url += "?login=" + dojo.cookie("username") + "&pwd=" + dojo.cookie("passwd") + "&input=" + value + "&build=HG19&export_html_bootstrap=1";
-	if (project_name && pname) { this_url += "&project="+project_name+"&patient="+pname; }
+	this_url += "?login=" + dojo.cookie("username") + "&pwd=" + dojo.cookie("passwd") + "&input=" + value + "&build=HG19&export_html_bootstrap=1"+"&project="+project_name;
+	if (project_name && pname) { this_url += "&patient="+pname; }
 	if (is_in_this_run) { this_url += "&in_this_run=1"; }
 	//alert (this_url);
 	console.log(this_url);
