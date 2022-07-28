@@ -154,7 +154,6 @@ function displayOneBAMIGV(file){
 var old_tracks;
 function launch_igv_tool(fasta, tracks, locus) {
 	var url = "http://localhost:60151/load";
-	alert(old_tracks);
 	if (old_tracks == tracks){
 		return;
 	} 
