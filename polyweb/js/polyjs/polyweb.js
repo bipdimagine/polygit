@@ -695,7 +695,8 @@ function launch_web_igv_add_bam_and_locus(project, name, file, locus){
 	LoadIGVPatient_editor(name, file);
 	launch_web_igv_js(project, name, file, locus);
 }
-var previous_bams = "";
+var previous_bams = new Array();
+var igv_genome;
 function launch_web_igv_js(project, patients_names, bams_files, locus){
 	var locus2 = locus.replace(':', ';');
 	locus2 = locus2.replace('-', ';');
@@ -708,15 +709,39 @@ function launch_web_igv_js(project, patients_names, bams_files, locus){
 	if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 	else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
 	else { list_bams_files.push(bams_files); }
-	if (previous_bams == bams_files){
-		displayInIGV(chr, start, end);
-		view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
-		return;
+	// url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa";
+	if (igv_genome == undefined){
+		 var temp = bams_files.split('/');
+		 igv_genome = temp[3];
+		init_igv();
 	}
+	
+	
+	
+	for (i in list_bams_files ) {
+		var file = list_bams_files[i];
+		if (!(file in previous_bams)){
+			previous_bams[file] = 1;
+			displayOneBAMIGV(window.location.origin+file);
+		}
+		else {
+			previous_bams[file] +=1;
+		}
+		//if (previous_bams[file] )
+	}
+	displayInIGVLocus(chr+":"+start+"-"+end);
+	if (igv_js){
+		view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
+	}
+//	if (previous_bams == bams_files){
+	//	displayInIGV(chr, start, end);
+	//	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
+	//	return;
+//	}
 	//displayListBamInIgvApp(list_bams_files);
 	//displayInIGV(chr, start, end);
-	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
-	previous_bams = bams_files;
+	//view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
+	//previous_bams = bams_files;
 }
 
 function LoadIGVPatient_editor (patients, bams) {
@@ -774,5 +799,9 @@ function getViewPortSize() {
 		heigth: viewPortHeight
 	};
 }
-
-
+var igv_js = true;
+function checkWindowIGV (check) {
+	dojo.cookie("igv_js", check.get('value'), { expires:300 ,path: "/" });
+	 igv_js =  check.checked;
+//alert(check.get('value'));
+}
