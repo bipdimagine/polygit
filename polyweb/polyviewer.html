@@ -302,8 +302,9 @@ function onSearchAll_polyviewer (input,name){
 	
 	var cookie_username;
      function checkPassword(project,okf){
+			if (!(dojo.cookie("igv_js") == undefined)){
     			 igv_js =  dojo.cookie("igv_js");
-    			
+    		}
     			 
                if (cookie_username == null){
             	   cookie_username = dojo.cookie("username");
