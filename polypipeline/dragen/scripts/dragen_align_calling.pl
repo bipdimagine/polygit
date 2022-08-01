@@ -32,8 +32,6 @@ use JSON::XS;
 use Net::SSH::Perl; 
 
  
- my $ssh = Net::SSH::Perl->new("10.200.27.109");
-$ssh->login("pnitschk");
 
 my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
 my $bin_script_pipeline = qq{$Bin/scripts/scripts_pipeline};
@@ -86,8 +84,8 @@ my $patient = $project->getPatient($patients_name);
 my $dir_pipeline = $patient->getDragenDir("pipeline");
 my $prefix = $patient->name;
 my $bam_prod = $patient->gvcfFileName("dragen-calling");
-warn $bam_prod if -e $bam_prod;
-exit(0) if -e $bam_prod;
+#warn $bam_prod if -e $bam_prod;
+#exit(0) if -e $bam_prod;
 
 my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
 
@@ -122,9 +120,11 @@ if ($project->isGenome){
 	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-duplicate-marking true  --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true};
 	
 }
-system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
-system("ssh pnitschk\@10.200.27.109 rm $fastq1 $fastq2");
+my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) ;#unless -e $f1;
+#system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
+#system("ssh pnitschk\@10.200.27.109 rm $fastq1 $fastq2");
 #my ($out,$err,$exit) = $ssh->cmd("$cmd") ;#unless -e $bam_pipeline;
+die if $exit != 0;
 }
 
 
