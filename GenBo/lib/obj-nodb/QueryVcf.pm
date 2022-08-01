@@ -416,7 +416,6 @@ sub parseVcfFileForReference_gatk{
 	else {
 		$vcf = Vcf -> new (file=>$file, tabix=>$self->buffer->software("tabix"));
 	}
-	warn $reference." ==> ".$self->method." ".$file." ".$idchr.":".$reference->start."-".$reference->end;
 #	$chr = $reference->getProject->getChromosome('21');
 #	$vcf = Vcf -> new (file=>$file, region=>'21:38858930-38858940',tabix=>$self->buffer->software("tabix"));
 	

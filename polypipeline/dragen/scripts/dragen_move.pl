@@ -95,7 +95,7 @@ my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 my $target_pipeline  ="$dir_pipeline/".$prefix.".target.counts.gz";
 my $target_pipeline_gc  = "$dir_pipeline/".$prefix.".target.counts.gc-corrected.gz";
 ($out, $err, $exit)=  $ssh->cmd("test -f $gvcf_pipeline");
-die($gvcf_pipeline ." probleme no gvcf") unless  $exit ==0;
+#die($gvcf_pipeline ." probleme no gvcf") unless  $exit ==0;
 
 ($out, $err, $exit)=  $ssh->cmd("test -f $target_pipeline_gc");
 die($target_pipeline_gc ." probleme no target gc") unless  $exit ==0;
@@ -126,6 +126,7 @@ sub move_bam {
 sub move_gvcf {
 	my ($gvcf,$patient) = @_;
 	my $prod = $patient->gvcfFileName("dragen-calling");
+	return if -e $prod;
 	system("rsync -rav  $url:$gvcf $prod");
 	system("rsync -rav  $url:$gvcf.tbi $prod.tbi");
 }
