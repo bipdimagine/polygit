@@ -11,17 +11,30 @@ GetOptions(
 	'pwd=s' => \$pwd,
 );
 my $file_lock = "/data-dragen/lock";
-
+my $last_cmd;
+my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
+ my $ssh = Net::SSH::Perl->new("10.1.2.9");
 my $myproc = Proc::Simple->new(); 
 $SIG{INT} = \&tsktsk;
 $SIG{KILL} = \&tsktsk;
 sub tsktsk {
-	warn "kill jobs";
-  	$myproc->kill() if $myproc->poll();
+	warn "kill jobs !!!!!!! wait 10 seconds";
+  	$myproc->kill() ;#if $myproc->poll();
+  	undef $myproc;
+  	if($last_cmd){
+  		sleep(10);
+  		$last_cmd =~ s/  / /g;
+  		$last_cmd =~ s/^\s+|\s+$//g;
+  		my ($o,$e,$ee) = $ssh->cmd(qq{pkill -f \"$last_cmd\"});
+  		warn qq{pkill -f \"$last_cmd\"};
+  		unlink $file_lock if -e $file_lock;
+  		warn " $ee $e +++++"
+  	}
+  	
+  
 }
 
-my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
- my $ssh = Net::SSH::Perl->new("10.1.2.9");
+
 $ssh->login("$username",$pwd);
 my @cmds;
 
@@ -34,9 +47,11 @@ else {
 }
 
 foreach my $dragen_cmd (@cmds) {
+	$last_cmd = $dragen_cmd;
 	my $exit = run_cmd($dragen_cmd);
 	unlink $file_lock if -e $file_lock;
 	die() if $exit != 0;
+	$last_cmd = undef;
 }
 
 warn "end";
@@ -54,7 +69,6 @@ sub run_cmd {
 		$f ++ ;
 		sleep($sleep);
 		if ($f%2 == 0){
-			warn "lock";
 			chomp($line);
 			my ($user1,$cm,$t) = split(":",$line);
 			my($stdout, $stderr, $exit) = $ssh->cmd(qq{ps -edf | grep $user1 | grep dragen | grep -v "grep"});
@@ -75,17 +89,22 @@ sub run_cmd {
 	system("chmod a+rwx $file_lock");
 	#warn "run";
 	$myproc = Proc::Simple->new(); 
-	$myproc->start(qq{ssh $username\@10.1.2.9 $cmd;rm $file_lock});
+	$myproc->kill_on_destroy(1);            # Set kill on destroy
+	$myproc->signal_on_destroy("KILL");
+	$myproc->start(qq{ssh $username\@10.1.2.9 $cmd});
 	while ($myproc->poll()){
-		sleep 2;
+		sleep 10;
+		
 	}
+	my $exit = $myproc->exit_status();
 	
-	if ($myproc->exit_status() == 0){
+	$ssh->cmd("rm $file_lock");
+	if ($exit == 0){
+		
 		return 0;
 	}
 	else {
-		#print $stdout."\n".$stderr."\n";
-		return $myproc->exit_status;
+		return $exit;
 	}	
 	
 	
