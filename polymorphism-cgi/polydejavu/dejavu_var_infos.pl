@@ -36,11 +36,17 @@ print "{\"progress\":\".";
 my $fam;
 my $p;
 my $h_this_run_patients;
+my $solo;
+my $solo_fam = {};
 if ($project_name){
 	my $buffer = GBuffer->new();
 	my $p1 = $buffer->newProjectCache(-name => $project_name);
 	if($p1->isDefidiagSolo){
-		$fam = $p1->getPatient($patient_name)->getFamily->name();
+		$solo =1 ;
+		my $variant = $p1->_newVariant($varId);
+		foreach my $patient (@{$variant->getPatients}){
+			$solo_fam->{$patient->getFamily->name()} ++;
+		}
 	}
 	if ($in_this_run) {
 		my $in_this_run_patients =  $p1->in_this_run_patients();
@@ -105,7 +111,7 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 		my $pp;
 		eval { $pp = $thisProject->getPatient($patName); };
 		if ($@) { next; }
-		next if $fam eq $pp->getFamily()->name ;
+		next if exists $solo_fam->{$pp->getFamily()->name} ;
 		#die();
 		my $hash;
 		$hash->{id} = $id;
@@ -197,6 +203,7 @@ sub printHtml_bootstrap {
 		$out .= $cgi->start_Tr();
 		foreach my $cat (@lCat) {
 			my $value = $h->{$cat};
+			next unless $value;
 			if ($cat eq 'implicated') { $value = format_implicated_icon($value); }
 			if ($cat eq 'project') { $value = format_project_name_phenotype($value); }
 			if ($cat eq 'sex_status') { $value = format_patient_icon($value); }
