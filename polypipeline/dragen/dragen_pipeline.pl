@@ -88,8 +88,7 @@ foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name => $pname );
 	$project->isGenome;
-	warn $project->buffer;
-	$project->$project->get_only_list_patients($apatients_name[0]);
+	$project->get_only_list_patients($apatients_name[0]);
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
