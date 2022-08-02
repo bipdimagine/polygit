@@ -222,7 +222,7 @@ has tabix_coverage => (
 		my $coverage_file;
 		$coverage_file = $self->getCoverageFile();
 		return unless -e $coverage_file;
-		return new Tabix( -data => $coverage_file );
+		return Bio::DB::HTS::Tabix->new( filename => $coverage_file );
 
 	}
 );
@@ -442,38 +442,6 @@ has 'coverage_SRY' => (
 		}
 		return int( $max_mean * 10 ) / 10;
 
-#    		push(@tt,$chr->ucsc_name."\t".$from."\t".$to);
-#
-#
-#
-#		return -1 if $zint->is_empty;
-#		my $tabixFile = $self->tabix_coverage();
-#		return -1 unless $tabixFile;
-#		 my $z = $self->project->liteAnnotations->get("annotations","SRY");
-#		 return -1 unless $z;
-#		 my $cov =0;
-#		my $nb =0;
-#		 if ($self->isNoSqlDepth){
-#		 	my $depth = $self->depth("chrY", $z->{start}, $z->{end});
-#		  	$cov = sum(@$depth);
-#		 	$nb = scalar(@$depth);
-#		 }
-#		else{
-#
-#
-#			my $res = $tabixFile->query("chrY", $z->{start}, $z->{end});
-#			#TODO: a verifier si return -1 est correct
-#			return -1 unless defined ($res->{_}); # test iterator not null (null = no result = no cov)
-#			#next unless defined ($res->{_}); # test iterator not null (null = no result = no cov)
-#			while (my $line = $tabixFile->read($res)) {
-#				my ($thisChr, $thisPos, $thisCov) = split("\t", $line);
-#				#next unless ($thisPos == $end);
-#				$cov += $thisCov;
-#				$nb++;
-#			}
-#		}
-#		return 0 if $nb ==0;
-#		return int(($cov/$nb)*10)/10;
 
 	},
 );
@@ -1587,7 +1555,16 @@ sub getLargeIndelsFiles {
 	return [];
 
 }
-
+sub targetGCFile {
+	my ( $self ) = @_;
+	my $file = $self->project->getTargetCountDir()."/".$self->name.".target.counts.gc-corrected.gz";
+	return $file;
+}
+sub targetFile {
+	my ( $self ) = @_;
+	my $file = $self->project->getTargetCountDir()."/".$self->name.".target.counts.gz";
+	return $file;
+}
 sub gvcfFileName {
 	my ( $self, $method ) = @_;
 	$method = "haplotypecaller4" unless $method;
@@ -1749,7 +1726,8 @@ has tabix_wisecondor => (
 		my $coverage_file;
 		$coverage_file = $self->rawDataWiseCondor();
 		return unless -e $coverage_file;
-		return new Tabix( -data => $coverage_file );
+		
+		return  Bio::DB::HTS::Tabix->new( filename => $coverage_file );;
 
 	}
 );
@@ -1958,10 +1936,10 @@ sub getCoverage {
 	my $tabix = $self->tabix_coverage();
 	my $len   = abs( $start - $end ) + 1;
 	my @v     = ( (0) x $len );
-	my $res   = $tabix->query( $chr, $start - 1, $end ) if $start;
+	my $res   = $tabix->query_full( $chr, $start - 1, $end ) if $start;
 	my @data;
 
-	while ( my $line = $tabix->read($res) ) {
+	while ( my $line = $res->next ) {
 
 		my ( $a, $p, $c ) = split( " ", $line );
 
@@ -2468,6 +2446,28 @@ sub getWindowGvcf {
 	return $outfile;
 }
 
+sub getCallingPipelineDir {
+	my ( $self, $type ) = @_;
+	return $self->{_cdir}->{$type} if exists  $self->{_cdir}->{$type};
+	my $path = $self->project->getCallingPipelineDir($type);
+	return $self->project->makedir($path."/".$self->name);
+}
+sub getDragenDirName {
+	my ( $self, $type ) = @_;
+	return $self->{_dir}->{$type} if exists  $self->{_dir}->{$type};
+	my $dir_out      = $self->project->project_dragen_pipeline_path_name();
+	$self->{_dir}->{$type} = $dir_out. "/$type/" . $self->name;#."/".$type."/";
+	return $self->{_dir}->{$type};
+}
+sub getDragenDir {
+	my ( $self, $type ) = @_;
+	$self->project->project_dragen_pipeline_path();
+	my $dir = $self->getDragenDirName($type);
+	unless ( -e $dir ) {
+		system("mkdir -p ".$dir." && chmod a+rw ".$dir);
+	}
+	return $dir;
+}
 sub get_lmdb_primers {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
