@@ -83,13 +83,12 @@ my $steps = {
 
 my $buffers;
 my $projects;
-
+my @apatients_name = split(":",$patients_name);
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
-	
 	my $project = $buffer->newProject( -name => $pname );
 	$project->isGenome;
-	warn $project->buffer;
+	$project->get_only_list_patients($apatients_name[0]);
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
@@ -114,14 +113,14 @@ my $jobs =[];
 run_align($projects);
 
 run_move($projects);
-run_gvcf();
-run_dragen_cnv_coverage();
-run_genotype();
+run_gvcf($projects);
+run_dragen_cnv_coverage($projects);
+run_genotype($projects);
 #run_sv();
 #run_target();
-run_pon();
-run_coverage();
-run_lmdb_depth();
+run_pon($projects);
+run_coverage($projects);
+run_lmdb_depth($projects);
 exit(0);
 
 
@@ -156,7 +155,7 @@ sub run_move {
 foreach my $project (@$projects){
 	my $ppn = 5;
 	my $projectName = $project->name;
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	foreach my $patient (@$patients){
 		my $dir_pipeline = $patient->getDragenDir("pipeline");
 		my $prefix = $patient->name;
@@ -189,7 +188,7 @@ foreach my $project (@$projects){
 	
 	my $ppn = 10;
 	my $project_name = $project->name;
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	foreach my $patient (@$patients){
 		my $name = $patient->name;
 		my $fileout = $patient->fileNoSqlDepth;
@@ -225,7 +224,7 @@ foreach my $project (@$projects){
 	my $project_name = $project->name;
 	my $coverage_dir = $project->getRootDir() . "/align/coverage/";
 	system("mkdir $coverage_dir && chmod a+rwx $coverage_dir") unless -e $coverage_dir;
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	foreach my $patient (@$patients){
 		my $name = $patient->name;
 		
@@ -260,7 +259,7 @@ my ($projects) = @_;
 my $jobs =[];
 
 foreach my $project (@$projects){
-my $patients = $project->get_only_list_patients($patients_name);
+my $patients = $project->getPatients($patients_name);
 my $projectName = $project->name;
 foreach my $patient (@$patients){
 	my $dir_pipeline = $patient->getDragenDir("pipeline");
@@ -288,11 +287,10 @@ foreach my $patient (@$patients){
 sub run_genotype {
 my ($projects) = @_;
 	my $jobs =[];
-
 foreach my $project (@$projects){
 	my $projectName = $project->name;
  my @ps;
- my $patients = $project->get_only_list_patients($patients_name);
+ my $patients = $project->getPatients();
  foreach my $p (@$patients) {
  	my $dir_out= $project->getVariationsDir("dragen-calling");
  	my $f = $dir_out."/".$p->name.".vcf.gz";
@@ -315,7 +313,7 @@ my $jobs =[];
 
 foreach my $project (@$projects){
 	my $projectName = $project->name;
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	my $cmd = qq{perl $script_perl/dragen_gvf.pl -project=$projectName};
 	foreach my $patient (@$patients){
 		my $fileout = $patient->gvcfFileName("dragen-calling");;
@@ -337,7 +335,7 @@ sub run_dragen_cnv_coverage {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $cmd = qq{perl $script_perl/dragen_cnv_coverage.pl -project=$projectName};
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	foreach my $patient (@$patients){
 		my $dir = $patient->project->getTargetCountDir();
 		my $fileout = $dir."/".$patient->name.".target.counts.gc-corrected.gz";
@@ -359,7 +357,7 @@ sub run_pon {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $dir_prod = $project->getVariationsDir("dragen-pon");
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	my $cmd = qq{perl $script_perl/dragen_cnv.pl -project=$projectName};
 	foreach my $patient (@$patients){
 		my $fileout = $dir_prod."/".$patient->name.".cnv.vcf.gz";
@@ -378,7 +376,7 @@ sub run_sv {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $dir_prod2 = $project->getVariationsDir("dragen-sv");
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	foreach my $patient (@$patients){
 		#push(@$jobs,{name=>$patient->name.".sv", cmd=>"sleep 3",out=> $dir_prod2."/".$patient->name.".sv.vcf.gz"});
 	 	next if -e $dir_prod2."/".$patient->name.".sv.vcf.gz";
@@ -396,7 +394,7 @@ sub run_target {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $dir_prod = $project->getVariationsDir("dragen-target");
-	my $patients = $project->get_only_list_patients($patients_name);
+	my $patients = $project->getPatients($patients_name);
 	 foreach my $patient (@$patients){
 	 	#	push(@$jobs,{name=>$patient->name.".target", cmd=>"sleep 3",out=> $patient->targetGCFile()});
 	 	next if -e $patient->targetGCFile();
