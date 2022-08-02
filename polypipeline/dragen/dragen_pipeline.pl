@@ -289,7 +289,6 @@ my ($projects) = @_;
 	my $jobs =[];
 foreach my $project (@$projects){
 	my $projectName = $project->name;
-	die();
  my @ps;
  my $patients = $project->getPatients();
  foreach my $p (@$patients) {
