@@ -754,12 +754,12 @@ sub getPrimersByPosition {
 	return unless $tabix;
 	my $no = $chr->get_lmdb_cnvs("r");
 
-	my $res = $tabix->query($chr->ucsc_name,$start,$end);
-	return [] unless $res->get();
+	my $res = $tabix->query_full($chr->ucsc_name,$start,$end);
+	return [] unless $res;
 		# return {mean=>0,} unless defined $res->{_};
 		 my @data;
 		my $objs =[];
-		 while(my $line = $tabix->read($res)){
+		 while(my $line = $res->next){
 		 	
 				my($a,$b,$c,$pid) = split(" ",$line);
 				my $o;
@@ -790,13 +790,13 @@ sub getPrimersByObjects {
 	my $no = $chr->get_lmdb_cnvs("r");
 	my $tabix = $self->tabix_primers;
 	return unless $tabix;
-	my $res = $tabix->query($chr->ucsc_name,$obj->start,$obj->end);
+	my $res = $tabix->query_full($chr->ucsc_name,$obj->start,$obj->end);
 	
-	return [] unless $res->get();
+	#return [] unless $res->get();
 		# return {mean=>0,} unless defined $res->{_};
 		 my @data;
 		my $objs =[];
-		 while(my $line = $tabix->read($res)){
+		 while(my $line = $res->next){
 				my($a,$b,$c,$pid) = split(" ",$line);
 				my $o;
 				if (exists  $self->{objects}->{primers}->{$pid}){
@@ -1070,7 +1070,7 @@ sub myflushobjects {
 				elsif ($type eq 'runs') {$self->getRunFromId($id); }
 				elsif ($type eq 'patients') {
 					$self->setPatients(); 
-					confess() unless exists $self->{objects}->{$type}->{$id};
+					confess($id) unless exists $self->{objects}->{$type}->{$id};
 				}
 				elsif ($type eq 'captures') {
 					#$self->setCaptures(); 
