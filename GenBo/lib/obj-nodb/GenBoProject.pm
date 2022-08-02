@@ -423,7 +423,6 @@ has isGenome => (
 	default => sub {
 		my $self = shift;
 		foreach my $c ( @{ $self->getCaptures } ) {
-
 			return 1 if lc( $c->analyse ) =~ /genome/;
 		}
 		return undef;
@@ -1149,7 +1148,29 @@ has project_pipeline_path => (
 		return $self->makedir($path);
 	},
 );
-
+has project_dragen_pipeline_path_name => (
+is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = "/data-dragen/pipeline/";
+		my $path     = $pathRoot . "/" . $self->name() . "/";
+		$path .= $self->getVersion . "/";
+		return $path;
+	},
+);
+has project_dragen_pipeline_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = "/data-dragen/pipeline/";
+		my $path     = $pathRoot . "/" . $self->name() . "/";
+		$self->makedir($path);
+		$path .= $self->getVersion . "/";
+		return $self->makedir($self->project_dragen_pipeline_path_name);
+	},
+);
 has project_metrics_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -2198,7 +2219,14 @@ has pipelineDir => (
 		return $self->project_pipeline_path;
 	},
 );
-
+has pipelineDragen => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->project_dragen_pipeline_path;
+	},
+);
 has metricsDir => (
 	is      => 'ro',
 	reader  => 'getMetricsDir',
@@ -4465,6 +4493,7 @@ sub liteObjectId {
 
 sub getGenBoId {
 	my ( $self, $geneId ) = @_;
+	
 	my $syno = $self->liteAnnotations->get( "synonyms", $geneId );
 	return $syno;
 
@@ -5124,6 +5153,12 @@ sub get_only_list_patients {
 sub getCoverageDir {
 	my $self = shift;
 	my $dir  = $self->getAlignmentRootDir . "/coverage/";
+	return $self->makedir($dir);
+}
+
+sub getTargetCountDir {
+	my $self = shift;
+	my $dir  = $self->getCoverageDir."/target_count/";
 	return $self->makedir($dir);
 }
 
@@ -5852,7 +5887,7 @@ has tabix_primers_file => (
 sub tabix_primers {
 	my ($self) = @_;
 	confess( $self->tabix_primers_file ) unless $self->isDude;
-	return new Tabix( -data => $self->tabix_primers_file );
+	return Bio::DB::HTS::Tabix->new( filename => $self->tabix_primers_file );
 }
 
 has dir_varids_to_vector_ids => (
