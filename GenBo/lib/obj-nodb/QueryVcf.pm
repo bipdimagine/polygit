@@ -158,7 +158,25 @@ has force_all_gt_he => (
 	default => undef,
 );
 
+has ucsc_format => (
+	is		=> 'rw',
+	lazy =>1,
+	default => sub{ 
 
+	my ($self) = @_;
+	my $chrs = $self->tabix->seqnames();
+		return $self->getPatient->project->getChromosome($chrs->[0])->ucsc_name eq $chrs->[0];
+	},
+	
+);
+
+sub return_tabix_chromosome_name {
+	my ($self,$chr) = @_;
+	if ($self->ucsc_format) {
+		return $chr->ucsc_name;
+	}
+	return $chr->name;
+ }
 
 ##### METHODS #####
 
@@ -211,17 +229,27 @@ sub parseVcfFileForReference {
 	else { confess("\n\nERROR: no parser for this file ($file)\n\n") }
 }
 
+sub return_tabix_query {
+	my ($self,$chromosome,$start,$end) = @_;
+	my $res = $self->tabix->query_full($chromosome->name,$start,$end);
+	unless ($res){
+		$res = $self->tabix->query_full($chromosome->ucsc,$start,$end);
+	}
+	
+}
 
 sub parseLid {
 	my ($self, $reference) = @_;
 	#return {};
-	confess("change tabix query");
+	
  	my $project = $self->getPatient()->getProject();
  	my $file = $self->file();
  	my $chromosome = $reference->getChromosome();
- 	
- 	my $res =  $self->tabix->query($chromosome->fasta_name.":.".$reference->start."-".$reference->end);
+ 	my $res = $self->tabix->query_full($self->return_tabix_chromosome_name($chromosome),$reference->start,$reference->end);
+ 	#my $res =  $self->tabix->query($chromosome->name.":".$reference->start."-".$reference->end);
+  #	my $res =  $self->tabix->query($chromosome->fasta_name); 
  	return {} unless $res;
+ 	
  	my @data;
 	my %hashRes;
 	my $patient_id =  $self->getPatient()->id;
@@ -328,10 +356,10 @@ sub parseBed {
  	my ($self, $reference) = @_;
  	my $project = $self->getPatient()->getProject();
  	 my $file = $self->file();
-
+	
  	 my $chromosome = $reference->getChromosome();
- 		return {} if $chromosome->name eq "Y";
- 	 my $res = $self->query_full($chromosome,$reference->start,$reference->end);
+ 	return {} if $chromosome->name eq "Y";
+ 	my $res = $self->tabix->query_full($self->return_tabix_chromosome_name($chromosome),$reference->start,$reference->end);
  	 return {} unless $res;
 		 my @data;
 		 my %hashRes;
@@ -394,7 +422,6 @@ sub parseVcfFileForReference_gatk{
 	unless ($useFilter) { $useFilter = 0; }
 #	my $project = $self->getPatient()->getProject(); 
 	return {} if $self->isUcsc() eq "empty";
-	
 	my $t = time;
 
 
