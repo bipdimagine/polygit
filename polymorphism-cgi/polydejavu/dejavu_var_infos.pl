@@ -93,10 +93,11 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 	print '.';
 	my $thisProject = $buffer->newProject(-name => $projName);
 	delete $thisProject->{version};
-	delete $thisProject->{genomeFai};
-	delete $thisProject->{genomeFasta};
-	delete $thisProject->{dirGenome};
-	delete $thisProject->{genome_version};
+	#delete $thisProject->{genomeFai};
+	#delete $thisProject->{genomeFasta};
+	#delete $thisProject->{dirGenome};
+	#delete $thisProject->{genome_version};
+	#warn $build_use;
 	$thisProject->version($build_use);
 	my @lPheno;
 	foreach my $pheno_obj (@{$thisProject->getPhenotypes()}) {
