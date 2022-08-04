@@ -32,8 +32,6 @@ use JSON::XS;
 use Net::SSH::Perl; 
 
  
- my $ssh = Net::SSH::Perl->new("10.200.27.109");
-$ssh->login("pnitschk");
 
 my $projectName;
 my $patients_name;
@@ -65,20 +63,21 @@ close(PED);
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $cmd = "dragen -f -r $ref_dragen --output-directory $dir_pipeline --output-file-prefix $projectName --enable-joint-genotyping true --variant-list $file";
 my $filein = $dir_pipeline."/$projectName.hard-filtered.vcf.gz";
-warn $cmd;
 warn $filein;
-my($stdout, $stderr, $exit) = $ssh->cmd($cmd ."&& touch $dir_pipeline/dragen-genotype.ok" ) unless -e $filein;
+my $exit =0; 
+ $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) unless -e $filein;
+#my($stdout, $stderr, $exit) = $ssh->cmd($cmd ."&& touch $dir_pipeline/dragen-genotype.ok" ) unless -e $filein;
 warn "end";
 #warn $stderr;
-
-die() unless -e "$dir_pipeline/dragen-genotype.ok";
+die() if $exit != 0;
 my $bin_dev = "$Bin/../../scripts/scripts_pipeline/";
 my $cmd1 = "perl $bin_dev/correct_gatk.pl -vcf=$filein -project=$projectName -dir=$dir_pipeline  -patient=$patients_name -method=dragen-calling";
-
-#system($cmd1);
+warn $cmd1;
+system($cmd1);
 my $cmd2 = "perl $bin_dev/move_vcf.pl  -project=$projectName -vcf_dir=$dir_pipeline -patient=$patients_name -method_calling=dragen-calling";
 warn $cmd2;
-#system($cmd2);
+system($cmd2);
+
 
 exit(0);
 

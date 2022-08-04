@@ -27,11 +27,11 @@ has array => (
 	my $tabix = $self->patient->tabix_coverage;
 	my $len = abs($self->start - $self->end) +1;
 	my @v = ((0) x $len);
-	 my $res = $tabix->query($self->chromosome_name,$self->start-1,$self->end);
-	  return \@v unless defined $res->{_};
+	 my $res = $tabix->query_full($self->chromosome_name,$self->start-1,$self->end);
+	  return \@v unless  $res;
 		 my @data;
 		
-		 while(my $line = $tabix->read($res)){
+		 while(my $line = $res->next){
     		
 				my($a,$p,$c) = split(" ",$line);
 				confess() if $a ne $self->chromosome_name;
@@ -63,10 +63,10 @@ sub add_value {
 		my $tabix = $self->patient->tabix_coverage;
 	my $samtools = $self->patient->buffer->samtools;
 	$self->array->[$pos_array] = 0;
-   my $res = $tabix->query($self->chromosome_name,$pos_genomic,$pos_genomic);
+   my $res = $tabix->query_full($self->chromosome_name,$pos_genomic,$pos_genomic);
 
 	#	warn "$samtools depth $bam -r $region";
-		while(my $line = $tabix->read($res)){
+		while(my $line = $res->next){
     		
 				my($a,$p,$c) = split(" ",$line);
 				next if $p ne $pos_genomic;

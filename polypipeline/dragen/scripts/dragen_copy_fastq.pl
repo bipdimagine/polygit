@@ -1,5 +1,5 @@
 #!/usr/bin/perl
- 
+
 use strict;
 use FindBin qw($Bin);
 use lib "$Bin/../../../GenBo/lib/";
@@ -8,7 +8,7 @@ use lib "$Bin/../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../GenBo/lib/obj-nodb/packages";
 use lib "$Bin/../../../GenBo/lib/kyoto/";
 use lib "$Bin/../../../GenBo/lib/GenBoDB/writeDB";
-use lib "$Bin/../packages";
+use lib "$Bin/../../packages";
 use Logfile::Rotate;
 use Getopt::Long;
 use Data::Dumper;
@@ -22,7 +22,7 @@ use GenBoProject;
 use colored; 
 use Config::Std;
 use Text::Table;
-
+use file_util;
 use File::Temp qw/ tempfile tempdir /;; 
 
 use Term::Menus;
@@ -54,13 +54,11 @@ my $bds;
  my @running_steps;
  my $predef_steps;
  my $nocluster = 0;
- my $myproc;
 my $low_calling;
 my $predef_type;
 my $define_steps;
 my $step;
 
-my $dir_dragen = "/run/";
 
 
 my $limit;
@@ -74,33 +72,55 @@ GetOptions(
 
 
 my $user = system("whoami");
-
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
 
+my $tm = "/staging/tmp/";
 
-
-
-
+if ($project->isGenome){
+	warn "coucou";
+}
 #system ("mkdir -p $dir_dragen/".$project->name );
 
-my $output = "/data-isilon/dragen-pipeline/".$project->name."/cnv1/";
-system("mkdir -p $output");
-warn $output;
 my $patient = $project->getPatient($patients_name);
-my $ref_dragen = "/data-isilon/public-data/genome/HG19_MT/dragen/all.fa.k_21.f_16.m_149 ";
-
+my $dir_pipeline = $patient->getDragenDir("pipeline");
 my $prefix = $patient->name;
-my $bam = $patient->getBamFile();
-my $tmp = "/staging/intermediate";
-my $capture_file = $patient->getCapture->gzFileName();
-my $cmd = qq{dragen -f  -r $ref_dragen  --output-directory $output --output-file-prefix $prefix -b $bam --intermediate-results-dir $tmp --enable-map-align false --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
-my ($out,$err,$exit) = $ssh->cmd("$cmd");
+my $bam_prod = $patient->gvcfFileName("dragen-calling");
+#warn $bam_prod if -e $bam_prod;
+#exit(0) if -e $bam_prod;
 
-warn "OK";
-
-
+my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
+my ($fastq1,$fastq2) = get_fastq_file($patient,$dir_pipeline);
+exit(0);
 
 
+
+
+
+sub get_fastq_file {
+	my ($patient,$dir_pipeline) = @_;
+	
+	my $name=$patient->name();
+	
+	my $files_pe1 = file_util::find_file_pe($patient,"");
+	my $cmd;
+	my @r1;
+	my @r2;
+	foreach my $cp (@$files_pe1) {
+		my $file1 = $patient->getSequencesDirectory()."/".$cp->{R1};
+		my $file2 = $patient->getSequencesDirectory()."/".$cp->{R2};
+		push(@r1,$file1);
+		push(@r2,$file2);
+	}
+	my $cmd1 = join(" ",@r1);
+	my $cmd2 = join(" ",@r2);
+	my $fastq1 = $dir_pipeline."/".$patient->name.".R1.fastq.gz";
+	my $fastq2 = $dir_pipeline."/".$patient->name.".R2.fastq.gz";
+	#if ($step eq "align"){
+		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
+		system "cat $cmd2 > $fastq2";# unless -e $fastq2;
+	#}
+	return  ($fastq1,$fastq2);
+}
 
 
