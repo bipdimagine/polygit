@@ -9,7 +9,7 @@ var tabRatio = "";
 var nb=0;
 
 
-var url_CNV_Patient = url_path + "/manta/Retrieve_allSV_Patient.pl";
+
 
 
 
