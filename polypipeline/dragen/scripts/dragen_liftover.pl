@@ -65,6 +65,7 @@ GetOptions(
 	'patients=s' => \$patients_name,
 	'step=s'=> \$step,
 	'type=s' => \$type,
+	
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -72,7 +73,15 @@ GetOptions(
 my $user = system("whoami");
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
-
+my $buffer19 = GBuffer->new();
+my $project19 = $buffer19->newProject( -name => $projectName );
+my $version ="HG38_CNG";
+ if ($version){
+ 	$project->genome_version("$version");
+ 	$project->version("$version");
+ 	$project19->genome_version("HG19_CNG");
+ 	$project19->version("HG19_CNG");
+ }
 my $tm = "/staging/tmp/";
 
 if ($project->isGenome){
@@ -81,11 +90,13 @@ if ($project->isGenome){
 #system ("mkdir -p $dir_dragen/".$project->name );
 
 my $patient = $project->getPatient($patients_name);
+my $patient19 = $project19->getPatient($patients_name);
 my $dir_pipeline = $patient->getDragenDir("pipeline");
 my $prefix = $patient->name;
-my $bam_prod = $patient->gvcfFileName("dragen-calling");
-#warn $bam_prod if -e $bam_prod;
-#exit(0) if -e $bam_prod;
+my $bam_prod = $patient->getBamFileName("dragen-calling");
+
+warn $bam_prod if -e $bam_prod;
+exit(0) if -e $bam_prod;
 
 my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
 
@@ -99,8 +110,11 @@ exit(0);
 
 
 sub run_pipeline {
-my ($fastq1,$fastq2) = get_fastq_file($patient,$dir_pipeline);
-warn "\n\n end copy";
+my $bam_ori = $patient19->getBamFileName("bwa");	
+die($bam_ori)  unless -e $bam_ori;
+
+#my ($fastq1,$fastq2) = get_fastq_file($patient,$dir_pipeline);
+#warn "\n\n end copy";
 my $ref_dragen = $project->getGenomeIndex("dragen");
 
 
@@ -113,11 +127,11 @@ my $runid = $patient->getRun()->id;
 my $gvcf_pipeline = $dir_pipeline."/".$prefix.".hard-filtered.gvcf.gz";
 
 #--vc-enable-vcf-output true
-my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-duplicate-marking true  --enable-map-align-output true  --vc-target-bed $capture_file --vc-target-bed-padding 150 --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
+my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $bam_ori --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-duplicate-marking true  --enable-map-align-output true  --vc-target-bed $capture_file --vc-target-bed-padding 150 --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
 #warn $cmd;
 #die();
 if ($project->isGenome){
-	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-duplicate-marking true  --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true};
+	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $bam_ori  --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-duplicate-marking true  --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true};
 	
 }
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) ;#unless -e $f1;

@@ -2289,10 +2289,10 @@ is		=> 'ro',
 	default => sub {
 		my $self = shift;
 		my $tabix = $self->project->tabix_primers;
-		my $res = $tabix->query($self->ucsc_name,$self->start,$self->end);
+		my $res = $tabix->query_full($self->ucsc_name,$self->start,$self->end);
 		my $tree = Set::IntervalTree->new;
 		return $tree unless $res->get();;
-		while(my $line = $tabix->read($res)){
+		while(my $line = $res->next){
 		my($a,$b,$c,$pid) = split(" ",$line);
 		
 			$tree->insert($pid,$b,$c);
@@ -2318,10 +2318,10 @@ sub ordered_primers_ids {
 	$self->{ordered_primers}  = [];
 	my $tabix = $self->project->tabix_primers;
 	return unless $tabix;
-	my $res = $tabix->query($self->ucsc_name,$self->start,$self->end);
+	my $res = $tabix->query_full($self->ucsc_name,$self->start,$self->end);
 
-	return $self->{ordered_primers} unless $res->get();;
-	 while(my $line = $tabix->read($res)){
+	return $self->{ordered_primers} unless $res;
+	 while(my $line = $res->next){
 		my($a,$b,$c,$pid) = split(" ",$line);
 		push (@{$self->{ordered_primers}},$pid);
 	}
