@@ -165,7 +165,8 @@ has ucsc_format => (
 
 	my ($self) = @_;
 	my $chrs = $self->tabix->seqnames();
-		return $self->getPatient->project->getChromosome($chrs->[0])->ucsc_name eq $chrs->[0];
+	return 1 unless @$chrs;
+	return $self->getPatient->project->getChromosome($chrs->[0])->ucsc_name eq $chrs->[0];
 	},
 	
 );
