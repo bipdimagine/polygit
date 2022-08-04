@@ -304,11 +304,10 @@ has coverage => (
 		eval {
 			my $tabix = $self->tabix_coverage;
 			return unless $tabix;
-			my $res = $tabix->query("mean_all");
-			#warn Dumper $res;
-			# return {mean=>0,} unless defined $res->{_};
+			my $res   = $tabix->query_full( "mean_all" ) ;
+			my @data;
 
-			while ( my $line = $tabix->read($res) ) {
+			while ( my $line = $res->next ) {
 				my ( $a, $b, $c ) = split( " ", $line );
 				if ( $b == 99 ) {
 					$b = "mean";
@@ -1399,6 +1398,7 @@ sub getBamFileName {
 
 sub getBamFile {
 	my ( $self, $method_name, $nodie ) = @_;
+	
 	unless ($method_name) {
 		my $files = $self->getBamFiles();
 		return $files->[0] if scalar(@$files) == 1;
@@ -1407,8 +1407,9 @@ sub getBamFile {
 			return;
 		}
 
-	  #		confess($self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
+	  		confess($self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
 	}
+	 
 	confess("ERROR: no bam file with $method_name method name. Exit. "
 		  . $self->name . " "
 		  . $self->project->name
