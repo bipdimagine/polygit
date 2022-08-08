@@ -2291,7 +2291,7 @@ is		=> 'ro',
 		my $tabix = $self->project->tabix_primers;
 		my $res = $tabix->query_full($self->ucsc_name,$self->start,$self->end);
 		my $tree = Set::IntervalTree->new;
-		return $tree unless $res->get();;
+		return $tree unless $res;
 		while(my $line = $res->next){
 		my($a,$b,$c,$pid) = split(" ",$line);
 		
