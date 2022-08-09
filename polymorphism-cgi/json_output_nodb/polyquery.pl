@@ -1532,7 +1532,8 @@ sub launchStatsPatient {
 	my $patName = $patient->name();
 	$hStats->{name} 		= $patName;
 	$hStats->{id} 			= int($project->hash_patients_name->{$patient->name()}->{'id'});
-	$hStats->{bam} 			= $patient->bamUrl();
+	$hStats->{bam} 			= "";
+	$hStats->{bam} 			= $patient->bamUrl() if -e $patient->getBamFileName();
 	$hStats->{fam} 			= $patient->family();
 	$hStats->{sex} 			= $patient->sex();
 	$hStats->{status} 		= $patient->status();
