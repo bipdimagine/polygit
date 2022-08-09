@@ -1275,7 +1275,7 @@ has bamUrl => (
 		die() if ( scalar( @$methods > 1 ) );
 		my $method_name = $methods->[0];
 		my $bam_dir     = $self->getProject->getAlignmentUrl($method_name);
-		my $bamf        = $self->getBamFile();
+		my $bamf        = $self->getBamFileName();
 		my (@t) = split( "/", $bamf );
 
 		#warn $bam_dir;
