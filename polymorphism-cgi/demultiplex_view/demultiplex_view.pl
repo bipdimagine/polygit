@@ -214,24 +214,26 @@ sub convert_csv_to_json {
 						$sample_id = $value;
 						$nb_samples++ if (not lc($sample_id) eq 'undetermined' and not lc($sample_id) =~ /_rc/);
 						my ($run_id, @l_runs_id);
-						if (exists $h->{$file}->{runs_ids} and exists $h->{$file}->{runs_ids}->{$value}) {
-							@l_runs_id = sort keys %{$h->{$file}->{runs_ids}->{$value}};
-						}
-						else {
-							my $h_runs_infos = check_run_id_from_sample_name($value) if (lc($value) ne 'undetermined');
-							@l_runs_id = sort keys %{$h_runs_infos};
-							foreach my $r (@l_runs_id) {
-								$h->{$file}->{runs_ids}->{by_samples}->{$value}->{$r} = undef;
-								$h->{$file}->{runs_ids}->{by_runs}->{$r}->{$value} = undef;
-							}
-						}
+#						if (exists $h->{$file}->{runs_ids} and exists $h->{$file}->{runs_ids}->{$value}) {
+#							@l_runs_id = sort keys %{$h->{$file}->{runs_ids}->{$value}};
+#						}
+#						else {
+#							my $h_runs_infos = check_run_id_from_sample_name($value) if (lc($value) ne 'undetermined');
+#							@l_runs_id = sort keys %{$h_runs_infos};
+#							foreach my $r (@l_runs_id) {
+#								$h->{$file}->{runs_ids}->{by_samples}->{$value}->{$r} = undef;
+#								$h->{$file}->{runs_ids}->{by_runs}->{$r}->{$value} = undef;
+#							}
+#						}
 						my $runs = join(' ', reverse @l_runs_id);
 						$runs = 'no_run_info' unless ($runs);
+						
+						
 						$h->{$file}->{values}->{$id}->{'RunID'} = $runs;
 						$h->{$file}->{values}->{$id}->{$max_nb_header} = $runs;
 					}
 					if ($cat eq '# Reads') {
-						$total_reads += int($value)  if (not $sample_id =~ /undetermined/ and not $sample_id =~ /_RC$/);
+						$total_reads += int($value)  if (not lc($sample_id) =~ /undetermined/ and not $sample_id =~ /_RC$/);
 						$h->{$file}->{values}->{$id}->{'# Reads Norm Only'} = int($value);
 						$h->{$file}->{values}->{$id}->{$max_nb_header+1} = int($value);
 						if (exists $h->{$file}->{runs_ids}->{by_samples}->{$sample_id}) {

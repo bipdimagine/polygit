@@ -573,6 +573,7 @@
 			    });
 	    	}
 	    	
+	    	var url_force = '';
 	    	function launch() {
 	    		document.title = "PolyDemultiplex " + param("name");
 	    		document.getElementById("span_run_name").innerHTML = param("name");
@@ -586,7 +587,7 @@
 			    		var path_run = json_file;
 			    		json_file = json_file.replace("json/demultiplex.json", "");
 			    		
-						var url_force = url_path + "/demultiplex_view/demultiplex_view.pl";
+						url_force = url_path + "/demultiplex_view/demultiplex_view.pl";
 						url_force += "?force=1";
 						url_force += "&run=" + param('name');
 						
