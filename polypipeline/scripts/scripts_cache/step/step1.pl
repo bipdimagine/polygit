@@ -74,7 +74,7 @@ unless ($project->isGenome){
 		my $name = $patient->name;
 		my $no1 = $patient->getTranscriptsDude();
 		my $cmd = qq{perl $bin_dev/transcripts/transcripts_cache.pl -patient=$name  -fork=$ppn  -project=$project_name  && perl $bin_dev/transcripts/genes_level_dude.pl -patient=$name  -fork=$ppn  -project=$project_name};
-		print $cmd " :::$ppn\n";
+		print $cmd." :::$ppn\n";
 	}
 	
 
