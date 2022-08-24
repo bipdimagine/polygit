@@ -12,7 +12,7 @@ use Digest::MD5 qw(md5_hex);
 use lib "$RealBin/../../../GenBo/lib/obj-nodb/";
 use List::MoreUtils qw{ natatime };
 use String::ProgressBar;
-use POSIX qw(strftime);
+use POSIX qw(strftime); 
 use JSON;
 use Compress::Snappy;
 use Getopt::Long;
