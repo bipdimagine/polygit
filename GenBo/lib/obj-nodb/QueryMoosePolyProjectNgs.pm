@@ -1036,7 +1036,7 @@ has sql_cmd_get_alamut_api_key_from_username => (
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
-			SELECT USER.LOGIN as login, USER.EQUIPE_ID as equipe_id, ALAMUT_LICENCE.NAME as licence_alamut, ALAMUT_LICENCE.API_KEY as api_key  FROM bipd_users.USER, bipd_users.EQUIPE_ALAMUT_LICENCE, bipd_users.ALAMUT_LICENCE
+			SELECT USER.LOGIN as login, USER.EQUIPE_ID as equipe_id, ALAMUT_LICENCE.NAME as licence_alamut, ALAMUT_LICENCE.API_KEY as api_key, ALAMUT_LICENCE.INSTITUTION_KEY as institution_key  FROM bipd_users.USER, bipd_users.EQUIPE_ALAMUT_LICENCE, bipd_users.ALAMUT_LICENCE
 				where USER.login=? and USER.EQUIPE_ID=EQUIPE_ALAMUT_LICENCE.EQUIPE_ID and EQUIPE_ALAMUT_LICENCE.ALAMUT_ID=ALAMUT_LICENCE.ALAMUT_ID;
 		};
 		return $sql;
