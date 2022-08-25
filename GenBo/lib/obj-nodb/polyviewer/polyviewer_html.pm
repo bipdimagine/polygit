@@ -220,7 +220,7 @@ sub html_parent_line_variant {
 sub calling_variation {
 	my ($self) = @_;
 	my $gene = $self->variant->gene;
-	my $gene_name =  $gene->{name};
+	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
 	
@@ -239,6 +239,7 @@ sub calling_variation {
 	  if ($self->patient->isChild) {
 	  	if ($fam->getMother){
 	  		my $hsample = $samples->{$fam->getMother->id};
+	  	
 	  		$hsample->{button} =  qq{<button style='color:black;' onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"mother").qq{')">}.$fam->getMother->name.qq{</button>};
 	  		#$hsample->{button} = qq{<span class="badge badge-primary">}.$fam->getMother->name." ".$fam->getMother->small_icon.qq{</span>};
 	  		#
@@ -375,7 +376,7 @@ sub calling_cnv {
 	my($self) = @_;
 	my $gene = $self->variant->gene;
 	my $variation_id = $self->variant->id;
-	my $gene_name =  $gene->{name};
+	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $samples = $self->variant->patients_calling();
 	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
@@ -462,11 +463,6 @@ sub html_parent_line_variant_cnv {
 	my $color = "black";
 	my $pid = $self->patient_id;
 	
-	#warn Dumper $hvariation->{patients};
-	#die();
-	#if ($hvariation->{patients}->{$pid}->{model} =~ /denovo/ && ($sample->isMother or $sample->isFather))  {
-	#	$color = "lightgrey";
-	#}
 	my $parent_type = "" ;
 	my $sid = $sample->id;
 	$parent_type = "mother" if $sample->isMother;
@@ -586,7 +582,7 @@ sub alamut {
 	
 	my $start = $self->variant->start;
 	my $a0 = $self->variant->ref_allele;
-	my $a1 = $self->variant->allele;
+	my $a1 = $self->variant->var_allele;
 	my $chr_name = $self->variant->chromosome;
 	my $qq5 = qq{	<button    class="alamutView3" onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']);"></button>};
 	return $qq5;
@@ -733,6 +729,7 @@ sub gnomad {
 	$html.= $cgi->td($self->abutton($href,$self->put_text_minus($ac)));
 	#$html.= $cgi->td($self-abutton($href,));
 	$html.= $cgi->td($self->abutton($href,$self->put_text_minus($ac_ho)));
+	#$html.= $cgi->td("+++++") if  ($chr_name eq "X" or $chr_name eq "Y");
 	$html.= $cgi->td($self->abutton($href,$self->put_text_minus($ac_ho_male))) if  ($chr_name eq "X" or $chr_name eq "Y");
 	my $text =  qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>};
 	$text = $max_pop;
@@ -884,7 +881,7 @@ sub validations {
 				my $id = $self->variant->id;
 				my $gene_id = $self->variant->gene->{id};
 				my $cmd = qq{view_variation_validation(\'$id\', \'$gene_id\')};
-				$polyweb = $self->printButtonWithAlert($saved,[4,5],$project->buffer->value_validation->{$saved},qq{onClick="$cmd"}) ;
+				$polyweb = $self->printButtonWithCmd($saved,[4,5],$project->buffer->value_validation->{$saved},qq{onClick="$cmd"}) ;
 		}
 		if ($self->variant->hgmd_id){
 	 	my $n1 = $self->project->name;
@@ -903,7 +900,7 @@ sub validations {
 		else {
 			$html   .= $cgi->td($minus); 
 		}
-		if ($self->variant->clinvar){
+		if ($self->variant->clinvar_id){
 			my $nb =  $self->variant->clinvar_value;
 			my $cmd ="";
 			my $uc = qq{https://www.ncbi.nlm.nih.gov/clinvar/?term=}.$self->variant->clinvar_id."[alleleid]";
@@ -1027,7 +1024,6 @@ sub transcripts_variants {
 	my $gene = $self->variant->gene;
 	
 	my $atr = $self->variant->transcripts;
-	
 	 my $revel = $self->variant->revel;
 	
 	  unless( $revel eq "-"){
@@ -1191,7 +1187,7 @@ sub validation_select{
 	my $pname = $patient->name;
 	my $vid = $self->variant->id;
 	my $gene = $self->variant->gene;
-	my $tt = $patient->name."_".$self->variant->gene->{js_id};
+	my $tt = $patient->name."_".time;#$self->variant->gene->{js_id};
 	my $menu = $tt."_menu";
 	my $sp = $tt."_span";
 	my $tdid = $gene->{id}."_".rand(50);
