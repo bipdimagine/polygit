@@ -91,10 +91,11 @@ warn "coucou";
 	}
 	#push(@{$controls->{$r->id}},@hps2);
 
-
+	
 	warn "\t*******************".scalar (@hps2);
 	#die();
-	if (scalar (@hps2) < 5 ) {
+	 $max_controls = 10 if $project->isExome;
+	if (scalar (@hps2) < $max_controls ) {
 		warn scalar (@hps2);
 		find_other_patient($r,\@hps2);
 	}
