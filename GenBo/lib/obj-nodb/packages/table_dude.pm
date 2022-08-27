@@ -1061,7 +1061,6 @@ sub compute_uri {
 			$uri_text = $no3->get( $h->{best_transcript} . $uri_key."-$VERSION" );
 		
 		}
-		$uri_text = undef;
 		unless ($uri_text) {
 			my $t        = $project->newTranscript( $h->{best_transcript} );
 			my $coverage = polyweb_dude->new(
