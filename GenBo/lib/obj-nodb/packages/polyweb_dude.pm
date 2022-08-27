@@ -1049,10 +1049,9 @@ sub image {
 	my $index = 0;
 	$max = @{ $self->ordered_patients };
 	foreach my $p ( @{ $self->ordered_patients } ) {
-		
 		if ( exists $hcapture->{$p->getCapture->id}) {
 			#$true_patient->{$p->id} = $p;
-			push( @$true_patient, $p ) if $p->getCapture->id eq $capture->id;
+			push( @$true_patient, $p );# if $p->getCapture->id eq $capture->id;
 			$true_index->{$index}++;
 
 			#push($true_index,$index) ;
