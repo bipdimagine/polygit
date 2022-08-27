@@ -43,7 +43,6 @@ sub getListGenes {
 			last;
 		}
 	}
-	warn "first :".scalar(@$lists);
 	if ( $notok ) {
 		print qq{<div style="display: none">} if $print;
 		get_transcripts( $patient, $fork,$print );
@@ -1062,6 +1061,7 @@ sub compute_uri {
 			$uri_text = $no3->get( $h->{best_transcript} . $uri_key."-$VERSION" );
 		
 		}
+		$uri_text = undef;
 		unless ($uri_text) {
 			my $t        = $project->newTranscript( $h->{best_transcript} );
 			my $coverage = polyweb_dude->new(
@@ -1070,6 +1070,7 @@ sub compute_uri {
 				limit             => undef,
 				selected_patients => $patient->getFamily->getMembers
 			);
+			
 			my ( $image, $type ) = $coverage->image();
 			my $uri = URI->new("data:");
 			$uri->media_type("image/png");
