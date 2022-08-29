@@ -48,7 +48,7 @@ my $out;
 my $prg =  $cgi->url(-relative=>1);
 my $url_image = url(-absolute=>1);
 $url_image =~ s/$prg/image_coverage.pl/;
-
+$url_image =~ s/polydiag_old/validation_variation/;
 
 my $order = $cgi->param('order');
 

@@ -1039,17 +1039,19 @@ sub image {
 
 	my $hcolors;
 	my $type;
-
 	my $capture = $self->selected_patients->[0]->getCapture;
+	my $hcapture;
+	foreach my $p (@{$self->selected_patients}){
+		$hcapture->{$p->getCapture->id} = $p->getCapture;
+	}
 	my $true_patient;
 	my $true_index;
 	my $index = 0;
 	$max = @{ $self->ordered_patients };
-
 	foreach my $p ( @{ $self->ordered_patients } ) {
-
-		if ( $p->getCapture->id eq $capture->id ) {
-			push( @$true_patient, $p ) if $p->getCapture->id eq $capture->id;
+		if ( exists $hcapture->{$p->getCapture->id}) {
+			#$true_patient->{$p->id} = $p;
+			push( @$true_patient, $p );# if $p->getCapture->id eq $capture->id;
 			$true_index->{$index}++;
 
 			#push($true_index,$index) ;
@@ -1090,7 +1092,7 @@ sub image {
 	for ( my $i = 1 ; $i < 2 ; $i++ ) {
 		$x = 2;
 		for ( my $j = 0 ; $j < $nb_col ; $j++ ) {
-
+		warn $nb_col;
 		 #$image->rectangle($x-1,$y-1,$x+$nb_col*($size+2)+1,$y+$size+1,$black);
 			my $color = $mimosa;
 

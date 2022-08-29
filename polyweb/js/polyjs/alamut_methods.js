@@ -11,7 +11,6 @@ function httpGetFocusOn(url) {
 function displayInAlamut(chr, start, a){
 	chr = chr.replace('-', '');
 	var locus = "chr"+chr+":"+start+a[0]+">"+a[1];
-	httpGetFocusOn("http://localhost:10000/show?request="+locus);
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+locus);
 	launch_alamut_visual_plus_cmds(list_cmds);
@@ -21,7 +20,6 @@ function displayInAlamut(chr, start, a){
 function displayLocusInAlamut(chr, start, end){
 	chr = chr.replace('-', '');
 	var locus = "chr" + chr + ":" + start + "-" + end;
-	httpGetFocusOn("http://localhost:10000/show?request="+locus);
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+locus);
 	launch_alamut_visual_plus_cmds(list_cmds);
@@ -30,7 +28,6 @@ function displayLocusInAlamut(chr, start, end){
 
 function displayInAlamutVector(a){
 	console.log("http://localhost:10000/show?request="+a);
-	httpGetFocusOn("http://localhost:10000/show?request="+a);
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+a);
 	launch_alamut_visual_plus_cmds(list_cmds);
@@ -56,14 +53,12 @@ function httpGetLoadBam(){
 		if(p==patient){
 			var url_bam=dijit.byId("gridPatients").store.getValue(item2,"bam");
 			if (xmlHttp){
-				xmlHttp.open("GET", "http://localhost:10000/show?request="+gene+"&synchronous=true", true);
 				if (alamut_api_key) {
 					xmlHttp.open("GET", "http://localhost:10000/search?apikey="+alamut_api_key+"&request="+gene+"&synchronous=true", true);
 				}
 				xmlHttp.send(null);
 				xmlHttp.onreadystatechange=function(){
 					if (xmlHttp.readyState==4){
-						bamXmlHttp.open("GET", "http://localhost:10000/show?request=BAM%3Chttps://polyweb.fr/"+url_bam, true);
 						if (alamut_api_key) {
 							bamXmlHttp.open("GET", "http://localhost:10000/open?apikey="+alamut_api_key+"&filetype=BAM&path=https://polyweb.fr/"+url_bam, true);
 						}
@@ -77,24 +72,8 @@ function httpGetLoadBam(){
 
 function httpGetLoadListBam(string_list_bam){
 	var list_bam = String(string_list_bam).split(',');
-	var xmlHttp = null;
 	var item = dijit.byId("gridGenes").getItem(0);
 	var gene = dijit.byId("gridGenes").store.getValue(item,"label");
-	xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", "http://localhost:10000/show?request="+gene+"&synchronous=true", true);
-	xmlHttp.send(null);
-	xmlHttp.onreadystatechange=function(){
-		if (xmlHttp.readyState==4){
-			for(var i = 0; i < list_bam.length; i++){
-				var url_bam = "http://localhost:10000/show?request=BAM%3Chttps://www.polyweb.fr/"+list_bam[i];
-				var bamXmlHttp = null;
-				bamXmlHttp = new XMLHttpRequest();
-				bamXmlHttp.open("GET", url_bam, true);
-				bamXmlHttp.send(null);
-			}
-		}
-	}
-	
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+gene+"&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
@@ -105,22 +84,6 @@ function httpGetLoadListBam(string_list_bam){
 
 function httpGetLoadOnlyListBam(string_list_bam){
 	var list_bam = String(string_list_bam).split(',');
-	var xmlHttp = null;
-	xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", "http://localhost:10000/show?request=BRCA1&synchronous=true", true);
-	xmlHttp.send(null);
-	xmlHttp.onreadystatechange=function(){
-		if (xmlHttp.readyState==4){
-			for(var i = 0; i < list_bam.length; i++){
-				var url_bam = "http://localhost:10000/show?request=BAM%3Chttps://www.polyweb.fr/"+list_bam[i];
-				var bamXmlHttp = null;
-				bamXmlHttp = new XMLHttpRequest();
-				bamXmlHttp.open("GET", url_bam, true);
-				bamXmlHttp.send(null);
-			}
-		}
-	}
-	
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request=BRCA1&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
@@ -131,22 +94,6 @@ function httpGetLoadOnlyListBam(string_list_bam){
 
 function httpGetLoadOnlyListBamInGene(gene_name, string_list_bam){
 	var list_bam = String(string_list_bam).split(',');
-	var xmlHttp = null;
-	xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", "http://localhost:10000/show?request=" + gene_name + "&synchronous=true", true);
-	xmlHttp.send(null);
-	xmlHttp.onreadystatechange=function(){
-		if (xmlHttp.readyState==4){
-			for(var i = 0; i < list_bam.length; i++){
-				var url_bam = "http://localhost:10000/show?request=BAM%3Chttps://www.polyweb.fr/"+list_bam[i];
-				var bamXmlHttp = null;
-				bamXmlHttp = new XMLHttpRequest();
-				bamXmlHttp.open("GET", url_bam, true);
-				bamXmlHttp.send(null);
-			}
-		}
-	}
-	
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+gene_name+"&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
@@ -165,15 +112,16 @@ function launch_alamut_visual_plus_cmds(list_cmds) {
 		if (data.api_key) {
 			var licence = data.licence_alamut;
 			var api_key = data.api_key;
-			console.log("LOGIN: "+user_name+" - ALAMUT_LICENCE: "+licence+" - API_KEY: "+api_key);
+			var institution_key = data.institution_key;
+			console.log("LOGIN: "+user_name+" - ALAMUT_LICENCE: "+licence+" - API_KEY: "+api_key+" - INSTITUTION: "+institution_key);
 			var xmlHttp2 = null;
 			xmlHttp2 = new XMLHttpRequest();
-			xmlHttp2.open("GET", list_cmds[0]+"&apikey="+api_key, true);
+			xmlHttp2.open("GET", list_cmds[0]+"&apikey="+api_key+"&institution="+institution_key, true);
 			xmlHttp2.send(null);
 			xmlHttp2.onreadystatechange=function(){
 				if (xmlHttp2.readyState==4){
 					for(var i = 1; i < list_cmds.length; i++){
-						var url_request = list_cmds[i]+"&apikey="+api_key;
+						var url_request = list_cmds[i]+"&apikey="+api_key+"&institution="+institution_key;
 						var bamXmlHttp2 = null;
 						bamXmlHttp2 = new XMLHttpRequest();
 						bamXmlHttp2.open("GET", url_request, true);
