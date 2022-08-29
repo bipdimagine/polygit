@@ -178,6 +178,6 @@ var url_polyviewer = url_path+"/validation_variation/patient_report.pl";
 var url_hgmd_view = url_path+"/hgmd/view.pl";
 var url_report_quality = url_path+"/report/quality.pl";
 var url_igv_js = url_path+"/igv/load_igv.pl";
-
+var url_CNV_Patient = url_path + "/manta/Retrieve_allSV_Patient.pl";
 // mes tests
 // var url_parserManta = url_path + "/manta/parser_VcfManta.pl";

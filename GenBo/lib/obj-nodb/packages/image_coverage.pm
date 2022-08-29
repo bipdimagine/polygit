@@ -792,15 +792,18 @@ my $hcolors;
 		my $filebed =  $patient->project->getVariationsDir("duplicate_region_calling")."/regions/".$patient->name().".dup.bed";
 		my $span =$exon->getGenomicSpan->intersection($spanTr);#->intersection($exon->getGenomicSpan);
 		
-		if ($exon->isExon() && $exon->is_noncoding && $utr ==1 ){
+		if ($exon->isExon() && $exon->is_noncoding && $utr ne 1 ){
 			next;
 		}
 		my $pid =$patient->id;
 		my ($mean,$intspan,$min);
 
 			
-			my $pos = $exon->return_start_end_no_utr(padding=>$padding);
-			my $xa = [];
+		my $pos = $exon->return_start_end_no_utr(padding=>$padding);
+		if ($utr) {
+			$pos = $exon->return_start_end(padding=>$padding);
+		}
+		my $xa = [];
 			
 			
 			if ($pos){
@@ -1127,8 +1130,9 @@ sub horizontal_image_cnv {
 
 sub image_cache_cnv {
 	 my ($patients,$transcript,$primers) = @_;
+	my $debug;
+	$debug =1 if $transcript->name eq "ENST00000545496";
  $primers = $transcript->project->getPrimersByObjects($transcript) unless $primers;
-
 my $hrun_id;
 foreach my $p (@{$patients}) {
 	$hrun_id->{$p->getRun->id} ++;
@@ -1190,7 +1194,7 @@ my $hdata;
 			$max_event = $count if $count > $max_event;
 			$count = ($string =~ tr/2//);
 			$max_event = $count if $count > $max_event;
-		$data->{$patient->id}->{score_smooth} =  smooth_data($hdata->{$patient->id}->{score});
+			$data->{$patient->id}->{score_smooth} =  smooth_data($hdata->{$patient->id}->{score});
 	}
 	
 	my @color_background  = (223, 255, 216);
@@ -1206,15 +1210,18 @@ for  (my $i = 0 ; $i<@$primers;$i++ ){
 				my @colors =();
 			my $level = $primer->level($patient) ;
 			my $score = $primer->cnv_score($patient);
+			
 			my $vscore = $score; 
 				my $rscore = $score;
 				  $rscore =  $data->{$patient->id}->{score_smooth}->[$i] ;# if exists $hdata->{$patient->id}->{$primer->id};
-				 $score = $rscore;
+				 $score = $rscore if $score > 0.58;
+				 
+			warn $patient->name." ".$primer->name." ".$level." ".$score." ".$rscore if $debug && $primer->name eq "1_chrX_2878340";
+			
 			if ($level == 0 && exists $hdata->{$patient->id}->{level}) {
 				my $sd = $primer->sd($patient);
 				
-			
-			
+			  warn "\tcoucou" if $debug && $primer->name eq "1_chrX_2878340";
 				 if ($rscore - $sd/2 >= 1.3){
 					$level = 3;
 				}	
@@ -1222,6 +1229,7 @@ for  (my $i = 0 ; $i<@$primers;$i++ ){
 					$level = 4;
 				}	
 			}
+			
 			my $name = $patient->name;
 			@colors = (223, 255, 216);
 			@colors =@color_background;
@@ -1253,14 +1261,16 @@ for  (my $i = 0 ; $i<@$primers;$i++ ){
 					
 				}
 				elsif ($level ==0){
+					warn "cuicui $score" if $debug && $primer->name eq "1_chrX_2878340";;
 					#FFC9CF
 					if ($score <=0.1){
 						@colors = (0, 0,0)
 					}
-					elsif ($score <=0.55){
+					elsif ($score <=0.58){
 						@colors = (254, 138, 53)
 					}
-						elsif ($score <=0.6){
+					
+					elsif ($score <=0.6){
 						@colors =(246, 179, 134);
 					}
 					elsif ($score <=0.7){
@@ -1321,7 +1331,6 @@ return $re;
 sub find_previous {
 	my ($pos,$data) = @_;
 	return ($pos,undef) if $pos-1 <= 0;
-	warn $pos unless $data->[$pos-1] ;
 	return ($pos-1,$data->[$pos-1]) if $data->[$pos-1] ne -1;
 	return find_previous($pos-1,$data);
 	
