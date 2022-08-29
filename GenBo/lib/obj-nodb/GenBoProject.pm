@@ -580,6 +580,15 @@ has lmdb_cache_dir => (
 		return $self->makedir($dir);
 	}
 );
+has rocks_cache_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir  = $self->getCacheBitVectorDir() . "/rocks";
+		return $self->makedir($dir);
+	}
+);
 
 has lmdb_cache_variations_dir => (
 	is      => 'ro',
@@ -1148,10 +1157,20 @@ is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self     = shift;
-		my $pathRoot = "/data-dragen/pipeline/";
+		my $pathRoot = $self->buffer->config->{dragen}->{pipeline};
 		my $path     = $pathRoot . "/" . $self->name() . "/";
 		$path .= $self->getVersion . "/";
 		return $path;
+	},
+);
+has dragen_fastq => (
+is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = $self->buffer->config->{dragen}->{pipeline};
+		my $path     = $pathRoot . "/" . $self->getRun->name()."/";
+		return ($self->makedir($path));
 	},
 );
 has project_dragen_pipeline_path => (
@@ -1159,11 +1178,21 @@ has project_dragen_pipeline_path => (
 	lazy    => 1,
 	default => sub {
 		my $self     = shift;
-		my $pathRoot = "/data-dragen/pipeline/";
-		my $path     = $pathRoot . "/" . $self->name() . "/";
-		$self->makedir($path);
-		$path .= $self->getVersion . "/";
 		return $self->makedir($self->project_dragen_pipeline_path_name);
+	},
+);
+has project_dragen_demultiplex_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = "/data-dragen/fastq/";
+		my $run = $self->getRuns->[0];
+		die() if scalar(@{$self->getRuns}) > 1;
+		
+		my $path     = $pathRoot . "/" . $run->name().".".$self->name. "/";
+		$self->makedir($path);
+		return $path;
 	},
 );
 has project_metrics_path => (
@@ -1378,7 +1407,7 @@ sub get_gencode_directory {
 
 sub get_public_data_directory {
 	my ( $self, $database, $version ) = @_;
-	return $self->{directory}->{$database} if exists $self->{directory}->{$database};
+	return $self->{directory}->{$database} if exists $self->{directory}->{$database} ;
 	$version = $self->public_database_version unless $version;
 	$self->{directory}->{$database} =
 		$self->public_data_root . "/"
@@ -2215,6 +2244,7 @@ has pipelineDir => (
 		return $self->project_pipeline_path;
 	},
 );
+
 has pipelineDragen => (
 	is      => 'ro',
 	lazy    => 1,
@@ -3824,6 +3854,7 @@ sub getAlignmentDirName {
 	#return $self->makedir($path);
 }
 
+
 sub existsAlignmentDir {
 	my ($self) = @_;
 	my $path = $self->project_path . "/align/";
@@ -3832,6 +3863,24 @@ sub existsAlignmentDir {
 	#return $self->makedir($path);
 }
 
+
+
+has CellRangerDir => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->project_path . "/cellranger/";
+		return $path;
+
+	},
+);
+
+sub getCellRangerRootDir {
+	my ($self) = @_;
+	my $path = $self->CellRangerDir;
+	return $self->makedir($path);
+}
 sub getAlignmentRootDir {
 	my ($self) = @_;
 	my $path = $self->project_path . "/align/";
@@ -4483,7 +4532,7 @@ sub liteObjectId {
 
 sub getGenBoId {
 	my ( $self, $geneId ) = @_;
-	
+	#delete $self->{liteAnnotations};
 	my $syno = $self->liteAnnotations->get( "synonyms", $geneId );
 	return $syno;
 
@@ -4495,6 +4544,8 @@ sub getGenBoId {
 
 sub getGenBoIds {
 	my ( $self, $geneId ) = @_;
+	#delete  $self->{liteAnnotations};
+	
 	my $syno = $self->liteAnnotations->get_key_values( "synonyms", $geneId );
 	return $syno;
 }
