@@ -122,6 +122,57 @@ has description => (
 	},
 );
 
+has fastq_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self        = shift;
+		my $machine     = $self->machine;
+		my $run_name    = $self->plateform_run_name();
+		my $constructor = $self->machine_constructor();
+		my $plateform   = $self->plateform();
+		my $path        = $self->buffer()->getDataDirectory("sequences");
+
+		my $seq_dir =
+			$path . "/"
+		  . $constructor . "/"
+		  . $machine . "/"
+		  . $plateform
+		  . "/$run_name/";
+		my $seq_dir2 =
+			$path . "/"
+		  . $constructor . "/"
+		  . $machine . "/"
+		  . $plateform
+		  . "/$run_name.saved/";
+		return $seq_dir2 if -e $seq_dir2;
+		return $seq_dir;
+
+	},
+);
+
+
+has bcl_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self        = shift;
+		my $machine     = $self->machine;
+		my $run_name    = $self->run_name();
+		my $constructor = $self->machine_constructor();
+		my $plateform   = $self->plateform();
+		my $path        = "/data-isilon/raw-data/";#$self->buffer()->getDataDirectory("bcl");
+
+		my $seq_dir =
+			$path . "/"
+		  . $constructor . "/"
+		  . $machine . "/"
+		  . $plateform
+		  . "/$run_name/";
+		return $seq_dir;
+
+	},
+);
 has plateform_run_name => (
 	is		=> 'ro',
 
@@ -131,7 +182,25 @@ has plateform_run_name => (
 		return $self->infosRun->{plateform_run_name};
 	},
 );
+has run_name => (
+	is		=> 'ro',
 
+	lazy 	=> 1,
+	default => sub {
+		my $self = shift;
+		return $self->infosRun->{run_name};
+	},
+);
+has sample_sheet => (
+	is		=> 'ro',
+
+	lazy 	=> 1,
+	default => sub {
+		my $self = shift;
+		warn Dumper $self->infosRun->{document};
+		return connect::uncompressData($self->infosRun->{document});
+	},
+);
 
 has date => (
 	is		=> 'ro',
