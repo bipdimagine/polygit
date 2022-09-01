@@ -217,11 +217,14 @@ method mean_intspan_coverage (GenBoPatient :$patient, Int :$padding, Int :$limit
 	return @{$self->{coding_stats}->{$patient->id}->{$sstart.$send}} if exists $self->{coding_stats}->{$patient->id}->{$sstart.$send};
 	 #$self->getTranscript->getGene->get_coverage($patient) unless exists  $self->getTranscript->{coverage_obj}->{$patient->id};
 	
-	my $res2 = $self->coverage_object($patient)->coverage($sstart,$send);
-	
+	my $res2 = $patient->getDepth($self->getChromosome->name,$sstart,$send);
+	my $mean = sum(@$res2)/scalar(@$res2);
+	my $min = min(@$res2);
+	#$self->coverage_object($patient)->coverage($sstart,$send);
+	my $array = [$mean,$intspan,$min]
 	#my $res2 = $self->getTranscript->getGene->get_coverage($patient)->coverage($sstart,$send);
-	$self->{stats}->{$patient->id}->{$padding} = [$res2->{mean},$intspan,$res2->{min}];
-	$self->{coding_stats}->{$patient->id}->{$sstart.$send}  = [$res2->{mean},$intspan,$res2->{min}];
+	$self->{stats}->{$patient->id}->{$padding} = $array;
+	$self->{coding_stats}->{$patient->id}->{$sstart.$send}  = $array;
 	
 	return @{$self->{stats}->{$patient->id}->{$padding} };#($res2->{mean},$intspan,$res2->{min});
 	
