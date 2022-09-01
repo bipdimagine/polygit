@@ -176,30 +176,33 @@ method computed_statistic_coverage_coding (GenBoPatient :$patient, Int :$padding
 }
 
 method statistic_coverage_coding (GenBoPatient :$patient, Int :$padding, Int :$limit, Int :$utr ){
-	return $self->mean_intspan_coverage(patient=>$patient,padding=>$padding,limit=>$limit) if $utr > 0;
-	return $self->mean_intspan_coverage_coding(patient=>$patient,padding=>$padding,limit=>$limit);
+	return $self->mean_intspan_coverage($patient,$padding,$limit) if $utr > 0;
+	return $self->mean_intspan_coverage_coding($patient,$padding,$limit);
 	
 }
-method mean_intspan_coverage_coding (GenBoPatient :$patient, Int :$padding, Int :$limit ){
+sub mean_intspan_coverage_coding{
+ my ($self,$patient, $padding,$limit ) =@_;
 	return @{$self->{coding_stats}->{$patient->id}->{$padding}} if exists $self->{coding_stats}->{$patient->id}->{$padding};
 	return (0,$self->intspan_no_utr,-1) if $self->intspan_no_utr->is_empty;
 
 			my $intspan = Set::IntSpan::Fast::XS->new();
-			my $mean;
-			my $min;
 			
 	
 	my $pos = $self->return_start_end_no_utr(padding=>$padding);
 
 	my $sstart = $pos->{start};
 	my $send = $pos->{end} ;
+	
 	return @{$self->{coding_stats}->{$patient->id}->{$sstart.$send}} if exists $self->{coding_stats}->{$patient->id}->{$sstart.$send};
 	
 	# $self->getTranscript->getGene->get_coverage($patient) unless exists  $self->getTranscript->{coverage_obj}->{$patient->id};
-
+	my $res2 = $patient->depth($self->getChromosome->name,$sstart,$send);
+	my $mean = sum(@$res2)/scalar(@$res2);
+	my $min = min(@$res2);
+	my $array = [$mean,$intspan,$min];
 	my $res2 =  $self->coverage_object($patient)->coverage($sstart,$send);#$self->getTranscript()->getGene->get_coverage($patient)->coverage($sstart,$send);
-	$self->{coding_stats}->{$patient->id}->{$padding} = [$res2->{mean},$intspan,$res2->{min}];
-	$self->{coding_stats}->{$patient->id}->{$sstart.$send}  = [$res2->{mean},$intspan,$res2->{min}];
+	$self->{coding_stats}->{$patient->id}->{$padding} = $array;
+	$self->{coding_stats}->{$patient->id}->{$sstart.$send}  = $array;
 	return @{$self->{coding_stats}->{$patient->id}->{$padding}};
 }
 sub  mean_intspan_coverage {
@@ -216,7 +219,7 @@ sub  mean_intspan_coverage {
 	return @{$self->{coding_stats}->{$patient->id}->{$sstart.$send}} if exists $self->{coding_stats}->{$patient->id}->{$sstart.$send};
 	 #$self->getTranscript->getGene->get_coverage($patient) unless exists  $self->getTranscript->{coverage_obj}->{$patient->id};
 	
-	my $res2 = $patient->getDepth($self->getChromosome->name,$sstart,$send);
+	my $res2 = $patient->depth($self->getChromosome->name,$sstart,$send);
 	my $mean = sum(@$res2)/scalar(@$res2);
 	my $min = min(@$res2);
 	#$self->coverage_object($patient)->coverage($sstart,$send);

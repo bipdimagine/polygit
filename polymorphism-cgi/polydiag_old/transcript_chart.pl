@@ -91,7 +91,7 @@ my @exons = sort{$a->start*$a->strand <=> $b->start*$b->strand} @{$tr->getExons}
 my $i=0;
 my @hexons;
 foreach my $exon (@exons){
-	
+	 
 	my $h;
 	$h->{name} = $exon->name;
 foreach my $patient (@{$run->getPatients}){
