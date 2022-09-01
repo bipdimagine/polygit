@@ -202,13 +202,12 @@ method mean_intspan_coverage_coding (GenBoPatient :$patient, Int :$padding, Int 
 	$self->{coding_stats}->{$patient->id}->{$sstart.$send}  = [$res2->{mean},$intspan,$res2->{min}];
 	return @{$self->{coding_stats}->{$patient->id}->{$padding}};
 }
-method mean_intspan_coverage (GenBoPatient :$patient, Int :$padding, Int :$limit ){
+sub  mean_intspan_coverage {
+	
+ my ($self,$patient,$padding,$limit ) =@_;
 	
 	return @{$self->{stats}->{$patient->id}->{$padding}} if exists $self->{stats}->{$patient->id}->{$padding};
-			my $intspan = Set::IntSpan::Fast::XS->new();
-			my $mean;
-			my $min;
-			
+	my $intspan = Set::IntSpan::Fast::XS->new();
 	
 
 	#my $pos = $self->return_start_end_no_utr(padding=>$padding);
@@ -221,7 +220,7 @@ method mean_intspan_coverage (GenBoPatient :$patient, Int :$padding, Int :$limit
 	my $mean = sum(@$res2)/scalar(@$res2);
 	my $min = min(@$res2);
 	#$self->coverage_object($patient)->coverage($sstart,$send);
-	my $array = [$mean,$intspan,$min]
+	my $array = [$mean,$intspan,$min];
 	#my $res2 = $self->getTranscript->getGene->get_coverage($patient)->coverage($sstart,$send);
 	$self->{stats}->{$patient->id}->{$padding} = $array;
 	$self->{coding_stats}->{$patient->id}->{$sstart.$send}  = $array;
