@@ -197,7 +197,6 @@ has sample_sheet => (
 	lazy 	=> 1,
 	default => sub {
 		my $self = shift;
-		warn Dumper $self->infosRun->{document};
 		return connect::uncompressData($self->infosRun->{document});
 	},
 );
