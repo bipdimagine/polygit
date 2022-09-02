@@ -84,13 +84,15 @@ foreach my $patient ( @{$patients}){
 			next if  $cgi_exon ne $exon->name();
 			
 		}
-		my $data = $exon->getTranscript()->get_coverage($patient)->coverage($exon->start,$exon->end);
-		my $nn = $data->{nb};
-		if ($nn >0){
-		my $s = $data->{sum};
-		$sum_patient += $s /$nn;
+		my $data = $patient->meanDepth($exon->getChromosome->name,$exon->start,$exon->end);
+		warn $data;
+		#$exon->getTranscript()->get_coverage($patient)->coverage($exon->start,$exon->end);
+		#my $nn = $data->{nb};
+		#if ($nn >0){
+		#my $s = $data->{sum};
+		$sum_patient += $data;
 		$i++;
-		}
+		#}
 	
 	}
 	
