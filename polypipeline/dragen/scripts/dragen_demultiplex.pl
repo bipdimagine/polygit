@@ -112,7 +112,7 @@ $lines->{"[Settings]"}=[];
 
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]);
-push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]);
+push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
 
 my $lheader_data = shift @{$lines->{"[Data]"}};
 if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
