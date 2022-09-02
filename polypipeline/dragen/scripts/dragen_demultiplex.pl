@@ -101,12 +101,15 @@ foreach my $line(@$aoa){
 }
 
 #change setting
+
 foreach my $set (@{$lines->{"[Settings]"}}){
 	if ($set->[0] eq "Adapter") {
 		$set->[0] = "AdapterRead1"
 	}
 	
 }
+$lines->{"[Settings]"}=[];
+
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]);
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]);
