@@ -65,9 +65,9 @@ sub getProjectListsRNA {
 	foreach my $h (@$list_proj) {
 		my $h_users;
 		foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
-#		unless ($is_BIPD_login) {
-#			next unless exists $h_users->{$login};
-#		}
+		unless ($is_BIPD_login) {
+			next unless exists $h_users->{$login};
+		}
 		my $name = $h->{name};
 		my $b1 = GBuffer->new;
 		my $p1 = $b1->newProject( -name => $name );
