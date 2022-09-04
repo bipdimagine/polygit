@@ -45,6 +45,7 @@ use GenBoNoSql;
 use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
+use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
@@ -4309,6 +4310,19 @@ has dejavuSV1 => (
 	}
 );
 
+has dejavuJunctions => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = '/data-isilon/bipd-src/mbras/dejavu_junctions/'.$release.'/';
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctions->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
 
 has dejavuSVIntervalTree => (
 	is		=> 'ro',
@@ -5981,6 +5995,55 @@ has get_path_rna_seq_junctions_root  => (
 		my $self = shift;
 		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
 		return $path;
+	},
+);
+
+has get_path_rna_seq_junctions_analyse_description_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/RNAseqSEA/";
+		return $path;
+	},
+);
+
+has get_hash_patients_description_rna_seq_junction_analyse => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $project_name = $self->name;
+		my (@lFilesDescription, $hType_patients);
+		my $path_rna_description = $self->get_path_rna_seq_junctions_analyse_description_root();
+		opendir my ($dir), $path_rna_description;
+		my @found_files = readdir $dir;
+		closedir $dir;
+		foreach my $file (@found_files) {
+			next if (not $file =~ /SamplesTypes_/);
+			push(@lFilesDescription, $path_rna_description.'/'.$file);
+		}
+		foreach my $file (@lFilesDescription) {
+			next if (not -e $file);
+			open (FILE, $file);
+			my (@lPat, @lCtrl);
+			while (<FILE>) {
+				chomp($_);
+				my $line = $_;
+				next if not $line =~ /$project_name/;
+				my ($pat_name, $type, $proj_name) = split(' ', $line);
+				$hType_patients->{$pat_name}->{lc($type)} = undef;
+				push(@lPat, $pat_name) if (lc($type) eq 'pat');
+				push(@lCtrl, $pat_name) if (lc($type) eq 'ctrl');
+			}
+			close(FILE);
+			foreach my $pat_name (@lPat) {
+				foreach my $ctrl (@lCtrl) {
+					$hType_patients->{$pat_name}->{used_ctrl}->{$ctrl} = undef;
+				}
+			}
+		}
+		return $hType_patients;
 	},
 );
 

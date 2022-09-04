@@ -523,7 +523,7 @@
             
             $(document).ready(function () {
 	            setTimeout(function() {
-	            	document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> Please Wait... We are launching PolyRNA for project " + project_name;
+	            	document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> STEP 1/2 - Please Wait... We are launching PolyRNA for project " + project_name;
 					launch();
 				}, 3000);
 	    	});
@@ -544,7 +544,10 @@
 			    		document.getElementById("content_res").innerHTML = "<span style='color:red;'>ERROR... Impossible to open Project " + project_name + " with user " + user_name +"</span>";
 			    	}
 			    	else {
-			    		document.getElementById("content_res").innerHTML = "<a href='" + url_docker + "' target='_blank'>Click to launch PolyRNA :)</a>";
+			            setTimeout(function() {
+	            			document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> STEP 2/2 - Please Wait... We are launching PolyRNA for project " + project_name;
+			            	document.getElementById("content_res").innerHTML = "<a href='" + url_docker + "' target='_blank'>Click to launch PolyRNA :)</a>";
+						}, 1500);
 		    		}
 			    });
 		    }

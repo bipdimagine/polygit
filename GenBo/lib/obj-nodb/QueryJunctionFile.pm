@@ -67,22 +67,14 @@ sub parse_file_RI {
 		next if $h_junction->{'junc_ri_start'} eq 'na';
 		next if $h_junction->{'junc_ri_end'} eq 'na';
 		my ($h, $hchr);
-		$h->{isRI} = 1;
-		$h->{isSE} = 0;
-		$h->{id} = $h_junction->{'chr'}.'_'.$h_junction->{'junc_ri_start'}.'_'.$h_junction->{'junc_ri_end'}.'_RI_'.$h_junction->{'junc_ri_count'}.'_'.$h_junction->{'junc_normale_count'};
+		$h->{id} = $h_junction->{'chr'}.'_'.$h_junction->{'junc_ri_start'}.'_'.$h_junction->{'junc_ri_end'}.'_RI';
 		my $h_chr_id;
 		$h_chr_id->{$h_junction->{'chr'}} = undef;
 		$h->{chromosomes_object} = $h_chr_id;
 		$h->{start} = $h_junction->{'junc_ri_start'};
 		$h->{end} = $h_junction->{'junc_ri_end'};
-		$h->{score} = $h_junction->{'score'};
-		$h->{nb_new_count} = $h_junction->{'junc_ri_count'};
-		$h->{nb_normal_count} = $h_junction->{'junc_normale_count'};
 		delete $h_junction->{'junc_ri_start'};
 		delete $h_junction->{'junc_ri_end'};
-		delete $h_junction->{'score'};
-		delete $h_junction->{'junc_ri_count'};
-		delete $h_junction->{'junc_normale_count'};
 		$h->{annex} = $h_junction;
 		push(@lJunctions, $h);
 	}
@@ -98,21 +90,13 @@ sub parse_file_SE {
 		next if $h_junction->{'junc_se_start'} eq 'na';
 		next if $h_junction->{'junc_se_end'} eq 'na';
 		my $h;
-		$h->{isRI} = 0;
-		$h->{isSE} = 1;
-		$h->{id} = $h_junction->{'chr'}.'_'.$h_junction->{'junc_se_start'}.'_'.$h_junction->{'junc_se_end'}.'_SE_'.$h_junction->{'junc_se_count'}.'_'.$h_junction->{'junc_normale_count'};
+		$h->{id} = $h_junction->{'chr'}.'_'.$h_junction->{'junc_se_start'}.'_'.$h_junction->{'junc_se_end'}.'_SE';
 		$h->{chromosomes_object} = { $h_junction->{'chr'} => undef };
 		$h->{start} = $h_junction->{'junc_se_start'};
 		$h->{end} = $h_junction->{'junc_se_end'};
-		$h->{score} = $h_junction->{'score'};
-		$h->{nb_new_count} = $h_junction->{'junc_se_count'};
-		$h->{nb_normal_count} = $h_junction->{'junc_normale_count'};
 		#delete $h_junction->{'chr'};
 		delete $h_junction->{'junc_se_start'};
 		delete $h_junction->{'junc_se_end'};
-		delete $h_junction->{'score'};
-		delete $h_junction->{'junc_se_count'};
-		delete $h_junction->{'junc_normale_count'};
 		$h->{annex} = $h_junction;
 		push(@lJunctions, $h);
 	}
@@ -127,15 +111,21 @@ sub parse_results_file {
 	while (<FILE>) {
 		my $line = $_;
 		chomp($_);
-		if ($i == 0) { $h_header = parse_header($line); }
+		if ($i == 0) {
+			$h_header = parse_header($line);
+		}
 		else {
 			my $h_res;
 			my $nb_col = 0;
 			my @l_col = @{parse_line($line)};
+			if (not scalar(@l_col) == scalar keys %$h_header) {
+				warn "\n$line\n\n";
+				confess("\nERROR parsing file... no same nb columns...\nFile: $file_name\n\n");
+			}
 			if ($l_col[0] ne 'NA') {
 				foreach my $res (@l_col) {
 					my $cat = $h_header->{$nb_col};
-					confess("error parsing file...") unless ($cat);
+					confess("\nERROR parsing file... no header...\nFile: $file_name\n\n") unless ($cat);
 					$h_res->{lc($cat)} = $res;
 					$nb_col++;
 				}
