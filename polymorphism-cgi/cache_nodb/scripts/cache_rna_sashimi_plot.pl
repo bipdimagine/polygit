@@ -44,14 +44,24 @@ my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name );
 $project->getChromosomes();
 my $patient = $project->getPatient($patient_name);
+$patient->use_not_filtred_junction_files(0);
 
-my $pm = new Parallel::ForkManager($fork);
-foreach my $junction (@{$patient->getJunctions()}) {
-	my $pid = $pm->start and next;
-	$junction->createListSashimiPlots($patient);
-	print FILE 'Ok junction '.$junction->id()."\n";
-	$pm->finish();
+my $hType_patients;
+$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
+
+if ($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) {
+	my $pm = new Parallel::ForkManager($fork);
+	foreach my $junction (@{$patient->getJunctions()}) {
+		my $pid = $pm->start and next;
+		$junction->createListSashimiPlots($patient);
+		print FILE 'Ok junction '.$junction->id()."\n";
+		$pm->finish();
+	}
+	$pm->wait_all_children();
 }
-$pm->wait_all_children();
-close (FILE);
+else {
+	print FILE "Patient $patient_name is a control\n";
+}
 
+close (FILE);
+exit(0);

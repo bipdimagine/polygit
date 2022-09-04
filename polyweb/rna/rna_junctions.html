@@ -647,6 +647,7 @@
 			var dict_results_patients = {};
 			var dict_table_patients_name = {};
 			function launch_patient(patient_name) {
+				document.getElementById("content_res").innerHTML = "";
 	    		var text_loading = 'Loading patient ' + patient_name;
 				show_waiting(text_loading);
 				if (patient_name in dict_results_patients) {
@@ -670,10 +671,10 @@
 								var myNode = document.getElementById("content_res");
 						    	var myPanel = $(val);
 								myPanel.appendTo(myNode);
-								dict_results_patients[patient_name] = val;
-								document.getElementById('span_'+patient_name).setAttribute("style", "color:red;font-size:11px;");
+//								dict_results_patients[patient_name] = val;
+//								document.getElementById('span_'+patient_name).setAttribute("style", "color:red;font-size:11px;");
 								enable_table_search(data.table_id);
-								dict_table_patients_name[patient_name] = data.table_id;
+//								dict_table_patients_name[patient_name] = data.table_id;
 								dijit.byId('waiting').hide();
 							}
 						});
@@ -760,6 +761,24 @@
 				else { list_bams_files.push(bams_files); }
 				displayListBamInIgvApp(list_bams_files);
 			}
+			
+			function view_deja_vu_rna_junction(project_name, patient_name, junction_id) {
+				show_waiting("Search DejaVu");
+				var url = url_path + "/polydejavu/dejavu_jonction.pl";
+				url += "?project=" + project_name;
+				url += "&patient=" + patient_name;
+				url += "&id=" + junction_id;
+				
+				$.getJSON( url, function( data ) {
+					document.getElementById("dialog_dejavu_junction").innerHTML = data.html;
+					//document.getElementById("dialog_dejavu_junction").innerHTML += "<br>" + data.html_my_variant;
+					document.getElementById("dialog_dejavu_junction").innerHTML += "<center><button onclick='dijit.byId(\"dialog_dejavu_junction\").hide()'>Close</button></center>";
+					enable_table_search(data.table_id);
+					dijit.byId('waiting').hide();
+					dijit.byId('dialog_dejavu_junction').show();
+			    })
+				
+			}
 		    	
 	    	function enable_table_search(id) {
 	    		$('#'+id).bootstrapTable();
@@ -803,6 +822,8 @@
         </div>
 		
 		<div id="dialog_sashimi" dojoType="dojox.widget.Dialog" dimensions="[920,600]" title="Sashimi PLOT"></div>
+		
+		<div id="dialog_dejavu_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[920,700]" title="DejaVu Junction"></div>
         
         <div id="dialog_svg" dojoType="dijit.Dialog" onClick="dijit.byId('dialog_svg').hide();" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;"></div>
 
