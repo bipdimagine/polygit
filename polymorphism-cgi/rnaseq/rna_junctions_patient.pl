@@ -18,6 +18,7 @@ use session_export;
 my $cgi    = new CGI;
 my $project_name = $cgi->param('project');
 my $use_patient = $cgi->param('patient');
+my $view_all_junctions = $cgi->param('view_all_junctions');
 my $isChrome = $cgi->param('is_chrome');
 
 my $buffer = GBuffer->new;
@@ -25,26 +26,45 @@ my $project = $buffer->newProject( -name => $project_name );
 $project->getChromosomes();
 my $patient = $project->getPatient($use_patient);
 
-
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
+
+
+my $max_patients = 0;
+my $hType_patients;
+$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
+my $h_junctions_dejavu_run;
+foreach my $patient (@{$project->getPatients()}) {
+	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
+		print '.';
+		$patient->use_not_filtred_junction_files(0) unless ($view_all_junctions);
+		foreach my $junction (@{$patient->getJunctions()}) {
+			my $junction_id = $junction->id();
+			$junction_id =~ s/_RI/_junction/;
+			$junction_id =~ s/_SE/_junction/;
+			$h_junctions_dejavu_run->{$junction_id} = scalar(@{$junction->getPatients()});
+		}
+		$max_patients++;
+	}
+}
 
 my $patient_name = $patient->name();
 my $table_id = 'table_'.$patient_name;
 my $html;
-if (not $isChrome) {
-	$html .= qq{<center><span style='color:green;font-size:15px'><u><i><b>TIPS:</b></u> use Chrome web navigator for a best experience :)</i></span></center><br>};
-}
+#if (not $isChrome) {
+#	$html .= qq{<center><span style='color:green;font-size:15px'><u><i><b>TIPS:</b></u> use Chrome web navigator for a best experience :)</i></span></center><br>};
+#}
 my $release = ' - <b>Release:</b> '.$project->getVersion();
 my $gencode;
 $gencode = ' - <b>Gencode version:</b> '.$project->gencode_version() if ($release =~ /HG19/);
 $html .= qq{<center><span style='color:red;font-size:13px'>Patient $patient_name</span>$release$gencode</center>};
-$html .= qq{<table id='$table_id' data-sort-name='score' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
+$html .= qq{<table id='$table_id' data-sort-name='score' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 20, 30]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
 $html .= qq{<th data-field="figs"><b><center>Figure</center></b></th>};
 $html .= qq{<th data-field="sashimi"><b><center>Sashimi Plot</center></b></th>};
 $html .= qq{<th data-filter-control='select' data-sortable="select" data-field="junction_type"><b><center>Junction Type</center></b></th>};
+$html .= qq{<th data-filter-control='select' data-sortable="select" data-field="junction_type_description"><b><center>Junction Type Description</center></b></th>};
 $html .= qq{<th data-filter-control='input' data-sortable="true" data-field="ensid"><b><center>ENSID</center></b></th>};
 $html .= qq{<th data-filter-control='input' data-sortable="true" data-field="gene"><b><center>Gene</center></b></th>};
 $html .= qq{<th data-filter-control='input' data-sortable="true" data-field="chr"><b><center>Chr</center></b></th>};
@@ -52,36 +72,75 @@ $html .= qq{<th data-sortable="true" data-field="start"><b><center>Start</center
 $html .= qq{<th data-sortable="true" data-field="end"><b><center>End</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="junc_count"><b><center>Junction Count</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="normal_count"><b><center>Normal Count</center></b></th>};
-$html .= qq{<th data-sortable="true" data-field="score"><b><center>Score</center></b></th>};
-$html .= qq{<th data-sortable="true" data-field="dejavu"><b><center>DejaVu</th>};
-$html .= qq{<th data-sortable="true" data-field="dejavu_run"><b><center>DejaVu InThisRun</th>};
+$html .= qq{<th data-filter-control='input' data-filter-default=">=1" data-sortable="true" data-field="score"><b><center>Score</center></b></th>};
+#$html .= qq{<th data-sortable="true" data-field="dejavu_cnv"><b><center>DejaVu CNVs</th>};
+$html .= qq{<th data-filter-control='input' data-filter-default="<=3" data-sortable="true" data-field="dejavu_junctions_run"><b><center>DejaVu Junctions InThisRun</b><br>- };
+$html .= ($max_patients-1).qq{ other(s) patient(s) -</th>};
+$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center>DejaVu Junctions</b></th>};
 $html .= qq{</thead>};
 $html .= qq{<tbody>};
 
-
-
+my $h_dejavu_cnv;
 my $n = 0;
 foreach my $junction (@{$patient->getJunctions()}) {
 	$n++;
 	print '.' if ($n % 100);
-	$junction->getPatients();
+	next if (not $junction->is_filtred_results($patient));
 	
-	my $ensid = $junction->annex->{ensid};
-	my $gene_name = $junction->annex->{gene};
+	$junction->getPatients();
+	my $ensid = $junction->annex->{$patient->name()}->{ensid};
+	my $gene_name = $junction->annex->{$patient->name()}->{gene};
 	my $chr_id = $junction->getChromosome->id();
 	my $start = $junction->start();
 	my $end = $junction->end();
-	my $type_junction;
-	$type_junction = 'RI' if $junction->isRI();
-	$type_junction = 'SE' if $junction->isSE();
-	my $count_new_junction = $junction->nb_new_count();
-	my $count_normal_junction = $junction->nb_normal_count();
-	my $score = $junction->score();
+	my @lTypes;
+	push(@lTypes, 'RI') if $junction->isRI($patient);
+	push(@lTypes, 'SE') if $junction->isSE($patient);
+	my $type_junction = join('+', @lTypes);
+	my $type_junction_description = $junction->getTypeDescription($patient);
+	my $count_new_junction = $junction->get_nb_new_count($patient);
+	my $count_normal_junction = $junction->get_nb_normal_count($patient);
+	my $score = sprintf("%.4f", $junction->get_score($patient));
 	
-	#my $dv_all = $junction->dejavu_all();
-	#my $dv_run = $junction->dejavu_in_this_run();
-	my $dv_all = '.';
-	my $dv_run = '.';
+	my $dv_cnv = '.';
+	
+	#DEJAVU JUNCTIONS
+	my $dv_junctions_in_this_run = '.';
+	my $junction_dv_id = $type_junction.'_'.$start.'_'.$end;
+	my $nb_pat_run = scalar(@{$junction->getPatients()}) - 1;
+	#$dv_junctions_in_this_run = $nb_pat_run.'/'.($max_patients - 1) if ($nb_pat_run);
+	$dv_junctions_in_this_run = $nb_pat_run;
+	
+	my $dv_junctions = '.';
+	my (@lDvJunctions_resume, $h_tmp_dv);
+	foreach my $h (@{$junction->get_dejavu_list_similar_junctions_resume(98)}) {
+		my $this_id = $h->{id};
+		my $nb_proj = $h->{projects};
+		my $nb_pat = $h->{patients};
+		my $same_as = $h->{same_as};
+		$same_as =~ s/%//;
+		if ($same_as == 100 and exists $h_junctions_dejavu_run->{$this_id}) {
+			$nb_proj --;
+			$nb_pat -= $h_junctions_dejavu_run->{$this_id};
+		}
+		next if ($nb_proj == 0);
+		my $color = 'green';
+		$color = 'red' if ($h->{same_as} eq '100%');
+		$color = 'orange' if ($h->{same_as} eq '99%');
+		my $text = '<b><span style="color:'.$color.';">'.$h->{same_as}.'</span></b>:'.$nb_proj.'/'.$nb_pat;
+		$h_tmp_dv->{$same_as}->{$nb_proj}->{$nb_pat} = $text;
+	}
+	foreach my $same_as (sort {$b <=> $a} keys %$h_tmp_dv) {
+		foreach my $nb_proj (sort {$b <=> $a} keys %{$h_tmp_dv->{$same_as}}) {
+			foreach my $nb_pat (sort {$b <=> $a} keys %{$h_tmp_dv->{$same_as}->{$nb_proj}}) {
+				push(@lDvJunctions_resume, $h_tmp_dv->{$same_as}->{$nb_proj}->{$nb_pat});
+			}
+		}
+	}
+	if (@lDvJunctions_resume) {
+		my $jid = $junction->id();
+		$dv_junctions = "<button onclick='view_deja_vu_rna_junction(\"$project_name\",\"$patient_name\",\"$jid\")'>".join('<br>', @lDvJunctions_resume)."</button>";
+	}
 	
 	
 	my $color;
@@ -91,18 +150,26 @@ foreach my $junction (@{$patient->getJunctions()}) {
 	$color = 'lightcoral' if ($score > 100);
 	
 	my $bam_file = "https://www.polyweb.fr/".$patient->bamUrl();
-	my $np = 0;
-	foreach my $other_pat (@{$project->getPatients()}) {
-		next if ($other_pat->name() eq $patient->name());
-		$bam_file .= ',https://www.polyweb.fr/'.$other_pat->bamUrl();
-		$np++;
-		last if $np == 3;
+	my $list_patients_ctrl = $patient->getPatients_used_control_rna_seq_junctions_analyse();
+	if ($list_patients_ctrl) {
+		foreach my $other_pat (@$list_patients_ctrl) {
+			$bam_file .= ',https://www.polyweb.fr/'.$other_pat->bamUrl();
+		}
+	}
+	else {
+		my $np = 0;
+		foreach my $other_pat (@{$project->getPatients()}) {
+			next if ($other_pat->name() eq $patient->name());
+			$bam_file .= ',https://www.polyweb.fr/'.$other_pat->bamUrl();
+			$np++;
+			last if $np == 3;
+		}
 	}
 	my $gtf = $project->get_gtf_genes_annotations_igv();
 	$gtf =~ s/\/data-isilon//;
 	$gtf = "https://www.polyweb.fr/".$gtf;
 	my $locus = $chr_id.':'.($junction->start()-100).'-'.($junction->end()+100);
-	my $igv_link = qq{<button class='igvIcon2' onclick='launch_igv_tool("", "$bam_file,$gtf","$locus")' style="color:black"></button>};
+	my $igv_link = qq{<button class='igvIcon2' onclick='launch_igv_tool_rna("", "$bam_file,$gtf","$locus")' style="color:black"></button>};
 	
 	my $svg_button = 'N.A.';
 	my $svg_patient = $junction->getSvgPlotPath($patient);
@@ -125,9 +192,17 @@ foreach my $junction (@{$patient->getJunctions()}) {
 		my $files = join(';', @lFiles);
 		if ($isChrome) {
 			my $pdf = $lFiles[0].'#toolbar=0&navpanes=0&scrollbar=0&embedded=true';
-			$sashimi_button .= qq{<button type="button" class="btn btn-default" style="text-align:center;padding:2px;background-color:$color;max-height:90px;" onClick="view_pdf_list_files('$files')"><table><td><iframe onClick="view_pdf_list_files('$files')" loading="lazy" loading="lazy" width="200" height="70" src="$pdf"></iframe></td><td><span style="writing-mode:vertical-lr !important; font: 9spx Verdana, sans-serif;padding-left:2px;letter-spacing: 1px;">Zoom</span></td></table> </button>};
+			$sashimi_button .= qq{<button type="button" class="btn btn-default" style="text-align:center;padding:2px;background-color:$color;max-height:90px;" onClick="view_pdf_list_files('$files')"><table><td><iframe onClick="view_pdf_list_files('$files')" loading="lazy" loading="lazy" width="200" height="70" src="$pdf" suppressConsole></iframe></td><td><span style="writing-mode:vertical-lr !important; font: 9spx Verdana, sans-serif;padding-left:2px;letter-spacing: 1px;">Zoom</span></td></table> </button>};
 		}
 		else {
+			#Fonctionne mais fait planter la page Web Mozilla si trop de PDF
+#			my $pdf = $lFiles[0].'#toolbar=0&embedded=true';
+#			$sashimi_button .= qq{<button type="button" class="btn btn-default" style="text-align:center;background-color:$color;" onClick="view_pdf_list_files('$files')"><table><td>};
+#			$sashimi_button .= qq{<div class="pdfobject-container">};
+#			$sashimi_button .= qq{<embed loading="lazy" class="pdfobject" title="Embedded PDF" src="$pdf" allowfullscreen suppressConsole></embed>};
+#			$sashimi_button .= qq{</div>};
+#			$sashimi_button .= qq{</td><td><span style="writing-mode:vertical-lr !important; font: 9spx Verdana, sans-serif;padding-right:1px;letter-spacing: 1px;">Zoom</span></td></table> </button>};
+			
 			$sashimi_button .= qq{<button type="button" class="btn btn-default" onClick="view_pdf_list_files('$files')" style="text-align:center;padding:2px;background-color:$color;"> PDF <span style="top:3px;width:20px;height:20px;" class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button>};
 		}
 		$sashimi_button .= qq{</center></};
@@ -141,6 +216,7 @@ foreach my $junction (@{$patient->getJunctions()}) {
 	$html .= qq{<td>$svg_button</td>};
 	$html .= qq{<td>$sashimi_button</td>};
 	$html .= qq{<td>$type_junction</td>};
+	$html .= qq{<td>$type_junction_description</td>};
 	$html .= qq{<td>$ensid</td>};
 	$html .= qq{<td>$gene_name</td>};
 	$html .= qq{<td>$chr_id</td>};
@@ -149,12 +225,15 @@ foreach my $junction (@{$patient->getJunctions()}) {
 	$html .= qq{<td>$count_new_junction</td>};
 	$html .= qq{<td>$count_normal_junction</td>};
 	$html .= qq{<td>$score</td>};
-	$html .= qq{<td>$dv_all</td>};
-	$html .= qq{<td>$dv_run</td>};
+#	$html .= qq{<td>$dv_cnv</td>};
+	$html .= qq{<td style="max-height:150px;">$dv_junctions_in_this_run</td>};
+	$html .= qq{<td style="max-height:150px;">$dv_junctions</td>};
 	$html .= qq{</tr>};
 }
 $html .= qq{</tbody>};
 $html .= qq{</table>};
+#$no_cnv->close();
+$project->dejavuJunctions->close();
 
 
 my $hash;

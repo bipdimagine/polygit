@@ -65,9 +65,9 @@ sub getProjectListsRNA {
 	foreach my $h (@$list_proj) {
 		my $h_users;
 		foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
-#		unless ($is_BIPD_login) {
-#			next unless exists $h_users->{$login};
-#		}
+		unless ($is_BIPD_login) {
+			next unless exists $h_users->{$login};
+		}
 		my $name = $h->{name};
 		my $b1 = GBuffer->new;
 		my $p1 = $b1->newProject( -name => $name );
@@ -79,7 +79,19 @@ sub getProjectListsRNA {
 #			$h->{button} = '1::'.$project_name;
 #		}
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
-		$h->{button} = '1::'.$h->{name} if (-d $p1->get_path_rna_seq_junctions_root());
+		if (-d $p1->get_path_rna_seq_junctions_root()) {
+			my $ok;
+			foreach my $pat (@{$p1->getPatients()}) {
+				eval { $pat->getJunctionsAnalysePath() };
+				if ($@) { next; }
+				$ok = 1 if ($pat->junction_RI_file_filtred());
+				$ok = 1 if ($pat->junction_SE_file_filtred());
+				$ok = 1 if ($pat->junction_RI_file());
+				$ok = 1 if ($pat->junction_SE_file());
+				last if $ok;
+			}
+			$h->{button} = '1::'.$h->{name} if ($ok);
+		}
 		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
 		push (@list_res, $h);
 	}
