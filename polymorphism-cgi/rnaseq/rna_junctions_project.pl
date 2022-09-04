@@ -24,12 +24,23 @@ my $project = $buffer->newProject( -name => $project_name );
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
 
+my $hType_patients;
+$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
+
 my $h_resume;
 foreach my $patient (@{$project->getPatients}) {
-	foreach my $junction ((@{$patient->getJunctions()})) {
-		$h_resume->{$patient->name()}->{nb_junctions_all}++;
-		$h_resume->{$patient->name()}->{nb_junctions_ri}++ if ($junction->isRI());
-		$h_resume->{$patient->name()}->{nb_junctions_se}++ if ($junction->isSE());
+	$patient->use_not_filtred_junction_files(0);
+	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
+		foreach my $junction ((@{$patient->getJunctions()})) {
+			$h_resume->{$patient->name()}->{nb_junctions_all}++;
+			$h_resume->{$patient->name()}->{nb_junctions_ri}++ if ($junction->isRI($patient));
+			$h_resume->{$patient->name()}->{nb_junctions_se}++ if ($junction->isSE($patient));
+		}
+	}
+	else {
+		$h_resume->{$patient->name()}->{nb_junctions_all} = 'CONTROL';
+		$h_resume->{$patient->name()}->{nb_junctions_ri} = 'CONTROL';
+		$h_resume->{$patient->name()}->{nb_junctions_se} = 'CONTROL';
 	}
 	$h_resume->{$patient->name()}->{bam_file} = $patient->bamUrl();
 	print '.';
@@ -70,7 +81,16 @@ print '.';
 
 my $hash;
 $hash->{html} = $html_table_patients;
-$hash->{patients} = join(';', sort keys %$h_resume);
+if ($hType_patients) {
+	my @lPatOk;
+	foreach my $patname (sort keys %$hType_patients) {
+		push(@lPatOk, $patname) if exists $hType_patients->{$patname}->{pat};
+	}
+	$hash->{patients} = join(';', @lPatOk);
+}
+else {
+	$hash->{patients} = join(';', sort keys %$h_resume);
+}
 
 printJson($hash);
 exit(0);

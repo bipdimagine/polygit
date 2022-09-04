@@ -79,7 +79,19 @@ sub getProjectListsRNA {
 #			$h->{button} = '1::'.$project_name;
 #		}
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
-		$h->{button} = '1::'.$h->{name} if (-d $p1->get_path_rna_seq_junctions_root());
+		if (-d $p1->get_path_rna_seq_junctions_root()) {
+			my $ok;
+			foreach my $pat (@{$p1->getPatients()}) {
+				eval { $pat->getJunctionsAnalysePath() };
+				if ($@) { next; }
+				$ok = 1 if ($pat->junction_RI_file_filtred());
+				$ok = 1 if ($pat->junction_SE_file_filtred());
+				$ok = 1 if ($pat->junction_RI_file());
+				$ok = 1 if ($pat->junction_SE_file());
+				last if $ok;
+			}
+			$h->{button} = '1::'.$h->{name} if ($ok);
+		}
 		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
 		push (@list_res, $h);
 	}

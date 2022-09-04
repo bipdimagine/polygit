@@ -27,17 +27,25 @@ has isJunction => (
 	default	=> 1,
 );
 
-has isRI => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> 0,
-);
+sub getTypeDescription {
+	my ($self, $patient) = @_;
+	confess() unless ($patient);
+	return $self->annex->{$patient->name()}->{type}; 
+}
 
-has isSE => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> 0,
-);
+sub isRI {
+	my ($self, $patient) = @_;
+	return 1 if $self->getTypeDescription($patient) =~ /RI/; 
+	return 1 if $self->annex->{$patient->name}->{type_origin_file} eq 'RI';
+	return;
+}
+
+sub isSE {
+	my ($self, $patient) = @_;
+	return 1 if $self->getTypeDescription($patient) =~ /SE/; 
+	return 1 if $self->annex->{$patient->name}->{type_origin_file} eq 'SE';
+	return;
+}
 
 has isCnv => (
 	is		=> 'ro',
@@ -75,56 +83,46 @@ has strict_intspan => (
 	},
 );
 
-has score => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> 0,
-);
-
-has nb_new_count => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> 0,
-);
-
-has nb_normal_count => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> 0,
-);
-
 has annex => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> 0,
 );
 
-
-#TODO: a faire
-has dejaVuInfosForDiag2 => (
-	is              => 'rw',
-	lazy    => 1,
-	default => sub {
-		return;
-	}
-);
-
-#TODO: a faire
-sub dejavu_all {
-	my $self = shift;
-	return '.';
+sub is_filtred_results {
+	my ($self, $patient) = @_;
+	confess() unless $patient;
+	return 1 if (exists $self->annex->{$patient->name()}->{filtred_result} and $self->annex->{$patient->name()}->{filtred_result} == 1);
+	return;
 }
 
-#TODO: a faire
-sub dejavu_in_this_run {
-	my $self = shift;
-	return '.';
+sub get_score {
+	my ($self, $patient) = @_;
+	confess() unless $patient;
+	return $self->annex->{$patient->name()}->{score} if (exists $self->annex->{$patient->name()}->{score});
+	return;
+}
+
+sub get_nb_new_count {
+	my ($self, $patient) = @_;
+	confess() unless $patient;
+	my $count = 0;
+	$count += $self->annex->{$patient->name()}->{junc_ri_count} if ($self->isRI($patient) and exists $self->annex->{$patient->name()}->{junc_ri_count});
+	$count += $self->annex->{$patient->name()}->{junc_se_count} if ($self->isSE($patient) and exists $self->annex->{$patient->name()}->{junc_se_count});
+	return $count;
+}
+
+sub get_nb_normal_count {
+	my ($self, $patient) = @_;
+	confess() unless $patient;
+	return $self->annex->{$patient->name()}->{junc_normale_count} if (exists $self->annex->{$patient->name()}->{junc_normale_count});
+	return;
 }
 
 sub getSvgPlotPath {
 	my ($self, $patient) = @_;
-	my $path_svg = $patient->getJunctionsAnalysePath().'/../'.$self->annex->{'ensid'}.'/SpliceRes/Figs/';
-	my $svg_patient = $path_svg.'/juncPairPos_'.$self->annex->{ensid}.'_'.$self->getChromosome->id().'_'.$patient->name().'_'.$patient->getProject->name().'.svg'; 
+	my $path_svg = $patient->getJunctionsAnalysePath().'/../'.$self->annex->{$patient->name()}->{'ensid'}.'/SpliceRes/Figs/';
+	my $svg_patient = $path_svg.'/juncPairPos_'.$self->annex->{$patient->name()}->{ensid}.'_'.$self->getChromosome->id().'_'.$patient->name().'_'.$patient->getProject->name().'.svg'; 
 	return $svg_patient if (-e $svg_patient);
 	return;
 }
@@ -135,8 +133,8 @@ sub createSashiPlot {
 	return if -e $file;
 	my $patient_name = $patient->name();
 	my $path_analysis = $patient->getJunctionsAnalysePath();
-	my $ensg = $self->annex->{'ensid'};
-	my $score = $self->score();
+	my $ensg = $self->annex->{$patient->name()}->{'ensid'};
+	my $score = $self->get_score($patient);
 	my $project_name = $patient->getProject->name();
 	my $cmd = $patient->getProject->buffer->software('ggsashimi');
 	$cmd .= " -b $path_analysis/../$ensg/rmdup/$patient_name\_$project_name\_rmdup.bam";
@@ -153,8 +151,15 @@ sub createSashiPlot {
 	return $file;
 }
 
+has can_create_sashimi_plots => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> 0,
+);
+
 sub createListSashimiPlots {
 	my ($self, $patient) = @_;
+	$self->can_create_sashimi_plots(1);
 	$self->getListSashimiPlotsPathFiles($patient, '1');
 }
 
@@ -170,15 +175,15 @@ sub getSashimiPlotPath {
 		mkdir $path;
 		`chmod 775 $path`;
 	}
-	my $outfile = $path.'/sashimi_'.$patient->name().'.'.$self->annex->{'ensid'}.'.'.$locus_text.'.pdf';
+	my $outfile = $path.'/sashimi_'.$patient->name().'.'.$self->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.pdf';
 	return $outfile;
 }
 
 sub getListSashimiPlotsPathFiles {
-	my ($self, $patient, $to_create) = @_;
+	my ($self, $patient) = @_;
 	my $locus = $self->getChromosome->id().':'.($self->start() - 100).'-'.($self->end() + 100);
 	my $sashimi_file = $self->getSashimiPlotPath($patient, $locus);
-	$self->createSashiPlot($patient, $locus) if ($to_create);
+	$self->createSashiPlot($patient, $locus) if ($self->can_create_sashimi_plots());
 	my @lFiles;
 	if ($sashimi_file) {
 		push(@lFiles, $sashimi_file);
@@ -192,7 +197,7 @@ sub getListSashimiPlotsPathFiles {
 			$end += (1000*$i);
 			my $locus_extended = $chr_id.':'.$start.'-'.$end;
 			my $sashimi_plot_file = $self->getSashimiPlotPath($patient, $locus_extended);
-			$self->createSashiPlot($patient, $locus_extended) if ($to_create);
+			$self->createSashiPlot($patient, $locus_extended) if ($self->can_create_sashimi_plots());
 			push(@lFiles, $sashimi_plot_file);
 			$i++;
 		}
@@ -200,5 +205,54 @@ sub getListSashimiPlotsPathFiles {
 	}
 	return;
 }
+
+sub get_dejavu_list_similar_junctions {
+	my ($self, $identity) = @_;
+	$identity = 98 unless $identity;
+	my $chr_id = $self->getChromosome->id();
+	my $type = 'all';
+	confess() unless $type;
+	return $self->getProject->dejavuJunctions->get_junction($chr_id, $self->start(), $self->end(), $type, 'all', $identity);
+}
+
+sub get_dejavu_list_similar_junctions_resume {
+	my ($self, $identity) = @_;
+	$identity = 98 unless $identity;
+	my $chr_id = $self->getChromosome->id();
+	my $type = 'all';
+	confess() unless $type;
+	return $self->getProject->dejavuJunctions->get_junction_resume($chr_id, $self->start(), $self->end(), $type, 'all', $identity);
+}
+
+has dejavu_nb_projects => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume(98)}) {
+			if ($h->{id} ne $self->id()) {
+				$self->{dejavu_nb_patients} = $h->{patients};
+				return $h->{projects};
+			}
+		}
+		return 0;
+	},
+);
+
+has dejavu_nb_patients => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume(98)}) {
+			if ($h->{id} ne $self->id()) {
+				$self->{dejavu_nb_projects} = $h->{projects};
+				return $h->{patients};
+			}
+		}
+		return 0;
+	},
+);
+
 
 1;
