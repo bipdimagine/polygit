@@ -1610,6 +1610,17 @@ has annotation_public_path => (
 	},
 );
 
+has DejaVuJunction_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
+		confess("junction dejavu $dir") unless -e $dir;
+		return $dir;
+	},
+);
+
 has DejaVuCNV_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -4366,7 +4377,7 @@ has dejavuJunctions => (
 		my $self = shift;
 		my $release = $self->annotation_genome_version();
 		$release = 'HG19' if ($release =~ /HG19/);
-		my $sqliteDir = '/data-isilon/bipd-src/mbras/dejavu_junctions/'.$release.'/';
+		my $sqliteDir = $self->DejaVuJunction_path();
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuJunctions->new( dir => $sqliteDir, mode => "r" );
 	}

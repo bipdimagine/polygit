@@ -43,7 +43,8 @@ my $xx =0;
 my $release = $project->annotation_genome_version();
 $release = 'HG19' if ($release =~ /HG19/);
 
-my $dir = "/data-isilon/bipd-src/mbras/dejavu_junctions/$release/";
+my $dir = $project->DejaVuJunction_path();
+
 unless (-d $dir){
 	`mkdir $dir`;
 	`chmod 777 $dir`;
