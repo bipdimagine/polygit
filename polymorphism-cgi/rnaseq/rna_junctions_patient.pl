@@ -18,35 +18,18 @@ use session_export;
 my $cgi    = new CGI;
 my $project_name = $cgi->param('project');
 my $use_patient = $cgi->param('patient');
-my $view_all_junctions = $cgi->param('view_all_junctions');
+my $view_all_junctions = $cgi->param('view_not_filtred_junctions');
 my $isChrome = $cgi->param('is_chrome');
 
 my $buffer = GBuffer->new;
 my $project = $buffer->newProject( -name => $project_name );
 $project->getChromosomes();
 my $patient = $project->getPatient($use_patient);
+$patient->use_not_filtred_junction_files(0) if (not $view_all_junctions);
 
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
 
-
-my $max_patients = 0;
-my $hType_patients;
-$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
-my $h_junctions_dejavu_run;
-foreach my $patient (@{$project->getPatients()}) {
-	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
-		print '.';
-		$patient->use_not_filtred_junction_files(0) unless ($view_all_junctions);
-		foreach my $junction (@{$patient->getJunctions()}) {
-			my $junction_id = $junction->id();
-			$junction_id =~ s/_RI/_junction/;
-			$junction_id =~ s/_SE/_junction/;
-			$h_junctions_dejavu_run->{$junction_id} = scalar(@{$junction->getPatients()});
-		}
-		$max_patients++;
-	}
-}
 
 my $patient_name = $patient->name();
 my $table_id = 'table_'.$patient_name;
@@ -57,8 +40,16 @@ my $html;
 my $release = ' - <b>Release:</b> '.$project->getVersion();
 my $gencode;
 $gencode = ' - <b>Gencode version:</b> '.$project->gencode_version() if ($release =~ /HG19/);
+
+my ($default_filter_dejavu_project, $default_filter_score);
+my @lJunctions = @{$patient->getJunctions()};
+if (scalar (@lJunctions) > 100) {
+	$default_filter_dejavu_project = "data-filter-default='<=3'";
+	$default_filter_score = "data-filter-default='>=1'";
+}
+
 $html .= qq{<center><span style='color:red;font-size:13px'>Patient $patient_name</span>$release$gencode</center>};
-$html .= qq{<table id='$table_id' data-sort-name='score' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 20, 30]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
+$html .= qq{<table id='$table_id' data-sort-name='score' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
 $html .= qq{<th data-field="figs"><b><center>Figure</center></b></th>};
@@ -72,20 +63,19 @@ $html .= qq{<th data-sortable="true" data-field="start"><b><center>Start</center
 $html .= qq{<th data-sortable="true" data-field="end"><b><center>End</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="junc_count"><b><center>Junction Count</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="normal_count"><b><center>Normal Count</center></b></th>};
-$html .= qq{<th data-filter-control='input' data-filter-default=">=1" data-sortable="true" data-field="score"><b><center>Score</center></b></th>};
+$html .= qq{<th data-filter-control='input' $default_filter_score data-sortable="true" data-field="score"><b><center>Score</center></b></th>};
 #$html .= qq{<th data-sortable="true" data-field="dejavu_cnv"><b><center>DejaVu CNVs</th>};
-$html .= qq{<th data-filter-control='input' data-filter-default="<=3" data-sortable="true" data-field="dejavu_junctions_run"><b><center>DejaVu Junctions InThisRun</b><br>- };
-$html .= ($max_patients-1).qq{ other(s) patient(s) -</th>};
+$html .= qq{<th data-filter-control='input' $default_filter_dejavu_project data-sortable="true" data-field="dejavu_junctions_project"><b><center>DejaVu Junctions Project(s)</b></th>};
 $html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center>DejaVu Junctions</b></th>};
 $html .= qq{</thead>};
 $html .= qq{<tbody>};
 
 my $h_dejavu_cnv;
 my $n = 0;
-foreach my $junction (@{$patient->getJunctions()}) {
+foreach my $junction (@lJunctions) {
 	$n++;
 	print '.' if ($n % 100);
-	next if (not $junction->is_filtred_results($patient));
+	#next if (not $junction->is_filtred_results($patient));
 	
 	$junction->getPatients();
 	my $ensid = $junction->annex->{$patient->name()}->{ensid};
@@ -105,30 +95,38 @@ foreach my $junction (@{$patient->getJunctions()}) {
 	my $dv_cnv = '.';
 	
 	#DEJAVU JUNCTIONS
-	my $dv_junctions_in_this_run = '.';
-	my $junction_dv_id = $type_junction.'_'.$start.'_'.$end;
-	my $nb_pat_run = scalar(@{$junction->getPatients()}) - 1;
-	#$dv_junctions_in_this_run = $nb_pat_run.'/'.($max_patients - 1) if ($nb_pat_run);
-	$dv_junctions_in_this_run = $nb_pat_run;
+#	my $dv_junctions_in_this_run = '.';
+#	my $junction_dv_id = $type_junction.'_'.$start.'_'.$end;
+#	my $nb_pat_run = scalar(@{$junction->getPatients()}) - 1;
+#	#$dv_junctions_in_this_run = $nb_pat_run.'/'.($max_patients - 1) if ($nb_pat_run);
+#	$dv_junctions_in_this_run = $nb_pat_run;
 	
 	my $dv_junctions = '.';
+	my $dv_junctions_projects = 0;
 	my (@lDvJunctions_resume, $h_tmp_dv);
 	foreach my $h (@{$junction->get_dejavu_list_similar_junctions_resume(98)}) {
 		my $this_id = $h->{id};
 		my $nb_proj = $h->{projects};
 		my $nb_pat = $h->{patients};
 		my $same_as = $h->{same_as};
-		$same_as =~ s/%//;
-		if ($same_as == 100 and exists $h_junctions_dejavu_run->{$this_id}) {
-			$nb_proj --;
-			$nb_pat -= $h_junctions_dejavu_run->{$this_id};
+		my @lTmp = split('_', $this_id);
+		if ($lTmp[1] == $junction->start() and $lTmp[2] == $junction->end()) {
+			$same_as = '100%';
 		}
+		$same_as =~ s/%//;
+#		if ($same_as == 100 and exists $h_junctions_dejavu_run->{$this_id}) {
+#			$nb_proj --;
+#			$nb_pat -= $h_junctions_dejavu_run->{$this_id};
+#		}
 		next if ($nb_proj == 0);
 		my $color = 'green';
-		$color = 'red' if ($h->{same_as} eq '100%');
-		$color = 'orange' if ($h->{same_as} eq '99%');
-		my $text = '<b><span style="color:'.$color.';">'.$h->{same_as}.'</span></b>:'.$nb_proj.'/'.$nb_pat;
+		$color = 'red' if ($same_as eq '100');
+		$color = 'orange' if ($same_as eq '99');
+		my $text = '<b><span style="color:'.$color.';">'.$same_as.'%</span></b>:'.$nb_proj.'/'.$nb_pat;
 		$h_tmp_dv->{$same_as}->{$nb_proj}->{$nb_pat} = $text;
+		if ($same_as == 100) {
+			$dv_junctions_projects = $nb_proj;
+		}
 	}
 	foreach my $same_as (sort {$b <=> $a} keys %$h_tmp_dv) {
 		foreach my $nb_proj (sort {$b <=> $a} keys %{$h_tmp_dv->{$same_as}}) {
@@ -226,7 +224,7 @@ foreach my $junction (@{$patient->getJunctions()}) {
 	$html .= qq{<td>$count_normal_junction</td>};
 	$html .= qq{<td>$score</td>};
 #	$html .= qq{<td>$dv_cnv</td>};
-	$html .= qq{<td style="max-height:150px;">$dv_junctions_in_this_run</td>};
+	$html .= qq{<td style="max-height:150px;">$dv_junctions_projects</td>};
 	$html .= qq{<td style="max-height:150px;">$dv_junctions</td>};
 	$html .= qq{</tr>};
 }

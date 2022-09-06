@@ -58,10 +58,16 @@ sub get_junction_resume {
 		$x->{id} = $row[-3];
 		$x->{patients} = $row[-2];
 		$x->{projects} = $row[-1];
-		$x->{same_as} = int($identity).'%';
+		my @lTmp = split('_', $x->{id});
+		if ($lTmp[1] == $start and $lTmp[2] == $end) {
+			$x->{same_as} = '100%';
+		}
+		else {		
+			$x->{same_as} = int($identity).'%';
+		}
 		push(@lRes, $x);
 		unless ($dejavu eq "all") {last if scalar(keys %$x) > $dejavu+1};
-	 }
+	}
 	return \@lRes;
 }
 
@@ -79,14 +85,15 @@ sub get_junction {
 		my $z = $self->decode($row[-1]);
 		foreach my $zz (keys %$z){
 			foreach my $zzz (keys %{$z->{$zz}}) {
+				my $identite = int($identity);
+				$identite = 100 if ($start1 == $start and $end1 == $end);
 				foreach my $zzzz (keys %{$z->{$zz}->{$zzz}}) {
-					$x->{$zz}->{$zzz}->{$zzzz} = $z->{$zz}->{$zzz}->{$zzzz};
+					$x->{$identite}->{$zz}->{$zzz}->{$zzzz} = $z->{$zz}->{$zzz}->{$zzzz};
 				}
-				$x->{$zz}->{$zzz}->{start} = $start1;
-				$x->{$zz}->{$zzz}->{end} = $end1;
-				$x->{$zz}->{$zzz}->{identity} = $identity;
+				$x->{$identite}->{$zz}->{$zzz}->{start} = $start1;
+				$x->{$identite}->{$zz}->{$zzz}->{end} = $end1;
+				$x->{$identite}->{$zz}->{$zzz}->{identity} = $identite;
 			}
-			
 			unless ($dejavu eq "all") {last if scalar(keys %$x) > $dejavu+1};
 		}
 		unless ($dejavu eq "all") {last if scalar(keys %$x) > $dejavu+1};

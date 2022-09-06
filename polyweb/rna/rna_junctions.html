@@ -646,7 +646,7 @@
 			
 			var dict_results_patients = {};
 			var dict_table_patients_name = {};
-			function launch_patient(patient_name) {
+			function launch_patient(patient_name, without_filters) {
 				document.getElementById("content_res").innerHTML = "";
 	    		var text_loading = 'Loading patient ' + patient_name;
 				show_waiting(text_loading);
@@ -664,6 +664,7 @@
 					url += "?project=" + project_name;
 					url += "&patient=" + patient_name;
 					if (isChrome) { url += "&is_chrome=1"; }
+					if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
 				    $.getJSON( url, function( data ) {
 				    	$.each( data, function( key, val ) {
 				    		if (key == 'html') {
@@ -770,10 +771,11 @@
 				url += "&id=" + junction_id;
 				
 				$.getJSON( url, function( data ) {
-					document.getElementById("dialog_dejavu_junction").innerHTML = data.html;
-					//document.getElementById("dialog_dejavu_junction").innerHTML += "<br>" + data.html_my_variant;
-					document.getElementById("dialog_dejavu_junction").innerHTML += "<center><button onclick='dijit.byId(\"dialog_dejavu_junction\").hide()'>Close</button></center>";
+					document.getElementById("dialog_dejavu_junction").innerHTML = "<button onclick='dijit.byId(\"dialog_dejavu_junction\").hide()'>Close</button>";
+					document.getElementById("dialog_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
+					document.getElementById("dialog_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
 					enable_table_search(data.table_id);
+					enable_table_search(data.table_id_my_variant);
 					dijit.byId('waiting').hide();
 					dijit.byId('dialog_dejavu_junction').show();
 			    })
@@ -808,7 +810,7 @@
 		<div class='container-fluid' id='content_nav'></div>
 		<div class='container-fluid' id='content_res'></div>
 		
-		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
+		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[500,150]" title="Waiting"> 
 			<div class="container" style="margin-left: auto ;margin-right: auto ;">
 				<div>
 					<br><br>

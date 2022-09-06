@@ -1253,7 +1253,7 @@ sub getListProjectsRnaSeq {
 		$sth2->execute();
 	}
 	my $h = $sth->fetchall_hashref('id');
-	my $h2 = $sth2->fetchall_hashref('id');
+	my $h2 = $sth2->fetchall_hashref('project_id');
 	
 	my @l_projects_ids = keys %$h;
 	foreach my $pr_id (keys %$h2) {
