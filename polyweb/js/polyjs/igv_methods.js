@@ -148,26 +148,23 @@ function init_igv (){
 	    httpGetFocusOn(url);
 	return 1;		
 }
+
 function igv_reset () {
 	previous_bams = new Array();
 }
-function launch_igv_tool(fasta, tracks, locus) {
-	return;
+
+function launch_igv_tool_rna(fasta, tracks, locus) {
 	var url = "http://localhost:60151/load";
-	if (old_tracks == tracks){
-		return;
-	} 
-	old_tracks = tracks;
 	if (fasta) {
 		url += "?genome=" + fasta;
 		url += "&file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=false";
+		url += "&merge=true";
 	}
 	else {
 		url += "?file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=false";
+		url += "&merge=true";
 	}
     httpGetFocusOn(url);
 	return 1;
