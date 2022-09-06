@@ -50,26 +50,59 @@ unless (-d $dir){
 	`chmod 777 $dir`;
 }
 
-my $hash_projects;
-$hash_projects->{'NGS2022_5612'} = undef;
-$hash_projects->{'NGS2022_5712'} = undef;
-$hash_projects->{'NGS2022_5837'} = undef;
-$hash_projects->{'NGS2022_5515'} = undef;
+print "\n# Checking RNA-Projects Junctions";
 
+my $hash_projects;
+foreach my $h (@{$buffer->getQuery->getListProjectsRnaSeq()}) {
+	my $h_users;
+	foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
+	my $name = $h->{name};
+	my $b1 = GBuffer->new;
+	my $p1 = $b1->newProject( -name => $name );
+	$h->{button} = '';
+	if (-d $p1->get_path_rna_seq_junctions_root()) {
+		my $ok;
+		foreach my $pat (@{$p1->getPatients()}) {
+			eval { $pat->getJunctionsAnalysePath() };
+			if ($@) { next; }
+			$ok = 1 if ($pat->junction_RI_file_filtred());
+			$ok = 1 if ($pat->junction_SE_file_filtred());
+			$ok = 1 if ($pat->junction_RI_file());
+			$ok = 1 if ($pat->junction_SE_file());
+		}
+		$hash_projects->{$name} = undef if $ok;
+	}
+}
+print " -> Done!\n";
+print "   -> Found ".scalar(keys %{$hash_projects})." projects\n\n";
 
 my $h_junctions;
 foreach my $this_project_name (keys %$hash_projects) {
+	print "$this_project_name "; 
 	my $buffer_tmp = GBuffer->new();
 	my $project_tmp = $buffer_tmp->newProject( -name => $this_project_name );
+	if ($project_tmp->annotation_genome_version() ne 'HG19') {
+		print "-> SKIPPED (".$project_tmp->annotation_genome_version().")\n";
+		$project_tmp = undef;
+		$buffer_tmp = undef;
+		next;
+	}
 	$project_tmp->getChromosomes();
 	
 	my $hType_patients;
 	$hType_patients = $project_tmp->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project_tmp->get_path_rna_seq_junctions_analyse_description_root());
 	
-	my $h_junctions_dejavu_run;
+	my ($h_junctions_dejavu_run, $in_error);
 	foreach my $this_patient (@{$project_tmp->getPatients()}) {
+		#$this_patient->use_not_filtred_junction_files(0);
 		if (($hType_patients and exists $hType_patients->{$this_patient->name()}->{pat}) or not $hType_patients) {
-			foreach my $junction (@{$this_patient->getJunctions()}) {
+			my @lJunctions;
+			eval { @lJunctions = @{$this_patient->getJunctions()}; };
+			if ($@) {
+				print "-> ERROR ".$this_patient->name();
+				next;
+			}
+			foreach my $junction (@lJunctions) {
 				$junction->getPatients();
 				my $type = $junction->getTypeDescription($this_patient);
 				my $chr_id = $junction->getChromosome->id();
@@ -90,13 +123,14 @@ foreach my $this_project_name (keys %$hash_projects) {
 			}
 		}
 	}
-	print $project_tmp->name()." -> Done!\n";
+	print "-> Done!\n";
 	$project_tmp = undef;
 	$buffer_tmp = undef;
 }
 
+print "\n# INSERT in DejaVuLMDB Junctions\n";
 my $nodejavu = GenBoNoSqlDejaVuJunctions->new( dir => $dir, mode => "c" );
-warn $dir;
+print "\n-> DIR: $dir\n";
 foreach my $chr_id (keys %{$h_junctions}) {
 	$nodejavu->create_table($chr_id);
 	my $sth = $nodejavu->dbh($chr_id)->prepare('insert into  __DATA__(_key,_value,start,end,variation_type,patients,projects)  values(?,?,?,?,?,?,?) ;') or die $DBI::errstr;
@@ -117,8 +151,8 @@ foreach my $chr_id (keys %{$h_junctions}) {
 		$sth->execute($junction_id, $value, $start, $end, $type, $nb_pat, $nb_proj);
 		push(@$tree, [$junction_id, $start, $end]);
 		
-		warn "\n";
-		warn $junction_id.'  '.$type.':'.$nb_proj.'/'.$nb_pat;
+		#warn "\n";
+		#warn $junction_id.'  '.$type.':'.$nb_proj.'/'.$nb_pat;
 	}
 	$nodejavu->dbh($chr_id)->do(qq{CREATE UNIQUE INDEX if not exists _key_idx  on __DATA__ (_key);});
 	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _start_idx  on __DATA__ (start);});
@@ -126,7 +160,7 @@ foreach my $chr_id (keys %{$h_junctions}) {
 	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _type_idx  on __DATA__ (variation_type);});
 }
 $nodejavu->close();
-
+print "-> DONE!\n\n";
 
 
  	
