@@ -238,15 +238,8 @@ has parse_nb_projects_patients => (
 				$h_proj->{$proj} = undef;
 				foreach my $pat (split(',', $list2[$i])) {
 					$h_pat->{$proj.'_'.$pat} = undef;
-					
-					
-					
 					if ($h->{same_as} eq '100%' and 'NGS20'.$proj eq $self->getProject->name()) {
 						$hpatrun->{$proj.'_'.$pat} = undef;
-						
-						warn "\n";
-						warn $proj;
-						warn $list2[$i];
 					}
 				}
 				$i++;
