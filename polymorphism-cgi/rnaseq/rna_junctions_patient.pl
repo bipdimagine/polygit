@@ -43,8 +43,17 @@ $gencode = ' - <b>Gencode version:</b> '.$project->gencode_version() if ($releas
 
 my ($default_filter_dejavu_project, $default_filter_score);
 my @lJunctions = @{$patient->getJunctions()};
-if (scalar (@lJunctions) > 100) {
-	$default_filter_dejavu_project = "data-filter-default='<=3'";
+if (scalar (@lJunctions) > 30) {
+	my ($nb_max_patient, $nb_limit);
+	my $h_desc = $project->get_hash_patients_description_rna_seq_junction_analyse();
+	if ($h_desc) {
+		foreach my $pat_name (keys %$h_desc) { $nb_max_patient++ if (exists $h_desc->{$pat_name}->{pat}); }
+	}
+	else { $nb_max_patient = scalar(@{$project->getPatients()}); }
+	if ($nb_max_patient == 1) { $nb_limit = 0; }
+	elsif ($nb_max_patient <= 3) { $nb_limit = 1; }
+	else { $nb_limit = int($nb_max_patient / 2); }
+	$default_filter_dejavu_project = "data-filter-default='<=$nb_limit'" if $nb_limit > 0;
 	$default_filter_score = "data-filter-default='>=1'";
 }
 
