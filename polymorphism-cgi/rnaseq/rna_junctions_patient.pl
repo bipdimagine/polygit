@@ -65,7 +65,7 @@ $html .= qq{<th data-sortable="true" data-field="junc_count"><b><center>Junction
 $html .= qq{<th data-sortable="true" data-field="normal_count"><b><center>Normal Count</center></b></th>};
 $html .= qq{<th data-filter-control='input' $default_filter_score data-sortable="true" data-field="score"><b><center>Score</center></b></th>};
 #$html .= qq{<th data-sortable="true" data-field="dejavu_cnv"><b><center>DejaVu CNVs</th>};
-$html .= qq{<th data-filter-control='input' $default_filter_dejavu_project data-sortable="true" data-field="dejavu_junctions_project"><b><center>DejaVu Junctions Project(s)</b></th>};
+$html .= qq{<th data-filter-control='input' $default_filter_dejavu_project data-sortable="true" data-field="dejavu_junctions_project"><b><center>DejaVu Junctions InThisRun</b><br>-Exact jonction-</th>};
 $html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center>DejaVu Junctions</b></th>};
 $html .= qq{</thead>};
 $html .= qq{<tbody>};
@@ -91,7 +91,6 @@ foreach my $junction (@lJunctions) {
 	my $count_new_junction = $junction->get_nb_new_count($patient);
 	my $count_normal_junction = $junction->get_nb_normal_count($patient);
 	my $score = sprintf("%.4f", $junction->get_score($patient));
-	
 	my $dv_cnv = '.';
 	
 	#DEJAVU JUNCTIONS
@@ -101,44 +100,46 @@ foreach my $junction (@lJunctions) {
 #	#$dv_junctions_in_this_run = $nb_pat_run.'/'.($max_patients - 1) if ($nb_pat_run);
 #	$dv_junctions_in_this_run = $nb_pat_run;
 	
-	my $dv_junctions = '.';
-	my $dv_junctions_projects = 0;
-	my (@lDvJunctions_resume, $h_tmp_dv);
-	foreach my $h (@{$junction->get_dejavu_list_similar_junctions_resume(98)}) {
-		my $this_id = $h->{id};
-		my $nb_proj = $h->{projects};
-		my $nb_pat = $h->{patients};
-		my $same_as = $h->{same_as};
-		my @lTmp = split('_', $this_id);
-		if ($lTmp[1] == $junction->start() and $lTmp[2] == $junction->end()) {
-			$same_as = '100%';
-		}
-		$same_as =~ s/%//;
-#		if ($same_as == 100 and exists $h_junctions_dejavu_run->{$this_id}) {
-#			$nb_proj --;
-#			$nb_pat -= $h_junctions_dejavu_run->{$this_id};
+	my $dv_junctions = '';
+#	my (@lDvJunctions_resume, $h_tmp_dv);
+#	foreach my $h (@{$junction->get_dejavu_list_similar_junctions_resume(98)}) {
+#		my $this_id = $h->{id};
+#		my $nb_proj = $h->{projects};
+#		my $nb_pat = $h->{patients};
+#		my $same_as = $h->{same_as};
+#		my @lTmp = split('_', $this_id);
+#		if ($lTmp[1] == $junction->start() and $lTmp[2] == $junction->end()) {
+#			$same_as = '100%';
 #		}
-		next if ($nb_proj == 0);
-		my $color = 'green';
-		$color = 'red' if ($same_as eq '100');
-		$color = 'orange' if ($same_as eq '99');
-		my $text = '<b><span style="color:'.$color.';">'.$same_as.'%</span></b>:'.$nb_proj.'/'.$nb_pat;
-		$h_tmp_dv->{$same_as}->{$nb_proj}->{$nb_pat} = $text;
-		if ($same_as == 100) {
-			$dv_junctions_projects = $nb_proj;
-		}
-	}
-	foreach my $same_as (sort {$b <=> $a} keys %$h_tmp_dv) {
-		foreach my $nb_proj (sort {$b <=> $a} keys %{$h_tmp_dv->{$same_as}}) {
-			foreach my $nb_pat (sort {$b <=> $a} keys %{$h_tmp_dv->{$same_as}->{$nb_proj}}) {
-				push(@lDvJunctions_resume, $h_tmp_dv->{$same_as}->{$nb_proj}->{$nb_pat});
-			}
-		}
-	}
-	if (@lDvJunctions_resume) {
+#		$same_as =~ s/%//;
+##		if ($same_as == 100 and exists $h_junctions_dejavu_run->{$this_id}) {
+##			$nb_proj --;
+##			$nb_pat -= $h_junctions_dejavu_run->{$this_id};
+##		}
+#		next if ($nb_proj == 0);
+#		my $color = 'green';
+#		$color = 'red' if ($same_as eq '100');
+#		$color = 'orange' if ($same_as eq '99');
+#		my $text = '<b><span style="color:'.$color.';">'.$same_as.'%</span></b>:'.$nb_proj.'/'.$nb_pat;
+#		$h_tmp_dv->{$same_as}->{$nb_proj}->{$nb_pat} = $text;
+#		if ($same_as == 100) {
+#			$dv_junctions_inthisrun = $nb_proj;
+#		}
+#	}
+#	foreach my $same_as (sort {$b <=> $a} keys %$h_tmp_dv) {
+#		foreach my $nb_proj (sort {$b <=> $a} keys %{$h_tmp_dv->{$same_as}}) {
+#			foreach my $nb_pat (sort {$b <=> $a} keys %{$h_tmp_dv->{$same_as}->{$nb_proj}}) {
+#				push(@lDvJunctions_resume, $h_tmp_dv->{$same_as}->{$nb_proj}->{$nb_pat});
+#			}
+#		}
+#	}
+#	if (@lDvJunctions_resume) {
 		my $jid = $junction->id();
-		$dv_junctions = "<button onclick='view_deja_vu_rna_junction(\"$project_name\",\"$patient_name\",\"$jid\")'>".join('<br>', @lDvJunctions_resume)."</button>";
-	}
+		my $dv_text = $junction->dejavu_nb_projects().'/'.$junction->dejavu_nb_patients();
+#		warn $dv_text;
+		$dv_junctions = "<button onclick='view_deja_vu_rna_junction(\"$project_name\",\"$patient_name\",\"$jid\")'>$dv_text</button>";
+#	}
+	my $dv_junctions_inthisrun = $junction->inthisrun_nb_patients();
 	
 	
 	my $color;
@@ -224,7 +225,7 @@ foreach my $junction (@lJunctions) {
 	$html .= qq{<td>$count_normal_junction</td>};
 	$html .= qq{<td>$score</td>};
 #	$html .= qq{<td>$dv_cnv</td>};
-	$html .= qq{<td style="max-height:150px;">$dv_junctions_projects</td>};
+	$html .= qq{<td style="max-height:150px;">$dv_junctions_inthisrun</td>};
 	$html .= qq{<td style="max-height:150px;">$dv_junctions</td>};
 	$html .= qq{</tr>};
 }
