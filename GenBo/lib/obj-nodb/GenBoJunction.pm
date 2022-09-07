@@ -224,35 +224,67 @@ sub get_dejavu_list_similar_junctions_resume {
 	return $self->getProject->dejavuJunctions->get_junction_resume($chr_id, $self->start(), $self->end(), $type, 'all', $identity);
 }
 
-has dejavu_nb_projects => (
-	is		=> 'ro',
+has parse_nb_projects_patients => (
+	is		=> 'rw',
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
+		my ($h_proj, $h_pat, $hpatrun);
 		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume(98)}) {
-			if ($h->{id} ne $self->id()) {
-				$self->{dejavu_nb_patients} = $h->{patients};
-				return $h->{projects};
+			my @list = split(';', $h->{projects});
+			my @list2 = split(';', $h->{patients});
+			my $i = 0;
+			foreach my $proj (@list) {
+				$h_proj->{$proj} = undef;
+				foreach my $pat (split(',', $list2[$i])) {
+					$h_pat->{$proj.'_'.$pat} = undef;
+					
+					
+					
+					if ($h->{same_as} eq '100%' and 'NGS20'.$proj eq $self->getProject->name()) {
+						$hpatrun->{$proj.'_'.$pat} = undef;
+						
+						warn "\n";
+						warn $proj;
+						warn $list2[$i];
+					}
+				}
+				$i++;
 			}
 		}
-		return 0;
+		my $h;
+		$h->{projects} = scalar(keys %$h_proj);
+		$h->{patients} = scalar(keys %$h_pat);
+		$h->{patients_inthisrun} = scalar(keys %$hpatrun);
+		return $h;
+	},
+);
+
+has dejavu_nb_projects => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->parse_nb_projects_patients->{projects};
 	},
 );
 
 has dejavu_nb_patients => (
-	is		=> 'ro',
+	is		=> 'rw',
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume(98)}) {
-			if ($h->{id} ne $self->id()) {
-				$self->{dejavu_nb_projects} = $h->{projects};
-				return $h->{patients};
-			}
-		}
-		return 0;
+		return $self->parse_nb_projects_patients->{patients};
 	},
 );
 
+has inthisrun_nb_patients => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->parse_nb_projects_patients->{patients_inthisrun};
+	},
+);
 
 1;

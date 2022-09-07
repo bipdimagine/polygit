@@ -94,7 +94,7 @@ foreach my $this_project_name (keys %$hash_projects) {
 	
 	my ($h_junctions_dejavu_run, $in_error);
 	foreach my $this_patient (@{$project_tmp->getPatients()}) {
-		#$this_patient->use_not_filtred_junction_files(0);
+		$this_patient->use_not_filtred_junction_files(0);
 		if (($hType_patients and exists $hType_patients->{$this_patient->name()}->{pat}) or not $hType_patients) {
 			my @lJunctions;
 			eval { @lJunctions = @{$this_patient->getJunctions()}; };
@@ -142,17 +142,17 @@ foreach my $chr_id (keys %{$h_junctions}) {
 		my $end = $h_junctions->{$chr_id}->{$junction_id}->{end};
 		
 		my $value = $nodejavu->encode($h_junctions->{$chr_id}->{$junction_id}->{dejavu});
-		my ($nb_proj, $nb_pat);
-		
-		foreach my $proj (keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}}) {
-			$nb_proj++;
-			$nb_pat += scalar keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}};
+		my (@l_proj, @l_pat);
+		foreach my $proj (sort keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}}) {
+			my $patients = join(',', keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}});
+			$proj =~ s/NGS20//;
+			push(@l_proj, $proj);
+			push(@l_pat, $patients);
 		}
-		$sth->execute($junction_id, $value, $start, $end, $type, $nb_pat, $nb_proj);
+		my $pr = join(';', @l_proj);
+		my $pt = join(';', @l_pat);
+		$sth->execute($junction_id, $value, $start, $end, $type, $pt, $pr);
 		push(@$tree, [$junction_id, $start, $end]);
-		
-		#warn "\n";
-		#warn $junction_id.'  '.$type.':'.$nb_proj.'/'.$nb_pat;
 	}
 	$nodejavu->dbh($chr_id)->do(qq{CREATE UNIQUE INDEX if not exists _key_idx  on __DATA__ (_key);});
 	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _start_idx  on __DATA__ (start);});
