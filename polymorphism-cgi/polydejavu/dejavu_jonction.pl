@@ -70,8 +70,17 @@ $html .= qq{<th data-sortable="true" data-field="score"><b><center>Score</center
 $html .= qq{</thead>};
 $html .= qq{<tbody>};
 
+my $sashimi_pdf;
 foreach my $junction (@{$patient->$method_name()}) {
 	next unless $junction->id() eq $junction_id_search;
+	
+	my $list_sashimi_plot_files = $junction->getListSashimiPlotsPathFiles($patient);
+	if ($list_sashimi_plot_files and -e $list_sashimi_plot_files->[0]) {
+		$sashimi_pdf = $list_sashimi_plot_files->[0];
+		$sashimi_pdf =~ s/\/\//\//g;
+		$sashimi_pdf =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+	}
+			
 	$junction->getPatients();
 	my $hdv = $junction->get_dejavu_list_similar_junctions(98);
 	
@@ -127,6 +136,9 @@ $hashRes->{html} = $html;
 $hashRes->{html_my_variant} = $html_my_var;
 $hashRes->{table_id} = $table_id; 
 $hashRes->{table_id_my_variant} = $table_id_my_var; 
+$hashRes->{pdf_sashimi} = 'none';
+$hashRes->{pdf_sashimi} = $sashimi_pdf if $sashimi_pdf;
+
 my $json_encode = encode_json $hashRes;
 print $cgi->header('text/json-comment-filtered');
 print $json_encode;
