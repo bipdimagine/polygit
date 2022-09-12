@@ -19,12 +19,18 @@
                 margin: 0;
                 overflow: hidden;
             }
-			
+            
+            .navbar-patient:hover {
+			      color:red;
+			      transition: 0.7s;
+			  }
+            
+    
             #borderContainer {
                 width: 100%;
                 height: 100%;
             }
-    
+    		
             .testDialog {
                 font-size: 8pt;
             }
@@ -611,20 +617,20 @@
 							}
 							if (key == 'patients') {
 								var panel = "";
-								panel += "<nav id='navbar_project' class='navbar navbar-light' style='background-color: #e3f2fd;'>";
-								panel += "<div id='container_list_patients' class='container-fluid'>";
+								panel += "<nav id='navbar_project' class='navbar navbar-light overflow-auto' style='margin-bottom:0px;'>";
+								panel += "<div id='container_list_patients'>";
 								panel += "<div class='navbar-header'>";
 								panel += "</div>";
-								panel += "<ul class='nav navbar-nav'>";
-								panel += "<li onclick='launch_project()'><a href='#' ><span style='font-size:18px'>RESUME</span></a></li>";
+								panel += "<ul class='nav navbar-nav' style='max-height:60px;width:max-content;overflow-x:scroll;overflow-y:hidden;'>";
+								panel += "<li onclick='launch_project()' style='border-radius: 25% 10%;border-left:3px solid #23527C;border-right:1px solid #23527C;border-top:1px solid #23527C;height:70px;'><a href='#' ><span style='font-size:13px;text-align:center'><table><tr><td>PROJECT</td></tr><tr><td>RESUME</td></tr></table></span></a></li>";
 								var list_patients = val.split(';');
 								for (var i = 0; i < list_patients.length; i++){
 									var name = list_patients[i];
 									var cmd = "launch_patient(\"" + name + "\")";
 									var span_name = 'span_' + name;
-									panel += "<ul class='nav navbar-nav' onclick='" + cmd + "'><li><a href='#' ><span id='" + span_name + "' style='color:black;font-size:11px'>";
+									panel += "<ul class='nav navbar-nav' onclick='" + cmd + "'><li style='border-radius: 25% 10%;border:5px double white;background-color:#23527C;'><a href='#' ><table><tr><td class='align-baseline' style='color:#85BAC3;font-size:10px'>View Patient</td></tr><tr><td class='navbar-patient'><span style='color:white;font-size:10px;'>";
 									panel += name;
-									panel += "</span></a></li></ul>";
+									panel += "</span></td></tr></table></a></li></ul>";
 							    }
 								panel += "</ul>";
 								panel += "</div>";
@@ -771,15 +777,33 @@
 				url += "&id=" + junction_id;
 				
 				$.getJSON( url, function( data ) {
-					document.getElementById("dialog_dejavu_junction").innerHTML = "<button onclick='dijit.byId(\"dialog_dejavu_junction\").hide()'>Close</button>";
-					document.getElementById("dialog_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
-					document.getElementById("dialog_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
+					if (data.pdf_sashimi == 'none') {
+						document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
+					}
+					else {
+					
+						document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>";
+						
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='container'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='row'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='col-md-12' style='border:black solid 1px;'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<center><div style='background-color:black;height:200px;'><object data='" + data.pdf_sashimi + "' type='application/pdf' width='100%' height='200px'></object></div></center>";
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='col-md-12'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<center>" + data.html_my_variant + "</center>";		
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+					
+					
+						
+					}
+					document.getElementById("div_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
 					enable_table_search(data.table_id);
 					enable_table_search(data.table_id_my_variant);
 					dijit.byId('waiting').hide();
 					dijit.byId('dialog_dejavu_junction').show();
 			    })
-				
 			}
 		    	
 	    	function enable_table_search(id) {
@@ -807,8 +831,8 @@
 		</nav>
 		
 		
-		<div class='container-fluid' id='content_nav'></div>
-		<div class='container-fluid' id='content_res'></div>
+		<div id='content_nav' style="overflow-x:auto;border-bottom:1px double black;"></div>
+		<div class='container-fluid' id='content_res' style="padding-top:25px;"></div>
 		
 		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[500,150]" title="Waiting"> 
 			<div class="container" style="margin-left: auto ;margin-right: auto ;">
@@ -825,7 +849,9 @@
 		
 		<div id="dialog_sashimi" dojoType="dojox.widget.Dialog" dimensions="[920,600]" title="Sashimi PLOT"></div>
 		
-		<div id="dialog_dejavu_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[920,700]" title="DejaVu Junction"></div>
+		<div id="dialog_dejavu_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[920,700]" title="DejaVu Junction">
+			<div class="container-fluid" id="div_dejavu_junction" style="height:99%;width:99%;"></div>
+		</div>
         
         <div id="dialog_svg" dojoType="dijit.Dialog" onClick="dijit.byId('dialog_svg').hide();" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;"></div>
 

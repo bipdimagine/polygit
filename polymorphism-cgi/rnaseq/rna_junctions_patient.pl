@@ -57,7 +57,7 @@ if (scalar (@lJunctions) > 30) {
 	$default_filter_score = "data-filter-default='>=1'";
 }
 
-$html .= qq{<center><span style='color:red;font-size:13px'>Patient $patient_name</span>$release$gencode</center>};
+$html .= qq{<center><span style='color:red;font-size:13px'>Patient $patient_name</span>$release$gencode</center><br>};
 $html .= qq{<table id='$table_id' data-sort-name='score' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
