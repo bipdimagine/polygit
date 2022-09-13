@@ -19,12 +19,9 @@
                 margin: 0;
                 overflow: hidden;
             }
-            
-            .navbar-patient:hover {
-			      color:red;
-			      transition: 0.7s;
-			  }
-            
+            .nav .language-nonactive a:hover {
+			    background:rgba(0,0,0,0);
+			}
     
             #borderContainer {
                 width: 100%;
@@ -770,20 +767,18 @@
 			}
 			
 			function view_deja_vu_rna_junction(project_name, patient_name, junction_id) {
+				document.getElementById("div_dejavu_junction").innerHTML = "";
 				show_waiting("Search DejaVu");
 				var url = url_path + "/polydejavu/dejavu_jonction.pl";
 				url += "?project=" + project_name;
 				url += "&patient=" + patient_name;
 				url += "&id=" + junction_id;
-				
 				$.getJSON( url, function( data ) {
 					if (data.pdf_sashimi == 'none') {
 						document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
 					}
 					else {
-					
 						document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>";
-						
 						document.getElementById("div_dejavu_junction").innerHTML += "<div class='container'>";
 						document.getElementById("div_dejavu_junction").innerHTML += "<div class='row'>";
 						document.getElementById("div_dejavu_junction").innerHTML += "<div class='col-md-12' style='border:black solid 1px;'>";
@@ -794,9 +789,6 @@
 						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
 						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
 						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
-					
-					
-						
 					}
 					document.getElementById("div_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
 					enable_table_search(data.table_id);
