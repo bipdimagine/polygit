@@ -19,8 +19,13 @@
                 margin: 0;
                 overflow: hidden;
             }
-            .nav .language-nonactive a:hover {
-			    background:rgba(0,0,0,0);
+		    .noHover:hover{
+                background: #23527C;
+			    pointer-events: none;
+			}
+		    .noHover:focus{
+                background: #23527C;
+			    pointer-events: none;
 			}
     
             #borderContainer {
@@ -618,14 +623,14 @@
 								panel += "<div id='container_list_patients'>";
 								panel += "<div class='navbar-header'>";
 								panel += "</div>";
-								panel += "<ul class='nav navbar-nav' style='width:max-content;overflow-x:scroll;overflow-y:hidden;line-height:10px;'>";
+								panel += "<ul class='nav navbar-nav noHover' style='width:max-content;overflow-x:scroll;overflow-y:hidden;line-height:10px;'>";
 								panel += "<li onclick='launch_project()' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:3px solid #23527C;border-top:1px solid #23527C;'><a href='#' style='padding-top:5px;padding-bottom:5px;'><span style='font-size:13px;text-align:center;'><b>PROJECT<br>RESUME</b></span></a></li>";
 								var list_patients = val.split(';');
 								for (var i = 0; i < list_patients.length; i++){
 									var name = list_patients[i];
 									var cmd = "launch_patient(\"" + name + "\")";
 									var span_name = 'span_' + name;
-									panel += "<ul class='nav navbar-nav end' onclick='" + cmd + "'><li style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#23527C;'><a href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
+									panel += "<ul class='nav navbar-nav noHover' onclick='" + cmd + "'><li style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#23527C;'><a href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
 									panel += name;
 									panel += "</b></span></a></li></ul>";
 							    }
@@ -647,43 +652,32 @@
 				}    
 			}
 			
-			var dict_results_patients = {};
-			var dict_table_patients_name = {};
+			var used_dejavu_value;
+			var url_last_launch_patient;
 			function launch_patient(patient_name, without_filters) {
 				document.getElementById("content_res").innerHTML = "";
 	    		var text_loading = 'Loading patient ' + patient_name;
 				show_waiting(text_loading);
-				if (patient_name in dict_results_patients) {
-					var val = dict_results_patients[patient_name];
-					document.getElementById("content_res").innerHTML = "";
-					var myNode = document.getElementById("content_res");
-			    	var myPanel = $(val);
-					myPanel.appendTo(myNode);
-					enable_table_search(dict_table_patients_name[patient_name]);
-					dijit.byId('waiting').hide();
-				}
-				else {
-					var url = url_path + "/rnaseq/rna_junctions_patient.pl";
-					url += "?project=" + project_name;
-					url += "&patient=" + patient_name;
-					if (isChrome) { url += "&is_chrome=1"; }
-					if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
-				    $.getJSON( url, function( data ) {
-				    	$.each( data, function( key, val ) {
-				    		if (key == 'html') {
-								document.getElementById("content_res").innerHTML = "";
-								var myNode = document.getElementById("content_res");
-						    	var myPanel = $(val);
-								myPanel.appendTo(myNode);
-//								dict_results_patients[patient_name] = val;
-//								document.getElementById('span_'+patient_name).setAttribute("style", "color:red;font-size:11px;");
-								enable_table_search(data.table_id);
-//								dict_table_patients_name[patient_name] = data.table_id;
-								dijit.byId('waiting').hide();
-							}
-						});
-				    })
-			    }
+				var url = url_path + "/rnaseq/rna_junctions_patient.pl";
+				url += "?project=" + project_name;
+				url += "&patient=" + patient_name;
+				if (isChrome) { url += "&is_chrome=1"; }
+				if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
+				url_last_launch_patient = url;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_res");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							enable_table_search(data.table_id);
+			    			used_dejavu_value = data.used_dejavu;
+							update_dejavu_span_value();
+							dijit.byId('waiting').hide();
+						}
+					});
+			    })
 			}
 	    	
 	    	function show_waiting(text) {
@@ -800,6 +794,43 @@
 		    	
 	    	function enable_table_search(id) {
 	    		$('#'+id).bootstrapTable();
+			}
+			
+			var value_dejavu = 999;
+			function update_dejavu_span_value() {
+				value_dejavu = document.getElementById("slider_dejavu").value;
+				if (value_dejavu == 11) {
+					document.getElementById("nb_max_dejavu_projects").innerHTML = 'ALL';
+				}
+				else {
+					document.getElementById("nb_max_dejavu_projects").innerHTML = value_dejavu;
+				}
+				if (parseInt(used_dejavu_value) == parseInt(value_dejavu)) {
+					document.getElementById("b_update_dejavu").disabled = true;
+				}
+				else {
+					document.getElementById("b_update_dejavu").disabled = false;
+				}
+			}
+			
+			function launch_dejavu_span_value() {
+				show_waiting("Filter DejaVu max " + value_dejavu + " projects");
+				var url = url_last_launch_patient; 
+				if (value_dejavu < 11) { url += "&dejavu=" + value_dejavu; }
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_res");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							enable_table_search(data.table_id);
+			    			used_dejavu_value = data.used_dejavu;
+							update_dejavu_span_value();
+							dijit.byId('waiting').hide();
+						}
+					});
+			    })
 			}
 			
 		</script>

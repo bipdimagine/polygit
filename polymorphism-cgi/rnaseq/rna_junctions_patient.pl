@@ -20,6 +20,7 @@ my $project_name = $cgi->param('project');
 my $use_patient = $cgi->param('patient');
 my $view_all_junctions = $cgi->param('view_not_filtred_junctions');
 my $isChrome = $cgi->param('is_chrome');
+my $max_dejavu = $cgi->param('dejavu');
 
 my $buffer = GBuffer->new;
 my $project = $buffer->newProject( -name => $project_name );
@@ -27,9 +28,9 @@ $project->getChromosomes();
 my $patient = $project->getPatient($use_patient);
 $patient->use_not_filtred_junction_files(0) if (not $view_all_junctions);
 
+
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
-
 
 my $patient_name = $patient->name();
 my $table_id = 'table_'.$patient_name;
@@ -57,11 +58,29 @@ if (scalar (@lJunctions) > 30) {
 	$default_filter_score = "data-filter-default='>=1'";
 }
 
+my $max_dejavu_value = 11;
+$max_dejavu_value = $max_dejavu if $max_dejavu;
+my $html_dejavu = qq{<center><div class="container" style="width:100%;padding-top:10px;"><div class="row">};
+$html_dejavu .= qq{<div class="col-sm-6" style="text-align:right;">
+	<table>
+		<tr>
+			<td style="padding-left:5px;">
+				<label for="slider_dejavu" class="form-label" style="font-size:10px;font-weight:300;"><i>in max <span id="nb_max_dejavu_projects" style="color:blue;">$max_dejavu_value</span> Project(s)</i></label>
+				<input type="range" class="form-range" min="1" max="11" value="$max_dejavu_value" step="1" id="slider_dejavu" onchange="update_dejavu_span_value()">
+			</td>
+			<td style="padding-left:20px;">
+				<button type="button" class="btn btn-sm btn-primary" id="b_update_dejavu" onclick="launch_dejavu_span_value()"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
+			</td>
+		</tr>
+	</table>
+</div>};
+$html_dejavu .= qq{</div></div></center>};
+
 $html .= qq{<center><span style='color:red;font-size:13px'>Patient $patient_name</span>$release$gencode</center><br>};
 $html .= qq{<table id='$table_id' data-sort-name='score' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
-$html .= qq{<th data-field="figs"><b><center>Figure</center></b></th>};
+#$html .= qq{<th data-field="figs"><b><center>Figure</center></b></th>};
 $html .= qq{<th data-field="sashimi"><b><center>Sashimi Plot</center></b></th>};
 $html .= qq{<th data-filter-control='select' data-sortable="select" data-field="junction_type"><b><center>Junction Type</center></b></th>};
 $html .= qq{<th data-filter-control='select' data-sortable="select" data-field="junction_type_description"><b><center>Junction Type Description</center></b></th>};
@@ -75,7 +94,12 @@ $html .= qq{<th data-sortable="true" data-field="normal_count"><b><center>Normal
 $html .= qq{<th data-filter-control='input' $default_filter_score data-sortable="true" data-field="score"><b><center>Score</center></b></th>};
 #$html .= qq{<th data-sortable="true" data-field="dejavu_cnv"><b><center>DejaVu CNVs</th>};
 $html .= qq{<th data-filter-control='input' $default_filter_dejavu_project data-sortable="true" data-field="dejavu_junctions_project"><b><center>DejaVu Junctions InThisRun</b><br>-Exact jonction-</th>};
-$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center>DejaVu Junctions</b></th>};
+if ($max_dejavu_value == 11) {
+	$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center><div>DejaVu Junctions -<span style='color:green;'>used ALL</span>-</div></b><div>$html_dejavu</div></th>};
+}
+else {
+	$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center><div>DejaVu Junctions -<span style='color:red;'>used $max_dejavu_value</span>-</div></b><div>$html_dejavu</div></th>};
+}
 $html .= qq{</thead>};
 $html .= qq{<tbody>};
 
@@ -85,6 +109,8 @@ foreach my $junction (@lJunctions) {
 	$n++;
 	print '.' if ($n % 100);
 	#next if (not $junction->is_filtred_results($patient));
+	
+	next if ($max_dejavu and $max_dejavu < $junction->dejavu_nb_projects());
 	
 	$junction->getPatients();
 	my $ensid = $junction->annex->{$patient->name()}->{ensid};
@@ -160,8 +186,11 @@ foreach my $junction (@lJunctions) {
 	my $bam_file = "https://www.polyweb.fr/".$patient->bamUrl();
 	my $list_patients_ctrl = $patient->getPatients_used_control_rna_seq_junctions_analyse();
 	if ($list_patients_ctrl) {
+		my $nb_control;
 		foreach my $other_pat (@$list_patients_ctrl) {
 			$bam_file .= ',https://www.polyweb.fr/'.$other_pat->bamUrl();
+			$nb_control++;
+			last if $nb_control == 3;
 		}
 	}
 	else {
@@ -179,13 +208,13 @@ foreach my $junction (@lJunctions) {
 	my $locus = $chr_id.':'.($junction->start()-100).'-'.($junction->end()+100);
 	my $igv_link = qq{<button class='igvIcon2' onclick='launch_igv_tool_rna("", "$bam_file,$gtf","$locus")' style="color:black"></button>};
 	
-	my $svg_button = 'N.A.';
-	my $svg_patient = $junction->getSvgPlotPath($patient);
-	if (-e $svg_patient) {
-		$svg_patient =~ s/\/\//\//g;
-		$svg_patient =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
-		$svg_button = qq{<button type="button" class="btn btn-default" onClick="zoom_file('', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;max-height:60px;max-width:130px;"><img loading="lazy" src="$svg_patient" alt="Pb" width="100%"></img></button>};
-	}
+#	my $svg_button = 'N.A.';
+#	my $svg_patient = $junction->getSvgPlotPath($patient);
+#	if (-e $svg_patient) {
+#		$svg_patient =~ s/\/\//\//g;
+#		$svg_patient =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+#		$svg_button = qq{<button type="button" class="btn btn-default" onClick="zoom_file('', '$svg_patient')" style="text-align:center;padding:2px;background-color:$color;max-height:60px;max-width:130px;"><img loading="lazy" src="$svg_patient" alt="Pb" width="100%"></img></button>};
+#	}
 	
 	my $sashimi_button;
 	my $list_sashimi_plot_files = $junction->getListSashimiPlotsPathFiles($patient);
@@ -221,7 +250,7 @@ foreach my $junction (@lJunctions) {
 	
 	$html .= qq{<tr style="text-align:center;font-size:11px;">};
 	$html .= qq{<td>$igv_link</td>};
-	$html .= qq{<td>$svg_button</td>};
+#	$html .= qq{<td>$svg_button</td>};
 	$html .= qq{<td>$sashimi_button</td>};
 	$html .= qq{<td>$type_junction</td>};
 	$html .= qq{<td>$type_junction_description</td>};
@@ -247,7 +276,8 @@ $project->dejavuJunctions->close();
 my $hash;
 $hash->{html} = $html;
 $hash->{table_id} = $table_id;
-
+$hash->{used_dejavu} = $max_dejavu_value;
+$hash->{used_dejavu} = $max_dejavu if $max_dejavu;
 printJson($hash);
 exit(0);
 
