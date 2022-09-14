@@ -94,7 +94,7 @@ foreach my $this_project_name (keys %$hash_projects) {
 	
 	my ($h_junctions_dejavu_run, $in_error);
 	foreach my $this_patient (@{$project_tmp->getPatients()}) {
-		$this_patient->use_not_filtred_junction_files(0);
+		#$this_patient->use_not_filtred_junction_files(0);
 		if (($hType_patients and exists $hType_patients->{$this_patient->name()}->{pat}) or not $hType_patients) {
 			my @lJunctions;
 			eval { @lJunctions = @{$this_patient->getJunctions()}; };
