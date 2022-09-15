@@ -88,6 +88,7 @@ $hash->{html} = $html_table_patients;
 if ($hType_patients) {
 	my @lPatOk;
 	foreach my $patname (sort keys %$hType_patients) {
+		next if (not exists $h_resume->{$patname});
 		push(@lPatOk, $patname) if exists $hType_patients->{$patname}->{pat};
 	}
 	$hash->{patients} = join(';', @lPatOk);
