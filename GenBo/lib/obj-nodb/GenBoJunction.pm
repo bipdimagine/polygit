@@ -229,6 +229,7 @@ has parse_nb_projects_patients => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
 		my ($h_proj, $h_pat, $hpatrun);
 		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume(98)}) {
 			my @list = split(';', $h->{projects});
@@ -258,6 +259,7 @@ has dejavu_nb_projects => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
 		return $self->parse_nb_projects_patients->{projects};
 	},
 );
@@ -267,6 +269,7 @@ has dejavu_nb_patients => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
 		return $self->parse_nb_projects_patients->{patients};
 	},
 );
@@ -276,6 +279,7 @@ has inthisrun_nb_patients => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
 		return $self->parse_nb_projects_patients->{patients_inthisrun};
 	},
 );
