@@ -19,6 +19,15 @@
                 margin: 0;
                 overflow: hidden;
             }
+            
+            .nav > li > a:focus {
+		        background-color: unset !important;
+		      }
+            .nav > li > a:hover {
+		        background-color: unset !important;
+		      }
+            
+            
             #borderContainer {
                 width: 100%;
                 height: 100%;
@@ -610,9 +619,9 @@
 							}
 							if (key == 'patients') {
 								var panel = "";
-								panel += "<nav id='navbar_project' class='navbar navbar-light overflow-auto noHover' style='border-bottom:1px double black;margin-bottom:0px;line-height:10px;min-height:0px;'>";
-								panel += "<div id='container_list_patients' class='noHover'>";
-								panel += "<div class='navbar-header noHover'>";
+								panel += "<nav id='navbar_project' class='noHover navbar navbar-light overflow-auto' style='border-bottom:1px double black;margin-bottom:0px;line-height:10px;min-height:0px;'>";
+								panel += "<div id='container_list_patients''>";
+								panel += "<div class='navbar-header'>";
 								panel += "</div>";
 								panel += "<ul class='nav navbar-nav noHover' style='width:max-content;overflow-x:scroll;overflow-y:hidden;line-height:10px;'>";
 								panel += "<li class='noHover' onclick='launch_project()' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:3px solid #23527C;border-top:1px solid #23527C;'><a class='noHover' href='#' style='padding-top:5px;padding-bottom:5px;'><span class='noHover' style='font-size:13px;text-align:center;'><b>PROJECT<br>RESUME</b></span></a></li>";
@@ -621,7 +630,7 @@
 									var name = list_patients[i];
 									var cmd = "launch_patient(\"" + name + "\")";
 									var span_name = 'span_' + name;
-									panel += "<ul class='nav navbar-nav noHover' onclick='" + cmd + "'><li class='noHover' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#23527C;'><a class='noHover' href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span class='noHover' style='color:#85BAC3;'>View Patient</span><br><span class='noHover' style='color:white;font-size:8px;'><b>";
+									panel += "<ul class='nav navbar-nav noHover' onclick='" + cmd + "'><li class='noHover' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#23527C;'><a class='noHover' href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
 									panel += name;
 									panel += "</b></span></a></li></ul>";
 							    }
