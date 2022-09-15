@@ -93,12 +93,14 @@ $html .= qq{<th data-sortable="true" data-field="junc_count"><b><center>Junction
 $html .= qq{<th data-sortable="true" data-field="normal_count"><b><center>Normal Count</center></b></th>};
 $html .= qq{<th data-filter-control='input' $default_filter_score data-sortable="true" data-field="score"><b><center>Score</center></b></th>};
 #$html .= qq{<th data-sortable="true" data-field="dejavu_cnv"><b><center>DejaVu CNVs</th>};
-$html .= qq{<th data-filter-control='input' $default_filter_dejavu_project data-sortable="true" data-field="dejavu_junctions_project"><b><center>DejaVu Junctions InThisRun</b><br>-Exact jonction-</th>};
-if ($max_dejavu_value == 11) {
-	$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center><div>DejaVu Junctions -<span style='color:green;'>used ALL</span>-</div></b><div>$html_dejavu</div></th>};
-}
-else {
-	$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center><div>DejaVu Junctions -<span style='color:red;'>used $max_dejavu_value</span>-</div></b><div>$html_dejavu</div></th>};
+if ($release =~ /HG19/) {
+	$html .= qq{<th data-filter-control='input' $default_filter_dejavu_project data-sortable="true" data-field="dejavu_junctions_project"><b><center>DejaVu Junctions InThisRun</b><br>-Exact jonction-</th>};
+	if ($max_dejavu_value == 11) {
+		$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center><div>DejaVu Junctions -<span style='color:green;'>used ALL</span>-</div></b><div>$html_dejavu</div></th>};
+	}
+	else {
+		$html .= qq{<th data-sortable="false" data-field="dejavu_junctions"><b><center><div>DejaVu Junctions -<span style='color:red;'>used $max_dejavu_value</span>-</div></b><div>$html_dejavu</div></th>};
+	}
 }
 $html .= qq{</thead>};
 $html .= qq{<tbody>};
@@ -263,21 +265,26 @@ foreach my $junction (@lJunctions) {
 	$html .= qq{<td>$count_normal_junction</td>};
 	$html .= qq{<td>$score</td>};
 #	$html .= qq{<td>$dv_cnv</td>};
-	$html .= qq{<td style="max-height:150px;">$dv_junctions_inthisrun</td>};
-	$html .= qq{<td style="max-height:150px;">$dv_junctions</td>};
+	$html .= qq{<td style="max-height:150px;">$dv_junctions_inthisrun</td>} if ($release =~ /HG19/);
+	$html .= qq{<td style="max-height:150px;">$dv_junctions</td>} if ($release =~ /HG19/);
 	$html .= qq{</tr>};
 }
 $html .= qq{</tbody>};
 $html .= qq{</table>};
 #$no_cnv->close();
-$project->dejavuJunctions->close();
+$project->dejavuJunctions->close() if ($release =~ /HG19/);
 
 
 my $hash;
 $hash->{html} = $html;
 $hash->{table_id} = $table_id;
-$hash->{used_dejavu} = $max_dejavu_value;
-$hash->{used_dejavu} = $max_dejavu if $max_dejavu;
+if ($release =~ /HG19/) {
+	$hash->{used_dejavu} = $max_dejavu_value;
+	$hash->{used_dejavu} = $max_dejavu if $max_dejavu;
+}
+else {
+	$hash->{used_dejavu} = 'not';
+}
 printJson($hash);
 exit(0);
 

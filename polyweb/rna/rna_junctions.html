@@ -673,7 +673,8 @@
 							myPanel.appendTo(myNode);
 							enable_table_search(data.table_id);
 			    			used_dejavu_value = data.used_dejavu;
-							update_dejavu_span_value();
+			    			if (used_dejavu_value == 'not') {}
+							else { update_dejavu_span_value();}
 							dijit.byId('waiting').hide();
 						}
 					});
@@ -826,7 +827,8 @@
 							myPanel.appendTo(myNode);
 							enable_table_search(data.table_id);
 			    			used_dejavu_value = data.used_dejavu;
-							update_dejavu_span_value();
+			    			if (used_dejavu_value == 'not') {}
+							else { update_dejavu_span_value();}
 							dijit.byId('waiting').hide();
 						}
 					});
@@ -847,8 +849,8 @@
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">RNA Analysis - Junction</span></a></li>
 				</ul>
 				<ul class="nav navbar-nav">
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
 				</ul>
 			</div>
 		</nav>
