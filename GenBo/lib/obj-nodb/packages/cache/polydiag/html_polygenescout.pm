@@ -19,13 +19,13 @@ my $cgi = new CGI();
 
 sub print_hgmd_total_new {
 	my ($total_new, $external_name) = @_;
-	return qq{<td><a class="btn btn-xs" onClick="get_variants_from_hgmd_gene_filters('$external_name', '1');" style="min-width:30px"><button style="background-color:green;color:white;font-size:12px;border: 5px white double;padding-left:5px;padding-right:5px;">$total_new</button></a></td>} if ($total_new);
+	return qq{<td><a class="btn btn-xs" onClick="get_variants_from_hgmd_gene_filters('$external_name', '1');" style="min-width:30px"><button style="background-color:green;color:white;font-size:12px;padding-left:5px;padding-right:5px;">$total_new</button></a></td>} if ($total_new);
 	return $cgi->td({rowspan => 1,style => "max-height:60px;overflow-y: auto;width:90px;"}, '<i class="fa fa-minus"></i>');
 }
 
 sub print_hgmd_total_mut {
 	my ($total_mut, $external_name) = @_;
-	return qq{<td><a class="btn btn-xs" onClick="get_variants_from_hgmd_gene_filters('$external_name');" style="min-width:30px"><button style="background-color:green;color:white;font-size:12px;padding-left:5px;border: 5px white double;padding-right:5px;">$total_mut</button></a></td>} if ($total_mut);
+	return qq{<td><a class="btn btn-xs" onClick="get_variants_from_hgmd_gene_filters('$external_name');" style="min-width:30px"><button style="background-color:green;color:white;font-size:12px;padding-left:5px;padding-right:5px;">$total_mut</button></a></td>} if ($total_mut);
 	return $cgi->td({rowspan => 1,style => "max-height:60px;overflow-y: auto;width:90px;"}, '<i class="fa fa-minus"></i>');
 }
 
@@ -34,10 +34,10 @@ sub print_hgmd_concepts {
 	if ($nb_concepts) {
 		if ($used_concept and $concept_list =~ /$used_concept/) {
 			$concept_list =~ s/$used_concept/$used_concept <b><i>Found !<\/b><\/i>/;
-			return qq{<td><a class="btn btn-xs" onClick="document.getElementById('span_list_panels').innerHTML='$concept_list';dijit.byId('dialog_list_panels').show();" style="min-width:30px"><button style="background-color:red;color:white;font-size:12px;padding-left:5px;border: 5px white double;padding-right:5px;">$nb_concepts</button></a></td>}
+			return qq{<td><a class="btn btn-xs" onClick="document.getElementById('span_list_panels').innerHTML='$concept_list';dijit.byId('dialog_list_panels').show();" style="min-width:30px"><button style="background-color:red;color:white;font-size:12px;padding-left:5px;padding-right:5px;">$nb_concepts</button></a></td>}
 		}
 		else {
-			return qq{<td><a class="btn btn-xs" onClick="document.getElementById('span_list_panels').innerHTML='$concept_list';dijit.byId('dialog_list_panels').show();" style="min-width:30px"><button style="background-color:green;color:white;font-size:12px;padding-left:5px;border: 5px white double;padding-right:5px;">$nb_concepts</button></a></td>}
+			return qq{<td><a class="btn btn-xs" onClick="document.getElementById('span_list_panels').innerHTML='$concept_list';dijit.byId('dialog_list_panels').show();" style="min-width:30px"><button style="background-color:green;color:white;font-size:12px;padding-left:5px;padding-right:5px;">$nb_concepts</button></a></td>}
 		}
 	}
 	return $cgi->td({rowspan => 1,style => "max-height:60px;overflow-y: auto;width:90px;"}, '<i class="fa fa-minus"></i>');
@@ -316,7 +316,7 @@ sub print_table_base_line_gene {
 	$type = "orange" if $pli >= 0.75;
 	$type = "red" if $pli >= 0.9;
 	my $m = $hgene->{max_score};
-	$out .=qq{<td><center><a class="btn btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="min-width:30px"><button style="background-color:$type;color:white;font-size:11px;padding-left:5px;border: 5px white double;padding-right:5px;">$pli</button></a></center></td>};
+	$out .=qq{<td><center><a class="btn btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="min-width:30px"><button style="background-color:$type;color:white;font-size:11px;padding-left:5px;padding-right:5px;">$pli</button></a></center></td>};
 		
 	my $panel_name1 = join("-",keys %{$hgene->{panels}});
 	my $hPanels;
@@ -336,10 +336,10 @@ sub print_table_base_line_gene {
 	$panel_list .= "<br>";
 	$panel_name1 = scalar (keys %{$hgene->{panels}});
 	if ($panel_name1 and $found_phenotype and $found_phenotype == 1) {
-		$out .=qq{<td><center><a class="btn btn-primary btn-xs" href="#" role="button" style="border-color:transparent;background-color:transparent;color:black;font-size:11px;" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><button style="background-color:red;color:white;font-size:11px;padding-left:5px;border: 5px white double;padding-right:5px;">$panel_name1</button></a></center></td>};
+		$out .=qq{<td><center><a class="btn btn-primary btn-xs" href="#" role="button" style="border-color:transparent;background-color:transparent;color:black;font-size:11px;" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><button style="background-color:red;color:white;font-size:11px;padding-left:5px;padding-right:5px;">$panel_name1</button></a></center></td>};
 	}
 	elsif ($panel_name1) {
-		$out .=qq{<td><center><a class="btn btn-primary btn-xs" href="#" role="button" style="border-color:transparent;background-color:transparent;color:black;font-size:11px;" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><button style="background-color:green;color:white;font-size:11px;padding-left:5px;border: 5px white double;padding-right:5px;">$panel_name1</button></a></center></td>};
+		$out .=qq{<td><center><a class="btn btn-primary btn-xs" href="#" role="button" style="border-color:transparent;background-color:transparent;color:black;font-size:11px;" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><button style="background-color:green;color:white;font-size:11px;padding-left:5px;padding-right:5px;">$panel_name1</button></a></center></td>};
 	}
 	else { $out .= qq{<td><center><i class="fa fa-minus"></i></center></td>}; }
 

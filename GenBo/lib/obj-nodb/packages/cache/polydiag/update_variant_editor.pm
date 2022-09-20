@@ -1813,7 +1813,13 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				$type = "red" if $pli >= 0.9;
 				my $m = $hgene->{max_score};
 				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
- 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span class="badge" style="color:$type">$pli</span></a>};
+ 				
+ 				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
+ 				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
+ 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				
+ 				
+ 				
 	   			my $panel_name1 = join("-",keys %{$hgene->{panels}});
 	   			my $hPanels;
 	   			foreach my $panel_name (keys %{$hgene->{panels}}) {
@@ -2661,6 +2667,7 @@ sub table_cnv_genes_transcripts {
 		my $type ="green";
 		$type = "orange" if $pli >= 0.75;
 		$type = "red" if $pli >= 0.9;
+		
  		my $b_pli =qq{<a class="btn btn-xs" role="button" href='https://gnomad.broadinstitute.org/gene/$gid' target='_blank' style="background-color:#EEE;color:black;border:solid 1px black;"><span style="font-size:8px;background-color:#EEE;">$pli</span></a>};
  		
  		#VARIANTS
