@@ -2287,11 +2287,11 @@ has tree_primers =>(
 is		=> 'ro',
 	lazy	=> 1,
 	default => sub {
-		my $self = shift;
+		my $self = shift; 
 		my $tabix = $self->project->tabix_primers;
 		my $res = $tabix->query_full($self->ucsc_name,$self->start,$self->end);
 		my $tree = Set::IntervalTree->new;
-		return $tree unless $res->get();;
+		return $tree unless $res;
 		while(my $line = $res->next){
 		my($a,$b,$c,$pid) = split(" ",$line);
 		

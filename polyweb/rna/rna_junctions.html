@@ -1,0 +1,908 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>RNA Junctions</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+        <!-- chargement des feuilles de styles necessaires a l'affichage -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+        <style type="text/css">
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/claro/claro.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/claroGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/widget/Dialog/Dialog.css";
+			@import "../css/polycss/login.css";
+      		@import "../css/polycss/button.css";
+    
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+            
+            .navbar-patient > li > a:focus {
+		        background-color: unset !important;
+		        border-radius: 30% 30% 0% 0%;
+		        border:3px solid green;
+		      }
+            .navbar-patient > li > a:hover {
+		        background-color: unset !important;
+		        border-radius: 30% 30% 0% 0%;
+                border:3px solid green;
+		      }
+            
+            
+            #borderContainer {
+                width: 100%;
+                height: 100%;
+            }
+    		
+            .testDialog {
+                font-size: 8pt;
+            }
+    
+            .dojoxGrid-row-odd td {
+            }
+    
+            .name {
+                color: #2962A7;
+                font-weight: bold;
+            }
+    
+            .pconseq {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_blue.png);
+                padding: 1em;
+                width: 1200px;
+                min-width: 400px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .ptranscript {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_grey.png);
+                padding: 1em;
+                min-width: 100px;
+                height: 15px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .pconseq .gridconseq {
+                background: #fff;
+                height: 150px;
+                position: float;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .partsContainerSmall {
+                background: rgb(192,80,77);
+                padding: 1em;
+                background-image: url(../images/polyicons/bckgrdsmall.png);
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .titleSmall {
+                font-family: Verdana, Arial, Helvetica, sans-serif;
+                padding: 0.5em 0.5em 0 0.5em;
+                color: #000000;
+                background: rgb(192,80,77);
+                font-weight: normal;
+                -moz-border-radius-topleft: 8px;
+                -moz-border-radius-topright: 8px;
+                -webkit-border-top-left-radius: 8px;
+                -webkit-border-top-right-radius: 8px;
+                -webkit-box-shadow: 2px 2px 11px #888;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+            }
+    
+            .partsContainerSmall .gridContainerSmall {
+                background: #fff;
+                height: 150px;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .person_name {
+                padding: 3px 3px 3px 25px;
+                font-size: 23px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #ff5500;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .titre {
+                padding: 1px 5px 1px 25px;
+                margin-left: 70px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 12px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .run {
+                padding: 1px 1px 1px 25px;
+                margin-left: 50px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(../images/polyicons/lightning.png) no-repeat center left;
+            }
+    
+            .span_desc {
+                font-family: arial;
+                font-size: 10px;
+                padding: 8px 1px 1px 25px;
+                background: url(../images/polyicons/star.png) no-repeat center left;
+            }
+    
+            .alternateDock {
+                position: absolute;
+                background-color: #000000;
+                right: 0px;
+                top: 0px;
+                border-left: 1px solid #ccc;
+                height: 100%;
+            }
+    
+            #alternateDock ul.dojoxDockList {
+                display: block;
+            }
+    
+            .td_align {
+                border: 2px solid;
+            }
+    
+            .tundra #toolbar.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar2.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar3.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+            
+            table.dataTable thead .sorting:before, table.dataTable thead .sorting:after, table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+               padding: 5px;
+            }
+            .dataTables_wrapper .mdb-select {
+                border: none;
+                float: left;
+            }
+            .dataTables_wrapper .mdb-select.form-control {
+                padding-top: 0;
+                margin-top: -1rem;
+                margin-left: 0.7rem;
+                margin-right: 0.7rem;
+                width: 100px;
+            }
+            .dataTables_length label {
+                float: left;
+            }
+            table.dataTable {
+                margin-bottom: 3rem!important;
+            }
+            div.dataTables_wrapper div.dataTables_info {
+                padding-top: 0;
+            }
+            
+            table #grid_var {
+                border-collapse: collapse;   
+            }
+            #grid_var tr:hover {
+                background-color: #ccc;
+            }
+            #grid_var th {
+                background-color: #fff;
+            }
+            #grid_var th, #example td {
+                padding: 3px 5px;
+            }
+            #grid_var td:hover {
+                cursor: pointer;
+            }
+            
+            table #tab_transcripts {
+                border-collapse: collapse;   
+            }
+            #tab_transcripts tr:hover {
+                background-color: #ccc;
+            }
+            #tab_transcripts th {
+                background-color: #fff;
+            }
+            #tab_transcripts th, #example td {
+                padding: 3px 5px;
+            }
+            #tab_transcripts td:hover {
+                cursor: pointer;
+            }
+            
+			.collapsing{
+			 	-webkit-transition:height .01s ease;
+			  	transition:height .01s ease
+			}
+			
+			.loader {
+				border-top: 16px solid #F5F5F5;
+				border-right: 16px solid #A9A9A9;
+				border-bottom: 16px solid #808080;
+				border-left: 16px solid #000000;
+				border-radius: 50%;
+			    width: 120px;
+			    height: 120px;
+  				-webkit-animation: spin 2s linear infinite;
+			    animation: spin 2s linear infinite;
+			}
+			
+			.nav-tabs {
+			  overflow-x: auto;
+			  overflow-y: hidden;
+			  display: -webkit-box;
+			  display: -moz-box;
+			}
+			.nav-tabs>li {
+			  float: none;
+			}
+			
+			@-webkit-keyframes spin {
+				0% { -webkit-transform: rotate(0deg); }
+				100% { -webkit-transform: rotate(360deg); }
+			}
+			
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+			
+			#text_search_polyquery_var {
+			    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+			    background-position: 10px 12px; /* Position the search icon */
+			    background-repeat: no-repeat; /* Do not repeat the icon image */
+			    width: 100%; /* Full-width */
+			    font-size: 16px; /* Increase font-size */
+			    padding: 12px 20px 12px 40px; /* Add some padding */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    margin-bottom: 12px; /* Add some space below the input */
+			}
+			
+			#myTable {
+			    border-collapse: collapse; /* Collapse borders */
+			    width: 100%; /* Full-width */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    font-size: 18px; /* Increase font-size */
+			}
+			
+			#myTable th, #myTable td {
+			    text-align: left; /* Left-align text */
+			    padding: 12px; /* Add padding */
+			}
+			
+			#myTable tr {
+			    /* Add a bottom border to all table rows */
+			    border-bottom: 1px solid #ddd;
+			}
+			
+			#myTable tr.header, #myTable tr:hover {
+			    /* Add a grey background color to the table header and on hover */
+			    background-color: #f1f1f1;
+			}
+			 
+			.visible {
+			  visibility: visible;
+			}
+			
+			.invisible {
+			  visibility: hidden;
+			}
+
+			.progress_chr {
+				opacity: 0;
+				-webkit-transition: opacity 2s ease-in;
+				-moz-transition: opacity 2s ease-in;
+				-o-transition: opacity 2s ease-in;
+				-ms-transition: opacity 2s ease-in;
+				transition: opacity 2s ease-in;
+			}
+			
+			.progress_chr.load {
+			    opacity: 1;
+			}
+			
+			.dijitSliderLeftBumper {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderProgressBar {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderImageHandle {
+				border: 6px solid #cfe5fa;
+			}
+			
+			.dijitCheckBoxInput {
+				opacity:10;
+			}
+			
+			.checkbox {
+				margin: 0px 0 0;
+				margin-top: 1px \9;
+				line-height: normal;
+			}
+	
+			.badge1 {
+			  display: block;
+			  position: absolute;
+			  top: -13px;
+			  right: -2px;
+			  line-height: 16px;
+			  height: 16px;
+			  padding: 0 5px;
+			  font-family: Arial, sans-serif;
+			  color: white;
+			  text-shadow: 0 1px rgba(0, 0, 0, 0.25);
+			  border: 1px solid;
+			  border-radius: 10px;
+			  -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			
+			.badge1.green {
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			 .badge1.yellow {
+			  background: #FFFF56;
+			  border-color: #FFFF88;
+			  color:black;
+			  background-image: -webkit-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -moz-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -o-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: linear-gradient(to bottom, #FFFF88, #FFFF56);
+			}
+			 .badge1.red {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: -moz-linear-gradient(top, #AA0000, #FF0066);
+			  background-image: -o-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: linear-gradient(to bottom, #fc9f8a, #FF0066);
+			}
+			
+			 .badge1.grey {
+			  background: #EEE;
+			  border-color: white;
+			  background-image: -webkit-linear-gradient(top, #EEE,beige);
+			  background-image: -moz-linear-gradient(top, #EEE,beige);
+			  background-image: -o-linear-gradient(top, #EEE,beige);
+			  background-image: linear-gradient(to bottom, #EEE,beige);
+			  color:#555
+			}	
+			 .badge1.orange {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -moz-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -o-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: linear-gradient(to bottom, #FFC04C,#FFA500);
+			}
+			.badge1.coral {
+			;	//#FF7061
+			  background:#FF7061;# #FF7F50;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -moz-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -o-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: linear-gradient(to bottom, #FF7F50,#FF7061);
+			}
+        </style>
+        
+        <style type="text/css" media="print">
+			@page { size: landscape; }
+			
+			.row {
+				-webkit-print-color-adjust: exact;
+			}
+		</style>
+        
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	    
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		
+		
+		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/tableExport.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF/jspdf.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF-AutoTable/jspdf.plugin.autotable.js"></script>
+       
+        <link rel="stylesheet" type="text/css" href="js/igv/igv-1.0.9.css">
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.11.2/dist/igv.min.js"></script>
+		<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		<script type="text/javascript" src="../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+	  	<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	   	<script type="text/javascript" src="../js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+		<script type="text/javascript" src="../js/polyviewer/methods_polyviewer.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
+         
+        <style type="text/css">
+        	input[type="checkbox"], input[type="radio"] { margin: 0px 0 0 !important; }
+        </style>
+        
+        <script type="text/javascript">
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dojo.cookie");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dijit.form.CheckBox");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem", "dojox/grid/cells/dijit","dijit/form/HorizontalSlider"]);
+            
+            var project_name = param("project");
+            var patient_name = param("patient");
+            
+			// Firefox 1.0+
+			var isFirefox = typeof InstallTrigger !== 'undefined';
+			
+			// Safari 3.0+ "[object HTMLElementConstructor]" 
+			var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && window['safari'].pushNotification));
+			
+			// Internet Explorer 6-11
+			var isIE = /*@cc_on!@*/false || !!document.documentMode;
+			
+			// Chrome 1 - 79
+			var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+            
+            var polyquery_filters;
+            var list_projects_names = [];
+            var list_panels = [];
+            
+            var username, pwd, project_name;
+            var release_annotation = '34';
+            var use_session_id = '';
+            $(document).ready(function () {
+	            setTimeout(function() {
+					document.getElementById("span_project_name").innerHTML = "Project "+project_name;
+					document.title = "RNA Junctions [" + project_name + "]";
+					checkPassword();
+				}, 1500);
+	    	});
+	    	
+	    	var is_checking = 0;
+			function checkPassword(new_log){
+				if (is_checking == 1) { return; }
+				is_checking = 1;
+				dijit.byId('login').hide();
+				show_waiting('Checking Login / Password...');
+				var username;
+				var passwd;
+				if (new_log == 1) {
+	                var midnight = new Date();
+	                midnight.setHours(23,59,59,0);
+	                passwd = document.getElementById('passwd').value;
+	                username = document.getElementById('username').value;
+					dojo.cookie("username", username, { expires:midnight ,path: "/" });
+					dojo.cookie("passwd", passwd, { expires: midnight,path: "/" });
+				}
+				else {
+					username = dojo.cookie("username");
+					passwd = dojo.cookie("passwd");
+					}
+				var found = 0;
+				urlpasswd = url_listProject_rna+"?type=login&pwd="+passwd+"&login="+username+"&action=list"+"&project="+project_name;
+				$.getJSON( urlpasswd, function( data ) {
+					$.each( data.items, function(val) {
+						var this_project = data.items[val].name;
+						if (this_project == project_name) {
+							found = 1;
+						}
+					});
+					dijit.byId('waiting').hide();
+					is_checking = 0;
+					if (found == 1) { return run_after_check_login_OK(); }
+					else { dijit.byId('login').show(); }
+			    })
+			    return;
+			}
+			
+			function run_after_check_login_OK() {
+				getGencodeTrackForProject(project_name);
+				dijit.byId('login').hide();
+				launch_project();
+			}
+			
+			var html_resume = '';
+			function launch_project() {
+				if (html_resume == '') {
+		    		var text_loading = 'Loading project';
+					show_waiting(text_loading);
+					var url = url_path + "/rnaseq/rna_junctions_project.pl";
+					url += "?project=" + project_name;
+				    $.getJSON( url, function( data ) {
+				    	$.each( data, function( key, val ) {
+				    		if (key == 'html') {
+				    			html_resume = val;
+								document.getElementById("content_res").innerHTML = "";
+								var myNode = document.getElementById("content_res");
+						    	var myPanel = $(val);
+								myPanel.appendTo(myNode);
+								dijit.byId('waiting').hide();
+							}
+							if (key == 'patients') {
+								var panel = "";
+								panel += "<nav id='navbar_project' class='navbar navbar-light overflow-auto' style='border-bottom:1px double black;margin-bottom:0px;line-height:10px;min-height:0px;'>";
+								panel += "<div id='container_list_patients''>";
+								panel += "<div class='navbar-header'>";
+								panel += "</div>";
+								panel += "<ul class='nav navbar-nav navbar-patient' style='width:max-content;overflow-x:scroll;overflow-y:hidden;line-height:10px;'>";
+								panel += "<li onclick='launch_project()' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:3px solid #23527C;border-top:1px solid #23527C;'><a href='#' style='padding-top:5px;padding-bottom:5px;'><span style='font-size:13px;text-align:center;'><b>PROJECT<br>RESUME</b></span></a></li>";
+								var list_patients = val.split(';');
+								for (var i = 0; i < list_patients.length; i++){
+									var name = list_patients[i];
+									var cmd = "launch_patient(\"" + name + "\")";
+									var span_name = 'span_' + name;
+									panel += "<ul class='nav navbar-nav navbar-patient' onclick='" + cmd + "'><li style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#23527C;'><a href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
+									panel += name;
+									panel += "</b></span></a></li></ul>";
+							    }
+								panel += "</ul>";
+								panel += "</div>";
+								panel += "</nav>";
+								var myNode = document.getElementById("content_nav");
+						    	var myPanel = $(panel);
+								myPanel.appendTo(myNode);
+							}
+						});
+				    })
+				}
+				else {
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(html_resume);
+					myPanel.appendTo(myNode);
+				}    
+			}
+			
+			var used_dejavu_value;
+			var url_last_launch_patient;
+			function launch_patient(patient_name, without_filters) {
+				document.getElementById("content_res").innerHTML = "";
+	    		var text_loading = 'Loading patient ' + patient_name;
+				show_waiting(text_loading);
+				var url = url_path + "/rnaseq/rna_junctions_patient.pl";
+				url += "?project=" + project_name;
+				url += "&patient=" + patient_name;
+				if (isChrome) { url += "&is_chrome=1"; }
+				if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
+				url_last_launch_patient = url;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_res");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							enable_table_search(data.table_id);
+			    			used_dejavu_value = data.used_dejavu;
+			    			if (used_dejavu_value == 'not') {}
+							else { update_dejavu_span_value();}
+							dijit.byId('waiting').hide();
+						}
+					});
+			    })
+			}
+	    	
+	    	function show_waiting(text) {
+	    		document.getElementById("waiting_text").innerHTML = "Loading Data...";
+	    		if (text) {
+	    			document.getElementById("waiting_text").innerHTML = text;
+	    		}
+	    		dijit.byId('waiting').show();
+	    	}
+			
+			function zoom_file(svg_legend, svg_file) {
+				var span = document.createElement("span");
+				span.innerHTML = "<br>"+svg_legend;
+				var elem = document.createElement("img");
+				elem.setAttribute("src", svg_file);
+				elem.setAttribute("height", "200%");
+				elem.setAttribute("width", "auto");
+				elem.setAttribute("style", "transform: translate(0%, -30%);");
+				elem.setAttribute("alt", "N.A.");
+				document.getElementById("dialog_svg").innerHTML = "";
+				document.getElementById("dialog_svg").appendChild(span);
+				document.getElementById("dialog_svg").appendChild(elem);
+				dijit.byId('dialog_svg').show();
+			}
+			
+			function view_sashimi(analyse_name, patient_name, ensg, locus, score) {
+				var url = url_path + "/rnaseq/launch_sashimi_plot.pl";
+				url += "?project=" + project_name;
+				url += "&analyse_name=" + analyse_name;
+				url += "&patient=" + patient_name;
+				url += "&ensg=" + ensg;
+				url += "&locus=" + locus;
+				url += "&score=" + score;
+				$.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'pdf') {
+							view_pdf_file(val);
+						}
+					});
+			    })
+			}
+			
+			function view_pdf_file(file) {
+				var elem = "<div onClick='dijit.byId(\"dialog_sashimi\").hide();' style='background-color:black;'><object data='"+file+"' type='application/pdf' width='900' height='600'></object><br><button onClick='dijit.byId(\"dialog_sashimi\").hide();'>Close PDF</button></div>";
+				document.getElementById("dialog_sashimi").innerHTML = elem;
+				dijit.byId('dialog_sashimi').show();
+			}
+			
+			function update_sashimi_pdf_file (files, nb) {
+				document.getElementById("dialog_sashimi").innerHTML = "<br><img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/><br>";
+				var list_files = files.split(';');
+				var max = list_files.length;
+				var file = list_files[nb];
+				var disabled_previous = 'disabled';
+				var nb_previous = 0;
+				if (parseInt(nb) > 0) {
+					nb_previous = parseInt(nb) - 1;
+					disabled_previous = '';
+				}
+				var disabled_next = 'disabled';
+				var nb_next = 4;
+				if (parseInt(nb) < 4) {
+					nb_next = parseInt(nb) + 1;
+					disabled_next = '';
+				}
+				var elem = "<div style='background-color:black;'><object data='"+file+"' type='application/pdf' width='900' height='500'></object><center><div><label for='zoom_pdf_sashimi' class='form-label' style='color:white;'><button " + disabled_previous + " style='background-color:black;border: solid 2px white;border-radius:10px;' onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_previous + "')\"><span class='glyphicon glyphicon-plus-sign' style='color:white;height:16px'></span></button> ZOOM Sashimi Plot <button style='background-color:black;border: solid 2px white;border-radius:10px;' " + disabled_next + " onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_next + "')\"><span class='glyphicon glyphicon-minus-sign' style='color:white;height:16px;'></span></button></label><input disabled type='range' class='form-range' min='0' max='" + (parseInt(max)-1) + "' value='" + nb + "' style='width:300px;' id='zoom_pdf_sashimi'></div><br><button onClick='dijit.byId(\"dialog_sashimi\").hide();'>Close PDF</button></div></center>";
+				document.getElementById("dialog_sashimi").innerHTML = elem;
+			}
+			
+			function view_pdf_list_files(files) {
+				update_sashimi_pdf_file(files, 0);
+				dijit.byId('dialog_sashimi').show();
+			}
+	
+			function add_bam_igv (bams_files) {
+				var list_bams_files = [];
+				if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
+				else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
+				else { list_bams_files.push(bams_files); }
+				displayListBamInIgvApp(list_bams_files);
+			}
+			
+			function view_deja_vu_rna_junction(project_name, patient_name, junction_id) {
+				document.getElementById("div_dejavu_junction").innerHTML = "";
+				show_waiting("Search DejaVu");
+				var url = url_path + "/polydejavu/dejavu_jonction.pl";
+				url += "?project=" + project_name;
+				url += "&patient=" + patient_name;
+				url += "&id=" + junction_id;
+				$.getJSON( url, function( data ) {
+					if (data.pdf_sashimi == 'none') {
+						document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
+					}
+					else {
+						document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='container'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='row'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='col-md-12' style='border:black solid 1px;'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<center><div style='background-color:black;height:200px;'><object data='" + data.pdf_sashimi + "' type='application/pdf' width='100%' height='200px'></object></div></center>";
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<div class='col-md-12'>";
+						document.getElementById("div_dejavu_junction").innerHTML += "<center>" + data.html_my_variant + "</center>";		
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+						document.getElementById("div_dejavu_junction").innerHTML += "</div>";
+					}
+					document.getElementById("div_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
+					enable_table_search(data.table_id);
+					enable_table_search(data.table_id_my_variant);
+					dijit.byId('waiting').hide();
+					dijit.byId('dialog_dejavu_junction').show();
+			    })
+			}
+		    	
+	    	function enable_table_search(id) {
+	    		$('#'+id).bootstrapTable();
+			}
+			
+			var value_dejavu = 999;
+			function update_dejavu_span_value() {
+				value_dejavu = document.getElementById("slider_dejavu").value;
+				if (value_dejavu == 11) {
+					document.getElementById("nb_max_dejavu_projects").innerHTML = 'ALL';
+				}
+				else {
+					document.getElementById("nb_max_dejavu_projects").innerHTML = value_dejavu;
+				}
+				if (parseInt(used_dejavu_value) == parseInt(value_dejavu)) {
+					document.getElementById("b_update_dejavu").disabled = true;
+				}
+				else {
+					document.getElementById("b_update_dejavu").disabled = false;
+				}
+			}
+			
+			function launch_dejavu_span_value() {
+				show_waiting("Filter DejaVu max " + value_dejavu + " projects");
+				var url = url_last_launch_patient; 
+				if (value_dejavu < 11) { url += "&dejavu=" + value_dejavu; }
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_res");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							enable_table_search(data.table_id);
+			    			used_dejavu_value = data.used_dejavu;
+			    			if (used_dejavu_value == 'not') {}
+							else { update_dejavu_span_value();}
+							dijit.byId('waiting').hide();
+						}
+					});
+			    })
+			}
+			
+		</script>
+    </head>
+	<body class="container-fluid" style="overflow-y:scroll;">
+		<nav id="navbar" class="navbar navbar-inverse" style="background-color:#363945;">
+			<div class="container-fluid">
+				<div class="navbar-header"> <table>
+					<tr><td><a class="navbar-brand" href="https://www.polyweb.fr/" style="padding-top: 5px;padding-bottom: 5px;"><img src='/icons/Polyicons/logo_polyweb_white2.png' width='170px' height='33px' ></a></td></tr>
+					<tr><td style="color:white;font-size:10px;text-align:center"> <span  style="color:#B1268B;font-size:12px;text-align:center">Imagine Institute</span> - <span>University Of Paris</span ></td></tr>
+					</table>
+				</div>
+				<ul class="nav navbar-nav">
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">RNA Analysis - Junction</span></a></li>
+				</ul>
+				<ul class="nav navbar-nav">
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
+				</ul>
+			</div>
+		</nav>
+		
+		<div><span style='color:#23527C;'><b>Select patient analyse:</b></span></div>
+		<div id='content_nav' style="overflow-x:auto;padding-top:5px;"></div>
+		<div class='container-fluid' id='content_res' style="padding-top:25px;"></div>
+		
+		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[500,150]" title="Waiting"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle"/> <span id="waiting_text">Loading Data...</span>
+				</div> 
+			</div>
+		</div>
+       
+		<div id="dialog_igv" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">
+            <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
+        </div>
+		
+		<div id="dialog_sashimi" dojoType="dojox.widget.Dialog" dimensions="[920,600]" title="Sashimi PLOT"></div>
+		
+		<div id="dialog_dejavu_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[920,700]" title="DejaVu Junction">
+			<div class="container-fluid" id="div_dejavu_junction" style="height:99%;width:99%;"></div>
+		</div>
+        
+        <div id="dialog_svg" dojoType="dijit.Dialog" onClick="dijit.byId('dialog_svg').hide();" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;"></div>
+
+      	<div id="login" dojoType="dojox.widget.Dialog" dimensions="[265,160]"   title="Help" onHide="checkPassword();"> 
+			<div class="container" style="min-width:250px;max-width:250px;margin-left: auto ;margin-right: auto ;">
+				<div class="panel panel-success">
+					<div class="panel-body">     
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-user text-success" id="sizing-addon1"></span>
+							<label for="username" class="sr-only">Email address</label>
+							<input type="text"  id="username" name="username" class="form-control text-primary"  autocomplete="on" placeholder="bipd login" required autofocus aria-describedby="sizing-addon1">
+						</div>
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-lock text-success" id="sizing-addon2"></span>
+							<label for="passwd" class="sr-only">Password</label>
+							<input type="password" id="passwd" name="password" class="form-control  text-primary" placeholder="Password" required aria-describedby="sizing-addon2">
+						</div> 
+						<button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" onClick="checkPassword(1);" >Sign in</button>
+					</div>
+				</div> 
+			</div>
+		</div>
+	</body>
+</html>
+
+

@@ -282,7 +282,7 @@ open (READ, "zcat $file | ") || die "Cannot open $file: $!.\n";
 	while (my $line = <READ>){
 		chomp($line);
 		
-		my($zid,$description,@t) = split(";",$line) ;
+		my($zid,$description,@t) = split(",",$line) ;
 		next unless exists $translate_id->{$zid};
 		warn $zid unless exists $translate_id->{$zid};
 		foreach my $rid (@{$translate_id->{$zid}}) {

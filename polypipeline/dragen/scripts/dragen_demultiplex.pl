@@ -101,6 +101,7 @@ foreach my $line(@$aoa){
 }
 
 #change setting
+
 foreach my $set (@{$lines->{"[Settings]"}}){
 	if ($set->[0] eq "Adapter") {
 		$set->[0] = "AdapterRead1"
@@ -108,14 +109,12 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 	
 }
 
-### read mask ;
-my @amask = split(";",$mask);
-my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+$lines->{"[Settings]"}=[];
 
-$lines->{"[Settings]"} = [];
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi;
-push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]);
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]);
+push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
+
 
 my $lheader_data = shift @{$lines->{"[Data]"}};
 if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){

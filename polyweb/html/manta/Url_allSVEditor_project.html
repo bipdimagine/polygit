@@ -1,0 +1,234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<link rel="icon" type="image/png" href="images/polyicons/application_view_tile.png">
+    	<style type="text/css">
+    	@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/Grid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/widget/Dialog/Dialog.css";
+        @import "../../css/polycss/general.css";
+        @import "../../css/polycss/button.css"; 
+        
+		html, body {
+    		width: 100%;
+    		height: 100%;
+    		margin: 0;
+    		overflow : hidden;
+		}    
+   	</style>
+
+
+   	
+	<LINK rel="stylesheet" type="text/css" href="../css/dejavu/dejavu.css">
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="../../js/polyjs/alamut_methods.js" djConfig="parseOnLoad: true"></script>
+	<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+	<script type="text/javascript" src="../../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/manta/Url_allSVEditor.js" djConfig="parseOnLoad: true"></script> 
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript">
+			dojo.require("dojo.store");
+	</script>
+	
+	<script type="text/javascript" src="../js/polyjs/Utility/vp.js" ></script>
+	<script	type="text/javascript">
+			dojo.require("dojo.cookie");
+			dojo.require("dijit.Dialog");
+			dojo.require("dojo.parser");
+			dojo.require("dojo.data.ItemFileReadStore");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dojox.grid.DataGrid");
+			dojo.require("dojo.parser");
+			dojo.require("dijit.TitlePane");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.layout.AccordionContainer");
+			dojo.require("dijit.form.TextBox");
+			dojo.require("dijit.layout.ContentPane");
+			dojo.require("dijit.Toolbar");
+			dojo.require("dijit.form.NumberTextBox");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dijit.form.Select");
+			dojo.require("dijit.form.FilteringSelect");
+			dojo.require("dijit.form.ComboBox");
+			dojo.require("dijit.form.Form");
+			dojo.require("dojox.grid.EnhancedGrid");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dojox.grid.enhanced.plugins.NestedSorting");
+			dojo.require("dijit.form.DropDownButton");
+			dojo.require("dijit.form.MultiSelect");
+			dojo.require("dijit.form.CheckBox");
+			dojo.require("dojox.charting.Chart2D");
+			dojo.require("dojox.charting.Chart3D");
+			dojo.require("dojox.charting.plot3d.Base");
+			dojo.require("dojox.charting.plot3d.Bars");
+			dojo.require("dojox.data.AndOrReadStore");
+
+			require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/TabContainer","dijit/layout/ContentPane"]);
+			require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+			require(["dijit/form/Select", "dojo/data/ObjectStore","dojo/store/Memory","dojo/domReady!"]);
+	</script> 
+ 
+  	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+ 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  	
+ 	<script>
+			var parameters = location.search.split("&");
+			var par0 = parameters[0].split("=");
+			var par1 = parameters[1].split("=");
+   			var titre="CNV:" + par0[1]+"/"+par1[1];
+   			document.title=titre;
+		</script>
+		<title></title>
+</head>
+
+
+<body onload="collapseResult();setTitre();GetAllSVProject(1);">
+
+<center><label id="titre" style="font-size:12px"> </label></center>
+
+<center style="height:10%">
+	<div class="table-responsive" style="height=95%;width:70%;">
+ 			 <table class="table">
+ 			 <center><tr>
+					<td style="width:10%;font-size:10px";><label>  Min Length  : </label>
+						<select class="form-control" id="minlengthSelect" name="minlengthSelect" style="width:80%; font-size:8px;padding:5px">
+							<option value=1000  >  1kb  </option>
+							<option value=5000>  5kb  </option>
+							<option value=10000 selected="selected" >  10kb  </option>
+							<option value=50000>  	50 kb  </option>
+							<option value=100000 >  100 kb  </option>
+							<option value=200000 >  200 kb  </option>
+							<option value=300000>  300 kb  </option>
+							<option value=400000>  400 kb  </option>
+							<option value=500000 >  500 kb  </option>
+						</select>
+					</td>
+					<td style="width:10%;font-size:10px";><label>  Max Length  : </label>
+						<select class="form-control" id="maxlengthSelect" name="maxlengthSelect" style="width:80%; font-size:8px;padding:5px">
+							<option value= "nomax" selected="selected" >  no max  </option>
+							<option value= 1000000 >  1Mb  </option>
+							<option value= 5000000 >  5Mb  </option>
+							<option value= 10000000 >  10Mb  </option>
+							<option value= 50000000 >  50Mb  </option>
+							<option value= 50000000 >  100Mb  </option>
+							
+						</select>
+					</td>
+					<td style="width:10%;font-size:10px";><label>  Max DGV freq  : </label>
+						<select class="form-control" id="maxfreqSelect" name="maxfreqSelect" style="width:80%; font-size:8px;padding:5px">
+							<option value= "nomax" selected="selected" >  no max  </option>
+							<option value= 0.01 >  1%  </option>
+							<option value= 0.001 >  0.1%  </option>
+							<option value= 0.0001 >  0.01%  </option>
+							<option value= 0.000001 >  0.001%  </option>
+						</select>
+					</td>
+					<td style="width:10%;font-size:10px"><label>  DejaVu     </label>
+						<select class="form-control" id="dejavu" name="dejavu" style="width:80%; font-size:8px;padding:5px">
+							<option value= 0 selected="selected" >  0  </option>
+							<option value= 1 >  1  </option>
+							<option value= 2 >  2  </option>
+							<option value= 3 >  3  </option>
+							<option value= 4 >  4  </option>
+							<option value= 5 >  5  </option>
+							<option value= 10 >  10  </option>
+							<option value= 20 >  20 </option>
+							<option value= 30 >  30 </option>
+							<option value= 40 >  40 </option>
+							<option value= 50 >  50 </option>
+							<option value= 100  >  100  </option>
+						</select>
+					</td>
+					<td style="width:10%;font-size:10px";><label>  Chromosome  : </label>
+					<select class="form-control" id="chromSelect" name="chromSelect" style="width:80%; font-size:8px;padding:5px">
+						<option value="all" selected="selected"  >  all  </option>
+						<option value="noXY" > all but XY  </option>
+						<option value="1">  1  </option>
+						<option value="2">  2 </option>
+						<option value="3">  3  </option>
+						<option value="4">  4  </option>
+						<option value="5">  5  </option>
+						<option value="6">  6  </option>
+						<option value="7">  7  </option>
+						<option value="8">  8  </option>
+						<option value="9">  9  </option>
+						<option value="10">  10  </option>
+						<option value="11">  11 </option>
+						<option value="12">  12  </option>
+						<option value="13">  13  </option>
+						<option value="14">  14  </option>
+						<option value="15">  15  </option>
+						<option value="16">  16  </option>
+						<option value="17">  17  </option>
+						<option value="18">  18  </option>
+						<option value="19">  19  </option>
+						<option value="20">  20  </option>
+						<option value="21">  21  </option>
+						<option value="23">  X  </option>
+						<option value="24">  Y  </option>
+					</select>
+				</td>
+				<td style="width:10%;font-size:10px";><label>  genotype  : </label>
+						<select class="form-control" id="genotypeSelect" name="genotypeSelect" style="width:80%; font-size:8px;padding:5px">
+							<option value="he" >  He  </option>
+							<option value="ho">  Ho  </option>
+							<option value="both" selected="selected" >  both  </option>
+						</select>
+				</td>
+				<td style="width:10%;font-size:10px";><label>  Cytoband : </label>
+						<input type="text" class="form-control" id="cytobSelect"  name="cytobSelect" value="all" style="width:80%;font-size:8px;padding:5px"></input>
+				</td>
+				<td style="width:10%;font-size:10px;";><label>  Gene : </label>
+						<input type="text" class="form-control" id="geneSelect" name="geneSelect" value="all" style="width:80%; font-size:8px;padding:5px"></input>
+				</td>
+				<td style=" width:15%; font-size:10px;"><label> Display CNV  : </label>
+						 <div><button  type="button" class="btn-xs  btn-warning" style="font-size:12px;" onclick="collapseResult();GetAllSVProject(1);" >  BEST ONES </button></div>
+				</td>
+				<td style=" width:10%;  font-size:10px; color:white"><label> _____ </label>
+						 <center><div><button  type="button" class="btn-xs  btn-primary" onclick="collapseResult();GetAllSVProject(0);" >   ALL  </button></div></center>
+				</td>
+				</tr></center>
+  			</table>
+ 	</div>
+ </center>
+ <center style="height:80%">
+ <div  class="table-responsive,panel-collapse" id="collapse1" style="height:95%;width:95%;margin-top:8px;border: 2px solid grey;">
+      	 <span dojoType="dojo.data.ItemFileReadStore" jsId="jsonDetails" ></span>     
+             <table border="2" 
+             			style="overflow:auto;"
+             			dojoType="dojox.grid.DataGrid"
+                        id    = "SVCompare_gridDetails"
+                        jsId  = "SVCompare_gridDetails"
+                        store = "jsonDetails"  
+                        query = "{ id: '*' }" > 
+             	<tr><thead>
+             			<th width="3%" field="SVTYPE" formatter="formaterDUPDEL" styles="text-align:center;font-size:8px;"><center><b>TYPE</b></center></th>
+			            <th width="3%" field="CHROM" formatter="formaterCHROM_int" styles="text-align:center;font-size:8px;"><center><b>Chr</b></center></th>
+			            <th width="5%" field="SVLEN" formatter="formaterLength" styles="text-align:center;font-size:8px;"><center><b>Length</b></center></th> 
+			            <th width="6%" field="POSITIONS" formatter="formaterPos" styles="text-align:center;font-size:8px;"><center><b>Positions</b></center></th>
+			            <th width="7%" field="CYTOBAND" formatter="formaterLISTE" styles="text-align:center;font-size:8px;"><center><b>Cytoband</b></center></th>
+			            <th width="4%" field="GENOTYPE" styles="text-align:center;font-size:8px;"><center><b>Genotype</b></center></th>
+						<th width="5%" field="wisecondor"   formatter="formaterInfoCaller" styles="text-align:center;font-size:8px;"><center><b> WiseCondor </b></center></th>	
+						<th width="4%" field="canvas"  formatter="formaterInfoCaller" styles="text-align:center;font-size:8px;"><center><b> Canvas </b></center></th>	
+						<th width="4%" field="manta"   formatter="formaterInfoCaller" styles="text-align:center;font-size:8px;"><center><b> Manta </b></center></th>	
+						<th width="5%" field="TRANSMISSION"    formatter="formaterTransmission" styles="text-align:center;font-size:8px;"><center><b> Transmission </b></center></th>	
+						<th width="3%" field="BREAKPOINTS" formatter="formaterBreakPoint" styles="text-align:center;font-size:8px;"><center><b>Break Points</b></center></th>
+						<th width="5%" field="IGV"   formatter="formater_infoPATIENTIGV" styles="text-align:center;font-size:8px;"><center><b> IGV  </b></center></th>	
+						<th width="4%" field="OTHER"  formatter="formaterDejavu" styles="text-align:center;font-size:8px;"><center><b> DejaVu in this project </b></center></th>	
+						<th width="4%" field="SCORECALLER"  formatter="formaterScore" styles="text-align:center;font-size:8px;"><center><b> Score Caller </b></center></th>	
+						<th width="4%" field="ScoreGene" formatter="formaterScore" styles="text-align:center;font-size:8px;"><center><b> Score Gene </b></center></th>
+						<th width="4%" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:8px;"><center><b> AnnotSV Ranking</b></center></th>					
+						<th width="10%" field="GENES" styles="text-align:center;font-size:8px;" formatter="formaterGENES"><center><b> Genes </b></center></th>						 								
+						<th width="4%" field="DGV" formatter="formaterDGV" styles="text-align:center;font-size:8px;"><center><b> DGV</b></center></th>
+						<th width="4%" field="GOLD_G_freq" formatter="formaterFreq" styles="text-align:center;font-size:8px;"><center><b> DGV Gain_freq </b></center></th>   
+						<th width="4%" field="GOLD_L_freq" formatter="formaterFreq" styles="text-align:center;font-size:8px;"><center><b> DGV Loss_freq </b></center></th>  
+						<th width="3%" field="OMIN_MG" formatter="formaterOmin" styles="text-align:center;font-size:8px;"><center><b> Omin </b></center></th>
+						<th width="4%" field="dbVar_status"  formatter="formaterdbvarStatus" styles="text-align:center;font-size:8px;"><center><b> dbVar status</b></center></th>		
+				</tr></thead>
+             </table>
+</div>
+</center>
+ </body>
+ </html>
+                 

@@ -8,6 +8,7 @@ use Config::Std;
 use GenBoCapture;
 use GenBoPcrMultiplex;
 use QueryVcf;
+use QueryJunctionFile;
 use File::Util;
 use Bio::DB::Sam;
 use Storable;
@@ -1274,7 +1275,7 @@ has bamUrl => (
 		die() if ( scalar( @$methods > 1 ) );
 		my $method_name = $methods->[0];
 		my $bam_dir     = $self->getProject->getAlignmentUrl($method_name);
-		my $bamf        = $self->getBamFile();
+		my $bamf        = $self->getBamFileName();
 		my (@t) = split( "/", $bamf );
 
 		#warn $bam_dir;
@@ -2994,6 +2995,204 @@ sub get_string_validations {
 			$stv =~ s/_/-/g;
 			return $self->name.":".$stv if $stv;
 			return $stv;
+}
+
+sub getQueryJunction {
+	my ($self, $fileName, $method) = @_;
+	my %args;
+	$args{patient} = $self;
+	$args{file}    = $fileName;
+	if ($method eq 'RI') { $args{isRI} = 1; }
+	elsif ($method eq 'SE') { $args{isSE} = 1; }
+	else { confess(); }
+	my $queryJunction = QueryJunctionFile->new( \%args );
+	return $queryJunction;
+}
+
+sub getJunctionsAnalysePath {
+	my ($self) = @_;
+	my $path_analisys_root = $self->getProject->get_path_rna_seq_junctions_root();
+	confess("\n\nERROR: PATH $path_analisys_root not found. Die.\n\n") unless (-d $path_analisys_root);
+	my $path_analisys;
+	opendir my ($dir), $path_analisys_root;
+	my @found_files = readdir $dir;
+	closedir $dir;
+	my $pat_name = $self->name();
+	foreach my $file (@found_files) {
+		next if $file eq '.';
+		next if $file eq '..';
+		if ($file =~ /$pat_name/) {
+			$path_analisys = $path_analisys_root.'/'.$file;
+			last;
+		}
+	}
+	confess("\n\nERROR: PATH RNA JUNCTION not found. Die.\n\n") unless ($path_analisys);
+	confess("\n\nERROR: PATH RNA JUNCTION not found. Die.\n\n") unless (-d $path_analisys);
+	$path_analisys .= '/AllRes/';
+	return $path_analisys;
+}
+
+sub getPatients_used_control_rna_seq_junctions_analyse {
+	my $self = shift;
+	my $h_desc;
+	$h_desc = $self->getProject->get_hash_patients_description_rna_seq_junction_analyse();
+	return unless $h_desc;
+	return if not exists $h_desc->{$self->name()}->{used_ctrl};
+	my @lPat;
+	foreach my $other_pat (@{$self->getProject->getPatients()}) {
+		push(@lPat, $other_pat) if exists $h_desc->{$self->name()}->{used_ctrl}->{$other_pat->name()};
+	}
+	return \@lPat;
+} 
+
+has use_not_filtred_junction_files => (
+	is => 'rw',
+	lazy    => 1,
+	default => 1,
+);
+
+has junction_RI_file => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		return unless ($self->use_not_filtred_junction_files());
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_RI_file = $path_analyse.'/AllresAll_RI.txt';
+		return $path_RI_file if (-e $path_RI_file);
+		return;
+	},
+);
+
+has junction_RI_file_filtred => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_RI_file = $path_analyse.'/AllresRI_f.txt';
+		return $path_RI_file if (-e $path_RI_file);
+		return;
+	},
+);
+
+has junction_SE_file => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		return unless ($self->use_not_filtred_junction_files());
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_SE_file = $path_analyse.'/AllresAll_SE.txt';
+		return $path_SE_file if (-e $path_SE_file);
+		return;
+	},
+);
+
+has junction_SE_file_filtred => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_SE_file = $path_analyse.'/AllresSE_f.txt';
+		return $path_SE_file if (-e $path_SE_file);
+		return;
+	},
+);
+
+sub setJunctions {
+	my ($self) = @_;
+	my $h_ids;
+	if ($self->junction_RI_file()) {
+		foreach my $hres (@{$self->getQueryJunction($self->junction_RI_file(), 'RI')->parse_file()}) {
+			my $annex = $hres->{annex};
+			$annex->{type_origin_file} = 'RI';
+			delete $hres->{annex};
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{annex}->{$self->name()} = $annex;
+			$obj->{patients_object}->{$self->id()} = undef;
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($self->junction_RI_file_filtred()) {
+		foreach my $hres (@{$self->getQueryJunction($self->junction_RI_file_filtred(), 'RI')->parse_file()}) {
+			my $annex = $hres->{annex};
+			$annex->{type_origin_file} = 'RI';
+			$annex->{filtred_result} = 1;
+			delete $hres->{annex};
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{annex}->{$self->name()} = $annex;
+			$obj->{patients_object}->{$self->id()} = undef;
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($self->junction_SE_file()) {
+		foreach my $hres (@{$self->getQueryJunction($self->junction_SE_file(), 'SE')->parse_file()}) {
+			my $annex = $hres->{annex};
+			$annex->{type_origin_file} = 'SE';
+			delete $hres->{annex};
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{annex}->{$self->name()} = $annex;
+			$obj->{patients_object}->{$self->id()} = undef;
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($self->junction_SE_file_filtred()) {
+		foreach my $hres (@{$self->getQueryJunction($self->junction_SE_file_filtred(), 'SE')->parse_file()}) {
+			my $annex = $hres->{annex};
+			$annex->{type_origin_file} = 'SE';
+			$annex->{filtred_result} = 1;
+			delete $hres->{annex};
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{annex}->{$self->name()} = $annex;
+			$obj->{patients_object}->{$self->id()} = undef;
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	return $h_ids;
+}
+
+sub getFiltredJunctionsRI {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isRI($self);
+		next unless $obj->is_filtred_results($self);
+		push (@lObj, $obj);
+	}
+	return \@lObj;
+}
+
+sub getFiltredJunctionsSE {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isSE($self);
+		next unless $obj->is_filtred_results($self);
+		push (@lObj, $obj);
+	}
+	return \@lObj;
+}
+
+sub getJunctionsRI {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isRI($self);
+		push (@lObj, $obj);
+	}
+	return \@lObj;
+}
+
+sub getJunctionsSE {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isSE($self);
+		push (@lObj, $obj);
+	}
+	return \@lObj;
 }
 
 1;
