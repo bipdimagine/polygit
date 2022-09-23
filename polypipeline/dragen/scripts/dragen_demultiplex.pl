@@ -107,8 +107,14 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 	}
 	
 }
+
+### read mask ;
+my @amask = split(";",$mask);
+my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+
+$lines->{"[Settings]"} = [];
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]);
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]);
 
 my $lheader_data = shift @{$lines->{"[Data]"}};
@@ -130,8 +136,24 @@ die("no sample id in header ") if $pos_sample eq -1;
 my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
 my $pos_cb1 = firstidx { $_ eq "index" } @$lheader_data;
 my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
+warn Dumper @$lheader_data;
+
+### read mask ;
+my @amask = split(";",$mask);
+my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+if($pos_umi == 2){
+	splice(@$lheader_data, $pos_cb2, 1);
+	warn Dumper @$lheader_data;
+	foreach my $data (@{$lines->{"[Data]"}}){
+	if($pos_umi == 2){
+		splice(@$data, $pos_cb2, 1);
+		#my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
+	}
+	}
+}
 my $dj;
 foreach my $data (@{$lines->{"[Data]"}}){
+	
 	if($l2){
  		my $index2 =  $data->[$pos_cb2];
  		$data->[$pos_cb2] = substr($index2, 0, $l2);
@@ -148,6 +170,7 @@ foreach my $data (@{$lines->{"[Data]"}}){
  	
 	
 }
+
 my $error;
 if (keys %$ok) {
 	print colored(['bright_green on_black']," SAMPLE OK : ".scalar(keys %$ok) )."\n";
@@ -202,7 +225,7 @@ foreach my $project_name (split(",",$project_names)){
 	
 	foreach my $p (@{$project->getPatients}){
 			my $pid = $pm->start and next;
-		system ("rsync -rav $dir_out/".$p->name."_* $out_fastq/");
+		system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 		$pm->finish( 0, {});
 }
 
