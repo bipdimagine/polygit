@@ -9,6 +9,8 @@ use lib "$Bin/../../../GenBo/lib/obj-nodb/packages";
 use lib "$Bin/../../../GenBo/lib/kyoto/";
 use lib "$Bin/../../../GenBo/lib/GenBoDB/writeDB";
 use lib "$Bin/../../packages";
+use lib "$Bin";
+use dragen_util; 
 use Logfile::Rotate;
 use Getopt::Long;
 use Data::Dumper;
@@ -26,8 +28,8 @@ use file_util;
 use File::Temp qw/ tempfile tempdir /;; 
 
 use Term::Menus;
- use Proc::Simple;
- use Storable;
+use Proc::Simple;
+use Storable;
 use JSON::XS;
 use Net::SSH::Perl; 
 
@@ -56,7 +58,7 @@ my $low_calling;
 my $predef_type;
 my $define_steps;
 my $step;
-
+my $umi;
 
 
 my $limit;
@@ -65,6 +67,7 @@ GetOptions(
 	'patients=s' => \$patients_name,
 	'step=s'=> \$step,
 	'type=s' => \$type,
+	'umi=s' => \$umi,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -99,28 +102,38 @@ exit(0);
 
 
 sub run_pipeline {
-my ($fastq1,$fastq2) = get_fastq_file($patient,$dir_pipeline);
+my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 warn "\n\n end copy";
 my $ref_dragen = $project->getGenomeIndex("dragen");
 
 
 my $tmp = "/staging/tmp";
 
-my $capture_file  = $patient->getCapture->gzFileName();
+my $capture_file  = dragen_util::get_capture_file($patient,$dir_pipeline."/".$patient->name.".".time.".bed");
+
 
 my $runid = $patient->getRun()->id;
 
 my $gvcf_pipeline = $dir_pipeline."/".$prefix.".hard-filtered.gvcf.gz";
 
+
 #--vc-enable-vcf-output true
-my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-duplicate-marking true  --enable-map-align-output true  --vc-target-bed $capture_file --vc-target-bed-padding 150 --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
+my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true  --vc-target-bed $capture_file --vc-target-bed-padding 150 --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
 #warn $cmd;
 #die();
+
 if ($project->isGenome){
-	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-duplicate-marking true  --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true};
+	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true };
 	
 }
+if ($umi){
+	$cmd .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
+}
+else {
+	$cmd .= qq{  --enable-duplicate-marking true };
+	 }
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) ;#unless -e $f1;
+
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
 #system("ssh pnitschk\@10.200.27.109 rm $fastq1 $fastq2");
 #my ($out,$err,$exit) = $ssh->cmd("$cmd") ;#unless -e $bam_pipeline;
@@ -129,30 +142,8 @@ die if $exit != 0;
 
 
 
-sub get_fastq_file {
-	my ($patient,$dir_pipeline) = @_;
-	
-	my $name=$patient->name();
-	
-	my $files_pe1 = file_util::find_file_pe($patient,"");
-	my $cmd;
-	my @r1;
-	my @r2;
-	foreach my $cp (@$files_pe1) {
-		my $file1 = $patient->getSequencesDirectory()."/".$cp->{R1};
-		my $file2 = $patient->getSequencesDirectory()."/".$cp->{R2};
-		push(@r1,$file1);
-		push(@r2,$file2);
-	}
-	my $cmd1 = join(" ",@r1);
-	my $cmd2 = join(" ",@r2);
-	my $fastq1 = $dir_pipeline."/".$patient->name.".R1.fastq.gz";
-	my $fastq2 = $dir_pipeline."/".$patient->name.".R2.fastq.gz";
-	#if ($step eq "align"){
-		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
-		system "cat $cmd2 > $fastq2";# unless -e $fastq2;
-	#}
-	return  ($fastq1,$fastq2);
-}
+
+1;
+
 
 
