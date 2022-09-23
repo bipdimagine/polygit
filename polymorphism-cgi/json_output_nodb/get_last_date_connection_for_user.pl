@@ -26,16 +26,19 @@ my $buffer = GBuffer->new;
 my $user_name = $cgi->param('user_name');
 my $is_new_polybtf = $cgi->param('is_new_polybtf');
 
+
 my $hashRes;
 my $date = $buffer->getQuery->getLastConnectionUser($user_name);
 
 if ($is_new_polybtf) {
-	if ($date) {
+	my $buffer = new GBuffer;
+	my $h_polybtf_infos = $buffer->polybtf_infos();
+	if ($h_polybtf_infos->{date_last_days} <= 30) { $hashRes->{$user_name} = 1; }
+	elsif ($date) {
 		my @lTmp = split(' ', $date);
 		my ($day_user, $month_user, $year_user) = reverse split('-', $lTmp[0]);
-		$year_user =~ s/20//;
-		my $buffer = new GBuffer;
 		my ($day_polybtf, $month_polybtf, $year_polybtf) = split('/', $buffer->polybtf_infos->{date_release});
+		$year_user =~ s/20//;
 		$hashRes->{$user_name} = 1;
 		if ($year_polybtf < $year_user) { $hashRes->{$user_name} = 0; }
 		elsif ($month_polybtf < $month_user) { $hashRes->{$user_name} = 0; }

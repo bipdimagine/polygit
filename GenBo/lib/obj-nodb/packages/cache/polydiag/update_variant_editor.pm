@@ -1813,7 +1813,13 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				$type = "red" if $pli >= 0.9;
 				my $m = $hgene->{max_score};
 				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
- 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span class="badge" style="color:$type">$pli</span></a>};
+ 				
+ 				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
+ 				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
+ 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				
+ 				
+ 				
 	   			my $panel_name1 = join("-",keys %{$hgene->{panels}});
 	   			my $hPanels;
 	   			foreach my $panel_name (keys %{$hgene->{panels}}) {
@@ -2221,7 +2227,7 @@ my $string_label = join(";",@$all_label);
 		print qq{<div id="group_buttons_time_exec" class="btn-group-vertical  btn-sm clearfix pull-left" style="padding:20px;min-width:200px;">};
 		
 		my (@lButtons_times, @lButtons_times_id);
-		foreach my $cat (split(' ', $ztime)) {
+		foreach my $cat (sort split(' ', $ztime)) {
 			my ($cat_name, $time) = split(':', $cat);
 			my $b_id = 'b_time_exec_'.$cat_name.'_'.$patient->name();
 			push(@lButtons_times_id, $b_id);
@@ -2286,11 +2292,11 @@ my $string_label = join(";",@$all_label);
 	};
 	
 	print qq{<div class="btn-group-vertical  btn-sm clearfix pull-right" style="color:black;padding:20px;width:200px;">};
-	foreach my $name (keys %$version){
+	foreach my $name (sort keys %$version){
 		my $v = $version->{$name}->{version};
 		print qq{<button type="button" class="btn btn-success btn-xs" style="font-size: 10px;"><span style="float:left">$name</span> <span class="badge badge-alert" style="font-size: 10px;float:right;">$v </span></button>	};
 	}
-	foreach my $name (keys %$date){
+	foreach my $name (sort keys %$date){
 		my $v = $date->{$name};
 		print qq{<button type="button" class="btn btn-primary btn-xs" style="font-size: 10px;"><span style="float:left">$name</span> <span class="badge badge-alert" style="font-size: 10px;float:right;">$v </span></button>	};
 	}
@@ -2661,6 +2667,7 @@ sub table_cnv_genes_transcripts {
 		my $type ="green";
 		$type = "orange" if $pli >= 0.75;
 		$type = "red" if $pli >= 0.9;
+		
  		my $b_pli =qq{<a class="btn btn-xs" role="button" href='https://gnomad.broadinstitute.org/gene/$gid' target='_blank' style="background-color:#EEE;color:black;border:solid 1px black;"><span style="font-size:8px;background-color:#EEE;">$pli</span></a>};
  		
  		#VARIANTS
@@ -2844,6 +2851,7 @@ sub get_hash_genes_dude {
 	}
 	#$h_type_levels->{medium} = 1;
 	if ($panel) { $h_panels_tr = $panel->genes_id(); }
+
 	$by_names_or_ids = 'names' unless ($by_names_or_ids);
 	my $hGenes_dude = {};
 	my $no = $patient->getTranscriptsDude("r");
@@ -2852,14 +2860,16 @@ sub get_hash_genes_dude {
  	push(@selected_patients, $patient);
  	my $nb_genes_done = 0;
 	foreach my $type (@$list_type) {
-		
-		my $list_tr_high = $no->get($type);
+		my $list_tr_high;
+		eval { $list_tr_high = $no->get($type); };
+		if($@) {}
+#		warn $type;
+#		warn Dumper $list_tr_high;
 		#ENST00000631057
 #		my ($toto) = grep {$_ =~/ENST/ } @$list_tr_high;
 	#	warn Dumper $list_tr_high;
 	#	die();
 		unless ($list_tr_high) {
-			
 			$no->close();
 			next;
 		}

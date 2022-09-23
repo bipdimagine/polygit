@@ -423,8 +423,7 @@ if ( $project->isDefidiag ) {
 
 #$panel_name="ACMG-Actionable";
 my $panel;
-$panel = $project->getPanel($panel_name)
-  if $panel_name && lc($panel_name) ne "all";
+$panel = $project->getPanel($panel_name) if $panel_name && lc($panel_name) ne "all" && lc($panel_name) ne "all panels genes";
 my $hash_genes_panel;
 if ($panel) {
 	$panel->getGenes();
@@ -436,7 +435,6 @@ if ($panel) {
 	$project->{phenotypes_object} = $hPhenoIds;
 }
 
-
 my $phenotype_name = $cgi->param('phenotype');
 if ($phenotype_name) {
 	my $hPhenoIds;
@@ -446,10 +444,15 @@ if ($phenotype_name) {
 				$hPhenoIds->{ $phenotype->id() } = undef;
 			}
 		}
+		if ($panel_name && lc($panel_name) eq "all panels genes") {
+			$panel->getGenes();
+			foreach my $ensg (keys %{$panel->{genes_object}}) {
+				$hash_genes_panel->{$ensg} = undef;
+			}
+		}
 	}
 	$project->{phenotypes_object} = $hPhenoIds;
 }
-
 
 $t = time;
 $buffer->disconnect();
@@ -597,6 +600,7 @@ sub error {
 	  qq{<div id ="logo" > contact : bioinformatique\@users-imagine.fr</div>}
 	  ;    # if scalar(@$genes) == 0;
 	warn "error !!!!!!!!! $text";
+	warn $TEST;
 	die() if $TEST;
 	exit(0);
 }

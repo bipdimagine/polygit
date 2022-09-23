@@ -1036,7 +1036,7 @@ has sql_cmd_get_alamut_api_key_from_username => (
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
-			SELECT USER.LOGIN as login, USER.EQUIPE_ID as equipe_id, ALAMUT_LICENCE.NAME as licence_alamut, ALAMUT_LICENCE.API_KEY as api_key  FROM bipd_users.USER, bipd_users.EQUIPE_ALAMUT_LICENCE, bipd_users.ALAMUT_LICENCE
+			SELECT USER.LOGIN as login, USER.EQUIPE_ID as equipe_id, ALAMUT_LICENCE.NAME as licence_alamut, ALAMUT_LICENCE.API_KEY as api_key, ALAMUT_LICENCE.INSTITUTION_KEY as institution_key  FROM bipd_users.USER, bipd_users.EQUIPE_ALAMUT_LICENCE, bipd_users.ALAMUT_LICENCE
 				where USER.login=? and USER.EQUIPE_ID=EQUIPE_ALAMUT_LICENCE.EQUIPE_ID and EQUIPE_ALAMUT_LICENCE.ALAMUT_ID=ALAMUT_LICENCE.ALAMUT_ID;
 		};
 		return $sql;
@@ -1054,6 +1054,239 @@ has sql_cmd_get_projects_control_giab => (
 		return $sql;
 	},
 );
+
+has sql_cmd_get_quick_projects_list_RNA => (
+	is	 => 'ro',
+	isa	 => 'Str',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT p.project_id as id,  p.name as name, p.description, p.creation_date as cDate, po.name as dbname, r.name as relname,
+				GROUP_CONCAT(DISTINCT pp.version_id ORDER BY pp.version_id  SEPARATOR ' ') as 'ppversionid',
+				GROUP_CONCAT(DISTINCT rg.name ORDER BY rg.name  SEPARATOR ' ') as 'relGene',
+				GROUP_CONCAT(DISTINCT U.login ORDER BY U.login DESC SEPARATOR ',') as 'username'
+				FROM
+					PolyprojectNGS.projects p 
+					LEFT JOIN PolyprojectNGS.databases_projects dp
+					ON p.project_id =dp.project_id
+					LEFT JOIN PolyprojectNGS.polydb po
+					ON dp.db_id = po.db_id
+					LEFT JOIN PolyprojectNGS.project_release pr
+					ON p.project_id=pr.project_id
+					LEFT JOIN PolyprojectNGS.releases r
+					ON pr.release_id=r.release_id
+			        LEFT JOIN PolyprojectNGS.project_release_public_database pp
+			        ON p.project_id = pp.project_id
+			        LEFT JOIN PolyprojectNGS.project_release_gene pg
+			        ON p.project_id = pg.project_id
+			        LEFT JOIN PolyprojectNGS.release_gene rg
+			        ON rg.rel_gene_id=pg.rel_gene_id
+			        LEFT JOIN PolyprojectNGS.user_projects up
+					ON p.project_id = up.project_id
+					LEFT JOIN bipd_users.`USER` U
+					ON up.user_id = U.user_id
+			        LEFT JOIN PolyprojectNGS.ugroup_projects gp
+					ON p.project_id = gp.project_id
+			        LEFT JOIN bipd_users.UGROUP ug
+			        ON gp.ugroup_id=ug.ugroup_id
+					LEFT JOIN bipd_users.EQUIPE E
+					ON U.equipe_id = E.equipe_id
+					LEFT JOIN bipd_users.UNITE T
+					ON E.unite_id = T.unite_id
+					WHERE p.type_project_id=3 and dp.db_id !=2
+			        GROUP BY p.project_id;
+		};
+		return $sql;
+	},
+);
+
+has sql_cmd_check_project_RNA=> (
+	is	 => 'ro',
+	isa	 => 'Str',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT p.project_id as id,  p.name as name, p.description, p.creation_date as cDate, po.name as dbname, r.name as relname,
+				GROUP_CONCAT(DISTINCT pp.version_id ORDER BY pp.version_id  SEPARATOR ' ') as 'ppversionid',
+				GROUP_CONCAT(DISTINCT rg.name ORDER BY rg.name  SEPARATOR ' ') as 'relGene',
+				GROUP_CONCAT(DISTINCT U.login ORDER BY U.login DESC SEPARATOR ',') as 'username'
+				FROM
+					PolyprojectNGS.projects p 
+					LEFT JOIN PolyprojectNGS.databases_projects dp
+					ON p.project_id =dp.project_id
+					LEFT JOIN PolyprojectNGS.polydb po
+					ON dp.db_id = po.db_id
+					LEFT JOIN PolyprojectNGS.project_release pr
+					ON p.project_id=pr.project_id
+					LEFT JOIN PolyprojectNGS.releases r
+					ON pr.release_id=r.release_id
+			        LEFT JOIN PolyprojectNGS.project_release_public_database pp
+			        ON p.project_id = pp.project_id
+			        LEFT JOIN PolyprojectNGS.project_release_gene pg
+			        ON p.project_id = pg.project_id
+			        LEFT JOIN PolyprojectNGS.release_gene rg
+			        ON rg.rel_gene_id=pg.rel_gene_id
+			        LEFT JOIN PolyprojectNGS.user_projects up
+					ON p.project_id = up.project_id
+					LEFT JOIN bipd_users.`USER` U
+					ON up.user_id = U.user_id
+			        LEFT JOIN PolyprojectNGS.ugroup_projects gp
+					ON p.project_id = gp.project_id
+			        LEFT JOIN bipd_users.UGROUP ug
+			        ON gp.ugroup_id=ug.ugroup_id
+					LEFT JOIN bipd_users.EQUIPE E
+					ON U.equipe_id = E.equipe_id
+					LEFT JOIN bipd_users.UNITE T
+					ON E.unite_id = T.unite_id
+					WHERE p.type_project_id=3 and dp.db_id !=2 and p.name=?
+			        GROUP BY p.project_id;
+		};
+		return $sql;
+	},
+);
+
+has sql_cmd_get_quick_patients_list_from_project_id => (
+	is	 => 'ro',
+	isa	 => 'Str',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT
+		        a.patient_id,
+		        a.name as name,
+		        a.type as type,
+		        r.run_id,
+				C.name as capName,
+				C.analyse as capAnalyse,
+		        GROUP_CONCAT(DISTINCT S.name ORDER BY S.name ASC SEPARATOR ' ') as 'macName',
+		        GROUP_CONCAT(DISTINCT f.name ORDER BY f.name ASC SEPARATOR ' ') as 'plateformName',
+		        GROUP_CONCAT(DISTINCT ms.name ORDER BY ms.name ASC SEPARATOR ' ') as 'methSeqName',
+		        GROUP_CONCAT(DISTINCT case M.type when 'ALIGN' THEN M.name ELSE NULL END ORDER BY M.name ASC SEPARATOR ' ') as 'methAln',
+		        GROUP_CONCAT(DISTINCT case M.type when 'SNP' THEN M.name ELSE NULL END ORDER BY M.name ASC SEPARATOR ' ') as 'methCall'
+		        FROM PolyprojectNGS.patient a
+		        LEFT JOIN PolyprojectNGS.run r
+		        ON a.run_id = r.run_id
+		        LEFT JOIN PolyprojectNGS.run_machine rm
+		        ON r.run_id = rm.run_id
+		        LEFT JOIN PolyprojectNGS.sequencing_machines S
+		        ON rm.machine_id=S.machine_id
+		        LEFT JOIN PolyprojectNGS.run_plateform rp
+		        ON r.run_id=rp.run_id
+		        LEFT JOIN PolyprojectNGS.plateform f
+		        ON rp.plateform_id=f.plateform_id
+		        LEFT JOIN PolyprojectNGS.run_method_seq rs
+		        ON r.run_id=rs.run_id
+		        LEFT JOIN PolyprojectNGS.method_seq ms
+		        ON rs.method_seq_id=ms.method_seq_id
+		        LEFT JOIN PolyprojectNGS.patient_methods pm
+		        ON a.patient_id = pm.patient_id
+		        LEFT JOIN PolyprojectNGS.methods M
+		        ON pm.method_id=M.method_id
+		        LEFT JOIN PolyprojectNGS.capture_systems C
+		        ON a.capture_id=C.capture_id
+				WHERE a.project_id = ?
+				GROUP BY patient_id
+		        ORDER BY name;
+		};
+		return $sql;
+	},
+);
+
+has sql_cmd_get_projects_ids_with_patients_type_rna => (
+	is	 => 'ro',
+	isa	 => 'Str',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT distinct(project_id) FROM PolyprojectNGS.patient
+				where type='rna'; 
+		};
+		return $sql;
+	},
+);
+
+has sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name => (
+	is	 => 'ro',
+	isa	 => 'Str',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT pr.project_id as id, pr.name as name, pr.creation_date as cDate FROM PolyprojectNGS.patient as pa, PolyprojectNGS.projects as pr
+				where pa.type='rna' and pa.project_id=pr.project_id and pr.name=?;
+		};
+		return $sql;
+	},
+);
+
+sub isLoginSTAFF {
+	my ($self, $name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{SELECT (EQUIPE_ID) FROM bipd_users.USER where login=?};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($name);
+	my $res = $sth->fetchall_arrayref({});
+	return 1 if ($res->[0]->{EQUIPE_ID} == 6);
+	return;
+}
+
+sub getListProjectsRnaSeq {
+	my ($self, $project_name) = @_;
+	my @l_res;
+	my $dbh = $self->getDbh();
+	my ($sql, $sql2);
+	if ($project_name) {
+		$sql = $self->sql_cmd_check_project_RNA();
+		$sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name();
+	}
+	else {
+		$sql = $self->sql_cmd_get_quick_projects_list_RNA();
+		$sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna();
+	}
+	my $sth = $dbh->prepare($sql);
+	my $sth2 = $dbh->prepare($sql2);
+	if ($project_name) {
+		$sth->execute($project_name);
+		$sth2->execute($project_name);
+	}
+	else {
+		$sth->execute();
+		$sth2->execute();
+	}
+	my $h = $sth->fetchall_hashref('id');
+	my $h2 = $sth2->fetchall_hashref('project_id');
+	
+	my @l_projects_ids = keys %$h;
+	foreach my $pr_id (keys %$h2) {
+		push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});
+	}
+	
+	foreach my $project_id (sort {$b <=> $a} @l_projects_ids) {
+		next if ($project_id == 0);
+		my $sql2 = $self->sql_cmd_get_quick_patients_list_from_project_id();
+		my $sth2 = $dbh->prepare($sql2);
+		$sth2->execute($project_id);
+		my $h_patients = $sth2->fetchall_hashref('name');
+		my ($is_rna, $h_captures);
+		foreach my $patient_name (keys %$h_patients) {
+			$is_rna = 1 if ($h_patients->{$patient_name}->{type} eq 'rna');
+			$is_rna = 1 if ($h_patients->{$patient_name}->{capAnalyse} eq 'rnaseq');
+			$h_captures->{$h_patients->{$patient_name}->{capName}} = undef;
+		}
+		next unless ($is_rna);
+		my @l_versions = split(' ', $h->{$project_id}->{ppversionid});
+		@l_versions = sort {$a <=> $b} @l_versions;
+		my $max_annot = $self->getMaxPublicDatabaseVersion();
+		$h->{$project_id}->{version} = abs($max_annot - $l_versions[-1]).'::'.$h->{$project_id}->{relGene}.'-'.$l_versions[-1];
+		$h->{$project_id}->{samples} = scalar(keys %$h_patients);
+		$h->{$project_id}->{patient_name} = join(';', keys %$h_patients);
+		$h->{$project_id}->{capture_name} = join(';', keys %$h_captures);
+		$h->{$project_id}->{creation_date} = $h->{$project_id}->{cDate};
+		$h->{$project_id}->{genome} = $h->{$project_id}->{relname};
+		$h->{$project_id}->{project_id} = $project_id;
+		push(@l_res, $h->{$project_id});
+	}
+	return \@l_res;
+}
 
 sub getListProjectsControlGIAB {
 	my ($self) = @_;
@@ -1076,5 +1309,30 @@ sub getAlamutApiKeyFromUserName {
 	my $h = $sth->fetchall_hashref('login');
 	return $h->{$user_name};
 }
+
+has sql_cmd_get_runid_from_samplename => (
+	is       => 'ro',
+	isa      => 'Str',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+		my $query = qq{
+			SELECT * FROM PolyprojectNGS.patient where name=?;
+		};
+		return $query;
+	},
+);
+
+sub getHashRunIdFromSampleName {
+	my ($self, $sample_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = $self->sql_cmd_get_runid_from_samplename();
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($sample_name);
+	my $h = $sth->fetchall_hashref('run_id');
+	return $h;
+}
+
+
 
 1;

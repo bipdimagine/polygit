@@ -242,7 +242,7 @@ close(JOBS_ARC);
 
 
 
-my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=20";
+my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=40";
 if ($step eq "count" or $step eq "all"){
 	warn $cmd2;
 	system $cmd2  unless $no_exec==1;
