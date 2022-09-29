@@ -2403,10 +2403,10 @@ sub print_variation_td_edit{
 					$text = join("<BR>",@terms);
 				}
 				
-				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ){
+				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ) {
 					my $url = $deja_vu_url.$variation->{id};
 					 if (exists $variation->{dup}){
-					 	$text = qq{<a href="$url" target="_blank" style="color:white;font-weight:bold">$text</a>};
+					 	$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
 					 }
 					 else {
 					$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
@@ -2415,6 +2415,7 @@ sub print_variation_td_edit{
 					
 				}	
 				if ( $cat eq "in_this_run"){
+					$text =~ s/white/black/;# '<span style="color:black;font-weight:bold">'.$text."<span>";
 					 $text = update::printSimpleBadge(qq{$text},3);
 				}
 		if (exists $variation->{dup}){
