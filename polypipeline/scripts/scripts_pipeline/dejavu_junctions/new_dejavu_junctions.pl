@@ -58,18 +58,43 @@ foreach my $h (@{$buffer->getQuery->getListProjectsRnaSeq()}) {
 	foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
 	my $name = $h->{name};
 	my $b1 = GBuffer->new;
-	my $p1 = $b1->newProject( -name => $name );
+	my $p1 = $b1->newProjectCache( -name => $name );
 	$h->{button} = '';
-	if (-d $p1->get_path_rna_seq_junctions_root()) {
+#	if (-d $p1->get_path_rna_seq_junctions_root()) {
+#		my $ok;
+#		foreach my $pat (@{$p1->getPatients()}) {
+#			eval { $pat->getJunctionsAnalysePath() };
+#			if ($@) { next; }
+#			$ok = 1 if ($pat->junction_RI_file_filtred());
+#			$ok = 1 if ($pat->junction_SE_file_filtred());
+#			$ok = 1 if ($pat->junction_RI_file());
+#			$ok = 1 if ($pat->junction_SE_file());
+#			my $new_path = $p1->get_path_rna_seq_junctions_analyse_all_res();
+#			mkdir $new_path unless (-d $new_path);
+#			if ($pat->junction_SE_file() and not -e $new_path.'/allResSE.txt' ) {
+#				my $old_file = $pat->junction_SE_file();
+#				my $new_file = $new_path.'/allResSE.txt';
+#				my $cmd = "ln -s $old_file $new_file";
+#				`$cmd`;
+#				print $name." -> UPDATE SE file!\n";
+#			}
+#			if ($pat->junction_RI_file() and not -e $new_path.'/allResRI.txt' ) {
+#				my $old_file = $pat->junction_RI_file();
+#				my $new_file = $new_path.'/allResRI.txt';
+#				my $cmd = "ln -s $old_file $new_file";
+#				`$cmd`;
+#				print $name." -> UPDATE RI file!\n";
+#			}
+#		}
+#		$hash_projects->{$name} = undef if $ok;
+#	}
+	if (-d $p1->get_path_rna_seq_junctions_analyse_all_res()) {
 		my $ok;
-		foreach my $pat (@{$p1->getPatients()}) {
-			eval { $pat->getJunctionsAnalysePath() };
-			if ($@) { next; }
-			$ok = 1 if ($pat->junction_RI_file_filtred());
-			$ok = 1 if ($pat->junction_SE_file_filtred());
-			$ok = 1 if ($pat->junction_RI_file());
-			$ok = 1 if ($pat->junction_SE_file());
-		}
+		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
+		my $se_file = $path.'/allResSE.txt';
+		my $ri_file = $path.'/allResRI.txt';
+		$ok = 1 if (-e $se_file);
+		$ok = 1 if (-e $ri_file);
 		$hash_projects->{$name} = undef if $ok;
 	}
 }
@@ -103,6 +128,8 @@ foreach my $this_project_name (keys %$hash_projects) {
 				next;
 			}
 			foreach my $junction (@lJunctions) {
+				next if ($junction->isCanonique($this_patient));
+				next if ($junction->get_ratio_new_count($this_patient) == 1);
 				$junction->getPatients();
 				my $type = $junction->getTypeDescription($this_patient);
 				my $chr_id = $junction->getChromosome->id();
@@ -110,7 +137,7 @@ foreach my $this_project_name (keys %$hash_projects) {
 				my $end = $junction->end();
 				my $count_new_junction = $junction->get_nb_new_count($this_patient);
 				my $count_normal_junction = $junction->get_nb_normal_count($this_patient);
-				my $score = $junction->get_score($this_patient);
+				my $score = sprintf("%.3f", $junction->get_ratio_new_count($this_patient));
 				my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
 				if (not exists $h_junctions->{$chr_id}->{$junction_id}) {
 					$h_junctions->{$chr_id}->{$junction_id}->{start} = $start;
@@ -158,6 +185,7 @@ foreach my $chr_id (keys %{$h_junctions}) {
 	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _start_idx  on __DATA__ (start);});
 	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _end_idx  on __DATA__ (end);});
 	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _type_idx  on __DATA__ (variation_type);});
+	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _value_idx  on __DATA__ (_value);});
 }
 $nodejavu->close();
 print "-> DONE!\n\n";

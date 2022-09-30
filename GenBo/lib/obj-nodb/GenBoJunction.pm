@@ -11,6 +11,24 @@ use List::Util qw[min max];
 extends "GenBoGenomic";
 
 
+has type => (
+	is		=> 'ro',
+	default	=> "junction",
+);
+
+has type_public_db => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return "junctions";
+	},
+);
+
+has type_object => (
+	is		=> 'ro',
+	default	=> "junctions_object",
+);
 
 has name => (
 	is		=> 'ro',
@@ -26,6 +44,102 @@ has isJunction => (
 	lazy 	=> 1,
 	default	=> 1,
 );
+
+has coverage_start => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->start();
+	},
+);
+
+has coverage_end => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->end();
+	},
+);
+
+sub raw_coverage {
+	my ($self, $patient) = @_;
+	
+	warn "\n\n";
+	warn $self->id;
+	
+	my $gc_start = GenBoCoverageSamtools->new(chromosome=>$self->getChromosome, patient=>$patient, start=>($self->start()-5), end=>$self->start());
+	
+	warn "\n";
+	warn ($self->start()-5).' - '.$self->start();
+	warn Dumper $gc_start->{raw};
+	
+	my $gc_end = GenBoCoverageSamtools->new(chromosome=>$self->getChromosome, patient=>$patient, start=>$self->end(), end=>($self->end()+5));
+	warn "\n";
+	warn $self->end().' - '.($self->end()+5);
+	warn Dumper $gc_end->{raw};
+	
+	die;
+}
+
+has get_hash_exons_introns => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my @lPat = @{$self->getPatients()};
+		my $ensid = $self->annex->{$lPat[0]->name()}->{ensid};
+		my $h_exons_introns;
+		my (@lExons, @lIntrons);
+		my $intspan_junction = $self->getStrictGenomicSpan();
+		my $i = 0;
+		foreach my $g (@{$self->getGenes()}) {
+			my @ltmp = split('_', $g->id());
+			next if ($ltmp[0] ne $ensid);
+			foreach my $t (@{$g->getTranscripts()}) {
+				next unless $t->isMain();
+				my $intspan_t = $t->getGenomicSpan();
+				my $inter1 = $intspan_junction->intersection( $intspan_t );
+				next if $inter1->is_empty();
+				my @ltmp2 = split('_', $t->id());
+				my $t_id_all = $t->id();
+				my $t_id = $ltmp2[0];
+				foreach my $e (@{$t->getExons()}) {
+					my $intspan_e = $e->getGenomicSpan();
+					my $inter2 = $intspan_junction->intersection( $intspan_e );
+					next if ($inter2->is_empty());
+					my $e_id = $e->id();
+					$e_id =~ s/$t_id_all//;
+					push(@lExons, $e_id);
+					$h_exons_introns->{$t_id}->{exons}->{$e_id} = undef;
+					$h_exons_introns->{$t_id}->{by_pos}->{$e->start} = $e_id;
+					$i++;
+				}
+				foreach my $i (@{$t->getIntrons()}) {
+					my $intspan_i = $i->getGenomicSpan();
+					my $inter2 = $intspan_junction->intersection( $intspan_i );
+					next if ($inter2->is_empty());
+					my $i_id = $i->id();
+					$i_id =~ s/$t_id_all//;
+					push(@lIntrons, $i_id);
+					$h_exons_introns->{$t_id}->{introns}->{$i_id} = undef;
+					$h_exons_introns->{$t_id}->{by_pos}->{$i->start} = $i_id;
+					$i++;
+				}
+			}
+		}
+		return $h_exons_introns;
+	},
+);
+
+sub isCanonique {
+	my ($self, $patient) = @_;
+	confess() unless ($patient);
+	my $type = lc($self->getTypeDescription($patient)); 
+	return 1 if ($type =~ /canonique/);
+	return;
+}
 
 sub getTypeDescription {
 	my ($self, $patient) = @_;
@@ -119,6 +233,28 @@ sub get_nb_normal_count {
 	return;
 }
 
+sub get_dp_count {
+	my ($self, $patient) = @_;
+	confess() unless $patient;
+	my $new_count = $self->get_nb_new_count($patient);
+	$new_count = 0 if $self->get_nb_new_count($patient) eq '---';
+	my $normal_count = $self->get_nb_normal_count($patient);
+	$normal_count = 0 if $self->get_nb_normal_count($patient) eq '---';
+	return ($new_count + $normal_count);
+}
+
+sub get_ratio_new_count {
+	my ($self, $patient) = @_;
+	confess() unless $patient;
+	my $ratio = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
+	return $ratio;
+} 
+
+sub get_percent_new_count {
+	my ($self, $patient) = @_;
+	return $self->get_ratio_new_count($patient) * 100;
+}
+
 sub getSvgPlotPath {
 	my ($self, $patient) = @_;
 	my $path_svg = $patient->getJunctionsAnalysePath().'/../'.$self->annex->{$patient->name()}->{'ensid'}.'/SpliceRes/Figs/';
@@ -137,16 +273,19 @@ sub createSashiPlot {
 	my $score = $self->get_score($patient);
 	my $project_name = $patient->getProject->name();
 	my $cmd = $patient->getProject->buffer->software('ggsashimi');
-	$cmd .= " -b $path_analysis/../$ensg/rmdup/$patient_name\_$project_name\_rmdup.bam";
+	my $bam_path = $patient->getJunctionsAnalysePath()."/../resGenes/$ensg/rmdup/$patient_name\_$project_name\_rmdup.bam";
+	$cmd .= " -b $bam_path";
 	$cmd .= " -c chr".$locus;
 	$cmd .= " -o ".$file;
-	if ($score and $score >= 100) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/red.txt"; }
-	elsif ($score and $score >= 10) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/orange.txt"; }
-	elsif ($score and $score >= 1) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/green.txt"; }
-	else { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/black.txt"; }
+#	if ($score and $score >= 100) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/red.txt"; }
+#	elsif ($score and $score >= 10) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/orange.txt"; }
+#	elsif ($score and $score >= 1) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/green.txt"; }
+#	else { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/black.txt"; }
+	$cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/black.txt";
 	$cmd .= " -C 1";
 	$cmd .= " --shrink --alpha 0.25 --base-size=20 --ann-height=4 --height=3 --width=18";
 	$cmd .= " -g ".$patient->getProject->get_gtf_genes_annotations_igv();
+	$cmd .= " -F svg";
 	`$cmd`;
 	return $file;
 }
@@ -175,7 +314,7 @@ sub getSashimiPlotPath {
 		mkdir $path;
 		`chmod 775 $path`;
 	}
-	my $outfile = $path.'/sashimi_'.$patient->name().'.'.$self->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.pdf';
+	my $outfile = $path.'/sashimi_'.$patient->name().'.'.$self->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
 	return $outfile;
 }
 
@@ -192,7 +331,7 @@ sub getListSashimiPlotsPathFiles {
 		$locus_text =~ s/:/-/;
 		my ($chr_id, $start, $end) = split('-', $locus_text);
 		my $i = 1;
-		while ($i < 5) {
+		while ($i < 3) {
 			$start -= (1000*$i);
 			$end += (1000*$i);
 			my $locus_extended = $chr_id.':'.$start.'-'.$end;
@@ -206,9 +345,15 @@ sub getListSashimiPlotsPathFiles {
 	return;
 }
 
+has dejavu_percent_coordinate_similar => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> 98,
+);
+
 sub get_dejavu_list_similar_junctions {
 	my ($self, $identity) = @_;
-	$identity = 98 unless $identity;
+	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
 	my $chr_id = $self->getChromosome->id();
 	my $type = 'all';
 	confess() unless $type;
@@ -217,7 +362,7 @@ sub get_dejavu_list_similar_junctions {
 
 sub get_dejavu_list_similar_junctions_resume {
 	my ($self, $identity) = @_;
-	$identity = 98 unless $identity;
+	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
 	my $chr_id = $self->getChromosome->id();
 	my $type = 'all';
 	confess() unless $type;
@@ -231,7 +376,8 @@ has parse_nb_projects_patients => (
 		my $self = shift;
 		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
 		my ($h_proj, $h_pat, $hpatrun);
-		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume(98)}) {
+		my $similar = $self->dejavu_percent_coordinate_similar();
+		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume($similar)}) {
 			my @list = split(';', $h->{projects});
 			my @list2 = split(';', $h->{patients});
 			my $i = 0;
@@ -239,7 +385,8 @@ has parse_nb_projects_patients => (
 				$h_proj->{$proj} = undef;
 				foreach my $pat (split(',', $list2[$i])) {
 					$h_pat->{$proj.'_'.$pat} = undef;
-					if ($h->{same_as} eq '100%' and 'NGS20'.$proj eq $self->getProject->name()) {
+					#if ($h->{same_as} eq '100%' and 'NGS20'.$proj eq $self->getProject->name()) {
+					if ('NGS20'.$proj eq $self->getProject->name()) {
 						$hpatrun->{$proj.'_'.$pat} = undef;
 					}
 				}
@@ -249,7 +396,9 @@ has parse_nb_projects_patients => (
 		my $h;
 		$h->{projects} = scalar(keys %$h_proj);
 		$h->{patients} = scalar(keys %$h_pat);
-		$h->{patients_inthisrun} = scalar(keys %$hpatrun);
+		#$h->{patients_inthisrun} = scalar(keys %$hpatrun);
+		$h->{others_patients} = scalar(keys %$h_pat) - scalar(keys %$hpatrun);
+		#$h->{others_patients} = scalar(keys %$h_pat);
 		return $h;
 	},
 );
@@ -274,14 +423,33 @@ has dejavu_nb_patients => (
 	},
 );
 
-has inthisrun_nb_patients => (
+has dejavu_nb_others_patients => (
 	is		=> 'rw',
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
 		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		return $self->parse_nb_projects_patients->{patients_inthisrun};
+		return $self->parse_nb_projects_patients->{others_patients};
 	},
 );
+
+sub dejavu_nb_int_this_run_patients {
+	my ($self, $min_percent) = @_;
+	my $nb = scalar(@{$self->getPatients()});
+	return $nb unless ($min_percent);
+	foreach my $patient (@{$self->getPatients()}) {
+		$nb-- if ($self->get_percent_new_count($patient) < $min_percent);
+	}
+	return $nb;
+}
+
+sub setPatients {
+	my $self = shift;
+	my $h;
+	foreach my $patient (@{$self->getProject->getPatients()}) {
+		$h->{$patient->id} = undef if exists $self->annex->{$patient->name()};
+	}
+	return $h;
+}
 
 1;
