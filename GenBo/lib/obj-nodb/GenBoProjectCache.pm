@@ -329,6 +329,7 @@ sub hashTypeObject {
 	 	'variations'	=> 'GenBoVariationCache',
 	 	'deletions'		=> 'GenBoDeletionCache',	
 	 	'insertions'	=> 'GenBoInsertionCache',
+		'junctions'		=> 'GenBoJunctionCache',
 	 	'large_deletions'	=> 'GenBoLargeDeletionCache',	
 	 	'large_duplications'=> 'GenBoLargeDuplicationCache',
 	 	'references'	=> 'GenBoReference',
@@ -636,6 +637,8 @@ sub getVariantFromId {
 	die("\n\nERROR: no variant found with ID $id. Exit...\n\n");
 }
 
+
+
 sub setVariants {
 	my ($self, $type) = @_;
 	
@@ -645,6 +648,7 @@ sub setVariants {
 	elsif ($type eq 'deletions')       { $method = 'getDeletions'; }
 	elsif ($type eq 'large_deletions') { $method = 'getLargeDeletions'; }
 	elsif ($type eq 'large_duplications') { $method = 'getLargeDuplications'; }
+	elsif ($type eq 'junctions') 		{ $method = 'getJunctions'; }
 	my $h;
 	foreach my $chr (@{$self->getChromosomes()}) {
 		next if ($chr->not_used());
@@ -656,8 +660,10 @@ sub setVariants {
 	return $h;
 }
 
-
-
+sub setJunctions {
+	my ($self) = @_;
+	return $self->setVariants('junctions');
+}
 
 sub setVariations {
 	my $self = shift;
@@ -1002,12 +1008,12 @@ sub myflushobjects {
 					$self->{objects}->{$type}->{$id} = $obj;
 					
 				}
-				elsif ($type =~ /variant/ or $type eq 'variations' or $type eq 'deletions' or $type eq 'insertions' or $type eq 'large_duplications' or $type eq 'large_duplications' ){
+				elsif ($type =~ /variant/ or $type eq 'variations' or $type eq 'deletions' or $type eq 'insertions' or $type eq 'large_duplications' or $type eq 'large_duplications' or $type eq 'junctions' ){
 					
-					#confess() if 
 					my $vector_id;
 					my $chr;
 					my $real_id;
+					
 					if ($id =~/!/){
 						my ($chr_name,$vid) = split("!",$id);
 						$real_id = $id;
@@ -1029,38 +1035,42 @@ sub myflushobjects {
 					
 					my $ref = ref($var_obj);
 					$var_obj->{vector_id}= $vector_id;
-				if ($ref eq 'GenBoVariation'){
-					bless $var_obj , 'GenBoVariationCache';
-					$self->{objects}->{variations}->{$id}= $var_obj;
-				}
-				elsif  ($ref eq 'GenBoLargeDeletion'){
-					bless $var_obj , 'GenBoLargeDeletionCache';
-					$self->{objects}->{large_deletions}->{$id}= $var_obj;
 					
-				}
-				elsif  ($ref eq 'GenBoLargeInsertion'){
-					bless $var_obj , 'GenBoLargeDuplicationCache';
-					$self->{objects}->{large_duplications}->{$id}= $var_obj;
-				}
-				elsif  ($ref eq 'GenBoDeletion'){
-					bless $var_obj , 'GenBoDeletionCache'; 
-					$self->{objects}->{deletions}->{$id}= $var_obj;
-				}
-				elsif  ($ref eq 'GenBoInsertion'){
-					bless $var_obj , 'GenBoInsertionCache';
-					$self->{objects}->{insertions}->{$id}= $var_obj;
-				}
-					elsif  ($ref eq 'GenBoLargeDuplication'){
-					bless $var_obj , 'GenBoLargeDuplicationCache';
-					$self->{objects}->{insertions}->{$id}= $var_obj;
-				}
+					if ($ref eq 'GenBoVariation'){
+						bless $var_obj , 'GenBoVariationCache';
+						$self->{objects}->{variations}->{$id}= $var_obj;
+					}
+					elsif  ($ref eq 'GenBoJunction'){
+						bless $var_obj , 'GenBoJunctionCache';
+						$self->{objects}->{junctions}->{$id}= $var_obj;
+					}
 					elsif  ($ref eq 'GenBoLargeDeletion'){
-					bless $var_obj , 'GenBoLargeDeletionCache';
-					$self->{objects}->{insertions}->{$id}= $var_obj;
-				}
-				elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache') {
-					confess("$ref =+>".$var_obj);
-				}
+						bless $var_obj , 'GenBoLargeDeletionCache';
+						$self->{objects}->{large_deletions}->{$id}= $var_obj;
+					}
+					elsif  ($ref eq 'GenBoLargeInsertion'){
+						bless $var_obj , 'GenBoLargeDuplicationCache';
+						$self->{objects}->{large_duplications}->{$id}= $var_obj;
+					}
+					elsif  ($ref eq 'GenBoDeletion'){
+						bless $var_obj , 'GenBoDeletionCache'; 
+						$self->{objects}->{deletions}->{$id}= $var_obj;
+					}
+					elsif  ($ref eq 'GenBoInsertion'){
+						bless $var_obj , 'GenBoInsertionCache';
+						$self->{objects}->{insertions}->{$id}= $var_obj;
+					}
+					elsif  ($ref eq 'GenBoLargeDuplication'){
+						bless $var_obj , 'GenBoLargeDuplicationCache';
+						$self->{objects}->{insertions}->{$id}= $var_obj;
+					}
+					elsif  ($ref eq 'GenBoLargeDeletion'){
+						bless $var_obj , 'GenBoLargeDeletionCache';
+						$self->{objects}->{insertions}->{$id}= $var_obj;
+					}
+					elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoJunctionCache') {
+						confess("$ref =+>".$var_obj);
+					}
 				$var_obj->{project} =  $self;
 				$var_obj->{buffer} = $self->buffer;
 				
@@ -1102,6 +1112,8 @@ sub myflushobjects {
 				#warn "coucou" if $type eq "variants";
 			}
 			#confess($id) unless (exists  $self->{objects}->{$type}->{$id});
+			
+			
 			push(@objs, $self->{objects}->{$type}->{$id});
 
 		}

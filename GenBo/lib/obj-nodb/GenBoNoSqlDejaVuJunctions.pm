@@ -23,6 +23,7 @@ sub create_table {
 	return  $self->{table}->{$key1} unless  $self->write();
 	$self->dbh($key1)->do("DROP TABLE IF EXISTS $table_name")  or die $DBI::errstr  if $self->mode eq 'c'  ;
 	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),patients INTEGER, projects INTEGER, _value BLOB,start INTEGER,end INTEGER, variation_type VARCHAR(2), length INTEGER, caller_infos VARCHAR(100))")  or die $DBI::errstr;;
+	$self->dbh($key1)->do("CREATE UNIQUE INDEX if not exists _key_idx  on $table_name (_key); ")  or die $DBI::errstr;;
 	return 	$self->{table}->{$key1} ;
 }
 
@@ -98,6 +99,7 @@ sub get_junction {
 		}
 		unless ($dejavu eq "all") {last if scalar(keys %$x) > $dejavu+1};
 	 }
+#	 die;
 	 return $x;
 }
 
