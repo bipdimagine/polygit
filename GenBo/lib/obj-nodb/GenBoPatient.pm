@@ -2997,18 +2997,6 @@ sub get_string_validations {
 			return $stv;
 }
 
-sub getQueryJunction {
-	my ($self, $fileName, $method) = @_;
-	my %args;
-	$args{patient} = $self;
-	$args{file}    = $fileName;
-	if ($method eq 'RI') { $args{isRI} = 1; }
-	elsif ($method eq 'SE') { $args{isSE} = 1; }
-	else { confess(); }
-	my $queryJunction = QueryJunctionFile->new( \%args );
-	return $queryJunction;
-}
-
 sub getJunctionsAnalysePath {
 	my ($self) = @_;
 	my $path_analisys_root = $self->getProject->get_path_rna_seq_junctions_root();
@@ -3104,50 +3092,9 @@ has junction_SE_file_filtred => (
 sub setJunctions {
 	my ($self) = @_;
 	my $h_ids;
-	if ($self->junction_RI_file()) {
-		foreach my $hres (@{$self->getQueryJunction($self->junction_RI_file(), 'RI')->parse_file()}) {
-			my $annex = $hres->{annex};
-			$annex->{type_origin_file} = 'RI';
-			delete $hres->{annex};
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$obj->{annex}->{$self->name()} = $annex;
-			$obj->{patients_object}->{$self->id()} = undef;
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
-	if ($self->junction_RI_file_filtred()) {
-		foreach my $hres (@{$self->getQueryJunction($self->junction_RI_file_filtred(), 'RI')->parse_file()}) {
-			my $annex = $hres->{annex};
-			$annex->{type_origin_file} = 'RI';
-			$annex->{filtred_result} = 1;
-			delete $hres->{annex};
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$obj->{annex}->{$self->name()} = $annex;
-			$obj->{patients_object}->{$self->id()} = undef;
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
-	if ($self->junction_SE_file()) {
-		foreach my $hres (@{$self->getQueryJunction($self->junction_SE_file(), 'SE')->parse_file()}) {
-			my $annex = $hres->{annex};
-			$annex->{type_origin_file} = 'SE';
-			delete $hres->{annex};
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$obj->{annex}->{$self->name()} = $annex;
-			$obj->{patients_object}->{$self->id()} = undef;
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
-	if ($self->junction_SE_file_filtred()) {
-		foreach my $hres (@{$self->getQueryJunction($self->junction_SE_file_filtred(), 'SE')->parse_file()}) {
-			my $annex = $hres->{annex};
-			$annex->{type_origin_file} = 'SE';
-			$annex->{filtred_result} = 1;
-			delete $hres->{annex};
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$obj->{annex}->{$self->name()} = $annex;
-			$obj->{patients_object}->{$self->id()} = undef;
-			$h_ids->{$obj->id()} = undef;
+	foreach my $junction (@{$self->getProject->getJunctions()}) {
+		if (exists $junction->{annex}->{$self->name}) {
+			$h_ids->{$junction->id()} = undef;
 		}
 	}
 	return $h_ids;
