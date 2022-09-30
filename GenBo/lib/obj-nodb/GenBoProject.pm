@@ -49,6 +49,7 @@ use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
+use GenBoJunctionCache;
 use Storable qw(store retrieve freeze dclone thaw);
 
 #use LMDB_File qw(:flags :cursor_op);
@@ -6060,6 +6061,16 @@ has get_path_rna_seq_junctions_root  => (
 	},
 );
 
+has get_path_rna_seq_junctions_analyse_all_res  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->get_path_rna_seq_junctions_root()."/AllRes/";
+		return $path;
+	},
+);
+
 has get_path_rna_seq_junctions_analyse_description_root  => (
 	is      => 'rw',
 	lazy    => 1,
@@ -6109,14 +6120,6 @@ has get_hash_patients_description_rna_seq_junction_analyse => (
 	},
 );
 
-sub get_path_rna_seq_analyse {
-	my ($self, $analyse_name) = @_;
-	confess("\n\nERROR: analyse name mandatory. Die\n\n") unless ($analyse_name);
-	my $path = $self->get_path_rna_seq_junctions_root();
-	my $path_analyse = $path.'/'.$analyse_name.'/';
-	confess("\n\nERROR: analyse $analyse_name not found in $path. Die\n\n") unless (-d $path_analyse);
-	return $path_analyse;
-}
 
 sub get_gtf_genes_annotations_igv {
 	my ($self) = @_;
@@ -6131,6 +6134,40 @@ sub get_gtf_genes_annotations_igv {
 	}
 	return $self->buffer->config->{'public_data_annotation'}->{root}."/".$self->getVersion()."/igv/gencode.gtf.gz";
 }
+
+sub getQueryJunction {
+	my ($self, $fileName, $method) = @_;
+	my %args;
+	$args{project} = $self;
+	$args{file}    = $fileName;
+	if ($method eq 'RI') { $args{isRI} = 1; }
+	elsif ($method eq 'SE') { $args{isSE} = 1; }
+	else { confess(); }
+	my $queryJunction = QueryJunctionFile->new( \%args );
+	return $queryJunction;
+}
+
+sub setJunctions {
+	my ($self) = @_;
+	my $h_ids;
+	my $path = $self->get_path_rna_seq_junctions_analyse_all_res();
+	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+	if ($ri_file and -e $ri_file ) {
+		foreach my $hres (@{$self->getQueryJunction($ri_file, 'RI')->parse_file()}) {
+			my $obj = $self->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($se_file and -e $se_file) {
+		foreach my $hres (@{$self->getQueryJunction($se_file, 'SE')->parse_file()}) {
+			my $obj = $self->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	return $h_ids;
+}
+		
 
 
 1;
