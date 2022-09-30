@@ -79,20 +79,17 @@ sub getProjectListsRNA {
 #			$h->{button} = '1::'.$project_name;
 #		}
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
-		if (-d $p1->get_path_rna_seq_junctions_root()) {
+		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
+		if (-d $path) {
 			my $ok;
-			foreach my $pat (@{$p1->getPatients()}) {
-				eval { $pat->getJunctionsAnalysePath() };
-				if ($@) { next; }
-				$ok = 1 if ($pat->junction_RI_file_filtred());
-				$ok = 1 if ($pat->junction_SE_file_filtred());
-				$ok = 1 if ($pat->junction_RI_file());
-				$ok = 1 if ($pat->junction_SE_file());
-				last if $ok;
-			}
+			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+			my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+			$ok = 1 if (-e $se_file);
+			$ok = 1 if (-e $ri_file);
 			$h->{button} = '1::'.$h->{name} if ($ok);
 		}
 		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
+		next unless $h->{button};
 		push (@list_res, $h);
 	}
 	export_data::print_simpleJson($cgi, \@list_res);
