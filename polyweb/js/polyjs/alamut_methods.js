@@ -10,7 +10,7 @@ function httpGetFocusOn(url) {
 
 function displayInAlamut(chr, start, a){
 	chr = chr.replace('-', '');
-	var locus = "chr"+chr+":"+start+a[0]+">"+a[1];
+	var locus = chr+":"+start+a[0]+">"+a[1];
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+locus);
 	launch_alamut_visual_plus_cmds(list_cmds);
@@ -19,7 +19,7 @@ function displayInAlamut(chr, start, a){
 
 function displayLocusInAlamut(chr, start, end){
 	chr = chr.replace('-', '');
-	var locus = "chr" + chr + ":" + start + "-" + end;
+	var locus = chr + ":" + start + "-" + end;
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+locus);
 	launch_alamut_visual_plus_cmds(list_cmds);
