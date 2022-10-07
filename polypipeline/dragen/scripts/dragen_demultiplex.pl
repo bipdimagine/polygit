@@ -115,7 +115,7 @@ my $pos_umi = firstidx { $_ =~ /U/ } @amask;
 $lines->{"[Settings]"} = [];
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi;
-push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]);
+push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
 
 my $lheader_data = shift @{$lines->{"[Data]"}};
 if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
@@ -204,7 +204,7 @@ my $ss = $bcl_dir."/file".time.".csv";
 csv (in => $outcsv, out => $ss, sep_char=> ",");
 
 sleep(1);
-my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force   };
+my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force  };
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
@@ -234,7 +234,7 @@ foreach my $project_name (split(",",$project_names)){
 $pm->wait_all_children();
 
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name;
-system("mkdir -p $dir_stats && rsync -rav ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ && chmod -R a+rwx $dir_stats  ");
+system("mkdir -p $dir_stats && rsync -rav --remove-source-files ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ && chmod -R a+rwx $dir_stats  ");
 
 exit(0);
 
