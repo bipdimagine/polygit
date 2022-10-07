@@ -41,12 +41,13 @@ my %hash;
 while(<SUMMARY>){
 	
 	chomp($_);
-	my($patient,$protocol,$size,$udi,$index1,$index2,$gRNA,$ngRNA,$amplicon,$scaffold,$extension)=split(",",$_);
+#	my($patient,$protocol,$size,$udi,$index1,$index2,$gRNA,$ngRNA,$amplicon,$scaffold,$extension)=split(",",$_);
+	my($patient,$gRNA,$enzyme,$amplicon)= split(",",$_);
 	$hash{$patient}->{gRNA}=$gRNA;
 	$hash{$patient}->{amplicon}=$amplicon;
-	$hash{$patient}->{scaffold}=$scaffold;
-	$hash{$patient}->{ngRNA}=$ngRNA;
-	$hash{$patient}->{extension}=$extension;
+#	$hash{$patient}->{scaffold}=$scaffold;
+#	$hash{$patient}->{ngRNA}=$ngRNA;
+#	$hash{$patient}->{extension}=$extension;
 	
 }
 
@@ -85,9 +86,9 @@ foreach my $k (keys(%hash)){
 		my $cmd = "docker run --rm -v $dir:/DATA -v $dirin:/SEQ -w /DATA  pinellolab/crispresso2 CRISPResso  -r1 /DATA/$r1 -a $hash{$name}->{amplicon} -g $hash{$name}->{gRNA} --no_rerun --output_folder /DATA/$name ";
 		$cmd .= "-r2 /DATA/$r2" if $type eq "paired-end";
 		$cmd .= " --quantification_window_size 10 --quantification_window_center -10 --base_editor_output --conversion_nuc_from $wnuc --conversion_nuc_to $enuc" if $editing==1;
-		$cmd .= " --prime_editing_pegRNA_spacer_seq ".$hash{$name}->{gRNA};
-		$cmd .= " --prime_editing_nicking_guide_seq ".$hash{$name}->{ngRNA};
-		$cmd .= " --prime_editing_pegRNA_extension_seq ".$hash{$name}->{extension};
+#		$cmd .= " --prime_editing_pegRNA_spacer_seq ".$hash{$name}->{gRNA};
+#		$cmd .= " --prime_editing_nicking_guide_seq ".$hash{$name}->{ngRNA};
+#		$cmd .= " --prime_editing_pegRNA_extension_seq ".$hash{$name}->{extension};
 		
 		print SCRIPT $cmd."\n\n";
 		warn $cmd;
@@ -122,7 +123,8 @@ print "\t#########################################\n";
 sub wanted {
 	my ($patient, $bc,$dirin,$pair) =@_;
 	warn $dirin."/".$patient."*_".$pair."_*.fastq.gz";
-	my @seq = glob($dirin."/".$patient."*_".$pair."_*.fastq.gz");
+	warn $bc;
+	my @seq = glob($dirin."/".$bc."*_".$pair."_*.fastq.gz");
 	my $list = join (" ",@seq);
 	#my $fileout =  $project->getProjectRootPath()."/".$patient."_".$pair.".fastq.gz";
 	my $fileout =$patient."_".$pair.".fastq.gz";

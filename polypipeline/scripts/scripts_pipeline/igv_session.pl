@@ -61,7 +61,7 @@ print IGV "<Resources>\n";
 
 foreach my $patient (@{$patients_name}) {
 	my $name=$patient->name();
-	print IGV '<Resource path="http://www.polyweb.fr/NGS/'.$project->name."HG38/align/hisat2/".$patient->name.".bam\n";
+	print IGV '<Resource path="http://www.polyweb.fr/NGS/'.$project->name."/HG38/align/hisat2/".$patient->name.".bam\"/>\n";
 }
 print IGV "</Resources>\n";
 print IGV "</Session>\n";
