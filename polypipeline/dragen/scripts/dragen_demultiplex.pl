@@ -136,7 +136,7 @@ my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
 my $pos_cb1 = firstidx { $_ eq "index" } @$lheader_data;
 my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
 warn Dumper @$lheader_data;
-
+###
 ### read mask ;
 my @amask = split(";",$mask);
 my $pos_umi = firstidx { $_ =~ /U/ } @amask;
