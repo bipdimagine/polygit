@@ -63,11 +63,14 @@ sub tsktsk {
 my $project_name;
 my $patients_name;
 my $limit;
+my $umi;
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
+	'umi=s' => \$umi,
 	#'low_calling=s' => \$low_calling,
 );
+
 my $steps = {
 				"dragen-alignment"=> \&run_align,
 				"move"=>  \&run_move,
@@ -89,6 +92,9 @@ foreach my $pname (split(",",$project_name)){
 	my $project = $buffer->newProject( -name => $pname );
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
+	foreach my $p (@{$project->getPatients}){
+		warn $p->name;
+	}
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
@@ -111,19 +117,18 @@ my $jobs =[];
 
 
 run_align($projects);
-
 run_move($projects);
 #run_gvcf($projects);
 #run_dragen_cnv_coverage($projects);
 run_genotype($projects);
-#run_sv();
+run_sv();
 #run_target();
-run_pon($projects);
-run_coverage($projects);
+#run_pon($projects);
+#run_coverage($projects);
 run_lmdb_depth($projects);
 exit(0);
 
-
+  
 
 ####### Genotype
 
@@ -271,6 +276,7 @@ foreach my $patient (@$patients){
 	my $job;
 	$job->{name} = $patient->name.".aln";
 	$job->{cmd} = "perl $script_perl/dragen_align_calling.pl -project=$projectName -patient=".$patient->name;
+	$job->{cmd} .= " -umi=1" if $umi;
 	$job->{out} =  $dir_pipeline."/".$prefix.".bam";
 	push(@$jobs,$job);
 	}
@@ -299,8 +305,10 @@ foreach my $project (@$projects){
  }
  if(@ps){
 	my $cmd_genotype = "perl $script_perl/dragen_genotype.pl -project=$projectName -patient=".join(",",@ps);
+	
 	push(@$jobs,{cmd=>$cmd_genotype,name=>$project->name.".genotype"});
  }
+ 
 }
  	steps_system("Dragen Genotype ",$jobs);
 }
