@@ -1401,9 +1401,7 @@ sub get_gencode_directory {
 	  if exists $self->{directory}->{$version}->{$database};
 
 	$self->{directory}->{$version}->{$database} =
-		$self->public_data_root . "/"
-	  . $self->annotation_genome_version . "/"
-	  . $self->buffer->gencode->{$version}->{directory};
+		$self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
 	confess( "score:$database " . $self->{directory}->{$version}->{$database} )
 	  unless -e $self->{directory}->{$version}->{$database};
 
@@ -1416,11 +1414,7 @@ sub get_public_data_directory {
 	my ( $self, $database, $version ) = @_;
 	return $self->{directory}->{$database} if exists $self->{directory}->{$database} ;
 	$version = $self->public_database_version unless $version;
-	$self->{directory}->{$database} =
-		$self->public_data_root . "/"
-	  . $self->annotation_genome_version . "/"
-	  . $self->buffer->public_data->{$version}->{$database}->{config}
-	  ->{directory};
+	$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
 	confess( "public data :$database " . $self->{directory}->{$database} )
 	  unless -e $self->{directory}->{$database};
 	return $self->{directory}->{$database};
