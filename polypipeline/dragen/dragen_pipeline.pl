@@ -113,8 +113,8 @@ my $jobs =[];
 run_align($projects);
 
 run_move($projects);
-run_gvcf($projects);
-run_dragen_cnv_coverage($projects);
+#run_gvcf($projects);
+#run_dragen_cnv_coverage($projects);
 run_genotype($projects);
 #run_sv();
 #run_target();
@@ -127,9 +127,9 @@ exit(0);
 
 ####### Genotype
 
-run_genotype();
-run_lmdb_depth();
-run_sv_pon();
+#run_genotype();
+#run_lmdb_depth();
+#run_sv_pon();
 
 warn "end";
 exit(0);
