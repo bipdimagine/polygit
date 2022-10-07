@@ -1525,4 +1525,19 @@ sub log2 {
     return $v;
 }
 
+sub get_base_url_polyrna {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{base_url_polyrna};
+}
+
+sub get_polyrna_file_server_to_docker {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{server_to_docker};
+}
+
+sub get_polyrna_file_docker_to_server {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{docker_to_server};
+}
+
 1;

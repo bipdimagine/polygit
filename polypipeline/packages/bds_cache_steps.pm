@@ -512,6 +512,27 @@ method dude_bed (Str :$filein){
 	return ($fileout);
 }
 
+method sashimi_plots (Str :$filein){
+	my $name = $self->patient()->name();
+	my $project = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $log_error = $project->project_path."/align/sashimi_plots/sashimi_$name.log";
+	my $fileout = $log_error.'.ok';
+	my $ppn = $self->nproc;
+	$ppn = int($self->nproc/2) if $self->nocluster;
+	my $bin_dev = $self->script_dir;
+	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_sashimi_plot.pl -project=$project_name -patient=$name -fork=$ppn -fileout=$fileout";
+	my $type = "sashimi_plots";
+	my $stepname = $self->patient->name."@".$type;
+	$ppn =20;
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job(job=>$job_bds);
+	if ($self->unforce() &&  -e $fileout){
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+
 method transcripts_dude (Str :$filein){
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();

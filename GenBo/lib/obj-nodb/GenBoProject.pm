@@ -47,6 +47,7 @@ use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
+use GenBoJunction;
 use Storable qw(store retrieve freeze dclone thaw);
 
 #use LMDB_File qw(:flags :cursor_op);
@@ -175,8 +176,12 @@ has isFamilial => (
 			  or exists $self->pedigree_details()->{$_}->{father}
 		} keys %{ $self->pedigree_details() };
 		return 1 if scalar(@t) >= 1;
+		foreach my $fam_name (keys %{$self->pedigree_details()}) {
+			my $nb_childs = 0;
+			$nb_childs = scalar(keys %{$self->pedigree_details()->{$fam_name}->{children}}) if (exists $self->pedigree_details()->{$fam_name}->{children});
+			return 1 if ($nb_childs > 1);
+		}
 		return;
-
 #	return 1 if (scalar( grep {exists $self->pedigree_details()->{$_}->{mother} }keys %{$self->pedigree_details()}) ne scalar(@{$self->getPatients}));
 #	return;
 	},
@@ -1866,7 +1871,6 @@ has dirCytoManue => (
 
 );
 
-
 has gtf_file => (
 	is      => 'rw',
 	lazy    => 1,
@@ -3408,6 +3412,11 @@ sub myflushobjects {
 				$id = $obj->id;
 				confess($type." ".$id) unless exists $self->{objects}->{$type}->{$obj->id};
 			}
+			elsif ( $type eq 'junctions' ) {
+				my $obj = $self->createObject( $type, { id => $id } );
+				$id = $obj->id;
+				confess($type." ".$id) unless exists $self->{objects}->{$type}->{$obj->id};
+			}
 			else {
 				warn "\n\nproblem... no $type";
 				confess("je fais quoi ici $type");
@@ -3528,7 +3537,8 @@ has hashTypeObject => (
 			'somatic_groups'     => 'GenBoSomaticGroup',
 			'svduplications'     => 'GenBoSVDup',
 			'svdeletions'        => 'GenBoSVDel',
-			'regulatory_regions'        => 'GenBoRegulatoryRegion',
+			'regulatory_regions' => 'GenBoRegulatoryRegion',
+			'junctions'			 => 'GenBoJunction',
 		};
 		return $hashTypeObject;
 	}
@@ -6004,6 +6014,49 @@ has dir_controls_dude => (
 		return $dir;
 	},
 );
+
+has get_path_rna_seq_polyrna_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
+		return $path;
+	},
+);
+
+has get_path_rna_seq_junctions_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
+		return $path;
+	},
+);
+
+sub get_path_rna_seq_analyse {
+	my ($self, $analyse_name) = @_;
+	confess("\n\nERROR: analyse name mandatory. Die\n\n") unless ($analyse_name);
+	my $path = $self->get_path_rna_seq_junctions_root();
+	my $path_analyse = $path.'/'.$analyse_name.'/';
+	confess("\n\nERROR: analyse $analyse_name not found in $path. Die\n\n") unless (-d $path_analyse);
+	return $path_analyse;
+}
+
+sub get_gtf_genes_annotations_igv {
+	my ($self) = @_;
+	if ($self->getVersion() =~ /HG19/) {
+		my $igv_dir = $self->buffer->config->{'public_data_annotation'}->{root}.'/igv/';
+		if (defined $self->gencode_version() && $self->gencode_version() ne '-1') {
+			my $file = $igv_dir.'/gencode.'.$self->gencode_version().'.gtf.gz';
+			return $file if (-e $file);
+		}
+		my $file = $igv_dir.'/gencode.gtf.gz';
+		return $file;
+	}
+	return $self->buffer->config->{'public_data_annotation'}->{root}."/".$self->getVersion()."/igv/gencode.gtf.gz";
+}
 
 
 1;

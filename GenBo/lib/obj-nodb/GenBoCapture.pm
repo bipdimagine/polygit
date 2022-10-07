@@ -13,7 +13,6 @@ use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";
 
-
 has name => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -313,7 +312,7 @@ sub getCaptureChromosomesName {
 	my @l_tabix_chr_names = $tabix->getnames();
 	my @t;
 	if ($l_tabix_chr_names[0] =~ /chr/) { @t = map {$self->project->getChromosome($_)->ucsc_name}  @l_tabix_chr_names; }
-	else { @t = map {$self->project->getChromosome($_)->fasta_name}  @l_tabix_chr_names; }
+	else { @t = map {$self->project->getChromosome($_)->id}  @l_tabix_chr_names; }
 	$self->{chr_name} = \@t;
 	return $self->{chr_name};
 }
@@ -1119,7 +1118,7 @@ has sd_controls_dude => (
 	lazy => 1,
 	default => sub {
 		my $self = shift;
-		
+		 
 	 	$self->{control_nosql} =  GenBoBinaryFile->new(name=>"controls_sd",dir=>$self->dir_capture_controls_dude,mode=>"r");
 		return $self->{control_nosql};
 	},

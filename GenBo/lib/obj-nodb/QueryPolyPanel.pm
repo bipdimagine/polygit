@@ -110,7 +110,7 @@ has sql_genes_by_panel_name => (
 		my $sql = qq{
 			 SELECT ensg.ensg_vid as ensg, gene.name as name
 				FROM PolyPanelDB.gene, PolyPanelDB.gene_bundle, PolyPanelDB.panel_bundle,PolyPanelDB.panel, PolyPanelDB.ensg, PolyPanelDB.gene_ensg
-			 		where gene_ensg.gene_id=gene.gene_id and gene_ensg.ensg_id=ensg.ensg_id and gene.gene_id=gene_bundle.gene_id and gene_bundle.bundle_id=panel_bundle.bundle_id and panel_bundle.panel_id=panel.panel_id and panel.name=?;
+			 		where gene_ensg.gene_id=gene.gene_id and gene_ensg.ensg_id=ensg.ensg_id and gene.gene_id=gene_bundle.gene_id and gene_bundle.bundle_id=panel_bundle.bundle_id and panel_bundle.panel_id=panel.panel_id and panel.name=? and panel.current=1;
 		};
 		return $sql;
 	},
@@ -126,7 +126,7 @@ has sql_count_genes_by_panel_name => (
 		my $sql = qq{
 			 SELECT count(DISTINCT gene.gene_id) as nb
 				FROM PolyPanelDB.gene, PolyPanelDB.gene_bundle, PolyPanelDB.panel_bundle,PolyPanelDB.panel, PolyPanelDB.gene_ensg
-			 		where  gene_ensg.gene_id=gene.gene_id and gene.gene_id=gene_bundle.gene_id and gene_bundle.bundle_id=panel_bundle.bundle_id and panel_bundle.panel_id=panel.panel_id and panel.name=?;
+			 		where  gene_ensg.gene_id=gene.gene_id and gene.gene_id=gene_bundle.gene_id and gene_bundle.bundle_id=panel_bundle.bundle_id and panel_bundle.panel_id=panel.panel_id and panel.name=? and panel.current=1;
 		};
 		return $sql;
 	},
