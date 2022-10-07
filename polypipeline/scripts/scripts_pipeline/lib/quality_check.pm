@@ -342,7 +342,7 @@ sub fast_plink {
 	warn $tped_file;
 	if ( @{ $fam->getParents } ) {
 		my $cmd2 =
-"$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName";
+"$plink --tped $tped_file --allow-extra-chr  --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName";
 
 		#	warn $cmd2;
 		my @log   = `$cmd2`;
