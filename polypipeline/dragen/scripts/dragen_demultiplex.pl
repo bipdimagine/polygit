@@ -38,7 +38,7 @@ GetOptions(
 	'mask=s' => \$mask,
 	'l2=s' => \$l2,
 );
-# XX
+#
 my $bcl_dir;
 my $aoa;
 my $dir_out;
@@ -50,7 +50,7 @@ foreach my $project_name (split(",",$project_names)){
 	my $project = $buffer->newProject( -name 			=> $project_name );
 	map {$patients{$_->name}++} @{$project->getPatients};
 	my $run = $project->getRun();
-	 
+	
 	$run_name = $run->name;
 	
 	die("can't find bcl directory : ".$run->bcl_dir()) unless -e $run->bcl_dir();
@@ -101,6 +101,7 @@ foreach my $line(@$aoa){
 }
 
 #change setting
+
 foreach my $set (@{$lines->{"[Settings]"}}){
 	if ($set->[0] eq "Adapter") {
 		$set->[0] = "AdapterRead1"
@@ -108,14 +109,12 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 	
 }
 
-### read mask ;
-my @amask = split(";",$mask);
-my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+$lines->{"[Settings]"}=[];
 
-$lines->{"[Settings]"} = [];
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi;
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]);
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
+
 
 my $lheader_data = shift @{$lines->{"[Data]"}};
 if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
@@ -137,7 +136,7 @@ my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
 my $pos_cb1 = firstidx { $_ eq "index" } @$lheader_data;
 my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
 warn Dumper @$lheader_data;
-
+###
 ### read mask ;
 my @amask = split(";",$mask);
 my $pos_umi = firstidx { $_ =~ /U/ } @amask;
@@ -151,7 +150,6 @@ if($pos_umi == 2){
 	}
 	}
 }
-
 my $dj;
 foreach my $data (@{$lines->{"[Data]"}}){
 	
@@ -205,7 +203,7 @@ my $ss = $bcl_dir."/file".time.".csv";
 csv (in => $outcsv, out => $ss, sep_char=> ",");
 
 sleep(1);
-my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force  };
+my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force   };
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
@@ -235,7 +233,7 @@ foreach my $project_name (split(",",$project_names)){
 $pm->wait_all_children();
 
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name;
-system("mkdir -p $dir_stats && rsync -rav --remove-source-files ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ && chmod -R a+rwx $dir_stats  ");
+system("mkdir -p $dir_stats && rsync -rav ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ && chmod -R a+rwx $dir_stats  ");
 
 exit(0);
 
