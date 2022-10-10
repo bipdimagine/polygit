@@ -16,19 +16,30 @@ use Data::Dumper;
 use JSON;
 use xls_export;
 use session_export;
+use Spreadsheet::WriteExcel;
 use POSIX;
 
 my $cgi = new CGI;
-print $cgi->header('text/json-comment-filtered');
-
-
 my $force = $cgi->param('force');
 my $run_name = $cgi->param('run');
+my $export_xls = $cgi->param('export_xls');
 
 my ($h_files, $h_files_date);
 my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
 my ($list_paths_found) = list_html_files_in_dir($origin_path);
 my $buffer = new GBuffer;
+
+
+if ($run_name and $export_xls) {
+	my $this_path = $origin_path.'/'.$run_name;
+	if (-e $this_path.'/Demultiplex_Stats.csv' && -e $this_path.'/Top_Unknown_Barcodes.csv') {
+		my @lFiles = ('Demultiplex_Stats.csv', 'Top_Unknown_Barcodes.csv');
+		convert_csv_to_xls($this_path, \@lFiles);
+		exit(0);
+	}
+}
+
+print $cgi->header('text/json-comment-filtered');
 
 foreach my $this_path (@$list_paths_found) {
 	if ($run_name) {
@@ -185,6 +196,111 @@ sub check_run_id_from_sample_name {
 	return $h_runs;
 }
 
+sub parse_csv_file {
+	my $file = shift;
+	my $h;
+	$h->{has_RC} = undef;
+	open (CSV, "$file");
+	my $i = 0;
+	my $has_RC;
+	my $max_nb_header;
+	my $nb_samples;
+	my $total_reads;
+	while (<CSV>) {
+		chomp($_);
+		my $line = $_;
+		my @lCol = split(',', $line);
+		if ($i == 0) {
+			$h->{header} = \@lCol;
+			$max_nb_header = scalar(@{$h->{header}});
+		}
+		else {
+			my $j = 0;
+			my $id = $lCol[0].'_'.$lCol[1];
+			if ($id =~ /(.+)_RC/) {
+				$h->{has_RC}++ if (exists $h->{values}->{$1});
+			}
+			my $sample_id;
+			foreach my $value (@lCol) {
+				my $cat = $h->{header}[$j];
+				$value = $value * 100 if ($cat =~ /\%/);
+				$h->{values}->{$id}->{$cat} = $value;
+				$h->{values}->{$id}->{$j} = $value;
+				if ($cat eq 'SampleID') {
+					$sample_id = $value;
+					$nb_samples++ if (not lc($sample_id) eq 'undetermined' and not lc($sample_id) =~ /_rc/);
+					my ($run_id, @l_runs_id);
+					my $runs = join(' ', reverse @l_runs_id);
+					$runs = 'no_run_info' unless ($runs);
+					$h->{values}->{$id}->{'RunID'} = $runs;
+					$h->{values}->{$id}->{$max_nb_header} = $runs;
+				}
+				if ($cat eq '# Reads') {
+					$total_reads += int($value)  if (not lc($sample_id) =~ /undetermined/ and not $sample_id =~ /_RC$/);
+					$h->{values}->{$id}->{'# Reads Norm Only'} = int($value);
+					$h->{values}->{$id}->{$max_nb_header+1} = int($value);
+					if (exists $h->{runs_ids}->{by_samples}->{$sample_id}) {
+						foreach my $run_id (keys %{$h->{runs_ids}->{by_samples}->{$sample_id}}) {
+							$h->{runs_ids}->{by_samples}->{$sample_id}->{$run_id} = int($value);
+						}
+					}
+				}
+				
+				$j++;
+			}
+		}
+		$i++;
+	}
+	$h->{total_reads} = $total_reads;
+	$h->{nb_samples} = $nb_samples;
+	close(CSV);
+	return $h;
+}
+
+sub convert_csv_to_xls {
+	my ($path, $list_files) = @_;
+	print "Content-type: application/msexcel\n";
+	print "Content-Disposition: attachment;filename=$run_name\_demultiplex.xls\n\n";
+	my $workbook = Spreadsheet::WriteExcel->new( \*STDOUT );
+	my $formats;
+	$formats->{header} = $workbook->add_format( valign => 'vcenter', align => 'center' );
+	$formats->{header}->set_color('black');
+	$formats->{header}->set_bold();
+	$formats->{normal} = $workbook->add_format( valign => 'vcenter', align => 'center' );
+	$formats->{normal}->set_color('black');
+	foreach my $file (sort @$list_files) {
+		my $csv_file = $path.'/'.$file;
+		my $table_id = 'table_'.$file;
+		$table_id =~ s/\.csv//;
+		my $h = parse_csv_file($csv_file);
+		my $page_name = $file;
+		$page_name =~ s/.csv//;
+		my $xls_page = $workbook->add_worksheet($page_name);
+		my $i = 0;
+		my $j = 0;
+		my $max_header = scalar(@{$h->{header}});
+		foreach my $cat (@{$h->{header}}) {
+			$xls_page->write($i, $j, $cat, $formats->{header});
+			$j++;
+		}
+		$i++;
+		$j = 0;
+		foreach my $id (sort keys %{$h->{values}}) {
+			$j = 0;
+			my$continue = 1;
+			while ($continue == 1) {
+				my $value = $h->{values}->{$id}->{$j};
+				$xls_page->write($i, $j, $value, $formats->{normal});
+				$j++;
+				$continue = undef if (not exists $h->{values}->{$id}->{$j});
+				$continue = undef if ($j >= $max_header);
+			}
+			$i++;
+		}
+	}
+	exit(0);
+}
+
 sub convert_csv_to_json {
 	my ($path, $list_files) = @_;
 	my $path_out = $path.'/json/';
@@ -198,6 +314,7 @@ sub convert_csv_to_json {
 	my $h;
 	
 	foreach my $file (sort @$list_files) {
+		
 		my $csv_file = $path.'/'.$file;
 		my $table_id = 'table_'.$file;
 		$table_id =~ s/\.csv//;
@@ -205,71 +322,12 @@ sub convert_csv_to_json {
 		my $sorted_col = "data-sort-name='n_reads' data-sort-order='desc'";
 		#$sorted_col = "data-sort-name='p_of_unknown_barcodes' data-sort-order='desc'" if (lc($table_id) =~ /top_/);
 		
-		open (CSV, "$csv_file");
-		my $i = 0;
+		$h->{$file} = parse_csv_file($csv_file);
+		
 		my $has_RC;
-		my $max_nb_header;
-		my $nb_samples;
-		my $total_reads;
-		while (<CSV>) {
-			chomp($_);
-			my $line = $_;
-			my @lCol = split(',', $line);
-			if ($i == 0) {
-				$h->{$file}->{header} = \@lCol;
-				$max_nb_header = scalar(@{$h->{$file}->{header}});
-			}
-			else {
-				my $j = 0;
-				my $id = $lCol[0].'_'.$lCol[1];
-				if ($id =~ /(.+)_RC/) {
-					$has_RC ++ if (exists $h->{$file}->{values}->{$1});
-				}
-				my $sample_id;
-				foreach my $value (@lCol) {
-					my $cat = $h->{$file}->{header}[$j];
-					$value = $value * 100 if ($cat =~ /\%/);
-					$h->{$file}->{values}->{$id}->{$cat} = $value;
-					$h->{$file}->{values}->{$id}->{$j} = $value;
-					if ($cat eq 'SampleID') {
-						$sample_id = $value;
-						$nb_samples++ if (not lc($sample_id) eq 'undetermined' and not lc($sample_id) =~ /_rc/);
-						my ($run_id, @l_runs_id);
-#						if (exists $h->{$file}->{runs_ids} and exists $h->{$file}->{runs_ids}->{$value}) {
-#							@l_runs_id = sort keys %{$h->{$file}->{runs_ids}->{$value}};
-#						}
-#						else {
-#							my $h_runs_infos = check_run_id_from_sample_name($value) if (lc($value) ne 'undetermined');
-#							@l_runs_id = sort keys %{$h_runs_infos};
-#							foreach my $r (@l_runs_id) {
-#								$h->{$file}->{runs_ids}->{by_samples}->{$value}->{$r} = undef;
-#								$h->{$file}->{runs_ids}->{by_runs}->{$r}->{$value} = undef;
-#							}
-#						}
-						my $runs = join(' ', reverse @l_runs_id);
-						$runs = 'no_run_info' unless ($runs);
-						
-						
-						$h->{$file}->{values}->{$id}->{'RunID'} = $runs;
-						$h->{$file}->{values}->{$id}->{$max_nb_header} = $runs;
-					}
-					if ($cat eq '# Reads') {
-						$total_reads += int($value)  if (not lc($sample_id) =~ /undetermined/ and not $sample_id =~ /_RC$/);
-						$h->{$file}->{values}->{$id}->{'# Reads Norm Only'} = int($value);
-						$h->{$file}->{values}->{$id}->{$max_nb_header+1} = int($value);
-						if (exists $h->{$file}->{runs_ids}->{by_samples}->{$sample_id}) {
-							foreach my $run_id (keys %{$h->{$file}->{runs_ids}->{by_samples}->{$sample_id}}) {
-								$h->{$file}->{runs_ids}->{by_samples}->{$sample_id}->{$run_id} = int($value);
-							}
-						}
-					}
-					
-					$j++;
-				}
-			}
-			$i++;
-		}
-		close(CSV);
+		$has_RC = $h->{$file}->{has_RC} if (exists $h->{has_RC});
+		my $total_reads = $h->{$file}->{total_reads};
+		my $nb_samples = $h->{$file}->{nb_samples};
 		
 		my ($is_demultiplex_file, $is_top_barcodes_file);
 		$is_demultiplex_file = 1 if (lc($file) =~ /demultiplex/);
