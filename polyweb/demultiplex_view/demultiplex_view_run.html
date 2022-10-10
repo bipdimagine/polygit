@@ -604,6 +604,8 @@
 						myPanel.appendTo(myNode);
 		    			var table_id = data.table_id;
 						enable_table_search(table_id);
+						var table_id_resume = data.table_id_resume;
+						if (table_id_resume) { enable_table_search(table_id_resume); };
 						i++;
 					});
 					dijit.byId('waiting').hide();

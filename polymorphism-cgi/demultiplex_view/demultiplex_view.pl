@@ -298,8 +298,44 @@ sub convert_csv_to_json {
 			push(@{$h->{$file}->{header}}, 'Seems Ok');
 			$sorted_col = "data-sort-name='seems_ok' data-sort-order='desc'";
 		}
+		my $html;
 		
-		my $html = qq{<table style="width:100%;" $sorted_col data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped sortable-table' style='font-size:13px;'>};
+		my $h_lane_resume;
+		foreach my $id (sort keys %{$h->{$file}->{values}}) {
+			my $lane_id = $h->{$file}->{values}->{$id}->{'Lane'};
+			my $sample_id = $h->{$file}->{values}->{$id}->{'SampleID'};
+			my $nb_reads = $h->{$file}->{values}->{$id}->{'# Reads'};
+			if (lc($sample_id) eq 'undetermined') { $h_lane_resume->{$lane_id}->{undetermined} += $nb_reads; }
+			else { $h_lane_resume->{$lane_id}->{total} += $nb_reads; }
+		}
+		
+		my $table_id_resume = $table_id.'_resume';
+		$html .= qq{<body><table id="$table_id_resume" width="100%" class="table table-striped sortable-table">};
+		$html .= "<thead>";
+		$html .= "<th data-field='lane_id' ><center><b>Lane ID</b></center></th>";
+		$html .= "<th data-field='lane_total' ><center><b>Total Reads</b></center></th>";
+		$html .= "<th data-field='lane_perc_total' ><center><b>% Total Reads</b></center></th>";
+		$html .= "<th data-field='lane_undetermined' ><center><b>Undetermined</b></center></th>";
+		$html .= "<th data-field='lane_perc_undetermined' ><center><b>% Undetermined</b></center></th>";
+		$html .= "</thead>";
+		$html .= "<tbody>";
+		foreach my $lane_id (sort {$a <=> $b} keys %{$h_lane_resume}) {
+			my $total_OK = 0;
+			$total_OK = $h_lane_resume->{$lane_id}->{total} if exists $h_lane_resume->{$lane_id}->{total};
+			my $undetermined = 0;
+			$undetermined = $h_lane_resume->{$lane_id}->{undetermined} if exists $h_lane_resume->{$lane_id}->{undetermined};
+			my $total = $total_OK + $undetermined;
+			my $total_perc_OK = sprintf("%.3f", ($total_OK / $total) * 100).'%';
+			my $total_perc_undetermined = sprintf("%.3f", ($undetermined / $total) * 100).'%';
+			
+			$html .= "<tr><td><center>$lane_id</center></td><td><center>$total_OK</center></td><td><center>$total_perc_OK</center></td><td><center>$undetermined</center></td><td><center>$total_perc_undetermined</center></td></tr>";
+		
+		}
+		$html .= "</tbody>";
+		$html .= "</table>";
+		$html .= "<br>";
+		
+		$html .= qq{<table style="width:100%;" $sorted_col data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped sortable-table' style='font-size:13px;'>};
 		$html .= "<thead>\n";
 		foreach my $cat (@{$h->{$file}->{header}}) {
 			my $cat_name = $cat;
@@ -474,6 +510,7 @@ sub convert_csv_to_json {
 		$html .= "</table>\n";
 		$h->{$file}->{html} = $html;
 		$h->{$file}->{table_id} = $table_id;
+		$h->{$file}->{table_id_resume} = $table_id_resume;
 	}
 	open (JSON, ">$file_out");
 	print JSON encode_json $h;
@@ -483,37 +520,81 @@ sub convert_csv_to_json {
 
 sub convert_csv_to_html {
 	my ($csv_file, $html_file) = @_;
-	open (HTML, ">$html_file");
+	my ($html, $html_table_resume, $html_table);
 	open (CSV, "$csv_file");
-	print HTML qq{<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">}."\n";
-	print HTML qq{<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">}."\n";
-	print HTML qq{<body><table width="100%" class="table table-striped table-hover table-condensed">}."\n";
+	$html .= qq{<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">};
+	$html .= qq{<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">};
+	
+	my $h_total;
+	$html_table .= qq{<body><table width="100%" class="table table-striped table-hover table-condensed">};
 	my $i = 0;
 	while (<CSV>) {
 		chomp($_);
 		my $line = $_;
 		my @lCol = split(',', $line);
 		if ($i == 0) {
-			print HTML "<thead>\n";
+			$html_table .= "<thead>";
 			foreach my $cat (@lCol) {
-				print HTML "<th data-field='".lc($cat)."' ><center><b>$cat</b></center></th>\n";
+				$html_table .= "<th data-field='".lc($cat)."' ><center><b>$cat</b></center></th>";
 			}
-			print HTML "</thead>\n";
-			print HTML "<thead>\n";
-			print HTML "<tbody>\n";
+			$html_table .= "</thead>";
+			$html_table .= "<thead>";
+			$html_table .= "<tbody>";
 		}
 		else {
-			print HTML "<tr>\n";
+			my $lane_id = $lCol[0];
+			my $sample_id = $lCol[1];
+			my $nb_reads = $lCol[3];
+			if (lc($sample_id) eq 'undetermined') { $h_total->{$lane_id}->{undetermined} += $nb_reads; }
+			else { $h_total->{$lane_id}->{total} += $nb_reads; }
+			$html_table .= "<tr>";
 			foreach my $val (@lCol) {
-				print HTML "<td><center>".$val."</center></td>\n";
+				$html_table .= "<td><center>".$val."</center></td>";
 			}
-			print HTML "</tr>\n";
+			$html_table .= "</tr>";
 		}
 		$i++;
 	}
-	print HTML "</tbody>\n";
-	print HTML "</table>\n";
+	$html_table .= "</tbody>";
+	$html_table .= "</table>";
 	close (CSV);
+	
+	
+	$html_table_resume .= qq{<body><table width="100%" class="table table-striped table-hover table-condensed">};
+	$html_table_resume .= "<thead>";
+	$html_table_resume .= "<th data-field='lane_id' ><center><b>Lane ID</b></center></th>";
+	$html_table_resume .= "<th data-field='lane_total' ><center><b>Total Reads</b></center></th>";
+	$html_table_resume .= "<th data-field='lane_undetermined' ><center><b>Undetermined</b></center></th>";
+	$html_table_resume .= "</thead>";
+	$html_table_resume .= "<tbody>";$html_table .= "<tr>";
+	
+	foreach my $lane_id (sort {$a <=> $b} keys %{$h_total}) {
+		$html_table_resume .= "<tr>";
+		$html_table_resume .= "<td><center>".$lane_id."</center></td>";
+		if (exists $h_total->{$lane_id}->{total}) {
+			$html_table_resume .= "<td><center>".$h_total->{$lane_id}->{total}."</center></td>";
+		}
+		else {
+			$html_table_resume .= "<td><center>0</center></td>";
+		}
+		if (exists $h_total->{$lane_id}->{undetermined}) {
+			$html_table_resume .= "<td><center>".$h_total->{$lane_id}->{undetermined}."</center></td>";
+		}
+		else {
+			$html_table_resume .= "<td><center>0</center></td>";
+		}
+		$html_table_resume .= "</tr>";
+	}
+	
+	$html_table_resume .= "</tbody>";
+	$html_table_resume .= "</table>";
+	$html_table_resume .= "<br>";
+	$html .= $html_table_resume;
+	
+	$html .= $html_table;
+	
+	open (HTML, ">$html_file");
+	print HTML $html;
 	close(HTML);
 }
 
