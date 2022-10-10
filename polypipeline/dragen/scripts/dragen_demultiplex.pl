@@ -38,7 +38,7 @@ GetOptions(
 	'mask=s' => \$mask,
 	'l2=s' => \$l2,
 );
- #test
+# XX
 my $bcl_dir;
 my $aoa;
 my $dir_out;
@@ -50,7 +50,7 @@ foreach my $project_name (split(",",$project_names)){
 	my $project = $buffer->newProject( -name 			=> $project_name );
 	map {$patients{$_->name}++} @{$project->getPatients};
 	my $run = $project->getRun();
-	
+	 
 	$run_name = $run->name;
 	
 	die("can't find bcl directory : ".$run->bcl_dir()) unless -e $run->bcl_dir();
