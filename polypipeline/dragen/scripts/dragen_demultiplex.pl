@@ -238,7 +238,7 @@ my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name;
 system("mkdir -p $dir_stats && rsync -rav --remove-source-files ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ && chmod -R a+rwx $dir_stats  ");
 
 exit(0);
-
+###
 
 sub change_sample_sheet {
 	my ($pos,$array,$patients) = @_;
