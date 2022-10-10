@@ -16,6 +16,7 @@ use Data::Dumper;
 use JSON;
 use xls_export;
 use session_export;
+use POSIX;
 
 my $cgi = new CGI;
 print $cgi->header('text/json-comment-filtered');
@@ -85,9 +86,9 @@ foreach my $this_path (@$list_paths_found) {
 
 my $html_table = qq{<table id="table_demultiplex" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
 $html_table .= qq{<thead>};
-#$html_table .= qq{<th data-field="date" data-sortable="true"><b>Date</b></th>};
-$html_table .= qq{<th data-field="path" data-sortable="false" data-filter-control='input'><b>Path</b></th>};
-$html_table .= qq{<th data-field="file" data-sortable="false" data-filter-control='input'><b>File</b></th>};
+$html_table .= qq{<th data-field="date" data-sortable="true" data-filter-control='input'><b>Date</b></th>};
+$html_table .= qq{<th data-field="path" data-sortable="true" data-filter-control='input'><b>Path</b></th>};
+$html_table .= qq{<th data-field="file" data-sortable="true" data-filter-control='input'><b>File</b></th>};
 $html_table .= qq{<th data-field="view"><b>View</b></th>};
 $html_table .= qq{</thead>};
 $html_table .= qq{<tbody>};
@@ -97,6 +98,17 @@ $html_table .= qq{<tbody>};
 foreach my $date (reverse sort keys %$h_files_date) {
 	my $file = $h_files_date->{$date};
 	my $path_file_origin = $h_files->{$file};
+	
+	my $file_to_date = $origin_path.'/'.$file;
+	my $found_file;
+	if (-d $file_to_date) {
+		$file_to_date .= '/Top_Unknown_Barcodes.csv' if -e $file_to_date.'/Top_Unknown_Barcodes.csv';
+		$found_file = 1;
+	}
+	else {
+		$file_to_date = $origin_path;
+	}
+	
 	$path_file_origin =~ s/$origin_path/https:\/\/www.polyweb.fr\/NGS\/demultiplex/;
 	my $path_file = $h_files->{$file};
 	my ($substring, $color);
@@ -114,6 +126,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 			$substring = $1;
 			$color = 'green';
 		}
+		
 		$path_file =~ s/$substring/\/<span style='color:$color;'>$substring<\/span>/;
 		$path_file =~ s/\/\//\//;
 		$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
@@ -132,9 +145,17 @@ foreach my $date (reverse sort keys %$h_files_date) {
 		$file = qq{<span style='color:red;'>$file</span>};
 	}
 	
+	unless ($found_file) {
+		my $file_date = $path_file_origin;
+		$file_date =~ s/https:\/\/www.polyweb.fr\/NGS/\/data-isilon\/sequencing\/ngs/;
+		$file_to_date = $file_date;
+	}
+	
+	my $date_text = POSIX::strftime( "%y/%m/%d", localtime( ( stat $file_to_date )[9]) );
+	
 	
 	my $tr = qq{<tr>};
-	#$tr .= qq{<td>$date</td>};
+	$tr .= qq{<td>$date_text</td>};
 	$tr .= qq{<td>$path_file</td>};
 	$tr .= qq{<td>$file</td>};
 	
