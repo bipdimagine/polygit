@@ -151,6 +151,7 @@ if($pos_umi == 2){
 	}
 	}
 }
+
 my $dj;
 foreach my $data (@{$lines->{"[Data]"}}){
 	
