@@ -197,7 +197,7 @@ sub check_run_id_from_sample_name {
 }
 
 sub parse_csv_file {
-	my $file = shift;
+	my ($file, $h_run_description) = @_;
 	my $h;
 	$h->{has_RC} = undef;
 	open (CSV, "$file");
@@ -229,23 +229,29 @@ sub parse_csv_file {
 				if ($cat eq 'SampleID') {
 					$sample_id = $value;
 					$nb_samples++ if (not lc($sample_id) eq 'undetermined' and not lc($sample_id) =~ /_rc/);
-					my ($run_id, @l_runs_id);
-					my $runs = join(' ', reverse @l_runs_id);
-					$runs = 'no_run_info' unless ($runs);
-					$h->{values}->{$id}->{'RunID'} = $runs;
-					$h->{values}->{$id}->{$max_nb_header} = $runs;
+					
+					if (not lc($sample_id) =~ /_rc/) {
+						my $runs = 'no_run_info';
+						if (lc($sample_id) eq 'undetermined') {
+							$runs = 'undetermined';
+						}
+						elsif ($h_run_description and exists $h_run_description->{$sample_id}) {
+							$runs = $h_run_description->{$sample_id};
+						}
+						$h->{runs_ids}->{by_samples}->{$value}->{$runs} = undef;
+						$h->{runs_ids}->{by_runs}->{$runs}->{$value} = undef;
+						$h->{values}->{$id}->{'RunID'} = $runs;
+						$h->{values}->{$id}->{$max_nb_header} = $runs;
+					}
 				}
 				if ($cat eq '# Reads') {
 					$total_reads += int($value)  if (not lc($sample_id) =~ /undetermined/ and not $sample_id =~ /_RC$/);
 					$h->{values}->{$id}->{'# Reads Norm Only'} = int($value);
 					$h->{values}->{$id}->{$max_nb_header+1} = int($value);
-					if (exists $h->{runs_ids}->{by_samples}->{$sample_id}) {
-						foreach my $run_id (keys %{$h->{runs_ids}->{by_samples}->{$sample_id}}) {
-							$h->{runs_ids}->{by_samples}->{$sample_id}->{$run_id} = int($value);
-						}
+					foreach my $run_id (keys %{$h->{runs_ids}->{by_samples}->{$sample_id}}) {
+						$h->{runs_ids}->{by_samples}->{$sample_id}->{$run_id} += int($value);
 					}
 				}
-				
 				$j++;
 			}
 		}
@@ -313,6 +319,34 @@ sub convert_csv_to_json {
 	return $file_out if (not $run_name);
 	my $h;
 	
+	my $h_run_description;
+	my $sample_sheet_file = $path.'/SampleSheet.csv';
+	if (-e $sample_sheet_file) {
+		open (IN, "$sample_sheet_file");
+		my $start_parsing;
+		my @l_header;
+		while (<IN>) {
+			chomp($_);
+			my $line = $_;
+			if ($line =~ /,Sample_Project,/) {
+				@l_header = split (',', $line);
+				$start_parsing = 1;
+			}
+			elsif ($start_parsing == 1) {	
+				my $i = 0;
+				my @lTmp = split (',', $line);
+				my $this_h;
+				foreach my $value (@lTmp) {
+					my $cat = $l_header[$i];
+					$this_h->{$cat} = $value;
+					$i++;
+				}
+				$h_run_description->{$this_h->{Sample_ID}} = $this_h->{Sample_Project};
+			}
+		}
+		close(IN);
+	}
+	
 	foreach my $file (sort @$list_files) {
 		
 		my $csv_file = $path.'/'.$file;
@@ -322,10 +356,10 @@ sub convert_csv_to_json {
 		my $sorted_col = "data-sort-name='n_reads' data-sort-order='desc'";
 		#$sorted_col = "data-sort-name='p_of_unknown_barcodes' data-sort-order='desc'" if (lc($table_id) =~ /top_/);
 		
-		$h->{$file} = parse_csv_file($csv_file);
+		$h->{$file} = parse_csv_file($csv_file, $h_run_description);
 		
 		my $has_RC;
-		$has_RC = $h->{$file}->{has_RC} if (exists $h->{has_RC});
+		$has_RC = $h->{$file}->{has_RC} if (exists $h->{$file}->{has_RC});
 		my $total_reads = $h->{$file}->{total_reads};
 		my $nb_samples = $h->{$file}->{nb_samples};
 		
@@ -339,10 +373,10 @@ sub convert_csv_to_json {
 				my $nb_pat = 0;
 				my $reads_total = 0;
 				foreach my $sample (@lSamples) {
-					next if (lc($sample) =~ /undetermined/);
 					$nb_pat++;
 					$reads_total += $h->{$file}->{runs_ids}->{by_samples}->{$sample}->{$run_id};
 				}
+				$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{total_reads} = $reads_total;
 				$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{nb_samples} = $nb_pat;
 				$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{mean_reads} = $reads_total / $nb_pat;
 			}
@@ -358,40 +392,43 @@ sub convert_csv_to_json {
 		}
 		my $html;
 		
-		my $h_lane_resume;
-		foreach my $id (sort keys %{$h->{$file}->{values}}) {
-			my $lane_id = $h->{$file}->{values}->{$id}->{'Lane'};
-			my $sample_id = $h->{$file}->{values}->{$id}->{'SampleID'};
-			my $nb_reads = $h->{$file}->{values}->{$id}->{'# Reads'};
-			if (lc($sample_id) eq 'undetermined') { $h_lane_resume->{$lane_id}->{undetermined} += $nb_reads; }
-			else { $h_lane_resume->{$lane_id}->{total} += $nb_reads; }
-		}
-		
-		my $table_id_resume = $table_id.'_resume';
-		$html .= qq{<body><table id="$table_id_resume" width="100%" class="table table-striped sortable-table">};
-		$html .= "<thead>";
-		$html .= "<th data-field='lane_id' ><center><b>Lane ID</b></center></th>";
-		$html .= "<th data-field='lane_total' ><center><b>Total Reads</b></center></th>";
-		$html .= "<th data-field='lane_perc_total' ><center><b>% Total Reads</b></center></th>";
-		$html .= "<th data-field='lane_undetermined' ><center><b>Undetermined</b></center></th>";
-		$html .= "<th data-field='lane_perc_undetermined' ><center><b>% Undetermined</b></center></th>";
-		$html .= "</thead>";
-		$html .= "<tbody>";
-		foreach my $lane_id (sort {$a <=> $b} keys %{$h_lane_resume}) {
-			my $total_OK = 0;
-			$total_OK = $h_lane_resume->{$lane_id}->{total} if exists $h_lane_resume->{$lane_id}->{total};
-			my $undetermined = 0;
-			$undetermined = $h_lane_resume->{$lane_id}->{undetermined} if exists $h_lane_resume->{$lane_id}->{undetermined};
-			my $total = $total_OK + $undetermined;
-			my $total_perc_OK = sprintf("%.3f", ($total_OK / $total) * 100).'%';
-			my $total_perc_undetermined = sprintf("%.3f", ($undetermined / $total) * 100).'%';
+		my $table_id_resume;
+		if ($is_demultiplex_file) {
+			my $h_lane_resume;
+			foreach my $id (sort keys %{$h->{$file}->{values}}) {
+				my $lane_id = $h->{$file}->{values}->{$id}->{'Lane'};
+				my $sample_id = $h->{$file}->{values}->{$id}->{'SampleID'};
+				my $nb_reads = $h->{$file}->{values}->{$id}->{'# Reads'};
+				if (lc($sample_id) eq 'undetermined') { $h_lane_resume->{$lane_id}->{undetermined} += $nb_reads; }
+				else { $h_lane_resume->{$lane_id}->{total} += $nb_reads; }
+			}
 			
-			$html .= "<tr><td><center>$lane_id</center></td><td><center>$total_OK</center></td><td><center>$total_perc_OK</center></td><td><center>$undetermined</center></td><td><center>$total_perc_undetermined</center></td></tr>";
-		
+			$table_id_resume = $table_id.'_resume';
+			$html .= qq{<body><table id="$table_id_resume" width="100%" class="table table-striped sortable-table">};
+			$html .= "<thead>";
+			$html .= "<th data-field='lane_id' ><center><b>Lane ID</b></center></th>";
+			$html .= "<th data-field='lane_total' ><center><b>Total Reads</b></center></th>";
+			$html .= "<th data-field='lane_perc_total' ><center><b>% Total Reads</b></center></th>";
+			$html .= "<th data-field='lane_undetermined' ><center><b>Undetermined</b></center></th>";
+			$html .= "<th data-field='lane_perc_undetermined' ><center><b>% Undetermined</b></center></th>";
+			$html .= "</thead>";
+			$html .= "<tbody>";
+			foreach my $lane_id (sort {$a <=> $b} keys %{$h_lane_resume}) {
+				my $total_OK = 0;
+				$total_OK = $h_lane_resume->{$lane_id}->{total} if exists $h_lane_resume->{$lane_id}->{total};
+				my $undetermined = 0;
+				$undetermined = $h_lane_resume->{$lane_id}->{undetermined} if exists $h_lane_resume->{$lane_id}->{undetermined};
+				my $total = $total_OK + $undetermined;
+				my $total_perc_OK = sprintf("%.3f", ($total_OK / $total) * 100).'%';
+				my $total_perc_undetermined = sprintf("%.3f", ($undetermined / $total) * 100).'%';
+				
+				$html .= "<tr><td><center>$lane_id</center></td><td><center>$total_OK</center></td><td><center>$total_perc_OK</center></td><td><center>$undetermined</center></td><td><center>$total_perc_undetermined</center></td></tr>";
+			
+			}
+			$html .= "</tbody>";
+			$html .= "</table>";
+			$html .= "<br>";
 		}
-		$html .= "</tbody>";
-		$html .= "</table>";
-		$html .= "<br>";
 		
 		$html .= qq{<table style="width:100%;" $sorted_col data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped sortable-table' style='font-size:13px;'>};
 		$html .= "<thead>\n";
@@ -441,10 +478,9 @@ sub convert_csv_to_json {
 		
 		foreach my $id (sort keys %{$h->{$file}->{values}}) {
 			next if ($id =~ /.+_RC/);
-			
 			my $probably_run_id;
 			my $sample_id = $h->{$file}->{values}->{$id}->{SampleID};
-			if (exists $h->{$file}->{runs_ids}->{by_samples}->{$sample_id}) {
+			if ($is_demultiplex_file and exists $h->{$file}->{runs_ids}->{by_samples}->{$sample_id}) {
 				my $h_runs_samples;
 				foreach my $run_id (keys %{$h->{$file}->{runs_ids}->{by_samples}->{$sample_id}}) {
 					my $this_nb_samples = $h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{nb_samples};
@@ -456,7 +492,7 @@ sub convert_csv_to_json {
 				$probably_run_id = $lProb_runs[-1];
 				$mean_reads = $h->{$file}->{runs_ids}->{by_runs}->{$probably_run_id}->{mean_reads};
 			}
-			if (exists $h->{$file}->{values}->{$id}->{'RunID'} && $h->{$file}->{values}->{$id}->{'RunID'} eq 'no_run_info') {
+			if ($is_demultiplex_file and exists $h->{$file}->{values}->{$id}->{'RunID'} && $h->{$file}->{values}->{$id}->{'RunID'} eq 'no_run_info') {
 				$mean_reads = ($total_reads / $nb_samples);
 			}
 			$limit_errors_reads_min = $mean_reads * 0.5;
