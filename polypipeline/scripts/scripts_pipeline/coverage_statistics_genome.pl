@@ -59,7 +59,9 @@ my $pm   = new Parallel::ForkManager($fork);
 my $tabix = $buffer->software("tabix");
 my $bgzip = $buffer->software("bgzip");
 my $res;
-$pm->run_on_finish(
+
+if ($project->isGenome){
+	$pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
 
@@ -115,7 +117,67 @@ foreach my $patient (@{$patients}){
 	}
 }
 $pm->wait_all_children();
+}
+else {
+$pm->run_on_finish(
+		sub {
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
 
+			unless ( defined($h) or $exit_code > 0 ) {
+				print
+				  qq|No message received from child process $exit_code $pid!\n|;
+				die();
+				return;
+			}
+		 my $patient = $h->{patient};
+		 $res->{$patient}->{s5} += $h->{s5};
+		 $res->{$patient}->{s1} += $h->{s1};
+		 $res->{$patient}->{s30} += $h->{s30};
+		 $res->{$patient}->{s15} += $h->{s15};
+		 $res->{$patient}->{s100} += $h->{s100};
+		 $res->{$patient}->{sum} += $h->{sum};
+		 $res->{$patient}->{nb} += $h->{nb};
+		 warn  $patient." ".$res->{$patient}->{sum};
+		}
+	);
+$patient_name="all" unless $patient_name;	
+my $patients = $project->get_list__controls_patients($patient_name);
+foreach my $patient (@{$patients}){
+	my $all_sum;
+	
+	foreach my $chr (@{$project->getChromosomes}){
+			my $intspan = $chr->getCapturesGenomicSpan();
+			next if $intspan->is_empty();
+			my $pid = $pm->start and next;
+			my $array = $patient->depthIntspan($chr->name,$intspan);
+			#warn $from." ".$to;
+			#warn Dumper $intervals;
+			#die();
+		#	foreach my $interval (@$intervals){
+				
+				my $s5;
+				my $s30;
+				my $nb;
+				my $s15;
+				my $s100;
+				my $s1;
+				my $sum = sum @$array;
+				$all_sum = $sum;
+				$nb = scalar(@$array);
+				foreach my $a (@$array){
+					$s1 ++ if $a >= 1;
+					$s5 ++ if $a >= 5;
+					$s15 ++ if $a >= 15;
+					$s30 ++ if $a >= 30;
+					$s100 ++ if $a >= 100;
+				}
+		#	}
+		#warn $chr->name." ".$all_sum/$nb." ".(($s5/$nb)*100)." ".(($s30/$nb)*100);
+		$pm->finish( 0, {s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,patient=>$patient->name,nb=>$nb,sum=>$sum} );
+		}
+	}
+$pm->wait_all_children();
+}
 foreach my $patient (@{$patients}){
 	my $name = $patient->name;
 	my $coverage_file;
