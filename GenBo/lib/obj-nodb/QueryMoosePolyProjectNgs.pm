@@ -1333,6 +1333,28 @@ sub getHashRunIdFromSampleName {
 	return $h;
 }
 
+has sql_cmd_get_runid_infos => (
+	is       => 'ro',
+	isa      => 'Str',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+		my $query = qq{
+			SELECT * FROM PolyprojectNGS.run where run_id=?;
+		};
+		return $query;
+	},
+);
+
+sub getHashRunIdInfos {
+	my ($self, $run_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = $self->sql_cmd_get_runid_infos();
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($run_id);
+	my $h = $sth->fetchall_hashref('run_id');
+	return $h;
+}
 
 
 1;
