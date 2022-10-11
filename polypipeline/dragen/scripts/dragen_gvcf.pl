@@ -66,6 +66,10 @@ my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --bam-inp
 if ($project->isGenome){
 	my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --bam-input $bamin --output-file-prefix $patient_name --enable-map-align false --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-cnv true --cnv-enable-self-normalization true };
 }
+if ($project->isRnaSeq){
+	#my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --bam-input $bamin --output-file-prefix $patient_name --enable-map-align false --vc-emit-ref-confidence GVCF --enable-variant-caller true --enable-cnv true --cnv-enable-self-normalization true };
+	exit(0);
+}
 
 my $exit =0;
 warn $f1;
