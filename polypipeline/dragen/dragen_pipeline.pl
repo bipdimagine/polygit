@@ -119,7 +119,7 @@ my $jobs =[];
 run_align($projects);
 run_move($projects);
 run_gvcf($projects);
-run_dragen_cnv_coverage($projects);
+#run_dragen_cnv_coverage($projects);
 run_genotype($projects);
 run_sv();
 #run_target();
@@ -200,12 +200,12 @@ foreach my $project (@$projects){
 		next if -e $fileout;
 		my $cmd;
 		 $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
-		if ($project->isGenome){
+		#if ($project->isGenome){
 			$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
-		}
-		else {
+		#}
+		#else {
 		#	 $cmd = qq{perl $script_pipeline/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name :::$ppn};
-		}
+		#}
 		my $job;
 		$job->{name} = $patient->name.".lmdb";
 		$job->{cmd} =$cmd;
