@@ -61,6 +61,7 @@ foreach my $this_path (@$list_paths_found) {
 			}
 			next if ($name eq 'test_xths');
 			next if ($name =~ /run1[0-9]+/);
+			my $h_run_infos;
 			my $cmd = 'https://www.polyweb.fr/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file;
 			$cmd .= '&force=1' if ($use_force);
 			add_file_json($cmd, $json_path, $name);
@@ -95,11 +96,11 @@ foreach my $this_path (@$list_paths_found) {
 	}
 }
 
-my $html_table = qq{<table id="table_demultiplex" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
+my $html_table = qq{<table data-sort-name='date' data-sort-order='desc' id="table_demultiplex" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
 $html_table .= qq{<thead>};
 $html_table .= qq{<th data-field="date" data-sortable="true" data-filter-control='input'><b>Date</b></th>};
 $html_table .= qq{<th data-field="path" data-sortable="true" data-filter-control='input'><b>Path</b></th>};
-$html_table .= qq{<th data-field="file" data-sortable="true" data-filter-control='input'><b>File</b></th>};
+$html_table .= qq{<th data-field="file" data-sortable="true" data-filter-control='input'><b>Description / File</b></th>};
 $html_table .= qq{<th data-field="view"><b>View</b></th>};
 $html_table .= qq{</thead>};
 $html_table .= qq{<tbody>};
@@ -122,7 +123,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	
 	$path_file_origin =~ s/$origin_path/https:\/\/www.polyweb.fr\/NGS\/demultiplex/;
 	my $path_file = $h_files->{$file};
-	my ($substring, $color);
+	my ($substring, $color, $date_text);
 	if ($path_file =~ /$origin_path/) {
 		$path_file =~ s/$origin_path/DEMULTIPLEX/;
 		$path_file =~ s/$file//;
@@ -140,20 +141,33 @@ foreach my $date (reverse sort keys %$h_files_date) {
 		
 		$path_file =~ s/$substring/\/<span style='color:$color;'>$substring<\/span>/;
 		$path_file =~ s/\/\//\//;
-		$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
+		$file =~ s/$substring/<span style='color:black;'>$substring<\/span>/;
 		$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
 		
 		$substring =~ s/_/\./;
-		$file =~ s/$substring/<span style='color:$color;'>$substring<\/span>/;
+		$file =~ s/$substring/<span style='color:black;'>$substring<\/span>/;
 		$file =~ s/(.+<\/span>).+-([a-zA-Z]+\.html)$/$1.$2/;
 		
 		$file =~ s/\/\//\//;
 		$file =~ s/^\.//;
 		$file =~ s/^-//;
+		
+		$file = "<i>File: ".$file."</i>";
 	}
 	else {
+		my $description;
+		if ($file =~ /^run_[0-9]+$/) {
+			my $run_id = $file;
+			$run_id =~ s/run_//;
+			my $h_run_infos = $buffer->getQuery->getHashRunIdInfos($run_id);
+			$description = $h_run_infos->{$run_id}->{description};
+			my ($date_tmp, $hour_tmp) = split(' ', $h_run_infos->{$run_id}->{creation_date});
+			$date_text = $date_tmp if $date_tmp;
+			
+		}
 		$path_file = qq{DRAGEN/<span style='color:red;'>$file</span>};
-		$file = qq{<span style='color:red;'>$file</span>};
+		if ($description) { $file = qq{<b>Description:</b> <span style='color:blue;'>$description</span>}; }
+		else { $file = qq{<i>File: $file</i>}; }
 	}
 	
 	unless ($found_file) {
@@ -162,8 +176,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 		$file_to_date = $file_date;
 	}
 	
-	my $date_text = POSIX::strftime( "%y/%m/%d", localtime( ( stat $file_to_date )[9]) );
-	
+	$date_text = POSIX::strftime( "20%y-%m-%d", localtime( ( stat $file_to_date )[9]) ) unless ($date_text);
 	
 	my $tr = qq{<tr>};
 	$tr .= qq{<td>$date_text</td>};
