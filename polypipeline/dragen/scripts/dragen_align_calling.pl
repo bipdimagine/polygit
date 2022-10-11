@@ -105,11 +105,13 @@ sub run_pipeline {
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 warn "\n\n end copy";
 my $ref_dragen = $project->getGenomeIndex("dragen");
+warn $fastq1;
+warn $fastq2;
 
 
 my $tmp = "/staging/tmp";
 
-my $capture_file  = dragen_util::get_capture_file($patient,$dir_pipeline."/".$patient->name.".".time.".bed");
+my $capture_file  = dragen_util::get_capture_file($patient,$dir_pipeline."/".$patient->name.".".time.".bed") unless  $project->isRnaSeq;
 
 
 my $runid = $patient->getRun()->id;
@@ -126,12 +128,17 @@ if ($project->isGenome){
 	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true };
 	
 }
+if ($project->isRnaSeq){
+	my $gtf = $project->gtf_file();
+	my $cmd = qq{dragen -f -r $ref_dragen -1 $fastq1 -2 $fastq2 -a $gtf --enable-map-align true --enable-sort=true --enable-bam-indexing true --enable-map-align-output true --output-format=BAM --RGID=$runid --RGSM=$prefix --config-file /opt/edico/config/dragen-user-defaults.cfg --enable-rna=true --output-directory $dir_pipeline --output-file-prefix $prefix};
+}
 if ($umi){
 	$cmd .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 }
 else {
 	$cmd .= qq{  --enable-duplicate-marking true };
 	 }
+	 warn $cmd;
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) ;#unless -e $f1;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
