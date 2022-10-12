@@ -405,19 +405,85 @@ sub convert_csv_to_json {
 		}
 		my $html;
 		
-		my $table_id_resume;
+		my ($table_id_resume);
 		if ($is_demultiplex_file) {
-			my $h_lane_resume;
+			$html .= qq{<body>};
+			
+			my ($h_lane_resume, $h_all_patients);
 			foreach my $id (sort keys %{$h->{$file}->{values}}) {
 				my $lane_id = $h->{$file}->{values}->{$id}->{'Lane'};
 				my $sample_id = $h->{$file}->{values}->{$id}->{'SampleID'};
 				my $nb_reads = $h->{$file}->{values}->{$id}->{'# Reads'};
+				my $nb_perfect_reads = $h->{$file}->{values}->{$id}->{'# Perfect Index Reads'};
+				my $nb_one_mismatch_reads = $h->{$file}->{values}->{$id}->{'# One Mismatch Index Reads'};
+				my $nb_two_mismatch_reads = $h->{$file}->{values}->{$id}->{'# Two Mismatch Index Reads'};
+				
 				if (lc($sample_id) eq 'undetermined') { $h_lane_resume->{$lane_id}->{undetermined} += $nb_reads; }
 				else { $h_lane_resume->{$lane_id}->{total} += $nb_reads; }
+				
+				my $run_id = 'ALL_'.$h->{$file}->{values}->{$id}->{'RunID'};
+				$h_all_patients->{$sample_id}->{'RunID'} = $run_id;
+				$h_all_patients->{$sample_id}->{'Index'} = $h->{$file}->{values}->{$id}->{'Index'};
+				$h_all_patients->{$sample_id}->{'lanes'}->{$lane_id} = undef;
+				$h_all_patients->{$sample_id}->{'total_reads'} += $nb_reads;
+				$h_all_patients->{$sample_id}->{'perfect_reads'} += $nb_perfect_reads;
+				$h_all_patients->{$sample_id}->{'one_mismatch_reads'} += $nb_one_mismatch_reads;
+				$h_all_patients->{$sample_id}->{'two_mismatch_reads'} += $nb_two_mismatch_reads;
+				$h_all_patients->{$sample_id}->{'% Reads'} = '-';
+				$h_all_patients->{$sample_id}->{'% Perfect Index Reads'} = '-';
+				$h_all_patients->{$sample_id}->{'% One Mismatch Index Reads'} = '-';
+				$h_all_patients->{$sample_id}->{'% Two Mismatch Index Reads'} = '-';
+				$h_all_patients->{$sample_id}->{'Seems Ok'} = '-';
+				
+				$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{total_reads} += $nb_reads;
+				$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{samples}->{$sample_id} = undef
+			}
+			foreach my $run_id (keys %{$h->{$file}->{runs_ids}->{by_runs}}) {
+				next if exists $h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{mean_reads};
+				my $reads_total = $h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{total_reads};
+				my $nb_pat = scalar keys %{$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{samples}};
+				$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{nb_samples} = $nb_pat;
+				$h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{mean_reads} = $reads_total / $nb_pat;
 			}
 			
+			foreach my $sample_id (sort keys %{$h_all_patients}) {
+				my $id = 'all_'.$sample_id;
+				$h->{$file}->{values}->{$id}->{'Nb_lanes'} = scalar(keys %{$h_all_patients->{$sample_id}->{'lanes'}});
+				$h->{$file}->{values}->{$id}->{'Lane'} = 'ALL';
+				$h->{$file}->{values}->{$id}->{'SampleID'} = $sample_id;
+				$h->{$file}->{values}->{$id}->{'Index'} = $h_all_patients->{$sample_id}->{'Index'};
+				
+				my $nb_reads = $h_all_patients->{$sample_id}->{'total_reads'};
+				my $nb_perfect_reads = $h_all_patients->{$sample_id}->{'perfect_reads'};
+				my $nb_one_mis_reads = $h_all_patients->{$sample_id}->{'one_mismatch_reads'};
+				my $nb_two_mis_reads = $h_all_patients->{$sample_id}->{'two_mismatch_reads'};
+				my $perc_reads = ($nb_reads / $total_reads) * 100;
+				my ($perc_perfect_reads, $perc_one_mis_reads, $perc_two_mis_reads) = (0, 0, 0);
+				$perc_perfect_reads = ($nb_perfect_reads / $nb_reads) * 100 if ($nb_perfect_reads > 0);
+				$perc_one_mis_reads = ($nb_one_mis_reads / $nb_reads) * 100 if ($nb_one_mis_reads > 0);
+				$perc_two_mis_reads = ($nb_two_mis_reads / $nb_reads) * 100 if ($nb_two_mis_reads > 0);
+				
+				$h->{$file}->{values}->{$id}->{'# Reads'} = $h_all_patients->{$sample_id}->{'total_reads'};
+				$h->{$file}->{values}->{$id}->{'# Perfect Index Reads'} = $h_all_patients->{$sample_id}->{'perfect_reads'};
+				$h->{$file}->{values}->{$id}->{'# One Mismatch Index Reads'} = $h_all_patients->{$sample_id}->{'one_mismatch_reads'};
+				$h->{$file}->{values}->{$id}->{'# Two Mismatch Index Reads'} = $h_all_patients->{$sample_id}->{'two_mismatch_reads'};
+				$h->{$file}->{values}->{$id}->{'% Reads'} = sprintf("%.2f", $perc_reads);
+				$h->{$file}->{values}->{$id}->{'% Perfect Index Reads'} = sprintf("%.2f", $perc_perfect_reads);
+				$h->{$file}->{values}->{$id}->{'% One Mismatch Index Reads'} = sprintf("%.2f", $perc_one_mis_reads);
+				$h->{$file}->{values}->{$id}->{'% Two Mismatch Index Reads'} = sprintf("%.2f", $perc_two_mis_reads);
+				$h->{$file}->{values}->{$id}->{'RunID'} = $h_all_patients->{$sample_id}->{'RunID'};
+				my $c = 0;
+				foreach my $cat (@{$h->{$file}->{header}}) {
+					$h->{$file}->{values}->{$id}->{$c} = $h->{$file}->{values}->{$id}->{$cat};
+					$c++;
+				}
+			}
+			
+			$html .= qq{<br>};
+			$html .= qq{<div class="container" style="width:100%;height:200px;"><div class="row">};
+			$html .= qq{<div class="col-sm-12" style="height:200px;">};
 			$table_id_resume = $table_id.'_resume';
-			$html .= qq{<body><table id="$table_id_resume" width="100%" class="table table-striped sortable-table">};
+			$html .= qq{<table id="$table_id_resume" class="table table-striped sortable-table">};
 			$html .= "<thead>";
 			$html .= "<th data-field='lane_id' ><center><b>Lane ID</b></center></th>";
 			$html .= "<th data-field='lane_total' ><center><b>Total Reads</b></center></th>";
@@ -440,8 +506,11 @@ sub convert_csv_to_json {
 			}
 			$html .= "</tbody>";
 			$html .= "</table>";
-			$html .= "<br>";
+			$html .= qq{</div>};
+			$html .= qq{</div>};
+			$html .= qq{</div></div>};
 		}
+		
 		
 		$html .= qq{<table style="width:100%;" $sorted_col data-filter-control='true'data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 15, 20,30, 50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table table-striped sortable-table' style='font-size:13px;'>};
 		$html .= "<thead>\n";
@@ -474,11 +543,10 @@ sub convert_csv_to_json {
 							$sortable = qq{ data-sortable='true' class='numeric-sort'};
 						}
 					}
-					
 				}
 			}
 			elsif ($cat eq 'RunID' or $cat eq 'Seems Ok') { $sortable = qq{ data-sortable='true' data-filter-control='select' }; }
-			elsif ($cat eq 'Lane') { $sortable = qq{ data-sortable='true' data-filter-control='input' data-filter-default="1"}; }
+			elsif ($cat eq 'Lane') { $sortable = qq{ data-sortable='true' data-filter-control='input' data-filter-default="ALL"}; }
 			else { $sortable = qq{ data-sortable='true' data-filter-control='input' }; }
 			$html .= "<th $sortable data-field='".lc($cat_name)."' ><center><b>$cat</b></center></th>\n";
 		}
@@ -491,9 +559,17 @@ sub convert_csv_to_json {
 		
 		foreach my $id (sort keys %{$h->{$file}->{values}}) {
 			next if ($id =~ /.+_RC/);
+			my $is_all_lanes;
+			$is_all_lanes = 1 if ($h->{$file}->{values}->{$id}->{'Lane'} eq 'ALL');
+			
 			my $probably_run_id;
 			my $sample_id = $h->{$file}->{values}->{$id}->{SampleID};
-			if ($is_demultiplex_file and exists $h->{$file}->{runs_ids}->{by_samples}->{$sample_id}) {
+			if ($is_demultiplex_file and $is_all_lanes) {
+				$probably_run_id = $h->{$file}->{values}->{$id}->{'RunID'};
+				$mean_reads = $h->{$file}->{runs_ids}->{by_runs}->{$probably_run_id}->{mean_reads};
+				
+			}
+			elsif ($is_demultiplex_file and exists $h->{$file}->{runs_ids}->{by_samples}->{$sample_id}) {
 				my $h_runs_samples;
 				foreach my $run_id (keys %{$h->{$file}->{runs_ids}->{by_samples}->{$sample_id}}) {
 					my $this_nb_samples = $h->{$file}->{runs_ids}->{by_runs}->{$run_id}->{nb_samples};
@@ -525,6 +601,11 @@ sub convert_csv_to_json {
 				if ($cat ne '# Reads Norm Only' and $cat =~ /[#%]/ && $has_RC) {
 					if ($cat eq '# Reads') {
 						$h->{$file}->{header}[$j] = '# Reads Only';
+						if ($is_all_lanes) {
+							$h->{$file}->{values}->{$id}->{$j} = $h->{$file}->{values}->{$id}->{'# Reads'};
+							$h->{$file}->{values}->{$id}->{'# Reads Only'} = $h->{$file}->{values}->{$id}->{'# Reads'};
+							
+						} 
 					}
 					my $value_RC = $h->{$file}->{values}->{$id.'_RC'}->{$j};
 					$html_tr .= "<td id=\"$td_id\"><center>";
@@ -537,12 +618,14 @@ sub convert_csv_to_json {
 				}
 				else {
 					if ($is_demultiplex_file and $has_RC and $cat eq '# Reads Norm Only') {
-						if (int($value) >= $limit_errors_reads_max) {
+						my $use_value = int($value);
+						$use_value = $h->{$file}->{values}->{$id}->{'# Reads'} if ($is_all_lanes);
+						if ($use_value >= $limit_errors_reads_max) {
 							$with_problem++;
 							$h->{$file}->{values}->{$id}->{$j+1} = 'PB +++ reads';
 							$h->{$file}->{values}->{$id}->{'Seems Ok'} = 'PB +++ reads';
 						}
-						elsif (int($value) <= $limit_errors_reads_min) {
+						elsif ($use_value <= $limit_errors_reads_min) {
 							$with_problem++;
 							$h->{$file}->{values}->{$id}->{$j+1} = 'PB --- reads';
 							$h->{$file}->{values}->{$id}->{'Seems Ok'} = 'PB --- reads';
@@ -559,11 +642,15 @@ sub convert_csv_to_json {
 						}
 					}
 					if ($is_demultiplex_file and not $has_RC and $cat eq '# Reads') {
-						if (int($value) >= $limit_errors_reads_max) {
+						my $use_value = int($value);
+#						if ($is_all_lanes) {
+#							$use_value = $use_value / $h->{$file}->{values}->{$id}->{'Nb_lanes'};
+#						}
+						if ($use_value >= $limit_errors_reads_max) {
 							$with_problem++;
 							$h->{$file}->{values}->{$id}->{'Seems Ok'} = 'PB +++ reads';
 						}
-						if (int($value) <= $limit_errors_reads_min) {
+						if ($use_value <= $limit_errors_reads_min) {
 							$with_problem++;
 							$h->{$file}->{values}->{$id}->{'Seems Ok'} = 'PB --- reads';
 						}
