@@ -139,6 +139,7 @@ foreach my $pname (@patient_names) {
 	}
 }
 
+
 #initialisation global categorie
 my $intspan_global_type;
 my $categories = Cache_Commons::categories();
@@ -149,31 +150,31 @@ my $t = time;
 warn 'store 1/3: lmdb variations' if ( $project->cache_verbose() );
 my $no2 = $chr->get_lmdb_variations("c");    #open lmdb database
 #ok sort and read the filewarn
-my $hh;
 my $uniq;
+my $hh;
 my $size_variants = 0;
 
 foreach my $hv ( @{$all} ) {
 	my $var_id = $hv->{id};
 	next if exists $uniq->{$var_id};
 	$uniq->{$var_id} ++;
-	my $variation = thaw( decompress( $hv->{obj} ) );
-	my $index_lmdb = $no2->put( $var_id, $variation );
-	$variation->{buffer} = $buffer;
-	$variation->{project} = $project;
+	my $junction = thaw( decompress( $hv->{obj} ) );
+	my $index_lmdb = $no2->put( $var_id, $junction );
+	$junction->{buffer} = $buffer;
+	$junction->{project} = $project;
 	$size_variants++;
-	$hh->{$var_id} = $variation->{heho_string};
-	foreach my $patient (@{ $variation->getPatients() }) {
+	$hh->{$var_id} = $junction->{heho_string};
+	foreach my $patient (@{ $junction->getPatients() }) {
 		$hpatients->{$patient->name()}->{intspan}->{all}->add($index_lmdb);
-		$hpatients->{$patient->name()}->{intspan}->{RI}->add($index_lmdb) if ($variation->isRI($patient));
-		$hpatients->{$patient->name()}->{intspan}->{SE}->add($index_lmdb) if ($variation->isSE($patient));
+		$hpatients->{$patient->name()}->{intspan}->{RI}->add($index_lmdb) if ($junction->isRI($patient));
+		$hpatients->{$patient->name()}->{intspan}->{SE}->add($index_lmdb) if ($junction->isSE($patient));
 	}
-	unless ( exists $intspan_global_type->{ $variation->type() } ) {
-		warn "\n\nERROR: doesn't exists \$intspan_global_type->{".$variation->type() . "}\n\n";
+	unless ( exists $intspan_global_type->{ $junction->type() } ) {
+		warn "\n\nERROR: doesn't exists \$intspan_global_type->{".$junction->type() . "}\n\n";
 		warn Dumper keys %$intspan_global_type;
 		confess;
 	}
-	$intspan_global_type->{ $variation->type }->add($index_lmdb);
+	$intspan_global_type->{ $junction->type }->add($index_lmdb);
 }
 
 warn "close";
@@ -236,14 +237,64 @@ sub get_junctions_ids {
 		$hpatients->{ $patient_names[$i] } = $i;
 	}
 	my $vs = $project->getJunctions();
+	
+	my $h_ri_aval_amont;
+	#search common ri_aval ri_amont
 	foreach my $junction ( @{$vs } ) {
-		my $debug ;
+		my $h_exons_introns;
+		foreach my $patient (@{ $junction->getPatients() }) {
+			next if (not $junction->is_ri_aval($patient) and not $junction->is_ri_amont($patient));
+			$h_exons_introns = $junction->get_hash_exons_introns() unless ($h_exons_introns);
+			my $type_ri;
+			$type_ri = 'ri_aval'  if ($junction->is_ri_aval($patient));
+			$type_ri = 'ri_amont' if ($junction->is_ri_amont($patient));
+			foreach my $tid (sort keys %{$h_exons_introns}) {
+				my @lPos = (sort keys %{$h_exons_introns->{$tid}->{by_pos}});
+				my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[0]};
+				my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[-1]};
+				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$type_ri} = $junction->id(); 
+				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$last_exon_intron}->{$type_ri} = $junction->id(); 
+			} 
+		}
+	}
+	
+	foreach my $junction ( @{$vs } ) {
 		next if ($junction->getChromosome->id() ne $chr->id());
 		$junction->id();
 		$junction->name();
 		$junction->annex();
 		$junction->setPatients();
 		$junction->get_hash_exons_introns();
+	}
+	
+	
+	foreach my $junction ( @{$vs } ) {
+		my $debug ;
+		next if ($junction->getChromosome->id() ne $chr->id());
+		foreach my $patient (@{ $junction->getPatients() }) {
+			#check linked junctions - ri aval amont -
+			my $is_ri_aval = $junction->is_ri_aval($patient);
+			my $is_ri_amont = $junction->is_ri_amont($patient);
+			if ($is_ri_aval or $is_ri_amont) {
+				my $to_check;
+				$to_check = 'ri_amont' if $is_ri_aval;
+				$to_check = 'ri_aval' if $is_ri_amont;
+				my $h_exons_introns = $junction->get_hash_exons_introns();
+				foreach my $tid (sort keys %{$h_exons_introns}) {
+					my @lPos = (sort keys %{$h_exons_introns->{$tid}->{by_pos}});
+					my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[0]};
+					my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[-1]};
+					if (exists $h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$to_check}) {
+						my $other_junction_id = $h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$to_check};
+						$junction->{get_hash_junctions_linked_to_me}->{$patient->name()}->{$other_junction_id}->{$tid}->{$first_exon_intron} = $h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron};
+					}
+					if (exists $h_ri_aval_amont->{$patient->name()}->{$tid}->{$last_exon_intron}->{$to_check}) {
+						my $other_junction_id = $h_ri_aval_amont->{$patient->name()}->{$tid}->{$last_exon_intron}->{$to_check};
+						$junction->{get_hash_junctions_linked_to_me}->{$patient->name()}->{$other_junction_id}->{$tid}->{$last_exon_intron} = $h_ri_aval_amont->{$patient->name()}->{$tid}->{$last_exon_intron};
+					}
+				} 
+			}
+		}
 		
 		my $hv;
 		my $array_patients;
