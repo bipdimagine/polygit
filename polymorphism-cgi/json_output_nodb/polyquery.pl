@@ -2814,6 +2814,7 @@ sub checkEssentialsCategoriesInChr {
 			next if ($cat eq 'spliceAI_high');
 			next if ($cat eq 'spliceAI_medium');
 			next if ($cat eq 'predicted_splice_site');
+			next if ($cat eq 'junction');
 			unless (exists $chr->global_categories->{$cat}) {
 				warn "\n\n";
 				warn Dumper $chr->global_categories();
