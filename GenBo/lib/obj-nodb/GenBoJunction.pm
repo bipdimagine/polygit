@@ -45,43 +45,43 @@ has isJunction => (
 	default	=> 1,
 );
 
-has coverage_start => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return $self->start();
-	},
-);
-
-has coverage_end => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return $self->end();
-	},
-);
-
-sub raw_coverage {
-	my ($self, $patient) = @_;
-	
-	warn "\n\n";
-	warn $self->id;
-	
-	my $gc_start = GenBoCoverageSamtools->new(chromosome=>$self->getChromosome, patient=>$patient, start=>($self->start()-5), end=>$self->start());
-	
-	warn "\n";
-	warn ($self->start()-5).' - '.$self->start();
-	warn Dumper $gc_start->{raw};
-	
-	my $gc_end = GenBoCoverageSamtools->new(chromosome=>$self->getChromosome, patient=>$patient, start=>$self->end(), end=>($self->end()+5));
-	warn "\n";
-	warn $self->end().' - '.($self->end()+5);
-	warn Dumper $gc_end->{raw};
-	
-	die;
-}
+#has coverage_start => (
+#	is		=> 'ro',
+#	lazy 	=> 1,
+#	default	=> sub {
+#		my $self = shift;
+#		return $self->start();
+#	},
+#);
+#
+#has coverage_end => (
+#	is		=> 'ro',
+#	lazy 	=> 1,
+#	default	=> sub {
+#		my $self = shift;
+#		return $self->end();
+#	},
+#);
+#
+#sub raw_coverage {
+#	my ($self, $patient) = @_;
+#	
+#	warn "\n\n";
+#	warn $self->id;
+#	
+#	my $gc_start = GenBoCoverageSamtools->new(chromosome=>$self->getChromosome, patient=>$patient, start=>($self->start()-5), end=>$self->start());
+#	
+#	warn "\n";
+#	warn ($self->start()-5).' - '.$self->start();
+#	warn Dumper $gc_start->{raw};
+#	
+#	my $gc_end = GenBoCoverageSamtools->new(chromosome=>$self->getChromosome, patient=>$patient, start=>$self->end(), end=>($self->end()+5));
+#	warn "\n";
+#	warn $self->end().' - '.($self->end()+5);
+#	warn Dumper $gc_end->{raw};
+#	
+#	die;
+#}
 
 has get_hash_exons_introns => (
 	is		=> 'ro',
@@ -132,6 +132,36 @@ has get_hash_exons_introns => (
 		return $h_exons_introns;
 	},
 );
+
+has get_hash_junctions_linked_to_me => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> undef,
+);
+
+sub is_junctions_linked {
+	my ($self, $patient) = @_;
+	confess() unless ($patient);
+	return unless ($self->{get_hash_junctions_linked_to_me});
+	return unless (exists $self->get_hash_junctions_linked_to_me->{$patient->name()});
+	return 1; 
+}
+
+sub is_ri_aval {
+	my ($self, $patient) = @_;
+	confess() unless ($patient);
+	my $type = lc($self->getTypeDescription($patient)); 
+	return 1 if ($type =~ /ri_aval/);
+	return;
+}
+
+sub is_ri_amont {
+	my ($self, $patient) = @_;
+	confess() unless ($patient);
+	my $type = lc($self->getTypeDescription($patient)); 
+	return 1 if ($type =~ /ri_amont/);
+	return;
+}
 
 sub isCanonique {
 	my ($self, $patient) = @_;
@@ -450,6 +480,91 @@ sub setPatients {
 		$h->{$patient->id} = undef if exists $self->annex->{$patient->name()};
 	}
 	return $h;
+}
+
+sub get_hash_noise {
+	my ($self, $patient) = @_;
+	my $h_noise;
+	my $h_exons_introns = $self->get_hash_exons_introns();
+	return $h_noise unless $h_exons_introns;
+	my @lJunctions;
+	my $this_chr = $self->getChromosome();
+	my $i = $self->vector_id();
+	my $min = $self->vector_id() - 15;
+	$min = 0 if ($min < 0);
+	while ($i >= $min) {
+		my $junction2 = $this_chr->getVarObject($i);
+		push(@lJunctions, $junction2) if $junction2->get_hash_exons_introns();
+		$i--;
+	}
+	$i = $self->vector_id();
+	my $max = $self->vector_id() + 15;
+	$max = $this_chr->size_vector() if ($max >= $this_chr->size_vector());
+	while ($i < $max) {
+		my $junction2 = $this_chr->getVarObject($i);
+		push(@lJunctions, $junction2) if $junction2->get_hash_exons_introns();
+		$i++;
+	}
+	foreach my $junction2 (@lJunctions) {
+		foreach my $tid (keys %{$junction2->get_hash_exons_introns}) {
+			next if $tid eq 'by_pos';
+			next unless (exists $h_exons_introns->{$tid});
+			my @lPos = (sort keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}});
+			next if (@lPos == 0);
+			foreach my $pos (keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}}) {
+				if (exists $h_exons_introns->{$tid}->{by_pos}->{$pos}) {
+					$h_noise->{$tid}->{$pos}++;
+				}
+			}
+		}
+	}
+	return $h_noise;
+}
+
+sub junction_score {
+	my ($self, $patient) = @_;
+	my $gene;
+	foreach my $g (@{$self->getGenes()}) {
+		my @ltmp = split('_', $g->id());
+		next if ($ltmp[0] ne $self->annex->{$patient->name()}->{ensid});
+		$gene = $g;
+	}
+	confess() unless $gene;
+	my $score = $gene->score();
+	
+	#ratio
+	my $ratio = $self->get_percent_new_count($patient);
+	if ($ratio >= 30) { $score += 2; }
+	elsif ($ratio >= 20) { $score += 1.5; }
+	elsif ($ratio >= 10) { $score += 1; }
+	
+	#dp
+	my $dp = $self->get_dp_count($patient);
+	if ($dp >= 75) { $score += 2; }
+	elsif ($dp >= 50) { $score += 1.5; }
+	elsif ($dp >= 30) { $score += 1; }
+	elsif ($dp <= 10) { $score -= 1; }
+	elsif ($dp <= 5) { $score -= 3; }
+	
+	#nb new
+	my $nb_new = $self->get_nb_new_count($patient);
+	if ($dp >= 15) { $score += 1; }
+	elsif ($dp <= 5) { $score -= 1; }
+	elsif ($dp <= 2) { $score -= 3; }
+	
+	#noise
+	my $h_noise = $self->get_hash_noise($patient);
+	my $max_noise = 0;
+	foreach my $enst (keys %{$h_noise}) {
+		foreach my $pos (keys %{$h_noise->{$enst}}) {
+			my $this_noise = $h_noise->{$enst}->{$pos};
+			$max_noise = $this_noise if $this_noise > $max_noise;
+		}
+	}
+	if ($max_noise >= 20) { $score -= 3; }
+	elsif ($dp >= 12) { $score -= 2; }
+	elsif ($dp >= 5) { $score -= 1; }
+	return $score;
 }
 
 1;

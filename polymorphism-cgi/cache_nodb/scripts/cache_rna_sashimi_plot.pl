@@ -59,13 +59,13 @@ foreach my $chr (@{$project->getChromosomes()}) {
 		#next if ($junction->get_nb_new_count($patient) < 3);
 		next if ($junction->get_dp_count($patient) < 3);
 		next if ($junction->length() > 10000);
-		next if ($junction->get_percent_new_count($patient) < 20);
+		next if ($junction->get_percent_new_count($patient) < 10);
 		$junction->dejavu_percent_coordinate_similar(96);
-		my $nb_dejavu_run = $junction->dejavu_nb_int_this_run_patients(20);
-		next if ($nb_dejavu_run >= 4);
+		#my $nb_dejavu_run = $junction->dejavu_nb_int_this_run_patients(20);
+		#next if ($nb_dejavu_run >= 4);
 		#my $nb_dejavu_pat = $junction->dejavu_nb_patients() - $nb_dejavu_run;
 		my $nb_dejavu_pat = $junction->dejavu_nb_patients();
-		next if ($nb_dejavu_pat > 30);
+		next if ($nb_dejavu_pat > 50);
 		push(@lJunctions, $junction);
 	}
 }
