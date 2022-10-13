@@ -198,7 +198,6 @@ $html_table .= qq{</table>};
 my $hash;
 $hash->{html} = $html_table;
 $hash->{table_id} = 'table_demultiplex';
-
 my $json_encode = encode_json $hash;
 print $json_encode;
 exit(0);
@@ -329,7 +328,7 @@ sub convert_csv_to_json {
 	}
 	my $file_out = "$path_out/demultiplex.json";
 	return $file_out if (-e $file_out and not $force);
-	return $file_out if (not $run_name);
+	#return $file_out if (not $run_name);
 	my $h;
 	
 	my $h_run_description;
