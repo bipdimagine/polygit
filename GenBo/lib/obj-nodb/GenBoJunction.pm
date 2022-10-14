@@ -276,7 +276,9 @@ sub get_dp_count {
 sub get_ratio_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	my $ratio = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
+	my $ratio;
+	eval{ $ratio = $self->get_nb_new_count($patient) / $self->get_dp_count($patient); };
+	if($@) { confess(); }
 	return $ratio;
 } 
 
@@ -484,41 +486,89 @@ sub setPatients {
 
 sub get_hash_noise {
 	my ($self, $patient) = @_;
-	my $h_noise;
-	my $h_exons_introns = $self->get_hash_exons_introns();
-	return $h_noise unless $h_exons_introns;
-	my @lJunctions;
-	my $this_chr = $self->getChromosome();
-	my $i = $self->vector_id();
-	my $min = $self->vector_id() - 15;
-	$min = 0 if ($min < 0);
-	while ($i >= $min) {
-		my $junction2 = $this_chr->getVarObject($i);
-		push(@lJunctions, $junction2) if $junction2->get_hash_exons_introns();
-		$i--;
-	}
-	$i = $self->vector_id();
-	my $max = $self->vector_id() + 15;
-	$max = $this_chr->size_vector() if ($max >= $this_chr->size_vector());
-	while ($i < $max) {
-		my $junction2 = $this_chr->getVarObject($i);
-		push(@lJunctions, $junction2) if $junction2->get_hash_exons_introns();
-		$i++;
-	}
-	foreach my $junction2 (@lJunctions) {
-		foreach my $tid (keys %{$junction2->get_hash_exons_introns}) {
-			next if $tid eq 'by_pos';
-			next unless (exists $h_exons_introns->{$tid});
-			my @lPos = (sort keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}});
-			next if (@lPos == 0);
-			foreach my $pos (keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}}) {
-				if (exists $h_exons_introns->{$tid}->{by_pos}->{$pos}) {
-					$h_noise->{$tid}->{$pos}++;
-				}
-			}
+	return;
+}
+
+sub get_noise_score {
+	my ($self, $patient) = @_;
+	my $h_noise = $self->get_hash_noise($patient);
+	my $max_noise_in_tr = 0;
+	return $max_noise_in_tr unless $h_noise;
+	foreach my $enst (keys %{$h_noise}) {
+		next if $enst eq 'all';
+		foreach my $pos (keys %{$h_noise->{$enst}}) {
+			my $this_noise = scalar keys %{$h_noise->{$enst}->{$pos}};
+			$max_noise_in_tr = $this_noise if $this_noise > $max_noise_in_tr;
 		}
 	}
-	return $h_noise;
+	my $noise_all = scalar keys %{$h_noise->{all}};
+	return ($max_noise_in_tr, $noise_all);
+}
+
+sub junction_score_penality_ratio {
+	my ($self, $patient) = @_;
+	my $score_penality = 0;
+	my $ratio = $self->get_percent_new_count($patient);
+	if ($ratio <= 1) { $score_penality += 8; }
+	elsif ($ratio <= 5) { $score_penality += 7; }
+	elsif ($ratio <= 10) { $score_penality += 5; }
+	elsif ($ratio <= 15) { $score_penality += 2.5; }
+	elsif ($ratio <= 20) { $score_penality += 2; }
+	elsif ($ratio <= 30) { $score_penality += 1; }
+	return $score_penality;
+}
+
+sub junction_score_penality_dp {
+	my ($self, $patient) = @_;
+	my $score_penality = 0;
+	my $dp = $self->get_dp_count($patient);
+	if ($dp <= 5) { $score_penality += 8; }
+	elsif ($dp <= 10) { $score_penality += 3; }
+	elsif ($dp <= 20) { $score_penality += 1.5; }
+	elsif ($dp <= 30) { $score_penality += 0.5; }
+	return $score_penality;
+}
+
+sub junction_score_penality_new_junction {
+	my ($self, $patient) = @_;
+	my $score_penality = 0;
+	my $nb_new = $self->get_nb_new_count($patient);
+	if ($nb_new == 1) { $score_penality += 8; }
+	elsif ($nb_new < 3) { $score_penality += 5; }
+	elsif ($nb_new < 5) { $score_penality += 2; }
+	elsif ($nb_new < 10) { $score_penality += 1; }
+	return $score_penality;
+}
+
+sub junction_score_penality_noise {
+	my ($self, $patient) = @_;
+	my ($max_noise_in_tr, $noise_global) = $self->get_noise_score($patient);
+	if ($max_noise_in_tr >= 30) { return 8; }
+	elsif ($max_noise_in_tr >= 25) { return 6; }
+	elsif ($max_noise_in_tr >= 20) { return 4; }
+	elsif ($max_noise_in_tr >= 15) { return 3; }
+	elsif ($max_noise_in_tr >= 10) { return 2; }
+	
+	elsif ($noise_global >= 30) { return 4; }
+	elsif ($noise_global >= 25) { return 3; }
+	elsif ($noise_global >= 20) { return 2; }
+	elsif ($noise_global >= 15) { return 1.5; }
+	elsif ($noise_global >= 10) { return 1; }
+	return 0;
+}
+
+sub junction_score_penality_dejavu_inthisrun {
+	my ($self, $patient) = @_;
+	my $score_penality = 0;
+	my $dv_run_max_30 = $self->dejavu_nb_int_this_run_patients(30);
+	if ($dv_run_max_30 > 1) { $score_penality += (1 * ($dv_run_max_30-1)); }
+	my $dv_run_max_20 = $self->dejavu_nb_int_this_run_patients(20);
+	if ($dv_run_max_20 > 1) { $score_penality += (0.5 * ($dv_run_max_30-1)); }
+	my $dv_run_max_15 = $self->dejavu_nb_int_this_run_patients(15);
+	if ($dv_run_max_15 > 1) { $score_penality += 0.5; }
+	my $dv_run_max_10 = $self->dejavu_nb_int_this_run_patients(10);
+	if ($dv_run_max_10 > 1) { $score_penality += 0.5; }
+	return $score_penality;
 }
 
 sub junction_score {
@@ -529,41 +579,15 @@ sub junction_score {
 		next if ($ltmp[0] ne $self->annex->{$patient->name()}->{ensid});
 		$gene = $g;
 	}
+	return -999 unless $gene;
 	confess() unless $gene;
-	my $score = $gene->score();
-	
-	#ratio
-	my $ratio = $self->get_percent_new_count($patient);
-	if ($ratio >= 30) { $score += 2; }
-	elsif ($ratio >= 20) { $score += 1.5; }
-	elsif ($ratio >= 10) { $score += 1; }
-	
-	#dp
-	my $dp = $self->get_dp_count($patient);
-	if ($dp >= 75) { $score += 2; }
-	elsif ($dp >= 50) { $score += 1.5; }
-	elsif ($dp >= 30) { $score += 1; }
-	elsif ($dp <= 10) { $score -= 1; }
-	elsif ($dp <= 5) { $score -= 3; }
-	
-	#nb new
-	my $nb_new = $self->get_nb_new_count($patient);
-	if ($dp >= 15) { $score += 1; }
-	elsif ($dp <= 5) { $score -= 1; }
-	elsif ($dp <= 2) { $score -= 3; }
-	
-	#noise
-	my $h_noise = $self->get_hash_noise($patient);
-	my $max_noise = 0;
-	foreach my $enst (keys %{$h_noise}) {
-		foreach my $pos (keys %{$h_noise->{$enst}}) {
-			my $this_noise = $h_noise->{$enst}->{$pos};
-			$max_noise = $this_noise if $this_noise > $max_noise;
-		}
-	}
-	if ($max_noise >= 20) { $score -= 3; }
-	elsif ($dp >= 12) { $score -= 2; }
-	elsif ($dp >= 5) { $score -= 1; }
+	#my $score = 10+ $gene->score();
+	my $score = 10;
+	$score -= $self->junction_score_penality_ratio($patient);
+	$score -= $self->junction_score_penality_dp($patient);
+	$score -= $self->junction_score_penality_new_junction($patient);
+	$score -= $self->junction_score_penality_noise($patient);
+	$score -= $self->junction_score_penality_dejavu_inthisrun($patient);
 	return $score;
 }
 
