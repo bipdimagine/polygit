@@ -772,7 +772,7 @@ sub header_run {
 	my $date = "$d/$m/$y"; 
 	my $capt = values %$captures;
 	foreach my $c (values %$captures){
-			push(@$info , $c->description);
+			push(@$info , $project->description);
 			push(@$info , $c->type);
 	}
 	
