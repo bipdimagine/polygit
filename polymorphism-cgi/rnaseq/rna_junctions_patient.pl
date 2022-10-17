@@ -197,7 +197,7 @@ foreach my $junction (@lJunctions) {
 	next if ($junction->isCanonique($patient));
 	next if ($junction->get_ratio_new_count($patient) == 1);
 	
-	my $gene_name = $junction->annex->{$patient->name()}->{gene};
+	my $gene_name = $junction->annex->{$patient->name()}->{ensid};
 	if ($only_gene) {
 		my $keep;
 		$keep = 1 if ($only_gene->id() eq $gene_name);

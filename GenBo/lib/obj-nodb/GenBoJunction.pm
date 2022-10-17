@@ -548,12 +548,11 @@ sub junction_score_penality_noise {
 	elsif ($max_noise_in_tr >= 20) { return 4; }
 	elsif ($max_noise_in_tr >= 15) { return 3; }
 	elsif ($max_noise_in_tr >= 10) { return 2; }
-	
-	elsif ($noise_global >= 30) { return 4; }
-	elsif ($noise_global >= 25) { return 3; }
-	elsif ($noise_global >= 20) { return 2; }
-	elsif ($noise_global >= 15) { return 1.5; }
-	elsif ($noise_global >= 10) { return 1; }
+	elsif (defined($noise_global) and $noise_global >= 30) { return 4; }
+	elsif (defined($noise_global) and $noise_global >= 25) { return 3; }
+	elsif (defined($noise_global) and $noise_global >= 20) { return 2; }
+	elsif (defined($noise_global) and $noise_global >= 15) { return 1.5; }
+	elsif (defined($noise_global) and $noise_global >= 10) { return 1; }
 	return 0;
 }
 
