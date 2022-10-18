@@ -318,6 +318,7 @@ sub createSashiPlot {
 	$cmd .= " --shrink --alpha 0.25 --base-size=20 --ann-height=4 --height=3 --width=18";
 	$cmd .= " -g ".$patient->getProject->get_gtf_genes_annotations_igv();
 	$cmd .= " -F svg";
+#	warn $cmd;
 	`$cmd`;
 	return $file;
 }
@@ -407,20 +408,34 @@ has parse_nb_projects_patients => (
 	default	=> sub {
 		my $self = shift;
 		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		my ($h_proj, $h_pat, $hpatrun);
+		my ($h_proj, $h_pat, $h_pat_ratios, $hpatrun);
 		my $similar = $self->dejavu_percent_coordinate_similar();
 		foreach my $h (@{$self->get_dejavu_list_similar_junctions_resume($similar)}) {
 			my @list = split(';', $h->{projects});
 			my @list2 = split(';', $h->{patients});
+			my @list3 = split(';', $h->{ratios});
 			my $i = 0;
 			foreach my $proj (@list) {
 				$h_proj->{$proj} = undef;
-				foreach my $pat (split(',', $list2[$i])) {
+				my @lpat = split(',', $list2[$i]);
+				foreach my $pat (@lpat) {
 					$h_pat->{$proj.'_'.$pat} = undef;
 					#if ($h->{same_as} eq '100%' and 'NGS20'.$proj eq $self->getProject->name()) {
 					if ('NGS20'.$proj eq $self->getProject->name()) {
 						$hpatrun->{$proj.'_'.$pat} = undef;
 					}
+				}
+				my $j = 0;
+				foreach my $ratio (split(',', $list3[$i])) {
+					my $pat = $lpat[$j];
+					if ($ratio >= 90) { $h_pat_ratios->{ratio_90}->{$proj.'_'.$pat} = undef; }
+					if ($ratio >= 80) { $h_pat_ratios->{ratio_80}->{$proj.'_'.$pat} = undef; }
+					if ($ratio >= 70) { $h_pat_ratios->{ratio_70}->{$proj.'_'.$pat} = undef; }
+					if ($ratio >= 30) { $h_pat_ratios->{ratio_30}->{$proj.'_'.$pat} = undef; }
+					if ($ratio >= 20) { $h_pat_ratios->{ratio_20}->{$proj.'_'.$pat} = undef; }
+					if ($ratio >= 10) { $h_pat_ratios->{ratio_10}->{$proj.'_'.$pat} = undef; }
+					$h_pat_ratios->{ratio_all}->{$proj.'_'.$pat} = undef;
+					$j++;
 				}
 				$i++;
 			}
@@ -428,6 +443,19 @@ has parse_nb_projects_patients => (
 		my $h;
 		$h->{projects} = scalar(keys %$h_proj);
 		$h->{patients} = scalar(keys %$h_pat);
+		$h->{patients_ratio_10} = 0;
+		$h->{patients_ratio_20} = 0;
+		$h->{patients_ratio_30} = 0;
+		$h->{patients_ratio_details_all} = $h_pat_ratios->{ratio_all};
+		$h->{patients_ratio_details_10} = $h_pat_ratios->{ratio_10};
+		$h->{patients_ratio_details_20} = $h_pat_ratios->{ratio_20};
+		$h->{patients_ratio_details_30} = $h_pat_ratios->{ratio_30};
+		$h->{patients_ratio_10} = scalar(keys %{$h_pat_ratios->{ratio_10}}) if ($h_pat_ratios->{ratio_10});
+		$h->{patients_ratio_20} = scalar(keys %{$h_pat_ratios->{ratio_20}}) if ($h_pat_ratios->{ratio_20});
+		$h->{patients_ratio_30} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_30});
+		$h->{patients_ratio_70} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_70});
+		$h->{patients_ratio_80} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_80});
+		$h->{patients_ratio_90} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_90});
 		#$h->{patients_inthisrun} = scalar(keys %$hpatrun);
 		$h->{others_patients} = scalar(keys %$h_pat) - scalar(keys %$hpatrun);
 		#$h->{others_patients} = scalar(keys %$h_pat);
@@ -455,6 +483,36 @@ has dejavu_nb_patients => (
 	},
 );
 
+has dejavu_nb_patients_ratio_10 => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
+		return $self->parse_nb_projects_patients->{patients_ratio_10};
+	},
+);
+
+has dejavu_nb_patients_ratio_20 => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
+		return $self->parse_nb_projects_patients->{patients_ratio_20};
+	},
+);
+
+has dejavu_nb_patients_ratio_30 => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
+		return $self->parse_nb_projects_patients->{patients_ratio_30};
+	},
+);
+
 has dejavu_nb_others_patients => (
 	is		=> 'rw',
 	lazy 	=> 1,
@@ -465,12 +523,63 @@ has dejavu_nb_others_patients => (
 	},
 );
 
+
+sub dejavu_nb_other_patients_min_ratio_global {
+	my ($self, $patient, $min_percent) = @_;
+	my $nb = 0;
+	my $cat = 'patients_ratio_details_'.$min_percent;
+	my $proj_text = $patient->getProject->name();
+	$proj_text =~ s/NGS20//;
+	my $h_dejavu_infos = $self->parse_nb_projects_patients();
+	if (exists $h_dejavu_infos->{$cat}) {
+		delete $h_dejavu_infos->{$cat}->{$proj_text.'_'.$patient->name()};
+		$nb = scalar(keys %{$h_dejavu_infos->{$cat}});
+	}
+	return $nb;
+}
+
+sub dejavu_nb_other_patients {
+	my ($self, $patient) = @_;
+	return $self->dejavu_nb_other_patients_min_ratio_global($patient, 'all');
+}
+
+sub dejavu_nb_other_patients_min_ratio_10 {
+	my ($self, $patient) = @_;
+	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '10');
+}
+
+sub dejavu_nb_other_patients_min_ratio_20 {
+	my ($self, $patient) = @_;
+	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '20');
+}
+
+sub dejavu_nb_other_patients_min_ratio_30 {
+	my ($self, $patient) = @_;
+	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '30');
+}
+
+sub dejavu_nb_other_patients_min_ratio_70 {
+	my ($self, $patient) = @_;
+	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '70');
+}
+
+sub dejavu_nb_other_patients_min_ratio_80 {
+	my ($self, $patient) = @_;
+	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '80');
+}
+
+sub dejavu_nb_other_patients_min_ratio_90 {
+	my ($self, $patient) = @_;
+	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '90');
+}
+
 sub dejavu_nb_int_this_run_patients {
-	my ($self, $min_percent) = @_;
-	my $nb = scalar(@{$self->getPatients()});
-	return $nb unless ($min_percent);
+	my ($self, $patient_view, $min_percent) = @_;
+	my $nb = 0;
 	foreach my $patient (@{$self->getPatients()}) {
-		$nb-- if ($self->get_percent_new_count($patient) < $min_percent);
+		next if ($patient_view and $patient_view->name() eq $patient->name());
+		next if ($min_percent and $self->get_percent_new_count($patient) < $min_percent);
+		$nb++;
 	}
 	return $nb;
 }
@@ -556,16 +665,49 @@ sub junction_score_penality_noise {
 	return 0;
 }
 
+sub junction_score_penality_dejavu {
+	my ($self, $patient) = @_;
+	my $my_ratio = $self->get_percent_new_count($patient);
+	#return $self->junction_score_penality_dejavu_high_ratio($patient) if ($my_ratio >= 70);
+	return $self->junction_score_penality_dejavu_low_ratio($patient);
+}
+
+sub junction_score_penality_dejavu_low_ratio {
+	my ($self, $patient) = @_;
+	my $dv_ratio_all = $self->dejavu_nb_other_patients($patient);
+	my $dv_ratio_10 = $self->dejavu_nb_other_patients_min_ratio_10($patient);
+	my $dv_ratio_30 = $self->dejavu_nb_other_patients_min_ratio_30($patient);
+	if    ($dv_ratio_30 >= 10 or $dv_ratio_10 >= 20) { return 8; }
+	elsif ($dv_ratio_30 >= 5 or $dv_ratio_10 >= 10)  { return 5; }
+	elsif ($dv_ratio_30 >= 2 or $dv_ratio_10 >= 5)   { return 3; }
+	elsif ($dv_ratio_30 >= 1 or $dv_ratio_10 >= 3)   { return 2; }
+	return 0;
+}
+
+sub junction_score_penality_dejavu_high_ratio {
+	my ($self, $patient) = @_;
+	my $dv_ratio_all = $self->dejavu_nb_other_patients($patient);
+	my $dv_ratio_70 = $self->dejavu_nb_other_patients_min_ratio_70($patient);
+	my $dv_ratio_90 = $self->dejavu_nb_other_patients_min_ratio_90($patient);
+	
+	if ($dv_ratio_90 >= 20) { return 8; }
+	elsif ($dv_ratio_90 >= 10) { return 5; }
+	elsif ($dv_ratio_70 >= 20) { return 5; }
+	elsif ($dv_ratio_70 >= 15) { return 2; }
+	elsif ($dv_ratio_70 >= 5) { return 1; }
+	return 0;
+}
+
 sub junction_score_penality_dejavu_inthisrun {
 	my ($self, $patient) = @_;
 	my $score_penality = 0;
-	my $dv_run_max_30 = $self->dejavu_nb_int_this_run_patients(30);
-	if ($dv_run_max_30 > 1) { $score_penality += (1 * ($dv_run_max_30-1)); }
-	my $dv_run_max_20 = $self->dejavu_nb_int_this_run_patients(20);
-	if ($dv_run_max_20 > 1) { $score_penality += (0.5 * ($dv_run_max_30-1)); }
-	my $dv_run_max_15 = $self->dejavu_nb_int_this_run_patients(15);
+	my $dv_run_max_30 = $self->dejavu_nb_int_this_run_patients($patient, 30);
+	if ($dv_run_max_30 > 1) { $score_penality += (1 * ($dv_run_max_30)); }
+	my $dv_run_max_20 = $self->dejavu_nb_int_this_run_patients($patient, 20);
+	if ($dv_run_max_20 > 1) { $score_penality += (0.5 * ($dv_run_max_20)); }
+	my $dv_run_max_15 = $self->dejavu_nb_int_this_run_patients($patient, 15);
 	if ($dv_run_max_15 > 1) { $score_penality += 0.5; }
-	my $dv_run_max_10 = $self->dejavu_nb_int_this_run_patients(10);
+	my $dv_run_max_10 = $self->dejavu_nb_int_this_run_patients($patient, 10);
 	if ($dv_run_max_10 > 1) { $score_penality += 0.5; }
 	return $score_penality;
 }
@@ -587,6 +729,7 @@ sub junction_score {
 	$score -= $self->junction_score_penality_new_junction($patient);
 	$score -= $self->junction_score_penality_noise($patient);
 	$score -= $self->junction_score_penality_dejavu_inthisrun($patient);
+	$score -= $self->junction_score_penality_dejavu($patient);
 	return $score;
 }
 

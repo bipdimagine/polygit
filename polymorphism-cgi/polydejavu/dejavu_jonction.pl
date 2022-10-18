@@ -57,7 +57,7 @@ $html_my_var .= qq{<tbody>};
 
 my $table_id = "table_dv_".$project_name."_".$patient_name."_".$junction_vector_id_search;
 my $html;
-$html .= qq{<table id='$table_id' data-sort-name='identity' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-cache="false" data-pagination-loop="false" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-resizable='true' class='table table-striped' data-page-list="[10]" style='font-size:10px;'>};
+$html .= qq{<table id='$table_id' data-sort-name='identity' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-toggle="table" data-cache="false" data-pagination-loop="false" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-resizable='true' class='table table-striped' data-page-list="[10]" style='font-size:10px;'>};
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="pdf"><b><center>Sashimi</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="identity"><b><center>Identity</center></b></th>};
@@ -66,9 +66,9 @@ $html .= qq{<th data-sortable="true" data-field="patient"><b><center>Patient</ce
 $html .= qq{<th data-sortable="true" data-field="type"><b><center>Type</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="start"><b><center>Start</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="end"><b><center>End</center></b></th>};
-$html .= qq{<th data-sortable="true" data-field="count_junctions"><b><center>Count Junctions</center></b></th>};
-$html .= qq{<th data-sortable="true" data-field="count_normal"><b><center>Count Normal</center></b></th>};
-$html .= qq{<th data-sortable="true" data-field="ratio"><b><center>Ratio (%)</center></b></th>};
+$html .= qq{<th data-sortable="false" data-field="count_junctions"><b><center>Count Junctions</center></b></th>};
+$html .= qq{<th data-sortable="false" data-field="count_normal"><b><center>Count Normal</center></b></th>};
+$html .= qq{<th data-sortable="false" data-field="ratio"><b><center>Ratio (%)</center></b></th>};
 $html .= qq{</thead>};
 $html .= qq{<tbody>};
 
@@ -97,7 +97,7 @@ foreach my $junction (@lJunction) {
 			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{end} = $junction->end();
 			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_junctions} = $junction->get_nb_new_count($dv_patient);
 			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_normal} = $junction->get_nb_normal_count($dv_patient);
-			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{score} = $junction->get_ratio_new_count($dv_patient);
+			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{score} = int($junction->get_percent_new_count($dv_patient));
 			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{type} = $junction->getTypeDescription($dv_patient);
 		}
 	}
@@ -114,7 +114,7 @@ foreach my $junction (@lJunction) {
 				my $type = $hdv->{$identity}->{$prn}->{$ptn}->{type};
 				my $count_junctions = $hdv->{$identity}->{$prn}->{$ptn}->{count_junctions};
 				my $count_normal = $hdv->{$identity}->{$prn}->{$ptn}->{count_normal};
-				my $score = sprintf("%.3f", ($hdv->{$identity}->{$prn}->{$ptn}->{score} * 100));
+				my $score = int($hdv->{$identity}->{$prn}->{$ptn}->{score});
 				my $start = $hdv->{$identity}->{$prn}->{$ptn}->{start};
 				my $end = $hdv->{$identity}->{$prn}->{$ptn}->{end};
 
@@ -125,7 +125,7 @@ foreach my $junction (@lJunction) {
 				
 				my $sashimi_button = qq{<center>N.A.</center>};
 				my $locus_text = $chr_id.'-'.($start - 100).'-'.($end + 100);
-				my $sashimi_pdf_tmp = $project_tmp->getProjectPath.'/align/sashimi_dejavplots/';
+				my $sashimi_pdf_tmp = $project_tmp->getProjectPath.'/align/sashimi_plots/';
 				$sashimi_pdf_tmp =~ s/$project_name/$prn/;
 				$sashimi_pdf_tmp .= 'sashimi_'.$ptn.'.'.$junction->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
 				if (-e $sashimi_pdf_tmp) {
