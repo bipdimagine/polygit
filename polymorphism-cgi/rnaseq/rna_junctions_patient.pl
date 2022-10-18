@@ -25,6 +25,7 @@ my $max_dejavu = $cgi->param('dejavu');
 my $use_percent_dejavu = $cgi->param('dejavu_percent');
 my $min_score = $cgi->param('min_score');
 my $only_gene_name = $cgi->param('only_gene');
+my $only_dejavu_ratio_10 = $cgi->param('only_dejavu_ratio_10');
 
 
 $min_score = 20 unless (defined($min_score));
@@ -45,9 +46,9 @@ print "{\"progress\":\".";
 my $patient_name = $patient->name();
 my $table_id = 'table_'.$patient_name;
 my $html;
-my $release = '<b>Release:</b> '.$project->getVersion();
-my $gencode;
-$gencode = ' - <b>Gencode version:</b> '.$project->gencode_version() if ($release =~ /HG19/);
+my $release = $project->getVersion();
+my $gencode = '-';
+$gencode = $project->gencode_version() if ($release =~ /HG19/);
 
 my ($default_filter_dejavu_project, $default_filter_score);
 my ($nb_max_patient, $nb_limit);
@@ -112,75 +113,110 @@ if (defined($use_percent_dejavu)) {
 }
 my $nb_percent_dejavu_value = 90 + $percent_dejavu;
 
-my $html_score = qq{
-	<table style="width:100%;">
-		<tr style="text-align:right;">
-			<td style="padding-left:20px;font-size:11px;"><b>Ratio (%):</b></td>
-			<td style="padding-left:20px;width:200px;">
-				<label for="slider_score" class="form-label" style="font-size:10px;font-weight:300;"><i>Ratio >= <span id="nb_score" style="color:blue;">$min_score%</span></i></label>
-				<input type="range" class="form-range" min="0" max="10" value="$score_slider" step="1" id="slider_score" onchange="update_score_span_value()">
-			</td>
-		</tr>
-	</table>};
-
-my $max_dejavu_value = 101;
+my $checked_only_dejavu_ratio_10;
+$checked_only_dejavu_ratio_10 = qq{checked="checked"} if $only_dejavu_ratio_10;
+my $max_dejavu_value = 51;
 $max_dejavu_value = $max_dejavu if defined($max_dejavu);
 my $html_dejavu = qq{
 	<table style="width:100%;">
-		<tr style="text-align:right;">
-			<td style="padding-left:20px;font-size:11px;"><b>DejaVu % Similar:</b></td>
-			<td style="padding-left:20px;width:200px;">
-				<label for="slider_dejavu_percent" class="form-label" style="font-size:10px;font-weight:300;"><i>if <span id="nb_percent_dejavu" style="color:blue;">$nb_percent_dejavu_value</span> % similar coord</i></label>
-				<input type="range" class="form-range" min="0" max="10" value="$percent_dejavu" step="1" id="slider_dejavu_percent" onchange="update_dejavu_percent_span_value()">
+		<tr>
+			<td style="padding-top:5px;">
+				<center>
+					<label for="slider_dejavu_percent" class="form-label" style="font-size:10px;font-weight:300;"><i>if <span id="nb_percent_dejavu" style="color:blue;">$nb_percent_dejavu_value</span> % similar coord</i></label>
+					<input style="width:180px;" type="range" class="form-range" min="0" max="10" value="$percent_dejavu" step="1" id="slider_dejavu_percent" onchange="update_dejavu_percent_span_value()">
+				</center>
 			</td>
-			<td style="padding-left:20px;font-size:11px;"><b>DejaVu Filters:</b></td>
-			<td style="padding-left:20px;width:300px;">
-				<label for="slider_dejavu" class="form-label" style="font-size:10px;font-weight:300;"><i>in max <span id="nb_max_dejavu_patients" style="color:blue;">$max_dejavu_value</span> Patient(s)</i></label>
-				<input type="range" class="form-range" min="0" max="101" value="$max_dejavu_value" step="1" id="slider_dejavu" onchange="update_dejavu_span_value()">
+			<td style="padding-top:5px;">
+				<center>
+					<label for="slider_dejavu" class="form-label" style="font-size:10px;font-weight:300;"><i>in max <span id="nb_max_dejavu_patients" style="color:blue;">$max_dejavu_value</span> Patient(s)</i></label>
+					<input style="width:180px;" type="range" class="form-range" min="0" max="51" value="$max_dejavu_value" step="1" id="slider_dejavu" onchange="update_dejavu_span_value()">
+				</center>
 			</td>
+			<td style="padding-top:5px;">
+				<center>
+					<div class="form-check"><input $checked_only_dejavu_ratio_10 class="form-check-input" type="checkbox" value="" id="b_dejavu_min_ratio_10"><label class="form-check-label" for="b_dejavu_min_ratio_10" style="padding-left:10px;font-size:11px;">only ratio >10%</label></div>
+				</center>		
+			</td>
+					
+		</tr>
+		<tr>
+			<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Min Similarity</center></b></td>
+			<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Max patients</center></b></td>
+			<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Ratio</center></b></td>
+		</tr>
+	</table>};
+	
+
+my $html_gene_select = qq{<input type="text" style="font-size:11px;width:130px;" placeholder="Ex: COL4A5" class="form-control" id="input_gene_name">};
+if ($only_gene_name) {
+	$html_gene_select = qq{<input type="text" style="font-size:11px;width:130px;" value="$only_gene_name" class="form-control" id="input_gene_name">};
+}
+	
+my $html_filters = qq{
+	<table style="width:100%;">
+		<tr>
+			<td style="padding-top:5px;">
+				<center>
+					<label for="slider_score" class="form-label" style="font-size:10px;font-weight:300;"><i>Ratio >= <span id="nb_score" style="color:blue;">$min_score%</span></i></label>
+					<input style="width:180px;" type="range" class="form-range" min="0" max="10" value="$score_slider" step="1" id="slider_score" onchange="update_score_span_value()">
+				</center>
+			</td>
+			<td style="padding-top:5px;">
+				<center>
+					$html_gene_select
+				</center>
+			</td>
+					
+		</tr>
+		<tr>
+			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Min Ratio</center></b></td>
+			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Only Gene</center></b></td>
 		</tr>
 	</table>};
 
+	
 my $html_refresh = qq{
 	<table style="width:100%;">
 		<tr>
-			<td style="padding-left:20px;padding-right:20px;width:50px;">
+			<td style="padding-top:12px;">
 				<center>
-				<button type="button" class="btn btn-sm btn-primary" id="b_update_dejavu" onclick="launch_dejavu_span_value()"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
-				<br><b><span style="color:#363945">REFRESH</span></b>
+					<button style="font-size:25px;" type="button" class="btn btn-sm btn-primary" id="b_update_dejavu" onclick="launch_dejavu_span_value()"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
+				</center>
+			</td>
+		<tr>
+		</tr>
+			<td style="padding-top:5px;">
+				<center>
+					<b><span style="color:#363945">REFRESH</span></b>
 				</center>
 			</td>
 		</tr>
 	</table>};
 	
-my $only_gene_name_text = '';
-$only_gene_name_text = " <i><span style='color:red'>used $only_gene_name</span></i>" if ($only_gene_name);
-my $html_list_genes = qq{
-	<div>
-		<form>
-			<div class="form-group">
-				<label for="input_gene_name" style="font-size:11px;">Only Gene $only_gene_name_text</label>
-};
-if ($only_gene_name) {
-	$html_list_genes .= qq{<input type="text" style="font-size:11px;" value="$only_gene_name" class="form-control" id="input_gene_name">};
-}
-else {
-	$html_list_genes .= qq{<input type="text" style="font-size:11px;" placeholder="Ex: COL4A5" class="form-control" id="input_gene_name">};
-}
-$html_list_genes .= qq{				
-			</div>
-		</form>
-	</div>
-};
+my $html_patient = qq{
+	<table style="width:100%;">
+		<tr>
+			<td style="padding-top:8px;"><center><b>Name</b></center></td>
+			<td style="padding-top:8px;"><center><span style='color:red;font-size:13px'>$patient_name</span></center></td>
+		</tr>
+		<tr>
+			<td><center><b>Release</b></center></td>
+			<td><center>$release</center></td>
+		</tr>
+		<tr>
+			<td><center><b>Gencode</b></center></td>
+			<td><center>$gencode</center></td>
+		</tr>
+	</table>};
 
-
-$html .= qq{<div class="container" style="width:100%;padding-top:10px;padding-bottom:10px;"><div class="row">};
-$html .= qq{<div class="col-sm-3" style="border:3px #363945 double;"><center><span style='color:red;font-size:13px'>Patient $patient_name</span><br>$release$gencode</center></div>};
-$html .= qq{<div class="col-sm-2">$html_score</div>};
-$html .= qq{<div class="col-sm-4" style="text-align:right;padding-right:20px;">$html_dejavu</div>};
-$html .= qq{<div class="col-sm-2">$html_list_genes</div>};
-$html .= qq{<div class="col-sm-1">$html_refresh</div>};
+$html .= qq{<br>};
+$html .= qq{<div class="container" style="width:100%;height:86px;vertical-align:middle;"><div class="row">};
+$html .= qq{<div class="col-sm-2"><div style="height:82px;border:3px #363945 double;">$html_patient</div></div>};
+$html .= qq{<div class="col-sm-5"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_dejavu</center></div></div>};
+$html .= qq{<div class="col-sm-4"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_filters</center></div></div>};
+$html .= qq{<div class="col-sm-1"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_refresh</center></div></div>};
 $html .= qq{</div></div>};
+$html .= qq{<br>};
 
 my $_tr_lines_by_genes;
 my $h_junctions_color;
@@ -198,10 +234,13 @@ foreach my $junction (@lJunctions) {
 	next if ($junction->get_ratio_new_count($patient) == 1);
 	
 	my $gene_name = $junction->annex->{$patient->name()}->{ensid};
+	my $gene_name2 = $junction->annex->{$patient->name()}->{gene};
 	if ($only_gene) {
 		my $keep;
 		$keep = 1 if ($only_gene->id() eq $gene_name);
 		$keep = 1 if ($only_gene->external_name() eq $gene_name);
+		$keep = 1 if ($only_gene->id() eq $gene_name2);
+		$keep = 1 if ($only_gene->external_name() eq $gene_name2);
 		next unless $keep;
 	}
 	
@@ -213,6 +252,7 @@ foreach my $junction (@lJunctions) {
 	
 	$junction->dejavu_percent_coordinate_similar($nb_percent_dejavu_value);
 	my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
+	$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
 	if ($nb_dejavu_pat > $max_dejavu_value) {
 		next;
 		if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
@@ -415,6 +455,7 @@ sub get_sashimi_plot_file {
 sub get_html_dejavu {
 	my ($junction, $patient) = @_;
 	my $color = 'black';
+	my $my_ratio = $junction->get_percent_new_count($patient);
 	my $project_name = $patient->getProject->name();
 	my $patient_name = $patient->name();
 	my $vector_id = $junction->getChromosome->id().'-'.$junction->vector_id();
@@ -422,19 +463,43 @@ sub get_html_dejavu {
 	my $cmd_inthisrun = qq{view_dejavu_nb_int_this_run_patients(\"$project_name\",\"$patient_name\",\"$vector_id\")};
 	my $html = $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
 	$html.= $cgi->start_Tr();
-	$html.= $cgi->th("<center><b><br>DeJa Vu</b></center>");
-	$html.= $cgi->th("<center><b>In This Run<br>Ratio All</b></center>");
-	$html.= $cgi->th("<center><b>In This Run<br>Ratio > 10%</b></center>");
-	$html.= $cgi->th("<center><b>In This Run<br>Ratio >20%</b></center>");
+	$html.= $cgi->th("");
+	$html.= $cgi->th("<center><b>Ratio All</b></center>");
+#	if ($my_ratio >= 70) {
+#		$html.= $cgi->th("<center><b>Ratio >70%</b></center>");
+#		$html.= $cgi->th("<center><b>Ratio >90%</b></center>");
+#	}
+#	else {
+		$html.= $cgi->th("<center><b>Ratio >10%</b></center>");
+		$html.= $cgi->th("<center><b>Ratio >20%</b></center>");
+#	}
 	$html.= $cgi->end_Tr();
 	
 	$html.= $cgi->start_Tr();
-	$html.= $cgi->td(obutton($cmd_all,$junction->dejavu_nb_others_patients()));
-	$html.= $cgi->td(obutton($cmd_inthisrun,scalar(@{$junction->getPatients()})));
-	$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients(10)));
-	$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients(20)));
+	$html.= $cgi->td("<center><b>DejaVu</b></center>");
+	$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients($patient)));
+#	if ($my_ratio >= 70) {
+#		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_70($patient)));
+#		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_90($patient)));
+#	}
+#	else {
+		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_10($patient)));
+		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_20($patient)));
+#	}
 	$html.= $cgi->end_Tr();
 	
+	$html.= $cgi->start_Tr();
+	$html.= $cgi->td("<center><b>InThisRun</b></center>");
+	$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient)));
+#	if ($my_ratio >= 70) {
+#		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,70)));
+#		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,90)));
+#	}
+#	else {
+		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,10)));
+		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,20)));
+#	}
+	$html.= $cgi->end_Tr();
 	$html.=$cgi->end_table();
 	return $html;
 }
@@ -726,6 +791,7 @@ sub get_html_score_details {
 	my $score_pen_new = $junction->junction_score_penality_new_junction($patient);
 	my $score_pen_noise = $junction->junction_score_penality_noise($patient);
 	my $score_pen_dvrun = $junction->junction_score_penality_dejavu_inthisrun($patient);
+	my $score_pen_dv = $junction->junction_score_penality_dejavu($patient);
 	my $score_details_text = $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px black;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
 	if ($score_pen_ratio > 0) {
 		$score_details_text.= $cgi->start_Tr();
@@ -749,6 +815,12 @@ sub get_html_score_details {
 		$score_details_text.= $cgi->start_Tr();
 		$score_details_text.= $cgi->td("<center><b>Inthisrun</b></center>");
 		$score_details_text.= $cgi->td("<center>- $score_pen_dvrun</center>");
+		$score_details_text.= $cgi->end_Tr();
+	}
+	if ($score_pen_dv > 0) {
+		$score_details_text.= $cgi->start_Tr();
+		$score_details_text.= $cgi->td("<center><b>DejaVu</b></center>");
+		$score_details_text.= $cgi->td("<center>- $score_pen_dv</center>");
 		$score_details_text.= $cgi->end_Tr();
 	}
 	if ($score_pen_noise > 0) {

@@ -604,6 +604,7 @@
 				launch_project();
 			}
 			
+			var is_first_launch;
 			var html_resume = '';
 			function launch_project() {
 				if (html_resume == '') {
@@ -644,6 +645,7 @@
 								var myNode = document.getElementById("content_nav");
 						    	var myPanel = $(panel);
 								myPanel.appendTo(myNode);
+								is_first_launch = 1;
 							}
 						});
 				    })
@@ -656,7 +658,7 @@
 				}    
 			}
 			
-			var used_dejavu_value = 30;
+			var used_dejavu_value = 15;
 			var used_dejavu_percent_value = 96;
 			var used_score_value = 10;
 			var url_last_launch_patient;
@@ -673,6 +675,12 @@
 				url += "&dejavu=" + used_dejavu_value;
 				url += "&dejavu_percent=" + used_dejavu_percent_value;
 				url += "&min_score=" + used_score_value;
+				if (is_first_launch == 1) {
+					url += "&only_dejavu_ratio_10=1";
+				}
+				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+					url += "&only_dejavu_ratio_10=1";
+				}
 			    $.getJSON( url, function( data ) {
 			    	$.each( data, function( key, val ) {
 			    		if (key == 'html') {
@@ -691,6 +699,7 @@
 			    			if (used_dejavu_value == 'not') {}
 							else { update_dejavu_span_value();}
 							dijit.byId('waiting').hide();
+							is_first_launch = 0;
 						}
 					});
 			    })
@@ -789,6 +798,7 @@
 					document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
 					document.getElementById("div_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
 					enable_table_search(data.table_id_my_variant);
+					enable_table_search(data.table_id);
 					dijit.byId('waiting').hide();
 					dijit.byId('dialog_dejavu_junction').show();
 			    })
@@ -839,7 +849,7 @@
 			var value_dejavu = 999;
 			function update_dejavu_span_value() {
 				value_dejavu = document.getElementById("slider_dejavu").value;
-				if (value_dejavu == 101) {
+				if (value_dejavu == 51) {
 					document.getElementById("nb_max_dejavu_patients").innerHTML = 'ALL';
 				}
 				else {
@@ -855,6 +865,12 @@
 				if (value_dejavu < 101) { url += "&dejavu=" + value_dejavu; }
 				url += "&dejavu_percent=" + value_dejavu_percent_similar;
 				url += "&min_score=" + value_score;
+				if (is_first_launch == 1) {
+					url += "&only_dejavu_ratio_10=1";
+				}
+				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+					url += "&only_dejavu_ratio_10=1";
+				}
 				if (only_gene == '') {}
 				else { url += "&only_gene=" + only_gene; }
 				used_dejavu_percent_value = value_dejavu_percent_similar;
@@ -874,6 +890,7 @@
 			    			if (used_dejavu_value == 'not') {}
 							else { update_dejavu_span_value();}
 							dijit.byId('waiting').hide();
+							is_first_launch = 0;
 						}
 					});
 			    })
@@ -936,7 +953,7 @@
 		<div id="dialog_sashimi" dojoType="dojox.widget.Dialog" dimensions="[920,600]" title="Sashimi PLOT"></div>
 		
 		<div id="dialog_dejavu_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[920,700]" title="DejaVu Junction">
-			<div class="container-fluid" id="div_dejavu_junction" style="height:99%;width:99%;"></div>
+			<div class="container-fluid" id="div_dejavu_junction" style="height:95%;width:99%;"></div>
 		</div>
 		
 		<div id="dialog_linked_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[1150,700]" title="Linked Junction">

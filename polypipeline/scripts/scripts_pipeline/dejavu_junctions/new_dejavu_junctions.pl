@@ -137,7 +137,7 @@ foreach my $this_project_name (keys %$hash_projects) {
 				my $end = $junction->end();
 				my $count_new_junction = $junction->get_nb_new_count($this_patient);
 				my $count_normal_junction = $junction->get_nb_normal_count($this_patient);
-				my $score = sprintf("%.3f", $junction->get_ratio_new_count($this_patient));
+				my $score = int($junction->get_percent_new_count($this_patient));
 				my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
 				if (not exists $h_junctions->{$chr_id}->{$junction_id}) {
 					$h_junctions->{$chr_id}->{$junction_id}->{start} = $start;
@@ -160,7 +160,7 @@ my $nodejavu = GenBoNoSqlDejaVuJunctions->new( dir => $dir, mode => "c" );
 print "\n-> DIR: $dir\n";
 foreach my $chr_id (keys %{$h_junctions}) {
 	$nodejavu->create_table($chr_id);
-	my $sth = $nodejavu->dbh($chr_id)->prepare('insert into  __DATA__(_key,_value,start,end,variation_type,patients,projects)  values(?,?,?,?,?,?,?) ;') or die $DBI::errstr;
+	my $sth = $nodejavu->dbh($chr_id)->prepare('insert into  __DATA__(_key,_value,start,end,variation_type,patients,projects,ratios)  values(?,?,?,?,?,?,?,?) ;') or die $DBI::errstr;
 	$sth->execute();
 	my $tree;
 	foreach my $junction_id (keys %{$h_junctions->{$chr_id}}) {
@@ -169,16 +169,26 @@ foreach my $chr_id (keys %{$h_junctions}) {
 		my $end = $h_junctions->{$chr_id}->{$junction_id}->{end};
 		
 		my $value = $nodejavu->encode($h_junctions->{$chr_id}->{$junction_id}->{dejavu});
-		my (@l_proj, @l_pat);
+		my (@l_proj, @l_pat, @l_ratio);
 		foreach my $proj (sort keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}}) {
-			my $patients = join(',', keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}});
+			#my $patients = join(',', keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}});
+			
+			my (@local_pat, @local_ratios);
+			foreach my $pat_name (sort keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}}) {
+				push(@local_pat, $pat_name);
+				push(@local_ratios, $h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{score});
+			}
+			my $patients = join(',',@local_pat);
+			my $ratios = join(',',@local_ratios);
 			$proj =~ s/NGS20//;
 			push(@l_proj, $proj);
 			push(@l_pat, $patients);
+			push(@l_ratio, $ratios);
 		}
 		my $pr = join(';', @l_proj);
 		my $pt = join(';', @l_pat);
-		$sth->execute($junction_id, $value, $start, $end, $type, $pt, $pr);
+		my $ra = join(';', @l_ratio);
+		$sth->execute($junction_id, $value, $start, $end, $type, $pt, $pr, $ra);
 		push(@$tree, [$junction_id, $start, $end]);
 	}
 	$nodejavu->dbh($chr_id)->do(qq{CREATE UNIQUE INDEX if not exists _key_idx  on __DATA__ (_key);});

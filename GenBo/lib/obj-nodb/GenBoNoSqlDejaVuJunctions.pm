@@ -22,7 +22,7 @@ sub create_table {
 	$self->{table}->{$key1} = $table_name;
 	return  $self->{table}->{$key1} unless  $self->write();
 	$self->dbh($key1)->do("DROP TABLE IF EXISTS $table_name")  or die $DBI::errstr  if $self->mode eq 'c'  ;
-	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),patients INTEGER, projects INTEGER, _value BLOB,start INTEGER,end INTEGER, variation_type VARCHAR(2), length INTEGER, caller_infos VARCHAR(100))")  or die $DBI::errstr;;
+	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),ratios INTEGER, patients INTEGER, projects INTEGER, _value BLOB,start INTEGER,end INTEGER, variation_type VARCHAR(2), length INTEGER, caller_infos VARCHAR(100))")  or die $DBI::errstr;;
 	$self->dbh($key1)->do("CREATE UNIQUE INDEX if not exists _key_idx  on $table_name (_key); ")  or die $DBI::errstr;;
 	return 	$self->{table}->{$key1} ;
 }
@@ -31,7 +31,7 @@ sub prepare_junctions_resume {
 	my ($self,$chr) = @_;
 	return $self->{prepare_junctions_resume}->{$chr} if exists $self->{prepare_junctions_resume}->{$chr};
 	my $table_name = $self->create_table($chr);
-	$self->{prepare_junctions_resume}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type,$table_name.start,$table_name.end,$table_name._key,$table_name.patients,$table_name.projects  from $table_name  where end>=? and start<=?  and variation_type=?   });
+	$self->{prepare_junctions_resume}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type,$table_name.start,$table_name.end,$table_name._key,$table_name.patients,$table_name.projects,$table_name.ratios  from $table_name  where end>=? and start<=?  and variation_type=?   });
 	return $self->{prepare_junctions_resume}->{$chr};
 }
 
@@ -56,9 +56,10 @@ sub get_junction_resume {
 	 	next if $identity <  $seuil;
 	 	my $x;
 		$x->{type} = $row[0];
-		$x->{id} = $row[-3];
-		$x->{patients} = $row[-2];
-		$x->{projects} = $row[-1];
+		$x->{id} = $row[-4];
+		$x->{patients} = $row[-3];
+		$x->{projects} = $row[-2];
+		$x->{ratios} = $row[-1];
 		my @lTmp = split('_', $x->{id});
 		if ($lTmp[1] == $start and $lTmp[2] == $end) {
 			$x->{same_as} = '100%';
