@@ -858,7 +858,7 @@
 			}
 			
 			function launch_dejavu_span_value() {
-				var only_gene = document.getElementById('input_gene_name').value;
+				var only_gene_positions = document.getElementById('input_gene_positions').value;
 				if (value_dejavu == 101) { show_waiting("Filter DejaVu - ALL patients"); }
 				else { show_waiting("Filter DejaVu max " + value_dejavu + " patients (" + value_dejavu_percent_similar + "% coord similar)"); }
 				var url = url_last_launch_patient; 
@@ -871,8 +871,13 @@
 				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
 					url += "&only_dejavu_ratio_10=1";
 				}
-				if (only_gene == '') {}
-				else { url += "&only_gene=" + only_gene; }
+				if (only_gene_positions == '') {}
+				else if (only_gene_positions.match(':')) {
+					url += "&only_positions=" + only_gene_positions;
+				}
+				else {
+					url += "&only_gene=" + only_gene_positions;
+				}
 				used_dejavu_percent_value = value_dejavu_percent_similar;
 				used_score_value = value_score;
 			    $.getJSON( url, function( data ) {

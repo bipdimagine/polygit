@@ -25,6 +25,7 @@ my $max_dejavu = $cgi->param('dejavu');
 my $use_percent_dejavu = $cgi->param('dejavu_percent');
 my $min_score = $cgi->param('min_score');
 my $only_gene_name = $cgi->param('only_gene');
+my $only_positions = $cgi->param('only_positions');
 my $only_dejavu_ratio_10 = $cgi->param('only_dejavu_ratio_10');
 
 
@@ -69,6 +70,15 @@ my (@lJunctions, $h_varids, $h_var_linked_ids);
 foreach my $chr (@{$project->getChromosomes()}) {
 	#next if $chr->id ne '4';
 	my $vector_patient = $patient->getJunctionsVector($chr);
+	if ($only_positions) {
+		my @lTmp = split(':', $only_positions);
+		my $chr_id_limit = lc($lTmp[0]);
+		$chr_id_limit =~ s/chr//;
+		next if lc($chr->id) ne $chr_id_limit;
+		my ($from, $to) = split('-', $lTmp[1]);
+		my $vector_postions = $chr->getVectorByPosition($from, $to);
+		$vector_patient->Intersection($vector_patient, $vector_postions);
+	}
 	foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
 		$h_varids->{$junction->id()} = undef;
 		if ($junction->is_junctions_linked($patient)) {
@@ -147,10 +157,14 @@ my $html_dejavu = qq{
 	</table>};
 	
 
-my $html_gene_select = qq{<input type="text" style="font-size:11px;width:130px;" placeholder="Ex: COL4A5" class="form-control" id="input_gene_name">};
+my $html_gene_select = qq{<input type="text" style="font-size:11px;width:180px;" placeholder="COL4A5, 1:100000-1500000" class="form-control" id="input_gene_positions">};
 if ($only_gene_name) {
-	$html_gene_select = qq{<input type="text" style="font-size:11px;width:130px;" value="$only_gene_name" class="form-control" id="input_gene_name">};
+	$html_gene_select = qq{<input type="text" style="font-size:11px;width:180px;" value="$only_gene_name" class="form-control" id="input_gene_positions">};
 }
+elsif ($only_positions) {
+	$html_gene_select = qq{<input type="text" style="font-size:11px;width:180px;" value="$only_positions" class="form-control" id="input_gene_positions">};
+}
+
 	
 my $html_filters = qq{
 	<table style="width:100%;">
@@ -158,7 +172,7 @@ my $html_filters = qq{
 			<td style="padding-top:5px;">
 				<center>
 					<label for="slider_score" class="form-label" style="font-size:10px;font-weight:300;"><i>Ratio >= <span id="nb_score" style="color:blue;">$min_score%</span></i></label>
-					<input style="width:180px;" type="range" class="form-range" min="0" max="10" value="$score_slider" step="1" id="slider_score" onchange="update_score_span_value()">
+					<input style="width:150px;" type="range" class="form-range" min="0" max="10" value="$score_slider" step="1" id="slider_score" onchange="update_score_span_value()">
 				</center>
 			</td>
 			<td style="padding-top:5px;">
@@ -170,7 +184,7 @@ my $html_filters = qq{
 		</tr>
 		<tr>
 			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Min Ratio</center></b></td>
-			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Only Gene</center></b></td>
+			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Only Gene / Positions</center></b></td>
 		</tr>
 	</table>};
 
