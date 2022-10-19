@@ -794,6 +794,23 @@ sub getCaptureInfos {
 	return $$res[0];
 }
 
+sub getUmiInfos {
+	my ($self, $capture_id) = @_;
+	my $dbh = $self->getDbh();
+	my $config = $self->getConfig();
+	
+	my $sth = $dbh->prepare($self->sql_umi);
+	$sth->execute($capture_id);
+	my $res = $sth->fetchall_arrayref({});
+	my %hashCaptureFilesName;
+	#for (@$res) { $hashCaptureFilesName{$_->{'filename'}} = 1; }
+	if (scalar(keys(%hashCaptureFilesName)) > 1) {
+		warn "Multiple capture filed declared ! Exit...\n";
+		foreach my $name (keys(%hashCaptureFilesName)) { print "  -> $name\n"; }
+		die();
+	}
+	return $$res[0];
+}
 
 sub getCaptureId {
 	my ($self, $capture_name) = @_;
