@@ -708,6 +708,19 @@ has sql_capture_infos =>(
 	},
 );
 
+has sql_umi =>(
+	is		=> 'ro',
+	isa		=> 'Str',
+	lazy =>1,
+	default	=> sub {
+	my $sql = qq{SELECT u.name as name , u.mask as mask FROM  PolyprojectNGS.capture_systems c, PolyprojectNGS.umi u where c.capture_id=? and c.umi_id = u.umi_id ;};
+
+	return $sql;
+	},
+);
+
+
+
 has sql_capture_infos_by_name =>(
 	is		=> 'ro',
 	isa		=> 'Str',
