@@ -8,7 +8,7 @@ use FindBin qw($Bin);
 use lib "$Bin/";
 use lib "$Bin/../GenBoDB";
 use Set::IntSpan::Fast::XS;
-use Tabix;
+use Bio::DB::HTS::Tabix;
 use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";
@@ -74,6 +74,17 @@ has validation_db => (
 		
 	},
 );
+has umi => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+				my $query = $self->getProject->buffer->getQuery();
+		my $hash1 = $query->getUmiInfos($self->id);
+		return $hash1;
+		
+	},
+);
 
 
 has hash_intspan => (
@@ -82,6 +93,7 @@ has hash_intspan => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
+		confess();
 		my $hashIntSpan;
 		my $listChrom = $self->getChromosomes();
 		foreach my $chromObj (@{$self->getChromosomes}) {
@@ -95,7 +107,20 @@ has hash_intspan => (
 sub genomic_span {
 		my ($self,$chr) = @_;
 		die() unless $chr;
-		return $self->getHashGenomicSpan->{$chr->id};
+		
+		return $self->{gs}->{$chr->name} if exists  $self->{gs}->{$chr->name};
+		
+		my $iter = $self->tabix->query($chr->name);
+		unless ($iter) {
+			$iter = $self->tabix->query($chr->ucsc_name);
+		}
+		$self->{gs}->{$chr->name} =  Set::IntSpan::Fast::XS->new();
+		while (my $line = $iter->next){
+			chomp($line);
+			my($a,$b,$c,@d) = split(" ",$line);
+			$self->{gs}->{$chr->name}->add_range($b,$c);
+		}
+		return $self->{gs}->{$chr->name};
 }
 
 has hash_intspan_extended => (
@@ -129,6 +154,8 @@ has hash_intspan_referenceExtended => (
 		return $hashIntSpan;
 	},
 );
+
+
 
 sub parsePrimers{
 	my ($self,$list) = @_;
@@ -225,34 +252,37 @@ sub setPatients {
 	}
 	return \%patientsId;
 }
+has tabix => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $captureFileName = $self->gzFileName();
+		my $captureTabixFileName = $captureFileName . '.tbi';
+		if (not -e $captureTabixFileName) { die("\n\nERROR: $captureTabixFileName doesn't exist !! die...\n\n"); }
+		return  Bio::DB::HTS::Tabix->new( filename => $captureFileName );
+		
+	},
+);
+
+has seqnames => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->tabix->seqnames();#$self->infos()->{name};
+		
+	},
+);
+
 
 sub setChromosomes {
 	my $self = shift;
 	my %chrIds;
 	my $project = $self->getProject();
-	
-	my $captureFileName = $self->gzFileName();
-	my $captureTabixFileName = $captureFileName . '.tbi';
-	
-	if (not -e $captureTabixFileName) { die("\n\nERROR: $captureTabixFileName doesn't exist !! die...\n\n"); }
-	my $tabix = new Tabix(-data  => $captureFileName);
-	my @chrnames = $tabix->getnames();
-	
-	foreach my $name (@chrnames) {
+	confess();
+	foreach my $name (@{self->seqnames}) {
 		my $chr = $project->getChromosome($name);
-#		my $args;
-#		$name =~ s/chr//;
-#		$name = "MT" if $name eq "M";
-#		$args->{id} = $name;
-#		$args->{name} = $name;
-#		$args->{chromosomes_object} = { $name => undef };
-#		foreach my $fai (@{$project->getGenomeFai()}) {
-#			if ($fai->{id} eq $name) {
-#				$args->{fai} = $fai;
-#				$args->{length} = $fai->{length};
-#			}
-#		}
-#		my $chrom = $self->getProject()->flushObject('chromosomes', $args);
 		$chrIds{$chr->id} = undef;
 	}
 	return \%chrIds;
@@ -302,15 +332,12 @@ sub contains {
 	return  $intspan->contains($pos);
 }
 
+
+
 sub getCaptureChromosomesName {
 	my ($self) = @_;
-	
 	return $self->{chr_name} if exists  $self->{chr_name};
-	my $captureFileName = $self->gzFileName();
-	my $captureTabixFileName = $captureFileName . '.tbi';
-	#if (not -e $captureTabixFileName) { die("\n\nERROR: $captureTabixFileName doesn't exist !! die...\n\n"); }
-	my $tabix = new Tabix(-data  => $captureFileName);
-	my @l_tabix_chr_names = $tabix->getnames();
+	my @l_tabix_chr_names = @{$self->seqnames};
 	my @t;
 	if ($l_tabix_chr_names[0] =~ /chr/) { @t = map {$self->project->getChromosome($_)->ucsc_name}  @l_tabix_chr_names; }
 	else { @t = map {$self->project->getChromosome($_)->fasta_name}  @l_tabix_chr_names; }
@@ -321,27 +348,24 @@ sub getCaptureChromosomesName {
 sub getIntSpanForChromosome {
 	my ($self, $GenBoChrom, $nbExtendNt) = @_;
 	unless ($nbExtendNt) { $nbExtendNt = 0; }
-	my $captureFileName = $self->gzFileName();
-	my $captureTabixFileName = $captureFileName . '.tbi';
-	if (not -e $captureTabixFileName) { die("\n\nERROR: $captureTabixFileName doesn't exist !! die...\n\n"); }
-	
+
 	my $intSpan = Set::IntSpan::Fast::XS->new();
 	my $chrName = $GenBoChrom->fasta_name();
 	my $start = $GenBoChrom->start();
 	my $end = $GenBoChrom->end();
-	my $tabix = new Tabix(-data  => $captureFileName);
 	
 	my ($find) = grep {$_ eq $GenBoChrom->name or $_ eq $GenBoChrom->ucsc_name} @{$self->getCaptureChromosomesName};
 	return $intSpan unless $find;
-	my $res = $tabix->query($find);
+	my $res = $self->tabix->query($find);
 	
-	while(my $line = $tabix->read($res)){
+	while(my $line = $res->next()){
     	my @lFields = split("\t", $line);
     	my $start = int($lFields[1]) - $nbExtendNt;
     	$start =0 if $start <0;
     	my $end = int($lFields[2]) + $nbExtendNt;
     	$intSpan->add_range($start, $end);
   	}
+  	$res->close();
 	return $intSpan;
 }
 
@@ -834,13 +858,14 @@ has intspan_exon => (
 sub constructPrimersForExome {
 		my ($self,$chromosome) = @_;
 		my $file = $self->dude_bed;
-		warn $file;
-		open(BED1,"tabix $file ".$chromosome->name." | ");
+		my $tabix = Bio::DB::HTS::Tabix->new( filename => $file );
+		my $iter = $tabix->query($chromosome->name);
+		#warn $file;
 		my $hreturn;
-			my $primers;
-		while (<BED1>){
-				chomp();
-				my($chr,$s,$e) = split("\t",$_);
+		my $primers;
+		while (my $line = $iter->next){
+				chomp($line);
+				my($chr,$s,$e) = split("\t",$line);
 				my $hpos;
 				$hpos->{chromosomes_object}->{$chromosome->id} =undef;
 				my ($chrname,$startf,$endf,$startr,$endr,$plex) ;
@@ -876,7 +901,7 @@ sub constructPrimersForExome {
 #				warn $hpos->{start}." ".$hpos->{end} if $hpos->{id} eq "primer1_6854";;
 				push(@$primers,$hpos);
 			}
-	close(BED1);	
+	$iter->close();	
 	#warn scalar(@$primers);	
 	my $objs = $self->getProject()->flushObjects("primers",$primers);
 	
