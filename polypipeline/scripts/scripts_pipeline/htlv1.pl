@@ -51,11 +51,10 @@ print $patient->name().":\n";
 my $fileout = $dirout."/".$patient_name;
 
 #my $bam = $patient->getBamFile();
-my $fileout2 =  $project->getVariationsDir("htlv1")."/".$patient_name.".log";
-#my $fileout2 =  $project->getVariationsDir("muc1")."/".$patient_name.".aln";
-#my $fileout4 =  $project->getVariationsDir("muc1")."/".$patient_name.".log";
-#my $fileout3 =  $project->getVariationsDir("muc1")."/".$patient_name.".error";
-#my $bam_dir = $patient->getProject->getAlignmentDir("bwa");
+my $fileout =  $project->getVariationsDir("htlv1_calling")."/".$patient_name."-clonalityResults.txt";
+my $fileout2 =  $project->getVariationsDir("htlv1_calling")."/".$patient_name."-mergedIS.xls";
+my $fileout4 =  $project->getVariationsDir("htlv1_calling")."/".$patient_name."-mergedIS.txt";
+my $fileout3 =  $project->getVariationsDir("htlv1_calling")."/".$patient_name."-SIMPLIFIED_mergedIS.txt";
 
 
  #exit(0) if -e $fileout;
@@ -67,22 +66,29 @@ my $fileout2 =  $project->getVariationsDir("htlv1")."/".$patient_name.".log";
  system ("mkdir $dir_working");
  }
 my $singularity = $buffer->software("singularity");
-my $image = "/software/distrib/Clonality/SINGULARITY/step4_clonality.sif";
-my $script = "/software/distrib/Clonality/cecile_app.sh";
-my $cmd = qq{$singularity run --pwd /DATA/htlv1/ -B $dir_working:/TMP -B $dirout:/OUT  $image  $script $f1 $f2 $patient_name $ls $ln  $fork --working_directory  /TMP/};
+my $image = "/software/distrib/Clonality/SINGULARITY_R4/clonality_R4.sif";
+my $script = "/software/distrib/Clonality/fred_app.sh";
+
+my $cmd = qq{$singularity run --pwd /DATA/htlv1/ -B /software:/software -B /data-isilon/:/data-isilon -B $dir_working:/TMP -B $dirout:/OUT  $image  $script $f1 $f2 $patient_name $ls $ln $fork /TMP --working_directory  /TMP/ };
 
 warn $cmd;
 
-#system($cmd." && touch $dirout/$patient_name.ok");
+system($cmd." && touch $dirout/$patient_name.ok");
 
 
 
 #system("cp $dirout/$patient_name.log $fileout");
 
-#my $file_aln = $dir_working."/log_".$patient_name.".bam.log.aln";
-#my $file_log = $dir_working."/log_".$patient_name.".bam.log";
-#system("cp $file_aln $fileout2") if -e $file_aln;
-#system("cp $file_log $fileout4") if -e $file_log;
+
+
+my $file_result = $dir_working."/".$patient_name.$ln."-clonalityResults.txt";
+my $file_merged_xls = $dir_working."/".$patient_name.$ln."-mergedIS.xls";
+my $file_merged_txt = $dir_working."/".$patient_name.$ln."-mergedIS.txt";
+my $file_simpl = $dir_working."/".$patient_name.$ln."-SIMPLIFIED_mergedIS.txt";
+system("cp $file_result $fileout") if -e $file_result;
+system("cp $file_merged_xls $fileout2") if -e $file_merged_xls;
+system("cp $file_merged_txt $fileout4") if -e $file_merged_txt;
+system("cp $file_simpl $fileout3") if -e $file_simpl;
 #system("touch $fileout3") unless -e "$dirout/$patient_name.ok";
 
 #die() unless -e "$dirout/$patient_name.ok";
