@@ -47,16 +47,18 @@ my $dir_out;
 my %patients ;
 my $dir_fastq;
 my $run_name;
+my $umi_name;
 
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name 			=> $project_name );
 	
 	foreach my $capture (@{$project->getCaptures}){
-		
+		if ($capture->umi){
 		 $mask = $capture->umi->{mask} unless defined $mask;
+		 $umi_name = $capture->umi->{name};
 		 die("problem more than one mask ") if $mask ne $capture->umi->{mask};
-		 
+		}
 	}
 	map {$patients{$_->name}++} @{$project->getPatients};
 	my $run = $project->getRun();
@@ -82,17 +84,53 @@ foreach my $project_name (split(",",$project_names)){
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 }
-if ($mask){
-	warn $bcl_dir;
+my $reads;
+#if ($mask){
 	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read']);
-	my $read = $config->{Run}->{Reads}->{Read};
-	my $y = "Y".$read->[0]->{NumCycles};
-	 $mask = $y.";".$mask.";".$y; 
+	$reads = $config->{Run}->{Reads}->{Read};
+	#my $y = "Y".$read->[0]->{NumCycles};
+	 #$mask = $y.";".$mask.";".$y; 
 	
+#}
+my @real_mask;
+my @index = (1,2);
+@index = ();
+if ($umi_name ){
+	
+	my @vmask = split(";",$mask);
+	die() if scalar(@vmask) ne scalar(@$reads);
+	for (my $i=0;$i< @vmask;$i++){
+		my $l = $reads->[$i]->{NumCycles};
+	
+		
+		my @mread = split("-",$vmask[$i]);
+		my $nr = 0;
+		foreach my $m1 (@mread){
+			my ($v,$c) =split("",$m1);
+			if ($v ne "Y"){
+				$nr += $c;
+			}
+			if ($v eq "I"){
+				push(@index,$i);
+			}
+		} 
+		$l -= $nr;
+		$vmask[$i] = join("",@mread) ;
+		$vmask[$i]  =~ s/\*/$l/;
+	}
+	$mask = join(";",@vmask);	
+}
+else {
+		foreach my $read (@$reads){
+			if ($read->{IsIndexedRead} eq  "Y"){
+				push(@index,$read->{Number});
+			}
+		}
 }
 
 
-my $choice = prompt("use \"$mask\" for demultipexing  (y/n) ? ");
+
+my $choice = prompt("use - ".colored(['bright_red on_black'],"$mask")." - for demultipexing  (y/n) ? ");
 if ($choice ne "y") {
 	$mask =  prompt("enter your mask  ? ");
 	die($mask);
@@ -102,25 +140,23 @@ if ($choice ne "y") {
 
 
 
-
 my $lines;
 my $titles;
 my $current_title;
 
 
 foreach my $line(@$aoa){
-	
 		if ($line->[0] =~ /^\[/) {
 			$current_title = $line->[0];
 			push(@$titles,$current_title);
 		}
 		else {
+			next unless $current_title;
 			push(@{$lines->{$current_title}},$line);
 		}
 	
 	
 }
-
 #change setting
 foreach my $set (@{$lines->{"[Settings]"}}){
 	if ($set->[0] eq "Adapter") {
@@ -131,13 +167,12 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 
 ### read mask ;
 my @amask = split(";",$mask);
-my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+#my $pos_umi = firstidx { $_ =~ /U/ } @amask;
 
 $lines->{"[Settings]"} = [];
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi;
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) if scalar(@index) == 2;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
-
 my $lheader_data = shift @{$lines->{"[Data]"}};
 if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
 	my $tb = Text::Table->new(
@@ -152,19 +187,19 @@ if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
 
 my $error_not_in_project = {};
 my $ok;
-my $pos_sample = firstidx { $_ eq "Sample_ID" } @$lheader_data;
+my $pos_sample = firstidx{ $_ eq "Sample_ID" } @$lheader_data;
 die("no sample id in header ") if $pos_sample eq -1;
 my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
-my $pos_cb1 = firstidx { $_ eq "index" } @$lheader_data;
-my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
+my $pos_cb1 = firstidx{ $_ eq "index" } @$lheader_data;
+my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
 
 ### read mask ;
 #my @amask = split(";",$mask);
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
-if($pos_umi == 2){
+if(scalar(@index) == 1){
 	splice(@$lheader_data, $pos_cb2, 1);
 	foreach my $data (@{$lines->{"[Data]"}}){
-	if($pos_umi == 2){
+	if(scalar(@index) == 1){
 		splice(@$data, $pos_cb2, 1);
 		#my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
 	}
@@ -249,7 +284,8 @@ foreach my $project_name (split(",",$project_names)){
 	foreach my $p (@{$project->getPatients}){
 		my $pid = $pm->start and next;
 		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
-		
+	#	warn $fastq1;
+	#	die();
 	#	create_3_fastq($fastq1,$fastq2,$p);
 	#	warn "end ".$p->name;
 	#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
