@@ -64,10 +64,12 @@ my $project_name;
 my $patients_name;
 my $limit;
 my $umi;
+my $dude;
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
 	'umi=s' => \$umi,
+	'dude=s' => \$dude,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -121,7 +123,7 @@ run_move($ppd);
 run_genotype($projects);
 #un_coverage($projects);
 run_lmdb_depth($projects);
-
+run_dude($projects) if $dude;
 #run_gvcf($projects);
 #run_dragen_cnv_coverage($projects);
 #run_genotype($projects);
@@ -321,6 +323,28 @@ foreach my $project (@$projects){
 	
 }
 
+### DUDE 
+sub run_dude {
+	my ($projects) = @_;
+	my $jobs =[];
+
+foreach my $project (@$projects){
+	
+	my $ppn = 20;
+	my $project_name = $project->name;
+	my $patients = $project->getPatients($patients_name);
+	 	my	 $cmd = qq{perl $script_pipeline/dude/dude.pl -fork=$ppn  -project=$project_name  };
+	 	my $final_dir = $project->getVariationsDir("dude");
+		my $fileout = $final_dir."/".$project->name.".dude";
+		next if -e $fileout;
+		my $job;
+		$job->{name} = $project->name.".dude";
+		$job->{cmd} =$cmd;
+		$job->{cpus} = $ppn;
+		push(@$jobs,$job);
+	}
+	steps_cluster("DUDE ",$jobs);
+}
 
 sub run_coverage {
 	my ($projects) = @_;
