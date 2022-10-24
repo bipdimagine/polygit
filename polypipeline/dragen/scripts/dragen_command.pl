@@ -110,10 +110,18 @@ sub run_pipeline {
 my ($pipeline) = @_;
 my $param_align;
 my $ref_dragen = $project->getGenomeIndex("dragen");
+	my $param_umi = "";
 if (exists $pipeline->{align}){
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	my $runid = $patient->getRun()->id;
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
+
+	if (exists $pipeline->{umi}){
+		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
+	}
+	else {
+		$param_align .= qq{ --enable-duplicate-marking true };
+	 }
 }
 else {
 	my $bam = $patient->getBamFile();
@@ -147,13 +155,7 @@ if (exists $pipeline->{sv}){
 	 $param_sv .= " --sv-exome true ";
 	}
 }
-my $param_umi;
-if (exists $pipeline->{umi}){
-	$param_umi = qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
-}
-else {
-	$param_umi = qq{ --enable-duplicate-marking true };
-	 }
+
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_gvcf." ".$param_cnv." ".$param_sv;
 
