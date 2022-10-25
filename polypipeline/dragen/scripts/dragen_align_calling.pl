@@ -124,13 +124,14 @@ my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-d
 #warn $cmd;
 #die();
 
+
 if ($project->isGenome){
 	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true };
 	
 }
 if ($project->isRnaSeq){
 	my $gtf = $project->gtf_file();
-	my $cmd = qq{dragen -f -r $ref_dragen -1 $fastq1 -2 $fastq2 -a $gtf --enable-map-align true --enable-sort=true --enable-bam-indexing true --enable-map-align-output true --output-format=BAM --RGID=$runid --RGSM=$prefix --config-file /opt/edico/config/dragen-user-defaults.cfg --enable-rna=true --output-directory $dir_pipeline --output-file-prefix $prefix};
+	$cmd = qq{dragen -f -r $ref_dragen -1 $fastq1 -2 $fastq2 -a $gtf --enable-map-align true --enable-sort=true --enable-bam-indexing true --enable-map-align-output true --output-format=BAM --RGID=$runid --RGSM=$prefix --config-file /opt/edico/config/dragen-user-defaults.cfg --enable-rna=true --output-directory $dir_pipeline --output-file-prefix $prefix --enable-rna-quantification=true};
 }
 if ($umi){
 	$cmd .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
