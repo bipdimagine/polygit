@@ -266,7 +266,7 @@ my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --
 warn $cmd;
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
-#$exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
+$exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
 
 
 die() if $exit ne 0;
