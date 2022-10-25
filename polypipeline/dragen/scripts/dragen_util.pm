@@ -15,7 +15,7 @@ sub get_fastq_file {
 		my $file1 = $dir_fastq."/".$cp->{R1};
 		my $file2 = $dir_fastq."/".$cp->{R2};
 		push(@r1,$file1);
-		push(@r2,$file2);
+		push(@r2,$file2);##
 	}
 	my $cmd1 = join(" ",@r1);
 	my $cmd2 = join(" ",@r2);
