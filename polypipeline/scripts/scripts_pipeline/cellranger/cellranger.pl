@@ -244,7 +244,7 @@ close(JOBS_ARC);
 my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=40";
 if ($step eq "count" or $step eq "all"){
 	warn $cmd2;
-	#system $cmd2  unless $no_exec==1;
+	system $cmd2  unless $no_exec==1;
 }
 
 if ($step eq "aggr" or $step eq "all"){
@@ -263,7 +263,6 @@ if ($step eq "aggr" or $step eq "all"){
 	system ($aggr_cmd)  unless $no_exec==1;
 }
 
-die();
 
 #foreach my $patient (@{$patients_name}) {
 #	my $name = $patient->name();

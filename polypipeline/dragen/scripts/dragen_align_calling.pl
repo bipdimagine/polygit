@@ -134,12 +134,12 @@ if ($project->isRnaSeq){
 	$cmd = qq{dragen -f -r $ref_dragen -1 $fastq1 -2 $fastq2 -a $gtf --enable-map-align true --enable-sort=true --enable-bam-indexing true --enable-map-align-output true --output-format=BAM --RGID=$runid --RGSM=$prefix --config-file /opt/edico/config/dragen-user-defaults.cfg --enable-rna=true --output-directory $dir_pipeline --output-file-prefix $prefix --enable-rna-quantification=true};
 }
 if ($umi){
+	die("no umi on RNA") if $project->isRnaSeq;
 	$cmd .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 }
 else {
 	$cmd .= qq{  --enable-duplicate-marking true };
-	 }
-	 warn $cmd;
+}
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) ;#unless -e $f1;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");

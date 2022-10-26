@@ -51,7 +51,7 @@ foreach my $project_name (split(",",$project_names)){
 	map {$patients{$_->name}++} @{$project->getPatients};
 	my $run = $project->getRun();
 	
-	$run_name = $run->name;
+	$run_name = $run->run_name;
 	
 	die("can't find bcl directory : ".$run->bcl_dir()) unless -e $run->bcl_dir();
 
@@ -114,7 +114,7 @@ my $pos_umi = firstidx { $_ =~ /U/ } @amask;
 
 $lines->{"[Settings]"} = [];
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi;
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi == 2;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
 
 my $lheader_data = shift @{$lines->{"[Data]"}};

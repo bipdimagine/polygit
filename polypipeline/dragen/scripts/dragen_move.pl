@@ -98,7 +98,7 @@ my $target_pipeline_gc  = "$dir_pipeline/".$prefix.".target.counts.gc-corrected.
 #die($gvcf_pipeline ." probleme no gvcf") unless  $exit ==0;
 
 ($out, $err, $exit)=  $ssh->cmd("test -f $target_pipeline_gc");
-die($target_pipeline_gc ." probleme no target gc") unless  $exit ==0;
+#die($target_pipeline_gc ." probleme no target gc") unless  $exit ==0;
 #die() unless -e $target_pipeline;
 my $url = qq{$username\@10.200.27.109};
 move_bam($bam_pipeline,$patient);
@@ -120,6 +120,13 @@ sub move_bam {
 	my $prod = $patient->getBamFileName("dragen-align");
 	system("rsync -rav  $url".":$bam $prod ");
 	system("rsync -rav  $url".":$bam.bai $prod.bai ");
+	
+}
+
+sub move_count {
+	my ($count,$patient) = @_;
+	my $dir= $project->getCountingDir("dragen-count");
+	system("rsync -rav  $url".":$count $dir/ ");
 	
 }
 

@@ -124,12 +124,12 @@ sub wanted {
 	my ($patient, $bc,$dirin,$pair) =@_;
 	warn $dirin."/".$patient."*_".$pair."_*.fastq.gz";
 	warn $bc;
-	my @seq = glob($dirin."/".$bc."*_".$pair."_*.fastq.gz");
+	my @seq = glob($dirin."/".$bc."_*".$pair."_*.fastq.gz");
 	my $list = join (" ",@seq);
 	#my $fileout =  $project->getProjectRootPath()."/".$patient."_".$pair.".fastq.gz";
-	my $fileout =$patient."_".$pair.".fastq.gz";
+	my $fileout =$bc."_".$pair.".fastq.gz";
 	my $path_fileout = $project->getProjectRootPath()."/".$fileout;
-	my $cmd = "cat $list > $path_fileout";
+	my $cmd = "cat $list > $path_fileout" unless -e $fileout ;
 	warn $cmd;
 	system($cmd) unless $no_exec==1;
 	chmod (0777,$fileout);

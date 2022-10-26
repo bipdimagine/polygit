@@ -465,8 +465,6 @@ has isRnaSeq => (
 	default => sub {
 		my $self = shift;
 		foreach my $c ( @{ $self->getCaptures } ) {
-
-			#warn $c->analyse;
 			return 1 if lc( $c->analyse ) =~ /rna/;
 		}
 		return undef;
@@ -5218,6 +5216,8 @@ sub getCoverageCallable {
 	my $dir  = $self->getAlignmentRootDir . "/callable/";
 	return $self->makedir($dir);
 }
+
+
 
 sub purge_memory {
 	my ( $self, $limit ) = @_;
