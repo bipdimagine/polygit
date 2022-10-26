@@ -63,7 +63,7 @@ foreach my $capture (@lCaptures) {
 }
 
 my ($h_chr_found, $h_tr_captures_list);
-eval {
+#eval {
 	foreach my $capture (@lCaptures) {
 		foreach my $chr_id (keys %{$capture->getHashGenomicSpan()}) {
 			$h_chr_found->{$chr_id} = undef;
@@ -74,23 +74,24 @@ eval {
 			}
 		}
 	}
-};
-if ($@) {
-	my @lCapturesNames;
-	foreach my $c (@{$project->getCaptures()}) {
-		push(@lCapturesNames, $c->name());
-	}
-	my $captnames = join(', ', sort (@lCapturesNames));
-	my $hash;
-	$hash->{html} = "<center><span style='color:red;'><b>ERROR: </b> problem with capture(s) $captnames.</span></center>";
-	$hash->{table_id} = '';
-	$hash->{description} = $project->description();
-	$hash->{capture} = join(', ', sort @lCapturesNames);
-	$hash->{export_csv} = '';
-	$hash->{gencode} = $project->gencode_version();
-	printJson($hash);
-	exit(0);
-}
+#};
+#if ($@) {
+#	my @lCapturesNames;
+#	foreach my $c (@{$project->getCaptures()}) {
+#		push(@lCapturesNames, $c->name());
+#	}
+#	my $captnames = join(', ', sort (@lCapturesNames));
+#	my $hash;
+#	my $message = $@;
+#	$hash->{html} = "<center><span style='color:red;'><b>ERROR: </b> problem with capture(s) $captnames<br>$message.</span></center>";
+#	$hash->{table_id} = '';
+#	$hash->{description} = $project->description();
+#	$hash->{capture} = join(', ', sort @lCapturesNames);
+#	$hash->{export_csv} = '';
+#	$hash->{gencode} = $project->gencode_version();
+#	printJson($hash);
+#	exit(0);
+#}
 
 foreach my $chr_id (keys %$h_chr_found) {
 	my $chr = $project->getChromosome($chr_id);
