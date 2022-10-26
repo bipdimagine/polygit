@@ -46,8 +46,9 @@ foreach my $vid (@lIds) {
 
 my $h_html_pos;
 
+my $chr;
 foreach my $chr_id (keys %{$hIds}) {
-	my $chr = $project->getChromosome($chr_id);
+	$chr = $project->getChromosome($chr_id);
 	foreach my $vid (sort {$a <=> $b} keys %{$hIds->{$chr_id}}) {
 		my $junction = $chr->getVarObject($vid);
 		my $html_j;
@@ -79,40 +80,117 @@ foreach my $chr_id (keys %{$hIds}) {
 
 
 my $html_join = "<td style='padding:5px;margin:5px;'><span class='glyphicon glyphicon-arrow-right' style='font-size:24px;'/><td>";
-my ($html, @ltables);
-$html .= "<center><table tew><tr><td><div style='width:20px;'></td>";
+my ($html, @ltables, @ltablesIndex);
 
+my ($hPos, @lPos);
 my $previous_exon_intron = '';
 foreach my $start (sort {$a <=> $b} keys %{$h_html_pos->{pos}}) {
 	foreach my $exon_intron (keys %{$h_html_pos->{pos}->{$start}}) {
 		next if ($previous_exon_intron eq $exon_intron);
 		$previous_exon_intron = $exon_intron;
-		my $html_pos = "<td style='vertical-align:top;padding:5px;margin:5px;border:2px solid black;'>";
+		my $html_pos = "<td style='vertical-align:top;padding:5px;margin:5px;'>";
 		$html_pos .= "<table>";
 		my $nb_jid;
 		foreach my $jid (sort keys %{$h_html_pos->{html}->{$exon_intron}}) {
 			$nb_jid++;
 			if ($min_ratio and $h_html_pos->{score}->{$jid} < $min_ratio) {
-				$html_pos .= "<tr style='opacity:0.45;'><td>";
+				$html_pos .= "<tr style='border:2px solid black;opacity:0.45;'><td style='padding:15px;'>";
 			}
 			else {
-				$html_pos .= "<tr><td>";
+				$html_pos .= "<tr style='border:2px solid black;'><td style='padding:15px;'>";
 			}
-			$html_pos .= "<br><center>----------------------</center><br>" if ($nb_jid > 1);
 			$html_pos .= $h_html_pos->{html}->{$exon_intron}->{$jid};
 			$html_pos .= "</td></tr>";
 		}
 		$html_pos .= "</table>";
 		$html_pos .= "</td>";
+		push(@ltablesIndex, $exon_intron);
 		push(@ltables, $html_pos);
+	}
+	push(@lPos, $start);
+	foreach my $jid (keys %{$h_html_pos->{score}}) {
+		my @lTmp = split('_', $jid);	
+		my $j_start = $lTmp[1];
+		my $j_end = $lTmp[2];
+		next if ($j_start ne $start);
+		$hPos->{$start}->{start} = $j_start;
+		$hPos->{$start}->{end} = $j_end;
 	}
 }
 
-$html .= join($html_join, @ltables);
+my ($html_positions, $html_datas);
+my @l_datas_cov;
+my $i = 0;
+foreach my $html_table (@ltables) {
+	$html_positions .= "<td><center>(into) <b>".$ltablesIndex[$i]."</b></center><br></td>";
+	$i++;
+	$html_datas .= $html_table;
+	
+	next if ($i == scalar(@ltables));
+	if ($lPos[0] < $lPos[-1]) {
+		$html_datas .= "<td style='vertical-align:top;'><table style='min-width:250px;'><td><div style='width:5px;'/></td><td><span class='glyphicon glyphicon-arrow-right' style='font-size:24px;'></td>";
+	}
+	else {
+		$html_datas .= "<td style='vertical-align:top;'><table style='min-width:250px;'><td><div style='width:5px;'/></td><td><span class='glyphicon glyphicon-arrow-left' style='font-size:24px;'></td>";
+	}
+	my $start = $hPos->{$lPos[$i-1]}->{end} + 1;
+	my $end = $lPos[$i] - 1;
+	my ($mean_dp_patient, $length, @l_cov, @l_cov_norm, $z);
+	if ($start < $end) {
+		$length = $end - $start + 1;
+		$mean_dp_patient = sprintf("%.2f",$patient->meanDepth($chr->id(), $start, $end));
+		@l_cov = @{$patient->depth($chr->id(), $start, $end)};
+		@l_cov_norm = @{$patient->normalize_depth($chr->id(), $start, $end)};
+		$z = $start;
+		$html_positions .= "<td><center>From $start to $end</center><br></td>";
+	}
+	else {
+		$length = $start - $end + 1;
+		$mean_dp_patient = sprintf("%.2f",$patient->meanDepth($chr->id(), $end, $start));
+		@l_cov = @{$patient->depth($chr->id(), $end, $start)};
+		@l_cov_norm = @{$patient->normalize_depth($chr->id(), $end, $start)};
+		$z = $end;
+		$html_positions .= "<td><center>From $end to $start</center><br></td>";
+	}
+	
+	my $h_cov_graph;
+	my (@X, @Y, @Y2);
+	$h_cov_graph->{name} = "From $start to $end - Mean DP: $mean_dp_patient";
+	foreach my $cov (@l_cov) {
+		$z++;
+		push(@X, $z);
+		push(@Y, $cov);
+	}
+	foreach my $cov (@l_cov_norm) {
+		push(@Y2, $cov);
+	}
+	$h_cov_graph->{'patient_name'} = $patient->name();
+	$h_cov_graph->{'x_common'} = \@X;
+	$h_cov_graph->{'y_common'} = \@Y;
+	$h_cov_graph->{'y_norm'} = \@Y2;
+	push(@l_datas_cov, $h_cov_graph);
+	
+	$html_datas .= qq{<td style='vertical-align:top;padding-top:25px;'><center>Length: $length nt<br>Mean DP: $mean_dp_patient<br><button style="margin-top:10px;" id='b_cov_plot$i' onClick="document.getElementById('plot$i').classList.remove('hidden');document.getElementById('b_cov_plot$i').classList.add('hidden')">View Coverage</button><div id='plot$i' class='hidden' style='vertical-align:top !important;width:500px;'></div></center></td>};
+	
+	if ($lPos[0] < $lPos[-1]) {
+		$html_datas .= "<td><span class='glyphicon glyphicon-arrow-right' style='font-size:24px;'></td><td><div style='width:5px;'/></td></table></td>";
+	}
+	else {
+		$html_datas .= "<td><span class='glyphicon glyphicon-arrow-left' style='font-size:24px;'></td><td><div style='width:5px;'/></td></table></td>";
+	}
+	
+}
+
+$html .= "<center><table>";
+$html .= "<tr><td><div style='width:25px;'/></td>".$html_positions."<td><div style='width:25px;'/></td></tr>";
+$html .= "<tr style='padding-top:15px;'><td><div style='width:25px;'/></td>".$html_datas."<td><div style='width:25px;'/></td></tr>";
+$html .= "<tr><td><div style='width:20px;'></td>";
 $html .= "<td><div style='width:20px;'></td></tr></table></center><br><br>";
+
 
 my $hashRes;
 $hashRes->{html} = $html;
+$hashRes->{list_graphs} = \@l_datas_cov;
 my $json_encode = encode_json $hashRes;
 print $cgi->header('text/json-comment-filtered');
 print $json_encode;

@@ -59,7 +59,7 @@ getProjectListsRNA($buffer,$login,$pwd,$project_query) if $action eq "list";
 sub getProjectListsRNA {
 	my ( $buffer, $login, $pwd, $project_name ) = @_;
 	my $is_BIPD_login = $buffer->getQuery->isLoginSTAFF($login);
-	my $list_proj = $buffer->getQuery->getListProjectsRnaSeq($project_name);
+	my $list_proj = $buffer->getQuery->getListProjectsRnaSeqFromLoginPwd($login, $pwd, $project_name);
 	
 	my @list_res;
 	foreach my $h (@$list_proj) {

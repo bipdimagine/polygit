@@ -456,6 +456,7 @@
 			}
 		</style>
         
+		<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 		
 		
@@ -913,9 +914,63 @@
 				$.getJSON( url, function( data ) {
 					document.getElementById("div_linked_junction").innerHTML = "";
 					document.getElementById("div_linked_junction").innerHTML += data.html;
+					for (var i = 0; i < data.list_graphs.length; i++){
+						y_norm = data.list_graphs[i].y_norm;
+						x_common = data.list_graphs[i].x_common;
+						y_common = data.list_graphs[i].y_common;
+						plot_patient_name = data.list_graphs[i].patient_name;
+						var j = i + 1;
+						var plotid = 'plot'+j;
+						do_graph(plotid);
+					}
 					dijit.byId('waiting').hide();
 					dijit.byId('dialog_linked_junction').show();
 			    })
+			}
+			
+			var y_norm;
+    		var x_common;
+    		var y_common;
+    		var plot_patient_name;
+			function do_graph(plotname) {
+				var trace1 = {
+						x:x_common,
+						y:y_common,
+						yaxis: 'y1',
+						mode: 'lines+markers',
+						showlegend:false,
+						name:plot_patient_name,
+						opacity: 0.6,
+						marker: {
+  							color: 'red',
+  							size:2
+						}
+				};
+				
+				var trace2 = {
+						x:x_common,
+						y:y_norm,
+						yaxis: 'y1',
+						mode: 'lines+markers',
+						showlegend:false,
+						name:'Others',
+						opacity: 0.3,
+						marker: {
+  							color: 'blue',
+  							size:2
+						}
+				};
+
+				var data=[trace1, trace2];
+
+				var layout = {
+					yaxis:   {title : 'Nb Found Reads'},
+					xaxis : {title : 'Genomic Position'},
+					height: 600,
+				};
+	
+				var config = { modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: false};
+				Plotly.newPlot(plotname, data, layout,config);
 			}
 			
 		</script>
@@ -960,10 +1015,11 @@
 		<div id="dialog_dejavu_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[920,700]" title="DejaVu Junction">
 			<div class="container-fluid" id="div_dejavu_junction" style="height:95%;width:99%;"></div>
 		</div>
-		
-		<div id="dialog_linked_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[1150,700]" title="Linked Junction">
-			<div class="container-fluid" id="div_linked_junction" style="height:99%;width:99%;"></div>
-		</div>
+       
+		<div id="dialog_linked_junction" jsid="dialog_linked_junction" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">
+			<center><button onclick="dijit.byId('dialog_linked_junction').hide();" style="margin:15px;">X Close</button></center><br>
+            <div class="container-fluid" id="div_linked_junction" style="height:95%;width:95%;"></div>
+        </div>
 		
 		<div id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" dojoType="dojox.widget.Dialog" dimensions="[800,500]" title="List Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
 			 <span id="span_list_panels"></span>
