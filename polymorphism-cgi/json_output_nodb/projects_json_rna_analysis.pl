@@ -60,8 +60,7 @@ sub getProjectListsRNA {
 	my ( $buffer, $login, $pwd, $project_name ) = @_;
 	my $is_BIPD_login = $buffer->getQuery->isLoginSTAFF($login);
 	my $list_proj = $buffer->getQuery->getListProjectsRnaSeqFromLoginPwd($login, $pwd, $project_name);
-	
-	my @list_res;
+	my ($hDone, $h_ok);
 	foreach my $h (@$list_proj) {
 		my $h_users;
 		foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
@@ -69,6 +68,7 @@ sub getProjectListsRNA {
 			next unless exists $h_users->{$login};
 		}
 		my $name = $h->{name};
+		next if exists $hDone->{name};
 		my $b1 = GBuffer->new;
 		my $p1 = $b1->newProject( -name => $name );
 		$h->{button} = '';
@@ -87,10 +87,19 @@ sub getProjectListsRNA {
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
 			$h->{button} = '1::'.$h->{name} if ($ok);
+			$hDone->{$name} = undef if $ok;
 		}
-		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
+		if (-d $p1->get_path_rna_seq_polyrna_root()) {
+			$h->{button} = '2::'.$h->{name};			
+			$hDone->{$name} = undef;
+		}
+		$hDone->{$name} = undef;
 		next unless $h->{button};
-		push (@list_res, $h);
+		$h_ok->{$name} = $h;
+	}
+	my @list_res;
+	foreach my $name (reverse sort keys %$h_ok) {
+		push (@list_res, $h_ok->{$name});
 	}
 	export_data::print_simpleJson($cgi, \@list_res);
 	exit(0);
