@@ -1281,6 +1281,16 @@
 				if (document.getElementById('any_parent').checked == true) { l_models.push('any_parent'); }
 				if (document.getElementById('solo').checked == true) { l_models.push('solo'); }
 		    	url += "&models=" + l_models.join(',');
+		    	
+				if (document.getElementById('b_only_patients_if_variant').checked == true) {
+					if (document.getElementById('b_only_if_variant_he').checked == true) {
+						url += "&only_pat_with_var_he=1";
+					}
+					if (document.getElementById('b_only_if_variant_ho').checked == true) {
+						url += "&only_pat_with_var_ho=1";
+					}
+					url += "&only_pat_with_var=" + document.getElementById('value_only_if_variant').value;
+				}
 				
 				var l_proj_excluded = [];
     			for(i=0; i<list_projects_names.length; i++) {
