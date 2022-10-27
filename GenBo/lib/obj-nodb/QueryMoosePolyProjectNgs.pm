@@ -1252,11 +1252,13 @@ sub getListProjectsRnaSeqFromLoginPwd {
 	foreach my $hpr (@lProj) {
 		$h_found->{$hpr->{name}} = undef;
 	}
-	my $res_group = $self->getProjectHashForGroup($login,$pwd);
-	if ($res_group) {
-		foreach my $project_id (keys %{$res_group}) {
-			$res_group->{$project_id}->{username} = $login;
-			push(@lProj, $res_group->{$project_id}) unless exists $h_found->{$project_id};
+	if (not $is_BIPD_login) {
+		my $res_group = $self->getProjectHashForGroup($login,$pwd);
+		if ($res_group) {
+			foreach my $project_id (keys %{$res_group}) {
+				$res_group->{$project_id}->{username} = $login;
+				push(@lProj, $res_group->{$project_id}) unless exists $h_found->{$project_id};
+			}
 		}
 	}
 	return \@lProj;
