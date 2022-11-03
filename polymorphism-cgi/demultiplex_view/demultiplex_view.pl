@@ -545,7 +545,10 @@ sub convert_csv_to_json {
 				}
 			}
 			elsif ($cat eq 'RunID' or $cat eq 'Seems Ok') { $sortable = qq{ data-sortable='true' data-filter-control='select' }; }
-			elsif ($cat eq 'Lane') { $sortable = qq{ data-sortable='true' data-filter-control='input' data-filter-default="ALL"}; }
+			elsif ($cat eq 'Lane') {
+				if ($is_demultiplex_file) { $sortable = qq{ data-sortable='true' data-filter-control='input' data-filter-default="ALL"}; }
+				else { $sortable = qq{ data-sortable='true' data-filter-control='input' data-filter-default="1"}; }
+			}
 			else { $sortable = qq{ data-sortable='true' data-filter-control='input' }; }
 			$html .= "<th $sortable data-field='".lc($cat_name)."' ><center><b>$cat</b></center></th>\n";
 		}
