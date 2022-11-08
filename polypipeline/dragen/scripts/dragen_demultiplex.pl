@@ -133,7 +133,8 @@ else {
 my $choice = prompt("use - ".colored(['bright_red on_black'],"$mask")." - for demultipexing  (y/n) ? ");
 if ($choice ne "y") {
 	$mask =  prompt("enter your mask  ? ");
-	die($mask);
+	warn "use this mask $mask";
+	#die($mask);
 }
 
 #die() unless -e $dir_in;
@@ -266,11 +267,11 @@ my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --
 warn $cmd;
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
+
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
 
-
 die() if $exit ne 0;
-
+#exit(0);
 warn "END DEMULTIPEX \n let's copy ";
 my $fork =6;
 my $pm   = new Parallel::ForkManager($fork);
@@ -300,7 +301,7 @@ $pm->wait_all_children();
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name;
 
 
-system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav --remove-source-files ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ ;   ");
+system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ ;   ");
 
 exit(0);
 ###
