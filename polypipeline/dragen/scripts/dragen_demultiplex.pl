@@ -166,6 +166,7 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 	
 }
 
+
 ### read mask ;
 my @amask = split(";",$mask);
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
@@ -191,6 +192,7 @@ my $ok;
 my $pos_sample = firstidx{ $_ eq "Sample_ID" } @$lheader_data;
 die("no sample id in header ") if $pos_sample eq -1;
 my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
+
 my $pos_cb1 = firstidx{ $_ eq "index" } @$lheader_data;
 my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
 
@@ -201,6 +203,7 @@ if(scalar(@index) == 1){
 	splice(@$lheader_data, $pos_cb2, 1);
 	foreach my $data (@{$lines->{"[Data]"}}){
 	if(scalar(@index) == 1){
+
 		splice(@$data, $pos_cb2, 1);
 		#my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
 	}
@@ -261,10 +264,9 @@ csv (in => $outcsv, out => $ss, sep_char=> ",");
 
 sleep(1);
 
-
-
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force  };
 warn $cmd;
+
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
 
@@ -284,6 +286,7 @@ foreach my $project_name (split(",",$project_names)){
 	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ");
 	
 	foreach my $p (@{$project->getPatients}){
+
 		my $pid = $pm->start and next;
 		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
 	#	warn $fastq1;
@@ -291,6 +294,7 @@ foreach my $project_name (split(",",$project_names)){
 	#	create_3_fastq($fastq1,$fastq2,$p);
 	#	warn "end ".$p->name;
 	#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
+
 		$pm->finish( 0, {});
 	}
 
@@ -302,6 +306,7 @@ my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name;
 
 
 system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ ;   ");
+
 
 exit(0);
 ###
