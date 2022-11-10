@@ -30,7 +30,7 @@ my $listOfGenes = $cgi->param('genes');
 my $omim      = $cgi->param('omim');
 my $transmis = $cgi->param('transmission');
 my $scoreEvent = $cgi->param('score_event');
-
+#
 
 my $type;
 
