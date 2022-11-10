@@ -44,17 +44,27 @@ sub print_hgmd_concepts {
 }
 
 sub print_tab_variants_project {
-	my ($chr_id, $external_name, $trio_project, $trio_patient, $h_genes) = @_;
-	my $buffer_trio = GBuffer->new();
-	my $project_trio = $buffer_trio->newProjectCache( -name => $trio_project );
+	my ($chr_id, $external_name, $trio_project, $trio_patient, $h_genes,$project_trio) = @_;
+	my $buffer_trio;
+	if ($project_trio){
+		#$buffer_trio = $project_trio;
+		
+	}
+	else {
+		my $buffer_trio = GBuffer->new();
+		$project_trio = $buffer_trio->newProjectCache( -name => $trio_project );
+	}
+	# $buffer_trio = GBuffer->new() unless $buffer_trio;
+	# die();
+	#my $project_trio = $buffer_trio->newProjectCache( -name => $trio_project );
 	my $patient_trio = $project_trio->getPatient($trio_patient);
+	
 	my $chr_trio = $project_trio->getChromosome($chr_id);
 	my $gene_trio = $project_trio->newGene($h_genes->{$external_name});
 	my $vector_gene = $gene_trio->getVariantsVector();
 	my $vector_patient = $patient_trio->getVectorOrigin($chr_trio);
 	$vector_patient->Intersection($vector_patient, $vector_gene);
 	my @lVar = @{$chr_trio->getListVarObjects($vector_patient)};
-	
 	my $total = 0;
 	my $denovo = 0;
 	my $dominant = 0;
