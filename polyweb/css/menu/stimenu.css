@@ -12,7 +12,7 @@
 }
 
 .sti-menu{
-	width:1010px;
+	width:1250px;
 	position:relative;
 	margin:20px auto 0 auto;
 }
@@ -100,4 +100,7 @@
 }
 .sti-icon-family{
 	background-image:url(../../images/menu/polyexome.png);
+}
+.sti-icon-rnaseq{
+	background-image:url(../../images/menu/polyrnaseq.png);
 }

@@ -60,6 +60,7 @@ my $define_steps;
 my $step;
 my $umi;
 
+my $spipeline;
 
 my $limit;
 GetOptions(
@@ -68,10 +69,14 @@ GetOptions(
 	'step=s'=> \$step,
 	'type=s' => \$type,
 	'umi=s' => \$umi,
+	'command=s'=>\$spipeline,
 	#'low_calling=s' => \$low_calling,
 );
 
-
+my $pipeline;
+foreach my $l (split(",",$spipeline)){
+	$pipeline->{$l} ++;
+}
 my $user = system("whoami");
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
@@ -92,9 +97,9 @@ my $bam_prod = $patient->gvcfFileName("dragen-calling");
 
 my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
 
-run_pipeline($patient) unless -e $bam_pipeline;
+run_pipeline($pipeline);# unless -e $bam_pipeline;
 
-die() unless  -e $bam_pipeline;
+#die() unless  -e $bam_pipeline;
 
 
 exit(0);
@@ -102,37 +107,59 @@ exit(0);
 
 
 sub run_pipeline {
-my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-warn "\n\n end copy";
+my ($pipeline) = @_;
+my $param_align;
 my $ref_dragen = $project->getGenomeIndex("dragen");
+	my $param_umi = "";
+if (exists $pipeline->{align}){
+my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+	my $runid = $patient->getRun()->id;
+	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
-
-my $tmp = "/staging/tmp";
-
-my $capture_file  = dragen_util::get_capture_file($patient,$dir_pipeline."/".$patient->name.".".time.".bed");
-
-
-my $runid = $patient->getRun()->id;
-
-my $gvcf_pipeline = $dir_pipeline."/".$prefix.".hard-filtered.gvcf.gz";
-
-
-#--vc-enable-vcf-output true
-my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true  --vc-target-bed $capture_file --vc-target-bed-padding 150 --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
-#warn $cmd;
-#die();
-
-if ($project->isGenome){
-	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true };
-	
-}
-if ($umi){
-	$cmd .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
+	if (exists $pipeline->{umi}){
+		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
+	}
+	else {
+		$param_align .= qq{ --enable-duplicate-marking true };
+	 }
 }
 else {
-	$cmd .= qq{  --enable-duplicate-marking true };
-	 }
-my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) ;#unless -e $f1;
+	my $bam = $patient->getBamFile();
+	$param_align = qq{ --bam-input $bam --enable-map-align false };
+}
+my $param_gvcf = "";
+my $tmp = "/staging/tmp";
+	my $capture_file  = $patient->getCapture->gzFileName();
+my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
+if (exists $pipeline->{gvcf}){
+	
+	$param_gvcf = qq{--vc-emit-ref-confidence GVCF --enable-variant-caller true } ;
+	unless ($project->isGenome) {
+	
+		$param_gvcf .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150 };
+	}
+}
+
+my $param_cnv = "";
+if (exists $pipeline->{cnv}){
+	$param_cnv = qq{ --enable-cnv true --cnv-enable-self-normalization true };
+	unless ($project->isGenome) {
+	 $param_cnv .= " --cnv-target-bed $capture_file ";
+	}
+}
+
+my $param_sv = "";
+if (exists $pipeline->{sv}){
+	$param_sv = qq{   --enable-sv true };
+	unless ($project->isGenome) {
+	 $param_sv .= " --sv-exome true ";
+	}
+}
+
+
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_gvcf." ".$param_cnv." ".$param_sv;
+
+my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
 #system("ssh pnitschk\@10.200.27.109 rm $fastq1 $fastq2");

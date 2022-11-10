@@ -28,14 +28,16 @@ use File::Temp qw/ tempfile tempdir /;;
 use Term::Menus;
 use Proc::Simple;
 use Text::Table;
+use dragen_util;
+use XML::Simple qw(:strict);
+use IO::Prompt;
 my $project_names;
 my $sample_sheet;
-my $mask;
+my $mask = undef;
 my $l2;
 my $force;
 GetOptions(
 	'project=s' => \$project_names,
-	'mask=s' => \$mask,
 	'l2=s' => \$l2,
 );
 
@@ -45,13 +47,23 @@ my $dir_out;
 my %patients ;
 my $dir_fastq;
 my $run_name;
+my $umi_name;
+
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name 			=> $project_name );
+	
+	foreach my $capture (@{$project->getCaptures}){
+		if ($capture->umi){
+		 $mask = $capture->umi->{mask} unless defined $mask;
+		 $umi_name = $capture->umi->{name};
+		 die("problem more than one mask ") if $mask ne $capture->umi->{mask};
+		}
+	}
 	map {$patients{$_->name}++} @{$project->getPatients};
 	my $run = $project->getRun();
 	
-	$run_name = $run->name;
+	$run_name = $run->run_name;
 	
 	die("can't find bcl directory : ".$run->bcl_dir()) unless -e $run->bcl_dir();
 
@@ -72,13 +84,60 @@ foreach my $project_name (split(",",$project_names)){
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 }
+my $reads;
+#if ($mask){
+	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read']);
+	$reads = $config->{Run}->{Reads}->{Read};
+	#my $y = "Y".$read->[0]->{NumCycles};
+	 #$mask = $y.";".$mask.";".$y; 
+	
+#}
+my @real_mask;
+my @index = (1,2);
+@index = ();
+if ($umi_name ){
+	
+	my @vmask = split(";",$mask);
+	die() if scalar(@vmask) ne scalar(@$reads);
+	for (my $i=0;$i< @vmask;$i++){
+		my $l = $reads->[$i]->{NumCycles};
+	
+		
+		my @mread = split("-",$vmask[$i]);
+		my $nr = 0;
+		foreach my $m1 (@mread){
+			my ($v,$c) =split("",$m1);
+			if ($v ne "Y"){
+				$nr += $c;
+			}
+			if ($v eq "I"){
+				push(@index,$i);
+			}
+		} 
+		$l -= $nr;
+		$vmask[$i] = join("",@mread) ;
+		$vmask[$i]  =~ s/\*/$l/;
+	}
+	$mask = join(";",@vmask);	
+}
+else {
+		foreach my $read (@$reads){
+			if ($read->{IsIndexedRead} eq  "Y"){
+				push(@index,$read->{Number});
+			}
+		}
+}
 
 
 
+my $choice = prompt("use - ".colored(['bright_red on_black'],"$mask")." - for demultipexing  (y/n) ? ");
+if ($choice ne "y") {
+	$mask =  prompt("enter your mask  ? ");
+	warn "use this mask $mask";
+	#die($mask);
+}
 
- 
 #die() unless -e $dir_in;
-
 
 
 
@@ -88,18 +147,17 @@ my $current_title;
 
 
 foreach my $line(@$aoa){
-	
 		if ($line->[0] =~ /^\[/) {
 			$current_title = $line->[0];
 			push(@$titles,$current_title);
 		}
 		else {
+			next unless $current_title;
 			push(@{$lines->{$current_title}},$line);
 		}
 	
 	
 }
-
 #change setting
 foreach my $set (@{$lines->{"[Settings]"}}){
 	if ($set->[0] eq "Adapter") {
@@ -108,15 +166,15 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 	
 }
 
+
 ### read mask ;
 my @amask = split(";",$mask);
-my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+#my $pos_umi = firstidx { $_ =~ /U/ } @amask;
 
 $lines->{"[Settings]"} = [];
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) unless $pos_umi;
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) if scalar(@index) == 2;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
-
 my $lheader_data = shift @{$lines->{"[Data]"}};
 if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
 	my $tb = Text::Table->new(
@@ -131,26 +189,27 @@ if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
 
 my $error_not_in_project = {};
 my $ok;
-my $pos_sample = firstidx { $_ eq "Sample_ID" } @$lheader_data;
+my $pos_sample = firstidx{ $_ eq "Sample_ID" } @$lheader_data;
 die("no sample id in header ") if $pos_sample eq -1;
 my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
-my $pos_cb1 = firstidx { $_ eq "index" } @$lheader_data;
-my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
-warn Dumper @$lheader_data;
+
+my $pos_cb1 = firstidx{ $_ eq "index" } @$lheader_data;
+my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
 
 ### read mask ;
-my @amask = split(";",$mask);
-my $pos_umi = firstidx { $_ =~ /U/ } @amask;
-if($pos_umi == 2){
+#my @amask = split(";",$mask);
+#my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+if(scalar(@index) == 1){
 	splice(@$lheader_data, $pos_cb2, 1);
-	warn Dumper @$lheader_data;
 	foreach my $data (@{$lines->{"[Data]"}}){
-	if($pos_umi == 2){
+	if(scalar(@index) == 1){
+
 		splice(@$data, $pos_cb2, 1);
 		#my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
 	}
 	}
 }
+
 my $dj;
 foreach my $data (@{$lines->{"[Data]"}}){
 	
@@ -204,16 +263,19 @@ my $ss = $bcl_dir."/file".time.".csv";
 csv (in => $outcsv, out => $ss, sep_char=> ",");
 
 sleep(1);
+
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force  };
+warn $cmd;
+
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
+
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
 
-
 die() if $exit ne 0;
-
+#exit(0);
 warn "END DEMULTIPEX \n let's copy ";
-my $fork =3;
+my $fork =6;
 my $pm   = new Parallel::ForkManager($fork);
 
 foreach my $project_name (split(",",$project_names)){
@@ -224,20 +286,67 @@ foreach my $project_name (split(",",$project_names)){
 	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ");
 	
 	foreach my $p (@{$project->getPatients}){
-			my $pid = $pm->start and next;
-		system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
+
+		my $pid = $pm->start and next;
+		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
+	#	warn $fastq1;
+	#	die();
+	#	create_3_fastq($fastq1,$fastq2,$p);
+	#	warn "end ".$p->name;
+	#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
+
 		$pm->finish( 0, {});
-}
+	}
 
 }
 
 $pm->wait_all_children();
 
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name;
-system("mkdir -p $dir_stats && rsync -rav --remove-source-files ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ && chmod -R a+rwx $dir_stats  ");
+
+
+system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ ;   ");
+
 
 exit(0);
+###
 
+sub create_3_fastq {
+	my ($fastq1,$fastq2,$patient) = @_;
+	my $fastq3_prod  = $fastq2;
+	$fastq3_prod =~ s/_R2/_R3/;
+	#system("mv $fastq2 $fastq3");
+	open(FASTQR,"zcat $fastq2 | ");
+	
+	my $fastq3 = "/data-beegfs/tmp/".$patient->name."_R3.fastq";
+	open(FASTQ3,"> $fastq3 ");
+	my $fastq_umi ="/data-beegfs/tmp/".$patient->name."_R2.fastq";
+	open(FASTQU,"> $fastq_umi ");
+	my $line;
+	while($line = <FASTQR>){
+		chomp($line);
+		if ($line =~ /^@/) {
+			my $line3 = $line;
+			$line3 =~ s/2:N:0:/3:N:0:/;
+			print FASTQ3 $line3."\n";
+			my @t = split(" ",$line);
+			my @us = split(":",$t[0]);
+			
+			print FASTQU "$line\n".$us[-1]."\n+\nFFFFFFFFFF\n";
+				
+			}
+		else {
+			print FASTQ3 $line."\n";
+		}
+	}
+	close(FASTQ3);
+	close(FASTQU);
+	system("gzip $fastq3");
+	system("gzip $fastq_umi");
+	warn "mv $fastq3.gz $fastq3_prod";
+	system("mv $fastq3.gz $fastq3_prod");
+	system("mv $fastq_umi.gz $fastq2");
+}
 
 sub change_sample_sheet {
 	my ($pos,$array,$patients) = @_;
@@ -252,3 +361,5 @@ sub change_sample_sheet {
 	return $new_array;
 	
 }
+
+

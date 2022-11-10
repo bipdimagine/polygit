@@ -225,8 +225,6 @@ method bwa2 (Str :$filein!){
 		$self->current_sample->add_job(job=>$job_bds);
 		push(@jobs,$job_bds);
 			$nb_bam ++;
-			warn  $self->patient()->getBamFileName;
-			warn $fileout;
 		if ($self->unforce() && (-e $fileout or -e  $self->patient()->getBamFileName )){
 		 		$job_bds->skip();
 		}
@@ -453,7 +451,6 @@ method run_alignment_umi (Str :$filein!){
 	my $file2;
 	my $R1;
 	my $R3;
-	#warn Dumper $self->fastq_files();
 	
 	foreach my $cp (@$files_pe1){
 		$file1 = $cp->{R1}  ;
@@ -502,7 +499,6 @@ method run_alignment_umi (Str :$filein!){
 #	print $self->patient->name().":\n";
 #	my $file3;
 #	my $R3;
-#	#warn Dumper $self->fastq_files();
 #	
 #	foreach my $cp (@$files_pe1){
 #		$file3 = $cp->{R3}  ;
@@ -623,7 +619,6 @@ method run_alignment_flexbar  (Str :$filein!){
 	my $dirout = $self->project->getAlignmentPipelineDir($method);
 	system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
 	my $ppn = $self->nproc;# if $self->nocluster;
-	warn $filein;
 	my $files_pe1 = file_util::find_file_in_dir($self->patient,"",$dirout);
 	my $count_lane = scalar(@$files_pe1);
 	my $nb_bam =1;
@@ -700,7 +695,6 @@ method run_alignment_xths2  (Str :$filein!){
 
 
 method run_alignment_deepseq  (Str :$filein!){
-	warn $filein;
 	my $method = $self->patient()->alignmentMethod();
 	my $name = $self->patient()->name();
 	my $project_name =  $self->project->name();
@@ -715,7 +709,6 @@ method run_alignment_deepseq  (Str :$filein!){
 	my $cmd = qq{perl $bin_dev/align.pl -file1=$file1 -file2=$file2 -method=$method -lane=1 -mode=pe  -project=$project_name -name=$name -bam=$bam -fork=$ppn };
 	my $type = "align_deepseq#";
 	my $stepname = $self->patient->name."@".$type;
-	warn $cmd;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$file1,$file2],fileout=>$bam,type=>$type,dir_bds=>$self->dir_bds,sample_name=>$name,project_name=>$project_name,software=>$method);
 	$self->current_sample->add_job(job=>$job_bds);
 	if ($self->unforce() && -e $bam){
@@ -742,7 +735,6 @@ method agent_locatit_duplex (Str :$filein!){
 	my $cmd = qq{$java -Xmx12G -jar $agent_locatit -S -v2Duplex -d 1 -m 3 -q 25 -Q 25 -o $fileout $filein };
 	my $type = "agent_locatit";
 	my $stepname = $name."@".$type;
-	warn $cmd;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout ,type=>$type,dir_bds=>$self->dir_bds,sample_name=>$name,project_name=>$project_name,software=>$method);
 	$self->current_sample->add_job(job=>$job_bds);
 	if ($self->unforce() && -e $fileout){
@@ -769,7 +761,6 @@ method agent_locatit_single (Str :$filein!){
 	#my $cmd = qq{$java -Xmx12G -jar $agent_locatit -S  -PM:xm,Q:xq,q:nQ,r:nR    -q 25 -m 1 -U -IS -OB -C -i -r  -o $fileout  $filein $mbc_file};
 	my $type = "agent_locatit";
 	my $stepname = $name."@".$type;
-	warn $cmd;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout ,type=>$type,dir_bds=>$self->dir_bds,sample_name=>$name,project_name=>$project_name,software=>$method);
 	$self->current_sample->add_job(job=>$job_bds);
 	if ($self->unforce() && -e $fileout){
@@ -797,7 +788,6 @@ method agent_locatit_hybrid (Str :$filein!){
 	my $cmd= qq {$java -Xmx12G -jar $agent_locatit -S  -v2 -d 1 -m 3 -q 25  -Q 25 PM:xm,Q:xq,q:nQ,r:nR   -IB -OB  -o $fileout  $filein };
 	my $type = "agent_locatit";
 	my $stepname = $name."@".$type;
-	warn $cmd;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout ,type=>$type,dir_bds=>$self->dir_bds,sample_name=>$name,project_name=>$project_name,software=>$method);
 	$self->current_sample->add_job(job=>$job_bds);
 	if ($self->unforce() && -e $fileout){
@@ -823,7 +813,6 @@ method merge_picard (ArrayRef :$filein) {
 	#$fileout = $project->getAlignmentPipelineDir($m) . "/" . $name . "F[12345678].u.sort.bam" unless -e $fileout;
 	my $merge_files = join( " I=", @allfiles );
 	
-	warn $merge_files;
 	my $reference = $self->project->genomeFasta();
 	my $java = $self->project->getSoftware('java');
 	$java ="java" unless -e $java;
@@ -876,7 +865,6 @@ method fastq_to_bam (Str :$filein!){
 			my $file1 = $cp->{R1};
 			my $file2 =  $cp->{R3};
 			my $file_umi =  $cp->{R2};
-			warn $dirin.$file_umi;
 			print "\t $nb_bam : ".$cp->{R1}." ".$cp->{R3}."\n";
 		
 			if (exists $self->fastq_files->{$file1} or exists $self->fastq_files->{$file2}){
@@ -1001,7 +989,6 @@ method extract_umi_from_bam (ArrayRef :$filein){
 	#my ($ubam_merged) = $self->merge_picard(filein=>\@ubams);
 	#my $file = $ubam_merged ;
 	#$file =~ s/merge/unmapped.merge\.sam/;
-	#warn "mv $ubam_merged $file" ;
 	#system("mv $ubam_merged $file");
 	my ($fileout) = $self->merge_picard(filein=>\@bams);
 	return ($fileout);
@@ -1040,7 +1027,6 @@ method sam_to_fastq (Str :$filein!){
 }
 
 method fastp (Str :$filein!){
-		warn $filein;
 		my $method = $self->patient()->alignmentMethod();
 		my $name = $self->patient()->name();
 		my $project_name =  $self->project->name();
@@ -1076,7 +1062,6 @@ method fastp (Str :$filein!){
 }
 
 method merge_ubam (Str :$filein!){
-		warn $filein;
 		my $method = $self->patient()->alignmentMethod();
 		my $name = $self->patient()->name();
 		my $project_name =  $self->project->name();
@@ -1090,7 +1075,6 @@ method merge_ubam (Str :$filein!){
 }
 
 method filter_proper_pairs (Str :$filein!){
-		warn $filein;
 		my $method = $self->patient()->alignmentMethod();
 		my $name = $self->patient()->name();
 		my $project_name =  $self->project->name();
@@ -1117,7 +1101,6 @@ method filter_proper_pairs (Str :$filein!){
 }
 
 method bam_to_fastq_umi (Str :$filein!){
-		warn $filein;
 		my $method = $self->patient()->alignmentMethod();
 		my $name = $self->patient()->name();
 		my $project_name =  $self->project->name();
@@ -1168,7 +1151,6 @@ method run_alignment_consensus (ArrayRef :$filein){
 	my $file1 = $filein->[0];
 	my $file2 = $filein->[1];
 	
-	warn $file1;
 	 my $bin_dev = $self->script_dir();
 	my $f1gz = $file1.'.gz';
 	my $f2gz = $file2.'.gz';	
@@ -1237,7 +1219,6 @@ method group_reads_by_umi (Str :$filein!){
 		my $file_hist = $dirout."/".$name."_umi_group_data.tsv";
 		print $name.":\n";
 		my $cmd = $fgbio . " GroupReadsByUmi  -s adjacency -o ".$fileout." -i ".$filein." -f $file_hist";
-			warn $cmd;
 	 		my $type = "group";
 			 my $stepname = $self->patient->name."@".$type;
 			my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"fgbio",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
@@ -1295,7 +1276,6 @@ method filter_consensus_read (Str :$filein!){
 		$java ="java" unless -e $java;
 		my $fgbio =  $java." -jar ".$self->project->getSoftware('fgbio');
 		my $ref =  $self->project->genomeFasta();
-		warn $ref;
 		my @jobs;
 		print $self->patient->name().":\n";
 		my $cmd = $fgbio . " FilterConsensusReads  -M 1  -N 30  -o ".$fileout." -i ".$filein. " -r ".$ref ;
@@ -1319,7 +1299,6 @@ method concat_fastq_umi(Str :$filein!){
 		my $dirout = $self->project->getAlignmentPipelineDir($method);
 		system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
 		my $ppn = $self->nproc;# if $self->nocluster;
-		warn $name;
 		my $fileout = $dirout."/".$name.".umi.fastq.gz";
 		my @seq = glob($dirin.$name."*_R2_*.fastq.gz");
 		my $in = join(" ",@seq);
@@ -1361,7 +1340,6 @@ method annotate_with_umi (Str :$filein!){
 		print $self->patient->name().":\n";
 		
 		my $file_umi =  $seq[0];
-		warn $file_umi;
 	#	die("problem $file_umi $dirin :".$name) unless -e $file_umi;
 		my $cmd = $fgbio . " AnnotateBamWithUmis -i ".$filein." -f ".$file_umi." -o ". $fileout;
 	 	my $type = "annotate";
@@ -1561,14 +1539,12 @@ method move_bam (Str :$filein){
 	my $bin_dev = $self->script_dir;
 	
 	my $cmd =  "perl $bin_dev/move_bam.pl -bam=$filein  -project=$project_name -patient=$name -fork=$ppn -version=$version && ln -s $fileout $filein  ";
-	warn $cmd;
 	 if ($self->again  ){
 	 	my $dir_again = $self->patient->project->getAlignmentDir("start_again");
 	 	my $f = $dir_again."/".$self->patient->name.".bam";
 	 	die("problem start again") unless -e $f;
 	 
 	 	$cmd.="&& perl $bin_dev/rm_bam.pl $f ";
-	 	warn $cmd;
 	 }
 	 my $type = "move-bam";
 	 my $stepname = $self->patient->name."@".$type;
@@ -1640,7 +1616,6 @@ method fastqScreen (Str :$filein){
 		my $ppn = 20 ;
 		$ppn = 1 if $self->nocluster;
 		my $cmd =  "$fastqScreen $f --outdir $dir_out --threads $ppn";
-		warn $cmd;
 		 my $type = "fastqScreen";
 	 	my $stepname = $self->patient->name."@".$type;
 		my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -1743,7 +1718,6 @@ method start_again (Str :$filein ){
 	system("mkdir -p $dir_out " ) unless -e $dir_out;
 	$filein = 	$self->patient()->getBamFileName();
 	my $cmd = "mv $filein* $dir_out/ ";
-	warn $cmd;
 	system($cmd);
 	die unless -e $fileout;
 	return ($fileout);
@@ -1752,7 +1726,6 @@ method start_again (Str :$filein ){
 method replace_bam (Str :$filein ){ 
 	my $project = $self->patient()->getProject();
 	my $fileout = 	$self->patient()->getBamFileName();
-	warn $fileout;
 	("can't have write access to your bam file ".$filein) unless -w $fileout;
 	die() unless -e $fileout;
 	my $ppn = 1;
@@ -1783,7 +1756,6 @@ method bazam (Str :$filein){
 	my $type = "bazam";
 	
      my $cmd = qq{ $bin_dev/run_cmd_change_bazam.pl -project=$project_name -patient=$name;test -e $fileout};
-	 warn $cmd;
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"bazam");
 	$self->current_sample->add_job(job=>$job_bds);
@@ -1811,7 +1783,6 @@ method change_chrMT (Str :$filein ){
 	 my $type = "chrMT";
 	
      my $cmd = qq{ $bin_dev/run_cmd_change_new.bam.pl -fork=20 -dir=$dir_out -file1=$filein -file2=$fileout -bc=$bc -patient=$name;test -e $fileout};
-	 warn $cmd;
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job(job=>$job_bds);
@@ -1850,11 +1821,9 @@ method elprep5  (Str :$filein!){
 	my $samtools = $project->buffer->software("samtools");
 	
 	my $ref_root =  $project->get_public_data_directory;
-	warn $ref_root;
 	my $ref =  $project->dirGenome().$project->buffer->index("elprep");
 	die($ref) unless -e $ref;
 	my $known_sites = $ref_root."/elprep/dbsnp_137.hg19.elsites,$ref_root/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
-	warn $known_sites;
 	die($known_sites) unless -e  $ref_root."/elprep/dbsnp_137.hg19.elsites";
 	die($known_sites) unless -e  $ref_root."/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
 	my $recal = $self->patient->project->getRecalDir($m)."/".$self->patient->name.".recal.table";
@@ -1873,7 +1842,6 @@ method elprep5  (Str :$filein!){
  		 my $ref =  $project->dirGenome().$project->buffer->index("elprep");
 		die($ref) unless -e $ref;
 		my $known_sites = $ref_root."/elprep/dbsnp_137.hg19.elsites,$ref_root/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
-		warn $known_sites;
 		die($known_sites) unless -e  $ref_root."/elprep/dbsnp_137.hg19.elsites";
 		die($known_sites) unless -e  $ref_root."/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
 		
@@ -1883,7 +1851,6 @@ method elprep5  (Str :$filein!){
 	#--tmp-path /tmp --target-regions $bed --known-sites $known_sites --haplotypecaller $vcfout
 	
 	my $cmd = qq{/home/pnitschk/go/bin/elprep  $cmd2  $filein $fileout $tmp  --replace-read-group "$rg_string" --mark-duplicates  --sorting-order coordinate --reference $ref  $gvcf_arg };
-	warn $cmd;
 	die();
 	my $ppn = 40;
 	 my $type = "elprep";
@@ -1951,14 +1918,12 @@ method elprep  (Str :$filein!){
 	my $ref =  $project->dirGenome().$project->buffer->index("elprep");
 	die($ref) unless -e $ref;
 	my $known_sites = $ref_root."/elprep/dbsnp_137.hg19.elsites,$ref_root/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
-	warn $known_sites;
 	die($known_sites) unless -e  $ref_root."/elprep/dbsnp_137.hg19.elsites";
 	die($known_sites) unless -e  $ref_root."/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
 	my $recal = $self->patient->project->getRecalDir($m)."/".$self->patient->name.".recal.table";
 
  	
 	my $cmd = qq{$elprep  sfm $filein $fileout --tmp-path $tmpdir --replace-read-group "$rg_string" --mark-duplicates  --sorting-order coordinate --bqsr $recal --bqsr-reference $ref --known-sites $known_sites };
-	warn $cmd;
 	my $ppn = 40;
 	 my $type = "elprep";
 	 my $stepname = $self->patient->name."@".$type;
@@ -1989,7 +1954,6 @@ method change_ref_bazam (Str :$filein ){
 	my $type = "bazam";
 	
      my $cmd = qq{ $bin_dev/run_cmd_change_bazam.pl -fork=20 -dir=$dir_out -file1=$filein -file2=$fileout -bc=$bc -patient=$name;test -e $fileout};
-	 warn $cmd;
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job(job=>$job_bds);
@@ -2210,7 +2174,6 @@ method cnvnator  (Str :$filein){
 	my $project = $self->patient()->getProject();	
 	my $project_name =$project->name();
 	my $fileout = $project->getVariationsDir("cnvnator")."/".$name.".vcf.gz";
-	warn $fileout;
 	$filein = $self->patient()->getBamFileName();# unless $filein;
 
 	
@@ -2237,7 +2200,6 @@ method canvas  (Str :$filein){
 	my $project = $self->patient()->getProject();	
 	my $project_name =$project->name();
 	my $fileout = $project->getVariationsDir("canvas")."/".$name.".vcf.gz";
-	warn $fileout;
 	$filein = $self->patient()->getBamFileName();# unless $filein;
 
 	
@@ -2263,7 +2225,6 @@ method lumpy  (Str :$filein){
 	my $project = $self->patient()->getProject();	
 	my $project_name =$project->name();
 	my $fileout = $project->getVariationsDir("lumpy")."/".$name.".vcf.gz";
-	warn $fileout;
 	$filein = $self->patient()->getBamFileName();# unless $filein;
 
 	
@@ -2292,7 +2253,6 @@ method manta  (Str :$filein){
 	my $project = $self->patient()->getProject();	
 	my $project_name =$project->name();
 	my $fileout = $project->getVariationsDir("manta")."/".$name.".vcf.gz";
-	warn $fileout;
 	$filein = $self->patient()->getBamFileName();# unless $filein;
 
 	
@@ -2439,8 +2399,6 @@ method calling_gvcf4  (Str :$filein! ){
 	my $version = $self->patient()->project->genome_version();
 	my $cmd = "perl $bin_dev/gatk-4/calling_individual_gvcf.pl -version=$version -project=$project_name  -patient=$name -fork=$real_ppn -out=$fileout -window=5_000_000  ";
 	my $type = "gvcf4";
-	warn $cmd;
-
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"gatk4",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
 	$self->current_sample->add_job(job=>$job_bds);
@@ -2672,7 +2630,6 @@ method transcripts_dude (Str :$filein){
 	
 	my $no = $self->patient()->getTranscriptsDude();
 	my $fileout = $no->filename();
-	warn $fileout;
 	my $ppn =$self->nproc;
 	$ppn = int($self->nproc/2) if $self->nocluster;
 	
@@ -2682,7 +2639,6 @@ method transcripts_dude (Str :$filein){
 	my $bin_dev = $self->script_dir;
 	
 	my $cmd = qq{perl $bin_dev/transcripts/transcripts_dude.pl -patient=$name  -fork=$ppn  -project=$project_name };
-	warn $cmd;
 	my $type = "transcripts_dude";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -2736,7 +2692,6 @@ method calling_wisecondor (Str :$filein){
 	
 	
 	my $fileout = $project->getVariationsDir("wisecondor")."/".$self->patient->name."_aberrations.bed.gz";
-	warn $fileout;
 	my $ppn =1;
 	$ppn = 1 if $self->nocluster;
 	
@@ -2761,7 +2716,6 @@ method calling_wisecondor (Str :$filein){
 method reorder_picard  (Str :$filein,Object :$previous){
     my $ppn = $self->nproc;
     my $name = $self->patient()->name();
-    warn $name;
     my $fileout;
     my $project=$self->patient()->project;
     my $m = $self->patient->alignmentMethod();
@@ -2798,7 +2752,6 @@ method reorder_picard  (Str :$filein,Object :$previous){
     
 
     my $reference = $project->genomeFasta();
-    warn $reference;
 
 my $picard_path = $self->project->getSoftware('picard_path');
 my $picard=$self->project->getSoftware('java')." -jar ".$self->project->getSoftware('picard_path');
@@ -2898,15 +2851,11 @@ method generate_ubam_umi  (Str :$filein! ){
 	my $project_name =$project->name();	
 	my $dir = $project->getAlignmentPipelineDir($method."/".$name);
 	my $fileout = "$dir/files.json";
-	my $ppn = 40;	 
-	#warn "-";
-	my $cmd = qq{perl $bin_dev/umi/split_fast_ubam.pl -patient=$name -fork=$ppn  -project=$project_name  };
+	my $ppn = 20;	 
+	my $cmd = qq{perl $bin_dev/umi/split_fast_ubam_dragen.pl -patient=$name -fork=$ppn  -project=$project_name  };
 	#my $fileout = `$cmd -out=1`;
 	#chomp($fileout);
 	#die() unless $fileout;
-	warn "++";
-	warn "generate ubaml :".$fileout;
-	warn "cmd ubaml :".$cmd;
 	my $type = "ubam";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -2955,7 +2904,6 @@ method merge_split_bam_umi  (Str :$filein! ){
 	my $cmd = qq{perl $bin_dev/umi/merge_bam.pl -patient=$name -fork=$ppn  -project=$project_name -filein=$filein -bamout=$fileout};
 	
 	my $type = "merge_umi";
-	warn $type." : ".$fileout;
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job(job=>$job_bds);
@@ -3108,7 +3056,6 @@ method cellranger (Str :$filein){
 	my $dir_index = $project->getCellRangerIndex();
 	my $cmd = qq{cd $dirout && $cellranger  count --transcriptome=$dir_index --id=$name --fastqs=$dir_fastq --sample=$name --chemistry=SC3Pv3};
 	my $fileout = $dirout."$name/outs/cloupe.cloupe";
-	warn $fileout;
 	my $type = "cellranger";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -3146,8 +3093,6 @@ method test_genotype  (Str :$filein! ){
 	foreach my $patient (@$patients){
 			my $gvcf = $patient->gvcfFileName("haplotypecaller4");#$dir_out."/".$patient->name.".g.vcf.gz";
 			push(@$filesin,$gvcf);
-		#	warn $gvcf;
-			#die("$gvcf you don't have gvcf for at least this patient restart after_lifescope on this project ") unless $gvcf ;#-e $gvcf;
 	}
   my $bin_dev = $self->script_dir();
 		my $nb= 1;
@@ -3200,7 +3145,6 @@ method merge_vcfs (ArrayRef :$filein) {
 	
 #	foreach my $patient (@$patients){
 	#		my $gvcf = $patient->getGvcfFile("haplotypecaller4");#$dir_out."/".$patient->name.".g.vcf.gz";
-		#	warn $gvcf;
 	#		die("$gvcf you don't have gvcf for at least this patient restart after_lifescope on this project ") unless $gvcf ;#-e $gvcf;
 	#}
 	my $fork =$self->nproc;
@@ -3240,7 +3184,6 @@ method genotype_gvcf4 (Str :$filein! ){
 	
 #	foreach my $patient (@$patients){
 	#		my $gvcf = $patient->getGvcfFile("haplotypecaller4");#$dir_out."/".$patient->name.".g.vcf.gz";
-		#	warn $gvcf;
 	#		die("$gvcf you don't have gvcf for at least this patient restart after_lifescope on this project ") unless $gvcf ;#-e $gvcf;
 	#}
 	my $fork =$self->nproc;
@@ -3307,7 +3250,6 @@ method move_vcf_hc4 (Str :$filein! ){
 		$self->current_sample->add_job(job=>$job_bds);
 	#@@@@@@@@@@@@@@@@@@@@@
 	#todo check for all individual file 
-	warn $fileout;
 	if ($self->unforce() && -e $fileout){
 	  	$job_bds->skip();
 	}
@@ -3417,7 +3359,6 @@ method htlv1_insertion (Str :$filein!){
 			my $out_dir = $name."_".$ln;
 			my $fileout = $dirout."/".$name."_".$ln.".log";
 			my $cmd =qq{$insertion $f1 $f2 $out_dir $ls $ln $ppn $dirout > $fileout }; 
-			warn $cmd;
 		 	my $type = "insertion";
 			 my $stepname = $self->patient->name."_".$ln."@".$type;
 	

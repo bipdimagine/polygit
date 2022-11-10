@@ -138,7 +138,7 @@ function formaterButtonRNA(this_value) {
 		}
 		style =" style='margin-top: 3px ' ";
 		dd = ""
-		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >Junctions-Analyse</div></td></tr></table></center>";
+		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolySplice</div></td></tr></table></center>";
 	} 
 	if (list[0] == 2) {
 		tt = " onClick=view_rna_shiny('" + list[1]+"') ";

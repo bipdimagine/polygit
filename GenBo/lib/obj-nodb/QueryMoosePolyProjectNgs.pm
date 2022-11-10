@@ -708,6 +708,19 @@ has sql_capture_infos =>(
 	},
 );
 
+has sql_umi =>(
+	is		=> 'ro',
+	isa		=> 'Str',
+	lazy =>1,
+	default	=> sub {
+	my $sql = qq{SELECT u.name as name , u.mask as mask FROM  PolyprojectNGS.capture_systems c, PolyprojectNGS.umi u where c.capture_id=? and c.umi_id = u.umi_id ;};
+
+	return $sql;
+	},
+);
+
+
+
 has sql_capture_infos_by_name =>(
 	is		=> 'ro',
 	isa		=> 'Str',
@@ -1229,6 +1242,28 @@ sub isLoginSTAFF {
 	return;
 }
 
+sub getListProjectsRnaSeqFromLoginPwd {
+	my ($self, $login, $pwd,  $project_name) = @_;
+	
+	my $is_BIPD_login = $self->isLoginSTAFF($login);
+	my $h_found;
+	
+	my @lProj = @{$self->getListProjectsRnaSeq($project_name)};
+	foreach my $hpr (@lProj) {
+		$h_found->{$hpr->{name}} = undef;
+	}
+	if (not $is_BIPD_login) {
+		my $res_group = $self->getProjectHashForGroup($login,$pwd);
+		if ($res_group) {
+			foreach my $project_id (keys %{$res_group}) {
+				$res_group->{$project_id}->{username} = $login;
+				push(@lProj, $res_group->{$project_id}) unless exists $h_found->{$project_id};
+			}
+		}
+	}
+	return \@lProj;
+}
+
 sub getListProjectsRnaSeq {
 	my ($self, $project_name) = @_;
 	my @l_res;
@@ -1253,7 +1288,8 @@ sub getListProjectsRnaSeq {
 		$sth2->execute();
 	}
 	my $h = $sth->fetchall_hashref('id');
-	my $h2 = $sth2->fetchall_hashref('id');
+	my $h2 = $sth2->fetchall_hashref('project_id');
+	
 	
 	my @l_projects_ids = keys %$h;
 	foreach my $pr_id (keys %$h2) {
@@ -1333,6 +1369,28 @@ sub getHashRunIdFromSampleName {
 	return $h;
 }
 
+has sql_cmd_get_runid_infos => (
+	is       => 'ro',
+	isa      => 'Str',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+		my $query = qq{
+			SELECT * FROM PolyprojectNGS.run where run_id=?;
+		};
+		return $query;
+	},
+);
+
+sub getHashRunIdInfos {
+	my ($self, $run_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = $self->sql_cmd_get_runid_infos();
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($run_id);
+	my $h = $sth->fetchall_hashref('run_id');
+	return $h;
+}
 
 
 1;
