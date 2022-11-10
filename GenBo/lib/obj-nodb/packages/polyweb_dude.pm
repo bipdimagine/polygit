@@ -1092,7 +1092,7 @@ sub image {
 	for ( my $i = 1 ; $i < 2 ; $i++ ) {
 		$x = 2;
 		for ( my $j = 0 ; $j < $nb_col ; $j++ ) {
-		warn $nb_col;
+#		warn $nb_col;
 		 #$image->rectangle($x-1,$y-1,$x+$nb_col*($size+2)+1,$y+$size+1,$black);
 			my $color = $mimosa;
 

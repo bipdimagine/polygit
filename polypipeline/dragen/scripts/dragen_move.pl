@@ -58,6 +58,7 @@ my $predef_type;
 my $define_steps;
 my $step;
 
+my $spipeline;
 
 my $limit;
 GetOptions(
@@ -65,11 +66,19 @@ GetOptions(
 	'patients=s' => \$patients_name,
 	'step=s'=> \$step,
 	'type=s' => \$type,
+	'command=s'=>\$spipeline,
 	#'low_calling=s' => \$low_calling,
 );
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
  my $ssh = Net::SSH::Perl->new("10.1.2.9");
 $ssh->login("$username");
+
+
+my $pipeline;
+foreach my $l (split(",",$spipeline)){
+	$pipeline->{$l} ++;
+}
+
 
 #my $user = system("whoami");
 my $buffer = GBuffer->new();
@@ -86,28 +95,55 @@ my ($out, $err, $exit) = $ssh->cmd($cmd_dir);
 #my $dir_pipeline = $patient->getDragenDirName("pipeline");
 my $prefix = $patient->name;
 my $bam_prod = $patient->getBamFileName("dragen-align");
+my $url = qq{$username\@10.200.27.109};
+
 #exit(0) if -e $bam_prod;
 #warn "coucou";
-my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
-($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
+if (exists $pipeline->{align}){
+	my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
+	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
+	move_bam($bam_pipeline,$patient);
+}
 
-my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
-my $target_pipeline  ="$dir_pipeline/".$prefix.".target.counts.gz";
-my $target_pipeline_gc  = "$dir_pipeline/".$prefix.".target.counts.gc-corrected.gz";
-($out, $err, $exit)=  $ssh->cmd("test -f $gvcf_pipeline");
+if (exists $pipeline->{gvcf}){
+	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
+	($out, $err, $exit)=  $ssh->cmd("test -f $gvcf_pipeline");
+	move_gvcf($gvcf_pipeline,$patient);
+}
+if (exists $pipeline->{cnv}){
+	my $target_pipeline  ="$dir_pipeline/".$prefix.".target.counts.gz";
+	my $target_pipeline_gc  = "$dir_pipeline/".$prefix.".target.counts.gc-corrected.gz";
+	($out, $err, $exit)=  $ssh->cmd("test -f $target_pipeline_gc");
+	move_count($target_pipeline,$target_pipeline_gc,$patient);
+	if($project->isGenome){
+		my $cnv_file  = "$dir_pipeline/".$prefix.".cnv.vcf.gz";
+		move_cnv($cnv_file,$patient)
+	}
+}
+if (exists $pipeline->{sv}){
+
+	my $sv_file = $dir_pipeline."/".$prefix.".sv.vcf.gz";
+	move_sv($sv_file,$patient);
+}
+
+
+
+
+
+
+
 #die($gvcf_pipeline ." probleme no gvcf") unless  $exit ==0;
 
-($out, $err, $exit)=  $ssh->cmd("test -f $target_pipeline_gc");
-die($target_pipeline_gc ." probleme no target gc") unless  $exit ==0;
+
+#die($target_pipeline_gc ." probleme no target gc") unless  $exit ==0;
 #die() unless -e $target_pipeline;
-my $url = qq{$username\@10.200.27.109};
-move_bam($bam_pipeline,$patient);
-move_gvcf($gvcf_pipeline,$patient);
-move_target($target_pipeline,$target_pipeline_gc,$patient);
-if($project->isGenome){
-	my $cnv_file  = "$dir_pipeline/".$prefix.".cnv.vcf.gz";
-	move_cnv($cnv_file,$patient)
-}
+
+
+
+
+
+
+
 exit(0);
 
 
@@ -131,7 +167,7 @@ sub move_gvcf {
 	system("rsync -rav  $url:$gvcf.tbi $prod.tbi");
 }
 
-sub move_target {
+sub move_count {
 	my ($t1,$t2,$patient) = @_;
 	my $dir = $patient->project->getTargetCountDir();
 	system("rsync -rav  $url:$t1 $dir/");
@@ -146,5 +182,11 @@ sub move_cnv {
 	system("rsync -rav  $url:$t1.tbi $dir/");
 }
 
-
+sub move_sv {
+	my ($t1,$patient) = @_;
+	my $dir = $project->getVariationsDir("dragen-sv");
+	system("rsync -rav  $url:$t1 $dir/");
+	system("rsync -rav  $url:$t1.tbi $dir/");
+	
+}
 

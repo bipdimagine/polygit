@@ -226,7 +226,7 @@ foreach my $pn ( keys %{$hintspan_patients} ) {
 }
 $no5->close();
 $no5 = undef;
-die();
+
 #################
 # GENES
 #################

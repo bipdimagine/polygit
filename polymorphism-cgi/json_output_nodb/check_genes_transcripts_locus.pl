@@ -375,7 +375,9 @@ if ($h_genes) {
 		};
 		if ($@) { $hResGene->{$gene_name}->{panels} = undef; }
 		
-		my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;"} );
+
+		my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;vertical-align:center !important;"} );
+
 		my $gene_score;
 		if ($trio_project and $trio_patient) {
 			$sort = 'gene_score' unless $sort;

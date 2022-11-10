@@ -91,7 +91,7 @@ my @exons = sort{$a->start*$a->strand <=> $b->start*$b->strand} @{$tr->getExons}
 my $i=0;
 my @hexons;
 foreach my $exon (@exons){
-	
+	 
 	my $h;
 	$h->{name} = $exon->name;
 foreach my $patient (@{$run->getPatients}){
@@ -99,7 +99,7 @@ foreach my $patient (@{$run->getPatients}){
 	
 	
 		
-		my ($mean,$intspan,$min) =$exon->mean_intspan_coverage_coding(patient=>$patient,padding=>0,limit=>1);
+		my ($mean,$intspan,$min) =$exon->mean_intspan_coverage_coding($patient,0,1);
 	 #  my $data  = $exon->getTranscript()->get_coverage($patient)->coverage($exon->start,$exon->end);
 		#my $nn = $data->{nb};
 		#my $s = $data->{sum};

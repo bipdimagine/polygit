@@ -352,6 +352,7 @@ if ($project->isSomatic){
 if ($print == 1){
 	@headers = ("var_name","ngs","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 	@headers = ("var_name","ngs","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd") unless $hgmd ==1;
+	@headers = ("var_name","ngs","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","hgmd","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 	
 	$style_score ={
 		1=> {style=>"background-color:#95A5A6;color:#FFFFFF"},#E43725#95A5A6
@@ -1652,7 +1653,6 @@ $out.= $cgi->end_td().$cgi->end_Tr().$cgi->end_table();
 sub print_table_variants {
 	my ($patient) = @_;
 	 my $out1 = html::print_cadre($cgi,"Variations Summary");
-	
 	 $out1.="<br>";
 	
 	 $out1 .= $cgi->start_table({class=>"table table-striped  table-condensed table-bordered ",style=>"font-size: 8px;font-family:  Verdana;"});
@@ -2415,7 +2415,9 @@ sub print_variation_td_edit{
 					
 				}	
 				if ( $cat eq "in_this_run"){
-					$text =~ s/white/black/;# '<span style="color:black;font-weight:bold">'.$text."<span>";
+
+					$text =~ s/white/black/; 
+
 					 $text = update::printSimpleBadge(qq{$text},3);
 				}
 		if (exists $variation->{dup}){
@@ -2499,12 +2501,17 @@ sub printVariationsOther {
 		}
 		delete $genes{$k} unless $find;
 	}
+	#warn Dumper keys %genes;
 	my $nb_line = 0;
 	my $first_line = 0;
 	$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"vertical-align:middle;text-align: left;font-size: 6px;font-family:  Verdana;"});
 	
 	foreach my $k (sort {$a cmp $b} keys  %genes) {
+		warn $k;
+		my $debug ;
+		$debug =1 if $k eq "SOX10";
 		my $nb_line_next_gene = $nb_line + scalar (keys %{$gene_var->{$k}});
+		
 		if ( $first_line>0 && $print ==1){
 	#	$out .= html::end_cadre($cgi);
 		#$out .=qq{<div class="page-break">.</div>};
@@ -2555,6 +2562,7 @@ foreach my $tvariations ( sort {$a->[0]->{trans} <=> $b->[0]->{trans}} values %{
 		my $variation = $variations[0];
 		$out.= $cgi->start_Tr({style=>"vertical-align:middle"});
 		my $rowspan =scalar(@variations); 
+		warn $rowspan if $debug;
 		$nb_line+=$rowspan;
 		my $cat_start;
 		$nbv ++;
@@ -2568,18 +2576,19 @@ foreach my $tvariations ( sort {$a->[0]->{trans} <=> $b->[0]->{trans}} values %{
 			
 		}
 		$cat_start ++;
-	
+		warn scalar(@variations);
 		foreach my $variation (sort {$a->{trans} <=> $b->{trans}} @variations){
-		
+		warn "++".$cat_start;
+		warn @infos;
 			for (my $ind = $cat_start;$ind< @infos;$ind++){
-				my $cat = $infos[$ind];
 				
+				my $cat = $infos[$ind];
 				if ($cat eq "transcript"){
-					
 					if (exists $nm{$variation->{transcript}}){
 					#$variation->{transcript} = "<table><tr><td>".$variation->{transcript}."</td><tr></tr><td>".$nm{$variation->{transcript}}."</td></table>";
-					$variation->{transcript} = $variation->{transcript}."<br>".$nm{$variation->{transcript}};
+					$variation->{transcript} = $variation->{transcript}."++<br>".$nm{$variation->{transcript}};
 					}
+					
 				}
 				$out.=print_variation_td_edit($variation,$cat,1,$nbv,$nobutton);
 			}

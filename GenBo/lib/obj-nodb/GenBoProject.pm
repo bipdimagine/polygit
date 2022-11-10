@@ -45,9 +45,11 @@ use GenBoNoSql;
 use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
+use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
+use GenBoJunctionCache;
 use Storable qw(store retrieve freeze dclone thaw);
 
 #use LMDB_File qw(:flags :cursor_op);
@@ -1399,9 +1401,7 @@ sub get_gencode_directory {
 	  if exists $self->{directory}->{$version}->{$database};
 
 	$self->{directory}->{$version}->{$database} =
-		$self->public_data_root . "/"
-	  . $self->annotation_genome_version . "/"
-	  . $self->buffer->gencode->{$version}->{directory};
+		$self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
 	confess( "score:$database " . $self->{directory}->{$version}->{$database} )
 	  unless -e $self->{directory}->{$version}->{$database};
 
@@ -1414,11 +1414,7 @@ sub get_public_data_directory {
 	my ( $self, $database, $version ) = @_;
 	return $self->{directory}->{$database} if exists $self->{directory}->{$database} ;
 	$version = $self->public_database_version unless $version;
-	$self->{directory}->{$database} =
-		$self->public_data_root . "/"
-	  . $self->annotation_genome_version . "/"
-	  . $self->buffer->public_data->{$version}->{$database}->{config}
-	  ->{directory};
+	$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
 	confess( "public data :$database " . $self->{directory}->{$database} )
 	  unless -e $self->{directory}->{$database};
 	return $self->{directory}->{$database};
@@ -1606,6 +1602,17 @@ has annotation_public_path => (
 
 		return $dir;
 
+	},
+);
+
+has DejaVuJunction_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
+		confess("junction dejavu $dir") unless -e $dir;
+		return $dir;
 	},
 );
 
@@ -4358,6 +4365,19 @@ has dejavuSV1 => (
 	}
 );
 
+has dejavuJunctions => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->DejaVuJunction_path();
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctions->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
 
 has dejavuSVIntervalTree => (
 	is		=> 'ro',
@@ -6035,14 +6055,65 @@ has get_path_rna_seq_junctions_root  => (
 	},
 );
 
-sub get_path_rna_seq_analyse {
-	my ($self, $analyse_name) = @_;
-	confess("\n\nERROR: analyse name mandatory. Die\n\n") unless ($analyse_name);
-	my $path = $self->get_path_rna_seq_junctions_root();
-	my $path_analyse = $path.'/'.$analyse_name.'/';
-	confess("\n\nERROR: analyse $analyse_name not found in $path. Die\n\n") unless (-d $path_analyse);
-	return $path_analyse;
-}
+has get_path_rna_seq_junctions_analyse_all_res  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->get_path_rna_seq_junctions_root()."/AllRes/";
+		return $path;
+	},
+);
+
+has get_path_rna_seq_junctions_analyse_description_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/RNAseqSEA/";
+		return $path;
+	},
+);
+
+has get_hash_patients_description_rna_seq_junction_analyse => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $project_name = $self->name;
+		my (@lFilesDescription, $hType_patients);
+		my $path_rna_description = $self->get_path_rna_seq_junctions_analyse_description_root();
+		opendir my ($dir), $path_rna_description;
+		my @found_files = readdir $dir;
+		closedir $dir;
+		foreach my $file (@found_files) {
+			next if (not $file =~ /SamplesTypes_/);
+			push(@lFilesDescription, $path_rna_description.'/'.$file);
+		}
+		foreach my $file (@lFilesDescription) {
+			next if (not -e $file);
+			open (FILE, $file);
+			my (@lPat, @lCtrl);
+			while (<FILE>) {
+				chomp($_);
+				my $line = $_;
+				next if not $line =~ /$project_name/;
+				my ($pat_name, $type, $proj_name) = split(' ', $line);
+				$hType_patients->{$pat_name}->{lc($type)} = undef;
+				push(@lPat, $pat_name) if (lc($type) eq 'pat');
+				push(@lCtrl, $pat_name) if (lc($type) eq 'ctrl');
+			}
+			close(FILE);
+			foreach my $pat_name (@lPat) {
+				foreach my $ctrl (@lCtrl) {
+					$hType_patients->{$pat_name}->{used_ctrl}->{$ctrl} = undef;
+				}
+			}
+		}
+		return $hType_patients;
+	},
+);
+
 
 sub get_gtf_genes_annotations_igv {
 	my ($self) = @_;
@@ -6057,6 +6128,40 @@ sub get_gtf_genes_annotations_igv {
 	}
 	return $self->buffer->config->{'public_data_annotation'}->{root}."/".$self->getVersion()."/igv/gencode.gtf.gz";
 }
+
+sub getQueryJunction {
+	my ($self, $fileName, $method) = @_;
+	my %args;
+	$args{project} = $self;
+	$args{file}    = $fileName;
+	if ($method eq 'RI') { $args{isRI} = 1; }
+	elsif ($method eq 'SE') { $args{isSE} = 1; }
+	else { confess(); }
+	my $queryJunction = QueryJunctionFile->new( \%args );
+	return $queryJunction;
+}
+
+sub setJunctions {
+	my ($self) = @_;
+	my $h_ids;
+	my $path = $self->get_path_rna_seq_junctions_analyse_all_res();
+	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+	if ($ri_file and -e $ri_file ) {
+		foreach my $hres (@{$self->getQueryJunction($ri_file, 'RI')->parse_file()}) {
+			my $obj = $self->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($se_file and -e $se_file) {
+		foreach my $hres (@{$self->getQueryJunction($se_file, 'SE')->parse_file()}) {
+			my $obj = $self->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	return $h_ids;
+}
+		
 
 
 1;

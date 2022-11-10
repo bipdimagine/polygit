@@ -449,7 +449,9 @@ sub find_file_pe_umi {
 	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
 	foreach my $find (@pattern){
 		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
+		
 		if (@titi) {
+			warn Dumper @titi;
 			$couple = find_paired_files_umi(\@titi,$dir);
 			last NAME if ($couple);
 		}
@@ -464,8 +466,8 @@ sub find_file_pe_umi {
 
 
 sub find_file_pe {
-	my ($patient,$separator) = @_;
-	my $dir = $patient->getSequencesDirectory();
+	my ($patient,$separator,$dir) = @_;
+	 $dir = $patient->getSequencesDirectory() unless $dir;
 	my @names;
 	my $couple;
 	push(@names,$patient->name);
