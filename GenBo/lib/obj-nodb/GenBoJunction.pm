@@ -179,16 +179,22 @@ sub getTypeDescription {
 
 sub isRI {
 	my ($self, $patient) = @_;
-	return 1 if $self->getTypeDescription($patient) =~ /RI/; 
-	return 1 if $self->annex->{$patient->name}->{type_origin_file} eq 'RI';
-	return;
+	return $self->{isRi}->{$patient->name} if (exists $self->{isRi}->{$patient->name});
+	my $isRi;
+	$isRi = 1 if $self->annex->{$patient->name}->{type_origin_file} eq 'RI';
+	$isRi = 1 if $self->getTypeDescription($patient) =~ /RI/; 
+	$self->{isRi}->{$patient->name} = $isRi;
+	return $isRi;
 }
 
 sub isSE {
 	my ($self, $patient) = @_;
-	return 1 if $self->getTypeDescription($patient) =~ /SE/; 
-	return 1 if $self->annex->{$patient->name}->{type_origin_file} eq 'SE';
-	return;
+	return $self->{isSe}->{$patient->name} if (exists $self->{isSe}->{$patient->name});
+	my $isSe;
+	$isSe = 1 if $self->annex->{$patient->name}->{type_origin_file} eq 'SE';
+	$isSe = 1 if $self->getTypeDescription($patient) =~ /SE/; 
+	$self->{isSe}->{$patient->name} = $isSe;
+	return $isSe;
 }
 
 has isCnv => (
@@ -250,9 +256,11 @@ sub get_score {
 sub get_nb_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
+	return $self->{nb_new_count}->{$patient->name()} if (exists $self->{nb_new_count}->{$patient->name()});
 	my $count = 0;
 	$count += $self->annex->{$patient->name()}->{junc_ri_count} if ($self->isRI($patient) and exists $self->annex->{$patient->name()}->{junc_ri_count});
 	$count += $self->annex->{$patient->name()}->{junc_se_count} if ($self->isSE($patient) and exists $self->annex->{$patient->name()}->{junc_se_count});
+	$self->{nb_new_count}->{$patient->name()} = $count;
 	return $count;
 }
 
@@ -266,19 +274,23 @@ sub get_nb_normal_count {
 sub get_dp_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
+	return $self->{dp_count}->{$patient->name()} if (exists $self->{dp_count}->{$patient->name()});
 	my $new_count = $self->get_nb_new_count($patient);
 	$new_count = 0 if $self->get_nb_new_count($patient) eq '---';
 	my $normal_count = $self->get_nb_normal_count($patient);
 	$normal_count = 0 if $self->get_nb_normal_count($patient) eq '---';
-	return ($new_count + $normal_count);
+	$self->{dp_count}->{$patient->name()} = ($new_count + $normal_count);
+	return $self->{dp_count}->{$patient->name()};
 }
 
 sub get_ratio_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
+	return $self->{ratio_new_count}->{$patient->name()} if (exists $self->{ratio_new_count}->{$patient->name()});
 	my $ratio;
 	eval{ $ratio = $self->get_nb_new_count($patient) / $self->get_dp_count($patient); };
 	if($@) { confess(); }
+	$self->{ratio_new_count}->{$patient->name()} = $ratio;
 	return $ratio;
 } 
 
@@ -318,6 +330,7 @@ sub createSashiPlot {
 	$cmd .= " --shrink --alpha 0.25 --base-size=20 --ann-height=4 --height=3 --width=18";
 	$cmd .= " -g ".$patient->getProject->get_gtf_genes_annotations_igv();
 	$cmd .= " -F svg";
+#	warn "\n";
 #	warn $cmd;
 	`$cmd`;
 	return $file;
@@ -702,14 +715,25 @@ sub junction_score_penality_dejavu_inthisrun {
 	my ($self, $patient) = @_;
 	my $score_penality = 0;
 	my $dv_run_max_30 = $self->dejavu_nb_int_this_run_patients($patient, 30);
-	if ($dv_run_max_30 > 1) { $score_penality += (1 * ($dv_run_max_30)); }
+	if ($dv_run_max_30 >= 1) { $score_penality += (1 * ($dv_run_max_30)); }
 	my $dv_run_max_20 = $self->dejavu_nb_int_this_run_patients($patient, 20);
-	if ($dv_run_max_20 > 1) { $score_penality += (0.5 * ($dv_run_max_20)); }
+	if ($dv_run_max_20 >= 1) { $score_penality += (0.5 * ($dv_run_max_20)); }
 	my $dv_run_max_15 = $self->dejavu_nb_int_this_run_patients($patient, 15);
 	if ($dv_run_max_15 > 1) { $score_penality += 0.5; }
 	my $dv_run_max_10 = $self->dejavu_nb_int_this_run_patients($patient, 10);
 	if ($dv_run_max_10 > 1) { $score_penality += 0.5; }
 	return $score_penality;
+}
+
+sub junction_score_without_dejavu_global {
+	my ($self, $patient) = @_;
+	my $score = 10;
+	$score -= $self->junction_score_penality_ratio($patient);
+	$score -= $self->junction_score_penality_dp($patient);
+	$score -= $self->junction_score_penality_new_junction($patient);
+	$score -= $self->junction_score_penality_noise($patient);
+	$score -= $self->junction_score_penality_dejavu_inthisrun($patient);
+	return $score;
 }
 
 sub junction_score {

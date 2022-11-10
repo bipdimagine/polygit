@@ -94,7 +94,6 @@ my $old_pos       = 1;
 my $nb_variants   = 0;
 my $nb_var_region = 0;
 
-my $all;
 my $process;
 my $cpt = 1;
 #warn Dumper $regions;
@@ -147,7 +146,7 @@ foreach my $g ( keys %{ $categories->{global}->{variation_type} } ) {
 	$intspan_global_type->{$g} = Set::IntSpan::Fast::XS->new();
 }
 my $t = time;
-warn 'store 1/3: lmdb variations' if ( $project->cache_verbose() );
+warn 'store 1/4: lmdb variations' if ( $project->cache_verbose() );
 my $no2 = $chr->get_lmdb_variations("c");    #open lmdb database
 #ok sort and read the filewarn
 my $uniq;
@@ -193,7 +192,7 @@ else {
 	die();
 }
 warn "time : ".abs($t-time);
-warn 'store 2/3: lmdb chr_name freeze' if ( $project->cache_verbose() );
+warn 'store 2/4: lmdb chr_name freeze' if ( $project->cache_verbose() );
 #store htable only fort dejavu by project purpose
 store( $hh, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) if $hh;    
 my $no3 = $chr->get_lmdb_categories("c");
@@ -207,7 +206,7 @@ foreach my $k ( keys %{$intspan_global_type} ) {
 }
 $no3->close();
 
-warn 'store 3/3: lmdb patients' if ( $project->cache_verbose() );
+warn 'store 3/4: lmdb patients' if ( $project->cache_verbose() );
 my $no4 = $chr->get_lmdb_patients("c");
 foreach my $pname (@patient_names) {
 	my $h;
@@ -222,6 +221,25 @@ foreach my $pname (@patient_names) {
 }
 $no4->close;
 
+#NOISE 
+warn 'store 4/4: update methods calling' if ( $project->cache_verbose() );
+my $buffer_cache = new GBuffer;
+$buffer_cache->vmtouch(1);
+my $project_cache = $buffer_cache->newProjectCache( -name => $project_name );
+$project_cache->getPatients();
+my $chr_cache = $project_cache->getChromosome($chr_name);
+my $no5 = $chr_cache->get_lmdb_variations("w");
+my $vector_junctions = $chr_cache->getJunctionsVector();
+foreach my $junction (@{$chr_cache->getListVarObjects($vector_junctions)}) {
+	foreach my $patient_cache (@{$junction->getPatients()}) {
+		$junction->get_hash_noise($patient_cache);
+	}
+	my $jid = $junction->id();
+	delete $junction->{buffer};
+	delete $junction->{project};
+	$no5->put( $jid, $junction );
+}
+$no5->close();
 
 sub get_junctions_ids {
 	my ( $project, $chr ) = @_;
@@ -300,14 +318,15 @@ sub get_junctions_ids {
 		my $array_patients;
 		my $aho = [];
 		my $ap  = [];
-		delete $junction->{buffer};
-		delete $junction->{project};
 		
 		# line to prepare dejavu global;
 		my $ref = ref($junction);
 		if ($ref eq 'GenBoJunction'){
 			bless $junction , 'GenBoJunctionCache';
 		}
+		delete $junction->{buffer};
+		delete $junction->{project};
+		
 		$hv->{obj}   = compress( freeze($junction) );
 		$hv->{start} = $junction->start;
 		$hv->{end}   = $junction->end;
