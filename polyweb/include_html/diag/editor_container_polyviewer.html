@@ -1,57 +1,57 @@
 <center>
-	<div class='row no-gutters' style="height:100px;width:99%;background-color:#F0F0F0;border: 2px double black;">
-		<div class='col-sm-2' style="height:95px;padding-top:5px;border-right: 1px dashed grey;">
+	<div class='row no-gutters' style="height:100px;width:100%;background-color:#F0F0F0;border: 2px double black;">
+	
+		<div class='col-sm-3 col-m-2' style="height:95px;padding-top:5px;border-right: 1px dashed grey;">
 			<table style="padding-top:10px;width:100%">
-				<td style="min-width:16px;height:80px;background-color:rgb(214, 44, 26);color:white;border-top:5px solid rgb(214, 44, 26);border-bottom:2px solid rgb(214, 44, 26);border-left:2px solid rgb(214, 44, 26);border-right:5px solid rgb(214, 44, 26);writing-mode:vertical-lr;">
+				<td id="td_launch" style="padding-right:10px;">
+					<center>
+						<button type="button" class="btn btn-xs" style="border:5px white double;background-color:rgb(214, 44, 26);padding:3px;" id="panel_name_button" onclick="load_polyviewer(1,0);">
+							<center><span style="padding:4px;font-size:14px;color:white;">Refresh </span><br><i class="fa fa-refresh" aria-hidden="true" style="font-size:18px;color:white;"></i></center> 
+						</button>
+					</center>
+				</td>
+				
+				<td style="min-width:16px;height:80px;background-color:#607D8B;color:white;border-top:5px solid #607D8B;border-bottom:2px solid #607D8B;border-left:2px solid #607D8B;border-right:5px solid #607D8B;writing-mode:vertical-lr;">
 					<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;margin:2px">PANELS</span>
 				</td>
 				
-				<td style="border:2px solid rgb(214, 44, 26);border-top:5px solid rgb(214, 44, 26);width:100%;background-color:white;height:80px;" id="td_phenotypes_panels">
+				<td style="border:2px solid #607D8B;border-top:5px solid #607D8B;width:100%;background-color:white;height:80px;" id="td_phenotypes_panels">
 					<table>
 						<tr>
 							<center>
-								<div><span style="color:#E74C3C;"><u><b>Phenotype</u></b></span></div>
+								<div><span style="color:#607D8B;"><u><b>Phenotype</u></b></span></div>
 								<div class="btn-group-phenotypes btn-group btn-xs">
-									<button type="button" id="list_phenotype_name_button" class="btn btn-danger dropdown-toggle btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<button type="button" id="list_phenotype_name_button" style="color:white;background-color:#607D8B;" class="btn dropdown-toggle btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 										<span class="caret"></span> <span class="sr-only">Toggle Dropdown</span>
 									</button>
-									<button type="button" class="btn btn-danger btn-xs" id="phenotype_name_button">
-										<span id="span_phenotype_name" jsId="span_phenotype_name" style="font-size:8px;width:150px;">All Genes</span>
+									<button type="button" class="btn btn-xs" style="background-color:#607D8B;" id="phenotype_name_button">
+										<span id="span_phenotype_name" jsId="span_phenotype_name" style="color:white;font-size:8px;width:150px;">All Genes</span>
 									</button>
 									<div class="dropdown-menu" aria-labelledby="btnGroupDrop1" id="dropdown-menu-phenotypes" style='height:auto;max-height:400px;min-width:230px;overflow-y:auto;'></div>
 								</div>
-								&nbsp;&nbsp;
-								<button type="button" class="btn btn-danger btn-xs"
-									id="panel_name_button" onclick="load_polyviewer(1,0);">
-									<span style="font-size:8px">Refresh </span><i class="fa fa-refresh" aria-hidden="true" style="font-size:8px"></i> 
-								</button>
 							</center>
 						</tr>
 						<tr>
 							<center>
-								<div><span style="color:#E74C3C;"><u><b>Panel</u></b></span></div>
+								<div><span style="color:#607D8B;"><u><b>Panel</u></b></span></div>
 								<div class="btn-group-panel btn-group btn-xs">
-									<button type="button" id="list_panel_name_button" class="btn btn-danger dropdown-toggle btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<button type="button" id="list_panel_name_button" style="color:white;background-color:#607D8B;" class="btn dropdown-toggle btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 										<span class="caret"></span> <span class="sr-only">Toggle Dropdown</span>
 									</button>
-									<button type="button" class="btn btn-danger btn-xs" id="panel_name_button">
-										<span id="span_panel_name" jsId="span_panel_name" style="font-size:8px;width:150px;">All Genes</span>
+									<button type="button" style="background-color:#607D8B;" class="btn btn-xs" id="panel_name_button">
+										<span id="span_panel_name" jsId="span_panel_name" style="color:white;font-size:8px;width:150px;">All Genes</span>
 									</button>
 									<div class="dropdown-menu" aria-labelledby="btnGroupDrop1" id="dropdown-menu-panels" style='height:auto;max-height:400px;overflow-y:auto;overflow-x:hidden;'></div>
 								</div>
 							</center>
 						</tr>
 					</table>
-				
-				
-	
-					
-					
 				</td>
 			</table>
 		</div>
-		<!-- class='col-sm-10 float-left'-->
-		<div   style="height:110px;overflow-x:auto;scrollbar-width:thin;padding-top:5px;">
+		<!-- class='col-sm-9 float-left'-->
+		
+		<div   style="height:110px;overflow-x:auto;scrollbar-width:thin;padding-top:5px;padding-left:15px;">
 		
 	
 			<table id="table_float" style="min-width:1400px;">

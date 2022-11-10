@@ -223,7 +223,7 @@ has tabix_coverage => (
 		my $coverage_file;
 		$coverage_file = $self->getCoverageFile();
 		return unless -e $coverage_file;
-		return new Tabix( -data => $coverage_file );
+		return Bio::DB::HTS::Tabix->new( filename => $coverage_file );
 
 	}
 );
@@ -304,11 +304,10 @@ has coverage => (
 		eval {
 			my $tabix = $self->tabix_coverage;
 			return unless $tabix;
-			my $res = $tabix->query("mean_all");
-			#warn Dumper $res;
-			# return {mean=>0,} unless defined $res->{_};
+			my $res   = $tabix->query_full( "mean_all" ) ;
+			my @data;
 
-			while ( my $line = $tabix->read($res) ) {
+			while ( my $line = $res->next ) {
 				my ( $a, $b, $c ) = split( " ", $line );
 				if ( $b == 99 ) {
 					$b = "mean";
@@ -443,38 +442,6 @@ has 'coverage_SRY' => (
 		}
 		return int( $max_mean * 10 ) / 10;
 
-#    		push(@tt,$chr->ucsc_name."\t".$from."\t".$to);
-#
-#
-#
-#		return -1 if $zint->is_empty;
-#		my $tabixFile = $self->tabix_coverage();
-#		return -1 unless $tabixFile;
-#		 my $z = $self->project->liteAnnotations->get("annotations","SRY");
-#		 return -1 unless $z;
-#		 my $cov =0;
-#		my $nb =0;
-#		 if ($self->isNoSqlDepth){
-#		 	my $depth = $self->depth("chrY", $z->{start}, $z->{end});
-#		  	$cov = sum(@$depth);
-#		 	$nb = scalar(@$depth);
-#		 }
-#		else{
-#
-#
-#			my $res = $tabixFile->query("chrY", $z->{start}, $z->{end});
-#			#TODO: a verifier si return -1 est correct
-#			return -1 unless defined ($res->{_}); # test iterator not null (null = no result = no cov)
-#			#next unless defined ($res->{_}); # test iterator not null (null = no result = no cov)
-#			while (my $line = $tabixFile->read($res)) {
-#				my ($thisChr, $thisPos, $thisCov) = split("\t", $line);
-#				#next unless ($thisPos == $end);
-#				$cov += $thisCov;
-#				$nb++;
-#			}
-#		}
-#		return 0 if $nb ==0;
-#		return int(($cov/$nb)*10)/10;
 
 	},
 );
@@ -1308,7 +1275,7 @@ has bamUrl => (
 		die() if ( scalar( @$methods > 1 ) );
 		my $method_name = $methods->[0];
 		my $bam_dir     = $self->getProject->getAlignmentUrl($method_name);
-		my $bamf        = $self->getBamFile();
+		my $bamf        = $self->getBamFileName();
 		my (@t) = split( "/", $bamf );
 
 		#warn $bam_dir;
@@ -1431,6 +1398,7 @@ sub getBamFileName {
 
 sub getBamFile {
 	my ( $self, $method_name, $nodie ) = @_;
+	
 	unless ($method_name) {
 		my $files = $self->getBamFiles();
 		return $files->[0] if scalar(@$files) == 1;
@@ -1439,8 +1407,9 @@ sub getBamFile {
 			return;
 		}
 
-	  #		confess($self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
+	  		confess($self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
 	}
+	 
 	confess("ERROR: no bam file with $method_name method name. Exit. "
 		  . $self->name . " "
 		  . $self->project->name
@@ -1588,7 +1557,16 @@ sub getLargeIndelsFiles {
 	return [];
 
 }
-
+sub targetGCFile {
+	my ( $self ) = @_;
+	my $file = $self->project->getTargetCountDir()."/".$self->name.".target.counts.gc-corrected.gz";
+	return $file;
+}
+sub targetFile {
+	my ( $self ) = @_;
+	my $file = $self->project->getTargetCountDir()."/".$self->name.".target.counts.gz";
+	return $file;
+}
 sub gvcfFileName {
 	my ( $self, $method ) = @_;
 	$method = "haplotypecaller4" unless $method;
@@ -1750,7 +1728,8 @@ has tabix_wisecondor => (
 		my $coverage_file;
 		$coverage_file = $self->rawDataWiseCondor();
 		return unless -e $coverage_file;
-		return new Tabix( -data => $coverage_file );
+		
+		return  Bio::DB::HTS::Tabix->new( filename => $coverage_file );;
 
 	}
 );
@@ -1959,10 +1938,10 @@ sub getCoverage {
 	my $tabix = $self->tabix_coverage();
 	my $len   = abs( $start - $end ) + 1;
 	my @v     = ( (0) x $len );
-	my $res   = $tabix->query( $chr, $start - 1, $end ) if $start;
+	my $res   = $tabix->query_full( $chr, $start - 1, $end ) if $start;
 	my @data;
 
-	while ( my $line = $tabix->read($res) ) {
+	while ( my $line = $res->next ) {
 
 		my ( $a, $p, $c ) = split( " ", $line );
 
@@ -2469,6 +2448,28 @@ sub getWindowGvcf {
 	return $outfile;
 }
 
+sub getCallingPipelineDir {
+	my ( $self, $type ) = @_;
+	return $self->{_cdir}->{$type} if exists  $self->{_cdir}->{$type};
+	my $path = $self->project->getCallingPipelineDir($type);
+	return $self->project->makedir($path."/".$self->name);
+}
+sub getDragenDirName {
+	my ( $self, $type ) = @_;
+	return $self->{_dir}->{$type} if exists  $self->{_dir}->{$type};
+	my $dir_out      = $self->project->project_dragen_pipeline_path_name();
+	$self->{_dir}->{$type} = $dir_out. "/$type/" . $self->name;#."/".$type."/";
+	return $self->{_dir}->{$type};
+}
+sub getDragenDir {
+	my ( $self, $type ) = @_;
+	$self->project->project_dragen_pipeline_path();
+	my $dir = $self->getDragenDirName($type);
+	unless ( -e $dir ) {
+		system("mkdir -p ".$dir." && chmod a+rw ".$dir);
+	}
+	return $dir;
+}
 sub get_lmdb_primers {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
@@ -2996,21 +2997,10 @@ sub get_string_validations {
 			return $stv;
 }
 
-sub getQueryJunction {
-	my ($self, $fileName, $method) = @_;
-	my %args;
-	$args{patient} = $self;
-	$args{file}    = $fileName;
-	if ($method eq 'RI') { $args{isRI} = 1; }
-	elsif ($method eq 'SE') { $args{isSE} = 1; }
-	else { confess(); }
-	my $queryJunction = QueryJunctionFile->new( \%args );
-	return $queryJunction;
-}
-
 sub getJunctionsAnalysePath {
 	my ($self) = @_;
 	my $path_analisys_root = $self->getProject->get_path_rna_seq_junctions_root();
+	confess("\n\nERROR: PATH $path_analisys_root not found. Die.\n\n") unless (-d $path_analisys_root);
 	my $path_analisys;
 	opendir my ($dir), $path_analisys_root;
 	my @found_files = readdir $dir;
@@ -3024,39 +3014,119 @@ sub getJunctionsAnalysePath {
 			last;
 		}
 	}
-	confess("\n\nERROR: PATH $path_analisys not found. Die.\n\n") unless (-d $path_analisys);
+	confess("\n\nERROR: PATH RNA JUNCTION not found. Die.\n\n") unless ($path_analisys);
+	confess("\n\nERROR: PATH RNA JUNCTION not found. Die.\n\n") unless (-d $path_analisys);
 	$path_analisys .= '/AllRes/';
 	return $path_analisys;
 }
 
+sub getPatients_used_control_rna_seq_junctions_analyse {
+	my $self = shift;
+	my $h_desc;
+	$h_desc = $self->getProject->get_hash_patients_description_rna_seq_junction_analyse();
+	return unless $h_desc;
+	return if not exists $h_desc->{$self->name()}->{used_ctrl};
+	my @lPat;
+	foreach my $other_pat (@{$self->getProject->getPatients()}) {
+		push(@lPat, $other_pat) if exists $h_desc->{$self->name()}->{used_ctrl}->{$other_pat->name()};
+	}
+	return \@lPat;
+} 
+
+has use_not_filtred_junction_files => (
+	is => 'rw',
+	lazy    => 1,
+	default => 1,
+);
+
+has junction_RI_file => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		return unless ($self->use_not_filtred_junction_files());
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_RI_file = $path_analyse.'/AllresAll_RI.txt';
+		return $path_RI_file if (-e $path_RI_file);
+		return;
+	},
+);
+
+has junction_RI_file_filtred => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_RI_file = $path_analyse.'/AllresRI_f.txt';
+		return $path_RI_file if (-e $path_RI_file);
+		return;
+	},
+);
+
+has junction_SE_file => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		return unless ($self->use_not_filtred_junction_files());
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_SE_file = $path_analyse.'/AllresAll_SE.txt';
+		return $path_SE_file if (-e $path_SE_file);
+		return;
+	},
+);
+
+has junction_SE_file_filtred => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		my $path_analyse = $self->getJunctionsAnalysePath();
+		my $path_SE_file = $path_analyse.'/AllresSE_f.txt';
+		return $path_SE_file if (-e $path_SE_file);
+		return;
+	},
+);
+
 sub setJunctions {
 	my ($self) = @_;
 	my $h_ids;
-	my $path_analyse = $self->getJunctionsAnalysePath();
-	my $path_RI_file = $path_analyse.'/AllresRI_f.txt';
-	if (-e $path_RI_file) {
-		foreach my $hres (@{$self->getQueryJunction($path_RI_file, 'RI')->parse_file()}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$obj->{patients_object}->{$self->id()} = undef;
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
-	my $path_SE_file = $path_analyse.'/AllresSE_f.txt';
-	if (-e $path_SE_file) {
-		foreach my $hres (@{$self->getQueryJunction($path_SE_file, 'SE')->parse_file()}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$obj->{patients_object}->{$self->id()} = undef;
-			$h_ids->{$obj->id()} = undef;
+	foreach my $junction (@{$self->getProject->getJunctions()}) {
+		if (exists $junction->{annex}->{$self->name}) {
+			$h_ids->{$junction->id()} = undef;
 		}
 	}
 	return $h_ids;
+}
+
+sub getFiltredJunctionsRI {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isRI($self);
+		next unless $obj->is_filtred_results($self);
+		push (@lObj, $obj);
+	}
+	return \@lObj;
+}
+
+sub getFiltredJunctionsSE {
+	my ($self) = shift;
+	my @lObj;
+	foreach my $obj (@{$self->getJunctions()}) {
+		next unless $obj->isSE($self);
+		next unless $obj->is_filtred_results($self);
+		push (@lObj, $obj);
+	}
+	return \@lObj;
 }
 
 sub getJunctionsRI {
 	my ($self) = shift;
 	my @lObj;
 	foreach my $obj (@{$self->getJunctions()}) {
-		next unless $obj->isRI();
+		next unless $obj->isRI($self);
 		push (@lObj, $obj);
 	}
 	return \@lObj;
@@ -3066,7 +3136,7 @@ sub getJunctionsSE {
 	my ($self) = shift;
 	my @lObj;
 	foreach my $obj (@{$self->getJunctions()}) {
-		next unless $obj->isSE();
+		next unless $obj->isSE($self);
 		push (@lObj, $obj);
 	}
 	return \@lObj;

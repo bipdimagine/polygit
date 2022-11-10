@@ -150,10 +150,10 @@ var url_update_validations =  url_path+"/polydiag_old/update_validations.pl";
 var url_chart_transcript = url_path+"/polydiag_old/transcript_chart.pl";
 var url_chart_exon = url_path+"/polydiag_old/exon_chart.pl";
 var url_chart_exon_hc = url_path+"/validation_variation/exon_chart_hc.pl";
-var url_chart_gene = url_path+"/polydiag_old/gene_chart.pl";
+var url_chart_gene = url_path+"/validation_variation/gene_chart.pl";
 var url_chart_primer= url_path+"/polydiag_old/primer_chart.pl";
 
-
+  
 var url_header = url_path+"/polydiag_old/header.pl";
 var url_diag_tree = url_path+"/polydiag_old/bundle_json.pl";
 var url_list_transcripts = url_path+"/polydiag_old/list_transcripts_json.pl";	

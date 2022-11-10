@@ -19,18 +19,29 @@
                 margin: 0;
                 overflow: hidden;
             }
-			
+            
+            .navbar-patient > li > a:focus {
+		        background-color: unset !important;
+		        border-radius: 30% 30% 0% 0%;
+		        border:3px solid #FFFF00;
+		      }
+            .navbar-patient > li > a:hover {
+		        background-color: unset !important;
+		        border-radius: 30% 30% 0% 0%;
+                border:3px solid #FFFF00;
+		      }
+            
+            
             #borderContainer {
                 width: 100%;
                 height: 100%;
             }
-    
+    		
             .testDialog {
                 font-size: 8pt;
             }
     
             .dojoxGrid-row-odd td {
-                background: #e8f2ff;
             }
     
             .name {
@@ -445,6 +456,7 @@
 			}
 		</style>
         
+		<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 		
 		
@@ -498,6 +510,7 @@
             dojo.require("dijit.form.Button");
             dojo.require("dijit.layout.TabContainer");
             dojo.require("dijit.form.FilteringSelect");
+			dojo.require("dijit.TooltipDialog");
             dojo.require("dijit.form.ComboBox");
             dojo.require("dojox.widget.Dialog");
             dojo.require("dojox.gfx");
@@ -517,7 +530,7 @@
             dojo.require("dojo.domReady!");
             dojo.require("dojox.widget.Dialog");
             dojo.require("dijit.form.CheckBox");
-            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem", "dojox/grid/cells/dijit","dijit/form/HorizontalSlider"]);
             
             var project_name = param("project");
             var patient_name = param("patient");
@@ -592,6 +605,7 @@
 				launch_project();
 			}
 			
+			var is_first_launch;
 			var html_resume = '';
 			function launch_project() {
 				if (html_resume == '') {
@@ -611,20 +625,20 @@
 							}
 							if (key == 'patients') {
 								var panel = "";
-								panel += "<nav id='navbar_project' class='navbar navbar-light' style='background-color: #e3f2fd;'>";
-								panel += "<div id='container_list_patients' class='container-fluid'>";
+								panel += "<nav id='navbar_project' class='navbar navbar-light overflow-auto' style='border-bottom:1px double black;margin-bottom:0px;line-height:10px;min-height:0px;'>";
+								panel += "<div id='container_list_patients''>";
 								panel += "<div class='navbar-header'>";
 								panel += "</div>";
-								panel += "<ul class='nav navbar-nav'>";
-								panel += "<li onclick='launch_project()'><a href='#' ><span style='font-size:18px'>RESUME</span></a></li>";
+								panel += "<ul class='nav navbar-nav navbar-patient' style='width:max-content;overflow-x:scroll;overflow-y:hidden;line-height:10px;'>";
+								panel += "<li onclick='launch_project()' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:3px solid #363945;border-top:1px solid #23527C;'><a href='#' style='padding-top:5px;padding-bottom:5px;'><span style='font-size:13px;text-align:center;'><b>PROJECT<br>RESUME</b></span></a></li>";
 								var list_patients = val.split(';');
 								for (var i = 0; i < list_patients.length; i++){
 									var name = list_patients[i];
 									var cmd = "launch_patient(\"" + name + "\")";
 									var span_name = 'span_' + name;
-									panel += "<ul class='nav navbar-nav' onclick='" + cmd + "'><li><a href='#' ><span id='" + span_name + "' style='color:black;font-size:11px'>";
+									panel += "<ul class='nav navbar-nav navbar-patient' onclick='" + cmd + "'><li style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#363945;'><a href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
 									panel += name;
-									panel += "</span></a></li></ul>";
+									panel += "</b></span></a></li></ul>";
 							    }
 								panel += "</ul>";
 								panel += "</div>";
@@ -632,6 +646,7 @@
 								var myNode = document.getElementById("content_nav");
 						    	var myPanel = $(panel);
 								myPanel.appendTo(myNode);
+								is_first_launch = 1;
 							}
 						});
 				    })
@@ -644,41 +659,51 @@
 				}    
 			}
 			
-			var dict_results_patients = {};
-			var dict_table_patients_name = {};
-			function launch_patient(patient_name) {
+			var used_dejavu_value = 15;
+			var used_dejavu_percent_value = 96;
+			var used_score_value = 10;
+			var url_last_launch_patient;
+			function launch_patient(patient_name, without_filters) {
+				document.getElementById("content_res").innerHTML = "";
 	    		var text_loading = 'Loading patient ' + patient_name;
 				show_waiting(text_loading);
-				if (patient_name in dict_results_patients) {
-					var val = dict_results_patients[patient_name];
-					document.getElementById("content_res").innerHTML = "";
-					var myNode = document.getElementById("content_res");
-			    	var myPanel = $(val);
-					myPanel.appendTo(myNode);
-					enable_table_search(dict_table_patients_name[patient_name]);
-					dijit.byId('waiting').hide();
+				var url = url_path + "/rnaseq/rna_junctions_patient.pl";
+				url += "?project=" + project_name;
+				url += "&patient=" + patient_name;
+				if (isChrome) { url += "&is_chrome=1"; }
+				if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
+				url_last_launch_patient = url;
+				url += "&dejavu=" + used_dejavu_value;
+				url += "&dejavu_percent=" + used_dejavu_percent_value;
+				url += "&min_score=" + used_score_value;
+				if (is_first_launch == 1) {
+					url += "&only_dejavu_ratio_10=1";
 				}
-				else {
-					var url = url_path + "/rnaseq/rna_junctions_patient.pl";
-					url += "?project=" + project_name;
-					url += "&patient=" + patient_name;
-					if (isChrome) { url += "&is_chrome=1"; }
-				    $.getJSON( url, function( data ) {
-				    	$.each( data, function( key, val ) {
-				    		if (key == 'html') {
-								document.getElementById("content_res").innerHTML = "";
-								var myNode = document.getElementById("content_res");
-						    	var myPanel = $(val);
-								myPanel.appendTo(myNode);
-								dict_results_patients[patient_name] = val;
-								document.getElementById('span_'+patient_name).setAttribute("style", "color:red;font-size:11px;");
-								enable_table_search(data.table_id);
-								dict_table_patients_name[patient_name] = data.table_id;
-								dijit.byId('waiting').hide();
+				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+					url += "&only_dejavu_ratio_10=1";
+				}
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_res");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							
+							var list_tables = String(data.tables_id).split(',');
+							for (var i = 0; i < list_tables.length; i++){
+								enable_table_search(list_tables[i]);
 							}
-						});
-				    })
-			    }
+							
+							//enable_table_search(data.table_id);
+			    			used_dejavu_value = data.used_dejavu;
+			    			if (used_dejavu_value == 'not') {}
+							else { update_dejavu_span_value();}
+							dijit.byId('waiting').hide();
+							is_first_launch = 0;
+						}
+					});
+			    })
 			}
 	    	
 	    	function show_waiting(text) {
@@ -744,7 +769,7 @@
 					nb_next = parseInt(nb) + 1;
 					disabled_next = '';
 				}
-				var elem = "<div style='background-color:black;'><object data='"+file+"' type='application/pdf' width='900' height='500'></object><center><div><label for='zoom_pdf_sashimi' class='form-label' style='color:white;'><button " + disabled_previous + " style='background-color:black;border: solid 2px white;border-radius:10px;' onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_previous + "')\"><span class='glyphicon glyphicon-plus-sign' style='color:white;height:16px'></span></button> ZOOM Sashimi Plot <button style='background-color:black;border: solid 2px white;border-radius:10px;' " + disabled_next + " onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_next + "')\"><span class='glyphicon glyphicon-minus-sign' style='color:white;height:16px;'></span></button></label><input disabled type='range' class='form-range' min='0' max='" + (parseInt(max)-1) + "' value='" + nb + "' style='width:300px;' id='zoom_pdf_sashimi'></div><br><button onClick='dijit.byId(\"dialog_sashimi\").hide();'>Close PDF</button></div></center>";
+				var elem = "<div style='background-color:black;'><object data='"+file+"' width='900' height='500'></object><center><div><label for='zoom_pdf_sashimi' class='form-label' style='color:white;'><button " + disabled_previous + " style='background-color:black;border: solid 2px white;border-radius:10px;' onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_previous + "')\"><span class='glyphicon glyphicon-plus-sign' style='color:white;height:16px'></span></button> ZOOM Sashimi Plot <button style='background-color:black;border: solid 2px white;border-radius:10px;' " + disabled_next + " onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_next + "')\"><span class='glyphicon glyphicon-minus-sign' style='color:white;height:16px;'></span></button></label><input disabled type='range' class='form-range' min='0' max='" + (parseInt(max)-1) + "' value='" + nb + "' style='width:300px;' id='zoom_pdf_sashimi'></div><br><button onClick='dijit.byId(\"dialog_sashimi\").hide();'>Close PLOT</button></div></center>";
 				document.getElementById("dialog_sashimi").innerHTML = elem;
 			}
 			
@@ -760,9 +785,192 @@
 				else { list_bams_files.push(bams_files); }
 				displayListBamInIgvApp(list_bams_files);
 			}
+			
+			function view_deja_vu_rna_junction(project_name, patient_name, junction_vector_id) {
+				document.getElementById("div_dejavu_junction").innerHTML = "";
+				show_waiting("Search DejaVu");
+				var url = url_path + "/polydejavu/dejavu_jonction.pl";
+				url += "?project=" + project_name;
+				url += "&patient=" + patient_name;
+				url += "&vector_id=" + junction_vector_id;
+				url += "&dejavu_percent=" + value_dejavu_percent_similar;
+				$.getJSON( url, function( data ) {
+					document.getElementById("div_dejavu_junction").innerHTML = "";
+					document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
+					document.getElementById("div_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
+					enable_table_search(data.table_id_my_variant);
+					enable_table_search(data.table_id);
+					dijit.byId('waiting').hide();
+					dijit.byId('dialog_dejavu_junction').show();
+			    })
+			}
+			
+			function view_dejavu_nb_int_this_run_patients(project_name, patient_name, junction_vector_id, min_ratio) {
+				document.getElementById("div_dejavu_junction").innerHTML = "";
+				show_waiting("Search DejaVu (in this run)");
+				var url = url_path + "/polydejavu/dejavu_jonction.pl";
+				url += "?is_dejavu_inthis_run=1&project=" + project_name;
+				url += "&patient=" + patient_name;
+				url += "&vector_id=" + junction_vector_id;
+				url += "&min_ratio=" + used_score_value;
+				$.getJSON( url, function( data ) {
+					document.getElementById("div_dejavu_junction").innerHTML = "";
+					document.getElementById("div_dejavu_junction").innerHTML += "<center><span style='margin:5px;'><b>In Patient <span style='color:green;'>" + patient_name + "</span></b></span></center>" + data.html_my_variant;
+					document.getElementById("div_dejavu_junction").innerHTML += "<br><center><span style='margin:5px;'><b>In DejaVu Junctions</b></span></center>" + data.html;
+					enable_table_search(data.table_id);
+					enable_table_search(data.table_id_my_variant);
+					dijit.byId('waiting').hide();
+					dijit.byId('dialog_dejavu_junction').show();
+			    })
+			}
 		    	
 	    	function enable_table_search(id) {
 	    		$('#'+id).bootstrapTable();
+			}
+			
+			var value_dejavu_percent_similar = 96;
+			function update_dejavu_percent_span_value() {
+				value_dejavu_percent_similar = 90 + parseInt(document.getElementById("slider_dejavu_percent").value);
+				document.getElementById("nb_percent_dejavu").innerHTML = value_dejavu_percent_similar;
+			}
+			
+			var value_score = 10;
+			function update_score_span_value() {
+				var value_score_slider = document.getElementById("slider_score").value;
+				if (value_score_slider == 0) {
+					document.getElementById("nb_score").innerHTML = '0%';
+					value_score = '0';
+				}
+				else {
+					value_score = value_score_slider * 10;
+					document.getElementById("nb_score").innerHTML = value_score+'%';
+				}
+			}
+			
+			var value_dejavu = 999;
+			function update_dejavu_span_value() {
+				value_dejavu = document.getElementById("slider_dejavu").value;
+				if (value_dejavu == 51) {
+					document.getElementById("nb_max_dejavu_patients").innerHTML = 'ALL';
+				}
+				else {
+					document.getElementById("nb_max_dejavu_patients").innerHTML = value_dejavu;
+				}
+			}
+			
+			function launch_dejavu_span_value() {
+				var only_gene_positions = document.getElementById('input_gene_positions').value;
+				if (value_dejavu == 101) { show_waiting("Filter DejaVu - ALL patients"); }
+				else { show_waiting("Filter DejaVu max " + value_dejavu + " patients (" + value_dejavu_percent_similar + "% coord similar)"); }
+				var url = url_last_launch_patient; 
+				if (value_dejavu < 101) { url += "&dejavu=" + value_dejavu; }
+				url += "&dejavu_percent=" + value_dejavu_percent_similar;
+				url += "&min_score=" + value_score;
+				if (is_first_launch == 1) {
+					url += "&only_dejavu_ratio_10=1";
+				}
+				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+					url += "&only_dejavu_ratio_10=1";
+				}
+				if (only_gene_positions == '') {}
+				else if (only_gene_positions.match(':')) {
+					url += "&only_positions=" + only_gene_positions;
+				}
+				else {
+					url += "&only_gene=" + only_gene_positions;
+				}
+				used_dejavu_percent_value = value_dejavu_percent_similar;
+				used_score_value = value_score;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_res");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							var list_tables = String(data.tables_id).split(',');
+							for (var i = 0; i < list_tables.length; i++){
+								enable_table_search(list_tables[i]);
+							}
+			    			used_dejavu_value = data.used_dejavu;
+			    			if (used_dejavu_value == 'not') {}
+							else { update_dejavu_span_value();}
+							dijit.byId('waiting').hide();
+							is_first_launch = 0;
+						}
+					});
+			    })
+			}
+			
+			function view_linked_junctions(patient_name, transcript_name, junction_vector_ids, this_junction, min_ratio) {
+				show_waiting("Show linked junctions found");
+				var url = url_path + "/rnaseq/rna_junctions_linked_view.pl";
+				url += "?project=" + project_name;
+				url += "&patient=" + patient_name;
+				url += "&transcript=" + transcript_name;
+				url += "&min_ratio=" + min_ratio;
+				url += "&this_junction=" + this_junction;
+				url += "&vector_ids=" + junction_vector_ids;
+				$.getJSON( url, function( data ) {
+					document.getElementById("div_linked_junction").innerHTML = "";
+					document.getElementById("div_linked_junction").innerHTML += data.html;
+					for (var i = 0; i < data.list_graphs.length; i++){
+						y_norm = data.list_graphs[i].y_norm;
+						x_common = data.list_graphs[i].x_common;
+						y_common = data.list_graphs[i].y_common;
+						plot_patient_name = data.list_graphs[i].patient_name;
+						var j = i + 1;
+						var plotid = 'plot'+j;
+						do_graph(plotid);
+					}
+					dijit.byId('waiting').hide();
+					dijit.byId('dialog_linked_junction').show();
+			    })
+			}
+			
+			var y_norm;
+    		var x_common;
+    		var y_common;
+    		var plot_patient_name;
+			function do_graph(plotname) {
+				var trace1 = {
+						x:x_common,
+						y:y_common,
+						yaxis: 'y1',
+						mode: 'lines+markers',
+						showlegend:false,
+						name:plot_patient_name,
+						opacity: 0.6,
+						marker: {
+  							color: 'red',
+  							size:2
+						}
+				};
+				
+				var trace2 = {
+						x:x_common,
+						y:y_norm,
+						yaxis: 'y1',
+						mode: 'lines+markers',
+						showlegend:false,
+						name:'Others',
+						opacity: 0.3,
+						marker: {
+  							color: 'blue',
+  							size:2
+						}
+				};
+
+				var data=[trace1, trace2];
+
+				var layout = {
+					yaxis:   {title : 'Nb Found Reads'},
+					xaxis : {title : 'Genomic Position'},
+					height: 600,
+				};
+	
+				var config = { modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: false};
+				Plotly.newPlot(plotname, data, layout,config);
 			}
 			
 		</script>
@@ -776,20 +984,20 @@
 					</table>
 				</div>
 				<ul class="nav navbar-nav">
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">RNA Analysis - Junction</span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">PolySplice</span></a></li>
 				</ul>
 				<ul class="nav navbar-nav">
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
 				</ul>
 			</div>
 		</nav>
 		
-		
-		<div class='container-fluid' id='content_nav'></div>
+		<div><span style='color:#23527C;'><b>Select patient analyse:</b></span></div>
+		<div id='content_nav' style="overflow-x:auto;padding-top:5px;"></div>
 		<div class='container-fluid' id='content_res'></div>
 		
-		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
+		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[500,150]" title="Waiting"> 
 			<div class="container" style="margin-left: auto ;margin-right: auto ;">
 				<div>
 					<br><br>
@@ -803,6 +1011,35 @@
         </div>
 		
 		<div id="dialog_sashimi" dojoType="dojox.widget.Dialog" dimensions="[920,600]" title="Sashimi PLOT"></div>
+		
+		<div id="dialog_dejavu_junction" style='overflow-y:hidden;' dojoType="dojox.widget.Dialog" dimensions="[920,700]" title="DejaVu Junction">
+			<div class="container-fluid" id="div_dejavu_junction" style="height:95%;width:99%;"></div>
+		</div>
+       
+		<div id="dialog_linked_junction" jsid="dialog_linked_junction" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">
+			<center><button onclick="dijit.byId('dialog_linked_junction').hide();" style="margin:15px;">X Close</button></center><br>
+            <div class="container-fluid" id="div_linked_junction" style="height:95%;width:95%;"></div>
+        </div>
+		
+		<div id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" dojoType="dojox.widget.Dialog" dimensions="[800,500]" title="List Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
+			 <span id="span_list_panels"></span>
+		</div>
+		
+		<div id="dialog_list_phenotypes" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="List Phenotype(s)"> 
+			 <table class="table">
+				<tbody>
+					<tr>
+						<td><div id="container_wordcloud" style="height:450px;border: solid black 1px;"></div></td>
+					</tr>
+				</tbody>
+			</table>
+			<br>
+			<div class="container-fluid" id="content_table_phenotypes" style="height:99%;width:99%;"></div>
+		</div>
+	    
+	    <div id="dialog_genes_in_panel" dojoType="dijit.Dialog" title="Genes in Panel">
+	        <div  id="content_genes_in_panel" jsId="content_genes_in_panel" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
         
         <div id="dialog_svg" dojoType="dijit.Dialog" onClick="dijit.byId('dialog_svg').hide();" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;"></div>
 

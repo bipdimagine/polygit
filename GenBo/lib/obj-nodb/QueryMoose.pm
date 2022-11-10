@@ -388,8 +388,8 @@ sub getRuns {
 sub getRunInfosById {
 	my ($self,$run_id) = @_;
 	my $dbh = $self->getDbh();
-	my $sql = qq{	select r.run_id as id ,creation_date as date , r.plateform_run_name as plateform_run_name,  description as description, p.name as plateform ,m.name as machine,m.type as constructor,s.name as method
-from PolyprojectNGS.run r,PolyprojectNGS.run_plateform rp , PolyprojectNGS.plateform p , PolyprojectNGS.run_machine rm, PolyprojectNGS.sequencing_machines m , 
+	my $sql = qq{	select r.run_id as id ,creation_date as date , r.plateform_run_name as plateform_run_name,  description as description, p.name as plateform ,m.name as machine,m.type as constructor,s.name as method,
+r.document as document,r.name as run_name from PolyprojectNGS.run r,PolyprojectNGS.run_plateform rp , PolyprojectNGS.plateform p , PolyprojectNGS.run_machine rm, PolyprojectNGS.sequencing_machines m , 
 PolyprojectNGS.run_method_seq rs, PolyprojectNGS.method_seq s
 where r.run_id=? and r.run_id=rp.run_id and rp.plateform_id=p.plateform_id and rm.run_id=r.run_id and rm.machine_id=m.machine_id and rs.run_id=r.run_id and rs.method_seq_id=s.method_seq_id ;};
 	my $sth = $dbh->prepare($sql);
@@ -739,7 +739,7 @@ sub fast_getPatients {
 
 sub getProjectByName {
 	my ($self, $name, $verbose) = @_;
-	confess() unless $name;
+	confess("-".$name."-") unless $name;
 	my $dbh = $self->getDbh();
 	my $config = $self->getConfig();
 	#$self->project_name($name);
@@ -794,6 +794,23 @@ sub getCaptureInfos {
 	return $$res[0];
 }
 
+sub getUmiInfos {
+	my ($self, $capture_id) = @_;
+	my $dbh = $self->getDbh();
+	my $config = $self->getConfig();
+	
+	my $sth = $dbh->prepare($self->sql_umi);
+	$sth->execute($capture_id);
+	my $res = $sth->fetchall_arrayref({});
+	my %hashCaptureFilesName;
+	#for (@$res) { $hashCaptureFilesName{$_->{'filename'}} = 1; }
+	if (scalar(keys(%hashCaptureFilesName)) > 1) {
+		warn "Multiple capture filed declared ! Exit...\n";
+		foreach my $name (keys(%hashCaptureFilesName)) { print "  -> $name\n"; }
+		die();
+	}
+	return $$res[0];
+}
 
 sub getCaptureId {
 	my ($self, $capture_name) = @_;

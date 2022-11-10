@@ -198,7 +198,7 @@ width: 5em;
 		dojo.require("dojox.mobile");
         dojo.require("dojox.mobile.parser"); 
         dojo.require("dojox.mobile.Switch"); 
-		
+		dojo.require("dojo.io.iframe");
 		require([ "dojo/_base/xhr","dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem","dojox/mobile/Switch"]);
 
 			var storeP;
@@ -302,7 +302,10 @@ function onSearchAll_polyviewer (input,name){
 	
 	var cookie_username;
      function checkPassword(project,okf){
-    	
+			if (!(dojo.cookie("igv_js") == undefined)){
+    			 igv_js =  dojo.cookie("igv_js");
+    		}
+    			 
                if (cookie_username == null){
             	   cookie_username = dojo.cookie("username");
                }
@@ -357,7 +360,12 @@ function onSearchAll_polyviewer (input,name){
 				  
                 header.setHref(url_header1);
 				reload_project();
-			
+				var elm = document.getElementById('checkbox');
+ 				 if (igv_js != document.getElementById("check_igv").checked) {
+    				document.getElementById("check_igv").click();
+  				}
+    			
+    			 
 				//preload_coverage();
 				
                 var tabs = dijit.byId("tabPrincipal");

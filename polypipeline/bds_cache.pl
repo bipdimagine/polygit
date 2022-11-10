@@ -119,7 +119,7 @@ my $steps = {
 				"cache_html_polycyto" =>sub {$pipeline->html_cache_polycyto(@_)}, 
 				"polydude" =>sub {$pipeline->polydude(@_)}, 
 				"sashimi_plots"=>sub {$pipeline->sashimi_plots(@_)}, 
-				
+				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)}, 
 			};
 
 
