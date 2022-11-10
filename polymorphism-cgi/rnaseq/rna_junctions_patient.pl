@@ -28,6 +28,7 @@ my $only_gene_name = $cgi->param('only_gene');
 my $only_positions = $cgi->param('only_positions');
 my $only_dejavu_ratio_10 = $cgi->param('only_dejavu_ratio_10');
 
+#$only_positions = '10:17000000-17080000';
 
 $min_score = 20 unless (defined($min_score));
 
@@ -51,6 +52,9 @@ my $release = $project->getVersion();
 my $gencode = '-';
 $gencode = $project->gencode_version() if ($release =~ /HG19/);
 
+my $max_dejavu_value = 51;
+$max_dejavu_value = $max_dejavu if defined($max_dejavu);
+
 my ($default_filter_dejavu_project, $default_filter_score);
 my ($nb_max_patient, $nb_limit);
 my $h_desc = $project->get_hash_patients_description_rna_seq_junction_analyse();
@@ -64,6 +68,7 @@ else { $nb_limit = int($nb_max_patient / 4); }
 $default_filter_dejavu_project = "data-filter-default='<=$nb_limit'" if $nb_limit > 0;
 $default_filter_score = "data-filter-default='>=1'";
 
+my $n = 0;
 my $score_slider = 0;
 $score_slider = $min_score / 10 if ($min_score and $min_score > 0);
 my (@lJunctions, $h_varids, $h_var_linked_ids);
@@ -80,6 +85,8 @@ foreach my $chr (@{$project->getChromosomes()}) {
 		$vector_patient->Intersection($vector_patient, $vector_postions);
 	}
 	foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
+		$n++;
+		print '.' if ($n % 50000);
 		$h_varids->{$junction->id()} = undef;
 		if ($junction->is_junctions_linked($patient)) {
 			if (exists $h_var_linked_ids->{$junction->id()}) {
@@ -117,6 +124,30 @@ foreach my $chr (@{$project->getChromosomes()}) {
 	}
 }
 
+#warn "\n";
+#warn "before: ".scalar(@lJunctions);
+
+#if (scalar(@lJunctions) > 1000) {
+#	my ($h_by_score, @lJunctionsPreFilter);
+#	foreach my $junction (@lJunctions) {
+#		$n++;
+#		print '.' if ($n % 50000);
+#		next if ($junction->isCanonique($patient));
+#		next if ($junction->get_ratio_new_count($patient) == 1);
+#		next if ($junction->get_percent_new_count($patient) < $min_score);
+#		my $score_no_dejavu = $junction->junction_score_without_dejavu_global($patient);
+#		$h_by_score->{$score_no_dejavu}++;
+#		next if $score_no_dejavu <= 8;
+#		push(@lJunctionsPreFilter, $junction);
+#	}
+#	@lJunctions = undef;
+#	@lJunctions = @lJunctionsPreFilter;
+#	@lJunctionsPreFilter = undef;
+#	warn Dumper $h_by_score;
+#}
+#warn "pre-filtre: ".scalar(@lJunctions);
+#die;
+
 my $percent_dejavu = 0;
 if (defined($use_percent_dejavu)) {
 	$percent_dejavu = $use_percent_dejavu - 90;
@@ -125,8 +156,6 @@ my $nb_percent_dejavu_value = 90 + $percent_dejavu;
 
 my $checked_only_dejavu_ratio_10;
 $checked_only_dejavu_ratio_10 = qq{checked="checked"} if $only_dejavu_ratio_10;
-my $max_dejavu_value = 51;
-$max_dejavu_value = $max_dejavu if defined($max_dejavu);
 my $html_dejavu = qq{
 	<table style="width:100%;">
 		<tr>
@@ -235,8 +264,7 @@ $html .= qq{<br>};
 my $_tr_lines_by_genes;
 my $h_junctions_color;
 my $h_dejavu_cnv;
-my $n = 0;
-
+$n = 0;
 
 my $h_junctions_scores;
 foreach my $junction (@lJunctions) {
@@ -257,6 +285,7 @@ foreach my $junction (@lJunctions) {
 		$keep = 1 if ($only_gene->external_name() eq $gene_name2);
 		next unless $keep;
 	}
+	#my $gene = $project->newGene($gene_name);
 	
 	if ($junction->get_percent_new_count($patient) < $min_score) {
 		next;
@@ -264,14 +293,21 @@ foreach my $junction (@lJunctions) {
 		else { next; }
 	}
 	
-	$junction->dejavu_percent_coordinate_similar($nb_percent_dejavu_value);
-	my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
-	$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
-	if ($nb_dejavu_pat > $max_dejavu_value) {
-		next;
-		if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
-		else { next; }
-	}
+	eval {
+		$junction->dejavu_percent_coordinate_similar($nb_percent_dejavu_value);
+		my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
+		$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
+		next if ($nb_dejavu_pat > $max_dejavu_value);
+	};
+	if ($@) { next; }
+	
+#	my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
+#	$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
+#	if ($nb_dejavu_pat > $max_dejavu_value) {
+#		next;
+#		if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
+#		else { next; }
+#	}
 	my $html_sashimi = get_sashimi_plot($junction, $patient);
 	my $html_igv = get_igv_button($junction, $patient);
 	my $html_id = get_html_id($junction);
@@ -489,29 +525,45 @@ sub get_html_dejavu {
 #	}
 	$html.= $cgi->end_Tr();
 	
+	my $dv_other_pat = $junction->dejavu_nb_other_patients($patient);
+	my $dv_other_pat_ratio_10 = 0;
+	my $dv_other_pat_ratio_20 = 0;
+	if ($dv_other_pat > 0) {
+		$dv_other_pat_ratio_10 = $junction->dejavu_nb_other_patients_min_ratio_10($patient);
+		$dv_other_pat_ratio_20 = $junction->dejavu_nb_other_patients_min_ratio_20($patient);
+	}
+	
 	$html.= $cgi->start_Tr();
 	$html.= $cgi->td("<center><b>DejaVu</b></center>");
-	$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients($patient)));
+	$html.= $cgi->td(obutton($cmd_all, $dv_other_pat));
 #	if ($my_ratio >= 70) {
 #		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_70($patient)));
 #		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_90($patient)));
 #	}
 #	else {
-		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_10($patient)));
-		$html.= $cgi->td(obutton($cmd_all, $junction->dejavu_nb_other_patients_min_ratio_20($patient)));
+		$html.= $cgi->td(obutton($cmd_all, $dv_other_pat_ratio_10));
+		$html.= $cgi->td(obutton($cmd_all, $dv_other_pat_ratio_20));
 #	}
 	$html.= $cgi->end_Tr();
 	
+	my $dv_run_other_pat = $junction->dejavu_nb_int_this_run_patients($patient);
+	my $dv_run_other_pat_ratio_10 = 0;
+	my $dv_run_other_pat_ratio_20 = 0;
+	if ($dv_run_other_pat > 0) {
+		$dv_run_other_pat_ratio_10 = $junction->dejavu_nb_int_this_run_patients($patient, 10);
+		$dv_run_other_pat_ratio_20 = $junction->dejavu_nb_int_this_run_patients($patient, 20);
+	}
+	
 	$html.= $cgi->start_Tr();
 	$html.= $cgi->td("<center><b>InThisRun</b></center>");
-	$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient)));
+	$html.= $cgi->td(obutton($cmd_inthisrun, $dv_run_other_pat));
 #	if ($my_ratio >= 70) {
 #		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,70)));
 #		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,90)));
 #	}
 #	else {
-		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,10)));
-		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,20)));
+		$html.= $cgi->td(obutton($cmd_inthisrun, $dv_run_other_pat_ratio_10));
+		$html.= $cgi->td(obutton($cmd_inthisrun, $dv_run_other_pat_ratio_20));
 #	}
 	$html.= $cgi->end_Tr();
 	$html.=$cgi->end_table();
@@ -659,6 +711,29 @@ sub obutton {
 sub get_html_patients {
 	my ($junction, $patient) = @_;
 	my $h_by_pat;
+	
+	my $intspan_junction = Set::IntSpan::Fast::XS->new();
+	$intspan_junction->add_range($junction->start()-25, $junction->start()+25);
+	$intspan_junction->add_range($junction->end()-25, $junction->end()+25);
+	
+#	my (@l_cov_all_pat, @l_cov_all_pat_gene);
+#	foreach my $pat (@{$project->getPatients()}) {
+#		foreach my $pcov (@{$pat->depthIntspan($junction->getChromosome->id(), $intspan_junction)}) {
+#			push(@l_cov_all_pat, $pcov);
+#		}
+#		foreach my $pcov (@{$pat->depth($gene->getChromosome->id(), $gene->start(), $gene->end())}) {
+#			push(@l_cov_all_pat_gene, $pcov);
+#		}
+#		
+#	}
+#	my $cov_mean_all_pat = 0;
+#	foreach my $cov (@l_cov_all_pat) { $cov_mean_all_pat += $cov; }
+#	$cov_mean_all_pat = $cov_mean_all_pat / scalar(@l_cov_all_pat);
+#	
+#	my $cov_mean_all_pat_gene = 0;
+#	foreach my $cov (@l_cov_all_pat_gene) { $cov_mean_all_pat_gene += $cov; }
+#	$cov_mean_all_pat_gene = $cov_mean_all_pat_gene / scalar(@l_cov_all_pat_gene);
+    	
 	foreach my $pat (@{$patient->getFamily->getPatients()}) {
 		next if (not $junction->get_dp_count($pat));
 		next if (not $junction->get_nb_new_count($pat));
@@ -682,6 +757,21 @@ sub get_html_patients {
 			}
 		}
 		$h_by_pat->{$fam_name}->{$pat->name()}->{dp} = $junction->get_dp_count($pat);
+#		my @l_cov = @{$pat->depthIntspan($junction->getChromosome->id(), $intspan_junction)};
+#		my $cov_mean = 0;
+#		foreach my $pcov (@l_cov) { $cov_mean += $pcov; }
+#		$cov_mean = $cov_mean / scalar(@l_cov);
+		
+#		my $cov_norm_mean = 0;
+#		my @lcov_norm = @{$patient->normalize_depth($gene->getChromosome->id(), $gene->start(), $gene->end())};
+#		foreach my $pcov (@lcov_norm) { $cov_norm_mean += $pcov; }
+#		$cov_norm_mean = $cov_norm_mean / scalar(@lcov_norm);
+		
+#		$h_by_pat->{$fam_name}->{$pat->name()}->{dp_pat_gene} = sprintf("%.2f",$cov_mean);
+#		$h_by_pat->{$fam_name}->{$pat->name()}->{dp_all_pat_gene} = sprintf("%.2f",$cov_mean_all_pat);
+#		$h_by_pat->{$fam_name}->{$pat->name()}->{dp_pat_normalize_gene} = sprintf("%.2f",$cov_norm_mean);
+#		$h_by_pat->{$fam_name}->{$pat->name()}->{dp_pat_mean_gene} = sprintf("%.2f",$patient->meanDepth($gene->getChromosome->id(), $gene->start(), $gene->end()));
+#		$h_by_pat->{$fam_name}->{$pat->name()}->{dp_all_pat_mean_gene} = sprintf("%.2f",$cov_mean_all_pat_gene);
 		$h_by_pat->{$fam_name}->{$pat->name()}->{nb_new} = $junction->get_nb_new_count($pat);
 		$h_by_pat->{$fam_name}->{$pat->name()}->{nb_normal} = $junction->get_nb_normal_count($pat);
 		$h_by_pat->{$fam_name}->{$pat->name()}->{percent} = sprintf("%.3f", $junction->get_percent_new_count($pat)).'%';
@@ -696,6 +786,11 @@ sub get_html_patients {
 	$html_patients .= qq{<th data-field="nb_new"><b><center>Nb New</center></b></th>};
 	$html_patients .= qq{<th data-field="nb_normal"><b><center>Nb Normal</center></b></th>};
 	$html_patients .= qq{<th data-field="dp"><b><center>DP</center></b></th>};
+#	$html_patients .= qq{<th data-field="dp_pat_gene"><b><center>DP Pat.</center></b></th>};
+#	$html_patients .= qq{<th data-field="dp_pat_gene"><b><center>DP All Pat.</center></b></th>};
+#	$html_patients .= qq{<th data-field="dp_mean_gene"><b><center>DP Normalize Pat Gene</center></b></th>};
+#	$html_patients .= qq{<th data-field="dp_mean_gene"><b><center>DP Mean Pat Gene</center></b></th>};
+#	$html_patients .= qq{<th data-field="dp_mean_gene"><b><center>DP Mean All Pat Gene</center></b></th>};
 	$html_patients .= qq{<th data-field=""><b><center></center></b></th>};
 	$html_patients .= qq{</thead>};
 	$html_patients .= qq{<tbody>};
@@ -709,6 +804,11 @@ sub get_html_patients {
 			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_new}.qq{</td>};
 			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_normal}.qq{</td>};
 			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp}.qq{</td>};
+#			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp_pat_gene}.qq{</td>};
+#			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp_all_pat_gene}.qq{</td>};
+#			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp_pat_normalize_gene}.qq{</td>};
+#			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp_pat_mean_gene}.qq{</td>};
+#			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp_all_pat_mean_gene}.qq{</td>};
 			$html_patients .= qq{</tr>};
 		}
 	}
