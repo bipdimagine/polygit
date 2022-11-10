@@ -708,6 +708,19 @@ has sql_capture_infos =>(
 	},
 );
 
+has sql_umi =>(
+	is		=> 'ro',
+	isa		=> 'Str',
+	lazy =>1,
+	default	=> sub {
+	my $sql = qq{SELECT u.name as name , u.mask as mask FROM  PolyprojectNGS.capture_systems c, PolyprojectNGS.umi u where c.capture_id=? and c.umi_id = u.umi_id ;};
+
+	return $sql;
+	},
+);
+
+
+
 has sql_capture_infos_by_name =>(
 	is		=> 'ro',
 	isa		=> 'Str',
@@ -1036,7 +1049,7 @@ has sql_cmd_get_alamut_api_key_from_username => (
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
-			SELECT USER.LOGIN as login, USER.EQUIPE_ID as equipe_id, ALAMUT_LICENCE.NAME as licence_alamut, ALAMUT_LICENCE.API_KEY as api_key  FROM bipd_users.USER, bipd_users.EQUIPE_ALAMUT_LICENCE, bipd_users.ALAMUT_LICENCE
+			SELECT USER.LOGIN as login, USER.EQUIPE_ID as equipe_id, ALAMUT_LICENCE.NAME as licence_alamut, ALAMUT_LICENCE.API_KEY as api_key, ALAMUT_LICENCE.INSTITUTION_KEY as institution_key  FROM bipd_users.USER, bipd_users.EQUIPE_ALAMUT_LICENCE, bipd_users.ALAMUT_LICENCE
 				where USER.login=? and USER.EQUIPE_ID=EQUIPE_ALAMUT_LICENCE.EQUIPE_ID and EQUIPE_ALAMUT_LICENCE.ALAMUT_ID=ALAMUT_LICENCE.ALAMUT_ID;
 		};
 		return $sql;
@@ -1229,6 +1242,28 @@ sub isLoginSTAFF {
 	return;
 }
 
+sub getListProjectsRnaSeqFromLoginPwd {
+	my ($self, $login, $pwd,  $project_name) = @_;
+	
+	my $is_BIPD_login = $self->isLoginSTAFF($login);
+	my $h_found;
+	
+	my @lProj = @{$self->getListProjectsRnaSeq($project_name)};
+	foreach my $hpr (@lProj) {
+		$h_found->{$hpr->{name}} = undef;
+	}
+	if (not $is_BIPD_login) {
+		my $res_group = $self->getProjectHashForGroup($login,$pwd);
+		if ($res_group) {
+			foreach my $project_id (keys %{$res_group}) {
+				$res_group->{$project_id}->{username} = $login;
+				push(@lProj, $res_group->{$project_id}) unless exists $h_found->{$project_id};
+			}
+		}
+	}
+	return \@lProj;
+}
+
 sub getListProjectsRnaSeq {
 	my ($self, $project_name) = @_;
 	my @l_res;
@@ -1253,7 +1288,8 @@ sub getListProjectsRnaSeq {
 		$sth2->execute();
 	}
 	my $h = $sth->fetchall_hashref('id');
-	my $h2 = $sth2->fetchall_hashref('id');
+	my $h2 = $sth2->fetchall_hashref('project_id');
+	
 	
 	my @l_projects_ids = keys %$h;
 	foreach my $pr_id (keys %$h2) {
@@ -1333,6 +1369,28 @@ sub getHashRunIdFromSampleName {
 	return $h;
 }
 
+has sql_cmd_get_runid_infos => (
+	is       => 'ro',
+	isa      => 'Str',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+		my $query = qq{
+			SELECT * FROM PolyprojectNGS.run where run_id=?;
+		};
+		return $query;
+	},
+);
+
+sub getHashRunIdInfos {
+	my ($self, $run_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = $self->sql_cmd_get_runid_infos();
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($run_id);
+	my $h = $sth->fetchall_hashref('run_id');
+	return $h;
+}
 
 
 1;

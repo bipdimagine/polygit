@@ -49,7 +49,7 @@ my $hps =  $run->getAllPatientsInfos();
 my %contr_projects;
 
 map {$contr_projects{$_->{project}} ++} @$hps;
-
+my $dir_out = $patient->getDragenDir("PON");
 my @files;
 foreach my $pr (keys %contr_projects){
 	my $buffer1 = new GBuffer;
@@ -64,21 +64,22 @@ foreach my $pr (keys %contr_projects){
 
 die(@files) if scalar(@files) < 5;
 my $ref_dragen = $project->getGenomeIndex("dragen");
-my $dir_out= $patient->getCallingPipelineDir("dragen-cnv");
-warn $dir_out;
 my $patient_gc = $patient->targetGCFile;
-open(PON,">$dir_out/poc.txt");
+my $pon_list = "$dir_out/pon.txt";
+my $f1= $dir_out."/".$patient_name.".cnv.vcf.gz";
+open(PON,">$pon_list");
 print PON join("\n",@files);
 close(PON);
-my $bam = $patient->getBamFile("dragen-align");
-my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_out --bam-input $bam --output-file-prefix $patient_name --enable-map-align false --enable-cnv true --enable-sv true --cnv-input $patient_gc --cnv-normals-list $dir_out/poc.txt --cnv-enable-gcbias-correction false};
-my $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
-warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
+my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_out --output-file-prefix $patient_name --enable-map-align false --enable-cnv true --cnv-input $patient_gc --cnv-normals-list $pon_list --cnv-enable-gcbias-correction false};
+my $exit = 0;
+ $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"}) unless -e $f1;
+#warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
 #my ($out,$err,$exit) = $ssh->cmd($cmd);
 die($cmd) unless $exit == 0;
-my $f1= $dir_out."/".$patient_name.".cnv.vcf.gz";
-my $dir_prod = $project->getVariationsDir("dragen-pon");
-system("rsync -rav $f1 $dir_prod 2>/dev/null");
 
+
+my $dir_prod = $project->getVariationsDir("dragen-pon");
+system("rsync -rav $f1* $dir_prod 2>/dev/null");
+warn "rsync -rav $f1 $dir_prod 2>/dev/null";
 exit(0);
 

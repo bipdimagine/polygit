@@ -50,20 +50,26 @@ my $hps =  $run->getAllPatientsInfos();
 my %contr_projects;
 
 map {$contr_projects{$_->{project}} ++} @$hps;
-
+my $dir_pipeline_bam = $patient->getDragenDir("pipeline");
 my $dir_pipeline = $patient->getDragenDir("SV");
 my $ref_dragen = $project->getGenomeIndex("dragen");
-my $dir_out= $patient->getCallingPipelineDir("dragen-sv");
+my $f1= $dir_pipeline."/".$patient_name.".sv.vcf.gz";
+my $bam = $patient->getBamFile();
+die() unless -e $bam;
+system("rsync -rav $bam*  $dir_pipeline_bam/") unless -e $f1;
+my $bamin = "$dir_pipeline_bam/$patient_name.bam";
+my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --bam-input $bamin --output-file-prefix $patient_name --enable-map-align false  --enable-sv true  };
+my $exit =0;
+warn $f1;
+$exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) unless -e $f1;
 
-my $bam = $patient->getBamFile("dragen-align");
-my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --bam-input $bam --output-file-prefix $patient_name --enable-map-align false  --enable-sv true  };
-my $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
-warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
-#my ($out,$err,$exit) = $ssh->cmd($cmd);
+warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd"};
+
 die($cmd) unless $exit == 0;
-my $f1= $dir_pipeline."/".$patient_name.".cnv.vcf.gz";
-my $dir_prod = $project->getVariationsDir("dragen-pon");
-system("rsync -rav $f1 $dir_prod 2>/dev/null");
 
+
+my $dir_prod = $project->getVariationsDir("dragen-sv");
+system("rsync -rav $f1* $dir_prod 2>/dev/null");
+warn "rsync -rav $f1 $dir_prod 2>/dev/null";
 exit(0);
 

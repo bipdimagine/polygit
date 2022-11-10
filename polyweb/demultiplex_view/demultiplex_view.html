@@ -580,6 +580,10 @@
 	    		dijit.byId('waiting').show();
 	    	}
 	    	
+	    	function datesSorter(a, b){
+		        return(new Date(a).getTime() - new Date(b).getTime());
+		    }
+	    	
 	    	function launch() {
 	    		var text_loading = 'Checking HTML Files';
 				show_waiting(text_loading);

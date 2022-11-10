@@ -498,8 +498,10 @@ function exclude_functions_for_old_project() {
 	dijit.byId('filter_predicted_splice_site_2').set('checked', false);
 	dijit.byId('filter_predicted_splice_site_2').set('disabled', true);
 	hash_button_always_disabled['filter_predicted_splice_site_2'] = 'not';
-    dijit.byId("slider_ratio").set("value", 5);
-	dijit.byId('slider_ratio').set('disabled', true);
+    dijit.byId("slider_ratio_min").set("value", 1);
+	dijit.byId('slider_ratio_min').set('disabled', true);
+	dijit.byId("slider_ratio_max").set("value", 5);
+	dijit.byId('slider_ratio_max').set('disabled', true);
 }
 
 
@@ -772,7 +774,8 @@ function loadFirstLaunch() {
     dijit.byId("slider_predictions").set("value", 4);
     dijit.byId("slider_cadd").set("value", 7);
     dijit.byId("slider_ncboost").set("value", 4);
-    dijit.byId("slider_ratio").set("value", 5);
+    dijit.byId("slider_ratio_min").set("value", 1);
+    dijit.byId("slider_ratio_max").set("value", 5);
     //dijit.byId("slider_polyscore").set("value", 4);
     dijit.byId("slider_confidence").set("value", 3);
     dijit.byId("filter_nofreq").set("value", "on");
@@ -2423,10 +2426,15 @@ function construct_url_filter_data () {
     else if (dijit.byId("slider_ncboost").get("value") == 2)  { filter_args += "&ncboost=medium"; }
     else if (dijit.byId("slider_ncboost").get("value") == 3)  { filter_args += "&ncboost=moderate"; }
     
-    if (dijit.byId("slider_ratio").get("value") == 1)       { filter_args += "&ratio=80&type_ratio=" + type_ratio_allelic; }
-    else if (dijit.byId("slider_ratio").get("value") == 2)  { filter_args += "&ratio=40&type_ratio=" + type_ratio_allelic; }
-    else if (dijit.byId("slider_ratio").get("value") == 3)  { filter_args += "&ratio=20&type_ratio=" + type_ratio_allelic; }
-    else if (dijit.byId("slider_ratio").get("value") == 4)  { filter_args += "&ratio=10&type_ratio=" + type_ratio_allelic; }
+    if (dijit.byId("slider_ratio_min").get("value") == 2)       { filter_args += "&min_ratio=10"; }
+    else if (dijit.byId("slider_ratio_min").get("value") == 3)  { filter_args += "&min_ratio=20"; }
+    else if (dijit.byId("slider_ratio_min").get("value") == 4)  { filter_args += "&min_ratio=40"; }
+    else if (dijit.byId("slider_ratio_min").get("value") == 5)  { filter_args += "&min_ratio=80"; }
+    
+    if (dijit.byId("slider_ratio_max").get("value") == 1)       { filter_args += "&max_ratio=10"; }
+    else if (dijit.byId("slider_ratio_max").get("value") == 2)  { filter_args += "&max_ratio=20"; }
+    else if (dijit.byId("slider_ratio_max").get("value") == 3)  { filter_args += "&max_ratio=40"; }
+    else if (dijit.byId("slider_ratio_max").get("value") == 4)  { filter_args += "&max_ratio=80"; }
     
     
 //    if (view_all_genes == 1) { filter_args += "&view_all_genes=1"; }
@@ -6909,7 +6917,7 @@ function selectFamilies_recregion(value) {
                     </div>
               </td>
               <td style="padding:3px">
-                    <div id="slider_predictions" jsId="slider_predictions" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:165px; height: 25px;margin-left:10px;"' >
+                    <div id="slider_predictions" jsId="slider_predictions" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:165px; height: 25px;margin-left:4px;"' >
                         <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:4, style:{height:"5px"}'> </div>
                         <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
                             <li><span><font color="#EA3434"><i>Damaging</i></font></span></li>
@@ -6937,7 +6945,7 @@ function selectFamilies_recregion(value) {
                     -->
               </td>
               <td style="padding-left:3px">
-                    <div id="slider_confidence" jsId="slider_confidence" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 4" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:90px; height: 25px;margin-left:10px;"' >
+                    <div id="slider_confidence" jsId="slider_confidence" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 4" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:90px; height: 25px;margin-left:4px;"' >
                         <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
                         <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
                             <li><span><font color="#EA3434"><i>High</i></font></span></li>
@@ -7051,7 +7059,7 @@ function selectFamilies_recregion(value) {
                 </div>
               </td>
               <td style="padding:3px">
-                    <div id="slider_ncboost" jsId="slider_ncboost" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;margin-left:10px;"' >
+                    <div id="slider_ncboost" jsId="slider_ncboost" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;margin-left:4px;"' >
                         <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:4, style:{height:"5px"}'> </div>
                         <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
                             <li><span><font color="#EA3434"><i>High</i></font></span></li>
@@ -7083,7 +7091,7 @@ function selectFamilies_recregion(value) {
                 </div>
               </td>
               <td style="padding:3px">
-                    <div id="slider_cadd" jsId="slider_cadd" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:7,maximum:7,discreteValues:7,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 25px;margin-left:10px;"' >
+                    <div id="slider_cadd" jsId="slider_cadd" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:7,maximum:7,discreteValues:7,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 25px;margin-left:4px;"' >
                         <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:7, style:{height:"5px"}'> </div>
                         <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
                             <li><span><font color="#EA3434"><i>30</i></font></span></li>
@@ -7121,23 +7129,31 @@ function selectFamilies_recregion(value) {
                     </div>
                     <div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'help_ratio',position:['above']">
                     	<span>
-                    		<br><br>
+                    		<b>TIPS</b>
+                    		<br>
+                    		To use this filter (Min/Max % ratio):<br>
+                    		  1- Select your patient name with "Intersect"<br>
+                    		  2- Select all others patients and put them "In The Attic"<br>
+                    		  3- RUN<br>
                     	</span>
                     </div>
                 </div>
               </td>
-              <td style="padding:3px">
+              <td style="padding-left:2px">
+              		<b><span>MIN:</span></b>
+              </td>
+              <td style="padding-left:1px">
               	<table>
               		<tr>
               			<td>
-		                    <div id="slider_ratio" jsId="slider_ratio" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 25px;margin-left:10px;"' >
+		                    <div id="slider_ratio_min" jsId="slider_ratio_min" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:0,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:110px; height: 25px;margin-left:4px;"' >
 		                        <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
 		                        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
-									<li>80</li>
-									<li>40</li>
-									<li>20</li>
+									<li>0</li>
 									<li>10</li>
-						            <li>All</li>
+									<li>20</li>
+									<li>40</li>
+						            <li>80</li>
 		                        </ol>
 		                        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
 		                            <li><span></span></li>
@@ -7148,23 +7164,30 @@ function selectFamilies_recregion(value) {
 		                        </ol>
 		                    </div>
 	                    </td>
-	                    <td>
-							<div id="drop_type_ratio_allelic"  data-dojo-type="dijit/form/DropDownButton">
-								<span id="span_drop_type_ratio_allelic"><b>MIN</b> Ratio</span> 
-		                    	<div data-dojo-type="dijit/DropDownMenu" style="font-size:12px">
-			                        <div data-dojo-type="dijit/MenuItem"  onClick="change_type_ratio_allelic('min')">Min (ex: 40% to 100%)</div>
-			                        <div data-dojo-type="dijit/MenuItem"  onClick="change_type_ratio_allelic('max')">Max (ex: 0% to 40%)</div>
-								</div>
-							</div>
-	                    </td>
 					</tr>
 				</table>
-              
-              
-              
-              
-              
-              
+              </td>
+              <td style="padding-left:2px">
+              		<b><span>MAX:</span></b>
+              </td>
+              <td style="padding:1px">
+	                <div id="slider_ratio_max" jsId="slider_ratio_max" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:110px; height: 25px;margin-left:4px;"' >
+	                    <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
+	                    <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+							<li>10</li>
+							<li>20</li>
+							<li>40</li>
+							<li>80</li>
+				            <li>All</li>
+	                    </ol>
+	                    <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
+	                        <li><span></span></li>
+	                        <li><span></span></li>
+	                        <li><span></span></li>
+	                        <li><span></span></li>
+	                        <li><span></span></li>
+	                    </ol>
+	                </div>
                </td>
                
                <!--
@@ -7184,7 +7207,7 @@ function selectFamilies_recregion(value) {
                 </div>
               </td>
               <td style="padding:3px">
-                    <div id="slider_polyscore" jsId="slider_polyscore" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 25px;margin-left:10px;"' >
+                    <div id="slider_polyscore" jsId="slider_polyscore" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 25px;margin-left:4px;"' >
                         <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:4, style:{height:"5px"}'> </div>
                         <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
                             <li><span><font color="#EA3434"><i>High</i></font></span></li>

@@ -195,7 +195,7 @@ function cgh(){
    }
 }
 
-dojo.require("dojo.io.iframe");
+
 function load_polyviewer_export_xls(mode) {
 	dijit.byId('waiting').show();
 	var url;

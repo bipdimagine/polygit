@@ -103,20 +103,7 @@ var tsamples = dijit.byId("gridPatients").selection.getSelected();
 function displayInIGVLocus(locus) {
 	 var url = "http://localhost:60151/goto?locus="+locus;
 	 httpGetFocusOn(url);
-	 return;
-	 socket = dojox.socket({ 
-         url: "localhost:60151", 
-         headers: { 
-             "Accept": "application/json", 
-             "Content-Type": "text/plain" 
-         } 
-     }); 
-     if (!socket) 
-     { 
-         console.log("Socket error"); 
-         return; 
-     } 
-     console.log("socket ok"); 
+	 return 1;
 }
 
 function displayInIGV(chr, start, end){
@@ -146,30 +133,39 @@ function displayInIGV(chr, start, end){
 
 function displayOneBAMIGV(file){
     var url = "http://localhost:60151/load?file="+file;
-    console.dir(url);
+	url += "&merge=false";
     httpGetFocusOn(url);
 	return 1;
 }
 
 var old_tracks;
-function launch_igv_tool(fasta, tracks, locus) {
+function init_igv (){
 	var url = "http://localhost:60151/load";
-	if (old_tracks == tracks){
-		return;
-	} 
-	old_tracks = tracks;
+	var polyweb_url =window.location.origin; // url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa";
+	 var url_fasta2 = polyweb_url+"/public-data/genome/"+igv_genome+"/fasta/all.fa";
+		url += "?genome=hg19"+"&file="+polyweb_url+url_gene_bed;
+		url += "&merge=false";
+	    httpGetFocusOn(url);
+	return 1;		
+}
+
+function igv_reset () {
+	previous_bams = new Array();
+}
+
+function launch_igv_tool_rna(fasta, tracks, locus) {
+	var url = "http://localhost:60151/load";
 	if (fasta) {
 		url += "?genome=" + fasta;
 		url += "&file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=false";
+		url += "&merge=true";
 	}
 	else {
 		url += "?file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=false";
+		url += "&merge=true";
 	}
-    console.dir(url);
     httpGetFocusOn(url);
 	return 1;
 }

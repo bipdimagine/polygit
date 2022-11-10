@@ -573,6 +573,18 @@
 			    });
 	    	}
 	    	
+			dojo.require("dojo.io.iframe");
+			function exportXls() {
+				var url_xls_2 = url_path + "/demultiplex_view/demultiplex_view.pl?export_xls=1&run=" + param('name');
+    			console.log(url_xls_2);
+			    var downloadPdfIframeName = "downloadPdfIframe"; 
+			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
+			    dojo.io.iframe.setSrc(iframe, url_xls_2, true);
+			    return;
+			}
+
+	    	var url_xls_lanes = '';
+	    	var url_force = '';
 	    	function launch() {
 	    		document.title = "PolyDemultiplex " + param("name");
 	    		document.getElementById("span_run_name").innerHTML = param("name");
@@ -586,16 +598,16 @@
 			    		var path_run = json_file;
 			    		json_file = json_file.replace("json/demultiplex.json", "");
 			    		
-						var url_force = url_path + "/demultiplex_view/demultiplex_view.pl";
+						url_force = url_path + "/demultiplex_view/demultiplex_view.pl";
 						url_force += "?force=1";
 						url_force += "&run=" + param('name');
-						
-			    		var cmd = "force_reload_view('" + url_force + "')";
-			    	
+			    		var cmd_force = "force_reload_view('" + url_force + "')";
+						var cmd_xls = "exportXls()";
 						var myNode = document.getElementById("content_res");
 				    	var nav = "<ul class='nav nav-tabs' style='padding-top:20px;'>";
 						nav += "<li><a data-toggle='tab' href='#" + file + "'><b>" + file + "</b></a></li>";
-						nav += "<li><a data-toggle='tab' href='#" + file + "'  style='color:red;'><button onclick=\"" + cmd + " \"><b><span class='glyphicon glyphicon-refresh'></span> Force Reload</b></button></a></li>";
+						nav += "<li><a data-toggle='tab' href='#" + file + "'  style='color:red;'><button onclick=\"" + cmd_force + " \"><b><span class='glyphicon glyphicon-refresh'></span> Force Reload</b></button></a></li>";
+						nav += "<li><a data-toggle='tab' href='#" + file + "'  style='color:green;'><button onclick=\"" + cmd_xls + " \"><b><span class='glyphicon glyphicon-save-file'></span> Export XLS</b></button></a></li>";
 						nav += "</ul>";
 						$(nav).appendTo(myNode);
 			    	
@@ -603,6 +615,8 @@
 						myPanel.appendTo(myNode);
 		    			var table_id = data.table_id;
 						enable_table_search(table_id);
+						var table_id_resume = data.table_id_resume;
+						if (table_id_resume) { enable_table_search(table_id_resume); };
 						i++;
 					});
 					dijit.byId('waiting').hide();
