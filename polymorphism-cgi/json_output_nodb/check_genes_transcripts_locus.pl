@@ -55,7 +55,6 @@ else {
 		$annot_version    = $buffer->getQuery()->getMaxPublicDatabaseVersion();
 		$annotation       = $genecode_version . '.' . $annot_version;
 	}
-	
 	$project->changeAnnotationVersion( $annotation, 1 );
 }
 
@@ -389,9 +388,7 @@ if ($h_genes) {
 				$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
 			}
 #			$out_line .= html_polygenescout::print_link_dejavu($cmd_link);
-			warn "cuicui";
 			$out_line .= html_polygenescout::print_tab_variants_project($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes,$gene->project);
-			warn "end cuicui";
 			if ( $buffer->hasHgmdAccess($user) ) {
 				$out_line .= html_polygenescout::print_hgmd_total_mut($total_mut, $external_name);
 				$out_line .= html_polygenescout::print_hgmd_total_new($total_new, $external_name);
@@ -399,7 +396,6 @@ if ($h_genes) {
 			
 		}
 		else {
-			die();
 			if ($use_phenotype_score) {
 				$sort = 'gene_score' unless $sort;
 				$gene_score = get_gene_score($gene);
@@ -431,7 +427,6 @@ if ($h_genes) {
 				$gene_start = $gene_end;
 				$gene_end = $t;
 			}
-			next;
 			if ($transcripts) {
 				my @list_transcripts  = keys %{$h_found_by_transcript->{$external_name}};
 				foreach my $tr_name (sort @list_transcripts) {
