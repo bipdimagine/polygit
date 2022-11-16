@@ -1282,6 +1282,16 @@ has bamUrl => (
 		return $bam_dir . "/" . $t[-1];
 	},
 );
+has hasBamFile => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		my ($no) =  grep {$_ eq "no_align"} @{$self->alignmentMethods()};
+		return undef if $no;
+		return 1;
+	},
+);
 
 has bamFiles => (
 	is      => 'ro',
