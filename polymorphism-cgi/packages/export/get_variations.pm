@@ -666,7 +666,8 @@ sub getIds_onlive {
 				push(@{$hash->{'patient_unifiedgenotyper3'} }, $nb_all_mut);
 				
 				push(@{$hash->{'patient_unifiedgenotyper'}  }, '.');
-				my $thisCov = $var->get_coverage($patient)->coverage($var->start(), $var->end());
+				my $thisCov = $var->getMeanDP($patient);
+				#	push(@{$hash->{'patient_unifiedgenotyper4'} }, );
 				if (exists $thisCov->{mean}) { push(@{$hash->{'patient_unifiedgenotyper4'} }, int($thisCov->{mean})); }
 				else { push(@{$hash->{'patient_unifiedgenotyper4'} }, '.'); }
 				push(@{$hash->{'patient_unifiedgenotyper5'} }, '.');
