@@ -575,6 +575,7 @@ sub get_variants_infos_from_projects {
 		my ($hResGene_local, $hResVariants_local, $hResVariantsIds_local, $hResVariantsListPatients_local, $hResVariantsTableLocal_local,$hResVariantsByScore_local, $hResVariantsRatioAll_local);
 		foreach my $project_name (@tmp) {
 			print '.';
+#			die if ($project_name eq 'NGS2022_5424');
 			next if ($only_project and $project_name ne $only_project);
 			my $buffer = new GBuffer;
 			my $project;
@@ -595,13 +596,12 @@ sub get_variants_infos_from_projects {
 					my @lTmp = split('_', $check_var_id);
 					my $chr_id = $lTmp[0];
 					my $start = $lTmp[1] - 1000;
-					my $end = $lTmp[1] - 1000;
+					my $end = $lTmp[1] + 1000;
 					my $chr_tmp = $project->getChromosome($chr_id);
 					my $vector_tmp = $chr_tmp->getVectorByPosition($start, $end);
 					foreach my $var_tmp (@{$chr_tmp->getListVarObjects($vector_tmp)}) {
 						if ($var_tmp->id() eq $check_var_id) {
 							foreach my $pat_tmp (@{$var_tmp->getPatients()}) {
-								warn $pat_tmp->name();
 								if ($only_pat_with_var_he == 1 and $var_tmp->isHeterozygote($pat_tmp)) {
 									$is_ok_filter_var_in_project = 1;
 									$h_patients_found_with_filter_var->{$pat_tmp->name()} = undef;
@@ -865,13 +865,11 @@ sub update_list_variants_from_dejavu {
 	my $h_projects_filters_he_comp;
 	if ($only_pat_with_var) {
 		my $var_dv = $project_dejavu->_newVariant($only_pat_with_var);
-		
 		$h_projects_filters_he_comp = $var_dv->deja_vu();
 		if (not $only_pat_with_var_he or not $only_pat_with_var_ho) {
 			foreach my $proj_name (keys %{$h_projects_filters_he_comp}) {
-				my $string = $h_projects_filters_he_comp->{$proj_name}->{string};
-				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_ho and not $string =~ /:1/);
-				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_he and not $string =~ /:2/);
+				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_ho and $h_projects_filters_he_comp->{$proj_name}->{ho} == 0);
+				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_he and $h_projects_filters_he_comp->{$proj_name}->{he} == 0);
 			}
 		}
 	}
