@@ -80,6 +80,13 @@ function update_buttons_polyquery() {
 		dijit.byId("slider_dv_pv").set('value', 4);
 		
 	}
+	if (is_genome_project == -1 ){
+		dijit.byId("slider_dv_pv").set('value', 4);
+		dijit.byId("slider_dv_ho_pv").set('value', 3);
+		dijit.byId("slider_gnomad_ac_ho_pv").set('value', 3);
+		
+		
+	}
 	if (polyquery_filters) {
 		dijit.byId('waiting').show();
 
