@@ -5474,7 +5474,7 @@ sub getDejaVuInfosForDiag {
 		}
 		#IN EXOME 	
 		if (exists $exomes->{$p}){
-			$res->{exome_projects}  ++;
+			$res->{exome_projects}  ++; 
 			$res->{exome_patients}   += $nhe;
 			$res->{exome_patients_ho}   += $nho;
 		}
