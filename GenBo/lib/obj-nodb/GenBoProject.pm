@@ -865,13 +865,15 @@ has similarProjects => (
 		my $self = shift;
 		my $results;
 		my $query = $self->buffer->getQuery();
-		if ( $self->isExome or $self->isGenome() ) {
+	#	
 			my $phenotypes = $self->getPhenotypes();
 			return {} unless $phenotypes;
 			return {} unless @$phenotypes;
 			map { $results->{$_}++ }
 			  @{ $phenotypes->[0]->projects_name } if $phenotypes;
 			 # warn Dumper $results;
+			 
+		if ( $self->isExome or $self->isGenome() ) { 
 			return {} unless $results;
 			return $results;
 		}
@@ -891,8 +893,7 @@ has similarProjects => (
 				#next;
 			}
 			else {
-				map { $results->{$_}++ }
-				  @{ $query->getSimilarProjects( $c->id ) };
+				map { $results->{$_}++ } @{ $query->getSimilarProjects( $c->id ) };
 			}
 			if ($vdb) {
 				map { $results->{$_}++ }
@@ -900,7 +901,6 @@ has similarProjects => (
 			}
 
 		}
-
 		delete $results->{ $self->name };
 		return $results;
 	},
@@ -5458,6 +5458,7 @@ sub getDejaVuInfosForDiag {
 	$res->{in_this_run_patients} = 0;
 	$res->{in_this_run_patients} += scalar(@{$v->getPatients});
 	return $res unless ($h);
+	
 	foreach my $l (split("!",$h)) {
 		my($p,$nho,$nhe,$info) = split(":",$l);
 		$p = "NGS20".$p;
