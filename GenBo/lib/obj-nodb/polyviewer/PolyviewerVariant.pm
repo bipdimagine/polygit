@@ -626,7 +626,7 @@ sub update_clinvar {
 }
 
 sub setOldVariant {
-	my ($self,$vh,$project,$patient,$gene,$update) = @_; 
+	my ($self,$vh,$project,$patient,$gene,$update,$debug) = @_; 
 		$self->gene($gene);
 		$self->id($vh->{value}->{id});
 		$self->start($vh->{value}->{start});
@@ -695,9 +695,23 @@ sub setOldVariant {
 	#########
 	# DEJAVU
 	#########
+	if ($project->isDiagnostic){
+		my $h = $project->getDejaVuInfosForDiag($self->id);
+	
+	$self->dejavu_other_projects($h->{other_projects});
+	$self->dejavu_other_patients($h->{other_patients});
+	$self->dejavu_other_patients_ho($h->{other_patients_ho});
+	$self->dejavu_similar_projects( $h->{similar_projects});
+	$self->dejavu_similar_patients($h->{similar_patients});
+	$self->dejavu_similar_patients_ho($h->{similar_patients_ho});
+	$self->dejavu_this_run_patients($h->{in_this_run_patients});# = '-';
+		warn Dumper $h;
+	#	warn $self->id;
+	}
+	else {
 	$self->parseDejaVuTable($vh->{html}->{deja_vu},$vh);
 	$self->dejavu_this_run_patients($vh->{value}->{this_run_patients});# = '-';
-	
+	}
 	#########
 	# caller
 	#########
