@@ -5482,7 +5482,7 @@ sub getDejaVuInfosForDiag {
 		if (exists $similar->{$p}){
 			$res->{similar_projects}  ++;
 			$res->{similar_patients} += $nhe;
-			$res->{similar_patient_ho} += $nho;
+			$res->{similar_patients_ho} += $nho;
 		}
 		else {
 			$res->{other_projects} ++;
