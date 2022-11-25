@@ -119,8 +119,7 @@ my $gene_name;
 my $translate_id ={};
 warn 'parse gene';
 my $genes = parse_gff::read_gff_genes($ftype->{gff_all}->{file},$translate_id,$gene_code_version);
-warn "description";
-warn $ftype->{mart}->{file};
+
 readMetaDataMartGenes($ftype->{mart}->{file},$translate_id,$genes,"description");
 my $transcripts;
 my $proteins;
@@ -134,7 +133,6 @@ if (-e $sqliteDir."/translate_id.freeze"){
 else {
 	
  ($transcripts,$proteins) = parse_gff::read_gff_transcripts($ftype->{gff_all}->{file},$genes,$translate_id,$gene_code_version);
-
 store $transcripts, $sqliteDir."/transcripts.freeze";
 store $proteins, $sqliteDir."/proteins.freeze";
 store $genes, $sqliteDir."/genes.freeze";
@@ -224,6 +222,7 @@ my %delete_transcripts;
 		delete $genes->{$gene_id}->{transcripts_object}->{$tid};
 		delete $transcripts->{$tid};
 	}
+
 foreach my $prot_id (keys %$proteins) {
 		next if $proteins->{$prot_id}->{sequence};
 		#warn "coucou ".$prot_id;
@@ -251,6 +250,7 @@ foreach my $prot_id (keys %$proteins) {
 
 
 warn "SAVE";
+	warn Dumper %$genes;
  my $no2 = GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"c");
  warn "\t genes";
  parse_gff::save_sqlite ($no2,$genes,"gene");
