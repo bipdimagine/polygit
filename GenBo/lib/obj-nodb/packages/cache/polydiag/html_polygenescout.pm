@@ -62,7 +62,7 @@ sub print_tab_variants_project {
 	my $chr_trio = $project_trio->getChromosome($chr_id);
 	my $gene_trio = $project_trio->newGene($h_genes->{$external_name});
 	my $vector_gene = $gene_trio->getVariantsVector();
-	my $vector_patient = $patient_trio->getVectorOrigin($chr_trio);
+	my $vector_patient = $patient_trio->getVectorOrigin($chr_trio)->Clone();
 	$vector_patient->Intersection($vector_patient, $vector_gene);
 	my @lVar = @{$chr_trio->getListVarObjects($vector_patient)};
 	my $total = 0;
