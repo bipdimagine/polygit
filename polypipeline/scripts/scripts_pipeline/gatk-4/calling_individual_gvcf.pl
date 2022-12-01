@@ -79,6 +79,7 @@ if ($patient->is_control){
 	  . $patient->name . "\n";
 	close OUT;
 	system("bgzip $final_gvcf ; tabix -p vcf $final_gvcf.gz");
+	exit(0);
 }
 
 my $dir_prod  = $patient->project->getGvcfDir("haplotypecaller4");
