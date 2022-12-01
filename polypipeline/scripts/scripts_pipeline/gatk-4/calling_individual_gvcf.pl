@@ -69,7 +69,18 @@ if ($region_name){
 my $other_project = [];
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name , -version =>$version);
-my $patient =  $project->getPatient($patient_name);
+my $patient =  $project->getPatientOrControl($patient_name);
+if ($patient->is_control){
+	my $dir_prod  = $patient->project->getGvcfDir("haplotypecaller4");
+	my $final_gvcf = $dir_prod."/".$patient->name.".g.vcf";
+	open( OUT, ">$final_gvcf" );
+	print OUT
+"##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
+	  . $patient->name . "\n";
+	close OUT;
+	system("bgzip $final_gvcf ; tabix -p vcf $final_gvcf.gz");
+	exit(0);
+}
 
 my $dir_prod  = $patient->project->getGvcfDir("haplotypecaller4");
 my $final_file = $dir_prod."/".$patient->name.".end";
