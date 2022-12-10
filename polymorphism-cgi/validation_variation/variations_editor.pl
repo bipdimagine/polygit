@@ -276,6 +276,7 @@ my $level_dude = 'high,medium';
 my $cache_dude_id = "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
 my $cache_id = join( ";", @$keys );
 my $text = $no_cache->get_cache($cache_id);
+$dev=1;
 $text = "" if $dev;
 
 my $html_dude = "<!--DUDE-->";
@@ -1325,12 +1326,11 @@ sub new_refine_heterozygote_composite_score_old {
 
 	my $total_time = 0;
 	my $ztotal     = 0;
-
 	#$t = time;
 	my $current;
 	my $rtime = 0;
 	foreach my $g (@$list) {
-
+		warn "coucou";
 		#last if $xp > 100;
 		$xp++;
 
@@ -1393,14 +1393,24 @@ sub new_refine_heterozygote_composite_score_old {
 		);
 		$out .= "\n";
 		$out .= $out_header;
-
+		my $debug;
+		$debug=1 if $g->{external_name} eq "COL7A1";
+		
 		foreach my $vid ( keys %{ $g->{all_variants} } ) {
 		#	my $v  = $noV->get($vid);
 			my $vh = $no->get($vid);
+			if($debug){
+			my $vv = $noV->get($vid);
+			$vv->{project} = $project;
+			$vv->{buffer} = $buffer;
+				warn "\t".$vv->id;
+				warn "\t ==> ".Dumper($vv->dejaVuInfosForDiag2);
+				
+			}			
 			my $vp =  PolyviewerVariant->new();
 			
-			$vp->setOldVariant($vh,$project,$patient,$g,$version_db);
-			
+			$vp->setOldVariant($vh,$project,$patient,$g,$version_db,$debug);
+			#warn Dumper $vp if $debug;
 			#$vp->setLmdbVariant($vh,$project,$g,$patient);
 			$print_html->variant($vp);
 			
