@@ -44,7 +44,6 @@ use Date::Tiny;
 use JSON::XS;
 use List::MoreUtils qw{part};
 
-
 my $buffer = GBuffer->new();
 
 my $cgi          = new CGI();
@@ -91,20 +90,29 @@ my $region = $variation->getChromosome->ucsc_name.":".$variation->start."-".$var
 my @letters = ("A","T","C","G","\\*");
 my $ps = $project->in_this_run_patients();
 delete $ps->{total};
+unless (exists $ps->{$project_name}){
+my $i=0;
+foreach my $patient (@{$project->getPatients}){
+	$ps->{$project_name}->{$i} = $patient->name;
+	$i++;
+}
+}
 foreach my $pr2 (keys %$ps){
+	
 	my @listp = map{$ps->{$pr2}->{$_}} keys %{$ps->{$pr2}};
+	
 	my $buffer2 = GBuffer->new();
 	my $project2 = $buffer->newProject(-name=>$pr2);
 	my $patients2 = $project2->get_list_patients(join(",",@listp),",");
 	foreach my $p (@$patients2){
-	
-		my $bam = $p->getBamFile;
-		my ($res) = `$samtools depth -d 50000   $bam -r $region  | cut -f 3`;
-		chomp($res);
-		my $d =$res;;
+		my $d = $p->depth($variation->getChromosome->name,$variation->start,$variation->start)->[0];
+		#my $bam = $p->getBamFile;
+		#my ($res) = `$samtools depth -d 50000   $bam -r $region  | cut -f 3`;
+		#chomp($res);
+		#my $d2 =$res;;
 		my $hvariation = utility::return_hash_variant($project,$vid,$transcript,$p,$vquery);
 		if ($hvariation){
-		print $cgi->start_Tr({class=>"infos"},{style=>"vertical-align:middle"});
+		print $cgi->start_Tr({class=>"infos",style=>"vertical-align:middle;background-color:yellowgreen"});
 		}
 		else {
 		foreach my $i (@header){
