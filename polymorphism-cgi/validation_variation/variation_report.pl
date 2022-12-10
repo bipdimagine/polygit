@@ -124,7 +124,7 @@ foreach my $pr2 (keys %$ps){
 	foreach my $i (@header){
 		print $cgi->td($hvariation->{$i}) ;
 	}
-	
+	  
 	print $cgi->td($d);
 	foreach my $l (@letters){
 		
