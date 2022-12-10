@@ -30,7 +30,6 @@ use Data::Dumper;
 use GenBo;
 use Compress::Snappy;
 use File::Temp qw/ tempfile tempdir /;
-
 #require "$Bin/../GenBo/lib/obj-nodb/GBuffer.pm";
 use List::MoreUtils qw{ natatime };
 use Getopt::Long;
@@ -276,7 +275,7 @@ my $level_dude = 'high,medium';
 my $cache_dude_id = "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
 my $cache_id = join( ";", @$keys );
 my $text = $no_cache->get_cache($cache_id);
-$dev=1;
+#$dev=1;
 $text = "" if $dev;
 
 my $html_dude = "<!--DUDE-->";
