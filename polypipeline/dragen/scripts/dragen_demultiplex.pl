@@ -306,7 +306,7 @@ $pr =~ s/,/_/g;
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name.".".$pr;
 
 
-system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ && chmod -R a+rwx $dir_stats; && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ ;   ");
+system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;");
 
 
 exit(0);
