@@ -55,14 +55,13 @@ $html_table_patients .= qq{<th data-field="name" data-sortable="true"><center><b
 $html_table_patients .= qq{<th data-field="nb_junctions_all" data-sortable="true"><center><b>Nb Junctions ALL</b></center></th>};
 $html_table_patients .= qq{<th data-field="nb_junctions_ri" data-sortable="true"><center><b>Nb Junctions RI</b></center></th>};
 $html_table_patients .= qq{<th data-field="nb_junctions_se" data-sortable="true"><center><b>Nb Junctions SE</b></center></th>};
+$html_table_patients .= qq{<th data-field="igv_bam" data-sortable="true"><center><b>IGV</b></center></th>};
 $html_table_patients .= qq{</thead>};
 $html_table_patients .= qq{<tbody>};
 
 my (@l_tr_patient, @l_tr_control);
 foreach my $patient_name (sort keys %$h_resume) {
 	my $all = $h_resume->{$patient_name}->{nb_junctions_all};
-	
-	
 	
 	my $s1000 = $h_resume->{$patient_name}->{nb_junctions_score_1000};
 	my $s100 = $h_resume->{$patient_name}->{nb_junctions_score_100};
@@ -81,6 +80,10 @@ foreach my $patient_name (sort keys %$h_resume) {
 	$tr .= qq{<td><b">$all</b></td>};
 	$tr .= qq{<td>$ri ($ri_perc)</td>};
 	$tr .= qq{<td>$se ($se_perc)</td>};
+	
+	my $bam_pat_file = $h_resume->{$patient_name}->{bam_file};
+	my $cmd_bam = qq{onclick="add_bam_igv('$bam_pat_file')";};
+	$tr .= qq{<td><button $cmd_bam>Add BAM IGV</button></td>};
 	$tr .= qq{</tr>};
 	if (lc($all) =~ /control/) { push(@l_tr_control, $tr); }
 	else { push(@l_tr_patient, $tr); }

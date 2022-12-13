@@ -763,6 +763,13 @@ function displayListBamInIgvApp(list_bams) {
     }
 }
 
+function addListBamInIgvApp(list_bams) {
+	for(var i = 0; i < list_bams.length; i++) {
+		var bam = window.location.origin + list_bams[i];
+		addOneBAMIGV(bam);
+    }
+}
+
 function click_annot(value) {
 
 }
