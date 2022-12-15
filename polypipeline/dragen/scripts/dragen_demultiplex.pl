@@ -290,7 +290,7 @@ foreach my $project_name (split(",",$project_names)){
 	#	die();
 	#	create_3_fastq($fastq1,$fastq2,$p);
 	#	warn "end ".$p->name;
-	#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
+		system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 		$pm->finish( 0, {});
 	}
 
