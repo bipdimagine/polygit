@@ -32,6 +32,7 @@ function launchAnalyse(transloc)
 	}
 	GetAllCNV();
 	GetChrsPloidy();
+	refresh_grids();
 }
 
 function setTitrePolyCyto()
@@ -1036,8 +1037,19 @@ function GetSVeq()
 }
 
 function refresh_grids() {
+	var parameters = location.search.split("&");
+	var arg1 = parameters[0].split("=");
+	var arg2 = parameters[1].split("=");
+	var projectname = arg1[1];
+	var filename = arg2[1];
 	$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-	  var target = $(e.target).attr("href") // activated tab
+		var target = $(e.target).attr("href") // activated tab
+		if (filename in h_gridSVCompare) {
+			h_gridSVCompare[filename].render();
+		}
+		if (filename in h_gridTRANS) {
+			h_gridTRANS[filename].render();
+		}
 	});
 	return;
 }
