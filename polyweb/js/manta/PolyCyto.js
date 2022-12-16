@@ -1254,7 +1254,7 @@ function formaterOMIM(value)
 	return out;
 }
 
-###	##
+
 
 function formaterFreqBND(value)
 {	
