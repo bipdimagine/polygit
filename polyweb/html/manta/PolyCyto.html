@@ -156,6 +156,7 @@
 			var url_gene_bed, url_fasta, url_cyto;
 			getGencodeTrackForProject(par0[1]);
 			
+			var patient_name = par1[1];
 			var transloc = par2[1];
    			var titre="PolyCyto:" + par0[1]+"/"+par1[1];
    			document.title=titre;
@@ -164,8 +165,7 @@
 </head>
 
 
-
-<body onload="launchAnalyse(transloc);" onclick="refresh_grids();">
+<body onload="launchAnalyse(transloc);" onclick="force_refresh_tab_polycto_selected(patient_name);">
 	<center>
 		<div id="titre"style="height:10%;width:95%" ></div>
  	</center>
@@ -273,8 +273,8 @@
 			</td></tr></table></div></center>
 
  	<ul class="nav nav-tabs">
-   		 	<li class="active" onmouseout="refresh_grids();"><a data-toggle="tab" href="#CNV"><span id='span_cnv_dup_del'> CNV (DUP/DEL) </span></a></li>
-		  	<li id="id_transloc" style="visibility:hidden;" onmouseenter="refresh_grids();" onmouseout="refresh_grids();"><a data-toggle="tab" href="#TRANSLOC"><span id='span_transloc_inv'> TRANSLOC/INV  </span></a></li>
+   		 	<li id="id_cnv_dup_del" class="active" onshow="refresh_grids();"><a data-toggle="tab" href="#CNV"><span id='span_cnv_dup_del'> CNV (DUP/DEL) </span></a></li>
+		  	<li id="id_transloc" style="visibility:hidden;" onshow="refresh_grids();"><a data-toggle="tab" href="#TRANSLOC"><span id='span_transloc_inv'> TRANSLOC/INV  </span></a></li>
  		</ul>
  		<div class="tab-content" style="height:90%;width:100%">
 
