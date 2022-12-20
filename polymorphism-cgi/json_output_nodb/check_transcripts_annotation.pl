@@ -86,7 +86,7 @@ if ($genes) {
 			}
 		};
 		if ($@) {
-			warn Dumper $@;
+			#warn Dumper $@;
 			$hRes->{$gene_name} = 'NOT;'.$annotation;
 		}
 	}
