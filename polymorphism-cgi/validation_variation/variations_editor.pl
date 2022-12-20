@@ -281,7 +281,7 @@ if ($project->isDiagnostic){
 my $text = $no_cache->get_cache($cache_id);
 #$dev=1;
 $text = "" if $dev;
-$text = "";
+#$text = "";
 my $html_dude = "<!--DUDE-->";
 my $cache_icon;
 
