@@ -354,6 +354,16 @@ foreach my $score (sort {$b <=> $a} keys %{$h_junctions_scores->{max}}) {
 
 if (scalar(@lGenesNames) == 0) {
 	$html .= qq{<tr><td><center><b><i>No Result Found...</b></i></center></td></tr>};
+	
+	if ($only_gene) {
+		my $b_igv = get_igv_button($only_gene, $patient);
+		$html .= qq{<br><tr><td><center><b><i>...but you can view gene <span style="color:orange;">$only_gene_name</span> in IGV :)</b></i></center></td></tr>};
+		$html .= qq{<br><tr><td><center><b><i><span class="glyphicon glyphicon-arrow-down"></span></b></i></center></td></tr><br><tr><td><center><b><i>$b_igv</b></i></center></td></tr>};
+	}
+	else {
+		$html .= qq{<br><tr><td><center><b><i><span class="glyphicon glyphicon-exclamation-sign" style="color:red;font-size:18px;"></span> your gene <span style="color:orange;">$only_gene_name</span> is unknown in my database...</b></i></center></td></tr><br><br><br>};
+	}
+	
 	$html .= qq{</table>};
 	my $hash;
 	$hash->{html} = $html;
@@ -367,6 +377,9 @@ if (scalar(@lGenesNames) == 0) {
 	}
 	printJson($hash);
 	exit(0);
+}
+elsif (scalar(@lGenesNames) > 0 and $only_gene_name and not $only_gene) {
+	$html .= qq{<br><tr><td><b><i><span class="glyphicon glyphicon-exclamation-sign" style="color:red;font-size:18px;"></span> your gene <span style="color:orange;">$only_gene_name</span> is unknown in my database...</b></i></td></tr><br><br><br>};
 }
 
 my @lTablesIds;

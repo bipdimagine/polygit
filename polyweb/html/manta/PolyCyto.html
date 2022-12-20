@@ -156,6 +156,7 @@
 			var url_gene_bed, url_fasta, url_cyto;
 			getGencodeTrackForProject(par0[1]);
 			
+			var patient_name = par1[1];
 			var transloc = par2[1];
    			var titre="PolyCyto:" + par0[1]+"/"+par1[1];
    			document.title=titre;
@@ -164,8 +165,7 @@
 </head>
 
 
-
-<body onload="launchAnalyse(transloc);" onclick="refresh_grids();">
+<body onload="launchAnalyse(transloc);" onmouseenter="force_refresh_grids();">
 	<center>
 		<div id="titre"style="height:10%;width:95%" ></div>
  	</center>
@@ -273,8 +273,8 @@
 			</td></tr></table></div></center>
 
  	<ul class="nav nav-tabs">
-   		 	<li class="active" onmouseout="refresh_grids();"><a data-toggle="tab" href="#CNV"><span id='span_cnv_dup_del'> CNV (DUP/DEL) </span></a></li>
-		  	<li id="id_transloc" style="visibility:hidden;" onmouseenter="refresh_grids();" onmouseout="refresh_grids();"><a data-toggle="tab" href="#TRANSLOC"><span id='span_transloc_inv'> TRANSLOC/INV  </span></a></li>
+   		 	<li id="id_cnv_dup_del" class="active" onshow="refresh_grids();"><a data-toggle="tab" href="#CNV"><span id='span_cnv_dup_del'> CNV (DUP/DEL) </span></a></li>
+		  	<li id="id_transloc" style="visibility:hidden;" onshow="refresh_grids();"><a data-toggle="tab" href="#TRANSLOC"><span id='span_transloc_inv'> TRANSLOC/INV  </span></a></li>
  		</ul>
  		<div class="tab-content" style="height:90%;width:100%">
 
@@ -307,7 +307,7 @@
              			 
              			 <th width="3%" field="RATIO"  formatter="formaterRatio" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Ratio </b></center></th>
 
-      		 			 <th width="3%" field="SCORECNV"  formatter="formaterScore" styles="text-align:center;font-size:9px;background-color:white;"><center>Score CNV</center></th>  
+      		 			 <th width="3%" field="SCORECNV"  formatter="formaterScoreCNV" styles="text-align:center;font-size:9px;background-color:white;"><center>Score CNV</center></th>  
              			 			             			           
 						<th width="3%" field="wisecondor_elementary"   formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> WC </b></center></th>	
 						<th width="3%"  field="canvas_elementary"  formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Canvas </b></center></th>	
@@ -319,10 +319,10 @@
 						<th width="4%" field="TRANSMISSION"    formatter="formaterTransmission" styles="text-align:center;font-size:9px;background-color:white;"><center><img src="../../images/polyicons/family256_24779.png"></center></th>			
 						<th width="12%" field="DEJAVU_G"  formatter="formaterDejavuCNV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DejaVu  </b></center></th>			
 								
-						<th width="3%" field="SCORE_GENES" formatter="formaterScore" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Score Gene </b></center></th>
-						<th width="4%" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:9px;background-color:white;"><center><b> AnnotSV Ranking</b></center></th>					
-						<th width="8%" field="GENES" formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Genes </b></center></th>
-						<th width="3%" field="OMIN_MG" formatter="formaterOmin" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Omin </b></center></th>
+						<th width="3%" field="SCORE_GENES" formatter="formaterScoreGene" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Score Gene </b></center></th>
+				<!--		<th width="4%" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:9px;background-color:white;"><center><b> AnnotSV Ranking</b></center></th>	-->			
+						<th width="8%" field="GENES" formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Genes </b></center></th> 
+						<th width="3%" field="OMIM" formatter="formaterOMIM" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Omin </b></center></th>
 					
 						<th width="4%" field="PLOT"  formatter="formaterPlot" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Plot  </b> </center></th>		
 						<th width="4%" field="IGV"   formatter="formater_infoPATIENTIGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> IGV </b></center></th>						
@@ -363,19 +363,20 @@
           			<th width="3%" field="SCORE_EVENT"  styles="text-align:center;font-size:10px;background-color:white;"><center><b> Score Event  </b></center></th>
           			
           			<th width="4%" field="LENGTH"  formatter="formaterLength" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Length  </b></center></th>
-          			<th width="3%" field="TYPE"   formatter="formaterTypeInv"styles="text-align:center;font-size:9px;background-color:white;"><center><b> Type  </b></center></th>
           			
-             		<th width="6%" field="CYTOBAND1" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob1<img src="../../images/polyicons/cytoband.png"> </b></center></th>
-		        	<th width="8%" field="POS1" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BreakPoint Start </b></center></th>
-			        <th width="5%" field="GENES1" formatter="formaterGENESBND"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes </b></center></th>
-			        <th width="3%" field="OMIM1" formatter="formaterOMIMBND"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
+             		<th width="4%" field="CYTOBAND1" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob1<img src="../../images/polyicons/cytoband.png"> </b></center></th>
+		        	<th width="5%" field="POS1" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BP1 </b></center></th>
+			        <th width="5%" field="GENES1" formatter="formaterGENES"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes BP1 </b></center></th>
+			        <th width="3%" field="OMIM1" formatter="formaterOMIM"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
 			        
-					<th width="6%" field="CYTOBAND2" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob2<img src="../../images/polyicons/cytoband.png"> </b></center></th>	
-			        <th width="8%" field="POS2" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BreakPoint END </b></center></th>
-			        <th width="5%" field="GENES2" formatter="formaterGENESBND" styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes </b></center></th>
-			        <th width="3%" field="OMIM2" formatter="formaterOMIMBND"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
+					<th width="4%" field="CYTOBAND2" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob2<img src="../../images/polyicons/cytoband.png"> </b></center></th>	
+			        <th width="5%" field="POS2" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BP2 </b></center></th>
+			        <th width="5%" field="GENES2" formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes BP2 </b></center></th>
+			        <th width="3%" field="OMIM2" formatter="formaterOMIM"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
 			        			        
-			         <th width="3%" field="QUAL"  styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Qual </b></center></th> 					        
+			        <th width="6%" field="ALLGENES"   formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Genes INV </b></center></th>
+			        			        
+			        <th width="3%" field="QUAL"  styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Qual </b></center></th> 					        
 			       	<th width="3%" field="PR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> PR (ref/alt) </b></center></th>
           			<th width="3%" field="SR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> SR (ref/alt) </b></center></th>
 	
