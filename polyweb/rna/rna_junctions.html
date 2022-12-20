@@ -778,12 +778,20 @@
 				dijit.byId('dialog_sashimi').show();
 			}
 	
-			function add_bam_igv (bams_files) {
+			function display_bam_igv (bams_files) {
 				var list_bams_files = [];
 				if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 				else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
 				else { list_bams_files.push(bams_files); }
 				displayListBamInIgvApp(list_bams_files);
+			}
+	
+			function add_bam_igv (bams_files) {
+				var list_bams_files = [];
+				if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
+				else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
+				else { list_bams_files.push(bams_files); }
+				addListBamInIgvApp(list_bams_files);
 			}
 			
 			function view_deja_vu_rna_junction(project_name, patient_name, junction_vector_id) {

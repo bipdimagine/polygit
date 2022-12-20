@@ -271,6 +271,38 @@ function load_tab_polycyto(){
 	}
 	var_load_polycyto = 1;
 }
+
+function force_refresh_tab_polycto_selected(name) {
+	if (name in hash_polycyto_loaded) {
+	
+		//console.log( $('id_cnv_dup_del') );
+		//console.log( $('SVCompare_gridDetails') );
+		//document.getElementById('SVCompare_gridDetails').render();
+		//$('SVCompare_gridDetails').render();
+	
+//		var div_dupdel = document.getElementById('id_cnv_dup_del');
+//		console.log(div_dupdel);
+//		if (div_dupdel) {}
+//		else {
+			//document.getElementById('iframe_polycyto_'+name).src += ''
+//		}
+	
+//		console.log($('iframe_polycyto_'+name));
+		
+//		console.log($('iframe_polycyto_'+name).context);
+		
+//		$('iframe_polycyto_'+name).context.URL = $('iframe_polycyto_'+name).context.URL;
+		
+//		console.log($('c1polycyto'+name));
+//		if (hash_polycyto_loaded[name] == 1) {
+//			$('c1polycyto'+name).prevObject[0].links[1].click();
+//			$('c1polycyto'+name).prevObject[0].links[0].click();
+//		}
+
+
+	}
+}
+
 function refresh_tab_polycyto(){
 	if ( !(dijit.byId("gridPatients"))) {
 		return 1;
@@ -289,9 +321,9 @@ function refresh_tab_polycyto(){
 				tab_editor_polycyto[tsamples[i].label].add = 1;
 			}
 			if (first < 1){
-			tab_editor_polycyto[name].onShow();
-			first ++;
-		}
+				tab_editor_polycyto[name].onShow();
+				first ++;
+			}
 		}
 		else {
 			if (tab_editor_polycyto[tsamples[i].label].add == 1) {
@@ -604,13 +636,12 @@ function tabPatients(items , request ) {
             z++;
      //       <td><span class='glyphicon glyphicon-star' aria-hidden='true' style='font-size:08px;></span></td>
             //<td><span class='glyphicon glyphicon-star' aria-hidden='true' ></span></td>
-	var title1;
+		var title1;
 		if (tsamples[i].label == tsamples[i].fam){
-			 title1 = star+"<table><tr><td rowspan=2>"+ic+ "</td><td style='font-size:10px;'>"+tsamples[i].label+"</td></tr></table>";
-			
+			title1 = star+"<table><tr><td rowspan=2>"+ic+ "</td><td style='font-size:10px;'>"+tsamples[i].label+"</td></tr></table>";
 		}
 		else {
-			  title1 = star+"<table><tr><td rowspan=2>"+ic+ "</td><td style='font-size:09px;font-weight: bold;'>"+tsamples[i].label+"</td></tr><tr>"+"<td ><span style='font-size:09px;'>"+tsamples[i].fam+"</small></td></tr></table>";
+			title1 = star+"<table><tr><td rowspan=2>"+ic+ "</td><td style='font-size:09px;font-weight: bold;' >"+tsamples[i].label+"</td></tr><tr>"+"<td ><span style='font-size:09px;'>"+tsamples[i].fam+"</small></td></tr></table>";
 		}
 		
          tab_editor_polyviewer[tsamples[i].label] = new dojox.layout.ContentPane({ // new dijit.layout.ContentPane({
@@ -658,9 +689,9 @@ function tabPatients(items , request ) {
            		var url_polycyto = lTmp.join('/') + '/html/manta/PolyCyto.html';
 				url_polycyto += "?projectname=" + projectName + "&filename=" + this.patient + "&transloc=yes&iframe=1";
 				load_polycyto_url(this.patient, this.id, url_polycyto);
-           }
+           },
         });
-
+		
          tab_editor_polycyto[tsamples[i].label].patient = tsamples[i].label;
          tab_editor_polycyto[tsamples[i].label].toto = 0;
 
@@ -733,7 +764,8 @@ var hash_polycyto_loaded = {};
 function load_polycyto_url(patient_name, tab_id, url_polycyto) {
 	if (!(patient_name in hash_polycyto_loaded)) {
 		var div = document.createElement('div');
-		var html = "<iframe width='100%' height='1000px' style='' src='" + url_polycyto + "' title='PolyCyto Interface'></iframe>";
+		var id_iframe = "iframe_polycyto_" + patient_name;
+		var html = "<iframe id='" + id_iframe + "' width='100%' height='1000px' style='' src='" + url_polycyto + "' title='PolyCyto Interface'></iframe>";
 		div.innerHTML = html;
 		document.getElementById(tab_id).appendChild(div);
 		hash_polycyto_loaded[patient_name] = 1;

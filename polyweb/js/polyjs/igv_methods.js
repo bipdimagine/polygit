@@ -138,6 +138,13 @@ function displayOneBAMIGV(file){
 	return 1;
 }
 
+function addOneBAMIGV(file){
+    var url = "http://localhost:60151/load?file="+file;
+	url += "&merge=true";
+    httpGetFocusOn(url);
+	return 1;
+}
+
 var old_tracks;
 function init_igv (){
 	var url = "http://localhost:60151/load";
@@ -159,12 +166,12 @@ function launch_igv_tool_rna(fasta, tracks, locus) {
 		url += "?genome=" + fasta;
 		url += "&file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=true";
+		url += "&merge=false";
 	}
 	else {
 		url += "?file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=true";
+		url += "&merge=false";
 	}
     httpGetFocusOn(url);
 	return 1;

@@ -32,6 +32,7 @@ function launchAnalyse(transloc)
 	}
 	GetAllCNV();
 	GetChrsPloidy();
+	refresh_grids();
 }
 
 function setTitrePolyCyto()
@@ -150,19 +151,23 @@ function formaterDUPDEL(value)
 	}
 	
 	 if ( /DEL/.test(value)) {
-	 	eurl = '<b><font style="color:red"> '+ value +' </font></b>';
+	 	//eurl = '<b><font style="color:red"> '+ value +' </font></b>';
+	 	eurl = '<p style="font-size:10px;color:white;background-color:rgb(255,74,42);padding:8px">' + value + ' </p>';
 	 }
 	 
 	 if ( /DUP/.test(value)) {
-	 	eurl = '<b><font style="color:blue"> '+ value +' </font></b>';
+	 	//eurl = '<b><font style="color:blue"> '+ value +' </font></b>';
+	 	eurl = '<p style="font-size:10px;color:white;background-color:rgb(12,148,230);padding:8px">' + value + ' </p>';
 	 }
 	 
 	 if ( /TRI/.test(value)) {
-			eurl = '<b><font style="color:blue"> '+ value +' </font></b>';	 
+			//eurl = '<b><font style="color:blue"> '+ value +' </font></b>';	 
+			eurl = '<p style="font-size:10px;color:white;background-color:rgb(12,98,228);padding:8px">' + value + ' </p>';	
 	}
 	 
 	 if ( /QUA/.test(value)) {
-	 	eurl = '<b><font style="color:indigo"> '+ value +' </font></b>';
+	 	//eurl = '<b><font style="color:indigo"> '+ value +' </font></b>';
+	 	eurl = '<p style="font-size:10px;color:white;background-color:rgb(1,26,255);padding:8px">' + value + ' </p>';	
 	 }
 	 
 	return eurl;
@@ -217,7 +222,7 @@ function formaterScoreDude(value)
 function formaterDUPSEG(value)
 {
 	
-		var eurl = '<b><font size="4" style="color:green"> - </font>';
+		var eurl = '<b><font size="4" style="color:green"> - </font></b>';
 
 		if (value == "-")
 		{
@@ -228,7 +233,7 @@ function formaterDUPSEG(value)
 		
 		if (val == 0)
 		{
-				eurl = '<b><font size="4" style="color:green"> - </font>';
+				eurl = '<b><font size="4" style="color:green"> - </font></b>';
 				return eurl;
 		}
 		
@@ -448,7 +453,7 @@ function formaterPlot(value)
 	if (type == "QUA") { type=4; }
 	
 	var boutonID = 'boutonPlot'+ nb;				
-   	var out   = '<button class="btn btn-default btn-m" id="' + boutonID + '" onclick="launch_plot(\''+ transmission + '\',' + type + ',' + chr + ',' + debcnv + ',' + fincnv + ' )" style="font-size:16px;">&#128200;</button>';
+   	var out   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px" id="' + boutonID + '" onclick="launch_plot(\''+ transmission + '\',' + type + ',' + chr + ',' + debcnv + ',' + fincnv + ' )" style="font-size:16px;">&#128200;</button>';
   
 	return out;
 }	
@@ -660,7 +665,7 @@ function formaterBP(value)
 	return out;
 }
 
-function formaterScore(value)
+function formaterScoreCNV(value)
 {
 
 	if (value <= -2 )
@@ -681,6 +686,56 @@ function formaterScore(value)
 	 	}
 
 	 
+	return eurl;
+	
+}	
+
+function formaterScoreGene(value)
+{
+
+	if (value <= -2 )
+	{
+		return "-";
+	}
+
+
+	var eurl;
+	
+	var score = Number(value);
+	
+	 	if (score >= 4 ) {
+	 			//eurl = '<label style="color:red">' + score + ' </label>';
+	 			eurl = '<label style="font-size:10px;color:white;background-color:rgb(255,0,0);padding:3px">' + score + ' </label>';
+		}
+	 	else 
+	 	{
+	 		if (score >= 3 ) 
+	 		{
+	 			//eurl = '<label style="color:Tomato">' + score + ' </label>';
+	 			eurl = '<label style="font-size:10px;color:white;background-color:rgb(255,127,79);padding:3px">' + score + ' </label>';	 			
+			}
+			else
+			
+				 if (score >= 2 ) 
+	 			{
+	 				//eurl = '<label style="color:orange">' + score + ' </label>';
+	 				eurl = '<label style="font-size:10px;color:white;background-color:rgb(255,165,0);padding:3px">' + score + ' </label>';	 				
+				}
+				else
+				{
+					if (score >= 1 ) 
+	 				{
+	 					//eurl = '<label style="color:black;background-color:yellow">' + score + ' </label>';
+	 					eurl = '<label style="font-size:10px;color:black;background-color:rgb(255,255,2);padding:3px">' + score + ' </label>';
+					}
+					else
+					{
+	 					//eurl = '<label style="color:black">'+ score + '</label>';
+	 					eurl = '<label style="font-size:10px;color:black;background-color:rgb(204,204,204);padding:3px">' + score + ' </label>';
+	 				}
+	 			}
+	 	}
+	 	
 	return eurl;
 	
 }	
@@ -805,99 +860,6 @@ function formaterRANK(value)
 }	
 
 
-
-function formaterGENES(value)
-{
-	var parameters = location.search.split("&");
-	var par0 = parameters[0].split("=");
-	var par1 = parameters[1].split("=");
-   	
-   	var project =par0[1];
-   	var patient = par1[1];
-   	
-	if (value == "-")
-	{
-		return value;
-	}
-
-	var out;
-	var liste="";
-	var etiq;
-
-	var values = value.split(" ");
-	var len = values.length;
-	
-	if (! /[a-zA-Z0-9]/.test(value))
-	{
-		return "-";
-	}
-	
-	var infos = values[0].split(":");
-	
-	var bestgene = infos[0];
-	
-	var scorebest = infos[1];
-	var nbgenes = infos[2]-1;
-	var len = values.length;
-	
-	for (i=1; i<len ; i++)
-	{
-		var name = values[i];
-		if (/[a-zA-Z0-9]/.test(name))
-		{
-			 liste = liste + name + ',';
-		}
-	}
-
-		if (Number(scorebest) >= 1 )
-		{
-			if (nbgenes > 0)
-			{
-				etiq = '<font style="color:red;font-size:10px;">' + bestgene + ' </font><font style="color:black;font-size:9px;">(+' + nbgenes + ')</font>';
-				out = '&nbsp;<button class="btn btn-classic btn-m"  onclick="viewGeneByName(\'' + liste + '\', \''+ project + '\',\'' + patient + '\')">'+ etiq + '</button>';
-			}
-			else
-			{
-				etiq = '<font style="color:red;font-size:10px;">' + bestgene + ' </font>';
-				out = '&nbsp;<button class="btn btn-classic btn-m"  onclick="viewGeneByName(\'' + liste + '\', \''+ project + '\',\'' + patient + '\')">'+ etiq + '</button>';
-			}		
-		}
-		else
-		{
-			if (nbgenes > 0)
-			{
-				etiq = '<font style="color:black;font-size:10px;">' + bestgene + ' </font><font style="color:black;font-size:9px;">(+' + nbgenes + ')</font>';
-				out = '&nbsp;<button class="btn btn-default btn-m"  onclick="viewGeneByName(\'' + liste + '\', \''+ project + '\',\'' + patient + '\')">' + etiq + '</button>';
-			}
-			else
-			{
-				etiq = '<font style="color:black;font-size:10px;">' + bestgene + ' </font>';
-				out = '&nbsp;<button class="btn btn-default btn-m"  onclick="viewGeneByName(\'' + liste + ' \', \''+ project + '\',\'' + patient + '\')">'+ etiq + '</button>';
-			}	
-		}
-		
-	return out;
-}
-
-
-
-function formaterOmin(value)
-{
-	if (value == "-")
-	{
-			return value;
-	}
-
-	var eurl = "-";
-	
-	 if (/yes/.test(value) )
-	 {
-	 	eurl =  '<i class="fa fa-asterisk" style="font-size:14px;color:orange"> </i>';
-	 }
-	return eurl;
-}	
-
-
 function formaterDGV(value)
 {
 		if (value == "-")
@@ -916,7 +878,7 @@ function formatergnomAD(value)
 			return value;
 		}
 
-	var eurl = '<a href="' + value  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><font style="color:blue;font-size:8px; ">gnom</font><font style="color:black;font-size:10px; ">AD</font></b/</button></a>';
+	var eurl = '<a href="' + value  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><font style="color:blue;font-size:8px; ">gnom</font><font style="color:black;font-size:10px; ">AD</font></b></button></a>';
 	return eurl;
 }
 
@@ -1074,21 +1036,32 @@ function GetSVeq()
 	return;
 }
 
+var nb_check_force_refresh = 0;
+function force_refresh_grids() {
+	if (nb_check_force_refresh >= 1) { return; }
+	nb_check_force_refresh++;
+	$('c1polycyto'+name).prevObject[0].links[1].click();
+	$('c1polycyto'+name).prevObject[0].links[0].click();
+	refresh_grids();
+}
+
 function refresh_grids() {
 	var parameters = location.search.split("&");
 	var arg1 = parameters[0].split("=");
 	var arg2 = parameters[1].split("=");
 	var projectname = arg1[1];
 	var filename = arg2[1];
-	if (filename in h_gridSVCompare) {
-		h_gridSVCompare[filename].render();
-	}
-	if (filename in h_gridTRANS) {
-		h_gridTRANS[filename].render();
-	}
+	$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+		var target = $(e.target).attr("href") // activated tab
+		if (filename in h_gridSVCompare) {
+			h_gridSVCompare[filename].render();
+		}
+		if (filename in h_gridTRANS) {
+			h_gridTRANS[filename].render();
+		}
+	});
 	return;
 }
-
 
 function formaterPosBND(value)
 {
@@ -1104,7 +1077,7 @@ function formaterPosBND(value)
 
 function formaterCHROM_BND1(value)
 {
-	//alert('chr1'+value);
+	//alert('chr1 = '+value);
 	if (value=="-")
 	{
 		return(value);
@@ -1127,7 +1100,7 @@ function formaterCHROM_BND1(value)
 
 function formaterCHROM_BND2(value)
 {
-	//alert('chr2'+value);
+	//alert('chr2 = '+value);
 	if (value=="-")
 	{
 		return(value);
@@ -1149,15 +1122,16 @@ function formaterCHROM_BND2(value)
 }
 
 
-function formaterGENESBND(value)
+function formaterGENES(value)
 {
-
+	//alert("genes =" + value);
 	var parameters = location.search.split("&");
 	var par0 = parameters[0].split("=");
 	var par1 = parameters[1].split("=");
    	
    	var project =par0[1];
    	var patient = par1[1];
+   	
   
 	if (value == "")
 	{
@@ -1172,6 +1146,7 @@ function formaterGENESBND(value)
 	var out ="";
 	var name = "";
 	var score;
+	var locus;
 	var phen = "";
 	
 	var outshort;
@@ -1180,47 +1155,108 @@ function formaterGENESBND(value)
 	
 	var liste1="";
 	var liste2="";
+	var liste3="";
+	var nbghigh=0;
+	var nbglow=0;
+	var nbplus=0;
 	
-	for ( i = 0 ; i < len; i++)
+	locus = values[0];
+	
+	for ( i = 1 ; i < len; i++)
 	{
 		if (values[i] != "-")
 		{	
 					var geneinfos = values[i].split(";");
 					name = geneinfos[0];
 					score = geneinfos[1];
-					
-					if (score < 1 )
+										
+					if (score < 3 )
 					{
-						liste1 = liste1 + '<font style="font-size:9px;">' +name+'</font><br>';
+						if(nbglow < 3)
+						{
+							if (score >= 2)
+							{
+								liste1 = liste1 + '<font style="font-size:10px;color:white;background-color:rgb(255,165,0);padding:1px">' + name +'</font><br>';
+							}
+							else
+							{
+								if (score >= 1)
+								{
+									liste1 = liste1 + '<font style="font-size:10px;color:black;background-color:rgb(255,255,2);padding:1px">' + name +'</font><br>';
+								}
+								else
+								{
+									liste1 = liste1 + '<font style="font-size:10px;color:white;background-color:rgb(128,128,128);padding:1px">' + name +'</font><br>';
+								}
+							}
+							nbglow++;
+						}
+						else
+						{
+							nbplus++;
+						}
 					}
 					else
 					{
-							liste1 = liste1+ '<font style="font-size:9px;color:red">'+name+'</font><br>';
-							var flag = 1;
+						if(nbghigh<10)
+						{
+							if (score >= 4)
+							{
+								liste2 = liste2 + '<font style="font-size:10px;color:white;background-color:rgb(255,0,0);padding:2px;">'+name+'</font><br>';
+							}
+							else
+							{
+								liste2 = liste2 + '<font style="font-size:10px;color:white;background-color:rgb(255,127,79);padding:2px">'+name+'</font><br>';							
+							}
+						}
+						else
+						{
+							nbplus++;
+						}
+						nbghigh++;
+						var flag = 1;
 					}
-					liste2 = liste2+name+',';
 		}
 	}
 	
 	if (flag ==1)
 	{
-		out = '<button class="btn btn-classic btn-xs"  onclick="viewGeneByName(\'' + liste2 + '\', \''+ project + '\',\'' + patient + '\')">' + liste1 + '</button>';
+		if (nbplus > 0)
+		{
+			out = '<button class="btn btn-classic btn-xs"  style="border: 1px solid black;padding:2px" onclick="viewGeneByName(\'' + locus + '\', \''+ project + '\',\'' + patient + '\')">' + liste2 + '<font style="font-size:9px;"> (+' + nbplus + ')</button>';
+		}
+		else
+		{
+			out = '<button class="btn btn-classic btn-xs"   style="border: 1px solid black;padding:2px" onclick="viewGeneByName(\'' + locus + '\', \''+ project + '\',\'' + patient + '\')">' + liste2 + '</button>';
+		}
+		
 	}
 	else
 	{
-		out = '<button class="btn btn-default btn-xs"  onclick="viewGeneByName(\'' + liste2 + '\', \''+ project + '\',\'' + patient + '\')">' + liste1 + '</button>';
+		if (nbplus > 0)
+		{
+			out = '<button class="btn btn-classic btn-xs"  style="border: 1px solid black;padding:2px" onclick="viewGeneByName(\'' + locus + '\', \''+ project + '\',\'' + patient + '\')">' + liste1  + '<font style="font-size:9px;"> (+' + nbplus + ')</button>';
+		}
+		else
+		{
+			out = '<button class="btn btn-classic btn-xs" style="border: 1px solid black;padding:2px"  onclick="viewGeneByName(\'' + locus + '\', \''+ project + '\',\'' + patient + '\')">' + liste1  + '</button>';
+		}
 	}
 	return out;
 }	
 
-
-function formaterOMIMBND(value)
+function formaterOMIM(value)
 {
 	var out = ""; 
 	
-	if (value=="-")
+	if (value == "-")
 	{
-		return(value);
+		return("-");
+	}
+	
+	if (value == "0")
+	{
+		return("-");
 	}
 	
 	if (value == 1)
@@ -1229,7 +1265,8 @@ function formaterOMIMBND(value)
 	}
 	return out;
 }
-	
+
+
 
 function formaterFreqBND(value)
 {	
@@ -1248,49 +1285,26 @@ function formaterTransloc(value)
 {
 	//alert('transloc'+value);
 	
-	// on suprime temporairement le btnAbstract
-	/* if ( (document.getElementById("btnAbstract").style.visibility == 'visible') && (document.getElementById("btnAbstract").disabled == true))
-		{
-			  document.getElementById("btnAbstract").disabled = false;
-		}*/
-	
 	if (value=="-")
 	{
 		return(value);
 	}
 	
-	var chrs = value.split("to");
+	var infos = value.split("##");
+	var eurl;
 	
-	if (chrs[0] == 23)
+	if (infos[0] == "inv" )
 	{
-		 chrs[0] ="X";
-	}
-	if (chrs[0] == 24)
-	{
-		 chrs[0]="Y";
+		eurl = '<p style="font-size:12px;color:purple;background-color:rgb(204,204,204);padding:8px"> <b>inv</b> (' + infos[1] + ',' + infos[3] + ') (' + infos[2] + ',' + infos[4] + ') </p>';
+		
 	}
 	
-	if (chrs[1] == 23)
-	{
-		 chrs[1] ="X";
-	}
-	if (chrs[1] == 24)
-	{
-		 chrs[1]="Y";
-	}
-	
-	if ( chrs[0] == chrs[1] )
-	{
-		//var out = '<table style="width:100%;"><tr><td style="border: 2px solid green;width:30px; vertical-align:middle;font-size: 10px;">' + chrs[0] + '</td><td style="width:20px"> == </td><td style="border: 2px solid green;width:30px; vertical-align:middle;font-size: 10px;">' + chrs[1] + '</td></tr></table>';
-		var out = '<font style="color:indigo;font-size: 11px;"> INV(' + chrs[0] +')</font>';
-	}
 	else
 	{
-			//var out = '<table style="width:100%;"><tr><td style="border: 2px solid indigo;width:30px; vertical-align:middle;font-size: 10px;">' + chrs[0] + '</td><td style="width:20px"> == </td><td style="border: 2px solid DarkOrange;width:30px; vertical-align:middle;font-size: 10px;">' + chrs[1] + '</td></tr></table>';
-			var out = '<font style="color:DarkOrange; font-size: 11px;"> TRANSLOC(' + chrs[0] + ',' + chrs[1] + ')</font>';
+		eurl = '<p style="font-size:12px;color:white;background-color:rgb(255,165,0);padding:8px"> <b>t </b> (' + infos[1] + ',' + infos[3] + ') (' + infos[2] + ',' + infos[4] + ') </p>';
 	}
 	
-	return out;
+	return eurl;
 }
 
 function formaterInv(value)
@@ -1666,7 +1680,7 @@ function formaterDejavuCNV(value)
 
 function formaterDejavuSVeq(value)
 {
-
+	//alert(value);
 	if (value == "-")
 	{
 			return value;
@@ -1929,7 +1943,7 @@ function GetChrsPloidy()
 	dataStorePloidyValue.fetch({
 			onComplete: function(items,request){
 				
-				var out = '<table class="table-responsive" ><center><tr><td style="padding:5px;border-top-color:white;"> <label style="font-size:16px; color:purple;"> Chromosome Globale View </label></td>';
+				var out = '<table class="table-responsive" ><center><tr><td style="padding:5px;border-top-color:white;"> <label style="font-size:16px; color:purple;"> Chromosome View </label></td>';
 				
 				for (i=0;i<items.length;i++)
 				{
