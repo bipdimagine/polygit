@@ -1036,6 +1036,15 @@ function GetSVeq()
 	return;
 }
 
+var nb_check_force_refresh = 0;
+function force_refresh_grids() {
+	if (nb_check_force_refresh >= 1) { return; }
+	nb_check_force_refresh++;
+	$('c1polycyto'+name).prevObject[0].links[1].click();
+	$('c1polycyto'+name).prevObject[0].links[0].click();
+	refresh_grids();
+}
+
 function refresh_grids() {
 	var parameters = location.search.split("&");
 	var arg1 = parameters[0].split("=");

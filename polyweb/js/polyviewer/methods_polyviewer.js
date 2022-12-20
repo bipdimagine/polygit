@@ -637,14 +637,11 @@ function tabPatients(items , request ) {
      //       <td><span class='glyphicon glyphicon-star' aria-hidden='true' style='font-size:08px;></span></td>
             //<td><span class='glyphicon glyphicon-star' aria-hidden='true' ></span></td>
 		var title1;
-		var title2;
 		if (tsamples[i].label == tsamples[i].fam){
 			title1 = star+"<table><tr><td rowspan=2>"+ic+ "</td><td style='font-size:10px;'>"+tsamples[i].label+"</td></tr></table>";
-			title2 = star+"<table onclick=\"force_refresh_tab_polycto_selected('"+tsamples[i].label+"');\"><tr><td rowspan=2>"+ic+ "</td><td style='font-size:10px;'>"+tsamples[i].label+"</td></tr></table>";
 		}
 		else {
 			title1 = star+"<table><tr><td rowspan=2>"+ic+ "</td><td style='font-size:09px;font-weight: bold;' >"+tsamples[i].label+"</td></tr><tr>"+"<td ><span style='font-size:09px;'>"+tsamples[i].fam+"</small></td></tr></table>";
-			title2 = star+"<table onclick=\"force_refresh_tab_polycto_selected('"+tsamples[i].label+"');\"><tr><td rowspan=2>"+ic+ "</td><td style='font-size:09px;font-weight: bold;'>"+tsamples[i].label+"</td></tr><tr>"+"<td ><span style='font-size:09px;'>"+tsamples[i].fam+"</small></td></tr></table>";
 		}
 		
          tab_editor_polyviewer[tsamples[i].label] = new dojox.layout.ContentPane({ // new dijit.layout.ContentPane({
@@ -679,7 +676,7 @@ function tabPatients(items , request ) {
          tab_editor_polyviewer[tsamples[i].label].toto = 0;
          
          tab_editor_polycyto[tsamples[i].label] = new dijit.layout.ContentPane({
-            title:title2,
+            title:title1,
             content: " ",
              closable: true,
              id:"c1polycyto"+n,
