@@ -165,7 +165,7 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 	}
 	
 }
-
+ 
 ### read mask ;
 my @amask = split(";",$mask);
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
