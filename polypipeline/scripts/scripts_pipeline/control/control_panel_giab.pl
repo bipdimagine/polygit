@@ -45,8 +45,18 @@ unless ($p1name){
 }
 #my $p = $project->getPatient("$p1name");
 my $giab =  $project->getPatient("$p2name");
-
-my $hintspan_giab = bed_to_intspan("$Bin/HG001.bed.gz");
+my $GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB";
+if ($p2name =~ /001/){
+	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG001";
+}
+elsif ($p2name =~ /002/){
+	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG002";
+}
+else {
+	die($p2name." not foud HG001 or HG002");
+}
+die() unless -e $GIAB_DIR;
+my $hintspan_giab = bed_to_intspan("$GIAB_DIR/bed.gz");
 my $hintspan_global;
 my $hintspan_project;
 my $nb_bases;
@@ -103,7 +113,7 @@ my $nb_total_vars;
 foreach my $v (@$vs){
 		
 	next unless exists $hintspan_giab->{$v->getChromosome->name};
-	 next unless $hintspan_global->{$v->getChromosome->name}->contains($v->start);
+	next unless $hintspan_global->{$v->getChromosome->name}->contains($v->start);
 	 $nb_total_vars ++;
 	 #	 next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 50;
 	
@@ -209,9 +219,8 @@ $results->{patient}= $p->name();
 $results->{date}= time;
 $results->{stats}= "variations ".($nb_total_vars+$nb_total_indels)." bases $nb_bases <br> ";
 $results->{errors}= \@errors;
-
 my $file = $dir_out."/".$project->name.".giab.json";
-
+warn "write $file"; 
 open (JSON,">$file");
 print JSON encode_json $results;
 close(JSON);
