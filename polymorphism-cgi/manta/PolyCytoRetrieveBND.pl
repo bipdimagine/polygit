@@ -30,7 +30,7 @@ my $listOfGenes = $cgi->param('genes');
 my $omim      = $cgi->param('omim');
 my $transmis = $cgi->param('transmission');
 my $scoreEvent = $cgi->param('score_event');
-
+#
 
 my $type;
 
@@ -143,20 +143,7 @@ foreach my $event_id (keys %$hTransLoc)
 		next unless ( ($hTransLoc->{$event_id}->{"OMIM1"}) ||  ($hTransLoc->{$event_id}->{"OMIM2"}));
 	}
 
-	# filtre sur une liste de gènes
-	my $genebp1 = $hTransLoc->{$event_id}->{"GENES1"};
-	my $genebp2 = $hTransLoc->{$event_id}->{"GENES2"};
-	my $pass   = 0;
-	my @tabgenes = split(/,/,$listOfGenes);
-	foreach my $gene (@tabgenes) 
-	{
-		if ( ( $genebp1 =~ m/$gene/ ) || ( $genebp2 =~ m/$gene/ ) || ( $gene eq "all" ) ) 
-		{
-			$pass = 1;
-		}
-		last if ( $pass == 1 );
-	}
-	next unless ($pass);
+	
 	
 	# pour le dejavu
 	my $listpat_itp ="";
@@ -211,23 +198,18 @@ foreach my $event_id (keys %$hTransLoc)
 	if ($type eq "inv")
 	{
 		$hTransLoc->{$event_id}->{"LENGTH"} = abs($bp1-$bp2);
-		
-		$cb1 = "q" if ($hTransLoc->{$event_id}->{"CYTOBAND1"} =~ m/q/);
-		$cb1 = "p" if ($hTransLoc->{$event_id}->{"CYTOBAND1"} =~ m/p/);
-		$cb2 = "q" if ($hTransLoc->{$event_id}->{"CYTOBAND2"} =~ m/q/);
-		$cb2 = "p" if ($hTransLoc->{$event_id}->{"CYTOBAND2"} =~ m/p/);
-	
-		$hTransLoc->{$event_id}->{"TYPE"} = "Paracentrique" if ($cb1 eq $cb2);
-		$hTransLoc->{$event_id}->{"TYPE"} = "Pericentrique"  if ($cb1 ne $cb2);
 	}
 	else
 	{
-		$hTransLoc->{$event_id}->{"TYPE"} = "-" ;
 		$hTransLoc->{$event_id}->{"LENGTH"} = "-" ;
 	}
 	
+	$hTransLoc->{$event_id}->{"TRANSLOC"} = $type."##".$c1."##".$hTransLoc->{$event_id}->{"CYTOBAND1"}."##".$c2."##".$hTransLoc->{$event_id}->{"CYTOBAND2"};
+	
 	$hTransLoc->{$event_id}->{"CYTOBAND1"} = $c1.$hTransLoc->{$event_id}->{"CYTOBAND1"};
 	$hTransLoc->{$event_id}->{"CYTOBAND2"} = $c2.$hTransLoc->{$event_id}->{"CYTOBAND2"};
+	
+	
 	
 	my $hdjv_project;
 	my $hdjv_patient_itp;
@@ -289,9 +271,9 @@ foreach my $event_id (keys %$hTransLoc)
 			}
 		}
 	
-	# etablir la transmission
-	if ($thePatientFamily->isTrio() && $thePatient->isChild() )
-	{
+		# etablir la transmission
+		if ($thePatientFamily->isTrio() && $thePatient->isChild() )
+		{
 			$infoTransmission .= "both  " if (($transmission == 3) && ($infoTransmission !~ m/both/));
 			$infoTransmission .= "mother " if (($transmission == 2) && ($infoTransmission !~ m/mother/));
 			$infoTransmission .= "father " if (($transmission == 1) && ($infoTransmission !~ m/father/));
@@ -300,16 +282,16 @@ foreach my $event_id (keys %$hTransLoc)
 			{
 				$infoTransmission .= "denovo " if ($infoTransmission !~ m/denovo/);
 			}
-	}
-	else
-	{
+		}
+		else
+		{
 			$infoTransmission = "X";
+		}
 	}
-}
 
 	# filtre sur la transmission
 	
-		$pass = 1;
+		my $pass = 1;
 	
 		unless ( ($transmis  eq "all")  || ( $infoTransmission eq "X"))
 		{
@@ -370,7 +352,6 @@ foreach my $event_id (keys %$hTransLoc)
 	
 	# filtres
 	unless($dejavu eq "all") {next if ( $hTransLoc->{$event_id}->{"nbdejavu"} > $dejavu)};
-	#next if ( int($hTransLoc->{$event_id}->{"QUAL"}) < $qual);
 	
 	
 	$hTransLoc->{$event_id}->{"SCORE_EVENT"} = getScoreEvent($event_id);
@@ -379,7 +360,7 @@ foreach my $event_id (keys %$hTransLoc)
 	next if ($hTransLoc->{$event_id}->{"SCORE_EVENT"} < 10) && $scoreEvent==0;
 	next if ($hTransLoc->{$event_id}->{"SCORE_EVENT"} < 5) && $scoreEvent== 1;
 	
-	#################################################################################
+	############################################
 	# pour afficher les CNVs lies a l'evenement
 	
 	$hTransLoc->{$event_id}->{'CNV'}=";";
@@ -398,8 +379,8 @@ foreach my $event_id (keys %$hTransLoc)
 	getLinkedCNV($event_id);
 	
 	
-	##########################################
-		# pour aller rechercher les infos PR /PR dans les vcfs manta 
+	#############################################################
+	# pour aller rechercher les infos PR /PR dans les vcfs manta 
 
 	my $file_in = $thePatient->_getCallingSVFileWithMethodName("manta","variations");
 	my $tabix = $buffer->getSoftware("tabix");	
@@ -434,14 +415,13 @@ foreach my $event_id (keys %$hTransLoc)
  	$hTransLoc->{$event_id}->{'SR'} = $ref."/".$alt;
  
  
-  	# calculer le score des gènes
-	#  les genes compris dans l'interval
+  	# calculer le score des gènes compris dans l'evenement
 	
-
+		my $genesListe;
 		my $objChr  = $project->getChromosome($c1);
 		my $deb = $bp1-50;
 		my $end = $bp1+50; 
-		my $genebp1bis;
+		my $genebp1bis = $c1.":".$deb."_".$end."##";
 		my $tabgenesbp1 = $objChr->getGenesByPosition($deb,$end);
 	
 		if ( scalar(@$tabgenesbp1) >=1 )  # si le variant recouvre des gènes
@@ -449,6 +429,7 @@ foreach my $event_id (keys %$hTransLoc)
 			foreach my $g (@$tabgenesbp1)
 			{
 				$genebp1bis .= $g->external_name.";".$g->raw_score."##";
+				$genesListe .= $g->external_name;
 			}
 		}
 		else
@@ -460,7 +441,7 @@ foreach my $event_id (keys %$hTransLoc)
 		$objChr  = $project->getChromosome($c2) if ($c1 ne $c2);
 		$deb = $bp2-50;
 		$end = $bp2+50; 
-		my $genebp2bis;
+		my $genebp2bis=$c2.":".$deb."_".$end."##";
 		my $tabgenesbp2 = $objChr->getGenesByPosition($deb,$end);
 	
 		if ( scalar(@$tabgenesbp2) >=1 )  # si le variant recouvre des gènes
@@ -468,6 +449,7 @@ foreach my $event_id (keys %$hTransLoc)
 			foreach my $g (@$tabgenesbp2)
 			{
 				$genebp2bis .= $g->external_name.";".$g->raw_score."##";
+				$genesListe .= $g->external_name;
 			}
 		}
 		else
@@ -475,7 +457,68 @@ foreach my $event_id (keys %$hTransLoc)
 			$genebp2bis="-";
 		}
 		$hTransLoc->{$event_id}->{"GENES2"}=$genebp2bis;
+		
+		
+		# dans le cas de inversions 
+		my $geneInv;
+		my $scoremax=0;
 
+		
+		if ($type eq "inv")
+		{
+			my $tabgenesinv = $objChr->getGenesByPosition($bp1,$bp2);
+			if ( scalar(@$tabgenesinv) >=1 )  # si le variant recouvre des gènes
+			{	
+				foreach my $g (@$tabgenesinv)
+				{
+					my $gscore=$g->raw_score; 
+					my $gname= $g->external_name;
+					
+					$genesListe .= $gname;
+					
+					if($gscore > $scoremax)
+					{
+						$scoremax  =$gscore;
+						$geneInv = $gname.";".$gscore."##".$geneInv;
+					}
+					else
+					{
+						$geneInv .= $gname.";".$gscore."##";
+					} 
+				}
+				$geneInv = $c1.":".$bp1."_".$bp2."##".$geneInv;
+				$hTransLoc->{$event_id}->{"ALLGENES"}=$geneInv;
+			}
+			else
+			{
+				$hTransLoc->{$event_id}->{"ALLGENES"}="-";
+			}
+		}
+		else
+		{
+			$hTransLoc->{$event_id}->{"ALLGENES"}="-";
+		}
+		
+	
+	
+	# dernier filtre sur la liste de gènes
+
+	unless ($listOfGenes eq "all")
+	{
+		$pass   = 0;
+		my @tabgenes = split(/,/,$listOfGenes);
+		foreach my $gene (@tabgenes) 
+		{
+			if ( $genesListe =~ m/$gene/ )
+			{
+				$pass = 1;
+			}
+			last if ( $pass == 1 );
+		}
+		next unless ($pass);
+	}
+	
+	
 	# pour le json final
 	push( @listHashRes, { %{$hTransLoc->{$event_id}} } );
 }	
@@ -489,6 +532,7 @@ if ( (scalar(@listHashRes) == 0) )
 	$hash->{"TRANSLOC"}= "-";
 	$hash->{"IGV"}= "-";
 	$hash->{"QUAL"}= "-";
+	$hash->{"ALLGENES"}= "-";	
 	$hash->{"LENGTH"}= "-";
 	$hash->{"POS1"}= "-";
 	$hash->{"CYTOBAND1"}= "-";
@@ -521,9 +565,9 @@ exit(0);
 
 
 ############
-#                          #
-#	   methodes      #
-#                         #
+#          #
+# methodes #
+#          #
 ############
 
 
@@ -548,7 +592,7 @@ sub getScoreEvent()
 	my $score = 0;
 	
 	# break point dans un gene omim morbid
-	$score += 1  if $hTransLoc->{$event_id}->{"OMIM1"};
+	$score += 1  if $hTransLoc->{$event_id}->{"OMIM1"};	
 	$score += 1  if $hTransLoc->{$event_id}->{"OMIM2"};
 	
 	# score sur le dejavu

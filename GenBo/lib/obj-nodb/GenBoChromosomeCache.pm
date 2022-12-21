@@ -163,6 +163,8 @@ has patients_categories => (
 				$h->{$patient->name()} = Bit::Vector->new(0);
 				$h->{$patient->name().'_he'} = Bit::Vector->new(0);
 				$h->{$patient->name().'_ho'} = Bit::Vector->new(0);
+				$h->{$patient->name().'_RI'} = Bit::Vector->new(0);
+				$h->{$patient->name().'_SE'} = Bit::Vector->new(0);
 			}
 			return $h;
 		}
@@ -173,6 +175,8 @@ has patients_categories => (
 			$h->{$name} = $patient->{'bitvector'}->{'all'};
 			$h->{$name.'_he'} = $patient->{'bitvector'}->{'he'};
 			$h->{$name.'_ho'} = $patient->{'bitvector'}->{'ho'};
+			$h->{$name.'_RI'} = $patient->{'bitvector'}->{'RI'} if (exists $patient->{'bitvector'}->{'RI'});
+			$h->{$name.'_SE'} = $patient->{'bitvector'}->{'SE'} if (exists $patient->{'bitvector'}->{'SE'});
 		}
 		$no_patients->close();
 		return $h;
@@ -224,6 +228,11 @@ has global_categories => (
 # TODO: CORRECTIF Logiciel a cause de freq_ho qui remplissait freq_. A enlever une fois tout MAJ
 sub correct_vectors_filters {
 	my ($self, $h_global_categories) = @_;
+	if (exists $h_global_categories->{junction}) {
+		my $todo;
+		foreach my $freq (sort keys %{$self->project->buffer->config->{frequence_filters}}) { $todo = 1 if exists $h_global_categories->{$freq}; }
+		return $h_global_categories unless $todo;
+	}
 	my $h_v_to_k;
 #	warn "\n\n";
 #	warn 'BEFORE: ';
@@ -1217,6 +1226,25 @@ sub getTreeVariants {
 		#push(@lVarObj, $self->getVarObject($v_id));
 	}
 	return $tree;
+}
+
+sub getJunctionsVector {
+	my $self = shift;
+	my $vector = $self->getNewVector();
+	$vector += $self->global_categories->{junction} if (exists $self->global_categories->{junction});
+	return $vector;
+}
+
+sub setJunctions {
+	my $self = shift;
+	my $vector = $self->getJunctionsVector();
+	foreach my $junction (@{$self->getListVarObjects($vector)}) {
+		$self->{$junction->type_object()}->{$junction->id()} = undef;
+		unless (exists $self->project->{objects}->{junctions}->{$junction->id()}) {
+			$self->project->{objects}->{junctions}->{$junction->id()} = $junction;
+		}
+	}
+	return $self->{junctions_object} ;
 }
 
 sub setVariations {
@@ -2287,11 +2315,11 @@ has tree_primers =>(
 is		=> 'ro',
 	lazy	=> 1,
 	default => sub {
-		my $self = shift;
+		my $self = shift; 
 		my $tabix = $self->project->tabix_primers;
 		my $res = $tabix->query_full($self->ucsc_name,$self->start,$self->end);
 		my $tree = Set::IntervalTree->new;
-		return $tree unless $res->get();;
+		return $tree unless $res;
 		while(my $line = $res->next){
 		my($a,$b,$c,$pid) = split(" ",$line);
 		

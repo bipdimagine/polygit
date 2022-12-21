@@ -45,8 +45,11 @@ use GenBoNoSql;
 use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
+use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
+use GenBoJunction;
+use GenBoJunctionCache;
 use Storable qw(store retrieve freeze dclone thaw);
 
 #use LMDB_File qw(:flags :cursor_op);
@@ -175,8 +178,12 @@ has isFamilial => (
 			  or exists $self->pedigree_details()->{$_}->{father}
 		} keys %{ $self->pedigree_details() };
 		return 1 if scalar(@t) >= 1;
+		foreach my $fam_name (keys %{$self->pedigree_details()}) {
+			my $nb_childs = 0;
+			$nb_childs = scalar(keys %{$self->pedigree_details()->{$fam_name}->{children}}) if (exists $self->pedigree_details()->{$fam_name}->{children});
+			return 1 if ($nb_childs > 1);
+		}
 		return;
-
 #	return 1 if (scalar( grep {exists $self->pedigree_details()->{$_}->{mother} }keys %{$self->pedigree_details()}) ne scalar(@{$self->getPatients}));
 #	return;
 	},
@@ -858,13 +865,15 @@ has similarProjects => (
 		my $self = shift;
 		my $results;
 		my $query = $self->buffer->getQuery();
-		if ( $self->isExome or $self->isGenome() ) {
+	#	
 			my $phenotypes = $self->getPhenotypes();
 			return {} unless $phenotypes;
 			return {} unless @$phenotypes;
 			map { $results->{$_}++ }
 			  @{ $phenotypes->[0]->projects_name } if $phenotypes;
 			 # warn Dumper $results;
+			 
+		if ( $self->isExome or $self->isGenome() ) { 
 			return {} unless $results;
 			return $results;
 		}
@@ -884,8 +893,7 @@ has similarProjects => (
 				#next;
 			}
 			else {
-				map { $results->{$_}++ }
-				  @{ $query->getSimilarProjects( $c->id ) };
+				map { $results->{$_}++ } @{ $query->getSimilarProjects( $c->id ) };
 			}
 			if ($vdb) {
 				map { $results->{$_}++ }
@@ -893,7 +901,6 @@ has similarProjects => (
 			}
 
 		}
-
 		delete $results->{ $self->name };
 		return $results;
 	},
@@ -1394,9 +1401,7 @@ sub get_gencode_directory {
 	  if exists $self->{directory}->{$version}->{$database};
 
 	$self->{directory}->{$version}->{$database} =
-		$self->public_data_root . "/"
-	  . $self->annotation_genome_version . "/"
-	  . $self->buffer->gencode->{$version}->{directory};
+		$self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
 	confess( "score:$database " . $self->{directory}->{$version}->{$database} )
 	  unless -e $self->{directory}->{$version}->{$database};
 
@@ -1409,11 +1414,7 @@ sub get_public_data_directory {
 	my ( $self, $database, $version ) = @_;
 	return $self->{directory}->{$database} if exists $self->{directory}->{$database} ;
 	$version = $self->public_database_version unless $version;
-	$self->{directory}->{$database} =
-		$self->public_data_root . "/"
-	  . $self->annotation_genome_version . "/"
-	  . $self->buffer->public_data->{$version}->{$database}->{config}
-	  ->{directory};
+	$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
 	confess( "public data :$database " . $self->{directory}->{$database} )
 	  unless -e $self->{directory}->{$database};
 	return $self->{directory}->{$database};
@@ -1601,6 +1602,17 @@ has annotation_public_path => (
 
 		return $dir;
 
+	},
+);
+
+has DejaVuJunction_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
+		confess("junction dejavu $dir") unless -e $dir;
+		return $dir;
 	},
 );
 
@@ -1865,7 +1877,6 @@ has dirCytoManue => (
 	},
 
 );
-
 
 has gtf_file => (
 	is      => 'rw',
@@ -3408,6 +3419,11 @@ sub myflushobjects {
 				$id = $obj->id;
 				confess($type." ".$id) unless exists $self->{objects}->{$type}->{$obj->id};
 			}
+			elsif ( $type eq 'junctions' ) {
+				my $obj = $self->createObject( $type, { id => $id } );
+				$id = $obj->id;
+				confess($type." ".$id) unless exists $self->{objects}->{$type}->{$obj->id};
+			}
 			else {
 				warn "\n\nproblem... no $type";
 				confess("je fais quoi ici $type");
@@ -3528,7 +3544,8 @@ has hashTypeObject => (
 			'somatic_groups'     => 'GenBoSomaticGroup',
 			'svduplications'     => 'GenBoSVDup',
 			'svdeletions'        => 'GenBoSVDel',
-			'regulatory_regions'        => 'GenBoRegulatoryRegion',
+			'regulatory_regions' => 'GenBoRegulatoryRegion',
+			'junctions'			 => 'GenBoJunction',
 		};
 		return $hashTypeObject;
 	}
@@ -4345,6 +4362,19 @@ has dejavuSV1 => (
 		
 		return  GenBoNoSqlDejaVuSV->new( dir => $sqliteDir, mode => "r" );
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
+	}
+);
+
+has dejavuJunctions => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->DejaVuJunction_path();
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctions->new( dir => $sqliteDir, mode => "r" );
 	}
 );
 
@@ -5428,6 +5458,7 @@ sub getDejaVuInfosForDiag {
 	$res->{in_this_run_patients} = 0;
 	$res->{in_this_run_patients} += scalar(@{$v->getPatients});
 	return $res unless ($h);
+	
 	foreach my $l (split("!",$h)) {
 		my($p,$nho,$nhe,$info) = split(":",$l);
 		$p = "NGS20".$p;
@@ -5443,7 +5474,7 @@ sub getDejaVuInfosForDiag {
 		}
 		#IN EXOME 	
 		if (exists $exomes->{$p}){
-			$res->{exome_projects}  ++;
+			$res->{exome_projects}  ++; 
 			$res->{exome_patients}   += $nhe;
 			$res->{exome_patients_ho}   += $nho;
 		}
@@ -5451,7 +5482,7 @@ sub getDejaVuInfosForDiag {
 		if (exists $similar->{$p}){
 			$res->{similar_projects}  ++;
 			$res->{similar_patients} += $nhe;
-			$res->{similar_patient_ho} += $nho;
+			$res->{similar_patients_ho} += $nho;
 		}
 		else {
 			$res->{other_projects} ++;
@@ -6004,6 +6035,134 @@ has dir_controls_dude => (
 		return $dir;
 	},
 );
+
+has get_path_rna_seq_polyrna_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
+		return $path;
+	},
+);
+
+has get_path_rna_seq_junctions_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
+		return $path;
+	},
+);
+
+has get_path_rna_seq_junctions_analyse_all_res  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->get_path_rna_seq_junctions_root()."/AllRes/";
+		return $path;
+	},
+);
+
+has get_path_rna_seq_junctions_analyse_description_root  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/RNAseqSEA/";
+		return $path;
+	},
+);
+
+has get_hash_patients_description_rna_seq_junction_analyse => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $project_name = $self->name;
+		my (@lFilesDescription, $hType_patients);
+		my $path_rna_description = $self->get_path_rna_seq_junctions_analyse_description_root();
+		opendir my ($dir), $path_rna_description;
+		my @found_files = readdir $dir;
+		closedir $dir;
+		foreach my $file (@found_files) {
+			next if (not $file =~ /SamplesTypes_/);
+			push(@lFilesDescription, $path_rna_description.'/'.$file);
+		}
+		foreach my $file (@lFilesDescription) {
+			next if (not -e $file);
+			open (FILE, $file);
+			my (@lPat, @lCtrl);
+			while (<FILE>) {
+				chomp($_);
+				my $line = $_;
+				next if not $line =~ /$project_name/;
+				my ($pat_name, $type, $proj_name) = split(' ', $line);
+				$hType_patients->{$pat_name}->{lc($type)} = undef;
+				push(@lPat, $pat_name) if (lc($type) eq 'pat');
+				push(@lCtrl, $pat_name) if (lc($type) eq 'ctrl');
+			}
+			close(FILE);
+			foreach my $pat_name (@lPat) {
+				foreach my $ctrl (@lCtrl) {
+					$hType_patients->{$pat_name}->{used_ctrl}->{$ctrl} = undef;
+				}
+			}
+		}
+		return $hType_patients;
+	},
+);
+
+
+sub get_gtf_genes_annotations_igv {
+	my ($self) = @_;
+	if ($self->getVersion() =~ /HG19/) {
+		my $igv_dir = $self->buffer->config->{'public_data_annotation'}->{root}.'/igv/';
+		if (defined $self->gencode_version() && $self->gencode_version() ne '-1') {
+			my $file = $igv_dir.'/gencode.'.$self->gencode_version().'.gtf.gz';
+			return $file if (-e $file);
+		}
+		my $file = $igv_dir.'/gencode.gtf.gz';
+		return $file;
+	}
+	return $self->buffer->config->{'public_data_annotation'}->{root}."/".$self->getVersion()."/igv/gencode.gtf.gz";
+}
+
+sub getQueryJunction {
+	my ($self, $fileName, $method) = @_;
+	my %args;
+	$args{project} = $self;
+	$args{file}    = $fileName;
+	if ($method eq 'RI') { $args{isRI} = 1; }
+	elsif ($method eq 'SE') { $args{isSE} = 1; }
+	else { confess(); }
+	my $queryJunction = QueryJunctionFile->new( \%args );
+	return $queryJunction;
+}
+
+sub setJunctions {
+	my ($self) = @_;
+	my $h_ids;
+	my $path = $self->get_path_rna_seq_junctions_analyse_all_res();
+	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+	if ($ri_file and -e $ri_file ) {
+		foreach my $hres (@{$self->getQueryJunction($ri_file, 'RI')->parse_file()}) {
+			my $obj = $self->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($se_file and -e $se_file) {
+		foreach my $hres (@{$self->getQueryJunction($se_file, 'SE')->parse_file()}) {
+			my $obj = $self->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	return $h_ids;
+}
+		
 
 
 1;
