@@ -80,11 +80,19 @@ my $fileout = $project->getVariationsDir("haplotypecaller4")."/".$patient->name.
 unlink  $fileout.".tbi" if -e $fileout.".tbi";
 unlink  $fileout if -e $fileout;
 
-#system("$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");#&& $tabix -f -p vcf $fileout");
-system("$bcftools view $vcf_giab | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");
+system("$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");#&& $tabix -f -p vcf $fileout");
+#system("$bcftools view $vcf_giab | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");
 system("$tabix -f -p vcf $fileout  ");
-
-warn "$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z && $tabix -f -p vcf $fileout";
+die() unless -e $fileout.".tbi";
+system("/software/polyweb/poly-disk/poly-src/polygit/polypipeline/scripts/scripts_cache/step/./step1.pl -project=NGS2022_6106 | run_cluster.pl -cpu=5");
+warn "\n\n--------------------\n\n";
+warn "run stats ";
+system("$Bin/control_panel_giab.pl -project=$project_name -giab=$p2name");
+warn "\n\n-----------------------------\n\n";
+warn "\n\n-----------------------------\n\n";
+warn "\n\n------ THAT's ALL FOLKS ------\n\n";
+warn "\n\n-----------------------------\n\n";
+warn "\n\n-----------------------------\n\n";
 exit(0);
 
 warn $fileout;
