@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>PolyPipeline</title>
+                <style type="text/css">
+         	@import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/resources/dojo.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.9.2/dijit/themes/soria/soria.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/soriaGrid.css";
+          
+		 	@import "css/polycss/button.css";
+			@import "css/polycss/general.css";
+			@import "css/polycss/login.css";
+			@import "css/polycss/header-footer.css";
+	
+	body, html {
+	margin:0; padding:0; width:100%; background:#E6F3F7;
+	
+
+	color:#000;
+	
+}
+
+/*.partsContainer .gridContainer table {
+	width:475px;
+}
+*/
+.polypipelineTitre{
+	color:#2E9EC7;
+	text-align:center;
+	font-size:44pt;
+}
+.turquoise  {
+	color:#2E9EC7;
+	
+}
+
+
+
+ #gridVersions_div {
+	position: relative;
+	border:solid;
+	border-color:#2E9EC7;
+	border-style:groove;
+	top: 2px;
+	bottom: 0;
+ 	/*background-image: -moz-linear-gradient(top, #b4b4b4, #707070);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#b4b4b4), to(#707070));
+    */
+    left:20%;
+    padding:1px 2px 4px 1px;
+
+}
+
+ #gridRefs_div {
+	position: relative;
+	border:solid;
+	border-color:#2E9EC7;
+	border-style:groove;
+	top: 2px;
+	bottom: 0;
+ 	/*background-image: -moz-linear-gradient(top, #b4b4b4, #707070);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#b4b4b4), to(#707070));
+    */
+    left:10%;
+    padding:1px 2px 4px 1px;
+
+}
+
+ #gridProgs_div {
+	position: relative;
+	border:solid;
+	border-color:#2E9EC7;
+	border-style:groove;
+	top: 2px;
+	bottom: 0;
+ 	/*background-image: -moz-linear-gradient(top, #b4b4b4, #707070);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#b4b4b4), to(#707070));
+    */
+    left:10%;
+    padding:1px 2px 4px 1px;
+
+}
+
+ #gridProjects_div {
+	position: relative;
+	border:solid;
+	border-color:#2E9EC7;
+	border-style:groove;
+	top: 2px;
+	bottom: 0;
+ 	/*background-image: -moz-linear-gradient(top, #b4b4b4, #707070);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#b4b4b4), to(#707070));
+    */
+    left:10%;
+    padding:1px 2px 4px 1px;
+
+}
+
+ #gridAnalysis_div {
+	position: relative;
+	border:solid;
+	border-color:#2E9EC7;
+	border-style:groove;
+	top: 2px;
+	bottom: 0;
+ 	/*background-image: -moz-linear-gradient(top, #b4b4b4, #707070);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#b4b4b4), to(#707070));
+    */
+    
+    padding:1px 2px 4px 1px;
+
+}
+        </style>
+		
+<script>
+    dojoConfig = {
+    	isDebug: true,
+         parseOnLoad: true,
+       
+    };
+</script>
+
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.2/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+
+	<script type="text/javascript" src="../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+    <script type="text/javascript" src="../js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../js/polyjs/Utility/viewVar.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../js/polyjs/Utility/utilGrid2.js" djConfig="parseOnLoad: true"></script>
+	
+	<script type="text/javascript" src="js/layout_polypipeline.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript">
+		
+		//chargement de modules dojo necessaires
+		
+		dojo.require("dojox.grid.EnhancedGrid");
+		dojo.require("dojox.grid.DataGrid");
+		dojo.require("dojox.grid.enhanced.plugins.Filter");
+		dojo.require("dojox.grid.enhanced.plugins.Search");
+		dojo.require("dojo.cookie");
+		dojo.require("dijit.Dialog");
+		dojo.require("dijit.form.Button");
+		dojo.require("dijit.Toolbar");
+		dojo.require("dijit.form.TextBox");
+	    dojo.require("dojo.data.ItemFileReadStore");
+		dojo.require("dojox.grid.DataGrid");
+		dojo.require("dojox.data.AndOrReadStore");
+		dojo.require("dojo.parser");
+   
+ 		
+			
+     
+     
+        </script>
+    </head>
+    <body>
+    	<header>
+    		<span class="polypipelineTitre">PolyPipeline</span>
+    		
+    		
+    		
+    		
+    	</header>
+    	<ul>
+    		
+    		<li>Build (Versions list)
+    		<div  id="gridVersions_div" style="width:50em ; height :20em" > </div>
+    		<!--	<div  id="gridVersions_div" autoHeight="15" autowidth="true"></div> -->
+    		</li>
+    		<li>References list
+    			<div  id="gridRefs_div" style="width:100em ; height :20em" > </div>
+    		</li>
+    		<li>Programs list
+    			<div  id="gridProgs_div" style="width:100em ; height :20em" > </div>
+    		</li>
+    		<li>Project list</li>
+    		<div  id="gridProjects_div" style="width:100em ; height :20em" > </div>
+    		<li>Analysis list
+    			<span class="span_input">
+			   <input
+        id="searchInput"
+        data-dojo-type="dijit/form/TextBox"
+        data-dojo-props="
+            placeHolder: 'project_id, name, user, type...',
+            intermediateChanges:true,
+            
+            "
+        style="padding:2px;"  
+        onChange="onSearchAll(dojo.byId('searchInput').value,'GridAnalysis')"/></span>  
+     <br>  
+    			<div  id="gridAnalysis_div" style="width:130em ; height :20em" ; plugins="{filter: true}" ; plugins="{search: true}"> </div>
+    		</li>
+    		
+    	</ul>
+    	
+    	
+    		
+   
+    	
+    	
+    	
+    </body>
+</html>
