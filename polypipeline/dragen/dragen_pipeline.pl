@@ -675,7 +675,7 @@ sub steps_cluster {
 	$num_jobs ++;
 	my $text = "$num_jobs- $name";
 	running_text($text,$num_jobs);
-	$jobs = run_cluster($jobs,$num_jobs,500);
+	$jobs = run_cluster($jobs,$num_jobs,$limit);
 	text_system($text,$jobs);
 }
 
