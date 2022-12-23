@@ -245,7 +245,7 @@ foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
 	next unless scalar @{$hp->{run}};
-		my $ppn = 5;
+		my $ppn = 20;
 	$job->{name} = $hp->{name}.".move.".scalar @{$hp->{run}};
 	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$hp->{command_option};
 	$job->{cpus} = $ppn;
