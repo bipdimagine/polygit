@@ -1153,7 +1153,7 @@ has project_pipeline_path => (
 	default => sub {
 		my $self     = shift;
 		my $pathRoot = $self->buffer->config->{project_pipeline}->{root};
-		my $path     = $pathRoot . "/" . $self->name() . "/";
+		my $path     = $pathRoot . "/tmp." . $self->name() . "/";
 		$self->makedir($path);
 		$path .= $self->getVersion . "/";
 		return $self->makedir($path);
