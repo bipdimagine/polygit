@@ -39,7 +39,6 @@ my $patient = $project->getPatient($p2name);
 my $is_ucsc = undef;
 $is_ucsc = 1 if $project->getChromosome(1)->fasta_name eq "chr1";
 update_type($buffer->dbh,$project->id);
-die();
 #my $file_out = $patient->vcf_file;
 my $GIAB_DIR;
 
