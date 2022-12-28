@@ -87,8 +87,9 @@ foreach my $v (@$vs){
 	$nb_total_indels ++;
 	next if $p->meanDepth($v->getChromosome->name,$v->start+5,$v->end+5) < 15;
 	next if $v->sequencing_details($p)->{hap}->{pourcent} < 20;
+	
 		 $nb ++;
-	#warn $v->name;
+	warn $v->name;
 	#$ids{$v->id}= $v->vector_id;
 	if (scalar(@{$v->getPatients}) == 1){
 		#next if $v->sequencing_details($p)->{hap}->{nb_ref} + $v->sequencing_details($p)->{hap}->{nb_alt} < 15;
@@ -329,6 +330,7 @@ sub print_variant {
 	my ($v,$tab) = @_;
 	my @vs;
 	my $vh;
+	
 	$vh->{chromosome} = $v->getChromosome->name;
 	$vh->{event} = "false positive";
 	$vh->{id} = $v->id;
@@ -351,21 +353,24 @@ sub print_variant {
 	$vh->{control_depth} = $p->depth($v->getChromosome->name,$v->start,$v->end)->[0];
 	warn "coucou ".$v->type;
 	#unless ($v->type){
-		warn "cuicuiu";
+	warn "cuicuiu ->".$v->vector_id;
 		my $chr = $v->getChromosome();
-		my $vid = $v->vector_id;
-		$vid++;
-		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		 #warn $gid." ".$vid." ".$id;
-		 my $obj = $chr->cache_lmdb_variations->get($gid);
-		 warn $obj->sequence;
-		 warn $v->sequence;
-		 $vid-=2;
-		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		 #warn $gid." ".$vid." ".$id;
-		 my $obj = $chr->cache_lmdb_variations->get($gid);
-		 warn $obj->sequence;
-		 warn $v->sequence;
+	#	my $vid = $v->vector_id;
+	#	$vid++;
+	#	 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+	#	 warn $gid." ==> ".$vid." =+> ".$v->id;
+	#	 unless ($gid)
+		 
+	#	 my $obj = $chr->cache_lmdb_variations->get($gid);
+	#	  warn "--++++--";
+	#	 warn $obj->sequence;
+	#	 warn $v->sequence;
+	#	 $vid-=2;
+	#	 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+	#	 #warn $gid." ".$vid." ".$id;
+	#	 my $obj = $chr->cache_lmdb_variations->get($gid);
+	#	 warn $obj->sequence;
+	#	 warn $v->sequence;
 	
 	push(@$tab,$vh);
  	push(@vs,"./.");

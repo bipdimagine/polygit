@@ -14,6 +14,7 @@ use List::MoreUtils  qw( uniq );
  use Scalar::Util qw(looks_like_number);
  use Align::NW;
 use Bio::DB::HTS::Tabix;
+use Bio::DB::HTS::VCF;
  use Time::HiRes qw ( time alarm sleep );;
 my %REV_IUB = (A	=> 'A',
 				T	=> 'T',
@@ -186,11 +187,7 @@ sub parseVcfFile {
 	die("\n\nERROR: no reason to use QueryVcf::parseVcfFile method !!!\n\n");
 }
 
-sub changeSamFile {
-	my ($self) = @_;
-	
-	
-}
+
 
 
 
@@ -200,7 +197,9 @@ sub parseVcfFileForReference {
 	#warn $file;
 #	warn $file if $file =~/mpileup/;
 	die($file) unless -e $file;
-	
+	if ($self->method() eq "melt"){
+			return $self->parseVcfFileForReference_melt($reference, $useFilter);
+	}
 	if ($file =~ /\.sam/) { 
 		my @res = `zgrep "#INFO=<ID" $file`;
 		#unless (scalar @res){
@@ -415,7 +414,125 @@ sub parseBed {
 		 }
  	return \%hashRes;	
 }
+sub getRandomInsertion {
+	my ($self,$row,$header) = @_;
+	
+}
 
+sub parseVCFLine {
+  my ($self,$line) = @_;
+  my($chr,$pos,$id,$ref,$alt,$qual,$filter,$info,@all) = split("\t",$line);
+  confess() if scalar(@all) ne 2;
+  
+  my @alts = defined $alt? split(",",$alt) : ();
+  my %infos = defined $info?
+  map { my ($k,$v) = split '='; $k => $v } split ';', $info : ();
+  my @a = split(":",$all[0]);
+  my @b = split(":",$all[1]);
+  my $gt;
+  for (my $i=0;$i<@a;$i++){
+  	$gt->{$a[$i]} = $b[$i];
+  }
+  $gt->{genotype} = $self->genotype($gt->{GT});
+  $gt->{he} =1;
+  $gt->{ho} =0;
+  $gt->{isref} = 0;
+  $gt->{is_cas_1_2} = 0;
+  if($gt->{genotype}->[0] eq $gt->{genotype}->[1] ){
+  	$gt->{he} =0;
+  	$gt->{ho} =1;
+  	$gt->{isref} = 1 if $gt->{genotype}->[0] == 0;
+  	
+  }
+  else {
+  	$gt->{is_cas_1_2} = 1 if ($gt->{genotype}->[0] +  $gt->{genotype}->[1]) > 2 ;
+  }
+  return { chr => $chr,
+    pos     => $pos,
+    id      => $id,
+    ref     => $ref,
+    alt     => \@alts,
+    qual    => $qual,
+    filter  => $filter,
+    info    => \%infos,
+    gt => $gt,
+  };
+}
+sub genotype {
+	my ($self,$val) = @_;
+	my @t = split("",$val);
+	confess($val) if scalar(@t) ne 3;
+	return [$t[0],$t[-1]] if $t[0] < $t[-1];
+	return [$t[-1],$t[0]];#if $t[0] < $t[-1];
+}
+
+sub parseVcfFileForReference_melt {
+	my ($self, $reference, $useFilter) = @_;
+	my $chr = $reference->getChromosome();
+	my $v = Bio::DB::HTS::VCF->new( filename => $self->file() );
+	my $v1 = Bio::DB::HTS::Tabix->new( filename => $self->file() );
+	my $header = $v->header();
+	confess() if $header->num_samples() ne 1;
+	die() if $self->getPatient->name ne  $header->get_sample_names->[0];
+	#confess() if 
+	my $patient_id = $self->getPatient->id;
+	my %hashRes;
+	my $iter = $v1->query($chr->fasta_name.":".$reference->start."-".$reference->end);
+	#my $iter = $v->query($chr->fasta_name.":".$reference->start."-".$reference->end);
+	return {} unless $iter;
+	my $structType = "insertion";
+	my $chr_name =  $chr->fasta_name;
+	while (my $row = $iter->next) {
+		my $x =  $self->parseVCFLine($row);
+		my $ref = $x->{ref};
+		my $pos = $x->{pos};
+		my $genbo_pos = $pos +1;
+		confess() if scalar(@{$x->{alt}}) > 1;
+		my $alt = $x->{alt};
+		my $sequence_id = $ref.'_'.$a;
+		my $id = $chr_name."_".$genbo_pos."_ALU";
+		$hashRes{$structType}->{$id}->{'id'} = $id;
+		$hashRes{$structType}->{$id}->{'vcf_id'} = join("_",$chr_name,$pos,$ref,$alt);#.$alt;
+		$hashRes{$structType}->{$id}->{'structuralType'} = "insertion" ;#= $allele->{type};
+		$hashRes{$structType}->{$id}->{'structuralTypeObject'} = 'insertions';
+		$hashRes{$structType}->{$id}->{'isMei'} = 1;
+		$hashRes{$structType}->{$id}->{'chromosomes_object'} = {$chr->id => undef};
+		$hashRes{$structType}->{$id}->{'start'} = $genbo_pos ;# = $allele->{start};
+		$hashRes{$structType}->{$id}->{'end'} = $genbo_pos;# = $allele->{end};
+		$hashRes{$structType}->{$id}->{'ref_allele'} = $ref;#; = $allele->{sequence_ref};
+		$hashRes{$structType}->{$id}->{'var_allele'} = "ALU";#; = $allele->{sequence};
+		$hashRes{$structType}->{$id}->{'line_infos'} = "-";#$allele->{vcf_parse};
+		$hashRes{$structType}->{$id}->{'vcf_position'} = $pos;# = $allele->{vcf_parse}->{POS};
+		###OBJECTS
+		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
+		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
+		
+		### ANNEX 
+		
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{Filter} =  "PASS";
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{'ref_allele'} = $ref;
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{'var_allele'} = "ALU";
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{dp} = $x->{gt}->{DP} ;# = $allele->{dp}->{raw};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{nb_all_mut} = $x->{gt}->{AD};# = $allele->{dp}->{alt};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{nb_all_ref} = abs($x->{gt}->{DP}-$x->{gt}->{AD});# = $allele->{dp}->{ref};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score} = $x->{qual};			
+						# = $allele->{score};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{he}= $x->{gt}->{he};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{ho}= $x->{gt}->{ho};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method} = $self->method();#$allele->{method};#  if exists $allele->{method};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_other_mut} = 0;
+	
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_ref} = abs($x->{gt}->{DP}-$x->{gt}->{AD});#$allele->{dp}->{ref};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{score} = 0;#$allele->{score};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_mut} = $x->{gt}->{AD};#$allele->{dp}->{alt};
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{he} =$x->{gt}->{he};#$allele->{he} ;
+		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{ho} = $x->{gt}->{ho};#$allele->{ho}  ;
+		$hashRes{$structType}->{$id} = compress(freeze($hashRes{$structType}->{$id}));
+		
+	}
+	
+	return \%hashRes;
+}
 sub parseVcfFileForReference_gatk{
 	my ($self, $reference, $useFilter) = @_;
 	my $hash_alleles;
@@ -469,7 +586,7 @@ sub parseVcfFileForReference_gatk{
 				next if ($type_found ne 'DUP' and $type_found ne 'DEL');
 				next if (abs($$x{'INFO'}->{'SVLEN'}) < 50);
 				next if (abs($$x{'INFO'}->{'SVLEN'}) > 10000);
-				next if ($$x{'CHROM'} =~ m/chrMT/);
+				#next if ($$x{'CHROM'} =~ m/chrMT/);
 				next if ($$x{'CHROM'} =~ m/^GL/);
 				next if ($$x{'CHROM'} =~ m/^hs37d5/);
 				#TODO: pb position manta
@@ -509,7 +626,7 @@ sub parseVcfFileForReference_gatk{
 				
 				my $pat_name;
 				unless ($self->noPatient()) {
-					$pat_name = $self->getPatient->{name};
+					$pat_name = $self->getPatient->name;
 				}
 				
 				my $gtypes;
@@ -1084,6 +1201,7 @@ my $temp_all;
 							$allele->{iupac_allele} =  "-";
 							$allele->{PARSE} = "tutu";
 							$allele->{end} = $allele->{vcf_parse}->{INFO}->{END};
+							$allele->{start} = $allele->{start}+1;
 							push(@$temp_all,compress(freeze $allele));
 							next;
 						}
