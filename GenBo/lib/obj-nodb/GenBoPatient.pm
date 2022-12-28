@@ -309,6 +309,8 @@ has coverage => (
 
 			while ( my $line = $res->next ) {
 				my ( $a, $b, $c ) = split( " ", $line );
+				warn $line;
+				die();
 				if ( $b == 99 ) {
 					$b = "mean";
 
@@ -454,7 +456,6 @@ has 'compute_sex' => (
 	default => sub {
 		my $self = shift;
 		my $covm = $self->coverage_SRY();
-		warn $covm;
 		return -1 if $covm == -1;
 		my $covh = $self->coverage();
 		$covh->{mean} += 0;
@@ -932,16 +933,14 @@ sub setVariantsForReference {
 	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
 		my $hfiles = $self->callingFiles->{$this_typeVar};
 		foreach my $method ( keys %{$hfiles} ) {
-			#next unless $method eq 'manta';
+			#next unless $method eq 'melt';
 			#next unless $method eq 'haplotypecaller4';
 			my $vcfFile = $hfiles->{$method};
 			next if exists $already_parse->{ $reference->name }->{$vcfFile};
 
 			#	warn "coucou ".$reference->name;
 			$already_parse->{ $reference->name }->{$vcfFile}++;
-			$self->{queryVcf}->{$vcfFile} =
-			  $self->getQueryVcf( $vcfFile, $method )
-			  unless exists $self->{queryVcf}->{$vcfFile};
+			$self->{queryVcf}->{$vcfFile} = $self->getQueryVcf( $vcfFile, $method ) unless exists $self->{queryVcf}->{$vcfFile};
 			my $queryVcf = $self->{queryVcf}->{$vcfFile};
 			my $z        = $queryVcf->parseVcfFileForReference($reference);
 			foreach my $type ( keys %$z ) {
@@ -963,9 +962,9 @@ sub setVariantsForReference {
 		}
 	}
 	my $o = [];
-
 	#warn "\t end parsing :".abs(time-$z)." ".$self->name;
 	$o = $self->myflushobjects2( $hashRes, $cursor );
+	
 	return $o;
 }
 
@@ -979,51 +978,51 @@ has tempArray => (
 	},
 );
 
-sub setVariantsForReference2 {
-	my ( $self, $reference, $typeVar ) = @_;
-	$self->setValidatedVariants() if $self->project->isDiagnostic();
-	my @objs;
-	my $hashRes;
-	my $z = time;
-	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
-		my $hfiles = $self->callingFiles->{$this_typeVar};
-		foreach my $method ( keys %{$hfiles} ) {
-			my $vcfFile = $hfiles->{$method};
-			next if exists $already_parse->{ $reference->name }->{$vcfFile};
-
-			#	warn "coucou ".$reference->name;
-			$already_parse->{ $reference->name }->{$vcfFile}++;
-			$self->{queryVcf}->{$vcfFile} =
-			  $self->getQueryVcf( $vcfFile, $method )
-			  unless exists $self->{queryVcf}->{$vcfFile};
-			my $queryVcf = $self->{queryVcf}->{$vcfFile};
-			my $z        = $queryVcf->parseVcfFileForReference($reference);
-			foreach my $type ( keys %$z ) {
-				foreach my $id ( keys %{ $z->{$type} } ) {
-					if ( exists $hashRes->{$type}->{$id} ) {
-						my $h1 = thaw( decompress( $hashRes->{$type}->{$id} ) );
-						my $h2 = thaw( decompress( $z->{$type}->{$id} ) );
-
-						$h1->{annex}->{ $self->id }->{method_calling}->{$method}
-						  = $h2->{annex}->{ $self->id }->{method_calling}
-						  ->{$method};
-						$hashRes->{$type}->{$id} = compress( freeze $h1);
-
-					}
-					else {
-						$hashRes->{$type}->{$id} = $z->{$type}->{$id};
-					}
-
-				}
-			}
-		}
-	}
-	my $o = [];
-
-	warn "\t end parsing :" . abs( time - $z ) . " " . $self->name;
-	$o = $self->myflushobjects2($hashRes);
-	return $o;
-}
+#sub setVariantsForReference2 {
+#	my ( $self, $reference, $typeVar ) = @_;
+#	$self->setValidatedVariants() if $self->project->isDiagnostic();
+#	my @objs;
+#	my $hashRes;
+#	my $z = time;
+#	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
+#		my $hfiles = $self->callingFiles->{$this_typeVar};
+#		foreach my $method ( keys %{$hfiles} ) {
+#			my $vcfFile = $hfiles->{$method};
+#			next if exists $already_parse->{ $reference->name }->{$vcfFile};
+#
+#			#	warn "coucou ".$reference->name;
+#			$already_parse->{ $reference->name }->{$vcfFile}++;
+#			$self->{queryVcf}->{$vcfFile} =
+#			  $self->getQueryVcf( $vcfFile, $method )
+#			  unless exists $self->{queryVcf}->{$vcfFile};
+#			my $queryVcf = $self->{queryVcf}->{$vcfFile};
+#			my $z        = $queryVcf->parseVcfFileForReference($reference);
+#			foreach my $type ( keys %$z ) {
+#				foreach my $id ( keys %{ $z->{$type} } ) {
+#					if ( exists $hashRes->{$type}->{$id} ) {
+#						my $h1 = thaw( decompress( $hashRes->{$type}->{$id} ) );
+#						my $h2 = thaw( decompress( $z->{$type}->{$id} ) );
+#
+#						$h1->{annex}->{ $self->id }->{method_calling}->{$method}
+#						  = $h2->{annex}->{ $self->id }->{method_calling}
+#						  ->{$method};
+#						$hashRes->{$type}->{$id} = compress( freeze $h1);
+#
+#					}
+#					else {
+#						$hashRes->{$type}->{$id} = $z->{$type}->{$id};
+#					}
+#
+#				}
+#			}
+#		}
+#	}
+#	my $o = [];
+#
+#	warn "\t end parsing :" . abs( time - $z ) . " " . $self->name;
+#	$o = $self->myflushobjects2($hashRes);
+#	return $o;
+#}
 
 sub _newDeletions {
 	my ( $self, $pos, $ref, $alt, $len, $chr ) = @_;
@@ -1087,8 +1086,7 @@ sub myflushobjects2 {
 	my $x = 0;
 	if ( scalar( keys %$hashRes ) > 0 ) {
 		foreach my $structType ( keys %$hashRes ) {
-			while ( my ( $keyId, $valHash ) =
-				each( %{ $hashRes->{$structType} } ) )
+			while ( my ( $keyId, $valHash ) = each( %{ $hashRes->{$structType} } ) )
 			{
 				if ($cursor) {
 					push( @{ $self->tempArray }, $valHash );
@@ -1097,28 +1095,25 @@ sub myflushobjects2 {
 
 				$x++;
 				$valHash = thaw( decompress($valHash) );
-				my $varObj = $self->getProject()
-				  ->flushObject( $valHash->{structuralTypeObject}, $valHash );
-
+				my $varObj = $self->getProject()->flushObject( $valHash->{structuralTypeObject}, $valHash );
+				#warn $varObj;
 				$varObj->patients_object()->{ $self->id() } = undef;
 
 				#here add all method for this variant in method calling hash
 
-				$varObj->annex()->{ $self->id } =
-				  $valHash->{annex}->{ $self->id };
-
-#$self->{objects}->{$valHash->{structuralTypeObject}}->{$varObj->id()} = $varObj->id();
+				$varObj->annex()->{ $self->id } =  $valHash->{annex}->{ $self->id };
+				
 				$valHash = undef;
 				delete $hashRes->{$structType}->{$keyId};
-
 				push( @objs, $varObj );
 			}
 		}
 		$hashRes = {};
 	}
 	my $t = abs( $z - time );
-
-	#warn $t." nb objs => ".scalar(@objs)." ".$self->name." construct ".$x;
+	
+#	warn $t." nb objs => ".scalar(@objs)." ".$self->name." construct ".$x if scalar(@objs) >0 ;
+	
 	#else { warn 'No object...'; }
 	return \@objs;
 }
@@ -1315,6 +1310,49 @@ has bamFiles => (
 
 );
 
+sub get_fastq {
+	my ($self) = @_;
+	require "fastq_util.pm";
+	my $name=$self->name();
+	my $dir = $self->getSequencesDirectory();
+	my @names;
+	my $couple;
+	push(@names,$self->name);
+	push(@names,$self->barcode) if length($self->barcode)>1 ;
+	unless (exists $self->buffer->{cached_dir}->{$dir}){
+		$self->buffer->{cached_dir}->{$dir}= [];
+		opendir(DIR,$dir);
+		my @allFiles= readdir(DIR);
+
+		$self->buffer->{cached_dir}->{$dir} = \@allFiles;
+	}
+	NAME: foreach my $name (@names) {
+	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
+	foreach my $find (@pattern){
+		my (@titi) = grep { /$find/} grep { /fastq/} @{$self->buffer->{cached_dir}->{$dir}} ;
+	
+		if (@titi) {
+			$couple = fastq_util::find_paired_files(\@titi,$dir);
+			last NAME if ($couple);
+		}
+	}
+	}
+	warn "NO fastq file for : -".$self->name()."- ".$self->barcode." ".$dir unless $couple;	
+	foreach my $cp (@$couple) {
+		$cp->{R1} = $self->getSequencesDirectory()."/".$cp->{R1};
+		$cp->{R2} = $self->getSequencesDirectory()."/".$cp->{R2};
+		delete $cp->{dif};
+		delete $cp->{pos};
+	}
+	return $couple if scalar(@$couple)>0;
+	die();	
+	
+
+}
+
+
+
+
 has trackingFile => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1397,15 +1435,30 @@ sub getBamFileName {
 		 
 	}
 	else {
-		my $methods = $self->alignmentMethods();
-	die( $self->project->name ) if scalar(@$methods) > 1;
+	my $methods = $self->alignmentMethods();
+	die( $self->project->name." ".Dumper($methods)) if scalar(@$methods) > 1;
 	 $bam_dir = $self->getProject->getAlignmentDir( $methods->[0] );
 	}
 	die() unless $bam_dir;
 	my $bam     = $bam_dir . "/" . $self->name . ".bam";
 	return $bam;
 }
-
+sub getCramFileName {
+	my ( $self, $method_name ) = @_;
+	my $bam_dir;
+	if($method_name){
+		 $bam_dir = $self->getProject->getAlignmentDir( $method_name );
+		 
+	}
+	else {
+	my $methods = $self->alignmentMethods();
+	die( $self->project->name." ".Dumper($methods)) if scalar(@$methods) > 1;
+	 $bam_dir = $self->getProject->getAlignmentDir( $methods->[0] );
+	}
+	die() unless $bam_dir;
+	my $bam     = $bam_dir . "/" . $self->name . ".cram";
+	return $bam;
+}
 sub getBamFile {
 	my ( $self, $method_name, $nodie ) = @_;
 	
@@ -1417,16 +1470,15 @@ sub getBamFile {
 			return;
 		}
 
-	  		confess($self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
+	  		confess($self->getBamFileName." ".$self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
 	}
 	 
 	confess("ERROR: no bam file with $method_name method name. Exit. "
-		  . $self->name . " "
+		  . $self->name." "
 		  . $self->project->name
 		  . "\n\n" )
 	  unless exists $self->bamFiles()->{$method_name};
-	return $self->bamFiles()->{$method_name};
-
+		return $self->bamFiles()->{$method_name};
 	#return  $self->{files}->{alignment}->{alignment}; # Pas rempli cette table
 }
 
@@ -1678,7 +1730,7 @@ sub _getFileByExtention {
 			"vcf.gz", "gz",  "vcf", "gff3", "sam", "txt",
 			"casava", "tab", "casava2"
 		],
-		"align" => ["bam"]
+		"align" => ["bam","cram"]
 	};
 
 	#my $f = File::Util->new();
