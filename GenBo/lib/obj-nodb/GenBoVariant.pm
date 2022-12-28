@@ -2864,10 +2864,14 @@ has dp_infos =>(
 	default=> sub {
 		my $self = shift;
 		 my $hash = {}; 
-		 
 		foreach my $pat (@{$self->getPatients}){
 			foreach my $patient (@{$pat->getFamily()->getMembers}){
-				my $pid = $patient->id;
+					my $pid = $patient->id;
+				unless ($patient->hasBamFile) {
+					$hash->{$pid} = ["-","-","-"];
+					next;
+				}
+			
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				my $norm_depth = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start, $self->end+1));
 				my $dude = "-";
