@@ -489,7 +489,7 @@ sub parseVcfFileForReference_melt {
 		my $genbo_pos = $pos +1;
 		confess() if scalar(@{$x->{alt}}) > 1;
 		my $alt = $x->{alt};
-		my $sequence_id = $ref.'_'.$a;
+		my $sequence_id = $ref.'_'.$x->{alt}->[0];
 		my $id = $chr_name."_".$genbo_pos."_ALU";
 		$hashRes{$structType}->{$id}->{'id'} = $id;
 		$hashRes{$structType}->{$id}->{'vcf_id'} = join("_",$chr_name,$pos,$ref,$alt);#.$alt;
