@@ -394,6 +394,31 @@ sub codonsConsequenceForDuplication {
 	};
 	return $results;
 }
+sub codonsConsequenceForMei {
+	my ($self,$var) = @_;
+	my $span =  Set::IntSpan::Fast::XS->new($var->start()."-".($var->start()+50));
+	my @tt = $self->getGenomicSpan->intersection($span)->as_array();
+	my $real_start = $tt[0];
+	my $real_end = $tt[-1];
+	my $pos_transcript = $self->translate_position($real_start);
+	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
+	my $pos_orf_end = $pos_orf + 1; 
+		my $codon1 = $self->getCodon($pos_orf);
+		
+	my $results = {
+		transcript_position => $pos_transcript,
+		orf_position => $pos_orf,
+		orf_end => $pos_orf_end,
+		seq_orf =>$var->sequence,
+		prot_position => ceil($pos_orf/3),
+		codon => $codon1,
+		codon_mut => "",
+		aa => "MEI",#$self->getProject->biotools->translate($codon1,$self->isMT),
+		aa_mut => "mei",
+	};
+	return $results;
+}
+
 sub codonsConsequenceForInsertion {
 	my ($self,$var) = @_;
 	my $posvar = $var->start();
@@ -1048,6 +1073,28 @@ sub translate_hgvs_vcf {
 
 
 
+
+has exons_introns_simple_tree => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub { 
+			my $self = shift;
+	 my $tree = Set::IntervalTree->new;
+	 #my $hh;
+	foreach my $ex (@{$self->getExons}){
+		my $h = {start=>$ex->start,end=>$ex->end,type=>"exon",name=>$ex->name};
+		$tree->insert($ex,$ex->start,$ex->end+1) ;
+	}
+	foreach my $ex (@{$self->getIntrons}){
+		my $h = {start=>$ex->start,end=>$ex->end,type=>"intron",name=>$ex->name};
+		next if $ex->start == $ex->end;
+		$tree->insert($ex,$ex->start,$ex->end+1) ;
+	}
+
+    return $tree;
+	}
+);
+
 #ok construct an intervaltree on each exon intron position 
 # the value for each position of the tree are 
 #tip : I divide the intron in two equal part to directly have the name of the nearest exon 
@@ -1061,8 +1108,6 @@ sub translate_hgvs_vcf {
 # use pos_ref to determine the distance of your genomic position and the nearest exon 
 # from start of the exon
 # to end of the exon
-
-
 
 has exons_introns_tree => (
 	is      => 'ro',
@@ -1089,10 +1134,9 @@ has exons_introns_tree => (
     		#pos_ref is from or to depending of the strand 
     		$h->{pos_ref} =$from if $self->strand == 1;
     		$h->{pos_ref} = $to if $self->strand == -1;
-    		
     		push(@apos,$h);
     }
- 
+ #die($self->name);
  # now I have a array with all exon in hashtable   
     
 #now the introns 
@@ -1116,11 +1160,12 @@ has exons_introns_tree => (
     for  (my $i=0;$i<scalar(@apos);$i++) {
 		#apos is an exon so directly insert in the tree the exon
 		#	push(@$hh,["exon",$apos[$i],$apos[$i]->{from},$apos[$i]->{to}+1]);
+			$apos[$i]->{rpos} = $apos[$i]->{to};
     		$tree->insert($apos[$i],$apos[$i]->{from},$apos[$i]->{to}+1);
     		#and for one exson I will have 2 pseudo-introns 
     		
     		#next exon is ++ or -- depending of the strand
-    		$nb_exon+=  $self->strand;
+    		$nb_exon +=  $self->strand;
     		
     		# semi intron before exon 
     		 if ($i <  scalar(@apos)-1)  {
@@ -1134,7 +1179,7 @@ has exons_introns_tree => (
     			
     			#end position of this semi intron at the middle of the intron 
     			my $mean = int((abs(($apos[$i]->{to}+1)-($apos[$i+1]->{from}-1)))/2+1);
-    		
+    			$h->{rpos} = $apos[$i]->{to}+$mean+1;
     			
    			#insert semi intron in the tree
    				#push(@$hh,["1",$apos[$i]->{to}+1,$apos[$i]->{to}+$mean+1,$mean,$h]);
@@ -1152,6 +1197,7 @@ has exons_introns_tree => (
     			#insert it but this time the start is the end position of the previoous semi intron +1 
     			#push(@$hh,["2",$apos[$i]->{to}+$mean+1,$apos[$i+1]->{from},$mean,$h2]) ;
     			next if ($apos[$i]->{to}+$mean+1 >= $apos[$i+1]->{from});
+    			$h->{rpos} = $apos[$i+1]->{from};
     			$tree->insert($h2,$apos[$i]->{to}+$mean+1,$apos[$i+1]->{from}) ;
     		}
     		
@@ -1232,7 +1278,7 @@ sub computeNearestExon {
 	#	warn $start;
 		
 		die() unless $r->{pos_ref};
-		my $n =$r->{exon_name};
+		my $n = $r->{exon_name};
 		my $p = ($start - $r->{pos_ref})*$self->strand;
 		return ($p,$n,$r->{pos_ref});
 }
