@@ -65,7 +65,7 @@ my $bds;
 my $low_calling;
 my $predef_type;
 my $define_steps;
-
+my $yes =0;
 
 
 #$define_steps->{pipeline}->{all} = ["alignment","elprep","move_bam","coverage","gvcf4","callable_regions","binary_depth"];
@@ -100,6 +100,7 @@ my $filename_cfg;
 my $limit;
 my $version;
 my $arg_steps;
+my $pipeline_name;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -113,6 +114,8 @@ GetOptions(
 	'config=s' => \$filename_cfg,
 	'limit=s' => \$limit,
 	'version=s' => \$version,
+	'pipeline=s' =>\$pipeline_name,
+	'yes=s' =>\$yes,
 	#'low_calling=s' => \$low_calling,
 );
 $patients_name = "all" unless $patients_name;
@@ -138,6 +141,7 @@ my $pipeline = bds_steps->new( project=>$project,argument_patient=>$patients_nam
 if ($limit) {
 	$pipeline->limit($limit);
 }
+$pipeline->yes($yes);
 if ($pipeline->bipd){
 	push(@{$predef_steps->{diag_capture}},"gvcf","callable_regions");
 	push(@{$predef_steps->{diag_pcr}},"gvcf","callable_regions");
@@ -258,6 +262,7 @@ my $steps = {
 				"nudup" => sub {$pipeline->nudup(@_)},
 				"pipeline_genome" => sub {$pipeline->pipeline_genome(@_)},
 				"cnvnator" => sub {$pipeline->cnvnator(@_)},
+				"melt" => sub {$pipeline->melt(@_)},
 				"sortdedup" => sub {$pipeline->sortdedup(@_)},
 				"bwa2" => sub {$pipeline->bwa2(@_)},
 				"elprep5_genome" => sub {$pipeline->elprep5_genome(@_)},
@@ -282,6 +287,11 @@ if ($arg_steps){
 else {
 foreach  my $type (@types_steps){
 	my @list = sort {$a cmp $b} keys %{$define_steps->{$type}};
+	if ($pipeline_name){
+		 push(@$list_steps,[split(",",$define_steps->{$type}->{$pipeline_name})]);
+   			push(@$list_steps_types,$type);
+   			next;
+	}
 	push(@list,'none');
 	my $x =  colored ['black ON_BRIGHT_GREEN'];
 	my $banner=" $x Please Pick a $type  for $projectName :";
@@ -387,7 +397,7 @@ my $nb_type = 0;
 warn Dumper $list_steps;
 
 foreach my $list_requests (@{$list_steps}) {
-	warn  $list_requests;
+	warn  Dumper $list_requests;
 	
 	my $type_objects = $list_steps_types->[$nb_type];
 	warn $type_objects;
@@ -427,8 +437,12 @@ print colored ['black '], "#####################################################
 
 print colored ['black '], "################################################################################################" ;
 print "\n";
-my $choice = prompt("run this/these step(s)   (y/n) ? ");
-die() if ($choice ne "y"); 
+
+unless ($yes){
+	my $choice = prompt("run this/these step(s)   (y/n) ? ");
+	die() if ($choice ne "y"); 
+}
+
 $pipeline->clean();
 
 
@@ -437,6 +451,9 @@ $pipeline->clean();
 
 $pipeline->launch_bds_daemon_by_priority();
 
+if ($pipeline->error > 0){
+	die();
+}
 
 
 exit(0);
