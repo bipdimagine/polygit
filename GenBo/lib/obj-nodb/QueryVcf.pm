@@ -489,6 +489,7 @@ sub parseVcfFileForReference_melt {
 		my $genbo_pos = $pos +1;
 		confess() if scalar(@{$x->{alt}}) > 1;
 		my $alt = $x->{alt};
+
 		next if $alt =~ /DEL/;
 		my $sequence_id = $ref.'_'.$a;
 		
@@ -499,6 +500,7 @@ sub parseVcfFileForReference_melt {
 		$type_mei = "LINE" if $type_mei_vcf =~/LINE/i ; 
 		$type_mei = "L1" if $type_mei_vcf =~/L1/i;
 		my $id = $chr_name."_".$genbo_pos."_".$ref."_".$type_mei;
+
 		$hashRes{$structType}->{$id}->{'id'} = $id;
 		$hashRes{$structType}->{$id}->{'vcf_id'} = join("_",$chr_name,$pos,$ref,$alt);#.$alt;
 		$hashRes{$structType}->{$id}->{'structuralType'} = "insertion" ;#= $allele->{type};
