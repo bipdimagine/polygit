@@ -5714,7 +5714,6 @@ has lite_deja_vu2 => (
 	default => sub {
 		my $self = shift;
 		my $dir  = $self->deja_vu_lite_dir;
-		warn $dir;
 		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 		return $no;
 	}
