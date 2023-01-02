@@ -4326,16 +4326,14 @@ has lmdbMainTranscripts => (
 			vmtouch=>$self->buffer->vmtouch
 		);
 	}
-);
-
+);  
+# TEST 
 has liteIntervalTree => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self      = shift;
 		my $sqliteDir = $self->get_gencode_directory;
-		warn $sqliteDir;
-		
 		die( "you don t have the directory : " . $sqliteDir )
 		  unless -e $sqliteDir;
 		return GenBoNoSqlIntervalTree->new( dir => $sqliteDir, mode => "r" )
