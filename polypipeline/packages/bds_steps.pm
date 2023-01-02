@@ -2220,6 +2220,32 @@ method canvas  (Str :$filein){
 	}
 	return ($fileout);
 }
+
+method melt  (Str :$filein){ 
+	my $name = $self->patient()->name();
+	my $project = $self->patient()->getProject();	
+	my $project_name =$project->name();
+	my $fileout = $project->getVariationsDir("melt")."/".$name.".vcf.gz";
+	$filein = $self->patient()->getBamFileName();# unless $filein;
+
+	
+	my $ppn =$self->nproc;
+
+	$ppn = int($self->nproc/2) if $self->nocluster;
+	die("-".$filein) unless $filein;
+
+	my $bin_dev = $self->script_dir;
+		my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/melt/melt.pl -project=$project_name  -patient=$name -fork=$ppn -version=$version";
+	my $type = "melt-calling";
+	 my $stepname = $self->patient->name."@".$type;
+	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"melt",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job(job=>$job_bds);
+	if ($self->unforce() && -e $fileout){
+		 		$job_bds->skip();
+	}
+	return ($fileout);
+}
 method lumpy  (Str :$filein){ 
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();	
@@ -2314,6 +2340,7 @@ method calling_panel (Str :$filein, Any :$low_calling){
         next if $m eq "haplotypecaller4";
         next if $m eq "dude";
         next if $m eq "casava";
+         next if $m eq "melt";
         #next unless $m eq "duplicate_region_calling";
         $self->calling_generic(filein=>$filein,method=>$m,low_calling=>$low_calling);
     }
@@ -2853,6 +2880,7 @@ method generate_ubam_umi  (Str :$filein! ){
 	my $fileout = "$dir/files.json";
 	my $ppn = 20;	 
 	my $cmd = qq{perl $bin_dev/umi/split_fast_ubam_dragen.pl -patient=$name -fork=$ppn  -project=$project_name  };
+	warn "$cmd";
 	#my $fileout = `$cmd -out=1`;
 	#chomp($fileout);
 	#die() unless $fileout;
@@ -2875,7 +2903,7 @@ method align_bam_combine_ubam_umi  (Str :$filein! ){
 	my $project_name =$project->name();	
 	my $ppn = 40;	 
 	my $cmd = qq{perl $bin_dev/umi/align_combine.pl -patient=$name -fork=$ppn  -project=$project_name -filein=$filein };
-	
+	warn $cmd;
 	my $method = $patient->alignmentMethod();
 	my $dir = $project->getAlignmentPipelineDir($method."/".$patient->name);
 	my $fileout = "$dir/list_file.txt";
@@ -2902,6 +2930,7 @@ method merge_split_bam_umi  (Str :$filein! ){
 	my $dir = $project->getAlignmentPipelineDir($method."/".$patient->name);
 	my $fileout = $dir."/".$patient->name.".consensus.umi.bam";
 	my $cmd = qq{perl $bin_dev/umi/merge_bam.pl -patient=$name -fork=$ppn  -project=$project_name -filein=$filein -bamout=$fileout};
+	warn $cmd;
 	
 	my $type = "merge_umi";
 	my $stepname = $self->patient->name."@".$type;
@@ -2928,7 +2957,7 @@ method consensus_bam_umi  (Str :$filein! ){
 	my $dir = $project->getAlignmentPipelineDir($method."/".$patient->name);
 	my $fileout = "$dir/list_combined.txt";
 	 $cmd = qq{perl $bin_dev/umi/generateFastqFromConsensusBam.pl -patient=$name -fork=$ppn  -project=$project_name -bamin=$filein -bamout=$fileout };
-	
+	warn $cmd;
 	my $type = "consensus_bam";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -2949,8 +2978,9 @@ method merge_final_bam (Str :$filein! ){
 	my $method = $self->patient()->alignmentMethod();
 	my $fileout = $project->getAlignmentPipelineDir($method)."/".$name.".consensus.umi.bam";
 	my $cmd = qq{perl $bin_dev/umi/merge_bam.pl -patient=$name -fork=$ppn  -project=$project_name -filein=$filein -bamout=$fileout};
-	$cmd = qq{perl $bin_dev/umi/merge_bam.pl -patient=$name -fork=$ppn  -project=$project_name -filein=$filein -bamout=$fileout};
 	
+	$cmd = qq{perl $bin_dev/umi/merge_bam.pl -patient=$name -fork=$ppn  -project=$project_name -filein=$filein -bamout=$fileout};
+	warn $cmd;
 	my $type = "merge_final_umi";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
