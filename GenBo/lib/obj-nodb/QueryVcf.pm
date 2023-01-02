@@ -493,12 +493,13 @@ sub parseVcfFileForReference_melt {
 		next if $alt =~ /DEL/;
 		my $sequence_id = $ref.'_'.$a;
 		
-		my $type_mei_vcf = $x->{info}->{SVTYPE};#($header, "SVTYPE");
-		my $type_mei = "+";
+		my $type_mei = $x->{info}->{SVTYPE};#($header, "SVTYPE");
+		#my $type_mei = $type_mei_vcf;
 		
-		$type_mei = "ALU" if $type_mei_vcf =~/ALU/i ; 
-		$type_mei = "LINE" if $type_mei_vcf =~/LINE/i ; 
-		$type_mei = "L1" if $type_mei_vcf =~/L1/i;
+		#$type_mei = "ALU" if $type_mei_vcf =~/ALU/i ; 
+		#$type_mei = "LINE" if $type_mei_vcf =~/LINE/i ; 
+		#$type_mei = "L1" if $type_mei_vcf =~/L1/i;
+		
 		my $id = $chr_name."_".$genbo_pos."_".$ref."_".$type_mei;
 
 		$hashRes{$structType}->{$id}->{'id'} = $id;
@@ -514,7 +515,7 @@ sub parseVcfFileForReference_melt {
 		$hashRes{$structType}->{$id}->{'var_allele'} = "ALU";#; = $allele->{sequence};
 		$hashRes{$structType}->{$id}->{'line_infos'} = "-";#$allele->{vcf_parse};
 		$hashRes{$structType}->{$id}->{'vcf_position'} = $pos;# = $allele->{vcf_parse}->{POS};
-		$hashRes{$structType}->{$id}->{'vcf_id'} = $chr_name."_".$pos."_".$ref."_".$type_mei_vcf;
+		$hashRes{$structType}->{$id}->{'vcf_id'} = $chr_name."_".$pos."_".$ref."_".$type_mei;
 		###OBJECTS
 		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
 		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
