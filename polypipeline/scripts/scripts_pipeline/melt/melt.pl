@@ -41,15 +41,31 @@ my $patient =  $project->getPatient($patient_name);
 my $dir_in = $project->getAlignmentDir("bwa");
 my $ref = $project->genomeFasta();
 my $bam = $patient->getBamFile();
-my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name);
+my $dir_out= $project->getCallingPipelineDir("melt-".$patient->name);
 my $samtools = $buffer->software("samtools");
 my $meltd = "/software/distrib/MELT/MELTv2.2.2";
-my $melt = "java -jar $meltd/MELT.jar Single -a -c 8 ";
+my $melt = $buffer->software("melt");
+my $java = $buffer->software("java");
+my $melt = "$java -jar $melt Single -a -c 8 ";
+my $dir_melt = $buffer->config->{'public_data'}->{root} . '/repository/'.$project->annotation_genome_version  . '/mei/';
+my $bed = $dir_melt."/bed/hg19.genes.bed";
+my @files = `ls $dir_melt/me_refs/*.zip`;
+my $bcftools = $buffer->software("bcftools");
+my $bgzip =$buffer->software("bgzip"); 
+my $tabix =$buffer->software("tabix"); 
+my $gatk=$buffer->software("gatk4");
+chomp @files;
+my $list = $dir_out."/list.txt";
+open (LIST,">$list");
+print LIST join("\n",@files);
+close LIST;
+
 #java -jar MELT.jar Single -a -c 8 -h /data-isilon/public-data/genome/HG19/fasta/all.fa -bamfile /data-isilon/sequencing/ngs/NGS2018_2224/HG19/align/bwa/1806245.bam -n ./add_bed_files/1KGP_Hg19/hg19.genes.bed  -w /data-isilon/sequencing/ngs/NGS2018_2224/HG19/align/test -t ./me_refs/list.txt
-	my $dir_out = $melt_dir;
 	system("mkdir $dir_out && chmpd a+rwx $dir_out ") unless -e $dir_out;
+	
 	#system("sambamba slice $bam ".$chr->fasta_name." >$bout && samtools index $bout");
-	system("$melt -h $ref -bamfile $bam -n $meltd/add_bed_files/1KGP_Hg19/hg19.genes.bed  -w $dir_out -t $meltd/me_refs/list.txt  -exome 1");
+	warn "$melt -h $ref -bamfile $bam -n $bed  -w $dir_out -t $list  -exome 1";
+	system("$melt -h $ref -bamfile $bam -n $bed  -w $dir_out -t $list  -exome 1");
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
 	
 	foreach my $f (keys %$files){
@@ -76,7 +92,7 @@ my $melt = "java -jar $meltd/MELT.jar Single -a -c 8 ";
 	
  	my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
 	warn "bcftools concat $list_file | bcftools view  - -U -c 1  > $tvcf; gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; bcftools sort $tvcf2";
-	system ("bcftools concat $list_file | bcftools view  - -U -c 1  > $tvcf; gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; bcftools sort $tvcf2 -O z -o $fileout; tabix -f -p vcf $fileout");
+	system ("$bcftools concat $list_file | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; $tabix -f -p vcf $fileout");
 	exit(0);
 	my $f2 = "/data-isilon/bipd-src/pnitschk/git/repository/polypipeline/scripts/scripts_pipeline/melt/1806245.vcf.gz";
 	my $v = Bio::DB::HTS::VCF->new( filename => $f2 );
