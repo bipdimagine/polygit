@@ -489,13 +489,22 @@ sub parseVcfFileForReference_melt {
 		my $genbo_pos = $pos +1;
 		confess() if scalar(@{$x->{alt}}) > 1;
 		my $alt = $x->{alt};
+		next if $alt =~ /DEL/;
 		my $sequence_id = $ref.'_'.$a;
-		my $id = $chr_name."_".$genbo_pos."_ALU";
+		
+		my $type_mei_vcf = $x->{info}->{SVTYPE};#($header, "SVTYPE");
+		my $type_mei = "+";
+		
+		$type_mei = "ALU" if $type_mei_vcf =~/ALU/i ; 
+		$type_mei = "LINE" if $type_mei_vcf =~/LINE/i ; 
+		$type_mei = "L1" if $type_mei_vcf =~/L1/i;
+		my $id = $chr_name."_".$genbo_pos."_".$ref."_".$type_mei;
 		$hashRes{$structType}->{$id}->{'id'} = $id;
 		$hashRes{$structType}->{$id}->{'vcf_id'} = join("_",$chr_name,$pos,$ref,$alt);#.$alt;
 		$hashRes{$structType}->{$id}->{'structuralType'} = "insertion" ;#= $allele->{type};
 		$hashRes{$structType}->{$id}->{'structuralTypeObject'} = 'insertions';
 		$hashRes{$structType}->{$id}->{'isMei'} = 1;
+		$hashRes{$structType}->{$id}->{'mey_type'} = $type_mei;
 		$hashRes{$structType}->{$id}->{'chromosomes_object'} = {$chr->id => undef};
 		$hashRes{$structType}->{$id}->{'start'} = $genbo_pos ;# = $allele->{start};
 		$hashRes{$structType}->{$id}->{'end'} = $genbo_pos;# = $allele->{end};

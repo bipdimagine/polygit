@@ -13,6 +13,7 @@ use GenBoVariationCache;
 use GenBoDeletionCache;
 use GenBoInsertionCache;
 use GenBoLargeDeletionCache;
+use GenBoMeiCache;
 use GenBoLargeDuplicationCache;
 use GenBoSomaticGroupCache;
 use GenBoPanelCache;
@@ -958,7 +959,9 @@ sub nextVariant {
 		elsif  ($ref eq 'GenBoLargeDeletion'){
 					bless $var_obj , 'GenBoLargeDeletionCache';
 		}
-				
+		elsif  ($ref eq 'GenBoMei'){
+					bless $var_obj , 'GenBoMeiCache';
+		}		
 		return $var_obj;
 	
 }
@@ -1032,7 +1035,6 @@ sub myflushobjects {
 					 $chr = $self->getChromosome($chr_name);
 					}
 					my $var_obj = $chr->cache_lmdb_variations->get($id);
-					
 					my $ref = ref($var_obj);
 					$var_obj->{vector_id}= $vector_id;
 					
@@ -1066,6 +1068,10 @@ sub myflushobjects {
 					}
 					elsif  ($ref eq 'GenBoLargeDeletion'){
 						bless $var_obj , 'GenBoLargeDeletionCache';
+						$self->{objects}->{insertions}->{$id}= $var_obj;
+					}
+					elsif  ($ref eq 'GenBoMei'){
+						bless $var_obj , 'GenBoMeiCache';
 						$self->{objects}->{insertions}->{$id}= $var_obj;
 					}
 					elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoJunctionCache') {
