@@ -10,14 +10,14 @@ use Position;
 extends "GenBoInsertion";
 
 	
-has name => (
-	is		=> 'ro',
-	lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return $self->getChromosome->id().'-'.$self->start().'ins-ALU';
-	},
-);
+#has name => (
+#	is		=> 'ro',
+#	lazy	=> 1,
+#	default	=> sub {
+#		my $self = shift;
+#		return $self->getChromosome->name().'-'.$self->start().'-ins-'.$self->mei_type;
+#	},
+#);
 has isMei => (
 	is		=> 'ro',
 	default	=> sub {
@@ -25,7 +25,9 @@ has isMei => (
 		return 1;
 	},
 );
-
+has mei_type => (
+	is		=> 'ro',
+);
 has alleles => (
 	is		=> 'ro',
 	lazy	=> 1,

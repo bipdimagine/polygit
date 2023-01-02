@@ -1,0 +1,85 @@
+.infobulle{
+    position: inherit;  
+    visibility : hidden;
+    border: 1px solid Black;
+    padding: 5px;
+	margin: 3px;
+    font-family: Verdana, Arial;
+    font-size: 10px;
+    background-color: #FFFFCC;
+}
+
+.myToolBarIcon {
+	background-image: url('images/polyicons/bullet_green.png'); /* editor icons sprite image for the enabled state */
+	background-repeat: no-repeat;
+	width: 18px;
+	height: 18px;
+	text-align: center;
+}
+
+.onglet {
+	display:inline-block;
+	margin-left:3px;
+	margin-right:3px;
+	padding:3px;
+	border:1px solid black;
+	cursor:pointer;
+}
+
+.onglet_0 {
+	background:#bbbbbb;
+	border-bottom:1px solid black;
+}
+
+.onglet_1 {
+	background:Transparent;
+	border-bottom:0px solid black;
+	padding-bottom:4px;
+}
+
+.contenu_onglet {
+	background-color:#dddddd;
+	border:1px solid black;
+	margin-top:-1px;
+	padding:5px;
+	display:none;
+}
+
+.dijitToolbar {
+  background-color: transparent;
+}
+
+.popupOpen
+{
+    position:absolute;
+    top:15%;
+    left:15%;
+    margin:100px auto;
+    width:850px;
+    height:410px;
+    font-family:verdana;
+    font-size:13px;
+    padding:10px;
+    background-color:white;
+    border:2px solid black;
+    z-index:100000000000000000;
+    display:none
+}
+
+.popupCancel
+{
+    display:relative;
+    cursor:pointer;
+    margin:0;
+    float:right;
+    height:10px;
+    width:14px;
+    padding:0 0 5px 0;
+    text-align:center;
+    font-weight:bold;
+    font-size:11px;
+    color:black;
+    border:1px solid black;
+    border-radius:3px;
+    z-index:100000000000000000;
+}
