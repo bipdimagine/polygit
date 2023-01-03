@@ -39,7 +39,12 @@ has "bds_uuid" =>(
  UUID::unparse( $uuid, $string_uuid );
  return $string_uuid."-".$self->project->name."-".time; },
 );
-
+has "error" =>(
+	is        => 'rw',
+	lazy=>1,
+	default   => sub{  
+	return 0 },
+);
 has   'yes' =>(
 	is =>'rw',
 	default => sub {
@@ -1018,7 +1023,9 @@ method print_status_bds {
 	print "\n";
 	my @files;
 	foreach my $s ($self->samples){
+		
 		next unless @{$s->log_for_error_jobs()};
+		$self->error(1);
 		push(@files,@{$s->log_for_error_jobs()});
 	}
 	if (@files){
