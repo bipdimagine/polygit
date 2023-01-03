@@ -74,7 +74,7 @@ close(BED);
 #system("sambamba slice $bam -L $bed -o $bam_tmp;samtools index $bam_tmp ");
 #warn $bam_tmp;
 #die();
-
+##
 my $meltd = "/software/distrib/MELT/MELTv2.2.2";
 my $melt = $buffer->software("melt");
 my $java = $buffer->software("java");
