@@ -2403,7 +2403,7 @@ sub print_variation_td_edit{
 					$text = join("<BR>",@terms);
 				}
 				
-				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ){
+				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ) {
 					my $url = $deja_vu_url.$variation->{id};
 					 if (exists $variation->{dup}){
 					 	$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
@@ -2415,7 +2415,9 @@ sub print_variation_td_edit{
 					
 				}	
 				if ( $cat eq "in_this_run"){
+
 					$text =~ s/white/black/; 
+
 					 $text = update::printSimpleBadge(qq{$text},3);
 				}
 		if (exists $variation->{dup}){
@@ -3012,6 +3014,12 @@ sub printTableGenesXls {
 				}
 				my $cat = $infos[$ind];
 					my $text = $variation->{$cat};
+					
+				if (lc($cat) eq 'var_name') {
+					my @lCol = split('-', $text);
+					$text = $lCol[1].$lCol[3];
+				}
+					
 				$text =~ s|<.+?>||g;
 				$worksheet->write($row,$ind,$text);
 		
