@@ -172,8 +172,8 @@ sub intspanToBed{
     }
     warn $chr_name." ".$size;
 	#	my @tt = map{$_ = $chr->ucsc_name."\t".$_} split(";",$intspan->as_string({ sep => ";", range => "\t" }) );
-
-sub update_method{
+}
+sub update_method {
 	my ($dbh,$patient_id) = @_;
 	my $query = qq{
 		insert into PolyprojectNGS.patient_methods (patient_id,method_id) SELECT $patient_id ,method_id as methodId FROM PolyprojectNGS.methods where methods.name="melt" ;
