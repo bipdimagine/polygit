@@ -56,6 +56,8 @@ my $tabix =$buffer->software("tabix");
 my $gatk=$buffer->software("gatk4");
 chomp @files;
 my $list = $dir_out."/list.txt";
+
+system("add_calling_method.sh -project=$project_name -patient=$patient_name -method=melt");
 open (LIST,">$list");
 print LIST join("\n",@files);
 close LIST;
@@ -139,5 +141,16 @@ close LIST;
 	  . $patient->name . "\n";
 	close OUT;
 	
+}
+
+
+
+sub update_method{
+	my ($dbh,$patient_id) = @_;
+	my $query = qq{
+		insert into PolyprojectNGS.patient_methods (patient_id,method_id) SELECT $patient_id ,method_id as methodId FROM PolyprojectNGS.methods where methods.name="melt" ;
+	};
+	warn $query;
+	$dbh->do($query) ;
 }
 	
