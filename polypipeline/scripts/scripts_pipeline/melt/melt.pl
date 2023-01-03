@@ -64,10 +64,10 @@ foreach my $chr (@{$project->getChromosomes}){
 #	print LIST $chr->name."\t".$chr->fasta_name."\n";
 	#getIntSpanCapture
 	#getIntSpanCaptureForCalling
-	my @line = intspanToBed($chr_name,$chr->getIntSpanCapture(50) );
+	my @line = intspanToBed($chr_name,$chr->getIntSpanCapture(50));
 	print BED join("\n",@line)."\n" if @line;
 }
-
+##
 close(BED);
 #system("sambamba slice $bam -L $bed -o $bam_tmp;samtools index $bam_tmp ");
 #warn $bam_tmp;
