@@ -122,7 +122,7 @@ run_command($ppd);
 run_move($ppd);
 run_genotype($projects);
 #un_coverage($projects);
-run_lmdb_depth($projects);
+run_lmdb_depth_melt($projects);
 run_dude($projects) if $dude;
 #run_gvcf($projects);
 #run_dragen_cnv_coverage($projects);
