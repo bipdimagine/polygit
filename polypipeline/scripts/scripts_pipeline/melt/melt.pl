@@ -56,7 +56,7 @@ my $tabix =$buffer->software("tabix");
 my $gatk=$buffer->software("gatk4");
 chomp @files;
 my $list = $dir_out."/list.txt";
-
+update_method($buffer->dbh,$patient->id);
 system("add_calling_method.sh -project=$project_name -patient=$patient_name -method=melt");
 open (LIST,">$list");
 print LIST join("\n",@files);
