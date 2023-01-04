@@ -3406,7 +3406,9 @@ method muc1  (Str :$filein){
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();	
 	my $project_name =$project->name();
-	my $fileout = $project->getVariationsDir("muc1")."/".$name.".bed";
+	my $dir_prod = $project->getVariationsDir("vntyper")."/muc1/";
+	system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
+	my $fileout = $dir_prod."/".$name.".vcf";
 	
 	$filein = $self->patient()->getBamFileName();# unless $filein;
 
@@ -3418,7 +3420,7 @@ method muc1  (Str :$filein){
 
 	my $bin_dev = $self->script_dir;
 	my $version = $self->patient()->project->genome_version();
-	my $cmd = "perl $bin_dev/muc1.pl -project=$project_name  -patient=$name";
+	my $cmd = "perl $bin_dev/muc1/vntyper.pl -project=$project_name  -patient=$name";
 	my $type = "muc1-calling";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"manta",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
