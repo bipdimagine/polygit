@@ -123,7 +123,7 @@ run_command($ppd);
 run_move($ppd);
 run_genotype($projects);
 
-run_coverage($projects);
+#run_coverage($projects);
 run_lmdb_depth($projects);
 run_dude($projects) if $dude;
 
