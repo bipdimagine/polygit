@@ -179,7 +179,8 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
-		$h->{align}->{file}   = $patient->getBamFileName();
+		$h->{align}->{file}   = $patient->getBamFileName("dragen-align") if $version;
+		warn $h->{align}->{file};
 #		$h->{align_dragen}->{file}  = $patient->getCramFileName("dragen-align");
 #		$h->{align}->{file}   = $patient->getCramFileName();
 		$h->{align}->{pipeline}   = $dir_pipeline."/".$patient->name.".cram";
@@ -232,6 +233,7 @@ sub run_command {
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$hp->{command_option_pipeline};
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -version=$version " if $version;
+	warn $job->{cmd};
 	#die();
 	my $first_cmd = $hp->{run_pipeline}->[0];
 	$job->{out} =  $hp->{$first_cmd}->{pipeline};
@@ -314,8 +316,11 @@ foreach my $project (@$projects){
 		my $fileout = $patient->fileNoSqlDepth;
 		next if -e $fileout;
 		my  $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
+		$cmd .= qq{ -version=$version -align=dragen-align } if $version;
+
 		#if ($project->isGenome){
 			$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
+			$cmd .= qq{ -version=$version  } if $version;
 		#}
 		#else {
 		#	 $cmd = qq{perl $script_pipeline/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name :::$ppn};
@@ -456,8 +461,6 @@ foreach my $project (@$projects){
  if(@ps){
 	my $cmd_genotype = "perl $script_perl/dragen_genotype.pl -project=$projectName -patient=".join(",",@ps);
 	$cmd_genotype .= " -version=$version " if $version;
-	warn $cmd_genotype;
-	die();
 	push(@$jobs,{cmd=>$cmd_genotype,name=>$project->name.".genotype"});
  }
  

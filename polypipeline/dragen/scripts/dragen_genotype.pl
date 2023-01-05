@@ -35,20 +35,26 @@ use Net::SSH::Perl;
 
 my $projectName;
 my $patients_name;
+my $version;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
+	'version=s' => \$version,
 );
 
 
 my $user = system("whoami");
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version =>$version);
 my $patients = $project->get_only_list_patients($patients_name);
 my $tm = "/staging/tmp/";
-
+warn $patients_name;
 my @gvcfs;
-my $dir_pipeline =  $project->getCallingPipelineDir("dragen-calling");#$project->project_dragen_pipeline_path()."/pipeline/";
+my $dir_pipeline =  $project->getCallingPipelineDir("dragen-calling");
+#my $dir_pipeline = $project->pipelineDragen()."/vcf/";
+#system("mkdir -p $dir_pipeline");
+
+#$project->project_dragen_pipeline_path()."/pipeline/";
 my $file = $dir_pipeline."/".$project->name.'.'.time;
 my $file2 = $dir_pipeline."/".$project->name.'.pedigree.'.time;
 open(FILE,">$file");
@@ -63,7 +69,7 @@ close(PED);
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $cmd = "dragen -f -r $ref_dragen --output-directory $dir_pipeline --output-file-prefix $projectName --enable-joint-genotyping true --variant-list $file";
 my $filein = $dir_pipeline."/$projectName.hard-filtered.vcf.gz";
-warn $filein;
+unlink $filein if -e $filein;
 my $exit =0; 
  $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) unless -e $filein;
 #my($stdout, $stderr, $exit) = $ssh->cmd($cmd ."&& touch $dir_pipeline/dragen-genotype.ok" ) unless -e $filein;
