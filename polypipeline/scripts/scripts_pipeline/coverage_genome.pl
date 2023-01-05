@@ -46,10 +46,14 @@ my $patient_name;
 my $verbose;
 my $use_samtools;
 my $log_file;
+my $version;
+my $align;
 GetOptions(
 	"fork=s"   => \$fork,
 	"project=s" =>\$project_name,
 	"patient=s" =>\$patient_name,
+	"version=s" =>\$version,
+	"align=s" =>\$align,
 	"verbose=i" =>\$verbose,
 );
 unless($patient_name){
@@ -59,27 +63,40 @@ unless ($name){
 	$name = $patient_name;
 }
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject(-name=>$project_name);
+my $project = $buffer->newProject(-name=>$project_name, -version =>$version);
 
 my $patient = $project->getPatientOrControl($patient_name);
-
-
-my $fbout =  $patient->getNoSqlDepth("c");#GenBoBinaryFile->new(name=>$patient->name,dir=>$dir,mode=>"c");
-warn $fbout->no->filename;
-$fbout->no->put("toto","titi");
-$fbout->close();
+if($align){
+ $patient->{alignmentMethods} = [$align];
+}
 
 
 
 
 my $dir = $project->getAlignmentPipelineDir($patient_name."_depth");#$buffer->config->{project_pipeline}->{tmp};
-
+my $process;
 my $pm = new Parallel::ForkManager($fork);
+$pm->run_on_finish(
+	sub {
+		my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $hRes) = @_;
+		unless (defined($hRes) or $exit_code > 0) {
+			print qq|No message received from child process $exit_code $pid!\n|;
+			die();
+			return;
+		}
+#		warn "@@@@@ ".$hRes->{end}." ".$hRes->{ttime};
+		delete $process->{$hRes->{end}};
+#	
+	}
+);
+
 $project->getChromosomes;
 	$project->buffer->dbh_deconnect();
 	my @tall = (0) x (50_000);
+	my $id = time;
 foreach my $chr (@{$project->getChromosomes}) {
-	
+	$id ++;
+	$process->{$id} = 1;
 	my $pid = $pm->start and next;
 	
 	$project->buffer->dbh_reconnect();
@@ -105,18 +122,25 @@ foreach my $chr (@{$project->getChromosomes}) {
 			next;
 			
 		}
-		warn $chr->name." ".$nb."/". scalar(@$regions) ;#if $nb%100 ==0;
 		my $gc =  GenBoCoverageSamtools->new(chromosome=>$chr, patient=>$patient, start=>$r->{start}, end=>$r->{end});
 		$fb->putDepth($chr->name,$r->{start},$r->{end},$gc->array);
 	}
 	$fb->save_index();
 	$fb->close();
-	$pm->finish(0,{});
+	$pm->finish(0,{end=>$id});
 	}
 $pm->wait_all_children();
 
-
+if (keys %$process){
+	warn Dumper $process;
+	die();
+}
 my $fbout =  $patient->getNoSqlDepth("c");#GenBoBinaryFile->new(name=>$patient->name,dir=>$dir,mode=>"c");
+warn $fbout->no->filename;
+$fbout->no->put("toto","titi");
+$fbout->close();
+
+$fbout =  $patient->getNoSqlDepth("c");#GenBoBinaryFile->new(name=>$patient->name,dir=>$dir,mode=>"c");
 
 foreach my $chr (@{$project->getChromosomes}){
 	my $fb =  GenBoBinaryFile->new(name=>$chr->name,dir=>$dir,mode=>"r");
@@ -136,7 +160,7 @@ foreach my $chr (@{$project->getChromosomes}){
 }
 
 $fbout->close();
-
+warn "end";
 exit(0);	
 
 
