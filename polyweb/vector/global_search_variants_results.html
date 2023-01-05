@@ -1,0 +1,761 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>PolyGeneScout - Results</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+        <!-- chargement des feuilles de styles necessaires a l'affichage -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+        <style type="text/css">
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/claro/claro.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/claroGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/widget/Dialog/Dialog.css";
+			@import "../css/polycss/login.css";
+      		@import "../css/polycss/button.css";
+    
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+    
+            #borderContainer {
+                width: 100%;
+                height: 100%;
+            }
+    
+            .testDialog {
+                font-size: 8pt;
+            }
+    
+            .dojoxGrid-row-odd td {
+                background: #e8f2ff;
+            }
+    
+            .name {
+                color: #2962A7;
+                font-weight: bold;
+            }
+    
+            .pconseq {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_blue.png);
+                padding: 1em;
+                width: 1200px;
+                min-width: 400px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .ptranscript {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_grey.png);
+                padding: 1em;
+                min-width: 100px;
+                height: 15px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .pconseq .gridconseq {
+                background: #fff;
+                height: 150px;
+                position: float;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .partsContainerSmall {
+                background: rgb(192,80,77);
+                padding: 1em;
+                background-image: url(../images/polyicons/bckgrdsmall.png);
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .titleSmall {
+                font-family: Verdana, Arial, Helvetica, sans-serif;
+                padding: 0.5em 0.5em 0 0.5em;
+                color: #000000;
+                background: rgb(192,80,77);
+                font-weight: normal;
+                -moz-border-radius-topleft: 8px;
+                -moz-border-radius-topright: 8px;
+                -webkit-border-top-left-radius: 8px;
+                -webkit-border-top-right-radius: 8px;
+                -webkit-box-shadow: 2px 2px 11px #888;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+            }
+    
+            .partsContainerSmall .gridContainerSmall {
+                background: #fff;
+                height: 150px;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .person_name {
+                padding: 3px 3px 3px 25px;
+                font-size: 23px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #ff5500;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .titre {
+                padding: 1px 5px 1px 25px;
+                margin-left: 70px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 12px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .run {
+                padding: 1px 1px 1px 25px;
+                margin-left: 50px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(../images/polyicons/lightning.png) no-repeat center left;
+            }
+    
+            .span_desc {
+                font-family: arial;
+                font-size: 10px;
+                padding: 8px 1px 1px 25px;
+                background: url(../images/polyicons/star.png) no-repeat center left;
+            }
+    
+            .alternateDock {
+                position: absolute;
+                background-color: #000000;
+                right: 0px;
+                top: 0px;
+                border-left: 1px solid #ccc;
+                height: 100%;
+            }
+    
+            #alternateDock ul.dojoxDockList {
+                display: block;
+            }
+    
+            .td_align {
+                border: 2px solid;
+            }
+    
+            .tundra #toolbar.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar2.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar3.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+            
+            table.dataTable thead .sorting:before, table.dataTable thead .sorting:after, table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+               padding: 5px;
+            }
+            .dataTables_wrapper .mdb-select {
+                border: none;
+                float: left;
+            }
+            .dataTables_wrapper .mdb-select.form-control {
+                padding-top: 0;
+                margin-top: -1rem;
+                margin-left: 0.7rem;
+                margin-right: 0.7rem;
+                width: 100px;
+            }
+            .dataTables_length label {
+                float: left;
+            }
+            table.dataTable {
+                margin-bottom: 3rem!important;
+            }
+            div.dataTables_wrapper div.dataTables_info {
+                padding-top: 0;
+            }
+            
+            table #grid_var {
+                border-collapse: collapse;   
+            }
+            #grid_var tr:hover {
+                background-color: #ccc;
+            }
+            #grid_var th {
+                background-color: #fff;
+            }
+            #grid_var th, #example td {
+                padding: 3px 5px;
+            }
+            #grid_var td:hover {
+                cursor: pointer;
+            }
+            
+            table #tab_transcripts {
+                border-collapse: collapse;   
+            }
+            #tab_transcripts tr:hover {
+                background-color: #ccc;
+            }
+            #tab_transcripts th {
+                background-color: #fff;
+            }
+            #tab_transcripts th, #example td {
+                padding: 3px 5px;
+            }
+            #tab_transcripts td:hover {
+                cursor: pointer;
+            }
+            
+			.collapsing{
+			 	-webkit-transition:height .01s ease;
+			  	transition:height .01s ease
+			}
+			
+			.loader {
+				border-top: 16px solid #F5F5F5;
+				border-right: 16px solid #A9A9A9;
+				border-bottom: 16px solid #808080;
+				border-left: 16px solid #000000;
+				border-radius: 50%;
+			    width: 120px;
+			    height: 120px;
+  				-webkit-animation: spin 2s linear infinite;
+			    animation: spin 2s linear infinite;
+			}
+			
+			.nav-tabs {
+			  overflow-x: auto;
+			  overflow-y: hidden;
+			  display: -webkit-box;
+			  display: -moz-box;
+			}
+			.nav-tabs>li {
+			  float: none;
+			}
+			
+			@-webkit-keyframes spin {
+				0% { -webkit-transform: rotate(0deg); }
+				100% { -webkit-transform: rotate(360deg); }
+			}
+			
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+			
+			#text_search_polyquery_var {
+			    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+			    background-position: 10px 12px; /* Position the search icon */
+			    background-repeat: no-repeat; /* Do not repeat the icon image */
+			    width: 100%; /* Full-width */
+			    font-size: 16px; /* Increase font-size */
+			    padding: 12px 20px 12px 40px; /* Add some padding */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    margin-bottom: 12px; /* Add some space below the input */
+			}
+			
+			#myTable {
+			    border-collapse: collapse; /* Collapse borders */
+			    width: 100%; /* Full-width */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    font-size: 18px; /* Increase font-size */
+			}
+			
+			#myTable th, #myTable td {
+			    text-align: left; /* Left-align text */
+			    padding: 12px; /* Add padding */
+			}
+			
+			#myTable tr {
+			    /* Add a bottom border to all table rows */
+			    border-bottom: 1px solid #ddd;
+			}
+			
+			#myTable tr.header, #myTable tr:hover {
+			    /* Add a grey background color to the table header and on hover */
+			    background-color: #f1f1f1;
+			}
+			 
+			.visible {
+			  visibility: visible;
+			}
+			
+			.invisible {
+			  visibility: hidden;
+			}
+			
+			.progress_chr {
+				opacity: 0;
+				-webkit-transition: opacity 2s ease-in;
+				-moz-transition: opacity 2s ease-in;
+				-o-transition: opacity 2s ease-in;
+				-ms-transition: opacity 2s ease-in;
+				transition: opacity 2s ease-in;
+			}
+			
+			.progress_chr.load {
+			    opacity: 1;
+			}
+			
+			.dijitSliderLeftBumper {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderProgressBar {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderImageHandle {
+				border: 6px solid #cfe5fa;
+			}
+			
+			.dijitCheckBoxInput {
+				opacity:10;
+			}
+			
+			.checkbox {
+				margin: 0px 0 0;
+				margin-top: 1px \9;
+				line-height: normal;
+			}
+	
+			.badge1 {
+			  display: block;
+			  position: absolute;
+			  top: -13px;
+			  right: -2px;
+			  line-height: 16px;
+			  height: 16px;
+			  padding: 0 5px;
+			  font-family: Arial, sans-serif;
+			  color: white;
+			  text-shadow: 0 1px rgba(0, 0, 0, 0.25);
+			  border: 1px solid;
+			  border-radius: 10px;
+			  -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			
+			.badge1.green {
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			 .badge1.yellow {
+			  background: #FFFF56;
+			  border-color: #FFFF88;
+			  color:black;
+			  background-image: -webkit-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -moz-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -o-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: linear-gradient(to bottom, #FFFF88, #FFFF56);
+			}
+			 .badge1.red {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: -moz-linear-gradient(top, #AA0000, #FF0066);
+			  background-image: -o-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: linear-gradient(to bottom, #fc9f8a, #FF0066);
+			}
+			
+			 .badge1.grey {
+			  background: #EEE;
+			  border-color: white;
+			  background-image: -webkit-linear-gradient(top, #EEE,beige);
+			  background-image: -moz-linear-gradient(top, #EEE,beige);
+			  background-image: -o-linear-gradient(top, #EEE,beige);
+			  background-image: linear-gradient(to bottom, #EEE,beige);
+			  color:#555
+			}	
+			 .badge1.orange {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -moz-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -o-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: linear-gradient(to bottom, #FFC04C,#FFA500);
+			}
+			.badge1.coral {
+			;	//#FF7061
+			  background:#FF7061;# #FF7F50;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -moz-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -o-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: linear-gradient(to bottom, #FF7F50,#FF7061);
+			}
+        </style>
+        
+        <style type="text/css" media="print">
+			@page { size: landscape; }
+			
+			.row {
+				-webkit-print-color-adjust: exact;
+			}
+		</style>
+        
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	    
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/tableExport.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF/jspdf.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF-AutoTable/jspdf.plugin.autotable.js"></script>
+       
+        <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+		<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		<script type="text/javascript" src="../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+	  	<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	   	<script type="text/javascript" src="../js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+		<script type="text/javascript" src="../js/polyviewer/methods_polyviewer.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
+         
+        <style type="text/css">
+        	input[type="checkbox"], input[type="radio"] { margin: 0px 0 0 !important; }
+        </style>
+        
+        <script type="text/javascript">
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dojo.cookie");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dijit.form.CheckBox");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            
+            var project_name;
+            var input_session_id = param("job_id");
+            
+            $(document).ready(function () {
+	            setTimeout(function() {
+	            	launch_for_gene();
+				}, 1500);
+	    	});
+	    	
+	    	function enable_table_search() {
+	    		$('#table_variants').bootstrapTable();
+			}
+			
+			function get_popup_users(users) {
+				document.getElementById("content_res_users").innerHTML = "";
+				document.getElementById("content_res_users").innerHTML = users;
+				dijit.byId('dialog_users').show();
+			}
+	    	
+	    	function launch_for_gene() {
+	    		document.getElementById("content_res_variants").innerHTML = "<center>Loading datas... <img src='../images/polyicons/wait18trans.gif' align='absmiddle'></center>";
+	    		var url = url_path + "json_output_nodb/load_job_id.pl?session_id=" + input_session_id;
+	    		var html_variants_done = 0;
+	    		var html_gene_done = 0;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == "project_init_name") {
+			    			project_name = data.project_init_name;
+			    		}
+			    		if (key == 'html_variants') {
+							document.getElementById("content_res_variants").innerHTML = "";
+							var myNode = document.getElementById("content_res_variants");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							document.getElementById("b_export_xls").classList.remove("disabled");
+							document.getElementById("b_export_pdf").classList.remove("disabled");
+							html_variants_done = 1;
+							if (html_variants_done == 1 && html_gene_done == 1) {
+								enable_table_search();
+							}
+			    		}
+			    		if (key == 'html_gene') {
+							document.getElementById("content_res_gene").innerHTML = "";
+							var myNode = document.getElementById("content_res_gene");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							document.getElementById("content_res_gene").classList.remove("hidden");
+							html_gene_done = 1;
+							if (html_variants_done == 1 && html_gene_done == 1) {
+								enable_table_search();
+							}
+			    		}
+			    		if (key == 'html_source') {
+							document.getElementById("search_source").innerHTML = val;
+			    		}
+			    		if (key == 'html_title') {
+							document.getElementById("search_title").innerHTML = val;
+			    		}
+			    		if (key == 'html_page_title') {
+			    			document.title = 'PolyGeneScout - ' + val;
+			    		}
+			    		if (key == 'hash_filters') {
+//			    			console.log(val);
+			    			var filter_found = 0;
+			    			var list_filters = [];
+			    			for (var key in val) {
+			    				if (val[key] == 1) {
+			    					filter_found = 1;
+									var filter = key.replace(/"/g, "");
+			    					list_filters.push(filter);
+			    				}
+			    			}
+			    			if (filter_found == 1) {
+				    			list_filters = list_filters.sort();
+				    			document.getElementById("span_filters").innerHTML = "<b><u>Filters used:</b></u> " + list_filters.join(" / ");
+			    			}
+			    		}
+  					});
+			    });
+			    
+    		}
+			
+			dojo.require("dojo.io.iframe");
+			function exportXls() {
+				var url_xls_2 = url_path + "json_output_nodb/load_job_id.pl?export_xls=1&session_id=" + input_session_id;
+    			console.log(url_xls_2);
+			    var downloadPdfIframeName = "downloadPdfIframe"; 
+			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
+			    dojo.io.iframe.setSrc(iframe, url_xls_2, true);
+			    return;
+			}
+			
+			function exportPdf() {
+				var divContents_gene = $("#content_res_gene").html();
+				var divContents_var = $("#content_res_variants").html();
+	            var printWindow = window.open('', '', 'height=400,width=800');
+	            printWindow.document.write('<html><head><title>PolyGeneScout</title>');
+	            printWindow.document.write('</head><body >');
+	            printWindow.document.write(divContents_gene);
+	            printWindow.document.write(divContents_var);
+	            printWindow.document.write('</body></html>');
+	            printWindow.document.close();
+	            printWindow.print();
+			}
+			
+			function show_hide_hgmd_not_in_polyweb() {
+				var elements = document.getElementsByClassName('tr_hgmd_not_found')
+				if (document.getElementById('b_found_hgmd_in_polyweb').checked == true) {
+				    for (var i = 0; i < elements.length; i++){
+				    	elements[i].classList.add("hidden");
+				    }
+				}
+				else {
+				    for (var i = 0; i < elements.length; i++){
+				    	elements[i].classList.remove("hidden");
+				    }
+				}
+			}
+	    	
+	    	
+		</script>
+    </head>
+	<body class="container-fluid" style="overflow-y:scroll;">
+		<nav class="navbar navbar-inverse" style="background-color:#363945">
+			<div class="container-fluid" >
+				<div class="navbar-header">
+					<table>
+					<tr><td><a class="navbar-brand" href="https://www.polyweb.fr/" style="padding-top: 5px;padding-bottom: 5px;"><img src='/icons/Polyicons/logo_polyweb_white2.png' width='170px' height='33px' ></a></td></tr>
+					<tr><td style="color:white;font-size:10px;text-align:center"> <span  style="color:#B1268B;font-size:12px;text-align:center">Imagine Institute</span> - <span>University Of Paris</span ></td></tr>
+					</table>
+				</div>
+				<ul class="nav navbar-nav">
+					<li><a href="#"><span style="color:yellow">PolyGeneScout Results</span></a></li>
+					<li><a><span id="search_source" style="color:#5cea5c"></span></a></li>
+					<li><a><span id="search_title" style="color:#60b6f5"></span></a></li>
+				</ul>
+				<ul class="nav navbar-nav navbar-right">
+					<li>
+				    	<div class="input-group" style="margin-right:20px;width:100%;"> 		
+							<span class="input-group-btn" style="top:12px;">
+								<button id="b_export_xls" class="btn btn-default disabled" type="submit" onclick="exportXls()" style="font-size:9px;background-color:#38B392;">
+									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">XLS</span></b>
+								</button>
+								<button id="b_export_pdf" class="btn btn-default disabled" type="submit" onclick="exportPdf()" style="font-size:9px;background-color:#BD3D3A;margin-right:20px;">
+									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">PRINT</span></b>
+								</button>
+							</span>
+						</div>
+					</li>
+				</ul>
+				
+			</div>
+		</nav>
+		
+		<div style="font-size:11px;" id='content_gene_selection'>
+			<span id="span_filters"></span>
+		</div>
+		
+		<div style="padding-top:13px;background-color:#607D8B;border:1px black solid;" class='container-fluid hidden' id='content_res_gene'></div>
+		
+		<div class='container-fluid' id='content_res_variants' style='height:auto;max-width:100%;overflow-x:auto;border:1px black solid;'></div>
+		
+		<div id="dialog_validation" dojoType="dojox.widget.Dialog" dimensions="[800,300]" title="USER Validation">
+	        <div id="content_validation" jsId="content_validation" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
+				
+		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[150,120]" title="Waiting"> 
+			<div class="container" style="min-width:200px;max-width:150px;margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<span id="waiting_text">Loading Data...</span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
+				</div> 
+			</div>
+		</div>
+		
+		<div dojoType="dojox.widget.Dialog"  jsId="popup_hgmd" id="popup_hgmd" dimensions="[700,600]" title="HGMD Infos" style="background-color:white;overflow:auto;width:70%;height:70%;" >
+            <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane"></div>	
+        </div>
+        
+        <div id="popup_dude" dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" >
+        	<div  id="div_popup_dude" jsId="div_popup_dude" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
+       
+		<div id="dialog_igv" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">
+            <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
+        </div> 
+       
+		<div dojoType="dojox.widget.Dialog" onHide="update_nb_projects_selected()" onClose="update_nb_projects_selected()" jsId="dialog_projects" id="dialog_projects" dimensions="[800,800]" title="IGV View" style="background-color:white;overflow: auto;" >
+	        <div style="height:99%;width:99%;" id="content_res_projects" jsId="content_res_projects" data-dojo-type="dijit/layout/ContentPane"></div>	
+        </div> 
+        
+		<div dojoType="dojox.widget.Dialog"  jsId="dialog_list_panels" dimensions="[700,600]" id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
+			 <span id="span_list_panels"></span>
+		</div>
+        
+		<div dojoType="dojox.widget.Dialog"  jsId="dialog_list_hgmd_variants"  id="dialog_list_hgmd_variants" title="HGMD Variants" style="sizeToViewport:true;background-color:white;overflow:auto;min-width:250px;" >
+			 <center><b>GENE Name:</b> <span id="span_hgmd_gene_variants"></span></center>
+			 <br><br>
+			 <div class="container-fluid" id="content_hgmd_variants" style="height:99%;width:99%;"></div>
+		</div>
+				
+		<div id="waiting_variants" dojoType="dojox.widget.Dialog" dimensions="[150,120]" title="Waiting"> 
+			<div class="container" style="min-width:200px;max-width:150px;margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<span id="waiting_text">Loading Data...</span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
+				</div> 
+			</div>
+		</div>
+		
+		<div id="dialog_hgmd" dojoType="dojox.widget.Dialog"  dimensions="[1050,850]" title="" style="border:solid 1px black;background-color:white;height:70%;width:98%;background-color:#AAB7B8;">
+			<br>
+	        <div class="container-fluid" id="content_res" style="height:99%;width:99%;"></div>
+			<br>
+		</div>
+		
+		<div id="dialog_users" dojoType="dojox.widget.Dialog"  dimensions="[500,500]" title="" style="text-align:center;border:solid 1px black;background-color:white;height:70%;width:98%;">
+			<b><u>List Users</b></u>
+			<br><br>
+	        <div class="container-fluid" id="content_res_users" style="height:99%;width:99%;"></div>
+			<br>
+		</div>
+		
+		<div id="dialog_list_phenotypes" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="List Phenotype(s)"> 
+			 <table class="table">
+				<tbody>
+					<tr>
+						<td><div id="container_wordcloud" style="height:450px;border: solid black 1px;"></div></td>
+					</tr>
+				</tbody>
+			</table>
+			<br>
+			<div class="container-fluid" id="content_table_phenotypes" style="height:99%;width:99%;"></div>
+		</div>
+		
+		<div id="dialog_dejavu_var_infos" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="DejaVu Infos"> 
+			 <center><a id="url_dejavu_var" href="polydejavu/dejavu.html" target="_blank"><i><u>Go to PolyDejaVu Interface</i></u></a></center>
+	        <div  id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>
+		</div>
+		
+	</body>
+</html>

@@ -70,7 +70,7 @@ sub print_resume_project {
 	$html .= qq{</table>};
 	$html .= qq{<hr>};
 	$html .= qq{<table class="table table-sm table-striped table-condensed table-bordered table-primary" style="width:40%"><tr style="background-color:#363945;color:white">};
-	$html .= qq{<th>Type</th>}.qq{<th>False positive</th>}.qq{<th>true negative</th>}.qq{<th>total</th>};
+	$html .= qq{<th>Type</th>}.qq{<th>False positive</th>}.qq{<th>false negative</th>}.qq{<th>total in GIAB </th>};
 	$html .= qq{</tr><tr>};
 	$html.= "<td>Indels</td><td>".$global->{indels}->{fp}."</td><td>".$global->{indels}->{fn}."</td><td>".$global->{indels}->{nb}."</td></tr><tr>";
 	$html.= "<td>Substitutions</td><td>".$global->{substitution}->{fp}."</td><td>".$global->{substitution}->{fn}."</td><td>".$global->{substitution}->{nb}."</td></tr></table>";

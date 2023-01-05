@@ -317,6 +317,7 @@ foreach my $project (@$projects){
 		next if -e $fileout;
 		my  $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
 		$cmd .= qq{ -version=$version -align=dragen-align } if $version;
+
 		#if ($project->isGenome){
 			$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
 			$cmd .= qq{ -version=$version  } if $version;
