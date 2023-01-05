@@ -122,9 +122,11 @@ my $ppd  = patient_pipeline_dragen($projects);
 run_command($ppd);
 run_move($ppd);
 run_genotype($projects);
+
 run_coverage($projects);
 run_lmdb_depth($projects);
-#run_dude($projects) if $dude;
+run_dude($projects) if $dude;
+
 #run_gvcf($projects);
 #run_dragen_cnv_coverage($projects);
 #run_genotype($projects);
@@ -140,7 +142,7 @@ exit(0);
 ####### Genotype
 
 run_genotype();
-run_lmdb_depth();
+run_lmdb_depth_melt();
 run_sv_pon();
 
 warn "end";
@@ -251,7 +253,7 @@ foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
 	next unless scalar @{$hp->{run}};
-		my $ppn = 5;
+		my $ppn = 20;
 	$job->{name} = $hp->{name}.".move.".scalar @{$hp->{run}};
 	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$hp->{command_option};
 	$job->{cmd} .= " -version=$version " if $version;
@@ -298,21 +300,20 @@ foreach my $hp (@$patients_jobs) {
 
 
 ### LMDB 
-sub run_lmdb_depth {
+sub run_lmdb_depth_melt {
 	my ($projects) = @_;
 	my $jobs =[];
 
 foreach my $project (@$projects){
 	
-	my $ppn = 10;
+	my $ppn = 20;
 	my $project_name = $project->name;
 	my $patients = $project->getPatients($patients_name);
 	foreach my $patient (@$patients){
 		my $name = $patient->name;
 		my $fileout = $patient->fileNoSqlDepth;
 		next if -e $fileout;
-		my $cmd;
-		 $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
+		my  $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
 		#if ($project->isGenome){
 			$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
 		#}
@@ -325,8 +326,22 @@ foreach my $project (@$projects){
 		$job->{cpus} = $ppn;
 		push(@$jobs,$job);
 	}
+	foreach my $patient (@$patients){
+		my $cmd;
+			my $name = $patient->name;
+		my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
+		my $ppn = 5;
+
+		my $cmd1 = "perl $script_pipeline//melt/melt.pl -project=$project_name  -patient=$name -fork=$ppn ";
+		my $job;
+		$job->{name} = $patient->name.".melt";
+		$job->{cmd} =$cmd1;
+		$job->{cpus} = $ppn;
+		push(@$jobs,$job);
+		
 	}
-	steps_cluster("LMDBDepth ",$jobs);
+	}
+	steps_cluster("LMDBDepth+Melt ",$jobs);
 	
 }
 
