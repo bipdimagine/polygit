@@ -65,14 +65,14 @@ my $patients_name;
 my $limit;
 my $umi;
 my $dude;
+my $version;
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
 	'umi=s' => \$umi,
-	'dude=s' => \$dude,
+	'version=s' => \$version,
 	#'low_calling=s' => \$low_calling,
 );
-
 my $steps = {
 				"dragen-alignment"=> \&run_align,
 				"move"=>  \&run_move,
@@ -91,7 +91,8 @@ my $projects;
 my @apatients_name = split(":",$patients_name);
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
-	my $project = $buffer->newProject( -name => $pname );
+	my $project = $buffer->newProject( -name => $pname , -version =>$version);
+	#my $project = $buffer->newProject( -name => $pname );
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $p (@{$project->getPatients}){
@@ -121,9 +122,11 @@ my $ppd  = patient_pipeline_dragen($projects);
 run_command($ppd);
 run_move($ppd);
 run_genotype($projects);
-#un_coverage($projects);
-run_lmdb_depth_melt($projects);
+
+run_coverage($projects);
+run_lmdb_depth($projects);
 run_dude($projects) if $dude;
+
 #run_gvcf($projects);
 #run_dragen_cnv_coverage($projects);
 #run_genotype($projects);
@@ -158,7 +161,6 @@ sub running_text {
 ########################################################################################################
 
 #### dragen_command
-
 sub patient_pipeline_dragen {
 		my ($projects) = @_;
 my $patients_jobs;
@@ -178,7 +180,10 @@ foreach my $project (@$projects){
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
 		$h->{align}->{file}   = $patient->getBamFileName();
-		$h->{align}->{pipeline}   = $dir_pipeline."/".$patient->name.".bam";
+#		$h->{align_dragen}->{file}  = $patient->getCramFileName("dragen-align");
+#		$h->{align}->{file}   = $patient->getCramFileName();
+		$h->{align}->{pipeline}   = $dir_pipeline."/".$patient->name.".cram";
+		$h->{align}->{pipeline}   = $dir_pipeline."/".$patient->name.".bam" if $version =~/HG19/;
 		unless (-e $h->{align}->{file}){
 			push(@{$h->{run}},"align") ;
 			push(@{$h->{run_pipeline}},"align")  unless -e $h->{align}->{pipeline};
@@ -223,13 +228,16 @@ sub run_command {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
 	next unless scalar @{$hp->{run_pipeline}};
-	$job->{name} = $hp->{name}.".aln.".scalar @{$hp->{run}};
+	$job->{name} = $hp->{name}.join("_",@{$hp->{run_pipeline}}).scalar @{$hp->{run}};
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$hp->{command_option_pipeline};
-	$job->{cmd} .= " -umi=1" if $umi;
+	$job->{cmd} .= " -umi=1 " if $umi;
+	$job->{cmd} .= " -version=$version " if $version;
+	#die();
 	my $first_cmd = $hp->{run_pipeline}->[0];
 	$job->{out} =  $hp->{$first_cmd}->{pipeline};
 	push(@$jobs,$job);
 }
+sleep(5);
 	my $text = "$num_jobs-  DRAGEN ALIGN";
 	steps_system("Dragen :",$jobs);	
 	
@@ -248,6 +256,7 @@ foreach my $hp (@$patients_jobs) {
 		my $ppn = 20;
 	$job->{name} = $hp->{name}.".move.".scalar @{$hp->{run}};
 	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$hp->{command_option};
+	$job->{cmd} .= " -version=$version " if $version;
 	$job->{cpus} = $ppn;
 	push(@$jobs,$job);
 }
@@ -446,7 +455,9 @@ foreach my $project (@$projects){
  }
  if(@ps){
 	my $cmd_genotype = "perl $script_perl/dragen_genotype.pl -project=$projectName -patient=".join(",",@ps);
-	
+	$cmd_genotype .= " -version=$version " if $version;
+	warn $cmd_genotype;
+	die();
 	push(@$jobs,{cmd=>$cmd_genotype,name=>$project->name.".genotype"});
  }
  

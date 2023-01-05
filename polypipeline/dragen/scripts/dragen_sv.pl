@@ -58,7 +58,14 @@ my $bam = $patient->getBamFile();
 die() unless -e $bam;
 system("rsync -rav $bam*  $dir_pipeline_bam/") unless -e $f1;
 my $bamin = "$dir_pipeline_bam/$patient_name.bam";
-my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --bam-input $bamin --output-file-prefix $patient_name --enable-map-align false  --enable-sv true  };
+
+my $param =" --sv-exome ";
+if ($project->isGenome){
+	$param ="";
+}
+warn $param;
+die();
+my $cmd = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --bam-input $bamin --output-file-prefix $patient_name --enable-map-align false  --enable-sv true $param  };
 my $exit =0;
 warn $f1;
 $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) unless -e $f1;
