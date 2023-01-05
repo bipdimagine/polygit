@@ -46,15 +46,17 @@ my $patient_name;
 my $verbose;
 my $use_samtools;
 my $log_file;
+my $version;
 GetOptions(
 	"fork=s"   => \$fork,
 	"project=s" =>\$project_name,
 	"patient=s" =>\$patient_name,
 	"verbose=i" =>\$verbose,
+	"version=s" =>\$version,
 );
 
 my $buffer = new GBuffer;
-my $project = $buffer->newProjectCache( -name => $project_name );
+my $project = $buffer->newProject ( -name => $project_name , -version =>$version);
 my $pm   = new Parallel::ForkManager($fork);
 my $tabix = $buffer->software("tabix");
 my $bgzip = $buffer->software("bgzip");
