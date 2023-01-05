@@ -31,7 +31,7 @@ use POSIX qw(strftime);
 use DateTime;
  use List::Util qw[min max];
 use Cwd qw(abs_path);
-
+#
 has maxProc => (
 	is 		=> 'rw',
 	default	=> '1',
@@ -1523,6 +1523,21 @@ sub log2 {
 	 my $v = log($n)/log(2);
 	 $v =-2 if $v < -2; 
     return $v;
+}
+
+sub get_base_url_polyrna {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{base_url_polyrna};
+}
+
+sub get_polyrna_file_server_to_docker {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{server_to_docker};
+}
+
+sub get_polyrna_file_docker_to_server {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{docker_to_server};
 }
 
 1;
