@@ -61,12 +61,14 @@ my $step;
 my $spipeline;
 
 my $limit;
+my $version;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
 	'step=s'=> \$step,
 	'type=s' => \$type,
 	'command=s'=>\$spipeline,
+	'version=s' =>\$version,
 	#'low_calling=s' => \$low_calling,
 );
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
@@ -82,8 +84,7 @@ foreach my $l (split(",",$spipeline)){
 
 #my $user = system("whoami");
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
-
+my $project = $buffer->newProject( -name => $projectName , -version =>$version);
 my $tm = "/staging/tmp/";
 
 #system ("mkdir -p $dir_dragen/".$project->name );
@@ -95,12 +96,18 @@ my ($out, $err, $exit) = $ssh->cmd($cmd_dir);
 #my $dir_pipeline = $patient->getDragenDirName("pipeline");
 my $prefix = $patient->name;
 my $bam_prod = $patient->getBamFileName("dragen-align");
+
 my $url = qq{$username\@10.200.27.109};
 
 #exit(0) if -e $bam_prod;
 #warn "coucou";
 if (exists $pipeline->{align}){
 	my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
+	if ($version && !(-e $bam_pipeline)){
+	$bam_pipeline =~ s/bam/cram/;
+	$bam_prod =~ s/bam/cram/;
+	}
+#warn $bam_pipeline;
 	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
 	move_bam($bam_pipeline,$patient);
 }
@@ -154,8 +161,10 @@ exit(0);
 sub move_bam {
 	my ($bam,$patient) = @_;
 	my $prod = $patient->getBamFileName("dragen-align");
+	 $prod = $patient->getCramFileName("dragen-align") if $bam =~ /cram/;
 	system("rsync -rav  $url".":$bam $prod ");
 	system("rsync -rav  $url".":$bam.bai $prod.bai ");
+	system("rsync -rav  $url".":$bam.cai $prod.cai ");
 	
 }
 
