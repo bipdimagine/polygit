@@ -1,0 +1,29 @@
+<div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true" onShow ="reload_cnv(1);">
+	<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="splitter:false, region:'top'" >
+	<table>
+	<td>
+     <div id="slider_cnv" jsId="slider_cnv"  data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:1,maximum:4,discreteValues:4,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:140px; height: 10px;"' >
+		    			               <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:4, style:{height:"2px"}'> </div>
+				                             <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+				                                <li><span><font color="coral"><i>High</i></font></span></li>
+				                                <li><span><font color="#EACC34"><i>Medium</i></font></span></li>
+				                                <li><span><font color="#28A24C"><i>Low</i></font></span></li>
+				                                <li><span><font color="#CCCCCC"><i>All</i></font></span></li>
+				                            </ol>
+				                            <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 2em; ">
+        										<li> Quality</li>
+    										</ol>
+				                        </div>
+	</td>
+	<td>						
+								<button type="button" class="btn btn-danger btn-xs"
+									 onclick="reload_cnv();">
+									<i class="fa fa-refresh" aria-hidden="true"></i> 
+									<span id="cnv_span_panel_name" jsId="cnv_span_panel_name">Refresh</span>
+								</button>
+	</td>							
+	</table>						
+	</div>
+		<div jsId="cnv_panel" id="table_cnv" data-dojo-type="dijit/layout/ContentPane" data-dojo-props=" region:'center'" onShow="reload_cnv(1);" >
+		</div>
+</div>
