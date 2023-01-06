@@ -63,6 +63,8 @@ my $umi;
 my $spipeline;
 
 my $limit;
+my $version;
+my $rna;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -70,6 +72,8 @@ GetOptions(
 	'type=s' => \$type,
 	'umi=s' => \$umi,
 	'command=s'=>\$spipeline,
+	'version=s' =>\$version,
+	'rna=s' =>\$rna,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -79,7 +83,7 @@ foreach my $l (split(",",$spipeline)){
 }
 my $user = system("whoami");
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version =>$version);
 
 my $tm = "/staging/tmp/";
 
@@ -96,27 +100,57 @@ my $bam_prod = $patient->gvcfFileName("dragen-calling");
 #exit(0) if -e $bam_prod;
 
 my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
-
+if ($rna){
+	run_pipeline_rna($pipeline);
+}
+else {
 run_pipeline($pipeline);# unless -e $bam_pipeline;
-
+}
 #die() unless  -e $bam_pipeline;
 
 
 exit(0);
-
+sub run_pipeline_rna {
+my ($pipeline) = @_;
+my $param_align = "";
+my $ref_dragen = $project->getGenomeIndex("dragen");
+my $param_umi = "";
+my $tmp = "/staging/tmp";
+my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
+my $runid = $patient->getRun()->id;
+ $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true -a /data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf --enable-rna-quantification true";
+##
+$cmd_dragen .= $param_umi." ".$param_align;
+warn $cmd_dragen;
+die();
+my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+die if $exit != 0;
+}
 
 
 sub run_pipeline {
 my ($pipeline) = @_;
 my $param_align;
 my $ref_dragen = $project->getGenomeIndex("dragen");
-	my $param_umi = "";
-if (exists $pipeline->{align}){
+my $param_umi = "";
+if ($version && exists $pipeline->{align} ){
+	my $buffer_ori = GBuffer->new();
+	my $project_ori = $buffer_ori->newProject( -name => $projectName );
+	my $patient_ori = $project_ori->getPatient($patients_name);
+	my $bamfile = $patient_ori->getBamFile();
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true --output-format CRAM";
+	if ($umi){
+		confess();
+	}
+	
+}	
+elsif (exists $pipeline->{align}){
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	my $runid = $patient->getRun()->id;
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
-	if (exists $pipeline->{umi}){
+	if ($umi){
 		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 	}
 	else {
@@ -157,8 +191,8 @@ if (exists $pipeline->{sv}){
 }
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_gvcf." ".$param_cnv." ".$param_sv;
 
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_gvcf." ".$param_cnv." ".$param_sv;
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
