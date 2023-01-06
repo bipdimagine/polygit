@@ -71,6 +71,7 @@ foreach my $chr (@{$project->getChromosomes}){
 }
 ##
 close(BED);
+
 #system("sambamba slice $bam -L $bed -o $bam_tmp;samtools index $bam_tmp ");
 #warn $bam_tmp;
 #die();
@@ -174,8 +175,8 @@ sub intspanToBed{
     		push(@tt,$chr_name."\t".$from."\t".$to);
     	
     }
-    warn $chr_name." ".$size;
 	#	my @tt = map{$_ = $chr->ucsc_name."\t".$_} split(";",$intspan->as_string({ sep => ";", range => "\t" }) );
+	return @tt;
 }
 sub update_method {
 	my ($dbh,$patient_id) = @_;
