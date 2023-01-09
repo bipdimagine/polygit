@@ -74,7 +74,7 @@ close(BED);
 
 #system("sambamba slice $bam -L $bed -o $bam_tmp;samtools index $bam_tmp ");
 #warn $bam_tmp;
-#die();
+#die();getInts
 ##
 my $meltd = "/software/distrib/MELT/MELTv2.2.2";
 my $melt = $buffer->software("melt");
@@ -142,7 +142,7 @@ $bed = $bed.".gz";
  	my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
 
 	#warn "$bcftools concat $list_file | $bcftools view - -T $bed | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; tabix -f -p vcf $fileout";
-	my $cmd = qq{$bcftools concat $list_file | $bcftools view - -T $bed | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; $tabix -f -p vcf $fileout};
+	my $cmd = qq{$bcftools concat $list_file | $bcftools view - -R $bed | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; $tabix -f -p vcf $fileout};
 	warn $cmd;
 	system ($cmd);
 	exit(0);
