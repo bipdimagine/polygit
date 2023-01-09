@@ -21,7 +21,7 @@ use validationQuery;
 use connect;
 use FindBin;
 use Parallel::ForkManager;
-use Tabix;
+use Bio::DB::HTS::Tabix;
 use packages::SmithWaterman;
 use packages::NeedlemanWunsch;
 use Storable qw(dclone);
@@ -29,8 +29,9 @@ use JSON::XS;
 use Sys::Hostname;
 use POSIX qw(strftime);
 use DateTime;
- use List::Util qw[min max];
+use List::Util qw[min max];
 use Cwd qw(abs_path);
+use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
 
 has maxProc => (
 	is 		=> 'rw',
@@ -984,9 +985,10 @@ sub get_lmdb_database {
 	my ($self,$database,$chr,$type) = @_;
 	
 	confess() unless $type;
-	return $self->{lmdb}->{$chr}->{$database}->{$type} if exists  $self->{lmdb}->{$chr}->{$database}->{$type};
 	
+	return $self->{lmdb}->{$chr}->{$database}->{$type} if exists  $self->{lmdb}->{$chr}->{$database}->{$type};
 	my $dir = $self->get_lmdb_database_directory($database).'/'.$type;
+	
 	confess($dir) unless -e $dir;
 	unless (-e $dir."/".$chr ){
 		if ($chr eq "Y"){
@@ -1098,15 +1100,14 @@ sub coverage_samtools {
 sub coverage_tabix {
 	my($self,$coverage_file,$chr,$start,$end) = @_;
 	confess() unless -e $coverage_file;
-	my $tabix = new Tabix(-data =>$coverage_file);
+	my $tabix = Bio::DB::HTS::Tabix->new( filename => $coverage_file );
 	my $region = $chr.":".$start."-".$end;
 	my $len = abs($start - $end) +1;
 	my @v = ((0) x $len);
-	 my $res = $tabix->query($chr,$start-1,$end) if $start;
+	 my $res = $tabix->query($region) if $start;
 		 my @data;
 		
-		 while(my $line = $tabix->read($res)){
-    		
+		 while(my $line = $res->next){
 				my($a,$p,$c) = split(" ",$line);
 				confess() if $a ne $chr;
 				my $pv = $p - $start ;
@@ -1171,7 +1172,7 @@ sub dbh_reconnect {
 	#$self->{query}->{dbh} = connect::getdbh($self->config->{polyprod});
 	#$self->{queryPanel}->{dbh} = connect::getdbh($self->config->{polyprod}) if (exists $self->{queryPanel});
 }
-
+ 
 sub intspanToBed{
 	my ($self,$chr,$intspan) = @_;
 	my $iter = $intspan->iterate_runs();
@@ -1183,6 +1184,24 @@ sub intspanToBed{
 	#	my @tt = map{$_ = $chr->ucsc_name."\t".$_} split(";",$intspan->as_string({ sep => ";", range => "\t" }) );
 		return @tt;
 }
+
+sub gzip_tabix {
+	my ($self,$file,$type) = @_;
+	my $bgzip = $self->software('bgzip');
+	my $tabix = $self->software('tabix');
+
+	if ($file =~ /gz$/){
+		system(" $tabix -f -p $type $file");
+	}
+	else {
+		system("$bgzip -f $file && $tabix -p $type $file.gz");
+		$file .= ".gz";
+	}
+	
+	confess($file) unless -e "$file.tbi";
+	return "$file"
+}
+
 
 sub public_data_annotation_root {
 		my ($self) = @_;
@@ -1524,5 +1543,42 @@ sub log2 {
 	 $v =-2 if $v < -2; 
     return $v;
 }
+########
+# SEREAL
+#######
+has sereal_encoder => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		#return Sereal::Encoder->new();
+		return Sereal::Encoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
+		return 0;
+	},
+);
+
+sub sereal_encode {
+	my ($self,$value)  =@_;
+	return sereal_encode_with_object($self->sereal_encoder, $value);
+}
+
+
+has sereal_decoder => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return Sereal::Decoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
+		return 0;
+	},
+);
+sub sereal_decode {
+	my ($self,$value)  = @_;
+	return unless $value;
+	return sereal_decode_with_object($self->sereal_decoder, $value);
+}
+
+
+
 
 1;
