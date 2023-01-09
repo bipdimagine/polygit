@@ -2141,7 +2141,7 @@ sub score_prediction_refined {
 
 sub score_refined {
 	my ($self,$patient,$debug) = @_;
-	
+		$debug= undef;
 		my $refined_score = 0;
 		
 		
@@ -2284,7 +2284,7 @@ sub scaledScoreVariant{
 
 sub scaledScoreVariantPolydiag{
 	my ($self, $tr,$patient,$query,$debug) = @_;
-	$debug = 1;
+	$debug = undef;
 	 #$debug = 1 if $self->id eq "1_209961988_A_C";# && $patient->name eq "GEF2000057";
 	#	if ($self->isClinvarPathogenic or $self->isDM && $self->scaled_score_frequence >= 2 ){
 	#	return 5;
@@ -2864,10 +2864,14 @@ has dp_infos =>(
 	default=> sub {
 		my $self = shift;
 		 my $hash = {}; 
-		 
 		foreach my $pat (@{$self->getPatients}){
 			foreach my $patient (@{$pat->getFamily()->getMembers}){
-				my $pid = $patient->id;
+					my $pid = $patient->id;
+				unless ($patient->hasBamFile) {
+					$hash->{$pid} = ["-","-","-"];
+					next;
+				}
+			
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				my $norm_depth = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start, $self->end+1));
 				my $dude = "-";
