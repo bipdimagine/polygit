@@ -253,6 +253,7 @@ sub run_command {
 	foreach my $t (@$pipeline_dragen_steps){
 		$lims->{$pname}->{$t} = "SKIP"; 
 		next if -e $hp->{prod}->{$t};
+		warn $hp->{pipeline}->{$t};
 		next if -e $hp->{pipeline}->{$t};
 		$lims->{$pname}->{$t} = "PLANNED"; 
 		push(@{$hp->{run_pipeline}},$t);
@@ -315,7 +316,7 @@ foreach my $hp (@$patients_jobs) {
 	next unless $option;
 	$job->{jobs_type_list} = join(",",@tt);
 	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$option;
-	$status_jobs->{patient}=$nname;
+	#$status_jobs->{patient}=$nname;
 	$job->{cmd} .= " -version=$version " if $version;
 	$job->{cpus} = $ppn;
 	push(@$jobs,$job);
@@ -329,7 +330,7 @@ foreach my $hp (@$patients_jobs) {
 
 
 
-
+my @failed;
 ### LMDB 
 sub run_lmdb_depth_melt {
 	my ($patients_jobs) = @_;
@@ -372,6 +373,7 @@ foreach my $hp (@$patients_jobs) {
 	$lims->{$nname}->{melt} = "SKIP" if -e $fileout; 
 	next if -e $fileout;
 	my $cmd1 = "perl $script_pipeline//melt/melt.pl -project=$project_name  -patient=$name -fork=$ppn ";
+	$cmd1 .= qq{ -version=$version  } if $version;
 	$job->{name} = $name.".melt";
 	$job->{cmd} =$cmd1;
 	$job->{cpus} = $ppn;
@@ -516,7 +518,7 @@ sub steps_system {
 ##########################
 #GENERIC SUB 
 ##########################
-
+my $cmd_failed;
 sub run_system {
 	my ($jobs,$row) = @_; 
 	$row ++;
@@ -583,6 +585,7 @@ foreach my $hcmd (@$jobs){
 		foreach my $pname (@pnames){
 			map{$lims->{$pname}->{$_} = "FAILED"} @tjs; 
 		}
+		push(@$cmd_failed,$hcmd->{cmd});
 		$hcmd->{failed} ++;
 	}
 		 $status->update();
@@ -730,6 +733,7 @@ while (keys %$runnings_jobs ) {
 			$cluster_jobs->{$jobid}->{failed} ++;
 			my $pname = $cluster_jobs->{$jobid}->{patient};
 			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
+			push(@$cmd_failed,$cluster_jobs->{cmd});
 			$lims->{$pname}->{$tj} = "FAILED"; 
 			#system("mv slurm-".$jobid."out"." slurm-".$jobid."failed")
 		}
@@ -868,6 +872,10 @@ sub end_report {
 		print $tb;
 		print "\n ------------------------------\n";
 		#print "\n";
+	}
+	print "\n --------ERROR JOB ----------------\n";
+	foreach my $c (@$cmd_failed){
+		print colored::print_color("red",$c,1)."\n";
 	}
 		
 }
