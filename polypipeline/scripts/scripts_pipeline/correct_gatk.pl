@@ -37,6 +37,7 @@ my $patient_name;
 my $snp_out;
 my $indels_out;
 my $method;
+my $version;
 
 GetOptions(
 	"vcf=s"          => \$vcf_file,
@@ -47,11 +48,12 @@ GetOptions(
 	"project=s"      => \$project_name,
 	"patient_name=s" => \$patient_name,
 	"method=s"=> \$method,
+	"version=s" =>\$version,
 );
 
 my $buffer  = GBuffer->new();
 
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name , -version => $version);
 my $error   = 0;
 my %hpatients;
 map { $hpatients{ $_->name } = 0 }
@@ -133,6 +135,9 @@ while ( my $line = <VCF> ) {
 		next;
 	}    #end if CHROM
 	my @array = split( " ", $line );
+	if($method =~ /dragen/){
+		next if $array[6] ne "PASS";
+	}
 	my $debug;
 	$debug = 1 if $array[1] == 130914965;
 	warn $line if $debug;
@@ -227,7 +232,7 @@ while ( my $line = <VCF> ) {
 	}
 	warn "coucou " if $debug;
 	warn $max_all." ".$max_pc if $debug;
-	
+
 	
 	#if ($max_all >= $LIMIT_AC || ($max_all >= 10 && $max_pc > 0.3)) {
 	if ($max_all >= $LIMIT_AC || ($max_all >= 5 && $max_pc > 0.25)) {

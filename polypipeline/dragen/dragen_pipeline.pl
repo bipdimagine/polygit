@@ -49,6 +49,7 @@ my $script_perl = $Bin."/scripts/";
 my $script_pipeline = $Bin."/../scripts/scripts_pipeline/";
 my $num_jobs =0;
 my $lims;
+my $elapsed;
 
 $SIG{INT} = \&tsktsk;
 $SIG{KILL} = \&tsktsk;
@@ -70,6 +71,9 @@ my $umi;
 my $dude;
 my $version;
 my $dry;
+##########
+my $cmd_failed = [];
+my $cmd_cancel = [];
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
@@ -351,6 +355,7 @@ my $project_name = $hp->{project};
 	$lims->{$nname}->{lmdb_depth} = "SKIP" if -e $fileout; 
 	next if -e $fileout;
 	my  $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
+	$cmd .= qq{ -version=$version  } if $version;
 	$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
 	$cmd .= qq{ -version=$version  } if $version;
 		$job->{name} =  $name.".lmdb";
@@ -383,7 +388,7 @@ foreach my $hp (@$patients_jobs) {
 	push(@$jobs,$job);
 	
 }	
-	
+
 	steps_cluster("LMDBDepth+Melt ",$jobs);
 	
 }
@@ -519,8 +524,7 @@ sub steps_system {
 
 ##########################
 #GENERIC SUB 
-##########################
-my $cmd_failed;
+################
 sub run_system {
 	my ($jobs,$row) = @_; 
 	$row ++;
@@ -578,6 +582,7 @@ foreach my $hcmd (@$jobs){
 	if ($myproc->exit_status() == 0){
 		$ok ++;
 		foreach my $pname (@pnames){
+		map{$elapsed->{$pname}->{$_} = $ttt->pretty} @tjs; 	
 		map{$lims->{$pname}->{$_} = "OK"} @tjs; 
 		}
 		$hcmd->{ok} ++;
@@ -728,6 +733,8 @@ while (keys %$runnings_jobs ) {
 		$cluster_jobs->{$jobid}->{status} = $stat;
 		
 		$hstatus->{$stat}->{$jobid} ++;
+		my $pname = $cluster_jobs->{$jobid}->{patient};
+		my $tj = $cluster_jobs->{$jobid}->{jobs_type};
 		if (lc($stat) eq "failed"){
 			my $ttt = Time::Seconds->new( time - $cluster_jobs->{$jobid}->{t1} );
 			$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
@@ -735,7 +742,7 @@ while (keys %$runnings_jobs ) {
 			$cluster_jobs->{$jobid}->{failed} ++;
 			my $pname = $cluster_jobs->{$jobid}->{patient};
 			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
-			push(@$cmd_failed,$cluster_jobs->{cmd});
+			push(@$cmd_failed,$cluster_jobs->{$jobid}->{cmd}->{cmd});
 			$lims->{$pname}->{$tj} = "FAILED"; 
 			#system("mv slurm-".$jobid."out"." slurm-".$jobid."failed")
 		}
@@ -746,8 +753,8 @@ while (keys %$runnings_jobs ) {
 			my $ttt = Time::Seconds->new( time - $cluster_jobs->{$jobid}->{t1} );
 			$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
 			$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
-			my $pname = $cluster_jobs->{$jobid}->{patient};
-			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
+			
+			$elapsed->{$pname}->{$tj} = $cluster_jobs->{$jobid}->{elapse};
 			$lims->{$pname}->{$tj} = "OK"; 
 			delete $cluster_jobs->{$jobid}->{failed};
 			$cluster_jobs->{$jobid}->{ok} ++;
@@ -763,16 +770,19 @@ while (keys %$runnings_jobs ) {
 		}
 		elsif (lc($stat) eq "pending"){
 			$pending ++;
+			
 		}
 		elsif (lc($stat) eq "running"){
 			$cluster_jobs->{$jobid}->{t1} = time  unless exists $cluster_jobs->{$jobid}->{t1};
 			$running ++;
 		}
-		elsif (lc($stat) eq "cancel"){
+		elsif (lc($stat) =~ /cancel/){
 			$cluster_jobs->{$jobid}->{failed} ++;
+			push(@$cmd_cancel,$cluster_jobs->{$jobid}->{cmd}->{cmd});
 			delete $runnings_jobs->{$jobid};
 			$cancel->{$jobid} ++;
-			
+			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
+			$lims->{$pname}->{$tj} = "CANCEL"; 
 #			unlink "slurm-".$jobid."out";
 			$status->update()  ;
 		}
@@ -804,6 +814,7 @@ while (keys %$runnings_jobs ) {
 	my @j = values %$cluster_jobs;
 	return \@j;
 	die() if keys %$runnings_jobs;
+	die();
 }
 
 
@@ -860,11 +871,14 @@ sub end_report {
 			push(@row,colored::stabilo("blue",$hp->{name},1));
 			foreach my $c (@all_list){
 				$lims->{$pname}->{$c} = "-" unless exists $lims->{$pname}->{$c};
+				my $text = $lims->{$pname}->{$c};
 				my $color = "white";
 				$color = "green" if $lims->{$pname}->{$c} eq "OK";
 				$color = "red" if lc($lims->{$pname}->{$c}) eq "failed";
 				$color = "magenta" if lc($lims->{$pname}->{$c}) eq "-";
-				push(@row,colored::print_color("$color",$lims->{$pname}->{$c},1));
+				$color = "blue" if lc($lims->{$pname}->{$c}) eq "cancel";
+				$text = $elapsed->{$pname}->{$c} if $lims->{$pname}->{$c} eq "OK";
+				push(@row,colored::print_color("$color",$text,1));
 			#print " $c : ".$lims->{$pname}->{$c}."\t";
 			}
 			push(@rows,\@row);
@@ -875,9 +889,17 @@ sub end_report {
 		print "\n ------------------------------\n";
 		#print "\n";
 	}
+	if(@$cmd_failed){
 	print "\n --------ERROR JOB ----------------\n";
 	foreach my $c (@$cmd_failed){
 		print colored::print_color("red",$c,1)."\n";
+	}
+	}
+	if(@$cmd_cancel){
+	print "\n --------CANCEL JOB ----------------\n";
+	foreach my $c (@$cmd_cancel){
+		print colored::print_color("blue",$c,1)."\n";
+	}
 	}
 		
 }
