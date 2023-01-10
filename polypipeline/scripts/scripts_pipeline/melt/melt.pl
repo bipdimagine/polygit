@@ -142,6 +142,7 @@ $bed = $buffer->gzip_tabix($bed,"bed");
 	my $tvcf3 = $dir_out."/".$patient->name.".".time.".3.vcf.gz";
 	my $cmd2 = qq{$bcftools sort $tvcf2 -O z -o $tvcf3 ;$tabix -p vcf $tvcf3; $bcftools view $tvcf3 -R $bed -O z -o $fileout};
 	system($cmd2);
+	warn $cmd2;
 	$buffer->gzip_tabix($fileout,"vcf");
 	
 	warn "OK " ;
