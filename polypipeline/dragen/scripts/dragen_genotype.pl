@@ -79,8 +79,10 @@ die() if $exit != 0;
 my $bin_dev = "$Bin/../../scripts/scripts_pipeline/";
 my $cmd1 = "perl $bin_dev/correct_gatk.pl -vcf=$filein -project=$projectName -dir=$dir_pipeline  -patient=$patients_name -method=dragen-calling";
 warn $cmd1;
+$cmd1.= " -version=$version" if $version;
 system($cmd1);
-my $cmd2 = "perl $bin_dev/move_vcf.pl  -project=$projectName -vcf_dir=$dir_pipeline -patient=$patients_name -method_calling=dragen-calling";
+my $cmd2 = "perl $bin_dev/move_vcf.pl  -project=$projectName -vcf_dir=$dir_pipeline -patient=$patients_name -method_calling=dragen-calling ";
+$cmd2.= " -version=$version" if $version;
 warn $cmd2;
 system($cmd2);
 

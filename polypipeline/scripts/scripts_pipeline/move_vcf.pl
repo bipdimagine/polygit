@@ -31,6 +31,7 @@ my $patient_name;
 my $type;
 my $merge;
 my $calling_type = "unifiedgenotyper";
+my $version;
 GetOptions(
 	'project=s'   => \$project_name,
 	"vcf_dir=s"=>\$vcf_dir,
@@ -39,6 +40,7 @@ GetOptions(
 	"type=s" =>\$type,
 	"merge=s" =>\$merge,
 	"method_calling=s" =>\$calling_type,
+	"version=s" =>\$version,
 );
 
 #my $calling_type = "unifiedgenotyper";
@@ -59,13 +61,12 @@ print  "\n";
 
 
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name,-version=> $version );
 
 my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
 my $javac = $project->getSoftware('java');
 my $reference = $project->genomeFasta();
-my $gatk = $project->getSoftware('gatk');
 
 my $patients = $project->get_list_patients($patient_name);
 

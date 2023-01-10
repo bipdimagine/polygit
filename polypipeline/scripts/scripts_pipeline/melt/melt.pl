@@ -34,7 +34,7 @@ GetOptions(
 	'project=s'   => \$project_name,
 	"fork=s"  => \$fork,
 	"patients=s" => \$patient_name,
-	"version=s" => \$patient_name,
+	"version=s" => \$version,
 );
 #test
 my $buffer = GBuffer->new();
@@ -48,13 +48,16 @@ my $gatk  = $buffer->software("gatk4");
 my $patient =  $project->getPatient($patient_name);
 my $dir_in = $project->getAlignmentDir("bwa");
 my $ref = $project->genomeFasta();
-my $bam = $patient->getBamFile();
+my $bam_prod = $patient->getBamFile();
 
 my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name."-".time);
 
 my $samtools = $buffer->software("samtools");
 my $dir_out = $melt_dir;
+my $bam_dev = 
 my $bam_tmp = $dir_out."/".$patient->name.time.".bam";
+system("ln -s $bam_prod $bam_tmp");
+system("ln -s $bam_prod.bai $bam_tmp.bai");
 my $bed = $dir_out."/".$patient->name.time.".bed";
 
 #my $list = $dir_out."/".$patient->name.".list";
@@ -74,10 +77,7 @@ foreach my $chr (@{$project->getChromosomes}){
 ##
 close(BED);
 
-#system("sambamba slice $bam -L $bed -o $bam_tmp;samtools index $bam_tmp ");
-#warn $bam_tmp;
-#die();getInts
-##
+
 my $meltd = "/software/distrib/MELT/MELTv2.2.2";
 my $melt = $buffer->software("melt");
 my $java = $buffer->software("java");
@@ -91,6 +91,7 @@ my $tabix =$buffer->software("tabix");
 my $gatk=$buffer->software("gatk4");
 chomp @files;
 my $list = $dir_out."/list.txt";
+
 update_method($buffer->dbh,$patient->id);
 system("add_calling_method.sh -project=$project_name -patient=$patient_name -method=melt");
 open (LIST,">$list");
@@ -102,8 +103,8 @@ close LIST;
 	system("mkdir $dir_out && chmpd a+rwx $dir_out ") unless -e $dir_out;
 	
 	#system("sambamba slice $bam ".$chr->fasta_name." >$bout && samtools index $bout");
-	warn "$melt -h $ref -bamfile $bam -n $bed  -w $dir_out -t $list  -exome 1";
-	system("$melt -h $ref -bamfile $bam -n $bedg  -w $dir_out -t $list  -exome 1");
+	warn "$melt -h $ref -bamfile $bam_tmp -n $bed  -w $dir_out -t $list  -exome 1";
+	system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1");
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
 	
 	foreach my $f (keys %$files){
