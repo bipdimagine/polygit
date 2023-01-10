@@ -104,7 +104,7 @@ if ($rna){
 	run_pipeline_rna($pipeline);
 }
 else {
-run_pipeline($pipeline);# unless -e $bam_pipeline;
+	run_pipeline($pipeline);# unless -e $bam_pipeline;
 }
 #die() unless  -e $bam_pipeline;
 
@@ -134,10 +134,16 @@ my ($pipeline) = @_;
 my $param_align;
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $param_umi = "";
-if ($version && exists $pipeline->{align} ){
+my ($fastq1,$fastq2);
+if (exists $pipeline->{align}){
+	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline,1);
+	 
+}
+if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
 	my $patient_ori = $project_ori->getPatient($patients_name);
+	 $patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
 	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true --output-format CRAM";
 	if ($umi){
@@ -146,7 +152,8 @@ if ($version && exists $pipeline->{align} ){
 	
 }	
 elsif (exists $pipeline->{align}){
-my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+#my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+	confess() unless $fastq1;
 	my $runid = $patient->getRun()->id;
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
