@@ -130,17 +130,22 @@ close LIST;
 #close (LIST);
 
 
-
-system("$bgzip $bed ; $tabix $bed.gz");
-$bed = $bed.".gz";
+$bed = $buffer->gzip_tabix($bed,"bed");
 	
 	
  	my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
 
-	#warn "$bcftools concat $list_file | $bcftools view - -T $bed | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; tabix -f -p vcf $fileout";
-	my $cmd = qq{$bcftools concat $list_file | $bcftools view - -R $bed | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; $tabix -f -p vcf $fileout};
-	warn $cmd;
+	#warn "$bcftools concat $list_file | $bcftools view - -R $bed | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; tabix -f -p vcf $fileout";
+	my $cmd = qq{$bcftools concat $list_file  | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf;$gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace;};
 	system ($cmd);
+	warn $cmd;
+	my $tvcf3 = $dir_out."/".$patient->name.".".time.".3.vcf.gz";
+	my $cmd2 = qq{$bcftools sort $tvcf2 -O z -o $tvcf3 ;$tabix -p vcf $tvcf3; $bcftools view $tvcf3 -R $bed -O z -o $fileout};
+	system($cmd2);
+	$buffer->gzip_tabix($fileout,"vcf");
+	
+	warn "OK " ;
+	
 	exit(0);
 	
 	
