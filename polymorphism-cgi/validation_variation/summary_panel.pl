@@ -508,7 +508,7 @@ my $dev;
  warn join(";",@$key_quality);
  
  $header = undef  if $dev or $cgi->param('force') == 1;
- $header = undef;
+ #$header = undef;
  $no_cache->close();
 $project->getChromosomes();
 $project->getPatients();
@@ -641,8 +641,8 @@ sub check_level {
 			#print $cgi->td($class,$hsex->{$sex});
 			my $style_btn_name= qq{style ="background-color:#FFEBED;color:black"}  ;
 			$style_btn_name= qq{style ="background-color:#C6E7F6;color:black"}  if $p->sex() == 1;
-			warn $sex_eval ." ".$p->sex();
-			die();
+#			warn $sex_eval ." ".$p->sex();
+#			die();
 			if ($sex_eval ne $p->sex() && $sex_eval ne -1){
 				# $class->{class}= "danger";
 				  $style_btn_name= qq{style ="background-color:#E74C3C;color:white"};
@@ -765,25 +765,24 @@ sub header_run {
 #				$stats->{$k} += $cov->{$k};
 #		}
 	}
-	
+	my $bcolor = qq{background-color:#1079B2};
+	$bcolor = "background-color:#BD3D3A" if $project->isSomatic;
 	my ($date1,$hour) = split(" ",$run->date);
 	my($y,$m,$d) = split("-",$date1);
 	$y =~s/20//;
 	my $date = "$d/$m/$y"; 
 	my $capt = values %$captures;
 	foreach my $c (values %$captures){
-			push(@$info , $c->description);
+			push(@$info , $project->description);
 			push(@$info , $c->type);
 	}
 	
-	my $bcolor = "#F6D155";
-	 $bcolor = "#E15D44";
-	 # $bcolor = "#C3447A";
 	 my $fcolor = "white";
-		
-		my $text_info = join(qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>},@$info);
+	 my $text_info ="";
+		$text_info .= qq{SOMATIC<span class="glyphicon glyphicon-minus" aria-hidden="true"></span> } if $project->isSomatic;
+		 $text_info .= join(qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>},@$info);
+		$text_info .= qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC } if $project->isSomatic;
 	my $nb = scalar(@{$run->getPatients});
-		 my $btn_class = qq{class= "label  label-success " style="font-size: 12px;background-color:#F6D155;color:black"};
 		 
 		#$btn_class = qq{class= "label  label-xs label-warning " style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 95;
 		#$btn_class = qq{class= "label  label-xs label-alert "  style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 90;
@@ -806,7 +805,7 @@ sub header_run {
  my $texta;
  foreach my $name (keys %$version){
 			my $v = $version->{$name};
-			$texta .= qq{<span class="label " style="font-size: 12px;background-color:#1079B2">$name <span class="badge badge-alert" style="font-size: 10px;">$v </span></span>	};
+			$texta .= qq{<span class="label " style="font-size: 12px;$bcolor">$name <span class="badge badge-alert" style="font-size: 10px;">$v </span></span>	};
 		}
 		
 	my $cmd =qq{project_printer("$project_name",$user)};
@@ -814,7 +813,7 @@ my  $out = qq{
   	<div  style="position: relative;">
        	$texta
        </div>
-       <div class="callout-mage text-center fade-in-b" style="padding-bottom: 10px;padding-top: 5px;">
+       <div class="callout-mage text-center fade-in-b" style="padding-bottom: 10px;padding-top: 5px;$bcolor">
        
        	
 					<h1>
@@ -852,7 +851,26 @@ my  $out = qq{
 				 </div>
    			</div> 
  
-     </div>
+};
+;
+
+if ($project->isDiagnostic){
+	my @color = ("#C4E17F","#F7FDCA","#FECF71","#F0776C","#DB9DBE","#C49CDE");
+	my @color = ("aliceblue","#DDDDDD");
+	$out.= qq{<div>};
+	$out .= $cgi->start_table({class=> "table table-striped table-bordered ",style=>"color:black;text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;box-shadow: 1px 1px 2px 1px YYY;margin-top: 5px;margin-bottom: 0px;"});
+	
+my $n=0;
+foreach my $m (@{$project->callingMethods}) {
+	my $c = $color[$n%(scalar(@color))];
+	$out.= "<td style=\"background-color:$c\">".$m."</td>\n";
+	$n ++;
+}
+$out.= qq{</table></div>};
+}
+$out.= qq{</div>};
+
+$out.= qq{
    <hr class="colorgraph" style="margin-top:1px;margin-bottom:1px">
  };
  return $out;
