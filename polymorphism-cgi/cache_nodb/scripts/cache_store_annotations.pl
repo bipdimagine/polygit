@@ -12,11 +12,11 @@ use Digest::MD5 qw(md5_hex);
 use lib "$RealBin/../../../GenBo/lib/obj-nodb/";
 use List::MoreUtils qw{ natatime };
 use String::ProgressBar;
-use POSIX qw(strftime);
+use POSIX qw(strftime); 
 use JSON;
 use Compress::Snappy;
 use Getopt::Long;
-use Carp;
+use Carp; 
 use GBuffer;
 use Cache_Commons;
 use Sys::Hostname;
@@ -226,7 +226,7 @@ foreach my $pn ( keys %{$hintspan_patients} ) {
 }
 $no5->close();
 $no5 = undef;
-die();
+
 #################
 # GENES
 #################
