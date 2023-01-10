@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<title>PolyViewer</title>
+		<style type="text/css">
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/resources/dojo.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dijit/themes/claro/claro.css";
+			 @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/resources/claroGrid.css";
+			@import  "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/editor/plugins/resources/css/Save.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/widget/Dialog/Dialog.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/enhanced/resources/claro/EnhancedGrid.css"; 
+        	@import "/resources/demos/style.css";
+		 	@import "css/polycss/button.css";
+		 	@import "css/polycss/button2.css";
+		 	@import "css/polydiag/polydiag.css";
+			@import "css/polycss/login.css";
+			@import "css/polycss/header-footer.css";
+			@import "//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/claro.css";
+     		@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/document.css";
+     		 @import "//maxcdn.bootstrapcdn.com/bootswatch/3.3.4/flatly/bootstrap.min.css";
+      		/*@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3//dijit/tests/css/dijitTests.css";*/
+      		@import "js/cbtree/themes/claro/claro.css";
+      		@import "//netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css";
+      		@import "css/polycss/myMblSwitch.css";
+      		@import "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css";
+      		@import "js/igv/igv-1.0.9.css";
+      		@import "https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css";
+
+	html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+.claro .demoLayout .edgePanel {
+    background-color: #d0e9fc;
+}
+
+.tundra #navMenuCoverage.dijitToolbar {
+				background-image:none;
+		
+		
+				background-repeat: repeat-x;
+              
+                }
+                
+           .spinner {
+  margin: 2px auto 0;
+  width: 70px;
+  text-align: center;
+}
+
+.spinner > div {
+  width: 18px;
+  height: 18px;
+  background-color: #FFFFFF;
+  border-radius: 100%;
+  display: inline-block;
+  -webkit-animation: bouncedelay 1.4s infinite ease-in-out;
+  animation: bouncedelay 1.4s infinite ease-in-out;
+  /* Prevent first frame from flickering when animation starts */
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
+
+.spinner .bounce1 {
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+
+.spinner .bounce2 {
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+
+@-webkit-keyframes bouncedelay {
+  0%, 80%, 100% { -webkit-transform: scale(0.0) }
+  40% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes bouncedelay {
+  0% 
+   { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  }
+  80%
+  { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+   
+  }
+  
+   100% { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+    
+  } 40% { 
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}     
+.claro .demoLayout .edgePanel {
+    background-color: #d0e9fc;
+}
+
+.coaro #navMenuCoverage.dijitToolbar {
+				background-image:none;
+		
+		
+				background-repeat: repeat-x;
+              
+                }
+  
+  
+  #tabContainer .dijitTabChecked .tabLabel {
+  color:red;
+  font-weight:bold;
+}
+  
+</style>
+	 <script type="text/javascript">
+ var dojoConfig = {
+        parseOnLoad: true,
+      };
+
+    </script>
+
+		    <script type="text/javascript" src="//code.jquery.com/jquery-2.0.2.min.js"></script>
+		         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		         	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+		         	
+		    <!--     
+		    <script type="text/javascript" src="js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>
+		    -->
+		    
+		    <script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+		    
+			<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+				<script type="text/javascript" src="js/polyviewer/methods_polyviewer.js"></script>
+		  	<script type="text/javascript" src="js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/Utility/vp.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/chart_coverage.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/electro.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/polyweb.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/coverage/coverage_global.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/coverage/coverage_split.js"></script>
+		   	<script type="text/javascript" src="http://www.dojotoolkit-fr.org/wp-content/uploads/dojo-adapter.js"></script>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		  	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+			<script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+			<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+			<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
+<style>
+label {
+display: inline-block;
+width: 5em;
+}
+</style>
+		   	   
+		  <script>
+		
+		  dojo.require("dijit.layout.LinkPane");
+		  dojo.require("dijit.Toolbar");
+		  dojo.require("dijit.layout.AccordionContainer");
+		  dojo.require("dijit.form.NumberSpinner");
+		  dojo.require("dijit.form.Button");
+		  dojo.require("dijit.form.FilteringSelect");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dijit.TooltipDialog");
+			dojo.require("dijit.Dialog");
+			dojo.require("dojo.cookie");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dojox.editor.plugins.Save");
+		   require(["dojo/parser", "dijit/form/CheckBox","dojo/data/ObjectStore","dojo/store/JsonRest","dijit/form/DropDownButton","dojox/form/CheckedMultiSelect"]);
+			dojo.require("dijit.layout.ContentPane");
+		require(["dojo/dom","dojo/parser", "dijit/layout/TabContainer","dojo/domReady!"]);
+		require(["dojox/layout/ScrollPane","dijit/ToolbarSeparator"]);
+		dojo.require("dijit.ProgressBar");
+		dojo.require("dijit.TitlePane");
+		dojo.require("dijit.Menu");
+		dojo.require("dojox.grid.enhanced.plugins.Menu");
+		dojo.require("dijit.Menu");
+		dojo.require("dijit.MenuItem");
+		dojo.require("dijit.layout.StackContainer");
+		dojo.require("dijit.layout.StackController");	
+		dojo.require("dojox.layout.TableContainer");
+			var storeG;
+			var storeGroup;
+		   	var project_name = param('project'); //"NGS2013_0201";
+		   	document.title = "PolyViewer [" + project_name + "]";
+		   var project_name =  project_name;
+		   var patient =  param('patient');
+		 dojo.addOnLoad(function() {
+			var url_header = url_hemi+"?project="+project_name+"&patients="+patient;	
+			  dijit.byId("test").setHref(url_header);
+		});
+		  </script>
+	</head>
+	
+    <body class="claro" style ="font-size : 90%;">
+	 <div  id="test" data-dojo-type="dijit/layout/ContentPane" title="tab #2" href=></div>
+	</div>
+ <div dojoType="dijit.Dialog"  jsId="dialog_igv" id="dialog_igv" title="IGV View" style="background-color:white;overflow: auto;" >
+    	
+            <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
+      </div>  
+</body>

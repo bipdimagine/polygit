@@ -1,0 +1,46 @@
+		.filterTable{
+			
+				
+			}
+			.filterTable td{
+				
+				padding:0px 0px 0px 0px;
+			}
+			 .tdActif{
+				border: thin solid #6495ed;
+
+				padding:0px 14px 0px 4px;
+			}
+			.filterLabel {
+				 font-size: 10px;
+				font-weight: bold;
+				color:#333333;
+				background:  url(../../images/polyicons/bullet_black.png) no-repeat center left;
+				padding:0px 5px 0px 20px;
+			}
+	
+			.filterLabelActif {
+				font-size: 10px;
+				color:#CA1329;
+				font-weight: bold;
+				background:  url(../../images/polyicons/bullet_red.png) no-repeat center left;
+				padding:0px 5px 0px 20px;
+			}
+			.filterLabelActif2 {
+				font-size: 9px;
+				color:#000000;
+				font-weight: bold;
+				background:  url(../../images/polyicons/8-em-plus.png) no-repeat center left;
+				padding:0px 5px 0px 10px;
+			}
+			.filterLabelActif3 {
+				font-size: 9px;
+				color:#000000;
+				font-weight: bold;
+				padding:0px 3px 0px 3px;
+			}
+			.filterLabelActif4 {
+				font-size: 9px;
+				color:#000000;
+				padding:0px 3px 0px 3px;
+			}
