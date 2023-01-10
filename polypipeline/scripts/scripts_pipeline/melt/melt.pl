@@ -29,14 +29,16 @@ use List::Util qw(max);
 my $project_name;
 my $fork;
 my $patient_name;
+my $version;
 GetOptions(
 	'project=s'   => \$project_name,
 	"fork=s"  => \$fork,
 	"patients=s" => \$patient_name,
+	"version=s" => \$patient_name,
 );
 #test
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProject( -name => $project_name , -version =>$version);
 
 my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
