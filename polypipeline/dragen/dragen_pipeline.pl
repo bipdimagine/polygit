@@ -844,7 +844,7 @@ sub run_cmd {
 
 sub end_report {
 	my ($projects,$patients_jobs) = @_;
-	
+	 
 	
 	foreach my $project (@$projects){
 		my @rows = ();
