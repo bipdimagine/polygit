@@ -32,7 +32,8 @@ use DateTime;
 use List::Util qw[min max];
 use Cwd qw(abs_path);
 
-use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
+#use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
+
 
 has maxProc => (
 	is 		=> 'rw',
@@ -984,7 +985,6 @@ sub mask_database {
 
 sub get_lmdb_database {
 	my ($self,$database,$chr,$type) = @_;
-	
 	confess() unless $type;
 	
 	return $self->{lmdb}->{$chr}->{$database}->{$type} if exists  $self->{lmdb}->{$chr}->{$database}->{$type};
@@ -1545,39 +1545,39 @@ sub log2 {
     return $v;
 }
 ########
-# SEREAL
+# SEREAL 
 #######
-has sereal_encoder => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		#return Sereal::Encoder->new();
-		return Sereal::Encoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
-		return 0;
-	},
-);
-
-sub sereal_encode {
-	my ($self,$value)  =@_;
-	return sereal_encode_with_object($self->sereal_encoder, $value);
-}
-
-
-has sereal_decoder => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return Sereal::Decoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
-		return 0;
-	},
-);
-sub sereal_decode {
-	my ($self,$value)  = @_;
-	return unless $value;
-	return sereal_decode_with_object($self->sereal_decoder, $value);
-}
+#has sereal_encoder => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		#return Sereal::Encoder->new();
+#		return Sereal::Encoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
+#		return 0;
+#	},
+#);
+#
+#sub sereal_encode {
+#	my ($self,$value)  =@_;
+#	return sereal_encode_with_object($self->sereal_encoder, $value);
+#}
+#
+#
+#has sereal_decoder => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		return Sereal::Decoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
+#		return 0;
+#	},
+#);
+#sub sereal_decode {
+#	my ($self,$value)  = @_;
+#	return unless $value;
+#	return sereal_decode_with_object($self->sereal_decoder, $value);
+#}
 
 
 
