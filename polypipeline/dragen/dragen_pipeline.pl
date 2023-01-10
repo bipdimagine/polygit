@@ -38,6 +38,7 @@ use file_util;
 use File::Temp qw/ tempfile tempdir /;; 
 use Term::Menus;
 use Proc::Simple;
+use Text::Table;
 
 my @running_jobs;
 my $cluster_jobs;
@@ -47,6 +48,8 @@ my $file_cluster = "/tmp/tmp.".time."cmd";
 my $script_perl = $Bin."/scripts/";
 my $script_pipeline = $Bin."/../scripts/scripts_pipeline/";
 my $num_jobs =0;
+my $lims;
+
 $SIG{INT} = \&tsktsk;
 $SIG{KILL} = \&tsktsk;
 sub tsktsk {
@@ -66,11 +69,13 @@ my $limit;
 my $umi;
 my $dude;
 my $version;
+my $dry;
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
 	'umi=s' => \$umi,
 	'version=s' => \$version,
+	"dry=s" => \$dry,
 	#'low_calling=s' => \$low_calling,
 );
 my $steps = {
@@ -84,26 +89,25 @@ my $steps = {
 				"run_coverage"=>  \&run_coverage,
 				"run_dragen_cnv_coverage" =>\&run_dragen_cnv_coverage,
 				
+				
 };
 
 my $buffers;
 my $projects;
 my @apatients_name = split(":",$patients_name);
+my $status_jobs; 
+
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name => $pname , -version =>$version);
 	#my $project = $buffer->newProject( -name => $pname );
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
-	foreach my $p (@{$project->getPatients}){
-		warn $p->name;
-	}
-	warn $project->name;
+	
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
  $project_name =~ s/\,/\./g ;
- warn $projects->[0]->buffer;
 my $dir_log = $projects->[0]->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time;
 system("mkdir $dir_log && chmod a+rwx $dir_log");
 
@@ -115,26 +119,19 @@ system("clear");# unless $noprint;
 
 my $start_time = time;
 my $jobs =[];
-
+my $pipeline_dragen_steps = ["align","gvcf","sv","cnv"];
 ####### Alignement
 my $ppd  = patient_pipeline_dragen($projects);
-
 run_command($ppd);
 run_move($ppd);
+
+
+run_lmdb_depth_melt($ppd);
+
 run_genotype($projects);
-
-#run_coverage($projects);
-run_lmdb_depth($projects);
 run_dude($projects) if $dude;
+end_report($projects,$ppd);
 
-#run_gvcf($projects);
-#run_dragen_cnv_coverage($projects);
-#run_genotype($projects);
-#run_sv($projects);
-#run_target();
-#run_pon($projects);
-#run_coverage($projects);
-#run_lmdb_depth($projects);
 exit(0);
 
   
@@ -162,7 +159,7 @@ sub running_text {
 
 #### dragen_command
 sub patient_pipeline_dragen {
-		my ($projects) = @_;
+my ($projects) = @_;
 my $patients_jobs;
 $patients_name = "all" unless $patients_name;
 my @apatients_name = split(":",$patients_name);
@@ -173,73 +170,108 @@ foreach my $project (@$projects){
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatients}){
+		$status_jobs->{$patient->name."_".$project->name}->{progress} ="waiting" ;
 		my $h;
 		$h->{run} = [];
 		$h->{run_pipeline} = [];
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
-		$h->{align}->{file}   = $patient->getBamFileName("dragen-align") if $version;
-		warn $h->{align}->{file};
-#		$h->{align_dragen}->{file}  = $patient->getCramFileName("dragen-align");
-#		$h->{align}->{file}   = $patient->getCramFileName();
-		$h->{align}->{pipeline}   = $dir_pipeline."/".$patient->name.".cram";
-		$h->{align}->{pipeline}   = $dir_pipeline."/".$patient->name.".bam" if $version =~/HG19/;
-		unless (-e $h->{align}->{file}){
-			push(@{$h->{run}},"align") ;
-			push(@{$h->{run_pipeline}},"align")  unless -e $h->{align}->{pipeline};
-		}
 		
-		$h->{gvcf}->{file} = $patient->gvcfFileName("dragen-calling");
-		$h->{gvcf}->{pipeline} = 	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
-		unless (-e $h->{gvcf}->{file}){
-			push(@{$h->{run}},"gvcf");
-			push(@{$h->{run_pipeline}},"gvcf") unless -e $h->{gvcf}->{pipeline};
-		}
-		my $dir = $patient->project->getTargetCountDir();
-		$h->{cnv}->{file}  = $dir."/".$patient->name.".target.counts.gc-corrected.gz";
-		$h->{cnv}->{pipeline}  = "$dir_pipeline/".$prefix.".target.counts.gc-corrected.gz";
-		 unless  (-e $h->{cnv}->{file}){
-			push(@{$h->{run}},"cnv");
-			push(@{$h->{run_pipeline}},"cnv") unless  -e $h->{cnv}->{pipeline};
-		 }
-		my $dir_prod2 = $project->getVariationsDir("dragen-sv");
+		$h->{name} = $patient->name;
 		
-		#push(@$jobs,{name=>$patient->name.".sv", cmd=>"sleep 3",out=> $dir_prod2."/".$patient->name.".sv.vcf.gz"});
-	 	$h->{sv}->{file}  =  $dir_prod2."/".$patient->name.".sv.vcf.gz";
-	 	$h->{sv}->{pipeline}  =  $dir_pipeline."/".$prefix.".sv.vcf.gz";;
-	 	unless ( -e $h->{sv}->{file}){
-	 		push(@{$h->{run}},"sv");
-	 		push(@{$h->{run_pipeline}},"sv") unless  -e $h->{sv}->{pipeline};
-	 	 }
-	 	$h->{name} = $patient->name;
 	 	$h->{project} = $patient->project->name;
-	 	$h->{dir_pipeline} = $patient->getDragenDir("pipeline");;
+	 	$h->{dir_pipeline} = $patient->getDragenDir("pipeline");
 	 	$h->{command_option} = join(",",@{$h->{run}});
-	 	$h->{command_option_pipeline} = join(",",@{$h->{run_pipeline}});
+		
+		#####  
+		#####  BAM
+		#####  
+		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".bam";
+		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".cram" if $version && $version =~ /HG38/;
+		
+		$h->{prod}->{align} = $patient->getBamFileName(); 
+		$h->{prod}->{align} = $patient->getBamFileName("dragen-align") unless -e $patient->getBamFileName; 
+		#$h->{prod}->{align_HG38} = $patient->getBamFileName("dragen-align"); 
+		$h->{prod}->{file}   = $patient->getBamFileName("dragen-align") if $version;
+		
+		
+		#####  
+		#####  GVCF
+		#####  
+		
+		 $h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
+		 $h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
+		
+		#####  
+		#####  CNV
+		#####  
+	
+		my $dir = $patient->project->getTargetCountDir();
+		$h->{prod}->{cnv}  = $dir."/".$patient->name.".target.counts.gc-corrected.gz";
+		$h->{pipeline}->{cnv}  = "$dir_pipeline/".$prefix.".target.counts.gc-corrected.gz";
+		
+		#####  
+		#####  SV
+		#####  
+		my $dir_prod2 = $project->getVariationsDir("dragen-sv");
+	 	$h->{prod}->{sv}  =  $dir_prod2."/".$patient->name.".sv.vcf.gz";
+	 	$h->{pipeline}->{sv}  =  $dir_pipeline."/".$prefix.".sv.vcf.gz";;
+	 	
+	 	#####  
+		#####  lmdb
+		#####  
+	 	$h->{prod}->{lmdb} = $patient->fileNoSqlDepth;
+	 	
+	 	#####  
+		#####  melt
+		#####  
+		
+		$h->{prod}->{melt} = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";	 	
+
+	 
+
 		push(@{$patients_jobs},$h);
 	}
 	}
 	return $patients_jobs;
 }
 
+my @all_list ;
+
+
+
 sub run_command {
 	my ($patients_jobs) = @_;
+	 @all_list = @$pipeline_dragen_steps;
 	foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
-	next unless scalar @{$hp->{run_pipeline}};
-	$job->{name} = $hp->{name}.join("_",@{$hp->{run_pipeline}}).scalar @{$hp->{run}};
-	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$hp->{command_option_pipeline};
+	my $pname =  $hp->{name}."_".$hp->{project};
+	$hp->{run_pipeline} = [];
+	
+	foreach my $t (@$pipeline_dragen_steps){
+		$lims->{$pname}->{$t} = "SKIP"; 
+		next if -e $hp->{prod}->{$t};
+		next if -e $hp->{pipeline}->{$t};
+		$lims->{$pname}->{$t} = "PLANNED"; 
+		push(@{$hp->{run_pipeline}},$t);
+		
+	}
+	next unless @{$hp->{run_pipeline}};
+	
+	$job->{name} = $hp->{name}.join("_",@{$hp->{run_pipeline}});
+	$job->{step_name} = join(";",@{$hp->{run_pipeline}});
+	$job->{patient} = $hp->{name}."_".$hp->{project};
+	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});;
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -version=$version " if $version;
-	warn $job->{cmd};
+	$job->{jobs_type_list} = join(",",@{$hp->{run_pipeline}});
 	#die();
 	my $first_cmd = $hp->{run_pipeline}->[0];
 	$job->{out} =  $hp->{$first_cmd}->{pipeline};
 	push(@$jobs,$job);
 }
-sleep(5);
 	my $text = "$num_jobs-  DRAGEN ALIGN";
 	steps_system("Dragen :",$jobs);	
 	
@@ -250,19 +282,44 @@ sleep(5);
 ### MOVE 
 sub run_move {
 	my ($patients_jobs) = @_;
+	my @tt;
+	foreach my $a (@$pipeline_dragen_steps){
+		push(@all_list,"move_".$a);
+		push(@tt,"move_".$a);
+	}
 	my $jobs =[];
 foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
-	next unless scalar @{$hp->{run}};
-		my $ppn = 20;
-	$job->{name} = $hp->{name}.".move.".scalar @{$hp->{run}};
-	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$hp->{command_option};
+	my $nname = $job->{patient} = $hp->{name}."_".$hp->{project};
+	next if $status_jobs->{$nname}->{progress} eq "failed";
+	my $ppn = 20;
+	$job->{name} = $hp->{name}.".move";
+	
+	$hp->{move_options} = [];
+	
+	foreach my $t (@$pipeline_dragen_steps){
+		$lims->{$nname}->{"move_".$t} = "SKIP"; 
+		unless (-e $hp->{prod}->{$t}){
+			$lims->{$nname}->{"move_".$t} = "PENDING"; 
+			push(@{$hp->{move_options}},$t);
+			die("$t => ".$hp->{patient}) unless -e $hp->{pipeline}->{$t};
+		}
+		
+	}
+	
+	next if scalar (@{$hp->{move_options}}) == 0;
+	
+	my $option = join(",",@{$hp->{move_options}});
+	
+	next unless $option;
+	$job->{jobs_type_list} = join(",",@tt);
+	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$option;
+	$status_jobs->{patient}=$nname;
 	$job->{cmd} .= " -version=$version " if $version;
 	$job->{cpus} = $ppn;
 	push(@$jobs,$job);
 }
-	
 	my $text = "$num_jobs- MOVE BAM";
 	my $limit = 5;
 	steps_cluster("MOVE BAM  ",$jobs,$limit);
@@ -270,82 +327,61 @@ foreach my $hp (@$patients_jobs) {
 	
 }
 
-#sub run_move {
-#	my ($projects) = @_;
-#	my $jobs =[];
-#
-#foreach my $project (@$projects){
-#	my $ppn = 5;
-#	my $projectName = $project->name;
-#	my $patients = $project->getPatients($patients_name);
-#	foreach my $patient (@$patients){
-#		my $dir_pipeline = $patient->getDragenDir("pipeline");
-#		my $prefix = $patient->name;
-#		my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
-#		next if -e $patient->getBamFileName("dragen-align");
-#		die() unless  -e $bam_pipeline;
-#		my $cmd = "perl $script_perl/dragen_move.pl -project=$projectName -patient=".$patient->name;
-#		my $job;
-#		$job->{name} = $patient->name.".lmdb";
-#		$job->{cmd} =$cmd;
-#		$job->{cpus} = $ppn;
-#		push(@$jobs,$job);
-#	}
-#}
-#	
-#	my $text = "$num_jobs- MOVE BAM";
-#	my $limit = 5;
-#	steps_cluster("MOVE BAM  ",$jobs,$limit);
-#
-#	
-#}
+
 
 
 ### LMDB 
 sub run_lmdb_depth_melt {
-	my ($projects) = @_;
+	my ($patients_jobs) = @_;
 	my $jobs =[];
-
-foreach my $project (@$projects){
+	push(@all_list,"lmdb_depth");
 	
+foreach my $hp (@$patients_jobs) {
 	my $ppn = 20;
-	my $project_name = $project->name;
-	my $patients = $project->getPatients($patients_name);
-	foreach my $patient (@$patients){
-		my $name = $patient->name;
-		my $fileout = $patient->fileNoSqlDepth;
-		next if -e $fileout;
-		my  $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
-		$cmd .= qq{ -version=$version -align=dragen-align } if $version;
 
-		#if ($project->isGenome){
-			$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
-			$cmd .= qq{ -version=$version  } if $version;
-		#}
-		#else {
-		#	 $cmd = qq{perl $script_pipeline/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name :::$ppn};
-		#}
-		my $job;
-		$job->{name} = $patient->name.".lmdb";
+my $project_name = $hp->{project};
+	my $job;
+	my $nname  = $hp->{name}."_".$hp->{project};
+	my $name = $hp->{name};
+	$job->{patient} = $nname;
+	$status_jobs->{$nname}->{progress} = "failed" unless -e $hp->{prod}->{align};
+	next if $status_jobs->{$nname}->{progress} eq "failed";
+	my $fileout = $hp->{prod}->{lmdb};
+	$lims->{$nname}->{lmdb_depth} = "SKIP" if -e $fileout; 
+	next if -e $fileout;
+	my  $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
+	$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
+	$cmd .= qq{ -version=$version  } if $version;
+		$job->{name} =  $name.".lmdb";
+		$job->{patient} = $nname;
+
 		$job->{cmd} =$cmd;
 		$job->{cpus} = $ppn;
+		$job->{jobs_type} ="lmdb_depth";
 		push(@$jobs,$job);
 	}
-	foreach my $patient (@$patients){
-		my $cmd;
-			my $name = $patient->name;
-		my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
-		my $ppn = 5;
-
-		my $cmd1 = "perl $script_pipeline//melt/melt.pl -project=$project_name  -patient=$name -fork=$ppn ";
-		my $job;
-		$job->{name} = $patient->name.".melt";
-		$job->{cmd} =$cmd1;
-		$job->{cpus} = $ppn;
-		push(@$jobs,$job);
-		
-	}
-	}
+push(@all_list,"melt");		
+foreach my $hp (@$patients_jobs) {
+	my $project_name = $hp->{project};
+	my $ppn = 5;
+	my $job;
+	my $nname  = $hp->{name}."_".$hp->{project};
+	my $name = $hp->{name};
+	$job->{patient} = $nname;
+	$status_jobs->{$nname}->{progress} = "failed" unless -e $hp->{prod}->{align};
+	next if $status_jobs->{$nname}->{progress} eq "failed";
+	my $fileout = $hp->{prod}->{melt};
+	$lims->{$nname}->{melt} = "SKIP" if -e $fileout; 
+	next if -e $fileout;
+	my $cmd1 = "perl $script_pipeline//melt/melt.pl -project=$project_name  -patient=$name -fork=$ppn ";
+	$job->{name} = $name.".melt";
+	$job->{cmd} =$cmd1;
+	$job->{cpus} = $ppn;
+	$job->{jobs_type} ="melt";
+	push(@$jobs,$job);
+	
+}	
+	
 	steps_cluster("LMDBDepth+Melt ",$jobs);
 	
 }
@@ -373,142 +409,53 @@ foreach my $project (@$projects){
 	steps_cluster("DUDE ",$jobs);
 }
 
-sub run_coverage {
-	my ($projects) = @_;
-	my $jobs =[];
-
-foreach my $project (@$projects){
-	next if $project->isGenome;
-	$jobs= [];
-	my $ppn = 10;
-	my $project_name = $project->name;
-	my $coverage_dir = $project->getRootDir() . "/align/coverage/";
-	system("mkdir $coverage_dir && chmod a+rwx $coverage_dir") unless -e $coverage_dir;
-	my $patients = $project->getPatients($patients_name);
-	foreach my $patient (@$patients){
-		my $name = $patient->name;
-		
-		my $fileout = $coverage_dir . "/" . $name.".cov.gz";
-		next if -e $fileout;
-		my $bed = $patient->getCaptureFile();
-		my $filein = $patient->getBamFileName();
-		
-		 my $cmd = qq{perl $script_pipeline/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name };
-		my $job;
-		$job->{name} = $patient->name.".coverage";
-		$job->{cmd} =$cmd;
-		$job->{cpus} =$ppn;
-		push(@$jobs,$job);
-	}
-}
-	steps_cluster("Coverage  ",$jobs);
-}
-
 
 
 ########################################################################################################
 #########################---------------------  PIPELINE DRAGEN --------------##########################
 ########################################################################################################
 
-##########################
-### ALIGN 
-##########################
 
-sub run_align {
-my ($projects) = @_;
-my $jobs =[];
-
-foreach my $project (@$projects){
-my $patients = $project->getPatients($patients_name);
-my $projectName = $project->name;
-foreach my $patient (@$patients){
-	my $dir_pipeline = $patient->getDragenDir("pipeline");
-	my $prefix = $patient->name;
-	my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
-	#next if -e $patient->getBamFileName("dragen-align");
-	next if -e $patient->getBamFileName();
-	next if -e $bam_pipeline;
-	my $job;
-	$job->{name} = $patient->name.".aln";
-	$job->{cmd} = "perl $script_perl/dragen_align_calling.pl -project=$projectName -patient=".$patient->name;
-	$job->{cmd} .= " -umi=1" if $umi;
-	$job->{out} =  $dir_pipeline."/".$prefix.".bam";
-	push(@$jobs,$job);
-	}
-}
-	
-	my $text = "$num_jobs-  DRAGEN ALIGN";
-	steps_system("Dragen Align",$jobs);
-	return;
-}
 
 ##########################
 ### GENOTYPE 
 ##########################
+
+
 sub run_genotype {
-my ($projects) = @_;
+my ($projects,$force) = @_;
 	my $jobs =[];
+	push(@all_list,"genotype");
 foreach my $project (@$projects){
 	my $projectName = $project->name;
  my @ps;
  my $patients = $project->getPatients();
+ my @ps1;
  foreach my $p (@$patients) {
+ 	my $nname = $p->name."_".$project_name;
+ 	$lims->{$nname}->{genotype} = "PLANNED" ;
  	my $dir_out= $project->getVariationsDir("dragen-calling");
  	my $f = $dir_out."/".$p->name.".vcf.gz";
+ 	$lims->{$nname}->{genotype} = "SKIP" if -e $f; 
  	next if -e $f;
+ 	next unless -e $p->gvcfFileName("dragen-calling");
  	push(@ps,$p->name);
+ 	push(@ps1,$p->name."_".$project_name);
  }
  if(@ps){
 	my $cmd_genotype = "perl $script_perl/dragen_genotype.pl -project=$projectName -patient=".join(",",@ps);
 	$cmd_genotype .= " -version=$version " if $version;
-	push(@$jobs,{cmd=>$cmd_genotype,name=>$project->name.".genotype"});
+	push(@$jobs,{cmd=>$cmd_genotype,name=>$project->name.".genotype",patient=>join(",",@ps1)});
  }
  
 }
  	steps_system("Dragen Genotype ",$jobs);
 }
-##########################
-#         GVCF
-##########################
-sub run_gvcf {
-my ($projects) = @_;
-my $jobs =[];
+	
 
-foreach my $project (@$projects){
-	my $projectName = $project->name;
-	my $patients = $project->getPatients($patients_name);
-	my $cmd = qq{perl $script_perl/dragen_gvf.pl -project=$projectName};
-	foreach my $patient (@$patients){
-		my $fileout = $patient->gvcfFileName("dragen-calling");;
-		next if -e $fileout;
-			my $cmd = qq{perl $script_perl/dragen_gvcf.pl -project=$projectName -patient=}.$patient->name;
-			push(@$jobs,{name=>$patient->name.".gvcf" ,cmd=>$cmd,fileout=>$fileout});
-	}
-}
-steps_system("GVCF",$jobs);
-}
 
-##########################
-#         CNV et COVERAGE
-##########################
-sub run_dragen_cnv_coverage {
-	my ($projects) = @_;
-	my $jobs =[];
 
-foreach my $project (@$projects){
-	my $projectName = $project->name;
-	my $cmd = qq{perl $script_perl/dragen_cnv_coverage.pl -project=$projectName};
-	my $patients = $project->getPatients($patients_name);
-	foreach my $patient (@$patients){
-		my $dir = $patient->project->getTargetCountDir();
-		my $fileout = $dir."/".$patient->name.".target.counts.gc-corrected.gz";
-		next if -e $fileout;
-		my $cmd = qq{perl $script_perl/dragen_cnv_coverage.pl -project=$projectName -patient=}.$patient->name;
-		push(@$jobs,{name=>$patient->name.".cnv_cov" ,cmd=>$cmd,fileout=>$fileout});
-	}
-}
-steps_system("CNV_COV",$jobs);
-}
+
 ##########################
 #         CNV AND SV
 ##########################
@@ -532,25 +479,7 @@ foreach my $project (@$projects){
 steps_system("PON",$jobs);
 }
 
-sub run_sv {
-	my ($projects) = @_;
-	my $jobs =[];
-foreach my $project (@$projects){
-	
-	my $projectName = $project->name;
-	my $dir_prod2 = $project->getVariationsDir("dragen-sv");
-	my $patients = $project->getPatients($patients_name);
-	foreach my $patient (@$patients){
-		
-		#push(@$jobs,{name=>$patient->name.".sv", cmd=>"sleep 3",out=> $dir_prod2."/".$patient->name.".sv.vcf.gz"});
-	 	next if -e $dir_prod2."/".$patient->name.".sv.vcf.gz";
-		my $cmd = qq{perl $script_perl/dragen_sv.pl -project=$projectName -patient=}.$patient->name;
-		warn $cmd;
-		push(@$jobs,{name=>$patient->name.".sv", cmd=>$cmd,out=> $dir_prod2."/".$patient->name.".sv.vcf.gz"});
-	}
-}
-	steps_system("SV",$jobs);
-}
+
 
 sub run_target {
 	my ($projects) = @_;
@@ -594,6 +523,12 @@ sub run_system {
 	my ($jobs,$row) = @_; 
 	$row ++;
 	return 0 unless @$jobs;
+	if ($dry){
+		foreach my $hcmd (@$jobs){
+			warn $hcmd->{cmd};
+		}
+		die();
+	}
 	my $nb_jobs =  scalar(@$jobs);
 	my $status = new Term::StatusBar (
                     label => 'jobs Done : ',
@@ -635,13 +570,21 @@ foreach my $hcmd (@$jobs){
 	$hcmd->{time} = time - $t1;
 	
 	print  $FH "\033[".$line2.";0H",colored(['bright_blue on_black'],"last job: ".$hcmd->{name}." : ".$hcmd->{elapse});
+	my @tjs = split(",",$hcmd->{jobs_type_list});
+	my @pnames = split(",",$hcmd->{patient}); 
 	
 	if ($myproc->exit_status() == 0){
 		$ok ++;
+		foreach my $pname (@pnames){
+		map{$lims->{$pname}->{$_} = "OK"} @tjs; 
+		}
 		$hcmd->{ok} ++;
 	}
 	else {
 		$failed ++;
+		foreach my $pname (@pnames){
+			map{$lims->{$pname}->{$_} = "FAILED"} @tjs; 
+		}
 		$hcmd->{failed} ++;
 	}
 		 $status->update();
@@ -668,21 +611,36 @@ sub text_system {
 	my $ttt = Time::Seconds->new($mean);
 	my $tt = Time::Seconds->new($sum);
 	my @text;
+	my $et ="";
 	
 	if (@error) {
+		$et ="-";
+		
 		foreach my $job (@$jobs){
-			print colored(['bright_red on_black'],$job->{name}." ".$job->{elapse})."\n";
-			print colored(['bright_magenta on_black'],$job->{cmd})."\n";
-			print "log : ".$dir_log."/".$job->{name}.".err";
+			$status_jobs->{$job->{patient}}->{progress} = "failed";
+			$status_jobs->{$job->{patient}}->{failed} = 1;
+			push(@{$status_jobs->{$job->{patient}}->{cmd}},$job->{cmd});
 		}
-	die();
+		foreach my $k (keys %{$status_jobs}) {
+			next unless $status_jobs->{$k}->{progress} eq "failed";
+			$et.= $k.";";
+		}
+		my $new =  colored(['bright_white'],"$title "). colored(['bright_magenta on_black'],"Error: "). colored(['bright_red'],$et)."\n";
+		push(@$sentences,$new);
+		print join("\n",@$sentences)."\n";
+		return;
+		#exit(1);	
+	#die();
 	}
-	my $new = colored(['bright_cyan on_black'],"$title NONE ")."\n";
-	if (@$jobs){
-		$new =  colored(['bright_white'],"$title "). colored(['bright_green on_black'],"OK"). colored(['bright_white']," : ".$tt->pretty." (".$ttt->pretty).")\n";
-	}
+	
+	
+	my $new = colored(['bright_cyan on_black'],"$title NONE ");
+	
+		
+	$new =  colored(['bright_white'],"$title "). colored(['bright_green on_black'],"OK"). colored(['bright_white']," : ".$tt->pretty." (".$ttt->pretty).")" if (@$jobs);
+	
 	push(@$sentences,$new);
-	print join("",@$sentences)."\n";
+	print join("\n",@$sentences)."\n";
 }
 
 
@@ -772,6 +730,9 @@ while (keys %$runnings_jobs ) {
 			$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
 			$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
 			$cluster_jobs->{$jobid}->{failed} ++;
+			my $pname = $cluster_jobs->{$jobid}->{patient};
+			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
+			$lims->{$pname}->{$tj} = "FAILED"; 
 			#system("mv slurm-".$jobid."out"." slurm-".$jobid."failed")
 		}
 		if (lc($stat) eq "completed"){
@@ -781,6 +742,9 @@ while (keys %$runnings_jobs ) {
 			my $ttt = Time::Seconds->new( time - $cluster_jobs->{$jobid}->{t1} );
 			$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
 			$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
+			my $pname = $cluster_jobs->{$jobid}->{patient};
+			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
+			$lims->{$pname}->{$tj} = "OK"; 
 			delete $cluster_jobs->{$jobid}->{failed};
 			$cluster_jobs->{$jobid}->{ok} ++;
 			delete $runnings_jobs->{$jobid};
@@ -804,6 +768,7 @@ while (keys %$runnings_jobs ) {
 			$cluster_jobs->{$jobid}->{failed} ++;
 			delete $runnings_jobs->{$jobid};
 			$cancel->{$jobid} ++;
+			
 #			unlink "slurm-".$jobid."out";
 			$status->update()  ;
 		}
@@ -866,15 +831,48 @@ sub run_cmd {
 	#run3 ["sbatch  "],\$file,\$out ;
 	$cmd->{jobid} = $jobid;
 	$cluster_jobs->{$jobid}->{log} = $dir_log."/".$cmd->{name}."-slurm";
-	$cluster_jobs->{$jobid} =  $cmd;
+	$cluster_jobs->{$jobid}->{cmd} =  $cmd;
+	$cluster_jobs->{$jobid}->{jobs_type} = $cmd->{jobs_type};
 	#$cluster_jobs->{$jobid}->{cmd} = $cmd->{cmd};
 	#$cluster_jobs->{$jobid}->{name} = $cmd->{name};
 	#$cmd->{id} = $jobid;
 	$cluster_jobs->{$jobid}->{status} = "submitted";
+	$cluster_jobs->{$jobid}->{patient} = $cmd->{patient};
 	$runnings_jobs->{$jobid} ++;
 	
 }
 
+sub end_report {
+	my ($projects,$patients_jobs) = @_;
+	
+	
+	foreach my $project (@$projects){
+		my @rows = ();
+		my $tb = Text::Table->new( (colored::stabilo("blue", $project->name , 1),  @all_list) ) ; # if ($type == 1);
+		foreach my $hp ( grep{$_->{project} eq $project->name} @$patients_jobs) {
+		
+			my @row;
+			my $pname = $hp->{name}."_".$hp->{project};
+			push(@row,colored::stabilo("blue",$hp->{name},1));
+			foreach my $c (@all_list){
+				$lims->{$pname}->{$c} = "-" unless exists $lims->{$pname}->{$c};
+				my $color = "white";
+				$color = "green" if $lims->{$pname}->{$c} eq "OK";
+				$color = "red" if lc($lims->{$pname}->{$c}) eq "failed";
+				$color = "magenta" if lc($lims->{$pname}->{$c}) eq "-";
+				push(@row,colored::print_color("$color",$lims->{$pname}->{$c},1));
+			#print " $c : ".$lims->{$pname}->{$c}."\t";
+			}
+			push(@rows,\@row);
+		}
+		
+		$tb->load(@rows);
+		print $tb;
+		print "\n ------------------------------\n";
+		#print "\n";
+	}
+		
+}
 
 
 
