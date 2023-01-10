@@ -145,7 +145,8 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $patient_ori = $project_ori->getPatient($patients_name);
 	 $patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true --output-format CRAM";
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+	$param_align .= "--output-format CRAM " if $version =~/HG38/;
 	if ($umi){
 		confess();
 	}
@@ -165,7 +166,11 @@ elsif (exists $pipeline->{align}){
 	 }
 }
 else {
-	my $bam = $patient->getBamFile();
+	my $bam = $patient->getBamFileName();
+	unless (-e $bam){
+		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".bam";
+		confess() unless -e $bam;
+	}
 	$param_align = qq{ --bam-input $bam --enable-map-align false };
 }
 my $param_gvcf = "";
