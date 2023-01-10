@@ -660,7 +660,8 @@ foreach my $tr (sort {$a->{gene_name} cmp $b->{gene_name}} values %$all_htranscr
 			
 			$id++;
 			push(@tab_ids,"cov_$id");
-			my ($r,$g,$b) = @{$exon->{color}};
+			my ($r,$g,$b);
+			($r,$g,$b) = @{$exon->{color}} if (exists $exon->{color} and $exon->{color});
 			print $cgi->td({class=>"red",style=>"background-color:rgb($r,$g,$b);font-size:09px;",id=>"cov_$id"},$text);
 #			if ($exon->{type} == 1){
 #				print $cgi->td({class=>"red",style=>"background-color:rgb(50,50,200);font-size:8px;",id=>"cov_$id"},$text);
