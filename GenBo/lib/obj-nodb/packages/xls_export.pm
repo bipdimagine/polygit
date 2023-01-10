@@ -1042,6 +1042,10 @@ sub prepare_generic_datas_variants {
 			my $h_var = $self->hash_variants_global->{$chr_id}->{$var_id};
 			my $h;
 			$h->{'variation'}    = $h_var->{'var_id'};
+			if ($h->{'variation'} =~ /M/) {
+				my @lCol = split('_', $h->{'variation'});
+				$h->{'variation'} = $lCol[1].$lCol[3];
+			}
 			$h->{'type'}         = $h_var->{'type'};
 			$h->{'dejavu'}       = $h_var->{'dejavu'};
 			$h->{'chr'}          = $h_var->{'chr'};

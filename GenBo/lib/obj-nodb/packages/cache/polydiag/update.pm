@@ -1097,13 +1097,17 @@ sub construct_variant {
 		#deletion 
 		$hvariation->{db_type} = "insertions";
 	}
+	elsif ($hvariation->{allele} eq "ALU"){
+		#deletion 
+		$hvariation->{db_type} = "insertions";
+	}
 	elsif ($lalt eq $lref && $lref eq 1)
 	{
 		$hvariation->{db_type} = "snps";
 	}
 	else {
 		warn $hvariation->{ref_allele}." lalt ".$lalt." lref ".$lref;
-warn $hvariation->{allele};
+		warn $hvariation->{allele};
 
 	confess($hvariation->{id});
 	}

@@ -81,7 +81,9 @@ my $melt = $buffer->software("melt");
 my $java = $buffer->software("java");
 my $melt = "$java -jar $melt Single -a -c 8 ";
 my $dir_melt = $buffer->config->{'public_data'}->{root} . '/repository/'.$project->annotation_genome_version  . '/mei/';
+
 my $bedg = $dir_melt."/bed/hg19.genes.bed";
+
 my @files = `ls $dir_melt/me_refs/*.zip`;
 my $bcftools = $buffer->software("bcftools");
 my $bgzip =$buffer->software("bgzip"); 
@@ -101,7 +103,9 @@ close LIST;
 	
 	#system("sambamba slice $bam ".$chr->fasta_name." >$bout && samtools index $bout");
 	warn "$melt -h $ref -bamfile $bam -n $bed  -w $dir_out -t $list  -exome 1";
+
 	system("$melt -h $ref -bamfile $bam -n $bedg  -w $dir_out -t $list  -exome 1");
+
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
 	
 	foreach my $f (keys %$files){

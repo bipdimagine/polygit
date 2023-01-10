@@ -84,10 +84,97 @@ foreach my $project_name (split(",",$project_names)){
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 }
+
+
 my $reads;
+
+###############
+#SAMPLE SHEET 
+###############
+
+my $lines;
+my $titles;
+my $current_title;
+
+
+foreach my $line(@$aoa){
+		if ($line->[0] =~ /^\[/) {
+			$current_title = $line->[0];
+			push(@$titles,$current_title);
+		}
+		else {
+			next unless $current_title;
+			push(@{$lines->{$current_title}},$line);
+		}
+	
+	
+}
+my $cb1_len;
+my $cb2_len;
+
+my $lheader_data = shift @{$lines->{"[Data]"}};
+if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
+	my $tb = Text::Table->new(
+	{is_sep => 1},
+	@$lheader_data,
+    );
+    $tb->load($lines->{"[Data]"}->[0]);
+    print $tb;
+	print "\n";
+	die(scalar (@$lheader_data)."vs" .scalar (@{$lines->{"[Data]"}->[0]}));
+}
+
+my $error_not_in_project = {};
+my $ok;
+my $pos_sample = firstidx{ $_ eq "Sample_ID" } @$lheader_data;
+die("no sample id in header ") if $pos_sample eq -1;
+my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
+
+my $pos_cb1 = firstidx{ $_ eq "index" } @$lheader_data;
+my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
+my $len_cb;
+ $len_cb->[0] = length($lines->{"[Data]"}->[0]->[$pos_cb1]);
+ $len_cb->[1] = length($lines->{"[Data]"}->[0]->[$pos_cb2]); ;
+
+foreach my $data (@{$lines->{"[Data]"}}){
+	next unless  $data->[$pos_cb1];
+	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if  $len_cb->[0] ne length($data->[$pos_cb1]);
+	die() if  $len_cb->[1] ne length($data->[$pos_cb2]);
+	
+}
+
+
+
+
+
+my $guess_mask;
 #if ($mask){
 	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read']);
 	$reads = $config->{Run}->{Reads}->{Read};
+	my $i_index =0;
+	foreach  my $read (@$reads){
+		if ($read->{IsIndexedRead} eq 'N'){
+			push(@$guess_mask,"Y".$read->{NumCycles});
+		}
+		elsif ($read->{IsIndexedRead} eq 'Y'){
+			my $l = $read->{NumCycles};
+			if ($l == $len_cb->[$i_index]) {
+				push(@$guess_mask,"I".$read->{NumCycles});
+			}
+			elsif ($l> $len_cb->[$i_index]){
+				push(@$guess_mask,"I". $len_cb->[$i_index]."N".($l-$len_cb->[$i_index]));
+			}
+			else {
+				die();
+			}
+			$i_index ++;
+		}
+		else {die;}
+	}
+	#warn Dumper $reads;
+	
+	#my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
+	
 	#my $y = "Y".$read->[0]->{NumCycles};
 	 #$mask = $y.";".$mask.";".$y; 
 	
@@ -129,6 +216,8 @@ else {
 }
 
 
+$mask = join(";",@$guess_mask) unless $mask;
+
 
 my $choice = prompt("use - ".colored(['bright_red on_black'],"$mask")." - for demultipexing  (y/n) ? ");
 if ($choice ne "y") {
@@ -140,24 +229,6 @@ if ($choice ne "y") {
 #die() unless -e $dir_in;
 
 
-
-my $lines;
-my $titles;
-my $current_title;
-
-
-foreach my $line(@$aoa){
-		if ($line->[0] =~ /^\[/) {
-			$current_title = $line->[0];
-			push(@$titles,$current_title);
-		}
-		else {
-			next unless $current_title;
-			push(@{$lines->{$current_title}},$line);
-		}
-	
-	
-}
 #change setting
 foreach my $set (@{$lines->{"[Settings]"}}){
 	if ($set->[0] eq "Adapter") {
@@ -171,34 +242,14 @@ foreach my $set (@{$lines->{"[Settings]"}}){
 my @amask = split(";",$mask);
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
 
-$lines->{"[Settings]"} = [];
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) if scalar(@index) == 2;
-push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
-my $lheader_data = shift @{$lines->{"[Data]"}};
-if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
-	my $tb = Text::Table->new(
-	{is_sep => 1},
-	@$lheader_data,
-    );
-    $tb->load($lines->{"[Data]"}->[0]);
-    print $tb;
-	print "\n";
-	die(scalar (@$lheader_data)."vs" .scalar (@{$lines->{"[Data]"}->[0]}));
-}
 
-my $error_not_in_project = {};
-my $ok;
-my $pos_sample = firstidx{ $_ eq "Sample_ID" } @$lheader_data;
-die("no sample id in header ") if $pos_sample eq -1;
-my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
-
-my $pos_cb1 = firstidx{ $_ eq "index" } @$lheader_data;
-my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
 
 ### read mask ;
 #my @amask = split(";",$mask);
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
+
+
+
 if(scalar(@index) == 1){
 	splice(@$lheader_data, $pos_cb2, 1);
 	foreach my $data (@{$lines->{"[Data]"}}){
@@ -209,6 +260,13 @@ if(scalar(@index) == 1){
 	}
 	}
 }
+
+
+
+$lines->{"[Settings]"} = [];
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) if scalar(@index) == 2;
+push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask; 
 
 my $dj;
 foreach my $data (@{$lines->{"[Data]"}}){
@@ -289,11 +347,12 @@ foreach my $project_name (split(",",$project_names)){
 
 		my $pid = $pm->start and next;
 		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
-	#	warn $fastq1;
-	#	die();
-	#	create_3_fastq($fastq1,$fastq2,$p);
-	#	warn "end ".$p->name;
-	system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
+		#	warn $fastq1;
+		#	die();
+		#	create_3_fastq($fastq1,$fastq2,$p);
+		#	warn "end ".$p->name;
+
+		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 
 		$pm->finish( 0, {});
 	}
@@ -306,7 +365,8 @@ $pr =~ s/,/_/g;
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name.".".$pr;
 
 
-system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ && chmod -R a+rwx $dir_stats; && rm $dir_out/Reports/* && rmdir $dir_out/Reports/ ;   ");
+system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;");
+
 
 
 exit(0);

@@ -71,6 +71,7 @@ has categories => (
 					deletion       => 1,
 					large_deletion => 1,
 					large_duplication => 1,
+					junction => 1,
 				},
 			},
 			genes => {
