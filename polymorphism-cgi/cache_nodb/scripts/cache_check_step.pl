@@ -149,6 +149,7 @@ foreach my $chr_name (@lChrNames) {
 		my $chr = $project_cache->getChromosome($chr_name);
 		
 		my $var = $chr->getNewVector();
+		
 #		warn $var;
 		if (exists $chr->global_categories->{substitution}) {
 			$var += $chr->global_categories->{substitution};
@@ -193,7 +194,7 @@ foreach my $chr_name (@lChrNames) {
 		}
 		else {
 			warn "  -> Nb deletion(s) in FREEZE $estim_del_freeze and in CACHE $estim_del_obj: ERROR\n" unless ($no_verbose);
-			confess("\n\nERROR: missing deletions...\nERROR: $step_name in error...\nERROR: confess\n\n");
+			#confess("\n\nERROR: missing deletions...\nERROR: $step_name in error...\nERROR: confess\n\n");
 		}
 		
 		# Check si genes OK seulement sil y a des variants...
