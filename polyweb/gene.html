@@ -1,0 +1,2972 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<title>Gene List</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<!-- chargement des feuilles de styles necessaires  l'affichage -->
+	<style type="text/css">
+        	@import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/resources/dojo.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/claroGrid.css";
+			
+			@import "css/polycss/header-footer.css";
+			@import "css/polycss/general.css";
+			@import "css/polycss/button.css";
+			@import "css/polycss/filter.css";
+			@import "css/polycss/login.css";
+			@import "viewer/viewer.css";
+
+body, html {
+	margin:0; padding:0; width:100%; background:#fff;
+	
+	font-family: Helvetica,Verdana,Arial,sans-serif;
+	font-size : 11px;
+	color:#000;
+margin:0; padding:0; width:100%; background:#fff;
+}
+
+.claro .dijitArrowButtonInner {
+    width: 15px;
+    height: 15px;
+    margin: 0 auto;
+    background-image: url(/icons/Polyicons//buttonArrows.png);
+    background-repeat: no-repeat;
+    background-position: -51px 53%;
+    vertical-align:middle;
+}
+
+
+.claro #toolbar.dijitToolbar {
+				height: 50px;
+				background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+				background-repeat: repeat-x;
+              
+                }
+
+
+	</style>
+	
+	<!-- chargement de scrits necessaires -->
+
+
+<script>
+    dojoConfig = {
+    	isDebug: true,
+         parseOnLoad: true,
+       
+    };
+</script>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js"   type="text/javascript" >
+
+</script>
+
+
+
+	   <script type="text/javascript" src="js/polyjs/include.js"> </script>
+	 <script type="text/javascript" src="js/polyjs//Utility/vp.js" ></script>
+	 <script type="text/javascript" src="js/polyjs/Utility/viewVar.js" ></script>
+	<script type="text/javascript" src="js/polyjs/Utility/utilGrid2.js"  ></script>
+	<script type="text/javascript" src="js/polyjs/Utility/TableFilter2.js"  ></script>
+	
+	<script type="text/javascript" src="js/polyjs/changeStatus.js"></script>
+
+	<script type="text/javascript" src="viewer/viewer.js"  >	</script>
+	<script type="text/javascript" src="js/polyjs/Utility/my_formatter.js"  ></script>
+    <script type="text/javascript" src="js/polyjs/layoutVar.js"  ></script>
+
+	<script type="text/javascript" src="viewer/patient.js"  ></script>
+   
+    <script type="text/javascript" src="viewer/viewer.js"  >	</script>
+   
+    <script type="text/javascript" src="js/polyjs/Utility/viewVar.js"  ></script>
+	 <script type="text/javascript" src="js/polyjs/Utility/waiting.js"  ></script>
+	 <script type="text/javascript" src="js/polyjs/igv_methods.js"  ></script>
+	 <script type="text/javascript" src="js/polyjs/alamut_methods.js"  ></script>
+	 
+	 <script type="text/javascript" src="viewer/variation.js"  ></script>
+		<script type="text/javascript" src="viewer/cnv.js"  >
+		</script>
+	  <script type="text/javascript" src="viewer/indicator.js"  >
+	  </script>
+	   <script type="text/javascript" src="viewer/transcript.js"  >	
+	   	</script>
+	   	    <!-- <script type="text/javascript" src="http://www.dojotoolkit-fr.org/wp-content/uploads/dojo-adapter.js"></script> -->
+            <script type="text/javascript" src="https://raw.github.com/highslide-software/highcharts.com/master/js/highcharts.src.js"></script>
+         
+	<script type="text/javascript">
+		dojo.require("dojox.widget.DialogSimple");
+		dojo.require("dojo.fx.easing");
+     	dojo.require("dijit.Dialog");
+		dojo.require("dojox.grid.DataGrid");
+		dojo.require("dojo.data.ItemFileReadStore");
+		dojo.require("dojo.data.ItemFileWriteStore");
+		dojo.require("dojo.parser");	
+		dojo.require("dijit.layout.BorderContainer");
+		dojo.require("dijit.layout.SplitContainer");
+        dojo.require("dijit.form.Button");
+ 	    dojo.require("dijit.layout.TabContainer");
+		dojo.require("dijit.form.FilteringSelect");
+		dojo.require("dijit.form.ComboBox");
+        dojo.require("dijit.Dialog");
+        dojo.require("dojox.gfx");
+        dojo.require("dojo.colors");
+		dojo.require("dojo.data.ItemFileReadStore");
+		dojo.require("dijit.form.NumberTextBox");
+		dojo.require("dijit.form.SimpleTextarea");
+   		dojo.require("dijit.form.Select");
+ 	 	dojo.require("dijit.layout.AccordionContainer");
+		dojo.require("dijit.form.Form");
+
+	 	dojo.require("dijit.Toolbar");
+		dojo.require("dijit.form.MultiSelect");
+		dojo.require("dijit.form.CheckBox");
+		dojo.require("dijit.form.NumberSpinner");
+	  	dojo.require("dijit.Tree");
+		dojo.require("dijit.Menu");
+		dojo.require("dojox.widget.PlaceholderMenuItem");
+		 dojo.require("dijit.form.Slider");
+		dojo.require("dijit.TitlePane");
+		dojo.require("dojo.store.JsonRest");
+			dojo.require("dojo.store.Cache");
+		
+		require(["dojo/parser", "dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem",
+    "dijit/DropDownMenu", "dijit/MenuItem"]);
+				//recupration des valeurs contenues dans les input cachs (cf title.html)
+		var projectName = param("project");
+		document.title = "Gene List [" + projectName + "]";
+		var project_type = param("type");
+		
+		var projectId;//parent.haut.document.getElementById('project_id').value;
+		var user_name;// = dojo.cookie("username");
+		//definition des diffrentes url pour rcuprer les donnes grace aux cgi
+		//var geneurl = url_cache+"?type=genes&project="+projectName;
+		var gene_url = url_cache_gene+"?project="+projectName+"&type=genes";//&filter_public=new&filter_consequence=coding";
+		var patient_url = url_cache_gene+"?project="+projectName+"&type=genes&stat=patient";
+		var diseases_tree_url = url_cache_gene+"?project="+projectName+"&type=genes&stat=diseases";
+		var button_url = url_cache_gene+"?project="+projectName+"&type=genes&stat=button";
+		var region_url = url_cache_gene+"?project="+projectName+"&type=genes&stat=region";
+		var cache_all_url =  url_cache_gene+"?project="+projectName+"&stat=all";
+		var chr_url =  url_cache_gene+"?project="+projectName+"&type=genes&stat=gene";
+		var staturl = url_cache_gene+"?project="+projectName+"&stat=gene";//&filter_public=new&filter_consequence=coding";
+		var staturlpatient = url_cache_gene+"?project="+projectName+"&type=genes&stat=patient";
+		var is_cache_url = is_cache+"?project="+projectName+"&type=all";
+		var geneexporturl = url_query+"?type=gene&projectName="+projectName+"&xls=1";
+		url_view_filter += "?project="+projectName;
+		url_region += "?project="+projectName;
+		var selectGene="toto";
+		var reference="titi";
+		var show_graph = 0;
+		url_get_filter += "?project="+projectName+"&user=";//+user_name;
+		
+		
+		var famind = 'Ind';
+		var patients_status = new Array();
+		var families_status = new Array();
+		//fonction pour connaitre le numro de la ligne
+		
+		
+		//layout pour le tableau des genes
+
+	
+		
+		//fonction  executer au chargement de la page
+	
+		var layoutChromosome = [
+				{ name: "Chr",field: "name",  width: "3em", styles: 'text-align:center;'},
+				{ name: "Genes ",field: "genes", width: "3em" , styles: 'text-align:center;'},
+				{ name: "Sub",field: "substitutions", width: "3.5em" , styles: 'text-align:center;'},
+				{ name: "Del",field: "deletions", width: "3.5em" , styles: 'text-align:center;'},
+				{ name: "Ins",field: "insertions", width: "4em" , styles: 'text-align:center;'},
+				{ name: "he",field: "heterozygote", width: "4em" , styles: 'text-align:center;'},
+				{ name: "ho",field: "homozygote", width: "4em" , styles: 'text-align:center;'},
+			//	{ name: "Coding",field: "coding", width: 5 , styles: 'text-align:center;'},
+				
+				];
+				
+	 var layoutRegion = [
+        { name: "Row", get: getRow, width: "3em",styles: 'font-size : 8px;text-align:center;'},  
+        { field: 'chromosome', name: 'chr', width: 2,styles: 'font-size : 8px;text-align:center;'
+
+          } , 
+        { name: "start",editable: true,field: "start", width: "4em", styles: 'font-size : 8px;text-align:center;'},  
+        { name: "end",editable: true,field: "end",width: "4em", styles: 'font-size : 8px;text-align:center;'},  
+		 {field: 'genes', name: "genes", width: "3em", styles: 'font-size : 8px;text-align:center;'},
+		 {field: 'substitution', name: "subs", width: "3em", styles: 'font-size : 8px;text-align:center;'},
+		  {field: 'insertion', name: "ins", width: "3em",styles: 'font-size : 8px;text-align:center;'},
+		   {field: 'deletion', name: "del", width: "3em", styles: 'font-size : 8px;text-align:center;'},
+		{ field: 'include', name: 'Sl.',formatter:formatInclude, width: "3em", styles: 'font-size : 8px;text-align:center;'},	
+		
+    ];	
+    
+	
+	var layoutViewFilter = [
+	 { field: 'name', name: 'name',width: "8em", styles: 'text-align:center;'}, 
+	 { field: 'value', name: 'value',width: "20em", styles: 'text-align:center;'}, 
+	];
+/*	data_list = {
+		identifier: 'id',
+		label: 'id',
+		items:  [ 
+			//{id:1 ,name: "XX",chromosome: "XX", start: -1, end: -1, include: 2}
+		]
+		};
+
+	*/
+	var store_region;// =	new dojo.data.ItemFileWriteStore({data: data_list});
+	
+	var layoutFamilies = [
+			
+				{ name: "Fam",field: "name",  width: "6em", styles: 'text-align:center;'},		
+				{ name: "Pat",field: "nb", width:  "2em", styles: 'text-align:center;'},
+				{ name: "Sub",field: "substitution", width:  "3em", styles: 'text-align:center;'},
+				{ name: "Del",field: "deletion", width:  "3em", styles: 'text-align:center;'},
+				{ name: "Ins",field: "insertion", width:  "3em", styles: 'text-align:center;'},
+				{ name: "Gene",field: "genes", width:  "3em", styles: 'text-align:center;'},
+				
+					{ field: 'include', name: 'Sl.',formatter:formatInclude, width:  "2em", styles: 'text-align: center;'},	
+				{ name: "Model",field: "model", width:  "4em", styles: 'text-align:center;'},
+			
+		
+			
+				
+						 			
+		];
+	var layoutPatient = [
+				{ name: "N", get: getRow, width:"3em", styles: 'text-align:center;'},		
+				{ name: "Patients",field: "name",  width:"3em", styles: 'text-align:center;'},		
+				{ name: "Sub",field: "substitutions", width: "3em", styles: 'text-align:center;'},
+				{ name: "Del",field: "deletions", width: "3em", styles: 'text-align:center;'},
+				{ name: "Ins",field: "insertions", width: "3em", styles: 'text-align:center;'},
+				{ name: "ho",field: "homozygote", width: "3em", styles: 'text-align:center;'},
+				{ name: "he",field: "heterozygote", width: "3em", styles: 'text-align:center;'},		
+				{ name: "Genes",field: "genes", width: "3em", styles: 'text-align:center;'},	
+				{ name: "Comp",field: "composite", width: "3em", styles: 'text-align:center;'},
+				{ name: "Cov",field: "coverage", width: "3em", styles: 'text-align:center;'},
+				{ name: "15x",field: "15x", width: "3em", styles: 'text-align:center;'},
+				{ name: "30x",field: "30x", width: "2em", styles: 'text-align:center;'},
+				{ field: "filter_heho",name: 'he',formatter:formathe, width: "3em", styles: 'text-align: center;'},
+				{ field: "filter_heho",name: 'ho',formatter:formatho, width: "3em", styles: 'text-align: center;'},
+				{ field: 'include', name: 'Sl.',formatter:formatInclude, width: "3em", styles: 'text-align: center;'},	
+		
+			
+				
+						 			
+		];
+		var layoutPatient_fam_somatic = [
+				{ name: "N", get: getRow, width:2, styles: 'text-align:center;'},	
+				{ field: "fam",name: 'fam', width: 3, styles: 'text-align: center;'},	
+				{ field: "group",name: 'group', width: 2, styles: 'text-align: center;'},	
+				{ name: "Patients",field: "name",  width: 4, styles: 'text-align:center;'},
+				{ field: "child",name: 'Ped', width: 2, formatter:formatChild,styles: 'text-align: center;'},
+				
+				{ field: "status",name: 'st', width: 2,formatter:formatDisease, styles: 'text-align: center;'},			
+				{ field: "tissue",name: 'tis', width: 1, styles: 'text-align: center;'},	
+				{ name: "Sub",field: "substitutions", width: 3, styles: 'text-align:center;'},
+				{ name: "Del",field: "deletions", width: 3, styles: 'text-align:center;'},
+				{ name: "Ins",field: "insertions", width: 3, styles: 'text-align:center;'},
+				{ name: "ho",field: "homozygote", width: 3, styles: 'text-align:center;'},
+				{ name: "he",field: "heterozygote", width: 3, styles: 'text-align:center;'},		
+				{ name: "Genes",field: "genes", width: 5, styles: 'text-align:center;'},	
+				{ name: "Comp",field: "composite", width: 3, styles: 'text-align:center;'},
+				{ name: "Cov",field: "coverage", width: 3, styles: 'text-align:center;'},
+				{ name: "15x",field: "15x", width: 3, styles: 'text-align:center;'},
+				    { name: "30x",field: "30x", width: "2em", styles: 'text-align:center;'},
+				{ field: "filter_heho",name: 'he',formatter:formathe, width: 2, styles: 'text-align: center;'},
+				{ field: "filter_heho",name: 'ho',formatter:formatho, width: 2, styles: 'text-align: center;'},
+				{ field: 'include', name: 'Sl.',formatter:formatInclude, width: 2, styles: 'text-align: center;'},	
+				
+		];
+		var layoutPatient_fam = [
+				{ name: "N", get: getRow, width:"1em", styles: 'text-align:center;'},	
+				//{ field: 'include', name: 'Sl.f',formatter:formatIncludeF, width: 2, styles: 'text-align: center;'},
+				{ field: "fam",name: 'fam', width: "4em", styles: 'text-align: center;'},	
+				{ name: "Patients",field: "name",  width: "5em", styles: 'text-align:center;'},
+				{ field: "child",name: 'Ped', width: "2em", formatter:formatChild,styles: 'text-align: center;'},
+				
+				{ field: "status",name: 'st', width: "2em",formatter:formatDisease, styles: 'text-align: center;'},			
+				{ name: "Sub",field: "substitutions", width: "3em", styles: 'text-align:center;'},
+				{ name: "Del",field: "deletions", width: "3em", styles: 'text-align:center;'},
+				{ name: "Ins",field: "insertions", width: "3em", styles: 'text-align:center;'},
+				{ name: "ho",field: "homozygote", width: "3em", styles: 'text-align:center;'},
+				{ name: "he",field: "heterozygote", width: "3em", styles: 'text-align:center;'},		
+				{ name: "Genes",field: "genes", width: "3em", styles: 'text-align:center;'},	
+				//{ name: "Comp",field: "composite", width: "3em", styles: 'text-align:center;'},
+				{ name: "Cov",field: "coverage", width: "2em", styles: 'text-align:center;'},
+				{ name: "15x",field: "15x", width: "2em", styles: 'text-align:center;'},
+				{ name: "30x",field: "30x", width: "2em", styles: 'text-align:center;'},
+				{ field: "filter_heho",name: 'he',formatter:formathe, width: "2em", styles: 'text-align: center;'},
+				{ field: "filter_heho",name: 'ho',formatter:formatho, width: "2em", styles: 'text-align: center;'},
+				{ field: 'include', name: 'Sl',formatter:formatInclude, width: "2em", styles: 'text-align: center;'},	
+					
+				
+		];
+		
+		
+		
+			var layoutPatient_somatic = [
+				{ name: "N", get: getRow, width:2, styles: 'text-align:center;'},	
+				{ field: "group",name: 'group', width: 3, styles: 'text-align: center;'},	
+				{ name: "Patients",field: "name",  width: 4, styles: 'text-align:center;'},
+				{ field: "tissue",name: 'tissue', width: 2, styles: 'text-align: center;'},			
+				{ name: "Sub",field: "substitutions", width: 3, styles: 'text-align:center;'},
+				{ name: "Del",field: "deletions", width: 3, styles: 'text-align:center;'},
+				{ name: "Ins",field: "insertions", width: 3, styles: 'text-align:center;'},
+				{ name: "ho",field: "homozygote", width: 3, styles: 'text-align:center;'},
+				{ name: "he",field: "heterozygote", width: 3, styles: 'text-align:center;'},		
+				{ name: "Genes",field: "genes", width: 5, styles: 'text-align:center;'},	
+				{ name: "Comp",field: "composite", width: 3, styles: 'text-align:center;'},
+				{ name: "Cov",field: "coverage", width: 3, styles: 'text-align:center;'},
+				{ name: "15x",field: "15x", width: 3, styles: 'text-align:center;'},
+				{ name: "30x",field: "30x", width: "2em", styles: 'text-align:center;'},
+				{ field: "filter_heho",name: 'he',formatter:formathe, width: 2, styles: 'text-align: center;'},
+				{ field: "filter_heho",name: 'ho',formatter:formatho, width: 2, styles: 'text-align: center;'},
+				{ field: 'include', name: 'Sl.',formatter:formatInclude, width: 2, styles: 'text-align: center;'},	
+				
+		];	
+	
+		var layoutFilter = [
+				{ name: "id",field: "id" , width: "3em", styles: 'text-align:center;'},		
+				{ name: "Filter",field: "name",  width: "10em", styles: 'text-align:center;'},
+				{ name: "date",field: "date",  width: "6em", styles: 'text-align:center;'}				
+		];
+	var tree_diseases;	
+	    var testStore; 
+	   
+	function okfunction (items, request){
+	
+			dojo.connect(passwd, "onKeyUp", check_enter);	
+		if (items.length==0) {
+	
+			dijit.byId('login').show();
+			 
+			return;
+		};
+		document.getElementById("stat_project").textContent= projectName;
+		document.getElementById("stat_description").textContent= "\""+items[0].description+"\"";
+	/*	document.getElementById("stat_type").textContent= "sporadic";
+		document.getElementById("stat_sequencing").textContent= items[0].sequencing;
+		document.getElementById("stat_capture").textContent= items[0].capture;
+		document.getElementById("stat_run").textContent= items[0].nb_run;
+		if  (items[0].pedigree == 1) {
+			document.getElementById("stat_type").textContent= "familial";
+		}
+		document.getElementById("stat_login").textContent= dojo.cookie("username");
+		*/
+		gridFamilies.set("structure",layoutFamilies);
+		
+		if (items[0].pedigree == 1 && items[0].somatic == 1) {
+			
+			gridPatient.set("structure",layoutPatient_fam_somatic);
+			document.getElementById('span_somatic').style.display='block';
+			
+		}
+		
+		else if (items[0].pedigree == 1) {
+			gridPatient.set("structure",layoutPatient_fam);
+		}
+		else if (items[0].somatic == 1) {
+			gridPatient.set("structure",layoutPatient_somatic);
+			document.getElementById('span_somatic').style.display='block';
+			
+		}
+		project_type = items[0].type;
+		document.getElementById("nb_projects").innerHTML = "/ "+items[0].nb_total;
+		update_choice_filter();
+		url_get_filter += dojo.cookie("username");
+		lock_button.set("label", dojo.cookie("username"));
+		run_after_waiting();
+		refreshGrid(gridRegion,store_region);
+		dojo.connect(gridListGenes,'onRowClick',displayCover);
+		dojo.connect(gridChromosome,'onRowClick',displayGeneForChromosome);
+		dojo.connect(gridListGenes,'onRowDblClick',viewVarByGene);
+		dojo.connect(gridPatient, "onRowDblClick", dblClickPatient);
+		dojo.connect(gridPatient, "onRowClick", oneClickPatient);
+		dojo.connect(listcompletion, "onKeyUp", genecompletion);	
+		dojo.connect(listcompletion, "onChange", findGene);	
+		
+		dojo.connect(gridFamilies,'onRowClick',displayFamilies);
+	 	testStore = new dojo.store.Memory({data: []});
+	 	dijit.byId("listcompletion").set("store", testStore);
+		
+}
+
+function oneClickPatient(items){
+	gridFamilies.selection.clear();
+}
+
+function displayFamilies(items){
+	var items = gridFamilies.selection.getSelected();
+
+	
+	gridPatient.selection.clear();
+	var sfam = "*";
+	for (var i=0;i<items.length;i++){
+		 sfam = items[i].name+"";
+		 
+	}
+	gridPatient.filter({fam:sfam});
+	
+}
+function findGene(item){
+	console.log(item);
+}
+
+
+
+function genecompletion(value){
+	  var leStore = new dojo.store.Cache(new dojo.store.JsonRest({ target :
+            url_find_name+"?project="+projectName, idProperty: "id"
+            }), dojo.store.Memory());
+ 
+        var testStore = new dojo.store.Memory({data: []});
+        
+         if(dojo.byId("listcompletion").value.length > 2 )//&& dijit.byId("listcompletion").get("store") == testStore)
+                        dijit.byId("listcompletion").set("store", leStore);
+                    if(dojo.byId("listcompletion").value.length <= 2  && dijit.byId("listcompletion").get("store") == leStore)
+                        dijit.byId("listcompletion").set("store", testStore);
+	console.log(value);
+	
+}	
+
+	  //require("dojo/ready", function(ready){
+    dojo.addOnLoad(function(){
+       var z =  document.getElementById('gridListGenes').style.width;
+	data_list = {
+		identifier: 'id',
+		label: 'id',
+		items:  [ 
+			//{id:1 ,name: "XX",chromosome: "XX", start: -1, end: -1, include: 2}
+		]
+		};
+
+	
+	 store_region =	new dojo.data.ItemFileWriteStore({data: data_list});
+			//resizeDiv('gridListGenes','local');
+			
+			checkPassword(projectName,okfunction,"polyQuery");
+		
+        addPatientsOptions();
+    });
+
+  
+
+
+
+function update_choice_filter() {
+		choice_filter(dd_dbsnp,[filter_dbsnp_none,filter_dbsnp_1p,filter_dbsnp,filter_phenotype],["no freq","<1%",">1%","clinical"],"DBSNP");
+		choice_filter(dd_evs,[filter_evs_1p,filter_evs],["<1%",">1%"],"EVS");
+		choice_filter(dd_1kg,[filter_1kg_1p,filter_1kg],["<1%",">1%"],"1KG");
+		choice_filter(dd_cosmic,[filter_not_cosmic,filter_cosmic],["NOT","IN"],"Cosmic");
+		choice_filter(dd_type,[filter_substitution,filter_deletion,filter_large_deletion,filter_insertion],["sub","del","ldel","ins"],"variation type");
+		choice_filter(dd_no_exonic,[filter_intergenic,filter_nocoding],["intergenic","intronic"],"Not exonic");
+		choice_filter(dd_somatic,[filter_dblevt,filter_loh],["dbl evt","loh"],"Somatic Model");
+		choice_filter(dd_not_coding,[filter_mature,filter_ncRNA,filter_pseudogene],["mature-miRNA","ncRNA","Pseudogene"],"No-Coding RNA");
+		choice_filter(dd_utr_splicing,[filter_utr,filter_splicing,filter_essential_splicing],["utr","splicing","essential sp."],"UTR,Splicing");
+		choice_filter(dd_with,[filter_frameshift,filter_coding,filter_stop,filter_phase],["frameshift","Non-Syno","stop-gained","start/stop-lost"],"with Consequence");
+		choice_filter(dd_polyphen,[filter_polyphen_3,filter_polyphen_2,filter_polyphen_1,filter_polyphen_0],["Probably","Possibly","begnin","unknown"],"Polyphen");
+		choice_filter(dd_sift,[filter_sift_2,filter_sift_1,filter_sift_0],["deleterious","begnin","unknown"],"sift");
+		choice_filter(dd_without,[filter_silent,filter_non_frameshift],["Synonymous","No-frameshift"],"Without Consequence");
+		choice_filter(dd_score,[filter_score2,filter_score1,filter_score0],["High","Med","Low"],"Confidence");
+}
+
+
+	  
+	
+			
+	
+	  
+	  //fonction pour retourner  la page de la liste des projets
+	  function goBack(){
+		document.location.href ="projectList.html";
+	}
+	
+	var old_click;
+	
+
+	
+var firstview =0;
+
+//fonction pour afficher le message indiquant le chargerment des donnes
+function testx(){
+	if (!drawingOK){
+		if (dijit.byId('waiting')) {
+					dijit.byId('waiting').show();
+				}
+		
+	}
+}	
+
+
+/****************************************************
+ * 
+ * METHODS POUR LES diseases
+ * 
+*****************************************************/
+function displayGeneForDiseases(e){
+		var args = construct_url_filter_data();
+	 args += "&filter_diseases="+e.sid;
+	 
+	 loadAll(args,"diseases");
+	
+}
+
+
+/****************************************************
+ * 
+ * METHODS POUR LES CHROMOSOMES
+ * 
+*****************************************************/
+function displayGeneForChromosome(e){
+	
+				var args = construct_url_filter_data();
+				var i = e.rowNode.gridRowIndex;	
+				var name=e.grid.getCell(0).getNode(i).textContent;
+	 			args += "&filter_chromosome="+name;
+				if (name == "Game Over"){
+					return;
+				}
+	 loadAll(args,"chromosomes");
+	
+
+	
+}
+
+function viewAllChromosome (){
+	var args = construct_url_filter_data();
+	 args +="&filter_chromosome=";
+	for (i=0;i<gridChromosome.rowCount;i++){
+		var item = gridChromosome.getItem(i);
+		
+		args+=item.name+"+";
+	}
+	loadAll(args,"chromosomes");
+	
+}
+/****************************************************
+ * 
+ * METHODS POUR LES REGIONS
+ * 
+*****************************************************/
+
+function changeRegionsState(value,type) {
+	var sel = gridRegion.selection.getSelected();
+	var l = sel.length;
+	
+	var allids='';
+	
+	//pour chaque lignes sellectionnes
+	for (var i = 0; i < l; i++) {
+		gridRegion.store.setValue(sel[i], type, value);
+	}
+	update_regions_cache(gridRegion.store);
+}
+
+
+		 
+ function addRow(){
+ 	dialog_region.show();
+		
+}
+
+function addRegion(regexp1,regexp2,text) {
+	if (!text){
+		 text = text_region.get("value");
+	}
+	var reg=new RegExp(regexp1, "g");
+	var tableau=text.split(reg);
+	var nb = gridRegion.rowCount;
+	//store_region.save();
+	for (var i=0; i<tableau.length; i++) {
+		
+		nb++;
+	var reg2=new RegExp(regexp2, "g");	
+	var region = tableau[i].split(reg2);
+	store_region.newItem({
+				id:  nb+"_"+region[1]+"_"+region[0]+"_"+region[2],
+				name: nb+"_"+region[1]+"_"+region[0]+"_"+region[2],
+				chromosome:region[0],
+				start: region[1],
+				end: region[2],
+				include:0,
+});
+}
+update_regions_cache(store_region);
+dialog_region.hide();
+}
+
+function defineArrayButton() {
+ var array_button = new Array();
+ 	array_button["score0"] = filter_score0;
+	array_button["score1"] = filter_score1;
+	array_button["score2"] = filter_score2;
+	array_button["dbsnp"] = filter_dbsnp;
+	array_button["dbsnp_1p"] = filter_dbsnp_1p;
+	array_button["dbsnp_none"] = filter_dbsnp_none;
+	array_button["pheno_snp"] = filter_phenotype;
+	//array_button["bipd"] = filter_bipd;
+	array_button["1000genomes"] = filter_1kg;
+	array_button["1000genomes_1p"] = filter_1kg_1p;
+	array_button["evs"] = filter_evs;
+	array_button["evs_1p"] = filter_evs_1p;
+	array_button["notcosmic"] = filter_not_cosmic;
+	array_button["cosmic"] = filter_cosmic;
+	array_button["deletion"] = filter_deletion;
+	array_button["large_deletion"] = filter_large_deletion;
+	array_button["insertion"] = filter_insertion;
+	array_button["substitution"] = filter_substitution;
+	array_button["silent"] = filter_silent;
+	array_button["utr"] = filter_utr;
+	array_button["splicing"] = filter_splicing;
+	array_button["essential_splicing"] = filter_essential_splicing;
+	array_button["coding"] = filter_coding;
+	array_button["stop"] = filter_stop;
+	array_button["phase"] = filter_phase;
+	array_button["intergenic"] = filter_intergenic;
+	array_button["intronic"] = filter_nocoding;
+	array_button["ncrna"] = filter_ncRNA;
+	array_button["maturemirna"] = filter_mature;
+	array_button["pseudogene"] = filter_pseudogene;
+	array_button["frameshift"] = filter_frameshift;
+	array_button["non-frameshift"] = filter_non_frameshift;
+	array_button["loh"] = filter_loh;
+	array_button["dbl_evt"] = filter_dblevt;
+	array_button["polyphen3"] = filter_polyphen_3;
+	array_button["polyphen2"] = filter_polyphen_2;
+	array_button["polyphen1"] = filter_polyphen_1;
+	array_button["polyphen0"] = filter_polyphen_0;
+
+	array_button["sift2"] = filter_sift_2;
+	array_button["sift1"] = filter_sift_1;
+	array_button["sift0"] = filter_sift_0;
+	//array_button["polyphen"] = filter_polyphen;
+	
+	return (array_button);
+}
+function choice_filter(obj,items,addstrings,name){
+	var string ="";
+	var nb =0;
+	 for (i = 0; i < items.length; i++) {
+	 	if (items[i].checked){
+			string +=" "+addstrings[i];
+			nb++;
+		}
+	 	
+	 }
+	 if (nb == 0 ){
+	 	string = "None";
+	 }
+	  if (nb == items.length ){
+	 	string = "All";
+	 }
+	 
+	 obj.set('label', name+" ("+string+")");
+} 
+
+
+function choice_filter(obj,items,addstrings,name){
+	var string ="";
+	var nb =0;
+	 for (i = 0; i < items.length; i++) {
+	 	if (items[i].checked){
+			string +=" "+addstrings[i];
+			nb++;
+		}
+	 	
+	 }
+	 if (nb == 0 ){
+	 	string = "None";
+	 }
+	  if (nb == items.length ){
+	 	string = "All";
+	 }
+	 
+	 obj.set('label', name+" ("+string+")");
+} 
+
+/****************************************************
+ * 
+ * METHODS POUR LES Refresh des tableaux
+ * 
+*****************************************************/
+function changeStatusPatients(array,value,type){
+
+	for (var i=0;i<array.length;i++){
+		if(!patients_status[array[i]]){
+			patients_status[array[i]] = new Array();
+		}
+		patients_status[array[i]][type] = value;
+	}
+}
+
+
+function changeButtonStatut(itemsAll, request){
+	
+	var i;
+	var filter= new Array();
+	var string_filter = "";
+	var string_annd_patient ="";
+	var res_button = new Array();
+	var res_patient_and =  new Array();
+	var res_patient_attic =  new Array();
+	var res_patient_not =  new Array();
+	var res_patient_he =  new Array();
+	var res_patient_ho =  new Array();
+	for (i = 0; i < itemsAll.length; i++) {
+		  var item = itemsAll[i];
+		  	var st = itemsAll[i].value+"";
+		  if (item.name =="filter_type_variation"){
+		  
+		  	 res_button = st.split(" ");
+		  }
+		    if (item.name =="filter_patient"){
+		    	changeStatusPatients(st.split(" "),0,"include");
+		    }
+		     if (item.name =="filter_attic"){
+		    	changeStatusPatients(st.split(" "),2,"include");
+		    }
+		    if (item.name =="filter_not_patient"){
+		    	changeStatusPatients(st.split(" "),-1,"include");
+		    }
+		     if (item.name =="filter_fam"){
+		    	changeStatusFamilies(st.split(" "),0,"include");
+		    }
+		     if (item.name =="filter_not_fam"){
+		    	changeStatusFamilies(st.split(" "),-1,"include");
+		    }
+		     if (item.name =="filter_he"){
+		     		changeStatusPatients(st.split(" "),0,"filter_heho");
+		    }
+		     if (item.name =="filter_ho"){
+		    		changeStatusPatients(st.split(" "),1,"filter_heho");
+		    }
+		     if (item.name =="filter_gene_level"){
+		    		filter_gene_level.set("checked",1);
+		    		filter_variation_level.set("checked",0);
+		    }		   
+		     if (item.name =="filter_mode"){
+		    		filtering_mode = st;
+		    }
+		     if (item.name =="filter_level_ind"){
+		    		filtering_level_ind =st;
+		    }
+		       if (item.name =="filter_level_fam"){
+		    		filtering_level_fam =st;
+		    }
+		    
+		      if (item.name =="filter_model"){
+		    		genetic_model=st;
+		    }
+		     if (item.name =="filter_region"){
+		    	addRegion('[ ]+','[:]+',st);
+		    }
+	}
+	
+	
+	
+	for (i = 0; i < res_button.length; i++) {
+			filter[res_button[i]]=1;
+		}
+
+	var ab;
+	ab = defineArrayButton();
+	for (z in ab){
+		if (z == "loh"){
+			continue;
+		}
+		if (z == "dbl_evt"){
+			continue;
+		}
+		if (filter[z]){
+			ab[z].set('checked',0);
+		}
+		else {
+			ab[z].set('checked',1);
+		}
+	}
+
+update_choice_filter();
+}
+
+function changeStatusFamilies(array,value,type){
+
+	for (var i=0;i<array.length;i++){
+		if(!families_status[array[i]]){
+			families_status[array[i]] = new Array();
+		}
+		families_status[array[i]][type] = value;
+	}
+}
+
+function refreshStatutButton(args) {
+	var storeP = new dojo.data.ItemFileWriteStore({
+			url: button_url+args
+		});
+	
+	storeP.fetch({
+		onComplete:changeButtonStatut
+	});	
+}
+
+function refreshDiseasesTree(storeD){
+	
+	
+	var treeModel = new dijit.tree.TreeStoreModel({
+            store: storeD,
+          	childrenAttrs: ["children"], 
+		 	query: {
+                "id": "root"
+            	},
+          
+        });
+	if (tree_diseases){
+	
+    // Destroy the widget
+    	tree_diseases.rootNode.destroyRecursive();
+	
+	
+    // Recreate the model, (with the model again)
+    	tree_diseases.model.constructor(treeModel)
+
+    // Rebuild the tree
+    	tree_diseases.postMixInProperties();
+    	tree_diseases._load();
+		}
+		else {
+			tree_diseases = new dijit.Tree({
+		 	jsId : "tree_diseases",
+            model: treeModel
+        },
+        "tree_gene_atlas");
+		dojo.connect(tree_diseases,'onClick',displayGeneForDiseases);
+		}
+		
+		//var storeP =readStore(patient_url+args);
+	
+}
+
+function refreshDiseasesTree2(args){
+	
+	var storeD = new dojo.data.ItemFileWriteStore({
+			url:diseases_tree_url+args
+		
+		});
+		
+	var treeModel = new dijit.tree.TreeStoreModel({
+            store: storeD,
+          	childrenAttrs: ["children"], 
+		 	query: {
+                "id": "root"
+            	},
+          
+        });
+	if (tree_diseases){
+	
+    // Destroy the widget
+    	tree_diseases.rootNode.destroyRecursive();
+	
+	
+    // Recreate the model, (with the model again)
+    	tree_diseases.model.constructor(treeModel)
+
+    // Rebuild the tree
+    	tree_diseases.postMixInProperties();
+    	tree_diseases._load();
+		}
+		else {
+			tree_diseases = new dijit.Tree({
+		 	jsId : "tree_diseases",
+            model: treeModel
+        },
+        "tree_gene_atlas");
+		dojo.connect(tree_diseases,'onClick',displayGeneForDiseases);
+		}
+		
+		//var storeP =readStore(patient_url+args);
+	
+}
+
+
+
+
+
+function update_regions_cache(store_region) {
+	
+	store_region.fetch({
+     onComplete: function(items){
+	 	REGION_FILTER = new Array();
+         dojo.forEach(items, function(item){
+		 	REGION_FILTER.push(item);
+            
+         });
+		
+	}
+	});
+}
+
+function refreshRegionsGrid(args){
+	store_region = new dojo.data.ItemFileWriteStore({
+			url: region_url+args
+		});
+	update_regions_cache(store_region);
+ 	refreshGrid(gridRegion,store_region);
+}
+
+
+function refreshGridFilter(){
+	forceRefreshTable(url_get_filter,gridFilter);
+ 
+}
+
+function view_all_in_attic() {
+    gridPatient.filter({name:"*"})
+    gridFamilies.filter({name:"*"});
+}
+
+
+
+function dblClickPatient(){
+
+	
+	gridPatient.store.fetch({
+		onItem :function (item, result){
+			gridPatient.store.setValue(item,"include", 1);
+			
+			var name= gridPatient.store.getValue(item,"name");
+			if (!patients_status[name]) patients_status[name] = new Array(); 
+			patients_status[name]["include"]=1;
+		
+			},
+		onComplete: function (items, result){
+			var items = gridPatient.selection.getSelected();
+  			 if (items.length) {
+			 	dojo.forEach(items, function(selectedItem) {
+     			 if (selectedItem !== null) {
+				 	gridPatient.store.setValue(selectedItem,"include", 0);
+				 	var name= gridPatient.store.getValue(selectedItem,"name");
+					patients_status[name]["include"]=0;
+       			 	
+       			 	
+      			}
+  			  });
+			 }
+			 stats();
+	}
+	});	
+
+}
+
+
+function changePatientsState(value,type) {
+	var test =false;
+	if (value==2 && type=="include") test = true;
+	gridPatient.store.fetch({
+		
+		onComplete: function (items2, result){
+			var fams = new Array();
+
+			dojo.forEach(items2, function(selectedItem) {
+				var f1 = gridPatient.store.getValue(selectedItem,"fam");
+				if (fams[f1] == null) fams[f1] =0;
+				fams[f1] = fams[f1] +1;
+			});
+			
+			var items = gridPatient.selection.getSelected();
+			var fam_dels = new Array();
+  			 if (items.length) {
+			 	dojo.forEach(items, function(selectedItem) {
+     			 if (selectedItem != null) {
+				 	var name= gridPatient.store.getValue(selectedItem,"name");
+					var f1 = gridPatient.store.getValue(selectedItem,"fam");
+					if (!patients_status[name]) patients_status[name] = new Array(); 
+						patients_status[name][type]=value;
+       			 		
+       			 		if (fam_dels[f1] == null) fam_dels[f1] =0;
+       			 		fam_dels[f1]++;
+       			 	
+      			}
+  			 }); 
+  			  if (type == "include" && (value ==1 || value == 2)) {//and (value == 1 or value ==0 )){}
+  			  for (f1 in fam_dels){
+  			  	 	if (fam_dels[f1] == fams[f1]){
+  			  	 		if (!families_status[f1]) families_status[f1] = new Array(); 
+  			  	 			families_status[f1][type] = value; 
+  			  			}
+  			  			else {
+  			  					if (!families_status[f1]) families_status[f1] = new Array(); 
+  			  				families_status[f1][type] = 1;
+  			  			}	
+  			  }
+ 				
+			 }
+			}
+			changeFamiliesState(value,type,items2);
+	}
+	});	
+}
+
+function changeFamiliesState(value,type,itemsPatient) {
+	gridFamilies.store.fetch({
+		
+		onComplete: function (items2, result){
+			var items = gridFamilies.selection.getSelected();
+  			 if (items.length) {
+			 	dojo.forEach(items, function(selectedItem) {
+     			 if (selectedItem != null) {
+				 	var name= gridFamilies.store.getValue(selectedItem,"name");
+					if (!families_status[name]) families_status[name] = new Array(); 
+						families_status[name][type]=value;
+						 if (type == "include" && (value ==1 || value == 2)) {
+						for (var i in itemsPatient){
+							var item = itemsPatient[i];
+							var namef= gridPatient.store.getValue(item,"fam");
+							if (namef == name){
+									var namep= gridPatient.store.getValue(item,"name");
+									patients_status[namep]["include"] = value;
+							}
+							
+						}
+					}
+      			}
+      			
+  			  });
+			 }
+		
+			 
+			 updateGridState(itemsPatient,items2);
+	}
+	});	
+}
+
+function updateGridState(itemsPatient,itemsFam){
+	for (var i in itemsFam){
+			var item = itemsFam[i];
+			var name= gridFamilies.store.getValue(item,"name");
+			if (!families_status[name]) continue; 
+				gridFamilies.store.setValue(item,"include", families_status[name]["include"]);
+			
+	}
+	
+	for (var i in itemsPatient){
+			var item = itemsPatient[i];
+			var name= gridPatient.store.getValue(item,"name");
+			gridPatient.store.setValue(item,"include", patients_status[name]["include"]);
+			gridPatient.store.setValue(item,"filter_heho", patients_status[name]["filter_heho"]);
+	
+	}
+	//stats();
+	
+}
+
+
+displayCover = function(e){
+			if (show_graph == 0) return;
+		var i = e.rowNode.gridRowIndex;	
+	
+		var projectName = param("project");//parent.haut.document.getElementById('project_name').value;
+		var name=gridListGenes.getCell(1).getNode(i).textContent;
+		var store = gridListGenes.store;//readStore(gene_url);
+			
+			store.fetch({
+				query: {
+					name: name
+				},
+				onComplete: findCover
+			
+			});
+		
+	
+		//principal(projectName,refname,genename);
+	};
+
+var select_gene_for_cover;
+function findCover(items){
+	
+	/* */
+	 var chr = items[0].chromosome+""; 
+	 chr_number.set('value',chr);
+ 	 start_number.set('value',items[0].start);
+	 end_number.set('value',items[0].end);
+	
+	 initFilterGenes(chr,items[0].start,items[0].end,1,items[0].id);	
+	// initCoverViewer(items[0].name,items[0].ids,items[0].start,items[0].end,chr);
+
+}
+
+$(document).ready(function() {
+    $("#map").scroll(function () { 
+            $("#drawing_transcripts").scrollLeft($("#map").scrollLeft());
+            $("#drawing_patients").scrollLeft($("#map").scrollLeft());
+        });
+    $("#drawing_transcripts").scroll(function () { 
+            $("#map").scrollLeft($("#drawing_transcripts").scrollLeft());
+            $("#drawing_patients").scrollLeft($("#drawing_transcripts").scrollLeft());
+        });
+    $("#drawing_patients").scroll(function () { 
+            $("#map").scrollLeft($("#drawing_patients").scrollLeft());
+            $("#drawing_transcripts").scrollLeft($("#drawing_patients").scrollLeft());
+        });
+});
+
+function displayGeneCover(){
+	//if show_graph == 0 return;
+	
+	initCoverViewer(filterGenes.get("value"));
+	 //var url_genes2 =url_region_genes+"?project="+projectName+"&gene="+filterGenes.get("value");
+	 
+}
+function run_after_waiting(){
+	
+	 
+	var cgi_args = stats();
+		
+}
+
+/**** Open window for coverage *****/
+
+function return_geneId(st){
+	var z = st.split("-");
+	return z[1];
+}
+function show_coverage_detail() {
+	var gene = return_geneId(listcompletion.get("value"));
+
+	var url_igv2 ="polyweb_coverage.html?project="+projectName+"&gene="+gene;
+
+	window.open(url_igv2);
+	
+}
+
+function viewGraphic() {
+	dijit.byId('waiting').show();
+	var chr = chr_number.attr('value');
+	var start = start_number.attr('value');
+	var end =  end_number.attr('value');
+	var ensg =  return_geneId(listcompletion.get("value"));
+	if (ensg){
+	   initCoverViewer(ensg);
+	}
+	else {
+		initFilterGenes(chr,start,end);
+		//initCoverViewer(null,null,start,end,chr);
+	}
+    when_external_loaded_graph (function () {
+        testx();
+    });
+}
+
+function when_external_loaded_graph (callback) {
+    var isEmpty1 = $('#drawing_transcripts').is(':empty');
+    var isEmpty2 = $('#drawing_patients').is(':empty');
+    if(isEmpty1 || isEmpty2) {
+        setTimeout (function () {
+            when_external_loaded_graph (callback);
+        }, 100);
+    } else { callback (); }
+}
+
+//fonction pour afficher un message indiquant le chargement des donnes
+function testx(){
+    if (!drawingOK){
+        if (dijit.byId('waiting')) {
+            dijit.byId('waiting').show();
+        }
+    }
+    else {
+        if (dijit.byId('waiting')) {
+            dijit.byId('waiting').hide();
+        }
+    }
+}   
+
+
+function show_deja_vu() {
+	
+	var gene = return_geneId(listcompletion.get("value"));
+	var url_igv2 ="polydejavu/dejavu.html?input="+gene;
+	window.open(url_igv2);
+}
+function initFilterGenes(chr,start,end,draw,id) {
+	 var url_genes2 =url_region_genes+"?project="+projectName+"&chr="+chr+"&start="+start+"&end="+end;
+	
+	 var st = new dojo.data.ItemFileWriteStore({
+			url: url_genes2
+		});;
+		
+	 st.fetch({
+    	query: {
+       			label:"*"
+    			},
+		onComplete:function(items) { filterGenes.set("store",st);
+			for (i=0;i<items.length;i++){
+				if (items[i].name == id){
+					filterGenes.set("value",items[i].name);
+					return;
+				}
+			}
+		filterGenes.set("value",items[0].name);
+		
+		},
+	
+		onError: function(items){alert("error filtering")}
+	});
+
+	
+	
+}
+/* 
+ * refresh all table
+ */
+
+function stats () {
+	dijit.byId('waiting').show();
+	var cgi_args = construct_url_filter_data();
+	loadAll(cgi_args);
+	if (REGION_FILTER.length >0) { 
+		refreshRegionsGrid(cgi_args);
+	}	
+	refreshGridFilter();
+	
+	return cgi_args;
+}
+
+var tablayout = new Array("Coding","variations","Splicing","Silent","UTR");
+var first_time_refresh = 1;
+
+function refreshStats(args){
+	 var storeC = readStore(chr_url+args);
+	 storeC.fetch({
+    	query: {
+       			name:"*"
+    			},
+		onComplete:printStats,
+	
+		onError: function(items){alert("error")}
+	});
+	
+	 //refreshGrid(gridChromosome,storeC);
+}
+
+
+function printStats (items){
+	
+	    var nb = 0;//items.length;	
+		
+		var nbchr=items.length*1.0;
+		var nbc = 0;
+		var nbv =0;
+		var nbhomo =0;
+		var nbhetero=0;
+		var nbsample =0;
+		for (var i=0;i<items.length;i++){
+			if (!items[i].genes) continue; 
+			nb += items[i].genes*1.0;
+			//nbv += items[i]["variations"]*1.0;
+			nbv += items[i]["substitutions"]*1.0+items[i]["deletions"]*1.0+items[i]["insertions"]*1.0;
+			nbc += items[i]["coding"]*1.0;
+			nbhomo += items[i]["homozygote"]*1.0;
+			nbhetero += items[i]["heterozygote"]*1.0;
+		}
+		
+			gridPatient.store.fetch({
+     onComplete: function(items){
+     	var total =0;
+         dojo.forEach(items, function(item){
+         	nbsample ++;
+         	var name = item.name;
+         	total = total + item.substitutions*1.0+item.insertions*1.0+item.deletions*1.0;
+         });
+         document.getElementById("stat_sample").textContent= nbsample;
+		document.getElementById("stat_var").textContent= total;
+		document.getElementById("stat_dif").textContent= nbv;
+		document.getElementById("stat_he").textContent= nbhetero;
+		document.getElementById("stat_ho").textContent= nbhomo;
+	//	document.getElementById("stat_coding").textContent= nbc;
+		document.getElementById("stat_chr").textContent= nbchr;
+		document.getElementById("stat_gene").textContent= nb;
+	
+	}
+	});
+	
+	
+		var url2 = gene_url + "&filter_chromosome=" + items[0].name + filter_args;
+	
+		 if (items[0].name == "Game Over") {
+
+		 	return;
+		}
+}
+
+
+
+var filter_args="";
+
+
+function move(el,div) {
+	
+	document.getElementById(div).appendChild(document.getElementById(el));
+	
+}
+
+
+function loadFilter (){
+	
+	
+	
+
+	gridViewFilter.store.fetch({
+		onComplete:changeButtonStatut
+	});	
+	dialog_view_filter.hide();
+	stats();
+	return;
+	var items= gridFilter.selection.getSelected();
+	user_name = dojo.cookie("username");
+	if (items.length) {
+		var args = "&filter_name="+items[0].name+"&user="+user_name;	
+		refreshStatutButton(args);	
+		loadAll(args);
+	}
+	return;
+	
+	
+	
+	
+}
+
+
+function export_filter_by_variations(){
+	var filter_args = construct_url_filter_data();
+	
+	var url2 = gene_url + filter_args+"&stat=variations";
+	console.log(url2);
+	window.location=url2;
+}
+
+function export_filter_data(){
+	var filter_args = construct_url_filter_data();
+	
+	var url2 = gene_url + filter_args;
+	console.log(url2+"&xls=1");
+	window.location=url2+"&xls=1";
+}
+/*
+ * CONSTRUCT URL FOR REGIONS
+ */
+var REGION_FILTER = new Array();
+function url_filter_regions() {
+		
+	 var args ="&filter_region=";
+	
+	//for (i=0;i<gridRegion.rowCount;i++){
+	for (i=0;i<REGION_FILTER.length;i++){	
+		var item = REGION_FILTER[i];
+		if (item){
+			args+=item.chromosome+":"+item.start+":"+item.end+":"+item.include+"+";
+		}
+		else{
+			console.log(i);
+		}
+		}
+	if (REGION_FILTER.length == 0){
+		return "" ;
+	}
+	return args;
+	
+}
+
+function functional_url_filter_data (){
+	
+	var ab;
+	var filters="";
+	ab = defineArrayButton();
+	for (z in ab){
+		
+		if (!ab[z].checked){
+			filters +=z+"+";
+			
+		}
+	
+	}
+	if (filter_polyphen_sift.checked) {
+		
+	 filters +="polyphen_sift";		
+	}
+	return filters;
+	
+}
+
+function construct_url_filter_data (){
+
+	 var filter_args= "";
+	var args = new Array();
+	
+	var filters=functional_url_filter_data();
+	filter_args = "&filter_type_variation="+filters; 
+	
+	filter_args +=url_filter_regions();
+	/*
+	 * model genetique
+	 */
+
+	if (genetic_model != "none"){
+		filter_args +="&model="+genetic_model;
+	}
+
+
+	/*
+	 * model for somatique
+	 */
+	if (filter_loh.checked){
+		filter_args +="&filter_loh=1";
+	}
+	if (filter_dblevt.checked){
+		filter_args +="&filter_dblevt=1";
+	}
+	/*
+	 * text search
+	 */
+	
+	if (filter_text.get("value")){
+		filter_args +="&filter_text="+filter_text.get("value");
+	}
+	/*
+	 * filtre famillial lock
+	 */
+	
+	if (filtering_mode == 'fam'){
+		filter_args +="&mode=fam";
+	}
+	else {
+		filter_args +="&mode=ind";
+	}
+
+
+		
+	
+	/*
+	 * filter at least number 
+	 */
+	if (filter_identical_number.value>0) {
+		filter_args +="&nb="+filter_identical_number.value;
+	}
+	
+	/*
+	 * type gene or variation
+	 */
+
+	filter_args +="&level_ind="+filtering_level_ind;	
+	filter_args +="&level_fam="+filtering_level_fam;
+	
+	/*
+	 * deja vu
+	 */
+	
+	var dejavu= dejavu_spinner.value;
+	if (dejavu >0) filter_args +="&dejavu="+dejavu;
+	if (dejavu_ho.get('value') == 1) filter_args +="&dejavu_ho=1";
+	
+	/*
+	 * patient filter
+	 */
+	
+	var string_patient_and ="";
+	var string_patient_not="";
+	var string_patient_he="";
+	var string_patient_ho="";
+	var string_patient_attic="";
+		
+	for (var name in patients_status){
+			var v = patients_status[name]["include"];
+			var vv =  patients_status[name]["filter_heho"];
+			if (v == 0) {
+				string_patient_and += name+"+";
+			}
+			if (v == -1) {
+			string_patient_not += name+"+";
+			}
+			if (v == 2) {
+				string_patient_attic += name+"+";
+			}
+			if (vv == 0  ) {
+				string_patient_he +=name+"+";
+			} 
+			if (vv == 1) {
+				string_patient_ho +=name+"+";
+			} 
+			
+		}
+		
+		if (string_patient_and) filter_args += "&filter_patient="+string_patient_and;
+		if (string_patient_not) filter_args += "&filter_not_patient="+string_patient_not;
+		if (string_patient_attic) filter_args +="&filter_attic="+string_patient_attic;
+		if (string_patient_he) filter_args += "&filter_he="+string_patient_he;
+		if (string_patient_ho) filter_args += "&filter_ho="+string_patient_ho;
+	/*
+	 * famillial test
+	 */	
+	var string_fam_and ="";
+	var string_fam_not="";
+	for (var name in families_status){
+		
+			var v = families_status[name]["include"];
+			
+			var vv =  families_status[name]["filter_heho"];
+			if (v == 0) {
+				string_fam_and += name+"+";
+			}
+			if (v == -1) {
+			string_fam_not += name+"+";
+			}
+		}
+		if (string_fam_and) filter_args += "&fam_and="+string_fam_and;
+		if (string_fam_not) filter_args += "&fam_not="+string_fam_not;
+	
+		
+
+	return filter_args;
+	
+}
+
+
+
+
+
+function showFilter(){
+	
+	dialog_filter.show();
+	var string_patient_and ="";
+	var string_patient_not="";
+	var string_patient_he ="";
+	var string_patient_ho = "";
+	var string_patient_attic ="";
+		for (var name in patients_status){
+			var v = patients_status[name]["include"];
+			var vv =  patients_status[name]["filter_heho"];
+			if (v == 0) {
+				string_patient_and += name+"+";
+			}
+			if (v == -1) {
+			string_patient_not += name+"+";
+			}
+			if (v == 2) {
+				string_patient_attic += name+"+";
+			}
+			if (vv == 0  ) {
+				string_patient_he +=name+"+";
+			} 
+			if (vv == 1) {
+				string_patient_ho +=name+"+";
+			} 
+			
+		}
+	var string_region ="";
+	
+		for (i=0;i<gridRegion.rowCount;i++){
+			
+		var item = gridRegion.getItem(i);
+		
+		if (item) {		
+			string_region += item.chromosome+":"+item.start+":"+item.end+":"+item.include+" ";
+		}
+	}
+	
+	var string_fam_and ="";
+	var string_fam_not="";
+	for (var name in families_status){
+		
+			var v = families_status[name]["include"];
+			if (v == 0) {
+				string_fam_and += name+"+";
+			}
+			if (v == -1) {
+			string_fam_not += name+"+";
+			}
+		}
+	
+	myForm.set('value', {filter_fam: string_fam_and}) ;
+	myForm.set('value', {filter_not_fam: string_fam_not});
+
+	myForm.set('value', {filter_patient: string_patient_and}) ;
+	
+	myForm.set('value', {filter_not_patient: string_patient_not});
+	myForm.set('value', {filter_he: string_patient_he});
+	myForm.set('value', {filter_ho: string_patient_ho});
+	myForm.set('value', {filter_attic: string_patient_attic});
+	myForm.set('value', {filter_region: string_region});
+	myForm.set('value', {user: user_name});
+	myForm.set('value', {project: projectName});
+	
+	myForm.set('value',{filter_type_variation:functional_url_filter_data()});
+
+	myForm.set('value',{filter_level_fam:filtering_level_fam});
+	myForm.set('value',{filter_level_ind:filtering_level_ind});
+	myForm.set('value',{filter_mode:filtering_mode});
+	if (genetic_model != "none"){
+		myForm.set('value',{filter_genetic_model:genetic_model});
+	}
+	
+
+return;
+	    
+	
+}
+
+
+/*
+FILTER !!!!!!!!!! save delete 
+*/
+
+function deleteFilter(){
+	var sel = gridFilter.selection.getSelected();
+	var l = sel.length;
+	var allid='';
+	var allname='';
+	//pour chaque lignes sellectionnes
+	for (var i = 0; i < l; i++) {
+		allname +=sel[i].name+" ";
+		
+	}
+	   for (var i = 0; i < l; i++) {
+	       if (sel[i].id != "zz"){
+                allid +=sel[i].id+";";
+        }
+    }
+    if (allid == ''){
+        return;
+    }
+    
+	 user_name = dojo.cookie("username");
+	 myForm.set('value', {id: allid});
+	myForm.set('value', {name: allname});
+	myForm.set('value', {user: user_name});
+	myForm.set('value', {project: projectName});
+	var my_url = url_delete_filter+"?project="+projectName+"&filter_id="+allid+"&user="+user_name;
+
+	  var xhrArgs = {
+               //form: dojo.byId("myForm"),
+                handleAs: "text",
+				url:my_url,
+                load: function(data) {
+						myForm.set('value', {name: ""});
+						
+						refreshGridFilter();
+						
+                },
+                error: function(error) {
+                    //We'll 404 in the demo, but that's okay.  We don't have a 'postIt' service on the
+                    //docs server.
+					alert("error delete filter");
+                   
+                }
+           };
+            //Call the asynchronous xhrPost
+           
+            var deferred = dojo.xhrGet(xhrArgs);
+}
+
+function saveFilter(){
+	
+	if (myForm.get('value').name == "") {
+		alert("please give name to your filter");
+		return;
+	}  
+	var tuser_name = dojo.cookie("username");
+	filter_username.set("value",tuser_name);
+	
+	
+	   var xhrArgs = {
+                form: dojo.byId("myForm"),
+                handleAs: "text",
+				url:url_save_filter,
+                load: function(data) {
+				
+						
+						refreshGridFilter();
+						dialog_filter.hide();
+                  //  dojo.byId("response").innerHTML = "Form posted.";
+                },
+                error: function(error) {
+                    //We'll 404 in the demo, but that's okay.  We don't have a 'postIt' service on the
+                    //docs server.
+					alert("error");
+                   
+                }
+           };
+            //Call the asynchronous xhrPost
+           
+            var deferred = dojo.xhrPost(xhrArgs);
+}
+
+function delete_filter(){
+	gridRegion.removeSelectedRows();
+	update_regions_cache(gridRegion.store);
+	
+	
+}
+
+function viewFilter (){
+	var items= gridFilter.selection.getSelected();
+	 user_name = dojo.cookie("username");
+	if (items.length) {
+		var arg = "&filter_name="+items[0].name+"&user="+user_name;
+	
+		
+		
+		 var storeC = readStore( url_view_filter+arg);
+		dialog_view_filter.show();
+	 	refreshGrid(gridViewFilter,storeC);
+		
+		
+	}
+	return;
+	
+	
+	
+	
+}
+
+function change_status_buttons (buttons){
+	for(i=0;i<buttons.length;i++){
+		buttons[i].set('checked', false);
+	}
+}
+function change_button(b){
+	
+	if (b.checked) {
+		 b.set('checked', false);
+	}
+	else {
+		 b.set('checked', true);
+	}
+	
+	
+}
+
+
+
+function viewIGV () {
+	var chr = chr_number.get('value');
+	var start = start_number.get('value');
+	var end =  end_number.get('value');
+	
+	displayInIGV(chr,start,end);
+}
+
+function jumpToAllVar(items) {
+	var ids="";
+	var tids = new Array();
+	var chr_name="";
+	for (var i=0 ;i<items.length;i++){
+		ids += items[i].ids+",";
+		if (!tids[items[i].chromosome]){
+			tids[items[i].chromosome] ="";
+			chr_name+=items[i].chromosome+"+";
+		}
+		tids[items[i].chromosome]+= items[i].ids+",";
+	}
+	var murl = "detailProject.html?project="+projectName+"&chromosome="+chr_name+"&type="+project_type+"&ids="+ids+"&nograph=1";
+	window.open(murl);
+}
+
+function viewAllSelectedVariations () {
+	var store = gridListGenes.store;
+	store.fetch ({
+		onComplete: jumpToAllVar
+	});
+}
+
+function addPatientsNameInOptionObj(patNames) {
+    var tabPat = patNames.split(",");
+    var listOfOptions = [];
+    var i = 0;
+    dojo.forEach(tabPat, function(patName){
+        var select = false;
+        if (i == 0) { select = true; }
+        var option = { value: patName, label: patName, selected: select };
+        listOfOptions.push(option);
+        i++;
+    });
+    dijit.byId("select_pat_names").addOption(listOfOptions);
+}
+
+function addPatientsOptions() {
+    //var urlPat = url_path + 'packages/export/export_vcf.pl?project='+projectName+'&patient=all';
+    var urlPat = url_path + 'json_output_nodb/genes_json.pl?project=' + projectName + '&get_patients=1';
+    var patNames = '';
+    $.getJSON(urlPat,function(result) {
+        $.each(result, function(i, field) {
+          addPatientsNameInOptionObj(field);
+       });
+    });
+}
+
+function exportVcf() {
+    var filter_args = construct_url_filter_data();
+    var patName = dijit.byId("select_pat_names").get('displayedValue');
+    var urlVcf = url_path + 'json_output_nodb/genes_json.pl?project=' + projectName + '&only_patient=' + patName + '&filter_chromosome=getAll&stat=vcf' + filter_args;
+    alert ("Click OK and wait your file patiently please.\n\nIf it's too long to get your file, please give us by email this URL:\n\n "+urlVcf+"\n\nThanks.");
+    window.location = urlVcf;
+}
+
+function enable_button(me,other,buttons,bool){
+	for (i=0;i<buttons.length;i++){
+	
+		buttons[i].setAttribute("disabled",bool);
+		
+	}
+	me.setAttribute("disabled",true);
+	other.setAttribute("disabled",false);
+	if (bool){
+		dd_genet.setAttribute("iconClass","individualIcon24");
+		
+		PanePatient.setAttribute('style','background-color:#00FFA6'); //FFFB00
+	}
+	else {
+	dd_genet.setAttribute("iconClass","familyIcon24");
+
+	PanePatient.setAttribute('style','background-color:#FF0000');
+	}
+}
+
+ 
+   
+   
+function loadAll (args,exclude) {
+
+	 var g = genetic_model;
+	  change_filtering_type(filtering_mode);
+	  change_filtering_model(g);
+	var hurl = cache_all_url+args;
+	var xhrArgs = {
+            url: hurl,
+            timeout:0,
+            handleAs: "json",
+            load: function(data) {
+				
+	// Grid patient update 
+	var store_patients = new dojo.data.ItemFileWriteStore({data:  {
+				identifier: 'id',
+				label: 'id',
+				items: data.items.patients
+			
+			}
+			});
+			
+		  refreshGrid(gridPatient,store_patients);
+		  gridPatient.store.fetch({
+		onItem :function (item, result){
+			var name= gridPatient.store.getValue(item,"name");
+			var value= gridPatient.store.getValue(item,"include");
+			var value2= gridPatient.store.getValue(item,"filter_heho");
+			if (!patients_status[name]) patients_status[name] = new Array(); 
+				patients_status[name]["include"]=value;
+				patients_status[name]["filter_heho"]=value2;
+		
+			},
+		onComplete: function (items, result){
+			hide_attic();
+		}	
+	});	
+	
+	// grid Genes update 	  
+		var store_genes = new dojo.data.ItemFileWriteStore({data:  {
+				identifier: 'id',
+				label: 'id',
+				items: data.items.genes
+			
+			}
+			});	
+			
+			refreshGrid(gridListGenes,store_genes);
+			
+		/* Tree diseases update */ 	
+			if (exclude != "diseases"){
+			var store_diseases = new dojo.data.ItemFileWriteStore({data:  {
+				identifier: 'id',
+				label: 'name',
+				items: data.items.diseases
+			
+			}
+			});	
+			refreshDiseasesTree(store_diseases);
+		
+			}
+			
+				/* Grid Families update */ 	
+			var store_families = new dojo.data.ItemFileWriteStore({data:  {
+				identifier: 'id',
+				label: 'id',
+				items: data.items.families
+			
+			}
+			});
+			
+		  refreshGrid(gridFamilies,store_families);
+			  gridFamilies.store.fetch({
+		onItem :function (item, result){
+			var name= gridFamilies.store.getValue(item,"name");
+			var value= gridFamilies.store.getValue(item,"include");
+			
+			if (!families_status[name]) families_status[name] = new Array(); 
+				families_status[name]["include"]=value;
+		
+			},
+		onComplete: function (items, result){
+			hide_attic();
+		}	
+	});	
+			/* Grid chromosome update */ 	
+			
+			var store_chr = new dojo.data.ItemFileWriteStore({data:  {
+				identifier: 'id',
+				label: 'id',
+				items: data.items.chromosomes
+			
+			}
+			});	
+			
+			
+			 store_chr.fetch({
+    	query: {
+       			name:"*"
+    			},
+		onComplete:printStats,
+	
+		onError: function(items){alert("error loading chromosome data");}
+	});
+		if (exclude != "chromosomes"){
+			refreshGrid(gridChromosome,store_chr);
+			}
+			
+				dijit.byId('waiting').hide();
+            },
+            error: function(error) {
+               alert("error loading data ");
+               console.log(hurl);
+            }
+		
+		
+
+       };
+	  var deferred = dojo.xhrGet(xhrArgs);
+	}
+function check_enter(e){
+   if(e.keyCode==13){
+   	setPassword();
+   	
+   }
+}
+
+function hide_attic(){
+	if (button_hide_attic.checked){
+	gridPatient.filter({include:new RegExp("1|0|-1")},true);
+	gridFamilies.filter({include:new RegExp("1|0|-1")},true);
+	}
+	else {
+		gridPatient.filter({name:"*"});
+	}
+}
+
+var filtering_mode ='ind';
+ function change_filtering_type(mode,u) {
+           filtering_mode = mode;
+             if (mode == "fam"){
+	     		dojo.style("PaneFamilies", {"opacity": 1});
+	  			//dojo.style("stat_filtering_type", { "color": "#FF0000"});
+	  			document.getElementById("stat_filtering_type").textContent= "Familial";
+	  			famind = 'Fam';
+	 			dojo.style("div_select_model_families", {"display": "inline-block"});	
+	  			dojo.style("div_select_model_individual", {"display": "none"});	
+	  			 dijit.byId("drop_type_filter").set("iconClass", "familyIcon24");	
+	  			 dijit.byId("drop_type_filter").set("label",  "familial");	
+	  			
+	     	} 
+     		else {
+	  			dojo.style("PaneFamilies", {"opacity": 0.3,"border-color":"#FFFFFF"});
+	  			dojo.style("div_select_model_families", {"display": "none"});
+	  			dojo.style("div_select_model_individual", { "display": "inline-block"});	
+	  			document.getElementById("stat_filtering_type").textContent= "Individual";
+                famind = 'Ind';
+	  			//dojo.style("stat_filtering_type", {"color": "#00FF7F"});
+	  			dijit.byId("drop_type_filter").set("iconClass",  "individualIcon24");
+	  			dijit.byId("drop_type_filter").set("label",  "individual");
+  	
+  			}
+  			change_filtering_model("none");
+        };
+        var genetic_model= 'none';
+ function change_filtering_model(model) {
+ 
+ 	genetic_model = model;
+ 	document.getElementById("stat_filter_model").textContent= model;
+ 	
+ 	if (filtering_mode=="fam") {
+ 			dijit.byId("drop_type_model_families").set("label",  "Genetic Model ("+model+")");
+ 				if (model == "none"){
+ 				dijit.byId("drop_type_model_families").set("iconClass",  "treeIcon32nb");
+ 				}
+ 				else {
+ 					dijit.byId("drop_type_model_families").set("iconClass",  "treeIcon32");
+ 				}
+ 		
+ 	}
+ 	
+ 	else {
+ 		dijit.byId("drop_type_model_individual").set("label",  "Genetic Model ("+model+")");
+ 		if (model == "none"){
+ 				dijit.byId("drop_type_model_individual").set("iconClass",  "oneIconnb");
+ 		}
+ 				else {
+ 					dijit.byId("drop_type_model_individual").set("iconClass",  "oneIcon");
+ 				}
+ 	}
+ 		
+ };
+ var filtering_level_ind ='variation';
+ function change_filtering_level_ind(fv) {
+ 	filtering_level_ind = fv;
+ 	dijit.byId("select_individual_type_ind").set("label",  fv);
+ 	document.getElementById("stat_filter_level").textContent= fv;
+ 	 dijit.byId("select_individual_type_ind").set("iconClass", fv+"Icon");	
+ 	
+ };
+ 
+ var filtering_level_fam ='variation';
+ function change_filtering_level_fam(fv) {
+ 	filtering_level_fam = fv;
+ 	dijit.byId("select_individual_type_fam").set("label",  fv);
+ 	document.getElementById("stat_filter_level").textContent= fv;
+ 	 dijit.byId("select_individual_type_fam").set("iconClass", fv+"Icon");	
+ };
+ 
+</script>
+	
+	
+    </head>
+    <body class="claro"  style ="font-size:10px;">
+ <div id="header_apple">
+	<span class="title_page">Projects List</span>
+	<span class="insetheader2"><img src="/icons/Polyicons/bipd4.png" width="50%" height="50%"></span>
+	<span class="insetheader3">Bioinformatics Paris Descartes</span>
+	<span class="title_credit">Université Paris Descartes , Institut Imagine</span>
+		<div id="header-content">
+				<span class="insetheader_projectname"> <label class ="label1" id="stat_project">---</label>
+
+					
+					
+				</span>
+				<br>
+				<span class="insetheader_description2">
+					<span class="insetheader_description"><label class = "label1" id="stat_description">---</label></span>
+				
+				</span>
+		</div>
+</div>
+
+		<div  id="toolbar" dojoType="dijit.Toolbar" style="height:18px;">
+			<span class="myspan">Samples  <label class = "label2" id="stat_sample">??</label></span>
+			<span class="myspan"><a>Chromosomes</a ><label class = "label2" id="stat_chr">??</label></span> 
+			<span class="myspan"><a>Genes</a> <label class = "label2" id="stat_gene">??</label></span>
+			<span class="myspan"><a>Variations</a> <label class = "label2" id="stat_var">??</label></span>
+			<span class="myspan"><a>Uniq</a><label class = "label2" id="stat_dif">??</label></span>
+			<span class="myspan"><a>He</a>	<label class = "label2" id="stat_he">??</label></span>
+			<span class="myspan"><a>Ho</a><label class = "label2" id="stat_ho">??</label></span>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<span dojoType="dijit.ToolbarSeparator"> </span>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<span class="span_toolbar_right"><a >Filtration Level <label class = "label2" id="stat_filter_level">Variations</label></a> </span>
+			<span class="span_toolbar_right"><a >Type <label class = "label2" id="stat_filtering_type">Individual</label></a></span>
+			<span class="span_toolbar_right"><a >Model <label class = "label2" id="stat_filter_model">-</label></a></span>
+			<span dojoType="dijit.ToolbarSeparator"> </span>
+			<div id="lock_button"  jsId="lock_button" dojoType="dijit.form.Button" iconClass="loginIcon" onClick='relogin();' showLabel="true" style="float:right">
+       							Login
+    				</div>
+    				
+    			
+	</div>
+
+	
+	
+
+
+
+	<div class="container" style="border: solid white 2px;border-style:outset;" >
+		
+		<div dojoType="dijit/TitlePane" id= "t1" title="Graphical View" onShow="show_graph=1;" onHide="show_graph=0" open="false">
+  
+				<!--<div dojotype="dijit.layout.ContentPane" id="div_viewer" layoutalign="client" style="height:200px"  title="Graphic" >
+				-->
+				<div dojoType="dijit.layout.BorderContainer"  style="height:400px" design="sidebar" gutters="true" liveSplitters="true" id="borderContainer" title="Graphic"  >	
+            
+					<div dojoType="dijit.layout.ContentPane" splitter="false" region="bottom" style="display:none" > 
+						<span id="over" class="infoSpan" style="height:1px"> </span>
+				
+					</div>
+					<div dojoType="dijit.layout.ContentPane" splitter="false" region="top"> 
+						 <div  dojoType="dijit.Toolbar">
+
+						 	view specific region :
+							chr <select jsId="chr_number" name ="select" dojoType="dijit.form.Select" style "height:50px">							
+								<option value="1" >1</option>
+								<option value="2">2</option>
+								<option value="3">3</option>
+								<option value="4">4</option>
+								<option value="5">5</option>
+								<option value="6">6</option>
+								<option value="7">7</option>
+								<option value="8">8</option>
+								<option value="9">9</option>
+								<option value="10">10</option>
+								<option value="11">11</option>
+								<option value="12">12</option>
+								<option value="13">13</option>
+								<option value="14">14</option>
+								<option value="15">15</option>
+								<option value="16">16</option>
+								<option value="17">17</option>
+								<option value="18">18</option>
+								<option value="19">19</option>
+								<option value="20">20</option>
+								<option value="21">21</option>
+								<option value="22">22</option>
+								<option value="X">X</option>
+								<option value="Y">Y</option>
+								<option value="MT">MT</option>
+							</select>
+							<input jsId="start_number" type="text" dojoType="dijit.form.NumberTextBox" 
+						value="0" constraints="{min:-1,places:0}" 
+					invalidMessage="Invalid number." style="width: 8em;">-
+						<input jsId="end_number" type="text" dojoType="dijit.form.NumberTextBox" 
+						value="0" constraints="{min:-1,places:0}" 
+					invalidMessage="Invalid number." style="width: 8em;">
+					
+					<input dojoType="dijit.form.FilteringSelect"  
+                    
+                   			    name="name"
+                   		    	
+								jsId="filterGenes"
+								id="label"
+								labelAttr= "label"
+								onChange = "displayGeneCover();"
+								
+                 			     />
+                 			 	
+				
+					
+							<span dojoType="dijit.ToolbarSeparator"></span> IGV Viewer 
+							<div dojoType="dijit.form.Button" iconClass="igvIcon" onClick='LoadIGVPatients();' showLabel="true">
+       							Load 
+    						</div>
+							<div dojoType="dijit.form.Button" jsId ="view_igv" iconClass="igvView" onClick='viewIGV();'  showLabel="true">
+       							View
+    						</div>
+    						
+							<span dojoType="dijit.ToolbarSeparator">
+							</span> 
+							Zoom 
+								<div dojoType="dijit.form.Button"  iconClass="zoominIcon" onClick='zoomIn()'  showLabel="false">
+       						
+    						</div>
+							<div dojoType="dijit.form.Button"  iconClass="zoomoutIcon" onClick='zoomOut()'  showLabel="false">
+       						
+    						</div>
+							coverage : 
+							
+							<select  jsId="select_coverage" data-dojo-type="dijit.form.Select" onChange="change_coverage()">
+    						<option value="cov0">0</option>
+    						<option value="cov5" selected="selected">5</option>
+    						<option value="cov10">10</option>
+   							 <option value="cov15">15</option>
+   						 	<option value="cov20">20</option>
+							</select>
+							
+							</div>
+							<div  dojoType="dijit.Toolbar">Bip-d Tools&nbsp;
+								<input dojoType="dijit.form.ComboBox"  
+                   			    name="name"
+                   		    	queryExpr="${0}",
+                   		    	searchAttr: "label",
+								jsId="listcompletion"
+								id="listcompletion"
+								labelAttr= "label"
+								labelType="html"
+								promptMessage="Please enter a Gene name"
+								selectOnClick="true"
+							    />    
+							   <div dojoType="dijit.form.Button" iconClass="zoomIcon" onClick='viewGraphic();' showLabel="true">
+       							Region View
+    						</div>
+							<div dojoType="dijit.form.Button" iconClass="coverageIcon" onClick='show_coverage_detail();' showLabel="true">
+       							Coverage view
+    						</div>
+    						<div dojoType="dijit.form.Button" iconClass="dejavuIcon" onClick='show_deja_vu();' showLabel="true">
+       							deja vu
+    						</div>
+    					
+    					</div>
+				
+					</div>
+					
+				   <div id="right" dojoType="dijit.layout.ContentPane" splitter="true" region="center" >
+                        <div id='map' style="height:35px;overflow-x:hidden;overflow-y:auto;border:1px solid #7EABCD;resize:vertical;"></div>
+                        <br>
+                        <div id='drawing_transcripts' style="height:115px;overflow-x:hidden;overflow-y:auto;border:1px solid #7EABCD;resize:vertical;"></div>
+                        <br>
+                        <div id='drawing_patients' style="height:115px;overflow-x:auto;overflow-y:auto;border:1px solid #7EABCD;resize:vertical;"></div>
+                    </div>			
+				</div> <!-- end div graphic accordion -->
+                </div> <!-- title -->
+				
+			 <div dojoType="dijit.TitlePane" title="Workspace" style ="padding:1px">
+			<div dojotype="dijit.layout.BorderContainer" style="height:330px;padding:1px" design="sidebar" gutters="true" liveSplitters="true" id="div_chr" layoutalign="client" title="Workspace" selected="true">
+			  <div dojoType="dijit.layout.ContentPane"  style="width:25%;padding:1px"  data-dojo-props="splitter:true, region:'leading'">
+ 		<div dojoType="dijit.layout.TabContainer" style="padding:1px">
+        <div dojoType="dijit.layout.ContentPane" title="Chromosomes" style="padding:1px">
+        	<div dojoType="dijit.layout.ContentPane" region="top" style="padding:0px;height:11%" splitter="false"> 
+        	 <div  dojoType="dijit.Toolbar">
+							<div dojoType="dijit.form.Button" iconClass="eyeIcon" onClick='viewAllChromosome();' showLabel="true">
+       							Select All
+    						</div>
+					
+			 </div>
+			 
+			 </div>
+		<div dojoType="dijit.layout.ContentPane" style="padding:1px;height:90%;width:300em" region="center" >
+			<!-- <table style="border: 1px solid #9f9f9f;">
+	  			<tr><td  style="height:auto" >
+				-->
+           		<div  id="gridChromosome" class="grid" dojoType="dojox.grid.DataGrid" style="width:100%;padding:1px"  jsId="gridChromosome" rowcount="10000" autowidth="true" structure="layoutChromosome"></div>
+				<!--</td>
+				</tr>
+				</table>
+				-->
+			</div>
+			
+		</div>
+				
+		
+        <div dojoType="dijit.layout.ContentPane" title="Region">
+       <div  dojoType="dijit.Toolbar" >
+							<div dojoType="dijit.form.Button" iconClass="plusIcon" onClick='addRow();' showLabel="true">
+       							Add Region
+    						</div>
+    					<div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconRemoveFormat" showLabel="true" onclick="delete_filter()"> 
+							Delete
+						</div>
+						
+						<div dojoType="dijit.form.Button" iconClass="dijitEditorIcon dijitEditorIconCreateLink" onClick='changeRegionsState(0,"include");' showLabel="true">
+       							And
+    						</div>
+    					<div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconDelete" showLabel="true" onClick='changeRegionsState(-1,"include");' > 
+							Exclude
+						</div>
+   						<div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconUnlink" showLabel="true" onClick='changeRegionsState(2,"include");'> 
+							Remove
+						</div>
+
+			</div> <!-- END TOOLBAR -->
+			<table style="border: 1px solid #9f9f9f;" cellspacing="10">
+	  			<tr><td  style="height:100px" >
+	  				
+            		<div id="gridRegion"  class="grid" dojoType="dojox.grid.DataGrid" jsId="gridRegion"  selectable="1" rowcount="10000" autowidth="true" structure="layoutRegion">
+            		</div>	
+				</td></tr>
+	 			
+			</table>	
+					 
+        </div><!-- END REGION TAB -->
+		  <div dojoType="dijit.layout.ContentPane" title="Diseases">
+		  	<div id="tree_gene_atlas">
+			</div>
+		  </div>      
+
+				
+				<div dojoType="dijit.layout.ContentPane" title="Filter">
+ 				<table  style="border: 1px solid #9f9f9f;width:100%;height:100%" cellspacing="0">
+					<tr><td> 
+						<div id="toolbar1" dojoType="dijit.Toolbar">
+							<div dojoType="dijit.form.Button" id="toolbar1.copy" iconClass="dijitEditorIcon dijitEditorIconSelectAll" onClick='viewFilter(this);' showLabel="true">
+       							 Load Filter
+    						</div>
+    					<div dojoType="dijit.form.Button" id="toolbar1.cut" iconClass="dijitEditorIcon dijitEditorIconSave" showLabel="true" onClick='showFilter();'> 
+							Save
+						</div>
+   
+    					<div dojoType="dijit.form.Button" id="toolbar1.paste" iconClass="dijitEditorIcon dijitEditorIconRemoveFormat" showLabel="true" onClick='deleteFilter();'>
+        					Delete
+    					</div>
+    					
+						</div> 
+					</td></tr>	
+ 				
+					<tr><td> 
+						<div  style="width:150px;height:150px" id="gridFilter"   dojoType="dojox.grid.DataGrid" jsId="gridFilter" rowcount="10" autowidth="true" structure="layoutFilter">
+   						</div>
+   					</td></tr>	
+
+				</table>
+				</div>	
+    </div>
+				
+		
+			  </div> <!-- end div grid chromosome -->
+
+			  <div dojoType="dijit.layout.ContentPane" style="padding:0px;" data-dojo-props="splitter:true, region:'center'">
+			  
+			  <div dojoType="dijit.layout.BorderContainer" style="padding:5px;">
+			  	 <div dojoType="dijit.layout.ContentPane"  style="border-color:#B22148;padding:0px;    box-shadow: #B3B3B3 3px 3px 2px;" data-dojo-props="splitter:true, region:'top'"  >
+			  	 
+			  	 		<div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+			  	 				
+			  	 	<span>Filter </span>
+							<span dojoType="dijit.ToolbarSeparator">
+							</span>
+							<div dojoType="dijit.form.Button" iconClass="dijitEditorIcon dijitEditorIconCreateLink" onClick='changePatientsState(0,"include");' showLabel="true">
+       							Intersect
+    						</div>
+    					<div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconDelete" showLabel="true" onClick='changePatientsState(-1,"include");'> 
+							Exclude
+						</div>
+   
+    					<div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconUnlink" showLabel="true" onClick='changePatientsState(1,"include");'>
+        					or
+    					</div>
+						<div dojoType="dijit.form.Button"  iconClass="trashIcon" showLabel="true" onClick='changePatientsState(2,"include");'>
+        					in the attic
+    					</div>
+    					<span>&nbsp; at least </span> 
+    						<input jsId="filter_identical_number" type="text" dojoType="dijit.form.NumberTextBox" 
+						value="" constraints="{min:-1,max:100,places:0}" 
+					invalidMessage="Invalid number." style="width: 5em;">
+					<span dojoType="dijit.ToolbarSeparator">
+					</span>
+					
+					<span dojoType="dijit.ToolbarSeparator">
+				</span>
+			
+				
+			
+				<div data-dojo-type="dijit/form/DropDownButton" id="drop_type_filter" data-dojo-props="iconClass:'individualIcon'">	
+					<span>Individual</span>	
+										
+				<div data-dojo-type="dijit/DropDownMenu" >
+				    <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'familyIcon24'" onClick="change_filtering_type('fam')">
+				        Familial</div>
+				         <div data-dojo-type="dijit/MenuSeparator"></div>
+				    		<div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'individualIcon24'" onClick="change_filtering_type('ind')">
+				        Individual</div>
+				    
+					</div>
+				</div>
+				<span dojoType="dijit.ToolbarSeparator">
+						</span>
+				<span id="div_select_model_families">
+				<div id="drop_type_model_families"  data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass:'treeIcon32nb'" >	
+					<span>Genetic Model (-)</span>	
+				<div data-dojo-type="dijit/DropDownMenu" style="font-size:12px">
+				        <div data-dojo-type="dijit/MenuItem"  onClick="change_filtering_model('none')">none</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'treeIcon32'" onClick="change_filtering_model('recessif')">recessif</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'treeIcon32'" onClick="change_filtering_model('compound')">compound</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'treeIcon32'" onClick="change_filtering_model('denovo')">denovo</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'treeIcon32'" onClick="change_filtering_model('strict-denovo')">strict-denovo</div>
+				         <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'treeIcon32'"  onClick="change_filtering_model('dominant')">dominant</div>
+					</div>
+				</div>
+				</span>
+				<span id="div_select_model_individual">
+				<div id="drop_type_model_individual"  data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass:'oneIconnb'">	
+					<span>Genetic Model (-)</span>			
+ 				<div data-dojo-type="dijit/DropDownMenu" style="font-size:12px">
+					 <div data-dojo-type="dijit/MenuItem"  onClick="change_filtering_model('none')">none</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'oneIcon'" onClick="change_filtering_model('recessif')">recessif</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'oneIcon'" onClick="change_filtering_model('compound')">compound</div>
+					</div>
+				</div>
+				</span>
+					</div>
+					
+			  	 </div>
+			  	 <div dojoType="dijit.layout.ContentPane"  style="border-color:#73C8A9;padding:0px;   box-shadow: #B3B3B3 3px 3px 2px;" data-dojo-props="splitter:true, region:'center'"  >	
+			<div dojoType="dijit.layout.BorderContainer" jsId="border_individual"  style="padding:2px;">
+				<div dojoType="dijit.layout.ContentPane" region="top" style="padding:0px; " splitter="false"> 
+						<div  dojoType="dijit.Toolbar" style ="font-size : 9px;padding:0px;">
+							<img src="images/polyicons/man-icon24.png" style="vertical-align:middle" height="24" width="24"></img>
+						
+						<span dojoType="dijit.ToolbarSeparator">
+						</span>
+				<div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconDelete" showLabel="true" onClick='changePatientsState(1,"filter_heho");'>
+        					homozygous
+    					</div>
+						<div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconDelete" showLabel="true" onClick='changePatientsState(0,"filter_heho");'>
+        					heterozygous
+    					</div>
+							<span dojoType="dijit.ToolbarSeparator">
+							</span>
+						<div dojoType="dijit.form.Button"  iconClass="plusIcon" showLabel="true" onClick='changePatientsState(-1,"filter_heho");'>
+        					Add All
+    					</div>
+    					
+    					<span dojoType="dijit.ToolbarSeparator">
+    					</span>
+    						<div dojoType="dijit.form.Button"  iconClass="refreshIcon" showLabel="true" onClick="view_all_in_attic()">
+        					view all
+    					</div>
+    					<button jsId="button_hide_attic" dojoType="dijit.form.ToggleButton" checked="false" label="hide attic" iconClass="dijitRadioIcon" onChange="hide_attic();">
+    					</button>
+    					 
+    					<span dojoType="dijit.ToolbarSeparator">
+    					</span>
+							<div id="select_individual_type_ind" data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass:'variationIcon'">	
+					<span>variation</span>	
+				<div data-dojo-type="dijit/DropDownMenu" >
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'variationIcon'" onClick="change_filtering_level_ind('variation')">variation</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'geneIcon'" onClick="change_filtering_level_ind('gene')">genes</div>
+				      
+					</div>
+				</div>
+					</div> <!-- END TOOLBAR -->		
+					</div> <!-- END TOP -->	
+					<div dojoType="dijit.layout.ContentPane"  jsId="PanePatient"  style="padding:Opx" region="leading" splitter="false">
+						
+						<div id="gridPatient"  dojoType="dojox.grid.DataGrid" selectable="1" elasticView="2"   jsId="gridPatient" rowcount="10000" autowidth="true" structure="layoutPatient">
+						</div>
+						
+					
+					</div>	
+				</div>
+			</div>	<!-- end div grid Patient -->
+			
+
+ 				<div dojoType="dijit.layout.ContentPane" id="PaneFamilies"  style="box-shadow: #B3B3B3 3px 3px 2px;border-color:#FE4040;width:370px;padding:1px" id="resume_filter"   data-dojo-props="splitter:true, region:'trailing'" >
+ 					 	
+				 		<div dojoType="dijit.layout.BorderContainer" style="padding:0px;box-shadow: #B3B3B3 3px 3px 2px;">
+				<div dojoType="dijit.layout.ContentPane" region="top" style="padding:0px;" splitter="false"> 
+		   	<div  dojoType="dijit.Toolbar" style ="font-size : 9px">
+		   			<img src="images/polyicons/family-on.png" style="vertical-align:middle" height="24" width="24"></img>
+					<div id="select_individual_type_fam" data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass:'variationIcon'">	
+					<span>variation</span>	
+				<div data-dojo-type="dijit/DropDownMenu" >
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'variationIcon'" onClick="change_filtering_level_fam('variation')">variation</div>
+				        <div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass:'geneIcon'" onClick="change_filtering_level_fam('gene')">genes</div>
+					</div>
+				</div>
+				
+						</div><!-- end toolbar famille -->
+			</div>
+		
+				<div   dojoType="dijit.layout.ContentPane" region="center" style="padding:3px;" splitter="false"> 
+					
+					 	<div id="gridFamilies" dojoType="dojox.grid.DataGrid" selectable="1" elasticView="2"   jsId="gridFamilies" rowcount="10000" autowidth="true" structure="layoutFamilies">
+						</div>
+					
+				</div>
+			</div><!--  end div families -->
+			</div><!--  end div families + individual -->
+		</div>
+		</div>
+		</div>
+		</div><!-- end div Accordion workspace -->
+		<!--</div> end div Accordion !!!!! -->
+		
+	  <div dojoType="dijit.TitlePane"  title="Filter variations">
+	  		<div dojoType="dijit.layout.ContentPane" region="top" style="padding:0px; box-shadow: 1px 0 1px rgba(0, 0, 0, 1);" splitter="false"> 
+		
+
+	  <div  dojoType="dijit.Toolbar" style ="font-size : 9px;">
+	<div jsId="dd_dbsnp" data-dojo-type="dijit.form.DropDownButton"  data-dojo-props="iconClass:'dijitIconTable'">
+  	<span>Dbsnp</span>
+  
+  	<div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_dbsnp,[filter_dbsnp_none,filter_dbsnp_1p,filter_dbsnp,filter_phenotype],["Nofreq","<1%",">1%","clinical"],"DBSNP")' >
+  	 	<div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+    		<table style="border:1px solid #9f9f9f; " align="center">	
+							<caption >
+								<span class="filterLabelActif2" >DBSNP</span>
+							</caption>	
+							 <td style="border: 1px solid #9f9f9f; "> 
+								<button jsId="filter_dbsnp_none" dojoType="dijit.form.ToggleButton" checked="true" label="No Freq" iconClass="dijitCheckBoxIcon">
+								</button>
+							</td>
+							 <td style="border: 1px solid #9f9f9f; "> 
+								<button jsId="filter_dbsnp_1p" dojoType="dijit.form.ToggleButton" checked="false" label="< 1%" iconClass="dijitCheckBoxIcon">
+								</button>
+							</td>
+							<td style="border: 1px solid #9f9f9f; ">
+								<button jsId="filter_dbsnp" dojoType="dijit.form.ToggleButton" checked="false" label="> 1%" iconClass="dijitCheckBoxIcon">
+								</button>
+							</td>	
+							<td style="border: 1px solid #9f9f9f; ">
+									<button jsId="filter_phenotype" dojoType="dijit.form.ToggleButton" checked="true" label="Clinical" iconClass="dijitCheckBoxIcon">
+						</button>
+							</td>
+							</table>
+			</div>
+  		</div>
+	</div>
+	
+	<!-- button EVS-->
+	  <span data-dojo-type="dijit.ToolbarSeparator">
+	  </span>		
+	  <div jsId="dd_evs" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconTable'">
+  		<span>EVS </span>
+  
+ 		 <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_evs,[filter_evs_1p,filter_evs],["<1%",">1%"],"EVS")' >
+  			 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+				 <table style="border:1px solid #9f9f9f;">		
+							  <caption> <span class="filterLabelActif2">EVS</span></caption>
+							<td style="border: 1px solid #9f9f9f;">
+								<button jsId="filter_evs_1p" dojoType="dijit.form.ToggleButton" checked="false" label="<1%" iconClass="dijitCheckBoxIcon">
+								</button>
+							</td>		
+							<td style="border: 1px solid #9f9f9f;">
+								<button jsId="filter_evs" dojoType="dijit.form.ToggleButton" checked="false" label=">1%" iconClass="dijitCheckBoxIcon">
+								</button></td>
+				</table>
+	 		</div>
+		</div>
+	</div>
+	  <span data-dojo-type="dijit.ToolbarSeparator">
+	  </span>
+	<!-- button 1KG -->
+	  <div jsId="dd_1kg" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconTable'">
+  <span>1kg</span>
+  <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_1kg,[filter_1kg_1p,filter_1kg],["<1%",">1%"],"1KG")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 	<table style="border:1px solid #9f9f9f;">	
+						 <caption> <span class="filterLabelActif2">1KG</span></caption>
+						<td style="border: 1px solid #9f9f9f; " ><button jsId="filter_1kg_1p" dojoType="dijit.form.ToggleButton" checked="false" label="<1%" iconClass="dijitCheckBoxIcon"></button></td>
+						<td style="border: 1px solid #9f9f9f; "><button jsId="filter_1kg" dojoType="dijit.form.ToggleButton" checked="false" label=">=1%" iconClass="dijitCheckBoxIcon"></button></td>
+		</table>
+	 </div>
+	</div>
+	</div>
+	
+	
+	  <span data-dojo-type="dijit.ToolbarSeparator">
+	  </span>
+	<!-- dejavu -->
+	
+  <button data-dojo-type="dijit.form.Button"  data-dojo-props="iconClass:'dijitIconTable'">Deja vu</button>
+
+		<button id="dejavu_spinner" dojoType="dijit.form.NumberSpinner" value="0" samllDelta="1" jsId="dejavu_spinner" style ="width:40px">
+		</button>
+	<span id ="nb_projects">/ -1</span>	
+	  <input id="dejavu_ho" jsId="dejavu_ho" data-dojo-type="dijit/form/CheckBox" value="1" /><label for="dejavu_ho">only ho</label> 
+
+  <span data-dojo-type="dijit.ToolbarSeparator">
+  </span>
+	<!--  varuiation type-->
+	  <div jsId="dd_type" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+  <span>variation type</span>
+
+  <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_type,[filter_substitution,filter_deletion,filter_large_deletion,filter_insertion],["sub","del","ldel","ins"],"variation type")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 <table style="border:1px solid #9f9f9f;">
+						 <caption> <span class="filterLabelActif2">Variation Type </span></caption>
+						<td><button jsId="filter_substitution" dojoType="dijit.form.ToggleButton" checked="true" label="substitution" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_deletion" dojoType="dijit.form.ToggleButton" checked="true" label="deletion" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_large_deletion" dojoType="dijit.form.ToggleButton" checked="true" label="large deletion (ho)" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_insertion" dojoType="dijit.form.ToggleButton" checked="true" label="insertion" iconClass="dijitCheckBoxIcon"></button></td>
+			</table>
+	 </div>
+	</div>
+	</div>
+	  <span data-dojo-type="dijit.ToolbarSeparator"></span>
+	  
+	  	<!-- button confidence -->
+	  <div jsId="dd_score" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconTable'">
+  <span>Confidence</span>
+  <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_score,[filter_score2,filter_score1,filter_score0],["High","Med","Low"],"Confidence")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 	<table style="border:1px solid #9f9f9f;">	
+						 <caption> <span class="filterLabelActif2">Condidence</span></caption>
+						<td style="border: 1px solid #9f9f9f; " ><button jsId="filter_score2" dojoType="dijit.form.ToggleButton" checked="true" label="Strong" iconClass="dijitCheckBoxIcon"></button></td>
+						<td style="border: 1px solid #9f9f9f; "><button jsId="filter_score1" dojoType="dijit.form.ToggleButton" checked="true" label="Medium" iconClass="dijitCheckBoxIcon"></button></td>
+						<td style="border: 1px solid #9f9f9f; "><button jsId="filter_score0" dojoType="dijit.form.ToggleButton" checked="true" label="Low" iconClass="dijitCheckBoxIcon"></button></td>
+		</table>
+	 </div>
+	</div>
+	</div>
+	<span data-dojo-type="dijit.ToolbarSeparator">
+	</span>
+
+	  <span data-dojo-type="dijit.ToolbarSeparator">
+	  </span>
+	<!-- text search -->
+
+  
+						<span class="filterLabelActif2"> search :</span>
+					 <input jsId="filter_text" dojoType="dijit.form.TextBox">
+				  <span data-dojo-type="dijit.ToolbarSeparator"></span>		
+									<button dojoType="dijit.form.Button" onClick='stats();' data-dojo-props="iconClass:'dijitIconConfigure'" align="right">
+                               		<big><b>Run</b></big>
+     							 </button>		
+
+</div>
+
+<!-- toolbar for somatic -->
+<span id="span_somatic" style ="font-size : 9px;display:none">
+  <div  dojoType="dijit.Toolbar" style ="font-size : 9px">
+  	<span class="filterLabelActif2"> Somatic Filter  :</span>
+  	<!-- button cosmic -->
+
+<div id="dd_cosmic" jsId="dd_cosmic" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconTable'">
+  <span>Cosmic</span>
+  <div id="tt_cosmic" data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_cosmic,[filter_not_cosmic,filter_cosmic],["not","in"],"cosmic")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 	<table style="border:1px solid #9f9f9f;">	
+						 <caption> <span class="filterLabelActif2">Cosmic</span></caption>
+						<td style="border: 1px solid #9f9f9f; " ><button jsId="filter_not_cosmic" dojoType="dijit.form.ToggleButton" checked="true" label="not" iconClass="dijitCheckBoxIcon"></button></td>
+						<td style="border: 1px solid #9f9f9f; "><button jsId="filter_cosmic" dojoType="dijit.form.ToggleButton" checked="true" label="in" iconClass="dijitCheckBoxIcon"></button></td>
+		</table>
+	 </div>
+	</div>
+	</div>
+	
+		<div  jsId="dd_somatic" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'individualIcon'">
+  <span>Somatic Model</span>
+	<div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_somatic,[filter_dblevt,filter_loh],["dbl evt","loh"],"Somatic Model")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 <table style="border:1px solid #9f9f9f;">
+						<caption> <span class="filterLabelActif2">Somatic Model </span></caption>
+						<td><button jsId="filter_dblevt" onClick="change_status_buttons([filter_loh]);" dojoType="dijit.form.ToggleButton" checked="false" label="dbl evt" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_loh"  onClick="change_status_buttons([filter_dblevt]);" dojoType="dijit.form.ToggleButton" checked="false" label="loh" iconClass="dijitCheckBoxIcon"></button></td>
+		</table>
+	 </div>
+	</div>
+	</div>	
+
+  </div> 
+  </span><!-- end toolbar for somatic -->
+	  <div  dojoType="dijit.Toolbar" style ="font-size : 9px;">
+<span class="filterLabelActif2"> Non Coding Consequence  :</span>
+<!-- no exonic -->
+<div  jsId="dd_no_exonic" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+  <span>Not exonic</span>
+
+  <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_no_exonic,[filter_intergenic,filter_nocoding],["intergenic","intronic"],"Not exonic")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 <table style="border:1px solid #9f9f9f;">
+						<caption> <span class="filterLabelActif2"> Non exonic  </span></caption>
+							<td><button jsId="filter_intergenic" dojoType="dijit.form.ToggleButton" checked="false" label="Intergenic" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_nocoding" dojoType="dijit.form.ToggleButton" checked="false" label="Intronic" iconClass="dijitCheckBoxIcon"></button></td>
+						</table>
+	 </div>
+	</div>
+	</div>
+	<!-- no exonic -->
+<div  jsId="dd_not_coding" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+  <span>Non-Coding RNA</span>
+
+  <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_not_coding,[filter_ncRNA,filter_pseudogene,filter_mature],[ "ncRNA","Pseudogene","mature-miRNA"],"Non-Coding RNA")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 <table style="border:1px solid #9f9f9f;">
+						<caption> <span class="filterLabelActif2"> No-Coding RNA  </span></caption>
+					<td><button jsId="filter_pseudogene" dojoType="dijit.form.ToggleButton" checked="false" label="Pseudo" iconClass="dijitCheckBoxIcon"></button></td>
+					<td><button jsId="filter_ncRNA" dojoType="dijit.form.ToggleButton" checked="true" label="ncRNA" iconClass="dijitCheckBoxIcon"></button></td>
+					<td><button jsId="filter_mature" dojoType="dijit.form.ToggleButton" checked="true" label="mature-miRNA" iconClass="dijitCheckBoxIcon"></button></td>
+	
+	</table>
+	 </div>
+	</div>
+	</div>
+		<!-- utr, splicing -->
+	<div  jsId="dd_utr_splicing" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+  <span>UTR,Splicing</span>
+
+  <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_utr_splicing,[filter_utr,filter_splicing,filter_essential_splicing],["utr","splicing","essential sp."],"UTR,Splicing")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 <table style="border:1px solid #9f9f9f;">
+						<caption> <span class="filterLabelActif2">UTR,Splicing  </span></caption>
+								<td><button jsId="filter_utr" dojoType="dijit.form.ToggleButton" checked="true" label="Utr" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_splicing" dojoType="dijit.form.ToggleButton" checked="true" label="Splicing" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_essential_splicing" dojoType="dijit.form.ToggleButton" checked="true" label="essential splicing" iconClass="dijitCheckBoxIcon"></button></td>
+
+	</table>
+	 </div>
+	</div>
+	</div>
+	<!-- Substitution Coding -->
+	  <span data-dojo-type="dijit.ToolbarSeparator">
+	  </span>		
+	<span class="filterLabelActif2">Coding Consequences:</span>
+	<div  jsId="dd_with" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+  <span> with Consequence</span>
+
+  <div data-dojo-type="dijit.TooltipDialog" onHide='choice_filter(dd_with,[filter_frameshift,filter_coding,filter_stop,filter_phase],["Frameshift","Non-Syno","stop-gained","start/stop-lost"],"with Consequence")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	 <table style="border:1px solid #9f9f9f;">
+		
+						<td><button jsId="filter_coding" dojoType="dijit.form.ToggleButton" checked="true" label="Non-synonymous" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_frameshift" dojoType="dijit.form.ToggleButton" checked="true" label="frameshift" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_stop" dojoType="dijit.form.ToggleButton" checked="true" label="stop-gained" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_phase" dojoType="dijit.form.ToggleButton" checked="true" label="(start/stop)-lost" iconClass="dijitCheckBoxIcon"></button></td>
+						
+	</table>
+	 </div>
+	</div>
+	</div>
+	
+	<div  jsId="dd_without" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+  <span> Without Consequence </span>
+
+  <div data-dojo-type="dijit.TooltipDialog"  onHide='choice_filter(dd_without,[filter_silent,filter_non_frameshift],["Synonymous","No-frameshift"],"Without Consequence")' >
+  	 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	
+						<table style="border:1px solid #9f9f9f;">
+							<td><button jsId="filter_silent" dojoType="dijit.form.ToggleButton" checked="false" label="Synonymous" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_non_frameshift" dojoType="dijit.form.ToggleButton" checked="true" label="no-frameshift" iconClass="dijitCheckBoxIcon"></button></td>
+						</table>	
+	</div>
+	</div>
+						
+	</div>
+	</div><!-- end tool bar -->
+	
+	  <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	  
+	  <span class="filterLabelActif2"> Predictions  :</span>
+	  	<div  jsId="dd_polyphen" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+  		<span> Polyphen </span>
+
+  			<div data-dojo-type="dijit.TooltipDialog"  onHide='choice_filter(dd_polyphen,[filter_polyphen_3,filter_polyphen_2,filter_polyphen_1,filter_polyphen_0],["Probably","Possibly","begnin","unknown"],"Polyphen")' >
+  	 			<div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	
+						<table style="border:1px solid #9f9f9f;">
+						
+						<td><button jsId="filter_polyphen_3" dojoType="dijit.form.ToggleButton" checked="true" label="Probably Damaging" iconClass="dijitCheckBoxIcon" disabled></button></td>
+						<td><button jsId="filter_polyphen_2" dojoType="dijit.form.ToggleButton" checked="true" label="Possibly Damaging" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_polyphen_1" dojoType="dijit.form.ToggleButton" checked="true" label="begnin" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_polyphen_0" dojoType="dijit.form.ToggleButton" checked="true" label="unknown" iconClass="dijitCheckBoxIcon"></button></td>
+						</table>	
+				</div>
+			</div>
+						
+			</div>
+		
+	
+		
+	<div  jsId="dd_sift" data-dojo-type="dijit.form.DropDownButton"   data-dojo-props="iconClass:'dijitIconFilter '">
+	
+ 		 <span> sift </span>
+	
+  			<div data-dojo-type="dijit.TooltipDialog"  onHide='choice_filter(dd_sift,[filter_sift_2,filter_sift_1,filter_sift_0],["deleterious","begnin","unknown"],"sift")' >
+  	 				<div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
+	
+						<table style="border:1px solid #9f9f9f;">
+					
+						<td><button jsId="filter_sift_2" dojoType="dijit.form.ToggleButton" checked="true" label="deleterious" iconClass="dijitCheckBoxIcon" disabled></button></td>
+						<td><button jsId="filter_sift_1" dojoType="dijit.form.ToggleButton" checked="true" label="begnin" iconClass="dijitCheckBoxIcon"></button></td>
+						<td><button jsId="filter_sift_0" dojoType="dijit.form.ToggleButton" checked="true" label="unknown" iconClass="dijitCheckBoxIcon"></button></td>
+						</table>	
+					</div>
+			</div>	
+	</div>
+	
+	<span class="filterLabelActif2"> remove  if  filtered by Polyphen </span>
+		 <input type="radio" name="polyphen_sift_test" id="or" data-dojo-type="dijit/form/RadioButton"/>
+		  <label for="radioOne">or </label>
+    	<input type="radio" checked="true" data-dojo-type="dijit/form/RadioButton" name="polyphen_sift_test" jsId="filter_polyphen_sift" value="and"/> 
+		<label for="radioTwo">and </label>
+	<span class="filterLabelActif2"> SIFT </span>	
+			
+	</div>
+	 
+	</div> <!-- END TOOLBAR --> 
+	</div>
+</div>
+
+ <div dojoType="dijit.TitlePane" title="Genes" style ="padding:0px;font-size : 10px;">
+ 	<div dojoType="dijit.layout.BorderContainer" style =" border-color:#037889;box-shadow: #B3B3B3 3px 3px 2px;width:1220px;;height:500px;font-size : 10px;">	
+            
+  
+		<div dojoType="dijit.layout.ContentPane" splitter="false" region="center"  style="padding:0px;;padding:0px" splitter="false">
+
+ 		
+        <div id="gridListGenes"  dojoType="dojox.grid.DataGrid" elasticView="2" jsId="gridListGenes" rowcount="10000" autowidth="true" structure="layoutListGenes" >
+                                	
+          </div>
+		</div>
+
+
+        	<!-- table pour organiser le tableau et les boutons sous le tableau -->
+          
+        <div dojoType="dijit.layout.ContentPane" splitter="false" region="bottom"  style="padding:0px; box-shadow: 1px 0 1px rgba(0, 0, 0, 1);" splitter="false">
+               
+   <div  align="center" dojoType="dijit.Toolbar" style ="font-size : 10px;">
+			    <button dojoType="dijit.form.Button" onClick='viewAllSelectedVariations();' iconClass="viewAll">
+                            View All Genes
+                </button>	 
+            	<!-- bouton pour rafraichir le tableau -->
+				<!-- bouton pour exporter les donnes du tableau -->
+				<button id="1470" dojoType="dijit.form.Button" onClick='export_filter_data()' iconClass="exportIcon">
+                    Export by genes
+                </button>
+				<button id="1471" dojoType="dijit.form.Button" onClick='export_filter_by_variations()' iconClass="exportIcon">
+                    Export by variations
+                </button>  
+                <button id="1472" dojoType="dijit.form.Button" onClick='exportVcf()' iconClass="exportIcon">
+                    Export  VCF for patient
+                </button>
+                <select class="option" id="select_pat_names" dojoType="dijit.form.Select"> </select>    
+		</div>
+                    
+                   
+       </div>
+	</div>			
+    </div>
+</div>
+</div>
+ 
+	<footer> 
+		
+	<div id="footer1">
+		<span class="div-logo-paris-descartes"> </span>
+		<span class="div-logo-imagine"> </span>
+	</div>
+	</footer>
+	  	<!-- div pour le message de chargement des donnes -->
+
+	  	
+	
+ 
+
+    <div dojoType="dijit.Dialog" jsId="waiting" id="waiting" style="height:80px" >
+        Loading Data <img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle">
+    </div>
+	
+	  	<!-- div pour le login -->
+	   <div id="login" dojoType="dijit.Dialog" title="Login">
+   	  <div dojoType="dijit.TooltipDialog" id="dialog1" title="Login Form" execute="setPassword(arguments[0]);">
+   	 <form method="post" class="signin" action="#">
+                <fieldset class="textbox">
+            	<label class="username">
+                <span>Username</span>
+                <input id="username" name="username" value="" type="text" autocomplete="on" placeholder="Username">
+                </label>
+                <label class="password">
+                <span>Password</span>
+                <input id="passwd" name="password" value="" type="password" placeholder="Password">
+                </label>
+                </fieldset>
+          </form>
+ 					<div align="center">
+                    <div   type="submit" dojoType="dijit.form.Button" iconClass="loginIcon"  showLabel="true">
+       						<div style='width:150px'>Sign in</div>
+
+    				</div>
+    		</div>
+                  
+                       
+            </div>
+        </div>
+<div id="dialog_view_filter" jsId = "dialog_view_filter" dojoType="dijit.Dialog" title="view" style="height:300px;width:500px" >
+	
+	<div  style="height:200px" id="gridViewFilter" class="grid" dojoType="dojox.grid.DataGrid" elasticView="2" jsId="gridViewFilter" rowcount="10000" autowidth="true" structure="layoutViewFilter">			
+	</div>	
+	 <div dojoType="dijit.form.Button" id="cancel1" iconClass="dijitEditorIcon dijitEditorIconSelectAll" onClick='dialog_view_filter.hide();' showLabel="true">
+       							 Cancel
+    						</div>
+    <div dojoType="dijit.form.Button" id="load1" iconClass="dijitEditorIcon dijitEditorIconSave" showLabel="true" onClick='loadFilter();'> 
+							Load
+			</div>
+ 
+</div>
+<div id="dialog_filter" jsId = "dialog_filter" dojoType="dijit.Dialog" title="Save your filter">
+	<div dojoType="dijit.form.Form" id="myForm" jsId="myForm" encType="multipart/form-data" action="save_filter.pl" method="post">
+		 <table style="border: 1px solid #9f9f9f;" cellspacing="10">
+		 <tr>
+		 	<td > <label for="name"> Name:</label> </td>
+            <td><input type="text" name="name" required="true" dojoType="dijit.form.ValidationTextBox"/></td>
+        </tr>
+		 	<tr>
+		 		<td ><label for="filter Region">  Region: </label></td>
+		 		<td><input type="text"  name="filter_region"  dojoType="dijit.form.ValidationTextBox"/></td>
+			</tr>
+			<tr><td><hr></td><td><hr></td></tr>
+			<tr>
+				<td > <label for="filter_not_patient"> Not Samples:</label> </td>
+				<td><input type="text"  name="filter_not_patient"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+			<tr>
+				<tr>
+				<td > <label for="filter_attic"> Attic Samples:</label> </td>
+				<td><input type="text"  name="filter_attic"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+			<tr>
+				<td > <label for="filter_patient"> And  Samples :</label> </td>
+				<td><input type="text"  name="filter_patient"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+
+				<tr>
+				<td > <label for="filter_he"> heterozygote</label> </td>
+				<td><input type="text"  name="filter_he"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+				<tr>
+				<tr>
+				<td > <label for="filter_ho"> homozygote</label> </td>
+				<td><input type="text"  name="filter_ho"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+				<tr>
+				<tr><td><hr></td><td><hr></td></tr>
+				<tr>
+					<td > <label for="filter_fam"> And  Families:</label> </td>
+				<td><input type="text"  name="filter_fam"  dojoType="dijit.form.ValidationTextBox"/></td>
+				</tr>
+				<tr>
+					<td > <label for="filter_not_fam"> NOT  Families:</label> </td>
+				<td><input type="text"  name="filter_not_fam"  dojoType="dijit.form.ValidationTextBox"/></td>
+				</tr>
+				<tr><td><hr></td><td><hr></td></tr>	
+				<tr>
+				<td > <label for="filter_gene_level"> gene_level</label> </td>
+				<td><input type="text"  name="filter_gene_level"  dojoType="dijit.form.ValidationTextBox"/></td>
+				</tr>
+				<tr>
+				<td > <label for="filter_type_variation"> functional</label> </td>
+				<td><input type="text"  name="filter_type_variation"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+				<tr>
+				<td > <label for="model"> Genetic model </label> </td>
+				<td><input type="text"  name="filter_genetic_model"  dojoType="dijit.form.ValidationTextBox"/></td>
+				</tr>
+				<tr>
+				<td > <label for="type"> type </label> </td>
+				<td><input type="text"  name="filter_mode"  dojoType="dijit.form.ValidationTextBox"/></td>
+				</tr>
+				<tr>
+				<td > <label for="level_ind"> level individual </label> </td>
+				<td><input type="text"  name="filter_level_ind"  dojoType="dijit.form.ValidationTextBox"/></td>
+				</tr>
+				<td > <label for="level_fam"> level familial</label> </td>
+				<td><input type="text"  name="filter_level_fam"  dojoType="dijit.form.ValidationTextBox"/></td>
+				</tr>
+			<tr><td><input type="text"  name="project"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+			<tr><td><input id="filter_username" jsId = "filter_username" type="text"  name="user"  dojoType="dijit.form.ValidationTextBox"/></td></tr>
+			<tr><td colspan="2" style="font-size:150%;">
+				<button dojoType="dijit.form.Button" type="button" onclick="saveFilter();">SAVE</button>
+			</td></tr>
+		 </table>
+	</div>	
+</div>
+  
+ <div dojoType="dijit.Dialog" jsId="dialog_region" id="dialog_region" title="copy/paste region">	
+
+ <div  style="width: 250px; height: 300px;">
+ 
+  <table>
+  	<tr><td>example Format : <b>1 100 10000</b><br> <i>(ie chr1 start 100 ==> end 10000)</i></td></tr>
+  	<tr><td>
+        <button dojoType="dijit.form.Button" type="button" onclick="addRegion('[\n]+','[ \t]+');">Load </button>
+    </td></tr>
+	<tr><td>
+   <textarea jsId="text_region"  dojoType="dijit.form.SimpleTextarea"  rows="15" cols="25">
+   </textarea>
+       </td></tr>
+      </table> 
+    </div>
+</div>
+
+<!-- formulaire pour exporter les donnes du tableau au format xls (cf cgi authentification.pl--> 	
+	 <form id="formexport" name="formexport" enctype="multipart/form-data"  action="/polymorphism-cgi/authentification.pl" method="post">
+ 		<input name="type"  value="export" type = "hidden">
+		<input id="filename"  name="filename"  value="zzz" type = "hidden">
+	 </form>
+
+
+    </body>
+    </html>
