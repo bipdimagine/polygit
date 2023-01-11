@@ -1,0 +1,514 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<title>Coverage / CNV</title>
+		<style type="text/css">
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/resources/dojo.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dijit/themes/claro/claro.css";
+			 @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/resources/claroGrid.css";
+			@import  "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/editor/plugins/resources/css/Save.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/widget/Dialog/Dialog.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/enhanced/resources/claro/EnhancedGrid.css";
+        	@import "/resources/demos/style.css";
+		 	@import "css/polycss/button.css";
+		 	@import "css/polycss/button2.css";
+		 	@import "css/polydiag/polydiag.css";
+			@import "css/polycss/login.css";
+			@import "css/polycss/header-footer.css";
+			@import "//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/claro.css";
+     		@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/document.css";
+     		 @import "//maxcdn.bootstrapcdn.com/bootswatch/3.3.4/flatly/bootstrap.min.css";
+      		/*@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3//dijit/tests/css/dijitTests.css";*/
+      		@import "js/cbtree/themes/claro/claro.css";
+      		@import "//netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css";
+      		@import "css/polycss/myMblSwitch.css";
+      		@import "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css";
+      		@import "js/igv/igv-1.0.9.css";
+      		@import "https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css";
+
+			html, body {
+			    width: 100%;
+			    height: 100%;
+			    margin: 0;
+			}
+
+			.claro .demoLayout .edgePanel {
+			    background-color: #d0e9fc;
+			}
+
+			.tundra #navMenuCoverage.dijitToolbar {
+				background-image:none;
+				background-repeat: repeat-x;
+            }
+                
+           .spinner {
+			  margin: 2px auto 0;
+			  width: 70px;
+			  text-align: center;
+			}
+
+			.spinner > div {
+			  width: 18px;
+			  height: 18px;
+			  background-color: #FFFFFF;
+			
+			  border-radius: 100%;
+			  display: inline-block;
+			  -webkit-animation: bouncedelay 1.4s infinite ease-in-out;
+			  animation: bouncedelay 1.4s infinite ease-in-out;
+			  /* Prevent first frame from flickering when animation starts */
+			  -webkit-animation-fill-mode: both;
+			  animation-fill-mode: both;
+			}
+
+			.spinner .bounce1 {
+			  -webkit-animation-delay: -0.32s;
+			  animation-delay: -0.32s;
+			}
+			
+			.spinner .bounce2 {
+			  -webkit-animation-delay: -0.16s;
+			  animation-delay: -0.16s;
+			}
+			
+			@-webkit-keyframes bouncedelay {
+			  0%, 80%, 100% { -webkit-transform: scale(0.0) }
+			  40% { -webkit-transform: scale(1.0) }
+			}
+			
+			@keyframes bouncedelay {
+			  0%, 80%, 100% { 
+			    transform: scale(0.0);
+			    -webkit-transform: scale(0.0);
+			  } 40% { 
+			    transform: scale(1.0);
+			    -webkit-transform: scale(1.0);
+			  }
+			}     
+</style>
+
+
+<script type="text/javascript" src="//code.jquery.com/jquery-2.0.2.min.js"></script>
+     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+     	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+     	
+<!--     
+<script type="text/javascript" src="js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>
+-->
+
+<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+<script type="text/javascript" src="js/polyjs/include_OLD.js" djConfig="parseOnLoad:true"></script>
+<script type="text/javascript" src="js/polyjs/Utility/vp.js" djConfig="parseOnLoad:true"></script>
+<script type="text/javascript" src="js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+<script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad:true"></script>
+<script type="text/javascript" src="js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+<script type="text/javascript" src="js/polyjs/chart_coverage.js"></script>
+<script type="text/javascript" src="js/polyjs/electro.js"></script>
+<script type="text/javascript" src="js/polyjs/polyweb.js"></script>
+<script type="text/javascript" src="js/polyjs/coverage/coverage_global.js"></script>
+<script type="text/javascript" src="js/polyjs/coverage/coverage_split.js"></script>
+<!--
+<script type="text/javascript" src="http://www.dojotoolkit-fr.org/wp-content/uploads/dojo-adapter.js"></script>
+-->
+<script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+<script>
+
+	dojo.require("dijit.layout.LinkPane");
+	dojo.require("dijit.Toolbar");
+	dojo.require("dijit.layout.AccordionContainer");
+	dojo.require("dijit.form.NumberSpinner");
+	dojo.require("dijit.form.Button");
+	dojo.require("dijit.form.FilteringSelect");
+	dojo.require("dojo.data.ItemFileWriteStore");
+	dojo.require("dijit.TooltipDialog");
+	dojo.require("dijit.Dialog");
+	dojo.require("dojo.cookie");
+	dojo.require("dijit.form.SimpleTextarea");
+	dojo.require("dojox.editor.plugins.Save");
+	require(["dojo/parser", "dijit/form/CheckBox","dojo/data/ObjectStore","dojo/store/JsonRest","dijit/form/DropDownButton","dojox/form/CheckedMultiSelect"]);
+	dojo.require("dojox.grid.EnhancedGrid");
+	dojo.require("dojox.grid.enhanced.plugins.DnD");
+	dojo.require("dojox.grid.enhanced.plugins.NestedSorting");
+	dojo.require("dojox.grid.enhanced.plugins.IndirectSelection");
+	dojo.require("dijit.layout.ContentPane");
+	require(["dojo/parser", "dijit/layout/TabContainer"]);
+	require(["dojox/layout/ScrollPane","dijit/ToolbarSeparator"]);
+	dojo.require("dijit.ProgressBar");
+	dojo.require("dijit.TitlePane");
+	dojo.require("dijit.Menu");
+	dojo.require("dojox.grid.enhanced.plugins.Menu");
+	dojo.require("dijit.Menu");
+	dojo.require("dijit.MenuItem");
+	dojo.require("dijit.layout.StackContainer");
+	dojo.require("dijit.layout.StackController");	
+	dojo.require("dojox.layout.TableContainer");
+	dojo.require("dojox.mobile");
+	dojo.require("dojox.mobile.parser"); 
+	dojo.require("dojox.mobile.Switch"); 
+	require([ "dojo/_base/xhr","dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+		
+	var first_panel_name = 'all';
+	var storeP;
+	var storeG;
+	var storeGroup;
+	var project_name = param('project'); //"NGS2013_0201";
+	var projectName =  project_name;
+  	var gene_id = param('gene');
+	var patients_done = 0;
+	var tab_coverage = [];
+	var first_panel_name = 'none';
+  
+  
+  	dojo.addOnLoad(function(){
+		launch_coverage_view();
+	});
+ 
+	function launch_coverage_view() {
+		dijit.byId('waiting').show();
+		
+		if (patients_done == 1) {
+			preload_coverage(store_patients, 1);
+			return;
+		}
+		
+		var grid = new dojox.grid.EnhancedGrid({
+			id: 'gridPatients',
+			structure: layoutPatients,
+			rowSelector: '20px',
+			plugins: {indirectSelection: {headerSelector:true,  field: 'active',name: 'Select', width:"40px", styles:"text-align: center;",selected:true}}}, document.createElement('div')
+		);
+		grid.startup();	
+		
+		var grid2 = new dojox.grid.EnhancedGrid({
+			id: 'gridGenes',
+			structure: layoutGenes,
+			//rowSelector: '20px',
+			selection:{mode:'single'}, 
+			plugins: {indirectSelection: { headerSelector:true, field: 'active',name: 'Select', width:"40px", styles:"text-align: center;"}}}, document.createElement('div')
+		);
+	  	grid2.startup();
+		
+		var url1 = construct_url(url_patients);
+		
+		var store_patients = new dojo.data.ItemFileReadStore({ url: url1 });
+		grid.setStore(store_patients);
+		grid.store.fetch({
+			onComplete: function(items){
+				patients_done = 1;
+				preload_coverage(store_patients, 1);
+			}
+		});
+		grid.startup();
+	}
+
+	var first = 0;
+	function preload_coverage(storeP,reload_flag) { 
+		if (first >0) {
+			reload(5);
+		    return;
+		}
+		first ++;
+		var tsamples = storeP._arrayOfAllItems;//dijit.byId("gridPatients").selection.getSelected();
+		var url_cnv =    construct_url(url_cnv_overview)+"&test_cache=1";
+		
+		require(["dojo/promise/all", "dojo/Deferred", "dojo/request", "dojo/_base/array", "dojo/dom-construct", "dojo/dom", "dojo/json", "dojo/domReady!"], function(all, Deferred, request, arrayUtil, domConstruct, dom, JSON) {
+			var p="";
+			var samples = new Array();
+			var requests = new Array();
+			var url = construct_url(url_cached_coverage);
+			if (gene_id) {
+				url += '&gene=' + gene_id;
+			}
+			var progress_id =0;
+			var max =0;
+            var i,j,temparray,chunk = 4;
+            
+            if (tsamples.length < 4) {
+            	i,j,temparray,chunk = 1;
+            }
+            
+			var labels = new Array;
+			var z =0;
+            for (i=0,j=tsamples.length; i<j; i+=chunk) {
+				temparray = tsamples.slice(i,i+chunk);
+                var temp = new Array();
+                for (var x=0;x<temparray.length;x++){
+                    temp[x] = temparray[x].label;
+                }
+                labels[z++] = temp.join(",");
+            }
+                     
+			max = labels.length +1;
+            for(i=0;i<Math.round(labels.length/2);i++){
+            	var this_url = url+"&patient_cached="+ labels[i];
+            	var ltmp = this_url.split('?');
+				var url_diag = ltmp[0];
+				var arguments = ltmp[1];
+				var xhr = new XMLHttpRequest();
+				xhr.responseType = 'json';
+				xhr.open('POST', url_diag, true);
+				xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+				xhr.onreadystatechange = function() { // Call a function when the state changes.
+				    if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+						progress_id ++;
+						myProgressBar.set( { value: progress_id } );
+				    }
+				}
+				xhr.send(arguments);
+			}           
+			myProgressBar.set( { value: 0,maximum:max } );
+			dijit.byId('waiting_progress').show();   
+            
+			var todo = 0; 
+			for(i=Math.round(labels.length/2);i<labels.length;i++){
+				todo++;
+			}
+			var done = 0;
+			for(i=Math.round(labels.length/2);i<labels.length;i++){
+				var this_url = url+"&no_cache=1&patient_cached="+ labels[i];
+            	var ltmp = this_url.split('?');
+				var url_diag = ltmp[0];
+				var arguments = ltmp[1];
+				var xhr = new XMLHttpRequest();
+				xhr.responseType = 'json';
+				xhr.open('POST', url_diag, true);
+				xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+				xhr.onreadystatechange = function() { // Call a function when the state changes.
+				    if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+				    	done++;
+						progress_id ++;
+						myProgressBar.set( { value: progress_id } );
+						if (done == todo) {
+							dijit.byId('waiting_progress').hide();
+							if (reload_flag ==1) { reload(5); }
+						}
+				    }
+				}
+				xhr.send(arguments);
+			}           
+            
+            var this_url = url_cnv;
+        	var ltmp = this_url.split('?');
+			var url_diag = ltmp[0];
+			var arguments = ltmp[1];
+			var xhr = new XMLHttpRequest();
+			xhr.responseType = 'html';
+			xhr.open('POST', url_diag, true);
+			xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+			xhr.onreadystatechange = function() { // Call a function when the state changes.
+			    if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+					progress_id ++;
+					myProgressBar.set( { value: progress_id } );
+			    }
+			}
+			xhr.send(arguments);
+		});
+	}
+		
+   function loading (){ 
+        require(["dojo/promise/all", "dojo/Deferred", "dojo/request", "dojo/_base/array", "dojo/dom-construct", "dojo/dom", "dojo/json", "dojo/domReady!"],
+            function(all, Deferred, request, arrayUtil, domConstruct, dom, JSON) {	
+            }
+        );
+	}
+
+	function reload(value){
+		var table_coverage = dijit.byId("table_coverage");
+		var this_order;
+		if (dijit.byId("ENST_order").get("value") == "on") { this_order = "name"; }
+		else {this_order = "position"; }
+		var start_url = url_coverage;
+		if (value == 5) { start_url = url_coverage_overview; }
+		if (value == 3) { start_url = url_primer_coverage_overview; }
+		if (value == 4) { start_url =url_cnv_overview ; }
+		var url = construct_url(start_url);
+		if (gene_id) {
+			url += '&gene=' + gene_id;
+		}
+		var nbTranscripts = dijit.byId("gridGenes").selection.getSelected().length;
+		nbTranscripts = 1;
+		if (value ==1){
+			dijit.byId("ENST_order").set("value", "on");
+			url+= "&only_red=1";
+		}
+		else if (value ==2){
+			dijit.byId("ENST_order").set("value", "on");
+			url+= "&only_orange=1";
+		}
+		else if (value ==3){
+			dijit.byId("ENST_order").set("value", "on");
+			url+= "&multiplex=1";
+		}
+		else if (value ==4){
+			url+= "&cnv=1";
+			url+='&order='+this_order;
+		}
+		else if (value ==5){
+			url+='&order='+this_order;
+			url+="&only_low="+dijit.byId("only_low").get('value');
+		}
+				
+		var step = 100;
+		var first =-1;
+		var previous = -1;
+		var ii =1;
+			
+		for (var n=0;n<nbTranscripts;n+=step){ 
+			if (first == -1){ first =ii;} 
+			if (!tab_coverage[ii]){
+				tab_coverage[ii] = new dijit.layout.ContentPane({
+						title: ii,
+						content: " ",
+						closable: true,
+						id:"cov50_"+n,
+						onClose: function() {
+						var t = this.get('title');
+						delete tab_patients[t];
+						return true;
+					},
+					onShow:  function() {
+						var z =this.nextTab +0;
+						if (this.nextTab && tab_coverage[z]){
+							tab_coverage[z].refresh();
+						}
+					}
+				});
+		    	table_coverage.addChild(tab_coverage[ii]);
+			}
+			tab_coverage[ii].setHref(url+"&start="+n+"&step="+step);
+			tab_coverage[ii].nextTab = ii+1; 
+			ii++; 	
+		}
+		table_coverage.selectChild( tab_coverage[first]);
+		select_exons = new Array();
+		sanger_variations_valid = new Array();
+		sanger_exons_valid = new Array();
+		type = "todo";
+		dijit.byId('waiting').hide();
+	}
+	  
+	function reload_cnv(value){
+		var start_url = url_cnv_overview_dude ;
+		var url = construct_url(start_url);
+		var widget = dijit.byId("slider_cnv");
+		var value = widget.get("value");
+		url += "&quality="+value;
+		if (gene_id) {
+			url += '&genes=' + gene_id;
+			url += "&cnv=1&order=name&start=0&step=100&force_visualisation=1";
+		}
+		url = url.replace('&patients=all', '');
+		cnv_panel.setHref(url);
+	}
+	
+	function zoomCoverage(tr){
+		var start_url = url_coverage;
+		var url = construct_url(start_url,tr);
+		dijit.byId("popup_coverage").show();
+		dijit.byId("div_popup_coverage").setHref(url);
+	}
+	  
+	function zoomCnv(tr,r,panel){
+		var start_url = url_cnv_dude;
+		var url = construct_url(start_url,tr);
+		dijit.byId("popup_coverage").show();
+		dijit.byId("div_popup_coverage").setHref(url+"&large=1&panel="+panel);
+	}
+
+	var hideorshow =0;	
+	var button_colors= ["#90ED7D","#217DBB","#E08E0B","#65999F","#6CBF70"]	;
+	var nbshow=0;
+	function hideShowWait(){
+	     if (dijit.byId('waiting')) {
+			if (hideorshow%2 ==0){
+				dijit.byId('waiting').show();
+				change_loading_button("pwaiting",button_colors[nbshow%6]);
+				nbshow++;
+			}
+			else {
+				dijit.byId('waiting').hide();
+			}
+			hideorshow ++;
+		}
+	}	
+
+	function change_loading_button(name,color1,color2){
+		var o = document.getElementById(name);
+	    if (!o){ return; }
+		o.style.backgroundColor = color1;            
+	    return;
+	}
+  
+</script>
+</head>
+	<body class="claro" >
+	
+		<div  data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true" style="width: 100%;height:100%">
+	
+			<div  data-dojo-type="dijit.layout.ContentPane"  data-dojo-props="region:'top'" style="width: 100%;padding:0px;height:65px;overflow-y:hidden" >
+				<div  data-dojo-type="dijit.Toolbar"  id="navMenu" style ="font-size: 10px;">
+					<div jsId="header" data-dojo-type="dijit.layout.ContentPane"  style="background-color:#F4F4F4;width:100%;min-height:35px;" >
+					</div>
+					<div style="width: 50%;margin: 0 auto;">
+		  				&nbsp;
+					</div>            
+					<span class="insetheader4"><img src="/icons/Polyicons/bipd4.png" width="50%" height="50%"></span>
+					<span class="insetheader5" style="padding-right:8px;">Bioinformatics Paris Descartes,Imagine Institute</span>
+				</div>
+			</div>
+		
+			<div id="tabPrincipal" jsId="tabPrincipal" data-dojo-type="dijit/layout/TabContainer"  data-dojo-props="region: 'center'" tabPosition="top" tabStrip="true" style="font-size:11px">
+		
+	   			<div id="coverage_stack" data-dojo-props="selected:true" data-dojo-type="dijit/layout/ContentPane" title="Coverage"  href="include_html/diag/coverage_container.html"></div>
+	    
+	    		<div id="cnv_stack" data-dojo-type="dijit/layout/ContentPane" title="CNVs"  href="include_html/diag/cnv_container.html" onload = "reload_cnv(1);" > </div>
+		
+		 	</div>
+	 	</div>
+	 	
+	 	<div dojoType="dijit.Toolbar">      
+            Patient : <label id="label_patients">
+            </label>
+      	</div>
+      	
+      	<div dojoType="dijit.Dialog" jsId="waiting_progress" id="waiting_progress" style="height:80;" >
+	        <div data-dojo-type="dijit/ProgressBar" style="width:300px" data-dojo-id="myProgressBar" id="myProgressBar" data-dojo-props="maximum:25"></div>
+	        <br>
+	        <span>Loading coverage ...</span>
+	    </div>
+	    
+	    <div dojoType="dijit.Dialog" jsId="waiting" id="waiting" style="width:210px;height:120px;background-color:#2C3E50" >
+		           <div class="panel panel-primary" id="pwaiting1" style="height:100%">
+		                <div class="panel-heading"  id="pwaiting">
+		                     <h2 class="panel-title" style="font-size: 10px">Loading  
+		                         <div class="spinner pull-right">
+		                            <div class="bounce1"></div>
+		                            <div class="bounce2"></div>
+		                             <div class="bounce3"></div>
+		                            </div>
+		                         </h2>
+		              </div>
+			</div>
+		</div>
+	 	
+	 	<div id="popup_coverage" dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" > 
+	        <div  id="div_popup_coverage" jsId="div_popup_coverage" data-dojo-type="dijit/layout/ContentPane">	
+	 		</div>	
+		</div>
+		
+		<div id="graph_exon" dojoType="dojox.widget.Dialog"   dimensions="[1020,550]" > 
+		    <table style="width: 100%; height: 100%;">
+		        <tr><td> <div id="title_graph" style="font-size: 11pt;height: 40px;"></div></td></tr>
+		        <tr><td style="width: 810px; height: 450px;" > <div id="chart_exon" style="width: 1010px; height: 450px;"></div></td></tr>
+		           <tr><td> <div id="status" style="font-size: 11pt;width: 1010px; height: 20px;"></div></td></tr>
+		    </table> 
+		</div>
+	 			
+	</body>
+</html>

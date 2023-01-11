@@ -1,0 +1,494 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="icon" type="image/png" href="images/polyicons/application_view_tile.png">
+  
+    <style type="text/css">
+        .tundra #toolbar_dejavu.dijitToolbar {
+            height: 50px;
+            background-image: url("../images/polyicons/subtitle_greyblack.png");
+            background-repeat: repeat-x;
+        }
+   </style>
+</head>
+
+<body class="tundra" onsubmit='return false'">
+<form name="DejaVu">
+    <div id="toolbar_dejavu" dojoType="dijit.Toolbar" style="height:25px;">
+        <span class="myspan"><a>Used Build</a> <label class = "label2" id="aff_build">HG19</label></span>
+        <span class="myspan" style="margin-left: 5px"><a>Research</a> <label class = "label2" id="affichage">---</label></span>
+        <span class="myspan"><a>Nb Var</a> <label class = "label2" id="aff_nbres_dejavu">---</label></span>
+        <span class="myspan"><a>Nb DejaVu Composite</a> <label class = "label2" id="aff_nbhe_dejavu">Click HeComp tab to run analysis</label></span>
+        <span style="float:right;">
+            <span class="span_toolbar_right">Login  <label class = "label2" id="aff_log">---</label></span>
+            <span class="span_toolbar_right"><a>Authorized Project(s)</a ><label class = "label2" id="aff_nbauthproj">---</label></span>
+        </span>
+    </div>
+    
+       <div dojoType="dijit.layout.ContentPane" style="width:100%;" region="top">
+            <div dojoType="dijit.Toolbar">
+                <div style="width:auto">
+                    <table>
+                        <td>
+                            <div>
+                                <span><img style="margin-left: 5px" id='help_search' src="../images/menu/help_2.png" margin-bottom="inherit"/></span>
+                            </div>
+                            <div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'help_search',position:['below']">
+                                <div dojoType="dijit.layout.BorderContainer" style="width:640px;height:80px;background-color: #F4F4F4;padding: 3px;">
+                                    <table text-align="center" style="width:100%">
+                                        <td style="width:100%">
+                                            <table text-align="center" border="2px" style="width:100%">
+                                                <tr>
+                                                <td style="width: 20%" align="center"><b>BY VARIANT</b></td>
+                                                    <td style="width: 80%" align="center"><b>VAR ID</b> <i>(Ex: 7_92383888_A_C)</i></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="width: 20%" align="center"><b>BY GENE</b></td>
+                                                    <td style="width: 80%" align="center"><b>ENSEMBL ID</b> <i>(Ex: ENSG00000105810)</i> or <b>GENE NAME</b> <i>(Ex: CDK6)</i></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="width: 20%" align="center"><b>BY TRANSCRIPT</b></td>
+                                                    <td style="width: 80%" align="center"><b>ENSEMBL ID</b> <i>(Ex: ENST00000518655)</i></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="width: 20%" align="center"><b>BY REGION</b></td>
+                                                    <td style="width: 80%" align="center"><b>CHR:START-END</b> <i>(Ex: 1:1-75000, for chr 1 from position 1 to 75.000)</i></td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span style="margin-left: 5px"><b>TEXT SEARCH : </b></span></td>
+                        <td><input id="id" type="text" dojoType="dijit.form.TextBox" value="" style="width: 15em;" disabled="true"></input></td>
+                        <td><button id="b_run" dojoType="dijit.form.Button" onClick="launchId(dijit.byId('id').getValue())" data-dojo-props="iconClass:'dijitIconSearch'" disabled="true" > <big><b>Run</b></big></button></td>
+                        <td><span data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                        <td><button dojoType="dijit.form.Button" onClick="showAll()" data-dojo-props="iconClass:'dijitIconConfigure'"> <big><b>No Filter</b></big></button></td>
+                        <td><span data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                        <td><input style="margin-left:5px;" id="show_large_deletion" jsId="show_large_deletion" dojoType="dijit.form.CheckBox" checked="false"></input></td>
+                        <td><span style="font-size:10px">Show Large Deletion</span></td>
+                        <td><span data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                        <td><input style="margin-left:5px;" id="filter_ho" jsId="filter_ho" dojoType="dijit.form.CheckBox" checked="false" onClick="updateStatusButons('filter_ho')"></input></td>
+                        <td><span style="font-size:10px">Ho</span></td>
+                        <td><input style="margin-left:5px;" id="filter_strict_ho" jsId="filter_strict_ho" dojoType="dijit.form.CheckBox" checked="false" onClick="updateStatusButons('filter_strict_ho')"></input></td>
+                        <td><span style="font-size:10px">Ho Exclusive</span></td>
+                        <td><span data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                        <td><span><button id="b_export_xls_results" dojoType="dijit.form.Button" onClick='export_xls_results()' iconClass="exportIcon" style="padding-right:3px" disabled>XLS Results</button></span></td>
+                        <td><span><button id="b_export_xls_he_comp" dojoType="dijit.form.Button" onClick='export_xls_he_comp()' iconClass="exportIcon" style="padding-right:3px" disabled>XLS He Comp</button></span></td>
+                        <td><span data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                        <td>
+                            <span>
+                                <img src="../images/menu/info_details_ok.png"  id="image_info_details"/>
+                                <div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'image_info_details',position:['below']">
+                                    <div id="div_resume">
+                                        <span><font color="red"><b><u>Stats: </u></b></font></span><br>
+                                        <table border="2px" align-text="center">
+                                            <tr>
+                                                <td style="width: 130px;"><span><b>Nb Projects</b></span></td>
+                                                <td style="width: 120px;"><span id="span_projects"---</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 130px;"><span><b>Nb Exomes</b></span></td>
+                                                <td style="width: 120px;"><span id="span_exomes"---</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 130px;"><span><b>Nb Ciliomes</b></span></td>
+                                                <td style="width: 120px;"><span id="span_ciliomes"---</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 130px;"><span><b>Nb Target Genes</b></span></td>
+                                                <td style="width: 120px;"><span id="span_diagnostics"---</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 130px;"><span><b>Nb Samples</b></span></td>
+                                                <td style="width: 120px;"><span id="span_samples"---</span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </span>
+                        </td>
+                    </table>
+                </div>
+            </div>
+        </div>
+       
+        <div dojoType="dijit/layout/ContentPane" style="width:100%;" region="top">
+            <div dojoType="dijit/TitlePane" title="<b>Graphics and grid results filters</b>" open="false" id="panel_graphics" onShow="refresh()" style="width:100%;">
+                <div style="height:370px;width:100%;overflow-y:scroll;overflow-x:scroll">
+                    <center>
+                        <div style="margin-top:8px;width:100%;">
+                            <table style="width:100%;">
+                                <td style="width:30%;margin:1px;border:2px solid #7EABCD;">
+                                    <div>
+                                        <center><div id="chart_consequence_div"></div></center>
+                                    </div>
+                                </td>
+                                <td style="width:30%;margin:1px;border:2px solid #7EABCD;">
+                                    <div>
+                                        <center><div id="chart_polyphen_div"></div></center>
+                                    </div>
+                                </td>
+                                <td style="width:30%;margin:1px;border:2px solid #7EABCD;">
+                                    <div>
+                                        <center><div id="chart_sift_div"></div></center>
+                                    </div>
+                                </td>
+                            </table>
+                        </div>
+                    </center>
+                </div>
+            </div>
+            
+            <div dojoType="dijit/TitlePane" title="<b>Selected variant consequence(s) by each transcript</b>" open="false" id="panel_details" onShow="refresh()" style="width:100%;">
+                <div style="height:348px;width:100%;overflow-y:scroll;overflow-x:scroll">
+                    <div dojoType="dijit.Toolbar">
+                        <div>
+                            <span style="margin-left: 5px;margin-left: 5px" id="details_id"><b><u>Id: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;margin-left: 5px" id="details_chr"><b><u>Chr: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;margin-left: 5px" id="details_pos"><b><u>Pos: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;margin-left: 5px" id="details_rsname"><b><u>rsName: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;margin-left: 5px" id="details_freq"><b><u>dbSNP Freq: </b></u>N.A.</span>
+                        </div>
+                    </div>
+                    <br>
+                    <div style="height:300px;width:100%;overflow-y:scroll;overflow-x:scroll">
+                        <span dojoType="dojo.data.ItemFileReadStore" jsId="jsonDetails"></span>
+                        <table dojoType="dojox/grid/DataGrid"
+                            id    = "gridDetails"
+                            jsId  = "gridDetails"
+                            store = "jsonDetails"
+                            errorMessage = "<b><i>No Result...</b></i><br><br><b>Click</b> to a variant line in '<b>Results section</b>' to view its details."; 
+                            selectable = "true"
+                            selectionMode = "extended"
+                            query = "{ name: '*' }" >
+                            <thead><center>
+                                <tr>
+                                    <th width="10%" field="gene" formatter="formatReferenceGene"><b><center>Gene</b></center></th>
+                                    <th width="25%" field="description"><b><center>Gene description</b></center></th>
+                                    <th width="12%" field="transcript" formatter="formatTranscriptName"><b><center>Transcript</b></center></th>
+                                    <th width="12%" field="protein" formatter="formatProteinName"><b><center>Protein</b></center></th>
+                                    <th width="5%" field="exon"><b><center>Exon</b></center></th>
+                                    <th width="5%" field="cdna_pos"><b><center>Cdna pos</b></center></th>
+                                    <th width="5%" field="cds_pos"><b><center>Cds pos</b></center></th>
+                                    <th width="5%" field="prot_pos"><b><center>Prot pos</b></center></th>
+                                    <th width="8%" field="nomenclature"><b><center>Nomenclature</b></center></th>
+                                    <th width="8%" field="consequence"><b><center>Consequence</b></center></th>
+                                    <th width="5%" field="polyphen" formatter="formatPolyphen"><b><center>Polyphen Status</b></center></th>
+                                    <th width="5%" field="sift" formatter="formatSift"><b><center>Sift Status</b></center></th>
+                                </tr>
+                            </thead></center>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div dojoType="dijit/TitlePane" title="<b>Heterozygotes composites</b>" open="False" id="panel_he" onShow="refresh()" onclick="launchHeComp()" style="width:100%;">
+                <div  dojoType="dijit.Toolbar" style ="font-size:10px;">
+                    <div id="test" jsId="but_filters_hecomp" data-dojo-type="dijit.form.DropDownButton" data-dojo-props="iconClass:'dijitIconFilter '">
+                        <span class="filterLabelActif2"><b>FILTERS</b></span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <table>
+                                <col span="5" width="relative">
+                                <tr>
+                                    <button style="float:left;margin-left:20px" type="button" id="b_launch_clear_he" dojoType="dijit.form.Button" iconClass="dijitIconSearch" data-dojo-props="iconClass:'dijitIconConfigure'" onClick="doSearch_he('clear')"><b>Show All</b></button>
+                                    <button style="float:right;margin-right:20px" type="button" id="b_launch_run_he" dojoType="dijit.form.Button" iconClass="dijitIconSearch" data-dojo-props="iconClass:'dijitIconConfigure'" onClick="doSearch_he('run')"><b>Apply filters</b></button>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td><span style="margin-left:7px;"><b>A</b></span></td>
+                                    <td></td>
+                                    <td><span style="margin-left:5px;"><b>B</b></span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="filterLabelActif2">[Not Exonic]</span></td>
+                                    <td><span style="font-size:10px">Intergenic</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_intergenic" jsId="filter_intergenic" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_intergenic_2" jsId="filter_intergenic_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">Intronic</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_nocoding" jsId="filter_nocoding" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_nocoding_2" jsId="filter_nocoding_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="filterLabelActif2">[No-Coding RNA]</span></td>
+                                    <td><span style="font-size:10px">Pseudogene</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_pseudogene" jsId="filter_pseudogene" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_pseudogene_2" jsId="filter_pseudogene_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">ncRNA</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_ncRNA" jsId="filter_ncRNA" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_ncRNA_2" jsId="filter_ncRNA_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">Mature miRNA</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_mature" jsId="filter_mature" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_mature_2" jsId="filter_mature_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="filterLabelActif2">[Utr, Splicing]</span></td>
+                                    <td><span style="font-size:10px">Utr</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_utr" jsId="filter_utr" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_utr_2" jsId="filter_utr_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">Splice Region</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_splicing" jsId="filter_splicing" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_splicing_2" jsId="filter_splicing_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">Splice Acc/Don</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_essential_splicing" jsId="filter_essential_splicing" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_essential_splicing_2" jsId="filter_essential_splicing_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="filterLabelActif2">[Coding with consequence]</span></td>
+                                    <td><span style="font-size:10px">Missense</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_coding" jsId="filter_coding" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_coding_2" jsId="filter_coding_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">Frameshift</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_frameshift" jsId="filter_frameshift" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_frameshift_2" jsId="filter_frameshift_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">Stop-gained</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_stop" jsId="filter_stop" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_stop_2" jsId="filter_stop_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">(Start/Stop)-lost</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_phase" jsId="filter_phase" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_phase_2" jsId="filter_phase_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="filterLabelActif2">[Coding without consequence]</span></td>
+                                    <td><span style="font-size:10px">Synonymous</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_silent" jsId="filter_silent" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_silent_2" jsId="filter_silent_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td><span style="font-size:10px">No-frameshift</span></td>
+                                    <td><input style="margin-left:5px;" id="filter_non_frameshift" jsId="filter_non_frameshift" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                    <td><span style="margin-left:3px;" data-dojo-type="dijit.ToolbarSeparator"></span></td>
+                                    <td><input style="margin-left:3px;" id="filter_non_frameshift_2" jsId="filter_non_frameshift_2" dojoType="dijit.form.CheckBox" checked="true"></input></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <span id="nameA" style="margin-left:10px"></span>
+                    <span style="float:right;margin-right:5px">
+                        You look at composite heterozygote of
+                        <b><u><span id="aff_he" style="color:red;margin-right:5px;">None... </span></b></u>
+                    </span>
+                </div>
+        
+                <div style="height:400px;width:100%;overflow-y:scroll;overflow-x:scroll">
+                    <table dojoType="dojox/grid/DataGrid"
+                        id    = "gridHeComp"
+                        jsId  = "gridHeComp"
+                        selectable = "true"
+                        onRowClick = "onRowClick_HeComp"
+                        onRowDblClick = "onRowDblClick_hecomp"
+                        query = "{ id: '*' }" >
+                        <thead><center>
+                            <tr>
+                                <!--
+                                    <th width="40px" field="implicated" formatter="formatShowYourVariations"><b><center>Access</b></center></th>
+                                -->
+                                <th width="20%" field="var_1"><b><center>Variation 1</b></center></th>
+                                <th width="20%" field="consequence_1" formatter="formatConsequence"><b><center>Consequence 1</b></center></th>
+                                <th width="20%" field="var_2"><b><center>Variation 2</b></center></th>
+                                <th width="20%" field="consequence_2" formatter="formatConsequence"><b><center>Consequence 2</b></center></th>
+                                <th width="10%" field="nbProj" formatter="formatCellDejaVU"><b><center>Nb Project(s)</b></center></th>
+                                <th width="10%" field="nbPat" formatter="formatCellPat"><b><center>Nb Patient(s)</b></center></th>
+                            </tr>
+                        </thead></center>
+                    </table>
+                </div>
+            </div>
+            
+            <div dojoType="dijit/TitlePane" title="<b>Results</b>" open="True" id="panel_results" onShow="refresh()" style="width:100%;">
+                <div style="height:500px;width:100%;overflow-y:scroll;overflow-x:scroll">
+                    <table dojoType="dojox/grid/DataGrid"
+                        id    = "gridId"
+                        jsId  = "gridId"
+                        selectable = "true"
+                        selectionMode = "single"
+                        onRowClick = "onRowClick_details"
+                        onRowDblClick = "onRowClick_varInfos"
+                        plugin = "filter: { ruleCount: 3 }, exporter: true"
+                        query = "{ varId: '*' }"
+                        cellType="dojox.grid.cells.Select">
+                        <thead> <center> <tr>
+                            <th width="40px" field="implicated" formatter="formatShowYourVariations"><b><center>Access</b></center></th>
+                            <th width="9%" field="varId" formatter="formatRsName"><b><center>Var ID or rsName</b></center></th>
+                            <th width="3%" field="type"><b><center>Type</b></center></th>
+                            <th width="3%" field="chr"><b><center>Chr</b></center></th>
+                            <th width="7%" field="pos"><b><center>Position</b></center></th>
+                            <th width="9%" field="gene" formatter="formatCellGeneTrans"><b><center>Gene(s)</b></center></th>
+                            <th width="9%" field="transcript" formatter="formatCellGeneTrans"><b><center>Transcript(s)</b></center></th>
+                            <th width="7%" field="protein" formatter="formatCellDejaVU"><b><center>Protein(s)</b></center></th>
+                            <th width="7%" field="nbProj" formatter="formatCellDejaVU"><b><center>Nb Project(s)</b></center></th>
+                            <th width="7%" field="nbPat" formatter="formatCellPat"><b><center>Nb Patient(s)</b></center></th>
+                            <th width="3%" field="nbHo"><b><center>Nb Ho</b></center></th>
+                            <th width="3%" field="nbHe"><b><center>Nb He</b></center></th>
+                            <th width="9%" field="consequence" formatter="formatConsequence"><b><center>Consequence</b></center></th>
+                            <th width="5%" field="polyphen" formatter="formatPolyphen"><b><center>Polyphen Status</b></center></th>
+                            <th width="5%" field="sift" formatter="formatSift"><b><center>Sift Status</b></center></th>
+                            <th width="8%" field="freqDbSnp"><b><center>Freq. dbSnp (in %)</b></center></th>
+                        </thead> </center> </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    <!-- POPUP -->
+    
+    <div id="popupLog" jsId="popupDetails" dojoType="dojox.widget.Dialog" sizeToViewport="true" viewPortHeight="85%" viewportPadding="200">
+        <center>
+            <div>
+                <span style="margin-left:3px;" id="popup_text"></span> [
+                <span style="margin-left: 5px" id="details_projNok"> <b><u>Not Authorized Project: </b></u>0</span>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <span style="margin-left: 5px;margin-right: 5px" id="details_projOk"><b><u>Authorized Project: </b></u>0</span> ]
+            </div>
+            <br>
+            <div>
+                <span style="margin-left: 5px" id="details_affAlertHo"></span>
+            </div>
+        </center>
+        <br><br>
+        <center>
+            <div style="overflow-y:scroll">
+                <table dojoType="dojox/grid/DataGrid" style="border: 1px solid black;height:340px;width:60%;"
+                    id    = "gridLog"
+                    jsId  = "gridLog"
+                    selectable = "true"
+                    selectionMode = "extended"
+                    query = "{ projName: 'None' }" >
+                    <thead><center>
+                        <tr>
+                            <th width="15%" field="projName"><b><center>Project name</b></center></th>
+                            <th width="30%" field="owner" formatter="formatEmail"><b><center>Owner(s)</b></center></th>
+                            <th width="35%" field="pat" formatter="formatCellPatDetails"><b><center>Patient(s) with this variation</b></center></th>
+                        </tr>
+                    </thead></center>
+                </table>
+            </div>
+        </center>
+    </div>
+    
+    <div id="popupDetails" jsId="popupDetails" dojoType="dojox.widget.Dialog" sizeToViewport="true" viewPortHeight="85%" viewportPadding="200">
+        <center>
+            <br><br>
+            <div>
+                <span style="margin-left:3px;" id="popup_text"></span> [
+                <span style="margin-left: 5px" id="details_patNok"> <b><u>Not Authorized Patient(s): </b></u>0</span>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <span style="margin-left: 5px;margin-right: 5px" id="details_patOk"><b><u>Authorized Patient(s): </b></u>0</span> ]
+            </div>
+            <br><br><br>
+            <!--<div style="height:500px;width:95%;overflow-y:scroll;overflow-x:scroll">-->
+            <div style="height:500px;width:95%;border: 1px solid black;">
+                <div dojoType="dijit.Toolbar" style="border: 1px solid black;">
+                    <div>
+                        <span style="float:left;">
+                            <span style="margin-left: 5px;" id="align_gene"><b><u>Gene: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;" id="align_id"><b><u>Id: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;" id="align_chr"><b><u>Chr: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;" id="align_pos"><b><u>Pos: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;" id="align_rsname"><b><u>rsName: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-left: 5px;" id="align_freq"><b><u>dbSNP Freq: </b></u>N.A.</span>
+                        </span>
+                        <span style="float:right;">
+                            <span style="margin-right: 5px;" id="align_min"><b><u>Min DP: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-right: 5px;" id="align_max"><b><u>Max DP: </b></u>N.A.</span>
+                            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                            <span style="margin-right: 5px;" id="align_mean"><b><u>Mean DP: </b></u>N.A.</span>
+                        </span>
+                    </div>
+                </div>
+                <br>
+                <div style="float:left;height:475px;width:69%;margin:1px;overflow-y:scroll;border: 1px solid black;">
+                    <span dojoType="dojo.data.ItemFileReadStore" jsId="jsoninfos"></span>
+                    <table dojoType="dojox/grid/DataGrid"
+                        id    = "gridInfos"
+                        jsId  = "gridInfos"
+                        store = "jsoninfos"
+                        errorMessage = "<b><i>No Result...</b></i><br><br><b>Click</b> to a variant line in '<b>Results section</b>' to view its details."; 
+                        selectable = "true"
+                        selectionMode = "extended"
+                        onRowClick = "selectPatient_dejavu"
+                        query = "{ id: '*' }" >
+                        <thead><center>
+                            <tr>
+                                <th width="40px" field="implicated" formatter="formatShowYourVariations"><b><center>Access</b></center></th>
+                                <th width="15%" field="project"><b><center>Project Name</b></center></th>
+                                <th width="15%" field="name"><b><center>Patient Name</b></center></th>
+                                <th width="10%" field="ho_he"><b><center>Ho / He</b></center></th>
+                                <!--
+                                <th width="10%" field="dp"><b><center>Depth</b></center></th>
+                                <th width="10%" field="nb_all_ref"><b><center>Nb Reads Ref</b></center></th>
+                                <th width="10%" field="nb_all_mut"><b><center>Nb Reads Mut</b></center></th>
+                                -->
+                                <th width="60%" field="contacts"><b><center>Contacts</b></center></th>
+                            </tr>
+                        </thead></center>
+                    </table>
+                </div>
+                <div style="float:right;height:475px;width:29%;margin:1px;overflow-y:scroll;border: 1px solid black;">
+                    <center>
+                        <div id ="csmall2" class="partsContainerSmall2" >
+                            <table id="graphAlign"  jsId="graphAlign" border="1"></table>
+                        </div>
+                    </center>
+                </div>
+            </div>
+            <br><br>
+            <div>
+                <span id="contacts"> <b><u>Contact(s): </b></u> first, click to a patient row...</span>
+            </div>
+        </center>
+    </div>
+</form>
+</body>
+</html>
+
