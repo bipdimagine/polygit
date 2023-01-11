@@ -200,6 +200,9 @@ sub parseVcfFileForReference {
 	if ($self->method() eq "melt"){
 			return $self->parseVcfFileForReference_melt($reference, $useFilter);
 	}
+	#	if ($self->method() eq "manta"){
+	#		return $self->parseVcfFileForReference_manta($reference, $useFilter);
+	#}
 	if ($file =~ /\.sam/) { 
 		my @res = `zgrep "#INFO=<ID" $file`;
 		#unless (scalar @res){
@@ -454,7 +457,7 @@ sub parseVCFLine {
     alt     => \@alts,
     qual    => $qual,
     filter  => $filter,
-    info    => \%infos,
+    infos    => \%infos,
     gt => $gt,
   };
 }
@@ -466,7 +469,191 @@ sub genotype {
 	return [$t[-1],$t[0]];#if $t[0] < $t[-1];
 }
 
-sub parseVcfFileForReference_melt {
+sub genericSVDel {
+		my ($self,$x,$reference) = @_;
+		my $chr = $reference->getChromosome();
+		my $patient = $self->getPatient();
+		my $patient_id = $patient->id;
+		my $hash;
+		my $ref = $x->{ref};
+		my $pos = $x->{pos};
+		my $genbo_pos = $pos + length($ref);
+		my $structType = "insertion";
+		confess() if scalar(@{$x->{alt}}) > 1;
+		my $id ;
+		my $alt = $x->{alt}->[0];
+		my $len;
+		my $var_allele;
+		my $infos = $x->{infos};
+		if ($infos->{SVTYPE} eq "DUP"){
+			 $len = $infos->{SVLEN};
+			 $id = $chr->name."_".$genbo_pos."_".$ref."_dup";
+			 $var_allele = $chr->sequence($genbo_pos,$genbo_pos+$len);
+			$hash->{'isDup'} = 1;
+			$genbo_pos += $len; 
+			
+		}
+		elsif ($infos->{SVTYPE} eq "INS" &&  (exists $infos->{LEFT_SVINSSEQ} or exists $infos->{RIGHT_SVINSSEQ}) ){
+			 $len = 1;
+			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
+			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
+		}
+		elsif ($infos->{SVTYPE} eq "INS" && $alt =~ /INS/){
+			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
+			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
+		}
+		elsif ($infos->{SVTYPE} eq "INS" && $alt !~ /INS/){
+			$alt = substr($alt,length($ref));			
+			$len = length($alt);
+			
+			$id = $chr->name."_".$genbo_pos."_".$ref."_".$alt;
+			$var_allele =   $alt;
+		}
+		else {
+			confess();
+		}
+		
+	$hash->{'id'} = $id;
+	$hash->{'vcf_id'} = join("_",$chr->name,$pos,$ref,$x->{alt}->[0]);
+	$hash->{'structuralType'} = "insertion" ;#= $allele->{type};
+	$hash->{'structuralTypeObject'} = 'insertions';
+	$hash->{'isSV'} = 1;
+	$hash->{'chromosomes_object'} = {$chr->id => undef};
+	$hash->{'start'} = $genbo_pos ;
+	$hash->{'end'} = $genbo_pos;
+	$hash->{'ref_allele'} = $ref;
+	$hash->{'var_allele'} = $var_allele;
+	$hash->{'line_infos'} = "-";
+	$hash->{'vcf_position'} = $pos;
+	###OBJECTS
+	$hash->{'references_object'}->{$reference->id} = undef;
+	### ANNEX 
+	$hash->{annex}->{$patient_id}->{Filter} =  "PASS";
+	$hash->{annex}->{$patient_id}->{'ref_allele'} = $ref;
+	$hash->{annex}->{$patient_id}->{'var_allele'} = $var_allele;
+	$self->add_DP_AD($patient_id,$hash,$x);
+	$self->add_SR_PR($patient_id,$hash,$x);
+	$hash->{annex}->{$patient_id}->{score} = $x->{qual};			
+	$hash->{annex}->{$patient_id}->{he}= $x->{gt}->{he};
+	$hash->{annex}->{$patient_id}->{ho}= $x->{gt}->{ho};
+	$hash->{annex}->{$patient_id}->{method} = $self->method();
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_other_mut} = 0;
+	
+	$hash->{annex}->{$patient_id}->{method} = $self->method();
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_other_mut} = 0;
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_ref} = $hash->{annex}->{$patient_id}->{nb_all_mut};
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{score} = $x->{qual};
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_mut} = $hash->{annex}->{$patient_id}->{nb_all_ref} ;
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{he} = $x->{gt}->{he};
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{ho} = $x->{gt}->{ho};
+	return $hash;
+}
+
+
+sub genericSVIns {
+		my ($self,$x,$reference) = @_;
+		my $chr = $reference->getChromosome();
+		my $patient = $self->getPatient();
+		my $patient_id = $patient->id;
+		my $hash;
+		my $ref = $x->{ref};
+		my $pos = $x->{pos};
+		my $genbo_pos = $pos + length($ref);
+		my $structType = "insertion";
+		confess() if scalar(@{$x->{alt}}) > 1;
+		my $id ;
+		my $alt = $x->{alt}->[0];
+		my $len;
+		my $var_allele;
+		my $infos = $x->{infos};
+		if ($infos->{SVTYPE} eq "DUP"){
+			 $len = $infos->{SVLEN};
+			 $id = $chr->name."_".$genbo_pos."_".$ref."_dup";
+			 $var_allele = $chr->sequence($genbo_pos,$genbo_pos+$len);
+			$hash->{'isDup'} = 1;
+			$genbo_pos += $len; 
+			
+		}
+		elsif ($infos->{SVTYPE} eq "INS" &&  (exists $infos->{LEFT_SVINSSEQ} or exists $infos->{RIGHT_SVINSSEQ}) ){
+			 $len = 1;
+			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
+			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
+		}
+		elsif ($infos->{SVTYPE} eq "INS" && $alt =~ /INS/){
+			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
+			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
+		}
+		elsif ($infos->{SVTYPE} eq "INS" && $alt !~ /INS/){
+			$alt = substr($alt,length($ref));			
+			$len = length($alt);
+			
+			$id = $chr->name."_".$genbo_pos."_".$ref."_".$alt;
+			$var_allele =   $alt;
+		}
+		else {
+			confess();
+		}
+		
+	$hash->{'id'} = $id;
+	$hash->{'vcf_id'} = join("_",$chr->name,$pos,$ref,$x->{alt}->[0]);
+	$hash->{'structuralType'} = "insertion" ;#= $allele->{type};
+	$hash->{'structuralTypeObject'} = 'insertions';
+	$hash->{'isSV'} = 1;
+	$hash->{'chromosomes_object'} = {$chr->id => undef};
+	$hash->{'start'} = $genbo_pos ;
+	$hash->{'end'} = $genbo_pos;
+	$hash->{'ref_allele'} = $ref;
+	$hash->{'var_allele'} = $var_allele;
+	$hash->{'line_infos'} = "-";
+	$hash->{'vcf_position'} = $pos;
+	###OBJECTS
+	$hash->{'references_object'}->{$reference->id} = undef;
+	### ANNEX 
+	$hash->{annex}->{$patient_id}->{Filter} =  "PASS";
+	$hash->{annex}->{$patient_id}->{'ref_allele'} = $ref;
+	$hash->{annex}->{$patient_id}->{'var_allele'} = $var_allele;
+	$self->add_DP_AD($patient_id,$hash,$x);
+	$self->add_SR_PR($patient_id,$hash,$x);
+	$hash->{annex}->{$patient_id}->{score} = $x->{qual};			
+	$hash->{annex}->{$patient_id}->{he}= $x->{gt}->{he};
+	$hash->{annex}->{$patient_id}->{ho}= $x->{gt}->{ho};
+	$hash->{annex}->{$patient_id}->{method} = $self->method();
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_other_mut} = 0;
+	
+	$hash->{annex}->{$patient_id}->{method} = $self->method();
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_other_mut} = 0;
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_ref} = $hash->{annex}->{$patient_id}->{nb_all_mut};
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{score} = $x->{qual};
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_mut} = $hash->{annex}->{$patient_id}->{nb_all_ref} ;
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{he} = $x->{gt}->{he};
+	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{ho} = $x->{gt}->{ho};
+	return $hash;
+}
+
+
+
+sub add_DP_AD {
+	my ($self,$patient_id,$hash,$x) = @_;
+	my $a;
+	$a .= $x->{gt}->{PR} if exists $x->{gt}->{PR};
+	$a .= ",".$x->{gt}->{SR} if exists $x->{gt}->{SR};
+	my @aa = split(",",$a);
+	for(my $i =0 ; $i<@aa ;$i+=2){
+		$hash->{annex}->{$patient_id}->{nb_all_mut} = $aa[$i+1];
+		$hash->{annex}->{$patient_id}->{nb_all_ref} = $aa[$i];
+	}
+	$hash->{annex}->{$patient_id}->{dp} = $hash->{annex}->{$patient_id}->{nb_all_mut}+ $hash->{annex}->{$patient_id}->{nb_all_ref};
+	
+}
+sub add_SR_PR {
+	my ($self,$patient_id,$hash,$x) = @_;
+	$hash->{annex}->{$patient_id}->{pr} = "-1,-1";
+	$hash->{annex}->{$patient_id}->{sr} = "-1,-1";
+	$hash->{annex}->{$patient_id}->{pr} = $x->{gt}->{PR} if exists $x->{gt}->{PR};
+	$hash->{annex}->{$patient_id}->{sr} = $x->{gt}->{SR} if exists $x->{gt}->{SR};
+}
+
+sub parseVcfFileForReference_manta {
 	my ($self, $reference, $useFilter) = @_;
 	my $chr = $reference->getChromosome();
 	my $v = Bio::DB::HTS::VCF->new( filename => $self->file() );
@@ -474,6 +661,37 @@ sub parseVcfFileForReference_melt {
 	my $header = $v->header();
 	confess() if $header->num_samples() ne 1;
 	die() if $self->getPatient->name ne  $header->get_sample_names->[0];
+	#confess() if 
+	my $patient_id = $self->getPatient->id;
+	my %hashRes;
+	my $iter = $v1->query($chr->fasta_name.":".$reference->start."-".$reference->end);
+	#my $iter = $v->query($chr->fasta_name.":".$reference->start."-".$reference->end);
+	return {} unless $iter;
+	while (my $row = $iter->next) {
+		my $x =  $self->parseVCFLine($row);
+		my $hash;
+		if ($x->{infos}->{SVTYPE} eq  "INS" or $x->{infos}->{SVTYPE} eq  "DUP") 
+		{
+			 $hash = $self->genericSVIns($x,$chr);
+			#my ($self,$x,$patient,$chr,$reference) = @_;		
+		}
+		else {
+			next;
+		}
+		my $id = $hash->{id};
+		my $structType = $hash->{structuralType};
+		$hashRes{$structType}->{$id} = compress(freeze($hash));
+	}
+	return \%hashRes;
+}	
+sub parseVcfFileForReference_melt {
+	my ($self, $reference, $useFilter) = @_;
+	my $chr = $reference->getChromosome();
+	my $v = Bio::DB::HTS::VCF->new( filename => $self->file() );
+	my $v1 = Bio::DB::HTS::Tabix->new( filename => $self->file() );
+	my $header = $v->header();
+	confess() if $header->num_samples() ne 1;
+	#die() if $self->getPatient->name ne  $header->get_sample_names->[0];
 	#confess() if 
 	my $patient_id = $self->getPatient->id;
 	my %hashRes;
@@ -490,7 +708,7 @@ sub parseVcfFileForReference_melt {
 		confess() if scalar(@{$x->{alt}}) > 1;
 		my $alt = $x->{alt};
 		my $sequence_id = $ref.'_'.$x->{alt}->[0];
-		my $id = $chr_name."_".$genbo_pos."_ALU";
+		my $id = $chr_name."_".$genbo_pos."_".$ref."_ALU";
 		$hashRes{$structType}->{$id}->{'id'} = $id;
 		$hashRes{$structType}->{$id}->{'vcf_id'} = join("_",$chr_name,$pos,$ref,$alt);#.$alt;
 		$hashRes{$structType}->{$id}->{'structuralType'} = "insertion" ;#= $allele->{type};
@@ -506,6 +724,7 @@ sub parseVcfFileForReference_melt {
 		###OBJECTS
 		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
 		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
+	
 		
 		### ANNEX 
 		
