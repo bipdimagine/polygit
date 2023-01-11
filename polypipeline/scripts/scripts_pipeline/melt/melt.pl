@@ -108,12 +108,15 @@ close LIST;
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
 	
 	foreach my $f (keys %$files){
-		warn $files->{$f};
+		$files->{$f} = $buffer->gzip_tabix($files->{$f},"vcf");
 		my $ff =  $files->{$f};
 		delete  $files->{$f} unless -s $ff;
 		my $res = ` bcftools view  $ff -U -c 1 2>/dev/null | grep -v "#" | wc -l `;
 		chomp($res);
 		delete  $files->{$f} if $res == 0 ;
+		if ($res>=0){
+			
+		}
 		
 	}
 	unless (keys %$files){
@@ -139,7 +142,7 @@ $bed = $buffer->gzip_tabix($bed,"bed");
  	my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
 
 	#warn "$bcftools concat $list_file | $bcftools view - -R $bed | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; tabix -f -p vcf $fileout";
-	my $cmd = qq{$bcftools concat $list_file  | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf;$gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace;};
+	my $cmd = qq{$bcftools concat -a $list_file  | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf;$gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace;};
 	system ($cmd);
 	warn $cmd;
 	my $tvcf3 = $dir_out."/".$patient->name.".".time.".3.vcf.gz";

@@ -33,6 +33,7 @@ my $filename_cfg;
 my $secret;
 my $analyse_type;
 my $nobackup;
+my $giab;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -47,6 +48,7 @@ GetOptions(
 	'type=s' => \$analyse_type,
 	'h!' => \$help,
 	"nobackup=s" => \$nobackup,
+	"control=s" => \$giab,
 );
 
 #$steps_name = "all" unless $steps_name;
@@ -75,7 +77,6 @@ unless ($steps_name){
 		$steps_name = "query";
 	}
 }
-
 
 
 
@@ -133,7 +134,7 @@ $pipeline->unforce(0) if $force;
 
 my @types_steps = ('dude','chromosomes','project','polydiag','html_cache');
  @types_steps = ('dude','chromosomes','project','html_cache') if $project->isGenome or $project->isExome ;
-
+@types_steps = ('chromosomes') if $giab ;
 my $list_steps;
 my $list_steps_types;
 
