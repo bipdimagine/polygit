@@ -343,7 +343,8 @@ sub run_lmdb_depth_melt {
 	
 foreach my $hp (@$patients_jobs) {
 	my $ppn = 20;
-	my $project_name = $hp->{project};
+
+my $project_name = $hp->{project};
 	my $job;
 	my $nname  = $hp->{name}."_".$hp->{project};
 	my $name = $hp->{name};
@@ -359,6 +360,7 @@ foreach my $hp (@$patients_jobs) {
 	$cmd .= qq{ -version=$version  } if $version;
 		$job->{name} =  $name.".lmdb";
 		$job->{patient} = $nname;
+
 		$job->{cmd} =$cmd;
 		$job->{cpus} = $ppn;
 		$job->{jobs_type} ="lmdb_depth";
