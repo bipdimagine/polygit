@@ -55,7 +55,7 @@ my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name."-".time);
 my $samtools = $buffer->software("samtools");
 my $dir_out = $melt_dir;
 my $bam_dev = 
-my $bam_tmp = $dir_out."/".$patient->name.time.".bam";
+my $bam_tmp = $dir_out."/".$patient->name.".bam";
 system("ln -s $bam_prod $bam_tmp");
 system("ln -s $bam_prod.bai $bam_tmp.bai");
 my $bed = $dir_out."/".$patient->name.time.".bed";

@@ -10,14 +10,16 @@ use Position;
 extends "GenBoInsertion";
 
 	
-#has name => (
-#	is		=> 'ro',
-#	lazy	=> 1,
-#	default	=> sub {
-#		my $self = shift;
-#		return $self->getChromosome->name().'-'.$self->start().'-ins-'.$self->mei_type;
-#	},
-#);
+
+has name => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->getChromosome->id().'-'.$self->start().'ins-'.$self->mei_type;
+	},
+);
+
 has isMei => (
 	is		=> 'ro',
 	default	=> sub {
@@ -27,13 +29,27 @@ has isMei => (
 );
 has mei_type => (
 	is		=> 'ro',
+
+	default	=> sub {
+		my $self = shift;
+		return "ALU";
+	},
 );
+has gnomad_id => (
+	is		=> 'ro',
+	lazy=> 1,
+	default=> sub {
+	my $self = shift;
+	return $self->getChromosome->id().'-'.$self->start().'ins-'.$self->mei_type;
+	}
+	);
+
 has alleles => (
 	is		=> 'ro',
 	lazy	=> 1,
 	default=> sub {
 		my $self = shift;
-		return self->getChromosome->id().'-'.$self->start().'-ins-ALU';
+		return self->getChromosome->id().'-'.$self->start().'-ins-'.$self->mei_type;
 	},
 );
 
@@ -65,7 +81,7 @@ sub protein_nomenclature {
 	my ( $self, $prot ) = @_;
 		confess() unless $prot->isProtein();
 		my $pos = $self->getProteinPosition($prot);
-		return "p.".$self->changeAA($prot).$pos."fsALU";
+		return "p.".$self->changeAA($prot).$pos."fs".$self->mei_type;
 }
 
 sub annotation_coding {
@@ -88,7 +104,7 @@ sub annotation_coding {
 
 sub getSequence{
 	my $self = shift;
-	return 'ALU';
+	return $self->mei_type;
 }
 
 sub nomenclatureType {
@@ -111,10 +127,10 @@ sub constructNomenclature {
 	elsif ($self->isUtr($transcript)){
 		#return;
 		#warn $transcript->name();
-		return "UTR-ins-MEI";
+		return "UTR-ins-".$self->mei_type;
 	}
 	else {
-		return "ins-MEI";
+		return "ins-".$self->mei_type;
 	}	
 	#coding 
 }
