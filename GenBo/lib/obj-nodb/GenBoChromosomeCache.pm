@@ -163,6 +163,8 @@ has patients_categories => (
 				$h->{$patient->name()} = Bit::Vector->new(0);
 				$h->{$patient->name().'_he'} = Bit::Vector->new(0);
 				$h->{$patient->name().'_ho'} = Bit::Vector->new(0);
+				$h->{$patient->name().'_RI'} = Bit::Vector->new(0);
+				$h->{$patient->name().'_SE'} = Bit::Vector->new(0);
 			}
 			return $h;
 		}
@@ -173,6 +175,8 @@ has patients_categories => (
 			$h->{$name} = $patient->{'bitvector'}->{'all'};
 			$h->{$name.'_he'} = $patient->{'bitvector'}->{'he'};
 			$h->{$name.'_ho'} = $patient->{'bitvector'}->{'ho'};
+			$h->{$name.'_RI'} = $patient->{'bitvector'}->{'RI'} if (exists $patient->{'bitvector'}->{'RI'});
+			$h->{$name.'_SE'} = $patient->{'bitvector'}->{'SE'} if (exists $patient->{'bitvector'}->{'SE'});
 		}
 		$no_patients->close();
 		return $h;
@@ -224,6 +228,11 @@ has global_categories => (
 # TODO: CORRECTIF Logiciel a cause de freq_ho qui remplissait freq_. A enlever une fois tout MAJ
 sub correct_vectors_filters {
 	my ($self, $h_global_categories) = @_;
+	if (exists $h_global_categories->{junction}) {
+		my $todo;
+		foreach my $freq (sort keys %{$self->project->buffer->config->{frequence_filters}}) { $todo = 1 if exists $h_global_categories->{$freq}; }
+		return $h_global_categories unless $todo;
+	}
 	my $h_v_to_k;
 #	warn "\n\n";
 #	warn 'BEFORE: ';
@@ -781,12 +790,18 @@ sub flushObjectVariantCache {
 	elsif  ($ref eq 'GenBoInsertion'){
 		bless $var_obj , 'GenBoInsertionCache';
 	}
+	elsif  ($ref eq 'GenBoMei'){
+		bless $var_obj , 'GenBoMeiCache';
+	}
 	elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache') {
 		confess("\n\nERROR: $vid not found in cache project. Die.\n\n") unless ($can_create_variant);
 		#Si l'objet n a pas ete stocke correctement pendant le cache, je construit a la volee sa verion NON cache avec GenBoProject
 		my $this_project = $self->getProject();
 		#bless $this_project , 'GenBoProject';
 		#warn $self->
+	#	warn $self->project;
+	#	warn $vid;
+
 		$var_obj = $self->project->SUPER::_newVariant($vid);
 	}
 	my $method;
@@ -1217,6 +1232,25 @@ sub getTreeVariants {
 		#push(@lVarObj, $self->getVarObject($v_id));
 	}
 	return $tree;
+}
+
+sub getJunctionsVector {
+	my $self = shift;
+	my $vector = $self->getNewVector();
+	$vector += $self->global_categories->{junction} if (exists $self->global_categories->{junction});
+	return $vector;
+}
+
+sub setJunctions {
+	my $self = shift;
+	my $vector = $self->getJunctionsVector();
+	foreach my $junction (@{$self->getListVarObjects($vector)}) {
+		$self->{$junction->type_object()}->{$junction->id()} = undef;
+		unless (exists $self->project->{objects}->{junctions}->{$junction->id()}) {
+			$self->project->{objects}->{junctions}->{$junction->id()} = $junction;
+		}
+	}
+	return $self->{junctions_object} ;
 }
 
 sub setVariations {
@@ -2287,11 +2321,11 @@ has tree_primers =>(
 is		=> 'ro',
 	lazy	=> 1,
 	default => sub {
-		my $self = shift;
+		my $self = shift; 
 		my $tabix = $self->project->tabix_primers;
 		my $res = $tabix->query_full($self->ucsc_name,$self->start,$self->end);
 		my $tree = Set::IntervalTree->new;
-		return $tree unless $res->get();;
+		return $tree unless $res;
 		while(my $line = $res->next){
 		my($a,$b,$c,$pid) = split(" ",$line);
 		
@@ -2588,34 +2622,89 @@ sub getVectorByPosition {
 	my ($self,$start,$end,$debug) =@_;
 	$end ++ if $end == $start;
 
+#	my @ids = (1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6, 7, 7, 7, 8, 8, 9, 9, 9, 9, 9, 11, 13, 13, 13, 17);
+#	my $lb = upper_bound { $_ <=> 4 } @ids; # returns 10
+#	warn $lb." ".scalar(@ids);
+#	 $lb = upper_bound { $_ <=> -1 } @ids; # returns 10
+#	 warn $lb." ".scalar(@ids);
+#	  $lb = upper_bound { $_ <=> 100 } @ids; # returns 10
+#	 warn $lb." ".scalar(@ids);
+#	 die();
 	my $nb = $self->getVariantsVector->Size();
+	return $self->getNewVector() if $nb ==0;
+	my $ilimit = $nb -1;
+
 #	warn $start." ".$end if  $end <= 236557770;
-#	$debug =1 if $end<=236557771; 	
+	$debug =1 if $end==145878861; 
+	warn $start." ".$end if  $debug;
 	#confess() if $debug;
 		
 	#->get_varid($vid);
-	my @ids =(0..$nb-2);
+	my @ids =(0..$ilimit);
 	my $lb = lower_bound {$self->getVariantPosition($_,"start") <=> $start}  @ids; # returns 2
-	warn $lb." lb $start-$end" if $debug;
-	warn "pos ".$self->getVariantPosition($lb,"start") if $debug;
+	
+	if ($start > $self->getVariantPosition($ilimit,"start")){
+		return $self->getNewVector();
+	#	warn " *** LB : ".$lb." lb nb:$nb $start-$end ".scalar(@ids);
+	#	warn $self->getVariantPosition($ilimit,"start");
+	#	die($lb);
+	}
+	if ($end < $self->getVariantPosition(0,"start") ){
+		return $self->getNewVector();
+		
+	}
+	warn "LB : ".$lb." lb nb:$nb $start-$end ".scalar(@ids) if $debug;
+	warn $ids[$lb];
 	warn "pos ".$self->getVariantPosition($lb-1,"start") if $debug;
+	warn ($start - $self->getVariantPosition($lb-1,"start")) if $debug;
+	warn "pos ".$self->getVariantPosition($lb,"start") if $debug;
 	
-	my $ub = upper_bound {$self->getVariantPosition($_,"end") <=> $end}  @ids; # returns 2
-	warn $ub." ub" if $debug;
-	$ub +=2 if $lb == $ub;
+	confess() if $debug;
+	#die("coucou $lb") if $start > $self->getVariantPosition($lb,"start");
+	my $ub ;
+	warn $lb." ".$ilimit if $debug;;
 	
+	unless ($lb == $ilimit){
+	 $ub = upper_bound {$self->getVariantPosition($_,"end") <=> $end}  @ids; # returns 2
+	 $ub = $ilimit if $ub>$ilimit;
+	 warn "RAW UB: $lb-".$ub." $ilimit" ;#if $debug;
+	}
+	else {
+		$ub = $lb;
+		$lb --;
+	}
+	warn "UB: $lb-".$ub." " if $debug;
+	if ($ub == $lb){
+		# on est à la limite 
+		$ub = 1;
+	#	warn "pos ".$self->getVariantPosition($ub,"start")." ".$end ;
+	#	die();
+	}
+	warn "UB: $lb-".$ub." $start $end" if $debug;
+	#warn $ub." ub" if $debug;
+	#die() if $debug;
+	
+	#die($ub." ".$lb." $nb")  if $lb == $ub;
+	#$ub +=2 if $lb == $ub;
+	warn $ub." ub $nb nb" if $debug;
 	my $no = $self->cache_lmdb_variations();
 	my $id = $no->get_varid($lb);
 	my($chr,$pos,$a,$b) = split("_",$id);
 	my $vector_pos = $self->getNewVector();
 	
-	$ub = $nb if $ub > $nb;
+	$ub = $nb -1 if $ub > $nb;
 	#if $lb>= $nb;
+	warn $self->name;
+	warn $lb."-$ub  $nb "." $start $end";# if $debug;
+	die() if $debug;
 	if ($lb+1 > $ub -1){
+		#warn $lb." $nb ".($lb+1)." $start $end";# if $debug;
+		#confess();# if $debug;
 		$vector_pos->Interval_Fill($lb,$lb+1);
 	}
 	else {
-	$vector_pos->Interval_Fill($lb,$ub);
+		warn "==>".$lb."-$ub:$nb";
+		$vector_pos->Interval_Fill($lb,$ub);
 	}
 	if (length($a) > length($b)){
 		for  (my $i = $lb+1;$i<$ub+1;$i++) {
@@ -2630,6 +2719,8 @@ sub getVariantPosition {
 	my ($self,$v,$startorend) = @_;
 	my $no = $self->cache_lmdb_variations();
 	my $id = $no->get_varid($v);
+	confess() if $v == -1;
+	warn $v unless $id;
 	my($chr,$pos,$a,$b) = split("_",$id);
 	
 	if($startorend eq "start"){

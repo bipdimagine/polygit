@@ -349,7 +349,6 @@ sub gather_strict_identicalCNV
 					$hCNV->{$type}->{$num}->{$id}->{'LEN'} = $hPat_CNV->{$caller}->{$type}->{$num}->{$id}->{'SVLEN'};				
 					$hCNV->{$type}->{$num}->{$id}->{'GOLD_G_FREQ'} = $hPat_CNV->{$caller}->{$type}->{$num}->{$id}->{'GOLD_G_FREQ'};
 					$hCNV->{$type}->{$num}->{$id}->{'GOLD_L_FREQ'} = $hPat_CNV->{$caller}->{$type}->{$num}->{$id}->{'GOLD_L_FREQ'};
-					$hCNV->{$type}->{$num}->{$id}->{'OMIN_MG'} = $hPat_CNV->{$caller}->{$type}->{$num}->{$id}->{'OMIN_MG'};
 					$hCNV->{$type}->{$num}->{$id}->{'dbVar_status'} = $hPat_CNV->{$caller}->{$type}->{$num}->{$id}->{'dbVar_status'};
 					$hCNV->{$type}->{$num}->{$id}->{'RANKAnnot'} = $hPat_CNV->{$caller}->{$type}->{$num}->{$id}->{'RANKAnnot'};
 					$hCNV->{$type}->{$num}->{$id}->{'DUPSEG'} = $hPat_CNV->{$caller}->{$type}->{$num}->{$id}->{'DUPSEG'};
@@ -583,8 +582,6 @@ sub gatherSV_byPosition()
 				{	
 						$ggfreq = $hCNV->{$type}->{$num}->{$ind_id}->{'GOLD_G_FREQ'} if ($hCNV->{$type}->{$num}->{$ind_id}->{'GOLD_G_FREQ'} > $ggfreq);
 						$glfreq = $hCNV->{$type}->{$num}->{$ind_id}->{'GOLD_L_FREQ'} if ($hCNV->{$type}->{$num}->{$ind_id}->{'GOLD_L_FREQ'} > $glfreq);
-					
-						$mg = "yes" if ($hCNV->{$type}->{$num}->{$ind_id}->{'OMIN_MG'} eq "yes");
 						$dbVar_status .= $hCNV->{$type}->{$num}->{$ind_id}->{'dbVar_status'}." " unless ($dbVar_status =~ m/$hCNV->{$type}->{$num}->{$ind_id}->{'dbVar_status'}/);
 						$rankannot = $hCNV->{$type}->{$num}->{$ind_id}->{'RANKAnnot'} if ($hCNV->{$type}->{$num}->{$ind_id}->{'RANKAnnot'} > $rankannot);			
 						$ds = $hCNV->{$type}->{$num}->{$ind_id}->{'DUPSEG'} if ($hCNV->{$type}->{$num}->{$ind_id}->{'DUPSEG'} > $ds);
@@ -619,7 +616,6 @@ sub gatherSV_byPosition()
 			
 			$hGroupedCNV->{$global_id}->{'GOLD_G_FREQ'} = $ggfreq;
 			$hGroupedCNV->{$global_id}->{'GOLD_L_FREQ'} = $glfreq;
-			$hGroupedCNV->{$global_id}->{'OMIN_MG'} = $mg;
 			$hGroupedCNV->{$global_id}->{'dbVar_status'} = $dbVar_status;
 			$hGroupedCNV->{$global_id}->{'RANKAnnot'} = $rankannot;
 			$hGroupedCNV->{$global_id}->{'DUPSEG'} = $ds;
@@ -984,12 +980,7 @@ sub filtreCNV
 		}
 		next unless ($pass);
 		
-		# filtre sur les gènes omim
-		if ($omim)
-		{
-			next unless ($hGroupedCNV->{$global_id}->{"OMIN_MG"} eq "yes");
-		}
-				
+		
 		# filtre sur la transmission
 		$pass = 1;
 		my $infoTransmission = $hGroupedCNV->{$global_id}->{"TRANSMISSION"};
@@ -1045,42 +1036,62 @@ sub filtreCNV
 		#Pour le score_genes
 		my $chr = $project->getChromosome($num);
 		my $tabGenes = $chr->getGenesByPosition($gdeb,$gend);
-
-		# calculer le score gene max correspondant a la liste de gene associe au variant
-		my $max = 0;
-		my $maxname;
-		
-		my $htabscore;
-		my @names;
-		if ( scalar(@$tabGenes) )  # si le variant recouvre des gènes
+		my $genes_liste=$num;
+		my @genes_names;
+		my $gname;
+		my $gscore;
+		my $scoremax=0;
+		my $hasOmim=0;
+	
+		if ( scalar(@$tabGenes) >=1 )  # si le variant recouvre des gènes
 		{	
-				foreach my $g (@$tabGenes){
-							$htabscore->{$g->external_name} = $g->raw_score;
-				}
-				
-				my $nb = 0;
-				foreach my $name (keys %{$htabscore})
+			foreach my $g (@$tabGenes)
+			{
+				$gscore=$g->raw_score; 
+				$gname= $g->external_name;
+				$hasOmim = 1 if $g->is_omim_morbid();
+				 
+				if($gscore > $scoremax)
 				{
-							if ($htabscore->{$name} >= $max)
-							{
-								$max = $htabscore->{$name};
-								$maxname = $name;
-							}
-							$nb++;
-							push (@names,$name);
+					$scoremax =$gscore;
+					$genes_liste = $gname.";".$gscore."##".$genes_liste;
 				}
+				else
+				{
+					$genes_liste .= $gname.";".$gscore."##";
+				} 
+				push(@genes_names,$gname);
+			}
+			$genes_liste = $num.":".$gdeb."_".$gend."##".$genes_liste;
+			$hGroupedCNV->{$global_id}->{'SCORE_GENES'}=$scoremax;
+			$hGroupedCNV->{$global_id}->{'GENES'}=$genes_liste;
+			$hGroupedCNV->{$global_id}->{'OMIM'}=$hasOmim;
+			
+		}
+		else
+		{
+			$hGroupedCNV->{$global_id}->{'SCORE_GENES'}=-2;
+			$hGroupedCNV->{$global_id}->{'GENES'}="-";
+			$hGroupedCNV->{$global_id}->{'OMIM'}=0;
+		}
 		
-				$hGroupedCNV->{$global_id}->{'SCORE_GENES'}=$max;
-				$hGroupedCNV->{$global_id}->{'GENES'} =join(" ",@names);
-				$hGroupedCNV->{$global_id}->{'GENES'} = $maxname.":".$max.":".$nb." ".$hGroupedCNV->{$global_id}->{'GENES'};
-
-			# filtre sur une liste de genes
-			my @tabgenes_annot = split(/ /,$hGroupedCNV->{$global_id}->{"GENES"} );
-			$pass   = 0;
+		# filtre sur les gènes omim
+		if ($omim)
+		{
+			next unless ($hGroupedCNV->{$global_id}->{"OMIM"} == 1);
+		}
+		
+		# filtre sur une liste de genes
+		unless($listOfGenes eq "all")
+		{
+			$pass = 0;
 			my @tabgenes = split(/,/,$listOfGenes);
-			foreach my $gene_annot (@tabgenes_annot) {
-				foreach my $gene (@tabgenes) {
-					if ( ( $gene_annot eq $gene ) || ( $gene eq "all" ) ) {
+			foreach my $gene_annot (@genes_names)
+			{
+				foreach my $gene (@tabgenes) 
+				{
+					if ( ( $gene_annot eq $gene ))
+					{
 						$pass = 1;
 						last;
 					}
@@ -1089,12 +1100,7 @@ sub filtreCNV
 			}
 			next unless ($pass);
 		}
-		else
-		{
-				$hGroupedCNV->{$global_id}->{'SCORE_GENES'}=-2;
-				$hGroupedCNV->{$global_id}->{'GENES'} ="-";
-		}
-		
+
 		
 		#################################################################################
 		# pour aller rechercher les infos PR /PR dans les vcfs manta si et seulement si evt vu par manta
@@ -1176,7 +1182,7 @@ sub filtreCNV
 				$hash->{'DEJAVU_G'} = "-";
 				$hash->{'SCORE_GENES'} = "-";
 				$hash->{'RANKAnnot'} = "-";
-				$hash->{'OMIM_MG'} = "-";
+				$hash->{'OMIM'} = "-";
 				$hash->{'GENES'} = "-";
 				$hash->{'DGV'} = "-";
 				$hash->{'GOLD_G_FREQ'} = "-";

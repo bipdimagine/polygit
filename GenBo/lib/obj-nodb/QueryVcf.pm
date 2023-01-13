@@ -709,17 +709,21 @@ sub parseVcfFileForReference_melt {
 		my $alt = $x->{alt}->[0];
 
 		next if $alt =~ /DEL/;
+
 		my $type_mei = $x->{infos}->{SVTYPE};
 		my $sequence_id = $ref.'_'.$type_mei;
 		
-	#	my $type_mei = $x->{info}->{SVTYPE};#($header, "SVTYPE");
+
 		#my $type_mei = $type_mei_vcf;
 		
 		#$type_mei = "ALU" if $type_mei_vcf =~/ALU/i ; 
 		#$type_mei = "LINE" if $type_mei_vcf =~/LINE/i ; 
 		#$type_mei = "L1" if $type_mei_vcf =~/L1/i;
 		
+
 		my $id = $chr->name."_".$genbo_pos."_".$ref."_".$type_mei;
+
+
 
 		$hashRes{$structType}->{$id}->{'id'} = $id;
 		$hashRes{$structType}->{$id}->{'structuralType'} = "insertion" ;#= $allele->{type};
