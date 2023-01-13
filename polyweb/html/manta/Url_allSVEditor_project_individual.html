@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<link rel="icon" type="image/png" href="images/polyicons/application_view_tile.png">
+    	<style type="text/css">
+    	@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/Grid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/widget/Dialog/Dialog.css";
+        @import "../../css/polycss/general.css";
+        @import "../../css/polycss/button.css"; 
+        
+		html, body {
+    		width: 100%;
+    		height: 100%;
+    		margin: 0;
+    		overflow : hidden;
+		}    
+   	</style>
+
+
+   	
+	<LINK rel="stylesheet" type="text/css" href="../css/dejavu/dejavu.css">
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="../../js/polyjs/alamut_methods.js" djConfig="parseOnLoad: true"></script>
+	<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+	<script type="text/javascript" src="../../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/manta/Url_allSVEditor.js" djConfig="parseOnLoad: true"></script> 
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript">
+			dojo.require("dojo.store");
+	</script>
+	
+	<script type="text/javascript" src="../js/polyjs/Utility/vp.js" ></script>
+	<script	type="text/javascript">
+			dojo.require("dojo.cookie");
+			dojo.require("dijit.Dialog");
+			dojo.require("dojo.parser");
+			dojo.require("dojo.data.ItemFileReadStore");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dojox.grid.DataGrid");
+			dojo.require("dojo.parser");
+			dojo.require("dijit.TitlePane");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.layout.AccordionContainer");
+			dojo.require("dijit.form.TextBox");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.layout.ContentPane");
+			dojo.require("dijit.Toolbar");
+			dojo.require("dijit.form.NumberTextBox");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dijit.form.Select");
+			dojo.require("dijit.form.FilteringSelect");
+			dojo.require("dijit.form.ComboBox");
+			dojo.require("dijit.form.Form");
+			dojo.require("dojox.grid.EnhancedGrid");
+			dojo.require("dijit.form.DropDownButton");
+			dojo.require("dijit.form.MultiSelect");
+			dojo.require("dijit.form.CheckBox");
+			dojo.require("dojox.charting.Chart2D");
+			dojo.require("dojox.charting.Chart3D");
+			dojo.require("dojox.charting.plot3d.Base");
+			dojo.require("dojox.charting.plot3d.Bars");
+			dojo.require("dojox.data.AndOrReadStore");
+
+			require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/TabContainer","dijit/layout/ContentPane"]);
+			require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+			require(["dijit/form/Select", "dojo/data/ObjectStore","dojo/store/Memory","dojo/domReady!"]);
+	</script> 
+ 
+  	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+ 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  	
+  
+</head>
+
+
+<body onload="collapseResult();GetAllSVProject_sanstrio();">
+
+<br><center> <h5> STRUCTURAL VARIANT (DUP/DEL) </h5></center>
+<center> <h5>Individual Analysis</h5></center>
+
+<center>
+	<div class="table-responsive" style="width:80%;border: 2px solid grey;">
+ 			 <table class="table">
+ 			 <center><tr>
+ 			 		<td padding: 15px; style="width:120px";><label><h6>                </h6></label>
+					<td padding: 15px; style="width:120px";><label><h6>  Min Lenght  : </h6></label>
+						<select class="form-control" id="minlengthSelect" name="minlengthSelect" style="width:120px; height:30px; font-size:12px;padding:5px">
+							<option value= 0 >  all  </option>
+							<option value=1000 selected="selected" >  1kb  </option>
+							<option value=5000>  5kb  </option>
+							<option value=10000>  10kb  </option>
+							<option value=50000>  	50 kb  </option>
+							<option value=100000 >  100 kb  </option>
+							<option value=200000 >  200 kb  </option>
+							<option value=300000>  300 kb  </option>
+							<option value=400000>  400 kb  </option>
+							<option value=500000 >  500 kb  </option>
+						</select>
+					</td>
+					<td padding: 15px; style="width:120px";><label><h6>  Max Lenght  : </h6></label>
+						<select class="form-control" id="maxlengthSelect" name="maxlengthSelect" style="width:120px; height:30px; font-size:12px;padding:5px">
+							<option value= "nomax" selected="selected" >  no max  </option>
+							<option value= 1000000 >  1Mb  </option>
+							<option value= 5000000 >  5Mb  </option>
+							<option value= 10000000 >  10Mb  </option>
+							<option value= 50000000 >  50Mb  </option>
+							<option value= 50000000 >  100Mb  </option>
+							
+						</select>
+					</td>
+					<td padding: 15px; style="width:120px";><label><h6>  Max DGV frequency  : </h6></label>
+						<select class="form-control" id="maxfreqSelect" name="maxfreqSelect" style="width:120px; height:30px; font-size:12px;padding:5px">
+							<option value= "nomax" >  no max  </option>
+							<option value= 0.01 >  1%  </option>
+							<option value= 0.001 selected="selected" >  0.1%  </option>
+							<option value= 0.0001 >  0.01%  </option>
+							<option value= 0.000001 >  0.001%  </option>
+						</select>
+					</td>
+					<td padding: 15px; style="width:120px";><label><h6>  DejaVu "In this Project" </h6></label>
+						<select class="form-control" id="dejavu" name="dejavu" style="width:120px; height:30px; font-size:12px;padding:5px">
+							<option value= 0 >  0  </option>
+							<option value= 1 >  1  </option>
+							<option value= 2 >  2  </option>
+							<option value= 3 >  3  </option>
+							<option value= 4 >  4  </option>
+							<option value= 5 >  5  </option>
+							<option value= 10 >  10  </option>
+							<option value= 20 >  20 </option>
+							<option value= 30 >  30 </option>
+							<option value= 40 >  40 </option>
+							<option value= 50 >  50 </option>
+							<option value= 100 selected="selected" >  100  </option>
+						</select>
+					</td>
+					<td padding: 15px; style="width:120px";><label><h6>  Chromosome  : </h6></label>
+					<select class="form-control" id="chromSelect" name="chromSelect" style="width:120px; height:30px; font-size:12px;padding:5px">
+						<option value="all" selected="selected"  >  all  </option>
+						<option value="noXY" > all but XY  </option>
+						<option value="chr1">  1  </option>
+						<option value="chr2">  2 </option>
+						<option value="chr3">  3  </option>
+						<option value="chr4">  4  </option>
+						<option value="chr5">  5  </option>
+						<option value="chr6">  6  </option>
+						<option value="chr7">  7  </option>
+						<option value="chr8">  8  </option>
+						<option value="chr9">  9  </option>
+						<option value="chr10">  10  </option>
+						<option value="chr11">  11 </option>
+						<option value="chr12">  12  </option>
+						<option value="chr13">  13  </option>
+						<option value="chr14">  14  </option>
+						<option value="chr15">  15  </option>
+						<option value="chr16">  16  </option>
+						<option value="chr17">  17  </option>
+						<option value="chr18">  18  </option>
+						<option value="chr19">  19  </option>
+						<option value="chr20">  20  </option>
+						<option value="chr21">  21  </option>
+						<option value="chrX">  X  </option>
+						<option value="chrY">  Y  </option>
+					</select>
+				</td>
+				<td padding: 15px; style="width:120px";><label><h6>  genotype  : </h6></label>
+						<select class="form-control" id="genotypeSelect" name="genotypeSelect" style="width:120px; height:30px; font-size:12px;padding:5px">
+							<option value="he" >  He  </option>
+							<option value="ho">  Ho  </option>
+							<option value="both" selected="selected" >  both  </option>
+						</select>
+				</td>
+				<td padding: 15px; style="width:120px";><label><h6>  Cytoband : </h6></label>
+						<input type="text" class="form-control" id="cytobSelect"  name="cytobSelect" value="all" style="width:120px; height:30px; font-size:10px;padding:5px"></input>
+				</td>
+				<td padding: 15px; style="width:120px";><label><h6>  Gene : </h6></label>
+						<input type="text" class="form-control" id="geneSelect" name="geneSelect" value="all" style="width:120px; height:30px; font-size:10px;padding:5px"></input>
+				</td>
+			<!--	<td padding: 15px; style="width:350px";><label><h6>  intergenic event  : </h6></label>
+						<select class="form-control"  id="interGSelect" name="interGSelect" style="width:120px; height:30px; font-size:10px;padding:5px" onchange="collapseResult();GetAllSVProject_sanstrio();">
+						 	<option value="1"  selected="selected" >  Hidden </option>
+						 	<option value="0" >  Show all events </option>
+						 	<option value="-1" > Show intergenics only </option>
+						 </select>
+				</td> -->
+				<td padding: 15px; style="width:250px";><label><h6>  Segmental Duplication  : </h6></label>
+						<select class="form-control"  id="SDSelect" name="SDSelect" style="width:120px; height:30px; font-size:10px;padding:5px" onchange="collapseResult();GetAllSVProject_sanstrio();">
+						 	<option value="0" >  Shown  </option>
+						 	<option value="1"  selected="selected" >  Hidden  </option>
+						 </select>
+				</td>
+				<td padding: 15px; style="width:250px";><label><h6>  Search for SV  </h6></label>
+						 <div><button type="button" class="btn btn-warning" onclick="collapseResult();GetAllSVProject_sanstrio();" >  RUN  </button></div>
+				</td>
+				</tr></center>
+  			</table>
+ 	</div>
+ </center>
+ <center style="height:70%;">
+ <div  class="table-responsive,panel-collapse" id="collapse1" style="height:95%;width:80%;margin-top:8px;border: 2px solid grey;">
+      	 <span dojoType="dojo.data.ItemFileReadStore" jsId="jsonDetails" ></span>     
+             <table border="2" 
+             			style="overflow:auto;"
+             			dojoType="dojox.grid.DataGrid"
+                        id    = "SVCompare_gridDetails"
+                        jsId  = "SVCompare_gridDetails"
+                        store = "jsonDetails"  
+                        query = "{ id: '*' }"> 
+             	<tr><thead>
+			            <th width="45px" field="CHROM" formatter="formaterCHROM" styles="text-align:center;font-size:10px;"><center><b> Chr </b></center></th>
+						<th width="220px" field="id" formatter="formaterDUPDEL" styles="text-align:center;font-size:10px;"><center><b> Global id </b></center></th>
+						<th width="350px" field="PATIENT"  formatter="formater_infoPATIENT_indiv" styles="font-size:10px;"><center><b> ids / PATIENT / Caller </b></center></th>	
+						<th width="60px" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:10px;"><center><b> AnnotSV Ranking</b></center></th>
+						<th width="120px" field="CYTOBAND" formatter="formaterLISTE" styles="text-align:center;font-size:10px;"><center><b>Cytoband</b></center></th>
+						<th width="120px" field="GENES" styles="text-align:center;font-size:10px;" formatter="formaterLISTE"><center><b> Genes </b></center></th>		
+						<th width="60px" field="SVLEN" formatter="formaterLength" styles="text-align:center;font-size:10px;"><center><b>Length</b></center></th>  								
+						<th width="280px" field="BREAKPOINTS" formatter="formaterBreakPoint" styles="text-align:center;font-size:10px;"><center><b>BreakPoints</b></center></th>                                                             
+						<th width="100px" field="DGV" formatter="formaterDGV" styles="text-align:center;font-size:10px;"><center><b> DGV</b></center></th>
+						<th width="100px" field="DUPSEG" styles="text-align:center;font-size:10px;" formatter="formaterDUPSEG"><center><b> Segmental Dup</b></center></th>                              
+						<th width="180px" field="GOLD" styles="text-align:center;font-size:10px;" formatter="formaterLISTE"><center><b> DGV Gold Standard </b></center></th>
+						<th width="80px" field="GOLD_G_freq" formatter="formaterFreq" styles="text-align:center;font-size:10px;"><center><b> DGV Gain_freq </b></center></th>   
+						<th width="80px" field="GOLD_L_freq" formatter="formaterFreq" styles="text-align:center;font-size:10px;"><center><b> DGV Loss_freq </b></center></th>  
+						<th width="80px" field="DDD_DEL_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:10px;"><center><b> DDD DEL freq </b></center></th>  
+						<th width="80px" field="DDD_DUP_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:10px;"><center><b> DDD DUP freq </b></center></th>  
+						<th width="80px" field="OMIN_MG" formatter="formaterOmin" styles="text-align:center;font-size:10px;"><center><b> Omin Morbid Genes </b></center></th>
+						<th width="100px" field="dbVar_event"  formatter="formaterdbvarEvent" styles="text-align:center;font-size:10px;"><center><b> dbVar event </b></center></th>
+						<th width="120px" field="dbVar_status"  formatter="formaterdbvarStatus" styles="text-align:center;font-size:10px;"><center><b> dbVar status</b></center></th>
+				</tr></thead>
+             </table>
+</div>
+</center>
+ </body>
+ </html>
+                 
