@@ -200,9 +200,9 @@ sub parseVcfFileForReference {
 	if ($self->method() eq "melt"){
 			return $self->parseVcfFileForReference_melt($reference, $useFilter);
 	}
-	#	if ($self->method() eq "manta"){
-	#		return $self->parseVcfFileForReference_manta($reference, $useFilter);
-	#}
+		if ($self->method() eq "manta"){
+			return $self->parseVcfFileForReference_manta($reference, $useFilter);
+	}
 	if ($file =~ /\.sam/) { 
 		my @res = `zgrep "#INFO=<ID" $file`;
 		#unless (scalar @res){
@@ -566,27 +566,26 @@ sub genericSVIns {
 		my $len;
 		my $var_allele;
 		my $infos = $x->{infos};
-		if ($infos->{SVTYPE} eq "DUP"){
-			 $len = $infos->{SVLEN};
-			 $id = $chr->name."_".$genbo_pos."_".$ref."_dup";
-			 $var_allele = $chr->sequence($genbo_pos,$genbo_pos+$len);
-			$hash->{'isDup'} = 1;
+		if ($infos->{SVTYPE} eq "DUP" or (exists $infos->{DUPSVLEN} && $infos->{SVTYPE} eq "INS")){
+			$len = $infos->{SVLEN};
+			$len = $infos->{DUPSVLEN} if exists $infos->{DUPSVLEN};
 			$genbo_pos += $len; 
-			
+			$id = $chr->name."_".$genbo_pos."_".$ref."_".$len."dup";
+			$var_allele = $chr->sequence($genbo_pos,$genbo_pos+$len);
+			$hash->{'isDup'} = 1;
 		}
 		elsif ($infos->{SVTYPE} eq "INS" &&  (exists $infos->{LEFT_SVINSSEQ} or exists $infos->{RIGHT_SVINSSEQ}) ){
 			 $len = 1;
-			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
+			 $id = $chr->name."_".$genbo_pos."_".$ref."_ins?";
 			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
 		}
 		elsif ($infos->{SVTYPE} eq "INS" && $alt =~ /INS/){
-			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
-			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
+			confess() unless exists $infos->{LEFT_SVINSSEQ};
 		}
 		elsif ($infos->{SVTYPE} eq "INS" && $alt !~ /INS/){
 			$alt = substr($alt,length($ref));			
 			$len = length($alt);
-			
+			$ref = substr($ref, 0, 1); 
 			$id = $chr->name."_".$genbo_pos."_".$ref."_".$alt;
 			$var_allele =   $alt;
 		}
@@ -706,14 +705,27 @@ sub parseVcfFileForReference_melt {
 		my $pos = $x->{pos};
 		my $genbo_pos = $pos +1;
 		confess() if scalar(@{$x->{alt}}) > 1;
-		my $alt = $x->{alt};
-		my $sequence_id = $ref.'_'.$x->{alt}->[0];
-		my $id = $chr_name."_".$genbo_pos."_".$ref."_ALU";
+
+		my $alt = $x->{alt}->[0];
+
+		next if $alt =~ /DEL/;
+		my $type_mei = $x->{infos}->{SVTYPE};
+		my $sequence_id = $ref.'_'.$type_mei;
+		
+	#	my $type_mei = $x->{info}->{SVTYPE};#($header, "SVTYPE");
+		#my $type_mei = $type_mei_vcf;
+		
+		#$type_mei = "ALU" if $type_mei_vcf =~/ALU/i ; 
+		#$type_mei = "LINE" if $type_mei_vcf =~/LINE/i ; 
+		#$type_mei = "L1" if $type_mei_vcf =~/L1/i;
+		
+		my $id = $chr->name."_".$genbo_pos."_".$ref."_".$type_mei;
+
 		$hashRes{$structType}->{$id}->{'id'} = $id;
-		$hashRes{$structType}->{$id}->{'vcf_id'} = join("_",$chr_name,$pos,$ref,$alt);#.$alt;
 		$hashRes{$structType}->{$id}->{'structuralType'} = "insertion" ;#= $allele->{type};
 		$hashRes{$structType}->{$id}->{'structuralTypeObject'} = 'insertions';
 		$hashRes{$structType}->{$id}->{'isMei'} = 1;
+		$hashRes{$structType}->{$id}->{'mei_type'} = $type_mei;
 		$hashRes{$structType}->{$id}->{'chromosomes_object'} = {$chr->id => undef};
 		$hashRes{$structType}->{$id}->{'start'} = $genbo_pos ;# = $allele->{start};
 		$hashRes{$structType}->{$id}->{'end'} = $genbo_pos;# = $allele->{end};
@@ -721,6 +733,7 @@ sub parseVcfFileForReference_melt {
 		$hashRes{$structType}->{$id}->{'var_allele'} = "ALU";#; = $allele->{sequence};
 		$hashRes{$structType}->{$id}->{'line_infos'} = "-";#$allele->{vcf_parse};
 		$hashRes{$structType}->{$id}->{'vcf_position'} = $pos;# = $allele->{vcf_parse}->{POS};
+		$hashRes{$structType}->{$id}->{'vcf_id'} = $chr_name."_".$pos."_".$ref."_".$type_mei;
 		###OBJECTS
 		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
 		$hashRes{$structType}->{$id}->{'references_object'}->{$reference->id} = undef;
