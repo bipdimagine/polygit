@@ -1227,15 +1227,6 @@
             alert ("Click OK and wait your file patiently please. Thanks.");
             var url_xls;
             if (param_xls_url != null) {
-            	var hash_chr = {};
-            	for (i = 0; i < gridVar.rowCount; i++) {
-				  var obj = gridVar.getItem(i);
-				  if (obj) { hash_chr[obj.chromosome] = 'ok'; }
-				}
-				var list_chr = [];
-				for(var key in hash_chr) { list_chr.push(key); }
-				var chromosomes = list_chr.join(',');
-            	param_xls_url = param_xls_url.replace('filter_chromosome=all', 'filter_chromosome='+chromosomes);
                 url_xls = url_cache_variation_excel_vector + "?" + param_xls_url;
                 url_xls = url_xls.replace(/;/g, '&');
             }
