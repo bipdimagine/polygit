@@ -466,10 +466,10 @@ sub find_file_pe_umi {
 
 
 sub find_file_pe {
-	my ($patient,$separator,$dir) = @_;
+	my ($patient,$separator,$dir,$nodie) = @_;
 	 $dir = $patient->getSequencesDirectory() unless $dir;
 	my @names;
-	my $couple;
+	my $couple =[];
 	push(@names,$patient->name);
 	push(@names,$patient->barcode) if length($patient->barcode)>1 ;
 	unless (exists $cached_dir{$dir}){
@@ -492,8 +492,9 @@ sub find_file_pe {
 	}
 	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir unless $couple;	
 	return $couple if scalar(@$couple)>0;
+	return [] if $nodie;
 	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir;
-	die();
+	die($nodie);
 }
 
 sub find_file_in_dir {
