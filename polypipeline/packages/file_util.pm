@@ -467,6 +467,7 @@ sub find_file_pe_umi {
 
 sub find_file_pe {
 	my ($patient,$separator,$dir) = @_;
+	warn $dir;
 	 $dir = $patient->getSequencesDirectory() unless $dir;
 	 warn $dir;
 	my @names;
