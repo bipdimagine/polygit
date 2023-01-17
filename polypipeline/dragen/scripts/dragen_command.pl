@@ -136,7 +136,7 @@ my $ref_dragen = $project->getGenomeIndex("dragen");
 my $param_umi = "";
 my ($fastq1,$fastq2);
 if (exists $pipeline->{align}){
-	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline,1);
+	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	 
 }
 if ($version && exists $pipeline->{align} && !($fastq1)){
