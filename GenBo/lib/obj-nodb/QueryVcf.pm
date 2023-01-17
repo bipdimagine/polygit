@@ -200,9 +200,9 @@ sub parseVcfFileForReference {
 	if ($self->method() eq "melt"){
 			return $self->parseVcfFileForReference_melt($reference, $useFilter);
 	}
-		if ($self->method() eq "manta"){
-			return $self->parseVcfFileForReference_manta($reference, $useFilter);
-	}
+		#if ($self->method() eq "manta"){
+		#	return $self->parseVcfFileForReference_manta($reference, $useFilter);
+	#}
 	if ($file =~ /\.sam/) { 
 		my @res = `zgrep "#INFO=<ID" $file`;
 		#unless (scalar @res){
@@ -476,55 +476,35 @@ sub genericSVDel {
 		my $patient_id = $patient->id;
 		my $hash;
 		my $ref = $x->{ref};
-		my $pos = $x->{pos};
-		my $genbo_pos = $pos + length($ref);
-		my $structType = "insertion";
-		confess() if scalar(@{$x->{alt}}) > 1;
-		my $id ;
-		my $alt = $x->{alt}->[0];
-		my $len;
-		my $var_allele;
-		my $infos = $x->{infos};
-		if ($infos->{SVTYPE} eq "DUP"){
-			 $len = $infos->{SVLEN};
-			 $id = $chr->name."_".$genbo_pos."_".$ref."_dup";
-			 $var_allele = $chr->sequence($genbo_pos,$genbo_pos+$len);
-			$hash->{'isDup'} = 1;
-			$genbo_pos += $len; 
-			
-		}
-		elsif ($infos->{SVTYPE} eq "INS" &&  (exists $infos->{LEFT_SVINSSEQ} or exists $infos->{RIGHT_SVINSSEQ}) ){
-			 $len = 1;
-			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
-			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
-		}
-		elsif ($infos->{SVTYPE} eq "INS" && $alt =~ /INS/){
-			 $id = $chr->name."_".$genbo_pos."_".$ref."_?";
-			 $var_allele =   $infos->{LEFT_SVINSSEQ}."+".$infos->{RIGHT_SVINSSEQ};
-		}
-		elsif ($infos->{SVTYPE} eq "INS" && $alt !~ /INS/){
-			$alt = substr($alt,length($ref));			
-			$len = length($alt);
-			
-			$id = $chr->name."_".$genbo_pos."_".$ref."_".$alt;
-			$var_allele =   $alt;
-		}
-		else {
-			confess();
-		}
+		$ref = substr($ref, 1);
+		my $alt =  $x->{alt}->[0];
+
+		die($alt) if length($alt) > 1;
 		
-	$hash->{'id'} = $id;
-	$hash->{'vcf_id'} = join("_",$chr->name,$pos,$ref,$x->{alt}->[0]);
-	$hash->{'structuralType'} = "insertion" ;#= $allele->{type};
-	$hash->{'structuralTypeObject'} = 'insertions';
-	$hash->{'isSV'} = 1;
-	$hash->{'chromosomes_object'} = {$chr->id => undef};
-	$hash->{'start'} = $genbo_pos ;
-	$hash->{'end'} = $genbo_pos;
-	$hash->{'ref_allele'} = $ref;
-	$hash->{'var_allele'} = $var_allele;
-	$hash->{'line_infos'} = "-";
-	$hash->{'vcf_position'} = $pos;
+		my $pos = $x->{pos};
+		my $genbo_pos = $pos + 1;
+		
+		my $structType = "deletion";
+		
+		my $id ;
+		
+		my $len;
+		my $var_allele = $alt;
+		my $infos = $x->{infos};
+		
+		$hash->{'id'} = $id;
+		$hash->{'vcf_id'} = join("_",$chr->name,$pos,$ref,$x->{alt}->[0]);
+		$hash->{'structuralType'} = "deletion" ;#= $allele->{type};
+		$hash->{'structuralTypeObject'} = 'deletions';
+		$hash->{'isSV'} = 1;
+		$hash->{'chromosomes_object'} = {$chr->id => undef};
+		$hash->{'start'} = $genbo_pos ;
+		$hash->{'end'} = $x->{END};
+		$hash->{'length'} = abs($x->{SVLEN});
+		$hash->{'ref_allele'} = $ref;
+		$hash->{'var_allele'} = $var_allele;
+		$hash->{'line_infos'} = "-";
+		$hash->{'vcf_position'} = $pos;
 	###OBJECTS
 	$hash->{'references_object'}->{$reference->id} = undef;
 	### ANNEX 
@@ -560,7 +540,6 @@ sub genericSVIns {
 		my $pos = $x->{pos};
 		my $genbo_pos = $pos + length($ref);
 		my $structType = "insertion";
-		confess() if scalar(@{$x->{alt}}) > 1;
 		my $id ;
 		my $alt = $x->{alt}->[0];
 		my $len;
@@ -668,6 +647,8 @@ sub parseVcfFileForReference_manta {
 	return {} unless $iter;
 	while (my $row = $iter->next) {
 		my $x =  $self->parseVCFLine($row);
+		confess("alt "=>Dumper $x) if scalar(@{$x->{alt}}) > 1;
+		confess("ref =>".Dumper $x ) if scalar(@{$x->{ref}}) > 1;
 		my $hash;
 		if ($x->{infos}->{SVTYPE} eq  "INS" or $x->{infos}->{SVTYPE} eq  "DUP") 
 		{
