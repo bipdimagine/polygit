@@ -33,15 +33,19 @@ use Carp;
 my $buffer = new GBuffer;
 my $project_name;
 my $fork;
+my $excludes;
+
 GetOptions(
 	'project=s' => \$project_name,
 	'fork=s' => \$fork,
+	'exclude=s' => \$excludes,
 );
 die("he no fork ") unless $fork;
 my $jobs;
 my $project = $buffer->newProjectCache( -name 			=> $project_name );
 my $runs = $project->getRuns();
-
+my @a_excludes;
+@a_excludes = split(",",$excludes);
  my $sambamba = $buffer->software("sambamba");
 
 #choose control by run .
@@ -52,14 +56,19 @@ foreach my $r (@$runs) {
 	#die();
 	my $hps =  $r->getAllPatientsInfos();
 	#warn Dumper($hps) if $r->id() eq 982;
-	
 	#only control
 #	if (scalar(@$hps) < 8){
 #		push(@{$controls->{$r->id}},@$hps);
 #		next;
 #	}
-	my  @hps2 =  grep{$_->{project} ne $project_name && $_->{status} eq 1 && $_->{patient} =~ /GIAB/ } @$hps;
-warn "coucou";
+	@$hps = grep{$_->{patient} !~ /CDNA/ && $_->{control} == 0} @$hps;
+	my  @hps2 =  grep{$_->{project} ne $project_name && $_->{status} eq 1 && $_->{patient} =~ /GIAB/  } @$hps;
+	
+	if ($excludes){
+		@hps2 = grep {$_->{patient} !~/$excludes/ }@$hps; 
+	}
+	
+	
 	if (@hps2>=$max_controls){
 		@hps2 = samples $max_controls,@hps2;
 		#push(@{$controls->{$r->id}},samples 6,@hps2);
@@ -73,7 +82,7 @@ warn "coucou";
 		}
 			
 		}
-	
+	warn scalar(@hps2);
 	if (@hps2<=$max_controls) {
 		foreach my $h  (grep{$_->{project} eq $project_name && $_->{status} eq 1} @$hps){
 			push(@hps2,$h);
@@ -81,7 +90,7 @@ warn "coucou";
 			
 		}
 	}
-	
+	warn scalar(@hps2);
 		if (@hps2<=$max_controls) {
 		foreach my $h  (grep{$_->{project} eq $project_name && $_->{status} ne 1} @$hps){
 			push(@hps2,$h);
@@ -92,17 +101,17 @@ warn "coucou";
 	#push(@{$controls->{$r->id}},@hps2);
 
 	
-	warn "\t*******************".scalar (@hps2);
 	#die();
-	 $max_controls = 10 if $project->isExome;
-	if (scalar (@hps2) < $max_controls ) {
+	# $max_controls = 50;
+	warn "\tmax control $max_controls ******************* control".scalar (@hps2);
+	if (scalar (@hps2) < 12 ) {
 		warn scalar (@hps2);
 		find_other_patient($r,\@hps2);
 	}
-	warn "\t*******************".scalar (@hps2);
+	
 	my %contr_projects;
 	map {$contr_projects{$_->{project}} ++} @hps2;
-warn "\t*******************".scalar (@hps2);
+	warn "\t*******************".scalar (@hps2);
 	#warn Dumper @hps2;
 
 
@@ -137,6 +146,7 @@ warn "\t*******************".scalar (@hps2);
 #				die();
 				#next;
 			}
+			
 			push(@{$controls->{$r->id}},$p) ;
 		} 
 		
@@ -145,19 +155,20 @@ warn "\t*******************".scalar (@hps2);
 
 #my $chr = $project->getChromosome("Y");
 foreach my $r (keys %$controls){
-	foreach my $c (@{$controls->{$r}}){
-		next unless $r ==1453;
-		warn "run : ".$r. " c : ".Dumper $c;
-	}
+		warn "run : ".$r. " c : ".scalar (@{$controls->{$r}});
+#	foreach my $c (@{$controls->{$r}}){
+		#next unless $r ==1453;
+	
+#	}
 }
 
 
 foreach my $r (@$runs){
 	warn $r->id." ".$r->name." ". scalar(@{$controls->{$r->id}});
-	#die("not enough control ". $r->id." ".$r->name) if scalar(@{$controls->{$r->id}}) <= 2;
+	die("not enough control ". $r->id." ".$r->name) if scalar(@{$controls->{$r->id}}) <= 2;
 }
 my $no =  $project->noSqlCnvs("c");
-warn Dumper  $controls;
+warn Dumper $controls;
 $no->put("raw_data","controls",$controls);
 
 warn "OK END";
@@ -186,7 +197,7 @@ sub find_other_patient {
 	 my $capture = $run->project->getCaptures()->[0];
 	 if (exists $patients_captures{$capture->name}){
 	 	 push(@$controls, @{$patients_captures{$capture->name}});
-	 	 return; 
+	 #	 return; 
 	 	
 	 }
 	 my $mean_norm;
@@ -208,10 +219,7 @@ sub find_other_patient {
 			my $project2 =  $buffer2->newProject( -name 			=> $c->{project});
 			my $patient = $project2->getPatient($c->{patient});
 			my $hp = $patient->nb_reads;
-			warn Dumper $hp;
 			foreach my $ps (@apos){
-				warn Dumper $ps;
-				warn $hp->{$ps->{chr}};
 				$mean_norm += ($patient->maxDepth($ps->{chr},$ps->{start},$ps->{end})/$hp->{$ps->{chr}});
 				$nv ++;
 			}
@@ -221,8 +229,7 @@ sub find_other_patient {
 	 my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
 	my $x;
 	my $res;
-	my $limit = 10 - scalar(@$controls);
-	
+	my $limit = 12 - scalar(@$controls);
 	 foreach my $project_name2 (@$query){
 	 		next if $project_name2 =~ /NGS2010/;
 	 		my $buffer2 = GBuffer->new();
@@ -272,6 +279,7 @@ sub find_other_patient {
 			}
 			last if scalar(@$res) > 50;
 	 }
+	
 	  @$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);
 	 my @toto = splice (@$res,0,$limit);
 	# warn Dumper(@toto);

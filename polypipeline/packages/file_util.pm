@@ -466,12 +466,10 @@ sub find_file_pe_umi {
 
 
 sub find_file_pe {
-	my ($patient,$separator,$dir) = @_;
-	warn $dir;
+	my ($patient,$separator,$dir,$nodie) = @_;
 	 $dir = $patient->getSequencesDirectory() unless $dir;
-	 warn $dir;
 	my @names;
-	my $couple;
+	my $couple =[];
 	push(@names,$patient->name);
 	push(@names,$patient->barcode) if length($patient->barcode)>1 ;
 	unless (exists $cached_dir{$dir}){
@@ -482,9 +480,10 @@ sub find_file_pe {
 		$cached_dir{$dir} = \@allFiles;
 	}
 	NAME: foreach my $name (@names){
-	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name","^".$name);
+	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
 	foreach my $find (@pattern){
 		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
+	
 		if (@titi) {
 			$couple = find_paired_files(\@titi,$dir);
 			last NAME if ($couple);
@@ -493,8 +492,9 @@ sub find_file_pe {
 	}
 	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir unless $couple;	
 	return $couple if scalar(@$couple)>0;
+	return [] if $nodie;
 	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir;
-	die();
+	die($nodie);
 }
 
 sub find_file_in_dir {
