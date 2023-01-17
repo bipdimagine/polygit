@@ -102,7 +102,7 @@ foreach my $patient (@{$patients_name}) {
 	}
 }
 close(SAMPLESHEET);
-
+  
 
 #my $prog =  $patient->alignmentMethod();
 my $tmp = "/data-isilon/tmp-bcl/";
