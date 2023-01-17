@@ -10,7 +10,10 @@ function httpGetFocusOn(url) {
 
 function displayInAlamut(chr, start, a){
 	chr = chr.replace('-', '');
-	var locus = "chr"+chr+":"+start+a[0]+">"+a[1];
+	var locus;
+	if (a[0] == '-') { locus = chr+":"+start; }
+	else if (a[1] == '-') { locus = chr+":"+start; }
+	else { locus = chr+":"+start+a[0]+">"+a[1]; }
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+locus);
 	launch_alamut_visual_plus_cmds(list_cmds);
@@ -19,7 +22,7 @@ function displayInAlamut(chr, start, a){
 
 function displayLocusInAlamut(chr, start, end){
 	chr = chr.replace('-', '');
-	var locus = "chr" + chr + ":" + start + "-" + end;
+	var locus = chr + ":" + start + "-" + end;
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+locus);
 	launch_alamut_visual_plus_cmds(list_cmds);

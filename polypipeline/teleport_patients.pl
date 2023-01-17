@@ -139,6 +139,7 @@ sub move_patient{
 	my $projectName = $newProject->name;	
 	my $pn = $patient->name();
  	my $dir1 = $project->getProjectPath();
+ 	warn $dir1;
  	my $dir2 = $newProject->getProjectPath();
  	my $dir3 = $project->getSequencesRootDir();
 
@@ -169,7 +170,7 @@ my @files2 = File::Find::Rule->file()
 
 push(@files,@files2);
 my @files3 = File::Find::Rule->file()
-                                  ->name( $pn."_*" )
+                                  ->name( $pn."\.*" )
                                   ->in( $dir1);
 
 
@@ -206,7 +207,7 @@ if ($bam ne 1 || $vcf < 2){
 	colored::stabilo("red","---------------- $vcf vcf  file  ---------------") if $vcf < 2; 
 	colored::stabilo("red","-----------------------------------------------------"); 
 	warn Dumper @cmd;
-	die();
+#	die();
 }
 	
 	

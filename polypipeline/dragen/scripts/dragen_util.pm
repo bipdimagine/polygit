@@ -2,24 +2,25 @@ package dragen_util;
 use strict;
 
 sub get_fastq_file {
-	my ($patient,$dir_pipeline) = @_;
+	my ($patient,$dir_pipeline, $dir_fastq) = @_;
 	
 	my $name=$patient->name();
+	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
+	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq);
 	
-	my $files_pe1 = file_util::find_file_pe($patient,"");
 	my $cmd;
 	my @r1;
 	my @r2;
 	foreach my $cp (@$files_pe1) {
-		my $file1 = $patient->getSequencesDirectory()."/".$cp->{R1};
-		my $file2 = $patient->getSequencesDirectory()."/".$cp->{R2};
+		my $file1 = $dir_fastq."/".$cp->{R1};
+		my $file2 = $dir_fastq."/".$cp->{R2};
 		push(@r1,$file1);
-		push(@r2,$file2);
+		push(@r2,$file2);##
 	}
 	my $cmd1 = join(" ",@r1);
 	my $cmd2 = join(" ",@r2);
-	my $fastq1 = $dir_pipeline."/".$patient->name.".R1.fastq.gz";
-	my $fastq2 = $dir_pipeline."/".$patient->name.".R2.fastq.gz";
+	my $fastq1 = $dir_pipeline."/".$patient->name."_S1_R1_L001.fastq.gz";
+	my $fastq2 = $dir_pipeline."/".$patient->name."_S1_R2_L001.fastq.gz";
 	#if ($step eq "align"){
 		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
 		system "cat $cmd2 > $fastq2";# unless -e $fastq2;

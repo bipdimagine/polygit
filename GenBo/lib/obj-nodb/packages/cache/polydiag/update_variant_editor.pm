@@ -1668,7 +1668,7 @@ sub panel_gene_short_button {
    		$panel_list .= "<br>";
    	}
    	$panel_name1 = "Panel: ".scalar (keys %{$hgene->{panels}});
-	my $b_panels = qq{<div id="$div_id_gene" class="btn btn-brown btn-xs" style="color:white;background-color:#4A4F53;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><span style="font-size:10px;">$panel_name1</span></div>} if $panel_name1;
+	my $b_panels = qq{<div class="btn btn-brown btn-xs" style="color:white;background-color:#4A4F53;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><span style="font-size:10px;">$panel_name1</span></div>} if $panel_name1;
 	
 	my $pheno =$hgene->{phenotypes};
 	my @t = split(";",$pheno);
@@ -1700,7 +1700,14 @@ sub panel_gene_short_button {
 	$out .= "<table>";
 	$out .= "<tr>";
 	$out .= "<td>";
-	$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor" style="font-size:12px;color:white;background-color:#4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;"> </span> <span id= "$label_id" class="glyphicon glyphicon-triangle-right" aria-hidden="true" style="padding-top:2px;float:left;"></span> $gene_name<sup>&nbsp;$in</b></sup>&nbsp;&nbsp;&nbsp;</div></div>};
+	if (exists $hgene->{collapse_with_id}) {
+		my $this_collapse_id = $hgene->{collapse_with_id};
+		$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="font-size:12px;color:white;background-color:#4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;"> </span> <span id= "$label_id" class="glyphicon glyphicon-triangle-right" aria-hidden="true" style="padding-top:2px;float:left;"></span> $gene_name<sup>&nbsp;$in</b></sup>&nbsp;&nbsp;&nbsp;</div></div>};
+	}
+	else {
+		$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor" style="font-size:12px;color:white;background-color:#4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;"> </span> <span id= "$label_id" class="glyphicon glyphicon-triangle-right" aria-hidden="true" style="padding-top:2px;float:left;"></span> $gene_name<sup>&nbsp;$in</b></sup>&nbsp;&nbsp;&nbsp;</div></div>};
+	}
+
 	$out .= "</td>";
 	if ($list_html_cons) {
 		$out .= '<td>&nbsp;&nbsp;'.join('&nbsp;', @$list_html_cons).'</td>';
@@ -1794,7 +1801,18 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				if (exists $hgene->{specific_cmd}) {
 					$this_b_cmd = $hgene->{specific_cmd};
 				}
-				$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:white;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+				
+				
+				if (exists $hgene->{collapse_with_id}) {
+					my $this_collapse_id = $hgene->{collapse_with_id};
+					$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:white;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+				}
+				else {
+					$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:white;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+				}
+				
+				
+				
 	   			my $nbv = $hgene->{nb};
 
 				my $omim = $hgene->{omim_id};
@@ -1813,7 +1831,13 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				$type = "red" if $pli >= 0.9;
 				my $m = $hgene->{max_score};
 				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
- 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span class="badge" style="color:$type">$pli</span></a>};
+ 				
+ 				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
+ 				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
+ 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				
+ 				
+ 				
 	   			my $panel_name1 = join("-",keys %{$hgene->{panels}});
 	   			my $hPanels;
 	   			foreach my $panel_name (keys %{$hgene->{panels}}) {
@@ -2661,6 +2685,7 @@ sub table_cnv_genes_transcripts {
 		my $type ="green";
 		$type = "orange" if $pli >= 0.75;
 		$type = "red" if $pli >= 0.9;
+		
  		my $b_pli =qq{<a class="btn btn-xs" role="button" href='https://gnomad.broadinstitute.org/gene/$gid' target='_blank' style="background-color:#EEE;color:black;border:solid 1px black;"><span style="font-size:8px;background-color:#EEE;">$pli</span></a>};
  		
  		#VARIANTS

@@ -228,6 +228,8 @@ foreach my $project_name (split(",",$project_names)){
 		system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 		$pm->finish( 0, {});
 }
+warn "count_sequence.pl -dir=$out_fastq";
+system("count_sequence.pl -dir=$out_fastq");
 
 }
 

@@ -154,7 +154,7 @@ foreach my $r (keys %$controls){
 
 foreach my $r (@$runs){
 	warn $r->id." ".$r->name." ". scalar(@{$controls->{$r->id}});
-	die("not enough control ". $r->id." ".$r->name) if scalar(@{$controls->{$r->id}}) <= 2;
+	#die("not enough control ". $r->id." ".$r->name) if scalar(@{$controls->{$r->id}}) <= 2;
 }
 my $no =  $project->noSqlCnvs("c");
 warn Dumper  $controls;

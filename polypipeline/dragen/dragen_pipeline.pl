@@ -79,6 +79,7 @@ my $steps = {
 				"genotype"=>  \&run_genotype,
 				"dragen-sv"=>  \&run_sv,
 				"dragen-target"=>  \&run_target,
+				"dragen-count"=> \&run_count,
 				"dragen-pon"=>  \&run_pon,
 				"lmdb-depth"=>  \&run_lmdb_depth,
 				"run_coverage"=>  \&run_coverage,
@@ -117,6 +118,9 @@ my $jobs =[];
 
 ####### Alignement
 my $ppd  = patient_pipeline_dragen($projects);
+
+
+
 
 run_command($ppd);
 run_move($ppd);
@@ -184,6 +188,18 @@ foreach my $project (@$projects){
 			push(@{$h->{run_pipeline}},"align")  unless -e $h->{align}->{pipeline};
 		}
 		
+		
+		if($project->isRnaSeq()){
+		$h->{count}->{file} = $patient->countFileName("dragen-count");
+		$h->{count}->{pipeline} = 	my $count_pipeline = "$dir_pipeline/".$prefix.".quant.sf";
+		unless (-e $h->{count}->{file}){
+			push(@{$h->{run}},"count");
+			push(@{$h->{run_pipeline}},"count") unless -e $h->{count}->{pipeline};
+		}
+		}
+		else{
+		
+		
 		$h->{gvcf}->{file} = $patient->gvcfFileName("dragen-calling");
 		$h->{gvcf}->{pipeline} = 	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 		unless (-e $h->{gvcf}->{file}){
@@ -214,6 +230,7 @@ foreach my $project (@$projects){
 		push(@{$patients_jobs},$h);
 	}
 	}
+}
 	return $patients_jobs;
 }
 
@@ -541,6 +558,29 @@ foreach my $project (@$projects){
 	}
 }
 	steps_system("Target",$jobs);
+}
+
+##########################
+#         COUNT RNA
+##########################
+
+sub run_count {
+	my ($projects) = @_;
+	my $jobs =[];
+
+foreach my $project (@$projects){
+	my $projectName = $project->name;
+	my $cmd = qq{perl $script_perl/dragen_count.pl -project=$projectName};
+	my $patients = $project->getPatients($patients_name);
+	foreach my $patient (@$patients){
+		my $dir = $patient->project->getCountingDir("dragen-count");
+		my $fileout = $dir."/".$patient->name.".quant.sf";
+		next if -e $fileout;
+		my $cmd = qq{perl $script_perl/dragen_count.pl -project=$projectName -patient=}.$patient->name;
+		push(@$jobs,{name=>$patient->name.".count" ,cmd=>$cmd,fileout=>$fileout});
+	}
+}
+steps_system("COUNT",$jobs);
 }
 
 

@@ -25,7 +25,7 @@ use Sys::Hostname;
  my $host = hostname();
 
 
-warn "*_*_*_*_*_".$host."*_*_*_*_*_";
+#warn "*_*_*_*_*_".$host."*_*_*_*_*_";
 #use Cache_Commons;
 
 
@@ -41,17 +41,48 @@ GetOptions(
 
 open(FILE, ">$fileout");
 my $buffer = new GBuffer;
-my $project = $buffer->newProject( -name => $project_name );
+my $project = $buffer->newProjectCache( -name => $project_name );
 $project->getChromosomes();
 my $patient = $project->getPatient($patient_name);
+#$patient->use_not_filtred_junction_files(1);
 
-my $pm = new Parallel::ForkManager($fork);
-foreach my $junction (@{$patient->getJunctions()}) {
-	my $pid = $pm->start and next;
-	$junction->createListSashimiPlots($patient);
-	print FILE 'Ok junction '.$junction->id()."\n";
-	$pm->finish();
+my $hType_patients;
+$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
+
+
+my @lJunctions;
+foreach my $chr (@{$project->getChromosomes()}) {
+	my $vector_patient = $patient->getJunctionsVector($chr);
+	foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
+		next if ($junction->isCanonique($patient));
+		next if ($junction->get_ratio_new_count($patient) == 1);
+		next if ($junction->get_percent_new_count($patient) < 10);
+		$junction->dejavu_percent_coordinate_similar(96);
+		my $nb_dejavu_pat = $junction->dejavu_nb_patients();
+		next if ($nb_dejavu_pat > 50);
+		push(@lJunctions, $junction);
+	}
 }
-$pm->wait_all_children();
-close (FILE);
 
+if (scalar(@lJunctions) == 0) {
+	print FILE '0 junction';
+	close (FILE);
+	exit(0); 
+}
+
+if (not $hType_patients or ($hType_patients and exists $hType_patients->{$patient->name()}->{pat})) {
+	my $pm = new Parallel::ForkManager($fork);
+	foreach my $junction (@lJunctions) {
+		my $pid = $pm->start and next;
+		$junction->createListSashimiPlots($patient);
+		print FILE 'Ok junction '.$junction->id()."\n";
+		$pm->finish();
+	}
+	$pm->wait_all_children();
+}
+else {
+	print FILE "Patient $patient_name is a control\n";
+}
+
+close (FILE);
+exit(0);
