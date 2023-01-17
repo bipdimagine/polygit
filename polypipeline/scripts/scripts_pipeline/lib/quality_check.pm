@@ -343,7 +343,7 @@ sub fast_plink {
 	if ( @{ $fam->getParents } ) {
 		my $cmd2 =
 "$plink --tped $tped_file --allow-extra-chr  --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName";
-
+  
 		#	warn $cmd2;
 		my @log   = `$cmd2`;
 		my $file1 = "$dir/" . $fam->name();
