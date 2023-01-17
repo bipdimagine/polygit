@@ -1,19 +1,22 @@
 package dragen_util;
 use strict;
+use Data::Dumper;
 
 sub get_fastq_file {
 	my ($patient,$dir_pipeline, $dir_fastq) = @_;
 	
 	my $name=$patient->name();
 	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
-	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq);
-	
+	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq,1);
+	return unless @$files_pe1;
 	my $cmd;
 	my @r1;
 	my @r2;
 	foreach my $cp (@$files_pe1) {
 		my $file1 = $dir_fastq."/".$cp->{R1};
+		die($file1) unless -e  $file1;
 		my $file2 = $dir_fastq."/".$cp->{R2};
+		die($file2) unless -e  $file1;
 		push(@r1,$file1);
 		push(@r2,$file2);##
 	}
