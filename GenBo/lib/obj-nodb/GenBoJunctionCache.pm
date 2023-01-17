@@ -19,6 +19,7 @@ sub setPatients {
 
 sub get_hash_noise {
 	my ($self, $patient) = @_;
+	return $self->{h_noise}->{$patient->name()} if (exists $self->{h_noise}->{$patient->name()});
 	my ($h_noise, @lJunctions, $my_id_in_list);
 	my $h_exons_introns = $self->get_hash_exons_introns();
 	my $intspan_self = $self->getStrictGenomicSpan();
@@ -77,6 +78,7 @@ sub get_hash_noise {
 		}
 		$i++;
 	}
+	$self->{h_noise}->{$patient->name()} = $h_noise;
 	return $h_noise;
 }
 
