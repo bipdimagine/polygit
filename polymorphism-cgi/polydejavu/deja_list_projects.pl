@@ -193,6 +193,7 @@ $out_phenos .= qq{</div>};
 
 $hRes->{html_projects} = $out;
 $hRes->{list_projects}= \@lProjectNames;
+$hRes->{list_captures}= \@lCapturesNames;
 #$hRes->{list_panels}= \@lCapturesNames;
 $hRes->{html_list_captures}=$out_captures;
 $hRes->{html_list_phenotypes}=$out_phenos;

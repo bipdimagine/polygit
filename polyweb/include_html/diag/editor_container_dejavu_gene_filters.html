@@ -26,7 +26,19 @@
 								<td style="padding-top: 5px;">
 									<input class="form-check-input" type="checkbox" value="" id="b_only_my_projects" checked>
 									<label class="form-check-label" for="b_only_my_projects" style="vertical-align:middle;">
-										ONLY my projects
+										<table>
+											<td>ONLY my projects</td>
+											<td style='padding-left:5px;'>
+												<div class="input-group">
+											    	<select class="form-control" id="form_only_my_projects_type" style="font-size:9px;height:auto;max-width:220px;padding-top:1px;padding-bottom:1px;">
+														<option value='all' selected><span>ALL</span></option>
+														<option value='only_genomes'><span>Genomes</span></option>
+														<option value='only_exomes'><span>Exomes</span></option>
+											    	</select>
+												</div>
+												
+											</td>
+										</table>
 									</label>
 								</td>
 							</tr>

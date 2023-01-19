@@ -625,6 +625,15 @@
 			    		if (key == 'list_projects') {
 			    			list_projects_names = $(val);
 			    		}
+			    		if (key == 'list_captures') {
+			    			var list_captures = $(val);
+    						for(i=0; i<list_captures.length; i++) {
+    							var new_option = "<option value='" + list_captures[i] + "'><span>with capture " + list_captures[i] + "</span></option>";
+					    		var myPanel = $(new_option);
+    							var myNode = document.getElementById("form_only_my_projects_type");
+								myPanel.appendTo(myNode);
+    						}
+			    		}
 			    		if (key == 'html_list_captures') {
 							var myNode = document.getElementById("content_list_my_captures");
 					    	var myPanel = $(val);
@@ -1271,7 +1280,12 @@
 				}
 		    	
 				if (document.getElementById('b_only_pat_ill').checked == true) { url += "&only_ill=1"; }
-				if (document.getElementById('b_only_my_projects').checked == true) { url += "&only_my_projects=1"; }
+				if (document.getElementById('b_only_my_projects').checked == true) {
+					var filter_type_project = document.getElementById("form_only_my_projects_type").value;
+					if (filter_type_project == "") { url += "&only_my_projects=1"; }
+					else if (filter_type_project == "all") { url += "&only_my_projects=1"; }
+					else { url += "&only_my_projects=" + filter_type_project; }
+				}
 				
 				var l_models = [];
 				if (document.getElementById('strict_denovo').checked == true) { l_models.push('strict_denovo'); }
