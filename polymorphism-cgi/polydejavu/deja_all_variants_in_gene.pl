@@ -117,8 +117,26 @@ my $dbh_init = $buffer_init->dbh();
 my $query_init = $buffer_init->getQuery();
 my $project_init;
 
-my $h_proj_pat_ill;
+my ($h_projects_name_with_capture,$h_proj_pat_ill);
+if ($only_my_projects and $only_my_projects ne '1') {
+	if ($only_my_projects eq 'only_genomes') {
+		foreach my $p_name (@{$query_init->getSimilarProjectsByAnalyse('genome')}) {
+			$h_projects_name_with_capture->{$p_name} = undef;
+		}
+	}
+	elsif ($only_my_projects eq 'only_exomes') {
+		foreach my $p_name (@{$query_init->getSimilarProjectsByAnalyse('exome')}) {
+			$h_projects_name_with_capture->{$p_name} = undef;
+		}
+	}
+	else {
+		foreach my $p_name (@{$query_init->listAllProjectsNameByCapture($only_my_projects)}) {
+			$h_projects_name_with_capture->{$p_name} = undef;
+		}
+	}
+}
 my @lProjectNames = reverse sort keys %{$hProjects};
+
 foreach my $project_name (@lProjectNames) {
 	my $h;
 	$h->{name} = $project_name;
@@ -473,7 +491,10 @@ sub export_html {
 	$h_annot_categories->{'gnomad_'.$max_gnomad} = 1 if ($max_gnomad);
 	$h_annot_categories->{'gnomad_ho_'.$max_gnomad_ho} = 1 if ($max_gnomad_ho);
 	$h_annot_categories->{'only_ill_patients'} = 1 if ($only_ill);
-	$h_annot_categories->{'only_my_projects'} = 1 if ($only_my_projects);
+	if ($only_my_projects) {
+		if ($only_my_projects eq '1') { $h_annot_categories->{'only_my_projects'} = 1; }
+		else { $h_annot_categories->{"only_my_projects <span style='color:red;'>$only_my_projects</span>"} = 1; }
+	}
 	if ($models) {
 		$models =~ s/,/, /g;
 		$h_annot_categories->{'models '.$models} = 1;
@@ -576,6 +597,7 @@ sub get_variants_infos_from_projects {
 		foreach my $project_name (@tmp) {
 			print '.';
 #			die if ($project_name eq 'NGS2022_5424');
+			next if ($only_my_projects and $only_my_projects ne '1' and  not exists $h_projects_name_with_capture->{$project_name});
 			next if ($only_project and $project_name ne $only_project);
 			my $buffer = new GBuffer;
 			my $project;
@@ -973,7 +995,7 @@ sub update_list_variants_from_dejavu {
 				$h_proj_pat_ill->{$proj_id} = get_hash_patients_ill_from_project_name($dbh_init, $query_init, $proj_id);
 			}
 		
-			if (not $only_my_projects or ($only_my_projects == 1 and exists $hProjects->{$proj_id})) {
+			if (not $only_my_projects or ($only_my_projects and exists $hProjects->{$proj_id})) {
 				foreach my $name (split(';', $hashVarId->{$proj_id}->{patients})) {
 					my $model;
 					if ($hResVariantsModels and exists $hResVariantsModels->{$proj_id}->{$name}) {
@@ -1138,7 +1160,13 @@ sub get_table_trio_from_object {
 	my $color_local = 'black';
 	my $isMotherTransmission = $var->isMotherTransmission($fam,$patient);
 	my $isFatherTransmission = $var->isFatherTransmission($fam,$patient);
-	my $model = $var->getTransmissionModel($fam,$patient,$gene_used);
+	my $model;
+	eval { $model = $var->getTransmissionModel($fam,$patient,$gene_used); };
+	if ($@) {
+		my $key = "strict_denovo_".$patient->id;
+		$fam->{vector_transmission}->{$key}->{$var->getChromosome->id} = $var->getChromosome->getNewVector();
+		$model = $var->getTransmissionModel($fam,$patient,$gene_used);
+	}
 	my $model2 = qq{<i class="fa fa-male  fa-2x" style="color:lightgrey"></i><i class="fa fa-female  fa-2x" style="color:lightgrey"></i>};
 	$h_var->{model} = lc($model);
 	if ($is_solo_trio eq 'SOLO') {
