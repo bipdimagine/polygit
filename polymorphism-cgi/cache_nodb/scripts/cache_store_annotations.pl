@@ -428,7 +428,7 @@ sub get_annotations {
 				confess( $cons_text . " " . $c ) unless exists $intspan_genes_categories->{ $g->id }->{$c};
 				$intspan_genes_categories->{ $g->id }->{$c}->add($lmdb_index);
 				warn 	$intspan_genes_categories->{ $g->id }->{$c}->as_string if $debug;
-				my $prediction = $variation->categorie_frequency_predicion($g);
+				my $prediction = $variation->categorie_frequency_prediction($g);
 				$intspan_genes_categories->{ $g->id }->{$prediction}->add($lmdb_index);
 			}
 		}
