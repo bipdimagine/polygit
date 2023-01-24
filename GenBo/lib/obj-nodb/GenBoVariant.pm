@@ -63,10 +63,13 @@ has isLargeDeletion => (
 has vcf_position => (
 	is		=> 'rw',
 );
-
-has vcf_sequence => (
+has vcf_first_base => (
 	is		=> 'rw',
+	
 );
+#has vcf_sequence => (
+#	is		=> 'rw',
+#);
 
 has ref_allele => (
 	is		=> 'rw',
@@ -152,7 +155,7 @@ sub define_max_spliceAI {
 	my ($self,$gene) = @_;
 	$self->{AI_max}->{$gene->id} = -1;
 	$self->{AI_max_cat}->{$gene->id} = "-";
-	
+	return unless $self->spliceAI() ;
 	return if $self->spliceAI() eq "-";
 	my $v = $self->spliceAI_score($gene);
 	return unless defined $v;
@@ -760,7 +763,7 @@ has rs_name => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return unless  $self->gnomad->{rsname};
+		return "" unless  $self->gnomad->{rsname};
 		return $self->gnomad->{rsname};
 		}
 	
@@ -902,7 +905,7 @@ has categorie_frequency_ho=> (
 );
 
 
-sub categorie_frequency_predicion { 
+sub categorie_frequency_prediction { 
 			my ($self,$g) = @_;
 			die() unless $g;
 			my $key_polyphen = "polyphen".$self->polyphenStatus($g);
@@ -1005,6 +1008,20 @@ has gnomad_id => (
 	return $vn;
 	}
 	);
+
+#has vcf_first_base => (
+#	is		=> 'rw',
+#	lazy=> 1,
+#	default=> sub {
+#	my $self = shift;
+#	my $vn=$self->vcf_id;
+#	my ($pos,$a,$b) = split("_",$self->vcf_id);
+#	my @z = split($a);
+#	die() unless @z;
+#	return $z[0];
+#	}
+#);
+
 
 has vcf_id => (
 	is		=> 'rw',
@@ -1262,12 +1279,13 @@ sub return_mask_testing {
 		#confess("call only on transcript") unless $obj->isTranscript();
 		$id = $obj->id ;
 	}
-#	unless  ($self->annotation()->{$id}->{mask}){
-#		
-#	warn $id." ".$self->getChromosome->name." ".$self->id;
-#	warn $self->annotation()->{$id}->{mask}." $type ".$self->getProject()->getMaskCoding($type);
-#	confess() ;
-#	}
+	
+	unless  ($self->annotation()->{$id}->{mask}){
+		
+		warn $id." ".$self->getChromosome->name." ".$self->id;
+		warn $self->annotation()->{$id}->{mask}." $type ".$self->getProject()->getMaskCoding($type);
+		confess() ;
+	}
 #	warn $type." $id ".$self->id unless exists $self->annotation()->{$id}->{mask};
 	return $self->annotation()->{$id}->{mask} & $self->getProject()->getMaskCoding($type);
 }
@@ -1328,11 +1346,6 @@ sub init_annotation {
 	}
 	my $span = $self->getGenomicSpan();
 	$annot->{all}->{mask} = 0;
-#	warn "------+----+ ".$self->id;
-#		foreach my $tr ( @{ $self->getTranscripts() } ) {
-#		warn "\t".$tr->name();
-#		}
-#		warn "------+----+";
 
 	foreach my $tr ( @{ $self->getTranscripts() } ) {
 		my $gid = $tr->getGene()->id();
@@ -2619,7 +2632,8 @@ sub scoreVariant{
 	my $score =-150;
 	if ($obj->isGene){
 		
-		foreach my $tr (@{$obj->getTranscripts}){
+		foreach my $tr (@{$self->getTranscripts}){
+			next if $tr->getGene->id ne $obj->id;
 			my $tscore = $self->score_transcript_consequence($tr,$debug);
 			
 			#warn "transcript  score : ".$tscore if $debug;
@@ -2954,7 +2968,7 @@ sub getGenotype {
 	confess();
 }
 
-##################
+########################
 #SEQUENCING INFOS
 ########################
 sub getDepth {
@@ -3047,10 +3061,12 @@ sub getTextSequencingRatio {
 
         my @string;
         foreach my $v (@{$self->sequencing_infos->{$pid}->{values}}){
-        	my $pc = sprintf("%.1f", ($v->[2]/($v->[2]+$v->[3])) );
+        	my $pc = "-";
+        
+        	 $pc = sprintf("%.0f", ($v->[3]/($v->[2]+$v->[3]))*100 ) if ($v->[2]+$v->[3]) > 0;
         	push(@string,$v->[0].":$pc%");
         }
-        return \@string;
+        return join(";",@string);
 }
 
 
@@ -3230,7 +3246,7 @@ sub check_no_var_allele_in_bam {
 	$limit = 2 unless ($limit);
 	foreach my $bam_file (@{$patient->getBamFiles()}) {
 		my $sam = $patient->bio_db_sam();
-		my $chr_name = $self->getChromosome()->id();
+		my $chr_name = $self->getChromosome()->fasta_name();
 		my $start = $self->start();
 		my $end = $self->end();
 		my $all_var = $self->var_allele();
@@ -3316,7 +3332,7 @@ sub similar_patients_ho {
  
 sub other_projects  {
         my ($self) = @_;
-     
+     	return $self->dejaVuInfosForDiag2->{other_project} if exists $self->dejaVuInfosForDiag2->{other_project};
          return $self->dejaVuInfosForDiag2->{other_projects};
 }
 
@@ -3381,87 +3397,6 @@ has dejaVuInfosForDiag2 => (
 );
      
 
-#has dejaVuInfosForDiag => (
-#        is              => 'rw',
-#        lazy    => 1,
-#        default => sub {
-#         my $self = shift;
-#         my $chr = $self->getChromosome()->name();
-#        	my $in_this_run_patients =  $self->project->in_this_run_patients();
-#        	
-#       		my $project = $self->project;
-#        	my $no = $project->lite_deja_vu();
-#        	# $project->getDejaVuInfosForDiag($self->id);
-#        	# return;
-#        	 #die();
-#        	my $h = $no->get($self->getChromosome->name,$self->id);
-#      
-#        	my $similar = $project->similarProjects();
-#  
-#        	my $exomes = $project->exomeProjects();
-#       	 	my $pe =  $project->countExomePatients();
-#       	 	my $ps =  $project->countSimilarPatients();
-#       	 	 
-#			my $res;
-#        	$res->{similar_projects} = 0;
-#       		 $res->{other_projects} = 0;
-#        	$res->{exome_projects} = 0;
-#
-#        	$res->{other_patients} = 0;
-#        	$res->{exome_patients} = 0;
-#        	$res->{similar_patients} = 0;
-#
-#        	$res->{other_patients_ho} = 0;
-#        	$res->{exome_patients_ho} = 0;
-#        	$res->{similar_patients_ho} = 0;
-#        	
-#        	$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
-#        	if ($res->{total_in_this_run_patients} == 0 ){
-#        		$res->{total_in_this_run_patients} = scalar(@{$self->project->getPatients});
-#        	}
-#        	$res->{in_this_run_patients} = 0;
-#        	$res->{in_this_run_patients} += scalar(@{$self->getPatients});
-#        	delete $h->{$project->name};
-#        
-#        foreach my $p (keys %$h){
-#                                        next if $p eq $project->name();
-#
-#                                        my ($p1,$p2,$HO) = split(" ",$h->{$p});
-#                                        my @hho ;
-#                                        @hho=  split(",",$p2) if $p2;
-#                                        my $n = () = $p1 =~  /,/g;
-#                                        my $nho =scalar(@hho);
-#                                        if (exists $in_this_run_patients->{$p}){
-#											foreach my $v (split(",",$p1.",".$p2)){
-#												if (exists $in_this_run_patients->{$p}->{$v}){
-#					 								$res->{in_this_run_patients} ++;
-#												}
-#											}
-#										}
-#                                        if (exists $exomes->{$p}){
-#                                                        $res->{exome_projects}  ++;
-#                                                        $res->{exome_patients}   += $n +1;
-#                                                        $res->{exome_patients_ho}   += $nho;
-#                                                }
-#                                        if (exists $similar->{$p}){
-#                                                $res->{similar_projects}  ++;
-#                                                $res->{similar_patients} += $n +1;
-#                                                $res->{similar_patient_ho} += $nho;
-#                                        }
-#                                        else {
-#                                                $res->{other_projects} ++;
-#                                                $res->{other_patients}+= $n +1;
-#                                                $res->{other_patients_ho}+= $nho;
-#                                        }
-#                                }
-#                                
-#                                 $res->{total_exome_projects} =  scalar(keys %{$self->project->exomeProjects()});
-#                                 $res->{total_exome_patients} =  $self->project->countExomePatients();
-#                                  $res->{total_similar_projects} =  scalar(keys %{$self->project->similarProjects()});
-#                                  $res->{total_similar_patients} =  $self->project->countSimilarPatients();
-#                               return $res;
-#        }
-#);
 
 sub string_nomenclature {
 	my($self,$st,$seqv) =@_;
