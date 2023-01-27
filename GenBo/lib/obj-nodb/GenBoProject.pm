@@ -1912,6 +1912,22 @@ has gtf_file => (
 	},
 );
 
+
+has gtf_dragen_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file =
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		  .  $self->annotation_genome_version  . '/'
+		  . $self->buffer()->config->{'public_data'}->{gtf_dragen};
+		return $file;
+	},
+);
+
+
 has gtf_file_star => (
 	is      => 'rw',
 	lazy    => 1,
@@ -3854,12 +3870,6 @@ sub getAlignmentUrl {
 sub getCellRangerDir {
 	my ($self) = @_;
 	my $path = $self->project_path . "/cellranger/";
-	return $self->makedir($path);
-}
-
-sub getMetricsDir {
-	my ($self) = @_;
-	my $path = $self->project_path . "/metrics/picard/";
 	return $self->makedir($path);
 }
 
