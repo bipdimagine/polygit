@@ -3857,6 +3857,12 @@ sub getCellRangerDir {
 	return $self->makedir($path);
 }
 
+sub getMetricsDir {
+	my ($self) = @_;
+	my $path = $self->project_path . "/metrics/picard/";
+	return $self->makedir($path);
+}
+
 sub getPipelineTrackingDir {
 	my ($self) = @_;
 	my $path = $self->getProjectRootPath() . "/tracking/";
