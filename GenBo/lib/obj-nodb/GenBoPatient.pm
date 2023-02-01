@@ -1821,7 +1821,7 @@ is      => 'ro',
 		return [] unless $lines[0];
 		my @t;
 		foreach my $l (@lines){
-			push(@t,[split(" ",$lines[0])] ) ;
+			push(@t,[split(" ",$l)] ) ;
 		}
 		return \@t;
 	}
