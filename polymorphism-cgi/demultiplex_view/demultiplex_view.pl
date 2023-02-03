@@ -43,12 +43,21 @@ print $cgi->header('text/json-comment-filtered');
 
 foreach my $this_path (@$list_paths_found) {
 	if ($run_name) {
-		next unless ($this_path =~ /$run_name/);
+		next if ($this_path ne $run_name);
 	}
 	if (-e $this_path.'/Demultiplex_Stats.csv') {
 		mkdir $this_path.'/html/' if (not -d $this_path.'/html/');
 		if (-e $this_path.'/Demultiplex_Stats.csv' && -e $this_path.'/Top_Unknown_Barcodes.csv') {
 			my @lFiles = ('Demultiplex_Stats.csv', 'Top_Unknown_Barcodes.csv');
+			
+#			if ($this_path =~ /NB501645_0664/) {
+#				warn "\n\n";
+#				warn "$this_path";
+#				warn Dumper @lFiles;
+#				warn "\n\n";
+#				#die;
+#			}
+			
 			my $json_file = convert_csv_to_json($this_path, \@lFiles);
 			my $json_path = $json_file;
 			my $use_force;
@@ -95,6 +104,7 @@ foreach my $this_path (@$list_paths_found) {
 		list_html_files_in_dir($this_path);
 	}
 }
+#die;
 
 my $html_table = qq{<table data-sort-name='date' data-sort-order='desc' id="table_demultiplex" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
 $html_table .= qq{<thead>};
@@ -212,6 +222,9 @@ sub parse_csv_file {
 	my ($file, $h_run_description) = @_;
 	my $h;
 	$h->{has_RC} = undef;
+	
+	#warn $file;
+	
 	open (CSV, "$file");
 	my $i = 0;
 	my $has_RC;
@@ -228,7 +241,7 @@ sub parse_csv_file {
 		}
 		else {
 			my $j = 0;
-			my $id = $lCol[0].'_'.$lCol[1];
+			my $id = $lCol[0].'_'.$lCol[1].'_'.$lCol[2];
 			if ($id =~ /(.+)_RC/) {
 				$h->{has_RC}++ if (exists $h->{values}->{$1});
 			}
@@ -365,10 +378,24 @@ sub convert_csv_to_json {
 		my $table_id = 'table_'.$file;
 		$table_id =~ s/\.csv//;
 		
+		
+#		if ($csv_file =~ /NB501645_0664/) {
+#			warn 'CSV file: '.$csv_file;
+#		}
+		
 		my $sorted_col = "data-sort-name='n_reads' data-sort-order='desc'";
 		#$sorted_col = "data-sort-name='p_of_unknown_barcodes' data-sort-order='desc'" if (lc($table_id) =~ /top_/);
 		
 		$h->{$file} = parse_csv_file($csv_file, $h_run_description);
+		
+		
+#		if ($csv_file =~ /NB501645_0664/ and $csv_file =~ /Top_Unk/) {
+#			warn "\n\n";
+#			warn Dumper keys %{$h->{$file}->{values}};
+#			warn 'CSV file: '.$csv_file;
+#			warn "\n\n";
+#			die;
+#		}
 		
 		my $has_RC;
 		$has_RC = $h->{$file}->{has_RC} if (exists $h->{$file}->{has_RC});
