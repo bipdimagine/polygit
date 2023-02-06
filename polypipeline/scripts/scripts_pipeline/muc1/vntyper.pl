@@ -48,7 +48,7 @@ if ($patient_name2 =~ / /){
 }
 
 warn $patient_name2;
-exit(0) if -e "/data-isilon/sequencing/muc1/renome/".$patient_name2.".vcf";
+#exit(0) if -e "/data-isilon/sequencing/muc1/renome/".$patient_name2.".vcf";
 my $patients = $project->get_only_list_patients($patient_name2);
 die() unless scalar(@$patients);
 warn "coucou ".scalar(@$patients);
@@ -77,12 +77,12 @@ my $fileoutx=  $project->getVariationsDir("muc1_vntyper6")."/".$patient_name.".v
  }
 my $singularity = $buffer->software("singularity");
 #my $image = "/software/distrib/ADVNTR/SINGLARITY/vntyper_v7_20221209.sif";
-my $image = "/software/distrib/ADVNTR/SINGLARITY/production2.sif";
+my $image = "/software/distrib/ADVNTR/SINGLARITY/vntyper.sif";
 my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
-#my $scommand ="python3 /SOFT/VNtyper/VNtyper.py -t 5 -k 20 -ref_VNTR /tmp/pipeline/MUC1-VNTR.fa  -f /SOFT/VNtyper/Files/ -ref /tmp/pipeline/MUC1-VNTR.fa -p Scripts/ -w $dir_pipeline -r1 $fastq1 -r2 $fastq2 -o $patient_name -m Files/vntr_data/hg19_genic_VNTRs.db --ignore_advntr";
-my $scommand ="python3 /SOFT/VNtyper/VNtyper.py   -t 5    --bam  -ref chr1.fa -ref_VNTR /SOFT/VNtyper/Files/MUC1-VNTR.fa -p /SOFT/VNtyper/Scripts/ -w $dir_pipeline -a $bam   -o $patient_name  -m /vntr_data/hg19_genic_VNTRs.db --ignore_advntr";
+#my $scommand ="python3 /SOFT/VNtyper/VNtyper.py -t 5 -k 20 -ref_VNTR /tmp/pipeline/MUC1-VNTR.fa  -f /SOFT/VNtyper/Files/ -ref /tmp/pipeline/MUC1-VNTR.fa -p Scripts/ -w $dir_pipeline -r1 $fastq1 -r2 $fastq2 -o $patient_name -m Files/vntr_data/hg19_genic_VNTRs.db --ignore_advntr  -p /SOFT/VNtyper/";
+my $scommand ="python3 /SOFT/VNtyper/VNtyper.py   -t 5    --bam  -ref chr1.fa -ref_VNTR /SOFT/VNtyper/Files/MUC1-VNTR.fa -p /SOFT/VNtyper/Scripts/ -w $dir_pipeline -a $bam   -o $patient_name  -m /vntr_data/hg19_genic_VNTRs.db --ignore_advntr  -p /SOFT/VNtyper/";
 my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 warn $cmd;
 system($cmd." && touch $dir_pipeline/$patient_name.ok");
