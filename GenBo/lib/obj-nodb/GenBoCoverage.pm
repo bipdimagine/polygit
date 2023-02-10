@@ -35,6 +35,7 @@ is		=> 'ro',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
+		return $self->chromosome->fasta_name;
 		return $self->chromosome->ucsc_name if $self->patient->is_ucsc_nomenclature();
 		return  $self->chromosome->name();
 	},

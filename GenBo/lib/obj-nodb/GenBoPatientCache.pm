@@ -274,6 +274,7 @@ sub setOrigin {
 	else {
 		my $no_patients = $chr->get_lmdb_patients("r");
 		my $hh =  $no_patients->get($self->name());
+		#$hh =  $no_patients->get($self->id()) unless $hh;;
 		confess() unless  $hh;
 		$self->{origin}->{all}->{$chr->name} = $hh->{bitvector}->{'all'};
 		$self->{origin}->{ho}->{$chr->name} = $hh->{bitvector}->{'ho'};

@@ -81,6 +81,16 @@ sub setLargeDeletions {
 	$self->setVariants('large_deletions');
 	return $self->{large_deletions_object} ;
 }
+sub setInversions {
+	my $self = shift;
+	$self->setVariants('inversions');
+	return $self->{inversions_object} ;
+}
+sub setBoundaries {
+	my $self = shift;
+	$self->setVariants('boundaries');
+	return $self->{boundaries_object} ;
+}
 sub setLargeDuplications {
 	my $self = shift;
 	$self->setVariants('large_duplications');

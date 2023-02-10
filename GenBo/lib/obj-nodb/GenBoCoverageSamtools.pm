@@ -38,9 +38,8 @@ has array => (
 		#warn "$samtools depth -Q 1 $bam -r $region -Q 1 | cut -f 2-3";
 	#	my @t = `$samtools depth -Q 1 $bam -r $region -Q 1 | cut -f 2-3`;
 		my $opt = "-Q 1";
-	$opt ="" if $self->raw eq 1;
-		my @t = `$samtools depth -d 50000 $opt  $bam -r $region $opt | cut -f 2-3` ;
-	
+		$opt ="" if $self->raw eq 1;
+		my @t = `$samtools depth -d 50000 $opt  $bam -r $region $opt 2>/dev/null| cut -f 2-3` ;
 	#	warn "$samtools depth $bam -r $region";
 		chomp(@t);
 		foreach my $tt (@t ){

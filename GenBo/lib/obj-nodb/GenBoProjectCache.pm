@@ -331,6 +331,8 @@ sub hashTypeObject {
 	 	'insertions'	=> 'GenBoInsertionCache',
 	 	'large_deletions'	=> 'GenBoLargeDeletionCache',	
 	 	'large_duplications'=> 'GenBoLargeDuplicationCache',
+	 	'inversions'=> 'GenBoInversionCache',
+	 	'boundaries'=> 'GenBoBoudaryCache',
 	 	'references'	=> 'GenBoReference',
 	 	'transcripts'	=> 'GenBoTranscriptCache',
 	 	'proteins'		=> 'GenBoProtein',
@@ -871,9 +873,10 @@ sub returnVariants {
 		my ($self, $id, $type) = @_;
 		my ($chr_name,$vid) = split("!",$id);
 		my $chr = $self->getChromosome($chr_name);
-		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		 #warn $gid." ".$vid." ".$id;
-		 my $obj = $chr->cache_lmdb_variations->get($gid);
+	
+		my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+		my $obj = $chr->cache_lmdb_variations->get($gid,1);
+		
 		  $obj->{global_vector_id} = $id;
 		 $obj->{vector_id} = $vid;
 		 
@@ -928,13 +931,21 @@ sub nextVariant {
 	return unless scalar(@{$self->{list_variant}});
 	my $id = shift(@{$self->{list_variant}} );
 	my $var_obj = $self->returnVariants($id);
-	
+	confess() unless defined $var_obj;
 	my $ref = ref($var_obj);
 	if ($ref eq 'GenBoVariation'){
 					bless $var_obj , 'GenBoVariationCache';
 		}
 		elsif  ($ref eq 'GenBoLargeDeletion'){
 					bless $var_obj , 'GenBoLargeDeletionCache';
+					
+		}
+		elsif  ($ref eq 'GenBoInversion'){
+					bless $var_obj , 'GenBoInversionCache';
+					
+		}
+		elsif  ($ref eq 'GenBoBoundary'){
+					bless $var_obj , 'GenBoBoundaryCache';
 					
 		}
 		elsif  ($ref eq 'GenBoLargeInsertion'){
@@ -949,9 +960,9 @@ sub nextVariant {
 		elsif  ($ref eq 'GenBoLargeDuplication'){
 					bless $var_obj , 'GenBoLargeDuplicationCache';
 		}
-		elsif  ($ref eq 'GenBoLargeDeletion'){
-					bless $var_obj , 'GenBoLargeDeletionCache';
-		}
+	#	else {
+	#		confess($ref);
+	#	}
 				
 		return $var_obj;
 	
@@ -1014,6 +1025,7 @@ sub myflushobjects {
 						$vector_id = $vid;
 						 $chr = $self->getChromosome($chr_name);
 						unless (exists $self->{lmdb_id}->{$id}){
+							
 						$self->{lmdb_id}->{$id} =  $chr->cache_lmdb_variations->get_varid($vid);
 					#$id = $chr->cache_lmdb_variations->get_varid($vid);
 						}
@@ -1038,8 +1050,13 @@ sub myflushobjects {
 					$self->{objects}->{large_deletions}->{$id}= $var_obj;
 					
 				}
+				elsif  ($ref eq 'GenBoBoudary'){
+					bless $var_obj , 'GenBoBoundaryCache';
+					$self->{objects}->{boundaries}->{$id}= $var_obj;
+					
+				}
 				elsif  ($ref eq 'GenBoLargeInsertion'){
-					bless $var_obj , 'GenBoLargeDuplicationCache';
+					bless $var_obj , 'GenBoLargeInsertionCache';
 					$self->{objects}->{large_duplications}->{$id}= $var_obj;
 				}
 				elsif  ($ref eq 'GenBoDeletion'){
@@ -1054,11 +1071,7 @@ sub myflushobjects {
 					bless $var_obj , 'GenBoLargeDuplicationCache';
 					$self->{objects}->{insertions}->{$id}= $var_obj;
 				}
-					elsif  ($ref eq 'GenBoLargeDeletion'){
-					bless $var_obj , 'GenBoLargeDeletionCache';
-					$self->{objects}->{insertions}->{$id}= $var_obj;
-				}
-				elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache') {
+				elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeInsertionCache'  && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoBoundaryCache'  && $ref ne 'GenBoInversionCache') {
 					confess("$ref =+>".$var_obj);
 				}
 				$var_obj->{project} =  $self;
