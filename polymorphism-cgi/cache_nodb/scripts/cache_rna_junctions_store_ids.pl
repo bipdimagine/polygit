@@ -260,7 +260,8 @@ sub get_junctions_ids {
 	#search common ri_aval ri_amont
 	foreach my $junction ( @{$vs } ) {
 		my $h_exons_introns;
-		foreach my $patient (@{ $junction->getPatients() }) {
+		my @lPatients = @{ $junction->getPatients() };
+		foreach my $patient (@lPatients) {
 			next if (not $junction->is_ri_aval($patient) and not $junction->is_ri_amont($patient));
 			$h_exons_introns = $junction->get_hash_exons_introns() unless ($h_exons_introns);
 			my $type_ri;

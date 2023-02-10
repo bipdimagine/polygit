@@ -929,4 +929,16 @@ sub setJunctions {
 	return $h;
 }
 
+sub hasJunctions {
+	my $self = shift;
+	my $has_junctions;
+	foreach my $chr (@{$self->getProject->getChromosomes()}) {
+		my $v = $self->getJunctionsVector($chr);;
+		next if $v->is_empty();
+		$has_junctions = 1;
+		last;
+	}
+	return $has_junctions;
+}
+
 1;
