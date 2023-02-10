@@ -9,7 +9,8 @@ use Config::Std;
 use GenBoGenomic;
 use GenBoNoSqlLmdb;
 use GenBoNoSqlLmdbPipeline;
-use GenBoNoSqlLmdbVariation;
+use GenBoNoSqlRocksVariation;
+use GenBoNoSqlRocksPolyviewerVariant;
 extends "GenBoGenomic";
 use Storable qw/thaw retrieve/;
 use Set::IntervalTree;
@@ -376,16 +377,16 @@ has cytobandTree => (
 		my $self  = shift;
 		my $tree  = Set::IntervalTree->new;
 		my $dir   = $self->project->get_public_data_directory("cytoband");
-		my $tabix = new Tabix( -data => $dir . "/cytoband.bed.gz" );
+		my $tabix = Bio::DB::HTS::Tabix->new( filename => $dir . "/cytoband.bed.gz" );
+		
 		my $res = $tabix->query( $self->ucsc_name );    # if $start;
 
-		while ( my $line = $tabix->read($res) ) {
+		while ( my $line = $res->next ) {
 			chomp($line);
 			my ( $chr, $start, $end, $name, $color ) = split( " ", $line );
 			my @v = ( "$name;$color", $start + 1, $end + 2 );
 			$tree->insert(@v);
 		}
-
 		return $tree;
 	}
 );
@@ -838,6 +839,7 @@ sub getIntSpanCaptureForCalling {
 
 sub setPrimersForPatient {
 	my ( $self, $patients ) = @_;
+	confess();
 	my $captures = [];
 	foreach my $patient (@$patients) {
 		push( @$captures, $patient->getCapture() );
@@ -866,11 +868,70 @@ sub setPrimersForPatient {
 
 }
 
+sub _constructPrimersFromIntspan {
+	my ($self,$intspan,$captures) = @_;
+	my $iter = $intspan->iterate_runs();
+	my $primers;
+	while (my ( $from, $to ) = $iter->()) {
+		my $size = 	abs($from-$to);
+		foreach (my $i=$from;$i<$to;$i+=1000){
+			my $start = $i;
+			my $end = $i+1000;
+			$end=$to if $end > $to;
+			next if abs($start-$to) <50;
+			my $hpos;
+	 
+			
+			$hpos->{chromosomes_object}->{$self->id} =undef;
+			$hpos->{gstart} = $start - 15;
+			$hpos->{gend} = $end+15;
+			$hpos->{start} = $start;
+			$hpos->{end}   = $end;
+			confess() if ($hpos->{start} > $hpos->{end});
+			($hpos->{end}, $hpos->{start}) = ($hpos->{start},$hpos->{end})  if ($hpos->{start} > $hpos->{end});
+			$hpos->{start_forward}   = $start -15;
+			$hpos->{end_forward}   = $start;
+			$hpos->{id}="primer".$self->name."_$start-$end";
+			$hpos->{id2}="primer".$self->name."_$start-id";
+			$hpos->{name}= $self->name."_$start-$end";
+			$hpos->{multiplex}= 1;
+			$hpos->{length}   = ($end-$start)+1;
+			$hpos->{intspan} =  Set::IntSpan::Fast::XS->new($hpos->{start}."-".$hpos->{end} );
+		
+			$hpos->{cnv} ={};
+			foreach my $c (@$captures){
+				$hpos->{$c->type_object}->{$c->id} =undef;
+			}
+			#$self->{primer_size}->{$hpos->{id}} = abs($startf-$startr)-1; 
+			push(@$primers,$hpos);
+		}
+		}
+	my $objs = $self->getProject()->flushObjects("primers",$primers);
+	foreach my $o (@$objs){
+		$self->{primers_object}->{ $o->id } = undef;
+		$o->{chromosomes_object}->{$self->id} = undef;	
+	}
+	return $objs;
+		
+	
+}
+
 
 sub setPrimers {
 	my ( $self, $patient ) = @_;
 	my $captures = $self->project->getCaptures();
-	$captures = [ $patient->getCapture() ] if ($patient);
+	#$captures = [ $patient->getCapture() ] if ($patient);
+	if (scalar(@$captures) > 1) {
+		my $intspan;# = Set::IntSpan::Fast::XS->new();
+		foreach my $c (@$captures) {
+			my $span = $c->getIntSpanForChromosome($self,50);
+			$intspan = $span unless $intspan;
+			$intspan = $intspan->intersection($span);
+		}
+		$self->_constructPrimersFromIntspan($intspan,$captures);
+		return $self->{primers_object};
+	}
+	
 	my %hchrs;
 	my @objs;
 	#if ($self->project->isExome){
@@ -1283,83 +1344,104 @@ sub get_lmdb_annex {
 	$self->{lmdb}->{annex} = $no2;
 	return $no2;
 }
-
+sub get_old_lmdb_variations {
+	my ($self,$mode,$dir_out) = @_;
+		return  GenBoNoSqlLmdb->new(
+			dir         => $self->project->lmdb_cache_variations_dir(),
+			mode        => $mode,
+			is_index    => 1,
+			name        => $self->name,
+			is_compress => 1,
+			vmtouch     => $self->buffer->vmtouch
+			);
+}
+sub get_rocks_variations {
+	my ($self,$mode) = @_;
+		#$dir_out = "/data-beegfs/tmp/".$self->project->name."/";
+		return  GenBoNoSqlRocksVariation->new(
+					dir         => $self->project->rocks_cache_dir,
+					mode        => $mode,
+					is_index    => 1,
+					name        => $self->name,
+					is_compress => 1,
+				);	
+}
+sub get_rocks_polyviewer_variant {
+	my ($self,$mode) = @_;
+		#$dir_out = "/data-beegfs/tmp/".$self->project->name."/";
+		return $self->{rocks}->{$mode} if exists $self->{rocks}->{$mode};
+		$self->{rocks}->{$mode} =  GenBoNoSqlRocksPolyviewerVariant->new(
+					dir         => $self->project->rocks_cache_dir,
+					mode        => $mode,
+					is_index    => 1,
+					name        => $self->name.".pv",
+					is_compress => 1,
+				);	
+				#$self->{rocks}->{$mode}->rocks->compact_range;
+				return 	$self->{rocks}->{$mode};
+}
+# sub get_lmdb_variations {
+#	my ( $self, $modefull,$rocks) = @_;
+#	my $hindex = "variations_";
+#	$hindex = "variations_".$modefull if ($modefull);
+#	return $self->{rocks}->{$hindex} if exists $self->{rocks}->{$hindex};
+#	$modefull = "r" unless $modefull;
+#	my ( $mode, $pipeline ) = split( '', $modefull );
+#	my $dir_out = $self->project->lmdb_cache_variations_dir();
+#	
+#	my $dir_out_rocks = $self->project->rocks_cache_dir;
+#	if ($mode eq "c"){
+#		if ($rocks) {
+#			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
+#			$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode);
+#		}
+#		else {
+#			$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);
+#		}
+#	}
+#	else {
+#		if ( -e  $dir_out_rocks){
+#				$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode);
+#		}
+#		else {
+#			$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);
+#		}
+#	}
+#	
+#	return $self->{rocks}->{$hindex};
+#}
+# 
 
 sub get_lmdb_variations {
-	my ( $self, $modefull,$toto ) = @_;
+	my ( $self, $modefull,$rocks) = @_;
 	my $hindex = "variations_";
 	$hindex = "variations_".$modefull if ($modefull);
 	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
 	$modefull = "r" unless $modefull;
 	my ( $mode, $pipeline ) = split( '', $modefull );
 	my $dir_out = $self->project->lmdb_cache_variations_dir();
-	my $no2;
-	if ( $pipeline and $pipeline eq 'p' ) {
-		die();
-		#$dir_out = $self->project->lmdb_cache_variations_dir();
-		confess() if $mode ne 'c';
-		$dir_out = $self->project->lmdb_pipeline_dir() . "/lmdb_variations/";
-		$no2     = GenBoNoSqlLmdbPipeline->new(
-			dir_prod    => $self->project->lmdb_cache_variations_dir(),
-			dir         => $dir_out,
-			mode        => $mode,
-			is_index    => 1,
-			name        => $self->name,
-			is_compress => 2
-		);
-
-	}
-	else {
-		if ($mode eq "c"){
-			if ($toto){
-		   		$no2 = GenBoNoSqlLmdbVariation->new(
-					dir         => $dir_out,
-					mode        => $mode,
-					is_index    => 1,
-					name        => $self->name.".lmdb_var",
-					is_compress => 1,
-					vmtouch     => $self->buffer->vmtouch
-				);	
-			}
-			else {
-				$no2 = GenBoNoSqlLmdb->new(
-				dir         => $dir_out,
-				mode        => $mode,
-				is_index    => 1,
-				name        => $self->name,
-				is_compress => 1,
-				vmtouch     => $self->buffer->vmtouch
-				);
-			}
-			}
-		elsif (-e $dir_out."/".$self->name.".lmdb_var"){
-			warn "WORK WITH LMDB_VARIATION";
-			$no2 = GenBoNoSqlLmdbVariation->new(
-			dir         => $dir_out,
-			mode        => $mode,
-			is_index    => 1,
-			name        => $self->name.".lmdb_var",
-			is_compress => 1,
-			vmtouch     => $self->buffer->vmtouch
-			);
-				
+	
+	my $dir_out_rocks = $self->project->rocks_cache_dir;
+	warn $dir_out_rocks;
+	if ($mode eq "c"){
+		if ($rocks) {
+			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
+			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
 		}
 		else {
-#			warn "WORK WITH OLD ".$dir_out."/".$self->name.".lmdb_var";
-			$no2 = GenBoNoSqlLmdb->new(
-			dir         => $dir_out,
-			mode        => $mode,
-			is_index    => 1,
-			name        => $self->name,
-			is_compress => 1,
-			vmtouch     => $self->buffer->vmtouch
-			);
-			}
-		
+			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);
+		}
+	}
+	else {
+		#if ( -e  $dir_out_rocks){
+		#		$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
+		#}
+		#else {
+			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
 		#}
 	}
-	$self->{lmdb}->{$hindex} = $no2;
-	return $no2;
+	
+	return $self->{lmdb}->{$hindex};
 }
 
 sub get_lmdb_cnvs {

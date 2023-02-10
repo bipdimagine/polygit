@@ -183,7 +183,7 @@ sub lmdb {
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
       			flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
  	 			});
- 			system("/software/bin/vmtouch -t $filename -q  ");
+ 			system("/software/bin/vmtouch -t $filename -q  ") if -e "/software/bin/vmtouch";
 	 		}
 	 		else {
 	 	#	warn "rsync -rav ".$self->dir."/$name /tmp/tt/$newname";
@@ -599,7 +599,23 @@ sub put{
 	return  $index;
 	#$self->_put_index($key) if ($self->is_index);
 } 
-
+sub put_text{
+	my ($self,$key,$value) = @_;
+	my $db_name = $self->name();
+	my $index = -1;
+	
+	# if ($self->is_index){
+	 #	unless (exists $value->{index_lmdb} ){
+	#	 	$index = $self->_put_index($key);
+	#		$value->{index_lmdb} = $index;
+	 #	}
+	 	
+	 #}
+	 
+	$self->lmdb($db_name)->put($self->lmdb_key($key),$self->encode($self->_compress($value)));
+	return  $index;
+	#$self->_put_index($key) if ($self->is_index);
+} 
 sub put_with_index{
 	my ($self,$key,$value) = @_;
 		my $db_name = $self->name();
@@ -633,8 +649,7 @@ sub update{
 
 sub get{
 	my ($self,$key,$debug) = @_;
-	warn $key if $debug;
-	warn $self->lmdb_key($key) if $debug;
+#	warn $self->lmdb_key($key) if $debug;
 	my $db_name = $self->name();
 	return  $self->decode($self->lmdb($db_name)->get($self->lmdb_key($key)));
 }

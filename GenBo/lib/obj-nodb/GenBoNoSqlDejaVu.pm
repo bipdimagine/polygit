@@ -266,7 +266,7 @@ sub getIdentityBetweenCNV {
 	#retourne le recouvrement en % de la longueur du plus long des deux evenements 
 	
 	my $overlap = min( $end1, $end2 ) - max( $start1, $start2 );
-	
+	confess if abs( $start1 - $end1 ) ==0;
 	my $overlap1 = $overlap / abs( $start1 - $end1 );
 	my $overlap2 = $overlap / abs( $start2 - $end2 );
 

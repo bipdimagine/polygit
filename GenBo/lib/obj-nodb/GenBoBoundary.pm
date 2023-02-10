@@ -1,30 +1,60 @@
-package GenBoLargeDeletion;
+package GenBoBoundary;
 
 use strict;
 use Moose;
 use MooseX::Method::Signatures;
-use Data::Dumper;
-use Config::Std;
-use GenBoCapture;
-use Position;
 extends 'GenBoCnv';
 
 
-
-
-
-has isLargeDeletion => (
+has isBoundary => (
 	is		=> 'ro',
 	default	=> 1,
 );
 
+has name => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $al = $self->allele_length;
+		
+		#$al = "*" if $al == -1;
+		my $id = $self->getChromosome->name().'-'.$self->start().'-trans-'. $self->mate_chr.":".$self->mate_pos;
+		return $id;
+	},
+);
 
+has isCnv => (
+	is		=> 'ro',
+	default	=> undef,
+);
+
+has mate_chr =>(
+is		=> 'ro',
+	default	=> "XX",
+);
+has mate_pos =>(
+is		=> 'ro',
+	default	=> "XX",
+);
+has mate_id => (
+	is		=> 'ro',
+		default	=> sub {
+		my $self = shift;
+		return $self->mate_chr."_".$self->mate_pos."_".$self->ref_allele."_bnd-".$self->getChromosome->name.":".$$self->position;
+	},
+		
+);
+
+has event_id => (
+	is		=> 'ro',
+);
 
 has type => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> sub {
-		return "large_deletion";
+		return "boundary";
 	},
 );
 
@@ -32,40 +62,28 @@ has sv_type => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> sub {
-		return "DEL";
+		return "BND";
 	},
 );
 
 sub limit_cnv_value {
 	my ($self,$value) = @_;
-	return 1 if  $value <= 0.6;
+	
 	return undef;
 }
 
 sub limit_cnv_value_ho {
 	my ($self,$value) = @_;
-	return 1 if  $value <= 0.15;
 	return undef;
 }
-
-
-
-has structural_type => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return "l_del";
-	},
-);
 
 has string_dejavu => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		my $h = $self->project->get_deja_vu_from_overlap($self->getChromosome->name,$self->start,$self->start+$self->length,"DL");
-		return $h->[1] if $h;
+		#my $h = $self->project->get_deja_vu_from_overlap($self->getChromosome->name,$self->start,$self->start+$self->length,"DL");
+		#return $h->[1] if $h;
 		return "";
 	},
 );
@@ -76,7 +94,7 @@ has type_public_db => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return "deletions";
+		return "boundaries";
 	},
 );
 
@@ -85,7 +103,7 @@ has type_object => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return "large_deletions_object";
+		return "boundaries_object";
 	},
 );
 
@@ -95,6 +113,7 @@ has alleles => (
 	lazy	=> 1,
 	default=> sub {
 		my $self = shift;
+		return "*";
 		return 'del '.$self->start().' to '.$self->end().' (length:'.$self->length().')';
 	},
 );
@@ -116,13 +135,11 @@ sub delete_sequence {
 }
 
 
-sub setLargeDeletions {
-	my $self = shift;
-	confess();
-
-}
 
 
+
+
+1;
 
 
 1;
