@@ -199,9 +199,9 @@ sub parseVcfFileForReference {
 	if ($self->method() eq "melt"){
 			return $self->parseVcfFileForReference_melt($reference, $useFilter);
 	}
-	#if ($self->method() eq "manta"){
-	#		return $self->parseVcfFileForReference_manta($reference, $useFilter);
-	#}
+	if ($self->method() eq "manta"){
+			return $self->parseVcfFileForReference_manta($reference, $useFilter);
+	}
 	if ($file =~ /\.sam/) { 
 		my @res = `zgrep "#INFO=<ID" $file`;
 		#unless (scalar @res){
