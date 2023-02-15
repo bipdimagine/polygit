@@ -363,6 +363,7 @@ foreach my $hp (@$patients_jobs) {
 		$job->{jobs_type} ="lmdb_depth";
 		push(@$jobs,$job);
 	}
+unless ($umi){	
 push(@all_list,"melt");		
 foreach my $hp (@$patients_jobs) {
 	my $project_name = $hp->{project};
@@ -385,9 +386,11 @@ foreach my $hp (@$patients_jobs) {
 	push(@$jobs,$job);
 	
 }	
-
-	steps_cluster("LMDBDepth+Melt ",$jobs);
+steps_cluster("LMDBDepth+Melt ",$jobs);
+return;
+}
 	
+steps_cluster("LMDBDepth(-melt) ",$jobs);	
 }
 
 ### DUDE 
