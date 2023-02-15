@@ -600,11 +600,12 @@ has primers_lines =>(
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
+		warn "*********";
 		if ($self->analyse eq "genome"){
 			my @lines;
 			foreach my $chr (@{$self->project->getChromosomes()}){
 				
-					my $from =1;
+				my $from =1;
     			my $to = $chr->length;
   	
     	my $window =1000;
@@ -631,7 +632,10 @@ has primers_lines =>(
 			my @lines;
 			if ($capture_file =~/\.gz/){
 				my $bedtools = $self->buffer->software("bedtools");
-		 		@lines = `$bedtools makewindows -b $capture_file -w 500 `;
+				
+		 		@lines = `zcat $capture_file | cut -f 1-3 | $bedtools makewindows -b /dev/stdin -w 500 `;
+		 		confess() if $? ne 0;
+		 		
 			}
 			else {
 				confess();
