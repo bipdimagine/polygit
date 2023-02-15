@@ -117,7 +117,7 @@ my $dir_log = $projects->[0]->buffer->config->{project_pipeline}->{bds}."/".$pro
 system("mkdir $dir_log && chmod a+rwx $dir_log");
 
 if ($test_umi && !($umi)){
-		print colored::stabilo("Hey Sylvain, it seems to me that you didn't put the UMI=1 option but your project had UMIs  ", 1)."\n";
+		print colored::stabilo("red","Hey Sylvain, it seems to me that you didn't put the UMI=1 option but your project had UMIs  ", 1)."\n";
 		my $choice = prompt("do you  want to use it anyway (yes or no) ?  (y/n) ? ");
 		$umi=1 if ($choice ne "y"); 
 	
