@@ -95,7 +95,6 @@ sub getProjectListsRNA {
 			$hDone->{$name} = undef;
 		}
 		$h->{button} = join(';', @lbuttons);
-		warn Dumper @lbuttons; die;
 		$hDone->{$name} = undef;
 		next unless $h->{button};
 		$h_ok->{$name} = $h;
