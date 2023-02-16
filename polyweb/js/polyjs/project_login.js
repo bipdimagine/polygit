@@ -124,29 +124,36 @@ function view_polyquery(prj, type) {
  }
  
 function formaterButtonRNA(this_value) {
-	var list = this_value.split('::');
-	var tt = " ";
-	var dd = " disabled ";
-	var style =" style='margin-top: 3px ;opacity: 0.25;' ";
-	// 1 for junctions analyse
-	if (list[0] == 1) {
-		tt = " onClick=view_rna_junctions('" + list[1]+"') ";
-		style =" style='margin-top: 3px ' ";
-		dd = ""
-		if (list[1] == 'disabled') {
-			tt = "disabled";
-		}
-		style =" style='margin-top: 3px ' ";
-		dd = ""
-		return "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolySplice</div></td></tr></table></center>";
-	} 
-	if (list[0] == 2) {
-		tt = " onClick=view_rna_shiny('" + list[1]+"') ";
-		style =" style='margin-top: 3px ' ";
-		dd = ""
-		return "<center><table><tr><td><div style='background-color:#ca4ff8;color:white;' class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolyRnaSeq-Analyse</div></td></tr></table></center>";
-	} 
-	return '';
+	var array_button = [];
+	var super_list = this_value.split(';');
+	for (i in super_list) {
+		var list = super_list[i].split('::');
+		var tt = " ";
+		var dd = " disabled ";
+		var style =" style='margin-top: 3px ;opacity: 0.25;' ";
+		// 1 for junctions analyse
+		if (list[0] == 1) {
+			tt = " onClick=view_rna_junctions('" + list[1]+"') ";
+			style =" style='margin-top: 3px ' ";
+			dd = ""
+			if (list[1] == 'disabled') {
+				tt = "disabled";
+			}
+			style =" style='margin-top: 3px ' ";
+			dd = ""
+			var button = "<center><table><tr><td><div class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolySplice</div></td></tr></table></center>";
+			array_button.push(button);
+		} 
+		if (list[0] == 2) {
+			tt = " onClick=view_rna_shiny('" + list[1]+"') ";
+			style =" style='margin-top: 3px ' ";
+			dd = ""
+			var button = "<center><table><tr><td><div style='background-color:#ca4ff8;color:white;' class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolyRnaSeq-Analyse</div></td></tr></table></center>";
+			array_button.push(button);
+		} 
+	}
+	var html = array_button.join('  ');
+	return html;
 }
 
 function formaterButton(this_value) {
