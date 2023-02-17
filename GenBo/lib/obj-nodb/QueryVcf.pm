@@ -528,8 +528,9 @@ sub genericSVTransLoc {
 	
 	
 	my $hash;
-	my $bnds = $self->find_linked_bnd($text,$x->{bnd_alt}->{chromosome},$astart,$aend);
-	confess() unless scalar (@$bnds) == 1;
+	return unless $self->project->isChromosomeName($x->{bnd_alt}->{chromosome});
+	my $bnds = $self->find_linked_bnd($x->{id},$x->{bnd_alt}->{chromosome},($x->{bnd_alt}->{pos}-2000),$aend);
+	confess(Dumper (@$bnds)." ".$text." ".($x->{bnd_alt}->{pos}-100)."  $aend") unless scalar (@$bnds) == 1;
 	my $other = $bnds->[0];#grep {$_->{ID} ne $x->{ID}} @$bnds;
 	
 	my $genbo_pos = $x->{pos};#+(length($bnds->[0]->{ref})*$bnds->[0]->{bnd_alt}->{ref_position});
@@ -900,11 +901,12 @@ sub add_SR_PR {
 sub parseVcfFileForReference_manta {
 	my ($self, $reference, $useFilter) = @_;
 	my $chr = $reference->getChromosome();
+	warn $self->file();
 	my $v = Bio::DB::HTS::VCF->new( filename => $self->file() );
 	my $v1 = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 	my $header = $v->header();
 	confess() if $header->num_samples() ne 1;
-	die() if $self->getPatient->name ne  $header->get_sample_names->[0];
+	die( $header->get_sample_names->[0]." ".$self->getPatient->barcode) if ($self->getPatient->name ne  $header->get_sample_names->[0] && $self->getPatient->barcode ne  $header->get_sample_names->[0]);
 	#confess() if 
 	my $patient_id = $self->getPatient->id;
 	my %hashRes;

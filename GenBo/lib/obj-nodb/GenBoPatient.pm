@@ -309,8 +309,6 @@ has coverage => (
 
 			while ( my $line = $res->next ) {
 				my ( $a, $b, $c ) = split( " ", $line );
-				warn $line;
-				die();
 				if ( $b == 99 ) {
 					$b = "mean";
 

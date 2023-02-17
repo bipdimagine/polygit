@@ -886,7 +886,7 @@ sub get_gnomad {
 				my $hash = $self->get_lmdb_database($db,$chr,$type)->get($start);
 				next unless $hash;
 				warn $start if $hash =~ /-/;
-				next unless exists $hash->{$allele};
+				confess( $chr." ".$type." ".$start) unless exists $hash->{$allele};
 				$public ++;
 				 $h = $hash->{$allele};
 					

@@ -185,7 +185,14 @@ has isLargeDuplication => (
 	is		=> 'ro',
 	default	=> 0
 );
-
+has isLargeInsertion => (
+	is		=> 'ro',
+	default	=> 0
+);
+has isMei => (
+	is		=> 'ro',
+	default	=> 0
+);
 has isPanel => (
 	is		=> 'ro',
 	default	=> 0
@@ -755,14 +762,14 @@ sub getCnvs{
 	push(@lRes,@{$self->getLargeDeletions()});
     return \@lRes;
 }
-sub getSV{
+sub getSVs{
 	my $self = shift;
 	my @lRes;
 	push(@lRes,@{$self->getLargeDuplications()});
 	push(@lRes,@{$self->getLargeInsertions()});
 	push(@lRes,@{$self->getLargeDeletions()});
 	push(@lRes,@{$self->getInversions()});
-	push(@lRes,@{$self->getMeis()});
+	#push(@lRes,@{$self->getMeis()});
     return \@lRes;
 }
 #has indels => (
@@ -781,8 +788,8 @@ sub getSV{
 sub getStructuralVariations {
 		my $self  =shift;
 		my @lRes;
-		push(@lRes,@{$self->getVariations()});
-		push(@lRes,@{$self->getIndels()});
+	#	push(@lRes,@{$self->getVariations()});
+	#	push(@lRes,@{$self->getIndels()});
 		push(@lRes,@{$self->getCnvs()});	
 		#push(@lRes,@{$self->getMnps()});	
 	#	die() if @{$self->getMnps()};
