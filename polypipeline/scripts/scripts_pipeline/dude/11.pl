@@ -48,7 +48,9 @@ my $f2 = "$dir_out/primers.lite";
 unlink $f2 if -e $f2;
 my $f3 = "$dir_out/raw_data.lite";
 unlink $f3 if -e $f3;
-
+foreach my $c (@{$project->getCaptures}){
+	$c->primers_lines();
+}
 my $pm2 = new Parallel::ForkManager($fork);
 
 	my $total;
@@ -66,12 +68,9 @@ my $pm2 = new Parallel::ForkManager($fork);
 		
 		my $pid      = $pm2->start() and next;
 		my $buffer   = new GBuffer;
-		my $project =
-		  $buffer->newProject( -name => $project_name, -verbose => 1 );
+		my $project = $buffer->newProject( -name => $project_name, -verbose => 1 );
 		my $chr1    = $project->getChromosome($chr_name);
-		warn $chr_name." read";
 		my $primers = $chr1->getPrimers();
-			warn $chr_name." end ".scalar(@$primers);
 	#	map { delete $_->{project}; delete $_->{buffer} } @$primers;
 	#	my $dir_out   =$project->getCacheDir() . "/cnv_lite";
 		my $no2 = GenBoNoSqlLmdb->new(dir=>$dir_out,mode=>"c",name=>$chr->name,is_compress=>1);

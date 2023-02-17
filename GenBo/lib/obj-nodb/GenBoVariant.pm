@@ -713,6 +713,7 @@ sub getGnomadHO {
 	my ($self,$pop) = @_;
 	$pop = "all" unless $pop;
 	return $self->{"gho".$pop} if exists  $self->{"gho".$pop};
+	
 	my $value = $self->_getGnomadHO($pop);
 	if ($self->getChromosome->name  eq  "X" and $self->getGnomadAC_Male($pop)){
 		my $z =  $self->getGnomadAC_Male($pop);
@@ -744,8 +745,9 @@ sub getGnomadAC {
 }
 sub getGnomadAN {
 	my ($self,$pop) = @_;
-		$pop = "all" unless $pop;
+	$pop = "all" unless $pop;
 	return $self->{"gan".$pop} if exists  $self->{"gan".$pop};
+	return 0 unless $self->gnomad;
 	$self->{"gan".$pop} = $self->gnomad->{populations}->{$pop}->{AN};
 	return $self->{"gan".$pop}
 }

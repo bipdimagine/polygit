@@ -327,7 +327,7 @@ sub get_ids {
 	for ( my $i = 0 ; $i < @patient_names ; $i++ ) {
 		$hpatients->{ $patient_names[$i] } = $i;
 	}
-	my $vs = $reference->getStructuralVariations;
+	my $vs = $reference->getSVs();
 	foreach my $variation ( @{$vs } ) {
 		my $debug ;
 	#	next unless $variation->id eq "Y_13484007_C_A";
