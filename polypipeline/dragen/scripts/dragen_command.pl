@@ -189,19 +189,32 @@ my $tmp = "/staging/tmp";
 my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 if (exists $pipeline->{gvcf}){
 	
-	$param_gvcf = qq{--vc-emit-ref-confidence GVCF --enable-variant-caller true } ;
-	unless ($project->isGenome) {
+	$param_gvcf = qq{--vc-emit-ref-confidence GVCF } ;
 	
-		$param_gvcf .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150  };
-	}
 }
+my $param_bed ="";
+
+unless ($project->isGenome) {
+	
+		$param_bed .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150  };
+	}
+my $param_vcf ="";
+if (exists $pipeline->{vcf} && exists $pipeline->{gvcf}){
+	
+	$param_vcf = qq{--vc-enable-vcf-output true } ;
+	
+}
+my $param_calling ="";
+if (exists $pipeline->{vcf} or exists $pipeline->{gvcf}){
+	$param_calling = qq{--enable-variant-caller true } ;
+	
+}
+
 
 my $param_cnv = "";
 if (exists $pipeline->{cnv}){
 	$param_cnv = qq{ --enable-cnv true --cnv-enable-self-normalization true };
-	unless ($project->isGenome) {
-	 $param_cnv .= " --cnv-target-bed $capture_file ";
-	}
+
 }
 
 my $param_sv = "";
@@ -214,7 +227,8 @@ if (exists $pipeline->{sv}){
 
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_gvcf." ".$param_cnv." ".$param_sv." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;
 

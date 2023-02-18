@@ -1243,6 +1243,8 @@ has callingFiles => (
 
 );
 
+
+
 has callingSVFiles => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1549,6 +1551,11 @@ sub getVariationsFileName {
 	my ( $self, $method, $nodie ) = @_;
 	my $dir = $self->project->getVariationsDir($method);
 	return $dir . "/" . $self->name . ".vcf.gz";
+}
+
+sub vcfFileName {
+	my ( $self, $method, $nodie ) = @_;
+	return $self->getVariationsFileName($method);
 }
 
 sub getVariationsFile {

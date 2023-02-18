@@ -69,19 +69,33 @@ my $patients_name;
 my $limit;
 my $umi;
 my $dude;
-my $version;
+my $version ="";
 my $dry;
+
 ##########
 my $cmd_failed = [];
 my $cmd_cancel = [];
+my $step;
+my $force;
+
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
 	'umi=s' => \$umi,
 	'version=s' => \$version,
+	'force=s' => \$force,
+	'step=s'=> \$step,
 	"dry=s" => \$dry,
 	#'low_calling=s' => \$low_calling,
 );
+
+unless($step){
+	$step = "align,gvcf,vcf,sv,cnv,lmdb";
+}
+
+my $hstep ;
+map {$hstep->{$_}++} split(",",$step);
+
 my $steps = {
 				"dragen-alignment"=> \&run_align,
 				"move"=>  \&run_move,
@@ -92,8 +106,6 @@ my $steps = {
 				"lmdb-depth"=>  \&run_lmdb_depth,
 				"run_coverage"=>  \&run_coverage,
 				"run_dragen_cnv_coverage" =>\&run_dragen_cnv_coverage,
-				
-				
 };
 
 my $buffers;
@@ -118,8 +130,8 @@ system("mkdir $dir_log && chmod a+rwx $dir_log");
 
 if ($test_umi && !($umi)){
 		print colored::stabilo("red","Hey Sylvain, it seems to me that you didn't put the UMI=1 option but your project had UMIs  ", 1)."\n";
-		my $choice = prompt("do you  want to use it anyway (yes or no) ?  (y/n) ? ");
-		$umi=1 if ($choice ne "y"); 
+		my $choice = prompt("do you  want to use it anyway   (y/n) ? ");
+		$umi=1 if ($choice eq "y"); 
 	
 }
 
@@ -129,12 +141,14 @@ if ($test_umi && !($umi)){
 system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
-my $pipeline_dragen_steps = ["align","gvcf","sv","cnv"];
+my $pipeline_dragen_steps = ["align","gvcf","vcf","sv","cnv"];
 ####### Alignement
 my $ppd  = patient_pipeline_dragen($projects);
 run_command($ppd);
 run_move($ppd);
+if (exists $hstep->{lmdb}){
 run_lmdb_depth_melt($ppd) unless $version =~ /HG38/;
+}
 run_genotype($projects);
 #run_dude($projects) if $dude;
 end_report($projects,$ppd);
@@ -205,6 +219,13 @@ foreach my $project (@$projects){
 		 $h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 		
 		#####  
+		#####  VCF
+		#####  
+		
+		 $h->{prod}->{vcf} = $patient->vcfFileName("dragen-calling");
+		 $h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
+		
+		#####  
 		#####  CNV
 		#####  
 	
@@ -253,9 +274,13 @@ sub run_command {
 	
 	foreach my $t (@$pipeline_dragen_steps){
 		$lims->{$pname}->{$t} = "SKIP"; 
+		next unless $hstep->{$t};
+		next if (-e $hp->{prod}->{$t} && !($force));
+		if ( $force  &&  -e $hp->{pipeline}->{$t} ){
+			unlink $hp->{pipeline}->{$t};
+		}
+		next if -e $hp->{pipeline}->{$t} ;
 		
-		next if -e $hp->{prod}->{$t};
-		next if -e $hp->{pipeline}->{$t};
 		$lims->{$pname}->{$t} = "PLANNED"; 
 		push(@{$hp->{run_pipeline}},$t);
 		
