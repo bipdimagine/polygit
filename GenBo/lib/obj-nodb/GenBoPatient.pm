@@ -1236,6 +1236,8 @@ has callingFiles => (
 
 );
 
+
+
 has callingSVFiles => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1418,6 +1420,8 @@ sub getRecalFile {
 	  . ".recal.table";
 }
 
+
+
 sub getBamFileName {
 	my ( $self, $method_name ) = @_;
 	my $bam_dir;
@@ -1540,6 +1544,11 @@ sub getVariationsFileName {
 	my ( $self, $method, $nodie ) = @_;
 	my $dir = $self->project->getVariationsDir($method);
 	return $dir . "/" . $self->name . ".vcf.gz";
+}
+
+sub vcfFileName {
+	my ( $self, $method, $nodie ) = @_;
+	return $self->getVariationsFileName($method);
 }
 
 sub getVariationsFile {
@@ -1784,6 +1793,37 @@ has tabix_wisecondor => (
 		
 		return  Bio::DB::HTS::Tabix->new( filename => $coverage_file );;
 
+	}
+);
+
+
+has vntyperTsv => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+	}
+);
+
+has vntyperResults => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return [] unless -e  $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		
+		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		my @lines = `tail -n +4 $file`;
+		#warn Dumper @lines;
+		chomp(@lines);
+		#confess() if scalar(@lines) > 1;
+		return [] unless $lines[0];
+		my @t;
+		foreach my $l (@lines){
+			push(@t,[split(" ",$l)] ) ;
+		}
+		return \@t;
 	}
 );
 
