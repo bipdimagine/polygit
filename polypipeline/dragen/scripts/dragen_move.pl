@@ -9,28 +9,17 @@ use lib "$Bin/../../../GenBo/lib/obj-nodb/packages";
 use lib "$Bin/../../../GenBo/lib/kyoto/";
 use lib "$Bin/../../../GenBo/lib/GenBoDB/writeDB";
 use lib "$Bin/../../packages";
-use Logfile::Rotate;
 use Getopt::Long;
 use Data::Dumper;
-use IO::Prompt;
-use Sys::Hostname;
-use Parallel::ForkManager;
-use Term::ANSIColor;
-use Moose;
 use GBuffer;
 use GenBoProject;
 use colored; 
-use Config::Std;
 use Text::Table;
 use file_util;
 use File::Temp qw/ tempfile tempdir /;; 
-
-use Term::Menus;
- use Proc::Simple;
- use Storable;
-use JSON::XS;
-use Net::SSH::Perl; 
-
+use Logfile::Rotate; 
+use File::Basename;
+use Net::SSH::Perl;
  
 
 
@@ -97,8 +86,8 @@ my ($out, $err, $exit) = $ssh->cmd($cmd_dir);
 my $prefix = $patient->name;
 my $bam_prod = $patient->getBamFileName("dragen-align");
 
-my $url = qq{$username\@10.200.27.109};
-
+my $url = qq{$username\@10.200.27.109:};
+$url ="";
 #exit(0) if -e $bam_prod;
 #warn "coucou";
 if (exists $pipeline->{align}){
@@ -116,6 +105,11 @@ if (exists $pipeline->{gvcf}){
 	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 	($out, $err, $exit)=  $ssh->cmd("test -f $gvcf_pipeline");
 	move_gvcf($gvcf_pipeline,$patient);
+}
+if (exists $pipeline->{vcf}){
+	my $vcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
+	($out, $err, $exit)=  $ssh->cmd("test -f $vcf_pipeline");
+	move_vcf($vcf_pipeline,$patient);
 }
 if (exists $pipeline->{cnv}){
 	my $target_pipeline  ="$dir_pipeline/".$prefix.".target.counts.gz";
@@ -162,40 +156,67 @@ sub move_bam {
 	my ($bam,$patient) = @_;
 	my $prod = $patient->getBamFileName("dragen-align");
 	 $prod = $patient->getCramFileName("dragen-align") if $bam =~ /cram/;
-	system("rsync -rav  $url".":$bam $prod ");
-	system("rsync -rav  $url".":$bam.bai $prod.bai ");
-	system("rsync -rav  $url".":$bam.cai $prod.cai ");
+	system("rsync -rav  $url"."$bam $prod ");
+	system("rsync -rav  $url"."$bam.bai $prod.bai ");
+	system("rsync -rav  $url"."$bam.cai $prod.cai ");
 	
 }
 
 sub move_gvcf {
 	my ($gvcf,$patient) = @_;
 	my $prod = $patient->gvcfFileName("dragen-calling");
-	return if -e $prod;
-	system("rsync -rav  $url:$gvcf $prod");
-	system("rsync -rav  $url:$gvcf.tbi $prod.tbi");
+	backup($prod) if -e $prod;
+	system("rsync -rav  $url"."$gvcf $prod");
+	system("rsync -rav  $url"."$gvcf.tbi $prod.tbi");
 }
-
+sub move_vcf {
+	my ($vcf,$patient) = @_;
+	my $prod = $patient->vcfFileName("dragen-calling");
+	backup($prod) if -e $prod;
+	system("rsync -rav  $url"."$vcf $prod");
+	system("rsync -rav  $url"."$vcf.tbi $prod.tbi");
+}
 sub move_count {
 	my ($t1,$t2,$patient) = @_;
 	my $dir = $patient->project->getTargetCountDir();
-	system("rsync -rav  $url:$t1 $dir/");
-	system("rsync -rav  $url:$t2 $dir/");
+	system("rsync -rav  $url"."$t1 $dir/");
+	system("rsync -rav  $url"."$t2 $dir/");
 }
 
 
 sub move_cnv {
 	my ($t1,$patient) = @_;
 	my $dir = $patient->project->getVariationsDir("dragen-cnv");
-	system("rsync -rav  $url:$t1 $dir/");
-	system("rsync -rav  $url:$t1.tbi $dir/");
+	system("rsync -rav  $url"."$t1 $dir/");
+	system("rsync -rav  $url"."$t1.tbi $dir/");
 }
 
 sub move_sv {
 	my ($t1,$patient) = @_;
 	my $dir = $project->getVariationsDir("dragen-sv");
-	system("rsync -rav  $url:$t1 $dir/");
-	system("rsync -rav  $url:$t1.tbi $dir/");
+	system("rsync -rav  $url"."$t1 $dir/");
+	system("rsync -rav  $url"."$t1.tbi $dir/");
 	
+}
+
+sub backup {
+	my ($final_gz) = @_;
+	my $dir =  dirname($final_gz);
+	my $dirb = $dir."/backup";
+	unless (-e $dirb){
+		mkdir $dirb unless -e $dirb;
+		system("chmod a+w $dirb");
+	}
+	if (-e $final_gz){
+	my $log = new Logfile::Rotate( File => $final_gz,	
+	 								Count => 5,
+	 								Gzip  => 'no',
+	 								 Flock  => 'no',
+	 								 Dir => $dirb
+	 								);
+		$log->rotate();	 								
+		}
+		unlink $final_gz;
+		unlink $final_gz.".tbi" if -e $final_gz.".tbi";
 }
 

@@ -150,7 +150,16 @@ sub parse_results_global_file {
 		$i++;
 	}
 	close (FILE);
-	foreach my $id (keys %{$h_global}) { push (@l_res, $h_global->{$id}); }
+
+	foreach my $id (keys %{$h_global}) {
+		my $is_ok;
+		foreach my $patient (@{$self->getProject->getPatients()}) {
+			next if not exists $h_global->{$id}->{annex}->{$patient->name()};
+			$is_ok = 1;
+		}
+		push (@l_res, $h_global->{$id}) if $is_ok;
+	}
+
 	return ($h_header, \@l_res);
 }
 
