@@ -69,19 +69,33 @@ my $patients_name;
 my $limit;
 my $umi;
 my $dude;
-my $version;
+my $version ="";
 my $dry;
+
 ##########
 my $cmd_failed = [];
 my $cmd_cancel = [];
+my $step;
+my $force;
+
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
 	'umi=s' => \$umi,
 	'version=s' => \$version,
+	'force=s' => \$force,
+	'step=s'=> \$step,
 	"dry=s" => \$dry,
 	#'low_calling=s' => \$low_calling,
 );
+
+unless($step){
+	$step = "align,gvcf,vcf,sv,cnv,lmdb";
+}
+
+my $hstep ;
+map {$hstep->{$_}++} split(",",$step);
+
 my $steps = {
 				"dragen-alignment"=> \&run_align,
 				"move"=>  \&run_move,
@@ -92,22 +106,21 @@ my $steps = {
 				"lmdb-depth"=>  \&run_lmdb_depth,
 				"run_coverage"=>  \&run_coverage,
 				"run_dragen_cnv_coverage" =>\&run_dragen_cnv_coverage,
-				
-				
 };
 
 my $buffers;
 my $projects;
+$patients_name ="" unless $patients_name;
 my @apatients_name = split(":",$patients_name);
 my $status_jobs; 
-
+my $test_umi;
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name => $pname , -version =>$version);
 	#my $project = $buffer->newProject( -name => $pname );
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
-	
+	 $test_umi=1 if grep{$_->umi} @{$project->getCaptures};
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
@@ -115,39 +128,39 @@ foreach my $pname (split(",",$project_name)){
 my $dir_log = $projects->[0]->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time;
 system("mkdir $dir_log && chmod a+rwx $dir_log");
 
-
+if ($test_umi && !($umi)){
+		print colored::stabilo("red","Hey Sylvain, it seems to me that you didn't put the UMI=1 option but your project had UMIs  ", 1)."\n";
+		my $choice = prompt("do you  want to use it anyway   (y/n) ? ");
+		$umi=1 if ($choice eq "y"); 
+	
+}
 
  $|=1;
  
-system("clear");# unless $noprint;
-
+# unless $noprint;
+system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
+
+
 my $pipeline_dragen_steps = ["align","gvcf","sv","cnv"];
 my $pipeline_dragen_rna_steps = ["align","count"];
+
 ####### Alignement
 my $ppd  = patient_pipeline_dragen($projects);
 run_command($ppd);
 run_move($ppd);
 
+if (exists $hstep->{lmdb}){
+run_lmdb_depth_melt($ppd) unless $version =~ /HG38/;
+}
 
-run_lmdb_depth_melt($ppd);
 run_genotype($projects);
-run_dude($projects) if $dude;
+#run_dude($projects) if $dude;
 end_report($projects,$ppd);
 
 exit(0);
 
-  
-
-####### Genotype
-
-run_genotype();
-run_lmdb_depth_melt();
-run_sv_pon();
-
-warn "end";
-exit(0);
 
 
 sub running_text {
@@ -174,6 +187,10 @@ foreach my $project (@$projects){
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatients}){
+		if ($version =~ /HG38/){
+			my ($m) = grep{$_ eq "bwa" or $_ eq "dragen-align" } @{$patient->alignmentMethods};
+			next unless $m;
+		}
 		$status_jobs->{$patient->name."_".$project->name}->{progress} ="waiting" ;
 		my $h;
 		$h->{run} = [];
@@ -196,16 +213,23 @@ foreach my $project (@$projects){
 		
 		$h->{prod}->{align} = $patient->getBamFileName(); 
 		$h->{prod}->{align} = $patient->getBamFileName("dragen-align") unless -e $patient->getBamFileName; 
+		
 		#$h->{prod}->{align_HG38} = $patient->getBamFileName("dragen-align"); 
 		$h->{prod}->{file}   = $patient->getBamFileName("dragen-align") if $version;
-		
-		
+		$h->{prod}->{align}   = $patient->getCramFileName("dragen-align") if $version && $version =~ /HG38/; 
 		#####  
 		#####  GVCF
 		#####  
 		
 		 $h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
 		 $h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
+		
+		#####  
+		#####  VCF
+		#####  
+		
+		 $h->{prod}->{vcf} = $patient->vcfFileName("dragen-calling");
+		 $h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
 		
 		#####  
 		#####  CNV
@@ -258,9 +282,13 @@ sub run_command {
 	
 	foreach my $t (@all_list){
 		$lims->{$pname}->{$t} = "SKIP"; 
-		next if -e $hp->{prod}->{$t};
-		warn $hp->{pipeline}->{$t};
-		next if -e $hp->{pipeline}->{$t};
+		next unless $hstep->{$t};
+		next if (-e $hp->{prod}->{$t} && !($force));
+		if ( $force  &&  -e $hp->{pipeline}->{$t} ){
+			unlink $hp->{pipeline}->{$t};
+		}
+		next if -e $hp->{pipeline}->{$t} ;
+		
 		$lims->{$pname}->{$t} = "PLANNED"; 
 		push(@{$hp->{run_pipeline}},$t);
 		
@@ -274,6 +302,8 @@ sub run_command {
 	
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -version=$version " if $version;
+	
+	
 	$job->{jobs_type_list} = join(",",@{$hp->{run_pipeline}});
 	#die();
 	my $first_cmd = $hp->{run_pipeline}->[0];
@@ -346,8 +376,7 @@ sub run_lmdb_depth_melt {
 	
 foreach my $hp (@$patients_jobs) {
 	my $ppn = 20;
-
-my $project_name = $hp->{project};
+	my $project_name = $hp->{project};
 	my $job;
 	my $nname  = $hp->{name}."_".$hp->{project};
 	my $name = $hp->{name};
@@ -363,12 +392,12 @@ my $project_name = $hp->{project};
 	$cmd .= qq{ -version=$version  } if $version;
 		$job->{name} =  $name.".lmdb";
 		$job->{patient} = $nname;
-
 		$job->{cmd} =$cmd;
 		$job->{cpus} = $ppn;
 		$job->{jobs_type} ="lmdb_depth";
 		push(@$jobs,$job);
 	}
+unless ($umi){	
 push(@all_list,"melt");		
 foreach my $hp (@$patients_jobs) {
 	my $project_name = $hp->{project};
@@ -391,12 +420,14 @@ foreach my $hp (@$patients_jobs) {
 	push(@$jobs,$job);
 	
 }	
-
-	steps_cluster("LMDBDepth+Melt ",$jobs);
+steps_cluster("LMDBDepth+Melt ",$jobs);
+return;
+}
 	
+steps_cluster("LMDBDepth(-melt) ",$jobs);	
 }
 
-### DUDE 
+### DUDE  
 sub run_dude {
 	my ($projects) = @_;
 	my $jobs =[];
@@ -520,6 +551,12 @@ sub steps_system {
 	my ($name , $jobs) = @_;
 	$num_jobs ++;
 	my $text = "$num_jobs- $name";
+	if ($dry){
+		foreach my $hcmd (@$jobs){
+			print $hcmd->{cmd}."\n";
+		}
+		die();
+	}
 	running_text($text,$num_jobs);
 	run_system($jobs,$num_jobs);
 	text_system($text,$jobs);
@@ -532,12 +569,7 @@ sub run_system {
 	my ($jobs,$row) = @_; 
 	$row ++;
 	return 0 unless @$jobs;
-	if ($dry){
-		foreach my $hcmd (@$jobs){
-			warn $hcmd->{cmd};
-		}
-		die();
-	}
+	
 	my $nb_jobs =  scalar(@$jobs);
 	my $status = new Term::StatusBar (
                     label => 'jobs Done : ',
@@ -845,7 +877,6 @@ sub run_cmd {
 	my $jobid = `/cm/shared/apps/slurm/16.05.8/bin/sbatch  --parsable $file_cluster -o $n1 -e $n2`;
 	unlink $file_cluster;
 	chomp($jobid);
-	#warn $file;
 	#run3 ["sbatch  "],\$file,\$out ;
 	$cmd->{jobid} = $jobid;
 	$cluster_jobs->{$jobid}->{log} = $dir_log."/".$cmd->{name}."-slurm";

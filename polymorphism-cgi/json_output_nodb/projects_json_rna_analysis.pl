@@ -80,19 +80,21 @@ sub getProjectListsRNA {
 #		}
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
 		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
+		my @lbuttons;
 		if (-d $path) {
 			my $ok;
 			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
 			my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
-			$h->{button} = '1::'.$h->{name} if ($ok);
+			push(@lbuttons, '1::'.$h->{name}) if ($ok);
 			$hDone->{$name} = undef if $ok;
 		}
 		if (-d $p1->get_path_rna_seq_polyrna_root()) {
-			$h->{button} = '2::'.$h->{name};			
+			push(@lbuttons, '2::'.$h->{name});			
 			$hDone->{$name} = undef;
 		}
+		$h->{button} = join(';', @lbuttons);
 		$hDone->{$name} = undef;
 		next unless $h->{button};
 		$h_ok->{$name} = $h;

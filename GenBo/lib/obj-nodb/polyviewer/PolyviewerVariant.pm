@@ -248,6 +248,11 @@ has locus => (
 has isCnv => (
 	is		=> 'rw',
 );
+
+has isJunction => (
+	is		=> 'rw',
+);
+
 has patients_calling => (
 	is		=> 'rw',
 	default => sub {
@@ -770,6 +775,7 @@ sub setOldVariant {
 	 my @lVar_same_pos = @{$self->get_variants_same_position($project->getChromosome($self->chromosome()), $vh->{vector_id}, $patient)};
  	 if (scalar(@lVar_same_pos) > 0) {
  		foreach my $other_var (@lVar_same_pos) {
+ 			next if ($other_var->isJunction());
  			push(@{$self->{patients_calling}->{$patient->id()}->{var_same_pos}->{name}}, $other_var->name());
 			my $heho_other = "ho" if $other_var->isHomozygote($patient);
 			$heho_other = "he" if $other_var->isHeterozygote($patient);
