@@ -142,6 +142,7 @@ system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
 
+
 my $pipeline_dragen_steps = ["align","gvcf","sv","cnv"];
 my $pipeline_dragen_rna_steps = ["align","count"];
 
