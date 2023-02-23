@@ -3356,6 +3356,7 @@ method htlv1_insertion (Str :$filein!){
 	system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
 	my $ppn = $self->nproc;# if $self->nocluster;
 	my $insertion=$self->project->getSoftware('insertion');
+	my $bin_dev = $self->script_dir;
 
 	#linker
 	#my @linkers =  ("1:CGCTCTTCCGATCT","2:GGCACATGCGTTCT","3:CGGTGAACCGTTCT","4:GGCTGTACGGATGT","5:CGGACTTGCGAAGT","6:CGGTGTTCGCATGT","7:GGCACTACCGTACT","8:CCCTCATGGCATCT");
@@ -3366,9 +3367,10 @@ method htlv1_insertion (Str :$filein!){
 
 	my $files_pe1 = file_util::find_file_pe($self->patient,"");
 	my $count_lane = scalar(@$files_pe1);
-	print $self->patient->name().":\n";
+	print $name.":\n";
 	my @jobs;
-	 my $fileout = $dirout."/".$name;
+	my $fileout =  $self->project->getVariationsDir("htlv1_calling")."/".$name."-SIMPLIFIED_mergedIS.txt";
+#	 my $fileout = $dirout."/".$name;
 	foreach my $cp (@$files_pe1){
 		my $file1 = $cp->{R1};
 		my $file2 =  $cp->{R2};
@@ -3384,13 +3386,20 @@ method htlv1_insertion (Str :$filein!){
 		 my $f1 = $dirin.$file1;
 		 my $f2 = $dirin.$file2;
 		# foreach my $l (@linker){
-			my $l = $linker[$self->patient->barcode()];
+			my $bc = $self->patient->barcode();
+			my $ucbc = uc($bc);
+			warn $ucbc;
+			$ucbc =~ s/LIN//;
+			my $l = $linker[$ucbc-1];
+		
 			my ($ln,$ls) = split(/:/,$l);
 			my $out_dir = $name."_".$ln;
-			my $fileout = $dirout."/".$name."_".$ln.".log";
-			my $cmd =qq{$insertion $f1 $f2 $out_dir $ls $ln $ppn $dirout > $fileout }; 
+			
+			my $fileout = $dirout."/".$name."-SIMPLIFIED_mergedIS.txt";
+			my $cmd = "perl $bin_dev/htlv1.pl -project=$project_name  -patient=$name  -f1=$f1 -f2=$f2 $out_dir -ls=$ls -ln=$ln -fork=$ppn ";
+			warn $cmd;
 		 	my $type = "insertion";
-			 my $stepname = $self->patient->name."_".$ln."@".$type;
+			my $stepname = $self->patient->name."_".$ln."@".$type;
 	
 		my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$f1,$f2],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,sample_name=>$name,project_name=>$project_name,software=>$method);
 		$self->current_sample->add_job(job=>$job_bds);
