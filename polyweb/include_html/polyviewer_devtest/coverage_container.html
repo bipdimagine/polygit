@@ -1,0 +1,117 @@
+<div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true" onShow : "reload(5)">
+	<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="splitter:false, region:'top'" >
+				<div  data-dojo-type="dijit.Toolbar" id="navMenuCoverage" style ="font-size : 12px ;">
+                        <table valign="center" style="width:650px;">
+                        	<tr>
+                        		<td>
+                        			Coverage limit :  
+									<select jsId="limit_spinner" id="limit_spinner" data-dojo-type="dijit/form/Select">
+										<option value="0">0</option>
+										<option value="5" >5</option>
+										<option value="10" >10</option>
+										<option value="15">15</option>
+										<option value="20">20</option>
+										<option value="30" selected="selected">30</option>
+										<option value="50" >50</option>
+										<option value="100" >100</option>
+										<option value="200" >200</option>
+										<option value="300" >300</option>
+										<option value="500" >500</option>
+										<option value="1000" >1000</option>
+									</select>
+                        		</td>
+                        		<td>
+                        			Padding limit : 
+									<select jsId="padding_spinner" id="padding_spinner" data-dojo-type="dijit/form/Select" onChange="first=0;">
+										<option value="0">0</option>
+										<option value="5" >5</option>
+										<option value="10">10</option>
+										<option value="15">15</option>
+										<option value="20" selected="selected">20</option>
+										<option value="30">30</option>
+									</select>
+                        		</td>
+                        		<td>
+                        			<input jsId="utr" id="utr" name="utr" data-dojo-type="dijit/form/CheckBox" value="1" /> <label for="utr">UTR</label>
+                        		</td>
+                        		<td>
+                        			<input jsId="intronic" id="intronic" name="intronic" data-dojo-type="dijit/form/CheckBox" value="1" /> <label for="intronic">Intronic</label>
+                        		</td>
+   								<td>
+   									<input jsId="all_var" id="all_var" name="all_var" data-dojo-type="dijit/form/CheckBox" value="1" /> <label for="all_var">All&nbsp;Variations</label>
+   								</td>
+                        	</tr>
+                        </table>
+                        <table valign="center" style="width:750px;">
+                        	<tr>
+	                            <td>
+									<div data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass:'viewerIcon'">
+										<span> View </span>
+										<div data-dojo-type="dijit/DropDownMenu" id="editMenu">
+									
+											<!--<div data-dojo-type="dijit/MenuItem" onClick='reload()' data-dojo-props="iconClass:'chromIcon'">
+												coverage all
+											</div>
+											
+											<div data-dojo-type="dijit/MenuItem" onClick='reload(1)' data-dojo-props="iconClass:'chromIcon'">
+												Amplification problem
+											</div>
+											<div data-dojo-type="dijit/MenuItem" onClick='reload(2)' data-dojo-props="iconClass:'chromIcon'">
+												Coverage problem
+											</div>
+								-->
+											<div data-dojo-type="dijit/MenuItem" onClick='reload(5)' data-dojo-props="iconClass:'chromIcon'">
+												Coverage all
+											</div>
+											<div data-dojo-type="dijit/MenuItem" onClick='reload(3)' data-dojo-props="iconClass:'chromIcon'">
+												Coverage by Primer/multiplex
+											</div>
+											
+											<div data-dojo-type="dijit/MenuItem" onClick='reload(4)' data-dojo-props="iconClass:'chromIcon'">
+												Dup/Del Beta Version
+											</div>
+			
+										</div>
+									</div>
+	                            </td>
+								<!--<div  data-dojo-type="dijit.form.Button" onClick='reload(5);' data-dojo-props="iconClass:'dijitIconSave'">
+									sort by genomic position COUCOU
+								</div>-->
+								
+								<td style="padding-left:10px ;padding-top:5px  ;">
+									<div>
+										<input type="checkbox" id="ENST_order" data-dojo-type="dojox/mobile/Switch"  value="on"  leftLabel="sort by name" rightLabel="sort by position"  style="width: 100px;">
+									</div>
+								</td>
+								<td style="padding-left:10px;">
+									<span dojoType="dijit.ToolbarSeparator"></span>
+								</td>
+								<td style="padding-left:10px;">
+									<div jsId="save_button" id="save_button" data-dojo-type="dijit.form.Button" onClick='show_save();' data-dojo-props="iconClass:'dijitIconSave',disabled:'true'">
+										save
+									</div>
+								</td>
+								<td style="padding-left:10px;">
+									<div data-dojo-type="dijit.form.Button" onClick='preload_coverage(storeP,1); ' data-dojo-props="iconClass:'refreshIcon'">
+										refresh
+									</div>
+								</td>
+								<td style="padding-left:10px;">
+									<span dojoType="dijit.ToolbarSeparator"></span>
+								</td>
+								<td>
+								<input id="only_low" name="only_low" data-dojo-type="dijit/form/CheckBox" value="1" checked o />  only genes below limit
+								</td>
+								<td>
+								<div jsId="button_low" id="button_low" data-dojo-type="dijit.form.Button" onClick='show_low();' data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconCopy'">
+										Export Low Exon
+									</div>
+								</td>
+							<tr>
+						</table>
+					</div>
+					
+				</div>
+				
+			<div jsId="table_coverage" id="table_coverage" data-dojo-type="dijit/layout/TabContainer" data-dojo-props="splitter:false, region:'center'" onShow="reload(5);"></div>
+</div>
