@@ -31,6 +31,8 @@ use Text::Table;
 use dragen_util;
 use XML::Simple qw(:strict);
 use IO::Prompt;
+use Statistics::Descriptive;
+
 my $project_names;
 my $sample_sheet;
 my $mask = undef;
@@ -367,11 +369,80 @@ my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name.".".$pr;
 
 system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;");
 
-
+report($dir_stats."/Demultiplex_Stats.csv");
 
 exit(0);
 ###
 
+sub report {
+	my ($csv) = @_;
+	confess($csv) unless -e $csv;
+	my $aoa = csv (in => $csv); 
+	my $header = shift @$aoa;
+	
+	my $byline;
+	my $bypatient;
+	
+	foreach my $line (@$aoa){
+		my $l = $line->[0];
+		$byline->{$l} += $line->[3];
+		my $p = $line->[1];
+		$bypatient->{$p} += $line->[3];;
+	}
+	
+print "-- BY LINES : --\n";	
+my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# read") ) ; # if ($type == 1);
+my @l ;
+my @rows;
+my $stat = Statistics::Descriptive::Full->new();
+$stat->add_data(values %$byline);
+my $mean = $stat->mean();
+my $sd = $stat->standard_deviation();
+foreach my $l (keys %$byline){
+		my @row;
+			push(@row,colored::stabilo("blue",$l,1));
+			
+			if ($byline->{$l} < 100){
+				push(@row,colored::stabilo("red",$byline->{$l},1)) ;
+			}
+			elsif ($byline->{$l} < (3*$sd) + $mean){
+				push(@row,colored::stabilo("red",$byline->{$l},1)) ;
+			}
+			elsif ($byline->{$l} < $sd + $mean){
+				push(@row,colored::stabilo("orange",$byline->{$l},1)) ;
+			}
+			
+			else {
+					push(@row,colored::stabilo("green",$byline->{$l},1)) ;
+			}
+			push(@rows,\@row);
+		}
+		
+		$tb->load(@rows);
+		print $tb;
+		print "\n ------------------------------\n";
+
+print "-- By Sample : --\n";	
+my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
+ @rows = ();
+foreach my $l (keys %$bypatient){
+		my @row;
+			push(@row,colored::stabilo("blue",$l,1));
+			if ($byline->{$l} > 1000){
+				push(@row,colored::stabilo("green",$bypatient->{$l},1)) ;
+			}
+			else {
+					push(@row,colored::stabilo("red",$bypatient->{$l},1)) ;
+			}
+			push(@rows,\@row);
+		}
+		
+		$tb2->load(@rows);
+		print $tb2;
+		print "\n ------------------------------\n";
+}
+
+	
 sub create_3_fastq {
 	my ($fastq1,$fastq2,$patient) = @_;
 	my $fastq3_prod  = $fastq2;

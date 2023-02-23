@@ -68,8 +68,6 @@ my $rna;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
-	'step=s'=> \$step,
-	'type=s' => \$type,
 	'umi=s' => \$umi,
 	'command=s'=>\$spipeline,
 	'version=s' =>\$version,
@@ -100,6 +98,12 @@ my $bam_prod = $patient->gvcfFileName("dragen-calling");
 #exit(0) if -e $bam_prod;
 
 my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
+
+my $dir_pipeline_log = $patient->getDragenDir("pipeline.log");
+my $ok_pipeline = $dir_pipeline_log."/".$prefix.".ok.pipeline.".time; 
+my $ok_move = $dir_pipeline_log."/".$prefix.".ok.move.".time;
+my $log_pipeline = $dir_pipeline_log."/".$prefix.".pipeline.".time.".log"; 
+my $log_error_pipeline = $log_pipeline.".err"; 
 if ($rna){
 	run_pipeline_rna($pipeline);
 }
@@ -108,7 +112,7 @@ else {
 }
 #die() unless  -e $bam_pipeline;
 
-
+system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline && touch $ok_move");
 exit(0);
 sub run_pipeline_rna {
 my ($pipeline) = @_;
@@ -122,8 +126,7 @@ my $runid = $patient->getRun()->id;
  $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true -a /data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf --enable-rna-quantification true";
 ##
 $cmd_dragen .= $param_umi." ".$param_align;
-warn $cmd_dragen;
-die();
+
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die if $exit != 0;
 }
@@ -164,14 +167,21 @@ elsif (exists $pipeline->{align}){
 	else {
 		$param_align .= qq{ --enable-duplicate-marking true };
 	 }
+	 $param_align .= " --output-format CRAM " if $version =~/HG38/;
 }
 else {
 	my $bam = $patient->getBamFileName();
+		my $opt = "--bam-input";
+	$bam = $patient->getCramFileName("dragen-align") if $version =~ /38/;
+	warn $bam;
 	unless (-e $bam){
 		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".bam";
+		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".cram" if $version =~ /38/;
 		confess() unless -e $bam;
 	}
-	$param_align = qq{ --bam-input $bam --enable-map-align false };
+
+	$opt = "--cram-input" if $bam =~ /cram/;
+	$param_align = qq{ $opt $bam --enable-map-align false --enable-map-align-output false };
 }
 my $param_gvcf = "";
 my $tmp = "/staging/tmp";
@@ -179,19 +189,32 @@ my $tmp = "/staging/tmp";
 my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 if (exists $pipeline->{gvcf}){
 	
-	$param_gvcf = qq{--vc-emit-ref-confidence GVCF --enable-variant-caller true } ;
-	unless ($project->isGenome) {
+	$param_gvcf = qq{--vc-emit-ref-confidence GVCF } ;
 	
-		$param_gvcf .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150 };
-	}
 }
+my $param_bed ="";
+
+unless ($project->isGenome) {
+	
+		$param_bed .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150  };
+	}
+my $param_vcf ="";
+if (exists $pipeline->{vcf} && exists $pipeline->{gvcf}){
+	
+	$param_vcf = qq{--vc-enable-vcf-output true } ;
+	
+}
+my $param_calling ="";
+if (exists $pipeline->{vcf} or exists $pipeline->{gvcf}){
+	$param_calling = qq{--enable-variant-caller true } ;
+	
+}
+
 
 my $param_cnv = "";
 if (exists $pipeline->{cnv}){
 	$param_cnv = qq{ --enable-cnv true --cnv-enable-self-normalization true };
-	unless ($project->isGenome) {
-	 $param_cnv .= " --cnv-target-bed $capture_file ";
-	}
+
 }
 
 my $param_sv = "";
@@ -204,8 +227,10 @@ if (exists $pipeline->{sv}){
 
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_gvcf." ".$param_cnv." ".$param_sv;
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+die() unless -e $ok_pipeline;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
 #system("ssh pnitschk\@10.200.27.109 rm $fastq1 $fastq2");

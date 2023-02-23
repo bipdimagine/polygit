@@ -459,7 +459,7 @@ $project->cgi_user($user);
 
 
 #my @array_control_panels = ("control_mendel","control_quality","control_sex","control_duplicate");
-my $list_control_panels = "control_design,control_mendel,control_quality,control_sex,control_duplicate";;
+my $list_control_panels = "control_design,control_mendel,control_quality,control_sex,control_duplicate,control_muc1";
 
 
 #html::print_cgi_header($cgi,$CSS,1,$project_name." - PolyDiag");
@@ -724,8 +724,14 @@ sub check_level {
 			
 			}
 			
-			
-			
+			my $res_muc = $p->vntyperResults();
+			if (@$res_muc){
+				my $text = qq{ <span  class="stamp1"><span>MUC1</span></span>};
+			 	$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
+			}
+			else {
+				 $line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
+			}
 			
 			
 			return $line;
@@ -1659,7 +1665,7 @@ sub table_control {
 	 	my $samtools = $buffer->software("samtools");
 	 	unless (@$controls) {
 	 		
-	 			my $out1 =  qq{<div  type ="button"  style="position:relative;bottom:1px;min-width:200px;border-color:black;" class="btn  btn-xs"  disabled> <img src="https://img.icons8.com/ios/20/000000/empty-test-tube.png"> Control (Blanc) &nbsp;&nbsp</div>};
+	 			my $out1 =  qq{<div  type ="button"  style="position:relative;bottom:1px;min-width:200px;border-color:black;display: none" class="btn  btn-xs"  disabled> <img src="https://img.icons8.com/ios/20/000000/empty-test-tube.png"> Control (Blanc) &nbsp;&nbsp</div>};
 	 			
 	 			return ($out1,"");
 	 	}
@@ -1767,6 +1773,65 @@ sub table_control {
 	
 	return ($out1,$out);
 }
+}
+
+sub table_muc1 {
+	 my ($run) = @_;
+	 my $controls = $run->getPatientsControl;
+	 my $patients ;
+	 	
+	#return "" unless $controls;
+		my $out_table ="";
+		my $style = "success";
+		
+	 my $nb =0;
+		foreach my $patient (@{$project->getPatients}){
+			my $t = $patient->vntyperResults;
+			next unless @{$t};
+			$out_table .= $cgi->start_Tr({class=>""});	
+			$out_table.= $cgi->td({rowspan=>scalar(@$t)},$patient->name);
+			foreach my $tt (@$t){
+				$out_table .= $cgi->td($tt);
+				$out_table .= $cgi->end_Tr({class=>""});
+			}
+			#$out_table .= $cgi->end_Tr({class=>""});	
+			$nb ++;
+		}
+	
+	my $out1;	
+	#my $nb =  1;
+	my $run_id = $run->id;
+	$out1 =  qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb</span></div>};
+	unless (-e  $project->getVariationsDir("vntyper")."/muc1/" ){
+		return ("","");
+	}
+	my $out;
+	$out .= $cgi->start_div({class=>"row"});
+	 my $pstyle = "panel-primary";#.$style;
+	$out .= $cgi->start_div({class=>"panel-body panel-primary panel-collapse collapse ",style=>"font-size: 09px;font-family:  Verdana;",id=>"control_muc1_".$run->id});	
+	$out .= $cgi->start_div({class=>"col-xs-6"});
+	$out .= $cgi->start_table({class=> "table table-striped table-bordered table-hover",style=>"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;", 'data-click-to-select'=>"true",'data-toggle'=>"table"});
+	$out .= $cgi->start_Tr({class=>"$style"});
+	
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"name") ;
+		$out .= $cgi->th( {style=>"text-align: center;"} ,"Motif") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Variant") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"POS") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"REF") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"ALT") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Motif_sequence (RevCom)") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Estimated_Depth_AlternateVariant") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Estimated_Depth_Variant_ActiveRegion") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Depth_Score") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Confidence") ;
+	$out .= $cgi->end_Tr();
+	$out .= $out_table;
+	$out .= $cgi->end_table();
+	$out .= $cgi->end_div();
+	$out .= $cgi->end_div();
+	$out .= $cgi->end_div();
+	
+	return ($out1,$out);
 }
 
 sub table_duplicate {
@@ -2206,7 +2271,6 @@ my $line_patient = [];
 					 update_variant_editor::check_is_clinvar_pathogenic_for_gene($patient->getProject(), $hvariant, $gene);
 					 $hvariant->{value}->{hgmd} = "-" if $hvariant->{value}->{hgmd} =~ /minus/;
 					 $hvariant->{value}->{clinvar} = "-" if $hvariant->{value}->{clinvar} =~ /minus/;
-					  warn Dumper $hvariant->{value}->{hgmd};
 					 merge_range($line_patient,$row,$col,$nb_merge,$hvariant->{value}->{hgmd});$col++;
 					 merge_range($line_patient,$row,$col,$nb_merge,$hvariant->{value}->{clinvar});$col++;
 			 		
@@ -2337,7 +2401,6 @@ sub table_patients_xls {
 	
 		my $col =0;
 		#$worksheet->merge_range($row,1,$row+$line_patient->[-1]->{row}+1,$col,$patient->name,$bold_merge);
-		#warn Dumper @$line_patient;
 		foreach my $l (@$line_patient){
 			if ($l->{merge}>0){
 			$worksheet->merge_range($l->{row}+$row,$l->{col}+$col,$l->{row}+$l->{merge}+$row,$l->{col}+$col,$l->{value},$bold_merge);
@@ -2430,8 +2493,9 @@ sub table_patients {
 		 my $col_hgmd =3;
 	 	$col_hgmd = 2 unless $hgmd ==1;
 
-		
+	
 		my  @title = ("Fam","view","Print","Patient","Cov","30x",);# if ($project->isFamilial());
+		
 		#@title = ("Fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		my $isfam = 1;
 		unless ($project->isFamilial()){
@@ -2439,7 +2503,7 @@ sub table_patients {
 		 #	@title = ("fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		 	$isfam = undef;
 		 }
-		
+		push(@title,"MUC1") if (-e  $project->getVariationsDir("vntyper")."/muc1/" );
 		$out .= $cgi->start_Tr({style=>"background-color:#1079B2;color:white"});
 		$out .= $cgi->th({style=>"text-align: center;"},qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(this)"></input>});
 		foreach my $p (@title){
@@ -2474,14 +2538,14 @@ sub table_patients {
   		 	
   		 $out .= $cgi->td({rowspan=>$nb_members,style=>"vertical-align:middle"},qq{<input id="$pname" type="checkbox" aria-label="..." onClick="selection(event,this)"></input>});
   		 $out .= $cgi->td({rowspan=>$nb_members,style=>"vertical-align:middle"},$fam->name );# if $isfam ;
-
+			
   		 		
 				
 				
 
   		
 		foreach my $p (@{$fam->getMembers}){
-					my $pp = $p->name;
+			my $pp = $p->name;
 			my $cmd = qq{printer('$pp');};
 			my $cmd2 = qq{printer2('$pp','1');};
 			my $td =[
@@ -2489,7 +2553,7 @@ sub table_patients {
 			'<a type="button" class="btn btn-xs btn-success" onclick="'.$cmd2.'"><i class="fa fa-print pull-left  "></i>Print</button></a>'
 			
 			];
-				$out.= $cgi->td({style=>"vertical-align:middle"}, $td);
+			$out.= $cgi->td({style=>"vertical-align:middle"}, $td);
 			my $line = print_line_patient($p,0);
 			foreach my $col (@title){
 				next  unless exists $line->{$col};
@@ -2518,6 +2582,7 @@ sub table_run_header {
 			my ($b3,$p3) =  table_mendelian($run);
 			my ($b4,$p4) =   table_quality($run);
 			my ($b5,$p5) =   table_design($run);
+			my ($b6,$p6) = table_muc1($run);
 				$out.=  $cgi->start_Tr;
 		 $out .= $cgi->th({style=>"margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"},$b);
 		  $out .= $cgi->th({style=>"margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"},$b4);
@@ -2525,7 +2590,7 @@ sub table_run_header {
 		  $out .= $cgi->th({style=>"margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"},$b2);
 		   $out .= $cgi->th({style=>"margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"},$b1);
 		    $out .= $cgi->th({style=>"margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"},$b5);
-		    
+		       $out .= $cgi->th({style=>"margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"},$b6);
 		   $out .= $cgi->end_Tr;
 			 $out .= $cgi->end_table();
 			 
@@ -2535,6 +2600,7 @@ sub table_run_header {
 	$out .= $p3;
 	$out .= $p4;
 	$out .= $p5;
+	$out .= $p6;
 	return $out;
 }
 	
