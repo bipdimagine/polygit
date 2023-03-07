@@ -1425,7 +1425,6 @@ sub get_lmdb_variations {
 
 	
 	my $dir_out_rocks = $self->project->rocks_cache_dir;
-	warn $dir_out_rocks;
 	if ($mode eq "c"){
 		if ($rocks) {
 			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
