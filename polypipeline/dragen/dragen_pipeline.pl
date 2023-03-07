@@ -201,6 +201,7 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
+		$h->{rna} = 0;
 		$h->{rna} = 1 if $project->isRnaSeq;
 		$h->{name} = $patient->name;
 		
