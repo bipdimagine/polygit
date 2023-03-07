@@ -225,7 +225,7 @@ foreach my $project (@$projects){
 		#####  GVCF
 		#####  
 		
-		 $h->{prod}->{gvcf} = $patient->getVariationsFileName("dragen-calling");
+		 $h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
 		 $h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 		
 		#####  
