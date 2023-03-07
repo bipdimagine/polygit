@@ -215,14 +215,14 @@ foreach my $project (@$projects){
 		#####  GVCF
 		#####  
 		
-		 $h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
+		 $h->{prod}->{gvcf} = $patient->getVariationsFileName("dragen-calling");
 		 $h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 		
 		#####  
 		#####  VCF
 		#####  
 		
-		 $h->{prod}->{vcf} = $patient->vcfFileName("dragen-calling");
+		 $h->{prod}->{vcf} = $patient->getVariationsFileName("dragen-calling");
 		 $h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
 		
 		#####  
