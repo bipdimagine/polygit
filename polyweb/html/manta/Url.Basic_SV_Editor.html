@@ -1,0 +1,158 @@
+<html>
+<head>
+	<title>Basic Structural Variants Editor </title>
+	<link rel="icon" type="image/png" href="images/polyicons/application_view_tile.png">
+    	<style type="text/css">
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojo/resources/dojo.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dijit/themes/claro/claro.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/claroGrid.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dijit/themes/soria/soria.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/Grid.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/nihiloGrid.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dijit/themes/nihilo/nihilo.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/tundraGrid.css";
+		@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dijit/themes/tundra/tundra.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/widget/Dialog/Dialog.css";
+        @import "../../css/polycss/general.css";
+        @import "../../css/polycss/button.css";
+        @import "../../css/polycss/filter.css";
+        @import "../../css/polycss/login.css";
+        @import "../../css/polycss/header-footer.css";
+        
+   	</style>
+
+   	<style>
+   	#myProgress {
+   	  width: 300px;
+   	  background-color: #ECEAEA;
+   	}
+
+   	#myBar {
+   	  width: 2%;
+   	  height: 30px;
+   	  background-color: orange;
+   	}
+   	}
+   	</style>
+   	
+	<LINK rel="stylesheet" type="text/css" href="../css/dejavu/dejavu.css">
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="../../js/polyjs/alamut_methods.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+
+	<script type="text/javascript" src="../../js/manta/URL.Basic_SV_Editor.js" djConfig="parseOnLoad: true"></script> 
+
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript">
+			dojo.require("dojo.store");
+	</script>
+	<script type="text/javascript" src="../js/polyjs/Utility/vp.js" ></script>
+	<script	type="text/javascript">
+			dojo.require("dojo.cookie");
+			dojo.require("dijit.Dialog");
+			dojo.require("dojo.parser");
+			dojo.require("dojo.data.ItemFileReadStore");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dojox.grid.DataGrid");
+			dojo.require("dojo.parser");
+			dojo.require("dijit.TitlePane");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.layout.AccordionContainer");
+			dojo.require("dijit.form.TextBox");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.layout.ContentPane");
+			dojo.require("dijit.Toolbar");
+			dojo.require("dijit.form.NumberTextBox");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dijit.form.Select");
+			dojo.require("dijit.form.FilteringSelect");
+			dojo.require("dijit.form.ComboBox");
+			dojo.require("dijit.form.Form");
+			dojo.require("dojox.grid.EnhancedGrid");
+			dojo.require("dijit.form.DropDownButton");
+			dojo.require("dijit.form.MultiSelect");
+			dojo.require("dijit.form.CheckBox");
+			dojo.require("dojox.charting.Chart2D");
+			dojo.require("dojox.charting.Chart3D");
+			dojo.require("dojox.charting.plot3d.Base");
+			dojo.require("dojox.charting.plot3d.Bars");
+			dojo.require("dojox.data.AndOrReadStore");
+
+			require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/TabContainer","dijit/layout/ContentPane"]);
+			require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+			require(["dijit/form/Select", "dojo/data/ObjectStore","dojo/store/Memory","dojo/domReady!"]);
+	</script> 
+ 
+  	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+ 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  
+</head>
+
+
+<body onload="setCallerOptions();collapseResult();getVcfCompare_info_basic();" >
+
+<center><div style="width:90%; height:100%;">
+
+<br><center> <h4> CNV (DUP/DEL)  </h4></center><br>
+<center><div class="table-responsive" style="width:1600px";>
+ 	   	<div class="table-responsive" >
+ 			 <table class="table">
+ 		 		<tr>
+  					<td>
+  							<label for="sel1"><h5> Select Caller  </h5></label>
+  							<select class="form-control" id="Callers" name="Callers" style="width:180px; height:30px; font-size:12px;padding:5px" onchange='collapseResult2(); setCallerOptions();'>
+  								<option value="WCONDOR" selected="selected">  WCondor </option>
+  								<option value="CANVAS" >  Canvas </option>
+  								<option value="MANTA" >  Manta </option>
+  								<option value="LUMPY">   Lumpy </option>
+							</select>
+					</td>
+  				<td><span  id="caller_option" style="width:100%;"> </span> </td>
+  				</tr>
+  				</table>
+  		</div>
+  		<center> <div style="height:75%;width:100%;margin-top:8px;overflow-y:scroll;overflow-x:scroll;" id="collapse1" class="panel-collapse collapse">
+      	 <span dojoType="dojo.data.ItemFileReadStore" jsId="jsonDetails"></span>     
+             <table border="1"
+             			dojoType="dojox.grid.DataGrid"
+                        id    = "SVCompare_gridDetails"
+                        jsId  = "SVCompare_gridDetails"
+                        store = "jsonDetails"  
+                        query = "{ id: '*' }"> 
+             			<tr><thead> 
+             				 <th width="35px" field="id" styles="text-align:center;font-size:12px;"><center><b>ID</b></center></th>
+             				 <th width="35px" field="SVTYPE" formatter="formaterDUPDEL" styles="text-align:center;font-size:12px;"><center><b>SV</b></center></th>
+             				 <th width="60px" field="RANKAnnot"formatter="formaterRANK" styles="text-align:center;font-size:12px;"><center><b> Ranking SVannot</b></center></th>
+             				 <th width="80px" field="CALLER" styles="text-align:center;font-size:12px;"><center><b>Caller</b></center></th>  
+             				 <th width="60px" field="OTHERS" formatter="formaterCallers"  styles="text-align:center;font-size:12px;"><center><b>Other Caller</b></center></th>  
+             				 <th width="300px" field="BP_LUMPY" formatter="formaterBreakPoint" styles="text-align:center;font-size:12px;"><center><b>BreakPoint Lumpy</b></center></th>  
+             				 <th width="300px" field="BP_MANTA" formatter="formaterBreakPoint" styles="text-align:center;font-size:12px;"><center><b>BreakPoint Manta</b></center></th>  
+             				 <th width="250px" field="CHROM_POS_END" styles="text-align:center;font-size:12px;"><center><b>CHR_POS_END</b></center></th>
+                              <th width="80px" field="SVLEN" formatter="formaterLength" styles="text-align:center;font-size:12px;"><center><b>Length</b></center></th>
+                              <th width="100px" field="CYTOBAND" formatter="formaterLISTE" styles="text-align:center;font-size:12px;"><center><b>Cytoband</b></center></th>
+                              <th width="80px" field="DGV" formatter="formaterDGV" styles="text-align:center;font-size:12px;"><center><b> DGV</b></center></th>
+                              <th width="80px" field="DUPSEG" styles="text-align:center;font-size:12px;" formatter="formaterDUPSEG"><center><b> Segmental Dup</b></center></th>
+                              <th width="35px" field="GT" styles="text-align:center;font-size:12px;"><center><b> GT </b></center></th>
+                              <th width="80px" field="CN" styles="text-align:center;font-size:12px;"><center><b> Copy Nb </b></center></th>
+                              <th width="100px" field="GENES" styles="text-align:center;font-size:12px;" formatter="formaterLISTE"><center><b> Genes </b></center></th>    
+                              <th width="100px" field="GOLD" styles="text-align:center;font-size:12px;" formatter="formaterLISTE"><center><b> DGV Gold Standard </b></center></th>
+                              <th width="80px" field="GOLD_G_freq" formatter="formaterFreq" styles="text-align:center;font-size:12px;"><center><b> DGV Gain_freq </b></center></th>   
+                              <th width="80px" field="GOLD_L_freq" formatter="formaterFreq" styles="text-align:center;font-size:12px;"><center><b> DGV Loss_freq </b></center></th>  
+                              <th width="80px" field="DDD_DEL_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:12px;"><center><b> DDD DEL freq </b></center></th>  
+                              <th width="80px" field="DDD_DUP_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:12px;"><center><b> DDD DUP freq </b></center></th>  
+                              <th width="80px" field="OMIN_MG" formatter="formaterOmin" styles="text-align:center;font-size:12px;"><center><b> Omin Morbid Genes </b></center></th>
+                              <th width="80px" field="dbVar_event"  formatter="formaterdbvarEvent" styles="text-align:center;font-size:12px;"><center><b> dbVar event </b></center></th>
+                              <th width="80px" field="dbVar_status"  formatter="formaterdbvarStatus" styles="text-align:center;font-size:12px;"><center><b> dbVar status</b></center></th>
+                        </tr></thead>
+              </table>
+              </div></center> 
+</div>
+
+
+</div></center> 
+
+
+ </body>
+ </html>
+                 

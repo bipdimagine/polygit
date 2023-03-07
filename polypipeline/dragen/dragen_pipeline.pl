@@ -141,14 +141,23 @@ if ($test_umi && !($umi)){
 system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
+
 my $pipeline_dragen_steps = ["align","gvcf","vcf","sv","cnv"];
+
+my $pipeline_dragen_rna_steps = ["align","count"];
+
+
 ####### Alignement
 my $ppd  = patient_pipeline_dragen($projects);
 run_command($ppd);
 run_move($ppd);
+
+
 if (exists $hstep->{lmdb}){
 run_lmdb_depth_melt($ppd) unless $version =~ /HG38/;
 }
+
+
 run_genotype($projects);
 #run_dude($projects) if $dude;
 end_report($projects,$ppd);
@@ -192,7 +201,7 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
-		
+		$h->{rna} = 1 if $project->isRnaSeq;
 		$h->{name} = $patient->name;
 		
 	 	$h->{project} = $patient->project->name;
@@ -222,7 +231,9 @@ foreach my $project (@$projects){
 		#####  VCF
 		#####  
 		
+
 		 $h->{prod}->{vcf} = $patient->getVariationsFileName("dragen-calling");
+
 		 $h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
 		
 		#####  
@@ -266,13 +277,15 @@ my @all_list ;
 sub run_command {
 	my ($patients_jobs) = @_;
 	 @all_list = @$pipeline_dragen_steps;
+	 
 	foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
+	@all_list = @$pipeline_dragen_rna_steps if $hp->{rna} ==1;
 	my $pname =  $hp->{name}."_".$hp->{project};
 	$hp->{run_pipeline} = [];
 	
-	foreach my $t (@$pipeline_dragen_steps){
+	foreach my $t (@all_list){
 		$lims->{$pname}->{$t} = "SKIP"; 
 		next unless $hstep->{$t};
 		next if (-e $hp->{prod}->{$t} && !($force));
@@ -291,6 +304,7 @@ sub run_command {
 	$job->{step_name} = join(";",@{$hp->{run_pipeline}});
 	$job->{patient} = $hp->{name}."_".$hp->{project};
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});;
+	
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -version=$version " if $version;
 	

@@ -484,6 +484,7 @@ sub getHeComposite1 {
 #			}
 		}
 		$hashHeComp->{$coupleId}->{'nbProj'} = join('; ', @lProjects);
+		$hashHeComp->{$coupleId}->{'implicated'} = '.';
 		my $nbPat = 0;
 		my @lPatients;
 		foreach my $projName (sort(keys(%{$hashHeComp->{$coupleId}->{'nbPat'}}))) {
@@ -491,6 +492,7 @@ sub getHeComposite1 {
 #			if (exists($hProjAuthorized->{$projName})) {
 				my $res = $projName.' ['.join(', ', sort(keys(%{$hashHeComp->{$coupleId}->{'nbPat'}->{$projName}}))).']';
 				push(@lPatients, $res);
+				$hashHeComp->{$coupleId}->{'implicated'} = 'X' if (exists($hProjAuthorized->{$projName}));
 #			}
 #			else {
 #				my @lPat;
