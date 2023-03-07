@@ -8,9 +8,11 @@ use Data::Dumper;
 use Config::Std;
 use GenBoGenomic;
 use GenBoNoSqlLmdb;
-use GenBoNoSqlLmdbPipeline;
+use GenBoNoSqlLmdbPipeline;  
+
+
 #use GenBoNoSqlRocksVariation;
-use GenBoNoSqlRocksPolyviewerVariant;
+#use GenBoNoSqlRocksPolyviewerVariant;
 extends "GenBoGenomic";
 use Storable qw/thaw retrieve/;
 use Set::IntervalTree;
