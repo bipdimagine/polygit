@@ -18,6 +18,8 @@ my $hashObjectType = {
  	'GenBoDeletion'		=> 'deletions',
  	'GenBoInsertion'	=> 'insertions',
  	'GenBoLargeDeletion'	=> 'large_deletions',
+ 	'GenBoInversion'	=> 'inversions',
+ 	'GenBoBoundary'	=> 'boudaries',
  	'GenBoLargeDuplication'	=> 'large_duplications',
  	'GenBoGene'			=> 'genes',
  	'GenBoReference'	=> 'references',
@@ -162,6 +164,10 @@ has isComplex => (
 );
 
 has isInsertion => (
+	is		=> 'ro',
+	default	=> 0
+);
+has isInvertion => (
 	is		=> 'ro',
 	default	=> 0
 );
@@ -507,6 +513,62 @@ sub getSVDuplications {
 
 
 ########################
+### Inversions
+#######################
+
+sub setInversions {
+	my $self = shift;
+	$self->setVariants('inversions');
+	return $self->{inversions_object} ;
+}
+
+has inversions_object => (
+	is		=> 'rw',
+	#isa		=> 'HashRef',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $hRes = $self->setInversions();
+		unless ($hRes) { $hRes->{none} = 'none'; }
+		return $hRes;
+	}
+);
+
+sub getInversions {
+	my $self = shift;
+	return $self->getProject()->myflushobjects($self->inversions_object(), "inversions");
+}
+
+########################
+### Boudaries
+#######################
+
+sub setBoundaries {
+	my $self = shift;
+	$self->setVariants('boundaries');
+	return $self->{inversions_object} ;
+}
+
+has boundaries_object => (
+	is		=> 'rw',
+	#isa		=> 'HashRef',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $hRes = $self->setBoundaries();
+		unless ($hRes) { $hRes->{none} = 'none'; }
+		return $hRes;
+	}
+);
+
+sub getBoundaries {
+	my $self = shift;
+	return $self->getProject()->myflushobjects($self->boundaries_object(), "boundaries");
+}
+
+
+
+########################
 ### LargeDeletions
 #######################
 
@@ -534,7 +596,7 @@ sub getLargeDeletions {
 }
 
 ########################
-### LargeInsertions
+### LargeDuplications
 #######################
 
 sub setLargeDuplications {
@@ -560,6 +622,32 @@ sub getLargeDuplications {
 	return $self->getProject()->myflushobjects($self->large_duplications_object(), "large_duplications");
 }
 
+########################
+### LargeInsertions
+#######################
+
+sub setLargeInsertions {
+	my $self = shift;
+	$self->setVariants('large_insertions');
+	return $self->{large_insertions_object} ;
+}
+
+has large_insertions_object => (
+	is		=> 'rw',
+	#isa		=> 'HashRef',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $hRes = $self->setLargeInsertions();
+		unless ($hRes) { $hRes->{none} = 'none'; }
+		return $hRes;
+	}
+);
+
+sub getLargeInsertions {
+	my $self = shift;
+	return $self->getProject()->myflushobjects($self->large_insertions_object(), "large_insertions");
+}
 
 ########################
 ### Mnps
@@ -639,10 +727,13 @@ sub setInsertions {
 	return $self->{insertions_object} ;
 }
 
+
 sub getInsertions {
 	my $self = shift;
 	return $self->getProject()->myflushobjects($self->insertions_object(), "insertions");
 }
+
+
 
 ### GenBoDeletions
 #
@@ -688,10 +779,20 @@ sub getCnvs{
 	my $self = shift;
 	my @lRes;
 	push(@lRes,@{$self->getLargeDuplications()});
+	push(@lRes,@{$self->getLargeInsertions()});
 	push(@lRes,@{$self->getLargeDeletions()});
     return \@lRes;
 }
-
+sub getSV{
+	my $self = shift;
+	my @lRes;
+	push(@lRes,@{$self->getLargeDuplications()});
+	push(@lRes,@{$self->getLargeInsertions()});
+	push(@lRes,@{$self->getLargeDeletions()});
+	push(@lRes,@{$self->getInversions()});
+	push(@lRes,@{$self->getMeis()});
+    return \@lRes;
+}
 #has indels => (
 #	is		=> 'ro',
 #	#isa		=> 'HashRef',

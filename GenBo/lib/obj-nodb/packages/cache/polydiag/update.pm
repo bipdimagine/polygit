@@ -1484,7 +1484,7 @@ sub return_coverage {
 	die();
 	return $p->depth($chr,$start,$start+1);
 	my $tabix = $p->tabix_coverage();
-	 my $res = $tabix->query($chr,$start,$start+1);# if $start;
+	 my $res = $tabix->query_full($chr,$start,$start+1);# if $start;
 	 	my($a,$p,$c) = split(" ",$tabix->read($res));
 	 	return $c;
 }

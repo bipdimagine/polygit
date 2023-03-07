@@ -775,6 +775,12 @@ sub flushObjectVariantCache {
 	if ($ref eq 'GenBoVariation'){
 		bless $var_obj , 'GenBoVariationCache';
 	}
+	elsif  ($ref eq 'GenBoInversion'){
+		bless $var_obj , 'GenBoInversionCache';
+	}
+	elsif  ($ref eq 'GenBoBoundary'){
+		bless $var_obj , 'GenBoBoundaryCache';
+	}
 	elsif  ($ref eq 'GenBoLargeDeletion'){
 		bless $var_obj , 'GenBoLargeDeletionCache';
 	}
@@ -1276,6 +1282,7 @@ sub setLargeDeletions {
 	$self->setVariants('large_deletions');
 	return $self->{large_deletions_object} ;
 }
+
 
 sub setLargeDuplications {
 	my $self = shift;

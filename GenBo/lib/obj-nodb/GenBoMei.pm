@@ -8,15 +8,14 @@ use Config::Std;
 use GenBoCapture;
 use Position;
 extends "GenBoInsertion";
-#
-	
+
 
 has name => (
 	is		=> 'ro',
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return $self->getChromosome->id().'-'.$self->start().'ins-'.$self->mei_type;
+		return $self->getChromosome->name().'-'.$self->start().'ins-'.$self->mei_type;
 	},
 );
 
@@ -92,7 +91,7 @@ sub annotation_coding {
 	my $project = $self->getProject();
 	my $l = length($self->sequence()) % 3;
 	my $start = $self->position($self->getChromosome())->start;
-	my $consequence =  $tr->codonsConsequenceForMei($self);
+	my $consequence =  $tr->codonsConsequenceForLargeInsertion($self);
 	$annot->{ $tr->id }->{coding}->{sequences} = $consequence;
 	$annot->{ $protid }->{coding}->{sequences} = $consequence;
 	$annot->{ $tr->id }->{coding}->{frameshift}++;

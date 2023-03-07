@@ -8,7 +8,7 @@ use FindBin qw($Bin);
 use lib "$Bin/";
 use lib "$Bin/../GenBoDB";
 use Set::IntSpan::Fast::XS;
-use Tabix;
+#use Tabix;
 use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum min max);
 extends "GenBoCapture";

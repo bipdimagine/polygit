@@ -150,6 +150,7 @@ sub parse_results_global_file {
 		$i++;
 	}
 	close (FILE);
+
 	foreach my $id (keys %{$h_global}) {
 		my $is_ok;
 		foreach my $patient (@{$self->getProject->getPatients()}) {
@@ -158,6 +159,7 @@ sub parse_results_global_file {
 		}
 		push (@l_res, $h_global->{$id}) if $is_ok;
 	}
+
 	return ($h_header, \@l_res);
 }
 

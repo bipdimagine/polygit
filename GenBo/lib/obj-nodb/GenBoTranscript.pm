@@ -364,18 +364,21 @@ sub ispseudoGene{
 sub codonsConsequenceForVariations {
 	my ($self,$var,$startg,$endg) = @_;
 	return $self->codonsConsequenceForDuplication($var,$startg,$endg) if ($var->isLargeDuplication());
+	return $self->codonsConsequenceForLargeInsertion($var,$startg,$endg) if ($var->isLargeInsertion() or $var->isMei());
 	return $self->codonsConsequenceForDeletion($var,$startg,$endg) if ($var->isDeletion() or $var->isLargeDeletion());
 	return $self->codonsConsequenceForMnp($var) if $var->isMnp();
 	return $self->codonsConsequenceForInsertion($var) if $var->isInsertion();
 	return $self->codonsConsequenceForSubstitution($var); 
 }
+
+
+
 sub codonsConsequenceForDuplication {
 		my ($self,$var) = @_;
-	my $span =  Set::IntSpan::Fast::XS->new(($var->start()-100)."-".($var->end()+100));
+	my $span =  Set::IntSpan::Fast::XS->new(($var->start()-5)."-".($var->end()+5));
 	my @tt = $self->getGenomicSpan->intersection($span)->as_array();
 	my $real_start = $tt[0];
 	my $real_end = $tt[-1];
-	warn "----->".$tt[0] if $var->id() eq "1_1669703_G_GGATGGAGGCCTGGGATGGTGGGGCGCAGGCGGAGGGGTGGGGCCCAGGGGGCCTCACCTGTGTACTCCCCCAGAATCATCCGAGACATGATCACCGTGAAGATGGGGGCGGAGCTCTTCA";
 	my $pos_transcript = $self->translate_position($real_start);
 	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
 	my $pos_orf_end = $pos_orf + 1; 
@@ -394,16 +397,17 @@ sub codonsConsequenceForDuplication {
 	};
 	return $results;
 }
-sub codonsConsequenceForMei {
+
+sub codonsConsequenceForLargeInsertion {
 	my ($self,$var) = @_;
-	my $span =  Set::IntSpan::Fast::XS->new($var->start()."-".($var->start()+50));
+	my $span =  Set::IntSpan::Fast::XS->new(($var->start()+3)."-".($var->start()+3));
 	my @tt = $self->getGenomicSpan->intersection($span)->as_array();
 	my $real_start = $tt[0];
 	my $real_end = $tt[-1];
 	my $pos_transcript = $self->translate_position($real_start);
 	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
 	my $pos_orf_end = $pos_orf + 1; 
-		my $codon1 = $self->getCodon($pos_orf);
+	my $codon1 = $self->getCodon($pos_orf);
 		
 	my $results = {
 		transcript_position => $pos_transcript,
@@ -412,9 +416,9 @@ sub codonsConsequenceForMei {
 		seq_orf =>$var->sequence,
 		prot_position => ceil($pos_orf/3),
 		codon => $codon1,
-		codon_mut => "",
-		aa => "MEI",#$self->getProject->biotools->translate($codon1,$self->isMT),
-		aa_mut => "mei",
+		codon_mut => "?",
+		aa => "?",#$self->getProject->biotools->translate($codon1,$self->isMT),
+		aa_mut => "?",
 	};
 	return $results;
 }

@@ -145,31 +145,6 @@ sub uncompressData{
          || die "gunzip failed \n";
  
       return $test;   
-	my $filename = "cp_".time;
-	my $tempfilegz = "/temporary/tmp/".$filename.".gz";
-	my $tempfile = "/temporary/tmp/".$filename;
-	while (-e $tempfilegz){
-		 $filename = "pw_".time;
-		 $tempfilegz = "/temporary/tmp/".$filename.".gz";
-		 $tempfile = "/temporary/tmp/".$filename;
-	}
-	open UPLOADFILE, ">".$tempfilegz;
-
-	binmode UPLOADFILE;
-	print UPLOADFILE $data;
-	close UPLOADFILE;
-
-
-         warn $tempfile;
-    die();     
-     return $test;   
-	`gunzip  $tempfilegz`;
-	my $data2;
-	open UPLOADFILE,$tempfile;
-	read(UPLOADFILE, $data2, -s UPLOADFILE );
-	unlink($tempfilegz);
-	unlink($tempfile);
-	return $data2;	
 }
 
 sub return_arrayref {

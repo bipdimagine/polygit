@@ -12,10 +12,58 @@ extends "GenBoVariant";
 
 
 
+sub length {
+	my ($self) = @_;
+	return $self->allele_length;
+}
+
+has allele_length => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return abs($self->start - $self->end)+1;
+	},
+);
 
 has isCnv => (
+	is		=> 'rw',
+	default	=> 1,
+);
+
+has name => (
 	is		=> 'ro',
-	lazy 	=> 1,
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $al = $self->allele_length;
+		
+		#$al = "*" if $al == -1;
+		my $id = $self->getChromosome->id().'-'.$self->start().'-'.lc($self->sv_type).'-'.$self->allele_length;
+		$id  = $self->getChromosome->id().'-'.$self->start().'-'.lc($self->mei_type).'-'.$self->allele_length if $self->isMei;
+		return $id;
+	},
+);
+
+
+
+has mei_type => (
+	is		=> 'ro',
+	default	=> sub {
+		my $self = shift;
+		return "";
+	},
+);
+
+########
+# isXXX Methods
+########
+has isSV => (
+	is		=> 'ro',
+	default	=> 1,
+);
+has isCnv => (
+	is		=> 'ro',
 	default	=> 1,
 );
 
@@ -23,6 +71,22 @@ has isLarge => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> 1,
+);
+has isMei => (
+	is		=> 'ro',
+	default	=> undef,
+);
+has isLargeDuplication => (
+	is		=> 'rw',
+	default	=> undef,
+);
+has isLargeDeletion => (
+	is		=> 'rw',
+	default	=> undef,
+);
+has isLargeInsertion => (
+	is		=> 'rw',
+	default	=> undef,
 );
 
 has isDude => (
@@ -38,64 +102,62 @@ has isDude => (
 	},
 );
 
-has intspan => (
-	is		=> 'ro',
-	reader	=> 'getGenomicSpan',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $intSpan = Set::IntSpan::Fast::XS->new();
-		$intSpan->add_range($self->start()-100, $self->start() + $self->length() +100);
-    	return $intSpan;
-	},
-);
 
-has strict_intspan => (
-	is		=> 'ro',
-	reader	=> 'getStrictGenomicSpan',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $intSpan = Set::IntSpan::Fast::XS->new();
-		$intSpan->add_range($self->start(), $self->start() + $self->length());
-    	return $intSpan;
-	},
-);
+############
+# INTSPAN 
+#############
 
-sub polyphenStatus {
-	my ( $self, $obj ) = @_;
-	if (not $obj) {
-		foreach my $t (@{$self->getTranscripts()}) {
-			return 3 if ($self->isHighImpact($t));
-		}
-	}
-	elsif ($obj->isGene()) {
-		foreach my $t (@{$obj->getTranscripts()}) {
-			return 3 if ($self->isHighImpact($t));
-		}
-	}
-	elsif ($obj->isTranscript()) {
-		return 3 if ($self->isHighImpact($obj));
-	}
-	return 0;
-}
+#has intspan => (
+#	is		=> 'ro',
+#	reader	=> 'getGenomicSpan',
+#	lazy	=> 1,
+#	default => sub {
+#		my $self = shift;
+#		my $intSpan = Set::IntSpan::Fast::XS->new();
+#		$intSpan->add_range($self->start()-100, $self->start() + $self->length() +100);
+#    	return $intSpan;
+#	},
+#);
+#
+#has strict_intspan => (
+#	is		=> 'ro',
+#	reader	=> 'getStrictGenomicSpan',
+#	lazy	=> 1,
+#	default => sub {
+#		my $self = shift;
+#		my $intSpan = Set::IntSpan::Fast::XS->new();
+#		$intSpan->add_range($self->start(),$self->event_end());
+#    	return $intSpan;
+#	},
+#);
 
-sub siftStatus {
-	my ( $self, $obj ) = @_;
-	if (not $obj) {
-		foreach my $t (@{$self->getTranscripts()}) {
-			return 2 if ($self->isHighImpact($t));
-		}
+
+
+
+sub annotation_coding {
+	my ( $self, $tr, $annot ) = @_;
+	my $span =  $self->getGenomicSpan()->intersection( $tr->getSpanCoding );
+	my $prot  = $tr->getProtein();
+	my $gid   = $tr->getGene->id();
+	my $trid = $tr->id;
+	my $namep = $prot->name();
+	my $pos   = $self->start();
+	my $seq   = $self->sequence();
+	my @array = $span->as_array();
+	my $project = $self->getProject();
+	my $start_tr = $array[0];
+	my $end_tr = $array[-1];
+	my $tres = scalar(@array) % 3;
+	my $pos_transcript = $tr->translate_position($pos);
+	$end_tr = $start_tr unless $end_tr; 
+	my $consequence =  $tr->codonsConsequenceForVariations($self,$start_tr,$end_tr);
+	$annot->{ $tr->id }->{coding}->{sequences} = $consequence;
+	$annot->{ $prot->id }->{coding}->{sequences} = $consequence;
+	unless ( $self->getGenomicSpan()->intersection($tr->getSpanCodonStartEnd())->is_empty){
+		$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $project->getMaskCoding("phase");
 	}
-	elsif ($obj->isGene()) {
-		foreach my $t (@{$obj->getTranscripts()}) {
-			return 2 if ($self->isHighImpact($t));
-		}
-	}
-	elsif ($obj->isTranscript()) {
-		return 2 if ($self->isHighImpact($obj));
-	}
-	return 0;
+	$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $project->getMaskCoding("frameshift");
+	
 }
 
 sub polyphenScore {
@@ -111,17 +173,6 @@ sub getRatio {
         my ($self,$patient,$method) = @_;
         my $pid = $patient->id;
         return "-";
-     #   return $self->{seq}->{$pid}->{ratio} if exists  $self->{seq}->{$pid}->{ratio};
-      # 	my $seq_details = $self->sequencing_details($patient);
-       #	if ($seq_details){
-       	#	$self->{seq}->{$pid}->{ratio} = $self->SUPER::getRatio($patient,$method);
-       	#	return $self->{seq}->{$pid}->{ratio};
-       	#}
-       	#$self->{seq}->{$pid}->{ratio} = 0;
-       	#$self->{seq}->{$pid}->{ratio} = 100 if $self->isHomozygote($patient);
-       	#$self->{seq}->{$pid}->{ratio} = 50 if $self->isHeterozygote($patient);
-       	#return $self->{seq}->{$pid}->{ratio} ;
-        
 }
 
 
@@ -194,7 +245,6 @@ sub getTransmissionModelType {
 
 
 
-
 has split_read_infos =>(
 	is =>'ro',	
 	lazy=>1,
@@ -228,7 +278,8 @@ has split_read_infos =>(
 				}
 				else {
 					unless ( exists $self->annex()->{$patient->id()}->{sr}) {
-						warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name;
+					#	warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name." ".Dumper( $self->annex()->{$patient->id()});
+					#	die();
 						$hash->{$pid} = ["-1","-1","-1","-1",$srq_end,$srq_start,$equality];
 						
 					}
@@ -570,7 +621,16 @@ has dejaVuInfosForDiag2 => (
 	my $in_this_run_patients =  $self->project->in_this_run_patients();
 	my $no = $project->dejavuSV();
 	
-	
+
+	if ($self->length == 0) {
+		warn $self->end;
+		warn $self->length;
+		warn Dumper $self->getPatientsInfos();
+		warn $self->sequence;
+		foreach my $p (@{$self->getPatients}){
+			warn $p->name;
+		}
+	}
 	my $h = $no->get_cnv($self->getChromosome->name,$self->start,$self->start+$self->length,$self->sv_type,'all',75);
 	my $similar = $project->similarProjects();
 	my $exomes = $project->exomeProjects();
@@ -631,9 +691,10 @@ sub get_dude_scores {
 	my @lRes;
 	my @lDudeFiles = @{$patient->getDudeFiles()};
 	foreach my $file (@lDudeFiles) {
-		my $tabix = new Tabix( -data => $file );
-		my $res = $tabix->query($self->getChromosome()->name(), ($self->start()-1), ($self->start + $self->length() + 1));
-		while ( my $line = $tabix->read($res) ) {
+		
+		my $tabix = Bio::DB::HTS::Tabix->new( filename => $file );#new Tabix( -data => $file );
+		my $res = $tabix->query_full($self->getChromosome()->name(), ($self->start()-1), ($self->start + $self->length() + 1));
+		while ( my $line = $res->next ) {
 			my ($chr_name,$start,$end,$status,$type,$gene,$score1,$score2,$score3,$score4) = split(" ",$line);
 			my $h_pr;
 			$h_pr->{id} = $chr_name.':'.$start.'-'.$end;
@@ -680,8 +741,8 @@ has get_genes_transcripts_details_dup_del => (
 				my $inter1 = $intspan_v->intersection( $intspan_t );
 				next if $inter1->is_empty();
 				my $t_id = $t->id();
-				#$h->{$g->id()}->{$t_id}->{nm} = 'NM';
-				#$h->{$g->id()}->{$t_id}->{ccds} = $t->ccds_name();
+				$h->{$g->id()}->{$t_id}->{nm} = 'NM';
+				$h->{$g->id()}->{$t_id}->{ccds} = $t->ccds_name();
 				#$h->{$g->id()}->{$t_id}->{appris} = $t->{tag};
 				foreach my $e (@{$t->getExons()}) {
 					my $intspan_e = $e->getGenomicSpan();
@@ -752,81 +813,13 @@ sub cnv_confidence {
 	return '-';
 }
 
-sub init_annotation {
-	my ($self) = @_;
-	my $annot;
-	$annot->{all}->{mask} = 0;
-	my $has_g_exon = 0;
-	my $has_g_intron = 0;
-	foreach my $g (@{$self->getGenes()}) {
-		my $gene_id = $g->id();
-		my $has_tr_exon = 0;
-		my $has_tr_intron = 0;
-#		my $has_tr_upstream = 0;
-#		my $has_tr_downstream = 0;
-		foreach my $t (@{$g->getTranscripts()}) {
-			my $tr_id = $t->id();
-			my $has_exon = 0;
-			my $has_intron = 0;
-			my $start1 = $self->start();
-			my $end1 = $self->start() + $self->length();
-			my $intspan_v = $self->getStrictGenomicSpan();
-			
-			foreach my $e (@{$t->getExons()}) {
-				my $intspan_e = $e->getGenomicSpan();
-				my $inter2 = $intspan_v->intersection( $intspan_e );
-				next if ($inter2->is_empty());
-				$has_exon = 1;
-				last;
-			}
-			foreach my $i (@{$t->getIntrons()}) {
-				my $intspan_i = $i->getGenomicSpan();
-				my $inter2 = $intspan_v->intersection( $intspan_i );
-				next if ($inter2->is_empty());
-				$has_intron = 1;
-				last;
-			}
-			if ($has_exon == 1) {
-				$annot->{$tr_id}->{mask} = $self->getProject->getMaskCoding("frameshift");
-				$has_tr_exon = 1;
-			}
-			elsif ($has_intron == 1) {
-				$annot->{$tr_id}->{mask} = $self->getProject->getMaskCoding("intronic");
-				$has_tr_intron = 1;
-			}
-			elsif (($t->strand == 1 && $t->start>$self->start) or ($t->strand == -1 && $t->end<$self->start)){
-				$annot->{$tr_id}->{mask} = $self->getProject->getMaskCoding("upstream");
-				#$has_tr_upstream = 1;
-			}
-			elsif (($t->strand == 1 && $t->end<$self->start) or ($t->strand == -1 && $t->start>$self->start)){
-				$annot->{$tr_id}->{mask} = $self->getProject->getMaskCoding("downstream");
-				#$has_tr_downstream = 1;
-			}
-			else {
-				$annot->{$tr_id}->{mask} = $self->getProject->getMaskCoding("upstream");
-				$annot->{$tr_id}->{mask} += $self->getProject->getMaskCoding("downstream");
-			}
-		}
-		if ($has_tr_exon == 1) {
-			$annot->{$gene_id}->{mask} = $self->getProject->getMaskCoding("frameshift");
-			$has_g_exon = 1;
-		}
-		elsif ($has_tr_intron == 1) {
-			$annot->{$gene_id}->{mask} = $self->getProject->getMaskCoding("intronic");
-			$has_g_intron = 1;
-		}
-		else {
-			$annot->{$gene_id}->{mask} = $self->getProject->getMaskCoding("upstream");
-			$annot->{$gene_id}->{mask} += $self->getProject->getMaskCoding("downstream");
-		}
-	}
-	if ($has_g_exon == 1) { $annot->{all}->{mask} = $self->getProject->getMaskCoding("frameshift"); }
-	elsif ($has_g_intron == 1) { $annot->{all}->{mask} = $self->getProject->getMaskCoding("intronic"); }
-	else {
-		$annot->{all}->{mask} = $self->getProject->getMaskCoding("upstream");
-		$annot->{all}->{mask} += $self->getProject->getMaskCoding("downstream");
-	}
-	return $annot;
-}
 
+has structural_type => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return  lc($self->sv_type);
+	},
+);
 1;

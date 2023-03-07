@@ -142,18 +142,21 @@ system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
 
+my $pipeline_dragen_steps = ["align","gvcf","vcf","sv","cnv"];
 
-my $pipeline_dragen_steps = ["align","gvcf","sv","cnv"];
 my $pipeline_dragen_rna_steps = ["align","count"];
+
 
 ####### Alignement
 my $ppd  = patient_pipeline_dragen($projects);
 run_command($ppd);
 run_move($ppd);
 
+
 if (exists $hstep->{lmdb}){
 run_lmdb_depth_melt($ppd) unless $version =~ /HG38/;
 }
+
 
 run_genotype($projects);
 #run_dude($projects) if $dude;
@@ -221,14 +224,16 @@ foreach my $project (@$projects){
 		#####  GVCF
 		#####  
 		
-		 $h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
+		 $h->{prod}->{gvcf} = $patient->getVariationsFileName("dragen-calling");
 		 $h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 		
 		#####  
 		#####  VCF
 		#####  
 		
-		 $h->{prod}->{vcf} = $patient->vcfFileName("dragen-calling");
+
+		 $h->{prod}->{vcf} = $patient->getVariationsFileName("dragen-calling");
+
 		 $h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
 		
 		#####  
