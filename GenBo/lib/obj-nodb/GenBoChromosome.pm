@@ -1420,6 +1420,7 @@ sub get_lmdb_variations {
 	$modefull = "r" unless $modefull;
 	my ( $mode, $pipeline ) = split( '', $modefull );
 	my $dir_out = $self->project->lmdb_cache_variations_dir();
+
 	
 	my $dir_out_rocks = $self->project->rocks_cache_dir;
 	warn $dir_out_rocks;
@@ -1427,6 +1428,7 @@ sub get_lmdb_variations {
 		if ($rocks) {
 			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
 			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
+
 		}
 		else {
 			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);

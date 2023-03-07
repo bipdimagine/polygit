@@ -148,13 +148,19 @@ else {
 $out .= "</tbody>";
 $out .= "</table>";
 
-my @lCapturesNames = sort keys %$hCapturesNames;
+
+my $hCapturesNames_for_sort;
+foreach my $c_name (keys %$hCapturesNames) {
+	$hCapturesNames_for_sort->{lc($c_name)} = $c_name;
+}
+my @lCapturesNames = sort keys %$hCapturesNames_for_sort;
 
 my $out_captures;
 $out_captures .= qq{<div class="input-group" style="width:100%">};
 $out_captures .= qq{<select class="form-control" id="form_my_captures" style="font-size:9px;height:auto;width:100%;">};
 $out_captures .= qq{<option value=''><span></span></option>};
-foreach my $capture (sort @lCapturesNames) {
+foreach my $capture_for_sort (sort @lCapturesNames) {
+	my $capture = $hCapturesNames_for_sort->{$capture_for_sort};
 	my $name = lc($capture);
 	$name =~ s/ /_/g;
 	my @lProjects = sort keys %{$hCapturesNamesProject->{$capture}};
@@ -193,6 +199,7 @@ $out_phenos .= qq{</div>};
 
 $hRes->{html_projects} = $out;
 $hRes->{list_projects}= \@lProjectNames;
+$hRes->{list_captures}= \@lCapturesNames;
 #$hRes->{list_panels}= \@lCapturesNames;
 $hRes->{html_list_captures}=$out_captures;
 $hRes->{html_list_phenotypes}=$out_phenos;
