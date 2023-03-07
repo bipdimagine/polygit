@@ -1052,8 +1052,14 @@ sub myflushobjects {
 					my $var_obj = $chr->cache_lmdb_variations->get($id);
 					my $ref = ref($var_obj);
 					$var_obj->{vector_id}= $vector_id;
+				if ($ref eq 'GenBoVariation'){
+					bless $var_obj , 'GenBoVariationCache';
+					$self->{objects}->{variations}->{$id}= $var_obj;
+				}
+				elsif  ($ref eq 'GenBoLargeDeletion'){
+					bless $var_obj , 'GenBoLargeDeletionCache';
+					$self->{objects}->{large_deletions}->{$id}= $var_obj;
 					
-
 				}
 				elsif  ($ref eq 'GenBoBoudary'){
 					bless $var_obj , 'GenBoBoundaryCache';
