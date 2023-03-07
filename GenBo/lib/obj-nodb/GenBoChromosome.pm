@@ -9,7 +9,7 @@ use Config::Std;
 use GenBoGenomic;
 use GenBoNoSqlLmdb;
 use GenBoNoSqlLmdbPipeline;
-use GenBoNoSqlRocksVariation;
+#use GenBoNoSqlRocksVariation;
 use GenBoNoSqlRocksPolyviewerVariant;
 extends "GenBoGenomic";
 use Storable qw/thaw retrieve/;
