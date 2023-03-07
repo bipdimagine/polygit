@@ -171,7 +171,9 @@ sub move_gvcf {
 }
 sub move_vcf {
 	my ($vcf,$patient) = @_;
+	my $prod = $patient->getVariationsFileName("dragen-calling");
 	my $prod = $patient->vcfFileName("dragen-calling");
+
 	backup($prod) if -e $prod;
 	system("rsync -rav  $url"."$vcf $prod");
 	system("rsync -rav  $url"."$vcf.tbi $prod.tbi");

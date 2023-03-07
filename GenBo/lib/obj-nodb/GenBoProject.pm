@@ -16,7 +16,10 @@ use decode_prediction_matrix;
 use GenBoDeletion;
 use GenBoInsertion;
 use GenBoLargeDeletion;
+use GenBoInversion;
+use GenBoBoundary;
 use GenBoLargeDuplication;
+use GenBoLargeInsertion;
 use GenBoCnv;
 use GenBoMei;
 
@@ -67,6 +70,17 @@ sub hasHgmdAccess {
 	return 1 if ( $self->buffer->queryHgmd->getHGMD($user) == 1 );
 	return;
 }
+
+has extAlignFile => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		return "cram" if $self->getVersion() =~ /HG38/;
+		return "bam";
+		return 1;
+	},
+);
 
 # just stupid mehtod to print on stdout a dot each  modulo $max  it's for waiting for CGI
 # method to write dot on stdout for cgi waiting
@@ -2682,7 +2696,7 @@ sub getRunFromId {
 	$self->setRuns();
 	return $self->{objects}->{runs}->{$id}
 	  if exists $self->{objects}->{runs}->{$id};
-	confess();
+	confess($id);
 }
 
 sub setPhenotypes {
@@ -2948,7 +2962,26 @@ sub setLargeDeletions {
 	}
 	return $delIds;
 }
-
+sub setInversions {
+	my $self = shift;
+	my $delIds;
+	foreach my $patient ( @{ $self->getPatients() } ) {
+		foreach my $del ( @{ $patient->getInversions() } ) {
+			$delIds->{ $del->id() } = undef;
+		}
+	}
+	return $delIds;
+}
+sub setBoundaries {
+	my $self = shift;
+	my $delIds;
+	foreach my $patient ( @{ $self->getPatients() } ) {
+		foreach my $del ( @{ $patient->getBoundaries() } ) {
+			$delIds->{ $del->id() } = undef;
+		}
+	}
+	return $delIds;
+}
 sub setMnps {
 	my $self = shift;
 	my $delIds;
@@ -3382,6 +3415,7 @@ sub myflushobjects {
 	#confess if $ids =~ /ENSG0/;
 	#unless (exists $ids->{none}) {
 	foreach my $id (@$array_ids) {
+		
 		unless ( exists $self->{objects}->{$type}->{$id} ) {
 			if (   $type eq 'genes'
 				or $type eq 'transcripts'
@@ -3417,12 +3451,9 @@ sub myflushobjects {
 			elsif ( $type eq 'deletions' )  { $self->getVariantFromId($id); }
 			elsif ( $type eq 'indels' )     { die(); }
 			elsif ( $type eq 'insertions' ) { $self->getVariantFromId($id); }
-			elsif ( $type eq 'large_duplications' ) {
-				$self->getVariantFromId($id);
-			}
-			elsif ( $type eq 'large_deletions' ) {
-				$self->getVariantFromId($id);
-			}
+			elsif ( $type eq 'boundaries' ) { $self->getVariantFromId($id); }
+			elsif ( $type eq 'large_duplications' ) {$self->getVariantFromId($id);}
+			elsif ( $type eq 'large_deletions' ) {$self->getVariantFromId($id);}
 			elsif ( $type eq 'mnps' ) {
 				warn $id . "-";
 				$self->getVariantFromId($id);
@@ -3562,6 +3593,9 @@ has hashTypeObject => (
 			'insertions'         => 'GenBoInsertion',
 			'large_deletions'    => 'GenBoLargeDeletion',
 			'large_duplications' => 'GenBoLargeDuplication',
+			'large_insertions'	 => 'GenBoLargeInsertion',
+			'inversions' 	 	 => 'GenBoInversion',
+			'boundaries' 	 	 => 'GenBoBoundary',
 			'references'         => 'GenBoReference',
 			'transcripts'        => 'GenBoTranscript',
 			'proteins'           => 'GenBoProtein',
@@ -3582,7 +3616,7 @@ has hashTypeObject => (
 			'svdeletions'        => 'GenBoSVDel',
 			'regulatory_regions' => 'GenBoRegulatoryRegion',
 			'junctions'			 => 'GenBoJunction',
-			'meis'				=>'GenBoMei',
+			'meis'				 =>'GenBoMei',
 		};
 		return $hashTypeObject;
 	}
@@ -3604,7 +3638,7 @@ has check_ped_db_only => (
 sub createObject {
 	my ( $self, $type, $hash ) = @_;
 	my $hashTypeObject = $self->hashTypeObject();
-	confess("\n\nERROR: No type defined to create object $type !! die...\n\n")  unless exists $hashTypeObject->{$type};
+	confess("\n\nERROR: No type defined to create object -$type- !! die...\n\n".Dumper $hash)  unless exists $hashTypeObject->{$type};
 	$hash->{project} = $self;
 
 	my $typeObj = $hashTypeObject->{$type};
@@ -3652,7 +3686,9 @@ sub createObject {
 		or $type eq "deletions"
 		or $type eq "insertions"
 		or $type eq "large_duplication"
-		or $type eq "large_deletions" )
+		or $type eq "large_deletions" 
+		or $type eq "large_insertions"
+		or $type eq "inversions" )
 	{
 		$object = $self->get_void_object($type);
 		foreach my $k ( keys %$hash ) {
@@ -3897,10 +3933,22 @@ sub getSVeqDir {
 	return $self->makedir($path);
 }
 
+sub project_path_version {
+	my ($self,$version) = @_;
+	my $path = $self->getProjectRootPath() . "/" .$version . "/";
+	return $self->makedir($path);
+}
+
+sub getAlignmentRootDirWithVersion {
+	my ($self,$version) = @_;
+	my $path = $self->getProjectRootPath() . "/".$version. "/align/";
+	return $self->makedir($path);
+}
+
 sub getAlignmentDir {
-	my ( $self, $method_name ) = @_;
+	my ( $self, $method_name,$version ) = @_;
 	confess() unless $method_name;
-	my $path = $self->getAlignmentRootDir . "/" . $method_name . '/';
+	my $path = $self->getAlignmentRootDir($version) . "/" . $method_name . '/';
 	return $self->makedir($path);
 }
 
@@ -3940,8 +3988,14 @@ sub getCellRangerRootDir {
 	return $self->makedir($path);
 }
 sub getAlignmentRootDir {
-	my ($self) = @_;
-	my $path = $self->project_path . "/align/";
+	my ($self,$version) = @_;
+	my $path;
+	if ($version){
+	 $path = $self->getProjectRootPath() . "/".$version. "/align/";
+	}
+	else {
+	 $path = $self->project_path . "/align/";
+	}
 	return $self->makedir($path);
 }
 
@@ -5888,9 +5942,9 @@ sub setVariants {
 	elsif ( $type eq 'insertions' )      { $method = 'getInsertions'; }
 	elsif ( $type eq 'deletions' )       { $method = 'getDeletions'; }
 	elsif ( $type eq 'large_deletions' ) { $method = 'getLargeDeletions'; }
-	elsif ( $type eq 'large_duplications' ) {
-		$method = 'getLargeDuplications';
-	}
+	elsif ( $type eq 'large_duplications' ) {$method = 'getLargeDuplications';}
+	elsif ( $type eq 'large_inserttions' ) {$method = 'getLargeInsertions';}
+	elsif ( $type eq 'inversions' ) {$method = 'getInversions';}
 	my $h;
 
 	foreach my $chr ( @{ $self->getChromosomes() } ) {
@@ -6209,7 +6263,18 @@ sub setJunctions {
 	return $h_ids;
 }
 		
-
+sub writeCaptureBedFile {
+	my ($self,$span,$file) = @_;
+	$span = 0 unless $span;
+	open ("BED",">$file");
+	foreach my $chr (@{$self->getChromosomes}){
+		my $intspan = $chr->getIntSpanCapture($span);
+		next if $intspan->is_empty;
+		my @line = $self->buffer->intspanToBed($chr,$intspan);
+		print BED join("\n",@line)."\n";
+	}	
+	close(BED);
+}
 
 1;
 

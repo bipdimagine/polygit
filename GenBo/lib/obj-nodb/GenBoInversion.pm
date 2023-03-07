@@ -1,30 +1,27 @@
-package GenBoLargeDeletion;
+package GenBoInversion;
 
 use strict;
 use Moose;
 use MooseX::Method::Signatures;
-use Data::Dumper;
-use Config::Std;
-use GenBoCapture;
-use Position;
 extends 'GenBoCnv';
 
 
-
-
-
-has isLargeDeletion => (
+has isInversion => (
 	is		=> 'ro',
 	default	=> 1,
 );
 
 
+has isCnv => (
+	is		=> 'ro',
+	default	=> undef,
+);
 
 has type => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> sub {
-		return "large_deletion";
+		return "inversion";
 	},
 );
 
@@ -32,40 +29,28 @@ has sv_type => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> sub {
-		return "DEL";
+		return "INV";
 	},
 );
 
 sub limit_cnv_value {
 	my ($self,$value) = @_;
-	return 1 if  $value <= 0.6;
+	
 	return undef;
 }
 
 sub limit_cnv_value_ho {
 	my ($self,$value) = @_;
-	return 1 if  $value <= 0.15;
 	return undef;
 }
-
-
-
-has structural_type => (
-	is		=> 'ro',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return "l_del";
-	},
-);
 
 has string_dejavu => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		my $h = $self->project->get_deja_vu_from_overlap($self->getChromosome->name,$self->start,$self->start+$self->length,"DL");
-		return $h->[1] if $h;
+		#my $h = $self->project->get_deja_vu_from_overlap($self->getChromosome->name,$self->start,$self->start+$self->length,"DL");
+		#return $h->[1] if $h;
 		return "";
 	},
 );
@@ -76,7 +61,7 @@ has type_public_db => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return "deletions";
+		return "invertions";
 	},
 );
 
@@ -85,7 +70,7 @@ has type_object => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return "large_deletions_object";
+		return "inversions_object";
 	},
 );
 
@@ -116,13 +101,11 @@ sub delete_sequence {
 }
 
 
-sub setLargeDeletions {
-	my $self = shift;
-	confess();
-
-}
 
 
+
+
+1;
 
 
 1;

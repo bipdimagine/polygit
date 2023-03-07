@@ -931,7 +931,7 @@ sub setVariantsForReference {
 	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
 		my $hfiles = $self->callingFiles->{$this_typeVar};
 		foreach my $method ( keys %{$hfiles} ) {
-			#next unless $method eq 'melt';
+			#next unless $method eq 'manta';
 			#next unless $method eq 'haplotypecaller4';
 			my $vcfFile = $hfiles->{$method};
 			next if exists $already_parse->{ $reference->name }->{$vcfFile};
@@ -959,6 +959,7 @@ sub setVariantsForReference {
 			}
 		}
 	}
+
 	my $o = [];
 	#warn "\t end parsing :".abs(time-$z)." ".$self->name;
 	$o = $self->myflushobjects2( $hashRes, $cursor );
@@ -1154,6 +1155,9 @@ sub getStructuralVariations {
 	push( @$lRes, @{ $self->getDeletions( $chrName, $start, $end ) } );
 	push( @$lRes, @{ $self->getMnps( $chrName, $start, $end ) } );
 	push( @$lRes, @{ $self->getLargeDeletions( $chrName, $start, $end ) } );
+	push( @$lRes, @{ $self->getLargeDuplications( $chrName, $start, $end ) } );
+	push( @$lRes, @{ $self->getInversions( $chrName, $start, $end ) } );
+	push( @$lRes, @{ $self->getBoundaries( $chrName, $start, $end ) } );
 	return $lRes;
 }
 
@@ -1210,24 +1214,13 @@ has callingFiles => (
 		my $methods = $self->getCallingMethods();
 		my $files   = {};
 		foreach my $method_name (@$methods) {
-			my $file = $self->_getCallingFileWithMethodName( $method_name,
-				"variations" );
+			my $file = $self->_getCallingFileWithMethodName( $method_name, "variations" );
 			$files->{variations}->{$method_name} = $file if $file;
-			if (   $self->project->year < 2015
-				&& $self->project->name ne 'DIAG2014' )
-			{
-				#	last if $file;
-			}
 
 		}
 		foreach my $method_name (@$methods) {
-			my $file2 =
-			  $self->_getCallingFileWithMethodName( $method_name, "indels" );
+			my $file2 = $self->_getCallingFileWithMethodName( $method_name, "indels" );
 			$files->{indels}->{$method_name} = $file2 if $file2;
-			if ( $self->project->year < 2015 ) {
-				last if $file2;
-			}
-
 		}
 		my $file3 = $self->getLargeIndelsFile();
 		$files->{large_indels}->{'lifinder'} = $file3 if ( -e $file3 );
@@ -1253,8 +1246,7 @@ has callingSVFiles => (
 		my $methods = $self->callingSVMethods();
 		my $files   = {};
 		foreach my $method_name (@$methods) {
-			my $file = $self->_getCallingSVFileWithMethodName( $method_name,
-				"variations" );
+			my $file = $self->_getCallingSVFileWithMethodName( $method_name,"variations" );
 			$files->{sv}->{$method_name} = $file if $file;
 		}
 		return $files;
@@ -1277,6 +1269,7 @@ has bamUrl => (
 		return $bam_dir . "/" . $t[-1];
 	},
 );
+
 has hasBamFile => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1446,16 +1439,16 @@ sub getBamFileName {
 	return $bam;
 }
 sub getCramFileName {
-	my ( $self, $method_name ) = @_;
+	my ( $self, $method_name,$version ) = @_;
 	my $bam_dir;
 	if($method_name){
-		 $bam_dir = $self->getProject->getAlignmentDir( $method_name );
+		 $bam_dir = $self->getProject->getAlignmentDir( $method_name,$version );
 		 
 	}
 	else {
 	my $methods = $self->alignmentMethods();
 	die( $self->project->name." ".Dumper($methods)) if scalar(@$methods) > 1;
-	 $bam_dir = $self->getProject->getAlignmentDir( $methods->[0] );
+	 $bam_dir = $self->getProject->getAlignmentDir( $methods->[0],$version );
 	}
 	die() unless $bam_dir;
 	my $bam     = $bam_dir . "/" . $self->name . ".cram";

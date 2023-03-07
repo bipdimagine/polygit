@@ -287,10 +287,8 @@ sub image {
  my ($patients,$transcript,$intronic,$utr,$padding,$limit,$all) = @_;
 my $nb_line =15;
 my $size = 3;
-
 my $x = 0;
 my $y = 0;
-
 my $xr = 255;
 my $xg = 10;
 my $xb = 0;
@@ -347,7 +345,7 @@ my $hcolors;
 	my $data;
 	$y =2;
 	my $capture_intspan = $transcript->getChromosome->getIntSpanCapture();
-		my $no =  $transcript->project->noSqlCoverage();
+	my $no =  $transcript->project->noSqlCoverage();
 	
 	foreach my $exon (sort{$a->end*$a->strand <=> $b->end*$b->strand } @$exons) {
 	$x =2;
