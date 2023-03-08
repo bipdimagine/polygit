@@ -13,6 +13,7 @@ use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";
 
+
 has name => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -339,7 +340,7 @@ sub getCaptureChromosomesName {
 	my @l_tabix_chr_names = @{$self->seqnames};
 	my @t;
 	if ($l_tabix_chr_names[0] =~ /chr/) { @t = map {$self->project->getChromosome($_)->ucsc_name}  @l_tabix_chr_names; }
-	else { @t = map {$self->project->getChromosome($_)->id}  @l_tabix_chr_names; }
+	else { @t = map {$self->project->getChromosome($_)->fasta_name}  @l_tabix_chr_names; }
 	$self->{chr_name} = \@t;
 	return $self->{chr_name};
 }
@@ -600,12 +601,11 @@ has primers_lines =>(
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		warn "*********";
 		if ($self->analyse eq "genome"){
 			my @lines;
 			foreach my $chr (@{$self->project->getChromosomes()}){
 				
-				my $from =1;
+					my $from =1;
     			my $to = $chr->length;
   	
     	my $window =1000;
@@ -632,10 +632,7 @@ has primers_lines =>(
 			my @lines;
 			if ($capture_file =~/\.gz/){
 				my $bedtools = $self->buffer->software("bedtools");
-				
-		 		@lines = `zcat $capture_file | cut -f 1-3 | $bedtools makewindows -b /dev/stdin -w 500 `;
-		 		confess() if $? ne 0;
-		 		
+		 		@lines = `$bedtools makewindows -b $capture_file -w 500 `;
 			}
 			else {
 				confess();
@@ -1147,7 +1144,7 @@ has sd_controls_dude => (
 	lazy => 1,
 	default => sub {
 		my $self = shift;
-		 
+		
 	 	$self->{control_nosql} =  GenBoBinaryFile->new(name=>"controls_sd",dir=>$self->dir_capture_controls_dude,mode=>"r");
 		return $self->{control_nosql};
 	},

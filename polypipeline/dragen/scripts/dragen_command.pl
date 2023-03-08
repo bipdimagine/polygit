@@ -92,6 +92,8 @@ if ($project->isGenome){
 
 my $patient = $project->getPatient($patients_name);
 my $dir_pipeline = $patient->getDragenDir("pipeline");
+
+dsds
 my $prefix = $patient->name;
 my $bam_prod = $patient->gvcfFileName("dragen-calling");
 #warn $bam_prod if -e $bam_prod;

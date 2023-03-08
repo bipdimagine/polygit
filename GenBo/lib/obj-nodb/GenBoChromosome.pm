@@ -8,8 +8,8 @@ use Data::Dumper;
 use Config::Std;
 use GenBoGenomic;
 use GenBoNoSqlLmdb;
-use GenBoNoSqlLmdbPipeline;  
 
+use GenBoNoSqlLmdbPipeline;
 
 #use GenBoNoSqlRocksVariation;
 #use GenBoNoSqlRocksPolyviewerVariant;
@@ -1424,15 +1424,19 @@ sub get_lmdb_variations {
 	my $dir_out = $self->project->lmdb_cache_variations_dir();
 
 	
-	my $dir_out_rocks = $self->project->rocks_cache_dir;
-	if ($mode eq "c"){
+
+	
+	if ($mode eq "c") {
+
 		if ($rocks) {
+			my $dir_out_rocks = $self->project->rocks_cache_dir;
+			warn $dir_out_rocks;
 			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
 			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
 
 		}
 		else {
-			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);
+			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
 		}
 	}
 	else {

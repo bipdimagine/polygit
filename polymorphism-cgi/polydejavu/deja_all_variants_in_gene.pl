@@ -65,17 +65,13 @@ my $filter_perc_allelic_min = $cgi->param('min_perc_all');
 my $filter_perc_allelic_max = $cgi->param('max_perc_all');
 my $only_interval = $cgi->param('only_interval');
 my $export_xls = $cgi->param('export_xls');
-my $only_pat_with_var = $cgi->param('only_pat_with_var');
-my $only_pat_with_var_he = $cgi->param('only_pat_with_var_he');
-my $only_pat_with_var_ho = $cgi->param('only_pat_with_var_ho');
+
 my $only_project = $cgi->param('project');
 my $only_patient = $cgi->param('patient');
 if ($only_project and $only_patient) {
 	$only_ill = undef;
 	$only_my_projects = 1;
 }
-
-$only_pat_with_var =~ s/-/_/g if ($only_pat_with_var);
 
 $filter_perc_allelic_max = undef if ($filter_perc_allelic_max == 0);
 
@@ -117,26 +113,8 @@ my $dbh_init = $buffer_init->dbh();
 my $query_init = $buffer_init->getQuery();
 my $project_init;
 
-my ($h_projects_name_with_capture,$h_proj_pat_ill);
-if ($only_my_projects and $only_my_projects ne '1') {
-	if ($only_my_projects eq 'only_genomes') {
-		foreach my $p_name (@{$query_init->getSimilarProjectsByAnalyse('genome')}) {
-			$h_projects_name_with_capture->{$p_name} = undef;
-		}
-	}
-	elsif ($only_my_projects eq 'only_exomes') {
-		foreach my $p_name (@{$query_init->getSimilarProjectsByAnalyse('exome')}) {
-			$h_projects_name_with_capture->{$p_name} = undef;
-		}
-	}
-	else {
-		foreach my $p_name (@{$query_init->listAllProjectsNameByCapture($only_my_projects)}) {
-			$h_projects_name_with_capture->{$p_name} = undef;
-		}
-	}
-}
+my $h_proj_pat_ill;
 my @lProjectNames = reverse sort keys %{$hProjects};
-
 foreach my $project_name (@lProjectNames) {
 	my $h;
 	$h->{name} = $project_name;
@@ -353,8 +331,13 @@ sub export_html {
 	my $nb_var = 0;
 	my $nb_var_filtred = 0;
 	
+	#TODO: DEBUT FORK HTML
 	foreach my $pos (sort keys %{$hResVariants}) {
 		foreach my $var_id (sort keys %{$hResVariants->{$pos}}) {
+	#		if ($hResVariants->{$pos}->{$var_id}->{filtred} and $hResVariants->{$pos}->{$var_id}->{filtred} == 1) {
+	#			$nb_var_filtred++;
+	#			next;
+	#		}
 			$nb_var++;
 			my $hvariation->{html} = $hResVariants->{$pos}->{$var_id};
 			
@@ -385,9 +368,11 @@ sub export_html {
 			}
 			$table_trio .= qq{<div style="max-height:170px;max-width:400px;overflow-y:auto;">};
 			
+			#TODO: ici enlever BR si table trio
 			if ($only_project and $only_patient) { $table_trio .= join("", @l_pat); }
 			else { $table_trio .= join("<br>", @l_pat); }
 			$table_trio .= qq{</div>};
+			
 			
 			my $out = $cgi->start_Tr();
 			foreach my $h (@headers_validations){
@@ -442,6 +427,9 @@ sub export_html {
 		}
 	}
 	
+	#TODO: FIN FORK HTML
+	
+	
 	foreach my $line (@lTrLines) {
 		$out2 .= $line;
 	}
@@ -491,22 +479,13 @@ sub export_html {
 	$h_annot_categories->{'gnomad_'.$max_gnomad} = 1 if ($max_gnomad);
 	$h_annot_categories->{'gnomad_ho_'.$max_gnomad_ho} = 1 if ($max_gnomad_ho);
 	$h_annot_categories->{'only_ill_patients'} = 1 if ($only_ill);
-	if ($only_my_projects) {
-		if ($only_my_projects eq '1') { $h_annot_categories->{'only_my_projects'} = 1; }
-		else { $h_annot_categories->{"only_my_projects <span style='color:red;'>$only_my_projects</span>"} = 1; }
-	}
+	$h_annot_categories->{'only_my_projects'} = 1 if ($only_my_projects);
 	if ($models) {
 		$models =~ s/,/, /g;
 		$h_annot_categories->{'models '.$models} = 1;
 	}
 	$h_annot_categories->{'min_perc_all_'.$filter_perc_allelic_min} = 1 if ($filter_perc_allelic_min);
 	$h_annot_categories->{'max_perc_all_'.$filter_perc_allelic_max} = 1 if ($filter_perc_allelic_max);
-	
-	my @lHeHo;
-	push(@lHeHo, "<span style='color:green;'>He</span>") if ($only_pat_with_var_he);
-	push(@lHeHo, "<span style='color:green;'>Ho</span>") if ($only_pat_with_var_ho);
-	$h_annot_categories->{"patient_has_variant <b><span style='color:red'>".$only_pat_with_var."</span></b> (".join('+', @lHeHo).")"} = 1 if ($only_pat_with_var);
-	
 	$hRes->{hash_filters} = $h_annot_categories;
 	save_html($session_id, $hRes);
 	my $hRes2;
@@ -596,8 +575,6 @@ sub get_variants_infos_from_projects {
 		my ($hResGene_local, $hResVariants_local, $hResVariantsIds_local, $hResVariantsListPatients_local, $hResVariantsTableLocal_local,$hResVariantsByScore_local, $hResVariantsRatioAll_local);
 		foreach my $project_name (@tmp) {
 			print '.';
-#			die if ($project_name eq 'NGS2022_5424');
-			next if ($only_my_projects and $only_my_projects ne '1' and  not exists $h_projects_name_with_capture->{$project_name});
 			next if ($only_project and $project_name ne $only_project);
 			my $buffer = new GBuffer;
 			my $project;
@@ -609,35 +586,6 @@ sub get_variants_infos_from_projects {
 				next;
 			}
 			if ($project) {
-				my $h_patients_found_with_filter_var;
-				my $is_ok_filter_var_in_project = 1;
-				if ($only_pat_with_var) {
-					$is_ok_filter_var_in_project = undef;
-					my $check_var_id = $only_pat_with_var;
-					$check_var_id =~  s/-/_/g;
-					my @lTmp = split('_', $check_var_id);
-					my $chr_id = $lTmp[0];
-					my $start = $lTmp[1] - 1000;
-					my $end = $lTmp[1] + 1000;
-					my $chr_tmp = $project->getChromosome($chr_id);
-					my $vector_tmp = $chr_tmp->getVectorByPosition($start, $end);
-					foreach my $var_tmp (@{$chr_tmp->getListVarObjects($vector_tmp)}) {
-						if ($var_tmp->id() eq $check_var_id) {
-							foreach my $pat_tmp (@{$var_tmp->getPatients()}) {
-								if ($only_pat_with_var_he == 1 and $var_tmp->isHeterozygote($pat_tmp)) {
-									$is_ok_filter_var_in_project = 1;
-									$h_patients_found_with_filter_var->{$pat_tmp->name()} = undef;
-								}
-								if ($only_pat_with_var_ho == 1 and $var_tmp->isHomozygote($pat_tmp)) {
-									$is_ok_filter_var_in_project = 1;
-									$h_patients_found_with_filter_var->{$pat_tmp->name()} = undef;
-								}
-							}
-						}
-					}
-				}
-				next unless $is_ok_filter_var_in_project;
-				
 				my @lPhen;
 				eval {
 					foreach my $pheno (@{$project->getPhenotypes()}) {
@@ -693,8 +641,8 @@ sub get_variants_infos_from_projects {
 				}
 				my ($h_local_gene, $h_local_variants, $hTrioFamDone, $var_score_max);
 				foreach my $p (@{$project->getPatients()}) {
+					#TODO: juste les malades
 					#next if ($p->name ne $only_patient);
-					next if ($only_pat_with_var and not exists $h_patients_found_with_filter_var->{$p->name()});
 					next if ($only_ill and not exists $h_proj_pat_ill->{$project_name}->{$p->name});
 	#				next if ($only_ill == 1 and $p->status() ne '2');
 					my $v_patient = $p->getVariantsVector($chr);
@@ -790,6 +738,7 @@ sub get_variants_infos_from_projects {
 						}
 						if (not $hResVariants_local->{$var->start()}->{$var_id} or not $hResVariants_local->{$var->start()}->{$var_id}) {
 							if ($export_xls) {
+								#TODO: here
 								$hResVariants_local->{$var->start()}->{$var_id} = $h_var;
 							}
 							else { $hResVariants_local->{$var->start()}->{$var_id} = $h_var->{'html'}; }
@@ -884,18 +833,6 @@ sub update_list_variants_from_dejavu {
 		@lVarIds = @{$project_dejavu->getDejaVuIdsFromInterval($use_locus)};
 	}
 	
-	my $h_projects_filters_he_comp;
-	if ($only_pat_with_var) {
-		my $var_dv = $project_dejavu->_newVariant($only_pat_with_var);
-		$h_projects_filters_he_comp = $var_dv->deja_vu();
-		if (not $only_pat_with_var_he or not $only_pat_with_var_ho) {
-			foreach my $proj_name (keys %{$h_projects_filters_he_comp}) {
-				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_ho and $h_projects_filters_he_comp->{$proj_name}->{ho} == 0);
-				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_he and $h_projects_filters_he_comp->{$proj_name}->{he} == 0);
-			}
-		}
-	}
-	
 	foreach my $var_id (@lVarIds) {
 		$t++;
 		if ($t == 50) {
@@ -988,14 +925,11 @@ sub update_list_variants_from_dejavu {
 		my $hashVarId = $project_init->getDejaVuInfos($var_id);
 		
 		foreach my $proj_id (keys %{$hashVarId}) {
-			
-			next if ($only_pat_with_var and not exists $h_projects_filters_he_comp->{$proj_id});
-			
 			if (not $only_my_projects and $only_ill and not exists $h_proj_pat_ill->{$proj_id}) {
 				$h_proj_pat_ill->{$proj_id} = get_hash_patients_ill_from_project_name($dbh_init, $query_init, $proj_id);
 			}
 		
-			if (not $only_my_projects or ($only_my_projects and exists $hProjects->{$proj_id})) {
+			if (not $only_my_projects or ($only_my_projects == 1 and exists $hProjects->{$proj_id})) {
 				foreach my $name (split(';', $hashVarId->{$proj_id}->{patients})) {
 					my $model;
 					if ($hResVariantsModels and exists $hResVariantsModels->{$proj_id}->{$name}) {
@@ -1061,10 +995,6 @@ sub update_list_variants_from_dejavu {
 		$h_var->{'html'}->{'hgmd'} =~ s/$val1/$Val2/;
 		#$h_var->{'html'}->{'var_name'} .= "<br><br><span style='font-size:8px;'><b>".$var->getChromosome->id().':'.$var->start().'-'.$var->end()."</span></b>";
 		my $table_vname = $h_var->{'html'}->{'var_name'};
-		
-#		my $cmd_search_he_comp = qq{search_he_comp_with_variant('$var_id', '$user_name');};
-#		my $b_search_he_comp = qq{<button onClick="$cmd_search_he_comp" style="margin-top:7px;font-size:9px;">Search He Composite</button>};
-#		$table_vname .= qq{<center>$b_search_he_comp</center>};
 		
 		my $table_varsome = $h_var->{html}->{varsome};
 		
@@ -1160,13 +1090,7 @@ sub get_table_trio_from_object {
 	my $color_local = 'black';
 	my $isMotherTransmission = $var->isMotherTransmission($fam,$patient);
 	my $isFatherTransmission = $var->isFatherTransmission($fam,$patient);
-	my $model;
-	eval { $model = $var->getTransmissionModel($fam,$patient,$gene_used); };
-	if ($@) {
-		my $key = "strict_denovo_".$patient->id;
-		$fam->{vector_transmission}->{$key}->{$var->getChromosome->id} = $var->getChromosome->getNewVector();
-		$model = $var->getTransmissionModel($fam,$patient,$gene_used);
-	}
+	my $model = $var->getTransmissionModel($fam,$patient,$gene_used);
 	my $model2 = qq{<i class="fa fa-male  fa-2x" style="color:lightgrey"></i><i class="fa fa-female  fa-2x" style="color:lightgrey"></i>};
 	$h_var->{model} = lc($model);
 	if ($is_solo_trio eq 'SOLO') {

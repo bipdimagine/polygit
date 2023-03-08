@@ -31,9 +31,7 @@ use POSIX qw(strftime);
 use DateTime;
 use List::Util qw[min max];
 use Cwd qw(abs_path);
-
 #use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
-
 
 has maxProc => (
 	is 		=> 'rw',
@@ -888,7 +886,7 @@ sub get_gnomad {
 				my $hash = $self->get_lmdb_database($db,$chr,$type)->get($start);
 				next unless $hash;
 				warn $start if $hash =~ /-/;
-				next unless exists $hash->{$allele};
+				confess( $chr." ".$type." ".$start) unless exists $hash->{$allele};
 				$public ++;
 				 $h = $hash->{$allele};
 					
@@ -1581,20 +1579,5 @@ sub log2 {
 
 
 
-
-sub get_base_url_polyrna {
-	my ($self) = shift;
-	return $self->config->{polyrna}->{base_url_polyrna};
-}
-
-sub get_polyrna_file_server_to_docker {
-	my ($self) = shift;
-	return $self->config->{polyrna}->{server_to_docker};
-}
-
-sub get_polyrna_file_docker_to_server {
-	my ($self) = shift;
-	return $self->config->{polyrna}->{docker_to_server};
-}
 
 1;

@@ -844,10 +844,9 @@ foreach my $release (reverse sort keys %{$buffer->config->{polybtf_releases}}) {
 }
 $hashRes->{releases_available} = join(';', @lReleases);
 
-my $last_release = $buffer->getQuery->getMaxGencodeVersion().'.'.$buffer->getQuery->getMaxPublicDatabaseVersion();
 my ($nb_new, $current_version_text);
 if ($only_clinvar) {
-	if ($release and $release ne $last_release) { 
+	if ($release and $release ne $buffer->getQuery->getCurrentGenomeProjectReleasesAnntotations()) { 
 		$current_version_text = 'Clinvar: '.$hReleasesVersions->{$release}->{clinvar};
 	}
 	else {
@@ -855,7 +854,7 @@ if ($only_clinvar) {
 	}
 }
 else {
-	if ($release and $release ne $last_release) { 
+	if ($release and $release ne $buffer->getQuery->getCurrentGenomeProjectReleasesAnntotations()) { 
 		$current_version_text = 'HGMD: '.$hReleasesVersions->{$release}->{hgmd}.'<br>Clinvar: '.$hReleasesVersions->{$release}->{clinvar};
 	}
 	else {
@@ -886,8 +885,8 @@ if ($can_use_hgmd) {
 else { $hashRes->{last_hgmd_release} = qq{<span class="glyphicon glyphicon-ban-circle" aria-hidden="true" style='font-size:12px;color:black;'></span>}; }
 $hashRes->{last_clinvar_release} = $buffer->queryClinvarPathogenic->last_release_name();
 
-if ($release and $release ne $last_release) { $hashRes->{releases_used} = $release; }
-else { $hashRes->{releases_used} = $last_release; }
+if ($release and $release ne $buffer->getQuery->getCurrentGenomeProjectReleasesAnntotations()) { $hashRes->{releases_used} = $release; }
+else { $hashRes->{releases_used} = $buffer->getQuery->getCurrentGenomeProjectReleasesAnntotations(); }
 if ($multi_release) { $hashRes->{releases_used} .= ", ".join(', ', @list_other_releases); }
 
 my $json_encode = encode_json $hashRes;

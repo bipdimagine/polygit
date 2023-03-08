@@ -380,11 +380,11 @@ my $hcolors;
 			$min = $t->{min};
 			#die($mean);
 		}
-		elsif ($patient->isNoSqlDepth()) {
-			my $xa =  $patient->depth($exon->getChromosome->name,$exon->start-$padding,$exon->end+$padding);
-			$min = min(@$xa);
-			$mean = sum(@$xa)/scalar(@$xa);
-		}
+#		elsif ($patient->isNoSqlDepth()) {
+#			my $xa =  $patient->depth($exon->getChromosome->name,$exon->start-$padding,$exon->end+$padding);
+#			$min = min(@$xa);
+#			$mean = sum(@$xa)/scalar(@$xa);
+#		}
 		else {
 		 	confess($no->dir);
 		}

@@ -12,11 +12,11 @@ use Digest::MD5 qw(md5_hex);
 use lib "$RealBin/../../../GenBo/lib/obj-nodb/";
 use List::MoreUtils qw{ natatime };
 use String::ProgressBar;
-use POSIX qw(strftime); 
+use POSIX qw(strftime);
 use JSON;
 use Compress::Snappy;
 use Getopt::Long;
-use Carp; 
+use Carp;
 use GBuffer;
 use Cache_Commons;
 use Sys::Hostname;
@@ -226,7 +226,7 @@ foreach my $pn ( keys %{$hintspan_patients} ) {
 }
 $no5->close();
 $no5 = undef;
-
+die();
 #################
 # GENES
 #################
@@ -428,7 +428,7 @@ sub get_annotations {
 				confess( $cons_text . " " . $c ) unless exists $intspan_genes_categories->{ $g->id }->{$c};
 				$intspan_genes_categories->{ $g->id }->{$c}->add($lmdb_index);
 				warn 	$intspan_genes_categories->{ $g->id }->{$c}->as_string if $debug;
-				my $prediction = $variation->categorie_frequency_prediction($g);
+				my $prediction = $variation->categorie_frequency_predicion($g);
 				$intspan_genes_categories->{ $g->id }->{$prediction}->add($lmdb_index);
 			}
 		}

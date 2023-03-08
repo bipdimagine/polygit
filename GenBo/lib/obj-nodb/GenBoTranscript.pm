@@ -356,14 +356,13 @@ sub isncRNA {
 
 sub ispseudoGene{
 	my $self = shift;
-
 	return 1 unless  $self->protein();
 	return undef;
 }
 
 sub codonsConsequenceForVariations {
 	my ($self,$var,$startg,$endg) = @_;
-	return $self->codonsConsequenceForDuplication($var,$startg,$endg) if ($var->isLargeDuplication());
+	return $self->codonsConsequenceForDuplication($var,$startg,$endg) if ($var->isLargeDuplication() or $var->isInversion);
 	return $self->codonsConsequenceForLargeInsertion($var,$startg,$endg) if ($var->isLargeInsertion() or $var->isMei());
 	return $self->codonsConsequenceForDeletion($var,$startg,$endg) if ($var->isDeletion() or $var->isLargeDeletion());
 	return $self->codonsConsequenceForMnp($var) if $var->isMnp();

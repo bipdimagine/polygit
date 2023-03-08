@@ -38,7 +38,7 @@ my $p;
 my $h_this_run_patients;
 my $solo;
 my $solo_fam = {};
-if ($project_name and $project_name =~ /NGS/){
+if ($project_name){
 	my $buffer = GBuffer->new();
 	my $p1 = $buffer->newProjectCache(-name => $project_name);
 	if($p1->isDefidiagSolo){

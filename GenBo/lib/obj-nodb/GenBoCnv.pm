@@ -55,6 +55,22 @@ has mei_type => (
 	},
 );
 
+has gnomad => (
+is		=> 'rw',
+lazy =>1,
+default => sub {
+	return {};
+}
+);
+has hgmd => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default	=> sub {
+		
+		return ;
+	}
+);
+
 ########
 # isXXX Methods
 ########

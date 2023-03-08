@@ -188,7 +188,6 @@ sub return_button_name {
 }
 sub html_parent_line_variant {
 	my ($self,$hsample,$sample,$gene_name) = @_;
-	my $gt = $hsample->{gt};
 	my $color = "black";
 	my $pid = $self->patient_id;
 	#if ($hvariation->{patients}->{$pid}->{model} =~ /denovo/ && ($sample->isMother or $sample->isFather))  {
@@ -204,12 +203,7 @@ sub html_parent_line_variant {
 	#[$name,$sample->small_icon,$hvariation->{patients}->{$sid}->{gt},$hvariation->{patients}->{$sid}->{pc}."%", $hvariation->{patients}->{$sid}->{dp},$model_text];
 	my $pc_text = '-';
 	$pc_text = $hsample->{pc}.'%' if ($hsample->{pc});
-	if (exists $hsample->{var_same_pos}) {
-		foreach my $other_gt (@{$hsample->{var_same_pos}->{gt}}) {
-			$gt .= "<br><b><span style='color:red'>+".$other_gt."</span></b>";
-		}
-	}
-	my $tab = [$hsample->{button},$sample->small_icon,$gt,$pc_text,$hsample->{dp},$model_text];
+	my $tab = [$hsample->{button},$sample->small_icon,$hsample->{gt},$pc_text,$hsample->{dp},$model_text];
 	my $style = "color:$color;";
 	$style .= "background-color:$bgcolor" if $bgcolor; 
 	my $html;
@@ -235,7 +229,6 @@ sub calling_variation {
 	my $id_info = 'ti_'.$variation_id.'_'.$gene->{id}.'_'.$self->patient_id;
 	my $html = $self->cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",id=>$id_info,style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
 	  my $fam = $self->patient->getFamily();
-	  my $h_others_var_same_pos;
 	  if ($self->patient->isChild) {
 	  	if ($fam->getMother){
 	  		my $hsample = $samples->{$fam->getMother->id};
@@ -247,11 +240,6 @@ sub calling_variation {
 	  		$hsample->{button} =  $self->return_button_name("pink",$fam->getMother,$onclick);
 	  		
 	  		$html.= "\n".$self->html_parent_line_variant($hsample,$fam->getMother,$gene_name,undef);
-			if (exists $hsample->{var_same_pos}) {
-				foreach my $other_var_name (@{$hsample->{var_same_pos}->{name}}) {
-					$h_others_var_same_pos->{$other_var_name}->{$fam->getMother->name()} = undef;
-				}
-			}
 	  	}
 	  	if ($fam->getFather){
 	  		my $hsample = $samples->{$fam->getFather->id};
@@ -259,14 +247,9 @@ sub calling_variation {
 	  		my $onclick = $self->return_onclick($gene_name,$variation_id,"father");
 	  		$hsample->{button} =  $self->return_button_name("#1BA1E2",$fam->getFather,$onclick);
 	  		$html.= "\n".$self->html_parent_line_variant($hsample,$fam->getFather,$gene_name,undef);
-			if (exists $hsample->{var_same_pos}) {
-				foreach my $other_var_name (@{$hsample->{var_same_pos}->{name}}) {
-					$h_others_var_same_pos->{$other_var_name}->{$fam->getFather->name()} = undef;
-				}
-			}
 	  	}
 	  	my $ch = 0;
-		  	foreach my $child (@{$fam->getChildren()}){
+	  	foreach my $child (@{$fam->getChildren()}){
 	  			my $hsample = $samples->{$child->id};
 	  			$ch++;
 	  			next unless $hsample;
@@ -275,28 +258,15 @@ sub calling_variation {
 	  			my $onclick = $self->return_onclick($gene_name,$variation_id,"");
 	  			$hsample->{button} =  $self->return_button_name("#333333",$child,$onclick);
 	  			$html.= "\n".$self->html_parent_line_variant($hsample,$child,$gene_name,$color,undef);
-				if (exists $hsample->{var_same_pos}) {
-					foreach my $other_var_name (@{$hsample->{var_same_pos}->{name}}) {
-						$h_others_var_same_pos->{$other_var_name}->{$child->name()} = undef;
-					}
-				}
-		  	}
+	  	}
 	  }
 	  else {
 	  	my $hsample = $samples->{$self->patient->id};
 	  	$html.= "\n".$self->html_parent_line_variant($hsample,$self->patient,$gene_name);
 	  }
 	  $html .= $self->cgi->end_table();
-	  
-	if ($h_others_var_same_pos) {
-		$text_caller .= "<br><br><b><u>Variant(s) same position:</b></u>";
-		foreach my $other_name (sort keys %$h_others_var_same_pos) {
-			my $pat_names = join(', ', sort keys %{$h_others_var_same_pos->{$other_name}});
-			$text_caller .= "<br><b><span style='color:red'>".$other_name."</span></b> ($pat_names)";
-		}
-	}
-	$html .= qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$id_info',position:['after']"><div style="min-width:300px;width:auto;height:auto;"><center><b><u>Patient $patient_name</b></u><br><br>}; 
-	$html .= qq{<b><u>Calling Method(s):</b></u><br> $text_caller </center></div></div>};
+	  $html .= qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$id_info',position:['after']"><div style="min-width:300px;width:auto;height:auto;"><center><b><u>Patient $patient_name</b></u><br><br>};
+	  $html .= qq{<b><u>Calling Method(s):</b></u><br> $text_caller </center></div></div>};
 	return $html;	
 }
 
@@ -363,8 +333,7 @@ sub calling_dude {
 	  	}
 	  }
 	  else {
-	  		my $hsample = $samples->{$self->patient->id};
-	  		$html.= "\n".$self->html_parent_line_variant_dude($hsample,$self->patient,$gene_name);
+	  		$html.= "\n".$self->html_parent_line_variant_dude($self->patient,$gene_name);
 	  }
 	  $html .= $self->cgi->end_table();
 	  $html .= qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$id_info',position:['after']"><div style="min-width:300px;width:auto;height:auto;"><center><b><u>Patient $patient_name</b></u><br><br>};
@@ -1051,26 +1020,22 @@ sub transcripts_variants {
 	 }
 	 
 	 my $spliceAI = $self->variant->spliceAI;
-	 my $b_spliceai = qq{<table><td>};
+	 
 	 my $cat = $self->variant->spliceAI_cat;
 	 unless ($spliceAI){
 	 	$spliceAI = -1;
 	 }
 	 unless ($spliceAI == -1){
-		my $text = $cat.':'.$spliceAI;
-		if ($spliceAI == 0) { $text = '0'; }
-		my $text_alert = "";
-		$spliceAI = $self->printButtonWithAlert($spliceAI,[0.5, 0.9],$text,$text_alert);
+			my $text = $cat.':'.$spliceAI;
+			if ($spliceAI == 0) { $text = '0'; }
+			my $text_alert = "";
+			
+			$spliceAI = $self->printButtonWithAlert($spliceAI,[0.5, 0.9],$text,$text_alert);
 	 }
 	 else {
-		$spliceAI = $minus;
+	 	$spliceAI = $minus;
 	 }
-	 $b_spliceai .= "$spliceAI</td><td style='padding-left:5px;'>";
-	my $var_spliceai_id = 'chr'.$self->variant->id();
-	$var_spliceai_id =~ s/_/-/g;
-	my $cmd_btn = qq{onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=$var_spliceai_id&hg=37&distance=1000&mask=0&precomputed=0','_blank')"};
-	$b_spliceai .= $self->printButtonWithCmd(0,[0.5, 0.9],"<span class='glyphicon glyphicon-pencil' aria-hidden='true'/>",$cmd_btn)."</td></table>";
-
+	 
 	my $level = 2;
 	my $cgi          = $self->cgi;
 	#my $value = $atr->[0]->{value}->{impact_score};
@@ -1136,7 +1101,7 @@ sub transcripts_variants {
 		 $html.= $cgi->td($cadd);
 		 $html.= $cgi->td($revel);
 		 $html.= $cgi->td($dbscsnv);
-		 $html.= $cgi->td($b_spliceai);
+		 $html.= $cgi->td($spliceAI);
 		 
 		 
 		 $html.= $cgi->end_Tr();
