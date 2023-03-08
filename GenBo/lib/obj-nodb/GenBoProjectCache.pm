@@ -960,10 +960,14 @@ sub nextVariant {
 		elsif  ($ref eq 'GenBoLargeDuplication'){
 					bless $var_obj , 'GenBoLargeDuplicationCache';
 		}
-	#	else {
-	#		confess($ref);
-	#	}
-				
+		elsif  ($ref eq 'GenBoLargeDeletion'){
+					bless $var_obj , 'GenBoLargeDeletionCache';
+		}
+		elsif  ($ref eq 'GenBoMei'){
+					bless $var_obj , 'GenBoMeiCache';
+		}		
+
+
 		return $var_obj;
 	
 }
@@ -1049,6 +1053,7 @@ sub myflushobjects {
 					bless $var_obj , 'GenBoLargeDeletionCache';
 					$self->{objects}->{large_deletions}->{$id}= $var_obj;
 					
+
 				}
 				elsif  ($ref eq 'GenBoBoudary'){
 					bless $var_obj , 'GenBoBoundaryCache';
