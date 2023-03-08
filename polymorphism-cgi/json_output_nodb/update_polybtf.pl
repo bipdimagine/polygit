@@ -44,11 +44,9 @@ $io->autoflush(1);
 
 my $fork;
 my $release;
-my $only_users;
 GetOptions(
 	'fork=s' => \$fork,
 	'release=s' => \$release,
-	'only_users=s' => \$only_users,
 );
 
 
@@ -57,7 +55,7 @@ confess("\n\n-release option mandatory... Die.\n\n") unless ($release);
 
 my $buffer = new GBuffer;
 my $dir = $buffer->get_polybtf_path($release);
-if (-d $dir and not $only_users) {
+if (-d $dir) {
 	confess("\n\nUPDATE impossible.\n$dir already exists... Die.\n\n");
 }
 
@@ -65,11 +63,9 @@ my @lCmds;
 my $dirname = dirname(__FILE__);
 
 warn "# BEGIN UPDATE\n";
-unless ($only_users) {
-	my $first_cmd = "$dirname/check_new_hgmd_clinvar.pl user_name=masson pwd=test release=$release fork=1 update=1";
-	`$first_cmd`;
-	warn "First step (check new var) finished.\n\n# START each user cache\n";
-}
+my $first_cmd = "$dirname/check_new_hgmd_clinvar.pl user_name=masson pwd=test release=$release fork=$fork update=1";
+`$first_cmd`;
+warn "First step (check new var) finished.\n\n# START each user cache\n";
 
 my $i = 0;
 my $pm = new Parallel::ForkManager($fork);

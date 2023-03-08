@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib "$Bin";
-use lib "$Bin/../../../../GenBo/lib/obj-nodb";
+use lib "$Bin/../../../../../lib/obj-nodb";
 use strict; 
 use Bio::SearchIO;
 use strict;
@@ -30,90 +30,11 @@ my $chromosomes = [1..22,'X','Y','MT'];
 #my $dir = "/data-xfs/public-data/HG19/snp/exac/latest/";
 my $pm = new Parallel::ForkManager(3);
 my $buffer = GBuffer->new();
-my $version;
-GetOptions(
-	'version=s'   => \$version,
-);
-die("please add -version=") unless $version;
-my $dir_vcf  = "/data-isilon/public-data/repository/HG19/clinvar/$version/vcf/";
-  my @files = `ls $dir_vcf/*.vcf.gz`;
-  chomp(@files);
-  my $file = $files[0];
-  my $md5_1 = file_md5_hex( $file);
-  warn $file." ".$md5_1;
-
-die("clinar file doesn t exists " .$file ) unless -e $file;
-my $dir_out = "/tmp/clinvar/$version/";
-system("mkdir -p /tmp/clinvar/$version/");
-
-#run_chr("1");
-#die();
-my $hrun;
-my $id = time;
-my $nb;
-
-
+$buffer->{annotation_genome_version} = 'HG19';
+$buffer->{public_data_version} = $buffer->getQuery->getMaxPublicDatabaseVersion();
 my $max_gencode = $buffer->getQuery->getMaxGencodeVersion( );
 my $gencode_dir = $buffer->public_data_root().'/HG19/'.$buffer->gencode->{$max_gencode}->{directory};
-my $projname = $buffer->get_random_project_name_with_this_annotations_and_genecode();
-my $omim_dir = $buffer->newProject(-name => $projname)->get_public_data_directory("omim");
-
-$pm->run_on_finish(
-    sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
-    	
-		delete $hrun->{$data->{id}};		    
-    	
-    }
-  );
-
-foreach my $chr (@$chromosomes){
-	$id ;
-	$hrun->{$id."_".$chr}++;
-	my $pid = $pm->start and next;
-	warn "start $chr";
-	run_chr($chr);
-	warn "end $chr";
-	$pm->finish(0,{id=>$id."_".$chr});
-}#end chr
-  $pm->wait_all_children;
-
-my $hversion;
-$hversion->{name} = "clinvar";
-$hversion->{version} = "$version";
-$hversion->{file} = $file;
-  my $d = Date::Tiny->now;
-
-$hversion->{date} =  $d->as_string;
-$hversion->{md5sum} = $md5_1;
-open(JSON,">$dir_out/lmdb/version.json") or die();
-warn "$dir_out/clinvar.json";
-print JSON encode_json $hversion;
-close JSON;
-
-
-if (keys %$hrun){
-	warn Dumper $hrun;
-	warn "ERROR ON YOUR LMDB DATABASE ";
-	die();
-}
-warn Dumper $hrun;
-warn "your database is here : ".$dir_out;
-exit(0);
-
-
-
-
-
-sub run_chr {
-	my ($chr) = @_;
-
-
-
-die() unless -e $file;
-	my $db = new save({name=>"lmdb",chromosome=>$chr,mode=>"c",integer=>1,db_type=>"lmdb"});
-	$db->dir_lmdb($dir_out);
-
-
+my $omim_dir = $buffer->get_lmdb_database_directory('omim');
 
 my $no_genes_syno = GenBoNoSqlAnnotation->new(
 	dir  => $gencode_dir,
@@ -133,9 +54,64 @@ my $no_omim = GenBoNoSqlLmdb->new(
 	dir         => $omim_dir,
 	mode        => "r",
 	is_compress => 1,
-	vmtouch=>$buffer->vmtouch
+	vmtouch		=> $buffer->vmtouch
 );
 
+my $version;
+GetOptions(
+	'version=s'   => \$version,
+);
+die("please add -version=") unless $version;
+my $dir_vcf  = "/public-data/repository/HG19/clinvar/$version/vcf/";
+  my @files = `ls $dir_vcf/*.vcf.gz`;
+  chomp(@files);
+  my $file = $files[0];
+  my $md5_1 = file_md5_hex( $file);
+  warn $file." ".$md5_1;
+
+die("clinar file doesn t exists " .$file ) unless -e $file;
+my $dir_out = "/public-data/repository/HG19/clinvar/$version/";
+
+
+
+my $nb;
+foreach my $chr (@$chromosomes){
+	my $pid = $pm->start and next;
+	warn "start $chr";
+	run_chr($chr);
+	$pm->finish;
+}#end chr
+  $pm->wait_all_children;
+
+my $hversion;
+$hversion->{name} = "clinvar";
+$hversion->{version} = "$version";
+$hversion->{file} = $file;
+  my $d = Date::Tiny->now;
+
+$hversion->{date} =  $d->as_string;
+$hversion->{md5sum} = $md5_1;
+open(JSON,">$dir_out/lmdb/version.json") or die();
+warn "$dir_out/clinvar.json";
+print JSON encode_json $hversion;
+close JSON;
+
+
+warn "your database is here : ".$dir_out;
+exit(0);
+
+
+
+
+
+sub run_chr {
+	my ($chr) = @_;
+
+
+
+die() unless -e $file;
+	my $db = new save({name=>"lmdb",chromosome=>$chr,mode=>"c",integer=>1,db_type=>"lmdb"});
+	$db->dir_lmdb($dir_out);
 	#my $db = new save({name=>"dbsnp",chromosome=>$chr});
 	my @objs;
 	#   warn $file;
@@ -153,8 +129,6 @@ my $no_omim = GenBoNoSqlLmdb->new(
 				my $chrom = $$x{'CHROM'};
 				my $varStart = $$x{'POS'};
 				my $debug;
-				$debug = 1 if $varStart == 110395675;
-			
 				my $varEnd;
 				my $vcfRefAllele = $$x{'REF'};
 				my $varAllele = $$x{'ALT'};
@@ -175,8 +149,7 @@ my $no_omim = GenBoNoSqlLmdb->new(
 					$sig{$x->{INFO}->{CLNSIG}} ++;
 				#	 warn $x->{INFO}->{CLNSIG} if $x->{INFO}->{CLNSIG} =~/\// ;
 				
-					warn "1" if $debug;
-					
+					 
 					$nb_all ++;
 					$vcfRefAllele = $$x{'REF'};
 					
@@ -197,14 +170,13 @@ my $no_omim = GenBoNoSqlLmdb->new(
 					$variation->{id} =  $x->{INFO}->{ALLELEID};
 					$variation->{clinvar_id} =  $x->{INFO}->{ALLELEID};
 					#warn  $x->{INFO}->{ALLELEID};
-					$variation->{clinvar_id};
+					#$variation->{clinvar_id};
 					die() unless  $x->{INFO}->{ALLELEID};
 					$variation->{id} =~s/\|/;/g;
 					my $sig = parse_clnsig( $x->{INFO}->{CLNSIG});
 					$variation->{sig} =  $sig;
 					#$variation->{sig} =~s/\|/;/g;
 					$variation->{start} =  $$x{'POS'};
-					
 					
 					my @l_genes_infos = split('\|', $x->{INFO}->{GENEINFO});
 					my $CLNVI_OMIM_gene_id;
@@ -224,7 +196,6 @@ my $no_omim = GenBoNoSqlLmdb->new(
 						if ($CLNVI_OMIM_gene_id) {
 							my $is_ok_check_CLNVI_OMIM_gene_id;
 							my $h_synos = $no_genes_syno->get_key_values("synonyms", $gene_external_name);
-							my $has_done;
 							foreach my $gene_syno (values %{$h_synos}) {
 								next if ($is_ok_check_CLNVI_OMIM_gene_id);
 								my $gene;
@@ -240,15 +211,7 @@ my $no_omim = GenBoNoSqlLmdb->new(
 									$hrelation_variant_gene->{clinvar_id} = $variation->{clinvar_id};
 									$hrelation_variant_gene->{gene} = $gene_external_name;
 									$db->add_relation_variant_gene($hrelation_variant_gene);
-									$has_done = 1;
 								}
-							}
-							unless ($has_done) {
-								my $hrelation_variant_gene;
-								$hrelation_variant_gene->{type_id} = 'clinvar_id';
-								$hrelation_variant_gene->{clinvar_id} = $variation->{clinvar_id};
-								$hrelation_variant_gene->{gene} = $gene_external_name;
-								$db->add_relation_variant_gene($hrelation_variant_gene);
 							}
 						}
 						else {
@@ -259,21 +222,13 @@ my $no_omim = GenBoNoSqlLmdb->new(
 							$db->add_relation_variant_gene($hrelation_variant_gene);
 						}
 					}
-					
-					
-	#				warn 
-					warn "2" if $debug;
 					if ($type eq 's') {
 						# SNP
-						warn "3" if $debug;
 						$db->add_snp($variation);
 					}
 					elsif ($type eq "i" && $len < 0 ){
 						# deletions
-					
 						$db->add_deletion($variation);
-						
-					
 					}
 					elsif ($type eq "i" && $len >= 0 ){
 						# insertion
@@ -286,7 +241,7 @@ my $no_omim = GenBoNoSqlLmdb->new(
 				#	warn $id;
 					
 				
-						warn "4" if $debug;
+						
 				}# for index_alt
 				$nb++;		
 			 	if ($nb%100000 == 0){
@@ -299,12 +254,13 @@ my $no_omim = GenBoNoSqlLmdb->new(
 		
     }# while parse vcf
 	$vcf->close();
+	
 	#warn Dumper (keys %sig); 
 	$db->save_intspan();
 	#die() if $debug;
 	$db->close();
-	$no_genes_syno->close();
 	$no_genes_obj->close();
+	$no_genes_syno->close();
 	$no_omim->close();
 	
 	return \@objs;
@@ -330,29 +286,18 @@ sub parse_clnsig {
 	"protective" =>-6,
 	"affects" =>-7,
 	"conflicting_interpretations_of_pathogenicity" => -8,
-	"association_not_found" => -9,
 	"other" => -9,
+	
+	"association_not_found" => -10,
 	
 };
 	my ($st1,$st2) = split(",",$string);
 	my @values = split("/",$st1);
-	
 	my @res;
 	foreach my $v (@values){
-		
 		$v = lc ($v);
-		
-		my $scorev = $score->{$v};
-		unless (exists $score->{$v}){
-			warn " !!!!!!!!".$v ;
-			 $scorev = -9 ; 
-		}
-		
-		
-		push(@res,$scorev);
-		#warn $v unless exists $score->{$v};
-		
-		#die($v) unless exists $score->{$v};
+		push(@res,$score->{$v});
+		die($v) unless exists $score->{$v};
 	}
 	return join(";",@res);
 }

@@ -248,11 +248,6 @@ has locus => (
 has isCnv => (
 	is		=> 'rw',
 );
-
-has isJunction => (
-	is		=> 'rw',
-);
-
 has patients_calling => (
 	is		=> 'rw',
 	default => sub {
@@ -465,14 +460,6 @@ has isMantaImprecise  => (
 	}		
 );
 
-has variants_same_position  => (
-	is		=> 'rw',
-	lazy	=> 1,
-	default => sub {
-		return undef;
-	}		
-);
-
 sub setCnvValues {
 	my ($self,$chr,$patient,$variant)  =@_;
 	foreach my $p (@{$patient->getFamily()->getMembers}){
@@ -631,7 +618,7 @@ sub update_clinvar {
 }
 
 sub setOldVariant {
-	my ($self,$vh,$project,$patient,$gene,$update,$debug) = @_; 
+	my ($self,$vh,$project,$patient,$gene,$update) = @_; 
 		$self->gene($gene);
 		$self->id($vh->{value}->{id});
 		$self->start($vh->{value}->{start});
@@ -700,23 +687,9 @@ sub setOldVariant {
 	#########
 	# DEJAVU
 	#########
-	if ($project->isDiagnostic){
-	my $h = $project->getDejaVuInfosForDiag($self->id);
-	
-	$self->dejavu_other_projects($h->{other_projects});
-	$self->dejavu_other_patients($h->{other_patients});
-	$self->dejavu_other_patients_ho($h->{other_patients_ho});
-	$self->dejavu_similar_projects( $h->{similar_projects});
-	$self->dejavu_similar_patients($h->{similar_patients});
-	$self->dejavu_similar_patients_ho($h->{similar_patients_ho});
-	$self->dejavu_this_run_patients($h->{in_this_run_patients});# = '-';
-	#	warn Dumper $h;
-	#	warn $self->id;
-	}
-	else {
 	$self->parseDejaVuTable($vh->{html}->{deja_vu},$vh);
 	$self->dejavu_this_run_patients($vh->{value}->{this_run_patients});# = '-';
-	}
+	
 	#########
 	# caller
 	#########
@@ -772,55 +745,8 @@ sub setOldVariant {
 	 	$self->spliceAI_cat($v1);
 	 	$self->spliceAI($v2);
 	 }
-	 my @lVar_same_pos = @{$self->get_variants_same_position($project->getChromosome($self->chromosome()), $vh->{vector_id}, $patient)};
- 	 if (scalar(@lVar_same_pos) > 0) {
- 		foreach my $other_var (@lVar_same_pos) {
- 			next if ($other_var->isJunction());
- 			push(@{$self->{patients_calling}->{$patient->id()}->{var_same_pos}->{name}}, $other_var->name());
-			my $heho_other = "ho" if $other_var->isHomozygote($patient);
-			$heho_other = "he" if $other_var->isHeterozygote($patient);
-			$heho_other .= '('.$other_var->ref_allele().'/'.$other_var->var_allele().')';
- 			push(@{$self->{patients_calling}->{$patient->id()}->{var_same_pos}->{gt}}, $heho_other);
- 		}
- 	}
 }
 
-sub get_variants_same_position {
-	my ($self, $chr, $vector_id, $init_patient) = @_;
-	my @lVar_same_pos;
-	my $check_before_done = 0;
-	my $check_after_done = 0;
-	my $i = $vector_id;
-	my $j = $vector_id;
-	my $var = $chr->getVarObject($vector_id);
-	$check_before_done = 1 if ($vector_id == 0);
-	$check_after_done = 1 if ($vector_id == ($chr->getVariantsVector->Size() -1) );
-	while ($check_before_done == 0) {
-		$i--;
-		my $var_before = $chr->getVarObject($i);
-		if ($var_before->start() == $var->start()) {
-			foreach my $patient (@{$var_before->getPatients()}) {
-				next if ($patient->name() ne $init_patient->name());
-				push(@lVar_same_pos, $var_before);
-			}
-		}
-		else { $check_before_done = 1; }
-		$check_before_done = 1 if ($i == 0);
-	}
-	while ($check_after_done == 0) {
-		$j++;
-		my $var_after = $chr->getVarObject($j);
-		if ($var_after->start() == $var->start()) {
-			foreach my $patient (@{$var_after->getPatients()}) {
-				next if ($patient->name() ne $init_patient->name());
-				push(@lVar_same_pos, $var_after);
-			}
-		}
-		else { $check_after_done = 1; }
-		$check_after_done = 1 if ($vector_id == ($chr->getVariantsVector->Size() - 1));
-	}
-	return \@lVar_same_pos;
-}
 
 
 1;

@@ -118,7 +118,7 @@ my $transcripts_arg = $cgi->param('transcripts');
 my $genes_arg       = $cgi->param('genes');
 my $filter;
 my @selected_patients;
-
+#test for git1
 if ($value_quality and not $genes_arg) {
 	my $p   = $cgi->param('patients');
 	my $pat = $project->getPatient($p);
@@ -132,7 +132,6 @@ if ($value_quality and not $genes_arg) {
 	my $this_types = join(', ', @lTypes);
 	if ($project->isDiagnostic()) { @lTypes = ('high','medium', 'low'); }
 	my $hRes = update_variant_editor::get_hash_genes_dude($pat, 'ids', \@lTypes,undef,1);
-#	warn Dumper $hRes;
 	if ($project->isDiagnostic()) { 
 		foreach my $g_id (keys %{$hRes}) {
 			if ($value_quality == 1 and not exists $hRes->{$g_id}->{'high'}) {
@@ -389,6 +388,7 @@ print $out;
 
 #html::print_cgi($cgi,$out);
 exit(0);
+
 sub uri_image {
 	my ( $projects, $transcripts, $force_visualisation) = @_;
 	my $patients = $project->getPatients();
@@ -456,7 +456,7 @@ sub uri_image {
 		my $nbtp = 0;
 
 		foreach my $tr1 (@tmp) {
-#			warn $tr1;
+
 			print "." if $znb % 20 == 0;
 			my $debug;
 
@@ -473,9 +473,6 @@ sub uri_image {
 				selected_patients => \@selected_patients
 			);
 			$coverage->init_matrices;
-			
-			warn "\n\n";
-			warn Dumper $coverage->quality();
 
 			#warn Dumper $coverage->quality if $debug;
 			unless ($force_visualisation) {
@@ -491,7 +488,9 @@ sub uri_image {
 				next
 				  if ( $coverage->quality->{dup} > 5
 					&& $coverage->quality->{del} > 5 );
-				next if ( $coverage->quality->{grey} > 10 );    # &&  $coverage->quality->{del} >2);
+				next
+				  if ( $coverage->quality->{grey} > 10 )
+				  ;    # &&  $coverage->quality->{del} >2);
 			}
 
 			$coverage = polyweb_dude->new(

@@ -38,6 +38,7 @@ my $sort			   = $cgi->param('sort');
 my $trio_project	   = $cgi->param('project');
 my $trio_patient	   = $cgi->param('patient');
 my $use_phenotype_score	   = $cgi->param('use_phenotype');
+
 $use_phenotype_score = lc($phenotype) if ($phenotype and not $use_phenotype_score);
 $use_phenotype_score = 'intellectual disability' unless ($use_phenotype_score);
 
@@ -45,7 +46,7 @@ my $buffer  = GBuffer->new();
 purge_cgi_session_directory($buffer);
 my $project;
 if ($trio_project) {
-	$project = $buffer->newProjectCache( -name => $trio_project );
+	$project = $buffer->newProject( -name => $trio_project );
 }
 else {
 	$project = $buffer->newProject( -name => $buffer->get_random_project_name_with_this_annotations_and_genecode() );
@@ -55,6 +56,7 @@ else {
 		$annot_version    = $buffer->getQuery()->getMaxPublicDatabaseVersion();
 		$annotation       = $genecode_version . '.' . $annot_version;
 	}
+	
 	$project->changeAnnotationVersion( $annotation, 1 );
 }
 
@@ -374,9 +376,8 @@ if ($h_genes) {
 		};
 		if ($@) { $hResGene->{$gene_name}->{panels} = undef; }
 		
-
-		my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;vertical-align:center !important;"} );
-
+		my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;"} );
+		
 		my $gene_score;
 		if ($trio_project and $trio_patient) {
 			$sort = 'gene_score' unless $sort;
@@ -388,7 +389,8 @@ if ($h_genes) {
 				$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
 			}
 #			$out_line .= html_polygenescout::print_link_dejavu($cmd_link);
-			$out_line .= html_polygenescout::print_tab_variants_project($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes,$gene->project);
+			$out_line .= html_polygenescout::print_tab_variants_project($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes);
+			
 			if ( $buffer->hasHgmdAccess($user) ) {
 				$out_line .= html_polygenescout::print_hgmd_total_mut($total_mut, $external_name);
 				$out_line .= html_polygenescout::print_hgmd_total_new($total_new, $external_name);

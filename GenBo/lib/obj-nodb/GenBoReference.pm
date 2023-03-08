@@ -81,6 +81,11 @@ sub setLargeDeletions {
 	$self->setVariants('large_deletions');
 	return $self->{large_deletions_object} ;
 }
+sub setLargeInsertions {
+	my $self = shift;
+	$self->setVariants('large_deletions');
+	return $self->{large_deletions_object} ;
+}
 sub setInversions {
 	my $self = shift;
 	$self->setVariants('inversions');

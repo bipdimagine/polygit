@@ -77,39 +77,6 @@ has array_for_string => (
 	},
 );
 
-has array_for_string2 => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $for_string = $self->read_string("for_string");
-		
-		unless ($for_string){
-			confess() if $self->mode() ne "c";
-		 	$for_string =  "name,gnomad_id,id,vcf_sequence,ref_allele,check_id,vcf_id,var_allele,rs_name,sequence";
-		 	 $self->save_string("for_string",$for_string);
-		}
-		my @toto = split(",",$for_string);
-		return \@toto;
-	},
-);
-has array_for_index_string => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $for_string = $self->read_string("for_string");
-		
-		unless ($for_string){
-			confess() if $self->mode() ne "c";
-		 	$for_string =  "type_object,type_public_db,structuralTypeObject,min_pop_name,max_pop_name,structuralType,validation_method";
-		 	 $self->save_string("for_string",$for_string);
-		}
-		my @toto = split(",",$for_string);
-		return \@toto;
-	},
-);
-
 has array_for_transcript_name => (
 	is      => 'rw',
 	lazy    => 1,
@@ -559,27 +526,10 @@ sub encode {
 		$variation->{st_float} =$st_float;
 		
 		###########
-		#STRING INDEX ###
-		###########
-		my @int1;
-		foreach my $id (@{$self->array_for_index_string}){
-		#	next if $id =~ /id/;
-			#warn $id." ".$variation->{$id}."\n";
-			
-			 $variation->{$id} = "" unless $variation->{$id};
-			 #warn $variation->{$id}." ".$sid;
-		# my $sid = $self->get_object_index($variation->{$id});
-			#delete $variation->{$id};
-			#$variation->{f} .= pack("s",$variation->{$id});
-			#push(@{$variation->{f}} ,$sid);
-		}
-		#$variation->{fsti} = pack("w".scalar(@int1),@int1);
-		###########
 		#STRING ###
 		###########
 		my $t;
 		foreach my $id (@{$self->array_for_string}){
-		#next unless exists $variation->{$id};
 		#	next if $id =~ /id/;
 			#warn $id." ".$variation->{$id}."\n";
 			 $variation->{$id} = "" unless $variation->{$id};
@@ -590,13 +540,8 @@ sub encode {
 		}
 		
 		$variation->{fst} = join("!",@{$variation->{fs}});
-		delete $variation->{fs};
-		
-	#foreach my $id (@{$self->array_for_string2}){
-	#				delete $variation->{$id}
-	#	}
-		
-	
+	#	delete $variation->{fst} ;
+	delete $variation->{fs};
 		                                                                                                   
 		#die();
 	##############	

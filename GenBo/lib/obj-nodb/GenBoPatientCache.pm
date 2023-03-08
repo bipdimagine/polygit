@@ -299,6 +299,7 @@ sub getVectorOriginHe {
 	return $self->{origin}->{he}->{$chr->name};
 }
 
+
 sub getVectorOriginHo {
 	my ($self,$chr) = @_;
 	confess() unless $chr;
@@ -892,54 +893,6 @@ sub getVectorRatio {
 	my $vector_ok = $self->getVariantsVector($chr)->Clone();
 	$vector_ok->Intersection($vector_ok, $chr->getVectorScore($self->id().'_'.$filter_name));
 	return $vector_ok;
-}
-
-sub getJunctionsVector {
-	my ($self, $chr) = @_;
-	my $vector = $self->getVectorOrigin($chr)->Clone();
-	return $vector if ($vector->is_empty);
-	$vector->Intersection($vector, $chr->getJunctionsVector());
-	return $vector;
-}
-
-sub getVectorJunctionsRI {
-	my ($self, $chr) = @_;
-	my $vector = $chr->patients_categories->{$self->name().'_RI'};
-	return $vector;
-}
-
-sub getVectorJunctionsSE {
-	my ($self, $chr, ) = @_;
-	my $vector = $chr->patients_categories->{$self->name().'_SE'};
-	return $vector;
-}
-
-sub setJunctions {
-	my $self = shift;
-	my $h;
-	foreach my $chr (@{$self->getProject->getChromosomes()}) {
-		next if $chr->not_used();
-		my $vector = $self->getJunctionsVector($chr);
-		foreach my $junction (@{$chr->getListVarObjects($vector)}) {
-			$h->{$junction->id()} = undef;
-			unless (exists $self->project->{objects}->{junctions}->{$junction->id()}) {
-				$self->project->{objects}->{junctions}->{$junction->id()} = $junction;
-			}
-		}
-	}
-	return $h;
-}
-
-sub hasJunctions {
-	my $self = shift;
-	my $has_junctions;
-	foreach my $chr (@{$self->getProject->getChromosomes()}) {
-		my $v = $self->getJunctionsVector($chr);;
-		next if $v->is_empty();
-		$has_junctions = 1;
-		last;
-	}
-	return $has_junctions;
 }
 
 1;

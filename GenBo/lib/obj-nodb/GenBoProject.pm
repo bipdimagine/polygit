@@ -1926,22 +1926,6 @@ has gtf_file => (
 	},
 );
 
-
-has gtf_dragen_file => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf_dragen};
-		return $file;
-	},
-);
-
-
 has gtf_file_star => (
 	is      => 'rw',
 	lazy    => 1,
@@ -5782,6 +5766,7 @@ has lite_deja_vu2 => (
 	default => sub {
 		my $self = shift;
 		my $dir  = $self->deja_vu_lite_dir;
+		warn $dir;
 		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 		return $no;
 	}

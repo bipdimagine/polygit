@@ -2,7 +2,6 @@
 use FindBin qw($Bin);
 use lib $Bin;
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
-use lib "$Bin/../packages/";
 #use lib "/bip-d/perl/ensembl64/ensembl/modules";
 use Bio::SearchIO;
 use strict;
@@ -40,14 +39,11 @@ my $sqliteDir ;
 my $out;
 my $type;
 my $version;
-
-
 GetOptions(
 	'version=s' => \$version,
 	'type=s' => \$type,
 );
 my $sqliteDir =  "/tmp/lmdb/$version/annotations";
-warn $sqliteDir;
 die(" -dir= ") unless $sqliteDir;
 
 warn "work on $sqliteDir";
@@ -77,50 +73,48 @@ sub intervaltree_freeze {
  foreach my $gene (@genes_id){
  	$dd ++;
  	warn $dd if $dd%100 == 0 ;
- 	#next if $gene->{genbo_id} ne 'ENSG00000225216_2';
  	my $isncrna;
  	my $chr = $gene->{chromosome};
 
  	$hintspan->{genes}->{$chr} = [] unless exists $hintspan->{genes}->{$chr};
- 	#$hintspan->{transcripts}->{$chr} = [] unless exists $hintspan->{transcripts}->{$chr};
+ 	$hintspan->{transcripts}->{$chr} = [] unless exists $hintspan->{transcripts}->{$chr};
  	my $isncrna;
- 	my $min;
- 	my $max;
-# 	warn Dumper $gene if $gene->{external_name} eq "GBAP1";
-# 	die()  if $gene->{external_name} eq "GBAP1";
-# 	next;
-# 	die();
- 	foreach my $tid (keys %{$gene->{transcripts_object}}) {
- 		
+ 	
+ 	foreach my $tid (@{$gene->{transcripts}}){
  		my ($id,$n) = split("_",$tid);
  		my $tr = $annot->get("annotations",$id."_".$chr);
- 		
- 		$min = $tr->{start} unless $min;
- 		$max = $tr->{end} unless $max;
- 		$min = $tr->{start} if $tr->{start} < $min;
- 		$max = $tr->{end} if $tr->{end} > $max;
- 		my $limit = 5000;
+ 		$isncrna = 1 if $tr->{biotype} =~ /pseudo/ || $tr->{biotype} =~ /RNA/;
+ 		my $limit =11;
+		$limit = 0 if $isncrna;
 		$limit= 0 if $chr eq 'MT';
-		push(@{$hintspan->{transcripts_padding}->{$chr}},[$tr->{genbo_id},$tr->{start}-$limit,$tr->{end}+$limit+1]);
- 		
- 		$limit = 11;
-		$limit= 0 if $chr eq 'MT';
-		
- 		push(@{$hintspan->{transcripts}->{$chr}},[$tr->{genbo_id},$tr->{start}-$limit,$tr->{end}+$limit+1]);
- 		
+		my $start1 = $tr->{start}-$limit;
+		my $end1 = $tr->{end}+$limit;
+		push(@{$hintspan->{transcripts}->{$chr}},[$tr->{genbo_id},$start1,$end1+1]);
+		my $intspan = $tr->{genomic_span};
+		if ( $tr->{span_coding}){
+		my $iter = $tr->{span_coding}->iterate_runs();
+		my $protid  = $tr->{protein};
+		unless ($protid =~/_/){
+			$protid.="_".$tr->{chromosome};
+		}
+		while (my ( $from, $to ) = $iter->()) { 
+			push(@{$hintspan->{exons}->{$chr}},["c:".$tr->{genbo_id},$from,$to+1]);
+			push(@{$hintspan->{proteins}->{$chr}},[$protid,$from,$to+1]);
+		}
+		$intspan = $tr->{genomic_span}->diff($tr->{span_coding});
+		}
+		my $iter2 = $intspan->iterate_runs();
+		while (my ( $from, $to ) = $iter2->()) { 
+			push(@{$hintspan->{exons}->{$chr}},["u:".$tr->{genbo_id},$from,$to+1]);
+		}
  	}
- 	my $limit = 5000;
-	$limit= 0 if $chr eq 'MT';
-	my $gstart = $min;
+ 	my $limit = 1000;
+		$limit = 15 if $isncrna;
+		$limit= 0 if $chr eq 'MT';
+	my $gstart = $gene->{start} - $limit;
 	$gstart =1 if $gstart < 0;
-	my $gend = $max;
-	warn $gene->{genbo_id}.' ==> *'.$min.' '.$gstart.$gstart if ($gstart-$limit) < 0;
-	die() unless $gstart;
-	(@{$hintspan->{genes}->{$chr}},[$gene->{genbo_id},$gstart,$gend+1]);
-	push(@{$hintspan->{genes_padding}->{$chr}},[$gene->{genbo_id},$gstart-$limit,$gend+$limit+1]);
-	$limit = 500;
-	$limit= 0 if $chr eq 'MT';
-	push(@{$hintspan->{genes}->{$chr}},[$gene->{genbo_id},$gstart-$limit,$gend+$limit+1]);
+	my $gend = $gene->{end} + $limit;
+	push(@{$hintspan->{genes}->{$chr}},[$gene->{genbo_id},$gstart,$gend+1]);
 	
  }
   my $no = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"c");
@@ -157,7 +151,6 @@ my $type = "gene";
  	foreach my $tid (@{$gene->{transcripts}}){
  		my ($id,$n) = split("_",$tid);
  		my $tr = $annot->get("annotations",$id."_".$chr);
- 		
  		$isncrna = 1 if $tr->{biotype} =~ /pseudo/ || $tr->{biotype} =~ /RNA/;
  		$hintspan->{transcripts}->{$chr} = Set::IntSpan::Fast::XS->new() unless exists $hintspan->{transcripts}->{$chr};
  		$htree->{transcripts}->{$chr} = Set::IntervalTree->new  unless exists $htree->{transcripts}->{$chr};
@@ -299,3 +292,4 @@ sub rtree_sqlite {
 	
 
 }
+

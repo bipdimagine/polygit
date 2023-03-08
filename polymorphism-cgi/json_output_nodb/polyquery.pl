@@ -93,8 +93,8 @@ my $user_name				= $cgi->param('user_name');
 my $without_stats			= $cgi->param('without_stats');
 my $delete_models			= $cgi->param('delete_models');
 my $filter_gnomad			= $cgi->param('gnomad');
-my $filter_ratio_min		= $cgi->param('min_ratio');
-my $filter_ratio_max		= $cgi->param('max_ratio');
+my $filter_ratio			= $cgi->param('ratio');
+my $filter_type_ratio		= $cgi->param('type_ratio');
 my $filter_ncboost			= $cgi->param('ncboost');
 my $panel_name				= $cgi->param('panel');
 my $annot_version			= $cgi->param('annot_version');
@@ -449,11 +449,8 @@ foreach my $chr_id (split(',', $filter_chromosome)) {
 	QueryVectorFilter::setInTheAttic($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
-	QueryVectorFilter::filter_vector_ratio($chr, $filter_ratio_min, 'min');
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ratio_min - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	
-	QueryVectorFilter::filter_vector_ratio($chr, $filter_ratio_max, 'max');
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ratio_max - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+	QueryVectorFilter::filter_vector_ratio($chr, $filter_ratio, $filter_type_ratio);
+	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ratio - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	QueryVectorFilter::filter_vector_ncboost($chr, $filter_ncboost);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ncboost - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
@@ -481,6 +478,9 @@ foreach my $chr_id (split(',', $filter_chromosome)) {
 	
 	QueryVectorFilter::filter_vector_gnomad_ac($chr, $filter_gnomad) if ($filter_gnomad);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_gnomad_ac - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+	
+#	QueryVectorFilter::filter_vector_ratio_allele($chr, $filter_ratio) if ($filter_ratio);
+#	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ratio_allele - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	if ($panel_name) {
 		QueryVectorFilter::filter_genes_from_ids($chr, $hChr->{$chr->id()}, $can_use_hgmd);
@@ -1268,7 +1268,6 @@ sub launchStatsChr {
 		$hash->{$chr->stats_categories->{$cat}} += $nb;
 		$hash->{variations}	+= $nb;
 	}
-	
 	my $vector_bin = $chr->getVariantsVector->to_Bin();
 	$hash->{vector_HEX} = $chr->compress_vector_bin($vector_bin);
 	my $bin = $chr->decompress_vector_bin($hash->{vector_HEX});
@@ -1346,12 +1345,8 @@ sub launchStatsGene {
 	$hashStats->{'chromosome'} 	= $gene->chromosome->id();
 	warn '  -> stats chromosome_id: '.$hashStats->{'chromosome'} if ($debug);
 	#$hashStats->{'description'} = $gene->phenotypes();
-	$hashStats->{'phenotype'} = $gene->polyquery_phenotypes();
-	$hashStats->{'description'} = $gene->description() if ($gene->description());
-	#my ($pheno,$nb_other_terms) = $gene->polyviewer_phentotypes();
-	#$hashStats->{'description'} = "$pheno + $nb_other_terms terms";
-	
-	
+	$hashStats->{'phenotype'} = $gene->phenotypes();
+	$hashStats->{'description'} = $gene->description();
 	my @lIds = @{$gene->getIdsBitOn($gene->getVariantsVector())};
 	$hashStats->{'vector_ids'}	= join(',', @lIds);
 	my ($hashCount, $hGetFam, $hAllPat, @lGetPat);
@@ -1533,7 +1528,6 @@ sub launchStatsPatient {
 	my $patName = $patient->name();
 	$hStats->{name} 		= $patName;
 	$hStats->{id} 			= int($project->hash_patients_name->{$patient->name()}->{'id'});
-	$hStats->{bam} 			= "";
 	$hStats->{bam} 			= $patient->bamUrl();
 	$hStats->{fam} 			= $patient->family();
 	$hStats->{sex} 			= $patient->sex();
@@ -2815,7 +2809,6 @@ sub checkEssentialsCategoriesInChr {
 			next if ($cat eq 'spliceAI_high');
 			next if ($cat eq 'spliceAI_medium');
 			next if ($cat eq 'predicted_splice_site');
-			next if ($cat eq 'junction');
 			unless (exists $chr->global_categories->{$cat}) {
 				warn "\n\n";
 				warn Dumper $chr->global_categories();
