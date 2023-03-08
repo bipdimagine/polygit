@@ -91,6 +91,11 @@ sub setBoundaries {
 	$self->setVariants('boundaries');
 	return $self->{boundaries_object} ;
 }
+sub setLargeInsertions {
+	my $self = shift;
+	$self->setVariants('large_insertions');
+	return $self->{large_duplications_object} ;
+}
 sub setLargeDuplications {
 	my $self = shift;
 	$self->setVariants('large_duplications');
