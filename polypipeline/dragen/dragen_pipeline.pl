@@ -77,7 +77,7 @@ my $cmd_failed = [];
 my $cmd_cancel = [];
 my $step;
 my $force;
-my $rna;
+
 GetOptions(
 	'project=s' => \$project_name,
 	'patients=s' => \$patients_name,
@@ -86,7 +86,6 @@ GetOptions(
 	'force=s' => \$force,
 	'step=s'=> \$step,
 	"dry=s" => \$dry,
-	"rna=s" => \$rna,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -125,10 +124,8 @@ foreach my $pname (split(",",$project_name)){
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
- #$project_name =~ s/\,/\./g ;
- my @pp = split(",",$project_name);
- 
-my $dir_log = $projects->[0]->buffer->config->{project_pipeline}->{bds}."/".$pp[0].".dragen.".time;
+ $project_name =~ s/\,/\./g ;
+my $dir_log = $projects->[0]->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time;
 system("mkdir $dir_log && chmod a+rwx $dir_log");
 
 if ($test_umi && !($umi)){
@@ -145,7 +142,8 @@ system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
 
-my $pipeline_dragen_steps = ["align","gvcf","sv","cnv","vcf"];
+my $pipeline_dragen_steps = ["align","gvcf","vcf","sv","cnv"];
+
 my $pipeline_dragen_rna_steps = ["align","count"];
 
 
@@ -203,11 +201,8 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
-
 		$h->{rna} = 0;
 		$h->{rna} = 1 if $project->isRnaSeq;
-		$h->{rna} = 1 if $rna;
-
 		$h->{name} = $patient->name;
 		
 	 	$h->{project} = $patient->project->name;
@@ -287,7 +282,6 @@ sub run_command {
 	foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
-
 	@all_list = @$pipeline_dragen_rna_steps if $hp->{rna} ==1;
 	my $pname =  $hp->{name}."_".$hp->{project};
 	$hp->{run_pipeline} = [];
@@ -314,7 +308,8 @@ sub run_command {
 	
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -version=$version " if $version;
-	$job->{cmd} .= " -rna=1 " if $hp->{rna};
+	
+	
 	$job->{jobs_type_list} = join(",",@{$hp->{run_pipeline}});
 	#die();
 	my $first_cmd = $hp->{run_pipeline}->[0];

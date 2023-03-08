@@ -87,9 +87,16 @@ sub getAllPatientsInfos {
 	my $query = $self->buffer->getQuery();
 	my $res = $query->getAllPatientsFromRunId($self->id);
 	
+	my $hCaptNames;
+	foreach my $capture (@{$self->getProject->getCaptures()}) {
+		$hCaptNames->{$capture->name()} = undef;
+	}
+	
 	my @lPat;
 	foreach my $h (@$res) {
 		 next if  $h->{patient} =~ /GIAB/;
+		 next if not exists $hCaptNames->{$h->{capture}};
+		 
 		#if (exists $pids->{$h->{id}}) {
 			push(@lPat, $h);
 		#}

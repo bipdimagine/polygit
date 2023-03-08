@@ -4,6 +4,7 @@ use strict;
 use File::stat;
 use Time::localtime;
 use Data::Dumper;
+use colored;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
 
@@ -762,6 +763,60 @@ sub statistics_variations2 {
 	}
 	return ( transform_array_to_json_like($resume) );
 
+}
+
+
+sub check_calling_methods_in_cache {
+	my ($project) = @_;
+	foreach my $patient (@{$project->getPatients()}) {
+		my $pname = $patient->name();
+		print "\n";
+		print colored::stabilo('white',"# Patient $pname",1);
+		print "\n";
+		my ($h_methods_patient, $h_methods_variants);
+		foreach my $method (@{$patient->getCallingMethods()}) { $h_methods_patient->{$method} = undef; }
+		my @lChr = @{$project->getChromosomes()};
+		foreach my $chr (reverse @lChr) {
+			next if $chr->not_used();
+			#print "-> checking chr".$chr->id()."\n";
+			my $no = $chr->get_lmdb_variations("r");
+			my $cursor = $no->cursor( 1, $chr->end() );
+			while ( my $var_id = $cursor->next_key ) {
+				my $lmdb_index = $cursor->current_index();
+				my $variation = $no->get($var_id);
+				my $h_details = $variation->sequencing_details($patient);
+				foreach my $method (keys %{$h_details}) {
+					$h_methods_variants->{$method}++;
+				}
+			}
+			$no->close();
+			last if (scalar(keys %$h_methods_patient) == scalar(keys %$h_methods_variants));
+		}
+		
+		
+		foreach my $method (sort keys %$h_methods_patient) {
+			my @lLetters = split('', $method);
+			my $method_3letters = $lLetters[0].$lLetters[1].$lLetters[2];
+			if (exists $h_methods_variants->{$method_3letters}) {
+				my $text = $method;
+				print colored::stabilo('green',$text,1);
+				print ' => found '.$method_3letters.' => found nb '.$h_methods_variants->{$method_3letters};
+				print "\n";
+				delete $h_methods_variants->{$method_3letters};
+			}
+			else {
+				my $text = $method;
+				print colored::stabilo('red',$text,1);
+				print ' => not found '.$method_3letters;
+				print "\n";
+			}
+		}
+		if (scalar keys %$h_methods_variants > 0) {
+			print "\n";
+			print colored::stabilo('red','=> found this method(s) in cache: '.sort join(', ', keys %$h_methods_variants),1); 
+			print "\n";
+		}
+	}
 }
 
 sub transcripts_variations {
