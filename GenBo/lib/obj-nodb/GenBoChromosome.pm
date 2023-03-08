@@ -1359,6 +1359,7 @@ sub get_old_lmdb_variations {
 }
 sub get_rocks_variations {
 	my ($self,$mode) = @_;
+	confess();
 		#$dir_out = "/data-beegfs/tmp/".$self->project->name."/";
 		return  GenBoNoSqlRocksVariation->new(
 					dir         => $self->project->rocks_cache_dir,
@@ -1432,7 +1433,7 @@ sub get_lmdb_variations {
 
 		}
 		else {
-			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);
+			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
 		}
 	}
 	else {
