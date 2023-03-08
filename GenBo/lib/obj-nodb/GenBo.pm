@@ -185,6 +185,10 @@ has isLargeInsertion => (
 	is		=> 'ro',
 	default	=> 0
 );
+has isMei => (
+	is		=> 'ro',
+	default	=> 0
+);
 has isLargeDuplication => (
 	is		=> 'ro',
 	default	=> 0
