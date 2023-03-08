@@ -181,7 +181,10 @@ has isLargeDeletion => (
 	is		=> 'ro',
 	default	=> 0
 );
-
+has isLargeInsertion => (
+	is		=> 'ro',
+	default	=> 0
+);
 has isLargeDuplication => (
 	is		=> 'ro',
 	default	=> 0
