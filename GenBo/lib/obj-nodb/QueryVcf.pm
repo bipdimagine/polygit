@@ -199,9 +199,9 @@ sub parseVcfFileForReference {
 	if ($self->method() eq "melt"){
 			return $self->parseVcfFileForReference_melt($reference, $useFilter);
 	}
-	if ($self->method() eq "manta"){
-			return $self->parseVcfFileForReference_manta($reference, $useFilter);
-	}
+	#if ($self->method() eq "manta"){
+	#		return $self->parseVcfFileForReference_manta($reference, $useFilter);
+	#}
 	if ($file =~ /\.sam/) { 
 		my @res = `zgrep "#INFO=<ID" $file`;
 		#unless (scalar @res){
@@ -528,9 +528,8 @@ sub genericSVTransLoc {
 	
 	
 	my $hash;
-	return unless $self->project->isChromosomeName($x->{bnd_alt}->{chromosome});
-	my $bnds = $self->find_linked_bnd($x->{id},$x->{bnd_alt}->{chromosome},($x->{bnd_alt}->{pos}-2000),$aend);
-	confess(Dumper (@$bnds)." ".$text." ".($x->{bnd_alt}->{pos}-100)."  $aend") unless scalar (@$bnds) == 1;
+	my $bnds = $self->find_linked_bnd($text,$x->{bnd_alt}->{chromosome},$astart,$aend);
+	confess() unless scalar (@$bnds) == 1;
 	my $other = $bnds->[0];#grep {$_->{ID} ne $x->{ID}} @$bnds;
 	
 	my $genbo_pos = $x->{pos};#+(length($bnds->[0]->{ref})*$bnds->[0]->{bnd_alt}->{ref_position});
@@ -901,12 +900,11 @@ sub add_SR_PR {
 sub parseVcfFileForReference_manta {
 	my ($self, $reference, $useFilter) = @_;
 	my $chr = $reference->getChromosome();
-	warn $self->file();
 	my $v = Bio::DB::HTS::VCF->new( filename => $self->file() );
 	my $v1 = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 	my $header = $v->header();
 	confess() if $header->num_samples() ne 1;
-	die( $header->get_sample_names->[0]." ".$self->getPatient->barcode) if ($self->getPatient->name ne  $header->get_sample_names->[0] && $self->getPatient->barcode ne  $header->get_sample_names->[0]);
+	die() if $self->getPatient->name ne  $header->get_sample_names->[0];
 	#confess() if 
 	my $patient_id = $self->getPatient->id;
 	my %hashRes;
@@ -981,17 +979,21 @@ sub parseVcfFileForReference_melt {
 		my $alt = $x->{alt}->[0];
 
 		next if $alt =~ /DEL/;
+
 		my $type_mei = $x->{infos}->{SVTYPE};
 		my $sequence_id = $ref.'_'.$type_mei;
 		
-	#	my $type_mei = $x->{info}->{SVTYPE};#($header, "SVTYPE");
+
 		#my $type_mei = $type_mei_vcf;
 		
 		#$type_mei = "ALU" if $type_mei_vcf =~/ALU/i ; 
 		#$type_mei = "LINE" if $type_mei_vcf =~/LINE/i ; 
 		#$type_mei = "L1" if $type_mei_vcf =~/L1/i;
 		
+
 		my $id = $chr->name."_".$genbo_pos."_".$ref."_".$type_mei;
+
+
 
 		$hashRes{$structType}->{$id}->{'id'} = $id;
 		$hashRes{$structType}->{$id}->{'structuralType'} = "insertion" ;#= $allele->{type};
