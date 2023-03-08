@@ -24,6 +24,7 @@ my $hashObjectType = {
  	'GenBoGene'			=> 'genes',
  	'GenBoReference'	=> 'references',
  	'Position'			=> 'positions',
+ 	'GenBoJunction'	=> 'junctions',
 };
 
 has name => (
@@ -185,15 +186,13 @@ has isLargeDuplication => (
 	is		=> 'ro',
 	default	=> 0
 );
-has isLargeInsertion => (
-	is		=> 'ro',
-	default	=> 0
-);
-has isMei => (
-	is		=> 'ro',
-	default	=> 0
-);
+
 has isPanel => (
+	is		=> 'ro',
+	default	=> 0
+);
+
+has isJunction => (
 	is		=> 'ro',
 	default	=> 0
 );
@@ -402,6 +401,31 @@ sub getChromosomes {
 	return \@chrs;
 }
 
+### GenBoJunction
+#
+
+has junctions_object => (
+	is		=> 'rw',
+	#isa		=> 'HashRef',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $hRes = $self->setJunctions();
+		unless ($hRes) { $hRes->{none} = 'none'; }
+		return $hRes;
+	}
+);
+
+sub setJunctions {
+	my $self = shift;
+	$self->_errorMethod('setJunctions');
+}
+
+sub getJunctions {
+	my $self = shift;
+	return $self->getProject()->myflushobjects($self->junctions_object(), "junctions");
+}
+
 ### GenBoVariation
 #
 
@@ -417,14 +441,11 @@ has variations_object => (
 	}
 );
 
-
-
 sub setVariations {
 	my $self = shift;
 	$self->setVariants('variations');
 	return $self->{variations_object} ;
 }
-
 
 sub getVariations {
 	my $self = shift;
@@ -762,14 +783,14 @@ sub getCnvs{
 	push(@lRes,@{$self->getLargeDeletions()});
     return \@lRes;
 }
-sub getSVs{
+sub getSV{
 	my $self = shift;
 	my @lRes;
 	push(@lRes,@{$self->getLargeDuplications()});
 	push(@lRes,@{$self->getLargeInsertions()});
 	push(@lRes,@{$self->getLargeDeletions()});
 	push(@lRes,@{$self->getInversions()});
-	#push(@lRes,@{$self->getMeis()});
+	push(@lRes,@{$self->getMeis()});
     return \@lRes;
 }
 #has indels => (
@@ -788,8 +809,8 @@ sub getSVs{
 sub getStructuralVariations {
 		my $self  =shift;
 		my @lRes;
-	#	push(@lRes,@{$self->getVariations()});
-	#	push(@lRes,@{$self->getIndels()});
+		push(@lRes,@{$self->getVariations()});
+		push(@lRes,@{$self->getIndels()});
 		push(@lRes,@{$self->getCnvs()});	
 		#push(@lRes,@{$self->getMnps()});	
 	#	die() if @{$self->getMnps()};
