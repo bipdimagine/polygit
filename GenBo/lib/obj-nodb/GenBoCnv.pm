@@ -183,14 +183,20 @@ sub polyphenScore {
 sub siftScore {
 	return '-';
 }
-
+sub polyphenStatus {
+	my ( $self, $obj ) = @_;
+	return 0 ;
+}
 
 sub getRatio {
         my ($self,$patient,$method) = @_;
         my $pid = $patient->id;
         return "-";
 }
-
+sub siftnStatus {
+	my ( $self, $obj ) = @_;
+	return 0 ;
+}
 
 
 sub getPourcentAllele {
