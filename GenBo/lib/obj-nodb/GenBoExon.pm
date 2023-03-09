@@ -200,6 +200,7 @@ sub mean_intspan_coverage_coding{
 	my $mean = sum(@$res2)/scalar(@$res2);
 	my $min = min(@$res2);
 	my $array = [$mean,$intspan,$min];
+
 	#my $res2 =  $self->coverage_object($patient)->coverage($sstart,$send);#$self->getTranscript()->getGene->get_coverage($patient)->coverage($sstart,$send);
 
 	$self->{coding_stats}->{$patient->id}->{$padding} = $array;

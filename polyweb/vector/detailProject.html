@@ -1,0 +1,1801 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Variations List</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+    <!-- chargement des feuilles de styles necessaires a l'affichage -->
+    <style type="text/css"> 
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/resources/dojo.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/claroGrid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/soriaGrid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/soria/soria.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/Grid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/nihiloGrid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/nihilo/nihilo.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/tundraGrid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/tundra/tundra.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/layout/resources/ExpandoPane.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/widget/Dialog/Dialog.css";
+        @import "../css/polycss/general.css";
+        @import "../css/polycss/login.css";
+        @import "../css/polycss/button.css";
+        @import "../css/polycss/filter.css";
+        @import "../viewer/viewer.css";
+        @import "../css/dejavu/dejavu.css";
+        @import "../css/polycss/header.css";
+        @import "../css/polycss/header-footer.css";
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow:hidden;
+        }
+        
+        #borderContainer {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .testDialog {
+            font-size : 8pt;
+        }
+
+        .dojoxGrid-row-odd td {
+            background:#e8f2ff;
+        }
+
+        .name {
+            color:#2962A7;
+            font-weight:bold;
+        }   
+         
+        .pconseq {
+            background:#DFE8EE;
+            background-image: url(../images/polyicons/bckgrd_blue.png); 
+            padding:1em;
+            width:1200px;
+            min-width:400px;
+            -webkit-box-shadow: 2px 8px 11px #888;
+            padding-bottom:20px;
+            border-left:1px solid #000;
+            border-right:1px solid #000;
+            border-bottom:1px solid #000;
+            border-top:1px solid #000;
+        }
+         
+        .ptranscript {
+            background:#DFE8EE;
+            background-image:url(../images/polyicons/bckgrd_grey.png); 
+            padding:1em;
+            min-width:100px;
+            height:15px;
+            -webkit-box-shadow: 2px 8px 11px #888;
+            padding-bottom:20px;    
+            border-left:1px solid #000;
+            border-right:1px solid #000;
+            border-bottom:1px solid #000;
+            border-top:1px solid #000;
+        }
+
+        .pconseq .gridconseq {
+            background:#fff;
+            height:150px;
+            position:float; 
+            border-top:1px solid #000;
+            border-left:1px solid #000;
+            border-right:1px solid #000;
+            border-bottom:1px solid #000;
+        }
+ 
+        .partsContainerSmall {
+            background:rgb(192,80,77);
+            padding:1em;
+            background-image: url(../images/polyicons/bckgrdsmall.png); 
+            -webkit-box-shadow: 2px 8px 11px #888;
+            padding-bottom:20px;
+            border-left:1px solid #000;
+            border-right:1px solid #000;
+            border-bottom:1px solid #000;
+            border-top:1px solid #000;
+        }
+    
+        .partsContainerSmall2 {
+            background:beige;
+            padding:1em;
+            -webkit-box-shadow: 2px 8px 11px #888;
+            padding-bottom:20px;
+            border-left:1px solid #000;
+            border-right:1px solid #000;
+            border-bottom:1px solid #000;
+            border-top:1px solid #000;
+        }
+    
+        .titleSmall  {
+            font-family: Verdana,Arial,Helvetica,sans-serif;
+            padding:0.5em 0.5em 0 0.5em;
+            color:#000000;
+            background:rgb(192,80,77);
+            font-weight:normal;
+            -moz-border-radius-topleft:8px;
+            -moz-border-radius-topright:8px;
+            -webkit-border-top-left-radius:8px;
+            -webkit-border-top-right-radius:8px;
+            -webkit-box-shadow: 2px 2px 11px #888;
+            border-top:1px solid #000;
+            border-left:1px solid #000;
+            border-right:1px solid #000;
+        }
+        
+        .partsContainerSmall .gridContainerSmall {
+            background:#fff;
+            height:150px;
+            border-top:1px solid #000;
+            border-left:1px solid #000;
+            border-right:1px solid #000;
+            border-bottom:1px solid #000;
+        }
+        
+        .person_name {
+            padding: 3px 3px 3px 25px;  
+            font-size: 23px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #ff5500;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .titre {
+             padding: 1px 5px 1px 25px;
+             margin-left: 70px;
+             margin-bottom: 16px;
+             white-space: nowrap;
+             font-size: 12px;
+             font-family: Arial, Helvetica, sans-serif;
+             color: #000000;
+             font-weight: bold;
+             text-align: center;
+         }
+         
+         .run {
+             padding: 1px 1px 1px 25px;
+             margin-left: 50px;
+             margin-bottom: 16px;
+             white-space: nowrap;
+             font-size: 13px;
+             font-family: Arial, Helvetica, sans-serif;
+             color: #000000;
+             font-weight: bold;
+             text-align: center;
+             background:url(../images/polyicons/lightning.png) no-repeat center left;
+         }
+         
+        .span_desc {
+            font-family: arial;
+            font-size: 10px; 
+            padding: 8px 1px 1px 25px;
+            background:url(../images/polyicons/star.png) no-repeat center left;
+        }        
+    
+        .alternateDock {
+            position:absolute; 
+            background-color:#000000; 
+            right:0px; top:0px; 
+            border-left:1px solid #ccc; 
+            height:100%; 
+        }
+        
+        #alternateDock ul.dojoxDockList { display:block; }
+        
+        .td_align {
+            border: 2px solid ;
+        }
+
+        .tundra #toolbar.dijitToolbar {
+            height: 50px;
+            background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+            background-repeat: repeat-x;
+        }
+
+        .tundra #toolbar2.dijitToolbar {
+            height: 50px;
+            background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+            background-repeat: repeat-x;
+        }
+
+        .tundra #toolbar3.dijitToolbar {
+            height: 50px;
+            background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+            background-repeat: repeat-x;
+        }
+    </style>
+    
+        <!-- IGV CSS -->
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+        
+        <!--
+        <script type="text/javascript" src="../js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>
+        <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">  
+        -->
+        
+	    <script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+              
+		<script type="text/javascript" src="../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad: true" type="text/javascript"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/vp.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/utilGrid2.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/TableFilter2.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/changeStatus.js"></script>
+        <script type="text/javascript" src="../js/polyjs/electro.js"></script>
+        <script type="text/javascript" src="../viewer/variation.js" djconfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../viewer/cnv.js" djconfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../viewer/patient.js" djconfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../viewer/indicator.js" djconfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../viewer/viewer.js" djconfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../viewer/transcript.js" djconfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/viewVar.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/my_formatter_vector.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/consequenceVector.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/layoutVarVector.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/waiting.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/alamut_methods.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="../js/polyjs/chart_coverage.js"></script>
+  		<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+        
+    <script type="text/javascript">
+        //chargement de modules dojo necessaires
+        dojo.require("dijit.layout.ContentPane");
+        dojo.require("dijit.layout.LayoutContainer");
+        dojo.require("dojox.layout.ExpandoPane");
+        dojo.require("dijit.MenuBar");
+        dojo.require("dojo.cookie");
+        dojo.require("dojox.grid.DataGrid");
+        dojo.require("dijit.layout.AccordionContainer");
+        dojo.require("dijit.Toolbar");
+        dojo.require("dijit.layout.TabContainer");
+        dojo.require("dijit.Dialog");       
+        dojo.require("dojo.parser");    
+        dojo.require("dijit.layout.BorderContainer");
+        dojo.require("dijit.layout.SplitContainer");
+        dojo.require("dijit.form.Button");
+        dojo.require("dojox.gfx");
+        dojo.require("dojo.colors");
+        dojo.require("dijit.Dialog");
+        dojo.require("dijit.TooltipDialog");
+        dojo.require("dijit.form.FilteringSelect");
+        dojo.require("dijit.form.CheckBox");
+        dojo.require("dijit.form.Slider");
+        dojo.require("dijit.form.HorizontalRule"); 
+        dojo.require("dijit.form.Select");
+        require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+        
+        //recupration des valeurs contenues dans les input cachs (cf title.html)
+        var chr_number;
+        var select_coverage;
+        var user_name;
+        var progress_drawing =0;
+        var project_type = param('type');
+        var projectName = param('project');
+        var selectGene = param('gene');
+        var selectGeneName = param('genename');
+        var title = param('title');
+        if (title) {
+            title = title.replace(/_/g, ' ');
+            document.title = title;
+        }
+        else if ((selectGeneName) && (selectGene)) { document.title = selectGeneName+" ["+selectGene+"]"; }
+        else if (selectGene) document.title = selectGene ;
+        var gene_name = selectGene;
+        var reference = param('reference');
+        var model = param('model') + ' [' + param('famind') + ']';
+        var ids = param('ids');
+        var v_chr_size = param('vector_chr_size');
+        var v_ids = param('vector_ids');
+        var v_resume = param('vector_resume');
+        var type_cache = param('type_cache');
+        var no_graph = param('no_graph');
+        var chromosome_name = param('chromosome');
+        var locus = param('locus');
+        var param_xls_url = param('xls_url');
+        var filter_nbvar_regionho = param('region_ho');
+        var xref;
+        var projectId;
+        var groupurl = url_query+"?type=group&projectName="+projectName;
+        var groupexporturl = url_query+"?type=group&projectName="+projectName+"&xls=1";
+        var geneexporturl = url_query+"?type=gene&projectName="+projectName+"&xls=1";
+        var detailurl = url_query+"?type=patient&projectName="+projectName;
+        var detailexporturl = url_query+"?type=patient&projectName="+projectName+"&xls=1";
+        var traceurl = url_query+"?type=trace&projectName="+projectName;    
+        var traceexporturl = url_query+"?type=trace&projectName="+projectName+"&xls=1";
+        var reporturl=url_query+"?type=report&projectName="+projectName;
+        var reportexporturl = url_query+"?type=report&projectName="+projectName+"&xls=1";
+        var arguments;
+        var arguments_gene;
+        if (v_ids && type_cache) {
+            arguments ="?project="+projectName+"&type=variations"+"&chromosome="+chromosome_name+"&vector_ids="+v_ids;//+"&type_cache="+type_cache;
+            arguments_gene ="?project="+projectName+"&chromosome="+chromosome_name+"&gene="+gene_name+"&ids="+v_ids;
+        }
+        else if (v_resume && type_cache) {
+            arguments ="?project="+projectName+"&type=variations"+"&chromosome="+chromosome_name+"&vector_resume="+v_resume;//+"&type_cache="+type_cache;
+            arguments_gene ="?project="+projectName+"&chromosome="+chromosome_name+"&gene="+gene_name+"&ids="+v_resume;
+        }
+        else if (chromosome_name && selectGene && param('patients')) {
+            arguments ="?project="+projectName+"&chromosome="+chromosome_name+"&gene="+selectGene+"&patients="+param('patients');
+        	arguments_gene ="?project="+projectName+"&chromosome="+chromosome_name+"&gene="+gene_name;
+        }
+        else {
+            arguments ="?project="+projectName+"&type=variations"+"&chromosome="+chromosome_name+"&ids="+ids;
+            arguments_gene ="?project="+projectName+"&chromosome="+chromosome_name+"&gene="+gene_name+"&ids="+ids;
+        }
+        var url_consequence;
+        var varurl = url_cache_variation_vector+arguments; 
+        var is_cache_url = is_cache+"?project="+projectName+"&type=all";        
+        var patient_url = url_cache_patient+arguments;      
+        var indelurl= url_cache_variation_vector+arguments;
+        var transcripts_url = url_cache_transcripts+arguments;
+        var geneurl;   
+        var grid_current_annex;
+        var current_electro;
+        var lastDejaVuInput;
+        var b_dejavu_gene = 'b_dejavu_gene';
+        var launchDejaVu = "false";
+    
+        //layout pour le tableau de rsultats concernant les patients
+        var layoutPatient = [
+            { name: "Row", get: getRow, width:2, styles: 'text-align:center;'},
+            { name: "Name",field: "name", width: 10, styles: 'text-align:center;' },
+            { name: "Nb traces",field: "nb_traces", width:10, styles: 'text-align:center;'},
+            { name: "Not aligned",field: "trace_na", width:10, styles: 'text-align:center;'},
+            { name: "Nb variations",field: "nb_var", width:8,styles: 'text-align:center;'}  
+        ];
+        
+        //layout pour le tableau de rsultats concernant les groupes
+        var layoutGroup = [
+            { name: "Row", get: getRow, width:2, styles: 'text-align:center;'},         
+            { name: "Name",field: "name",  width: 15, styles: 'text-align:center;'},
+            { name: "Reference",field: "reference",  width: 10, styles: 'text-align:center;'},
+            { name: "Analyse",field: "valid", width: 3 , styles: 'text-align:center;'}
+        ];
+        
+        //layout pour le tableau de rsultats concernant les traces
+        var layoutLectures = [
+            { name: "Row", get: getRow, width:2, styles: 'text-align:center;'}, 
+            { name: "Name",field: "name",  width: 20, styles: 'text-align:center;'},
+            { name: "Patient",field: "patient", width: 6 , styles: 'text-align:center;'},
+            { name: "Oligo",field: "oligo", width: 7 , styles: 'text-align:center;'},   
+            { name: "Quality",field: "quality", width: 3 , styles: 'text-align:center;'},
+            { name: "Length",field: "longueur", width: 3 , styles: 'text-align:center;'},
+            { name: "Is Aligned",field: "isAligned", width: 3,formatter: formatAlign, styles: 'text-align:center;'}
+        ];
+
+        //layout pour le tableau de rsultats concernant les report
+        var layoutReport = [
+            { name: "Row", get: getRow, width:2, styles: 'text-align:center;'}, 
+            { name: "Name",field: "name",  width: 12, styles: 'text-align:center;'},
+            { name: "Allele",field: "text", width: 3 , styles: 'text-align:center;'},
+            { name: "Position",field: "start", width: 8 , styles: 'text-align:center;'},    
+            { name: "Patients",field: "patient", width: 10 , styles: 'text-align:center;'},
+            { name: "Bipd",field: "bipd", width: 6 , styles: 'text-align:center;'},
+            { name: "Polyphred",field: "polyphred", width: 6 , styles: 'text-align:center;'},
+            { name: "Gseq",field: "gseq", width: 6 , styles: 'text-align:center;'},
+            { name: "Consequence",field: "consequence",styles: 'text-align:center;'},
+            { name: "Group",field: "group", width: 7 , styles: 'text-align:center;'},
+            { name: "Reference",field: "reference", width: 10 , styles: 'text-align:center;'},
+            { name: "Filter",field: "filterStar", width: 5 , styles: 'text-align:center;'},
+            { name: "Valid",field: "valid", width: 3 , styles: 'text-align:center;'},
+            {name: "polyphen<br>status",field: "polyphen_status",width: 5,styles:'text-align:center;'} 
+        ];
+        
+        //fonction qui contient les instructions  excuter au chargement de la page      
+        function init() {
+            var t = dojo.byId("patientStore");
+            if (gene_name.toUpperCase() == 'ALL') {
+                if (param_xls_url == null) { dijit.byId("b_export_XLS").set("disabled", true); }
+            }
+        }
+        
+        //fonction appelee au chargement de la page
+        dojo.addOnLoad(init);
+        //dojo.ready(checkPassword_dejavu_local);
+    
+        //fonction appele quand un double click est effectu sur le tableau gridGroup (celui des groupes d'oligos)
+        viewGroup = function(e){
+            var i = e.rowNode.gridRowIndex; 
+            //recupre le nom du groupe et le nom de la rfrence pour la ligne selectionne
+            var name=gridGroup.getCell(1).getNode(i).textContent;   
+            var refname=gridGroup.getCell(2).getNode(i).textContent;    
+            //appelle la fonction detailGroup avec les valeurs rcupres
+            detailGroup(name,refname);
+        };
+    
+        //fonction appele quand double click sur tableau gridIndel (celui des indel)
+        viewIndel =function(e){
+            var i = e.rowNode.gridRowIndex;
+            var name=gridIndel.getCell(1).getNode(i).textContent;   
+            var store = readStore(indelurl);
+            store.fetch({
+                query: {
+                    name: name
+                },
+                onComplete: detailVar
+            });
+        };
+         
+         //fonction appele par viewIndel
+         function detailIndel(name){
+            var zurl = "detailVar.html?project="+projectName+"&variation="+name+"&reference="+reference+"&gene="+selectGene;
+            var fenetre =window.open(zurl,name,config=' toolbar=no, menubar=no, scrollbars=yes, resizable=no, location=no, directories=no, status=no');
+         }
+    
+        //fonction appele par viewPatient       
+        function detailPatient(name){
+           //renseigne le input id= namepatient dans title.html (utiliser ensuite par la page detailPatient.html)
+           //ouvre la page detailPatient.html
+           document.location.href = "detailPatient.html";
+        }
+    
+      
+        //fonction appele par viewVar
+        function detailVar(items,e){
+            //ouvre la page detailVar.html dans une nouvelle fenetre
+            var name = items[0].name;
+            var zurl = "detailVar.html?project="+projectName+"&variation="+name+"&reference="+reference+"&gene="+selectGene+"&contig="+items[0].group+"&varid="+items[0].id;
+            var fenetre =window.open(zurl,name,config=' toolbar=no, menubar=no, scrollbars=yes, resizable=no, location=no, directories=no, status=no');
+            //passe  la fenetre des valeurs utiles pour son chargement
+         }
+     
+        function detailByPatient (item) {
+            var lTraces = [];
+            lTraces.push(item.chromosome);
+            var lPatFam = item.pedigree_fam.toString().split(",");
+            var lPatName = item.patient_name.toString().split(",");
+            var lPatType = item.pedigree_type.toString().split(",");
+            var lPatBase = item.patient_base.toString().split(",");
+            //var lPatStatus = item.pedigree_status.toString().split(",");
+            var lPatHoHe = item.patient_unifiedgenotyperheho.toString().split(",");
+            var lPatRef = item.patient_unifiedgenotyper2.toString().split(",");
+            var lPatVar = item.patient_unifiedgenotyper3.toString().split(",");
+            var lPatDp  = item.patient_unifiedgenotyper4.toString().split(",");
+            var lPatMet = item.patient_unifiedgenotyper5.toString().split(",");
+            var lFound  = item.patient_found.toString().split(",");
+            var lPatReg = item.patient_inregionho.toString().split(",");
+            var lPatTransmission = item.patient_transmission.toString().split(",");
+            
+            //TODO: PolyViewer PolyScore
+            //var lPatScaleScore = item.patient_scale_score.toString().split(",");
+            
+            var lPatBam = item.patient_bam.toString().split(",");
+            var lJson = [];
+            for (var i = 0; i < lPatName.length; i++) {
+            	var priority = 1;
+            	if (lFound[i] == 'yes') {
+            		priority = 2;
+            		if (lPatTransmission[i]) {
+            			if      (String(lPatTransmission[i]) == 'Father') { priority = 3; }
+            			else if (String(lPatTransmission[i]) == 'Mother') { priority = 4; }
+            			else if (String(lPatTransmission[i]) == 'Both')   { priority = 5; }
+            			else { priority = 6; }
+            			
+        			}
+            		else { hPatRowIdFound[String(lPatName[i])] = 'yes'; }
+        		}
+            	var in_region_ho = lPatReg[i];
+            	if (in_region_ho == 'true') {
+            		var lRegions = item.regions_ho;
+            		if (lRegions) {
+	            		for (var r = 0; r < lRegions.length; r++) {
+	            			var h = lRegions[r];
+	            			if (String(h.patient_name) == String(lPatName[i])) {
+	            				in_region_ho = String(h.id);
+	            			}
+	            		}
+            		}
+            	}
+            	var this_perc = " ";
+            	if (parseInt(lPatVar[i]) > 0) {
+					var l_nb_var = String(lPatVar[i]).split(';');
+					var l_nb_ref = String(lPatRef[i]).split(';');
+					for (var j = 0; j < l_nb_var.length; j++) {
+						if (l_nb_var.length == 1) {
+							this_perc = parseInt((parseInt(l_nb_var[j]) / (parseInt(l_nb_ref[j]) + parseInt(l_nb_var[j]))) * 100);
+	            			this_perc += "% " + l_nb_ref[j] + "/" + l_nb_var[j];
+						}
+						else {
+	            			this_perc += " " + l_nb_ref[j] + "/" + l_nb_var[j];
+						}
+					}
+	            }
+	            else {
+	            	this_perc = lPatDp[i] +" reads";
+	            }
+	            
+	            var color = "#A2A5A8";
+		    	if      (priority == 2) { color = '#000000'; } //noir
+		    	else if (priority == 3) { color = '#3695f9'; } //bleu
+		    	else if (priority == 4) { color = '#f44bbf'; } //rose
+		    	else if (priority == 5)   { color = '#9c32f2'; } //violet
+		    	else if (priority == 6){ color = '#e00000'; } //rouge
+						    	
+                var json = {
+                    "fam":     	lPatFam[i] + ';' + color,
+                    "name":     lPatName[i] + ';' + color,
+                    "bam":     lPatBam[i],
+                    "type":     lPatType[i],
+                    "base":     lPatBase[i] + ';' + color,
+                    //"status":   lPatStatus[i],
+                    "status":   lPatHoHe[i] + ';' + color,
+                    "hohe":     lPatHoHe[i] + ';' + color,
+                    "perc":     this_perc + ';' + color,
+                    "ref":      lPatRef[i],
+                    "alt":      lPatVar[i],
+                    "met":      lPatMet[i],
+                    "in_region_ho": in_region_ho,
+                    "transmission": lPatTransmission[i] + ';' + color,
+                    
+                    //TODO: PolyViewer PolyScore
+                    //"scale_score": lPatScaleScore[i] + ';' + color,
+                    
+                    "traces_id":   lTraces,
+                    "traces_name": lTraces,
+                    "variation_id": item.id,
+                    "poly_id":      item.id,
+                    "priority":     priority,
+                };
+                lJson.push(json);
+            }
+            var data = { "items": lJson };
+            var newStore = new dojo.data.ItemFileReadStore({ data: data });
+            gridAnnex.setStore( newStore );
+        }
+     
+     	var done_connect = 0;
+        function onRowClic_gridVar() {
+            var item = gridVar.selection.getSelected()[0];
+			gridAnnex.layout.setColumnVisibility(7, false);
+            getGeneDescription(item);
+            var name = item.name;
+            document.getElementById("waiting_text").textContent = "Loading for  "+name+"  ";
+            dijit.byId('waiting').show();
+            var id = item.v_id;
+            var chr = item.chromosome;
+            var arguments = arguments ="?project="+projectName+"&type=variations"+"&chromosome="+chr+"&ids="+id;
+            if (filter_nbvar_regionho) {
+            	arguments += "&filter_nbvar_regionho="+filter_nbvar_regionho;
+            }
+            var varurl = url_cache_variation_vector + arguments;
+            var store_tmp = readStore(varurl+"&user="+user_name);
+            var done = 0;
+            var list_json = [];
+        	hPatRowIdFound = [];
+            store_tmp.fetch({
+                onItem: function (item, result) {
+                    consequenceOver(item);
+                    detailByPatient(item);
+                    coverageOthersProjects(item);
+                    dijit.byId('waiting').hide();
+                    document.getElementById("waiting_text").textContent = "Loading Data ";
+                    gridAnnex.setSortIndex(1, true);
+                    hide_wild_type();
+                }
+            });
+        }
+        
+        function hide_wild_type() {
+		    if (button_hide_wt.checked){
+		        gridAnnex.filter({priority:"*"});
+		    }
+		    else {
+			    gridAnnex.filter({priority:new RegExp("2|3|4|5|6")}, true);
+		    }
+        }
+     
+           
+        //fonction contenant les instructions  executer au chargement de la page
+        dataLoad = function () {
+            user_name = dojo.cookie("username");   
+            isCache(is_cache_url+"&user="+user_name);
+            document.getElementById("pconseq").style.visibility = "hidden";
+            document.getElementById("csmall").style.visibility = "hidden";
+            dojo.connect(gridVar,'onRowClick', onRowClic_gridVar);
+            dojo.connect(gridVar,'onRowClick', nbLinesSelected);
+            dojo.connect(gridAnnex,'onRowClick' ,selectPatient);
+            filterTranscript.set("store",  new dojo.data.ItemFileWriteStore({
+                url: transcripts_url
+            }));
+        };
+
+        $(document).ready(function() {
+            $("#map").scroll(function () { 
+                    $("#drawing_transcripts").scrollLeft($("#map").scrollLeft());
+                    $("#drawing_patients").scrollLeft($("#map").scrollLeft());
+                });
+            $("#drawing_transcripts").scroll(function () { 
+                    $("#map").scrollLeft($("#drawing_transcripts").scrollLeft());
+                    $("#drawing_patients").scrollLeft($("#drawing_transcripts").scrollLeft());
+                });
+            $("#drawing_patients").scroll(function () { 
+                    $("#map").scrollLeft($("#drawing_patients").scrollLeft());
+                    $("#drawing_transcripts").scrollLeft($("#drawing_patients").scrollLeft());
+                });
+        });
+
+        var firstViewer = 0;  
+        function test_init_viewer(){
+            if (gene_name.toUpperCase() == 'ALL') {
+                alert ("Coverage View not enabled when you show ALL variations at the same time. Sorry.");
+                return;
+            }
+            if (firstViewer == 0 ) {
+                dijit.byId('waiting').show();
+                initViewer();
+                when_external_loaded_graph (function () {
+                    testx();
+                });
+            }
+            firstViewer = 1;
+        }   
+
+        function run_after_waiting() {
+            /* ici je lance la vue graphique */
+            if (!no_graph) {
+                //initViewer();
+            }
+            varurl+="&user="+user_name;
+            //alert (varurl);
+            createFilter(varurl, ["consequence!all","type","filter","public"],gridVar,"filterTable",{allpatients:"patient",name:"name",start:"Position"});
+            
+            gridVar.store.fetch({
+                onComplete: function (items, result){
+                	if('hgmd_class' in items[0]) {}
+                	else { gridVar.layout.setColumnVisibility(16, false); }
+                    document.getElementById("stat_variations").innerHTML = gridVar.rowCount;
+                    setTimeout(function() {
+                    	gridVar.render();
+                	}, 400);
+                	
+                	//TODO: TEST PolyViewer
+                	//alert(items[0]);
+                	//alert(items[0].polyviewer);
+                	//alert(items[0].polyviewer[0]);
+                	//alert(items[0].polyviewer[0].html);
+                	//console.log(items[0].polyviewer[0].html);
+					//document.getElementById('div_polyviewer').innerHTML = items[0].polyviewer[0].html; 
+                	
+                }
+            }); 
+            //resizeDiv('gridVar','local_var',900);
+        }
+
+    
+        var layoutAnnex;    
+        var genome_version ;    
+        function okfunction (items, request){
+            if (items.length==0) {
+                dijit.byId('login').show();
+                return;
+            };
+            getGencodeTrackForProject(projectName);
+            document.getElementById("stat_project").textContent= projectName;
+            document.getElementById("stat_description").textContent= "\""+items[0].description+"\"";
+        
+            lock_button.set("label", dojo.cookie("username"));
+            genome_version = items[0].genome_version[0];
+            project_type = items[0].type;
+            //filterProject.store = readStore(urlpasswd);
+            //filterProject.setValue(items[0].name);
+            setLayoutVar("variations",gridVar);
+        
+            setLayoutVar("annex",gridAnnex);
+            setLayoutVar("consequence",gridConsequence);
+            
+            getGeneDescription();
+            dataLoad();
+            //indel();
+        }
+        var min_position;
+        var max_position;
+        dojo.addOnLoad(function() {
+                checkPassword(projectName,okfunction);
+        });
+
+        //fonction pour revenir  la page listant les projets
+        function goBack(){
+            parent.bas.location.href ="projectList.html";
+        }
+    
+        var old_click;
+        
+        function getGeneDescription(item) {
+            geneurl =  getGeneUrl(item);
+            var jsonStore = readStore(geneurl);
+            if (selectGene =="all") selectGene= '*';
+            jsonStore.fetch({
+                onItem: function (item, result) {
+                    document.getElementById("stat_name").innerHTML = item.complete_name;
+                    document.getElementById("stat_gene_description").innerHTML = item.description+"";
+                    document.getElementById("stat_position").innerHTML = item.position;
+                    document.getElementById("stat_strand").innerHTML = item.strand;
+                    document.getElementById("stat_filter_model").innerHTML = model;
+                    document.getElementById("span_used_filters").innerHTML = item.used_filters;
+                    if (filter_nbvar_regionho) { document.getElementById("span_used_filters").innerHTML += ', HoRegion:' + filter_nbvar_regionho; }
+                    document.getElementById("stat_freq").innerHTML = item.freq;
+                    document.getElementById("stat_dejavu").innerHTML = item.dejavu;
+                }
+            });
+        }
+    
+        function getGeneUrl(item) {
+            geneurl = '';
+            if (item) {
+                arguments_gene = "?project="+projectName+"&chromosome="+item.chromosome+"&gene="+item.genes_name+"&ids="+item.id;
+            }
+            else {
+                arguments_gene = "?project="+projectName+"&chromosome="+chromosome_name+"&gene="+gene_name+"&ids="+v_ids;
+            }
+            geneurl = url_genes_infos_vector + arguments_gene;
+            var lParams = [];
+            lParams = param_xls_url.split(';');
+            dojo.forEach(lParams, function(this_param) {
+                var lTmp = this_param.split('=');
+                if (lTmp[0] == 'filter_type_variation') {
+                    geneurl += '&used_filters=' + lTmp[1];
+                }
+                if (lTmp[0] == 'dejavu') {
+                    geneurl += '&dejavu=' + lTmp[1];
+                }
+                if (lTmp[0] == 'dejavu_ho') {
+                    geneurl += '&dejavu_ho=' + lTmp[1];
+                }
+            });
+            return geneurl;
+        }
+    
+        //fonction appele quand on choisit l'onglet indel
+        function indel() {
+            dojo.connect(gridIndel,'onRowDblClick' ,viewIndel);
+            dojo.connect(gridIndel,'onRowClick' ,IndelOver);
+            dojo.connect(gridCover,'onRowClick' ,selectPatient);
+            document.getElementById('gridIndel').style.width = "780px";
+            createFilter(indelurl, ["valid"],gridIndel,"filterTableIndel",{name:"Indel name",valid:"Valid",start:"Position"});
+            initSpecialFilter(indelurl,filterTranscriptindel);
+            setLayoutVar("indels",gridIndel);
+            setLayoutVar("cover",gridCover);
+            resizeDiv('gridIndel','local_indel');
+        }
+
+        var firstview =0;
+
+        //fonction pour afficher un message indiquant le chargement des donnes
+        function testx(){
+            if (!drawingOK){
+                if (dijit.byId('waiting')) {
+                    dijit.byId('waiting').show();
+                }
+            }
+            else {
+                if (dijit.byId('waiting')) {
+                    dijit.byId('waiting').hide();
+                }
+            }
+        }   
+
+        var url_cover = url_query + "?type=cover"+ "&projectName=" + projectName +"&varid=";
+        var url_annex = url_query + "?type=annex"+ "&projectName=" + projectName +"&varid=";
+
+        function viewCover(items, request){
+            alert("graph");
+            return;
+         /*     if (project_type == "ngs") {
+                    var jsonStore = new dojo.data.ItemFileReadStore({
+                        url: url_cover + items[0].id + "&object_type=" + items[0].type
+                    });
+                    //gridCover.setStore(jsonStore);
+                    viewAnnex(items,request);
+                }
+                else {*/
+                     grid_current_annex = gridCover;
+                     current_electro= "tableElectro_indel";
+                    viewAnnex(items,request);
+                //}
+        }
+
+
+        IndelOver =function(e){
+            var i = e.rowNode.gridRowIndex; 
+            var name=gridIndel.getCell(1).getNode(i).textContent;   
+            var store = readStore(indelurl);
+            store.fetch({
+                query: {
+                    name: name
+                },
+                onComplete: viewCover,
+                onError:jsonError
+            });
+            var i = e.rowNode.gridRowIndex; 
+            var name=gridIndel.getCell(1).getNode(i).textContent;   
+        };
+    
+        var indexNomenclature;
+    
+        function addNomenclature() {
+            if (!gridVar.structure) return; 
+            var layoutVariation = gridVar.structure;
+            if (!indexNomenclature) indexNomenclature = findColumnIndex(layoutVariation,"Nomenclature");
+            layoutVariation[indexNomenclature]["name"] = filterTranscript.getDisplayedValue();
+            layoutVariation[indexNomenclature]["field"] = "nomenclature!"+filterTranscript.getValue();
+            var zz = findColumnIndex(layoutVariation,"Consequence");
+            layoutVariation[zz]["field"] = "consequence!"+filterTranscript.getValue();
+            var yy = findColumnIndex(layoutVariation,"polyphen<br>status");
+            layoutVariation[yy]["field"] = "polyphen!"+filterTranscript.getValue(); 
+            gridVar.setStructure(layoutVariation);
+            if  (filterTranscript.getValue() == "all") {        
+                document.getElementById("ptranscript").style.backgroundImage = 'url(/icons/Polyicons/bckgrd_grey.png)';
+            }
+        }
+    
+        //   fonction appele quand double click sur tableau gridPatient (celui des patients)    
+        var patient_select = "all";
+        viewPatient = function(e){
+            var filter;
+            var i = e.rowNode.gridRowIndex; 
+            var name=gridPatient.getCell(1).getNode(i).textContent; 
+            filterPatientName.setValue(name);
+            lhtabs.selectChild(rhtab4);
+            return;
+        };
+    
+        var patient_name_filter;
+        var tab_id_patientFilter;
+        var indexValid;
+        function filterPatient(ft,grid) {
+            var filter;
+            var name=ft.getValue();
+            if (name =='') name ='all';
+            patient_name_filter = name; 
+            var layout = gridVar.structure;
+            if (!indexValid) indexValid = findColumnIndex(layout,"Valid");
+            if (name == "all") {
+                patient_name_filter ="";    
+                layout[indexValid]["name"] = "valid";
+                layout[indexValid]["field"] = "valid";
+                grid.setStructure(layout);
+                grid.filter({"allpatients": "*"});  
+                return;
+            }
+            tab_id_patientFilter = 0;
+            layout[indexValid]["name"] = name;
+            layout[indexValid]["field"] = "valid!"+name;
+            grid.setStructure(layout);
+            grid.filter({"allpatients": "*" + name + "*"}); 
+        }
+
+        function addNomenclatureIndel() {
+            document.getElementById("ptranscriptindel").style.backgroundImage = 'url(/icons/polyicons/bckgrdsmall.png)';
+            dijit.byId("5471").attr("iconClass", "exportIcon");
+            b5471.setDisabled(false);
+            var layoutIndel = gridIndel.structure;
+            layoutIndel[2]["name"] = filterTranscriptindel.getDisplayedValue();
+            layoutIndel[2]["field"] = "nomenclature!"+filterTranscriptindel.getValue();
+            layoutIndel[7]["field"] = "consequence!"+filterTranscriptindel.getValue();
+            gridIndel.setStructure(layoutIndel);
+            if  (filterTranscriptindel.getValue() == "all") {       
+                document.getElementById("ptranscriptindel").style.backgroundImage = 'url(/icons/polyicons/bckgrd_grey.png)';
+                dijit.byId("5471").attr("iconClass", "reportIcon");
+                b5471.setDisabled(true);
+            }
+        }
+        
+        function generate_report(type){
+            var name;
+            if (type == "variation") {
+                name = filterTranscript.getValue();
+            }
+            else {
+                name= filterTranscriptindel.getValue();
+            }
+            if (!name || name == "all") {
+                alert("choose a transcript first ");
+                return 1;
+            }
+            var url = url_report+"?project="+projectName+"&transcript="+name+"&type="+type;
+            window.location=url;
+        }
+        
+        function viewTracesForPosition(){
+            var chr = document.getElementById("trace_chromosome").innerHTML;
+            var position = trace_position.value;
+            //document.location.href = "detailProject.html?project="+projectName+"&gene="+items[0].name+"&reference="+items[0].reference+"&type="+project_type+"&ids="+items[0].ids;
+            var zurl = "detailVar.html?project="+projectName+"&chromosome="+chr+"&genomic_position="+position;
+            var fenetre =window.open(zurl,name,config=' toolbar=no, menubar=no, scrollbars=yes, resizable=no, location=no, directories=no, status=no');
+        }
+
+        function viewIGV () {
+            //alert(chromosome);
+            var items= gridVar.selection.getSelected();
+            var chr = items[0].chromosome;
+            var start = items[0].start;
+            var end = items[0].end;
+            displayInIGV(chr,start,end);
+        }
+        
+        function viewAlamut() {
+            //alert(chromosome);
+            var items= gridVar.selection.getSelected();
+            var alamut = items[0].alamut;
+            displayInAlamutVector(alamut);
+        }
+    
+        function polyphen (){
+            var polyphen2 = "//genetics.bwh.harvard.edu/cgi-bin/ggi/ggi2.cgi?&_ggi_project=PPHWeb2&_ggi_origin=query&_ggi_target_pipeline=Submit%20Batch&"+"_ggi_batch=";//chr1:1267483 G/A";
+            var items= gridVar.selection.getSelected();
+            var text2 ="";
+            if(items.length == 0) {
+                alert_txt();
+                return;
+                }
+            for (var i = 0; i < items.length; i++) {
+                var chr = items[i].chromosome;
+                var start = items[i].start;
+                var allele = items[i].text;
+                
+                text2 += "chr" + chr + ":" + start + " " + allele+"\n";
+            }
+            var uniqueID = new Date();
+            //var fenetre =window.open(polyphen2+text2,"test");
+            var textarea = document.getElementById("_ggi_batch");
+             var sdata;
+             sdata = "<form id='form_polyphen' method='post' action='//genetics.bwh.harvard.edu/cgi-bin/ggi/ggi2.cgi' enctype='multipart/form-data'> <input type='hidden' name='_ggi_project' value='PPHWeb2' />";
+             
+                sdata += "<input type='hidden' name='_ggi_origin' value='query' />";
+                sdata += "<input type='hidden' name='_ggi_target_pipeline' value='=Submit Batch' />";
+                sdata += "<TEXTAREA  id='_ggi_batch' name='_ggi_batch' >"+text2+"</TEXTAREA>";
+                sdata += "<input type='hidden' name='_ggi_target_pipeline' value='=Submit Batch' />";
+                sdata += "<input type='submit' name='_ggi_target_pipeline' value='Submit Batch' />";
+                if (genome_version == "HG19") {
+                    sdata += "<option selected='selected' value='hg19'>GRCh37/hg19</option><option value='hg18'>NCBI36/hg18</option></select>";
+                }
+                else {
+                    sdata += "<option  value='hg19'>GRCh37/hg19</option><option selected='selected' value='hg18'>NCBI36/hg18</option></select>";
+                }
+                sdata += '</form>   ';
+                sdata += "<script type='text/javascript'>";
+                sdata += "document.getElementById('form_polyphen').submit('Submit Batch');";
+            
+                sdata +="</sc" + "ript>";
+                OpenWindow=window.open("",uniqueID.getTime());
+                OpenWindow.document.write(sdata);
+        
+        }
+        
+        function alert_txt (){
+            alert ("select snp first");
+        }
+        
+        function sift() {
+            var items= gridVar.selection.getSelected();
+            var text2 ="";
+            if(items.length == 0) {
+                alert_txt();
+                return;
+                }
+            for (var i = 0; i < items.length; i++) {
+                var chr = items[i].chromosome;
+                var start = items[i].start;
+                var allele = items[i].text;
+                text2 +=  chr + "," + start + ",1," + allele+"\n";
+            }
+            var sdata = "<FORM ID='form_sift' ENCTYPE='MULTIPART/FORM-DATA' METHOD='POST' ACTION='//sift.jcvi.org/sift-bin/SIFT_feed_to_chr_coords.pl'>";
+            sdata += "<select name='organism' id='organism'>";
+            if (genome_version == "HG19") {
+                sdata += "<option value='Human_db_37'>Homo sapiens NCBI 37 Ensembl 61</option>";
+            }
+            else {
+                sdata += "<option value='Human_db'>Homo sapiens NCBI 36 Ensembl 41</option>";
+            }
+                    sdata += "  </select>";
+                    sdata += "  <TEXTAREA NAME='CHR' ROWS=15 COLS=50>"+text2+"</TEXTAREA>";
+                    sdata += "  <input type='checkbox' name='oo1' value='1' checked='checked' > Ensembl Gene ID<br>";
+                    sdata += "  <input type='checkbox' name='oo2' value='1' checked='checked'> Gene Name<br>";
+                    sdata += "  <input type='checkbox' name='oo3' value='1' checked='checked' > Gene Description<br>";
+                    sdata += "  <input type='checkbox' name='oo4' value='1' checked='checked' > Ensembl Transcript Status (Known / Novel)<br>";
+                    sdata += "  <input type='checkbox' name='oo5' value='1' checked='checked'> Ensembl Protein Family ID<br>";
+                    sdata += "  <input type='checkbox' name='oo6' value='1' checked='checked'> Ensembl Protein Family Description<br>";
+                    sdata += "<input type='checkbox' name='oo7' value='1' checked='checked' > Protein Family Size<br>";
+                    sdata += "  <input type='checkbox' name='oo8' value='1' checked='checked'> Ka/Ks (Human-mouse)<br> ";
+                    sdata += "  <input type='checkbox' name='oo9' value='1' checked='checked'> Ka/Ks (Human-macaque)<br>";
+                    sdata += "  <input type='checkbox' name='oo10' value='1' checked='checked'> OMIM Disease<br>";
+                    sdata += "  <input type='checkbox' name='oo11' value='1' checked='checked'> Allele Frequencies (All Hapmap Populations - weighted average)<br>";
+                    sdata += "<input type='checkbox' name='oo12' value='1' checked='checked'> Allele Frequencies (CEU Hapmap population)<br>";
+                    sdata += "  <input type='checkbox' name='oo13' value='1' checked='checked'> Allele Frequencies (ASW Hapmap population)<br>";
+                    sdata += "<input type='checkbox' name='oo14' value='1' checked='checked'> Allele Frequencies (CHB Hapmap population)<br>";
+                    sdata += "<input type='checkbox' name='oo15' value='1' checked='checked' > Allele Frequencies (CHD Hapmap population)<br>";
+                    sdata += "<input type='checkbox' name='oo16' value='1' checked='checked'> Allele Frequencies (GIH Hapmap population)<br>";
+                    sdata += "<input type='checkbox' name='oo17' value='1' checked='checked'> Allele Frequencies (JPT Hapmap population)<br>";
+                    sdata += "  <input type='checkbox' name='oo18' value='1' checked='checked' > Allele Frequencies (LWK Hapmap population)<br>";
+                    sdata += "  <input type='checkbox' name='oo19' value='1' checked='checked'> Allele Frequencies (MEX Hapmap population)<br>";
+                    sdata += "  <input type='checkbox' name='oo20' value='1' checked='checked' > Allele Frequencies (MKK Hapmap population)<br>";
+                    sdata += "  <input type='checkbox' name='oo21' value='1' checked='checked'> Allele Frequencies (TSI Hapmap population)<br>";
+                    sdata += "  <input type='checkbox' name='oo22' value='1' checked='checked'> Allele Frequencies (YRI Hapmap population)<br>";
+                    sdata += " </FORM>";
+                    sdata += "<script type='text/javascript'>";
+                    sdata += "document.getElementById('form_sift').submit('Submit Batch');";
+                    sdata +="</sc" + "ript>";
+                    var uniqueID = new Date();
+                    OpenWindow=window.open("",uniqueID.getTime());
+                    OpenWindow.document.write(sdata);
+        }
+        
+        function zoomCoverage(tr){
+           var url = url_coverage+"?project="+projectName+"&span=0&limit=5&patients=all&exome=1&transcripts="+tr;
+                dijit.byId("popup_coverage").show();
+                dijit.byId("div_popup_coverage").setHref(url);
+        }
+        
+        function show_coverage() {
+            if (gene_name.toUpperCase() == 'ALL') {
+                alert ("Coverage View not enabled when you show ALL variations at the same time. Sorry.");
+                return;
+            }
+            var url ="../polyweb_coverage.html?project="+projectName+"&gene="+gene_name;
+            window.open(url);
+        }
+ 
+        function openPopup_hecomp(value) {
+            var myDialog = dijit.byId(value);
+            myDialog.show();
+        }
+ 
+       function nbLinesSelected() {
+           var listVarNames = getVarIdFromSelectedVar();
+           if (listVarNames.length == 2) { dijit.byId("bHeComp").set('disabled', false); }
+           else { dijit.byId("bHeComp").set('disabled', true); }
+       }
+
+        function show_dejavu() {
+            LoginOk = true;
+            if (gene_name.toUpperCase() == 'ALL') {
+                alert ("PolyDejaVu not enabled when you show ALL variations at the same time. Sorry.");
+                return;
+            }
+            var url ="../polydejavu/dejavu.html?input=" + gene_name + '&origin_project=' + projectName;
+            window.open(url);
+        }
+        
+        function launch_web_igv() {
+            var items = [];
+            var this_project_name;
+            if (dijit.byId("covthisproj").selected == true) {
+                items = gridAnnex.selection.getSelected();
+                this_project_name = projectName;
+            }
+            if (dijit.byId("covyourproj").selected == true)      {
+                items = gridCovYourProj.selection.getSelected();
+                this_project_name = items[0].project;
+            }
+            if (dijit.byId("covotherproj").selected == true) {
+                items = gridCovOtherProj.selection.getSelected();
+                this_project_name = items[0].project;
+            }
+            if (items.length == 0) {
+            	alert("Web IGV: please, select a patient first.");
+            	return;
+            }
+            var gridVar = dijit.byId("gridVar");
+            var item_var = gridVar.selection.getSelected()[0];
+            var locus = item_var.chromosome + ':' + item_var.start;
+            var array_bam = [];
+            var array_name = [];
+            for (var i = 0; i < items.length; i++) {
+            	array_bam.push(items[i].bam.join(';'));
+            	var lTmp = items[i].name[0].split(';');
+            	array_name.push(lTmp[0]);
+            }
+			displayListBamInIgvApp(array_bam); 
+        	displayInIGV(item_var.chromosome, item_var.start, item_var.start);
+        	var var_id = String(item_var.id).substring(0, 60); 
+        	if (var_id.length >= 60) { var_id = var_id + '...'; }
+            var url_igv = "/polyweb/html/manta/Url_CNV_Viewer.html?titre=" + var_id;
+            var var_length = (item_var.end - item_var.start + 1);
+            if (String(item_var.structural_type).match(/cnv/)) {
+            	url_igv += "&locusstart=" + item_var.chromosome + ":" + (parseInt(item_var.start)-100) + "-" + (parseInt(item_var.end)+100);
+            	url_igv += "&locusend=";
+            	//url_igv += "&locusend=" + item_var.chromosome + ":" + (parseInt(item_var.end)-100) + "-" + (parseInt(item_var.end)+100);
+            }
+            else {
+            	url_igv += "&locusstart=" + item_var.chromosome + ":" + (parseInt(item_var.start)-50) + "-" + (parseInt(item_var.start)+50);
+            	url_igv += "&locusend=";
+            }
+            url_igv += "&bamfile=" + array_bam.join(',');
+            url_igv += "&patient_name=" + array_name.join(',');
+            url_igv += "&taille=" + var_length + "pb";
+            if (typeof url_gene_bed !== 'undefined') {
+            	url_igv += "&genes_bed=" + url_gene_bed;
+        	}
+            if (typeof url_fasta !== 'undefined') {
+            	url_igv += "&fasta=" + url_fasta;
+        	}
+            window.open(url_igv);
+            return;
+        }
+        
+        function show_HeComp() {
+            var listVarNames = getVarIdFromSelectedVar();
+            if (listVarNames.length == 2) {
+                dijit.byId("gridLogLocal").filter({projName: "NONE"});
+                openPopup_hecomp('popupHeComp');
+                var inputId = listVarNames.join(',');
+                launchHeComp(inputId, 'gridHeCompLocal', projectName);
+                when_external_loaded (function () {
+                    getDetails_HeComp();
+                });
+            }
+        }
+        
+        function when_external_loaded (callback) {
+            var item = dijit.byId("gridHeCompLocal").getItem(0);
+            if (item == null) {
+                setTimeout (function () {
+                    when_external_loaded (callback);
+                }, 100);
+            } else { callback (); }
+        }
+        
+        function when_external_loaded_graph (callback) {
+            var isEmpty1 = $('#drawing_transcripts').is(':empty');
+            var isEmpty2 = $('#drawing_patients').is(':empty');
+            if(isEmpty1 || isEmpty2) {
+                setTimeout (function () {
+                    when_external_loaded_graph (callback);
+                }, 100);
+            } else { callback (); }
+        }
+
+        function getDetails_HeComp() {
+            var item = dijit.byId("gridHeCompLocal").getItem(0);
+            var val_var = dijit.byId("gridHeCompLocal").store.getValue(item, "var_1");
+            if (val_var == 'No Result...') { dijit.byId("gridLogLocal").filter({projName: "None"}); }
+            else {
+                var val_proj = dijit.byId("gridHeCompLocal").store.getValue(item, "nbProj");
+                var toFilter = val_proj.replace(/; /g, "|");
+                var item = dijit.byId("gridHeCompLocal").getItem(0);
+                var val_var = dijit.byId("gridHeCompLocal").store.getValue(item, "var_1");
+                if (val_var == "No result...") {
+                    toFilter = 'NONE';
+                    openPopup_hecomp('popupHeComp_noResult');
+                    dijit.byId("popupHeComp").hide();
+                }
+                details_local();
+                dijit.byId("gridLogLocal").filter({projName: "*"});
+                dijit.byId("gridLogLocal").filter({projName: new RegExp(toFilter)});
+            }
+            dijit.byId("gridLogLocal").render();
+            dijit.byId("gridHeCompLocal").render();
+        }
+
+        function details_local() {
+            var details = new Object();
+            var patients = new Object();
+            var grid = dijit.byId("gridHeCompLocal");
+            var item = grid.getItem(0);
+            var val_var = dijit.byId("gridHeCompLocal").store.getValue(item, "var_1");
+            if (val_var == "No result...") {
+                document.getElementById("details_projNok_local").innerHTML = "<b><u>[ Not Authorized Project: </b></u> 0";
+                document.getElementById("details_projOk_local").innerHTML = "<b><u>Authorized Project: </b></u> 0<b><u> ]</b></u>";
+                hashPatient[''] = 0;
+            }
+            else {
+                dojo.forEach(grid.store.getAttributes(item), function(attribute) {
+                    var value = grid.store.getValues(item, attribute);
+                    if (attribute == "nbProj") {
+                        var tmp = new String(value);
+                        var tab = tmp.split("; ");
+                        var ok = 0;
+                        var nok = 0;
+                        dojo.forEach(tab, function(projName){
+                            if (projName == "X") { nok += 1; }
+                            else { ok += 1; }
+                        });
+                        document.getElementById("details_projNok_local").innerHTML = "<b><u>[ Not Authorized Project: </b></u> " + nok;
+                        document.getElementById("details_projOk_local").innerHTML = "<b><u>Authorized Project: </b></u>" + ok + "<b><u> ]</b></u>";
+                    }
+                    if (attribute == "nbPat") {
+                        var tmp = new String(value);
+                        var tab = tmp.split("|");
+                        tmp = tab[1];
+                        tab = tmp.split("; ");
+                        dojo.forEach(tab, function(patName){
+                            var tmp2 = patName.split(" [");
+                            var project = tmp2[0];
+                            var pat = tmp2[1].replace("]", "");
+                            hashPatient[project] = pat;
+                        });
+                    }
+                    details[attribute] = value;
+                });
+            }
+        }
+        
+        function exportExcel() {
+            alert ("Click OK and wait your file patiently please. Thanks.");
+            var url_xls;
+            if (param_xls_url != null) {
+                url_xls = url_cache_variation_excel_vector + "?" + param_xls_url;
+                url_xls = url_xls.replace(/;/g, '&');
+            }
+            else {
+                url_xls = url_cache_variation_excel_vector+"?project="+projectName+"&resume_vector="+chromosome_name+":"+type_cache+":"+v_chr_size+":"+v_ids+"&xls_by_variants=1";
+            }
+            url_xls += '&detail_project=1';
+            url_xls += "&user_name="+user_name;
+            console.log(url_xls);
+            downloadFile(url_xls);
+        }
+
+        var deferred_xls;
+        dojo.require("dojo.io.iframe");
+        
+        function downloadFile(url){
+            if (deferred_xls) { deferred_xls.cancel(); }
+            deferred_xls = dojo.io.iframe.send({
+                url: url,
+                data: sendData,
+                method: "post",
+            });
+            console.log(deferred_xls);
+        }
+        
+        function checkPassword_dejavu_local() {
+            var user = null;
+            var pass = null;
+            user = dojo.cookie("username");
+            pass = dojo.cookie("passwd");
+            dataStore_log = new dojo.data.ItemFileReadStore({ url: url_checkLogin + "?login=" + user + "&pwd=" + pass });
+            var gridLog = dijit.byId("gridLogLocal");
+            gridLog.setStore(dataStore_log);
+            gridLog.store.fetch();
+            dijit.byId("gridLogLocal").filter({projName: "NONE"});
+        }
+        
+        function getVarIdFromSelectedVar() {
+            var grid = dijit.byId("gridVar");
+            var listVarNames = [];
+            dojo.forEach(grid.selection.getSelected(), function (item,i) {
+                var id = grid.store.getValue(item,"id");
+                listVarNames.push(id);
+            });
+            return listVarNames;
+        }
+        
+        function getDejaVuFromSelectedVar() {
+            var grid = dijit.byId("gridVar");
+            var dejavu = grid.store.getValue(grid.selection.getSelected()[0], "bipd_db");
+            return dejavu;
+        }
+        
+        function coverageOthersProjects(item) {
+            var gridCovYourProj = dijit.byId("gridCovYourProj");
+            var gridCovOtherProj = dijit.byId("gridCovOtherProj");
+            if (getDejaVuFromSelectedVar() == "-") {
+                gridCovYourProj.filter({id: 'NONE'});
+                gridCovOtherProj.filter({id: 'NONE'});
+            } 
+            else {
+                var user = dojo.cookie("username");
+                var pass = dojo.cookie("passwd");
+                var urlLaunch = url_path + "polydejavu/dejavu_bypatient_cgi.pl";
+                var datastore_cov = new dojo.data.ItemFileWriteStore({ url: urlLaunch + "?login=" + user + "&pwd=" + pass + "&input=" + item.id + "&thisproject=" + projectName });
+                //gridCovYourProj.set('disabled', '');
+                gridCovYourProj.setStore(datastore_cov);
+                gridCovYourProj.store.fetch();
+                gridCovOtherProj.setStore(datastore_cov);
+                gridCovOtherProj.store.fetch({
+                    onComplete: function(items){
+                        //document.getElementById("covyourproj").style.visibility="visible";
+                        //document.getElementById("covotherproj").style.visibility="visible";
+                        gridCovYourProj.filter({other_project: "n"});
+                        if (gridCovYourProj.rowCount == 0) { document.getElementById("covyourproj").style.visibility="hidden"; }
+                        gridCovOtherProj.filter({other_project: "y"});
+                        if (gridCovOtherProj.rowCount == 0) { document.getElementById("covotherproj").style.visibility="hidden"; }
+                    }
+                });
+            }
+        }
+    
+        var hideorshow =0;  
+        var nbshow=0;
+        function hideShowWait(){
+             if (dijit.byId('waiting')) {
+                 if (hideorshow%2 ==0){
+                      dijit.byId('waiting').show();
+                      nbshow++;
+                 }
+                 else {
+                     dijit.byId('waiting').hide();
+                 }
+                 hideorshow ++;
+             }
+        }
+        
+        function show_region_ho(value) {
+			var lfields = String(value).split(';');
+			var patient_name = lfields[0];
+			var chr_name = lfields[1];
+			var start = lfields[2];
+			var end = lfields[3];
+			var nb_var = lfields[4];
+			var length = parseInt(end) - parseInt(start) + 1; 
+			document.getElementById("info_ho_region_patient").textContent = patient_name;
+			document.getElementById("info_ho_region_chr").textContent = chr_name;
+			document.getElementById("info_ho_region_start").textContent = start;
+			document.getElementById("info_ho_region_end").textContent = end;
+			document.getElementById("info_ho_region_length").textContent = length + ' nt';
+			document.getElementById("info_ho_region_nbvar").textContent = nb_var;
+			dialog_region_ho.show();
+        }
+        
+        function zoomHgmd(p,hid,vid){
+            dijit.byId("popup_hgmd").show();
+            dijit.byId("div_popup_hgmd").setHref(url_hgmd_view+"?polyquery_view=1&hid="+hid+"&vid="+vid+"&project="+p);
+		}
+    </script>
+    
+    </head>
+        <body class="tundra" style="font-size: 10px;">
+         <form id="formTrace" jsId="formTrace" action="#" execute="#">
+            <input id="trace_type" name="type" value="trace" type="hidden"><input name="project_name" id = "trace_project_name" value="zzz" type="hidden">
+        </form>
+    
+        <div id="header_apple">
+            <span class="title_page">Variations Detail</span>
+            <span class="insetheader2"><img src="/icons/Polyicons/bipd4.png" width="50%" height="50%"></span>
+            <span class="insetheader3">Bioinformatics Paris Descartes</span>
+            <span class="title_credit">Université Paris Descartes , Institut Imagine</span>
+            <div id="header-content">
+                <span class="insetheader_projectname"> <label class ="label1" id="stat_project">---</label></span>
+                <br>
+                <span class="insetheader_description2">
+                    <span class="insetheader_description"><label class = "label1" id="stat_description">---</label></span>
+                </span>
+            </div>
+        </div>
+
+        <div style="background-image: url(/icons/Polyicons/subtitle_greyblack.png);background-repeat: repeat-x;">
+            <div id="toolbar" dojoType="dijit.Toolbar" style="height:22px;">
+                <span class="myspan" style="font-size:10px;"><a >Model<label class = "label2" id="stat_filter_model" style="font-size:10px;">??</label></a></span>
+                <span class="myspan" style="font-size:10px;"><a >DB Public<label class = "label2" id="stat_freq" style="font-size:10px;">??</label></a></span>
+                <span class="myspan" style="font-size:10px;"><a><label id="label_dejavu">DejaVu</label><label class = "label2" id="stat_dejavu" style="font-size:10px;">??</label></a></span>
+                <span class="myspan" style="font-size:10px;">Filters  <label class="label2" id="span_used_filters" style="font-size:9px;">??</label></span>
+            </div>
+            <div id="toolbar2" dojoType="dijit.Toolbar" style="height:22px;">
+                <span class="myspan" style="font-size:10px;">Name<label class = "label2" id="stat_name" style="font-size:10px;">??</label></span>
+                <span class="myspan" style="font-size:10px;">Description<label class = "label2" id="stat_gene_description" style="font-size:10px;">??</label></span>
+                <span class="myspan" style="font-size:10px;"><a>Pos</a ><label class = "label2" id="stat_position" style="font-size:10px;">??</label></span> 
+                <span class="myspan" style="font-size:10px;"><a>Strand</a ><label class = "label2" id="stat_strand" style="font-size:10px;">??</label></span>
+                <span class="myspan" style="font-size:10px;"><a>Nb Var</a> <label class = "label2" id="stat_variations" style="font-size:10px;">??</label></span>
+                <div id="lock_button"  jsId="lock_button" dojoType="dijit.form.Button" iconClass="loginIcon" onClick='relogin();' showLabel="true" style="float:right">Login</div>
+            </div>
+        </div>
+        
+        <div dojoType="dijit.layout.BorderContainer" style="width:100%; height:80%;overflow-y: auto;">
+            <!-- div pour affichage du message indiquant le chargement des donnes -->
+            <!--formulaire pour charger les fichiers ab1 des traces-->
+            <div id="tabs" jsId="tabs" dojoType="dijit.layout.TabContainer"  style="width:100%;" region = "leading" tabStrip="true">
+                <div dojoType="dijit.layout.ContentPane" selected="true" title="Table View" id= "tableViewer" jsId="tableViewer" style="width:100%;height:70%" selected="true"> 
+                <!-- div au dessus du tableau permettant de revenir en arrire et affichant le nom du projet --> 
+                <!---------- END header---------->
+                <!-- table pour l'affichage des filtres  appliquer sur le tableau -->
+                <!-- table pour l'affichage du tableau et des boutons sous le tableau -->
+                <div dojoType="dijit.layout.BorderContainer" style="width:100%; height:500px;" design="sidebar" gutters="true" liveSplitters="true">
+                    <div id ="local_var" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="splitter:true, region:'center'"  style="width:100%;height:100%">
+                          <table id="filterTable" hidden></table>
+                          <!--    <div class="gridContainer" style="width:100px;"> -->
+                          <!-- tableau des donnees proprement dit -->
+                          <div id="gridVar" style="width:100%;height:95%" class="grid" dojoType="dojox.grid.DataGrid" selectable="1" jsId="gridVar"></div>
+                          <!--</div> -->
+                    </div>
+                   
+                    <!--<div id ="csmall" dojoType="dijit.layout.ContentPane" region="trailing"  > -->
+                    <div id ="csmall" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="splitter:true, region:'right'"style="width:400px;">
+                        <div  class="partsContainerSmall" jsId="csmall">
+                             <div  dojoType="dijit.Toolbar">
+                                 <table>
+                                     <td><div dojoType="dijit.form.Button" iconClass="igvIcon" onClick='launch_web_igv();' showLabel="true">Load IGV</div></td>
+                                     <td><div><span dojoType="dijit.ToolbarSeparator"></span></div></td>
+                                     <td>
+                                     	<input type="checkbox" dojoType="dijit.form.CheckBox" id="button_hide_wt" checked="true" onClick="hide_wild_type();">
+										<span>Show All Patients</span>                                     	
+                                     </td>
+                                 </table>
+                             </div> <!-- end div toolbar -->    
+                             <div class="gridContainerSmall"  style="height:350px;">
+                                <div id="tabs_cov" jsId="tabs" dojoType="dijit.layout.TabContainer"  style="width:100%;height:100%" region = "leading" tabStrip="true">
+                                    <div dojoType="dijit.layout.ContentPane" selected="true" title="This Project" id= "covthisproj" jsId="covthisproj" style="width:100%;height:100%" selected="true">    
+                                        <div id="gridAnnex" class="grid" dojoType="dojox.grid.DataGrid"  jsId="gridAnnex"></div>
+                                    </div>
+                                    <div dojoType="dijit.layout.ContentPane" title="Your Project(s)" id= "covyourproj" jsId="covyourproj" style="width:100%;height:100%">
+                                        <table dojoType="dojox/grid/DataGrid"
+                                            id    = "gridCovYourProj"
+                                            jsId  = "gridCovYourProj"
+                                            selectionMode = "single"
+                                            onRowClick = "selectPatient_yours"
+                                            query = "{ id: '*' }" >
+                                            <thead><center>
+                                                <tr>
+                                                    <th width="30%" field="project"><b><center>Proj</b></center></th>
+                                                    <th width="30%" field="name"><b><center>Patient</b></center></th>
+                                                    <!--<th width="10%" field="ped" formatter="formatChild2"><b><center>ped</b></center></th>-->
+                                                    <th width="8%" field="var_allele"><b><center>base</b></center></th>
+                                                    <th width="7%" field="hohe"><b><center>st</b></center></th>
+                                                    <th width="7%" field="nb_all_ref"><b><center>ref</b></center></th>
+                                                    <th width="7%" field="nb_all_mut"><b><center>alt</b></center></th>
+                                                    <!--<th width="10%" field="method"><b><center>met</b></center></th>
+                                                    <th width="10%" field="valid"><b><center>valid</b></center></th>-->
+                                                </tr>
+                                            </thead></center>
+                                        </table>
+                                    </div>
+                                    <div dojoType="dijit.layout.ContentPane" title="Other Project(s)" id= "covotherproj" jsId="covotherproj" style="width:100%;height:100%">
+                                        <table dojoType="dojox/grid/DataGrid"
+                                            id    = "gridCovOtherProj"
+                                            jsId  = "gridCovOtherProj"
+                                            selectionMode = "single"
+                                            onRowClick = "selectPatient_others"
+                                            query = "{ id: '*' }" >
+                                            <thead><center>
+                                                <tr>
+                                                    <th width="25%" field="id"><b><center>Proj/Pat id</b></center></th>
+                                                    <!--<th width="10%" field="ped" formatter="formatChild2"><b><center>ped</b></center></th>-->
+                                                    <th width="8%" field="var_allele"><b><center>base</b></center></th>
+                                                    <th width="7%" field="hohe"><b><center>st</b></center></th>
+                                                    <th width="7%" field="nb_all_ref"><b><center>ref</b></center></th>
+                                                    <th width="7%" field="nb_all_mut"><b><center>alt</b></center></th>
+                                                    <!--<th width="10%" field="method"><b><center>met</b></center></th>
+                                                    <th width="10%" field="valid"><b><center>valid</b></center></th>-->
+                                                </tr>
+                                            </thead></center>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        <!--
+                        <div dojoType="dijit.Toolbar">
+                            <button id="A_1470" dojoType="dijit.form.Button" onClick='updateValidation(2,dojo.cookie("username"),gridAnnex,gridVar);' iconClass="validIcon">
+                                Ho
+                             </button>
+                            <button id="A_1471" dojoType="dijit.form.Button" onClick='updateValidation(3,dojo.cookie("username"),gridAnnex,gridVar);' iconClass="validIcon">
+                             He
+                          </button>
+                        
+                           <button id="A_1468" dojoType="dijit.form.Button" onClick='updateValidation(-1,dojo.cookie("username"),gridAnnex,gridVar);' iconClass="unvalidIcon">
+                               None
+                           </button>
+                           <button id="A_1469" dojoType="dijit.form.Button" onClick='updateValidation(-3,user_name,gridAnnex,gridVar);' iconClass="uncertainIcon">
+                              Todo
+                          </button>
+                          
+                        </div>   -->
+                                                                                            
+                        
+
+                        </div>
+                        
+                        <div id ="csmall2" class="partsContainerSmall2" >
+                            
+                            <table id="tableElectro"  jsId="tableElectro" border="1"></table>
+                        </div>
+                        </div>  
+                        <!-- div pour les boutons sous le tableau -->
+                    <div id ="pbuttons"  dojoType="dijit.layout.ContentPane" region="top" style="width:100%; height:25px;">
+                        <div dojoType="dijit.Toolbar"style="width:100%; height:25px;">
+                            <!-- bouton pour rafraichir le tableau -->
+                            <!--
+                            <button dojoType="dijit.form.Button" onClick='forceRefreshTableVariation(gridVar);' iconClass="refreshIcon">
+                                Refresh
+                            </button>
+                            <span dojoType="dijit.ToolbarSeparator"></span>
+                            -->
+                                <!-- bouton pour exporter le tableau -->
+                                
+                            <table>
+                                <td>
+                                    <button id="b_export_XLS" dojoType="dijit.form.Button" onClick='exportExcel()' iconClass="exportIcon">
+                                        <span>Export</span>
+                                    </button>
+                                </td>
+                                <!--
+                                 <td><div><span dojoType="dijit.ToolbarSeparator"></span></div></td>
+                                 <td><div dojoType="dijit.form.Button" iconClass="igvIcon" onClick='LoadIGV();' showLabel="true">Load App IGV</div></td>
+                                 <td><div dojoType="dijit.form.Button" jsId ="view_igv" iconClass="igvView" onClick='viewIGV();' showLabel="true">View In App IGV</div></td>
+								-->                                 
+                                 <td><div><span dojoType="dijit.ToolbarSeparator"></span></div></td>
+                                 <td><div dojoType="dijit.form.Button" jsId ="view_alamut" iconClass="alamutView" onClick='viewAlamut();' showLabel="true">Alamut</div></td>
+                                 <td><div><span dojoType="dijit.ToolbarSeparator"></span></div></td>
+                                 <td><button id="bHeComp" dojoType="dijit.form.Button" onClick='show_HeComp()' iconClass="hecompIconnb" disabled="true">Dejavu compound</button></td>
+                            </table>
+                            
+                            <!--
+                            <span dojoType="dijit.ToolbarSeparator"></span>
+                            <button id="747" dojoType="dijit.form.Button" onClick='polyphen' iconClass="polyphenIcon">
+                                Polyphen
+                            </button>
+                            <button dojoType="dijit.form.Button" onClick='sift' iconClass="polyphenIcon">
+                                Sift
+                            </button>
+                            <button id="bHeComp" dojoType="dijit.form.Button" onClick='show_HeComp()' iconClass="hecompIconnb" disabled="true">Dejavu compound</button>
+                            -->
+                            <!--<span dojoType="dijit.ToolbarSeparator"></span>
+                            <span  class="titre"> Transcripts : </span>-->
+                            <input dojoType="dijit.form.FilteringSelect"
+                                type="hidden"
+                                searchAttr="label"
+                                name="name"
+                                autocomplete="true"
+                                jsId="filterTranscript"
+                                labelAttr= "label"
+                                id="name"
+                                onChange = "addNomenclature();"
+                                style="margin-right:5px;" >
+                            </input>
+                            
+                           
+                            
+                        </div>
+                    </div>
+           
+       <!-- </div>
+        </div> -->
+        
+    </div>
+    
+    <!--affichage des consequences -->
+
+        
+    
+         <div class="pconseq" id="pconseq" dojoType="dijit.layout.ContentPane"   region="bottom">             
+         <span  class="titre">Variation Name : <span id="variation_select"></span></span>
+        <span  class="titre"> Consequence : <span id="consequence_select"></span></span> 
+        <div id ="gridconseq" class="gridconseq">
+        <!-- affichage des consquences sur une ligne -->
+    
+    
+        
+        <div id="gridConsequence"   dojoType="dojox.grid.DataGrid"  jsId="gridConsequence" style="width:100%"></div>
+        
+        </div>
+        </div>
+        
+    
+        
+    
+        
+    </div><!--end bottom-->
+<!--</div>  end border-->
+
+
+<!-- div pour la vue graphique des variations -->
+<div dojoType="dijit.layout.ContentPane"   id="toto" title="Graphic View" jsId="toto" onShow="test_init_viewer()" >
+<div dojotype="dijit.layout.LayoutContainer" style="width: 1000px; height:1500px; padding: 0; margin: 0; border: 0;">
+            <div dojotype="dijit.layout.ContentPane" layoutalign="client" style="background:beige;width:900px;height:2000px;">
+                
+                <div dojoType="dijit.layout.BorderContainer" design="sidebar" gutters="true" liveSplitters="true" id="borderContainer">
+                    <div id="right" dojoType="dijit.layout.ContentPane" splitter="true" region="center">
+                        <div dojoType="dijit.layout.BorderContainer" style="height:100%,width:100%;overflow-y:auto;white-space:nowrap;border:2px solid #00000;">
+                            <div id='map' style="height:40px;overflow-x:hidden;overflow-y:auto;border:1px solid #7EABCD;resize:vertical;"></div>
+                            <br>
+                            <div id='drawing_transcripts' style="height:200px;overflow-x:hidden;overflow-y:auto;border:1px solid #7EABCD;resize:vertical;"></div>
+                            <br>
+                            <div id='drawing_patients' style="height:200px;overflow-x:auto;overflow-y:auto;border:1px solid #7EABCD;resize:vertical;"></div>
+                            <br><br>
+                        </div>
+                    </div>
+                    <div dojoType="dijit.layout.ContentPane" splitter="false" region="bottom"> <span id="over" class="infoSpan"></span> </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<div  jsId="table_coverage" dojoType="dijit.layout.ContentPane" title="Go To Coverage View" style="width:100%;height:1000px" onShow="show_coverage()"></div>
+<div dojoType="dijit.layout.ContentPane"  title="Go To PolyDejaVu" style="width:100%;height:1000px" onShow="show_dejavu()"></div>
+
+</div> <!--end border tab container global-->
+
+
+
+</div> <!--border total-->
+<footer>
+<div id="footer1" dojoType="dijit.layout.ContentPane" region ="bottom">
+    <div id="menu">
+        <ul>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>
+        </ul>
+        </div>
+        </div>
+    </footer>
+    <!-- formulaire pour changer le statut des variations (cf changeStatus.js) -->
+    <form id="statusForm" style="border: 1px solid ;" enctype="multipart/form-data" action="#" method="post">
+        <input id="id" name="id" value="" type="hidden"><input id="mother_id" name="mother_id" value="" type="hidden"><input id="objet" name="objet" value="" type="hidden"><input id="type" name="type" value="" type="hidden">
+    </form>
+    
+    <div id="popup_hgmd" dojoType="dojox.widget.Dialog"   dimensions="[600,300]"   >
+        <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane">
+		</div>
+	</div>
+    
+    <!-- div login -->
+
+     <div id="login" dojoType="dijit.Dialog" title="Login">
+      <div dojoType="dijit.TooltipDialog" id="dialog1" title="Login Form" execute="setPassword(arguments[0]);">
+     <form method="post" class="signin" action="#">
+                <fieldset class="textbox">
+                <label class="username">
+                <span>Username</span>
+                <input id="username" name="username" value="" type="text" autocomplete="on" placeholder="Username">
+                </label>
+                <label class="password">
+                <span>Password</span>
+                <input id="passwd" name="password" value="" type="password" placeholder="Password">
+                </label>
+                </fieldset>
+          </form>
+                    <center>
+                    <div   type="submit" dojoType="dijit.form.Button" iconClass="loginIcon"  showLabel="true">
+                            <div style='width:150px'>Sign in</div>
+
+
+                    </div>
+            </center>
+                  
+                       
+            </div>
+        </div>
+
+    <!-- ############################################################################################## -->
+    <!--            POPUPs             -->
+    <!-- ############################################################################################## -->
+    <div id="popupHeComp" jsId="popupHeComp" dojoType="dojox.widget.Dialog" sizeToViewport="true"  viewportPadding="75">
+        <center>
+            <br><br><br><br>
+            <div>
+                <span style="margin-left:3px;margin-right:3px;"><u><b><FONT COLOR=red>Heterozygote Composite</FONT></b></u></span>
+                <br><br>
+                <div id="div_tabHeComp">
+                    <table dojoType="dojox/grid/DataGrid" style="border: 1px solid black;height:80px;width:60%;"
+                        id = "gridHeCompLocal"
+                        jsId = "gridHeCompLocal"
+                        query = "{ id: '*' }" >
+                        <thead><center>
+                            <tr>
+                                <th width="40px" field="implicated" formatter="formatShowYourVariations"><b><center>Access</b></center></th>
+                                <th width="20%" field="var_1"><b><center>Variation 1</b></center></th>
+                                <th width="20%" field="consequence_1" formatter="formatConsequence"><b><center>Consequence 1</b></center></th>
+                                <th width="20%" field="var_2"><b><center>Variation 2</b></center></th>
+                                <th width="20%" field="consequence_2" formatter="formatConsequence"><b><center>Consequence 2</b></center></th>
+                                <th width="10%" field="nbProj" formatter="formatCellDejaVU"><b><center>Nb Project(s)</b></center></th>
+                                <th width="10%" field="nbPat" formatter="formatCellPat"><b><center>Nb Patient(s)</b></center></th>
+                            </tr>
+                        </thead></center>
+                    </table>
+                </div>
+            </div>
+            <br><br>
+            <div>
+                <span style="margin-left:3px;margin-right:3px;"><u><b><FONT COLOR=red>Project(s) / Patient(s) list</FONT></b></u></span>
+                <span style="margin-left: 5px" id="details_projNok_local"> ---> <b><u>[ Not Authorized Project: </b></u>0</span>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <span style="margin-left: 5px;margin-right: 5px" id="details_projOk_local"><b><u>Authorized Project: </b></u>0 ]</span>
+                <br><br>
+                <div>
+                    <table dojoType="dojox/grid/DataGrid" style="border: 1px solid black;height:350px;width:60%;overflow-y:scroll"
+                        id    = "gridLogLocal"
+                        jsId  = "gridLogLocal"
+                        selectable = "true"
+                        selectionMode = "extended"
+                        query = "{ projName: 'None' }" >
+                        <thead><center>
+                            <tr>
+                                <th width="15%" field="projName"><b><center>Project name</b></center></th>
+                                <th width="20%" field="description"><b><center>Description</b></center></th>
+                                <th width="30%" field="owner" formatter="formatEmail"><b><center>Owner(s)</b></center></th>
+                                <th width="35%" field="pat" formatter="formatCellPatDetails"><b><center>Patient(s) with this variation</b></center></th>
+                            </tr>
+                        </thead></center>
+                    </table>
+                </div>
+            </div>
+        </center>
+    </div>
+    
+    
+    <div id="dialog_region_ho" jsId="dialog_region_ho" dojoType="dijit.Dialog" sizeToViewport="true" title="HO Region" style="height:175px !important;">
+        <center>
+        	<div>
+                <table border="1px" align-text="center">
+                    <tr>
+                        <td style="width: 100px;height: 18px;">&nbsp;&nbsp;<span><b>PATIENT</b></span></td>
+                        <td style="width: 250px;height: 18px;">&nbsp;&nbsp;<span id="info_ho_region_patient">---</span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px;height: 18px;">&nbsp;&nbsp;<span><b>CHR NAME</b></span></td>
+                        <td style="width: 150px;"height: 18px;>&nbsp;&nbsp;<span id="info_ho_region_chr">---</span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px;height: 18px;">&nbsp;&nbsp;<span><b>START</b></span></td>
+                        <td style="width: 150px;height: 18px;">&nbsp;&nbsp;<span id="info_ho_region_start">---</span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px;height: 18px;">&nbsp;&nbsp;<span><b>END</b></span></td>
+                        <td style="width: 150px;height: 18px;">&nbsp;&nbsp;<span id="info_ho_region_end">---</span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px;height: 18px;">&nbsp;&nbsp;<span><b>LENGTH</b></span></td>
+                        <td style="width: 150px;height: 18px;">&nbsp;&nbsp;<span id="info_ho_region_length">---</span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px;height: 18px;">&nbsp;&nbsp;<span><b>NB VAR</b></span></td>
+                        <td style="width: 150px;height: 18px;">&nbsp;&nbsp;<span id="info_ho_region_nbvar">---</span></td>
+                    </tr>
+                </table>
+	       </div>
+        </center>
+    </div>
+    
+    
+    <div id="popupHeComp_noResult" jsId="popupHeComp_noResult" dojoType="dojox.widget.Dialog" sizeToViewport="true"  viewportPadding="200">
+        <center>
+            <br><br><br><br>
+            <div>
+                <span style="margin-left:3px;margin-right:3px;"><u><b>Heterozygote Composite<br><br><br></u><FONT COLOR=red>NO RESULT !</FONT></b></span>
+            </div>
+        </center>
+    </div>
+    
+    <div dojoType="dijit.Dialog" jsId="waiting" id="waiting" style="height:80px" >
+        <span id="waiting_text">Loading Data </span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
+    </div>
+        
+
+<div id="graph_exon" dojoType="dojox.widget.Dialog" sizeToViewport="true"   viewportPadding="50" title="heho" > 
+        <center>
+        <div id="waiting_chart">
+            
+        </div>
+        </center>
+       <div id="chart_exon" style="width: 1200px; height: 550px; margin: 10px auto 0px auto;">
+       
+        </div>  
+<div id ="status"></div>
+<div id ="legend"></div>
+<div id ="title_graph" style="width: 1000px; height: 50px;"></div>
+</div>
+
+<div id="popup_coverage" dojoType="dojox.widget.Dialog" sizeToViewport="true" viewportPadding="50" style="overflow-x:scroll;"> 
+    <div style="height:3%;padding-left:30px;padding-bottom:1px;>
+        <select jsId="padding_spinner" id="padding_spinner" data-dojo-type="dijit/form/Select"">
+            <option value="0" selected="selected">0</option>
+            <option value="5" >5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+        </select>
+    </div>
+    <center>
+        <div  id="div_popup_coverage" jsId="div_popup_coverage" data-dojo-type="dijit/layout/ContentPane" style="border: 1px solid black;height:97%;width:100%;"></div>
+    </center>  
+</div>      
+
+        <div dojoType="dijit.Dialog" jsId="dialog_igv" id="dialog_igv" title="IGV View" style="background-color:white;overflow: auto;" >
+            <div class="container-fluid" id="div_igv" style="height:90%;width:90%;"></div>
+        </div>
+                
+    </body>
+    </html>

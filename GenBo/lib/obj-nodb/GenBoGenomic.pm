@@ -236,7 +236,6 @@ sub setLargeDuplications {
 sub setLargeInsertions {
 	my $self = shift;
 	my $hash;
-	confess();
 	foreach my $ref (@{$self->getReferences()}){
 		$hash =  $self->objectsInside($ref->getLargeInsertions());
 	}

@@ -205,6 +205,7 @@ has omim_id => (
 		return undef;
 		 },
 );
+
 has phenotypes  => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -268,6 +269,16 @@ has array_phenotypes  => (
 		return \@lPhen;
 	},
 );
+
+sub polyquery_phenotypes {
+	my ($self) = @_;
+	my @lPhen;
+	push(@lPhen, 'Omim: '.join(', ', @{$self->omim->{phenotypes}->{omim}}) ) if (exists $self->omim->{phenotypes}->{omim});
+	push(@lPhen, 'Hgmd: '.join(', ', @{$self->hgmd_disease}) ) if ($self->hgmd and $self->hgmd_disease);
+	push(@lPhen, 'Ddg2p: '.join(', ', @{$self->omim->{phenotypes}->{ddg2p}}) ) if (exists $self->omim->{phenotypes}->{ddg2p});
+	push(@lPhen, 'Hpo: '.join(', ', @{$self->hpo_phenotypes_names()})) if ($self->hpo());
+	return join(' ; ',@lPhen);
+}
 
 sub polyviewer_phentotypes {
 	my ($self) = @_;

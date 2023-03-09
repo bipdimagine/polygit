@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib "$Bin";
-use lib "$Bin/../../../../../lib/obj-nodb";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb";
 use strict; 
 use Bio::SearchIO;
 use strict;
@@ -34,7 +34,7 @@ GetOptions(
 	'version=s'   => \$version,
 );
 die("please add -version=") unless $version;
-my $dir_vcf  = "/public-data/repository/HG19/hgmd/$version/vcf/";
+my $dir_vcf  = "/data-isilon/public-data/repository/HG19/hgmd/$version/vcf/";
   my @files = `ls $dir_vcf/*.vcf.gz`;
   chomp(@files);
   my $file = $files[0];
@@ -42,7 +42,7 @@ my $dir_vcf  = "/public-data/repository/HG19/hgmd/$version/vcf/";
   warn $file." ".$md5_1;
 
 die("clinar file doesn t exists " .$file ) unless -e $file;
-my $dir_out  = "/public-data/repository/HG19/hgmd/$version/";
+my $dir_out  = "/data-isilon/public-data/repository/HG19/hgmd/$version/";
 
 if (-e $dir_out."/lmdb"){
 	die("hey the output directory already exists !!! $dir_out/lmdb");
