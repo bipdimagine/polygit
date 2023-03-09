@@ -134,6 +134,7 @@ sub constructNomenclature {
 
 sub return_interval_tree {
 	my $self = shift;
+	confess();
 	return $self->getChromosome->large_duplication_interval_tree();
 }
 has allele_length => (
