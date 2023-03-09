@@ -177,7 +177,7 @@ sub getRatio {
         my $pid = $patient->id;
         return "-";
 }
-sub siftnStatus {
+sub siftStatus {
 	my ( $self, $obj ) = @_;
 	return 0 ;
 }
