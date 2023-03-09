@@ -133,7 +133,10 @@ sub constructNomenclature {
 }
 
 
-
+sub return_interval_tree {
+	my $self = shift;
+	return $self->getChromosome->large_duplication_interval_tree();
+}
 
 
 
