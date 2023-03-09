@@ -1,0 +1,487 @@
+	.coverageIcon {
+		background-image:url(../../images/polyicons/viewer16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.hecompIcon {
+		background-image:url(../../images/polyicons/two_users.png);
+		background-repeat:no-repeat;https://www.youtube.com/watch?v=iKa4cS_4MQw
+		height:16px;
+		width:16px;
+	}
+	.hecompIconnb {
+		background-image:url(../../images/polyicons/two_users_nb.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.dnaIcon2 {
+		background-image:url(../../images/polyicons/Body-DNA-icon.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.treeIcon32{
+		background-image:url(../../images/polyicons/tree-32.png);
+		background-repeat:no-repeat;
+		height:32px;
+		width:32px;
+	}
+	.treeIcon32nb{
+		background-image:url(../../images/polyicons/tree-32nb.png);
+		background-repeat:no-repeat;
+		height:32px;
+		width:32px;
+	}
+	.oneIcon{
+		background-image:url(../../images/polyicons/user_group.png);
+		background-repeat:no-repeat;
+		height:32px;
+		width:32px;
+	}
+		.oneIconnb{
+		background-image:url(../../images/polyicons/user_group_nb.png);
+		background-repeat:no-repeat;
+		height:32px;
+		width:32px;
+	}
+
+	.bulletIcon24 {
+		background-image:url(../../images/polyicons/bullet-icon24.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.variationIcon {
+		background-image:url(../../images/polyicons/chart-bullseye-icon-24.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+		.geneIcon {
+		background-image:url(../../images/polyicons/candlestickchart-icon.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.familyIcon24{
+		background-image:url(../../images/polyicons/family-on.png);
+		background-repeat:no-repeat;
+		height:32px;
+		width:32px;
+	}
+	.individualIcon24{
+		background-image:url(../../images/polyicons/man-icon24.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+			.dejavuIcon {
+		background-image:url(../../images/polyicons/report16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.patientReportIcon {
+		background-image:url(../../images/polyicons/application_view_list.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		}
+	.printerIcon {
+		background-image:url(../../images/polyicons/printer.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		}
+	.bulletGreen {
+		padding: 4px 1px 1px 12px;;
+		background-image:url(../../images/polyicons/bullet_green.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		}
+	.bulletGrey {
+		padding: 4px 1px 1px 12px;;
+		background-image:url(../../images/polyicons/bullet_grey.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		}
+	.patientEditReportIcon {
+		background-image:url(../../images/polyicons/application_form_edit.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		}
+		
+	.familyIcon {
+		background-image:url(../../images/polyicons/family-icon.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		padding: 1px 1px 1px 16px;
+		}
+	.todoIcon {
+		background-image:url(../../images/polyicons/todo.png);
+		background-repeat:no-repeat;
+		font-size: 14px;
+		 font-family: Arial, Helvetica, sans-serif;
+		height:16px;
+		width: 16px;
+		
+		}
+			.dnaIcon {
+		background-image:url(../../images/polyicons/dna16.png);
+		background-repeat:no-repeat;
+		font-size: 14px;
+		 font-family: Arial, Helvetica, sans-serif;
+		height:16px;
+		width: 16px;
+		
+		}		
+		.viewerIcon {
+		background-image:url(../../images/polyicons/viewer16.png);
+		background-repeat:no-repeat;
+		font-size: 14px;
+		 font-family: Arial, Helvetica, sans-serif;
+		height:16px;
+		width: 16px;
+		
+		}
+				.cnvIcon {
+		background-image:url(../../images/polyicons/layer_his_add.png);
+		background-repeat:no-repeat;
+		font-size: 14px;
+		 font-family: Arial, Helvetica, sans-serif;
+		height:16px;
+		width: 16px;
+		
+		}
+.individualIcon {
+		background-image:url(../../images/polyicons/man-icon.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		/*padding: 1px 1px 1px 18px;*/
+		}
+	.reportPIcon {
+		background-image:url(../../images/polyicons/report16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		
+		}
+	.plusIcon2 {
+		background-image:url(../../images/polyicons/arrow_turn_left.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width: 16px;
+		}
+		.dropDown {
+		background-image:url(../../images/polyicons/comboArrowDown.gif);
+		background-position: bottom right;
+		background-repeat:no-repeat;
+		float:right;
+		height:8px;
+		width: 8px;
+		}
+	.plusIcon {
+		background-image:url(../../images/polyicons/plus.gif);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.chromIcon {
+		background-image:url(../../images/polyicons/chart_curve.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+.listIcon {
+		background-image:url(../../images/polyicons//icons8-bulleted-list-24.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.listIconSepia {
+		background-image:url(../../images/polyicons//icons8-bulleted-list-24-sep.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+		.panelIcon {
+		background-image:url(https://img.icons8.com/office/24/000000/control-panel.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.compareIcon {
+		background-image:url(../../images/polyicons/circular_arrow.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	} 
+	.heterozigoteIcon {
+		background-image:url(../../images/polyicons/heterozygote.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.homozygoteIcon {
+		background-image:url(../../images/polyicons/png-8/8-em-plus.png);
+	}
+	.validIcon {
+		background-image:url(../../images/polyicons/accept-icon-16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.unvalidIcon {
+		background-image:url(../../images/polyicons/Cancel-icon-16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+		
+	}
+	.uncertainIcon {
+		background-image:url(../../images/polyicons/Help-icon-16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.polyphenIcon {
+		background-image:url(../../images/polyicons/wizard.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.exportIcon {
+		background-image:url(../../images/polyicons/Excel-icon-16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.reportIcon {
+		background-image:url(../../images/polyicons/Excel-icon-16nb.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;	
+		
+	}
+	.refreshIcon {
+		background-image:url(../../images/polyicons/Refresh-icon-16.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+		.deleteIcon {
+		background-image:url(../../images/polyicons/cross.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+		.brlmmIcon {
+		background-image:url(../../images/polyicons/application_view_tile.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	
+	.viewProject {
+		background-image:url(../../images/polyicons/report_magnify.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.viewAll {
+		background-image:url(../../images/polyicons/24-book-green-add.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.testIcon {
+		background-image:url(../../images/polyicons/lightning.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.loginIcon {
+		background-image:url(../../images/polyicons/kgpg.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.starIcon {
+		background-image:url(../../images/polyicons/star.png);
+		background-repeat:no-repeat;
+		border-style:solid;
+		border-color:red;
+		height:16px;
+		width:16px;
+	}
+
+.pedigreeIcon {
+		background-image:url(../../images/polyicons/chart_organisation.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+.saveIcon {
+		background-image:url(../../images/polyicons/disk.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+.infoSpan {
+	     padding: 1px 1px 1px 25px;;
+		 white-space: nowrap;
+		 font-size: 14px;
+		 font-family: Arial, Helvetica, sans-serif;
+		 color: #000000;
+		 font-weight: bold;
+		 text-align: center;
+		 background:url(../../images/polyicons/exclamation.png) no-repeat center left;
+}	
+	.spError {
+ 		 padding: 1px 1px 1px 25px;;
+		 white-space: nowrap;
+		 font-size: 14px;
+		 font-family: Arial, Helvetica, sans-serif;
+		 color: #000000;
+		 font-weight: bold;
+		 text-align: center;
+		 background:url(../../images/polyicons/exclamation.png) no-repeat center left;
+		 }
+		 
+		 .spWarning {
+ 		 padding: 1px 1px 1px 25px;;
+		 white-space: nowrap;
+		 font-size: 14px;
+		 font-family: Arial, Helvetica, sans-serif;
+		 color: #000000;
+		 font-weight: bold;
+		 text-align: center;
+		 background:url(../../images/polyicons/error.png) no-repeat center left;
+		 }
+
+	.zoomIcon {
+		background-image:url(../../images/polyicons/16-zoom.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+		 
+	.igvIcon2 {
+		background-image:url(../../images/polyicons/igv_button_small.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}	
+		.igvIcon {
+		background-image:url(../../images/polyicons/igv_button_small.png);
+		background-repeat:no-repeat;
+		height:18px;
+		width:18px;
+	}
+	
+	.igvView_desactivate {
+		background-image:url(../../images/polyicons/chart_curve_go_desactivate.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}	
+	.alamutView {
+		background-image:url(../../images/polyicons/table_refresh.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}	
+	.alamutView2 {
+		background-image:url(../../images/polyicons/eye.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.alamutView3 {
+		background-image:url(../../images/polyicons/alamut_visual.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+		.alignIcon {
+		background-image:url(../../images/polyicons/align.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}		
+	.igvView {
+		background-image:url(../../images/polyicons/chart_curve_go.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.eyeIcon {
+		background-image:url(../../images/polyicons/rebuild.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}	
+	.icon_babyboy_d{
+		background-image:url(../../images/polyicons/iconfinder_baby-boy_d.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+		
+	}
+	.icon_babyboy_s{
+		background-image:url(../../images/polyicons/iconfinder_baby-boy_s.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.icon_babygirl_s{
+		background-image:url(../../images/polyicons/iconfinder_baby-girl_s_.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.icon_babygirl_d{
+		background-image:url(../../images/polyicons/iconfinder_baby-girl_d.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.icon_female_d{
+		background-image:url(../../images/polyicons/female-d.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.icon_female_s{
+		background-image:url(../../images/polyicons/female-s.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.icon_male_d{
+		background-image:url(../../images/polyicons/male-d.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.icon_male_s{
+		background-image:url(../../images/polyicons/male-s.png);
+		background-repeat:no-repeat;
+		height:24px;
+		width:24px;
+	}
+	.trashIcon {
+		background-image:url(../../images/polyicons/trashcan-full-icon.png);
+		background-repeat:no-repeat;
+		height:16px;
+		width:16px;
+	}
+	.zoominIcon { background-image:url(../../images/polyicons/magnifier_zoom_in.png); width:16px; height:16px; }
+	.zoomoutIcon { background-image:url(../../images/polyicons/magifier_zoom_out.png); width:16px; height:16px; }

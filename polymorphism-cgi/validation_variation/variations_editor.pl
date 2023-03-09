@@ -30,7 +30,6 @@ use Data::Dumper;
 use GenBo;
 use Compress::Snappy;
 use File::Temp qw/ tempfile tempdir /;
-
 #require "$Bin/../GenBo/lib/obj-nodb/GBuffer.pm";
 use List::MoreUtils qw{ natatime };
 use Getopt::Long;
@@ -86,7 +85,6 @@ my $VERSION = "21.09.2021";
 my $VERSION_UPDATE_VARIANT_EDITOR = "9dd1dc46f32240dad92ea588d85d9f9d1"; #23/09/2021;
 my $dev;
 $dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
-
 my $cgi = new CGI();
 my $myproc = Proc::Simple->new();        # Create a new process object
  
@@ -246,6 +244,7 @@ unless ($cgi->param('phenotype')){
 		$cgi->param(-name=>'phenotype',-value=>$project->phenotypes->[0]);
 	}
 }
+#
 if ($gene_name_filtering){
 	my $gene;
 	eval {
@@ -275,9 +274,15 @@ my $level_dude = 'high,medium';
 
 my $cache_dude_id = "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
 my $cache_id = join( ";", @$keys );
-my $text = $no_cache->get_cache($cache_id);
-$text = "" if $dev;
 
+if ($project->isDiagnostic){
+	$cache_id.="121222";
+}
+
+my $text = $no_cache->get_cache($cache_id);
+#$dev=1;
+$text = "" if $dev;
+#$text = "";
 my $html_dude = "<!--DUDE-->";
 my $cache_icon;
 
@@ -423,8 +428,7 @@ if ( $project->isDefidiag ) {
 
 #$panel_name="ACMG-Actionable";
 my $panel;
-$panel = $project->getPanel($panel_name)
-  if $panel_name && lc($panel_name) ne "all";
+$panel = $project->getPanel($panel_name) if $panel_name && lc($panel_name) ne "all" && lc($panel_name) ne "all panels genes";
 my $hash_genes_panel;
 if ($panel) {
 	$panel->getGenes();
@@ -436,7 +440,6 @@ if ($panel) {
 	$project->{phenotypes_object} = $hPhenoIds;
 }
 
-
 my $phenotype_name = $cgi->param('phenotype');
 if ($phenotype_name) {
 	my $hPhenoIds;
@@ -446,10 +449,15 @@ if ($phenotype_name) {
 				$hPhenoIds->{ $phenotype->id() } = undef;
 			}
 		}
+		if ($panel_name && lc($panel_name) eq "all panels genes") {
+			$panel->getGenes();
+			foreach my $ensg (keys %{$panel->{genes_object}}) {
+				$hash_genes_panel->{$ensg} = undef;
+			}
+		}
 	}
 	$project->{phenotypes_object} = $hPhenoIds;
 }
-
 
 $t = time;
 $buffer->disconnect();
@@ -597,6 +605,7 @@ sub error {
 	  qq{<div id ="logo" > contact : bioinformatique\@users-imagine.fr</div>}
 	  ;    # if scalar(@$genes) == 0;
 	warn "error !!!!!!!!! $text";
+	warn $TEST;
 	die() if $TEST;
 	exit(0);
 }
@@ -707,20 +716,6 @@ sub refine_heterozygote_composite_score_fork {
 	$fork = 16 if $project->isGenome();
 	#$fork=20;
 	my $pm        = new Parallel::ForkManager($fork);
-#	my $t = time;
-#	
-#	foreach my $chr_name (keys %$hchr){
-#		my $pid = $pm->start and next;
-#		print "!";
-#		my $no       = $project->getChromosome($chr_name)->lmdb_polyviewer_variants( $patient, "r" );
-#		$no->test(1);
-#		$no->lmdb($no->name);
-#		print "!";
-#		$pm->finish();
-#		#$no->lmdb($chr->name);
-#	}
-#	$pm->wait_all_children();
-	#warn "cp ".abs(time-$t);
 	$fork = 10;
 	 $pm        = new Parallel::ForkManager($fork);
 	my $nb        = int( scalar(@$vgenes) / ($fork*2) + 1 );
@@ -1313,7 +1308,6 @@ sub new_refine_heterozygote_composite_score_old {
 	$out_header .= $cgi->end_Tr();
 	my $mother = $patient->getFamily->getMother();
 	my $father = $patient->getFamily->getFather();
-
 	my $hno;
 	my $tsum = 0;
 	my $t    = time;
@@ -1321,12 +1315,10 @@ sub new_refine_heterozygote_composite_score_old {
 
 	my $total_time = 0;
 	my $ztotal     = 0;
-
 	#$t = time;
 	my $current;
 	my $rtime = 0;
 	foreach my $g (@$list) {
-
 		#last if $xp > 100;
 		$xp++;
 
@@ -1389,14 +1381,24 @@ sub new_refine_heterozygote_composite_score_old {
 		);
 		$out .= "\n";
 		$out .= $out_header;
-
+		my $debug;
+		$debug=1 if $g->{external_name} eq "COL7A1";
+		
 		foreach my $vid ( keys %{ $g->{all_variants} } ) {
 		#	my $v  = $noV->get($vid);
 			my $vh = $no->get($vid);
+			if($debug){
+			my $vv = $noV->get($vid);
+			$vv->{project} = $project;
+			$vv->{buffer} = $buffer;
+				warn "\t".$vv->id;
+				warn "\t ==> ".Dumper($vv->dejaVuInfosForDiag2);
+				
+			}			
 			my $vp =  PolyviewerVariant->new();
 			
-			$vp->setOldVariant($vh,$project,$patient,$g,$version_db);
-			
+			$vp->setOldVariant($vh,$project,$patient,$g,$version_db,$debug);
+			#warn Dumper $vp if $debug;
 			#$vp->setLmdbVariant($vh,$project,$g,$patient);
 			$print_html->variant($vp);
 			
@@ -1514,7 +1516,6 @@ sub new_refine_heterozygote_composite_score_old {
 	$project->buffer->close_lmdb();
 	return ( $list, $total_time );
 
-	die();
 }
 
 sub new_refine_heterozygote_composite_score_one {
@@ -1577,8 +1578,7 @@ sub new_refine_heterozygote_composite_score_one {
 			}
 		);
 		my $panel_id = "panel_" . $g->{uid};
-		$out .=
-		  update_variant_editor::panel_gene( $g, $panel_id, $project->name,
+		$out .= update_variant_editor::panel_gene( $g, $panel_id, $project->name,
 			$patient );
 		$out .= $cgi->end_div();
 
@@ -1678,11 +1678,6 @@ sub new_refine_heterozygote_composite_score_one {
 			$out .= "\n";
 			$t = shift(@headers);
 
-			#$out .= $cgi->td( $style,$v->{html}->{$t});
-			#	if ($v->{name} eq "2-179312317-ins-100"){
-			#		warn Dumper $v;
-			#		die();
-			#	}
 			if ( exists $v->{value}->{large_evt} ) {
 				$out .= $cgi->td( $style, $print_html->calling_cnv( $v, $g ) );
 			}
@@ -1722,7 +1717,6 @@ sub new_refine_heterozygote_composite_score_one {
 	$project->buffer->close_lmdb();
 	return ( $list, $total_time );
 
-	die();
 }
 
 sub construct_panel_vector {

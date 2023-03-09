@@ -1,0 +1,91 @@
+<div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true">
+		
+	
+	<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="splitter:false, region:'top'" style="overflow: visible !important;">
+	
+				<div  data-dojo-type="dijit.Toolbar" id="navMenuCoverage" style ="font-size : 12px ;overflow: visible !important;">
+                        <table valign="center" style="overflow: visible !important;">
+                        	<!--
+                            <td>
+								<div data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass:'viewerIcon'">
+									<span> View </span>
+									<div data-dojo-type="dijit/DropDownMenu" id="editMenu2">
+										<div data-dojo-type="dijit/MenuItem" onClick='reload(5)' data-dojo-props="iconClass:'chromIcon'">
+											Coverage all
+										</div>
+										<div data-dojo-type="dijit/MenuItem" onClick='reload(3)' data-dojo-props="iconClass:'chromIcon'">
+											Coverage by Primer/multiplex
+										</div>
+										<div data-dojo-type="dijit/MenuItem" onClick='reload(4)' data-dojo-props="iconClass:'chromIcon'">
+											Dup/Del Beta Version
+										</div>
+									</div>
+								</div>
+                            </td>
+                            -->
+                            
+                            <td>
+                            	<b><u>Use Panel:</u> </b></u> 
+								<div data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass:'panelIcon'" >
+									<span jsId="span_panel_coverage" id="span_panel_coverage" ><i>DI_DI44</i> <img id="check1" src="../../polyweb/images/polyicons/wait18trans.gif" align="absmiddle"></span>
+									<div data-dojo-type="dijit/DropDownMenu" id="dropdown-menu-panels_cov">
+										
+									</div>
+								</div>
+                            </td>
+							<td style="padding-left:10px;">
+								<span dojoType="dijit.ToolbarSeparator"></span>
+							</td>
+                            
+							<!--<div  data-dojo-type="dijit.form.Button" onClick='reload(5);' data-dojo-props="iconClass:'dijitIconSave'">
+								sort by genomic position COUCOU
+							</div>-->
+							
+							<td style="padding-left:10px ;padding-top:5px  ;">
+								<div>
+									<input type="checkbox" id="ENST_order" data-dojo-type="dojox/mobile/Switch"  value="on"  leftLabel="sort by name" rightLabel="sort by position"  style="width: 100px;">
+								</div>
+							</td>
+							<td style="padding-left:10px;">
+								<span dojoType="dijit.ToolbarSeparator"></span>
+							</td>
+							<td style="padding-left:10px;">
+								<div jsId="save_button" id="save_button" data-dojo-type="dijit.form.Button" onClick='show_save();' data-dojo-props="iconClass:'dijitIconSave',disabled:'true'">
+									save
+								</div>
+							</td>
+							<td style="padding-left:10px;">
+								<div data-dojo-type="dijit.form.Button" onClick='preload_coverage(storeP,1); ' data-dojo-props="iconClass:'refreshIcon'">
+									refresh
+								</div>
+							</td>
+							<td style="padding-left:10px;">
+								<span dojoType="dijit.ToolbarSeparator"></span>
+							</td>
+							<td style="padding-left:10px;">
+								<input id="only_low" name="only_low" data-dojo-type="dijit/form/CheckBox" value="1" checked/>  only genes below limit
+							</td>
+							<td style="padding-left:10px;">
+								<span dojoType="dijit.ToolbarSeparator"></span>
+							</td>
+							<td style="padding-left:10px;"><button onClick="dijit.byId('dialog_cov_view_gene').show();">Search Gene</button></td>
+						</table>
+					</div>
+			
+				</div>
+				
+			<div jsId="table_coverage" id="table_coverage" data-dojo-type="dijit/layout/StackContainer" data-dojo-props="splitter:false, region:'center'" onShow="reload(5);" >
+				</div>
+
+</div>
+	
+    <div id="dialog_cov_view_gene" dojoType="dijit.Dialog" title="Coverage View Gene">
+    	<br>
+    	<table>
+			<td><label for="gene_name_coverage_editor">Gene name:</label></td>
+			<td><input id="gene_name_coverage_editor" type="text" value=""/></td>
+			<td style="padding-left:10px;font-size:12px;"><button onClick="load_coverage_gene();" size="70">View</button></td>
+		</table>
+    	<br>
+	</div>
+

@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<link rel="icon" type="image/png" href="images/polyicons/application_view_tile.png">
+    	<style type="text/css">
+    	@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/Grid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/widget/Dialog/Dialog.css";
+        @import "../../css/polycss/general.css";
+        @import "../../css/polycss/button.css"; 
+        
+		html, body {
+    		width: 100%;
+    		height: 100%;
+    		margin: 0;
+    		overflow : hidden;
+		}    
+   	</style>
+
+
+	<LINK rel="stylesheet" type="text/css" href="../css/dejavu/dejavu.css">
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="../../js/polyjs/alamut_methods.js" djConfig="parseOnLoad: true"></script>
+	<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+	<script type="text/javascript" src="../../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/manta/Url_allSVEditor.js" djConfig="parseOnLoad: true"></script> 
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript">
+			dojo.require("dojo.store");
+	</script>
+	
+	<script type="text/javascript" src="../js/polyjs/Utility/vp.js" ></script>
+	<script	type="text/javascript">
+			dojo.require("dojo.cookie");
+			dojo.require("dojo.data.ItemFileReadStore");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dojox.grid.DataGrid");
+			dojo.require("dojo.parser");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.form.TextBox");
+			dojo.require("dijit.layout.ContentPane");
+			dojo.require("dijit.Toolbar");
+			dojo.require("dijit.form.NumberTextBox");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dojox.grid.EnhancedGrid");
+			dojo.require("dojox.grid.enhanced.plugins.NestedSorting");
+			dojo.require("dojox.data.AndOrReadStore");
+			require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/TabContainer","dijit/layout/ContentPane"]);
+			require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+			require(["dijit/form/Select", "dojo/data/ObjectStore","dojo/store/Memory","dojo/domReady!"]);
+	</script> 
+ 
+  	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+ 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  	
+ 	<script>
+			var dataStore_Best;
+			
+			var nb=0.;
+			var url_BestCNV = url_path + "/manta/getBestCNV.pl";
+
+
+			function getBestCNV() {
+
+				var parameters = location.search.split("&");
+				var arg1 = parameters[0].split("=");
+   				var arg2 = parameters[1].split("=");
+		
+    			var projectname = arg1[1];
+    			var filename = arg2[1];
+    	
+	
+				//dataStore_Best = new dojo.data.ItemFileReadStore({ url: url_BestCNV+ "?projectname=" + projectname + "&filename=" + filename});
+				dataStore_Best = new dojo.data.ItemFileReadStore({ url: url_allSV_Project+ "?projectname=" + projectname + "&filename=" + filename + "&minlength=" + 10000 + "&maxlength=" + "nomax" + "&maxfreq=" + "nomax" + "&dejavu=" + 0 + "&genotype=" + "both" + "&transmission=" + 0 + "&hide_sd=" + 1 + "&select_best=" + 1 + "&chrom=" + "all" + "&cytoband=" + "all" + "&genes=" + "all"});
+
+				var gridBest = dijit.byId("BestCNV_gridDetails");
+				gridBest.setStore(dataStore_Best);
+				gridBest.store.fetch({
+					onComplete: function(items){		
+					}
+				});
+				gridBest.startup();
+			return;
+		}
+		</script>
+</head>
+
+
+<body onload="getBestCNV();">
+
+
+ 
+ <div  class="table-responsive,panel-collapse" id="collapse1" style="height:95%;width:95%;margin-top:8px;">
+      	 <span dojoType="dojo.data.ItemFileReadStore" jsId="jsonDetails" ></span>     
+             <table border="2" 
+             			style="overflow:auto;"
+             			dojoType="dojox.grid.DataGrid"
+                        id    = "BestCNV_gridDetails"
+                        jsId  = "BestCNV_gridDetails"
+                        store = "jsonDetails"  
+                        query = "{ id: '*' }" > 
+             	<tr><thead>
+             			<th width="3%" field="SVTYPE" formatter="formaterDUPDEL" styles="text-align:center;font-size:8px;"><center><b>TYPE</b></center></th>
+			            <th width="3%" field="CHROM" formatter="formaterCHROM_int" styles="text-align:center;font-size:8px;"><center><b>Chr</b></center></th>
+			            <th width="5%" field="SVLEN" formatter="formaterLength" styles="text-align:center;font-size:8px;"><center><b>Length</b></center></th> 
+			            <th width="6%" field="POSITIONS" formatter="formaterPos" styles="text-align:center;font-size:8px;"><center><b>Positions</b></center></th>
+			            <th width="7%" field="CYTOBAND" formatter="formaterLISTE" styles="text-align:center;font-size:8px;"><center><b>Cytoband</b></center></th>
+			            <th width="4%" field="GENOTYPE" styles="text-align:center;font-size:8px;"><center><b>Genotype</b></center></th>
+						<th width="5%" field="wisecondor"   formatter="formaterInfoCaller" styles="text-align:center;font-size:8px;"><center><b> WiseCondor </b></center></th>	
+						<th width="4%" field="canvas"  formatter="formaterInfoCaller" styles="text-align:center;font-size:8px;"><center><b> Canvas </b></center></th>	
+						<th width="4%" field="manta"   formatter="formaterInfoCaller" styles="text-align:center;font-size:8px;"><center><b> Manta </b></center></th>	
+						<th width="5%" field="TRANSMISSION"    formatter="formaterTransmission" styles="text-align:center;font-size:8px;"><center><b> Transmission </b></center></th>	
+						<th width="3%" field="BREAKPOINTS" formatter="formaterBreakPoint" styles="text-align:center;font-size:8px;"><center><b>Break Points</b></center></th>
+						<th width="5%" field="IGV"   formatter="formater_infoPATIENTIGV" styles="text-align:center;font-size:8px;"><center><b> IGV  </b></center></th>	
+						<th width="4%" field="OTHER"  formatter="formaterDejavu" styles="text-align:center;font-size:8px;"><center><b> DejaVu in this project </b></center></th>	
+						<th width="4%" field="SCORECALLER"  formatter="formaterScore" styles="text-align:center;font-size:8px;"><center><b> Score Caller </b></center></th>	
+						<th width="4%" field="ScoreGene" formatter="formaterScore" styles="text-align:center;font-size:8px;"><center><b> Score Gene </b></center></th>
+						<th width="4%" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:8px;"><center><b> AnnotSV Ranking</b></center></th>					
+						<th width="10%" field="GENES" styles="text-align:center;font-size:8px;" formatter="formaterGENES"><center><b> Genes </b></center></th>						 								
+						<th width="4%" field="DGV" formatter="formaterDGV" styles="text-align:center;font-size:8px;"><center><b> DGV</b></center></th>
+						<th width="4%" field="GOLD_G_freq" formatter="formaterFreq" styles="text-align:center;font-size:8px;"><center><b> DGV Gain_freq </b></center></th>   
+						<th width="4%" field="GOLD_L_freq" formatter="formaterFreq" styles="text-align:center;font-size:8px;"><center><b> DGV Loss_freq </b></center></th>  
+						<th width="3%" field="OMIN_MG" formatter="formaterOmin" styles="text-align:center;font-size:8px;"><center><b> Omin </b></center></th>
+						<th width="4%" field="dbVar_status"  formatter="formaterdbvarStatus" styles="text-align:center;font-size:8px;"><center><b> dbVar status</b></center></th>		
+				</tr></thead>
+             </table>
+</div>
+
+ </body>
+ </html>
+                 

@@ -2,6 +2,7 @@
 use FindBin qw($Bin);
 use lib $Bin;
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../packages/";
 use GBuffer;
 #use lib "/bip-d/perl/ensembl64/ensembl/modules";
 use Bio::SearchIO;
@@ -34,13 +35,17 @@ use GenBoProtein;
 use GenBoExon;
 use GenBoIntron;
  use Storable;
-my $version;
+my ($version,$fork,$use_dir);
 GetOptions(
 	'version=s' => \$version,
+	'fork=s' => \$fork,
+	'use_dir=s' => \$use_dir,
 );
+$fork = 3 unless ($fork);
 my $sqliteDir =  "/tmp/lmdb/$version/annotations";
-my $dd = $sqliteDir;#"/data-xfs/public-data/repository/HG19/annotations/gencode.basic.v28/lmdb/";
-my $annot =  GenBoNoSqlAnnotation->new(dir=>$dd,mode=>"r");
+$sqliteDir = $use_dir if ($use_dir);
+
+my $annot =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"r");
 
  my $z = $annot->get_like("annotations","*"."gene*");
  my $nb;
@@ -70,7 +75,7 @@ my (@types) = ("transcript","protein","gene");
     
 my %genes_annot_array;
 my $first = 1;
-my $pm = Parallel::ForkManager->new(20);
+my $pm = Parallel::ForkManager->new($fork);
 
 my $mode = "w";
 $mode ="c" if $first;
@@ -154,10 +159,10 @@ $pm->run_on_finish(
  					$z->{$id}->{id} = $z->{$id}->{genbo_id};
  				}
  			
- #				warn 'cpoucou $id' if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
+ 				warn 'cpoucou $id' if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
      	 	my $obj = create($z->{$id},"transcript");
- #    	 	warn Dumper $obj if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
-#     	 	die() if $z->{$id}->{genbo_id} eq 'ENST00000628650_2';
+     	 	warn Dumper $obj if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
+     	 	die() if $z->{$id}->{genbo_id} eq 'ENST00000628650_2';
      	 	#next;
      	 $obj->{object_type} ="transcript";
  			
