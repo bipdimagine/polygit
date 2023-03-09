@@ -120,9 +120,9 @@ system("mkdir $dir_log && chmod a+rwx $dir_log");
 
 if ($test_umi && !($umi)){
 		print colored::stabilo("red","Hey Sylvain, it seems to me that you didn't put the UMI=1 option but your project had UMIs  ", 1)."\n";
-		my $choice = prompt("do you  want to use it anyway   (y/n) ? ");
+		#yesorno("do you  want to use it UMI  (y/n) ? ","y");
+		my $choice = prompt('y',"do you  want to use  UMI  (y/n) ? ");
 		$umi=1 if ($choice eq "y"); 
-	
 }
 
  $|=1;
@@ -139,12 +139,40 @@ unless ($rna){
 	test_rna($projects);
 	
 }
+
 my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
 my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6};
 if($rna){
-	$steps = ["align","count"];;
-	$hsteps = {"align"=>0,"count"=>1};
+	print colored::stabilo("orange ","Hey Cecile, You are working  on RNA project and you didn't put RNA=1 option  ", 1)."\n";
+	my $choice = prompt("y","Do you want to the option (y/n) ? ");
+	if ($choice eq "y"){
+		$steps = ["align","count"] ;
+		$hsteps = {"align"=>0,"count"=>1};
+		$rna = 1;
+	}
+	else {
+		$rna =0;
+	}
+}
+
+unless ($step_name){
+	my $tdna = "DNA";
+	$tdna = "RNA" if $rna == 1;
+	my $tumi = "NO UMI ";
+	my $tumi = " UMI " if $umi==1;
+	my $banner=colored::stabilo("Green  ","  it's a $tdna  project with $tumi  bu twhat can I do for you    ", 1);
+	my %menu1 = (
+	Item_1 => {
+      Text    => "]Convey[",
+      Convey  => $steps,
+   },
+    Select => 'Many',
+   	Banner => "\n $banner"
+	);
+	my @selection=&Menu(\%menu1,$banner);
+	$step_name	= join(",",@selection);
+	
 }
 
 if($step_name) {
@@ -176,6 +204,7 @@ print "Running this steps (y/n) ? ";
 	print "\n";
 	die() if ($key ne "y"); 
 #
+system("clear") ;
 run_command($ppd);
 run_move($ppd);
 
@@ -213,14 +242,14 @@ my $f;
 			push(@res,$name);
 			foreach my $t (@$steps) {
 				if (exists $hp->{exists_file}->{$t}) {
-					push(@res,colored::stabilo("green","Done",1));
+					push(@res,colored::stabilo("white","ok",1));
 					#push(@line,$text);
 				}
 				elsif (exists  $hp->{exists_file_pipeline}->{$t}){
-					push(@res,colored::stabilo("Orange","MOVE",1));
+					push(@res,colored::stabilo("magenta","$t",1));
 				}
 				else {
-					push(@res,colored::stabilo("Magenta","Planned",1));
+					push(@res,colored::stabilo("green","$t",1));
 				}
 				
 			}
@@ -266,7 +295,7 @@ sub test_rna {
 		$rna ++ if $project->isRnaSeq;
 	}
 	if ($rna) {
-		confess("you have different king of oject rna and not") if $rna ne scalar(@$projects);
+		confess("you have different king of project rna and not") if $rna ne scalar(@$projects);
 	}
 }
 
@@ -1171,7 +1200,15 @@ sub end_report {
 		
 }
 
-
+sub yesorno {
+	my ($sentence,$true) = @_;
+	
+	prompt ("$sentence ");
+	my $key = key();
+	print "\n";
+	die() if ($key ne "$true"); 
+	
+}
 
 sub key {
 	my $key;
