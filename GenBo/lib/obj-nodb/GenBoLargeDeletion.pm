@@ -122,7 +122,10 @@ sub setLargeDeletions {
 
 }
 
-
+sub return_interval_tree {
+	my $self = shift;
+	return $self->getChromosome->large_deletion_interval_tree();
+}
 
 
 1;
