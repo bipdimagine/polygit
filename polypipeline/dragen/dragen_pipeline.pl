@@ -125,6 +125,7 @@ if ($test_umi && !($umi)){
 		$umi=1 if ($choice eq "y"); 
 }
 
+
  $|=1;
  
 # unless $noprint;
@@ -143,6 +144,9 @@ unless ($rna){
 my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
 my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6};
+
+
+
 if($rna){
 	print colored::stabilo("orange ","Hey Cecile, You are working  on RNA project and you didn't put RNA=1 option  ", 1)."\n";
 	my $choice = prompt("y","Do you want to the option (y/n) ? ");
@@ -199,10 +203,7 @@ if($step_name) {
 my $ppd  = patient_pipeline_dragen($projects);
 purge_files($ppd) if $force==1;
 start_report($ppd);
-print "Running this steps (y/n) ? ";
-	my $key = key();
-	print "\n";
-	die() if ($key ne "y"); 
+
 #
 system("clear") ;
 run_command($ppd);
@@ -231,7 +232,8 @@ exit(0);
 sub start_report {
 	my ($patients_jobs) = @_;
 my @lines;
-my $f;
+my $done;
+my $job;
 	foreach  my $hp (@$patients_jobs) {
 		my @line;
 		push(@line, $hp->{name});
@@ -241,8 +243,10 @@ my $f;
 			my @res;
 			push(@res,$name);
 			foreach my $t (@$steps) {
+				$job++;
 				if (exists $hp->{exists_file}->{$t}) {
-					push(@res,colored::stabilo("white","ok",1));
+					push(@res,colored::stabilo("white","Done",1));
+					$done ++;
 					#push(@line,$text);
 				}
 				elsif (exists  $hp->{exists_file_pipeline}->{$t}){
@@ -266,6 +270,17 @@ my $f;
 	print $tb;
 	print "\n";
 	print "\n";
+	if ($done == $job && $force ne 1){
+		print colored::stabilo("magenta","------------------------------------------------------------",1)."\n";
+		print colored::stabilo("magenta","COOL  everything is already done !!!!",1)."\n";
+		print colored::stabilo("magenta","are you sure you didn't want to use -force=1",1)."\n";
+		print colored::stabilo("magenta","------------------------------------------------------------",1)."\n";
+		exit(0);
+	}
+	print "Running this steps (y/n) ? ";
+	my $key = key();
+	print "\n";
+	die() if ($key ne "y"); 
 	
 	#}
 }
