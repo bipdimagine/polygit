@@ -740,7 +740,7 @@ has get_genes_transcripts_details_dup_del => (
 		my $h;
 		my $start1 = $self->start();
 		my $end1 = $self->start() + $self->length();
-		my $intspan_v = $self->getStrictGenomicSpan();
+		my $intspan_v = $self->getGenomicSpan();
 		foreach my $g (@{$self->getGenes()}) {
 			foreach my $t (@{$g->getTranscripts()}) {
 				my $intspan_t = $t->getGenomicSpan();
