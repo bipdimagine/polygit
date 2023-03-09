@@ -315,14 +315,13 @@ $pm->run_on_finish(
 system("$bgzip -f  $final_gvcf && $tabix -p vcf $gz");	
 	confess() unless -e $gz;
  	confess() unless -e $gz.".tbi";
- 	my @t = `$bcftools query -l $gz`;
-chomp(@t);
-confess('BIG BIG AND REBIG PROBLEM ') if $t[0] ne $patient->name();
 my $dir_prod  = $patient->project->getGvcfDir("haplotypecaller4");
 #system("mv $gz $dir_prod ");
 system("mv $gz* $dir_prod ");
 warn "mv $gz* $dir_prod ";
-
+my @t = `$bcftools query -l $gz`;
+chomp(@t);
+confess('BIG BIG AND REBIG PROBLEM ') if $t[0] ne $patient->name();
 print " END ".$patient->name." join \n";
 $project->destroy_tmp_dir();
 exit(0);
