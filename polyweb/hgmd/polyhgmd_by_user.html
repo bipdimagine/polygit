@@ -1,0 +1,766 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>PolyWeb - HGMD DB By User</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+        <!-- chargement des feuilles de styles necessaires a l'affichage -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+        <style type="text/css">
+            @import "../css/polycss/general.css";
+            @import "../css/polycss/login.css";
+            @import "../css/polycss/button.css";
+            @import "../css/polycss/filter.css";
+            @import "../viewer/viewer.css";
+            @import "../css/dejavu/dejavu.css";
+            @import "../css/polycss/header.css";
+            @import "../css/polycss/header-footer.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/claro/claro.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/claroGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/soriaGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/soria/soria.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/Grid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/nihiloGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/nihilo/nihilo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/tundraGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/tundra/tundra.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/layout/resources/ExpandoPane.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/widget/Dialog/Dialog.css";
+    
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+    
+            #borderContainer {
+                width: 100%;
+                height: 100%;
+            }
+    
+            .testDialog {
+                font-size: 8pt;
+            }
+    
+            .dojoxGrid-row-odd td {
+                background: #e8f2ff;
+            }
+    
+            .name {
+                color: #2962A7;
+                font-weight: bold;
+            }
+    
+            .pconseq {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_blue.png);
+                padding: 1em;
+                width: 1200px;
+                min-width: 400px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .ptranscript {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_grey.png);
+                padding: 1em;
+                min-width: 100px;
+                height: 15px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .pconseq .gridconseq {
+                background: #fff;
+                height: 150px;
+                position: float;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .partsContainerSmall {
+                background: rgb(192,80,77);
+                padding: 1em;
+                background-image: url(../images/polyicons/bckgrdsmall.png);
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .titleSmall {
+                font-family: Verdana, Arial, Helvetica, sans-serif;
+                padding: 0.5em 0.5em 0 0.5em;
+                color: #000000;
+                background: rgb(192,80,77);
+                font-weight: normal;
+                -moz-border-radius-topleft: 8px;
+                -moz-border-radius-topright: 8px;
+                -webkit-border-top-left-radius: 8px;
+                -webkit-border-top-right-radius: 8px;
+                -webkit-box-shadow: 2px 2px 11px #888;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+            }
+    
+            .partsContainerSmall .gridContainerSmall {
+                background: #fff;
+                height: 150px;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .person_name {
+                padding: 3px 3px 3px 25px;
+                font-size: 23px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #ff5500;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .titre {
+                padding: 1px 5px 1px 25px;
+                margin-left: 70px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 12px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .run {
+                padding: 1px 1px 1px 25px;
+                margin-left: 50px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(../images/polyicons/lightning.png) no-repeat center left;
+            }
+    
+            .span_desc {
+                font-family: arial;
+                font-size: 10px;
+                padding: 8px 1px 1px 25px;
+                background: url(../images/polyicons/star.png) no-repeat center left;
+            }
+    
+            .alternateDock {
+                position: absolute;
+                background-color: #000000;
+                right: 0px;
+                top: 0px;
+                border-left: 1px solid #ccc;
+                height: 100%;
+            }
+    
+            #alternateDock ul.dojoxDockList {
+                display: block;
+            }
+    
+            .td_align {
+                border: 2px solid;
+            }
+    
+            .tundra #toolbar.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar2.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar3.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+            
+            table.dataTable thead .sorting:before, table.dataTable thead .sorting:after, table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+               padding: 5px;
+            }
+            .dataTables_wrapper .mdb-select {
+                border: none;
+                float: left;
+            }
+            .dataTables_wrapper .mdb-select.form-control {
+                padding-top: 0;
+                margin-top: -1rem;
+                margin-left: 0.7rem;
+                margin-right: 0.7rem;
+                width: 100px;
+            }
+            .dataTables_length label {
+                float: left;
+            }
+            table.dataTable {
+                margin-bottom: 3rem!important;
+            }
+            div.dataTables_wrapper div.dataTables_info {
+                padding-top: 0;
+            }
+            
+            table #grid_var {
+                border-collapse: collapse;   
+            }
+            #grid_var tr:hover {
+                background-color: #ccc;
+            }
+            #grid_var th {
+                background-color: #fff;
+            }
+            #grid_var th, #example td {
+                padding: 3px 5px;
+            }
+            #grid_var td:hover {
+                cursor: pointer;
+            }
+            
+            table #tab_transcripts {
+                border-collapse: collapse;   
+            }
+            #tab_transcripts tr:hover {
+                background-color: #ccc;
+            }
+            #tab_transcripts th {
+                background-color: #fff;
+            }
+            #tab_transcripts th, #example td {
+                padding: 3px 5px;
+            }
+            #tab_transcripts td:hover {
+                cursor: pointer;
+            }
+            
+			.collapsing{
+			 	-webkit-transition:height .01s ease;
+			  	transition:height .01s ease
+			}
+			
+			.loader {
+				border-top: 16px solid #F5F5F5;
+				border-right: 16px solid #A9A9A9;
+				border-bottom: 16px solid #808080;
+				border-left: 16px solid #000000;
+				border-radius: 50%;
+			    width: 120px;
+			    height: 120px;
+  				-webkit-animation: spin 2s linear infinite;
+			    animation: spin 2s linear infinite;
+			}
+			
+			.nav-tabs {
+			  overflow-x: auto;
+			  overflow-y: hidden;
+			  display: -webkit-box;
+			  display: -moz-box;
+			}
+			.nav-tabs>li {
+			  float: none;
+			}
+			
+			@-webkit-keyframes spin {
+				0% { -webkit-transform: rotate(0deg); }
+				100% { -webkit-transform: rotate(360deg); }
+			}
+			
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+			
+			#text_search_polyquery_var {
+			    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+			    background-position: 10px 12px; /* Position the search icon */
+			    background-repeat: no-repeat; /* Do not repeat the icon image */
+			    width: 100%; /* Full-width */
+			    font-size: 16px; /* Increase font-size */
+			    padding: 12px 20px 12px 40px; /* Add some padding */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    margin-bottom: 12px; /* Add some space below the input */
+			}
+			
+			#myTable {
+			    border-collapse: collapse; /* Collapse borders */
+			    width: 100%; /* Full-width */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    font-size: 18px; /* Increase font-size */
+			}
+			
+			#myTable th, #myTable td {
+			    text-align: left; /* Left-align text */
+			    padding: 12px; /* Add padding */
+			}
+			
+			#myTable tr {
+			    /* Add a bottom border to all table rows */
+			    border-bottom: 1px solid #ddd;
+			}
+			
+			#myTable tr.header, #myTable tr:hover {
+			    /* Add a grey background color to the table header and on hover */
+			    background-color: #f1f1f1;
+			}
+			 
+			.visible {
+			  visibility: visible;
+			}
+			
+			.invisible {
+			  visibility: hidden;
+			}
+			
+			.progress_chr {
+				opacity: 0;
+				-webkit-transition: opacity 2s ease-in;
+				-moz-transition: opacity 2s ease-in;
+				-o-transition: opacity 2s ease-in;
+				-ms-transition: opacity 2s ease-in;
+				transition: opacity 2s ease-in;
+			}
+			
+			.progress_chr.load {
+			    opacity: 1;
+			}
+			
+        </style>
+        
+        <style type="text/css" media="print">
+			@page { size: landscape; }
+			
+			.row {
+				-webkit-print-color-adjust: exact;
+			}
+		</style>
+        
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/dojo.js" djConfig="parseOnLoad: true" type="text/javascript"></script>
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+        
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        
+        
+        <script type="text/javascript" src="../js/polyjs/include.js"></script>
+        <script type="text/javascript" src="../js/polyjs//Utility/my_formatter_vector.js"></script>
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js"></script>
+        <script type="text/javascript" src="../js/polyjs/alamut_methods.js"></script>
+        <script type="text/javascript" src="../js/dejavu/dejavu.js"></script>
+        <script type="text/javascript" src="../js/igv/igv-1.0.9.js"></script>
+    	<script type="text/javascript" src="../js/polyjs/igv_methods.js"  ></script>
+    	<script type="text/javascript" src="../js/polyjs/consequence.js"> </script>
+        <script type="text/javascript" src="../js/polyjs//Utility/my_formatter_vector.js" djConfig="parseOnLoad: true"></script>
+        
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+        
+        <script type="text/javascript">
+			dojo.require("dojo.cookie");
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dijit.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dijit.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.CheckBox");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            
+            var url_script;
+            var sorted_by = 'pos';
+            var sorted_by_asc_desc = 'asc';
+            
+            var only_project = param("project");
+            var only_patient = param("patient");
+            var only_genes = param("genes");
+            var interface_view = param("interface_view");
+            
+            $(document).ready(function () {
+			    var urlVerisonCgi = url_path + "hgmd/hgmd_get_last_version.pl";
+			    $.getJSON( urlVerisonCgi, function( data ) {
+					var items = [];
+  					$.each( data, function( key, val ) {
+  						if (key == 'hgmd_last_version') { document.getElementById("span_hgmd_current_version").textContent = "Current Version " + val; }
+  					});
+				});
+				if (only_project == '') { $("#modal_login_no_project").modal("show"); }
+			    else { $("#modal_login").modal("show"); }
+		    });
+		    
+		    function init_without_project() {
+		    	if (check_user_pwd_2() != 1) { return; }
+		    	var user = $("#usr_2").val();
+		    	var passwd = $("#pwd_2").val();
+		    	$("#modal_login_no_project").modal("hide");
+		    	$("#modal_wait").modal("show");
+            	document.getElementById("span_login").innerHTML = "<font color='green'>"+user+"</font>";
+				url_script = url_path + "hgmd/hgmd_get_list_projects_by_user.pl?user="+user+"&pwd="+passwd;
+				var xmlhttp = new XMLHttpRequest(), method = 'GET', url = url_script;
+				xmlhttp.open(method, url, true);
+				xmlhttp.onprogress = function () {
+					var nb = parseInt(count_progress_bar(String(this.response)));
+					if (nb > 100) { nb = 100; }
+					$(".progress-bar").css("width", nb + "%").text(nb + " %");
+				};
+				xmlhttp.onload = function () {
+					var $log = $( "#container_hgmd" ),
+						html = $.parseHTML( String(xmlhttp.response) ),
+						nodeNames = [];
+					$log.append( html );
+	            	setTimeout(function() {
+				    	$('#modal_wait').modal('hide');
+	        		}, 500);
+					
+				}
+				xmlhttp.send();
+		    }
+		    
+		    function init(type) {
+		    	if (check_user_pwd() != 1) { return; }
+		    	var user = $("#usr").val();
+		    	var passwd = $("#pwd").val();
+		    	$("#modal_login").modal("hide");
+            	document.getElementById("span_login").innerHTML = "<font color='green'>"+user+"</font>";
+				url_script = url_path + "hgmd/hgmd_get_variants_found_by_user.pl?user="+user+"&pwd="+passwd;
+				if (only_project) {
+					document.getElementById("span_only_project").innerHTML = "<font color='red'><i>only "+only_project+"</i></font>";
+					url_script += "&project=" + only_project;
+				}
+				if (only_patient) {
+					document.getElementById("span_only_patient").innerHTML = "<font color='red'><i>patient "+only_patient+"</i></font>";
+					url_script += "&patient=" + only_patient;
+				}
+				if (only_genes) {
+					var lGenes = only_genes.split(',');
+					document.getElementById("span_only_genes").innerHTML = "<font color='red'><i>"+lGenes.length+" capture(s) / gene(s)</i></font>";
+					url_script += "&genes=" + only_genes;
+				}
+				if (interface_view) {
+					url_script += "&interface_view=" + interface_view;
+				}
+	            launch('container_hgmd');
+		    };
+		    
+		    function check_user_pwd() {
+		    	var user = $("#usr").val();
+		    	var passwd = $("#pwd").val();
+		    	var has_pb;
+		    	if (user == '')   {
+		    		document.getElementById("span_usr_mandatory").innerHTML = "<font color='red'><i> * mandatory</i></font>";
+		    		has_pb = 1;
+	    		}
+		    	if (passwd == '') {
+		    		document.getElementById("span_pwd_mandatory").innerHTML = "<font color='red'><i> * mandatory</i></font>";
+		    		has_pb = 1;
+	    		}
+	    		if (has_pb == 1) { return; }
+		    	return 1;
+		    	
+		    }
+		    
+		    function check_user_pwd_2() {
+		    	var user = $("#usr_2").val();
+		    	var passwd = $("#pwd_2").val();
+		    	var has_pb;
+		    	if (user == '')   {
+		    		document.getElementById("span_usr_mandatory_2").innerHTML = "<font color='red'><i> * mandatory</i></font>";
+		    		has_pb = 1;
+	    		}
+		    	if (passwd == '') {
+		    		document.getElementById("span_pwd_mandatory_2").innerHTML = "<font color='red'><i> * mandatory</i></font>";
+		    		has_pb = 1;
+	    		}
+	    		if (has_pb == 1) { return; }
+		    	return 1;
+		    	
+		    }
+			
+			function remove_all_elements_in_container_hgmd() {
+        		var myNode = document.getElementById("container_hgmd");
+        		while (myNode.firstChild) {
+        		    myNode.removeChild(myNode.firstChild);
+        		}
+		    }
+		    
+		    function sort_by(type, type_asc_desc) {
+		    	$("#b_launch_sort").removeClass("btn-secondary");
+		    	$("#b_launch_sort").addClass("btn-primary");
+				if (type) { sorted_by = type; }
+				if (type_asc_desc) { sorted_by_asc_desc = type_asc_desc; }
+			}
+		    
+		    var hash_done = {};
+		    function launch(container_id, project_name) {
+		    	$(".progress-bar").css("width", "0%").text("0 %");
+		    	if (project_name !== undefined && project_name in hash_done) { return; }
+		    	$("#b_launch_sort").removeClass("btn-primary");
+		    	$("#b_launch_sort").addClass("btn-secondary");
+		    	$('#modal_wait').modal('show');
+	            var this_url = url_script + "&sort_by=" + sorted_by + "&sort_by_asc_desc=" + sorted_by_asc_desc;
+	            if (project_name === undefined) { remove_all_elements_in_container_hgmd(); }
+	            else {
+			    	var user = $("#usr_2").val();
+			    	var passwd = $("#pwd_2").val();
+	            	this_url = url_path + "hgmd/hgmd_get_variants_found_by_user.pl?user="+user+"&pwd="+passwd+"&project=" + project_name;
+	            }
+	            if ($("#b_listed_genes").is(":checked")) { this_url += "&interface_view=by_captures_genes"; }
+				//if ($("#b_listed_var").is(":checked"))   { this_url += "&interface_view=by_variants"; }
+				if ($("#b_hgmd_latest").is(":checked"))  {
+					document.getElementById("span_hgmd_latest").innerHTML = "<font color='red'><i>only in latest HGMD version</i></font>";
+					this_url += "&only_new_hgmd=1";
+				}
+	            var xmlhttp = new XMLHttpRequest(), method = 'GET', url = this_url;
+				xmlhttp.open(method, url, true);
+				xmlhttp.onprogress = function () {
+					var nb = parseInt(count_progress_bar(String(this.response))) * 4;
+					if (nb > 100) { nb = 100; }
+					$(".progress-bar").css("width", nb + "%").text(nb + " %");
+				};
+				xmlhttp.onload = function () {
+					var $log = $( '#' + container_id ),
+						html = $.parseHTML( String(xmlhttp.response) ),
+						nodeNames = [];
+					$log.append( html );
+	            	setTimeout(function() {
+				    	$('#modal_wait').modal('hide');
+	        		}, 500);
+					hash_done[project_name] = 'ok';
+				}
+				xmlhttp.send();
+		    }
+		    
+		    function count_progress_bar(str) {
+  				const re = /\@/g;
+  				return ((str || '').match(re) || []).length;
+			}
+		    
+		    function collapse_them(div_phen, div_analyse, genes_name) {
+            	setTimeout(function() {
+			    	if ($('#'+div_phen).hasClass("in")) { $('#'+div_phen).removeClass("in"); }
+			    	var lGenes = genes_name.split(',');
+	                for (var i = 0; i < lGenes.length; i++) {
+	                	$('#'+div_analyse+'_'+lGenes[i]).addClass("in");
+	            	}
+	            	setTimeout(function() {
+				    	$('#'+div_analyse).addClass("in");
+	        		}, 1000);
+        		}, 1000);
+		    }
+		    
+		    function collapse_close() {
+		    	$('collapse in').contents().removeClass("in");
+			}
+			
+			function zoomHgmd(p,hid,vid){
+	            dijit.byId("popup_hgmd").show();
+	            dijit.byId("div_popup_hgmd").setHref(url_hgmd_view+"?polyquery_view=1&hid="+hid+"&vid="+vid+"&project="+p);
+			}
+			
+		</script>
+    </head>
+	<body>
+		<nav class="navbar navbar-inverse ">
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+						<span class="icon-bar"></span>
+				        <span class="icon-bar"></span>
+				        <span class="icon-bar"></span>                        
+	      			</button>
+	      			<a class="navbar-brand" href="#"><span style="color:#80aaf2">PolyWeb</span></a>
+	      			<a class="navbar-brand" href="#"><span style="color:#80aaf2">HGMD DataBase</span></a>
+	      			<a class="navbar-brand" href="#"><span style="color:#80aaf2" id="span_hgmd_current_version"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_only_project"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_only_patient"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_only_genes"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_hgmd_latest"></span></a>
+	    		</div>
+	    		<div class="collapse navbar-collapse" id="myNavbar">
+	      			<ul class="nav navbar-nav navbar-right">
+				        <li onClick="$('#modal_login').modal('show');"><a href="#"><span class="glyphicon glyphicon-user"></span> <span id="span_login">Not Logged</span></a></li>
+	      			</ul>
+	    		</div>
+	  		</div>
+		</nav>
+		
+		<!--
+		<div style="padding:5px">
+			<table>
+				<td>
+					<label class="radio-inline"><input type="radio" id="b_option_sort_by_pos" name="b_option_sort_by" checked onClick="sort_by('pos');">Sort by Position</label>
+					<label class="radio-inline"><input type="radio" id="b_option_sort_by_gene" name="b_option_sort_by" onClick="sort_by('gene');">Sort by Gene Name</label>
+					<label class="radio-inline"><input type="radio" id="b_option_sort_by_dejavu" name="b_option_sort_by" onClick="sort_by('dejavu');">Sort by Deja Vu</label>
+				</td>
+				<td style="width:15px"></td>
+				<td>|</td>
+				<td style="width:15px"></td>
+				<td>
+					<label class="radio-inline"><input type="radio" id="b_option_sort_by_asc" name="b_option_sort_by_asc_desc" checked onClick="sort_by(null, 'asc');">ASC</label>
+					<label class="radio-inline"><input type="radio" id="b_option_sort_by_desc" name="b_option_sort_by_asc_desc" onClick="sort_by(null, 'desc');">DESC</label>
+				</td>
+				<td style="width:15px"></td>
+				<td>|</td>
+				<td style="width:15px"></td>
+				<td>
+					<button id="b_launch_sort" type="button" class="btn btn-secondary btn-sm" onClick="launch('container_hgmd')">SORT</button>
+				</td>
+			</table>
+		</div>
+		-->
+		
+		<div class="container" id="container_global" style="width:100%;overflow-y:auto;overflow-x:visible;height:85%;border: 1px solid black;">
+			<div style="padding-top:5px;"></div>
+			<center>
+			<div class="container" id="container_hgmd" style="width:100%;overflow-y:auto;overflow-x:visible;padding-top:5px;" onload="window.print()">
+			</div>
+			</center>
+			<br>
+		</div>
+        
+        <div id="modal_wait" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+			<div class="modal-dialog modal-sm">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title"><center>Loading...</center></h4>
+					</div>
+      				<div class="modal-body">
+        				<center>
+							<div class="progress" id="div_progress_bar">
+							    <div id="div_progress_bar_2" class="progress-bar progress-bar-striped" style="min-width: 20px;"></div>
+							</div>
+        				</center>
+					</div>
+    			</div>
+			</div>
+		</div>
+		
+		<div id="modal_login_no_project" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+			<div class="modal-dialog modal-sm">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title"><center>Welcome to HGMD DejaVu</center></h4>
+					</div>
+      				<div class="modal-body">
+	      				<div class="panel panel-default">
+							<div class="panel-body text-success"><center><h5>Login / Password</h5></center></div>
+							<div class="form-group" style="padding:5px;">
+								<label for="usr_1">Name:</label><span id="span_usr_mandatory_2"></span>
+								<input type="text" class="form-control" id="usr_2">
+							</div>
+							<div class="form-group" style="padding:5px;">
+								<label for="pwd_2">Password:</label><span id="span_pwd_mandatory_2"></span>
+								<input type="password" class="form-control" id="pwd_2">
+							</div>
+						</div>
+						<center><button type="button" class="btn btn-success" onclick="init_without_project()" id="b_run">Login</button></center>
+					</div>
+    			</div>
+			</div>
+		</div>
+		
+		<div id="modal_login" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+			<div class="modal-dialog modal-sm">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title"><center>Welcome to HGMD DejaVu</center></h4>
+					</div>
+      				<div class="modal-body">
+	      				<div class="panel panel-default">
+							<div class="panel-body text-success"><center><h5>Login / Password</h5></center></div>
+							<div class="form-group" style="padding:5px;">
+								<label for="usr">Name:</label><span id="span_usr_mandatory"></span>
+								<input type="text" class="form-control" id="usr">
+							</div>
+							<div class="form-group" style="padding:5px;">
+								<label for="pwd">Password:</label><span id="span_pwd_mandatory"></span>
+								<input type="password" class="form-control" id="pwd">
+							</div>
+						</div>
+	      				<div class="panel panel-default" hidden>
+							<div class="panel-body text-success"><center><h5>Visualisation</h5></center></div>
+							<div class="custom-control custom-radio" style="padding-left:5px;">
+							 	<input type="radio" class="custom-control-input" id="b_listed_var" name="radios_visualisation">
+							 	<label class="custom-control-label" for="b_listed_var">Listed by Variations</label>
+							</div>
+							<div class="custom-control custom-radio" style="padding-left:5px;">
+							 	<input type="radio" class="custom-control-input" id="b_listed_genes" name="radios_visualisation" checked>
+							 	<label class="custom-control-label" for="b_listed_genes">Listed by Genes</label>
+							</div>
+							<br>
+						</div>
+	      				<div class="panel panel-default">
+							<div class="panel-body text-success"><center><h5>HGMD Versions</h5></center></div>
+							<div class="custom-control custom-radio" style="padding-left:5px;">
+							 	<input type="radio" class="custom-control-input" id="b_hgmd_latest" name="radios_hgmd">
+							 	<label class="custom-control-label" for="b_hgmd_latest">Only in latest version</label>
+							</div>
+							<div class="custom-control custom-radio" style="padding-left:5px;">
+							 	<input type="radio" class="custom-control-input" id="b_hgmd_all" name="radios_hgmd" checked>
+							 	<label class="custom-control-label" for="b_hgmd_all">ALL versions</label>
+							</div>
+							<br>
+						</div>
+						<center><button type="button" class="btn btn-success" onclick="init()" id="b_run">Run</button></center>
+					</div>
+    			</div>
+			</div>
+		</div>
+		
+		
+	    <div id="popup_hgmd" dojoType="dojox.widget.Dialog"   dimensions="[600,300]"   >
+	        <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane">
+			</div>
+		</div>
+		
+	
+	</body>
+</html>
+

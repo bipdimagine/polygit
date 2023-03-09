@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-
+ 
 use strict;
 use FindBin qw($Bin);
 use lib "$Bin/../../../GenBo/lib/";

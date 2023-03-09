@@ -1,0 +1,459 @@
+<center>
+	<div class='row no-gutters' style="height:100px;width:100%;background-color:#F0F0F0;border: 2px double black;">
+	
+		<div class='col-sm-3 col-m-2' style="height:95px;padding-top:5px;border-right: 1px dashed grey;">
+			<table style="padding-top:10px;width:100%">
+				<td id="td_launch" style="padding-right:10px;">
+					<center>
+						<button type="button" class="btn btn-xs" style="border:5px white double;background-color:rgb(214, 44, 26);padding:3px;" id="panel_name_button" onclick="load_polyviewer(1,0);">
+							<center><span style="padding:4px;font-size:14px;color:white;">Refresh </span><br><i class="fa fa-refresh" aria-hidden="true" style="font-size:18px;color:white;"></i></center> 
+						</button>
+					</center>
+				</td>
+				
+				<td style="min-width:16px;height:80px;background-color:#607D8B;color:white;border-top:5px solid #607D8B;border-bottom:2px solid #607D8B;border-left:2px solid #607D8B;border-right:5px solid #607D8B;writing-mode:vertical-lr;">
+					<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;margin:2px">PANELS</span>
+				</td>
+				
+				<td style="border:2px solid #607D8B;border-top:5px solid #607D8B;width:100%;background-color:white;height:80px;" id="td_phenotypes_panels">
+					<table>
+						<tr>
+							<center>
+								<div><span style="color:#607D8B;"><u><b>Phenotype</u></b></span></div>
+								<div class="btn-group-phenotypes btn-group btn-xs">
+									<button type="button" id="list_phenotype_name_button" style="color:white;background-color:#607D8B;" class="btn dropdown-toggle btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<span class="caret"></span> <span class="sr-only">Toggle Dropdown</span>
+									</button>
+									<button type="button" class="btn btn-xs" style="background-color:#607D8B;" id="phenotype_name_button">
+										<span id="span_phenotype_name" jsId="span_phenotype_name" style="color:white;font-size:8px;width:150px;">All Genes</span>
+									</button>
+									<div class="dropdown-menu" aria-labelledby="btnGroupDrop1" id="dropdown-menu-phenotypes" style='height:auto;max-height:400px;min-width:230px;overflow-y:auto;'></div>
+								</div>
+							</center>
+						</tr>
+						<tr>
+							<center>
+								<div><span style="color:#607D8B;"><u><b>Panel</u></b></span></div>
+								<div class="btn-group-panel btn-group btn-xs">
+									<button type="button" id="list_panel_name_button" style="color:white;background-color:#607D8B;" class="btn dropdown-toggle btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<span class="caret"></span> <span class="sr-only">Toggle Dropdown</span>
+									</button>
+									<button type="button" style="background-color:#607D8B;" class="btn btn-xs" id="panel_name_button">
+										<span id="span_panel_name" jsId="span_panel_name" style="color:white;font-size:8px;width:150px;">All Genes</span>
+									</button>
+									<div class="dropdown-menu" aria-labelledby="btnGroupDrop1" id="dropdown-menu-panels" style='height:auto;max-height:400px;overflow-y:auto;overflow-x:hidden;'></div>
+								</div>
+							</center>
+						</tr>
+					</table>
+				</td>
+			</table>
+		</div>
+		<!-- class='col-sm-9 float-left'-->
+		
+		<div   style="height:110px;overflow-x:auto;scrollbar-width:thin;padding-top:5px;padding-left:15px;">
+		
+	
+			<table id="table_float" style="min-width:1400px;">
+				
+				<!--  ****slider gnomad  **** -->
+			
+				<td style="max-width:10px !important;width:10px;;background-color:#3ab795;color:white;border-top:5px solid #3ab795;border-bottom:2px solid #3ab795;border-left:2px solid #3ab795;border-right:5px solid #3ab795;writing-mode:vertical-lr;">
+					<span onclick="hide_and_show('td_slider_gnomad');" id = "image_td_slider_gnomad" class ="glyphicon glyphicon-triangle-right" style="font-size:10px;text-shadow: 2px 2px 2px rgba(0,0,0,0.9);"></span>
+						<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;padding-left:2px;text-shadow: 1px 1px 1px rgba(0,0,0,1);letter-spacing: 1px;">&nbsp;GNOMAD</span>
+					
+				</td>
+				
+				<td style="max-width:100px !important;width:2px;padding-left:5px;padding-right:5px;background-color:white;border-style:none;border-top:5px solid #3ab795;border-bottom:2px solid #3ab795;border-left:2px solid #3ab795;border-right:2px solid #3ab795;height:80px;">
+				<div   id="td_slider_gnomad"  >
+					<center>
+						<table>
+							<tr>
+								<td  id="td_slider_gnomad_ac_pv" style="padding-top: 5px;">
+									<center>
+										<div id="slider_gnomad_ac_pv" jsId="slider_gnomad_ac_pv" data-dojo-type="dijit/form/HorizontalSlider" onChange="check_slider_gnomad_ac" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+							                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+							                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+							                    <li>5</li>
+							                    <li>10</li>
+							                    <li>50</li>
+							                    <li>100</li>
+							                    <li>1000</li>
+							                    <li>All</li>
+							                </ol>
+						                	<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 1.6em; ">
+												<li>Allele&nbsp;Count</li>
+											</ol>
+					                	</div>
+					                </center>
+								</td>
+							</tr>
+							<tr>
+								<td  id="slider_gnomad_ac_ho_pv" style="padding-top: 5px;">
+									<center>
+										<div id="slider_gnomad_ac_ho_pv" jsId="slider_gnomad_ac_ho_pv" data-dojo-type="dijit/form/HorizontalSlider"  aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:2,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+											<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+							                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+							                      <li>5</li>
+							                    <li>10</li>
+							                    <li>50</li>
+							                    <li>100</li>
+							                    <li>1000</li>
+							                    <li>All</li>
+							                </ol>
+							                	<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 1.6em; ">
+												<li>Ho&nbsp;Allele&nbsp;Count</li>
+											</ol>
+										</div>
+									</center>
+								</td>
+							</tr> 
+						</table>
+					</center>
+					</div>
+				</td>
+				
+				<td style="width:10px !important;"></td>
+				
+				<td style="max-width:10px !important;width:10px;background-color:rgb(189, 61, 58);color:white;border-top:5px solid rgb(189, 61, 58);border-bottom:2px solid rgb(189, 61, 58);border-left:2px solid rgb(189, 61, 58);border-right:5px solid rgb(189, 61, 58);writing-mode:vertical-lr;">
+					<span onclick="hide_and_show('td_slider_dejavu');" id = "image_td_slider_dejavu" class ="glyphicon glyphicon-triangle-right" style="font-size:12px;text-shadow: 2px 2px 2px rgba(0,0,0,0.9);"></span>
+						<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;padding-left:2px;text-shadow: 1px 1px 1px rgba(0,0,0,1);letter-spacing: 1px;">&nbsp;DEJAVU</span>
+				</td>
+				
+				<!--  ****end slider dejavu  **** -->
+				<td style="max-width:100px !important;width:2px;padding-left:5px;padding-right:5px;background-color:white;border-style:none;border-top:5px solid rgb(189, 61, 58);border-bottom:2px solid rgb(189, 61, 58);border-left:2px solid rgb(189, 61, 58);border-right:2px solid rgb(189, 61, 58);height:80px;" id="slider_dv">
+					<div id="td_slider_dejavu" >
+					<center>
+					<table>
+						<tr>
+							<td id="slider_dv_pv" jsId="slider_dv_pv" data-dojo-type="dijit/form/HorizontalSlider" onChange="check_slider_gnomad_ac" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+			                	<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+			                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+			                     	<li>5</li>
+			                    	<li>10</li>
+			                    	<li>50</li>
+			                    	<li>100</li>
+			                    	<li>1000</li>
+			                    	<li>All</li>
+			                		</ol>
+			                		<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 2em; ">
+								<li>DejaVu</li>
+							</ol>
+		                </td>
+		                </tr>
+		                <tr>
+							<td id="slider_dv_ho_pv" jsId="slider_dv_ho_pv" data-dojo-type="dijit/form/HorizontalSlider" onChange="check_slider_gnomad_ac" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:2,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+			                	<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+			                		<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+			                     	<li>5</li>
+			                    	<li>10</li>
+			                    	<li>50</li>
+			                    	<li>100</li>
+			                    	<li>1000</li>
+			                    	<li>All</li>
+			                		</ol>
+			                		<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 2em; ">
+								<li>DejaVu Ho</li>
+							</ol>
+		                </td>
+		                </tr>
+		                </table>
+					</center>
+				</td>
+				
+				<td style="width:10px !important;"></td>
+				
+				<td style="max-width:10px !important;width:10px;;background-color:#ffca3a;color:white;border-top: 5px solid #ffca3a;border-bottom:2px solid #ffca3a;border-left:2px solid #ffca3a;border-right:5px solid #ffca3a;writing-mode:vertical-lr;">
+						<span onclick="hide_and_show('td_slider_impact');" id = "image_td_slider_impact" class ="glyphicon glyphicon-triangle-right" style="font-size:12px;text-shadow: 2px 2px 2px rgba(0,0,0,0.9);"></span>
+						<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;padding-left:2px;text-shadow: 1px 1px 1px rgba(0,0,0,1);letter-spacing: 1px;">&nbsp;IMPACTS</span>
+					
+				</td>
+				
+				<!--  ****end slider Impact  **** -->
+				<td style="width:1px;max-width:300px !important;padding-left:2px;padding-right:2px;width:1px;background-color:white;border-style:none;border-top: 5px solid #ffca3a;border-bottom:2px solid #ffca3a;border-left:2px solid #ffca3a;border-right:2px solid #ffca3a;height:80px;vertical-align:center;text-align:-moz-center;">
+						<div id="td_slider_impact">
+						<table>
+						
+							<td >
+							
+							   <center>
+			                        <div id="slider_impact_pv" jsId="slider_impact_pv" onChange="check_slider_cat_annotations()" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:2,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:95px; height: 10px;"' >
+					               		<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"2px"}'> </div>
+				                         <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+				                            <li><span><font color="coral"><i>High</i></font></span></li>
+				                            <li><span><font color="#EACC34"><i>Medium</i></font></span></li>
+				                            <li><span><font color="#28A24C"><i>Low</i></font></span></li>
+				                        </ol>
+				                        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 2em; ">
+										<li>Impact</li>
+										</ol>
+			                    	</div>
+			                	
+								<div style="padding-top: 10px;">						
+				                <input type="checkbox" dojoType="dijit.form.CheckBox" id="keep_pathogenic" onClick="click_annot('filter_intergenic') " checked>
+				                <span id="span_keep"> keep pathogenic  </span>
+								</div>
+							
+						</center>
+						
+							</td>			
+							<td>
+					    		<center>
+									<table>
+										<tr>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                               <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_stop" onClick="click_annot('filter_stop')" checked>
+				                               <span id="span_stop">Stop-gained  </span>
+				                            </td>
+			                            
+			                                <td style="font-size:9px;padding-left:5px;">
+			                                	<input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_phase" onClick="click_annot('filter_phase')" checked>
+			                                	<span id="span_phase">(Start/Stop)-lost  </span>
+			                            	</td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_essential_splicing" onClick="click_annot('filter_essential_splicing')" checked>
+				                                <span id="span_essential_splicing">Splice Acc/Don  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_frameshift" onClick="click_annot('filter_frameshift')" checked>
+				                                <span id="span_frameshift">Frameshift  </span>
+				                            </td>
+				                            
+				                               <td style="font-size:9px;padding-left:5px;display: none">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_maturemirna" onClick="click_annot('filter_maturemirna')" checked>
+				                                <span id="span_maturemirna">Mature miRNA  </span>
+				                            </td>  
+				                            
+				                        </tr>
+				                        <tr> 
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_splice_site" onClick="click_annot('filter_splice_site')" checked>
+				                                <span id="span_splice_site">Splice Region  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_predicted_splice_site" onClick="click_annot('filter_predicted_splice_site')" checked>
+				                                <span id="span_splice_site">Predicted Splice Region  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_nonsynonymous" onClick="click_annot('filter_nonsynonymous')" checked>
+				                                <span id="span_nonsynonymous">Missense  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_nonframeshift" onClick="click_annot('filter_nonframeshift')" checked>
+				                                <span id="span_nonframeshift">No-frameshift  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_ncrna" onClick="click_annot('filter_ncrna')">
+				                                <span id="span_ncrna">ncRNA  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;display: none">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_pseudogene" onClick="click_annot('filter_pseudogene')">
+				                                <span id="span_pseudogene">Pseudogene  </span>
+				                            </td>
+				                        </tr>
+				                        <tr>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_utr" onClick="click_annot('filter_utr')">
+				                                <span id="span_utr">Utr  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_silent" onClick="click_annot('filter_silent')">
+				                                <span id="span_silent">Synonymous  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_upstream_downstream" onClick="click_annot('filter_upstream_downstream')">
+				                                <span id="span_upstream_downstream">Up/Downstream  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;">
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_intronic" onClick="click_annot('filter_intronic')">
+				                                <span id="span_intronic">Intronic  </span>
+				                            </td>
+				                            <td style="font-size:9px;padding-left:5px;" hidden>
+				                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_intergenic" onClick="click_annot('filter_intergenic')">
+				                                <span id="span_intergenic">Intergenic  </span>
+				                            </td>
+				                        </tr>
+				                    </table>
+								</center>
+							</td>	
+							<td>
+							 
+						</table>
+						</div>	
+				</td>	
+				
+				<td style="width:10px !important;"></td>
+				
+				<td style="max-width:10px !important;width:10px;background-color:rgb(138, 201, 38);color:white;border-top:5px solid rgb(138, 201, 38);border-bottom:2px solid rgb(138, 201, 38);border-left:2px solid rgb(138, 201, 38);border-right:5px solid rgb(138, 201, 38);writing-mode:vertical-lr;font: 8px Verdana, sans-serif;">
+					<span onclick="hide_and_show('td_slider_ratio');;" id = "right_td_slider_ratio" class ="glyphicon glyphicon-triangle-bottom" style="font-size:12px;text-shadow: 2px 2px 2px rgba(0,0,0,0.9);"></span>
+
+						<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;padding-left:2px;text-shadow: 1px 1px 1px rgba(0,0,0,1);letter-spacing: 1px;"> 
+										 &nbsp;%&nbsp;RATIO</span>
+				</td>
+				
+				<!--  ****start ratio  **** -->		
+				<td  style="max-width:130px !important;background-color:white;padding-left:1px;border-style:none;border-top:5px solid rgb(138, 201, 38);border-bottom:2px solid rgb(138, 201, 38);border-left:2px solid rgb(138, 201, 38);border-right:2px solid rgb(138, 201, 38);margin-right:1px;width:1px;height:80px;">
+					<div   id="td_slider_ratio" style="display: none;">
+					<center>
+						<div id="slider_allele_quality_pv" jsId="slider_allele_quality_pv" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 4" 
+						onChange="change_slider_ratio"
+						data-dojo-props='
+						value:0,maximum:100,
+			minimum:0,
+			pageIncrement:100,
+			showButtons:true,
+			intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
+				        <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
+				        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+				             <li> All </li>
+							 <li> 25% </li>
+							 <li> 50% </li>
+							 <li> 75% </li>
+				            <li>100%</li>
+				        </ol>
+				        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em; ">
+				            <li>% Ratio</li>
+				        </ol>
+
+				        </div>
+					<label for="htoto">Ratio:</label>
+				      <input   readonly id="htoto"  size="2" value="-" style="margin-top: 10px;font-size:11px;padding-left: 10px;padding-top: 2px;"> </input>
+			        </center>
+					</div>
+		        </td>
+		        
+		        <td style="width:10px !important;"></td>
+		        <td  style="max-width:10px !important;width:10px;;background-color:rgb(154, 139, 79);color:white;border-top:5px solid rgb(154, 139, 79);border-bottom:2px solid rgb(154, 139, 79);border-left:2px solid rgb(154, 139, 79);border-right:5px solid rgb(154, 139, 79);writing-mode:vertical-lr;">
+						
+					<span onclick="hide_and_show('td_slider_polyviewer_this');" id = "image_td_slider_polyviewer_this" class ="glyphicon glyphicon-triangle-bottom" style="font-size:12px;text-shadow: 2px 2px 2px rgba(0,0,0,0.9);"></span>
+						<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;padding-left:2px;text-shadow: 1px 1px 1px rgba(0,0,0,1);letter-spacing: 1px;">&nbsp;In&nbsp;this&nbsp;Run</span>
+						
+				</td>
+				
+		
+						<!--  ****start in this run   **** -->		
+				<td  style="max-width:130px !important;background-color:white;padding-left:2px;border-style:none;border-top:5px solid rgb(154, 139, 79);border-bottom:2px solid rgb(154, 139, 79);border-left:2px solid rgb(154, 139, 79);border-right:2px solid rgb(154, 139, 79);margin-right:2px;width:1px;height:80px;">
+				<div   id="td_slider_polyviewer_this" style="display: none;">
+					<center>
+ 			<div id="slider_polyviewer_this" jsId="slider_polyviewer_this" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 5" data-dojo-props='name:"horizontal2",minimum:1,value:6,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:140px; height: 10px;"'>
+                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+                    <li>Uniq</li>
+                     <li>10</li>
+                    <li>25</li>
+                      <li>50</li>
+                    <li>75</li>
+                    <li>all</li>
+                </ol>
+                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em; ">
+                    <li>% this run</li>
+                </ol>
+                
+
+			        </center>
+				</div>
+		        </td>
+		        
+		        <td style="width:10px !important;"></td>
+		        
+				<td  style="max-width:10px !important;width:10px;;background-color:rgb(151, 150, 196);color:white;border-style:none;border-top:5px solid rgb(151, 150, 196);border-bottom:2px solid rgb(151, 150, 196);border-left:2px solid rgb(151, 150, 196);border-right:5px solid rgb(151, 150, 196);writing-mode:vertical-lr;">
+						 <span onclick="hide_and_show('td_slider_models');" id = "image_td_slider_models" class ="glyphicon glyphicon-triangle-bottom" style="font-size:12px;text-shadow: 2px 2px 2px rgba(0,0,0,0.9);"></span>
+						<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;padding-left:2px;text-shadow: 1px 1px 1px rgba(0,0,0,1);letter-spacing: 1px;">&nbsp;MODELS</span>
+				</td>
+				<!--  ****start transmission  **** -->	
+					
+				<td  style="max-width:200px !important;background-color:white;border-style:none;border-top:5px solid rgb(151, 150, 196);border-bottom:2px solid rgb(151, 150, 196);border-left:2px solid rgb(151, 150, 196);border-right:2px solid rgb(151, 150, 196);width:1px;height:80px;">
+					<div   id="td_slider_models" style="display: none;">
+					<center>
+						<table>
+							<tr>
+					  			<td style="padding-block:3px;">
+					    			<div class="pretty p-default p-curve p-thick p-bigger">
+					        			<input id="strict_denovo" type="checkbox" checked/>
+								        <div class="state p-danger-o">
+								            <label> Strict-Denovo </label>
+								        </div>
+					    			</div>
+					    		</td>
+					    		
+					  			<td style="padding-block:3px;padding-left:30px;">
+					    			<div class="pretty p-default p-curve p-thick p-bigger">
+					        			<input id="denovo" type="checkbox" checked/>
+								        <div class="state p-danger-o">
+								            <label> Denovo </label>
+								        </div>
+					    			</div>
+					    		</td>
+					    		
+					  			<td style="padding-block:3px;padding-left:10px;">
+					    			<div class="pretty p-default p-curve p-thick p-bigger">
+					        			<input id="recessive" type="checkbox" checked/>
+								        <div class="state p-danger-o">
+								            <label> Recessif </label>
+								        </div>
+					    			</div>
+					    		</td>
+				    		</tr>
+				    		<tr>
+					  			<td style="padding-block:10px;">
+									<div class="pretty p-default p-curve p-thick p-bigger">
+									
+						        		<input id="xor_father" type="checkbox" checked/>
+						        		<div class="state p-danger-o">
+								            <label> Father<sup> Excl.</sup></label>
+								        </div>
+									</div>
+										
+					    		</td>
+									<td style="padding-block:10px;padding-left:30px;">
+									<div class="pretty p-default p-curve p-thick p-bigger">
+									
+						        		<input id="xor_mother" type="checkbox" checked/>
+										<div class="state p-danger-o" >
+								            <label>Mother<sup> Excl.</sup></label>
+								        </div>
+									</div>
+					    		</td>
+					    		
+							   	<td style="padding-block:3px;padding-left:10px;">
+					    			<div class="pretty p-default p-curve p-thick p-bigger">
+						        		<input id="both" type="checkbox"/>
+								        <div class="state p-danger-o">
+								            <label> Others Trans. </label>
+								        </div>
+					    			</div>
+					    		</td>
+					    		
+					    		<td hidden>
+									<div>
+					                	<input id="check_never_pv" style="visibility: hidden" name="check_never" data-dojo-type="dijit/form/CheckBox" value="1"  style="visibility: hidden"checked o /> 
+					               	</div>
+					    		</td>
+				            </tr>
+			            </table>
+		            </center>
+				</td>
+				
+				<td style="width:10px !important;"></td>
+				<td id="td_slider_polyviewer_sample" style="max-width:10px !important;width:10px;;background-color:#6C4F3D;color:white;border-top:5px solid #6C4F3D;border-bottom:2px solid #6C4F3D;border-left:2px solid #6C4F3D;border-right:5px solid #6C4F3D;writing-mode:vertical-lr;">
+					<span onclick="hide_and_show('td_slider_polyviewer_sample');" id = "image_td_slider_polyviewer_sample" class ="glyphicon glyphicon-triangle-bottom" style="font-size:12px;text-shadow: 2px 2px 2px rgba(0,0,0,0.9);"></span>
+			
+					<span style="writing-mode:vertical-lr !important; font: 8px Verdana, sans-serif;padding-left:2px;text-shadow: 1px 1px 1px rgba(0,0,0,1);letter-spacing: 1px;">Sample</span>
+				</td>
+				<td style="background-color:white;border-style:none;border-top:5px solid #6C4F3D ;border-bottom:2px solid #6C4F3D;border-left:2px solid #6C4F3D;border-right:2px solid #6C4F3D;width:1px;height:80px;">
+				<center>
+				<button type="button" class="btn btn-danger btn-xs"
+									id="" onclick="dijit.byId('popup_patients').show();" style="background-color:#6C4F3D;border-color:#6C4F3D">
+									<span style="font-size:12px">Select Sample </span><i class="fa fa-user" aria-hidden="true" style="font-size:12px"></i> 
+								</button>				
+				</center>
+				</div>
+				</td>
+			</table>
+		</div>
+	</div>
+</center>
+
+<br>
+
+<div jsId="container_editor_polyviewer" data-dojo-type="dijit/layout/TabContainer" data-dojo-props="splitter:false, region:'center'" style="width:100%;height:80%;"></div>
