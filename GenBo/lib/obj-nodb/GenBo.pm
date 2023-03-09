@@ -786,7 +786,7 @@ sub getCnvs{
 	my $self = shift;
 	my @lRes;
 	push(@lRes,@{$self->getLargeDuplications()});
-	push(@lRes,@{$self->getLargeInsertions()});
+	#push(@lRes,@{$self->getLargeInsertions()});
 	push(@lRes,@{$self->getLargeDeletions()});
     return \@lRes;
 }
