@@ -1086,6 +1086,10 @@ sub myflushobjects {
 					bless $var_obj , 'GenBoLargeDuplicationCache';
 					$self->{objects}->{insertions}->{$id}= $var_obj;
 				}
+				elsif  ($ref eq 'GenBoMei'){
+						bless $var_obj , 'GenBoMeiCache';
+						$self->{objects}->{insertions}->{$id}= $var_obj;
+					}
 				elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeInsertionCache'  && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoBoundaryCache'  && $ref ne 'GenBoInversionCache' && $ref ne 'GenBoJunctionCache') {
 					confess("$ref =+>".$var_obj);
 				}
