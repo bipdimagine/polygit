@@ -127,6 +127,13 @@ if (exists $pipeline->{sv}){
 	move_sv($sv_file,$patient);
 }
 
+if (exists $pipeline->{count}){
+
+	my $count_file = $dir_pipeline."/".$prefix.".quant.sf";
+	my $splice_file = $dir_pipeline."/".$prefix.".SJ.out.tab";
+	move_count($count_file,$splice_file,$patient);
+}
+
 
 
 
@@ -198,6 +205,22 @@ sub move_sv {
 	system("rsync -rav  $url"."$t1.tbi $dir/");
 	
 }
+
+sub move_rna_count {
+	my ($t1,$t2,$patient) = @_;
+	my $dir = $project->getCountingDir("dragen-count");
+	system("rsync -rav  $url"."$t1 $dir/");
+	system("rsync -rav  $url"."$t2 $dir/");
+	
+}
+
+sub move_rna_metrics {
+	my ($t1,$patient) = @_;
+	my $dir = $project->getCountingDir("dragen-count");
+	system("rsync -rav  $url"."$t1 $dir/");
+	
+}
+
 
 sub backup {
 	my ($final_gz) = @_;

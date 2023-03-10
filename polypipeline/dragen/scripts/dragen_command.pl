@@ -71,12 +71,13 @@ GetOptions(
 	'umi=s' => \$umi,
 	'command=s'=>\$spipeline,
 	'version=s' =>\$version,
-	'rna=s' =>\$rna,
+#	'rna=s' =>\$rna,
 	#'low_calling=s' => \$low_calling,
 );
 
 my $pipeline;
 foreach my $l (split(",",$spipeline)){
+	warn $l;
 	$pipeline->{$l} ++;
 }
 my $user = system("whoami");
@@ -88,12 +89,13 @@ my $tm = "/staging/tmp/";
 if ($project->isGenome){
 	warn "coucou";
 }
+
 #system ("mkdir -p $dir_dragen/".$project->name );
 
 my $patient = $project->getPatient($patients_name);
 my $dir_pipeline = $patient->getDragenDir("pipeline");
 my $prefix = $patient->name;
-my $bam_prod = $patient->gvcfFileName("dragen-calling");
+#my $bam_prod = $patient->gvcfFileName("dragen-calling");
 #warn $bam_prod if -e $bam_prod;
 #exit(0) if -e $bam_prod;
 
@@ -104,7 +106,8 @@ my $ok_pipeline = $dir_pipeline_log."/".$prefix.".ok.pipeline.".time;
 my $ok_move = $dir_pipeline_log."/".$prefix.".ok.move.".time;
 my $log_pipeline = $dir_pipeline_log."/".$prefix.".pipeline.".time.".log"; 
 my $log_error_pipeline = $log_pipeline.".err"; 
-if ($rna){
+if ($project->isRnaseq){
+	warn "rna";
 	run_pipeline_rna($pipeline);
 }
 else {
@@ -114,6 +117,7 @@ else {
 
 system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline && touch $ok_move");
 exit(0);
+
 sub run_pipeline_rna {
 my ($pipeline) = @_;
 my $param_align = "";
@@ -123,11 +127,21 @@ my $tmp = "/staging/tmp";
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 my $runid = $patient->getRun()->id;
- $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true -a /data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf --enable-rna-quantification true";
-##
-$cmd_dragen .= $param_umi." ".$param_align;
+my $gtf  = $project->gtf_dragen_file();
+$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true -a $gtf --enable-rna-quantification true";
+if ($umi){
+		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 };
+	}
+	else {
+		$param_align .= qq{ --enable-duplicate-marking true };
+	 }
 
+##/data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf
+$cmd_dragen .= $param_umi." ".$param_align." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+
+die() unless -e $ok_pipeline;
 die if $exit != 0;
 }
 
@@ -224,7 +238,7 @@ if (exists $pipeline->{sv}){
 	 $param_sv .= " --sv-exome true ";
 	}
 }
-
+	
 
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";

@@ -48,7 +48,7 @@ my $project = $buffer->newProject( -name => $project_name,-version=>$version );
 my $patient = $project->getPatient($patient_name);
 my $dirout= $project->getCallingPipelineDir("htlv1");
 print $patient->name().":\n";
-my $fileout = $dirout."/".$patient_name;
+#my $fileout = $dirout."/".$patient_name;
 
 #my $bam = $patient->getBamFile();
 my $fileout =  $project->getVariationsDir("htlv1_calling")."/".$patient_name."-clonalityResults.txt";

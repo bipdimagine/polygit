@@ -206,7 +206,7 @@ if ($bam ne 1 || $vcf < 2){
 	colored::stabilo("red","---------------- $vcf vcf  file  ---------------") if $vcf < 2; 
 	colored::stabilo("red","-----------------------------------------------------"); 
 	warn Dumper @cmd;
-	die();
+#	die();
 }
 	
 	

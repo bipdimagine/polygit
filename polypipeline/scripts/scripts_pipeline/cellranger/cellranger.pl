@@ -47,6 +47,7 @@ my $run;
 my $feature_ref;
 my $no_exec;
 my $aggr_name;
+my $cmo_ref;
 my $lane;
 
 
@@ -58,6 +59,7 @@ GetOptions(
 	'bcl=s' => \$bcl_dir,
 	'run=s' => \$run,
 	'feature_ref=s' =>  \$feature_ref,
+	'cmo_ref=s' =>  \$cmo_ref,
 	'no_exec=s' => \$no_exec,
 	'aggr_name=s' => \$aggr_name,
 	'nb_lane=s' => \$lane,
@@ -68,16 +70,15 @@ if ($step eq "all" || $step eq "demultiplex"){
 	die ("-bcl, -run and -nb_lane options are required") unless $bcl_dir || $run || $lane;
 }
 
-
+warn $step;
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
-#$patients_name = "all" unless $patients_name;
+$patients_name = "all" unless $patients_name;
 $patients_name = $project->get_only_list_patients($patients_name);
 
 my $sampleSheet = $bcl_dir."/sampleSheet.csv";
 my $exec = "cellranger";
-
 
 open (SAMPLESHEET,">$sampleSheet");
 my $dir = $project->getProjectRootPath();
@@ -91,28 +92,31 @@ my @group;
 
 foreach my $patient (@{$patients_name}) {
 	my $name=$patient->name();
+	warn $name;
 	my $bc = $patient->barcode();
 	my $group = $patient->somatic_group();
+	warn $group;
 	push(@group,$group);
 	for (my $i=1;  $i<=$lane;$i++){
 		print SAMPLESHEET $i.",".$name.",".$bc."\n";
 	}
 }
 close(SAMPLESHEET);
-
+  
 
 #my $prog =  $patient->alignmentMethod();
+my $tmp = "/data-isilon/tmp-bcl/";
 my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
 
-#my $cmd = "cd $tmp; /software/bin/demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
+my $cmd = "cd $tmp; /software/bin/demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
 warn $exec;
-my $cmd = "cd $tmp; $Bin/../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
+#my $cmd = "cd $tmp; demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
 warn $cmd;
 if ($step eq "demultiplex" or $step eq "all"){
 	warn $cmd;
-#	system $cmd or die "impossible $cmd" unless $no_exec==1;
+	system $cmd or die "impossible $cmd" unless $no_exec==1;
 }
-
+warn "titi";
 open (JOBS, ">$dir/jobs_count.txt");
 foreach my $patient (@{$patients_name}) {
 	my $name=$patient->name();
@@ -120,8 +124,10 @@ foreach my $patient (@{$patients_name}) {
 	my $run = $patient->getRun();
 	my $group = "EXP";
 	$group = $patient->somatic_group() if ($patient->somatic_group());
+	warn $group;
 	next() unless uc($group) eq "EXP" ;
 	$type = $run->infosRun->{method};
+	warn $type;
 	next() if $type eq "arc";
 	my $prog =  $patient->alignmentMethod();
 	my $index = $project->getGenomeIndex($prog);
@@ -157,8 +163,9 @@ foreach my $patient (@{$patients_name}) {
 			print JOBS_VDJ "cd $dir; cellranger vdj --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_vdj  \n"
 		}
 	}
+	close(JOBS_VDJ);
 }
-close(JOBS_VDJ);
+
 
 
 foreach my $patient (@{$patients_name}) {
@@ -179,8 +186,9 @@ foreach my $patient (@{$patients_name}) {
 			print JOBS_ATAC "cd $dir; $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$index  \n"
 		}
 	}
+	close(JOBS_ATAC);
 }
-close(JOBS_ATAC);
+
 
 
 foreach my $patient (@{$patients_name}) {
@@ -208,8 +216,45 @@ foreach my $patient (@{$patients_name}) {
 			print JOBS_ADT "cd $dir ; cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file\n"
 		}
 	}
+	close(JOBS_ADT);
 }
-close(JOBS_ADT);
+
+
+foreach my $patient (@{$patients_name}) {
+	my $run = $patient->getRun();
+	my $type = $run->infosRun->{method};
+	if ($type =~ /cmo/ ){
+		open (JOBS_CMO, ">$dir/jobs_cmo.txt");
+		warn $patient->somatic_group();
+		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients_name};
+		foreach my $e(@exp){
+			my $ename = $e->name(); 
+			my $efam = $e->family();
+			my $egroup = uc($e->somatic_group());
+			my $prog =  $e->alignmentMethod();
+			my $index = $project->getGenomeIndex($prog);
+			my $lib_file = $dir."/".$ename."_multi.csv";
+			open(LIB,">$lib_file") or die "impossible $lib_file";
+			print LIB "[gene-expression]\nreference,".$index."\ncmo-set,/data-isilon/sequencing/ngs/NGS2022_6140/cmo_ref.csv\n";
+			
+			print LIB "[libraries]\nfastq_id,fastqs,feature_types\n";
+			print LIB "$ename,".$e->getSequencesDirectory().$ename.",Gene Expression\n";
+			my @cmo = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "CMO"} @{$patients_name};
+			my $cmo_name = $cmo[0]->name();
+			print LIB "$cmo_name,".$cmo[0]->getSequencesDirectory().$ename.",Antibody Capture\n";
+			print LIB "[samples]\nsample_id,cmo_ids\n";
+			print LIB $ename."_B251,B251\n";
+			print LIB $ename."_B252,B252\n";
+			print LIB $ename."_B253,B253\n";
+			close(LIB);
+			print JOBS_CMO "cd $dir ; cellranger multi --id=$ename --csv=$lib_file\n";
+		}
+	}
+	close(JOBS_CMO);
+}
+
+
+
 
 foreach my $patient (@{$patients_name}) {
 	my $run = $patient->getRun();
@@ -244,7 +289,7 @@ close(JOBS_ARC);
 my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=40";
 if ($step eq "count" or $step eq "all"){
 	warn $cmd2;
-	#system $cmd2  unless $no_exec==1;
+	system $cmd2  unless $no_exec==1;
 }
 
 if ($step eq "aggr" or $step eq "all"){
@@ -263,7 +308,6 @@ if ($step eq "aggr" or $step eq "all"){
 	system ($aggr_cmd)  unless $no_exec==1;
 }
 
-die();
 
 #foreach my $patient (@{$patients_name}) {
 #	my $name = $patient->name();
@@ -274,7 +318,7 @@ die();
 ##commande pour copier sur /data-isilon/singleCell
 
 if ($step eq "tar" or $step eq "all"){
-	my $tar_cmd = "tar -cvzf $dir/$run.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/filtered_*_bc_matrix/* $dir/*/outs/raw_*_bc_matrix/*";
+	my $tar_cmd = "tar -cvzf $dir/$run.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
 	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
 	system ($tar_cmd)  unless $no_exec==1;
 	#or die "impossible $tar_cmd";

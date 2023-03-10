@@ -106,6 +106,7 @@ my $steps = {
 				"lmdb-depth"=>  \&run_lmdb_depth,
 				"run_coverage"=>  \&run_coverage,
 				"run_dragen_cnv_coverage" =>\&run_dragen_cnv_coverage,
+				"run_rna_metrics" => \&run_rna_metrics,
 };
 
 my $buffers;
@@ -120,7 +121,7 @@ foreach my $pname (split(",",$project_name)){
 	#my $project = $buffer->newProject( -name => $pname );
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
-	 $test_umi=1 if grep{$_->umi} @{$project->getCaptures};
+	$test_umi=1 if grep{$_->umi} @{$project->getCaptures};
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
@@ -144,7 +145,7 @@ my $jobs =[];
 
 
 my $pipeline_dragen_steps = ["align","gvcf","sv","cnv"];
-my $pipeline_dragen_rna_steps = ["align","count"];
+my $pipeline_dragen_steps_rna = ["align","rna_count","rna_metrics"] ;
 
 ####### Alignement
 my $ppd  = patient_pipeline_dragen($projects);
@@ -154,6 +155,7 @@ run_move($ppd);
 if (exists $hstep->{lmdb}){
 run_lmdb_depth_melt($ppd) unless $version =~ /HG38/;
 }
+
 
 run_genotype($projects);
 #run_dude($projects) if $dude;
@@ -183,7 +185,7 @@ my @apatients_name = split(":",$patients_name);
 my $dir_log ;;
 foreach my $project (@$projects){
 	my $projectName = $project->name;
-	 $dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
+	$dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatients}){
@@ -209,14 +211,14 @@ foreach my $project (@$projects){
 		#####  BAM
 		#####  
 		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".bam";
-		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".cram" if $version && $version =~ /HG38/;
+		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".cram" if $version && $version =~ /HG38/ && $project->isRna() ne 1;
 		
 		$h->{prod}->{align} = $patient->getBamFileName(); 
 		$h->{prod}->{align} = $patient->getBamFileName("dragen-align") unless -e $patient->getBamFileName; 
 		
 		#$h->{prod}->{align_HG38} = $patient->getBamFileName("dragen-align"); 
 		$h->{prod}->{file}   = $patient->getBamFileName("dragen-align") if $version;
-		$h->{prod}->{align}   = $patient->getCramFileName("dragen-align") if $version && $version =~ /HG38/; 
+		$h->{prod}->{align}   = $patient->getCramFileName("dragen-align") if $version && $version =~ /HG38/ && $project->isRna() ne 1; 
 		#####  
 		#####  GVCF
 		#####  
@@ -255,15 +257,34 @@ foreach my $project (@$projects){
 		#####  melt
 		#####  
 		
-		$h->{prod}->{melt} = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";	 	
+		$h->{prod}->{melt} = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";	 
+		
+		#####  
+		#####  count
+		#####  
+		$h->{pipeline}->{rna_count}  =  $dir_pipeline."/".$prefix.".quant.sf";
+		$h->{prod}->{rna_count} = $project->getCountingDir("dragen-count")."/".$patient->name.".quant.sf";		
 
-	 
+		#####  
+		#####  splice
+		#####  
+		$h->{pipeline}->{splice}  =  $dir_pipeline."/".$prefix.".SJ.out.tab";
+		$h->{prod}->{splice} = $project->getCountingDir("dragen-count")."/".$patient->name.".SJ.out.tab";	 
+		
+		#####  
+		#####  metrics
+		#####  
+		$h->{pipeline}->{rna_metrics}  =  $dir_pipeline."/".$prefix.".metrics";
+		$h->{prod}->{rna_metrics} = $project->getCountingDir("dragen-count")."/metrics/".$patient->name.".metrics";	
+		
 
 		push(@{$patients_jobs},$h);
 	}
 	}
 	return $patients_jobs;
+	warn Dumper $patients_jobs;
 }
+
 
 my @all_list ;
 
@@ -271,12 +292,12 @@ my @all_list ;
 
 sub run_command {
 	my ($patients_jobs) = @_;
-	 @all_list = @$pipeline_dragen_steps;
-	 
+	@all_list = @$pipeline_dragen_steps; 
 	foreach my $hp (@$patients_jobs) {
+		
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
-	@all_list = @$pipeline_dragen_rna_steps if $hp->{rna} ==1;
+	@all_list = @$pipeline_dragen_steps_rna if $hp->{rna} ==1;
 	my $pname =  $hp->{name}."_".$hp->{project};
 	$hp->{run_pipeline} = [];
 	
@@ -298,7 +319,8 @@ sub run_command {
 	$job->{name} = $hp->{name}.join("_",@{$hp->{run_pipeline}});
 	$job->{step_name} = join(";",@{$hp->{run_pipeline}});
 	$job->{patient} = $hp->{name}."_".$hp->{project};
-	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});;
+	warn join(",",@{$hp->{run_pipeline}});
+	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@all_list);;
 	
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -version=$version " if $version;
@@ -321,12 +343,17 @@ sub run_command {
 sub run_move {
 	my ($patients_jobs) = @_;
 	my @tt;
-	foreach my $a (@$pipeline_dragen_steps){
+#	
+	
+	my $jobs =[];
+foreach my $hp (@$patients_jobs) {
+	my $steps = $pipeline_dragen_steps;
+	$steps = $pipeline_dragen_steps_rna if $hp->{rna} ==1;
+	warn Dumper $steps;
+	foreach my $a (@$steps){
 		push(@all_list,"move_".$a);
 		push(@tt,"move_".$a);
 	}
-	my $jobs =[];
-foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
 	my $nname = $job->{patient} = $hp->{name}."_".$hp->{project};
@@ -336,8 +363,10 @@ foreach my $hp (@$patients_jobs) {
 	
 	$hp->{move_options} = [];
 	
-	foreach my $t (@$pipeline_dragen_steps){
+	foreach my $t (@$steps){
 		$lims->{$nname}->{"move_".$t} = "SKIP"; 
+		warn $hp->{prod}->{$t};
+		warn  $hp->{pipeline}->{$t};
 		unless (-e $hp->{prod}->{$t}){
 			$lims->{$nname}->{"move_".$t} = "PENDING"; 
 			push(@{$hp->{move_options}},$t);
@@ -452,6 +481,47 @@ foreach my $project (@$projects){
 
 
 
+sub run_rna_metrics {
+	my ($projects) = @_;
+	my $jobs =[];
+
+	foreach my $project (@$projects){
+	
+		my $ppn = 20;
+		my $project_name = $project->name;
+		my $patients = $project->getPatients($patients_name);
+		foreach my $p (@$patients){
+			my $m = $p->alignmentMethod();
+			my $refFlat = $project->refFlat_file();
+			$refFlat =  $project->refFlat_file_star() if $m eq "star";
+			my $rRNA_file = $project->rRNA_file();
+			my $opt = "";
+			$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
+			unless (-e $refFlat){
+				die("can't find $refFlat");
+			
+			}
+			my $java = $project->buffer->software("java");
+			my $picard =  $project->buffer->software("picard");
+	
+			my $filein =$p->getBamFile();
+			my $fileout= $project->getCountingDir("dragen-count")."/metrics/".$p->name.".metrics";
+			my $cmd = qq{ "$java -jar $picard  CollectRnaSeqMetrics I=$filein O=$fileout REF_FLAT=$refFlat STRAND=FIRST_READ_TRANSCRIPTION_STRAND $opt"};
+			next if -e $fileout;
+			my $job;
+			$job->{name} = $project->name.".metrics";
+			$job->{cmd} =$cmd;
+			$job->{cpus} = $ppn;
+			push(@$jobs,$job);
+ 			#my	 $cmd = qq{perl $script_pipeline/dude/dude.pl -fork=$ppn  -project=$project_name  };
+		
+		}
+		steps_cluster("METRICS ",$jobs);
+	}
+}
+
+
+
 ########################################################################################################
 #########################---------------------  PIPELINE DRAGEN --------------##########################
 ########################################################################################################
@@ -469,6 +539,7 @@ my ($projects,$force) = @_;
 	push(@all_list,"genotype");
 foreach my $project (@$projects){
 	my $projectName = $project->name;
+	next() if $project->isRnaseq();
  my @ps;
  my $patients = $project->getPatients();
  my @ps1;

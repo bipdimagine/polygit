@@ -348,7 +348,7 @@ foreach my $project_name (split(",",$project_names)){
 	foreach my $p (@{$project->getPatients}){
 
 		my $pid = $pm->start and next;
-		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
+		#my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
 		#	warn $fastq1;
 		#	die();
 		#	create_3_fastq($fastq1,$fastq2,$p);

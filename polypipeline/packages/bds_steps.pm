@@ -1562,12 +1562,12 @@ method move_bam (Str :$filein){
 method rnaseq_metrics (Str :$filein){
 	my $name = $self->patient()->name();
 	my $project=$self->patient()->project;
-	my$m = $self->patient->alignmentMethod();
+	my $m = $self->patient->alignmentMethod();
 	my $project_name = $self->patient()->getProject->name();
-	my $dir_out= $project->getCountingDir("featureCounts")."/metrics";
+	my $dir_out= $project->getCountingDir("$m")."/metrics";
 	system("mkdir $dir_out && chmod a+rwx $dir_out") unless -e $dir_out;
 		
-	my $method = $self->patient()->alignmentMethod();
+	#my $method = $self->patient()->alignmentMethod();
 	my $fileout  =$dir_out."/$name.metrics";
 
 	my $ppn = 2 ;
@@ -1575,7 +1575,7 @@ method rnaseq_metrics (Str :$filein){
 
 	die() if 	$fileout eq $filein;
 	my $refFlat = $project->refFlat_file();
-	$refFlat =  $project->refFlat_file_star() if $method eq "star";
+	$refFlat =  $project->refFlat_file_star() if $m eq "star";
 	my $rRNA_file = $project->rRNA_file();
 	my $opt = "";
 	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
