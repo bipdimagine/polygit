@@ -79,6 +79,7 @@ my $cmd_failed = [];
 my $cmd_cancel = [];
 my $step_name;
 my $force;
+my $rna;
 
 GetOptions(
 	'project=s' => \$project_name,
@@ -89,6 +90,7 @@ GetOptions(
 	'step=s'=> \$step_name,
 	'steps=s'=> \$step_name,
 	"dry=s" => \$dry,
+	"rna=s" => \$dry,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -230,8 +232,8 @@ exit(0);
 sub start_report {
 	my ($patients_jobs) = @_;
 my @lines;
-my $done;
-my $job;
+my $done = 0;
+my $job = 0;
 	foreach  my $hp (@$patients_jobs) {
 		my @line;
 		push(@line, $hp->{name});
@@ -491,8 +493,7 @@ sub purge_files {
 				}
 			}
 			my $toto = join(" ",@files);
-			my $cmd = "$script_pipeline/rm_prod.pl 2>/dev/null";
-			$cmd .= $toto;
+			my $cmd = "$script_pipeline/rm_prod.pl $toto 2>/dev/null";
 			system($cmd) if (@files);
 #			warn $cmd;
 			foreach my $t (@$steps) {
