@@ -277,9 +277,7 @@ my $job = 0;
 		print colored::stabilo("magenta","------------------------------------------------------------",1)."\n";
 		exit(0);
 	}
-	print "Running this steps (y/n) ? ";
-	my $key = key();
-	print "\n";
+	my $key = prompt("y","Running this steps (y/n) ? ");
 	die() if ($key ne "y"); 
 	
 	#}
@@ -548,13 +546,6 @@ sub run_command {
 	$job->{out} =  $hp->{$first_cmd}->{pipeline};
 	
 	push(@$jobs,$job);
-}
-foreach my $hp (@$patients_jobs) {
-	my $name = $hp->{name};
-	my $pname =  $hp->{name}."_".$hp->{project};
-	
-	
-	
 }
 	my $text = "$num_jobs-  DRAGEN ALIGN";
 	steps_system("Dragen :",$jobs);	
