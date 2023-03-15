@@ -1101,6 +1101,10 @@ sub construct_variant {
 		#deletion 
 		$hvariation->{db_type} = "insertions";
 	}
+		elsif ($hvariation->{allele} eq "LINE1"){
+		#deletion 
+		$hvariation->{db_type} = "insertions";
+	}
 	elsif ($lalt eq $lref && $lref eq 1)
 	{
 		$hvariation->{db_type} = "snps";
