@@ -1824,6 +1824,7 @@ sub table_muc1 {
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"Estimated_Depth_Variant_ActiveRegion") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"Depth_Score") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"Confidence") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Kmer") ;
 	$out .= $cgi->end_Tr();
 	$out .= $out_table;
 	$out .= $cgi->end_table();

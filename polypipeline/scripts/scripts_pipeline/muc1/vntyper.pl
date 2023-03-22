@@ -47,7 +47,6 @@ if ($patient_name2 =~ / /){
 	warn $find[0]->{name};
 }
 
-warn $patient_name2;
 #exit(0) if -e "/data-isilon/sequencing/muc1/renome/".$patient_name2.".vcf";
 my $patients = $project->get_only_list_patients($patient_name2);
 die() unless scalar(@$patients);
@@ -94,6 +93,10 @@ unless (-e "$dir_pipeline/$patient_name.ok"){
 warn "ok ************";
 warn $dir_pipeline2;
 my $dir_prod = $project->getVariationsDir("vntyper")."/muc1/";
+my $tsv = $dir_prod."/".$patient->name."_Final_result.tsv";
+if (-e $tsv ){
+	system("$Bin/../rm_vcf.pl $tsv");
+}
 system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
 system("cp $dir_pipeline2/".$patient->name."* $dir_prod");
 }
