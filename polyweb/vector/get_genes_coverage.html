@@ -543,6 +543,12 @@
 		    	var url_xls_2 = url_path + "json_output_nodb/get_gene_coverage_xls.pl";
 				url_xls_2 += "?project=" + value_project;
 				url_xls_2 += "&gene=" + value_gene;
+				if (document.getElementById("intronic").checked) {
+					url_xls_2 += "&intronic=1";
+				}
+				if (document.getElementById("coding").checked) {
+					url_xls_2 += "&only_coding=1";
+				}
 				console.log(url_xls_2);
 				downloadFile(url_xls_2);
 			    return;
@@ -586,6 +592,7 @@
 		</nav>
 		<center>
 		<div class="row" style="height:auto;width:98%;">
+			<div class="col-sm-3"></div>
 			<div class="col-sm-6">
 			
 				<form>
@@ -599,6 +606,15 @@
 						<input type="text" class="form-control" id="gene_name" aria-describedby="geneExample" placeholder="">
 						<small id="geneExample" class="form-text text-muted">Example: BRCA1.</small>
 					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="coding">
+						<label class="form-check-label" for="coding">ONLY Coding Positions (for XLS)</label>
+					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="intronic">
+						<label class="form-check-label" for="intronic">Get Introns (for XLS)</label>
+					</div>
+					<br><br>
 					<button type='button' onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Export XLS</button>
 					<button type='button' onClick="view_coverage_view()" class='btn btn-info' style="background-color:blue;color:white;">Coverage VIEW</button>
 				</form>
@@ -610,11 +626,11 @@
 				<span id="span_description"></span><br>
 				<span id="span_captures"></span>
 			</div>
+			<br><br>
+				<div class="row" id="content_res"></div>
+			</center>
 		</div>
-		<br><br>
-			<div class="row" id="content_res"></div>
-		</center>
-		<br>
+		<div class="col-sm-3"></div>
 		
 	</body>
 </html>

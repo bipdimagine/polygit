@@ -19,6 +19,8 @@ my $cgi = new CGI();
 my $dir_out			= $cgi->param('dir_out');
 my $project_name	= $cgi->param('project');
 my $gene_name		= $cgi->param('gene');
+my $only_coding		= $cgi->param('only_coding');
+my $intronic		= $cgi->param('intronic');
 
 #confess("\n\nOption -dir_out mandatory. Die\n\n") unless $dir_out;
 confess("\n\nOption -project mandatory. Die\n\n") unless $project_name;
@@ -41,41 +43,44 @@ foreach my $p (@lPatients) {
 #print "\n# NB PATIENTS: ".scalar(@lPatients)."\n";
 
 my $xls_export = new xls_export();
-$xls_export->title_page('Coverage_'.$project->name().'_'.$gene_name.'.xls');
+my $title_xls = 'Coverage_'.$project->name().'_'.$gene_name;
+$title_xls .= '_only_coding' if ($only_coding);
+$title_xls .= '.xls';
+$xls_export->title_page($title_xls);
+
+
 if ($dir_out) { $xls_export->output_dir($dir_out); }
 $xls_export->open_xls_file();
 
 my $h_res;
 foreach my $t (sort @{$gene->getTranscripts()}) {
+	#warn Dumper $t->getSpanCoding();
+	
 	my $t_id = $t->id();
-#	print "-> ".$t_id." -> analyse";
 	foreach my $e (@{$t->getExons()}) {
 		my $e_id = $e->id();
 		$e_id =~ s/$t_id//;
 		foreach my $p (@lPatients) {
-			my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $e->start(), $e->end());
+			my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $t, $e);
 			my $pos = $e_id;
 			$pos =~ s/ex//;
 			$h_res->{$pos}->{$e_id}->{$p->name()} = $h;
 		}
 	}
-	foreach my $i (@{$t->getIntrons()}) {
-		my $i_id = $i->id();
-		$i_id =~ s/$t_id//;
-		foreach my $p (@{$project->getPatients()}) {
-			my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $i->start(), $i->end());
-			my $pos = $i_id;
-			$pos =~ s/intron//;
-			$h_res->{$pos}->{$i_id}->{$p->name()} = $h;
+	if ($intronic) {
+		foreach my $i (@{$t->getIntrons()}) {
+			my $i_id = $i->id();
+			$i_id =~ s/$t_id//;
+			foreach my $p (@{$project->getPatients()}) {
+				my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $t, $i);
+				my $pos = $i_id;
+				$pos =~ s/intron//;
+				$h_res->{$pos}->{$i_id}->{$p->name()} = $h;
+			}
 		}
 	}
-#	print " -> xls";
 	write_xls_transcript($xls_export, $t, $h_res);
-#	print " -> done\n";
 }
-#print "\n\n";
-#print "ALL Done\nXLS: $dir_out/".$xls_export->title_page();
-#print "\n\n";
 exit(0);
 
 
@@ -172,13 +177,22 @@ sub write_xls_transcript {
 
 
 sub get_coverage_at_positions {
-	my ($patient, $chr_name, $start, $end) = @_;
+	my ($patient, $chr_name, $t, $ei) = @_;
+	my $start = $ei->start();
+	my $end = $ei->end();
+	
 	my $array = $patient->getNoSqlDepth->getDepth($chr_name, $start, $end);
 	my $min = 99999;
 	my $max = 0;
 	my $total = 0;
 	my $nb = 0;
+	my $i = 0;
 	foreach my $val (@$array) {
+		my $this_pos = $start + $i;
+		$i++;
+		if ($only_coding) {
+			next if not $t->getSpanCoding->contains($this_pos);
+		}
 		$min = $val if $val < $min;
 		$max = $val if $val > $max;
 		$total += $val;
@@ -187,7 +201,12 @@ sub get_coverage_at_positions {
 	my $h;
 	$h->{min} = $min;
 	$h->{max} = $max;
-	$h->{mean} = sprintf("%.2f", ($total / $nb));
+	if ($total == 0 or $nb ==0) {
+		$h->{min} = 0;
+		$h->{max} = 0;
+		$h->{mean} = 0;
+	}
+	else { $h->{mean} = sprintf("%.2f", ($total / $nb)); }
 	return $h;
 }
 
