@@ -257,10 +257,13 @@ if ($bundle_id) { return launch_uniq_bundle_request(); }
 my $h_chr_from_only_genes;
 if ($only_genes) {
 	foreach my $name (split(',', $only_genes)) {
-		my $buffer_tmp = new GBuffer;
-		my $project_tmp = $buffer_tmp->newProject( -name => $projectName );
-		my $this_gene = $project_tmp->newGene($name);
-		$h_chr_from_only_genes->{$this_gene->getChromosome->id()}->{$this_gene->id()} = undef;
+#		eval {
+#			my $buffer_tmp = new GBuffer;
+#			my $project_tmp = $buffer_tmp->newProject( -name => $projectName );
+#			my $this_gene = $project_tmp->newGene($name);
+#			$h_chr_from_only_genes->{$this_gene->getChromosome->id()}->{$this_gene->id()} = undef;
+#		};
+#		if ($@) {}
 		if ($name =~ /capture/) {
 			my @lTmp = split(':', $name);
 			my $capture_name = $lTmp[-1];
@@ -478,14 +481,14 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	my $h_args;	
 	$chr->save_model_variants_all_patients('init');
 	
-	if ($only_genes) {
-		my $vector_genes = $chr->getNewVector();
-		foreach my $gene_name (keys %{$h_chr_from_only_genes->{$chr->id()}}) {
-			my $this_g = $project->newGene($gene_name);
-			$vector_genes += $chr->getVectorByPosition($this_g->start(), $this_g->end);
-		}
-		$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $vector_genes);
-	}
+#	if ($only_genes) {
+#		my $vector_genes = $chr->getNewVector();
+#		foreach my $gene_name (keys %{$h_chr_from_only_genes->{$chr->id()}}) {
+#			my $this_g = $project->newGene($gene_name);
+#			$vector_genes += $chr->getVectorByPosition($this_g->start(), $this_g->end);
+#		}
+#		$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $vector_genes);
+#	}
 	
 	doPolyQueryFilters_global_cat($chr, $hFiltersChr, $dejavu, $polyscore);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER doPolyQueryFilters_global_cat - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
