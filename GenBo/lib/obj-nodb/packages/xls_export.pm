@@ -9,7 +9,7 @@ use Carp qw(confess croak);
 use Data::Dumper;
 use Moose;
 use MooseX::Method::Signatures;
-use Spreadsheet::WriteExcel;
+use Spreadsheet::WriteExcel::Big;
 use Compress::Snappy;
 use Storable qw(store retrieve freeze dclone thaw);
 use session_export;
@@ -66,7 +66,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Sift', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature');
+		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Sift', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -579,14 +579,14 @@ sub export {
 		$self->write_header_on_page( $worksheet, $number_page );
 		$self->write_on_page( $worksheet, $number_page );
 	}
-	exit(0);
 }
 
 sub store_cnvs_infos {
 	my ( $self, $list_var_objects, $project, $list_patients ) = @_;
+	print '|';
 	foreach my $var (@$list_var_objects) {
 		my $hash;
-		$project->print_dot(25);
+		$project->print_dot(5);
 		my $chr      = $var->getChromosome();
 		my $var_id   = $var->id();
 		my $chr_h_id = $chr->id();
@@ -706,7 +706,7 @@ sub store_cnvs_infos {
 				}
 				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->{annex}->{$patient->id()}->{he} eq '1';
 				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->{annex}->{$patient->id()}->{ho} eq '1';
-				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'cnv_confidence'} = $var->cnv_confidence($patient);
+				#$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'cnv_confidence'} = $var->cnv_confidence($patient);
 			}
 		}
 	}
@@ -943,7 +943,7 @@ sub prepare_generic_datas_cnvs {
 			$h->{'end'}			 = $h_var->{'end'};
 			$h->{'allele'}       = $h_var->{'allele'};
 			$h->{'sequence'}     = $h_var->{'sequence'};
-			$h->{'freq'}         = $h_var->{'freq'};
+			$h->{'freq (%)'}     = $h_var->{'freq'};
 			$h->{'gnomad ac'}    = $h_var->{'gnomad ac'};
 			$h->{'gnomad ho'}    = $h_var->{'gnomad ho'};
 			$h->{'gnomad an'}    = $h_var->{'gnomad an'};
@@ -1052,7 +1052,7 @@ sub prepare_generic_datas_variants {
 			$h->{'position'}     = $h_var->{'position'};
 			$h->{'allele'}       = $h_var->{'allele'};
 			$h->{'sequence'}     = $h_var->{'sequence'};
-			$h->{'freq'}         = $h_var->{'freq'};
+			$h->{'freq (%)'}     = $h_var->{'freq'};
 			$h->{'gnomad ac'}    = $h_var->{'gnomad ac'};
 			$h->{'gnomad ho'}    = $h_var->{'gnomad ho'};
 			$h->{'gnomad an'}    = $h_var->{'gnomad an'};
