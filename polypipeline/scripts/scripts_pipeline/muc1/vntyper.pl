@@ -84,6 +84,7 @@ system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 my $scommand ="python3 /SOFT/VNtyper/VNtyper.py   -t 5    --bam  -ref chr1.fa -ref_VNTR /SOFT/VNtyper/Files/MUC1-VNTR.fa -p /SOFT/VNtyper/Scripts/ -w $dir_pipeline -a $bam   -o $patient_name  -m /vntr_data/hg19_genic_VNTRs.db --ignore_advntr  -p /SOFT/VNtyper/";
 my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 warn $cmd;
+system("samtools index $bam -\@5");
 system($cmd." && touch $dir_pipeline/$patient_name.ok");
 
 unless (-e "$dir_pipeline/$patient_name.ok"){
