@@ -2369,6 +2369,42 @@ sub is_multiplex_ok {
 }
 
 sub hotspot {
+	my ( $self) = @_;
+
+	my $capture = $self->getCapture();
+	my $file =$capture->hotspots_filename; 
+	my $bam = $self->getBamFile();
+	my $sambamba = $self->buffer()->software("sambamba");
+	my @lines = `$sambamba depth base $bam -L $file 2>/dev/null`;
+	
+
+	chomp(@lines);
+	#REF	POS	COV	A	C	G	T	DEL	REFSKIP	SAMPLE
+	my @header = split(" ",shift @lines);
+	my $res;
+	foreach my $l  (@lines){
+		my @data = split(" ",$l);
+			my $hash ={};
+		foreach (my $i=0;$i<@header;$i++){
+			
+			$hash->{$header[$i]} = $data[$i];
+		}
+		
+	#	my $chromosome = $self->project->getChromosome($hash->{REF});
+	#	$hash->{POS} ++;
+	#	my $t = $chromosome->genesIntervalTree->fetch($hash->{POS},$hash->{POS}+1);
+		my $id = $hash->{REF}.":".$hash->{POS};
+		my $h = $capture->hotspots->{$id};
+		$hash->{A_REF} = $h->{ref};
+		$hash->{A_ALT} = $h->{alt};
+		$hash->{NAME} = $h->{name};
+		$hash->{ID} = $hash->{REF}.":".($hash->{POS}+1);
+		push(@{$res->{$h->{gene}}},$hash);	
+	}
+	return $res;
+}
+
+sub hotspot2 {
 	my ( $self, $motif ) = @_;
 	confess();
 	my $bam = $self->getBamFile();
