@@ -366,7 +366,7 @@ function onSearchAll_polyviewer (input,name){
 	
 	var cookie_username;
      function checkPassword(project,okf){
-			document.getElementById("b_dropdown_list_patients").disabled = true;
+			document.getElementById("b_select_samples").disabled = true;
 			if (!(dojo.cookie("igv_js") == undefined)){
     			 igv_js =  dojo.cookie("igv_js");
     		}
@@ -392,7 +392,15 @@ function onSearchAll_polyviewer (input,name){
                 query: {
                     name: project
                 },
-                onComplete: okf,
+                onComplete: function(items) {
+                	okf(items);
+					for (i in items) {
+						var item = items[i];
+						document.getElementById('span_header_project_release').innerHTML = item.genome_version[0];
+						document.getElementById('span_header_project_capture').innerHTML = item.capture[0];
+						document.getElementById('span_header_project_description').innerHTML = item.description[0];
+					}
+            	},
                 onError: error,     
             }); 
                 
@@ -406,7 +414,7 @@ function onSearchAll_polyviewer (input,name){
 			
 			var storeP;
 			function okfunction(items, request) {
-				document.getElementById("b_dropdown_list_patients").disabled = true;
+				document.getElementById("b_select_samples").disabled = true;
 				require(["dojo/on", "dojo/dom", "dojo/ready", "dijit/registry","dojo/dom-construct", "dijit/layout/TabContainer", "dijit/layout/ContentPane","dojo/dom-style"], function(On, dom, ready, registry,domConstruct, TabContainer, ContentPane, domStyle) {
 					ready(function() {
 					    var tab1 = registry.byId("tabPrincipal_tablist_coverage_stack");
@@ -577,7 +585,7 @@ function just_reload_project(){
 	}
 	
 function reload_project(force){
-	document.getElementById("b_dropdown_list_patients").disabled = true;
+	document.getElementById("b_select_samples").disabled = true;
 	document.getElementById("summary").innerHTML = ' <span class="dijitInline dijitIconLoading"></span> Loading';
 	//dijit.byId('waiting').show();
 	var this_panel = panel;
@@ -598,16 +606,18 @@ function reload_project(force){
 		//dijit.byId('waiting').show();
 	    if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
 	    	var sumamry_html = this.response;
-	    	var new_color = get_defined_color_panel_project();
-	    	sumamry_html = sumamry_html.replace(/#1079b2/gi, new_color );
-	    	sumamry_html = sumamry_html.replace(/rgb(16, 121, 178)/gi, new_color );
+			var new_color = get_defined_color_panel_project();
+			document.getElementById("div_toolbar_samples").style.border = "double 7px " + new_color;
+			document.getElementById("div_toolbar").style.border = "double 7px " + new_color;
+			document.getElementById("div_menu_samples").style.border = "solid 1px white";
+			
 			document.getElementById("summary").innerHTML = sumamry_html;
 			const regex = /clinvar/;
 			const found = sumamry_html.match(regex);
 			if (found) {
 				summary_panel_loaded = 1;
 				write_header_project_infos();
-				document.getElementById("b_dropdown_list_patients").disabled = false;
+				document.getElementById("b_select_samples").disabled = false;
 			}
 			else {
 				document.getElementById("summary").innerHTML = "<img src='images/polyicons/wait18trans.gif'></img> <i>Please wait, I'm checking your project...</i>";
@@ -655,7 +665,7 @@ function load_resume_project_rna() {
 				});
 				document.getElementById("navMenuPatient").style.display = "none";
 				write_header_project_infos();
-				document.getElementById("b_dropdown_list_patients").disabled = false;
+				document.getElementById("b_select_samples").disabled = false;
 				window.onresize();
 			}
 	    }
@@ -668,28 +678,16 @@ var new_color_project_panel = '';
 function get_defined_color_panel_project_for_url() {
 	if (new_color_project_panel == '') {
     	var array_tmp = projectName.split('');
-    	if (array_tmp[11] == '0') { new_color_project_panel = "363945"; }
-    	else if (array_tmp[11] == '1') { new_color_project_panel = "50394C"; }
-    	else if (array_tmp[11] == '2') { new_color_project_panel = "3e4444"; }
-    	else if (array_tmp[11] == '3') { new_color_project_panel = "618685"; }
-    	else if (array_tmp[11] == '4') { new_color_project_panel = "36486B"; }
-    	else if (array_tmp[11] == '5') { new_color_project_panel = "625750"; }
-    	else if (array_tmp[11] == '6') { new_color_project_panel = "50394C"; }
-    	else if (array_tmp[11] == '7') { new_color_project_panel = "3e4444"; }
-    	else if (array_tmp[11] == '8') { new_color_project_panel = "618685"; }
-    	else if (array_tmp[11] == '9') { new_color_project_panel = "36486B"; }
-    	
-    	
-//    	if (array_tmp[11] == '0') { new_color_project_panel = "1079b2"; }
-//    	else if (array_tmp[11] == '1') { new_color_project_panel = "50394C"; }
-//    	else if (array_tmp[11] == '2') { new_color_project_panel = "F0A30A"; }
-//    	else if (array_tmp[11] == '3') { new_color_project_panel = "A20025"; }
-//    	else if (array_tmp[11] == '4') { new_color_project_panel = "36486B"; }
-//    	else if (array_tmp[11] == '5') { new_color_project_panel = "625750"; }
-//    	else if (array_tmp[11] == '6') { new_color_project_panel = "618685"; }
-//    	else if (array_tmp[11] == '7') { new_color_project_panel = "96897f"; }
-//    	else if (array_tmp[11] == '8') { new_color_project_panel = "b8a9c9"; }
-//    	else if (array_tmp[11] == '9') { new_color_project_panel = "3e4444"; }
+    	if (array_tmp[11] == '0') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '1') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '2') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '3') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '4') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '5') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '6') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '7') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '8') { new_color_project_panel = "607D8B"; }
+    	else if (array_tmp[11] == '9') { new_color_project_panel = "607D8B"; }
 	}
 	return new_color_project_panel;
 }
@@ -1172,8 +1170,8 @@ var view_polydiag =0;
 
 <div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar', gutters:false, liveSplitters:false" style="width: 100%;height:100%">
 	<div data-dojo-type="dijit.layout.ContentPane" id="div_header_container" data-dojo-props="region:'top'" style="width: 100%;padding:0px;max-height:400px;overflow-y:hidden;background-color:#363945;border:0px;" >
-		<div class="container" style="max-height:400px;width:100%;">
-		  <div id="row_header" class="row" style="min-height:80px;">
+		<div class="container" style="max-height:400px;width:100%;" onmouseleave="window.onresize();" onmouseenter="window.onresize();">
+		  <div id="row_header" class="row" style="min-height:80px;border-bottom:solid 3px #363945;">
 		    <div class="col-sm-3 col-lg-2" id="div_header_logo" style="padding-left:5px;overflow-y:hidden;">
 		    	<table>
 		    		<tr>
@@ -1181,69 +1179,167 @@ var view_polydiag =0;
 		    		</tr>
 		    	</table>
 		    </div>
-		    <div class="col-sm-7 col-lg-8">
+		    <div class="col-sm-7 col-lg-8" style="padding-bottom:5px;">
 		    	<div class="row">
-		    		<div class="col-sm-12 col-lg-5">
-		    			<table style="float:left">
-		    				<tr style="height:10px;">
-		    					<td colspan='3'></td>
-		    				</tr>
-			    			<tr>
-				    			<td colspan='3'>
-				    				<span style="color:white;font-size:14px;"><i><b>1.</b> Select Sample&nbsp;&nbsp;(<span id="span_header_nb_patients">0</span> founded)&nbsp;&nbsp;</i></span>
-				    			</td>
-			    			</tr>
-		    				<tr style="height:5px;">
-		    					<td colspan='3'></td>
-		    				</tr>
-		    				<tr>
-			    				<td>
-			    					<input type='text' id="input_search_patient" class='form-control' placeholder='Search' onkeyup="filter_list_dropdown_patients()" style='border-radius:6px;border:1px solid white;border: 1px solid white;font-size:13px;height:31px;width:50px;margin-right:5px;padding-left:2px;padding-right:2px;border: solid 0.5px white;'></input>
-			    				</td>
-			    				<td>
-									<div class="dropdown" style="white-space: nowrap;">
-										<button disabled onmouseover="document.getElementById('b_dropdown_list_patients').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border-radius:6px;border:1px solid black;border: 1px solid black; box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
-									    	<span id="span_patient_selected_text" style="white-space: nowrap"><img src='images/polyicons/wait18trans.gif'></img> <i>Loading patient(s)...</i></span>
-									  	</button>
-									  	<div class="dropdown-menu dropdown-multicol" id="b_menu_dropdown_list_patients" aria-labelledby="b_dropdown_list_patients" style="top:0;left:100%;margin-top:-34px;width:auto;height:78px !important;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
-									</div>
-			    				</td>
-			    				<td>
-			    					<div class="btn-group-vertical" style="margin-left:8px;" id="b_group_select_all_pat" role="group">
-										<button id="b_select_all_pat" type="button" class="btn btn-xs btn-default" onmouseover="document.getElementById('b_select_all_pat').style.border='2px solid green'"  onmouseout="document.getElementById('b_select_all_pat').style.border='1px solid black'"  style="display:none;font-size:9px;border-radius-left:20px;margin:0px;height:16px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="select_all_patients()">Select ALL</button>
-										<button id="b_unselect_all_pat" type="button" class="btn btn-xs btn-default" onmouseover="document.getElementById('b_unselect_all_pat').style.border='2px solid red'"  onmouseout="document.getElementById('b_unselect_all_pat').style.border='1px solid black'"  style="display:none;font-size:9px;border-radius-right:20px;margin:0px;height:16px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="unselect_all_patients()">Unselect ALL</button>
-									</div>
-			    				</td>
-			    			</tr>
-		    			</table>
+		    		<div class="col-sm-12" style="height:10px;"></div>
+		    		
+		    		<div class="col-sm-5" id="div_toolbar_samples" style="background-color:#363945;height:75px;padding-left:8px;padding-right:8px;overflow-y:scroll;">
+	    				<table style="width:100%;overflow-x:scroll;">
+	    					<td>
+	    						<center><button style="color:white;font-size:30px;background-color:#363945;border:0px;margin-top:5px;" onmouseover="document.getElementById('b_tab_project2').style.borderBottom='0px solid white'" onmouseout="document.getElementById('b_tab_project2').style.borderBottom='0px solid white'" id="b_tab_project2" onClick="click_button_project_resume()"><span style="padding:7px;padding-left:5px;border:solid 2.2px white;border-radius:11px;" class='glyphicon glyphicon-home'></span></button></center>
+	    					</td>
+	    					<td style="padding-left:25px;float:left;margin-top:5px;">
+    							<table style="vertical-align:middle;">
+			    					<tr>
+					    				<button id="b_select_extra_options" onclick="select_navigation_menu('extra_options')" type="button" onmouseover="document.getElementById('b_select_extra_options').style.borderBottom='1px solid white'" onmouseout="document.getElementById('b_select_extra_options').style.borderBottom='0px solid white'" style="margin-bottom:2px;color:white;font-size:9px;background-color:#363945;border:0px;"><b><i>&nbsp;IGV / Alamut&nbsp;</i><span class="glyphicon glyphicon-link"></b></button>
+								  	</tr>
+			    					<tr>
+			    						<center><button id="b_select_samples" onclick="select_navigation_menu('samples')" onmouseover="document.getElementById('b_select_samples').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_samples').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Samples&nbsp;(<span id="span_header_nb_patients"><img style="background-color:white;border-radius:20px;" src='images/polyicons/wait18trans.gif'></img></span> founded)</button></center>
+								  	</tr>
+			    				</table>
+    						</td>
+			    			<td style="padding-left:25px;float:right;padding-right:5px;margin-top:8px;">
+			    				<button disabled class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients" style="display:none;white-space: nowrap;background-color:white !important;color:black;border-radius:6px;border:1px solid black;border: 1px solid black;" >
+							    	<span id="span_patient_selected_text" style="white-space: nowrap"><img src='images/polyicons/wait18trans.gif'></img> <i>Loading patient(s)...</i></span>
+							  	</button>
+							</td>
+						</table>	
+	    			</div>
+		    		
+		    		
+	    			<div class="col-sm-7" id="div_toolbar" style="background-color:#363945;height:75px;display:none;overflow-y:scroll;">
+	    				<table>
+	    					<tr>
+			    				<div class="row">
+			    					<div class="col-sm-3" id="td_b_select_polyviewer" style="display:none;">
+			    						<center><button id="b_select_polyviewer" type="button" onmouseover="document.getElementById('b_select_polyviewer').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polyviewer').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polyviewer()">&nbsp;&nbsp;PolyViewer&nbsp;&nbsp;</button></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_b_select_polydiag" style="display:none;">
+			    						<center><button id="b_select_polydiag" type="button" onmouseover="document.getElementById('b_select_polydiag').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polydiag').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polydiag()">&nbsp;&nbsp;Variations Editor&nbsp;&nbsp;</button></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_b_select_polydupdel" style="display:none;">
+			    						<center><button id="b_select_polydupdel" type="button" onmouseover="document.getElementById('b_select_polydupdel').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polydupdel').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polydupdel()">&nbsp;&nbsp;PolyDupDel&nbsp;&nbsp;</button></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_b_select_polycyto" style="display:none;">
+			    						<center><button id="b_select_polycyto" type="button" onmouseover="document.getElementById('b_select_polycyto').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polycyto').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polycyto()">&nbsp;&nbsp;PolyCyto&nbsp;&nbsp;</button></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_b_select_polysplice" style="display:none;">
+			    						<center><button id="b_select_polysplice" type="button" onmouseover="document.getElementById('b_select_polysplice').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polysplice').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polysplice()">&nbsp;&nbsp;PolySplice&nbsp;&nbsp;</button></center>
+			    					</div>
+		    					</div>
+	    					</tr>
+							<tr>    					
+			    				<div class="row">
+			    					<div class="col-sm-3" id="td_span_triangle_select_polyviewer" style="display:none;">
+			    						<center><span id="span_triangle_select_polyviewer" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_span_triangle_select_polydiag" style="display:none;">
+			    						<center><span id="span_triangle_select_polydiag" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_span_triangle_select_polydupdel" style="display:none;">
+			    						<center><span id="span_triangle_select_polydupdel" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_span_triangle_select_polycyto" style="display:none;">
+			    						<center><span id="span_triangle_select_polycyto" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+			    					</div>
+			    					<div class="col-sm-3" id="td_span_triangle_select_polysplice" style="display:none;">
+			    						<center><span id="span_triangle_select_polysplice" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+			    					</div>
+		    					</div>
+	    					</tr>
+    					</table>
 		    		</div>
-		    		<div class="col-sm-12 col-lg-7">
-		    			<table style="float:left">
-		    				<tr style="height:10px;">
-		    					<td colspan='6'></td>
-		    				</tr>
-			    			<tr>
-				    			<td colspan='6'>
-				    				<span id="span_legend_view_interface" style="display:none;padding-left:3px;color:white;font-size:14px;"><i><b>2.</b> Select Interface View</i>&nbsp;&nbsp;</span>
-				    			</td>
-			    			</tr>
-		    				<tr style="height:5px;">
-		    					<td colspan='6'></td>
-		    				</tr>
-		    				<tr>
-								<td style="padding-left:0px;"  id="td_b_select_polyviewer"><button id="b_select_polyviewer" type="button" class="btn btn-xs btn-default" onmouseover="document.getElementById('b_select_polyviewer').style.border ='2px solid white'" onmouseout="document.getElementById('b_select_polyviewer').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;  onmouseout="document.getElementById('b_select_polyviewer').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;" onClick="click_button_view_polyviewer()">&nbsp;&nbsp;PolyViewer&nbsp;&nbsp;</button></td>
-								<td style="padding-left:15px;" id="td_b_select_polydiag"><button id="b_select_polydiag" type="button" class="btn btn-xs btn-default"   onmouseover="document.getElementById('b_select_polydiag').style.border ='2px solid white'" onmouseout="document.getElementById('b_select_polydiag').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;  onmouseout="document.getElementById('b_select_polydiag').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;" onClick="click_button_view_polydiag()">&nbsp;&nbsp;Variations Editor&nbsp;&nbsp;</button></td>
-								<td style="padding-left:15px;" id="td_b_select_polydupdel"><button id="b_select_polydupdel" type="button" class="btn btn-xs btn-default" onmouseover="document.getElementById('b_select_polydupdel').style.border ='2px solid white'" onmouseout="document.getElementById('b_select_polydupdel').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;  onmouseout="document.getElementById('b_select_polydupdel').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;" onClick="click_button_view_polydupdel()">&nbsp;&nbsp;PolyDupDel&nbsp;&nbsp;</button></td>
-								<td style="padding-left:15px;" id="td_b_select_polycyto"><button id="b_select_polycyto" type="button" class="btn btn-xs btn-default"   onmouseover="document.getElementById('b_select_polycyto').style.border ='2px solid white'" onmouseout="document.getElementById('b_select_polycyto').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;    onmouseout="document.getElementById('b_select_polycyto').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;" onClick="click_button_view_polycyto()">&nbsp;&nbsp;PolyCyto&nbsp;&nbsp;</button></td>
-								<td style="padding-left:15px;" id="td_b_select_polysplice"><button id="b_select_polysplice" type="button" class="btn btn-xs btn-default" onmouseover="document.getElementById('b_select_polysplice').style.border ='2px solid white'" onmouseout="document.getElementById('b_select_polysplice').style.border='1px solid black'"  style="box-shadow: rgb(127, 128, 131) 3px 3px 5px;display:none;margin: 2px; height: 31px; color: rgb(127, 128, 131); border-radius: 6px; background-color: rgb(54, 57, 69); border: 1px solid black;" onClick="click_button_view_polysplice()">&nbsp;&nbsp;PolySplice&nbsp;&nbsp;</button></td>
-		    				</tr>
-		    			</table>
+		    		
+		    		<div class="col-sm-12" id="div_menu_samples" style="display:none;border:solid 1px #363945;border-top:0px;background-color:#363945;height:auto;max-height:270px;overflow-y:scroll;overflow-x:hidden;margin-bottom:10px;">
+		    			<div class="row">
+		    				<div class="col-sm-12" style="margin-left:8px;background-color:#363945;border:solid 0.5px #363945;padding-left:0px;padding-right:0px;margin-top: 0px;margin-bottom: 0px;">
+		    					<table style="width:100%;">
+		    						<td style="width:60%;">
+		    							<input type='text' id="input_search_patient" class='form-control' placeholder='Quick Search' onkeyup="filter_list_dropdown_patients()" style='font-size:13px;max-width:350px;height:20px;margin-right:5px;margin:3px;margin-left:0px;padding-right:3px;background-color:white;border:2px solid #363945; '></input>
+	    							</td>
+	    							<td style="float:right;padding-right:8px;">
+			    						<div class="btn-group" style="margin-left:8px;" id="b_group_select_all_pat" role="group">
+											<button id="b_select_all_pat" type="button" class="btn btn-xs btn-default" style="display:none;font-size:11px;border-radius-left:20px;margin:0px;height:26px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="select_all_patients()">Select ALL</button>
+											<button id="b_unselect_all_pat" type="button" class="btn btn-xs btn-default" style="display:none;font-size:11px;border-radius-right:20px;margin:0px;height:26px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="unselect_all_patients()">Unselect ALL</button>
+										</div>
+	    							</td>
+    							</table>
+	    					</div>
+		    				<div class="col-sm-12" id="div_row_samples" style="overflow-x:hidden;margin-left:8px;background-color:#363945;border:solid 0.5px #363945;padding-left:0px;padding-right:0px;"></div>
+		    				<div class="col-sm-12" style="background-color:#363945;height:5px"></div>
+		    			</div>
 		    		</div>
+		    		
+		    		<div class="col-sm-12" id="div_menu_extra_options" style="display:none;border-top:0px;">
+		    			<div class="row">
+		    				<div class="col-sm-5" style="padding-bottom:5px;background-color:#363945;float:left;border: solid 1px white;">
+		    					<table style="float:right;width:100%;">
+		    						<tr>
+		    							<td>
+		    								<span style="display:none;float:right;padding-right:5px;color:white;font-size:14px;top:0px;" id="span_triangle_extra_options" class="glyphicon glyphicon-triangle-top"></span>
+	    								</td>
+		    						</tr>
+								  	<tr>
+								  		<td>
+								  			<div class="dropdown" style="white-space: nowrap;float:left;padding-right:5px;padding-top:5px;">
+								  				<span style="color:white;font-size:14px;">ADD Bam File in </span>
+												<button onmouseover="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_igv" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
+													<img src="images/polyicons/igv_button_small.png"></img>
+												</button>
+												<div class="dropdown-menu" id="b_menu_dropdown_list_patients_bam_igv" aria-labelledby="b_dropdown_list_patients_bam_igv" style="top:0;left:-200px;margin-top:-75px;max-height:138px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
+											</div>
+							  			</td>
+		    							<td>
+		    								<input id="b_check_igv" name="check_igv" data-dojo-type="dijit/form/CheckBox" value="1" checked onChange="checkWindowIGV(this);" /> <label for="mycheck" style="font-size:8px;color:white;">IGV-js</label>
+		    							</td>
+               							<td>
+               								<button type="button" data-dojo-type="dijit/form/Button" id="b_igv_reset_2" onclick="igv_reset"><span style="font-size:8px">IGV reset </span></button>
+               							</td>
+								  	</tr>
+								  	<tr>
+								  		<td>
+											<div class="dropdown" style="white-space: nowrap;float:left;padding-right:5px;" onHide="alert('2');">
+								  				<span style="color:white;font-size:14px;">ADD Bam File in </span>
+												<button onmouseover="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_alamut" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
+													<img src="images/polyicons/alamut_visual.png"></img>
+												</button>
+											  	<div class="dropdown-menu" id="b_menu_ddropdown_list_patients_bam_alamut" aria-labelledby="b_dropdown_list_patients_bam_alamut" style="top:-20px;left:-200px;margin-top:-90px;max-height:138px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
+											</div>
+							  			</td>
+		    							<td></td>
+		    							<td></td>
+								  	</tr>
+							  	</table>
+		    				</div>
+		    				<div class="col-sm-7"></div>
+		    			</div>
+		    		</div>
+		    	
 	    		</div>
 		    </div>
 		    
 		    <div class="col-sm-2 col-lg-2">
-				<table style="float:right">
+		    
+		    	<div class="row">
+		    		<div class="col-sm-12">
+		    			<div style="height:8px;"></div>
+		    		</div>
+		    		<div class="col-sm-12" style="padding:0px;padding-right:10px;">
+		    			<span style="float:right;color:white;font-size:14px;"><span id="span_header_project_type"></span>&nbsp;&nbsp;<span id="span_header_project_name"></span></span>
+		    		</div>
+		    		<div class="col-sm-12" style="padding:0px;padding-right:10px;max-height:35px;overflow-x:scroll;">
+		    			<span style="float:right;color:white;font-size:11px;"><span id="span_header_project_capture"></span> - <span id="span_header_project_release"></span></span>
+		    		</div>
+		    		<div class="col-sm-12" style="padding:0px;padding-right:10px;">
+		    			<span style="float:right;color:white;font-size:10px;"><span id="span_header_project_description"></span></span>
+		    		</div>
+		    		<div class="col-sm-12" style="padding:0px;padding-right:10px;">
+		    			<span style="float:right;color:white;font-size:9px;"><span class="glyphicon glyphicon-user"></span>&nbsp;<span id="span_header_username"></span></span>
+		    		</div>
+		    		
+		    	</div>
+		    
+				<table style="float:right;display:none;">
     				<td>
     					<table style="float:right">
 		    				<tr style="height:10px;">
@@ -1251,7 +1347,7 @@ var view_polydiag =0;
 		    				</tr>
 			    			<tr>
 				    			<td colspan='4'>
-				    				<span style="float:right;color:white;font-size:14px;"><span id="span_header_project_type"></span>&nbsp;&nbsp;<span id="span_header_project_name"></span></span>
+				    				
 				    			</td>
 			    			</tr>
 		    				<tr style="height:5px;">
@@ -1263,23 +1359,6 @@ var view_polydiag =0;
 										<span></span>
 									</td>
 									<td style="width:31px;">
-										<span style="height:31px;font-size:13px;text-align:center;margin-right:5px;line-height:14px;"><b><font style="font-size:11px;color:white;">ADD BAM</font></b></span>
-									</td>
-									<td>
-										<div class="dropdown" style="white-space: nowrap;">
-										  <button onmouseover="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_igv" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
-												<img src="images/polyicons/igv_button_small.png"></img>
-										  </button>
-										  <div class="dropdown-menu" id="b_menu_dropdown_list_patients_bam_igv" aria-labelledby="b_dropdown_list_patients_bam_igv" style="top:0;left:-200px;margin-top:-34px;max-height:78px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
-										</div>
-									</td>
-									<td>
-										<div class="dropdown" style="white-space: nowrap;">
-										  <button onmouseover="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_alamut" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
-												<img src="images/polyicons/alamut_visual.png"></img>
-										  </button>
-										  <div class="dropdown-menu" id="b_menu_ddropdown_list_patients_bam_alamut" aria-labelledby="b_dropdown_list_patients_bam_alamut" style="top:0;left:-200px;margin-top:-34px;max-height:78px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
-										</div>
 									</td>
 								</center>
 							</tr>
