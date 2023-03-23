@@ -439,10 +439,10 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		next;
 	}
 	
-	if ($only_genes and not exists $h_chr_from_only_genes->{$chr->id()}) {
-		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
-		next;
-	}
+#	if ($only_genes and not exists $h_chr_from_only_genes->{$chr->id()}) {
+#		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
+#		next;
+#	}
 	
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
