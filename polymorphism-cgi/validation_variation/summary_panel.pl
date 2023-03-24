@@ -424,6 +424,27 @@ h4 {
   border-radius: 0;
 }
 
+.stamp3 {
+
+	color: black;
+	font-size: 1.2rem;
+	font-weight: 500;
+	border: 0.25rem solid #555;
+	display: inline-block;
+	padding: 0.25rem 1rem;
+	text-transform: uppercase;
+	border-radius: 1rem;
+	font-family: 'Courier';
+	-webkit-mask-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/8399/grunge.png');
+  -webkit-mask-size: 944px 604px;
+  mix-blend-mode: multiply;
+  color:#4B0082;
+	border: 0.2rem solid #4B0082;
+	-webkit-mask-position: 13rem 6rem;
+	transform: rotate(0deg);
+  border-radius: 0;
+}
+
 	</style>
 };
 
@@ -503,6 +524,7 @@ my $dev;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
+ push(@$key_quality,"muc1") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  warn "HEADER ==> ".$header;
  warn join(";",@$key_quality);
@@ -537,7 +559,8 @@ my ($gstats,$lstats,$patient_value) ;
 
 
 
-my $key_validation = args_validation($project);
+#my $key_validation = args_validation($project);
+ #push(@$key_quality,"muc1") if $project->getCaptures->[0]->analyse =~ /renom/i;
 $no_cache = $project->get_lmdb_cache_summary("r");
 my $htable = $no_cache->get_cache(join(";",@$key_quality).".table");
 #$htable = undef;
@@ -723,14 +746,21 @@ sub check_level {
 				
 			
 			}
-			
+			##
 			my $res_muc = $p->vntyperResults();
 			if (@$res_muc){
 				my $text = qq{ <span  class="stamp1"><span>MUC1</span></span>};
 			 	$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
 			}
+			elsif (-e  $project->getVariationsDir("vntyper")."/muc1/" && !(-e $p->vntyperTsv)){
+				my $text = qq{ <span  class="stamp1"><span>PROBLEM !!!!!</span></span>};
+				$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
+			}
 			else {
-				 $line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
+				my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
+				$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
+				# $line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
+				 #$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
 			}
 			
 			
@@ -1787,6 +1817,20 @@ sub table_muc1 {
 	 my $nb =0;
 		foreach my $patient (@{$project->getPatients}){
 			my $t = $patient->vntyperResults;
+			unless (@{$t}){
+				if(-e $patient->vntyperTsv()){
+			 	$out_table .= $cgi->start_Tr({class=>""});
+			 	$out_table .= $cgi->td($patient->name);
+			 	$out_table .= $cgi->td(["-","-","-","-","-","-","-","-","-","-","-"]);
+			 	#,"-","-","-","-","-","-","-","-","-","-","-"]);
+				$out_table .= $cgi->end_Tr({class=>""});
+				}
+				else {
+				$out_table .= $cgi->start_Tr({class=>""});
+			 	$out_table .= $cgi->td([$patient->name,"PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM"]);
+				$out_table .= $cgi->end_Tr({class=>""});
+				}
+			 }
 			next unless @{$t};
 			$out_table .= $cgi->start_Tr({class=>""});	
 			$out_table.= $cgi->td({rowspan=>scalar(@$t)},$patient->name);
