@@ -468,10 +468,8 @@ has files =>(
 		$files->{gz} = $file;
 		my $file2 = $dir . "/" . $self->type . "/" . $self->file_name;
 		$files->{bed} = $file2;
-		
-		$files->{hotspot} = $file2;
-		
-		$files->{hotspot} =~ s/bed/hotspot.bed/;
+		#warn $files->{bed};
+		$files->{hotspot} = $dir . "/hotspot/" .lc($self->analyse) . ".bed";;
 		my $fp =  $dir . "/" . $self->type . "/" . $self->primers_filename;
 		
 	#	if (-s $fp){
@@ -527,7 +525,8 @@ has hotspots_filename => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-			return $self->files()->{hotspot}; 
+		#return "/data-isilon/bipd-src/pnitschk/git2-polyweb/polygit/polyscripts/hotspot/cloves.bed"; 
+		return $self->files()->{hotspot}; 
 		
 	},
 ); 
@@ -548,17 +547,40 @@ has hotspots => (
 #	end=>117232275,
 #	seq=>'ACAAAAAAACA',
 #} ;
+ 	my $h;
 	while (my $line = <PLEX>){
 		chomp($line);
-		my $h;
-		 ($h->{chromosome},$h->{start},$h->{end},$h->{sequence},$h->{name}) = split(" ",$line);
-		 my $seq =  $self->project->getChromosome($h->{chromosome})->getSequence($h->{start},$h->{end});
-		 confess() if $seq ne $h->{sequence};
-		push(@$hotspots,$h);
+		my @t = split(" ",$line);
+		 my $id =$t[0].":".$t[1];
+		 $h->{$id}->{gene} = $t[3];
+		 my $gene = $self->project->newGene($t[3]);
 		
-		
+		 ($h->{$id}->{ref},$h->{$id}->{alt}) = split("/",$t[4]);
+		 $h->{$id}->{name} = $t[5];
+		 if ($gene->strand == -1){
+			$h->{$id}->{ref} = BioTools::complement($h->{$id}->{ref});
+			$h->{$id}->{alt} = BioTools::complement($h->{$id}->{alt});
+			$h->{$id}->{name} = "-".$t[5];
+			
+			}
+		my $chr = $self->project->getChromosome($t[0],$t[0]);
+		if (length($h->{$id}->{ref})==1 && length($h->{$id}->{alt})==1){
+		$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+1)."_".$h->{$id}->{ref}."_".$h->{$id}->{alt};
+		}
+		elsif(length($h->{$id}->{ref})>1){
+			my $before = $chr->getSequence($t[1],$t[1]);
+			$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+1)."_".$before.$h->{$id}->{ref}."_".$before;
+		}
+		elsif(length($h->{$id}->{alt})>1){
+			my $before = $chr->getSequence($t[1],$t[1]);
+			$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+1)."_".$before."_".$before.$h->{$id}->{alt};
+		}
+		else {
+			confess();
+		}
+		$h->{$id}->{protid} = $t[7];
 	}
-	return $hotspots;
+	return $h;
 	},
 );
 has multiplexFile => (
