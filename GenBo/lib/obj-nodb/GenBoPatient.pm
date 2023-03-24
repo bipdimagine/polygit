@@ -2399,6 +2399,8 @@ sub hotspot {
 		$hash->{A_ALT} = $h->{alt};
 		$hash->{NAME} = $h->{name};
 		$hash->{ID} = $hash->{REF}.":".($hash->{POS}+1);
+		$hash->{GENBO_ID} =$h->{genbo_id};
+		$hash->{PROT} =$h->{protid};
 		push(@{$res->{$h->{gene}}},$hash);	
 	}
 	return $res;
