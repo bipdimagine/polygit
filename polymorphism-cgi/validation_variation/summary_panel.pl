@@ -746,7 +746,7 @@ sub check_level {
 				
 			
 			}
-			
+			##
 			my $res_muc = $p->vntyperResults();
 			if (@$res_muc){
 				my $text = qq{ <span  class="stamp1"><span>MUC1</span></span>};
