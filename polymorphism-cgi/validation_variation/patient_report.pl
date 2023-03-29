@@ -3580,8 +3580,7 @@ foreach my $g (keys %$hotspots){
 	my $f =  join(";",@bams);#$patient->{obj}->bamUrl;;
 	 my $pnames = join(";",@names);
 	foreach my $hotspot (@{$hotspots->{$g}}){
-	
-	my @td;
+		my @td;
 		my $chr = $project->getChromosome($hotspot->{REF});
 		my $var_obj = $chr->cache_lmdb_variations->get($hotspot->{GENBO_ID});
 		#warn $chr->cache_lmdb_variations->get(0);
@@ -3589,12 +3588,12 @@ foreach my $g (keys %$hotspots){
 		 $style = {style=>"background-color:#D2386C;color:white"} if $var_obj && $var_obj->existsPatient($patient);
 		 $out.= $cgi->start_Tr($style);
 		 my $nba;
-		 my $chrn = $chr->fasta_name;
+		 my $chrn = $chr->name;
 		 my $start = $hotspot->{POS};
-		 my $l = $chr->fasta_name.":".$start;
+		 my $l = $chr->name.":".$start;
 		 my $gn = $project->getVersion();
-		 my $project_name = $project->name;
-		 	my $v1 = "?/?";#.$hvariation->{allele};	
+		 my $project_name = $project->name; 
+		 my $v1 = "?/?";#.$hvariation->{allele};	
 		# launch_web_igv_js
 		my $text =qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$pnames","$f","$l","$v1","$gn")' style="color:black"></button>};
 		#my $text =qq{<button dojoType="dijit.form.Button"   iconClass='igvIcon' onclick='view_web_igv_bam("dialog_igv", "div_igv", "$l", "$f", "$pnames")' style="color:black"></button>};
