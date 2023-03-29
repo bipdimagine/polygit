@@ -3594,8 +3594,10 @@ foreach my $g (keys %$hotspots){
 		 my $l = $chr->fasta_name.":".$start;
 		 my $gn = $project->getVersion();
 		 my $project_name = $project->name;
-		
-		my $text =qq{<button dojoType="dijit.form.Button"   iconClass='igvIcon' onclick='view_web_igv_bam("dialog_igv", "div_igv", "$l", "$f", "$pnames")' style="color:black"></button>};
+		 	my $v1 = "?/?";#.$hvariation->{allele};	
+		# launch_web_igv_js
+		my $text =qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$pnames","$f","$l","$v1","$gn")' style="color:black"></button>};
+		#my $text =qq{<button dojoType="dijit.form.Button"   iconClass='igvIcon' onclick='view_web_igv_bam("dialog_igv", "div_igv", "$l", "$f", "$pnames")' style="color:black"></button>};
 		 
 		 
 		$out.=$cgi->td($text);
