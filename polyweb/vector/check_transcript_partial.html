@@ -1,0 +1,714 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>Check Partial Transcript</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+        <!-- chargement des feuilles de styles necessaires a l'affichage -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+        <style type="text/css">
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/claro/claro.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/claroGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/widget/Dialog/Dialog.css";
+			@import "../css/polycss/login.css";
+      		@import "../css/polycss/button.css";
+    
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+			
+            #borderContainer {
+                width: 100%;
+                height: 100%;
+            }
+    
+            .testDialog {
+                font-size: 8pt;
+            }
+    
+            .dojoxGrid-row-odd td {
+                background: #e8f2ff;
+            }
+    
+            .name {
+                color: #2962A7;
+                font-weight: bold;
+            }
+    
+            .pconseq {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_blue.png);
+                padding: 1em;
+                width: 1200px;
+                min-width: 400px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .ptranscript {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_grey.png);
+                padding: 1em;
+                min-width: 100px;
+                height: 15px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .pconseq .gridconseq {
+                background: #fff;
+                height: 150px;
+                position: float;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .partsContainerSmall {
+                background: rgb(192,80,77);
+                padding: 1em;
+                background-image: url(../images/polyicons/bckgrdsmall.png);
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .titleSmall {
+                font-family: Verdana, Arial, Helvetica, sans-serif;
+                padding: 0.5em 0.5em 0 0.5em;
+                color: #000000;
+                background: rgb(192,80,77);
+                font-weight: normal;
+                -moz-border-radius-topleft: 8px;
+                -moz-border-radius-topright: 8px;
+                -webkit-border-top-left-radius: 8px;
+                -webkit-border-top-right-radius: 8px;
+                -webkit-box-shadow: 2px 2px 11px #888;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+            }
+    
+            .partsContainerSmall .gridContainerSmall {
+                background: #fff;
+                height: 150px;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .person_name {
+                padding: 3px 3px 3px 25px;
+                font-size: 23px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #ff5500;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .titre {
+                padding: 1px 5px 1px 25px;
+                margin-left: 70px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 12px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .run {
+                padding: 1px 1px 1px 25px;
+                margin-left: 50px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(../images/polyicons/lightning.png) no-repeat center left;
+            }
+    
+            .span_desc {
+                font-family: arial;
+                font-size: 10px;
+                padding: 8px 1px 1px 25px;
+                background: url(../images/polyicons/star.png) no-repeat center left;
+            }
+    
+            .alternateDock {
+                position: absolute;
+                background-color: #000000;
+                right: 0px;
+                top: 0px;
+                border-left: 1px solid #ccc;
+                height: 100%;
+            }
+    
+            #alternateDock ul.dojoxDockList {
+                display: block;
+            }
+    
+            .td_align {
+                border: 2px solid;
+            }
+    
+            .tundra #toolbar.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar2.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar3.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+            
+            table.dataTable thead .sorting:before, table.dataTable thead .sorting:after, table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+               padding: 5px;
+            }
+            .dataTables_wrapper .mdb-select {
+                border: none;
+                float: left;
+            }
+            .dataTables_wrapper .mdb-select.form-control {
+                padding-top: 0;
+                margin-top: -1rem;
+                margin-left: 0.7rem;
+                margin-right: 0.7rem;
+                width: 100px;
+            }
+            .dataTables_length label {
+                float: left;
+            }
+            table.dataTable {
+                margin-bottom: 3rem!important;
+            }
+            div.dataTables_wrapper div.dataTables_info {
+                padding-top: 0;
+            }
+            
+            table #grid_var {
+                border-collapse: collapse;   
+            }
+            #grid_var tr:hover {
+                background-color: #ccc;
+            }
+            #grid_var th {
+                background-color: #fff;
+            }
+            #grid_var th, #example td {
+                padding: 3px 5px;
+            }
+            #grid_var td:hover {
+                cursor: pointer;
+            }
+            
+            table #tab_transcripts {
+                border-collapse: collapse;   
+            }
+            #tab_transcripts tr:hover {
+                background-color: #ccc;
+            }
+            #tab_transcripts th {
+                background-color: #fff;
+            }
+            #tab_transcripts th, #example td {
+                padding: 3px 5px;
+            }
+            #tab_transcripts td:hover {
+                cursor: pointer;
+            }
+            
+			.collapsing{
+			 	-webkit-transition:height .01s ease;
+			  	transition:height .01s ease
+			}
+			
+			.loader {
+				border-top: 16px solid #F5F5F5;
+				border-right: 16px solid #A9A9A9;
+				border-bottom: 16px solid #808080;
+				border-left: 16px solid #000000;
+				border-radius: 50%;
+			    width: 120px;
+			    height: 120px;
+  				-webkit-animation: spin 2s linear infinite;
+			    animation: spin 2s linear infinite;
+			}
+			
+			.nav-tabs {
+			  overflow-x: auto;
+			  overflow-y: hidden;
+			  display: -webkit-box;
+			  display: -moz-box;
+			}
+			.nav-tabs>li {
+			  float: none;
+			}
+			
+			@-webkit-keyframes spin {
+				0% { -webkit-transform: rotate(0deg); }
+				100% { -webkit-transform: rotate(360deg); }
+			}
+			
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+			
+			#text_search_polyquery_var {
+			    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+			    background-position: 10px 12px; /* Position the search icon */
+			    background-repeat: no-repeat; /* Do not repeat the icon image */
+			    width: 100%; /* Full-width */
+			    font-size: 16px; /* Increase font-size */
+			    padding: 12px 20px 12px 40px; /* Add some padding */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    margin-bottom: 12px; /* Add some space below the input */
+			}
+			
+			#myTable {
+			    border-collapse: collapse; /* Collapse borders */
+			    width: 100%; /* Full-width */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    font-size: 18px; /* Increase font-size */
+			}
+			
+			#myTable th, #myTable td {
+			    text-align: left; /* Left-align text */
+			    padding: 12px; /* Add padding */
+			}
+			
+			#myTable tr {
+			    /* Add a bottom border to all table rows */
+			    border-bottom: 1px solid #ddd;
+			}
+			
+			#myTable tr.header, #myTable tr:hover {
+			    /* Add a grey background color to the table header and on hover */
+			    background-color: #f1f1f1;
+			}
+			 
+			.visible {
+			  visibility: visible;
+			}
+			
+			.invisible {
+			  visibility: hidden;
+			}
+
+			.progress_chr {
+				opacity: 0;
+				-webkit-transition: opacity 2s ease-in;
+				-moz-transition: opacity 2s ease-in;
+				-o-transition: opacity 2s ease-in;
+				-ms-transition: opacity 2s ease-in;
+				transition: opacity 2s ease-in;
+			}
+			
+			.progress_chr.load {
+			    opacity: 1;
+			}
+			
+			.dijitSliderLeftBumper {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderProgressBar {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderImageHandle {
+				border: 6px solid #cfe5fa;
+			}
+			
+			.dijitCheckBoxInput {
+				opacity:10;
+			}
+			
+			.checkbox {
+				margin: 0px 0 0;
+				margin-top: 1px \9;
+				line-height: normal;
+			}
+	
+			.badge1 {
+			  display: block;
+			  position: absolute;
+			  top: -13px;
+			  right: -2px;
+			  line-height: 16px;
+			  height: 16px;
+			  padding: 0 5px;
+			  font-family: Arial, sans-serif;
+			  color: white;
+			  text-shadow: 0 1px rgba(0, 0, 0, 0.25);
+			  border: 1px solid;
+			  border-radius: 10px;
+			  -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			
+			.badge1.green {
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			 .badge1.yellow {
+			  background: #FFFF56;
+			  border-color: #FFFF88;
+			  color:black;
+			  background-image: -webkit-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -moz-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -o-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: linear-gradient(to bottom, #FFFF88, #FFFF56);
+			}
+			 .badge1.red {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: -moz-linear-gradient(top, #AA0000, #FF0066);
+			  background-image: -o-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: linear-gradient(to bottom, #fc9f8a, #FF0066);
+			}
+			
+			 .badge1.grey {
+			  background: #EEE;
+			  border-color: white;
+			  background-image: -webkit-linear-gradient(top, #EEE,beige);
+			  background-image: -moz-linear-gradient(top, #EEE,beige);
+			  background-image: -o-linear-gradient(top, #EEE,beige);
+			  background-image: linear-gradient(to bottom, #EEE,beige);
+			  color:#555
+			}	
+			 .badge1.orange {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -moz-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -o-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: linear-gradient(to bottom, #FFC04C,#FFA500);
+			}
+			.badge1.coral {
+			;	//#FF7061
+			  background:#FF7061;# #FF7F50;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -moz-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -o-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: linear-gradient(to bottom, #FF7F50,#FF7061);
+			}
+        </style>
+        
+        <style type="text/css" media="print">
+			@page { size: landscape; }
+			
+			.row {
+				-webkit-print-color-adjust: exact;
+			}
+		</style>
+        
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	    
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		
+		
+		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/tableExport.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF/jspdf.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF-AutoTable/jspdf.plugin.autotable.js"></script>
+       
+        <link rel="stylesheet" type="text/css" href="js/igv/igv-1.0.9.css">
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.11.2/dist/igv.min.js"></script>
+		<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		<script type="text/javascript" src="../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+	  	<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	   	<script type="text/javascript" src="../js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+		<script type="text/javascript" src="../js/polyviewer/methods_polyviewer.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
+         
+        <style type="text/css">
+        	input[type="checkbox"], input[type="radio"] { margin: 0px 0 0 !important; }
+        </style>
+        
+        <script type="text/javascript">
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dojo.cookie");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dijit.form.CheckBox");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            
+            $(document).ready(function () {
+            	document.getElementById("transcript_name").value = "";
+            	document.getElementById("position").value = "";
+	    	});
+	    	
+	    	function eraseText() {
+			    document.getElementById("project_name").value = "";
+				document.getElementById("content_res").innerHTML = "";
+				document.getElementById("span_gencode").innerHTML = "";
+				document.getElementById("span_description").innerHTML = "";
+				document.getElementById("span_captures").innerHTML = "";
+    			export_csv_datas = '';
+			}
+			
+			function enable_table_search(id) {
+	    		$('#'+id).bootstrapTable();
+			}
+			
+			function export_xls(mode) {
+				alert('TO DO');
+				return;
+		    	var value_project = document.getElementById("project_name").value;
+		    	var value_gene = document.getElementById("gene_name").value;
+		    	var url_xls_2 = url_path + "json_output_nodb/get_gene_coverage_xls.pl";
+				url_xls_2 += "?project=" + value_project;
+				url_xls_2 += "&gene=" + value_gene;
+				if (document.getElementById("intronic").checked) {
+					url_xls_2 += "&intronic=1";
+				}
+				if (document.getElementById("coding").checked) {
+					url_xls_2 += "&only_coding=1";
+				}
+				console.log(url_xls_2);
+				downloadFile(url_xls_2);
+			    return;
+			}
+			
+			function view() {
+				document.getElementById("content_res").innerHTML = "<center><img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <span id='waiting_text'>Loading Data...</span></center>";
+		    	var value_project = 'NGS2014_0566';
+		    	var value_tr = document.getElementById("transcript_name").value;
+		    	var value_pos = document.getElementById("position").value;
+		    	
+		    	var url = url_path + "json_output_nodb/check_transcript_partial.pl";
+				url += "?project=" + value_project;
+				url += "&transcript=" + value_tr;
+				if (value_pos) {
+					url += "&only_position=" + value_pos;
+				}
+
+		    	var html_table = "<table data-sort-name='0' data-sort-order='desc' class='table' id ='table_res' data-filter-control='true' data-toggle='table' data-show-extended-pagination='true' data-cache='false' data-pagination-loop='false' data-virtual-scroll='true' data-pagination-pre-text='Previous' data-pagination-next-text='Next' data-pagination='true' data-page-size='50' data-page-list='[10, 20, 50, 100, 200, 300]' data-resizable='true' class='table table-striped' style='font-size:13px;'>";
+				html_table += "<thead>";
+				html_table += "<tr>";
+				html_table += "<th data-field='status' data-sortable='true' data-filter-control='input'><b><center>Status</b></center></th>";
+				html_table += "<th data-field='0' data-sortable='true' data-filter-control='input'><b><center>VarID</b></center></th>";
+				html_table += "<th data-field='1' data-sortable='true' data-filter-control='input'><b><center>V19:exon/intron</b></center></th>";
+				html_table += "<th data-field='11' data-sortable='true' data-filter-control='input'><b><center>V19:annot</b></center></th>";
+				html_table += "<th data-field='2' data-sortable='true' data-filter-control='input'><b><center>V19:nomenclature</b></center></th>";
+				html_table += "<th data-field='3' data-sortable='true' data-filter-control='input'><b><center>V19:cds_position</b></center></th>";
+				html_table += "<th data-field='4' data-sortable='true' data-filter-control='input'><b><center>V19:protein_position</b></center></th>";
+				html_table += "<th data-field='5' data-sortable='true' data-filter-control='input'><b><center>V19:aa</b></center></th>";
+				html_table += "<th data-field='6' data-sortable='true' data-filter-control='input'><b><center>V43:annot</b></center></th>";
+				html_table += "<th data-field='61' data-sortable='true' data-filter-control='input'><b><center>V43:exon/intron</b></center></th>";
+				html_table += "<th data-field='7' data-sortable='true' data-filter-control='input'><b><center>V43:nomenclature</b></center></th>";
+				html_table += "<th data-field='8' data-sortable='true' data-filter-control='input'><b><center>V43:cds_position</b></center></th>";
+				html_table += "<th data-field='9' data-sortable='true' data-filter-control='input'><b><center>V43:protein_positio</b></center></th>";
+				html_table += "<th data-field='10' data-sortable='true' data-filter-control='input'><b><center>V43:aa</b></center></th>";
+				html_table += "</tr>";
+				html_table += "</thead>";
+				html_table += "<tbody>";
+				
+				var jqxhr = $.getJSON(url, function() {
+				}).done(function(data) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var nb_warn = 0;
+			    	var i = 1;
+			    	var status;
+			    	$.each( data, function( key, val ) {
+			    		var color = 'green';
+			    		var list_res = String(val).split(';');
+			    		
+			    		var color = 'black';
+			    		if (list_res[1] != list_res[7]) {
+			    			color = 'red';
+			    			status = "<b>ERROR</b>";
+			    			nb_not++;
+		    			}
+			    		else if (list_res[6] != list_res[12]) {
+			    			color = 'orange';
+			    			status = "<b>WARN</b>";
+			    			nb_warn++;
+			    		}
+			    		else {
+			    			status = "<b><span style='color:green'>OK</span></b>";
+			    			nb_ok++;
+			    		}
+			    		html_table += "<tr style='color:" + color + "'>";
+			    		html_table += "<td><center>" + status + "</center></td>";
+			    		for (i in list_res) {
+			    			html_table += "<td><center>" + list_res[i] + "</center></td>";
+			    		}
+			    		html_table += "</tr>"
+  					});
+					html_table += "</tbody>";
+					html_table += "</table>";
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(html_table);
+					myPanel.appendTo(myNode);
+					var nb_total = nb_ok + nb_not + nb_warn;
+					document.getElementById("span_ok").innerHTML  = "<font color='#00CC00'>OK: " + nb_ok + " / " + nb_total + "</font>";
+					document.getElementById("span_warn").innerHTML = "<font color='orange'>WARNING: " + nb_warn + " / " + nb_total + "</font>";
+					document.getElementById("span_not").innerHTML = "<font color='red'>ERROR: " + nb_not + " / " + nb_total + "</font>";
+					enable_table_search('table_res');
+			  })
+			  .fail(function() {
+					document.getElementById("content_res").innerHTML = "<center><b><u>ERROR:</u></b> Problem... transcript not found in gencode v19 ? or v43 ?</center>";
+			  });
+				
+			}
+			
+	    	function enable_table_search(id) {
+	    		$('#'+id).bootstrapTable();
+			}
+			
+			dojo.require("dojo.io.iframe");
+			function downloadFile(url) {
+			    var downloadPdfIframeName = "downloadPdfIframe"; 
+			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
+			    dojo.io.iframe.setSrc(iframe, url, true);
+			} 
+	    	
+		</script>
+    </head>
+	<body class="container-fluid" style="overflow-y:scroll;">
+		<nav class="navbar navbar-inverse ">
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+						<span class="icon-bar"></span>
+				        <span class="icon-bar"></span>
+				        <span class="icon-bar"></span>                        
+	      			</button>
+	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">PolyWeb</span></a>
+	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">Check Partial Transcript</span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_1"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_2"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_ok"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_warn"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_not"></span></a>
+	    		</div>
+	  		</div>
+		</nav>
+		<center>
+		<div class="row" style="height:auto;width:98%;">
+			<div class="col-sm-3"></div>
+			<div class="col-sm-6">
+			
+				<form>
+					<div class="form-group">
+						<label for="transcript_name">Transcript Name</label>
+						<input type="text" class="form-control" id="transcript_name" aria-describedby="trExemple" placeholder="">
+						<small id="trExemple" class="form-text text-muted">Example: ENST00000227471</small>
+					</div>
+					<div class="form-group">
+						<label for="position">Only Genomic Position (all positions if empty)</label>
+						<input type="text" class="form-control" id="position" aria-describedby="trExemple" placeholder="">
+						<small id="trExemple" class="form-text text-muted">Example: 67759017 or 67765150-67765180</small>
+					</div>
+					<br><br>
+					<button type='button' disabled onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Export XLS</button>
+					<button type='button' onClick="view()" class='btn btn-info' style="background-color:blue;color:white;">VIEW</button>
+				</form>
+			
+				
+			</div>
+			<div class="col-sm-6">
+				<span id="span_gencode"></span><br>
+				<span id="span_description"></span><br>
+				<span id="span_captures"></span>
+			</div>
+			</center>
+		</div>
+		<div class="col-sm-3"></div>
+		<div class="col-sm-12" align='left'>
+			<div class="row" id="content_res" style="width:99%;"></div>
+			<br>
+		</div>
+		
+	</body>
+</html>
+

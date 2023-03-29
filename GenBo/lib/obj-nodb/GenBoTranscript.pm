@@ -46,7 +46,7 @@ has hash_partial_infos => (
 		return if (not $self->is_partial_transcript());
 		my $dir = $self->getProject->get_gencode_directory();
 		my $no = GenBoNoSqlLmdb->new(
-			name        => "partial",
+			name        => "partial_transcripts",
 			dir         => $dir,
 			mode        => "r",
 			is_compress => 1,
@@ -631,6 +631,7 @@ sub codonsConsequenceForSubstitution {
 	$seq = reverse_base($seq) if ($self->strand == -1);
 	my $codon2 = $codon1;
 	my $splice = ($pos_orf+2) % 3;
+	
 	substr($codon2,$splice,1,$seq);
 	my $results = {
 		transcript_position => $pos_transcript,
@@ -889,7 +890,13 @@ is      => 'rw',
 sub get_correct_translate_position_hg38 {
 	my ($self, $pos) = @_;
 	return 0 if not $self->is_partial_transcript();
-	foreach my $nt (keys %{$self->hash_partial_infos->{intspan}}) {
+	$self->getSpanSpliceSite->empty();
+	$self->getSpanEssentialSpliceSite->empty();
+	$self->getSpanSpliceSite->add_from_string( $self->hash_partial_infos->{splice_site_span}->as_string() );
+	$self->getSpanEssentialSpliceSite->add_from_string( $self->hash_partial_infos->{essential_splice_site_span}->as_string() );
+	$self->{orf_start_new} = $self->hash_partial_infos->{HG38}->{cds}->{start};
+	$self->{orf_end_new} = $self->hash_partial_infos->{HG38}->{cds}->{end};
+	foreach my $nt (sort {$b <=> $a} keys %{$self->hash_partial_infos->{intspan}}) {
 		if ($self->hash_partial_infos->{intspan}->{$nt}->contains($pos)) {
 			return $nt;
 		}
@@ -912,6 +919,7 @@ sub translate_position{
 	my $rpos = abs($r->[0]-$pos)+1 + $r->[1];
  	$rpos = abs($rpos - $self->length) +1 if $self->strand == -1;
  	
+# 	warn $rpos;
  	$rpos += $self->get_correct_translate_position_hg38($rpos);
  	
 	return $rpos;

@@ -66,7 +66,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Sift', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature');
+		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -1115,6 +1115,8 @@ sub prepare_generic_datas_variants {
 						$h2->{'nomenclature'}    = $h_tr->{'nomenclature'};
 						$h2->{'polyphen'}        = $h_tr->{'polyphen_status'};
 						$h2->{'sift'}            = $h_tr->{'sift_status'};
+						$h2->{'polyphen_score'}  = $h_tr->{'polyphen_score'};
+						$h2->{'sift_score'}      = $h_tr->{'sift_score'};
 						$h2->{'aa'}              = $h_tr->{'aa'};
 						$h2->{'appris'}          = $h_tr->{'appris'};
 						push( @lDatas, $h2 );
