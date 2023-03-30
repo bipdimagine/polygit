@@ -1563,6 +1563,24 @@ has lmdbOmim => (
 	}
 );
 
+has lmdbPartialTranscripts => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->get_gencode_directory();
+		my $lmdb_file = $dir.'/partial_transcripts';
+		return if not -e $lmdb_file;
+		my $no = GenBoNoSqlLmdb->new(
+			name        => "partial_transcripts",
+			dir         => $dir,
+			mode        => "r",
+			is_compress => 1,
+			vmtouch=>$self->buffer->vmtouch
+		);
+		return $no;
+	}
+);
 
 has litePredictionMatrix => (
 	is      => 'ro',

@@ -33,7 +33,9 @@ has is_partial_transcript => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		return 1 if $self->remap_status() and $self->remap_status() eq 'partial';
+		return if ($self->getProject->gencode_version() eq '943');
+		#return 1 if $self->remap_status() and $self->remap_status() eq 'partial';
+		return 1 if $self->hash_partial_infos();
 		return;
 	}
 );
@@ -43,18 +45,11 @@ has hash_partial_infos => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		return if (not $self->is_partial_transcript());
-		my $dir = $self->getProject->get_gencode_directory();
-		my $no = GenBoNoSqlLmdb->new(
-			name        => "partial_transcripts",
-			dir         => $dir,
-			mode        => "r",
-			is_compress => 1,
-			vmtouch=>$self->buffer->vmtouch
-		);
+		my $no = $self->getProject->lmdbPartialTranscripts();
+		return unless $no;
 		my $h = $no->get($self->id);
-		confess() unless $h;
-		return $h;
+		return $h if $h;
+		return;
 	}
 );
 
@@ -890,12 +885,18 @@ is      => 'rw',
 sub get_correct_translate_position_hg38 {
 	my ($self, $pos) = @_;
 	return 0 if not $self->is_partial_transcript();
-	$self->getSpanSpliceSite->empty();
-	$self->getSpanEssentialSpliceSite->empty();
-	$self->getSpanSpliceSite->add_from_string( $self->hash_partial_infos->{splice_site_span}->as_string() );
-	$self->getSpanEssentialSpliceSite->add_from_string( $self->hash_partial_infos->{essential_splice_site_span}->as_string() );
-	$self->{orf_start_new} = $self->hash_partial_infos->{HG38}->{cds}->{start};
-	$self->{orf_end_new} = $self->hash_partial_infos->{HG38}->{cds}->{end};
+	return 0 unless $self->hash_partial_infos;
+	if (exists $self->hash_partial_infos->{splice_site_span}) {
+		$self->getSpanSpliceSite->empty();
+		$self->getSpanSpliceSite->add_from_string( $self->hash_partial_infos->{splice_site_span}->as_string() );
+	}
+	if (exists $self->hash_partial_infos->{essential_splice_site_span}) {
+		$self->getSpanEssentialSpliceSite->empty();
+		$self->getSpanEssentialSpliceSite->add_from_string( $self->hash_partial_infos->{essential_splice_site_span}->as_string() );
+	}
+	#TODO: enlever les if pour les ORF. Ca doit planter si pas present
+	$self->{orf_start_new} = $self->hash_partial_infos->{HG38}->{cds}->{start} if (exists $self->hash_partial_infos->{HG38}->{cds}->{start});
+	$self->{orf_end_new} = $self->hash_partial_infos->{HG38}->{cds}->{end} if (exists $self->hash_partial_infos->{HG38}->{cds}->{end});
 	foreach my $nt (sort {$b <=> $a} keys %{$self->hash_partial_infos->{intspan}}) {
 		if ($self->hash_partial_infos->{intspan}->{$nt}->contains($pos)) {
 			return $nt;
