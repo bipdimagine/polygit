@@ -522,6 +522,11 @@
             $(document).ready(function () {
             	document.getElementById("transcript_name").value = "";
             	document.getElementById("position").value = "";
+            	document.getElementById("gencode_v1").value = "19";
+            	document.getElementById("gencode_v2").value = "43";
+            	document.getElementById("skip_intronic").checked = true;
+            	document.getElementById("skip_utr").checked = true;
+            	document.getElementById("skip_pseudogene").checked = true;
 	    	});
 	    	
 	    	function eraseText() {
@@ -556,36 +561,56 @@
 			    return;
 			}
 			
-			function view() {
+			function view(type) {
 				document.getElementById("content_res").innerHTML = "<center><img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <span id='waiting_text'>Loading Data...</span></center>";
 		    	var value_project = 'NGS2014_0566';
 		    	var value_tr = document.getElementById("transcript_name").value;
 		    	var value_pos = document.getElementById("position").value;
 		    	
+		    	var value_gencode_v1 = document.getElementById("gencode_v1").value;
+		    	var value_gencode_v2 = document.getElementById("gencode_v2").value;
+		    	
 		    	var url = url_path + "json_output_nodb/check_transcript_partial.pl";
 				url += "?project=" + value_project;
 				url += "&transcript=" + value_tr;
+				url += "&type=" + type;
 				if (value_pos) {
 					url += "&only_position=" + value_pos;
 				}
+				if (value_gencode_v1) {
+					url += "&gencode_v1=" + value_gencode_v1;
+				}
+				if (value_gencode_v2) {
+					url += "&gencode_v2=" + value_gencode_v2;
+				}
+				if (document.getElementById("skip_intronic").checked) {
+					url += "&skip_intronic=1";
+				}
+				if (document.getElementById("skip_utr").checked) {
+					url += "&skip_utr=1";
+				}
+				if (document.getElementById("skip_pseudogene").checked) {
+					url += "&skip_pseudogene=1";
+				}
+				
 
 		    	var html_table = "<table data-sort-name='0' data-sort-order='desc' class='table' id ='table_res' data-filter-control='true' data-toggle='table' data-show-extended-pagination='true' data-cache='false' data-pagination-loop='false' data-virtual-scroll='true' data-pagination-pre-text='Previous' data-pagination-next-text='Next' data-pagination='true' data-page-size='50' data-page-list='[10, 20, 50, 100, 200, 300]' data-resizable='true' class='table table-striped' style='font-size:13px;'>";
 				html_table += "<thead>";
 				html_table += "<tr>";
 				html_table += "<th data-field='status' data-sortable='true' data-filter-control='input'><b><center>Status</b></center></th>";
 				html_table += "<th data-field='0' data-sortable='true' data-filter-control='input'><b><center>VarID</b></center></th>";
-				html_table += "<th data-field='1' data-sortable='true' data-filter-control='input'><b><center>V19:exon/intron</b></center></th>";
-				html_table += "<th data-field='11' data-sortable='true' data-filter-control='input'><b><center>V19:annot</b></center></th>";
-				html_table += "<th data-field='2' data-sortable='true' data-filter-control='input'><b><center>V19:nomenclature</b></center></th>";
-				html_table += "<th data-field='3' data-sortable='true' data-filter-control='input'><b><center>V19:cds_position</b></center></th>";
-				html_table += "<th data-field='4' data-sortable='true' data-filter-control='input'><b><center>V19:protein_position</b></center></th>";
-				html_table += "<th data-field='5' data-sortable='true' data-filter-control='input'><b><center>V19:aa</b></center></th>";
-				html_table += "<th data-field='6' data-sortable='true' data-filter-control='input'><b><center>V43:annot</b></center></th>";
-				html_table += "<th data-field='61' data-sortable='true' data-filter-control='input'><b><center>V43:exon/intron</b></center></th>";
-				html_table += "<th data-field='7' data-sortable='true' data-filter-control='input'><b><center>V43:nomenclature</b></center></th>";
-				html_table += "<th data-field='8' data-sortable='true' data-filter-control='input'><b><center>V43:cds_position</b></center></th>";
-				html_table += "<th data-field='9' data-sortable='true' data-filter-control='input'><b><center>V43:protein_positio</b></center></th>";
-				html_table += "<th data-field='10' data-sortable='true' data-filter-control='input'><b><center>V43:aa</b></center></th>";
+				html_table += "<th data-field='1' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " exon/intron</b></center></th>";
+				html_table += "<th data-field='11' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " annot</b></center></th>";
+				html_table += "<th data-field='2' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " nomenclature</b></center></th>";
+				html_table += "<th data-field='3' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " cds_position</b></center></th>";
+				html_table += "<th data-field='4' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " protein_position</b></center></th>";
+				html_table += "<th data-field='5' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " aa</b></center></th>";
+				html_table += "<th data-field='6' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " annot</b></center></th>";
+				html_table += "<th data-field='61' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " exon/intron</b></center></th>";
+				html_table += "<th data-field='7' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " nomenclature</b></center></th>";
+				html_table += "<th data-field='8' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " cds_position</b></center></th>";
+				html_table += "<th data-field='9' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " protein_positio</b></center></th>";
+				html_table += "<th data-field='10' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " aa</b></center></th>";
 				html_table += "</tr>";
 				html_table += "</thead>";
 				html_table += "<tbody>";
@@ -598,30 +623,33 @@
 			    	var i = 1;
 			    	var status;
 			    	$.each( data, function( key, val ) {
-			    		var color = 'green';
-			    		var list_res = String(val).split(';');
-			    		
-			    		var color = 'black';
-			    		if (list_res[1] != list_res[7]) {
-			    			color = 'red';
-			    			status = "<b>ERROR</b>";
-			    			nb_not++;
-		    			}
-			    		else if (list_res[6] != list_res[12]) {
-			    			color = 'orange';
-			    			status = "<b>WARN</b>";
-			    			nb_warn++;
-			    		}
+			    		if (key == 'progress') {}
 			    		else {
-			    			status = "<b><span style='color:green'>OK</span></b>";
-			    			nb_ok++;
+				    		var color = 'green';
+				    		var list_res = String(val).split(';');
+				    		
+				    		var color = 'black';
+				    		if (list_res[1] != list_res[7]) {
+				    			color = 'red';
+				    			status = "<b>ERROR</b>";
+				    			nb_not++;
+			    			}
+				    		else if (list_res[6] != list_res[12]) {
+				    			color = 'orange';
+				    			status = "<b>WARN</b>";
+				    			nb_warn++;
+				    		}
+				    		else {
+				    			status = "<b><span style='color:green'>OK</span></b>";
+				    			nb_ok++;
+				    		}
+				    		html_table += "<tr style='color:" + color + "'>";
+				    		html_table += "<td><center>" + status + "</center></td>";
+				    		for (i in list_res) {
+				    			html_table += "<td><center>" + list_res[i] + "</center></td>";
+				    		}
+				    		html_table += "</tr>"
 			    		}
-			    		html_table += "<tr style='color:" + color + "'>";
-			    		html_table += "<td><center>" + status + "</center></td>";
-			    		for (i in list_res) {
-			    			html_table += "<td><center>" + list_res[i] + "</center></td>";
-			    		}
-			    		html_table += "</tr>"
   					});
 					html_table += "</tbody>";
 					html_table += "</table>";
@@ -636,7 +664,7 @@
 					enable_table_search('table_res');
 			  })
 			  .fail(function() {
-					document.getElementById("content_res").innerHTML = "<center><b><u>ERROR:</u></b> Problem... transcript not found in gencode v19 ? or v43 ?</center>";
+					document.getElementById("content_res").innerHTML = "<center><b><u>ERROR:</u></b> Problem... transcript not found in gencode " + value_gencode_v1 + " ? or " + value_gencode_v2 + " ?</center>";
 			  });
 				
 			}
@@ -675,9 +703,8 @@
 		</nav>
 		<center>
 		<div class="row" style="height:auto;width:98%;">
-			<div class="col-sm-3"></div>
-			<div class="col-sm-6">
-			
+			<div class="col-sm-1"></div>
+			<div class="col-sm-4">
 				<form>
 					<div class="form-group">
 						<label for="transcript_name">Transcript Name</label>
@@ -690,20 +717,50 @@
 						<small id="trExemple" class="form-text text-muted">Example: 67759017 or 67765150-67765180</small>
 					</div>
 					<br><br>
-					<button type='button' disabled onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Export XLS</button>
-					<button type='button' onClick="view()" class='btn btn-info' style="background-color:blue;color:white;">VIEW</button>
 				</form>
-			
-				
 			</div>
-			<div class="col-sm-6">
-				<span id="span_gencode"></span><br>
-				<span id="span_description"></span><br>
-				<span id="span_captures"></span>
+			<div class="col-sm-1"></div>
+			<div class="col-sm-2">
+				<div class="form-group">
+					<label for="gencode_v1">Gencode TEST 1</label>
+					<input type="text" class="form-control" id="gencode_v1" aria-describedby="g1Exemple" placeholder="19">
+					<small id="g1Exemple" class="form-text text-muted">Example: 19</small>
+				</div>
+				<div class="form-group">
+					<label for="gencode_v2">Gencode TEST 2</label>
+					<input type="text" class="form-control" id="gencode_v2" aria-describedby="g2Exemple" placeholder="43">
+					<small id="g2Exemple" class="form-text text-muted">Example: 43</small>
+				</div>
 			</div>
-			</center>
+			<div class="col-sm-1"></div>
+			<div class="col-sm-2">
+				<br>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" id="skip_utr">
+					<label class="form-check-label" for="skip_utr">Skip UTR variant</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" id="skip_pseudogene">
+					<label class="form-check-label" for="skip_pseudogene">Skip Pseudogene variant</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" id="skip_intronic">
+					<label class="form-check-label" for="skip_intronic">Skip Intronic variant</label>
+				</div>
+				<br>
+				<!--
+				<button type='button' disabled onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Export XLS</button>
+				<br><br>
+				-->
+				<button type='button' onClick="view('snp')" class='btn btn-info' style="background-color:blue;color:white;">SNP</button>
+				<button type='button' onClick="view('del')" class='btn btn-info' style="background-color:orange;color:white;">DEL</button>
+				<button type='button' onClick="view('ins')" class='btn btn-info' style="background-color:green;color:white;">INS</button>
+			</div>
+			<div class="col-sm-1"></div>
 		</div>
-		<div class="col-sm-3"></div>
+		</center>
+		<div class="col-sm-1"></div>
+		<div class="col-sm-1"></div>
 		<div class="col-sm-12" align='left'>
 			<div class="row" id="content_res" style="width:99%;"></div>
 			<br>
