@@ -132,12 +132,26 @@ sub get{
  
 sub put{
 	my ($self,$key,$value) = @_;
+	
 	confess() unless $self->rocks;
 	$self->rocks->put($key,$self->encode($value));
 	#$self->_put_index($key) if ($self->is_index);
 } 
+sub close {
+	my ($self) =@_;
+	if ($self->mode ne "r"){
+		$self->rocks->compact_range();
+	}
+	#$self->DESTROY();
+	$self->{rocks} = undef;
+	$self = undef;
+}
 sub DESTROY {
 	my ($self) =@_;
+	#if ($self->mode ne "r"){
+	#	$self->rocks->compact_range();
+	#}
 	system("rm -f ".$self->path_rocks()."/LOG*");
+	system("rm -f ".$self->path_rocks()."/LOCK");
 }
 1;

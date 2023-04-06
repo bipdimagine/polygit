@@ -13,6 +13,7 @@ use List::MoreUtils qw{ natatime uniq};
 use Parallel::ForkManager;
 use Try::Catch;
 use Set::IntervalTree;
+use GenBoNoSqlRocks;
 
 my $dir;
 my $version;
@@ -34,20 +35,37 @@ my $file_gff = "$dir1/tabix/gencode.v".$version."lift37.annotation.gff3.gz";
 die($file_gff) unless -e $file_gff;
 
 #open (FILE,"zgrep \"remap_status=partial\" $file_gff | ");
-my $annot2 =  GenBoNoSqlLmdb->new(name=>"partial_transcripts",dir=>$dir1."/fasta/",mode=>"c",is_compress=>1);
+my $annot2 =  GenBoNoSqlRocks->new(name=>"partial_transcripts",dir=>$dir1."/fasta/",mode=>"c",is_compress=>1);
 
-
+$annot2->put("date",{time1=>time});
+$annot2->close();
 #my $annot2 =  GenBoNoSqlLmdb->new(name=>"partial_transcripts",dir=>$dir1."/fasta/",mode=>"c",is_compress=>1);
-my @genes =  `zgrep \"remap_status=partial\" $file_gff | awk \'\$3 \~ \/transcript\/\'`;
-chomp(@genes);
+my @all =  `zgrep \"remap_status=partial\" $file_gff | awk \'\$3 \~ \/transcript\|exon\/\'`;
+
+chomp(@all);
+my (@genes);
+my (@all_exons);
+foreach my $l (@all){
+	my @f = split(" ",$l);
+	if($f[2] =~ /transcript/){
+		push(@genes,$l);
+	}
+	elsif ($f[2] =~ /exon/){
+			push(@all_exons,$l);
+	}
+	else{
+		die($l);
+	}
+}
+
 my $max =  scalar(@genes);
 my $nb =0;
 my $sid= 0;
 my $hrun ={};
 my $pm           = new Parallel::ForkManager($fork);
 
-$annot2->put("date",time);
-$annot2->close();
+
+#$annot2->close();
 
 $pm->run_on_finish(
 	sub {
@@ -58,31 +76,37 @@ $pm->run_on_finish(
 			die();
 			return;
 		}
-		my $annot2 =  GenBoNoSqlLmdb->new(name=>"partial_transcripts",dir=>$dir1."/fasta/",mode=>"w",is_compress=>1);
+		#
 		#warn Dumper  $h->{data};
+		
 		delete $hrun->{$h->{run_id}};
+		my $annot2 =  GenBoNoSqlRocks->new(name=>"partial_transcripts",dir=>$dir1."/fasta/",mode=>"w",is_compress=>1);
 		foreach my $s ( @{ $h->{data} } ) {
 			my $tid = delete $s->{id};
 			$annot2->put( $tid, $s );
+			warn $tid;
 		}
+		
 		$annot2->close();
 	}
 );
 
 
-my $nbt = int(scalar(@genes)/$fork) +1;
+my $nbt = int(scalar(@genes)/($fork*1)) +1;
 my $it = natatime $nbt, @genes;
+
 while (my @vals = $it->())
 {
 		$sid++;
 		
 		$hrun->{$sid}++;
+		warn "NEXT";
 		my $pid = $pm->start and next;	
 		my $allres;
 		my $index19 = Bio::DB::HTS::Faidx->new($file19);
 		my $index38 = Bio::DB::HTS::Faidx->new($file38);
-		my $indexprot19 = Bio::DB::HTS::Faidx->new($dir_HG19.$fileprot);
-		my $indexprot38 = Bio::DB::HTS::Faidx->new($dir_HG38.$fileprot);
+		#my $indexprot19 = Bio::DB::HTS::Faidx->new($dir_HG19.$fileprot);
+		#my $indexprot38 = Bio::DB::HTS::Faidx->new($dir_HG38.$fileprot);
 		
 	$nb = 0;
 	 my $buffer = new GBuffer;
@@ -93,7 +117,7 @@ while (my @vals = $it->())
 	#next unless $l =~ /ENST00000433992/;
 	
 		$nb++;
-
+	#	next if $nb > 5;
 		my @F = split(" ",$l);
 		next  if $F[2] ne "transcript";
 	#next unless ($F[8] =~ /CCDS/);
@@ -102,7 +126,8 @@ while (my @vals = $it->())
 		#next if $nb < 100;
 		$chr =~s/chr//;
 		$chr = "MT" if $chr eq "M";
-	
+		my $coding;
+		$coding = 1 if ($F[8] =~ /protein_id/);
 		warn $nb."/".$nbt;
 		my @z =split(";",$F[8]);
 	
@@ -120,9 +145,10 @@ while (my @vals = $it->())
 		#my ($seq2, $length2) = $indexprot38->get_sequence("$enst");
 		#next if $seq1 && ($seq1 eq $seq2) ;
 		
-		my $res  = return_hash($enst,$index19,$index38,$buffer);
+		my $res  = return_hash($enst,$index19,$index38,$buffer,$coding);
 		next unless $res;
-		my @exons =  `zgrep \"$enst_ori\" $file_gff | awk \'\$3 \~ \/exon\/\'`;
+		
+		my @exons =  grep {$_ =~/$enst_ori/} @all_exons;#`zgrep \"$enst_ori\" $file_gff | awk \'\$3 \~ \/exon\/\'`;
 		chomp(@exons);
 		my $span = Set::IntSpan::Fast::XS->new;
 		foreach my $exonl (@exons) {
@@ -148,25 +174,30 @@ while (my @vals = $it->())
 		push(@{$allres->{data}},$res);
 }
 	$allres->{run_id} = $sid;
+	warn "END $sid";
 	$pm->finish( 0, $allres );
 }
 
 $pm->wait_all_children();
+my $iter = $annot2->rocks->new_iterator->seek_to_first;
+while (my ($key, $value) = $iter->each) {
+    printf "%s: %s\n", $key, $value;
+}
 die(Dumper ($hrun)) if keys %$hrun;
 #@seq_ids = ("ENST00000227471");
  exit(0);
 
  sub return_hash {
- 	my ($id,$index19,$index38,$buffer) = @_;
+ 	my ($id,$index19,$index38,$buffer,$coding) = @_;
 	
 	my ($seq1, $length) = $index19->get_sequence("$id");
-	my ($seq2, $length2) = $index38->get_sequence("$id");
+	my ($seq2, $length2) = $index38->get_sequence("$id");	
 	return unless $seq2;
-	
 	
 
 
  my $res = {};
+ 
 try{
 
 #warn $id unless $aln->{align1};
@@ -209,14 +240,15 @@ for (my $i=0;$i<@correspondence_table;$i++){
 #	warn $i." =>  ".$correspondence_table[$i];
 }
 
-
+$res->{seq38} = $seq2;
 }
 catch{
 	print $id."\n";
 	#print $seq1."\n".$seq2."\n";
 	die("$length $length2");
 };
-$res->{seq38} = $seq2;
+if($coding){
+$res->{protein_coding} = $coding;
 my @t = `zgrep $id $dir_HG38/transcripts.pc.fa.gz`;
 if (@t){
 my @l = split(/\|/,$t[0]);
@@ -226,16 +258,15 @@ $res->{HG38}->{cds}->{start} = $1;
 $res->{HG38}->{cds}->{end} = $2;
 $res->{HG38}->{cds}->{length} = $length2;
 }
-
 #unless (exists $res->{HG38}->{cds}){
-unless (exists $res->{HG38}->{cds}->{start} ){	
+	
+unless (exists $res->{HG38} ){
+		
 	my @lines =  `zgrep \"$id\" $file_gff_HG38 | awk \'\$3 \~ \/exon\|CDS\/\'`;
 	chomp(@lines);
-	#warn Dumper @lines;
 	readGtf(\@lines,$res);
-	warn Dumper $res;
 }
-	
+}
 #	}
 return $res;
  }
@@ -271,7 +302,7 @@ foreach my $line (@$lines){
     my $start     = $columns[3];
     my $end       = $columns[4];
     my $score     = $columns[5];
-     my $cstrand    = $columns[6];
+    my $cstrand    = $columns[6];
     my $frame     = $columns[7];
     my $attribute = $columns[8];
 	$strand = -1 if $cstrand eq "-";
@@ -356,12 +387,12 @@ foreach my $line (@$lines){
  
  sub return_alignment {
  	my ($buffer,$seq1,$seq2) = @_;
- 	if (length($seq1)>500){
+ 	#if (length($seq1)>50){
  		return return_long_alignment($seq1,$seq2);
- 	}
- 	else {
- 		return return_normal_alignment($buffer,$seq1,$seq2);
- 	}
+ 	#}
+ 	#else {
+ 	#	return return_normal_alignment($buffer,$seq1,$seq2);
+ 	#}
  }
  
 sub return_normal_alignment {
