@@ -14,7 +14,7 @@ my $file_ori =  $fai.".ori";
 
 system("cp $fai $file_ori");
 die("mv $file.fai $file_ori") unless -e $file_ori;
-
+ 
 open(FAI,"$file_ori");
 open(FAI_OUT,">$fai");
 while(<FAI>){
