@@ -100,7 +100,6 @@ while (my @vals = $it->())
 		$sid++;
 		
 		$hrun->{$sid}++;
-		warn "NEXT";
 		my $pid = $pm->start and next;	
 		my $allres;
 		my $index19 = Bio::DB::HTS::Faidx->new($file19);
@@ -179,9 +178,10 @@ while (my @vals = $it->())
 }
 
 $pm->wait_all_children();
+ $annot2 =  GenBoNoSqlRocks->new(name=>"partial_transcripts",dir=>$dir1."/fasta/",mode=>"r",is_compress=>1);
 my $iter = $annot2->rocks->new_iterator->seek_to_first;
 while (my ($key, $value) = $iter->each) {
-    printf "%s: %s\n", $key, $value;
+    printf "%s \n", $key;
 }
 die(Dumper ($hrun)) if keys %$hrun;
 #@seq_ids = ("ENST00000227471");
