@@ -76,6 +76,7 @@ else {
 		my $buffer_test = GBuffer->new();
 		my $project_test = $buffer_test->newProject(-name => $project_name);
 		if ($project_test->annotation_genome_version() eq $build_use and ($project_test->isDiagnostic() or $project_test->isGenome() or $project_test->isExome())) {
+			
 			$project_test = undef;
 			$buffer_test = undef;
 			$projectTmp = $buffer->newProject(-name => $project_name);
@@ -84,7 +85,11 @@ else {
 	}
 	die unless ($projectTmp);
 	if ($annot_version) { $projectTmp->changeAnnotationVersion( $annot_version, 1 ); }
-	else { $projectTmp->changeAnnotationVersion( $projectTmp->buffer->getQuery->getCurrentGenomeProjectReleasesAnntotations(), 1 ); }
+	else {
+		my $max_gencode = $projectTmp->buffer->getQuery->getMaxGencodeVersion();
+		my $max_annot = $projectTmp->buffer->getQuery->getMaxPublicDatabaseVersion();
+		$projectTmp->changeAnnotationVersion( $max_gencode.'.'.$max_annot, 1 );
+	}
 }
 
 $projectTmp->cgi_object(1);
@@ -429,9 +434,6 @@ sub _getVarGeneralDetails {
 	}
 	#warn $objAnalyse;
 	my @lFilters;
-	
-	
-	
 	$hash->{'varId'} = $varId;
 	if ($var->rs_name()) { $hash->{'varId'} .= ';'.$var->rs_name(); }
 	elsif ($var->isInsertion()) { $hash->{'varId'} .= ';'.$var->name(); }
@@ -713,7 +715,7 @@ sub _getPatProjHoHeNbFromHash {
 		}
 		else {
 			my $buffer_pheno = GBuffer->new();
-			my $project_pheno = $buffer->newProject(-name => $projName);
+			my $project_pheno = $buffer_pheno->newProject(-name => $projName);
 			my @lPheno;
 			foreach my $pheno_obj (@{$project_pheno->getPhenotypes()}) {
 				push(@lPheno, $pheno_obj->name());
