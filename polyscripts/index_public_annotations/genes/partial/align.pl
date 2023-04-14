@@ -41,8 +41,9 @@ $annot2->put("date",{time1=>time});
 $annot2->close();
 #my $annot2 =  GenBoNoSqlLmdb->new(name=>"partial_transcripts",dir=>$dir1."/fasta/",mode=>"c",is_compress=>1);
 my @all =  `zgrep \"remap_status=partial\" $file_gff | awk \'\$3 \~ \/transcript\|exon\/\'`;
-
 chomp(@all);
+
+
 my (@genes);
 my (@all_exons);
 foreach my $l (@all){
@@ -52,6 +53,20 @@ foreach my $l (@all){
 	}
 	elsif ($f[2] =~ /exon/){
 			push(@all_exons,$l);
+	}
+	else{
+		die($l);
+	}
+}
+
+
+my @all_grep_status_exons =  `zgrep \"exon\" $file_gff | awk \'\$3 \~ \/exon\/\'`;
+chomp(@all_grep_status_exons);
+my (@all_status_exons);
+foreach my $l (@all_grep_status_exons){
+	my @f = split(" ",$l);
+	if ($f[2] =~ /exon/){
+		push(@all_status_exons,$l);
 	}
 	else{
 		die($l);
@@ -113,7 +128,7 @@ while (my @vals = $it->())
 		
 	next if $l =~ /ENST00000674361/;
 	#$l = "ENST00000227471";
-	#next unless $l =~ /ENST00000433992/;
+#	next unless $l =~ /ENST00000227471/;
 	
 		$nb++;
 	#	next if $nb > 5;
@@ -149,23 +164,27 @@ while (my @vals = $it->())
 		
 		my @exons =  grep {$_ =~/$enst_ori/} @all_exons;#`zgrep \"$enst_ori\" $file_gff | awk \'\$3 \~ \/exon\/\'`;
 		chomp(@exons);
+		
+		my @exons_all =  grep {$_ =~/$enst_ori/} @all_status_exons;#`zgrep \"$enst_ori\" $file_gff | awk \'\$3 \~ \/exon\/\'`;
+		chomp(@exons_all);
+		
 		my $span = Set::IntSpan::Fast::XS->new;
-		foreach my $exonl (@exons) {
+		foreach my $exonl (@exons_all) {
 			my @l = split(" ",$exonl);
 			$span->add_range($l[3],$l[4]);
 		}
-		my $iter = $span->iterate_runs();
 		
 		$res->{splice_site_span} = Set::IntSpan::Fast::XS->new;
 		$res->{essential_splice_site_span} = Set::IntSpan::Fast::XS->new;
+		
+		my $iter = $span->iterate_runs();
     	while (my ( $start, $end ) = $iter->()) {
-    	$res->{essential_splice_site_span}->add_range($start-2,$start-1);
-		$res->{essential_splice_site_span}->add_range($end+1,$end+2);
-		$res->{splice_site_span}->add_range($start-8,$start-2);
-		$res->{splice_site_span}->add_range($start,$start+2);
-		$res->{splice_site_span}->add_range($end+2,$end+8);
-		$res->{splice_site_span}->add_range($end-2,$end);
-    		
+	    	$res->{essential_splice_site_span}->add_range($start-2,$start-1);
+			$res->{essential_splice_site_span}->add_range($end+1,$end+2);
+			$res->{splice_site_span}->add_range($start-8,$start-2);
+			$res->{splice_site_span}->add_range($start,$start+2);
+			$res->{splice_site_span}->add_range($end+2,$end+8);
+			$res->{splice_site_span}->add_range($end-2,$end);
     	}
 		
 		$res->{id} = $enst_ori."_".$chr;
