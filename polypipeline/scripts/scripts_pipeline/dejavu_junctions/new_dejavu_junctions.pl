@@ -177,20 +177,6 @@ foreach my $this_project_name (keys %$hash_projects) {
 	$buffer_tmp = undef;
 }
 
-my $h_count;
-foreach my $chr_id (keys %$h_junctions) {
-	my $nb = scalar keys %{$h_junctions->{$chr_id}};
-	$h_count->{$chr_id} += $nb;
-	$h_count->{total} += $nb;
-}
-foreach my $chr_id (keys %$h_junctions_canonique) {
-	my $nb = scalar keys %{$h_junctions_canonique->{$chr_id}};
-	$h_count->{$chr_id} += $nb;
-	$h_count->{total} += $nb;
-}
-warn Dumper $h_count;
-die;
-
 
 print "\n# INSERT in DejaVuLMDB Junctions\n";
 my $nodejavu = GenBoNoSqlDejaVuJunctions->new( dir => $dir, mode => "c" );
