@@ -858,6 +858,7 @@
 	    		}
 	    		else {
 		    		show_waiting('Checking...');
+	    			document.getElementById("span_gencode").innerHTML = "";
 	    			document.getElementById("span_nb_genes_filters").innerHTML = "";
 	    			document.getElementById("span_nb_genes_errors").innerHTML = "";
     				document.getElementById("resume_nb_genes_selected").innerHTML = "";
@@ -896,10 +897,14 @@
 								myPanel.appendTo(myNode);
 		    					dijit.byId('waiting').hide();
 				    		}
+				    		if (key == 'gencode') {
+				    			gencode_version = value;
+				    		}
 	  					});
 				    });
 			    }
 	    	}
+	    	var gencode_version = '';
 	    	
 	    	function reload_score_gene (use_args) {
 			    show_waiting("Updating gene(s) score(s) !");

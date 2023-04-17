@@ -162,10 +162,7 @@ while (my @vals = $it->())
 		my $res  = return_hash($enst,$index19,$index38,$buffer,$coding);
 		next unless $res;
 		
-		my @exons =  grep {$_ =~/$enst_ori/} @all_exons;#`zgrep \"$enst_ori\" $file_gff | awk \'\$3 \~ \/exon\/\'`;
-		chomp(@exons);
-		
-		my @exons_all =  grep {$_ =~/$enst_ori/} @all_status_exons;#`zgrep \"$enst_ori\" $file_gff | awk \'\$3 \~ \/exon\/\'`;
+		my @exons_all =  grep {$_ =~/$enst_ori/} @all_status_exons;
 		chomp(@exons_all);
 		
 		my $span = Set::IntSpan::Fast::XS->new;
