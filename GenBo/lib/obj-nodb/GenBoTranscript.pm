@@ -45,7 +45,7 @@ has hash_partial_infos => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		my $no = $self->getProject->lmdbPartialTranscripts();
+		my $no = $self->getProject->rocksPartialTranscripts();
 		return unless $no;
 		my $h = $no->get($self->id);
 		return $h if $h;
@@ -886,17 +886,12 @@ sub get_correct_translate_position_hg38 {
 	my ($self, $pos) = @_;
 	return 0 if not $self->is_partial_transcript();
 	return 0 unless $self->hash_partial_infos;
-	if (exists $self->hash_partial_infos->{splice_site_span}) {
-		$self->getSpanSpliceSite->empty();
-		$self->getSpanSpliceSite->add_from_string( $self->hash_partial_infos->{splice_site_span}->as_string() );
-	}
-	if (exists $self->hash_partial_infos->{essential_splice_site_span}) {
-		$self->getSpanEssentialSpliceSite->empty();
-		$self->getSpanEssentialSpliceSite->add_from_string( $self->hash_partial_infos->{essential_splice_site_span}->as_string() );
-	}
-	#TODO: enlever les if pour les ORF. Ca doit planter si pas present
-	$self->{orf_start_new} = $self->hash_partial_infos->{HG38}->{cds}->{start} if (exists $self->hash_partial_infos->{HG38}->{cds}->{start});
-	$self->{orf_end_new} = $self->hash_partial_infos->{HG38}->{cds}->{end} if (exists $self->hash_partial_infos->{HG38}->{cds}->{end});
+	$self->getSpanSpliceSite->empty();
+	$self->getSpanSpliceSite->add_from_string( $self->hash_partial_infos->{splice_site_span}->as_string() );
+	$self->getSpanEssentialSpliceSite->empty();
+	$self->getSpanEssentialSpliceSite->add_from_string( $self->hash_partial_infos->{essential_splice_site_span}->as_string() );
+	$self->{orf_start_new} = $self->hash_partial_infos->{HG38}->{cds}->{start};
+	$self->{orf_end_new} = $self->hash_partial_infos->{HG38}->{cds}->{end};
 	foreach my $nt (sort {$b <=> $a} keys %{$self->hash_partial_infos->{intspan}}) {
 		if ($self->hash_partial_infos->{intspan}->{$nt}->contains($pos)) {
 			return $nt;

@@ -461,7 +461,7 @@ function onSearchAll_polyviewer (input,name){
                     dojo.connect(tabs,"_transition", function(newPage, oldPage) {
                         if (newPage.id =="tab_project"){
                         	window.onresize();
-                        	if (summary_panel_loaded == 2) {}
+                        	if (view_only_polysplice == 1) {}
                             else { just_reload_project(); }
                         }
                     });
@@ -499,7 +499,7 @@ function fillgridPatients(){
 
      }
 
-
+var view_only_polysplice = 0;
 var view_polysplice = 0;
 function check_polysplice() {
 	var patient_name;
@@ -569,7 +569,7 @@ function just_reload_project(){
 		this_panel = 'sysid';
 	}
 	document.getElementById("summary").innerHTML =" Reload";
-	var url_project = url_summary;
+	var url_project = url_summary_panel_devtest;
 	var this_args = "project="+project_name+"&panel="+this_panel+"&user_name="+cookie_username;
 	var xhr = new XMLHttpRequest();
 	
@@ -592,11 +592,11 @@ function reload_project(force){
 	if (is_project_update == 'yes') {
 		this_panel = 'sysid';
 	}
-	var url_project = url_summary;
+	var url_project = url_summary_panel_devtest;
 	var this_args = "project="+project_name+"&panel="+this_panel+"&user_name="+cookie_username;
-	if(force){
+//	if(force){
 		 this_args = this_args+"&force=1";
-	}
+//	}
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', url_project, true);
 	xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
@@ -1172,154 +1172,167 @@ var view_polydiag =0;
 	<div data-dojo-type="dijit.layout.ContentPane" id="div_header_container" data-dojo-props="region:'top'" style="width: 100%;padding:0px;max-height:400px;overflow-y:hidden;background-color:#363945;border:0px;" >
 		<div class="container" style="max-height:400px;width:100%;" onmouseleave="window.onresize();" onmouseenter="window.onresize();">
 		  <div id="row_header" class="row" style="min-height:80px;border-bottom:solid 3px #363945;">
-		    <div class="col-sm-3 col-lg-2" id="div_header_logo" style="padding-left:5px;overflow-y:hidden;">
-		    	<table>
-		    		<tr>
-						<div id="header" jsId="header" data-dojo-type="dijit.layout.ContentPane" style="width:100%;padding:0px;padding-top:10px;height:auto;overflow-y:hidden;background-color:#363945;border:0px;" ></div>
-		    		</tr>
-		    	</table>
-		    </div>
-		    <div class="col-sm-7 col-lg-8" style="padding-bottom:5px;">
+		  
+		  
+		    <div class="col-sm-10 " id="div_header_logo" style="padding-left:5px;overflow-y:hidden;">
 		    	<div class="row">
-		    		<div class="col-sm-12" style="height:10px;"></div>
-		    		
-		    		<div class="col-sm-5" id="div_toolbar_samples" style="background-color:#363945;height:75px;padding-left:8px;padding-right:8px;overflow-y:scroll;">
-	    				<table style="width:100%;overflow-x:scroll;">
-	    					<td>
-	    						<center><button style="color:white;font-size:30px;background-color:#363945;border:0px;margin-top:5px;" onmouseover="document.getElementById('b_tab_project2').style.borderBottom='0px solid white'" onmouseout="document.getElementById('b_tab_project2').style.borderBottom='0px solid white'" id="b_tab_project2" onClick="click_button_project_resume()"><span style="padding:7px;padding-left:5px;border:solid 2.2px white;border-radius:11px;" class='glyphicon glyphicon-home'></span></button></center>
-	    					</td>
-	    					<td style="padding-left:25px;float:left;margin-top:5px;">
-    							<table style="vertical-align:middle;">
+		    		<div class="col-sm-2" id="div_header_logo" style="padding-left:5px;padding-top:8px;overflow-y:hidden;overflow-x:hidden;">
+		    			<center>
+							<div id="header" jsId="header" data-dojo-type="dijit.layout.ContentPane" style="padding:0px;padding-top:10px;height:auto;overflow-y:hidden;background-color:#363945;border:0px;" ></div>
+						</center>
+				    </div>
+				    
+				    
+				    <div class="col-sm-10" style="padding-bottom:5px;">
+				    	<div class="row">
+				    		<div class="col-sm-12" style="height:10px;"></div>
+				    		
+				    		<div class="col-sm-6" id="div_toolbar_samples" style="background-color:#363945;height:75px;padding-left:8px;padding-right:8px;overflow-x:auto;">
+				    			<div class="row">
+					    			<div class="col-sm-6">
+					    				<center>
+						    				<table style="width:100%;overflow-x:scroll;">
+						    					<td>
+						    						<center><button style="color:white;font-size:30px;background-color:#363945;border:0px;margin-top:5px;" onmouseover="document.getElementById('b_tab_project2').style.borderBottom='0px solid white'" onmouseout="document.getElementById('b_tab_project2').style.borderBottom='0px solid white'" id="b_tab_project2" onClick="click_button_project_resume()"><span style="padding:7px;padding-left:5px;border:solid 2.2px white;border-radius:11px;" class='glyphicon glyphicon-home'></span></button></center>
+						    					</td>
+						    					<td style="padding-left:15px;float:left;margin-top:9px;">
+					    							<table style="vertical-align:middle;">
+								    					<tr>
+										    				<button id="b_select_extra_options" onclick="select_navigation_menu('extra_options')" type="button" onmouseover="document.getElementById('b_select_extra_options').style.borderBottom='1px solid white'" onmouseout="document.getElementById('b_select_extra_options').style.borderBottom='0px solid white'" style="margin-bottom:2px;color:white;font-size:9px;background-color:#363945;border:0px;"><b><i>&nbsp;IGV / Alamut&nbsp;</i><span class="glyphicon glyphicon-link"></b></button>
+													  	</tr>
+								    					<tr>
+								    						<center><button id="b_select_samples" onclick="select_navigation_menu('samples')" onmouseover="document.getElementById('b_select_samples').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_samples').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Samples&nbsp;(<span id="span_header_nb_patients"><img style="background-color:white;border-radius:20px;" src='images/polyicons/wait18trans.gif'></img></span> founded)</button></center>
+													  	</tr>
+								    				</table>
+					    						</td>
+											</table>
+										</center>
+									</div>	
+					    			<div class="col-sm-6">
+				    					<center>
+						    				<div id="b_dropdown_list_patients" style="margin-top:8px;display:none;white-space: nowrap;background-color:white !important;color:black;border-radius:6px;border:4px double #363945;height:45px;padding-right:5px;width:fit-content;" >
+										    	<span id="span_patient_selected_text" style="white-space: nowrap"><img src='images/polyicons/wait18trans.gif'></img> <i>Loading patient(s)...</i></span>
+										  	</div>
+						    			</center>
+									</div>	
+								</div>
+			    			</div>
+			    			
+				    		
+			    			<div class="col-sm-6" id="div_toolbar" style="background-color:#363945;height:75px;display:none;overflow-y:scroll;">
+			    				<table>
 			    					<tr>
-					    				<button id="b_select_extra_options" onclick="select_navigation_menu('extra_options')" type="button" onmouseover="document.getElementById('b_select_extra_options').style.borderBottom='1px solid white'" onmouseout="document.getElementById('b_select_extra_options').style.borderBottom='0px solid white'" style="margin-bottom:2px;color:white;font-size:9px;background-color:#363945;border:0px;"><b><i>&nbsp;IGV / Alamut&nbsp;</i><span class="glyphicon glyphicon-link"></b></button>
-								  	</tr>
-			    					<tr>
-			    						<center><button id="b_select_samples" onclick="select_navigation_menu('samples')" onmouseover="document.getElementById('b_select_samples').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_samples').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Samples&nbsp;(<span id="span_header_nb_patients"><img style="background-color:white;border-radius:20px;" src='images/polyicons/wait18trans.gif'></img></span> founded)</button></center>
-								  	</tr>
-			    				</table>
-    						</td>
-			    			<td style="padding-left:25px;float:right;padding-right:5px;margin-top:8px;">
-			    				<button disabled class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients" style="display:none;white-space: nowrap;background-color:white !important;color:black;border-radius:6px;border:1px solid black;border: 1px solid black;" >
-							    	<span id="span_patient_selected_text" style="white-space: nowrap"><img src='images/polyicons/wait18trans.gif'></img> <i>Loading patient(s)...</i></span>
-							  	</button>
-							</td>
-						</table>	
-	    			</div>
-		    		
-		    		
-	    			<div class="col-sm-7" id="div_toolbar" style="background-color:#363945;height:75px;display:none;overflow-y:scroll;">
-	    				<table>
-	    					<tr>
-			    				<div class="row">
-			    					<div class="col-sm-3" id="td_b_select_polyviewer" style="display:none;">
-			    						<center><button id="b_select_polyviewer" type="button" onmouseover="document.getElementById('b_select_polyviewer').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polyviewer').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polyviewer()">&nbsp;&nbsp;PolyViewer&nbsp;&nbsp;</button></center>
+					    				<div class="row">
+					    					<div class="col-sm-4" id="td_b_select_polyviewer" style="display:none;">
+					    						<center><button id="b_select_polyviewer" type="button" onmouseover="document.getElementById('b_select_polyviewer').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polyviewer').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polyviewer()">&nbsp;&nbsp;PolyViewer&nbsp;&nbsp;</button></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_b_select_polydiag" style="display:none;">
+					    						<center><button id="b_select_polydiag" type="button" onmouseover="document.getElementById('b_select_polydiag').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polydiag').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polydiag()">&nbsp;&nbsp;Variations Editor&nbsp;&nbsp;</button></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_b_select_polydupdel" style="display:none;">
+					    						<center><button id="b_select_polydupdel" type="button" onmouseover="document.getElementById('b_select_polydupdel').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polydupdel').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polydupdel()">&nbsp;&nbsp;PolyDupDel&nbsp;&nbsp;</button></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_b_select_polycyto" style="display:none;">
+					    						<center><button id="b_select_polycyto" type="button" onmouseover="document.getElementById('b_select_polycyto').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polycyto').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polycyto()">&nbsp;&nbsp;PolyCyto&nbsp;&nbsp;</button></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_b_select_polysplice" style="display:none;">
+					    						<center><button id="b_select_polysplice" type="button" onmouseover="document.getElementById('b_select_polysplice').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polysplice').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polysplice()">&nbsp;&nbsp;PolySplice&nbsp;&nbsp;</button></center>
+					    					</div>
+				    					</div>
+			    					</tr>
+									<tr>    					
+					    				<div class="row">
+					    					<div class="col-sm-4" id="td_span_triangle_select_polyviewer" style="display:none;">
+					    						<center><span id="span_triangle_select_polyviewer" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_span_triangle_select_polydiag" style="display:none;">
+					    						<center><span id="span_triangle_select_polydiag" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_span_triangle_select_polydupdel" style="display:none;">
+					    						<center><span id="span_triangle_select_polydupdel" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_span_triangle_select_polycyto" style="display:none;">
+					    						<center><span id="span_triangle_select_polycyto" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+					    					</div>
+					    					<div class="col-sm-4" id="td_span_triangle_select_polysplice" style="display:none;">
+					    						<center><span id="span_triangle_select_polysplice" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
+					    					</div>
+				    					</div>
+			    					</tr>
+		    					</table>
+				    		</div>
+				    		
+				    		<div class="col-sm-12" id="div_menu_samples" style="display:none;border:solid 1px #363945;border-top:0px;background-color:#363945;height:auto;max-height:270px;overflow-y:scroll;overflow-x:hidden;margin-bottom:10px;">
+				    			<div class="row">
+				    				<div class="col-sm-12" style="margin-left:8px;background-color:#363945;border:solid 0.5px #363945;padding-left:0px;padding-right:0px;margin-top: 0px;margin-bottom: 0px;">
+				    					<table style="width:100%;">
+				    						<td style="width:60%;">
+				    							<input type='text' id="input_search_patient" class='form-control' placeholder='Quick Search' onkeyup="filter_list_dropdown_patients()" style='font-size:13px;max-width:350px;height:20px;margin-right:5px;margin:3px;margin-left:0px;padding-right:3px;background-color:white;border:2px solid #363945; '></input>
+			    							</td>
+			    							<td style="float:right;padding-right:8px;">
+					    						<div class="btn-group" style="margin-left:8px;" id="b_group_select_all_pat" role="group">
+													<button id="b_select_all_pat" type="button" class="btn btn-xs btn-default" style="display:none;font-size:11px;border-radius-left:20px;margin:0px;height:26px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="select_all_patients()">Select ALL</button>
+													<button id="b_unselect_all_pat" type="button" class="btn btn-xs btn-default" style="display:none;font-size:11px;border-radius-right:20px;margin:0px;height:26px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="unselect_all_patients()">Unselect ALL</button>
+												</div>
+			    							</td>
+		    							</table>
 			    					</div>
-			    					<div class="col-sm-3" id="td_b_select_polydiag" style="display:none;">
-			    						<center><button id="b_select_polydiag" type="button" onmouseover="document.getElementById('b_select_polydiag').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polydiag').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polydiag()">&nbsp;&nbsp;Variations Editor&nbsp;&nbsp;</button></center>
-			    					</div>
-			    					<div class="col-sm-3" id="td_b_select_polydupdel" style="display:none;">
-			    						<center><button id="b_select_polydupdel" type="button" onmouseover="document.getElementById('b_select_polydupdel').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polydupdel').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polydupdel()">&nbsp;&nbsp;PolyDupDel&nbsp;&nbsp;</button></center>
-			    					</div>
-			    					<div class="col-sm-3" id="td_b_select_polycyto" style="display:none;">
-			    						<center><button id="b_select_polycyto" type="button" onmouseover="document.getElementById('b_select_polycyto').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polycyto').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polycyto()">&nbsp;&nbsp;PolyCyto&nbsp;&nbsp;</button></center>
-			    					</div>
-			    					<div class="col-sm-3" id="td_b_select_polysplice" style="display:none;">
-			    						<center><button id="b_select_polysplice" type="button" onmouseover="document.getElementById('b_select_polysplice').style.borderBottom='3px solid white'" onmouseout="document.getElementById('b_select_polysplice').style.borderBottom='1px solid white'" style="margin-top:8px;color:white;font-size:14px;background-color:#363945;border:0px;border-bottom:1px solid white;" onClick="click_button_view_polysplice()">&nbsp;&nbsp;PolySplice&nbsp;&nbsp;</button></center>
-			    					</div>
-		    					</div>
-	    					</tr>
-							<tr>    					
-			    				<div class="row">
-			    					<div class="col-sm-3" id="td_span_triangle_select_polyviewer" style="display:none;">
-			    						<center><span id="span_triangle_select_polyviewer" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
-			    					</div>
-			    					<div class="col-sm-3" id="td_span_triangle_select_polydiag" style="display:none;">
-			    						<center><span id="span_triangle_select_polydiag" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
-			    					</div>
-			    					<div class="col-sm-3" id="td_span_triangle_select_polydupdel" style="display:none;">
-			    						<center><span id="span_triangle_select_polydupdel" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
-			    					</div>
-			    					<div class="col-sm-3" id="td_span_triangle_select_polycyto" style="display:none;">
-			    						<center><span id="span_triangle_select_polycyto" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
-			    					</div>
-			    					<div class="col-sm-3" id="td_span_triangle_select_polysplice" style="display:none;">
-			    						<center><span id="span_triangle_select_polysplice" style="display:none;color:white;font-size:30px;top:0px;" class="glyphicon glyphicon-triangle-top"></span></center>
-			    					</div>
-		    					</div>
-	    					</tr>
-    					</table>
-		    		</div>
-		    		
-		    		<div class="col-sm-12" id="div_menu_samples" style="display:none;border:solid 1px #363945;border-top:0px;background-color:#363945;height:auto;max-height:270px;overflow-y:scroll;overflow-x:hidden;margin-bottom:10px;">
-		    			<div class="row">
-		    				<div class="col-sm-12" style="margin-left:8px;background-color:#363945;border:solid 0.5px #363945;padding-left:0px;padding-right:0px;margin-top: 0px;margin-bottom: 0px;">
-		    					<table style="width:100%;">
-		    						<td style="width:60%;">
-		    							<input type='text' id="input_search_patient" class='form-control' placeholder='Quick Search' onkeyup="filter_list_dropdown_patients()" style='font-size:13px;max-width:350px;height:20px;margin-right:5px;margin:3px;margin-left:0px;padding-right:3px;background-color:white;border:2px solid #363945; '></input>
-	    							</td>
-	    							<td style="float:right;padding-right:8px;">
-			    						<div class="btn-group" style="margin-left:8px;" id="b_group_select_all_pat" role="group">
-											<button id="b_select_all_pat" type="button" class="btn btn-xs btn-default" style="display:none;font-size:11px;border-radius-left:20px;margin:0px;height:26px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="select_all_patients()">Select ALL</button>
-											<button id="b_unselect_all_pat" type="button" class="btn btn-xs btn-default" style="display:none;font-size:11px;border-radius-right:20px;margin:0px;height:26px;background-color:white;color:black;border:1px solid black;margin-left:0px;" onClick="unselect_all_patients()">Unselect ALL</button>
-										</div>
-	    							</td>
-    							</table>
-	    					</div>
-		    				<div class="col-sm-12" id="div_row_samples" style="overflow-x:hidden;margin-left:8px;background-color:#363945;border:solid 0.5px #363945;padding-left:0px;padding-right:0px;"></div>
-		    				<div class="col-sm-12" style="background-color:#363945;height:5px"></div>
-		    			</div>
-		    		</div>
-		    		
-		    		<div class="col-sm-12" id="div_menu_extra_options" style="display:none;border-top:0px;">
-		    			<div class="row">
-		    				<div class="col-sm-5" style="padding-bottom:5px;background-color:#363945;float:left;border: solid 1px white;">
-		    					<table style="float:right;width:100%;">
-		    						<tr>
-		    							<td>
-		    								<span style="display:none;float:right;padding-right:5px;color:white;font-size:14px;top:0px;" id="span_triangle_extra_options" class="glyphicon glyphicon-triangle-top"></span>
-	    								</td>
-		    						</tr>
-								  	<tr>
-								  		<td>
-								  			<div class="dropdown" style="white-space: nowrap;float:left;padding-right:5px;padding-top:5px;">
-								  				<span style="color:white;font-size:14px;">ADD Bam File in </span>
-												<button onmouseover="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_igv" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
-													<img src="images/polyicons/igv_button_small.png"></img>
-												</button>
-												<div class="dropdown-menu" id="b_menu_dropdown_list_patients_bam_igv" aria-labelledby="b_dropdown_list_patients_bam_igv" style="top:0;left:-200px;margin-top:-75px;max-height:138px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
-											</div>
-							  			</td>
-		    							<td>
-		    								<input id="b_check_igv" name="check_igv" data-dojo-type="dijit/form/CheckBox" value="1" checked onChange="checkWindowIGV(this);" /> <label for="mycheck" style="font-size:8px;color:white;">IGV-js</label>
-		    							</td>
-               							<td>
-               								<button type="button" data-dojo-type="dijit/form/Button" id="b_igv_reset_2" onclick="igv_reset"><span style="font-size:8px">IGV reset </span></button>
-               							</td>
-								  	</tr>
-								  	<tr>
-								  		<td>
-											<div class="dropdown" style="white-space: nowrap;float:left;padding-right:5px;" onHide="alert('2');">
-								  				<span style="color:white;font-size:14px;">ADD Bam File in </span>
-												<button onmouseover="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_alamut" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
-													<img src="images/polyicons/alamut_visual.png"></img>
-												</button>
-											  	<div class="dropdown-menu" id="b_menu_ddropdown_list_patients_bam_alamut" aria-labelledby="b_dropdown_list_patients_bam_alamut" style="top:-20px;left:-200px;margin-top:-90px;max-height:138px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
-											</div>
-							  			</td>
-		    							<td></td>
-		    							<td></td>
-								  	</tr>
-							  	</table>
-		    				</div>
-		    				<div class="col-sm-7"></div>
-		    			</div>
-		    		</div>
-		    	
-	    		</div>
+				    				<div class="col-sm-12" id="div_row_samples" style="overflow-x:hidden;margin-left:8px;background-color:#363945;border:solid 0.5px #363945;padding-left:0px;padding-right:0px;"></div>
+				    				<div class="col-sm-12" style="background-color:#363945;height:5px"></div>
+				    			</div>
+				    		</div>
+				    		
+				    		<div class="col-sm-12" id="div_menu_extra_options" style="display:none;border-top:0px;">
+				    			<div class="row">
+				    				<div class="col-sm-5" style="padding-bottom:5px;background-color:#363945;float:left;border: solid 1px white;">
+				    					<table style="float:right;width:100%;">
+				    						<tr>
+				    							<td>
+				    								<span style="display:none;float:right;padding-right:5px;color:white;font-size:14px;top:0px;" id="span_triangle_extra_options" class="glyphicon glyphicon-triangle-top"></span>
+			    								</td>
+				    						</tr>
+										  	<tr>
+										  		<td>
+										  			<div class="dropdown" style="white-space: nowrap;float:left;padding-right:5px;padding-top:5px;">
+										  				<span style="color:white;font-size:14px;">ADD Bam File in </span>
+														<button onmouseover="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_igv').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_igv" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
+															<img src="images/polyicons/igv_button_small.png"></img>
+														</button>
+														<div class="dropdown-menu" id="b_menu_dropdown_list_patients_bam_igv" aria-labelledby="b_dropdown_list_patients_bam_igv" style="top:0;left:-200px;margin-top:-75px;max-height:138px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
+													</div>
+									  			</td>
+				    							<td>
+				    								<input id="b_check_igv" name="check_igv" data-dojo-type="dijit/form/CheckBox" value="1" checked onChange="checkWindowIGV(this);" /> <label for="mycheck" style="font-size:8px;color:white;">IGV-js</label>
+				    							</td>
+		               							<td>
+		               								<button type="button" data-dojo-type="dijit/form/Button" id="b_igv_reset_2" onclick="igv_reset"><span style="font-size:8px">IGV reset </span></button>
+		               							</td>
+										  	</tr>
+										  	<tr>
+										  		<td>
+													<div class="dropdown" style="white-space: nowrap;float:left;padding-right:5px;" onHide="alert('2');">
+										  				<span style="color:white;font-size:14px;">ADD Bam File in </span>
+														<button onmouseover="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='2px solid white'" onmouseout="document.getElementById('b_dropdown_list_patients_bam_alamut').style.border='1px solid black'" class="btn btn-xs btn-secondary dropdown-toggle" type="button" id="b_dropdown_list_patients_bam_alamut" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="white-space: nowrap;height:31px;background-color:white;color:black;border:1px solid black;border-radius:6px;border:1px solid black;border: 1px solid black;box-shadow: rgb(127, 128, 131) 3px 3px 5px;" >
+															<img src="images/polyicons/alamut_visual.png"></img>
+														</button>
+													  	<div class="dropdown-menu" id="b_menu_ddropdown_list_patients_bam_alamut" aria-labelledby="b_dropdown_list_patients_bam_alamut" style="top:-20px;left:-200px;margin-top:-90px;max-height:138px;border:solid 1px black;background-color:white;overflow-y:auto;"></div>
+													</div>
+									  			</td>
+				    							<td></td>
+				    							<td></td>
+										  	</tr>
+									  	</table>
+				    				</div>
+				    				<div class="col-sm-7"></div>
+				    			</div>
+				    		</div>
+				    	
+			    		</div>
+				    </div>
+		    	</div>
 		    </div>
 		    
 		    <div class="col-sm-2 col-lg-2">
-		    
 		    	<div class="row">
 		    		<div class="col-sm-12">
 		    			<div style="height:8px;"></div>

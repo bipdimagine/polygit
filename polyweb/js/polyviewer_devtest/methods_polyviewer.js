@@ -672,10 +672,9 @@ function show_buttons_view_interfaces() {
 		document.getElementById("td_b_select_polydiag").style.display = "";
 		document.getElementById("td_span_triangle_select_polydiag").style.display = "";
 	}
-	if (summary_panel_loaded == 2) {
+	if (view_only_polysplice) {
 		document.getElementById("td_span_triangle_select_polyviewer").style.display = "none";
 		document.getElementById("td_span_triangle_select_polycyto").style.display = "none";
-		document.getElementById("td_span_triangle_select_resume").style.display = "none";
 		document.getElementById("td_span_triangle_select_polydupdel").style.display = "none";
 		document.getElementById("td_span_triangle_select_polydiag").style.display = "none";
 		document.getElementById("td_b_select_polyviewer").style.display = "none";
@@ -701,8 +700,9 @@ function show_buttons_view_interfaces() {
 }
 
 function cosmetics_click_button_project_resume() {
+	hide_all_triangle_interface();
 	document.getElementById("tabFilters").style.display = "none";
-	if (summary_panel_loaded == 2) {
+	if (view_only_polysplice == 1) {
 		document.getElementById("navMenuPatient").style.display = "none";
 	}
 	window.onresize();
@@ -908,7 +908,7 @@ function get_panels_from_db () {
 }
 
 function check_first_patient_click() {
-	if (summary_panel_loaded == 2) {
+	if (view_only_polysplice == 1) {
 		setTimeout(function () {
 			click_button_view_polysplice();
 			document.getElementById("td_b_select_polyviewer").style.display = "none";
@@ -944,7 +944,14 @@ function load_panels_patients(items) {
     });
 	for (var i=0; i<tsamples.length; i++) { 
 		var n = tsamples[i].label;
-		if (tsamples[i].hasJonction == 1) { view_polysplice = 1; }
+		if (tsamples[i].hasJonction == 1) {
+			view_polysplice = 1;
+			view_only_polysplice = 1;
+		}
+		if (tsamples[i].hasJonctionAndDna == 1) {
+			view_polysplice = 1;
+			view_only_polysplice = 0;
+		}
 		if (tsamples[i].is_genome == 1) { is_genome_project = 1; }
 		if (tsamples[i].is_diag == 1) { is_diag_project = 1; }
 		
@@ -1109,7 +1116,7 @@ function write_header_project_infos() {
 	document.getElementById('img_logo_rna').style.display = "none";
 	document.getElementById('img_logo_rna_exome').style.display = "none";
 	document.getElementById('img_logo_rna_genome').style.display = "none";
-	if (view_polysplice == 1) {
+	if (view_only_polysplice == 1) {
 		if(summary_panel_loaded == 1) {
 			if (is_genome_project == 1) {
 				document.getElementById('img_logo_rna_genome').style.display = "";
@@ -1276,11 +1283,7 @@ var array_family_color = ['#f2f2f4', '#f2f2f4', '#f2f2f4'];
 var i_array_family_color = -1;
 function add_patient_name_in_dropdown_menu(family_name, patient_name, ic, star) {
 	if (star) { star = star.replace('position:absolute;top:1px;left:1px;', ''); }
-	var patient_name_text = patient_name + "&nbsp;&nbsp;";
-	if (String(patient_name).length > 20) {
-		patient_name_text = String(patient_name).substring(0, 18) + "...";
-	}
-	var label_text = "<b><i>Family " + family_name + "</i></b><br>&nbsp;&nbsp;" + ic + "&nbsp;&nbsp;" + patient_name_text;
+	var label_text =  ic + "|" + family_name + "|" + patient_name;
 	hash_patient_selected_html[patient_name] = label_text;
 	var bam_file = hash_bam_files[patient_name];
 	
@@ -1303,7 +1306,7 @@ function add_patient_name_in_dropdown_menu(family_name, patient_name, ic, star) 
 	elem.onclick = function(){ select_patient_in_dropdown_menu(patient_name); };
 	var display_b_select = "display:none;";
 	display_b_select = "";
-//	if (is_diag_project == 1) { display_b_select = ""; }
+	if (is_diag_project == 1) { display_b_select = ""; }
 	var html_select_button = "<span class='form-check' style='" + display_b_select + "'><input style='' class='form-check-input' onclick='event.stopPropagation()' type='checkbox' value='' id='b_selected_patient_" + patient_name + "' checked></span>";
 	var b_id = "b_choice_patient_" + patient_name;
 	var html_text;
@@ -1513,16 +1516,9 @@ function write_all_sorted_patient_name_in_dropdown_menu() {
 	}
 	
 	setTimeout(function () {
-//		if (is_diag_project == 0) { hide_select_all_patients(); }
-//		else {
-//			document.getElementById("b_select_all_pat").style.display = '';
-//			document.getElementById("b_unselect_all_pat").style.display = '';
-//		}
-		
 		hide_select_all_patients();
 		document.getElementById("b_select_all_pat").style.display = 'none';
 		document.getElementById("b_unselect_all_pat").style.display = 'none';
-		
 		document.getElementById("span_patient_selected_text").innerHTML = "&nbsp;Selected Sample";
 		dijit.byId('waiting').hide();
 	}, 1000);
@@ -1550,13 +1546,57 @@ function select_patient_in_dropdown_menu(patient_name) {
 		});
 	});	
 	
-	var html_text = "&nbsp;" + hash_patient_selected_html[patient_name] + "&nbsp;";
+	var pat_select = hash_patient_selected_html[patient_name];
+	
+	var lInfosPatSelect = pat_select.split('|');
+	var ic = lInfosPatSelect[0];
+	const regex = /16px/g;
+	ic = ic.replaceAll(regex, '26px');
+	
+	var html_text = "<center><table style=''>";
+	html_text += "<tr><td rowspan='2' style='padding-left:7px;'><center>" + ic + "</center></td><td style='padding-top:3px;font-size:12px;padding-left:20px;'><center><b>Family " + lInfosPatSelect[1] + "</b></center></td></tr>";
+	html_text += "<tr><td style='font-size:12px;padding-left:15px;'><center>" + lInfosPatSelect[2] + "</center></td></tr>";
+	html_text += "</table></center>";
 	document.getElementById("span_patient_selected_text").innerHTML = html_text;
+	
 	document.getElementById("b_dropdown_list_patients").style.display = '';
 	document.getElementById("b_dropdown_list_patients").disabled = true;
 	
 	var panel_name = "tabPrincipal_tablist_panel_" + patient_name;
 	document.getElementById(panel_name).click();
+}
+
+function select_patient_interface_in_summary(patient_name, interface_name) {
+	dijit.byId('waiting').show();
+	select_patient_in_dropdown_menu(patient_name);
+	setTimeout(function () {
+		document.getElementById("span_triangle_select_polyviewer").style.display = "none";
+		document.getElementById("span_triangle_select_polycyto").style.display = "none";
+		document.getElementById("span_triangle_select_polydupdel").style.display = "none";
+		document.getElementById("span_triangle_select_polydiag").style.display = "none";
+		document.getElementById("span_triangle_select_polysplice").style.display = "none";
+		if (interface_name == "polydiag") {
+			click_button_view_polydiag();
+			document.getElementById("span_triangle_select_polydiag").style.display = "";
+		}
+		else if (interface_name == "polydupdel") {
+			click_button_view_polydupdel();
+			document.getElementById("span_triangle_select_polydupdel").style.display = "";
+		}
+		else if (interface_name == "polycyto") {
+			click_button_view_polycyto();
+			document.getElementById("span_triangle_select_polycyto").style.display = "";
+		}
+		else if (interface_name == "polysplice") {
+			click_button_view_polysplice();
+			document.getElementById("span_triangle_select_polysplice").style.display = "";
+		}
+		else {
+			click_button_view_polyviewer();
+			document.getElementById("span_triangle_select_polyviewer").style.display = "";
+		}
+		dijit.byId('waiting').hide();
+	}, 1500);
 }
 
 jQuery.loadScript = function (url, callback) {
@@ -1964,7 +2004,7 @@ function create_content_pane_polydiag(patient_name) {
 	var t_polydiag;
 	require(["dojo/_base/array","dijit/layout/TabContainer", "dijit/layout/ContentPane","dojo/domReady!"], function(array, TabContainer, ContentPane) {
 		t_polydiag =  new ContentPane({
-			style:"font-size:9px;max-height:800px;width:100%;overflow:auto scroll;",
+			style:"font-size:9px;width:100%;overflow:auto scroll;",
 			title: 'PolyDiag',
 			id:"panel_polydiag_"+patient_name,
 			jsId:"panel_polydiag_"+patient_name,
@@ -2000,7 +2040,7 @@ function create_pane_polysplice(patient_name) {
 	var t_polysplice;
 	require(["dojo/_base/array","dijit/layout/TabContainer", "dijit/layout/ContentPane","dojo/domReady!"], function(array, TabContainer, ContentPane) {
 		t_polysplice =  new ContentPane({
-			style:"font-size:9px;max-height:800px;width:100%;overflow:auto scroll;",
+			style:"font-size:9px;width:100%;overflow:auto scroll;",
 			title: 'PolySplice',
 			id:"panel_polysplice_"+patient_name,
 			jsId:"panel_polysplice_"+patient_name,
@@ -2048,7 +2088,7 @@ function create_pane_polycyto(patient_name) {
 	var t_polycyto;
 	require(["dojo/_base/array","dijit/layout/TabContainer", "dijit/layout/ContentPane","dojo/domReady!"], function(array, TabContainer, ContentPane) {
 		t_polycyto =  new ContentPane({
-			style:"font-size:9px;max-height:1000px;width:100%;overflow:auto scroll;",
+			style:"font-size:9px;width:100%;overflow:auto scroll;",
 			title: 'PolyCyto',
 			id:"panel_polycyto_"+patient_name,
 			jsId:"panel_polycyto_"+patient_name,
@@ -2083,7 +2123,7 @@ function create_pane_polydupdel(patient_name) {
 	var t_polydupdel;
 	require(["dojo/_base/array","dijit/layout/TabContainer", "dijit/layout/ContentPane","dojo/domReady!"], function(array, TabContainer, ContentPane) {
 		t_polydupdel =  new ContentPane({
-			style:"font-size:9px;max-height:1000px;width:100%;overflow:auto scroll;",
+			style:"font-size:9px;width:100%;overflow:auto scroll;",
 			title: 'PolyCyto',
 			id:"panel_polydupdel_"+patient_name,
 			jsId:"panel_polydupdel_"+patient_name,

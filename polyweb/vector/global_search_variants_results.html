@@ -594,6 +594,9 @@
 				    			document.getElementById("span_filters").innerHTML = "<b><u>Filters used:</b></u> " + list_filters.join(" / ");
 			    			}
 			    		}
+			    		if (key == 'gencode_version') {
+			    			document.getElementById("span_gencode_version").innerHTML = "<b><u>Gencode:</b></u> " + val + "<br>";
+		    			}
   					});
 			    });
 			    
@@ -672,10 +675,10 @@
 		</nav>
 		
 		<div style="font-size:11px;" id='content_gene_selection'>
-			<span id="span_filters"></span>
+			<span id="span_gencode_version"></span> <span id="span_filters"></span>
 		</div>
 		
-		<div style="padding-top:13px;background-color:#607D8B;border:1px black solid;" class='container-fluid hidden' id='content_res_gene'></div>
+		<div style="padding-top:8px;background-color:#607D8B;border:1px black solid;" class='container-fluid hidden' id='content_res_gene'></div>
 		
 		<div class='container-fluid' id='content_res_variants' style='height:auto;max-width:100%;overflow-x:auto;border:1px black solid;'></div>
 		

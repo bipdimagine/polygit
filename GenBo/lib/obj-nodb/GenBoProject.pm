@@ -50,10 +50,12 @@ use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlDejaVuJunctions;
+use GenBoNoSqlDejaVuJunctionsCanoniques;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
 use GenBoJunctionCache;
+use GenBoNoSqlRocks;
 use Storable qw(store retrieve freeze dclone thaw);
 
 #use LMDB_File qw(:flags :cursor_op);
@@ -1421,6 +1423,9 @@ has gencode_version => (
 		my $self  = shift;
 		my $query = $self->buffer->getQuery();
 		my $id    = $query->getGencodeVersion( $self->id );
+		
+		return $id if $id =~ /M/;
+		
 		return $id if defined $id && $id > -1;
 
 		return $self->update_gencode_version();
@@ -1563,21 +1568,28 @@ has lmdbOmim => (
 	}
 );
 
-has lmdbPartialTranscripts => (
+has getRockPartialTranscriptDir  => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir = $self->get_gencode_directory();
-		my $lmdb_file = $dir.'/partial_transcripts';
-		return if not -e $lmdb_file;
-		my $no = GenBoNoSqlLmdb->new(
-			name        => "partial_transcripts",
-			dir         => $dir,
-			mode        => "r",
+		return $self->get_gencode_directory();
+	}
+);
+
+has rocksPartialTranscripts => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $no = GenBoNoSqlRocks->new(
+			dir         => $self->getRockPartialTranscriptDir(),
+			mode        => 'r',
+			is_index    => 1,
+			name        => 'partial_transcripts',
 			is_compress => 1,
-			vmtouch=>$self->buffer->vmtouch
-		);
+		);	
+		return unless $no->exists_rocks();
 		return $no;
 	}
 );
@@ -2122,6 +2134,7 @@ has genomeFai => (
 			next if $chr =~ /KI/;
 			next if $chr =~ /GL/;
 			next if $chr =~ /EBV/;
+			next if $chr =~ /_random/;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -4488,6 +4501,19 @@ has dejavuJunctions => (
 		my $sqliteDir = $self->DejaVuJunction_path();
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuJunctions->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
+has dejavuJunctionsCanoniques => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->DejaVuJunction_path();
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $sqliteDir, mode => "r" );
 	}
 );
 
