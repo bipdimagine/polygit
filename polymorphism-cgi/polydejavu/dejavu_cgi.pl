@@ -285,9 +285,12 @@ foreach my $input (sort(@lTmp)) {
 	}
 	my $nbSnpsSearching = scalar(@listSnp);
 	my $hRes;
+	
+	$projectTmp->print_dot(1);
+	
 	if (scalar(@listSnp) > 0) {
 		foreach my $varId (@listSnp) {
-			$projectTmp->print_dot(50);
+			$projectTmp->print_dot(10);
 			my $hashVarId = $projectTmp->getDejaVuInfos($varId);
 			if ($details eq 'true') {
 				foreach my $hDetails (_getVarTranscriptsDetails($varId)) { $hashRes->{$hDetails->{'transcript'}} = $hDetails; }
