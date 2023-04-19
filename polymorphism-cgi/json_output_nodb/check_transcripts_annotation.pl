@@ -64,26 +64,19 @@ if ($transcripts) {
 				$gene = $transcript->getGene;
 				$hRes->{$tr_name} .= ';'.$gene->external_name();
 				my $remap = $transcript->remap_status();
-				if ($remap and $remap eq 'partial') {
-					my $h_patial_infos;
-					eval {
-						$h_patial_infos = $transcript->hash_partial_infos->{intspan};
-					};
-					if ($@) {
-						$remap .= " [not found in lmdb]"
+				if ($transcript->is_partial_transcript()) {
+					$remap = 'partial';
+					my $h_patial_infos = $transcript->hash_partial_infos->{intspan};
+					my $is_frameshift;
+					my @lNt = sort {$a <=> $b} keys %{$h_patial_infos};
+					if ($lNt[0] == 0) { shift(@lNt); }
+					my @lNt_text;
+					foreach my $nt (@lNt) {
+						if ($nt % 3 > 0) { $is_frameshift = 1; }
+						push (@lNt_text, '+'.$nt.'nt');
 					}
-					else {
-						my $is_frameshift;
-						my @lNt = sort {$a <=> $b} keys %{$h_patial_infos};
-						if ($lNt[0] == 0) { shift(@lNt); }
-						my @lNt_text;
-						foreach my $nt (@lNt) {
-							if ($nt % 3 > 0) { $is_frameshift = 1; }
-							push (@lNt_text, '+'.$nt.'nt');
-						}
-						$remap .= " FRAMESHIFT " if ($is_frameshift);
-						$remap .= " [".join(', ', @lNt_text)."]";
-					}
+					$remap .= " FRAMESHIFT " if ($is_frameshift);
+					$remap .= " [".join(', ', @lNt_text)."]";
 				}
 				$hRes->{$tr_name} .= ';'.$remap;
 			};
