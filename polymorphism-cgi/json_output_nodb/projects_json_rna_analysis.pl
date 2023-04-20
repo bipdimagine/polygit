@@ -58,10 +58,14 @@ getProjectListsRNA($buffer,$login,$pwd,$project_query) if $action eq "list";
  
 sub getProjectListsRNA {
 	my ( $buffer, $login, $pwd, $project_name ) = @_;
+	print $cgi->header('text/json-comment-filtered');
+	print "{\"progress\":\".";
+	
 	my $is_BIPD_login = $buffer->getQuery->isLoginSTAFF($login);
 	my $list_proj = $buffer->getQuery->getListProjectsRnaSeqFromLoginPwd($login, $pwd, $project_name);
 	my ($hDone, $h_ok);
 	foreach my $h (@$list_proj) {
+		print '.';
 		my $h_users;
 		foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
 		unless ($is_BIPD_login) {
@@ -103,11 +107,27 @@ sub getProjectListsRNA {
 	foreach my $name (reverse sort keys %$h_ok) {
 		push (@list_res, $h_ok->{$name});
 	}
-	export_data::print_simpleJson($cgi, \@list_res);
+	print_simpleJson($cgi, \@list_res);
 	exit(0);
 }
 
 
+
+sub print_simpleJson {
+	my ($cgi,$data,$type_identifier) = @_;
+	
+	$type_identifier = "name" unless defined $type_identifier;
+	my %all;
+	#$all{identifier} = "name";
+	$all{label}      = $type_identifier;
+	$all{items}      = $data;	
+	
+	my $json_encode = encode_json \%all;
+	print ".\",";
+	$json_encode =~ s/{//;
+	print $json_encode;
+	exit(0);
+}
 
 
 
