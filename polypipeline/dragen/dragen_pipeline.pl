@@ -90,7 +90,7 @@ GetOptions(
 	'step=s'=> \$step_name,
 	'steps=s'=> \$step_name,
 	"dry=s" => \$dry,
-	"rna=s" => \$dry,
+	"rna=s" => \$rna,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -140,9 +140,9 @@ unless ($rna){
 	
 }
 
-my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt"];
+my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
-my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6};
+my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
 
 
 
@@ -217,6 +217,7 @@ run_move($ppd);
 my $jobs_cluster = [];
 run_lmdb_depth($ppd,$jobs_cluster) unless $version =~ /HG38/;
 run_melt($ppd,$jobs_cluster) unless $version =~ /HG38/;
+run_calling_target($ppd,$jobs_cluster);
 steps_cluster("LMDBDepth+Melt ",$jobs_cluster) if @$jobs_cluster;
 
 
@@ -302,14 +303,17 @@ sub test_rna {
 	my ($projects) = @_;
 	my $vs;
 	$vs->{rna} = 0;# unless exists ;
-	my $rna = 0 ;
+	 $rna = 0 ;
 	foreach my $project (@$projects){
 		my $projectName = $project->name;
+		warn $project->isRnaSeq;
 		$rna ++ if $project->isRnaSeq;
 	}
+	warn $rna;
 	if ($rna) {
 		confess("you have different king of project rna and not") if $rna ne scalar(@$projects);
 	}
+	return $rna;
 }
 
 
@@ -414,8 +418,28 @@ foreach my $project (@$projects){
 		#####  
 		$h->{prod}->{melt} = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";	 	
 	 	$h->{exists_file}->{melt} = 1 if -e $h->{prod}->{melt};
+	 	if ($project->isDiagnostic) {
+	 	foreach my $m (@{$patient->getCallingMethods()}){
+        	next if $m eq "seqnext";
+        	next if $m eq "SmCounter";
+        	next if $m eq "haplotypecaller4";
+        	next if $m eq "dude";
+        	next if $m eq "casava";
+        	next if $m eq "melt";
+        	next if $m eq "manta";
+        	next if $m eq "wisecondor";
+        	next if $m eq "canvas";
+        	next if $m =~ /dragen/;
+        	push(@{$h->{calling_methods}},$m);
+        	$h->{calling_target}->{$m} ++;
+	 		$h->{prod}->{$m} = $patient->getVariationsFileName($m);
+	 		$h->{exists_file}->{$m} = 1 if -e $h->{prod}->{$m};
+	 		}
+	 		
+	 	}
 		push(@{$patients_jobs},$h);
 	}
+	
 	}
 	return $patients_jobs;
 }
@@ -536,6 +560,7 @@ sub run_command {
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});;
 	
 	$job->{cmd} .= " -umi=1 " if $umi;
+	$job->{cmd} .= " -rna=1 " if $rna == 1;
 	$job->{cmd} .= " -version=$version " if $version;
 	
 	
@@ -697,6 +722,40 @@ return ;
 	
 steps_cluster("LMDBDepth(-melt) ",$jobs);	
 }
+
+sub run_calling_target {
+	my ($patients_jobs,$jobs) = @_;
+	foreach my $hp (@$patients_jobs) {
+	 my $methods    =  $hp->{calling_methods};
+	my $project_name =$hp->{project};
+	#$filein = $self->patient()->getBamFileName();
+	my $ppn = 20;	
+	my $name = $hp->{name};
+	
+    foreach my $m (@$methods){
+    	next unless exists $hp->{calling_target}->{$m};
+        my $job;
+		my $nname  = $hp->{name}."_".$hp->{project};
+		$job->{patient} = $nname;
+		$status_jobs->{$nname}->{progress} = "failed" unless -e $hp->{prod}->{align};
+		next if $status_jobs->{$nname}->{progress} eq "failed";
+		my $fileout = $hp->{prod}->{$m};
+		next if -e $fileout;
+		my $cmd1 = "perl $script_pipeline/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn -fileout=$fileout -method=$m ";
+		$cmd1 .= qq{ -version=$version  } if $version;
+		$job->{name} = $name.".melt";
+		$job->{cmd} =$cmd1;
+		$job->{cpus} = $ppn;
+		$job->{jobs_type} ="melt";
+		push(@$jobs,$job);
+    }
+	}
+    return ;
+
+	
+}	
+
+
 
 ### DUDE  
 sub run_dude {
