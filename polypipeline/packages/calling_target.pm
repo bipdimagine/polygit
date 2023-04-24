@@ -1379,7 +1379,7 @@ sub duplicate_region_calling {
 	my $recal_string       = "";
 	my $bam_file_string_hc = " -I " . $patient->getBamFile();
 	my $gatk_region        = "";
-	my $cmd_uni =qq{$javac -jar $gatk -T HaplotypeCaller   -R $reference     -rf BadCigar    -I $bamtmp   -o $vcf_uni -L $bed};
+	my $cmd_uni =qq{$javac -jar $gatk -T HaplotypeCaller   -R $reference     -rf BadCigar    -I $bamtmp   -o $vcf_uni -L $bed --allow_potentially_misencoded_quality_scores};
 
 	warn $cmd_uni;
 	system($cmd_uni);
