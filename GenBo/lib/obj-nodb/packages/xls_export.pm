@@ -584,6 +584,8 @@ sub export {
 
 sub store_cnvs_infos {
 	my ( $self, $list_var_objects, $project, $list_patients ) = @_;
+	$project->buffer->dbh_deconnect();
+	$project->buffer->dbh_reconnect();
 	print '|';
 	foreach my $var (@$list_var_objects) {
 		my $hash;
@@ -715,6 +717,8 @@ sub store_cnvs_infos {
 
 sub store_variants_infos {
 	my ( $self, $list_var_objects, $project, $list_patients ) = @_;
+	$project->buffer->dbh_deconnect();
+	$project->buffer->dbh_reconnect();
 	my @lCnv;
 	foreach my $var (@$list_var_objects) {
 		my $is_cnv;
@@ -726,6 +730,8 @@ sub store_variants_infos {
 		}
 		my $hash;
 		$project->print_dot(25);
+		
+		
 		my $chr      = $var->getChromosome();
 		my $var_id   = $var->id();
 		my $chr_h_id = $chr->id();
@@ -819,6 +825,7 @@ sub store_variants_infos {
 				my $g_id = $gene->id();
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'external_name'} = $gene->external_name();
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'description'} = $gene->description();
+				
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'phenotypes'} = $gene->phenotypes();
 				eval { $var->annotation(); };
 				if ($@) { next; }
@@ -923,7 +930,9 @@ sub store_variants_infos {
 			}
 		}
 	}
-	$self->store_cnvs_infos(\@lCnv, $project, $list_patients );
+	if (@lCnv and scalar(@lCnv) > 0) {
+		$self->store_cnvs_infos(\@lCnv, $project, $list_patients );
+	}
 }
 
 sub store_specific_infos {
