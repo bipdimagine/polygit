@@ -852,9 +852,11 @@ sub store_variants_infos {
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = $t->{'external_protein_name'};
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'nomenclature'} = $var->getNomenclature($t);
 							my $aa_text = '-';
-							my $hcc = $t->codonsConsequenceForVariations($var);
-							if ($hcc) {
-								$aa_text = 'p.'.$hcc->{aa}.$hcc->{prot_position}.$hcc->{aa_mut};
+							if ($var->type() eq 'substitution') {
+								my $hcc = $t->codonsConsequenceForVariations($var);
+								if ($hcc) {
+									$aa_text = 'p.'.$hcc->{aa}.$hcc->{prot_position}.$hcc->{aa_mut};
+								}
 							}
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = $aa_text;
 							my $cds_pos = $var->getOrfPosition($prot);
