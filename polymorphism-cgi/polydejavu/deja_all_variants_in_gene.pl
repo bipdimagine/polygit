@@ -242,7 +242,9 @@ my $color_orange = '#EFB73E';
 my $color_yellow = 'yellow';
 
 my $session_id = save_export_xls();
+print "|";
 export_html($session_id);
+print "|";
 exit(0);
 
 
@@ -254,6 +256,8 @@ exit(0);
 
 
 sub save_export_xls {
+	$project_dejavu->getProject->buffer->dbh_deconnect();
+	$project_dejavu->getProject->buffer->dbh_reconnect();
 	my $h_xls_args;
 	print '_save_xls_';
 	$project_dejavu->cgi_object(1);
@@ -302,8 +306,15 @@ sub save_export_xls {
 			}
 		}
 	}
+	print "|";
+	$project_dejavu->getProject->buffer->dbh_deconnect();
+	$project_dejavu->getProject->buffer->dbh_reconnect();
+	print "|";
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
+	print "|";
 	my $session_id = $xls_export->save();
+	print "|";
+	$project_dejavu->getProject->buffer->dbh_deconnect();
 	return $session_id;
 }
 
@@ -451,8 +462,10 @@ sub export_html {
 		$out2 .= $line;
 	}
 	$h_count->{total_pass} = scalar(@lTrLines);
+	$gene_init = undef;
+	$gene_init = $project_dejavu->newGene($gene_init_id) unless ($gene_init);
+
 	$hRes->{html_gene} = get_html_gene($gene_init_id, $gene_init, $h_count);
-	
 	if ($nb_var_filtred > 0) {
 		$out2 .= $cgi->start_Tr();
 		$out2 .= "<td colspan='4' style='color:red;font-size:12px;'><b><u>and $nb_var_filtred variants fitred...</b></u></td>";
@@ -888,6 +901,8 @@ sub get_html_gene {
 	$hResGene->{$gene_init_id}->{phenotypes}->{pheno} = $pheno;
 	$hResGene->{$gene_init_id}->{phenotypes}->{nb_other_terms} = $nb_other_terms;
 	my $description_gene = $gene_init->description();
+	$gene_init->getProject->buffer->dbh_deconnect();
+	$gene_init->getProject->buffer->dbh_reconnect();
 #	eval {
 		foreach my $panel (@{$gene_init->getPanels()}) {
 			$hResGene->{$gene_init_id}->{panels}->{$panel->name()}->{phenotype} = $panel->getPhenotypes()->[0]->name();
