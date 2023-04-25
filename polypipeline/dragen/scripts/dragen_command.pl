@@ -75,7 +75,7 @@ GetOptions(
 	#'low_calling=s' => \$low_calling,
 );
 
-my $pipeline;
+my $pipeline = {};
 foreach my $l (split(",",$spipeline)){
 	$pipeline->{$l} ++;
 }
@@ -111,22 +111,49 @@ else {
 	run_pipeline($pipeline);# unless -e $bam_pipeline;
 }
 #die() unless  -e $bam_pipeline;
-
+if ($rna == 1) {
+	$spipeline.=",sj";
+	
+}
 system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline && touch $ok_move");
 exit(0);
+
 sub run_pipeline_rna {
 my ($pipeline) = @_;
 my $param_align = "";
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $param_umi = "";
 my $tmp = "/staging/tmp";
-my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 my $runid = $patient->getRun()->id;
- $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true -a /data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf --enable-rna-quantification true";
+if ($version && exists $pipeline->{align} ){
+	my $buffer_ori = GBuffer->new();
+	my $project_ori = $buffer_ori->newProject( -name => $projectName );
+	my $patient_ori = $project_ori->getPatient($patients_name);
+	 $patient_ori->{alignmentMethods} =['dragen-align','bwa'];
+	my $bamfile = $patient_ori->getBamFile();
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true ";
+	#$param_align .= "--output-format CRAM " if $version =~/HG38/;
+	if ($umi){
+		confess();
+	}
+	
+}	
+
+else {
+my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+
+
+ $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true ";
+if (exists $pipeline->{count}){
+my $gtf = qq{/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/gtf/gencode.vM32.annotation.gtf};
+my $gtf2 = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf};
+$param_align .= "-a $gtf --enable-rna-quantification true";
+}
+}
+
 ##
 $cmd_dragen .= $param_umi." ".$param_align;
-
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die if $exit != 0;
 }
@@ -185,7 +212,7 @@ else {
 }
 my $param_gvcf = "";
 my $tmp = "/staging/tmp";
-	my $capture_file  = $patient->getCapture->gzFileName();
+
 my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 if (exists $pipeline->{gvcf}){
 	
@@ -193,9 +220,8 @@ if (exists $pipeline->{gvcf}){
 	
 }
 my $param_bed ="";
-
 unless ($project->isGenome) {
-	
+		my $capture_file  = $patient->getCapture->gzFileName();
 		$param_bed .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150  };
 	}
 my $param_vcf ="";
