@@ -1582,7 +1582,7 @@ has rocksPartialTranscripts => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return if not (-e $self->getRockPartialTranscriptDir.'/CURRENT');
+		return if not (-e $self->getRockPartialTranscriptDir.'/partial_transcripts.rocksdb/CURRENT');
 		my $no = GenBoNoSqlRocks->new(
 			dir         => $self->getRockPartialTranscriptDir(),
 			mode        => 'r',
