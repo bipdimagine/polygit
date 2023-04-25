@@ -1582,6 +1582,7 @@ has rocksPartialTranscripts => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+		return if not (-e $self->getRockPartialTranscriptDir.'/CURRENT');
 		my $no = GenBoNoSqlRocks->new(
 			dir         => $self->getRockPartialTranscriptDir(),
 			mode        => 'r',
