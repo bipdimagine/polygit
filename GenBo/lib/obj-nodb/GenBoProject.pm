@@ -6244,6 +6244,15 @@ has get_path_rna_seq_polyrna_root  => (
 	default => sub {
 		my $self = shift;
 		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
+		return $path if -d $path;
+		if ($self->version() eq 'MM38') {
+			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM39/polyRNA/";
+			return $alt_path if -d $alt_path;
+		}
+		if ($self->version() eq 'MM39') {
+			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM38/polyRNA/";
+			return $alt_path if -d $alt_path;
+		}
 		return $path;
 	},
 );
