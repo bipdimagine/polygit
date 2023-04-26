@@ -101,123 +101,21 @@ foreach my $h (@{$buffer->getQuery->getListProjectsRnaSeq()}) {
 			$toto++;
 		}
 	}
-	
-#	last if $toto == 1;
 }
 print " -> Done!\n";
 print " -> Found ".scalar(keys %{$hash_projects})." projects\n\n";
 
-#warn Dumper $hash_projects;
-#warn Dumper $hash_project_phenotypes;
-#die;
 
 
-my $pm = new Parallel::ForkManager($fork);
-my ($h_junctions, $h_junctions_canonique, $h_junctions_phenotypes);
 foreach my $this_project_name (keys %$hash_projects) {
-#	print "$this_project_name "; 
-	
-	#TODO: faire json de chaque project pour aller plus vite apres
-	my $dir_dv_proj = $dv_dir_path.'/projects/';
+	my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
 	unless (-d $dir_dv_proj) {
-		`mkdir $dir_dv_proj`;
-		`chmod 777 $dir_dv_proj`;
+		warn "WARN DejaVu $this_project_name not done yet....";
 	}
-	$dir_dv_proj .= $this_project_name;
-	unless (-d $dir_dv_proj) {
-		`mkdir $dir_dv_proj`;
-		`chmod 777 $dir_dv_proj`;
+	unless (-e $dir_dv_proj.'/'.$this_project_name.'.json') {
+		warn "WARN DejaVu $this_project_name not done yet....";
 	}
-	
-	next if (-e $dir_dv_proj.'/'.$this_project_name.'.json' and -e $dir_dv_proj.'/'.$this_project_name.'.canoniques.json');
-	
-	my $pid = $pm->start and next;
-	print "LAUNCH $this_project_name\n";
-	my ($h_proj_junctions, $h_proj_junctions_canoniques);
-	
-	my $buffer_tmp = GBuffer->new();
-	my $project_tmp = $buffer_tmp->newProjectCache( -name => $this_project_name );
-	if (not $project_tmp->annotation_genome_version() =~ /$release/) {
-#		print "-> SKIPPED (".$project_tmp->annotation_genome_version().")\n";
-		$project_tmp = undef;
-		$buffer_tmp = undef;
-		next;
-	}
-#	print " -> OK release ".$project_tmp->annotation_genome_version();
-	$project_tmp->getChromosomes();
-	
-	my $hType_patients;
-	$hType_patients = $project_tmp->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project_tmp->get_path_rna_seq_junctions_analyse_description_root());
-	
-	foreach my $this_patient (@{$project_tmp->getPatients()}) {
-		#$this_patient->use_not_filtred_junction_files(0);
-		if (($hType_patients and exists $hType_patients->{$this_patient->name()}->{pat}) or not $hType_patients) {
-			my @lJunctions;
-			eval { @lJunctions = @{$this_patient->getJunctions()}; };
-			if ($@) {
-#				print "-> ERROR ".$this_patient->name();
-				$pm->finish();
-				next;
-			}
-			foreach my $junction (@lJunctions) {
-				#next if ($junction->isCanonique($this_patient));
-				next if ($junction->get_ratio_new_count($this_patient) == 1);
-				$junction->getPatients();
-				my $type = $junction->getTypeDescription($this_patient);
-				my $chr_id = $junction->getChromosome->id();
-				my $start = $junction->start();
-				my $end = $junction->end();
-				my $gene_name = $junction->annex->{$this_patient->name()}->{ensid};
-				my $count_new_junction = $junction->get_nb_new_count($this_patient);
-				my $count_normal_junction = $junction->get_nb_normal_count($this_patient);
-				my $score = int($junction->get_percent_new_count($this_patient));
-				my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
-				
-				if ($junction->isCanonique($this_patient)) {
-					if (not exists $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}) {
-						$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{start} = $start;
-						$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{end} = $end;
-					}
-					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
-					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
-					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{score} = $score;
-					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{type} = $type;
-					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
-				}
-				else {
-					if (not exists $h_proj_junctions->{$chr_id}->{$junction_id}) {
-						$h_proj_junctions->{$chr_id}->{$junction_id}->{start} = $start;
-						$h_proj_junctions->{$chr_id}->{$junction_id}->{end} = $end;
-					}
-					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
-					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
-					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{score} = $score;
-					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{type} = $type;
-					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
-				}
-			}
-		}
-	}
-	
-	my $json_encode = encode_json $h_proj_junctions;
-	open (JSON1, '>'.$dir_dv_proj.'/'.$this_project_name.'.json');
-	print JSON1 $json_encode;
-	close (JSON1);
-	
-	open (JSON2, '>'.$dir_dv_proj.'/'.$this_project_name.'.canoniques.json');
-	if ($h_proj_junctions_canoniques) {
-		my $json_c_encode = encode_json $h_proj_junctions_canoniques;
-		print JSON2 $json_c_encode;
-	}
-	close (JSON2);
-	
-	print "$this_project_name -> Done!\n"; 
-	$project_tmp = undef;
-	$buffer_tmp = undef;
-	$pm->finish();
 }
-$pm->wait_all_children();
-
 
 my $dir = $dv_dir_path;
 unless (-d $dir){

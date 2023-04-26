@@ -46,6 +46,13 @@ $project->getChromosomes();
 my $patient = $project->getPatient($patient_name);
 #$patient->use_not_filtred_junction_files(1);
 
+
+if (not $project->is_human_genome()) {
+	print FILE 'PASS not Human release';
+	close (FILE);
+	exit(0); 
+}
+
 my $hType_patients;
 $hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
