@@ -56,7 +56,7 @@ if (not $project->is_human_genome()) {
 my $hType_patients;
 $hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
-
+my $nb = 0;
 my @lJunctions;
 foreach my $chr (@{$project->getChromosomes()}) {
 	my $vector_patient = $patient->getJunctionsVector($chr);
@@ -68,7 +68,7 @@ foreach my $chr (@{$project->getChromosomes()}) {
 		$junction->dejavu_percent_coordinate_similar(96);
 		my $nb_dejavu_pat = $junction->dejavu_nb_patients();
 		next if ($nb_dejavu_pat > 50);
-		if (scalar(@lJunctions) > 5000) {
+		if (scalar(@lJunctions) > 1000) {
 			next if $junction->junction_score_penality_ratio($patient);
 			next if $junction->junction_score_penality_dp($patient);
 			next if $junction->junction_score_penality_new_junction($patient);
@@ -76,6 +76,8 @@ foreach my $chr (@{$project->getChromosomes()}) {
 			next if $junction->junction_score_penality_noise($patient);
 		}
 		push(@lJunctions, $junction);
+		$nb++;
+		last if ($nb == 1000);
 	}
 }
 
