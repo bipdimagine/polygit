@@ -85,8 +85,13 @@ sub getProjectListsRNA {
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
 		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
 		my @lbuttons;
+		
 		if (-d $path) {
 			my $ok;
+			foreach my $patient (@{$p1->getPatients()}) { 
+				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
+				$ok = 1 if (-e $dragen_file);
+			}
 			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
 			my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
 			$ok = 1 if (-e $se_file);
@@ -94,6 +99,16 @@ sub getProjectListsRNA {
 			push(@lbuttons, '1::'.$h->{name}) if ($ok);
 			$hDone->{$name} = undef if $ok;
 		}
+		else {
+			my $ok_dragen;
+			foreach my $patient (@{$p1->getPatients()}) { 
+				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
+				$ok_dragen = 1 if (-e $dragen_file);
+			}
+			push(@lbuttons, '1::'.$h->{name}) if ($ok_dragen);
+			$hDone->{$name} = undef if $ok_dragen;
+		}
+		
 		if (-d $p1->get_path_rna_seq_polyrna_root()) {
 			push(@lbuttons, '2::'.$h->{name});			
 			$hDone->{$name} = undef;

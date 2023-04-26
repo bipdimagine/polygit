@@ -12,7 +12,8 @@ use FindBin qw($Bin);
 use Storable qw(store retrieve freeze);
 use Number::Format qw(:subs);
 use File::Basename;
-
+use Getopt::Long;
+use JSON;
 
 use GBuffer;
 use GenBoProject;
@@ -40,85 +41,109 @@ my $ids;
 my $total;
 my $xx =0;
 
-my $release = $cgi->param('release');
-if (not $release) { $release = 'HG19'; }
-elsif ($release =~ /HG19/) { $release = 'HG19'; }
+my $fork = 1;
+my $release = 'HG19';
 
+GetOptions(
+	'release=s' => \$release,
+	'fork=s'    => \$fork,
+);
 
-my $dir = $project->DejaVuJunction_path();
-
-unless (-d $dir){
-	`mkdir $dir`;
-	`chmod 777 $dir`;
-}
-
+my $dv_dir_path = $project->DejaVuJunction_path();
+if ($release =~ /HG19/) { $release = 'HG19'; }
+else { $dv_dir_path =~ s/HG19/$release/; }
 
 print "\n# Checking RNA-Projects Junctions";
 
-#my $nb = 0;
-
-
+my $toto = 0;
+my ($hash_projects, $hash_project_phenotypes);
 foreach my $h (@{$buffer->getQuery->getListProjectsRnaSeq()}) {
-#	warn $h->{name} if $h->{relname} eq 'MM38';
-#	next if not $h->{relname} eq 'MM38';
-	
 	next if not $h->{relname} =~ /$release/;
-	
-	my $b1 = GBuffer->new;
-	my $p1 = $b1->newProjectCache( -name => $h->{name} );
-	if (-d $p1->get_path_rna_seq_junctions_analyse_all_res()) {
-		warn $h->{name}.' - '.$h->{relname}.' ---> OK !!';
-		my $ok;
-		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
-		my $se_file = $path.'/allResSE.txt';
-		my $ri_file = $path.'/allResRI.txt';
-		$ok = 1 if (-e $se_file);
-		$ok = 1 if (-e $ri_file);
-		warn $h->{name}.' - '.$h->{relname}.' ------> OK 2 !!!!!' if $ok;
-	}
-}
-#die;
-
-my $hash_projects;
-foreach my $h (@{$buffer->getQuery->getListProjectsRnaSeq()}) {
 	my $h_users;
 	foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
 	my $name = $h->{name};
+	
 	my $b1 = GBuffer->new;
 	my $p1 = $b1->newProjectCache( -name => $name );
 	$h->{button} = '';
 	if (-d $p1->get_path_rna_seq_junctions_analyse_all_res()) {
-#		$nb++;
-#		last if $nb == 4;
-#		warn $name;
 		my $ok;
 		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
 		my $se_file = $path.'/allResSE.txt';
 		my $ri_file = $path.'/allResRI.txt';
 		$ok = 1 if (-e $se_file);
 		$ok = 1 if (-e $ri_file);
-		$hash_projects->{$name} = $h->{relname} if $ok;
+		if ($ok) {
+			$hash_projects->{$name} = $h->{relname};
+			if ($release =~ /HG/) {
+				foreach my $pheno_name (@{$p1->phenotypes()}) {
+					$pheno_name =~ s/ /_/g;
+					$hash_project_phenotypes->{lc($pheno_name)}->{$name} = undef;
+				}
+			}
+			$toto++;
+		}
 	}
+	else {
+		my $ok_dragen;
+		foreach my $patient (@{$p1->getPatients()}) { 
+			my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
+			$ok_dragen = 1 if (-e $dragen_file);
+		}
+		if ($ok_dragen) {
+			$hash_projects->{$name} = $h->{relname};
+			if ($release =~ /HG/) {
+				foreach my $pheno_name (@{$p1->phenotypes()}) {
+					$pheno_name =~ s/ /_/g;
+					$hash_project_phenotypes->{lc($pheno_name)}->{$name} = undef;
+				}
+			}
+			$toto++;
+		}
+	}
+	
+#	last if $toto == 1;
 }
 print " -> Done!\n";
-print "   -> Found ".scalar(keys %{$hash_projects})." projects\n\n";
+print " -> Found ".scalar(keys %{$hash_projects})." projects\n\n";
 
 #warn Dumper $hash_projects;
-
+#warn Dumper $hash_project_phenotypes;
 #die;
 
-my ($h_junctions, $h_junctions_canonique);
+
+my $pm = new Parallel::ForkManager($fork);
+my ($h_junctions, $h_junctions_canonique, $h_junctions_phenotypes);
 foreach my $this_project_name (keys %$hash_projects) {
-	print "$this_project_name "; 
+#	print "$this_project_name "; 
+	
+	#TODO: faire json de chaque project pour aller plus vite apres
+	my $dir_dv_proj = $dv_dir_path.'/projects/';
+	unless (-d $dir_dv_proj) {
+		`mkdir $dir_dv_proj`;
+		`chmod 777 $dir_dv_proj`;
+	}
+	$dir_dv_proj .= $this_project_name;
+	unless (-d $dir_dv_proj) {
+		`mkdir $dir_dv_proj`;
+		`chmod 777 $dir_dv_proj`;
+	}
+	
+	next if (-e $dir_dv_proj.'/'.$this_project_name.'.json' and -e $dir_dv_proj.'/'.$this_project_name.'.canoniques.json');
+	
+	my $pid = $pm->start and next;
+	print "LAUNCH $this_project_name\n";
+	my ($h_proj_junctions, $h_proj_junctions_canoniques);
+	
 	my $buffer_tmp = GBuffer->new();
-	my $project_tmp = $buffer_tmp->newProject( -name => $this_project_name );
+	my $project_tmp = $buffer_tmp->newProjectCache( -name => $this_project_name );
 	if (not $project_tmp->annotation_genome_version() =~ /$release/) {
-		print "-> SKIPPED (".$project_tmp->annotation_genome_version().")\n";
+#		print "-> SKIPPED (".$project_tmp->annotation_genome_version().")\n";
 		$project_tmp = undef;
 		$buffer_tmp = undef;
 		next;
 	}
-	print " -> OK release ".$project_tmp->annotation_genome_version();
+#	print " -> OK release ".$project_tmp->annotation_genome_version();
 	$project_tmp->getChromosomes();
 	
 	my $hType_patients;
@@ -130,7 +155,8 @@ foreach my $this_project_name (keys %$hash_projects) {
 			my @lJunctions;
 			eval { @lJunctions = @{$this_patient->getJunctions()}; };
 			if ($@) {
-				print "-> ERROR ".$this_patient->name();
+#				print "-> ERROR ".$this_patient->name();
+				$pm->finish();
 				next;
 			}
 			foreach my $junction (@lJunctions) {
@@ -148,53 +174,177 @@ foreach my $this_project_name (keys %$hash_projects) {
 				my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
 				
 				if ($junction->isCanonique($this_patient)) {
-					if (not exists $h_junctions_canonique->{$chr_id}->{$junction_id}) {
-						$h_junctions_canonique->{$chr_id}->{$junction_id}->{start} = $start;
-						$h_junctions_canonique->{$chr_id}->{$junction_id}->{end} = $end;
+					if (not exists $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}) {
+						$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{start} = $start;
+						$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{end} = $end;
 					}
-					$h_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
-					$h_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
-					$h_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{score} = $score;
-					$h_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{type} = $type;
-					$h_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
+					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
+					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
+					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{score} = $score;
+					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{type} = $type;
+					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
 				}
 				else {
-					if (not exists $h_junctions->{$chr_id}->{$junction_id}) {
-						$h_junctions->{$chr_id}->{$junction_id}->{start} = $start;
-						$h_junctions->{$chr_id}->{$junction_id}->{end} = $end;
+					if (not exists $h_proj_junctions->{$chr_id}->{$junction_id}) {
+						$h_proj_junctions->{$chr_id}->{$junction_id}->{start} = $start;
+						$h_proj_junctions->{$chr_id}->{$junction_id}->{end} = $end;
 					}
-					$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
-					$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
-					$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{score} = $score;
-					$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{type} = $type;
-					$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
+					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
+					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
+					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{score} = $score;
+					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{type} = $type;
+					$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
 				}
 			}
 		}
 	}
-	print "-> Done!\n";
+	
+	my $json_encode = encode_json $h_proj_junctions;
+	open (JSON1, '>'.$dir_dv_proj.'/'.$this_project_name.'.json');
+	print JSON1 $json_encode;
+	close (JSON1);
+	
+	open (JSON2, '>'.$dir_dv_proj.'/'.$this_project_name.'.canoniques.json');
+	if ($h_proj_junctions_canoniques) {
+		my $json_c_encode = encode_json $h_proj_junctions_canoniques;
+		print JSON2 $json_c_encode;
+	}
+	close (JSON2);
+	
+	print "$this_project_name -> Done!\n"; 
 	$project_tmp = undef;
 	$buffer_tmp = undef;
+	$pm->finish();
+}
+$pm->wait_all_children();
+
+
+my $dir = $dv_dir_path;
+unless (-d $dir){
+	`mkdir $dir`;
+	`chmod 777 $dir`;
 }
 
+my $dir_canoniques = $dv_dir_path.'/canoniques/';
+unless (-d $dir_canoniques){
+	`mkdir $dir_canoniques`;
+	`chmod 777 $dir_canoniques`;
+}
 
-print "\n# INSERT in DejaVuLMDB Junctions\n";
-my $nodejavu = GenBoNoSqlDejaVuJunctions->new( dir => $dir, mode => "c" );
-insert_in_dejavu_jonctions($nodejavu, $h_junctions);
-$nodejavu->close();
-print "-> DONE!\n\n";
+my @lTypes;
+push(@lTypes, 'all');
+push(@lTypes, 'canoniques');
+foreach my $pheno_name (keys %{$hash_project_phenotypes}) {
+	push(@lTypes, $pheno_name);
+}
 
-print "\n# INSERT in DejaVuLMDB Junctions Canoniques\n";
-my $nodejavucanoniques = GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $dir, mode => "c" );
-insert_in_dejavu_jonctions($nodejavucanoniques, $h_junctions_canonique);
-$nodejavucanoniques->close();
-print "-> DONE!\n\n";
+my $pm2 = new Parallel::ForkManager($fork);
+foreach my $type (@lTypes) {
+	my $pid = $pm2->start and next;
+	if ($type eq 'all') { insert_all_junctions(); }
+	elsif ($type eq 'canoniques') { insert_all_junctions_canoniques(); }
+	else { insert_all_junctions_type($type); }
+	$pm2->finish();
+}
+$pm2->wait_all_children();
 
 
+print "\n\nALL DONE!\n\n";
+
+
+sub insert_all_junctions {
+	my $h_all_junctions;
+	foreach my $this_project_name (keys %$hash_projects) {
+		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+		my $file = $dir_dv_proj.'/'.$this_project_name.'.json';
+		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
+		open (FILE, $file);
+		my $json = <FILE>;
+		my $h_proj_junctions = decode_json $json;
+		close (FILE);
+		foreach my $chr_id (keys %{$h_proj_junctions}) {
+			foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
+				if (exists $h_all_junctions->{$chr_id}->{$junction_id}) {
+					$h_all_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+				}
+				else {
+					$h_all_junctions->{$chr_id}->{$junction_id} = $h_proj_junctions->{$chr_id}->{$junction_id};
+				}
+			}	
+		}
+	}
+	my $nodejavu = GenBoNoSqlDejaVuJunctions->new( dir => $dir, mode => "c" );
+	insert_in_dejavu_jonctions($nodejavu, $h_all_junctions);
+	$nodejavu->close();
+	print "# INSERT in DejaVuLMDB Junctions -> DONE!\n";
+}
+
+sub insert_all_junctions_canoniques {
+	my $h_all_junctions_canoniques;
+	foreach my $this_project_name (keys %$hash_projects) {
+		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+		my $file = $dir_dv_proj.'/'.$this_project_name.'.canoniques.json';
+		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
+		open (FILE, $file);
+		my $json = <FILE>;
+		my $h_proj_junctions_canoniques; 
+		$h_proj_junctions_canoniques = decode_json $json if ($json);
+		close (FILE);
+		next if (not $h_proj_junctions_canoniques); 
+		foreach my $chr_id (keys %{$h_proj_junctions_canoniques}) {
+			foreach my $junction_id (keys %{$h_proj_junctions_canoniques->{$chr_id}}) {
+				if (exists $h_all_junctions_canoniques->{$chr_id}->{$junction_id}) {
+					$h_all_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+				}
+				else {
+					$h_all_junctions_canoniques->{$chr_id}->{$junction_id} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id};
+				}
+			}	
+		}
+	}
+	my $nodejavucanoniques = GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $dir_canoniques, mode => "c" );
+	insert_in_dejavu_jonctions($nodejavucanoniques, $h_all_junctions_canoniques);
+	$nodejavucanoniques->close();
+	print "# INSERT in DejaVuLMDB Junctions canoniques -> DONE!\n";
+}
+
+sub insert_all_junctions_type {
+	my ($pheno_name) = @_;
+	my $h_all_junctions_pheno;
+	foreach my $this_project_name (keys %{$hash_project_phenotypes->{$pheno_name}}) {
+		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+		my $file = $dir_dv_proj.'/'.$this_project_name.'.json';
+		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
+		open (FILE, $file);
+		my $json = <FILE>;
+		my $h_proj_junctions = decode_json $json;
+		close (FILE);
+		foreach my $chr_id (keys %{$h_proj_junctions}) {
+			foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
+				if (exists $h_all_junctions_pheno->{$chr_id}->{$junction_id}) {
+					$h_all_junctions_pheno->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+				}
+				else {
+					$h_all_junctions_pheno->{$chr_id}->{$junction_id} = $h_proj_junctions->{$chr_id}->{$junction_id};
+				}
+			}	
+		}
+	} 
+	
+	my $dir_pheno = $dv_dir_path.'/'.$pheno_name.'/';
+	unless (-d $dir_pheno){
+		`mkdir $dir_pheno`;
+		`chmod 777 $dir_pheno`;
+	}
+	my $nodejavupheno = GenBoNoSqlDejaVuJunctionsPhenotype->new( phenotype_name => $pheno_name, dir => $dir_pheno, mode => "c" );
+	insert_in_dejavu_jonctions($nodejavupheno, $h_all_junctions_pheno);
+	$nodejavupheno->close();
+	print "# INSERT in DejaVuLMDB Junctions $pheno_name -> DONE!\n";
+}
 
 sub insert_in_dejavu_jonctions {
 	my ($nodejavu, $h_junctions_to_insert) = @_;
-	print "\n-> DIR: $dir\n";
+#	print "\n-> DIR: ".$nodejavu->dir()."\n";
 	foreach my $chr_id (keys %{$h_junctions_to_insert}) {
 		$nodejavu->create_table($chr_id);
 		my $sth = $nodejavu->dbh($chr_id)->prepare('insert into  __DATA__(_key,_value,start,end,variation_type,patients,projects,ratios,gene_name)  values(?,?,?,?,?,?,?,?,?) ;') or die $DBI::errstr;

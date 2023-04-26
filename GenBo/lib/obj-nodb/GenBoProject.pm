@@ -51,6 +51,7 @@ use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlDejaVuJunctionsCanoniques;
+use GenBoNoSqlDejaVuJunctionsPhenotype;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
@@ -1122,6 +1123,16 @@ has geneWindow => (
 	},
 );
 
+has is_human_genome => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 1 if $self->getVersion() =~ /HG/;
+		return;
+	},
+);
+
 has version => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1434,6 +1445,13 @@ has gencode_version => (
 
 sub get_gencode_directory {
 	my ( $self, $version ) = @_;
+	if ($self->annotation_genome_version() =~ /MM38/) {
+		return "/data-isilon/public-data/repository/MM38/annotations/gencode.vM25/lmdb/";
+	}
+	if ($self->annotation_genome_version() =~ /MM39/) {
+		return "/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/lmdb/";
+	}
+	
 	my $database = "gencode";
 	$version = $self->gencode_version unless $version;
 	return $self->{directory}->{$version}->{$database}
@@ -1686,14 +1704,21 @@ has annotation_public_path => (
 	},
 );
 
+
+sub get_dejavu_junctions_path {
+	my ($self, $phenotype_name) = @_;
+	my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
+	$dir .= '/'.$phenotype_name.'/' if ($phenotype_name);
+	confess("junction dejavu $dir") unless -e $dir;
+	return $dir;
+}
+
 has DejaVuJunction_path => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
-		confess("junction dejavu $dir") unless -e $dir;
-		return $dir;
+		return $self->get_dejavu_junctions_path();
 	},
 );
 
@@ -2151,6 +2176,8 @@ has genomeFai => (
 			next if $chr =~ /KI/;
 			next if $chr =~ /GL/;
 			next if $chr =~ /EBV/;
+			next if $chr =~ /JH/;
+			next if $chr =~ /MU0/;
 			next if $chr =~ /_random/;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
@@ -4528,11 +4555,25 @@ has dejavuJunctionsCanoniques => (
 		my $self = shift;
 		my $release = $self->annotation_genome_version();
 		$release = 'HG19' if ($release =~ /HG19/);
-		my $sqliteDir = $self->DejaVuJunction_path();
+		my $sqliteDir = $self->get_dejavu_junctions_path('canoniques');
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $sqliteDir, mode => "r" );
 	}
 );
+
+sub dejavuJunctionsPhenotype {
+	my ($self, $phenotype_name) = @_;
+	$phenotype_name =~ s/ /_/g;
+	$phenotype_name = lc($phenotype_name);
+	confess("\n\nERROR: DV Junctions Phenotype mandatory\n\n") unless ($phenotype_name);
+	return $self->{'dv_junctions_'.$phenotype_name} if (exists $self->{'dv_junctions_'.$phenotype_name});
+	my $release = $self->annotation_genome_version();
+	$release = 'HG19' if ($release =~ /HG19/);
+	my $sqliteDir = $self->get_dejavu_junctions_path($phenotype_name);
+	die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+	$self->{'dv_junctions_'.$phenotype_name} = GenBoNoSqlDejaVuJunctionsPhenotype->new( phenotype_name => $phenotype_name, dir => $sqliteDir, mode => "r" );
+	return $self->{'dv_junctions_'.$phenotype_name};
+}
 
 
 has dejavuSVIntervalTree => (
@@ -6245,6 +6286,8 @@ has get_hash_patients_description_rna_seq_junction_analyse => (
 		my $project_name = $self->name;
 		my (@lFilesDescription, $hType_patients);
 		my $path_rna_description = $self->get_path_rna_seq_junctions_analyse_description_root();
+		return $hType_patients if (not -d $path_rna_description);
+		
 		opendir my ($dir), $path_rna_description;
 		my @found_files = readdir $dir;
 		closedir $dir;
@@ -6298,6 +6341,7 @@ sub getQueryJunction {
 	$args{file}    = $fileName;
 	if ($method eq 'RI') { $args{isRI} = 1; }
 	elsif ($method eq 'SE') { $args{isSE} = 1; }
+	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;
@@ -6305,23 +6349,11 @@ sub getQueryJunction {
 
 sub setJunctions {
 	my ($self) = @_;
-	my $h_ids;
-	my $path = $self->get_path_rna_seq_junctions_analyse_all_res();
-	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
-	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
-	if ($ri_file and -e $ri_file ) {
-		foreach my $hres (@{$self->getQueryJunction($ri_file, 'RI')->parse_file()}) {
-			my $obj = $self->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
+	my @lObj;
+	foreach my $chr (@{$self->getChromosomes()}) {
+		push(@lObj, @{$chr->getJunctions()});
 	}
-	if ($se_file and -e $se_file) {
-		foreach my $hres (@{$self->getQueryJunction($se_file, 'SE')->parse_file()}) {
-			my $obj = $self->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
-	return $h_ids;
+	return \@lObj;
 }
 		
 sub writeCaptureBedFile {
