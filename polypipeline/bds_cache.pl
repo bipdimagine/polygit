@@ -53,7 +53,10 @@ GetOptions(
 
 #$steps_name = "all" unless $steps_name;
 
-check_version($projectName) unless ($steps_name eq 'update' );
+my $can_check_version = 1;
+$can_check_version = undef if ($steps_name eq 'update' );
+$can_check_version = undef if ($analyse_type eq 'rna_junctions' );
+check_version($projectName) if ($can_check_version);
 my $report;
 my $buffer = GBuffer->new();
 my $define_steps;
@@ -161,26 +164,24 @@ unless ($menu) {
 	}
 }
 else {
-foreach  my $type (@types_steps){
-	my @list = sort {$a cmp $b} keys %{$define_steps->{$type}};
-	push(@list,'none');
-	my $x =  colored ['black ON_BRIGHT_GREEN'];
-	my $banner=" $x Please Pick a $type  for $projectName :";
 	
-   	my $choice = &pick(\@list,$banner,20);
-   	my $text;
-   ($steps_name,$text)=split(":",$choice);
-   next if $steps_name eq 'none';
-   push(@$list_steps,[split(",",$define_steps->{$type}->{$steps_name})]);
-   push(@$list_steps_types,$type);
-}
+	foreach  my $type (@types_steps){
+		my @list = sort {$a cmp $b} keys %{$define_steps->{$type}};
+		push(@list,'none');
+		my $x =  colored ['black ON_BRIGHT_GREEN'];
+		my $banner=" $x Please Pick a $type  for $projectName :";
+		
+	   	my $choice = &pick(\@list,$banner,20);
+	   	my $text;
+	   ($steps_name,$text)=split(":",$choice);
+	   next if $steps_name eq 'none';
+	   push(@$list_steps,[split(",",$define_steps->{$type}->{$steps_name})]);
+	   push(@$list_steps_types,$type);
+	}
 }
 
 #warn Dumper $list_steps_types;
 $pipeline->priority_name($list_steps_types);
-
-
-
 
 
 my $bin_dev = qq{$Bin/scripts/scripts_pipeline/};
