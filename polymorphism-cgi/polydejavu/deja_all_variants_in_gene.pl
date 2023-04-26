@@ -258,6 +258,7 @@ exit(0);
 sub save_export_xls {
 	$project_dejavu->getProject->buffer->dbh_deconnect();
 	$project_dejavu->getProject->buffer->dbh_reconnect();
+#	delete $project_dejavu->{rocksPartialTranscripts};
 	my $h_xls_args;
 	print '_save_xls_';
 	$project_dejavu->cgi_object(1);
@@ -309,12 +310,14 @@ sub save_export_xls {
 	print "|";
 	$project_dejavu->getProject->buffer->dbh_deconnect();
 	$project_dejavu->getProject->buffer->dbh_reconnect();
+#	delete $project_dejavu->{rocksPartialTranscripts};
 	print "|";
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
 	print "|";
 	my $session_id = $xls_export->save();
 	print "|";
 	$project_dejavu->getProject->buffer->dbh_deconnect();
+#	delete $project_dejavu->{rocksPartialTranscripts};
 	return $session_id;
 }
 
@@ -547,24 +550,67 @@ sub save_html {
 	$session->save( 'gencode_version', $hRes->{'gencode_version'} );
 }
 
+#sub get_variants_infos_from_this_project {
+#	my ($data) = @_;
+#	foreach my $gene_init_id (keys %{$data->{hResGene}}) {
+#		$hResGene->{$gene_init_id} = $data->{hResGene}->{$gene_init_id} unless (exists $hResGene->{$gene_init_id});
+#	}
+#	foreach my $start (keys %{$data->{hResVariants}}) {
+#		foreach my $var_id (keys %{$data->{hResVariants}->{$start}}) {
+#			$hResVariants->{$start}->{$var_id} = $data->{hResVariants}->{$start}->{$var_id};
+#			my $score_max = $data->{hResVariantsByScore}->{$var_id};
+#			$hResVariants_byScores->{$score_max}->{$var_id} = undef;
+#		}
+#	}
+#	foreach my $var_id (keys %{$data->{hResVariantsIds}}) {
+#		$hResVariantsIds->{$var_id} += $data->{hResVariantsIds}->{$var_id};
+#	}
+#	foreach my $var_id (keys %{$data->{hResVariantsListPatients}}) {
+#		foreach my $project_name (keys %{$data->{hResVariantsListPatients}->{$var_id}}) {
+#			foreach my $pat_name (keys %{$data->{hResVariantsListPatients}->{$var_id}->{$project_name}}) {
+#				foreach my $type (keys %{$data->{hResVariantsListPatients}->{$var_id}->{$project_name}->{$pat_name}}) {
+#					$hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{$type} = $data->{hResVariantsListPatients}->{$var_id}->{$project_name}->{$pat_name}->{$type};
+#				}
+#			}
+#		}
+#	}
+#	foreach my $var_id (keys %{$data->{hResVariantsTableLocal}}) {
+#		$hVariantsDetails->{$var_id}->{table_local} = $data->{hResVariantsTableLocal}->{$var_id};
+#	}
+#	
+#	foreach my $var_id (keys %{$data->{hResVariantsRatioAll}}) {
+#		foreach my $project_id (keys %{$data->{hResVariantsRatioAll}->{$var_id}}) {
+#			foreach my $patient_id (keys %{$data->{hResVariantsRatioAll}->{$var_id}->{$project_id}}) {
+#				$hResVariantsRatioAll->{$var_id}->{$project_id}->{$patient_id} = $data->{hResVariantsRatioAll}->{$var_id}->{$project_id}->{$patient_id};
+#			}
+#		}
+#	}
+#	foreach my $var_id (keys %{$data->{hResVariantsModels}}) {
+#		foreach my $project_id (keys %{$data->{hResVariantsModels}->{$var_id}}) {
+#			foreach my $patient_id (keys %{$data->{hResVariantsModels}->{$var_id}->{$project_id}}) {
+#				$hResVariantsModels->{$var_id}->{$project_id}->{$patient_id} = $data->{hResVariantsModels}->{$var_id}->{$project_id}->{$patient_id};
+#			}
+#		}
+#	}
+#}
+
 sub get_variants_infos_from_projects {
 	my ($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript) = @_;
 	my ($h_count, $lProjectNames_filtred);
 	print '_update_dv_';
 	($h_count, $hVariantsDetails, $lProjectNames_filtred) = update_list_variants_from_dejavu($project_init_name, $gene_init_id_for_newgene, $h_proj_pat_ill, $hResVariants_loaded, $hVariantsDetails, $hResVariantsRatioAll, $hResVariantsModels, $use_locus, $only_transcript);
-#	if ($only_project) { push(@lProjectNames, $only_project); }
-#	else { @lProjectNames = @$lProjectNames_filtred; }
-#	if ($only_project) { push(@lProjectNames, $only_project); }
-#	else { @lProjectNames = @$lProjectNames_filtred; }
 	@lProjectNames = @$lProjectNames_filtred;
 	
 	my $hgene;
 	$hgene->{id} = $gene_init_id;
 	my $pm = new Parallel::ForkManager($fork);
+	my $nb_errors=0;
 	$pm->run_on_finish(
 		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
+			$nb_errors++ unless $data;
 			my $this_project_name = $data->{project_name};
 			if (exists $data->{problem} and $data->{problem}) {
+				$nb_errors++;
 				$hResProjectProblem->{$this_project_name} = $data->{problem};
 				next;
 			}
@@ -608,37 +654,23 @@ sub get_variants_infos_from_projects {
 					}
 				}
 			}
-			
 		}
 	);
 	
-	print '_by_proj_';
-	my $iter = natatime ($fork, @lProjectNames);
+	my $iter = natatime 1, @lProjectNames;
 	while ( my @tmp = $iter->() ) {
 		my $pid = $pm->start and next;
 		my $h_project_res;
 		my ($hResGene_local, $hResVariants_local, $hResVariantsIds_local, $hResVariantsListPatients_local, $hResVariantsTableLocal_local,$hResVariantsByScore_local, $hResVariantsRatioAll_local);
+		
 		foreach my $project_name (@tmp) {
-#			next if $project_name eq 'NGS2020_3052';
-#			print $project_name;
+#			next if $project_name eq 'NGS2014_0524';
 			print '.';
-#			die if ($project_name eq 'NGS2022_5424');
 			next if ($only_my_projects and $only_my_projects ne '1' and  not exists $h_projects_name_with_capture->{$project_name});
-#			next if ($only_project and $project_name ne $only_project);
-			
-			my ($buffer_nocache, $project_nocache);
-			
 			my $buffer = new GBuffer;
-			my $project;
-#			eval {
-				$project = $buffer->newProjectCache( -name => $project_name );
-#			};
-#			if ($@) {
-#				$h_project_res->{problem} = 'cache not found';
-#				next;
-#			}
+			$buffer->{gencode} = $buffer_init->gencode();
+			my $project = $buffer->newProjectCache( -name => $project_name );
 			if ($project) {
-				my ($buffer_nocache, $project_no_cache);
 				my $h_patients_found_with_filter_var;
 				my $is_ok_filter_var_in_project = 1;
 				if ($only_pat_with_var) {
@@ -668,6 +700,7 @@ sub get_variants_infos_from_projects {
 					}
 				}
 				next unless $is_ok_filter_var_in_project;
+				
 				
 				my @lPhen;
 #				eval {
@@ -764,7 +797,8 @@ sub get_variants_infos_from_projects {
 								$vn =~ s/chr//;
 								$h_var->{value}->{gnomad_id} = $vn;
 								$h_var->{html}->{gnomad_id} = $vn;	
-								$h_var->{value}->{is_cnv} = 0;	
+								$h_var->{value}->{is_cnv} = 0;
+								
 								update_variant_editor::vgnomad($var,$h_var);
 								update_variant_editor::vname($var,$h_var);
 								update_variant_editor::vspliceAI($var,$h_var);
@@ -775,6 +809,7 @@ sub get_variants_infos_from_projects {
 								update_variant_editor::vclinvar($var,$h_var);
 								update_variant_editor::vhgmd($var,$h_var);
 								update_variant_editor::vdejavu($var,$h_var);
+								
 								if (-d $p->NoSqlDepthDir() and -e $p->NoSqlDepthDir().$p->name.".depth.lmdb") {
 									update_variant_editor::trio($var,$h_var,$p);
 								}
@@ -853,8 +888,6 @@ sub get_variants_infos_from_projects {
 						
 						if (not $hResVariantsTableLocal_local->{$var_id} or not $hResVariantsTableLocal_local->{$var_id}) {
 							$hResVariantsTableLocal_local->{$var_id} = update_variant_editor::table_validation($p, $h_var, $hgene);
-#							eval { $hResVariantsTableLocal_local->{$var_id} = update_variant_editor::table_validation($p, $h_var, $hgene); };
-#							if ($@) { $hResVariantsTableLocal_local->{$var_id} = 'Problem. Analyse too old'; }
 						}
 						if (not $hResVariants_local->{$var->start()}->{$var_id} or not $hResVariants_local->{$var->start()}->{$var_id}) {
 							if ($export_xls) {
@@ -867,10 +900,15 @@ sub get_variants_infos_from_projects {
 					$no->close() if ($no);
 				}
 				
-				$buffer_nocache = undef;
-				$project_no_cache = undef;
+				foreach my $lmdb_type (keys %{$chr->{lmdb}}) {
+					$chr->{lmdb}->{$lmdb_type}->close();
+				}
+				delete $chr->{lmdb};
+				
 			}
-			#delete $buffer->{dbh};
+#			$project->{rocksPartialTranscripts}->rocks->get("coucou");
+#			delete $project->{rocksPartialTranscripts};
+			
 			$h_project_res->{project_name} = $project_name;
 			$h_project_res->{hResGene} = $hResGene_local;
 			$h_project_res->{hResVariants} = $hResVariants_local;
@@ -879,11 +917,17 @@ sub get_variants_infos_from_projects {
 			$h_project_res->{hResVariantsListPatients} = $hResVariantsListPatients_local;
 			$h_project_res->{hResVariantsTableLocal} = $hResVariantsTableLocal_local;
 			$h_project_res->{hResVariantsByScore} = $hResVariantsByScore_local;
+			
+			$buffer->disconnect();
+			$buffer = undef;
+			$project = undef;
 		}
+#		get_variants_infos_from_this_project($h_project_res);
 		$pm->finish(0, $h_project_res);
 	}
 	$pm->wait_all_children();
 	print '_done_proj_';
+	print '..._nb_errors_proj_'.$nb_errors.'_';
 	return ($h_count, $hVariantsDetails, $hResVariantsModels);
 }
 
@@ -903,6 +947,7 @@ sub get_html_gene {
 	my $description_gene = $gene_init->description();
 	$gene_init->getProject->buffer->dbh_deconnect();
 	$gene_init->getProject->buffer->dbh_reconnect();
+#	delete $gene_init->getProject->{rocksPartialTranscripts};
 #	eval {
 		foreach my $panel (@{$gene_init->getPanels()}) {
 			$hResGene->{$gene_init_id}->{panels}->{$panel->name()}->{phenotype} = $panel->getPhenotypes()->[0]->name();
@@ -1213,6 +1258,12 @@ sub update_list_variants_from_dejavu {
 	my $h_count;
 	$h_count->{total} = $total;
 	$h_count->{total_pass} = $total_pass;
+	
+#	delete $project_dejavu->{rocksPartialTranscripts};
+	$project_dejavu->buffer->dbh_deconnect();
+	
+	
+	
 	return ($h_count, $hVariantsDetails, \@lProjectNames);
 }
 
