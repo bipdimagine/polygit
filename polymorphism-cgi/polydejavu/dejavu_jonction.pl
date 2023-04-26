@@ -44,6 +44,7 @@ $html_my_var .= qq{<table id='$table_id_my_var' data-sort-name='identity' data-s
 $html_my_var .= qq{<thead style="text-align:center;">};
 $html_my_var .= qq{<th data-field="pdf"><b><center>Sashimi</center></b></th>};
 $html_my_var .= qq{<th data-sortable="true" data-field="identity"><b><center>Identity</center></b></th>};
+$html_my_var .= qq{<th data-sortable="true" data-field="phenos"><b><center>Phenotypes</center></b></th>};
 $html_my_var .= qq{<th data-field="project"><b><center>Project</center></b></th>};
 $html_my_var .= qq{<th data-field="patient"><b><center>Patient</center></b></th>};
 $html_my_var .= qq{<th data-field="type"><b><center>Type</center></b></th>};
@@ -61,6 +62,7 @@ $html .= qq{<table id='$table_id' data-sort-name='identity' data-sort-order='des
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="pdf"><b><center>Sashimi</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="identity"><b><center>Identity</center></b></th>};
+$html .= qq{<th data-sortable="true" data-field="phenos"><b><center>Phenotypes</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="project"><b><center>Project</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="patient"><b><center>Patient</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="type"><b><center>Type</center></b></th>};
@@ -109,7 +111,14 @@ foreach my $junction (@lJunction) {
 	foreach my $identity (reverse sort keys %{$hdv}) {
 		foreach my $prn (reverse sort keys %{$hdv->{$identity}}) {
 			my $buffer_tmp = GBuffer->new();
-			my $project_tmp = $buffer->newProject(-name => $project_name);
+			my $project_tmp = $buffer->newProject(-name => $prn);
+			
+			my @lPhenos;
+			foreach my $pheno_name (@{$project_tmp->phenotypes()}) {
+				push(@lPhenos, $pheno_name);	
+			}
+			my $phenos = join(', ', sort @lPhenos);
+			
 			foreach my $ptn (sort keys %{$hdv->{$identity}->{$prn}}) {
 				my $type = $hdv->{$identity}->{$prn}->{$ptn}->{type};
 				my $count_junctions = $hdv->{$identity}->{$prn}->{$ptn}->{count_junctions};
@@ -145,6 +154,7 @@ foreach my $junction (@lJunction) {
 				else { $this_html .= qq{<tr>}; }
 				$this_html .= qq{<td><center>$sashimi_button</center></td>};
 				$this_html .= qq{<td><center><b><span style="color:$color;">$identity%</span></b></center></td>};
+				$this_html .= qq{<td><center>$phenos</center></td>};
 				$this_html .= qq{<td><center>$prn</center></td>};
 				$this_html .= qq{<td><center>$ptn</center></td>};
 				$this_html .= qq{<td><center>$type</center></td>};
