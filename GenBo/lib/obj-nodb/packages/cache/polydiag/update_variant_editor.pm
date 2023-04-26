@@ -1763,7 +1763,10 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				
 				$out .=  $cgi->start_div({class=>" btn-group btn-xs ",style=>'position:relative;float:left;bottom:5px;'});
 				my $in;
-				if ($gene) { $in = $gene->omim_inheritance; }
+				if ($gene) {
+					if ($gene->getProject->getVersion() =~ /HG/) { $in = $gene->omim_inheritance; }
+					$in = '-';
+				}
 				else { $in = $hgene->{omim_inheritance}; }
 				$in ="" if $in eq "-";
 				$in = "X-linked " if $in =~/X-linked/;
@@ -1856,7 +1859,14 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				$out .=qq{<a class="btn btn-primary btn-xs" href="#" role="button" style="top:-4px;$bgcolor2" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><p style="font-size:10px;text-shadow:0px 1px 1px #000;position:relative;bottom:-4px">$panel_name1</p></a>} if $panel_name1;
 
 	   		my ($pheno,$nb_other_terms);
-	   		if ($gene) { ($pheno,$nb_other_terms) = $gene->polyviewer_phentotypes(); }
+	   		if ($gene) {
+	   			if ($gene->getProject->getVersion() =~ /HG/) { 
+	   				($pheno,$nb_other_terms) = $gene->polyviewer_phentotypes();
+	   			}
+	   			else {
+	   				$pheno = $gene->description();
+	   			}
+	   		}
 	   		elsif (exists $hgene->{phenotypes}->{pheno} and exists $hgene->{phenotypes}->{nb_other_terms}) {
 				$pheno = $hgene->{phenotypes}->{pheno};
 				$nb_other_terms = $hgene->{phenotypes}->{nb_other_terms};
