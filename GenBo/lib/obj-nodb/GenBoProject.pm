@@ -1577,12 +1577,28 @@ has getRockPartialTranscriptDir  => (
 	}
 );
 
+has lmdbPartialTranscripts => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return unless -e $self->getRockPartialTranscriptDir().'/partial_transcripts_lmdb';
+		my $no = GenBoNoSqlLmdb->new(
+			dir         => $self->getRockPartialTranscriptDir(),
+			mode        => 'r',
+			is_index    => 1,
+			name        => 'partial_transcripts_lmdb',
+			is_compress => 1,
+		);	
+		return $no;
+	}
+);
+
 has rocksPartialTranscripts => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return if not (-e $self->getRockPartialTranscriptDir.'/partial_transcripts.rocksdb/CURRENT');
 		my $no = GenBoNoSqlRocks->new(
 			dir         => $self->getRockPartialTranscriptDir(),
 			mode        => 'r',

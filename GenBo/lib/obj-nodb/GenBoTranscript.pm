@@ -45,7 +45,8 @@ has hash_partial_infos => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		my $no = $self->getProject->rocksPartialTranscripts();
+		#my $no = $self->getProject->rocksPartialTranscripts();
+		my $no = $self->getProject->lmdbPartialTranscripts();
 		return unless $no;
 		my $h = $no->get($self->id);
 		return $h if $h;
