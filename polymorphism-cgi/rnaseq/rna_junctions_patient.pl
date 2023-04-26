@@ -89,6 +89,12 @@ foreach my $chr (@{$project->getChromosomes()}) {
 		my $vector_postions = $chr->getVectorByPosition($from, $to);
 		$vector_patient->Intersection($vector_patient, $vector_postions);
 	}
+	if ($only_gene) {
+		next if ($chr->id() ne $only_gene->getChromosome->id());
+		my $vector_postions = $chr->getVectorByPosition(($only_gene->start - 1000), ($only_gene->end + 1000));
+		$vector_patient->Intersection($vector_patient, $vector_postions);
+	}
+	
 	foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
 		$n++;
 		print '.' if ($n % 50000);
@@ -128,10 +134,6 @@ foreach my $chr (@{$project->getChromosomes()}) {
 		push(@lJunctions, $junction);
 	}
 }
-
-#warn "\n";
-#warn "before: ".scalar(@lJunctions);
-#die;
 
 #if (scalar(@lJunctions) > 1000) {
 #	my ($h_by_score, @lJunctionsPreFilter);
@@ -339,19 +341,21 @@ while( my @tmp = $iter->() ) {
 		}
 		next unless @lGenesNames;
 		
-		if ($junction->get_percent_new_count($patient) < $min_score) {
-			next;
-			if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
-			else { next; }
+		if (not $only_gene) {
+			if ($junction->get_percent_new_count($patient) < $min_score) {
+				next;
+				if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
+				else { next; }
+			}
+			
+			eval {
+				$junction->dejavu_percent_coordinate_similar($nb_percent_dejavu_value);
+				my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
+				$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
+				next if ($nb_dejavu_pat > $max_dejavu_value);
+			};
+			if ($@) { next; }
 		}
-		
-		eval {
-			$junction->dejavu_percent_coordinate_similar($nb_percent_dejavu_value);
-			my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
-			$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
-			next if ($nb_dejavu_pat > $max_dejavu_value);
-		};
-		if ($@) { next; }
 		
 	#	my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
 	#	$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
