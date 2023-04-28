@@ -64,6 +64,8 @@ eval { $hRes->{'html_title'} = $session->load('html_title'); };
 if ($@) { warn 'no html_title'; }
 eval { $hRes->{'hash_filters'} = $session->load('hash_filters'); };
 if ($@) { warn 'no hash_filters'; }
+eval { $hRes->{'gencode_version'} = $session->load('gencode_version'); };
+if ($@) { warn 'no gencode_version'; }
 
 unless ($hRes->{'html_variants'}) {
 	$hRes->{'html_variants'} = '<div>Session expired... Please, reload your filters...</div>';

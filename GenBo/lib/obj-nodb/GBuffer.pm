@@ -230,9 +230,8 @@ has gencode => (
 		confess($filename2) unless -e $filename2;
 		my $public_data;
 		my $previous;
-		foreach my $v (sort{$a <=> $b} keys %config1){
+		foreach my $v (keys %config1){
 			$config1{$v}->{directory} = $config1{$v}->{name}."/".$config1{$v}->{version}."/".$config1{$v}->{dir};
-			
 		}
 		return \%config1;
 		},
@@ -494,10 +493,13 @@ sub newProject {
 										release	=> $release,
 										test	=> $test,
 										buffer	=> $self );
-									
 	$self->genome_version($project->genome_version);	
 	$self->annotation_genome_version($project->annotation_genome_version);
-	if ($project->gencode_version > -1){
+	if ($project->gencode_version =~ /M/) {
+		$self->annotation_version($project->annotation_version);
+	 	$self->public_data_version($project->public_database_version);	
+	}
+	elsif ($project->gencode_version > -1){
 		$self->annotation_version($project->annotation_version);
 	 	$self->public_data_version($project->public_database_version);	
 	}
@@ -657,13 +659,11 @@ sub software {
 sub software_version {
 		my ($self,$name,$nodie) = @_;
 		my $prog =  $self->getSoftware($name,1);
-		warn Dumper $prog;
 		return {"name" => $prog,"not_avalaible"=>1} unless $prog;
 		my $rp = abs_path($prog);
 		my @p = split("/",$rp);
 		pop @p;
 		my $version_json = join("/",@p)."/version.json";
-		warn $version_json." ".$prog;
 		if ($nodie){
 		return {} unless  -e $version_json;
 		}
@@ -886,6 +886,8 @@ sub get_gnomad {
 				my $pops = $desc->{array}->{populations};
 				my $infos = $desc->{array}->{infos};
 				my $hash = $self->get_lmdb_database($db,$chr,$type)->get($start);
+				
+				
 				next unless $hash;
 				warn $start if $hash =~ /-/;
 				next unless exists $hash->{$allele};
@@ -954,7 +956,6 @@ sub get_gnomad {
 sub get_lmdb_database_directory{
 	my ($self,$database)= @_;
 	my $version = $self->public_data_version;
-	
 	return $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 }
 
@@ -966,7 +967,6 @@ sub description_public_lmdb_database {
 	my $dir = $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 	
 	my $f ="$dir/description.json";
-	
 	 $f  =  "$dir/version.json"  unless -e $f;
 	 confess($f) unless -e $f;
 	  open(JSON, $f);
@@ -989,7 +989,6 @@ sub get_lmdb_database {
 	
 	return $self->{lmdb}->{$chr}->{$database}->{$type} if exists  $self->{lmdb}->{$chr}->{$database}->{$type};
 	my $dir = $self->get_lmdb_database_directory($database).'/'.$type;
-	
 	confess($dir) unless -e $dir;
 	unless (-e $dir."/".$chr ){
 		if ($chr eq "Y"){

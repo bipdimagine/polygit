@@ -648,6 +648,9 @@
 								myPanel.appendTo(myNode);
 								is_first_launch = 1;
 							}
+							if (key == 'captures') {
+								document.getElementById("span_captures").innerHTML = "Capture(s) " + val;
+							}
 						});
 				    })
 				}
@@ -996,6 +999,8 @@
 				</ul>
 				<ul class="nav navbar-nav">
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_captures" style="color:white;font-size:18px"></span></a></li>
+					
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
 				</ul>
 			</div>
