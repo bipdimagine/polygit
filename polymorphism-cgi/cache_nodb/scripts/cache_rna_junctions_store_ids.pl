@@ -254,7 +254,7 @@ sub get_junctions_ids {
 	for ( my $i = 0 ; $i < @patient_names ; $i++ ) {
 		$hpatients->{ $patient_names[$i] } = $i;
 	}
-	my $vs = $project->getJunctions();
+	my $vs = $chr->getJunctions();
 	
 	my $h_ri_aval_amont;
 	#search common ri_aval ri_amont

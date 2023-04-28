@@ -62,6 +62,13 @@ has path_rocks =>(
 }
 );
 
+
+sub exists_rocks  {
+	my $self = shift;
+	return -e ($self->path_rocks.'/CURRENT');
+}
+
+
 has rocks =>(
 	is		=> 'rw',
 	lazy    => 1,
@@ -73,8 +80,9 @@ default => sub {
 	#	system ("chmod a+rwx ".$self->path_rocks);
 	#}
 	if ($self->mode eq "r"){
-#		confess();
-	
+
+		confess() unless ($self->exists_rocks());
+
 		my $rocks = RocksDB->new($self->path_rocks,{IncreaseParallelism => 1,read_only=>1});
 		#$rocks->IncreaseParallelism();
 		return  $rocks;

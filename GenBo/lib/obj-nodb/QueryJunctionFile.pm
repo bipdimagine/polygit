@@ -3,6 +3,7 @@ package QueryJunctionFile;
 use strict;
 use Moose;
 use Data::Dumper;
+use Bio::DB::HTS::Tabix;
 
 
 has file => (
@@ -40,47 +41,68 @@ has project => (
 	weak_ref=> 1,
 );
 
+#1. contig name
+#2. first base of the splice junction (1-based)
+#3. last base of the splice junction (1-based)strand (0: undefined, 1: +, 2: -)
+#4. strand (0: undefined, 1: +, 2: -)
+#5. intron motif: 0: noncanonical, 1: GT/AG, 2: CT/AC, 3: GC/AG, 4: CT/GC, 5: AT/AC, 6: GT/AT
+#6. 0: unannotated, 1: annotated, only if an input gene annotations file was used
+#7. number of uniquely mapping reads spanning the splice junction
+#8. number of multimapping reads spanning the splice junction
+#9. maximum spliced alignment overhang
+
+#Ex: 1	3277541	3283661	2	2	0	3	0	49
+sub parse_dragen_file {
+	my ($self, $patient, $chr) = @_;
+	my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->file() );
+	my $iter = $tabix->query($chr->name);
+	my ($h_header, $h_global, @l_res);
+	my $i = 0;
+	while ( my $line = $iter->next ) {
+		my ($chr_id, $start, $end, $strand, $intron_motif, $is_annot, $new_j, $multiple_j, $max_j) = split(' ', $line);
+		my $id = $chr_id.'_'.$start.'_'.$end.'_ALL';
+		my ($h, $h_tmp);
+		$h_tmp->{$chr_id} = undef;
+		$h->{id} = $id;
+		$h->{chromosomes_object} = $h_tmp;
+#		$h->{ensid} = '';
+#		$h->{gene} = '';
+		$h->{chr} = $chr_id;
+		$h->{start} = $start;
+		$h->{end} = $end;
+		$h->{annex}->{$patient->name()}->{type} = 'dragen';
+		$h->{annex}->{$patient->name()}->{junc_new_count} = $new_j;
+		$h->{annex}->{$patient->name()}->{junc_multiple_count} = $multiple_j;
+		$h->{annex}->{$patient->name()}->{junc_normale_count} = $max_j;
+		push (@l_res, $h);
+	}
+	close (FILE);
+	return \@l_res;
+}
 
 sub parse_file {
-	my ($self) = @_;
-	return $self->parse_file_RI() if $self->isRI();
-	return $self->parse_file_SE() if $self->isSE();
+	my ($self, $chr) = @_;
+	return $self->parse_file_RI($chr) if $self->isRI();
+	return $self->parse_file_SE($chr) if $self->isSE();
 	confess();
 }
 
 sub parse_file_RI {
-	my ($self) = @_;
+	my ($self, $chr) = @_;
 	my @lJunctions;
-	my ($h_header_ri, $list_res_ri) = $self->parse_results_global_file($self->file());
+	my ($h_header_ri, $list_res_ri) = $self->parse_results_global_file($self->file(), $chr);
 	return $list_res_ri;
 }
 
 sub parse_file_SE {
-	my ($self) = @_;
+	my ($self, $chr) = @_;
 	my @lJunctions;
-	my ($h_header_se, $list_res_se) = $self->parse_results_global_file($self->file());
+	my ($h_header_se, $list_res_se) = $self->parse_results_global_file($self->file(), $chr);
 	return $list_res_se;
-#	my ($h_header_se, $list_res_se) = $self->parse_results_file($self->file());
-#	foreach my $h_junction (@$list_res_se) {
-#		next if $h_junction->{'chr'} eq 'na';
-#		next if $h_junction->{'junc_se_start'} eq 'na';
-#		next if $h_junction->{'junc_se_end'} eq 'na';
-#		my $h;
-#		$h->{id} = $h_junction->{'chr'}.'_'.$h_junction->{'junc_se_start'}.'_'.$h_junction->{'junc_se_end'}.'_SE';
-#		$h->{chromosomes_object} = { $h_junction->{'chr'} => undef };
-#		$h->{start} = $h_junction->{'junc_se_start'};
-#		$h->{end} = $h_junction->{'junc_se_end'};
-#		#delete $h_junction->{'chr'};
-#		delete $h_junction->{'junc_se_start'};
-#		delete $h_junction->{'junc_se_end'};
-#		$h->{annex} = $h_junction;
-#		push(@lJunctions, $h);
-#	}
-#	return \@lJunctions;
 }
 
 sub parse_results_global_file {
-	my ($self, $file_name) = @_;
+	my ($self, $file_name, $chr) = @_;
 	open (FILE, $file_name);
 	my ($h_header, $h_global, @l_res);
 	my $i = 0;
@@ -121,7 +143,22 @@ sub parse_results_global_file {
 							delete $h_res->{'junc_ri_end'};
 							$h_res->{type_origin_file} = 'RI';
 						}
+						
+#						warn 'S:'.$start.' - E:'.$end;
+						next unless $start;
+						next unless $end;
+						next if $end <= $start;
+
+#Junc_SE					ENSID				Gene	Chr	Junc_SE_Start	Junc_SE_End	Junc_SE_Count	NbreSkippedExons	SkippedExonsID		TranscritsID		Junc_Normale			Junc_Normale_Count	score	Type			minMoyNcountParJunc	maxMoyNcountParJunc		Sample
+#10_100051959_100064084	ENSMUSG00000019966	Kitl	10	100051959		100064084	62				1					ENSMUSE00001407898	ENSMUST00000219050	10_100051959_100064084	62					1		SE_Canonique	35.2222222222222	158.5					102
+					
+						
 						my $chr_id = $h_res->{'chr'};
+						my $is_chr_ok;
+						$is_chr_ok = 1 if $chr_id eq $chr->id();
+						$is_chr_ok = 1 if $chr_id eq $chr->name();
+						next unless $is_chr_ok;
+						
 						my $ensid = $h_res->{'ensid'};
 						$h_tmp->{$chr_id} = undef;
 						$h_global->{$id}->{id} = $id;
@@ -201,7 +238,7 @@ sub parse_results_file {
 sub parse_line {
 	my ($line) = @_;
 	chomp($line);
-	my @lCol = split(' ', $line);
+	my @lCol = split("\t", $line);
 	return \@lCol;
 }
 

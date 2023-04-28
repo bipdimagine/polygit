@@ -23,6 +23,47 @@ has biotype => (
 	required=> 1,
 );
 
+has remap_status => (
+	is		=> 'ro',
+	required=> 1,
+);
+
+has is_partial_transcript => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return if ($self->getProject->gencode_version() eq '943');
+		#return 1 if $self->remap_status() and $self->remap_status() eq 'partial';
+		return 1 if $self->hash_partial_infos();
+		return;
+	}
+);
+
+has hash_partial_infos => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		#my $no = $self->getProject->rocksPartialTranscripts();
+		my $no = $self->getProject->lmdbPartialTranscripts();
+		return unless $no;
+		my $h = $no->get($self->id);
+		return $h if $h;
+		return;
+	}
+);
+
+
+has sequence_from_hg38 => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return $self->hash_partial_infos->{seq38};
+	}
+);
+
 has is_omim => (
         is              => 'ro',
         lazy    => 1,
@@ -208,6 +249,9 @@ has protein => (
 sub getOrfSequence {
 	my $self = shift;
 	my $seq = $self->sequence();
+	if ($self->is_partial_transcript) {
+		$seq = $self->sequence_from_hg38();
+	}
 	my $cs = substr($seq,$self->orf_start-1,abs($self->orf_start-$self->orf_end)+1);
 	$self->{coding_sequence} = $cs;
 	return $self->{coding_sequence} if ($self->{coding_sequence});
@@ -578,9 +622,12 @@ sub codonsConsequenceForSubstitution {
 	my $seq_orf = substr($self->getOrfSequence,$pos_orf-1,1);
 	
 	my $seq= $var->getSequence();
+	
+	
 	$seq = reverse_base($seq) if ($self->strand == -1);
 	my $codon2 = $codon1;
 	my $splice = ($pos_orf+2) % 3;
+	
 	substr($codon2,$splice,1,$seq);
 	my $results = {
 		transcript_position => $pos_transcript,
@@ -836,6 +883,27 @@ is      => 'rw',
 );
 
 
+sub get_correct_translate_position_hg38 {
+	my ($self, $pos) = @_;
+	return 0 if not $self->is_partial_transcript();
+	return 0 unless $self->hash_partial_infos;
+	$self->getSpanSpliceSite->empty();
+	$self->getSpanSpliceSite->add_from_string( $self->hash_partial_infos->{splice_site_span}->as_string() );
+	$self->getSpanEssentialSpliceSite->empty();
+	$self->getSpanEssentialSpliceSite->add_from_string( $self->hash_partial_infos->{essential_splice_site_span}->as_string() );
+	$self->{orf_start_new} = $self->hash_partial_infos->{HG38}->{cds}->{start};
+	$self->{orf_end_new} = $self->hash_partial_infos->{HG38}->{cds}->{end};
+	foreach my $nt (sort {$b <=> $a} keys %{$self->hash_partial_infos->{intspan}}) {
+		if ($self->hash_partial_infos->{intspan}->{$nt}->contains($pos)) {
+			return $nt;
+		}
+	}
+	warn "\n";	
+	warn "Transcript: ".$self->id();
+	warn "Checking position : ".$pos;
+	warn Dumper $self->hash_partial_infos();
+	confess("\n\nProblem transcript ".$self->id()." in get_correct_translate_position_hg38 method. Die\n\n");
+}
 
 #translate genomic position to transcript position call to search_position on the corresponding array
 sub translate_position{
@@ -847,12 +915,17 @@ sub translate_position{
 	my $r = $r1->[0];
 	my $rpos = abs($r->[0]-$pos)+1 + $r->[1];
  	$rpos = abs($rpos - $self->length) +1 if $self->strand == -1;
-		return $rpos;
-			$self->project->start_timer();
-	my $t = $self->search_position($pos,$self->array_pos);
-	$self->project->add_timer();
-	die($t." ".$rpos) if $t ne $rpos;
-	return $t;
+ 	
+# 	warn $rpos;
+ 	$rpos += $self->get_correct_translate_position_hg38($rpos);
+ 	
+	return $rpos;
+	
+#			$self->project->start_timer();
+#	my $t = $self->search_position($pos,$self->array_pos);
+#	$self->project->add_timer();
+#	die($t." ".$rpos) if $t ne $rpos;
+#	return $t;
 	#return $self->search_position($pos,$self->array_pos);
 }
 #translate genomic position to orf position call to search_position on the corresponding array

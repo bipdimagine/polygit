@@ -46,21 +46,38 @@ $project->getChromosomes();
 my $patient = $project->getPatient($patient_name);
 #$patient->use_not_filtred_junction_files(1);
 
+
+if (not $project->is_human_genome()) {
+	print FILE 'PASS not Human release';
+	close (FILE);
+	exit(0); 
+}
+
 my $hType_patients;
 $hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
-
+my $nb = 0;
 my @lJunctions;
 foreach my $chr (@{$project->getChromosomes()}) {
 	my $vector_patient = $patient->getJunctionsVector($chr);
-	foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
+	my @lJunctions = @{$chr->getListVarObjects($vector_patient)};
+	foreach my $junction (@lJunctions) {
 		next if ($junction->isCanonique($patient));
 		next if ($junction->get_ratio_new_count($patient) == 1);
 		next if ($junction->get_percent_new_count($patient) < 10);
 		$junction->dejavu_percent_coordinate_similar(96);
 		my $nb_dejavu_pat = $junction->dejavu_nb_patients();
 		next if ($nb_dejavu_pat > 50);
+		if (scalar(@lJunctions) > 1000) {
+			next if $junction->junction_score_penality_ratio($patient);
+			next if $junction->junction_score_penality_dp($patient);
+			next if $junction->junction_score_penality_new_junction($patient);
+			next if $junction->junction_score_penality_dejavu_inthisrun($patient);
+			next if $junction->junction_score_penality_noise($patient);
+		}
 		push(@lJunctions, $junction);
+		$nb++;
+		last if ($nb == 1000);
 	}
 }
 
