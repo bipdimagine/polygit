@@ -1,10 +1,9 @@
 package GenBoNoSqlRocks;
-use Moose;
+use Moose; 
 use MooseX::Method::Signatures;
 use strict;
 use warnings;
 use Data::Dumper;
-use Carp qw(cluck longmess shortmess);
 use Storable qw/thaw freeze/;
 use JSON::XS;
 use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
@@ -62,6 +61,7 @@ has path_rocks =>(
 		
 }
 );
+
 has rocks =>(
 	is		=> 'rw',
 	lazy    => 1,
@@ -74,17 +74,21 @@ default => sub {
 	#}
 	if ($self->mode eq "r"){
 #		confess();
+	
 		my $rocks = RocksDB->new($self->path_rocks,{IncreaseParallelism => 1,read_only=>1});
 		#$rocks->IncreaseParallelism();
 		return  $rocks;
 	}
 	elsif ($self->mode eq "c"){
 		 RocksDB->destroy_db($self->path_rocks) if -e $self->path_rocks;
-		 my $db =   RocksDB->new($self->path_rocks, {  log_file_time_to_roll=>1 ,IncreaseParallelism => 1,keep_log_file_num=>1,create_if_missing => 1,compression=>"zlib"});
+
+
+		 my $db =   RocksDB->new($self->path_rocks, { log_file_time_to_roll=>1 ,IncreaseParallelism => 1,keep_log_file_num=>1,create_if_missing => 1,compression=>"zlib"});
 		 system("chmod a+rwx ".$self->path_rocks);
 		 return $db;
 	}
 	else {
+	
 		 return  RocksDB->new($self->path_rocks, {  log_file_time_to_roll=>1 ,IncreaseParallelism => 1,keep_log_file_num=>1,create_if_missing => 1,compression=>"zlib"});
 	}
 	
@@ -129,20 +133,45 @@ sub get{
 	return unless $v;
 	return $self->decode($v);
 }
+ has batch => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		#return Sereal::Encoder->new();
+		return RocksDB::WriteBatch->new;;
+	},
+);
  
+
 sub put{
 	my ($self,$key,$value) = @_;
-	
 	confess() unless $self->rocks;
 	$self->rocks->put($key,$self->encode($value));
 	#$self->_put_index($key) if ($self->is_index);
 } 
+
+
 sub close {
 	my ($self) =@_;
 	if ($self->mode ne "r"){
-		$self->rocks->compact_range();
+	if (exists $self->{intspan_keys} && $self->mode ne "r"){
+		#$self->put("&intspan",$self->{intspan_keys});
 	}
+	if (exists $self->{batch}){
+	#	warn "write ".$self->path_rocks;
+		$self->rocks->write($self->batch);
+	#	warn "end ".$self->path_rocks;
+	}
+	
+		warn "\t\t compact ".$self->path_rocks;
+		$self->rocks->compact_range();
+		warn "\t\t end compact ".$self->path_rocks;
+	}
+	
 	#$self->DESTROY();
+	#$self->rocks->close();
+	delete $self->{rocks};
 	$self->{rocks} = undef;
 	$self = undef;
 }

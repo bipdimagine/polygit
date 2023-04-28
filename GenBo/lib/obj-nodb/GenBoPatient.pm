@@ -454,6 +454,7 @@ has 'compute_sex' => (
 	default => sub {
 		my $self = shift;
 		my $covm = $self->coverage_SRY();
+		return 1 if $covm > 30;
 		return -1 if $covm == -1;
 		my $covh = $self->coverage();
 		$covh->{mean} += 0;
@@ -1798,7 +1799,7 @@ has tabix_wisecondor => (
 
 
 has vntyperTsv => (
-is      => 'ro',
+	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
