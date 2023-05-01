@@ -1820,10 +1820,19 @@ is      => 'ro',
 		chomp(@lines);
 		#confess() if scalar(@lines) > 1;
 		return [] unless $lines[0];
+			my $t = (stat $file )[10];
+	
+		my $date = POSIX::strftime( 
+             "%d/%m/%y", 
+             localtime( 
+               		$t
+                 )
+             );
 		my @t;
 		foreach my $l (@lines){
-			push(@t,[split(" ",$l)] ) ;
+			push(@t,[split(" ",$l),$date] ) ;
 		}
+		
 		return \@t;
 	}
 );
