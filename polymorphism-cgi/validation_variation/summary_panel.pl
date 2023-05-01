@@ -524,7 +524,7 @@ my $dev;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
- push(@$key_quality,"muc1") if $project->getCaptures->[0]->analyse =~ /renom/i;
+ push(@$key_quality,"muc1.01.05.23") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  warn "HEADER ==> ".$header;
  warn join(";",@$key_quality);
@@ -733,6 +733,7 @@ sub check_level {
 			else {
 				my @text;
 				if (keys %$hval){
+					warn Dumper $hval;
 					push(@text,validation_table_new($p,$hval));
 			 
 				}
@@ -2572,6 +2573,7 @@ sub table_patients {
 		$nb ++;
   		my $nb_members = scalar(@{$fam->getMembers});
   		foreach my $p1 (@{$fam->getMembers}){
+  			warn $p1->name;
   			my $hval = $project->validations_query->getValidationPatient($p1);
   			
   		}
@@ -2730,12 +2732,17 @@ sub validation_table_new {
 			 		
 			 
 			 		my $val = $hval->{$k}->[0];
-			 			my $color = "#9BC8A5";
+			 		warn Dumper $hval->{$k};
+			 		warn $k;
+			 		my $color = "#9BC8A5";
 			 		$color = "#E74C3C" if $val->{validation}== 5 ;
 			 		$color = "coral" if $val->{validation}== 4 ;
 			 		$color = "#217DBB" if $val->{validation}== -3 ;
 			 		$color = "orange" if $val->{validation}== 3 ;
-			 		 	my $v  = $project->_newVariant($val->{polyid});
+			 		 my $v  = $project->_newVariant($val->{polyid});
+			 		 foreach my $g (@{$v->getGenes}){
+			 		 	warn $g->id." ".$k;
+			 		 }
 			 		my $btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: $color;$fsize"} ;
 			 	
 			 		my $gene ;
