@@ -125,6 +125,7 @@ my $steps = {
 				"sashimi_plots"=>sub {$pipeline->sashimi_plots(@_)}, 
 				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)},
 				"dejavu_rna_junctions"=>sub {$pipeline->dejavu_rna_junctions(@_)},
+				"html_rna_junctions"=>sub {$pipeline->html_rna_junctions(@_)},
 			};
 
 
