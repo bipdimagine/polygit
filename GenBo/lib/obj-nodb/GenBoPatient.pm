@@ -1819,7 +1819,7 @@ is      => 'ro',
 		#warn Dumper @lines;
 		chomp(@lines);
 		#confess() if scalar(@lines) > 1;
-		return [] unless $lines[0];
+		
 			my $t = (stat $file )[10];
 	
 		my $date = POSIX::strftime( 
@@ -1828,9 +1828,10 @@ is      => 'ro',
                		$t
                  )
              );
+        return [[$date]] unless $lines[0];     
 		my @t;
 		foreach my $l (@lines){
-			push(@t,[split(" ",$l),$date] ) ;
+			push(@t,[$date,split(" ",$l)] ) ;
 		}
 		
 		return \@t;
