@@ -524,7 +524,7 @@ my $dev;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
- push(@$key_quality,"muc1.10.05.23.1") if $project->getCaptures->[0]->analyse =~ /renom/i;
+ push(@$key_quality,"muc1.10.05.23.2") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  warn "HEADER ==> ".$header;
  warn join(";",@$key_quality);
@@ -749,8 +749,9 @@ sub check_level {
 			}
 			##
 			my $res_muc = $p->vntyperResults();
-			if (@$res_muc){
-				my $text = qq{ <span  class="stamp1"><span>MUC1</span></span>};
+			if (scalar(@{$res_muc->[0]}>1)){
+				my $date = $res_muc->[0]->[0];
+				my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
 			 	$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
 			}
 			elsif (-e  $project->getVariationsDir("vntyper")."/muc1/" && !(-e $p->vntyperTsv)){
@@ -758,6 +759,7 @@ sub check_level {
 				$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
 			}
 			else {
+				my $date = $res_muc->[0]->[0];
 				my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
 				$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
 				# $line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
