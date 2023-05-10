@@ -524,7 +524,7 @@ my $dev;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
- push(@$key_quality,"muc1.01.05.23") if $project->getCaptures->[0]->analyse =~ /renom/i;
+ push(@$key_quality,"muc1.10.05.23") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  warn "HEADER ==> ".$header;
  warn join(";",@$key_quality);
