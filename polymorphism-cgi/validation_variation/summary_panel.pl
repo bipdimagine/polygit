@@ -714,7 +714,7 @@ sub check_level {
 
 			my $hstatus = $p->getLatestValidationStatus($user);
   		
-			
+			 
 			#print $cgi->td($class,$td);
 		#	my $mtime = stat("/etc/passwd")->mtime; 
 				$line->{"validation"}  = $cgi->td($class,"-");
