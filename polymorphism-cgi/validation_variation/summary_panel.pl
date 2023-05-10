@@ -524,7 +524,7 @@ my $dev;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
- push(@$key_quality,"muc1.10.05.23") if $project->getCaptures->[0]->analyse =~ /renom/i;
+ push(@$key_quality,"muc1.10.05.23.1") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  warn "HEADER ==> ".$header;
  warn join(";",@$key_quality);
@@ -1818,11 +1818,12 @@ sub table_muc1 {
 	 my $nb =0;
 		foreach my $patient (@{$project->getPatients}){
 			my $t = $patient->vntyperResults;
-			unless (@{$t}){
+					next unless @{$t};
+			if (scalar(@{$t->[0]}) <=1){
 				if(-e $patient->vntyperTsv()){
 			 	$out_table .= $cgi->start_Tr({class=>""});
 			 	$out_table .= $cgi->td($patient->name);
-			 	$out_table .= $cgi->td(["-","-","-","-","-","-","-","-","-","-","-"]);
+			 	$out_table .= $cgi->td([$t->[0]->[0],"-","-","-","-","-","-","-","-","-","-","-"]);
 			 	#,"-","-","-","-","-","-","-","-","-","-","-"]);
 				$out_table .= $cgi->end_Tr({class=>""});
 				}
@@ -1831,8 +1832,9 @@ sub table_muc1 {
 			 	$out_table .= $cgi->td([$patient->name,"PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM"]);
 				$out_table .= $cgi->end_Tr({class=>""});
 				}
+				next;
 			 }
-			next unless @{$t};
+	
 			$out_table .= $cgi->start_Tr({class=>""});	
 			$out_table.= $cgi->td({rowspan=>scalar(@$t)},$patient->name);
 			foreach my $tt (@$t){
@@ -1857,9 +1859,10 @@ sub table_muc1 {
 	$out .= $cgi->start_div({class=>"col-xs-6"});
 	$out .= $cgi->start_table({class=> "table table-striped table-bordered table-hover",style=>"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;", 'data-click-to-select'=>"true",'data-toggle'=>"table"});
 	$out .= $cgi->start_Tr({class=>"$style"});
-	
+
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"name") ;
-		$out .= $cgi->th( {style=>"text-align: center;"} ,"Motif") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"date") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"Motif") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"Variant") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"POS") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"REF") ;
