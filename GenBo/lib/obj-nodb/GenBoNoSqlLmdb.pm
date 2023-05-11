@@ -321,7 +321,7 @@ sub encode {
 
 sub lmdb_key {
 	my ($self,$key) = @_;
-	confess('-'.$key.'-') unless defined $key;
+	confess('-') unless defined $key;
 	return $key if $self->is_integer;
 	  if (length($key) > 500){
      	my (@s) = split ("_",$key);

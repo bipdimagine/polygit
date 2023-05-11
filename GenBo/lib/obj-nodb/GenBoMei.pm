@@ -48,7 +48,7 @@ has alleles => (
 	lazy	=> 1,
 	default=> sub {
 		my $self = shift;
-		return self->getChromosome->id().'-'.$self->start().'-ins-'.$self->mei_type;
+		return $self->getChromosome->id().'-'.$self->start().'-ins-'.$self->mei_type;
 	},
 );
 

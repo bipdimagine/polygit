@@ -852,6 +852,41 @@ method dejavu (Str :$filein) {
 	return ($filein);
 }
 
+method html_rna_junctions (Str :$filein!) {
+	my $projectName = $self->project->name();
+	my $patientName = $self->patient->name();
+	my $ppn = $self->nproc;
+	my $type = "html_splices";
+	my $stepname = $projectName."@".$type;
+	my $dir = $self->project->getCacheDir();;
+	my $fileout = $dir."/".$patientName.".cache";
+	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName only_html_cache=1";
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job(job=>$job_bds);
+	$job_bds->isLogging(1);
+	if ($self->unforce() && -e $fileout){
+  		$job_bds->skip();
+	}
+	return ($filein);
+}
+
+method dejavu_rna_junctions (Str :$filein!) {
+	my $projectName = $self->project->name();
+	my $ppn = $self->nproc;
+	my $type = "dejavu_splices";
+	my $stepname = $projectName."@".$type;
+	my $dir = $self->project->DejaVuJunction_path().'/projects/'.$projectName.'/';
+	my $fileout = $dir."/".$projectName.".json";
+	my $cmd = "perl $Bin/../polypipeline/scripts/scripts_pipeline/dejavu_junctions/project_dejavu_jonctions.pl -project=$projectName";
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job(job=>$job_bds);
+	$job_bds->isLogging(1);
+	if ($self->unforce() && -e $fileout){
+  		$job_bds->skip();
+	}
+	return ($filein);
+}
+
 method coverage (Str :$filein){
 	my $project = $self->project();
 	my $patients = $project->getPatients();

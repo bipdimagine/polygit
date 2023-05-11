@@ -15,6 +15,8 @@ use Data::Dumper;
 use JSON;
 use xls_export;
 use session_export;
+use List::MoreUtils qw{ natatime };
+use Parallel::ForkManager;
 
 my $cgi    = new CGI;
 my $project_name = $cgi->param('project');
@@ -27,6 +29,7 @@ my $min_score = $cgi->param('min_score');
 my $only_gene_name = $cgi->param('only_gene');
 my $only_positions = $cgi->param('only_positions');
 my $only_dejavu_ratio_10 = $cgi->param('only_dejavu_ratio_10');
+my $only_html_cache = $cgi->param('only_html_cache');
 
 #$only_positions = '10:17000000-17080000';
 
@@ -50,7 +53,10 @@ my $table_id = 'table_'.$patient_name;
 my $html;
 my $release = $project->getVersion();
 my $gencode = '-';
-$gencode = $project->gencode_version() if ($release =~ /HG19/);
+if ($release =~ /HG19/) { $gencode = $project->gencode_version(); }
+elsif ($release eq 'MM38') { $gencode = 'M25'; }
+elsif ($release eq 'MM39') { $gencode = 'M32'; }
+
 
 my $max_dejavu_value = 51;
 $max_dejavu_value = $max_dejavu if defined($max_dejavu);
@@ -71,10 +77,15 @@ $default_filter_score = "data-filter-default='>=1'";
 my $n = 0;
 my $score_slider = 0;
 $score_slider = $min_score / 10 if ($min_score and $min_score > 0);
-my (@lJunctions, $h_varids, $h_var_linked_ids);
+my (@lJunctions, $h_var_linked_ids);
+
+my $j_total = 0;
+my $h_chr_vectors;
+my $h_chr_vectors_counts;
 foreach my $chr (@{$project->getChromosomes()}) {
-	#next if $chr->id ne '4';
+	#next if $chr->id ne '1';
 	my $vector_patient = $patient->getJunctionsVector($chr);
+	$j_total += $chr->countThisVariants($vector_patient);
 	if ($only_positions) {
 		my @lTmp = split(':', $only_positions);
 		my $chr_id_limit = lc($lTmp[0]);
@@ -84,69 +95,81 @@ foreach my $chr (@{$project->getChromosomes()}) {
 		my $vector_postions = $chr->getVectorByPosition($from, $to);
 		$vector_patient->Intersection($vector_patient, $vector_postions);
 	}
-	foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
-		$n++;
-		print '.' if ($n % 50000);
-		$h_varids->{$junction->id()} = undef;
-		if ($junction->is_junctions_linked($patient)) {
-			if (exists $h_var_linked_ids->{$junction->id()}) {
-				$h_var_linked_ids->{$junction->id()}->{vector_id} = $chr->id().'-'.$junction->vector_id();
-			}
-			else {
-				$h_var_linked_ids->{$junction->id()}->{vector_id} = $chr->id().'-'.$junction->vector_id();
-				my $hdone;
-				my @lOthers = (keys %{$junction->get_hash_junctions_linked_to_me->{$patient->name()}});
-				my $nb_others = scalar(@lOthers);
-				while ($nb_others > 0) {
-					my $other_id = $lOthers[0];
-					#if (not exists $hdone->{$other_id}) {
-						foreach my $id (keys %{$junction->get_hash_junctions_linked_to_me->{$patient->name()}}) {
-							$h_var_linked_ids->{$junction->id()}->{linked_to}->{$id} = undef;
-							$h_var_linked_ids->{$id}->{linked_to}->{$junction->id()} = undef;
-							push(@lOthers, $id) if not (exists $hdone->{$other_id});
-						}
-						$hdone->{$other_id} = undef;
-					#}
-					my $supress = shift(@lOthers);
-					$nb_others = scalar(@lOthers);
-				}
-				
-				my $hallids = $h_var_linked_ids->{$junction->id()}->{linked_to};
-				$hallids->{$junction->id()} = undef;
-				foreach my $jid (keys %$hallids) {
-					next unless exists $h_var_linked_ids->{$jid}->{linked_to};
-					$h_var_linked_ids->{$jid}->{linked_to} = $hallids;
-				}
-			}
-			
-		}
-		push(@lJunctions, $junction);
+	if ($only_gene) {
+		next if ($chr->id() ne $only_gene->getChromosome->id());
+		my $vector_postions = $chr->getVectorByPosition(($only_gene->start - 1000), ($only_gene->end + 1000));
+		$vector_patient->Intersection($vector_patient, $vector_postions);
 	}
+	
+#	my $vid = 0;
+#	while ($vid < $vector_patient->Size()) {
+#		if ($vector_patient->contains($vid)) {
+#			my $id =  $chr->cache_lmdb_variations->get_key_index($vid);
+#			$id =~ s/ //g;
+#			warn $id;
+#			my @lTmp = split('_', $id);
+#			my $dv = $project->dejavuJunctions->get_junction($chr->id(), $lTmp[1], $lTmp[2], 'all', 'all', 96);
+#			my $nb_dv = 0;
+#			if ($dv) {
+#				foreach my $sim (keys %{$dv}) {
+#					foreach my $pn (keys %{$dv->{$sim}}) {
+#						foreach my $ppn (keys %{$dv->{$sim}->{$pn}}) {
+#							$nb_dv++;
+#						}
+#					}
+#				} 
+#			}
+#			$vector_patient->Bit_Off($vid) if ($dv > $max_dejavu_value);
+##			warn Dumper $dv;
+#			warn $id.' - DV: '.$nb_dv;
+##			die if $dv;
+#		}
+#		$vid++;
+#	}
+	
+	$h_chr_vectors->{$chr->id} = $vector_patient->Clone();
+	
+	$h_chr_vectors_counts->{$chr->id} = $chr->countThisVariants($h_chr_vectors->{$chr->id});
+	
 }
 
-#warn "\n";
-#warn "before: ".scalar(@lJunctions);
-
-#if (scalar(@lJunctions) > 1000) {
-#	my ($h_by_score, @lJunctionsPreFilter);
-#	foreach my $junction (@lJunctions) {
-#		$n++;
-#		print '.' if ($n % 50000);
-#		next if ($junction->isCanonique($patient));
-#		next if ($junction->get_ratio_new_count($patient) == 1);
-#		next if ($junction->get_percent_new_count($patient) < $min_score);
-#		my $score_no_dejavu = $junction->junction_score_without_dejavu_global($patient);
-#		$h_by_score->{$score_no_dejavu}++;
-#		next if $score_no_dejavu <= 8;
-#		push(@lJunctionsPreFilter, $junction);
-#	}
-#	@lJunctions = undef;
-#	@lJunctions = @lJunctionsPreFilter;
-#	@lJunctionsPreFilter = undef;
-#	warn Dumper $h_by_score;
-#}
-#warn "pre-filtre: ".scalar(@lJunctions);
+#warn Dumper $h_chr_vectors_counts;
+#warn $j_total; die;
+#my $id =  $project->getChromosome('22')->cache_lmdb_variations->get_key_index(1500);
+#warn $id;
+#my @lTmp = split('_', $id);
+#my $dv = $project->dejavuJunctions->get_junction(22, $lTmp[1], $lTmp[2], 'all', 'all', 96);
+#warn Dumper $dv;
 #die;
+
+my $cache_id = 'splices_linked_'.$patient->name().'_'.$j_total;
+#warn $cache_id;
+my $no_cache = $patient->get_lmdb_cache("r");
+my $h_res = $no_cache->get_cache($cache_id);
+$no_cache->close();
+if ($h_res) {
+	$h_var_linked_ids = $h_res;
+}
+else {
+	add_linked_hash_in_cache($cache_id, $patient); 
+	my $no_cache = $patient->get_lmdb_cache("r");
+	$h_var_linked_ids = $no_cache->get_cache($cache_id);
+	$no_cache->close();
+}
+
+exit(0) if ($only_html_cache and $j_total < 50000);
+
+my $cache_h_html_id = 'hash_html_splices_'.$patient->name().'_'.$j_total;
+if ($j_total >= 50000) {
+	#warn $cache_id;
+	my $no_cache = $patient->get_lmdb_cache("r");
+	my $h_res = $no_cache->get_cache($cache_h_html_id);
+	$no_cache->close();
+	if ($h_res) {
+		printJson($h_res);
+		exit(0);
+	}
+}
 
 my $percent_dejavu = 0;
 if (defined($use_percent_dejavu)) {
@@ -267,80 +290,151 @@ my $h_dejavu_cnv;
 $n = 0;
 
 my $h_junctions_scores;
-foreach my $junction (@lJunctions) {
-	$n++;
-	print '.' if ($n % 100);
-	
-	my $is_junction_linked_filtred;
-	next if ($junction->isCanonique($patient));
-	next if ($junction->get_ratio_new_count($patient) == 1);
-	
-	my $gene_name = $junction->annex->{$patient->name()}->{ensid};
-	my $gene_name2 = $junction->annex->{$patient->name()}->{gene};
-	if ($only_gene) {
-		my $keep;
-		$keep = 1 if ($only_gene->id() eq $gene_name);
-		$keep = 1 if ($only_gene->external_name() eq $gene_name);
-		$keep = 1 if ($only_gene->id() eq $gene_name2);
-		$keep = 1 if ($only_gene->external_name() eq $gene_name2);
-		next unless $keep;
-	}
-	#my $gene = $project->newGene($gene_name);
-	
-	if ($junction->get_percent_new_count($patient) < $min_score) {
-		next;
-		if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
-		else { next; }
-	}
-	
-	eval {
-		$junction->dejavu_percent_coordinate_similar($nb_percent_dejavu_value);
-		my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
-		$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
-		next if ($nb_dejavu_pat > $max_dejavu_value);
-	};
-	if ($@) { next; }
-	
-#	my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
-#	$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
-#	if ($nb_dejavu_pat > $max_dejavu_value) {
-#		next;
-#		if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
-#		else { next; }
-#	}
-	my $html_sashimi = get_sashimi_plot($junction, $patient);
-	my $html_igv = get_igv_button($junction, $patient);
-	my $html_id = get_html_id($junction);
-	my $html_patients = get_html_patients($junction, $patient);
-	my $html_dv = get_html_dejavu($junction, $patient);
-	my $html_validation = '';
-	my ($html_trans, $has_linked_junctions) = get_html_transcripts($junction, $patient);
-	my $html_to_validate = '';
-	
-	my $score = $junction->junction_score($patient);
-	#$score += 1 if ($junction->isSE($patient));
-	#$score += 0.1 if ($junction->isRI($patient) and $has_linked_junctions);
-	my $score_details_text = get_html_score_details($junction, $patient);
-	
-	$h_junctions_scores->{all}->{$gene_name}->{$score} = $junction->id();
 
-	my $html_tr;
-	if ($is_junction_linked_filtred) { $html_tr .= qq{<tr style="text-align:center;font-size:11px;opacity:0.55;">}; }
-	else { $html_tr .= qq{<tr style="text-align:center;font-size:11px;">}; }
-	$html_tr .= qq{<td style="width:230px;">$html_sashimi</td>};
-	$html_tr .= qq{<td>$html_igv</td>};
-	$html_tr .= qq{<td>$html_id</td>};
-	$html_tr .= qq{<td>$html_patients</td>};
-#	$html_tr .= qq{<td></td>};
-	$html_tr .= qq{<td>$html_dv</td>};
-#	$html_tr .= qq{<td>$html_validation</td>};
-	$html_tr .= qq{<td>$html_trans</td>};
-#	$html_tr .= qq{<td>$html_to_validate</td>};
-	$html_tr .= qq{<td>$score</td>};
-	$html_tr .= qq{<td>$score_details_text</td>};
-	$html_tr .= qq{</tr>};
-	push(@{$_tr_lines_by_genes->{$gene_name}}, $html_tr);
+my $fork = 4;
+my $pm = new Parallel::ForkManager($fork);
+my $nbErrors = 0;
+$pm->run_on_finish(
+	sub {
+		my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $hres ) = @_;
+		unless ( defined($hres) or $exit_code > 0 ) {
+			$nbErrors++;
+			print qq|No message received from child process $exit_code $pid!\n|;
+			warn Dumper $hres;
+			return;
+		}
+		foreach my $gene_name (keys %{$hres->{genes}}) {
+			foreach my $html_tr (@{$hres->{genes}->{$gene_name}}) {
+				push(@{$_tr_lines_by_genes->{$gene_name}}, $html_tr);
+			}
+		}
+		
+		foreach my $gene_name (keys %{$hres->{score}->{all}}) {
+			foreach my $score (keys %{$hres->{score}->{all}->{$gene_name}}) {
+				$h_junctions_scores->{all}->{$gene_name}->{$score} = undef;
+			}
+		}
+	}
+);
+		
+		
+#my $nb_elems = int(scalar(@lJunctions) / $fork);
+#$nb_elems += 20;
+#
+#my $iter = natatime $nb_elems, @lJunctions;
+#while( my @tmp = $iter->() ) {
+	
+	
+foreach my $chr_id (sort keys %{$h_chr_vectors}) {
+	my $chr = $patient->getProject->getChromosome($chr_id);
+	next if $chr->countThisVariants($h_chr_vectors->{$chr_id}) == 0;
+	
+	$patient->getProject->buffer->dbh_deconnect();
+	$pm->start and next;
+	$patient->getProject->buffer->dbh_reconnect();
+	
+	my @lJunctionsChr = @{$chr->getListVarObjects($h_chr_vectors->{$chr_id})};
+	my $hres;
+	foreach my $junction (@lJunctionsChr) {
+		$n++;
+		print '.' if ($n % 1000);
+		
+		my $is_junction_linked_filtred;
+		next if ($junction->isCanonique($patient));
+		#next if ($junction->get_ratio_new_count($patient) == 1);
+		
+		my $gene_name = $junction->annex->{$patient->name()}->{ensid};
+		my $gene_name2 = $junction->annex->{$patient->name()}->{gene};
+		my @lGenesNames;
+		
+		if ($only_gene) {
+			my $keep;
+			$keep = 1 if ($only_gene->id() eq $gene_name);
+			$keep = 1 if ($only_gene->external_name() eq $gene_name);
+			$keep = 1 if ($only_gene->id() eq $gene_name2);
+			$keep = 1 if ($only_gene->external_name() eq $gene_name2);
+			next unless $keep;
+		}
+		
+		if ($gene_name) { push (@lGenesNames, $gene_name); }
+		else {
+			foreach my $gene (@{$junction->getGenes()}) {
+				push (@lGenesNames, $gene->id());
+			}
+		}
+		next unless @lGenesNames;
+		
+		if (not $only_gene) {
+			if ($junction->get_percent_new_count($patient) < $min_score) {
+				next;
+				if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
+				else { next; }
+			}
+			
+			eval {
+				$junction->dejavu_percent_coordinate_similar($nb_percent_dejavu_value);
+				my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
+				$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
+				next if ($nb_dejavu_pat > $max_dejavu_value);
+			};
+			if ($@) { next; }
+		}
+		
+	#	my $nb_dejavu_pat = $junction->dejavu_nb_others_patients();
+	#	$nb_dejavu_pat = $junction->dejavu_nb_other_patients_min_ratio_10($patient) if ($only_dejavu_ratio_10);
+	#	if ($nb_dejavu_pat > $max_dejavu_value) {
+	#		next;
+	#		if (exists $h_var_linked_ids->{$junction->id()}) { $is_junction_linked_filtred = 1; }
+	#		else { next; }
+	#	}
+		my $html_sashimi = get_sashimi_plot($junction, $patient);
+		my $html_igv = get_igv_button($junction, $patient);
+		my $html_id = get_html_id($junction);
+		my $html_patients = get_html_patients($junction, $patient);
+		my $html_dv = get_html_dejavu($junction, $patient);
+		
+		
+		my $html_validation = '';
+		my $html_to_validate = '';
+		
+		foreach my $gene_name (@lGenesNames) {
+			
+			my $ht = $junction->get_hash_exons_introns();
+			next unless $ht;
+#			next if scalar keys %$ht == 0;
+			
+			my ($html_trans, $has_linked_junctions) = get_html_transcripts($junction, $patient);
+			my $score = $junction->junction_score($patient);
+			my $score_details_text = get_html_score_details($junction, $patient);
+			
+			$hres->{score}->{all}->{$gene_name}->{$score} = $junction->id();
+		
+			my $html_tr;
+			if ($is_junction_linked_filtred) { $html_tr .= qq{<tr style="text-align:center;font-size:11px;opacity:0.55;">}; }
+			else { $html_tr .= qq{<tr style="text-align:center;font-size:11px;">}; }
+			$html_tr .= qq{<td style="width:230px;">$html_sashimi</td>};
+			$html_tr .= qq{<td>$html_igv</td>};
+			$html_tr .= qq{<td>$html_id</td>};
+			$html_tr .= qq{<td>$html_patients</td>};
+		#	$html_tr .= qq{<td></td>};
+			$html_tr .= qq{<td>$html_dv</td>};
+		#	$html_tr .= qq{<td>$html_validation</td>};
+			$html_tr .= qq{<td>$html_trans</td>};
+		#	$html_tr .= qq{<td>$html_to_validate</td>};
+			$html_tr .= qq{<td>$score</td>};
+			$html_tr .= qq{<td>$score_details_text</td>};
+			$html_tr .= qq{</tr>};
+			push(@{$hres->{genes}->{$gene_name}}, $html_tr);
+		}
+	}
+	$hres->{done} = 1;
+	$pm->finish( 0, $hres );
 }
+$pm->wait_all_children();
+
+die if $nbErrors > 0;
+
+
 foreach my $gene_name (keys %{$h_junctions_scores->{all}}) {
 	my @lscores = sort {$a <=> $b} keys %{$h_junctions_scores->{all}->{$gene_name}};
 	$h_junctions_scores->{max}->{$lscores[-1]}->{$gene_name} = undef;
@@ -383,7 +477,12 @@ elsif (scalar(@lGenesNames) > 0 and $only_gene_name and not $only_gene) {
 }
 
 my @lTablesIds;
-$html .= "<table style='width:100%;>";
+$html .= qq{<table id='table_major' data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[100]" data-resizable='true' class='table' style='font-size:11px;'>};
+$html .= qq{<thead style="text-align:center;">};
+$html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder="Gene Name / Description / Panel"><b><center></center></b></th>};
+$html .= qq{</thead>};
+$html .= qq{<tbody>};
+push(@lTablesIds, 'table_major');
 foreach my $gene_name (@lGenesNames) {
 	my $class;
 	my @lScores = sort {$a <=> $b} keys %{$h_junctions_scores->{all}->{$gene_name}};
@@ -399,30 +498,30 @@ foreach my $gene_name (@lGenesNames) {
 	$hgene->{max_score} = $max_score;
 	$hgene->{js_id} = $g->id();
 	$hgene->{id} = $g->id();
-	$hgene->{omim_id} = $g->omim_id();
-	$hgene->{pLI} = $g->pLI();
-	$hgene->{omim_inheritance} = $g->omim_inheritance();
-	$hgene->{variants} = $_tr_lines_by_genes->{$gene_name};
 	
+	$hgene->{pLI} = $g->pLI();
+	$hgene->{omim_id} = $g->omim_id();
+	$hgene->{omim_inheritance} = $g->omim_inheritance();
 	foreach my $panel (@{$g->getPanels()}) {
 		$hgene->{panels}->{$panel->name()} = undef;
 	}
+	
+	$hgene->{variants} = $_tr_lines_by_genes->{$gene_name};
+	
 	
 	my $div_id = 'div_'.$this_table_id;
 	$hgene->{collapse_with_id} = $div_id;
 	
 	my $class_tr_gene->{style} = "background-color:#607D8B;border:1px black solid;padding:0px;white-space: nowrap;height:50px;";
 	
-	$html .= qq{<tr>};
+	$html .= qq{<tr><td>};
 	$html .= "<table style='width:100%;background-color:#F3F3F3;'>";
 	my $html_gene_panel = update_variant_editor::panel_gene($hgene, $this_panel_gene_id,$project->name(), $patient);
 	$html_gene_panel =~ s/<b>pLI<\/b> Score//;
 	$html_gene_panel =~ s/bottom:5px;/bottom:-5px;/;
 	$html .= $cgi->td($class_tr_gene, $html_gene_panel);
 	$html .= "</table>";
-	$html .= $cgi->end_Tr();
 	
-	$html .= qq{<tr>};
 	$html .= qq{<div class="collapse" id="$div_id">};
 	$html .= qq{<table id='$this_table_id' data-sort-name='locus' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="both" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 	$html .= qq{<thead style="text-align:center;">};
@@ -445,9 +544,10 @@ foreach my $gene_name (@lGenesNames) {
 	$html .= qq{</tbody>};
 	$html .= qq{</table>};
 	$html .= qq{</div>};
-	$html .= $cgi->end_Tr();
-	$html .= "<br>";
+	$html .= qq{</td></tr>};
+	
 }
+$html .= qq{</tbody>};
 $html .= qq{</table>};
 
 
@@ -466,6 +566,15 @@ if ($release =~ /HG19/) {
 else {
 	$hash->{used_dejavu} = 'not';
 }
+
+
+if ($j_total >= 50000) {
+	my $no_cache = $patient->get_lmdb_cache("w");
+	$no_cache->put_cache_hash($cache_h_html_id, $hash);
+	$no_cache->close();
+	exit(0) if ($only_html_cache);
+}
+
 printJson($hash);
 exit(0);
 
@@ -567,8 +676,24 @@ sub get_html_dejavu {
 		$dv_run_other_pat_ratio_20 = $junction->dejavu_nb_int_this_run_patients($patient, 20);
 	}
 	
+#	foreach my $pheno_name (@{$patient->getProject->phenotypes()}) {
+#		$html.= $cgi->start_Tr();
+#		$html.= $cgi->td("<center><b>$pheno_name</b></center>");
+#		my $dv_other_pat_pheno = $junction->dejavu_nb_other_patients_phenotype($patient, $pheno_name);
+#		my $dv_other_pat_pheno_ratio_10 = 0;
+#		my $dv_other_pat_pheno_ratio_20 = 0;
+#		if ($dv_other_pat_pheno > 0) {
+#			$dv_other_pat_pheno_ratio_10 = $junction->dejavu_nb_other_patients_phenotype_min_ratio_10($patient, $pheno_name);
+#			$dv_other_pat_pheno_ratio_20 = $junction->dejavu_nb_other_patients_phenotype_min_ratio_20($patient, $pheno_name);
+#		}
+#		$html.= $cgi->td(obutton($cmd_all, $dv_other_pat_pheno));
+#		$html.= $cgi->td(obutton($cmd_all, $dv_other_pat_pheno_ratio_10));
+#		$html.= $cgi->td(obutton($cmd_all, $dv_other_pat_pheno_ratio_20));
+#		$html.= $cgi->end_Tr();
+#	}
+	
 	$html.= $cgi->start_Tr();
-	$html.= $cgi->td("<center><b>InThisRun</b></center>");
+	$html.= $cgi->td("<center><b>InThisProject</b></center>");
 	$html.= $cgi->td(obutton($cmd_inthisrun, $dv_run_other_pat));
 #	if ($my_ratio >= 70) {
 #		$html.= $cgi->td(obutton($cmd_inthisrun,$junction->dejavu_nb_int_this_run_patients($patient,70)));
@@ -579,6 +704,7 @@ sub get_html_dejavu {
 		$html.= $cgi->td(obutton($cmd_inthisrun, $dv_run_other_pat_ratio_20));
 #	}
 	$html.= $cgi->end_Tr();
+	
 	$html.=$cgi->end_table();
 	return $html;
 }
@@ -856,7 +982,19 @@ sub get_igv_button {
 	$gtf =~ s/\/data-isilon//;
 	$gtf = "https://www.polyweb.fr/".$gtf;
 	my $locus = $junction->getChromosome->id().':'.($junction->start()-100).'-'.($junction->end()+100);
-	my $igv_link = qq{<button class='igvIcon2' onclick='launch_igv_tool_rna("", "$bam_file,$gtf","$locus")' style="color:black"></button>};
+	
+	my $fasta = "";
+	if (not $patient->getProject->is_human_genome()) {
+		$fasta = $patient->getProject->genomeFasta();
+		my $release = $patient->getProject->getVersion();
+		my $fasta_named = $fasta;
+		$fasta_named =~ s/all/$release/;
+		if (-e $fasta_named) { $fasta = $fasta_named; }
+		$fasta =~ s/\/data-isilon//;
+		$fasta = "https://www.polyweb.fr/".$fasta;
+	}
+	
+	my $igv_link = qq{<button class='igvIcon2' onclick='launch_igv_tool_rna("$fasta", "$bam_file,$gtf","$locus")' style="color:black"></button>};
 	return $igv_link;
 }
 
@@ -883,6 +1021,8 @@ sub get_sashimi_plot {
 	}
 	else {
 		$sashimi_button .= qq{<center>N.A.</center>};
+#		my $vid = $junction->vector_id();
+#		$sashimi_button .= qq{<center>$vid</center>};
 	}
 	return $sashimi_button;
 }
@@ -958,6 +1098,52 @@ sub get_html_score_details {
 	}
 	$score_details_text .= "</table>";
 	return $score_details_text;
+}
+
+sub add_linked_hash_in_cache {
+	my ($cache_id, $patient) = @_;
+	foreach my $chr (@{$patient->getProject->getChromosomes()}) {
+		my $vector_patient = $patient->getJunctionsVector($chr);
+		foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
+			$n++;
+			next if ($junction->isCanonique($patient));
+			print '.' if ($n % 50000);
+			if ($junction->is_junctions_linked($patient)) {
+				if (exists $h_var_linked_ids->{$junction->id()}) {
+					$h_var_linked_ids->{$junction->id()}->{vector_id} = $chr->id().'-'.$junction->vector_id();
+				}
+				else {
+					$h_var_linked_ids->{$junction->id()}->{vector_id} = $chr->id().'-'.$junction->vector_id();
+					my $hdone;
+					my @lOthers = (keys %{$junction->get_hash_junctions_linked_to_me->{$patient->name()}});
+					my $nb_others = scalar(@lOthers);
+					while ($nb_others > 0) {
+						my $other_id = $lOthers[0];
+						#if (not exists $hdone->{$other_id}) {
+							foreach my $id (keys %{$junction->get_hash_junctions_linked_to_me->{$patient->name()}}) {
+								$h_var_linked_ids->{$junction->id()}->{linked_to}->{$id} = undef;
+								$h_var_linked_ids->{$id}->{linked_to}->{$junction->id()} = undef;
+								push(@lOthers, $id) if not (exists $hdone->{$other_id});
+							}
+							$hdone->{$other_id} = undef;
+						#}
+						my $supress = shift(@lOthers);
+						$nb_others = scalar(@lOthers);
+					}
+					
+					my $hallids = $h_var_linked_ids->{$junction->id()}->{linked_to};
+					$hallids->{$junction->id()} = undef;
+					foreach my $jid (keys %$hallids) {
+						next unless exists $h_var_linked_ids->{$jid}->{linked_to};
+						$h_var_linked_ids->{$jid}->{linked_to} = $hallids;
+					}
+				}
+			}
+		}
+	}
+	my $no_cache = $patient->get_lmdb_cache("w");
+	$no_cache->put_cache_hash($cache_id, $h_var_linked_ids);
+	$no_cache->close();
 }
 
 sub printJson {
