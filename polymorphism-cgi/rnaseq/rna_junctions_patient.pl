@@ -80,10 +80,11 @@ $score_slider = $min_score / 10 if ($min_score and $min_score > 0);
 my (@lJunctions, $h_var_linked_ids);
 
 my $j_total = 0;
+my $j_selected = 0;
 my $h_chr_vectors;
 my $h_chr_vectors_counts;
 foreach my $chr (@{$project->getChromosomes()}) {
-	#next if $chr->id ne '1';
+	#next if $chr->id ne '1' and $patient_name eq 'KUCerc';
 	my $vector_patient = $patient->getJunctionsVector($chr);
 	$j_total += $chr->countThisVariants($vector_patient);
 	if ($only_positions) {
@@ -101,46 +102,11 @@ foreach my $chr (@{$project->getChromosomes()}) {
 		$vector_patient->Intersection($vector_patient, $vector_postions);
 	}
 	
-#	my $vid = 0;
-#	while ($vid < $vector_patient->Size()) {
-#		if ($vector_patient->contains($vid)) {
-#			my $id =  $chr->cache_lmdb_variations->get_key_index($vid);
-#			$id =~ s/ //g;
-#			warn $id;
-#			my @lTmp = split('_', $id);
-#			my $dv = $project->dejavuJunctions->get_junction($chr->id(), $lTmp[1], $lTmp[2], 'all', 'all', 96);
-#			my $nb_dv = 0;
-#			if ($dv) {
-#				foreach my $sim (keys %{$dv}) {
-#					foreach my $pn (keys %{$dv->{$sim}}) {
-#						foreach my $ppn (keys %{$dv->{$sim}->{$pn}}) {
-#							$nb_dv++;
-#						}
-#					}
-#				} 
-#			}
-#			$vector_patient->Bit_Off($vid) if ($dv > $max_dejavu_value);
-##			warn Dumper $dv;
-#			warn $id.' - DV: '.$nb_dv;
-##			die if $dv;
-#		}
-#		$vid++;
-#	}
-	
 	$h_chr_vectors->{$chr->id} = $vector_patient->Clone();
-	
 	$h_chr_vectors_counts->{$chr->id} = $chr->countThisVariants($h_chr_vectors->{$chr->id});
-	
+	$j_selected += $h_chr_vectors_counts->{$chr->id};
 }
 
-#warn Dumper $h_chr_vectors_counts;
-#warn $j_total; die;
-#my $id =  $project->getChromosome('22')->cache_lmdb_variations->get_key_index(1500);
-#warn $id;
-#my @lTmp = split('_', $id);
-#my $dv = $project->dejavuJunctions->get_junction(22, $lTmp[1], $lTmp[2], 'all', 'all', 96);
-#warn Dumper $dv;
-#die;
 
 my $cache_id = 'splices_linked_'.$patient->name().'_'.$j_total;
 #warn $cache_id;
@@ -157,17 +123,18 @@ else {
 	$no_cache->close();
 }
 
-exit(0) if ($only_html_cache and $j_total < 50000);
+exit(0) if ($only_html_cache);
 
-my $cache_h_html_id = 'hash_html_splices_'.$patient->name().'_'.$j_total;
-if ($j_total >= 50000) {
-	#warn $cache_id;
+if ($j_selected >= 10000) {
 	my $no_cache = $patient->get_lmdb_cache("r");
-	my $h_res = $no_cache->get_cache($cache_h_html_id);
-	$no_cache->close();
-	if ($h_res) {
-		printJson($h_res);
-		exit(0);
+	my $cache_vectors_enum_id = 'splices_linked_'.$patient->name().'_'.$j_total.'_chr_vectors_enum';
+	my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
+	my $use_cat = countMinCatToUse($h_res_v_enum); 
+	print ".$use_cat.";
+	foreach my $chr_id (keys %$h_res_v_enum) {
+		my $v_filters = $project->getChromosome($chr_id)->getNewVector();
+		$v_filters->from_Enum($h_res_v_enum->{$chr_id}->{$use_cat});
+		$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $v_filters);
 	}
 }
 
@@ -209,7 +176,7 @@ my $html_dejavu = qq{
 	</table>};
 	
 
-my $html_gene_select = qq{<input type="text" style="font-size:11px;width:180px;" placeholder="COL4A5, 1:100000-1500000" class="form-control" id="input_gene_positions">};
+my $html_gene_select = qq{<input type="text" style="font-size:11px;width:180px;" placeholder="COL4A5, 1:100000-150000" class="form-control" id="input_gene_positions">};
 if ($only_gene_name) {
 	$html_gene_select = qq{<input type="text" style="font-size:11px;width:180px;" value="$only_gene_name" class="form-control" id="input_gene_positions">};
 }
@@ -341,6 +308,9 @@ foreach my $chr_id (sort keys %{$h_chr_vectors}) {
 		
 		my $is_junction_linked_filtred;
 		next if ($junction->isCanonique($patient));
+		
+		next if ($junction->junction_score_without_dejavu_global($patient) < 0);
+		
 		#next if ($junction->get_ratio_new_count($patient) == 1);
 		
 		my $gene_name = $junction->annex->{$patient->name()}->{ensid};
@@ -477,12 +447,27 @@ elsif (scalar(@lGenesNames) > 0 and $only_gene_name and not $only_gene) {
 }
 
 my @lTablesIds;
-$html .= qq{<table id='table_major' data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[100]" data-resizable='true' class='table' style='font-size:11px;'>};
-$html .= qq{<thead style="text-align:center;">};
-$html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder="Gene Name / Description / Panel"><b><center></center></b></th>};
-$html .= qq{</thead>};
-$html .= qq{<tbody>};
+
+my $filters = qq{data-filter-control="input" data-filter-control-placeholder="Gene Name / Description / Panel"};
+my $numbers_per_page = "100";
+
+my $html_table_1 = qq{<table id='table_major' data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="$numbers_per_page" data-page-list="[$numbers_per_page]" data-resizable='true' class='table' style='font-size:11px;'>};
+$html_table_1 .= qq{<thead style="text-align:center;">};
+$html_table_1 .= qq{<th data-field="gene" $filters><b><center></center></b></th>};
+$html_table_1 .= qq{</thead>};
+$html_table_1 .= qq{<tbody>};
+
+my $html_table_2;
+
+#$html .= qq{<table id='table_major' data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="$numbers_per_page" data-page-list="[$numbers_per_page]" data-resizable='true' class='table' style='font-size:11px;'>};
+#$html .= qq{<thead style="text-align:center;">};
+#$html .= qq{<th data-field="gene" $filters><b><center></center></b></th>};
+#$html .= qq{</thead>};
+#$html .= qq{<tbody>};
 push(@lTablesIds, 'table_major');
+
+my (@l_html, @l_tables_ids);
+my $nb_g = 0;
 foreach my $gene_name (@lGenesNames) {
 	my $class;
 	my @lScores = sort {$a <=> $b} keys %{$h_junctions_scores->{all}->{$gene_name}};
@@ -490,7 +475,7 @@ foreach my $gene_name (@lGenesNames) {
 	
 	my $this_panel_gene_id = 'panel_'.$table_id.'_'.$gene_name;
 	my $this_table_id = $table_id.'_'.$gene_name;
-	push(@lTablesIds, $this_table_id);
+#	push(@lTablesIds, $this_table_id);
 	my $g = $project->newGene($gene_name);
 	my $hgene;
 	$hgene->{description} = $g->description();
@@ -514,41 +499,45 @@ foreach my $gene_name (@lGenesNames) {
 	
 	my $class_tr_gene->{style} = "background-color:#607D8B;border:1px black solid;padding:0px;white-space: nowrap;height:50px;";
 	
-	$html .= qq{<tr><td>};
-	$html .= "<table style='width:100%;background-color:#F3F3F3;'>";
+	$html_table_2 .= qq{<tr><td>};
+	$html_table_2 .= "<table style='width:100%;background-color:#F3F3F3;'>";
 	my $html_gene_panel = update_variant_editor::panel_gene($hgene, $this_panel_gene_id,$project->name(), $patient);
 	$html_gene_panel =~ s/<b>pLI<\/b> Score//;
 	$html_gene_panel =~ s/bottom:5px;/bottom:-5px;/;
-	$html .= $cgi->td($class_tr_gene, $html_gene_panel);
-	$html .= "</table>";
+	$html_table_2 .= $cgi->td($class_tr_gene, $html_gene_panel);
+	$html_table_2 .= "</table>";
 	
-	$html .= qq{<div class="collapse" id="$div_id">};
-	$html .= qq{<table id='$this_table_id' data-sort-name='locus' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="both" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
-	$html .= qq{<thead style="text-align:center;">};
-	$html .= qq{<th data-field="plot"><b><center>Sashimi Plot</center></b></th>};
-	$html .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
-	$html .= qq{<th data-sortable='true' data-field="var_name"><b><center>Var name</center></b></th>};
-	$html .= qq{<th data-field="trio"><b><center>Trio</center></b></th>};
-#	$html .= qq{<th data-field="gnomad"><b><center>Gnomad</center></b></th>};
-	$html .= qq{<th data-field="deja_vu"><b><center>DejaVu (Nb Samples)</center></b></th>};
-#	$html .= qq{<th data-field="validations"><b><center>Validations</center></b></th>};
-	$html .= qq{<th data-field="transcripts"><b><center>Transcripts</center></b></th>};
-#	$html .= qq{<th data-field="to_validation"><b><center></center></b></th>};
-	$html .= qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></th>};
-	$html .= qq{<th data-field="noise"><b><center>Details Score</center></b></th>};
-	$html .= qq{</thead>};
-	$html .= qq{<tbody>};
+	$html_table_2 .= qq{<div class="collapse" id="$div_id">};
+	$html_table_2 .= qq{<table id='$this_table_id' data-sort-name='locus' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="both" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
+	$html_table_2 .= qq{<thead style="text-align:center;">};
+	$html_table_2 .= qq{<th data-field="plot"><b><center>Sashimi Plot</center></b></th>};
+	$html_table_2 .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
+	$html_table_2 .= qq{<th data-sortable='true' data-field="var_name"><b><center>Var name</center></b></th>};
+	$html_table_2 .= qq{<th data-field="trio"><b><center>Trio</center></b></th>};
+	$html_table_2 .= qq{<th data-field="deja_vu"><b><center>DejaVu (Nb Samples)</center></b></th>};
+	$html_table_2 .= qq{<th data-field="transcripts"><b><center>Transcripts</center></b></th>};
+	$html_table_2 .= qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></th>};
+	$html_table_2 .= qq{<th data-field="noise"><b><center>Details Score</center></b></th>};
+	$html_table_2 .= qq{</thead>};
+	$html_table_2 .= qq{<tbody>};
 	foreach my $l (@{$_tr_lines_by_genes->{$gene_name}}) {
-		$html .= $l;
+		$html_table_2 .= $l;
 	}
-	$html .= qq{</tbody>};
-	$html .= qq{</table>};
-	$html .= qq{</div>};
-	$html .= qq{</td></tr>};
-	
+	$html_table_2 .= qq{</tbody>};
+	$html_table_2 .= qq{</table>};
+	$html_table_2 .= qq{</div>};
+	$html_table_2 .= qq{</td></tr>};
+	$nb_g++;
 }
-$html .= qq{</tbody>};
-$html .= qq{</table>};
+if ($html_table_2) {
+	my $this_html = $html;
+	$this_html .= $html_table_1;
+	$this_html .= $html_table_2;
+	$this_html .= qq{</tbody>};
+	$this_html .= qq{</table>};
+	push(@l_html, $this_html);
+	push(@l_tables_ids, join(',', @lTablesIds));
+}
 
 
 #$no_cnv->close();
@@ -556,23 +545,14 @@ $project->dejavuJunctions->close() if ($release =~ /HG19/);
 
 
 my $hash;
-$hash->{html} = $html;
-$hash->{tables_id} = join(',', @lTablesIds);
-#$hash->{table_id} = $table_id;
+$hash->{html} = $l_html[0];
+$hash->{tables_id} = $l_tables_ids[0];
 if ($release =~ /HG19/) {
 	$hash->{used_dejavu} = $max_dejavu_value;
 	$hash->{used_dejavu} = $max_dejavu if $max_dejavu;
 }
 else {
 	$hash->{used_dejavu} = 'not';
-}
-
-
-if ($j_total >= 50000) {
-	my $no_cache = $patient->get_lmdb_cache("w");
-	$no_cache->put_cache_hash($cache_h_html_id, $hash);
-	$no_cache->close();
-	exit(0) if ($only_html_cache);
 }
 
 printJson($hash);
@@ -1102,12 +1082,19 @@ sub get_html_score_details {
 
 sub add_linked_hash_in_cache {
 	my ($cache_id, $patient) = @_;
+	my $h_vector;
 	foreach my $chr (@{$patient->getProject->getChromosomes()}) {
+		my $h_vector_chr;
 		my $vector_patient = $patient->getJunctionsVector($chr);
+		$h_vector_chr->{min0} = $vector_patient->Clone();
+		$h_vector_chr->{min2} = $vector_patient->Clone();
+		$h_vector_chr->{min4} = $vector_patient->Clone();
+		$h_vector_chr->{min6} = $vector_patient->Clone();
+		$h_vector_chr->{min8} = $vector_patient->Clone();
 		foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
 			$n++;
 			next if ($junction->isCanonique($patient));
-			print '.' if ($n % 50000);
+			print '.' if ($n % 5000);
 			if ($junction->is_junctions_linked($patient)) {
 				if (exists $h_var_linked_ids->{$junction->id()}) {
 					$h_var_linked_ids->{$junction->id()}->{vector_id} = $chr->id().'-'.$junction->vector_id();
@@ -1139,12 +1126,64 @@ sub add_linked_hash_in_cache {
 					}
 				}
 			}
+			my $score_this_j = $junction->junction_score_without_dejavu_global($patient);
+			if ($score_this_j < 0) {
+				$h_vector_chr->{min0}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min2}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min4}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min6}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min8}->Bit_Off($junction->vector_id());
+			}
+			if ($score_this_j < 2) {
+				$h_vector_chr->{min2}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min4}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min6}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min8}->Bit_Off($junction->vector_id());
+			}
+			if ($score_this_j < 4) {
+				$h_vector_chr->{min4}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min6}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min8}->Bit_Off($junction->vector_id());
+			}
+			if ($score_this_j < 6) {
+				$h_vector_chr->{min6}->Bit_Off($junction->vector_id());
+				$h_vector_chr->{min8}->Bit_Off($junction->vector_id());
+			}
+			if ($score_this_j < 8) {
+				$h_vector_chr->{min8}->Bit_Off($junction->vector_id());
+			}
 		}
+		$h_vector->{$chr->id()}->{min0} = $h_vector_chr->{min0}->to_Enum();
+		$h_vector->{$chr->id()}->{min2} = $h_vector_chr->{min2}->to_Enum();
+		$h_vector->{$chr->id()}->{min4} = $h_vector_chr->{min4}->to_Enum();
+		$h_vector->{$chr->id()}->{min6} = $h_vector_chr->{min6}->to_Enum();
+		$h_vector->{$chr->id()}->{min8} = $h_vector_chr->{min8}->to_Enum();
+		print '.chr'.$chr->id.':'.$chr->countThisVariants($h_vector_chr->{min0}).'|'.$chr->countThisVariants($h_vector_chr->{min2}).'|'.$chr->countThisVariants($h_vector_chr->{min4}).'|'.$chr->countThisVariants($h_vector_chr->{min6}).'|'.$chr->countThisVariants($h_vector_chr->{min8}).'.';
 	}
 	my $no_cache = $patient->get_lmdb_cache("w");
 	$no_cache->put_cache_hash($cache_id, $h_var_linked_ids);
+	$no_cache->put_cache_hash($cache_id.'_chr_vectors_enum', $h_vector);
 	$no_cache->close();
 }
+
+sub countMinCatToUse {
+	my ($h_res_v_enum) = @_;
+	my $hCount;
+	foreach my $chr_id (keys %$h_res_v_enum) {
+		foreach my $cat (keys %{$h_res_v_enum->{$chr_id}}) {
+			my $v_filters = $project->getChromosome($chr_id)->getNewVector();
+			$v_filters->from_Enum($h_res_v_enum->{$chr_id}->{$cat});
+			$hCount->{$cat} += $project->getChromosome($chr_id)->countThisVariants($v_filters);
+		}
+	}
+	my @lCat = sort keys %{$hCount};
+	foreach my $cat (@lCat) {
+		return $cat if $hCount->{$cat} <= 50000;
+	}
+	return $lCat[-1];
+}
+	
+
 
 sub printJson {
 	my ($hashRes) = @_;
