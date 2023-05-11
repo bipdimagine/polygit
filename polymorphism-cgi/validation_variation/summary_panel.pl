@@ -749,7 +749,10 @@ sub check_level {
 			}
 			##
 			my $res_muc = $p->vntyperResults();
-			if (scalar(@{$res_muc->[0]}>1)){
+			unless (-e  $project->getVariationsDir("vntyper")."/muc1/"){
+				
+			}
+			elsif (scalar(@{$res_muc->[0]}>1)){
 				my $date = $res_muc->[0]->[0];
 				my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
 			 	$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
@@ -2803,7 +2806,7 @@ sub args_quality {
 		my $t = stat($project->quality_dir."/".$project->name.".lite")->[9];
 		push(@z,$t);
 	}
-	else {confess()};
+	else {confess($project->quality_dir)};
 	foreach my $p1 (sort{$a->name cmp $b->name} @{$project->getPatients}){
   			my $string = $p1->get_string_identification;
   			push(@z,$string);
