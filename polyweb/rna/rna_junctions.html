@@ -685,18 +685,18 @@
 				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
 					url += "&only_dejavu_ratio_10=1";
 				}
-			    $.getJSON( url, function( data ) {
-			    	$.each( data, function( key, val ) {
-			    		if (key == 'html') {
+			    $.getJSON( url, {})
+			    	.done( function( data ) {
 							document.getElementById("content_res").innerHTML = "";
 							var myNode = document.getElementById("content_res");
-					    	var myPanel = $(val);
+					    	var myPanel = $(data.html);
 							myPanel.appendTo(myNode);
+							enable_table_search('table_major');
 							
-							var list_tables = String(data.tables_id).split(',');
-							for (var i = 0; i < list_tables.length; i++){
-								enable_table_search(list_tables[i]);
-							}
+//							var list_tables = String(data.tables_id).split(',');
+//							for (var i = 0; i < list_tables.length; i++){
+//								enable_table_search(list_tables[i]);
+//							}
 							
 							//enable_table_search(data.table_id);
 			    			used_dejavu_value = data.used_dejavu;
@@ -704,9 +704,7 @@
 							else { update_dejavu_span_value();}
 							dijit.byId('waiting').hide();
 							is_first_launch = 0;
-						}
 					});
-			    })
 			}
 	    	
 	    	function show_waiting(text) {
@@ -836,7 +834,7 @@
 			}
 		    	
 	    	function enable_table_search(id) {
-	    		$('#'+id).bootstrapTable();
+    			$('#'+id).bootstrapTable();
 			}
 			
 			var value_dejavu_percent_similar = 96;
@@ -899,10 +897,12 @@
 							var myNode = document.getElementById("content_res");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
-							var list_tables = String(data.tables_id).split(',');
-							for (var i = 0; i < list_tables.length; i++){
-								enable_table_search(list_tables[i]);
-							}
+							enable_table_search('table_major');
+							
+//							var list_tables = String(data.tables_id).split(',');
+//							for (var i = 0; i < list_tables.length; i++){
+//								enable_table_search(list_tables[i]);
+//							}
 			    			used_dejavu_value = data.used_dejavu;
 			    			if (used_dejavu_value == 'not') {}
 							else { update_dejavu_span_value();}
