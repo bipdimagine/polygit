@@ -226,6 +226,10 @@ if($version_db == 15){
 	$project->public_database_version(16);
 	
 }
+if($version_db > 17){
+	$VERSION = $VERSION."-".$version_db."clinvar.inh";
+	
+}
 else {
 	$version_db = undef;
 }
