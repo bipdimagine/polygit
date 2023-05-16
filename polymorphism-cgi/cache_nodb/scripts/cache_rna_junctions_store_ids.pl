@@ -230,15 +230,28 @@ $project_cache->getPatients();
 my $chr_cache = $project_cache->getChromosome($chr_name);
 my $no5 = $chr_cache->get_lmdb_variations("w");
 my $vector_junctions = $chr_cache->getJunctionsVector();
-foreach my $junction (@{$chr_cache->getListVarObjects($vector_junctions)}) {
-	foreach my $patient_cache (@{$junction->getPatients()}) {
-		$junction->get_hash_noise($patient_cache);
+
+
+my $nb_elems = int($chr_cache->countThisVariants($vector_junctions) / $fork);
+$nb_elems += 20;
+
+my $pm = new Parallel::ForkManager($fork);
+my $iter = natatime $nb_elems, @{$chr_cache->getListVarObjects($vector_junctions)};
+while ( my @tmp = $iter->() ) {
+	my $pid = $pm->start and next;
+	foreach my $junction (@tmp) {
+		foreach my $patient_cache (@{$junction->getPatients()}) {
+			$junction->get_hash_noise($patient_cache);
+		}
+		my $jid = $junction->id();
+		delete $junction->{buffer};
+		delete $junction->{project};
+		$no5->put( $jid, $junction );
 	}
-	my $jid = $junction->id();
-	delete $junction->{buffer};
-	delete $junction->{project};
-	$no5->put( $jid, $junction );
+	$pm->finish();
 }
+$pm->wait_all_children();
+sleep(10);
 $no5->close();
 
 sub get_junctions_ids {

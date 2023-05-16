@@ -117,6 +117,13 @@ if ($h_res) {
 	$h_var_linked_ids = $h_res;
 }
 else {
+	if ($j_total >= 25000 and not $only_html_cache) {
+		my $hash;
+		$hash->{html} = qq{<table id='table_major'></table><span><br><br><b>Error</b> for this patient</span>};
+		$hash->{table_id} = '';
+		printJson($hash);
+		exit(0);
+	}
 	add_linked_hash_in_cache($cache_id, $patient); 
 	my $no_cache = $patient->get_lmdb_cache("r");
 	$h_var_linked_ids = $no_cache->get_cache($cache_id);
@@ -125,6 +132,7 @@ else {
 
 exit(0) if ($only_html_cache);
 
+my $is_partial_results;
 if ($j_selected >= 10000) {
 	my $no_cache = $patient->get_lmdb_cache("r");
 	my $cache_vectors_enum_id = 'splices_linked_'.$patient->name().'_'.$j_total.'_chr_vectors_enum';
@@ -136,6 +144,7 @@ if ($j_selected >= 10000) {
 		$v_filters->from_Enum($h_res_v_enum->{$chr_id}->{$use_cat});
 		$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $v_filters);
 	}
+	$is_partial_results = 1;
 }
 
 my $percent_dejavu = 0;
@@ -554,6 +563,7 @@ if ($release =~ /HG19/) {
 else {
 	$hash->{used_dejavu} = 'not';
 }
+$hash->{is_partial_results} = $is_partial_results;
 
 printJson($hash);
 exit(0);
@@ -1161,9 +1171,16 @@ sub add_linked_hash_in_cache {
 		print '.chr'.$chr->id.':'.$chr->countThisVariants($h_vector_chr->{min0}).'|'.$chr->countThisVariants($h_vector_chr->{min2}).'|'.$chr->countThisVariants($h_vector_chr->{min4}).'|'.$chr->countThisVariants($h_vector_chr->{min6}).'|'.$chr->countThisVariants($h_vector_chr->{min8}).'.';
 	}
 	my $no_cache = $patient->get_lmdb_cache("w");
+	my $outfile_log = $no_cache->filename().'.ok';
 	$no_cache->put_cache_hash($cache_id, $h_var_linked_ids);
 	$no_cache->put_cache_hash($cache_id.'_chr_vectors_enum', $h_vector);
 	$no_cache->close();
+	if ($only_html_cache) {
+		sleep (30);
+		my $cmd = 'touch '.$outfile_log;
+		`$cmd`;
+		exit(0);
+	}
 }
 
 sub countMinCatToUse {

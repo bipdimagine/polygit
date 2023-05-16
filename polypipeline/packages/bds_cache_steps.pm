@@ -857,9 +857,9 @@ method html_rna_junctions (Str :$filein!) {
 	my $patientName = $self->patient->name();
 	my $ppn = $self->nproc;
 	my $type = "html_splices";
-	my $stepname = $projectName."@".$type;
-	my $dir = $self->project->getCacheDir();;
-	my $fileout = $dir."/".$patientName.".cache";
+	my $stepname = $self->patient->name."@".$type;
+	my $dir = $self->project->getCacheDir();
+	my $fileout = $dir."/".$patientName.".cache.ok";
 	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName only_html_cache=1";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job(job=>$job_bds);
@@ -867,7 +867,7 @@ method html_rna_junctions (Str :$filein!) {
 	if ($self->unforce() && -e $fileout){
   		$job_bds->skip();
 	}
-	return ($filein);
+	return ($fileout);
 }
 
 method dejavu_rna_junctions (Str :$filein!) {
@@ -884,7 +884,7 @@ method dejavu_rna_junctions (Str :$filein!) {
 	if ($self->unforce() && -e $fileout){
   		$job_bds->skip();
 	}
-	return ($filein);
+	return ($fileout);
 }
 
 method coverage (Str :$filein){
