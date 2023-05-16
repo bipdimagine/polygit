@@ -128,7 +128,6 @@ sub parse_results_global_file {
 						my ($h_tmp, $h_annex);
 						my ($id, $start, $end);
 						if (exists $h_res->{'junc_se_start'} and exists $h_res->{'junc_se_end'}) {
-							$id = $h_res->{'chr'}.'_'.$h_res->{'junc_se_start'}.'_'.$h_res->{'junc_se_end'}.'_SE';
 							$start = $h_res->{'junc_se_start'};
 							$end = $h_res->{'junc_se_end'};
 							delete $h_res->{'junc_se_start'};
@@ -136,7 +135,6 @@ sub parse_results_global_file {
 							$h_res->{type_origin_file} = 'SE';
 						}
 						if (exists $h_res->{'junc_ri_start'} and exists $h_res->{'junc_ri_end'}) {
-							$id = $h_res->{'chr'}.'_'.$h_res->{'junc_ri_start'}.'_'.$h_res->{'junc_ri_end'}.'_RI';
 							$start = $h_res->{'junc_ri_start'};
 							$end = $h_res->{'junc_ri_end'};
 							delete $h_res->{'junc_ri_start'};
@@ -144,14 +142,18 @@ sub parse_results_global_file {
 							$h_res->{type_origin_file} = 'RI';
 						}
 						
+						$start =~ s/ //g;
+						$end =~ s/ //g;
+						
 #						warn 'S:'.$start.' - E:'.$end;
 						next unless $start;
 						next unless $end;
-						next if $end <= $start;
-
-#Junc_SE					ENSID				Gene	Chr	Junc_SE_Start	Junc_SE_End	Junc_SE_Count	NbreSkippedExons	SkippedExonsID		TranscritsID		Junc_Normale			Junc_Normale_Count	score	Type			minMoyNcountParJunc	maxMoyNcountParJunc		Sample
-#10_100051959_100064084	ENSMUSG00000019966	Kitl	10	100051959		100064084	62				1					ENSMUSE00001407898	ENSMUST00000219050	10_100051959_100064084	62					1		SE_Canonique	35.2222222222222	158.5					102
-					
+						if ($end <= $start) {
+							my $toto = $start;
+							$start = $end;
+							$end = $toto;
+						}
+						$id = $h_res->{'chr'}.'_'.$start.'_'.$end.'_'.$h_res->{type_origin_file};
 						
 						my $chr_id = $h_res->{'chr'};
 						my $is_chr_ok;

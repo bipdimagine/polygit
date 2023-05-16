@@ -369,12 +369,22 @@ sub getSashimiPlotPath {
 		mkdir $path;
 		`chmod 775 $path`;
 	}
-	my $outfile;
+	$path .= $patient->name().'/';
+	unless (-d $path) {
+		mkdir $path;
+		`chmod 775 $path`;
+	}
+	my $file_name;
 	if (exists $self->annex->{$patient->name()}->{'ensid'}) {
-		$outfile = $path.'/sashimi_'.$patient->name().'.'.$self->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
+		$file_name = 'sashimi_'.$patient->name().'.'.$self->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
 	}
 	else {
-		$outfile = $path.'/sashimi_'.$patient->name().'.'.$locus_text.'.svg';
+		$file_name = 'sashimi_'.$patient->name().'.'.$locus_text.'.svg';
+	}
+	my $outfile = $path.'/'.$file_name;
+	if (-e $path.'/../'.$file_name) {
+		my $cmd = qq{mv $path/../$file_name $outfile};
+		`$cmd`;
 	}
 	return $outfile;
 }

@@ -37,6 +37,7 @@ my $giab;
 GetOptions(
 	'project=s' => \$projectName,
 	'force=s' => \$force,
+	'nolimit=s' => \$secret,
 );
 
 print "\n\n##### CACHE Junctions #####\n\n";
@@ -44,6 +45,9 @@ my $cmd = "$Bin/bds_cache.pl -type=rna_junctions";
 $cmd .= " -project=".$projectName;
 if ($force) {
 	$cmd .= " -force=1";
+}
+if ($secret) {
+	$cmd .= " -nolimit=1";
 }
 system ($cmd);
 
