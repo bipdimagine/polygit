@@ -1,7 +1,7 @@
 package GenBoSomaticGroupCache;
 use strict;
 use Storable qw(thaw retrieve);
-use Moose;
+use Moo;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Bio::DB::Sam;

@@ -2,8 +2,8 @@ package GenBoRun;
 use FindBin qw($Bin);
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use String::ProgressBar;
 use Data::Dumper;
 use Config::Std;
