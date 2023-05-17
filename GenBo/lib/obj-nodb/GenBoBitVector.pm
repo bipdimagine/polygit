@@ -1,6 +1,5 @@
 package GenBoBitVector;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Set::IntervalTree;

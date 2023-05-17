@@ -1,7 +1,8 @@
 package GenBoChromosomeCache;
 use strict;
 use Storable qw(freeze thaw retrieve);
-use Moose;
+use Moo;
+use Carp;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Set::Intersection;
