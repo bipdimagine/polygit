@@ -1766,6 +1766,7 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				if ($gene) {
 					if ($gene->getProject->getVersion() =~ /HG/) { $in = $gene->omim_inheritance; }
 					else {$in = '-';}
+
 				}
 				else { $in = $hgene->{omim_inheritance}; }
 				$in ="" if $in eq "-";
