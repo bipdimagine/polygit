@@ -1,15 +1,14 @@
 package QueryPolyPanel;
 use strict;
 use Vcf;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 use Carp;
 
 has config => (
 	is		=> 'ro',
-	isa		=> 'HashRef',
 	reader	=> 'getConfig',
 	lazy	=> 1,
 	default => sub {
@@ -28,13 +27,11 @@ is		=> 'ro',
 );
 has all_config => (
 	is		=> 'ro',
-	#isa		=> 'HashRef',
 	required=> 1,
 );
 
 has dbh => (
 	is		=> 'ro',
-	isa		=> 'DBI::db',
 	required=> 1,
 	reader	=> 'getDbh',
 );
@@ -48,7 +45,7 @@ has dbh => (
 #########
 has sql_panel_all_ids => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -60,7 +57,7 @@ has sql_panel_all_ids => (
 
 has sql_panel_all_names => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -72,7 +69,7 @@ has sql_panel_all_names => (
 
 has sql_panel_infos => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -88,7 +85,7 @@ has sql_panel_infos => (
 
 has sql_panel_by_gene_name => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -102,7 +99,7 @@ has sql_panel_by_gene_name => (
 
 has sql_genes_by_panel_name => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -118,7 +115,7 @@ has sql_genes_by_panel_name => (
 
 has sql_count_genes_by_panel_name => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -136,7 +133,7 @@ has sql_count_genes_by_panel_name => (
 
 has sql_panel_by_gene_id => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -152,7 +149,7 @@ has sql_panel_by_gene_id => (
 ###########
 has sql_bundle_ids_from_panel_id => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 			my $self = shift;
@@ -164,7 +161,7 @@ has sql_bundle_ids_from_panel_id => (
 
 has sql_bundle_infos => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 			my $self = shift;
@@ -176,7 +173,7 @@ has sql_bundle_infos => (
 
 has sql_bundle_genes => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -187,7 +184,7 @@ has sql_bundle_genes => (
 );
 has sql_bundle_genes_ensg => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -199,7 +196,7 @@ has sql_bundle_genes_ensg => (
 
 has sql_genes_omim_morbid => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;

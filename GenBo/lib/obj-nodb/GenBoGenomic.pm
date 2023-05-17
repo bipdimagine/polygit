@@ -2,12 +2,8 @@ package GenBoGenomic;
 
 use strict;
 use Vcf;
-use Moose;
+use Moo;
 use Data::Dumper;
-use Config::Std;
-use GenBoCapture;
-use Position;
- use JSON::XS;
  use GenBoCoverageSamtools;
  use GenBoCoverageTabix;
  use GenBoCoverageLmdb;

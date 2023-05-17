@@ -547,7 +547,6 @@ has hgmd_refseq => (
 		return $self->hgmd->{refseq};
 	 },
 );
-
 has hgmd_go_terms_name => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -560,7 +559,8 @@ has hgmd_go_terms_name => (
 		}
 		return \@list;
 	 },
-); 
+);
+
 
 has hgmd_go_terms_acc => (
 	is		=> 'ro',
@@ -619,19 +619,7 @@ sub getExons {
 	return $exons;
 }
 
-has hgmd_go_terms_name => (
-	is		=> 'ro',
-	lazy	=> 1,
-	default => sub { 
-		my $self = shift;
-		return unless $self->hgmd();
-		my @list;
-		if ($self->hgmd->{go_terms_name}) {
-			@list = split('\|', $self->hgmd->{go_terms_name});
-		}
-		return \@list;
-	 },
-); 
+ 
 
 has panels_name => (
 	is		=> 'ro',

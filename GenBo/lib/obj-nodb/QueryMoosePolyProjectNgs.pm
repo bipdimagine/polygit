@@ -2,8 +2,8 @@ package QueryMoosePolyProjectNgs;
 
 use strict;
 use Vcf;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 extends "QueryMoose";
@@ -13,7 +13,6 @@ extends "QueryMoose";
 
 has sql_cmd_delete_last_connection_user => (
 	is	 => 'ro',
-	isa	 => 'Str',
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -25,7 +24,6 @@ has sql_cmd_delete_last_connection_user => (
 
 has sql_cmd_insert_last_connection_user => (
 	is	 => 'ro',
-	isa	 => 'Str',
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -37,7 +35,6 @@ has sql_cmd_insert_last_connection_user => (
 
 has sql_cmd_get_last_connection_user_project => (
 	is	 => 'ro',
-	isa	 => 'Str',
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -49,7 +46,6 @@ has sql_cmd_get_last_connection_user_project => (
 
 has sql_cmd_insert_last_connection_user_project => (
 	is	 => 'ro',
-	isa	 => 'Str',
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -61,7 +57,6 @@ has sql_cmd_insert_last_connection_user_project => (
 
 has sql_cmd_delete_last_connection_user_project => (
 	is	 => 'ro',
-	isa	 => 'Str',
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -74,7 +69,6 @@ has sql_cmd_delete_last_connection_user_project => (
 
 has sql_cmd_get_ill_patients_from_project => (
 	is	 => 'ro',
-	isa	 => 'Str',
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -87,7 +81,7 @@ has sql_cmd_get_ill_patients_from_project => (
 
 has sql_cmd_get_user_id => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -99,7 +93,7 @@ has sql_cmd_get_user_id => (
 
 has sql_cmd_get_last_connection_user => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -112,7 +106,7 @@ has sql_cmd_get_last_connection_user => (
 
 has sql_cmd_get_project_release_annotation => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -125,7 +119,7 @@ has sql_cmd_get_project_release_annotation => (
 
 has sql_cmd_get_project_release_gene => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -138,7 +132,7 @@ has sql_cmd_get_project_release_gene => (
 
 has sql_cmd_get_release_annotation_id => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT rel_annot_id  FROM PolyprojectNGS.release_annotation where name=?; };
@@ -148,7 +142,7 @@ has sql_cmd_get_release_annotation_id => (
 
 has sql_cmd_get_current_genes_releases_annotations => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT * FROM PolyprojectNGS.release_gene; };
@@ -158,7 +152,7 @@ has sql_cmd_get_current_genes_releases_annotations => (
 
 has sql_cmd_get_current_diag_project_releases_annotations => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT name FROM PolyprojectNGS.release_annotation where diag=2; };
@@ -168,7 +162,7 @@ has sql_cmd_get_current_diag_project_releases_annotations => (
 
 has sql_cmd_get_current_genome_project_releases_annotations => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT name FROM PolyprojectNGS.release_annotation where genome=2; };
@@ -178,7 +172,7 @@ has sql_cmd_get_current_genome_project_releases_annotations => (
 
 has sql_cmd_get_list_project_releases_annotations => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT ra.name as annotation_release FROM PolyprojectNGS.project_release_annotation as pra, PolyprojectNGS.projects as p, PolyprojectNGS.release_annotation as ra where p.project_id=pra.project_id and pra.rel_annot_id=ra.rel_annot_id and p.project_id=?; };
@@ -188,7 +182,7 @@ has sql_cmd_get_list_project_releases_annotations => (
 
 has sql_cmd_get_list_releases_annotations => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT ra.name as annotation_release FROM PolyprojectNGS.release_annotation as ra; };
@@ -198,7 +192,7 @@ has sql_cmd_get_list_releases_annotations => (
 
 has sql_cmd_getTranscriptsTooLongFromBundles =>(
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT * FROM PolyprojectNGS.transcripts where LENGTH(ENSEMBL_ID) > 15; };
@@ -208,7 +202,7 @@ has sql_cmd_getTranscriptsTooLongFromBundles =>(
 
 has sql_cmd_getTranscriptsInfosTranscriptsTable =>(
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT * FROM PolyprojectNGS.transcripts where ENSEMBL_ID=?; };
@@ -218,7 +212,7 @@ has sql_cmd_getTranscriptsInfosTranscriptsTable =>(
 
 has sql_cmd_getAllBundlesIdsFromTranscriptsId =>(
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{ SELECT * FROM PolyprojectNGS.bundle_transcripts where transcript_id=?; };
@@ -229,7 +223,7 @@ has sql_cmd_getAllBundlesIdsFromTranscriptsId =>(
 
 has sql_cmd_list_capture_diag_from_transcrip_id => (
         is       => 'ro',
-        isa      => 'Str',
+        
         lazy =>1,
         default => sub {
                 my $self = shift;
@@ -244,7 +238,6 @@ has sql_cmd_list_capture_diag_from_transcrip_id => (
 
 has sql_cmd_transcrip_id_with_capture_diag => (
         is       => 'ro',
-        isa      => 'Str',
         lazy =>1,
         default => sub {
                 my $self = shift;
@@ -259,7 +252,7 @@ has sql_cmd_transcrip_id_with_capture_diag => (
 
 has sql_cmd_list_all_capture_analyse => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -272,7 +265,7 @@ has sql_cmd_list_all_capture_analyse => (
 
 has sql_cmd_list_ngs_patients_id_byCapture => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -286,7 +279,7 @@ has sql_cmd_list_ngs_patients_id_byCapture => (
 
 has sql_cmd_list_ngs_projects_name_byCapture => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -300,7 +293,7 @@ has sql_cmd_list_ngs_projects_name_byCapture => (
 
 has sql_cmd_list_ngs_projects_name_byCaptureId => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -314,7 +307,7 @@ has sql_cmd_list_ngs_projects_name_byCaptureId => (
 
 has sql_cmd_list_ngs_projects_name_byAnalyse => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -328,7 +321,7 @@ has sql_cmd_list_ngs_projects_name_byAnalyse => (
 
 has sql_cmd_list_projects_name => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -341,7 +334,7 @@ has sql_cmd_list_projects_name => (
 
 has sql_cmd_list_projects_name_exome_for_dejaVu => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -354,7 +347,7 @@ has sql_cmd_list_projects_name_exome_for_dejaVu => (
 
 has sql_cmd_list_projects_name_for_dejaVu => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -367,7 +360,7 @@ has sql_cmd_list_projects_name_for_dejaVu => (
 
 has sql_cmd_hash_ngs_patients_infos => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -381,7 +374,7 @@ has sql_cmd_hash_ngs_patients_infos => (
 
 has sql_cmd_list_ngs_patients_id => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -395,7 +388,7 @@ has sql_cmd_list_ngs_patients_id => (
 
 has sql_cmd_list_ngs_patients_id_byYear => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -409,7 +402,7 @@ has sql_cmd_list_ngs_patients_id_byYear => (
 
 has sql_cmd_owner_project => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -423,7 +416,7 @@ has sql_cmd_owner_project => (
 
 has sql_cmd_owner_project_by_name => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -437,7 +430,7 @@ has sql_cmd_owner_project_by_name => (
 
 has sql_list_all_projects => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{select distinct(project_id) as id, name, description from PolyprojectNGS.projects where name regexp 'NGS';};
@@ -447,7 +440,7 @@ has sql_list_all_projects => (
 
 has sql_list_project_for_user =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{	  	
@@ -466,7 +459,7 @@ has sql_list_project_for_user =>(
 
 has sql_list_project_for_group =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{
@@ -489,7 +482,7 @@ has sql_list_project_for_group =>(
 
 has sql_list_projects =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{	  	
@@ -504,7 +497,7 @@ has sql_list_projects =>(
 
 has sql_cmd_project_by_id => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -517,7 +510,7 @@ has sql_cmd_project_by_id => (
 
 has sql_cmd_project_by_name => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $self = shift;
@@ -531,7 +524,7 @@ has sql_cmd_project_by_name => (
 );
 has sql_cmd_sequencing_machine =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -545,7 +538,7 @@ has sql_cmd_sequencing_machine =>(
 
 has sql_get_patients =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -557,7 +550,7 @@ has sql_get_patients =>(
 
 has sql_get_groups =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -596,7 +589,7 @@ sub getGenboIdPatient {
 
 has sql_get_origin_methods =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -609,7 +602,7 @@ has sql_get_origin_methods =>(
 );
 has sql_get_similar_projects =>(
 is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{SELECT pr.name as name FROM PolyprojectNGS.patient p,PolyprojectNGS.projects pr  where p.capture_id = ? and p.project_id = pr.project_id group by pr.project_id};
@@ -620,7 +613,7 @@ is		=> 'ro',
 
 has sql_get_similar_projects_by_validation_db =>(
 is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{SELECT pr.name as name ,p.patient_id as patient_id FROM PolyprojectNGS.patient p,PolyprojectNGS.projects pr ,PolyprojectNGS.capture_systems cs  where cs.validation_db = ? and p.capture_id=cs.capture_id  and p.project_id = pr.project_id group by pr.project_id};
@@ -629,7 +622,7 @@ is		=> 'ro',
 );
 has sql_get_similar_projects_by_analyse =>(
 is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	
 	default	=> sub {
@@ -641,7 +634,7 @@ is		=> 'ro',
 );
 has sql_get_methods =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -654,7 +647,7 @@ has sql_get_methods =>(
 
 has sql_cmd_select_run =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -666,7 +659,7 @@ has sql_cmd_select_run =>(
 
 #has sql_panel_all_names => (
 #	is		=> 'ro',
-#	isa		=> 'Str',
+#	
 #	lazy =>1,
 #	default	=> sub {
 #		my $sql = qq{ SELECT name FROM PolyPanelDB.panel; };
@@ -676,7 +669,7 @@ has sql_cmd_select_run =>(
 
 #has sql_panel_all_ids => (
 #	is		=> 'ro',
-#	isa		=> 'Str',
+#	
 #	lazy =>1,
 #	default	=> sub {
 #		my $sql = qq{ SELECT panel_id FROM PolyPanelDB.panel; };
@@ -689,7 +682,7 @@ has sql_cmd_select_run =>(
 
 has sql_panel_infos => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{ SELECT * FROM PolyPanelDB.panel where panel_id=?; };
@@ -699,7 +692,7 @@ has sql_panel_infos => (
 
 has sql_capture_infos =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{SELECT c.*,pr.name as gencode_version FROM  PolyprojectNGS.capture_systems c, PolyprojectNGS.release_gene pr where c.capture_id=? and c.rel_gene_id = pr.rel_gene_id ;};
@@ -710,7 +703,7 @@ has sql_capture_infos =>(
 
 has sql_umi =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{SELECT u.name as name , u.mask as mask FROM  PolyprojectNGS.capture_systems c, PolyprojectNGS.umi u where c.capture_id=? and c.umi_id = u.umi_id ;};
@@ -723,7 +716,7 @@ has sql_umi =>(
 
 has sql_capture_infos_by_name =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{SELECT c.capture_id FROM  PolyprojectNGS.capture_systems c where c.name=?;};
@@ -734,7 +727,7 @@ has sql_capture_infos_by_name =>(
 
 has sql_allprojects_infos_for_user =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{select p.name as name,analyse,pa.name,p.validation_db as type from 
@@ -747,7 +740,7 @@ has sql_allprojects_infos_for_user =>(
 );
 has sql_allprojects_infos =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{select p.name as name,analyse,pa.name,p.validation_db as type from PolyprojectNGS.projects p ,PolyprojectNGS.patient pa , PolyprojectNGS.run r ,PolyprojectNGS.capture_systems c where p.project_id = pa.project_id and pa.run_id=r.run_id and pa.capture_id = c.capture_id;
@@ -758,7 +751,7 @@ has sql_allprojects_infos =>(
 
 has sql_cmd_capture_transcripts =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{select b.*,tr.* from  PolyprojectNGS.capture_bundle cb, PolyprojectNGS.bundle b, PolyprojectNGS.bundle_transcripts bt,PolyprojectNGS.transcripts tr where cb.capture_id = ? and cb.bundle_id = b.bundle_id and bt.bundle_id = cb.bundle_id and bt.transcript_id = tr.ID and tr.deprecated=0 order by tr.GENE;	};
@@ -769,7 +762,7 @@ has sql_cmd_capture_transcripts =>(
 
 has sql_release_gene_capture_id =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{ SELECT rg.name as release_id  
@@ -784,7 +777,7 @@ has sql_release_gene_capture_id =>(
 
 has sql_cmd_capture_transcripts_by_name =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		
@@ -801,7 +794,7 @@ PolyprojectNGS.bundle_transcripts as bt
 
 has sql_cmd_getBundleGenesAllProjectsUsers => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{
@@ -823,7 +816,7 @@ has sql_cmd_getBundleGenesAllProjectsUsers => (
 
 has sql_cmd_getGenesNamesInBundle => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{
@@ -839,7 +832,7 @@ has sql_cmd_getGenesNamesInBundle => (
 
 has sql_cmd_getGenesNamesAllBundle => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{
@@ -858,7 +851,7 @@ has sql_cmd_getGenesNamesAllBundle => (
 
 has sql_cmd_getOmimGenesTranscriptsNames => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{
@@ -943,7 +936,7 @@ from DEJAVU_STATIC d, RELATION r,GENBO g, RELATION_ANNEX ra
 
 has sql_cmd_getPatientProjectInfo => (
         is       => 'ro',
-        isa      => 'Str',
+        
         lazy =>1,
         default => sub {
                 my $self = shift;
@@ -985,7 +978,7 @@ has sql_cmd_getPatientProjectInfo => (
 
 has sql_cmd_getPatientSomaticProjectInfo => (
         is       => 'ro',
-        isa      => 'Str',
+        
         lazy =>1,
         default => sub {
                 my $self = shift;
@@ -1031,7 +1024,7 @@ has sql_cmd_getPatientSomaticProjectInfo => (
 
 has sql_cmd_get_proj_ids_genes_datatbase_version => (
         is       => 'ro',
-        isa      => 'Str',
+        
         lazy =>1,
         default => sub {
                 my $self = shift;
@@ -1045,7 +1038,7 @@ has sql_cmd_get_proj_ids_genes_datatbase_version => (
 
 has sql_cmd_get_alamut_api_key_from_username => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -1058,7 +1051,7 @@ has sql_cmd_get_alamut_api_key_from_username => (
 
 has sql_cmd_get_projects_control_giab => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -1070,7 +1063,7 @@ has sql_cmd_get_projects_control_giab => (
 
 has sql_cmd_get_quick_projects_list_RNA => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -1115,7 +1108,7 @@ has sql_cmd_get_quick_projects_list_RNA => (
 
 has sql_cmd_check_project_RNA=> (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -1160,7 +1153,7 @@ has sql_cmd_check_project_RNA=> (
 
 has sql_cmd_get_quick_patients_list_from_project_id => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -1207,7 +1200,7 @@ has sql_cmd_get_quick_patients_list_from_project_id => (
 
 has sql_cmd_get_projects_ids_with_patients_type_rna => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -1220,7 +1213,7 @@ has sql_cmd_get_projects_ids_with_patients_type_rna => (
 
 has sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name => (
 	is	 => 'ro',
-	isa	 => 'Str',
+
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
@@ -1348,7 +1341,7 @@ sub getAlamutApiKeyFromUserName {
 
 has sql_cmd_get_runid_from_samplename => (
 	is       => 'ro',
-	isa      => 'Str',
+	
 	lazy =>1,
 	default => sub {
 		my $self = shift;
@@ -1371,7 +1364,7 @@ sub getHashRunIdFromSampleName {
 
 has sql_cmd_get_runid_infos => (
 	is       => 'ro',
-	isa      => 'Str',
+	
 	lazy =>1,
 	default => sub {
 		my $self = shift;

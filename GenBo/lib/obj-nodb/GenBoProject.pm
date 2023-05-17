@@ -2,8 +2,8 @@ package GenBoProject;
 use FindBin qw($Bin);
 use strict;
 use POSIX qw(strftime);
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+use Carp;
 use Data::Dumper;
 extends 'GenBo';
 use GenBoFamily;
@@ -4108,7 +4108,13 @@ sub getVariationsDir {
 	$path .= $method_name . '/';
 	return $self->makedir($path);
 }
-
+sub getJunctionsDir {
+	my ( $self, $method_name ) = @_;
+	my $path = $self->project_path . "/junctions/";
+	$self->makedir($path);
+	$path .= $method_name . '/';
+	return $self->makedir($path);
+}
 sub getAnnotSVDir {
 	my ( $self, $method_name ) = @_;
 	my $path = $self->project_path . "/variations/";

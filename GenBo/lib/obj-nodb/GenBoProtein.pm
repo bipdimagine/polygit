@@ -44,10 +44,7 @@ has genomic_span => (
 	required=> 1,
 );
 
- has sequence => (
-	is		=> 'ro',
-	required=> 1,
-);
+
 
 sub getSequence {
 	my ($self,$start,$end) = @_;
