@@ -1,9 +1,8 @@
 package GenBoChromosome;
 
 use strict;
-use Moose;
+use Moo;
 
-#use MooseX::Method::Signatures;
 use Data::Dumper;
 use Config::Std;
 use GenBoGenomic;
@@ -161,7 +160,6 @@ has fai => (
 );
 has length => (
 	is       => 'ro',
-	isa      => 'Int',
 	required => 1,
 );
 

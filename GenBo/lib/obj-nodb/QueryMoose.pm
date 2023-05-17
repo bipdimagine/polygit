@@ -2,7 +2,7 @@ package QueryMoose;
 
 use strict;
 use Moose;
-use MooseX::Method::Signatures;
+
 use Data::Dumper;
 
 
@@ -869,7 +869,11 @@ sub getOriginMethods {
 	return \@lRes;
 }
 
-method getMethods (Str :$patient_name!, Int :$project_id!, Str :$type!) {
+sub getMethods{
+		my ($self,%arg) = @_;
+	my $patient_name = $arg{patient_name};
+	my $project_id = $arg{project_id};
+	my $type = $arg{type};
 	my $dbh = $self->getDbh();
 	my $config = $self->getConfig();
 	my $sth = $dbh->prepare($self->sql_get_methods);
@@ -878,20 +882,23 @@ method getMethods (Str :$patient_name!, Int :$project_id!, Str :$type!) {
 	my @lRes = sort(keys(%$s));
 	return \@lRes;
 }
-
-method getCallingSVMethods (Str :$patient_name!, Int :$project_id!) {
-return $self->getMethods(type=>"SV", patient_name=>$patient_name,project_id=>$project_id);
-
-}
-
-method getCallingMethods (Str :$patient_name!, Int :$project_id!) {
-
-return $self->getMethods(type=>"SNP", patient_name=>$patient_name,project_id=>$project_id);
+sub getCallingSVMethods {
+	my ($self,%arg) = @_;
+	my $patient_name = $arg{patient_name};
+	my $project_id = $arg{project_id};
+	return $self->getMethods(type=>"SV", patient_name=>$patient_name,project_id=>$project_id);
 
 }
-method getAlignmentMethods ( Any:$patient_name!, Int :$project_id!) {
-	
-	return $self->getMethods(type=>"ALIGN", patient_name=>$patient_name,project_id=>$project_id);
+sub getCallingMethods{
+	my ($self,%arg) = @_;
+	my $patient_name = $arg{patient_name};
+	my $project_id = $arg{project_id};
+	return $self->getMethods(type=>"SNP", patient_name=>$patient_name,project_id=>$project_id);
+
+}
+sub getAlignmentMethods {
+	my ($self,%arg) = @_;
+	return $self->getMethods(type=>"ALIGN", patient_name=>$arg{patient_name},project_id=>$arg{project_id});
 }
 
 
