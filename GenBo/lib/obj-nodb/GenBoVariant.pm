@@ -1,8 +1,8 @@
 package GenBoVariant;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Parallel::ForkManager;
 use Data::Dumper;
 use Config::Std;
@@ -229,15 +229,6 @@ sub alternate_allele {
 	return $self->sequence();
 } 
 
-has categorie_frequency_ho=> (
-		is		=> 'rw',
-	
-		lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-	 	return 0;
-	},
-);
 
 
 has clinvar => (
@@ -849,7 +840,6 @@ sub get_infos_database {
 
 has population_frequencies=> (
 		is		=> 'rw',
-	#isa		=> 'Str',
 	lazy	=> 1,
 	default => sub {
 			my $self = shift;
@@ -890,6 +880,16 @@ has categorie_frequency => (
 		
 	},
 );
+#has categorie_frequency_ho=> (
+#		is		=> 'rw',
+#	
+#		lazy	=> 1,
+#	default	=> sub {
+#		my $self = shift;
+#	 	return 0;
+#	},
+#);
+
 
 has categorie_frequency_ho=> (
 		is		=> 'rw',
@@ -1394,7 +1394,9 @@ sub init_annotation {
 		else {
 				
 			### exonic
-			if ($tr->protein() ) {
+	
+			
+			if ($tr->protein() && $tr->protein !~ /ENST/ ) {
 				#$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $maskCoding->{exonic};
 				my $span_splice = $span->intersection( $tr->getSpanSpliceSite() );
 				
@@ -1433,11 +1435,14 @@ sub init_annotation {
 					$annot->{$trid}->{mask} = $annot->{$trid}->{mask} |$project->getMaskCoding("pseudogene");
 					
 				}
-				
 				else {
-					warn $tr->name();
-					confess("problem");
+					$annot->{$trid}->{mask} = $annot->{$trid}->{mask} |$project->getMaskCoding("ncrna");	
 				}
+				
+				#else {
+				#	warn $tr->name();
+				#	confess("problem");
+				#}
 			}
 		}
 		$annot->{$gid}->{mask} = $annot->{$gid}->{mask} | $annot->{$trid}->{mask};
