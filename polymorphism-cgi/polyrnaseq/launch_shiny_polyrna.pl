@@ -34,6 +34,18 @@ unless ($specie) {
 	exit(0);
 }
 
+my $pathTest = $project->project_path().'/polyRNA/outputs/species.txt';
+if (not -e $pathTest) {
+	my $other_specie;
+	if ($specie eq 'MM39') { $other_specie = 'MM38'; }
+	if ($specie eq 'MM38') { $other_specie = 'MM39'; }
+	if ($specie eq 'HG38') { $other_specie = 'HG19'; }
+	if ($specie =~ /HG19/) { $other_specie = 'HG38'; }
+	my $pathTest2 = $pathTest;
+	$pathTest2 =~ s/$specie/$other_specie/;
+	if (-e $pathTest2) { $specie = $other_specie; }
+}
+
 my $url_link;
 my $found_port = read_log_file();
 if ($found_port) {
