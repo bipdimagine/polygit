@@ -1,7 +1,7 @@
 package image_primer_coverage;
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use GD;
 use Data::Printer;
 use Data::Dumper;

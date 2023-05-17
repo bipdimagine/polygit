@@ -1,7 +1,7 @@
 package polysplice_html;
 use strict;
 use FindBin qw($Bin);
-use Moose;
+use Moo;
 use Data::Dumper;
 use JSON::XS;
 extends 'polyviewer_html';
