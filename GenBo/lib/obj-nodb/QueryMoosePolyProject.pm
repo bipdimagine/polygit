@@ -2,8 +2,8 @@ package QueryMoosePolyProject;
 
 use strict;
 use Vcf;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 extends "QueryMoose";
@@ -12,7 +12,6 @@ extends "QueryMoose";
 
 has sql_cmd_list_all_capture_analyse => (
 	is	 => 'ro',
-	isa	 => 'Str',
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -25,7 +24,7 @@ has sql_cmd_list_all_capture_analyse => (
 
 has sql_cmd_list_ngs_patients_id_byCapture => (
 	is	 => 'ro',
-	isa	 => 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -39,7 +38,7 @@ has sql_cmd_list_ngs_patients_id_byCapture => (
 
 has sql_cmd_list_ngs_projects_name_byCapture => (
 	is	 => 'ro',
-	isa	 => 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -53,7 +52,7 @@ has sql_cmd_list_ngs_projects_name_byCapture => (
 
 has sql_cmd_list_ngs_projects_name_byCaptureId => (
 	is	 => 'ro',
-	isa	 => 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -65,10 +64,10 @@ has sql_cmd_list_ngs_projects_name_byCaptureId => (
 	},
 );
 
-# TODO: � faire...
+# TODO: faire...
 #has sql_cmd_list_ngs_projects_id => (
 #	is	 => 'ro',
-#	isa	 => 'Str',
+#	
 #	lazy =>1,
 #	default	=> sub {
 #		my $self = shift;
@@ -82,7 +81,7 @@ has sql_cmd_list_ngs_projects_name_byCaptureId => (
 
 has sql_cmd_list_ngs_patients_id => (
 	is	 => 'ro',
-	isa	 => 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -96,7 +95,7 @@ has sql_cmd_list_ngs_patients_id => (
 
 has sql_cmd_list_ngs_patients_id_byYear => (
 	is	 => 'ro',
-	isa	 => 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -110,7 +109,7 @@ has sql_cmd_list_ngs_patients_id_byYear => (
 
 has sql_cmd_list_projects_name => (
 is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -122,7 +121,7 @@ is		=> 'ro',
 );
 has sql_cmd_owner_project => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -137,7 +136,7 @@ has sql_cmd_owner_project => (
 
 has sql_cmd_project_by_id => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -150,7 +149,7 @@ has sql_cmd_project_by_id => (
 
 has sql_cmd_project_by_name => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -169,7 +168,7 @@ has sql_cmd_project_by_name => (
 
 has sql_cmd_sequencing_machine =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{select m.name as name,m.type as type 
@@ -181,7 +180,7 @@ has sql_cmd_sequencing_machine =>(
 
 has sql_get_patients =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -194,7 +193,7 @@ has sql_get_patients =>(
 
 has sql_list_project_for_user =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{	  	
@@ -212,7 +211,7 @@ has sql_list_project_for_user =>(
 
 has sql_capture_infos =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{SELECT c.* FROM Polyproject.capture_systems c where c.capture_id= ?;};
@@ -223,7 +222,7 @@ has sql_capture_infos =>(
 
 has sql_cmd_owner_project_by_name => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 		my $self = shift;
@@ -237,7 +236,7 @@ has sql_cmd_owner_project_by_name => (
 
 has sql_get_origin_methods =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{
@@ -251,7 +250,7 @@ has sql_get_origin_methods =>(
 
 has sql_get_methods =>(
 	is		=> 'ro',
-	isa		=> 'Str',
+	
 	lazy =>1,
 	default	=> sub {
 	my $sql = qq{

@@ -1,7 +1,7 @@
 package GenBoMnp;
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;

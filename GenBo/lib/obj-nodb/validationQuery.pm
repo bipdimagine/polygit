@@ -2,8 +2,8 @@ package validationQuery;
 use strict;
 use Data::Dumper;
 use Carp;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use IO::Compress::Gzip qw(gzip $GzipError) ;
 
 has 'dbh' => (
@@ -121,8 +121,9 @@ sub getVariationByVcfId  {
 	return $s->{id};
 }
 
-
-method getVariationByGenBoId(Str :$id!) {
+sub getVariationByGenBoId {
+	my ($self,%arg) =@_;
+	my $id = $arg{id};
 	my $db = $self->db;
 	my $id2 = "chr".$id;
 	my $query = qq{
@@ -133,17 +134,21 @@ method getVariationByGenBoId(Str :$id!) {
 	my $s = $sth->fetchrow_hashref();	
 	return $s->{id};
 }
-
-method getValidations (Int :$id , Str :$project, Str :$sample){
+sub getValidations{
+	my ($self,%arg) =@_;
 	my $db = $self->db;
-	
+	my $id = $arg{id};
+	my $project = $arg{project};
+	my $sample = $arg{sample};
 	my $query = qq{select validation as validation ,validation_sanger as sanger from $db.validations where variation_id=$id and project_name='$project'  and sample_name='$sample' order by modification_date; };
 	my $sth = $self->dbh->prepare($query);
 	$sth->execute();
 	my $s = $sth->fetchrow_hashref();	
 	
 	return ($s->{validation},$s->{sanger});
+	
 }
+
 
 sub getIdFromPositionSequence{
 		my ($self,$chr,$start,$end,$seq,$type) = @_; 
@@ -208,8 +213,10 @@ sub  hresults {
 	}
 	return $res;
 }
-
-method get_variations_validated(Str :$project_name!, Str :$sample_name!){
+sub get_variations_validated{
+	my ($self,%arg) = @_;
+	my $project_name =$arg{project_name};
+	my $sample_name = $arg{sample_name};
 	my $db = $self->db;
 	my $query = qq{SELECT v.validation_id as validation_id,  vr.vcfid as vcfid, validation, validation_sanger FROM $db.validations v, $db.variations vr where
 v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_name="$project_name";};
@@ -231,29 +238,34 @@ v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_na
 	return $variations;
 }
 
-
-method get_variations_ions(Str :$project_name!, Str :$sample_name!){
-	my $db = $self->db;
-	my $query = qq{SELECT v.validation_id as validation_id,  vr.vcfid as vcfid, validation, validation_sanger FROM $db.validations v, $db.variations vr where
-v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_name="$project_name" and v.validation_sanger=0 and v.validation!=-3;};
-	my $sth = $self->dbh->prepare($query);
-	$sth->execute();
-	#my $s = $sth->fetchall_arrayref();	
-	my $variations;
-	while ( my $v  = $sth->fetchrow_hashref() ){
-		my $var;
-		($var->{chromosome},$var->{start},$var->{ref},$var->{alt}) = split("_",$v->{vcfid});
-		$var->{vcf_id} = $v->{vcfid};
-		$var->{validation} = $v->{validation};
-		$var->{validation_id} = $v->{validation_id};
-		$var->{validation_sanger} = $v->{validation_sanger} if $v->{validation_sanger};
-		$variations->{$v->{vcfid}} = $var;
-		#push(@$variations,$var);
-	}
-	return $variations;
+sub get_variations_ions {
+	confess();
+#	method get_variations_ions(Str :$project_name!, Str :$sample_name!){
+#	my $db = $self->db;
+#	my $query = qq{SELECT v.validation_id as validation_id,  vr.vcfid as vcfid, validation, validation_sanger FROM $db.validations v, $db.variations vr where
+#v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_name="$project_name" and v.validation_sanger=0 and v.validation!=-3;};
+#	my $sth = $self->dbh->prepare($query);
+#	$sth->execute();
+#	#my $s = $sth->fetchall_arrayref();	
+#	my $variations;
+#	while ( my $v  = $sth->fetchrow_hashref() ){
+#		my $var;
+#		($var->{chromosome},$var->{start},$var->{ref},$var->{alt}) = split("_",$v->{vcfid});
+#		$var->{vcf_id} = $v->{vcfid};
+#		$var->{validation} = $v->{validation};
+#		$var->{validation_id} = $v->{validation_id};
+#		$var->{validation_sanger} = $v->{validation_sanger} if $v->{validation_sanger};
+#		$variations->{$v->{vcfid}} = $var;
+#		#push(@$variations,$var);
+#	}
+#	return $variations;
+#}
 }
 
-method get_variations_in_validation_table(Str :$project_name!, Str :$sample_name!){
+sub get_variations_in_validation_table {
+	my ($self,%arg) = @_;
+	my $project_name = $arg{project_name};
+	my $sample_name= $arg{sample_name};
 	my $db = $self->db;
 	my $query = qq{SELECT * FROM $db.validations v, $db.variations vr where v.variation_id=vr.variation_id 
 		and v.sample_name="$sample_name" and v.project_name="$project_name" order by modification_date;};
@@ -273,7 +285,10 @@ method get_variations_in_validation_table(Str :$project_name!, Str :$sample_name
 	return $variations;
 }
 
-method get_validations_users (Str :$project_name!, Str :$sample_name!){
+sub get_validations_users {
+		my ($self,%arg) = @_;
+	my $project_name = $arg{project_name};
+	my $sample_name = $arg{sample_name};
 	my $db = $self->db;
 	my $query = qq{SELECT user_name as user ,modification_date as date FROM $db.validations v, $db.variations vr where
 		 v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_name="$project_name" 
@@ -295,7 +310,11 @@ method get_validations_users (Str :$project_name!, Str :$sample_name!){
 	return (\%users,$last_user,$last_date);
 		 
 }
-method get_variations_todo(Str :$project_name!, Str :$sample_name!, Int:$uniq){
+sub get_variations_todo{
+	my ($self,%arg) = @_;
+	my $project_name = $arg{project_name};
+	my $sample_name = $arg{sample_name};
+	my $uniq  = $arg{uniq};
 	my $db = $self->db;
 	my $query = qq{SELECT * FROM $db.validations v, $db.variations vr where v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_name="$project_name" and v.validation_sanger=0 and v.validation =-3;};
     #my $query = qq{SELECT * FROM $db.validations v, $db.variations vr where v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_name="$project_name" and  v.validation_sanger>0 ;};
@@ -313,8 +332,10 @@ method get_variations_todo(Str :$project_name!, Str :$sample_name!, Int:$uniq){
 	}
 	return $variations;
 }
-
-method get_variations_sanger(Str :$project_name!, Str :$sample_name!){
+sub get_variations_sanger {
+	my ($self,%arg) = @_;
+	my $project_name = $arg{project_name};
+	my $sample_name = $arg{sample_name};
 	my $db = $self->db;
 	my $query = qq{SELECT v.validation_id as validation_id, v.user_name as user,  vr.vcfid as vcfid, validation, validation_sanger FROM $db.validations v, $db.variations vr where
 v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_name="$project_name" and v.validation_sanger != 0;};
@@ -337,8 +358,10 @@ v.variation_id=vr.variation_id and v.sample_name="$sample_name" and v.project_na
 	}
 	return $variations;
 }
-
-method get_exons (Str :$project_name!,Str :$sample_name){ 
+sub get_exons {
+	my ($self,%arg) = @_;
+	my $project_name = $arg{project_name};
+	my $sample_name = $arg{sample_name};
 	my $db = $self->db;
 	my $query = qq{select * from $db.exons where  project_name="$project_name" and sample_name ="$sample_name";};
 	my $sth = $self->dbh->prepare($query) ;
@@ -354,7 +377,11 @@ method get_exons (Str :$project_name!,Str :$sample_name){
 	return $exons;
 	}
 	
-method getTodoVariations (Str :$project_name, Str :$sample_name) {
+	
+sub getTodoVariations {
+	my ($self,%arg) = @_;
+	my $project_name = $arg{project_name};
+	my $sample_name = $arg{sample_name};
 	my $db = $self->db;
 my $sql = qq{SELECT validation_id ,sample_name as patient_name ,vcfid as variation_name ,validation  FROM $db.validations v, $db.variations vr where v.project_name="NGS2013_0201" and v.variation_id=vr.variation_id; };
 
@@ -372,10 +399,13 @@ foreach my $id (keys %$hres){
 }
 
 }
-
-
-
-method existsValidation(Int :$variation_id, Str :$project!, Str :$sample!, Str :$user!){
+sub existsValidation {
+	my ($self,%arg) = @_;
+	my $project = $arg{project};
+	my $sample = $arg{sample};
+	my $variation_id = $arg{variation_id};
+	my $user =  $arg{user};
+	
 	my $db = $self->db;
 	my $query = qq{
 		select validation_id as id  from $db.validations where variation_id=$variation_id and project_name='$project' and user_name='$user' and sample_name='$sample' ;
@@ -386,8 +416,17 @@ method existsValidation(Int :$variation_id, Str :$project!, Str :$sample!, Str :
 	my $s = $sth->fetchrow_hashref();
 	return $s->{id};
 }
+sub createValidation {
+		my ($self,%arg) = @_;
+	my $project = $arg{project};
+	my $sample = $arg{sample};
+	my $variation_id = $arg{variation_id};
+	my $user =  $arg{user};
+	my $vcf_line = $arg{vcf_line};
+	my $validation_status = $arg{validation_status};
+	my $bam_line = $arg{bam_line};
+	my $method = $arg{method};
 
-method createValidation (Int :$variation_id, Str :$project!, Str :$sample!, Str :$user!,Str :$vcf_line!, Int :$validation_status!, Str :$bam_line, Str :$method){ 
 	my $db = $self->db;
 	my $validation_id = $self->existsValidation(variation_id=>$variation_id,project=>$project,sample=>$sample,user=>$user);
 
@@ -411,8 +450,11 @@ method createValidation (Int :$variation_id, Str :$project!, Str :$sample!, Str 
 	return 1;
 	}
 }
-
-method update_variation_validation(Int :$validation_id, Str :$heho, Str :$method){
+sub update_variation_validation {
+		my ($self,%arg) = @_;
+	my $heho = $arg{heho};
+	my $validation_id = $arg{validation_id};
+	my $method = $arg{method};
 	my $db = $self->db;
 	my $query = qq{update $db.validations set validation_sanger=$heho , modification_date=NOW() where validation_id=$validation_id};
 	#my $query = qq{insert into $db.sanger_validations (validation_id,validation,method,creation_date) values(?,?,?,NOW()) };
@@ -422,9 +464,11 @@ method update_variation_validation(Int :$validation_id, Str :$heho, Str :$method
 	#$self->dbh->do($query) || return undef;
 	return 1;
 }
+sub update_exon_validation {
+	my ($self,%arg) = @_;
+my $exon_id = $arg{exon_id};
+my $value = $arg{value};
 
-
-method update_exon_validation(Str :$exon_id,Int :$value){
 	my $db = $self->db;
 	
 	my $query = qq{update $db.exons set done=$value , modification_date=NOW() where exon_id="$exon_id"};
@@ -440,60 +484,68 @@ sub compressData{
         or die "gzip failed: $GzipError\n";
     return $data2;
 }
-method exon_todo (Str :$project_name!, Str :$id!,Str :$sample_name, Str :$chromosome!, Str :$start!, Str :$end!, Str :$transcript!, Str :$user_name, Int :$todo!, Str :$name, Str :$gene! ){ 
-	#$bam_line = "toto";
-	my $db = $self->db;
-	my $query = qq{
-		insert into $db.exons (exon_id , project_name,sample_name,gene,chromosome,start,end,transcript,user_name,todo,creation_date,modification_date,done) 
-		                       values("$id","$project_name","$sample_name","$gene","$chromosome",$start,$end,"$transcript","$user_name",$todo,NOW(),NOW(),0 )
-		on DUPLICATE KEY UPDATE todo=$todo, modification_date= NOW();
-	};
-	warn $query;
-	$self->dbh->do($query) || die($query);
-	return 1;
+sub exon_todo {
+	confess();
+#method exon_todo (Str :$project_name!, Str :$id!,Str :$sample_name, Str :$chromosome!, Str :$start!, Str :$end!, Str :$transcript!, Str :$user_name, Int :$todo!, Str :$name, Str :$gene! ){ 
+#	#$bam_line = "toto";
+#	my $db = $self->db;
+#	my $query = qq{
+#		insert into $db.exons (exon_id , project_name,sample_name,gene,chromosome,start,end,transcript,user_name,todo,creation_date,modification_date,done) 
+#		                       values("$id","$project_name","$sample_name","$gene","$chromosome",$start,$end,"$transcript","$user_name",$todo,NOW(),NOW(),0 )
+#		on DUPLICATE KEY UPDATE todo=$todo, modification_date= NOW();
+#	};
+#	warn $query;
+#	$self->dbh->do($query) || die($query);
+#	return 1;
 	}
-
-method is_todo (Str :$project_name!, Str :$id!){ 
-	#$bam_line = "toto";
-	my $db = $self->db;
-	my $query = qq{select * from $db.exons where exon_id="$id" and project_name="$project_name";};
-	my $sth = $self->dbh->prepare($query) ;
-	
-	$sth->execute() || die();
-	my $s = $sth->fetchrow_hashref();
-	 if (exists $s->{exon_id} && !$s->{done}){
-	 	return (1);
-	 }
-	return;
+sub is_todo{
+	confess();
+#method is_todo (Str :$project_name!, Str :$id!){ 
+#	#$bam_line = "toto";
+#	my $db = $self->db;
+#	my $query = qq{select * from $db.exons where exon_id="$id" and project_name="$project_name";};
+#	my $sth = $self->dbh->prepare($query) ;
+#	
+#	$sth->execute() || die();
+#	my $s = $sth->fetchrow_hashref();
+#	 if (exists $s->{exon_id} && !$s->{done}){
+#	 	return (1);
+#	 }
+#	return;
 	}
-
-method save_report (Str :$project!, Str :$sample!,Str :$conclusion!, Str :$json, Str :$user_name){ 
-	my $db = $self->db;
-	my $query =qq{insert into $db.reports(project,sample,creation_date,json,conclusion,user_name)  values (?,?,NOW(),?,?,?)
-		on DUPLICATE KEY UPDATE creation_date=NOW(),json=?,conclusion=?;
-	};
-	my $sth = $self->dbh->prepare($query) ;
-	$sth->bind_param(1,$project);
-	$sth->bind_param(2,$sample);
-	$sth->bind_param(3,$json);
-	$sth->bind_param(4,$conclusion);
-	$sth->bind_param(5,$user_name);
-	$sth->bind_param(6,$json);
-	$sth->bind_param(7,$conclusion);
-	
-	$sth->execute() || die();
-	#$self->dbh->do($query) || die($query);
-	return 1;
+sub save_report{
+	confess();
+#method save_report (Str :$project!, Str :$sample!,Str :$conclusion!, Str :$json, Str :$user_name){ 
+#	
+#	my $db = $self->db;
+#	my $query =qq{insert into $db.reports(project,sample,creation_date,json,conclusion,user_name)  values (?,?,NOW(),?,?,?)
+#		on DUPLICATE KEY UPDATE creation_date=NOW(),json=?,conclusion=?;
+#	};
+#	my $sth = $self->dbh->prepare($query) ;
+#	$sth->bind_param(1,$project);
+#	$sth->bind_param(2,$sample);
+#	$sth->bind_param(3,$json);
+#	$sth->bind_param(4,$conclusion);
+#	$sth->bind_param(5,$user_name);
+#	$sth->bind_param(6,$json);
+#	$sth->bind_param(7,$conclusion);
+#	
+#	$sth->execute() || die();
+#	#$self->dbh->do($query) || die($query);
+#	return 1;
+#}
 }
-method get_report (Str :$project!, Str :$sample!){ 
-	my $db = $self->db;
-	my $query =qq{select * from $db.reports where project="$project" and sample="$sample"};
-	my $sth = $self->dbh->prepare($query) ;
-	$sth->execute() || die();
-	my $s = $sth->fetchrow_hashref();
-	
-	return $s;
-	return 1;
+sub get_report{
+	confess();
+#method get_report (Str :$project!, Str :$sample!){ 
+#	my $db = $self->db;
+#	my $query =qq{select * from $db.reports where project="$project" and sample="$sample"};
+#	my $sth = $self->dbh->prepare($query) ;
+#	$sth->execute() || die();
+#	my $s = $sth->fetchrow_hashref();
+#	
+#	return $s;
+#	return 1;
 }
 
 sub getVariantValidated{
@@ -508,6 +560,7 @@ sub getVariantValidated{
 	my $row = $sth->rows;	
 	return $row;
 }
+
 sub getVariantRejected{
 	my ($self,$project,$varid) =@_;
 	my $db = $self->db;
@@ -520,8 +573,12 @@ sub getVariantRejected{
 	my $row = $sth->rows;	
 	return $row;
 }
-
-method createVariation(Str :$polyid!, Str :$vcfid!, Str :$genboid, Str :$version!){ 
+sub createVariation {
+	my ($self,%arg) = @_;
+	my $polyid = $arg{polyid};
+	my $vcfid = $arg{vcfid};
+	my $genboid = $arg{genboid};
+	my $version = $arg{version};
 	unless ($vcfid =~ /chr/){
 		$vcfid = "chr".$vcfid;
 		$vcfid="chrM" if $vcfid eq "chrMT";

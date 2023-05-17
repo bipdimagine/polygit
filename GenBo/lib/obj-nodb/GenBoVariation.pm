@@ -1,7 +1,7 @@
 package GenBoVariation;
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
@@ -11,7 +11,6 @@ extends "GenBoVariant";
 
 has isVariation => (
 	is		=> 'ro',
-	isa		=> 'Bool',
 	default	=> 1,
 );
 
@@ -55,7 +54,6 @@ has type_object => (
 
 has kyoto_id => (
 	is		=> 'rw',
-	#isa		=> 'Str',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
@@ -67,37 +65,9 @@ has kyoto_id => (
 	},
 );
 
-has dbscsnv_ada => (
-	is		=> 'rw',
-	#isa		=> 'Str',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $chr = $self->getChromosome();
-		my $sc =  $chr->get_lmdb_score("dbscsnv_ada",$self);
-		return "-" unless $sc;
-		return $sc;
-		
-	},
-);
-
-has dbscsnv_rf => (
-	is		=> 'rw',
-	#isa		=> 'Str',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $chr = $self->getChromosome();
-		my $sc =  $chr->get_lmdb_score("dbscsnv_rf",$self);
-		return "-" unless $sc;
-		return $sc;
-		
-	},
-);
 
 has cadd_score => (
 	is		=> 'rw',
-	#isa		=> 'Str',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
@@ -144,7 +114,6 @@ has ncboost_category => (
 
 has revel_score => (
 	is		=> 'rw',
-	#isa		=> 'Str',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
@@ -156,7 +125,6 @@ has revel_score => (
 );
 has dbscsnv_ada => (
 	is		=> 'rw',
-	#isa		=> 'Str',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
@@ -169,7 +137,6 @@ has dbscsnv_ada => (
 );
 has dbscsnv_rf => (
 	is		=> 'rw',
-	#isa		=> 'Str',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
@@ -369,6 +336,14 @@ sub consequence {
 sub annotation_coding {
 	my ( $self, $tr, $annot ) = @_;
 	my $project = $self->getProject();
+	 if ($tr->{protein} =~ /ENST/){
+	 	warn $self->id;
+		warn $tr->name();
+	 }
+	return if $tr->{protein} =~ /ENST/;
+	
+	
+	#return unless $tr->getProtein;
 	my $prot  = $tr->getProtein->id;
 	my $gid   = $tr->getGene->id();
 	my $trid = $tr->id();

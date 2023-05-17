@@ -2,7 +2,7 @@ package GenBoProjectTests;
 use strict;
 use FindBin qw($Bin);
 use Storable qw(retrieve);
-use Moose;
+use Moo;
 use Data::Dumper;
 use GenBoProject;
 use GenBoProjectCache;

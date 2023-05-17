@@ -1,7 +1,7 @@
 package GenBoVariationCache;
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 extends  'GenBoVariantCache','GenBoVariation';
 

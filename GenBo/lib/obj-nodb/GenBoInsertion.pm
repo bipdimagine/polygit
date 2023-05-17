@@ -1,8 +1,7 @@
 package GenBoInsertion;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
@@ -31,20 +30,29 @@ has name => (
 		return $self->id();
 	},
 );
-
 has alleles => (
 	is		=> 'ro',
-	lazy	=> 1,
+	lazy=> 1,
 	default=> sub {
 		my $self = shift;
-		if ($self->length() > 20) {
-			my $len = length($self->var_allele())-1;
-			my $id = $self->getChromosome->id().'-'.$self->start().'-ins-'.$len;
-			return $id;
-		}
-		return $self->getChromosome->sequence($self->start(), $self->end())."/".$self->sequence();
+		my $previous_nt = $self->getChromosome->sequence($self->start()-1, $self->start()-1);
+		return $previous_nt."/".$previous_nt.$self->sequence();
 	},
 );
+
+#has alleles => (
+#	is		=> 'ro',
+#	lazy	=> 1,
+#	default=> sub {
+#		my $self = shift;
+#		if ($self->length() > 20) {
+#			my $len = length($self->var_allele())-1;
+#			my $id = $self->getChromosome->id().'-'.$self->start().'-ins-'.$len;
+#			return $id;
+#		}
+#		return $self->getChromosome->sequence($self->start(), $self->end())."/".$self->sequence();
+#	},
+#);
 
 has kyoto_id => (
 	is		=> 'rw',
@@ -135,15 +143,7 @@ has kyoto_id_2 => (
 	},
 );
 
-has alleles => (
-	is		=> 'ro',
-	lazy=> 1,
-	default=> sub {
-		my $self = shift;
-		my $previous_nt = $self->getChromosome->sequence($self->start()-1, $self->start()-1);
-		return $previous_nt."/".$previous_nt.$self->sequence();
-	},
-);
+
 
 has alamut_id => (
 	is		=> 'ro',

@@ -1,10 +1,9 @@
 package GenBo;
 
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Config::Std;
-use Array::IntSpan;
 use Storable qw(store retrieve freeze thaw fd_retrieve);
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 
@@ -790,7 +789,7 @@ sub getCnvs{
 	push(@lRes,@{$self->getLargeDeletions()});
     return \@lRes;
 }
-sub getSV{
+sub getSVs{
 	my $self = shift;
 	my @lRes;
 	push(@lRes,@{$self->getLargeDuplications()});

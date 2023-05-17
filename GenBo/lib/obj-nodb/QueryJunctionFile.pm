@@ -1,14 +1,13 @@
 package QueryJunctionFile; 
 
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Bio::DB::HTS::Tabix;
 
 
 has file => (
 	is		=> 'rw',
-	isa		=> 'Str',
 	required=> 1,
 	
 );
@@ -36,7 +35,6 @@ has buffer => (
 
 has project => (
 	is		=> 'ro',
-	isa		=> 'GenBoProject',
 	reader	=> 'getProject',
 	weak_ref=> 1,
 );

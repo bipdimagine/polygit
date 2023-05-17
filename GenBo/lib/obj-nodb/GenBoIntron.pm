@@ -1,7 +1,7 @@
 package GenBoIntron;
 
 use strict;
-use Moose;
+use Moo;
 
 extends "GenBoExon";
 

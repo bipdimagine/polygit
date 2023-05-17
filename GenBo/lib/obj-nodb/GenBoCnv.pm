@@ -1,12 +1,10 @@
 package GenBoCnv;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
-use Position;
 use List::Util qw[min max];
 extends "GenBoVariant";
 
@@ -26,10 +24,7 @@ has allele_length => (
 	},
 );
 
-has isCnv => (
-	is		=> 'rw',
-	default	=> 1,
-);
+
 
 has name => (
 	is		=> 'ro',
