@@ -2,7 +2,6 @@ package GenBoPatient;
 
 use strict;
 use Moo;
-
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
