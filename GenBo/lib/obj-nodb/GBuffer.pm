@@ -516,9 +516,8 @@ sub _checkArguments {
 	my $index;
     for ($index=0; $index < @_; $index += 2) {
         my $key = $_[$index];
-        warn $key;
         unless ($key =~ /^\-/o) {
-            confess "Please, could you be so kind as to check your arguments for method \'construct\'? I have the impression you wrote \'$key\' instead of \'$key\' -- didn\'t you?\n";
+            confess ("Please, could you be so kind as to check your arguments for method \'construct\'? I have the impression you wrote \'$key\' instead of \'$key\' -- didn\'t you?\n");
             die();
             return undef;
         }
