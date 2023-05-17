@@ -7,8 +7,8 @@ package GenBoNoSql;
 use strict;
 use warnings;
 use DBD::SQLite;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 #use Sereal::Decoder qw(decode_sereal sereal_decode_with_object scalar_looks_like_sereal);
 #use  Sereal::Encoder::Constants qw(SRL_PROTOCOL_ENCODING_SNAPPY);
 #use Sereal::Encoder  qw(SRL_SNAPPY);
