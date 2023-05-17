@@ -46,23 +46,59 @@ $project->getChromosomes();
 my $patient = $project->getPatient($patient_name);
 #$patient->use_not_filtred_junction_files(1);
 
+
+if (not $project->is_human_genome()) {
+	print FILE 'PASS not Human release';
+	close (FILE);
+	exit(0); 
+}
+
 my $hType_patients;
 $hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
-
-my @lJunctions;
+my ($h_chr_vectors, $h_junctions_todo);
+my $j_total = 0;
 foreach my $chr (@{$project->getChromosomes()}) {
 	my $vector_patient = $patient->getJunctionsVector($chr);
-	foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
-		next if ($junction->isCanonique($patient));
-		next if ($junction->get_ratio_new_count($patient) == 1);
-		next if ($junction->get_percent_new_count($patient) < 10);
-		$junction->dejavu_percent_coordinate_similar(96);
-		my $nb_dejavu_pat = $junction->dejavu_nb_patients();
-		next if ($nb_dejavu_pat > 50);
-		push(@lJunctions, $junction);
+	$j_total += $chr->countThisVariants($vector_patient);
+	$h_chr_vectors->{$chr->id()} = $vector_patient->Clone();
+}
+
+if ($j_total >= 10000) {
+	my $no_cache = $patient->get_lmdb_cache("r");
+	my $cache_vectors_enum_id = 'splices_linked_'.$patient->name().'_'.$j_total.'_chr_vectors_enum';
+	my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
+	if ($h_res_v_enum) {
+		foreach my $chr_id (keys %$h_res_v_enum) {
+			my $v_filters = $project->getChromosome($chr_id)->getNewVector();
+			$v_filters->from_Enum($h_res_v_enum->{$chr_id}->{min8});
+			$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $v_filters);
+		}
+	}
+	else { die; }
+}
+
+my $nb = 0;
+my @lJunctions;
+
+my @lScores = (5..10);
+@lScores = reverse sort {$a <=> $b} @lScores;
+foreach my $score (@lScores) {
+	foreach my $chr (@{$project->getChromosomes()}) {
+		foreach my $junction (@{$chr->getListVarObjects($h_chr_vectors->{$chr->id()})}) {
+			next if ($junction->isCanonique($patient));
+			next if ($junction->junction_score_without_dejavu_global($patient) < $score);
+			my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
+			next if (exists $h_junctions_todo->{$j_pos});
+			push(@lJunctions, $junction);
+			$nb++;
+			$h_junctions_todo->{$j_pos} = $junction->junction_score_without_dejavu_global($patient);
+			last if ($nb == 1500);
+		}
 	}
 }
+
+
 
 if (scalar(@lJunctions) == 0) {
 	print FILE '0 junction';
@@ -70,19 +106,14 @@ if (scalar(@lJunctions) == 0) {
 	exit(0); 
 }
 
-if (not $hType_patients or ($hType_patients and exists $hType_patients->{$patient->name()}->{pat})) {
-	my $pm = new Parallel::ForkManager($fork);
-	foreach my $junction (@lJunctions) {
-		my $pid = $pm->start and next;
-		$junction->createListSashimiPlots($patient);
-		print FILE 'Ok junction '.$junction->id()."\n";
-		$pm->finish();
-	}
-	$pm->wait_all_children();
+my $pm = new Parallel::ForkManager($fork);
+foreach my $junction (@lJunctions) {
+	my $pid = $pm->start and next;
+	$junction->createListSashimiPlots($patient);
+	print FILE 'Ok junction '.$junction->id()."\n";
+	$pm->finish();
 }
-else {
-	print FILE "Patient $patient_name is a control\n";
-}
+$pm->wait_all_children();
 
 close (FILE);
 exit(0);

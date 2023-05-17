@@ -634,7 +634,7 @@
 								var list_patients = val.split(';');
 								for (var i = 0; i < list_patients.length; i++){
 									var name = list_patients[i];
-									var cmd = "launch_patient(\"" + name + "\")";
+									var cmd = "launch_patient_from_button(\"" + name + "\")";
 									var span_name = 'span_' + name;
 									panel += "<ul class='nav navbar-nav navbar-patient' onclick='" + cmd + "'><li style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#363945;'><a href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
 									panel += name;
@@ -648,6 +648,9 @@
 								myPanel.appendTo(myNode);
 								is_first_launch = 1;
 							}
+							if (key == 'captures') {
+								document.getElementById("span_captures").innerHTML = "Capture(s) " + val;
+							}
 						});
 				    })
 				}
@@ -659,11 +662,28 @@
 				}    
 			}
 			
+			var hash_pats_done = {};
+			
 			var used_dejavu_value = 15;
 			var used_dejavu_percent_value = 96;
 			var used_score_value = 10;
 			var url_last_launch_patient;
+			
+			function launch_patient_from_button(patient_name) {
+				if (patient_name in hash_pats_done) {
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(hash_pats_done[patient_name]);
+					myPanel.appendTo(myNode);
+					enable_table_search('table_major');
+				}
+				else {
+					launch_patient(patient_name);
+				}
+			}
+			
 			function launch_patient(patient_name, without_filters) {
+				document.getElementById("span_partial_results").innerHTML = "";
 				document.getElementById("content_res").innerHTML = "";
 	    		var text_loading = 'Loading patient ' + patient_name;
 				show_waiting(text_loading);
@@ -682,18 +702,20 @@
 				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
 					url += "&only_dejavu_ratio_10=1";
 				}
-			    $.getJSON( url, function( data ) {
-			    	$.each( data, function( key, val ) {
-			    		if (key == 'html') {
+			    $.getJSON( url, {})
+			    	.done( function( data ) {
 							document.getElementById("content_res").innerHTML = "";
 							var myNode = document.getElementById("content_res");
-					    	var myPanel = $(val);
+					    	var myPanel = $(data.html);
 							myPanel.appendTo(myNode);
+							enable_table_search('table_major');
 							
-							var list_tables = String(data.tables_id).split(',');
-							for (var i = 0; i < list_tables.length; i++){
-								enable_table_search(list_tables[i]);
-							}
+					    	hash_pats_done[patient_name] = data.html;
+							
+//							var list_tables = String(data.tables_id).split(',');
+//							for (var i = 0; i < list_tables.length; i++){
+//								enable_table_search(list_tables[i]);
+//							}
 							
 							//enable_table_search(data.table_id);
 			    			used_dejavu_value = data.used_dejavu;
@@ -701,9 +723,11 @@
 							else { update_dejavu_span_value();}
 							dijit.byId('waiting').hide();
 							is_first_launch = 0;
-						}
+							
+							if (data.is_partial_results == 1) { 
+								document.getElementById("span_partial_results").innerHTML = " <span class='glyphicon glyphicon-warning-sign' style='orange;height:16px'></span> Too much splices: partial results";
+							}
 					});
-			    })
 			}
 	    	
 	    	function show_waiting(text) {
@@ -833,7 +857,7 @@
 			}
 		    	
 	    	function enable_table_search(id) {
-	    		$('#'+id).bootstrapTable();
+    			$('#'+id).bootstrapTable();
 			}
 			
 			var value_dejavu_percent_similar = 96;
@@ -896,10 +920,12 @@
 							var myNode = document.getElementById("content_res");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
-							var list_tables = String(data.tables_id).split(',');
-							for (var i = 0; i < list_tables.length; i++){
-								enable_table_search(list_tables[i]);
-							}
+							enable_table_search('table_major');
+							
+//							var list_tables = String(data.tables_id).split(',');
+//							for (var i = 0; i < list_tables.length; i++){
+//								enable_table_search(list_tables[i]);
+//							}
 			    			used_dejavu_value = data.used_dejavu;
 			    			if (used_dejavu_value == 'not') {}
 							else { update_dejavu_span_value();}
@@ -996,7 +1022,10 @@
 				</ul>
 				<ul class="nav navbar-nav">
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_captures" style="color:white;font-size:18px"></span></a></li>
+					
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_partial_results" style="color:red;font-size:18px"></span></a></li>
 				</ul>
 			</div>
 		</nav>
