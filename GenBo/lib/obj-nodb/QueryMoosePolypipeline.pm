@@ -2,8 +2,8 @@ package QueryMoosePolypipeline;
 
 use strict;
 use Vcf;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 extends "QueryMoose";

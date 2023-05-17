@@ -2,8 +2,8 @@ package GenBoNoSqlIntervalTree;
 use strict;
 use warnings;
 use DBD::SQLite;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Set::IntervalTree;
 use Data::Dumper;
 use Set::IntSpan::Fast::XS;

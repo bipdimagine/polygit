@@ -1,5 +1,6 @@
 package GenBoProjectCache;
 use strict;
+use Carp;
 use Storable qw(retrieve);
 use Moo;
 use Bit::Vector;
