@@ -1,7 +1,7 @@
 package GBuffer;
 
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+use Carp;
 use Data::Dumper;
 use Config::Std;
 use GenBoProject;
@@ -230,7 +230,7 @@ has gencode => (
 		confess($filename2) unless -e $filename2;
 		my $public_data;
 		my $previous;
-		foreach my $v (sort{$a <=> $b} keys %config1){
+		foreach my $v ( keys %config1){
 			$config1{$v}->{directory} = $config1{$v}->{name}."/".$config1{$v}->{version}."/".$config1{$v}->{dir};
 			
 		}
@@ -513,8 +513,10 @@ sub _checkArguments {
 	my $index;
     for ($index=0; $index < @_; $index += 2) {
         my $key = $_[$index];
+        warn $key;
         unless ($key =~ /^\-/o) {
-            confess "Please, could you be so kind as to check your arguments for method 'construct'? I have the impression you wrote '$key' instead of '-$key' -- didn't you?\n";
+            confess "Please, could you be so kind as to check your arguments for method \'construct\'? I have the impression you wrote \'$key\' instead of \'$key\' -- didn\'t you?\n";
+            die();
             return undef;
         }
     }
