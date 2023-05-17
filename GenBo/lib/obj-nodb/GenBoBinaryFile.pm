@@ -1,9 +1,7 @@
 package GenBoBinaryFile;
 use strict;
 use warnings;
-use Moose;
-use MooseX::Method::Signatures;
-use Data::Dumper;
+use Moo;
 use Carp;
 use IO::File;
 use List::Util qw(max sum min);

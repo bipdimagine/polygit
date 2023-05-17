@@ -1,6 +1,6 @@
 package GenBoCapture;
 
-use Moose;
+use Moo;
 
 use Data::Dumper;
 use Config::Std;
