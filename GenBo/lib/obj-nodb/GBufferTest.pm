@@ -3,6 +3,7 @@ use strict;
 use Moo;
 use FindBin qw($Bin);
 use GenBoProjectCacheTest;
+use Carp;
 extends 'GBuffer';
  
 
@@ -39,7 +40,7 @@ sub _checkArguments {
     for ($index=0; $index < @_; $index += 2) {
         my $key = $_[$index];
         unless ($key =~ /^\-/o) {
-            confess "Please, could you be so kind as to check your arguments for method 'construct'? I have the impression you wrote '$key' instead of '-$key' -- didn't you?\n";
+            confess ("Please, could you be so kind as to check your arguments for method 'construct'? I have the impression you wrote '$key' instead of '-$key' -- didn't you?\n");
             return undef;
         }
     }

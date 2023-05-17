@@ -1,7 +1,6 @@
 package GenBoNoSqlDejaVuJunctionsCanoniques;
 # ABSTRACT: An embedded, NoSQL SQLite database with SQL indexing
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 use strict;
 use warnings;
 use Data::Dumper;
