@@ -1,6 +1,6 @@
 package polyweb_dude;
 use strict;
-use Moose;
+use Moo;
 
 use GD;
 use Data::Printer;

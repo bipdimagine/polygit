@@ -7,8 +7,8 @@ use lib "$Bin/../../";
 use List::Util qw( max min sum);
 use Carp qw(confess croak);
 use Data::Dumper;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Spreadsheet::WriteExcel;
 use CGI::Session;
 use Compress::Snappy;
