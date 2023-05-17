@@ -6,7 +6,7 @@ use GenBoChromosome;
 use GenBoVariation;
 use GenBoInsertion;
 use GenBoDeletion;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Compress::Snappy;
 use List::MoreUtils qw{ natatime };

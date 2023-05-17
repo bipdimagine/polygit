@@ -2,7 +2,7 @@ package GenBoSVDel;
 
 use strict;
 use Vcf;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use Position;
