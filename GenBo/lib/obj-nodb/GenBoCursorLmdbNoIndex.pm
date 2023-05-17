@@ -1,7 +1,6 @@
 package GenBoCursorLmdbNoIndex;
 
 use Moose;
-use MooseX::Method::Signatures;
 use strict;
 use warnings;
 use Data::Dumper;
@@ -54,12 +53,14 @@ default => sub {
 }
 );
 
-method  current_index() {
+sub  current_index {
+	my ($self) =@_;
 	confess() unless $self->current();
 	return $self->current() -1;
 }
 
-method  next_key() {
+sub  next_key {
+	my ($self) =@_;
 	my $cursor = $self->cursor_index();
 	return (undef) if $self->current() eq -99;
 		my $z;

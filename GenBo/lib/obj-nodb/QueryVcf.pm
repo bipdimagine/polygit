@@ -1,8 +1,8 @@
 package QueryVcf; 
 
 use strict;
-use Moose;
-#use MooseX::Method::Signatures;
+use Moo;
+#
 use Data::Dumper;
 
 #use Tabix;
@@ -36,7 +36,6 @@ my %REV_IUB = (A	=> 'A',
 				
 has patient => (
 	is		=> 'ro',
-	isa		=> 'GenBoPatient',
 	reader	=> 'getPatient',
 	weak_ref=> 1,
 	#required=> 1,
@@ -50,7 +49,6 @@ has method => (
 
 has file => (
 	is		=> 'rw',
-	isa		=> 'Str',
 	required=> 1,
 	
 );
@@ -63,7 +61,6 @@ has parse_hgmd => (
 
 has vcf => (
 	is		=> 'ro',
-	isa		=> 'Vcf',
 	lazy =>1,
 	default => sub{ 
 		my $self = shift;
@@ -942,6 +939,7 @@ sub parseVcfFileForReference_manta {
 			#my ($self,$x,$patient,$chr,$reference) = @_;		
 		}
 		else {
+			confess($x->{infos}->{SVTYPE});
 			next;
 		}
 		my $id = $hash->{id};

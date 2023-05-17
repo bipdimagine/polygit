@@ -18,7 +18,7 @@ package QueryFilter;
 
 use strict;
 use Moose;
-use MooseX::Method::Signatures;
+
 use Data::Dumper;
 
 
@@ -36,8 +36,11 @@ has dbh => (
 );
 
 
-
-method get_filter_id (Str :$filter_name!, Int :$project_id!, Int :$user_id!) {
+sub get_filter_id {
+	my ($self,%arg) = @_;
+	my $user_id = $arg{user_id};
+	my $filter_name = $arg{filter_name};
+	my $project_id = $arg{project_id};
 	my $dbh = $self->dbh();
 	my $db = $self->database();	
 	my $sql = qq{select fu.filter_id as id from $db.filters f,$db.filters_users fu where FILTER_NAME='$filter_name' and PROJECT_ID=$project_id and f.filter_id=fu.filter_id and fu.USER_ID=$user_id};
@@ -45,12 +48,17 @@ method get_filter_id (Str :$filter_name!, Int :$project_id!, Int :$user_id!) {
 	#return connect::returnOneVal($dbh,$sql);
 }
 
-method get_user_id  (Str :$user_name!){
+sub get_user_id  {
+	my ($self,%arg) = @_;
+	my $user_name = $arg{user_name};
 	my $sql = qq{SELECT USER_ID as id FROM bipd_users.USER U WHERE U.LOGIN = '$user_name'};
 	return $self->dbh->selectall_arrayref($sql)->[0][0];
 }
-
-method  newFilter (Str :$filter_name!,Int :$project_id,Int :$user_id) {
+sub newFilter {
+	my ($self,%arg) = @_;
+	my $user_id = $arg{user_id};
+	my $filter_name = $arg{filter_name};
+	my $project_id = $arg{project_id};
 	
 	my $id = $self->get_filter_id(filter_name=>$filter_name, project_id=>$project_id, user_id => $user_id);
 	if ($id){
@@ -65,7 +73,11 @@ method  newFilter (Str :$filter_name!,Int :$project_id,Int :$user_id) {
 	return $self->get_filter_id(filter_name=>$filter_name, project_id=>$project_id, user_id => $user_id);
 }
 
-method addParam (Int :$filter_id!,Str :$param_name,Str :$param_value) {
+sub addParam {
+		my ($self,%arg) = @_;
+	my $filter_id = $arg{filter_id};
+	my $param_name = $arg{param_value};
+	my $param_value = $arg{param_value};
 	my $db = $self->database;
 
 	 
@@ -77,8 +89,9 @@ method addParam (Int :$filter_id!,Str :$param_name,Str :$param_value) {
 
 	$self->dbh->do($query) ;
 }
-
-method delete_param (Int :$filter_id) {
+sub delete_param {
+	my ($self,%arg) = @_;
+	my $filter_id = $arg{filter_id};
 		my $db = $self->database;
 		my $query = qq{
 			delete from $db.filters_param where FILTER_ID = $filter_id;
@@ -86,8 +99,10 @@ method delete_param (Int :$filter_id) {
 		$self->dbh->do($query);
 		
 }
-
-method delete_filter (Int :$filter_id! , Int :$user_id!) {
+sub delete_filter {
+	my ($self,%arg) = @_;
+	my $filter_id = $arg{filter_id};
+	my $user_id = $arg{user_id};
 	my $db = $self->database;
 	my $query2 = qq{
 			call $db.delete_filter($filter_id,$user_id);
@@ -97,16 +112,19 @@ method delete_filter (Int :$filter_id! , Int :$user_id!) {
 		$self->dbh->do($query2);
 		return;
 }
-
-method getParam (Int :$filter_id!){
+sub getParam{
+	my ($self,%arg) = @_;
+	my $filter_id = $arg{filter_id};
 	my $db = $self->database;
 	my $query = qq{select PARAM_NAME as name, PARAM_VALUE as value from $db.filters_param  where FILTER_ID= $filter_id}; 
 	my $sth = $self->dbh->prepare($query);
 	$sth->execute();
 	return $sth->fetchall_hashref("name");
 }
-
-method getAllFilterName (Int :$project_id!, Int :$user_id) {
+sub getAllFilterName {
+	my ($self,%arg) = @_;
+	my $project_id = $arg{project_id};
+	my $user_id = $arg{user_id};
 	my $db = $self->database;
 	
 	my $query = qq{select f.filter_name as name , f.filter_id as id, creation_date as date from $db.filters f ,$db.filters_users fu where f.filter_id=fu.filter_id and fu.USER_ID=$user_id and PROJECT_ID=$project_id order by creation_date};

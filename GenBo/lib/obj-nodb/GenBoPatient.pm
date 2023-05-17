@@ -1,8 +1,8 @@
 package GenBoPatient;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
@@ -696,28 +696,7 @@ sub alignmentMethod {
 	return $methods->[0];
 }
 
-has vcfParsed => (
-	is      => 'rw',
-	lazy    => 1,
-	reader  => 'infosVcfParsed',
-	default => sub {
-		my $self = shift;
-		my $lChr = $self->getProject()->getChromosomes();
-		my %hashVcf;
-		foreach my $chrObj (@$lChr) {
-			my $chrName = $chrObj->ucsc_name();
-			my $lVcfSnp = $self->getVariationsFiles();
-			foreach my $vcfFile (@$lVcfSnp) {
-				$hashVcf{$vcfFile}->{$chrName} = Set::IntSpan::Fast->new();
-			}
-			my $lVcfIndel = $self->getIndelsFiles();
-			foreach my $vcfFile (@$lVcfIndel) {
-				$hashVcf{$vcfFile}->{$chrName} = Set::IntSpan::Fast->new();
-			}
-		}
-		return \%hashVcf;
-	}
-);
+
 
 sub setRuns {
 	my $self = shift;
@@ -1806,7 +1785,22 @@ has vntyperTsv => (
 		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
 	}
 );
-
+has isVntyperPositif => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 0 unless -e  $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		
+		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		my @lines = `tail -n +4 $file`;
+		#warn Dumper @lines;
+		chomp(@lines);
+		#confess() if scalar(@lines) > 1;
+		 return undef unless $lines[0];    
+		 return 1;
+	}
+);
 has vntyperResults => (
 is      => 'ro',
 	lazy    => 1,
