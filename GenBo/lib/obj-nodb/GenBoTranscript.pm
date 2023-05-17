@@ -1,6 +1,6 @@
 package GenBoTranscript;
 use strict;
-use Moose;
+use Moo;
 use GenBoCoverage;
 use Data::Dumper;
 use Config::Std;

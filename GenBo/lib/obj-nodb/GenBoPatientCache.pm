@@ -1,16 +1,16 @@
 package GenBoPatientCache;
 use strict;
 use Storable qw(retrieve thaw);
-use Moose;
+use Moo;
+use Carp;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Data::Dumper;
-use GenBoNoSql;
 use FindBin qw($Bin);
 use Storable qw(store retrieve freeze dclone thaw);
 extends 'GenBoPatient', 'GenBoCache';
 
-
+ 
 
 # lien avec l'objet GenBoChromosomeCache
 has chromosome => (
@@ -98,11 +98,7 @@ has fam_recessif_global_categories => (
 	default => undef,
 );
 
-has stats_categories => (
-	is 		=> 'rw',
-	lazy	=> 1,
-	default => undef,
-);
+
 
 has calling_methods_categories => (
 	is		=> 'rw',

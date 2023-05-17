@@ -1,6 +1,6 @@
 package GenBoPhenotype;
 
-use Moose;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use FindBin qw($Bin);

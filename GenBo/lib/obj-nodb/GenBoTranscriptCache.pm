@@ -1,7 +1,7 @@
 package GenBoTranscriptCache;
 use strict;
 use Storable qw(retrieve);
-use Moose;
+use Moo;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Data::Dumper;

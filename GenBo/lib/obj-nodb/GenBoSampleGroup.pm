@@ -1,7 +1,7 @@
 package GenBoSampleGroup;
 
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 extends "GenBo";
 

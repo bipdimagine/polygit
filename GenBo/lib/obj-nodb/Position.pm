@@ -17,26 +17,23 @@ The Position object is create between 2 GenBos (one passed to the method and the
 
 package Position;
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 
 
 has start => (
 	is		=> 'rw',
-	isa		=> 'Int',
 	required=> 1,
 );
 
 has end => (
 	is		=> 'rw',
-	isa		=> 'Int',
 	required=> 1,
 );
 
 has strand => (
 	is		=> 'rw',
-	isa		=> 'Int',
 	required=> 1,
 	#default =>1,
 );
@@ -44,7 +41,6 @@ has strand => (
 
 has intspan => (
 	is		=> 'ro',
-	isa		=> 'Set::IntSpan::Fast',
 	reader	=> 'getGenomicSpan',
 	lazy	=> 1,
 	default => sub {

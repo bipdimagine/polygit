@@ -1,6 +1,6 @@
 package GenBoCoverageLmdb;
 use strict;
-use Moose;
+use Moo;
 extends "GenBoCoverage";
 use Data::Dumper;
 use Config::Std;
