@@ -6,7 +6,6 @@ use Carp;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Data::Dumper;
-use GenBoNoSql;
 use FindBin qw($Bin);
 use Storable qw(store retrieve freeze dclone thaw);
 extends 'GenBoPatient', 'GenBoCache';
