@@ -1,10 +1,10 @@
 package GBufferTest;
 use strict;
-use Moose;
+use Moo;
 use FindBin qw($Bin);
 use GenBoProjectCacheTest;
 extends 'GBuffer';
-
+ 
 
 has dir_project => (
 	is 		=> 'rw',
