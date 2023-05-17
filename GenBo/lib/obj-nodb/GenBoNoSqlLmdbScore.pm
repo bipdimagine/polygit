@@ -2,8 +2,8 @@ package GenBoNoSqlLmdbScore;
 use strict;
 use warnings;
 use DBD::SQLite;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
  use JSON::XS;
  use POSIX;

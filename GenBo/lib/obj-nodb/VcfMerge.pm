@@ -1,8 +1,8 @@
 package VcfMerge;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use warnings;
 use Carp;
 use FindBin qw($Bin);

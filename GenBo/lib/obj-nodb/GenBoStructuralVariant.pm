@@ -1,8 +1,8 @@
 package GenBoStructuralVariant;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Parallel::ForkManager;
 use Data::Dumper;
 use Config::Std;
