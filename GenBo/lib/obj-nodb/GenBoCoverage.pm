@@ -1,7 +1,7 @@
 package GenBoCoverage;
 
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use Storable qw(store retrieve freeze thaw fd_retrieve dclone);
