@@ -3,8 +3,8 @@ package GenBoNoSqlDejaVu;
 
 
 # ABSTRACT: An embedded, NoSQL SQLite database with SQL indexing
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use strict;
 use warnings;
 use Data::Dumper;
@@ -15,6 +15,7 @@ use Tie::LevelDB;
 use LMDB_File qw(:flags :cursor_op);
  use Digest::MD5 qw(md5 md5_hex md5_base64);
  use Compress::Snappy;
+ use Carp;
   use List::Util qw[min max];
 has extension =>(
 	is		=> 'rw',
