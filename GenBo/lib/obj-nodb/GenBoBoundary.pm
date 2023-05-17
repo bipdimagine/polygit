@@ -1,8 +1,7 @@
 package GenBoBoundary;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 extends 'GenBoCnv';
 
 
