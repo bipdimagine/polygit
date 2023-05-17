@@ -1,6 +1,6 @@
 package GenBoCursorLmdbNoIndex;
 
-use Moose;
+use Moo;
 use strict;
 use warnings;
 use Data::Dumper;

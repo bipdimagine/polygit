@@ -1,7 +1,6 @@
 package GenBoCursorLmdb;
 
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 use strict;
 use warnings;
 use Data::Dumper;
@@ -74,12 +73,14 @@ default => sub {
 }
 );
 
-method  current_index() {
+sub  current_index {
+	my $self = shift;
 	confess() unless $self->current();
 	return $self->current() -1;
 }
 
-method  next_key() {
+sub  next_key {
+	my $self = shift;
 	my $cursor = $self->cursor_index();
 	confess() unless defined $self->current();
 	return (undef) if $self->current() > $self->end();
