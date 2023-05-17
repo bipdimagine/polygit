@@ -3,8 +3,8 @@ package GenBoNoSqlLmdbInteger;
 
 
 # ABSTRACT: An embedded, NoSQL SQLite database with SQL indexing
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use strict;
 use warnings;
 use Data::Dumper;
@@ -41,9 +41,7 @@ has mode => (
 	required=> 1,
 );
 
-has env => (
-	is		=> 'rw',
-);
+
 has txn => (
 	is		=> 'rw',
 );

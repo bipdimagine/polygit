@@ -1,14 +1,14 @@
 package QueryMoose;
 
 use strict;
-use Moose;
+use Carp;
+use Moo;
 
 use Data::Dumper;
 
 
 has config => (
 	is		=> 'ro',
-	isa		=> 'HashRef',
 	reader	=> 'getConfig',
 	lazy	=> 1,
 	default => sub {
@@ -27,7 +27,6 @@ has buffer => (
 
 has all_config => (
 	is		=> 'ro',
-	#isa		=> 'HashRef',
 	required=> 1,
 );
 
@@ -41,12 +40,6 @@ sub getDbh {
 	return $self->buffer->dbh;
 }
 
-#has dbh => (
-#	is		=> 'ro',
-#	isa		=> 'DBI::db',
-#	required=> 1,
-#	reader	=> 'getDbh',
-#);
 
 
 

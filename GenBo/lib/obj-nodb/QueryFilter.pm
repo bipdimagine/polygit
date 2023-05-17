@@ -17,7 +17,7 @@ GenBoCacheQuery provides a set of functions to create a cache (stored informatio
 package QueryFilter;
 
 use strict;
-use Moose;
+use Moo;
 
 use Data::Dumper;
 
@@ -25,13 +25,11 @@ use Data::Dumper;
 
 has database =>(
 	is		=> 'ro',
-	isa		=> 'Str',
 	required=> 1,
 );
 
 has dbh => (
 	is		=> 'ro',
-	isa		=> 'DBI::db',
 	required=> 1,
 );
 

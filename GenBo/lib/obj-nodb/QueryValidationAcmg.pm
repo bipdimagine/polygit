@@ -2,7 +2,7 @@ package QueryValidationAcmg;
 use strict;
 use Data::Dumper;
 use Carp;
-use Moose;
+use Moo;
 use IO::Compress::Gzip qw(gzip $GzipError) ;
 use JSON::XS;
 

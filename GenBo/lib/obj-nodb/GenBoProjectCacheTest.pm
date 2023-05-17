@@ -2,7 +2,7 @@ package GenBoProjectCacheTest;
 use strict;
 use Data::Dumper;
 use Storable qw(store retrieve freeze dclone thaw);
-use Moose;
+use Moo;
 use FindBin qw($Bin);
 extends 'GenBoProjectCache';
 

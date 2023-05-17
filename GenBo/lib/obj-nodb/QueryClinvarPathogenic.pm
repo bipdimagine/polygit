@@ -1,8 +1,8 @@
 package QueryClinvarPathogenic;
 use strict;
 use Vcf;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Config::Std;
 use JSON;
@@ -10,7 +10,6 @@ use GBuffer;
 
 has config => (
 	is		=> 'ro',
-	isa		=> 'HashRef',
 	reader	=> 'getConfig',
 	lazy	=> 1,
 	default => sub {
@@ -22,7 +21,6 @@ has config => (
 
 has dbh => (
 	is		=> 'ro',
-	isa		=> 'DBI::db',
 	required=> 1,
 	reader	=> 'getDbh',
 );

@@ -1,6 +1,6 @@
 package GenBoPrimerCache;
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 use base 'Exporter';
 extends 'GenBoPrimer', 'GenBoCache';

@@ -1,7 +1,7 @@
 package GenBoGeneCache;
 use strict;
 use Storable qw(retrieve thaw);
-use Moose;
+use Moo;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Data::Dumper;
