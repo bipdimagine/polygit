@@ -1,7 +1,7 @@
 package PolyviewerJunction;
 use strict;
 use FindBin qw($Bin);
-use Moose;
+use Moo;
 use Data::Dumper;
 use CGI qw/:standard :html3/;
 extends 'PolyviewerVariant';

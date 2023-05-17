@@ -1,7 +1,7 @@
 package PolyviewerVariant;
 use strict;
 use FindBin qw($Bin);
-use Moose;
+use Moo;
 use Data::Dumper;
 
 
