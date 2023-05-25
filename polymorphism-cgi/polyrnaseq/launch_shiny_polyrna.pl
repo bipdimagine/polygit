@@ -34,16 +34,15 @@ unless ($specie) {
 	exit(0);
 }
 
-my $pathTest = $project->project_path().'/polyRNA/outputs/species.txt';
-if (not -e $pathTest) {
-	my $other_specie;
-	if ($specie eq 'MM39') { $other_specie = 'MM38'; }
-	if ($specie eq 'MM38') { $other_specie = 'MM39'; }
-	if ($specie eq 'HG38') { $other_specie = 'HG19'; }
-	if ($specie =~ /HG19/) { $other_specie = 'HG38'; }
-	my $pathTest2 = $pathTest;
-	$pathTest2 =~ s/$specie/$other_specie/;
-	if (-e $pathTest2) { $specie = $other_specie; }
+my $pathTest = $project->get_path_rna_seq_polyrna_root();
+if (not $pathTest =~ /\/$specie\//) {
+	my @lPotentialRelease = ('HG19', 'HG19_CNG', 'HG19_MT', 'HG38', 'HG38-ERCC', 'MM38', 'MM39');
+	foreach my $rel2 (@lPotentialRelease) {
+		if ($pathTest =~ /\/$rel2\//) {
+			$specie = $rel2;
+			last;
+		}
+	}
 }
 
 my $url_link;
