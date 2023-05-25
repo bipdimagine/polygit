@@ -4,6 +4,7 @@ use strict;
 use Moo;
 use Data::Dumper;
 use GenBoCapture;
+use Carp;
 use List::Util qw[min max];
 extends "GenBoGenomic";
 
@@ -421,6 +422,49 @@ has dejavu_percent_coordinate_similar => (
 	default	=> 98,
 );
 
+
+
+sub get_quick_dejavu_patients {
+	my ($self, $identity) = @_;
+	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
+	
+	return $self->getProject->dejavuJunctionsResume->get_nb_junctions($self->getChromosome->id(), $self->start() ,$self->end(), $identity);
+	
+	return $self->{'quick_dv_'.$identity} if (exists $self->{'quick_dv_'.$identity});
+	$self->{'quick_dv_'.$identity} = $self->getProject->dejavuJunctionsResume->get_nb_junctions($self->getChromosome->id(), $self->start() ,$self->end(), $identity);
+#	warn 'quick_dv_'.$identity.' - '.$self->{'quick_dv_'.$identity};
+#	
+#	if ($self->{'quick_dv_'.$identity} > 0) {
+#		warn "\n\n";
+#		die;
+#	}
+	return $self->{'quick_dv_'.$identity};
+}
+
+sub get_quick_dejavu_patients_ratio_10 {
+	my ($self, $identity) = @_;
+	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
+	
+	return $self->getProject->dejavuJunctionsResume->get_nb_junctions_ratio10($self->getChromosome->id(), $self->start() ,$self->end(), $identity);
+	
+	return $self->{'quick_dv_ratio10_'.$identity} if (exists $self->{'quick_dv_ratio10_'.$identity});
+	$self->{'quick_dv_ratio10_'.$identity} = $self->getProject->dejavuJunctionsResume->get_nb_junctions_ratio10($self->getChromosome->id(), $self->start() ,$self->end(), $identity);
+#	warn 'quick_dv_ratio10_'.$identity.' - '.$self->{'quick_dv_'.$identity};
+#	if ($self->{'quick_dv_ratio10_'.$identity} > 0) {
+#		warn "\n\n";
+#		die;
+#	}
+	return $self->{'quick_dv_ratio10_'.$identity};
+}
+
+sub get_quick_dejavu_patients_ratio_20 {
+	my ($self, $identity) = @_;
+	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
+	return $self->{'quick_dv_ratio20_'.$identity} if (exists $self->{'quick_dv_ratio20_'.$identity});
+	$self->{'quick_dv_ratio20_'.$identity} = $self->getProject->dejavuJunctionsResume->get_nb_junctions_ratio20($self->getChromosome->id(), $self->start() ,$self->end(), $identity);
+	return $self->{'quick_dv_ratio20_'.$identity};
+}
+
 sub get_dejavu_list_similar_junctions {
 	my ($self, $identity) = @_;
 	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
@@ -506,7 +550,7 @@ sub parse_nb_projects_patients {
 		#warn Dumper @listres; die;
 	}
 	else {
-		@listres = @{$self->get_dejavu_list_similar_junctions_resume($pheno_name, $similar)};
+		@listres = @{$self->get_dejavu_list_similar_junctions_resume($similar)};
 		#warn Dumper @listres; die;
 	}
 	foreach my $h (@listres) {
@@ -773,13 +817,20 @@ sub junction_score_penality_dejavu {
 
 sub junction_score_penality_dejavu_low_ratio {
 	my ($self, $patient) = @_;
-	my $dv_ratio_all = $self->dejavu_nb_other_patients($patient);
-	my $dv_ratio_10 = $self->dejavu_nb_other_patients_min_ratio_10($patient);
-	my $dv_ratio_30 = $self->dejavu_nb_other_patients_min_ratio_30($patient);
-	if    ($dv_ratio_30 >= 10 or $dv_ratio_10 >= 20) { return 8; }
-	elsif ($dv_ratio_30 >= 5 or $dv_ratio_10 >= 10)  { return 5; }
-	elsif ($dv_ratio_30 >= 2 or $dv_ratio_10 >= 5)   { return 3; }
-	elsif ($dv_ratio_30 >= 1 or $dv_ratio_10 >= 3)   { return 2; }
+#	my $dv_ratio_all = $self->dejavu_nb_other_patients($patient);
+#	my $dv_ratio_10 = $self->dejavu_nb_other_patients_min_ratio_10($patient);
+#	my $dv_ratio_30 = $self->dejavu_nb_other_patients_min_ratio_30($patient);
+	my $dv_ratio_all = $self->get_quick_dejavu_patients();
+	my $dv_ratio_10 = $self->get_quick_dejavu_patients_ratio_10();
+	my $dv_ratio_20 = $self->get_quick_dejavu_patients_ratio_20();
+#	if    ($dv_ratio_30 >= 10 or $dv_ratio_10 >= 20) { return 8; }
+#	elsif ($dv_ratio_30 >= 5 or $dv_ratio_10 >= 10)  { return 5; }
+#	elsif ($dv_ratio_30 >= 2 or $dv_ratio_10 >= 5)   { return 3; }
+#	elsif ($dv_ratio_30 >= 1 or $dv_ratio_10 >= 3)   { return 2; }
+	if    ($dv_ratio_20 >= 10 or $dv_ratio_10 >= 20) { return 8; }
+	elsif ($dv_ratio_20 >= 5 or $dv_ratio_10 >= 10)  { return 5; }
+	elsif ($dv_ratio_20 >= 2 or $dv_ratio_10 >= 5)   { return 3; }
+	elsif ($dv_ratio_20 >= 1 or $dv_ratio_10 >= 3)   { return 2; }
 	return 0;
 }
 

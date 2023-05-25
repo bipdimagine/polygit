@@ -26,17 +26,15 @@ use Config::Std;
  
 my ($projectName, $filename, $name, $patients_name, $steps_name, $force, $type, $fastq_ext, $somatic, $method, $no_cluster, $stdout, $help, $annot_version);
 my $fork = 1;
-my $yes = 0;
+my $yes;
 my $nocluster = 0;
 my $menu= 0;
-my $filename_cfg;
 my $secret;
-my $analyse_type;
-my $nobackup;
-my $giab;
+
 GetOptions(
 	'project=s' => \$projectName,
 	'force=s' => \$force,
+	'yes=s'	=> \$yes,
 	'nolimit=s' => \$secret,
 );
 
@@ -48,6 +46,9 @@ if ($force) {
 }
 if ($secret) {
 	$cmd .= " -nolimit=1";
+}
+if ($yes) {
+	$cmd .= " -yes=1";
 }
 system ($cmd);
 

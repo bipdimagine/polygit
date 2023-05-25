@@ -89,6 +89,22 @@ sub setJunctions {
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
+	my $path3 = $self->getProject->getJunctionsDir('star');
+	foreach my $patient (@{$self->getProject->getPatients()}) {
+		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
+		my $star_file_bz = $star_file.'.gz';
+		if (-e $star_file) {
+			my $cmd1 = "bgzip $star_file";
+			`$cmd1`;
+			my $cmd2 = "tabix -p bed $star_file_bz";
+			`$cmd2`;
+		}
+		next if not -e $star_file_bz;
+		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
 	return $h_ids;
 }
 
