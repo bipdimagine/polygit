@@ -6265,13 +6265,11 @@ has get_path_rna_seq_polyrna_root  => (
 		my $self = shift;
 		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
 		return $path if -d $path;
-		if ($self->version() eq 'MM38') {
-			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM39/polyRNA/";
+		my @lPotentialRelease = ('HG19', 'HG19_CNG', 'HG19_MT', 'HG38', 'HG38-ERCC', 'MM38', 'MM39');
+		foreach my $rel2 (@lPotentialRelease) {
+			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$rel2."/polyRNA/";
 			return $alt_path if -d $alt_path;
-		}
-		if ($self->version() eq 'MM39') {
-			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM38/polyRNA/";
-			return $alt_path if -d $alt_path;
+			
 		}
 		return $path;
 	},
