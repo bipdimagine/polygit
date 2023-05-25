@@ -674,6 +674,7 @@ foreach my $gene_name (@lGenesNames) {
 	$html_table_2 .= qq{</div>};
 	$html_table_2 .= qq{</td></tr>};
 	$nb_g++;
+	last if ($nb_g == 2500);
 }
 if ($html_table_2) {
 	my $this_html = $html;
