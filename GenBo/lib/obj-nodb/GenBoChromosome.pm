@@ -3,6 +3,7 @@ package GenBoChromosome;
 use strict;
 use Moo;
 
+use Carp;
 use Data::Dumper;
 use Config::Std;
 use GenBoGenomic;
