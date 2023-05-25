@@ -66,7 +66,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'splice_ai', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature', 'Prot_Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -638,6 +638,8 @@ sub store_cnvs_infos {
 			$hash->{$chr_h_id}->{$var_id}->{'cadd_score'} = '-' if ( $hash->{$chr_h_id}->{$var_id}->{'cadd_score'} eq '-1' );
 			$hash->{$chr_h_id}->{$var_id}->{'ncboost_score'} = '-';
 			$hash->{$chr_h_id}->{$var_id}->{'ncboost_score'} = $var->ncboost_score() if defined $var->ncboost_score();
+			
+			
 			if ( $var->cosmic() ) {
 				my @lTmpCosmic = split( ':', $var->cosmic() );
 				$hash->{$chr_h_id}->{$var_id}->{'cosmic'} = $lTmpCosmic[0];
@@ -686,6 +688,7 @@ sub store_cnvs_infos {
 					my $t = $project->newTranscript($tr_id);
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'external_name'} = $t->external_name();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'appris'} = $t->appris_type();
+					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'splice_ai'} = '-';
 					
 					foreach my $exon_intron_id (keys %{$h_genes->{$gene_id}->{$tr_id}->{'exons_introns'}}) {
 						my $h_exon_intron = $h_genes->{$gene_id}->{$tr_id}->{'exons_introns'}->{$exon_intron_id};
@@ -825,10 +828,23 @@ sub store_variants_infos {
 				my $g_id = $gene->id();
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'external_name'} = $gene->external_name();
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'description'} = $gene->description();
-				
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'phenotypes'} = $gene->phenotypes();
 				eval { $var->annotation(); };
 				if ($@) { next; }
+				my ($max_value, $max_cat);
+				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'spliceAI'} = '-';
+				my $h_score_spliceAI = $var->spliceAI_score($gene);
+				my $splice_ai_txt = '-';
+				if ($h_score_spliceAI) {
+					foreach my $cat (sort keys %$h_score_spliceAI) {
+						if (not $max_value or $h_score_spliceAI->{$cat} > $max_value) {
+							$max_value = $h_score_spliceAI->{$cat};
+							$max_cat = $cat;
+						}
+					}
+					$splice_ai_txt = $max_cat.':'.$max_value;
+				}
+				
 				foreach my $t ( @{ $gene->getTranscripts() } ) {
 					
 					next unless ( exists $var->annotation->{ $t->id() } );
@@ -841,6 +857,7 @@ sub store_variants_infos {
 						push( @ok, $lTmp[1] );
 					}
 					next if ( scalar(@ok) == 0 );
+					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'splice_ai'} = $splice_ai_txt;
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'external_name'} = $t->external_name();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'appris'} = $t->appris_type();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'consequence'} = join( ',', @ok );
@@ -920,7 +937,10 @@ sub store_variants_infos {
 					}
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->{annex}->{$patient->id()}->{he} eq '1';
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->{annex}->{$patient->id()}->{ho} eq '1';
-					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} = $var->getTransmissionModelType($patient->getFamily(), $patient);
+					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} ='';
+					if (not $var->isMei()) {
+						$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} = $var->getTransmissionModelType($patient->getFamily(), $patient);
+					}
 				}
 				else {
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = '';
@@ -1137,6 +1157,7 @@ sub prepare_generic_datas_variants {
 						$h2->{'sift'}            = $h_tr->{'sift_status'};
 						$h2->{'polyphen_score'}  = $h_tr->{'polyphen_score'};
 						$h2->{'sift_score'}      = $h_tr->{'sift_score'};
+						$h2->{'splice_ai'}       = $h_tr->{'splice_ai'};
 						$h2->{'aa'}              = $h_tr->{'aa'};
 						$h2->{'appris'}          = $h_tr->{'appris'};
 						push( @lDatas, $h2 );
