@@ -31,7 +31,7 @@ sub prepare_junctions_resume {
 	my ($self,$chr) = @_;
 	return $self->{prepare_junctions_resume}->{$chr} if exists $self->{prepare_junctions_resume}->{$chr};
 	my $table_name = $self->create_table($chr);
-	$self->{prepare_junctions_resume}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type,$table_name.start,$table_name.end,$table_name._key,$table_name.patients,$table_name.projects,$table_name.ratios,$table_name.gene_name  from $table_name  where end>=? and start<=?  and variation_type=?   });
+	$self->{prepare_junctions_resume}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type,$table_name.start,$table_name.end,$table_name._key,$table_name.patients,$table_name.projects,$table_name.ratios,$table_name.gene_name  from $table_name  WHERE start=? OR end=?  and variation_type=?   });
 	return $self->{prepare_junctions_resume}->{$chr};
 }
 
@@ -39,7 +39,7 @@ sub prepare_junctions {
 	my ($self,$chr) = @_;
 	return $self->{prepare_junctions}->{$chr} if exists $self->{prepare_junctions}->{$chr};
 	my $table_name = $self->create_table($chr);
-	$self->{prepare_junctions}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type,$table_name.start,$table_name.end,$table_name._value,$table_name.gene_name from $table_name  where end>=? and start<=?  and variation_type=?   });
+	$self->{prepare_junctions}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type,$table_name.start,$table_name.end,$table_name._value,$table_name.gene_name from $table_name  WHERE start=? OR end=?  and variation_type=?   });
 	return $self->{prepare_junctions}->{$chr};
 }
 
@@ -52,8 +52,21 @@ sub get_junction_resume {
 	while (my @row = $self->prepare_junctions_resume($chr)->fetchrow_array) { 
 	 	my $start1 = $row[1];
 	 	my $end1 = $row[2];
+	 	
 	 	my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
 	 	next if $identity <  $seuil;
+	 	
+#	 	my $identity = 100;
+#	 	if ($start != $start1 or $end != $end1) {
+#	 		my $len1 = ($end-$start);
+#	 		my $len2 = ($end1-$start1);
+#	 		if ($len1 > $len2) { $identity = ($len2/$len1)*100;  }
+#	 		if ($len2 < $len1) { $identity = ($len1/$len2)*100;  }
+#	 	} 
+#	 	next if $identity <  $seuil;
+	 	
+	 	#warn join(' ', @row).$identity;
+	 	
 	 	my $x;
 		$x->{type} = $row[0];
 		$x->{id} = $row[-5];
@@ -84,8 +97,19 @@ sub get_junction {
 	 	my $start1 = $row[1];
 	 	my $end1 = $row[2];
 	 	my $ensg = $row[-1];
+	 	
 	 	my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
 	 	next if $identity <  $seuil;
+	 	
+#	 	my $identity = 100;
+#	 	if ($start != $start1 or $end != $end1) {
+#	 		my $len1 = ($end-$start);
+#	 		my $len2 = ($end1-$start1);
+#	 		if ($len1 > $len2) { $identity = ($len2/$len1)*100;  }
+#	 		if ($len2 < $len1) { $identity = ($len1/$len2)*100;  }
+#	 	}  
+#	 	next if $identity <  $seuil;
+	 	
 		my $z = $self->decode($row[-2]);
 		foreach my $zz (keys %$z){
 			foreach my $zzz (keys %{$z->{$zz}}) {

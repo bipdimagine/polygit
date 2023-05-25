@@ -52,6 +52,7 @@ use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlDejaVuJunctionsCanoniques;
 use GenBoNoSqlDejaVuJunctionsPhenotype;
+use GenBoNoSqlDejaVuJunctionsResume;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
@@ -4554,6 +4555,19 @@ has dejavuJunctions => (
 	}
 );
 
+has dejavuJunctionsResume => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->DejaVuJunction_path();
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctionsResume->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
 has dejavuJunctionsCanoniques => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -6357,6 +6371,7 @@ sub getQueryJunction {
 	if ($method eq 'RI') { $args{isRI} = 1; }
 	elsif ($method eq 'SE') { $args{isSE} = 1; }
 	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
+	elsif ($method eq 'STAR') { $args{isSTAR} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;
