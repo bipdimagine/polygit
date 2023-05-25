@@ -437,7 +437,7 @@ foreach my $chr_id (sort keys %{$h_chr_vectors}) {
 	my $hres;
 	foreach my $junction (@lJunctionsChr) {
 		$n++;
-		print '.' if ($n % 1000);
+		print '.' if (not $only_html_cache and $n % 1000);
 		
 		my $is_junction_linked_filtred;
 		next if ($junction->isCanonique($patient));
@@ -1223,7 +1223,7 @@ sub add_linked_hash_in_cache {
 		foreach my $junction (@{$chr->getListVarObjects($vector_patient)}) {
 			$n++;
 			next if ($junction->isCanonique($patient));
-			print '.' if ($n % 5000);
+			print '.' if (not $only_html_cache and $n % 5000);
 			if ($junction->is_junctions_linked($patient)) {
 				if (exists $h_var_linked_ids->{$junction->id()}) {
 					$h_var_linked_ids->{$junction->id()}->{vector_id} = $chr->id().'-'.$junction->vector_id();
@@ -1287,11 +1287,10 @@ sub add_linked_hash_in_cache {
 		$h_vector->{$chr->id()}->{min4} = $h_vector_chr->{min4}->to_Enum();
 		$h_vector->{$chr->id()}->{min6} = $h_vector_chr->{min6}->to_Enum();
 		$h_vector->{$chr->id()}->{min8} = $h_vector_chr->{min8}->to_Enum();
-		print '.chr'.$chr->id.':'.$chr->countThisVariants($h_vector_chr->{min0}).'|'.$chr->countThisVariants($h_vector_chr->{min2}).'|'.$chr->countThisVariants($h_vector_chr->{min4}).'|'.$chr->countThisVariants($h_vector_chr->{min6}).'|'.$chr->countThisVariants($h_vector_chr->{min8}).'.';
 	}
 	my $no_cache = $patient->get_lmdb_cache("w");
 	my $outfile_log = $no_cache->filename().'.ok';
-	$no_cache->put_cache_hash($cache_id, $h_var_linked_ids);
+	$no_cache->put_cache_hash($cache_id, $h_var_linked_ids) if $h_var_linked_ids;
 	$no_cache->put_cache_hash($cache_id.'_chr_vectors_enum', $h_vector);
 	$no_cache->close();
 	if ($only_html_cache) {
