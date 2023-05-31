@@ -32,6 +32,8 @@ GetOptions(
 my $hash_project_phenotypes;
 my $b1 = GBuffer->new;
 my $project = $b1->newProjectCache( -name => $name );
+
+
 if (-d $project->get_path_rna_seq_junctions_analyse_all_res()) {
 	my $ok;
 	my $path = $project->get_path_rna_seq_junctions_analyse_all_res();
@@ -52,6 +54,8 @@ my $ok_dragen;
 foreach my $patient (@{$project->getPatients()}) { 
 	my $dragen_file = $project->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
 	$ok_dragen = 1 if (-e $dragen_file);
+	my $star_file = $project->getJunctionsDir('star').'/'.$patient->name().'.SJ.tab.gz';
+	$ok_dragen = 1 if (-e $star_file);
 }
 if ($ok_dragen) {
 		if ($project->is_human_genome()) {
@@ -85,7 +89,6 @@ foreach my $this_patient (@{$project->getPatients()}) {
 	if (($hType_patients and exists $hType_patients->{$this_patient->name()}->{pat}) or not $hType_patients) {
 		my @lJunctions = @{$this_patient->getJunctions()};
 		foreach my $junction (@lJunctions) {
-			next if ($junction->get_ratio_new_count($this_patient) == 1);
 			$junction->getPatients();
 			my $type = $junction->getTypeDescription($this_patient);
 			my $chr_id = $junction->getChromosome->id();
