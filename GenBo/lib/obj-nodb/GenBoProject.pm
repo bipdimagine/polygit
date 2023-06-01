@@ -5815,6 +5815,7 @@ sub getDejaVuInfos {
 	my $hres;
 	my $no = $self->lite_deja_vu2();
 	my $string_infos = $no->get( $chr, $id );
+	return $hres unless ($string_infos);
 	foreach my $string_infos_project (split('!', $string_infos)) {
 		my @lTmp = split(':', $string_infos_project);
 		my $project_name = 'NGS20'.$lTmp[0];
