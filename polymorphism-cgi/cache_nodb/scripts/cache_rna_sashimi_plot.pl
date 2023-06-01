@@ -81,29 +81,22 @@ if ($j_total >= 10000) {
 my $nb = 0;
 my @lJunctions;
 
-my @lScores = (5..10);
+my @lScores = (0..10);
 @lScores = reverse sort {$a <=> $b} @lScores;
 foreach my $score (@lScores) {
 	foreach my $chr (@{$project->getChromosomes()}) {
 		foreach my $junction (@{$chr->getListVarObjects($h_chr_vectors->{$chr->id()})}) {
 			next if ($junction->isCanonique($patient));
-			next if ($junction->junction_score_without_dejavu_global($patient) < $score);
+			my $j_score = $junction->junction_score($patient);
+			next if ($j_score < $score);
 			my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
 			next if (exists $h_junctions_todo->{$j_pos});
 			push(@lJunctions, $junction);
 			$nb++;
-			$h_junctions_todo->{$j_pos} = $junction->junction_score_without_dejavu_global($patient);
+			$h_junctions_todo->{$j_pos} = $j_score;
 			last if ($nb == 1500);
 		}
 	}
-}
-
-
-
-if (scalar(@lJunctions) == 0) {
-	print FILE '0 junction';
-	close (FILE);
-	exit(0); 
 }
 
 my $pm = new Parallel::ForkManager($fork);
@@ -114,6 +107,11 @@ foreach my $junction (@lJunctions) {
 	$pm->finish();
 }
 $pm->wait_all_children();
+
+
+if (scalar(@lJunctions) == 0) {
+	print FILE '0 junction';
+}
 
 close (FILE);
 exit(0);
