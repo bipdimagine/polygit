@@ -81,7 +81,8 @@ sub get_junctions_generic {
 	my $x;
 	while (my @row = $self->prepare_junctions($chr)->fetchrow_array) {
 		
-		#warn join(' | ',@row);
+#		warn "\n";
+#		warn join(' | ',@row);
 		
 	 	my $start1 = $row[0];
 	 	my $end1 = $row[1];
@@ -144,35 +145,38 @@ sub get_junctions_ratio20 {
 }
 
 sub get_nb_junctions_generic {
-	my ($self,$hres) = @_;
+	my ($self,$hres,$patient_name) = @_;
 #	warn Dumper $hres;
 	return 0 if not $hres;
 	my $hp;
 	foreach my $id (keys %{$hres}){
 		next if $hres->{$id}->{nbpat} == 0;
 		my @lPat = split(';', $hres->{$id}->{details});
-		foreach my $p (@lPat) { $hp->{$p} = undef; }
+		foreach my $p (@lPat) {
+			next if ($patient_name and $patient_name eq $p);
+			$hp->{$p} = undef;
+		}
 	}
 	return 0 if not $hp;
 	return scalar(keys %$hp);
 }
 
 sub get_nb_junctions {
-	my ($self,$chr,$start,$end,$seuil) = @_;
+	my ($self,$chr,$start,$end,$seuil,$patient_name) = @_;
 	my $h = $self->get_junctions($chr,$start,$end,$seuil);
-	return $self->get_nb_junctions_generic($h);
+	return $self->get_nb_junctions_generic($h,$patient_name);
 }
 
 sub get_nb_junctions_ratio10 {
-	my ($self,$chr,$start,$end,$seuil) = @_;
+	my ($self,$chr,$start,$end,$seuil,$patient_name) = @_;
 	my $h = $self->get_junctions_ratio10($chr,$start,$end,$seuil);
-	return $self->get_nb_junctions_generic($h);
+	return $self->get_nb_junctions_generic($h,$patient_name);
 }
 
 sub get_nb_junctions_ratio20 {
-	my ($self,$chr,$start,$end,$seuil) = @_;
+	my ($self,$chr,$start,$end,$seuil,$patient_name) = @_;
 	my $h = $self->get_junctions_ratio20($chr,$start,$end,$seuil);
-	return $self->get_nb_junctions_generic($h);
+	return $self->get_nb_junctions_generic($h,$patient_name);
 }
 
 1;
