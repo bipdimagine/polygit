@@ -87,6 +87,33 @@ sub get_junction_resume {
 	return \@lRes;
 }
 
+sub get_position {
+	my ($self,$chr,$start,$end,$type,$dejavu) = @_;
+	my $table_name = $self->create_table($chr);
+	my $T2 = $table_name."POSITION";
+	$self->prepare_junctions($chr)->execute($start,$end,$type);
+	my $x;
+	while (my @row = $self->prepare_junctions($chr)->fetchrow_array) {
+	 	my $type = $row[0];
+	 	my $start1 = $row[1];
+	 	my $end1 = $row[2];
+	 	my $h_details = $self->decode($row[3]);
+	 	my $gene_id = $row[4];
+	 	$start =~ s/ //g;
+	 	$end =~ s/ //g;
+	 	$start1 =~ s/ //g;
+	 	$end1 =~ s/ //g;
+		next if not $start == $start1;
+		next if not $end == $end1;
+	 	$x->{$start1.'-'.$end1.'-'.$type}->{type} = $type;
+	 	$x->{$start1.'-'.$end1.'-'.$type}->{start} = $start1;
+	 	$x->{$start1.'-'.$end1.'-'.$type}->{end} = $end1;
+	 	$x->{$start1.'-'.$end1.'-'.$type}->{details} = $h_details;
+	 	$x->{$start1.'-'.$end1.'-'.$type}->{gene_id} = $gene_id;
+	}
+	return $x;
+}
+
 sub get_junction {
 	my ($self,$chr,$start,$end,$type,$dejavu,$seuil) = @_;
 	my $table_name = $self->create_table($chr);

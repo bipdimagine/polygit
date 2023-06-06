@@ -496,11 +496,12 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			}
 
 			my $nb_dejavu_pat = 0;
+			$use_percent_dejavu = $junction->dejavu_percent_coordinate_similar() unless ($use_percent_dejavu);
 			if ($only_dejavu_ratio_10) {
-				$nb_dejavu_pat = $junction->get_quick_dejavu_patients_ratio_10($patient);
+				$nb_dejavu_pat =  $project->dejavuJunctionsResume->get_nb_junctions_ratio10($junction->getChromosome->id(), $junction->start(),$junction->end(), $use_percent_dejavu, $patient_name);
 			}
 			else {
-				$nb_dejavu_pat = $junction->get_quick_dejavu_patients($patient);
+				$nb_dejavu_pat =  $project->dejavuJunctionsResume->get_nb_junctions($junction->getChromosome->id(), $junction->start(),$junction->end(), $use_percent_dejavu, $patient_name);
 			}
 			next if ( $nb_dejavu_pat > $max_dejavu_value );
 		}
@@ -524,11 +525,9 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 
 			#			next if scalar keys %$ht == 0;
 
-			my ( $html_trans, $has_linked_junctions ) =
-			  get_html_transcripts( $junction, $patient );
+			my ( $html_trans, $has_linked_junctions ) = get_html_transcripts( $junction, $patient );
 			my $html_trans;
-			my $score_details_text =
-			  get_html_score_details( $junction, $patient );
+			my $score_details_text = get_html_score_details( $junction, $patient );
 
 			$hres->{score}->{all}->{$gene_name}->{$score} = $junction->id();
 
@@ -804,16 +803,12 @@ sub get_html_dejavu {
 	my $patient_name = $patient->name();
 	my $vector_id =
 	  $junction->getChromosome->id() . '-' . $junction->vector_id();
-	my $cmd_all =
-qq{view_deja_vu_rna_junction(\"$project_name\",\"$patient_name\",\"$vector_id\")};
-	my $cmd_inthisrun =
-qq{view_dejavu_nb_int_this_run_patients(\"$project_name\",\"$patient_name\",\"$vector_id\")};
+	my $cmd_all = qq{view_deja_vu_rna_junction(\"$project_name\",\"$patient_name\",\"$vector_id\")};
+	my $cmd_inthisrun = qq{view_dejavu_nb_int_this_run_patients(\"$project_name\",\"$patient_name\",\"$vector_id\")};
 	my $html = $cgi->start_table(
 		{
-			class =>
-"table table-sm table-striped table-condensed table-bordered table-primary ",
-			style =>
-"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"
+			class => "table table-sm table-striped table-condensed table-bordered table-primary ",
+			style => "box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"
 		}
 	);
 	$html .= $cgi->start_Tr();
@@ -822,16 +817,11 @@ qq{view_dejavu_nb_int_this_run_patients(\"$project_name\",\"$patient_name\",\"$v
 	$html .= $cgi->th("<center><b>Ratio >10%</b></center>");
 	$html .= $cgi->th("<center><b>Ratio >20%</b></center>");
 	$html .= $cgi->end_Tr();
-
-	my $dv_other_pat = $junction->get_quick_dejavu_patients( $patient );
-	my $dv_other_pat_ratio_10 = $junction->get_quick_dejavu_patients_ratio_10( $patient );
-	my $dv_other_pat_ratio_20 = $junction->get_quick_dejavu_patients_ratio_20( $patient );
-
-#	warn "\n";
-#	warn $junction->id().' - '.$dv_other_pat.' - '.$dv_other_pat_ratio_10.' - '.$dv_other_pat_ratio_20;
-#	die if ($junction->id =~ /1148/);
-#	die if ($junction->start =~ /114817630/ and $junction->end =~ /114821931/);
-
+	
+	my $dv_other_pat =  $project->dejavuJunctionsResume->get_nb_junctions($junction->getChromosome->id(), $junction->start(),$junction->end(), $use_percent_dejavu, $patient_name);
+	my $dv_other_pat_ratio_10 =  $project->dejavuJunctionsResume->get_nb_junctions_ratio10($junction->getChromosome->id(), $junction->start(),$junction->end(), $use_percent_dejavu, $patient_name);
+	my $dv_other_pat_ratio_20 =  $project->dejavuJunctionsResume->get_nb_junctions_ratio20($junction->getChromosome->id(), $junction->start(),$junction->end(), $use_percent_dejavu, $patient_name);
+	
 	$html .= $cgi->start_Tr();
 	$html .= $cgi->td("<center><b>DejaVu</b></center>");
 	$html .= $cgi->td( obutton( $cmd_all, $dv_other_pat ) );
