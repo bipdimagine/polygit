@@ -1562,7 +1562,6 @@ sub add_linked_hash_in_cache {
 sub countMinCatToUse {
 	my ($h_res_v_enum) = @_;
 	my $hCount;
-	return 'min0';
 	foreach my $chr_id ( keys %$h_res_v_enum ) {
 		foreach my $cat ( keys %{ $h_res_v_enum->{$chr_id} } ) {
 			my $v_filters = $project->getChromosome($chr_id)->getNewVector();
