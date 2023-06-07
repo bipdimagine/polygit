@@ -161,6 +161,8 @@ if ( $j_selected >= 10000 ) {
 	$is_partial_results = 1;
 	$min_partial_score  = $use_cat;
 	$min_partial_score =~ s/min//;
+	$min_partial_score -= 4;
+	$min_partial_score = 0 if $min_partial_score < 0;
 }
 
 my $percent_dejavu = 0;
@@ -417,8 +419,10 @@ $pm->run_on_finish(
 			return;
 		}
 		foreach my $gene_name ( keys %{ $hres->{genes} } ) {
-			foreach my $html_tr ( @{ $hres->{genes}->{$gene_name} } ) {
-				push( @{ $_tr_lines_by_genes->{$gene_name} }, $html_tr );
+			foreach my $score ( keys %{$hres->{genes}->{$gene_name}} ) {
+				foreach my $html_tr ( @{ $hres->{genes}->{$gene_name}->{$score} } ) {
+					push( @{ $_tr_lines_by_genes->{$gene_name}->{$score} }, $html_tr );
+				}
 			}
 		}
 
@@ -510,7 +514,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $html_to_validate = '';
 		my $score = $junction->junction_score($patient);
 
-		#		next if ($is_partial_results and $score <$min_partial_score);
+		next if ($min_partial_score and $score < $min_partial_score);
 
 		my $html_sashimi  = get_sashimi_plot( $junction, $patient );
 		my $html_igv      = get_igv_button( $junction, $patient );
@@ -533,8 +537,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 
 			my $html_tr;
 			if ($is_junction_linked_filtred) {
-				$html_tr .=
-qq{<tr style="text-align:center;font-size:11px;opacity:0.55;">};
+				$html_tr .= qq{<tr style="text-align:center;font-size:11px;opacity:0.55;">};
 			}
 			else {
 				$html_tr .= qq{<tr style="text-align:center;font-size:11px;">};
@@ -554,7 +557,7 @@ qq{<tr style="text-align:center;font-size:11px;opacity:0.55;">};
 			$html_tr .= qq{<td>$score</td>};
 			$html_tr .= qq{<td>$score_details_text</td>};
 			$html_tr .= qq{</tr>};
-			push( @{ $hres->{genes}->{$gene_name} }, $html_tr );
+			push( @{ $hres->{genes}->{$gene_name}->{$score} }, $html_tr );
 		}
 	}
 	$hres->{done} = 1;
@@ -571,27 +574,21 @@ foreach my $gene_name ( keys %{ $h_junctions_scores->{all} } ) {
 }
 my @lGenesNames;
 foreach my $score ( sort { $b <=> $a } keys %{ $h_junctions_scores->{max} } ) {
-	foreach
-	  my $gene_name ( sort keys %{ $h_junctions_scores->{max}->{$score} } )
-	{
+	foreach my $gene_name ( sort keys %{ $h_junctions_scores->{max}->{$score} } ) {
 		push( @lGenesNames, $gene_name );
 	}
 }
 
 if ( scalar(@lGenesNames) == 0 ) {
-	$html .=
-	  qq{<tr><td><center><b><i>No Result Found...</b></i></center></td></tr>};
+	$html .= qq{<tr><td><center><b><i>No Result Found...</b></i></center></td></tr>};
 
 	if ($only_gene) {
 		my $b_igv = get_igv_button( $only_gene, $patient );
-		$html .=
-qq{<br><tr><td><center><b><i>...but you can view gene <span style="color:orange;">$only_gene_name</span> in IGV :)</b></i></center></td></tr>};
-		$html .=
-qq{<br><tr><td><center><b><i><span class="glyphicon glyphicon-arrow-down"></span></b></i></center></td></tr><br><tr><td><center><b><i>$b_igv</b></i></center></td></tr>};
+		$html .= qq{<br><tr><td><center><b><i>...but you can view gene <span style="color:orange;">$only_gene_name</span> in IGV :)</b></i></center></td></tr>};
+		$html .= qq{<br><tr><td><center><b><i><span class="glyphicon glyphicon-arrow-down"></span></b></i></center></td></tr><br><tr><td><center><b><i>$b_igv</b></i></center></td></tr>};
 	}
 	else {
-		$html .=
-qq{<br><tr><td><center><b><i><span class="glyphicon glyphicon-exclamation-sign" style="color:red;font-size:18px;"></span> your gene <span style="color:orange;">$only_gene_name</span> is unknown in my database...</b></i></center></td></tr><br><br><br>};
+		$html .= qq{<br><tr><td><center><b><i><span class="glyphicon glyphicon-exclamation-sign" style="color:red;font-size:18px;"></span> your gene <span style="color:orange;">$only_gene_name</span> is unknown in my database...</b></i></center></td></tr><br><br><br>};
 	}
 
 	$html .= qq{</table>};
@@ -619,11 +616,9 @@ my $filters =
 qq{data-filter-control="input" data-filter-control-placeholder="Gene Name / Description / Panel"};
 my $numbers_per_page = "100";
 
-my $html_table_1 =
-qq{<table id='table_major' data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="$numbers_per_page" data-page-list="[$numbers_per_page]" data-resizable='true' class='table' style='font-size:11px;'>};
+my $html_table_1 = qq{<table id='table_major' data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="$numbers_per_page" data-page-list="[$numbers_per_page]" data-resizable='true' class='table' style='font-size:11px;'>};
 $html_table_1 .= qq{<thead style="text-align:center;">};
-$html_table_1 .=
-  qq{<th data-field="gene" $filters><b><center></center></b></th>};
+$html_table_1 .= qq{<th data-field="gene" $filters><b><center></center></b></th>};
 $html_table_1 .= qq{</thead>};
 $html_table_1 .= qq{<tbody>};
 
@@ -663,19 +658,22 @@ foreach my $gene_name (@lGenesNames) {
 		$hgene->{panels}->{ $panel->name() } = undef;
 	}
 
-	$hgene->{variants} = $_tr_lines_by_genes->{$gene_name};
+	my @lVarHtml;
+	foreach my $score (sort {$b <=> $a} keys %{$_tr_lines_by_genes->{$gene_name}}) {
+		foreach my $l ( @{ $_tr_lines_by_genes->{$gene_name}->{$score} } ) {
+			push(@lVarHtml, $l);
+		}
+	}
+	$hgene->{variants} = \@lVarHtml;
 
 	my $div_id = 'div_' . $this_table_id;
 	$hgene->{collapse_with_id} = $div_id;
 
-	my $class_tr_gene->{style} =
-"background-color:#607D8B;border:1px black solid;padding:0px;white-space: nowrap;height:50px;";
+	my $class_tr_gene->{style} ="background-color:#607D8B;border:1px black solid;padding:0px;white-space: nowrap;height:50px;";
 
 	$html_table_2 .= qq{<tr><td>};
 	$html_table_2 .= "<table style='width:100%;background-color:#F3F3F3;'>";
-	my $html_gene_panel =
-	  update_variant_editor::panel_gene( $hgene, $this_panel_gene_id,
-		$project->name(), $patient );
+	my $html_gene_panel = update_variant_editor::panel_gene( $hgene, $this_panel_gene_id, $project->name(), $patient );
 	$html_gene_panel =~ s/<b>pLI<\/b> Score//;
 	$html_gene_panel =~ s/bottom:5px;/bottom:-5px;/;
 	$html_table_2 .= $cgi->td( $class_tr_gene, $html_gene_panel );
@@ -703,9 +701,18 @@ qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></t
 	$html_table_2 .= qq{</thead>};
 	$html_table_2 .= qq{<tbody>};
 
-	foreach my $l ( @{ $_tr_lines_by_genes->{$gene_name} } ) {
+
+	my $nb_limit = 0;
+	foreach my $l (@lVarHtml) {
+		next if (not $only_gene_name and $nb_limit == 100);
 		$html_table_2 .= $l;
+		$nb_limit++;
+		if (not $only_gene_name and $nb_limit == 100) {
+			$html_table_2 .= "<tr><td colspan='8'><center><span style='color:red'>Limit junctions view... Search only this gene to see all junctions</span></td></tr>";
+			last;
+		}
 	}
+
 	$html_table_2 .= qq{</tbody>};
 	$html_table_2 .= qq{</table>};
 	$html_table_2 .= qq{</div>};
