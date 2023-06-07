@@ -41,6 +41,8 @@ sub prepare_junctions {
 
 sub getIdentityBetweenCNV {
 	my ( $self, $start1, $end1, $start2, $end2) = @_;
+	return 0 unless $start2;
+	return 0 unless $end2;
 	#retourne le recouvrement en % de la longueur du plus long des deux evenements 
 	my $overlap = min( $end1, $end2 ) - max( $start1, $start2 );
 	confess() if (abs( $start1 - $end1 ) ==0);
