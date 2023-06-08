@@ -93,12 +93,15 @@ foreach my $this_patient (@{$project->getPatients()}) {
 			my $type = $junction->getTypeDescription($this_patient);
 			my $chr_id = $junction->getChromosome->id();
 			my $start = $junction->start();
+			$start =~ s/ //g;
 			my $end = $junction->end();
+			$end =~ s/ //g;
 			my $gene_name = $junction->annex->{$this_patient->name()}->{ensid};
 			my $count_new_junction = $junction->get_nb_new_count($this_patient);
 			my $count_normal_junction = $junction->get_nb_normal_count($this_patient);
 			my $score = int($junction->get_percent_new_count($this_patient));
 			my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
+			$junction_id =~ s/ //g;
 			
 			if ($junction->isCanonique($this_patient)) {
 				if (not exists $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}) {
