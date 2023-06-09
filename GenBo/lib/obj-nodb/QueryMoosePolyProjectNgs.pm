@@ -1327,6 +1327,17 @@ sub getListProjectsControlGIAB {
 	my @l = keys %{$sth->fetchall_hashref('name')};
 	return \@l;
 }
+sub getListProjectsByType {
+	my ($self,$type) = @_;
+	my $dbh = $self->getDbh();
+	my $config = $self->getConfig();
+	my $sql = qq{SELECT name FROM PolyprojectNGS.projects where validation_db = "$type" ;};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute();
+	my @l = keys %{$sth->fetchall_hashref('name')};
+	return \@l;
+	
+}
 
 sub getAlamutApiKeyFromUserName {
 	my ($self, $user_name) = @_;
@@ -1341,7 +1352,6 @@ sub getAlamutApiKeyFromUserName {
 
 has sql_cmd_get_runid_from_samplename => (
 	is       => 'ro',
-	
 	lazy =>1,
 	default => sub {
 		my $self = shift;
@@ -1385,5 +1395,16 @@ sub getHashRunIdInfos {
 	return $h;
 }
 
+sub getProfileSample {
+	my ($self, $sample_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql =  qq{SELECT profile.name FROM PolyprojectNGS.patient,PolyprojectNGS.profile where patient.patient_id =? and patient.profile_id=profile.profile_id;};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($sample_id);
+	my $h = $sth->fetchall_hashref('name');
+	my ($v) = keys %$h;
+	return $v;
+	
+}
 
 1;
