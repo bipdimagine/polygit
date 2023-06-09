@@ -44,6 +44,7 @@ $html_my_var .= qq{<table id='$table_id_my_var' data-sort-name='identity' data-s
 $html_my_var .= qq{<thead style="text-align:center;">};
 $html_my_var .= qq{<th data-field="pdf"><b><center>Sashimi</center></b></th>};
 $html_my_var .= qq{<th data-sortable="true" data-field="identity"><b><center>Identity</center></b></th>};
+$html_my_var .= qq{<th data-sortable="true" data-field="phenos"><b><center>Phenotypes</center></b></th>};
 $html_my_var .= qq{<th data-field="project"><b><center>Project</center></b></th>};
 $html_my_var .= qq{<th data-field="patient"><b><center>Patient</center></b></th>};
 $html_my_var .= qq{<th data-field="type"><b><center>Type</center></b></th>};
@@ -61,6 +62,7 @@ $html .= qq{<table id='$table_id' data-sort-name='identity' data-sort-order='des
 $html .= qq{<thead style="text-align:center;">};
 $html .= qq{<th data-field="pdf"><b><center>Sashimi</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="identity"><b><center>Identity</center></b></th>};
+$html .= qq{<th data-sortable="true" data-field="phenos"><b><center>Phenotypes</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="project"><b><center>Project</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="patient"><b><center>Patient</center></b></th>};
 $html .= qq{<th data-sortable="true" data-field="type"><b><center>Type</center></b></th>};
@@ -79,7 +81,6 @@ my $vector = $chr->getNewVector();
 $vector->Bit_On($vector_id);
 my @lJunction = @{$chr->getListVarObjects($vector)};
 foreach my $junction (@lJunction) {
-	
 	my $list_sashimi_plot_files = $junction->getListSashimiPlotsPathFiles($patient);
 	if ($list_sashimi_plot_files and -e $list_sashimi_plot_files->[0]) {
 		$sashimi_pdf = $list_sashimi_plot_files->[0];
@@ -93,73 +94,107 @@ foreach my $junction (@lJunction) {
 	if ($is_dejavu_inthis_run) {
 		foreach my $dv_patient (@{$junction->getPatients()}) {
 			#next if ($junction->get_percent_new_count($dv_patient) < $dejavu_min_ratio);
-			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{start} = $junction->start();
-			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{end} = $junction->end();
-			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_junctions} = $junction->get_nb_new_count($dv_patient);
-			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_normal} = $junction->get_nb_normal_count($dv_patient);
-			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{score} = int($junction->get_percent_new_count($dv_patient));
-			$hdv->{'100%'}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{type} = $junction->getTypeDescription($dv_patient);
+			my $pos = $junction->start().'-'.$junction->end();
+			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{start} = $junction->start();
+			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{end} = $junction->end();
+			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_junctions} = $junction->get_nb_new_count($dv_patient);
+			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_normal} = $junction->get_nb_normal_count($dv_patient);
+			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{score} = int($junction->get_percent_new_count($dv_patient));
+			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{type} = $junction->getTypeDescription($dv_patient);
 		}
 	}
 	else {
 		$dejavu_percent = $junction->dejavu_percent_coordinate_similar() unless ($dejavu_percent);
-		$hdv = $junction->get_dejavu_list_similar_junctions($dejavu_percent);
+		my $h_dv = $project->dejavuJunctionsResume->get_junctions($junction->getChromosome->id(), $junction->start(),$junction->end(), $dejavu_percent);
+		foreach my $pos (keys %{$h_dv}) {
+			my $id_part = $pos;
+			$id_part =~ s/-/_/;
+			
+			my @l_pat = split(';', $h_dv->{$pos}->{details});
+			foreach my $patinfos (@l_pat) {
+				my @lTmp = split('_', $patinfos);
+				my $project_name_dv = 'NGS20'.shift(@lTmp).'_'.shift(@lTmp);
+				my $patient_name_dv = join('_', @lTmp);
+				my $dir_proj_dv_path = $project->DejaVuJunction_path().'/projects/'.$project_name_dv;
+				my $patient_dv_file = $dir_proj_dv_path.'/'.$project_name_dv.'.tab.gz';
+				my $cmd = "tabix $patient_dv_file ".$junction->getChromosome->id().':'.$junction->start().'-'.$junction->end().' | grep "'.$patient_name_dv.'" | grep "'.$id_part.'"';
+				my $dv_infos = `$cmd`;
+				my ($dv_chr, $dv_start, $dv_end, $dv_pat_name, $dv_type, $dv_j_new, $dv_j_normal, $dv_ratio, $dv_j_id) = split(' ', $dv_infos);
+				my $this_dv_percent = int($project->dejavuJunctionsResume->getIdentityBetweenCNV($junction->start() ,$junction->end(), $dv_start, $dv_end));
+				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{type} = $dv_type;
+				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_junctions} = $dv_j_new;
+				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_normal} = $dv_j_normal;
+				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{score} = $dv_ratio;
+				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{start} = $dv_start;
+				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{end} = $dv_end;
+			}
+		}
 	}
 	
 	foreach my $identity (reverse sort keys %{$hdv}) {
-		foreach my $prn (reverse sort keys %{$hdv->{$identity}}) {
-			my $buffer_tmp = GBuffer->new();
-			my $project_tmp = $buffer->newProject(-name => $project_name);
-			foreach my $ptn (sort keys %{$hdv->{$identity}->{$prn}}) {
-				my $type = $hdv->{$identity}->{$prn}->{$ptn}->{type};
-				my $count_junctions = $hdv->{$identity}->{$prn}->{$ptn}->{count_junctions};
-				my $count_normal = $hdv->{$identity}->{$prn}->{$ptn}->{count_normal};
-				my $score = int($hdv->{$identity}->{$prn}->{$ptn}->{score});
-				my $start = $hdv->{$identity}->{$prn}->{$ptn}->{start};
-				my $end = $hdv->{$identity}->{$prn}->{$ptn}->{end};
-
-				my $color = 'black';
-				if ($identity == 100) { $color = 'red' }
-				elsif ($identity == 99) { $color = 'orange'; }
-				elsif ($identity >= 95) { $color = 'green'; }
+		foreach my $pos (sort keys %{$hdv->{$identity}}) {
+			foreach my $prn (reverse sort keys %{$hdv->{$identity}->{$pos}}) {
+				my $buffer_tmp = GBuffer->new();
+				my $project_tmp = $buffer->newProject(-name => $prn);
 				
-				my $sashimi_button = qq{<center>N.A.</center>};
-				my $locus_text = $chr_id.'-'.($start - 100).'-'.($end + 100);
-				my $sashimi_pdf_tmp = $project_tmp->getProjectPath.'/align/sashimi_plots/';
-				$sashimi_pdf_tmp =~ s/$project_name/$prn/;
-				$sashimi_pdf_tmp .= 'sashimi_'.$ptn.'.'.$junction->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
-				if (-e $sashimi_pdf_tmp) {
-					$sashimi_pdf_tmp =~ s/\/\//\//g;
-					$sashimi_pdf_tmp =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
-					$sashimi_pdf_tmp =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
-					my $files = $sashimi_pdf_tmp;
-					my $pdf = $sashimi_pdf_tmp.'#toolbar=0&embedded=true';
-					$sashimi_button = qq{<button type="button" class="btn btn-default" style="border:2px black double;overflow:hidden;text-align:center;background-color:white;padding-right:20px;padding-left:4px;padding-top:4px;padding-bottom:4px;" onClick="view_pdf_list_files('$files')"><table><td>};
-					$sashimi_button .= qq{<image style="position:relative;z-index:2;width:120px;object-position: -50% -50%;transform: scale(1.8) translate(-27px, 10px);" loading="lazy" src="$pdf"></image>};
-					$sashimi_button .= qq{</td><td style="padding-left:1px;"><span style="writing-mode:vertical-lr !important; font: 12px Verdana, sans-serif;letter-spacing: 1px;">Zoom</span></td></table> </button>};
-					$sashimi_button .= qq{</center></};
+				my @lPhenos;
+				foreach my $pheno_name (@{$project_tmp->phenotypes()}) {
+					push(@lPhenos, $pheno_name);	
 				}
+				my $phenos = join(', ', sort @lPhenos);
 				
-				my $this_html;
-				if ($dejavu_min_ratio > $score) { $this_html .= qq{<tr style="opacity:0.35;">}; }
-				else { $this_html .= qq{<tr>}; }
-				$this_html .= qq{<td><center>$sashimi_button</center></td>};
-				$this_html .= qq{<td><center><b><span style="color:$color;">$identity%</span></b></center></td>};
-				$this_html .= qq{<td><center>$prn</center></td>};
-				$this_html .= qq{<td><center>$ptn</center></td>};
-				$this_html .= qq{<td><center>$type</center></td>};
-				$this_html .= qq{<td><center>$start</center></td>};
-				$this_html .= qq{<td><center>$end</center></td>};
-				$this_html .= qq{<td><center>$count_junctions</center></td>};
-				$this_html .= qq{<td><center>$count_normal</center></td>};
-				$this_html .= qq{<td><center>$score</center></td>};
-				
-				if ($prn eq $project_name and $ptn eq $patient_name) { $html_my_var .= $this_html; }
-				else { $html .= $this_html; }
-				#$html .= $this_html;
+				foreach my $ptn (sort keys %{$hdv->{$identity}->{$pos}->{$prn}}) {
+					my $type = $hdv->{$identity}->{$pos}->{$prn}->{$ptn}->{type};
+					my $count_junctions = $hdv->{$identity}->{$pos}->{$prn}->{$ptn}->{count_junctions};
+					my $count_normal = $hdv->{$identity}->{$pos}->{$prn}->{$ptn}->{count_normal};
+					my $score = int($hdv->{$identity}->{$pos}->{$prn}->{$ptn}->{score});
+					my $start = $hdv->{$identity}->{$pos}->{$prn}->{$ptn}->{start};
+					my $end = $hdv->{$identity}->{$pos}->{$prn}->{$ptn}->{end};
+	
+					my $color = 'black';
+					if ($identity == 100) { $color = 'red' }
+					elsif ($identity == 99) { $color = 'orange'; }
+					elsif ($identity >= 95) { $color = 'green'; }
+					
+					my $sashimi_button = qq{<center>N.A.</center>};
+					my $locus_text = $chr_id.'-'.($start - 100).'-'.($end + 100);
+					my $sashimi_pdf_tmp = $project_tmp->getProjectPath.'/align/sashimi_plots/';
+					$sashimi_pdf_tmp =~ s/$project_name/$prn/;
+					$sashimi_pdf_tmp .= 'sashimi_'.$ptn.'.'.$junction->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
+					if (-e $sashimi_pdf_tmp) {
+						$sashimi_pdf_tmp =~ s/\/\//\//g;
+						$sashimi_pdf_tmp =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+						$sashimi_pdf_tmp =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+						my $files = $sashimi_pdf_tmp;
+						my $pdf = $sashimi_pdf_tmp.'#toolbar=0&embedded=true';
+						$sashimi_button = qq{<button type="button" class="btn btn-default" style="border:2px black double;overflow:hidden;text-align:center;background-color:white;padding-right:20px;padding-left:4px;padding-top:4px;padding-bottom:4px;" onClick="view_pdf_list_files('$files')"><table><td>};
+						$sashimi_button .= qq{<image style="position:relative;z-index:2;width:120px;object-position: -50% -50%;transform: scale(1.8) translate(-27px, 10px);" loading="lazy" src="$pdf"></image>};
+						$sashimi_button .= qq{</td><td style="padding-left:1px;"><span style="writing-mode:vertical-lr !important; font: 12px Verdana, sans-serif;letter-spacing: 1px;">Zoom</span></td></table> </button>};
+						$sashimi_button .= qq{</center></};
+					}
+					
+					my $this_html;
+					if ($dejavu_min_ratio > $score) { $this_html .= qq{<tr style="opacity:0.35;">}; }
+					else { $this_html .= qq{<tr>}; }
+					$this_html .= qq{<td><center>$sashimi_button</center></td>};
+					$this_html .= qq{<td><center><b><span style="color:$color;">$identity%</span></b></center></td>};
+					$this_html .= qq{<td><center>$phenos</center></td>};
+					$this_html .= qq{<td><center>$prn</center></td>};
+					$this_html .= qq{<td><center>$ptn</center></td>};
+					$this_html .= qq{<td><center>$type</center></td>};
+					$this_html .= qq{<td><center>$start</center></td>};
+					$this_html .= qq{<td><center>$end</center></td>};
+					$this_html .= qq{<td><center>$count_junctions</center></td>};
+					$this_html .= qq{<td><center>$count_normal</center></td>};
+					$this_html .= qq{<td><center>$score</center></td>};
+					
+					if ($prn eq $project_name and $ptn eq $patient_name) { $html_my_var .= $this_html; }
+					else { $html .= $this_html; }
+					#$html .= $this_html;
+				}
+				$project_tmp = undef;
+				$buffer_tmp = undef;
 			}
-			$project_tmp = undef;
-			$buffer_tmp = undef;
 		}
 	}
 }

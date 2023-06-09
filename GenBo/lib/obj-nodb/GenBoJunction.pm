@@ -4,6 +4,7 @@ use strict;
 use Moo;
 use Data::Dumper;
 use GenBoCapture;
+use Carp;
 use List::Util qw[min max];
 extends "GenBoGenomic";
 
@@ -366,12 +367,24 @@ sub getSashimiPlotPath {
 		mkdir $path;
 		`chmod 775 $path`;
 	}
-	my $outfile;
+
+	$path .= $patient->name().'/';
+	unless (-d $path) {
+		mkdir $path;
+		`chmod 775 $path`;
+	}
+	my $file_name;
 	if (exists $self->annex->{$patient->name()}->{'ensid'}) {
-		$outfile = $path.'/sashimi_'.$patient->name().'.'.$self->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
+		$file_name = 'sashimi_'.$patient->name().'.'.$self->annex->{$patient->name()}->{'ensid'}.'.'.$locus_text.'.svg';
 	}
 	else {
-		$outfile = $path.'/sashimi_'.$patient->name().'.'.$locus_text.'.svg';
+		$file_name = 'sashimi_'.$patient->name().'.'.$locus_text.'.svg';
+	}
+	my $outfile = $path.'/'.$file_name;
+	if (-e $path.'/../'.$file_name) {
+		my $cmd = qq{mv $path/../$file_name $outfile};
+		`$cmd`;
+
 	}
 	return $outfile;
 }
@@ -408,257 +421,6 @@ has dejavu_percent_coordinate_similar => (
 	lazy 	=> 1,
 	default	=> 98,
 );
-
-sub get_dejavu_list_similar_junctions {
-	my ($self, $identity) = @_;
-	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
-	my $chr_id = $self->getChromosome->id();
-	my $type = 'all';
-	confess() unless $type;
-	return $self->getProject->dejavuJunctions->get_junction($chr_id, $self->start(), $self->end(), $type, 'all', $identity);
-}
-
-sub get_dejavu_list_similar_junctions_phenotypes_resume {
-	my ($self, $pheno_name, $identity) = @_;
-	confess() unless $pheno_name;
-	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
-	my $chr_id = $self->getChromosome->id();
-	my $type = 'all';
-	confess() unless $type;
-	return $self->getProject->dejavuJunctionsPhenotype($pheno_name)->get_junction_resume($chr_id, $self->start(), $self->end(), $type, 'all', $identity);
-}
-
-sub get_dejavu_list_similar_junctions_resume {
-	my ($self, $identity) = @_;
-	$identity = $self->dejavu_percent_coordinate_similar() unless $identity;
-	my $chr_id = $self->getChromosome->id();
-	my $type = 'all';
-	confess() unless $type;
-	return $self->getProject->dejavuJunctions->get_junction_resume($chr_id, $self->start(), $self->end(), $type, 'all', $identity);
-}
-
-sub dejavu_nb_other_patients_phenotype {
-	my ($self, $patient, $pheno_name) = @_;
-	return $self->dejavu_nb_other_patients_phenotype_min_ratio_global($patient, $pheno_name, 'all');
-}
-
-sub dejavu_nb_other_patients_phenotype_min_ratio_10 {
-	my ($self, $patient, $pheno_name) = @_;
-	return $self->dejavu_nb_other_patients_phenotype_min_ratio_global($patient, $pheno_name, '10');
-}
-
-sub dejavu_nb_other_patients_phenotype_min_ratio_20 {
-	my ($self, $patient, $pheno_name) = @_;
-	return $self->dejavu_nb_other_patients_phenotype_min_ratio_global($patient, $pheno_name, '20');
-}
-
-sub dejavu_nb_other_patients_phenotype_min_ratio_global {
-	my ($self, $patient, $pheno_name, $min_percent) = @_;
-	my $nb = 0;
-	my $cat = 'patients_ratio_details_'.$min_percent;
-	my $proj_text = $patient->getProject->name();
-	$proj_text =~ s/NGS20//;
-	my $h_dejavu_infos = $self->parse_nb_projects_patients($pheno_name);
-	
-#	warn "\n\n";
-#	warn $self->id();
-#	warn Dumper $h_dejavu_infos;
-
-#	if ($self->id eq '9_101542578_101544749_RI') {
-#		warn "\n";
-#		warn Dumper $self->parse_nb_projects_patients();
-#		die;
-#	}
-	
-	if (exists $h_dejavu_infos->{$cat}) {
-		foreach my $proj_pat (keys %{$h_dejavu_infos->{$cat}}) {
-			delete $h_dejavu_infos->{$cat}->{$proj_pat} if ($proj_pat =~ /$proj_text/);
-		}
-		$nb = scalar(keys %{$h_dejavu_infos->{$cat}});
-	}
-	return $nb;
-}
-
-sub parse_nb_projects_patients {
-	my ($self, $pheno_name) = @_;
-	my $similar = $self->dejavu_percent_coordinate_similar();
-	
-	my $id_saved = 'parse_nb_projects_patients_'.$similar;
-	$id_saved .= '_'.$pheno_name if ($pheno_name);
-	return $self->{$id_saved} if (exists $self->{$id_saved});
-	
-	my @listres;
-	my ($h_proj, $h_pat, $h_pat_ratios, $hpatrun);
-	if ($pheno_name) {
-		@listres = @{$self->get_dejavu_list_similar_junctions_phenotypes_resume($pheno_name, $similar)};
-		#warn Dumper @listres; die;
-	}
-	else {
-		@listres = @{$self->get_dejavu_list_similar_junctions_resume($pheno_name, $similar)};
-		#warn Dumper @listres; die;
-	}
-	foreach my $h (@listres) {
-		my @list = split(';', $h->{projects});
-		my @list2 = split(';', $h->{patients});
-		my @list3 = split(';', $h->{ratios});
-		my $i = 0;
-		foreach my $proj (@list) {
-			$h_proj->{$proj} = undef;
-			my @lpat = split(',', $list2[$i]);
-			foreach my $pat (@lpat) {
-				$h_pat->{$proj.'_'.$pat} = undef;
-				#if ($h->{same_as} eq '100%' and 'NGS20'.$proj eq $self->getProject->name()) {
-				if ('NGS20'.$proj eq $self->getProject->name()) {
-					$hpatrun->{$proj.'_'.$pat} = undef;
-				}
-			}
-			my $j = 0;
-			foreach my $ratio (split(',', $list3[$i])) {
-				my $pat = $lpat[$j];
-				if ($ratio >= 90) { $h_pat_ratios->{ratio_90}->{$proj.'_'.$pat} = undef; }
-				if ($ratio >= 80) { $h_pat_ratios->{ratio_80}->{$proj.'_'.$pat} = undef; }
-				if ($ratio >= 70) { $h_pat_ratios->{ratio_70}->{$proj.'_'.$pat} = undef; }
-				if ($ratio >= 30) { $h_pat_ratios->{ratio_30}->{$proj.'_'.$pat} = undef; }
-				if ($ratio >= 20) { $h_pat_ratios->{ratio_20}->{$proj.'_'.$pat} = undef; }
-				if ($ratio >= 10) { $h_pat_ratios->{ratio_10}->{$proj.'_'.$pat} = undef; }
-				$h_pat_ratios->{ratio_all}->{$proj.'_'.$pat} = undef;
-				$j++;
-			}
-			$i++;
-		}
-	}
-	my $h;
-	$h->{projects} = scalar(keys %$h_proj);
-	$h->{patients} = scalar(keys %$h_pat);
-	$h->{patients_ratio_10} = 0;
-	$h->{patients_ratio_20} = 0;
-	$h->{patients_ratio_30} = 0;
-	$h->{patients_ratio_details_all} = $h_pat_ratios->{ratio_all};
-	$h->{patients_ratio_details_10} = $h_pat_ratios->{ratio_10};
-	$h->{patients_ratio_details_20} = $h_pat_ratios->{ratio_20};
-	$h->{patients_ratio_details_30} = $h_pat_ratios->{ratio_30};
-	$h->{patients_ratio_10} = scalar(keys %{$h_pat_ratios->{ratio_10}}) if ($h_pat_ratios->{ratio_10});
-	$h->{patients_ratio_20} = scalar(keys %{$h_pat_ratios->{ratio_20}}) if ($h_pat_ratios->{ratio_20});
-	$h->{patients_ratio_30} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_30});
-	$h->{patients_ratio_70} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_70});
-	$h->{patients_ratio_80} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_80});
-	$h->{patients_ratio_90} = scalar(keys %{$h_pat_ratios->{ratio_30}}) if ($h_pat_ratios->{ratio_90});
-	#$h->{patients_inthisrun} = scalar(keys %$hpatrun);
-	$h->{others_patients} = scalar(keys %$h_pat) - scalar(keys %$hpatrun);
-	#$h->{others_patients} = scalar(keys %$h_pat);
-	$self->{$id_saved} = $h;
-	return $h;
-}
-
-has dejavu_nb_projects => (
-	is		=> 'rw',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		return $self->parse_nb_projects_patients->{projects};
-	},
-);
-
-has dejavu_nb_patients => (
-	is		=> 'rw',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		return $self->parse_nb_projects_patients->{patients};
-	},
-);
-
-has dejavu_nb_patients_ratio_10 => (
-	is		=> 'rw',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		return $self->parse_nb_projects_patients->{patients_ratio_10};
-	},
-);
-
-has dejavu_nb_patients_ratio_20 => (
-	is		=> 'rw',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		return $self->parse_nb_projects_patients->{patients_ratio_20};
-	},
-);
-
-has dejavu_nb_patients_ratio_30 => (
-	is		=> 'rw',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		return $self->parse_nb_projects_patients->{patients_ratio_30};
-	},
-);
-
-has dejavu_nb_others_patients => (
-	is		=> 'rw',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return if (not $self->getProject->annotation_genome_version() =~ /HG19/);
-		return $self->parse_nb_projects_patients->{others_patients};
-	},
-);
-
-
-sub dejavu_nb_other_patients_min_ratio_global {
-	my ($self, $patient, $min_percent) = @_;
-	my $nb = 0;
-	my $cat = 'patients_ratio_details_'.$min_percent;
-	my $proj_text = $patient->getProject->name();
-	$proj_text =~ s/NGS20//;
-	my $h_dejavu_infos = $self->parse_nb_projects_patients();
-	if (exists $h_dejavu_infos->{$cat}) {
-		delete $h_dejavu_infos->{$cat}->{$proj_text.'_'.$patient->name()};
-		$nb = scalar(keys %{$h_dejavu_infos->{$cat}});
-	}
-	return $nb;
-}
-
-sub dejavu_nb_other_patients {
-	my ($self, $patient) = @_;
-	return $self->dejavu_nb_other_patients_min_ratio_global($patient, 'all');
-}
-
-sub dejavu_nb_other_patients_min_ratio_10 {
-	my ($self, $patient) = @_;
-	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '10');
-}
-
-sub dejavu_nb_other_patients_min_ratio_20 {
-	my ($self, $patient) = @_;
-	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '20');
-}
-
-sub dejavu_nb_other_patients_min_ratio_30 {
-	my ($self, $patient) = @_;
-	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '30');
-}
-
-sub dejavu_nb_other_patients_min_ratio_70 {
-	my ($self, $patient) = @_;
-	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '70');
-}
-
-sub dejavu_nb_other_patients_min_ratio_80 {
-	my ($self, $patient) = @_;
-	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '80');
-}
-
-sub dejavu_nb_other_patients_min_ratio_90 {
-	my ($self, $patient) = @_;
-	return $self->dejavu_nb_other_patients_min_ratio_global($patient, '90');
-}
 
 sub dejavu_nb_int_this_run_patients {
 	my ($self, $patient_view, $min_percent) = @_;
@@ -760,14 +522,15 @@ sub junction_score_penality_dejavu {
 }
 
 sub junction_score_penality_dejavu_low_ratio {
-	my ($self, $patient) = @_;
-	my $dv_ratio_all = $self->dejavu_nb_other_patients($patient);
-	my $dv_ratio_10 = $self->dejavu_nb_other_patients_min_ratio_10($patient);
-	my $dv_ratio_30 = $self->dejavu_nb_other_patients_min_ratio_30($patient);
-	if    ($dv_ratio_30 >= 10 or $dv_ratio_10 >= 20) { return 8; }
-	elsif ($dv_ratio_30 >= 5 or $dv_ratio_10 >= 10)  { return 5; }
-	elsif ($dv_ratio_30 >= 2 or $dv_ratio_10 >= 5)   { return 3; }
-	elsif ($dv_ratio_30 >= 1 or $dv_ratio_10 >= 3)   { return 2; }
+	my ($self, $patient_name) = @_;
+	my $use_percent_dejavu = $self->dejavu_percent_coordinate_similar();
+	my $dv_ratio_all = 	$self->project->dejavuJunctionsResume->get_nb_junctions($self->getChromosome->id(), $self->start(),$self->end(), $use_percent_dejavu, $patient_name);
+	my $dv_ratio_10 = $self->project->dejavuJunctionsResume->get_nb_junctions_ratio10($self->getChromosome->id(), $self->start(),$self->end(), $use_percent_dejavu, $patient_name);
+	my $dv_ratio_20 = $self->project->dejavuJunctionsResume->get_nb_junctions_ratio20($self->getChromosome->id(), $self->start(),$self->end(), $use_percent_dejavu, $patient_name);
+	if    ($dv_ratio_20 >= 10 or $dv_ratio_10 >= 20) { return 8; }
+	elsif ($dv_ratio_20 >= 5 or $dv_ratio_10 >= 10)  { return 5; }
+	elsif ($dv_ratio_20 >= 2 or $dv_ratio_10 >= 5)   { return 3; }
+	elsif ($dv_ratio_20 >= 1 or $dv_ratio_10 >= 3)   { return 2; }
 	return 0;
 }
 
