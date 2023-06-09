@@ -330,6 +330,12 @@ has hash_freeze_file_all_genes => (
 	default => undef,
 );
 
+sub existsVariationsCacheDir {
+	my $self = shift;
+	return 1 if -e $self->project->getCacheBitVectorDir().'/lmdb_cache/variations/'.$self->id();
+	return;
+}
+
 # NOSQL with vectors model somatic loh
 has sqlite_loh => (
 	is		=> 'rw',
@@ -2644,7 +2650,7 @@ sub getVectorByPosition {
 
 #	warn $start." ".$end if  $end <= 236557770;
 	$debug =1 if $end==145878861; 
-	warn $start." ".$end if  $debug;
+#	warn $start." ".$end if  $debug;
 	#confess() if $debug;
 		
 	#->get_varid($vid);
@@ -2661,40 +2667,40 @@ sub getVectorByPosition {
 		return $self->getNewVector();
 		
 	}
-	warn "LB : ".$lb." lb nb:$nb $start-$end ".scalar(@ids) if $debug;
-	warn $ids[$lb];
-	warn "pos ".$self->getVariantPosition($lb-1,"start") if $debug;
-	warn ($start - $self->getVariantPosition($lb-1,"start")) if $debug;
-	warn "pos ".$self->getVariantPosition($lb,"start") if $debug;
+#	warn "LB : ".$lb." lb nb:$nb $start-$end ".scalar(@ids) if $debug;
+#	warn $ids[$lb];
+#	warn "pos ".$self->getVariantPosition($lb-1,"start") if $debug;
+#	warn ($start - $self->getVariantPosition($lb-1,"start")) if $debug;
+#	warn "pos ".$self->getVariantPosition($lb,"start") if $debug;
 	
 	confess() if $debug;
 	#die("coucou $lb") if $start > $self->getVariantPosition($lb,"start");
 	my $ub ;
-	warn $lb." ".$ilimit if $debug;;
+#	warn $lb." ".$ilimit if $debug;;
 	
 	unless ($lb == $ilimit){
 	 $ub = upper_bound {$self->getVariantPosition($_,"end") <=> $end}  @ids; # returns 2
 	 $ub = $ilimit if $ub>$ilimit;
-	 warn "RAW UB: $lb-".$ub." $ilimit" ;#if $debug;
+#	 warn "RAW UB: $lb-".$ub." $ilimit" ;#if $debug;
 	}
 	else {
 		$ub = $lb;
 		$lb --;
 	}
-	warn "UB: $lb-".$ub." " if $debug;
+	#warn "UB: $lb-".$ub." " if $debug;
 	if ($ub == $lb){
 		# on est à la limite 
 		$ub = 1;
 	#	warn "pos ".$self->getVariantPosition($ub,"start")." ".$end ;
 	#	die();
 	}
-	warn "UB: $lb-".$ub." $start $end" if $debug;
+	#warn "UB: $lb-".$ub." $start $end" if $debug;
 	#warn $ub." ub" if $debug;
 	#die() if $debug;
 	
 	#die($ub." ".$lb." $nb")  if $lb == $ub;
 	#$ub +=2 if $lb == $ub;
-	warn $ub." ub $nb nb" if $debug;
+#	warn $ub." ub $nb nb" if $debug;
 	my $no = $self->cache_lmdb_variations();
 	my $id = $no->get_varid($lb);
 	my($chr,$pos,$a,$b) = split("_",$id);
@@ -2702,8 +2708,8 @@ sub getVectorByPosition {
 	
 	$ub = $nb -1 if $ub > $nb;
 	#if $lb>= $nb;
-	warn $self->name;
-	warn $lb."-$ub  $nb "." $start $end";# if $debug;
+#	warn $self->name;
+#	warn $lb."-$ub  $nb "." $start $end";# if $debug;
 	die() if $debug;
 	if ($lb+1 > $ub -1){
 		#warn $lb." $nb ".($lb+1)." $start $end";# if $debug;

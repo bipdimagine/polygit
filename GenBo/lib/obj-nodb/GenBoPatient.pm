@@ -19,6 +19,7 @@ use List::Util qw(max sum);
 use JSON::XS;
 use Statistics::Descriptive;
 use GenBoNoSqlLmdbCache;
+use Carp;
 extends "GenBo";
 
 has patient_id => (
