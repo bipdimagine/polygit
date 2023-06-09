@@ -1,6 +1,6 @@
 package job_bds_tracking;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use strict;
 use FindBin qw($Bin);
 
@@ -63,7 +63,8 @@ sub return_end_tracking {
 	return $cmd;
 }
 
-method command_bds (){
+sub command_bds  {
+	my ($self) = @_;
 	my @c;
 	push(@c,"date >  ".$self->bds_log);
 	push(@c," touch ".$self->bds_start);

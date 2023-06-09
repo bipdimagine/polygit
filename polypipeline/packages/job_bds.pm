@@ -1,13 +1,14 @@
 package job_bds;
 
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Printer;
 use FindBin qw($Bin);
 use Time::Local;
 use POSIX qw(strftime);
 use Term::ANSIColor;
 use Data::Dumper;
+use Carp;
 use colored;
 
 has 'cmd' => (
@@ -120,13 +121,15 @@ has 'run_log' => (
 	},
 );
 
-method  is_running() {
+sub  is_running {
+	my ($self) = @_;
 	return if $self->is_finished();
 	return -e $self->bds_start();
 	return;
 }
 
-method  is_finished() {
+sub  is_finished {
+		my ($self) = @_;
 	if (-e $self->bds_error or -e $self->bds_ok){
 		return 1;
 	}
@@ -135,29 +138,35 @@ method  is_finished() {
 	
 }
 
-method  is_pending() {
+sub  is_pending {
+		my ($self) = @_;
 	if (!{$self->is_finished} && !($self->is_running)){
 		return 1;
 	}
 	return;
 }
 
-method  is_ok() {
+sub  is_ok {
+		my ($self) = @_;
 	return  -e $self->bds_ok;
 }
 
-method  is_error() {
+sub  is_error {
+		my ($self) = @_;
 	return  -e $self->bds_error;
 }
 
-method is_root(){
+sub is_root {
+		my ($self) = @_;
 		return 1 if scalar(@{$self->prev}) ==0;
 }
-method is_leaf(){
+sub is_leaf{
+		my ($self) = @_;
 		return 1 if  scalar(@{$self->next}) == 0;
 }
 
-method is_first(){
+sub is_first{
+		my ($self) = @_;
 		return undef  if $self->is_skip;
 		return 1 if $self->is_root;
 		my @prevs = grep{$_->is_run} @{$self->prev};
@@ -168,7 +177,8 @@ method is_first(){
 
 
 
-method command_bds (){
+sub command_bds{
+		my ($self) = @_;
 	my @c;
 	push(@c,"date >  ".$self->bds_log);
 	push(@c," touch ".$self->bds_start);
@@ -185,7 +195,8 @@ method command_bds (){
 	return @c;
 }
 
-method print_task {
+sub print_task {
+		my ($self) = @_;
 	my $string;
 	
 	if ($self->is_skip){
@@ -213,15 +224,20 @@ method print_task {
 }
 
 
-method is_run(){
+sub is_run{
+		my ($self) = @_;
 	return 1  if  $self->is_skip == 0;
 	return 0;
 }
-method is_type (Any :$type!){
+sub is_type{
+	my ($self,$hash) = @_;
+	confess();
+	my $type = $hash->{type};
 	return  $self->type =~/$type/;
 } 
 
-method print_start_status() {
+sub print_start_status {
+		my ($self) = @_;
 	if ($self->is_skip){
 	return colored::stabilo("white","SKIP",1);
 	}
@@ -230,18 +246,23 @@ method print_start_status() {
 	}
 	
 }
-method add_prev (Any :$previous!){
+sub add_prev {
+	my ($self,$hash) = @_;
+	my $previous = $hash->{previous};
 	return unless defined $previous;
-	
 	push(@{$self->prev},$previous);
 } 
 
-method print_prev (){
+sub print_prev {
+		my ($self) = @_;
 	foreach my $p (@{$self->prev}){
 			warn "\t".$p->name."\n";
 	}
 }
-method add_next (Any :$next!){
+sub add_next{
+		my ($self,$hash) = @_;
+		confess();
+	my $next = $hash->{next};
 	return unless defined $next;
 	push(@{$self->next},$next);
 } 
@@ -263,12 +284,14 @@ $self->{skip} = $skip;
 return $self->{skip};
 	
 }
+
 #	is =>'rw',
 #	default=> sub {
 #		0;
 #	},
 #);
-method skip (){
+sub skip {
+		my ($self) = @_;
 	#return undef  unless $self->prev();
 	confess() if $self->name =~/replace/;
 	$self->is_skip(1);
@@ -278,7 +301,8 @@ method skip (){
 	}
 	#die();
 }
-method is_prod (){
+sub is_prod (){
+	my ($self) = @_;
 	return 1 if $self->fileout !~/pipeline/;
 	return undef;
 }

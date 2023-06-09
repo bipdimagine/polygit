@@ -1,12 +1,13 @@
 package sample;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Printer;
 use FindBin qw($Bin);
 use Time::Local;
 use POSIX qw(strftime);#
 use List::Util qw( uniq );
 use Time::HiRes;
+use Data::Dumper;
 has 'name' => (
 	is =>'ro',
 );
@@ -72,7 +73,8 @@ has 'current_bam' => (
 	},
 );
 
-method list_categories (){
+sub list_categories {
+		my ($self) = @_;
 	 my @cat;
 	 $self->reconstruct_dependancy();
 	foreach my $j (@{$self->jobs}){
@@ -82,7 +84,8 @@ method list_categories (){
 	return uniq(@cat);
 }
 
-method list_hashes_categories (){
+sub  list_hashes_categories {
+		my ($self) = @_;
 	 my @cat;
 	 $self->reconstruct_dependancy();
 	 my $hh;
@@ -95,12 +98,15 @@ method list_hashes_categories (){
 	}
 	return $hh;
 }
-method get_jobs_category(Any :$category!){
+sub  get_jobs_category{
+	my ($self,$hash) = @_;
+	my $category = $hash->{category};	
 	return $self->categories->{$category};
 } 
 
 
-method  delete_tmp_files() {
+sub  delete_tmp_files {
+	my ($self) = @_;
 	my @tmp;
 	foreach  my $j (@{$self->jobs}){
 		next if $j->is_prod();
@@ -111,7 +117,8 @@ method  delete_tmp_files() {
 	return \@tmp;
 }
 
-method  delete_prod_files() {
+sub  delete_prod_files {
+	my ($self) = @_;
 	my @tmp;
 	foreach  my $j (@{$self->jobs}){
 		next unless $j->is_prod();
@@ -123,7 +130,11 @@ method  delete_prod_files() {
 	return \@tmp;
 }
 
-method add_job(Any :$job!){
+
+
+sub add_job{
+	my ($self, $hash) = @_;
+	my $job = $hash->{job};
 	push(@{$self->jobs},$job);
 	push(@{$self->categories->{$job->category}},$job);
 	$self->jobs_type->{$job->type} = $job;
@@ -133,14 +144,16 @@ method add_job(Any :$job!){
 	 delete $self->{reconstruct};
 } 
 
-
-method is_pending_jobs(){
+sub is_pending_jobs{
+	my ($self,$hash) = @_;
 	my @jobs = grep{$_->is_run} @{$self->jobs};
 	return 1 if (@jobs);
 	return undef;
 }
 
-method bds_sub (){
+sub bds_sub {
+	my ($self,$hash) = @_;
+	
 	$self->reconstruct_dependancy();
 	my $jobs = $self->jobs;
 	my $fname = $self->task_name;
@@ -153,7 +166,8 @@ method bds_sub (){
 }
 
 
-method reconstruct_dependancy (){
+sub reconstruct_dependancy {
+	my ($self,$hash) = @_;
 	return if exists $self->{reconstruct};
 	my @un = grep{$_->is_leaf}  @{$self->jobs};
 	my %fileout;
@@ -173,12 +187,13 @@ method reconstruct_dependancy (){
 		foreach my $fi (@{$j->filein}){
 		
 			next unless exists $fileout{$fi};
-			$j->add_prev(previous=>$fileout{$fi});
+			$j->add_prev({previous=>$fileout{$fi}});
 		}
 	}
 }
 
-method print_jobs() {
+sub print_jobs {
+	my ($self,$hash) = @_;
 	$self->reconstruct_dependancy();
 	my $jobs = $self->jobs;
 	foreach my $j (@$jobs){
@@ -187,7 +202,8 @@ method print_jobs() {
 	
 }
 
-method log_for_error_jobs (){
+sub log_for_error_jobs {
+	my ($self,$hash) = @_;
 	my $jobs = $self->jobs;
 	my @error =   grep{$_->is_error()} @$jobs;
 	my @files;
@@ -197,7 +213,8 @@ method log_for_error_jobs (){
 	return \@files;
 }
 
-method status_jobs(){
+sub status_jobs{
+	my ($self,$hash) = @_;
 	my $jobs = $self->jobs;
 	my $nb = scalar( @$jobs);
 	my @running =   grep{$_->is_running()} @$jobs;
