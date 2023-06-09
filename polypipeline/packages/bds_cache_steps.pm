@@ -4,7 +4,7 @@ use FindBin qw($Bin);
 use lib "$Bin";
 #use root_steps;
 use Moose;  
-use MooseX::Method::Signatures;
+
 use job_bds;
 use sample;
 use Data::Dumper;
@@ -12,7 +12,9 @@ extends (qw(bds_root));
 my $bin_dev = qq{$Bin/scripts/scripts_pipeline/};
 
 	
-method global_infos  (Str :$filein!) {
+sub global_infos   {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $project = $self->patient();	
 	my $project_name = $project->name();
 	my $ppn =1;
@@ -23,10 +25,12 @@ method global_infos  (Str :$filein!) {
  	my $type = "global_infos";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
+	
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
+
 	return ($fileout);
 }
 sub define_ppn {
@@ -51,7 +55,9 @@ sub define_ppn {
 	return 20;
 }
 
-method update_variants (Str :$filein!) {
+sub update_variants  {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	my $chr_name = $chr->name();
 	my $project = $self->project();
@@ -64,14 +70,16 @@ method update_variants (Str :$filein!) {
 	my $type = "update_variants";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		$job_bds->skip();
 	}
 	return ($fileout);
 }
 
-method update_chromosomes (Str :$filein!) {
+sub update_chromosomes  {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	my $chr_name = $chr->name();
 	my $project = $self->project();
@@ -84,7 +92,7 @@ method update_chromosomes (Str :$filein!) {
 	my $type = "update_chromosomes";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		$job_bds->skip();
 	}
@@ -92,7 +100,9 @@ method update_chromosomes (Str :$filein!) {
 	
 }
 
-method update_genes (Str :$filein!) {
+sub update_genes  {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	my $chr_name = $chr->name();
 	my $project = $self->project();
@@ -105,7 +115,7 @@ method update_genes (Str :$filein!) {
 	my $type = "update_genes";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		$job_bds->skip();
 	}
@@ -113,8 +123,9 @@ method update_genes (Str :$filein!) {
 	
 }
 
-method store_ids (Str :$filein!) {
-	
+sub store_ids {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	my $chr_name = $chr->name();
 	
@@ -132,15 +143,16 @@ method store_ids (Str :$filein!) {
 	 my $type = "cache_store_ids";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>20,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
 	return ($fileout);
 }
 
-method store_rna_junction_ids (Str :$filein!) {
-	
+sub store_rna_junction_ids  {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	my $chr_name = $chr->name();
 	
@@ -158,15 +170,16 @@ method store_rna_junction_ids (Str :$filein!) {
 	 my $type = "cache_store_junctions_ids";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>20,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
 	return ($fileout);
 }
 
-method store_annotations (Str :$filein!) {
-	
+sub store_annotations  {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	
 	my $chr_name = $chr->name();
@@ -183,7 +196,7 @@ method store_annotations (Str :$filein!) {
 	 my $type = "store_annotations";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
@@ -191,7 +204,9 @@ method store_annotations (Str :$filein!) {
 	
 }
 
-method polyviewer (Str :$filein!) {
+sub polyviewer  {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	my $chr_name = $chr->name();
 	
@@ -211,14 +226,16 @@ method polyviewer (Str :$filein!) {
 	 my $type = "polyviewer";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
 	return ($fileout);
 }
 
-method diagHash (Str :$filein!) {
+sub  diagHash {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	my $chr_name = $chr->name();
 	
@@ -234,14 +251,16 @@ method diagHash (Str :$filein!) {
 	 my $type = "diagHash";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
 	return ($fileout);
 }
 
-method update_score (Str :$filein!) {
+sub update_score  {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	
 	my $chr_name = $chr->name();
@@ -259,7 +278,7 @@ method update_score (Str :$filein!) {
 	 my $type = "update_score";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		my $no = $chr->lmdb_variations("r");
 			
@@ -269,7 +288,9 @@ method update_score (Str :$filein!) {
 }
 
 
-method update_coverage (Str :$filein!) {
+sub update_coverage {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	
 	my $chr_name = $chr->name();
@@ -288,7 +309,7 @@ method update_coverage (Str :$filein!) {
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
@@ -297,7 +318,9 @@ method update_coverage (Str :$filein!) {
 
 
 
-method transcripts_coverage (Str :$filein!) {
+sub transcripts_coverage {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $p = $self->patient();
 	
 	my $patient_name = $p->name();
@@ -317,14 +340,16 @@ method transcripts_coverage (Str :$filein!) {
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
 	return ($fileout);
 }
 
-method identito_vigilence (Str :$filein){
+sub identito_vigilence {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -344,7 +369,7 @@ method identito_vigilence (Str :$filein){
 	my $type = "genes_dude";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	my $no_cache = $self->patient()->get_lmdb_cache("r");
 	if ($self->unforce() &&  -e $no_cache->filename ){
 		 		$job_bds->skip();
@@ -353,7 +378,9 @@ method identito_vigilence (Str :$filein){
 	return ($fileout);
 }
 
-method html_cache_polyviewer (Str :$filein){
+sub html_cache_polyviewer {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -376,7 +403,7 @@ method html_cache_polyviewer (Str :$filein){
 	my $type = "html_polyviewer";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() &&  -e $no_cache->filename && -e $fileout ){
 		 		$job_bds->skip();
 	}
@@ -384,7 +411,9 @@ method html_cache_polyviewer (Str :$filein){
 	return ($fileout);
 }
 
-method html_cache_polycyto (Str :$filein){
+sub html_cache_polycyto{
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -407,14 +436,16 @@ method html_cache_polycyto (Str :$filein){
 	my $type = "html_polycyto";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() &&  -e $no_cache->filename && -e $fileout){
 		 		$job_bds->skip();
 	}
 	
 	return ($fileout);
 }
-method genes_dude (Str :$filein){
+sub genes_dude {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -438,7 +469,7 @@ method genes_dude (Str :$filein){
 	my $type = "genes_dude";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() &&  $no->nb_keys >10 ){
 		 		$job_bds->skip();
 	}
@@ -446,7 +477,9 @@ method genes_dude (Str :$filein){
 	return ($fileout);
 }
 
-method polydude (Str :$filein){
+sub polydude {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -469,7 +502,7 @@ method polydude (Str :$filein){
 	my $type = "polydude";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce()  && -e $fileout ){
 		 		$job_bds->skip();
 	}
@@ -477,7 +510,7 @@ method polydude (Str :$filein){
 	return ($fileout);
 }
 
-#method level_dude (Str :$filein!) {
+#sub level_dude (Str :$filein!) {
 #	
 #	my $patient = $self->patient();
 #	my $patient_name = $patient->name();
@@ -493,7 +526,7 @@ method polydude (Str :$filein){
 #	 my $type = "level_dude";
 #	 my $stepname = $self->patient->name."@".$type;
 #	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>20,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-#	$self->current_sample->add_job(job=>$job_bds);
+#	$self->current_sample->add_job({job=>$job_bds});
 #	
 #	if ($self->unforce() && -e $fileout){
 #			if($no3->get($no3->get("low_update_date") ) ) {
@@ -503,7 +536,9 @@ method polydude (Str :$filein){
 #	return ($filein);
 #}
 
-method dude_bed (Str :$filein){
+sub dude_bed {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -528,7 +563,7 @@ method dude_bed (Str :$filein){
 	my $type = "dude_bed";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() &&  -e $fileout ){
 		 		$job_bds->skip();
 	}
@@ -536,7 +571,9 @@ method dude_bed (Str :$filein){
 	return ($fileout);
 }
 
-method sashimi_plots (Str :$filein){
+sub sashimi_plots {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -550,14 +587,16 @@ method sashimi_plots (Str :$filein){
 	my $stepname = $self->patient->name."@".$type;
 	$ppn =20;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() &&  -e $fileout){
 		$job_bds->skip();
 	}
 	return ($fileout);
 }
 
-method transcripts_dude (Str :$filein){
+sub transcripts_dude {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -580,16 +619,21 @@ method transcripts_dude (Str :$filein){
 	 my $stepname = $self->patient->name."@".$type;
 	 $ppn =20;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() &&  $no1->nb_keys >10 ){
 		 		$job_bds->skip();
 	}
+		
+	warn Dumper $self->current_sample->jobs();
 	$no->close();
 	return ($fileout);
 }
 
 
-method update_annotation (Str :$filein!) {
+sub update_annotation{
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	
 	my $chr = $self->patient();
 	
@@ -613,7 +657,7 @@ method update_annotation (Str :$filein!) {
 	 my $type = "update_annotations";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
@@ -622,7 +666,9 @@ method update_annotation (Str :$filein!) {
 }
 
 
-method check_store_annotations (Str :$filein!) {
+sub check_store_annotations {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	
 	my $chr = $self->patient();
 	
@@ -644,7 +690,7 @@ method check_store_annotations (Str :$filein!) {
 	 my $type = "check_store_annot";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
@@ -652,7 +698,9 @@ method check_store_annotations (Str :$filein!) {
 	
 }
 
-method  strict_denovo(Str :$filein!) {
+sub  strict_denovo{
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	
 	my $chr = $self->patient();
 	
@@ -677,15 +725,16 @@ method  strict_denovo(Str :$filein!) {
 	 my $type = "strict_denovo";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout2,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
 	return ($fileout2);
 }
 
-method  loh (Str :$filein!) {
-	
+sub  loh {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $chr = $self->patient();
 	
 	my $chr_name = $chr->name();
@@ -709,7 +758,7 @@ method  loh (Str :$filein!) {
 	my $type = "loh";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		 		$job_bds->skip();
 	}
@@ -723,7 +772,9 @@ sub between {
             : $test>=$tom && $test<=$fom;
 }
 
-method polydiag (Str :$filein){
+sub polydiag {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $project = $self->project();
 	my $dir_out = $project->getCacheDir() . "/polydiag_lite/";
 	my $p = $self->patient();
@@ -738,14 +789,16 @@ method polydiag (Str :$filein){
 	my $stepname = $project->name.".".$p->name."@".$type;
 	push(@$fout,$fileout);
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
   		$job_bds->skip();
 	}
 	return $filein;
 }
 
-method cnv_manue (Str :$filein){
+sub cnv_manue {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $projectName = $self->project->name();
 	
 	my $ppn = $self->nproc;
@@ -759,7 +812,7 @@ method cnv_manue (Str :$filein){
 	
 	my $cmd = "perl $bin_dev/manue_cnv/SV_global.pl -project=$projectName -fork=$ppn > $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
 	if ($self->unforce() && -e $fileout){
 		$job_bds->skip();
@@ -767,7 +820,9 @@ method cnv_manue (Str :$filein){
 	return ($filein);
 }
 
-method identito_vigilence (Str :$filein){
+sub identito_vigilence {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -786,7 +841,7 @@ method identito_vigilence (Str :$filein){
 	my $type = "identito";
 	my $stepname = $projectName."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 		my $nofound;
 		foreach my $patient (@{$project->getPatients()}) {
@@ -799,7 +854,9 @@ method identito_vigilence (Str :$filein){
 	return ($fileout);
 }
 
-method quality_check (Str :$filein){
+sub quality_check {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	
 	my $projectName = $self->project->name();
 	my $logPlink = $self->project->getProjectPath().'../'.$projectName.'.qualitycheck.resume';
@@ -812,7 +869,7 @@ method quality_check (Str :$filein){
 	
 	my $cmd = "perl $bin_dev/quality_check.pl -project=$projectName -fork=$ppn -cache=1>$fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
 	if ($self->unforce() && -e $fileout){
 		my $no = $self->project->noSqlQuality("r");
@@ -833,7 +890,9 @@ method quality_check (Str :$filein){
 	return ($filein);
 }
 
-method dejavu (Str :$filein) {
+sub dejavu {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $projectName = $self->project->name();
 	my $logPlink = $self->project->getProjectPath().'../'.$projectName.'.dejavu.resume';
 	my $ppn = $self->nproc;
@@ -844,7 +903,7 @@ method dejavu (Str :$filein) {
 	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_lite_dejavu.pl -project=$projectName >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
 	if ($self->unforce() && -e $fileout){
   		$job_bds->skip();
@@ -852,7 +911,9 @@ method dejavu (Str :$filein) {
 	return ($filein);
 }
 
-method coverage (Str :$filein){
+sub coverage {
+		my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
 	my $project = $self->project();
 	my $patients = $project->getPatients();
 	my $type = "coverage";
@@ -867,7 +928,7 @@ method coverage (Str :$filein){
 	}
 	my $cmd = " $root_cmd -fork=$ppn -project=".$project->name;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>40,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
   		$job_bds->skip();
 	}

@@ -1,6 +1,6 @@
 package bds_root;
-use Moose;  
-use MooseX::Method::Signatures;
+use Moo;  
+
 use strict;
 use FindBin qw($Bin);
 
@@ -25,7 +25,6 @@ use UUID 'uuid';
 my $bin_dev = "";
 has 'patient' => (
 	is =>'rw',
-	isa =>"Object",
 );
 
 has "bds_uuid" =>(
@@ -101,18 +100,15 @@ has   'script_dir' =>(
 
 has 'project' => (
 	is =>'ro',
-	isa =>"Object",
 	required=>1,
 );
 
 has 'max_cpu' => (
 	is	=> 'rw',
-	isa	=> 'Int',
 ); 
 
 has 'argument_patient' => (
 	is =>'rw',
-	isa =>"Str",
 );
 
 has 'host' =>(
@@ -203,7 +199,6 @@ has 'timestamp' => (
 );
 has 'unforce' => (
 	is        => 'rw',
-	isa       => 'Int',
 	default   => 1,
 ); 
 has 'dir_bds' =>(
@@ -288,7 +283,10 @@ sub add_sample_with_priority {
 	}
 }
 
-method add_sample(Any :$patient!) {
+sub add_sample{
+	my ($self,$hash) = @_;
+	confess();
+	my $patient = $hash->{patient};
 	$self->patient($patient);
 	
 	$self->{samples}->{$patient->name} = sample->new(name=>$patient->name);
@@ -296,11 +294,12 @@ method add_sample(Any :$patient!) {
 	$self->current_sample($self->{samples}->{$patient->name});
 	
 }
-method job_super_types() {
+sub job_super_types() {
 	confess();
 }
 
-method print_bds() {
+sub print_bds{
+		my ($self) = @_;
 	my $dir = $self->dir_bds;
 	open(BDS,">$dir/pipeline.bds") or die($dir);
 	
@@ -333,7 +332,8 @@ method print_bds() {
 	}
 }
 
-method print_bds_by_priority() {
+sub print_bds_by_priority{
+		my ($self) = @_;
 	my $dir = $self->dir_bds;
 	open(BDS,">$dir/pipeline.bds") or die($dir);
 	my @samples = grep { $_->is_pending_jobs()}  $self->samples;
@@ -363,19 +363,22 @@ method print_bds_by_priority() {
 
 }
 
-method launch_bds_daemon() {
+sub launch_bds_daemon{
+		my ($self) = @_;
 	#return $self->launch_shell()  if $self->nocluster;
 	$self->print_bds();
 	$self->launch_bds_daemon_common();
 }
 
-method launch_bds_daemon_by_priority() {
+sub launch_bds_daemon_by_priority{
+		my ($self) = @_;
 	#return $self->launch_shell()  if $self->nocluster;
 	$self->print_bds_by_priority();
 	$self->launch_bds_daemon_common();
 }
 
-method launch_bds_daemon_common() {
+sub launch_bds_daemon_common{
+		my ($self) = @_;
 	my $dir = $self->dir_bds;
 	$| = 1;
 	print colored ['black ON_BRIGHT_GREEN'],"RUNNING BDS .... ";
@@ -470,7 +473,8 @@ has   'start_jobs' =>(
 	is =>'rw',
 );
 
-method launch_shell2() {
+sub launch_shell2{
+		my ($self) = @_;
 	my $max_proc = $self->nproc;
 	my @samples = grep { $_->is_pending_jobs()} $self->samples;
 	
@@ -525,7 +529,8 @@ method launch_shell2() {
 }
 
 
-method launch_shell3() {
+sub launch_shell3{
+		my ($self) = @_;
 	my $max_proc = $self->nproc;
 	my @samples = grep { $_->is_pending_jobs()} $self->samples;
 	my $scr = Term::Screen->new();
@@ -688,7 +693,8 @@ method launch_shell3() {
 }
 
 
-method launch_shell() {
+sub launch_shell{
+		my ($self) = @_;
 	
 	my $max_proc = $self->nproc;
 	
@@ -703,7 +709,7 @@ method launch_shell() {
 		$run->{ppn} =0;
 		$run->{jobs} =[];
 		foreach my $s (@samples){
-			my $jobs = $s->get_jobs_category(category=>$category);
+			my $jobs = $s->get_jobs_category({category=>$category});
 		
 			my $nbr = scalar(grep{$_->is_run} @$jobs);
 			next if $nbr ==0;
@@ -800,7 +806,8 @@ method launch_shell() {
 	
 	}
 	
-method report_final_shell {
+sub report_final_shell{
+		my ($self) = @_;
 	my @samples = grep { $_->is_pending_jobs()} $self->samples;
 	 my $list_running_cmd;
 	my @categories =  $samples[0]->list_categories();
@@ -812,7 +819,7 @@ method report_final_shell {
 			push(@line,$s->name);
 			my $sample_time =0;
 			foreach my $category (@categories) {
-				my $jobs = $s->get_jobs_category(category=>$category);
+				my $jobs = $s->get_jobs_category({category=>$category});
 				my $time = 0;
 				my $status = 0;
 				my $text = "NC";
@@ -878,7 +885,8 @@ method report_final_shell {
 	}
 
 
-method launch_bds() {
+sub launch_bds{
+		my ($self) = @_;
 	$self->print_bds();
 	my $dir = $self->dir_bds;
 	$| = 1;
@@ -952,7 +960,8 @@ method launch_bds() {
 
 
 
-method report_final {
+sub report_final {
+		my ($self) = @_;
 	my @yamlfiles;
 	my $dir = $self->dir_bds;;
 	 @yamlfiles = `ls -r $dir/*.yaml`;
@@ -975,7 +984,8 @@ method report_final {
 	return \@job_log;
 }
 
-method report_target {
+sub report_target{
+		my ($self) = @_;
 	my @yamlfiles;
 	 my $project_name = $self->project()->name();
 	 my $dir = $self->project->project_log();
@@ -993,7 +1003,8 @@ method report_target {
     	
 }
 
-method print_status_bds {
+sub print_status_bds {
+		my ($self) = @_;
 	print "\n";
 	#[$status,$tcurrent,$terror,$nbok,$remaining];
 	my @header = ("sample","status","Running","OK","error","remaining");
@@ -1037,7 +1048,8 @@ method print_status_bds {
 }
 
 
-method clean () {
+sub clean {
+		my ($self) = @_;
 	my @samples = grep { $_->is_pending_jobs()} values %{$self->{samples}};
 		
 		my $delete_files;
@@ -1147,7 +1159,8 @@ sub clean_temporary_file {
 		system("rm ".$f."* 2>/dev/null");
 }
 
-method clean_error() {
+sub clean_error{
+		my ($self) = @_;
 	my @samples = values %{$self->{samples}};
 	
 	foreach my $s  (@samples){
@@ -1167,7 +1180,8 @@ method clean_error() {
 	}
 }
 
-method samples (){
+sub samples {
+		my ($self) = @_;
 	return (sort {$a->{index} <=> $b->{index}}values %{$self->{samples}});
 }
 
@@ -1180,7 +1194,8 @@ has   'priority_name' =>(
 	}
 );
 
-method print_all_steps_by_prority() {
+sub print_all_steps_by_prority{
+		my ($self) = @_;
 	my @sams = $self->samples;
 	
 	my $hCat;
@@ -1224,7 +1239,7 @@ method print_all_steps_by_prority() {
 			
 		 	$tb = Text::Table->new( (colored::stabilo("cyan", $text, 1),  @$categories, "total") ) unless $tb; # if ($type == 1);
 		foreach my $cat ( @$categories) {
-				my $jobs = $s->get_jobs_category(category=>$cat);
+				my $jobs = $s->get_jobs_category({category=>$cat});
 			my $nb = scalar(@$jobs);
 		$total += $nb;
 		my $nbp =0;
@@ -1271,7 +1286,8 @@ method print_all_steps_by_prority() {
 }
 
 
-method print_all_steps() {
+sub print_all_steps{
+		my ($self) = @_;
 	my @sams = $self->samples;#keys %{$self->samples};
 	my $hCat;
 	foreach my $sam (@sams) {
@@ -1299,7 +1315,7 @@ method print_all_steps() {
 		$total += $nb;
 		my $nbp =0;
 		foreach my $cat (sort @categories){
-			my $jobs = $s->get_jobs_category(category=>$cat);
+			my $jobs = $s->get_jobs_category({category=>$cat});
 			unless ($jobs){
 				push(@line, colored::stabilo("white","NONE",1) );
 				next;
@@ -1334,7 +1350,8 @@ method print_all_steps() {
 	print "\n";
 }
 
-method key (){
+sub key {
+	my ($self) = @_;
 	my $key;
 	 ReadMode 0;
 	 while (not defined ($key = ReadKey(-1))) {

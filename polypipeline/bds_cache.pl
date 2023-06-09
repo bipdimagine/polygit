@@ -13,8 +13,8 @@ use IO::Prompt;
 use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use bds_cache_steps;    
 #use file_util;
 use Class::Inspector;
@@ -267,7 +267,7 @@ sub prepare_calling_jobs {
 	
 	my $next_file = "";
 	foreach my $step (@$running_steps){
-		($next_file) = $steps->{$step}->((filein=>$next_file));
+		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;
 }
