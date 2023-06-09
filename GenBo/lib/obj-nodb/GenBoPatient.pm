@@ -2818,6 +2818,8 @@ has nb_reads => (
 			};
 
 		}
+		warn $self->name();
+		
 		$h->{norm1} = 1/$h->{all};#/1_000_000_000;
 #		warn $h->{all};
 		$h->{norm} = $h->{all}/1_000_000_000;
@@ -3276,6 +3278,12 @@ sub getJunctionsSE {
 		push (@lObj, $obj);
 	}
 	return \@lObj;
+}
+
+sub getSampleProfile {
+	my ($self) = shift;
+	my $query    = $self->getProject()->buffer->getQuery();
+	return $query->getProfileSample($self->id);
 }
 
 1;
