@@ -108,9 +108,9 @@ sub alignment {
 	my $method = $self->patient()->alignmentMethod();
 	my $run    = $self->patient->getRun();
 	if ( $run->infosRun->{method} eq "fragment" ) {
-		return $self->run_alignment_frag( filein => $filein );
+		return $self->run_alignment_frag({ filein => $filein} );
 	}
-	return $self->run_alignment_pe( filein => $filein );
+	return $self->run_alignment_pe( {filein => $filei} );
 }
 
 sub run_alignment_pe {
