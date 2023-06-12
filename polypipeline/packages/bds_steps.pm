@@ -2081,7 +2081,7 @@ sub sort_sam_umi {
 sub merge_bam {
 	my ( $self, $hash ) = @_;
 	my $filein = $hash->{filein};
-	return $self->merge_bamba( filein => $filein );
+	return $self->merge_bamba( {filein => $filein} );
 }
 
 sub merge_bamba {
