@@ -110,7 +110,7 @@ sub alignment {
 	if ( $run->infosRun->{method} eq "fragment" ) {
 		return $self->run_alignment_frag({ filein => $filein} );
 	}
-	return $self->run_alignment_pe( {filein => $filei} );
+	return $self->run_alignment_pe( {filein => $filein} );
 }
 
 sub run_alignment_pe {
