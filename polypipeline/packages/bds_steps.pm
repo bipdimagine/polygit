@@ -202,8 +202,7 @@ qq{perl $bin_dev/align.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -
 		push( @bams, $bam );
 	}
 
-	#my ($fileout) = $self->elprep_all(filein=>\@bams);
-	my ($fileout) = $self->merge_bam( filein => \@bams );
+	my ($fileout) = $self->merge_bam( {filein => \@bams} );
 	return ($fileout);
 
 }
@@ -657,7 +656,7 @@ qq{perl $bin_dev/align.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -
 	}
 
 	#	#my ($fileout) = $self->elprep_all(filein=>\@bams);
-	my ($fileout) = $self->merge_bam( filein => \@bams );
+	my ($fileout) = $self->merge_bam( {filein => \@bams} );
 
 	#my ($fileout) =$self->sort_sam_umi(filein=>\@bams);
 	return ($fileout);
@@ -783,7 +782,6 @@ qq{perl $bin_dev/flexbar.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam 
 		#push(@fastq_out,$fastq_out2);
 	}
 
-	#	my ($fileout) = $self->merge_bam(filein=>\@bams);
 	return ($fileout);
 }
 
@@ -861,7 +859,7 @@ qq{perl $bin_dev/align.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -
 	}
 
 	#my ($fileout) = $self->elprep_all(filein=>\@bams);
-	my ($fileout) = $self->merge_bam( filein => \@bams );
+	my ($fileout) = $self->merge_bam( {filein => \@bams} );
 	return ($fileout);
 
 }
@@ -1660,8 +1658,6 @@ qq{gzip -f $file2 && gzip -f $file1 && perl $bin_dev/align.pl -file1=$f1gz -file
 		$job_bds->skip();
 	}
 
-	#my ($fileout) = $self->elprep_all(filein=>\@bams);
-	#	my ($fileout) = $self->merge_bam(filein=>\@bams);
 	return ($fileout);
 }
 
@@ -1769,8 +1765,6 @@ sub group_reads_by_umi {
 		$job_bds->skip();
 	}
 
-	#push(@bams,$bam);
-	#my ($fileout) = $self->merge_bam(filein=>\@bams);
 	return ($fileout);
 }
 
@@ -1820,8 +1814,6 @@ sub call_consensus_reads {
 		$job_bds->skip();
 	}
 
-	#push(@bams,$bam);
-	#my ($fileout) = $self->merge_bam(filein=>\@bams);
 	return ($fileout);
 }
 
@@ -1871,8 +1863,6 @@ sub filter_consensus_read {
 		$job_bds->skip();
 	}
 
-	#push(@bams,$bam);
-	#my ($fileout) = $self->merge_bam(filein=>\@bams);
 	return ($fileout);
 }
 
