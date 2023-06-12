@@ -912,8 +912,8 @@ sub dejavu {
 }
 
 
-method html_rna_junctions{
-		my ($self,$hash) = @_;
+sub html_rna_junctions {
+	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
 	my $projectName = $self->project->name();
 	my $patientName = $self->patient->name();
@@ -932,8 +932,8 @@ method html_rna_junctions{
 	return ($fileout);
 }
 
-method dejavu_rna_junctions {
-		my ($self,$hash) = @_;
+sub dejavu_rna_junctions {
+	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
 	my $projectName = $self->project->name();
 	my $ppn = $self->nproc;
