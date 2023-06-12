@@ -530,7 +530,6 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			#			next if scalar keys %$ht == 0;
 
 			my ( $html_trans, $has_linked_junctions ) = get_html_transcripts( $junction, $patient );
-			my $html_trans;
 			my $score_details_text = get_html_score_details( $junction, $patient );
 
 			$hres->{score}->{all}->{$gene_name}->{$score} = $junction->id();
