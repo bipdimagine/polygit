@@ -625,7 +625,6 @@ sub transcripts_dude {
 		 		$job_bds->skip();
 	}
 		
-	warn Dumper $self->current_sample->jobs();
 	$no->close();
 	return ($fileout);
 }
