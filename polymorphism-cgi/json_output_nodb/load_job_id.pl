@@ -121,32 +121,38 @@ sub load_xls() {
 		my ($var_id, $rs) = split(' ', $hvar->{variation});
 		foreach my $proj_name (keys %{$h_by_patients->{$var_id}}) {
 			foreach my $pat_name (keys %{$h_by_patients->{$var_id}->{$proj_name}}) {
-				my $text_name = $pat_name.':'.$h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{perc};
-				$hpat->{$proj_name.':'.$text_name} = undef;
-				$hproj->{$proj_name}->{$text_name} = undef;
+				$hvar->{project} = $proj_name;
+				$hvar->{patient} = $pat_name;
+				$hvar->{sex} = 'male';
+				$hvar->{sex} = 'female' if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{sex} == 2;
+				$hvar->{status} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{status};
+				$hvar->{perc} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{perc};
+				$hvar->{model} = '-';
+				$hvar->{model} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} ne '?';
+				push(@list_datas_annotations_with_patients, $hvar);
 			}
 		}
-		$hvar->{patients} = join(', ', sort keys %$hpat);
-		foreach my $proj_name (sort keys %$hproj) {
-			$hProjFound->{$proj_name} = undef;
-			$hvar->{lc($proj_name)} = join(', ', sort keys %{$hproj->{$proj_name}});
-		}
-		push(@list_datas_annotations_with_patients, $hvar);
 	}
-	my $nb_p = 0;
-	foreach my $proj_name (sort keys %$hProjFound) {
-		$nb_p++;
-		push(@lHeaderWithProj, $proj_name);
-		if ($nb_p == 100) {
-			push(@lHeaderWithProj, 'Too Much Projects...');
-			last;
-		}
-	}
-	$xls_export->add_page_merged('Variants Merged', \@lHeaderWithProj, \@list_datas_annotations_with_patients);
+	
+	
+	# AJOUT par TRANSCRITS
+	
+	
+	
+#	my $nb_p = 0;
+#	foreach my $proj_name (sort keys %$hProjFound) {
+#		$nb_p++;
+#		push(@lHeaderWithProj, $proj_name);
+#		if ($nb_p == 100) {
+#			push(@lHeaderWithProj, 'Too Much Projects...');
+#			last;
+#		}
+#	}
 	
 	my @lHeaderWithPat = @{$xls_export->list_generic_header()};
-	push (@lHeaderWithPat, 'Patients');
-	$xls_export->add_page('Variants Not Merged', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+	push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model');
+	#$xls_export->add_page_merged('Variants Merged', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+	$xls_export->add_page('All', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
 	if (scalar @$list_datas_annotations_cnvs > 0) {
 		$xls_export->add_page('Cnvs', $xls_export->list_generic_header_cnvs(), $list_datas_annotations_cnvs);
 	}
