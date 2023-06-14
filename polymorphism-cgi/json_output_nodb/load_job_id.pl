@@ -41,6 +41,8 @@ use session_export;
 my $cgi = new CGI();
 my $use_session_id = $cgi->param('session_id');
 my $export_xls = $cgi->param('export_xls');
+my $merged = $cgi->param('merged');
+
 
 return load_xls($use_session_id) if ($export_xls);
 
@@ -114,9 +116,10 @@ sub load_xls() {
 			}
 		}
 	}
-	my (@list_datas_annotations_with_patients, $hProjFound);
+	my (@list_datas_annotations_with_patients, $hProjFound, $h_by_tr);
 	my @lHeaderWithProj = @{$xls_export->list_generic_header()};
 	foreach my $hvar (@$list_datas_annotations) {
+		my $enst = $hvar->{transcript};
 		my ($hproj, $hpat);
 		my ($var_id, $rs) = split(' ', $hvar->{variation});
 		foreach my $proj_name (keys %{$h_by_patients->{$var_id}}) {
@@ -130,29 +133,22 @@ sub load_xls() {
 				$hvar->{model} = '-';
 				$hvar->{model} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} ne '?';
 				push(@list_datas_annotations_with_patients, $hvar);
+				push(@{$h_by_tr->{$enst}}, $hvar);
 			}
 		}
 	}
 	
-	
-	# AJOUT par TRANSCRITS
-	
-	
-	
-#	my $nb_p = 0;
-#	foreach my $proj_name (sort keys %$hProjFound) {
-#		$nb_p++;
-#		push(@lHeaderWithProj, $proj_name);
-#		if ($nb_p == 100) {
-#			push(@lHeaderWithProj, 'Too Much Projects...');
-#			last;
-#		}
-#	}
-	
-	my @lHeaderWithPat = @{$xls_export->list_generic_header()};
-	push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model');
-	#$xls_export->add_page_merged('Variants Merged', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
-	$xls_export->add_page('All', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+	if ($merged) {
+		$xls_export->add_page_merged('Variants Merged', $xls_export->list_generic_header(), \@list_datas_annotations_with_patients);
+	}
+	else {
+		my @lHeaderWithPat = @{$xls_export->list_generic_header()};
+		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model');
+		$xls_export->add_page('ALL GENE', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+		foreach my $enst (sort keys %$h_by_tr) {
+			$xls_export->add_page($enst, \@lHeaderWithPat, $h_by_tr->{$enst});
+		}
+	}
 	if (scalar @$list_datas_annotations_cnvs > 0) {
 		$xls_export->add_page('Cnvs', $xls_export->list_generic_header_cnvs(), $list_datas_annotations_cnvs);
 	}
