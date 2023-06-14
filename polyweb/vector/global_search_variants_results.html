@@ -604,6 +604,7 @@
 			
 			dojo.require("dojo.io.iframe");
 			function exportXls() {
+				dijit.byId('waiting').show();
 				var url_xls_2 = url_path + "json_output_nodb/load_job_id.pl?export_xls=1&session_id=" + input_session_id;
     			console.log(url_xls_2);
 			    var downloadPdfIframeName = "downloadPdfIframe"; 
