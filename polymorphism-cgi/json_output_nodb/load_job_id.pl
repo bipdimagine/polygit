@@ -121,22 +121,25 @@ sub load_xls() {
 	}
 	my (@list_datas_annotations_with_patients, $hProjFound, $h_by_tr);
 	my @lHeaderWithProj = @{$xls_export->list_generic_header()};
+	
+	my $hdone_tr;
 	foreach my $hvar (@$list_datas_annotations) {
 		my $enst = $hvar->{transcript};
 		my ($hproj, $hpat);
 		my ($var_id, $rs) = split(' ', $hvar->{variation});
 		foreach my $proj_name (keys %{$h_by_patients->{$var_id}}) {
 			foreach my $pat_name (keys %{$h_by_patients->{$var_id}->{$proj_name}}) {
-				$hvar->{project} = $proj_name;
-				$hvar->{patient} = $pat_name;
-				$hvar->{sex} = 'male';
-				$hvar->{sex} = 'female' if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{sex} == 2;
-				$hvar->{status} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{status};
-				$hvar->{perc} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{perc};
-				$hvar->{model} = '-';
-				$hvar->{model} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} ne '?';
-				push(@list_datas_annotations_with_patients, $hvar);
-				push(@{$h_by_tr->{$enst}}, $hvar);
+				my $hvar_new = dclone($hvar);
+				$hvar_new->{project} = $proj_name;
+				$hvar_new->{patient} = $pat_name;
+				$hvar_new->{sex} = 'male';
+				$hvar_new->{sex} = 'female' if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{sex} == 2;
+				$hvar_new->{status} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{status};
+				$hvar_new->{perc} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{perc};
+				$hvar_new->{model} = '-';
+				$hvar_new->{model} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} ne '?';
+				push(@list_datas_annotations_with_patients,  dclone($hvar_new));
+				push(@{$h_by_tr->{$enst}},  dclone($hvar_new));
 			}
 		}
 	}
@@ -148,7 +151,7 @@ sub load_xls() {
 		my @lHeaderWithPat = @{$xls_export->list_generic_header()};
 		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model');
 		if (not $only_transcript) {
-			$xls_export->add_page('ALL GENE', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+			$xls_export->add_page('ALL TRANSCRIPTS', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
 		}
 		foreach my $enst (sort keys %$h_by_tr) {
 			next if ($only_transcript and not $enst =~ /$only_transcript/);
