@@ -552,7 +552,7 @@
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
 							document.getElementById("b_export_xls").classList.remove("disabled");
-							document.getElementById("b_export_xls_merged").classList.remove("disabled");
+							//document.getElementById("b_export_xls_merged").classList.remove("disabled");
 							document.getElementById("b_export_pdf").classList.remove("disabled");
 							html_variants_done = 1;
 							if (html_variants_done == 1 && html_gene_done == 1) {
@@ -605,18 +605,22 @@
 			
 			dojo.require("dojo.io.iframe");
 			function exportXls() {
-				dijit.byId('waiting').show();
 				var url_xls_2 = url_path + "json_output_nodb/load_job_id.pl?export_xls=1&session_id=" + input_session_id;
+				if (param("only_transcript")) { url_xls_2 += "&only_transcript=" + param("only_transcript"); }
+				if (param("only_interval")) { url_xls_2 += "&only_interval=" + param("only_interval"); }
     			console.log(url_xls_2);
 			    var downloadPdfIframeName = "downloadPdfIframe"; 
 			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
 			    dojo.io.iframe.setSrc(iframe, url_xls_2, true);
+			    alert("XLS export is launching. Please wait your file :)");
 			    return;
 			}
 			
 			function exportMergedXls() {
 				dijit.byId('waiting').show();
 				var url_xls_2 = url_path + "json_output_nodb/load_job_id.pl?export_xls=1&merged=1&session_id=" + input_session_id;
+				if (param("only_transcript")) { url_xls_2 += "&only_transcript=" + param("only_transcript"); }
+				if (param("only_interval")) { url_xls_2 += "&only_interval=" + param("only_interval"); }
     			console.log(url_xls_2);
 			    var downloadPdfIframeName = "downloadPdfIframe"; 
 			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
@@ -672,7 +676,7 @@
 					<li>
 				    	<div class="input-group" style="margin-right:20px;width:100%;"> 		
 							<span class="input-group-btn" style="top:12px;">
-								<button id="b_export_xls_merged" class="btn btn-default disabled" type="submit" onclick="exportMergedXls()" style="font-size:9px;background-color:#38B392;">
+								<button id="b_export_xls_merged" class="btn btn-default disabled hidden" type="submit" onclick="exportMergedXls()" style="font-size:9px;background-color:#38B392;">
 									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">XLS-merged</span></b>
 								</button>
 								<button id="b_export_xls" class="btn btn-default disabled" type="submit" onclick="exportXls()" style="font-size:9px;background-color:#38B392;">
