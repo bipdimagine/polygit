@@ -42,7 +42,10 @@ my $cgi = new CGI();
 my $use_session_id = $cgi->param('session_id');
 my $export_xls = $cgi->param('export_xls');
 my $merged = $cgi->param('merged');
+my $only_transcript = $cgi->param('only_transcript');
 
+
+if ($only_transcript) { $only_transcript =~ s/_.+//; }
 
 return load_xls($use_session_id) if ($export_xls);
 
@@ -144,8 +147,11 @@ sub load_xls() {
 	else {
 		my @lHeaderWithPat = @{$xls_export->list_generic_header()};
 		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model');
-		$xls_export->add_page('ALL GENE', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+		if (not $only_transcript) {
+			$xls_export->add_page('ALL GENE', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+		}
 		foreach my $enst (sort keys %$h_by_tr) {
+			next if ($only_transcript and not $enst =~ /$only_transcript/);
 			$xls_export->add_page($enst, \@lHeaderWithPat, $h_by_tr->{$enst});
 		}
 	}
