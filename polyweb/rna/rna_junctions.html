@@ -664,8 +664,8 @@
 			
 			var hash_pats_done = {};
 			
-			var used_dejavu_value = 15;
-			var used_dejavu_percent_value = 96;
+			var used_dejavu_value = 10;
+			var used_dejavu_percent_value = 100;
 			var used_score_value = 10;
 			var url_last_launch_patient;
 			
@@ -860,7 +860,7 @@
     			$('#'+id).bootstrapTable();
 			}
 			
-			var value_dejavu_percent_similar = 96;
+			var value_dejavu_percent_similar = 100;
 			function update_dejavu_percent_span_value() {
 				value_dejavu_percent_similar = 90 + parseInt(document.getElementById("slider_dejavu_percent").value);
 				document.getElementById("nb_percent_dejavu").innerHTML = value_dejavu_percent_similar;

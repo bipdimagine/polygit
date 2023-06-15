@@ -449,25 +449,20 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	$pm->start and next;
 	$patient->getProject->buffer->dbh_reconnect();
 
-	my @lJunctionsChr =
-	  @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };
+	my @lJunctionsChr = @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };
 
 	my $hres;
+	my $h_td_line;
 	foreach my $junction (@lJunctionsChr) {
 		$n++;
 		print '.' if ( not $only_html_cache and $n % 1000 );
 
 		my $is_junction_linked_filtred;
-		next if ( $junction->isCanonique($patient) );
+		next if ( $junction->isCanonique() );
 
-		next
-		  if ( $junction->junction_score_without_dejavu_global($patient) < 0 );
-
-
+		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 );
 
 		next if $junction->start == $junction->end();
-
-		#next if ($junction->get_ratio_new_count($patient) == 1);
 
 		my $gene_name  = $junction->annex->{ $patient->name() }->{ensid};
 		my $gene_name2 = $junction->annex->{ $patient->name() }->{gene};
@@ -512,7 +507,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 
 		my $html_validation  = '';
 		my $html_to_validate = '';
-		my $score = $junction->junction_score($patient);
+		my $score = $junction->junction_score($patient, $use_percent_dejavu);
 
 		next if ($min_partial_score and $score < $min_partial_score);
 
@@ -522,6 +517,28 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $html_patients = get_html_patients( $junction, $patient );
 		my $html_dv       = get_html_dejavu( $junction, $patient );
 
+		my $jid_tmp = $junction->getChromosome->id().'-'.$junction->start().'-'.$junction->end();
+		if ($h_td_line and $h_td_line->{id} eq $jid_tmp) {
+			my $max_score = $h_td_line->{max_score};
+			my $tmp = pop(@{ $hres->{genes}->{$gene_name}->{$max_score} });
+			push (@{$h_td_line->{3}}, "<br>");
+			push (@{$h_td_line->{4}}, "<br>");
+			push (@{$h_td_line->{7}}, "<br>");
+			push (@{$h_td_line->{8}}, "<br>");
+			
+		}
+		else { $h_td_line = undef; }
+
+		$h_td_line->{id} = $jid_tmp;
+		
+		if (not exists $h_td_line->{1}) { push (@{$h_td_line->{1}}, $html_sashimi); }
+		if (not exists $h_td_line->{2}) { push (@{$h_td_line->{2}}, $html_igv); }
+#		if (exists $h_td_line->{3}) { push (@{$h_td_line->{3}}, qq{<div>------------</div>}); }
+		push (@{$h_td_line->{3}}, $html_id);
+#		if (exists $h_td_line->{4}) { push (@{$h_td_line->{4}}, qq{<div>------------</div>}); }
+		push (@{$h_td_line->{4}}, $html_patients);
+		if (not exists $h_td_line->{5}) { push (@{$h_td_line->{5}}, $html_dv); }
+
 		foreach my $gene_name (@lGenesNames) {
 
 			my $ht = $junction->get_hash_exons_introns();
@@ -530,10 +547,23 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			#			next if scalar keys %$ht == 0;
 
 			my ( $html_trans, $has_linked_junctions ) = get_html_transcripts( $junction, $patient );
-			my $score_details_text = get_html_score_details( $junction, $patient );
+			my $score_details_text = get_html_score_details( $junction, $patient, $use_percent_dejavu );
+			
+			if (not exists $h_td_line->{6}) { push (@{$h_td_line->{6}}, $html_trans);} 
+#			if (exists $h_td_line->{7}) { push (@{$h_td_line->{7}}, qq{<div>---</div>}); }
+			my $badge_color = '#808080';
+			$badge_color = '#92D674' if $score >= 0;
+			$badge_color = '#FFFF00' if $score >= 5;
+			$badge_color = '#CC8506' if $score >= 8;
+			my $badge_color_text = "white";
+			$badge_color_text = "black" if $badge_color eq '#FFFF00';
+			push (@{$h_td_line->{score}}, $score); 
+			push (@{$h_td_line->{7}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$score</span>});
+#			if (exists $h_td_line->{8}) { push (@{$h_td_line->{8}}, qq{<div>-------</div>}); }
+			push (@{$h_td_line->{8}}, $score_details_text);
 
 			$hres->{score}->{all}->{$gene_name}->{$score} = $junction->id();
-
+			
 			my $html_tr;
 			if ($is_junction_linked_filtred) {
 				$html_tr .= qq{<tr style="text-align:center;font-size:11px;opacity:0.55;">};
@@ -541,22 +571,25 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			else {
 				$html_tr .= qq{<tr style="text-align:center;font-size:11px;">};
 			}
-			$html_tr .= qq{<td style="width:230px;">$html_sashimi</td>};
-			$html_tr .= qq{<td>$html_igv</td>};
-			$html_tr .= qq{<td>$html_id</td>};
-			$html_tr .= qq{<td>$html_patients</td>};
+			$html_tr .= qq{<td style="width:230px;">@{$h_td_line->{1}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{2}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{3}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{4}}</td>};
 
 			#	$html_tr .= qq{<td></td>};
-			$html_tr .= qq{<td>$html_dv</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{5}}</td>};
 
 			#	$html_tr .= qq{<td>$html_validation</td>};
-			$html_tr .= qq{<td>$html_trans</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{6}}</td>};
 
 			#	$html_tr .= qq{<td>$html_to_validate</td>};
-			$html_tr .= qq{<td>$score</td>};
-			$html_tr .= qq{<td>$score_details_text</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{7}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{8}}</td>};
 			$html_tr .= qq{</tr>};
-			push( @{ $hres->{genes}->{$gene_name}->{$score} }, $html_tr );
+			my $max_score = -999;
+			foreach my $s (@{$h_td_line->{score}}) { $max_score = $s if $s > $max_score; }
+			$h_td_line->{max_score} = $max_score;
+			push( @{ $hres->{genes}->{$gene_name}->{$max_score} }, $html_tr );
 		}
 	}
 	$hres->{done} = 1;
@@ -707,7 +740,7 @@ qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></t
 		$html_table_2 .= $l;
 		$nb_limit++;
 		if (not $only_gene_name and $nb_limit == 100) {
-			$html_table_2 .= "<tr><td colspan='8'><center><span style='color:red'>Limit junctions view... Search only this gene to see all junctions</span></td></tr>";
+			$html_table_2 .= "<tr><td colspan='8'><center><span style='color:red'><i> ---------------- Limit junctions view... Search only this gene to see all junctions ---------------- </i></span></td></tr>";
 			last;
 		}
 	}
@@ -1391,15 +1424,14 @@ sub get_html_id {
 }
 
 sub get_html_score_details {
-	my ( $junction, $patient ) = @_;
+	my ( $junction, $patient, $use_percent_dejavu ) = @_;
+	$junction->dejavu_percent_coordinate_similar($use_percent_dejavu) if $use_percent_dejavu;
 	my $noise           = $junction->get_noise_score($patient);
 	my $score_pen_ratio = $junction->junction_score_penality_ratio($patient);
 	my $score_pen_dp    = $junction->junction_score_penality_dp($patient);
-	my $score_pen_new =
-	  $junction->junction_score_penality_new_junction($patient);
+	my $score_pen_new = $junction->junction_score_penality_new_junction($patient);
 	my $score_pen_noise = $junction->junction_score_penality_noise($patient);
-	my $score_pen_dvrun =
-	  $junction->junction_score_penality_dejavu_inthisrun($patient);
+	my $score_pen_dvrun = $junction->junction_score_penality_dejavu_inthisrun($patient);
 	my $score_pen_dv = $junction->junction_score_penality_dejavu($patient);
 	my $score_details_text = $cgi->start_table(
 		{
@@ -1410,6 +1442,12 @@ sub get_html_score_details {
 		}
 	);
 
+	if ( $junction->isCanonique() ) {
+		$score_details_text .= $cgi->start_Tr();
+		$score_details_text .= $cgi->td("<center><b>isCanonique</b></center>");
+		$score_details_text .= $cgi->td("<center>- 10</center>");
+		$score_details_text .= $cgi->end_Tr();
+	}
 	if ( $score_pen_ratio > 0 ) {
 		$score_details_text .= $cgi->start_Tr();
 		$score_details_text .= $cgi->td("<center><b>Ratio</b></center>");
@@ -1464,7 +1502,7 @@ sub add_linked_hash_in_cache {
 		$h_vector_chr->{min8} = $vector_patient->Clone();
 		foreach my $junction ( @{ $chr->getListVarObjects($vector_patient) } ) {
 			$n++;
-			next if ( $junction->isCanonique($patient) );
+			next if ( $junction->isCanonique() );
 			print '.' if ( not $only_html_cache and $n % 5000 );
 			if ( $junction->is_junctions_linked($patient) ) {
 				if ( exists $h_var_linked_ids->{ $junction->id() } ) {
