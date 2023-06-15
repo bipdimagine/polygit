@@ -119,14 +119,27 @@ foreach my $junction (@lJunction) {
 				my $patient_dv_file = $dir_proj_dv_path.'/'.$project_name_dv.'.tab.gz';
 				my $cmd = "tabix $patient_dv_file ".$junction->getChromosome->id().':'.$junction->start().'-'.$junction->end().' | grep "'.$patient_name_dv.'" | grep "'.$id_part.'"';
 				my $dv_infos = `$cmd`;
-				my ($dv_chr, $dv_start, $dv_end, $dv_pat_name, $dv_type, $dv_j_new, $dv_j_normal, $dv_ratio, $dv_j_id) = split(' ', $dv_infos);
-				my $this_dv_percent = int($project->dejavuJunctionsResume->getIdentityBetweenCNV($junction->start() ,$junction->end(), $dv_start, $dv_end));
-				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{type} = $dv_type;
-				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_junctions} = $dv_j_new;
-				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_normal} = $dv_j_normal;
-				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{score} = $dv_ratio;
-				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{start} = $dv_start;
-				$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{end} = $dv_end;
+				if ($dv_infos) {
+					my ($dv_chr, $dv_start, $dv_end, $dv_pat_name, $dv_type, $dv_j_new, $dv_j_normal, $dv_ratio, $dv_j_id) = split('\t', $dv_infos);
+					$dv_infos =~ s/ //g;
+					my $this_dv_percent = int($project->dejavuJunctionsResume->getIdentityBetweenCNV($junction->start() ,$junction->end(), $dv_start, $dv_end));
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{type} = $dv_type;
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_junctions} = $dv_j_new;
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_normal} = $dv_j_normal;
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{score} = $dv_ratio;
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{start} = $dv_start;
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{end} = $dv_end;
+				}
+				else {
+					my $this_dv_percent = int($project->dejavuJunctionsResume->getIdentityBetweenCNV($junction->start() ,$junction->end(), $h_dv->{start}, $h_dv->{end}));
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{type} = 'pb_dv_proj';
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_junctions} = '-';
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_normal} = '-';
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{score} = '-';
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{start} = $h_dv->{start};
+					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{end} = $h_dv->{end};
+					
+				}
 			}
 		}
 	}
