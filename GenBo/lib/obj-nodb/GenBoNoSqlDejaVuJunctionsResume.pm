@@ -106,8 +106,12 @@ sub get_junctions_generic {
 	 	$end1 =~ s/ //g;
 	 	next if ($start1 == $end1);
 	 	
+	 	next unless $start1;
+	 	next unless $end1;
+	 	
 	 	my $identity;
 	 	if ($start == $start1 and $end == $end1) { $identity = 100; }
+	 	if ($start == ($start1 - 1) and $end == ($end1 + 1)) { $identity = 100; }
 	 	else { $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1); }
 	 	next if $identity <  $seuil;
 	 	
@@ -123,6 +127,7 @@ sub get_junctions_generic {
 		 	$x->{$start1.'-'.$end1}->{nbpat} = $nbpat;
 		 	$x->{$start1.'-'.$end1}->{details} = $details;
 		}
+		
 	}
 	return $x;
 	

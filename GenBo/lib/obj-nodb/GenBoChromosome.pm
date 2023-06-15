@@ -1460,6 +1460,25 @@ sub get_rocks_polyviewer_variant {
 #}
 # 
 
+sub get_lmdb_junctions_canoniques {
+	my ( $self, $modefull) = @_;
+	my $hindex = "dv_junctions_canoniques_";
+	$hindex = "dv_junctions_canoniques_".$modefull if ($modefull);
+	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+	$modefull = "r" unless $modefull;
+	my ( $mode, $pipeline ) = split( '', $modefull );
+	my $dir_out = $self->project->get_dejavu_junctions_path('canoniques');
+	return  GenBoNoSqlLmdb->new(
+		dir         => $dir_out,
+		mode        => $mode,
+		is_index    => 1,
+		name        => $self->name,
+		is_compress => 1,
+		vmtouch     => $self->buffer->vmtouch
+	);
+	return $self->{lmdb}->{$hindex};
+}
+
 sub get_lmdb_variations {
 	my ( $self, $modefull,$rocks) = @_;
 	my $hindex = "variations_";
