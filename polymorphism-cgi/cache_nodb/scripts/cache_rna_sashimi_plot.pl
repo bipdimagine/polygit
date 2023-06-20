@@ -86,7 +86,7 @@ my @lScores = (0..10);
 foreach my $score (@lScores) {
 	foreach my $chr (@{$project->getChromosomes()}) {
 		foreach my $junction (@{$chr->getListVarObjects($h_chr_vectors->{$chr->id()})}) {
-			next if ($junction->isCanonique($patient));
+			next if ($junction->isCanonique());
 			my $j_score = $junction->junction_score($patient);
 			next if ($j_score < $score);
 			my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
