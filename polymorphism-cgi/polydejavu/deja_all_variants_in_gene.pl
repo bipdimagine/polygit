@@ -683,7 +683,7 @@ sub get_variants_infos_from_projects {
 					my $end = $lTmp[1] + 1000;
 					my $chr_tmp = $project->getChromosome($chr_id);
 					my $vector_tmp = $chr_tmp->getVectorByPosition($start, $end);
-					$vector_tmp -= $vector_tmp->getVectorCnv();
+					#$vector_tmp -= $vector_tmp->getVectorCnv();
 					foreach my $var_tmp (@{$chr_tmp->getListVarObjects($vector_tmp)}) {
 						if ($var_tmp->id() eq $check_var_id) {
 							foreach my $pat_tmp (@{$var_tmp->getPatients()}) {
