@@ -103,7 +103,7 @@ foreach my $this_patient (@{$project->getPatients()}) {
 			my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
 			$junction_id =~ s/ //g;
 			
-			if ($junction->isCanonique($this_patient)) {
+			if ($junction->isCanonique()) {
 				if (not exists $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}) {
 					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{start} = $start;
 					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{end} = $end;
