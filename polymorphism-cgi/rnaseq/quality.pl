@@ -68,7 +68,8 @@ my @files = split(" ",$header);
 my $stats;
 
 foreach my $patient (@{$project->getPatients}){
-	my $bam = $patient->getBamFile();
+	my $bam = $patient->getBamFileName();
+	next unless -e $bam;
 	
 	my $idx = firstidx {$_ eq $bam } @files;
 	my %stat_patient;
@@ -142,11 +143,16 @@ my @line;
 	my $nb = scalar(keys %{$stat_project->{sample}} );
 #	warn $nb;
 	foreach my $stat (@stats_name){
+		if ($nb ne 0 ){
 		$stat_project->{global}->{$stat} /= $nb;
 			$stat_project->{global}->{$stat} = int ($stat_project->{global}->{$stat}*100) / 100;
 		$_ = reverse 	$stat_project->{global}->{$stat};
 	s/(\d{3})(?=\d)(?!\d*\.)/$1,/g;
 		$stat_project->{global}->{$stat} = reverse $_;
+		}
+		else {
+			$stat_project->{global}->{$stat} = qq{<span class="glyphicon glyphicon-remove-sign" aria-hidden="true"  style="font-size:24px;"></span>};
+		}
 		push(@line,$stat_project->{global}->{$stat} );
 		#push(@line,sprintf("%.2f",$stat_project->{global}->{$stat}));
 	}
