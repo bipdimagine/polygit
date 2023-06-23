@@ -18,7 +18,7 @@ use IO::Prompt;
 use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
-use Moose;
+use Moo;
 use GBuffer;
 use GenBoProject;
 use colored; 
@@ -32,7 +32,7 @@ use Proc::Simple;
 use Storable;
 use JSON::XS;
 use Net::SSH::Perl; 
-
+use Carp;
  
 
 my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
@@ -115,7 +115,7 @@ if ($rna == 1) {
 	$spipeline.=",sj";
 	
 }
-system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline && touch $ok_move");
+system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -version=$version && touch $ok_move");
 exit(0);
 
 sub run_pipeline_rna {
@@ -130,9 +130,9 @@ if ($version && exists $pipeline->{align} ){
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
 	my $patient_ori = $project_ori->getPatient($patients_name);
-	 $patient_ori->{alignmentMethods} =['dragen-align','bwa'];
+	 $patient_ori->{alignmentMethods} =['dragen-align','hisat2'];
 	my $bamfile = $patient_ori->getBamFile();
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true ";
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true  --enable-rna=true ";
 	#$param_align .= "--output-format CRAM " if $version =~/HG38/;
 	if ($umi){
 		confess();
@@ -143,13 +143,15 @@ if ($version && exists $pipeline->{align} ){
 else {
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
-
  $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true ";
-if (exists $pipeline->{count}){
-my $gtf = qq{/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/gtf/gencode.vM32.annotation.gtf};
-my $gtf2 = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf};
-$param_align .= "-a $gtf --enable-rna-quantification true";
 }
+
+if (exists $pipeline->{count}){
+	my $gtf =  $project->gtf_dragen_file();
+	die() unless -e $gtf;
+	#my $gtf = qq{/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/gtf/gencode.vM32.annotation.gtf};
+	#my $gtf2 = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf};
+	$param_align .= "-a $gtf --enable-rna-quantification true";
 }
 
 ##
@@ -189,7 +191,7 @@ elsif (exists $pipeline->{align}){
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
 	if ($umi){
-		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
+		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 2 --vc-enable-umi-germline true};
 	}
 	else {
 		$param_align .= qq{ --enable-duplicate-marking true };
