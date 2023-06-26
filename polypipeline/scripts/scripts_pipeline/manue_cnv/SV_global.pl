@@ -45,6 +45,7 @@ warn "SV ANNOT";
 #launch annotsv  step 1
 my $l = time;
 my $lfile = "$log_dir/$l"."_sv.log";
+warn $lfile;
 my $cmd = qq{$Bin/annotsv.pl -project=$project_name -fork=$fork};
 
 system("$cmd && date > $lfile");

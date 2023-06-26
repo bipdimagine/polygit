@@ -1,7 +1,7 @@
 package GenBoFamily;
 
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 extends "GenBoSampleGroup";
 
@@ -416,5 +416,8 @@ has getGerminals => (
 		return \@lPat;
 	},
 );
+
+
+
 
 1;

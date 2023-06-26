@@ -128,6 +128,7 @@ $nbb = 0;
 $pr->update(0);
 $pr->write();
 foreach my $patient_name (@patients_name) {
+	warn "titi";
 	my $pid = $pm2->start() and next;
 	polydiag::compute_coverage_diagnostic2( $project_name, $patient_name );
 	$pm2->finish(0);

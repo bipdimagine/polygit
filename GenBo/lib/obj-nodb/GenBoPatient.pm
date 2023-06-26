@@ -1,8 +1,7 @@
 package GenBoPatient;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
@@ -20,6 +19,7 @@ use List::Util qw(max sum);
 use JSON::XS;
 use Statistics::Descriptive;
 use GenBoNoSqlLmdbCache;
+use Carp;
 extends "GenBo";
 
 has patient_id => (
@@ -454,6 +454,7 @@ has 'compute_sex' => (
 	default => sub {
 		my $self = shift;
 		my $covm = $self->coverage_SRY();
+		return 1 if $covm > 30;
 		return -1 if $covm == -1;
 		my $covh = $self->coverage();
 		$covh->{mean} += 0;
@@ -695,28 +696,7 @@ sub alignmentMethod {
 	return $methods->[0];
 }
 
-has vcfParsed => (
-	is      => 'rw',
-	lazy    => 1,
-	reader  => 'infosVcfParsed',
-	default => sub {
-		my $self = shift;
-		my $lChr = $self->getProject()->getChromosomes();
-		my %hashVcf;
-		foreach my $chrObj (@$lChr) {
-			my $chrName = $chrObj->ucsc_name();
-			my $lVcfSnp = $self->getVariationsFiles();
-			foreach my $vcfFile (@$lVcfSnp) {
-				$hashVcf{$vcfFile}->{$chrName} = Set::IntSpan::Fast->new();
-			}
-			my $lVcfIndel = $self->getIndelsFiles();
-			foreach my $vcfFile (@$lVcfIndel) {
-				$hashVcf{$vcfFile}->{$chrName} = Set::IntSpan::Fast->new();
-			}
-		}
-		return \%hashVcf;
-	}
-);
+
 
 sub setRuns {
 	my $self = shift;
@@ -931,7 +911,7 @@ sub setVariantsForReference {
 	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
 		my $hfiles = $self->callingFiles->{$this_typeVar};
 		foreach my $method ( keys %{$hfiles} ) {
-			#next unless $method eq 'melt';
+			#next unless $method eq 'manta';
 			#next unless $method eq 'haplotypecaller4';
 			my $vcfFile = $hfiles->{$method};
 			next if exists $already_parse->{ $reference->name }->{$vcfFile};
@@ -959,6 +939,7 @@ sub setVariantsForReference {
 			}
 		}
 	}
+
 	my $o = [];
 	#warn "\t end parsing :".abs(time-$z)." ".$self->name;
 	$o = $self->myflushobjects2( $hashRes, $cursor );
@@ -1154,6 +1135,9 @@ sub getStructuralVariations {
 	push( @$lRes, @{ $self->getDeletions( $chrName, $start, $end ) } );
 	push( @$lRes, @{ $self->getMnps( $chrName, $start, $end ) } );
 	push( @$lRes, @{ $self->getLargeDeletions( $chrName, $start, $end ) } );
+	push( @$lRes, @{ $self->getLargeDuplications( $chrName, $start, $end ) } );
+	push( @$lRes, @{ $self->getInversions( $chrName, $start, $end ) } );
+	push( @$lRes, @{ $self->getBoundaries( $chrName, $start, $end ) } );
 	return $lRes;
 }
 
@@ -1210,24 +1194,13 @@ has callingFiles => (
 		my $methods = $self->getCallingMethods();
 		my $files   = {};
 		foreach my $method_name (@$methods) {
-			my $file = $self->_getCallingFileWithMethodName( $method_name,
-				"variations" );
+			my $file = $self->_getCallingFileWithMethodName( $method_name, "variations" );
 			$files->{variations}->{$method_name} = $file if $file;
-			if (   $self->project->year < 2015
-				&& $self->project->name ne 'DIAG2014' )
-			{
-				#	last if $file;
-			}
 
 		}
 		foreach my $method_name (@$methods) {
-			my $file2 =
-			  $self->_getCallingFileWithMethodName( $method_name, "indels" );
+			my $file2 = $self->_getCallingFileWithMethodName( $method_name, "indels" );
 			$files->{indels}->{$method_name} = $file2 if $file2;
-			if ( $self->project->year < 2015 ) {
-				last if $file2;
-			}
-
 		}
 		my $file3 = $self->getLargeIndelsFile();
 		$files->{large_indels}->{'lifinder'} = $file3 if ( -e $file3 );
@@ -1253,8 +1226,7 @@ has callingSVFiles => (
 		my $methods = $self->callingSVMethods();
 		my $files   = {};
 		foreach my $method_name (@$methods) {
-			my $file = $self->_getCallingSVFileWithMethodName( $method_name,
-				"variations" );
+			my $file = $self->_getCallingSVFileWithMethodName( $method_name,"variations" );
 			$files->{sv}->{$method_name} = $file if $file;
 		}
 		return $files;
@@ -1277,6 +1249,7 @@ has bamUrl => (
 		return $bam_dir . "/" . $t[-1];
 	},
 );
+
 has hasBamFile => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1446,16 +1419,16 @@ sub getBamFileName {
 	return $bam;
 }
 sub getCramFileName {
-	my ( $self, $method_name ) = @_;
+	my ( $self, $method_name,$version ) = @_;
 	my $bam_dir;
 	if($method_name){
-		 $bam_dir = $self->getProject->getAlignmentDir( $method_name );
+		 $bam_dir = $self->getProject->getAlignmentDir( $method_name,$version );
 		 
 	}
 	else {
 	my $methods = $self->alignmentMethods();
 	die( $self->project->name." ".Dumper($methods)) if scalar(@$methods) > 1;
-	 $bam_dir = $self->getProject->getAlignmentDir( $methods->[0] );
+	 $bam_dir = $self->getProject->getAlignmentDir( $methods->[0],$version );
 	}
 	die() unless $bam_dir;
 	my $bam     = $bam_dir . "/" . $self->name . ".cram";
@@ -1805,14 +1778,29 @@ has tabix_wisecondor => (
 
 
 has vntyperTsv => (
-is      => 'ro',
+	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
 		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
 	}
 );
-
+has isVntyperPositif => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 0 unless -e  $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		
+		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		my @lines = `tail -n +4 $file`;
+		#warn Dumper @lines;
+		chomp(@lines);
+		#confess() if scalar(@lines) > 1;
+		 return undef unless $lines[0];    
+		 return 1;
+	}
+);
 has vntyperResults => (
 is      => 'ro',
 	lazy    => 1,
@@ -1825,11 +1813,21 @@ is      => 'ro',
 		#warn Dumper @lines;
 		chomp(@lines);
 		#confess() if scalar(@lines) > 1;
-		return [] unless $lines[0];
+		
+			my $t = (stat $file )[10];
+	
+		my $date = POSIX::strftime( 
+             "%d/%m/%y", 
+             localtime( 
+               		$t
+                 )
+             );
+        return [[$date]] unless $lines[0];     
 		my @t;
 		foreach my $l (@lines){
-			push(@t,[split(" ",$l)] ) ;
+			push(@t,[$date,split(" ",$l)] ) ;
 		}
+		
 		return \@t;
 	}
 );
@@ -2376,6 +2374,44 @@ sub is_multiplex_ok {
 }
 
 sub hotspot {
+	my ( $self) = @_;
+
+	my $capture = $self->getCapture();
+	my $file =$capture->hotspots_filename; 
+	my $bam = $self->getBamFile();
+	my $sambamba = $self->buffer()->software("sambamba");
+	my @lines = `$sambamba depth base $bam -L $file 2>/dev/null`;
+	
+
+	chomp(@lines);
+	#REF	POS	COV	A	C	G	T	DEL	REFSKIP	SAMPLE
+	my @header = split(" ",shift @lines);
+	my $res;
+	foreach my $l  (@lines){
+		my @data = split(" ",$l);
+			my $hash ={};
+		foreach (my $i=0;$i<@header;$i++){
+			
+			$hash->{$header[$i]} = $data[$i];
+		}
+		
+	#	my $chromosome = $self->project->getChromosome($hash->{REF});
+	#	$hash->{POS} ++;
+	#	my $t = $chromosome->genesIntervalTree->fetch($hash->{POS},$hash->{POS}+1);
+		my $id = $hash->{REF}.":".$hash->{POS};
+		my $h = $capture->hotspots->{$id};
+		$hash->{A_REF} = $h->{ref};
+		$hash->{A_ALT} = $h->{alt};
+		$hash->{NAME} = $h->{name};
+		$hash->{ID} = $hash->{REF}.":".($hash->{POS}+1);
+		$hash->{GENBO_ID} =$h->{genbo_id};
+		$hash->{PROT} =$h->{protid};
+		push(@{$res->{$h->{gene}}},$hash);	
+	}
+	return $res;
+}
+
+sub hotspot2 {
 	my ( $self, $motif ) = @_;
 	confess();
 	my $bam = $self->getBamFile();
@@ -2782,6 +2818,8 @@ has nb_reads => (
 			};
 
 		}
+		warn $self->name();
+		
 		$h->{norm1} = 1/$h->{all};#/1_000_000_000;
 #		warn $h->{all};
 		$h->{norm} = $h->{all}/1_000_000_000;
@@ -3240,6 +3278,12 @@ sub getJunctionsSE {
 		push (@lObj, $obj);
 	}
 	return \@lObj;
+}
+
+sub getSampleProfile {
+	my ($self) = shift;
+	my $query    = $self->getProject()->buffer->getQuery();
+	return $query->getProfileSample($self->id);
 }
 
 1;

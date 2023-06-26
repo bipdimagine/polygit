@@ -18,8 +18,8 @@ use IO::Prompt;
 use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use bds_steps;   
 use file_util;
 use Class::Inspector;
@@ -460,10 +460,9 @@ exit(0);
 
 sub prepare_jobs {
 	my ($running_steps,$steps) = @_;
-	warn Dumper $running_steps;
 	my $next_file = "";
 	foreach my $step (@$running_steps){
-		($next_file) = $steps->{$step}->((filein=>$next_file));
+		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;
 }

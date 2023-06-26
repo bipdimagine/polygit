@@ -247,6 +247,7 @@ sub find_other_patient {
 				
 				};
 				next unless -e $bam;
+				warn $p->name." ".$project2->name() unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
 				next unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
 			#	warn Dumper $p->nb_reads();
 				$nbx++;

@@ -1,13 +1,12 @@
 package GenBoPhenotype;
 
-use Moose;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use FindBin qw($Bin);
 use lib "$Bin/";
 use lib "$Bin/../GenBoDB";
 use Set::IntSpan::Fast::XS;
-use Tabix;
 use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";

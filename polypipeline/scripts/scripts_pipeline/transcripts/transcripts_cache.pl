@@ -55,6 +55,7 @@ warn "end";
 #	 warn Dumper $no;
 #	 die ();
 my $lists = $project->getListTranscripts();
+warn Dumper $lists;
 my $tmp1 = "/tmp/pipeline/";
 system("mkdir /tmp/pipeline;chmod a+rwx  /tmp/pipeline") unless -e $tmp1;
 

@@ -1,8 +1,8 @@
 package GenBoExon;
+#use strictures 2;
 
 use strict;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use Storable qw(store retrieve freeze thaw);
@@ -119,8 +119,10 @@ has is_noncoding =>(
 	}
 );
 
-method return_start_end ( Int :$padding){
-	my $sstart = $self->start;
+sub return_start_end {
+	 my ($self,%args ) =@_;
+	 my $padding = $args{padding};
+	 my $sstart = $self->start;
 	my $send = $self->end;
 	$sstart -= $padding; #unless $self->$self->start ;
 	$send += $padding; #unless $self->$self->start ;
@@ -129,9 +131,20 @@ method return_start_end ( Int :$padding){
 	return {start=>$sstart,end=>$send};
 }
 
-method return_start_end_no_utr ( Int :$padding){
-	
-	return $self->{start_end_no_utr}->{$padding} if exists   $self->{start_no_utr}->{$padding};
+#method return_start_end ( Int :$padding){
+#	my $sstart = $self->start;
+#	my $send = $self->end;
+#	$sstart -= $padding; #unless $self->$self->start ;
+#	$send += $padding; #unless $self->$self->start ;
+#	$sstart =1 if $sstart <=0;
+#	#$send = $self->getChromosome->length -1 if $send > $self->getChromosome->length ;
+#	return {start=>$sstart,end=>$send};
+#}
+
+sub return_start_end_no_utr {
+	my ($self,%args ) =@_;
+	 my $padding = $args{padding};
+	 return $self->{start_end_no_utr}->{$padding} if exists   $self->{start_no_utr}->{$padding};
 	return undef  if $self->intspan_no_utr->is_empty;
 		return (0,$self->intspan_no_utr) if $self->intspan_no_utr->is_empty;
 	my $sstart = $self->start_utr;
@@ -144,9 +157,13 @@ method return_start_end_no_utr ( Int :$padding){
 	$self->{start_end_no_utr}->{$padding}->{end} = $send;
 	return $self->{start_end_no_utr}->{$padding};
 }
-
-method cached_statistic_coverage_coding (GenBoPatient :$patient, Int :$padding, Int :$limit, Int :$utr ){
-		my $no =  $self->project->noSqlCoverage();
+sub cached_statistic_coverage_coding {
+	my ($self,%args ) =@_;
+	my $patient = $args{patient};
+	my $padding = $args{padding};
+	my $limit = $args{limit};
+	my $utr =  $args{utr};
+	my $no =  $self->project->noSqlCoverage();
 
 		my $t ={};
 		eval {
@@ -164,22 +181,30 @@ method cached_statistic_coverage_coding (GenBoPatient :$patient, Int :$padding, 
 		};
 	#	die();
 		return $h;
-		
+	
+	
 }
-method computed_statistic_coverage_coding (GenBoPatient :$patient, Int :$padding, Int :$limit, Int :$utr ){
 
-		my  ($mean,$intspan,$min)  = $self->statistic_coverage_coding(patient=>$patient,padding=>$padding,limit=>$limit,utr=>$utr);
+sub computed_statistic_coverage_coding {
+	my ($self,%args) = @_;
+	my $padding =  $args{padding};
+	my $patient = $args{patient};
+	my $limit=  $args{limit};
+	my $utr =  $args{utr};
+	my  ($mean,$intspan,$min)  = $self->statistic_coverage_coding(patient=>$patient,padding=>$padding,limit=>$limit,utr=>$utr);
 		my $h =  {mean=>$mean,intspan=>$intspan,min=>$min};
 		
 		return $h;
-		
 }
 
-method statistic_coverage_coding (GenBoPatient :$patient, Int :$padding, Int :$limit, Int :$utr ){
-	return $self->mean_intspan_coverage($patient,$padding,$limit) if $utr > 0;
-	return $self->mean_intspan_coverage_coding($patient,$padding,$limit);
-	
+sub statistic_coverage_coding{
+	my ($self,%args) = @_;
+	 
+	return $self->mean_intspan_coverage($args{patient},$args{padding},$args{limit}) if $args{utr} > 0;
+	return $self->mean_intspan_coverage_coding($args{patient},$args{padding},$args{limit});
 }
+
+
 sub mean_intspan_coverage_coding{
  my ($self,$patient, $padding,$limit ) =@_;
 	return @{$self->{coding_stats}->{$patient->id}->{$padding}} if exists $self->{coding_stats}->{$patient->id}->{$padding};
@@ -200,7 +225,9 @@ sub mean_intspan_coverage_coding{
 	my $mean = sum(@$res2)/scalar(@$res2);
 	my $min = min(@$res2);
 	my $array = [$mean,$intspan,$min];
-#	my $res2 =  $self->coverage_object($patient)->coverage($sstart,$send);#$self->getTranscript()->getGene->get_coverage($patient)->coverage($sstart,$send);
+
+	#my $res2 =  $self->coverage_object($patient)->coverage($sstart,$send);#$self->getTranscript()->getGene->get_coverage($patient)->coverage($sstart,$send);
+
 	$self->{coding_stats}->{$patient->id}->{$padding} = $array;
 	$self->{coding_stats}->{$patient->id}->{$sstart.$send}  = $array;
 	return @{$self->{coding_stats}->{$patient->id}->{$padding}};

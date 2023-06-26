@@ -132,6 +132,7 @@ foreach my $patient (@{$patients_name}) {
 	my $prog =  $patient->alignmentMethod();
 	my $index = $project->getGenomeIndex($prog);
 	$fastq = $patient->getSequencesDirectory();
+	warn $fastq;
 	$exec = "cellranger-atac" if $type eq "atac";
 	$exec = "cellranger-arc" if $type eq "arc";
 	$index = $project->getGenomeIndex($prog)."_atac" if $type eq "atac";
@@ -164,6 +165,45 @@ foreach my $patient (@{$patients_name}) {
 		}
 	}
 	close(JOBS_VDJ);
+}
+
+
+foreach my $patient (@{$patients_name}) {
+	my $run = $patient->getRun();
+	my $type = $run->infosRun->{method};
+	
+	
+ 	if($type =~ /spatial/  && $step eq "count" ){
+		open (JOBS_SPATIAL, ">$dir/jobs_spatial.txt");
+		my @spatial = grep { uc($_->somatic_group()) eq "SPATIAL"} @{$patients_name};
+		foreach my $s (@spatial){
+			my $sname = $s->name(); 
+			warn $sname;
+			my $sfam = $s->family();
+			my $des_file = $dir."/".$sname."_spatial_descript.csv";
+	
+			die("file with area, slide and path to image file is mandatory \(patientName_spatial_descript.csv\)") unless -e $des_file ;
+			open (DES, $des_file);
+			my $json;
+			my $area;
+			my $slide;
+	
+			while(<DES>){
+				warn $_;
+				chomp($_);
+				($json,$slide,$area)= split(",",$_);
+			}
+			close(DES);
+			my $image = $dir."/".$sname.".tif";
+			my $sgroup = uc($s->somatic_group());
+			my $fastq = $s->getSequencesDirectory();
+			my $prog =  $s->alignmentMethod();
+			my $index = $project->getGenomeIndex($prog);
+			my $index_spatial = $index;
+			print JOBS_SPATIAL "cd $dir;spaceranger count --sample=$sname --image=$image --id=$sname --fastqs=$fastq --transcriptome=$index_spatial --area=$area --slide=$slide --loupe-alignment=$json  \n";
+		}
+	}
+	close(JOBS_SPATIAL);
 }
 
 
@@ -270,7 +310,8 @@ foreach my $patient (@{$patients_name}) {
 			my $lib_file = $dir."/".$ename."_library.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
 			my @atac = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ATAC"} @{$patients_name};
-			my $atac_name = $atac[0]->name();
+			next() if scalar(@atac == 0);
+			my $atac_name = $atac[0]->name() ;
 			my $prog =  $e->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog)."_arc";
 			my $lib = "fastqs,sample,library_type\n".$e->getSequencesDirectory().",".$ename.",Gene Expression\n";
@@ -286,7 +327,7 @@ close(JOBS_ARC);
 #warn "cat $dir/jobs*.txt";
 #die();
 
-my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=40";
+my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=20";
 if ($step eq "count" or $step eq "all"){
 	warn $cmd2;
 	system $cmd2  unless $no_exec==1;
@@ -297,9 +338,21 @@ if ($step eq "aggr" or $step eq "all"){
 	my $id = $projectName;
 	$id = $aggr_name if $aggr_name;
 	open (JOBS_AGGR, ">$aggr_file");
-	print JOBS_AGGR "sample_id,molecule_h5\n";
+	my $type = $project->getRun->infosRun->{method};
+	if ($type =~ /vdj/) {
+		print JOBS_AGGR "sample_id,vdj_contig_info,donor,origin\n" ;
+	}
+	else{
+		print JOBS_AGGR "sample_id,molecule_h5\n";
+	}	
 	foreach my $patient (@{$patients_name}) {
-		print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/"."outs/molecule_info.h5\n";
+		my $group_type = uc($patient->somatic_group());
+		if ($group_type eq "VDJ") {
+			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/"."outs/vdj_contig_info.pb\n";
+		}
+		else{	
+			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/"."outs/molecule_info.h5\n";
+		}
 	}
 	close JOBS_AGGR;
 	my $aggr_cmd = "cd $dir ; $exec aggr --id=$id --csv=$aggr_file";

@@ -141,7 +141,7 @@ my $len_cb;
 foreach my $data (@{$lines->{"[Data]"}}){
 	next unless  $data->[$pos_cb1];
 	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if  $len_cb->[0] ne length($data->[$pos_cb1]);
-	die() if  $len_cb->[1] ne length($data->[$pos_cb2]);
+	die("CB de taille differente") if  $len_cb->[1] ne length($data->[$pos_cb2]);
 	
 }
 

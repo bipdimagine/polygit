@@ -2,8 +2,8 @@ package bds_steps;
 
 use Term::ReadKey;
 use IO::Prompt;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 #use Data::Printer;
 use FindBin qw($Bin);
 use Time::Local;
@@ -13,117 +13,120 @@ use Data::Dumper;
 use job_bds;
 use job_bds_tracking;
 use sample;
+use Carp;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
-extends (qw(bds_root));
+extends(qw(bds_root));
 
 ###########################################
 # Variables globales pour les paths, id et versions des programmes #
 ###########################################
 
-
-
-
-
-has "again" =>(
-	is        => 'rw',
-	default   => sub{ undef },
+has "again" => (
+	is      => 'rw',
+	default => sub { undef },
 );
 
-has 'fastq_files'  =>(
-	is        => 'rw',
-	isa       => 'HashRef',
-	default   => sub{ {} },
+has 'fastq_files' => (
+	is      => 'rw',
+	default => sub { {} },
 );
 
 #########
 # Méthodes  #
 #########
 
+sub job_super_types () {
+	confess();
 
-
-
-
-method job_super_types (){
-	 confess();
-	#my (@types) = sort{$self->{jobs_super_type}->{$a} <=> $self->{jobs_super_type}->{$b}} keys %{$self->{jobs_super_type}};
-	#return \@types;
+#my (@types) = sort{$self->{jobs_super_type}->{$a} <=> $self->{jobs_super_type}->{$b}} keys %{$self->{jobs_super_type}};
+#return \@types;
 }
-
-
-
 
 ###########################
 # Méthodes liées aux étapes  du pipeline #
 ###########################
 
-
-
-
-
 ###méthode d'aln mem utilisée pour le pipeline miseq, miseq_primer (avec trimming)
-
-
 
 ###méthode utilisée dans le pipeline illumina (sans trimming)
 
-
-
-method run_alignment_frag(Str :$filein){
+sub run_alignment_frag {
+	my ( $self, $hash ) = @_;
+	my $filein = $hash->{filein};
 
 	my $name = $self->patient()->name();
+
 	#confess("check the code man");
 	my ($dirin) = $self->patient()->getSequencesDirectory();
-	my $method = $self->patient()->alignmentMethod();
-	my $dirout = $self->project->getAlignmentPipelineDir("$method");
-	 $filein = file_util::find_fragment_file($self->project,$name,$dirin,"gz");
-	#my $ppn = 16;
-	my $ppn = $self->nproc ;#if $self->nocluster;
-	
+	my $method  = $self->patient()->alignmentMethod();
+	my $dirout  = $self->project->getAlignmentPipelineDir("$method");
+	$filein =
+	  file_util::find_fragment_file( $self->project, $name, $dirin, "gz" );
 
-	my $project_name =  $self->project->name();
-	my $fileout = $dirout.$name.".align.bam";
-	 my $type = "align-frag";
-	 my $stepname = $self->patient->name."@".$type;
-	  my $bin_dev = $self->script_dir();
-	my $cmd = qq{perl $bin_dev/align.pl -file1=$filein -method=$method   -mode=frag -project=$project_name -name=$name -bam=$fileout -fork=$ppn};
-	#my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>$synonym_program->{$method},sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
-	
-	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
-	$self->current_sample->add_job(job=>$job_bds);
-	if ($self->unforce() && -e $fileout){
-		 		$job_bds->skip();
+	#my $ppn = 16;
+	my $ppn = $self->nproc;    #if $self->nocluster;
+
+	my $project_name = $self->project->name();
+	my $fileout      = $dirout . $name . ".align.bam";
+	my $type         = "align-frag";
+	my $stepname     = $self->patient->name . "@" . $type;
+	my $bin_dev      = $self->script_dir();
+	my $cmd =
+qq{perl $bin_dev/align.pl -file1=$filein -method=$method   -mode=frag -project=$project_name -name=$name -bam=$fileout -fork=$ppn};
+
+#my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,cmd=>["$cmd"],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds,software=>$synonym_program->{$method},sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name);
+
+	my $job_bds = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds,
+		software     => "",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
 	}
 	return ($fileout);
-	
-#	
-#	$self->hash_steps->{$stepname}->{id}= 2;	
+
+#
+#	$self->hash_steps->{$stepname}->{id}= 2;
 #	my ($job_hisat,$job_final) = $self->construct_jobs(stepname=>$stepname,cmd=>[$cmd],ppn=>$proc);
 #	return ([$job_hisat],[$bam]);
 }
 
-method alignment (Str :$filein){
-	my $name = $self->patient()->name();
+sub alignment {
+	my ( $self, $hash ) = @_;
+	my $filein = $hash->{filein};
+	my $name   = $self->patient()->name();
 	my $method = $self->patient()->alignmentMethod();
-	my $run = $self->patient->getRun();	
-		if ($run->infosRun->{method} eq "fragment"){
-			return $self->run_alignment_frag(filein=>$filein);
-		}
-		return $self->run_alignment_pe(filein=>$filein);
+	my $run    = $self->patient->getRun();
+	if ( $run->infosRun->{method} eq "fragment" ) {
+		return $self->run_alignment_frag({ filein => $filein} );
+	}
+	return $self->run_alignment_pe( {filein => $filein} );
 }
 
+sub run_alignment_pe {
+	my ( $self, $hash ) = @_;
+	my $filein = $hash->{filein};
 
+	my $method       = $self->patient()->alignmentMethod();
+	my $name         = $self->patient()->name();
+	my ($dirin)      = $self->patient()->getSequencesDirectory();
+	my $project_name = $self->project->name();
+	my $dirout       = $self->project->getAlignmentPipelineDir($method);
+	$dirout .= "/" . $self->patient()->name() . "/";
+	my $run  = $self->patient->getRun();
+	my $type = $run->infosRun->{method};
+	system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
 
-method run_alignment_pe (Str :$filein!){
-		
-		my $method = $self->patient()->alignmentMethod();
-		my $name = $self->patient()->name();
-		my ($dirin) = $self->patient()->getSequencesDirectory();
-		my $project_name =  $self->project->name();
-		my $dirout = $self->project->getAlignmentPipelineDir($method);
-		$dirout .= "/".$self->patient()->name()."/";
-		my $run = $self->patient->getRun();
-		my $type = $run->infosRun->{method};
-		system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
 	#my $ppn = 10;
 	my $ppn = $self->nproc;# if $self->nocluster;
 
@@ -1598,6 +1601,40 @@ method rnaseq_metrics (Str :$filein){
 	
 	return ($fileout);
 }
+
+method hla (Str :$filein){
+	my $name = $self->patient()->name();
+	my $project=$self->patient()->project;
+	my $m = $self->patient->alignmentMethod();
+	my $project_name = $self->patient()->getProject->name();
+	my $dir_out= $project->getAlignmentDir("$m")."/hla";
+	system("mkdir $dir_out && chmod a+rwx $dir_out") unless -e $dir_out;
+		
+	#my $method = $self->patient()->alignmentMethod();
+	my $fileout  =$dir_out."/".$name."_bestguess_G.txt";
+
+	my $ppn = 2 ;
+	$ppn = 1 if $self->nocluster;
+
+	die() if 	$fileout eq $filein;
+			
+	
+	my $java = $project->buffer->software("java");
+	my $picard =  $project->buffer->software("picard");
+	
+	my $cmd =  "singularity exec -H /data-isilon:/data-isilon -w /data-isilon/STAT_GEN/hla-la.v0 bash /data-isilon/STAT_GEN/Projets_divers/HLA_haplotypes/script_hla-la_args_sing.sh $project_name $name HG19";
+	my $type = "hla";
+	my $stepname = $self->patient->name."@".$type;
+	my $job_bds = job_bds_tracking->new(uuid=>$self->bds_uuid,software=>"",sample_name=>$self->patient->name(),project_name=>$self->patient->getProject->name,cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job(job=>$job_bds);
+	if ($self->unforce() && -e $fileout){
+		 		$job_bds->skip();
+	}
+	
+	return ($fileout);
+}
+
+
 
 method fastqScreen (Str :$filein){
 	my $name = $self->patient()->name();

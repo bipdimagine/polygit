@@ -127,11 +127,13 @@ if (exists $pipeline->{sv}){
 	move_sv($sv_file,$patient);
 }
 
-if (exists $pipeline->{count}){
+if (exists $pipeline->{dragen_count}){
+	warn "toto";
 
 	my $count_file = $dir_pipeline."/".$prefix.".quant.sf";
 	my $splice_file = $dir_pipeline."/".$prefix.".SJ.out.tab";
-	move_count($count_file,$splice_file,$patient);
+	warn $splice_file;
+	move_rna_count($count_file,$splice_file,$patient);
 }
 
 
@@ -178,7 +180,9 @@ sub move_gvcf {
 }
 sub move_vcf {
 	my ($vcf,$patient) = @_;
+	my $prod = $patient->getVariationsFileName("dragen-calling");
 	my $prod = $patient->vcfFileName("dragen-calling");
+
 	backup($prod) if -e $prod;
 	system("rsync -rav  $url"."$vcf $prod");
 	system("rsync -rav  $url"."$vcf.tbi $prod.tbi");

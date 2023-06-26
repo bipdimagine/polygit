@@ -2,7 +2,7 @@ package GenBoDeletion;
 
 use strict;
 use Vcf;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
@@ -187,14 +187,7 @@ sub siftScore {
 	return '-';
 }
 
-sub get_kyoto_id{
-	my $self = shift;
-	return $self->{kyoto_id} if exists $self->{kyoto_id};
-	my $chr    = $self->getChromosome();
-	my $pos    = $self->position($chr)->start();
-	 $self->{kyoto_id} = join("_",($chr->name,$pos,"Del"));
-	 return $self->{kyoto_id};
-}
+
 
 sub annotation_coding {
 	my ( $self, $tr, $annot ) = @_;

@@ -1,6 +1,6 @@
 package GenBoTranscript;
 use strict;
-use Moose;
+use Moo;
 use GenBoCoverage;
 use Data::Dumper;
 use Config::Std;
@@ -21,6 +21,47 @@ has isTranscript => (
 has biotype => (
 	is		=> 'ro',
 	required=> 1,
+);
+
+has remap_status => (
+	is		=> 'ro',
+	required=> 1,
+);
+
+has is_partial_transcript => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return if ($self->getProject->gencode_version() eq '943');
+		#return 1 if $self->remap_status() and $self->remap_status() eq 'partial';
+		return 1 if $self->hash_partial_infos();
+		return;
+	}
+);
+
+has hash_partial_infos => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		#my $no = $self->getProject->rocksPartialTranscripts();
+		my $no = $self->getProject->lmdbPartialTranscripts();
+		return unless $no;
+		my $h = $no->get($self->id);
+		return $h if $h;
+		return;
+	}
+);
+
+
+has sequence_from_hg38 => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return $self->hash_partial_infos->{seq38};
+	}
 );
 
 has is_omim => (
@@ -208,6 +249,9 @@ has protein => (
 sub getOrfSequence {
 	my $self = shift;
 	my $seq = $self->sequence();
+	if ($self->is_partial_transcript) {
+		$seq = $self->sequence_from_hg38();
+	}
 	my $cs = substr($seq,$self->orf_start-1,abs($self->orf_start-$self->orf_end)+1);
 	$self->{coding_sequence} = $cs;
 	return $self->{coding_sequence} if ($self->{coding_sequence});
@@ -364,18 +408,21 @@ sub ispseudoGene{
 sub codonsConsequenceForVariations {
 	my ($self,$var,$startg,$endg) = @_;
 	return $self->codonsConsequenceForDuplication($var,$startg,$endg) if ($var->isLargeDuplication());
+	return $self->codonsConsequenceForLargeInsertion($var,$startg,$endg) if ($var->isLargeInsertion() or $var->isMei());
 	return $self->codonsConsequenceForDeletion($var,$startg,$endg) if ($var->isDeletion() or $var->isLargeDeletion());
 	return $self->codonsConsequenceForMnp($var) if $var->isMnp();
 	return $self->codonsConsequenceForInsertion($var) if $var->isInsertion();
 	return $self->codonsConsequenceForSubstitution($var); 
 }
+
+
+
 sub codonsConsequenceForDuplication {
 		my ($self,$var) = @_;
-	my $span =  Set::IntSpan::Fast::XS->new(($var->start()-100)."-".($var->end()+100));
+	my $span =  Set::IntSpan::Fast::XS->new(($var->start()-5)."-".($var->end()+5));
 	my @tt = $self->getGenomicSpan->intersection($span)->as_array();
 	my $real_start = $tt[0];
 	my $real_end = $tt[-1];
-	warn "----->".$tt[0] if $var->id() eq "1_1669703_G_GGATGGAGGCCTGGGATGGTGGGGCGCAGGCGGAGGGGTGGGGCCCAGGGGGCCTCACCTGTGTACTCCCCCAGAATCATCCGAGACATGATCACCGTGAAGATGGGGGCGGAGCTCTTCA";
 	my $pos_transcript = $self->translate_position($real_start);
 	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
 	my $pos_orf_end = $pos_orf + 1; 
@@ -394,16 +441,17 @@ sub codonsConsequenceForDuplication {
 	};
 	return $results;
 }
-sub codonsConsequenceForMei {
+
+sub codonsConsequenceForLargeInsertion {
 	my ($self,$var) = @_;
-	my $span =  Set::IntSpan::Fast::XS->new($var->start()."-".($var->start()+50));
+	my $span =  Set::IntSpan::Fast::XS->new(($var->start()+3)."-".($var->start()+3));
 	my @tt = $self->getGenomicSpan->intersection($span)->as_array();
 	my $real_start = $tt[0];
 	my $real_end = $tt[-1];
 	my $pos_transcript = $self->translate_position($real_start);
 	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
 	my $pos_orf_end = $pos_orf + 1; 
-		my $codon1 = $self->getCodon($pos_orf);
+	my $codon1 = $self->getCodon($pos_orf);
 		
 	my $results = {
 		transcript_position => $pos_transcript,
@@ -412,9 +460,9 @@ sub codonsConsequenceForMei {
 		seq_orf =>$var->sequence,
 		prot_position => ceil($pos_orf/3),
 		codon => $codon1,
-		codon_mut => "",
-		aa => "MEI",#$self->getProject->biotools->translate($codon1,$self->isMT),
-		aa_mut => "mei",
+		codon_mut => "?",
+		aa => "?",#$self->getProject->biotools->translate($codon1,$self->isMT),
+		aa_mut => "?",
 	};
 	return $results;
 }
@@ -574,9 +622,12 @@ sub codonsConsequenceForSubstitution {
 	my $seq_orf = substr($self->getOrfSequence,$pos_orf-1,1);
 	
 	my $seq= $var->getSequence();
+	
+	
 	$seq = reverse_base($seq) if ($self->strand == -1);
 	my $codon2 = $codon1;
 	my $splice = ($pos_orf+2) % 3;
+	
 	substr($codon2,$splice,1,$seq);
 	my $results = {
 		transcript_position => $pos_transcript,
@@ -832,6 +883,27 @@ is      => 'rw',
 );
 
 
+sub get_correct_translate_position_hg38 {
+	my ($self, $pos) = @_;
+	return 0 if not $self->is_partial_transcript();
+	return 0 unless $self->hash_partial_infos;
+	$self->getSpanSpliceSite->empty();
+	$self->getSpanSpliceSite->add_from_string( $self->hash_partial_infos->{splice_site_span}->as_string() );
+	$self->getSpanEssentialSpliceSite->empty();
+	$self->getSpanEssentialSpliceSite->add_from_string( $self->hash_partial_infos->{essential_splice_site_span}->as_string() );
+	$self->{orf_start_new} = $self->hash_partial_infos->{HG38}->{cds}->{start};
+	$self->{orf_end_new} = $self->hash_partial_infos->{HG38}->{cds}->{end};
+	foreach my $nt (sort {$b <=> $a} keys %{$self->hash_partial_infos->{intspan}}) {
+		if ($self->hash_partial_infos->{intspan}->{$nt}->contains($pos)) {
+			return $nt;
+		}
+	}
+	warn "\n";	
+	warn "Transcript: ".$self->id();
+	warn "Checking position : ".$pos;
+	warn Dumper $self->hash_partial_infos();
+	confess("\n\nProblem transcript ".$self->id()." in get_correct_translate_position_hg38 method. Die\n\n");
+}
 
 #translate genomic position to transcript position call to search_position on the corresponding array
 sub translate_position{
@@ -843,12 +915,17 @@ sub translate_position{
 	my $r = $r1->[0];
 	my $rpos = abs($r->[0]-$pos)+1 + $r->[1];
  	$rpos = abs($rpos - $self->length) +1 if $self->strand == -1;
-		return $rpos;
-			$self->project->start_timer();
-	my $t = $self->search_position($pos,$self->array_pos);
-	$self->project->add_timer();
-	die($t." ".$rpos) if $t ne $rpos;
-	return $t;
+ 	
+# 	warn $rpos;
+ 	$rpos += $self->get_correct_translate_position_hg38($rpos);
+ 	
+	return $rpos;
+	
+#			$self->project->start_timer();
+#	my $t = $self->search_position($pos,$self->array_pos);
+#	$self->project->add_timer();
+#	die($t." ".$rpos) if $t ne $rpos;
+#	return $t;
 	#return $self->search_position($pos,$self->array_pos);
 }
 #translate genomic position to orf position call to search_position on the corresponding array

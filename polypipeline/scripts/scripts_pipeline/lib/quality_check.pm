@@ -300,7 +300,7 @@ sub fast_plink {
 
 			$fam->{nb_snp}++;
 		}
-
+#$fam->{nb_snp}++;
 		#}
 
 		#my ($find) = grep {$snp->{samples}->{$_}  eq "0 0"} @samples;
@@ -344,7 +344,7 @@ sub fast_plink {
 		my $cmd2 =
 "$plink --tped $tped_file --allow-extra-chr  --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName";
   
-		#	warn $cmd2;
+			warn $cmd2;
 		my @log   = `$cmd2`;
 		my $file1 = "$dir/" . $fam->name();
 		open( MENDEL, "$file1.imendel" )
@@ -371,7 +371,7 @@ sub fast_plink {
 	}
 
 	my $cmd3 =
-"$plink --tped $tped_file --tfam $ped_file  --noweb  --check-sex --out $dir/$projectName 1>$logPlink 2>>$logPlink";
+"$plink --tped $tped_file --allow-extra-chr --tfam $ped_file  --noweb  --check-sex --out $dir/$projectName 1>$logPlink 2>>$logPlink";
 	system($cmd3);
 
 	#	warn $cmd3;

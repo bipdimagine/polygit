@@ -41,16 +41,22 @@ my %hash;
 while(<SUMMARY>){
 	
 	chomp($_);
+	warn $_;
 #	my($patient,$protocol,$size,$udi,$index1,$index2,$gRNA,$ngRNA,$amplicon,$scaffold,$extension)=split(",",$_);
-#	my($patient,$gRNA,$enzyme,$amplicon)= split(",",$_);
-	my($patient,$udi,$gRNA,$ngRNA,$amplicon,$scaffold,$extension)= split(",",$_);
-	$hash{$patient}->{gRNA}=$gRNA;
-	$hash{$patient}->{amplicon}=$amplicon;
-	$hash{$patient}->{scaffold}=$scaffold;
-	$hash{$patient}->{ngRNA}=$ngRNA;
-	$hash{$patient}->{extension}=$extension;
-	$hash{$patient}->{udi}=$udi;
+	my($patient,$on,$gRNA,$enzyme,$amplicon)= split(",",$_);
+	warn $enzyme;
+	my $name= $patient."-".$on;
+#	my($patient,$udi,$gRNA,$ngRNA,$amplicon,$scaffold,$extension)= split(",",$_) if $analyse eq "PE";
+	$hash{$name}->{gRNA}=$gRNA;
+	$hash{$name}->{amplicon}=$amplicon;
+	$hash{$name}->{on}=$on;
 	
+#	$hash{$patient}->{udi}=$udi;
+	if($analyse eq "PE"){
+#		$hash{$patient}->{scaffold}=$scaffold ;
+#		$hash{$patient}->{ngRNA}=$ngRNA;
+#		$hash{$patient}->{extension}=$extension;
+	}
 }
 
 warn Dumper \%hash;
@@ -61,11 +67,13 @@ my $script_file = $dir."/jobs.txt";
 open(SCRIPT,">".$script_file) or die "impossible d'ouvrir le fichier de donnees $script_file";
 foreach my $k (keys(%hash)){
 	warn $k;
-		my $pat = $project->getPatient($k);
+		my ($pat_name,$on) = split("-",$k);
+		my $pat = $project->getPatient($pat_name);
+		my $reste=$hash{$k}->{on};
 		my $bc = $pat->barcode();
 		$dirin = $pat->getSequencesDirectory();
 		#$dirin = $dir;
-		my $name = $pat->name();
+		my $name = $pat->name;
 		my $r1 = wanted($name,$bc,$dirin,"R1");
 		#my $r1 = $bc."S_L003_R1_001.fastq.gz";
 		warn $r1;
@@ -73,7 +81,6 @@ foreach my $k (keys(%hash)){
 		#my $r2 =  $bc."S_L003_R2_001.fastq.gz";
 		my $run = $pat->getRun();
 		my $type = $run->infosRun->{method};
-		warn $type;
 		my $enzyme = $pat->somatic_group();
 		my $wnuc;
 		my $enuc;
@@ -85,7 +92,8 @@ foreach my $k (keys(%hash)){
 			$wnuc = "A";
 			$enuc = "G";
 		}
-		my $cmd = "docker run --rm -v $dir:/DATA -v $dirin:/SEQ -w /DATA  pinellolab/crispresso2 CRISPResso  -r1 /DATA/$r1 -a $hash{$name}->{amplicon} --no_rerun --output_folder /DATA/$name ";
+		my $final_name = $k;
+		my $cmd = "docker run --rm -v $dir:/DATA -v $dirin:/SEQ -w /DATA  pinellolab/crispresso2 CRISPResso  -r1 /DATA/$r1 -a $hash{$k}->{amplicon} --no_rerun --output_folder /DATA/$final_name ";
 		$cmd .= "-r2 /DATA/$r2" if $type eq "paired-end";
 		$cmd .= " --quantification_window_size 10 --quantification_window_center -10 --base_editor_output --conversion_nuc_from $wnuc --conversion_nuc_to $enuc" if $analyse eq "editing" ;
 		if($analyse eq "PE"){
@@ -95,7 +103,7 @@ foreach my $k (keys(%hash)){
 			$cmd .= " --prime_editing_pegRNA_scaffold_seq ".$hash{$name}->{scaffold} if $hash{$name}->{scaffold};
 		}
 		else{
-			$cmd .= " -g ".$hash{$name}->{gRNA};
+			$cmd .= " -g ".$hash{$k}->{gRNA};
 		}
 		
 		

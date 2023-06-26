@@ -2,8 +2,8 @@ package GenBoNoSqlLmdbCache;
 use strict;
 use warnings;
 use DBD::SQLite;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Dumper;
 use Set::IntSpan::Fast::XS;
 use Module::Load;
@@ -30,7 +30,7 @@ sub put_cache {
 	$limit = 48 unless $limit;
 	$limit = $limit *60 *60;
  	my $end = time + $limit;
- 	$self->put($key1,{expiration=>$end,cache=>$key2});
+ 	$self->put($key1,{expiration=>$end,cache=>$key2,creation=>time});
  	return;
 }
 sub save_cache_hash {
@@ -63,15 +63,16 @@ sub save_cache_text {
 		$limit = $limit *60 *60;
 		$end = time + $limit;
 	}
-	$self->put($key1,{expiration=>$end,cache=>Compress::Zlib::compress($key2),snappy_html=>1});
+	$self->put($key1,{expiration=>$end,cache=>Compress::Zlib::compress($key2),snappy_html=>1,date=>time});
 }
 sub put_cache_text {
 	my ($self,$key1,$key2,$limit,$debug) = @_;
 #	require "Compress/Zstd.pm";
-	my $v = $self->get($key1);
+	my $v = $self->get_cache($key1);
 	if($v){
 			my $kk = $key1."::".rand(100)."::".time;
 			$self->save_cache_text($kk,$v);
+			
 	}
 	$self->save_cache_text($key1,$key2,$limit);
  	return;

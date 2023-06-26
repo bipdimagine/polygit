@@ -111,21 +111,21 @@ else {
 
 
 if ($cache == 1){
-	 $project = $buffer->newProjectCache( -name => $projectName );
+	$project = $buffer->newProjectCache( -name => $projectName );
 }
 else {
- $project = $buffer->newProject( -name => $projectName );
+	$project = $buffer->newProject( -name => $projectName );
 }
 			next if $project->isGenome();
 			my $no = $project->noSqlQuality("w");
-				$project->get_only_list_patients(join(",",@selected_patient));
+			$project->get_only_list_patients(join(",",@selected_patient));
 			$no->put($project->name,"identity",quality_check::identity($project,$fork));
 			$no->close();
 	},
 	"files" => sub{
 			warn "files" ;
 			my $buffer = GBuffer->new();
-				$project->get_only_list_patients(join(",",@selected_patient));
+			$project->get_only_list_patients(join(",",@selected_patient));
 			my $project = $buffer->newProject( -name => $projectName );
 			my $no = $project->noSqlQuality("w");
 			$no->put($project->name,"files",quality_check::files($project));

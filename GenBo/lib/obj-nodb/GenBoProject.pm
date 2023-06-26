@@ -2,8 +2,8 @@ package GenBoProject;
 use FindBin qw($Bin);
 use strict;
 use POSIX qw(strftime);
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+use Carp;
 use Data::Dumper;
 extends 'GenBo';
 use GenBoFamily;
@@ -16,7 +16,10 @@ use decode_prediction_matrix;
 use GenBoDeletion;
 use GenBoInsertion;
 use GenBoLargeDeletion;
+use GenBoInversion;
+use GenBoBoundary;
 use GenBoLargeDuplication;
+use GenBoLargeInsertion;
 use GenBoCnv;
 use GenBoMei;
 
@@ -47,10 +50,14 @@ use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
 use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlDejaVuJunctions;
+use GenBoNoSqlDejaVuJunctionsCanoniques;
+use GenBoNoSqlDejaVuJunctionsPhenotype;
+use GenBoNoSqlDejaVuJunctionsResume;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
 use GenBoJunctionCache;
+use GenBoNoSqlRocks;
 use Storable qw(store retrieve freeze dclone thaw);
 
 #use LMDB_File qw(:flags :cursor_op);
@@ -67,6 +74,17 @@ sub hasHgmdAccess {
 	return 1 if ( $self->buffer->queryHgmd->getHGMD($user) == 1 );
 	return;
 }
+
+has extAlignFile => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		return "cram" if $self->getVersion() =~ /HG38/;
+		return "bam";
+		return 1;
+	},
+);
 
 # just stupid mehtod to print on stdout a dot each  modulo $max  it's for waiting for CGI
 # method to write dot on stdout for cgi waiting
@@ -1106,6 +1124,16 @@ has geneWindow => (
 	},
 );
 
+has is_human_genome => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 1 if $self->getVersion() =~ /HG/;
+		return;
+	},
+);
+
 has version => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1407,6 +1435,9 @@ has gencode_version => (
 		my $self  = shift;
 		my $query = $self->buffer->getQuery();
 		my $id    = $query->getGencodeVersion( $self->id );
+		
+		return $id if $id =~ /M/;
+		
 		return $id if defined $id && $id > -1;
 
 		return $self->update_gencode_version();
@@ -1415,6 +1446,13 @@ has gencode_version => (
 
 sub get_gencode_directory {
 	my ( $self, $version ) = @_;
+	if ($self->annotation_genome_version() =~ /MM38/) {
+		return "/data-isilon/public-data/repository/MM38/annotations/gencode.vM25/lmdb/";
+	}
+	if ($self->annotation_genome_version() =~ /MM39/) {
+		return "/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/lmdb/";
+	}
+	
 	my $database = "gencode";
 	$version = $self->gencode_version unless $version;
 	return $self->{directory}->{$version}->{$database}
@@ -1549,6 +1587,48 @@ has lmdbOmim => (
 	}
 );
 
+has getRockPartialTranscriptDir  => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->get_gencode_directory();
+	}
+);
+
+has lmdbPartialTranscripts => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return unless -e $self->getRockPartialTranscriptDir().'/partial_transcripts_lmdb';
+		my $no = GenBoNoSqlLmdb->new(
+			dir         => $self->getRockPartialTranscriptDir(),
+			mode        => 'r',
+			is_index    => 1,
+			name        => 'partial_transcripts_lmdb',
+			is_compress => 1,
+		);	
+		return $no;
+	}
+);
+
+has rocksPartialTranscripts => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $no = GenBoNoSqlRocks->new(
+			dir         => $self->getRockPartialTranscriptDir(),
+			mode        => 'r',
+			is_index    => 1,
+			name        => 'partial_transcripts',
+			is_compress => 1,
+		);	
+		return unless $no->exists_rocks();
+		return $no;
+	}
+);
 
 has litePredictionMatrix => (
 	is      => 'ro',
@@ -1625,14 +1705,21 @@ has annotation_public_path => (
 	},
 );
 
+
+sub get_dejavu_junctions_path {
+	my ($self, $phenotype_name) = @_;
+	my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
+	$dir .= '/'.$phenotype_name.'/' if ($phenotype_name);
+	confess("junction dejavu $dir") unless -e $dir;
+	return $dir;
+}
+
 has DejaVuJunction_path => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
-		confess("junction dejavu $dir") unless -e $dir;
-		return $dir;
+		return $self->get_dejavu_junctions_path();
 	},
 );
 
@@ -1921,7 +2008,7 @@ has gtf_dragen_file => (
 		my $path = my $version = $self->getVersion();
 		my $file =
 			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
+		  .  $version  . '/'
 		  . $self->buffer()->config->{'public_data'}->{gtf_dragen};
 		return $file;
 	},
@@ -1964,7 +2051,7 @@ has refFlat_file_star => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/'
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
 		  . $version
 		  . '/refFlat/refFlat_no_chr.txt';
 		return $file;
@@ -2090,6 +2177,9 @@ has genomeFai => (
 			next if $chr =~ /KI/;
 			next if $chr =~ /GL/;
 			next if $chr =~ /EBV/;
+			next if $chr =~ /JH/;
+			next if $chr =~ /MU0/;
+			next if $chr =~ /_random/;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -2682,7 +2772,7 @@ sub getRunFromId {
 	$self->setRuns();
 	return $self->{objects}->{runs}->{$id}
 	  if exists $self->{objects}->{runs}->{$id};
-	confess();
+	confess($id);
 }
 
 sub setPhenotypes {
@@ -2948,7 +3038,26 @@ sub setLargeDeletions {
 	}
 	return $delIds;
 }
-
+sub setInversions {
+	my $self = shift;
+	my $delIds;
+	foreach my $patient ( @{ $self->getPatients() } ) {
+		foreach my $del ( @{ $patient->getInversions() } ) {
+			$delIds->{ $del->id() } = undef;
+		}
+	}
+	return $delIds;
+}
+sub setBoundaries {
+	my $self = shift;
+	my $delIds;
+	foreach my $patient ( @{ $self->getPatients() } ) {
+		foreach my $del ( @{ $patient->getBoundaries() } ) {
+			$delIds->{ $del->id() } = undef;
+		}
+	}
+	return $delIds;
+}
 sub setMnps {
 	my $self = shift;
 	my $delIds;
@@ -3382,6 +3491,7 @@ sub myflushobjects {
 	#confess if $ids =~ /ENSG0/;
 	#unless (exists $ids->{none}) {
 	foreach my $id (@$array_ids) {
+		
 		unless ( exists $self->{objects}->{$type}->{$id} ) {
 			if (   $type eq 'genes'
 				or $type eq 'transcripts'
@@ -3417,12 +3527,9 @@ sub myflushobjects {
 			elsif ( $type eq 'deletions' )  { $self->getVariantFromId($id); }
 			elsif ( $type eq 'indels' )     { die(); }
 			elsif ( $type eq 'insertions' ) { $self->getVariantFromId($id); }
-			elsif ( $type eq 'large_duplications' ) {
-				$self->getVariantFromId($id);
-			}
-			elsif ( $type eq 'large_deletions' ) {
-				$self->getVariantFromId($id);
-			}
+			elsif ( $type eq 'boundaries' ) { $self->getVariantFromId($id); }
+			elsif ( $type eq 'large_duplications' ) {$self->getVariantFromId($id);}
+			elsif ( $type eq 'large_deletions' ) {$self->getVariantFromId($id);}
 			elsif ( $type eq 'mnps' ) {
 				warn $id . "-";
 				$self->getVariantFromId($id);
@@ -3562,6 +3669,9 @@ has hashTypeObject => (
 			'insertions'         => 'GenBoInsertion',
 			'large_deletions'    => 'GenBoLargeDeletion',
 			'large_duplications' => 'GenBoLargeDuplication',
+			'large_insertions'	 => 'GenBoLargeInsertion',
+			'inversions' 	 	 => 'GenBoInversion',
+			'boundaries' 	 	 => 'GenBoBoundary',
 			'references'         => 'GenBoReference',
 			'transcripts'        => 'GenBoTranscript',
 			'proteins'           => 'GenBoProtein',
@@ -3582,7 +3692,7 @@ has hashTypeObject => (
 			'svdeletions'        => 'GenBoSVDel',
 			'regulatory_regions' => 'GenBoRegulatoryRegion',
 			'junctions'			 => 'GenBoJunction',
-			'meis'				=>'GenBoMei',
+			'meis'				 =>'GenBoMei',
 		};
 		return $hashTypeObject;
 	}
@@ -3604,7 +3714,7 @@ has check_ped_db_only => (
 sub createObject {
 	my ( $self, $type, $hash ) = @_;
 	my $hashTypeObject = $self->hashTypeObject();
-	confess("\n\nERROR: No type defined to create object $type !! die...\n\n")  unless exists $hashTypeObject->{$type};
+	confess("\n\nERROR: No type defined to create object -$type- !! die...\n\n".Dumper $hash)  unless exists $hashTypeObject->{$type};
 	$hash->{project} = $self;
 
 	my $typeObj = $hashTypeObject->{$type};
@@ -3652,7 +3762,9 @@ sub createObject {
 		or $type eq "deletions"
 		or $type eq "insertions"
 		or $type eq "large_duplication"
-		or $type eq "large_deletions" )
+		or $type eq "large_deletions" 
+		or $type eq "large_insertions"
+		or $type eq "inversions" )
 	{
 		$object = $self->get_void_object($type);
 		foreach my $k ( keys %$hash ) {
@@ -3897,10 +4009,22 @@ sub getSVeqDir {
 	return $self->makedir($path);
 }
 
+sub project_path_version {
+	my ($self,$version) = @_;
+	my $path = $self->getProjectRootPath() . "/" .$version . "/";
+	return $self->makedir($path);
+}
+
+sub getAlignmentRootDirWithVersion {
+	my ($self,$version) = @_;
+	my $path = $self->getProjectRootPath() . "/".$version. "/align/";
+	return $self->makedir($path);
+}
+
 sub getAlignmentDir {
-	my ( $self, $method_name ) = @_;
+	my ( $self, $method_name,$version ) = @_;
 	confess() unless $method_name;
-	my $path = $self->getAlignmentRootDir . "/" . $method_name . '/';
+	my $path = $self->getAlignmentRootDir($version) . "/" . $method_name . '/';
 	return $self->makedir($path);
 }
 
@@ -3940,8 +4064,14 @@ sub getCellRangerRootDir {
 	return $self->makedir($path);
 }
 sub getAlignmentRootDir {
-	my ($self) = @_;
-	my $path = $self->project_path . "/align/";
+	my ($self,$version) = @_;
+	my $path;
+	if ($version){
+	 $path = $self->getProjectRootPath() . "/".$version. "/align/";
+	}
+	else {
+	 $path = $self->project_path . "/align/";
+	}
 	return $self->makedir($path);
 }
 
@@ -3979,7 +4109,13 @@ sub getVariationsDir {
 	$path .= $method_name . '/';
 	return $self->makedir($path);
 }
-
+sub getJunctionsDir {
+	my ( $self, $method_name ) = @_;
+	my $path = $self->project_path . "/junctions/";
+	$self->makedir($path);
+	$path .= $method_name . '/';
+	return $self->makedir($path);
+}
 sub getAnnotSVDir {
 	my ( $self, $method_name ) = @_;
 	my $path = $self->project_path . "/variations/";
@@ -4418,6 +4554,46 @@ has dejavuJunctions => (
 		return  GenBoNoSqlDejaVuJunctions->new( dir => $sqliteDir, mode => "r" );
 	}
 );
+
+has dejavuJunctionsResume => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->DejaVuJunction_path();
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctionsResume->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
+has dejavuJunctionsCanoniques => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->get_dejavu_junctions_path('canoniques');
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
+sub dejavuJunctionsPhenotype {
+	my ($self, $phenotype_name) = @_;
+	$phenotype_name =~ s/ /_/g;
+	$phenotype_name = lc($phenotype_name);
+	confess("\n\nERROR: DV Junctions Phenotype mandatory\n\n") unless ($phenotype_name);
+	return $self->{'dv_junctions_'.$phenotype_name} if (exists $self->{'dv_junctions_'.$phenotype_name});
+	my $release = $self->annotation_genome_version();
+	$release = 'HG19' if ($release =~ /HG19/);
+	my $sqliteDir = $self->get_dejavu_junctions_path($phenotype_name);
+	die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+	$self->{'dv_junctions_'.$phenotype_name} = GenBoNoSqlDejaVuJunctionsPhenotype->new( phenotype_name => $phenotype_name, dir => $sqliteDir, mode => "r" );
+	return $self->{'dv_junctions_'.$phenotype_name};
+}
 
 
 has dejavuSVIntervalTree => (
@@ -5639,6 +5815,7 @@ sub getDejaVuInfos {
 	my $hres;
 	my $no = $self->lite_deja_vu2();
 	my $string_infos = $no->get( $chr, $id );
+	return $hres unless ($string_infos);
 	foreach my $string_infos_project (split('!', $string_infos)) {
 		my @lTmp = split(':', $string_infos_project);
 		my $project_name = 'NGS20'.$lTmp[0];
@@ -5888,9 +6065,9 @@ sub setVariants {
 	elsif ( $type eq 'insertions' )      { $method = 'getInsertions'; }
 	elsif ( $type eq 'deletions' )       { $method = 'getDeletions'; }
 	elsif ( $type eq 'large_deletions' ) { $method = 'getLargeDeletions'; }
-	elsif ( $type eq 'large_duplications' ) {
-		$method = 'getLargeDuplications';
-	}
+	elsif ( $type eq 'large_duplications' ) {$method = 'getLargeDuplications';}
+	elsif ( $type eq 'large_inserttions' ) {$method = 'getLargeInsertions';}
+	elsif ( $type eq 'inversions' ) {$method = 'getInversions';}
 	my $h;
 
 	foreach my $chr ( @{ $self->getChromosomes() } ) {
@@ -6088,6 +6265,13 @@ has get_path_rna_seq_polyrna_root  => (
 	default => sub {
 		my $self = shift;
 		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
+		return $path if -d $path;
+		my @lPotentialRelease = ('HG19', 'HG19_CNG', 'HG19_MT', 'HG38', 'HG38-ERCC', 'MM38', 'MM39');
+		foreach my $rel2 (@lPotentialRelease) {
+			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$rel2."/polyRNA/";
+			return $alt_path if -d $alt_path;
+			
+		}
 		return $path;
 	},
 );
@@ -6130,6 +6314,8 @@ has get_hash_patients_description_rna_seq_junction_analyse => (
 		my $project_name = $self->name;
 		my (@lFilesDescription, $hType_patients);
 		my $path_rna_description = $self->get_path_rna_seq_junctions_analyse_description_root();
+		return $hType_patients if (not -d $path_rna_description);
+		
 		opendir my ($dir), $path_rna_description;
 		my @found_files = readdir $dir;
 		closedir $dir;
@@ -6183,6 +6369,8 @@ sub getQueryJunction {
 	$args{file}    = $fileName;
 	if ($method eq 'RI') { $args{isRI} = 1; }
 	elsif ($method eq 'SE') { $args{isSE} = 1; }
+	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
+	elsif ($method eq 'STAR') { $args{isSTAR} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;
@@ -6190,26 +6378,25 @@ sub getQueryJunction {
 
 sub setJunctions {
 	my ($self) = @_;
-	my $h_ids;
-	my $path = $self->get_path_rna_seq_junctions_analyse_all_res();
-	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
-	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
-	if ($ri_file and -e $ri_file ) {
-		foreach my $hres (@{$self->getQueryJunction($ri_file, 'RI')->parse_file()}) {
-			my $obj = $self->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
+	my @lObj;
+	foreach my $chr (@{$self->getChromosomes()}) {
+		push(@lObj, @{$chr->getJunctions()});
 	}
-	if ($se_file and -e $se_file) {
-		foreach my $hres (@{$self->getQueryJunction($se_file, 'SE')->parse_file()}) {
-			my $obj = $self->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
-	return $h_ids;
+	return \@lObj;
 }
 		
-
+sub writeCaptureBedFile {
+	my ($self,$span,$file) = @_;
+	$span = 0 unless $span;
+	open ("BED",">$file");
+	foreach my $chr (@{$self->getChromosomes}){
+		my $intspan = $chr->getIntSpanCapture($span);
+		next if $intspan->is_empty;
+		my @line = $self->buffer->intspanToBed($chr,$intspan);
+		print BED join("\n",@line)."\n";
+	}	
+	close(BED);
+}
 
 1;
 

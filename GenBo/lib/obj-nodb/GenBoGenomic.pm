@@ -2,12 +2,8 @@ package GenBoGenomic;
 
 use strict;
 use Vcf;
-use Moose;
+use Moo;
 use Data::Dumper;
-use Config::Std;
-use GenBoCapture;
-use Position;
- use JSON::XS;
  use GenBoCoverageSamtools;
  use GenBoCoverageTabix;
  use GenBoCoverageLmdb;
@@ -209,7 +205,22 @@ sub setLargeDeletions {
 	}
 	return $hash;
 }
-
+sub setInversions {
+	my $self = shift;
+	my $hash;
+	foreach my $ref (@{$self->getReferences()}){
+		$hash =  $self->objectsInside($ref->getInversions());
+	}
+	return $hash;
+}
+sub setBoundaries {
+	my $self = shift;
+	my $hash;
+	foreach my $ref (@{$self->getReferences()}){
+		$hash =  $self->objectsInside($ref->getBoundaries());
+	}
+	return $hash;
+}
 sub setLargeDuplications {
 	my $self = shift;
 	my $hash;
@@ -218,7 +229,14 @@ sub setLargeDuplications {
 	}
 	return $hash;
 }
-
+sub setLargeInsertions {
+	my $self = shift;
+	my $hash;
+	foreach my $ref (@{$self->getReferences()}){
+		$hash =  $self->objectsInside($ref->getLargeInsertions());
+	}
+	return $hash;
+}
 sub setDeletions {
 	my $self = shift;
 	my $hash;
