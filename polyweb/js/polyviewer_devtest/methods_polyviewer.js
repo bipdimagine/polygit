@@ -2071,8 +2071,8 @@ function create_pane_polysplice(patient_name) {
 						if ($('#b_dejavu_min_ratio_10').prop('checked')) { obj.setArgsPost.only_dejavu_ratio_10 = 1; }
 						var only_gene_positions = document.getElementById('input_gene_positions').value;
 						if (only_gene_positions == '') {}
-						else if (only_gene_positions.match(':')) { obj.setArgsPost.dejavu_percent = only_gene_positions; }
-						else { obj.setArgsPost.dejavu_percent = only_gene_positions; }
+						else if (only_gene_positions.match(':')) { obj.setArgsPost.only_positions = only_gene_positions; }
+						else { obj.setArgsPost.only_gene = only_gene_positions; }
 						obj.ioArgs.content = obj.setArgsPost; 
 						obj.setHref(url_polysplice);
 						dijit.byId('waiting').hide();
