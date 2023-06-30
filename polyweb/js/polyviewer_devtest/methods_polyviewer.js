@@ -2060,7 +2060,7 @@ function create_pane_polysplice(patient_name) {
 					if (obj.toto == 2 ){
 		           		var lTmp = String(window.location.href.split('?')[0]).split('/');
 		           		lTmp.pop();
-		           		var url_polysplice = url_path + '/rnaseq/polysplice.pl';
+		           		var url_polysplice = url_path + '/rnaseq/rna_junctions_patient.pl';
 		           		obj.setArgsPost = {}
 						obj.setArgsPost.view_polyviewer=1;
 						obj.setArgsPost.project=projectName;
@@ -2296,7 +2296,7 @@ function tabPatients(items , request ) {
            onShow:  function() {
            		var lTmp = String(window.location.href.split('?')[0]).split('/');
            		lTmp.pop();
-           		var url_polysplice = url_path + '/rnaseq/polysplice.pl';
+           		var url_polysplice = url_path + '/rnaseq/rna_junctions_patient.pl';
            		url_polysplice += "?view_polyviewer=1&project=" + projectName + "&patient=" + this.patient
            		url_last_launch_patient = url_polysplice;
 				url_polysplice += "&dejavu=15&dejavu_percent=96&min_score=10&only_dejavu_ratio_10=1";

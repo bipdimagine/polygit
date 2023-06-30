@@ -1,14 +1,13 @@
 var is_first_launch_polysplice;
-var used_dejavu_value = 15;
-var used_dejavu_percent_value = 96;
+var used_dejavu_value = 10;
+var used_dejavu_percent_value = 100;
 var used_score_value = 10;
 var url_last_launch_patient;
-var value_dejavu_percent_similar = 96;
+var value_dejavu_percent_similar = 100;
 var value_score = 10;
-var value_dejavu = 15;
+var value_dejavu = 10;
 var var_load_polysplice = 0;
 function load_tab_polysplice(patient_name) {
-	alert('POLYSPLICE');
 	if (var_load_polysplice == 1) {
 		refresh_tab_polysplice();
 		return;

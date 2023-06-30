@@ -5,6 +5,7 @@ use strict;
 use FindBin qw($Bin);
 use lib "$Bin/../../GenBo";
 use lib "$Bin/../../GenBo/lib/obj-nodb";
+use lib "$Bin/../../GenBo/lib/obj-nodb/polyviewer/";
 use lib "$Bin/../GenBo/lib/obj-nodb/packages";
 require
   "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
@@ -18,6 +19,8 @@ use xls_export;
 use session_export;
 use List::MoreUtils qw{ natatime };
 use Parallel::ForkManager;
+use PolyviewerJunction;
+use polysplice_html;
 
 my $cgi                  = new CGI;
 my $project_name         = $cgi->param('project');
@@ -31,6 +34,7 @@ my $only_gene_name       = $cgi->param('only_gene');
 my $only_positions       = $cgi->param('only_positions');
 my $only_dejavu_ratio_10 = $cgi->param('only_dejavu_ratio_10');
 my $only_html_cache      = $cgi->param('only_html_cache');
+my $view_polyviewer 	 = $cgi->param('view_polyviewer');
 
 #$only_positions = '10:17000000-17080000';
 
@@ -48,7 +52,12 @@ $only_gene = $project->newGene($only_gene_name) if ($only_gene_name);
 
 if ( not $only_html_cache ) {
 	print $cgi->header('text/json-comment-filtered');
-	print "{\"progress\":\".";
+	if ($view_polyviewer) {
+		print "<div style='display:none;'>.";
+	}
+	else {
+		print "{\"progress\":\".";
+	}
 }
 
 my $patient_name = $patient->name();
@@ -276,115 +285,113 @@ $pm2->run_on_finish(
 
 my $checked_only_dejavu_ratio_10;
 $checked_only_dejavu_ratio_10 = qq{checked="checked"} if $only_dejavu_ratio_10;
-my $html_dejavu = qq{
-	<table style="width:100%;">
-		<tr>
-			<td style="padding-top:5px;">
-				<center>
-					<label for="slider_dejavu_percent" class="form-label" style="font-size:10px;font-weight:300;"><i>if <span id="nb_percent_dejavu" style="color:blue;">$nb_percent_dejavu_value</span> % similar coord</i></label>
-					<input style="width:180px;" type="range" class="form-range" min="0" max="10" value="$percent_dejavu" step="1" id="slider_dejavu_percent" onchange="update_dejavu_percent_span_value()">
-				</center>
-			</td>
-			<td style="padding-top:5px;">
-				<center>
-					<label for="slider_dejavu" class="form-label" style="font-size:10px;font-weight:300;"><i>in max <span id="nb_max_dejavu_patients" style="color:blue;">$max_dejavu_value</span> Patient(s)</i></label>
-					<input style="width:180px;" type="range" class="form-range" min="0" max="51" value="$max_dejavu_value" step="1" id="slider_dejavu" onchange="update_dejavu_span_value()">
-				</center>
-			</td>
-			<td style="padding-top:5px;">
-				<center>
-					<div class="form-check"><input $checked_only_dejavu_ratio_10 class="form-check-input" type="checkbox" value="" id="b_dejavu_min_ratio_10"><label class="form-check-label" for="b_dejavu_min_ratio_10" style="padding-left:10px;font-size:11px;">only ratio >10%</label></div>
-				</center>		
-			</td>
-					
-		</tr>
-		<tr>
-			<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Min Similarity</center></b></td>
-			<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Max patients</center></b></td>
-			<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Ratio</center></b></td>
-		</tr>
-	</table>};
 
-my $html_gene_select =
-qq{<input type="text" style="font-size:11px;width:180px;" placeholder="COL4A5, 1:100000-150000" class="form-control" id="input_gene_positions">};
-if ($only_gene_name) {
-	$html_gene_select =
-qq{<input type="text" style="font-size:11px;width:180px;" value="$only_gene_name" class="form-control" id="input_gene_positions">};
+if (not $view_polyviewer) {
+	my $html_dejavu = qq{
+		<table style="width:100%;">
+			<tr>
+				<td style="padding-top:5px;">
+					<center>
+						<label for="slider_dejavu_percent" class="form-label" style="font-size:10px;font-weight:300;"><i>if <span id="nb_percent_dejavu" style="color:blue;">$nb_percent_dejavu_value</span> % similar coord</i></label>
+						<input style="width:180px;" type="range" class="form-range" min="0" max="10" value="$percent_dejavu" step="1" id="slider_dejavu_percent" onchange="update_dejavu_percent_span_value()">
+					</center>
+				</td>
+				<td style="padding-top:5px;">
+					<center>
+						<label for="slider_dejavu" class="form-label" style="font-size:10px;font-weight:300;"><i>in max <span id="nb_max_dejavu_patients" style="color:blue;">$max_dejavu_value</span> Patient(s)</i></label>
+						<input style="width:180px;" type="range" class="form-range" min="0" max="51" value="$max_dejavu_value" step="1" id="slider_dejavu" onchange="update_dejavu_span_value()">
+					</center>
+				</td>
+				<td style="padding-top:5px;">
+					<center>
+						<div class="form-check"><input $checked_only_dejavu_ratio_10 class="form-check-input" type="checkbox" value="" id="b_dejavu_min_ratio_10"><label class="form-check-label" for="b_dejavu_min_ratio_10" style="padding-left:10px;font-size:11px;">only ratio >10%</label></div>
+					</center>		
+				</td>
+						
+			</tr>
+			<tr>
+				<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Min Similarity</center></b></td>
+				<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Max patients</center></b></td>
+				<td style="padding-top:5px;font-size:11px;"><center><b>DejaVu Ratio</center></b></td>
+			</tr>
+		</table>};
+	
+	my $html_gene_select =
+	qq{<input type="text" style="font-size:11px;width:180px;" placeholder="COL4A5, 1:100000-150000" class="form-control" id="input_gene_positions">};
+	if ($only_gene_name) {
+		$html_gene_select =
+	qq{<input type="text" style="font-size:11px;width:180px;" value="$only_gene_name" class="form-control" id="input_gene_positions">};
+	}
+	elsif ($only_positions) {
+		$html_gene_select =
+	qq{<input type="text" style="font-size:11px;width:180px;" value="$only_positions" class="form-control" id="input_gene_positions">};
+	}
+	
+	my $html_filters = qq{
+		<table style="width:100%;">
+			<tr>
+				<td style="padding-top:5px;">
+					<center>
+						<label for="slider_score" class="form-label" style="font-size:10px;font-weight:300;"><i>Ratio >= <span id="nb_score" style="color:blue;">$min_score%</span></i></label>
+						<input style="width:150px;" type="range" class="form-range" min="0" max="10" value="$score_slider" step="1" id="slider_score" onchange="update_score_span_value()">
+					</center>
+				</td>
+				<td style="padding-top:5px;">
+					<center>
+						$html_gene_select
+					</center>
+				</td>
+						
+			</tr>
+			<tr>
+				<td style="padding-top:5px;font-size:11px;"><center><b>Filter Min Ratio</center></b></td>
+				<td style="padding-top:5px;font-size:11px;"><center><b>Filter Only Gene / Positions</center></b></td>
+			</tr>
+		</table>};
+	
+	my $html_refresh = qq{
+		<table style="width:100%;">
+			<tr>
+				<td style="padding-top:12px;">
+					<center>
+						<button style="font-size:25px;" type="button" class="btn btn-sm btn-primary" id="b_update_dejavu" onclick="launch_dejavu_span_value()"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
+					</center>
+				</td>
+			<tr>
+			</tr>
+				<td style="padding-top:5px;">
+					<center>
+						<b><span style="color:#363945">REFRESH</span></b>
+					</center>
+				</td>
+			</tr>
+		</table>};
+	
+	my $html_patient = qq{
+		<table style="width:100%;">
+			<tr>
+				<td style="padding-top:8px;"><center><b>Name</b></center></td>
+				<td style="padding-top:8px;"><center><span style='color:red;font-size:13px'>$patient_name</span></center></td>
+			</tr>
+			<tr>
+				<td><center><b>Release</b></center></td>
+				<td><center>$release</center></td>
+			</tr>
+			<tr>
+				<td><center><b>Gencode</b></center></td>
+				<td><center>$gencode</center></td>
+			</tr>
+		</table>};
+		
+	$html .= qq{<br>};
+	$html .= qq{<div class="container" style="width:100%;height:86px;vertical-align:middle;"><div class="row">};
+	$html .= qq{<div class="col-sm-2"><div style="height:82px;border:3px #363945 double;">$html_patient</div></div>};
+	$html .= qq{<div class="col-sm-5"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_dejavu</center></div></div>};
+	$html .= qq{<div class="col-sm-4"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_filters</center></div></div>};
+	$html .= qq{<div class="col-sm-1"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_refresh</center></div></div>};
+	$html .= qq{</div></div>};
+	$html .= qq{<br>};
 }
-elsif ($only_positions) {
-	$html_gene_select =
-qq{<input type="text" style="font-size:11px;width:180px;" value="$only_positions" class="form-control" id="input_gene_positions">};
-}
-
-my $html_filters = qq{
-	<table style="width:100%;">
-		<tr>
-			<td style="padding-top:5px;">
-				<center>
-					<label for="slider_score" class="form-label" style="font-size:10px;font-weight:300;"><i>Ratio >= <span id="nb_score" style="color:blue;">$min_score%</span></i></label>
-					<input style="width:150px;" type="range" class="form-range" min="0" max="10" value="$score_slider" step="1" id="slider_score" onchange="update_score_span_value()">
-				</center>
-			</td>
-			<td style="padding-top:5px;">
-				<center>
-					$html_gene_select
-				</center>
-			</td>
-					
-		</tr>
-		<tr>
-			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Min Ratio</center></b></td>
-			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Only Gene / Positions</center></b></td>
-		</tr>
-	</table>};
-
-my $html_refresh = qq{
-	<table style="width:100%;">
-		<tr>
-			<td style="padding-top:12px;">
-				<center>
-					<button style="font-size:25px;" type="button" class="btn btn-sm btn-primary" id="b_update_dejavu" onclick="launch_dejavu_span_value()"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
-				</center>
-			</td>
-		<tr>
-		</tr>
-			<td style="padding-top:5px;">
-				<center>
-					<b><span style="color:#363945">REFRESH</span></b>
-				</center>
-			</td>
-		</tr>
-	</table>};
-
-my $html_patient = qq{
-	<table style="width:100%;">
-		<tr>
-			<td style="padding-top:8px;"><center><b>Name</b></center></td>
-			<td style="padding-top:8px;"><center><span style='color:red;font-size:13px'>$patient_name</span></center></td>
-		</tr>
-		<tr>
-			<td><center><b>Release</b></center></td>
-			<td><center>$release</center></td>
-		</tr>
-		<tr>
-			<td><center><b>Gencode</b></center></td>
-			<td><center>$gencode</center></td>
-		</tr>
-	</table>};
-
-$html .= qq{<br>};
-$html .=
-qq{<div class="container" style="width:100%;height:86px;vertical-align:middle;"><div class="row">};
-$html .=
-qq{<div class="col-sm-2"><div style="height:82px;border:3px #363945 double;">$html_patient</div></div>};
-$html .=
-qq{<div class="col-sm-5"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_dejavu</center></div></div>};
-$html .=
-qq{<div class="col-sm-4"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_filters</center></div></div>};
-$html .=
-qq{<div class="col-sm-1"><div style="height:82px;border:1px solid black;text-align:center;"><center>$html_refresh</center></div></div>};
-$html .= qq{</div></div>};
-$html .= qq{<br>};
 
 my $_tr_lines_by_genes;
 my $h_junctions_color;
@@ -638,8 +645,8 @@ if ( scalar(@lGenesNames) == 0 ) {
 	exit(0);
 }
 elsif ( scalar(@lGenesNames) > 0 and $only_gene_name and not $only_gene ) {
-	$html .=
-qq{<br><tr><td><b><i><span class="glyphicon glyphicon-exclamation-sign" style="color:red;font-size:18px;"></span> your gene <span style="color:orange;">$only_gene_name</span> is unknown in my database...</b></i></td></tr><br><br><br>};
+	$html .= qq{<br>} if (not $view_polyviewer);
+	$html .= qq{<tr><td><b><i><span class="glyphicon glyphicon-exclamation-sign" style="color:red;font-size:18px;"></span> your gene <span style="color:orange;">$only_gene_name</span> is unknown in my database...</b></i></td></tr><br><br><br>};
 }
 
 my @lTablesIds;
@@ -777,6 +784,12 @@ else {
 }
 $hash->{is_partial_results} = $is_partial_results;
 
+if ($view_polyviewer) {
+	print qq{</div>};
+	print $hash->{html};
+	exit(0);
+
+}
 printJson($hash);
 exit(0);
 
@@ -825,12 +838,7 @@ sub get_sashimi_plot_file {
 	$locus_text =~ s/:/-/;
 	my $patient_name = $patient->name();
 	my $path = $patient->getProject->getProjectPath . '/align/sashimi_plots/';
-	my $outfile =
-		$path
-	  . '/sashimi_'
-	  . $patient_name . '.'
-	  . $ensg . '.'
-	  . $locus_text . '.pdf';
+	my $outfile = $path.'/sashimi_'.$patient_name.'.'.$ensg.'.'.$locus_text.'.pdf';
 	return $outfile if ( -e $outfile );
 }
 
@@ -840,8 +848,7 @@ sub get_html_dejavu {
 	my $my_ratio     = $junction->get_percent_new_count($patient);
 	my $project_name = $patient->getProject->name();
 	my $patient_name = $patient->name();
-	my $vector_id =
-	  $junction->getChromosome->id() . '-' . $junction->vector_id();
+	my $vector_id = $junction->getChromosome->id() . '-' . $junction->vector_id();
 	my $cmd_all = qq{view_deja_vu_rna_junction(\"$project_name\",\"$patient_name\",\"$vector_id\")};
 	my $cmd_inthisrun = qq{view_dejavu_nb_int_this_run_patients(\"$project_name\",\"$patient_name\",\"$vector_id\")};
 	my $html = $cgi->start_table(
