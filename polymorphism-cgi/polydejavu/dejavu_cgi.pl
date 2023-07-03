@@ -249,6 +249,7 @@ if ( $input =~ 'geneId:' ) {
 	$input = join(',', @lOutput);
 	$originInput = join(',', @lGenesId2);
 }
+print '0';
 
 unless ($export_xls) {
 	print $cgi->header('text/json-comment-filtered');
@@ -285,7 +286,6 @@ foreach my $input (sort(@lTmp)) {
 	}
 	my $nbSnpsSearching = scalar(@listSnp);
 	my $hRes;
-	
 	$projectTmp->print_dot(1);
 	
 	if (scalar(@listSnp) > 0) {
@@ -311,6 +311,7 @@ foreach my $input (sort(@lTmp)) {
 				}
 			}
 		}
+		print '3';
 	}
 }
 
@@ -685,6 +686,7 @@ sub _getPatProjHoHeNbFromHash {
 	my $nbHe  = 0;
 	my $h_phenotypes;
 	foreach my $projName (keys %$hash) {
+		$projectTmp->print_dot(50);
 		my ($authorized, $res);
 		if (exists ($hProjAuthorized->{$projName})) {
 			$authorized = 1;
