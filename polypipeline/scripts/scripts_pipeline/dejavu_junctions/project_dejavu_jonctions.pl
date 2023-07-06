@@ -23,9 +23,11 @@ use GenBoNoSqlIntervalTree;
 
 my $cgi = new CGI;
 my ($name);
+my $fork = 20;
 
 GetOptions(
 	'project=s'    => \$name,
+	'fork=s'    => \$fork,
 );
 
 
@@ -85,49 +87,82 @@ my ($h_proj_junctions, $h_proj_junctions_canoniques);
 my $hType_patients;
 $hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
-foreach my $this_patient (@{$project->getPatients()}) {
-	if (($hType_patients and exists $hType_patients->{$this_patient->name()}->{pat}) or not $hType_patients) {
-		my @lJunctions = @{$this_patient->getJunctions()};
-		foreach my $junction (@lJunctions) {
-			$junction->getPatients();
-			my $type = $junction->getTypeDescription($this_patient);
-			my $chr_id = $junction->getChromosome->id();
-			my $start = $junction->start();
-			$start =~ s/ //g;
-			my $end = $junction->end();
-			$end =~ s/ //g;
-			my $gene_name = $junction->annex->{$this_patient->name()}->{ensid};
-			my $count_new_junction = $junction->get_nb_new_count($this_patient);
-			my $count_normal_junction = $junction->get_nb_normal_count($this_patient);
-			my $score = int($junction->get_percent_new_count($this_patient));
-			my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
-			$junction_id =~ s/ //g;
-			
+my $h_vector;
+my $pm = new Parallel::ForkManager($fork);
+my $nbErrors = 0;
+$pm->run_on_finish(
+	sub {
+		my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $hres ) = @_;
+		unless ( defined($hres) or $exit_code > 0 or not exists $hres->{done} ) {
+			$nbErrors++;
+			print qq|No message received from child process $exit_code $pid!\n|;
+			warn Dumper $hres;
+			return;
+		}
+		delete $hres->{done};
+		
+		my $chr_id = $hres->{'chr'};
+		foreach my $jid (keys %{$hres->{junctions}}) {
+			$h_proj_junctions->{$chr_id}->{$jid} = $hres->{junctions}->{$jid};
+		}
+		foreach my $jid (keys %{$hres->{canoniques}}) {
+			$h_proj_junctions_canoniques->{$chr_id}->{$jid} = $hres->{canoniques}->{$jid};
+		}
+	}
+);
+
+
+foreach my $chr (@{$project->getChromosomes}) {
+	$pm->start and next;
+	my $chr_id = $chr->id();
+	my $hres;
+	$hres->{'chr'} = $chr_id;
+	my @lJunctions = @{$chr->getJunctions()};
+	my ($h_proj_junctions_canoniques_tmp, $h_proj_junctions_tmp);
+	foreach my $junction (@lJunctions) {
+		my $start = $junction->start();
+		$start =~ s/ //g;
+		my $end = $junction->end();
+		$end =~ s/ //g;
+		my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
+		$junction_id =~ s/ //g;
+		foreach my $pat_j (@{$junction->getPatients()}) {
+			my $type = $junction->getTypeDescription($pat_j);
+			my $gene_name = $junction->annex->{$pat_j->name()}->{ensid};
+			my $count_new_junction = $junction->get_nb_new_count($pat_j);
+			my $count_normal_junction = $junction->get_nb_normal_count($pat_j);
+			my $score = int($junction->get_percent_new_count($pat_j));
 			if ($junction->isCanonique()) {
-				if (not exists $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}) {
-					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{start} = $start;
-					$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{end} = $end;
+				if (not exists $h_proj_junctions_canoniques_tmp->{$junction_id}) {
+					$h_proj_junctions_canoniques_tmp->{$junction_id}->{start} = $start;
+					$h_proj_junctions_canoniques_tmp->{$junction_id}->{end} = $end;
 				}
-				$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
-				$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
-				$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{score} = $score;
-				$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{type} = $type;
-				$h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
+				$h_proj_junctions_canoniques_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{count_junctions} = $count_new_junction;
+				$h_proj_junctions_canoniques_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{count_normal} = $count_normal_junction;
+				$h_proj_junctions_canoniques_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{score} = $score;
+				$h_proj_junctions_canoniques_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{type} = $type;
+				$h_proj_junctions_canoniques_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{gene_name} = $gene_name;
 			}
 			else {
-				if (not exists $h_proj_junctions->{$chr_id}->{$junction_id}) {
-					$h_proj_junctions->{$chr_id}->{$junction_id}->{start} = $start;
-					$h_proj_junctions->{$chr_id}->{$junction_id}->{end} = $end;
+				if (not exists $h_proj_junctions_tmp->{$junction_id}) {
+					$h_proj_junctions_tmp->{$junction_id}->{start} = $start;
+					$h_proj_junctions_tmp->{$junction_id}->{end} = $end;
 				}
-				$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
-				$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
-				$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{score} = $score;
-				$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{type} = $type;
-				$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project->name()}->{$this_patient->name()}->{gene_name} = $gene_name;
+				$h_proj_junctions_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{count_junctions} = $count_new_junction;
+				$h_proj_junctions_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{count_normal} = $count_normal_junction;
+				$h_proj_junctions_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{score} = $score;
+				$h_proj_junctions_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{type} = $type;
+				$h_proj_junctions_tmp->{$junction_id}->{dejavu}->{$project->name()}->{$pat_j->name()}->{gene_name} = $gene_name;
 			}
 		}
 	}
+	$hres->{canoniques} = $h_proj_junctions_canoniques_tmp;
+	$hres->{junctions} = $h_proj_junctions_tmp;
+	$hres->{done} = 1;
+	$pm->finish( 0, $hres );
 }
+$pm->wait_all_children();
+die if $nbErrors > 0;
 
 my $json_encode = encode_json $h_proj_junctions;
 open (JSON1, '>'.$dir_dv_proj.'/'.$name.'.json');
