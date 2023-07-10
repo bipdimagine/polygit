@@ -37,13 +37,13 @@ while(<FILE>){
 		#next if $chr->name eq "MT";
 		my $ppn=1;
 		foreach my $patient (@{$project->getPatients}){
-			my $cmd_root = " $root_cmd -fork=$ppn -project=".$project->name." -patient=".$patient->name." && ";
+			my $cmd_root = " $root_cmd -fork=$ppn -project=".$project->name." -patients=".$patient->name." && ";
 			my $opt2 = $opt." patient=".$patient->name;
 			my $cmd3.=$opt2." | tail -n +4 > $dir_out/".$patient->name.".xls";
 			print $cmd_root.$cmd." $cmd3\n";			
 		}
 			
-	delete $project->{objects};
-	$buffer = undef;
+	#delete $project->{objects};
+	#$buffer = undef;
 }
 
