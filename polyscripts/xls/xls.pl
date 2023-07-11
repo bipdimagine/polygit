@@ -13,9 +13,11 @@ my $fork = 1;
 
 my $file;
 my $transcript = "all";
+my $cache ;
 GetOptions(
 	'file=s'    => \$file,
 	'transcript' => \$transcript,
+	'cache' => \$cache,
 );
 
 my $root_cmd = "perl $RealBin/../../polymorphism-cgi//cache_nodb/scripts/cache_polydiag.pl";
@@ -40,7 +42,13 @@ while(<FILE>){
 			my $cmd_root = " $root_cmd -fork=$ppn -project=".$project->name." -patients=".$patient->name." && ";
 			my $opt2 = $opt." patient=".$patient->name;
 			my $cmd3.=$opt2." | tail -n +4 > $dir_out/".$patient->name.".xls";
-			print $cmd_root.$cmd." $cmd3\n";			
+			if ($cache){
+				print $cmd_root.$cmd." $cmd3\n";	
+			}
+			else {
+				print $cmd." $cmd3\n";
+			}
+			#
 		}
 			
 	#delete $project->{objects};
