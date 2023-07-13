@@ -19,7 +19,7 @@ GetOptions(
 	'transcript' => \$transcript,
 	'cache' => \$cache,
 );
-
+##
 my $root_cmd = "perl $RealBin/../../polymorphism-cgi//cache_nodb/scripts/cache_polydiag.pl";
 	
 	
