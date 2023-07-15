@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>PolyGeneScout - Results</title>
+        <title>Get Genes Coverage</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -19,7 +19,7 @@
                 margin: 0;
                 overflow: hidden;
             }
-    
+			
             #borderContainer {
                 width: 100%;
                 height: 100%;
@@ -322,7 +322,7 @@
 			.invisible {
 			  visibility: hidden;
 			}
-			
+
 			.progress_chr {
 				opacity: 0;
 				-webkit-transition: opacity 2s ease-in;
@@ -455,6 +455,8 @@
 		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		
+		
 		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
 		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
@@ -463,9 +465,9 @@
 		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF/jspdf.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF-AutoTable/jspdf.plugin.autotable.js"></script>
        
-        <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
+        <link rel="stylesheet" type="text/css" href="js/igv/igv-1.0.9.css">
         <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
-		<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.11.2/dist/igv.min.js"></script>
 		<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
 	    <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
 	    <script type="text/javascript" src="../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
@@ -517,268 +519,119 @@
             dojo.require("dijit.form.CheckBox");
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
-            var project_name;
-            var input_session_id = param("job_id");
-            
+            var release_annotation = '40';
             $(document).ready(function () {
-	            setTimeout(function() {
-	            	launch_for_gene();
-				}, 1500);
+            	document.getElementById("project_name").value = "";
 	    	});
 	    	
-	    	function enable_table_search() {
-	    		$('#table_variants').bootstrapTable();
+	    	function eraseText() {
+			    document.getElementById("project_name").value = "";
+				document.getElementById("content_res").innerHTML = "";
+				document.getElementById("span_gencode").innerHTML = "";
+				document.getElementById("span_description").innerHTML = "";
+				document.getElementById("span_captures").innerHTML = "";
+    			export_csv_datas = '';
 			}
 			
-			function get_popup_users(users) {
-				document.getElementById("content_res_users").innerHTML = "";
-				document.getElementById("content_res_users").innerHTML = users;
-				dijit.byId('dialog_users').show();
+			function enable_table_search(id) {
+	    		$('#'+id).bootstrapTable();
 			}
-	    	
-	    	function launch_for_gene() {
-	    		document.getElementById("content_res_variants").innerHTML = "<center>Loading datas... <img src='../images/polyicons/wait18trans.gif' align='absmiddle'></center>";
-	    		var url = url_path + "json_output_nodb/load_job_id.pl?session_id=" + input_session_id;
-	    		var html_variants_done = 0;
-	    		var html_gene_done = 0;
-			    $.getJSON( url, function( data ) {
-			    	$.each( data, function( key, val ) {
-			    		if (key == "project_init_name") {
-			    			project_name = data.project_init_name;
-			    		}
-			    		if (key == 'html_variants') {
-							document.getElementById("content_res_variants").innerHTML = "";
-							var myNode = document.getElementById("content_res_variants");
-					    	var myPanel = $(val);
-							myPanel.appendTo(myNode);
-							document.getElementById("b_export_xls").classList.remove("disabled");
-							//document.getElementById("b_export_xls_merged").classList.remove("disabled");
-							document.getElementById("b_export_pdf").classList.remove("disabled");
-							html_variants_done = 1;
-							if (html_variants_done == 1 && html_gene_done == 1) {
-								enable_table_search();
-							}
-			    		}
-			    		if (key == 'html_gene') {
-							document.getElementById("content_res_gene").innerHTML = "";
-							var myNode = document.getElementById("content_res_gene");
-					    	var myPanel = $(val);
-							myPanel.appendTo(myNode);
-							document.getElementById("content_res_gene").classList.remove("hidden");
-							html_gene_done = 1;
-							if (html_variants_done == 1 && html_gene_done == 1) {
-								enable_table_search();
-							}
-			    		}
-			    		if (key == 'html_source') {
-							document.getElementById("search_source").innerHTML = val;
-			    		}
-			    		if (key == 'html_title') {
-							document.getElementById("search_title").innerHTML = val;
-			    		}
-			    		if (key == 'html_page_title') {
-			    			document.title = 'PolyGeneScout - ' + val;
-			    		}
-			    		if (key == 'hash_filters') {
-//			    			console.log(val);
-			    			var filter_found = 0;
-			    			var list_filters = [];
-			    			for (var key in val) {
-			    				if (val[key] == 1) {
-			    					filter_found = 1;
-									var filter = key.replace(/"/g, "");
-			    					list_filters.push(filter);
-			    				}
-			    			}
-			    			if (filter_found == 1) {
-				    			list_filters = list_filters.sort();
-				    			document.getElementById("span_filters").innerHTML = "<b><u>Filters used:</b></u> " + list_filters.join(" / ");
-			    			}
-			    		}
-			    		if (key == 'gencode_version') {
-			    			document.getElementById("span_gencode_version").innerHTML = "<b><u>Gencode:</b></u> " + val + "<br>";
-		    			}
-  					});
-			    });
-			    
-    		}
+			
+			function export_xls(mode) {
+		    	var value_project = document.getElementById("project_name").value;
+		    	var value_gene = document.getElementById("gene_name").value;
+		    	var url_xls_2 = url_path + "json_output_nodb/get_gene_coverage_xls.pl";
+				url_xls_2 += "?project=" + value_project;
+				url_xls_2 += "&gene=" + value_gene;
+				if (document.getElementById("intronic").checked) {
+					url_xls_2 += "&intronic=1";
+				}
+				if (document.getElementById("coding").checked) {
+					url_xls_2 += "&only_coding=1";
+				}
+				console.log(url_xls_2);
+				downloadFile(url_xls_2);
+			    return;
+			}
+			
+			function view_coverage_view() {
+		    	var value_project = document.getElementById("project_name").value;
+		    	var value_gene = document.getElementById("gene_name").value;
+				var url = window.location.protocol + "//" + window.location.host + "/polyweb/polyweb_coverage.html"
+				url += "?project=" + value_project;
+				url += "&gene=" + value_gene;
+				window.open(url,'_blank');
+			}
 			
 			dojo.require("dojo.io.iframe");
-			function exportXls() {
-				var url_xls_2 = url_path + "json_output_nodb/load_job_id.pl?export_xls=1&session_id=" + input_session_id;
-				if (param("only_transcript")) { url_xls_2 += "&only_transcript=" + param("only_transcript"); }
-				if (param("only_interval")) { url_xls_2 += "&only_interval=" + param("only_interval"); }
-    			console.log(url_xls_2);
+			function downloadFile(url) {
 			    var downloadPdfIframeName = "downloadPdfIframe"; 
 			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
-			    dojo.io.iframe.setSrc(iframe, url_xls_2, true);
-			    alert("XLS export is launching. Please wait your file :)");
-			    return;
-			}
-			
-			function exportMergedXls() {
-				dijit.byId('waiting').show();
-				var url_xls_2 = url_path + "json_output_nodb/load_job_id.pl?export_xls=1&merged=1&session_id=" + input_session_id;
-				if (param("only_transcript")) { url_xls_2 += "&only_transcript=" + param("only_transcript"); }
-				if (param("only_interval")) { url_xls_2 += "&only_interval=" + param("only_interval"); }
-    			console.log(url_xls_2);
-			    var downloadPdfIframeName = "downloadPdfIframe"; 
-			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
-			    dojo.io.iframe.setSrc(iframe, url_xls_2, true);
-			    return;
-			}
-			
-			function exportPdf() {
-				var divContents_gene = $("#content_res_gene").html();
-				var divContents_var = $("#content_res_variants").html();
-	            var printWindow = window.open('', '', 'height=400,width=800');
-	            printWindow.document.write('<html><head><title>PolyGeneScout</title>');
-	            printWindow.document.write('</head><body >');
-	            printWindow.document.write(divContents_gene);
-	            printWindow.document.write(divContents_var);
-	            printWindow.document.write('</body></html>');
-	            printWindow.document.close();
-	            printWindow.print();
-			}
-			
-			function show_hide_hgmd_not_in_polyweb() {
-				var elements = document.getElementsByClassName('tr_hgmd_not_found')
-				if (document.getElementById('b_found_hgmd_in_polyweb').checked == true) {
-				    for (var i = 0; i < elements.length; i++){
-				    	elements[i].classList.add("hidden");
-				    }
-				}
-				else {
-				    for (var i = 0; i < elements.length; i++){
-				    	elements[i].classList.remove("hidden");
-				    }
-				}
-			}
-	    	
+			    dojo.io.iframe.setSrc(iframe, url, true);
+			} 
 	    	
 		</script>
     </head>
 	<body class="container-fluid" style="overflow-y:scroll;">
-		<nav class="navbar navbar-inverse" style="background-color:#363945">
-			<div class="container-fluid" >
+		<nav class="navbar navbar-inverse ">
+			<div class="container-fluid">
 				<div class="navbar-header">
-					<table>
-					<tr><td><a class="navbar-brand" href="https://www.polyweb.fr/" style="padding-top: 5px;padding-bottom: 5px;"><img src='/icons/Polyicons/logo_polyweb_white2.png' width='170px' height='33px' ></a></td></tr>
-					<tr><td style="color:white;font-size:10px;text-align:center"> <span  style="color:#B1268B;font-size:12px;text-align:center">Imagine Institute</span> - <span>University Of Paris</span ></td></tr>
-					</table>
-				</div>
-				<ul class="nav navbar-nav">
-					<li><a href="#"><span style="color:yellow">PolyGeneScout Results</span></a></li>
-					<li><a><span id="search_source" style="color:#5cea5c"></span></a></li>
-					<li><a><span id="search_title" style="color:#60b6f5"></span></a></li>
-				</ul>
-				<ul class="nav navbar-nav navbar-right">
-					<li>
-				    	<div class="input-group" style="margin-right:20px;width:100%;"> 		
-							<span class="input-group-btn" style="top:12px;">
-								<button id="b_export_xls_merged" class="btn btn-default disabled hidden" type="submit" onclick="exportMergedXls()" style="font-size:9px;background-color:#38B392;">
-									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">XLS-merged</span></b>
-								</button>
-								<button id="b_export_xls" class="btn btn-default disabled" type="submit" onclick="exportXls()" style="font-size:9px;background-color:#38B392;">
-									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">XLS</span></b>
-								</button>
-								<button id="b_export_pdf" class="btn btn-default disabled" type="submit" onclick="exportPdf()" style="font-size:9px;background-color:#BD3D3A;margin-right:20px;">
-									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">PRINT</span></b>
-								</button>
-							</span>
-						</div>
-					</li>
-				</ul>
-				
-			</div>
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+						<span class="icon-bar"></span>
+				        <span class="icon-bar"></span>
+				        <span class="icon-bar"></span>                        
+	      			</button>
+	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">PolyWeb</span></a>
+	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">Get Genes Coverage (Exons/Introns)</span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_1"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_2"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_ok"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_not"></span></a>
+	    		</div>
+	  		</div>
 		</nav>
-		
-		<div style="font-size:11px;" id='content_gene_selection'>
-			<span id="span_gencode_version"></span> <span id="span_filters"></span>
-		</div>
-		
-		<div style="padding-top:8px;background-color:#607D8B;border:1px black solid;" class='container-fluid hidden' id='content_res_gene'></div>
-		
-		<div class='container-fluid' id='content_res_variants' style='height:auto;max-width:100%;overflow-x:auto;border:1px black solid;'></div>
-		
-		<div id="dialog_validation" dojoType="dojox.widget.Dialog" dimensions="[800,300]" title="USER Validation">
-	        <div id="content_validation" jsId="content_validation" data-dojo-type="dijit/layout/ContentPane"></div>	
-		</div>
-				
-		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[150,120]" title="Waiting"> 
-			<div class="container" style="min-width:200px;max-width:150px;margin-left: auto ;margin-right: auto ;">
-				<div>
+		<center>
+		<div class="row" style="height:auto;width:98%;">
+			<div class="col-sm-3"></div>
+			<div class="col-sm-6">
+			
+				<form>
+					<div class="form-group">
+						<label for="project_name">Project Name</label>
+						<input type="text" class="form-control" id="project_name" aria-describedby="projectExample" placeholder="">
+						<small id="projectExample" class="form-text text-muted">Example: NGS2016_1231.</small>
+					</div>
+					<div class="form-group">
+						<label for="gene_name">Gene Name</label>
+						<input type="text" class="form-control" id="gene_name" aria-describedby="geneExample" placeholder="">
+						<small id="geneExample" class="form-text text-muted">Example: BRCA1.</small>
+					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="coding">
+						<label class="form-check-label" for="coding">ONLY Coding Positions (for XLS)</label>
+					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="intronic">
+						<label class="form-check-label" for="intronic">Get Introns (for XLS)</label>
+					</div>
 					<br><br>
-					<span id="waiting_text">Loading Data...</span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
-				</div> 
-			</div>
-		</div>
-		
-		<div dojoType="dojox.widget.Dialog"  jsId="popup_hgmd" id="popup_hgmd" dimensions="[700,600]" title="HGMD Infos" style="background-color:white;overflow:auto;width:70%;height:70%;" >
-            <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane"></div>	
-        </div>
-        
-        <div id="popup_dude" dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" >
-        	<div  id="div_popup_dude" jsId="div_popup_dude" data-dojo-type="dijit/layout/ContentPane"></div>	
-		</div>
-       
-		<div id="dialog_igv" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">
-			<div><button onclick="dijit.byId('dialog_igv').hide();"><b>X</b> Close</button></div>
-            <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
-        </div> 
-       
-		<div dojoType="dojox.widget.Dialog" onHide="update_nb_projects_selected()" onClose="update_nb_projects_selected()" jsId="dialog_projects" id="dialog_projects" dimensions="[800,800]" title="IGV View" style="background-color:white;overflow: auto;" >
-	        <div style="height:99%;width:99%;" id="content_res_projects" jsId="content_res_projects" data-dojo-type="dijit/layout/ContentPane"></div>	
-        </div> 
-        
-		<div dojoType="dojox.widget.Dialog"  jsId="dialog_list_panels" dimensions="[700,600]" id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
-			 <span id="span_list_panels"></span>
-		</div>
-        
-		<div dojoType="dojox.widget.Dialog"  jsId="dialog_list_hgmd_variants"  id="dialog_list_hgmd_variants" title="HGMD Variants" style="sizeToViewport:true;background-color:white;overflow:auto;min-width:250px;" >
-			 <center><b>GENE Name:</b> <span id="span_hgmd_gene_variants"></span></center>
-			 <br><br>
-			 <div class="container-fluid" id="content_hgmd_variants" style="height:99%;width:99%;"></div>
-		</div>
+					<button type='button' onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Export XLS</button>
+					<button type='button' onClick="view_coverage_view()" class='btn btn-info' style="background-color:blue;color:white;">Coverage VIEW</button>
+				</form>
+			
 				
-		<div id="waiting_variants" dojoType="dojox.widget.Dialog" dimensions="[150,120]" title="Waiting"> 
-			<div class="container" style="min-width:200px;max-width:150px;margin-left: auto ;margin-right: auto ;">
-				<div>
-					<br><br>
-					<span id="waiting_text">Loading Data...</span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
-				</div> 
 			</div>
-		</div>
-		
-		<div id="dialog_hgmd" dojoType="dojox.widget.Dialog"  dimensions="[1050,850]" title="" style="border:solid 1px black;background-color:white;height:70%;width:98%;background-color:#AAB7B8;">
-			<br>
-	        <div class="container-fluid" id="content_res" style="height:99%;width:99%;"></div>
-			<br>
-		</div>
-		
-		<div id="dialog_users" dojoType="dojox.widget.Dialog"  dimensions="[500,500]" title="" style="text-align:center;border:solid 1px black;background-color:white;height:70%;width:98%;">
-			<b><u>List Users</b></u>
+			<div class="col-sm-6">
+				<span id="span_gencode"></span><br>
+				<span id="span_description"></span><br>
+				<span id="span_captures"></span>
+			</div>
 			<br><br>
-	        <div class="container-fluid" id="content_res_users" style="height:99%;width:99%;"></div>
-			<br>
+				<div class="row" id="content_res"></div>
+			</center>
 		</div>
-		
-		<div id="dialog_list_phenotypes" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="List Phenotype(s)"> 
-			 <table class="table">
-				<tbody>
-					<tr>
-						<td><div id="container_wordcloud" style="height:450px;border: solid black 1px;"></div></td>
-					</tr>
-				</tbody>
-			</table>
-			<br>
-			<div class="container-fluid" id="content_table_phenotypes" style="height:99%;width:99%;"></div>
-		</div>
-		
-		<div id="dialog_dejavu_var_infos" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="DejaVu Infos"> 
-			 <center><a id="url_dejavu_var" href="polydejavu/dejavu.html" target="_blank"><i><u>Go to PolyDejaVu Interface</i></u></a></center>
-	        <div  id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>
-		</div>
+		<div class="col-sm-3"></div>
 		
 	</body>
 </html>
+
