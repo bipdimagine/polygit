@@ -524,11 +524,10 @@ my $dev;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
- push(@$key_quality,"muc1.10.05.23.2") if $project->getCaptures->[0]->analyse =~ /renom/i;
+ push(@$key_quality,"muc1.adVntr.10.05.23.2") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  warn "HEADER ==> ".$header;
  warn join(";",@$key_quality);
- 
  $header = undef  if $dev or $cgi->param('force') == 1;
  #$header = undef;
  $no_cache->close();
@@ -718,7 +717,6 @@ sub check_level {
 			#print $cgi->td($class,$td);
 		#	my $mtime = stat("/etc/passwd")->mtime; 
 				$line->{"validation"}  = $cgi->td($class,"-");
-
 			if (exists $hstatus->{term} && $hstatus->{term} eq "negative"){
 				my $term = $hstatus->{term};
 				my $date2 ="";
@@ -733,7 +731,6 @@ sub check_level {
 			else {
 				my @text;
 				if (keys %$hval){
-					warn Dumper $hval;
 					push(@text,validation_table_new($p,$hval));
 			 
 				}
@@ -748,7 +745,7 @@ sub check_level {
 			
 			}
 			##
-			my $res_muc = $p->vntyperResults();
+			my $res_muc = $p->kestrel();
 			unless (-e  $project->getVariationsDir("vntyper")."/muc1/"){
 				
 			}
@@ -821,9 +818,9 @@ sub header_run {
 	
 	 my $fcolor = "white";
 	 my $text_info ="";
-		$text_info .= qq{SOMATIC<span class="glyphicon glyphicon-minus" aria-hidden="true"></span> } if $project->isSomatic;
-		 $text_info .= join(qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>},@$info);
-		$text_info .= qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC } if $project->isSomatic;
+	$text_info .= qq{SOMATIC<span class="glyphicon glyphicon-minus" aria-hidden="true"></span> } if $project->isSomatic;
+	$text_info .= join(qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>},@$info);
+	$text_info .= qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC } if $project->isSomatic;
 	my $nb = scalar(@{$run->getPatients});
 		 
 		#$btn_class = qq{class= "label  label-xs label-warning " style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 95;
@@ -1822,8 +1819,9 @@ sub table_muc1 {
 		
 	 my $nb =0;
 		foreach my $patient (@{$project->getPatients}){
-			my $t = $patient->vntyperResults;
-					next unless @{$t};
+			my $t = $patient->kestrel;
+			 push(@$t,@{$patient->adVNTR}) if $patient->adVNTR;
+				next unless @{$t};
 			if (scalar(@{$t->[0]}) <=1){
 				if(-e $patient->vntyperTsv()){
 			 	$out_table .= $cgi->start_Tr({class=>""});
@@ -2740,17 +2738,15 @@ sub validation_table_new {
 			 		
 			 
 			 		my $val = $hval->{$k}->[0];
-			 		warn Dumper $hval->{$k};
-			 		warn $k;
 			 		my $color = "#9BC8A5";
 			 		$color = "#E74C3C" if $val->{validation}== 5 ;
 			 		$color = "coral" if $val->{validation}== 4 ;
 			 		$color = "#217DBB" if $val->{validation}== -3 ;
 			 		$color = "orange" if $val->{validation}== 3 ;
 			 		 my $v  = $project->_newVariant($val->{polyid});
-			 		 foreach my $g (@{$v->getGenes}){
-			 		 	warn $g->id." ".$k;
-			 		 }
+#			 		 foreach my $g (@{$v->getGenes}){
+#			 		 	warn $g->id." ".$k;
+#			 		 }
 			 		my $btn_class = qq{class= "btn btn-xs  btn-primary" style="background-color: $color;$fsize"} ;
 			 	
 			 		my $gene ;

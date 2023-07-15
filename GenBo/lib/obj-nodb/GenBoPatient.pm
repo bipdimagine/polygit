@@ -19,6 +19,8 @@ use List::Util qw(max sum);
 use JSON::XS;
 use Statistics::Descriptive;
 use GenBoNoSqlLmdbCache;
+use Carp;
+use List::MoreUtils qw(firstidx );
 extends "GenBo";
 
 has patient_id => (
@@ -1800,36 +1802,72 @@ is      => 'ro',
 		 return 1;
 	}
 );
-has vntyperResults => (
-is      => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return [] unless -e  $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
-		
-		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
-		my @lines = `tail -n +4 $file`;
-		#warn Dumper @lines;
-		chomp(@lines);
-		#confess() if scalar(@lines) > 1;
-		
-			my $t = (stat $file )[10];
+
+sub kestrel {
+	my ($self) = @_;
+	return $self->{kestrel} if exists $self->{kestrel};
+	$self->vntyperResults();
+	return $self->{kestrel};
+}
+sub adVNTR {
+	my ($self) = @_;
+	return $self->{adVNTR} if exists $self->{adVNTR};
+	$self->vntyperResults();
+	return $self->{adVNTR};
+}
 	
-		my $date = POSIX::strftime( 
+sub vntyperResults {
+		my $self = shift;
+		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		unless( -e $file){
+			$self->{kestrel} =[];
+			$self->{adVNTR} =[];
+			return;
+ 		}
+ 		
+		
+			my $date = POSIX::strftime( 
              "%d/%m/%y", 
              localtime( 
-               		$t
+               		(stat $file )[10]
                  )
              );
-        return [[$date]] unless $lines[0];     
 		my @t;
-		foreach my $l (@lines){
-			push(@t,[$date,split(" ",$l)] ) ;
-		}
+		my @lines = `cat $file`;
+		chomp(@lines);
+		my $kestrel = firstidx { $_ =~ /Kestrel_Result/ } @lines;
+		my $limit2 = $kestrel - 1;
 		
-		return \@t;
+		my $advntr = firstidx { $_ =~ /adVNTR_Result/ } @lines;
+		my $limit = $advntr ;
+		$limit = scalar(@lines) if $advntr < $kestrel;
+	
+		for (my $i = $kestrel +2 ; $i<$limit;$i++){
+			push(@t,[$date,"kestrel",split(" ",$lines[$i])] ) ;
+		}
+		push(@t,[$date]) unless @t; 
+		$self->{header_adVNTR} = [];
+		$self->{header_adVNTR} = ["date",split(" ",$lines[$advntr+1])] if $advntr > 0;
+		$self->{header_kestrel} = ["date",split(" ",$lines[$kestrel+1])]; 
+		$self->{kestrel} =\@t;
+		$limit2 = scalar(@lines) if $advntr >= $kestrel ;
+		warn $advntr." ".$limit2;
+		my @t2;
+		
+		for (my $i = $advntr+2 ; $i<$limit2;$i++) {
+			push(@t2,[$date,"adVNTR",split(" ",$lines[$i])] ) ;
+		}
+		$date = "-" if $advntr == -1;
+		push(@t2,[$date,"adVNTR"]) unless @t2; 
+		$self->{adVNTR} =\@t2;
+		return;
+		#confess() if scalar(@lines) > 1;
+
+      #      
+	
+		
+		#return \@t;
 	}
-);
 
 
 sub isNoSqlDepth {
