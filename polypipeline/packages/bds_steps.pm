@@ -2423,8 +2423,7 @@ sub bam_sort_bamba {
 
 sub rmdup {
 	my ( $self, $hash ) = @_;
-	my $filein = $hash->{filein};
-	return $self->rmdup_bamba( filein => $filein );
+	return $self->rmdup_bamba( $hash );
 }
 
 sub rmdup_nudup {
