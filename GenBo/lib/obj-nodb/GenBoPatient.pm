@@ -1824,19 +1824,22 @@ sub kestrel {
 		my $reverse = BioTools::complement_sequence($self->{kestrel}->[0]->[7]);
 		my $ref = $self->{kestrel}->[0]->[5] ;
 		my $alt = $self->{kestrel}->[0]->[6];
-		my $left = substr($reverse, 0, $position+1);
-		my $right = substr($reverse, $position+1);
+		my $left = substr($reverse, 0, $position-1);
+		my $right = substr($reverse, $position-1);
 		if (length($alt)> length($ref)){
 			#insertion 
 			 my $ralt = BioTools::complement_sequence(substr($alt, 1));
-		my $ins = qq{<span style="color:red">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
+		my $ins = qq{<span style="color:red;">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
 			#  my $ins = qq{<span style="color:blue;text-emphasis: double-circle blue; ">$ralt</span/>};
 			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
 		}
 		elsif (length($alt)< length($ref)){
-			my $ralt = BioTools::complement_sequence(substr($alt, 1));
+			my $ralt = BioTools::complement_sequence(substr($ref, 1));
 			 my $ins = qq{<span style="color:red">[$ralt]</span/>};
-			my $right = substr($reverse, $position+length($ralt));
+			 my $start = $l - ($pos+length($ralt));
+			 $start = 0 if $start < 0;
+			my $left = substr($reverse, 0, $start); 
+			my $right = substr($reverse, $start+length($ralt));
 			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
 		}
 		elsif (length($alt) == length($ref)){
@@ -2736,7 +2739,28 @@ sub get_lmdb_cache {
 	return $no2;
 }
  
- 
+ sub get_lmdb_cache_polydiag {
+	my ( $self, $mode ) = @_;
+	
+	$mode = "r" unless $mode;
+	my $dir_out = $self->project->getCacheDir();
+	unless (-e $dir_out."/".$self->name.".polydiag.cache"){
+		$mode = "c";
+	}
+	my $no2     = GenBoNoSqlLmdbCache->new(
+		dir     => $dir_out,
+		mode    => $mode,
+		name    => $self->name.".polydiag.cache",
+		is_compress => 1,
+		vmtouch => $self->buffer->vmtouch
+	);
+	if ( $mode eq "c"){
+		#confess();
+		$no2->put("cdate",time);
+		system("chmod a+w ".$no2->filename);
+	}
+	return $no2;
+}
 sub get_lmdb_patients {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
