@@ -76,9 +76,17 @@ has control => (
 	reader => 'is_control',
 );
 
-has identity_vigilance_vcf => ( is => 'ro', );
+has identity_vigilance_vcf => ( is => 'ro', 
+default => sub {
+	return "";
+}
+);
 
-has identity_vigilance => ( is => 'ro', );
+has identity_vigilance => ( is => 'ro',
+default => sub {
+	return "xx";
+}
+ );
 
 has captureFiles => (
 	is => 'ro',
@@ -1807,6 +1815,7 @@ sub kestrel {
 	my ($self) = @_;
 	return $self->{kestrel} if exists $self->{kestrel};
 	$self->vntyperResults();
+	return $self->{kestrel} unless @{$self->{kestrel}};
 	
 	if (@{$self->{kestrel}->[0]} > 3){
 		my $l = length ($self->{kestrel}->[0]->[7]);
@@ -3181,7 +3190,9 @@ sub getDudeFiles {
 
 sub get_string_identification {
 	my ($self) = @_;
-	my $stv =  $self->name.":".$self->id."-".$self->identity_vigilance_vcf()."-".$self->identity_vigilance."-".$self->sex."-".$self->status;
+	my $idv = $self->identity_vigilance;
+	$idv = "" unless $idv;
+	my $stv =  $self->name.":".$self->id."-".$self->identity_vigilance_vcf()."-".$idv."-".$self->sex."-".$self->status;
 	$stv =~ s/_/-/g;
 	return $stv;
 }
