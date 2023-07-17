@@ -524,10 +524,11 @@ my $dev;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
- push(@$key_quality,"muc1.adVntr.10.05.23.2") if $project->getCaptures->[0]->analyse =~ /renom/i;
+ push(@$key_quality,"muc1.adVntr.10.05.23.3") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
- warn "HEADER ==> ".$header;
- warn join(";",@$key_quality);
+ #warn "HEADER ==> ".$header;
+ #warn join(";",@$key_quality);
+ #$dev =1;
  $header = undef  if $dev or $cgi->param('force') == 1;
  #$header = undef;
  $no_cache->close();
@@ -1820,9 +1821,9 @@ sub table_muc1 {
 	 my $nb =0;
 		foreach my $patient (@{$project->getPatients}){
 			my $t = $patient->kestrel;
-			 push(@$t,@{$patient->adVNTR}) if $patient->adVNTR;
+			 push(@$t,@{$patient->adVNTR});# if $patient->adVNTR;
 				next unless @{$t};
-			if (scalar(@{$t->[0]}) <=1){
+			if (scalar(@{$t->[1]}) <=1){
 				if(-e $patient->vntyperTsv()){
 			 	$out_table .= $cgi->start_Tr({class=>""});
 			 	$out_table .= $cgi->td($patient->name);

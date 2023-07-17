@@ -1807,6 +1807,49 @@ sub kestrel {
 	my ($self) = @_;
 	return $self->{kestrel} if exists $self->{kestrel};
 	$self->vntyperResults();
+	
+	if (@{$self->{kestrel}->[0]} > 3){
+		my $l = length ($self->{kestrel}->[0]->[7]);
+		my $pos = $self->{kestrel}->[0]->[4];
+		my $position = ($l - $pos);
+		my $reverse = BioTools::complement_sequence($self->{kestrel}->[0]->[7]);
+		my $ref = $self->{kestrel}->[0]->[5] ;
+		my $alt = $self->{kestrel}->[0]->[6];
+		my $left = substr($reverse, 0, $position+1);
+		my $right = substr($reverse, $position+1);
+		if (length($alt)> length($ref)){
+			#insertion 
+			 my $ralt = BioTools::complement_sequence(substr($alt, 1));
+		my $ins = qq{<span style="color:red">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
+			#  my $ins = qq{<span style="color:blue;text-emphasis: double-circle blue; ">$ralt</span/>};
+			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
+		}
+		elsif (length($alt)< length($ref)){
+			my $ralt = BioTools::complement_sequence(substr($alt, 1));
+			 my $ins = qq{<span style="color:red">[$ralt]</span/>};
+			my $right = substr($reverse, $position+length($ralt));
+			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
+		}
+		elsif (length($alt) == length($ref)){
+			my $ralt = BioTools::complement_sequence($alt);
+			 my $ins = qq{<span style="color:red">[$ref/$ralt]</span/>};
+			  #my $ins = qq{<span style="color:red;text-decoration=underline overline">[$ref/$ralt]</span/>};
+			 $left = substr($reverse, 0, $position);
+			my $right = substr($reverse, $position+2);
+			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
+		}
+		
+		#my @ins = split("",$self->{kestrel}->[0]->[6]); 
+		#shift(@ins);
+		#my $t = join("",@ins);
+		#$self->{kestrel}->[0]->[5] = BioTools::complement_sequence($self->{kestrel}->[0]->[5]);
+		#$self->{kestrel}->[0]->[6] = BioTools::complement_sequence($self->{kestrel}->[0]->[6]);
+		#$self->{kestrel}->[0]->[7] = $self->{kestrel}->[0]->[7]."<BR>".$left."[".$position.$self->{kestrel}->[0]->[5]."/".$self->{kestrel}->[0]->[6]."]".$right."<BR>".$self->{kestrel}->[0]->[7];
+		#$self->{kestrel}->[0]->[7] = $left.$right."<BR>".$self->{kestrel}->[0]->[7];
+		
+	}
+	$self->{kestrel}->[0]->[0] .= "XXX";
+	
 	return $self->{kestrel};
 }
 sub adVNTR {
