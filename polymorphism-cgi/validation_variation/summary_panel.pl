@@ -46,7 +46,7 @@ use CGI::Cache;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex file_md5);
 use Statistics::Descriptive;
 use Number::Format;
-require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/utility.pm";
+require "$Bin/../GenBo/lib/obj-nodb/packages_old/cache/polydiag/utility.pm";
 use feature ':5.10';
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update.pm";
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
@@ -513,9 +513,9 @@ my $t = time;
 my $hv;
 my $stat; 
 
-my $dev;
+my $dev = undef;
 #$dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
-
+$dev =1;
 
  $t = time;
  $|=1;
@@ -529,7 +529,7 @@ my $dev;
  #warn "HEADER ==> ".$header;
  #warn join(";",@$key_quality);
  #$dev =1;
- $header = undef  if $dev or $cgi->param('force') == 1;
+ $header = undef  if $dev or $cgi->param('force') eq 1;
  #$header = undef;
  $no_cache->close();
 $project->getChromosomes();
@@ -565,7 +565,7 @@ $no_cache = $project->get_lmdb_cache_summary("r");
 my $htable = $no_cache->get_cache(join(";",@$key_quality).".table");
 #$htable = undef;
  $no_cache->close();
-$htable = undef if $dev or $cgi->param('force') == 1;;
+$htable = undef if $dev or $cgi->param('force');
 
 unless ($htable){
 		print qq{<div style="display: none">};
@@ -1823,6 +1823,7 @@ sub table_muc1 {
 			my $t = $patient->kestrel;
 			 push(@$t,@{$patient->adVNTR});# if $patient->adVNTR;
 				next unless @{$t};
+				$nb ++ if (scalar(@{$t->[0]}) > 1) ; 
 			if (scalar(@{$t->[1]}) <=1){
 				if(-e $patient->vntyperTsv()){
 			 	$out_table .= $cgi->start_Tr({class=>""});
@@ -1846,7 +1847,7 @@ sub table_muc1 {
 				$out_table .= $cgi->end_Tr({class=>""});
 			}
 			#$out_table .= $cgi->end_Tr({class=>""});	
-			$nb ++;
+			
 		}
 	
 	my $out1;	
