@@ -1828,19 +1828,29 @@ sub kestrel {
 		my $right = substr($reverse, $position-1);
 		if (length($alt)> length($ref)){
 			#insertion 
+			my $seq_alt = substr($self->{kestrel}->[0]->[7], 0, $pos)."XXX".substr($self->{kestrel}->[0]->[7], $pos);
+				my $reverse_alt = BioTools::complement_sequence($seq_alt);
 			 my $ralt = BioTools::complement_sequence(substr($alt, 1));
-		my $ins = qq{<span style="color:red;">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
+			my $ins = qq{<span style="color:red;">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
 			#  my $ins = qq{<span style="color:blue;text-emphasis: double-circle blue; ">$ralt</span/>};
-			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
+			$reverse_alt =~ s/XXX/$ins/;
+			$self->{kestrel}->[0]->[7] = $reverse_alt;
 		}
 		elsif (length($alt)< length($ref)){
+			 $ref  = substr($ref, 1);
+			my $end = $pos + length($ref);
+			if ($end > 60 ){
+				my $add = substr($ref,0,($end-60));
+				$self->{kestrel}->[0]->[7] .= lc($add);
+			}
+			my $seq_alt = substr($self->{kestrel}->[0]->[7], 0, $pos)."XXX".substr($self->{kestrel}->[0]->[7], $pos);
 			my $ralt = BioTools::complement_sequence(substr($ref, 1));
 			 my $ins = qq{<span style="color:red">[$ralt]</span/>};
 			 my $start = $l - ($pos+length($ralt));
 			 $start = 0 if $start < 0;
 			my $left = substr($reverse, 0, $start); 
 			my $right = substr($reverse, $start+length($ralt));
-			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
+			$self->{kestrel}->[0]->[7] =$reverse."<BR>".$left.$ins.$right;
 		}
 		elsif (length($alt) == length($ref)){
 			my $ralt = BioTools::complement_sequence($alt);
