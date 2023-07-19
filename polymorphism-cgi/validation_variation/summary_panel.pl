@@ -515,7 +515,7 @@ my $stat;
 
 my $dev = undef;
 #$dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
-#$dev =1;
+#$dev = 1;
 
  $t = time;
  $|=1;
@@ -524,7 +524,7 @@ my $dev = undef;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
- push(@$key_quality,"muc1.adVntr.10.05.23.4") if $project->getCaptures->[0]->analyse =~ /renom/i;
+ push(@$key_quality,"muc1.adVntr.10.05.23.5") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  #warn "HEADER ==> ".$header;
  #warn join(";",@$key_quality);
@@ -1818,42 +1818,84 @@ sub table_muc1 {
 		my $out_table ="";
 		my $style = "success";
 		
-	 my $nb =0;
-		foreach my $patient (@{$project->getPatients}){
+	 my $nb_k = 0;
+	 my $nb_vntr = 0;
+	 my @color = ("#F9F6FF","white");
+	 my $pn =0;
+	 	foreach my $fam (sort {$a->name cmp $b->name} @{$project->getFamilies}){
+	 		
+		foreach my $patient (sort {$a->name cmp $b->name} @{$fam->getMembers}){
+			$pn ++;
 			my $t = $patient->kestrel;
 			 push(@$t,@{$patient->adVNTR});# if $patient->adVNTR;
 				next unless @{$t};
-				$nb ++ if (scalar(@{$t->[0]}) > 1) ; 
-			if (scalar(@{$t->[1]}) <=1){
-				if(-e $patient->vntyperTsv()){
-			 	$out_table .= $cgi->start_Tr({class=>""});
-			 	$out_table .= $cgi->td($patient->name);
-			 	$out_table .= $cgi->td([$t->[0]->[0],"-","-","-","-","-","-","-","-","-","-","-"]);
-			 	#,"-","-","-","-","-","-","-","-","-","-","-"]);
-				$out_table .= $cgi->end_Tr({class=>""});
-				}
-				else {
-				$out_table .= $cgi->start_Tr({class=>""});
+#				$nb ++ if (scalar(@{$t->[0]}) > 1) ; 
+#			if (scalar(@{$t->[1]}) <=1){
+#				if(-e $patient->vntyperTsv()){
+#			 	$out_table .= $cgi->start_Tr({class=>""});
+#			 	$out_table .= $cgi->td($patient->name);
+#			 	$out_table .= $cgi->td([$t->[0]->[0],$t->[0]->[1],"-","-","-","-","-","-","-","-","-","-"]);
+#			 	#,"-","-","-","-","-","-","-","-","-","-","-"]);
+#				$out_table .= $cgi->end_Tr({class=>""});
+#				}
+#				else {
+#				$out_table .= $cgi->start_Tr({class=>""});
+#			 	$out_table .= $cgi->td([$patient->name,"PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM"]);
+#				$out_table .= $cgi->end_Tr({class=>""});
+#				}
+#				next;
+#			 }
+			
+			
+			unless (-e $patient->vntyperTsv()){
+				$out_table .= $cgi->start_Tr({class=>"background-color:grey"});
 			 	$out_table .= $cgi->td([$patient->name,"PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM"]);
 				$out_table .= $cgi->end_Tr({class=>""});
-				}
 				next;
-			 }
-	
-			$out_table .= $cgi->start_Tr({class=>""});	
-			$out_table.= $cgi->td({rowspan=>scalar(@$t)},$patient->name);
-			foreach my $tt (@$t){
-				$out_table .= $cgi->td($tt);
+			}
+			my $style2 = "background-color:".$color[$pn%2];
+			
+			$out_table.= $cgi->td({rowspan=>scalar(@$t),style=>"vertical-align: middle;".$style2},[$fam->name,$patient->name,$patient->return_icon]);
+			my $level = 0;
+			my $first = 1;
+			my @ladvntr = grep{$_->[0] =~ /VNTR/} @$t;
+			my @lkestrel = grep{$_->[0] !~ /VNTR/} @$t;
+			$nb_k ++ if (@lkestrel && scalar(@{$lkestrel[0]})>3);
+			$nb_vntr ++ if (@ladvntr && scalar(@{ladvntr[0]})>3);
+			foreach my $tt (@$t) {
+				my $type  ;
+				$type = 1 if $tt->[0] =~ /VNTR/;
+
+				
+				for (my $i=0;$i<@$tt;$i++){
+				#	my $color ="#34495E";
+				#	$color = "#9896A4" if $type == 1;
+				#	if ($i==1){
+				#	 	$style = "background-color:$color";
+				#	}
+					if($i ==4 && $type == 1){
+						$out_table .= $cgi->td({colspan=>3,style=>$style2},$tt->[$i]);
+					}	
+					else{					
+						$out_table .= $cgi->td({style=>$style2},$tt->[$i]);
+					}
+				}
+			
+			
 				$out_table .= $cgi->end_Tr({class=>""});
 			}
 			#$out_table .= $cgi->end_Tr({class=>""});	
 			
 		}
+		$out_table .= $cgi->start_Tr({style=>"background-color:black"});
+		$out_table .= $cgi->td({colspan=>13,style=>"fborder-top-width: 0px;border-left-width: 0px;padding-top: 0px;padding-bottom: 0px;"},["<div style='height: 1px; overflow:hidden;'></div> "]);
+		$out_table .= $cgi->end_Tr();
+	 	}
 	
 	my $out1;	
 	#my $nb =  1;
 	my $run_id = $run->id;
-	$out1 =  qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb</span></div>};
+	$out1 =  qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
 	unless (-e  $project->getVariationsDir("vntyper")."/muc1/" ){
 		return ("","");
 	}
@@ -1864,8 +1906,10 @@ sub table_muc1 {
 	$out .= $cgi->start_div({class=>"col-xs-6"});
 	$out .= $cgi->start_table({class=> "table table-striped table-bordered table-hover",style=>"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;", 'data-click-to-select'=>"true",'data-toggle'=>"table"});
 	$out .= $cgi->start_Tr({class=>"$style"});
-
+		$out .= $cgi->th( {style=>"text-align: center;"} ,"Fam") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"name") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"status") ;
+	$out .= $cgi->th( {style=>"text-align: center;"} ,"caller") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"date") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"Motif") ;
 	$out .= $cgi->th( {style=>"text-align: center;"} ,"Variant") ;

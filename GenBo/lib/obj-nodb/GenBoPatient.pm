@@ -1829,28 +1829,40 @@ sub kestrel {
 		if (length($alt)> length($ref)){
 			#insertion 
 			my $seq_alt = substr($self->{kestrel}->[0]->[7], 0, $pos)."XXX".substr($self->{kestrel}->[0]->[7], $pos);
-				my $reverse_alt = BioTools::complement_sequence($seq_alt);
+			my $reverse_alt = BioTools::complement_sequence($seq_alt);
 			 my $ralt = BioTools::complement_sequence(substr($alt, 1));
-			my $ins = qq{<span style="color:red;">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
+			my $ins = qq{<span style="color:#0F79B2;">[<span style="text-emphasis: double-circle #0F79B2; ">$ralt</span/>]</span/>};
 			#  my $ins = qq{<span style="color:blue;text-emphasis: double-circle blue; ">$ralt</span/>};
 			$reverse_alt =~ s/XXX/$ins/;
 			$self->{kestrel}->[0]->[7] = $reverse_alt;
 		}
 		elsif (length($alt)< length($ref)){
+			$pos ++;
+			
 			 $ref  = substr($ref, 1);
 			my $end = $pos + length($ref);
-			if ($end > 60 ){
-				my $add = substr($ref,0,($end-60));
-				$self->{kestrel}->[0]->[7] .= lc($add);
+			my $seq_alt = $self->{kestrel}->[0]->[7];
+			my $lref = length($self->{kestrel}->[0]->[7]);
+			if ($end > $lref ){
+				my $add = substr($ref,($lref-$pos)+1);
+				$seq_alt .= lc($add);
 			}
-			my $seq_alt = substr($self->{kestrel}->[0]->[7], 0, $pos)."XXX".substr($self->{kestrel}->[0]->[7], $pos);
-			my $ralt = BioTools::complement_sequence(substr($ref, 1));
-			 my $ins = qq{<span style="color:red">[$ralt]</span/>};
-			 my $start = $l - ($pos+length($ralt));
-			 $start = 0 if $start < 0;
-			my $left = substr($reverse, 0, $start); 
-			my $right = substr($reverse, $start+length($ralt));
-			$self->{kestrel}->[0]->[7] =$reverse."<BR>".$left.$ins.$right;
+			
+			 my $seq_alt2 = substr($seq_alt, 0, $pos-1)."XXX".substr($seq_alt, ($pos+length($ref)-1));
+			my $alt = substr($seq_alt,$pos-1,length($ref));
+			
+			#my $seq_alt = substr($self->{kestrel}->[0]->[7], 0, $pos)."XXX".substr($self->{kestrel}->[0]->[7], $pos);
+			#my $ralt = BioTools::complement_sequence(substr($ref, 1));
+			 #my $ins = qq{<span style="color:red">[$ralt]</span/>};
+			 #my $start = $l - ($pos+length($ralt));
+			 #$start = 0 if $start < 0;
+			#my $left = substr($reverse, 0, $start); 
+			#my $right = substr($reverse, $start+length($ralt));
+			my $ralt = BioTools::complement_sequence($alt);
+			my $ins = qq{<span style="color:red;">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
+			$seq_alt2 =  BioTools::complement_sequence($seq_alt2);
+			$seq_alt2 =~ s/XXX/$ins/;
+			$self->{kestrel}->[0]->[7] =$seq_alt2;
 		}
 		elsif (length($alt) == length($ref)){
 			my $ralt = BioTools::complement_sequence($alt);
@@ -1870,7 +1882,6 @@ sub kestrel {
 		#$self->{kestrel}->[0]->[7] = $left.$right."<BR>".$self->{kestrel}->[0]->[7];
 		
 	}
-	$self->{kestrel}->[0]->[0] .= "XXX";
 	
 	return $self->{kestrel};
 }
@@ -1908,22 +1919,33 @@ sub vntyperResults {
 		$limit = scalar(@lines) if $advntr < $kestrel;
 	
 		for (my $i = $kestrel +2 ; $i<$limit;$i++){
-			push(@t,[$date,"kestrel",split(" ",$lines[$i])] ) ;
+			
+			push(@t,["kestrel",$date,split(" ",$lines[$i])] ) ;
 		}
-		push(@t,[$date]) unless @t; 
+		push(@t,["kestrel",$date]) unless @t; 
 		$self->{header_adVNTR} = [];
+		my $type = 
 		$self->{header_adVNTR} = ["date",split(" ",$lines[$advntr+1])] if $advntr > 0;
 		$self->{header_kestrel} = ["date",split(" ",$lines[$kestrel+1])]; 
 		$self->{kestrel} =\@t;
 		$limit2 = scalar(@lines) if $advntr >= $kestrel ;
-		warn $advntr." ".$limit2;
 		my @t2;
 		
 		for (my $i = $advntr+2 ; $i<$limit2;$i++) {
-			push(@t2,[$date,"adVNTR",split(" ",$lines[$i])] ) ;
+			
+			
+			my @tt = split(" ",$lines[$i]);
+			my @aa = split("&",$tt[1]);
+			my @bb = split("_",$aa[0]);
+			my $repeat = $bb[1];
+			$tt[0] = "Insertion" ;
+			$tt[0] = "Deletetion" if $aa[0] =~ /^D/;
+			push(@t2,["adVNTR",$date,$repeat,$tt[0],$tt[1],"-",$tt[2],$tt[3],$tt[4]] ) ;
 		}
 		$date = "-" if $advntr == -1;
-		push(@t2,[$date,"adVNTR"]) unless @t2; 
+		push(@{$self->{run}},"kestrel") if $kestrel;
+		push(@{$self->{run}},"adVNTR") if $advntr;
+		push(@t2,["adVNTR",$date]) unless @t2; 
 		$self->{adVNTR} =\@t2;
 		return;
 		#confess() if scalar(@lines) > 1;
