@@ -515,7 +515,7 @@ my $stat;
 
 my $dev = undef;
 #$dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
-#$dev = 1;
+$dev = 1;
 
  $t = time;
  $|=1;
@@ -1873,6 +1873,10 @@ sub table_muc1 {
 				#	if ($i==1){
 				#	 	$style = "background-color:$color";
 				#	}
+				if ($i==0 && $type ne 1 && scalar(@$tt) > 3){
+					$out_table .= $cgi->td({style=> "background-color:#FFA500"},$tt->[$i]);
+					next;
+				}
 					if($i ==4 && $type == 1){
 						$out_table .= $cgi->td({colspan=>3,style=>$style2},$tt->[$i]);
 					}	
