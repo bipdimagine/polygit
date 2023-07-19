@@ -496,7 +496,7 @@ html::print_header_polydiag($cgi);
 print $CSS;
 
 
-
+#
 my $hgmd = $buffer->queryHgmd->getHGMD($user);
 $hgmd = 0 unless $hgmd;
 #my $project = $buffer->newProject(-name=>$project_name);
