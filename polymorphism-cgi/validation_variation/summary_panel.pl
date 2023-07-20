@@ -524,16 +524,17 @@ my $dev = undef;
  #warn $key_quality;
  # my $key_quality = args_quality($project);
  my $no_cache = $project->get_lmdb_cache_summary("r");
+ args_muc1($project,$key_quality)  if $project->getCaptures->[0]->analyse =~ /renom/i;
  push(@$key_quality,"muc1.adVntr.10.05.23.6") if $project->getCaptures->[0]->analyse =~ /renom/i;
  my $header = $no_cache->get_cache(join(";",@$key_quality).".header");
  #warn "HEADER ==> ".$header;
  #warn join(";",@$key_quality);
  #$dev =1;
- $header = undef  if $dev or $cgi->param('force') eq 1;
+ $header = undef  if $dev or $cgi->param('force');
  #$header = undef;
  $no_cache->close();
-$project->getChromosomes();
-$project->getPatients();
+ $project->getChromosomes();
+ $project->getPatients();
 my $hmendel;
 my ($gstats,$lstats,$patient_value) ;
  warn "HEADER ==> ".$header;
@@ -750,7 +751,7 @@ sub check_level {
 			unless (-e  $project->getVariationsDir("vntyper")."/muc1/"){
 				
 			}
-			elsif (scalar(@{$res_muc->[0]}>1)){
+			elsif (scalar(@{$res_muc->[0]}>3)){
 				my $date = $res_muc->[0]->[0];
 				my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
 			 	$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"$text");
@@ -1829,6 +1830,8 @@ sub table_muc1 {
 			my $t = $patient->kestrel;
 			 push(@$t,@{$patient->adVNTR});# if $patient->adVNTR;
 				next unless @{$t};
+				
+				
 #				$nb ++ if (scalar(@{$t->[0]}) > 1) ; 
 #			if (scalar(@{$t->[1]}) <=1){
 #				if(-e $patient->vntyperTsv()){
@@ -1855,15 +1858,17 @@ sub table_muc1 {
 			}
 			my $style2 = "background-color:".$color[$pn%2];
 			
-			$out_table.= $cgi->td({rowspan=>scalar(@$t),style=>"vertical-align: middle;".$style2},[$fam->name,$patient->name,$patient->return_icon]);
+			
 			my $level = 0;
 			my $first = 1;
 			my @ladvntr = grep{$_->[0] =~ /VNTR/} @$t;
 			my @lkestrel = grep{$_->[0] !~ /VNTR/} @$t;
 			$nb_k ++ if (@lkestrel && scalar(@{$lkestrel[0]})>3);
-			$nb_vntr ++ if (@ladvntr && scalar(@{ladvntr[0]})>3);
+			$nb_vntr ++ if (@ladvntr && scalar(@{$ladvntr[0]})>3);
+			$style2 = "background-color:#E0B589" if (@lkestrel && scalar(@{$lkestrel[0]})>3);
+			$out_table.= $cgi->td({rowspan=>scalar(@$t),style=>"vertical-align: middle;".$style2},[$fam->name,$patient->name,$patient->return_icon]);
 			foreach my $tt (@$t) {
-				my $type  ;
+				my $type =0 ;
 				$type = 1 if $tt->[0] =~ /VNTR/;
 
 				
@@ -1873,10 +1878,14 @@ sub table_muc1 {
 				#	if ($i==1){
 				#	 	$style = "background-color:$color";
 				#	}
-				if ($i==0 && $type ne 1 && scalar(@$tt) > 3){
-					$out_table .= $cgi->td({style=> "background-color:#FFA500"},$tt->[$i]);
-					next;
-				}
+				#if ($i==0 && $type ne 1 && @$tt && scalar(@$tt) > 3){
+				#	$style2 = "background-color:#FFA500";
+					#$out_table .= $cgi->td({style=> "background-color:#FFA500"},$tt->[$i]);
+					#next;
+				#}
+				#else {
+				#	$style2 = "background-color:".$color[$pn%2];
+				#}
 					if($i ==4 && $type == 1){
 						$out_table .= $cgi->td({colspan=>3,style=>$style2},$tt->[$i]);
 					}	
@@ -1892,7 +1901,7 @@ sub table_muc1 {
 			
 		}
 		$out_table .= $cgi->start_Tr({style=>"background-color:black"});
-		$out_table .= $cgi->td({colspan=>13,style=>"fborder-top-width: 0px;border-left-width: 0px;padding-top: 0px;padding-bottom: 0px;"},["<div style='height: 1px; overflow:hidden;'></div> "]);
+		$out_table .= $cgi->td({colspan=>16,style=>"fborder-top-width: 0px;border-left-width: 0px;padding-top: 0px;padding-bottom: 0px;"},["<div style='height: 1px; overflow:hidden;'></div> "]);
 		$out_table .= $cgi->end_Tr();
 	 	}
 	
@@ -2850,6 +2859,9 @@ sub args_quality {
 	my @z;
 	if ($project->existsnoSqlQuality) {
 		my $t = stat($project->quality_dir."/".$project->name.".lite")->[9];
+		
+		push(@z,$t);
+		$t = stat($Bin."/summary_panel.pl")->[9];
 		push(@z,$t);
 	}
 	else {confess($project->quality_dir)};
@@ -2857,11 +2869,27 @@ sub args_quality {
   			my $string = $p1->get_string_identification;
   			push(@z,$string);
   		}
-	push(@z,"$VERSION_SCRIPT");#file_md5_hex($Bin."/summary_panel.pl"));	
+	push(@z,"$VERSION_SCRIPT");#file_md5_hex($Bin."/summary_panel.pl"));
+		
 	#push(@z,"11");	
   	return \@z;	
 }	
 
+sub args_muc1 {
+	my ($project,$args) = @_;
+	my @z;
+	my $dir = $project->getVariationsDir("vntyper")."/muc1/";
+	 if (-e $dir) {
+	 	my $file =  `ls -Art $dir/*.tsv | tail -n 1`;
+	 	chomp($file);
+	 	warn $file;
+	 	if ($file){
+	 			my $t = stat($file)->[9];
+	 			warn $t;
+	 			push(@$args,$t)
+	 	}
+	 }
+}
 sub args_validation {
 	my ($project) = @_;
 	my @z;
