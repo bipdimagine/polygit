@@ -27,7 +27,7 @@ my $root_cmd = "perl $RealBin/../../polymorphism-cgi//cache_nodb/scripts/cache_p
 
 my $opt = "transcripts=$transcript ";
 open (FILE,"$file");
-my $cmd = qq{/software/polyweb/poly-disk/www/cgi-bin/polymorphism-cgi/validation_variation/patient_report.pl  panel= edit_mode=1 never=1 this=6 impact=2 frequence=2 allele_quality=5 report_mode=1 project_summary=1 graphic_coverage=1 sanger_variations=1 validated_variations=1 todo_variations=1 list=1 span=20 limit=30  user_name=pnitschk xls=1 };
+my $cmd = qq{/software/polyweb/poly-disk/www/cgi-bin/polymorphism-cgi/validation_variation/patient_report.pl edit_mode=1 never=1 this=6 impact=2 frequence=2 allele_quality=5 report_mode=1 project_summary=1 graphic_coverage=1 sanger_variations=1 validated_variations=1 todo_variations=1 list=1 span=20 limit=30  user_name=pnitschk xls=1 };
 while(<FILE>){
 	chomp();
 	my $buffer = new GBuffer;
@@ -39,10 +39,12 @@ while(<FILE>){
 		#next if $chr->name eq "MT";
 		my $ppn=1;
 		foreach my $patient (@{$project->getPatients}){
-			my $cmd_root = " $root_cmd -fork=$ppn -project=".$project->name." -patients=".$patient->name." && ";
-			my $opt2 = $opt." patient=".$patient->name;
+			my $cmd_root = " $root_cmd -fork=$ppn -project=".$project->name." -patient=".$patient->name." && ";
+			my $opt2 = $opt." patients=".$patient->name;
 			my $cmd3.=$opt2." | tail -n +4 > $dir_out/".$patient->name.".xls";
+			
 			if ($cache){
+				print $cmd_root."\n";
 				print $cmd_root.$cmd." $cmd3\n";	
 			}
 			else {
@@ -50,7 +52,6 @@ while(<FILE>){
 			}
 			#
 		}
-			
 	#delete $project->{objects};
 	#$buffer = undef;
 }
