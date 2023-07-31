@@ -50,7 +50,6 @@ if ($patient_name2 =~ / /){
 #exit(0) if -e "/data-isilon/sequencing/muc1/renome/".$patient_name2.".vcf";
 my $patients = $project->get_only_list_patients($patient_name2);
 die() unless scalar(@$patients);
-warn "coucou ".scalar(@$patients);
  my $dir_pipeline = "/tmp/pipeline/$project_name.".time."/";#
 
  system("mkdir -p $dir_pipeline") unless -e $dir_pipeline;
@@ -58,9 +57,9 @@ foreach my $patient (@$patients) {
 my $patient_name = $patient->name;
 my $bam = $patient->getBamFile();
 my $bam_dir = $patient->getProject->getAlignmentDir("bwa");
-  my $tmp_dir = $project->getCallingPipelineDir("muc1-vntyper.".$patient->name);
+  my $tmp_dir = $project->getCallingPipelineDir("muc1-advntr.".$patient->name);
   $dir_pipeline = $tmp_dir;
-my $fileoutx=  $project->getVariationsDir("muc1_vntyper6")."/".$patient_name.".vcf";
+my $fileoutx=  $project->getVariationsDir("advntr")."/".$patient_name.".vcf";
  my $dir_pipeline2 = $dir_pipeline ."/$patient_name/";
  system("rm -r $dir_pipeline2") if -e $dir_pipeline2;
 
@@ -80,25 +79,16 @@ my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
 #my $scommand ="python3 /SOFT/VNtyper/VNtyper.py -t 5 -k 20 -ref_VNTR /tmp/pipeline/MUC1-VNTR.fa  -f /SOFT/VNtyper/Files/ -ref /tmp/pipeline/MUC1-VNTR.fa -p Scripts/ -w $dir_pipeline -r1 $fastq1 -r2 $fastq2 -o $patient_name -m Files/vntr_data/hg19_genic_VNTRs.db --ignore_advntr  -p /SOFT/VNtyper/";
-my $scommand ="python3 /SOFT/VNtyper/VNtyper.py   -t 1    --bam  -ref chr1.fa -ref_VNTR /SOFT/VNtyper/Files/MUC1-VNTR.fa -p /SOFT/VNtyper/Scripts/ -w $dir_pipeline -a $bam   -o $patient_name  -m /SOFT/VNtyper/Files/hg19_genic_VNTRs.db   -p /SOFT/VNtyper/";
-my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
+my $scommand =qq{ advntr genotype --vntr_id 25561 --alignment_file $bam  --working_directory $dir_pipeline -fs --outfmt vcf  -m /SOFT/VNtyper/Files/hg19_genic_VNTRs.db  -t 4 -r /SOFT/VNtyper/Files/ -o $fileoutx};
 
-#system("samtools index $bam -\@2");
+my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
+warn $cmd;
 system($cmd." && touch $dir_pipeline/$patient_name.ok");
 
 unless (-e "$dir_pipeline/$patient_name.ok"){
  #	system("rm -r $dir_pipeline");
  	die();
  }
-warn "ok ************";
-warn $dir_pipeline2;
-my $dir_prod = $project->getVariationsDir("vntyper")."/muc1/";
-my $tsv = $dir_prod."/".$patient->name."_Final_result.tsv";
-if (-e $tsv ){
-	system("$Bin/../rm_vcf.pl $tsv");
-}
-system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
-system("cp $dir_pipeline2/".$patient->name."* $dir_prod");
 }
 
 
