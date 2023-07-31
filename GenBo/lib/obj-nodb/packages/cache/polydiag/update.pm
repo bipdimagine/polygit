@@ -1113,6 +1113,12 @@ sub construct_variant {
 	{
 		$hvariation->{db_type} = "snps";
 	}
+	elsif (length($ref) < length($alt)) {
+		$hvariation->{db_type} = "insertions";
+	}
+	elsif (length($ref) > length($alt)) {
+		$hvariation->{db_type} = "deletions";
+	}
 	else {
 		warn $hvariation->{ref_allele}." lalt ".$lalt." lref ".$lref;
 		warn $hvariation->{allele};

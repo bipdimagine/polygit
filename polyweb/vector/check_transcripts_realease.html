@@ -422,7 +422,7 @@
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
             
-            var release_annotation = '42';
+            var release_annotation = '43';
             $(document).ready(function () {
             	document.getElementById("text_list_genes").value = "";
 		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + release_annotation + "</b></font>";
@@ -435,6 +435,7 @@
 		    function launch() {
 		    	document.getElementById("content_res").innerHTML = "<div align='center'><i>Running. Please wait...</i> <img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'></div>";
 		    	document.getElementById("span_ok").innerHTML = "";
+		    	document.getElementById("span_warn").innerHTML = "";
 		    	document.getElementById("span_not").innerHTML = "";
 		    	var value = document.getElementById("text_list_genes").value;
 		    	var list_tr = value.split("\n");
@@ -446,6 +447,7 @@
 				html_table += "<th scope='col'>Transcript Name</th>";
 				html_table += "<th scope='col'>Gene Name</th>";
 				html_table += "<th scope='col'>Status</th>";
+				html_table += "<th scope='col'>Remap to HG19 Status</th>";
 				html_table += "<th scope='col'>Ensembl URL</th>";
 				html_table += "</tr>";
 				html_table += "</thead>";
@@ -453,6 +455,7 @@
 			    $.getJSON( url, function( data ) {
 			    	var nb_ok = 0;
 			    	var nb_not = 0;
+			    	var nb_warn = 0;
 			    	var i = 1;
 			    	$.each( data, function( key, val ) {
 			    		var color = 'green';
@@ -460,10 +463,23 @@
 			    		var status = list_res[0];
 			    		var release = list_res[1];
 			    		var gene_name = list_res[2];
+			    		var remap_status = list_res[3];
+			    		var regex_partial_frameshift = /partial FRAMESHIFT/;
+			    		var regex_partial = /partial/;
 			    		if (status == 'NOT') {
 			    			status = 'NOT FOUND in ' + release;
 			    			color = 'red';
 			    			nb_not++;
+			    		}
+			    		else if (remap_status.match(regex_partial_frameshift)) {
+			    			status = 'PARTIAL FRAMESHIFT in ' + release;
+			    			color = 'red';
+			    			nb_not++;
+			    		}
+			    		else if (remap_status.match(regex_partial)) {
+			    			status = 'PARTIAL in ' + release;
+			    			color = 'orange';
+			    			nb_warn++;
 			    		}
 			    		else {
 			    			nb_ok++;
@@ -475,6 +491,7 @@
 						html_table += "<td>" + key + "</td>";
 						html_table += "<td>" + gene_name + "</td>";
 						html_table += "<td>" + status + "</td>";
+						html_table += "<td>" + remap_status + "</td>";
 						html_table += "<td>";
 						html_table += "<table>";
 						html_table += "<td><a href='" + url_now + "' target='_blank'>url</a></td>";
@@ -489,8 +506,9 @@
 					var myNode = document.getElementById("content_res");
 			    	var myPanel = $(html_table);
 					myPanel.appendTo(myNode);
-					var nb_total = nb_ok + nb_not;
+					var nb_total = nb_ok + nb_not + nb_warn;
 					document.getElementById("span_ok").innerHTML  = "<font color='#00CC00'>OK: " + nb_ok + " / " + nb_total + "</font>";
+					document.getElementById("span_warn").innerHTML = "<font color='orange'>WARNING: " + nb_warn + " / " + nb_total + "</font>";
 					document.getElementById("span_not").innerHTML = "<font color='red'>ERROR: " + nb_not + " / " + nb_total + "</font>";
 			    });
 		    }
@@ -516,6 +534,7 @@
 	      			<a class="navbar-brand" href="#"><span id="span_1"></span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_2"></span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_ok"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_warn"></span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_not"></span></a>
 	    		</div>
 	  		</div>
@@ -536,6 +555,7 @@
 							Release<br>Annotation<br><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
 						</li>
 						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+							<a class="dropdown-item" href="#" onClick="change_annotation('43')"><center>HG19 / Gencode 43</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('42')"><center>HG19 / Gencode 42</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('41')"><center>HG19 / Gencode 41</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('40')"><center>HG19 / Gencode 40</center></a>
@@ -546,7 +566,7 @@
 							<a class="dropdown-item" href="#" onClick="change_annotation('31')"><center>HG19 / Gencode 31</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('19')"><center>HG19 / Gencode 19</center></a>
 						</div>
-						<li class="list-group-item"><span id="span_release_annotation">42</span></li>
+						<li class="list-group-item"><span id="span_release_annotation">43</span></li>
 					</ul>
 				</div>
 				<br>

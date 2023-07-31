@@ -191,7 +191,7 @@ elsif (exists $pipeline->{align}){
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
 	if ($umi){
-		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 2 --vc-enable-umi-germline true};
+		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 	}
 	else {
 		$param_align .= qq{ --enable-duplicate-marking true };
