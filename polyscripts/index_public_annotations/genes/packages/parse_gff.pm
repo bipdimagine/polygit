@@ -54,6 +54,7 @@ sub read_gff_genes {
 		  $genes->{$genbo_id}->{description} =   $infos->{description};
 		   $genes->{$genbo_id}->{description} =~s/-/ /g if $genes->{$genbo_id}->{description};
 		  #objects 
+		  $genes->{$genbo_id}->{remap_status} = $infos->{remap_status};
 		   $genes->{$genbo_id}->{chromosomes_object}->{$chr} = undef;
 		  
 		 

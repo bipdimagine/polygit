@@ -186,20 +186,20 @@ $stdout .= tee_stdout {
 	my $style_a ="font-size: 8px;font-family:Verdana;letter-spacing:1px;	padding-left: 10px;text-transform:uppercase; ";
 	print $cgi->start_div({class=>"btn-group  btn-toolbar-xs btn-group-justified",role=>"group",style=>"box-shadow: 0 6px 4px -4px black;"});
 	
-	print "<table>";
+	print "<table style='width:100%;'>";
 	
 	my $back_color = "#363945";
 	$back_color = '#'.$cgi->param("backgroundcolor") if $cgi->param("backgroundcolor");
 	
 	print "<tr style='height:58px;border:solid 3px $back_color;'>";
-	print "<td style='height:100%;background-color:$back_color;'>";
+	print "<td style='height:100%;background-color:$back_color;'><center>";
 	print $cgi->start_div({class=>"btn-group btn-group-xs", role=>"group"});
 	
 	print start_button({class=>"btn btn-$h1",style=>$style_b.";background-color:$back_color;border-width:0px;color:white;padding-left:5px;padding-right:5px;"});
 	print "<img src='/icons/Polyicons/logo_polyweb_white2.png' width='140px' height='29px' style='margin:2px'><br><span style='font-size: 7px;font-family:Verdana;position:relative;top:-1px;color:#F5DF4D;letter-spacing:normal'>- University of Paris<span style='color:#FF6F61'> - Imagine Institute -</span></span>";
 	print end_button();
 	print  $cgi->end_div;
-	print "</td>";
+	print "</center></td>";
 	
 #	print "<td style='height:100%;background-color:#b8a9c9;'>";
 #	print $cgi->start_div({class=>"btn-group btn-group-xs", role=>"group",style=>"background-color:$ccolor;padding-left:8px;padding-right:8px;"});

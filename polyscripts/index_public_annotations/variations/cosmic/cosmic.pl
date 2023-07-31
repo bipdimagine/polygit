@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib "$Bin";
-use lib "$Bin/../../../../../lib/obj-nodb";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use strict; 
 use Set::IntSpan::Fast::XS ;
 use Data::Dumper;
@@ -27,7 +27,7 @@ GetOptions(
 	'version=s'   => \$version,
 );
 die("please add -version=") unless $version;
-my $dir_out  = "/public-data/repository/HG19/cosmic/$version/";
+my $dir_out  = "/data-isilon/public-data/repository/HG19/cosmic/$version/";
 my $dir_vcf = "$dir_out/vcf/";
 
 

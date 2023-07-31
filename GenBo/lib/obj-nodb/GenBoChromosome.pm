@@ -3,6 +3,7 @@ package GenBoChromosome;
 use strict;
 use Moo;
 
+use Carp;
 use Data::Dumper;
 use Config::Std;
 use GenBoGenomic;
@@ -60,6 +61,52 @@ sub setStructuralVariants {
 			}
 		}
 	}
+}
+
+sub setJunctions {
+	my ($self) = @_;
+	my $h_ids;
+	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
+	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+	if ($ri_file and -e $ri_file ) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($se_file and -e $se_file) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	my $path2 = $self->getProject->getVariationsDir('dragen-sj');
+	foreach my $patient (@{$self->getProject->getPatients()}) {
+		my $dragen_file = $path2.'/'.$patient->name().'.SJ.out.tab.gz';
+		next if not -e $dragen_file;
+		foreach my $hres (@{$self->getProject->getQueryJunction($dragen_file,'DRAGEN')->parse_dragen_file($patient, $self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	my $path3 = $self->getProject->getJunctionsDir('star');
+	foreach my $patient (@{$self->getProject->getPatients()}) {
+		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
+		my $star_file_bz = $star_file.'.gz';
+		if (-e $star_file) {
+			my $cmd1 = "bgzip $star_file";
+			`$cmd1`;
+			my $cmd2 = "tabix -p bed $star_file_bz";
+			`$cmd2`;
+		}
+		next if not -e $star_file_bz;
+		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	return $h_ids;
 }
 
 has ucsc_name => (
@@ -1412,6 +1459,25 @@ sub get_rocks_polyviewer_variant {
 #	return $self->{rocks}->{$hindex};
 #}
 # 
+
+sub get_lmdb_junctions_canoniques {
+	my ( $self, $modefull) = @_;
+	my $hindex = "dv_junctions_canoniques_";
+	$hindex = "dv_junctions_canoniques_".$modefull if ($modefull);
+	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+	$modefull = "r" unless $modefull;
+	my ( $mode, $pipeline ) = split( '', $modefull );
+	my $dir_out = $self->project->get_dejavu_junctions_path('canoniques');
+	return  GenBoNoSqlLmdb->new(
+		dir         => $dir_out,
+		mode        => $mode,
+		is_index    => 1,
+		name        => $self->name,
+		is_compress => 1,
+		vmtouch     => $self->buffer->vmtouch
+	);
+	return $self->{lmdb}->{$hindex};
+}
 
 sub get_lmdb_variations {
 	my ( $self, $modefull,$rocks) = @_;

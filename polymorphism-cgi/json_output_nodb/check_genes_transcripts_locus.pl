@@ -225,12 +225,14 @@ $out .= $cgi->start_Tr( { style => "font-size:11px;" } );
 my $hgmd_version_used = $buffer->queryHgmd->database();
 my $searched = join(' - ', @lSearched);
 
+
+my $gencode_version = $project->gencode_version();
 my ($trio_phenotype, $used_hgmd);
 if ($trio_project and $trio_patient) {
 	$trio_phenotype = get_project_phenotype($trio_project);
 	my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($trio_phenotype);
 	$used_hgmd = $h_pheno_infos->{$use_phenotype_score}->{concept};
-	$out .= "<center><b>Phenotype:</b> <font color='green'>$trio_phenotype</font> | <b>HGMD Concept:</b> <font color='green'>$used_hgmd</font> | <b>Searched:</b> <font color='green'>$searched</font><b> | HGMD:</b> <font color='green'>$hgmd_version_used</font></center>";
+	$out .= "<center><b>Gencode:</b> <font color='green'>$gencode_version</font> | <b>Phenotype:</b> <font color='green'>$trio_phenotype</font> | <b>HGMD Concept:</b> <font color='green'>$used_hgmd</font> | <b>Searched:</b> <font color='green'>$searched</font><b> | HGMD:</b> <font color='green'>$hgmd_version_used</font></center>";
 	$out .= $cgi->start_Tr({style=>"font-size:12px;"});
 	$out .= $cgi->th({colspan=>8, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>GENE Informations</b>");
 	$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>HGMD</b>") if ( $buffer->hasHgmdAccess($user) );
@@ -246,7 +248,7 @@ else {
 	if ( $buffer->hasHgmdAccess($user) ) {
 		my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($use_phenotype_score);
 		$used_hgmd = $h_pheno_infos->{$use_phenotype_score}->{concept};
-		$out .= "<center><b>Phenotype:</b> <font color='green'>$use_phenotype_score</font> | <b>HGMD Concept:</b> <font color='green'>$used_hgmd</font> | <b>Searched:</b> <font color='green'>$searched</font><b> | HGMD:</b> <font color='green'>$hgmd_version_used</font></center>";
+		$out .= "<center><b>Gencode:</b> <font color='green'>$gencode_version</font> | <b>Phenotype:</b> <font color='green'>$use_phenotype_score</font> | <b>HGMD Concept:</b> <font color='green'>$used_hgmd</font> | <b>Searched:</b> <font color='green'>$searched</font><b> | HGMD:</b> <font color='green'>$hgmd_version_used</font></center>";
 		#$out .= "<center>".$out_phenos."</center>";
 		$out .= $cgi->start_Tr({style=>"font-size:11px;"});
 		if ($trio_project and $trio_patient) {
@@ -530,6 +532,7 @@ else {
 $out .= "</tbody></table></div>";
 $hRes = undef;
 $hRes->{html} = $out;
+$hRes->{gencode} = $gencode_version;
 $hRes->{nb_genes} = scalar(keys %$h_genes);
 $hRes->{nb_genes_error} = $nb_genes_error if ( $nb_genes_error > 0 );
 
