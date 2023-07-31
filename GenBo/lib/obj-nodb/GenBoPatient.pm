@@ -1888,7 +1888,34 @@ sub kestrel {
 sub adVNTR {
 	my ($self) = @_;
 	return $self->{adVNTR} if exists $self->{adVNTR};
-	$self->vntyperResults();
+	my $file = $self->project->getVariationsDir("advntr").$self->name.".vcf";
+	unless( -e $file){
+		$self->{adVNTR} =[];
+		return $self->{adVNTR};
+	}
+	
+	my @lines = `grep -v "#" $file`;  
+	chomp(@lines);
+	
+	$self->{header_adVNTR} = ["date","State","NumberOfSupportingReads","MeanCoverage","Pvalue"];
+	my $date = POSIX::strftime( 
+             "%d/%m/%y", 
+             localtime( 
+               		(stat $file )[10]
+                 )
+             );
+	
+	foreach my $l (@lines) {
+		my @tt = split(" ",$l);
+		my @aa = split("&",$tt[1]);
+		my @bb = split("_",$aa[0]);
+		my $repeat = $bb[1];
+		$tt[0] = "Insertion" ;
+		$tt[0] = "Deletetion" if $aa[0] =~ /^D/;
+		push( @{$self->{adVNTR}},["adVNTR",$date,$repeat,$tt[0],$tt[1],"-",$tt[2],$tt[3],$tt[4]] ) ;
+	}
+	push(@{$self->{adVNTR}},["adVNTR",$date]) unless @lines; 
+	#$self->vntyperResults();
 	return $self->{adVNTR};
 }
 	
@@ -1897,7 +1924,7 @@ sub vntyperResults {
 		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
 		unless( -e $file){
 			$self->{kestrel} =[];
-			$self->{adVNTR} =[];
+			#$self->{adVNTR} =[];
 			return;
  		}
  		
@@ -1944,9 +1971,9 @@ sub vntyperResults {
 		}
 		$date = "-" if $advntr == -1;
 		push(@{$self->{run}},"kestrel") if $kestrel;
-		push(@{$self->{run}},"adVNTR") if $advntr;
-		push(@t2,["adVNTR",$date]) unless @t2; 
-		$self->{adVNTR} =\@t2;
+		#push(@{$self->{run}},"adVNTR") if $advntr;
+		#push(@t2,["adVNTR",$date]) unless @t2; 
+		#$self->{adVNTR} =\@t2;
 		return;
 		#confess() if scalar(@lines) > 1;
 
