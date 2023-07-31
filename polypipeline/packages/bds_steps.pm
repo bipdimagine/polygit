@@ -5149,7 +5149,7 @@ sub advntr {
 
 	my $bin_dev = $self->script_dir;
 	my $version = $self->patient()->project->genome_version();
-	my $cmd = "perl $bin_dev/muc1/advntyper.pl -project=$project_name  -patient=$name";
+	my $cmd = "perl $bin_dev/muc1/advntr.pl -project=$project_name  -patient=$name";
 	my $type     = "advntr-calling";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
