@@ -267,6 +267,7 @@ my $steps = {
 				"bwa2" => sub {$pipeline->bwa2(@_)},
 				"elprep5_genome" => sub {$pipeline->elprep5_genome(@_)},
 				"muc1" => sub {$pipeline->muc1(@_)},
+				"advntr" => sub {$pipeline->advntr(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');
@@ -462,6 +463,7 @@ sub prepare_jobs {
 	my ($running_steps,$steps) = @_;
 	my $next_file = "";
 	foreach my $step (@$running_steps){
+		warn $step." ".$next_file;
 		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;

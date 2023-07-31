@@ -2290,10 +2290,10 @@ sub rnaseq_metrics {
 	my $rRNA_file = $project->rRNA_file();
 	my $opt       = "";
 	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
-	unless ( -e $refFlat ) {
-		die("can't find $refFlat");
+	#unless ( -e $refFlat ) {
+	#	die("can't find $refFlat $rRNA_file");
 
-	}
+	#}
 
 	my $java   = $project->buffer->software("java");
 	my $picard = $project->buffer->software("picard");
@@ -2423,7 +2423,10 @@ sub bam_sort_bamba {
 
 sub rmdup {
 	my ( $self, $hash ) = @_;
-	return $self->rmdup_bamba( $hash );
+
+	my $filein = $hash->{filein};
+	return $self->rmdup_bamba( {filein => $filein });
+
 }
 
 sub rmdup_nudup {
@@ -4079,6 +4082,7 @@ sub reorder_picard {
 
 		my $fileprod = $self->patient()->getBamFileName();
 		$filein = $outputdirstart . "\/" . $name . ".bam";
+		die($fileprod) unless -e $fileprod;
 		if ( -e $fileprod ) {
 
 			#              $filein = $fileprod;
@@ -4089,7 +4093,7 @@ sub reorder_picard {
 			system(" chmod a+w $fileprod ");
 			system("mv $fileprod $filein");
 		}
-		die() unless -e $filein;
+		confess() unless -e $filein;
 
 		$filein = $outputdirstart . "/" . $self->patient()->name . ".bam";
 		$fileout =
@@ -5097,20 +5101,60 @@ sub muc1 {
 
 	$filein = $self->patient()->getBamFileName();    # unless $filein;
 
-	my $ppn = 4;
+	my $ppn = 2;
 
 	$ppn = int( $self->nproc / 2 ) if $self->nocluster;
 	die( "-" . $filein ) unless $filein;
 
 	my $bin_dev = $self->script_dir;
 	my $version = $self->patient()->project->genome_version();
-	my $cmd =
-	  "perl $bin_dev/muc1/vntyper.pl -project=$project_name  -patient=$name";
+	my $cmd = "perl $bin_dev/muc1/vntyper.pl -project=$project_name  -patient=$name";
 	my $type     = "muc1-calling";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
 		uuid         => $self->bds_uuid,
 		software     => "manta",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+
+sub advntr {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $name         = $self->patient()->name();
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $dir_prod     = $project->getVariationsDir("advntr") ."/";
+	#system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
+	my $fileout = $dir_prod . "/" . $name . ".vcf";
+
+	$filein = $self->patient()->getBamFileName();    # unless $filein;
+
+	my $ppn = 1;
+	die( "-" . $filein ) unless $filein;
+
+	my $bin_dev = $self->script_dir;
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/muc1/advntyper.pl -project=$project_name  -patient=$name";
+	my $type     = "advntr-calling";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "advntr",
 		sample_name  => $self->patient->name(),
 		project_name => $self->patient->getProject->name,
 		cmd          => [$cmd],
