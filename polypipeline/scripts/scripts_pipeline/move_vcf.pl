@@ -76,11 +76,14 @@ warn $variation_out;
 my $total =  $vcf_dir."/".$project_name.".final.vcf";
 warn $project->getVariationsDir($calling_type);
 if (-e $total){
-print  colored ['black ON_BRIGHT_MAGENTA'],"======= Start with ALL SNP+INDELS ==== "; 
+print  colored ['black ON_BRIGHT_MAGENTA'],"======= Start with BACKUP SNP+INDELS ==== "; 
 print  color 'reset';
 print  "\n";
 
 backup_vcf($patients);
+print  colored ['black ON_BRIGHT_MAGENTA'],"======= Start with MOVE SNP+INDELS ==== "; 
+print  color 'reset';
+print  "\n";
 move_vcf($total,$variation_out,"SNP",$project->getVariationsDir($calling_type));
 split2_vcf($variation_out.".gz",$dir_out,$patients);
 
@@ -149,7 +152,6 @@ while (my $line = <VCF>){
 
 sub split2_vcf {
 	my ($in,$dir_out,$patients) = @_;
-	warn $in;
 	#my $nb = `zgrep -cv "#" $in`;
 	#warn $nb;  
 	my %hpatients;
@@ -190,7 +192,7 @@ sub split2_vcf {
 	my $chr_line;
 	my $chr_current;
 while (my $line = <VCF>){
-
+	warn $line;
 	if ($line =~ /^##/){
 		push (@$headers,$line);
 		next;
@@ -225,7 +227,7 @@ while (my $line = <VCF>){
 		};
 		next;
 		}
-
+		
 		my @array = split(" ",$line);
 
 	
@@ -262,6 +264,11 @@ while (my $line = <VCF>){
 				next;
 			}
 			my $name = $col_patients{$ii};
+			unless (exists $file->{first}->{$name}){
+				my $fh =  $file->{fh}->{$name};
+				 $file->{first}->{$name} =1;
+				$fh->print(join("\t",@$chr_line)."\t".$name."\n") if $fh ;
+			}
 			my $fam = $families{$name};
 
 			die() unless $name;
@@ -306,14 +313,10 @@ while (my $line = <VCF>){
 			
 			my $line2 = join("\t",@newline);
 			$line2 .= "\t".$array[$ii]."\n";
-			if (exists $file->{fh}->{$name} ){
+			if (exists $file->{fh}->{$name} ) {
 			my $fh =  $file->{fh}->{$name};
 			#warn "$line2";
-			unless (exists $file->{first}->{$name}){
-				 $file->{first}->{$name} =1;
-				
-				$fh->print(join("\t",@$chr_line)."\t".$name."\n") if $fh ;
-			}
+		
 			  $fh->print($line2);
 		}
 			#push(@{$vcf_patient->{$name}},$line2);
