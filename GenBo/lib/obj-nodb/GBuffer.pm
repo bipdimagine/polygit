@@ -513,9 +513,8 @@ sub _checkArguments {
 	my $index;
     for ($index=0; $index < @_; $index += 2) {
         my $key = $_[$index];
-        warn $key;
         unless ($key =~ /^\-/o) {
-            confess "Please, could you be so kind as to check your arguments for method \'construct\'? I have the impression you wrote \'$key\' instead of \'$key\' -- didn\'t you?\n";
+            confess ("Please, could you be so kind as to check your arguments for method \'construct\'? I have the impression you wrote \'$key\' instead of \'$key\' -- didn\'t you?\n");
             die();
             return undef;
         }
@@ -956,9 +955,15 @@ sub get_gnomad {
 sub get_lmdb_database_directory{
 	my ($self,$database)= @_;
 	my $version = $self->public_data_version;
-	
 	return $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 }
+
+sub get_index_database_directory{
+	my ($self,$database)= @_;
+	my $version = $self->public_data_version;
+	return $self->public_data_root."/".$self->annotation_genome_version."/$database/".$self->public_data->{$version}->{$database}->{config}->{version}."/".$self->public_data->{$version}->{$database}->{config}->{dir};
+}
+
 
 sub description_public_lmdb_database {
 	my ($self,$database)= @_;
@@ -1056,6 +1061,8 @@ sub close_lmdb {
 sub DESTROY {
 	my ($self) = @_;
 	#delete $self->{lmdb};
+	my $t =time;
+	#swarn "detroy buffer ";
 	foreach my $chr (keys %{$self->{lmdb}}){
 			foreach my $db (keys %{$self->{lmdb}->{$chr}}){
 					foreach my $type (keys %{$self->{lmdb}->{$chr}->{$db}}){
@@ -1072,7 +1079,7 @@ foreach my $database (keys %{$self->{lmdb_score}}){
 }
 delete 	$self->{lmdb_score};
 delete $self->{lmdb};
-
+#warn "end buffer "." ".time;
 }
 
 sub intersection {
