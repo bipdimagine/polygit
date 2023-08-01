@@ -112,13 +112,17 @@ close LIST;
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
 	
 	foreach my $f (keys %$files){
+		unless (-e $f){
+			delete $files->{$f};
+			next;
+		}
 		$files->{$f} = $buffer->gzip_tabix($files->{$f},"vcf");
 		my $ff =  $files->{$f};
 		delete  $files->{$f} unless -s $ff;
 		my $res = ` bcftools view  $ff -U -c 1 2>/dev/null | grep -v "#" | wc -l `;
 		chomp($res);
 		delete  $files->{$f} if $res == 0 ;
-		if ($res>=0){
+		if ($res>=0) {
 			
 		}
 		
