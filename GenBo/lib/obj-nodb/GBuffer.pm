@@ -961,6 +961,13 @@ sub get_lmdb_database_directory{
 	return $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 }
 
+sub get_index_database_directory{
+	my ($self,$database)= @_;
+	my $version = $self->public_data_version;
+	return $self->public_data_root."/".$self->annotation_genome_version."/$database/".$self->public_data->{$version}->{$database}->{config}->{version}."/".$self->public_data->{$version}->{$database}->{config}->{dir};
+}
+
+
 sub description_public_lmdb_database {
 	my ($self,$database)= @_;
 
@@ -1055,6 +1062,8 @@ sub close_lmdb {
 sub DESTROY {
 	my ($self) = @_;
 	#delete $self->{lmdb};
+	my $t =time;
+	#swarn "detroy buffer ";
 	foreach my $chr (keys %{$self->{lmdb}}){
 			foreach my $db (keys %{$self->{lmdb}->{$chr}}){
 					foreach my $type (keys %{$self->{lmdb}->{$chr}->{$db}}){
@@ -1071,7 +1080,7 @@ foreach my $database (keys %{$self->{lmdb_score}}){
 }
 delete 	$self->{lmdb_score};
 delete $self->{lmdb};
-
+warn "end buffer "." ".time;
 }
 
 sub intersection {
