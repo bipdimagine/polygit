@@ -118,6 +118,10 @@ if ($rna == 1) {
 system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -version=$version && touch $ok_move");
 exit(0);
 
+################################################
+### PIPELINE RNA
+################################################
+
 sub run_pipeline_rna {
 my ($pipeline) = @_;
 my $param_align = "";
@@ -143,16 +147,14 @@ if ($version && exists $pipeline->{align} ){
 else {
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
- $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true ";
+ $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-duplicate-marking true -enable-rna=true ";
 }
 
-if (exists $pipeline->{count}){
+#if (exists $pipeline->{count}){
 	my $gtf =  $project->gtf_dragen_file();
 	die() unless -e $gtf;
-	#my $gtf = qq{/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/gtf/gencode.vM32.annotation.gtf};
-	#my $gtf2 = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf};
 	$param_align .= "-a $gtf --enable-rna-quantification true";
-}
+#}
 
 ##
 $cmd_dragen .= $param_umi." ".$param_align;
@@ -161,6 +163,9 @@ die if $exit != 0;
 }
 
 
+################################################
+### PIPELINE DNA
+################################################
 sub run_pipeline {
 my ($pipeline) = @_;
 my $param_align;
