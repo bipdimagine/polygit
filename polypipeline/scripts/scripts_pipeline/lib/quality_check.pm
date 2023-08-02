@@ -341,8 +341,7 @@ sub fast_plink {
 	close TPED;
 	warn $tped_file;
 	if ( @{ $fam->getParents } ) {
-		my $cmd2 =
-"$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName";
+		my $cmd2 = "$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
 
 		#	warn $cmd2;
 		my @log   = `$cmd2`;
