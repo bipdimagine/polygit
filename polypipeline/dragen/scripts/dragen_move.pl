@@ -48,7 +48,7 @@ my $define_steps;
 my $step;
 
 my $spipeline;
-
+my $rna;
 my $limit;
 my $version;
 GetOptions(
@@ -58,6 +58,7 @@ GetOptions(
 	'type=s' => \$type,
 	'command=s'=>\$spipeline,
 	'version=s' =>\$version,
+	'rna=s' =>\$rna,
 	#'low_calling=s' => \$low_calling,
 );
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
@@ -91,16 +92,17 @@ $url ="";
 #exit(0) if -e $bam_prod;
 #warn "coucou";
 if (exists $pipeline->{align}){
+	
 	my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
 	if ($version && !(-e $bam_pipeline)){
 	$bam_pipeline =~ s/bam/cram/;
 	$bam_prod =~ s/bam/cram/;
+	
 	}
 #warn $bam_pipeline;
 	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
-	move_bam($bam_pipeline,$patient);
+	move_bam($bam_pipeline,$patient);# if ($version );
 }
-
 if (exists $pipeline->{gvcf}){
 	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 	($out, $err, $exit)=  $ssh->cmd("test -f $gvcf_pipeline");
@@ -122,11 +124,13 @@ if (exists $pipeline->{cnv}){
 	}
 }
 if (exists $pipeline->{sv}){
-
 	my $sv_file = $dir_pipeline."/".$prefix.".sv.vcf.gz";
 	move_sv($sv_file,$patient);
 }
-
+if ( $rna ==1){
+	my $sv_file = $dir_pipeline."/".$prefix.".SJ.out.tab";
+	move_sj($sv_file,$patient);
+}
 
 
 
@@ -196,11 +200,19 @@ sub move_cnv {
 sub move_sv {
 	my ($t1,$patient) = @_;
 	my $dir = $project->getVariationsDir("dragen-sv");
+	warn "rsync -rav  $url"."$t1 $dir/";
 	system("rsync -rav  $url"."$t1 $dir/");
 	system("rsync -rav  $url"."$t1.tbi $dir/");
 	
 }
-
+sub move_sj {
+	my ($t1,$patient) = @_;
+	my $dir = $project->getJunctionsDir("dragen-sj");
+	warn $dir;
+	system("rsync -rav  $url"."$t1 $dir/");
+	#system("rsync -rav  $url"."$t1.tbi $dir/");
+	
+}
 sub backup {
 	my ($final_gz) = @_;
 	my $dir =  dirname($final_gz);
