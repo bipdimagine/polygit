@@ -29,7 +29,7 @@ use IO::Prompt;
 use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
-use Moose;
+use Moo;
 use GBuffer;
 use GenBoProject;
 use colored; 
@@ -40,7 +40,8 @@ use Term::Menus;
 use Proc::Simple;
 use Text::Table;
 use Term::ReadKey;
-
+use List::MoreUtils qw(any uniq firstidx);
+use Carp;
 my @running_jobs;
 my $cluster_jobs;
 my $runnings_jobs;
@@ -90,7 +91,7 @@ GetOptions(
 	'step=s'=> \$step_name,
 	'steps=s'=> \$step_name,
 	"dry=s" => \$dry,
-	"rna=s" => \$rna,
+	"RNA=s" => \$rna,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -131,33 +132,33 @@ if ($test_umi && !($umi)){
 system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
-
-
-
-#create_list_steps;
-unless ($rna){
-	test_rna($projects);
-	
-}
-
 my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
 my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
 
-
-
-if($rna){
+#create_list_steps;
+unless ($rna){
+	test_rna($projects);
+	if(test_rna($projects)){
 	print colored::stabilo("orange ","Hey Cecile, You are working  on RNA project and you didn't put RNA=1 option  ", 1)."\n";
 	my $choice = prompt("y","Do you want to the option (y/n) ? ");
 	if ($choice eq "y"){
-		$steps = ["align","count"] ;
-		$hsteps = {"align"=>0,"count"=>1};
 		$rna = 1;
 	}
 	else {
 		$rna =0;
 	}
 }
+}
+
+
+if ($rna){
+	$steps = ["dragen pipeline","featurecount"] ;
+	$hsteps = {"align"=>0,"featurecount"=>1};
+}
+
+
+
 
 unless ($step_name){
 	my $tdna = "DNA";
@@ -175,6 +176,7 @@ unless ($step_name){
 	);
 	my @selection=&Menu(\%menu1,$banner);
 	$step_name	= join(",",@selection);
+	$step_name=~ s/dragen pipeline/align/;
 	
 }
 
@@ -198,16 +200,22 @@ if($step_name) {
 
 
 
-
 ####### Alignement
+ my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
+warn Dumper $ppd;
+	my $index = firstidx { $_ eq "calling_target" } @$steps;
+	if ($index >= 0){
+		splice(@$steps,$index,1);
+		push(@$steps,keys %{$calling_target_methods});
+	}
 purge_files($ppd) if $force==1;
 start_report($ppd);
 
 #
 system("clear") ;
 run_command($ppd);
-run_move($ppd);
+#run_move($ppd);
 
 
 #if (exists $hstep->{lmdb}){
@@ -215,13 +223,22 @@ run_move($ppd);
 # STEP CLUSTER
 ####################
 my $jobs_cluster = [];
-run_lmdb_depth($ppd,$jobs_cluster) unless $version =~ /HG38/;
+
+if (exists $hsteps->{lmdb}){	
+run_lmdb_depth($ppd,$jobs_cluster) unless $version =~ /HG38/ ;
+}
+if (exists $hsteps->{melt}){
 run_melt($ppd,$jobs_cluster) unless $version =~ /HG38/;
+}
+if (exists $hsteps->{calling_target}){
 run_calling_target($ppd,$jobs_cluster);
+}
+if (exists $hsteps->{featurecount}){
+run_featurecount($ppd,$jobs_cluster);
+}
+
 steps_cluster("LMDBDepth+Melt ",$jobs_cluster) if @$jobs_cluster;
 
-
-#}
 
 
 #run_genotype($projects);
@@ -266,7 +283,6 @@ my $job = 0;
 	 	my $tb = Text::Table->new(
 			( @header),
     	);
-   
    	$tb->load(@lines);
 	print $tb;
 	print "\n";
@@ -303,17 +319,15 @@ sub test_rna {
 	my ($projects) = @_;
 	my $vs;
 	$vs->{rna} = 0;# unless exists ;
-	 $rna = 0 ;
+	my $answer = 0 ;
 	foreach my $project (@$projects){
 		my $projectName = $project->name;
-		warn $project->isRnaSeq;
-		$rna ++ if $project->isRnaSeq;
+		$answer ++ if $project->isRnaSeq;
 	}
-	warn $rna;
-	if ($rna) {
-		confess("you have different king of project rna and not") if $rna ne scalar(@$projects);
+	if ($answer) {
+		confess("you have different king of project rna and not") if $answer ne scalar(@$projects);
 	}
-	return $rna;
+	return $answer;
 }
 
 
@@ -340,6 +354,7 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
+		#warn  $patient->name()." ".$h->{align_dragen}->{file};
 		$h->{rna} = 0;
 		
 		$h->{rna} = 1 if $project->isRnaSeq;
@@ -372,52 +387,68 @@ foreach my $project (@$projects){
 		$h->{prod}->{align}   = $patient->getCramFileName("dragen-align") if $version && $version =~ /HG38/; 
 		$h->{exists_file}->{align} = 1 if -e $h->{prod}->{align};
 		$h->{exists_file_pipeline}->{align} = 1 if -e $h->{pipeline}->{align};
-		
+		#warn  $patient->name()." ".$h->{prod}->{file}." :: ".$h->{exists_file}->{align}."::".$h->{exists_file_pipeline}->{align} ;
 		#####  
 		#####  GVCF
 		#####  
+		unless($rna) {
 		
-		 $h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
-		 $h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
-		$h->{exists_file}->{gvcf} = 1 if -e $h->{prod}->{gvcf};
-		$h->{exists_file_pipeline}->{gvcf} = 1 if -e $h->{pipeline}->{gvcf};
+		if (exists $hsteps->{gvcf}){	
+		 	$h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
+		 	$h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
+			$h->{exists_file}->{gvcf} = 1 if -e $h->{prod}->{gvcf};
+			$h->{exists_file_pipeline}->{gvcf} = 1 if -e $h->{pipeline}->{gvcf};
+		}
 		#####  
 		#####  VCF
 		#####  
 		
-
-		 $h->{prod}->{vcf} = $patient->getVariationsFileName("dragen-calling");
-		 $h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
-		$h->{exists_file}->{vcf} = 1 if -e $h->{prod}->{vcf};
-		$h->{exists_file_pipeline}->{vcf} = 1 if -e $h->{pipeline}->{vcf};
+		if (exists $hsteps->{vcf}){
+		 	$h->{prod}->{vcf} = $patient->getVariationsFileName("dragen-calling");
+		 	$h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
+			$h->{exists_file}->{vcf} = 1 if -e $h->{prod}->{vcf};
+			$h->{exists_file_pipeline}->{vcf} = 1 if -e $h->{pipeline}->{vcf};
+		}
 		#####  
 		#####  CNV
 		#####  
-	
+	if (exists $hsteps->{cnv}){
 		my $dir = $patient->project->getTargetCountDir();
 		$h->{prod}->{cnv}  = $dir."/".$patient->name.".target.counts.gc-corrected.gz";
 		$h->{pipeline}->{cnv}  = "$dir_pipeline/".$prefix.".target.counts.gc-corrected.gz";
 		$h->{exists_file}->{cnv} = 1 if -e $h->{prod}->{cnv};
 		$h->{exists_file_pipeline}->{cnv} = 1 if -e $h->{pipeline}->{cnv};
+	}
 		#####  
 		#####  SV
 		#####  
+		my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
+		if (exists $hsteps->{sv}){
 		my $dir_prod2 = $project->getVariationsDir("dragen-sv");
 	 	$h->{prod}->{sv}  =  $dir_prod2."/".$patient->name.".sv.vcf.gz";
 	 	$h->{pipeline}->{sv}  =  $dir_pipeline."/".$prefix.".sv.vcf.gz";;
 	 	$h->{exists_file}->{sv} = 1 if -e $h->{prod}->{sv};
 	 	$h->{exists_file_pipeline}->{sv} = 1 if -e $h->{pipeline}->{sv};
+		}
 	 	#####  
 		#####  lmdb
 		#####  
+		if (exists $hsteps->{lmdb}){
 	 	$h->{prod}->{lmdb} = $patient->fileNoSqlDepth;
-	 	
 	 	$h->{exists_file}->{lmdb} = 1 if -e $h->{prod}->{lmdb};
+		}
 	 	#####  
 		#####  melt
 		#####  
+		if (exists $hsteps->{melt}){
 		$h->{prod}->{melt} = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";	 	
 	 	$h->{exists_file}->{melt} = 1 if -e $h->{prod}->{melt};
+		}
+		if (exists $hsteps->{featurecount}){
+		my $dir_out= $project->getCountingDir("featureCounts");
+		$h->{prod}->{featurecount} = $dir_out."/".$project_name.".count.genes.txt";		 	
+	 	$h->{exists_file}->{featurecount} = 1 if -e $h->{prod}->{melt};
+		}
 	 	if ($project->isDiagnostic) {
 	 	foreach my $m (@{$patient->getCallingMethods()}){
         	next if $m eq "seqnext";
@@ -430,6 +461,7 @@ foreach my $project (@$projects){
         	next if $m eq "wisecondor";
         	next if $m eq "canvas";
         	next if $m =~ /dragen/;
+        	$calling_target_methods->{$m} ++;
         	push(@{$h->{calling_methods}},$m);
         	$h->{calling_target}->{$m} ++;
 	 		$h->{prod}->{$m} = $patient->getVariationsFileName($m);
@@ -437,6 +469,7 @@ foreach my $project (@$projects){
 	 		}
 	 		
 	 	}
+		}
 		push(@{$patients_jobs},$h);
 	}
 	
@@ -530,14 +563,12 @@ sub purge_files {
 
 sub run_command {
 	my ($patients_jobs) = @_;
-	 
 	foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
 
 
 	my @all_list =@{$hp->{dragen_jobs}};
-
 
 	my $pname =  $hp->{name}."_".$hp->{project};
 	$hp->{run_pipeline} = [];
@@ -546,7 +577,12 @@ sub run_command {
 		$lims->{$pname}->{$t} = "SKIP"; 
 		#next unless $hstep->{$t};
 		next if (exists $hp->{exists_file}->{$t});
-		next if exists $hp->{exists_file_pipeline}->{$t} ;
+	#	if (exists $hp->{exists_file_pipeline}->{$t} ) {
+	#		$lims->{$pname}->{$t} = "MOVED"; 
+	#		push(@{$hp->{run_pipeline}},$t);
+	#		next;
+	#	}
+		#next if exists $hp->{exists_file_pipeline}->{$t} ;
 		
 		$lims->{$pname}->{$t} = "PLANNED"; 
 		push(@{$hp->{run_pipeline}},$t);
@@ -556,14 +592,20 @@ sub run_command {
 	
 	$job->{name} = $hp->{name}.join("_",@{$hp->{run_pipeline}});
 	$job->{step_name} = join(";",@{$hp->{run_pipeline}});
+	
 	$job->{patient} = $hp->{name}."_".$hp->{project};
+#	if (exists $hp->{exists_file}->{$t}){
+#			$lims->{$nname}->{"move_".$t} = "PENDING"; 
+#	}
+#	else {
+	#$lims->{$pname}->{$t} = "PLANNED"; 
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});;
 	
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -rna=1 " if $rna == 1;
 	$job->{cmd} .= " -version=$version " if $version;
-	
-	
+#	warn $job->{cmd};
+#	die();
 	$job->{jobs_type_list} = join(",",@{$hp->{run_pipeline}});
 	
 	#die();
@@ -575,6 +617,7 @@ sub run_command {
 	my $text = "$num_jobs-  DRAGEN ALIGN";
 	steps_system("Dragen :",$jobs);	
 	
+	
 }
 
 
@@ -582,7 +625,8 @@ sub run_command {
 ### MOVE 
 sub run_move {
 	my ($patients_jobs) = @_;
-
+	warn Dumper $patients_jobs;
+	die();
 foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
@@ -598,7 +642,7 @@ foreach my $hp (@$patients_jobs) {
 			if (-e $hp->{pipeline}->{$t}) {
 				$lims->{$nname}->{"move_".$t} = "PENDING"; 
 				push(@{$hp->{move_options}},$t);
-				push(@tt,"move_".$a);
+				push(@tt,"move_");
 			} 
 			else {
 				confess($t."-".$hp->{prod}->{$t} ."-".$hp->{pipeline}->{$t} )
@@ -619,40 +663,6 @@ foreach my $hp (@$patients_jobs) {
 	$job->{cpus} = $ppn;
 	push(@$jobs,$job);
 }
-#	my $text = "$num_jobs- MOVE BAM";
-#	my $limit = 5;
-#	steps_cluster("MOVE BAM  ",$jobs,$limit);
-#	
-#	$job->{name} = $hp->{name}.".move";
-#	
-#	$hp->{move_options} = [];
-#	
-#	foreach my $t (@$pipeline_dragen_steps){
-#		$lims->{$nname}->{"move_".$t} = "SKIP"; 
-#		unless (-e $hp->{prod}->{$t}){
-#			$lims->{$nname}->{"move_".$t} = "PENDING"; 
-#			push(@{$hp->{move_options}},$t);
-#			die("$t => ".$hp->{patient}) unless -e $hp->{pipeline}->{$t};
-#		}
-#		
-#	}
-#	
-#	next if scalar (@{$hp->{move_options}}) == 0;
-#	
-#	my $option = join(",",@{$hp->{move_options}});
-#	
-#	next unless $option;
-#	$job->{jobs_type_list} = join(",",@tt);
-#	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$option;
-#	#$status_jobs->{patient}=$nname;
-#	$job->{cmd} .= " -version=$version " if $version;
-#	$job->{cpus} = $ppn;
-#	push(@$jobs,$job);
-#}
-#	my $text = "$num_jobs- MOVE BAM";
-#	my $limit = 5;
-#	steps_cluster("MOVE BAM  ",$jobs,$limit);
-
 	
 }
 
@@ -690,6 +700,51 @@ foreach my $hp (@$patients_jobs) {
 	}
 return ;
 }
+
+sub run_featurecount {
+	my ($patients_jobs,$jobs) = @_;
+	foreach my $project (@$projects){
+		my $cmd = "perl $script_pipeline/count/featurecount.pl   -fork=40  -project=".$project->name;
+		warn (qq{ run_cluster.pl -cpu=40  -cmd="$cmd});
+	}
+	
+#	push(@all_list,"featurecount");
+#	my $cmd = "perl $script_pipeline/count/featurecount.pl   -fork=$ppn  -project=$project_name";
+#	$job->{name} =  ".lmdb";
+#		$job->{patient} = $nname;
+#		$job->{cmd} =$cmd;
+#		$job->{cpus} = $ppn;
+#		$job->{jobs_type} ="featurecount";
+#		push(@$jobs,$job);
+#}
+#	
+#	
+#foreach my $hp (@$patients_jobs) {
+#	my $ppn = 20;
+#	my $project_name = $hp->{project};
+#	my $job;
+#	my $nname  = $hp->{name}."_".$hp->{project};
+#	my $name = $hp->{name};
+#	$job->{patient} = $nname;
+#	$status_jobs->{$nname}->{progress} = "failed" unless -e $hp->{prod}->{align};
+#	next if $status_jobs->{$nname}->{progress} eq "failed";
+#	my $fileout = $hp->{prod}->{lmdb};
+#	$lims->{$nname}->{lmdb_depth} = "SKIP" if -e $fileout; 
+#	next if -e $fileout;
+#	my  $cmd = qq{perl $script_pipeline/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
+#	$cmd .= qq{ -version=$version  } if $version;
+#	$cmd .= qq{ && perl $script_pipeline/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
+#	$cmd .= qq{ -version=$version  } if $version;
+#		$job->{name} =  $name.".lmdb";
+#		$job->{patient} = $nname;
+#		$job->{cmd} =$cmd;
+#		$job->{cpus} = $ppn;
+#		$job->{jobs_type} ="lmdb_depth";
+#		push(@$jobs,$job);
+#	}
+#return ;
+}
+
 sub run_melt {
 my ($patients_jobs,$jobs) = @_;
 return  if ($umi);
@@ -735,7 +790,7 @@ sub run_calling_target {
     foreach my $m (@$methods){
     	next unless exists $hp->{calling_target}->{$m};
         my $job;
-		my $nname  = $hp->{name}."_".$hp->{project};
+		my $nname  = $hp->{name}."_ $m _".$hp->{project};
 		$job->{patient} = $nname;
 		$status_jobs->{$nname}->{progress} = "failed" unless -e $hp->{prod}->{align};
 		next if $status_jobs->{$nname}->{progress} eq "failed";
@@ -743,10 +798,10 @@ sub run_calling_target {
 		next if -e $fileout;
 		my $cmd1 = "perl $script_pipeline/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn -fileout=$fileout -method=$m ";
 		$cmd1 .= qq{ -version=$version  } if $version;
-		$job->{name} = $name.".melt";
+		$job->{name} = $name.".".$m;
 		$job->{cmd} =$cmd1;
 		$job->{cpus} = $ppn;
-		$job->{jobs_type} ="melt";
+		$job->{jobs_type} ="calling_target";
 		push(@$jobs,$job);
     }
 	}
@@ -882,6 +937,7 @@ sub steps_system {
 	$num_jobs ++;
 	my $text = "$num_jobs- $name";
 	if ($dry){
+		warn Dumper $jobs;
 		foreach my $hcmd (@$jobs){
 			print $hcmd->{cmd}."\n";
 		}
