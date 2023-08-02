@@ -604,8 +604,8 @@ sub run_command {
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -rna=1 " if $rna == 1;
 	$job->{cmd} .= " -version=$version " if $version;
-	warn $job->{cmd};
-	die();
+#	warn $job->{cmd};
+#	die();
 	$job->{jobs_type_list} = join(",",@{$hp->{run_pipeline}});
 	
 	#die();
