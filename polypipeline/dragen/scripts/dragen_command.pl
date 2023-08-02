@@ -18,7 +18,7 @@ use IO::Prompt;
 use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
-use Moose;
+use Moo;
 use GBuffer;
 use GenBoProject;
 use colored; 
@@ -32,7 +32,7 @@ use Proc::Simple;
 use Storable;
 use JSON::XS;
 use Net::SSH::Perl; 
-
+use Carp;
  
 
 my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
@@ -59,6 +59,7 @@ my $predef_type;
 my $define_steps;
 my $step;
 my $umi;
+my $hla;
 
 my $spipeline;
 
@@ -72,6 +73,7 @@ GetOptions(
 	'command=s'=>\$spipeline,
 	'version=s' =>\$version,
 	'rna=s' =>\$rna,
+	'hla=s' =>\$hla,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -112,36 +114,59 @@ my $log_error_pipeline = $log_pipeline.".err";
 	run_pipeline($pipeline);# unless -e $bam_pipeline;
 #}
 #die() unless  -e $bam_pipeline;
-
-system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline && touch $ok_move");
+if ($rna == 1) {
+	$spipeline.=",sj";
+	
+}
+system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -version=$version && touch $ok_move");
 exit(0);
 
-#sub run_pipeline_rna {
-#my ($pipeline) = @_;
-#my $param_align = "";
-#my $ref_dragen = $project->getGenomeIndex("dragen");
-#my $param_umi = "";
-#my $tmp = "/staging/tmp";
-#my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-#my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
-#my $runid = $patient->getRun()->id;
-#my $gtf  = $project->gtf_dragen_file();
-#$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true -a $gtf --enable-rna-quantification true";
-#if ($umi){
-#		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 };
-#	}
-#	else {
-#		$param_align .= qq{ --enable-duplicate-marking true };
-#	 }
-#
-###/data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf
-#$cmd_dragen .= $param_umi." ".$param_align." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
-#warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
-#my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
-#
-#die() unless -e $ok_pipeline;
-#die if $exit != 0;
-#}
+
+sub run_pipeline_rna {
+my ($pipeline) = @_;
+my $param_align = "";
+my $ref_dragen = $project->getGenomeIndex("dragen");
+my $param_umi = "";
+my $tmp = "/staging/tmp";
+my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
+my $runid = $patient->getRun()->id;
+if ($version && exists $pipeline->{align} ){
+	my $buffer_ori = GBuffer->new();
+	my $project_ori = $buffer_ori->newProject( -name => $projectName );
+	my $patient_ori = $project_ori->getPatient($patients_name);
+	 $patient_ori->{alignmentMethods} =['dragen-align','hisat2'];
+	my $bamfile = $patient_ori->getBamFile();
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true  --enable-rna=true ";
+	#$param_align .= "--output-format CRAM " if $version =~/HG38/;
+	if ($umi){
+		$param_umi .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 };
+	}
+	else {
+		$param_umi .= qq{ --enable-duplicate-marking true };
+	 }
+	
+}	
+
+else {
+my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+
+ $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-rna=true ";
+}
+
+if (exists $pipeline->{count}){
+	my $gtf =  $project->gtf_dragen_file();
+	die() unless -e $gtf;
+	#my $gtf = qq{/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/gtf/gencode.vM32.annotation.gtf};
+	#my $gtf2 = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v42/gtf/gencode.v42lift37.annotation.gtf};
+	$param_align .= "-a $gtf --enable-rna-quantification true";
+}
+
+##
+$cmd_dragen .= $param_umi." ".$param_align;
+my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+die if $exit != 0;
+}
+
 
 
 sub run_pipeline {
@@ -149,11 +174,11 @@ my ($pipeline) = @_;
 my $param_align;
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $param_umi = "";
+my $param_hla = "";
 my ($fastq1,$fastq2);
 if (exists $pipeline->{align}){
 	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-	 warn "titi";
-	 
+	 warn $fastq1;
 }
 if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
@@ -178,8 +203,10 @@ elsif (exists $pipeline->{align}){
 		$param_align .= qq{ --enable-rna=true -a $gtf} ;
 	}
 	if ($umi){
+
 		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1};
 		$param_align .= qq{ --vc-enable-umi-germline true} unless $rna == 1;
+
 	}
 	else {
 		$param_align .= qq{ --enable-duplicate-marking true };
@@ -202,12 +229,16 @@ else {
 	$opt = "--cram-input" if $bam =~ /cram/;
 	$param_align = qq{ $opt $bam --enable-map-align false --enable-map-align-output false };
 }
+
+
 my $param_gvcf = "";
 my $tmp = "/staging/tmp";
+
 my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 if (exists $pipeline->{gvcf}){
 	$param_gvcf = qq{--vc-emit-ref-confidence GVCF } ;
 }
+
 
 my $param_vcf ="";
 if (exists $pipeline->{vcf} && exists $pipeline->{gvcf}){
@@ -248,10 +279,13 @@ if (exists $pipeline->{dragen_count}){
 	
 }
 
+my $param_hla =""; 
+if(exists $pipeline->{hla}){
+	$param_hla = qq{ --enable-hla true } ;
+}
 
 
-
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_dragen_count. " >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_dragen_count." ".$param_hla. "  >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;

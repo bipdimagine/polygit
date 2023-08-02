@@ -80,6 +80,7 @@ my $cmd_cancel = [];
 my $step_name;
 my $force;
 my $rna;
+my $hla;
 
 GetOptions(
 	'project=s' => \$project_name,
@@ -91,6 +92,7 @@ GetOptions(
 	'steps=s'=> \$step_name,
 	"dry=s" => \$dry,
 	"rna=s" => \$rna,
+	"hla=s" => \$hla,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -103,6 +105,7 @@ $patients_name ="" unless $patients_name;
 my @apatients_name = split(":",$patients_name);
 my $status_jobs; 
 my $test_umi;
+my $test_hla;
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name => $pname , -version =>$version);
@@ -110,6 +113,7 @@ foreach my $pname (split(",",$project_name)){
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	$test_umi=1 if grep{$_->umi} @{$project->getCaptures};
+	$test_hla=1 if map{$_ eq "immune"} @{$project->phenotypes};
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
@@ -156,6 +160,21 @@ if($rna){
 	}
 	else {
 		$rna =0;
+	}
+}
+
+
+if($test_hla  && !($hla)){
+	print colored::stabilo("orange ","Hey Cecile, You are working  on IMMUNE project and you didn't put HLA=1 option  ", 1)."\n";
+	my $choice = prompt("y","Do you want to the option (y/n) ? ");
+	if ($choice eq "y"){
+		$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target","hla"];
+		$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5, "hla" =>6};
+		$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6, "hla" =>7};
+		$hla=1;
+	}
+	else {
+		$hla =0;
 	}
 }
 
@@ -223,12 +242,13 @@ steps_cluster("LMDBDepth+Melt ",$jobs_cluster) if @$jobs_cluster;
 
 #}
 
+
 #run_genotype($projects);
 #run_dude($projects) if $dude;
 end_report($projects,$ppd);
 
 exit(0);
-		
+
 sub start_report {
 	my ($patients_jobs) = @_;
 my @lines;
@@ -302,7 +322,7 @@ sub test_rna {
 	my ($projects) = @_;
 	my $vs;
 	$vs->{rna} = 0;# unless exists ;
-	my $rna = 0 ;
+	 $rna = 0 ;
 	foreach my $project (@$projects){
 		my $projectName = $project->name;
 		$rna ++ if $project->isRnaSeq;
@@ -318,7 +338,7 @@ my ($projects) = @_;
 my $patients_jobs;
 $patients_name = "all" unless $patients_name;
 my @apatients_name = split(":",$patients_name);
-my $dir_log ;;
+my $dir_log ;
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	$dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
@@ -409,6 +429,33 @@ foreach my $project (@$projects){
 	 	$h->{prod}->{lmdb} = $patient->fileNoSqlDepth;
 	 	
 	 	$h->{exists_file}->{lmdb} = 1 if -e $h->{prod}->{lmdb};
+	 	
+	 	
+	 	#####  
+		#####  count
+		#####  
+		$h->{pipeline}->{"dragen-count"}  =  $dir_pipeline."/".$prefix.".quant.sf";
+		$h->{prod}->{"dragen-count"} = $project->getCountingDir("dragen-count")."/".$patient->name.".quant.sf";		
+
+		#####  
+		#####  splice
+		#####  
+		$h->{pipeline}->{"dragen-splice"}  =  $dir_pipeline."/".$prefix.".SJ.out.tab";
+		$h->{prod}->{"dragen-splice"} = $project->getCountingDir("dragen-splice")."/".$patient->name.".SJ.out.tab";	 
+		
+		#####  
+		#####  metrics
+		#####  
+		$h->{pipeline}->{"rna_metrics"}  =  $dir_pipeline."/".$prefix.".metrics";
+		$h->{prod}->{"rna_metrics"} = $project->getCountingDir("dragen-count")."/metrics/".$patient->name.".metrics";	
+		
+		#####  
+		#####  hla
+		#####  
+		$h->{pipeline}->{"ha"}  =  $dir_pipeline."/".$prefix.".hla.tsv";
+		$h->{prod}->{"hla"} = $project->getHlaDir()."/".$patient->name.".hla.tsv";	
+		
+		
 	 	#####  
 		#####  melt
 		#####  
@@ -431,27 +478,8 @@ foreach my $project (@$projects){
 	 			$h->{prod}->{$m} = $patient->getVariationsFileName($m);
 	 			$h->{exists_file}->{$m} = 1 if -e $h->{prod}->{$m};
 	 		}
+	 	}
 	 		
-		#####  
-		#####  count
-		#####  
-		$h->{pipeline}->{"dragen-count"}  =  $dir_pipeline."/".$prefix.".quant.sf";
-		$h->{prod}->{"dragen-count"} = $project->getCountingDir("dragen-count")."/".$patient->name.".quant.sf";		
-
-		#####  
-		#####  splice
-		#####  
-		$h->{pipeline}->{"dragen-splice"}  =  $dir_pipeline."/".$prefix.".SJ.out.tab";
-		$h->{prod}->{"dragen-splice"} = $project->getCountingDir("dragen-splice")."/".$patient->name.".SJ.out.tab";	 
-		
-		#####  
-		#####  metrics
-		#####  
-		$h->{pipeline}->{rna_metrics}  =  $dir_pipeline."/".$prefix.".metrics";
-		$h->{prod}->{rna_metrics} = $project->getCountingDir("dragen-count")."/metrics/".$patient->name.".metrics";	
-		
-	 	
-	
 		push(@{$patients_jobs},$h);
 	}
 	
@@ -551,7 +579,11 @@ sub run_command {
 	foreach my $hp (@$patients_jobs) {
 	my $job;
 	my $dir_pipeline = $hp->{dir_pipeline};
+
+
 	my @all_list =@{$hp->{dragen_jobs}};
+
+
 	my $pname =  $hp->{name}."_".$hp->{project};
 	$hp->{run_pipeline} = [];
 	
