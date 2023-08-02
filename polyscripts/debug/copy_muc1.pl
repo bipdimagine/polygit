@@ -7,7 +7,7 @@ use lib "$RealBin/../../GenBo/lib/obj-nodb/";
 use GBuffer;
 use Set::IntSpan::Fast::XS;
 use Getopt::Long;
-my $fork = 1;
+my $fork = 1; 
 my $cmd;
 my ($project_name, $patient_name,$vid);
 my $file;
