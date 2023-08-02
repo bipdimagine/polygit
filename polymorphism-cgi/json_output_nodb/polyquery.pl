@@ -114,8 +114,10 @@ if ($delete_models) {
 }
 
 if ($xls_outfile eq 'none') {
-		warn "\n\nERROR: please replace value 'none' for last -xls_outfile option.\nExample: -xls_outfile=export.xls\n\n";
-	die;
+	#modif temporaire pour export xls
+		$xls_outfile = $projectName.".xls";
+		#warn "\n\nERROR: please replace value 'none' for last -xls_outfile option.\nExample: -xls_outfile=export.xls\n\n";
+	#die;
 }
 
 if ($getPatientsCgi) {
