@@ -101,7 +101,7 @@ if (exists $pipeline->{align}){
 	}
 #warn $bam_pipeline;
 	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
-	move_bam($bam_pipeline,$patient) if ($version );
+	move_bam($bam_pipeline,$patient);# if ($version );
 }
 if (exists $pipeline->{gvcf}){
 	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
