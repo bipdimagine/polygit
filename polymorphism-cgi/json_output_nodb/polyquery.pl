@@ -143,7 +143,9 @@ if ($test) {
 	$buffer = new GBufferTest;
 	$buffer->dir_project($test);
 }
-else {$buffer = new GBuffer; }
+else {
+	$buffer = new GBuffer; 
+}
 
 my $project = $buffer->newProjectCache( -name 			=> $projectName,
 									    -cache 		=> '1',
