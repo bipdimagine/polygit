@@ -10,7 +10,6 @@ extends "QueryMoose";
 
 has projects => (
 	is		=> 'ro',
-	isa		=> 'Config::Std::Hash',
 	lazy =>1,
 	default	=> sub {
 		my $self = shift; 
@@ -25,12 +24,10 @@ has projects => (
 
 has project_id =>(
 	is		=> 'rw',
-	isa		=> 'Str',
 );
 
 has config_patients => (
 	is		=> 'ro',
-	isa		=> 'Config::Std::Hash',
 	lazy =>1,
 	default	=> sub {
 	my $self = shift; 
