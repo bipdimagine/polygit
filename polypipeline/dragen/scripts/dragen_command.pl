@@ -156,7 +156,7 @@ else {
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
 
- $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-duplicate-marking true -enable-rna=true ";
+ $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-duplicate-marking true --enable-rna=true ";
 
 }
 
