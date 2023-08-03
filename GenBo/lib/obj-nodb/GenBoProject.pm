@@ -2051,7 +2051,7 @@ has refFlat_file_star => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/'
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
 		  . $version
 		  . '/refFlat/refFlat_no_chr.txt';
 		return $file;
@@ -2065,7 +2065,7 @@ has rRNA_file => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/'
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
 		  . $version
 		  . '/refFlat/rRNA.interval_list_no_chr';
 		return $file;
