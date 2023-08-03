@@ -706,7 +706,7 @@ sub run_featurecount {
 	my ($patients_jobs,$jobs) = @_;
 	foreach my $project (@$projects){
 		my $cmd = "perl $script_pipeline/count/featurecount.pl   -fork=40  -project=".$project->name;
-		system (qq{ run_cluster.pl -cpu=40  -cmd="$cmd});
+		system (qq{ run_cluster.pl -cpu=40  -cmd="$cmd"});
 	}
 	
 #	push(@all_list,"featurecount");
