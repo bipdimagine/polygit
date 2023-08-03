@@ -2286,7 +2286,7 @@ sub rnaseq_metrics {
 
 	die() if $fileout eq $filein;
 	my $refFlat = $project->refFlat_file();
-	$refFlat = $project->refFlat_file_star() if $method eq "star";
+	$refFlat = $project->refFlat_file_star() if $method eq "star" || $method eq "dragen-align";
 	my $rRNA_file = $project->rRNA_file();
 	my $opt       = "";
 	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;

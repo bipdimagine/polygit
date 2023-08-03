@@ -2067,7 +2067,7 @@ has rRNA_file => (
 		my $file =
 			$self->buffer()->config->{'public_data'}->{root} . '/'
 		  . $version
-		  . '/refFlat/rRNA.interval_list';
+		  . '/refFlat/rRNA.interval_list_no_chr';
 		return $file;
 	},
 );
