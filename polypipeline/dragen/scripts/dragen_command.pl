@@ -168,6 +168,7 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
 ##
 $cmd_dragen .= $param_umi." ".$param_align;
+$patient->update_software_version("dragen",$cmd_dragen);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die if $exit != 0;
 }
@@ -272,6 +273,7 @@ if (exists $pipeline->{sv}){
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
+$patient->update_software_version("dragen",$cmd_dragen);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;
 
