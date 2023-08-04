@@ -18,7 +18,7 @@ use colored;
 use IO::Prompt;
 use Sys::Hostname;
 use Term::ANSIColor;
-use Moose;
+use Moo;
 use GBuffer;
 use GenBoProject;
 use colored; 
@@ -42,7 +42,7 @@ GetOptions(
 	'project=s' => \$project_names,
 	'l2=s' => \$l2,
 );
-
+ 
 my $bcl_dir;
 my $aoa;
 my $dir_out;
@@ -54,7 +54,8 @@ my $umi_name;
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name 			=> $project_name );
-	
+	my $run = $project->getRun;
+	#warn 
 	foreach my $capture (@{$project->getCaptures}){
 		if ($capture->umi){
 		 $mask = $capture->umi->{mask} unless defined $mask;
@@ -141,7 +142,7 @@ my $len_cb;
 foreach my $data (@{$lines->{"[Data]"}}){
 	next unless  $data->[$pos_cb1];
 	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if  $len_cb->[0] ne length($data->[$pos_cb1]);
-	die() if  $len_cb->[1] ne length($data->[$pos_cb2]);
+	die("CB de taille differente") if  $len_cb->[1] ne length($data->[$pos_cb2]);
 	
 }
 
@@ -349,10 +350,8 @@ foreach my $project_name (split(",",$project_names)){
 
 		my $pid = $pm->start and next;
 		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
-		#	warn $fastq1;
-		#	die();
-		#	create_3_fastq($fastq1,$fastq2,$p);
-		#	warn "end ".$p->name;
+			warn $fastq1." ".$fastq2;
+
 
 		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 
