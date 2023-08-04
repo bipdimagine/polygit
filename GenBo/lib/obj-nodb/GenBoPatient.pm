@@ -303,6 +303,8 @@ has is_ucsc_nomenclature => (
 #	return $res;
 #}
 
+
+
 has coverage => (
 	is      => 'ro',
 	lazy    => 1,
@@ -3458,6 +3460,15 @@ sub getSampleProfile {
 	my ($self) = shift;
 	my $query    = $self->getProject()->buffer->getQuery();
 	return $query->getProfileSample($self->id);
+}
+sub update_software_version {
+	my ($self,$name) = @_;
+	my $query    = $self->getProject()->buffer->getQuery();
+	my ($vid,$v) = $query->getLatestSoftwareVersion($name);
+	confess() unless $vid;
+	#my ($svid,$sv) = $query->getLatestSoftwareVersionByPatient($name,$self->id);
+	#return 1 if $svid eq $vid;
+	$query->insertSoftwareVersion($vid,$self->id);
 }
 
 1;
