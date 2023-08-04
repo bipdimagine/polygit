@@ -82,6 +82,25 @@ sub prediction_from_matrix {
     return prediction_from_short($pred);
 }
 
+sub compact_value_from_matrix {
+	 my ($matrix, $pos, $aa) = @_;
+	 $aa = uc($aa) if defined $aa;
+	  confess("Invalid position: $pos") unless (defined $pos && $pos > 0);
+    
+   return(0,-1)  unless (defined $aa && defined $AA_LOOKUP->{$aa});
+    my $offset = compute_offset($matrix,$pos, $aa);
+	
+    
+    if ($offset + 1 > length($matrix)) {
+       # warn "Offset outside of prediction matrix for position $pos and amino acid $aa?";
+       return(0,-1);
+        return undef;
+    }
+    
+    my $pred = substr($matrix, $offset, $BYTES_PER_PREDICTION);
+    return $pred;
+}
+
 sub compute_offset{
 	my($matrix,$pos,$aa) = @_;
 	
