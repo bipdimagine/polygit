@@ -774,13 +774,14 @@ sub connectDB {
 	return;
 }
 
-sub updateSoftwareVersion {
-	my ($self, $version_id,$patient_id, $verbose) = @_;
+sub update_software_version {
+	my ($self, $version_id,$patient_id, $cmd,$verbose) = @_;
 	confess("-".$version_id."-") unless $version_id;
 	confess("-".$patient_id."-") unless $patient_id;
 	my $dbh = $self->getDbh();
 	my $config = $self->getConfig();
-	$dbh->do(qq{insert into  PolyprojectNGS.version_patients as vp (version_id, patient_id,modification_date) VALUES ($version_id, $patient_id,NOW() ) ON DUPLICATE KEY UPDATE modification_date = NOW();}) or confess();
+	my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
+	$dbh->do(qq{insert into  PolyprojectNGS.version_patients as vp (version_id, patient_id,modification_date) VALUES ($version_id, $patient_id,NOW(),"$username:$cmd" )}) or confess();
 	return 1;
 }
 
@@ -812,20 +813,6 @@ sub getLatestSoftwareVersionByPatient {
 	return ($res->[0]->{version_id},$res->[0]->{version}) if $res;
 	return (undef,undef);
 
-}
-
-sub insertSoftwareVersionForPatient {
-	my ($self, $version_id,$patient_id, $verbose) = @_;
-	my ($self, $name, $verbose) = @_;
-	confess("-".$name."-") unless $name;
-	my $dbh = $self->getDbh();
-	my $config = $self->getConfig();
-	#$self->project_name($name);
-	my $sth = $self->prepare("SELECT version_id,version  FROM PolyprojectNGS.version_software where name=? ORDER BY version_id DESC LIMIT 0, 1");
-	$sth->execute("$name");
-	my $res = $sth->fetchall_arrayref({});
-	return ($res->[0]->{version_id},$res->[0]->{version}) if $res;
-	return (undef,undef);
 }
 
 sub getCaptureInfos {
