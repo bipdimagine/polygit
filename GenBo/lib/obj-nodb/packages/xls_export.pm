@@ -66,7 +66,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Sift', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature');
+		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'splice_ai', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature', 'Prot_Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -113,6 +113,7 @@ has hash_except_category_rowspan => (
 		$h->{'protein'}			= undef;
 		$h->{'protein_xref'}	= undef;
 		$h->{'nomenclature'}	= undef;
+		$h->{'prot_nomenclature'}= undef;
 		$h->{'aa'}				= undef;
 		$h->{'family'}			= undef;
 		$h->{'patient'}			= undef;
@@ -207,7 +208,7 @@ sub get_format_header {
 sub get_format_model_cyan {
 	my ($self) = @_;
 	return $self->format_types->{normal_cyan} if ( $self->format_types() and exists $self->format_types->{normal_cyan} );
-	$self->{format_types}->{normal_cyan} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_cyan} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_cyan}->set_color('cyan');
 	return $self->format_types->{normal_cyan};
 }
@@ -215,7 +216,7 @@ sub get_format_model_cyan {
 sub get_format_magenta {
 	my ($self) = @_;
 	return $self->format_types->{normal_magenta} if ( $self->format_types() and exists $self->format_types->{normal_magenta} );
-	$self->{format_types}->{normal_magenta} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_magenta} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_magenta}->set_color('magenta');
 	return $self->format_types->{normal_magenta};
 }
@@ -223,7 +224,7 @@ sub get_format_magenta {
 sub get_format_pink {
 	my ($self) = @_;
 	return $self->format_types->{normal_pink} if ( $self->format_types() and exists $self->format_types->{normal_pink} );
-	$self->{format_types}->{normal_pink} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_pink} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_pink}->set_color('pink');
 	return $self->format_types->{normal_pink};
 }
@@ -231,7 +232,7 @@ sub get_format_pink {
 sub get_format_blue {
 	my ($self) = @_;
 	return $self->format_types->{normal_blue} if ( $self->format_types() and exists $self->format_types->{normal_blue} );
-	$self->{format_types}->{normal_blue} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_blue} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_blue}->set_color('blue');
 	return $self->format_types->{normal_blue};
 }
@@ -239,7 +240,7 @@ sub get_format_blue {
 sub get_format_green {
 	my ($self) = @_;
 	return $self->format_types->{normal_green} if ( $self->format_types() and exists $self->format_types->{normal_green} );
-	$self->{format_types}->{normal_green} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_green} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_green}->set_color('green');
 	return $self->format_types->{normal_green};
 }
@@ -247,7 +248,7 @@ sub get_format_green {
 sub get_format_orange {
 	my ($self) = @_;
 	return $self->format_types->{normal_orange} if ( $self->format_types() and exists $self->format_types->{normal_orange} );
-	$self->{format_types}->{normal_orange} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_orange} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_orange}->set_color('orange');
 	return $self->format_types->{normal_orange};
 }
@@ -255,7 +256,7 @@ sub get_format_orange {
 sub get_format_red {
 	my ($self) = @_;
 	return $self->format_types->{normal_red} if ( $self->format_types() and exists $self->format_types->{normal_red} );
-	$self->{format_types}->{normal_red} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_red} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_red}->set_color('red');
 	return $self->format_types->{normal_red};
 }
@@ -263,7 +264,7 @@ sub get_format_red {
 sub get_format_default {
 	my ($self) = @_;
 	return $self->format_types->{normal} if ( $self->format_types() and exists $self->format_types->{normal} );
-	$self->{format_types}->{normal} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal}->set_color('black');
 	return $self->format_types->{normal};
 }
@@ -271,7 +272,7 @@ sub get_format_default {
 sub get_format_model_cyan_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_cyan_merge} if ( $self->format_types() and exists $self->format_types->{normal_cyan_merge} );
-	$self->{format_types}->{normal_cyan_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_cyan_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_cyan_merge}->set_color('cyan');
 	return $self->format_types->{normal_cyan_merge};
 }
@@ -279,7 +280,7 @@ sub get_format_model_cyan_merge {
 sub get_format_magenta_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_magenta_merge} if ( $self->format_types() and exists $self->format_types->{normal_magenta_merge} );
-	$self->{format_types}->{normal_magenta_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_magenta_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_magenta_merge}->set_color('magenta');
 	return $self->format_types->{normal_magenta_merge};
 }
@@ -287,7 +288,7 @@ sub get_format_magenta_merge {
 sub get_format_pink_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_pink_merge} if ( $self->format_types() and exists $self->format_types->{normal_pink_merge} );
-	$self->{format_types}->{normal_pink_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_pink_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_pink_merge}->set_color('pink');
 	return $self->format_types->{normal_pink_merge};
 }
@@ -295,7 +296,7 @@ sub get_format_pink_merge {
 sub get_format_blue_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_blue_merge} if ( $self->format_types() and exists $self->format_types->{normal_blue} );
-	$self->{format_types}->{normal_blue_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_blue_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_blue_merge}->set_color('blue');
 	return $self->format_types->{normal_blue_merge};
 }
@@ -303,7 +304,7 @@ sub get_format_blue_merge {
 sub get_format_green_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_green_merge} if ( $self->format_types() and exists $self->format_types->{normal_green_merge} );
-	$self->{format_types}->{normal_green_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_green_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_green_merge}->set_color('green');
 	return $self->format_types->{normal_green_merge};
 }
@@ -311,7 +312,7 @@ sub get_format_green_merge {
 sub get_format_orange_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_orange_merge} if ( $self->format_types() and exists $self->format_types->{normal_orange_merge} );
-	$self->{format_types}->{normal_orange_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_orange_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_orange_merge}->set_color('orange');
 	return $self->format_types->{normal_orange_merge};
 }
@@ -319,7 +320,7 @@ sub get_format_orange_merge {
 sub get_format_red_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_red_merge} if ( $self->format_types() and exists $self->format_types->{normal_red_merge} );
-	$self->{format_types}->{normal_red_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_red_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_red_merge}->set_color('red');
 	return $self->format_types->{normal_red_merge};
 }
@@ -327,7 +328,7 @@ sub get_format_red_merge {
 sub get_format_default_merge {
 	my ($self) = @_;
 	return $self->format_types->{normal_merge} if ( $self->format_types() and exists $self->format_types->{normal_merge} );
-	$self->{format_types}->{normal_merge} = $self->workbook->add_format( valign => 'vcenter', align => 'center' );
+	$self->{format_types}->{normal_merge} = $self->workbook->add_format(  );
 	$self->{format_types}->{normal_merge}->set_color('black');
 	return $self->format_types->{normal_merge};
 }
@@ -579,14 +580,16 @@ sub export {
 		$self->write_header_on_page( $worksheet, $number_page );
 		$self->write_on_page( $worksheet, $number_page );
 	}
-	exit(0);
 }
 
 sub store_cnvs_infos {
 	my ( $self, $list_var_objects, $project, $list_patients ) = @_;
+	$project->buffer->dbh_deconnect();
+	$project->buffer->dbh_reconnect();
+	print '|';
 	foreach my $var (@$list_var_objects) {
 		my $hash;
-		$project->print_dot(25);
+		$project->print_dot(5);
 		my $chr      = $var->getChromosome();
 		my $var_id   = $var->id();
 		my $chr_h_id = $chr->id();
@@ -635,6 +638,8 @@ sub store_cnvs_infos {
 			$hash->{$chr_h_id}->{$var_id}->{'cadd_score'} = '-' if ( $hash->{$chr_h_id}->{$var_id}->{'cadd_score'} eq '-1' );
 			$hash->{$chr_h_id}->{$var_id}->{'ncboost_score'} = '-';
 			$hash->{$chr_h_id}->{$var_id}->{'ncboost_score'} = $var->ncboost_score() if defined $var->ncboost_score();
+			
+			
 			if ( $var->cosmic() ) {
 				my @lTmpCosmic = split( ':', $var->cosmic() );
 				$hash->{$chr_h_id}->{$var_id}->{'cosmic'} = $lTmpCosmic[0];
@@ -683,6 +688,7 @@ sub store_cnvs_infos {
 					my $t = $project->newTranscript($tr_id);
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'external_name'} = $t->external_name();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'appris'} = $t->appris_type();
+					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'splice_ai'} = '-';
 					
 					foreach my $exon_intron_id (keys %{$h_genes->{$gene_id}->{$tr_id}->{'exons_introns'}}) {
 						my $h_exon_intron = $h_genes->{$gene_id}->{$tr_id}->{'exons_introns'}->{$exon_intron_id};
@@ -706,7 +712,7 @@ sub store_cnvs_infos {
 				}
 				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->{annex}->{$patient->id()}->{he} eq '1';
 				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->{annex}->{$patient->id()}->{ho} eq '1';
-				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'cnv_confidence'} = $var->cnv_confidence($patient);
+				#$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'cnv_confidence'} = $var->cnv_confidence($patient);
 			}
 		}
 	}
@@ -714,6 +720,8 @@ sub store_cnvs_infos {
 
 sub store_variants_infos {
 	my ( $self, $list_var_objects, $project, $list_patients ) = @_;
+	$project->buffer->dbh_deconnect();
+	$project->buffer->dbh_reconnect();
 	my @lCnv;
 	foreach my $var (@$list_var_objects) {
 		my $is_cnv;
@@ -725,6 +733,8 @@ sub store_variants_infos {
 		}
 		my $hash;
 		$project->print_dot(25);
+		
+		
 		my $chr      = $var->getChromosome();
 		my $var_id   = $var->id();
 		my $chr_h_id = $chr->id();
@@ -821,6 +831,20 @@ sub store_variants_infos {
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'phenotypes'} = $gene->phenotypes();
 				eval { $var->annotation(); };
 				if ($@) { next; }
+				my ($max_value, $max_cat);
+				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'spliceAI'} = '-';
+				my $h_score_spliceAI = $var->spliceAI_score($gene);
+				my $splice_ai_txt = '-';
+				if ($h_score_spliceAI) {
+					foreach my $cat (sort keys %$h_score_spliceAI) {
+						if (not $max_value or $h_score_spliceAI->{$cat} > $max_value) {
+							$max_value = $h_score_spliceAI->{$cat};
+							$max_cat = $cat;
+						}
+					}
+					$splice_ai_txt = $max_cat.':'.$max_value;
+				}
+				
 				foreach my $t ( @{ $gene->getTranscripts() } ) {
 					
 					next unless ( exists $var->annotation->{ $t->id() } );
@@ -833,6 +857,7 @@ sub store_variants_infos {
 						push( @ok, $lTmp[1] );
 					}
 					next if ( scalar(@ok) == 0 );
+					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'splice_ai'} = $splice_ai_txt;
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'external_name'} = $t->external_name();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'appris'} = $t->appris_type();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'consequence'} = join( ',', @ok );
@@ -850,6 +875,14 @@ sub store_variants_infos {
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = $prot->id();
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = $t->{'external_protein_name'};
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'nomenclature'} = $var->getNomenclature($t);
+							my $aa_text = '-';
+							if ($var->type() eq 'substitution') {
+								my $hcc = $t->codonsConsequenceForVariations($var);
+								if ($hcc) {
+									$aa_text = 'p.'.$hcc->{aa}.$hcc->{prot_position}.$hcc->{aa_mut};
+								}
+							}
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = $aa_text;
 							my $cds_pos = $var->getOrfPosition($prot);
 							$cds_pos = '-' if (not $cds_pos or $cds_pos eq '.');
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = $cds_pos;
@@ -869,6 +902,7 @@ sub store_variants_infos {
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'nomenclature'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = '-';
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_position'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_status'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_status'} = '-';
@@ -903,7 +937,10 @@ sub store_variants_infos {
 					}
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->{annex}->{$patient->id()}->{he} eq '1';
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->{annex}->{$patient->id()}->{ho} eq '1';
-					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} = $var->getTransmissionModelType($patient->getFamily(), $patient);
+					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} ='';
+					if (not $var->isMei()) {
+						$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} = $var->getTransmissionModelType($patient->getFamily(), $patient);
+					}
 				}
 				else {
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = '';
@@ -913,7 +950,9 @@ sub store_variants_infos {
 			}
 		}
 	}
-	$self->store_cnvs_infos(\@lCnv, $project, $list_patients );
+	if (@lCnv and scalar(@lCnv) > 0) {
+		$self->store_cnvs_infos(\@lCnv, $project, $list_patients );
+	}
 }
 
 sub store_specific_infos {
@@ -943,7 +982,7 @@ sub prepare_generic_datas_cnvs {
 			$h->{'end'}			 = $h_var->{'end'};
 			$h->{'allele'}       = $h_var->{'allele'};
 			$h->{'sequence'}     = $h_var->{'sequence'};
-			$h->{'freq'}         = $h_var->{'freq'};
+			$h->{'freq (%)'}     = $h_var->{'freq'};
 			$h->{'gnomad ac'}    = $h_var->{'gnomad ac'};
 			$h->{'gnomad ho'}    = $h_var->{'gnomad ho'};
 			$h->{'gnomad an'}    = $h_var->{'gnomad an'};
@@ -1052,7 +1091,7 @@ sub prepare_generic_datas_variants {
 			$h->{'position'}     = $h_var->{'position'};
 			$h->{'allele'}       = $h_var->{'allele'};
 			$h->{'sequence'}     = $h_var->{'sequence'};
-			$h->{'freq'}         = $h_var->{'freq'};
+			$h->{'freq (%)'}     = $h_var->{'freq'};
 			$h->{'gnomad ac'}    = $h_var->{'gnomad ac'};
 			$h->{'gnomad ho'}    = $h_var->{'gnomad ho'};
 			$h->{'gnomad an'}    = $h_var->{'gnomad an'};
@@ -1113,8 +1152,12 @@ sub prepare_generic_datas_variants {
 						$h2->{'protein'}         = $h_tr->{'protein'};
 						$h2->{'protein_xref'}    = $h_tr->{'protein_xref'};
 						$h2->{'nomenclature'}    = $h_tr->{'nomenclature'};
+						$h2->{'prot_nomenclature'}= $h_tr->{'prot_nomenclature'};
 						$h2->{'polyphen'}        = $h_tr->{'polyphen_status'};
 						$h2->{'sift'}            = $h_tr->{'sift_status'};
+						$h2->{'polyphen_score'}  = $h_tr->{'polyphen_score'};
+						$h2->{'sift_score'}      = $h_tr->{'sift_score'};
+						$h2->{'splice_ai'}       = $h_tr->{'splice_ai'};
 						$h2->{'aa'}              = $h_tr->{'aa'};
 						$h2->{'appris'}          = $h_tr->{'appris'};
 						push( @lDatas, $h2 );
