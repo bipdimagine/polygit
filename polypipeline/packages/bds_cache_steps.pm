@@ -779,10 +779,10 @@ sub polydiag {
 	my $p = $self->patient();
 	my $project_name = $self->patient()->getProject->name();
 	my $type = "polydiag";
-	my $root_cmd = "perl $Bin/../polymorphism-cgi//cache_nodb_old/scripts/cache_polydiag.pl";
+	my $root_cmd = "perl $Bin/../polymorphism-cgi//cache_nodb/scripts/cache_polydiag.pl";
 	
 	my $fout;
-	my $ppn =1;
+	my $ppn =5;
 	my $cmd = " $root_cmd -fork=$ppn -project=$project_name -patient=".$p->name;
 	my $fileout = $dir_out."/".$p->name.".lite";
 	my $stepname = $project->name.".".$p->name."@".$type;
