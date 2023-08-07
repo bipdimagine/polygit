@@ -290,6 +290,160 @@ sub run_cache_polydiag_cache {
 		}
 	}#end foreach chromosome
 }
+sub listVariants {
+		my($chr,$vector) =@_;
+		
+		
+		my @list_variants;
+		my $already;
+	
+		foreach my $id (@{to_array($vector,$chr->name)}) {
+				push (@list_variants,$id);
+			}
+		return( \@list_variants);
+}
+
+sub to_array {
+	my ($v,$name) = @_;
+	my $set = Set::IntSpan::Fast::XS->new($v->to_Enum);
+	my $iter = $set->iterate_runs();
+	my @t;
+	while (my ( $from, $to ) = $iter->()) {
+   		for my $member ($from .. $to) {
+   			push(@t,$name."!".$member);
+   		}
+    }
+    return \@t;
+}
+
+sub run_cache_polydiag_vector {
+	my ( $project_name, $patient_name, $tbundle,$version ) = @_;
+	my $buffer1 = new GBuffer;
+	#my $project = $buffer1->newProject( -name => $project_name, -verbose => 1 );
+	my $project = $buffer1->newProjectCache( -name => $project_name ,-version=>$version);
+	my $vquery = validationQuery->new(
+		dbh          => $buffer1->dbh,
+		capture_name => $project->validation_db()
+	);
+	my $p      = $project->getPatient($patient_name);
+	#my $p       = $pa->[0];
+	my $db_lite = $project->noSqlPolydiag("c");
+	my $vtr;
+	my %th;
+	
+	#my $variations = $p->getStructuralVariations();
+	
+	warn "end";
+	foreach my $chr ( @{ $project->getChromosomes } ) {
+		warn $chr->name;
+		my $vector = $p->getVectorOrigin($chr)->Clone;
+		
+		my $list = to_array($vector,$chr->name);
+		$project->setListVariants($list);
+		#next unless $chr->name eq "5";
+		#	my $db = $project->buffer->open_kyoto_db($file_out,'c');
+		#my $variations = $chr->getStructuralVariations();
+
+		#	warn scalar(@$variations);
+		#	die();
+		my $ii = 0;
+		my $dd = 0;
+		while (my $v = $project->nextVariant){
+			my $ps =  $v->getPatients;
+		
+		#foreach my $v ( @{$variations} ) {
+			next if $v->getChromosome->name ne $chr->name;
+			my $debug;
+			my $toto=  0;
+			#
+			#	$dd++;
+			#warn $dd."/".scalar(@$variations);
+			#$debug = 1 if $v->id eq "14_93670213_A_AT";
+			#die() if $debug;
+			#warn $ii++;
+
+			my $ok;
+			my $transcripts = $v->getTranscripts;
+			foreach my $tr ( @{$transcripts} ) {
+				#warn $tr->id();
+				#next unless exists $tbundle->{ $tr->name };
+				$ok = 1;
+				my $h = construct_variant( $project, $v, $tr, $p,
+					$vquery );
+					$h->{obj} = $v;
+					update::deja_vu($project,$tr,$h); 
+					update::annotations($project,$h); 
+						
+				my $id = join( ";", $tr->id, $v->id );
+				delete $h->{obj} ;
+				$db_lite->put( $patient_name, $id, $h );
+				#		$db->set($id,freeze $h );
+				push( @{ $vtr->{ $tr->id } }, $v->id );
+				
+				$th{ $tr->id }++;
+			}
+
+			if ( $v->isIntergenic ) {
+				my $h =
+				  construct_intergenic_variant( $project, $v, $p,
+					$vquery );
+						$h->{obj} = $v;
+					update::annotations($project,$h); 
+					update::deja_vu( $project, $v, $h );
+				my $id = join( ";", "intergenic", $v->id );
+					delete $h->{obj} ;
+				$db_lite->put( $patient_name, $id, $h );
+				#	$db->set($id,freeze $h );
+				push( @{ $vtr->{intergenic} }, $v->id );
+				$th{"intergenic"}++;
+
+			}
+		}
+		#$project->purge_memory( $chr->length );
+	}    #end chromosome
+	foreach my $t ( keys %$vtr ) {
+		$db_lite->put( $patient_name, "list_$t", join( ";", @{ $vtr->{$t} } ) );
+
+	}
+	$db_lite->put( $patient_name, "transcripts", join( ";", keys %th ) );
+	my @months = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+	my @days   = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
+
+	my ( $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst ) =
+	  localtime();
+	my $date = $mday . "/" . ( $mon + 1 ) . "/" . ( 1900 + $year );
+
+	$db_lite->put( $patient_name, "date", $date );
+	my $f1s = $p->getVariationsFiles();
+	my $tf;
+	foreach my $f1 (@$f1s) {
+		if ( -e $f1 ) {
+			$tf->{$f1} = file_md5_hex($f1);
+
+		}
+	}
+	$db_lite->put( $patient_name, "variations_vcf_md5", $tf );
+	$tf = {};
+	my $f2s = $p->getIndelsFiles();
+	foreach my $f1 (@$f2s) {
+		$tf->{$f1} = file_md5_hex($f1);
+
+		# 			push(@$tf,file_md5_hex($f1)) if -e $f1;;
+	}
+
+	$db_lite->put( $patient_name, "indels_vcf_md5", $tf );
+
+	$db_lite->close();
+	$project->buffer->dbh->disconnect();
+	if ( exists $project->{cosmic_db} ) {
+		$project->{cosmic_db}->close();
+	}
+	
+	$project = undef;
+
+
+	return 1;
+}
 
 
 
@@ -322,8 +476,9 @@ sub run_cache_polydiag {
 		my $dd = 0;
 		foreach my $v ( @{$variations} ) {
 			next if $v->getChromosome->name ne $chr->name;
-			warn $v->name;
 			my $debug;
+			my $toto=  0;
+			#
 			#	$dd++;
 			#warn $dd."/".scalar(@$variations);
 			#$debug = 1 if $v->id eq "14_93670213_A_AT";
