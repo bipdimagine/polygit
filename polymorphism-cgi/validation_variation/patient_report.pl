@@ -49,6 +49,7 @@ use constant mm => 25.4 / 72;
 use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
+use Digest::MD5::File qw(md5 md5_hex file_md5_hex url_md5_hex file_md5);
 
 my $cgi          = new CGI();
 
@@ -292,6 +293,9 @@ border-radius: 8px;
 </style>
 
 };
+#my $x = 0/0;
+#die();
+
 my $style_score ={
 		1=> {style=>"background-color:#95A5A6;color:#FFFFFF"},#E43725#95A5A6
 		2 => {style=>"background-color:#EFB73E;"},#F2DEDE#F7CCC8
@@ -309,9 +313,9 @@ my $style_td ={
 };
 
 my $server =  $ENV{HTTP_HOST};
+
 my $variation_script = $ENV{SCRIPT_NAME};
 $variation_script =~s/patient_/variation_/;
-
 
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "www.polyweb.fr" if $server =~/10\.200\.27/;
@@ -328,9 +332,11 @@ my $buffer = GBuffer->new();
 
 my $project_name = $cgi->param('project');
 my $force_cache =  $cgi->param('force_cache');
+my $pipeline =  $cgi->param('pipeline');
 #my $project = $buffer->newProject(-name=>$project_name);
 my $print =  $cgi->param('print');
 $update::print = $cgi->param('print');
+
 if($print){
 	$update::fts = "7px";
 }
@@ -477,7 +483,9 @@ my $name =  $cgi->param('name');
 
 $patient_name ="all" unless $patient_name;
 my $patients = $project->get_list_patients($patient_name,",");
-my $nb_patients = scalar @{$patients->[0]->getRun->getAllPatientsInfos()};
+confess() if scalar (@{$patients}) > 1;
+my $patient = $patients->[0];
+my $nb_patients = scalar @{$patient->getRun->getAllPatientsInfos()};
 
 #define limit for in this run
 
@@ -790,11 +798,22 @@ sub construct_data {
 	my $sum_time = 0;
 	my $htr_vars;
 	my $cpt =0;
-	my $patient = $patients->[0];
-
+	my $key = return_uniq_keys($patient,$cgi);
+	my $version = "1";
+	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
+	
+	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
+	#warn $cache_id;
+	my $text = $no_cache->get_cache($cache_id);
+	$text = undef if $pipeline;
+	if ($text){
+		my $data= $text->{data};
+		push(@$data,$text->{patient});
+		return  $data;
+	}
 	my $hpatient;
 	$hpatient->{name} = $patient->name();
-	$hpatient->{obj} = $patient;
+	#$hpatient->{obj} = $patient;
 	#$hpatient->{obj} = $patient;
 	
 	$hpatient->{machine} = $patient->getRuns->[0]->machine();
@@ -814,7 +833,8 @@ sub construct_data {
 	}
 	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
 	
-	my $fork      = 8;
+	my $fork      = 5;
+	#$fork = 2 if $pipeline;
 	my $nb        = int( scalar(@$list_transcript) / $fork + 1 );
 	my $pm        = new Parallel::ForkManager($fork);
 	my $iter      = natatime( $nb, @$list_transcript );
@@ -869,6 +889,11 @@ sub construct_data {
 	@{$hpatient->{transcripts}}  =();
 	@{$hpatient->{transcripts}} = sort {$a->{name} cmp $b->{name}}  @{$hpatient->{transcripts_not_sorted}} if $hpatient->{transcripts_not_sorted};
 	delete 	$hpatient->{transcripts_not_sorted};
+	delete $hpatient->{obj};
+	$no_cache->put_cache_hash($cache_id,{data=>$data,patient=>$hpatient});
+	$no_cache->close();
+	exit(0) if $pipeline;
+	#delete $hpatient->{obj};# = $patient;
 	push(@$data,$hpatient);
 	return $data;
 	
@@ -876,273 +901,6 @@ sub construct_data {
 	
 }
 
-
-
-
-
-sub construct_data1 {
-	my ($print_dot) = @_; 
-	my $t =time;
-	my $sum_time = 0;
-	my $htr_vars;
-	my $cpt =0;
-	my $patient = $patients->[0];
-
-#	 ($dude) = grep {$_ eq "dude" } @{$patient->getCallingMethods};
-#	if ($dude){
-#		my $file = $patient->getVariationsFile("$dude");
-#		open (CNV,"zcat $file | ");
-#		while(<CNV>){
-#			chomp();
-#			my ($chr,$s,$e,$st,$type,$sc1,$id,@all) = split(" ",$_);
-#			$hdude->{$chr}->{$id}->{nb} ++;
-#			$hdude->{$chr}->{$id}->{status} = $s;
-#			$hdude->{$chr}->{$id}->{type} = $type;
-#		}
-#		warn "coucou $file";
-#		 my $c = $patient->getCnvs();
-#		warn "end ".scalar(@$c);
-#	}
-#	die();
-	my $hpatient;
-	$hpatient->{name} = $patient->name();
-	$hpatient->{obj} = $patient;
-	#$hpatient->{obj} = $patient;
-	
-	$hpatient->{machine} = $patient->getRuns->[0]->machine();
-	$hpatient->{capture_type} = $patient->getCapture()->type;
-	$hpatient->{capture_description} = $patient->getCapture()->description;
-	$hpatient->{capture_version}  = $patient->getCapture()->version;
-
-	
-	my $nbv = scalar(@transcripts_cgi);
-	
-	
-	my $list_transcript = \@transcripts_cgi;
-
-	if ($all){
-		$list_transcript = utility::return_list_all_transcripts($project,$patient);
-	
-	}
-	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
-
-	my $iv =0;
-	foreach my $tr (@$list_transcript) {
-		$cpt++;
-			print ". " if $print_dot && $cpt%5 ==0;
-			my $tr_id = $tr;
-			my $tr1;
-				my $htranscript;
-
-				if ($tr ne "intergenic"){
-				 $tr1 = $project->newTranscript($tr);
-				$tr_id = $tr1->id;
-				$htranscript->{name} = $tr1->getGene->external_name();
-				$htranscript->{mean} = $tr1->mean_coding_coverage($patient);
-				$htranscript->{mean} = $tr1->mean_exonic_coverage($patient) if $htranscript->{mean} == 0;
-				$htranscript->{obj} = $tr1;
-				$htranscript->{exons} = [];
-				$htranscript->{variations} = [];
-				$htranscript->{all} = [];
-				$htranscript->{table} = 1;
-				$htranscript->{external_name} = $tr1->external_name;
-			}
-			else {
-				$htranscript->{name} = "intergenic";
-				$htranscript->{mean} = "-";
-				$htranscript->{mean} = "-";
-				$htranscript->{obj} = undef;
-				$htranscript->{exons} = [];
-				$htranscript->{variations} = [];
-				$htranscript->{all} = [];
-				$htranscript->{table} = 1;
-				$htranscript->{external_name} = "intergenic";
-			}
-			my $kvars = utility::return_list_variants($project,$patient,$tr_id);
-			
-			if ($tr ne "intergenic"){
-		
-		
-		if ($compute_coverage) {
-				my $exons;
-			if ($cgi->param('intronic') == 1){
-	 					$exons = $tr1->getAllGenomicsParts();
-			}
-			else {
-		 			$exons = $tr1->getExons();
-			}
-			
-			my $exons_todo = $vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name});		
-			my $show_utr = $cgi->param('utr') +0;
-			my $intronic =  $cgi->param('intronic') +0;
-			
-			my $kyoto_id = join("_",("all",$tr,$show_utr,$intronic,$cov_limit,$padding,"data"));
-
-			my $cdata;
-
-			unless ($cdata){
-		#	unless ($cdata && $cdata->{color2} ) {
-
-					my $ret = image_coverage::image ([$patient], $tr1,$intronic,$show_utr, $padding, $cov_limit,1);
-					$cdata = $ret->{data};
-			}
-			
-			foreach my $exon (sort{$a->start*$a->strand <=> $b->end*$b->strand }@$exons){
-				#my ($exon,$patient,$tr1,$exons_todo,$data,$limit) = @_;
-				 my $pdata = $cdata->{$exon->id}->{$patient->id};
-				my $hexons = infos_coverage_exons::return_hash_exons2 ($exon,$patient,$tr1,$exons_todo,$pdata,$cov_limit);
-				my $show_utr = $cgi->param('utr') +0;
-				
-				#my $hexons = infos_coverage_exons::return_hash_exons ($exon,$patient,$exons_todo,$capture_intspan,$tr1,$show_utr,$cov_limit,$padding);
-
-				push(@{$htranscript->{exons}},$hexons);
-			}
-		} #end_compute_coverage;
-		}
-	#	foreach my $var (@{$htr_vars->{$tr1->kyotoId}}){
-	
-		foreach my $var (@{$kvars}){   
-				my $debug;
-				$debug =1 if $var eq "5_11385203_C_CCGG"; 
-				my $hvariation = utility::return_hash_variant($project,$var,$tr_id,$patient,$vquery);
-				if ($print ==1){
-					$hvariation->{min_pop} =~ s/<[^>]*>//gs;
-					$hvariation->{max_pop} =~ s/<[^>]*>//gs;
-					$hvariation->{cadd} =~ s/<[^>]*>//gs;
-				}
-					update::edit($patient,$hvariation); 
-				
-					update::clinvar($project,$hvariation); 
-					update::hgmd($project,$hvariation); 
-					update::tclinical_local($project,$hvariation,$patient,$htranscript->{obj}->getGene);
-						
-				#$debug = 1 if $hvariation->{genomique} eq "1:62740264";
-				#next unless $debug;
-					my $zfilter = 1;
-				#	$zfilter = undef if $hvariation->{consequence} =~/essential/;
-				#	$zfilter = undef if $hvariation->{consequence} =~/phase/;
-				#	$zfilter = undef if $hvariation->{consequence} =~/stop/;	
-				#	 $zfilter = undef  if $hvariation->{consequence} !~/non/ && $hvariation->{consequence} =~/frameshift/ ;
-					$zfilter = undef if $hvariation->{clinvar_alert} ;	
-					$zfilter = undef if $hvariation->{clinical_local} ;
-					#$zfilter = undef if $hvariation->{hgmd} ;
-					$zfilter = undef if  $hvariation->{type} ne "other";	
-					
-					my $debug;
-					$debug = 1 if $hvariation->{var_name} eq "17_1940466_T_G";
-				
-					
-					if ($zfilter){
-						next  if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
-						#next if $hvariation->{impact_score} < $impact_score_limit;
-						next if $hvariation->{freq_level} > $vfreq ;
-					}
-				$hvariation->{ratio} = $hvariation->{ratio};
-				my @all_nums    = $hvariation->{ratio} =~ /([+-]?[0-9]*[.]?[0-9]+)%/g;
-				#$limit_ratio = 0.2;
-					if (scalar(@all_nums)){
-						my @t = grep{$_>=$limit_ratio} @all_nums;
-						next unless @t;
-					}
-				
-				update::trio($project,$tr,$hvariation,$patient,$cgi,$print);
-				if (exists $hvariation->{transmission_model} and  $hvariation->{transmission_model}=~ /strict_denovo/){
-						 $hvariation->{transmission_model} = "strict_denovo";
-				}
- 				if ( exists $hvariation->{transmission_model}){
-					my $t = $hvariation->{transmission_model};
-#					#$t ='strict_denovo' unless exists $list_transmission->{$t};
-					confess($t.' '.$hvariation->{id}) unless exists $list_transmission->{$t};
-					if ($filter_transmission){
-						
-						next unless exists  $filter_transmission->{$t};
-					}
-				}
-
-				#confess("problem with transmission name" ) if ( exists $hvariation->{transmission_model} and ! exists $list_transmission->{$hvariation->{transmission_model}});
-				#next if ($filter_transmission && exists $hvariation->{transmission_model} && ! exists $filter_transmission->{$hvariation->{transmission_model}});
-	
-				update::annotations($project,$hvariation);
-	
-				#my $t1 =time;
-				update::deja_vu($project,$tr1,$hvariation,$debug);
-				#$sum_time += abs(time-$t1);
-				$hvariation->{freq} = sprintf("%.5f",$hvariation->{freq}) if $hvariation->{freq} ne "-";
-				
-				unless  (exists $hvariation->{edit}) {
-					
-					if ($zfilter eq 1) {
-					
-					next if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
-					next if $hvariation->{impact_score} < $impact_score_limit;
-					next if $hvariation->{freq_level} > $vfreq ;
-					}
-					#my @vration = split("<BR>",$hvariation->{ratio});
-					my @all_nums    = $hvariation->{ratio} =~ /(\d+)/g;
-					if (scalar(@all_nums)){
-						my @t = grep{$_>$limit_ratio} @all_nums;
-						next unless @t;
-					}
-					
-				}
-				if ($force_cache==1){
-				update::deja_vu($project,$tr1,$hvariation);
-				
-				#$db_lite->put($patient_name,$id,$h);
-				}
-				#unless  (exists $hvariation->{edit}){
-					next if $hvariation->{freq_level} > $vfreq && $zfilter;
-				#}
-				if ($hvariation->{diff_project_deja_vu} == 0 && $hvariation->{freq} <= 0.01){
-					$hvariation->{freq_score} = 4; 
-					
-				}
-				elsif ($hvariation->{diff_project_deja_vu} <= 5 || $hvariation->{freq} <= 0.01){
-							$hvariation->{freq_score} = 3; 
-					
-				}
-				elsif ($hvariation->{diff_project_deja_vu} <= 20 || $hvariation->{freq} <= 0.05){
-						$hvariation->{freq_score} = 2; 
-					
-				}
-				else {
-						$hvariation->{freq_score} = 1; 
-				}
-				
-				
-				
-				my $href = qq{<a  href = "$deja_vu_light_url};
-					 if (exists $hvariation->{dup}){
-					 		$href .= qq{?project=$project_name&transcript=$tr_id&variation_id=$var" target="_blank" style="color:white;font-weight:bold">};
-					 }
-					 else {
-					$href .= qq{?project=$project_name&transcript=$tr_id&variation_id=$var" target="_blank" style="color:black;font-weight:bold">};
-					 }
-				if ($edit_mode == 1){
-					my $vv = $href.$hvariation->{in_this_run}."</a>" ;
-					$hvariation->{in_this_run} =$vv;
-				}
-				
-				push(@{$htranscript->{$hvariation->{type}}},$hvariation);
-				push(@{$hpatient->{variations}->{$hvariation->{id}}},$hvariation );
-				
-				push(@{$htranscript->{all}},$hvariation);
-				
-			}
-		
-			push(@{$hpatient->{transcripts_not_sorted}},$htranscript);
-	}
-	
-	
-	@{$hpatient->{transcripts}}  =();
-	@{$hpatient->{transcripts}} = sort {$a->{name} cmp $b->{name}}  @{$hpatient->{transcripts_not_sorted}} if $hpatient->{transcripts_not_sorted};
-	delete 	$hpatient->{transcripts_not_sorted};
-	push(@$data,$hpatient);
-	return $data;
-	
-	exit(0);
-	
-}
 
 
 
@@ -1236,16 +994,16 @@ my $xls =  $cgi->param('xls');
 sub print_hotspot {
 	
 	my ($data,$cgi,$print) = @_;
-	my $out1 .=printTableHotspots( $patients->[0],$print);
+	my $out1 .=printTableHotspots( $patient,$print);
 		return $out1;
 my $out1 ="" ;# = html::print_cadre($cgi,"Edition ");
-my $hotspots = $patients->[0]->getCapture()->hotspots;
+my $hotspots = $patients->getCapture()->hotspots;
 return $out1 unless scalar(@$hotspots);
 
 foreach my $hotspot (@$hotspots){
-$patients->[0]->hotspot($hotspot);
+$patient->hotspot($hotspot);
 }
-$out1 .=printTableHotspots( $patients->[0],$hotspots,$print);
+$out1 .=printTableHotspots( $patient,$hotspots,$print);
 
 
 }
@@ -2381,7 +2139,7 @@ sub print_variation_td_edit{
 					#$text = update::printSimpleBadge(qq{$text});
 				}
 				if ($cat eq "igv"){
-					my $fam = $patient->{obj}->getFamily();
+					my $fam = $patient->getFamily();
 					my @bams;
 					my @names;
 					foreach my $p (@{$fam->getPatients()}){
@@ -2392,7 +2150,7 @@ sub print_variation_td_edit{
 					my $f =  join(";",@bams);#$patient->{obj}->bamUrl;;
 					my $l = $variation->{genomique};
 					my $v = $variation->{ref_allele}."/".$variation->{allele};	
-					my $gn = $patient->{obj}->project->getVersion();
+					my $gn = $patient->project->getVersion();
 					my $pnames = join(";",@names);
 					$text =qq{<button dojoType="dijit.form.Button"   iconClass="igvIcon" onclick='launch_web_igv_js("$project_name","$pnames","$f","$l")' style="color:black"></button>};
 				}
@@ -3040,11 +2798,11 @@ sub printTableGenesXls {
 }
 
 sub printTableGenes {
-	my ($patient,$title,$type,$nobutton) = @_;
+	my ($hpatient,$title,$type,$nobutton) = @_;
 	my $out ="";
 
-	my $s_id=$patient->{name};
-	my $total_variations = $patient->{variations};
+	my $s_id=$hpatient->{name};
+	my $total_variations = $hpatient->{variations};
 	my $nb_line = 0;
 	my $first_line = 0;
 	my @buttons = ("status","igv","alamut","align");
@@ -3152,8 +2910,8 @@ my $string_label = join(";",@$all_label);
   my $icon_igv = $cgi->span({class=>"igvIcon2 pull-left",'aria-hidden'=>"true"});
   my $icon_calendar = $cgi->span({class=>"glyphicon glyphicon-calendar",'aria-hidden'=>"true"});
   my $icon_export =  $cgi->span({class=>"glyphicon glyphicon-open-file pull-left",'aria-hidden'=>"true"});
-	my ($date,$since) = utility::get_date($patient->{obj});
-	my $fam = $patient->{obj}->getFamily();
+	my ($date,$since) = utility::get_date($patient);
+	my $fam = $patient->getFamily();
 	
 		my $car = $project->maskImpact;
 	my $st_impact;
@@ -3198,8 +2956,8 @@ my $string_label = join(";",@$all_label);
 		
 	}
 	my $icon_sex =  qq{<i class="fa fa-mars" aria-hidden="true" style="color:cyan"></i>&nbsp};
-	 $icon_sex =  qq{<i class="fa fa-venus" aria-hidden="true" style="color:pink"></i>&nbsp} unless $patient->{obj}->isMale();
-	my $titlep = $icon_sex.$patient->{obj}->name;
+	 $icon_sex =  qq{<i class="fa fa-venus" aria-hidden="true" style="color:pink"></i>&nbsp} unless $patient->isMale();
+	my $titlep = $icon_sex.$patient->name;
 	my $mname = "-";
 	$mname = $fam->getMother->name() if  $fam->getMother;
 	my $pname ="-";
@@ -3647,7 +3405,6 @@ my $tdid =0;
 
 sub validation_select{
 	my ($hpatient,$variation,$gene) = @_;
-	my $patient = $hpatient->{obj};
 	my $cgi =  new CGI;# unless $cgi;
 	my $buffer = $patient->buffer;
 	my $project = $patient->project;
@@ -3863,6 +3620,7 @@ my $td_text = $select_text.$option.$force_text;
 
 
 
+
 sub html_cnv{
 my ($patient,$tr) = @_;	
 my $out;
@@ -3990,4 +3748,52 @@ print qq{
 
 };
 die();			
+}
+
+sub return_uniq_keys {
+my ($patient,$cgi) = @_;
+	
+my %hkeys = $cgi->Vars;
+my @keys;
+my $string;
+foreach my $k  (sort {$a cmp $b} keys %hkeys){
+	next if $k =~ /force/;
+	next if $k =~ /user/;
+	next if $k =~ /pipeline/;
+	push(@keys,"$k");
+	my $c = $hkeys{$k};
+	$c =~ s/\"//g;
+	$c =~ s/\+/ /g;
+	push(@keys,$c);
+}
+
+
+$patient->project->validations_query(1);
+
+
+foreach my $chr  (@{$patient->project->getChromosomes}){
+		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
+		my @st = (stat($no->filename));
+		 push(@keys, ($st[9].$st[11].$st[12]));
+		my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
+		@st = (stat($no2->filename));
+		 push(@keys, ($st[9].$st[11].$st[12]));
+		 last;
+}
+#push(@keys,file_md5_hex($Bin."/variations_editor.pl") );
+ 
+my $stv = $patient->get_string_validations();
+unless ($patient->isGenome ) {
+	$stv .= ':::'.$patient->get_string_identification();
+}
+if  ($stv ){
+push(@keys,"validation".":".md5_hex($stv));
+}
+else{
+push(@keys,encode_json ({}));
+push(@keys,encode_json ({}));
+push(@keys,encode_json ({}));
+#push(@keys,encode_json ($h2));	
+}
+return \@keys;
 }
