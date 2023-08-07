@@ -14,8 +14,6 @@ use Carp;
 use GBuffer;
 require  "$RealBin/../../GenBo/lib/obj-nodb/packages/cache/polydiag/polydiag.pm";
 require  "$RealBin/../../GenBo/lib/obj-nodb/packages/cache/polydiag/update.pm";
-use Text::Table;
-
 
 
 my $fork = 1;
@@ -36,7 +34,7 @@ $| = 1;
 
 	my $buffer = new GBuffer();
 	$buffer->vmtouch(1);
-	my $project = $buffer->newProject( -name => $project_name, -verbose => 1 , -version=>$version);
+	my $project = $buffer->newProjectCache( -name => $project_name, -verbose => 1 , -version=>$version);
 	my $patients = $project->getPatients();
 	if ($patient_name) {
 		
@@ -81,7 +79,9 @@ $| = 1;
 
 		#next if $pname ne "AS1502552";
 		my $pid = $pm->start and next;
+		#my $resp= {};
 		my $resp = polydiag::run_cache_polydiag( $project_name, $p->name, $tbundle,$version );
+		run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
 		$pm->finish( 0, \$resp );
 	}
@@ -91,5 +91,23 @@ $| = 1;
 	
 	#warn Dumper $project
 	die() if $error;
+
+sub run_cache_web_polydiag {
+	my ($project,$patient) = @_;
+	my $arg1 = "project=".$project->name." patients=".$patient->name;
+	my $args = " panel= edit_mode=1 never=1 this=6  allele_quality=5 report_mode=1 transcripts=all";
+	my $no_cache = $patient->get_lmdb_cache_polydiag("c");
+	$no_cache->put("date",time);
+	$no_cache->close();
+	$no_cache = undef;
+	my $polydiag = $RealBin."/../../validation_variation/patient_report.pl";
+	for (my $f=2;$f<5;$f++){
+		for (my $imp=2;$imp<4;$imp++){
+			warn "$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1";
+			system("$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1");
+		}
+	}
+	
+}
 
  exit(0);
