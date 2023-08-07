@@ -42,6 +42,7 @@ use draw_cnv;
 use infos_coverage_exons;
 use image_coverage;
 use preload_coverage;
+use Digest::MD5::File qw( md5_hex file_md5_hex file_md5);
 $| = 1;
 my $cgi = new CGI();
 
@@ -60,6 +61,17 @@ my $patient_names = $cgi->param('patients');
 #ProjectCache or not that's the questions , do you have run dude or not ?
 my $buffer  = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
+my $no_cache = $project->get_lmdb_cache_cnv("w");
+my $version = 1;
+my $key = return_uniq_keys($cgi);	
+my $cache_id = md5_hex("polydiag_cnv_".join(";",@$key).".$version");
+my $text = $no_cache->get_cache($cache_id);
+if ($text){
+	$| =1;
+	print $text;
+	exit(0);
+}
+
 if ( $project->isDude ) {
 	my $valid_cache = $cgi->param('test_cache');
 	exit(0) if $valid_cache;
@@ -209,6 +221,9 @@ qq{<img class="load" src="$toto"  align="top" style="box-shadow: 2px 2px 3px #aa
 $out .= print_lines( \@ths, \@tds );
 $out .= $cgi->end_table();
 $out .= html::end_cadre( $cgi, "CNV" );
+$no_cache->put_cache_text($cache_id,$out,2400);
+$no_cache->close();
+exit(0) if $cgi->param('pipeline');
 print $out;
 
 #html::print_cgi($cgi,$out);
@@ -347,4 +362,30 @@ sub select_transcripts {
 	 	exit(0);
 	 }
 	return keys %images;
+}
+
+sub return_uniq_keys {
+my ($cgi) = @_;
+	
+my %hkeys = $cgi->Vars;
+my @keys;
+my $string;
+foreach my $k  (sort {$a cmp $b} keys %hkeys){
+	next if $k =~ /force/;
+	next if $k =~ /user/;
+	next if $k =~ /pipeline/;
+	push(@keys,"$k");
+	my $c = $hkeys{$k};
+	$c =~ s/\"//g;
+	$c =~ s/\+/ /g;
+	push(@keys,$c);
+}
+my $dir_out   =$project->noSqlCnvsDir;
+my $f2 = "$dir_out/primers.lite";
+my @st = (stat($f2));
+push(@keys, ($st[9].$st[11].$st[12]));
+$f2 = "$dir_out/1";
+my @st2 = (stat($f2));
+push(@keys, ($st2[9].$st2[11].$st2[12]));
+return \@keys;
 }
