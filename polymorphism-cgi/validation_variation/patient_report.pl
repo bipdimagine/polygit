@@ -1659,8 +1659,9 @@ sub print_project_summary {
 	my ($patient) = @_;
 	my $out;
 	
-	my $pn = $patient->{name};
 	
+	my $pn = $patient->{name};
+	 $patient->{obj} = $project->getPatient($pn);
 	my @genes_name = sort {$a cmp $b} map{$_->{name} } @{$patient->{transcripts}};
 	my $nb_genes = scalar(@genes_name);
 	my $nb = int(($nb_genes / 10) +0.5);
@@ -1702,8 +1703,7 @@ sub print_project_summary {
 	}
 	
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
-	my $sex_eval = $patient->{obj}->compute_sex(); 
-	
+	my $sex_eval =  $patient->{obj}->compute_sex(); 
 	$out.= $cgi->th("Sex : ");	
 	 if ($sex_eval == -1){
 	 	$out.= $cgi->td(qq{<i class="fa fa-question-circle fa-2x"></i>});
@@ -1772,7 +1772,7 @@ sub print_project_summary {
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("Coverage : ");
 	my $p = $patient->{obj};
-	my $cov = $p->coverage();
+	my $cov =  $patient->{obj}->coverage();
 	$out.= $cgi->td([$cov->{mean}." (30X : ".$cov->{'30x'}."%)"]);
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->td("<h4>Pipeline</h4>");
