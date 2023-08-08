@@ -9,6 +9,7 @@ use lib "$Bin/../GenBo/lib/obj-nodb";
 use lib "$Bin/../GenBo/lib/GenBoDB/writeDB";
 use GBuffer;
 use Data::Dumper;
+use JSON;
 
 my $cgi = new CGI;
 print $cgi->header();
@@ -36,7 +37,6 @@ foreach my $param (@params){
 	my $value = $cgi->param($param);
 	next if $value eq "";
 	next if $value eq "all";
-	warn $param." ".$cgi->param($param);
 	$query->addParam(filter_id=>$filter_id,param_name=>$param,param_value=>$value);
 }
 sendOK("coucou");
@@ -62,7 +62,7 @@ sub sendError {
 sub response {
 	my ($rep) = @_;
 	print qq{<textarea>};
-	print to_json($rep);
+	print encode_json($rep);
 	print qq{</textarea>};
 	exit(0);
 }

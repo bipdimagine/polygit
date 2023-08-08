@@ -9,6 +9,7 @@ use lib "$Bin/";
 use lib "$Bin/../GenBoDB";
 use Set::IntSpan::Fast::XS;
 use Bio::DB::HTS::Tabix;
+use Carp;
 use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";

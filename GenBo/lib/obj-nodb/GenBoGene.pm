@@ -58,6 +58,7 @@ has pLI => (
 	lazy	=> 1,
 	default => sub { 
 		my $self = shift;
+		return '-' if not $self->getProject->is_human_genome();
 		my $z = $self->project->lmdbPLI->get($self->name());
 		return "-" unless $z;
 		 return $z;
@@ -201,6 +202,7 @@ has omim_id => (
 	lazy	=> 1,
 	default => sub { 
 		my $self = shift;
+		return '-' if not $self->getProject->is_human_genome();
 		return $self->omim->{omim_id} if exists $self->omim->{omim_id};
 		return undef;
 		 },
@@ -223,6 +225,7 @@ has hash_phenotypes => (
 	default => sub { 
 		my $self = shift;
 		my $hPhen;
+		return $hPhen if (not $self->getProject->is_human_genome);
 		if (exists $self->omim->{version}){
 			$hPhen->{omim} = $self->omim->{phenotypes}->{omim} if (exists $self->omim->{phenotypes}->{omim});
 			$hPhen->{hgmd} = $self->hgmd_disease() if ($self->hgmd and $self->hgmd_disease);
@@ -356,6 +359,7 @@ has omim_inheritance => (
 	lazy	=> 1,
 	default => sub { 
 		my $self = shift;
+		return '-' if not $self->getProject->is_human_genome();
 		return "-" unless exists $self->omim->{inheritance}->{omim};
 		my $in="";
 		$in = "X-linked " if exists $self->omim->{inheritance}->{omim}->{"X-linked"};
@@ -596,14 +600,14 @@ sub setPhenotypes {
 
 sub setPanels {
 	my $self = shift;
-	my %hids;
-	my $query = $self->buffer->queryPanel();
-	my $hs = $query->getPanelsForGeneName($self->external_name);
 	my %hIds;
-	foreach my $k (keys %$hs){
-		$hIds{$hs->{$k}->{panel_id}} ++;
+	if ($self->getProject->is_human_genome()) {
+		my $query = $self->buffer->queryPanel();
+		my $hs = $query->getPanelsForGeneName($self->external_name);
+		foreach my $k (keys %$hs){
+			$hIds{$hs->{$k}->{panel_id}} ++;
+		}
 	}
-	
 	return \%hIds;
 }
 

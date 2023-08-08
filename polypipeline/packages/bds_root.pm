@@ -21,6 +21,7 @@ use POSIX qw{strftime};
 require Term::Screen;
 use Term::StatusBar;
 use UUID 'uuid';
+use Carp;
 
 my $bin_dev = "";
 has 'patient' => (
