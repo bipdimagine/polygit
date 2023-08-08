@@ -5,7 +5,7 @@ use Moo;
 
 use Data::Dumper;
 use Config::Std;
-
+use Carp;
 
 
 
@@ -46,7 +46,7 @@ sub filter_vector_ncboost {
 
 sub filter_vector_hgmd_dm {
 	my ($chr) = @_;
-	confess unless ($chr->project->isUpdate());
+	confess() unless ($chr->project->isUpdate());
 	my $vector_hgmd_dm = $chr->getVectorLmdbDm();
 	$vector_hgmd_dm->Intersection($vector_hgmd_dm, $chr->getVariantsVector());
 	$chr->setVariantsVector($vector_hgmd_dm);

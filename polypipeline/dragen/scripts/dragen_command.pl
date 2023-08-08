@@ -155,7 +155,9 @@ else {
 	
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
+
  $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-duplicate-marking true --enable-rna=true ";
+
 }
 
 #if (exists $pipeline->{count}){
@@ -205,7 +207,7 @@ elsif (exists $pipeline->{align}){
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
 	if ($umi){
-		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 2 --vc-enable-umi-germline true};
+		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 	}
 	else {
 		$param_align .= qq{ --enable-duplicate-marking true };
