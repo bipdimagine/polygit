@@ -453,7 +453,9 @@ my $hscore_sorted = {
 };
 #define parameter 
 my $padding =  $cgi->param('span');
+$padding =20 unless $padding;
 my $cov_limit =  $cgi->param('limit');
+$cov_limit = 30 unless $cov_limit;
 my $vimpact = $cgi->param('impact');
 my $this_run = $cgi->param('this');
 
@@ -633,12 +635,11 @@ sub construct_htranscripts {
 		 			$exons = $tr1->getExons();
 			}
 			
-			my $exons_todo = $vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name});		
+			my $exons_todo = {};#$vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name});	
 			my $show_utr = $utr +0;
 			my $intronic =  $cgi->param('intronic') +0;
 			
-			my $kyoto_id = join("_",("all",$tr,$show_utr,$intronic,$cov_limit,$padding,"data"));
-
+			#my $kyoto_id = join("_",("all",$tr,$show_utr,$intronic,$cov_limit,$padding,"data"));
 			my $cdata;
 
 			unless ($cdata){
@@ -646,6 +647,7 @@ sub construct_htranscripts {
 
 					my $ret = image_coverage::image ([$patient], $tr1,$intronic,$show_utr, $padding, $cov_limit,1);
 					$cdata = $ret->{data};
+					#warn Dumper $ret->{data};
 			}
 			
 			foreach my $exon (sort{$a->start*$a->strand <=> $b->end*$b->strand }@$exons){
@@ -799,13 +801,13 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version = "1";
+	my $version = "2";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
-	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
 	$text = undef if $pipeline;
+	$compute_coverage = 1;
 	if ($text){
 		my $data= $text->{data};
 		push(@$data,$text->{patient});
@@ -3756,20 +3758,28 @@ my ($patient,$cgi) = @_;
 my %hkeys = $cgi->Vars;
 my @keys;
 my $string;
+$hkeys{allele_quality} = 5 unless exists $hkeys{allele_quality};
+delete $hkeys{never};
 foreach my $k  (sort {$a cmp $b} keys %hkeys){
 	next if $k =~ /force/;
 	next if $k =~ /user/;
 	next if $k =~ /pipeline/;
+	next if $k =~ /report_mode/;
+	next if $k =~ /project_summary/;
+	next if $k =~ /graphic_coverage/;
+	next if $k =~ /sanger_variations/;
+	next if $k =~ /validated_variations/;
+	next if $k =~ /todo_variations/;
+	next if $k =~ /span/;
+	next if $k =~ /limit/;
+	next if $k =~ /edit_mode/;
 	push(@keys,"$k");
 	my $c = $hkeys{$k};
 	$c =~ s/\"//g;
 	$c =~ s/\+/ /g;
 	push(@keys,$c);
 }
-
-
 $patient->project->validations_query(1);
-
 
 foreach my $chr  (@{$patient->project->getChromosomes}){
 		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
