@@ -3760,19 +3760,27 @@ my @keys;
 my $string;
 $hkeys{allele_quality} = 5 unless exists $hkeys{allele_quality};
 delete $hkeys{never};
-foreach my $k  (sort {$a cmp $b} keys %hkeys){
-	next if $k =~ /force/;
-	next if $k =~ /user/;
-	next if $k =~ /pipeline/;
-	next if $k =~ /report_mode/;
-	next if $k =~ /project_summary/;
-	next if $k =~ /graphic_coverage/;
-	next if $k =~ /sanger_variations/;
-	next if $k =~ /validated_variations/;
-	next if $k =~ /todo_variations/;
-	next if $k =~ /span/;
-	next if $k =~ /limit/;
-	next if $k =~ /edit_mode/;
+delete $hkeys{xls};
+delete $hkeys{table_variations};
+delete $hkeys{recessive};
+delete $hkeys{xor};
+delete $hkeys{both};
+delete $hkeys{denovo};
+delete $hkeys{all_coverage};
+delete $hkeys{all_variations};
+delete $hkeys{print};
+
+my %vkeys;
+$vkeys{allele_quality} = $hkeys{allele_quality};
+$vkeys{frequence} = $hkeys{frequence};
+$vkeys{impact} = $hkeys{impact};
+$vkeys{panel} = $hkeys{panel};
+$vkeys{patients} = $hkeys{patients};
+$vkeys{project} = $hkeys{project};
+$vkeys{this} = $hkeys{this};
+$vkeys{transcripts} = $hkeys{transcripts};
+
+foreach my $k  (sort {$a cmp $b} keys %vkeys){
 	push(@keys,"$k");
 	my $c = $hkeys{$k};
 	$c =~ s/\"//g;
