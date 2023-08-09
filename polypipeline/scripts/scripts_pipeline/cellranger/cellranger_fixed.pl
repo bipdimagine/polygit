@@ -42,8 +42,6 @@ my $bin_script_pipeline = qq{$Bin/scripts/scripts_pipeline};
 my $projectName;
 my $patients_name;
 my $step;
-my $bcl_dir;
-my $run;
 my $feature_ref;
 my $no_exec;
 my $aggr_name;
@@ -56,8 +54,6 @@ GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
 	'step=s'=> \$step,
-	'bcl=s' => \$bcl_dir,
-	'run=s' => \$run,
 	'feature_ref=s' =>  \$feature_ref,
 	'cmo_ref=s' =>  \$cmo_ref,
 	'no_exec=s' => \$no_exec,
@@ -67,7 +63,7 @@ GetOptions(
 );
 
 if ($step eq "all" || $step eq "demultiplex"){
-	die ("-bcl, -run and -nb_lane options are required") unless $bcl_dir || $run || $lane;
+#	die ("-bcl, -run and -nb_lane options are required") unless $bcl_dir || $run || $lane;
 }
 
 warn $step;
@@ -77,7 +73,9 @@ my $project = $buffer->newProject( -name => $projectName );
 $patients_name = "all" unless $patients_name;
 $patients_name = $project->get_only_list_patients($patients_name);
 
-
+my $run = $project->getRun();
+my $run_name = $run->run_name;
+my $bcl_dir = $run->bcl_dir;
 
 my $sampleSheet = $bcl_dir."/sampleSheet.csv";
 my $exec = "cellranger";
