@@ -14,12 +14,12 @@ sub find_paired_files_umi {
 	my @couple;
 	foreach my $r1 (@r1){
 		my $d;
-		$d->{R1} = $r1;
+		$d->{R1} = $dir."/".$r1;
 		
 		my $r2 = $r1;
 		if (-e $dir."/".$r2){
 			$r2 =~ s/_R1_/_R2_/;
-			$d->{R2} = $r2;
+			$d->{R2} = $dir."/".$r2;
 		}
 		else {
 			confess($r1 ." don t find R2" );
@@ -27,7 +27,7 @@ sub find_paired_files_umi {
 		my $r3 = $r1;
 		$r3 =~ s/_R1_/_R3_/;
 		if ( -e $dir."/".$r3) {
-			$d->{R3} = $r3;
+			$d->{R3} = $dir."/".$r3;
 		}
 		push(@couple,$d);
 	}
