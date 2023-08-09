@@ -2104,19 +2104,6 @@ has refFlat_file => (
 	},
 );
 
-has refFlat_file_star => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  . $version
-		  . '/refFlat/refFlat_no_chr.txt';
-		return $file;
-	},
-);
 
 has refFlat_file_star => (
 	is      => 'rw',
