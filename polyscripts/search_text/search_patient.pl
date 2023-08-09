@@ -56,9 +56,9 @@ foreach my $p (@sort){
 my $text;
 
 foreach my $near (@$nearest){
-	 $text .= $near."\t".$h->{$near}->{project}."\t".$min;
+	 push(@$text,$near."\t".$h->{$near}->{project}."\t".$min);
 }	
-print $search."\t".$text."\n";
+print $search."\t".join("\t",@$text)."\n";
 #my $indexer = Search::Indexer->new();
 #my $z = 0;
 #foreach my $p (keys %$h){
