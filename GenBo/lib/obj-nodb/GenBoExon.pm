@@ -1,7 +1,7 @@
 package GenBoExon;
-use strictures 2;
+#use strictures 2;
 
-#use strict;
+use strict;
 use Moo;
 use Data::Dumper;
 use Config::Std;

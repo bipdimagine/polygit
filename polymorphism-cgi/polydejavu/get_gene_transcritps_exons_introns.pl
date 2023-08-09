@@ -64,12 +64,14 @@ foreach my $tr (@{$gene->getTranscripts()}) {
 	my $tr_id = $lTmp[0];
 	my $locus_tr = $gene->getChromosome->id().':'.$tr->start().'-'.$tr->end();
 	$h_genes_transcripts_exons->{$tr_id}->{'locus'} = $locus_tr;
+	$h_genes_transcripts_exons->{$locus_tr} = $tr_id;
 	$html .= qq{<option value='$locus_tr'><span>$tr_id</span></option>};
 	
 	my ($h_e, $h_i);
 	foreach my $exon (@{$tr->getExons()}) {
 		my $locus = $gene->getChromosome->id().':'.$exon->start().'-'.$exon->end();
 		$h_genes_transcripts_exons->{$tr_id}->{exons}->{$exon->id()} = $locus;
+		$h_genes_transcripts_exons->{$locus} = $exon->id()  if (not exists $h_genes_transcripts_exons->{$locus});
 		my $id = $exon->id();
 		$id =~ s/$tr_all_id//;
 		$id =~ s/_//;
@@ -81,6 +83,7 @@ foreach my $tr (@{$gene->getTranscripts()}) {
 	foreach my $intron (@{$tr->getIntrons()}) {
 		my $locus = $gene->getChromosome->id().':'.$intron->start().'-'.$intron->end();
 		$h_genes_transcripts_exons->{$tr_id}->{introns}->{$intron->id()} = $locus;
+		$h_genes_transcripts_exons->{$locus} = $intron->id() if (not exists $h_genes_transcripts_exons->{$locus});
 		my $id = $intron->id();
 		$id =~ s/$tr_all_id//;
 		$id =~ s/_//;
