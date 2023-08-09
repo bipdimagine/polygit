@@ -68,6 +68,7 @@ use GenBoNoSqlLmdbScore;
 use Time::HiRes qw (time);
 use Sys::Hostname;
 use File::Temp;
+use Bio::DB::HTS::Faidx;
 
 sub hasHgmdAccess {
 	my ( $self, $user ) = @_;
@@ -587,6 +588,28 @@ sub get_lmdb_cache_summary {
 		dir     => $dir_out,
 		mode    => $mode,
 		name    => $self->name.".summary.cache",
+		is_compress => 1,
+		vmtouch => $self->buffer->vmtouch
+	);
+	if ( $mode eq "c"){
+		$no2->put("cdate",time);
+		system("chmod a+w ".$no2->filename);
+	}
+	return $no2;
+}
+
+sub get_lmdb_cache_cnv {
+	my ( $self, $mode ) = @_;
+	
+	$mode = "r" unless $mode;
+	my $dir_out = $self->getCacheDir();
+	unless (-e $dir_out."/".$self->name.".table_cnv.cache"){
+		$mode = "c";
+	}
+	my $no2     = GenBoNoSqlLmdbCache->new(
+		dir     => $dir_out,
+		mode    => $mode,
+		name    => $self->name.".table_cnv.cache",
 		is_compress => 1,
 		vmtouch => $self->buffer->vmtouch
 	);
@@ -1595,6 +1618,34 @@ has getRockPartialTranscriptDir  => (
 		return $self->get_gencode_directory();
 	}
 );
+has getFastaGencodeDir  => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		#confess() unless -e $self->get_gencode_directory()."/fasta";
+		return $self->get_gencode_directory()."/../fasta";
+	}
+);
+sub fastaProteinIndex {
+	my($self,$version) = @_;
+	die() if $version ne "HG38" && $version ne "HG19";
+	return $self->{fasta_index}->{$version} if exists $self->{fasta_index}->{$version};
+	my $file = $self->get_gencode_directory()."/../fasta/$version/proteins.fa.gz";
+	return undef unless -e $file;
+	$self->{fasta_index}->{$version} = Bio::DB::HTS::Faidx->new($file);
+	return $self->{fasta_index}->{$version};
+}
+has getFastaProteinIndexHG38  => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return unless -e $self->get_gencode_directory()."/fasta";
+	#	confess() unless -e $self->get_gencode_directory()."/fasta";
+		return $self->get_gencode_directory()."/fasta";
+	}
+);
 
 has lmdbPartialTranscripts => (
 	is      => 'ro',
@@ -1991,10 +2042,20 @@ has gtf_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf};
+		my $file = $self->buffer()->config->{'public_data'}->{root} 
+			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		 	.   '/gencode.v'.$self->gencode_version."/genes.gtf";
+#		my @patients          = @{ $self->getPatients() };
+#		my $alignMeth = $patients[0]->alignmentMethod();
+#		warn $self->annotation_genome_version;
+#		my $file =
+#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+#		  .  $self->annotation_genome_version  . '/'
+#		  . $self->buffer()->config->{'public_data'}->{gtf};
+#		  $file =
+#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+#		  .  $self->annotation_genome_version  . '/'
+#		  . $self->buffer()->config->{'public_data'}->{gtf_dragen} if $alignMeth eq "dragen-align";
 		return $file;
 	},
 );
@@ -2006,10 +2067,8 @@ has gtf_dragen_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf_dragen};
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/genes.gtf";
 		return $file;
 	},
 );
@@ -2057,6 +2116,32 @@ has refFlat_file_star => (
 		return $file;
 	},
 );
+
+has refFlat_file_star => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
+		return $file;
+	},
+);
+
+
+has refFlat_file_dragen => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
+		return $file;
+	},
+);
+
 
 has rRNA_file => (
 	is      => 'rw',
@@ -3793,9 +3878,10 @@ sub createObject {
 
 sub get_void_object {
 	my ( $self, $type ) = @_;
+	
 	return dclone( $self->{void}->{$type} ) if exists $self->{void}->{$type};
 	my $typeObj = $self->hashTypeObject()->{$type};
-	$self->{void}->{$type} = $typeObj->new( id => "titi" );
+	$self->{void}->{$type} = $typeObj->new( id => "titi");
 	return dclone( $self->{void}->{$type} );
 }
 
@@ -5493,7 +5579,14 @@ sub purge_memory {
 			undef($gene);
 		}
 	}
-
+	#delete $self->{objects};
+	warn "pruge";
+	
+	#delete $self->{objects}->{chromosomes};
+	
+	#delete $self->{objects}->{variants};
+	#warn Dumper keys %{$self->{objects}};
+	delete $self->{objects};
 }
 
 sub purge_memory_reference {
