@@ -781,7 +781,8 @@ sub update_software_version {
 	my $dbh = $self->getDbh();
 	my $config = $self->getConfig();
 	my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
-	$dbh->do(qq{insert into  PolyprojectNGS.version_patients as vp (version_id, patient_id,modification_date) VALUES ($version_id, $patient_id,NOW(),"$username:$cmd" )}) or confess();
+	warn qq{insert into  PolyprojectNGS.version_patients  (version_id, patient_id,modification_date) VALUES ($version_id, $patient_id,NOW(),"$username:$cmd")};
+	$dbh->do(qq{insert into  PolyprojectNGS.version_patients  (version_id, patient_id,modification_date,cmd) VALUES ($version_id, $patient_id,NOW(),"$username:$cmd" )}) or confess();
 	return 1;
 }
 
