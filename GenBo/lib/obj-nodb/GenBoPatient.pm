@@ -1,5 +1,5 @@
 package GenBoPatient;
-
+use File::Basename;
 use strict;
 use Moo;
 use Data::Dumper;
@@ -1302,47 +1302,30 @@ has bamFiles => (
 
 );
 
-sub get_fastq {
+sub fastqFiles{
 	my ($self) = @_;
-	require "fastq_util.pm";
-	my $name=$self->name();
-	my $dir = $self->getSequencesDirectory();
-	my @names;
-	my $couple;
-	push(@names,$self->name);
-	push(@names,$self->barcode) if length($self->barcode)>1 ;
-	unless (exists $self->buffer->{cached_dir}->{$dir}){
-		$self->buffer->{cached_dir}->{$dir}= [];
-		opendir(DIR,$dir);
-		my @allFiles= readdir(DIR);
-
-		$self->buffer->{cached_dir}->{$dir} = \@allFiles;
-	}
-	NAME: foreach my $name (@names) {
-	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
-	foreach my $find (@pattern){
-		my (@titi) = grep { /$find/} grep { /fastq/} @{$self->buffer->{cached_dir}->{$dir}} ;
-	
-		if (@titi) {
-			$couple = fastq_util::find_paired_files(\@titi,$dir);
-			last NAME if ($couple);
-		}
-	}
-	}
-	warn "NO fastq file for : -".$self->name()."- ".$self->barcode." ".$dir unless $couple;	
-	foreach my $cp (@$couple) {
-		$cp->{R1} = $self->getSequencesDirectory()."/".$cp->{R1};
-		$cp->{R2} = $self->getSequencesDirectory()."/".$cp->{R2};
-		delete $cp->{dif};
-		delete $cp->{pos};
-	}
-	return $couple if scalar(@$couple)>0;
-	die();	
-	
-
+	return $self->{fastq} if exists $self->{fastq};
+	my $pm =   dirname (__FILE__) . "/packages/fastq/fastq.pm";
+	require "$pm";
+	my $files = fastq::find_file_pe($self);
+	$self->{fastq} = $files;
+	return $self->{fastq};
 }
 
+sub R1fastq {
+	my ($self) = @_;
+	return $self->fastqFiles->{R1};
+}
 
+sub R2fastq {
+	my ($self) = @_;
+	return $self->fastqFiles->{R2};
+}
+
+sub R3fastq {
+	my ($self) = @_;
+	return $self->fastqFiles->{R3};
+}
 
 
 has trackingFile => (
