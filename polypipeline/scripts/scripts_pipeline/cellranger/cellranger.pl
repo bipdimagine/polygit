@@ -110,6 +110,9 @@ my $run_name = $run->run_name;
 my $bcl_dir = $run->bcl_dir;
 
 
+
+
+
 #my $cmd = "cd $tmp; /software/bin/demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
 warn $exec;
 my $cmd = "cd $tmp; $Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";

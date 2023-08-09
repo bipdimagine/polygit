@@ -66,6 +66,9 @@ if ($step eq "all" || $step eq "demultiplex"){
 #	die ("-bcl, -run and -nb_lane options are required") unless $bcl_dir || $run || $lane;
 }
 
+
+
+
 warn $step;
 
 my $buffer = GBuffer->new();
