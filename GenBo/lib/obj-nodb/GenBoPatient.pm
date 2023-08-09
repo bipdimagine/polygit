@@ -30,9 +30,17 @@ has patient_id => (
 	reader   => 'getPatientId',
 	required => 1,
 );
+
 has bar_code => (
 	is     => 'ro',
 	reader => 'barcode',
+
+	#isa		=> 'Str',
+);
+
+has bar_code2 => (
+	is     => 'ro',
+	reader => 'barcode2',
 
 	#isa		=> 'Str',
 );

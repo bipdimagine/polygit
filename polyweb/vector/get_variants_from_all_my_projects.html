@@ -896,10 +896,14 @@
 								myPanel.appendTo(myNode);
 		    					dijit.byId('waiting').hide();
 				    		}
+				    		if (key == 'gencode') {
+				    			gencode_version = value;
+				    		}
 	  					});
 				    });
 			    }
 	    	}
+	    	var gencode_version = '';
 	    	
 	    	function reload_score_gene (use_args) {
 			    show_waiting("Updating gene(s) score(s) !");
@@ -1135,6 +1139,7 @@
 			    });
     		}
     		
+    		var hash_transcripts_locus;
     		var use_only_interval;
     		var use_only_transcript;
 	    	var use_project_name;
@@ -1166,7 +1171,7 @@
 			    $.getJSON( url, function( data ) {
 			    	$.each( data, function( key, val ) {
 			    		if (key == 'transcripts_exons') {
-			    		
+			    			hash_transcripts_locus = data.transcripts_exons;
 			    		}
 			    		if (key == 'html_list') {
 							var myNode = document.getElementById("content_list_tr_exons_introns");
@@ -1199,6 +1204,7 @@
 							dijit.byId('waiting').hide();
 			    			use_session_id = data.session_id;
 			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
+			    			if (use_only_transcript) { window_url += "&only_transcript="+use_only_transcript; }
 			    			window.open(window_url, '_blank').focus();
 			    		}
   					});
@@ -1337,6 +1343,7 @@
 			    	var locus_filter = document.getElementById("form_transcripts_exons_introns").value;
 					if (locus_filter != '') {
 				    	url += "&only_interval="+locus_filter;
+				    	use_only_transcript = hash_transcripts_locus[locus_filter];
 					}
 				}
 				last_url_launch_for_gene = url;
@@ -1347,6 +1354,7 @@
 							dijit.byId('waiting').hide();
 			    			use_session_id = data.session_id;
 			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
+			    			if (use_only_transcript) { window_url += "&only_transcript="+use_only_transcript; }
 			    			window.open(window_url, '_blank').focus();
 			    		}
   					});
