@@ -69,6 +69,10 @@ use Time::HiRes qw (time);
 use Sys::Hostname;
 use File::Temp;
 use Bio::DB::HTS::Faidx;
+<<<<<<< HEAD
+=======
+
+>>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
 
 sub hasHgmdAccess {
 	my ( $self, $user ) = @_;
