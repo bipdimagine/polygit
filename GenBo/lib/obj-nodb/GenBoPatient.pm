@@ -1304,20 +1304,6 @@ sub fastqFiles{
 	return $self->{fastq};
 }
 
-sub R1fastq {
-	my ($self) = @_;
-	return $self->fastqFiles->{R1};
-}
-
-sub R2fastq {
-	my ($self) = @_;
-	return $self->fastqFiles->{R2};
-}
-
-sub R3fastq {
-	my ($self) = @_;
-	return $self->fastqFiles->{R3};
-}
 
 
 has trackingFile => (
