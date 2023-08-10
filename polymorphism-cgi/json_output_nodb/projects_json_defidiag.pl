@@ -59,7 +59,11 @@ checkAuthentification($buffer,$login,$pwd,$cgi->param('project')) if $action eq 
  
 sub getProjectListsDefidiag {
 	my ( $buffer, $login, $pwd ) = @_;
+	print $cgi->header('text/json-comment-filtered');
+	print "{\"progress\":\".";
+	
 	my $res2 = $buffer->getQuery()->getProjectListForUser($login, $pwd );
+	print '.';
 	my $res = $res2;
 	if ($defidiag){
 		@$res = grep{$_->{validation_db}  eq "defidiag"} @$res2;
@@ -71,6 +75,7 @@ sub getProjectListsDefidiag {
 	
 	my @ids = map{$_->{id}} @$res;
 	foreach my $pro (@$res) {
+		print '.';
 		if($defidiag) {
 			#next if $pro->{validation_db}  ne "defidiag";
 		}
@@ -231,11 +236,28 @@ sub getProjectListsDefidiag {
 	}
 	
 	my @res2 = sort{$a->{annotation_since} <=> $b->{annotation_since}} @$res;
-	export_data::print_simpleJson($cgi,\@res2);
-exit(0);
+	print_simpleJson($cgi,\@res2);
+	
+	exit(0);
 }
 
 
+
+sub print_simpleJson {
+	my ($cgi,$data,$type_identifier) = @_;
+	
+	$type_identifier = "name" unless defined $type_identifier;
+	my %all;
+	#$all{identifier} = "name";
+	$all{label}      = $type_identifier;
+	$all{items}      = $data;	
+	
+	my $json_encode = encode_json \%all;
+	print ".\",";
+	$json_encode =~ s/{//;
+	print $json_encode;
+	exit(0);
+}
 
 
 sub get_values_new_hgmd {

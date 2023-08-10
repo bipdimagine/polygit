@@ -114,7 +114,20 @@ foreach my $p (sort {  $a->name cmp $b->name  or  $a->getFamily->name cmp $b->ge
 	$item->{fam} = $p->getFamily()->name if $fam &&  $p->getFamily()->name ne $p->name or scalar(@{ $p->getFamily()->getParents})>0 ;
 	
 	$item->{hasJonction} = 0;
-	$item->{hasJonction} = 1 if $p->hasJunctions(0);
+	$item->{hasJonctionAndDna} = 0;
+	
+	if ($p->hasJunctions()) {
+		$item->{hasJonction} = 1;
+		my $nb_j = 0;
+		foreach my $chr (@{$project->getChromosomes()}) {
+			$nb_j += $chr->countThisVariants($p->getJunctionsVector($chr));
+			my $v_dna = $chr->getCategoryVariantsVector('substitution')->Clone();
+			$v_dna += $chr->getCategoryVariantsVector('insertion')->Clone();
+			$v_dna += $chr->getCategoryVariantsVector('deletion')->Clone();
+			$item->{hasJonctionAndDna} = 1 if ($chr->countThisVariants($v_dna) > 0);
+			last if ($item->{hasJonctionAndDna});
+		}
+	}
 	
 	$item->{bam} = $p->bamUrl();
 	
