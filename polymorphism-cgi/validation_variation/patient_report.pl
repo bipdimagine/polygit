@@ -452,8 +452,10 @@ my $hscore_sorted = {
 };
 #define parameter 
 my $padding =  $cgi->param('span');
+#
 $padding =20 unless $padding;
 my $cov_limit =  $cgi->param('limit');
+#
 $cov_limit = 30 unless $cov_limit;
 my $vimpact = $cgi->param('impact');
 my $this_run = $cgi->param('this');
@@ -806,6 +808,7 @@ sub construct_data {
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	my $text = $no_cache->get_cache($cache_id);
 	$text = undef if $pipeline;
+	#
 	$compute_coverage = 1;
 	if ($text){
 		my $data= $text->{data};
@@ -1774,6 +1777,7 @@ sub print_project_summary {
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("Coverage : ");
 	my $p = $patient->{obj};
+	#
 	my $cov =  $patient->{obj}->coverage();
 	$out.= $cgi->td([$cov->{mean}." (30X : ".$cov->{'30x'}."%)"]);
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
