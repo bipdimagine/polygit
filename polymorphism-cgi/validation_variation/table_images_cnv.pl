@@ -61,6 +61,7 @@ my $patient_names = $cgi->param('patients');
 #ProjectCache or not that's the questions , do you have run dude or not ?
 my $buffer  = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
+##
 my $no_cache = $project->get_lmdb_cache_cnv("w");
 my $version = 1;
 my $key = return_uniq_keys($cgi);	
@@ -71,7 +72,7 @@ if ($text){
 	print $text;
 	exit(0);
 }
-
+##
 if ( $project->isDude ) {
 	my $valid_cache = $cgi->param('test_cache');
 	exit(0) if $valid_cache;
