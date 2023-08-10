@@ -42,10 +42,11 @@ use draw_cnv;
 use infos_coverage_exons;
 use image_coverage;
 use preload_coverage;
+#
 use Digest::MD5::File qw( md5_hex file_md5_hex file_md5);
 $| = 1;
 my $cgi = new CGI();
-
+#
 html::print_cgi_header($cgi);
 my $cc = $cgi->param('no_cache');
 exit(0) if $cc == 1;
