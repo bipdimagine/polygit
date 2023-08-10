@@ -2114,46 +2114,6 @@ has refFlat_file => (
 	},
 );
 
-#has refFlat_file_star => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self = shift;
-#		my $path = my $version = $self->getVersion();
-#		my $file =
-#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-#		  . $version
-#		  . '/refFlat/refFlat_no_chr.txt';
-#		return $file;
-#	},
-#);
-
-#has refFlat_file_star => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self = shift;
-#		my $path = my $version = $self->getVersion();
-#		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-#		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
-#		return $file;
-#	},
-#);
-
-
-#has refFlat_file_dragen => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self = shift;
-#		my $path = my $version = $self->getVersion();
-#		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-#		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
-#		return $file;
-#	},
-#);
-
-
 has rRNA_file => (
 	is      => 'rw',
 	lazy    => 1,
