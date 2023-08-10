@@ -50,7 +50,7 @@ use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
 use Digest::MD5::File qw(md5 md5_hex file_md5_hex url_md5_hex file_md5);
-
+die();
 my $cgi          = new CGI();
 
 eval {
@@ -1660,7 +1660,10 @@ sub print_project_summary {
 	my $out;
 	
 	my $pn = $patient->{name};
-	
+
+	$patient->{obj} = $project->getPatient($pn);
+	#add here
+
 	my @genes_name = sort {$a cmp $b} map{$_->{name} } @{$patient->{transcripts}};
 	my $nb_genes = scalar(@genes_name);
 	my $nb = int(($nb_genes / 10) +0.5);
