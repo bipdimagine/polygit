@@ -3758,6 +3758,7 @@ my ($patient,$cgi) = @_;
 my %hkeys = $cgi->Vars;
 my @keys;
 my $string;
+#
 $hkeys{allele_quality} = 5 unless exists $hkeys{allele_quality};
 delete $hkeys{never};
 delete $hkeys{xls};
@@ -3769,7 +3770,7 @@ delete $hkeys{denovo};
 delete $hkeys{all_coverage};
 delete $hkeys{all_variations};
 delete $hkeys{print};
-
+#
 my %vkeys;
 $vkeys{allele_quality} = $hkeys{allele_quality};
 $vkeys{frequence} = $hkeys{frequence};
@@ -3779,7 +3780,7 @@ $vkeys{patients} = $hkeys{patients};
 $vkeys{project} = $hkeys{project};
 $vkeys{this} = $hkeys{this};
 $vkeys{transcripts} = $hkeys{transcripts};
-
+#
 foreach my $k  (sort {$a cmp $b} keys %vkeys){
 	push(@keys,"$k");
 	my $c = $hkeys{$k};
@@ -3788,7 +3789,7 @@ foreach my $k  (sort {$a cmp $b} keys %vkeys){
 	push(@keys,$c);
 }
 $patient->project->validations_query(1);
-
+#
 foreach my $chr  (@{$patient->project->getChromosomes}){
 		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
 		my @st = (stat($no->filename));
