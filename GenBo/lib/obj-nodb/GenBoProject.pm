@@ -2045,7 +2045,12 @@ has gtf_file => (
 		my $path = my $version = $self->getVersion();
 		my $file = $self->buffer()->config->{'public_data'}->{root} 
 			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
-		 	.   '/gencode.v'.$self->gencode_version."/genes.gtf";
+		 	.   '/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
+		
+		 $file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		  	. $version . '/'
+			. $self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
+		 die($file);	
 #		my @patients          = @{ $self->getPatients() };
 #		my $alignMeth = $patients[0]->alignmentMethod();
 #		warn $self->annotation_genome_version;
@@ -2062,32 +2067,33 @@ has gtf_file => (
 );
 
 
-has gtf_dragen_file => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-		  .   '/gencode.v'.$self->gencode_version."/genes.gtf";
-		return $file;
-	},
-);
+#has gtf_file_dragen => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $path = my $version = $self->getVersion();
+#		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+#		  .   '/gencode.v'.$self->gencode_version."/annotation.gtf";
+#		  die ($file);
+#		return $file;
+#	},
+#);
 
 
-has gtf_file_star => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  . $version . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf_star};
-		return $file;
-	},
-);
+#has gtf_file_star => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $path = my $version = $self->getVersion();
+#		my $file =
+#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+#		  . $version . '/'
+#		  . $self->buffer()->config->{'public_data'}->{gtf_star};
+#		return $file;
+#	},
+#);
 
 
 has refFlat_file => (
@@ -2096,52 +2102,56 @@ has refFlat_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  . $version
-		  . '/refFlat/refFlat.txt';
+		my $file = $self->buffer()->config->{'public_data'}->{root} 
+			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		 	.   '/gencode.v'.$self->gencode_version."/refFlat/refFlat.txt";
+		warn $file;
+		$file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		 	. $version
+		  	. '/refFlat/refFlat.txt' unless -e $file;
+		
 		return $file;
 	},
 );
 
-has refFlat_file_star => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  . $version
-		  . '/refFlat/refFlat_no_chr.txt';
-		return $file;
-	},
-);
+#has refFlat_file_star => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $path = my $version = $self->getVersion();
+#		my $file =
+#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+#		  . $version
+#		  . '/refFlat/refFlat_no_chr.txt';
+#		return $file;
+#	},
+#);
 
-has refFlat_file_star => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
-		return $file;
-	},
-);
+#has refFlat_file_star => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $path = my $version = $self->getVersion();
+#		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+#		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
+#		return $file;
+#	},
+#);
 
 
-has refFlat_file_dragen => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
-		return $file;
-	},
-);
+#has refFlat_file_dragen => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $path = my $version = $self->getVersion();
+#		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+#		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
+#		return $file;
+#	},
+#);
 
 
 has rRNA_file => (
@@ -2150,10 +2160,13 @@ has rRNA_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		my $file = $self->buffer()->config->{'public_data'}->{root} 
+			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		 	.   '/gencode.v'.$self->gencode_version."/rRNA.interval_list";
+		
+		$file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
 		  . $version
-		  . '/refFlat/rRNA.interval_list_no_chr';
+		  . '/refFlat/rRNA.interval_list' unless -e $file;
 		return $file;
 	},
 );

@@ -2271,6 +2271,7 @@ sub move_bam {
 sub rnaseq_metrics {
 	my ( $self, $hash ) = @_;
 	my $filein       = $hash->{filein};
+	$filein = $self->patient->getBamFile() unless  $filein;
 	my $name         = $self->patient()->name();
 	my $project      = $self->patient()->project;
 	my $m            = $self->patient->alignmentMethod();
@@ -2285,21 +2286,23 @@ sub rnaseq_metrics {
 	$ppn = 1 if $self->nocluster;
 
 	die() if $fileout eq $filein;
+	$filein = $self->patient->getBamFile() unless -e $filein;
 	my $refFlat = $project->refFlat_file();
-	$refFlat = $project->refFlat_file_star() if $method eq "star" || $method eq "dragen-align";
+	
+	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
+	#$refFlat = $project->refFlat_file_dragen() if $method eq "dragen-align";
 	my $rRNA_file = $project->rRNA_file();
 	my $opt       = "";
 	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
-	#unless ( -e $refFlat ) {
-	#	die("can't find $refFlat $rRNA_file");
-
-	#}
+	unless ( -e $refFlat ) {
+		die("can't find $refFlat $rRNA_file");
+	}
 
 	my $java   = $project->buffer->software("java");
 	my $picard = $project->buffer->software("picard");
 
 	my $cmd =
-"$java -jar $picard  CollectRnaSeqMetrics I=$filein O=$fileout REF_FLAT=$refFlat STRAND=FIRST_READ_TRANSCRIPTION_STRAND $opt";
+"$java -jar $picard  CollectRnaSeqMetrics I=$filein O=$fileout REF_FLAT=$refFlat STRAND=FIRST_READ_TRANSCRIPTION_STRAND $opt  ";
 	my $type     = "metrics";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
