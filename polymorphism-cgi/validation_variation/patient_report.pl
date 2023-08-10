@@ -50,7 +50,6 @@ use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
 use Digest::MD5::File qw(md5 md5_hex file_md5_hex url_md5_hex file_md5);
-
 my $cgi          = new CGI();
 
 eval {
@@ -453,7 +452,13 @@ my $hscore_sorted = {
 };
 #define parameter 
 my $padding =  $cgi->param('span');
+
+#
+$padding =20 unless $padding;
 my $cov_limit =  $cgi->param('limit');
+#
+$cov_limit = 30 unless $cov_limit;
+
 my $vimpact = $cgi->param('impact');
 my $this_run = $cgi->param('this');
 
@@ -791,7 +796,7 @@ sub construct_htranscripts {
 	}
 	return \@res;
 }
-
+##
 sub construct_data {
 	my ($print_dot) = @_; 
 	my $t =time;
@@ -806,6 +811,9 @@ sub construct_data {
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
 	$text = undef if $pipeline;
+
+	$compute_coverage = 1;
+
 	if ($text){
 		my $data= $text->{data};
 		push(@$data,$text->{patient});
@@ -1660,7 +1668,10 @@ sub print_project_summary {
 	my $out;
 	
 	my $pn = $patient->{name};
-	
+
+	$patient->{obj} = $project->getPatient($pn);
+	#add here
+
 	my @genes_name = sort {$a cmp $b} map{$_->{name} } @{$patient->{transcripts}};
 	my $nb_genes = scalar(@genes_name);
 	my $nb = int(($nb_genes / 10) +0.5);
@@ -1772,7 +1783,10 @@ sub print_project_summary {
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("Coverage : ");
 	my $p = $patient->{obj};
-	my $cov = $p->coverage();
+
+	my $cov =  $patient->{obj}->coverage();
+
+
 	$out.= $cgi->td([$cov->{mean}." (30X : ".$cov->{'30x'}."%)"]);
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->td("<h4>Pipeline</h4>");
@@ -3749,17 +3763,39 @@ print qq{
 };
 die();			
 }
-
+##
 sub return_uniq_keys {
 my ($patient,$cgi) = @_;
 	
 my %hkeys = $cgi->Vars;
 my @keys;
 my $string;
-foreach my $k  (sort {$a cmp $b} keys %hkeys){
-	next if $k =~ /force/;
-	next if $k =~ /user/;
-	next if $k =~ /pipeline/;
+
+#
+$hkeys{allele_quality} = 5 unless exists $hkeys{allele_quality};
+delete $hkeys{never};
+delete $hkeys{xls};
+delete $hkeys{table_variations};
+delete $hkeys{recessive};
+delete $hkeys{xor};
+delete $hkeys{both};
+delete $hkeys{denovo};
+delete $hkeys{all_coverage};
+delete $hkeys{all_variations};
+delete $hkeys{print};
+#
+my %vkeys;
+$vkeys{allele_quality} = $hkeys{allele_quality};
+$vkeys{frequence} = $hkeys{frequence};
+$vkeys{impact} = $hkeys{impact};
+$vkeys{panel} = $hkeys{panel};
+$vkeys{patients} = $hkeys{patients};
+$vkeys{project} = $hkeys{project};
+$vkeys{this} = $hkeys{this};
+$vkeys{transcripts} = $hkeys{transcripts};
+
+foreach my $k  (sort {$a cmp $b} keys %vkeys){
+
 	push(@keys,"$k");
 	my $c = $hkeys{$k};
 	$c =~ s/\"//g;
@@ -3769,7 +3805,6 @@ foreach my $k  (sort {$a cmp $b} keys %hkeys){
 
 
 $patient->project->validations_query(1);
-
 
 foreach my $chr  (@{$patient->project->getChromosomes}){
 		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
@@ -3797,3 +3832,4 @@ push(@keys,encode_json ({}));
 }
 return \@keys;
 }
+#
