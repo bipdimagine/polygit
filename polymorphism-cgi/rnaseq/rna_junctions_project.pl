@@ -27,7 +27,7 @@ print "{\"progress\":\".";
 my $hType_patients;
 $hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
-my $h_resume;
+my ($h_resume, $h_captures);
 foreach my $patient (@{$project->getPatients}) {
 	#$patient->use_not_filtred_junction_files(0);
 	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
@@ -46,6 +46,9 @@ foreach my $patient (@{$project->getPatients}) {
 		$h_resume->{$patient->name()}->{nb_junctions_se} = 'CONTROL';
 	}
 	$h_resume->{$patient->name()}->{bam_file} = $patient->bamUrl();
+	foreach my $capture (@{$patient->getCaptures()}) {
+		$h_captures->{$capture->name()} = undef;
+	}
 	print '.';
 }
 
@@ -107,6 +110,9 @@ if ($hType_patients) {
 else {
 	$hash->{patients} = join(';', sort keys %$h_resume);
 }
+
+$hash->{captures} = join(', ', sort keys %{$h_captures});
+
 
 printJson($hash);
 exit(0);
