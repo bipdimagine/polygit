@@ -221,6 +221,7 @@ qq{<img class="load" src="$toto"  align="top" style="box-shadow: 2px 2px 3px #aa
 $out .= print_lines( \@ths, \@tds );
 $out .= $cgi->end_table();
 $out .= html::end_cadre( $cgi, "CNV" );
+##
 $no_cache->put_cache_text($cache_id,$out,2400);
 $no_cache->close();
 exit(0) if $cgi->param('pipeline');
