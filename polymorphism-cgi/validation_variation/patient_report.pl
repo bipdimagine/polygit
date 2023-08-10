@@ -50,7 +50,6 @@ use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
 use Digest::MD5::File qw(md5 md5_hex file_md5_hex url_md5_hex file_md5);
-die();
 my $cgi          = new CGI();
 
 eval {
