@@ -422,7 +422,7 @@
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
             
-            var release_annotation = '42';
+            var release_annotation = '43';
             $(document).ready(function () {
             	document.getElementById("text_list_genes").value = "";
 		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + release_annotation + "</b></font>";
@@ -536,6 +536,7 @@
 							Release<br>Annotation<br><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
 						</li>
 						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+							<a class="dropdown-item" href="#" onClick="change_annotation('43')"><center>HG19 / Gencode 42</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('42')"><center>HG19 / Gencode 42</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('41')"><center>HG19 / Gencode 41</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('40')"><center>HG19 / Gencode 40</center></a>
