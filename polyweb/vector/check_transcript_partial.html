@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>Get Genes/Trans Project</title>
+        <title>Check Partial Transcript</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -519,9 +519,14 @@
             dojo.require("dijit.form.CheckBox");
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
-            var release_annotation = '40';
             $(document).ready(function () {
-            	document.getElementById("project_name").value = "";
+            	document.getElementById("transcript_name").value = "";
+            	document.getElementById("position").value = "";
+            	document.getElementById("gencode_v1").value = "19";
+            	document.getElementById("gencode_v2").value = "43";
+            	document.getElementById("skip_intronic").checked = true;
+            	document.getElementById("skip_utr").checked = true;
+            	document.getElementById("skip_pseudogene").checked = true;
 	    	});
 	    	
 	    	function eraseText() {
@@ -537,50 +542,144 @@
 	    		$('#'+id).bootstrapTable();
 			}
 			
-			function export_csv() {
-				if (export_csv_datas == '') {
-					alert('No data to export');
-					return;
+			function export_xls(mode) {
+				alert('TO DO');
+				return;
+		    	var value_project = document.getElementById("project_name").value;
+		    	var value_gene = document.getElementById("gene_name").value;
+		    	var url_xls_2 = url_path + "json_output_nodb/get_gene_coverage_xls.pl";
+				url_xls_2 += "?project=" + value_project;
+				url_xls_2 += "&gene=" + value_gene;
+				if (document.getElementById("intronic").checked) {
+					url_xls_2 += "&intronic=1";
 				}
-				let csvContent = export_csv_datas.map(e => e.join(";")).join("\n");
-				var blob = new Blob([csvContent], {type: "text/csv"});
-				var encodedUri = window.URL.createObjectURL(blob); 
-				var link = document.createElement("a");
-				link.setAttribute("href", encodedUri);
-				link.setAttribute("download", document.getElementById("project_name").value + "_genes_transcripts.csv");
-				document.body.appendChild(link);
-				link.click(); 
+				if (document.getElementById("coding").checked) {
+					url_xls_2 += "&only_coding=1";
+				}
+				console.log(url_xls_2);
+				downloadFile(url_xls_2);
+			    return;
 			}
+			
+			function view(type) {
+				document.getElementById("content_res").innerHTML = "<center><img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <span id='waiting_text'>Loading Data...</span></center>";
+		    	var value_project = 'NGS2014_0566';
+		    	var value_tr = document.getElementById("transcript_name").value;
+		    	var value_pos = document.getElementById("position").value;
+		    	
+		    	var value_gencode_v1 = document.getElementById("gencode_v1").value;
+		    	var value_gencode_v2 = document.getElementById("gencode_v2").value;
+		    	
+		    	var url = url_path + "json_output_nodb/check_transcript_partial.pl";
+				url += "?project=" + value_project;
+				url += "&transcript=" + value_tr;
+				url += "&type=" + type;
+				if (value_pos) {
+					url += "&only_position=" + value_pos;
+				}
+				if (value_gencode_v1) {
+					url += "&gencode_v1=" + value_gencode_v1;
+				}
+				if (value_gencode_v2) {
+					url += "&gencode_v2=" + value_gencode_v2;
+				}
+				if (document.getElementById("skip_intronic").checked) {
+					url += "&skip_intronic=1";
+				}
+				if (document.getElementById("skip_utr").checked) {
+					url += "&skip_utr=1";
+				}
+				if (document.getElementById("skip_pseudogene").checked) {
+					url += "&skip_pseudogene=1";
+				}
+				
+
+		    	var html_table = "<table data-sort-name='0' data-sort-order='desc' class='table' id ='table_res' data-filter-control='true' data-toggle='table' data-show-extended-pagination='true' data-cache='false' data-pagination-loop='false' data-virtual-scroll='true' data-pagination-pre-text='Previous' data-pagination-next-text='Next' data-pagination='true' data-page-size='50' data-page-list='[10, 20, 50, 100, 200, 300]' data-resizable='true' class='table table-striped' style='font-size:13px;'>";
+				html_table += "<thead>";
+				html_table += "<tr>";
+				html_table += "<th data-field='status' data-sortable='true' data-filter-control='input'><b><center>Status</b></center></th>";
+				html_table += "<th data-field='0' data-sortable='true' data-filter-control='input'><b><center>VarID</b></center></th>";
+				html_table += "<th data-field='1' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " exon/intron</b></center></th>";
+				html_table += "<th data-field='11' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " annot</b></center></th>";
+				html_table += "<th data-field='2' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " nomenclature</b></center></th>";
+				html_table += "<th data-field='3' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " cds_position</b></center></th>";
+				html_table += "<th data-field='4' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " protein_position</b></center></th>";
+				html_table += "<th data-field='5' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v1 + " aa</b></center></th>";
+				html_table += "<th data-field='6' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " annot</b></center></th>";
+				html_table += "<th data-field='61' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " exon/intron</b></center></th>";
+				html_table += "<th data-field='7' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " nomenclature</b></center></th>";
+				html_table += "<th data-field='8' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " cds_position</b></center></th>";
+				html_table += "<th data-field='9' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " protein_positio</b></center></th>";
+				html_table += "<th data-field='10' data-sortable='true' data-filter-control='input'><b><center>V" + value_gencode_v2 + " aa</b></center></th>";
+				html_table += "</tr>";
+				html_table += "</thead>";
+				html_table += "<tbody>";
+				
+				var jqxhr = $.getJSON(url, function() {
+				}).done(function(data) {
+			    	var nb_ok = 0;
+			    	var nb_not = 0;
+			    	var nb_warn = 0;
+			    	var i = 1;
+			    	var status;
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'progress') {}
+			    		else {
+				    		var color = 'green';
+				    		var list_res = String(val).split(';');
+				    		
+				    		var color = 'black';
+				    		if (list_res[1] != list_res[7]) {
+				    			color = 'red';
+				    			status = "<b>ERROR</b>";
+				    			nb_not++;
+			    			}
+				    		else if (list_res[6] != list_res[12]) {
+				    			color = 'orange';
+				    			status = "<b>WARN</b>";
+				    			nb_warn++;
+				    		}
+				    		else {
+				    			status = "<b><span style='color:green'>OK</span></b>";
+				    			nb_ok++;
+				    		}
+				    		html_table += "<tr style='color:" + color + "'>";
+				    		html_table += "<td><center>" + status + "</center></td>";
+				    		for (i in list_res) {
+				    			html_table += "<td><center>" + list_res[i] + "</center></td>";
+				    		}
+				    		html_table += "</tr>"
+			    		}
+  					});
+					html_table += "</tbody>";
+					html_table += "</table>";
+					document.getElementById("content_res").innerHTML = "";
+					var myNode = document.getElementById("content_res");
+			    	var myPanel = $(html_table);
+					myPanel.appendTo(myNode);
+					var nb_total = nb_ok + nb_not + nb_warn;
+					document.getElementById("span_ok").innerHTML  = "<font color='#00CC00'>OK: " + nb_ok + " / " + nb_total + "</font>";
+					document.getElementById("span_warn").innerHTML = "<font color='orange'>WARNING: " + nb_warn + " / " + nb_total + "</font>";
+					document.getElementById("span_not").innerHTML = "<font color='red'>ERROR: " + nb_not + " / " + nb_total + "</font>";
+					enable_table_search('table_res');
+			  })
+			  .fail(function() {
+					document.getElementById("content_res").innerHTML = "<center><b><u>ERROR:</u></b> Problem... transcript not found in gencode " + value_gencode_v1 + " ? or " + value_gencode_v2 + " ?</center>";
+			  });
+				
+			}
+			
+	    	function enable_table_search(id) {
+	    		$('#'+id).bootstrapTable();
+			}
+			
+			dojo.require("dojo.io.iframe");
+			function downloadFile(url) {
+			    var downloadPdfIframeName = "downloadPdfIframe"; 
+			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
+			    dojo.io.iframe.setSrc(iframe, url, true);
+			} 
 	    	
-	    	var export_csv_datas = '';
-		    function launch() {
-    			export_csv_datas = '';
-				document.getElementById("content_res").innerHTML = "";
-				document.getElementById("span_gencode").innerHTML = "";
-				document.getElementById("span_description").innerHTML = "";
-				document.getElementById("span_captures").innerHTML = "";
-		    	document.getElementById("content_res").innerHTML = "<div align='center'><i>Running. Please wait...</i> <img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'></div>";
-		    	document.getElementById("span_ok").innerHTML = "";
-		    	document.getElementById("span_not").innerHTML = "";
-		    	var value = document.getElementById("project_name").value;
-		    	var url = url_path + "json_output_nodb/get_list_genes_transcripts_from_project.pl?project=" + value;
-			    $.getJSON( url, function( data ) {
-				    	$.each( data, function( key, val ) {
-				    		if (key == 'html') {
-								document.getElementById("content_res").innerHTML = "";
-								var myNode = document.getElementById("content_res");
-						    	var myPanel = $(val);
-								myPanel.appendTo(myNode);
-								enable_table_search(data.table_id);
-								document.getElementById("span_gencode").innerHTML = "<b>Gencode version: </b>" + data.gencode;
-								document.getElementById("span_description").innerHTML = "<b>Description: </b>" + data.description;
-								document.getElementById("span_captures").innerHTML = "<b>Capture(s): </b>" + data.capture;
-								export_csv_datas = data.export_csv;
-							}
-						});
-			    });
-		    }
-		    
 		</script>
     </head>
 	<body class="container-fluid" style="overflow-y:scroll;">
@@ -593,41 +692,79 @@
 				        <span class="icon-bar"></span>                        
 	      			</button>
 	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">PolyWeb</span></a>
-	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">Get Genes / Transcripts in Capture(s) Project</span></a>
+	      			<a class="navbar-brand" href="#"><span style="color:#FFFDF3">Check Partial Transcript</span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_1"></span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_2"></span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_ok"></span></a>
+	      			<a class="navbar-brand" href="#"><span id="span_warn"></span></a>
 	      			<a class="navbar-brand" href="#"><span id="span_not"></span></a>
 	    		</div>
 	  		</div>
 		</nav>
 		<center>
 		<div class="row" style="height:auto;width:98%;">
-			<div class="col-sm-6">
-			
+			<div class="col-sm-1"></div>
+			<div class="col-sm-4">
 				<form>
 					<div class="form-group">
-						<label for="project_name">Project Name</label>
-						<input type="text" class="form-control" id="project_name" aria-describedby="projectExample" placeholder="">
-						<small id="projectExample" class="form-text text-muted">Example: NGS2016_1231.</small>
+						<label for="transcript_name">Transcript Name</label>
+						<input type="text" class="form-control" id="transcript_name" aria-describedby="trExemple" placeholder="">
+						<small id="trExemple" class="form-text text-muted">Example: ENST00000227471</small>
 					</div>
-					<button type='button' onClick="javascript:eraseText()" class='btn btn-danger'>Clear</button>
-					<button type='button' onClick="export_csv()" class='btn btn-info' style="background-color:green;color:white;">Export CSV</button>
-					<button type='button' onClick="launch()" class='btn btn-info'>Launch</button>
+					<div class="form-group">
+						<label for="position">Only Genomic Position (all positions if empty)</label>
+						<input type="text" class="form-control" id="position" aria-describedby="trExemple" placeholder="">
+						<small id="trExemple" class="form-text text-muted">Example: 67759017 or 67765150-67765180</small>
+					</div>
+					<br><br>
 				</form>
-			
-				
 			</div>
-			<div class="col-sm-6">
-				<span id="span_gencode"></span><br>
-				<span id="span_description"></span><br>
-				<span id="span_captures"></span>
+			<div class="col-sm-1"></div>
+			<div class="col-sm-2">
+				<div class="form-group">
+					<label for="gencode_v1">Gencode TEST 1</label>
+					<input type="text" class="form-control" id="gencode_v1" aria-describedby="g1Exemple" placeholder="19">
+					<small id="g1Exemple" class="form-text text-muted">Example: 19</small>
+				</div>
+				<div class="form-group">
+					<label for="gencode_v2">Gencode TEST 2</label>
+					<input type="text" class="form-control" id="gencode_v2" aria-describedby="g2Exemple" placeholder="43">
+					<small id="g2Exemple" class="form-text text-muted">Example: 43</small>
+				</div>
 			</div>
+			<div class="col-sm-1"></div>
+			<div class="col-sm-2">
+				<br>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" id="skip_utr">
+					<label class="form-check-label" for="skip_utr">Skip UTR variant</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" id="skip_pseudogene">
+					<label class="form-check-label" for="skip_pseudogene">Skip Pseudogene variant</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" id="skip_intronic">
+					<label class="form-check-label" for="skip_intronic">Skip Intronic variant</label>
+				</div>
+				<br>
+				<!--
+				<button type='button' disabled onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Export XLS</button>
+				<br><br>
+				-->
+				<button type='button' onClick="view('snp')" class='btn btn-info' style="background-color:blue;color:white;">SNP</button>
+				<button type='button' onClick="view('del')" class='btn btn-info' style="background-color:orange;color:white;">DEL</button>
+				<button type='button' onClick="view('ins')" class='btn btn-info' style="background-color:green;color:white;">INS</button>
+			</div>
+			<div class="col-sm-1"></div>
 		</div>
-		<br><br>
-			<div class="row" id="content_res"></div>
 		</center>
-		<br>
+		<div class="col-sm-1"></div>
+		<div class="col-sm-1"></div>
+		<div class="col-sm-12" align='left'>
+			<div class="row" id="content_res" style="width:99%;"></div>
+			<br>
+		</div>
 		
 	</body>
 </html>

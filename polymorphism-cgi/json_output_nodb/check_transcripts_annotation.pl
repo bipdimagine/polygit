@@ -63,8 +63,30 @@ if ($transcripts) {
 			eval {
 				$gene = $transcript->getGene;
 				$hRes->{$tr_name} .= ';'.$gene->external_name();
+				my $remap = $transcript->remap_status();
+				if ($transcript->is_partial_transcript()) {
+					$remap = 'partial';
+					my $h_patial_infos = $transcript->hash_partial_infos->{intspan};
+					my $is_frameshift;
+					my @lNt = sort {$a <=> $b} keys %{$h_patial_infos};
+					if ($lNt[0] == 0) { shift(@lNt); }
+					my @lNt_text;
+					foreach my $nt (@lNt) {
+						if ($nt % 3 > 0) { $is_frameshift = 1; }
+						push (@lNt_text, '+'.$nt.'nt');
+					}
+					$remap .= " FRAMESHIFT " if ($is_frameshift);
+					$remap .= " [".join(', ', @lNt_text)."]";
+				}
+				$hRes->{$tr_name} .= ';'.$remap;
 			};
 			if ($@) {
+				
+				warn "\n\n";
+				warn Dumper $@;
+				warn Dumper $transcript->hash_partial_infos;
+				warn "\n\n";
+				
 				$hRes->{$tr_name} .= ";<font color='orange'>?</font>";
 			}
 		}

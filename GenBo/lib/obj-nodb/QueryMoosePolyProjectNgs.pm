@@ -942,7 +942,7 @@ has sql_cmd_getPatientProjectInfo => (
                 my $self = shift;
 		        my $query = qq{
 		                SELECT distinct a.project_id,a.run_id,a.name,a.patient_id,
-			                a.project_id_dest,a.family,a.father,a.mother,a.sex,a.status,a.bar_code,a.flowcell,
+			                a.project_id_dest,a.family,a.father,a.mother,a.sex,a.status,a.bar_code,a.bar_code2,a.flowcell,
 			                r.description as desRun, r.document,r.name as nameRun,
 			                r.file_name as FileName,r.file_type as FileType,                
 			                S.name as macName,

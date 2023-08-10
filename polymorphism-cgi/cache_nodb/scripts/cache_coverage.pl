@@ -166,11 +166,6 @@ polydiag::cache_cnv( $project_name, $fork );
 change_table_status($steps++);
 polydiag::compute_coverage_diagnostic4( $project_name, $fork );
 change_table_status($steps++);
-my $no_cache = $projectP->get_lmdb_cache_cnv("c");
-$no_cache->put("date",time);
-$no_cache->close();
-my $polydiag = $RealBin."/../../validation_variation/table_images_cnv.pl project=".$project_name." panel= span=20 limit=30 patients=all transcripts=all cnv=1 order=name pipeline=1";
-system($polydiag);
 exit(0);
 
 
