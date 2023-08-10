@@ -14,6 +14,7 @@ use JSON::XS;
 use Compress::Snappy;
  use List::Util qw( max min sum);
 use Storable qw/thaw freeze/;
+use Carp;
 #use bytes;
 extends "GenBoGenomic";
 
