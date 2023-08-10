@@ -452,14 +452,12 @@ my $hscore_sorted = {
 };
 #define parameter 
 my $padding =  $cgi->param('span');
-$padding =20 unless $padding;
 my $cov_limit =  $cgi->param('limit');
-$cov_limit = 30 unless $cov_limit;
 my $vimpact = $cgi->param('impact');
 my $this_run = $cgi->param('this');
 
 $this_run=6 unless $this_run;
-#
+
 my $never =  $cgi->param('never');
 
 
@@ -634,11 +632,12 @@ sub construct_htranscripts {
 		 			$exons = $tr1->getExons();
 			}
 			
-			my $exons_todo = {};#$vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name});	
+			my $exons_todo = $vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name});		
 			my $show_utr = $utr +0;
 			my $intronic =  $cgi->param('intronic') +0;
 			
-			#my $kyoto_id = join("_",("all",$tr,$show_utr,$intronic,$cov_limit,$padding,"data"));
+			my $kyoto_id = join("_",("all",$tr,$show_utr,$intronic,$cov_limit,$padding,"data"));
+
 			my $cdata;
 
 			unless ($cdata){
@@ -646,7 +645,6 @@ sub construct_htranscripts {
 
 					my $ret = image_coverage::image ([$patient], $tr1,$intronic,$show_utr, $padding, $cov_limit,1);
 					$cdata = $ret->{data};
-					#warn Dumper $ret->{data};
 			}
 			
 			foreach my $exon (sort{$a->start*$a->strand <=> $b->end*$b->strand }@$exons){
@@ -800,13 +798,13 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version = "2";
+	my $version = "1";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
+	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
 	$text = undef if $pipeline;
-	$compute_coverage = 1;
 	if ($text){
 		my $data= $text->{data};
 		push(@$data,$text->{patient});
@@ -1660,10 +1658,11 @@ sub print_project_summary {
 	my ($patient) = @_;
 	my $out;
 	
-	
 	my $pn = $patient->{name};
+
 	$patient->{obj} = $project->getPatient($pn);
 	#add here
+
 	my @genes_name = sort {$a cmp $b} map{$_->{name} } @{$patient->{transcripts}};
 	my $nb_genes = scalar(@genes_name);
 	my $nb = int(($nb_genes / 10) +0.5);
@@ -1705,7 +1704,8 @@ sub print_project_summary {
 	}
 	
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
-	my $sex_eval =  $patient->{obj}->compute_sex(); 
+	my $sex_eval = $patient->{obj}->compute_sex(); 
+	
 	$out.= $cgi->th("Sex : ");	
 	 if ($sex_eval == -1){
 	 	$out.= $cgi->td(qq{<i class="fa fa-question-circle fa-2x"></i>});
@@ -1774,7 +1774,7 @@ sub print_project_summary {
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("Coverage : ");
 	my $p = $patient->{obj};
-	my $cov =  $patient->{obj}->coverage();
+	my $cov = $p->coverage();
 	$out.= $cgi->td([$cov->{mean}." (30X : ".$cov->{'30x'}."%)"]);
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->td("<h4>Pipeline</h4>");
@@ -3758,36 +3758,20 @@ my ($patient,$cgi) = @_;
 my %hkeys = $cgi->Vars;
 my @keys;
 my $string;
-$hkeys{allele_quality} = 5 unless exists $hkeys{allele_quality};
-delete $hkeys{never};
-delete $hkeys{xls};
-delete $hkeys{table_variations};
-delete $hkeys{recessive};
-delete $hkeys{xor};
-delete $hkeys{both};
-delete $hkeys{denovo};
-delete $hkeys{all_coverage};
-delete $hkeys{all_variations};
-delete $hkeys{print};
-
-my %vkeys;
-$vkeys{allele_quality} = $hkeys{allele_quality};
-$vkeys{frequence} = $hkeys{frequence};
-$vkeys{impact} = $hkeys{impact};
-$vkeys{panel} = $hkeys{panel};
-$vkeys{patients} = $hkeys{patients};
-$vkeys{project} = $hkeys{project};
-$vkeys{this} = $hkeys{this};
-$vkeys{transcripts} = $hkeys{transcripts};
-
-foreach my $k  (sort {$a cmp $b} keys %vkeys){
+foreach my $k  (sort {$a cmp $b} keys %hkeys){
+	next if $k =~ /force/;
+	next if $k =~ /user/;
+	next if $k =~ /pipeline/;
 	push(@keys,"$k");
 	my $c = $hkeys{$k};
 	$c =~ s/\"//g;
 	$c =~ s/\+/ /g;
 	push(@keys,$c);
 }
+
+
 $patient->project->validations_query(1);
+
 
 foreach my $chr  (@{$patient->project->getChromosomes}){
 		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );

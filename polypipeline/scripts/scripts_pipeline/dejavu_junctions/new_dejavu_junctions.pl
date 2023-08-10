@@ -12,7 +12,8 @@ use FindBin qw($Bin);
 use Storable qw(store retrieve freeze);
 use Number::Format qw(:subs);
 use File::Basename;
-
+use Getopt::Long;
+use JSON;
 
 use GBuffer;
 use GenBoProject;
@@ -27,7 +28,7 @@ use GenBoNoSqlIntervalTree;
 #  4) freeze de la table de hash gllobale
 ########################################################################
 
-#my $cgi = new CGI;
+my $cgi = new CGI;
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => 'NGS2022_5612' );
 $project->getChromosomes();
@@ -40,165 +41,385 @@ my $ids;
 my $total;
 my $xx =0;
 
-my $release = $project->annotation_genome_version();
-$release = 'HG19' if ($release =~ /HG19/);
+my $fork = 1;
+my $release = 'HG19';
 
-my $dir = $project->DejaVuJunction_path();
+GetOptions(
+	'release=s' => \$release,
+	'fork=s'    => \$fork,
+);
 
+my $dv_dir_path = $project->DejaVuJunction_path();
+if ($release =~ /HG19/) { $release = 'HG19'; }
+else { $dv_dir_path =~ s/HG19/$release/; }
+
+my $dv_dir_projects_path = $dv_dir_path.'/projects/';
+print "\n# Checking RNA-Projects Junctions";
+
+my $test = 0;
+my ($hash_projects, $hash_project_phenotypes);
+if (-d $dv_dir_projects_path) {
+	opendir DIR, $dv_dir_projects_path;
+	my @dir = readdir(DIR);
+	close DIR;
+	
+	foreach my $project_name (@dir) {
+#		next if $test == 10;
+		next if not $project_name =~ /NGS/;
+		$hash_projects->{$project_name} = undef;
+#		$test++;
+		my $b1 = GBuffer->new;
+		my $p1 = $b1->newProject( -name => $project_name );
+		if ($p1->is_human_genome()) {
+			foreach my $pheno_name (@{$p1->phenotypes()}) {
+				$pheno_name =~ s/ /_/g;
+				$hash_project_phenotypes->{lc($pheno_name)}->{$project_name} = undef;
+			}
+		}
+	}
+}
+
+#warn Dumper $hash_project_phenotypes;
+#die;
+print " -> Done!\n";
+print " -> Found ".scalar(keys %{$hash_projects})." projects\n\n";
+
+my $h_not_found;
+foreach my $this_project_name (keys %$hash_projects) {
+	my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+	my $file = $dir_dv_proj.'/'.$this_project_name.'.json';
+	my $file_gz = $dir_dv_proj.'/'.$this_project_name.'.json.gz';
+	unless (-d $dir_dv_proj) {
+		warn "WARN DejaVu $this_project_name not done yet....";
+		$h_not_found->{$this_project_name} = undef;
+	}
+	if (not -e $file and not -e $file_gz) {
+		warn "WARN DejaVu $this_project_name not done yet....";
+		$h_not_found->{$this_project_name} = undef;
+	}
+}
+
+my $dir = $dv_dir_path;
 unless (-d $dir){
 	`mkdir $dir`;
 	`chmod 777 $dir`;
 }
 
-print "\n# Checking RNA-Projects Junctions";
-
-my $hash_projects;
-foreach my $h (@{$buffer->getQuery->getListProjectsRnaSeq()}) {
-	my $h_users;
-	foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
-	my $name = $h->{name};
-	my $b1 = GBuffer->new;
-	my $p1 = $b1->newProjectCache( -name => $name );
-	$h->{button} = '';
-#	if (-d $p1->get_path_rna_seq_junctions_root()) {
-#		my $ok;
-#		foreach my $pat (@{$p1->getPatients()}) {
-#			eval { $pat->getJunctionsAnalysePath() };
-#			if ($@) { next; }
-#			$ok = 1 if ($pat->junction_RI_file_filtred());
-#			$ok = 1 if ($pat->junction_SE_file_filtred());
-#			$ok = 1 if ($pat->junction_RI_file());
-#			$ok = 1 if ($pat->junction_SE_file());
-#			my $new_path = $p1->get_path_rna_seq_junctions_analyse_all_res();
-#			mkdir $new_path unless (-d $new_path);
-#			if ($pat->junction_SE_file() and not -e $new_path.'/allResSE.txt' ) {
-#				my $old_file = $pat->junction_SE_file();
-#				my $new_file = $new_path.'/allResSE.txt';
-#				my $cmd = "ln -s $old_file $new_file";
-#				`$cmd`;
-#				print $name." -> UPDATE SE file!\n";
-#			}
-#			if ($pat->junction_RI_file() and not -e $new_path.'/allResRI.txt' ) {
-#				my $old_file = $pat->junction_RI_file();
-#				my $new_file = $new_path.'/allResRI.txt';
-#				my $cmd = "ln -s $old_file $new_file";
-#				`$cmd`;
-#				print $name." -> UPDATE RI file!\n";
-#			}
-#		}
-#		$hash_projects->{$name} = undef if $ok;
-#	}
-	if (-d $p1->get_path_rna_seq_junctions_analyse_all_res()) {
-		my $ok;
-		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
-		my $se_file = $path.'/allResSE.txt';
-		my $ri_file = $path.'/allResRI.txt';
-		$ok = 1 if (-e $se_file);
-		$ok = 1 if (-e $ri_file);
-		$hash_projects->{$name} = undef if $ok;
-	}
+my $dir_canoniques = $dv_dir_path.'/canoniques/';
+unless (-d $dir_canoniques){
+	`mkdir $dir_canoniques`;
+	`chmod 777 $dir_canoniques`;
 }
-print " -> Done!\n";
-print "   -> Found ".scalar(keys %{$hash_projects})." projects\n\n";
 
-my $h_junctions;
-foreach my $this_project_name (keys %$hash_projects) {
-	print "$this_project_name "; 
-	my $buffer_tmp = GBuffer->new();
-	my $project_tmp = $buffer_tmp->newProject( -name => $this_project_name );
-	if ($project_tmp->annotation_genome_version() ne 'HG19') {
-		print "-> SKIPPED (".$project_tmp->annotation_genome_version().")\n";
-		$project_tmp = undef;
-		$buffer_tmp = undef;
-		next;
-	}
-	$project_tmp->getChromosomes();
-	
-	my $hType_patients;
-	$hType_patients = $project_tmp->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project_tmp->get_path_rna_seq_junctions_analyse_description_root());
-	
-	my ($h_junctions_dejavu_run, $in_error);
-	foreach my $this_patient (@{$project_tmp->getPatients()}) {
-		#$this_patient->use_not_filtred_junction_files(0);
-		if (($hType_patients and exists $hType_patients->{$this_patient->name()}->{pat}) or not $hType_patients) {
-			my @lJunctions;
-			eval { @lJunctions = @{$this_patient->getJunctions()}; };
-			if ($@) {
-				print "-> ERROR ".$this_patient->name();
-				next;
-			}
-			foreach my $junction (@lJunctions) {
-				next if ($junction->isCanonique($this_patient));
-				next if ($junction->get_ratio_new_count($this_patient) == 1);
-				$junction->getPatients();
-				my $type = $junction->getTypeDescription($this_patient);
-				my $chr_id = $junction->getChromosome->id();
-				my $start = $junction->start();
-				my $end = $junction->end();
-				my $count_new_junction = $junction->get_nb_new_count($this_patient);
-				my $count_normal_junction = $junction->get_nb_normal_count($this_patient);
-				my $score = int($junction->get_percent_new_count($this_patient));
-				my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
-				if (not exists $h_junctions->{$chr_id}->{$junction_id}) {
-					$h_junctions->{$chr_id}->{$junction_id}->{start} = $start;
-					$h_junctions->{$chr_id}->{$junction_id}->{end} = $end;
-				}
-				$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_junctions} = $count_new_junction;
-				$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{count_normal} = $count_normal_junction;
-				$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{score} = $score;
-				$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$project_tmp->name()}->{$this_patient->name()}->{type} = $type;
-			}
+my @lTypes;
+push(@lTypes, 'all');
+push(@lTypes, 'canoniques');
+#foreach my $pheno_name (keys %{$hash_project_phenotypes}) {
+#	push(@lTypes, $pheno_name);
+#}
+
+foreach my $type (@lTypes) {
+	if ($type eq 'all') { insert_all_junctions(); }
+	elsif ($type eq 'canoniques') { insert_all_junctions_canoniques(); }
+#	else { insert_all_junctions_type($type); }
+}
+
+
+print "\n\nALL DONE!\n\n";
+
+
+sub insert_all_junctions {
+	my $h_all_junctions;
+	foreach my $this_project_name (keys %$hash_projects) {
+		print "-> $this_project_name ";
+		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+		my $file = $dir_dv_proj.'/'.$this_project_name.'.json';
+		my $file_gz = $dir_dv_proj.'/'.$this_project_name.'.json.gz';
+		my $file_canonique = $dir_dv_proj.'/'.$this_project_name.'.canonique.json';
+		next if exists $h_not_found->{$this_project_name};
+		my $h_proj_junctions;
+		if (-e $file) {
+			open (FILE, $file);
+			my $json = <FILE>;
+			$h_proj_junctions = decode_json $json;
+			close (FILE);
 		}
-	}
-	print "-> Done!\n";
-	$project_tmp = undef;
-	$buffer_tmp = undef;
-}
-
-print "\n# INSERT in DejaVuLMDB Junctions\n";
-my $nodejavu = GenBoNoSqlDejaVuJunctions->new( dir => $dir, mode => "c" );
-print "\n-> DIR: $dir\n";
-foreach my $chr_id (keys %{$h_junctions}) {
-	$nodejavu->create_table($chr_id);
-	my $sth = $nodejavu->dbh($chr_id)->prepare('insert into  __DATA__(_key,_value,start,end,variation_type,patients,projects,ratios)  values(?,?,?,?,?,?,?,?) ;') or die $DBI::errstr;
-	$sth->execute();
-	my $tree;
-	foreach my $junction_id (keys %{$h_junctions->{$chr_id}}) {
-		my $type = 'all';
-		my $start = $h_junctions->{$chr_id}->{$junction_id}->{start};
-		my $end = $h_junctions->{$chr_id}->{$junction_id}->{end};
+		elsif (-e $file_gz) {
+			open (FILE, "gunzip -c $file_gz |");
+			my $json = <FILE>;
+			$h_proj_junctions = decode_json $json;
+			close (FILE);
+		}
+		else {
+			die("\n\nNot exists: $file  - DIE\n");
+		}
 		
-		my $value = $nodejavu->encode($h_junctions->{$chr_id}->{$junction_id}->{dejavu});
-		my (@l_proj, @l_pat, @l_ratio);
-		foreach my $proj (sort keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}}) {
-			#my $patients = join(',', keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}});
-			
-			my (@local_pat, @local_ratios);
-			foreach my $pat_name (sort keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}}) {
-				push(@local_pat, $pat_name);
-				push(@local_ratios, $h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{score});
+		my $hres;
+		my $file_tab = $dir_dv_proj.'/'.$this_project_name.'.tab';
+		open (FILE, ">$file_tab");
+		foreach my $chr_id (1..22, 'X', 'Y', 'MT') {
+			next unless exists $h_proj_junctions->{$chr_id};
+			foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
+				my $start = $h_proj_junctions->{$chr_id}->{$junction_id}->{start};
+				my $end = $h_proj_junctions->{$chr_id}->{$junction_id}->{end};
+				foreach my $pat_name (keys %{$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}}) {
+					$hres->{$chr_id}->{$start}->{$end}->{$pat_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}->{$pat_name};
+					$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{junction_id} = $junction_id;
+				}
 			}
-			my $patients = join(',',@local_pat);
-			my $ratios = join(',',@local_ratios);
-			$proj =~ s/NGS20//;
-			push(@l_proj, $proj);
-			push(@l_pat, $patients);
-			push(@l_ratio, $ratios);
+			
+			foreach my $start (sort {$a <=> $b} keys %{$hres->{$chr_id}}) {
+				foreach my $end (sort {$a <=> $b} keys %{$hres->{$chr_id}->{$start}}) {
+					foreach my $pat_name (sort keys %{$hres->{$chr_id}->{$start}->{$end}}) {
+						my $junction_id = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{junction_id};
+						my $type = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{type};
+						my $count_junctions = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_junctions};
+						my $count_normal = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_normal};
+						my $ratio = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{score};
+						my @line;
+						push(@line, $chr_id);
+						push(@line, $start);
+						push(@line, $end);
+						push(@line, $pat_name);
+						push(@line, $type);
+						push(@line, $count_junctions);
+						push(@line, $count_normal);
+						push(@line, $ratio);
+						push(@line, $junction_id);
+						print FILE join("\t", @line)."\n";
+					}
+				}
+			}
 		}
-		my $pr = join(';', @l_proj);
-		my $pt = join(';', @l_pat);
-		my $ra = join(';', @l_ratio);
-		$sth->execute($junction_id, $value, $start, $end, $type, $pt, $pr, $ra);
-		push(@$tree, [$junction_id, $start, $end]);
+		close (FILE);
+		
+		foreach my $chr_id (keys %{$h_proj_junctions}) {
+			foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
+				my $new_id = $h_proj_junctions->{$chr_id}->{$junction_id}->{start}.'-'.$h_proj_junctions->{$chr_id}->{$junction_id}->{end};
+				if (exists $h_all_junctions->{$chr_id}->{$new_id}) {
+					$h_all_junctions->{$chr_id}->{$new_id}->{dejavu}->{$this_project_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+				}
+				else {
+					$h_all_junctions->{$chr_id}->{$new_id} = $h_proj_junctions->{$chr_id}->{$junction_id};
+				}
+			}	
+		}
+		if (-e "$file_tab.gz") {
+			`rm $file_tab.gz`;
+		}
+		my $cmd1 = "bgzip $file_tab";
+		`$cmd1`;
+		my $cmd2 = "tabix -p bed $file_tab.gz";
+		`$cmd2`;
+		if (not -e $file_gz) {
+			my $cmd3 = "bgzip $file";
+			`$cmd3`;
+			my $cmd4 = "bgzip $file_canonique";
+			`$cmd4`;
+		}
+		
+		print "-> ok\n";
 	}
-	$nodejavu->dbh($chr_id)->do(qq{CREATE UNIQUE INDEX if not exists _key_idx  on __DATA__ (_key);});
-	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _start_idx  on __DATA__ (start);});
-	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _end_idx  on __DATA__ (end);});
-	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _type_idx  on __DATA__ (variation_type);});
-	$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _value_idx  on __DATA__ (_value);});
-}
-$nodejavu->close();
-print "-> DONE!\n\n";
 
+#	my $nodejavu = GenBoNoSqlDejaVuJunctions->new( dir => $dir, mode => "c", is_compress => 1 );
+#	insert_in_dejavu_jonctions($nodejavu, $h_all_junctions);
+#	$nodejavu->close();
+	print "# CREATED TABIX Junctions -> DONE!\n";
+	
+	my $h_all_junctions_resume;
+	foreach my $chr_id (keys %{$h_all_junctions}) {
+		foreach my $junction_id (keys %{$h_all_junctions->{$chr_id}}) {
+			
+			my $h_resume;
+			$h_resume->{start} = $h_all_junctions->{$chr_id}->{$junction_id}->{start};
+			$h_resume->{end} = $h_all_junctions->{$chr_id}->{$junction_id}->{end};
+			
+			$h_resume->{pat} = 0;
+			$h_resume->{pat_r10} = 0;
+			$h_resume->{pat_r20} = 0;
+			my (@lDetails,@lDetailsR10, @lDetailsR20);
+			foreach my $proj (keys %{$h_all_junctions->{$chr_id}->{$junction_id}->{dejavu}}) {
+				foreach my $pat_name (keys %{$h_all_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}}) {
+					$h_resume->{pat}++;
+					my $new = $h_all_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{count_junctions};
+					my $normal = $h_all_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{count_normal};
+					my $dp = ($new + $normal);
+					my $ratio =  ($new / $dp) * 100;
+					
+					my $patname_text = $proj.'_'.$pat_name;
+					$patname_text =~ s/NGS20//;
+					
+					if ($ratio >= 10)  {
+						$h_resume->{pat_r10}++;
+						push(@lDetailsR10, $patname_text);
+					}
+					if ($ratio >= 20)  {
+						$h_resume->{pat_r20}++;
+						push(@lDetailsR20, $patname_text);
+					}
+					push(@lDetails, $patname_text);
+				}
+			}
+			$h_resume->{details} = join(';', @lDetails);
+			$h_resume->{details_r10} = join(';', @lDetailsR10);
+			$h_resume->{details_r20} = join(';', @lDetailsR20);
+			$h_all_junctions_resume->{$chr_id}->{$junction_id} = $h_resume;
+		}
+	}
+	
+	my $nodejavu_resume = GenBoNoSqlDejaVuJunctionsResume->new( dir => $dir, mode => "c", is_compress => 1 );
+	insert_in_dejavu_jonctions_resume($nodejavu_resume, $h_all_junctions_resume);
+	$nodejavu_resume->close();
+	print "# INSERT in DejaVuLMDB Junctions Resume -> DONE!\n";
+}
+
+sub insert_all_junctions_canoniques {
+	my $h_all_junctions_canoniques;
+	foreach my $this_project_name (keys %$hash_projects) {
+		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+		my $file = $dir_dv_proj.'/'.$this_project_name.'.canoniques.json';
+		next if exists $h_not_found->{$this_project_name};
+		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
+		open (FILE, $file);
+		my $json = <FILE>;
+		my $h_proj_junctions_canoniques; 
+		$h_proj_junctions_canoniques = decode_json $json if ($json);
+		close (FILE);
+		next if (not $h_proj_junctions_canoniques); 
+		foreach my $chr_id (keys %{$h_proj_junctions_canoniques}) {
+			foreach my $junction_id (keys %{$h_proj_junctions_canoniques->{$chr_id}}) {
+				my $jid = $junction_id;
+				$jid =~ s/_junction//;
+				if (exists $h_all_junctions_canoniques->{$chr_id}->{$junction_id}) {
+					$h_all_junctions_canoniques->{$chr_id}->{$jid}->{dejavu}->{$this_project_name} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+				}
+				else {
+					$h_all_junctions_canoniques->{$chr_id}->{$jid} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id};
+				}
+			}	
+		}
+	}
+	
+#	my $nodejavucanoniques = GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $dir_canoniques, mode => "c", is_compress => 1 );
+#	insert_in_dejavu_jonctions($nodejavucanoniques, $h_all_junctions_canoniques);
+#	$nodejavucanoniques->close();
+	print "# INSERT in DejaVuLMDB Junctions canoniques -> DONE!\n";
+}
+
+#sub insert_all_junctions_type {
+#	my ($pheno_name) = @_;
+#	my $h_all_junctions_pheno;
+#	foreach my $this_project_name (keys %{$hash_project_phenotypes->{$pheno_name}}) {
+#		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+#		my $file = $dir_dv_proj.'/'.$this_project_name.'.json';
+#		next if exists $h_not_found->{$this_project_name};
+#		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
+#		open (FILE, $file);
+#		my $json = <FILE>;
+#		my $h_proj_junctions = decode_json $json;
+#		close (FILE);
+#		foreach my $chr_id (keys %{$h_proj_junctions}) {
+#			foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
+#				my $jid = $junction_id;
+#				$jid =~ s/_junction//;
+#				if (exists $h_all_junctions_pheno->{$chr_id}->{$junction_id}) {
+#					$h_all_junctions_pheno->{$chr_id}->{$jid}->{dejavu}->{$this_project_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+#				}
+#				else {
+#					$h_all_junctions_pheno->{$chr_id}->{$jid} = $h_proj_junctions->{$chr_id}->{$junction_id};
+#				}
+#			}	
+#		}
+#	} 
+#	
+#	my $dir_pheno = $dv_dir_path.'/'.$pheno_name.'/';
+#	unless (-d $dir_pheno){
+#		`mkdir $dir_pheno`;
+#		`chmod 777 $dir_pheno`;
+#	}
+#	my $nodejavupheno = GenBoNoSqlDejaVuJunctionsPhenotype->new( phenotype_name => $pheno_name, dir => $dir_pheno, mode => "c", is_compress => 1 );
+#	insert_in_dejavu_jonctions($nodejavupheno, $h_all_junctions_pheno);
+#	$nodejavupheno->close();
+#	print "# INSERT in DejaVuLMDB Junctions $pheno_name -> DONE!\n";
+#}
+
+
+#sub insert_in_dejavu_jonctions {
+#	my ($nodejavu, $h_junctions_to_insert) = @_;
+##	print "\n-> DIR: ".$nodejavu->dir()."\n";
+#	foreach my $chr_id (keys %{$h_junctions_to_insert}) {
+#		$nodejavu->create_table($chr_id);
+#		my $sth = $nodejavu->dbh($chr_id)->prepare('insert into  __DATA__(_key,_value,start,end,variation_type,patients,projects,ratios,gene_name)  values(?,?,?,?,?,?,?,?,?) ;') or die $DBI::errstr;
+#		$sth->execute();
+#		my $tree;
+#		foreach my $junction_id (keys %{$h_junctions_to_insert->{$chr_id}}) {
+#			my $type = 'all';
+#			my $start = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{start};
+#			my $end = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{end};
+#			
+#			my $value = $nodejavu->encode($h_junctions_to_insert->{$chr_id}->{$junction_id}->{dejavu});
+#			my (@l_proj, @l_pat, @l_ratio, @l_gene_name);
+#			foreach my $proj (sort keys %{$h_junctions_to_insert->{$chr_id}->{$junction_id}->{dejavu}}) {
+#				#my $patients = join(',', keys %{$h_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}});
+#				
+#				my (@local_pat, @local_ratios, @local_gene);
+#				foreach my $pat_name (sort keys %{$h_junctions_to_insert->{$chr_id}->{$junction_id}->{dejavu}->{$proj}}) {
+#					push(@local_pat, $pat_name);
+#					push(@local_ratios, $h_junctions_to_insert->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{score});
+#					push(@local_gene, $h_junctions_to_insert->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{gene_name});
+#				}
+#				my $patients = join(',',@local_pat);
+#				my $ratios = join(',',@local_ratios);
+#				my $genes_names = join(',',@local_gene);
+#				$proj =~ s/NGS20//;
+#				push(@l_proj, $proj);
+#				push(@l_pat, $patients);
+#				push(@l_ratio, $ratios);
+#				push(@l_gene_name, $genes_names);
+#			}
+#			my $pr = join(';', @l_proj);
+#			my $pt = join(';', @l_pat);
+#			my $ra = join(';', @l_ratio);
+#			my $gn = join(';', @l_gene_name);
+#			$sth->execute($junction_id, $value, $start, $end, $type, $pt, $pr, $ra, $gn);
+#			push(@$tree, [$junction_id, $start, $end]);
+#		}
+#		$nodejavu->dbh($chr_id)->do(qq{CREATE UNIQUE INDEX if not exists _key_idx  on __DATA__ (_key);});
+#		$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _start_idx  on __DATA__ (start);});
+#		$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _end_idx  on __DATA__ (end);});
+#		$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _type_idx  on __DATA__ (variation_type);});
+#		$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _value_idx  on __DATA__ (_value);});
+#		$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _gene_name_idx  on __DATA__ (gene_name);});
+#	}
+#}
+
+sub insert_in_dejavu_jonctions_resume {
+	my ($nodejavu, $h_junctions_to_insert) = @_;
+#	print "\n-> DIR: ".$nodejavu->dir()."\n";
+	foreach my $chr_id (keys %{$h_junctions_to_insert}) {
+		$nodejavu->create_table($chr_id);
+		my $sth = $nodejavu->dbh($chr_id)->prepare('insert into  __DATA__(_key,start,end,patients,patients_ratios10,patients_ratios20,details,details_ratios10,details_ratios20)  values(?,?,?,?,?,?,?,?,?) ;') or die $DBI::errstr;
+		$sth->execute();
+		my $tree;
+		foreach my $junction_id (keys %{$h_junctions_to_insert->{$chr_id}}) {
+			my $start = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{start};
+			my $end = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{end};
+			my $nb_pat = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{pat};
+			my $nb_pat_r10 = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{pat_r10};
+			my $nb_pat_r20 = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{pat_r20};
+			my $details = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{details};
+			my $details_ratios10 = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{details_r10};
+			my $details_ratios20 = $h_junctions_to_insert->{$chr_id}->{$junction_id}->{details_r20};
+			
+			#my $value = $nodejavu->encode($h_junctions_to_insert->{$chr_id}->{$junction_id});
+			my (@l_proj, @l_pat, @l_ratio, @l_gene_name);
+			$sth->execute($junction_id, $start, $end, $nb_pat, $nb_pat_r10, $nb_pat_r20, $details,$details_ratios10, $details_ratios20);
+			push(@$tree, [$junction_id, $start, $end]);
+		}
+		$nodejavu->dbh($chr_id)->do(qq{CREATE UNIQUE INDEX if not exists _key_idx  on __DATA__ (_key);});
+		$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _start_idx  on __DATA__ (start);});
+		$nodejavu->dbh($chr_id)->do(qq{CREATE  INDEX if not exists _end_idx  on __DATA__ (end);});
+	}
+}
 
  	

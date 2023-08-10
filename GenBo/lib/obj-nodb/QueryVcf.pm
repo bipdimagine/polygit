@@ -37,13 +37,13 @@ my %REV_IUB = (A	=> 'A',
 has patient => (
 	is		=> 'ro',
 	reader	=> 'getPatient',
-	weak_ref=> 1,
+#	weak_ref=> 1,
 	#required=> 1,
 );
 
 has method => (
 	is		=> 'ro',
-	weak_ref=> 1,
+#	weak_ref=> 1,
 	required=> 1,
 );
 

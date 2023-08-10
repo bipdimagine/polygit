@@ -4,7 +4,6 @@ use CGI qw/:standard :html3/;
 package html_polygenescout;
 use strict;
 use FindBin qw($Bin);
-use Moose;
 use Data::Dumper;
 use lib "$Bin/";
 use lib "$Bin/../../../";
