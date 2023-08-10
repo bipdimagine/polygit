@@ -1,14 +1,13 @@
 var is_first_launch_polysplice;
-var used_dejavu_value = 15;
-var used_dejavu_percent_value = 96;
+var used_dejavu_value = 10;
+var used_dejavu_percent_value = 100;
 var used_score_value = 10;
 var url_last_launch_patient;
-var value_dejavu_percent_similar = 96;
+var value_dejavu_percent_similar = 100;
 var value_score = 10;
-var value_dejavu = 15;
+var value_dejavu = 10;
 var var_load_polysplice = 0;
 function load_tab_polysplice(patient_name) {
-	alert('POLYSPLICE');
 	if (var_load_polysplice == 1) {
 		refresh_tab_polysplice();
 		return;
@@ -254,7 +253,7 @@ function update_sashimi_pdf_file (files, nb) {
 		nb_next = parseInt(nb) + 1;
 		disabled_next = '';
 	}
-	var elem = "<div style='background-color:black;'><center><object data='"+file+"' width='85%' height='85%'></object><div><label for='zoom_pdf_sashimi' class='form-label' style='color:white;'><nobr><button " + disabled_previous + " style='background-color:black;border: solid 0px white;border-radius:10px;' onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_previous + "')\"><span class='glyphicon glyphicon-plus-sign' style='color:white;font-size:12px;'></span></button>&nbsp;&nbsp; ZOOM Sashimi Plot &nbsp;&nbsp;<button style='background-color:black;border: solid 0px white;border-radius:10px;' " + disabled_next + " onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_next + "')\"> &nbsp;&nbsp;<span class='glyphicon glyphicon-minus-sign' style='color:white;font-size:12px;'></span></button></label><input disabled type='range' class='form-range' min='0' max='" + (parseInt(max)-1) + "' value='" + nb + "' style='width:300px;' id='zoom_pdf_sashimi'></div></nobr><br><button onClick='dijit.byId(\"dialog_sashimi\").hide();'>Close PLOT</button></div></center>";
+	var elem = "<br><br><div><center><object data='"+file+"' width='95%' height='95%'></object><div style='background-color:#607d8b;'><br><br><label for='zoom_pdf_sashimi' class='form-label' style='color:white;'><nobr><button " + disabled_previous + " style='background-color:#607d8b;border: solid 0px white;border-radius:10px;' onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_previous + "')\"><span class='glyphicon glyphicon-plus-sign' style='color:white;font-size:12px;'></span></button>&nbsp;&nbsp; ZOOM Sashimi Plot &nbsp;&nbsp;<button style='background-color:#607d8b;border: solid 0px white;border-radius:10px;' " + disabled_next + " onclick=\"update_sashimi_pdf_file('" + files + "','" + nb_next + "')\"> &nbsp;&nbsp;<span class='glyphicon glyphicon-minus-sign' style='color:white;font-size:12px;'></span></button></label><input disabled type='range' class='form-range' min='0' max='" + (parseInt(max)-1) + "' value='" + nb + "' style='width:300px;' id='zoom_pdf_sashimi'></nobr><br><br><button style='font-size:16px;margin-bottom:15px;' onClick='dijit.byId(\"dialog_sashimi\").hide();'>Close PLOT</button></center><br><br></div>";
 	document.getElementById("dialog_sashimi").innerHTML = elem;
 }
 
@@ -307,4 +306,20 @@ function hide_view_table_gene_splices(table_id) {
 	const clone = node.cloneNode(true);
 	document.getElementById("content_res_splices").appendChild(clone);
 	dijit.byId('dialog_splices').show();
-} 
+}
+
+function select_patient(elem) {
+	console.log(elem);
+	var id1 = elem.id;
+	var id2 = id1.replace('check_', 'b_selected_patient_');
+	document.getElementById(id2).checked = elem.checked;
+}
+
+function select_all_patients(elem) {
+	if (tsamples.length == 0) { tsamples = storeP; }
+	for (var i=0;i<tsamples.length;i++) {
+		var label = tsamples[i].label;
+		document.getElementById('check_' + label).checked = elem.checked;
+		document.getElementById('b_selected_patient_' + label).checked = elem.checked;
+	}
+}

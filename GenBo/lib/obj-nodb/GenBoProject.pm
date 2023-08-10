@@ -52,6 +52,7 @@ use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlDejaVuJunctionsCanoniques;
 use GenBoNoSqlDejaVuJunctionsPhenotype;
+use GenBoNoSqlDejaVuJunctionsResume;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
@@ -2042,10 +2043,20 @@ has gtf_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf};
+		my $file = $self->buffer()->config->{'public_data'}->{root} 
+			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		 	.   '/gencode.v'.$self->gencode_version."/genes.gtf";
+#		my @patients          = @{ $self->getPatients() };
+#		my $alignMeth = $patients[0]->alignmentMethod();
+#		warn $self->annotation_genome_version;
+#		my $file =
+#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+#		  .  $self->annotation_genome_version  . '/'
+#		  . $self->buffer()->config->{'public_data'}->{gtf};
+#		  $file =
+#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+#		  .  $self->annotation_genome_version  . '/'
+#		  . $self->buffer()->config->{'public_data'}->{gtf_dragen} if $alignMeth eq "dragen-align";
 		return $file;
 	},
 );
@@ -2057,10 +2068,8 @@ has gtf_dragen_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf_dragen};
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/genes.gtf";
 		return $file;
 	},
 );
@@ -2095,19 +2104,32 @@ has refFlat_file => (
 	},
 );
 
+
 has refFlat_file_star => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/'
-		  . $version
-		  . '/refFlat/refFlat_no_chr.txt';
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
 		return $file;
 	},
 );
+
+
+has refFlat_file_dragen => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/refFlat.txt";
+		return $file;
+	},
+);
+
 
 has rRNA_file => (
 	is      => 'rw',
@@ -2116,9 +2138,9 @@ has rRNA_file => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/'
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
 		  . $version
-		  . '/refFlat/rRNA.interval_list';
+		  . '/refFlat/rRNA.interval_list_no_chr';
 		return $file;
 	},
 );
@@ -4607,6 +4629,19 @@ has dejavuJunctions => (
 	}
 );
 
+has dejavuJunctionsResume => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->DejaVuJunction_path();
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctionsResume->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
 has dejavuJunctionsCanoniques => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -5861,6 +5896,7 @@ sub getDejaVuInfos {
 	my $hres;
 	my $no = $self->lite_deja_vu2();
 	my $string_infos = $no->get( $chr, $id );
+	return $hres unless ($string_infos);
 	foreach my $string_infos_project (split('!', $string_infos)) {
 		my @lTmp = split(':', $string_infos_project);
 		my $project_name = 'NGS20'.$lTmp[0];
@@ -6311,13 +6347,11 @@ has get_path_rna_seq_polyrna_root  => (
 		my $self = shift;
 		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
 		return $path if -d $path;
-		if ($self->version() eq 'MM38') {
-			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM39/polyRNA/";
+		my @lPotentialRelease = ('HG19', 'HG19_CNG', 'HG19_MT', 'HG38', 'HG38-ERCC', 'MM38', 'MM39');
+		foreach my $rel2 (@lPotentialRelease) {
+			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$rel2."/polyRNA/";
 			return $alt_path if -d $alt_path;
-		}
-		if ($self->version() eq 'MM39') {
-			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM38/polyRNA/";
-			return $alt_path if -d $alt_path;
+			
 		}
 		return $path;
 	},
@@ -6417,6 +6451,7 @@ sub getQueryJunction {
 	if ($method eq 'RI') { $args{isRI} = 1; }
 	elsif ($method eq 'SE') { $args{isSE} = 1; }
 	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
+	elsif ($method eq 'STAR') { $args{isSTAR} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;

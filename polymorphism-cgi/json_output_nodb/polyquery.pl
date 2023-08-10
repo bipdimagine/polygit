@@ -8,8 +8,9 @@ use Data::Dumper;
 use FindBin qw($Bin);
 use lib "$Bin/../GenBo";
 use lib "$Bin/../GenBo/lib/obj-nodb";
-use lib "$Bin/../packages/export";
-use lib "$Bin/../packages/layout";
+use lib "$Bin/../GenBo/lib/obj-nodb/packages/";
+use lib "$Bin/../packages/export/";
+use lib "$Bin/../packages/layout/";
 use lib "$Bin/../packages/validation_variation"; 
 use lib "$Bin/../cache_nodb/scripts/";
 use GBuffer;
@@ -28,6 +29,8 @@ use html;
 use Carp;
 use Cache_Commons;
 use QueryVectorFilter;
+use xls_export;
+use session_export;
 
 
 my $io = IO::Handle->new();
@@ -111,8 +114,11 @@ if ($delete_models) {
 }
 
 if ($xls_outfile eq 'none') {
-		warn "\n\nERROR: please replace value 'none' for last -xls_outfile option.\nExample: -xls_outfile=export.xls\n\n";
-	die;
+	#modif temporaire pour export xls
+		$xls_outfile = $projectName.".xls";
+		
+		#warn "\n\nERROR: please replace value 'none' for last -xls_outfile option.\nExample: -xls_outfile=export.xls\n\n";
+	#die;
 }
 
 if ($getPatientsCgi) {
@@ -137,7 +143,9 @@ if ($test) {
 	$buffer = new GBufferTest;
 	$buffer->dir_project($test);
 }
-else {$buffer = new GBuffer; }
+else {
+	$buffer = new GBuffer; 
+}
 
 my $project = $buffer->newProjectCache( -name 			=> $projectName,
 									    -cache 		=> '1',
@@ -251,8 +259,16 @@ if ($get_bundles) { return launch_bundles_request(); }
 
 if ($bundle_id) { return launch_uniq_bundle_request(); }
 
+my $h_chr_from_only_genes;
 if ($only_genes) {
 	foreach my $name (split(',', $only_genes)) {
+#		eval {
+#			my $buffer_tmp = new GBuffer;
+#			my $project_tmp = $buffer_tmp->newProject( -name => $projectName );
+#			my $this_gene = $project_tmp->newGene($name);
+#			$h_chr_from_only_genes->{$this_gene->getChromosome->id()}->{$this_gene->id()} = undef;
+#		};
+#		if ($@) {}
 		if ($name =~ /capture/) {
 			my @lTmp = split(':', $name);
 			my $capture_name = $lTmp[-1];
@@ -379,7 +395,7 @@ if ($xls_by_variants or $xls_by_genes or $xls_load_session) {
 }
 
 if ($xls_load_session) {
-	loadSessionsXLS($project, $xls_load_session);
+	loadSessionsXLS($project, $xls_load_session, $hResumeFilters);
 }
 
 if ($xls_save_session) {
@@ -405,7 +421,8 @@ my (@lVarObj, @lHashStatsGenes, $h_all_genes_name);
 my $nb_chr = 0;
 
 my @l_genome_fai = @{$project->getGenomeFai};
-foreach my $chr_id (split(',', $filter_chromosome)) {
+
+foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Cas genome MT uniquement par exemple
 	my $chr_found;
 	foreach my $h_fai (@l_genome_fai) {
@@ -426,6 +443,11 @@ foreach my $chr_id (split(',', $filter_chromosome)) {
 		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 		next;
 	}
+	
+#	if ($only_genes and not exists $h_chr_from_only_genes->{$chr->id()}) {
+#		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
+#		next;
+#	}
 	
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
@@ -463,6 +485,16 @@ foreach my $chr_id (split(',', $filter_chromosome)) {
 	
 	my $h_args;	
 	$chr->save_model_variants_all_patients('init');
+	
+#	if ($only_genes) {
+#		my $vector_genes = $chr->getNewVector();
+#		foreach my $gene_name (keys %{$h_chr_from_only_genes->{$chr->id()}}) {
+#			my $this_g = $project->newGene($gene_name);
+#			$vector_genes += $chr->getVectorByPosition($this_g->start(), $this_g->end);
+#		}
+#		$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $vector_genes);
+#	}
+	
 	doPolyQueryFilters_global_cat($chr, $hFiltersChr, $dejavu, $polyscore);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER doPolyQueryFilters_global_cat - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
@@ -605,8 +637,15 @@ foreach my $chr_id (split(',', $filter_chromosome)) {
 			}
 		}
 	}
-	elsif ($export_list_var_ids){
-		push( @lVarObj, @{$chr->getStructuralVariations()} );
+	elsif ($xls_save_session or $xls_by_variants or $export_list_var_ids) {
+		foreach my $v_id (@{$chr->getListVarVectorIds($chr->getVariantsVector())}) {
+			my $var_id = $chr->getVarId($v_id);
+			my $var = $chr->get_lmdb_variations("r")->get($var_id);
+			$var->{project} = $project;
+			$var->{buffer} = $buffer;
+			$var->{vector_id} = $v_id;
+			push( @lVarObj, $var );
+		}
 		if ($debug) { warn "\nAfter chr->getStructuralVariations()"; }
 	}
 	else {
@@ -665,8 +704,15 @@ if ($gene_atlas_view) {
 	geneAtlasView($project);
 }
 
-if    ($xls_save_session) { saveSessionXLS($project, $hashRes, $hResumeFilters); }
-elsif ($xls_by_variants)  { getXls_byVar($project, undef, $hResumeFilters, $xls_outfile); }
+if ($xls_save_session or $xls_by_variants) { 
+	if ($xls_by_genes) {
+		saveSessionXLS($project, $hashRes, $hResumeFilters);
+	}
+	else {
+		export_xls($project, \@lVarObj, $hResumeFilters);
+	}
+}
+#elsif ($xls_by_variants)  { getXls_byVar($project, undef, $hResumeFilters, $xls_outfile); }
 elsif ($xls_by_genes)     {
 	my @lStats = @lHashStatsGenes;
 	my $h;
@@ -1924,55 +1970,6 @@ sub json_all_genes_name {
 	return \@lHash;
 }
 
-sub loadSessionsXLS {
-	my ($project, $sid) = @_;
-	my $tmp_dir = $project->getTmpDir();
-    my $session = new CGI::Session(undef, $sid, {Directory=>$tmp_dir});
-    my $h = thaw(decompress $session->param('hash_xls'));
-    $session->delete();
-    if ($xls_by_variants) { getXls_byVar($project, $h, $hResumeFilters); }
-    elsif ($xls_by_genes) { getXls_byGenes($project, $h, $hResumeFilters); }
-	exit(0);
-}
-
-sub saveSessionXLS {
-	my ($project, $hashRes, $hResumeFilters) = @_;
-	my ($h, $ok);
-	print ".";
-	if ($xls_by_variants) {
-		foreach my $patient (@{$project->getPatients()}) {
-			print ".";
-			$h->{by_pat}->{$patient->name()} = $patient->xls_var_id();
-			foreach my $chr_id (keys %{$h->{by_pat}->{$patient->name()}}) {
-				print ".";
-				foreach my $id (keys %{$h->{by_pat}->{$patient->name()}->{$chr_id}}) {
-					print ".";
-					$h->{by_var}->{$chr_id}->{$id}->{$patient->name()} = undef;
-					$ok = 1;
-				}
-			}
-		}
-	}
-	elsif ($xls_by_genes) {
-		my $lStats = launchStatsProjectAll_genes();
-		if (scalar(@$lStats) > 0) {
-			print ".";
-			$h->{by_genes} = $lStats;
-			$ok = 1;
-		}
-	}
-    if ($ok) {
-    	my $tmp_dir = $project->getTmpDir();
-	    my $session = new CGI::Session(undef, $cgi, {Directory=>$tmp_dir});
-	    $session->param('hash_xls', compress(freeze $h));
-	    print '@@@';
-		print "\",\"session_id\":\"";
-	    print $session->id;
-	    print "\"}";
-    }
-    exit(0);
-}
-
 
 
 ##### EXPORT VCF #####
@@ -2824,4 +2821,109 @@ sub checkEssentialsCategoriesInChr {
 		}
 	}
 	return 1;
+}
+
+#sub loadSessionsXLS {
+#	my ($project, $sid) = @_;
+#	my $tmp_dir = $project->getTmpDir();
+#    my $session = new CGI::Session(undef, $sid, {Directory=>$tmp_dir});
+#    my $h = thaw(decompress $session->param('hash_xls'));
+#    $session->delete();
+#    if ($xls_by_variants) { getXls_byVar($project, $h, $hResumeFilters); }
+#    elsif ($xls_by_genes) { getXls_byGenes($project, $h, $hResumeFilters); }
+#	exit(0);
+#}
+
+sub saveSessionXLS {
+	my ($project, $hashRes, $hResumeFilters) = @_;
+	my ($h, $ok);
+	print ".";
+	if ($xls_by_variants) {
+		foreach my $patient (@{$project->getPatients()}) {
+			print ".";
+			$h->{by_pat}->{$patient->name()} = $patient->xls_var_id();
+			foreach my $chr_id (keys %{$h->{by_pat}->{$patient->name()}}) {
+				print ".";
+				foreach my $id (keys %{$h->{by_pat}->{$patient->name()}->{$chr_id}}) {
+					print ".";
+					$h->{by_var}->{$chr_id}->{$id}->{$patient->name()} = undef;
+					$ok = 1;
+				}
+			}
+		}
+	}
+	elsif ($xls_by_genes) {
+		my $lStats = launchStatsProjectAll_genes();
+		if (scalar(@$lStats) > 0) {
+			print ".";
+			$h->{by_genes} = $lStats;
+			$ok = 1;
+		}
+	}
+    if ($ok) {
+    	my $tmp_dir = $project->getTmpDir();
+	    my $session = new CGI::Session(undef, $cgi, {Directory=>$tmp_dir});
+	    $session->param('hash_xls', compress(freeze $h));
+	    print '@@@';
+		print "\",\"session_id\":\"";
+	    print $session->id;
+	    print "\"}";
+    }
+    exit(0);
+}
+
+sub export_xls {
+	my ($project, $lVar, $hResumeFilters) = @_;
+	my $xls_export = new xls_export();
+	$xls_export->title_page('PolyQuery_'.$project->name().'.xls');
+	$xls_export->store_variants_infos($lVar, $project, $project->getPatients());
+	if ($xls_save_session) {
+		my $session_id = $xls_export->save();
+	    print '@@@';
+		print "\",\"session_id\":\"";
+	    print $session_id;
+	    print "\"}";
+		exit(0);
+	}
+	create_xls_variants($xls_export, $hResumeFilters);
+}
+
+sub loadSessionsXLS {
+	my ($project, $sid, $hResumeFilters) = @_;
+	if ($xls_by_genes) {
+		return loadSessionsXLS_byGenes($project, $sid, $hResumeFilters);
+	}
+	my $xls_export = new xls_export();
+	$xls_export->load($sid);
+	
+	create_xls_variants($xls_export, $hResumeFilters);
+}
+
+sub create_xls_variants {
+	my ($xls_export, $hResumeFilters) = @_;
+	my ($list_datas_annotations) = $xls_export->prepare_generic_datas_variants();
+	my ($list_datas_annotations_cnvs) = $xls_export->prepare_generic_datas_cnvs();
+	if ($detail_project) {
+		$xls_export->add_page_merged('Variants Merged', $xls_export->list_generic_header(), $list_datas_annotations);
+	}
+	$xls_export->add_page('Variants Not Merged', $xls_export->list_generic_header(), $list_datas_annotations);
+	if (scalar @$list_datas_annotations_cnvs > 0) {
+		$xls_export->add_page('Cnvs', $xls_export->list_generic_header_cnvs(), $list_datas_annotations_cnvs);
+	}
+	$xls_export->export();
+	my $xls_resume = $xls_export->workbook->add_worksheet('FILTERS USED');
+	writeResumeFiltersXls($xls_resume, undef, $hResumeFilters);
+	exit(0);
+}
+
+
+sub loadSessionsXLS_byGenes {
+	my ($project, $sid) = @_;
+	my $tmp_dir = $project->getTmpDir();
+    my $session = new CGI::Session(undef, $sid, {Directory=>$tmp_dir});
+    my $h = thaw(decompress $session->param('hash_xls'));
+    $session->delete();
+    if ($xls_by_variants) { getXls_byVar($project, $h, $hResumeFilters); }
+    elsif ($xls_by_genes) { getXls_byGenes($project, $h, $hResumeFilters); }
+	exit(0);
 }
