@@ -74,7 +74,7 @@ sub newFilter {
 sub addParam {
 		my ($self,%arg) = @_;
 	my $filter_id = $arg{filter_id};
-	my $param_name = $arg{param_value};
+	my $param_name = $arg{param_name};
 	my $param_value = $arg{param_value};
 	my $db = $self->database;
 
