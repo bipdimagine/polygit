@@ -4,9 +4,10 @@ use strict;
 use Moo;
 use Data::Dumper;
 use Config::Std;
+use Carp;
 use Storable qw(store retrieve freeze thaw fd_retrieve);
 use Digest::MD5 qw(md5 md5_hex md5_base64);
-
+use Carp;
 
 
 
@@ -397,7 +398,7 @@ sub setChromosomes {
 
 sub getChromosomes {
 	my $self = shift;
-	confess($self->name) unless $self->getProject();
+	confess($self->id) unless $self->getProject();
 	#warn $self->project->name;
 	#my @toto = grep {$_->karyotypeId =~ /KI/}   @{$self->getProject()->myflushobjects($self->chromosomes_object(), "chromosomes")};
 	#confess($self->name) if scalar(@toto) ;
@@ -1342,8 +1343,6 @@ sub buffer {
 	confess() unless $self->getProject();
 	return $self->getProject()->buffer();
 }
-sub DESTROY {
-	my $self = shift;
-}
+
 
 1;

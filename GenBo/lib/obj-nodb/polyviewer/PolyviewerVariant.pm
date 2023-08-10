@@ -198,9 +198,6 @@ has name => (
 	is		=> 'rw',
 	
 );
-has gnomad_id => (
-	is		=> 'rw',
-);
 
 
 has start => (
