@@ -42,8 +42,8 @@ use draw_cnv;
 use infos_coverage_exons;
 use image_coverage;
 use preload_coverage;
-#
 use Digest::MD5::File qw( md5_hex file_md5_hex file_md5);
+
 $| = 1;
 my $cgi = new CGI();
 #
@@ -62,6 +62,7 @@ my $patient_names = $cgi->param('patients');
 #ProjectCache or not that's the questions , do you have run dude or not ?
 my $buffer  = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
+
 ##
 my $no_cache = $project->get_lmdb_cache_cnv("w");
 my $version = 1;
@@ -74,6 +75,7 @@ if ($text){
 	exit(0);
 }
 ##
+
 if ( $project->isDude ) {
 	my $valid_cache = $cgi->param('test_cache');
 	exit(0) if $valid_cache;
@@ -227,6 +229,7 @@ $out .= html::end_cadre( $cgi, "CNV" );
 $no_cache->put_cache_text($cache_id,$out,2400);
 $no_cache->close();
 exit(0) if $cgi->param('pipeline');
+
 print $out;
 
 #html::print_cgi($cgi,$out);
@@ -366,6 +369,7 @@ sub select_transcripts {
 	 }
 	return keys %images;
 }
+
 ###
 #
 ####
@@ -395,3 +399,4 @@ push(@keys, ($st2[9].$st2[11].$st2[12]));
 return \@keys;
 }
 #
+
