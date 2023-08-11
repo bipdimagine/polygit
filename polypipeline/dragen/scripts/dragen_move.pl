@@ -102,6 +102,8 @@ if (exists $pipeline->{align}){
 #warn $bam_pipeline;
 	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
 	move_bam($bam_pipeline,$patient);# if ($version );
+	my $dir_out = $patient->project->getAlignmentStatsDir();
+	move_stats($dir_pipeline,$dir_out,$patient);
 }
 if (exists $pipeline->{gvcf}){
 	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
@@ -153,7 +155,11 @@ exit(0);
 
 
 
-
+sub move_stats {
+	my ($dir1,$dir2,$patient) = @_;
+	system("rsync -rav $dir1/".$patient->name."*csv $dir2/ ");
+	
+}
 
 
 sub move_bam {
