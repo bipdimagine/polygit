@@ -1959,6 +1959,7 @@ has annotation_genome_version => (
 		my $self    = shift;
 		my $version = $self->getVersion();
 		$version = "HG19" if $version =~ /HG19/;
+		$version = "HG38" if $version =~ /HG38/;
 		return $version;
 	}
 );
@@ -2050,7 +2051,7 @@ has gtf_file => (
 		 $file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
 		  	. $version . '/'
 			. $self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
-		 die($file);	
+		 die($file) unless -e $file;	
 #		my @patients          = @{ $self->getPatients() };
 #		my $alignMeth = $patients[0]->alignmentMethod();
 #		warn $self->annotation_genome_version;
