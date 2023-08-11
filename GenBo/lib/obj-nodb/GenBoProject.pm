@@ -4082,12 +4082,22 @@ sub getAlignmentRootDirWithVersion {
 	return $self->makedir($path);
 }
 
+sub getAlignmentStatsDir {
+	my ( $self, $method_name,$version ) = @_;
+	confess() unless $method_name;
+	my $path = $self->getAlignmentDir($method_name) . "/stats/";
+	return $self->makedir($path);
+}
+
+
+
 sub getAlignmentDir {
 	my ( $self, $method_name,$version ) = @_;
 	confess() unless $method_name;
 	my $path = $self->getAlignmentRootDir($version) . "/" . $method_name . '/';
 	return $self->makedir($path);
 }
+
 
 sub getAlignmentDirName {
 	my ($self) = @_;
