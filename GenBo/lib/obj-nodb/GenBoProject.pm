@@ -2067,7 +2067,7 @@ has gtf_file => (
 );
 
 
-has gtf_file_dragen => (
+has gtf_dragen_file => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {

@@ -81,7 +81,6 @@ foreach my $l (split(",",$spipeline)){
 my $user = system("whoami");
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version =>$version);
-
 my $tm = "/staging/tmp/";
 
 if ($project->isGenome){
@@ -161,7 +160,7 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 }
 
 #if (exists $pipeline->{count}){
-	my $gtf =  $project->gtf_dragen_file();
+	my $gtf =  $project->gtf_file();
 	die() unless -e $gtf;
 	$param_align .= "-a $gtf --enable-rna-quantification true";
 #}
