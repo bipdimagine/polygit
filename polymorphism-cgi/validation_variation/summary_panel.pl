@@ -2882,10 +2882,17 @@ sub args_muc1 {
 	 if (-e $dir) {
 	 	my $file =  `ls -Art $dir/*.tsv | tail -n 1`;
 	 	chomp($file);
-	 	warn $file;
 	 	if ($file){
 	 			my $t = stat($file)->[9];
-	 			warn $t;
+	 			push(@$args,$t)
+	 	}
+	 }
+	 $dir = $project->getVariationsDir("advntr");
+	 if (-e $dir) {
+	 	my $file =  `ls -Art $dir/*.vcf | tail -n 1`;
+	 	chomp($file);
+	 	if ($file){
+	 			my $t = stat($file)->[9];
 	 			push(@$args,$t)
 	 	}
 	 }
