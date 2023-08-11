@@ -2067,18 +2067,18 @@ has gtf_file => (
 );
 
 
-#has gtf_file_dragen => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self = shift;
-#		my $path = my $version = $self->getVersion();
-#		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-#		  .   '/gencode.v'.$self->gencode_version."/annotation.gtf";
-#		  die ($file);
-#		return $file;
-#	},
-#);
+has gtf_file_dragen => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/annotation.gtf";
+		  die ($file);
+		return $file;
+	},
+);
 
 
 #has gtf_file_star => (
