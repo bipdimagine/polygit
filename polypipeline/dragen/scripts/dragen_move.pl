@@ -102,7 +102,7 @@ if (exists $pipeline->{align}){
 #warn $bam_pipeline;
 	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
 	move_bam($bam_pipeline,$patient);# if ($version );
-	my $dir_out = $patient->project->getAlignmentStatsDir();
+	my $dir_out = $patient->project->getAlignmentStatsDir("dragen-align");
 	move_stats($dir_pipeline,$dir_out,$patient);
 }
 if (exists $pipeline->{gvcf}){
@@ -168,7 +168,7 @@ sub move_bam {
 	 $prod = $patient->getCramFileName("dragen-align") if $bam =~ /cram/;
 	system("rsync -rav --remove-source-files $url"."$bam $prod ");
 	system("rsync -rav  $url"."$bam.bai $prod.bai ");
-	system("rsync -rav  $url"."$bam.cai $prod.cai ");
+	system("rsync -rav  $url"."$bam.cai $prod.cai ") if $bam =~ /cram/;
 	
 }
 

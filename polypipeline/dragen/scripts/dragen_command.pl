@@ -131,6 +131,7 @@ my $tmp = "/staging/tmp";
 my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 my $runid = $patient->getRun()->id;
 my $bam   = $dir_pipeline."/".$patient->name.".bam";
+my ($fastq1,$fastq2);
 my $align = "true";
 if (-e $bam){
 	$align = "false";
@@ -152,7 +153,7 @@ if ($version && exists $pipeline->{align} ){
 
 else {
 	
-my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+ ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
 
  $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-duplicate-marking true --enable-rna=true ";
@@ -169,7 +170,10 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 $cmd_dragen .= $param_umi." ".$param_align;
 $patient->update_software_version("dragen",$cmd_dragen);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+unlink $fastq1 if  $fastq1 =~ /pipeline/;
+unlink $fastq2 if $fastq2 =~ /pipeline/;;
 die if $exit != 0;
+
 }
 
 
