@@ -4072,7 +4072,7 @@ sub getAlignmentRootDirWithVersion {
 	my $path = $self->getProjectRootPath() . "/".$version. "/align/";
 	return $self->makedir($path);
 }
-
+##
 sub getAlignmentStatsDir {
 	my ( $self, $method_name,$version ) = @_;
 	confess() unless $method_name;

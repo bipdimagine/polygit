@@ -166,7 +166,7 @@ sub move_bam {
 	my ($bam,$patient) = @_;
 	my $prod = $patient->getBamFileName("dragen-align");
 	 $prod = $patient->getCramFileName("dragen-align") if $bam =~ /cram/;
-	system("rsync -rav  $url"."$bam $prod ");
+	system("rsync -rav --remove-source-files $url"."$bam $prod ");
 	system("rsync -rav  $url"."$bam.bai $prod.bai ");
 	system("rsync -rav  $url"."$bam.cai $prod.cai ");
 	
