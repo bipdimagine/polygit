@@ -14,7 +14,7 @@ GBuffer provides a set of functions to create a buffer and get informations from
 =cut
 package BioTools;
 use Carp;
-use Moose;
+use Moo;
 use strict ;
 
 my $hcomplement = {
@@ -58,7 +58,6 @@ my  %IUB = ( A => [qw(A)],
 	     );
 has iupac =>(
 	is		=> 'ro',
-	isa		=> 'HashRef',
 	lazy	=> 1,	     
 	default => sub { 
 		return {
@@ -84,7 +83,6 @@ has iupac =>(
 	);
 has rev_iupac =>(
 	is		=> 'ro',
-	isa		=> 'HashRef',
 	lazy	=> 1,
 	default => sub {
 		return {
@@ -111,7 +109,6 @@ has rev_iupac =>(
 
 has codons_table =>(
 	is		=> 'ro',
-	isa		=> 'HashRef',
 	lazy	=> 1,
 	default => sub {
 
@@ -121,7 +118,6 @@ has codons_table =>(
 );
 has codons_table_mito =>(
 	is		=> 'ro',
-	isa		=> 'HashRef',
 	lazy	=> 1,
 	default => sub {
 
