@@ -73,7 +73,7 @@ my $no_cache;
 my $text;
 #
 #$no_cache = $patient->get_lmdb_cache("r");
-warn $no_cache->filename;
+#warn $no_cache->filename;
 $text = $no_cache->get_cache($cache_id);
 $no_cache->close();
 
