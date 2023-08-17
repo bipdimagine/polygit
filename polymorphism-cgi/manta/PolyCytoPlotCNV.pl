@@ -71,7 +71,8 @@ my $cache_id= "$chr_name;$project_name;$patient_name;$type"."polycyto_plot_cnv".
 #warn $cache_id;
 my $no_cache;
 my $text;
-$no_cache = $patient->get_lmdb_cache("r");
+#
+#$no_cache = $patient->get_lmdb_cache("r");
 warn $no_cache->filename;
 $text = $no_cache->get_cache($cache_id);
 $no_cache->close();
@@ -117,6 +118,7 @@ my $lpos="";
 my $lratio="";
 my $i=0;
 
+
 foreach my $ligne (@tabValPat)
 {
 	my ($x,$y)=split(/ /,$ligne);
@@ -128,7 +130,6 @@ foreach my $ligne (@tabValPat)
 	$lpos .= $x." ";
 	$lratio .= $y." ";
 }
-
 
 
 $hres->{'PLOT'} = $trio;
@@ -205,6 +206,7 @@ if (($trio ==1)	|| ($trio==3)	) # only dad or both
 	$hres->{'POSratio_dad'} = $lpos;
 	$hres->{'RATIO_dad'} = $lratio;
 }	
+
 	
 if ($trio == 3)	#both parents
 {
@@ -223,7 +225,7 @@ if ($trio == 3)	#both parents
 	
 	# (1) selection des snps informatifs a partir des variants Ho : version patrick
 	
-	if ($type == 1)	# DEL on regarde tous les variants de l'enfant / au niveau de la deletion tous les variants du parent non délété deviennent Ho
+	if ($type == 1)	# DEL on regarde tous les variants de l'enfant / au niveau de la deletion tous les variants He du parent non délété deviennent Ho
 	{
 		$v1 = $mother->getVectorOriginHe($chr);
 		$v1 &= $chr->getVectorSubstitutions();
@@ -236,14 +238,14 @@ if ($trio == 3)	#both parents
 		$v2 &= $patient->getVectorOrigin($chr);
 	}
 
-	if ($type >= 2 ) # DUP on ne regarde que les variants He de l'enfant / les Ho ne sont pas informatifs pour savoir quel parent a été dupliqué
+	if ($type >= 2 ) # DUP les snps informatifs sont ceux Ho chez un des parents non présents chez l'autre et He chez l'enfant 
 	{
-		$v1 = $mother->getVectorOrigin($chr);
+		$v1 = $mother->getVectorOriginHo($chr);
 		$v1 &= $chr->getVectorSubstitutions();
  		$v1 -= $father->getVectorOrigin($chr);
 		$v1 &= $patient->getVectorOriginHe($chr);
 
-		$v2 = $father->getVectorOrigin($chr);
+		$v2 = $father->getVectorOriginHo($chr);
 		$v2 &= $chr->getVectorSubstitutions();
  		$v2 -= $mother->getVectorOrigin($chr);
 		$v2 &= $patient->getVectorOriginHe($chr);
@@ -340,8 +342,9 @@ else
 	$hres->{'PATIENT'} = $lpatient;
 }
 
-push( @listHashRes, { %{ $hres } } );
 
+
+push( @listHashRes, { %{ $hres } } );
 
 
 my $stdout2 = tee_stdout {
