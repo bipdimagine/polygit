@@ -67,12 +67,16 @@ foreach my $k  (sort {$a cmp $b} keys %hkeys){
 	push(@keys,$c);
 }
 push(@keys,file_md5_hex($Bin."/PolyCytoPlotCNV.pl") );
-my $cache_id= "$chr_name;$project_name;$patient_name;$type"."polycyto_plot_cnv".file_md5_hex($Bin."/PolyCytoPlotCNV.pl");
+my $dir = $project->getVariationsDir("wisecondor");
+my $filein_pat_tbi = $dir."/".$patient_name."_bins.bed.gz.tbi";
+my @st = (stat($filein_pat_tbi));
+
+my $cache_id= "$chr_name;$project_name;$patient_name;$type"."polycyto_plot_cnv".file_md5_hex($Bin."/PolyCytoPlotCNV.pl").$st[9].$st[11].$st[12];
 #warn $cache_id;
 my $no_cache;
 my $text;
 #
-#$no_cache = $patient->get_lmdb_cache("r");
+$no_cache = $patient->get_lmdb_cache("r");
 #warn $no_cache->filename;
 $text = $no_cache->get_cache($cache_id);
 $no_cache->close();
