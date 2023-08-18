@@ -31,7 +31,6 @@ my $set_variants;
 
 sub setStructuralVariants {
 	my ($self, $typeVar) = @_;
-	
 	my @objs;
 	foreach my $p (@{$self->getProject()->getPatients}){
 		foreach my $o (@{$p->setStructuralVariantsForReference($self)}){

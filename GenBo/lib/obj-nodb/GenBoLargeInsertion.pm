@@ -14,7 +14,19 @@ has imprecise => (
 		return undef;
 	},
 );
-
+has rocksdb_id => (
+	is		=> 'ro',
+	lazy=> 1,
+	default => sub {
+	my ($self) = @_;
+	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
+	$pos  = sprintf("%010d", $pos);
+	my $seqid = $alt;
+	$seqid = "+".substr($alt, 1);
+	return  ($pos."!".$seqid);
+	},
+	
+);
 has isLargeInsertion => (
 	is		=> 'rw',
 	default	=> 1,

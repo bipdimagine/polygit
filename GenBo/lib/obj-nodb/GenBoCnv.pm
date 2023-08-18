@@ -5,6 +5,7 @@ use Moo;
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
+use Carp;
 use List::Util qw[min max];
 extends "GenBoVariant";
 
@@ -26,14 +27,16 @@ has allele_length => (
 
 
 
-has name => (
+has name_cnv => (
 	is		=> 'ro',
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
 		my $al = $self->allele_length;
-		
+		confess();
 		#$al = "*" if $al == -1;
+		warn $self->start()." :: ".$self->sv_type;
+		die();
 		my $id = $self->getChromosome->id().'-'.$self->start().'-'.lc($self->sv_type).'-'.$self->allele_length;
 		$id  = $self->getChromosome->id().'-'.$self->start().'-'.lc($self->mei_type).'-'.$self->allele_length if $self->isMei;
 		return $id;
@@ -170,7 +173,7 @@ sub polyphenStatus {
 sub getRatio {
         my ($self,$patient,$method) = @_;
         my $pid = $patient->id;
-        return "-";
+        return 0;
 }
 sub siftStatus {
 	my ( $self, $obj ) = @_;
@@ -244,7 +247,9 @@ sub getTransmissionModelType {
 }
 
 
-
+sub getNGSScore{
+	return 1;
+}
 
 has split_read_infos =>(
 	is =>'ro',	
@@ -278,7 +283,7 @@ has split_read_infos =>(
 					$sr0  = int($sr0/2);
 				}
 				else {
-					unless ( exists $self->annex()->{$patient->id()}->{sr}) {
+					unless ( exists $self->{annex}->{$patient->id()}->{sr}) {
 					#	warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name." ".Dumper( $self->annex()->{$patient->id()});
 					#	die();
 						$hash->{$pid} = ["-1","-1","-1","-1",$srq_end,$srq_start,$equality];
@@ -286,9 +291,9 @@ has split_read_infos =>(
 					}
 					else {
 			#	confess(Dumper ($self->annex)." ".$self->start." ".$self->getChromosome->name) unless  exists $self->annex()->{$patient->id()}->{sr};
-					($sr0,$sr1) = split(",",$self->annex()->{$patient->id()}->{sr});
-					if (exists  $self->annex()->{$patient->id()}->{pr}){
-						($pr0,$pr1) = split(",",$self->annex()->{$patient->id()}->{pr});
+					($sr0,$sr1) = split(",",$self->{annex}->{$patient->id()}->{sr});
+					if (exists  $self->{annex}->{$patient->id()}->{pr}){
+						($pr0,$pr1) = split(",",$self->{annex}->{$patient->id()}->{pr});
 					}
 					}
 				}
@@ -296,10 +301,10 @@ has split_read_infos =>(
 			}
 						
 		}
+			
 			return $hash;
 	},
 );
-
 
 sub sr0 {
 	my ($self, $patient) = @_;

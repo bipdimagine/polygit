@@ -1958,6 +1958,7 @@ has annotation_genome_version => (
 		my $self    = shift;
 		my $version = $self->getVersion();
 		$version = "HG19" if $version =~ /HG19/;
+		$version = "HG38" if $version =~ /HG38/;
 		return $version;
 	}
 );
@@ -1967,10 +1968,11 @@ has genome_version_generic => (
 	lazy    => 1,
 	default => sub {
 		my $self    = shift;
-		my $version = $self->getVersion();
-		$version = "HG19" if $version =~ /HG19/;
-		
-		return $version;
+		return $self->annotation_genome_version();
+	#	my $version = $self->getVersion();
+	#	$version = "HG19" if $version =~ /HG19/;
+	#	$version = "HG38" if $version =~ /HG38/;
+	#	return $version;
 	}
 );
 has capture_dir => (

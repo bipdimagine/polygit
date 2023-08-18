@@ -3,7 +3,8 @@ use Moo;
 use strict;
 use warnings;
 use Data::Dumper;
-extends "GenBoNoSqlRocks";
+use Carp;
+extends "GenBoNoSqlRocksAnnotations";
 
 has start =>(
 	is		=> 'ro',
@@ -31,14 +32,9 @@ has index =>(
 
 
 
-#has index_hash =>(
-#	is		=> 'ro',
-#	default => {},
-#); 
-
-
 sub put_batch {
 	my ($self,$key,$value,$debug) = @_;
+	confess();
 	$key = $self->index_position($key);
 	if ($self->nb%50_000 == 0){
 		$self->write_batch();
@@ -56,18 +52,7 @@ sub put_batch {
 	}
 }
 
-sub put_batch_raw {
-	my ($self,$key,$value,$debug) = @_;
-	#$key = $self->index_position($key);
-	if ($self->nb%50_000 == 0){
-		$self->write_batch();
-		$self->nb(1);
-		
-		#$self->rocks->compact_range();
-	}
-	$self->nb($self->nb+1);
-	$self->batch->put($key,$value);
-}
+
 sub index_position {
 	my ($self,$key) = @_;
 	
@@ -110,17 +95,7 @@ sub get_raw {
 	return  $self->rocks->get($key);
 }
 
-has intspan_keys => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $intspan = $self->SUPER::get("&intspan");
-		unless ($intspan){
-			 return Set::IntSpan::Fast::XS->new( );
-		}
-	},
-);
+
 
 
 
@@ -129,19 +104,8 @@ has intspan_keys => (
 sub close {
 	my ($self) =@_;
 	if ($self->mode ne "r"){
-	#if (exists $self->{intspan_keys}){
-	#$self->SUPER::put("&intspan",$self->{intspan_keys});
-	#}
-	
-	if (exists $self->{batch}){
-	#	warn "write ".$self->path_rocks;
-		$self->rocks->write($self->batch);
-	#	warn "end ".$self->path_rocks;
+		$self->SUPER::close();
 	}
-	
-		$self->rocks->compact_range();
-	}
-	warn "close chunks ".$self->path_rocks;
 	if ($self->pipeline){
 		my $dir_prod = $self->dir."/".$self->name.".rocksdb";
 		system("rsync -rav --remove-source-files ".$self->path_rocks." $dir_prod");

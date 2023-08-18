@@ -405,6 +405,7 @@ foreach my $project (@$projects){
 		#####  
 		
 		if (exists $hsteps->{vcf}){
+			my $latest_dragen_calling;
 		 	$h->{prod}->{vcf} = $patient->getVariationsFileName("dragen-calling");
 		 	$h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
 			$h->{exists_file}->{vcf} = 1 if -e $h->{prod}->{vcf};

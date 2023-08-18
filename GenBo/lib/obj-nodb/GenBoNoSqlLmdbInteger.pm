@@ -364,7 +364,7 @@ sub DESTROY {
 	}
 	
 	#warn "coucou";
-
+	warn "destroy lmdb integer".time;
    # print "In DESTROY\n";
 }
 

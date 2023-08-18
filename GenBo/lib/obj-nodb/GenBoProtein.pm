@@ -14,10 +14,26 @@ has isProtein => (
 	default	=> 1,
 );
 
-has sequence => (
-	is		=> 'ro',
-);
-	
+#has sequence => (
+#	is		=> 'ro',
+#);
+sub sequence {
+	my ($self) = @_;
+	return $self->{sequence_new} if exists $self->{sequence_new};
+	foreach my $vg  (("HG38","HG19")) {
+	my $index = $self->project->fastaProteinIndex($vg);
+	if($index){
+			my ($seq1, $length) = $index->get_sequence($self->getTranscript->name);
+			if ($seq1){
+				$self->{sequence_new} = $seq1;
+				return $self->{sequence_new};
+			} 
+		}	
+	 	
+	}
+	$self->{sequence_new} = $self->{sequence};
+	return $self->{sequence_new};
+}	
 has external_name => (
 	is		=> 'ro',
 );

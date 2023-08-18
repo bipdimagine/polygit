@@ -34,6 +34,8 @@ my $secret;
 my $analyse_type;
 my $nobackup;
 my $giab;
+my $clean;
+
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -49,11 +51,13 @@ GetOptions(
 	'h!' => \$help,
 	"nobackup=s" => \$nobackup,
 	"control=s" => \$giab,
+	"clean=s" => \$clean,
 );
 
 #$steps_name = "all" unless $steps_name;
 
 check_version($projectName) unless ($steps_name eq 'update' );
+clean($projectName) if $clean;
 my $report;
 my $buffer = GBuffer->new();
 my $define_steps;
@@ -133,7 +137,7 @@ $pipeline->unforce(0) if $force;
 #$pipeline->add_sample(patient=>$project);
 
 my @types_steps = ('dude','chromosomes','project','polydiag','html_cache');
- @types_steps = ('dude','chromosomes','project','html_cache') if $project->isGenome or $project->isExome ;
+ @types_steps = ('chromosomes','project','html_cache') if $project->isGenome or $project->isExome ;
 @types_steps = ('chromosomes') if $giab ;
 my $list_steps;
 my $list_steps_types;
@@ -292,7 +296,20 @@ sub usage {
 	die();
 }
 
-
+sub clean {
+		my ($project_name) = @_;
+		my $buffer = GBuffer->new();
+		my $project = $buffer->newProject( -name => $project_name );
+		my $cache_directory_actual = $project->getCacheDir();
+		my $choice = prompt(colored ['black ON_BRIGHT_YELLOW'],"delete  $cache_directory_actual (y/n) ? ") unless $yes;;
+		die() if ($choice ne "y"); 
+		$choice = prompt(colored ['black ON_BRIGHT_CYAN'],"no regret :  $cache_directory_actual (y/n) ? ") unless $yes;
+		die() if ($choice ne "y");
+		colored::stabilo("cyan","As you wish ....");
+		system ("rm -r $cache_directory_actual/*");
+		system("rmdir $cache_directory_actual");
+		
+}
 
 
 sub check_version {
@@ -364,7 +381,7 @@ sub check_version {
 	if (exists $hchange->{public_database}){
 			print "\n-------------------************----------------\n";
           	my $choice = "y";
-			 $choice =  $choice = prompt("\nDo you want to upgrade your PUBLIC  RELEASE   (y/n) ? ") unless $yes;
+			 $choice = prompt("\nDo you want to upgrade your PUBLIC  RELEASE   (y/n) ? ") unless $yes;
 			if ($choice eq "y"){
 				$change = 1;
 			} 
@@ -373,8 +390,16 @@ sub check_version {
 			}
 	}
 	
+	
+	
 	if (keys %$hchange){
-
+		if ($project->isGenome or $project->isExome){
+			my $choice = "y";
+			  $choice = prompt("\nDo you want to backup  your cache  (y/n) ? ") unless $yes;
+			if ($choice ne "y"){
+				$nobackup = 1;
+			} 
+		}
 		colored::stabilo("cyan","please wait , archiving old cache  : $nobackup");
 		my $archives_dir = $buffer->getDataDirectory("archives");
 		my $archives_name = $archives_dir."/".$project->name.".".$project->genome_version.".$gencode_actual.$version_actual".".tar";

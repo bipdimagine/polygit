@@ -8,7 +8,8 @@ use Config::Std;
 use GenBoGenomic;
 use GenBoNoSqlLmdb;
 use GenBoNoSqlLmdbPipeline;  
-
+use GenBoNoSqlRocksAnnotation;
+use Carp;
 
 #use GenBoNoSqlRocksVariation;
 #use GenBoNoSqlRocksPolyviewerVariant;
@@ -1719,9 +1720,7 @@ has list_hgmd_DM_postions => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return
-		  $self->project->buffer->queryHgmd
-		  ->getDataHGMDPro_positions_for_class( $self->id(), 'DM' );
+		return $self->project->buffer->queryHgmd->getDataHGMDPro_positions_for_class( $self->id(), 'DM' );
 	},
 );
 
@@ -1886,6 +1885,7 @@ sub close_lmdb {
 }
 sub get_lmdb_spliceAI {
 	my ($self)   = @_;
+	confess();
 	my $buffer   = $self->buffer;
 	my $chr      = $self->name;
 	my $database = "spliceAI";
@@ -1913,6 +1913,7 @@ has intspan_spliceAI => (
 
 sub score_spliceAI {
 	my ( $self, $pos, $allele ) = @_;
+	confess();
 	return undef unless $self->intspan_spliceAI->contains($pos);
 	my $v = $self->get_lmdb_spliceAI()->get($pos);
 	if ($v) {
@@ -1996,6 +1997,16 @@ sub purge_lmdb_score {
 		delete $buffer->{lmdb_score}->{$db}->{$chr}
 		  if exists $buffer->{lmdb_score}->{$db}->{$chr};
 	}
+}
+
+sub rocksdb {
+	my($self,$db) = @_;
+	confess unless $db;
+	return $self->{rocksdb}->{$db} if exists $self->{rocksdb}->{$db};
+	my $dir = $self->buffer->get_index_database_directory($db);
+	$self->{rocksdb}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$self->name);
+	return $self->{rocksdb}->{$db};
+	
 }
 
 1;

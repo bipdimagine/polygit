@@ -1,11 +1,8 @@
 package QueryVcf; 
-
 use strict;
 use Moo;
-#
 use Data::Dumper;
-
-#use Tabix;
+use Carp;
 use Clone 'clone';
 use IPC::Open2;
 use List::MoreUtils  qw( uniq );
@@ -15,6 +12,7 @@ use List::MoreUtils  qw( uniq );
  use Align::NW;
 use Bio::DB::HTS::Tabix;
 use Bio::DB::HTS::VCF;
+use Scalar::Util qw(weaken);
  use Time::HiRes qw ( time alarm sleep );;
 my %REV_IUB = (A	=> 'A',
 				T	=> 'T',
@@ -37,13 +35,11 @@ my %REV_IUB = (A	=> 'A',
 has patient => (
 	is		=> 'ro',
 	reader	=> 'getPatient',
-	weak_ref=> 1,
 	#required=> 1,
 );
 
 has method => (
 	is		=> 'ro',
-	weak_ref=> 1,
 	required=> 1,
 );
 
@@ -196,9 +192,9 @@ sub parseVcfFileForReference {
 	if ($self->method() eq "melt"){
 			return $self->parseVcfFileForReference_melt($reference, $useFilter);
 	}
-	#if ($self->method() eq "manta"){
-	#		return $self->parseVcfFileForReference_manta($reference, $useFilter);
-	#}
+	if ( $self->method() eq "manta" or $self->method() eq "dragen-sv"){
+			return $self->parseVcfFileForReference_manta($reference, $useFilter);
+	}
 	if ($file =~ /\.sam/) { 
 		my @res = `zgrep "#INFO=<ID" $file`;
 		#unless (scalar @res){
@@ -498,7 +494,7 @@ sub find_linked_bnd {
 	my %hashRes;
 	my $iter = $v1->query($chr.":".$start."-".$end);
 	#my $iter = $v->query($chr->fasta_name.":".$reference->start."-".$reference->end);
-	return {} unless $iter;
+	return undef unless $iter;
 	my $xs;
 	while (my $row = $iter->next) {
 		next unless $row =~ /$text/;
@@ -511,6 +507,7 @@ sub find_linked_bnd {
 }
 sub genericSVTransLoc {
 	my ($self,$x,$reference) = @_; 
+	return;
 	my $chr = $reference->getChromosome();
 	my $patient = $self->getPatient();
 	my $patient_id = $patient->id;
@@ -526,7 +523,10 @@ sub genericSVTransLoc {
 	
 	my $hash;
 	my $bnds = $self->find_linked_bnd($text,$x->{bnd_alt}->{chromosome},$astart,$aend);
-	confess() unless scalar (@$bnds) == 1;
+	#warn Dumper $x;
+	return unless $bnds;
+	return  unless scalar (@$bnds) == 1;
+	die($self->file) unless scalar (@$bnds) == 1;
 	my $other = $bnds->[0];#grep {$_->{ID} ne $x->{ID}} @$bnds;
 	
 	my $genbo_pos = $x->{pos};#+(length($bnds->[0]->{ref})*$bnds->[0]->{bnd_alt}->{ref_position});
@@ -739,8 +739,8 @@ sub genericSVDel {
 	my $infos = $x->{infos};
 	$hash->{'id'} = $id;
 	$hash->{'isLargeDeletion'} = 1;
-	$hash->{'structuralType'} = 'l_del';
-	$hash->{'structuralTypeObject'} = 'large_deletions';
+	$hash->{'structuralType'} = 'del';
+	$hash->{'structuralTypeObject'} = 'deletions';
 	$hash->{'id'} = $id;
 	$hash->{'vcf_id'} = join("_",$chr->name,$pos,$ref,$x->{alt}->[0]);
 	$hash->{'isSV'} = 1;
@@ -793,6 +793,7 @@ sub genericSVIns {
 		my $infos = $x->{infos};
 		$hash->{'structuralType'} = 'l_ins';
 		$hash->{'structuralTypeObject'} = 'large_insertions';
+		
 		if ($infos->{SVTYPE} eq "DUP" or (exists $infos->{DUPSVLEN} && $infos->{SVTYPE} eq "INS")){
 			$len = $infos->{SVLEN};
 			$len = $infos->{DUPSVLEN} if exists $infos->{DUPSVLEN};
@@ -818,7 +819,14 @@ sub genericSVIns {
 			 	$hash->{'allele_length'} = "~".length($var_allele);
 		}
 		elsif ($infos->{SVTYPE} eq "INS" && $alt =~ /INS/){
-			confess() unless exists $infos->{LEFT_SVINSSEQ};
+			if (exists $infos->{SVINSSEQ}){
+				$var_allele = $infos->{SVINSSEQ};
+				$hash->{'var_allele'} = $var_allele;
+			 	$hash->{'allele_length'} = "~".length($var_allele);
+			}
+			else {
+			confess(Dumper $infos) unless exists $infos->{LEFT_SVINSSEQ};
+			}
 			
 		}
 		elsif ($infos->{SVTYPE} eq "INS" && $alt !~ /INS/){
@@ -901,7 +909,7 @@ sub parseVcfFileForReference_manta {
 	my $v1 = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 	my $header = $v->header();
 	confess() if $header->num_samples() ne 1;
-	die() if $self->getPatient->name ne  $header->get_sample_names->[0];
+	die($header->get_sample_names->[0]." ".$self->getPatient->barcode) if $self->getPatient->name ne  $header->get_sample_names->[0] and $header->get_sample_names->[0] ne $self->getPatient->barcode;
 	#confess() if 
 	my $patient_id = $self->getPatient->id;
 	my %hashRes;
@@ -909,6 +917,7 @@ sub parseVcfFileForReference_manta {
 	#my $iter = $v->query($chr->fasta_name.":".$reference->start."-".$reference->end);
 	return {} unless $iter;
 	while (my $row = $iter->next) {
+		
 		my $x =  $self->parseVCFLine($row);
 		confess("alt "=>Dumper $x) if scalar(@{$x->{alt}}) > 1;
 	#	confess("ref =>".Dumper $x ) if scalar(@{$x->{ref}}) > 1;
@@ -923,11 +932,7 @@ sub parseVcfFileForReference_manta {
 		}
 		elsif ($x->{infos}->{SVTYPE} eq  "DEL" ) 
 		{
-			 $hash = $self->genericSVDel($x,$chr);
-			#my ($self,$x,$patient,$chr,$reference) = @_;		
-		}
-		elsif ($x->{infos}->{SVTYPE} eq  "DEL" ) 
-		{
+			next;
 			 $hash = $self->genericSVDel($x,$chr);
 			#my ($self,$x,$patient,$chr,$reference) = @_;		
 		}
@@ -944,7 +949,7 @@ sub parseVcfFileForReference_manta {
 		}
 		my $id = $hash->{id};
 		my $structType = $hash->{structuralType};
-		warn Dumper $hash unless $id;
+		#warn Dumper $hash unless $id;
 		$hashRes{$structType}->{$id} = compress(freeze($hash));
 		
 	}
@@ -1083,13 +1088,14 @@ sub parseVcfFileForReference_gatk{
 	$hash_alleles->{deletion} = [];
 	$hash_alleles->{indel} = [];	
 		while (my $x = $vcf->next_data_hash()) {
-			my $debug;
-			if ($self->method() eq 'manta') {
+			if ($self->method() eq 'manta' or $self->method() eq 'dragen-sv') {
+				confess();
 				$debug = 1 if $$x{'POS'} == 50251556;#18770711;#50251556;
 				my $type_found = $$x{'INFO'}->{'SVTYPE'};
 				next if ($type_found ne 'DUP' and $type_found ne 'DEL');
 				next if (abs($$x{'INFO'}->{'SVLEN'}) < 50);
 				next if (abs($$x{'INFO'}->{'SVLEN'}) > 10000);
+				warn $$x{'POS'}." ".$self->method();
 				#next if ($$x{'CHROM'} =~ m/chrMT/);
 				next if ($$x{'CHROM'} =~ m/^GL/);
 				next if ($$x{'CHROM'} =~ m/^hs37d5/);
@@ -1689,16 +1695,16 @@ my $temp_all;
 #	foreach my $allele (map{thaw(decompress($_))} shift @{$hash_alleles->{deletion}} ){
 						$allele->{type} = 'del';
     					$allele->{obj} = 'deletions';
-						if ($self->method() eq 'manta') {
+						if ($self->method() eq 'manta' or $self->method() eq 'dragen-sv') {
 							$allele->{method} = 'manta';
 							if (abs($allele->{len}) >= 50) {
 								$allele->{type} = 'l_del';
-								$allele->{obj} = 'large_deletions';
+								$allele->{obj} = 'deletions';
 							}
 						}
     					die() if $allele->{len} ==0;
 						$allele->{len} = abs($allele->{len});
-						if ($self->method() eq 'manta') {
+						if ($self->method() eq 'manta' or $self->method() eq 'dragen-sv') {
 							$allele->{sequence_ref} = $allele->{'ref'};
 							$allele->{sequence_id} = $allele->{'ref'}.'_'.$allele->{'alt'};
 							$allele->{sequence} =   "-";
@@ -1746,17 +1752,17 @@ my $temp_all;
 						# insertion
 						$allele->{type} = 'ins';
 						$allele->{obj} = 'insertions';
-						if ($self->method() eq 'manta') {
-							$allele->{method} = 'manta';
+						if ($self->method() eq 'manta' or $self->method() eq 'dragen-sv') {
+							$allele->{method} = $self->method();
 							if (abs($allele->{len}) >= 50) {
 								$allele->{type} = 'l_dup';
-								$allele->{obj} = 'large_duplications';
+								$allele->{obj} = 'insertions';
 							}
 						}
 						my $dpos = index($allele->{alt},$allele->{ht});
 						
 #						$dpos = 0 if ($self->method() eq 'manta');
-						if ($dpos ==0 and $self->method() ne 'manta'){
+						if ($dpos ==0 and ($self->method() eq 'manta' or $self->method() eq 'dragen-sv') ){
 							unless ($reference) {
 								my $chr_name = $allele->{chromosome};
 								$chr_name =~ s/chr//;

@@ -9,7 +9,19 @@ use Position;
 extends 'GenBoCnv';
 
 
-
+has rocksdb_id => (
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my $self = shift;
+	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
+	 	$pos  = sprintf("%010d", $pos);
+		my $l1 = length($ref);
+		my $seqid = ($l1 -1);
+		return  ($pos."!".$seqid);
+	},
+	
+);
 
 
 has isLargeDeletion => (

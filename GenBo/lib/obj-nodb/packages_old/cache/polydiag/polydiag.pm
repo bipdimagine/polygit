@@ -186,6 +186,7 @@ sub compute_coverage_diagnostic4 {
 sub run_cache_polydiag_cache {
 	my ( $project_name, $patient_name, $tbundle ) = @_;
 	my $buffer1 = new GBuffer;
+	die();
 	my $project = $buffer1->newProjectCache( -name 			=> $project_name, -typeFilters=>'individual' );
 	my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
@@ -209,7 +210,7 @@ sub run_cache_polydiag_cache {
 					$vquery );
 					$h->{obj} = $v;
 					update::deja_vu($project,$tr,$h); 
-					update::annotations($project,$h); 
+					#update::annotations($project,$h); 
 						
 				my $id = join( ";", $tr->id, $v->id );
 				delete $h->{obj} ;
@@ -224,7 +225,7 @@ sub run_cache_polydiag_cache {
 				  construct_intergenic_variant( $project, $v, $p,
 					$vquery );
 						$h->{obj} = $v;
-					update::annotations($project,$h); 
+					#update::annotations($project,$h); 
 					update::deja_vu( $project, $v, $h );
 				my $id = join( ";", "intergenic", $v->id );
 					delete $h->{obj} ;
@@ -237,7 +238,54 @@ sub run_cache_polydiag_cache {
 			
 			
 		}
+		$buffer1->close_lmdb;
+		
 	}#end foreach chromosome
+	
+	
+	foreach my $t ( keys %$vtr ) {
+		$db_lite->put( $patient_name, "list_$t", join( ";", @{ $vtr->{$t} } ) );
+
+	}
+	$db_lite->put( $patient_name, "transcripts", join( ";", keys %th ) );
+	my @months = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+	my @days   = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
+
+	my ( $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst ) =
+	  localtime();
+	my $date = $mday . "/" . ( $mon + 1 ) . "/" . ( 1900 + $year );
+
+	$db_lite->put( $patient_name, "date", $date );
+	my $f1s = $p->getVariationsFiles();
+	my $tf;
+	foreach my $f1 (@$f1s) {
+		if ( -e $f1 ) {
+			$tf->{$f1} = file_md5_hex($f1);
+
+		}
+	}
+	$db_lite->put( $patient_name, "variations_vcf_md5", $tf );
+	$tf = {};
+	my $f2s = $p->getIndelsFiles();
+	foreach my $f1 (@$f2s) {
+		$tf->{$f1} = file_md5_hex($f1);
+
+		# 			push(@$tf,file_md5_hex($f1)) if -e $f1;;
+	}
+
+	$db_lite->put( $patient_name, "indels_vcf_md5", $tf );
+
+	$db_lite->close();
+	$project->buffer->dbh->disconnect();
+	if ( exists $project->{cosmic_db} ) {
+		$project->{cosmic_db}->close();
+	}
+	
+	$project = undef;
+
+
+	return 1;
+	
 }
 
 
@@ -314,6 +362,7 @@ sub run_cache_polydiag {
 			}
 		}
 		$project->purge_memory( $chr->length );
+		
 	}    #end chromosome
 	foreach my $t ( keys %$vtr ) {
 		$db_lite->put( $patient_name, "list_$t", join( ";", @{ $vtr->{$t} } ) );

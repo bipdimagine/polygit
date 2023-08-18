@@ -623,6 +623,7 @@ has isKid => (
 	},
 );
 
+
 has callingMethods => (
 	is      => 'rw',
 	reader  => 'getCallingMethods',
@@ -1091,7 +1092,7 @@ sub myflushobjects2 {
 
 				#here add all method for this variant in method calling hash
 
-				$varObj->annex()->{ $self->id } =  $valHash->{annex}->{ $self->id };
+				$varObj->{annex}->{ $self->id } =  $valHash->{annex}->{ $self->id };
 				
 				$valHash = undef;
 				delete $hashRes->{$structType}->{$keyId};
@@ -2961,8 +2962,6 @@ has nb_reads => (
 			};
 
 		}
-		warn $self->name();
-		
 		$h->{norm1} = 1/$h->{all};#/1_000_000_000;
 #		warn $h->{all};
 		$h->{norm} = $h->{all}/1_000_000_000;

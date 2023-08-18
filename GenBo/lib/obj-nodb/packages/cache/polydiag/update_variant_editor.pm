@@ -5,7 +5,7 @@ use lib "$Bin";
 use lib "$Bin/../";
 use lib "$Bin/../../";
 use Storable qw/thaw freeze/;
-use BioTools;
+#use BioTools;
 use POSIX;
 use Time::Piece;
 use List::Util qw( max min sum);
@@ -246,36 +246,29 @@ sub vsequencing  {
 	my @methods;
 	my $nb_methods;
 	my $max_pc =-1;
-		my $max_dp =  -1;
-		foreach my $method (@{$patient->callingMethods}){
+	my $max_dp =  -1;
+	 my $pid = $patient->id;
+	foreach my $method (keys %{$v->sequencing_infos->{$pid}}) {
+			next if $method eq "max";
 			#next if $method eq "dude";
-			next unless exists $v->annex()->{$patient->id}->{method_calling}->{$method}->{nb_all_ref};
-			my $all_annex = $v->annex()->{$patient->id}->{method_calling}->{$method};
-			my $nb_ref =$all_annex->{nb_all_ref};
-			my $nb_alt =  $all_annex->{nb_all_mut};
-			
-		my $method_name = substr $method,0,3;
-		push(@methods,$method_name);
-		my $sequence_info = "he("; 
+
+		push(@methods,$method);
+		my $array = $v->sequencing_infos->{$pid}->{$method};
+		 
+		 
+		my $sequence_info ; 
 		my $pc ="-";		
-		if ($v->annex()->{$patient->id}->{nb_all_ref} eq "?"){
+		if ($v->getNbAlleleRef($patient,$method) eq "?"){
 			$sequence_info = "??";
 		}
 		else {
-		$sequence_info = "ho(" if $all_annex->{ho};
-		
-		my $sum = $nb_ref + $nb_alt;
-		if ($sum >0){
-		 $pc = int ($nb_alt *10000/($sum))/100;
-		 $pc = ceil($pc) if $pc >1;
-		}
-		$max_pc = $pc if $pc > $max_pc;
-		$max_dp = $sum if $sum > $max_dp;
-		$sequence_info .= $nb_ref."/".$nb_alt.")";
+		$sequence_info .=	$array->[2]."(";
+		#$sequence_info = "ho(" if $all_annex->{ho};
+		$sequence_info .= $v->getNbAlleleRef($patient,$method)."/".$v->getNbAlleleAlt($patient,$method).")";
 	
 		}
-		$sequence_info = $method_name.":".$sequence_info;
-		$pc = $method_name.":".$pc."%";
+		$sequence_info = $method.":".$sequence_info;
+		 $pc = $method.":".$v->getRatio($patient,$method)."%";
 		push(@apc,$pc);
 		push(@asequence_info,$sequence_info);
 		$nb_methods ++;
@@ -286,13 +279,13 @@ sub vsequencing  {
 		 	push(@asequence_info,"-");
 		 }
 		
-		$hvariation->{max_dp} = $max_dp;
-		$hvariation->{value}->{max_dp} = $max_dp;
-		$hvariation->{html}->{max_dp} = $max_dp;
+		$hvariation->{max_dp} = $v->getDP($patient);
+		$hvariation->{value}->{max_dp} = $hvariation->{max_dp};
+		$hvariation->{html}->{max_dp} = $hvariation->{max_dp};
 		
-		$hvariation->{max_pc} = $max_pc;
-		$hvariation->{value}->{max_pc} = $max_pc;
-		$hvariation->{html}->{max_pc} = $max_pc;
+		$hvariation->{max_pc} = $v->getRatio($patient);;
+		$hvariation->{value}->{max_pc} =$hvariation->{max_pc};
+		$hvariation->{html}->{max_pc} = $hvariation->{max_pc};
 		
 		$hvariation->{value}->{ngs} = \@asequence_info;
 		

@@ -24,6 +24,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Compress::Zlib qw( zlib_version); 
 use Storable qw/thaw freeze/;
 use JSON::XS;
+use Carp;
 #use  Compress::Zstd;
 use Compress::Zlib qw( zlib_version); 
 has lmdb_extension =>(

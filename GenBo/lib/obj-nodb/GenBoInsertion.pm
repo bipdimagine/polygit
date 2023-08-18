@@ -54,6 +54,24 @@ has alleles => (
 #	},
 #);
 
+
+has rocksdb_id => (
+	is		=> 'ro',
+	lazy=> 1,
+	default => sub {
+	my ($self) = @_;
+	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
+	$pos =~ s/ins//;
+	$pos  = sprintf("%010d", $pos);
+	$alt = "X".$ref unless $alt; 
+	my $seqid = $alt;
+	$seqid = "+".substr($alt, 1);
+	return  ($pos."!".$seqid);
+	},
+	
+);
+
+
 has kyoto_id => (
 	is		=> 'rw',
 	#isa		=> 'Str',
@@ -76,16 +94,6 @@ has type => (
 	},
 );
 
-has spliceAI => (
-	is   => 'rw',
-	lazy =>1,
-	default => sub {
-        my $self = shift;
-        my $v =   $self->getChromosome->score_spliceAI($self->start,'+'.$self->alternate_allele);
-          return "-" unless defined $v;
-        return $v;
-	}
-);
 
 has type_public_db => (
 	is		=> 'ro',
@@ -244,13 +252,7 @@ sub siftScore {
 	return '-';
 }
 
-has cadd_score => (
-	is		=> 'rw',
-	lazy	=> 1,
-	default	=> sub {
-		return -1;
-	},
-);
+
 
 sub protein_nomenclature {
 	my ( $self, $prot ) = @_;

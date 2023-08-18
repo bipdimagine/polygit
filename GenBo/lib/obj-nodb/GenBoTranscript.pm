@@ -571,7 +571,6 @@ sub codonsConsequenceForDeletion {
 	if ($self->strand == -1 ){
 		$posvar = $endg;
 	}
-	
 	my $ldeletion = abs($startg - $endg) +1;
 	
 	my $pos_transcript = $self->translate_position($posvar);

@@ -6,7 +6,8 @@ use Moo;
 use Data::Dumper;
 use JSON::XS;
 use POSIX;
-use GenBoNoSqlRocksChunks;
+#use GenBoNoSqlRocksChunks;
+use GenBoNoSqlRocksAnnotation;
 
 my $json_chr_length = qq{{"HG19":{"6":"171115067","11":"135006516","9":"141213431","15":"102531392","14":"107349540","1":"249250621","8":"146364022","17":"81195210","7":"159138663","13":"115169878","MT":"16569","22":"51304566","Y":"59373566","3":"198022430","21":"48129895","18":"78077248","5":"180915260","X":"155270560","20":"63025520","16":"90354753","2":"243199373","12":"133851895","19":"59128983","4":"191154276","10":"135534747"},"HG38":{"21":"46709983","Y":"57227415","18":"80373285","3":"198295559","22":"50818468","MT":"16569","20":"64444167","16":"90338345","X":"156040895","5":"181538259","2":"242193529","10":"133797422","4":"190214555","19":"58617616","12":"133275309","11":"135086622","6":"170805979","14":"107043718","15":"101991189","9":"138394717","17":"83257441","8":"145138636","1":"248956422","13":"114364328","7":"159345973"}}};
 
@@ -56,6 +57,12 @@ has pack =>(
 	}
 );
 has description =>(
+	is		=> 'ro',
+	default => sub {
+		return undef;
+	}
+);
+has factor =>(
 	is		=> 'ro',
 	default => sub {
 		return undef;
@@ -116,7 +123,7 @@ has chunks =>(
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		if($self->mode eq "c" or ($self->mode eq "w" && !(-e $self->json_file))){
+		if($self->mode eq "c" or $self->mode eq "t" or ($self->mode eq "w" && !(-e $self->json_file))){
 			$self->clean() if -e $self->json_file;
 			my $length = $self->chr_length;
 			die() unless $length;
@@ -160,6 +167,22 @@ is		=> 'ro',
 	}
 );
 
+has tree_db =>(
+is		=> 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+ 		my $tree =  Set::IntervalTree->new;
+ 		for my $r (@{$self->regions}){
+ 			#$self->chunks->{$id}->{rocksdb};
+ 			my $id = $r->{id};
+ 			my $db  = GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pipeline=>$self->pipeline,pack=>$self->pack,description=>$self->description,factor=>$self->factor);
+ 			 $tree->insert($db, $r->{start}, $r->{end});
+ 		}
+ 		return $tree;
+	}
+);
+
 sub nosql_rocks {
 	my ($self,$region) = @_;
 	my $id = $region->{id};
@@ -181,12 +204,13 @@ sub _chunks_rocks {
 
 	 unless (exists $self->chunks->{$id}->{rocksdb}){
 	 	$self->_pile($id);
-	 	$self->chunks->{$id}->{rocksdb} = GenBoNoSqlRocksChunks->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,start=>$self->chunks->{$id}->{start},index=>$self->index,compress=>$self->compress,pipeline=>$self->pipeline);
+	 	 
+	 	#$self->chunks->{$id}->{rocksdb} = GenBoNoSqlRocksChunks->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,start=>$self->chunks->{$id}->{start},index=>$self->index,compress=>$self->compress,pipeline=>$self->pipeline);
+		$self->chunks->{$id}->{rocksdb} = GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pipeline=>$self->pipeline,pack=>$self->pack,description=>$self->description,factor=>$self->factor);
 	 #	system("vmtouch -q -t ".$self->chunks->{$id}->{rocksdb}->path_rocks);
 	 }
 	 return $self->chunks->{$id}->{rocksdb};
 };
-
 
 #my $iter ; 
 #my $iter = $no->rocks->new_iterator->seek_to_first;
@@ -224,6 +248,7 @@ sub write_config {
 	$h->{compress} = $self->compress;
 	$h->{pack} = $self->pack;
 	$h->{description} = $self->description;
+	$h->{factor} = $self->factor;
 	$h->{index} = $self->index;
 	print $fh encode_json($h);
 	close ($fh);
@@ -238,6 +263,7 @@ sub load_config {
 	$self->{compress} = delete $h->{compress};
 	$self->{pack} = delete $h->{pack};
 	$self->{description} = delete $h->{description};
+	$self->{factor} = delete $h->{factor};
 	$self->{index} = delete $h->{index};
 	}
 	return delete $h->{chunks};
@@ -282,78 +308,28 @@ sub change_id {
 		return($start,$chaine."_".join("_",@t));
 	}
 	return ($start,sprintf("%010d", $key));
-		
 }
 
-sub put_batch {
-	my ($self,$key,$value) = @_;
-	my ($start,$key1) = $self->change_id($key);
-	my $results = $self->tree->fetch($start,$start+1);
-	confess(@$results) if scalar(@$results) > 1;
-	 $self->_chunks_rocks( $results->[0])->put($key1,$value);
-}
-
-sub compress_gnomad_position {
+sub spliceAI_id {
 	my ($self,$id) = @_;
-	my ($chr,$pos,$ref,$alt) = split("-",$id);
-	my $l1 = length($ref);
-	my $l2 = length($alt);
-	my $seqid = $alt;
-	#if ($l1 ==1 && $l2 ==1){
-	#	$nalt = $alt;
-	#}
-	if ($l1 ==1 && $l2 > 1){
-		$seqid = "+".substr($alt, 1);
-	}
-	if ($l1 >1 ){
-		$ref = substr($ref, 1);
-		$seqid = ($l1 -1);
-	}
-	return ($chr,$pos,$seqid);
+	my ($pos,$a) =split("!",$id);
+	$pos *= 1;
+	$self->get_db($pos);
+	return $self->get_db($pos)->spliceAI_id($id);
 }
-sub get {
-	my ($self,$id) = @_;
-	my ($chr,$key,$seq_id) = $self->compress_gnomad_position($id);
-	my ($start,$key1) =  $self->change_id($key);
-	my $results = $self->tree->fetch($start,$start+1);
-	confess(@$results) if scalar(@$results) > 1;
-	my $region_id = $results->[0];
-	my $d = $self->_chunks_rocks($region_id)->get($key);
-	return $d;
-	return undef unless $d;
-	return undef unless exists $d->{$seq_id};
-	if ($self->pack){
-		my @t = unpack($self->pack,$d->{$seq_id});
-		#warn Dumper(@t);
-		if ($self->description){
-		my $res = {};
-			foreach my $k (@{$self->description}){
-				$res->{$k} = shift @t;
-			}
-			return $res;
-		}
-		return \@t;
-	}
-	return $d->{$seq_id};
+sub spliceAI {
+	my ($self,$pos,$id) = @_;
+	$self->get_db($pos);
+	return $self->get_db($pos)->spliceAI($id);
 }
 
-sub get_raw {
-	my ($self,$start,$id) = @_;
-	
-	my $results = $self->tree->fetch($start,$start+1);
+sub get_db {
+	my ($self,$pos) = @_;
+	my $results = $self->tree_db->fetch($pos,$pos+1);
 	confess(@$results) if scalar(@$results) > 1;
-	my $region_id = $results->[0];
-	my $d = $self->_chunks_rocks($region_id)->get_raw($id);
-	return $d;
-	
-}
-sub get_position {
-	my ($self,$key) = @_;
-	my ($start,$key1) =  $self->change_id($key);
-	my $results = $self->tree->fetch($start,$start+1);
-	confess(@$results) if scalar(@$results) > 1;
-	my $id = $results->[0];
-	return $self->_chunks_rocks($id)->get($key);
+	return $results->[0];
+#	my $bd = $self->_chunks_rocks($region_id);
+#	return $bd;
 }
 
 

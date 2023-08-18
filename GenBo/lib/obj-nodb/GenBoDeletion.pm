@@ -40,6 +40,22 @@ has alleles => (
 	},
 );
 
+
+has rocksdb_id => (
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my $self = shift;
+	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
+	 	$pos  = sprintf("%010d", $pos);
+		my $l1 = length($ref);
+		my $seqid = ($l1 -1);
+		return  ($pos."!".$seqid);
+	},
+	
+);
+
+
 has kyoto_id => (
 	is		=> 'rw',
 	lazy	=> 1,
@@ -53,16 +69,6 @@ has kyoto_id => (
 	},
 );
 
-has spliceAI => (
-	is   => 'rw',
-	lazy =>1,
-	default => sub {
-        my $self = shift;
-        my $v =   $self->getChromosome->score_spliceAI($self->start,'-'.$self->alternate_allele);
-        return "-" unless defined $v;
-        return $v;
-	}
-);
 
 has type_public_db => (
 	is		=> 'ro',

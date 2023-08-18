@@ -1,7 +1,7 @@
 package GenBoVariantCache;
 use strict;
 use Moo;
-
+use Carp;
 use Data::Dumper;
 extends 'GenBoCache';
 
@@ -344,14 +344,15 @@ sub isMosaicTransmission {
 	return join(' and ', @lOk) if (@lOk);
 	return;
 }
-#sub sequencing_details {
-#	my ($self,$patient) = @_;
-#	confess();
-#}
+sub sequencing_details {
+	my ($self,$patient) = @_;
+	
+	confess();
+}
 #
-#sub annex {
-#	confess();
-#}
+sub annex {
+	confess();
+}
 #sub getSequencingInfos {
 #        my ($self,$patient) = @_;
 #        my $pid = $patient->id;

@@ -15,18 +15,18 @@ has isVariation => (
 );
 
 
-has spliceAI => (
-is              => 'rw',
-lazy =>1,
-default => sub {
-        my $self = shift;
-        my $v =   $self->getChromosome->score_spliceAI($self->start,$self->alternate_allele);
-        return "-" unless defined $v;
-        return $v;
-
-
-}
-);
+#has spliceAI => (
+#is              => 'rw',
+#lazy =>1,
+#default => sub {
+#        my $self = shift;
+#        my $v =   $self->getChromosome->score_spliceAI($self->start,$self->alternate_allele);
+#        return "-" unless defined $v;
+#        return $v;
+#
+#
+#}
+#);
 
 has type => (
 	is		=> 'ro',
@@ -65,18 +65,29 @@ has kyoto_id => (
 	},
 );
 
-
-has cadd_score => (
-	is		=> 'rw',
-	lazy	=> 1,
+has rocksdb_id => (
+	is		=> 'ro',
+	lazy=>1,
 	default => sub {
-		my $self = shift;
-		my $sc =  $self->getChromosome()->get_lmdb_score("cadd",$self);
-		return "-" unless $sc;
-		return $sc;
-		
+	my ($self) = @_;
+	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
+	 $pos  = sprintf("%010d", $pos);
+	return  ($pos."!".$alt);
 	},
+	
 );
+
+#has cadd_score => (
+#	is		=> 'rw',
+#	lazy	=> 1,
+#	default => sub {
+#		my $self = shift;
+#		my $sc =  $self->getChromosome()->get_lmdb_score("cadd",$self);
+#		return "-" unless $sc;
+#		return $sc;
+#		
+#	},
+#);
 
 has ncboost_score => (
 	is              => 'rw',

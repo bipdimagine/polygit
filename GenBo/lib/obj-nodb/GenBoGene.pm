@@ -29,11 +29,15 @@ has ensg => (
 		return $ensg;
 	},
 );
-	
-has external_name => (
-	is		=> 'ro',
-	#required=> 1,
-);
+
+sub external_name {
+	my ($self) = @_;
+	return uc($self->{external_name}); 
+}	
+#has external_name => (
+#	is		=> 'ro',
+#	#required=> 1,
+#);
 
 
 has strand => (
