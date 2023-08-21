@@ -67,12 +67,17 @@ foreach my $k  (sort {$a cmp $b} keys %hkeys){
 	push(@keys,$c);
 }
 push(@keys,file_md5_hex($Bin."/PolyCytoPlotCNV.pl") );
-my $cache_id= "$chr_name;$project_name;$patient_name;$type"."polycyto_plot_cnv".file_md5_hex($Bin."/PolyCytoPlotCNV.pl");
+my $dir = $project->getVariationsDir("wisecondor");
+my $filein_pat_tbi = $dir."/".$patient_name."_bins.bed.gz.tbi";
+my @st = (stat($filein_pat_tbi));
+
+my $cache_id= "$chr_name;$project_name;$patient_name;$type"."polycyto_plot_cnv".file_md5_hex($Bin."/PolyCytoPlotCNV.pl").$st[9].$st[11].$st[12];
 #warn $cache_id;
 my $no_cache;
 my $text;
+#
 $no_cache = $patient->get_lmdb_cache("r");
-warn $no_cache->filename;
+#warn $no_cache->filename;
 $text = $no_cache->get_cache($cache_id);
 $no_cache->close();
 
@@ -117,6 +122,7 @@ my $lpos="";
 my $lratio="";
 my $i=0;
 
+
 foreach my $ligne (@tabValPat)
 {
 	my ($x,$y)=split(/ /,$ligne);
@@ -128,6 +134,7 @@ foreach my $ligne (@tabValPat)
 	$lpos .= $x." ";
 	$lratio .= $y." ";
 }
+
 
 $hres->{'PLOT'} = $trio;
 $hres->{'POSratio'} = $lpos;
@@ -203,6 +210,7 @@ if (($trio ==1)	|| ($trio==3)	) # only dad or both
 	$hres->{'POSratio_dad'} = $lpos;
 	$hres->{'RATIO_dad'} = $lratio;
 }	
+
 	
 if ($trio == 3)	#both parents
 {
@@ -221,7 +229,7 @@ if ($trio == 3)	#both parents
 	
 	# (1) selection des snps informatifs a partir des variants Ho : version patrick
 	
-	if ($type == 1)	# DEL
+	if ($type == 1)	# DEL on regarde tous les variants de l'enfant / au niveau de la deletion tous les variants He du parent non délété deviennent Ho
 	{
 		$v1 = $mother->getVectorOriginHe($chr);
 		$v1 &= $chr->getVectorSubstitutions();
@@ -234,7 +242,7 @@ if ($trio == 3)	#both parents
 		$v2 &= $patient->getVectorOrigin($chr);
 	}
 
-	if ($type >= 2 ) # DUP
+	if ($type >= 2 ) # DUP les snps informatifs sont ceux Ho chez un des parents non présents chez l'autre et He chez l'enfant 
 	{
 		$v1 = $mother->getVectorOriginHo($chr);
 		$v1 &= $chr->getVectorSubstitutions();
@@ -261,20 +269,20 @@ if ($trio == 3)	#both parents
 	while(my $v = $project->nextVariant) {
 		$hvar->{$v->id} ++;
 		$x++;			
-		my $p1 = $v->getPourcentAllele($mother);			# 100 si mother Ho  - sinon
-		my $p2 = $v->getPourcentAllele($father);			# 100 si father Ho    - sinon
+		my $p1 = $v->getPourcentAllele($mother);			# 100 si mother Ho value si He  - sinon
+		my $p2 = $v->getPourcentAllele($father);			# 100 si father Ho value si He - sinon
 		my $value = $v->getPourcentAllele($patient);		# freaquence allelique de l'enfant
 		
 		next if $value eq "-";
 		
-		if ($p1 ne "-"){													# la mere Ho donne allele
+		if ($p1 ne "-"){									# la mere donne allele
 			my $res = $v->start.",".$value.",null";			# frequence allelique de l'enfant attribue a la mere 
 			push(@array,$res);
 		}
 		$p1= "" if $p1 eq "-";
 
-		if ($p2 ne "-"){													# le pere Ho donne allele
-			my $res = $v->start.",null,".$value;				# frequence allelique de l'enfant attribue au pere
+		if ($p2 ne "-"){									# le pere donne allele
+			my $res = $v->start.",null,".$value;			# frequence allelique de l'enfant attribue au pere
 			push(@array,$res);
 		}
 		next if  $p2 eq "-";
@@ -298,153 +306,6 @@ if ($trio == 3)	#both parents
 	$hres->{'POSball'} = $lpos;
 	$hres->{'MOTHER'} = $lmother;
 	$hres->{'FATHER'} = $lfather;
-	
-	
-	
-	# (2) selection des snps informatifs a partir des variants He : version fred (dans le cas des duplications seulement)
-#		my $vector_pos = $chr->getVectorByPosition($deb_cnv,$fin_cnv);
-#
-#		# pere informative
-#		$v1bis = $father->getVectorOriginHe($chr);				# pere He
-#		$v1bis -= $mother->getVectorOriginHe($chr);			# mere non He = Ho muté ou sauvage
-#		$v1bis &= $chr->getVectorSubstitutions();
-#		$v1bis &= $patient->getVectorOriginHe($chr);			# patient He
-#		$v1bis &=  $vector_pos;
-#		my $step =2;
-#		$step = 5 if (scalar($v1bis)>10000);
-#		$step = 10 if (scalar($v1bis)>50000);
-#		my $list1bis = to_array($v1bis,$chr->name,$step);	
-#	
-#		$project->setListVariants($list1bis);
-#		my @arraybis;
-#		#warn scalar(@$list1bis); 
-#		# boucle sur les variants 
-#		my $x1;
-#		my $mean_father=0;
-#		my $mean_mother=0;
-#		while(my $v = $project->nextVariant){		
-#			$x1++;	
-#			my $p1 = $v->getPourcentAllele($father);
-#			my $p2 = $v->getPourcentAllele($mother);
-#			my $value = $v->getPourcentAllele($patient);
-#			next if $value eq "-";
-#
-#			if ($p2 eq "-"){		# mother Ho sauvage
-#				$mean_father += $value;						#				my $res = $v->start.",null,".$value."; push(@arraybis,$res);
-#			}
-#			else	# mother Ho mutée
-#			{
-#				$mean_father += (100-$value);			#				my $res = $v->start.",null,".(100-$value); push(@arraybis,$res);
-#			}
-#		}	
-#		# mere informative
-#		$v2bis = $mother->getVectorOriginHe($chr);
-#		$v2bis -= $father->getVectorOriginHe($chr);
-#		$v2bis &= $chr->getVectorSubstitutions(); 		
-#		$v2bis &= $patient->getVectorOriginHe($chr);
-#		$v2bis &=  $vector_pos;
-#		$step =2;
-#		$step = 5 if (scalar($v2bis)>10000);
-#		$step = 10 if (scalar($v2bis)>50000);
-#		my $list2bis = to_array($v2bis,$chr->name,$step);	
-#		my $nb =0;
-#	#	my @rlist1bis =  grep {($nb++) % 10 == 0 } $list2bis;
-#		$project->setListVariants($list2bis);
-#		warn scalar(@$list1bis)." ".scalar(@$list2bis); 
-#		# boucle sur les variants 
-#		my $x2;
-#		while(my $v = $project->nextVariant){
-#			$x2++;			
-#			my $p1 = $v->getPourcentAllele($father);
-#			my $p2 = $v->getPourcentAllele($mother);
-#			my $value = $v->getPourcentAllele($patient);
-#			next if $value eq "-";
-#		
-#			if ($p1 eq "-"){		# father Ho sauvage
-#																			#				my $res = $v->start.",".$value.",null"; push(@arraybis,$res);
-#				$mean_mother += $value;
-#			}
-#			else		# father Ho muté
-#			{
-#																			#				my $res = $v->start.",".(100-$value).",null"; push(@arraybis,$res);
-#				$mean_mother += (100-$value);
-#			}
-#		}	
-#
-#		# moyenne sur le cnv
-#		$mean_father /= $x1 if ($x1);
-#		$mean_mother /= $x2 if ($x2);
-#
-#		# pere informative
-#		$v1bis = $father->getVectorOriginHe($chr);				# pere He
-#		$v1bis -= $mother->getVectorOriginHe($chr);			# mere non He = Ho muté ou sauvage
-#		$v1bis &= $chr->getVectorSubstitutions();
-#		$v1bis &= $patient->getVectorOriginHe($chr);			# patient He
-#		$v1bis &=  $vector_pos;
-#		
-#		my $list1bis = to_array($v1bis,$chr->name);	
-#		$project->setListVariants($list1bis);
-#		my @arraybis;
-#		
-#		# boucle sur les variants 
-#		my $x1;
-#		my $mean_father=0;
-#		my $mean_mother=0;
-#		
-#		while(my $v = $project->nextVariant){		
-#			$x1++;	
-#			my $p1 = $v->getPourcentAllele($father);
-#			my $p2 = $v->getPourcentAllele($mother);
-#			my $value = $v->getPourcentAllele($patient);
-#			next if $value eq "-";
-#
-#			if ($p2 eq "-"){		# mother Ho sauvage
-#				$mean_father += $value;						#				my $res = $v->start.",null,".$value."; push(@arraybis,$res);
-#			}
-#			else	# mother Ho mutée
-#			{
-#				$mean_father += (100-$value);			#				my $res = $v->start.",null,".(100-$value); push(@arraybis,$res);
-#			}
-#		}	
-#		
-#		# mere informative
-#		$v2bis = $mother->getVectorOriginHe($chr);
-#		$v2bis -= $father->getVectorOriginHe($chr);
-#		$v2bis &= $chr->getVectorSubstitutions(); 		
-#		$v2bis &= $patient->getVectorOriginHe($chr);
-#		$v2bis &=  $vector_pos;
-#
-#		my $list2bis = to_array($v2bis,$chr->name);	
-#		$project->setListVariants($list2bis);
-#		
-#		
-#		# boucle sur les variants 
-#		my $x2;
-#		while(my $v = $project->nextVariant){
-#			$x2++;			
-#			my $p1 = $v->getPourcentAllele($father);
-#			my $p2 = $v->getPourcentAllele($mother);
-#			my $value = $v->getPourcentAllele($patient);
-#			next if $value eq "-";
-#		
-#			if ($p1 eq "-"){		# father Ho sauvage
-#																			#				my $res = $v->start.",".$value.",null"; push(@arraybis,$res);
-#				$mean_mother += $value;
-#			}
-#			else		# father Ho muté
-#			{
-#																			#				my $res = $v->start.",".(100-$value).",null"; push(@arraybis,$res);
-#				$mean_mother += (100-$value);
-#			}
-#		}	
-#
-#		# moyenne sur le cnv
-#		$mean_father /= $x1 if ($x1);
-#		$mean_mother /= $x2 if ($x2);
-#
-#		$hres->{'MEANF'} = $mean_father;
-#		$hres->{'MEANM'} = $mean_mother;
-	
 }
 else
 {
@@ -485,8 +346,9 @@ else
 	$hres->{'PATIENT'} = $lpatient;
 }
 
-push( @listHashRes, { %{ $hres } } );
 
+
+push( @listHashRes, { %{ $hres } } );
 
 
 my $stdout2 = tee_stdout {
@@ -527,7 +389,6 @@ sub to_array {
 	while ( my ( $from, $to ) = $iter->() ) {
 		for my $member ( $from .. $to ) {
 			$x++;
-			#next if !($trio==3) && ($x%10 != 0);
 			next if ($x%10 != 0);
 			if ($name) {
 				push( @t, $name . "!" . $member );
