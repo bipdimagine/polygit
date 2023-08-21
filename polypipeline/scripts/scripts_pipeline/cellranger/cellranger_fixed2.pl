@@ -429,7 +429,7 @@ if ($step eq "tar" or $step eq "all"){
 	print "\t www.polyweb.fr/NGS/$projectName/$run.tar.gz \n";
 	print "\t#########################################\n";
 }
-
+#
 if ($step eq "cp" or $step eq "all"){
 	my $dirout = "/data-isilon/SingleCell/$projectName";
 	
@@ -440,7 +440,6 @@ if ($step eq "cp" or $step eq "all"){
 	}
 	foreach my $group_name (keys %$hgroups){
 		warn  "$dir/$group_name";
-		
 		my $cmd= qq{rsync -rav  $dir/$group_name $dirout && cp $dir/$group_name.csv $dirout };
 		warn $cmd;
 		system($cmd);
