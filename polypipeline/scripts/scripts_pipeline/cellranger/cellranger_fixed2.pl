@@ -418,7 +418,7 @@ if ($step eq "aggr" or $step eq "all"){
 #}
 
 ##commande pour copier sur /data-isilon/singleCell
-
+#
 if ($step eq "tar" or $step eq "all"){
 	my $tar_cmd = "tar -cvzf $dir/$run.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
 	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
