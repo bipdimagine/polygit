@@ -418,7 +418,7 @@ if ($step eq "aggr" or $step eq "all"){
 #}
 
 ##commande pour copier sur /data-isilon/singleCell
-
+#
 if ($step eq "tar" or $step eq "all"){
 	my $tar_cmd = "tar -cvzf $dir/$run.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
 	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
@@ -431,17 +431,20 @@ if ($step eq "tar" or $step eq "all"){
 }
 
 if ($step eq "cp" or $step eq "all"){
+	my $dirout = "/data-isilon/SingleCell/$projectName";
+	
+	system("mkdir $dirout") unless -e $dirout;
+	my $hgroups ;
 	foreach my $patient (@{$patients_name}) {
-		my $name = $patient->name();
-		my $dirout = "/data-isilon/SingleCell/$projectName";
-		my $cp_cmd = "mkdir $dirout ; cp -r $dir/$name $dirout/. ; cp -r $dir/$name $dirout/. ";
-		warn $cp_cmd;
-		#die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
-		system ($cp_cmd) ;# unless $no_exec==1;
-		#or die "impossible $tar_cmd";
-		print "\t#########################################\n";
-		print "\t  cp to /data-isilon/SingleCell/$projectName  \n";
-		print "\t#########################################\n";
+		$hgroups->{$patient->somatic_group}++ 
+	}
+	foreach my $group_name (keys %$hgroups){
+		warn  "$dir/$group_name";
+		
+		my $cmd= qq{rsync -rav  $dir/$group_name $dirout && cp $dir/$group_name.csv $dirout };
+		warn $cmd;
+		system($cmd);
+		
 	}
 }
 
