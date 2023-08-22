@@ -6477,4 +6477,3 @@ sub writeCaptureBedFile {
 }
 
 1;
-
