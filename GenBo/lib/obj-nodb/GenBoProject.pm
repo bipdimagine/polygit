@@ -1959,6 +1959,7 @@ has annotation_genome_version => (
 		my $self    = shift;
 		my $version = $self->getVersion();
 		$version = "HG19" if $version =~ /HG19/;
+		$version = "HG38" if $version =~ /HG38/;
 		return $version;
 	}
 );
@@ -2050,7 +2051,7 @@ has gtf_file => (
 		 $file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
 		  	. $version . '/'
 			. $self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
-		 die($file);	
+		 die($file) unless -e $file;	
 #		my @patients          = @{ $self->getPatients() };
 #		my $alignMeth = $patients[0]->alignmentMethod();
 #		warn $self->annotation_genome_version;
@@ -2067,18 +2068,18 @@ has gtf_file => (
 );
 
 
-#has gtf_file_dragen => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self = shift;
-#		my $path = my $version = $self->getVersion();
-#		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-#		  .   '/gencode.v'.$self->gencode_version."/annotation.gtf";
-#		  die ($file);
-#		return $file;
-#	},
-#);
+has gtf_dragen_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		  .   '/gencode.v'.$self->gencode_version."/annotation.gtf";
+		  die ($file);
+		return $file;
+	},
+);
 
 
 #has gtf_file_star => (
@@ -4080,6 +4081,15 @@ sub getAlignmentRootDirWithVersion {
 	my $path = $self->getProjectRootPath() . "/".$version. "/align/";
 	return $self->makedir($path);
 }
+##
+sub getAlignmentStatsDir {
+	my ( $self, $method_name,$version ) = @_;
+	confess() unless $method_name;
+	my $path = $self->getAlignmentDir($method_name) . "/stats/";
+	return $self->makedir($path);
+}
+
+
 
 sub getAlignmentDir {
 	my ( $self, $method_name,$version ) = @_;
@@ -4087,6 +4097,7 @@ sub getAlignmentDir {
 	my $path = $self->getAlignmentRootDir($version) . "/" . $method_name . '/';
 	return $self->makedir($path);
 }
+
 
 sub getAlignmentDirName {
 	my ($self) = @_;
@@ -6466,4 +6477,3 @@ sub writeCaptureBedFile {
 }
 
 1;
-
