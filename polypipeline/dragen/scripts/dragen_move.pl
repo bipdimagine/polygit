@@ -102,6 +102,8 @@ if (exists $pipeline->{align}){
 #warn $bam_pipeline;
 	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
 	move_bam($bam_pipeline,$patient);# if ($version );
+	my $dir_out = $patient->project->getAlignmentStatsDir("dragen-align");
+	move_stats($dir_pipeline,$dir_out,$patient);
 }
 if (exists $pipeline->{gvcf}){
 	my $gvcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
@@ -153,16 +155,20 @@ exit(0);
 
 
 
-
+sub move_stats {
+	my ($dir1,$dir2,$patient) = @_;
+	system("rsync -rav $dir1/".$patient->name."*csv $dir2/ ");
+	
+}
 
 
 sub move_bam {
 	my ($bam,$patient) = @_;
 	my $prod = $patient->getBamFileName("dragen-align");
 	 $prod = $patient->getCramFileName("dragen-align") if $bam =~ /cram/;
-	system("rsync -rav  $url"."$bam $prod ");
+	system("rsync -rav --remove-source-files $url"."$bam $prod ");
 	system("rsync -rav  $url"."$bam.bai $prod.bai ");
-	system("rsync -rav  $url"."$bam.cai $prod.cai ");
+	system("rsync -rav  $url"."$bam.cai $prod.cai ") if $bam =~ /cram/;
 	
 }
 
@@ -233,4 +239,3 @@ sub backup {
 		unlink $final_gz;
 		unlink $final_gz.".tbi" if -e $final_gz.".tbi";
 }
-

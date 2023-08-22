@@ -28,7 +28,7 @@ sub mendelian_statistics {
 			}
 
 			#warn $hres->{data};
-			die() unless $hres->{data};
+			die(Dumper $res) unless $hres->{data};
 			push( @{ $results->{data} }, @{ $hres->{data} } );
 
 		}
@@ -39,9 +39,10 @@ sub mendelian_statistics {
 	my $pid;
 	foreach my $f ( @{ $project->getFamilies } ) {
 		$f->getMembers();
-
+		#next if $f->name ne "DOU";
 		$pid = $pm->start and next;
-
+		warn $f->name;
+		
 		$project->buffer->dbh_reconnect();
 		#my $ps = $f->getMembers();
 		#	next if scalar(@$ps) > 1;
@@ -140,7 +141,9 @@ sub concatVcf {
 	my $variant_string = join( " ", @vcfs );
 
 #my $cmd = " $bcftools merge   $variant_string -o $fileout --force-samples >$fileout " ;
+
 	my $cmd = " $bcftools merge   $variant_string -o $fileout  >$fileout 2>/dev/null";
+	warn $cmd;
 	system($cmd) unless -e $fileout;
 	warn "end";
 	return $fileout;
@@ -226,7 +229,6 @@ sub fast_plink {
 				$string[1] = "/";
 				$string[2] = $string[0];
 			}
-
 			#else { 	warn scalar(@gsamples) ;die($line." ".@string." ".$name); }
 			my $a;
 			my $b;
@@ -238,11 +240,19 @@ sub fast_plink {
 
 				#$geno = "0 0" if $v < 10;
 			}
-
+			
 			#my $v = $tt[$DP];
 			#$geno = "0 0" if $v < 10;
 			my $geno;
-			if ( $a + $b < 10 ) {
+			if ( $string[0] eq "." && $string[2] eq "." ) {
+				$geno = "0 0";
+				my $patient = $project->getPatient($name);
+				my $d       = $patient->depth( $chrom, $pos, $pos );
+				$geno = "0 0";
+				$geno = "$ref $ref" if ( $d->[0] > 30 );
+				#warn $d->[0] if ($d->[0] < 20);
+			}
+			elsif ( $a + $b < 10  ) {
 				$geno = "0 0";
 			}
 			elsif ( $string[0] eq "0" && $string[2] eq "0" ) {
@@ -260,29 +270,12 @@ sub fast_plink {
 				$geno = "$alt $alt";
 				$geno = "0 0" if ( $a + $b ) < 20;
 			}
-			elsif ( $string[0] eq "." && $string[2] eq "." ) {
-				$geno = "0 0";
-				my $patient = $project->getPatient($name);
-				my $d       = $patient->depth( $chrom, $pos, $pos );
-				$geno = "0 0";
-				$geno = "$ref $ref" if ( $d->[0] > 30 );
-				warn "$name " . $geno . " " . $d->[0] if $debug;
-
-				#warn $d->[0] if ($d->[0] < 20);
-			}
-
 			#elsif ($string =~ /.:./) { $geno ="$ref $ref"; }
 			else {
 				warn scalar(@gsamples);
 				die( $line . " " . @string . " " . $name );
 			}
-			if ( $DP > 0 ) {
-
-				#my @tt = split(":",$string);
-				#my $v = $tt[$DP];
-				#$geno = "0 0" if $v < 10;
-
-			}
+			
 			warn $name . " " . $geno if $debug;
 			$snp->{samples}->{$name} = $geno;
 		}
