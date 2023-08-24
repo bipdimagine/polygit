@@ -13,6 +13,7 @@ sub mendelian_statistics {
 	my $res;
 	$res  = {};
 	$fork = 1 unless $fork;
+
 	#$fork=1;
 	my $pm = new Parallel::ForkManager($fork);
 	my $results;
@@ -28,7 +29,7 @@ sub mendelian_statistics {
 			}
 
 			#warn $hres->{data};
-			die(Dumper $res) unless $hres->{data};
+			die( Dumper $res) unless $hres->{data};
 			push( @{ $results->{data} }, @{ $hres->{data} } );
 
 		}
@@ -39,11 +40,13 @@ sub mendelian_statistics {
 	my $pid;
 	foreach my $f ( @{ $project->getFamilies } ) {
 		$f->getMembers();
+
 		#next if $f->name ne "DOU";
 		$pid = $pm->start and next;
 		warn $f->name;
-		
+
 		$project->buffer->dbh_reconnect();
+
 		#my $ps = $f->getMembers();
 		#	next if scalar(@$ps) > 1;
 		my $vcf = concatVcf( $project, $f );
@@ -74,7 +77,7 @@ sub mendelian_statistics2 {
 	my ($project) = @_;
 
 	my $vcf = concatVcf($project);
-	warn ":::>".$vcf;
+	warn ":::>" . $vcf;
 	return fast_plink( $project, $vcf );
 }
 
@@ -93,10 +96,12 @@ sub concatVcf {
 		system("mkdir -p $dir_out");
 	}
 
-	my $fileout =  $dir_out . "/" . $project->name . "." . $fam->name . ".merge.vcf";
+	my $fileout =
+	  $dir_out . "/" . $project->name . "." . $fam->name . ".merge.vcf";
 	my $fileout1 =
 	  $dir_out . "/" . $project->name . "." . $fam->name . ".merge1.vcf";
 	my $bed = $dir_out . "/" . $project->name . ".bed";
+
 	#return $fileout if -e $fileout;
 	unlink $fileout if -e $fileout;
 	unlink $bed     if -e $bed;
@@ -142,7 +147,8 @@ sub concatVcf {
 
 #my $cmd = " $bcftools merge   $variant_string -o $fileout --force-samples >$fileout " ;
 
-	my $cmd = " $bcftools merge   $variant_string -o $fileout  >$fileout 2>/dev/null";
+	my $cmd =
+	  " $bcftools merge   $variant_string -o $fileout  >$fileout 2>/dev/null";
 	warn $cmd;
 	system($cmd) unless -e $fileout;
 	warn "end";
@@ -194,12 +200,16 @@ sub fast_plink {
 
 		my $snp;
 		my $id = $chrom . "_" . $pos . "_" . $alt;
+		my $chro = $project->getChromosome($chrom,1);
+		next unless $chro;
+		
 		$snp->{id}       = $id;
 		$snp->{position} = $pos;
 		$chrom =~ s/chr//;
 		my $debug;
 		$debug = 1    if $id eq "1_754964_T";
-		$chrom = "MT" if $chrom eq "M";
+		#$chrom = "MT" if $chrom eq "M";
+		#$chrom = $chro->name;
 		$snp->{chr} = $chrom;
 
 		unless ($DP) {
@@ -229,6 +239,7 @@ sub fast_plink {
 				$string[1] = "/";
 				$string[2] = $string[0];
 			}
+
 			#else { 	warn scalar(@gsamples) ;die($line." ".@string." ".$name); }
 			my $a;
 			my $b;
@@ -240,7 +251,7 @@ sub fast_plink {
 
 				#$geno = "0 0" if $v < 10;
 			}
-			
+
 			#my $v = $tt[$DP];
 			#$geno = "0 0" if $v < 10;
 			my $geno;
@@ -250,9 +261,10 @@ sub fast_plink {
 				my $d       = $patient->depth( $chrom, $pos, $pos );
 				$geno = "0 0";
 				$geno = "$ref $ref" if ( $d->[0] > 30 );
+
 				#warn $d->[0] if ($d->[0] < 20);
 			}
-			elsif ( $a + $b < 10  ) {
+			elsif ( $a + $b < 10 ) {
 				$geno = "0 0";
 			}
 			elsif ( $string[0] eq "0" && $string[2] eq "0" ) {
@@ -270,12 +282,13 @@ sub fast_plink {
 				$geno = "$alt $alt";
 				$geno = "0 0" if ( $a + $b ) < 20;
 			}
+
 			#elsif ($string =~ /.:./) { $geno ="$ref $ref"; }
 			else {
 				warn scalar(@gsamples);
 				die( $line . " " . @string . " " . $name );
 			}
-			
+
 			warn $name . " " . $geno if $debug;
 			$snp->{samples}->{$name} = $geno;
 		}
@@ -334,7 +347,8 @@ sub fast_plink {
 	close TPED;
 	warn $tped_file;
 	if ( @{ $fam->getParents } ) {
-		my $cmd2 = "$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
+		my $cmd2 =
+"$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
 
 		#	warn $cmd2;
 		my @log   = `$cmd2`;
@@ -757,55 +771,67 @@ sub statistics_variations2 {
 
 }
 
-
 sub check_calling_methods_in_cache {
 	my ($project) = @_;
-	foreach my $patient (@{$project->getPatients()}) {
+	foreach my $patient ( @{ $project->getPatients() } ) {
 		my $pname = $patient->name();
 		print "\n";
-		print colored::stabilo('white',"# Patient $pname",1);
+		print colored::stabilo( 'white', "# Patient $pname", 1 );
 		print "\n";
-		my ($h_methods_patient, $h_methods_variants);
-		foreach my $method (@{$patient->getCallingMethods()}) { $h_methods_patient->{$method} = undef; }
-		my @lChr = @{$project->getChromosomes()};
-		foreach my $chr (reverse @lChr) {
+		my ( $h_methods_patient, $h_methods_variants );
+		foreach my $method ( @{ $patient->getCallingMethods() } ) {
+			$h_methods_patient->{$method} = undef;
+		}
+		my @lChr = @{ $project->getChromosomes() };
+		foreach my $chr ( reverse @lChr ) {
 			next if $chr->not_used();
+
 			#print "-> checking chr".$chr->id()."\n";
-			my $no = $chr->get_lmdb_variations("r");
+			my $no     = $chr->get_lmdb_variations("r");
 			my $cursor = $no->cursor( 1, $chr->end() );
 			while ( my $var_id = $cursor->next_key ) {
 				my $lmdb_index = $cursor->current_index();
-				my $variation = $no->get($var_id);
-				my $h_details = $variation->sequencing_details($patient);
-				foreach my $method (keys %{$h_details}) {
+				my $variation  = $no->get($var_id);
+				my $h_details  = $variation->sequencing_details($patient);
+				foreach my $method ( keys %{$h_details} ) {
 					$h_methods_variants->{$method}++;
 				}
 			}
 			$no->close();
-			last if (scalar(keys %$h_methods_patient) == scalar(keys %$h_methods_variants));
+			last
+			  if (
+				scalar( keys %$h_methods_patient ) ==
+				scalar( keys %$h_methods_variants ) );
 		}
-		
-		
-		foreach my $method (sort keys %$h_methods_patient) {
-			my @lLetters = split('', $method);
-			my $method_3letters = $lLetters[0].$lLetters[1].$lLetters[2];
-			if (exists $h_methods_variants->{$method_3letters}) {
+
+		foreach my $method ( sort keys %$h_methods_patient ) {
+			my @lLetters        = split( '', $method );
+			my $method_3letters = $lLetters[0] . $lLetters[1] . $lLetters[2];
+			if ( exists $h_methods_variants->{$method_3letters} ) {
 				my $text = $method;
-				print colored::stabilo('green',$text,1);
-				print ' => found '.$method_3letters.' => found nb '.$h_methods_variants->{$method_3letters};
+				print colored::stabilo( 'green', $text, 1 );
+				print ' => found '
+				  . $method_3letters
+				  . ' => found nb '
+				  . $h_methods_variants->{$method_3letters};
 				print "\n";
 				delete $h_methods_variants->{$method_3letters};
 			}
 			else {
 				my $text = $method;
-				print colored::stabilo('red',$text,1);
-				print ' => not found '.$method_3letters;
+				print colored::stabilo( 'red', $text, 1 );
+				print ' => not found ' . $method_3letters;
 				print "\n";
 			}
 		}
-		if (scalar keys %$h_methods_variants > 0) {
+		if ( scalar keys %$h_methods_variants > 0 ) {
 			print "\n";
-			print colored::stabilo('red','=> found this method(s) in cache: '.sort join(', ', keys %$h_methods_variants),1); 
+			print colored::stabilo(
+				'red',
+				'=> found this method(s) in cache: ' .
+				  sort join( ', ', keys %$h_methods_variants ),
+				1
+			);
 			print "\n";
 		}
 	}
