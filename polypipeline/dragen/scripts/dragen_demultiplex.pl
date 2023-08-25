@@ -371,7 +371,14 @@ my $pm   = new Parallel::ForkManager($fork);
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name 			=> $project_name );
-	my $run = $project->getRun;
+	my $runs = $project->getRuns;
+	my $run;
+	if($run_name_option){
+		($run) = grep{$_->plateform_run_name eq "$run_name_option"} @$runs;
+	}
+	else {
+		$run = $runs->[0];
+	}
 	my $out_fastq = $run->fastq_dir();
 	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ");
 	
