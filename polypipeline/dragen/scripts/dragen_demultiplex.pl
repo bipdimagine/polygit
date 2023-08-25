@@ -38,9 +38,11 @@ my $sample_sheet;
 my $mask = undef;
 my $l2;
 my $force;
+my $run_name_option;
 GetOptions(
 	'project=s' => \$project_names,
 	'l2=s' => \$l2,
+	'run=s' => \$run_name_option,
 );
  
 my $bcl_dir;
@@ -54,7 +56,23 @@ my $umi_name;
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name 			=> $project_name );
-	my $run = $project->getRun;
+	my $runs = $project->getRuns;
+	my $run;
+	if (scalar(@$runs)> 1){
+		unless ($run_name_option){
+			print colored(['bright_red on_black'],"Hey Manue you have ".scalar(@$runs)." runs in the projects $project_name you have to choose one and add -run on the command line" )."\n";
+			foreach my $run (@$runs){
+				print colored(['bright_green on_black'],$run->plateform_run_name)." ".colored(['bright_blue on_black'],$run->date)."\n";
+			}
+			die();
+		}
+		($run) = grep{$_->plateform_run_name eq "$run_name_option"} @$runs;
+		die("unable to find $run_name_option ".$project_name) unless $run;
+	}
+	else {
+		$run = $runs->[0];
+	}
+	#die() if scalar(@$runs)> 1;
 	#warn 
 	foreach my $capture (@{$project->getCaptures}){
 		if ($capture->umi){
@@ -63,8 +81,8 @@ foreach my $project_name (split(",",$project_names)){
 		 die("problem more than one mask ") if $mask ne $capture->umi->{mask};
 		}
 	}
-	map {$patients{$_->name}++} @{$project->getPatients};
-	my $run = $project->getRun();
+	map {$patients{$_->name}= $project->name} @{$project->getPatients};
+	#my $run = $project->getRun();
 	
 	$run_name = $run->run_name;
 	
@@ -283,7 +301,7 @@ foreach my $data (@{$lines->{"[Data]"}}){
 	next if $name =~ /_RC/; 
 	next if exists $dj->{$name};
 	next unless $name;
-	$error_not_in_project->{$name} ++ unless exists $patients{$name};
+	$error_not_in_project->{$name} = $patients{$name}  unless exists $patients{$name};
 	$ok->{$name} ++;
  	delete $patients{$name};
  	$dj->{$name}++;
@@ -297,8 +315,14 @@ if (keys %$ok) {
 }
 if (keys %patients) {
 	print colored(['bright_red on_black']," SAMPLE IN PROJECT NOT IN SAMPLE SHEET :")."\n";
-	map {print $_."\n"} keys %patients;
-	$error =1;
+	map {print $_."\t".$patients{$_}."\n"} keys %patients;
+	if ($run_name_option) {
+		my $choice = prompt("continue anyway  (y/n) ? ");
+		die() if ($choice ne "y"); 
+	}
+	else {
+		$error =1;
+	}
 }
 
 if (keys %$error_not_in_project) {
@@ -312,7 +336,12 @@ if (keys %$error_not_in_project) {
 		
 }
 
-die() if $error;
+if ($error && $run_name_option) {
+		my $choice = prompt("continue anyway  (y/n) ? ");
+		die() if ($choice ne "y"); 
+}
+elsif  ($error) {die();}
+
 unshift( @{$lines->{"[Data]"}},$lheader_data);
 my $outcsv;
 
