@@ -411,13 +411,16 @@ function hideShowWait(){
 	var type = "todo";
 	
 
-function reload_project(){
+function reload_project(force){
 	  //var username = dojo.cookie("username");
 	  	var this_panel = panel;
 	  	if (is_project_update == 'yes') {
 	  		this_panel = 'sysid';
 	  	}
         var url_project = url_summary+"?project="+project_name+"&panel="+this_panel+"&user_name="+cookie_username;
+        if (force){
+        	url_project = url_project+"&force=1";
+        }
         summary.setHref(url_project);
 	
 		//alert("cuicui");
