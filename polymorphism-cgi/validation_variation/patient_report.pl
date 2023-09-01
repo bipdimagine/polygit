@@ -547,11 +547,11 @@ if ($edit_mode){
 	
 	print qq{<div style="visibility: hidden">};
  	$data = construct_data(1);
- 
  	print qq{</div>};
 	$out_global .= print_hotspot($data,$cgi);
 	$out_global .= edit_mode($data,$cgi);
 	print $out_global;
+	print "*** => END  NB : ".scalar( keys %{$data->[0]->{variations}});
 	exit(0);
 	
 }
@@ -578,7 +578,6 @@ my $CSS = "";
 	#print $out;
 	#exit(0);
 html::print_cgi($cgi,$CSS.$out_global,$print,$patient_name." - PolyDiag");
-
 exit(0);
 
 
@@ -804,7 +803,7 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version = "1";
+	my $version = "1.1";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
