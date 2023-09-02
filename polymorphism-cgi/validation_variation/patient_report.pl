@@ -547,11 +547,11 @@ if ($edit_mode){
 	
 	print qq{<div style="visibility: hidden">};
  	$data = construct_data(1);
- 
  	print qq{</div>};
 	$out_global .= print_hotspot($data,$cgi);
 	$out_global .= edit_mode($data,$cgi);
 	print $out_global;
+	print "*** => END  NB : ".scalar( keys %{$data->[0]->{variations}});
 	exit(0);
 	
 }
@@ -578,7 +578,6 @@ my $CSS = "";
 	#print $out;
 	#exit(0);
 html::print_cgi($cgi,$CSS.$out_global,$print,$patient_name." - PolyDiag");
-
 exit(0);
 
 
@@ -675,7 +674,7 @@ sub construct_htranscripts {
 					$hvariation->{max_pop} =~ s/<[^>]*>//gs;
 					$hvariation->{cadd} =~ s/<[^>]*>//gs;
 				}
-					update::edit($patient,$hvariation); 
+					update::edit($patient,$hvariation,$tr1->getGene->id()); 
 				
 					update::clinvar($project,$hvariation); 
 					update::hgmd($project,$hvariation); 
@@ -804,13 +803,13 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version = "1";
+	my $version = "1.1";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
-	$text = undef if $pipeline;
+	$text = undef ;#if $pipeline;
 
 	$compute_coverage = 1;
 
@@ -1138,13 +1137,21 @@ sub printRejected {
 
 sub printValidated {
 	my ($patient) = @_;
-	my $out = html::print_cadre($cgi,"NGS validated Variations");
+	
 	my $type = "validated";
 	my $n = 0;
+	my $text ;
 	foreach my $transcript (@{$patient->{transcripts}}){
 		$n+=  scalar  @{$transcript->{$type}} if  $transcript->{$type} ;
-	}
+		if  ($transcript->{$type}){
+			foreach my $v (@{$transcript->{$type}}){
+				my ($a,$b) = split(" ",$v->{modification_date});
+				$text.=" - ".$v->{user_name}." (".$a.")"." - ";
+			}
+		}
+	}		
 	return if $n ==0 ;
+	my $out = html::print_cadre($cgi,"validated Variations  $text","#D64839");
 	$out.= printVariations2($patient,"Validated Variations","validated");
 	$out.=html::end_cadre($cgi);
 	return $out;
@@ -1152,12 +1159,20 @@ sub printValidated {
 
 sub printTodo {
 	my ($patient) = @_;
-	my $out = html::print_cadre($cgi,"Todo  Variations");
+	
 	my $type = "todo";
 	my $n = 0;
+	my $text;
 	foreach my $transcript (@{$patient->{transcripts}}){
 		$n+=  scalar  @{$transcript->{$type}} if  $transcript->{$type} ;
+		if  ($transcript->{$type}){
+			foreach my $v (@{$transcript->{$type}}){
+				my ($a,$b) = split(" ",$v->{modification_date});
+				$text.=" - ".$v->{user_name}." (".$a.")"." - ";
+			}
+		}
 	}
+	my $out = html::print_cadre($cgi,"Todo  Variations $text");
 	return if $n ==0 ;
 	$out.= printVariations2($patient,"Todo Variations","todo");
 	$out.=html::end_cadre($cgi);
@@ -2408,6 +2423,7 @@ sub printVariations2 {
 	my %nm;
 	foreach my $tr (@{$patient->{transcripts}}){
 		push(@{$genes{$tr->{name} } },$tr);
+		$tr->{obj} = $project->newTranscript($tr->{id});
 		my $n =  $tr->{obj}->name;
 		my $t = $tr->{external_name};
 		my @te = split(";",$t);

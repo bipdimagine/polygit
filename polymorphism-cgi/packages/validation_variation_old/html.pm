@@ -14,10 +14,11 @@ sub print_cadre2 {
 }
 
 sub print_cadre {
-	my ($cgi,$title) =  @_;
+	my ($cgi,$title,$color) =  @_;
 	my $out2= $cgi->start_div({class=>"panel panel-primary",style=>"font-size: 12px;font-family:  Verdana;"});
-	$out2 .= $cgi->div({class=>"panel-heading",syle=>"padding=100px;"},$title)."";
-	
+	my $style ="";
+	$style ="background-color:".$color if $color;
+	$out2 .= $cgi->div({class=>"panel-heading",style=>"$style"},$title)."";
 	
 	return $out2;
 	
