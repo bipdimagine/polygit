@@ -10,7 +10,7 @@ use Time::Piece;
   use Carp qw(confess croak);
  use Data::Printer;
  use JSON::XS;
- 
+use Data::Dumper;
  our $fts = "8px";
  our $print =0;
  
@@ -1630,16 +1630,27 @@ sub deja_vu{
 }
 
 sub edit {
-	 my ($patient,$hvariation) = @_;
+	 my ($patient,$hvariation,$gene_id) = @_;
+	 my $hval     = $patient->validations();
+	# warn Dumper $hval;
+	 #die();
+	# warn "----";
+	
 	 my $lists = $patient->getListValidatedVariants();
-	 	$hvariation->{type} = "other";
+	 #warn Dumper $lists;
+	 #die();
+	 $hvariation->{type} = "other";
 	$hvariation->{sanger} = "-";
 	#$hvariation->{user_name} = "";
-	my $id =$hvariation->{id};
-
-	return unless exists $lists->{$id};
+	my $id =$gene_id."!".$hvariation->{id};
 	
-	my $v =  $lists->{$id};
+	#warn Dumper(keys %$hval);
+	#warn $hval->{$id}->{validation_sanger};
+	#die($hval->{$id}->{validation_sanger}) if exists $hval->{$id} ;
+	return unless exists $hval->{$id};
+	my $v =  $hval->{$id}->[0];
+	$v->{validation_ngs} = $v->{validation};
+	#my $v =  $lists->{$id};
 	$hvariation->{always_keep} = 1;
 	if ($v->{validation_sanger} == -5 ){
 				$hvariation->{type} = "rejected";
@@ -1663,6 +1674,8 @@ sub edit {
 			$hvariation->{sanger} = "todo";
 			$hvariation->{type_confirmed} = "-";
 			$hvariation->{type_confirmed_ngs} = "todo";
+			$hvariation->{user_name} = $v->{user_name};
+			$hvariation->{modification_date} = $v->{modification_date}; 
 		}
 		elsif ( $v->{validation_ngs} == -1){
 			$hvariation->{type} = "rejected";
@@ -1674,7 +1687,9 @@ sub edit {
 			$hvariation->{type_confirmed} = "ngs";
 			$hvariation->{type_confirmed_ngs} = "ho";
 		}
-		elsif (  $v->{validation_ngs} == 2){
+		elsif (  $v->{validation_ngs} >= 2){
+				$hvariation->{user_name} = $v->{user_name};
+				$hvariation->{modification_date} = $v->{modification_date};   
 				$hvariation->{type} = "validated";
 				$hvariation->{type_confirmed} = "ngs";
 				$hvariation->{type_confirmed_ngs} = "he";
@@ -1682,8 +1697,8 @@ sub edit {
    
 
 		}
-		
-	 
+		warn $hvariation->{type}
+	
 }
  
  sub tclinical_local {

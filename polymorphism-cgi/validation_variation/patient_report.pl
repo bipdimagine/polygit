@@ -674,7 +674,7 @@ sub construct_htranscripts {
 					$hvariation->{max_pop} =~ s/<[^>]*>//gs;
 					$hvariation->{cadd} =~ s/<[^>]*>//gs;
 				}
-					update::edit($patient,$hvariation); 
+					update::edit($patient,$hvariation,$tr1->getGene->id()); 
 				
 					update::clinvar($project,$hvariation); 
 					update::hgmd($project,$hvariation); 
@@ -809,7 +809,7 @@ sub construct_data {
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
-	$text = undef if $pipeline;
+	$text = undef ;#if $pipeline;
 
 	$compute_coverage = 1;
 
@@ -1137,13 +1137,21 @@ sub printRejected {
 
 sub printValidated {
 	my ($patient) = @_;
-	my $out = html::print_cadre($cgi,"NGS validated Variations");
+	
 	my $type = "validated";
 	my $n = 0;
+	my $text ;
 	foreach my $transcript (@{$patient->{transcripts}}){
 		$n+=  scalar  @{$transcript->{$type}} if  $transcript->{$type} ;
-	}
+		if  ($transcript->{$type}){
+			foreach my $v (@{$transcript->{$type}}){
+				my ($a,$b) = split(" ",$v->{modification_date});
+				$text.=" - ".$v->{user_name}." (".$a.")"." - ";
+			}
+		}
+	}		
 	return if $n ==0 ;
+	my $out = html::print_cadre($cgi,"validated Variations  $text","#D64839");
 	$out.= printVariations2($patient,"Validated Variations","validated");
 	$out.=html::end_cadre($cgi);
 	return $out;
@@ -1151,12 +1159,20 @@ sub printValidated {
 
 sub printTodo {
 	my ($patient) = @_;
-	my $out = html::print_cadre($cgi,"Todo  Variations");
+	
 	my $type = "todo";
 	my $n = 0;
+	my $text;
 	foreach my $transcript (@{$patient->{transcripts}}){
 		$n+=  scalar  @{$transcript->{$type}} if  $transcript->{$type} ;
+		if  ($transcript->{$type}){
+			foreach my $v (@{$transcript->{$type}}){
+				my ($a,$b) = split(" ",$v->{modification_date});
+				$text.=" - ".$v->{user_name}." (".$a.")"." - ";
+			}
+		}
 	}
+	my $out = html::print_cadre($cgi,"Todo  Variations $text");
 	return if $n ==0 ;
 	$out.= printVariations2($patient,"Todo Variations","todo");
 	$out.=html::end_cadre($cgi);
@@ -2407,6 +2423,7 @@ sub printVariations2 {
 	my %nm;
 	foreach my $tr (@{$patient->{transcripts}}){
 		push(@{$genes{$tr->{name} } },$tr);
+		$tr->{obj} = $project->newTranscript($tr->{id});
 		my $n =  $tr->{obj}->name;
 		my $t = $tr->{external_name};
 		my @te = split(";",$t);
