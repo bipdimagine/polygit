@@ -133,7 +133,7 @@ function displayInIGV(chr, start, end){
 
 function displayOneBAMIGV(file){
     var url = "http://localhost:60151/load?file="+file;
-	url += "&merge=false";
+	url += "&merge=true";
     httpGetFocusOn(url);
 	return 1;
 }
@@ -151,7 +151,7 @@ function init_igv (){
 	var polyweb_url =window.location.origin; // url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa";
 	 var url_fasta2 = polyweb_url+"/public-data/genome/"+igv_genome+"/fasta/all.fa";
 		url += "?genome=hg19"+"&file="+polyweb_url+url_gene_bed;
-		url += "&merge=false";
+		url += "&merge=true";
 	    httpGetFocusOn(url);
 	return 1;		
 }
@@ -166,12 +166,12 @@ function launch_igv_tool_rna(fasta, tracks, locus) {
 		url += "?genome=" + fasta;
 		url += "&file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=false";
+		url += "&merge=true";
 	}
 	else {
 		url += "?file=" + tracks;
 		url += "&locus=" + locus;
-		url += "&merge=false";
+		url += "&merge=true";
 	}
     httpGetFocusOn(url);
 	return 1;
