@@ -288,6 +288,21 @@ sub annote_output_file {
 				$h->{isClinvarPathogenic} = $var->isClinvarPathogenic();
 				$h->{isClinvarPathogenic} = '-' unless ($h->{isClinvarPathogenic});
 				
+				$h->{gnomadAC} = $var->getGnomadAC();
+				$h->{gnomadAC} = '-' unless ($h->{gnomadAC});
+				
+				$h->{gnomadAN} = $var->getGnomadAN();
+				$h->{gnomadAN} = '-' unless ($h->{gnomadAN});
+				
+				$h->{gnomadHO} = $var->getGnomadHO();
+				$h->{gnomadHO} = '-' unless ($h->{gnomadHO});
+				
+				$h->{gnomadMinPop} = $var->min_pop_freq().':'.$var->min_pop_name();
+				$h->{gnomadMinPop} = '-' unless ($h->{gnomadMinPop});
+				
+				$h->{gnomadMaxPop} = $var->max_pop_freq().':'.$var->max_pop_name();
+				$h->{gnomadMaxPop} = '-' unless ($h->{gnomadMaxPop});
+				
 				my $hTrIds;
 				foreach my $tr (@{$var->getTranscripts()}) {
 					next if ($use_main_transcripts and not $tr->isMain());
@@ -370,6 +385,11 @@ sub annote_output_file {
 					push(@lCol, 'clinvar_id:'.$h->{clinvar_id});
 					push(@lCol, 'db_freq:'.$h->{frequency});
 					push(@lCol, 'dejavu:'.$h->{dejavu});
+					push(@lCol, 'gnomadAC:'.$h->{gnomadAC});
+					push(@lCol, 'gnomadAN:'.$h->{gnomadAN});
+					push(@lCol, 'gnomadHO:'.$h->{gnomadHO});
+					push(@lCol, 'gnomadMinPop:'.$h->{gnomadMinPop});
+					push(@lCol, 'gnomadMaxPop:'.$h->{gnomadMaxPop});
 					push(@lCol, 'hgmd_class:'.$h->{hgmd_class});
 					push(@lCol, 'cadd:'.$h->{cadd_score});
 					push(@lCol, 'ncboost:'.$h->{ncboost_score});
