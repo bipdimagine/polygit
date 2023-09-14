@@ -808,7 +808,7 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version ;
+	my $version ="2" ;
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
@@ -845,7 +845,7 @@ sub construct_data {
 	}
 	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
 	die () if scalar(@$list_transcript) == 0;
-	my $fork      = 1;
+	my $fork      =  5;
 	#$fork = 2 if $pipeline;
 	my $nb        = int( scalar(@$list_transcript) / $fork + 1 );
 	my $pm        = new Parallel::ForkManager($fork);
