@@ -484,6 +484,7 @@ if ($filter_quality < 0){
 my $mode_report = $cgi->param('report_mode');
 
 my $cgi_transcript =  $cgi->param('transcripts');
+$cgi_transcript = "all" unless $cgi_transcript;
 my $name =  $cgi->param('name');
 
 $patient_name ="all" unless $patient_name;
@@ -522,6 +523,7 @@ if ($cgi_transcript eq "all"){
 }
 else {
 	@transcripts_cgi = split(",",$cgi_transcript);
+	confess() if scalar (@transcripts_cgi);
 }
 
 
@@ -839,7 +841,7 @@ sub construct_data {
 	
 	}
 	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
-	
+	die () if scalar(@$list_transcript) == 0;
 	my $fork      = 5;
 	#$fork = 2 if $pipeline;
 	my $nb        = int( scalar(@$list_transcript) / $fork + 1 );
