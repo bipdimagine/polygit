@@ -808,7 +808,7 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version = "1.5";
+	my $version ;
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
@@ -845,7 +845,7 @@ sub construct_data {
 	}
 	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
 	die () if scalar(@$list_transcript) == 0;
-	my $fork      = 5;
+	my $fork      = 1;
 	#$fork = 2 if $pipeline;
 	my $nb        = int( scalar(@$list_transcript) / $fork + 1 );
 	my $pm        = new Parallel::ForkManager($fork);
@@ -902,7 +902,7 @@ sub construct_data {
 	@{$hpatient->{transcripts}} = sort {$a->{name} cmp $b->{name}}  @{$hpatient->{transcripts_not_sorted}} if $hpatient->{transcripts_not_sorted};
 	delete 	$hpatient->{transcripts_not_sorted};
 	delete $hpatient->{obj};
-	$no_cache->put_cache_hash($cache_id,{data=>$data,patient=>$hpatient});
+	$no_cache->put_cache_hash($cache_id,{data=>$data,patient=>$hpatient}) if $version;
 	$no_cache->close();
 	exit(0) if $pipeline;
 	#delete $hpatient->{obj};# = $patient;
@@ -3466,9 +3466,11 @@ my $validation_value = 0;
  if (exists $all_validations->{$val_id}){
  #	my @found = grep {$_->{sample_id} eq $patient->id} @{$all_validations->{$val_id}};
  	$saved =  $all_validations->{$val_id};
- 	$validation_term = $saved->[0]->{term};
- 	$validation_value = $saved->[0]->{validation};
- }
+ 	$validation_term = $saved->[-1]->{term};
+ 
+ 	$validation_value = $saved->[-1]->{validation};
+ 	$validation_term = "todo" if $validation_value== -3;
+  }
 
 #$saved = $all_validations->{$val_id}->[0]->{validation}  if exists $all_validations->{$val_id};
 
@@ -3476,6 +3478,7 @@ my $option;
 foreach my $val (sort {$b <=> $a }keys %{$buffer->value_validation}){
 	my $term = $buffer->value_validation->{$val};
 	my $sel ="";
+	warn $validation_term." ".$term;
 	if (lc($validation_term) eq lc($term) ){
 		$sel = "selected";
 	}
@@ -3487,10 +3490,9 @@ unless ($validation_term){
 
 	$option .="</select></div>";
 	$bgcolor = "info";
-	$bgcolor = "secondary" if  $validation_value >= 3;
+	$bgcolor = "success" if  $validation_value >= 3 ||  $validation_value == -3;
 	$bgcolor = "warning" if  $validation_value >= 4;
  	$bgcolor = "danger" if  $validation_value >= 5;
- 	
 	my $uniq_id ="$pname"."+"."_$tdid";
 	my $label_id= "div_$uniq_id";
 	my $select_id =  "select_$uniq_id";
