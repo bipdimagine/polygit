@@ -484,6 +484,7 @@ if ($filter_quality < 0){
 my $mode_report = $cgi->param('report_mode');
 
 my $cgi_transcript =  $cgi->param('transcripts');
+
 confess() unless $cgi_transcript;
 $cgi_transcript = "all" unless $cgi_transcript;
 my $name =  $cgi->param('name');
@@ -519,12 +520,13 @@ my $patients = $project->get_list_patients($patient_name,",");
 
 my $freq = 9999;
 my @transcripts_cgi ;
+
 if ($cgi_transcript eq "all"){
 	@transcripts_cgi = @{$project->bundle_transcripts() } ;
 }
 else {
 	@transcripts_cgi = split(",",$cgi_transcript);
-	confess() if scalar (@transcripts_cgi);
+	confess() if scalar (@transcripts_cgi) == 0;
 }
 
 
