@@ -1705,9 +1705,12 @@ sub edit {
 		my ($project,$hvariation,$patient,$gene) = @_;
 		
 	 my $val_id = $gene->id."!".$hvariation->{id};
-	 my $local_validation = $patient->project->getValidationVariation($val_id,$patient);
-	
-		if ($local_validation){
+	 
+	 my $lists = $project->validations_query->getValidationPatient($patient);
+
+
+		if (exists $lists->{$val_id}){
+				my $local_validation = $lists->{$val_id}->[-1];
 				my $saved = $local_validation->{validation};
 				$hvariation->{"local"} = $patient->buffer->value_validation->{$saved};
 				$hvariation->{"local"} = printButton($saved,[3,5],$patient->buffer->value_validation->{$saved},$saved) ;
