@@ -484,6 +484,7 @@ if ($filter_quality < 0){
 my $mode_report = $cgi->param('report_mode');
 
 my $cgi_transcript =  $cgi->param('transcripts');
+confess() unless $cgi_transcript;
 $cgi_transcript = "all" unless $cgi_transcript;
 my $name =  $cgi->param('name');
 
