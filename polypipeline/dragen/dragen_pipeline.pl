@@ -322,8 +322,11 @@ sub test_rna {
 	$vs->{rna} = 0;# unless exists ;
 	my $answer = 0 ;
 	foreach my $project (@$projects){
+		foreach my $patient (@{$project->getPatients}){
 		my $projectName = $project->name;
-		$answer ++ if $project->isRnaSeq;
+		$answer ++ if $patient->isRna;
+		last;
+		}
 	}
 	if ($answer) {
 		confess("you have different king of project rna and not") if $answer ne scalar(@$projects);
