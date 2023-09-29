@@ -289,25 +289,26 @@ sub print_variant_false {
 	my @t= split("_",$v->id);
 	warn "coucou ".$v->type;
 	#unless ($v->type){
-		warn "cuicuiu";
-		my $chr = $v->getChromosome();
-		my $vid = $v->vector_id;
-		$vid++;
-		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		 #warn $gid." ".$vid." ".$id;
-		 my $obj = $chr->cache_lmdb_variations->get($gid);
-		 warn $obj->sequence;
-		 warn $v->sequence;
-		 $vid-=2;
-		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		 #warn $gid." ".$vid." ".$id;
-		 my $obj = $chr->cache_lmdb_variations->get($gid);
-		 warn $obj->sequence;
-		 warn $v->sequence;
-	#	 die();
-		
-		
-	#} 
+#		warn "cuicuiu";
+#		my $chr = $v->getChromosome();
+#		my $vid = $v->vector_id;
+#		$vid++;
+#		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+#		 #warn $gid." ".$vid." ".$id;
+#		 my $obj = $chr->cache_lmdb_variations->get($gid);
+#		 #warn $obj->sequence;
+#		 #warn $v->sequence;
+#		 #$vid-=2;
+#		 #warn $vid;
+#		# my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+#		 #warn $gid." ".$vid." ".$id;
+#		 #my $obj = $chr->cache_lmdb_variations->get($gid);
+#		 #warn $obj->sequence;
+#		 #warn $v->sequence;
+#	#	 die();
+#		
+#		
+#	#} 
 	my $seqref = $v->getChromosome()->getSequence($v->start,$v->start);
 	my $seqalt = $v->sequence();
 	$seqalt = $v->alternate_allele if $seqalt eq "-";
@@ -320,6 +321,7 @@ sub print_variant_false {
 	push(@vs,"./.");
 	$vh->{control_depth} = $p->depth($v->getChromosome->name,$v->start,$v->end)->[0];
 	
+	warn $v->getChromosome->name;','.$v->start.','.$v->end;
 	push(@vs,$p->depth($v->getChromosome->name,$v->start,$v->end)->[0]);
 	push(@$tab,$vh);
 	print join("\t",@vs)."\n";
