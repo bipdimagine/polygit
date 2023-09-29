@@ -1080,7 +1080,6 @@ foreach my $database (keys %{$self->{lmdb_score}}){
 }
 delete 	$self->{lmdb_score};
 delete $self->{lmdb};
-warn "end buffer "." ".time;
 }
 
 sub intersection {
