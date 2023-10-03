@@ -176,11 +176,9 @@ sub getPredictions {
 		else {
 			my $pos = $self->position($tr->getProtein)->start();
 			my $aa  = $self->changeAA($tr->getProtein);
-			#warn "\t".$protid." $pos ".$aa."\n";
 			$self->{predictions}->{$tr->getProtein()->id()} = $self->getProject()->getPredictions($self->getChromosome(),$protid,$pos,$aa);
 			$self->{predictions}->{$protid} = $self->getProject()->getPredictions($self->getChromosome(),$protid,$pos,$aa);
 			$self->{predictions}->{$tr->id}=$self->{predictions}->{$protid};
-			#warn Dumper $self->{predictions}->{$protid};
 			 foreach my $method (keys %{$self->{predictions}->{$protid}}){
 				next if $method eq "mask";
 			#	if ($self->{predictions}->{$protid}->{$method}->{pred} > $self->{predictions}->{all}->{$method}->{pred}){
@@ -225,12 +223,7 @@ sub polyphenScore2 {
 
 	return unless $h;
 	my $sc = $h->{$self->sequence}->{$obj->name}->{Polyphen2_HDIV_score};
-	warn Dumper $h if $sc; 
 	return $sc;
-	#warn Dumper $h;
-	#die($obj->name) unless $obj->isProtein()||  $obj->isTranscript();
-	#$self->{predictions}->{$obj->id}->{polyphen_humvar}->{score} = "-" unless $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};
-	#return $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};
 }
 
 sub siftScore {
@@ -336,10 +329,6 @@ sub consequence {
 sub annotation_coding {
 	my ( $self, $tr, $annot ) = @_;
 	my $project = $self->getProject();
-	 if ($tr->{protein} =~ /ENST/){
-	 	warn $self->id;
-		warn $tr->name();
-	 }
 	return if $tr->{protein} =~ /ENST/;
 	
 	
@@ -356,8 +345,6 @@ sub annotation_coding {
 	}
 	elsif ( $consequence->{aa_mut}  eq "*"  ) {
 		$annot->{$trid}->{mask} = $annot->{$trid}->{mask} |$project->getMaskCoding("stop");
-		
-
 	}
 	elsif ( $consequence->{aa} eq "*" || $consequence->{orf_position} <= 3 ) {
 		
@@ -390,6 +377,7 @@ sub constructNomenclature {
 	else {
 		my $r = $transcript->find_exon_intron($self->start,$self->end);
 		if ($r && $r->{type} eq "exon"){
+			
 		my $pos_transcript = $transcript->translate_position($self->start);
 		 my $seqv = $self->sequence();
 		 my $seqr = $self->getChromosome()->sequence($self->start,$self->start);
@@ -403,13 +391,9 @@ sub constructNomenclature {
 	}
 			#return $self->getNomenclatureForUtr($transcript);
 		my ($dist,$pos) = $self->getPositionForNomenclatureIntronic($transcript);
-		
-	#	warn "cuicui";
 		 my $st_dist = $dist;
 		 $st_dist="+".$dist if $dist >0;
-		# warn $self->{$self->{var_allele};};
 		 my $seqv = $self->{var_allele};#"";#$self->{sequence};
-		#warn $self->{ref_allele};
 		 my $seqr = $self->{ref_allele};;
 		  #return;
 			if ($transcript->strand() == -1 ){
