@@ -2701,8 +2701,6 @@ sub getPositionForNomenclatureIntronic {
 		$p1 = $p1 * $transcript->strand();
 		return($p1,"")
 		
-	#	return "c.".($pos_transcript-$transcript->orf_start())."".$seqr.">".$seqv if ($self->isVariation);
-		
 	}
 	if ($self->end  > $transcript->end){
 		return (-1,"") unless 		$transcript->genomic_orf_end();
@@ -2710,14 +2708,20 @@ sub getPositionForNomenclatureIntronic {
 		$p1 = $p1 * $transcript->strand();
 		return($p1,"")
 		
-	#	return "c.".($pos_transcript-$transcript->orf_start())."".$seqr.">".$seqv if ($self->isVariation);
-		
 	}
-#	return;
-	#if ($self->start < )
 	my ($dist,$nearest,$ref_pos) = $transcript->computeNearestExon($self->start,$self->end);
+	
 	my $pos = $transcript->translate_coding_position($ref_pos);
-#	warn $pos." ".$ref_pos;	 
+	if ($pos == -1 && $transcript->genomic_orf_start() ){
+		
+		if ($ref_pos   < $transcript->genomic_orf_start()){
+			$pos = $ref_pos-$transcript->genomic_orf_start();
+		}
+		else {
+			$pos = $ref_pos-$transcript->genomic_orf_end()
+		} 
+	}
+
 #	warn $transcript->strand;
 		 return ($dist,$pos);
 }
