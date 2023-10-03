@@ -2693,7 +2693,7 @@ sub getNomenclatureForUtr {
 
 sub getPositionForNomenclatureIntronic {
 	my ( $self, $transcript, $debug ) = @_;
-#
+# >>>
 	if ($self->start  < $transcript->start){
 		return (-1,"") unless 		$transcript->genomic_orf_start();
 		my $p1 = ($self->start - $transcript->genomic_orf_start());
