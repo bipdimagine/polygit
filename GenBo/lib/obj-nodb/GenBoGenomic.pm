@@ -7,6 +7,7 @@ use Data::Dumper;
  use GenBoCoverageSamtools;
  use GenBoCoverageTabix;
  use GenBoCoverageLmdb;
+ use Carp;
  #use GenBoCoverageLmdb;
  use Storable qw(store retrieve freeze thaw);
   use Compress::Snappy;

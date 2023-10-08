@@ -250,128 +250,11 @@ sub getTransmissionModelType {
 sub getNGSScore{
 	return 1;
 }
-
-has split_read_infos =>(
-	is =>'ro',	
-	lazy=>1,
-	default=> sub {
-		my $self = shift;
-		 my $hash; 
-		 
-		foreach my $pat (@{$self->getPatients}){
-			foreach my $patient (@{$pat->getFamily()->getMembers}){
-				my $pid = $patient->id;
-				my $pr0 ="-";
-				my $pr1 ="-";
-				my $sr0;
-				my $sr1;
-				my $srq_end;
-				my $srq_start;
-				my $equality;
-				$srq_end = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
-				$srq_start = $patient->mean_align_quality($self->getChromosome, $self->start, $self->start);
-				$equality = $patient->mean_align_quality($self->getChromosome, $self->start, $self->end);
-				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
-				#$self->{seq}->{$pid}->{sr_quality_end} = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
-				unless ($self->existsPatient($patient)){
-					my ($a,$b,$c) = $patient->sr_raw($self->getChromosome, $self->start);
-					$sr0  =  $a;
-					$sr1 = int(($b+$c)/2); 
-		 			($a,$b,$c) = $patient->sr_raw($self->getChromosome, $self->end);
-					$sr0  +=  $a;
-					$sr1 += int(($b+$c)/2); 
-					$sr0  = int($sr0/2);
-				}
-				else {
-					unless ( exists $self->{annex}->{$patient->id()}->{sr}) {
-					#	warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name." ".Dumper( $self->annex()->{$patient->id()});
-					#	die();
-						$hash->{$pid} = ["-1","-1","-1","-1",$srq_end,$srq_start,$equality];
-						
-					}
-					else {
-			#	confess(Dumper ($self->annex)." ".$self->start." ".$self->getChromosome->name) unless  exists $self->annex()->{$patient->id()}->{sr};
-					($sr0,$sr1) = split(",",$self->{annex}->{$patient->id()}->{sr});
-					if (exists  $self->{annex}->{$patient->id()}->{pr}){
-						($pr0,$pr1) = split(",",$self->{annex}->{$patient->id()}->{pr});
-					}
-					}
-				}
-				$hash->{$pid} = [$sr0,$sr1,$pr0,$pr1,$srq_end,$srq_start,$equality];
-			}
-						
-		}
-			
-			return $hash;
-	},
-);
-
-sub sr0 {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[0];
-}
-sub sr1 {
-	my ($self, $patient,$debug) = @_;
-	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[1];
-}
-sub pr0 {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[2];
-}
-sub pr1 {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[3];
-}
-
-sub sr_align_quality {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return int(($self->split_read_infos->{$pid}->[4]+$self->split_read_infos->[5])/2);
-}
-
-sub getMeanDP {
-		my ($self,$patient,$method) = @_;
-		my $pid = $patient->id;
-		return $self->split_read_infos->{$pid}->[6];
-}
-
-sub event_align_quality {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[6];
-}
-
-
-sub sr {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	my $sr0 = $self->sr0($patient);
-	return "-" if not $sr0 or $sr0 eq "-";
-	my $sr1 = $self->sr1($patient);
-	$sr0 = '-' unless ($sr0);
-	$sr1 = '-' unless ($sr1);
-	return  $sr0.",".$sr1;
-}
-
-sub pr {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return "-" if $self->pr0($patient) eq "-";
-	return  $self->pr0($patient).",". $self->pr1($patient);
-}
-
-sub is_manta {
+sub spliceAI {
 	my ($self) = @_;
-	#my $pid = $p->id;
-	return $self->{ismanta}  if exists $self->{ismanta};
-	my ($manta) = grep {$_ =~ /manta/} split("\n",Dumper $self->{annex});
-	$self->{ismanta} =1 if $manta;
-	return $self->{ismanta};
+	return {};
 }
+
 
 sub getTransmissionModel_cnv {
 	my ($self,$fam,$child) = @_;
@@ -615,18 +498,23 @@ sub list_same_cnv {
 }
 
 
-has dejaVuInfosForDiag2 => (
-	is              => 'rw',
-	lazy    => 1,
-	default => sub {
+sub dejaVuInfosForDiag2 {
+	my ($self,$key) = @_;
+	unless (exists $self->{array_dejavu}) {
+		my $hash = $self->getProject->getDejaVuInfosForDiag($self->id());
+		$self->{array_dejavu} = $self->return_dejavu;
+	}
+	return $self->{array_dejavu} unless $key;
+	my $index = $self->buffer->index_dejavu($key);
+	return  $self->{array_dejavu}->[$index];
+}
+sub return_dejavu {
 	my $self = shift;
 	my $project = $self->project;	
 	return $self->SUPER::dejaVuInfosForDiag2() if ($self->isDude());
-	
 	my $chr = $self->getChromosome()->name();
 	my $in_this_run_patients =  $self->project->in_this_run_patients();
 	my $no = $project->dejavuSV();
-	
 
 	if ($self->length == 0) {
 		warn $self->end;
@@ -658,7 +546,7 @@ has dejaVuInfosForDiag2 => (
 	}
 	$res->{in_this_run_patients} = 0;
 	$res->{in_this_run_patients} += scalar(@{$self->getPatients});
-	return $res unless ($h);
+	return $self->buffer->hash_to_array_dejavu($res) unless ($h);
 	foreach my $p (keys %$h) {
 		my $nhe = scalar(keys %{$h->{$p}});
 		my $nho = 0;
@@ -675,7 +563,7 @@ has dejaVuInfosForDiag2 => (
 		if (exists $similar->{$p}){
 			$res->{similar_projects}  ++;
 			$res->{similar_patients} += $nhe;
-			$res->{similar_patient_ho} += $nho;
+			$res->{similar_patients_ho} += $nho;
 		}
 		else {
 			$res->{other_projects} ++;
@@ -687,10 +575,9 @@ has dejaVuInfosForDiag2 => (
 	$res->{total_exome_patients} =  $project->countExomePatients();
 	$res->{total_similar_projects} =  scalar(keys %{$project->similarProjects()});
 	$res->{total_similar_patients} =  $project->countSimilarPatients();
-	return $res;
-		
-	}
-);
+	return  $self->buffer->hash_to_array_dejavu($res);
+}
+
 
 sub get_dude_scores {
 	my ($self, $patient) = @_;

@@ -324,7 +324,7 @@ sub vdivers {
 }
 
 sub vvarsome {
-	my ($hvariation,$patient,$debug) = @_;
+	my ($hvariation,$debug) = @_;
 	return if exists $hvariation->{html}->{varsome}; 
 	my $url = qq{https://varsome.com/variant/hg19/}.$hvariation->{value}->{gnomad_id};
 	my $text =qq{<button dojoType="dijit.form.Button"   iconClass='https://img.icons8.com/ios-filled/24/000000/vimeo.png' onclick='window.open($url,"_blank")' style="color:black"></button>};
@@ -877,9 +877,17 @@ sub table_dejavu {
 #################
 
 my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","cadd","revel","dbscsnv",'spliceAI');
+sub construct_hash_variant_patient {
+	my ($project,$v,$patient,$hvariation) = @_;
+	my $debug;
+	valamut_igv($v,$hvariation,$patient,$debug);
+	vcnv($v, $hvariation, $patient) if ($v->isCnv());
+	trio($v,$hvariation,$patient);
+	vsequencing($v,$hvariation,$patient);
+}
 
-sub construct_hash_variant {
-	my ($project,$v,$vquery,$patient,$debug) = @_;
+sub construct_hash_variant_global {
+	my ($project,$v,$vquery,$debug) = @_;
 	my $hvariation;
 	$hvariation->{value}->{id} =  $v->id;
 	$hvariation->{html}->{id} =  $v->id;
@@ -904,14 +912,13 @@ sub construct_hash_variant {
 	vgnomad($v,$hvariation);
 	vname($v,$hvariation);
 	vspliceAI($v,$hvariation);
-	vsequencing($v,$hvariation,$patient);
+	vvarsome($hvariation,$debug);
 	vdivers($v,$hvariation);
-	valamut_igv($v,$hvariation,$patient,$debug);
-	vvarsome($hvariation,$patient,$debug);
+
 	vclinvar($v,$hvariation);
 	vhgmd($v,$hvariation);
 	vdejavu($v,$hvariation);
-	vcnv($v, $hvariation, $patient) if ($v->isCnv());
+
 	
 
 	my $gs;
@@ -921,7 +928,7 @@ sub construct_hash_variant {
 		$hvariation->{genes}->{$g->id}= construct_hash_transcript($v,$cgi,\@header_transcripts,2,$g);
 		#$hvariation->{html}->{genes}->{$g->id} = construct_table_transcript($v,$cgi,\@header_transcripts,2,$g);
 	}
-	trio($v,$hvariation,$patient);
+
 	return $hvariation;
 	
 }
@@ -1056,6 +1063,7 @@ sub construct_hash_transcript {
 		my $main =  0 ;
 		 $main  = 1 if $tr1->isMain();
 		value_html($htr,"main",$main,$main);
+		delete $htr->{html};
 		push(@$all_transcripts,$htr)
 	}#end for transcript
 	return $all_transcripts;

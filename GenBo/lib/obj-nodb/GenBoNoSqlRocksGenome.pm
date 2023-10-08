@@ -239,7 +239,26 @@ is		=> 'ro',
 		return $self->dir_db."chunk.json";
 	}
 );
+has vector_index_region =>(
+	is		=> 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return [];
+	}
+);
 
+sub save_vector_index_region {
+	my($self,$v) = @_;
+	open(my $fh ,$self->json_file) or die("can t open file");
+	my $json_str = do { local $/; <$fh> };
+	close($fh);
+	my $h = decode_json($json_str);
+	$h->{vector_index_region} = $v;
+	open(my $fh2,">".$self->json_file) or die("can t open file");
+	print $fh2 encode_json($h);
+	close ($fh);
+}
 sub write_config {
 	my ($self,$chunks) = @_;
 	open(my $fh,">".$self->json_file) or die("can t open file");
@@ -250,6 +269,7 @@ sub write_config {
 	$h->{description} = $self->description;
 	$h->{factor} = $self->factor;
 	$h->{index} = $self->index;
+	$h->{vector_index_region} = $self->vector_index_region;
 	print $fh encode_json($h);
 	close ($fh);
 }
@@ -265,6 +285,7 @@ sub load_config {
 	$self->{description} = delete $h->{description};
 	$self->{factor} = delete $h->{factor};
 	$self->{index} = delete $h->{index};
+	$self->{vector_index_region} = delete $h->{vector_index_region};
 	}
 	return delete $h->{chunks};
 }
@@ -346,7 +367,7 @@ sub close {
 }
 
 sub DESTROY {
-	warn "END rocks genome";
+	#warn "END rocks genome";
 }
 
 1;

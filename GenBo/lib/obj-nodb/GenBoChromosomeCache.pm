@@ -38,12 +38,17 @@ has isChromosome => (
 	default	 => 1,
 );
 
+
+
+
+
 # tag true if is an empty chromosome
 has not_used => (
 	is       => 'rw',
 	lazy	 => 1,
 	default	 => sub {
 		my $self = shift;
+		confess();#to deleteX
 		return 1 unless $self->get_lmdb_categories("r")->is_lmdb_exists('categories_annotations');
 		eval { $self->get_lmdb_categories("r")->get_keys(); };
 		if ($@) { return 1; }
@@ -77,24 +82,19 @@ has variants => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $vector;
-		my $t = time;
-		my $no_categories = $self->get_lmdb_categories("r");
-		
-		return Bit::Vector->new(0) unless $no_categories->is_lmdb_exists('categories_annotations');
-		
-		eval { $self->get_lmdb_categories("r")->get_keys(); };
-		if ($@) { return return Bit::Vector->new(0); }
-		return Bit::Vector->new(0) unless $no_categories->get_keys();
-		my $b =  $no_categories->get("substitution");
-		return  Bit::Vector->new(0) unless $b;
-		my $v = $b->{bitvector};
-		my $size = $v->Size();
-		my $v1 = Bit::Vector->new($size);
-		$v1->Fill;
-		return $v1;
+		$self->getVectorOrigin();
 	},
 );
+
+sub getVectorOrigin {
+	my ($self,$chr) = @_;
+	my $size = $self->size_vector();
+	
+	$size = 0 unless $size;
+	my $v1 = Bit::Vector->new($size);
+	$v1->Fill;
+	return $v1;
+}
 
 sub intersection {
 	my ($self,$vector1)=@_;
@@ -159,6 +159,8 @@ has patients_categories => (
 	default => sub {
 		my $self = shift;
 		my $h;
+		confess();
+		#HERE
 		unless ($self->size_vector()) {
 			foreach my $patient (@{$self->getPatients()}) {
 				$h->{$patient->name()} = Bit::Vector->new(0);
@@ -190,6 +192,8 @@ has global_categories_intspan => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+		confess(); # to deleteX
+		
 		my $h;
 		my $no_categories = $self->get_lmdb_categories("r");
 		my $categories = $no_categories->get_values();
@@ -208,16 +212,14 @@ has global_categories => (
 	default => sub {
 		my $self = shift;
 		my $h = {};
-		my $no_categories = $self->get_lmdb_categories("r");
-		my $categories = $no_categories->get_values();
-		my $toto = $no_categories->get("pheno_snp");
+		#HERE 
+		confess();
+		my $categories = $self->get_list_categories();
+		
+		my $hh = $self->get_vector_categories($categories);
 		foreach my $cat (@$categories) {
-			#warn Dumper @$categories;
-			#confess() unless $cat;
-			#confess() unless  $cat->{'bitvector'};
-			$h->{$cat->{'name'}} = $cat->{'bitvector'};
+			$h->{$cat} = $hh->{$cat};
 		}
-		$no_categories->close();
 		
 		#return $h;
 		
@@ -330,6 +332,12 @@ has hash_freeze_file_all_genes => (
 	default => undef,
 );
 
+sub existsVariationsCacheDir {
+	my $self = shift;
+	return 1 if -e $self->project->getCacheBitVectorDir().'/lmdb_cache/variations/'.$self->id();
+	return;
+}
+
 # NOSQL with vectors model somatic loh
 has sqlite_loh => (
 	is		=> 'rw',
@@ -377,8 +385,19 @@ has size_vector => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		unless (defined $self->getVariantsVector()) { confess(); }
-		return $self->getVariantsVector->Size();
+		if ($self->project->isRocks){
+			return $self->rocks_vector("r")->size;
+		}
+		my $no_categories = $self->get_lmdb_categories("r");
+		return 0 unless $no_categories->is_lmdb_exists('categories_annotations');
+		
+		eval { $self->get_lmdb_categories("r")->get_keys(); };
+		if ($@) { return 0 }
+		return 0  unless $no_categories->get_keys();
+		my $b =  $no_categories->get("substitution");
+		return  0 unless $b;
+		my $v = $b->{bitvector};
+		return  $v->Size();
 	},
 );
 
@@ -417,14 +436,6 @@ has variants_regions_exclude => (
 	},
 );
 
-has vector_all => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return $self->getVariantsVector();
-	},
-);
 
 # hash stats used for each group
 has stats_groups => (
@@ -654,22 +665,21 @@ has hash_gene_id_to_name => (
 	default	=> undef,
 );
 
-
-
 sub cache_lmdb_variations {
 	my $self = shift;
-	return $self->get_lmdb_variations("r");
+	return $self->cache_variations;
 }
-#has cache_lmdb_variations => (
-#	is 		=> 'rw',
-#	lazy	=> 1,
-#	default	=> sub {
-#		my $self = shift;
-#		
-#		my $no = $self->get_lmdb_variations("r");
-#		return $no;
-#	}
-#);
+
+sub cache_variations {
+	my $self = shift;
+	if ($self->project->isRocks){
+		return $self->get_rocks_variations("r");
+	}
+	return $self->get_lmdb_variations("r");;
+}
+
+
+
 
 has saved_model => (
 	is		=> 'rw',
@@ -827,21 +837,6 @@ sub flushObjectVariantCache {
 sub getVarObject {
 	my ($self, $v_id) = @_;
 	return $self->project->myflushobjects([$self->name."!".$v_id],"variants")->[0];
-	die();
-	my $var_obj ;
-	#unless (exists  $self->{test}->{$v_id}){
-	my $vid = 	$self->cache_lmdb_variations->get_index($v_id);
-	 #$var_obj = $self->cache_lmdb_variations->get_index($v_id);
-	 
-	 #$self->{test}->{$v_id}  = $var_obj->id ;
-	#}
-	#else {
-	#	warn $self->{test}->{$v_id};
-	#	return $self->project->myflushobjects([$self->{test}->{$v_id}],"variations");
-	#}
-	#warn $var_obj." ".$v_id if exists 	$self->{test}->{$v_id};;
-	
-	#return $self->flushObjectVariantCache($var_obj);
 
 }
 
@@ -1019,10 +1014,31 @@ sub getNbGenesIntergenic {
 		next if ($gene->getVariantsVector->is_empty());
 		$nb++;
 	}
-	return $nb
+	return $nb;
 }
 
-has vector_global_categories => (
+
+sub vector_global_categories {
+	my ($self,$cat) = @_;
+	if($self->project->isRocks){
+			if ( $cat eq "all" ) {
+				my $v = $self->getNewVector();
+				$v->Fill();
+			return $v;
+			}
+			
+		my $v = $self->rocks_vector("r")->get_vector_chromosome($cat);
+		warn $v;
+		return $v;
+	}
+	else {
+		my $v = $self->hash_vector_global_categories()->{$cat};
+		return $self->getNewVector() unless $v; 
+		return $v;
+	}
+	
+}
+has hash_vector_global_categories => (
 	is		=> 'rw',
 	lazy    => 1,
 	default => sub {
@@ -1118,13 +1134,14 @@ sub getVectorConsequence {
 
 sub getVectorNoFreq {
 	my $self = shift;
-	return $self->vector_global_categories()->{freq_none} if exists $self->vector_global_categories()->{freq_none};
+	return $self->vector_global_categorie("freq_none");
 	return $self->getNewVector();
 }
 
 sub getVectorPublicVariations {
 	my $self = shift;
 	my $vector = $self->getVectorVariations->Clone();
+	
 	return $vector if $self->countThisVariants($vector) == 0;
 	$vector -= $self->getVectorNoFreq();
 	return $vector;
@@ -1140,6 +1157,7 @@ sub getVectorNcboost {
 sub getVectorVariations {
 	my $self = shift;
 	my $v = $self->getVectorSubstitutions()->Clone();
+	return $v;
 	$v += $self->getVectorInsertions();
 	$v += $self->getVectorDeletions();
 	$v += $self->getVectorLargeDeletions();
@@ -1149,32 +1167,27 @@ sub getVectorVariations {
 
 sub getVectorSubstitutions {
 	my $self = shift;
-	return $self->vector_global_categories()->{substitution} if exists $self->vector_global_categories()->{substitution};
-	return $self->getNewVector();
+	return $self->vector_global_categories("substitution");
 }
 
 sub getVectorInsertions {
 	my $self = shift;
-	return $self->vector_global_categories()->{insertion} if exists $self->vector_global_categories()->{insertion};
-	return $self->getNewVector();
+	return $self->vector_global_categories("insertion");
 }
 
 sub getVectorDeletions {
 	my $self = shift;
-	return $self->vector_global_categories()->{deletion} if exists $self->vector_global_categories()->{deletion};
-	return $self->getNewVector();
+	return $self->vector_global_categories("deletion");
 }
 
 sub getVectorLargeDeletions {
 	my $self = shift;
-	return $self->vector_global_categories()->{large_deletion} if exists $self->vector_global_categories()->{large_deletion};
-	return $self->getNewVector();
+	return $self->vector_global_categories("large_deletion");
 }
 
 sub getVectorLargeDuplications {
 	my $self = shift;
-	return $self->vector_global_categories()->{large_duplication} if exists $self->vector_global_categories()->{large_duplication};
-	return $self->getNewVector();
+	return $self->vector_global_categories("large_duplication");
 }
 
 sub getVectorCnv {
@@ -1187,8 +1200,8 @@ sub getVectorCnv {
 
 sub setVariants {
 	my ($self, $type) = @_;
-	my $vector = $self->getNewVector();
 	
+	my $vector = $self->getNewVector();
 	if ($type eq 'variations') {
 		$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{substitution} ) if (exists $self->global_categories->{substitution});
 	}
@@ -2495,13 +2508,16 @@ has vectorClinvarPathogenic => (
         default => sub {
         	my $self = shift;
         	my $vector ;
-        	
+        	if ($self->project->isRocks){
+        		return $self->rocks_vector->get_vector_chromosome("dm");
+        	}
         	if ($self->lmdb_score_impact->exists_db){
         		
         		$vector = $self->lmdb_score_impact->get("clinvar_pathogenic");	
         		 $vector = $self->getNewVector() unless defined $vector;
         		 return $vector;
         	}
+        	confess();
   			#return $vector if defined $vector;
   			#die();
   			#confess("problem ".$self->name);
@@ -2514,17 +2530,22 @@ has vectorClinvarPathogenic => (
   			return $vector;
         },
 );
+
 has vectorDM => (
         is      => 'rw',
         lazy    => 1,
         default => sub {
         	my $self = shift;
+        	if ($self->project->isRocks){
+        		return $self->rocks_vector->get_vector_chromosome("dm");
+        	}
         	my $vector ;
         	if ($self->lmdb_score_impact->exists_db){
         		$vector = $self->lmdb_score_impact("r")->get("dm");	
+        		warn $self->lmdb_score_impact("r")->dir;
         	}
   			return $vector if defined $vector;
-  		
+  			confess();
  			$vector =  $self->getNewVector();
   			foreach my $v (@{$self->getStructuralVariations}){
   				if ($v->isDM){
@@ -2534,6 +2555,8 @@ has vectorDM => (
   			return $vector;
         },
 );
+
+
 
 has tree_vector_transcripts => (
 	is		=> 'rw',
@@ -2771,5 +2794,103 @@ has large_deletion_interval_tree => (
 	},
 );
 
+
+###################
+## Vector
+###################
+
+#Patient
+
+sub get_vector_patient {
+	my ($self,$patient,$queries) = @_;
+	if($self->project->isRocks){
+		my $h = {};
+		foreach my $cat (@$queries){
+			$h->{$cat} = $self->rocks_vector("r")->get_vector_patient($patient,$cat);
+			#$h->{$cat} = $self->rocks_vector("r")->get($patient->name."+".$cat);
+		}
+		return $h;
+	}
+	else {
+		my $h =  $self->get_lmdb_patients("r")->get($patient->name);
+		my $z ;
+		foreach my $q (@$queries) {
+			$z->{$q} = $h->{bitvector}->{$q};
+		}
+		return $z;
+	}
+}
+
+
+#has patients_categories => (
+#	is		=> 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $h;
+#		#HERE
+#		unless ($self->size_vector()) {
+#			foreach my $patient (@{$self->getPatients()}) {
+#				$h->{$patient->name()} = Bit::Vector->new(0);
+#				$h->{$patient->name().'_he'} = Bit::Vector->new(0);
+#				$h->{$patient->name().'_ho'} = Bit::Vector->new(0);
+#				$h->{$patient->name().'_RI'} = Bit::Vector->new(0);
+#				$h->{$patient->name().'_SE'} = Bit::Vector->new(0);
+#			}
+#			return $h;
+#		}
+#		my $no_patients = $self->get_lmdb_patients("r");
+#		my $patients = $no_patients->get_values();
+#		foreach my $patient (@$patients) {
+#			my $name = $patient->{'name'};
+#			$h->{$name} = $patient->{'bitvector'}->{'all'};
+#			$h->{$name.'_he'} = $patient->{'bitvector'}->{'he'};
+#			$h->{$name.'_ho'} = $patient->{'bitvector'}->{'ho'};
+#			$h->{$name.'_RI'} = $patient->{'bitvector'}->{'RI'} if (exists $patient->{'bitvector'}->{'RI'});
+#			$h->{$name.'_SE'} = $patient->{'bitvector'}->{'SE'} if (exists $patient->{'bitvector'}->{'SE'});
+#		}
+#		$no_patients->close();
+#		return $h;
+#	},
+#);
+
+
+
+
+
+sub get_vector_category {
+	my ( $self, $category ) = @_;
+	if($self->project->isRocks){
+					if ( $category eq "all" ) {
+				my $v = $self->getNewVector();
+				$v->Fill();
+			return $v;
+			}
+	return $self->rocks_vector("r")->get($category);
+	}
+	else {
+		my $no_categories = $self->get_lmdb_categories("r");
+		return $no_categories->get($category)->{bitvector};
+	}
+
+}
+ sub get_vector_categories {
+ 	my ( $self,$categories) = @_;
+ 	if($self->project->isRocks){
+ 		my $h = {};
+		foreach my $cat (@$categories) {
+			$h->{$cat} = $self->rocks_vector("r")->get($cat);
+		}
+		return $h;
+	}
+	else {
+		my $no_categories = $self->get_lmdb_categories("r");
+		my $h ={};
+		foreach my $cat (@$categories) {
+			$h->{$cat} = $no_categories->get($cat)->{bitvector};
+		}
+		return $h;
+	}
+ }
 
 1;

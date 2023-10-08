@@ -9,6 +9,9 @@ use GenBoGenomic;
 use GenBoNoSqlLmdb;
 use GenBoNoSqlLmdbPipeline;  
 use GenBoNoSqlRocksAnnotation;
+use GenBoNoSqlRocksVariation;
+use GenBoNoSqlRocksVector;
+use GenBoNoSqlRocksPolyviewerVariant;
 use Carp;
 
 #use GenBoNoSqlRocksVariation;
@@ -61,6 +64,52 @@ sub setStructuralVariants {
 			}
 		}
 	}
+}
+
+sub setJunctions {
+	my ($self) = @_;
+	my $h_ids;
+	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
+	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+	if ($ri_file and -e $ri_file ) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	if ($se_file and -e $se_file) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	my $path2 = $self->getProject->getVariationsDir('dragen-sj');
+	foreach my $patient (@{$self->getProject->getPatients()}) {
+		my $dragen_file = $path2.'/'.$patient->name().'.SJ.out.tab.gz';
+		next if not -e $dragen_file;
+		foreach my $hres (@{$self->getProject->getQueryJunction($dragen_file,'DRAGEN')->parse_dragen_file($patient, $self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	my $path3 = $self->getProject->getJunctionsDir('star');
+	foreach my $patient (@{$self->getProject->getPatients()}) {
+		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
+		my $star_file_bz = $star_file.'.gz';
+		if (-e $star_file) {
+			my $cmd1 = "bgzip $star_file";
+			`$cmd1`;
+			my $cmd2 = "tabix -p bed $star_file_bz";
+			`$cmd2`;
+		}
+		next if not -e $star_file_bz;
+		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
+			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$h_ids->{$obj->id()} = undef;
+		}
+	}
+	return $h_ids;
 }
 
 has ucsc_name => (
@@ -1281,14 +1330,149 @@ sub lmdb_polyviewer_variants {
 	return $no;
 
 }
+###################
+## Vector
+###################
+
+
+
+
+# !!!!!!!! rocks 
+sub rocks_vector {
+	my ( $self, $mode ) = @_;
+	$mode = "r" unless $mode;
+	my $name = "vector-".$mode.$$;
+	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
+	 $self->{rocks}->{$name} = GenBoNoSqlRocksVector->new(chromosome=>$self->name,dir=>$self->project->rocks_directory("vector"),mode=>$mode,name=>$self->name.".vector");
+	 return $self->{rocks}->{$name};
+
+}
+
+#------ lmdb 
+sub get_lmdb_patients {
+	my ( $self, $modefull ) = @_;
+	my $hindex = "patient_";
+	$hindex = "patient_".$modefull if ($modefull);
+	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+	my $dir_out = $self->project->lmdb_cache_patients_dir();
+	my ( $mode, $pipeline );
+	( $mode, $pipeline ) = split( '', $modefull ) if ($modefull);
+	$mode = "r" unless $mode;
+	my $no2;
+	if ( $pipeline and $pipeline eq 'p' ) {
+
+		confess() if $mode ne 'c';
+		my $dir_out2 = $self->project->lmdb_pipeline_dir() . "/lmdbd_patients/";
+		$no2 = GenBoNoSqlLmdbPipeline->new(
+			dir_prod    => $dir_out,
+			dir         => $dir_out2,
+			mode        => $mode,
+			name        => $self->name,
+			is_compress => 1
+		);
+
+	}
+	else {
+		$no2 = GenBoNoSqlLmdb->new(
+			dir         => $dir_out,
+			mode        => $mode,
+			name        => $self->name,
+			is_compress => 1,
+			vmtouch     => $self->buffer->vmtouch
+		);
+	}
+	$self->{lmdb}->{$hindex} = $no2;
+	return $no2;
+}
+
+############
+# ROCKS 
+##############
+
+
+
+
+
+sub rocks_polyviewer_directory {
+	my ($self) = @_;
+	return $self->project->rocks_directory("polyviewer");
+}
+
+sub rocks_polyviewer_variants {
+	my ( $self, $mode ) = @_;
+	$mode ="r" unless $mode;
+	my $hmode = $mode.$$;
+
+	return $self->{rocks}->{"polyviewer".$hmode} if exists $self->{rocks}->{"polyviewer".$hmode};
+	 $self->{rocks}->{"polyviewer".$hmode} = GenBoNoSqlRocksPolyviewerVariant->new(dir=>$self->rocks_polyviewer_directory,mode=>$mode,name=>$self->name.".polyviewer_variant");
+	
+	  #$self->{rockssss}->{"polyviewer".$mode}->rocks;
+	 return $self->{rocks}->{"polyviewer".$hmode};
+
+}
+
+sub rocks_polyviewer_variants_genes {
+	my ( $self,$mode ) = @_;
+	return $self->{rocks}->{"variants_genes".$mode} if exists $self->{rocks}->{"variants_genes".$mode};
+	 $self->{rocks}->{"variants_genes".$mode} = GenBoNoSqlRocks->new(dir=>$self->rocks_polyviewer_directory,mode=>$mode,name=>$self->name.".polyviewer_variant_genes");
+	 return $self->{rocks}->{"variants_genes".$mode};
+
+}
+
+sub rocks_polyviewer_patient {
+	my ( $self,$patient, $mode ) = @_;
+	$mode ="r" unless $mode;
+	confess();
+	my $hmode = $patient->id."-".$mode ."$$";
+	return $self->{rocks}->{"polyviewer".$hmode} if exists $self->{rocks}->{"polyviewer".$hmode};
+	my $dir = $self->rocks_polyviewer_directory."patients/".$patient->name."/";
+	$self->project->makedir($dir);
+	 $self->{rocks}->{"polyviewer".$hmode} = GenBoNoSqlRocks->new(dir=>$dir,mode=>$mode,name=>$self->name.".polyviewer_patient");
+	  #$self->{rockssss}->{"polyviewer".$mode}->rocks;
+	 return $self->{rocks}->{"polyviewer".$hmode};
+
+}
+
+
+sub get_polyviewer_variants_genes {
+		my ( $self,$patient,$id ) = @_;
+		if ($self->project->isRocks){
+			return  $self->rocks_polyviewer_patient($patient)->get($id);#$self->rocks_polyviewer_patient($patient)->get_patient_variant_genes($id);
+		}
+		else {
+			warn $self->lmdb_polyviewer_variants_genes($patient,"r")->filename;
+			warn $id;
+			return $self->lmdb_polyviewer_variants_genes($patient,"r")->get($id);
+		}
+}
 
 sub lmdb_polyviewer_variants_genes {
 	my ( $self, $patient, $mode ) = @_;
+	$mode ="r" unless $mode;
+	
 	return $self->_lmdb_polyviewer( "variants-genes", $patient, $mode );
+}
+
+
+sub get_polyviewer_genes {
+	my ( $self, $patient, $gene_id) = @_;
+	
+	if ($self->project->isRocks){
+		return $self->rocks_polyviewer_genes->get_patient_gene($patient,$gene_id);
+	}
+	confess();
+	return $self->lmdb_polyviewer_genes($patient)->get($gene_id);
+	
+}
+
+sub rocks_polyviewer_genes {
+	my ($self) = @_;
+	return $self->rocks_polyviewer_variants();
 }
 
 sub lmdb_polyviewer_genes {
 	my ( $self, $patient, $mode ) = @_;
+	confess() if $self->project->isRocks();
 	return $self->_lmdb_polyviewer( "hgenes", $patient, $mode );
 }
 
@@ -1311,7 +1495,6 @@ sub getPolyviewer_score {
 
 sub get_lmdb_variations_object {
 	my ( $self, $mode ) = @_;
-	confess();
 	return $self->_get_lmdb( $mode, "variations_objects" );
 }
 
@@ -1356,63 +1539,26 @@ sub get_old_lmdb_variations {
 			vmtouch     => $self->buffer->vmtouch
 			);
 }
-sub get_rocks_variations {
-	my ($self,$mode) = @_;
-	confess();
-		#$dir_out = "/data-beegfs/tmp/".$self->project->name."/";
-		return  GenBoNoSqlRocksVariation->new(
-					dir         => $self->project->rocks_cache_dir,
-					mode        => $mode,
-					is_index    => 1,
-					name        => $self->name,
-					is_compress => 1,
-				);	
+
+
+sub get_lmdb_junctions_canoniques {
+	my ( $self, $modefull) = @_;
+	my $hindex = "dv_junctions_canoniques_";
+	$hindex = "dv_junctions_canoniques_".$modefull if ($modefull);
+	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+	$modefull = "r" unless $modefull;
+	my ( $mode, $pipeline ) = split( '', $modefull );
+	my $dir_out = $self->project->get_dejavu_junctions_path('canoniques');
+	return  GenBoNoSqlLmdb->new(
+		dir         => $dir_out,
+		mode        => $mode,
+		is_index    => 1,
+		name        => $self->name,
+		is_compress => 1,
+		vmtouch     => $self->buffer->vmtouch
+	);
+	return $self->{lmdb}->{$hindex};
 }
-sub get_rocks_polyviewer_variant {
-	my ($self,$mode) = @_;
-		#$dir_out = "/data-beegfs/tmp/".$self->project->name."/";
-		return $self->{rocks}->{$mode} if exists $self->{rocks}->{$mode};
-		$self->{rocks}->{$mode} =  GenBoNoSqlRocksPolyviewerVariant->new(
-					dir         => $self->project->rocks_cache_dir,
-					mode        => $mode,
-					is_index    => 1,
-					name        => $self->name.".pv",
-					is_compress => 1,
-				);	
-				#$self->{rocks}->{$mode}->rocks->compact_range;
-				return 	$self->{rocks}->{$mode};
-}
-# sub get_lmdb_variations {
-#	my ( $self, $modefull,$rocks) = @_;
-#	my $hindex = "variations_";
-#	$hindex = "variations_".$modefull if ($modefull);
-#	return $self->{rocks}->{$hindex} if exists $self->{rocks}->{$hindex};
-#	$modefull = "r" unless $modefull;
-#	my ( $mode, $pipeline ) = split( '', $modefull );
-#	my $dir_out = $self->project->lmdb_cache_variations_dir();
-#	
-#	my $dir_out_rocks = $self->project->rocks_cache_dir;
-#	if ($mode eq "c"){
-#		if ($rocks) {
-#			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
-#			$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode);
-#		}
-#		else {
-#			$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);
-#		}
-#	}
-#	else {
-#		if ( -e  $dir_out_rocks){
-#				$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode);
-#		}
-#		else {
-#			$self->{rocks}->{$hindex} =  $self->get_rocks_variations($mode,$dir_out);
-#		}
-#	}
-#	
-#	return $self->{rocks}->{$hindex};
-#}
-# 
 
 sub get_lmdb_variations {
 	my ( $self, $modefull,$rocks) = @_;
@@ -1448,6 +1594,20 @@ sub get_lmdb_variations {
 	return $self->{lmdb}->{$hindex};
 }
 
+
+
+sub get_rocks_variations {
+	my ( $self, $modefull,$rocks) = @_;
+	my $hindex = "variations_";
+	$hindex = "variations_".$modefull if ($modefull);
+	$hindex .= $$;
+	return $self->{rocks}->{$hindex} if exists $self->{rocks}->{$hindex};
+	my $rg;
+	$self->{rocks}->{$hindex} = GenBoNoSqlRocksVariation->new(dir=>$self->project->rocks_directory("genbo"),mode=>"r",name=>$self->name.".genbo.rocks");
+	return $self->{rocks}->{$hindex};
+
+}
+
 sub get_lmdb_cnvs {
 	my ( $self, $mode ) = @_;
 	return $self->{lmdb}->{cnvs} if exists $self->{lmdb}->{cnvs};
@@ -1463,50 +1623,11 @@ sub get_lmdb_cnvs {
 	return $self->{lmdb}->{cnvs};
 }
 
-sub get_lmdb_patients1 {
-	my ( $self, $mode ) = @_;
-	confess();
-	my $no = $self->_get_lmdb( $mode, "patients" );
-	return $no;
-}
 
 
-sub get_lmdb_patients {
-	my ( $self, $modefull ) = @_;
-	my $hindex = "patient_";
-	$hindex = "patient_".$modefull if ($modefull);
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	my $dir_out = $self->project->lmdb_cache_patients_dir();
-	my ( $mode, $pipeline );
-	( $mode, $pipeline ) = split( '', $modefull ) if ($modefull);
-	$mode = "r" unless $mode;
-	my $no2;
-	if ( $pipeline and $pipeline eq 'p' ) {
 
-		#$dir_out = $self->project->lmdb_cache_variations_dir();
-		confess() if $mode ne 'c';
-		my $dir_out2 = $self->project->lmdb_pipeline_dir() . "/lmdbd_patients/";
-		$no2 = GenBoNoSqlLmdbPipeline->new(
-			dir_prod    => $dir_out,
-			dir         => $dir_out2,
-			mode        => $mode,
-			name        => $self->name,
-			is_compress => 1
-		);
 
-	}
-	else {
-		$no2 = GenBoNoSqlLmdb->new(
-			dir         => $dir_out,
-			mode        => $mode,
-			name        => $self->name,
-			is_compress => 1,
-			vmtouch     => $self->buffer->vmtouch
-		);
-	}
-	$self->{lmdb}->{$hindex} = $no2;
-	return $no2;
-}
+
 
 sub get_lmdb_patients_variations {
 	my ( $self, $mode, $patient ) = @_;
@@ -1526,6 +1647,7 @@ sub get_lmdb_patients_variations {
 	$self->{lmdb}->{$hindex} = $no2;
 	return $no2;
 }
+
 
 sub get_lmdb_categories {
 	my ( $self, $mode ) = @_;
@@ -1616,6 +1738,13 @@ sub getVectorScore {
 		$v->Fill();
 		return $v;
 	}
+	if ($self->project->isRocks){
+		return $self->rocks_vector->get_vector_chromosome($id);
+		return $self->rocks_vector->get($id);
+	}
+	
+	
+	
 	my $v = $self->lmdb_score_impact("r")->get($id);
 	if ($nodie) {
 		return undef if ref($v) ne "Bit::Vector";

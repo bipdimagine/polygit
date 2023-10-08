@@ -268,39 +268,58 @@ sub setOrigin {
 		$self->{origin}->{he}->{$chr->name} = Bit::Vector->new(0);
 	}
 	else {
-		my $no_patients = $chr->get_lmdb_patients("r");
-		my $hh =  $no_patients->get($self->name());
+		#my $no_patients = $chr->get_vector_patient($self);
+		my $hh = $chr->get_vector_patient($self,['all','ho','he']);
 		#$hh =  $no_patients->get($self->id()) unless $hh;;
 		confess() unless  $hh;
-		$self->{origin}->{all}->{$chr->name} = $hh->{bitvector}->{'all'};
-		$self->{origin}->{ho}->{$chr->name} = $hh->{bitvector}->{'ho'};
-		$self->{origin}->{he}->{$chr->name} = $hh->{bitvector}->{'he'};
+		$self->{origin}->{all}->{$chr->name} = $hh->{all};
+		$self->{origin}->{ho}->{$chr->name} = $hh->{ho};
+		$self->{origin}->{he}->{$chr->name} = $hh->{he};
 	}
-	return $self->{origin}->{$chr->name};
+	return;
 	
+}
+
+sub _getRocksVector {
+	my ($self,$chr,$type) = @_;
+	return $self->{origin}->{$type}->{$chr->name}->Clone if exists $self->{origin}->{$type}->{$chr->name};
+	$self->{origin}->{$type}->{$chr->name} = $chr->rocks_vector("r")->get_vector_patient($self,"$type");
+	return $self->{origin}->{$type}->{$chr->name}->Clone;
 }
 
 sub getVectorOrigin {
 	my ($self,$chr) = @_;
-	return $self->{origin}->{all}->{$chr->name} if exists $self->{origin}->{all}->{$chr->name};
+	return $self->{origin}->{all}->{$chr->name}->Clone if exists $self->{origin}->{all}->{$chr->name};
+	if ($self->project->isRocks){
+		return $self->_getRocksVector($chr,"all");
+	}
 	$self->setOrigin($chr);
-
-	return $self->{origin}->{all}->{$chr->name};
+	#warn   $self->{origin}->{all}->{$chr->name};
+	return $self->{origin}->{all}->{$chr->name}->Clone;
 }
 sub getVectorOriginHe {
 	my ($self,$chr) = @_;
-	return $self->{origin}->{he}->{$chr->name} if exists$self->{origin}->{he}->{$chr->name};
+	my $type = "he";
+	return $self->{origin}->{$type}->{$chr->name}->Clone if exists$self->{origin}->{$type}->{$chr->name};
+	if ($self->project->isRocks){
+		$self->{origin}->{$type}->{$chr->name} = $self->_getRocksVector($chr,"he");
+		return $self->{origin}->{$type}->{$chr->name};
+	}
 	$self->setOrigin($chr);
 
-	return $self->{origin}->{he}->{$chr->name};
+	return $self->{origin}->{he}->{$chr->name}->Clone;
 }
 
 sub getVectorOriginHo {
 	my ($self,$chr) = @_;
 	confess() unless $chr;
-	return $self->{origin}->{ho}->{$chr->name} if exists $self->{origin}->{ho}->{$chr->name};
+	return $self->{origin}->{ho}->{$chr->name}->Clone if exists $self->{origin}->{ho}->{$chr->name};
+	if ($self->project->isRocks){
+		return $self->_getRocksVector($chr,"ho");
+	}
 	$self->setOrigin($chr);
-	return $self->{origin}->{ho}->{$chr->name};
+
+	return $self->{origin}->{ho}->{$chr->name}->Clone;
 }
 
 
@@ -408,7 +427,7 @@ sub getHo {
 sub getHe {
 	my ($self, $chr_obj) = @_;
 	confess("\n\nERROR: GenBoPatientCache->getHe() method need a GenBoChromosomeCache object in argument. Die.\n\n") unless($chr_obj);
-	return $self->getVectorOriginHe($chr_obj);
+	return $self->getVectorOriginHe($chr_obj)->Clone;
 	return $self->getCategoryVariantsVector( $chr_obj, 'he' );
 }
 sub getVectorHe {
@@ -479,25 +498,33 @@ sub countGenes {
 
 sub getVariantsVector {
 	my ($self, $chr_obj) = @_;
+	return $self->getVectorOrigin($chr_obj);
+	confess();
 	confess("\n\nERROR: GenBoPatientCache->getVariantsVector() method need a GenBoChromosomeCache object in argument. Die.\n\n") unless($chr_obj);
-	unless (exists $chr_obj->patients_categories->{$self->name()}) {
-		$chr_obj->patients_categories->{$self->name()} = $chr_obj->getNewVector();
-		$chr_obj->patients_categories->{$self->name().'_he'} = $chr_obj->getNewVector();
-		$chr_obj->patients_categories->{$self->name().'_ho'} = $chr_obj->getNewVector();
-		return $chr_obj->patients_categories->{$self->name()};
-	}
-	if ($chr_obj->variants_intersected()) {	
-		$chr_obj->patients_categories->{$self->name()}->Intersection( $chr_obj->patients_categories->{$self->name()}, $chr_obj->variants_intersected() );
-		$chr_obj->patients_categories->{$self->name().'_he'}->Intersection( $chr_obj->patients_categories->{$self->name().'_he'}, $chr_obj->variants_intersected() );
-		$chr_obj->patients_categories->{$self->name().'_ho'}->Intersection( $chr_obj->patients_categories->{$self->name().'_ho'}, $chr_obj->variants_intersected() );
-	}
-	if ($chr_obj->variants_excluded() and $chr_obj->variants_excluded() eq 'all') {
-		$chr_obj->patients_categories->{$self->name()} -= $chr_obj->variants_excluded();
-		$chr_obj->patients_categories->{$self->name().'_he'} -= $chr_obj->variants_excluded();
-		$chr_obj->patients_categories->{$self->name().'_ho'} -= $chr_obj->variants_excluded();
-	}
-	$chr_obj->patients_categories->{$self->name()}->Intersection($chr_obj->patients_categories->{$self->name()}, $chr_obj->getVariantsVector());
-	return $chr_obj->patients_categories->{$self->name()};
+#	unless (exists $chr_obj->patients_categories->{$self->name()}) {
+#		confess() #deleteX 
+#		$chr_obj->patients_categories->{$self->name()} = $chr_obj->getNewVector();
+#		$chr_obj->patients_categories->{$self->name().'_he'} = $chr_obj->getNewVector();
+#		$chr_obj->patients_categories->{$self->name().'_ho'} = $chr_obj->getNewVector();
+#		return $chr_obj->patients_categories->{$self->name()};
+#	}
+#	if ($chr_obj->variants_intersected()) {	
+#			ceonfess() #deleteX 
+#		$chr_obj->patients_categories->{$self->name()}->Intersection( $chr_obj->patients_categories->{$self->name()}, $chr_obj->variants_intersected() );
+#		$chr_obj->patients_categories->{$self->name().'_he'}->Intersection( $chr_obj->patients_categories->{$self->name().'_he'}, $chr_obj->variants_intersected() );
+#		$chr_obj->patients_categories->{$self->name().'_ho'}->Intersection( $chr_obj->patients_categories->{$self->name().'_ho'}, $chr_obj->variants_intersected() );
+#	}
+#	if ($chr_obj->variants_excluded() and $chr_obj->variants_excluded() eq 'all') {
+#		confess() #deleteX 
+#		$chr_obj->patients_categories->{$self->name()} -= $chr_obj->variants_excluded();
+#		$chr_obj->patients_categories->{$self->name().'_he'} -= $chr_obj->variants_excluded();
+#		$chr_obj->patients_categories->{$self->name().'_ho'} -= $chr_obj->variants_excluded();
+#	}
+	#warn $chr_obj->getVariantsVector();
+
+	my $v1 = $self->getVectorOrigin();
+	$v1 &= $chr_obj->getVariantsVector();
+	return $v1;
 }
 
 sub getCategoryVariantsVector {
@@ -549,10 +576,8 @@ sub getVariantsCategory {
 sub getVectorVariants {
 	my ($self,$chr) = @_;
 	return $self->{vector}->{variants}->{$chr->id} if exists  $self->{vector}->{variants}->{$chr->id};
-	my $no_patients = $chr->get_lmdb_patients("r");
-	my $hash = $no_patients->get($self->name);
-	$self->{vector}->{variants}->{$chr->id} = $hash->{bitvector}->{all};
-	$no_patients->close();
+	my $hash = $chr->get_vector_patient($self,['all']);
+	$self->{vector}->{variants}->{$chr->id} = $hash->{all};
 	return $self->{vector}->{variants}->{$chr->id};
 }
 

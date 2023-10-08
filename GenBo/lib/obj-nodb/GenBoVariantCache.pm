@@ -17,6 +17,23 @@ has vector_id => (
 );
 
 
+
+sub dejaVuInfosForDiag2 {
+	my ($self,$key) = @_;
+	if (exists $self->{dejaVuInfosForDiag2}){
+		my $hash = delete $self->{dejaVuInfosForDiag2};
+		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
+	}
+	if (exists $self->{cad}){
+		my $a = delete $self->{cad}; #aka compress dejavu for diag
+		my @aa = unpack("w*",$a);
+		$self->{array_dejavu} = \@aa;
+	}
+	return $self->{array_dejavu} unless $key;
+	my $index = $self->buffer->index_dejavu($key);
+	return  $self->{array_dejavu}->[$index];
+}
+
 has global_vector_id => (
 	is	=> 'ro',
 	lazy => 1,
@@ -136,25 +153,26 @@ sub isCompoundTransmission {
 
 sub isUniparentalDisomyTransmission {
 	my ($self,$fam,$child) = @_;
-	
-	#warn '-';
-	return 0  unless 	$self->getPourcentAllele($child) ;
-	#warn '-';
-	return 0  if 	$self->getPourcentAllele($child) eq "-" ;
-	#warn '-';
-	#return 0 if 	$self->getPourcentAllele($child) > 75;
-	#warn '-';
-	#die();
-	die("don't forget the familly dude") unless $fam;
-	return 0 if ($child->getVectorHe($self->getChromosome())->contains($self->vector_id));
-	#die();
-	if ($self->isFatherTransmission($fam, $child)) {
-		return 1 if ($fam->getFather->getVectorHe($self->getChromosome())->contains($self->vector_id));
-	}
-	elsif ($self->isMotherTransmission($fam, $child)) {
-		return 1 if ($fam->getMother->getVectorHe($self->getChromosome())->contains($self->vector_id));
-	} 
-	return 0;
+	my $vector = $fam->getVector_individual_uniparental_disomy($self->getChromosome,$child);
+	return $vector->contains($self->vector_id);
+#	#warn '-';
+#	return 0  unless 	$self->getPourcentAllele($child) ;
+#	#warn '-';
+#	return 0  if 	$self->getPourcentAllele($child) eq "-" ;
+#	#warn '-';
+#	#return 0 if 	$self->getPourcentAllele($child) > 75;
+#	#warn '-';
+#	#die();
+#	die("don't forget the familly dude") unless $fam;
+#	return 0 if ($child->getVectorHe($self->getChromosome())->contains($self->vector_id));
+#	#die();
+#	if ($self->isFatherTransmission($fam, $child)) {
+#		return 1 if ($fam->getFather->getVectorHe($self->getChromosome())->contains($self->vector_id));
+#	}
+#	elsif ($self->isMotherTransmission($fam, $child)) {
+#		return 1 if ($fam->getMother->getVectorHe($self->getChromosome())->contains($self->vector_id));
+#	} 
+#	return 0;
 }
 
 
@@ -162,7 +180,7 @@ sub isUniparentalDisomyTransmission {
 
 sub isBothTransmission{
 		my ($self,$fam,$child,$debug) = @_;
-	my $vector = $fam->getVectorBothTransmission($self->getChromosome,$child,$self,$debug);
+	my $vector = $fam->getVectorBothTransmission($self->getChromosome,$child);
 	#my $vector2 = $fam->getVectorRecessiveTransmission($self->getChromosome,$child);
 	#$vector -= $vector2;
 	#warn "\t\t\t vector : ".$self->vector_id." ".$vector->contains($self->vector_id) if $debug;
@@ -212,7 +230,7 @@ sub isRecessiveTransmission {
 	 if ($@){
 	 	 warn $@;
 	 	 warn ref $vector;
-	 	 warn $vector;
+	 	 warn $vector->Size;
 	 	confess();
 	 }
 	return $vector->contains($self->vector_id);
@@ -306,32 +324,40 @@ sub isStrictDenovoTransmission{
 
 sub isMosaicTransmission {
 	my ($self,$fam,$child) = @_;
+	warn $self->id;
 #	my $vector = $fam->getModelVector_fam_mosaique($self->getChromosome);
 #	return $vector->contains($self->vector_id);
 	my $var_id = $self->id();
 	my $chr = $self->getChromosome();
 	return unless ($child->isIll());
 	return unless ($child->getHe($chr)->contains($self->vector_id()));
+	warn $child->getHe($chr)->contains($self->vector_id()) ;
+	warn $child->getHo($chr)->contains($self->vector_id()) ;
+	warn $self->getSequencingGenotype($child);
 	return if $self->isBothTransmission($fam,$child); 
 	my @lOk;
 	my $pc = $self->getPourcentAllele($child);
 	return if $pc eq "-";
+	my $sample_var_1 = $self->text_heho($child);
+	warn $sample_var_1;
+	unless ($sample_var_1) {
+			warn "\n\nERROR: pb with $var_id and patient ".$child->name()."... Die\n\n";
+			confess ();
+		}
 	foreach my $parent (@{$fam->getParents()}) {
 		#if ($chr->ploidy()
 		next unless ($parent->getHe($chr)->contains($self->vector_id()));
-		
 		my $pcp = $self->getPourcentAllele($parent);
+		warn $pcp;
+		next if $pcp > 20;
 		return if $pcp eq  "-";
 		next if ($pc - $pcp ) < 20;
-		my $sample_var_1 = $self->text_heho($child);#->{he_ho_details};
-		unless ($sample_var_1) {
-			warn "\n\nERROR: pb with $var_id and patient ".$child->name()."... Die\n\n";
-			die ();
-		}
+		#->{he_ho_details};
+		
 		my $sample_var_2 = $self->text_heho($parent);#->{he_ho_details};
 		unless ($sample_var_2) {
-			warn "\n\nERROR: pb with $var_id (parent: ".$parent->name().")... Die\n\n";
-			die ();
+			warn "\n\nERROR: pb with $var_id (parent: ".$parent->name().")... Die\n\n".$self->vector_id()."\n";
+			confess ($self->id);
 		}
 		
 #		next if ($pc - $pcp ) < 20;

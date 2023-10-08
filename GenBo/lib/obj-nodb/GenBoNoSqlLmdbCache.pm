@@ -10,6 +10,7 @@ use Module::Load;
 use Compress::Snappy;
 use JSON::XS;
 #use Gzip::Faster;
+
 extends "GenBoNoSqlLmdb";
 
 #use Compress::Zlib qw( zlib_version); 
@@ -26,7 +27,7 @@ default => sub {
 
 sub put_cache {
 	my ($self,$key1,$key2,$limit,$debug) = @_;
-#	require "Compress/Zstd.pm";
+	require "Compress/Zstd.pm";
 	$limit = 48 unless $limit;
 	$limit = $limit *60 *60;
  	my $end = time + $limit;
@@ -41,7 +42,8 @@ sub save_cache_hash {
 		$end = time + $limit;
 	}
 	my $text = encode_json ($key2);
-	$self->put($key1,{expiration=>$end,cache=>Compress::Zlib::compress($text),snappy_html=>2});
+	
+	$self->put($key1,{expiration=>$end,cache=>Compress::Zstd::compress($text),snappy_html=>3});
 }
 
 sub put_cache_hash {
@@ -63,7 +65,10 @@ sub save_cache_text {
 		$limit = $limit *60 *60;
 		$end = time + $limit;
 	}
-	$self->put($key1,{expiration=>$end,cache=>Compress::Zlib::compress($key2),snappy_html=>1,date=>time});
+		
+		
+	$self->put($key1,{expiration=>$end,cache=>Compress::Zstd::compress($key2),snappy_html=>4,date=>time});
+	#$self->put($key1,{expiration=>$end,cache=>Compress::Zlib::compress($key2),snappy_html=>1,date=>time});
 }
 sub put_cache_text {
 	my ($self,$key1,$key2,$limit,$debug) = @_;
@@ -91,6 +96,14 @@ sub get_cache {
  	}
  	elsif ( $h->{snappy_html} == 2 ) {
  		my $x =  decode_json(Compress::Zlib::uncompress($h->{cache}) );
+ 		return $x;
+ 	}
+ 	 elsif ( $h->{snappy_html} == 3 ) {
+ 		my $x =  decode_json(Compress::Zstd::uncompress($h->{cache}) );
+ 		return $x;
+ 	}
+ 	elsif ( $h->{snappy_html} == 4 ) {
+ 		my $x =  decode_json(Compress::Zstd::uncompress($h->{cache}) );
  		return $x;
  	}
  	else {

@@ -119,11 +119,6 @@ has type_object => (
 	},
 );
 
-has spliceAI => (
-	is   => 'rw',
-	lazy =>1,
-	default => sub {  return {}}
-);
 
 has alleles => (
 	is		=> 'ro',

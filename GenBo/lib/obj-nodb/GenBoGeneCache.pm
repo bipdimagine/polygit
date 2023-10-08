@@ -7,6 +7,7 @@ use Bit::Vector::Overload;
 use Data::Dumper;
 use GenBoGene;
 use Storable qw(store retrieve freeze dclone thaw);
+use Carp;
 extends 'GenBoGene', 'GenBoCache';
 
 
@@ -120,13 +121,17 @@ has intspan => (
 	lazy =>1,
 		default	=> sub {
 			my $self = shift;
+			confess();
 			$self->cache_specific_atrributes();
 			return $self->{intspan};
 		},
 );
 
+
+
 sub cache_specific_atrributes{
 	my $self = shift;
+	confess();
 	my $chr = $self->getChromosome();
 	my $lmdb = $chr->get_lmdb_genes("r");
 	
@@ -165,9 +170,37 @@ sub getVectorPatient {
 	$vector &= $patient->getVectorOrigin($self->getChromosome);# if $patient;
 	return $vector;
 }
+
+sub _getVectorOrigin {
+	my $self = shift;
+	if ($self->project->isRocks){
+		return $self->getChromosome->rocks_vector("r")->get_vector_gene($self->id);
+	}
+	else {
+		my $chr = $self->getChromosome();
+	 	my $lmdb = $chr->get_lmdb_genes("r");
+	 	my $hashArgs = $lmdb->get($self->id);
+	 	unless (exists $hashArgs->{start}) {
+		$self->{origin_vector_start} = 0;
+		$self->{origin_vector_end} = 0;
+		return  Bit::Vector->new($chr->size_vector()) ;#Bit::Vector->new_Enum($chr->size_vector(), $hashArgs->{start}."-".$hashArgs->{end});
+	}
+	else {
+
+		$self->{origin_vector_start} =  $hashArgs->{start};
+		$self->{origin_vector_end} =  $hashArgs->{end};
+		return   Bit::Vector->new_Enum($chr->size_vector(), $hashArgs->{start}."-".$hashArgs->{end});
+
+	}
+	 	
+	}
+	
+	
+}
 sub getVectorOrigin {
 	my $self = shift;
-	$self->cache_specific_atrributes unless exists $self->{origin_vector};
+	return $self->{origin_vector} if exists $self->{origin_vector};
+	$self->{origin_vector} = $self->_getVectorOrigin();
 	return  $self->{origin_vector};
 }
 
@@ -177,7 +210,7 @@ has global_categories => (
 	default => sub {
 		my $self = shift;
 		my $hash;
-
+		confess();
 		return {} unless $self->intspan;
 		foreach my $cat (keys %{$self->intspan()}) {
 			$hash->{$cat} = $self->convert_intspan_to_vector($self->intspan->{$cat}, $self->getChromosome());
@@ -472,9 +505,9 @@ sub getVariants {
 		foreach my $f (keys %{$self->buffer->config->{frequence_filters}}){
 			my $value = $self->buffer->config->{frequence_filters}->{$f};
 			if ($value <= $filter){
-				next unless exists $self->getChromosome->vector_global_categories->{$f};
-				$vf = $self->getChromosome->vector_global_categories->{$f} unless $vf;
-				$vf += $self->getChromosome->vector_global_categories->{$f};
+				next unless  $self->getChromosome->vector_global_categories($f);
+				$vf = $self->getChromosome->vector_global_categories($f) unless $vf;
+				$vf += $self->getChromosome->vector_global_categories($f);
 			}
 			
 		}

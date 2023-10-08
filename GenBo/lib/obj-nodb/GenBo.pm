@@ -92,6 +92,11 @@ has isCnv => (
 	lazy 	=> 1,
 	default	=> undef,
 );
+has isSrPr => (
+	is		=> 'rw',
+	default	=> undef,
+);
+
 has isChromosome => (
 	is		=> 'ro',
 	#isa		=> 'Bool',

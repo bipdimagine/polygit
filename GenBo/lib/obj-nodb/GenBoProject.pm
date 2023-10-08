@@ -52,6 +52,7 @@ use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlDejaVuJunctionsCanoniques;
 use GenBoNoSqlDejaVuJunctionsPhenotype;
+#use GenBoNoSqlDejaVuJunctionsResume;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
@@ -416,7 +417,18 @@ has isRnaseq => (
 		return undef;
 	},
 );
-
+has isRna => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $find ;
+		foreach my $p ( @{ $self->getPatients } ) {
+			$find ++ if $p->isRna;
+		}
+		return $find;
+	},
+);
 has isExome => (
 	is      => 'rw',
 	lazy    => 1,
@@ -3406,6 +3418,7 @@ sub _newVariant {
 	my $type;
 	my $strucType;
 	my ( $chr_name, $start, $ref, $alt ) = split( '_', $id );
+	$alt ="" unless $alt;
 	$hash->{id}         = $id;
 	$hash->{annex}      = undef;
 	#$hash->{line_infos} = "";
@@ -3989,6 +4002,23 @@ sub getStatsFile {
 	return $file;
 }
 
+
+
+sub rocks_pipeline_directory {
+	my ($self,$type) = @_;
+	my $path = $self->project_pipeline_path . "/rocks_tmp/";
+	$path .="$type/" if $type;
+	return $self->makedir($path);
+}
+
+sub rocks_directory {
+		my ($self,$type) = @_;
+		my $path = "/data-beegfs/test-cache/". "/".$self->name."/";
+		$path .="$type/" if $type;
+	return $self->makedir($path);
+}
+
+
 sub makePath {
 	my $self = shift;
 	$self->allPath unless exists $self->{dir};
@@ -4473,17 +4503,28 @@ sub existsObjects {
 	return exists $self->{objects}->{$type}->{$id};
 }
 
-has liteAnnotations => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return GenBoNoSqlAnnotation->new(
+
+sub liteAnnotations {
+	my ($self) = @_;
+	my $hid = "liteAnnotations".$$;
+	return $self->{$hid} if exists $self->{$hid};
+	$self->{$hid} = GenBoNoSqlAnnotation->new(
 			dir  => $self->get_gencode_directory,
 			mode => "r"
 		);
-	}
-);
+	return $self->{$hid};
+}
+#has liteAnnotations => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		return GenBoNoSqlAnnotation->new(
+#			dir  => $self->get_gencode_directory,
+#			mode => "r"
+#		);
+#	}
+#);
 has liteRegulations => (
 	is      => 'rw',
 	lazy    => 1,
@@ -4616,6 +4657,19 @@ has dejavuJunctions => (
 		my $sqliteDir = $self->DejaVuJunction_path();
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuJunctions->new( dir => $sqliteDir, mode => "r" );
+	}
+);
+
+has dejavuJunctionsResume => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release = $self->annotation_genome_version();
+		$release = 'HG19' if ($release =~ /HG19/);
+		my $sqliteDir = $self->DejaVuJunction_path();
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuJunctionsResume->new( dir => $sqliteDir, mode => "r" );
 	}
 );
 
@@ -5873,6 +5927,7 @@ sub getDejaVuInfos {
 	my $hres;
 	my $no = $self->lite_deja_vu2();
 	my $string_infos = $no->get( $chr, $id );
+	return $hres unless ($string_infos);
 	foreach my $string_infos_project (split('!', $string_infos)) {
 		my @lTmp = split(':', $string_infos_project);
 		my $project_name = 'NGS20'.$lTmp[0];
@@ -6323,13 +6378,11 @@ has get_path_rna_seq_polyrna_root  => (
 		my $self = shift;
 		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
 		return $path if -d $path;
-		if ($self->version() eq 'MM38') {
-			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM39/polyRNA/";
+		my @lPotentialRelease = ('HG19', 'HG19_CNG', 'HG19_MT', 'HG38', 'HG38-ERCC', 'MM38', 'MM39');
+		foreach my $rel2 (@lPotentialRelease) {
+			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$rel2."/polyRNA/";
 			return $alt_path if -d $alt_path;
-		}
-		if ($self->version() eq 'MM39') {
-			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/MM38/polyRNA/";
-			return $alt_path if -d $alt_path;
+			
 		}
 		return $path;
 	},
@@ -6429,6 +6482,7 @@ sub getQueryJunction {
 	if ($method eq 'RI') { $args{isRI} = 1; }
 	elsif ($method eq 'SE') { $args{isSE} = 1; }
 	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
+	elsif ($method eq 'STAR') { $args{isSTAR} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;
@@ -6455,6 +6509,54 @@ sub writeCaptureBedFile {
 	}	
 	close(BED);
 }
+
+sub return_calling_methods_short_name {
+	my ($self,$name) = @_;
+	unless (exists $self->{short}){
+		foreach my $m (@{$self->calling_methods}){
+			$self->{short}->{$m->{name}} = $m->{short_name};
+		}
+	}
+	
+	return unless exists $self->{short}->{$name};
+	return $self->{short}->{$name};
+}
+
+sub is_sv_calling_methods{
+	my ($self,$name) = @_;
+	unless (exists $self->{isSV}){
+		$self->{isSV} = {};
+		foreach my $mn (@{$self->callingSVMethods}){
+			$self->{isSV}->{$mn} = 1;
+			my $sn = $self->return_calling_methods_short_name($mn);
+			$self->{isSV}->{$sn} = 1;
+			
+		}
+	}
+	return exists $self->{isSV}->{$name};
+}
+sub calling_methods {
+	my ($self) = @_;
+	return $self->{calling_methods1} if exists $self->{calling_methods1};
+	my $methods = [];
+			foreach my $method_name (@{$self->callingSVMethods()}) {
+				my $method;
+				$method->{short_name} = substr $method_name,0,3;
+				$method->{name} = $method_name;
+				$method->{sv} = 1;
+				push(@$methods,$method);
+			}
+			foreach my $method_name (@{$self->getCallingMethods()}) {
+					my $method;
+				$method->{short_name} = substr $method_name,0,3;
+				$method->{name} = $method_name;
+				push(@$methods,$method);
+				
+			}
+	$self->{calling_methods1} = $methods;
+	return $self->{calling_methods1};
+}
+
 
 1;
 

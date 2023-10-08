@@ -536,6 +536,7 @@ sub genericSVTransLoc {
 	my $ref = $x->{ref};
 	my $id = $x->{chr}."_".$x->{pos}."_".$x->{ref}."_bnd-".$other->{chr}.":".$other->{pos};
 	my $infos = $x->{infos};
+	$hash->{'isSrPr'} = 1;
 	$hash->{'id'} = $id;
 	$hash->{'isInversion'} = 1;
 	$hash->{'structuralType'} = 'bnd';
@@ -625,6 +626,7 @@ sub genericSVInv {
 	$hash->{'var_allele'} = "++";
 	$hash->{'line_infos'} = "-";
 	$hash->{'vcf_position'} = $bnds->[0]->{pos};
+	$hash->{'isSrPr'} = 1;
 	###OBJECTS
 	$hash->{'references_object'}->{$reference->id} = undef;
 	### ANNEX 
@@ -684,7 +686,7 @@ sub genericSVBnd {
 		my $len;
 		my $var_allele = $alt;
 		my $infos = $x->{infos};
-		
+		$hash->{'isSrPr'} = 1;
 		$hash->{'id'} = $id;
 		$hash->{'vcf_id'} = join("_",$chr->name,$pos,$ref,$x->{alt}->[0]);
 		$hash->{'structuralType'} = "deletion" ;#= $allele->{type};
@@ -732,12 +734,18 @@ sub genericSVDel {
 	$ref = substr($ref, 1);
 	my $alt =  $x->{alt}->[0];
 	my $pos = $x->{pos};
+	my $debug;
+	$debug = 1 if $pos == 46011645;
 	my $genbo_pos = $pos + 1;
-	my $id = $chr->name."_".$genbo_pos."_del-".abs($x->{infos}->{SVLEN})."_".$ref;
+	my $id = $chr->name."_".$genbo_pos."_del-".abs($x->{infos}->{SVLEN});
+	
+	my $res = $chr->genesIntervalTree->fetch($genbo_pos,$genbo_pos+abs($x->{infos}->{SVLEN}));
+	return if scalar(@$res) >2;
 	my $len;
 	my $var_allele = $alt;
 	my $infos = $x->{infos};
 	$hash->{'id'} = $id;
+	$hash->{'isSrPr'} = 1;
 	$hash->{'isLargeDeletion'} = 1;
 	$hash->{'structuralType'} = 'del';
 	$hash->{'structuralTypeObject'} = 'deletions';
@@ -752,6 +760,7 @@ sub genericSVDel {
 	$hash->{'var_allele'} = $var_allele;
 	$hash->{'line_infos'} = "-";
 	$hash->{'vcf_position'} = $pos;
+	$hash->{'isCnv'} = 1;
 	###OBJECTS
 	$hash->{'references_object'}->{$reference->id} = undef;
 	### ANNEX 
@@ -773,6 +782,7 @@ sub genericSVDel {
 	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{nb_all_mut} = $hash->{annex}->{$patient_id}->{nb_all_ref} ;
 	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{he} = $x->{gt}->{he};
 	$hash->{annex}->{$patient_id}->{method_calling}->{$self->method}->{ho} = $x->{gt}->{ho};
+	warn Dumper $hash if $debug;
 	return $hash;
 }
 
@@ -793,6 +803,12 @@ sub genericSVIns {
 		my $infos = $x->{infos};
 		$hash->{'structuralType'} = 'l_ins';
 		$hash->{'structuralTypeObject'} = 'large_insertions';
+		if ($infos->{SVTYPE} eq "DUP"){
+			$len = $infos->{SVLEN};
+			$len = $infos->{DUPSVLEN} if exists $infos->{DUPSVLEN};
+			my $res = $chr->genesIntervalTree->fetch($genbo_pos,$genbo_pos+$len);
+			return if @$res >2;
+		}
 		
 		if ($infos->{SVTYPE} eq "DUP" or (exists $infos->{DUPSVLEN} && $infos->{SVTYPE} eq "INS")){
 			$len = $infos->{SVLEN};
@@ -846,7 +862,7 @@ sub genericSVIns {
 	$hash->{'end'} = $genbo_pos;	
 	$hash->{'id'} = $id;
 	$hash->{'vcf_id'} = join("_",$chr->name,$pos,$ref,$x->{alt}->[0]);
-	
+	$hash->{'isSrPr'} = 1;
 	$hash->{'isSV'} = 1;
 	$hash->{'chromosomes_object'} = {$chr->id => undef};
 	
@@ -926,14 +942,13 @@ sub parseVcfFileForReference_manta {
 		{
 			#next;
 			 $hash = $self->genericSVIns($x,$chr);
-			
 			 next unless $hash;
 			#my ($self,$x,$patient,$chr,$reference) = @_;		
 		}
 		elsif ($x->{infos}->{SVTYPE} eq  "DEL" ) 
 		{
-			next;
 			 $hash = $self->genericSVDel($x,$chr);
+			 next unless $hash;
 			#my ($self,$x,$patient,$chr,$reference) = @_;		
 		}
 		elsif ($x->{infos}->{SVTYPE} eq  "BND" ) 
@@ -949,7 +964,8 @@ sub parseVcfFileForReference_manta {
 		}
 		my $id = $hash->{id};
 		my $structType = $hash->{structuralType};
-		#warn Dumper $hash unless $id;
+		warn Dumper $hash unless $id;
+		next unless $id;
 		$hashRes{$structType}->{$id} = compress(freeze($hash));
 		
 	}

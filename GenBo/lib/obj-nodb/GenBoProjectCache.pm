@@ -38,6 +38,18 @@ has dir_files_test => (
 	},
 );
 
+has isRocks => (
+is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $rocks =1;
+		$rocks = undef unless $self->name =~ /2653/;
+		return $rocks;
+	},
+);
+
+
 # tag true - pour redireger le cache_vector et le test dejavu en figer
 has test => (
 	is		=> 'rw',
@@ -882,9 +894,10 @@ sub returnVariants {
 		my ($self, $id, $type) = @_;
 		my ($chr_name,$vid) = split("!",$id);
 		my $chr = $self->getChromosome($chr_name);
-	
-		my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		my $obj = $chr->cache_lmdb_variations->get($gid,1);
+		my $obj = $chr->cache_lmdb_variations->get($vid,1);
+		return undef unless $obj;
+		#my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+		#my $obj = $chr->cache_lmdb_variations->get($gid,1);
 		
 		  $obj->{global_vector_id} = $id;
 		 $obj->{vector_id} = $vid;
@@ -940,6 +953,7 @@ sub nextVariant {
 	return unless scalar(@{$self->{list_variant}});
 	my $id = shift(@{$self->{list_variant}} );
 	my $var_obj = $self->returnVariants($id);
+	
 	confess() unless defined $var_obj;
 	my $ref = ref($var_obj);
 	if ($ref eq 'GenBoVariation'){
@@ -1038,9 +1052,8 @@ sub myflushobjects {
 						$vector_id = $vid;
 						 $chr = $self->getChromosome($chr_name);
 						unless (exists $self->{lmdb_id}->{$id}){
-							
-						$self->{lmdb_id}->{$id} =  $chr->cache_lmdb_variations->get_varid($vid);
-					#$id = $chr->cache_lmdb_variations->get_varid($vid);
+							$self->{lmdb_id}->{$id} =  $chr->cache_lmdb_variations->get_varid($vid);
+							#$id = $chr->cache_lmdb_variations->get_varid($vid);
 						}
 						$id = $self->{lmdb_id}->{$id};
 					}
@@ -1050,7 +1063,9 @@ sub myflushobjects {
 				
 					 $chr = $self->getChromosome($chr_name);
 					}
+				
 					my $var_obj = $chr->cache_lmdb_variations->get($id);
+					
 					my $ref = ref($var_obj);
 					$var_obj->{vector_id}= $vector_id;
 				if ($ref eq 'GenBoVariation'){
@@ -1092,7 +1107,8 @@ sub myflushobjects {
 						$self->{objects}->{insertions}->{$id}= $var_obj;
 					}
 				elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeInsertionCache'  && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoBoundaryCache'  && $ref ne 'GenBoInversionCache' && $ref ne 'GenBoJunctionCache') {
-					confess("$ref =+>".$var_obj);
+					warn Dumper $var_obj;
+					confess("$ref =+>". $var_obj." ::  $id :: ".$ref ." :: ".$type);
 				}
 
 				$var_obj->{project} =  $self;
@@ -1104,6 +1120,7 @@ sub myflushobjects {
 				elsif ($type eq 'runs') {$self->getRunFromId($id); }
 				elsif ($type eq 'patients') {
 					$self->setPatients(); 
+					warn Dumper  keys %{$self->{objects}->{patients}};
 					confess($id) unless exists $self->{objects}->{$type}->{$id};
 				}
 				elsif ($type eq 'captures') {

@@ -1078,7 +1078,6 @@ foreach my $database (keys %{$self->{lmdb_score}}){
 }
 delete 	$self->{lmdb_score};
 delete $self->{lmdb};
-warn "end buffer "." ".time;
 }
 
 sub intersection {
@@ -1604,5 +1603,43 @@ sub get_polyrna_file_docker_to_server {
 	my ($self) = shift;
 	return $self->config->{polyrna}->{docker_to_server};
 }
+
+#####################
+# COMPRESS HASH 
+#####################
+my $hash_dejavu = {
+          'similar_patients_ho' => 0,
+          'total_in_this_run_patients' => 1,
+          'total_similar_projects' => 2,
+          'total_exome_projects' => 3,
+          'other_patients_ho' => 4,
+          'in_this_run_patients' => 5,
+          'other_patients' => 6,
+          'exome_patients_ho' => 7,
+          'exome_patients' => 8,
+          'other_projects' => 9,
+          'total_exome_patients' => 10,
+          'similar_projects' => 11,
+          'similar_patients' => 12,
+          'total_similar_patients' => 13,
+          'exome_projects' => 14
+        };
+
+sub index_dejavu {
+	my ($self,$key) =@_; 
+	confess() unless exists $hash_dejavu->{$key};
+	return $hash_dejavu->{$key};
+}
+
+sub hash_to_array_dejavu{
+	my ($self,$hash) =@_;
+	my $array = [];
+	foreach my $key (keys %$hash){
+		my $index = $self->index_dejavu($key);
+		$array->[$index] = $hash->{$key};
+	}
+	return $array;
+}
+
 
 1;

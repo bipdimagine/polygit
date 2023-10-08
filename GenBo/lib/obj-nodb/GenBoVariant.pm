@@ -135,6 +135,7 @@ sub spliceAI {
 	return $self->{spliceAI_rocks} if exists $self->{spliceAI_rocks};
 	$self->{spliceAI_rocks} = {};
 	my $spliceAI =  $self->getChromosome->rocksdb("spliceAI")->spliceAI($self->rocksdb_id); 
+	die() if $spliceAI && $spliceAI eq "-";
 	if ($spliceAI){
 		$self->{spliceAI_rocks} =  $spliceAI;
 	}
@@ -144,9 +145,9 @@ sub spliceAI {
 
 sub spliceAI_score {
 	my ($self,$gene,$debug) = @_;
+	delete $self->{spliceAI_rocks};
 	return {} unless exists $self->spliceAI->{uc($gene->external_name)};
 	my $sp = $self->spliceAI->{uc($gene->external_name)};
-	
 	my $hash = {};
 	my $score = ["AG","AL","DG","DL"];
 	foreach my $s (@$score){
@@ -603,123 +604,118 @@ has clinvar_class => (
 
 
 sub gnomad {
-	my ($self) = @_;
-	return $self->{gnomad_rocks} if exists $self->{gnomad_rocks};
+	my ($self,$type) = @_;
 	
-	if (exists $self->{gnomad} && %{$self->{gnomad}}){
+	unless (exists $self->{gnomad_rocks}){
+		if (exists $self->{gnomad} && %{$self->{gnomad}}){
 		 my $a = delete $self->{gnomad};
 					 
-		 $self->{gnomad_rocks}->{min_pop} = $a->{minpop};
-		 $self->{gnomad_rocks}->{min} = $a->{populations}->{$a->{minpop}}->{F};
-		 $self->{gnomad_rocks}->{max_pop} = $a->{maxpop}; ;
-		 $self->{gnomad_rocks}->{public} = $a->{populations}->{$a->{maxpop}}->{F};;
-		 $self->{gnomad_rocks}->{xy}= $a->{populations}->{all}->{AC_male};
-		 $self->{gnomad_rocks}->{an} = $a->{populations}->{all}->{AN};
-		 $self->{gnomad_rocks}->{ac} = $a->{populations}->{all}->{AC};
-		 $self->{gnomad_rocks}->{ho} = $a->{populations}->{all}->{HO};
-		 $self->{gnomad_rocks}->{rs} = $a->{rsname};
-		 
-		 $a =undef;
-			
-		return $self->{gnomad_rocks};
-	}
+		 	$self->{gnomad_rocks}->{min_pop} = $a->{minpop};
+			 $self->{gnomad_rocks}->{min} = $a->{populations}->{$a->{minpop}}->{F};
+		 	$self->{gnomad_rocks}->{max_pop} = $a->{maxpop}; ;
+		 	$self->{gnomad_rocks}->{public} = $a->{populations}->{$a->{maxpop}}->{F};
+			 $self->{gnomad_rocks}->{xy}= $a->{populations}->{all}->{AC_male};
+		 	$self->{gnomad_rocks}->{an} = $a->{populations}->{all}->{AN};
+		 	$self->{gnomad_rocks}->{ac} = $a->{populations}->{all}->{AC};
+		 	$self->{gnomad_rocks}->{ho} = $a->{populations}->{all}->{HO};
+		 	$self->{gnomad_rocks}->{rs} = $a->{rsname};
+		 	$self->{gnomad_rocks}->{public} = 1;
+		 	$a =undef;
+			return $self->{gnomad_rocks};
+		}
 	else {
-		$self->{gnomad_rocks} ={};
-		return $self->{gnomad_rocks};
-	}
-	#confess();	
-	my $gnomad =  $self->getChromosome->rocksdb("gnomad")->value($self->rocksdb_id); 
-	
-	
-	$self->{gnomad_rocks} = {} ;
-	if ($gnomad){
-		$self->{gnomad_rocks} =  $gnomad;
-		$self->{gnomad_rocks}->{public} = 1;
+			my $gnomad =  $self->getChromosome->rocksdb("gnomad")->value($self->rocksdb_id); 
+			$self->{gnomad_rocks} = {} ;
+		if ($gnomad){
+			$self->{gnomad_rocks} =  $gnomad;
+			$self->{gnomad_rocks}->{public} = 1;
+		
+		}
+		}
 		
 	}
-	
-	return $self->{gnomad_rocks};
+	return if $type eq "cache";
+	confess("no type for gnomad od call with cache") unless $type;
+	return $self->{gnomad_rocks}->{$type};
 	
 }
 sub min_pop_name {
 	my ($self) = @_;
-	return $self->{min_pop_name} if exists $self->{min_pop_name};
-	#$self->gnomad;
-	return $self->{min_pop_name};
-	#return "-" unless exists $self->gnomad->{public};
-	#return $self->gnomad->{min_pop};
+	return undef unless  $self->gnomad("public");
+	return $self->gnomad("min_pop");
 }
 
 sub min_pop_freq {
 	my ($self) = @_;
-	return $self->{min_pop_name} if exists $self->{min_pop_name};
-	return "-" unless exists $self->gnomad->{public};
-	return $self->gnomad->{min};
+	return "-" unless  $self->gnomad("public");
+	return $self->gnomad("min");
 }
 
 
 sub max_pop_freq {
 	my ($self) = @_;
-	return "-" unless exists $self->gnomad->{public};
-	return $self->gnomad->{max};
+	return "-" unless  $self->gnomad("public");
+	return $self->gnomad("max");
 }
 sub max_pop_name {
 	my ($self) = @_;
-	return undef unless exists $self->gnomad->{public};
-	return $self->gnomad->{max_pop};
+	return undef unless  $self->gnomad("public");
+	return $self->gnomad("max_pop");
 }
 
 
 sub isPublic {
 	my ($self) = @_;
-	return undef unless exists $self->gnomad->{public};
-	return $self->gnomad->{public};
+	return undef unless  $self->gnomad("public");
+	return $self->gnomad("public");
 }
 
 sub getGnomadHO {
 	my ($self) = @_;
-	
-	return undef unless exists $self->gnomad->{public};
-	return undef if  $self->gnomad->{ho} eq "-";
+	return undef unless  $self->gnomad("public");
+	#return undef if  $self->gnomad("ho") eq "-";
 	unless  ($self->getChromosome->isAutosomal($self->start,$self->end)){
-		return $self->gnomad->{xy};
+		return $self->gnomad("xy");
 	}
-	return $self->gnomad->{ho};
+	return $self->gnomad("ho");
 }
 sub getGnomadAC {
 	my ($self) = @_;
-	return undef unless exists $self->gnomad->{public};
-	return $self->gnomad->{ac};
+	return undef unless  $self->gnomad("public");
+	return $self->gnomad("ac");
 }
 sub getGnomadAN {
 	my ($self) = @_;
-	return $self->gnomad->{an};
+	return $self->gnomad("an");
 }
 sub getGnomadAC_Male {
 	my ($self) = @_;	
-	return undef unless exists $self->gnomad->{public};
-	return $self->gnomad->{xy};
+	return undef unless  $self->gnomad("public");
+	return $self->gnomad("xy");
 }
 sub getGnomadAC_XY {
 	my ($self) = @_;	
-	return undef unless exists $self->gnomad->{public};
-	return $self->gnomad->{xy};
+	return undef unless  $self->gnomad("public");
+	return $self->gnomad("xy");
 }
 sub frequency {
 	my ($self) = @_;
-	return undef unless exists $self->gnomad->{public};
+	return undef unless  $self->gnomad("public");
+	return undef if $self->getGnomadAN == 0;
 	return ($self->getGnomadAC/$self->getGnomadAN);
 }
 
 sub frequency_homozygote {
 	my ($self) = @_;	
-	return undef unless exists $self->gnomad->{public};
+	return undef unless  $self->gnomad("public");
+	return undef  if $self->getGnomadAN == 0;
+		return 0 if $self->getGnomadAN == 0;
 	return ($self->getGnomadHO()*2 / $self->getGnomadAN());
 }
 sub rs_name {
 	my ($self) = @_;	
-	return "-" unless exists $self->gnomad->{public};
-	return "rs".$self->gnomad->{rs};
+	return "-" unless  $self->gnomad("public");
+	return "rs".$self->gnomad("rs");
 }
 
 
@@ -803,6 +799,7 @@ has rocksdb_id => (
 	lazy => 1,
 	default => sub {
 		my $self = shift;
+		confess();
 		return "1-A-A";
 		confess($self->gnomad_id);
 	},
@@ -1516,6 +1513,13 @@ has public_data_id => (
 
 
 
+has isDude => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+	return undef;
+	},
+);
 
 
 has percent =>(
@@ -1531,27 +1535,12 @@ has percent =>(
 sub isFoundBySVCaller {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	return  $self->{svcaller}->{$patient->id}  if exists $self->{svcaller}->{$patient->id};
-	my $hVarMeth = $self->sequencing_infos->{$patient->id};
-	return unless $hVarMeth;
-	
-	my $v = 0;
-	foreach my $method_name (@{$patient->callingSVMethods()}) {
-		my $m = $self->calling_methods->{$method_name};
-		$v = 1 if (exists $hVarMeth->{$m} && keys %{$hVarMeth->{$m}} );
-	}
-	return $v;
+	return $self->sequencing_infos->{$patient->id}->{max}->[4] == 1;
 }
 
 sub isDudeCaller {
 	my ($self, $patient,$debug) = @_;
-	return  $self->{dudecaller}  if exists $self->{dudecaller};
-	my $hVarMeth = $self->sequencing_infos->{$patient->id};
-	return unless $hVarMeth;
-	my $m = $self->calling_methods->{dude};
-	return unless $m;
-	return exists $hVarMeth->{$m};
-
+	return exists $self->sequencing_infos->{$patient->id}->{dud};
 }
 
 
@@ -2790,6 +2779,7 @@ sub isHeterozygote {
 
 sub text_heho {
  my ($self,$patient) = @_;
+ return unless $self->existsPatient($patient);
  return $self->getSequencingGenotype($patient).":".$self->getNbAlleleRef($patient).":".$self->getNbAlleleAlt($patient);
 }
 
@@ -2797,14 +2787,7 @@ sub text_heho {
 	#	$seq_infos->{$method_name}->{nb_alt} = $nb_alt;
 
 
-has split_read_infos =>(
-	is =>'ro',	
-	lazy=>1,
-	default=> sub {
-		my $self = shift;
-		return {};
-	}
-	);
+
 ###LMDB_DEPTH_INFOS
 has dp_infos =>(
 	is =>'ro',	
@@ -2834,11 +2817,17 @@ has dp_infos =>(
 	},
 );
 
-sub getMeanDP{
+
+
+sub getMeanDP {
 		my ($self,$patient,$method) = @_;
 		my $pid = $patient->id;
-		return $self->dp_infos->{$pid}->[0];
-
+		if ($self->isSrPr){
+			return $self->split_read_infos->{$pid}->[6];
+		}
+		else {
+			$self->dp_infos->{$pid}->[0];
+		}
 }
 
 sub getNormDP {
@@ -2856,18 +2845,7 @@ sub getCNVDude {
 	return sprintf("%.2f", $self->buffer->log2($self->dp_infos->{$pid}->[2]/100));
 }
 
-sub sr {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return "-";
 
-}
-
-sub pr {
-	my ($self, $patient) = @_;
-	my $pid = $patient->id;
-	return "-";
-}
 
 
 
@@ -2932,8 +2910,8 @@ sub getDP {
 		unless ($method){
 			$method = "max";
 		}
-		elsif (exists $self->calling_methods->{$method}) {
-			$method = $self->calling_methods->{$method};
+		elsif ($self->project->return_calling_methods_short_name($method)) {
+			$method =$self->project->return_calling_methods_short_name($method);
 		}
 		$res = int($self->sequencing_infos->{$pid}->{$method}->[0] + $self->sequencing_infos->{$pid}->{$method}->[1]);
 		return $res;
@@ -2949,8 +2927,8 @@ sub getNbAlleleAlt {
 		unless ($method) {
 			$method = "max";
 		}
-		elsif (exists $self->calling_methods->{$method}) {
-			$method = $self->calling_methods->{$method};
+		elsif ($self->project->return_calling_methods_short_name($method)) {
+			$method =$self->project->return_calling_methods_short_name($method);
 		}
 		my $res = $self->sequencing_infos->{$pid}->{$method}->[1];
 		return $res;
@@ -2965,8 +2943,8 @@ sub getNbAlleleRef {
 		unless ($method) {
 			$method = "max";
 		}
-		elsif (exists $self->calling_methods->{$method}) {
-			$method = $self->calling_methods->{$method};
+		elsif ($self->project->return_calling_methods_short_name($method)) {
+			$method =$self->project->return_calling_methods_short_name($method);
 		}
 		my $res = $self->sequencing_infos->{$pid}->{$method}->[0];
 		return $res;
@@ -2980,8 +2958,8 @@ sub getSequencingGenotype {
        	unless ($method) {
 			$method = "max";
 		}
-		elsif (exists $self->calling_methods->{$method}) {
-			$method = $self->calling_methods->{$method};
+		elsif ($self->project->return_calling_methods_short_name($method)) {
+			$method =$self->project->return_calling_methods_short_name($method);
 		}
         my $res = $self->sequencing_infos->{$pid}->{$method}->[2];
 			return $res;
@@ -3040,24 +3018,30 @@ sub getRatio {
 	 	unless ($method) {
 			$method = "max";
 		}
-		elsif (exists $self->calling_methods->{$method}) {
-			$method = $self->calling_methods->{$method};
+		elsif ($self->project->return_calling_methods_short_name($method)) {
+			$method =$self->project->return_calling_methods_short_name($method);
 		}
 			
 			confess() unless exists $self->sequencing_infos->{$pid};
 			my $sum = ($self->sequencing_infos->{$pid}->{$method}->[0]+$self->sequencing_infos->{$pid}->{$method}->[1]);
-			return 100 if $sum ==0;
+			return 100 if $sum == 0;
 			my $pc = sprintf("%.0f", ($self->sequencing_infos->{$pid}->{$method}->[1]/$sum)*100);
 			return $pc;
 }
-
-sub  calling_methods {
-	my $self = shift;
-	return $self->{calling_methods} if exists $self->{calling_methods};
-	#initialise {calling_methods for this variation}
-	$self->sequencing_infos;
-	return $self->{calling_methods};
+sub array_sequencing_text {
+	  my ($self,$patient) = @_;
+	   my $pid = $patient->id;
+	   return [] unless exists $self->sequencing_infos->{$pid};
+	   my @res;
+	   foreach my $m (keys %{$self->sequencing_infos->{$pid}}){
+	   	next if $m eq "max";
+	   	my $a = $self->sequencing_infos->{$pid}->{$m};
+	   		push(@res,$m.":".$a->[2]."(".$a->[0]."/".$a->[1].")");
+	   }
+	 return \@res;
+	  
 }
+
 
 
 has sequencing_infos =>(
@@ -3068,7 +3052,6 @@ has sequencing_infos =>(
 		
 			 my $hash; 
 			 $hash = {};
-			  $self->{calling_methods}  = {};
 			foreach my $patient (@{$self->getPatients}){
 				my $pid = $patient->id;
 				# $hash->{$pid}->{ok} =1;
@@ -3077,7 +3060,8 @@ has sequencing_infos =>(
 				 my $ma = -1;
 				 my $genotype;
 				 $genotype->{ho} = 0;
-				  $genotype->{he} = 0;
+				 $genotype->{he} = 0;
+				 my $sv = 0;
 				foreach my $method (@methods){
 					#next unless exists $self->sequencing_details()->{$patient->id}->{method_calling}->{$method};
 					next unless exists $self->{annex}->{$patient->id}->{method_calling}->{$method}->{nb_all_ref};
@@ -3089,8 +3073,10 @@ has sequencing_infos =>(
 					$nb_alt = 0 if $all_annex->{nb_all_mut} eq "?";
 					my $nb_all_other_mut = 0;
 					$nb_ref += $all_annex->{nb_all_other_mut} if (exists $all_annex->{nb_all_other_mut});
-					my $method_name = substr $method,0,3;
-					$self->{calling_methods}->{$method} = $method_name;
+					my $method_name = $self->project->return_calling_methods_short_name($method);
+					if ($self->project->is_sv_calling_methods($method)){
+						$sv = 1;
+					}
 					my $type = "he";
 					$type = "ho" if $all_annex->{ho};
 					$genotype->{$type} ++;
@@ -3102,7 +3088,7 @@ has sequencing_infos =>(
 				$g = "ho" if ($genotype->{ho} > $genotype->{he});
 				my $case = 0;
 				$case = 1  if exists $self->{annex}->{$patient->id}->{is_cas_1_2};
-				$hash->{$pid}->{max} = [$mr,$ma,$g,$case];
+				$hash->{$pid}->{max} = [$mr,$ma,$g,$case,$sv];
 				
 			}
 			return $hash;
@@ -3255,9 +3241,10 @@ has in_this_run_patients => (
         lazy    => 1,
         default => sub {
                 my $self = shift;
-                if (exists  $self->dejaVuInfosForDiag2->{in_this_run_patients}){
-                	return  $self->dejaVuInfosForDiag2->{in_this_run_patients};
-                }
+                
+                #if (exists  $self->dejaVuInfosForDiag2("in_this_run_patients");}){
+                #	return  $self->dejaVuInfosForDiag2->{in_this_run_patients};
+                #}
                 return scalar(@{$self->getPatients});
         }
 );
@@ -3270,13 +3257,13 @@ has in_this_run_ratio => (
                 my $self = shift;
                 return 0 if $self->in_this_run_patients  <= 1;
                 my $nb;
-                 if (exists  $self->dejaVuInfosForDiag2->{total_in_this_run_patients}){
+                # if (exists  $self->dejaVuInfosForDiag2->{total_in_this_run_patients}){
                   
-                	$nb =   $self->dejaVuInfosForDiag2->{total_in_this_run_patients};
-                }
-                else {
+                #	$nb =   $self->dejaVuInfosForDiag2->{total_in_this_run_patients};
+                #}
+                #else {
                		$nb = scalar(@{$self->project->getPatients})-1;
-                }
+                #}
                 confess() if $nb == 0;
                 return  ($self->in_this_run_patients / $nb);
         }
@@ -3285,85 +3272,111 @@ has in_this_run_ratio => (
 sub similar_projects {
 
                 my $self = shift;
-              return  $self->dejaVuInfosForDiag2->{similar_projects};
+              return  $self->dejaVuInfosForDiag2("similar_projects");
         }
 
 
 sub  similar_patients{
                 my $self = shift;
-                return $self->dejaVuInfosForDiag2->{similar_patients};
+                return $self->dejaVuInfosForDiag2("similar_patients")
         }
 sub similar_patients_ho {
                 my $self = shift;
-  				return $self->dejaVuInfosForDiag2->{similar_patients_ho};
+  				return $self->dejaVuInfosForDiag2("similar_patients_ho");
  }
  
  
 sub other_projects  {
         my ($self) = @_;
-     	return $self->dejaVuInfosForDiag2->{other_project} if exists $self->dejaVuInfosForDiag2->{other_project};
-         return $self->dejaVuInfosForDiag2->{other_projects};
+     	return $self->dejaVuInfosForDiag2("other_projects");
 }
 
 sub other_patients{
           my $self = shift;
-           return $self->dejaVuInfosForDiag2->{other_patients};
+           return $self->dejaVuInfosForDiag2("other_patients");
      }
 
 sub other_patients_ho {
                 my $self = shift;
-             return $self->dejaVuInfosForDiag2->{other_patients_ho};
+             return $self->dejaVuInfosForDiag2("other_patients_ho");
         }
 
 sub exome_projects {
                 my $self = shift;
-               return $self->dejaVuInfosForDiag2->{exome_projects};
+               return $self->dejaVuInfosForDiag2("exome_projects");
 }
 
 sub exome_patients {
       
                 my $self = shift;
-               return  $self->dejaVuInfosForDiag2->{exome_patients};}
+               return  $self->dejaVuInfosForDiag2("exome_patients")
+}
 
 
 sub  exome_patients_ho {
                 my $self = shift;
-                return   $self->dejaVuInfosForDiag2->{exome_patients_ho};
+                return   $self->dejaVuInfosForDiag2("exome_patients_ho");
  }
 
 
 sub total_exome_projects  {
                 my $self = shift;
-                  return   $self->dejaVuInfosForDiag2->{total_exome_projects};
+                  return   $self->dejaVuInfosForDiag2("total_exome_projects");
         }
 
 
 sub total_exome_patients {
                 my $self = shift;
-                   return   $self->dejaVuInfosForDiag2->{total_exome_patients};
+                   return   $self->dejaVuInfosForDiag2("total_exome_patients");
         }
 
 
 sub total_similar_projects {
               my $self = shift;
-               return   $self->dejaVuInfosForDiag2->{total_similar_projects};
+               return   $self->dejaVuInfosForDiag2("total_similar_projects");
 }
         
 sub total_similar_patients  {
                 my $self = shift;
-               return   $self->dejaVuInfosForDiag2->{total_similar_patients};
+               return   $self->dejaVuInfosForDiag2("total_similar_patients");
         }
         
 
-     
-has dejaVuInfosForDiag2 => ( 
-	is              => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return $self->getProject->getDejaVuInfosForDiag($self->id());
+
+sub dejaVuInfosForDiag2 {
+	my ($self,$key) = @_;
+	unless (exists $self->{array_dejavu}) {
+		my $hash = $self->getProject->getDejaVuInfosForDiag($self->id());
+		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
-);
+	return $self->{array_dejavu} unless $key;
+	my $index = $self->buffer->index_dejavu($key);
+	return  $self->{array_dejavu}->[$index];
+}
+	
+#	unless  (exists $self->{dejaVuInfosForDiag2}){
+#		$self->{dejaVuInfosForDiag2} = $self->getProject->getDejaVuInfosForDiag($self->id());
+#	}
+#	if (exists $self->{dejaVuInfosForDiag2}){
+#		$self->{array_dejavu} 
+#	}
+#	if (exists $self->{array_dejavu}){
+#		my $index = $self->buffer->index_dejavu($key);
+#		return  $self->{array_dejavu}->[$index]
+#	}
+#	
+#	if (exisst $self->{dejaVuInfosForDiag2})
+#	if (exists array)
+#}
+     
+#has dejaVuInfosForDiag2 => ( 
+#	is              => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		return $self->getProject->getDejaVuInfosForDiag($self->id());
+#	}
+#);
      
 
 
@@ -3396,6 +3409,134 @@ sub purge_public_data {
 sub purge_deja_vu {
 	 my $self = shift;
 	 delete $self->{dejaVuInfosForDiag};
+}
+
+#################
+#
+#
+# SPLIT READ INFORMATION
+#
+##################
+
+has split_read_infos =>(
+	is =>'ro',	
+	lazy=>1,
+	default=> sub {
+		my $self = shift;
+		 my $hash; 
+		return {} unless $self->isSrPr();
+		foreach my $pat (@{$self->getPatients}){
+			foreach my $patient (@{$pat->getFamily()->getMembers}){
+				my $pid = $patient->id;
+				my $pr0 ="-";
+				my $pr1 ="-";
+				my $sr0;
+				my $sr1;
+				my $srq_end;
+				my $srq_start;
+				my $equality;
+				$srq_end = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
+				$srq_start = $patient->mean_align_quality($self->getChromosome, $self->start, $self->start);
+				$equality = $patient->mean_align_quality($self->getChromosome, $self->start, $self->end);
+				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
+				#$self->{seq}->{$pid}->{sr_quality_end} = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
+				unless ($self->existsPatient($patient)){
+					my ($a,$b,$c) = $patient->sr_raw($self->getChromosome, $self->start);
+					$sr0  =  $a;
+					$sr1 = int(($b+$c)/2); 
+		 			($a,$b,$c) = $patient->sr_raw($self->getChromosome, $self->end);
+					$sr0  +=  $a;
+					$sr1 += int(($b+$c)/2); 
+					$sr0  = int($sr0/2);
+				}
+				else {
+					unless ( exists $self->{annex}->{$patient->id()}->{sr}) {
+					#	warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name." ".Dumper( $self->annex()->{$patient->id()});
+					#	die();
+						$hash->{$pid} = ["-1","-1","-1","-1",$srq_end,$srq_start,$equality];
+						
+					}
+					else {
+			#	confess(Dumper ($self->annex)." ".$self->start." ".$self->getChromosome->name) unless  exists $self->annex()->{$patient->id()}->{sr};
+					($sr0,$sr1) = split(",",$self->{annex}->{$patient->id()}->{sr});
+					if (exists  $self->{annex}->{$patient->id()}->{pr}){
+						($pr0,$pr1) = split(",",$self->{annex}->{$patient->id()}->{pr});
+					}
+					}
+				}
+				$hash->{$pid} = [$sr0,$sr1,$pr0,$pr1,$srq_end,$srq_start,$equality];
+			}
+						
+		}
+			
+			return $hash;
+	},
+);
+
+sub sr0 {
+	my ($self, $patient) = @_;
+	my $pid = $patient->id;
+	return $self->split_read_infos->{$pid}->[0];
+}
+sub sr1 {
+	my ($self, $patient,$debug) = @_;
+	my $pid = $patient->id;
+	return $self->split_read_infos->{$pid}->[1];
+}
+sub pr0 {
+	my ($self, $patient) = @_;
+	my $pid = $patient->id;
+	return $self->split_read_infos->{$pid}->[2];
+}
+sub pr1 {
+	my ($self, $patient) = @_;
+	my $pid = $patient->id;
+	return $self->split_read_infos->{$pid}->[3];
+}
+
+sub sr_align_quality {
+	my ($self, $patient) = @_;
+	my $pid = $patient->id;
+	return int(($self->split_read_infos->{$pid}->[4]+$self->split_read_infos->[5])/2);
+}
+
+
+
+sub event_align_quality {
+	my ($self, $patient) = @_;
+	my $pid = $patient->id;
+	return $self->split_read_infos->{$pid}->[6];
+}
+
+sub sr {
+	my ($self, $patient) = @_;
+	my $pid = $patient->id;
+	return "-" unless $self->isSrPr;
+	my $sr0 = $self->sr0($patient);
+	return "-" if not $sr0 or $sr0 eq "-";
+	my $sr1 = $self->sr1($patient);
+	$sr0 = '-' unless ($sr0);
+	$sr1 = '-' unless ($sr1);
+	return  $sr0.",".$sr1;
+
+}
+
+sub pr {
+	my ($self, $patient) = @_;
+	my $pid = $patient->id ;
+	return "-"  unless $self->isSrPr;
+	return "-" if $self->pr0($patient) eq "-";
+	return  $self->pr0($patient).",". $self->pr1($patient);
+}
+
+
+
+
+sub is_manta {
+	my ($self) = @_;
+	#my $pid = $p->id;
+	return $self->isSrPr();
+	
 }
 
 

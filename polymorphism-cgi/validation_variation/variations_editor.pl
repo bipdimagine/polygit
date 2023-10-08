@@ -52,11 +52,14 @@ use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
 use Storable qw/thaw freeze/;
-use Digest::MD5 qw(md5 md5_hex md5_base64);
 use LMDB_File qw(:flags :cursor_op :error);
 use Proc::Simple;
 use lib "$Bin/variation_editor_lib";
 use hvariant;
+use variations_editor_methods;
+use annotations_methods;
+use max_score;
+
 use Sys::Hostname;
 use CGI::Cache;
 use table_dude;
@@ -88,7 +91,7 @@ $dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
 my $cgi = new CGI();
 my $myproc = Proc::Simple->new();        # Create a new process object
  
-$myproc->start("$Bin/vmtouch.pl project=".$cgi->param('project')." patient=".$cgi->param('patients'));
+#$myproc->start("$Bin/vmtouch.pl project=".$cgi->param('project')." patient=".$cgi->param('patients'));
 #warn "$Bin/vmtouch.pl project=".$cgi->param('project')." patient=".$cgi->param('patients');
 #die();
 #allele count
@@ -148,7 +151,6 @@ my @header_transcripts = (
 
 my @header_transcripts_cnv = ("consequence", "enst", "nm", "ccds", "appris", "start", "end");
 
-my $bgcolor = qq{background-color:#607D8B}
   ; #qq{background: #CFD8DC url('https://everything.typepad.com/photos/uncategorized/2008/03/28/crosshatch.png') 0 0 repeat};# #607d8b";#"#607D8B";
 my $bgcolor2 = "background-color:#E17F63";
 my $dir_tmp2 = tempdir( CLEANUP => 1, DIR => "/tmp/" );
@@ -236,7 +238,7 @@ else {
 
 my $patient = $project->getPatient($patient_name);
 my $fam = $patient->getFamily();
-my $print_html = polyviewer_html->new( project => $project, patient => $patient );
+my $print_html = polyviewer_html->new( project => $project, patient => $patient,header=> \@headers,bgcolor=>"background-color:#607D8B" );
 $print_html->init();
 
 if ($patient->isMale){
@@ -267,12 +269,11 @@ if ($gene_name_filtering){
 }
 my $force;
 my $no_cache;
-if ($force == 1) {
+if ($cgi->param('force') == 1) {
  $dev = 2;	
 }
 $no_cache = $patient->get_lmdb_cache("w");
-
-my $keys = return_uniq_keys($patient,$cgi);
+my $keys =[ "toto+".time,rand(1000)];#return_uniq_keys($patient,$cgi);
 my $level_dude = 'high,medium';
 
 
@@ -310,7 +311,7 @@ $cgi->param(-name=>'user_name',-value=>'');
 ##############################
 my $annot = $cgi->param('annot');
 my $only_DM = $cgi->param('only_DM');
-my $javascript_id = int( time + rand(400000) );
+
 my $statistics = {};
 
 #                           #
@@ -474,8 +475,9 @@ $buffer->disconnect();
 ##################################
 ################## GET VECTORS 
 ##################################
-
+#constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
 	my ( $vectors, $list, $hash_variants_DM ) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$statistics );
+
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;
 
@@ -485,7 +487,9 @@ $t = time;
 ##################################
 ################## GET GENES 
 ##################################
+	warn scalar @$list;
 my ($genes) = fork_annnotations( $list, [], $maskcoding );
+
 
 save_session_for_test($patient, $genes) if $cgi->param('test_mode');
 export_xls($patient, $genes) if $cgi->param('export_xls');
@@ -513,12 +517,12 @@ $project->buffer->dbh_reconnect();
 
 warn "max_score";
 #warn $genes->[0]->{js_id};
-
-calculate_max_score($project,$genes);
-warn "end";
+my $sct = time;
+$genes = calculate_max_score($project,$genes);
+warn "end max_score :".abs(time -$sct);
 	my $vgenes =[];
 	my $nb2 = 0;
-	my $limit =10000; 
+	my $limit =3000; 
 	my $hchr; 
 
 foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
@@ -569,7 +573,7 @@ unless ( $patient->isGenome() ) {
 	
 	
 $myproc->kill();
-
+$t     = time;
 #my $exit_status = $myproc->wait(); 
 #warn "ok *** $exit_status ";
 #exit(0);
@@ -614,7 +618,59 @@ sub error {
 	exit(0);
 }
 
+
+
 sub calculate_max_score {
+	my ( $project, $list ) = @_;
+	my $fork = 10;
+	my $nb        = int( scalar(@$list) / ($fork) +1 );
+	my $iter      = natatime( $nb,  @$list );
+	my $vid        = time;
+	my $hrun;
+	my $pm        = new Parallel::ForkManager($fork);
+	#$t = time;
+	
+	my $final =[];
+	
+	$pm->run_on_finish(
+		sub {
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
+
+			unless ( defined($h) or $exit_code > 0 ) {
+				print
+				  qq|No message received from child process $exit_code $pid!\n|;
+				die();
+				return;
+			}
+			my $id = $h->{run_id};
+			delete $hrun->{ $h->{run_id} };
+			push(@$final,@{$h->{genes}});
+		}
+	);
+	
+	#TODO: essayer d'integrer XLS Store variant ici pour le forker
+	
+	$project->buffer->dbh_deconnect();
+	
+	#delete $project->{validations_query1};
+	while ( my @tmp = $iter->() ) {
+		$vid++;
+		$hrun->{$vid}++;
+		my $pid = $pm->start and next;
+			my $res;
+			my $genes  = max_score::calculate($project,$patient,\@tmp);
+			$res->{run_id} = $vid;
+			$res->{genes} = $genes;
+		$pm->finish( 0, $res );
+	}
+	$pm->wait_all_children();
+	
+	return $final;
+	
+}
+
+
+sub calculate_max_score_toto {
 	my ( $project, $list ) = @_;
 	$project->buffer->close_lmdb();
 	
@@ -633,22 +689,24 @@ sub calculate_max_score {
 	my $h_all_variants_validations = $patient->getProject->validations();
 	my $no_dude                    = $patient->getGenesDude();
 	$no_dude = undef if $project->isGenome();
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
+	my @ids = map{$_->{id}} @{$list};
+	$final_polyviewer_all->prepare(\@ids);
 	foreach my $hgene (@$list) {
 		my $gid = $hgene->{id};
 		my $debug ;
 		my $gene = $project->newGenes( [$gid] )->[0];
 		my ( $n, $chr_name ) = split( "_", $gid );
-		$hgene->{chr_name} = 
 		my $chr = $gene->getChromosome();
 		$hgene->{chr_name} = $chr_name;
+		
 		if ( $no_dude && -e $no_dude->filename ) {
 			$hgene->{level_dude} = $no_dude->get($gid);
 		}
 		else {
 			$hgene->{level_dude} = -1;
 		}
-
-		my $global_gene = $chr->lmdb_polyviewer_genes($patient)->get($gid);
+		my $global_gene = $final_polyviewer_all->get($gid); #$chr->get_polyviewer_genes($patient,$gid);
 		foreach my $k ( keys %{$global_gene} ) {
 			next if $k eq "penality";
 			next if $k eq "denovo_rare";
@@ -659,6 +717,7 @@ sub calculate_max_score {
 		$class->{biallelic} = [];
 		$class->{mother}    = [];
 		$class->{father}    = [];
+	
 		foreach my $k ( keys %{ $hgene->{all_variants} } ) {
 			if ($version_db){
 				$hgene->{score} += update_score_clinvar($k);
@@ -670,12 +729,13 @@ sub calculate_max_score {
 				$hgene->{score} += 2   if ( $score_validation == 4 );
 				$hgene->{score} += 3   if ( $score_validation == 5 );
 			}
+			
 			push(@{ $class->{biallelic} },$hgene->{all_variants}->{$k}->{score}) if exists $hgene->{all_variants}->{$k}->{biallelic};
 			push( @{ $class->{mother} }, $hgene->{all_variants}->{$k}->{score} ) if exists $hgene->{all_variants}->{$k}->{mother};
 			push( @{ $class->{father} }, $hgene->{all_variants}->{$k}->{score} ) if exists $hgene->{all_variants}->{$k}->{father};
 		}
 		if (scalar( @{ $class->{mother} } ) > 0 && scalar( @{ $class->{father} } ) == 0 && exists $hgene->{father}->{id} ) {
-			warn "mother" if $debug;
+			
 			my $nid = $hgene->{father}->{id};
 			$hgene->{all_variants}->{$nid}->{father} = 1;
 			$hgene->{all_variants}->{$nid}->{score} = $hgene->{father}->{score};
@@ -718,12 +778,12 @@ sub refine_heterozygote_composite_score_fork {
 	my $fork      = scalar (keys %$hchr);
  	$fork =8;	
 	$fork = 16 if $project->isGenome();
-	#$fork=20;
-	my $pm        = new Parallel::ForkManager($fork);
-	$fork = 10;
-	 $pm        = new Parallel::ForkManager($fork);
-	my $nb        = int( scalar(@$vgenes) / ($fork*2) + 1 );
 	
+	$fork=10;
+	my $pm        = new Parallel::ForkManager($fork);
+	$pm        = new Parallel::ForkManager($fork);
+	#@$vgenes = @$vgenes[0..500];
+	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
 	my $iter      = natatime( $nb,  @$vgenes );
 	my $res_genes = [];
 	my $vid        = 0;
@@ -753,7 +813,9 @@ sub refine_heterozygote_composite_score_fork {
 				print qq{</div>} if $current  == 1 ;
 					foreach my $g (@{ $vres->{$current}}){
 						push(@toto,$g->{name});
-						print $g->{out} . "\n<!--SPLIT-->\n";
+						#warn $g->{out};
+						print $g->{out};
+						print  "\n<!--SPLIT-->\n";
 					#	push(@res_final,$g->{out})
 					}
 					delete $vres->{$current};
@@ -771,6 +833,7 @@ sub refine_heterozygote_composite_score_fork {
 	
 	#delete $project->{validations_query1};
 	while ( my @tmp = $iter->() ) {
+		warn scalar @tmp;
 		$vid++;
 		$hrun->{$vid}++;
 		my $pid = $pm->start and next;
@@ -779,9 +842,7 @@ sub refine_heterozygote_composite_score_fork {
 		$res->{tmp}  = \@tmp;
 		$res->{time} = time;
 		$project->buffer->dbh_reconnect();
-
-		( $res->{genes}, $res->{total_time} ) = new_refine_heterozygote_composite_score_old( $project, \@tmp, $vid );
-
+		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid);
 		$res->{run_id} = $vid;
 		$pm->finish( 0, $res );
 	}
@@ -790,7 +851,9 @@ sub refine_heterozygote_composite_score_fork {
 	error("Hey it looks like you're having an error  !!! ")
 	  if scalar keys %$hrun;
 	warn "end hetero " if $print;
+	warn "....";
 	print qq{</div>};
+	warn "....";
 	while (exists $vres->{$current}){
 				print qq{</div>} if $current  == 1 ;
 					foreach my $g (@{ $vres->{$current}}){
@@ -802,9 +865,6 @@ sub refine_heterozygote_composite_score_fork {
 				
 			}
 	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
-	#print scalar (keys %{$vres});
-	#warn  scalar (keys %{$vres});
-	#return;
 	return ;
 	exit(0);
 	print qq{</div>};
@@ -823,8 +883,9 @@ sub fork_annnotations {
 	}
 	my $fork = 6;
 	$fork = 10 if $project->isGenome();
+	$fork=10;
 	#ici $fork= 20;
-	my $nb   = int( scalar(@$list) / ($fork) + 0.5 );
+	my $nb   = int( (scalar(@$list) +1) / ($fork-1)  );
 	my $pm   = new Parallel::ForkManager($fork);
 	my $hrun = {};
 	my $hvariations;
@@ -849,18 +910,13 @@ sub fork_annnotations {
 			delete $h->{run_id};
 			delete $hrun->{$id};
 			foreach my $gene ( @{ $h->{genes} } ) {
-
 				my $gid = $gene->{id};
-				my $debug;
-				$debug = 1 if $gene->{name} eq "SDHA";
-
 				#unless ($keep_pathogenic){
 				#die($gene->{name}) if  exists $gene->{DM};
 				next
 				  unless ( $gene->{mask} & $maskcoding or exists $gene->{DM} );
 
 				#}
-				#warn Dumper  $gene if $gene->{name} eq "SDHA";
 
 				unless ( exists $hgenes->{$gid} ) {
 
@@ -872,40 +928,37 @@ sub fork_annnotations {
 					$hgenes->{$gid}->{max_score} -=( $hgenes->{$gid}->{denovo_rare} * 0.3 ) if $hgenes->{$gid}->{denovo_rare} > 2;
 					$hgenes->{$gid}->{max_score} += 2 if $hgenes->{$gid}->{cnv_dup} > 1 or $hgenes->{$gid}->{cnv_del} > 1;
 					foreach my $k ( keys %{ $gene->{variant} } ) {
-						$hgenes->{$gid}->{all_variants}->{$k} =
-						  $gene->{variant}->{$k};
+						$hgenes->{$gid}->{all_variants}->{$k} = $gene->{variant}->{$k};
+						$hgenes->{$gid}->{all_vector_ids}->{$k} = $gene->{vector_ids}->{$k};
 					}
 					next;
 				}
-				push( @{ $hgenes->{$gid}->{variants} },
-					@{ $gene->{variants} } );
+				push( @{ $hgenes->{$gid}->{variants} }, @{ $gene->{variants} } );
 
 				foreach my $k ( keys %{ $gene->{variant} } ) {
-					$hgenes->{$gid}->{all_variants}->{$k} =
-					  $gene->{variant}->{$k};
+					$hgenes->{$gid}->{all_variants}->{$k} = $gene->{variant}->{$k};
+					$hgenes->{$gid}->{all_vector_ids}->{$k} = $gene->{vector_ids}->{$k};
 				}
 
 			}
+			
 			$tsum += ( abs( time - $t ) );
 
 		}
 	);
-
 	my $iter = natatime( $nb, @$list );
 	my $id   = time;
 	$project->getChromosomes();
 	$project->buffer->dbh_deconnect();
 	#$project->buffer->close_lmdb();
 	my $tt = time;
-
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
 	while ( my @tmp = $iter->() ) {
 		$id++;
 		$hrun->{$id}++;
-
 		my $pid = $pm->start and next;
 		my $t   = time;
-		my $res = annotations2( $project, \@tmp, $list_saved, $maskcoding );
-
+		my $res = annotations_methods::annotations( $project,$patient, \@tmp, $list_saved, $maskcoding,$final_polyviewer_all,$hash_genes_panel,$hash_variants_DM );
 		$res->{run_id} = $id;
 		$res->{ttime}  = time;
 		$pm->finish( 0, $res );
@@ -914,19 +967,18 @@ sub fork_annnotations {
 	$pm->wait_all_children();
 	print qq{</div>} unless ($cgi->param('export_xls'));
 	warn '----- after Annotation: '
-	  . $tsum . ' '
+	  . $tsum . ' final :'
 	  . abs( $tt - time ) . ' :: '
 	  . $ttsum
 	  if $print;
+	  
 	warn '----- nb genes ' . scalar( values %$hgenes ) if $print;
 	error("Hey it looks like you're having an error  !!! ")
 	  if scalar keys %$hrun;
 	die("-------- PROBLEM ----------- ") if scalar keys %$hrun;
-
 	#refine_heterozygote_composite_score($hgenes);
 	#my @genes = sort {$b->{max_score} <=> $a->{max_score}} values %$hgenes;
 	$project->buffer->dbh_reconnect();
-
 	#warn 'end annotations';
 	return ( [ values %$hgenes ], $hvariations );
 }
@@ -936,792 +988,9 @@ sub return_litedb {
 	return GenBoNoSql->new( dir => $project->lmdb_cache_dir(), mode => 'r' );
 }
 
-sub annotations2 {
-	my ( $project, $list, $list_saved, $maskcoding ) = @_;
-	my $cgi = new CGI();
 
-	#$project->buffer->dbh_reconnect();
-	print "." unless ($cgi->param('export_xls'));
-	my $tsum = 0;
 
-	#my $vs =  $project->myflushobjects($list,"variants");;
-	my $tglobal = time;
-	my $res     = {};
-	my $agenes  = [];
-	my $e;
-	my $nb = 1;
-	my $mtime_flush;
-	my $mtime_gene;
-	my $mtime;
 
-	#my $lite = return_litedb($project);
-	#foreach my $v (@$vs) {
-	$javascript_id += int( rand(10000) );
-
-	#	$project->setListVariants($list);
-	#	my $t = time;
-	my $list2 = [];
-	my $dchr;
-	foreach my $id (@$list) {
-		my $debug;
-		my ( $cname, $xid ) = split( "!", $id );
-		$nb++;
-		unless ($cgi->param('export_xls')) {
-			print "." if $nb % 100 == 0;
-		}
-		my $t = time;
-
-#my $chr = $project->getChromosome($cname);
-#CHANG LMDB POLYVIEWER : $chr->{$cname} = $project->getChromosome($cname)->lmdb_hash_variants("r") unless exists $dchr->{$cname};
-
-		$dchr->{$cname} =
-		  $project->getChromosome($cname)->lmdb_polyviewer_variants_genes( $patient, "r" )
-		  unless exists $dchr->{$cname};
-
-		$tsum += abs( $t - time() );
-
-		my $hg = $dchr->{$cname}->get($id);
-		unless ($hg){
-			$hg = hvariant::hash_variant($patient,$id);
-		}
-		
-		#TODO: faire EXPORT XLS ici pour simplifier MAJ
-
-		if ($hg) {
-			if ($hash_genes_panel) {
-				foreach my $ag ( @{ $hg->{array} } ) {
-					next unless exists $hash_genes_panel->{ $ag->{id} };
-
-					#die();
-					push( @$agenes, $ag );    # if $ag->{mask} & $maskcoding;
-				}
-			}
-			elsif ( exists $hash_variants_DM->{$id} ) {
-				foreach my $a ( @{ $hg->{array} } ) {
-					$a->{DM}++;
-					push( @$agenes, $a );
-				}
-
-				#push(@$agenes, map{$_->{DM}++} @{$hg->{array}});
-				#warn Dumper @$agenes;
-			}
-			else {
-				#push(@$agenes, @{$hg->{array}});
-				#warn Dumper $hg->{array};
-				push( @$agenes,grep { $_->{mask} & $maskcoding } @{ $hg->{array} } );
-			}
-
-			next;
-		}
-		push( @$list2, $id );
-	}
-	$res->{genes} = $agenes;
-#	warn "\t end -->  "
-#	  . $tsum
-#	  . ' global '
-#	  . abs( time - $tglobal ) . ' '
-#	  . scalar( keys %$dchr )
-#	  if $print;
-	return $res unless @$list2;
-
-	###RETURN ####
-	warn Dumper @$list2;
-	foreach my $z (@$list2){
-		my $vobj = $project->returnVariants($z);
-		#warn $vobj->name;
-		warn Dumper $vobj->gnomad;
-	}
-	confess();
-
-}
-
-sub refine_heterozygote_composite_score_one {
-	my ( $project, $list,$id,$out_header ) = @_;
-	
-	
-
-	my $out_header;
-		$out_header .= $cgi->start_Tr( { style => "background-color:#E9DEFF" } );
-		foreach my $h (@headers) {
-			$out_header .= $cgi->th($h);
-		}
-		$out_header .= $cgi->th("validations");
-		$out_header .= $cgi->th("transcripts");
-		$out_header .= $cgi->end_Tr();
-		
-
-
-	#	warn "genes ".scalar(@$list);
-
-#	$project->buffer->close_lmdb();
-
-	#return;
-	#$project->buffer->dbh_reconnect();
-	my $mother = $patient->getFamily->getMother();
-	my $father = $patient->getFamily->getFather();
-
-#return $list unless $mother or $father;
-#	my $no  = GenBoNoSqlLmdb->new(dir=>$dir_tmp,mode=>"w",name=>"tutu",is_compress=>1);
-#if ($patient->isChild && $patient->getFamily->isTrio()){
-	my $hno;
-	my $tsum = 0;
-	my $t    = time;
-	my $xp   = 0;
-
-	my $total_time = 0;
-	my $ztotal     = 0;
-
-	
-	
-	#$t = time;
-	my $current;
-	my $rtime =  0;
-	foreach my $g ( @$list) {
-		#last if $xp > 100;
-		$xp++;
-		#warn $xp;
-		print "*" if $xp % 10 == 0 && $id ==1;
-#		warn "*" if $xp % 10 == 0;
-		my ( $n, $cname ) = split( "_", $g->{id} );
-		my $chr = $project->getChromosome($cname);
-		if ( $current ne $cname && $current ) {
-			#$project->buffer->close_lmdb();
-		}
-
-		$cname = $current;    #unless $cname;
-		next unless scalar(keys %{$g->{all_variants}});
-		my $no       = $chr->lmdb_polyviewer_variants( $patient, "r" );
-		my $out;
-
-		$out .= $cgi->start_div(
-			{
-				class => "panel panel-primary ",
-				style =>
-"border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;"
-			}
-		);
-		$out .= $cgi->start_div(
-			{
-				class => "panel-heading panel-face panel-grey",
-				style =>
-"$bgcolor;min-height:13px;max-height:13px;padding:10px;border:0px"
-			}
-		);
-		my $panel_id = "panel_" . $g->{uid};
-		$out .= update_variant_editor::panel_gene( $g, $panel_id, $project->name, $patient );
-		$out .= $cgi->end_div();
-
-		$out .= "\n";
-		$out .= $cgi->start_div(
-			{
-				class => "panel-body panel-collapse collapse ",
-				style => "font-size: 09px;font-family:  Verdana;",
-				id    => "$panel_id"
-			}
-		);
-		$out .= "\n";
-
-		#$out.="<br>\n";
-		$out .= $cgi->start_table(
-			{
-				class =>
-"table table-striped table-condensed table-bordered table-hover table-mybordered",
-				style =>
-"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;"
-			}
-		);
-		$out .= "\n";
-		$out .= $out_header;
-		
-		foreach my $vid ( keys %{ $g->{all_variants} } ) {
-			my $v;
-			$v = $no->get($vid);
-			if ($v->{value}->{is_cnv} == 1) {
-				$out .= "<tr style='background-image: linear-gradient(to right, white, #f9e1d8);'>" if ($v->{value}->{type} eq 'large_deletion');
-				$out .= "<tr style='background-image: linear-gradient(to right, white, #d8eef9);'>" if ($v->{value}->{type} eq 'large_duplication');
-			}
-			else { $out .= $cgi->start_Tr(); }
-			
-#			$out .= $cgi->start_Tr();
-		
-			#$v = $lite->get($chr->name(),$vid."@".$patient->name);
-			my $ttime = time;
-			 $rtime += abs(time -$ttime);
-			unless ($v){
-				$v = hvariant::hash_variant_2($patient,$vid);
-			}
-			#warn keys %$v;
-			#die();
-
-			warn "$vid -- " unless $v;
-			confess()       unless $v;
-			next            unless $v;
-
-			die($vid) unless $v;
-
-			if ( exists $hno->{$vid} ) {
-				$v->{composite} = 1;
-
-				#$v = $hno->{$vid};#if exists $hno->{$vid};
-
-			}
-			my $style = {};
-			$style = { style => "background-color: #DAEEED;opacity:0.5" } if exists $g->{all_variants}->{$vid}->{added};
-			update_variant_editor::alamut_link_js( $v, $patient );
-			update_variant_editor::table_validation( $patient, $v, $g );
-			$v->{id} = $vid;
-			die();
-			update_variant_editor::table_dejavu_live( $v, $patient->project,$patient,$g );
-			my $t = time;
-
-			$total_time += abs( time - $t );
-
-			$v->{id} = $vid;
-
-
-			update_variant_editor::trio( undef, $v, $patient, $project ) unless $patient->isChild;
-			
-	
-
-			foreach my $t (@headers) {
-				if ($t =~ 'igv' and $v->{value}->{type} ne 'substitution') {
-					my $chrom = $v->{value}->{chromosome};
-					my $start = $v->{value}->{start};
-					my $end = $start;
-					my $locus1 = $chrom.':'.$start;
-					my $locus2 = $chrom.':'.$start;
-					if ($v->{value}->{type} eq 'deletion' or $v->{value}->{type} eq 'large_deletion' or $v->{value}->{type} eq 'large_duplication') {
-						my $start2 = $start - 100;
-						my $end2 = $v->{value}->{end} + 100;
-						$locus2 = $chrom.':'.$start2.'-'.$end2;
-					}
-
-					$v->{html}->{$t} =~ s/$locus1/$locus2/ unless ($v->{html}->{$t} =~ /$locus2/);
-				}
-				if ($t eq 'var_name') {
-					if (exists $v->{value}->{manta}->{is_imprecise} and $v->{value}->{manta}->{is_imprecise} == 1) {
-						$v->{html}->{$t} .=  qq{<br><span style='font-size:7px'><b><u>IS IMPRECISE</b></u></span>};
-					}
-					if (exists $v->{value}->{cnv_details_genes} and scalar keys %{$v->{value}->{cnv_details_genes}} > 1) {
-						my @lGenesNames;
-						push(@lGenesNames, "<table class='table table-striped table-condensed table-bordered table-hover table-mybordered'>");
-						push(@lGenesNames, "<tr>");
-						push(@lGenesNames, "<td style='text-align:center;'><b>Gene Name</b></td>");
-						push(@lGenesNames, "<td style='text-align:center;'><b>Nb Panel(s)</b></td>");
-						push(@lGenesNames, "<td style='text-align:center;'><b>Description</b></td>");
-						push(@lGenesNames, "</tr>");
-						foreach my $g_id (keys %{$v->{value}->{cnv_details_genes}}) {
-							push(@lGenesNames, "<tr>");
-							my $cmd = qq{"view_var_from_proj_gene_pat('$project_name', '$g_id', '$patient_name', '', '', '');"};
-							my $disabled = '';
-							$disabled = 'disabled' if ($g_id eq $g->{id});
-							my $this_g = $project->newGene($g_id);
-							
-							my $nb_panels = scalar(@{$this_g->getPanels()});
-							my $panels_text = '';
-							foreach my $p (@{$this_g->getPanels()}) {
-								$panels_text += $p->name()."\n";
-							}
-							my $cmd_alert_panel = qq{alert("$panels_text");};
-							push(@lGenesNames, "<td style='text-align:center;'><button onclick=$cmd $disabled>".$this_g->external_name()."</button></td>");
-							push(@lGenesNames, "<td style='text-align:center;'>".$nb_panels."</td>");
-							push(@lGenesNames, "<td style='text-align:center;'>".$this_g->description()."</td>");
-							push(@lGenesNames, "</tr>");
-						}
-						push(@lGenesNames, "</table>");
-						#TODO: here
-						my $genes_text = join("", @lGenesNames);
-						my $id_info = 'b_multi_genes'.$v->{value}->{id}.'_'.$g->{id}.'_'.$patient->name();
-						
-						$v->{html}->{$t} .= qq{<br><br><button id="$id_info" type="button" class="btn btn-xs  btn-primary" style="background-color: #9796C4;font-size: 7px;font-family:  Verdana;color:white">Multi Genes !</button>};
-						$v->{html}->{$t} .= qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$id_info',position:['after']"><div style="width:450px;height:auto;text-align:center;">$genes_text</div></div>};
-					}
-				}
-				if ($t eq 'trio') {
-					my $cnv_score;
-					my $max_dp = $v->{value}->{max_dp};
-					my $max_dp_text = $max_dp;
-					$max_dp_text = '-' if ($max_dp_text == -1);
-					my $text_caller = join("<br>", @{$v->{value}->{ngs}});
-					my $id_info = 'table_infos_'.$v->{value}->{id}.'_'.$g->{id}.'_'.$patient->name();
-					my $vtype = '';
-					$vtype = '<span style="text-align:center;font-size:7px"><b><i>Large Deletion</b></i></span><br><br>' if ($v->{value}->{type} eq 'large_deletion');
-					$vtype = '<span style="text-align:center;font-size:7px"><b><i>Large Duplication</b></i></span><br><br>' if ($v->{value}->{type} eq 'large_duplication');
-					$v->{html}->{$t} =~ s/<table/$vtype<table id="$id_info"/;
-					$v->{html}->{$t} .= qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$id_info',position:['after']"><div style="min-width:300px;width:auto;height:auto;"><center><b><u>Patient $patient_name</b></u><br><br>};
-
-					if (exists $v->{value}->{manta}->{is_imprecise} and $v->{value}->{manta}->{is_imprecise} == 1) {
-						$text_caller .=  qq{<br><br><b><u>IS IMPRECISE (MANTA)</b></u>};
-					}
-
-					$v->{html}->{$t} .= qq{<b><u>Calling Method(s):</b></u><br> $text_caller </center></div></div>};
-					$v->{html}->{$t} .= qq{$cnv_score} if ($cnv_score);
-					
-					
-					
-				}
-				$out .= $cgi->td( $style, $v->{html}->{$t} );
-				$out .= "\n";
-			}
-			
-			update_variant_editor::check_is_hgmd_dm_for_gene($patient, $v, $g); #TODO: if DM a faire
-			update_variant_editor::check_is_clinvar_pathogenic_for_gene($patient, $v, $g); #TODO: if CLINVAR a faire
-			$out .= $cgi->td( $style,
-			update_variant_editor::table_validation( $patient, $v, $g ) );
-			if ($v->{value}->{type} eq 'large_deletion' or $v->{value}->{type} eq 'large_duplication') {
-				$out .= $cgi->td($style, update_variant_editor::table_transcripts_cnv($v, $v->{genes}->{ $g->{id} }, $g->{id}, \@header_transcripts_cnv));
-			}
-			else {
-				$out .= $cgi->td($style, update_variant_editor::table_transcripts($v->{genes}->{ $g->{id} }, \@header_transcripts));
-			}
-			$out .= $cgi->td($style, update_variant_editor::validation_select( $patient, $v, $g ) );
-			$out .= $cgi->end_Tr();
-			$out .= "\n";
-
-		}
-		
-		#$chr->lmdb_polyviewer_variants( $patient, "close" );
-		
-		$out .= $cgi->end_table();
-		$out .= "\n";
-		$out .= $cgi->end_div();
-		$out .= $cgi->end_div();
-		$out .= "<br>\n";
-		$g->{out} = $out;
-
-		#print $out;
-	}
-	$project->buffer->close_lmdb();
-#	warn "refine get: $rtime => step2 :".abs(time-$t);
-	#$no->close();
-	return ( $list, $total_time );
-
-	die();
-}
-
-sub new_refine_heterozygote_composite_score_old {
-	my ( $project, $list, $id, $out_header ) = @_;
-
-	my $out_header;
-	$out_header .= $cgi->start_Tr( { style => "background-color:#E9DEFF" } );
-	foreach my $h (@headers) {
-		$out_header .= $cgi->th($h);
-	}
-	$out_header .= $cgi->th("validations");
-	$out_header .= $cgi->th("transcripts");
-	$out_header .= $cgi->end_Tr();
-	my $mother = $patient->getFamily->getMother();
-	my $father = $patient->getFamily->getFather();
-	my $hno;
-	my $tsum = 0;
-	my $t    = time;
-	my $xp   = 0;
-
-	my $total_time = 0;
-	my $ztotal     = 0;
-	#$t = time;
-	my $current;
-	my $rtime = 0;
-	foreach my $g (@$list) {
-		#last if $xp > 100;
-		$xp++;
-
-		#warn $xp;
-		print "*" if $xp % 10 == 0 && $id == 1;
-		my ( $n, $cname ) = split( "_", $g->{id} );
-		my $chr = $project->getChromosome($cname);
-		if ( $current ne $cname && $current ) {
-
-			#$project->buffer->close_lmdb();
-		}
-
-		$cname = $current;    #unless $cname;
-		next unless scalar( keys %{ $g->{all_variants} } );
-
-		#my $no       = $chr->lmdb_polyviewer_variants( $patient, "r" );
-
-		my $noV = $chr->get_lmdb_variations("r");
-		my $no  = $chr->lmdb_polyviewer_variants( $patient, "r" );
-		my $out;
-
-		$out .= $cgi->start_div(
-			{
-				class => "panel panel-primary ",
-				style =>
-"border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;"
-			}
-		);
-		$out .= $cgi->start_div(
-			{
-				class => "panel-heading panel-face panel-grey",
-				style =>
-"$bgcolor;min-height:13px;max-height:13px;padding:10px;border:0px"
-			}
-		);
-		my $panel_id = "panel_" . $g->{uid};
-		$out .=
-		  update_variant_editor::panel_gene( $g, $panel_id, $project->name,
-			$patient );
-		$out .= $cgi->end_div();
-
-		$out .= "\n";
-		$out .= $cgi->start_div(
-			{
-				class => "panel-body panel-collapse collapse ",
-				style => "font-size: 09px;font-family:  Verdana;",
-				id    => "$panel_id"
-			}
-		);
-		$out .= "\n";
-
-		#$out.="<br>\n";
-		$out .= $cgi->start_table(
-			{
-				class =>
-"table table-striped table-condensed table-bordered table-hover table-mybordered",
-				style =>
-"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;"
-			}
-		);
-		$out .= "\n";
-		$out .= $out_header;
-		my $debug;
-		$debug=1 if $g->{external_name} eq "COL7A1";
-		
-		foreach my $vid ( keys %{ $g->{all_variants} } ) {
-		#	my $v  = $noV->get($vid);
-			my $vh = $no->get($vid);
-			if($debug){
-			my $vv = $noV->get($vid);
-			$vv->{project} = $project;
-			$vv->{buffer} = $buffer;
-				warn "\t".$vv->id;
-				warn "\t ==> ".Dumper($vv->dejaVuInfosForDiag2);
-				
-			}			
-			my $vp =  PolyviewerVariant->new();
-			
-			$vp->setOldVariant($vh,$project,$patient,$g,$version_db,$debug);
-			#warn Dumper $vp if $debug;
-			#$vp->setLmdbVariant($vh,$project,$g,$patient);
-			$print_html->variant($vp);
-			
-
-
-			my $ttime = time;
-			$rtime += abs( time - $ttime );
-			unless ($vh) {
-				confess();
-				$vh = hvariant::hash_variant_2( $patient, $vid );
-			}
-
-			if ( exists $hno->{$vid} ) {
-				$vh->{composite} = 1;
-
-			}
-			my $style = {};
-			$style = { style => "background-color: #DAEEED;opacity:0.5" } if exists $g->{all_variants}->{$vid}->{added};
-
-			my $t = time;
-
-			$total_time += abs( time - $t );
-
-		
-			my $hpatients;
-		
-		
-			#my $is_gnomad = exists $v->{value}->{ac};
-			
-
-			my @headers = (
-				"varsome", "igv",    "alamut", "var_name",
-				"trio",    "gnomad", "deja_vu"
-			);
-			
-			
-			##############
-			# VARSOME CELL
-			###############
-			my $t1 = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->varsome() );
-			$out .= "\n";
-
-			##############
-			# IGV CELL
-			###############
-
-			$t = shift(@headers);
-
-			#write locus
-			$out .= $cgi->td( $style, $print_html->igv);
-
-			##############
-			# ALAMUT CELL
-			###############
-
-			$t = shift(@headers);
-
-			$out .= $cgi->td( $style,$print_html->alamut);
-			$out .= "\n";
-
-			##############
-			# NAME CELL
-			#
-			###############
-			$t = shift(@headers);
-
-			#$name =  $v->{var_name} if exists $v->{var_name};
-
-			$out .= $cgi->td($style,$print_html->var_name());
-
-			$out .= "\n";
-			##############
-			# CELL CALLING INFOS
-			###############
-
-			
-				$out .= $cgi->td( $style, $print_html->calling()) ;
-
-			$out .= "\n";
-			
-			
-			
-			
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->gnomad() );
-			$out .= "\n";
-
-
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->dejavu() );
-			$out .= "\n";
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->validations );
-			
-			$t = shift(@headers);
-			$out .= "\n";
-			$out .= $cgi->td( $style, $print_html->transcripts() );
-			$out .= "\n";
-
-			$out .= $cgi->td( $style, $print_html->validation_select() );
-			$out .= $cgi->end_Tr();
-			$out .= "\n";
-
-		}
-
-		$out .= $cgi->end_table();
-		$out .= "\n";
-		$out .= $cgi->end_div();
-		$out .= $cgi->end_div();
-		$out .= "<br>\n";
-		$g->{out} = $out;
-
-	}
-	$project->buffer->close_lmdb();
-	return ( $list, $total_time );
-
-}
-
-sub new_refine_heterozygote_composite_score_one {
-	my ( $project, $list, $id, $out_header ) = @_;
-
-	my $out_header;
-	$out_header .= $cgi->start_Tr( { style => "background-color:#E9DEFF" } );
-	foreach my $h (@headers) {
-		$out_header .= $cgi->th($h);
-	}
-	$out_header .= $cgi->th("validations");
-	$out_header .= $cgi->th("transcripts");
-	$out_header .= $cgi->end_Tr();
-	my $mother = $patient->getFamily->getMother();
-	my $father = $patient->getFamily->getFather();
-
-	my $hno;
-	my $tsum = 0;
-	my $t    = time;
-	my $xp   = 0;
-
-	my $total_time = 0;
-	my $ztotal     = 0;
-
-	#$t = time;
-	my $current;
-	my $rtime = 0;
-	foreach my $g (@$list) {
-
-		#last if $xp > 100;
-		$xp++;
-
-		#warn $xp;
-		print "*" if $xp % 10 == 0 && $id == 1;
-		my ( $n, $cname ) = split( "_", $g->{id} );
-		my $chr = $project->getChromosome($cname);
-		if ( $current ne $cname && $current ) {
-
-			#$project->buffer->close_lmdb();
-		}
-
-		$cname = $current;    #unless $cname;
-		next unless scalar( keys %{ $g->{all_variants} } );
-		my $no  = $chr->lmdb_polyviewer_variants( $patient, "r" );
-		my $noV = $chr->get_lmdb_variations("r");
-		my $out;
-
-		$out .= $cgi->start_div(
-			{
-				class => "panel panel-primary ",
-				style =>
-"border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;"
-			}
-		);
-		$out .= $cgi->start_div(
-			{
-				class => "panel-heading panel-face panel-grey",
-				style =>
-"$bgcolor;min-height:13px;max-height:13px;padding:10px;border:0px"
-			}
-		);
-		my $panel_id = "panel_" . $g->{uid};
-		$out .= update_variant_editor::panel_gene( $g, $panel_id, $project->name,
-			$patient );
-		$out .= $cgi->end_div();
-
-		$out .= "\n";
-		$out .= $cgi->start_div(
-			{
-				class => "panel-body panel-collapse collapse ",
-				style => "font-size: 09px;font-family:  Verdana;",
-				id    => "$panel_id"
-			}
-		);
-		$out .= "\n";
-
-		#$out.="<br>\n";
-		$out .= $cgi->start_table(
-			{
-				class =>
-"table table-striped table-condensed table-bordered table-hover table-mybordered",
-				style =>
-"vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;"
-			}
-		);
-		$out .= "\n";
-		$out .= $out_header;
-
-		foreach my $vid ( keys %{ $g->{all_variants} } ) {
-			my $v = $noV->getHash( $vid, $patient );
-			next;
-			my $vh = $no->get($vid);
-			foreach my $sid ( keys %{ $v->{patients} } ) {
-				$v->{patients}->{$sid}->{model} =
-				  $vh->{patients}->{$sid}->{model};
-			}
-
-			if ( $v->{value}->{is_cnv} == 1 ) {
-				$out .=
-"<tr style='background-image: linear-gradient(to right, white, #f9e1d8);'>"
-				  if ( $v->{value}->{type} eq 'large_deletion' );
-				$out .=
-"<tr style='background-image: linear-gradient(to right, white, #d8eef9);'>"
-				  if ( $v->{value}->{type} eq 'large_duplication' );
-			}
-			else { $out .= $cgi->start_Tr(); }
-			my $ttime = time;
-			$rtime += abs( time - $ttime );
-			unless ($v) {
-				confess();
-				$v = hvariant::hash_variant_2( $patient, $vid );
-			}
-
-			warn "$vid -- " unless $v;
-			confess()       unless $v;
-			next            unless $v;
-
-			die($vid) unless $v;
-
-			if ( exists $hno->{$vid} ) {
-				$v->{composite} = 1;
-
-				#$v = $hno->{$vid};#if exists $hno->{$vid};
-
-			}
-			my $style = {};
-			$style = { style => "background-color: #DAEEED;opacity:0.5" }
-			  if exists $g->{all_variants}->{$vid}->{added};
-			update_variant_editor::alamut_link_js( $v, $patient );
-
-			#update_variant_editor::table_validation( $patient, $v, $g );
-			$v->{id} = $vid;
-
- #update_variant_editor::table_dejavu_live( $v, $patient->project,$patient,$g );
-			my $t = time;
-
-			$total_time += abs( time - $t );
-
-			$v->{id} = $vid;
-
-#update_variant_editor::trio( undef, $v, $patient, $project ) unless $patient->isChild;
-#update_variant_editor::check_is_hgmd_dm_for_gene($patient, $v, $g); #TODO: if DM a faire
-#update_variant_editor::check_is_clinvar_pathogenic_for_gene($patient, $v, $g); #TODO: if CLINVAR a faire
-			my @headers = (
-				"varsome", "igv",    "alamut", "var_name",
-				"trio",    "gnomad", "deja_vu"
-			);
-			my $t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->varsome($v) );
-			$out .= "\n";
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->igv($v) );
-			$out .= "\n";
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->alamut($v) );
-			$out .= "\n";
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->var_name($v) );
-			$out .= "\n";
-			$out .= "\n";
-			$t = shift(@headers);
-
-			if ( exists $v->{value}->{large_evt} ) {
-				$out .= $cgi->td( $style, $print_html->calling_cnv( $v, $g ) );
-			}
-			else {
-				$out .= $cgi->td( $style, $print_html->calling( $v, $g ) );
-			}
-
-			$out .= "\n";
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->gnomad($v) );
-			$out .= "\n";
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->dejavu($v) );
-			$out .= "\n";
-
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->validations( $v, $g ) );
-			$t = shift(@headers);
-			$out .= $cgi->td( $style, $print_html->transcripts( $v, $g ) );
-			$out .= "\n";
-
-			$out .= $cgi->td( $style,
-				update_variant_editor::validation_select( $patient, $v, $g ) );
-			$out .= $cgi->end_Tr();
-			$out .= "\n";
-
-		}
-
-		$out .= $cgi->end_table();
-		$out .= "\n";
-		$out .= $cgi->end_div();
-		$out .= $cgi->end_div();
-		$out .= "<br>\n";
-		$g->{out} = $out;
-
-	}
-	$project->buffer->close_lmdb();
-	return ( $list, $total_time );
-
-}
 
 sub construct_panel_vector {
 	my ( $panel, $hashVector ) = @_;
@@ -1737,7 +1006,6 @@ sub construct_panel_vector {
 
 	}
 }
-
 
 
 sub constructChromosomeVectorsPolyDiagFork {
@@ -1781,7 +1049,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 	}
 		#my @exception = ("PCDH19") ;
 	my $gene_exception = $project->newGene("PCDH19");
-	my $fork = 12;
+	my $fork = 13;
 	my $pm   = new Parallel::ForkManager($fork);
 	my $hrun;
 	$pm->run_on_finish(
@@ -1855,7 +1123,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 		else {
 			$hashVector->{ $chr->name } = $chr->getVariantsVector();
 		}
-		
 		#my $vquality = $chr->getVectorScore($vector_ratio_name);
 		print "=" unless $cgi->param('export_xls');
 			my $testid = 4201;
@@ -1873,45 +1140,24 @@ sub constructChromosomeVectorsPolyDiagFork {
 			  $chr->getVectorScore($limit_sample_dv)
 			  ;    # if $limit_sample_dv ne "all";
 			 $hashVector->{$chr->name} &= $chr->getVectorScore($limit_sample_dv_ho);
-			#$hashVector->{ $chr->name } &= $vquality if $vquality;
-			#$hashVector->{ $chr->name } &= $vquality if $vquality;
-
-			#$hashVector->{$chr->name} &= $chr->getVectorLargeDeletions;
 			$hashVector->{ $chr->name } -= $chr->getVectorScore("intergenic");
 
 		}
 
 		else {
 			$hashVector->{ $chr->name } &= $chr->getVariantsVector();
-			warn "\n 1 ==> " . $hashVector->{$chr->name}->contains($testid)  if $debug;
 			$hashVector->{ $chr->name } = $chr->getVectorScore($limit_ac);    # if $limit_ac ne "gnomad_ac_all";;
-			warn "\n 1 ==> " . $hashVector->{$chr->name}->contains($testid)  if $debug;
-			# warn $limit_sample_dv_ho;
 			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_ac_ho);    # if $limit_ac_ho ne "all";
-			warn "\n 1 ==> " . $hashVector->{$chr->name}->contains($testid)  if $debug;
 			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_sample_dv);    #  if $limit_sample_dv ne "all";
-			warn "\n 1 ==> " . $hashVector->{$chr->name}->contains($testid)  if $debug;
 			 $hashVector->{$chr->name} &= $chr->getVectorScore($limit_sample_dv_ho);
 			 #$hashVector->{$chr->name} &= $chr->getVectorLargeDeletions;
 			#$hashVector->{ $chr->name } &= $vquality if $vquality;
 			$hashVector->{ $chr->name } -= $chr->getVectorScore("intergenic");
-			warn "\n 1 ==> " . $hashVector->{$chr->name}->contains($testid)  if $debug;
 			
 		}
-	#$hashVector->{ $chr->name } -=  $chr->getVectorLargeDeletions();
-	#$hashVector->{ $chr->name } -=  $chr->getVectorLargeDuplications();
-
-  #warn $patient->countThisVariants( $patient->getVectorOrigin($chr)) if $debug;
-  
-  warn "\n 1 ==> " . $hashVector->{$chr->name}->contains($testid)  if $debug;
-  warn "\n\n+".$patient->getVectorOrigin($chr)->contains($testid) if $debug;
-  #warn $chr->name;
 		$hashVector->{ $chr->name } &= $patient->getVectorOrigin($chr);
 		
-		$patient->countThisVariants( $patient->getVectorOrigin($chr) )
-		  if $debug;
-
-   warn "2" if 	$debug && $hashVector->{$chr->name}->contains($testid) && $debug;
+			
 
 		$statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );
 
@@ -1921,7 +1167,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#$vDM &= $hashVector->{ $chr->name };
 		$statistics->{DM} += $patient->countThisVariants($vDM);
 		#$hashVector->{$chr->name}  |= $v1;
-
 		if ($trio) {
 			my @list_transmission = keys %$filter_transmission;
 			my $vtr               = $chr->getNewVector();
@@ -1949,7 +1194,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 
 			}
 			else {
-				#my @type = ["both","strict_denovo","denovo","recessive","xor","xor_mother","xor_father"];
 				
 				foreach my $tr ( keys %$filter_transmission ) {
 						print "__";
@@ -1957,9 +1201,8 @@ sub constructChromosomeVectorsPolyDiagFork {
 						 $vtr = $patient->getVectorOrigin($chr);
 						last;
 					}
-				#$vtr |= $patient->getFamily()->getVector_family_dominant($chr);
 					if ( $tr eq "strict_denovo" ) {
-						$vtr |= $patient->getFamily()->getVectorStrictDenovoTransmission( $chr, $patient );
+						$vtr |= $patient->getFamily()->getVector_individual_strict_denovo( $chr, $patient );
 
 					}
 					elsif ( $tr eq "denovo" ) {
@@ -1977,25 +1220,16 @@ sub constructChromosomeVectorsPolyDiagFork {
 						$vtr2 -= $patient->getFamily->getFather->getVectorHo( $chr,$patient ) if $patient->getFamily->getFather();
 						$vtr2 -= $patient->getFamily->getMother->getVectorHo( $chr, $patient ) if $patient->getFamily->getMother();
 						if ($chr->name eq "X" && $patient->isMale ) {
-						#	 warn "trio $tr =>".$hashVector->{$chr->name}->contains($testid)  if 	$debug && $debug;	
 							$vtr2 -=  $patient->getFamily()->getVectorRecessiveTransmission( $chr, $patient ) if $patient->getFamily->getMother;
 						}
 						$vtr |= $vtr2;
 					}
 					elsif ( $tr eq "xor_mother" ) {
-#						#my $v1 = $patient->getVectorOrigin($chr);
-#						$v1 &= $patient->getFamily()->getVectorMotherTransmission( $chr, $patient ) if $patient->getFamily->getMother;
-#						$v1 -= $patient->getFamily->getFather->getVectorOrigin( $chr,$patient ) if $patient->getFamily->getFather();
-#						$v1 -= $patient->getFamily()->getVectorRecessiveTransmission( $chr, $patient );
-					#	warn "mother";
+
 						$vtr |= $patient->getFamily()->getVector_individual_mother( $chr, $patient );
 					}
 					elsif ( $tr eq "xor_father" ) {
-					#	warn "father";
-					#	my $v1 = $patient->getVectorOrigin($chr);
-					#	$v1 &= $patient->getFamily()->getVectorFatherTransmission( $chr, $patient ) if $patient->getFamily->getFather;
-					#	$v1 -= $patient->getFamily->getMother->getVectorOrigin( $chr ) if $patient->getFamily->getMother();
-					#	$v1 -= $patient->getFamily()->getVectorRecessiveTransmission( $chr, $patient );
+
 						$vtr |= $patient->getFamily()->getVector_individual_father( $chr, $patient );
 					}
 				}
@@ -2052,7 +1286,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 			if ($limit_ratio2 != $limit_ratio1) {
 				
 				my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
-				my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
+			#	my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
 				my $vector_ratio_name = $patient->name . "_ratio_" . $limit_ratio2;
 				$vector_ratio_name = $patient->name . "_ratio_all" if $limit_ratio2 == -1;
 				 my $vquality2 = $chr->getVectorScore($vector_ratio_name);
@@ -2065,7 +1299,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 				foreach my $id ( @{ to_array( $vquality2, $chr->name ) } ) {
 					print "!";
 					my $av = $no->get($id);
-					#warn Dumper $av;
 					my ($a1,$a2)= split(":",$no->get($av->{id})->{value}->{ratio}->[0]);
 					$a2 =~ s/%//;
 					next if $a2 <  $limit_ratio;
@@ -2082,7 +1315,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 		###############
 		# in this run 
 		##############
-		
 		if ($in_this_run < 100 ){
 			print " in_this_run $in_this_run ";
 			my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
@@ -2099,21 +1331,20 @@ sub constructChromosomeVectorsPolyDiagFork {
 			}
 		}
 		
-		
 		$res->{statistics}    = $statistics;
 		$res->{list_variants} = [];
 
-		my $vLocal = $chr->getVectorLocalValidations();
-		
-
-		$vLocal &= $patient->getVectorOrigin($chr);
-
-		#Limitation gnomad ho ac a 1000 si projet exome ou genome
-		if ( $project->isExome() || $project->isGenome() ) {
-			$vLocal &= $chr->getVectorScore("gnomad_ho_ac_1000");
-		}
-
-		$res->{vector} |= $vLocal;
+#		my $vLocal = $chr->getVectorLocalValidations();
+#		
+#
+#		$vLocal &= $patient->getVectorOrigin($chr);
+#
+#		#Limitation gnomad ho ac a 1000 si projet exome ou genome
+#		if ( $project->isExome() || $project->isGenome() ) {
+#			$vLocal &= $chr->getVectorScore("gnomad_ho_ac_1000");
+#		}
+#
+#		$res->{vector} |= $vLocal;
 		my $xxx;
 		#
 		foreach my $id ( @{ to_array( $res->{vector}, $chr->name ) } ) {
@@ -2122,7 +1353,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 			push( @{ $res->{list_variants} }, $id );
 		}
 		if ($keep_pathogenic){
-		$vDM |= $vLocal if $keep_pathogenic;
+#		$vDM |= $vLocal if $keep_pathogenic;
 		foreach my $id ( @{ to_array( $vDM, $chr->name ) } ) {
 		#	warn $id;
 		#	my $vobj   = $project->returnVariants($id);
@@ -2131,7 +1362,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 		}
 		}
 		$res->{run_id} = $id;
-		
 		$pm->finish( 0, $res );
 	}
 	$pm->wait_all_children();
@@ -2177,100 +1407,7 @@ sub to_array {
 	return \@t;
 }
 
-sub return_max_variant_score {
-	my ( $vector, $gene, $patient ) = @_;
-	my $no  = $gene->getChromosome->lmdb_polyviewer_genes( $patient, "r" );
-	my $chr = $gene->getChromosome();
-	my @a;
-	my $avs = to_array($vector);
-	my $hmax;
-	foreach my $vid ( @{$avs} ) {
 
-		my $hg =
-		  $chr->getPolyviewer_score( $patient, "s:" . $vid . ":" . $gene->id );
-		unless ($hg) {
-
-			my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-			my $xid = $chr->name() . "!" . $vid;
-
-			#warn "s:".$vid.":".$gene->id."-".$patient->name;
-
-			#warn $xid;
-			my $v = $gene->project->returnVariants($xid);
-			foreach my $p ( @{ $v->getPatients() } ) {
-
-				#warn  "\t".$p->name();
-			}
-			my $vv = $no->get($xid);
-
-			die();
-		}
-		die( $vid . " " . $gene->getChromosome->name . " " . $patient->name )
-		  unless $hg;
-		die() unless $hg->{id};
-		$hmax = $hg unless $hmax;
-		$hmax = $hg if $hg->{score} > $hmax->{score};
-	}
-
-	#warn "end";
-
-	return $hmax;
-}
-
-sub return_uniq_keys {
-my ($patient,$cgi) = @_;
-	
-my %hkeys = $cgi->Vars;
-my @keys;
-my $string;
-foreach my $k  (sort {$a cmp $b} keys %hkeys){
-	next if $k =~ /force/;
-	next if $k =~ /user/;
-	push(@keys,"$k");
-	my $c = $hkeys{$k};
-	$c =~ s/\"//g;
-	$c =~ s/\+/ /g;
-	push(@keys,$c);
-}
-
-
-$project->validations_query(1);
-
-
-
-foreach my $chr  (@{$project->getChromosomes}){
-		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
-		my @st = (stat($no->filename));
-		 push(@keys, ($st[9].$st[11].$st[12]));
-		my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
-		@st = (stat($no2->filename));
-		 push(@keys, ($st[9].$st[11].$st[12]));
-}
-#push(@keys,file_md5_hex($Bin."/variations_editor.pl") );
-push(@keys,$VERSION);
-push(@keys,$VERSION_UPDATE_VARIANT_EDITOR );
-my $stv = $patient->get_string_validations();
-unless ($patient->isGenome ) {
-	$stv .= ':::'.$patient->get_string_identification();
-}
-#warn $stv;
-#keep compatibilty 
-if  ($stv ){
-push(@keys,"validation".":".md5_hex($stv));
-
-}
-else{
-push(@keys,encode_json ({}));
-push(@keys,encode_json ({}));
-push(@keys,encode_json ({}));
-#push(@keys,encode_json ($h2));	
-}
-
-
-
-
-return \@keys;
-}
 
 sub  date_cache_bam {
 	my($project) = @_;
@@ -2345,4 +1482,10 @@ sub update_score_clinvar {
 	return 1 if $vh->isClinvarPathogenic();
 	return 0;
 	
+}
+sub count {
+		my ( $bitvector) = @_;
+		return 0 unless $bitvector;
+		#if ($bitvector->is_empty());
+		return ($bitvector->to_Bin() =~ tr/1//);
 }
