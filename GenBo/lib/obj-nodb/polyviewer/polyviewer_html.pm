@@ -4,6 +4,8 @@ use FindBin qw($Bin);
 use Moo;
 use Data::Dumper;
 use JSON::XS;
+use Number::Format;
+use Carp;
 
 has project => (
 	is		=> 'ro',
@@ -57,6 +59,29 @@ has cgi => (
 	},
 );
 
+has header => (
+	is		=> 'rw',
+	default => sub {
+		return [];
+	},
+);
+
+has format => (
+	is		=> 'rw',
+	default => sub {
+		return  new Number::Format;
+	},
+);
+
+has bgcolor => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return qq{background-color:#607D8B};
+	},
+
+);
 
 has short_phenotype => (
 	is		=> 'rw',
@@ -81,6 +106,22 @@ my $plus  = qq{<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
  my $mother_icon_ill =   qq{<center><img src='/icons/Polyicons/female-d.png'><center>};
  my $mother_icon_healthy =  qq{<center><img src='/icons/Polyicons/female-s.png'></center>};
  
+ 
+ 
+ sub print_header {
+ 	my ($self,$style) = @_;
+ 	return $self->{th_header}->{$style} if exists $self->{th_header}->{$style};
+ 	my $cgi = $self->cgi;
+ 	my $out_header .= $cgi->start_Tr( { style => $style } );
+	foreach my $h (@{$self->header}) {
+		$out_header .= $cgi->th($h);
+	}
+	$out_header .= $cgi->th("validations");
+	$out_header .= $cgi->th("transcripts");
+	$out_header .= $cgi->end_Tr();
+	 $self->{th_header}->{$style} = $out_header;
+	 return  $self->{th_header}->{$style} ;
+ }
 
 sub color_genetic_model {
 	my ($self,$model,$patient) = @_;
@@ -174,34 +215,35 @@ sub return_onclick {
 	return qq{onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,$type).qq{')"};
 }
 
+
+sub font_size {
+	my ($self,$sample) = @_;
+	return   $self->{font_size} if exists $self->{font_size};
+	
+	$self->{font_size} = "9px";
+	if (length($sample->name)>10){
+		$self->{font_size} = "8px";
+	}
+	if (length($sample->name)>15){
+		$self->{font_size} = "7px";
+	}
+	return $self->{font_size};
+	
+}
 sub return_button_name {
 	my ($self,$color,$sample,$onclick) = @_;
 	#box-shadow: 1px 1px 2px $color;
-	my $size = "9px";
-	if (length($sample->name)>10){
-		$size = "8px";
-	}
-	if (length($sample->name)>15){
-		$size = "7px";
-	}
+	my $size = $self->font_size($sample);
 	return qq{<button type="button" class="btn btn-primary btn-xs" style="font-size:$size;color:black;background-color:aliceblue;border-color:$color;" $onclick>}.$sample->name.qq{</button>};
 }
 sub html_parent_line_variant {
-	my ($self,$hsample,$sample,$gene_name) = @_;
+	my ($self,$hsample,$sample) = @_;
 	my $gt = $hsample->{gt};
 	my $color = "black";
 	my $pid = $self->patient_id;
-	#if ($hvariation->{patients}->{$pid}->{model} =~ /denovo/ && ($sample->isMother or $sample->isFather))  {
-	#	$color = "lightgrey";
-	#}
-	#$hsample->{model} = $v->getTransmissionModelType($patient->getFamily(),$p,undef)  unless $hsample->{model};
-#		die() unless  $hsample->{model};
 	$hsample->{model} = "-" unless $hsample->{model};
 	my $model_text = $self->return_genetic_model($hsample->{model});
-	
-	
-	my $bgcolor = $self->color_genetic_model($hsample->{model},$sample);
-	#[$name,$sample->small_icon,$hvariation->{patients}->{$sid}->{gt},$hvariation->{patients}->{$sid}->{pc}."%", $hvariation->{patients}->{$sid}->{dp},$model_text];
+	my $bgcolor =  $self->color_genetic_model($hsample->{model},$sample);
 	my $pc_text = '-';
 	$pc_text = $hsample->{pc}.'%' if ($hsample->{pc});
 	if (exists $hsample->{var_same_pos}) {
@@ -209,6 +251,7 @@ sub html_parent_line_variant {
 			$gt .= "<br><b><span style='color:red'>+".$other_gt."</span></b>";
 		}
 	}
+	#my $tab = ["-","-","-","-"];
 	my $tab = [$hsample->{button},$sample->small_icon,$gt,$pc_text,$hsample->{dp},$model_text];
 	my $style = "color:$color;";
 	$style .= "background-color:$bgcolor" if $bgcolor; 
@@ -223,7 +266,7 @@ sub calling_variation {
 	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
-	
+
 	my $samples = $self->variant->patients_calling();
 	my $model = $samples->{$self->patient_id}->{infos_text};
 	my $variation_id = $self->variant->id;
@@ -231,19 +274,20 @@ sub calling_variation {
 	$model ="denovo" unless $model;
 	my $color = "#555";
 	die() unless $model;
-	$color = $self->color_genetic_model($model,$self->patient);
+	#$color = $self->color_genetic_model($model,$self->patient);
 	my $id_info = 'ti_'.$variation_id.'_'.$gene->{id}.'_'.$self->patient_id;
 	my $html = $self->cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",id=>$id_info,style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
 	  my $fam = $self->patient->getFamily();
 	  my $h_others_var_same_pos;
+
 	  if ($self->patient->isChild) {
 	  	if ($fam->getMother){
 	  		my $hsample = $samples->{$fam->getMother->id};
 	  	
 	  		$hsample->{button} =  qq{<button style='color:black;' onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"mother").qq{')">}.$fam->getMother->name.qq{</button>};
-	  		#$hsample->{button} = qq{<span class="badge badge-primary">}.$fam->getMother->name." ".$fam->getMother->small_icon.qq{</span>};
+	  		$hsample->{button} = qq{<span class="badge badge-primary">}.$fam->getMother->name." ".$fam->getMother->small_icon.qq{</span>};
 	  		#
-			my $onclick = $self->return_onclick($gene_name,$variation_id,"mother");
+			my $onclick =  $self->return_onclick($gene_name,$variation_id,"mother");
 	  		$hsample->{button} =  $self->return_button_name("pink",$fam->getMother,$onclick);
 	  		
 	  		$html.= "\n".$self->html_parent_line_variant($hsample,$fam->getMother,$gene_name,undef);
@@ -304,6 +348,12 @@ sub calling {
 	my ($self,$gene) = @_;
 	if ($self->variant->isDude) {
 		$self->calling_dude();
+	}
+	elsif ($self->variant->isSrPr) {
+		#warn Dumper $self->variant;
+		#warn $self->variant->{pr}." ".$self->variant->{sr};
+		#die($self->variant->id);
+		$self->calling_cnv();
 	}
 	elsif ($self->variant->isCnv) {
 		$self->calling_cnv();
@@ -558,6 +608,8 @@ sub put_text_minus {
 
 sub varsome {
 my ($self,$debug) = @_;
+warn  $self->variant->id unless $self->variant->gnomad_id;
+confess()  unless $self->variant->gnomad_id;
 my $url = qq{https://varsome.com/variant/hg19/}.$self->variant->gnomad_id;
 my $text =qq{<a  type="button" class="btn btn-primary btn-xs" href="$url" target="_blank">V</a>};
 return $text;
@@ -583,6 +635,7 @@ sub alamut {
 	my $start = $self->variant->start;
 	my $a0 = $self->variant->ref_allele;
 	my $a1 = $self->variant->allele;
+	$a1 = "*" unless $a1;
 	my $chr_name = $self->variant->chromosome;
 	my $qq5 = qq{	<button    class="alamutView3" onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']);"></button>};
 	return $qq5;
@@ -686,9 +739,9 @@ sub gnomad {
 	
 	}
 	my $min_pop = "-";
-	 $min_pop = $self->variant->gnomad_min_pop_name."<br>".$self->variant->gnomad_min_pop if  $self->variant->gnomad_min_pop; # !!!!!! 	$text  = $v->min_pop_name."<br>".sprintf("%.4f", $min_pop) if $min_pop;
+	 $min_pop = $self->variant->gnomad_min_pop_name."<br>".sprintf("%1.4f",$self->variant->gnomad_min_pop) if  $self->variant->gnomad_min_pop; # !!!!!! 	$text  = $v->min_pop_name."<br>".sprintf("%.4f", $min_pop) if $min_pop;
 	
-	my $max_pop = $self->variant->gnomad_max_pop_name."<br>".$self->variant->gnomad_max_pop;
+	my $max_pop = $self->variant->gnomad_max_pop_name."<br>".sprintf("%1.4f",$self->variant->gnomad_max_pop);
 	
 	my $ac_ho = $self->variant->gnomad_ho;
 	my $ac_ho_male = $self->variant->gnomad_ho_male;
@@ -739,7 +792,8 @@ sub gnomad {
 	$text = $min_pop;
 
 	$html.= $cgi->td($self->abutton($href,$text));
-	$html.= $cgi->td($self->abutton($href,$self->put_text_minus($an)));
+	my $v = $self->format->format_number($an);
+	$html.= $cgi->td($self->abutton($href,$self->put_text_minus($v)));
 	$html.= $cgi->end_Tr();
 	$html.=$cgi->end_table();
 
@@ -870,6 +924,7 @@ sub validations {
 		$html .= $cgi->start_Tr().$cgi->th(["HGMD","Clinvar","Local"]).$cgi->end_Tr();
 		$html .= $cgi->start_Tr();
 		my $all_validations = $project->validations;
+		
 		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
 		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
 		
@@ -1002,11 +1057,11 @@ sub transcripts_cnv {
 		$html .=  $cgi->end_Tr();
 	}
 	
-	if (@{$self->variant->other_genes}){
-	my $text = "Other Genes :".join("-",@{$self->variant->other_genes});
+	#if (@{$self->variant->other_genes}){
+	#my $text = "Other Genes :".join("-",@{$self->variant->other_genes});
 	
-	$html .=  $cgi->start_Tr({style=>"font-size:09px;position:sticky;z-index:8;top:0;background-color:#363945;color:white;"}).$cgi->th({style=>"text-align: center;",colspan=>7}, $text)."".$cgi->end_Tr();
-	}
+	#$html .=  $cgi->start_Tr({style=>"font-size:09px;position:sticky;z-index:8;top:0;background-color:#363945;color:white;"}).$cgi->th({style=>"text-align: center;",colspan=>7}, $text)."".$cgi->end_Tr();
+	#}
 	$html.=$cgi->end_table();
 	return $html;
 }
@@ -1097,7 +1152,10 @@ sub transcripts_variants {
 	my $hhide;
 	my $compact_table;
 	foreach my $htr (@$atr){
+			$htr->{enst} = $htr->{name} unless $htr->{enst};
 			my $zid = $htr->{enst}."-".$self->variant->gnomad_id;
+				$htr->{impact_score} = 0 unless $htr->{impact_score};
+			$htr->{impact_score} = 0 if $htr->{impact_score} eq "-";
 			my $hide ="";
 			
 			#{style=>"border: 1px solid black;color:lightgrey;$style"}).$cgi->td([$mother->name,qq{<i class="fa fa-female fa-2x" aria-hidden="true" style="color:ligthgrey"></i>},$type,$ps."%",""]);
@@ -1106,7 +1164,7 @@ sub transcripts_variants {
 		 	 $hide_id = $htr->{ccds} if exists $htr->{ccds} && $htr->{ccds};
 		 #	my $hide_id = 
 		 	$hide_id .= $htr->{nomenclature} if exists $htr->{nomenclature} && $htr->{nomenclature};# eq "" ;
-		 	
+		 	 
 		 	$hide = "display:none;"  if ($htr->{impact_score}  <  $level and $nb >0) or (exists $hhide->{$hide_id})  ;
 		 	$hide = "display:none;"  if ($compact_table and not $htr->{value}->{ccds} and $nb != $nb_skip)  ;
 		 	$hide = "display:none;"  if ($compact_table and $nb - $nb_skip >= 3)  ;
@@ -1121,7 +1179,9 @@ sub transcripts_variants {
 		 $html .=  $cgi->start_Tr({id=>$rid,style=>"border: 1px solid;background-color:$c ;".$hide});
 		 ##cosnequence 
 		 $html.= $cgi->td( $self->printButton($htr->{impact_score},[3,4],$htr->{consequence}) );
-		 $html.= $cgi->td($self->cgi->a({href=>qq{https://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=}.$htr->{enst},target=>"_blank"},$htr->{enst}));
+		 my $enst = $htr->{enst};
+		 $enst = $htr->{name} if exists  $htr->{name};
+		 $html.= $cgi->td($self->cgi->a({href=>qq{https://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=}.$enst,target=>"_blank"},$htr->{enst}));
 		 $html.= $cgi->td($htr->{nm});
 		 $htr->{ccds} = "-" unless $htr->{ccds};
  		 $html.= $cgi->td($self->cgi->a({href=>qq{https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=}.$htr->{ccds},target=>"_blank"},$htr->{ccds}));
@@ -1130,9 +1190,8 @@ sub transcripts_variants {
 		 $html.=  $cgi->td($self->printBadge($htr->{nomenclature}));
 		 $html.=  $cgi->td($self->printBadge($htr->{codons}));
 		 $html.=  $cgi->td($self->printBadge($htr->{codons_AA})); 
-		 
-		 $html.= $cgi->td($self->printBadge($htr->{polyphen},[0.446,0.908]));
-		 $html.=  $cgi->td($self->printInvBadge($htr->{sift},[0,1,0,05]));
+		 #$html.= $cgi->td($self->printBadge($htr->{polyphen},[0.446,0.908]));
+		 #$html.=  $cgi->td($self->printInvBadge($htr->{sift},[0,1,0,05]));
 		 $html.= $cgi->td($cadd);
 		 $html.= $cgi->td($revel);
 		 $html.= $cgi->td($dbscsnv);
@@ -1173,7 +1232,13 @@ sub printBadge {
 
 }
 
+sub printBadge1 {
+	my ($self,$value) = @_;
+	my $color = "#4CAF50";
+	return $minus unless defined $value;
+	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
 
+}
 sub validation_select{
 	my ($self) = @_;
 	
