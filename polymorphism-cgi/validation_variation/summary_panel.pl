@@ -46,9 +46,10 @@ use warnings;
 use utf8;
 use QueryValidationAcmg;
 use CGI::Cache;
-
+#je comprends rien   
 #use CGI::Carp;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex file_md5);
+use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Statistics::Descriptive;
 use Number::Format;
 require "$Bin/../GenBo/lib/obj-nodb/packages_old/cache/polydiag/utility.pm";
@@ -530,16 +531,11 @@ my $key_quality = args_quality($project);
 my $no_cache = $project->get_lmdb_cache_summary("r");
 args_muc1( $project, $key_quality )
   if $project->getCaptures->[0]->analyse =~ /renom/i;
-push( @$key_quality, "muc1.adVntr.10.05.23.6" )
-  if $project->getCaptures->[0]->analyse =~ /renom/i;
+push( @$key_quality, "muc1.adVntr.10.05.23.6" ) if $project->getCaptures->[0]->analyse =~ /renom/i;
 my $key_validation = args_validation($project);
-
-push( @$key_quality, $key_validation );
-my $header = $no_cache->get_cache( join( ";", @$key_quality ) . ".header" );
-
-#warn "HEADER ==> ".$header;
-#warn join(";",@$key_quality);
-#$dev =1;
+push( @$key_quality, @$key_validation );
+my $header_id = md5_hex(join( ";", @$key_quality . ".header" ));
+my $header = $no_cache->get_cache( $header_id );
 $header = undef if $dev or $cgi->param('force');
 
 #$header = undef;
@@ -548,9 +544,9 @@ $project->getChromosomes();
 $project->getPatients();
 my $hmendel;
 my ( $gstats, $lstats, $patient_value );
-warn "HEADER ==> " . $header;
 my $cache_icon = "";
 unless ($header) {
+	warn "pppppp";
 	print qq{<div style="display: none">};
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project);
 	$hmendel = get_mendelian_statistics($project);
@@ -559,9 +555,9 @@ unless ($header) {
 	}
 	print qq{</div>};
 	$no_cache = $project->get_lmdb_cache_summary("w");
-	my $id = join( ";", @$key_quality );
-	$no_cache->put_cache_hash( $id . ".header", $header, 2400 );
+	$no_cache->put_cache_hash( $header_id, $header, 2400 );
 	$no_cache->close();
+	die($header_id);
 	$cache_icon .=
 qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;color:red"></span>};
 }
@@ -570,12 +566,12 @@ else {
 qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
 
 }
-
 #my $key_validation = args_validation($project);
 #push(@$key_quality,"muc1") if $project->getCaptures->[0]->analyse =~ /renom/i;
 $no_cache = $project->get_lmdb_cache_summary("r");
-my $htable = $no_cache->get_cache( join( ";", @$key_quality ) . ".table" );
-
+my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table");
+my $htable = $no_cache->get_cache( $table_id );
+warn $table_id;
 #$htable = undef;
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
@@ -589,9 +585,8 @@ unless ($htable) {
 		$htable->{ $run->id } = table_patients($run);
 	}
 	$no_cache = $project->get_lmdb_cache_summary("w");
-	my $id = join( ";", @$key_quality );
-
-	$no_cache->put_cache_hash( $id . ".table", $htable, 2400 );
+	warn "put $table_id";
+	$no_cache->put_cache_hash( $table_id, $htable, 2400 );
 	$no_cache->close();
 	print qq{</div>};
 	$cache_icon .=
@@ -940,7 +935,7 @@ qq{<span class="label " style="font-size: 12px;$bcolor">$name <span class="badge
 	if ( $project->isDiagnostic ) {
 		my @color =
 		  ( "#C4E17F", "#F7FDCA", "#FECF71", "#F0776C", "#DB9DBE", "#C49CDE" );
-		my @color = ( "aliceblue", "#DDDDDD" );
+		 @color = ( "aliceblue", "#DDDDDD" );
 		$out .= qq{<div>};
 		$out .= $cgi->start_table(
 			{
@@ -3150,7 +3145,6 @@ qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(
 		$nb++;
 		my $nb_members = scalar( @{ $fam->getMembers } );
 		foreach my $p1 ( @{ $fam->getMembers } ) {
-			warn $p1->name;
 			my $hval = $project->validations_query->getValidationPatient($p1);
 
 		}
