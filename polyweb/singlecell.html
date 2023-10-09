@@ -138,6 +138,7 @@
 
     </script>	
 		
+			<script src="https://momentjs.com/downloads/moment.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	    
 	    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
@@ -263,7 +264,18 @@ width: 5em;
 	    	function enable_table_search(id) {
 	    		$('#'+id).bootstrapTable();
 			}
-	    	
+			
+			
+			function dateSorter(a, b) {
+				if (new Date(a) < new Date(b)) return -1;
+				if (new Date(a) > new Date(b)) return 1;
+				return 0;
+		    }
+		    
+		    function dateFormatter(date) {
+		    	var date2 = moment(String(date)).format('MMM DD, YYYY');
+				return date2;
+		    }
 			
 		</script>
     </head>
