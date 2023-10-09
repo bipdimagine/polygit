@@ -46,7 +46,7 @@ use warnings;
 use utf8;
 use QueryValidationAcmg;
 use CGI::Cache;
-  
+#je comprends rien   
 #use CGI::Carp;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex file_md5);
 use Digest::MD5 qw(md5 md5_hex md5_base64);
