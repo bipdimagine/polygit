@@ -821,39 +821,12 @@ sub construct_variant {
 		my $nb_methods;
 		my $max_pc =-1;
 		my $max_dp =  -1;
-		foreach my $method (@{$patient->callingMethods}){
-			next unless  $v->annex();
-			next unless exists $v->annex()->{$patient->id}->{method_calling}->{$method}->{nb_all_ref};
+		foreach my $method_name (@{$v->getMethods($patient)}) {
+			push(@methods,$method_name);
+			my $sequence_info = $v->getSequencingGenotype($patient,$method_name)."(".$v->getNbAlleleRef($patient,$method_name).":".$v->getNbAlleleAlt($patient,$method_name).")";
+			push(@asequence_info,$sequence_info);
+			push(@apc,$method_name.":".$v->getRatio($patient,$method_name)."%");
 			
-			my $all_annex = $v->annex()->{$patient->id}->{method_calling}->{$method};
-			my $nb_ref =$all_annex->{nb_all_ref};
-			my $nb_alt =  $all_annex->{nb_all_mut};
-			
-		my $method_name = substr $method,0,3;
-		push(@methods,$method_name);
-		my $sequence_info = "he("; 
-		my $pc ="-";		
-		if ($v->annex()->{$patient->id}->{nb_all_ref} eq "?"){
-			$sequence_info = "??";
-		}
-		else {
-		$sequence_info = "ho(" if $all_annex->{ho};
-		
-		my $sum = $nb_ref + $nb_alt;
-		if ($sum >0){
-		 $pc = int ($nb_alt *10000/($sum))/100;
-		 $pc = ceil($pc) if $pc >1;
-		}
-		$max_pc = $pc if $pc > $max_pc;
-		$max_dp = $sum if $sum > $max_dp;
-		$sequence_info .= $nb_ref."/".$nb_alt.")";
-	
-		}
-		$sequence_info = $method_name.":".$sequence_info;
-		$pc = $method_name.":".$pc."%";
-		push(@apc,$pc);
-		push(@asequence_info,$sequence_info);
-		$nb_methods ++;
 		}
 		
 		 if ($v->validation_method eq "sanger" ) {
@@ -861,8 +834,8 @@ sub construct_variant {
 		 	push(@asequence_info,"-");
 		 }
 		
-		$hvariation->{max_dp} = $max_dp;
-		$hvariation->{max_pc} = $max_pc;
+		$hvariation->{max_dp} = $v->getRatio($patient);
+		$hvariation->{max_pc} = $v->getDP($patient);;
 		$hvariation->{ngs} = printSimpleBadge(join("<br>",@asequence_info));
 	
 		$hvariation->{ratio} =  printSimpleBadge(join("<br>",@apc));
