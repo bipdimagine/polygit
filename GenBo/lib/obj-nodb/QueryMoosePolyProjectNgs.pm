@@ -1466,4 +1466,25 @@ sub getProfileSample {
 	
 }
 
+sub getPersonIdFromPatientId {
+	my ($self, $sample_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{SELECT * FROM PolyprojectNGS.patient_person where patient_id=?;};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($sample_id);
+	my $h = $sth->fetchall_hashref('person_id');
+	my (@l) = keys %$h;
+	return $l[0];
+}
+
+sub getPersonInfos {
+	my ($self, $person_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{SELECT * FROM PolyprojectNGS.person where person_id=?;};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($person_id);
+	my $h = $sth->fetchall_hashref('person_id');
+	return $h->{$person_id};
+}
+
 1;

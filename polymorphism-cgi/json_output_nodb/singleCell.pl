@@ -23,15 +23,21 @@ my $html;
 my @list_tables_ids;
 my @list_projects = @{$buffer->getQuery->getListProjectsSC()};
 my $hash;
+
 foreach my $project_name (reverse sort @list_projects) {
 	my $pname = $project_name->{name};
 	my $buffer_tmp = GBuffer->new;
 	my $project = $buffer_tmp->newProjectCache( -name => $pname );
+	
+	
+	 
+	
 	foreach my $patient (@{$project->getPatients}){
+
+		
 		my $name = $patient->name;
-		my $id = $name;
-#		$id =~ s/ATAC-//;
-#		$id =~ s/ATAC_//;
+		
+		
 		my $profile = $patient->getSampleProfile();
 		
 		next() if $profile =~/arc/;
@@ -44,7 +50,18 @@ foreach my $project_name (reverse sort @list_projects) {
 		 else {
 		 	next;
 		 }
-	
+		
+		my $h_person_infos = $patient->person_infos();
+		my $id;
+		if ($h_person_infos and exists $h_person_infos->{name}) { $id = $h_person_infos->{name}; }
+		else { $id = $patient->name; }
+		
+		$hash->{$id}->{'project_description'} = $project->description() unless (exists $hash->{$id}->{'project_description'});
+		
+		my $validation_db = $project->validation_db();
+		$hash->{$id}->{'is_rhu4'} = '-' if not exists $hash->{$id}->{'is_rhu4'};
+		$hash->{$id}->{'is_rhu4'} = 'RHU4' if $validation_db and uc($validation_db) eq 'RHU4';
+		
 		$hash->{$id}->{sort} .= $project->name; 
 		$hash->{$id}->{$profile}->{name} = $name;
 		$hash->{$id}->{$profile}->{pid} = $patient->id;
@@ -111,14 +128,16 @@ exit(0);
 sub print_header {
 	
 	
-	my $html = qq{<table id="table_singlecell" data-toggle="bootstrap-table" data-search="true" data-search-highlight="true" data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="true" data-pagination-loop="false" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-pagination-successively-size="10" data-page-size="50" data-pagination-parts="['pageInfo', 'pageSize', 'pageList']" class='table table-striped' style='font-size:15px;'>};
+	my $html = qq{<table id="table_singlecell" data-toggle="bootstrap-table" data-search="true" data-search-highlight="true" data-filter-control='true' data-toggle="table" data-pagination-v-align="bottom" data-show-extended-pagination="true" data-cache="true" data-pagination-loop="false" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-pagination-successively-size="10" data-page-size="100" data-pagination-parts="['pageInfo', 'pageSize', 'pageList']" class='table table-striped' style='font-size:15px;'>};
 					
 	
 	#my $html = qq{<table data-search="true" data-search-highlight="true" data-filter-control='true' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next"  id='$table_id' class='table table-striped' style='font-size:15px;'>};
 	$html .= qq{<thead>};
 	$html .= qq{<tr>};
-	$html .= qq{<th colspan="7"><span style="color:#6B5876;"><center><b>SingleCell Expression</b></center></span></th>};
-	$html .= qq{<th colspan="7"><span style="color:#00758F;"><center><b>SingleCell AtacSeq</b></center></th>};
+	$html .= qq{<th><span style="color:#6B5876;"><center><b>Sample</b></center></span></th>};
+	$html .= qq{<th colspan="6"><span style="color:#6B5876;"><center><b>SingleCell Expression</b></center></span></th>};
+	$html .= qq{<th colspan="6"><span style="color:#00758F;"><center><b>SingleCell AtacSeq</b></center></th>};
+	$html .= qq{<th><span><center><b></b></center></span></th>};
 	$html .= qq{</tr>};
 	$html .= qq{<tr>};
 	$html .= qq{<th data-field="event" data-sortable="true"><span style="color:#6B5876;"><center><b>ID</center></span></b></th>};
@@ -130,7 +149,6 @@ sub print_header {
 #	$html .= qq{<th data-field="es3" data-sortable="true"><span style="color:#6B5876;"><center><b>Median Genes per Cell</center></b></span></th>};
 	$html .= qq{<th data-field="exp_sum" data-sortable="true"><span style="color:#6B5876;"><center><b>10X Summary</center></b></span></th>};
 	$html .= qq{<th data-field="exp_cloop" data-sortable="true"><span style="color:#6B5876;"><center><b>Cloupe</center></b></span></th>};
-	$html .= qq{<th data-field="event_2" data-sortable="true"><span style="color:#00758F;"><center><b>ID</center></b></span></th>};
 	$html .= qq{<th data-field="ATAC" data-sortable="true"><span style="color:#00758F;"><center><b>SC ATAC-SEQ Project</center></b></span></th>};
 	$html .= qq{<th data-field="atac_desc" data-sortable="true"><span style="color:#00758F;"><center><b>Description</center></b></span></th>};
 	$html .= qq{<th data-field="Date_atac" data-sortable="true"><span style="color:#00758F;"><center><b>Date</center></b></span></th>};
@@ -139,13 +157,11 @@ sub print_header {
 #	$html .= qq{<th data-field="as3" data-sortable="true"><span style="color:#00758F;"><center><b>Fraction of high-quality fragments overlapping peaks</center></b></span></th>};
 	$html .= qq{<th data-field="atac_sum"  data-sortable="true"><span style="color:#00758F;"><center><b>10X Summary</center></b></span></th>};
 	$html .= qq{<th data-field="atac_cloop" data-sortable="true"><span style="color:#00758F;"><center><b>Cloupe</center></b></span></th>};
+	$html .= qq{<th data-field="is_rhu4" data-sortable="true"><span style="color:#00758F;"><center><b>Is RHU4</center></b></span></th>};
 	$html .= qq{</tr>};
 	$html .= qq{</thead>};
 	$html .= qq{<tbody>};
 	return $html;
-}
-
-sub print_foot_table {
 }
 
 sub print_table {
@@ -166,8 +182,15 @@ sub print_rhu4 {
 	foreach my $id ( sort{$samples->{$a}->{sort} cmp  $samples->{$b}->{sort}} keys %$samples){
 		next if exists $hdone->{$id};
 		my $line =  qq{<tr>};
+		
 		if (exists $samples->{$id}->{expression}) {
 			$line .= qq{<td style="background-color:#6b5876;color:white"><b>}.$id.qq{</b></td>};
+		}
+		elsif (exists $samples->{$id}->{atac}) {
+			$line .= qq{<td style="background-color:#00758F;color:white;"><b>}.$id.qq{</b></td>};
+		}
+		
+		if (exists $samples->{$id}->{expression}) {
 			my $h = $samples->{$id}->{expression};
 			delete $samples->{$id}->{expression};
 			
@@ -177,8 +200,8 @@ sub print_rhu4 {
 			else {
 				$line .= qq{<td>-</td>};
 			}
-			if (exists $h->{description}) {
-				$line .= qq{<td>}.$h->{description}.qq{</td>};
+			if (exists $samples->{$id}->{project_description}) {
+				$line .= qq{<td>}.$samples->{$id}->{project_description}.qq{</td>};
 			}
 			else {
 				$line .= qq{<td>-</td>};
@@ -215,17 +238,9 @@ sub print_rhu4 {
 			$line .= qq{<td>-}.qq{</td>};
 			$line .= qq{<td>-}.qq{</td>};
 			$line .= qq{<td>-}.qq{</td>};
-			$line .= qq{<td>-}.qq{</td>};
-		}
-		
-		my $combine_datas;
-		if (exists $samples->{'ATAC_'.$id}->{atac}) {
-			$id = 'ATAC_'.$id;	
-			$combine_datas = 1;
 		}
 		
 		if (exists $samples->{$id}->{atac}) {
-				$line .= qq{<td style="background-color:#00758F;color:white;"><b>}.$id.qq{</b></td>};
 				
 				my $h = $samples->{$id}->{atac};
 				delete $samples->{$id}->{atac};
@@ -236,8 +251,8 @@ sub print_rhu4 {
 				else {
 					$line .= qq{<td>-</td>};
 				}
-				if (exists $h->{description}) {
-					$line .= qq{<td>}.$h->{description}.qq{</td>};
+				if (exists $samples->{$id}->{project_description}) {
+					$line .= qq{<td>}.$samples->{$id}->{project_description}.qq{</td>};
 				}
 				else {
 					$line .= qq{<td>-</td>};
@@ -266,7 +281,6 @@ sub print_rhu4 {
 				else {
 					$line .= qq{<td>-</td>};
 				}
-				$hdone->{$id} = 1 if $combine_datas;
 		}
 		else {
 			$line .= qq{<td>-}.qq{</td>};
@@ -275,13 +289,16 @@ sub print_rhu4 {
 			$line .= qq{<td>-}.qq{</td>};
 			$line .= qq{<td>-}.qq{</td>};
 			$line .= qq{<td>-}.qq{</td>};
-			$line .= qq{<td>-}.qq{</td>};
+		}
+		if (exists $samples->{$id}->{is_rhu4}) {
+			$line .= qq{<td>}.$samples->{$id}->{is_rhu4}.qq{</td>};
+		}
+		else {
+			$line .= qq{<td>-</td>};
 		}
 		$html .= $line;
 		
 	}
-	
-	print_foot_table();
 	
 	return $html;
 }
