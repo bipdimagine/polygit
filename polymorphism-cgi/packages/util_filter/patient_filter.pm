@@ -1,7 +1,7 @@
 package patient_filter;
 use strict;
 use Set::Intersection;
-#use Moose;
+#use Moo;
 use base ("somatic_filter");
 
 

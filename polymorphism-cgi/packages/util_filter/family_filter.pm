@@ -1,7 +1,7 @@
 package family_filter;
 use strict;
 use Set::Intersection;
-use Moose;
+use Moo;
  use Bio::DB::Sam;
 use Data::Dumper;
 use base ("patient_filter");

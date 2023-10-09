@@ -1,11 +1,11 @@
 package root_filter;
 use strict;
 use Set::Intersection;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Storable qw(store retrieve freeze thaw);
 use KyotoCabinet;
-#use MooseX::Method::Signatures;
+#
    use Carp qw(cluck longmess shortmess);
 
 has 'data' => (
