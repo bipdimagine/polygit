@@ -1,0 +1,301 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<title>SingleCell</title>
+		<style type="text/css">
+		 	@import "css/polycss/button.css";
+		 	@import "css/polycss/button2.css";
+			@import "css/polycss/header-footer.css";
+			@import "//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/claro.css";
+     		@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/document.css";
+     		 @import "//maxcdn.bootstrapcdn.com/bootswatch/3.3.4/flatly/bootstrap.min.css";
+      		/*@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3//dijit/tests/css/dijitTests.css";*/
+      		@import "js/cbtree/themes/claro/claro.css";
+      		@import "//netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css";
+      		@import "css/polycss/myMblSwitch.css";
+      		@import "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css";
+      		@import "js/igv/igv-1.0.9.css";
+        	@import "js/cbtree/themes/claro/claro.css";
+      		@import "https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css";
+      		
+
+	html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+.th-inner {
+	padding: 0px !important;
+}
+
+.table td {
+	text-align: center !important;
+	padding: 2px !important;
+	font-size: 9px !important;
+}
+
+.bootstrap-table-filter-control-chr {
+	padding-left: 3px;padding-right: 3px;padding-bottom: 5px;padding-top: 5px;
+}
+
+.claro .demoLayout .edgePanel {
+    background-color: #d0e9fc;
+}
+
+.tundra #navMenuCoverage.dijitToolbar {
+				background-image:none;
+		
+		
+				background-repeat: repeat-x;
+              
+                }
+                
+           .spinner {
+  margin: 2px auto 0;
+  width: 70px;
+  text-align: center;
+}
+
+.spinner > div {
+  width: 18px;
+  height: 18px;
+  background-color: #FFFFFF;
+  border-radius: 100%;
+  display: inline-block;
+  -webkit-animation: bouncedelay 1.4s infinite ease-in-out;
+  animation: bouncedelay 1.4s infinite ease-in-out;
+  /* Prevent first frame from flickering when animation starts */
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
+
+.spinner .bounce1 {
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+
+.spinner .bounce2 {
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+
+@-webkit-keyframes bouncedelay {
+  0%, 80%, 100% { -webkit-transform: scale(0.0) }
+  40% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes bouncedelay {
+  0% 
+   { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  }
+  80%
+  { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+   
+  }
+  
+   100% { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+    
+  } 40% { 
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}     
+.claro .demoLayout .edgePanel {
+    background-color: #d0e9fc;
+}
+
+.coaro #navMenuCoverage.dijitToolbar {
+				background-image:none;
+		
+		
+				background-repeat: repeat-x;
+              
+                }
+  
+  
+  #tabContainer .dijitTabChecked .tabLabel {
+  color:red;
+  font-weight:bold;
+}
+  
+</style>
+	 <script type="text/javascript">
+ var dojoConfig = {
+        parseOnLoad: true,
+        packages: [
+          { name: "cbtree", location: "/polyweb/js/cbtree" }
+        ]
+      };
+
+    </script>	
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    
+	    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+	    
+	    
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.15.5/dist/igv.min.js"></script>
+		
+		    	<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>     	
+		    <!--     
+		    <script type="text/javascript" src="js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>
+		    -->
+		    
+		    
+			<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+			<script type="text/javascript" src="js/polyviewer/methods_polyviewer.js"></script>
+			<script type="text/javascript" src="js/polysplice/methods_polysplice.js"></script>
+		  	<script type="text/javascript" src="js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/Utility/vp.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/chart_coverage.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/electro.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/polyweb.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/coverage/coverage_global.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/coverage/coverage_split.js"></script>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+			
+			<script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+			<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+			<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>
+			
+
+
+<style>
+label {
+display: inline-block;
+width: 5em;
+}
+</style>
+        
+        <script type="text/javascript">
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dojo.cookie");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dijit.form.CheckBox");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            
+            var input = param("input");
+            var input_user = param("user");
+            
+            var polyquery_filters;
+            var list_projects_names = [];
+            var list_panels = [];
+            
+            var username, pwd, project_name;
+            var release_annotation = '34';
+            var use_session_id = '';
+            $(document).ready(function () {
+	            setTimeout(function() {
+					show_waiting('Loading datas from Projects');
+					launch();
+				}, 3000);
+	    	});
+	    	
+	    	function show_waiting(text) {
+	    		document.getElementById("waiting_text").innerHTML = "Loading Data...";
+	    		if (text) {
+	    			document.getElementById("waiting_text").innerHTML = text;
+	    		}
+	    		dijit.byId('waiting').show();
+	    	}
+	    	
+	    	function launch() {
+
+				var url = url_path + "/json_output_nodb/singleCell.pl";
+			    $.getJSON( url, function( data ) {
+			    	var i = 1;
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html') {
+							document.getElementById("content_res").innerHTML = "";
+							var myNode = document.getElementById("content_res");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+	    					dijit.byId('waiting').hide();
+	    					enable_table_search('table_singlecell');
+			    		}
+  					});
+			    });
+	    	}
+	    	
+	    	function enable_table_search(id) {
+	    		$('#'+id).bootstrapTable();
+			}
+	    	
+			
+		</script>
+    </head>
+	<body class="container-fluid" style="overflow-y:scroll;">
+		<nav id="navbar" class="navbar navbar-inverse" style="background-color:#363945;">
+			<div class="container-fluid">
+				<div class="navbar-header"> <table>
+					<tr><td><a class="navbar-brand" href="https://www.polyweb.fr/" style="padding-top: 5px;padding-bottom: 5px;"><img src='/icons/Polyicons/logo_polyweb_white2.png' width='170px' height='33px' ></a></td></tr>
+					<tr><td style="color:white;font-size:10px;text-align:center"> <span  style="color:#B1268B;font-size:12px;text-align:center">Imagine Institute</span> - <span>University Of Paris</span ></td></tr>
+					</table>
+				</div>
+				<ul class="nav navbar-nav">
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">Single CELL</span></a></li>
+				</ul>
+			</div>
+		</nav>
+		<div style="padding-top:10px;" class='container-fluid' id='content_res'></div>
+		
+		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle"/> <span id="waiting_text">Loading Data...</span>
+				</div> 
+			</div>
+		</div>
+       
+		<div id="dialog_igv" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">
+            <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
+        </div>
+        
+	</body>
+</html>
+
