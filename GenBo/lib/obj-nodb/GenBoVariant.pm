@@ -2137,6 +2137,7 @@ sub score_refined {
 	my $op = $self->other_patients_ho;
 	warn $op if $debug;
 	$pr = 0 unless $pr;
+	$op = 0 unless $op;
 		if ($pr >= 5 or $op >= 10){
 						$refined_score  -= 0.3;# if $v->{max_pc} > 15;
 		}
@@ -2373,6 +2374,7 @@ has scaled_score_frequence_dejavu => (
 				my $freq_score = 1;
 				my $freq_level = 4;
 				my $nb = $self->other_projects;
+				$nb = 0 unless $nb;
 				if ($nb == 0){
 					$freq_score = 4; 
 					$freq_level =1;
@@ -3004,6 +3006,7 @@ sub getSequencingGenotype {
 #}
 
 
+
 sub getPourcentAllele {
 		my ($self,$patient,$method) = @_;
 		return $self->getRatio($patient,$method);
@@ -3021,13 +3024,16 @@ sub getRatio {
 		elsif ($self->project->return_calling_methods_short_name($method)) {
 			$method =$self->project->return_calling_methods_short_name($method);
 		}
-			
+			warn Dumper $self->sequencing_infos->{$pid}->{$method} unless @{$self->sequencing_infos->{$pid}->{$method}};
+			warn $self->name." ".$patient->name." ".$method  unless @{$self->sequencing_infos->{$pid}->{$method}};
+			warn Dumper  $self->sequencing_infos->{$pid} unless @{$self->sequencing_infos->{$pid}->{$method}};
 			confess() unless exists $self->sequencing_infos->{$pid};
 			my $sum = ($self->sequencing_infos->{$pid}->{$method}->[0]+$self->sequencing_infos->{$pid}->{$method}->[1]);
 			return 100 if $sum == 0;
 			my $pc = sprintf("%.0f", ($self->sequencing_infos->{$pid}->{$method}->[1]/$sum)*100);
 			return $pc;
 }
+
 sub array_sequencing_text {
 	  my ($self,$patient) = @_;
 	   my $pid = $patient->id;
@@ -3039,9 +3045,20 @@ sub array_sequencing_text {
 	   		push(@res,$m.":".$a->[2]."(".$a->[0]."/".$a->[1].")");
 	   }
 	 return \@res;
-	  
 }
 
+
+sub getMethods {
+	my ($self,$patient) = @_;
+	my @ms;
+	delete $self->{sequencing_infos} if exists $self->sequencing_infos->{$patient->id}->{values};
+	   foreach my $m (keys %{$self->sequencing_infos->{$patient->id}}){
+	   	 	next if $m eq "max";
+	   		push(@ms,$m);
+	   }	   	
+	   return \@ms;
+	   
+}
 
 
 has sequencing_infos =>(
@@ -3049,7 +3066,6 @@ has sequencing_infos =>(
 	lazy=>1,
 	default=> sub {
 			my $self = shift;
-		
 			 my $hash; 
 			 $hash = {};
 			foreach my $patient (@{$self->getPatients}){
