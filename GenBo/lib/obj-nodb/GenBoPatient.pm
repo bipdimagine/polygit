@@ -89,6 +89,26 @@ has project_id => (
 	reader => 'getProjectId',
 );
 
+has person_id => (
+	is     => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $person_id = $self->getProject->buffer->getQuery->getPersonIdFromPatientId($self->id());
+		return $person_id;
+	}
+);
+
+has person_infos => (
+	is     => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $person_id = $self->getProject->buffer->getQuery->getPersonInfos($self->person_id());
+		return $person_id;
+	}
+);
+
 has control => (
 	is     => 'ro',
 	reader => 'is_control',

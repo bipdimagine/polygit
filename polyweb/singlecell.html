@@ -230,7 +230,6 @@ width: 5em;
             var use_session_id = '';
             $(document).ready(function () {
 	            setTimeout(function() {
-					show_waiting('Loading datas from Projects');
 					launch();
 				}, 3000);
 	    	});
@@ -244,7 +243,7 @@ width: 5em;
 	    	}
 	    	
 	    	function launch() {
-
+				document.getElementById("content_res").innerHTML = "<center><img id='wait1' src='./images/polyicons/wait18trans.gif' align='absmiddle'/> Loading datas from Projects...<br><br>Please wait...</center>";
 				var url = url_path + "/json_output_nodb/singleCell.pl";
 			    $.getJSON( url, function( data ) {
 			    	var i = 1;
