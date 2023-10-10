@@ -1070,8 +1070,11 @@ sub update_list_variants_from_dejavu {
 #				$hVarErrors->{$var->id()} = undef;
 #				next;
 #			}
-			if ($transcript_dejavu) { $var_annot = $var->variationTypeInterface($transcript_dejavu); }
-			else { $var_annot = $var->variationTypeInterface($gene_dejavu); }
+			eval {
+				if ($transcript_dejavu) { $var_annot = $var->variationTypeInterface($transcript_dejavu); }
+				else { $var_annot = $var->variationTypeInterface($gene_dejavu); }
+			};
+			if ($@) { $var_annot = 'error'; }
 			$hVariantsDetails->{$var_id}->{var_annot} = $var_annot;
 		}
 		
