@@ -6,6 +6,7 @@ use CGI qw/:standard :html3/;
 use strict;
 use FindBin qw($Bin);
 use Data::Dumper;
+use File::Find;
 use JSON;
 
 use lib "$Bin/../GenBo/lib/obj-nodb/";
@@ -542,20 +543,15 @@ print $json_encode;
 exit(0);
 
 
+sub deleteOldFiles {
+    unlink $_ if (-f && (int(-M _) > 1));
+}
+
 sub purge_cgi_session_directory {
 	my $buffer = shift;
 	my $dir_sessions = $buffer->config->{project_data}->{global_search};
 	return unless (-d $dir_sessions);
-	opendir my $dir, $dir_sessions or die "Cannot open directory: $!";
-	my @files = readdir $dir;
-	closedir $dir;
-	foreach my $f (@files) {
-		next unless ($f =~ /cgisess_/);
-		my ($base, $tmp_session_id) = split('_', $f);
-		my $session = new session_export();
-		$session->load_session( $tmp_session_id );
-		$session->check_if_expired();
-	}
+	File::Find::find(\&deleteOldFiles, ($dir_sessions));
 }
 
 sub get_project_phenotype {
