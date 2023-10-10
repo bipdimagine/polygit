@@ -410,10 +410,13 @@ has hgmd_releases => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		my $releases = $self->project->buffer->queryHgmd->database();
-		if (exists $self->project->buffer->queryHgmd->hashOldAccNum->{$self->hgmd_id()}) {
-			$releases .= ', '.join(', ', sort (keys %{$self->project->buffer->queryHgmd->hashOldAccNum->{$self->hgmd_id()}}));
+		my @lReleases;
+		push(@lReleases, $self->project->buffer->queryHgmd->database());
+		foreach my $hgmd_version (keys %{$self->project->buffer->queryHgmd->getHashOldDatabases()}) {
+			my $h_details = $self->project->buffer->queryHgmd->getDataHGMDPro($self->hgmd_id(), $hgmd_version);
+			push(@lReleases, $hgmd_version) if ($h_details);
 		}
+		my $releases = join(', ', reverse sort (@lReleases));
 		return $releases;
 	},
 );
