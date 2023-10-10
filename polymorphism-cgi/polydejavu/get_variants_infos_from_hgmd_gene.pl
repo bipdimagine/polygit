@@ -194,13 +194,17 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	if (exists $h_new_dm->{$v_hgmd_id}) {
 		$hvariation->{html}->{hgmd} .= qq{ <b><i><font color='red'>New!</font></b></i>};
 	}
+	my $disease_hgmd = $v->hgmd_details->{disease};
+	if ($disease_hgmd) {
+		$hvariation->{html}->{hgmd} .= qq{<br><i><font color='green'>$disease_hgmd</font></i>};
+	}
 	update_variant_editor::table_validation_without_local($project, $hvariation, $gene);
 	
 	my $nb_other_project = $hvariation->{value}->{other_project};
 	
 	my $out;
 	if ($nb_other_project and $nb_other_project > 0) { $out = $cgi->start_Tr(); }
-	else { $out = $cgi->start_Tr({style=>'opacity:0.5;', class=>"tr_hgmd_not_found"}); }
+	else { $out = $cgi->start_Tr({class=>"tr_hgmd_not_found"}); }
 	foreach my $h (@headers_validations){
 		if ($h eq "trio" or "table_transcript"){
 			$class->{style} = "min-width:200px;max-width:450px;max-height:200px;overflow-x:auto;vertical-align:middle;padding:5px;white-space: nowrap;";
@@ -279,7 +283,7 @@ $hResGene->{$gene_id}->{uid} = $panel_id;
 my $html_gene = update_variant_editor::panel_gene($hResGene->{$gene_id},$panel_id);
 $html_gene =~ s/float:right;/float:right;display:none;/;
 $html_gene =~ s/glyphicon-triangle-right//;
-my $b_hgmd_hide = qq{</span></span></div><div style="float:right;" class="form-check"><input class="form-check-input" type="checkbox" value="" onClick="show_hide_hgmd_not_in_polyweb();" id="b_found_hgmd_in_polyweb"><label style="color:white;padding:5px;font-size:12px;" class="form-check-label" for="b_found_hgmd_in_polyweb"> Hide variants not found in PolyWeb</label></div>};
+my $b_hgmd_hide = qq{</span></span></div><div style="float:right;" class="form-check"><input class="form-check-input" type="checkbox" value="" onClick="show_hide_hgmd_not_in_polyweb();" id="b_found_hgmd_in_polyweb"><label style="color:white;padding:5px;font-size:12px;" class="form-check-label" for="b_found_hgmd_in_polyweb"> only variant(s) found in PolyWeb</label></div>};
 $html_gene =~ s/<\/span><\/span><\/div>/$b_hgmd_hide/;
 #warn Dumper $html_gene; die;
 
