@@ -384,6 +384,28 @@ sub save_export_xls {
 	my $xls_export = new xls_export();
 	$xls_export->title_page('HGMD_'.$gene->external_name().'.xls');
 	$xls_export->store_variants_infos(\@$list_var, $project);
+	
+	my ($h_patients, $h_row_span);
+	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
+		foreach my $var_id (keys %{$xls_export->{hash_variants_global}->{$chr_id}}) {
+			my $project_name = 'HGMD';
+			my $pat_name = 'HGMD';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'variation'} = $var_id;
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'project'} = $project_name;
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'description'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'phenotypes'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'fam'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'name'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'sex'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'status'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'parent_child'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'sex_status_icon'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'perc'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'model'} = '';
+		}
+	}
+	
+	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
 	my $session_id = $xls_export->save();
 	return $session_id;
 }

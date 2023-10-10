@@ -123,12 +123,14 @@ sub load_xls() {
 	my @lHeaderWithProj = @{$xls_export->list_generic_header()};
 	
 	my $hdone_tr;
+	my $isHGMD_export;
 	foreach my $hvar (@$list_datas_annotations) {
 		my $enst = $hvar->{transcript};
 		my ($hproj, $hpat);
 		my ($var_id, $rs) = split(' ', $hvar->{variation});
 		foreach my $proj_name (keys %{$h_by_patients->{$var_id}}) {
 			foreach my $pat_name (keys %{$h_by_patients->{$var_id}->{$proj_name}}) {
+				$isHGMD_export = 1 if ($proj_name eq 'HGMD' and $pat_name eq 'HGMD');
 				my $hvar_new = dclone($hvar);
 				$hvar_new->{project} = $proj_name;
 				$hvar_new->{patient} = $pat_name;
@@ -149,7 +151,7 @@ sub load_xls() {
 	}
 	else {
 		my @lHeaderWithPat = @{$xls_export->list_generic_header()};
-		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model');
+		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model') if (not $isHGMD_export);
 		if (not $only_transcript) {
 			$xls_export->add_page('ALL TRANSCRIPTS', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
 		}
