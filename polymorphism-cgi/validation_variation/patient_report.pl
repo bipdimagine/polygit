@@ -684,7 +684,7 @@ sub construct_htranscripts {
 					update::clinvar($project,$hvariation); 
 					update::hgmd($project,$hvariation); 
 					update::tclinical_local($project,$hvariation,$patient,$htranscript->{obj}->getGene);
-					update::update_cosmic($hvariation,$project);
+					update::update_cosmic($hvariation,$project) if ($project->isSomatic);
 					update::deja_vu($project,$tr1,$hvariation,$debug);
 					my $zfilter = 1;
 					$zfilter = undef if $hvariation->{clinvar_alert} ;	
@@ -808,13 +808,12 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version ="2.1" ;
+	my $version ="2.2";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
-	$pipeline =1;
 	$text = undef if $pipeline;
 
 	$compute_coverage = 1;
