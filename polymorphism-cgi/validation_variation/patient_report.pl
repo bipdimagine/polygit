@@ -684,8 +684,8 @@ sub construct_htranscripts {
 					update::clinvar($project,$hvariation); 
 					update::hgmd($project,$hvariation); 
 					update::tclinical_local($project,$hvariation,$patient,$htranscript->{obj}->getGene);
+					update::update_cosmic($hvariation,$project) if ($project->isSomatic);
 					update::deja_vu($project,$tr1,$hvariation,$debug);
-		
 					my $zfilter = 1;
 					$zfilter = undef if $hvariation->{clinvar_alert} ;	
 					$zfilter = undef if $hvariation->{clinical_local} ;
@@ -794,7 +794,7 @@ sub construct_htranscripts {
 				push(@{$htranscript->{all}},$hvariation);
 				
 			}
-				delete $htranscript->{obj};
+			delete $htranscript->{obj};
 			push(@res,$htranscript);
 			#push(@{$hpatient->{transcripts_not_sorted}},$htranscript);
 	}
@@ -808,7 +808,7 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version ="2" ;
+	my $version ="2.2";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
@@ -897,14 +897,13 @@ sub construct_data {
 	$pm->wait_all_children();
 	
 	confess() if keys %$hrun;
-	
 	@{$hpatient->{transcripts}}  =();
 	@{$hpatient->{transcripts}} = sort {$a->{name} cmp $b->{name}}  @{$hpatient->{transcripts_not_sorted}} if $hpatient->{transcripts_not_sorted};
 	delete 	$hpatient->{transcripts_not_sorted};
 	delete $hpatient->{obj};
 	$no_cache->put_cache_hash($cache_id,{data=>$data,patient=>$hpatient}) if $version;
 	$no_cache->close();
-	exit(0) if $pipeline;
+	#die(1) if $pipeline;
 	#delete $hpatient->{obj};# = $patient;
 	push(@$data,$hpatient);
 	return $data;
@@ -3478,7 +3477,6 @@ my $option;
 foreach my $val (sort {$b <=> $a }keys %{$buffer->value_validation}){
 	my $term = $buffer->value_validation->{$val};
 	my $sel ="";
-	warn $validation_term." ".$term;
 	if (lc($validation_term) eq lc($term) ){
 		$sel = "selected";
 	}

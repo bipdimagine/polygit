@@ -961,6 +961,12 @@ sub get_lmdb_database_directory{
 	return $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 }
 
+sub get_version_database{
+	my ($self,$database)= @_;
+	my $version = $self->public_data_version;
+	return $self->public_data->{$version}->{$database}->{config}->{version};
+}
+
 sub get_index_database_directory{
 	my ($self,$database)= @_;
 	my $version = $self->public_data_version;
