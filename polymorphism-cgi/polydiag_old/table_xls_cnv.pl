@@ -88,5 +88,6 @@ $col =0;
 	}
 	}
 	$workbook->close();
+	warn "ok";
 	exit(0);
 	#csv (in => \@t, out => \*STDOUT);
