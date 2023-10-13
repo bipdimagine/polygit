@@ -23,6 +23,7 @@ my $prg =  $cgi->url(-relative=>1);
 my $url_image = url(-absolute=>1);
 $url_image =~ s/$prg/image_cnv.pl/;
 my $project_name = $cgi->param('project');
+my $patient_name = $cgi->param('patient');
 my $project = $buffer->newProject(-name=>$project_name);
 print "Content-type: application/msexcel\n";
 print "Content-Disposition: attachment;filename=".$project->name().".xls\n\n";
@@ -32,6 +33,9 @@ print "Content-Disposition: attachment;filename=".$project->name().".xls\n\n";
 	my $worksheet = $workbook->add_worksheet();
 	
 my $patients = $project->getPatients();
+if ($patient_name){
+	$patients = [$project->getPatient($patient_name)];
+}
 my $col =0 ;
 my $row =0;
 my $hscore;
