@@ -421,6 +421,7 @@ sub table_value_html_badge {
 
 sub vcosmic {
 	my ($v,$hvariation) = @_;
+	 	$hvariation->{post_bug} = 1; 
 	 	$hvariation->{cosmic} = $v->cosmic();
 		$hvariation->{value}->{cosmic} = $v->cosmic();
 		my $id  = $v->cosmic();
@@ -441,6 +442,30 @@ sub vcosmic {
 			$hvariation->{html}->{cosmic} = qq{<a href=\"$url$id1\" target="_blank">$text</a>};
 		}
 	
+}
+
+sub update_cosmic {
+	my ($hvariation,$project) = @_;
+	return if 	exists $hvariation->{post_bug};
+	my $version = $project->buffer->get_version_database("cosmic");
+	return if ($version != 98);
+	
+	 my $v  = $project->_newVariant($hvariation->{id});
+	 	 
+	 	$hvariation->{cosmic} = $v->cosmic();
+		$hvariation->{value}->{cosmic} = $v->cosmic();
+		my $id  = $v->cosmic();
+		if ($id){
+			my ($id1,$nb) = split(":",$id);
+			my $text = $id1;
+			my $url = "http://cancer.sanger.ac.uk/cosmic/mutation/overview?id="; 
+			 $url = "http://grch37-cancer.sanger.ac.uk/cosmic/ncv/overview?id="  if ($id1 =~/COSN/);
+			  $text = "$id1 [$nb]" if $nb;
+			$id1 =~s/COSM//;
+			$id1 =~s/COSN//;
+			$hvariation->{cosmic} = qq{<a href=\"$url$id1\" target="_blank">$text</a>};
+			$hvariation->{html}->{cosmic} = qq{<a href=\"$url$id1\" target="_blank">$text</a>};
+		}
 }
 
 sub vname {
@@ -1274,6 +1299,7 @@ sub hgmd {
 }
 sub clinical_local {
 	 my ($project,$hvariation,$url) = @_;
+	 confess();
 	 return if exists $hvariation->{clinical_local};
 	 unless ($hvariation->{obj}){
 	my ($chr_name,$start,$ref,$alt) = split('_', $hvariation->{id});
@@ -1703,17 +1729,14 @@ sub edit {
  
  sub tclinical_local {
 		my ($project,$hvariation,$patient,$gene) = @_;
-		
-	 my $val_id = $gene->id."!".$hvariation->{id};
-	 
-	 my $lists = $project->validations_query->getValidationPatient($patient);
+		my $val_id = $gene->id."!".$hvariation->{id};
+	 my $local_validation = $patient->project->getValidationVariation($val_id,$patient);
 
-
-		if (exists $lists->{$val_id}){
-				my $local_validation = $lists->{$val_id}->[-1];
+	 	 #die();
+		if ($local_validation){
 				my $saved = $local_validation->{validation};
-				$hvariation->{"local"} = $patient->buffer->value_validation->{$saved};
-				$hvariation->{"local"} = printButton($saved,[3,5],$patient->buffer->value_validation->{$saved},$saved) ;
+				$hvariation->{local} = $patient->buffer->value_validation->{$saved};
+				$hvariation->{local} = printButton($saved,[3,5],$patient->buffer->value_validation->{$saved},$saved) ;
 				$hvariation->{clinical_local} ++;
 		}
 		
