@@ -13,20 +13,22 @@ var layoutProject = [
 var layoutProjectRNA = [
 	{
 		cells: [
-			{ field: "name", name: "Name", width: "15%", styles: 'text-align:center;'},
-			{ field: "description", name: "Description", width: "35%", styles: 'text-align:center;' },
-			{ field: "samples", name: "samples",formatter: formaterSample, width: "7%", styles: 'text-align:center;' },
+			{ field: "name", name: "Name", width: "10%", styles: 'text-align:center;'},
+			{ field: "description", name: "Description", width: "30%", styles: 'text-align:center;' },
+			{ field: "samples", name: "Samples",formatter: formaterSample, width: "7%", styles: 'text-align:center;' },
 			{ field: "capture_name", name: "Capture", width: "15%", styles: 'text-align:center;' },
-			//{ field: "phenotype", name: "phenotype", width: "15%", styles: 'text-align:center;' },
-			{ field: "genome", name: "genome", width: "10%", styles: 'text-align:center;' },
+			//{ field: "phenotype", name: "Phenotype", width: "15%", styles: 'text-align:center;' },
+			{ field: "genome", name: "Genome", width: "10%", styles: 'text-align:center;' },
 			//{ field: "version", name: "annotation",formatter: formaterVersion, width: "10%", styles: 'text-align:center;'},
-			{ field: "creation_date", name: "creation date", width: "10%", styles: 'text-align:center;'},
+			{ field: "creation_date", name: "Creation date", width: "10%", styles: 'text-align:center;'},
 			//{ field: "annotation_date", name: "annotation date", width: "10%", styles: 'text-align:center;' },
 			//{ field: "latest_view", name: "latest view ", width: "10%", styles: 'text-align:center;' },
 			//{ field: "latest_view", name: "latest view", width: "100px",  formatter: formaterGenome,styles: 'text-align:center;'},
 			//{ field: "new_pathogenic", formatter: formaterBadgesV, name: "PolyBTF", width: "60px", styles: 'text-align:center;'},
 			//{ field: "acmg", name: "Latest Validation", width: "20%", styles: 'text-align:center;', formatter:formaterValidation},
-			{ field: "button", name: "Viewer ", width: "10%", styles: 'text-align:center;',formatter:formaterButtonRNA },
+			{ field: "button_splices", name: "PolySplice ", width: "8%", styles: 'text-align:center;',formatter:formaterButtonRNA },
+			{ field: "button_rna", name: "PolyRnaView ", width: "8%", styles: 'text-align:center;',formatter:formaterButtonRNA },
+			{ field: "link_analyse", name: "Analyse Link ", width: "10%", styles: 'text-align:center;',formatter:formaterButtonRNA },
 		],
 	}
 	];
@@ -148,7 +150,11 @@ function formaterButtonRNA(this_value) {
 			tt = " onClick=view_rna_shiny('" + list[1]+"') ";
 			style =" style='margin-top: 3px ' ";
 			dd = ""
-			var button = "<center><table><tr><td><div style='background-color:#ca4ff8;color:white;' class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolyRnaSeq-Analyse</div></td></tr></table></center>";
+			var button = "<center><table><tr><td><div style='background-color:#ca4ff8;color:white;' class=' btn btn-info btn-xs "+dd+"   ' aria-label='Left Align' "+tt+" >PolyRnaSeq</div></td></tr></table></center>";
+			array_button.push(button);
+		} 
+		if (list[0] == 3) {
+			var button = "<center><button class='btn btn-success btn-xs' style='padding:3px;' onclick=\" window.open('" + list[2] + "','_blank')\"><span style='font-size:12px;'>" + list[1] + "</span></button><center>";
 			array_button.push(button);
 		} 
 	}
