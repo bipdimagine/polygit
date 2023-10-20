@@ -31,6 +31,7 @@ use POSIX qw(strftime);
 use DateTime;
 use List::Util qw[min max];
 use Cwd qw(abs_path);
+use Auth::GoogleAuth;
 
 #use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
 
@@ -79,11 +80,83 @@ has genbo_dir =>(
 	}
 
 );
+
+has google_auth_issuer =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return 'POLYWEB';
+	}
+);
+
+has google_auth_key_id =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return 'STAFF';
+	}
+);
+
+has google_auth =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $date_now = DateTime->now;
+		my $auth = Auth::GoogleAuth->new({issuer => $self->google_auth_issuer(), key_id => $self->google_auth_key_id()});
+		
+		return $auth;
+	}
+);
+
+has google_auth_secret_pwd =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return '27kyhwdn2mmg6vib';
+#		my $auth = $self->google_auth();
+#		return $self->auth_secret_pwd() if ($self->auth_secret_pwd());
+#		my $secret = $auth->generate_secret32;
+#		warn $secret;
+#		return $secret;
+	}
+);
+
+has google_auth_qr_code =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		$self->google_auth->secret32( $self->google_auth_secret_pwd() );
+		return $self->google_auth->qr_code;
+	}
+);
+
+#has google_auth_text_code =>(
+#	is		=> 'ro',
+#	lazy	=> 1,
+#	default	=> sub {
+#		my $self = shift;
+#		$self->google_auth->secret32( $self->google_auth_secret_pwd() );
+#		return $self->google_auth->code();
+#	}
+#);
+
+sub google_auth_verify_code {
+	my ($self, $code) = @_;
+	my $auth = $self->google_auth;
+	return $auth->verify($code);
+}
+
 sub hasHgmdAccess {
 	my ($self, $user) = @_;
 	return 1 if ($self->queryHgmd->getHGMD($user) == 1);
 	return;
 }
+
 has config => (
 	is		=> 'ro',
 	lazy	=> 1,

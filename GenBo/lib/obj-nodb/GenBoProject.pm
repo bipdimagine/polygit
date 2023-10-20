@@ -2050,6 +2050,30 @@ has dirCytoManue => (
 
 );
 
+has rds_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
+has rds_junctions_canoniques_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/Junc_".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
 has gtf_file => (
 	is      => 'rw',
 	lazy    => 1,

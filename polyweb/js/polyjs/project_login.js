@@ -475,7 +475,7 @@ function formaterBadges(this_value) {
             }
         
        
-               function checkPassword(dialogFields){
+            function checkPassword(dialogFields){
                 var passwd = document.getElementById('passwd').value;
                 var username = document.getElementById('username').value;
                 var midnight = new Date();
@@ -483,7 +483,8 @@ function formaterBadges(this_value) {
 				dojo.cookie("username", username, { expires:midnight ,path: "/" });
 				dojo.cookie("passwd", passwd, { expires: midnight,path: "/" });
                 init_gridProject();
-                 dijit.byId('login').hide();
-             
+                dijit.byId('login').hide();
             }
+       
+            
         
