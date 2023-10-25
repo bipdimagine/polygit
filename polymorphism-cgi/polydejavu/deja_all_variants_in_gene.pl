@@ -291,6 +291,7 @@ sub save_export_xls {
 					my $sex_status_icon = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'sex_status_icon'};
 					my $perc = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'percent'};
 					my $model = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'model'};
+					my $he_ho = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'he_ho'};
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'variation'} = $var_id;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'project'} = $project_name;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'description'} = $description;
@@ -303,6 +304,7 @@ sub save_export_xls {
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'sex_status_icon'} = $sex_status_icon;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'perc'} = $perc.'%';
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'model'} = $model;
+					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'he_ho'} = $he_ho;
 				}	
 			}
 		}
@@ -858,6 +860,11 @@ sub get_variants_infos_from_projects {
 							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'name'} = $p->name();
 							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'sex'} = $p->sex();
 							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'status'} = $p->status();
+							my $is_heho = '-';
+							$is_heho = 'he' if $var->isHeterozygote($p);
+							$is_heho = 'ho' if $var->isHomozygote($p);
+							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'he_ho'} = $is_heho;
+							
 							my $parent_child = 'solo';
 							if ($p->getFamily->isTrio()) {
 								$parent_child = 'mother' if ($p->isMother());
