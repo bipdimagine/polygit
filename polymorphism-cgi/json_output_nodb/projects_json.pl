@@ -40,9 +40,24 @@ my $action = $cgi->param('action');
 my $only_diag = $cgi->param('only_diag');
 my $export_xls = $cgi->param('export_xls');
 my $viewer = $cgi->param('viewer');
+my $mycode   = $cgi->param('mycode');
+checkOtpAuth($buffer, $mycode) if $action eq "otp";
 getProjectLists($buffer,$login,$pwd) if $action eq "list";
 checkAuthentification($buffer,$login,$pwd,$cgi->param('project')) if $action eq "check";
 checkHgmdAccess($buffer,$login,$pwd) if $action eq "check_hgmd_access";
+
+
+
+sub checkOtpAuth {
+	my ( $buffer, $mycode ) = @_;
+	my $auth = $buffer->google_auth();
+	$auth->secret32( $buffer->google_auth_secret_pwd() );
+	my $hRes->{otp_verif} = $auth->verify($mycode);
+	my $json_encode = encode_json $hRes;
+	print $cgi->header('text/json-comment-filtered');
+	print $json_encode;
+	exit(0);
+}
 
 sub checkHgmdAccess {
 	my ( $buffer, $login, $pwd ) = @_;
@@ -58,8 +73,10 @@ sub getProjectLists {
 	#renvoit tous les origin associés au login et au mdp spécifié
 	
 	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
-	#warn Dumper $res;
-	#die();
+	if ($res->[0]->{team} eq '6') {
+		#$res->[0]->{otp_qr_code} = $buffer->google_auth_qr_code();
+		$res->[0]->{otp_code} = $buffer->google_auth_issuer().': '.$buffer->google_auth_key_id();
+	}
 	my $db_name = $buffer->{config}->{server}->{status};
 	
 	my $nb_project = scalar(@{$buffer->listProjects()});
