@@ -78,7 +78,7 @@ if ($filters_cons) {
 	}
 }
 my @headers_validations = ("var_name","locus","gnomad","deja_vu","table_validation","table_transcript");
-my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv");
+my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my $buffer = new GBuffer;
 
 my $project_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
