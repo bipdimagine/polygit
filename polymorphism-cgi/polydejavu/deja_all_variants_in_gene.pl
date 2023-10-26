@@ -274,7 +274,7 @@ sub save_export_xls {
 		}
 	}
 	my $xls_export = new xls_export();
-	$xls_export->title_page('DejaVu_'.$gene_init->external_name().'.xls');
+	$xls_export->title_page('GeneScout_'.$gene_init->external_name().'.xls');
 	$xls_export->store_variants_infos(\@lVarObj, $project_dejavu);
 	my ($h_patients, $h_row_span);
 	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
