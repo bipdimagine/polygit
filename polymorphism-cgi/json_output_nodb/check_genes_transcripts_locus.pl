@@ -59,6 +59,8 @@ else {
 	$project->changeAnnotationVersion( $annotation, 1 );
 }
 
+print $cgi->header('text/json-comment-filtered');
+print "{\"progress\":\".";
 
 if ($use_phenotype_score) {
 	my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($use_phenotype_score);
@@ -301,6 +303,7 @@ my $nb_genes_error = 0;
 my $last_gene_name;
 if ($h_genes) {
 	foreach my $gene_key_name ( sort keys %$h_genes ) {
+		print '.';
 		my $gene;
 		my $gene_id = $h_genes->{$gene_key_name};
 		eval { $gene = $project->newGene($gene_id); };
@@ -537,11 +540,23 @@ $hRes->{gencode} = $gencode_version;
 $hRes->{nb_genes} = scalar(keys %$h_genes);
 $hRes->{nb_genes_error} = $nb_genes_error if ( $nb_genes_error > 0 );
 
+
+printJson($hRes);
 print $cgi->header('text/json-comment-filtered');
 my $json_encode = encode_json $hRes;
 print $json_encode;
 exit(0);
 
+
+
+sub printJson {
+	my ($hRes) = @_;
+	my $json_encode = encode_json $hRes;
+	print ".\",";
+	$json_encode =~ s/{//;
+	print $json_encode;
+	exit(0);
+}
 
 sub deleteOldFiles {
     unlink $_ if (-f && (int(-M _) > 1));
