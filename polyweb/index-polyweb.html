@@ -135,7 +135,7 @@
             } 
             
             function okfunction_view_case(items) {
-				if (team_user == 6666){
+				if (team_user == 6){
 				  dojo.style("polyrun","visibility","visible");
 				  dojo.style("polyproject","visibility","visible");
 				  dojo.style("polytools","visibility","visible");
@@ -161,11 +161,12 @@
 				};
 		 		team_user = items[0].team;
 				if (items[0].team == 6) {
+					okfunction_view_case(items);
 					if (checkCookieOtp()) {
-						okfunction_view_case(items);
+						//okfunction_view_case(items);
 					}
 					else {
-						otp_auth(items[0].otp_code);
+						//otp_auth(items[0].otp_code);
 					}
 				}
 				else {
