@@ -80,7 +80,8 @@
              			dojo.style("footer","visibility","visible");
          			 },
       	};		
-      	
+      
+      var username_log;
       var fadeheaderArgs = {
        			 	node: "header",
        			 	beforeBegin: function(){
@@ -91,6 +92,7 @@
 			  function setPasswordlocal(){
                 var passwd = document.getElementById('passwd').value;
                 var username = document.getElementById('username').value;	
+                username_log = username;
 				dojo.cookie("username", username, { expires: 1 });
 				dojo.cookie("passwd", passwd, { expires: 1 });
 				dojo.fadeOut(fadeoutloginArgs).play();
@@ -132,7 +134,11 @@
                         document.getElementById("server_name").textContent = value;
                     } 
                 });
-            } 
+            }
+            
+            function use_checkPasswordOtp() {
+            	checkPasswordOtp(username_log);
+            }
             
             function okfunction_view_case(items) {
 				if (team_user == 6){
@@ -450,7 +456,7 @@
 						<tr><td colspan='2'><br></td></tr>
 						<tr style="padding-top:5px;">
 							<td colspan='2'>
-								<center><input type="submit" name="submit" value="Check" onclick="checkPasswordOtp();"></center>
+								<center><input type="submit" name="submit" value="Check" onclick="use_checkPasswordOtp();"></center>
 							</td>
 						</tr>
 					</table>
