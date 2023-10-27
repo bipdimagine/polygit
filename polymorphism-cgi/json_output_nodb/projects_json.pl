@@ -41,7 +41,7 @@ my $only_diag = $cgi->param('only_diag');
 my $export_xls = $cgi->param('export_xls');
 my $viewer = $cgi->param('viewer');
 my $mycode   = $cgi->param('mycode');
-checkOtpAuth($buffer, $mycode) if $action eq "otp";
+checkOtpAuth($buffer, $mycode, $login) if $action eq "otp";
 getProjectLists($buffer,$login,$pwd) if $action eq "list";
 checkAuthentification($buffer,$login,$pwd,$cgi->param('project')) if $action eq "check";
 checkHgmdAccess($buffer,$login,$pwd) if $action eq "check_hgmd_access";
@@ -49,10 +49,16 @@ checkHgmdAccess($buffer,$login,$pwd) if $action eq "check_hgmd_access";
 
 
 sub checkOtpAuth {
-	my ( $buffer, $mycode ) = @_;
-	my $auth = $buffer->google_auth();
-	$auth->secret32( $buffer->google_auth_secret_pwd() );
-	my $hRes->{otp_verif} = $auth->verify($mycode);
+	my ( $buffer, $mycode, $login ) = @_;
+	my $hRes;
+	if ($buffer->use_otp_for_login($login)) {
+		my $auth = $buffer->google_auth();
+		$auth->secret32( $buffer->google_auth_secret_pwd($login) );
+		$hRes->{otp_verif} = $auth->verify($mycode);
+	}
+	else {
+		$hRes->{otp_verif} = 1;
+	}
 	my $json_encode = encode_json $hRes;
 	print $cgi->header('text/json-comment-filtered');
 	print $json_encode;
