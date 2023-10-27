@@ -136,22 +136,6 @@ has google_auth_qr_code =>(
 	}
 );
 
-#has google_auth_text_code =>(
-#	is		=> 'ro',
-#	lazy	=> 1,
-#	default	=> sub {
-#		my $self = shift;
-#		$self->google_auth->secret32( $self->google_auth_secret_pwd() );
-#		return $self->google_auth->code();
-#	}
-#);
-
-sub google_auth_verify_code {
-	my ($self, $code) = @_;
-	my $auth = $self->google_auth;
-	return $auth->verify($code);
-}
-
 sub hasHgmdAccess {
 	my ($self, $user) = @_;
 	return 1 if ($self->queryHgmd->getHGMD($user) == 1);
