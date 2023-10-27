@@ -106,15 +106,13 @@ has google_auth =>(
 		my $self = shift;
 		my $date_now = DateTime->now;
 		my $auth = Auth::GoogleAuth->new({issuer => $self->google_auth_issuer(), key_id => $self->google_auth_key_id()});
-		
 		return $auth;
 	}
 );
 
 sub use_otp_for_login {
 	my ($self, $login) = @_;
-	my $dbh = $self->getQuery();
-	my $h_otp = $dbh->getSecretOtpKeyForUserId($login);
+	my $h_otp = $self->getQuery->getSecretOtpKeyForUserId($login);
 	return $h_otp->{'uKey'};
 	return;
 }
@@ -124,7 +122,7 @@ sub google_auth_secret_pwd {
 	my $dbh = $self->getQuery();
 	return if not $self->use_otp_for_login($login);
 	my $h_otp = $dbh->getSecretOtpKeyForUserId($login);
-	return $h_otp->{'uKey'};
+	return $h_otp->{'Key'};
 	confess();
 }
 

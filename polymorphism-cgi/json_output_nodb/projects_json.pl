@@ -52,8 +52,9 @@ sub checkOtpAuth {
 	my ( $buffer, $mycode, $login ) = @_;
 	my $hRes;
 	if ($buffer->use_otp_for_login($login)) {
+		my $secret_code = $buffer->google_auth_secret_pwd($login);
 		my $auth = $buffer->google_auth();
-		$auth->secret32( $buffer->google_auth_secret_pwd($login) );
+		$auth->secret32( $secret_code );
 		$hRes->{otp_verif} = $auth->verify($mycode);
 	}
 	else {
