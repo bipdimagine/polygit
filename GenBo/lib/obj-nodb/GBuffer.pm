@@ -111,19 +111,22 @@ has google_auth =>(
 	}
 );
 
-has google_auth_secret_pwd =>(
-	is		=> 'ro',
-	lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return '27kyhwdn2mmg6vib';
-#		my $auth = $self->google_auth();
-#		return $self->auth_secret_pwd() if ($self->auth_secret_pwd());
-#		my $secret = $auth->generate_secret32;
-#		warn $secret;
-#		return $secret;
-	}
-);
+sub use_otp_for_login {
+	my ($self, $login) = @_;
+	my $dbh = $self->getQuery();
+	my $h_otp = $dbh->getSecretOtpKeyForUserId($login);
+	return $h_otp->{'uKey'};
+	return;
+}
+
+sub google_auth_secret_pwd {
+	my ($self, $login) = @_;
+	my $dbh = $self->getQuery();
+	return if not $self->use_otp_for_login($login);
+	my $h_otp = $dbh->getSecretOtpKeyForUserId($login);
+	return $h_otp->{'uKey'};
+	confess();
+}
 
 has google_auth_qr_code =>(
 	is		=> 'ro',

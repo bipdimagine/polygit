@@ -573,6 +573,20 @@ sub getPatient {
 	return $s;
 }
 
+sub getSecretOtpKeyForUserId {
+	my ($self, $login) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{ SELECT * FROM bipd_users.USER where LOGIN=?; };
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($login);
+	my $h = $sth->fetchall_hashref('LOGIN');
+	my $h_otp;
+	$h_otp->{'Key'} = $h->{$login}->{'Key'};
+	$h_otp->{'uKey'} = $h->{$login}->{'uKey'};
+	return $h_otp;
+	
+}
+
 sub getGenboIdPatient {
 	my ($self, $project_id, $patient_name) = @_;
 	confess();
