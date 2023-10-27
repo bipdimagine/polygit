@@ -51,14 +51,22 @@ checkHgmdAccess($buffer,$login,$pwd) if $action eq "check_hgmd_access";
 sub checkOtpAuth {
 	my ( $buffer, $mycode, $login ) = @_;
 	my $hRes;
-	if ($buffer->use_otp_for_login($login)) {
-		my $secret_code = $buffer->google_auth_secret_pwd($login);
-		my $auth = $buffer->google_auth();
-		$auth->secret32( $secret_code );
-		$hRes->{otp_verif} = $auth->verify($mycode);
+	if ($login =~ /[a-zA-Z]/) {
+		my $need_otp = $buffer->use_otp_for_login($login);
+		
+		if ($need_otp) {
+			my $secret_code = $buffer->google_auth_secret_pwd($login);
+			my $auth = $buffer->google_auth();
+			$auth->secret32( $secret_code );
+			if ($auth->verify($mycode)) { $hRes->{otp_verif} = 'yes'; }
+			else { $hRes->{otp_verif} =  'no'; }
+		}
+		else {
+			$hRes->{otp_verif} = 'yes';
+		}
 	}
 	else {
-		$hRes->{otp_verif} = 1;
+		$hRes->{otp_verif} = 0;
 	}
 	my $json_encode = encode_json $hRes;
 	print $cgi->header('text/json-comment-filtered');

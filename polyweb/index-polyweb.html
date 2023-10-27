@@ -137,6 +137,8 @@
             }
             
             function use_checkPasswordOtp() {
+            	if(username_log) {}
+            	else { username_log = dojo.cookie('username'); } 
             	checkPasswordOtp(username_log);
             }
             

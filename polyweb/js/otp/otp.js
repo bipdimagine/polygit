@@ -57,7 +57,7 @@ function checkPasswordOtp(username){
         var url1 = url_listProject+"?action=otp&mycode="+my_code+"&login="+username;
         $.getJSON( url1, function( data ) {
             var verif = data.otp_verif;
-        	if (verif == 1) {
+        	if (verif == 'yes') {
             	var d = new Date();
 				d.setTime(d.getTime() + 12*60*60*1000);
 				//d.setTime(d.getTime() + 60);
@@ -66,7 +66,11 @@ function checkPasswordOtp(username){
         		dojo.style("otp_login", "visibility", "hidden");
         		okfunction_view_case();
         	}
-        	else { otp_auth(); }
+        	else if (verif == 'no') {
+        		location.reload();
+        		exit(0);
+        	}
+        	else { location.reload(); }
         	return;
 	    })
 	}
