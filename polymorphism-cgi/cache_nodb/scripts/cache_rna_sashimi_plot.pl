@@ -102,6 +102,8 @@ foreach my $score (@lScores) {
 my $pm = new Parallel::ForkManager($fork);
 foreach my $junction (@lJunctions) {
 	my $pid = $pm->start and next;
+	$buffer->dbh_deconnect();
+	$buffer->dbh_reconnect();
 	$junction->createListSashimiPlots($patient);
 	print FILE 'Ok junction '.$junction->id()."\n";
 	$pm->finish();
