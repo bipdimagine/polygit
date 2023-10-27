@@ -42,7 +42,7 @@ function okfunction_otp() {
 	var my_otp_verif = document.getElementById('passwd_otp').value;
 }
 
-function checkPasswordOtp(){
+function checkPasswordOtp(username){
     dojo.style("otp_login", "visibility", "hidden");
 	var my_code = document.getElementById('input_otp_1').value;
 	my_code += document.getElementById('input_otp_2').value;
@@ -54,7 +54,7 @@ function checkPasswordOtp(){
     	otp_auth();
     }
     else {
-        var url1 = url_listProject+"?action=otp&mycode="+my_code;
+        var url1 = url_listProject+"?action=otp&mycode="+my_code+"&login="+username;
         $.getJSON( url1, function( data ) {
             var verif = data.otp_verif;
         	if (verif == 1) {
