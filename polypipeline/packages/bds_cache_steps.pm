@@ -921,7 +921,7 @@ sub html_rna_junctions {
 	my $stepname = $self->patient->name."@".$type;
 	my $dir = $self->project->getCacheDir();
 	my $fileout = $dir."/".$patientName.".cache.ok";
-	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName only_html_cache=1";
+	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);

@@ -125,12 +125,25 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	$j_selected += $h_chr_vectors_counts->{ $chr->id };
 }
 
+my $cache_html_id = 'splices_HTML_' . $patient->name() . '_' . $j_total;
 my $cache_id = 'splices_linked_' . $patient->name() . '_' . $j_total;
 
 #warn $cache_id;
 my $no_cache = $patient->get_lmdb_cache("r");
+my $h_html    = $no_cache->get_cache($cache_html_id);
 my $h_res    = $no_cache->get_cache($cache_id);
 $no_cache->close();
+
+
+if ($h_html) {
+	if ($view_polyviewer) {
+		print qq{</div>};
+		print $h_html->{html};
+		exit(0);
+	}
+	printJson($h_html);
+	exit(0);
+}
 if ($h_res) {
 	$h_var_linked_ids = $h_res;
 }
@@ -783,6 +796,10 @@ else {
 	$hash->{used_dejavu} = 'not';
 }
 $hash->{is_partial_results} = $is_partial_results;
+
+my $no_cache = $patient->get_lmdb_cache("w");
+$no_cache->put_cache_hash( $cache_html_id, $hash );
+$no_cache->close();
 
 if ($view_polyviewer) {
 	print qq{</div>};
