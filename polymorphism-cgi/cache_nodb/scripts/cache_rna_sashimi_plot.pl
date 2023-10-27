@@ -71,7 +71,7 @@ if ($j_total >= 10000) {
 	if ($h_res_v_enum) {
 		foreach my $chr_id (keys %$h_res_v_enum) {
 			my $v_filters = $project->getChromosome($chr_id)->getNewVector();
-			$v_filters->from_Enum($h_res_v_enum->{$chr_id}->{min8});
+			$v_filters->from_Enum($h_res_v_enum->{$chr_id}->{min6});
 			$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $v_filters);
 		}
 	}
