@@ -3,7 +3,7 @@ const inputs = document.getElementById("inputs_otp");
 inputs.addEventListener("input_otp", function (e) { 
     const target = e.target; 
     const val = target.value; 
-  
+  	
     if (isNaN(val)) { 
         target.value = ""; 
         return; 
@@ -20,19 +20,41 @@ inputs.addEventListener("input_otp", function (e) {
 inputs.addEventListener("keyup", function (e) { 
     const target = e.target; 
     const key = e.key.toLowerCase(); 
-  
-    if (key == "backspace" || key == "delete") { 
+	const regex = /[a-zA-Z]/g;
+	if (String(key).match(regex)) {
+	  	if (key == "arrowup") { return; }
+	  	if (key == "arrowdown") { return; }
+	  	if (key == "arrowleft") {
+	        const previous = target.previousElementSibling; 
+	        if (previous) { 
+	            previous.focus(); 
+	        } 
+	  		return;
+	  	}
+	  	if (key == "arrowright") {
+	        const next = target.nextElementSibling; 
+	        if (next) { 
+	            next.focus(); 
+	        } 
+	  		return;
+	  	}
+	    if (key == "backspace" || key == "delete") { 
+	        target.value = ""; 
+	        const prev = target.previousElementSibling; 
+	        if (prev) { 
+	            prev.focus(); 
+            	prev.value = ""; 
+	        } 
+	        return; 
+	    }
         target.value = ""; 
-        const prev = target.previousElementSibling; 
-        if (prev) { 
-            prev.focus(); 
-        } 
-        return; 
+	    return;
     }
     else {
         const next = target.nextElementSibling; 
         if (next) { 
             next.focus(); 
+            next.value = ""; 
         } 
         return; 
     }
