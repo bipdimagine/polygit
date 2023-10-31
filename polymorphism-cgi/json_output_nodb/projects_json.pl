@@ -53,7 +53,6 @@ sub checkOtpAuth {
 	my $hRes;
 	if ($login =~ /[a-zA-Z]/) {
 		my $need_otp = $buffer->use_otp_for_login($login);
-		
 		if ($need_otp) {
 			my $secret_code = $buffer->google_auth_secret_pwd($login);
 			my $auth = $buffer->google_auth();
@@ -92,6 +91,7 @@ sub getProjectLists {
 		#$res->[0]->{otp_qr_code} = $buffer->google_auth_qr_code();
 		$res->[0]->{otp_code} = $buffer->google_auth_issuer().': '.$buffer->google_auth_key_id();
 	}
+	$res->[0]->{otp_need} = $buffer->use_otp_for_login($login);
 	my $db_name = $buffer->{config}->{server}->{status};
 	
 	my $nb_project = scalar(@{$buffer->listProjects()});
