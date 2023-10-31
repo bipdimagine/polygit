@@ -1398,36 +1398,20 @@ qq{<button class='igvIcon2' onclick='launch_igv_tool_rna("$fasta", "$bam_file,$g
 sub get_sashimi_plot {
 	my ( $junction, $patient ) = @_;
 	my $sashimi_button;
-	my $list_sashimi_plot_files =
-	  $junction->getListSashimiPlotsPathFiles($patient);
-	if ( $list_sashimi_plot_files and -e $list_sashimi_plot_files->[0] ) {
-		$sashimi_button .= qq{<center>};
-		my @lFiles;
-		foreach my $sashimi_plot_file (@$list_sashimi_plot_files) {
-			$sashimi_plot_file =~ s/\/\//\//g;
-			$sashimi_plot_file =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
-
-			#$sashimi_plot_file = "https://www.polyweb.fr/".$sashimi_plot_file;
-			push( @lFiles, $sashimi_plot_file );
-		}
-		my $files = join( ';', @lFiles );
-		my $pdf   = $lFiles[0] . '#toolbar=0&embedded=true';
-		$sashimi_button .=
-qq{<button type="button" class="btn btn-default" style="border:2px black double;overflow:hidden;text-align:center;background-color:white;padding-right:20px;padding-left:4px;padding-top:4px;padding-bottom:4px;" onClick="view_pdf_list_files('$files')"><table><td>};
-		$sashimi_button .=
-qq{<image style="position:relative;width:200px;" loading="lazy" src="$pdf"></image>};
-
-#$sashimi_button .= qq{<image style="position:relative;z-index:2;width:200px;object-position: -50% -50%;transform: scale(1.7) translate(-27px, 20px);" loading="lazy" src="$pdf"></image>};
-		$sashimi_button .=
-qq{</td><td style="padding-left:1px;"><span style="writing-mode:vertical-lr !important; font: 12px Verdana, sans-serif;letter-spacing: 1px;">Zoom</span></td></table> </button>};
-		$sashimi_button .= qq{</center></};
+	my $list_sashimi_plot_files = $junction->getListSashimiPlotsPathFiles($patient);
+	$sashimi_button .= qq{<center>};
+	my @lFiles;
+	foreach my $sashimi_plot_file (@$list_sashimi_plot_files) {
+		$sashimi_plot_file =~ s/\/\//\//g;
+		$sashimi_plot_file =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+		push( @lFiles, $sashimi_plot_file );
 	}
-	else {
-		$sashimi_button .= qq{<center>N.A.</center>};
-
-		#		my $vid = $junction->vector_id();
-		#		$sashimi_button .= qq{<center>$vid</center>};
-	}
+	my $files = join( ';', @lFiles );
+	my $pdf   = $lFiles[0] . '#toolbar=0&embedded=true';
+	$sashimi_button .= qq{<button type="button" class="btn btn-default" style="border:2px black double;overflow:hidden;text-align:center;background-color:white;padding-right:20px;padding-left:4px;padding-top:4px;padding-bottom:4px;" onClick="view_pdf_list_files('$files')"><table><td>};
+	$sashimi_button .= qq{<image alt="N.A." style="position:relative;width:200px;" loading="lazy" src="$pdf"></image>};
+	$sashimi_button .= qq{</td><td style="padding-left:1px;"><span style="writing-mode:vertical-lr !important; font: 12px Verdana, sans-serif;letter-spacing: 1px;">Zoom</span></td></table> </button>};
+	$sashimi_button .= qq{</center></};
 	return $sashimi_button;
 }
 
