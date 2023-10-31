@@ -22,7 +22,10 @@ inputs.addEventListener("keyup", function (e) {
     const key = e.key.toLowerCase(); 
 	const regex = /[a-zA-Z]/g;
 	if (String(key).match(regex)) {
-	  	if (key == "arrowup") { return; }
+	  	if (key == "enter") {
+	  		document.getElementById('b_check_otp').click();
+	  		return;
+	  	}
 	  	if (key == "arrowdown") { return; }
 	  	if (key == "arrowleft") {
 	        const previous = target.previousElementSibling; 
