@@ -22,6 +22,9 @@ inputs.addEventListener("keyup", function (e) {
     const key = e.key.toLowerCase(); 
 	const regex = /[a-zA-Z]/g;
 	if (String(key).match(regex)) {
+		if (key == "control") { return; }
+		if (key == "meta") { return; }
+		if (key == "shift") { return; }
 	  	if (key == "enter") {
 	  		document.getElementById('b_check_otp').click();
 	  		return;
