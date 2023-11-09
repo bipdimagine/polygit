@@ -31,6 +31,7 @@ use POSIX qw(strftime);
 use DateTime;
 use List::Util qw[min max];
 use Cwd qw(abs_path);
+use Auth::GoogleAuth;
 
 #use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
 
@@ -79,11 +80,68 @@ has genbo_dir =>(
 	}
 
 );
+
+has google_auth_issuer =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return 'POLYWEB';
+	}
+);
+
+has google_auth_key_id =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return 'STAFF';
+	}
+);
+
+has google_auth =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $date_now = DateTime->now;
+		my $auth = Auth::GoogleAuth->new({issuer => $self->google_auth_issuer(), key_id => $self->google_auth_key_id()});
+		return $auth;
+	}
+);
+
+sub use_otp_for_login {
+	my ($self, $login) = @_;
+	my $h_otp = $self->getQuery->getSecretOtpKeyForUserId($login);
+	return $h_otp->{'uKey'};
+	return;
+}
+
+sub google_auth_secret_pwd {
+	my ($self, $login) = @_;
+	my $dbh = $self->getQuery();
+	return if not $self->use_otp_for_login($login);
+	my $h_otp = $dbh->getSecretOtpKeyForUserId($login);
+	return $h_otp->{'Key'};
+	confess();
+}
+
+has google_auth_qr_code =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		$self->google_auth->secret32( $self->google_auth_secret_pwd() );
+		return $self->google_auth->qr_code;
+	}
+);
+
 sub hasHgmdAccess {
 	my ($self, $user) = @_;
 	return 1 if ($self->queryHgmd->getHGMD($user) == 1);
 	return;
 }
+
 has config => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -961,6 +1019,12 @@ sub get_lmdb_database_directory{
 	return $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 }
 
+sub get_version_database{
+	my ($self,$database)= @_;
+	my $version = $self->public_data_version;
+	return $self->public_data->{$version}->{$database}->{config}->{version};
+}
+
 sub get_index_database_directory{
 	my ($self,$database)= @_;
 	my $version = $self->public_data_version;
@@ -1080,7 +1144,6 @@ foreach my $database (keys %{$self->{lmdb_score}}){
 }
 delete 	$self->{lmdb_score};
 delete $self->{lmdb};
-warn "end buffer "." ".time;
 }
 
 sub intersection {
