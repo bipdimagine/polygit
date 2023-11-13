@@ -112,6 +112,7 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	my $rs_name = $h_v_hgmd_ids->{$v_hgmd_id}->{dbsnp};
 	my $ref_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'ref'};
 	my $mut_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'alt'};
+	my $refseq = $h_v_hgmd_ids->{$v_hgmd_id}->{'refseq'};
 #	my ($ref_allele, $mut_allele) = get_ref_mut_alleles_from_hgvs($hgvs);
 	
 	my $polyweb_id = $chromosome.'_'.$start.'_'.$ref_allele.'_'.$mut_allele;
@@ -194,10 +195,15 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	if (exists $h_new_dm->{$v_hgmd_id}) {
 		$hvariation->{html}->{hgmd} .= qq{ <b><i><font color='red'>New!</font></b></i>};
 	}
+	my $refseq_hgmd = $v->hgmd_details->{refseq};
+	if ($refseq_hgmd) {
+		$hvariation->{html}->{hgmd} .= qq{<br><i><font color='blue'>$refseq_hgmd</font></i>};
+	}
 	my $disease_hgmd = $v->hgmd_details->{disease};
 	if ($disease_hgmd) {
 		$hvariation->{html}->{hgmd} .= qq{<br><i><font color='green'>$disease_hgmd</font></i>};
 	}
+	
 	update_variant_editor::table_validation_without_local($project, $hvariation, $gene);
 	
 	my $nb_other_project = $hvariation->{value}->{other_project};
