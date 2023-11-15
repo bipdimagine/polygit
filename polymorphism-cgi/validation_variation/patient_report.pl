@@ -596,6 +596,9 @@ sub construct_htranscripts {
 
 	foreach my $tr (@$list_transcripts) {
 		my $utr = $cgi->param('utr')+0;
+		my $debug;
+		$debug =1 if  $tr eq "ENST00000448843_17";
+		#warn "coucou " if $tr eq "ENST00000448843_17";
 		print "+";
 	my $tr_id = $tr;
 			my $tr1;
@@ -629,7 +632,6 @@ sub construct_htranscripts {
 				$htranscript->{external_name} = "intergenic";
 			}
 			my $kvars = utility::return_list_variants($project,$patient,$tr_id);
-			
 			if ($tr ne "intergenic"){
 		
 		
@@ -672,7 +674,7 @@ sub construct_htranscripts {
 	#	foreach my $var (@{$htr_vars->{$tr1->kyotoId}}){
 		foreach my $var (@{$kvars}){   
 				my $debug;
-				$debug =1 if $var eq "5_11385203_C_CCGG"; 
+				$debug =1 if $var eq "17_8006708_G_A"; 
 				my $hvariation = utility::return_hash_variant($project,$var,$tr_id,$patient,$vquery);
 				if ($print ==1){
 					$hvariation->{min_pop} =~ s/<[^>]*>//gs;
@@ -680,7 +682,7 @@ sub construct_htranscripts {
 					$hvariation->{cadd} =~ s/<[^>]*>//gs;
 				}
 					update::edit($patient,$hvariation,$tr1->getGene->id()); 
-				
+					warn  $hvariation->{id} if $debug;
 					update::clinvar($project,$hvariation); 
 					update::hgmd($project,$hvariation); 
 					update::tclinical_local($project,$hvariation,$patient,$htranscript->{obj}->getGene);
@@ -692,14 +694,13 @@ sub construct_htranscripts {
 					#$zfilter = undef if $hvariation->{hgmd} ;
 					$zfilter = undef if  $hvariation->{type} ne "other";	
 					
-					my $debug;
-					$debug = 1 if $hvariation->{var_name} eq "17_1940466_T_G";
-				
+					warn  $hvariation->{id} if $debug;
 					if ($zfilter){
 						next  if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
 						#next if $hvariation->{impact_score} < $impact_score_limit;
 						next if $hvariation->{freq_level} > $vfreq ;
 					}
+						warn  $hvariation->{id} if $debug;
 				$hvariation->{ratio} = $hvariation->{ratio};
 				my @all_nums    = $hvariation->{ratio} =~ /([+-]?[0-9]*[.]?[0-9]+)%/g;
 				#$limit_ratio = 0.2;
@@ -707,26 +708,28 @@ sub construct_htranscripts {
 						my @t = grep{$_>=$limit_ratio} @all_nums;
 						next unless @t;
 					}
+						warn  $hvariation->{id} if $debug;
 				update::deja_vu($project,$tr1,$hvariation,$debug);
 				if ($zfilter){
 						next  if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
 					}
-				
 				update::trio($project,$tr,$hvariation,$patient,$cgi,$print);
 				if (exists $hvariation->{transmission_model} and  $hvariation->{transmission_model}=~ /strict_denovo/){
 						 $hvariation->{transmission_model} = "strict_denovo";
 				}
-				
+				if ($zfilter){
  				if ( exists $hvariation->{transmission_model}){
 					my $t = $hvariation->{transmission_model};
-#					#$t ='strict_denovo' unless exists $list_transmission->{$t};
 					confess($t.' '.$hvariation->{id}) unless exists $list_transmission->{$t};
+					
 					if ($filter_transmission){
-						
-						next unless exists  $filter_transmission->{$t};
+						warn  "$t ".$filter_transmission->{$t} if $debug;
+					#	next unless exists  $filter_transmission->{$t};
 					}
+					
 				}
-
+				}
+				warn "end" if $debug;
 	
 				update::annotations($project,$hvariation);
 	
@@ -844,6 +847,7 @@ sub construct_data {
 		$list_transcript = utility::return_list_all_transcripts($project,$patient);
 	
 	}
+	#die();
 	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
 	die () if scalar(@$list_transcript) == 0;
 	my $fork      =  5;
