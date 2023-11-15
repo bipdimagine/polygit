@@ -2240,6 +2240,7 @@ sub score_validations {
 	my ($self,$gene) = @_;
 	my $all_validations = $self->project->validations;
 	my $zid = $gene->id."!".$self->id;
+	warn  $all_validations->{$zid}->[0];
 	return $all_validations->{$zid}->[0] if exists  $all_validations->{$zid};
 	return undef;
 }
@@ -2272,13 +2273,19 @@ sub scaledScoreVariant{
 	$scaled_score += $self->score_prediction_refined($patient,$gene);
 	warn "\t 3- ".$scaled_score." ".$self->score_refined($patient,$debug) if $debug;
 	my $val = $self->score_validations($tr);
+	
 	if ($val){
 			my $score = $val->{validation};
 			$scaled_score = $val->{validation};
 	}
 	
 	if ($patient->isChild && $patient->getFamily->isTrio()) {
+		warn "before ".$scaled_score;
 		$scaled_score = $self->score_variants_trio($patient,$scaled_score,$tr,$debug);
+		warn "after ".$scaled_score;
+		
+		
+		
 	}
 	else {
 		$scaled_score = $self->score_variants_solo($patient,$scaled_score,$tr,$debug);
@@ -2297,7 +2304,6 @@ sub scaledScoreVariant{
 	warn "\t 4- ".$scaled_score if $debug;
 #	die() if $debug;
 	$self->{scale_score}->{$tr->id}->{$patient->id} = $scaled_score;
-	
 	return $self->{scale_score}->{$tr->id}->{$patient->id};
 }
 
