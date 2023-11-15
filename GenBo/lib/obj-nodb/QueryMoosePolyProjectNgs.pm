@@ -573,6 +573,20 @@ sub getPatient {
 	return $s;
 }
 
+sub getSecretOtpKeyForUserId {
+	my ($self, $login) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{ SELECT * FROM bipd_users.USER where LOGIN=?; };
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($login);
+	my $h = $sth->fetchall_hashref('LOGIN');
+	my $h_otp;
+	$h_otp->{'Key'} = $h->{$login}->{'Key'};
+	$h_otp->{'uKey'} = $h->{$login}->{'uKey'};
+	return $h_otp;
+	
+}
+
 sub getGenboIdPatient {
 	my ($self, $project_id, $patient_name) = @_;
 	confess();
@@ -1337,7 +1351,66 @@ sub getListProjectsByType {
 	my @l = keys %{$sth->fetchall_hashref('name')};
 	return \@l;
 	
+}sub getListProjectsSC {
+        my ($self, $project_name) = @_;
+        my @l_res;
+        my $dbh = $self->getDbh();
+        my ($sql, $sql2);
+        if ($project_name) {
+                $sql = $self->sql_cmd_check_project_RNA();
+                $sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name();
+        }
+        else {
+                $sql = $self->sql_cmd_get_quick_projects_list_RNA();
+                $sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna();
+        }
+        my $sth = $dbh->prepare($sql);
+        my $sth2 = $dbh->prepare($sql2);
+        if ($project_name) {
+                $sth->execute($project_name);
+                $sth2->execute($project_name);
+        }
+        else {
+                $sth->execute();
+                $sth2->execute();
+        }
+        my $h = $sth->fetchall_hashref('id');
+        my $h2 = $sth2->fetchall_hashref('project_id');
+
+
+        my @l_projects_ids = keys %$h;
+        foreach my $pr_id (keys %$h2) {
+                push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});
+        }
+
+        foreach my $project_id (sort {$b <=> $a} @l_projects_ids) {
+                next if ($project_id == 0);
+                my $sql2 = $self->sql_cmd_get_quick_patients_list_from_project_id();
+                my $sth2 = $dbh->prepare($sql2);
+                $sth2->execute($project_id);
+                my $h_patients = $sth2->fetchall_hashref('name');
+                my ($is_sc, $h_captures);
+                foreach my $patient_name (keys %$h_patients) {
+                        $is_sc = 1 if ($h_patients->{$patient_name}->{type} eq 'sc');
+                        $is_sc = 1 if ($h_patients->{$patient_name}->{capAnalyse} eq 'singlecell');
+                        $h_captures->{$h_patients->{$patient_name}->{capName}} = undef;
+                }
+                next unless ($is_sc);
+                my @l_versions = split(' ', $h->{$project_id}->{ppversionid});
+                @l_versions = sort {$a <=> $b} @l_versions;
+                my $max_annot = $self->getMaxPublicDatabaseVersion();
+                $h->{$project_id}->{version} = abs($max_annot - $l_versions[-1]).'::'.$h->{$project_id}->{relGene}.'-'.$l_versions[-1];
+                $h->{$project_id}->{samples} = scalar(keys %$h_patients);
+                $h->{$project_id}->{patient_name} = join(';', keys %$h_patients);
+                $h->{$project_id}->{capture_name} = join(';', keys %$h_captures);
+                $h->{$project_id}->{creation_date} = $h->{$project_id}->{cDate};
+                $h->{$project_id}->{genome} = $h->{$project_id}->{relname};
+                $h->{$project_id}->{project_id} = $project_id;
+                push(@l_res, $h->{$project_id});
+        }
+        return \@l_res;
 }
+        
 
 sub getAlamutApiKeyFromUserName {
 	my ($self, $user_name) = @_;
@@ -1405,6 +1478,27 @@ sub getProfileSample {
 	my ($v) = keys %$h;
 	return $v;
 	
+}
+
+sub getPersonIdFromPatientId {
+	my ($self, $sample_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{SELECT * FROM PolyprojectNGS.patient_person where patient_id=?;};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($sample_id);
+	my $h = $sth->fetchall_hashref('person_id');
+	my (@l) = keys %$h;
+	return $l[0];
+}
+
+sub getPersonInfos {
+	my ($self, $person_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{SELECT * FROM PolyprojectNGS.person where person_id=?;};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($person_id);
+	my $h = $sth->fetchall_hashref('person_id');
+	return $h->{$person_id};
 }
 
 1;

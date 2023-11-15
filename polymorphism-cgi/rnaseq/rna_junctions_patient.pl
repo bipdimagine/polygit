@@ -126,11 +126,11 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 }
 
 my $cache_id = 'splices_linked_' . $patient->name() . '_' . $j_total;
-
-#warn $cache_id;
 my $no_cache = $patient->get_lmdb_cache("r");
 my $h_res    = $no_cache->get_cache($cache_id);
 $no_cache->close();
+
+
 if ($h_res) {
 	$h_var_linked_ids = $h_res;
 }
@@ -150,6 +150,27 @@ qq{<table id='table_major'></table><span><br><br><b>Error</b> for this patient</
 }
 
 exit(0) if ($only_html_cache);
+
+
+my $cache_html_id = 'splices_HTML_' . $patient->name() . '_' . $j_total;
+$cache_html_id .= '_'.$max_dejavu if $max_dejavu;
+$cache_html_id .= '_'.$use_percent_dejavu if $use_percent_dejavu;
+$cache_html_id .= '_'.$min_score if $min_score;
+$cache_html_id .= '_'.$only_dejavu_ratio_10 if $only_dejavu_ratio_10;
+if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
+	my $no_cache_2 = $patient->get_lmdb_cache("r");
+	my $h_html    = $no_cache_2->get_cache($cache_html_id);
+	$no_cache_2->close();
+	if ($h_html) {
+		if ($view_polyviewer) {
+			print qq{</div>};
+			print $h_html->{html};
+			exit(0);
+		}
+		printJson($h_html);
+		exit(0);
+	}
+}
 
 my ( $is_partial_results, $use_cat, $min_partial_score );
 if ( $j_selected >= 10000 ) {
@@ -784,6 +805,10 @@ else {
 }
 $hash->{is_partial_results} = $is_partial_results;
 
+my $no_cache = $patient->get_lmdb_cache("w");
+$no_cache->put_cache_hash( $cache_html_id, $hash );
+$no_cache->close();
+
 if ($view_polyviewer) {
 	print qq{</div>};
 	print $hash->{html};
@@ -1373,36 +1398,20 @@ qq{<button class='igvIcon2' onclick='launch_igv_tool_rna("$fasta", "$bam_file,$g
 sub get_sashimi_plot {
 	my ( $junction, $patient ) = @_;
 	my $sashimi_button;
-	my $list_sashimi_plot_files =
-	  $junction->getListSashimiPlotsPathFiles($patient);
-	if ( $list_sashimi_plot_files and -e $list_sashimi_plot_files->[0] ) {
-		$sashimi_button .= qq{<center>};
-		my @lFiles;
-		foreach my $sashimi_plot_file (@$list_sashimi_plot_files) {
-			$sashimi_plot_file =~ s/\/\//\//g;
-			$sashimi_plot_file =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
-
-			#$sashimi_plot_file = "https://www.polyweb.fr/".$sashimi_plot_file;
-			push( @lFiles, $sashimi_plot_file );
-		}
-		my $files = join( ';', @lFiles );
-		my $pdf   = $lFiles[0] . '#toolbar=0&embedded=true';
-		$sashimi_button .=
-qq{<button type="button" class="btn btn-default" style="border:2px black double;overflow:hidden;text-align:center;background-color:white;padding-right:20px;padding-left:4px;padding-top:4px;padding-bottom:4px;" onClick="view_pdf_list_files('$files')"><table><td>};
-		$sashimi_button .=
-qq{<image style="position:relative;width:200px;" loading="lazy" src="$pdf"></image>};
-
-#$sashimi_button .= qq{<image style="position:relative;z-index:2;width:200px;object-position: -50% -50%;transform: scale(1.7) translate(-27px, 20px);" loading="lazy" src="$pdf"></image>};
-		$sashimi_button .=
-qq{</td><td style="padding-left:1px;"><span style="writing-mode:vertical-lr !important; font: 12px Verdana, sans-serif;letter-spacing: 1px;">Zoom</span></td></table> </button>};
-		$sashimi_button .= qq{</center></};
+	my $list_sashimi_plot_files = $junction->getListSashimiPlotsPathFiles($patient);
+	$sashimi_button .= qq{<center>};
+	my @lFiles;
+	foreach my $sashimi_plot_file (@$list_sashimi_plot_files) {
+		$sashimi_plot_file =~ s/\/\//\//g;
+		$sashimi_plot_file =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+		push( @lFiles, $sashimi_plot_file );
 	}
-	else {
-		$sashimi_button .= qq{<center>N.A.</center>};
-
-		#		my $vid = $junction->vector_id();
-		#		$sashimi_button .= qq{<center>$vid</center>};
-	}
+	my $files = join( ';', @lFiles );
+	my $pdf   = $lFiles[0] . '#toolbar=0&embedded=true';
+	$sashimi_button .= qq{<button type="button" class="btn btn-default" style="border:2px black double;overflow:hidden;text-align:center;background-color:white;padding-right:20px;padding-left:4px;padding-top:4px;padding-bottom:4px;" onClick="view_pdf_list_files('$files')"><table><td>};
+	$sashimi_button .= qq{<image alt="N.A." style="position:relative;width:200px;" loading="lazy" src="$pdf"></image>};
+	$sashimi_button .= qq{</td><td style="padding-left:1px;"><span style="writing-mode:vertical-lr !important; font: 12px Verdana, sans-serif;letter-spacing: 1px;">Zoom</span></td></table> </button>};
+	$sashimi_button .= qq{</center></};
 	return $sashimi_button;
 }
 
