@@ -111,6 +111,8 @@ warn "nb_total control indels : ".$nb_total_indels;
  $nb =0;
  $nbf = 0;
 my $nb_total_vars;
+warn scalar(@$vs);
+die();
 foreach my $v (@$vs){
 		
 	next unless exists $hintspan_giab->{$v->getChromosome->name};
@@ -161,7 +163,7 @@ my $nb2findel =0;
 foreach my $chr (@{$project->getChromosomes}) {
 	next if $chr->name eq "Y";
 	next unless exists $hintspan_giab->{$chr->name};
-	
+	warn $chr->name();
 	my $v1 = $chr->getVectorByIntspan( $hintspan_global->{$chr->name});
 	
 	my $vgiab = $giab->getVectorOrigin($chr);
@@ -174,6 +176,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 	foreach my $vid (@$z){
 		my $v = $project->returnVariants($vid);
 		next unless $hintspan_global->{$v->getChromosome->name}->contains($v->start);
+		
 		#my $f = grep {$_->name eq $giab->name} @{$v->getPatients}; 
 		#next unless $f;
 		if (scalar(@{$v->getPatients}) == 2){
@@ -214,8 +217,8 @@ $results->{global}->{substitution}->{fp} = $fps;
 $results->{global}->{substitution}->{fn} = $nb2fv;
 $results->{global}->{substitution}->{nb} = $nb_total_vars;  
 
-
-
+warn $nb_bases;
+warn  $nb_total_vars;
 $results->{patient}= $p->name();
 $results->{date}= time;
 $results->{stats}= "variations ".($nb_total_vars+$nb_total_indels)." bases $nb_bases <br> ";
@@ -287,23 +290,20 @@ sub print_variant_false {
 	#push(@vs,$v->start);
 	push(@vs,$v->id);
 	my @t= split("_",$v->id);
-	warn "coucou ".$v->type;
 	#unless ($v->type){
-		warn "cuicuiu";
 		my $chr = $v->getChromosome();
 		my $vid = $v->vector_id;
-		$vid++;
-		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		 #warn $gid." ".$vid." ".$id;
-		 my $obj = $chr->cache_lmdb_variations->get($gid);
-		 warn $obj->sequence;
-		 warn $v->sequence;
-		 $vid-=2;
-		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		 #warn $gid." ".$vid." ".$id;
-		 my $obj = $chr->cache_lmdb_variations->get($gid);
-		 warn $obj->sequence;
-		 warn $v->sequence;
+#		$vid++;
+#		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+#		 #warn $gid." ".$vid." ".$id;
+#		 my $obj = $chr->cache_lmdb_variations->get($gid);
+#		 $vid-=2;
+#		 warn $vid;
+#		 my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+#		 #warn $gid." ".$vid." ".$id;
+#		 my $obj = $chr->cache_lmdb_variations->get($gid);
+#		 warn $obj->sequence;
+#		 warn $v->sequence;
 	#	 die();
 		
 		
