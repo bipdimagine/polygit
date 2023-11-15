@@ -35,6 +35,7 @@ $| = 1;
 	my $buffer = new GBuffer();
 	$buffer->vmtouch(1);
 	my $project = $buffer->newProjectCache( -name => $project_name, -verbose => 1 , -version=>$version);
+	$project->preload_patients();
 	my $patients = $project->getPatients();
 	if ($patient_name) {
 		
