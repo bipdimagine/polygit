@@ -30,6 +30,12 @@ has patient_id => (
 	reader   => 'getPatientId',
 	required => 1,
 );
+#has species_id => (
+#	is => 'ro',
+	#isa		=> 'Str',
+#	required => 1,
+#);
+
 has type => (
 	is => 'ro',
 	#isa		=> 'Str',

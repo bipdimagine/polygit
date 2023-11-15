@@ -818,6 +818,7 @@ sub edit {
 	 my ($patient,$hvariation) = @_;
 	 my $lists = $patient->getListValidatedVariants();
 	 	$hvariation->{type} = "other";
+	 	confess();
 	$hvariation->{sanger} = "-";
 	#$hvariation->{user_name} = "";
 	my $id =$hvariation->{id};
