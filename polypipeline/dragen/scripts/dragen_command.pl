@@ -156,19 +156,21 @@ else {
  ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
 
- $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-duplicate-marking true --enable-rna=true ";
+ $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true --enable-duplicate-marking true --enable-rna true ";
 
 }
 
 #if (exists $pipeline->{count}){
 	my $gtf =  $project->gtf_file();
 	die() unless -e $gtf;
-	$param_align .= "-a $gtf --enable-rna-quantification true";
+	$gtf = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v43/gtf/gencode.v43lift37.annotation.gtf};
+	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
 #}
 
 ##
 $cmd_dragen .= $param_umi." ".$param_align;
 $patient->update_software_version("dragen",$cmd_dragen);
+warn $cmd_dragen;
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 unlink $fastq1 if  $fastq1 =~ /pipeline/;
 unlink $fastq2 if $fastq2 =~ /pipeline/;;
