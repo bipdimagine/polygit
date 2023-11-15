@@ -191,6 +191,7 @@ has isCanonique => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return if not -d $self->getChromosome()->get_lmdb_junctions_canoniques('r')->{dir}.'/'.$self->getChromosome->id();
 		if ($self->is_dragen() or $self->is_star()) {
 			my $id = $self->getChromosome->id().'_'.$self->start().'_'.$self->end();
 			return 1 if $self->getChromosome()->get_lmdb_junctions_canoniques('r')->get($id);

@@ -80,7 +80,8 @@
              			dojo.style("footer","visibility","visible");
          			 },
       	};		
-      	
+      
+      var username_log;
       var fadeheaderArgs = {
        			 	node: "header",
        			 	beforeBegin: function(){
@@ -91,6 +92,7 @@
 			  function setPasswordlocal(){
                 var passwd = document.getElementById('passwd').value;
                 var username = document.getElementById('username').value;	
+                username_log = username;
 				dojo.cookie("username", username, { expires: 1 });
 				dojo.cookie("passwd", passwd, { expires: 1 });
 				dojo.fadeOut(fadeoutloginArgs).play();
@@ -99,10 +101,16 @@
 				checkPassword("*",okfunction);
   				}
   				
+  				var otp_code;
   				
   			/* ONLOAD*/	
   				dojo.addOnLoad(function(){ 
-  					
+  					document.getElementById('input_otp_1').value = '';
+  					document.getElementById('input_otp_2').value = '';
+  					document.getElementById('input_otp_3').value = '';
+  					document.getElementById('input_otp_4').value = '';
+  					document.getElementById('input_otp_5').value = '';
+  					document.getElementById('input_otp_6').value = '';
   			
   					dojo.style("footer", "opacity", "0");
   					dojo.style("header", "opacity", "0");
@@ -126,36 +134,57 @@
                         document.getElementById("server_name").textContent = value;
                     } 
                 });
-            } 
-  					
-  			function okfunction (items, request){
-  			 		dojo.style("waiting", "opacity", "0");
-					
-  						if (items.length==0) {
-  							dojo.style("login","opacity","1");
-  							 
-  							
-  							dojo.fadeIn(fadeinloginArgs).play();
-  						
-						return;
-					};
-					if (items[0].team == 6){
-						  dojo.style("polyrun","visibility","visible");
-						  dojo.style("polyproject","visibility","visible");
-						  dojo.style("polytools","visibility","visible");
-					}
-					if (items[0].team == 34){
-						 dojo.style("polyrun","visibility","visible");
-					}
+            }
+            
+            function use_checkPasswordOtp() {
+            	if(username_log) {}
+            	else { username_log = dojo.cookie('username'); } 
+            	checkPasswordOtp(username_log);
+            }
+            
+            function okfunction_view_case(items) {
+				if (team_user == 6){
+				  dojo.style("polyrun","visibility","visible");
+				  dojo.style("polyproject","visibility","visible");
+				  dojo.style("polytools","visibility","visible");
+				}
+				if (team_user == 34){
+					 dojo.style("polyrun","visibility","visible");
+				}
 
-				 dojo.style("login","visibility","hidden");
-				 dojo.style("table_formation","visibility","visible");
+				dojo.style("login","visibility","hidden");
+				dojo.style("table_formation","visibility","visible");
 
 				dojo.fadeIn(fademenuArgs).play();
 				dojo.fadeOut(fadewaitingArgs).play();
-				
-				
-  				}	
+            }
+  			
+  			var team_user;
+  			function okfunction (items, request){
+		 		dojo.style("waiting", "opacity", "0");
+				if (items.length == 0) {
+					dojo.style("login","opacity","1");
+					dojo.fadeIn(fadeinloginArgs).play();
+					return;
+				};
+		 		team_user = items[0].team;
+				if (items[0].otp_need == 1) {
+					if (items[0].team == 6) {
+						if (checkCookieOtp()) {
+							okfunction_view_case(items);
+						}
+						else {
+							otp_auth(items[0].otp_code);
+						}
+					}
+					else {
+						okfunction_view_case(items);
+					}
+				}
+				else {
+					okfunction_view_case(items);
+				}
+			}	
   				
   	
 			
@@ -372,8 +401,9 @@
 			<div id="waiting" style="visibility:hidden" >
 				&nbsp;
 			</div>
-				<section class="main" style="visibility:hidden">
-					<div id="login" class="form-3" action="#" >
+			
+			<section class="main" style="visibility:hidden">
+				<div id="login" class="form-3" action="#" >
 				    <p class="clearfix">
 				        <label for="login">Username</label>
 				        <input type="text" name="login" id="username" placeholder="Username">
@@ -389,7 +419,55 @@
 				        <input type="submit" name="submit" value="Sign in" onclick="setPasswordlocal();">
 				    </p>      
 				</div>
-				
+			</section>
+			
+			<section class="main" style="visibility:hidden;width:50%;">
+				<div id="otp_login" class="form-3" action="#" >
+					<table>
+						<tr style="padding-top:5px;">
+							<td><label style="width:100%;" for="password">Group</label></td>
+							<td style="padding-left:5px;color:white;"><center><label style="width:100%;" id="span_otpcode"></label></center></td>
+						</tr>
+						<tr><td colspan='2'><br></td></tr>
+						<!--
+						<tr>
+							<td><center><label style="width:100%;" for="login">QR Code</label></center></td>
+							<td style="padding-left:5px;"><center><span id="span_otpqrcode"></span></center></td>
+						</tr>
+						<tr><td colspan='2'><br></td></tr>
+						-->
+						<tr style="padding-top:5px;">
+							<td><label style="width:100%;" for="password">Verification</label></td>
+							<td style="padding-left:5px;">
+								<center>
+									<div class="container_otp"> 
+								        <div id="inputs_otp" class="inputs_otp"> 
+									        <nobr>
+									            <input onpaste="onpaste_input_otp(event)" placeholder="*" id="input_otp_1" class="input_otp" type="text" inputmode="numeric" maxlength="1" style="width:20px;border:none;border-bottom: 3px solid rgba(0, 0, 0, 0.5);margin: 0 2px; text-align: center;font-size: 16px;"/> 
+									            <input onpaste="onpaste_input_otp(event)" placeholder="*" id="input_otp_2" class="input_otp" type="text" inputmode="numeric" maxlength="1" style="width:20px;border:none;border-bottom: 3px solid rgba(0, 0, 0, 0.5);margin: 0 2px; text-align: center;font-size: 16px;"/> 
+									            <input onpaste="onpaste_input_otp(event)" placeholder="*" id="input_otp_3" class="input_otp" type="text" inputmode="numeric" maxlength="1" style="width:20px;border:none;border-bottom: 3px solid rgba(0, 0, 0, 0.5);margin: 0 2px; margin-right: 8px; text-align: center;font-size: 16px;"/> 
+									            <input onpaste="onpaste_input_otp(event)" placeholder="*" id="input_otp_4" class="input_otp" type="text" inputmode="numeric" maxlength="1" style="width:20px;border:none;border-bottom: 3px solid rgba(0, 0, 0, 0.5);margin: 0 2px; text-align: center;font-size: 16px;"/> 
+									            <input onpaste="onpaste_input_otp(event)" placeholder="*" id="input_otp_5" class="input_otp" type="text" inputmode="numeric" maxlength="1" style="width:20px;border:none;border-bottom: 3px solid rgba(0, 0, 0, 0.5);margin: 0 2px; text-align: center;font-size: 16px;"/> 
+									            <input onpaste="onpaste_input_otp(event)" placeholder="*" id="input_otp_6" class="input_otp" type="text" inputmode="numeric" maxlength="1" style="width:20px;border:none;border-bottom: 3px solid rgba(0, 0, 0, 0.5);margin: 0 2px; text-align: center;font-size: 16px;"/> 
+								            </nobr>
+								        </div> 
+								    </div> 
+							    	<script src="js/otp/otp.js"></script> 
+							    	<script src="polyweb/js/otp/otp.js"></script> 
+						    	</center>
+							</td>
+							<!--
+							<td style="padding-left:5px;"><center><input style="width:100%;" name="password" id="passwd_otp" placeholder="Auth Code"></center></td>
+							-->
+						</tr>
+						<tr><td colspan='2'><br></td></tr>
+						<tr style="padding-top:5px;">
+							<td colspan='2'>
+								<center><input id="b_check_otp" type="submit" name="submit" value="Check" onclick="use_checkPasswordOtp();"></center>
+							</td>
+						</tr>
+					</table>
+				</div>
 			</section>
 
 			<div class="footer2" id ="footer"  style="visibility:hidden">

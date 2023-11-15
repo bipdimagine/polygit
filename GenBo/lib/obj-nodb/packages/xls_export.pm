@@ -1189,7 +1189,6 @@ sub add_infos_patients_variants {
 	foreach my $patient_name (keys %{$h_var->{'patients'}}) {
 		$h_patients_found->{$patient_name} = undef;
 		my $h_pat = $h_var->{'patients'}->{$patient_name};
-		warn Dumper $h_pat; die;
 		my $he_ho = $h_pat->{'he_ho'};
 		$nb_pat_he++ if ($he_ho eq 'he');
 		$nb_pat_ho++ if ($he_ho eq 'ho');

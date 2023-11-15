@@ -474,10 +474,10 @@ sub hgmd {
 }
 sub tclinical_local {
 		my ($project,$hvariation,$patient,$gene) = @_;
-		
 	 my $val_id = $gene->id."!".$hvariation->{id};
 	 my $local_validation = $patient->project->getValidationVariation($val_id,$patient);
-	
+	warn Dumper $local_validation;
+	die();
 		if ($local_validation){
 				my $saved = $local_validation->{validation};
 				$hvariation->{"local"} = $patient->buffer->value_validation->{$saved};
