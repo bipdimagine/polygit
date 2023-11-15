@@ -2953,11 +2953,18 @@ sub getPatientOrControl {
 	return $patient;
 }
 
+sub species_id {
+	my ($self) = @_;
+	$self->getPatients;
+	return $self->{species_id} ;
+}
+
 sub setPatients {
 	my $self  = shift;
 	my $query = $self->buffer->getQuery();
 	my $res   = $query->getPatients( $self->id );
 	my %names;
+	my $spec;
 	foreach my $h (@$res) {
 		$h->{id} = $h->{patient_id};
 		$names{ $h->{id} } = undef;
@@ -2969,7 +2976,10 @@ sub setPatients {
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
+		  $self->{species_id} = $h->{species_id};
+		  $spec->{$h->{species_id}} ++;
 	}
+	confess("problem species") if scalar(keys %$spec) ne 1;
 	return \%names;
 }
 

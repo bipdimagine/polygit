@@ -94,7 +94,7 @@ sub check_if_expired {
 	my $self = shift;
 	return unless $self->session;
 	if ( $self->session->is_expired ) {
-    	$self->session->delete();
+    	#$self->session->delete();
     	return 1;
 	}
 	if ( $self->session->is_empty ) {

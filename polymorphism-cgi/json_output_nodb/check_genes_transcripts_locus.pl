@@ -6,7 +6,6 @@ use CGI qw/:standard :html3/;
 use strict;
 use FindBin qw($Bin);
 use Data::Dumper;
-use File::Find;
 use JSON;
 
 use lib "$Bin/../GenBo/lib/obj-nodb/";
@@ -41,7 +40,6 @@ my $trio_patient	   = $cgi->param('patient');
 my $use_phenotype_score	   = $cgi->param('use_phenotype');
 $use_phenotype_score = lc($phenotype) if ($phenotype and not $use_phenotype_score);
 $use_phenotype_score = 'intellectual disability' unless ($use_phenotype_score);
-
 my $buffer  = GBuffer->new();
 purge_cgi_session_directory($buffer);
 my $project;
@@ -58,9 +56,6 @@ else {
 	}
 	$project->changeAnnotationVersion( $annotation, 1 );
 }
-
-print $cgi->header('text/json-comment-filtered');
-print "{\"progress\":\".";
 
 if ($use_phenotype_score) {
 	my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($use_phenotype_score);
@@ -303,7 +298,6 @@ my $nb_genes_error = 0;
 my $last_gene_name;
 if ($h_genes) {
 	foreach my $gene_key_name ( sort keys %$h_genes ) {
-		print '.';
 		my $gene;
 		my $gene_id = $h_genes->{$gene_key_name};
 		eval { $gene = $project->newGene($gene_id); };
@@ -540,33 +534,27 @@ $hRes->{gencode} = $gencode_version;
 $hRes->{nb_genes} = scalar(keys %$h_genes);
 $hRes->{nb_genes_error} = $nb_genes_error if ( $nb_genes_error > 0 );
 
-
-printJson($hRes);
 print $cgi->header('text/json-comment-filtered');
 my $json_encode = encode_json $hRes;
 print $json_encode;
 exit(0);
 
 
-
-sub printJson {
-	my ($hRes) = @_;
-	my $json_encode = encode_json $hRes;
-	print ".\",";
-	$json_encode =~ s/{//;
-	print $json_encode;
-	exit(0);
-}
-
-sub deleteOldFiles {
-    unlink $_ if (-f && (int(-M _) > 1));
-}
-
 sub purge_cgi_session_directory {
 	my $buffer = shift;
 	my $dir_sessions = $buffer->config->{project_data}->{global_search};
 	return unless (-d $dir_sessions);
-	File::Find::find(\&deleteOldFiles, ($dir_sessions));
+	opendir my $dir, $dir_sessions or die "Cannot open directory: $!";
+	my @files = readdir $dir;
+	closedir $dir;
+	foreach my $f (@files) {
+		next unless ($f =~ /cgisess_/);
+		my ($base, $tmp_session_id) = split('_', $f);
+		#my $session = new session_export();
+		#$session->tmp_dir($buffer->config->{project_data}->{global_search});
+		#warn Dumper $session->load_session( $tmp_session_id );
+		#$session->check_if_expired();
+	}
 }
 
 sub get_project_phenotype {
