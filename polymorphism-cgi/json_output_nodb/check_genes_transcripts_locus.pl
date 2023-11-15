@@ -40,7 +40,6 @@ my $trio_patient	   = $cgi->param('patient');
 my $use_phenotype_score	   = $cgi->param('use_phenotype');
 $use_phenotype_score = lc($phenotype) if ($phenotype and not $use_phenotype_score);
 $use_phenotype_score = 'intellectual disability' unless ($use_phenotype_score);
-
 my $buffer  = GBuffer->new();
 purge_cgi_session_directory($buffer);
 my $project;
@@ -57,7 +56,6 @@ else {
 	}
 	$project->changeAnnotationVersion( $annotation, 1 );
 }
-
 
 if ($use_phenotype_score) {
 	my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($use_phenotype_score);
@@ -552,9 +550,10 @@ sub purge_cgi_session_directory {
 	foreach my $f (@files) {
 		next unless ($f =~ /cgisess_/);
 		my ($base, $tmp_session_id) = split('_', $f);
-		my $session = new session_export();
-		$session->load_session( $tmp_session_id );
-		$session->check_if_expired();
+		#my $session = new session_export();
+		#$session->tmp_dir($buffer->config->{project_data}->{global_search});
+		#warn Dumper $session->load_session( $tmp_session_id );
+		#$session->check_if_expired();
 	}
 }
 
