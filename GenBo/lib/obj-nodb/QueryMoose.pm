@@ -715,7 +715,7 @@ sub fast_getProjectByName {
 	return $res;
 
 }
-
+ ###
 sub fast_getPatients {
 	my ($self, $project_id) = @_;
 	my $dbh = $self->getDbh();
@@ -730,8 +730,6 @@ sub fast_getPatients {
 		
 		push(@{$res->{$pid}},$p);
 	}
-	warn Dumper $res;
-	die();
 	#die($project_id);
 	return $res;
 }
