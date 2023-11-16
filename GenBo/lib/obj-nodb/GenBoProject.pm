@@ -2979,7 +2979,8 @@ sub setPatients {
 		  $self->{species_id} = $h->{species_id};
 		  $spec->{$h->{species_id}} ++;
 	}
-	confess("problem species") if scalar(keys %$spec) ne 1;
+	return \%names unless (%names);
+	confess("problem species for project ".$self->name()) if scalar(keys %$spec) ne 1;
 	return \%names;
 }
 
