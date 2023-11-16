@@ -125,7 +125,8 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	$j_selected += $h_chr_vectors_counts->{ $chr->id };
 }
 
-my $cache_id = 'splices_linked_' . $patient->name() . '_' . $j_total;
+my $cache_id = 'splices_linked_' . $patient->name();
+$cache_id .= '_'.$j_total;
 my $no_cache = $patient->get_lmdb_cache("r");
 my $h_res    = $no_cache->get_cache($cache_id);
 $no_cache->close();
@@ -152,15 +153,20 @@ qq{<table id='table_major'></table><span><br><br><b>Error</b> for this patient</
 exit(0) if ($only_html_cache);
 
 
-my $cache_html_id = 'splices_HTML_' . $patient->name() . '_' . $j_total;
-$cache_html_id .= '_'.$max_dejavu if $max_dejavu;
-$cache_html_id .= '_'.$use_percent_dejavu if $use_percent_dejavu;
-$cache_html_id .= '_'.$min_score if $min_score;
-$cache_html_id .= '_'.$only_dejavu_ratio_10 if $only_dejavu_ratio_10;
+my $cache_html_id = 'splices_HTML_' . $patient->name();
+$cache_html_id .= '_maxdv'.$max_dejavu if $max_dejavu;
+$cache_html_id .= '_mins'.$min_score if $min_score;
+$cache_html_id .= '_only'.$only_gene_name if $only_gene_name;
+$cache_html_id .= '_only'.$only_positions if $only_positions;
+$cache_html_id .= '_onlydvra10' if $only_dejavu_ratio_10;
+$cache_html_id .= '_'.$j_total;
+
+
 if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
 	my $no_cache_2 = $patient->get_lmdb_cache("r");
 	my $h_html    = $no_cache_2->get_cache($cache_html_id);
 	$no_cache_2->close();
+	
 	if ($h_html) {
 		if ($view_polyviewer) {
 			print qq{</div>};
@@ -171,6 +177,7 @@ if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
 		exit(0);
 	}
 }
+
 
 my ( $is_partial_results, $use_cat, $min_partial_score );
 if ( $j_selected >= 10000 ) {
@@ -805,9 +812,12 @@ else {
 }
 $hash->{is_partial_results} = $is_partial_results;
 
-my $no_cache = $patient->get_lmdb_cache("w");
-$no_cache->put_cache_hash( $cache_html_id, $hash );
-$no_cache->close();
+if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
+	my $no_cache = $patient->get_lmdb_cache("w");
+	$no_cache->put_cache_hash( $cache_html_id, $hash );
+	$no_cache->close();
+}
+
 
 if ($view_polyviewer) {
 	print qq{</div>};
