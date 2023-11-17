@@ -33,7 +33,7 @@ my $patient = $project->getPatient($patient_name);
 my $sjprod = "$dir/".$patient->name.".SJ.tab";
 my $bam_prod = $patient->getBamFileName("star");
 
-exit(0) if -e $sjprod && -e $bam_prod;
+#exit(0) if -e $sjprod && -e $bam_prod;
 #my $patient = $project->getPatient($patient_name);
 
 my $dir_pipeline = $project->getAlignmentPipelineDir("star-".$patient->name);
