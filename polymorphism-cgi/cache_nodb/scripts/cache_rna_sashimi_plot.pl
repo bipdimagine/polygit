@@ -94,7 +94,7 @@ foreach my $score (@lScores) {
 			push(@lJunctions, $junction);
 			$nb++;
 			$h_junctions_todo->{$j_pos} = $j_score;
-			last if ($nb == 1500);
+			last if ($nb == 500);
 		}
 	}
 }
