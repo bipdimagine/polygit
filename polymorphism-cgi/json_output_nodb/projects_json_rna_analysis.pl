@@ -96,7 +96,9 @@ sub getProjectListsRNA {
 				$ok = 1 if (-e $dragen_file);
 			}
 			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+			$se_file = $path.'/allResSE.txt.gz' if (-e $path.'/allResSE.txt.gz');
 			my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+			$ri_file = $path.'/allResRI.txt.gz' if (-e $path.'/allResRI.txt.gz');
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
 			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok);
