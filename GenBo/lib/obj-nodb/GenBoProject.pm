@@ -2973,11 +2973,13 @@ sub setPatients {
 		if ( not $h->{status} or $h->{status} eq '0' ) { $h->{status} = 2; }
 		if ( not $h->{sex}    or $h->{sex} eq '0' )    { $h->{sex}    = 1; }
 		$h->{project} = $self;
+		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
 		  $self->{species_id} = $h->{species_id};
-		  $spec->{$h->{species_id}} ++;
+		  warn $h->{species_id};
+		 
 	}
 	return \%names unless (%names);
 	confess("problem species for project ".$self->name()) if scalar(keys %$spec) ne 1;
