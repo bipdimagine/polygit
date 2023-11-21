@@ -2978,7 +2978,7 @@ sub setPatients {
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
 		  $self->{species_id} = $h->{species_id};
-		  warn $h->{species_id};
+#		  warn $h->{species_id};
 		 
 	}
 	return \%names unless (%names);
