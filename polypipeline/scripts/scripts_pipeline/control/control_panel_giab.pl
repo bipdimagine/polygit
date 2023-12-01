@@ -112,7 +112,6 @@ warn "nb_total control indels : ".$nb_total_indels;
  $nbf = 0;
 my $nb_total_vars;
 warn scalar(@$vs);
-die();
 foreach my $v (@$vs){
 		
 	next unless exists $hintspan_giab->{$v->getChromosome->name};
