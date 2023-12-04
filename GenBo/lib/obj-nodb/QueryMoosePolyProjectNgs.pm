@@ -440,11 +440,11 @@ has sql_list_all_projects => (
 
 has sql_list_project_for_user =>(
 	is		=> 'ro',
-	
 	lazy =>1,
 	default	=> sub {
+		####
 		my $sql = qq{	  	
-			select distinct(o.project_id) as id,o.name as name, pt.name as type , db.name as dbname ,o.description as description, BU.EQUIPE_ID team, o.validation_db,o.creation_date 
+			select distinct(o.project_id) as id,o.name as name, pt.name as type , db.name as dbname ,o.description as description, BU.EQUIPE_ID team, o.validation_db,o.creation_date,BU.uKey otp 
 			from PolyprojectNGS.projects o , PolyprojectNGS.databases_projects dp,PolyprojectNGS.polydb db,  PolyprojectNGS.user_projects  up ,  bipd_users.USER BU, PolyprojectNGS.project_types pt
 			  where 
 			  	up.project_id=o.project_id and (
