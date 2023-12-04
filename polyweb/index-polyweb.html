@@ -169,17 +169,17 @@
 				};
 		 		team_user = items[0].team;
 				if (items[0].otp_need == 1) {
-					if (items[0].team == 6) {
+					//if (items[0].team == 6) {
 						if (checkCookieOtp()) {
 							okfunction_view_case(items);
 						}
 						else {
 							otp_auth(items[0].otp_code);
 						}
-					}
-					else {
-						okfunction_view_case(items);
-					}
+					//}
+					//else {
+					//	okfunction_view_case(items);
+					//}
 				}
 				else {
 					okfunction_view_case(items);
