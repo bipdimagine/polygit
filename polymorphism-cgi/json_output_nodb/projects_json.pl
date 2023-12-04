@@ -87,9 +87,10 @@ sub getProjectLists {
 	#renvoit tous les origin associés au login et au mdp spécifié
 	
 	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
-	if ($res->[0]->{team} eq '6') {
+	if ($res->[0]->{otp} == 1 ) {
 		#$res->[0]->{otp_qr_code} = $buffer->google_auth_qr_code();
 		$res->[0]->{otp_code} = $buffer->google_auth_issuer().': '.$buffer->google_auth_key_id();
+		die();
 	}
 	$res->[0]->{otp_need} = $buffer->use_otp_for_login($login);
 	my $db_name = $buffer->{config}->{server}->{status};
