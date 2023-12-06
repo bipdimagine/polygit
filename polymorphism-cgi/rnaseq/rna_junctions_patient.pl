@@ -710,7 +710,9 @@ foreach my $gene_name (@lGenesNames) {
 	my $this_table_id      = $table_id . '_' . $gene_name;
 
 	#	push(@lTablesIds, $this_table_id);
+	warn $gene_name;
 	my $g = $project->newGene($gene_name);
+	next unless $g;
 	my $hgene;
 	$hgene->{description}   = $g->description();
 	$hgene->{external_name} = $g->external_name();
