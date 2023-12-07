@@ -118,6 +118,9 @@ sub run_alignment_pe {
 	my $filein = $hash->{filein};
 
 	my $method       = $self->patient()->alignmentMethod();
+	if ($method eq "star"){
+		return $self->star_align($hash);
+	}
 	my $name         = $self->patient()->name();
 	my ($dirin)      = $self->patient()->getSequencesDirectory();
 	my $project_name = $self->project->name();
@@ -174,9 +177,8 @@ sub run_alignment_pe {
 
 		my $cmd =
 qq{perl $bin_dev/align.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -project=$project_name -name=$name -bam=$bam -fork=$ppn };
-		my $type     = "align#" . $nb_bam;
-		my $stepname = $self->patient->name . "@" . $type;
-
+		my $type     = "$method#" . $nb_bam;
+		my $stepname = $self->patient->name . "@" .$method;
 		my $job_bds = job_bds_tracking->new(
 			uuid         => $self->bds_uuid,
 			cmd          => [$cmd],
