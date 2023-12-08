@@ -27,6 +27,7 @@ warn $project->gencode_version();
 foreach my $tr (@{ $capture->transcripts_name() }) {
 		#warn $tr;
 	#	next if $tr =~ /enh/;
+	$tr = "ENST00000614239" if $tr eq "ENST00000254457";
 			my $t = $project->newTranscript($tr);
 			
 			$genes->{$t->getGene->id} = $t->getGene
