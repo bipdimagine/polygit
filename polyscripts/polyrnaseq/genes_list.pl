@@ -18,22 +18,18 @@ GetOptions(
 	'dir=s'  => \$dir_out,
 );
 warn $patient_name;
+
 my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name);
-
+my $genes;
 
 my $capture = $project->getCapture();
 warn $project->gencode_version();
-		my $genes;
 foreach my $tr (@{ $capture->transcripts_name() }) {
-		#warn $tr;
-	#	next if $tr =~ /enh/;
-	$tr = "ENST00000614239" if $tr eq "ENST00000254457";
-	$tr = "ENST00000650373" if $tr eq "ENST00000398093";
-			my $t = $project->newTranscript($tr);
-			
+	my $t = $project->newTranscript($tr);
 			$genes->{$t->getGene->id} = $t->getGene
 }
+
 
 foreach my $g (values(%$genes)){
 	
