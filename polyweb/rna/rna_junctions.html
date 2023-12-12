@@ -670,8 +670,9 @@
 			var url_last_launch_patient;
 			
 			function launch_patient_from_button(patient_name) {
+				is_first_launch = 1;
 				document.getElementById("content_res").innerHTML = "";
-				launch_patient(patient_name);
+				launch_patient(patient_name, 1);
 			}
 			
 			function launch_patient(patient_name, without_filters) {
@@ -683,7 +684,7 @@
 				url += "?project=" + project_name;
 				url += "&patient=" + patient_name;
 				if (isChrome) { url += "&is_chrome=1"; }
-				if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
+				//if (without_filters == 1) {url += "&view_not_filtred_junctions=1"; }
 				url_last_launch_patient = url;
 				url += "&dejavu=" + used_dejavu_value;
 				url += "&dejavu_percent=" + used_dejavu_percent_value;
