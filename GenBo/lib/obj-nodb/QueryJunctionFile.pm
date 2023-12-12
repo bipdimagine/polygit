@@ -2,6 +2,7 @@ package QueryJunctionFile;
 
 use strict;
 use Moo;
+use Carp;
 use Data::Dumper;
 use Bio::DB::HTS::Tabix;
 
