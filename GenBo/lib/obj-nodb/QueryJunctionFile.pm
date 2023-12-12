@@ -120,6 +120,7 @@ sub parse_results_global_file {
 		if ($l_col[0] ne 'NA') {
 			my $h_res;
 			my $nb_col = 0;
+			# parsing ligne
 			foreach my $res (@l_col) {
 				my $cat = $h_header->{$nb_col};
 				$h_res->{type_origin_file} = 'RI' if (lc($cat) eq 'junc_ri_start' or lc($cat) eq 'junc_ri_end');
@@ -130,6 +131,8 @@ sub parse_results_global_file {
 				$h_res->{lc($cat)} = $res;
 				$nb_col++;
 			}
+			
+			# junctions en reverse
 			if ($h_res->{'end'} <= $h_res->{'start'}) {
 				my $toto = $h_res->{'end'};
 				$h_res->{'end'} = $h_res->{'start'};
@@ -137,7 +140,12 @@ sub parse_results_global_file {
 				$h_res->{'strand'} = -1;
 			}
 			
-			my $id = $h_res->{'chr'}.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file};
+			# check et regroupe same jonctions RI SE
+			my $proj_name = $self->getProject->name();
+			my $chr_id = $h_res->{'chr'};
+			my $ensid = $h_res->{'ensid'};
+			my $sample = $h_res->{'sample'};
+			my $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file};
 			confess("\n\nERROR: construct junction $id for column chr. Die\n\n") if not exists $h_res->{'chr'};
 			confess("\n\nERROR: construct junction $id for column start. Die\n\n") if not exists $h_res->{'start'};
 			confess("\n\nERROR: construct junction $id for column end. Die\n\n") if not exists $h_res->{'end'};
@@ -147,13 +155,15 @@ sub parse_results_global_file {
 				$h_tmp->{$h_res->{'chr'}} = undef;
 				$h_global->{$id}->{id} = $id;
 				$h_global->{$id}->{chromosomes_object} = $h_tmp;
-				$h_global->{$id}->{ensid} = $h_res->{'ensid'};
+				$h_global->{$id}->{ensid} = $ensid;
 				$h_global->{$id}->{gene} = $h_res->{'gene'};
-				$h_global->{$id}->{chr} = $h_res->{'chr'};
+				$h_global->{$id}->{chr} = $chr_id;
 				$h_global->{$id}->{start} = $h_res->{'start'};
 				$h_global->{$id}->{end} = $h_res->{'end'};
 			}
-			$h_global->{$id}->{annex}->{$h_res->{'sample'}} = $h_res;
+			if ($ensid) { $sample =~ s/$ensid\_$chr_id\_//; }
+			$sample =~ s/\_$proj_name//;
+			$h_global->{$id}->{annex}->{$sample} = $h_res;
 			$h_global->{$id}->{isCanonique} = 1 if exists $h_res->{isCanonique} and $h_res->{isCanonique};
 		}
 	}
