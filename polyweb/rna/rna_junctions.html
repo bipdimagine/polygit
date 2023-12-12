@@ -670,17 +670,8 @@
 			var url_last_launch_patient;
 			
 			function launch_patient_from_button(patient_name) {
-				if (patient_name in hash_pats_done) {
-					document.getElementById("content_res").innerHTML = "";
-					var myNode = document.getElementById("content_res");
-			    	var myPanel = $(hash_pats_done[patient_name]);
-					myPanel.appendTo(myNode);
-					enable_table_search('table_major');
-				}
-				else {
-					is_first_launch = 1;
-					launch_patient(patient_name);
-				}
+				document.getElementById("content_res").innerHTML = "";
+				launch_patient(patient_name);
 			}
 			
 			function launch_patient(patient_name, without_filters) {

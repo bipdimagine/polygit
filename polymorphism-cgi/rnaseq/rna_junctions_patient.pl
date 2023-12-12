@@ -114,9 +114,10 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	}
 	if ($only_gene) {
 		next if ( $chr->id() ne $only_gene->getChromosome->id() );
-		my $vector_postions =
-		  $chr->getVectorByPosition( ( $only_gene->start - 1000 ),
-			( $only_gene->end + 1000 ) );
+		my $this_start = $only_gene->start - 500000; 
+		$this_start = 1 if $this_start < 1;
+		my $this_end = $only_gene->end + 500000; 
+		my $vector_postions = $chr->getVectorByPosition( $this_start, $this_end );
 		$vector_patient->Intersection( $vector_patient, $vector_postions );
 	}
 
