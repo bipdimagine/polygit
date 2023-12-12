@@ -88,6 +88,7 @@ $default_filter_dejavu_project = "data-filter-default='<=$nb_limit'"
   if $nb_limit > 0;
 $default_filter_score = "data-filter-default='>=1'";
 
+
 my $n            = 0;
 my $score_slider = 0;
 $score_slider = $min_score / 10 if ( $min_score and $min_score > 0 );
@@ -1642,10 +1643,11 @@ sub countMinCatToUse {
 		}
 	}
 	my @lCat = sort keys %{$hCount};
+	
 	foreach my $cat (@lCat) {
-		return $cat if $hCount->{$cat} <= 50000;
+		return $cat if $hCount->{$cat} <= 150000;
 	}
-	return $lCat[-1];
+	return 'min4';
 }
 
 sub printJson {
