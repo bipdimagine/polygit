@@ -72,12 +72,14 @@ sub setJunctions {
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
 			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{isCanonique} = 1 if (exists $hres->{isCanonique} and $hres->{isCanonique} == 1);
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
 	if ($se_file and -e $se_file) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
 			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{isCanonique} = 1 if (exists $hres->{isCanonique} and $hres->{isCanonique} == 1);
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
