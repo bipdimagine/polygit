@@ -31,6 +31,7 @@ my ($h_resume, $h_captures);
 foreach my $patient (@{$project->getPatients}) {
 	#$patient->use_not_filtred_junction_files(0);
 	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
+		$h_resume->{$patient->name()}->{align_methods} = join(',', sort @{$patient->alignmentMethods});
 		$h_resume->{$patient->name()}->{nb_junctions_all} = 0;
 		$h_resume->{$patient->name()}->{nb_junctions_ri} = 0;
 		$h_resume->{$patient->name()}->{nb_junctions_se} = 0;
@@ -58,6 +59,7 @@ $html_table_patients .= qq{<th data-field="name" data-sortable="true"><center><b
 $html_table_patients .= qq{<th data-field="nb_junctions_all" data-sortable="true"><center><b>Nb Junctions ALL</b></center></th>};
 $html_table_patients .= qq{<th data-field="nb_junctions_ri" data-sortable="true"><center><b>Nb Junctions RI</b></center></th>};
 $html_table_patients .= qq{<th data-field="nb_junctions_se" data-sortable="true"><center><b>Nb Junctions SE</b></center></th>};
+$html_table_patients .= qq{<th data-field="align_methods" data-sortable="true"><center><b>Alignment in DB</b></center></th>};
 $html_table_patients .= qq{<th data-field="igv_bam" data-sortable="true"><center><b>IGV</b></center></th>};
 $html_table_patients .= qq{</thead>};
 $html_table_patients .= qq{<tbody>};
@@ -83,6 +85,9 @@ foreach my $patient_name (sort keys %$h_resume) {
 	$tr .= qq{<td><b">$all</b></td>};
 	$tr .= qq{<td>$ri ($ri_perc)</td>};
 	$tr .= qq{<td>$se ($se_perc)</td>};
+	
+	my $align_m = $h_resume->{$patient_name}->{align_methods};
+	$tr .= qq{<td>$align_m</td>};
 	
 	my $bam_pat_file = $h_resume->{$patient_name}->{bam_file};
 	my $cmd_bam = qq{onclick="add_bam_igv('$bam_pat_file')";};
