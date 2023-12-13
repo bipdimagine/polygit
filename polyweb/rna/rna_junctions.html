@@ -562,6 +562,8 @@
 				}, 1500);
 	    	});
 	    	
+	    	var hash_patients_align_DB = {};
+	    	
 	    	var is_checking = 0;
 			function checkPassword(new_log){
 				if (is_checking == 1) { return; }
@@ -589,6 +591,13 @@
 						var this_project = data.items[val].name;
 						if (this_project == project_name) {
 							found = 1;
+							var pat_name = data.items[val].patient_name;
+							var align_methods_infos = data.items[val].align_methods;
+							var ltmpa =  align_methods_infos.split(',');
+							$.each( ltmpa, function(n) {
+								var ltmpb = ltmpa[n].split(':');
+								hash_patients_align_DB[ltmpb[0]] = ltmpb[1];
+							});
 						}
 					});
 					dijit.byId('waiting').hide();

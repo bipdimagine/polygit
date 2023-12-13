@@ -144,6 +144,14 @@ sub getProjectListsRNA {
 		$h->{link_analyse} = $lAnalysis[-1] if (scalar @lAnalysis > 0);
 		$hDone->{$name} = undef;
 		
+		if ($project_name) {
+			my @lres;
+			foreach my $patient (@{$p1->getPatients()}) {
+				push(@lres, $patient->name().':'.join(',', sort @{$p1->alignmentMethods}));
+			}
+			$h->{align_methods} = join(',', @lres);
+		}
+		
 		my $is_ok;
 		$is_ok = 1 if $h->{button_splices};
 		$is_ok = 1 if $h->{button_rna};
