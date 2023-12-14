@@ -815,7 +815,7 @@ sub getWindowCaptureForCallingGenome {
 	}
 	return $res;
 }
-
+##
 sub getWindow {
 	my ( $self, $from, $end, $span_limit ) = @_;
 	my $intspan        = $self->getIntSpanCaptureForCalling($span_limit);
