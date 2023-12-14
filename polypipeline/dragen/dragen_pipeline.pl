@@ -101,6 +101,7 @@ GetOptions(
 
 
 
+
 my $buffers;
 my $projects;
 $patients_name ="" unless $patients_name;
@@ -165,6 +166,7 @@ if ($rna){
 
 
 
+
 unless ($step_name){
 	my $tdna = "DNA";
 	$tdna = "RNA" if $rna == 1;
@@ -206,11 +208,11 @@ if($step_name) {
 }
 
 
-
+##
 ####### Alignement
  my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
-
+warn Dumper $ppd;
 	my $index = firstidx { $_ eq "calling_target" } @$steps;
 	if ($index >= 0){
 		splice(@$steps,$index,1);
