@@ -1242,6 +1242,7 @@ is      => 'rw',
 		return $path;
 	},
 );
+##
 has dragen_fastq => (
 is      => 'rw',
 	lazy    => 1,
