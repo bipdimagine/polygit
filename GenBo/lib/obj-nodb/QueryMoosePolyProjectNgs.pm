@@ -1106,6 +1106,52 @@ has sql_cmd_get_quick_projects_list_RNA => (
 	},
 );
 
+
+has sql_cmd_get_quick_projects_list_SC => (
+	is	 => 'ro',
+
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT p.project_id as id,  p.name as name, p.description, p.creation_date as cDate, po.name as dbname, r.name as relname,
+				GROUP_CONCAT(DISTINCT pp.version_id ORDER BY pp.version_id  SEPARATOR ' ') as 'ppversionid',
+				GROUP_CONCAT(DISTINCT rg.name ORDER BY rg.name  SEPARATOR ' ') as 'relGene',
+				GROUP_CONCAT(DISTINCT U.login ORDER BY U.login DESC SEPARATOR ',') as 'username'
+				FROM
+					PolyprojectNGS.projects p 
+					LEFT JOIN PolyprojectNGS.databases_projects dp
+					ON p.project_id =dp.project_id
+					LEFT JOIN PolyprojectNGS.polydb po
+					ON dp.db_id = po.db_id
+					LEFT JOIN PolyprojectNGS.project_release pr
+					ON p.project_id=pr.project_id
+					LEFT JOIN PolyprojectNGS.releases r
+					ON pr.release_id=r.release_id
+			        LEFT JOIN PolyprojectNGS.project_release_public_database pp
+			        ON p.project_id = pp.project_id
+			        LEFT JOIN PolyprojectNGS.project_release_gene pg
+			        ON p.project_id = pg.project_id
+			        LEFT JOIN PolyprojectNGS.release_gene rg
+			        ON rg.rel_gene_id=pg.rel_gene_id
+			        LEFT JOIN PolyprojectNGS.user_projects up
+					ON p.project_id = up.project_id
+					LEFT JOIN bipd_users.`USER` U
+					ON up.user_id = U.user_id
+			        LEFT JOIN PolyprojectNGS.ugroup_projects gp
+					ON p.project_id = gp.project_id
+			        LEFT JOIN bipd_users.UGROUP ug
+			        ON gp.ugroup_id=ug.ugroup_id
+					LEFT JOIN bipd_users.EQUIPE E
+					ON U.equipe_id = E.equipe_id
+					LEFT JOIN bipd_users.UNITE T
+					ON E.unite_id = T.unite_id
+					WHERE p.type_project_id=3 and dp.db_id !=2
+			        GROUP BY p.project_id;
+		};
+		return $sql;
+	},
+);
+
 has sql_cmd_check_project_RNA=> (
 	is	 => 'ro',
 
@@ -1150,6 +1196,7 @@ has sql_cmd_check_project_RNA=> (
 		return $sql;
 	},
 );
+
 
 has sql_cmd_get_quick_patients_list_from_project_id => (
 	is	 => 'ro',
@@ -1223,6 +1270,7 @@ has sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name => (
 		return $sql;
 	},
 );
+
 
 sub isLoginSTAFF {
 	my ($self, $name) = @_;
@@ -1337,6 +1385,66 @@ sub getListProjectsByType {
 	my @l = keys %{$sth->fetchall_hashref('name')};
 	return \@l;
 	
+}
+
+sub getListProjectsSC {
+	my ($self, $project_name) = @_;
+	my @l_res;
+	my $dbh = $self->getDbh();
+	my ($sql, $sql2);
+	if ($project_name) {
+		$sql = $self->sql_cmd_check_project_RNA();
+		$sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name();
+	}
+	else {
+		$sql = $self->sql_cmd_get_quick_projects_list_RNA();
+		$sql2 = $self->sql_cmd_get_projects_ids_with_patients_type_rna();
+	}
+	my $sth = $dbh->prepare($sql);
+	my $sth2 = $dbh->prepare($sql2);
+	if ($project_name) {
+		$sth->execute($project_name);
+		$sth2->execute($project_name);
+	}
+	else {
+		$sth->execute();
+		$sth2->execute();
+	}
+	my $h = $sth->fetchall_hashref('id');
+	my $h2 = $sth2->fetchall_hashref('project_id');
+	
+	
+	my @l_projects_ids = keys %$h;
+	foreach my $pr_id (keys %$h2) {
+		push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});
+	}
+	
+	foreach my $project_id (sort {$b <=> $a} @l_projects_ids) {
+		next if ($project_id == 0);
+		my $sql2 = $self->sql_cmd_get_quick_patients_list_from_project_id();
+		my $sth2 = $dbh->prepare($sql2);
+		$sth2->execute($project_id);
+		my $h_patients = $sth2->fetchall_hashref('name');
+		my ($is_sc, $h_captures);
+		foreach my $patient_name (keys %$h_patients) {
+			$is_sc = 1 if ($h_patients->{$patient_name}->{type} eq 'sc');
+			$is_sc = 1 if ($h_patients->{$patient_name}->{capAnalyse} eq 'singlecell');
+			$h_captures->{$h_patients->{$patient_name}->{capName}} = undef;
+		}
+		next unless ($is_sc);
+		my @l_versions = split(' ', $h->{$project_id}->{ppversionid});
+		@l_versions = sort {$a <=> $b} @l_versions;
+		my $max_annot = $self->getMaxPublicDatabaseVersion();
+		$h->{$project_id}->{version} = abs($max_annot - $l_versions[-1]).'::'.$h->{$project_id}->{relGene}.'-'.$l_versions[-1];
+		$h->{$project_id}->{samples} = scalar(keys %$h_patients);
+		$h->{$project_id}->{patient_name} = join(';', keys %$h_patients);
+		$h->{$project_id}->{capture_name} = join(';', keys %$h_captures);
+		$h->{$project_id}->{creation_date} = $h->{$project_id}->{cDate};
+		$h->{$project_id}->{genome} = $h->{$project_id}->{relname};
+		$h->{$project_id}->{project_id} = $project_id;
+		push(@l_res, $h->{$project_id});
+	}
+	return \@l_res;
 }
 
 sub getAlamutApiKeyFromUserName {
