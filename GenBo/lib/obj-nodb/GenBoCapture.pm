@@ -451,7 +451,8 @@ has file_name => (
 		return $self->infos()->{filename};
 	}
 );
-
+##
+#https://www.polyweb.fr/NGS/NGS2023_6960/HG19_MT/align/dragen-align/CLE_CHR_6123GM005310_FLP.bam
 has files =>(
 	is		=> 'ro',
 	lazy	=> 1,
