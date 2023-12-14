@@ -728,10 +728,13 @@ sub flexbar {
 	my ($dirin)      = $self->patient()->getSequencesDirectory();
 	my $project_name = $self->project->name();
 	my $dirout       = $self->project->getAlignmentPipelineDir($method);
-
+$dirout = $self->patient->getDragenDir("pipeline") if $self->patient->alignmentMethod eq "dragen-align";
+warn $dirout;
 	my $illumina_adaptors = $self->project->getIlluminaAdaptors();
 	my $tso_adaptors      = $self->project->getTsoAdaptors();
+
 	my $fileout           = $dirout . "/" . $name . ".flexbarOut.log";
+		warn $fileout;
 
 	#system("mkdir -p $dirout/metrics;chmod a+rwx $dirout") unless -e $dirout;
 	my $ppn    = $self->nproc;    # if $self->nocluster;
@@ -747,6 +750,7 @@ sub flexbar {
 		die( "problem $file1 $file2 $dirin :" . $name )
 		  unless -e $dirin . $file1;
 		my $f1         = $dirin . $file1;
+		warn $f1;
 		my $f2         = $dirin . $file2;
 		my $bin_dev    = $self->script_dir();
 		my $fastq_out1 = $dirout . "/" . $name . "_F" . $nb_bam . "_1.fastq.gz";
@@ -754,6 +758,7 @@ sub flexbar {
 
 		my $cmd =
 qq{perl $bin_dev/flexbar.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -project=$project_name -name=$name -fork=$ppn -illumina=$illumina_adaptors -tso=$tso_adaptors };
+warn $cmd;
 		my $type     = "flexbar#" . $nb_bam;
 		my $stepname = $self->patient->name . "@" . $type;
 		my $job_bds  = job_bds_tracking->new(
@@ -792,6 +797,7 @@ sub run_alignment_flexbar {
 	my $name         = $self->patient()->name();
 	my $project_name = $self->project->name();
 	my $dirout       = $self->project->getAlignmentPipelineDir($method);
+	warn $dirout;
 	system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
 	my $ppn = $self->nproc;    # if $self->nocluster;
 	my $files_pe1  = file_util::find_file_in_dir( $self->patient, "", $dirout );
@@ -2286,7 +2292,7 @@ sub rnaseq_metrics {
 	$ppn = 1 if $self->nocluster;
 
 	die() if $fileout eq $filein;
-	$filein = $self->patient->getBamFile() unless -e $filein;
+	#$filein = $self->patient->getBamFile() unless -e $filein;
 	my $refFlat = $project->refFlat_file();
 	
 	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
