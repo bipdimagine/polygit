@@ -32,6 +32,7 @@ function launchAnalyse(transloc)
 	}
 	GetAllCNV();
 	GetChrsPloidy();
+	GetChrsDisomie();
 	refresh_grids();
 }
 
@@ -830,10 +831,25 @@ function formaterGenotype(value)
 			for ( i=0 ; i <len-1 ; i++)
 			{
 				if ( /[012]/.test(tval[i]) )
-				{
+				{	
+
+					if (tval[i] == "1/2")
+					{
+						tval[i] = "0/1";
+					}
+
+					if ( tval[i]+" " != out )
+					{
 						out = out + tval[i] + " ";
+					}
+					
 				}
 			}
+		}
+		
+		if (/1\/1/.test(out))
+		{
+			out = '<font style="color:red">' + out  + '</font>';
 		}
 		return out;	
 }
@@ -1245,6 +1261,200 @@ function formaterGENES(value)
 	return out;
 }	
 
+function formaterGENESNew(value)
+{
+	//alert("genes =" + value);
+	var parameters = location.search.split("&");
+	var par0 = parameters[0].split("=");
+	var par1 = parameters[1].split("=");
+   	
+   	var project =par0[1];
+   	var patient = par1[1];
+   	
+  
+	if (value == "")
+	{
+		return "-";
+	}
+	
+	if (value=="-")
+	{
+		return(value);
+	}
+	
+	var out ="";
+	var name = "";
+	var score;
+	var locus;
+	var phen = "";
+	
+	var outshort;
+	var values = value.split("##");
+	var len = values.length-1;
+	
+	var liste0="";
+	var liste1="";
+	var liste2="";
+	var liste3="";
+	var liste4="";
+
+	
+	var etiq0="";
+	var etiq1="";
+	var etiq2="";
+	var etiq3="";
+	var etiq4="";
+
+	
+	var nb0=0;
+	var nb1=0;
+	var nb2=0;
+	var nb3=0;
+	var nb4=0;
+
+
+	locus = values[0];
+
+	for ( i = 1 ; i < len; i++)
+	{
+		if (values[i] != "-")
+		{	
+			var geneinfos = values[i].split(";");
+			name = geneinfos[0];
+			score = geneinfos[1];
+			
+			if (score < 1 )
+			{
+				nb0++;
+				if(nb0 < 4)
+				{
+					liste0 = liste0 + '<font style="font-size:10px;color:white;background-color:rgb(128,128,128);padding:1px;border: 1px solid white">' + name + '</font><br>';
+				}
+			}
+			else
+			{
+				if (score < 2 )
+				{
+					nb1++;
+					if(nb1 < 4)
+					{
+						liste1 = liste1 + '<font style="font-size:10px;color:black;background-color:rgb(255,255,2);padding:1px;border: 1px solid black">' + name +'</font><br>';
+					}
+				}
+				else
+				{
+					if (score < 3 )
+					{
+						nb2++;
+						if(nb2 < 4)
+						{
+							liste2 = liste2 + '<font style="font-size:10px;color:white;background-color:rgb(255,165,0);padding:1px;border: 1px solid black">' + name +'</font><br>';
+						}
+					}
+					else
+					{
+						if (score < 4 )
+						{
+							nb3++;
+							if(nb3 < 4)
+							{
+								liste3 = liste3 + '<font style="font-size:10px;color:white;background-color:rgb(255,127,79);padding:1px;border: 1px solid black">' + name + '</font><br>';
+							}
+						}
+						else
+						{
+						
+							nb4++;
+							if(nb4 < 6)
+							{
+								liste4 = liste4 + '<font style="font-size:10px;color:white;background-color:rgb(255,0,0);padding:1px;border: 1px solid black">' + name + '</font><br>';
+							}						
+						}
+					}
+				}
+			}
+		}
+	}
+	
+
+	
+	if(liste4 != "")
+	{
+		outshort = liste4;
+		nb4 -= 5;
+	}
+	else
+	{
+		if(liste3 != "")
+		{
+			outshort = liste3;
+			nb3 -= 3;
+
+		}
+		else
+		{
+			if(liste2 != "")
+			{
+				outshort = liste2;
+				nb2 -= 3;
+			}
+			else
+			{
+				if(liste1 != "")
+				{
+					outshort = liste1;
+					nb1 -= 3;
+				}
+				else
+				{
+					outshort = liste0;
+					nb0 -= 3;
+				}
+			}
+		}
+	}
+		
+	out = out + '<button class="btn btn-classic btn-xs" style="color:black;border: 1px solid black;padding:2px" onclick="viewGeneByName(\'' + locus + '\', \''+ project + '\',\'' + patient + '\')">';
+	out = out + outshort;
+	
+	if( nb0+nb1+nb2+nb3+nb4 > 0)
+	{
+	
+	out = out + '<center width="80%"> <table><tr>';
+	
+	if(nb0>0)
+	{
+		etiq0 =  '<font style="font-size:9px;color:white;background-color:rgb(128,128,128);padding:3px"> +' + nb0 + '</font>';
+		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq0  + '</center></td>';
+	}
+	if(nb1>0)
+	{
+		etiq1 = '<font style="font-size:9px;color:black;background-color:rgb(255,255,2);padding:3px"> +' + nb1 +'</font>';
+		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq1  + '</center></td>';		
+	}
+	if(nb2>0)
+	{
+		etiq2 = '<font style="font-size:9px;color:white;background-color:rgb(255,165,0);padding:3px"> +' + nb2 +'</font>';
+		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq2  + '</center></td>';
+	}
+	if(nb3>0)
+	{
+		etiq3 = '<font style="font-size:9px;color:white;background-color:rgb(255,127,79);padding:3px"> +' + nb3 +'</font>';
+		out = out + '<td width="20%"style="padding:2px" ><center>' +  etiq3  + '</center></td>';
+	}
+	if(nb4>0)
+	{	
+		etiq4 = '<font style="font-size:9px;color:white;background-color:rgb(255,0,0);padding:3px"> +' + nb4 +'</font>';
+		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq4  + '</center></td>';
+	}
+
+	out = out + '</tr></table></center>'; 
+	}
+	
+	out = out + '</button>';
+	return out;
+}	
+
 function formaterOMIM(value)
 {
 	var out = ""; 
@@ -1517,6 +1727,103 @@ function formaterCNVlinked(value)
 		}
 	}
 	return out;
+}
+
+//--------------------------------------------------------------------
+// pour les expansions de triplets
+//---------------------------------------------------------------------
+
+
+
+var url_TRIPLETS  = url_path + "/manta/parseRepeatVcf.pl";
+
+
+var h_gridTRIPLETS = {};
+var dataStore_TRIPLETS;
+
+function GetTriplets_Get() 
+{
+	document.getElementById("span_exp_triplet").innerHTML = "<img src='../../images/polyicons/wait18trans.gif'> TRIPLETS EXPANSION";
+
+		var parameters = location.search.split("&");
+		var arg1 = parameters[0].split("=");
+   		var arg2 = parameters[1].split("=");
+   		
+		
+    	var project = arg1[1];
+    	var patient = arg2[1];
+		var dataStore_TRIPLETS = new dojo.data.ItemFileReadStore({ url: url_TRIPLETS+ "?project=" + project + "&patient=" + patient});
+		
+		
+		h_gridTRIPLETS[patient] = dijit.byId("TRIPLETS_gridDetails");
+		h_gridTRIPLETS[patient].setStore(dataStore_TRIPLETS);
+		h_gridTRIPLETS[patient].store.fetch({
+			onComplete: function(items){
+				document.getElementById("span_exp_triplet").innerHTML = "TRIPLETS EXPANSION";
+			}
+		});
+	
+		return;
+}
+
+
+function GetTriplets_Post() 
+{
+	document.getElementById("span_exp_triplet").innerHTML = "<img src='../../images/polyicons/wait18trans.gif'> TRIPLETS EXPANSION";
+	
+		var parameters = location.search.split("&");
+		var arg1 = parameters[0].split("=");
+   		var arg2 = parameters[1].split("=");
+		
+    	var project = arg1[1];
+    	var patient = arg2[1];
+    	
+    
+ 
+		var this_grid = dijit.byId("TRIPLETS_gridDetails");
+		var emptyCells = { items: "" };
+		var emptyStore = new dojo.data.ItemFileWriteStore({data: emptyCells});
+		this_grid.setStore(emptyStore);
+		this_grid.showMessage("Chargement...");
+	
+		
+		var url = url_TRIPLETS;
+		var args = "project=" + project + "&patient=" + patient;
+		
+		alert("coucou_post");
+		
+		var xhr = new XMLHttpRequest();
+		xhr.responseType = 'json';
+		xhr.open('POST', url, true);
+		xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+		
+		xhr.onreadystatechange = function () {
+			var json_reponse = xhr.response;
+			dataStore_TRIPLETS = new dojo.data.ItemFileReadStore({ data: json_reponse });
+			this_grid.setStore(dataStore_TRIPLETS);
+			this_grid.store.fetch({ onComplete: function(items){
+				document.getElementById("span_exp_triplet").innerHTML = 'TRIPLETS EXPANSION';
+				h_gridTRIPLETS[patient] = this_grid;
+			} });
+		}
+		xhr.send(args);
+		
+	return;
+}
+
+
+function formaterTriplet(value)
+{
+	alert(value);
+	return value;
+
+}
+
+function formaterGeneTriplet(value)
+{
+	alert('gene = '+value);
+	
+	return value;
 }
 
 //------------------------
@@ -1955,6 +2262,44 @@ function GetChrsPloidy()
   				document.getElementById('chrView').innerHTML = out;
    		}
   	});	
+}
+
+function GetChrsDisomie() 
+{
+	var parameters = location.search.split("&");
+	var par0 = parameters[0].split("=");
+	var par1 = parameters[1].split("=");
+   	
+   	var project =par0[1];
+   	var patient = par1[1];
+   	
+   	url_chrs = url_path + "/manta/PolyCytoCheckUniDisomie.pl";
+ 	
+	var dataStoreDisomieValue = new dojo.data.ItemFileReadStore({ url: url_chrs + "?project=" + project + "&patient=" + patient});
+	
+	dataStoreDisomieValue.fetch({
+			onComplete: function(items,request){
+						
+				var out;
+				var item;
+				var thevalue;
+				
+				item = items[0];
+				thevalue = dataStoreDisomieValue.getValue(item, "value");
+				
+				out = '<br>' + thevalue;
+				
+				for (i=1;i<items.length;i++)
+				{
+                	item = items[i];
+   					out = out + dataStoreDisomieValue.getValue(item, "value"); 
+   				}
+   				
+   				out = out + '</tr><center></table>';
+  				document.getElementById('chrView_disomie').innerHTML = out;
+  		
+   			}
+  		});	
 }
 
 
