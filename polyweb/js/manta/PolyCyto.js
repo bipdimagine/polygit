@@ -1078,7 +1078,7 @@ function refresh_grids() {
 	});
 	return;
 }
-
+//
 function formaterPosBND(value)
 {
 	//alert('posbnd'+value);

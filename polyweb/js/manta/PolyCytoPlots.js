@@ -2643,7 +2643,7 @@ function PlotValues_GFF(project,patient)
     						}
 
 						};
-				
+		//		
 						var trace2 = {
   							x:tabplotBAX,
   							y:tabplotYF,
