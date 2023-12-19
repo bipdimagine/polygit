@@ -118,6 +118,9 @@ sub run_alignment_pe {
 	my $filein = $hash->{filein};
 
 	my $method       = $self->patient()->alignmentMethod();
+	if ($method eq "star"){
+		return $self->star_align($hash);
+	}
 	my $name         = $self->patient()->name();
 	my ($dirin)      = $self->patient()->getSequencesDirectory();
 	my $project_name = $self->project->name();
@@ -174,9 +177,8 @@ sub run_alignment_pe {
 
 		my $cmd =
 qq{perl $bin_dev/align.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -project=$project_name -name=$name -bam=$bam -fork=$ppn };
-		my $type     = "align#" . $nb_bam;
-		my $stepname = $self->patient->name . "@" . $type;
-
+		my $type     = "$method#" . $nb_bam;
+		my $stepname = $self->patient->name . "@" .$method;
 		my $job_bds = job_bds_tracking->new(
 			uuid         => $self->bds_uuid,
 			cmd          => [$cmd],
@@ -728,13 +730,10 @@ sub flexbar {
 	my ($dirin)      = $self->patient()->getSequencesDirectory();
 	my $project_name = $self->project->name();
 	my $dirout       = $self->project->getAlignmentPipelineDir($method);
-$dirout = $self->patient->getDragenDir("pipeline") if $self->patient->alignmentMethod eq "dragen-align";
-warn $dirout;
+
 	my $illumina_adaptors = $self->project->getIlluminaAdaptors();
 	my $tso_adaptors      = $self->project->getTsoAdaptors();
-
 	my $fileout           = $dirout . "/" . $name . ".flexbarOut.log";
-		warn $fileout;
 
 	#system("mkdir -p $dirout/metrics;chmod a+rwx $dirout") unless -e $dirout;
 	my $ppn    = $self->nproc;    # if $self->nocluster;
@@ -750,7 +749,6 @@ warn $dirout;
 		die( "problem $file1 $file2 $dirin :" . $name )
 		  unless -e $dirin . $file1;
 		my $f1         = $dirin . $file1;
-		warn $f1;
 		my $f2         = $dirin . $file2;
 		my $bin_dev    = $self->script_dir();
 		my $fastq_out1 = $dirout . "/" . $name . "_F" . $nb_bam . "_1.fastq.gz";
@@ -758,7 +756,6 @@ warn $dirout;
 
 		my $cmd =
 qq{perl $bin_dev/flexbar.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -project=$project_name -name=$name -fork=$ppn -illumina=$illumina_adaptors -tso=$tso_adaptors };
-warn $cmd;
 		my $type     = "flexbar#" . $nb_bam;
 		my $stepname = $self->patient->name . "@" . $type;
 		my $job_bds  = job_bds_tracking->new(
@@ -797,7 +794,6 @@ sub run_alignment_flexbar {
 	my $name         = $self->patient()->name();
 	my $project_name = $self->project->name();
 	my $dirout       = $self->project->getAlignmentPipelineDir($method);
-	warn $dirout;
 	system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
 	my $ppn = $self->nproc;    # if $self->nocluster;
 	my $files_pe1  = file_util::find_file_in_dir( $self->patient, "", $dirout );
@@ -2292,7 +2288,7 @@ sub rnaseq_metrics {
 	$ppn = 1 if $self->nocluster;
 
 	die() if $fileout eq $filein;
-	#$filein = $self->patient->getBamFile() unless -e $filein;
+	$filein = $self->patient->getBamFileName() unless -e $filein;
 	my $refFlat = $project->refFlat_file();
 	
 	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
@@ -3510,7 +3506,6 @@ my $synonym_program = {
 	"freebayes"                => "freebayes",
 	"p1_freebayes"             => "freebayes",
 	"samtools"                 => "bcftools",
-	"p1_freebayes"             => "p1_freebayes",
 	"eif6_freebayes"           => "eif6_freebayes",
 	"mutect2"                  => "mutect2",
 	"lofreq"                   => "lofreq",
@@ -5164,6 +5159,47 @@ sub advntr {
 	my $job_bds  = job_bds_tracking->new(
 		uuid         => $self->bds_uuid,
 		software     => "advntr",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+sub star_align {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $name         = $self->patient()->name();
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $dir_prod     = $project->getVariationsDir("advntr") ."/";
+	my $dir_pipeline = $project->getAlignmentPipelineDir("star-".$self->patient()->name);
+	
+	#dir_pipeline/$patient_name"."Aligned.sortedByCoord.out.bam
+	#system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
+	my $fileout = "$dir_pipeline/$name".".Aligned.sortedByCoord.out.bam";
+
+
+	my $ppn = 20 ;
+
+	my $bin_dev = $self->script_dir;
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/star/star_align.pl -project=$project_name  -patient=$name";
+	my $type     = "star-align";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "star",
 		sample_name  => $self->patient->name(),
 		project_name => $self->patient->getProject->name,
 		cmd          => [$cmd],

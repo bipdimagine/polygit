@@ -92,6 +92,7 @@ if ($project->isGenome){
 	warn "coucou";
 }
 #system ("mkdir -p $dir_dragen/".$project->name );
+
 my $patient = $project->getPatient($patients_name);
 my $dir_pipeline = $patient->getDragenDir("pipeline");
 my $prefix = $patient->name;
@@ -173,7 +174,10 @@ else {
 		 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	}
 
+
  $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output $align --enable-rna=true ";
+
+
 }
 
 if ($umi){
@@ -189,21 +193,26 @@ else{
 if (exists $pipeline->{count}){
 	my $gtf =  $project->gtf_file();
 	die() unless -e $gtf;
-	$param_align .= "-a $gtf --enable-rna-quantification true";
+	$gtf = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v43/gtf/gencode.v43lift37.annotation.gtf};
+	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
+
+
 }
+
 my $param_calling ="";
 if (exists $pipeline->{vcf} ){
 	$param_calling = qq{--enable-variant-caller true  } ;
 	
 }
 
+
 ##
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling;
-warn $cmd_dragen;
 $patient->update_software_version("dragen",$cmd_dragen);
+warn $cmd_dragen;
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
-#unlink $fastq1 if  $fastq1 =~ /pipeline/;
-#unlink $fastq2 if $fastq2 =~ /pipeline/;;
+unlink $fastq1 if  $fastq1 =~ /pipeline/;
+unlink $fastq2 if $fastq2 =~ /pipeline/;;
 die if $exit != 0;
 
 }
