@@ -52,32 +52,45 @@ has project => (
 #Ex: 1	3277541	3283661	2	2	0	3	0	49
 sub parse_dragen_file {
 	my ($self, $patient, $chr) = @_;
+	confess();
+	return $self->_parse_tab_file($patient,$chr);
+	
+}
+
+sub _parse_tab_file {
+	my ($self, $patient, $chr) = @_;
 	my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->file() );
-	my $iter = $tabix->query($chr->name);
+	my $iter = $tabix->query($chr->fasta_name);
 	my ($h_header, $h_global, @l_res);
 	my $i = 0;
 	while ( my $line = $iter->next ) {
 		my ($chr_id, $start, $end, $strand, $intron_motif, $is_annot, $new_j, $multiple_j, $max_j) = split(' ', $line);
-		my $id = $chr_id.'_'.$start.'_'.$end.'_ALL';
+		my $id = $chr->name.'_'.$start.'_'.$end;
 		my ($h, $h_tmp);
 		$h_tmp->{$chr_id} = undef;
 		$h->{id} = $id;
-		$h->{chromosomes_object} = $h_tmp;
-#		$h->{ensid} = '';
-#		$h->{gene} = '';
-		$h->{chr} = $chr_id;
-		$h->{start} = $start;
-		$h->{end} = $end;
-		$h->{annex}->{$patient->name()}->{type} = 'dragen';
-		$h->{annex}->{$patient->name()}->{junc_new_count} = $new_j;
-		$h->{annex}->{$patient->name()}->{junc_multiple_count} = $multiple_j;
-		$h->{annex}->{$patient->name()}->{junc_normale_count} = $max_j;
+		$h->{annex_sj}->{$patient->name()}->{type} = 'dragen';
+		$h->{annex_sj}->{$patient->name()}->{junc_new_count} = $new_j;
+		$h->{annex_sj}->{$patient->name()}->{junc_multiple_count} = $multiple_j;
+		$h->{annex_sj}->{$patient->name()}->{junc_normale_count} = $max_j;
+		$h->{annex_sj}->{$patient->name()}->{overhang} = $max_j;
+		$h->{annex_sj}->{$patient->name()}->{intron_motif} = $intron_motif;
 		push (@l_res, $h);
 	}
 	close (FILE);
 	return \@l_res;
 }
 
+sub parse_SJ_file {
+	my ($self, $patient, $chr,$hh) = @_;
+	my $array =  $self->_parse_tab_file($patient,$chr);
+	foreach my $j (@$array){
+		my $id = $j->{id}; 
+		$hh->{$id}->{annex_sj}->{$patient->id} =  $j->{annex}->{$patient->name()};
+		$hh->{$id}->{type_canonic} = $j->{annex}->{$patient->name()}->{intron_motif};
+	}
+	return $hh;
+}
 sub parse_file {
 	my ($self, $chr) = @_;
 	return $self->parse_file_RI($chr) if $self->isRI();
@@ -109,7 +122,8 @@ sub parse_results_global_file {
 		$found = 1 if $chr_id eq $chr->name();
 	}
 	return ($h_header, \@l_res) if not $found;
-	my $iter = $tabix->query($chr->name);
+	
+	my $iter = $tabix->query($chr->id);
 	while ( my $line = $iter->next ) {
 		my $h_res;
 		my $nb_col = 0;
@@ -147,7 +161,8 @@ sub parse_results_global_file {
 						warn Dumper $h_res;
 						confess();
 					}
-					
+					my $res = $chr->genesIntervalTree->fetch($start,$end+1);
+					next if scalar(@$res) >3;
 #					warn 'S:'.$start.' - E:'.$end;
 					next unless $start;
 					next unless $end;
@@ -156,9 +171,9 @@ sub parse_results_global_file {
 						$start = $end;
 						$end = $toto;
 					}
-					$id = $h_res->{'chr'}.'_'.$start.'_'.$end.'_'.$h_res->{type_origin_file};
+					$id = $chr->name.'_'.$start.'_'.$end.'_'.$h_res->{type_origin_file};
 					
-					my $chr_id = $h_res->{'chr'};
+					my $chr_id = $chr->name;
 					my $is_chr_ok;
 					$is_chr_ok = 1 if $chr_id eq $chr->id();
 					$is_chr_ok = 1 if $chr_id eq $chr->name();
@@ -167,6 +182,8 @@ sub parse_results_global_file {
 					my $ensid = $h_res->{'ensid'};
 					$h_tmp->{$chr_id} = undef;
 					$h_global->{$id}->{id} = $id;
+					$h_global->{$id}->{sj_id} = $chr->name.'_'.($start+1).'_'.($end-1);
+					
 					$h_global->{$id}->{chromosomes_object} = $h_tmp;
 					$h_global->{$id}->{ensid} = $h_res->{'ensid'};
 					$h_global->{$id}->{gene} = $h_res->{'gene'};
