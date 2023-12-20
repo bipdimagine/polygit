@@ -69,27 +69,42 @@ sub setJunctions {
 	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
 	my $se_file = $path.'/allResSE.txt.gz' if (-e $path.'/allResSE.txt.gz');
 	my $ri_file = $path.'/allResRI.txt.gz' if (-e $path.'/allResRI.txt.gz');
+	my @ares;
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
+				#push(@ares,$hres);
 			my $obj = $self->getProject->flushObject( 'junctions', $hres );
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
 	if ($se_file and -e $se_file) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
+			push(@ares,$hres);
 			my $obj = $self->getProject->flushObject( 'junctions', $hres );
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
-	my $path2 = $self->getProject->getVariationsDir('dragen-sj');
+	
+	
+ my $hSJ= {};
+ 	
 	foreach my $patient (@{$self->getProject->getPatients()}) {
-		my $dragen_file = $path2.'/'.$patient->name().'.SJ.out.tab.gz';
-		next if not -e $dragen_file;
-		foreach my $hres (@{$self->getProject->getQueryJunction($dragen_file,'DRAGEN')->parse_dragen_file($patient, $self)}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
+		my $file = $patient->getSJFile();
+		next unless $file;
+		my $queryJunction = QueryJunctionFile->new( file=>$file );
+		$queryJunction->parse_SJ_file($patient,$self,$hSJ);
 	}
+ 	
+foreach my $hres (@ares ){
+	my $id = $hres->{sj_id};
+
+ unless  (exists $hSJ->{$id}){
+ 	warn Dumper $hres;
+ 	#die();
+ }
+	next unless  (exists $hSJ->{$id});
+	
+}
 #	my $path3 = $self->getProject->getJunctionsDir('star');
 #	foreach my $patient (@{$self->getProject->getPatients()}) {
 #		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
@@ -978,7 +993,6 @@ sub setPrimers {
 		$self->_constructPrimersFromIntspan($intspan,$captures);
 		return $self->{primers_object};
 	}
-	
 	my %hchrs;
 	my @objs;
 	#if ($self->project->isExome){
@@ -986,9 +1000,10 @@ sub setPrimers {
 #		warn $self->project->getCaptures()->[-1]->name;
 #		$captures = [$self->project->selectCapture ] ;
 #	}
+	my $tt =0;
 	foreach my $c (@$captures) {
 		foreach my $p ( @{ $c->parsePrimersForChromosome($self) } ) {
-
+			$tt ++;
 			$self->{primers_object}->{ $p->id } = 0;
 		}
 

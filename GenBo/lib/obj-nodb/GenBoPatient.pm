@@ -1339,6 +1339,32 @@ has bamFiles => (
 
 );
 
+has SJFiles => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		#warn $self->name."----";
+		my $methods = $self->alignmentMethods();
+		my $files   = {};
+		foreach my $method_name (@$methods) {
+			my $sjdir = $self->getProject->getSJDir($method_name);
+			my $file = $sjdir."/".$self->name.".SJ.tab";
+			if (-e $file ){
+			my $bgzip = $self->buffer->software("bgzip");
+			my $tabix = $self->buffer->software("tabix");
+			system("$bgzip $file && tabix -f -p bed $file.gz");
+			die() unless -e "$file.gz";
+			die() unless -e "$file.gz.tbi";
+		}
+			$file .=".gz";
+			next unless $file;
+			$files->{$method_name} = $file;
+		}
+		return $files;
+	},
+
+);
 sub fastqFiles{
 	my ($self) = @_;
 	return $self->{fastq} if exists $self->{fastq};
@@ -1735,7 +1761,8 @@ sub _getFileByExtention {
 			"vcf.gz", "gz",  "vcf", "gff3", "sam", "txt",
 			"casava", "tab", "casava2"
 		],
-		"align" => ["bam","cram"]
+		"align" => ["bam","cram"],
+		"SJ" => ["gz"]
 	};
 
 	#my $f = File::Util->new();
@@ -3323,6 +3350,43 @@ sub get_string_validations {
 			return $stv;
 }
 
+sub getSJFile {
+	my ( $self, $method, $nodie ) = @_;
+	if ($method) {
+		if ($nodie) {
+			return ""
+			  unless exists( $self->SJFiles()->{$method} );
+		}
+		confess( "can t find vcf for $method" . Dumper $self->SJFiles() )
+		 unless exists( $self->callingFiles()->{variations}->{$method} );
+		return $self->SJFiles->{$method};
+	}
+	my @all = values %{ $self->SJFiles};
+	return "" if scalar(@all) eq 0;
+
+	confess($self->name
+		  . "you have exactly "
+		  . scalar(@all)
+		  . " !$method! methods defined on your project "
+		  . $self->getProject->name() )
+	  if scalar(@all) ne 1;
+	return $all[0];
+	
+	
+	
+	
+	return $self->{file}->{SJ} if exists $self->{file}->{SJ};
+	my $path = $self->project->getSJPath();
+	my $file = $path."/".$self->name.".SJ.tab";
+	if (-e $file ){
+		my $bgzip = $self->buffer->software("bgzip");
+		my $tabix = $self->buffer->software("tabix");
+		system("$bgzip $file && tabix -p bed $file.gz");
+		die()unless -e "$file.gz";
+	}
+	$self->{file}->{SJ} = "$file.gz";
+	return $self->{file}->{SJ};
+}
 sub getJunctionsAnalysePath {
 	my ($self) = @_;
 	my $path_analisys_root = $self->getProject->get_path_rna_seq_junctions_root();

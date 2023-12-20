@@ -512,6 +512,8 @@ sub junction_score_penality_ratio {
 
 sub junction_score_penality_dp {
 	my ($self, $patient) = @_;
+	return 0;
+	
 	my $score_penality = 0;
 	my $dp = $self->get_dp_count($patient);
 	if ($self->get_percent_new_count($patient) == 100) {
