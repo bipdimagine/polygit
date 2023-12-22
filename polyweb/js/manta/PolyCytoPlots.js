@@ -382,12 +382,11 @@ function launch_plotAllChr()
    
    if (small == "no")
    {
-   	 document.getElementById('idtitre_Chr').innerHTML = titre;
+   	 document.getElementById('idtitre').innerHTML = titre;
    	 legende = "";
    	 
    }
-   
-   	
+ 
 	dataStorePlotValue.fetch({
 			onComplete: function(items,request){
                 	var item = items[0];
@@ -659,23 +658,23 @@ function launch_plotAllChr()
       								size:4
     						}
 						};
-						
+
 						// pour le plot des balances alléliques
 						
 						tabPosBA = dataStorePlotValue.getValue(item, "POSball"); 
    						tabMother = dataStorePlotValue.getValue(item, "MOTHERball");
  						tabFather = dataStorePlotValue.getValue(item, "FATHERball");
- 						
+
    						var tabBAX = tabPosBA.split(" ");
    						var tabYM = tabMother.split(" ");
    						var tabYF = tabFather.split(" ");
-   					
+   						
    						for ( var i = 0 ; i < tabBAX.length ; i++ ) {
   									tabplotBAX.push(tabBAX[i]);
   									tabplotYM.push(tabYM[i]);			
   									tabplotYF.push(tabYF[i]);
-  						}	
-  	
+  						}
+  							
   						var trace10 = {
   							x:tabplotBAX,
   							y:tabplotYM,
@@ -688,7 +687,7 @@ function launch_plotAllChr()
       								size:4
     						}
 						};
-				
+						
 						var trace11 = {
   							x:tabplotBAX,
   							y:tabplotYF,
@@ -703,7 +702,7 @@ function launch_plotAllChr()
 						};
 						
 						data=[trace1,trace2,trace3,trace4,trace5,trace6,trace7,trace8,trace9,trace10,trace11];
-						
+						 alert("coucou10");
 						layout = {
   							yaxis1:   {domain: [0.0, 0.20], title : 'WC ratio : Child'},
   							yaxis2:   {domain: [0.25, 0.45], title : 'WC ratio : Father',color:'blue'},
