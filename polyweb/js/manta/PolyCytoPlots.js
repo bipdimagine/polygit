@@ -702,7 +702,7 @@ function launch_plotAllChr()
 						};
 						
 						data=[trace1,trace2,trace3,trace4,trace5,trace6,trace7,trace8,trace9,trace10,trace11];
-						 alert("coucou10");
+				
 						layout = {
   							yaxis1:   {domain: [0.0, 0.20], title : 'WC ratio : Child'},
   							yaxis2:   {domain: [0.25, 0.45], title : 'WC ratio : Father',color:'blue'},
