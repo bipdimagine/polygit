@@ -63,7 +63,6 @@ $filter_concept = undef if ($filter_concept eq 'all');
 
 $user_name = lc($user_name);
 my $buffer = new GBuffer;
-purge_cgi_session_directory($buffer);
 
 $buffer->queryHgmd->{previous_database} = $previous_hgmd_version if ($previous_hgmd_version);
 
@@ -545,22 +544,6 @@ print $json_encode;
 exit(0);
 
 
-
-sub purge_cgi_session_directory {
-	my $buffer = shift;
-	my $dir_sessions = $buffer->config->{project_data}->{global_search};
-	return unless (-d $dir_sessions);
-	opendir my $dir, $dir_sessions or die "Cannot open directory: $!";
-	my @files = readdir $dir;
-	closedir $dir;
-	foreach my $f (@files) {
-		next unless ($f =~ /cgisess_/);
-		my ($base, $tmp_session_id) = split('_', $f);
-		my $session = new session_export();
-		$session->load_session( $tmp_session_id );
-		$session->check_if_expired();
-	}
-}
 
 sub get_gene_score {
 	my ($gene) = @_;

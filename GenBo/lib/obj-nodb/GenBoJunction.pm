@@ -191,6 +191,7 @@ has isCanonique => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return if not -d $self->getChromosome()->get_lmdb_junctions_canoniques('r')->{dir}.'/'.$self->getChromosome->id();
 		if ($self->is_dragen() or $self->is_star()) {
 			my $id = $self->getChromosome->id().'_'.$self->start().'_'.$self->end();
 			return 1 if $self->getChromosome()->get_lmdb_junctions_canoniques('r')->get($id);
@@ -354,8 +355,7 @@ sub createSashiPlot {
 	my $score = $self->get_score($patient);
 	my $project_name = $patient->getProject->name();
 	my $cmd = $patient->getProject->buffer->software('ggsashimi');
-	my $bam_path = $patient->getJunctionsAnalysePath()."/../resGenes/$ensg/rmdup/$patient_name\_$project_name\_rmdup.bam";
-	if (not -e $bam_path) { $bam_path = $patient->getBamFiles->[0]; }
+	my $bam_path = $patient->getBamFiles->[0];
 	$cmd .= " -b $bam_path";
 	if ($self->getProject->is_human_genome()) { $cmd .= " -c chr".$locus; }
 	else { $cmd .= " -c ".$locus; }
@@ -644,7 +644,7 @@ sub junction_score_penality_known_coordinates {
 sub junction_score_without_dejavu_global {
 	my ($self, $patient) = @_;
 	my $score = 10;
-	$score = 99999 if ($self->isCanonique());
+	$score = 0 if ($self->isCanonique());
 	$score -= $self->junction_score_penality_ratio($patient);
 	$score -= $self->junction_score_penality_dp($patient);
 	$score -= $self->junction_score_penality_new_junction($patient);

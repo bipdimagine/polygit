@@ -283,6 +283,40 @@ sub atLeastFilter_var_fam {
 	$chr->setVariantsVector($vector_ok);
 }
 
+sub atLeastFilter_var_som {
+	my ($chr, $atLeast) = @_;
+	my (@lOk, $hVectFam);
+	my @lGroups;
+	foreach my $group (@{$chr->getSomaticGroups()}) {
+		next if ($group->in_the_attic());
+		push(@lGroups, $group);
+	}
+	if ($atLeast <= scalar(@lGroups)) {
+		foreach my $group (@lGroups) {
+			$hVectFam->{$group->name()} = $chr->getNewVector();
+			foreach my $patient (@{$group->getPatients()}) {
+				next if ($patient->in_the_attic());
+				$hVectFam->{$group->name()} += $patient->getVariantsVector($chr);
+			}
+		}
+		foreach my $index (@{$chr->getIdsBitOn($chr->getVariantsVector())}) {
+			$chr->project->print_dot(50);
+			my $ok = 0;
+			foreach my $fam_name (keys %$hVectFam) {
+				if ($hVectFam->{$fam_name}->contains($index)) {
+					$ok++;
+					if ($ok == $atLeast) {
+						push(@lOk, $index);
+						last;
+					}
+				}
+			}
+		}
+	}
+	my $vector_ok = Bit::Vector->new_Enum($chr->getVariantsVector->Size(), join(',', @lOk));
+	$chr->setVariantsVector($vector_ok);
+}
+
 # AT_LEAST par patients en mode GENES et IND
 sub atLeastFilter_genes_ind {
 	my ($chr, $atLeast) = @_;
@@ -329,6 +363,30 @@ sub atLeastFilter_genes_fam {
 	}
 }
 
+sub atLeastFilter_genes_som{
+	my ($chr, $atLeast) = @_;
+	my $variants_genes  = $chr->getNewVector();
+	foreach my $gene (@{$chr->getGenes()}) {
+		my $nb_ok = 0;
+		my $var_tmp_atleast = $chr->getNewVector();
+		foreach my $group (@{$chr->getSomaticGroups}) {
+			my $vector_gr = $chr->getNewVector();
+			foreach my $patient (@{$group->getPatients()}) { $vector_gr += $patient->getVariantsVector($chr); }
+			$var_tmp_atleast->Intersection($gene->getVariantsVector(), $vector_gr);
+			unless ($var_tmp_atleast->is_empty()) {
+				$nb_ok++;
+				last if ($nb_ok == $atLeast);
+			}
+		}
+		if ($nb_ok < $atLeast) { $chr->supressGene($gene); }
+		else { $variants_genes += $gene->getVariantsVector(); }
+	}
+	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
+	foreach my $patient (@{$chr->getPatients()}) {
+		$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
+	}
+}
+
 sub filter_vector_gnomad_ac {
 	my ($chr, $filter_name) = @_;
 	return unless ($filter_name =~ /gnomad_/);
@@ -336,7 +394,6 @@ sub filter_vector_gnomad_ac {
 	$vector_ok->Intersection($vector_ok, $chr->getVectorScore($filter_name));
 	$chr->setVariantsVector($vector_ok);
 }
-
 
 
 ######### FILTRES MODELS CHR ##########
@@ -1080,6 +1137,10 @@ sub filter_atLeast {
 		if ($typeFilters eq 'familial') {
 			if ($level_fam eq 'gene') { atLeastFilter_genes_fam($chr, $atLeast); }
 			else { atLeastFilter_var_fam($chr, $atLeast); }
+		}
+		if ($typeFilters eq 'somatic') {
+			if ($level_fam eq 'gene') { atLeastFilter_genes_som($chr, $atLeast); }
+			else { atLeastFilter_var_som($chr, $atLeast); }
 		}
 		else {
 			if ($level_fam eq 'gene') { atLeastFilter_genes_ind($chr, $atLeast); }

@@ -24,6 +24,7 @@ GetOptions(
 );
 die("man !!!  no fork ") unless $fork;
 my $project = $buffer->newProjectCache( -name 			=> $project_name );
+$project->getPatients();
 my $no =  $project->noSqlCnvs("r");
 warn "start";
 my $plexn_count = $no->get("raw_data","plexn_count");

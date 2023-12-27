@@ -30,6 +30,12 @@ has patient_id => (
 	reader   => 'getPatientId',
 	required => 1,
 );
+#has species_id => (
+#	is => 'ro',
+	#isa		=> 'Str',
+#	required => 1,
+#);
+
 has type => (
 	is => 'ro',
 	#isa		=> 'Str',
@@ -87,6 +93,26 @@ has project_id => (
 
 	#isa		=> 'Str',
 	reader => 'getProjectId',
+);
+
+has person_id => (
+	is     => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $person_id = $self->getProject->buffer->getQuery->getPersonIdFromPatientId($self->id());
+		return $person_id;
+	}
+);
+
+has person_infos => (
+	is     => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $person_id = $self->getProject->buffer->getQuery->getPersonInfos($self->person_id());
+		return $person_id;
+	}
 );
 
 has control => (
@@ -3301,20 +3327,27 @@ sub getJunctionsAnalysePath {
 	my ($self) = @_;
 	my $path_analisys_root = $self->getProject->get_path_rna_seq_junctions_root();
 	confess("\n\nERROR: PATH $path_analisys_root not found. Die.\n\n") unless (-d $path_analisys_root);
+	if (-d $path_analisys_root.'/AllRes/') {
+		$path_analisys_root .= '/AllRes/';
+		return $path_analisys_root;
+	}
 	my $path_analisys;
 	opendir my ($dir), $path_analisys_root;
 	my @found_files = readdir $dir;
 	closedir $dir;
+	warn Dumper @found_files;
+	die;
 	my $pat_name = $self->name();
 	foreach my $file (@found_files) {
 		next if $file eq '.';
 		next if $file eq '..';
+		warn $path_analisys_root.'/'.$file;
 		if ($file =~ /$pat_name/) {
 			$path_analisys = $path_analisys_root.'/'.$file;
 			last;
 		}
 	}
-	confess("\n\nERROR: PATH RNA JUNCTION not found. Die.\n\n") unless ($path_analisys);
+	confess("\n\nERROR: PATH RNA ($path_analisys) JUNCTION not found. Die.\n\n") unless ($path_analisys);
 	confess("\n\nERROR: PATH RNA JUNCTION not found. Die.\n\n") unless (-d $path_analisys);
 	$path_analisys .= '/AllRes/';
 	return $path_analisys;

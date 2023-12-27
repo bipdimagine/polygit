@@ -2,6 +2,7 @@ package QueryJunctionFile;
 
 use strict;
 use Moo;
+use Carp;
 use Data::Dumper;
 use Bio::DB::HTS::Tabix;
 
@@ -101,90 +102,70 @@ sub parse_file_SE {
 
 sub parse_results_global_file {
 	my ($self, $file_name, $chr) = @_;
-	open (FILE, $file_name);
-	my ($h_header, $h_global, @l_res);
-	my $i = 0;
-	while (<FILE>) {
-		my $line = $_;
-		chomp($_);
-		if ($i == 0) {
-			$h_header = parse_header($line);
+	my ($h_global, @l_res);
+	my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->file() );
+	my $h_header = parse_header($tabix->header);
+	my $found;
+	foreach my $chr_id (@{$tabix->seqnames()}) {
+		$found = 1 if $chr_id eq $chr->name();
+	}
+	return ($h_header, \@l_res) if not $found;
+	my $iter = $tabix->query($chr->name);
+	while ( my $line = $iter->next ) {
+		my @l_col = @{parse_line($line)};
+		if (not scalar(@l_col) == scalar keys %$h_header) {
+			warn "\n$line\n\n";
+			confess("\nERROR parsing file... no same nb columns...\nFile: $file_name\n\n");
 		}
-		else {
+		if ($l_col[0] ne 'NA') {
 			my $h_res;
 			my $nb_col = 0;
-			my @l_col = @{parse_line($line)};
-			if (not scalar(@l_col) == scalar keys %$h_header) {
-				warn "\n$line\n\n";
-				confess("\nERROR parsing file... no same nb columns...\nFile: $file_name\n\n");
+			# parsing ligne
+			foreach my $res (@l_col) {
+				my $cat = $h_header->{$nb_col};
+				$h_res->{type_origin_file} = 'RI' if (lc($cat) eq 'junc_ri_start' or lc($cat) eq 'junc_ri_end');
+				$h_res->{type_origin_file} = 'SE' if (lc($cat) eq 'junc_se_start' or lc($cat) eq 'junc_se_end');
+				$cat = 'start' if (lc($cat) eq 'junc_se_start' or lc($cat) eq 'junc_ri_start');
+				$cat = 'end' if (lc($cat) eq 'junc_se_end' or lc($cat) eq 'junc_ri_end');
+				$h_res->{isCanonique} = 1 if (lc($cat) eq 'type' and lc($res) =~ /canonique/);
+				$h_res->{lc($cat)} = $res;
+				$nb_col++;
 			}
-			if ($l_col[0] ne 'NA') {
-				foreach my $res (@l_col) {
-					my $cat = $h_header->{$nb_col};
-					confess("\nERROR parsing file... no header...\nFile: $file_name\n\n") unless ($cat);
-					if (lc($cat) eq 'sample') {
-						my ($h_tmp, $h_annex);
-						my ($id, $start, $end);
-						if (exists $h_res->{'junc_se_start'} and exists $h_res->{'junc_se_end'}) {
-							$start = $h_res->{'junc_se_start'};
-							$end = $h_res->{'junc_se_end'};
-							delete $h_res->{'junc_se_start'};
-							delete $h_res->{'junc_se_end'};
-							$h_res->{type_origin_file} = 'SE';
-						}
-						if (exists $h_res->{'junc_ri_start'} and exists $h_res->{'junc_ri_end'}) {
-							$start = $h_res->{'junc_ri_start'};
-							$end = $h_res->{'junc_ri_end'};
-							delete $h_res->{'junc_ri_start'};
-							delete $h_res->{'junc_ri_end'};
-							$h_res->{type_origin_file} = 'RI';
-						}
-						
-						$start =~ s/ //g;
-						$end =~ s/ //g;
-						
-#						warn 'S:'.$start.' - E:'.$end;
-						next unless $start;
-						next unless $end;
-						if ($end <= $start) {
-							my $toto = $start;
-							$start = $end;
-							$end = $toto;
-						}
-						$id = $h_res->{'chr'}.'_'.$start.'_'.$end.'_'.$h_res->{type_origin_file};
-						
-						my $chr_id = $h_res->{'chr'};
-						my $is_chr_ok;
-						$is_chr_ok = 1 if $chr_id eq $chr->id();
-						$is_chr_ok = 1 if $chr_id eq $chr->name();
-						next unless $is_chr_ok;
-						
-						my $ensid = $h_res->{'ensid'};
-						$h_tmp->{$chr_id} = undef;
-						$h_global->{$id}->{id} = $id;
-						$h_global->{$id}->{chromosomes_object} = $h_tmp;
-						$h_global->{$id}->{ensid} = $h_res->{'ensid'};
-						$h_global->{$id}->{gene} = $h_res->{'gene'};
-						$h_global->{$id}->{chr} = $chr_id;
-						$h_global->{$id}->{start} = $start;
-						$h_global->{$id}->{end} = $end;
-						delete $h_res->{'chr'};
-						my $sample = $res;
-						my $proj_name = $self->getProject->name();
-						if ($ensid) { $sample =~ s/$ensid\_$chr_id\_//; }
-						$sample =~ s/\_$proj_name//;
-						$h_global->{$id}->{annex}->{$sample} = $h_res;
-						$h_res = undef;
-					}
-					
-					else {
-						$h_res->{lc($cat)} = $res;
-					}
-					$nb_col++;
-				}
+			
+			# junctions en reverse
+			if ($h_res->{'end'} <= $h_res->{'start'}) {
+				my $toto = $h_res->{'end'};
+				$h_res->{'end'} = $h_res->{'start'};
+				$h_res->{'start'} = $toto;
+				$h_res->{'strand'} = -1;
 			}
+			
+			# check et regroupe same jonctions RI SE
+			my $proj_name = $self->getProject->name();
+			my $chr_id = $h_res->{'chr'};
+			my $ensid = $h_res->{'ensid'};
+			my $sample = $h_res->{'sample'};
+			my $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file};
+			confess("\n\nERROR: construct junction $id for column chr. Die\n\n") if not exists $h_res->{'chr'};
+			confess("\n\nERROR: construct junction $id for column start. Die\n\n") if not exists $h_res->{'start'};
+			confess("\n\nERROR: construct junction $id for column end. Die\n\n") if not exists $h_res->{'end'};
+			confess("\n\nERROR: construct junction $id for column type_origin_file. Die\n\n") if not exists $h_res->{'type_origin_file'};
+			if (not exists $h_global->{$id}) {
+				my $h_tmp;
+				$h_tmp->{$h_res->{'chr'}} = undef;
+				$h_global->{$id}->{id} = $id;
+				$h_global->{$id}->{chromosomes_object} = $h_tmp;
+				$h_global->{$id}->{ensid} = $ensid;
+				$h_global->{$id}->{gene} = $h_res->{'gene'};
+				$h_global->{$id}->{chr} = $chr_id;
+				$h_global->{$id}->{start} = $h_res->{'start'};
+				$h_global->{$id}->{end} = $h_res->{'end'};
+			}
+			if ($ensid) { $sample =~ s/$ensid\_$chr_id\_//; }
+			$sample =~ s/\_$proj_name//;
+			$h_global->{$id}->{annex}->{$sample} = $h_res;
+			$h_global->{$id}->{isCanonique} = 1 if exists $h_res->{isCanonique} and $h_res->{isCanonique};
 		}
-		$i++;
 	}
 	close (FILE);
 
@@ -194,9 +175,9 @@ sub parse_results_global_file {
 			next if not exists $h_global->{$id}->{annex}->{$patient->name()};
 			$is_ok = 1;
 		}
-		push (@l_res, $h_global->{$id}) if $is_ok;
+		confess("\n\nERROR: Junction $id without sample annex. Die.\n\n") if not $is_ok;
+		push (@l_res, $h_global->{$id});
 	}
-
 	return ($h_header, \@l_res);
 }
 
@@ -247,6 +228,7 @@ sub parse_header {
 	my $h_header;
 	my $nb_col = 0;
 	foreach my $cat (@{parse_line($line)}) {
+		$cat =~ s/#//;
 		$h_header->{$nb_col} = $cat;
 		$nb_col++;
 	}

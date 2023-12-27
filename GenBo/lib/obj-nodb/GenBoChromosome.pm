@@ -67,17 +67,19 @@ sub setJunctions {
 	my ($self) = @_;
 	my $h_ids;
 	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
-	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
-	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+	my $se_file = $path.'/allResSE.txt.gz' if (-e $path.'/allResSE.txt.gz');
+	my $ri_file = $path.'/allResRI.txt.gz' if (-e $path.'/allResRI.txt.gz');
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
 			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{isCanonique} = 1 if (exists $hres->{isCanonique} and $hres->{isCanonique} == 1);
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
 	if ($se_file and -e $se_file) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
 			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+			$obj->{isCanonique} = 1 if (exists $hres->{isCanonique} and $hres->{isCanonique} == 1);
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
@@ -90,22 +92,22 @@ sub setJunctions {
 			$h_ids->{$obj->id()} = undef;
 		}
 	}
-	my $path3 = $self->getProject->getJunctionsDir('star');
-	foreach my $patient (@{$self->getProject->getPatients()}) {
-		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
-		my $star_file_bz = $star_file.'.gz';
-		if (-e $star_file) {
-			my $cmd1 = "bgzip $star_file";
-			`$cmd1`;
-			my $cmd2 = "tabix -p bed $star_file_bz";
-			`$cmd2`;
-		}
-		next if not -e $star_file_bz;
-		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
+#	my $path3 = $self->getProject->getJunctionsDir('star');
+#	foreach my $patient (@{$self->getProject->getPatients()}) {
+#		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
+#		my $star_file_bz = $star_file.'.gz';
+#		if (-e $star_file) {
+#			my $cmd1 = "bgzip $star_file";
+#			`$cmd1`;
+#			my $cmd2 = "tabix -p bed $star_file_bz";
+#			`$cmd2`;
+#		}
+#		next if not -e $star_file_bz;
+#		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
+#			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+#			$h_ids->{$obj->id()} = undef;
+#		}
+#	}
 	return $h_ids;
 }
 

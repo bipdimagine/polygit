@@ -483,6 +483,7 @@ sub convert_csv_to_json {
 				my $nb_perfect_reads = $h_all_patients->{$sample_id}->{'perfect_reads'};
 				my $nb_one_mis_reads = $h_all_patients->{$sample_id}->{'one_mismatch_reads'};
 				my $nb_two_mis_reads = $h_all_patients->{$sample_id}->{'two_mismatch_reads'};
+				$total_reads += 0.0001;
 				my $perc_reads = ($nb_reads / $total_reads) * 100;
 				my ($perc_perfect_reads, $perc_one_mis_reads, $perc_two_mis_reads) = (0, 0, 0);
 				$perc_perfect_reads = ($nb_perfect_reads / $nb_reads) * 100 if ($nb_perfect_reads > 0);
@@ -523,7 +524,7 @@ sub convert_csv_to_json {
 				$total_OK = $h_lane_resume->{$lane_id}->{total} if exists $h_lane_resume->{$lane_id}->{total};
 				my $undetermined = 0;
 				$undetermined = $h_lane_resume->{$lane_id}->{undetermined} if exists $h_lane_resume->{$lane_id}->{undetermined};
-				my $total = $total_OK + $undetermined;
+				my $total = $total_OK + $undetermined+0.0001;
 				my $total_perc_OK = sprintf("%.3f", ($total_OK / $total) * 100).'%';
 				my $total_perc_undetermined = sprintf("%.3f", ($undetermined / $total) * 100).'%';
 				
