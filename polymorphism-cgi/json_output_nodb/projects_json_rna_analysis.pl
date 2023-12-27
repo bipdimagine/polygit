@@ -73,9 +73,12 @@ sub getProjectListsRNA {
 		}
 		my $name = $h->{name};
 		next if exists $hDone->{name};
+		
 		my $b1 = GBuffer->new;
 		my $p1 = $b1->newProject( -name => $name );
-		$h->{button} = '';
+		$h->{button_splices} = '';
+		$h->{button_rna} = '';
+		$h->{link_analyse} = '';
 #		if (-d $p1->get_path_rna_seq_junctions_root()) {
 #			my $project_name = $h->{name};
 #			#my $path_function_ok = $p1->get_path_rna_seq_junctions_root().'/AllRes/';
@@ -84,7 +87,7 @@ sub getProjectListsRNA {
 #		}
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
 		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
-		my @lbuttons;
+		my (@lbuttons_splices, @lbuttons_rna);
 		
 		if (-d $path) {
 			my $ok;
@@ -93,10 +96,12 @@ sub getProjectListsRNA {
 				$ok = 1 if (-e $dragen_file);
 			}
 			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
+			$se_file = $path.'/allResSE.txt.gz' if (-e $path.'/allResSE.txt.gz');
 			my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+			$ri_file = $path.'/allResRI.txt.gz' if (-e $path.'/allResRI.txt.gz');
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
-			push(@lbuttons, '1::'.$h->{name}) if ($ok);
+			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok);
 			$hDone->{$name} = undef if $ok;
 		}
 		else {
@@ -105,17 +110,45 @@ sub getProjectListsRNA {
 				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
 				$ok_dragen = 1 if (-e $dragen_file);
 			}
-			push(@lbuttons, '1::'.$h->{name}) if ($ok_dragen);
+			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok_dragen);
 			$hDone->{$name} = undef if $ok_dragen;
 		}
-		
 		if (-d $p1->get_path_rna_seq_polyrna_root()) {
-			push(@lbuttons, '2::'.$h->{name});			
+			push(@lbuttons_rna, '2::'.$h->{name});			
 			$hDone->{$name} = undef;
 		}
-		$h->{button} = join(';', @lbuttons);
+		
+		my @lAnalysis;
+		if (-d $p1->get_path_rna_seq_junctions_root()) {
+			$hDone->{$name} = undef;
+			
+			opendir my $dir, $p1->get_path_rna_seq_junctions_root() or die "Cannot open directory: $!";
+			my @files = readdir $dir;
+			closedir $dir;
+			foreach my $path_2 (sort @files) {
+				my $new_path = $p1->get_path_rna_seq_junctions_root().'/'.$path_2;
+				if (-d $new_path) {
+					my $link = $new_path;
+					$link =~ s/.+ngs/\/NGS/; 
+					my $name_analysis = $path_2;
+					$name_analysis =~ s/_NGS20.+//;
+					push(@lAnalysis, '3::'.$name_analysis.'::'.$link.'/index.html') if (-e $new_path.'/index.html');
+				}
+			}
+		}
+		
+		my @ltmp = split(' ', $h->{creation_date});
+		$h->{creation_date} = $ltmp[0];
+		$h->{button_splices} = join(';', @lbuttons_splices);
+		$h->{button_rna} = join(';', @lbuttons_rna);
+		$h->{link_analyse} = $lAnalysis[-1] if (scalar @lAnalysis > 0);
 		$hDone->{$name} = undef;
-		next unless $h->{button};
+		
+		my $is_ok;
+		$is_ok = 1 if $h->{button_splices};
+		$is_ok = 1 if $h->{button_rna};
+		$is_ok = 1 if $h->{link_analyse};
+		next unless $is_ok;
 		$h_ok->{$name} = $h;
 	}
 	my @list_res;

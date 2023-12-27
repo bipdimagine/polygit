@@ -43,7 +43,7 @@
 .form-3 {
 	position: absolute;
 	left:40%;
-	top:40%;
+	top:20%;
     font-family: 'Ubuntu', 'Lato', sans-serif;
     font-weight: 400;
     /* Size and position */
@@ -240,3 +240,4 @@
 .no-pointerevents .form-3 p:nth-child(1):before {
     display: none;
 }
+

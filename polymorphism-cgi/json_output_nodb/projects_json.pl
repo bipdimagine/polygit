@@ -40,9 +40,38 @@ my $action = $cgi->param('action');
 my $only_diag = $cgi->param('only_diag');
 my $export_xls = $cgi->param('export_xls');
 my $viewer = $cgi->param('viewer');
+my $mycode   = $cgi->param('mycode');
+checkOtpAuth($buffer, $mycode, $login) if $action eq "otp";
 getProjectLists($buffer,$login,$pwd) if $action eq "list";
 checkAuthentification($buffer,$login,$pwd,$cgi->param('project')) if $action eq "check";
 checkHgmdAccess($buffer,$login,$pwd) if $action eq "check_hgmd_access";
+
+
+
+sub checkOtpAuth {
+	my ( $buffer, $mycode, $login ) = @_;
+	my $hRes;
+	if ($login =~ /[a-zA-Z]/) {
+		my $need_otp = $buffer->use_otp_for_login($login);
+		if ($need_otp) {
+			my $secret_code = $buffer->google_auth_secret_pwd($login);
+			my $auth = $buffer->google_auth();
+			$auth->secret32( $secret_code );
+			if ($auth->verify($mycode)) { $hRes->{otp_verif} = 'yes'; }
+			else { $hRes->{otp_verif} =  'no'; }
+		}
+		else {
+			$hRes->{otp_verif} = 'yes';
+		}
+	}
+	else {
+		$hRes->{otp_verif} = 0;
+	}
+	my $json_encode = encode_json $hRes;
+	print $cgi->header('text/json-comment-filtered');
+	print $json_encode;
+	exit(0);
+}
 
 sub checkHgmdAccess {
 	my ( $buffer, $login, $pwd ) = @_;
@@ -58,8 +87,13 @@ sub getProjectLists {
 	#renvoit tous les origin associés au login et au mdp spécifié
 	
 	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
-	#warn Dumper $res;
-	#die();
+	if ($res->[0]->{otp} == 1 ) {
+		#$res->[0]->{otp_qr_code} = $buffer->google_auth_qr_code();
+		$res->[0]->{otp_code} = $buffer->google_auth_issuer().': '.$buffer->google_auth_key_id();
+		#$res->[0]->{otp_need} == 1
+		
+	}
+	$res->[0]->{otp_need} = $buffer->use_otp_for_login($login);
 	my $db_name = $buffer->{config}->{server}->{status};
 	
 	my $nb_project = scalar(@{$buffer->listProjects()});

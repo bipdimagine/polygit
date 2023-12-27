@@ -150,8 +150,8 @@ sub getAllAccNum_with_hg19_coord {
 }
 
 sub getDataHGMDPro {
-	my ($self,$id) = @_;
-	my $database = $self->database();
+	my ($self,$id,$database) = @_;
+	$database = $self->database() unless $database;
 	my $dbh =  $self->getDbh;
 	my $sql = qq{ SELECT * FROM `$database`.allmut where acc_num = ?;};
 	my $sth = $dbh->prepare($sql);

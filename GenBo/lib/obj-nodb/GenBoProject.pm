@@ -2050,6 +2050,30 @@ has dirCytoManue => (
 
 );
 
+has rds_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
+has rds_junctions_canoniques_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/Junc_".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
 has gtf_file => (
 	is      => 'rw',
 	lazy    => 1,
@@ -2929,11 +2953,18 @@ sub getPatientOrControl {
 	return $patient;
 }
 
+sub species_id {
+	my ($self) = @_;
+	$self->getPatients;
+	return $self->{species_id} ;
+}
+
 sub setPatients {
 	my $self  = shift;
 	my $query = $self->buffer->getQuery();
 	my $res   = $query->getPatients( $self->id );
 	my %names;
+	my $spec;
 	foreach my $h (@$res) {
 		$h->{id} = $h->{patient_id};
 		$names{ $h->{id} } = undef;
@@ -2942,10 +2973,16 @@ sub setPatients {
 		if ( not $h->{status} or $h->{status} eq '0' ) { $h->{status} = 2; }
 		if ( not $h->{sex}    or $h->{sex} eq '0' )    { $h->{sex}    = 1; }
 		$h->{project} = $self;
+		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
+		  $self->{species_id} = $h->{species_id};
+#		  warn $h->{species_id};
+		 
 	}
+	return \%names unless (%names);
+	confess("problem species for project ".$self->name()) if scalar(keys %$spec) ne 1;
 	return \%names;
 }
 

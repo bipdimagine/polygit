@@ -24,6 +24,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Compress::Zlib qw( zlib_version); 
 use Storable qw/thaw freeze/;
 use JSON::XS;
+use Carp;
 #use  Compress::Zstd;
 use Compress::Zlib qw( zlib_version); 
 has lmdb_extension =>(
@@ -321,7 +322,7 @@ sub encode {
 
 sub lmdb_key {
 	my ($self,$key) = @_;
-	confess('-') unless defined $key;
+	confess($key."-") unless defined $key;
 	return $key if $self->is_integer;
 	  if (length($key) > 500){
      	my (@s) = split ("_",$key);
