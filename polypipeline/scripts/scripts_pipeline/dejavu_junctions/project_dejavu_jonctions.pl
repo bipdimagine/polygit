@@ -130,7 +130,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 			my $type = $junction->getTypeDescription($pat_j);
 			my $gene_name = $junction->annex->{$pat_j->name()}->{ensid};
 			my $count_new_junction = $junction->get_nb_new_count($pat_j);
-			my $count_normal_junction = $junction->get_nb_normal_count($pat_j);
+			my $count_normal_junction = $junction->get_canonic_count($pat_j);
 			my $score = int($junction->get_percent_new_count($pat_j));
 			if ($junction->isCanonique()) {
 				if (not exists $h_proj_junctions_canoniques_tmp->{$junction_id}) {
