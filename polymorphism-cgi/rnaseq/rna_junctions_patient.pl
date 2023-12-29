@@ -88,6 +88,7 @@ $default_filter_dejavu_project = "data-filter-default='<=$nb_limit'"
   if $nb_limit > 0;
 $default_filter_score = "data-filter-default='>=1'";
 
+
 my $n            = 0;
 my $score_slider = 0;
 $score_slider = $min_score / 10 if ( $min_score and $min_score > 0 );
@@ -470,11 +471,6 @@ $pm->run_on_finish(
 	}
 );
 
-#my $nb_elems = int(scalar(@lJunctions) / $fork);
-#$nb_elems += 20;
-#
-#my $iter = natatime $nb_elems, @lJunctions;
-#while( my @tmp = $iter->() ) {
 
 foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	my $chr = $patient->getProject->getChromosome($chr_id);
@@ -493,7 +489,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		print '.' if ( not $only_html_cache and $n % 1000 );
 
 		my $is_junction_linked_filtred;
-		next if ( $junction->isCanonique() );
+		next if ( $junction->isCanonique());
 
 		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 );
 
@@ -1285,7 +1281,7 @@ sub get_html_patients {
 		$h_by_pat->{$fam_name}->{ $pat->name() }->{nb_new} =
 		  $junction->get_nb_new_count($pat);
 		$h_by_pat->{$fam_name}->{ $pat->name() }->{nb_normal} =
-		  $junction->get_nb_normal_count($pat);
+		  $junction->get_canonic_count($pat);
 		$h_by_pat->{$fam_name}->{ $pat->name() }->{percent} =
 		  sprintf( "%.3f", $junction->get_percent_new_count($pat) ) . '%';
 	}
@@ -1642,10 +1638,11 @@ sub countMinCatToUse {
 		}
 	}
 	my @lCat = sort keys %{$hCount};
+	
 	foreach my $cat (@lCat) {
-		return $cat if $hCount->{$cat} <= 50000;
+		return $cat if $hCount->{$cat} <= 150000;
 	}
-	return $lCat[-1];
+	return 'min4';
 }
 
 sub printJson {
