@@ -546,20 +546,17 @@ my $hmendel;
 my ( $gstats, $lstats, $patient_value );
 my $cache_icon = "";
 unless ($header) {
-	warn "pppppp";
 	print qq{<div style="display: none">};
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project);
 	$hmendel = get_mendelian_statistics($project);
 	foreach my $run ( @{ $project->getRuns() } ) {
 		$header->{ $run->id } = table_run_header($run);
 	}
-	print qq{</div>};
+	print qq{\n</div>};
 	$no_cache = $project->get_lmdb_cache_summary("w");
 	$no_cache->put_cache_hash( $header_id, $header, 2400 );
 	$no_cache->close();
-	die($header_id);
-	$cache_icon .=
-qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;color:red"></span>};
+	$cache_icon .= qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;color:red"></span>};
 }
 else {
 	$cache_icon .=
@@ -578,23 +575,19 @@ $htable = undef if $dev or $cgi->param('force');
 
 unless ($htable) {
 	print qq{<div style="display: none">};
-	( $gstats, $lstats, $patient_value ) = statistics_projects($project)
-	  unless $patient_value;
+	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
 	$hmendel = get_mendelian_statistics($project) unless $hmendel;
 	foreach my $run ( @{ $project->getRuns() } ) {
 		$htable->{ $run->id } = table_patients($run);
 	}
 	$no_cache = $project->get_lmdb_cache_summary("w");
-	warn "put $table_id";
 	$no_cache->put_cache_hash( $table_id, $htable, 2400 );
 	$no_cache->close();
-	print qq{</div>};
-	$cache_icon .=
-qq{&nbsp; <span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
+	print qq{\n</div>};
+	$cache_icon .= qq{&nbsp; <span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
 }
 else {
-	$cache_icon .=
-qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
+	$cache_icon .= qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
 
 }
 
