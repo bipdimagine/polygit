@@ -5219,4 +5219,48 @@ sub star_align {
 	return ($fileout);
 }
 
+sub deepvariant {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $name         = $self->patient()->name();
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $low_calling  = "";
+	$filein = $self->patient()->getBamFileName();    #unless $filein !~/bam/;
+	my $fileout = $self->patient()->getVariationsFileName("deepvariant");
+	#probleme du fichier de log non défini dans le pipeline lancé sans pbs
+	#	my $cmd = "" ;
+	my $ppn = $self->nproc;    # if $self->nocluster;
+	$ppn = 20;
+	$ppn =40 if $self->patient()->project->isGenome();
+	my $real_ppn = $ppn;       #int($self->nproc / 2);
+	$real_ppn = 20 if $self->host eq "morgan";
+	die( "-" . $filein ) unless $filein;
+
+	#	die($filein. " is empty") if (-z $filein);
+	my $bin_dev = $self->script_dir;
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/deepvariant/deepvariant.pl -version=$version -project=$project_name  -patient=$name -fork=$real_ppn   ";
+	my $type     = "deepvariant";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		cmd          => ["$cmd"],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds,
+		software     => "deepvariant",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
 1;
