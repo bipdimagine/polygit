@@ -2,7 +2,6 @@ package QueryJunctionFile;
 
 use strict;
 use Moo;
-use Carp;
 use Data::Dumper;
 use Bio::DB::HTS::Tabix;
 
@@ -53,32 +52,45 @@ has project => (
 #Ex: 1	3277541	3283661	2	2	0	3	0	49
 sub parse_dragen_file {
 	my ($self, $patient, $chr) = @_;
+	confess();
+	return $self->_parse_tab_file($patient,$chr);
+	
+}
+
+sub _parse_tab_file {
+	my ($self, $patient, $chr) = @_;
 	my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->file() );
-	my $iter = $tabix->query($chr->name);
+	my $iter = $tabix->query($chr->fasta_name);
 	my ($h_header, $h_global, @l_res);
 	my $i = 0;
 	while ( my $line = $iter->next ) {
 		my ($chr_id, $start, $end, $strand, $intron_motif, $is_annot, $new_j, $multiple_j, $max_j) = split(' ', $line);
-		my $id = $chr_id.'_'.$start.'_'.$end.'_ALL';
+		my $id = $chr->name.'_'.$start.'_'.$end;
 		my ($h, $h_tmp);
 		$h_tmp->{$chr_id} = undef;
 		$h->{id} = $id;
-		$h->{chromosomes_object} = $h_tmp;
-#		$h->{ensid} = '';
-#		$h->{gene} = '';
-		$h->{chr} = $chr_id;
-		$h->{start} = $start;
-		$h->{end} = $end;
-		$h->{annex}->{$patient->name()}->{type} = 'dragen';
-		$h->{annex}->{$patient->name()}->{junc_new_count} = $new_j;
-		$h->{annex}->{$patient->name()}->{junc_multiple_count} = $multiple_j;
-		$h->{annex}->{$patient->name()}->{junc_normale_count} = $max_j;
+		$h->{annex_sj}->{$patient->name()}->{type} = 'dragen';
+		$h->{annex_sj}->{$patient->name()}->{junc_new_count} = $new_j;
+		$h->{annex_sj}->{$patient->name()}->{junc_multiple_count} = $multiple_j;
+		$h->{annex_sj}->{$patient->name()}->{junc_normale_count} = $max_j;
+		$h->{annex_sj}->{$patient->name()}->{overhang} = $max_j;
+		$h->{annex_sj}->{$patient->name()}->{intron_motif} = $intron_motif;
 		push (@l_res, $h);
 	}
 	close (FILE);
 	return \@l_res;
 }
 
+sub parse_SJ_file {
+	my ($self, $patient, $chr,$hh) = @_;
+	my $array =  $self->_parse_tab_file($patient,$chr);
+	foreach my $j (@$array){
+		my $id = $j->{id}; 
+		$hh->{$id}->{annex_sj}->{$patient->id} =  $j->{annex}->{$patient->name()};
+		$hh->{$id}->{type_canonic} = $j->{annex}->{$patient->name()}->{intron_motif};
+	}
+	return $hh;
+}
 sub parse_file {
 	my ($self, $chr) = @_;
 	return $self->parse_file_RI($chr) if $self->isRI();
@@ -110,61 +122,88 @@ sub parse_results_global_file {
 		$found = 1 if $chr_id eq $chr->name();
 	}
 	return ($h_header, \@l_res) if not $found;
-	my $iter = $tabix->query($chr->name);
+	
+	my $iter = $tabix->query($chr->id);
 	while ( my $line = $iter->next ) {
+		my $h_res;
+		my $nb_col = 0;
 		my @l_col = @{parse_line($line)};
 		if (not scalar(@l_col) == scalar keys %$h_header) {
 			warn "\n$line\n\n";
 			confess("\nERROR parsing file... no same nb columns...\nFile: $file_name\n\n");
 		}
 		if ($l_col[0] ne 'NA') {
-			my $h_res;
-			my $nb_col = 0;
-			# parsing ligne
 			foreach my $res (@l_col) {
 				my $cat = $h_header->{$nb_col};
-				$h_res->{type_origin_file} = 'RI' if (lc($cat) eq 'junc_ri_start' or lc($cat) eq 'junc_ri_end');
-				$h_res->{type_origin_file} = 'SE' if (lc($cat) eq 'junc_se_start' or lc($cat) eq 'junc_se_end');
-				$cat = 'start' if (lc($cat) eq 'junc_se_start' or lc($cat) eq 'junc_ri_start');
-				$cat = 'end' if (lc($cat) eq 'junc_se_end' or lc($cat) eq 'junc_ri_end');
-				$h_res->{isCanonique} = 1 if (lc($cat) eq 'type' and lc($res) =~ /canonique/);
-				$h_res->{lc($cat)} = $res;
+				confess("\nERROR parsing file... no header...\nFile: $file_name\n\n") unless ($cat);
+				if (lc($cat) eq 'sample') {
+					my ($h_tmp, $h_annex);
+					my ($id, $start, $end);
+					if (exists $h_res->{'junc_se_start'} and exists $h_res->{'junc_se_end'}) {
+						$start = $h_res->{'junc_se_start'};
+						$end = $h_res->{'junc_se_end'};
+						delete $h_res->{'junc_se_start'};
+						delete $h_res->{'junc_se_end'};
+						$h_res->{type_origin_file} = 'SE';
+					}
+					if (exists $h_res->{'junc_ri_start'} and exists $h_res->{'junc_ri_end'}) {
+						$start = $h_res->{'junc_ri_start'};
+						$end = $h_res->{'junc_ri_end'};
+						delete $h_res->{'junc_ri_start'};
+						delete $h_res->{'junc_ri_end'};
+						$h_res->{type_origin_file} = 'RI';
+					}
+					
+					$start =~ s/ //g;
+					$end =~ s/ //g;
+					
+					if (not $end)  {
+						warn Dumper $h_res;
+						confess();
+					}
+					my $res = $chr->genesIntervalTree->fetch($start,$end+1);
+					next if scalar(@$res) >3;
+#					warn 'S:'.$start.' - E:'.$end;
+					next unless $start;
+					next unless $end;
+					if ($end <= $start) {
+						my $toto = $start;
+						$start = $end;
+						$end = $toto;
+					}
+					$id = $chr->name.'_'.$start.'_'.$end.'_'.$h_res->{type_origin_file};
+					
+					my $chr_id = $chr->name;
+					my $is_chr_ok;
+					$is_chr_ok = 1 if $chr_id eq $chr->id();
+					$is_chr_ok = 1 if $chr_id eq $chr->name();
+					next unless $is_chr_ok;
+					
+					my $ensid = $h_res->{'ensid'};
+					$h_tmp->{$chr_id} = undef;
+					$h_global->{$id}->{id} = $id;
+					$h_global->{$id}->{sj_id} = $chr->name.'_'.($start+1).'_'.($end-1);
+					
+					$h_global->{$id}->{chromosomes_object} = $h_tmp;
+					$h_global->{$id}->{ensid} = $h_res->{'ensid'};
+					$h_global->{$id}->{gene} = $h_res->{'gene'};
+					$h_global->{$id}->{chr} = $chr_id;
+					$h_global->{$id}->{start} = $start;
+					$h_global->{$id}->{end} = $end;
+					delete $h_res->{'chr'};
+					my $sample = $res;
+					my $proj_name = $self->getProject->name();
+					if ($ensid) { $sample =~ s/$ensid\_$chr_id\_//; }
+					$sample =~ s/\_$proj_name//;
+					$h_global->{$id}->{annex}->{$sample} = $h_res;
+					$h_res = undef;
+				}
+				
+				else {
+					$h_res->{lc($cat)} = $res;
+				}
 				$nb_col++;
 			}
-			
-			# junctions en reverse
-			if ($h_res->{'end'} <= $h_res->{'start'}) {
-				my $toto = $h_res->{'end'};
-				$h_res->{'end'} = $h_res->{'start'};
-				$h_res->{'start'} = $toto;
-				$h_res->{'strand'} = -1;
-			}
-			
-			# check et regroupe same jonctions RI SE
-			my $proj_name = $self->getProject->name();
-			my $chr_id = $h_res->{'chr'};
-			my $ensid = $h_res->{'ensid'};
-			my $sample = $h_res->{'sample'};
-			my $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file};
-			confess("\n\nERROR: construct junction $id for column chr. Die\n\n") if not exists $h_res->{'chr'};
-			confess("\n\nERROR: construct junction $id for column start. Die\n\n") if not exists $h_res->{'start'};
-			confess("\n\nERROR: construct junction $id for column end. Die\n\n") if not exists $h_res->{'end'};
-			confess("\n\nERROR: construct junction $id for column type_origin_file. Die\n\n") if not exists $h_res->{'type_origin_file'};
-			if (not exists $h_global->{$id}) {
-				my $h_tmp;
-				$h_tmp->{$h_res->{'chr'}} = undef;
-				$h_global->{$id}->{id} = $id;
-				$h_global->{$id}->{chromosomes_object} = $h_tmp;
-				$h_global->{$id}->{ensid} = $ensid;
-				$h_global->{$id}->{gene} = $h_res->{'gene'};
-				$h_global->{$id}->{chr} = $chr_id;
-				$h_global->{$id}->{start} = $h_res->{'start'};
-				$h_global->{$id}->{end} = $h_res->{'end'};
-			}
-			if ($ensid) { $sample =~ s/$ensid\_$chr_id\_//; }
-			$sample =~ s/\_$proj_name//;
-			$h_global->{$id}->{annex}->{$sample} = $h_res;
-			$h_global->{$id}->{isCanonique} = 1 if exists $h_res->{isCanonique} and $h_res->{isCanonique};
 		}
 	}
 	close (FILE);
@@ -175,9 +214,9 @@ sub parse_results_global_file {
 			next if not exists $h_global->{$id}->{annex}->{$patient->name()};
 			$is_ok = 1;
 		}
-		confess("\n\nERROR: Junction $id without sample annex. Die.\n\n") if not $is_ok;
-		push (@l_res, $h_global->{$id});
+		push (@l_res, $h_global->{$id}) if $is_ok;
 	}
+
 	return ($h_header, \@l_res);
 }
 
