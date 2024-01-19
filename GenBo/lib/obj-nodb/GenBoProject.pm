@@ -417,7 +417,18 @@ has isRnaseq => (
 		return undef;
 	},
 );
-
+has isRna => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $find ;
+		foreach my $p ( @{ $self->getPatients } ) {
+			$find ++ if $p->isRna;
+		}
+		return $find;
+	},
+);
 has isExome => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1242,7 +1253,6 @@ is      => 'rw',
 		return $path;
 	},
 );
-##
 has dragen_fastq => (
 is      => 'rw',
 	lazy    => 1,
@@ -1970,10 +1980,11 @@ has genome_version_generic => (
 	lazy    => 1,
 	default => sub {
 		my $self    = shift;
-		my $version = $self->getVersion();
-		$version = "HG19" if $version =~ /HG19/;
-		
-		return $version;
+		return $self->annotation_genome_version();
+	#	my $version = $self->getVersion();
+	#	$version = "HG19" if $version =~ /HG19/;
+	#	$version = "HG38" if $version =~ /HG38/;
+	#	return $version;
 	}
 );
 has capture_dir => (
@@ -2039,63 +2050,73 @@ has dirCytoManue => (
 
 );
 
+has rds_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
+has rds_junctions_canoniques_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/Junc_".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
 has gtf_file => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config->{'public_data'}->{root} 
-			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
-		 	.   '/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
-		
-		 $file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  	. $version . '/'
-			. $self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
-		 die($file) unless -e $file;	
-#		my @patients          = @{ $self->getPatients() };
-#		my $alignMeth = $patients[0]->alignmentMethod();
-#		warn $self->annotation_genome_version;
-#		my $file =
-#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-#		  .  $self->annotation_genome_version  . '/'
-#		  . $self->buffer()->config->{'public_data'}->{gtf};
-#		  $file =
-#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-#		  .  $self->annotation_genome_version  . '/'
-#		  . $self->buffer()->config->{'public_data'}->{gtf_dragen} if $alignMeth eq "dragen-align";
+		my $file =
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		  .  $self->annotation_genome_version  . '/'
+		  . $self->buffer()->config->{'public_data'}->{gtf};
 		return $file;
 	},
 );
 
 
-has gtf_dragen_file => (
+has gtf_file_dragen => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config->{'public_data'}->{root} . 'repository/'.$self->annotation_genome_version  .'/annotations/'
-		  .   '/gencode.v'.$self->gencode_version."/annotation.gtf";
-		  die ($file);
+		my $file =
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		  .  $self->annotation_genome_version  . '/'
+		  . $self->buffer()->config->{'public_data'}->{gtf_dragen};
 		return $file;
 	},
 );
 
 
-#has gtf_file_star => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self = shift;
-#		my $path = my $version = $self->getVersion();
-#		my $file =
-#			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-#		  . $version . '/'
-#		  . $self->buffer()->config->{'public_data'}->{gtf_star};
-#		return $file;
-#	},
-#);
+has gtf_file_star => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file =
+			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		  . $version . '/'
+		  . $self->buffer()->config->{'public_data'}->{gtf_star};
+		return $file;
+	},
+);
 
 
 has refFlat_file => (
@@ -2114,6 +2135,20 @@ has refFlat_file => (
 		
 		return $file;
 	},
+); 
+
+has refFlat_file_star => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file =
+			$self->buffer()->config->{'public_data'}->{root} . '/'
+		  . $version
+		  . '/refFlat/refFlat_no_chr.txt';
+		return $file;
+	},
 );
 
 has rRNA_file => (
@@ -2122,13 +2157,10 @@ has rRNA_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config->{'public_data'}->{root} 
-			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
-		 	.   '/gencode.v'.$self->gencode_version."/rRNA.interval_list";
-		
-		$file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		my $file =
+			$self->buffer()->config->{'public_data'}->{root} . '/'
 		  . $version
-		  . '/refFlat/rRNA.interval_list' unless -e $file;
+		  . '/refFlat/rRNA.interval_list';
 		return $file;
 	},
 );
@@ -2925,11 +2957,18 @@ sub getPatientOrControl {
 	return $patient;
 }
 
+sub species_id {
+	my ($self) = @_;
+	$self->getPatients;
+	return $self->{species_id} ;
+}
+
 sub setPatients {
 	my $self  = shift;
 	my $query = $self->buffer->getQuery();
 	my $res   = $query->getPatients( $self->id );
 	my %names;
+	my $spec;
 	foreach my $h (@$res) {
 		$h->{id} = $h->{patient_id};
 		$names{ $h->{id} } = undef;
@@ -2938,10 +2977,16 @@ sub setPatients {
 		if ( not $h->{status} or $h->{status} eq '0' ) { $h->{status} = 2; }
 		if ( not $h->{sex}    or $h->{sex} eq '0' )    { $h->{sex}    = 1; }
 		$h->{project} = $self;
+		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
+		  $self->{species_id} = $h->{species_id};
+#		  warn $h->{species_id};
+		 
 	}
+	return \%names unless (%names);
+	confess("problem species for project ".$self->name()) if scalar(keys %$spec) ne 1;
 	return \%names;
 }
 
@@ -6477,4 +6522,53 @@ sub writeCaptureBedFile {
 	close(BED);
 }
 
+sub return_calling_methods_short_name {
+	my ($self,$name) = @_;
+	unless (exists $self->{short}){
+		foreach my $m (@{$self->calling_methods}){
+			$self->{short}->{$m->{name}} = $m->{short_name};
+		}
+	}
+	
+	return unless exists $self->{short}->{$name};
+	return $self->{short}->{$name};
+}
+
+sub is_sv_calling_methods{
+	my ($self,$name) = @_;
+	unless (exists $self->{isSV}){
+		$self->{isSV} = {};
+		foreach my $mn (@{$self->callingSVMethods}){
+			$self->{isSV}->{$mn} = 1;
+			my $sn = $self->return_calling_methods_short_name($mn);
+			$self->{isSV}->{$sn} = 1;
+			
+		}
+	}
+	return exists $self->{isSV}->{$name};
+}
+sub calling_methods {
+	my ($self) = @_;
+	return $self->{calling_methods1} if exists $self->{calling_methods1};
+	my $methods = [];
+			foreach my $method_name (@{$self->callingSVMethods()}) {
+				my $method;
+				$method->{short_name} = substr $method_name,0,3;
+				$method->{name} = $method_name;
+				$method->{sv} = 1;
+				push(@$methods,$method);
+			}
+			foreach my $method_name (@{$self->getCallingMethods()}) {
+					my $method;
+				$method->{short_name} = substr $method_name,0,3;
+				$method->{name} = $method_name;
+				push(@$methods,$method);
+				
+			}
+	$self->{calling_methods1} = $methods;
+	return $self->{calling_methods1};
+}
+
+
 1;
+
