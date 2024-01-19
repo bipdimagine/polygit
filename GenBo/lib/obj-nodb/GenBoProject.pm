@@ -6499,6 +6499,13 @@ sub getQueryJunction {
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;
 }
+sub getSJDir {
+	my ( $self, $method_name ) = @_;
+	my $path = $self->project_path . "/junctions/";
+	$self->makedir($path);
+	$path .= $method_name . '/';
+	return $self->makedir($path);
+}
 
 sub setJunctions {
 	my ($self) = @_;
