@@ -78,7 +78,7 @@ if ($filters_cons) {
 	}
 }
 my @headers_validations = ("var_name","locus","gnomad","deja_vu","table_validation","table_transcript");
-my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv");
+my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my $buffer = new GBuffer;
 
 my $project_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
@@ -112,6 +112,7 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	my $rs_name = $h_v_hgmd_ids->{$v_hgmd_id}->{dbsnp};
 	my $ref_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'ref'};
 	my $mut_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'alt'};
+	my $refseq = $h_v_hgmd_ids->{$v_hgmd_id}->{'refseq'};
 #	my ($ref_allele, $mut_allele) = get_ref_mut_alleles_from_hgvs($hgvs);
 	
 	my $polyweb_id = $chromosome.'_'.$start.'_'.$ref_allele.'_'.$mut_allele;
@@ -194,13 +195,22 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	if (exists $h_new_dm->{$v_hgmd_id}) {
 		$hvariation->{html}->{hgmd} .= qq{ <b><i><font color='red'>New!</font></b></i>};
 	}
+	my $refseq_hgmd = $v->hgmd_details->{refseq};
+	if ($refseq_hgmd) {
+		$hvariation->{html}->{hgmd} .= qq{<br><i><font color='blue'>$refseq_hgmd</font></i>};
+	}
+	my $disease_hgmd = $v->hgmd_details->{disease};
+	if ($disease_hgmd) {
+		$hvariation->{html}->{hgmd} .= qq{<br><i><font color='green'>$disease_hgmd</font></i>};
+	}
+	
 	update_variant_editor::table_validation_without_local($project, $hvariation, $gene);
 	
 	my $nb_other_project = $hvariation->{value}->{other_project};
 	
 	my $out;
 	if ($nb_other_project and $nb_other_project > 0) { $out = $cgi->start_Tr(); }
-	else { $out = $cgi->start_Tr({style=>'opacity:0.5;', class=>"tr_hgmd_not_found"}); }
+	else { $out = $cgi->start_Tr({class=>"tr_hgmd_not_found"}); }
 	foreach my $h (@headers_validations){
 		if ($h eq "trio" or "table_transcript"){
 			$class->{style} = "min-width:200px;max-width:450px;max-height:200px;overflow-x:auto;vertical-align:middle;padding:5px;white-space: nowrap;";
@@ -279,7 +289,7 @@ $hResGene->{$gene_id}->{uid} = $panel_id;
 my $html_gene = update_variant_editor::panel_gene($hResGene->{$gene_id},$panel_id);
 $html_gene =~ s/float:right;/float:right;display:none;/;
 $html_gene =~ s/glyphicon-triangle-right//;
-my $b_hgmd_hide = qq{</span></span></div><div style="float:right;" class="form-check"><input class="form-check-input" type="checkbox" value="" onClick="show_hide_hgmd_not_in_polyweb();" id="b_found_hgmd_in_polyweb"><label style="color:white;padding:5px;font-size:12px;" class="form-check-label" for="b_found_hgmd_in_polyweb"> Hide variants not found in PolyWeb</label></div>};
+my $b_hgmd_hide = qq{</span></span></div><div style="float:right;" class="form-check"><input class="form-check-input" type="checkbox" value="" onClick="show_hide_hgmd_not_in_polyweb();" id="b_found_hgmd_in_polyweb"><label style="color:white;padding:5px;font-size:12px;" class="form-check-label" for="b_found_hgmd_in_polyweb"> only variant(s) found in PolyWeb</label></div>};
 $html_gene =~ s/<\/span><\/span><\/div>/$b_hgmd_hide/;
 #warn Dumper $html_gene; die;
 
@@ -380,6 +390,28 @@ sub save_export_xls {
 	my $xls_export = new xls_export();
 	$xls_export->title_page('HGMD_'.$gene->external_name().'.xls');
 	$xls_export->store_variants_infos(\@$list_var, $project);
+	
+	my ($h_patients, $h_row_span);
+	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
+		foreach my $var_id (keys %{$xls_export->{hash_variants_global}->{$chr_id}}) {
+			my $project_name = 'HGMD';
+			my $pat_name = 'HGMD';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'variation'} = $var_id;
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'project'} = $project_name;
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'description'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'phenotypes'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'fam'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'name'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'sex'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'status'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'parent_child'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'sex_status_icon'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'perc'} = '';
+			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'model'} = '';
+		}
+	}
+	
+	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
 	my $session_id = $xls_export->save();
 	return $session_id;
 }

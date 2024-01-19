@@ -110,7 +110,7 @@ foreach my $project_name_excluded (split(',', $projects_excluded)) {
 }
 
 my @headers_validations = ("#", "varsome","alamut variant","var_name","projects / patients","gnomad","deja_vu","table_validation","table_transcript");
-my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv");
+my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my ($hVariantsIdsDejavu, $hVariantsDetails);
 my ($hResGene, $hResVariants, $hResVariantsIds, $hResVariantsListPatients, $hResProjectProblem, $hResVariants_byScores, $hResVariantsRatioAll, $hResVariantsModels);
 my $project_init_name;
@@ -274,7 +274,7 @@ sub save_export_xls {
 		}
 	}
 	my $xls_export = new xls_export();
-	$xls_export->title_page('DejaVu_'.$gene_init->external_name().'.xls');
+	$xls_export->title_page('GeneScout_'.$gene_init->external_name().'.xls');
 	$xls_export->store_variants_infos(\@lVarObj, $project_dejavu);
 	my ($h_patients, $h_row_span);
 	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
@@ -291,6 +291,7 @@ sub save_export_xls {
 					my $sex_status_icon = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'sex_status_icon'};
 					my $perc = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'percent'};
 					my $model = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'model'};
+					my $he_ho = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'he_ho'};
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'variation'} = $var_id;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'project'} = $project_name;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'description'} = $description;
@@ -303,6 +304,7 @@ sub save_export_xls {
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'sex_status_icon'} = $sex_status_icon;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'perc'} = $perc.'%';
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'model'} = $model;
+					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'he_ho'} = $he_ho;
 				}	
 			}
 		}
@@ -858,6 +860,11 @@ sub get_variants_infos_from_projects {
 							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'name'} = $p->name();
 							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'sex'} = $p->sex();
 							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'status'} = $p->status();
+							my $is_heho = '-';
+							$is_heho = 'he' if $var->isHeterozygote($p);
+							$is_heho = 'ho' if $var->isHomozygote($p);
+							$hResVariantsListPatients_local->{$var_id}->{$project->name()}->{$p->name()}->{'values'}->{'he_ho'} = $is_heho;
+							
 							my $parent_child = 'solo';
 							if ($p->getFamily->isTrio()) {
 								$parent_child = 'mother' if ($p->isMother());
@@ -1070,8 +1077,11 @@ sub update_list_variants_from_dejavu {
 #				$hVarErrors->{$var->id()} = undef;
 #				next;
 #			}
-			if ($transcript_dejavu) { $var_annot = $var->variationTypeInterface($transcript_dejavu); }
-			else { $var_annot = $var->variationTypeInterface($gene_dejavu); }
+			eval {
+				if ($transcript_dejavu) { $var_annot = $var->variationTypeInterface($transcript_dejavu); }
+				else { $var_annot = $var->variationTypeInterface($gene_dejavu); }
+			};
+			if ($@) { $var_annot = 'error'; }
 			$hVariantsDetails->{$var_id}->{var_annot} = $var_annot;
 		}
 		

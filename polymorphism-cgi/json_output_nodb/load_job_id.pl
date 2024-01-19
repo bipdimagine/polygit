@@ -114,6 +114,8 @@ sub load_xls() {
 					$h->{'parent_child'} = $h_by_patients->{$var_id}->{$project_name}->{$patient_name}->{'parent_child'};
 					$h->{'model'} = '-';
 					$h->{'model'} = $h_by_patients->{$var_id}->{$project_name}->{$patient_name}->{'model'} if (lc($h->{'parent_child'}) eq 'child');
+					$h->{'he_ho'} = $h_by_patients->{$var_id}->{$project_name}->{$patient_name}->{'he_ho'};
+					#$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'}
 					push(@list_datas_patients, $h);
 				}
 			}
@@ -123,12 +125,16 @@ sub load_xls() {
 	my @lHeaderWithProj = @{$xls_export->list_generic_header()};
 	
 	my $hdone_tr;
+	my $isHGMD_export;
+	my $nb_v = 0;
 	foreach my $hvar (@$list_datas_annotations) {
+		$nb_v++;
 		my $enst = $hvar->{transcript};
 		my ($hproj, $hpat);
 		my ($var_id, $rs) = split(' ', $hvar->{variation});
 		foreach my $proj_name (keys %{$h_by_patients->{$var_id}}) {
 			foreach my $pat_name (keys %{$h_by_patients->{$var_id}->{$proj_name}}) {
+				$isHGMD_export = 1 if ($proj_name eq 'HGMD' and $pat_name eq 'HGMD');
 				my $hvar_new = dclone($hvar);
 				$hvar_new->{project} = $proj_name;
 				$hvar_new->{patient} = $pat_name;
@@ -138,6 +144,8 @@ sub load_xls() {
 				$hvar_new->{perc} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{perc};
 				$hvar_new->{model} = '-';
 				$hvar_new->{model} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{model} ne '?';
+				$hvar_new->{he_ho} = '-';
+				$hvar_new->{he_ho} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{he_ho} if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{he_ho};
 				push(@list_datas_annotations_with_patients,  dclone($hvar_new));
 				push(@{$h_by_tr->{$enst}},  dclone($hvar_new));
 			}
@@ -149,12 +157,13 @@ sub load_xls() {
 	}
 	else {
 		my @lHeaderWithPat = @{$xls_export->list_generic_header()};
-		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'Model');
-		if (not $only_transcript) {
+		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'He_Ho', 'Model') if (not $isHGMD_export);
+		if (not $only_transcript and $nb_v > 5000) {
 			$xls_export->add_page('ALL TRANSCRIPTS', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
 		}
 		foreach my $enst (sort keys %$h_by_tr) {
 			next if ($only_transcript and not $enst =~ /$only_transcript/);
+			next if $nb_v > 5000;
 			$xls_export->add_page($enst, \@lHeaderWithPat, $h_by_tr->{$enst});
 		}
 	}
@@ -162,7 +171,7 @@ sub load_xls() {
 		$xls_export->add_page('Cnvs', $xls_export->list_generic_header_cnvs(), $list_datas_annotations_cnvs);
 	}
 	
-	my @lLinesHeaderPatients = ('Variation', 'Project', 'Description', 'Family', 'Patient', 'Parent_child', 'Sex', 'Status', 'Perc', 'Model', 'Phenotypes');
+	my @lLinesHeaderPatients = ('Variation', 'Project', 'Description', 'Family', 'Patient', 'Parent_child', 'Sex', 'Status', 'Perc', 'He_Ho', 'Model', 'Phenotypes');
 	$xls_export->add_page('Patients', \@lLinesHeaderPatients, \@list_datas_patients) if @list_datas_patients;
 	
 	$xls_export->export();
