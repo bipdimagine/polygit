@@ -12,7 +12,7 @@ use FindBin qw($Bin);
 use Storable qw(store retrieve freeze);
  
 use lib "$Bin/../GenBo";
-use lib "$Bin/../GenBo/lib/GenBoDB";
+use lib "$Bin/../../GenBo/lib/GenBoDB";
 use lib "$Bin/../GenBo/lib/obj-nodb";
 use lib "$Bin/../packages/export";
 use lib "$Bin/../packages/layout";
@@ -34,18 +34,18 @@ my $buffer = GBuffer->new();
 
 # recupere les options  (ici -project echantillon_condition1 echantillon_condition2) 
 my $cgi = new CGI;
-my $project = $cgi->param('project');
+my $projectname = $cgi->param('project');
 my $patient_name = $cgi->param('patient');
 my $chr_name = $cgi->param('chr');
 
 
-die("\n\nNo -project option... Die...\n\n") unless ($project);
+die("\n\nNo -project option... Die...\n\n") unless ($projectname);
 
 $chr_name = "X" if ($chr_name == 23);
 $chr_name = "Y" if ($chr_name == 24);
 
 #  instanciation d'un objet project_cache et des objets patient et chromosome
-my $project = $buffer->newProjectCache( -name => $project, -typeFilters=>"");
+my $project = $buffer->newProjectCache( -name => $projectname, -typeFilters=>"");
 my $patient = $project->getPatient("$patient_name");
 my $chr = $project->getChromosome($chr_name);
 
@@ -88,7 +88,7 @@ foreach my $ligne (@tabValPat)
 	if (($z<5) && ($z>-5))
 	{
 			$i++;
-			next if ($i%50 != 0);
+			next if ($i%20 != 0);
 	}
 	$lpos .= $x." ";
 	$lratio .= $y." ";
@@ -133,7 +133,6 @@ if($trio)
 
 	# ratio WC pour la mere 
 	my $cmd = $tabix." ".$filein_mom_bin. " ".$chr_name.":".$deb."-".$fin." | awk '{print \$2,\$5,\$6}' ";
-	#my $cmd = $tabix." ".$filein_mom_bin. " ".$chr_name.":".$deb."-".$fin." | cut -f 2,5,6 ";
 	my $res1 = `$cmd`;
 	chomp($res1);
 
@@ -149,7 +148,7 @@ if($trio)
 		if (($z<5) && ($z>-5))
 		{
 			$i++;
-			next if ($i%50 != 0);
+			next if ($i%20 != 0);
 		}
 		$lposmum .= $x." ";
 		$lratiomum .= $y." ";
@@ -161,12 +160,11 @@ if($trio)
 	$hres->{'Zscore_mom'} = $lzscoremum;
 	
 	# ratio WC pour le pere
-	my $cmd = $tabix." ".$filein_dad_bin. " ".$chr_name.":".$deb."-".$fin." | awk '{print \$2,\$5,\$6}' ";
-	#my $cmd = $tabix." ".$filein_dad_bin. " ".$chr_name.":".$deb."-".$fin." | cut -f 2,5,6 ";
-	my $res1 = `$cmd`;
-	chomp($res1);
+	my $cmd2 = $tabix." ".$filein_dad_bin. " ".$chr_name.":".$deb."-".$fin." | awk '{print \$2,\$5,\$6}' ";
+	my $res2 = `$cmd2`;
+	chomp($res2);
 
-	my @tabValDad = split("\n",$res1);
+	my @tabValDad = split("\n",$res2);
 	my $lposdad="";
 	my $lratiodad="";
 	my $lzscoredad="";
@@ -178,7 +176,7 @@ if($trio)
 		if (($z<5) && ($z>-5))
 		{
 			$i++;
-			next if ($i%50 != 0);
+			next if ($i%20 != 0);
 		}
 		$lposdad .= $x." ";
 		$lratiodad .= $y." ";
@@ -188,6 +186,96 @@ if($trio)
 	$hres->{'POSratio_dad'} = $lposdad;
 	$hres->{'RATIO_dad'} = $lratiodad;
 	$hres->{'Zscore_dad'} = $lzscoredad;
+	
+	
+	#######################
+	#     calcul dela fréquence allélique
+	#######################
+	my $vector;
+	my $nb = $chr->getVariantsVector->Size();
+	#my $no = $chr->cache_lmdb_variations();
+
+	my $vector_pos = $chr->getVectorByPosition($deb,$fin);
+
+	my $v1;
+	my $v2;
+	my $v1bis;
+	my $v2bis;
+
+	#######  version patrick avec les variants Ho   ########
+
+	# dup
+	$v1 = $mother->getVectorOriginHo($chr);
+	$v1 &= $chr->getVectorSubstitutions();
+ 	$v1 -= $father->getVectorOrigin($chr);
+	$v1 &= $patient->getVectorOriginHe($chr);
+
+	$v2 = $father->getVectorOriginHo($chr);
+	$v2 &= $chr->getVectorSubstitutions();
+ 	$v2 -= $mother->getVectorOrigin($chr);
+	$v2 &= $patient->getVectorOriginHe($chr);
+	
+	#del
+	$v1bis = $mother->getVectorOriginHe($chr);
+	$v1bis &= $chr->getVectorSubstitutions();
+ 	$v1bis -= $father->getVectorOrigin($chr);
+	$v1bis &= $patient->getVectorOrigin($chr);
+
+	$v2bis = $father->getVectorOriginHe($chr);
+	$v2bis &= $chr->getVectorSubstitutions();
+ 	$v2bis -= $mother->getVectorOrigin($chr);
+	$v2bis &= $patient->getVectorOrigin($chr);
+	
+	
+	#my $v3 = $v1+$v2;
+	my $v3 = $v1+$v2+$v1bis+$v2bis;
+		
+	my $list3 = to_array($v3,$chr->name);	
+	$project->setListVariants($list3);
+
+	my @array;
+	my $x;
+
+	# boucle sur les variants 
+	while(my $v = $project->nextVariant){
+		$x++;		
+		my $p1 = $v->getPourcentAllele($mother);
+		my $p2 = $v->getPourcentAllele($father);
+		my $value = $v->getPourcentAllele($patient);
+		next if $value eq "-";
+		
+		if ($p1 ne "-"){
+			my $res = $v->start.",".$value.",null";
+			push(@array,$res);
+		}
+		$p1= "" if $p1 eq "-";
+
+		if ($p2 ne "-"){
+			my $res = $v->start.",null,".$value;
+			push(@array,$res);
+		}
+		next if  $p2 eq "-";
+		$p2= "" if $p2 eq "-";
+	}
+	
+	my $lpos="";
+	my $lmother="";
+	my $lfather="";
+
+	foreach my $values (@array)
+	{
+		my ($p,$m,$f)=split(/,/,$values);
+		
+		$lpos .= $p." ";
+		$lmother .= $m." ";
+		$lfather .= $f." ";
+		
+	}
+
+	$hres->{'POSball'} = $lpos;
+	$hres->{'MOTHERball'} = $lmother;
+	$hres->{'FATHERball'} = $lfather;
+	
 }
 
 push( @listHashRes, { %{ $hres } } );
@@ -223,8 +311,7 @@ sub to_array {
 	while ( my ( $from, $to ) = $iter->() ) {
 		for my $member ( $from .. $to ) {
 			$x++;
-			next if !$trio && ($x%5 != 0);
-			
+			next if ($x%5 != 0);
 			if ($name) {
 				push( @t, $name . "!" . $member );
 			}
@@ -235,5 +322,4 @@ sub to_array {
 	}
 	return \@t;
 }
-
 

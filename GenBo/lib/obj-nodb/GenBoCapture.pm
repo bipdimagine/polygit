@@ -1118,6 +1118,7 @@ foreach my $line (@lines){
 	}
 	print "@" if $print;
 	 $objs = $self->getProject()->flushObjects("primers",$primers);
+	 warn scalar (@$objs);
 	foreach my $o (@$objs){
 		$o->{$self->type_object}->{$self->id} = undef;
 	}
