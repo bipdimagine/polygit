@@ -82,6 +82,72 @@ sub get_position {
 	return $x;
 }
 
+
+
+
+
+sub prepare_exact_junctions {
+	my ($self,$chr) = @_;
+	return $self->{prepare_junctions}->{$chr} if exists $self->{prepare_junctions}->{$chr};
+	my $table_name = $self->create_table($chr);
+	$self->{prepare_junctions}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.start,$table_name.end,$table_name.patients,$table_name.details,$table_name.patients_ratios10,$table_name.details_ratios10,$table_name.patients_ratios20,$table_name.details_ratios20,$table_name._key  from $table_name  WHERE start=? and end=? });
+	return $self->{prepare_junctions}->{$chr};
+}
+
+sub dejavu {
+	my ($self,$junction) = @_;
+	my $chr = $junction->getChromosome->id;
+	return $self->dejavu_by_position($chr,$junction->start,$junction->end);
+}
+
+sub dejavu_by_position {
+	my ($self,$chr,$start,$end) = @_;
+	$self->prepare_exact_junctions($chr)->execute($start,$end);
+	#49521386-49547363
+	my $debug;
+	$debug =1 if $start == 49521386;
+	
+	my $h ={};
+	my $nb =0;
+	my @toto;
+	while (my @row = $self->prepare_junctions($chr)->fetchrow_array) {
+		next if $row[-1] =~ / /;
+#		my $start1 = $row[0];
+#	 	my $end1 = $row[1];
+#	 	my $nbpat = $row[2];
+#	 	my $details = $row[3];
+#	 	my $nbpat_r10 = $row[4];
+#	 	my $details_r10 = $row[5];
+#	 	my $nbpat_r20 = $row[6];
+#	 	my $details_r20 = $row[7];
+		$h->{details} = $row[3];
+	 	$h->{all} = $row[2];
+	 	$h->{10} = $row[4];
+	 	$h->{20} = $row[6];
+	 	#if($row[2] < 5){
+	 		$h->{all} = $self->uniq_patient($row[3]);
+	 		$h->{10} = $self->uniq_patient($row[5]);
+	 		$h->{20} = $self->uniq_patient($row[7]);
+	 	#}
+	 	$nb ++;
+	 	push(@toto,$h);
+	}
+	die($nb." ".Dumper @toto ) if $nb >1;
+	return $h;
+}
+sub uniq_patient {
+	my ($self,$string) = @_;
+	my @t = split(";",$string);
+	my $h ={};
+	foreach my $a (@t){
+		my @u = split("_",$a);
+		shift(@u);shift(@u);
+		my $a = join("_",@u);
+		$h->{$a} ++;
+	}
+	return \%$h;
+	return(scalar(keys %$h));
+}
 sub get_junctions_generic {
 	my ($self,$type,$chr,$start,$end,$seuil) = @_;
 	my $table_name = $self->create_table($chr);
@@ -151,7 +217,7 @@ sub get_junctions_ratio20 {
 sub get_nb_junctions_generic {
 	my ($self,$hres,$patient_name) = @_;
 	my $hp;
-	foreach my $id (keys %{$hres}){
+	foreach my $id (keys %{$hres}) {
 		next if $hres->{$id}->{nbpat} == 0;
 		my @lPat = split(';', $hres->{$id}->{details});
 		foreach my $p (@lPat) {
@@ -179,6 +245,7 @@ sub get_nb_junctions {
 sub get_nb_junctions_ratio10 {
 	my ($self,$chr,$start,$end,$seuil,$patient_name) = @_;
 	my $h = $self->get_junctions_ratio10($chr,$start,$end,$seuil);
+	warn Dumper $h;
 	return $self->get_nb_junctions_generic($h,$patient_name);
 }
 

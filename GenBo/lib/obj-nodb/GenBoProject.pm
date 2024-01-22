@@ -1773,6 +1773,7 @@ sub get_dejavu_junctions_path {
 	my ($self, $phenotype_name) = @_;
 	my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
 	$dir .= '/'.$phenotype_name.'/' if ($phenotype_name);
+	
 	confess("junction dejavu $dir") unless -e $dir;
 	return $dir;
 }
@@ -6415,7 +6416,64 @@ has get_path_rna_seq_junctions_analyse_all_res  => (
 		return $path;
 	},
 );
+has RnaseqSEA_SE  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->get_path_rna_seq_junctions_analyse_all_res;
+		my $file = $path.'/allResSE.txt';
+		my $filegz = $file.".gz";
+		if(-e $filegz) {
+			return $filegz;
+		}
+		$self->tabix_gzip_rnaseqsea($filegz,$file);
+		return $filegz;
+	},
+);
+has RnaseqSEA_RI  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->get_path_rna_seq_junctions_analyse_all_res;
+		my $file = $path.'/allResRI.txt';
+		my $filegz = $file.".gz";
+		if(-e $filegz) {
+			return $filegz;
+		}
+		warn "coucou";
+		
+		$self->tabix_gzip_rnaseqsea($filegz,$file);
+		return $filegz;
+	},
+);
 
+sub tabix_gzip_rnaseqsea {
+	my ($self,$filegz,$file) = @_;
+	my $chr = 4;
+	my $start = 5;
+	my $end = 6;
+	if ($file =~ /SE/){
+		#$chr = 2;
+		#$start = 6;
+		#$end = 7;
+		
+	}
+	if (-e $file){
+		 	my $bgzip = $self->buffer->software("bgzip");
+		 	my $tabix = $self->buffer->software("tabix");
+		 	my $firstline = `head -n 1 $file`;
+		 	$firstline ="#".$firstline;
+		 	chomp($firstline);
+		 	warn  "(echo \"$firstline\"  && tail -n +2 $file | sort -k$chr,$chr -k$start,$start"."n) | $bgzip -s /dev/stdin  > $filegz && $tabix -f -S 1 -s $chr -b $start  -e $end $file.gz";
+		 	system("(echo \"$firstline\"  && tail -n +2 $file | sort -k$chr,$chr -k$start,$start"."n) | $bgzip -s /dev/stdin  > $filegz && $tabix -f  -s $chr -b $start  -e $end $file.gz");
+		 }
+		 else{
+		 	confess("no $file");
+		 }
+		confess("no $filegz") unless (-e $filegz);
+}
 has get_path_rna_seq_junctions_analyse_description_root  => (
 	is      => 'rw',
 	lazy    => 1,

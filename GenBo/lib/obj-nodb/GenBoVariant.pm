@@ -2903,7 +2903,7 @@ has dp_infos =>(
 					$hash->{$pid} = ["-","-","-"];
 					next;
 				}
-			
+				next unless $patient->isGenome;
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				my $norm_depth = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start, $self->end+1));
 				my $dude = "-";
