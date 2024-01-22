@@ -118,8 +118,11 @@ foreach my $junction (@lJunctions) {
 	my $pid = $pm->start and next;
 	$buffer->dbh_deconnect();
 	$buffer->dbh_reconnect();
-	my $locus_text = $junction->getChromosome->name().':'.($junction->start() - 100).'-'.($junction->end() + 100);
-	$junction->createSashiPlot($patient, $locus_text);
+
+#	my $locus_text = $junction->getChromosome->name().':'.($junction->start() - 100).'-'.($junction->end() + 100);
+#	$junction->createSashiPlot($patient, $locus_text);
+	$junction->can_create_sashimi_plots(1);
+	$junction->getListSashimiPlotsPathFiles($patient);
 	print FILE 'Ok junction '.$junction->id()."\n";
 	$pm->finish();
 }
