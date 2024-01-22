@@ -209,7 +209,7 @@ if ( defined($use_percent_dejavu) ) {
 }
 my $nb_percent_dejavu_value = 90 + $percent_dejavu;
 
-my $fork2    = 4;
+my $fork2    = 1;
 my $pm2      = new Parallel::ForkManager($fork2);
 my $nbErrors = 0;
 $pm2->run_on_finish(
@@ -442,7 +442,7 @@ $n = 0;
 
 my $h_junctions_scores;
 
-my $fork     = 4;
+my $fork     = 1;
 my $pm       = new Parallel::ForkManager($fork);
 my $nbErrors = 0;
 $pm->run_on_finish(
@@ -1523,6 +1523,7 @@ sub add_linked_hash_in_cache {
 		$h_vector_chr->{min4} = $vector_patient->Clone();
 		$h_vector_chr->{min6} = $vector_patient->Clone();
 		$h_vector_chr->{min8} = $vector_patient->Clone();
+		warn $chr->name." ==> ".$vector_patient;
 		foreach my $junction ( @{ $chr->getListVarObjects($vector_patient) } ) {
 			$n++;
 			next if ( $junction->isCanonique() );
