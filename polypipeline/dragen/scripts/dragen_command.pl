@@ -163,14 +163,12 @@ else {
 #if (exists $pipeline->{count}){
 	my $gtf =  $project->gtf_file();
 	die() unless -e $gtf;
-	$gtf = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v43/gtf/gencode.v43lift37.annotation.gtf};
-	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
+	$param_align .= "-a $gtf --enable-rna-quantification true";
 #}
 
 ##
 $cmd_dragen .= $param_umi." ".$param_align;
 $patient->update_software_version("dragen",$cmd_dragen);
-warn $cmd_dragen;
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 unlink $fastq1 if  $fastq1 =~ /pipeline/;
 unlink $fastq2 if $fastq2 =~ /pipeline/;;

@@ -65,6 +65,7 @@ sub setStructuralVariants {
 
 sub setJunctions {
 	my ($self) = @_;
+	warn $self->name;
 	my $h_ids;
 	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
 	my $se_file = $self->project->RnaseqSEA_SE;
@@ -74,9 +75,9 @@ sub setJunctions {
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
 			my $id = $hres->{sj_id};
-		
+			warn $id if $hres->{id} eq "18_39550420_39564909_RI";
 			$hash_junc->{$id} = $hres;
-		
+			#push(@ares,$hres);
 		}
 	}
 	if ($se_file and -e $se_file) {

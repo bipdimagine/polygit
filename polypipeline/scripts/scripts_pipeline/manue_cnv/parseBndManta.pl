@@ -61,9 +61,10 @@ my $path = $project->getSVeqDir();
 my $path_djv = $project->DejaVuProjectsSVeq_path;
 
 # boucle sur les patients du projets
-my $listPatients = $project->getPatients();
-foreach my $thePatient (@$listPatients)
+my @listPatients = grep {$_->isGenome} @{$project->getPatients()};
+foreach my $thePatient (@listPatients)
 {
+	
 	my $patientname = $thePatient->name;
 	print $patientname."\n";
 	
