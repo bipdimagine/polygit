@@ -68,7 +68,6 @@ if ($project->isGenome){
 }
 
 my $exit =0;
-warn $f1;
 my $gvcf_pipeline = "$dir_pipeline/".$patient_name.".hard-filtered.gvcf.gz";
 $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd\"}) unless -e $gvcf_pipeline;
 

@@ -5234,7 +5234,7 @@ sub deepvariant {
 	$ppn = 20;
 	$ppn =40 if $self->patient()->project->isGenome();
 	my $real_ppn = $ppn;       #int($self->nproc / 2);
-	$real_ppn = 20 if $self->host eq "morgan";
+	$real_ppn = 40 if $self->host eq "morgan";
 	die( "-" . $filein ) unless $filein;
 
 	#	die($filein. " is empty") if (-z $filein);

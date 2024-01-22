@@ -192,7 +192,6 @@ sub split2_vcf {
 	my $chr_line;
 	my $chr_current;
 while (my $line = <VCF>){
-	warn $line;
 	if ($line =~ /^##/){
 		push (@$headers,$line);
 		next;

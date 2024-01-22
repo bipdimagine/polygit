@@ -911,6 +911,7 @@ sub dejavu {
 }
 
 
+
 sub html_rna_junctions {
 	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
@@ -921,8 +922,8 @@ sub html_rna_junctions {
 	my $stepname = $self->patient->name."@".$type;
 	my $dir = $self->project->getCacheDir();
 	my $fileout = $dir."/".$patientName.".cache.ok";
-	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName only_html_cache=1";
-	$cmd .= "; perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName dejavu=10 dejavu_percent=100 min_score=10 only_dejavu_ratio_10=1 1>$fileout";
+	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/merge_junction.pl project=$projectName patient=$patientName fork=$ppn ";
+	$cmd .= "&& perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName dejavu=10 dejavu_percent=100 min_score=10 only_dejavu_ratio_10=1 1>$fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
