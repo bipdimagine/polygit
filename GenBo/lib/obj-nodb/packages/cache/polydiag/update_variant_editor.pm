@@ -45,7 +45,6 @@ sub printBadge {
 	 $color = "#FF8800" if $value > $types->[0] ;
 	 $color = "#FF0025" if $value > $types->[1] ;
 	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
-
 }
 
 sub printBadgeWithDesc{
@@ -55,7 +54,6 @@ sub printBadgeWithDesc{
 	 $color = "#FF8800" if $value > $types->[0] ;
 	 $color = "#FF0025" if $value > $types->[1] ;
 	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$description:$value</span>} ;
-
 }
 
 sub printSimpleBadge {
@@ -439,7 +437,7 @@ sub table_gnomad {
 	my $vn=$v->vcf_id;
 	$vn =~ s/_/-/g;
 	$vn=~ s/chr//;
-	if ($v->rsname() =~ /rs/){
+	if ($v->getGnomadAN() >0){
 			$href = qq{https://gnomad.broadinstitute.org/variant/$vn$dataset};
 	}
 

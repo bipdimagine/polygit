@@ -60,6 +60,7 @@ sub parse_dragen_file {
 
 sub _parse_tab_file {
 	my ($self, $patient, $chr) = @_;
+	return [] unless -e $self->file();
 	my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 	my $iter = $tabix->query($chr->fasta_name);
 	my ($h_header, $h_global, @l_res);
@@ -95,6 +96,7 @@ sub _parse_tab_file {
 
 sub parse_SJ_file {
 	my ($self, $patient, $chr,$hh) = @_;
+
 	my $array =  $self->_parse_tab_file($patient,$chr);
 	foreach my $j (@$array){
 		my $id = $j->{id}; 
@@ -165,7 +167,7 @@ sub parse_results_global_file {
 		
 		if (not scalar(@l_col) == scalar(@header)) {
 			warn "\n$line\n\n";
-			confess("\nERROR parsing file... no same nb columns...\nFile: $file_name\n\n");
+			confess("\nERROR parsing file... no same nb columns...\nFile: $file_name\n\n".scalar(@l_col)."==".scalar(@header));
 		}
 		next if $l_col[0] eq 'NA';
 		
@@ -209,7 +211,9 @@ sub parse_results_global_file {
 			$h_res->{canonic_count} = $h_res->{junc_normale_count};
 			
 			my $res = $chr->genesIntervalTree->fetch($h_res->{start},$h_res->{end}+1);
+			
 			next if scalar(@$res) > 2 &&  $h_res->{alt_count} < 5;
+			
 			next if $h_res->{alt_count} <= 2 && $h_res->{len} >= 50000 ;
 			next if $h_res->{alt_count} <= 3 && $h_res->{len} >= 100000;
 			next if $h_res->{alt_count} <= 4 && $h_res->{len} >= 200000;
@@ -217,6 +221,7 @@ sub parse_results_global_file {
 			#next if $h_res->{alt_count} <5 if h_res->{canonic_count} == 0;
 			
 			next if (($h_res->{alt_count}+0.001)/($h_res->{canonic_count}+0.001)) <0.01;
+		
 			my $ensid = $h_res->{'ensid'};
 			my $sample = $h_res->{'sample'};
 			my $chr_id = $h_res->{'chr'};
@@ -227,6 +232,7 @@ sub parse_results_global_file {
 			
 			
 			my $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file};
+				warn $id if $h_res->{start} == 39550420 && $h_res->{end} == 39564909;
 			confess("\n\nERROR: construct junction $id for column chr. Die\n\n") if not exists $h_res->{'chr'};
 			confess("\n\nERROR: construct junction $id for column start. Die\n\n") if not exists $h_res->{'start'};
 			confess("\n\nERROR: construct junction $id for column end. Die\n\n") if not exists $h_res->{'end'};
