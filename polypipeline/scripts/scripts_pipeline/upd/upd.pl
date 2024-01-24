@@ -118,11 +118,11 @@ foreach my $chr (@{$project->getChromosomes}){
 	$nb_father_fa ++;
 	$nb_mother_fa ++;
 	
-	 $all_res->{$child->name}->{$chr->name}->{RATIO_40} = int(($nb_father_fa_40/$nb_father_fa)*100);
-	$all_res->{$child->name}->{$chr->name}->{RATIO_40} = int(($nb_mother_fa_40/$nb_mother_fa)*100);
+	$all_res->{$child->name}->{$chr->name}->{RATIO_40_F} = int(($nb_father_fa_40/$nb_father_fa)*100);
+	$all_res->{$child->name}->{$chr->name}->{RATIO_40_M} = int(($nb_mother_fa_40/$nb_mother_fa)*100);
 	
-	$all_res->{$child->name}->{$chr->name}->{ONLY_FATHER} = int(($nb_child_only_F/$nb_only_F)*100);
-	$all_res->{$child->name}->{$chr->name}->{ONLY_MOTHER} = int(($nb_child_only_M/$nb_only_M)*100);
+	$all_res->{$child->name}->{$chr->name}->{ONLY_F} = int(($nb_child_only_F/$nb_only_F)*100);
+	$all_res->{$child->name}->{$chr->name}->{ONLY_M} = int(($nb_child_only_M/$nb_only_M)*100);
 	$all_res->{$child->name}->{$chr->name}->{UPD_F} = $sc1;
 	$all_res->{$child->name}->{$chr->name}->{UPD_M} = $sc2;
 	$all_res->{$child->name}->{$chr->name}->{nb_UPD_F} = $sc1;
