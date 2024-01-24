@@ -16,7 +16,7 @@ inputs.addEventListener("input_otp", function (e) {
         } 
     } 
 }); 
-  
+  //
 inputs.addEventListener("keyup", function (e) { 
     const target = e.target; 
     const key = e.key.toLowerCase(); 
