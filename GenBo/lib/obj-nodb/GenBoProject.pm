@@ -4225,6 +4225,7 @@ sub getVariationsDir {
 }
 sub getJunctionsDir {
 	my ( $self, $method_name ) = @_;
+	confess() unless $method_name;
 	my $path = $self->project_path . "/junctions/";
 	$self->makedir($path);
 	$path .= $method_name . '/';
@@ -6560,6 +6561,10 @@ sub getSJDir {
 	$path .= $method_name . '/';
 	return $self->makedir($path);
 }
+
+
+
+
 
 sub setJunctions {
 	my ($self) = @_;
