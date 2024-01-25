@@ -1,327 +1,2617 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> 
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>Index PolyDiag</title>
-		<!-- chargement des feuilles de styles necessaires à l'affichage -->
-        <style type="text/css">
-         	@import "//ajax.googleapis.com/ajax/libs/dojo/1.14.1/dojo/resources/dojo.css";
-			@import "//ajax.googleapis.com/ajax/libs/dojo/1.14.1/dijit/themes/soria/soria.css";
-			@import "//ajax.googleapis.com/ajax/libs/dojo/1.14.1/dojox/grid/resources/soriaGrid.css";
-          
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<title>PolyDiag</title>
+		<style type="text/css">
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/resources/dojo.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dijit/themes/claro/claro.css";
+			 @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/resources/claroGrid.css";
+			@import  "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/editor/plugins/resources/css/Save.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/widget/Dialog/Dialog.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/grid/enhanced/resources/claro/EnhancedGrid.css";
+        	@import "/resources/demos/style.css";
 		 	@import "css/polycss/button.css";
-			@import "css/polycss/general.css";
+		 	@import "css/polycss/button2.css";
+        	@import "css/polycss/filter.css";
+		 	@import "css/polydiag/polydiag.css";
 			@import "css/polycss/login.css";
 			@import "css/polycss/header-footer.css";
-	
-	body, html {
-	margin:0; padding:0; width:100%; background:#fff;
-	
+			@import "//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css";
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/claro.css";
+     		@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.4//dijit/themes/claro/document.css";
+     		 @import "//maxcdn.bootstrapcdn.com/bootswatch/3.3.4/flatly/bootstrap.min.css";
+      		/*@import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3//dijit/tests/css/dijitTests.css";*/
+      		@import "js/cbtree/themes/claro/claro.css";
+      		@import "//netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css";
+      		@import "css/polycss/myMblSwitch.css";
+      		@import "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css";
+      		@import "js/igv/igv-1.0.9.css";
+      		@import "https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css";
+      	
 
-	color:#000;
-	
+	html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
 }
 
-/*.partsContainer .gridContainer table {
-	width:475px;
-}*/
-
-
-
- #gridProject {
-	position: relative;
-	border:solid;
-	border-color:#D0E2F7;
-	border-style:groove;
-	top: 2px;
-	bottom: 0;
- 	/*background-image: -moz-linear-gradient(top, #b4b4b4, #707070);
-    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#b4b4b4), to(#707070));
-    */
-    left:10%;
-    padding:1px 2px 4px 1px;
-
+.claro .demoLayout .edgePanel {
+    background-color: #d0e9fc;
 }
 
-
-        </style>
-		
-<script>
-    dojoConfig = {
-    	isDebug: true,
-         parseOnLoad: true,
-       
-    };
-</script>
-
-
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
-
-	<script type="text/javascript" src="js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
-    <script type="text/javascript" src="js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
-	<script type="text/javascript" src="js/polyjs/Utility/viewVar.js" djConfig="parseOnLoad: true"></script>
-	<script type="text/javascript" src="js/polyjs/Utility/utilGrid2.js" djConfig="parseOnLoad: true"></script>
-	<script type="text/javascript" src="js/polyjs/project_login.js" djConfig="parseOnLoad: true"></script>
-	<script type="text/javascript" src="js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
-  	<script type="text/javascript" src="js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
-   	<script type="text/javascript" src="js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
-    <script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
-    <script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
-    <script type="text/javascript" src="js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
-   	<script type="text/javascript" src="js/polyviewer/methods_polyviewer.js"></script>
-	<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
-	<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
-	<script type="text/javascript">
-		
-		//chargement de modules dojo necessaires
+.tundra #navMenuCoverage.dijitToolbar {
+				background-image:none;
 		
 		
-		dojo.require("dojo.cookie");
-		dojo.require("dijit.Dialog");
-		dojo.require("dijit.form.Button");
-		dojo.require("dijit.Toolbar");
-			dojo.require("dijit.form.TextBox");
-	    dojo.require("dojo.data.ItemFileReadStore");
-		dojo.require("dojo.data.ItemFileWriteStore");
-		dojo.require("dojox.grid.EnhancedGrid");
-		dojo.require("dojox.grid.DataGrid");
-		dojo.require("dojox.data.AndOrReadStore");
-		dojo.require("dojox.grid.enhanced.plugins.Filter");
-		dojo.require("dojox.grid.enhanced.plugins.Search");
-		dojo.require("dojox/widget/Dialog");
-   
-   		var project_name = '';
-              var option_url ="&only_diag=1";
-               	var title_page= "PolyDiag";
-		 dojo.addOnLoad(init_gridProject);
-        
-       
-			//fonction appelée par dblclickGrid suite au dbl click sur une ligne du tableau
-            function viewProject(prj, type){
-             
-				//attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
-              // this.location.href = "coverage.html?project="+prj+"&type="+type;
-				window.open("coverage.html?project="+prj+"&type="+type,'_blank');
-            }
-			
-			
+				background-repeat: repeat-x;
+              
+                }
+                
+           .spinner {
+  margin: 2px auto 0;
+  width: 70px;
+  text-align: center;
+}
+
+.spinner > div {
+  width: 18px;
+  height: 18px;
+  background-color: #FFFFFF;
+
+  border-radius: 100%;
+  display: inline-block;
+  -webkit-animation: bouncedelay 1.4s infinite ease-in-out;
+  animation: bouncedelay 1.4s infinite ease-in-out;
+  /* Prevent first frame from flickering when animation starts */
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
+
+.spinner .bounce1 {
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+
+.spinner .bounce2 {
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+
+@-webkit-keyframes bouncedelay {
+  0%, 80%, 100% { -webkit-transform: scale(0.0) }
+  40% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes bouncedelay {
+  0%, 80%, 100% { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  } 40% { 
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}     
+
+
+  
+			</style>
+	 <script type="text/javascript">
+ var dojoConfig = {
+        parseOnLoad: true,
+        packages: [
      
-        </script>
-		
-		
-    </head>
-    <body class="soria"  style ="font-size:11px;">
-      <body class="tundra">
-<div id="header">
-	<span class="title_page">Projects List</span>
-	
-		
-	
-	<span class="insetheader2"><img src="/icons/Polyicons/bipd4.png" width="50%" height="50%"></span>
-	<span class="insetheader3">BIoinformatics Paris Descartes</span>
-	<span class="title_credit">Université Paris Descartes , Institut Imagine</span>
-		<div id="header-content">
-				<span id="title_polyweb" class="insetheader">Polyweb</span>
-		</div>
-</div>
-	        <div id="toolbar" dojoType="dijit.Toolbar" style="height:27px;">
-		
-			<span class="span_header_0">Projects  <label class = "label21" id="span_projects">??</label></span>
-			<span class="span_header_1"><a>Exomes :</a> <label class = "label21" id="span_exomes">??</label></span>
-    		<span class="span_header_1"><a>Genomes :</a> <label class = "label21" id="span_genomes">??</label></span>
-			<span class="span_header_1"><a>Ciliomes :</a> <label class = "label21" id="span_ciliomes">??</label></span>
-			<span class="span_header_1"><a>Target Genes :</a><label class = "label21" id="span_diagnostics">??</label></span>
-    		<span class="span_header_1"><a>Samples :</a ><label class = "label21" id="span_samples">??</label></span> 
-    		<span class="span_header_0" hidden>Last HGMD  <label class = "label21" id="span_last_hgmd">??</label></span>
-    		<span class="span_header_0" hidden>Last ClinVar  <label class = "label21" id="span_last_clinvar">??</label></span>
-    		
-    		<div id="b_export_xls"  jsId="b_export_xls" dojoType="dijit.form.Button" iconClass="exportIcon" onClick='export_xls();' showLabel="true" style="padding-left:10px;padding-top:5px;">Export <b>XLS</b> </div>
- 			<div id="lock_button"  jsId="lock_button" dojoType="dijit.form.Button" iconClass="loginIcon" onClick='relogin();' showLabel="true" style="float:right;padding-right:10px;padding-top:5px;">Login</div>
- 			<span class="span_input" style="top:-10px;"><input id="searchInput" data-dojo-type="dijit/form/TextBox" data-dojo-props=" placeHolder: 'Search project, patient, description...', intermediateChanges:true," style="width:250px;" onChange="onSearchAll(dojo.byId('searchInput').value,'gridProject')"/></span>
-     <br>  
+          { name: "cbtree", location: "/polyweb/js/cbtree" }
+        ]
+      };
 
-</div>
-<!--
-	   <div  id="gridProject" jsId="gridProject" dojoType="dojox.grid.EnhancedGrid" query="{ name: '*' }"  plugins="{filter: true}"  plugins="{search: true,exporter: true}" jsId="gridProject" autoHeight="15" structure = "layoutProject"  style="height:100%;width:80%;" >
-||||||| .r1220
-=======
--->
+    </script>
+		    <script type="text/javascript" src="//code.jquery.com/jquery-2.0.2.min.js"></script>
+		         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		         	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+		         	
+		    <!--     
+		    <script type="text/javascript" src="js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>
+		    -->
+		    
+		    <script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+		    
+			<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+		  	<script type="text/javascript" src="js/polyjs/include.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/Utility/vp.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		   	<script type="text/javascript" src="js/polyjs/chart_coverage.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/electro.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/coverage/coverage_global.js"></script>
+		   	<script type="text/javascript" src="js/polyjs/coverage/coverage_split.js"></script>
+		   	<script type="text/javascript" src="https://dojotoolkit.org/scripts/dojo/dojox/mdnd/adapter/"></script>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		  	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+		  		 <script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	
+ 			
+<style>
+label {
+display: inline-block;
+width: 5em;
+}
+</style>
+		   	   
+		  <script>
 
-        <div id="toolbar_polybtf" dojoType="dijit.Toolbar" style="height:30px;">
-        	<center>
-        		<div id='div_toolbar_polybtf'>
-        			<span style="font-size:14px;" id="span_polybtf_wait"><img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle"> <i>PolyBTF Loading...</i></span> <span "color:black;font-size:20px;" id="span_polybtf_news"></span> <span id="span_polybtf_date_release"></span> <span id="span_polybtf_button"></span>
-    			</div>
-    		</center>
-        </div>
+		  dojo.require("dijit.layout.LinkPane");
+		  dojo.require("dijit.Toolbar");
+		  dojo.require("dijit.Tooltip");
+		  dojo.require("dijit.layout.AccordionContainer");
+		  dojo.require("dijit.form.NumberSpinner");
+		  dojo.require("dijit.form.Button");
+		  dojo.require("dijit.form.FilteringSelect");
+			dojo.require("dojo.data.ItemFileWriteStore");
+			dojo.require("dijit.TooltipDialog");
+			dojo.require("dijit.Dialog");
+			dojo.require("dojo.cookie");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dojox.editor.plugins.Save");
+		   require(["dojo/parser", "dijit/form/CheckBox","dojo/data/ObjectStore","dojo/store/JsonRest","dijit/form/DropDownButton","dojox/form/CheckedMultiSelect"]);
+		  dojo.require("dojox.grid.EnhancedGrid");
+		  dojo.require("dojox.grid.enhanced.plugins.DnD");
+		dojo.require("dojox.grid.enhanced.plugins.NestedSorting");
+		dojo.require("dojox.grid.enhanced.plugins.IndirectSelection");
+			dojo.require("dijit.layout.ContentPane");
+		require(["dojo/parser", "dijit/layout/TabContainer"]);
+		require(["dojox/layout/ScrollPane","dijit/ToolbarSeparator"]);
+		dojo.require("dijit.ProgressBar");
+		dojo.require("dijit.TitlePane");
+		dojo.require("dijit.Menu");
+		dojo.require("dojox.grid.enhanced.plugins.Menu");
+		dojo.require("dijit.Menu");
+		dojo.require("dijit.MenuItem");
+		dojo.require("dijit.layout.StackContainer");
+		dojo.require("dijit.layout.StackController");	
+		dojo.require("dojox.layout.TableContainer");
+		
+		dojo.require("dojox.mobile");
+        dojo.require("dojox.mobile.parser"); 
+        dojo.require("dojox.mobile.Switch"); 
+		
+		require([ "dojo/_base/xhr","dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+
+			var storeP;
+			var storeG;
+			var storeGroup;
+		   	var project_name = param('project'); //"NGS2013_0201";
+		   var projectName =  project_name;
+		   var transcripts =  param('transcripts').split("+");
+		   var panel =  param('panel');
+		   
+		   var polyquery_tmp_file = param('polyquery_tmp_file');
+		   var polyquery_filters;
+		   if (polyquery_tmp_file) {
+		   		vectors_hex = localStorage.getItem("tempvectors_" + projectName);
+		   		vectors_hex = vectors_hex.replace("'", "");
+		   		polyquery_filters = localStorage.getItem("filters_vectors_" + projectName);
+		   }
+		   
+
+ 
+  var tree;
+     /* require([
+        "dojo/ready",
+        "dojo/data/ItemFileWriteStore",
+        "cbtree/Tree",                    // Checkbox tree
+        "cbtree/models/ForestStoreModel"  // ForestStoreModel
+        ], function( ready, ItemFileWriteStore, Tree, ForestStoreModel) {
+            // Declare an JSON object
+
+
+          var store = new ItemFileWriteStore( { url: url_diag_tree+"?project="+project_name+"&panel="+panel });
+          var model = new ForestStoreModel( { store: store,
+                                               query: {type: "group"},
+                                               rootLabel: "Groups",
+                                                checkedRoot: true,
+                                                checkedState:true
+                                             });
+           
+                   
+					  ready(function(){
+             tree = new Tree( { model: model, id: "bundleTree" }, "bundle_div" );
+            tree.on( "checkBoxClick", change_selected_genes);
+            tree.startup();
+          });
+      
+        });
+ 
+ */
+ 
+ 
+		  dojo.ready(function(){
+	
+  dojo.declare("mySavePlugin", [dojox.editor.plugins.Save],{
+    save: function(content){
+      this.inherited(arguments);
+    }
+  });
+
+  dojo.subscribe(dijit._scopeName + ".Editor.getPlugin", null, function(o){
+    if(o.plugin){ return; }
+    var name = o.args.name.toLowerCase();
+	
+    if(name ===  "mysave"){
+       o.plugin = new mySavePlugin({
+         url: ("url" in o.args)?o.args.url:"",
+         logResults: ("logResults" in o.args)?o.args.logResults:true
+       });
+     }
+   });
+   // Now we can parse the page since we defined our save plugin above.
+   dojo.parser.parse();
+  });
+  var vectors_hex;
+  var first_panel_name = '';
+  
+  
+dojo.addOnLoad(function() {	
+      if (dijit.byId('waiting')) {
+            dijit.byId('waiting').show();
+        }   
+	checkPassword(project_name,okfunction);
+	if (vectors_hex) {
+		var is_loaded;
+		setTimeout(function() {
+			require(["dijit/registry"], function(registry){
+			    if (registry.byId("gridPatients")) { setTimeout(function() { load_with_vectors(); }, 2500); }
+			    else {
+				    setTimeout(function() {
+						if (registry.byId("gridPatients")) { setTimeout(function() { load_with_vectors(); }, 2500); }
+						else {
+						    setTimeout(function() {
+								if (registry.byId("gridPatients")) { setTimeout(function() { load_with_vectors(); }, 2500); }
+								else {
+									
+								}
+							}, 5000);
+						}
+					}, 5000);
+			    }
+			});
+		}, 5000);
+	}
+});
+
+function load_with_vectors() {
+	dijit.byId("tab_project").set('disabled', 'disabled');
+	//dijit.byId("tab_genes").set('disabled', 'disabled');
+	//dijit.byId("tab_samples").set('disabled', 'disabled');
+	//dijit.byId("coverage_stack").set('disabled', 'disabled');
+	//dijit.byId("todo_stack").set('disabled', 'disabled');
+	dijit.byId("tabPrincipal").selectChild(dijit.byId("editor_stack"));
+	setTimeout(function() {
+		require(["dijit/registry"], function(registry){
+		    if (registry.byId("slider_gnomad_ac")) { setTimeout(function() {
+				//dijit.byId("slider_gnomad_ac").set('value', 6);
+				//document.getElementById("td_slider_gnomad_ac").style.display = "none";
+				//document.getElementById("td_title_slider_gnomad_ac").style.display = "none";
+				//document.getElementById("td_title_run").style.display = "none";
+				//document.getElementById("td_run").style.display = "none";
+				editor(1,0,'all');
+		    }, 1500); }
+		    else {
+			    setTimeout(function() {
+					if (registry.byId("slider_gnomad_ac")) { setTimeout(function() {
+						//dijit.byId("slider_gnomad_ac").set('value', 6);
+						//document.getElementById("td_slider_gnomad_ac").style.display = "none";
+						//document.getElementById("td_title_slider_gnomad_ac").style.display = "none";
+						//document.getElementById("td_title_run").style.display = "none";
+						//document.getElementById("td_run").style.display = "none";
+						editor(1,0,'all');
+					}, 1500); }
+					else {
+					    setTimeout(function() {
+							if (registry.byId("slider_gnomad_ac")) { setTimeout(function() {
+								//dijit.byId("slider_gnomad_ac").set('value', 6);
+								//document.getElementById("td_slider_gnomad_ac").style.display = "none";
+								//document.getElementById("td_title_slider_gnomad_ac").style.display = "none";
+								//document.getElementById("td_title_run").style.display = "none";
+								//document.getElementById("td_run").style.display = "none";
+								editor(1,0,'all');
+							}, 1500); }
+						}, 1000);
+					}
+				}, 1000);
+		    }
+		});
+	}, 1000);
+}
+
+function load_without_vectors() {
+	setTimeout(function() {
+		require(["dijit/registry"], function(registry){
+		    if (registry.byId("slider_gnomad_ac")) { setTimeout(function() {
+				dijit.byId("slider_gnomad_ac").set('value', 2);
+				document.getElementById("td_title_slider_frequence_query").style.display = "none";
+				document.getElementById("td_slider_frequence_query").style.display = "none";
+				document.getElementById("td_title_slider_dejavu").style.display = "none";
+				document.getElementById("td_slider_dejavu").style.display = "none";
+				editor(1,0,'all');
+		    }, 1500); }
+		    else {
+			    setTimeout(function() {
+					if (registry.byId("slider_gnomad_ac")) { setTimeout(function() {
+						dijit.byId("slider_gnomad_ac").set('value', 2);
+						document.getElementById("td_title_slider_frequence_query").style.display = "none";
+						document.getElementById("td_slider_frequence_query").style.display = "none";
+						document.getElementById("td_title_slider_dejavu").style.display = "none";
+						document.getElementById("td_slider_dejavu").style.display = "none";
+						editor(1,0,'all');
+					}, 1500); }
+					else {
+					    setTimeout(function() {
+							if (registry.byId("slider_gnomad_ac")) { setTimeout(function() {
+								dijit.byId("slider_gnomad_ac").set('value', 2);
+								document.getElementById("td_title_slider_frequence_query").style.display = "none";
+								document.getElementById("td_slider_frequence_query").style.display = "none";
+								document.getElementById("td_title_slider_dejavu").style.display = "none";
+								document.getElementById("td_slider_dejavu").style.display = "none";
+								editor(1,0,'all');
+							}, 1500); }
+						}, 1000);
+					}
+				}, 1000);
+		    }
+		});
+	}, 1000);
+}
+
+var hideorshow =0;	
+var button_colors= ["#90ED7D","#217DBB","#E08E0B","#65999F","#6CBF70"]	;
+var nbshow=0;
+function hideShowWait(){
+    
+     if (dijit.byId('waiting')) {
+         if (hideorshow%2 ==0){
+              dijit.byId('waiting').show();
+               change_loading_button("pwaiting",button_colors[nbshow%6]);
+               nbshow++;
+              
+         }
+         else {
+             dijit.byId('waiting').hide();
+         }
+         hideorshow ++;
+     }
+}		
+/*
+
+require(["dojo/request", "dojo/request/notify"], function(request, notify){
+  notify("start", function(){
+    // Do something when the request queue has started
+    // This event won't fire again until "stop" has fired
+    console.log("start");
+  });
+  notify("send", function(response, cancel){
+    // Do something before a request has been sent
+    // Calling cancel() will prevent the request from
+    // being sent
+  });
+  notify("load", function(response){
+      console.log("load");
+      console.dir(response);
+    // Do something when a request has succeeded
+  });
+  notify("error", function(error){
+    // Do something when a request has failed
+  });
+  notify("done", function(responseOrError){
+      console.log("done");
+    // Do something whether a request has succeeded or failed
+    if(responseOrError instanceof Error){
+      // Do something when a request has failed
+    }else{
+      // Do something when a request has succeeded
+    }
+  });
+  notify("stop", function(){
+    // Do something when all in-flight requests have finished
+  });
+
+
+   var username = dojo.cookie("username");
+              var passwd = dojo.cookie("passwd");
+            var   urlpasswd = url_listProject+"?type=login&pwd="+passwd+"&login="+username+"&action=list";
+        var deferred = request.get(urlpasswd, {
+            handleAs: "json"
+        });
+});
+*/
+
+
+/*
+
+require(["dojo/request", "dojo/_base/array", "dojo/dom-construct", "dojo/dom", "dojo/domReady!"],
+    function(request, arrayUtil, domConstruct, dom) {
+        var username = dojo.cookie("username");
+              var passwd = dojo.cookie("passwd");
+            var   urlpasswd = url_listProject+"?type=login&pwd="+passwd+"&login="+username+"&action=list";
+        var deferred = request.get(urlpasswd, {
+            handleAs: "json"
+        });
+
+        deferred.then(function(res){
+                console.dir(res);
+           
+        },function(err){
+            // This shouldn't occur, but it's defined just in case
+            alert("An error occurred: " + err);
+        });
+
+});
+	*/	
+	var username ;
+	var passwd;
+     function checkPassword(project,okf){
+               
+                username = dojo.cookie("username");
+               passwd = dojo.cookie("passwd");
+            
+              urlpasswd = url_listProject+"?type=login&pwd="+passwd+"&login="+username+"&action=list";
         
-        <div id="toolbar2" dojoType="dijit.Toolbar" style="height:40px;background-color:white;" hidden>
-        
-            <button id="b_view_new_hgmd" dojoType="dijit.form.Button" onClick='open_new_hgmd_var()' iconClass="dijitEditorIcon dijitEditorIconSelectAll" style="padding-left:20px;padding-top:10px;" disabled hidden>
-                <span id='span_nb_new_hgmd'>Waiting...</<span>
-            </button>
-         
-            <span style="padding-left:20px;" id='hgmd_current_version_2' hidden></span>
-        	
+
+              if (project){
+                urlpasswd = urlpasswd +"&project="+project;
+              }
+              var jsonStore = new dojo.data.ItemFileWriteStore({
+                        url: urlpasswd
+                });
+                jsonStore.fetch({
+                query: {
+                    name: project
+                },
+                onComplete: okf,
+                onError: error,     
+            }); 
+                
+            
+ }		
+			
+			
+			
+ var pbv =0;			
+			function change_loading_button(name,color1,color2){
+			  var o = document.getElementById(name);
+			    if (!o){
+			        return;
+			    }
+			    // dojo.style(name, {
+                                   // "background":"red",
+                                   // color:"red"
+                                // });
+                      
+                      o.style.backgroundColor = color1;            
+                    
+			    return;
+			}
+			
+			
+			
+			
+			function okfunction(items, request) {
+				
+				  
+				if (items.length == 0) {
+				     dijit.byId('waiting').hide();
+					dijit.byId('login').show();
+					return;
+					};
 			 
-        	<div style="float:right;">
-        		<table>
-        			<td>
-        				<span>Projects with New Pathogenics: </span>
-        			</td>
-        			<td style="padding-left:20px;padding-right:75px;padding-top:10px;">
-				    	<div id="slider_new_pathogenic" jsId="slider_new_pathogenic" onChange="check_slider_new_pathogenic" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:225px; height: 25px;"'>
-				            <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
-				            <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
-				                <li><font color="#EA3434"><span id='nb_new_proj_pathogenic_1'>0</<span></font></li>
-				                <li><font color="#EAA134"><span id='nb_new_proj_pathogenic_2'>0</<span></font></li>
-				                <li><font color="#EACC34"><span id='nb_new_proj_pathogenic_3'>0</<span></font></li>
-				                <li><font color="#28A24C"><span id='nb_new_proj_pathogenic_4'>0</<span></font></li>
-				                <li><font color="grey"><span id='nb_new_proj_pathogenic_all'>0</<span></font></li>
-				            </ol>
-				            <!--
-                            <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
-                                <li><font color="#EA3434">+++</font></li>
-				                <li><font color="#EAA134">++</font></li>
-				                <li><font color="#EACC34">+</font></li>
-				                <li><font color="#28A24C">New</font></li>
-				                <li><font color="grey">All</font></li>
-                            </ol>
-                            -->
-				        </div>
-        			</td>
-        		</table>
-        	</div>
-        	 
-        </div>
-        <br>
+           change_loading_button("pwaiting","#336699");
+				//document.getElementById("stat_project").textContent= projectName;
+				//document.getElementById("stat_description").textContent= "\""+items[0].description+"\"";	
+				  
+				  var url_header1 = url_header+"?project="+projectName+"&user="+username;
+				 
+                header.setHref(url_header1);
+				reload_project();
+				//preload_coverage();
+                var tabs = dijit.byId("tabPrincipal");
+                    dojo.connect(tabs,"_transition", function(newPage, oldPage){
+                        if (newPage.id =="tab_project"){
+                            reload_project();
+                        }
+                           if (oldPage.id =="tab_genes"){
+                            if (dijit.byId("gridGenes")){    
+                                var transcripts = dijit.byId("gridGenes").selection.getSelected();
+                                
+                                if (document.getElementById("span_transcripts") && transcripts.length > 0){
+                                    document.getElementById("span_transcripts").innerHTML = transcripts.length;
+                                   }
+                               }
+                           }
+                            if  (oldPage.id =="tab_samples"){
+                                    var tsamples = dijit.byId("gridPatients").selection.getSelected();
+                                    if (document.getElementById("span_patients") && tsamples.length > 0){
+                                        document.getElementById("span_patients").innerHTML = tsamples.length;
+                                     }
+                                }  
+                        
+                    // console.log("I was showing: ", oldPage.id || "nothing");
+                     //console.log("I am now showing: ", newPage.id);
+                    });
+				 var grid = new dojox.grid.EnhancedGrid({
+        				id: 'gridPatients',
+        				structure: layoutPatients,
+        				rowSelector: '20px',
+        				plugins: {indirectSelection: {headerSelector:true,  field: 'active',name: 'Select', width:"40px", styles:"text-align: center;",selected:true}}}, document.createElement('div')
+        				);
+		
+		  			dojo.byId("gridDivPatients").appendChild(grid.domNode);
+		  
+		   			grid.startup();	
+					
+					 var grid2 = new dojox.grid.EnhancedGrid({
+        				id: 'gridGenes',
+        				structure: layoutGenes,
+        				//rowSelector: '20px',
+        				selection:{mode:'single'}, 
+        				plugins: {indirectSelection: { headerSelector:true, field: 'active',name: 'Select', width:"40px", styles:"text-align: center;"}}
+        					},
+        					 document.createElement('div'));
+		
+		  			dojo.byId("gridDivGenes").appendChild(grid2.domNode);
+		  
+		   			grid2.startup();
+		   			
+		   			
+						
+				var url1 = construct_url(url_patients);
+				var url2 = construct_url(url_validation_genes);
+				var url3 = construct_url(url_validation_genes)+"&bundle=1";
+			
+				 storeP = new dojo.data.ItemFileWriteStore({
+						url: url1
+					});
+					storeP.fetch({onComplete: fillTabPatients});
+					
+				storeG = new dojo.data.ItemFileWriteStore({
+						url: url2
+					});
+				 change_loading_button("pwaiting","#9A28CF");
+				storeG.fetch({onComplete: fillTabGenes});	
+			storeGroup = new dojo.data.ItemFileWriteStore({
+						url: url3
+					});
+		storeGroup.fetch({onComplete: fillTabGroups});			
+		
+			
+				}
+	var type = "todo";
+	
+
+function reload_project(){
+	if (vectors_hex) { return; }
+        var url_project = url_summary_panel+"?project="+project_name+"&panel=sysid"+"&user_name="+username;
+        summary.setHref(url_project);
+        //preload_coverage();
+}
+			 
+function change_selected_genes(item, nodeWidget, event ) {
+
+var t = new Array();
+if (item.children){
+	for (var l in item.children){
+		var group = item.children[l];
+		if (group.children){
+			for (var z in group.children){
+					var leaf = group.children[z];
+					t[leaf.name] = leaf.checked;
+			}
+		}
+		else {
+		t[group.name] = group.checked;
+		}
+	}  
+	
+}	
+else {
+	t[item.name] = item.checked;
+}
+	
+var root = tree.model.root;
+var root1 = tree.getChildren();
+for (var d in tree.model.root.children){
+var ds=  tree.model.root.children[d];
+	for (var l in ds.children){
+			var leaf = ds.children[l];
+			
+			if (t[leaf.name]){
+				if (t[leaf.name]=="false"){
+					tree.model.setChecked(leaf,false);
+				}
+				else {
+					tree.model.setChecked(leaf,true);
+				}
+			}
+			
+		}
+	}	
+
+	var grid =  dijit.byId("gridGenes");
+
+	for (i = 0; i < grid.rowCount; i++){
+		var it = grid.getItem(i);
+	    if (t[it.label]){
+		var value = t[it.label];
+		if (value=="false"){
+		grid.rowSelectCell.toggleRow(i, false) ;
+		}
+		else {
+			grid.rowSelectCell.toggleRow(i, true) ;
+		}
+		}
+	}
+
+		   
+	}	
 
 
 
-	   <div  id="gridProject" jsId="gridProject" dojoType="dojox.grid.DataGrid" query="{ name: '*' }"  plugins="{filter: true}"  plugins="{search: true}" jsId="gridProject" autoHeight="15" structure = "layoutProjectDiag"  style="height:100%;width:80%;" >
->>>>>>> .r1622
-	  
-	   
-</div> <br>
+
+
+var AllTranscripts = new Array();
+
+
+	
+	 var tab_coverage;
 	 
-<br>
-	<footer> 
-		<div id="foo" data-dojo-type="dijit/layout/ContentPane" href="include_html/footer.html">
-		</div>
-	</footer>
+	 function clearOldList(){
+	 	dijit.byId("setTestBar").update({progress: 0});
+	 }
+	 function gotItem(item, request){
+	 	
+	 }
+	 	
+	 	function zoomCnv(tr,r,panel){
         
-        <div id="dialog_hgmd" dojoType="dijit.Dialog" title="PolyBTF: New Variants Pathogenic" style="background-color:white;overflow: auto;">
-			<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-			<div>
-				<table style="padding-left:3%;width:94%;padding-bottom:20px;">
-					<td>
-						<center>
-							<div class="dropdown">
-							  <button style="background-color:white;color:green;border: 1px solid #D7D7D7" class="btn dropdown-toggle" href="#" role="button" id="dropdown_release_version" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-							     <span class="glyphicon glyphicon-menu-down" aria-hidden="true"></span> Release Version: <span id="dropdown_releases_selected"></span>
-							  </button>
-							  <div style="background-color:#F0F0F0;padding-left:25px;width:400px;border:1px solid black;text-align:center;" id="dropdown_releases_new_pathogenics" class="dropdown-menu" aria-labelledby="dropdown_release_version"></div>
-							</div>
-							<br>
-							<span id='hgmd_current_version'></span>
-							<br><br>
-							<div style="padding-left:15px;padding-right:15px;padding-bottom:15px;"><button onclick="dont_show_dialog_again_index()"><img id="img_dont_show_me_again" style="height:12px;padding-bottom:2px;" src="images/polyicons/cross.png" alt='X'> <i>Don't show me again</i></button>
-						</center>
-					</td>
-					<td style='background-color:#F9F6FF;padding-bottom:10px;padding-left:300px;border: 1px solid black;box-shadow: 1px 1px 6px black;'>
-						<br><span id='span_dialog_new_dm_global'></span>
-						<br><span id='span_dialog_new_dm'></span>
-						<br><span id='span_dialog_max_dejavu'></span>
-						<br><span id='span_dialog_max_gnomad'></span>
-					</td>
-				</table>
+        
+         var start_url = url_cnv;
+            
+            var url = construct_url(start_url,tr);
+            dijit.byId("popup_coverage").show();
+            dijit.byId("div_popup_coverage").setHref(url+"&large=1&panel="+panel);
+        
+      }
+	 	function zoomHgmd(p,hid,vid){
+	        
+	        
+	     
+	            dijit.byId("popup_hgmd").show();
+	            dijit.byId("div_popup_hgmd").setHref(url_hgmd_view+"?hid="+hid+"&vid="+vid+"&project="+p);
+	        
+	      }	
+	 	
+	 	function comment_cldb(id){
+	        
+	        
+	      //   var start_url = url_cnv;
+	            
+	    //        var url = construct_url(start_url,tr);
+	            dijit.byId("popup_cldb").show();
+	      // dijit.byId("div_popup_coverage").setHref(url+"&large=1");
+	        
+	      } 	
+	 	
+	 	
+	  function zoomCoverage(tr){
+	  	
+	  	
+	  	 var start_url = url_coverage;
+		 	
+		 	var url = construct_url(start_url,tr);
+		 	dijit.byId("popup_coverage").show();
+		 	dijit.byId("div_popup_coverage").setHref(url);
+	  	
+	  }
+	  function zoomPrimer(cp,ml){
+        
+         var start_url = url_primer_coverage;
+            
+            var url = construct_url(start_url);
+            url+="&capture="+cp+"&multiplex="+ml;
+            dijit.byId("popup_coverage").show();
+            dijit.byId("div_popup_coverage").setHref(url);
+        
+      }
+		var tab_coverage = new Array();
+		var first =0;
+		function preload_coverage(storeP,reload_flag) { 
+			
+	/*	    alert("cocuou");
+		    console.dir(storeP._arrayOfAllItems);
+		    for(i=0;i.storeP._arrayOfAllItems.length;i++ ){
+		         console.dir(storeP._arrayOfAllItems[i]);
+		          console.log(storeP._arrayOfAllItems[i].label);
+		    }
+		*/    
+		  
+		     if (first >0) {
+		         reload(5);
+		         return;
+		     }
+		     first ++;
+		       var tsamples = storeP._arrayOfAllItems;//dijit.byId("gridPatients").selection.getSelected();
+		      
+		    var url_cnv =    construct_url(url_cnv_overview)+"&test_cache=1";
+       // document.getElementById("waiting_text").textContent = "Loading Data... [0/25]";
+      
+	 require(["dojo/promise/all", "dojo/Deferred", "dojo/request", "dojo/_base/array", "dojo/dom-construct", "dojo/dom", "dojo/json", "dojo/domReady!"],
+function(all, Deferred, request, arrayUtil, domConstruct, dom, JSON) {
+
+		//function preload_coverage(value){
+		 
+            var p="";
+            var samples = new Array();
+            var requests = new Array();
+             var url = construct_url(url_cached_coverage);
+             var progress_id =0;
+        
+             var max =0;
+              
+                   var i,j,temparray,chunk = 4;
+                   var labels = new Array;
+                   var z =0;
+                    for (i=0,j=tsamples.length; i<j; i+=chunk) {
+                        temparray = tsamples.slice(i,i+chunk);
+                        var temp = new Array();
+                        for (var x=0;x<temparray.length;x++){
+                            temp[x] = temparray[x].label;
+                        }
+                        
+                        labels[z++] = temp.join(",");
+                    }
+                     
+                          max =    labels.length +1;
+                          
+                          
+                      for(i=0;i<Math.round(labels.length/2);i++){
+                         requests[i] = request.get( url+"&patient_cached="+ labels[i], {
+                                                        handleAs: "json"
+                                                        }).then(function(response){
+                                                            
+                                                            progress_id ++;
+                                                            myProgressBar.set( { value: progress_id } );
+                                                          
+                                                            return 1;
+                                                            }) ;
+                           // do whatever
+                        }           
+                    
+                      
+                    myProgressBar.set( { value: 0,maximum:max } );
+                   dijit.byId('waiting_progress').show();   
+                   
+
+    
+		var request2 = new Array();
+		 all(requests).then(function(results){
+		     
+		      for(i=Math.round(labels.length/2);i<labels.length;i++){
+                         request2[i+labels.length] = request.get( url+"&no_cache=1&patient_cached="+ labels[i], {
+                                                        handleAs: "json"
+                                                        }).then(function(response){
+                                                            progress_id ++;
+                                                            myProgressBar.set( { value: progress_id } );
+                                                          
+                                                            return 1;
+                                                            }) ;
+                           // do whatever
+                        }           
+                 request2[i+labels.length] = request.get(url_cnv, {
+                                                        handleAs: "html"
+                                                        }).then(function(response){
+                                                            progress_id ++;
+                                                            myProgressBar.set( { value: progress_id } );
+                                                          
+                                                            return 1;
+                                                            }) ;
+                                                             
+                all(request2).then(function(results){
+                    if (reload_flag ==1) reload(5) ;
+                     dijit.byId('waiting_progress').hide();
+                });
+                    
+                 //  
+                   //
+                    
+                
+            });      
+
+		});
+		
+		
+		
+		}
+		
+	   function loading (){ 
+             
+       // document.getElementById("waiting_text").textContent = "Loading Data... [0/25]";
+      
+        require(["dojo/promise/all", "dojo/Deferred", "dojo/request", "dojo/_base/array", "dojo/dom-construct", "dojo/dom", "dojo/json", "dojo/domReady!"],
+            function(all, Deferred, request, arrayUtil, domConstruct, dom, JSON) {	
+		
+            }
+        );
+        
+}
+
+function reload(value){
+	      	var this_order;
+			if (dijit.byId("ENST_order").get("value") == "on") { this_order = "name";}
+    		else {this_order = "position";}
+	      	
+		 	var start_url = url_coverage;
+		 	if (value == 5 ){
+		 		start_url = url_coverage_overview_defidiag;
+		 		
+		 		
+		 		
+		 	}
+		 	if (value == 3){
+                start_url = url_primer_coverage_overview;
+                
+            }
+            if (value == 4){
+            	start_url =url_cnv_overview ;
+        		                 
+            }
+            
+		 	var url = construct_url(start_url);
+		 	
+		 	var nbTranscripts = dijit.byId("gridGenes").selection.getSelected().length;
+		 	
+		 	if (value ==1){
+		 		dijit.byId("ENST_order").set("value", "on");
+				url+= "&only_red=1";
+			}
+			else if (value ==2){
+		 		dijit.byId("ENST_order").set("value", "on");
+				url+= "&only_orange=1";
+			}
+			else if (value ==3){
+		 		dijit.byId("ENST_order").set("value", "on");
+				url+= "&multiplex=1";
+			}
+			else if (value ==4){
+				url+= "&cnv=1";
+				url+='&order='+this_order;
+			}
+			else if (value ==5){
+				url+='&order='+this_order;
+		//		if (dijit.byId("only_low")){
+				url+="&only_low="+dijit.byId("only_low").get('value');
+			
+				//url+="&recessive="+dijit.byId("recessive").get('value');
+				//url+="&recessive="+dijit.byId("recessive").get('value');
+				
+			//	}
+			}
+		 	 tab_coverage[1] = new dijit.layout.ContentPane({
+	         		title: "cov",
+	         		content: " ",
+	         		 closable: true,
+	         		 id:"cov50",
+	    		});
+		 	  tab_coverage[1].setHref(url);
+		 	table_coverage.addChild(tab_coverage[1]);
+			table_coverage.selectChild( tab_coverage[1]);
+	/*	 	
+		var step = 100;
+		var first =-1;
+		var previous = -1;
+		var ii =1;
+		for (var n=0;n<nbTranscripts;n+=step){ 
+			if (first == -1){ first =ii;} 
+		  if (!tab_coverage[ii]){
+			 tab_coverage[ii] = new dijit.layout.ContentPane({
+         		title: ii,
+         		content: " ",
+         		 closable: true,
+         		 id:"cov50_"+n,
+         		 onClose: function() {
+         		 var t = this.get('title');
+         		 delete tab_patients[t];
+                 return true;
+              },
+               onShow:  function() {
+               		var z =this.nextTab +0;
+               		if (this.nextTab && tab_coverage[z]){
+               			tab_coverage[z].refresh();
+               		}
+               		
+               }
+    		});
+			
+    	table_coverage.addChild(tab_coverage[ii]);
+    	}
+		
+        tab_coverage[ii].setHref(url+"&start="+n+"&step="+step);
+		 tab_coverage[ii].nextTab = ii+1; 
+			ii++; 	
+		}
+		table_coverage.selectChild( tab_coverage[first]);
+			select_exons = new Array();
+			sanger_variations_valid = new Array();
+			sanger_exons_valid = new Array();
+			type = "todo";
+			*/
+		   }
+		   
+var myAlertDialog;
+function warning(text){
+	if (!myAlertDialog) {
+			 myAlertDialog = new dijit.Dialog({
+        			title: "Warning",
+        			content: text,
+        			style: "width: 200px;height:150px;font-size: 13px;"
+    				});
+    			}
+  
+    	myAlertDialog.show();
+    				return;
+	}		   
+function get_alacarte(){
+	var text = "";
+	var tt = ["project_summary","graphic_coverage","all_coverage","cnv_coverage","table_variations","sanger_variations","validated_variations","todo_variations","all_variations"];
+	for (var i=0;i<tt.length;i++){
+		if (dijit.byId(tt[i]).get("checked")){
+			text+="&"+tt[i]+"=1";
+		}
+	
+	}
+
+	return text;
+}   
+
+var tab_patients = new Array();
+var tab_editor = new Array();
+
+
+
+
+function reload_editor (mode,type,panel_name){
+	document.getElementById("span_panel_name").innerHTML = panel_name;
+	editor(mode,type);
+	panel_selected = panel_name;
+	
+}
+
+
+    function editor(mode,type){
+    	var box1 = dijit.byId("ratio_label");
+    	
+ /*   	
+		var qual = box1.get("value");
+		if (qual){
+			qual = qual *-1;			
+		}
+		else {
+			qual = dijit.byId("slider_allele_quality").value;
+			box1.set("value","");
+		}
+		*/
+		var	qual = dijit.byId("slider_allele_quality").value;
+		
+		var panel_name;
+		if (document.getElementById("span_panel_name")){
+			panel_name = document.getElementById("span_panel_name").innerHTML;
+		}
+		else if (vectors_hex) {
+			document.getElementById("span_panel_name").innerHTML = "all";
+		}
+		else {
+			panel_name ="sysid";
+		}
+		if (panel_name == 'All Genes') {
+			panel_name = 'all';
+		}
+	
+		var url;
+        var argsPost;
+        
+		if (vectors_hex) {
+			url += "&vectors_hex='" + vectors_hex + "'";
+        	argsPost = {project:project_name,
+        		edit_mode:1,
+        		never:1,
+        		this:6,
+        		impact:3,
+        		frequence:4,
+        		allele_quality:5,
+        		report_mode:1,
+        		project_summary:1,
+        		all_coverage:1,
+        		table_variations:1,
+        		sanger_variations:1,
+        		validated_variations:1,
+        		all_variations:1,
+        		strict_denovo:1,
+        		denovo:1,
+        		recessive:1,
+        		xor:1,
+        		both:1,
+        		utr:1,
+        		intronic:1,
+        		all:1,
+        		span:20,
+        		limit:30,
+    		};
+    		
+        	argsPost["vectors_hex"] = vectors_hex;
+			argsPost["query_filters"] = "'"+polyquery_filters+"'";
+			
+			alert (argsPost);
+			console.log(argsPost);     
+				
+	        //dijit.byId("slider_gnomad_ac").set('value', 6);
+	        //dijit.byId("slider_consequence").set('value', 1);
+	        //dijit.byId("slider_frequence").set('value', 5);
+	        //dijit.byId("slider_consequence").set('disabled', 'disabled');
+	        //dijit.byId("slider_frequence").set('disabled', 'disabled');
+	        //dijit.byId("slider_this").set('disabled', 'disabled');
+	        //dijit.byId("slider_gnomad_ac").set('disabled', 'disabled');
+	        //dijit.byId("slider_allele_quality").set('disabled', 'disabled');
+	        
+	        url = "project="+project_name+"&edit_mode=1&never=1&this=6&impact=3&frequence=4&allele_quality=5&report_mode=1&project_summary=1&all_coverage=1&table_variations=1&sanger_variations=1&validated_variations=1&all_variations=1&denovo=1&recessive=1&xor=1&both=1&utr=1&intronic=1&all=1";
+	        url += '&vectors_hex=' + vectors_hex;
+		}
+		else {
+     		//url = url_report_patient+"?project="+project_name+"&edit_mode="+mode+"&never="+dijit.byId("check_never").get('value')+"&this="+dijit.byId("slider_this").value+"&impact="+dijit.byId("slider_consequence").value+"&frequence="+dijit.byId("slider_frequence").value+"&allele_quality="+qual+"&report_mode=1";
+     		 
+     		url = url_report_patient+"?project="+project_name;
+     		url += "&edit_mode="+mode;
+     		url += "&never="+dijit.byId("check_never").get('value');
+     		//url += "&this="+dijit.byId("slider_this").value;
+     		//url += "&frequence="+dijit.byId("slider_frequence_query").value;
+     		url += "&allele_quality="+qual;
+     		url += "&report_mode=1";
+     		url += "&annot=" + functional_url_filter_data();
+     		
+        	argsPost = {project:project_name,
+        		edit_mode: mode,
+        		never: dijit.byId("check_never").get('value'),
+        		//impact: dijit.byId("slider_consequence").value,
+        		//frequence: dijit.byId("slider_frequence_query").value,
+        		ac: dijit.byId("slider_gnomad_ac").value,
+        		allele_quality: qual,
+        		report_mode:1,
+        		annot: functional_url_filter_data(),
+    		};
+        
+	        if (panel_name) {
+	            url+= "&panel=" + panel_name;
+	        	argsPost["panel"] = panel_name;
+	        }
+        
+	        if (type == 1){
+	            /*report alacarte*/
+	            url+=get_alacarte();
+	        }
+	         if (type == 2){
+	            /*report alacarte*/
+	            url+=get_alacarte()+"&xls=1";
+	        }
+	         if (type == 3){
+	             /*report alacarte*/
+	             url+=get_alacarte()+"&list=1";
+	         }
+	        else {
+	            url +="&project_summary=1&all_coverage=1&table_variations=1&sanger_variations=1&validated_variations=1&all_variations=1";
+	            argsPost["project_summary"] =1;
+	            argsPost["all_coverage"] =1;
+	            argsPost["table_variations"] =1;
+	            argsPost["sanger_variations"] =1;
+	            argsPost["validated_variations"] =1;
+	            argsPost["all_variations"] =1;
+	            if (document.getElementById("strict_denovo").checked == true) url+="&strict_denovo=1";
+	        	if (document.getElementById("strict_denovo").checked == true) argsPost["strict_denovo"] =1;
+	            if (document.getElementById("denovo").checked == true) url+="&denovo=1";
+	        	if (document.getElementById("denovo").checked == true) argsPost["denovo"] =1;
+	        	if (document.getElementById("recessive").checked == true) url+="&recessive=1";
+	        	if (document.getElementById("recessive").checked == true) argsPost["recessive"] =1;
+	        	if (document.getElementById("xor").checked == true) url+="&xor=1";
+	        	if (document.getElementById("xor").checked == true) argsPost["xor"] =1;
+	        	if (document.getElementById("both").checked == true) url+="&both=1";
+	        	if (document.getElementById("both").checked == true) argsPost["both"] =1;
+	        }
+        }
+        
+         url += return_options();
+          
+        var tab_selected_patient;
+        if (tab_editor){
+            tab_selected_patient = return_selected_patient(tab_editor);
+          }
+        /* sample */
+        
+		if (vectors_hex) {
+	        url += "&transcripts=all";
+	        argsPost["transcripts"] = 'all';
+        }
+		else {
+	        //var transcripts = dijit.byId("gridGenes").selection.getSelected();
+	        var t="";
+	        var tz="";
+	        var total_show=0;
+	    //    if (transcripts.length == nb_genes){
+	            t="all";
+	            tz = "all";
+	        
+	    //    }
+	       /* else {
+	        for (i=0;i<transcripts.length;i++){
+	        t += transcripts[i].transcript+",";
+	        
+	        }
+	        }
+	    */
+	        //document.getElementById("label_patients").innerHTML = p;
+	        url += "&transcripts="+t;
+	        argsPost["transcripts"] = t;
+        }
+
+        url += "&user_name="+username;
+        argsPost["user_name"] = username;
+     if (type == 2){
+           window.location=url+"&patients="+tab_selected_patient;
+           return;
+     }
+     if (type == 3){
+    	   var tsamples = dijit.byId("gridPatients").selection.getSelected();
+    	   for (i=0;i<tsamples.length;i++){
+               var n = tsamples[i].label;
+    	 			window.open(url+"&xls=1&patients="+n);
+    	   }
+         return;
+   }
+    console.log("ici");
+       // var tsamples = dijit.byId("gridPatients").selection.getSelected();
+        var p="all";
+        var p="";
+        var tsamples = storeP._arrayOfAllItems;//dijit.byId("gridPatients").selection.getSelected();
+        if (tsamples.length == 0) {
+        p="all";
+        }
+        else {
+        var z=0;
+        var num_samples =0;
+        tsamples.sort(function(a,b) {
+            return b.child > a.child;
+        })
+        
+        for (i=0;i<tsamples.length;i++) {
+        	  //if  (tsamples[i].child == 0) continue;
+        	  num_samples ++;
+        }
+         
+        for (i=0;i<tsamples.length;i++) {
+            var n = tsamples[i].label;
+         //   if  (tsamples[i].child == 0) continue;
+           var ic ='<i class="fa fa-mars " aria-hidden="true" style="color:blue;vertical-align: top"></i> &nbsp;';
+           if (tsamples[i].sex == "F") ic ='<i class="fa fa-venus " aria-hidden="true" style="color:#F660AB;vertical-align: top"></i> &nbsp';
+       		  if (tsamples[i].child == 0) {
+       			 ic = '<img src="https://img.icons8.com/office/16/000000/person-male.png" &nbsp;>';
+       		  	 if (tsamples[i].sex == "F")   ic = '<img src="https://img.icons8.com/office/16/000000/businesswoman.png" &nbsp;>';
+       		  }
+        
+            if (!tab_editor[n]){
+                z++;
+             tab_editor[tsamples[i].label] = new dijit.layout.ContentPane({
+                title:ic+ tsamples[i].label,
+                content: " ",
+                 closable: true,
+                 id:"c1pp"+n,
+                 ioMethod:dojo.xhrPost,
+                 onClose: function() {
+                 var t = this.get('title');
+                 delete tab_patients[t];
+                 return true;
+              },
+               onShow:  function() {
+                    this.toto ++;
+                 
+                 //     this.setHref(url_report_patient_cache);
+                       if (this.toto== 2){
+                       	 	this.setArgsPost.patients=this.patient;
+                    	   this.ioArgs.content = this.setArgsPost; 
+                    	 
+                    	  	
+                    	   this.setHref(url_report_patient_cache);
+                          //this.setHref(this.setUrl);
+                      }
+               }
+            });
+            
+
+         container_editor.addChild(tab_editor[tsamples[i].label]);
+        }
+         
+      
+        tab_editor[tsamples[i].label].debug = url+"&patients="+tsamples[i].label;
+        tab_editor[tsamples[i].label].setArgsPost = argsPost;
+        tab_editor[tsamples[i].label].patient=tsamples[i].label;
+        tab_editor[tsamples[i].label].transcripts = t;
+        if (num_samples == 1){
+        	
+        
+        	  tab_editor[tsamples[i].label].setArgsPost = argsPost;
+        	 
+        	  tab_editor[tsamples[i].label].patient=tsamples[i].label;
+              tab_editor[tsamples[i].label].setArgsPost.patients=tsamples[i].label;
+          //  tab_editor[tsamples[i].label].setHref(url+"&patients="+tsamples[i].label);
+           	
+            tab_editor[tsamples[i].label].ioArgs.content = tab_editor[tsamples[i].label].setArgsPost;
+            tab_editor[tsamples[i].label].setHref(url_report_patient_cache);
+             tab_editor[tsamples[i].label].toto = 2;
+        }
+    //    else if ((num_samples-i)<2){
+           //  tab_editor[tsamples[i].label].toto =1;
+             //container_editor.selectChild( tab_editor[tsamples[i].label]);
+      //  }
+        else {
+        
+             tab_editor[tsamples[i].label].toto =1;
+        }
+
+        }
+        }
+        url += "&patients="+p;
+
+        
+
+        type = "patient";
+        if (tab_selected_patient){
+        	
+		      
+			 tab_editor[tab_selected_patient].onShow();
+			//container_editor.selectChild( tab_editor[tab_selected_patient]);
+			
+        }
+        else {
+        	
+        	 tab_editor[tsamples[0].label].onShow();
+        	//container_editor.selectChild( tab_editor[tsamples[2].label]);
+        }
+
+        }
+		
+    function  showTranscripts(array_cell,row){
+    	dojo.forEach(array_cell, function(cell, i){
+    		  dojo.setStyle(document.getElementById(cell), "display", "table-row");
+    		});
+    	if (row){
+    		dojo.setStyle(document.getElementById(row), "display", "none");
+    	}
+    }
+		
+		function patient(mode,type){
+		var url = url_report_patient_cache+"?project="+project_name+"&panel="+panel+"&edit_mode="+mode+"&report_mode=1"+"&this="+dijit.byId("select_this").get("value")+"&impact="+dijit.byId("select_impact").get("value")+"&frequence="+dijit.byId("select_frequence").get("value");
+		if (type == 1){
+			/*report alacarte*/
+			url+=get_alacarte();
+		}
+		else {
+			url +="report_mode=1&project_summary=1&all_coverage=1&table_variations=1&sanger_variations=1&validated_variations=1&all_variations=1";
+		}
+		 url += return_options();
+	
+		/* sample */
+		
+
+		var transcripts = dijit.byId("gridGenes").selection.getSelected();
+		var t="";
+		var tz="";
+		var total_show=0;
+		if (transcripts.length == nb_genes){
+			t="all";
+			tz = "all";
+		
+		}
+		else {
+		for (i=0;i<transcripts.length;i++){
+		t += transcripts[i].transcript+",";
+		
+		}
+		}
+		//document.getElementById("label_patients").innerHTML = p;
+		url += "&transcripts="+t;
+
+	
+
+		url += "&user_name="+username;
+	
+		var tsamples = dijit.byId("gridPatients").selection.getSelected();
+		 var tab_selected_patient;
+        if (tab_editor){
+            tab_selected_patient = return_selected_patient(tab_patients);
+          }
+		
+	//	return;
+		var p="";
+		if (tsamples.length == 0) {
+		p="all";
+		}
+		else {
+		var z=0;
+		for (i=0;i<tsamples.length;i++){
+			var n = tsamples[i].label;
+			if (!tab_patients[n]){
+				z++;
+			 tab_patients[tsamples[i].label] = new dijit.layout.ContentPane({
+         		title: tsamples[i].label,
+         	
+         		content: " ",
+         		 closable: true,
+         		 id:"c1p"+n,
+         		 onClose: function() {
+         		 var t = this.get('title');
+         		 delete tab_patients[t];
+                 return true;
+              },
+               onShow:  function() {
+               		
+               		 this.toto ++;
+               		 if (this.toto== 2){
+               			
+               		 
+               			this.setHref(this.setUrl);
+               		}
+               }
+    		});
+    		
+
+    	 container_patient.addChild(tab_patients[tsamples[i].label]);
+    	}
+    	tab_patients[tsamples[i].label].setUrl = url+"&patients="+tsamples[i].label;
+    	tab_patients[tsamples[i].label].setArgsPost = argsPost;//
+    	tab_patients[tsamples[i].label].setArgsPost.patients = tsamples[i].label;
+    	
+    	if (tsamples.length == 1){
+    		tab_patients[tsamples[i].label].ioArgs.content = {test:'it should work'};
+    		tab_patients[tsamples[i].label].setHref(url+"&patients="+tsamples[i].label);
+    		 tab_patients[tsamples[i].label].toto =2;
+    	}
+    	else if ((tsamples.length-i)<3){
+			 tab_patients[tsamples[i].label].toto =1;
+			
+			 container_patient.selectChild( tab_patients[tsamples[i].label]);
+			  //tab_patients[tsamples[i].label].show();
+		}
+		else {
+			console.log("la");
+			 tab_patients[tsamples[i].label].toto =1;
+		}
+
+		}
+		}
+		url += "&patients="+p;
+
+		if (tab_selected_patient){
+              container_patient.selectChild( tab_patients[tab_selected_patient]);
+        }
+
+		type = "patient";
+
+		}
+		
+	function return_selected_patient(tab){
+		
+		for (var p in tab ){
+		
+			if (tab[p].get('selected')) { return p; }
+		}
+		return "";
+	}	
+	function print_patient(type,p){
+		var p = return_selected_patient(tab_patients);
+		
+		open_window_report(p,type);
+	}
+	function send_print(p,mode){
+           var p = span_name.innerHTML;
+           var name = document.getElementById('input_name').value;   
+	       printer(p,1,name);
+	    }	
+	function printer2(p,mode){
+        span_name.innerHTML=p;
+        dijit.byId('popup_patient_name').show();
+        return;
+        }    
+	
+	function printer(p,mode,name){
+
+	    var url = url_report_patient_cache+"?project="+project_name+"&panel="+panel+"&edit_mode=0"+"&report_mode=1"+"&this="+dijit.byId("select_this").get("value")+"&impact="+dijit.byId("select_impact").get("value")+"&frequence="+dijit.byId("select_frequence").get("value");
+         url+=get_alacarte();
+	     url += return_options();
+	     
+        
+ 
+        var transcripts = dijit.byId("gridGenes").selection.getSelected();
+        var t="";
+        var tz="";
+        var total_show=0;
+        if (transcripts.length == nb_genes){
+            t="all";
+            tz = "all";
+        
+        }
+        else {
+        for (i=0;i<transcripts.length;i++){
+        t += transcripts[i].transcript+",";
+        
+        }
+        }
+        url += "&transcripts="+t;
+
+    
+
+        url += "&user_name="+username;
+      
+        if (p == "all"){
+       	 var tsamples = storeP._arrayOfAllItems;
+       	 var x =0;
+  	   	for (i=0,j=tsamples.length; i<j; i++) {
+  		  
+  		   var t = "check_"+tsamples[i].id[0];
+  		 
+  		   if( dojo.byId(t).checked == true){
+  				window.open(url+"&patients="+tsamples[i].id[0]);
+  				x ++;
+  		   }
+  		   
+  		   
+  	   }
+  	   	if (x ==0){
+  	   		alert("Select at least one patient ");
+  	   	}
+ 		
+          return;
+ 	   }
+        if (mode == 1) {url += "&print=1&name="+name;}
+	 
+	   url+="&patients="+p;
+	   child = window.open(url); //Open the child in a tiny window.
+            window.focus();
+	    open_window_report(p,1);
+	} 	
+		
+		function open_window_report(patient,type){
+		    	
+				var url = tab_patients[patient].setUrl+"&print=1";
+				
+		/*		url = url+"?project="+project_name+"&report_mode="+type;
+				if (type == 1){
+					url+=get_alacarte();
+					
+				}
+				limit =  limit_spinner.value;
+				padding = padding_spinner.value;
+				url += "&span="+padding;
+				url += "&limit="+limit;
+	
+				url += "&patients="+patient;
+		
+	
+		
+
+			 var username = dojo.cookie("username");
+		 
+				 url += "&transcripts=all";
+			
+				url += "&user_name="+username+"&print=1";
+			
+			// var url = url_report_patient_cache+"?project="+project_name+"&edit_mode=0&span=20&limit=10&transcript=all&patient="+patient;
+			// window.print(url);
+			*/
+			 child = window.open(url); //Open the child in a tiny window.
+			window.focus(); //Hide the child as soon as it is opened.
+			
+			//child.print(); //Print the child.
+			//child.close(); //Immediately close the child.
+		}
+		
+		function open_report_quality() {
+			
+			 var url = url_report_quality+"?project="+project_name;
+			  var win = window.open(url, '_blank');
+			  win.focus();
+			}
+		   function report(){
+			var url = construct_url(url_todo);;		   
+			todo_div.setHref(url);
+			select_exons = new Array();
+			sanger_variations_valid = new Array();
+			sanger_exons_valid = new Array();
+			type = "report";
+		   }
+		   
+		   
+		   var sanger_variations_valid = new Array();
+		   var sanger_exons_valid = new Array();
+		    function todo_xls(){
+         
+            limit =  limit_spinner.value;
+            padding = padding_spinner.value;
+            var url;
+         
+             url = construct_url(url_todo);
+           
+            url += "&xls=1";
+            
+            window.location=url;
+            
+            
+           }
+
+	           function todo_print(){
+         
+            limit =  limit_spinner.value;
+            padding = padding_spinner.value;
+            var url;
+         
+             url = construct_url(url_todo);
+           
+            url += "&print=1";
+            
+             child = window.open(url); //Open the child in a tiny window.
+             window.focus(); //Hide the child as soon as it is opened.
+            
+            
+           }	
+           
+           function export_gene_tab_xls(){
+           	url = construct_url(url_validation_genes);
+           	url += "&xls=1";
+			window.location=url;
+           }   
+		   
+		   function xls(){
+		 
+			limit =  limit_spinner.value;
+			padding = padding_spinner.value;
+			var url;
+			if (type == "report"){
+			 url = construct_url(url_todo);
+			}
+			else {
+				alert("error");
+			}
+		
+			url += "&xls=1";
+			
+			window.location=url;
+			
+			
+		   }
+		   
+		    function put_validation_exons(item,td,vv){
+		        
+			 if (item.checked) {
+			 	var myColor = dojo.colorFromString("yellow");
+				dojo.style(td.id, "backgroundColor", myColor);
+			 	sanger_exons_valid[vv] = 1;
+			 }
+			 else {
+			 	var myColor = dojo.colorFromString("red");
+				dojo.style(td.id, "backgroundColor", myColor);
+			 	
+			 	sanger_exons_valid[vv] = 0;
+			 }	  	
+		  }
+        function put_validation_exons2(item,tdid,vv){
+    
+			sanger_exons_valid[vv] = item.value;
+			 var td = document.getElementById(tdid);
+			td.classList.remove("info");
+            td.classList.remove("success");
+            td.classList.remove("danger");          
+             td.classList.add("info");
+			
+		  }
+		   
+		   function put_variations_status(item,tdid){
+		   	
+			
+
+			if (item.value == "none") {
+			    delete sanger_variations_valid[item.name];
+			    return;
+			}
+			
+			sanger_variations_valid[item.name] = item.value;
+			 var td = document.getElementById(tdid);
+            td.classList.remove("info");
+            td.classList.remove("success");
+            td.classList.remove("danger");          
+             td.classList.add("info");
+			
+		   }
+		   
+		   var select_exons = new Array();
+		   function test(node){
+		
+		   	 if (node.checked) {
+			 	select_exons[node.value] = 1;
+			 	save_button.setDisabled(false);
+			 	
+			 }
+			 else {
+			 	select_exons[node.value] = 0;
+			 }
+			 var n=0;
+			for (var z in select_exons) {
+					if (select_exons[z] > 0) {
+						n++;
+					}
+				}
+				
+			 save_button.set("label","save ("+n+" exons)");
+		   }
+		   
+		   
+		   
+           function save_validations(){
+               var text = "";
+               for (var z in sanger_variations_valid) {
+               
+                   text = text + z + ":" + sanger_variations_valid[z] + ",";
+                   
+                   
+               }
+               
+               var text2 = "";
+               
+               for (var z in sanger_exons_valid) {
+                   if (sanger_exons_valid[z] != 0) {
+                   		var val = sanger_exons_valid[z];
+                       text2 = text2 + z+"@" +val+ ",";
+                   }
+                   
+               }
+               var url = url_update_validations + "?project=" + project_name + "&variations=" + text + "&exons=" + text2;
+			
+				url += "&user_name="+username;
+               sendData(url);
+           }
+		  
+
+		 
+		 
+		  function show_save(){
+		  	if (type == "report"){
+				save_validations();
+				return;
+			}
+			if (type == "todo") {
+				var text = "";
+				var textq = "";
+				
+				for (var z in select_exons) {
+					if (select_exons[z] > 0) {
+						text = text + z + "!";
+						select_exons[z] =0;
+					}
+					
+				}
+				save_button.setDisabled(false);
+				save_button.set("label","save");
+				
+				var url = url_save_exons + "?project=" + project_name + "&exons=" + text+"&user_name="+username;
+				sendData(url);
+				return;
+			}
+			alert("error type :"+type);
+		   }
+	
+
+function save_report(patient,form_id){
+	var url = url_report_patient_cache;
+	url = url+"?project="+project_name;
+	limit =  limit_spinner.value;
+	padding = padding_spinner.value;
+	url += "&span="+padding;
+	url += "&limit="+limit;
+		
+		/* sample */
+	
+		url += "&patients="+patient;
+		
+	
+		
+
+		 
+		 url += "&transcripts=all";
+		var url1 = url;
+		url1 += "&user_name="+username+"&save=1";
+		
+
+	dojo.xhrGet({
+      url: url1,
+      handleAs: "text",
+      load: function(data){
+        	return;
+      },
+      error: function(error){
+	  	 alert("error");
+        // We'll 404 in the demo, but that's okay.  We don't have a 'postIt' service on the
+        // docs server.
+      //  dojo.byId("response2").innerHTML = "Message posted.";
+      }
+    });
+	
+}	 
+		 
+function sendData(url){
+	
+	
+	dojo.xhrGet({
+        url: url,
+        method: "get",
+        handleAs: "text",
+        handle: function(data, ioArgs){
+            var foo = dojo.fromJson(data);
+            if (foo.status == "OK") {		
+				alert("OK");
+				if (type == "todo") {
+					reload();
+				}
+				else {
+					report();
+				}
+				return 1;
+            }
+            else {
+			
+				alert("error");
+				 return -1;
+            }          
+        }     
+    }); 
+}
+
+function change_label(tp,text){
+	 dojo.byId('stats_cnv').innerHTML = text;
+	//	 dijit.byId(tp).attr('label',text+"");
+}
+
+
+
+function validation_acmg (pname,vid,select,tdid,ensg){
+	  	var url = url_valid_acmg+"?vid="+vid+"&sample="+pname+"&project="+project_name+"&user="+username+"&value="+select.value+"&gene="+ensg;
+	    var div = document.getElementById("div_"+tdid);
+	    div.innerHTML = "<i class='fa fa-spinner fa-spin' style=font-size></i>"; 
+	    var td = document.getElementById("td_"+tdid);
+	    td.classList.remove("info");
+	    td.classList.remove("success");
+	     td.classList.remove("warning");
+	    td.classList.remove("danger");
+	    dojo.xhrGet({ 
+	        // The following URL must match that used to test the server.
+	        url: url,
+	        handleAs: "json",     
+	        timeout: 80000, // Time in milliseconds
+	        // The LOAD function will be called on a successful response.
+	        
+	        load: function(responseObject, ioArgs,evt){
+	            if (responseObject["status"] == "OK") {
+	                div.innerHTML = "<i class='fa fa-check-square f' style='font-size:13px;color:white'> SAVED </i>";
+	               td.classList.add("success");
+	                 return;
+	            }       
+	            else  {
+	                div.innerHTML = "<i class='fa fa-exclamation-triangle style='font-size:13px;color:white''> ERROR</i>";
+	                td.classList.add("danger");
+	                 return;
+	            }   
+	        
+	            
+	        },
+	        
+	        // The ERROR function will be called in an error case.
+	        error: function(response, ioArgs){ // &acirc;&#382;&fnof;
+	            alert("Error !!!!");
+	               div.innerHTML = '<i class="fa fa-exclamation-triangle"> Error</i>';
+	           
+	            return;
+	        }
+	    });
+	  	return;
+	
+
+}
+
+
+
+function viewElectro  (pname,vid){
+	dijit.byId('align').show();
+		//align.show();
+		//dojo.byId("align").show();//=true;
+	
+		dojo.byId("talign").innerHTML='  ';
+
+		
+			var url_arg = "?project=" + project_name  +"&poly_id="+vid+"&variation_id=" + vid  + "&patient_name=" + pname+"&len=40";
+			
+		
+			dojo.xhrGet({ // 
+				// The following URL must match that used to test the server.
+				url: url_chart + url_arg,
+				handleAs: "json",
+				timeout: 100000, // Time in milliseconds
+				// The LOAD function will be called on a successful response.
+				load: function(responseObject, ioArgs){
+					// Now you can just use the object
+					//pour les projets de squencage classique on trace des chromatogrammes
+			
+					traceCover(responseObject, dojo.byId("talign"));
+				},
+				
+				// The ERROR function will be called in an error case.
+				error: function(response, ioArgs){ // 
+				
+					console.error(response);
+					//en cas d'erreur
+					td1.innerHTML = 'Loading Error ...';
+					
+					return response; // 
+				}
+			});
+			
+
+	
+	
+	
+}
+
+
+function LoadIGVPatient_diag () {
+		var patient = return_selected_patient(tab_patients);
+    
+    //var store =   new dojo.data.ItemFileWriteStore({url:url_igvbis});
+
+    var url_igvbis =url_igv+"?project="+projectName;
+    
+
+        url_igvbis += "&patients=" + patient;
+   
+    
+    var store = new dojo.data.ItemFileWriteStore({url:url_igvbis});
+
+    store.fetch({
+                onComplete: jumpToIgvXml
+            
+            });
+}
+
+function LoadIGVPatient_editor () {
+        var patient = return_selected_patient(tab_editor);
+    //var store =   new dojo.data.ItemFileWriteStore({url:url_igvbis});
+
+    var url_igvbis =url_igv+"?project="+projectName;
+    
+
+        url_igvbis += "&patients=" + patient;
+   
+    
+    var store = new dojo.data.ItemFileWriteStore({url:url_igvbis});
+
+    store.fetch({
+                onComplete: jumpToIgvXml
+            
+            });
+}
+function popup_patient(){
+		dijit.byId("popup_patient").show();
+}
+
+function collapse_all(names,labels){
+    var ps = names.split(";"); 
+    var ls = labels.split(";"); 
+  
+    for (i=0;i<ps.length;i++){
+        
+        collapse(ps[i],ls[i]);
+    }
+    var d = document.getElementById(name);
+    
+}
+function collapse(name,label){
+    var d = document.getElementById(name);
+    var l;
+     l = document.getElementById(label);
+    if (d.classList.contains("in")) {
+        d.classList.remove("in");
+     if (l){
+           l.classList.remove("glyphicon-triangle-bottom");
+           l.classList.add("glyphicon-triangle-right");
+        }
+    }
+    else {
+        d.classList.add("in");
+            l.classList.remove("glyphicon-triangle-right");
+             l.classList.add("glyphicon-triangle-bottom");
+        
+    }
+}
+
+ function select_enable(id){
+ 
+     var select = document.getElementById(id);
+
+  
+ }
+ 
+function select_all(check){
+	 var tsamples = storeP._arrayOfAllItems;
+
+   	 var x =0;
+	   	for (i=0,j=tsamples.length; i<j; i++) {
+		  
+		   var t = "check_"+tsamples[i].id[0];
+		   dojo.byId(t).checked = check.checked;
+		  
+		   
+	   }	
+}
+function selection(event,check){
+	 
+	if (event.shiftKey && check.checked == true){
+		var tsamples = storeP._arrayOfAllItems;
+		var start=-1;
+		var end = -1;
+		for (i=0,j=tsamples.length; i<j; i++) {
+			  
+			   var t = "check_"+tsamples[i].id[0];
+			   if (dojo.byId(t).checked == true && start == -1) {
+				   start =i;
+			   }
+			  if (dojo.byId(t) == check){
+				  end =i;
+			  }
+			  
+			   
+		   }
+		if (start < end){
+			for (i=start+1; i<end; i++) {
+				  var t = "check_"+tsamples[i].id[0];
+				  dojo.byId(t).checked = true ;
+			}
+			
+	
+		}
+
+		
+	}
+}
+
+	function get_slider_impact() {
+		//if (document.getElementById("fam_compound_multi_filters").checked == true) { return; }
+	    var widget = dijit.byId("slider_impact");
+	    var filters;
+	    var list_all_buttons = ["filter_intergenic", "filter_intronic", "filter_upstream_downstream", "filter_pseudogene", "filter_ncrna", "filter_maturemirna", "filter_utr", "filter_splice_site", "filter_essential_splicing", "filter_nonsynonymous", "filter_frameshift", "filter_stop", "filter_phase", "filter_silent", "filter_nonframeshift"];
+	    if (widget.get("value") == 3) {
+	        //list_all_buttons.forEach(function(entry) { dijit.byId(entry).set("value", "on") });
+	        list_all_buttons.forEach(function(entry) { dijit.byId(entry).set('checked', true); });
+	        list_all_buttons.forEach(function(entry) {
+	        	if (entry == 'filter_intergenic') {}
+	        	else { dijit.byId(entry + '_init').set('disabled', true); }
+	    	});
+	        list_all_span.forEach(function(span_name) { document.getElementById(span_name).setAttribute("style", "color:red;"); });
+	    }
+	    else {
+	        //list_all_buttons.forEach(function(entry) { dijit.byId(entry).set("value", "off") });
+	        list_all_buttons.forEach(function(entry) { dijit.byId(entry).set('checked', false); });
+	        list_all_buttons.forEach(function(entry) {
+	        	if (entry == 'filter_intergenic') {}
+	        });
+	        if (widget.get("value") == 1) { filters = 'maturemirna, stop, phase, frameshift, essential_splicing'; }
+	        else if (widget.get("value") == 2) { filters = 'maturemirna, stop, phase, frameshift, essential_splicing, ncrna, nonsynonymous, nonframeshift, splice_site'; }
+	        else if (widget.get("value") == 3) { filters = 'maturemirna, stop, phase, frameshift, essential_splicing, ncrna, nonsynonymous, nonframeshift, splice_site, pseudogene, intronic, silent, utr, upstream_downstream, upstream, downstream'; }
+	        var list = filters.split(', ');
+	        list.forEach(function(entry) {
+	            var buttonId = 'filter_' + entry;
+	            var b = dijit.byId(buttonId);
+	            if (b != null) {
+	            	b.set('checked', true);
+	            }
+	        });
+	    }
+	}
+
+	function choice_filter(object, listIds, listNames, catName) {
+	    var string = "";
+	    var nb = 0;
+	    for (i = 0; i < listIds.length; i++) {
+	        var id = listIds[i];
+	        var name = listNames[i];
+	        var widget = dijit.byId(id);
+	        if (widget) {
+	            if (widget.get("value") == "on"){
+	                if (string != "") { string += " "; }
+	                string += name;
+	                nb++;
+	            }
+	        }
+	    }
+	    if (string == 'Not_Cosmic Cosmic' && isSomatic == 0) {
+	        string = 'Not Clinical'
+	    }
+	    if (nb == 0 ) { string = "<font color='red'><b>None</b></font>"; }
+	    if (nb == listIds.length ) { string = "<font color='green'><b>All</b></font>"; }
+	    if (catName) { object.set('label', catName + " (" + string + ")"); }
+	}
+	
+	function check_slider_cat_annotations() {
+		var value = parseInt(dijit.byId("slider_impact").get('value'));
+		dijit.byId("filter_intergenic").set('checked', false);
+		dijit.byId("filter_intronic").set('checked', false);
+		dijit.byId("filter_upstream_downstream").set('checked', false);
+		dijit.byId("filter_silent").set('checked', false);
+		dijit.byId("filter_utr").set('checked', false);
+		dijit.byId("filter_pseudogene").set('checked', false);
+		dijit.byId("filter_nonframeshift").set('checked', false);
+		dijit.byId("filter_nonsynonymous").set('checked', false);
+		dijit.byId("filter_nonsynonymous").set('checked', false);
+		dijit.byId("filter_splice_site").set('checked', false);
+		dijit.byId("filter_ncrna").set('checked', false);
+		dijit.byId("filter_phase").set('checked', false);
+		dijit.byId("filter_stop").set('checked', false);
+		dijit.byId("filter_frameshift").set('checked', false);
+		dijit.byId("filter_essential_splicing").set('checked', false);
+		dijit.byId("filter_maturemirna").set('checked', false);
+		
+		if (value == 1) {
+			dijit.byId("filter_phase").set('checked', true);
+			dijit.byId("filter_stop").set('checked', true);
+			dijit.byId("filter_frameshift").set('checked', true);
+			dijit.byId("filter_essential_splicing").set('checked', true);
+			dijit.byId("filter_maturemirna").set('checked', true);
+		
+		}
+		else if (value == 2) {
+			dijit.byId("filter_nonframeshift").set('checked', true);
+			dijit.byId("filter_nonsynonymous").set('checked', true);
+			dijit.byId("filter_splice_site").set('checked', true);
+			dijit.byId("filter_phase").set('checked', true);
+			dijit.byId("filter_stop").set('checked', true);
+			dijit.byId("filter_frameshift").set('checked', true);
+			dijit.byId("filter_essential_splicing").set('checked', true);
+			dijit.byId("filter_maturemirna").set('checked', true);
+		}
+		else if (value == 3) {
+			dijit.byId("filter_ncrna").set('checked', true);
+			dijit.byId("filter_intronic").set('checked', true);
+			dijit.byId("filter_upstream_downstream").set('checked', true);
+			dijit.byId("filter_silent").set('checked', true);
+			dijit.byId("filter_utr").set('checked', true);
+			dijit.byId("filter_pseudogene").set('checked', true);
+			dijit.byId("filter_nonframeshift").set('checked', true);
+			dijit.byId("filter_nonsynonymous").set('checked', true);
+			dijit.byId("filter_splice_site").set('checked', true);
+			dijit.byId("filter_ncrna").set('checked', true);
+			dijit.byId("filter_phase").set('checked', true);
+			dijit.byId("filter_stop").set('checked', true);
+			dijit.byId("filter_frameshift").set('checked', true);
+			dijit.byId("filter_essential_splicing").set('checked', true);
+			dijit.byId("filter_maturemirna").set('checked', true);
+		}
+	}
+	
+	function check_slider_frequence_query() {
+		return;
+		if (dijit.byId("slider_frequence_query").get('value') > max_slider_frequency_query) {
+			dijit.byId("slider_frequence_query").set('value', max_slider_frequency_query);
+		}
+	}
+	
+	function change_slider_dejavu_text(value) {
+		text_dejavu.innerHTML = '<i><b>Others</b> Projects: </i>';
+	    if (value == 0)  {
+	        text_dejavu.innerHTML = '<i><b><font color="#EA3434">In this Project ONLY !</font></i></b>';
+	        nb_dejavu.innerHTML = '';
+	    }
+	    else if (value == 100) {
+	        text_dejavu.innerHTML = '';
+	        nb_dejavu.innerHTML = '';
+	    }
+	    else if (value <= 10) { nb_dejavu.innerHTML = '<font color="#EA3434">' + value + '</font>'; }
+	    else if (value <= 30) { nb_dejavu.innerHTML = '<font color="#EAA134">' + value + '</font>'; }
+	    else if (value <= 50) { nb_dejavu.innerHTML = '<font color="#EACC34">' + value + '</font>'; }
+	    else                  { nb_dejavu.innerHTML = '<font color="#28A24C">' + value + '</font>'; }
+	    dijit.byId("slider_dejavu").set('value', value);
+	}
+	
+	function get_value_slider_dejavu() {
+		var value = parseInt(dijit.byId("slider_dejavu").get('value'));
+		return value;
+	}
+	
+	function check_slider_dejavu() {
+		var value = get_value_slider_dejavu();
+		change_slider_dejavu_text(value);
+		return;
+		if (value > max_slider_dejavu) {
+			change_slider_dejavu_text(max_slider_dejavu);
+		}
+		else { change_slider_dejavu_text(value); }
+	}
+	
+	function check_slider_gnomad_ac() {
+		return;
+		if (dijit.byId("slider_gnomad_ac").get('value') > max_slider_gnomad_ac) {
+			dijit.byId("slider_gnomad_ac").set('value', max_slider_gnomad_ac);
+		}
+	}
+	
+	function check_slider_allele_quality() {
+		return;
+		if (dijit.byId("slider_allele_quality").get('value') > max_slider_allele_quality) {
+			dijit.byId("slider_allele_quality").set('value', max_slider_allele_quality);
+		}
+	}
+	
+	function click_annot(value) {
+	
+	}
+	
+	function launch_filters() {
+		vectors_hex = '';
+		var list_chr_vector_hex = [];	
+		var args = "project=" + projectName + "&user_name=" + username + "&without_stats=1&filter_chromosome=all&mode=fam&level_fam=variation&filter_patient=B00H6XP" + construct_url_filter_data();
+		var cache_all_url = url_cache_gene_vector;
+        dijit.byId('waiting').show();
+		var xhr = new XMLHttpRequest();
+		xhr.open('POST', url_cache_gene_vector, true);
+		xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+		xhr.onreadystatechange = function() {
+		    if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+				dijit.byId('waiting').hide();
+				var data = JSON.parse(this.responseText);
+				var store_tmp = new dojo.data.ItemFileWriteStore({data:  {
+                    identifier: 'id',
+                    label: 'id',
+                    items: data.items.chromosomes
+                }}); 
+                store_tmp.fetch({
+                    onItem: function (item, result) {
+                        if (store_tmp.getValue(item, 'name') == "No Result") {}
+                        else {
+                        	var array_ID = item.id;
+							var array_HEX = item.vector_HEX;
+							var hex = array_ID[0] + ':' + array_HEX[0];
+							list_chr_vector_hex.push(hex);
+						}
+					}
+				}); 
+		vectors_hex = list_chr_vector_hex.join('::');
+		polyquery_filters = args;
+		editor(1,0,'all');
+		    }
+		}
+		xhr.send(args);
+	}
+
+function defineArrayButton() {
+	var array_button = {};
+	//array_button["notcosmic"] = "filter_not_cosmic";
+	//array_button["cosmic"] = "filter_cosmic";
+	//array_button["cnv"] = "filter_cnv";
+	//array_button["deletion"] = "filter_deletion";
+	//array_button["insertion"] = "filter_insertion";
+	//array_button["substitution"] = "filter_substitution";
+	array_button["silent"] = "filter_silent";
+	array_button["utr"] = "filter_utr";
+	array_button["splicing"] = "filter_splice_site";
+	array_button["essential_splicing"] = "filter_essential_splicing";
+	array_button["nonsynonymous"] = "filter_nonsynonymous";
+	array_button["stop"] = "filter_stop";
+	array_button["phase"] = "filter_phase";
+	array_button["intergenic"] = "filter_intergenic";
+	array_button["upstream_downstream"] = "filter_upstream_downstream";
+	array_button["intronic"] = "filter_intronic";
+	array_button["ncrna"] = "filter_ncrna";
+	array_button["maturemirna"] = "filter_maturemirna";
+	array_button["pseudogene"] = "filter_pseudogene";
+	array_button["frameshift"] = "filter_frameshift";
+	array_button["non-frameshift"] = "filter_nonframeshift";
+	return (array_button);
+}
+
+
+var genetic_model = 'None';
+function functional_url_filter_data (){
+	var ab = defineArrayButton();
+	var lFilters = [];
+	for (z in ab){
+		if (dijit.byId(ab[z]).checked == true){
+			lFilters.push(z);
+			//filters += z + "+";
+		}
+	}
+	var filters = lFilters.join('+');
+//	if      (dijit.byId("slider_frequence_query").get("value") == 1)    { filters += "freq_001+freq_01+freq_05+freq_1+"; }
+//	else if (dijit.byId("slider_frequence_query").get("value") == 2)    { filters += "freq_01+freq_05+freq_1+"; }
+//	else if (dijit.byId("slider_frequence_query").get("value") == 3)    { filters += "freq_05+freq_1+"; }
+//	else if (dijit.byId("slider_frequence_query").get("value") == 4)    { filters += "freq_1+"; }
+	return filters;
+}
+
+var panel_selected = 'All Genes';
+function construct_url_filter_data () {
+	var filter_args= "";
+	var args = new Array();
+	filter_args  = "&filter_type_variation=" + functional_url_filter_data();
+	var dejavu_value = get_value_slider_dejavu();
+	if      (dejavu_value == 0)  { filter_args += "&dejavu=uniq"; }
+	else if (dejavu_value < 100) { filter_args += "&dejavu=" + dejavu_value; }
+	if (dijit.byId("dejavu_ho").get("value") == "off") { filter_args +="&dejavu_ho=1"; }
+	
+	if (dijit.byId("slider_gnomad_ac").get("value") == 1) { filter_args += "&gnomad=gnomad_ac_5"; }
+	if (dijit.byId("slider_gnomad_ac").get("value") == 2) { filter_args += "&gnomad=gnomad_ac_10"; }
+	if (dijit.byId("slider_gnomad_ac").get("value") == 3) { filter_args += "&gnomad=gnomad_ac_20"; }
+	if (dijit.byId("slider_gnomad_ac").get("value") == 4) { filter_args += "&gnomad=gnomad_ac_50"; }
+	if (dijit.byId("slider_gnomad_ac").get("value") == 5) { filter_args += "&gnomad=gnomad_ac_100"; }
+	
+	if (dijit.byId("slider_allele_quality").get("value") == 1) { filter_args += "&ratio=ratio_80"; }
+	if (dijit.byId("slider_allele_quality").get("value") == 2) { filter_args += "&ratio=ratio_40"; }
+	if (dijit.byId("slider_allele_quality").get("value") == 3) { filter_args += "&ratio=ratio_20"; }
+	if (dijit.byId("slider_allele_quality").get("value") == 4) { filter_args += "&ratio=ratio_10"; }
+	
+	var list_delete_models = [];
+	
+//	if(document.getElementById('strict-denovo').checked) {}
+//	else { list_delete_models.push("fam_strict_denovo"); }
+	
+	if(document.getElementById('denovo').checked) {}
+	else { list_delete_models.push("fam_denovo"); }
+	
+//	if(document.getElementById('dominant').checked) {}
+//	else { list_delete_models.push("fam_dominant"); }
+	
+//	if(document.getElementById('mosaic').checked) {}
+//	else { list_delete_models.push("fam_mosaic"); }
+	
+	if(document.getElementById('recessive').checked) {}
+	else { list_delete_models.push("fam_recessif"); }
+	
+	if(document.getElementById('both').checked) {}
+	else { list_delete_models.push("fam_both_parents"); }
+	
+	//compound
+	
+	//PANELS
+	if (panel_selected == 'All Genes') {}
+	else {
+		filter_args += "&panel=" + panel_selected;
+	}
+	
+	if (list_delete_models.length > 0) {
+		filter_args += "&delete_models=" + list_delete_models.join(' ');
+	}
+	
+	return filter_args;
+}
+
+function update_panel_name(panel_name) {
+	panel_selected = panel_name;
+	if (panel_name == 'all') {
+		document.getElementById("span_panel_name").innerHTML = 'All Genes';
+	}
+	else { document.getElementById("span_panel_name").innerHTML = panel_selected; }
+}
+	
+		  </script>
+	</head>
+	
+    <body class="claro" style ="font-size : 11px;">
+
+     <div dojoType="dijit.Dialog" jsId="waiting" id="waiting" style="width:210px;height:120px;background-color:#2C3E50" >
+           <div class="panel panel-primary" id="pwaiting1" style="height:100%">
+                <div class="panel-heading"  id="pwaiting">
+                     <h2 class="panel-title" style="font-size: 10px">Loading  
+                         <div class="spinner pull-right">
+                            <div class="bounce1"></div>
+                            <div class="bounce2"></div>
+                             <div class="bounce3"></div>
+                            </div>
+                         </h2>
+                </div>
+</div>
+</div>
+
+<div jsId="bd0" id="bd0" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true" style="width: 100%;height:100%">
+<div  data-dojo-type="dijit.layout.ContentPane"  data-dojo-props="region:'top'" style="width: 100% ; height: 67px;padding:0px;overflow: visible !important;" >
+
+
+
+  <div  data-dojo-type="dijit.Toolbar"  id="navMenu" style ="font-size: 10px;">
+
+      <div jsId="header" data-dojo-type="dijit.layout.ContentPane"  style="background-color:#F4F4F4;width: 100% ;" >
+</div>
+
+
+<div style="width: 50%;margin: 0 auto;z-index:1000;visibility: hidden;" >
+    <!-- <span id="stat_project">---</span><span data-dojo-type="dijit/ToolbarSeparator"> </span>
+    <span   id="stat_description"  >---------------</span><span data-dojo-type="dijit/ToolbarSeparator"> </span> -->
+   Coverage limit :  
+  <select jsId="limit_spinner" id="limit_spinner" data-dojo-type="dijit/form/Select" >
+  
+    
+      <option value="0">0</option>
+     <option value="5" >5</option>
+    <option value="10" selected="selected">10</option>
+    <option value="15">15</option>
+    <option value="20">20</option>
+    <option value="30" s>30</option>
+       <option value="50" >50</option>
+        <option value="100" >100</option>
+        <option value="200" >200</option>
+         <option value="300" >300</option>
+           <option value="500" >500</option>
+              <option value="1000" >1000</option>
+</select>
+
+       padding limit : 
+ <select jsId="padding_spinner" id="padding_spinner" data-dojo-type="dijit/form/Select" onChange="first=0;">
+  
+    
+      <option value="0">0</option>
+      <option value="5" >5</option>
+    <option value="10">10</option>
+    <option value="15">15</option>
+    <option value="20" selected="selected">20</option>
+    <option value="30">30</option>
+</select>
+
+
+
+
+<div style="display:none">
+
+           &nbsp;&nbsp;<input jsId="utr" id="utr" name="utr" data-dojo-type="dijit/form/CheckBox" value="1" /> <label for="utr">UTR</label>
+            <input jsId="intronic" id="intronic" name="intronic" data-dojo-type="dijit/form/CheckBox" value="1" /> <label for="intronic">Intronic</label>
+             <input jsId="all_var" id="all_var" name="all_var" data-dojo-type="dijit/form/CheckBox" value="1" /> <label for="all_var">All&nbsp;Variations</label>
+</div>
+</div>            
+<span class="insetheader4"><img src="/icons/Polyicons/bipd4.png" width="50%" height="50%"></span>
+<span class="insetheader5" style="padding-right:10px;">Bioinformatics Paris Descartes,Imagine Institute</span>
+</div>
+</div>
+<!--   <div data-dojo-type="dijit/layout/AccordionContainer" data-dojo-props="region: 'center'" style="width: 100%; height: 100%" tabPosition="left-h">
+ <div jsId="stack_general" data-dojo-type="dijit/layout/StackContainer" data-dojo-props="region: 'center'" style="width: 100%; height: 100%" tabPosition="left-h">
+
+ -->
+ <div id="tabPrincipal" jsId="tabPrincipal" data-dojo-type="dijit/layout/TabContainer"  data-dojo-props="region: 'center'" tabPosition="top" tabStrip="true" style="font-size:11px">
+ 	 <div  jsId="summary2" data-dojo-type="dijit/layout/ContentPane" id="tab_project" title="Project"  data-dojo-props="selected:true" href="include_html/diag/project_container.html">
+	</div>
+	
+<!--  
+   	 <div   id="tab_genes" data-dojo-type="dijit/layout/ContentPane" title="Genes" data-dojo-props="selected:true"  >
+   	 
+   	        <div id="content" data-dojo-type="dijit/layout/BorderContainer" style="font-size : 10px" data-dojo-props="liveSplitters:false, design:'sidebar'">
+   	        	   <div  data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top', splitter:false, maxSize:5" > 
+   	        			<div class="panel panel-primary">
+   	 						<div class="panel-heading clearfix" style="min-height=30px;max-height:30px;">
+								<h3 class="panel-title pull-left" style="padding-top: 1.5px;font-size: 15px;">Export genes</h3>
+								<div class="btn-group btn-sm clearfix pull-right" style="position:relative;top:-14px;float:right">
+								<div onclick="export_gene_tab_xls();" aria-label="Right Align" class=" btn btn-danger btn-sm ">
+		 						<i class="fa fa-file-excel-o pull-right"></i>		
+		 						</div>
+							</div>	
+						</div>
+					</div>
 			</div>
-			<br>
-            <div class="container-fluid" id="content_res" style="height:99%;width:99%;"></div>
-			<br>
-		</div>
+        	<div  data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'left', splitter:true, minSize:20"> 
+            	<div id="bundle_div"></div>   
+     		</div>
+        
+       		<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'" style="width:100%;height:100%" >
+            	<div id="gridDivGenes" style="font-size: 9px;font-family:Verdana;width:100%;height:100%"> </div>
+        	</div>
+	</div>
+    
+       </div>
+       -->
+    
+            	<div id="gridDivGenes" style="font-size: 9px;font-family:Verdana;width:100%;height:100%;display:none"> </div>
+     
+    
+	  <div id="gridDivPatients" style="font-size: 11px;font-family:Verdana;width:100%;height:100%;display: none;">
+ </div> 
+
+
+
+   	<div id="coverage_stack" data-dojo-type="dijit/layout/ContentPane" title="Coverage"  href="include_html/diag/coverage_container_defidiag.html"  onload="load_dropdown_menu_panels_coverage();"> </div>
+    
+    
+    
+    <div id="editor_stack" data-dojo-type="dijit/layout/ContentPane" title="Variations Editor" href="include_html/diag/editor_container_defidiag.html"  onload = "update_buttons_polyquery();" >
+              </div>
+<!--  
+	 <div   data-dojo-type="dijit/layout/ContentPane" title="ToDo" id="todo_stack" jsId="todo_stack" name ="todo_stack" onShow="report();">
+			<div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true" >
+	
+				
+			<div jsId="todo_div" id="todo_div" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="splitter:false, region:'center'" >
+				</div>
+
+   	
+	</div>
+
+
+ 	</div>			
+	-->
+	         
 		
-		<div id="dialog_hgmd_only_project" dojoType="dijit.Dialog" title="New Variants Pathogenic" style="background-color:white;overflow: auto;">
-			<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-            <div class="container-fluid" id="content_res_only_project" style="height:99%;width:99%;"></div>
-			<br>
-		</div>
-       
-        <div id="dialog_var_from_proj_gene_pat" dojoType="dijit.Dialog" title="Variants from PROJECT / GENE / PATIENT">
-			<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-			<div class="row" id="content_res_var_from_proj_gene_pat" style="width:99%;"></div>
-			<br>
-		</div>
+   </div>
+
+   
+   
+
+			
+	
 		
-		<div dojoType="dijit.Dialog" jsId="waiting" id="waiting" style="height:105px" title="[20/10/2020] Last Update: new versions of HGMD and CLINVAR !">
-	        <center><img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle"><span id="waiting_text"> Checking NEW Pathogenic variations... Please Wait, or close this popup.<br>First Loading ? I'll be faster next time ;)<br>Check <b>PolyBTF</b> Interface !</span></center>
-	    </div>
-		
-		<div dojoType="dijit.Dialog" jsId="waiting_general" id="waiting_general" style="height:80px" title="Waiting...">
-	        <center><img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle"><span id="waiting_text"> <i>Please Wait...</i></span></center>
-	    </div>
-		
-		<div dojoType="dijit.Dialog" jsId="waiting_variants" id="waiting_variants" style="height:80px" title="VAR PROJECT GENE PATIENT">
-	        <img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle"> <span>Finding all variations...</span>
-	    </div>
-       
-		<div dojoType="dijit.Dialog"  jsId="popup_hgmd" id="popup_hgmd" title="HGMD Infos" style="background-color:white;overflow:auto;width:70%;height:70%;" >
-            <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane"></div>	
-        </div> 
-       
-		<div dojoType="dijit.Dialog"  jsId="dialog_igv" id="dialog_igv" title="IGV View" style="background-color:white;overflow: auto;" >
+   </div>
+
+<div class="edgePanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'bottom'" style="display:none">
+	  <div dojoType="dijit.Toolbar" style="font-size : 09px;width: 100%;">
+			<label id="label_genes"style="font-size : 09px;width: 100%;"> - </label>
+    </div>
+	 <div dojoType="dijit.Toolbar" style="display:none">      
+            Patient : <label id="label_patients">
+            </label>
+      </div>
+
+</div> 
+
+
+
+     <div dojoType="dijit.Dialog" jsId="waiting_progress" id="waiting_progress" style="height:80;" >
+        <div data-dojo-type="dijit/ProgressBar" style="width:300px" data-dojo-id="myProgressBar" id="myProgressBar" data-dojo-props="maximum:25"></div>
+        <br>
+        <span>Loading coverage ...</span>
+    </div>
+    
+
+   <div id="igv_js" dojoType="dojox.widget.Dialog" sizeToViewport="true"  viewportPadding="130" title="A Dialog Thinger" > 
+    <div id="igv_js_editor"  jsId="igv_js_editor" data-dojo-type="dijit/layout/ContentPane"  style="width: 100%; height: 100%;">
+					    	<!--class="grid" dojoType="dojox.grid.DataGrid" jsId="gridBam"--> 
+	 </div>
+</div>
+
+   <div id="align" dojoType="dojox.widget.Dialog" sizeToViewport="true"  viewportPadding="130" title="A Dialog Thinger" > 
+   	
+   <div id="talign"  >
+   </div>
+</div>
+
+    <div dojoType="dijit.Dialog"  jsId="dialog_igv" id="dialog_igv" title="IGV View" style="background-color:white;overflow: auto;" >
+    	
             <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
         </div>  
 
-   <div id="login" dojoType="dijit.Dialog" title="Login">
-   	  <div dojoType="dijit.TooltipDialog" id="dialog1" title="Login Form" execute="checkPassword(arguments[0]);">
-   	 <form method="post" class="signin" action="#">
-                <fieldset class="textbox">
-            	<label class="username">
-                <span>Username</span>
-                <input id="username" name="username" value="" type="text" autocomplete="on" placeholder="Username">
-                </label>
-                <label class="password">
-                <span>Password</span>
-                <input id="passwd" name="password" value="" type="password" placeholder="Password">
-                </label>
-                </fieldset>
-          </form>
-                    <div   type="submit" dojoType="dijit.form.Button" iconClass="loginIcon" onClick='relogin();' showLabel="true">
-       						<div style='width:150px'>Sign in</div>
+<div id="popup_genes" dojoType="dojox.widget.Dialog"   dimensions="[1000,450]"  onHide="change_label_genes();" > 
+	<!-- <div id="content" data-dojo-type="dijit/layout/BorderContainer" style="font-size : 12px;width:1000px;height:445px" data-dojo-props="liveSplitters:false, design:'sidebar'">
+        <div  data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'leading', splitter:true, minSize:20" style="width:200px;height:445px">	
+ 		<div id="bundle_div" > </div>	
+		</div>
+ 		<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'" style="width:650px;height:445px">
+ 			<div id="gridDivGenes" style="width:650px;height:445px"> </div>
+		</div>
+</div> -->
+</div>
 
-    				</div>
-                  
-                       
-            </div>
-        </div> 
-        
-        <div dojoType="dijit.Dialog"  jsId="popup_dude" id="popup_dude" style="background-color:white;overflow:auto;min-width:250px;" >
-        	<div  id="div_popup_dude" jsId="div_popup_dude" data-dojo-type="dijit/layout/ContentPane"></div>	
-		</div>
+<div id="popup_coverage" dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" > 
+        <div  id="div_popup_coverage" jsId="div_popup_coverage" data-dojo-type="dijit/layout/ContentPane">	
+        	
+ 		</div>	
 		
-		<div dojoType="dijit.Dialog"  jsId="dialog_list_panels" id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
-			 <span id="span_list_panels"></span>
-		</div>
+</div>
+<div id="popup_hgmd" dojoType="dojox.widget.Dialog"   dimensions="[600,300]"   > 
+        <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane">	
+        	
+ 		</div>	
 		
-		<div id="dialog_list_phenotypes" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="List Phenotype(s)"> 
-			 <table class="table">
-				<tbody>
-					<tr>
-						<td><div id="container_wordcloud" style="height:450px;border: solid black 1px;"></div></td>
-					</tr>
-				</tbody>
-			</table>
-			<br>
-			<div class="container-fluid" id="content_table_phenotypes" style="height:99%;width:99%;"></div>
-		</div>
+</div>
+<div id="popup_patient" dojoType="dojox.widget.Dialog"   dimensions="[520,490]" onHide="construct_url('');"> 
+ <!-- <div id="gridDivPatients" style="font-size : 9px;width:500px;height:490px">
+ </div> -->
+</div>
+
+<div id="graph_exon" dojoType="dojox.widget.Dialog"   dimensions="[1020,550]" > 
+    <table style="width: 100%; height: 100%;">
+        <tr><td> <div id="title_graph" style="font-size: 11pt;height: 40px;"></div></td></tr>
+        <tr><td style="width: 810px; height: 450px;" > <div id="chart_exon" style="width: 1010px; height: 450px;"></div></td></tr>
+           <tr><td> <div id="status" style="font-size: 11pt;width: 1010px; height: 20px;"></div></td></tr>
+    </table> 
+</div>
+
+<div id="popup_cldb" dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" > 
+        <div  id="div_popup_cldb" jsId="div_popup_cldb" data-dojo-type="dijit/layout/ContentPane">	
+        	
+ 		</div>	
+		
+</div>
+    <div data-dojo-type="dijit.Menu" id="cellMenu"  style="display: none;">
+        <div data-dojo-type="dijit.MenuItem" onClick="click_exon_patient">View Exon/patient coverage</div>
+        <div data-dojo-type="dijit.MenuItem" onClick="click_exon">View Exon coverage</div>
+        <div data-dojo-type="dijit.MenuItem"onClick="click_patient">View Patient coverage</div>
+        <div data-dojo-type="dijit.MenuItem" onClick="click_transcript">View Transcript Coverage</div>
+    </div>
     
-	    <div id="dialog_genes_in_panel" dojoType="dijit.Dialog" title="Genes in Panel">
-	        <div  id="content_genes_in_panel" jsId="content_genes_in_panel" data-dojo-type="dijit/layout/ContentPane"></div>	
-		</div>
-     
+    <!-- div pour patient name -->
+    <div id="popup_patient_name" dojoType="dijit.Dialog" title="Patient Name" style="width:250px" execute="send_print(arguments[0]);">
+          <form method="post" class="signin" action="#">
+         <fieldset class="textbox">
+                <label class="username">
+                <span jsId="span_name" id="span_name">Username</span>
+                <input id="input_name" name="patient name" value="" type="text" autocomplete="on" placeholder="name">
+                </label>
+            </fieldset>
+            </form>
+        <div   type="submit" dojoType="dijit.form.Button"   showLabel="true">
+                            <div style='width:150px'>SEND</div>
 
+                  </div>        
+    </div>
+
+<div id="login" dojoType="dojox.widget.Dialog" dimensions="[265,160]"   title="Help" onHide="setPassword(arguments[0]);"> 
+   <div class="container" style="min-width:250px;max-width:250px;margin-left: auto ;margin-right: auto ;">
+   
+         <div class="panel panel-success">
+          
+
+          <div class="panel-body">     
+        <div class="input-group input-group-sm text-success">
+            
+         <span class="input-group-addon glyphicon glyphicon-user text-success" id="sizing-addon1"></span>
+        <label for="username" class="sr-only">Email address</label>
+        <input type="text"  id="username" name="username" class="form-control text-primary"  autocomplete="on" placeholder="bipd login" required autofocus aria-describedby="sizing-addon1">
+       </div>
+          <div class="input-group input-group-sm text-success">
+         <span class="input-group-addon glyphicon glyphicon-lock text-success" id="sizing-addon2"></span>
+        <label for="passwd" class="sr-only">Password</label>
+        <input type="password" id="passwd" name="password" class="form-control  text-primary" placeholder="Password" required aria-describedby="sizing-addon2">
+        </div> 
+        <button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" onClick="setPassword(arguments[0]);" >Sign in</button>
+    </div>
+    </div> 
+    </div> <!-- /container -->
+        </div>
+
+
+  
+     <div id="dialog_help_1" dojoType="dojox.widget.Dialog" sizeToViewport="true"  viewportPadding="130" title="Help" > 
+         <div class="panel panel-success">
+                <div class="panel-heading">
+                     <h2 class="panel-title"> HELP </h2>
+                </div>
+         <div class="panel-body" id='panel_help'>
+          <div class="bs-callout bs-callout-success" style="font-size:15px">
+            <h4>Letters stand for <span class='label label-info'>S</span>core <span class='label label-info'>I</span>mpact  <span class='label label-info'>F</span>requence
+            </h4>
+          </div>
+      <div class="bs-callout bs-callout-warning" style="font-size:15px"> 
+      <h4> Color highest variation level   for each category  </h4>
+                
+             <table class="table table-striped table-condensed table-bordered table-hover">
+              <tr><th colspan=2>Legend  </th></tr>
+                 <tr><td><span class='label label-info'>S</span>core  & <span class='label label-info'>I</span>mpact </td>
+    <td style="background-color:#CE0000" class="label">High</td><td style="background-color:#FF8800" class="label">Medium</td><td style="background-color:#95A5A6;color:#FFFFFF" class="label">Low</td></tr><tr><td><span class='label label-info'>F</span>requence </td><td style="background-color:#CE0000" class="label">Unique</td><td style="background-color:#FF8800" class="label">Rare</td><td style="background-color:#EFB73E" class="label">Occasional</td><td style="background-color:#95A5A6;color:#FFFFFF" class="label">Frequent</td></tr>
+          </table>
+          </div>
+          
+          </div>
+</div>
+</div>
     </body>
 </html>
