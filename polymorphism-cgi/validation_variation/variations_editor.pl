@@ -293,6 +293,10 @@ my $cache_icon;
  $cache_icon = qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
 if($text){
 		$text =~ s/onClick='editor\(1,2\);'/onClick='load_polyviewer_export_xls\(1\);'/g;
+		
+		my $regex = qq{href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/(.+)' target};
+		$text =~ s/$regex/href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/$1\?dataset\=gnomad_r2_1' target/g;
+		
 	 	$cache_icon = qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
 		print $text;
 		print"<br><div style='float:right;'><small>$cache_icon</small></div><br>"; 
