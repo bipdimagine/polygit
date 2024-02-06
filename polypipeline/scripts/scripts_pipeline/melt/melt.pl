@@ -50,8 +50,8 @@ my $dir_in = $project->getAlignmentDir("bwa");
 my $ref = $project->genomeFasta();
 my $bam_prod = $patient->getBamFile();
 
-my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name."-".time);
-
+my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name);
+warn $melt_dir;
 my $samtools = $buffer->software("samtools");
 my $dir_out = $melt_dir;
 my $bam_dev = 
@@ -102,17 +102,16 @@ close LIST;
 
 #java -jar MELT.jar Single -a -c 8 -h /data-isilon/public-data/genome/HG19/fasta/all.fa -bamfile /data-isilon/sequencing/ngs/NGS2018_2224/HG19/align/bwa/1806245.bam -n ./add_bed_files/1KGP_Hg19/hg19.genes.bed  -w /data-isilon/sequencing/ngs/NGS2018_2224/HG19/align/test -t ./me_refs/list.txt
 
-	system("mkdir $dir_out && chmpd a+rwx $dir_out ") unless -e $dir_out;
+	system("mkdir $dir_out && chmod a+rwx $dir_out ") unless -e $dir_out;
 	
 	#system("sambamba slice $bam ".$chr->fasta_name." >$bout && samtools index $bout");
 
 	warn "$melt -h $ref -bamfile $bam_tmp -n $bed  -w $dir_out -t $list  -exome 1";
-	system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1");
+	#system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1");
 
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
-	
 	foreach my $f (keys %$files){
-		unless (-e $f){
+		unless (-e $files->{$f}){
 			delete $files->{$f};
 			next;
 		}
@@ -121,10 +120,8 @@ close LIST;
 		delete  $files->{$f} unless -s $ff;
 		my $res = ` bcftools view  $ff -U -c 1 2>/dev/null | grep -v "#" | wc -l `;
 		chomp($res);
+		warn $res;
 		delete  $files->{$f} if $res == 0 ;
-		if ($res>=0) {
-			
-		}
 		
 	}
 	unless (keys %$files){
@@ -153,6 +150,7 @@ $bed = $buffer->gzip_tabix($bed,"bed");
 	my $cmd = qq{$bcftools concat -a $list_file  | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf;$gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace;};
 	system ($cmd);
 	warn $cmd;
+	
 	my $tvcf3 = $dir_out."/".$patient->name.".".time.".3.vcf.gz";
 	my $cmd2 = qq{$bcftools sort $tvcf2 -O z -o $tvcf3 ;$tabix -p vcf $tvcf3; $bcftools view $tvcf3 -R $bed -O z -o $fileout};
 	system($cmd2);
