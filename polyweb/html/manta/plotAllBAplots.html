@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<!-- Load plotly.js into the DOM -->
+	<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+	<script type="text/javascript" src="../../js/manta/PolyCyto.js" djConfig="parseOnLoad: true"></script> 
+	<script type="text/javascript" src="../../js/manta/PolyCytoPlots.js" djConfig="parseOnLoad: true"></script>
+	<script>
+	
+			var parameters = location.search.split("&");
+			var par0 = parameters[0].split("=");
+			var par1 = parameters[1].split("=");
+			
+			var project=par0[1];
+   			var patient=par1[1];
+   		
+   			var titre = patient + ': AB Plots';
+   			document.title=titre;
+   			
+	</script>
+	
+	<link rel="icon" type="image/png" href="images/polyicons/application_view_tile.png">
+    	<style type="text/css">
+    	@import "//ajax.googleapis.com/ajax/libs/dojo/1.8.0/dojox/grid/resources/Grid.css";
+        @import "//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/widget/Dialog/Dialog.css";
+        @import "../../css/polycss/general.css";
+        @import "../../css/polycss/button.css"; 
+        
+		html, body {
+    		width: 100%;
+    		height: 100%;
+    		margin: 0;
+    		overflow : auto;
+		}    
+   	</style>
+   	
+   
+	
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+	<script type="text/javascript" src="../../js/polyjs/include.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
+
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript">
+			dojo.require("dojo.store");
+	</script>
+	
+	<script type="text/javascript" src="../js/polyjs/Utility/vp.js" ></script>
+	<script	type="text/javascript">
+			dojo.require("dojo.parser");
+			dojo.require("dojo.data.ItemFileReadStore");
+			dojo.require("dojo.data.ItemFileWriteStore");
+
+			dojo.require("dijit.TitlePane");
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dijit.layout.ContentPane");
+			dojo.require("dijit.Toolbar");
+			dojo.require("dijit.form.NumberTextBox");
+			dojo.require("dijit.form.SimpleTextarea");
+			dojo.require("dijit.form.Select");
+			dojo.require("dijit.form.FilteringSelect");
+		
+			dojo.require("dojox.data.AndOrReadStore");
+
+			require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/TabContainer","dijit/layout/ContentPane"]);
+			require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+			require(["dijit/form/Select", "dojo/data/ObjectStore","dojo/store/Memory","dojo/domReady!"]);
+	</script> 
+	
+	<title></title>
+</head>
+
+<body > 
+	<script>
+				var parameters = location.search.split("&");
+				var par0 = parameters[0].split("=");
+				var par1 = parameters[1].split("=");
+			
+				var project=par0[1];
+   				var patient=par1[1];
+   				var out='';
+						
+			 	var out = "<center><br><div><center style='font-size:14px;color:grey;'><b> Allelic Balance / Variant tracking </b></center><br>";
+			 	
+			 	<!--  out = out + "<iframe style='heigth=400px;width:30%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=1&small=yes'></iframe>"; -->
+			 	
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=1&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=2&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=3&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=4&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=5&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=6&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=7&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=8&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=9&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=10&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=11&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=12&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=13&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=14&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=15&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=16&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=17&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=18&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=19&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=20&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=21&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=22&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=X&small=yes'></iframe>";
+			 	out = out + "<iframe style='width:22%;' src='PolyCytoBAPlot.html?project="+project+"&patient="+patient+"&chr=Y&small=yes'></iframe></div></center>";
+			 	document.body.innerHTML = out;	 
+		
+	</script>	
+</body>	
+			
+ </html>
