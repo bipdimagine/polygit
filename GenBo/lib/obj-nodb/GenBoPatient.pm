@@ -3566,5 +3566,9 @@ sub update_software_version {
 	#return 1 if $svid eq $vid;
 	$query->update_software_version($vid,$self->id,$cmd);
 }
-
+sub upd_file {
+	my ($self) = @_;
+	my $dir = $self->project->getSVDir("UPD");
+	return $dir."/".$self->name.".json";
+}
 1;
