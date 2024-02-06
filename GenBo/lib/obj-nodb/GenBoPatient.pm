@@ -1353,7 +1353,7 @@ has SJFiles => (
 			if (-e $file ){
 			my $bgzip = $self->buffer->software("bgzip");
 			my $tabix = $self->buffer->software("tabix");
-			system("$bgzip $file && tabix -f -p bed $file.gz");
+			system("$bgzip -f $file && tabix -f -p bed $file.gz");
 			die() unless -e "$file.gz";
 			die() unless -e "$file.gz.tbi";
 		}
