@@ -236,7 +236,7 @@ function launch_plotFreqAllelique(chr)
   								yaxis:   {domain: [0.4, 1], title : 'Allelic balance', tickmode: "array", tickvals: [0, 25, 50, 75, 100], ticktext: ['0', '25', '50', '75', '100']},
 						};
 						
-				var config = { modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+				var config = { modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 				Plotly.newPlot('plot1', data, layout,config);
 		}
   	});		
@@ -712,7 +712,7 @@ function launch_plotAllChr()
 						};
 				} // fin if trio
 	
-				var config  = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+				var config  = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 				
 				if (type == 0) {
   						document.getElementById("plotdiv").style="height:98%;width:98%; border: 4px solid lightgrey;";
@@ -1162,7 +1162,7 @@ function launch_plotAllChr()
 						};
 				} // fin if trio
 	
-				var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+				var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 				
 				if (type == 0) {
   						document.getElementById("plotdiv").style="height:98%;width:98%; border: 4px solid grey;";
@@ -1721,7 +1721,7 @@ function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
 						}
 			}	
 			
-			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 			Plotly.newPlot('plot1', data, layout,config);
 			
 			
@@ -1775,7 +1775,7 @@ function launch_plot_BA(chr)
 }
 
  
-function PlotBA()
+function PlotBA(small)
 {
 	var parameters = location.search.split("&");
 	
@@ -1786,11 +1786,20 @@ function PlotBA()
 	var project =par0[1];
 	var patient =par1[1];
 	var chr=par2[1];
-	
-	
-	// plot = les ratios wisecondor 
-	PlotValues_BA(project,patient,chr);
-	setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},10000);
+
+	if(small == "yes")
+	{
+   		PlotValues_BA_small_onlyChild(project,patient,chr);
+   		//document.getElementById('plot1').style.height = "90%"; 
+   		//document.getElementById('plot1').style.width = "90%";
+   		
+		setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},10000);
+   	}
+   	else
+   	{
+		PlotValues_BA(project,patient,chr);
+		setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},10000);
+	}
  }
  	
 function PlotValues_BA(project,patient,chr)
@@ -1798,11 +1807,9 @@ function PlotValues_BA(project,patient,chr)
 	var url_plotBA = url_path + "/manta/PolyCytoPlotBalanceAllelic.pl";
 	dataStorePlotValue = new dojo.data.ItemFileReadStore({ url: url_plotBA + "?project=" + project + "&patient=" + patient + "&chr=" + chr });
 
-	//var titre = '<br><label style="font-size:18px; color:orange"> Uniparental disomy </label> <br> <label style="font-size:18px;">' + patient + ' / Chromosome' + chr + '</label><br><br>';
 	var titre = '<br><label style="font-size:18px; color:orange">  Allelic Balance / Variant tracking </label> <br> <label style="font-size:18px;">' + patient + ' / Chromosome' + chr + '</label><br><br>';
-	
 	document.getElementById('idtitre').innerHTML = titre;
-
+	
 	var trio;
 	
 	// ratio WC enfant
@@ -1859,7 +1866,7 @@ function PlotValues_BA(project,patient,chr)
   
   	
   	var graphDiv = document.getElementById('plot1');	
-  	
+ 
 	dataStorePlotValue.fetch({
 			onComplete: function(items,request){
                 	var item = items[0];
@@ -2119,7 +2126,7 @@ function PlotValues_BA(project,patient,chr)
 						};
 			}	
 			
-			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 			Plotly.newPlot('plot1', data, layout,config);
 			
 			
@@ -2142,6 +2149,571 @@ function PlotValues_BA(project,patient,chr)
 		}
   	});		
   	
+}
+
+function PlotValues_BA_small(project,patient,chr)
+{
+	var url_plotBA = url_path + "/manta/PolyCytoPlotBalanceAllelic.pl";
+	dataStorePlotValue = new dojo.data.ItemFileReadStore({ url: url_plotBA + "?project=" + project + "&patient=" + patient + "&chr=" + chr });
+
+	var titre = '<b><label style="font-size:12px; color:black">chr ' + chr + '</label></b>';
+	document.getElementById('idtitre').innerHTML = titre;
+	
+	var trio;
+	
+	// ratio WC enfant
+	var tabPosR;
+	var tabRatio;
+	var tabRX;
+	var tabRY;
+	
+	// BA du père
+	var tabPosBA_dad;
+	var tabTransmission_dad;
+	var tabBA_dad;
+	var tabBAX_dad;
+	var tabBAY_dad;
+	
+	// BA de la mère
+	var tabPosBA_mom;
+	var tabTransmission_mom;
+	var tabBA_mom;
+	var tabBAX_mom;
+	var tabBAY_mom;
+	
+	// BA chez l'enfant
+	var tabPosBA;
+	var tabMother;
+	var tabFather;
+	var tabPatient;
+	
+	// 
+	var tabplotRX=[];
+   	var tabplotRY=[];
+   	
+   	var tabplotBAX_dad=[];
+   	var tabplotBAY_dad=[];
+   	var tabplotBAT_dad=[];	
+   	var tabplotBATX_dad=[];
+   	var tabplotBATY_dad=[];
+   	
+   	var tabplotBAX_mom=[];
+   	var tabplotBAY_mom=[];	
+   	var tabplotBAT_mom=[];	
+   	var tabplotBATX_mom=[];
+   	var tabplotBATY_mom=[];
+   	
+   	var tabBAX;
+   	var tabYM;
+   	var tabYF;
+   	var tabYC; 
+   	var tabplotBAX=[];
+  	var tabplotYM=[];			
+  	var	tabplotYF=[];
+  	var tabplotYC=[];
+  	
+  
+  	var graphDiv = document.getElementById('plot1');	
+ 
+	dataStorePlotValue.fetch({
+			onComplete: function(items,request){
+                	var item = items[0];
+   
+   					trio = parseInt(dataStorePlotValue.getValue(item, "PLOT"));
+   			
+   					tabPosR = dataStorePlotValue.getValue(item, "POSratio"); 
+   					tabRatio = dataStorePlotValue.getValue(item, "RATIO");
+  
+   					tabRX = tabPosR.split(" ");
+   					tabRY = tabRatio.split(" ");
+ 	
+ 					tabplotRX.push(0);
+  					tabplotRY.push(0);
+  					
+   					for ( var i = 0 ; i < tabRX.length ; i++ ) {
+   					
+ 						//points aberrants
+   						if ( tabRY[i]  < -2 ) 
+   						{
+ 								tabRY[i] = -2;
+ 						}
+ 						
+ 						if ( tabRY[i]  > 2) 
+   						{
+ 								tabRY[i] = 2;
+ 						}
+ 						
+ 
+  						tabplotRX.push(tabRX[i]);
+  						tabplotRY.push(tabRY[i]);
+
+  					}
+  		
+  					//var trace1 = {
+  					//		x:tabplotRX,
+  					//		y:tabplotRY,
+  					//		yaxis: 'y1',
+  					//		mode: 'markers',
+  					//		showlegend:false,
+  					//		name:' ',
+  					//		marker: {
+      				//				color: 'grey',
+      				//				size:3
+    				//		}
+					 //};
+						
+				if (trio) 			// Plot des BA  des parents
+				{
+					
+						// pour le pere
+				
+						tabPosBA_dad = dataStorePlotValue.getValue(item, "POSball_dad"); 
+   					 	tabBA_dad = dataStorePlotValue.getValue(item, "BAll_dad");
+   					 	tabTransmission_dad = dataStorePlotValue.getValue(item, "transmission_dad");
+  	
+   						tabBAX_dad = tabPosBA_dad.split(" ");
+   						tabBAY_dad= tabBA_dad.split(" ");
+   						tabBAT_dad= tabTransmission_dad.split(" ");
+   						
+   						tabplotBAX_dad.push(0);
+  						tabplotBAY_dad.push(0);
+ 						tabplotBAT_dad.push(0);
+ 						
+ 						
+   						for ( var i = 0 ; i < tabBAX_dad.length ; i++ ) {
+   						
+   							if(tabBAT_dad[i] == 1)
+   							{
+  								tabplotBATX_dad.push(tabBAX_dad[i]);
+  								tabplotBATY_dad.push(tabBAY_dad[i]);
+  							}
+  							else
+  							{
+  								tabplotBAX_dad.push(tabBAX_dad[i]);
+  								tabplotBAY_dad.push(tabBAY_dad[i]);
+  							}
+  						}
+  					
+  		
+  						var trace1 = {
+  							x:tabplotBAX_dad,
+  							y:tabplotBAY_dad,
+  							yaxis: 'y1',
+  							mode: 'markers',	
+  							showlegend:false,
+  							name:' ',
+  							marker: {
+      								color: 'lightgrey',
+      								size:3
+    						}
+						};
+						
+						var trace2 = {
+  							x:tabplotBATX_dad,
+  							y:tabplotBATY_dad,
+  							yaxis: 'y1',
+  							mode: 'markers',	
+  							showlegend:false,
+  							name:'Transmitted',
+  							marker: {
+      								color: 'orange',
+      								size:4
+    						}
+						};
+						
+				
+			
+						// pour la mere
+				
+						tabPosBA_mom = dataStorePlotValue.getValue(item, "POSball_mom"); 
+   					 	tabBA_mom = dataStorePlotValue.getValue(item, "BAll_mom");
+  						tabTransmission_mom = dataStorePlotValue.getValue(item, "transmission_mom");
+
+   						tabBAX_mom = tabPosBA_mom.split(" ");
+   						tabBAY_mom= tabBA_mom.split(" ");
+   						tabBAT_mom= tabTransmission_mom.split(" ");
+  						
+   						tabplotBAX_mom.push(0);
+  						tabplotBAY_mom.push(0);
+  						tabplotBAT_mom.push(0);
+  						
+  
+   						for ( var i = 0 ; i < tabBAX_mom.length ; i++ ) {
+   						
+   							if(tabBAT_mom[i] == 1)
+   							{
+  								tabplotBATX_mom.push(tabBAX_mom[i]);
+  								tabplotBATY_mom.push(tabBAY_mom[i]);
+  							}
+  							else
+  							{
+  							
+  								tabplotBAX_mom.push(tabBAX_mom[i]);
+  								tabplotBAY_mom.push(tabBAY_mom[i]);
+  							}
+  						}
+  					
+  					
+  						var trace3 = {
+  							x:tabplotBAX_mom,
+  							y:tabplotBAY_mom,
+  							yaxis: 'y2',
+  							mode: 'markers',	
+  							showlegend:false,
+  							name:' ',
+  							marker: {
+      								color: 'lightgrey',
+      								size:3
+    						}
+						};
+
+						var trace4 = {
+  							x:tabplotBATX_mom,
+  							y:tabplotBATY_mom,
+  							yaxis: 'y2',
+  							mode: 'markers',	
+  							showlegend:false,
+  							name:'transmitted',
+  							marker: {
+      								color: 'orange',
+      								size:4
+    						}
+						};
+				
+						
+						// pour l'enfant
+					
+						tabPosBA = dataStorePlotValue.getValue(item, "POSball"); 
+   						tabMother = dataStorePlotValue.getValue(item, "MOTHER");
+ 						tabFather = dataStorePlotValue.getValue(item, "FATHER");
+ 						
+   						tabBAX = tabPosBA.split(" ");
+   						tabYM = tabMother.split(" ");
+   						tabYF = tabFather.split(" ");
+   					
+   						for ( var i = 0 ; i < tabBAX.length ; i++ ) {
+   					
+  							tabplotBAX.push(tabBAX[i]);
+  							tabplotYM.push(tabYM[i]);			
+  							tabplotYF.push(tabYF[i]);
+  							
+  						}	
+  	
+  						var trace5 = {
+  							x:tabplotBAX,
+  							y:tabplotYM,
+  							yaxis: 'y3',
+  							mode: 'markers',
+  							showlegend:false,
+  							name:'from mother',
+  							marker: {
+      								color: 'pink',
+      								size:4
+    						}
+
+						};
+				
+						var trace6 = {
+  							x:tabplotBAX,
+  							y:tabplotYF,
+  							yaxis: 'y3',
+  							mode: 'markers',
+  							showlegend: false,
+  							name:'from father',
+  							marker: {
+      								color: 'lightblue',
+      								size:4
+    						},
+    										
+						};
+		
+						
+						//data=[trace1,trace2,trace3,trace4,trace5,trace6,trace7];
+						data=[trace1,trace2,trace3,trace4,trace5,trace6];
+						
+						
+						layout = {
+  							//yaxis1:   {domain: [0.0, 0.2], title : 'Wc ratio : Child'},
+  							yaxis1:   {domain: [0.0, 0.30], title : 'father',color:'blue', tickmode: "array", tickvals: [0, 50, 100], ticktext: ['0', '50 ', '100']},
+  							yaxis2:   {domain: [0.35, 0.65], title : 'mother',color:'deeppink', tickmode: "array", tickvals: [0, 50, 100], ticktext: ['0', '50 ', '100']},
+  							yaxis3:	  {domain: [0.7, 1], title : 'child', tickmode: "array", tickvals: [0, 50, 100], ticktext: ['0', '50 ', '100']},
+  							margin:	  {l:70, r:30, b:30, t:50},
+						};
+			}
+			else
+			{
+						// pour la balance allelique
+						tabPosBA = dataStorePlotValue.getValue(item, "POSball"); 
+   						tabPatient = dataStorePlotValue.getValue(item, "PATIENT");
+ 						
+   						var tabBAX = tabPosBA.split(" ");
+   						var tabYC = tabPatient.split(" ");
+   						
+   						for ( var i = 0 ; i < tabBAX.length ; i++ ) 
+   						{
+  							tabplotBAX.push(tabBAX[i]);
+  							tabplotYC.push(tabYC[i]);								
+
+  						}	
+  					
+  						var trace2 = {
+  							x:tabplotBAX,
+  							y:tabplotYC,
+  							yaxis: 'y2',
+  							mode: 'markers',
+  							showlegend:false,
+  							name:' ',
+  							marker: {
+      								color: 'lightgrey',
+      								size:3
+    						}
+						};
+						//data=[trace1,trace2];
+						data=[trace2];
+						layout = {
+  							//yaxis1:   {domain: [0.0, 0.40], title : 'Wc ratio : Child'},
+  							yaxis2:	  {domain: [0.0, 1], title : 'Child', tickmode: "array", tickvals: [0, 25, 50, 75, 100], ticktext: ['0', '25', '50', '75', '100']},
+						};
+			}	
+			
+			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true,};
+			Plotly.newPlot('plot1', data, layout,config);
+			
+			
+			graphDiv.on('plotly_selected', function(eventData)
+ 				{
+ 
+					var max = 0;
+					var min = 250000000;
+					
+ 					eventData.points.forEach(function(pt) {
+  						min = Math.min(min,pt.x);
+  						max = Math.max(max,pt.x);
+ 					});
+ 
+ 					var locus = chr+":"+min+"-"+max;
+ 					viewGenes(locus,project,patient);
+ 					
+ 					Plotly.restyle(graphDiv, data, layout,config);
+				});
+		}
+  	});		
+  	
+}
+
+function PlotValues_BA_small_onlyChild(project,patient,chr)
+{
+	var url_plotBA = url_path + "/manta/PolyCytoPlotBalanceAllelic.pl";
+	dataStorePlotValue = new dojo.data.ItemFileReadStore({ url: url_plotBA + "?project=" + project + "&patient=" + patient + "&chr=" + chr });
+
+	var titre = '<button  type="button" class="btn-warning btn-sm" style="font-size:10px; color:black; id="idzoom' + chr + '" onclick="zoom_plot_BA(\'' + project + '\',\'' + patient + '\',' + chr + ')">chr ' + chr + '</button>';
+	
+	document.getElementById('idtitre').innerHTML = titre;
+	
+	var trio;
+	
+	// ratio WC enfant
+	var tabPosR;
+	var tabRatio;
+	var tabRX;
+	var tabRY;
+	
+	
+	// BA chez l'enfant
+	var tabPosBA;
+	var tabMother;
+	var tabFather;
+	var tabPatient;
+	
+	// 
+	var tabplotRX=[];
+   	var tabplotRY=[];
+   	
+   	
+   	var tabBAX;
+   	var tabYM;
+   	var tabYF;
+   	var tabYC; 
+   	var tabplotBAX=[];
+  	var tabplotYM=[];			
+  	var	tabplotYF=[];
+  	var tabplotYC=[];
+  	
+  
+  	var graphDiv = document.getElementById('plot1');	
+ 
+	dataStorePlotValue.fetch({
+			onComplete: function(items,request){
+                	var item = items[0];
+   
+   					trio = parseInt(dataStorePlotValue.getValue(item, "PLOT"));
+   					
+   				/*	tabPosR = dataStorePlotValue.getValue(item, "POSratio"); 
+   					tabRatio = dataStorePlotValue.getValue(item, "RATIO");
+  
+   					tabRX = tabPosR.split(" ");
+   					tabRY = tabRatio.split(" ");
+ 	
+ 					tabplotRX.push(0);
+  					tabplotRY.push(0);
+  					
+   					for ( var i = 0 ; i < tabRX.length ; i++ ) {
+   					
+ 						//points aberrants
+   						if ( tabRY[i]  < -2 ) 
+   						{
+ 								tabRY[i] = -2;
+ 						}
+ 						
+ 						if ( tabRY[i]  > 2) 
+   						{
+ 								tabRY[i] = 2;
+ 						}
+ 						
+ 
+  						tabplotRX.push(tabRX[i]);
+  						tabplotRY.push(tabRY[i]);
+
+  					}
+  		
+  					var trace1 = {
+  							x:tabplotRX,
+  							y:tabplotRY,
+  							yaxis: 'y1',
+  							mode: 'markers',
+  							showlegend:false,
+  							name:' ',
+  							marker: {
+      								color: 'grey',
+      								size:3
+    						}
+					 };
+				
+				*/
+						
+				if (trio) 			// Plot des BA  des parents
+				{
+					
+						// pour l'enfant
+					
+						tabPosBA = dataStorePlotValue.getValue(item, "POSball"); 
+   						tabMother = dataStorePlotValue.getValue(item, "MOTHER");
+ 						tabFather = dataStorePlotValue.getValue(item, "FATHER");
+ 						
+   						tabBAX = tabPosBA.split(" ");
+   						tabYM = tabMother.split(" ");
+   						tabYF = tabFather.split(" ");
+   					
+   						for ( var i = 0 ; i < tabBAX.length ; i++ ) {
+   					
+  							tabplotBAX.push(tabBAX[i]);
+  							tabplotYM.push(tabYM[i]);			
+  							tabplotYF.push(tabYF[i]);
+  							
+  						}	
+  						
+  						var trace1 = {
+  							x:tabplotBAX,
+  							y:tabplotYM,
+  							yaxis: 'y1',
+  							mode: 'markers',
+  							showlegend:false,
+  							name:'from mother',
+  							marker: {
+      								color: 'pink',
+      								size:3
+    						}
+
+						};
+					
+						var trace2 = {
+  							x:tabplotBAX,
+  							y:tabplotYF,
+  							yaxis: 'y1',
+  							mode: 'markers',
+  							showlegend: false,
+  							name:'from father',
+  							marker: {
+      								color: 'lightblue',
+      								size:3
+    						},
+    										
+						};
+		
+						data=[trace1,trace2];
+						layout = {
+  							yaxis1:	  {domain: [0, 1], title : 'AB child', tickmode: "array", tickvals: [0, 50, 100], ticktext: ['0', '50 ', '100']},
+  							margin:	  {l:40, r:30, b:30, t:20},
+  							font:     {size:8},
+						};
+			}
+			else
+			{
+						// pour la balance allelique
+						tabPosBA = dataStorePlotValue.getValue(item, "POSball"); 
+   						tabPatient = dataStorePlotValue.getValue(item, "PATIENT");
+ 						
+   						var tabBAX = tabPosBA.split(" ");
+   						var tabYC = tabPatient.split(" ");
+   						
+   						for ( var i = 0 ; i < tabBAX.length ; i++ ) 
+   						{
+  							tabplotBAX.push(tabBAX[i]);
+  							tabplotYC.push(tabYC[i]);								
+
+  						}	
+  					
+  						var trace1 = {
+  							x:tabplotBAX,
+  							y:tabplotYC,
+  							yaxis: 'y1',
+  							mode: 'markers',
+  							showlegend:false,
+  							name:' ',
+  							marker: {
+      								color: 'grey',
+      								size:3
+    						}
+						};
+						data=[trace1];
+						layout = {
+  							yaxis2:	  {domain: [0.0, 1], title : 'AB child', tickmode: "array", tickvals: [0, 25, 50, 75, 100], ticktext: ['0', '50', '100']},
+  							margin:	  {l:40, r:30, b:30, t:20},
+  							font:     {size:8},
+						};
+			}	
+				
+			
+			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: false, responsive: true,};
+			Plotly.newPlot('plot1', data, layout,config);
+			
+			
+			graphDiv.on('plotly_selected', function(eventData)
+ 			{
+ 
+					var max = 0;
+					var min = 250000000;
+					
+ 					eventData.points.forEach(function(pt) {
+  						min = Math.min(min,pt.x);
+  						max = Math.max(max,pt.x);
+ 					});
+ 
+ 					var locus = chr+":"+min+"-"+max;
+ 					viewGenes(locus,project,patient);
+ 					
+ 					Plotly.restyle(graphDiv, data, layout,config);
+				});
+		}
+  	});		
+  	
+}
+
+function zoom_plot_BA(project,patient,chr)
+{
+	var url_plot;
+	url_plot = "PolyCytoBAPlot.html?project=" + project + "&patient=" + patient + "&chr=" + chr ;
+	var myWindow = window.open(url_plot,"_blank",""); 
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -2186,13 +2758,21 @@ function PlotFoetalFract()
 	var parameters = location.search.split("&");
 	
 	var par0 = parameters[0].split("=");
-	var par1 = parameters[1].split("=");	 
-
-	var project =par0[1];
-	var patient =par1[1];
+	var par1 = parameters[1].split("=");
+	var par2;	
+	
+	var project = par0[1];
+	var plasma = par1[1];
+	var bt = "no";
+	
+	if (parameters.length > 2)
+	{
+		par2 = parameters[2].split("=");
+		bt = par2[1];
+	}
 	
 	// plot = fraction foetal 
-	PlotValues_GFF(project,patient);
+	PlotValues_GFF(project,plasma,bt);
 	setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},2000);
  }
  	
@@ -2529,7 +3109,7 @@ function PlotValues_FF(project,patient,chr,small)
 			}
 			else
 			{
-				config = { modeBarButtonsToRemove: ['lasso2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+				config = { modeBarButtonsToRemove: ['lasso2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 			}
 			Plotly.newPlot('plot1', data, layout,config);
 			
@@ -2556,20 +3136,17 @@ function PlotValues_FF(project,patient,chr,small)
   	
 }
 
-function PlotValues_GFF(project,patient)
+function PlotValues_GFF(project,plasma,bt)
 {
 	var url_plotGFF= url_path + "/manta/PlotGlobalFoetalFract.pl";
 	
-	dataStorePlotValue = new dojo.data.ItemFileReadStore({ url: url_plotGFF + "?project=" + project + "&patient=" + patient});
+	dataStorePlotValue = new dojo.data.ItemFileReadStore({ url: url_plotGFF + "?project=" + project + "&plasma=" + plasma + "&bt=" +bt});
 	var legend = "Foetal fraction";
-	titre = '<br><b><label style="font-size:14px; color:black"> ' + project + ' : ' + patient  + '</label></b><br><br>';
+	titre = '<br><b><label style="font-size:14px; color:black"> ' + project + ' : ' + plasma  + '</label></b><br><br>';
 	document.getElementById('idtitre').innerHTML = titre;
 
 	
 	var trio;
-	
-	
-
 	
 	// BA chez l'enfant
 	var tabPosBA;
@@ -2595,6 +3172,11 @@ function PlotValues_GFF(project,patient)
   	
   	
   	var tabMean;
+  	var VP;
+  	var FN;
+  	var FP;
+  	var VN;
+  	var stats = "";
   
   	
   	var graphDiv = document.getElementById('plot1');	
@@ -2605,7 +3187,16 @@ function PlotValues_GFF(project,patient)
    
    					trio = parseInt(dataStorePlotValue.getValue(item, "PLOT"));
    					tabMean = dataStorePlotValue.getValue(item, "mean");
-	
+   				
+   				if (bt != "no")
+   				{	
+   					VP = dataStorePlotValue.getValue(item, "VP");
+   					FN = dataStorePlotValue.getValue(item, "FN");
+   					VN = dataStorePlotValue.getValue(item, "VN");
+   					FP = dataStorePlotValue.getValue(item, "FP");
+   					stats = "  VP=" + VP + "  FN=" + FN + "  VN=" + VN + "  FP=" + FP;
+   				}
+				
 				if (trio) 			
 				{
 					
@@ -2660,19 +3251,17 @@ function PlotValues_GFF(project,patient)
 
 						
 						data=[trace1,trace2];
-			
 						
 						layout = {
-							title :   {text: "Foetal Fraction = " + tabMean,
+							title :   {text: "Foetal Fraction = " + tabMean + stats,
 							           font: {size: 14,
 							           		  color: '#B22222',
 							           		  },
 							           },
- 
   							yaxis1:	  {domain: [0, 1], title : 'Allelic Ballance ', tickmode: "array", tickvals: [0,25,50,100], ticktext: ['0','25','50 ','100']},
 						};
 			
-			var config = { modeBarButtonsToRemove: ['lasso2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+			var config = { modeBarButtonsToRemove: ['lasso2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 			
 			Plotly.newPlot('plot1', data, layout,config);
 	
@@ -3059,7 +3648,7 @@ function PlotValues_RHo(project,patient,chr,minlength)
 			
 			Plotly.newPlot('plot1', data, layout);
 			
-			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true};
+			var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
 			Plotly.newPlot('plot1', data, layout,config);
 			
 			graphDiv.on('plotly_selected', function(eventData)
