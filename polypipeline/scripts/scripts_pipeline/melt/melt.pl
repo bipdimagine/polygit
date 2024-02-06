@@ -107,7 +107,7 @@ close LIST;
 	#system("sambamba slice $bam ".$chr->fasta_name." >$bout && samtools index $bout");
 
 	warn "$melt -h $ref -bamfile $bam_tmp -n $bed  -w $dir_out -t $list  -exome 1";
-	#system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1");
+	system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1");
 
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
 	foreach my $f (keys %$files){
