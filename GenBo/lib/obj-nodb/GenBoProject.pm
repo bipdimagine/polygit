@@ -4098,7 +4098,12 @@ sub getPipelineTrackingDir {
 sub getSVDir {
 	my ( $self, $method_name ) = @_;
 	my $path = $self->project_path . "/SV/";
-	return $self->makedir($path);
+	$self->makedir($path);
+	if ($method_name){
+		$path .= $method_name . '/';
+		return $self->makedir($path);
+	}
+	return $path;
 }
 
 sub getCNVDir {
