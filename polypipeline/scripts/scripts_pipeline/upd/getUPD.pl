@@ -18,28 +18,30 @@ my $file;
 GetOptions(
 'fork=s'       => \$fork,
 'project=s'    => \$project_name,
+'patient=s'    => \$patient_name,
 );
 
 my $buffer = new GBuffer;
 my $project = $buffer->newProjectCache( -name => $project_name);
+my $patient = $project->getPatient($patient_name);
+
+unless ($patient->isChild){
+	my $all_res ={};
+	save_json($patient,$all_res);
+	exit(0);
+} 
 #warn $project_name;
-my $fams = $project->getFamilies();
-
-
-foreach my $fam ($fams)
-{
-	exit(0) if scalar(@$fams) > 1;
-	my $fam = $fams->[0];
+my $fam = $patient->getFamily();
 	my $mother = $fam->getMother();
 	my $father = $fam->getFather();
-	next unless $father;
-	next unless $mother;			# il faut les deux parents
+	save_json($patient,{}) unless $father;
+	save_json($patient,{}) unless $mother;			# il faut les deux parents
 
   	foreach my $child (@{$fam->getChildren})
   	{
+  		next if $child->name ne $patient->name();
 		my $all_res;
-		foreach my $chr (@{$project->getChromosomes})
-		{
+		foreach my $chr (@{$project->getChromosomes}) {
 			next if  $chr->name eq "MT";
 			# snp he chez un des parents absent chez l'autre et qui se retrouve ho chez l'enfant (isodisomie)
 			my $father_he = $father->getVectorHe($chr)->Clone();
@@ -48,6 +50,7 @@ foreach my $fam ($fams)
 			$child_ho &= $father_he ;
 			my $nb1 = $chr->countThisVariants($father_he);
 			my $nb2 = $chr->countThisVariants($child_ho);
+			
 			$nb1 +=1 ;
 			my $sc1 = int(($nb2/$nb1)*100);  # % de snp he du père retrouvés ho chez l'enfant 
 
@@ -108,41 +111,19 @@ foreach my $fam ($fams)
 			# region Ho : nb snp ho consécutifs chez enfant provenant d'un des parents
 			my $lmax_HoF = _max($child_ho->to_Enum());
 			my $lmax_HoM = _max($child_ho2->to_Enum());
-
-			$all_res->{$child->name}->{$chr->name}->{TRANSMIS_BYF} = int(($nb_child_only_F/$nb_only_F)*100);
-			$all_res->{$child->name}->{$chr->name}->{TRANSMIS_BYM} = int(($nb_child_only_M/$nb_only_M)*100);
-			$all_res->{$child->name}->{$chr->name}->{ISO_UPD_F} = $sc1;
-			$all_res->{$child->name}->{$chr->name}->{ISO_UPD_M} = $sc2;
-			$all_res->{$child->name}->{$chr->name}->{ISOHE_UPD_F} = $sc3;
-			$all_res->{$child->name}->{$chr->name}->{ISOHE_UPD_M} = $sc4;
-			$all_res->{$child->name}->{$chr->name}->{HoFrom_F} = $lmax_HoF;
-			$all_res->{$child->name}->{$chr->name}->{HoFrom_M} = $lmax_HoM;
-
-
-			next unless (($transmissionF < 10) || ($transmissionM < 10 ));
-			print $project_name."\t".$child->name."\t".$chr->name."\n";
-			print "% de snp he père -> ho enfant : ".$sc1."\n";
-			print "% de snp he mère -> ho enfant : ".$sc2."\n";
-			print "% de snp ho père -> ho enfant : ".$sc3."\n";
-			print "% de snp ho mère -> ho enfant : ".$sc4."\n";
-			print "% snp du père transmis à l'enfant : ".$all_res->{$child->name}->{$chr->name}->{TRANSMIS_BYF}."\n";
-			print "nb snp ho consécutifs chez l'enfant provenant du père "._max($child_ho->to_Enum())."\n"; # taille max = region HO 
-			print "% snp de la mère transmis à l'enfant : ".$all_res->{$child->name}->{$chr->name}->{TRANSMIS_BYM}."\n";
-			print "nb snp ho consécutifs chez enfant provenant de la mère "._max($child_ho2->to_Enum())."\n"; # taille max  = region HO
-
+			$all_res->{$chr->name}->{TRANSMIS_BYF} = int(($nb_child_only_F/$nb_only_F)*100);
+			$all_res->{$chr->name}->{TRANSMIS_BYM} = int(($nb_child_only_M/$nb_only_M)*100);
+			$all_res->{$chr->name}->{ISO_UPD_F} = $sc1;
+			$all_res->{$chr->name}->{ISO_UPD_M} = $sc2;
+			$all_res->{$chr->name}->{ISOHE_UPD_F} = $sc3;
+			$all_res->{$chr->name}->{ISOHE_UPD_M} = $sc4;
+			$all_res->{$chr->name}->{HoFrom_F} = $lmax_HoF;
+			$all_res->{$chr->name}->{HoFrom_M} = $lmax_HoM;
+			
 		} # chr
-
-		my $json = encode_json $all_res;
-		my $dir = $project->getSVDir()."/UPD";
-		system("mkdir -p $dir ; chmod a+rwx $dir") unless -e $dir;
-
-		foreach my $c (keys %$all_res){
-			open(JSON,">$dir/".$c.".json");
-			print JSON  encode_json $all_res->{$c};
-			close JSON;
-		}
+		save_json($patient,$all_res);
+		
   	} # childs
-} # famille
 
 sub _max {
 my ($string) = @_;
@@ -164,6 +145,13 @@ while (my ( $from, $to ) = $iter->()) {
 return $max;
 
 }
-
+sub save_json{
+my ($patient,$hash) =@_;
+my $file = $patient->upd_file();
+open(JSON,">$file");
+print JSON  encode_json $hash;
+close JSON;
+exit(0);
+}
 exit(0);
 	
