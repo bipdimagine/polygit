@@ -151,7 +151,6 @@ sub is_junctions_linked {
 sub is_ri_aval {
 	my ($self, $patient) = @_;
 	confess() unless ($patient);
-	warn Dumper $self->annex->{$patient->name()};
 	my $type = lc($self->getTypeDescription($patient)); 
 	return 1 if ($type =~ /ri_aval/);
 	return;
@@ -737,7 +736,6 @@ sub in_this_run_patients {
 	my($self,$ratio,$patient) = @_;
 	$ratio =0 unless $ratio;
 	my $hash = $self->hash_in_this_run_patients($ratio);
-	warn Dumper $hash;
 	my $nb = scalar (keys %$hash);
 	if ($patient){
 		$nb -- if exists $hash->{$patient->id};
