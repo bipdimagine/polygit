@@ -341,7 +341,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		$n++;
 		print '.' if ( not $only_html_cache and $n % 1000 );
 		my $is_junction_linked_filtred;
-		next if ( $junction->isCanonique());
+		#next if ( $junction->isCanonique());
 		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 );
 
 		next if $junction->start == $junction->end();
