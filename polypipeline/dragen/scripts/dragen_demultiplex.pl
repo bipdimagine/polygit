@@ -72,6 +72,7 @@ foreach my $project_name (split(",",$project_names)){
 	else {
 		$run = $runs->[0];
 	}
+	warn $run->name();
 	#die() if scalar(@$runs)> 1;
 	#warn 
 	foreach my $capture (@{$project->getCaptures}){
@@ -327,7 +328,6 @@ if (keys %patients) {
 
 if (keys %$error_not_in_project) {
 		print colored(['bright_red on_black']," SAMPLE IN SAMPLE SHEET  NOT IN PROJECT :")."\n";
-		
 		map {print $_."\n"} keys %$error_not_in_project;
 		print " nb error : ".scalar (keys %$error_not_in_project)."\n";
 		my $choice = prompt("continue anyway  (y/n) ? ");

@@ -3544,6 +3544,7 @@ sub getSampleProfile {
 	my $query    = $self->getProject()->buffer->getQuery();
 	return $query->getProfileSample($self->id);
 }
+
 sub update_software_version {
 	my ($self,$name,$cmd) = @_;
 	my $query    = $self->getProject()->buffer->getQuery();
