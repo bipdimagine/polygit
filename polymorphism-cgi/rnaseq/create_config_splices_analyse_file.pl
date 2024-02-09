@@ -44,6 +44,16 @@ my $dt = DateTime->now;
 $hash->{analyse}->{date} = $dt->dmy;
 $hash->{analyse}->{path} = $project_path.'/analysis/';
 
+my $hcaptures;
+foreach my $capture (@{$project->getCaptures()}) {
+	$hcaptures->{$capture->name()} = undef;
+}
+$hash->{analyse}->{capture} = join('_', sort keys %$hcaptures);
+$hash->{analyse}->{align_methods} = join('_', sort @{$project->getAlignmentMethods()});
+$hash->{analyse}->{path_final} = $hash->{analyse}->{path}.'/'.$hash->{analyse}->{align_methods}.'/'.$hash->{analyse}->{capture}.'/';
+
+
+
 # PROJECT
 $hash->{project}->{gencode}->{release} = $project->getVersion();
 if ($hash->{project}->{gencode}->{release} =~ /HG19/) {

@@ -113,12 +113,11 @@ foreach my $patient (@{$run->getPatients}){
 		}
 		else {
 			#push(@texon,int($mean/$nb_patient));
-			$h->{meanr} += ($mean);	
+			$h->{meanr} += int($mean/$nb_patient);	
 			$texon[$i] += int($mean/$nb_patient);
 			#push (@texon , $mean/$nb_patient);
 		}
 	}
-	$h->{meanr} = int($h->{meanr}/$nb_patient);	
 	push(@hexons,$h);
 	$i++;
 }
