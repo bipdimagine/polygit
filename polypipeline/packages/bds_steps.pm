@@ -2290,6 +2290,9 @@ sub rnaseq_metrics {
 	die() if $fileout eq $filein;
 	$filein = $self->patient->getBamFileName() unless -e $filein;
 	my $refFlat = $project->refFlat_file();
+	warn $refFlat;
+	
+	#$refFlat = "/data-isilon/public-data/repository/HG38/refFlat/refFlat_no_chr.txt" if $method eq "star" ;
 	
 	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
 	#$refFlat = $project->refFlat_file_dragen() if $method eq "dragen-align";
@@ -5056,6 +5059,7 @@ sub htlv1_insertion {
 		my $ucbc = uc($bc);
 		warn $ucbc;
 		$ucbc =~ s/LIN//;
+		warn $ucbc;
 		my $l = $linker[ $ucbc - 1 ];
 
 		my ( $ln, $ls ) = split( /:/, $l );

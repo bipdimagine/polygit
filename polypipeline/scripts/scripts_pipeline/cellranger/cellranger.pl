@@ -344,8 +344,7 @@ close(JOBS_ARC);
 
 #my $cmd = "cd $tmp; /software/bin/demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
 warn $exec;
-my $cmd = "cd $tmp; $Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
-warn $cmd;
+my $cmd = "cd $tmp; $Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=1";
 if ($step eq "demultiplex" or $step eq "all"){
 	warn $cmd;
 	system $cmd or die "impossible $cmd" unless $no_exec==1;
@@ -400,7 +399,7 @@ if ($step eq "aggr" or $step eq "all"){
 #my $date = $RefDateActuelle->{date};
 
 if ($step eq "tar" or $step eq "all"){
-	my $tar_cmd = "tar -cvzf $dir/cellranger7"."_"."$projectName.tar.gz $tmp/*/outs/web_summary.html $tmp/*/outs/cloupe.cloupe $tmp/*/outs/vloupe.vloupe $tmp/*/outs/*_bc_matrix/* ";
+	my $tar_cmd = "tar -cvzf $dir/cellranger7"."_"."$projectName.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
 	warn $tar_cmd;
 	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
 	system ($tar_cmd)  unless $no_exec==1;

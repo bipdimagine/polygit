@@ -140,7 +140,6 @@ method genotype_gvcf4 (Str :$filein! ){
 	my $patients = $project->get_list_patients($arg);
 	foreach my $patient (@$patients){
 			my $gvcf = $patient->getGvcfFile("haplotypecaller4");#$dir_out."/".$patient->name.".g.vcf.gz";
-			warn $gvcf;
 			die("$gvcf you don't have gvcf for at least this patient restart after_lifescope on this project ") unless $gvcf ;#-e $gvcf;
 	}
 	my $fork =$self->nproc;
@@ -304,7 +303,7 @@ method count_featureCounts  (Str :$filein! ){
 	my @sed_cmd2;
 	my $nb =0;
 	my $align_method;
-	my $strand ;
+	my $profile;
 	foreach my $patient (@$patients){
 		my $run = $patient->getRun();
 		my $type = $run->infosRun->{method};
@@ -314,16 +313,22 @@ method count_featureCounts  (Str :$filein! ){
 		push(@bams,$bam);
 		$bam =~ s/\//\\\//g;
 		$align_method = $patient->alignmentMethod();
+		$profile = $patient->getSampleProfile();
 		push(@sed_cmd,qq{sed -i "2s/$bam/$name/" $fileout} );
 		push(@sed_cmd2,qq{sed -i "2s/$bam/$name/" $fileout2} );
 	}
 	my $ppn =16;
 	my $gtf = $project->gtf_file();
-	$gtf = $project->gtf_file_star() if $align_method eq "star";
+	$gtf = $project->gtf_file_dragen() if $align_method eq "star" || $align_method eq "dragen-align";
+	#die($gtf);
 	
 	my $sed = join(" && ",@sed_cmd);
 	my $featureCounts = $project->buffer->software("featureCounts");
-	my $cmd = "$featureCounts -T $ppn   -a $gtf --ignoreDup -o $fileout -p -t exon  -s 1 ".join(" ",@bams)." && $sed";
+	my $strand = " -s 1 ";
+	$strand = " -s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free";
+	$strand = " -s 0 " if $profile eq "bulk neb pcr-free";
+	
+	my $cmd = "$featureCounts -T $ppn   -a $gtf --ignoreDup -o $fileout -p -t exon  $strand ".join(" ",@bams)." && $sed";
 	#my $cmd = "$featureCounts -T $ppn   -a $gtf  -o $fileout -p -t exon  ".join(" ",@bams)." && $sed";
 	my $type = "featureCounts-genes";
 	my $stepname = $project_name."@".$type;
