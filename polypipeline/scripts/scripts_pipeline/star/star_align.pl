@@ -54,7 +54,7 @@ if (-e $fileout) {
 else {
 	die();
 }
-
+#111
 my $sjfile= "$dir_pipeline/$patient_name".".SJ.out.tab";
 die($sjfile) unless -e $sjfile;
 
