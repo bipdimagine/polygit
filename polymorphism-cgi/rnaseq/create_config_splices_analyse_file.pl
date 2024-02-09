@@ -73,6 +73,11 @@ $hash->{project}->{gencode}->{junctions_canoniques_rds} = $project->rds_junction
 $hash->{softwares}->{samtools} = $project->getSoftware('samtools');
 $hash->{softwares}->{sambamba} = $project->getSoftware('sambamba');
 $hash->{softwares}->{bedtools} = $project->getSoftware('bedtools');
+$hash->{softwares}->{picard} = $project->getSoftware('picard');
+
+# POLYRNASEQSEA PATHS
+$hash->{rnaseqseapaths}->{script} = "$Bin/../../polypipeline/polyrnaseqsea/junctions/RNAseqSEA_capt_js_dev.r";
+$hash->{rnaseqseapaths}->{biblio} = "$Bin/../../polypipeline/polyrnaseqsea/junctions/biblio_RNAseqSEA_capt_js.r";
 
 # PATIENTS
 my $path_splices = $project->getJunctionsDir('RnaSEA');

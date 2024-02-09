@@ -1004,7 +1004,6 @@ sub myflushobjects {
 	}
 	my @objs = (); 
 		foreach  my $id (@$array_ids) {
-			
 			confess("id".$id) unless $id;
 			if (exists $self->{lmdb_id}->{$id}) {
 				$id =  $self->{lmdb_id}->{$id};
@@ -1037,9 +1036,10 @@ sub myflushobjects {
 						$real_id = $id;
 						$vector_id = $vid;
 						 $chr = $self->getChromosome($chr_name);
-						unless (exists $self->{lmdb_id}->{$id}){
-							
+						unless (exists $self->{lmdb_id}->{$id}) {
 						$self->{lmdb_id}->{$id} =  $chr->cache_lmdb_variations->get_varid($vid);
+						confess($id) unless $self->{lmdb_id}->{$id};
+						
 					#$id = $chr->cache_lmdb_variations->get_varid($vid);
 						}
 						$id = $self->{lmdb_id}->{$id};

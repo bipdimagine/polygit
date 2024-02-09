@@ -68,7 +68,7 @@ foreach my $chr (@{$project->getChromosomes()}) {
 
 if ($j_total >= 10000) {
 	my $no_cache = $patient->get_lmdb_cache("r");
-	my $cache_vectors_enum_id = 'splices_linked_'.$patient->name().'_'.$j_total.'_chr_vectors_enum';
+	my $cache_vectors_enum_id = $patient->name().'_chr_vectors_enum';
 	my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
 	if ($h_res_v_enum) {
 		foreach my $chr_id (keys %$h_res_v_enum) {
@@ -118,6 +118,9 @@ foreach my $junction (@lJunctions) {
 	my $pid = $pm->start and next;
 	$buffer->dbh_deconnect();
 	$buffer->dbh_reconnect();
+
+#	my $locus_text = $junction->getChromosome->name().':'.($junction->start() - 100).'-'.($junction->end() + 100);
+#	$junction->createSashiPlot($patient, $locus_text);
 	$junction->can_create_sashimi_plots(1);
 	$junction->getListSashimiPlotsPathFiles($patient);
 	print FILE 'Ok junction '.$junction->id()."\n";
