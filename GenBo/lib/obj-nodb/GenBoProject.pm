@@ -2229,7 +2229,7 @@ sub getGenomeIndex {
 	my $dir;
 	confess("\n\nERROR: path "
 		  . $self->dirGenome()
-		  . "/genome/$method doesnt exist. Die.\n\n" )
+		  . "$method doesnt exist. Die.\n\n" )
 	  unless -e $self->dirGenome() . "/$method";
 	$dir = $self->dirGenome() . "/$method";
 	$dir .= "/hg19"   if ( $method eq "bowtie2" );
