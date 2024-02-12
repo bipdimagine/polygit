@@ -65,7 +65,9 @@ if(file.exists(configPath))
     testENSgGC(gcrds, resPath)
     
     write(paste("\t#\t5- Prepare / Execute les commandes", sep=""), file="")
-    cmds = formatSamplesTypes_1vsAll(idprojet, biblioPath, scriptPath, esp, gcvers, align, nCPUmax=4, limDecal=1, bamfiles, gcrds, resPath, sambambaPath, samtoolsPath, picardPath)
+    nCPU=4
+    if (nCPU >= nCPUmax) { nCPU = nCPUmax } 
+    cmds = formatSamplesTypes_1vsAll(idprojet, biblioPath, scriptPath, esp, gcvers, align, nCPU, limDecal, bamfiles, gcrds, resPath, sambambaPath, samtoolsPath, picardPath)
     runif(1)
     library(parallelMap)
     parallelStart(mode = "multicore", cpus=nCPUmax, show.info=TRUE)

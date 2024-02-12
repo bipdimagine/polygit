@@ -34,7 +34,7 @@ if(sum(grepl("titre", tmpArgs[,1]))>0)
 align="hisat2"
 if(sum(grepl("^align$", tmpArgs[,1])))	align = tmpArgs[grep("align", tmpArgs[,1], ignore.case=TRUE),2]
 
-nCPUmax = 1
+nCPUmax = 4
 if(sum(grepl("nCPUmax", tmpArgs[,1]))>0)	nCPUmax = as.numeric(tmpArgs[grep("nCPUmax", tmpArgs[,1], ignore.case=TRUE),2])
 
 limDecal = 1	# 5	Marge acceptable d'approximation des bornes des jonctions a concatener
