@@ -213,12 +213,12 @@ geneBams<-function(B)	#	Cree un bam pour les reads du gene
 rmdup<-function(I)
 {
 	write(paste("\t#\trmdup ", bamsGene[I], sep=""), file="")
-	system(paste(sambambaPath, " markdup -r -t 5 ", bamsGene[I], " ", rmdupPath, substr(basename(bamsGene[I]), 0, (nchar(basename(bamsGene[I]))-4)), "_rmdup.bam", sep=""))
+	system(paste(sambambaPath, " markdup -r -t 4 ", bamsGene[I], " ", rmdupPath, substr(basename(bamsGene[I]), 0, (nchar(basename(bamsGene[I]))-4)), "_rmdup.bam", sep=""))
 }
 
 exJunBed<-function(J)	#	nom chromosome avec chr
 {
-	tmp = system(paste(sambambaPath, " view ",bamsRMdups[J], " ", CHRbam, Chr, ":", Start-100, "_", End+100, " | cut -f3,4,6  | awk '{if ($3 ~ /N/){printf(\"%s\",$1); start=$2; end=$2; split($3,a,\"[NIMDSH]\"); 
+	tmp = system(paste(sambambaPath, " view -t 4 ",bamsRMdups[J], " ", CHRbam, Chr, ":", Start-100, "_", End+100, " | cut -f3,4,6  | awk '{if ($3 ~ /N/){printf(\"%s\",$1); start=$2; end=$2; split($3,a,\"[NIMDSH]\"); 
 							split($3,b,\"[0-9]*\"); nb=length(b); for(i=2; i<=nb; i++){if(b[i] ~ /[MD]/){ end=end+a[i-1];} if(b[i] ~ /N/){end=end-1; printf(\"\t%s\t%s\",start, end); 
 							start=end+a[i-1]+1; end=start;}} printf(\"\t%s\t%s\\n\", start,end-1);}}' > ", bedpath, gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".mbed", sep=""), intern=TRUE)
 }
@@ -228,7 +228,7 @@ JuncBam<-function(J)
 	#	test du bed pour eviter les bams vides...
 	if(file.size(paste(bedpath,gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".mbed", sep="")) != 0L)
 	{
-		system(paste(sambambaPath, " view ",bamsRMdups[J], " | cut -f3,4,6  | awk '($3 ~ /N/)' > ", juncBamPath, gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".bam", sep=""), intern=TRUE)
+		system(paste(sambambaPath, " view -t 4 ",bamsRMdups[J], " | cut -f3,4,6  | awk '($3 ~ /N/)' > ", juncBamPath, gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".bam", sep=""), intern=TRUE)
 	}
 }
 
