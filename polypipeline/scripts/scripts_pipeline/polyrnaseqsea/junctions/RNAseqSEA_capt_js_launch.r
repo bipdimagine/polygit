@@ -5,18 +5,24 @@
 # idprojet="NGS2021_3899"
 
  
+nCPUmax = 1
+ 
 args = commandArgs(trailingOnly=TRUE)
 tmpArgs = t(rbind(apply(as.matrix(unlist(args)), 1, function(x) unlist(strsplit(x, "=")))))
 if(sum(grepl("^idprojet$", tmpArgs[,1]))>0)	idprojet = tmpArgs[grep("^idprojet$", tmpArgs[,1], ignore.case=TRUE),2]
+if(sum(grepl("^config_file$", tmpArgs[,1]))>0)	configPath = tmpArgs[grep("^config_file$", tmpArgs[,1], ignore.case=TRUE),2]
+if(sum(grepl("^fork$", tmpArgs[,1]))>0)	nCPUmax = tmpArgs[grep("^fork$", tmpArgs[,1], ignore.case=TRUE),2]
+nCPUmax =strtoi(nCPUmax, base=0L)
 
-nCPUmax = 4
+
+
 limDecal=1
 CorrAnnot=TRUE
 # if(file.exists())
 
 write(paste("\t#\t1- Cree le fichier de config js", sep=""), file="")
 #configPath = system(paste("/software/polyweb/poly-disk/poly-src/polygit/polymorphism-cgi/rnaseq/create_config_splices_analyse_file.pl -force=1 -project=", idprojet, sep=""), intern=TRUE)
-configPath = system(paste("/data-isilon/bipd-src/mbras/git_repository/polymorphism-cgi/rnaseq/create_config_splices_analyse_file.pl -force=1 -project=", idprojet, sep=""), intern=TRUE)
+#configPath = system(paste("/data-isilon/bipd-src/mbras/git_repository/polymorphism-cgi/rnaseq/create_config_splices_analyse_file.pl -force=1 -project=", idprojet, sep=""), intern=TRUE)
 
 if(file.exists(configPath))
 {
@@ -58,19 +64,20 @@ if(file.exists(configPath))
     write(paste("\t#\t4- Valide la liste de capture", sep=""), file="")
     testENSgGC(gcrds, resPath)
     
-    write(paste("\t#\t4- Cree les fichier samplefiles des comparaisons", sep=""), file="")
-    formatSamplesTypes_1vsAll(idprojet, biblioPath, scriptPath, esp, gcvers, align, nCPUmax=4, limDecal=1, bamfiles, gcrds, resPath, sambambaPath, samtoolsPath, picardPath)
-    
-    write(paste("\t#\t5- Exectute les commandes du cmd.txt", sep=""), file="")
-	cmd = paste("sh ", resPath, "/RNAseqSEA/cmds.sh", sep="");
-    system(cmd, wait = TRUE);
-	cmd = paste("cat ", resPath, "/RNAseqSEA/cmds_all.sh | ", runcluster," -limit=300 -cpu=", nCPUmax, " ", sep="");
-    system(cmd, wait = TRUE);
+    write(paste("\t#\t5- Prepare / Execute les commandes", sep=""), file="")
+    cmds = formatSamplesTypes_1vsAll(idprojet, biblioPath, scriptPath, esp, gcvers, align, nCPUmax=4, limDecal=1, bamfiles, gcrds, resPath, sambambaPath, samtoolsPath, picardPath)
+    runif(1)
+    library(parallelMap)
+    parallelStart(mode = "multicore", cpus=nCPUmax, show.info=TRUE)
+    f = function(cmd) system(cmd, wait = TRUE);
+    y = parallelMap(f, cmds)
+    parallelStop()
     
     write(paste("\t#\t6- Formate les resultats", sep=""), file="")
     formatProjet(resPath, align)
     
     write(paste("\t#\t7- Supprime les fichiers temporaires", sep=""), file="")
+    if (nCPUmax >= 5) { nCPUmax = 5 } 
     tmp = list.files(paste(resPath, "/analysis/", sep=""), pattern = "^RNAseqSEA_", recursive = FALSE, full.names=TRUE)
     runif(1)
     library(parallelMap)

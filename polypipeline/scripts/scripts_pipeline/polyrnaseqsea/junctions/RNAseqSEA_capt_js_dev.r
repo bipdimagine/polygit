@@ -204,7 +204,7 @@ if(nrow(exons)>0)
 	for(cB in 1:length(bamsGene))
 		CountsMat[cB, "TotReadsGene"] = system(paste("samtools view ", bamsGene[cB], " | wc -l", sep=""), intern=TRUE)
 	
-	nCPU = round(nCPUmax/4)
+	nCPU = nCPUmax/5
 	library(parallelMap)
 	parallelStart(mode = "multicore", cpus=nCPU, show.info=TRUE) 
 	f = function(I) rmdup(I)
@@ -334,20 +334,23 @@ if(nrow(exons)>0)
 				if((minEndDec>0)&(minEndDec<=limDecal))	geneJunCorr[C,"EndJun"] = min(as.numeric(exons[abs(geneJunCorr[C,"EndJun"]-as.numeric(exons[,"exon_chrom_start"]))<=limDecal,"exon_chrom_start"]))
 			}
 			
-			geneJunCorr = geneJunCorr[order(geneJunCorr[,"EndJun"]),,drop=FALSE]
-			geneJunCorr = geneJunCorr[order(geneJunCorr[,"StartJun"]),,drop=FALSE]
-			geneJunNew = matrix(0, ncol=ncol(geneJun), nrow=0)
-			geneJunNew = rbind(geneJunNew, geneJunCorr[1,,drop=FALSE])
-			for(G in 1:nrow(geneJunCorr))
+			if(nrow(geneJunCorr)>=2)
 			{
-				if((geneJunNew[nrow(geneJunNew),"StartJun"]==geneJunCorr[G,"StartJun"])&(geneJunNew[nrow(geneJunNew),"EndJun"]==geneJunCorr[G,"EndJun"]))
+				geneJunCorr = geneJunCorr[order(geneJunCorr[,"EndJun"]),,drop=FALSE]
+				geneJunCorr = geneJunCorr[order(geneJunCorr[,"StartJun"]),,drop=FALSE]
+				geneJunNew = matrix(0, ncol=ncol(geneJun), nrow=0)
+				geneJunNew = rbind(geneJunNew, geneJunCorr[1,,drop=FALSE])
+				for(G in 2:nrow(geneJunCorr))
 				{
-					geneJunNew[nrow(geneJunNew),"CountJun"] = geneJunNew[nrow(geneJunNew),"CountJun"] + geneJunCorr[G,"CountJun"]
-				}else{
-					geneJunNew = rbind(geneJunNew, geneJunCorr[G,,drop=FALSE])
+					if((geneJunNew[nrow(geneJunNew),"StartJun"]==geneJunCorr[G,"StartJun"])&(geneJunNew[nrow(geneJunNew),"EndJun"]==geneJunCorr[G,"EndJun"]))
+					{
+						geneJunNew[nrow(geneJunNew),"CountJun"] = geneJunNew[nrow(geneJunNew),"CountJun"] + geneJunCorr[G,"CountJun"]
+					}else{
+						geneJunNew = rbind(geneJunNew, geneJunCorr[G,,drop=FALSE])
+					}
 				}
+				geneJun = geneJunNew
 			}
-			geneJun = geneJunNew
 			
 			#	filtre si les start ET end sont en dehors du gene... pb des marges
 			geneJun = geneJun[!(((geneJun[,"StartJun"]>=End)&(geneJun[,"EndJun"]>=Start))|((geneJun[,"StartJun"]<=End)&(geneJun[,"EndJun"]<=Start))),,drop=FALSE]
