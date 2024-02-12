@@ -3,10 +3,10 @@ $|=1;
 use CGI qw/:standard :html3/;
 use strict;
 use FindBin qw($Bin);
-use lib "$Bin/../../GenBo";
-use lib "$Bin/../../GenBo/lib/obj-nodb";
-use lib "$Bin/../GenBo/lib/obj-nodb/packages";
-require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
+use lib "$Bin/../../../../GenBo";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/packages";
+require "$Bin/../../../../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
 
 use connect;
 use GBuffer;
@@ -66,15 +66,12 @@ $hash->{softwares}->{bedtools} = $project->getSoftware('bedtools');
 $hash->{softwares}->{picard} = $project->getSoftware('picard');
 
 # POLYRNASEQSEA PATHS
-$hash->{rnaseqseapaths}->{script} = "$Bin/../../polypipeline/polyrnaseqsea/junctions/RNAseqSEA_capt_js_dev.r";
-$hash->{rnaseqseapaths}->{biblio} = "$Bin/../../polypipeline/polyrnaseqsea/junctions/biblio_RNAseqSEA_capt_js.r";
+$hash->{rnaseqseapaths}->{script} = "$Bin/junctions/RNAseqSEA_capt_js_dev.r";
+$hash->{rnaseqseapaths}->{biblio} = "$Bin/junctions/biblio_RNAseqSEA_capt_js.r";
 
 # PATIENTS
-my $path_splices = $project->getJunctionsDir('RnaSEA');
 foreach my $patient (@{$project->getPatients()}) {
 	$hash->{inputs}->{bam}->{$patient->name()} = $patient->getBamFile();
-	#$hash->{outputs}->{ri}->{$patient->name()} = $path_splices.'/'.$patient->name().'_RI.tab';
-	#$hash->{outputs}->{se}->{$patient->name()} = $path_splices.'/'.$patient->name().'_SE.tab';
 }
 
 my $json_encode = encode_json $hash;
