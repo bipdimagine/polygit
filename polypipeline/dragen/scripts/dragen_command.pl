@@ -322,7 +322,7 @@ if (exists $pipeline->{sv}){
 	}
 }
 warn $phased;
-$param_phased = "--vc-combine-phased-variants-distance ".$phased;
+$param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 
 
