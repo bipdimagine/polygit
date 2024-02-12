@@ -34,7 +34,7 @@ if(sum(grepl("titre", tmpArgs[,1]))>0)
 align="hisat2"
 if(sum(grepl("^align$", tmpArgs[,1])))	align = tmpArgs[grep("align", tmpArgs[,1], ignore.case=TRUE),2]
 
-nCPUmax = 40
+nCPUmax = 1
 if(sum(grepl("nCPUmax", tmpArgs[,1]))>0)	nCPUmax = as.numeric(tmpArgs[grep("nCPUmax", tmpArgs[,1], ignore.case=TRUE),2])
 
 limDecal = 1	# 5	Marge acceptable d'approximation des bornes des jonctions a concatener
@@ -204,9 +204,8 @@ if(nrow(exons)>0)
 	for(cB in 1:length(bamsGene))
 		CountsMat[cB, "TotReadsGene"] = system(paste("samtools view ", bamsGene[cB], " | wc -l", sep=""), intern=TRUE)
 	
-	nCPU = nCPUmax/5
 	library(parallelMap)
-	parallelStart(mode = "multicore", cpus=nCPU, show.info=TRUE) 
+	parallelStart(mode = "multicore", cpus=nCPUmax, show.info=TRUE) 
 	f = function(I) rmdup(I)
 	y = parallelMap(f, c(1:length(bamsGene)))
 	parallelStop()  
