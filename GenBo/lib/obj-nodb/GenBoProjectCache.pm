@@ -16,6 +16,8 @@ use GenBoInsertionCache;
 use GenBoLargeDeletionCache;
 use GenBoMeiCache;
 use GenBoLargeDuplicationCache;
+use GenBoLargeInsertionCache;
+use GenBoInversionCache;
 use GenBoSomaticGroupCache;
 use GenBoPanelCache;
 use GenBoBundleCache;
@@ -43,9 +45,10 @@ is		=> 'rw',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		my $rocks =1;
-		$rocks = undef unless $self->name =~ /2653/;
-		return $rocks;
+		if (-e  $self->rocks_cache_dir."/vector"){
+			return 1;
+		}
+		return undef;
 	},
 );
 
@@ -345,6 +348,7 @@ sub hashTypeObject {
 	 	'insertions'	=> 'GenBoInsertionCache',
 		'junctions'		=> 'GenBoJunctionCache',
 	 	'large_deletions'	=> 'GenBoLargeDeletionCache',	
+	 	'large_insertions'	=> 'GenBoLargeInsertionCache',
 	 	'large_duplications'=> 'GenBoLargeDuplicationCache',
 	 	'inversions'=> 'GenBoInversionCache',
 	 	'boundaries'=> 'GenBoBoudaryCache',
@@ -892,12 +896,12 @@ sub get_only_list_patients {
 
 sub returnVariants {
 		my ($self, $id, $type) = @_;
-		my ($chr_name,$vid) = split("!",$id);
+		confess if $self->isRocks;
+			my ($chr_name,$vid) = split("!",$id);
 		my $chr = $self->getChromosome($chr_name);
-		my $obj = $chr->cache_lmdb_variations->get($vid,1);
-		return undef unless $obj;
-		#my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		#my $obj = $chr->cache_lmdb_variations->get($gid,1);
+	
+		my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+		my $obj = $chr->cache_lmdb_variations->get($gid,1);
 		
 		  $obj->{global_vector_id} = $id;
 		 $obj->{vector_id} = $vid;
@@ -905,6 +909,23 @@ sub returnVariants {
 		 $obj->{project} =  $self;
 		$obj->{buffer} = $self->buffer;
 		return $obj;
+		
+#	
+#		my $chr = $self->getChromosome($chr_name);
+#		warn  $chr->cache_lmdb_variations->dir;
+#		warn $vid;
+#		my $obj = $chr->cache_lmdb_variations->get($vid,1);
+#		warn $obj;
+#		return undef unless $obj;
+#		#my $gid = $chr->cache_lmdb_variations->get_varid($vid);
+#		#my $obj = $chr->cache_lmdb_variations->get($gid,1);
+#		
+#		  $obj->{global_vector_id} = $id;
+#		 $obj->{vector_id} = $vid;
+#		 
+#		 $obj->{project} =  $self;
+#		$obj->{buffer} = $self->buffer;
+#		return $obj;
 		
 }
 
@@ -972,7 +993,7 @@ sub nextVariant {
 					
 		}
 		elsif  ($ref eq 'GenBoLargeInsertion'){
-					bless $var_obj , 'GenBoLargeDuplicationCache';
+					bless $var_obj , 'GenBoLargeInsertionCache';
 		}
 		elsif  ($ref eq 'GenBoDeletion'){
 					bless $var_obj , 'GenBoDeletionCache'; 
@@ -1106,6 +1127,10 @@ sub myflushobjects {
 						bless $var_obj , 'GenBoMeiCache';
 						$self->{objects}->{insertions}->{$id}= $var_obj;
 					}
+				elsif  ($ref eq 'GenBoInversion'){
+						bless $var_obj , 'GenBoInversionCache';
+						$self->{objects}->{insertions}->{$id}= $var_obj;
+					}	
 				elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeInsertionCache'  && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoBoundaryCache'  && $ref ne 'GenBoInversionCache' && $ref ne 'GenBoJunctionCache') {
 					warn Dumper $var_obj;
 					confess("$ref =+>". $var_obj." ::  $id :: ".$ref ." :: ".$type);

@@ -9,6 +9,7 @@ use Set::IntSpan::Fast::XS;
 use Module::Load;
 use Compress::Snappy;
 use JSON::XS;
+
 #use Gzip::Faster;
 
 extends "GenBoNoSqlLmdb";
@@ -42,7 +43,7 @@ sub save_cache_hash {
 		$end = time + $limit;
 	}
 	my $text = encode_json ($key2);
-	
+	require "Compress/Zstd.pm";
 	$self->put($key1,{expiration=>$end,cache=>Compress::Zstd::compress($text),snappy_html=>3});
 }
 
@@ -65,7 +66,7 @@ sub save_cache_text {
 		$limit = $limit *60 *60;
 		$end = time + $limit;
 	}
-		
+	require "Compress/Zstd.pm";	
 		
 	$self->put($key1,{expiration=>$end,cache=>Compress::Zstd::compress($key2),snappy_html=>4,date=>time});
 	#$self->put($key1,{expiration=>$end,cache=>Compress::Zlib::compress($key2),snappy_html=>1,date=>time});

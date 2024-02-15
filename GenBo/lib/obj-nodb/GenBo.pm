@@ -172,7 +172,7 @@ has isInsertion => (
 	is		=> 'ro',
 	default	=> 0
 );
-has isInvertion => (
+has isInversion => (
 	is		=> 'ro',
 	default	=> 0
 );
@@ -658,7 +658,8 @@ has large_insertions_object => (
 
 sub getLargeInsertions {
 	my $self = shift;
-	return $self->getProject()->myflushobjects($self->large_insertions_object(), "large_insertions");
+	my $o = $self->getProject()->myflushobjects($self->large_insertions_object(), "large_insertions");
+	return $o;
 }
 
 ########################
@@ -798,11 +799,9 @@ sub getCnvs{
 sub getSVs{
 	my $self = shift;
 	my @lRes;
-	push(@lRes,@{$self->getLargeDuplications()});
 	push(@lRes,@{$self->getLargeInsertions()});
-	push(@lRes,@{$self->getLargeDeletions()});
 	push(@lRes,@{$self->getInversions()});
-	push(@lRes,@{$self->getMeis()});
+	#push(@lRes,@{$self->getMeis()});
     return \@lRes;
 }
 #has indels => (
@@ -824,6 +823,8 @@ sub getStructuralVariations {
 		push(@lRes,@{$self->getVariations()});
 		push(@lRes,@{$self->getIndels()});
 		push(@lRes,@{$self->getCnvs()});	
+		push(@lRes,@{$self->getSVs()});	
+	#	push(@lRes,@{$self->getSVs()});
 		#push(@lRes,@{$self->getMnps()});	
 	#	die() if @{$self->getMnps()};
 	    return \@lRes;

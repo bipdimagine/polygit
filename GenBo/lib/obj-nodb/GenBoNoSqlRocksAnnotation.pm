@@ -5,6 +5,7 @@ use warnings;
 use Data::Dumper;
 use JSON::XS;
 use Set::IntSpan::Fast::XS;
+use Carp;
 use Sereal qw(sereal_encode_with_object sereal_decode_with_object write_sereal_file read_sereal_file);
 extends "GenBoNoSqlRocks";
 
@@ -12,6 +13,12 @@ extends "GenBoNoSqlRocks";
 
 
 
+has has_config =>(
+	is		=> 'ro',
+default => sub {
+		return 1;
+}
+);
 
 # sub rocks {
 #	my $self = shift;
@@ -85,6 +92,11 @@ sub put_cadd {
 	$self->batch->put($pos."!".$a2,pack("C",$value));
 }
 
+sub put_cosmic {
+	my ($self,$id,$value) = @_;
+	my $rid = $self->return_rocks_id_from_gnomad_id($id);
+	$self->batch->put($rid,join(":",@$value));
+}
 
 sub _get_no_sereal_pack {
 	my ($self,$value) = @_;
@@ -129,9 +141,10 @@ sub cadd_score_gnomad_id {
 
 sub dbscSNV_score {
 	my ($self,$id) = @_;
-	warn $id;
 	 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));
+	 
 	 return undef unless $v;
+	 warn Dumper $v;
 	 return $v;
 }
 sub dbscSNV_score_gnomad_id {
@@ -154,6 +167,40 @@ sub polyphen_score {
 	return $hash->{polyphen};
 }
 
+sub alphamissense_score {
+	my ($self,$enst,$pos,$aa) = @_;
+	return "-" unless $aa;
+	my $array = $self->get($enst);
+	return "-" unless $array;
+	my $pos_aa_array = $self->hash_description->{$aa};
+	return $array->[$pos]->[$pos_aa_array];
+}
+
+sub clinvar {
+	my ($self,$rocksid) = @_;
+	#warn $self->return_genomic_rocks_id_from_gnomad_id($id);
+	my $array = $self->get($rocksid);
+	return unless $array;
+	my $res;
+	my $i=0;
+	foreach my $k (@{$self->description}){
+		my $v = shift(@$array);
+		if ($k eq "clinvar_id" or $k eq "score"){
+			$res->{$k} =  $v;
+			
+		}
+		elsif ($k eq "genes" ){
+			foreach my $g (@$v){
+				$res->{$k}->{$self->get_text_dictionary($g) } ++;
+			}
+		}
+		else {
+		$res->{$k} = $self->get_text_dictionary($v);
+		}
+	}
+	return $res;
+}
+
 
 sub prediction_score {
 	my ($self,$id,$pos,$aa) = @_;
@@ -171,14 +218,7 @@ sub prediction_score {
 	 my @t = unpack($self->pack,$vraw);
 	 
 	 return ({sift=>$t[$pos2]*$self->factor->[$pos2],polyphen=>$t[$pos1]*$self->factor->[$pos1]*0.1});
-	# my ($polyphen,$sift) = unpack("x".(2*($pos1-1))."")
-	 
-#	 my $v =  $self->_get_no_sereal_pack_index($vraw,[$self->hash_description->{$key1},$self->hash_description->{$key2}]);
-	
-#	 my $key1 = "sift!".$aa;
-#	 my $key2 = "sift!".$aa;
-#	 return undef unless $v->{"sift!".$aa};
-#	 return ({sift=>$v->{$key2},polyphen=>$v->{$key1}});
+
 }
 sub sift_score {
 	my ($self,$id,$pos,$aa) = @_;
@@ -204,23 +244,9 @@ sub revel_decode {
 	my ($self,$value) = @_;
 	my $res = {};
 	 foreach my $l (@$value){
-	 	my @t = unpack($self->pack,$l);
-	 	next unless @t;
-		my $gene = $t[-1];
-		my $i=0;
-		foreach my $k (@{$self->description}){
-				$res->{$gene}->{$k} = shift @t;
-				 if ($self->factor->[$i]) {
-				 	if ($self->factor->[$i] == "ENST")  {
-				 		$res->{$gene}->{$k}= "ENST".sprintf("%011d", $res->{$gene}->{$k});
-				 	}
-				 	else {
-						$res->{$gene}->{$k} *= $self->factor->[$i];
-				 	}  
-				 }
-				$i++;
-			}
-		}
+	 	$res->{$l->[1]} = $l->[0];
+	
+	 }
 	return $res;
 }
 sub revel {
@@ -230,7 +256,12 @@ sub revel {
 	 return $self->revel_decode($value);
 }
 
-
+sub cosmic {
+	my ($self,$id) = @_;
+	 my $value =  $self->get_raw($id);
+	  return undef unless $value;
+	  return $value;
+}
 
 sub spliceAI {
 	my ($self,$id) = @_;
@@ -290,41 +321,7 @@ sub spliceAI_gnomad_id {
 }
 	 
 
-sub return_rocks_id_from_gnomad_id {
-	my ($self,$id) = @_;
-	my ($chr,$pos,$ref,$alt) = split("-",$id);
-	return $self->return_rocks_id($pos,$ref,$alt);
-}
 
-sub return_rocks_id {
-	my ($self,$pos,$ref,$alt) = @_;
-	 $pos  = $self->stringify_pos($pos);
-	my $l1 = length($ref);
-	my $l2 = length($alt);
-	
-	return  ($pos."!".$alt) if ($l1 == 1 && $l2 ==1);
-	my $seqid = $alt;
-	if ($l1 ==1 && $l2 > 1){
-		
-		$seqid = "+".substr($alt, 1);
-		return  ($pos."!".$seqid);
-	}
-	elsif ($l1 >1 && $l2 ==1){
-		$ref = substr($ref, 1);
-		$seqid = ($l1 -1);
-		return  ($pos."!".$seqid);
-	}
-	
-	else {
-		confess($l1." ".$l2);
-	}
-	
-}
-
-sub stringify_pos {
-	my ($self,$pos) = @_;
-	return ($pos,sprintf("%010d", $pos));
-}
 
 
 1;

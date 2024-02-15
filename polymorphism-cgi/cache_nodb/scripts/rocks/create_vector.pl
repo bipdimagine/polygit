@@ -65,16 +65,17 @@ foreach my $c ( keys %{ $categories->{global}->{variation_type} } ) {
 	$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new();
 }
 my $max;
-for (my $i =0 ;$i=<=$max;$i++){
-
-
-foreach my $p (@{$variation->getPatients}){
-			my $type = $variation->getSequencingGenotype($p);
-			$hpatients->{$p->name}->{all} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{all};
-			$hpatients->{$p->name}->{$type} =Set::IntSpan::Fast::XS->new() unless $hpatients->{$p->name}->{$type};
-			$hpatients->{$p->name}->{all}->add($lmdb_index);
-			$hpatients->{$p->name}->{$type}->add($lmdb_index);
-		}
-}
-
-}
+die();
+#for (my $i =0 ;$i<=$max;$i++){
+#
+#
+#foreach my $p (@{$variation->getPatients}){
+#			my $type = $variation->getSequencingGenotype($p);
+#			$hpatients->{$p->name}->{all} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{all};
+#			$hpatients->{$p->name}->{$type} =Set::IntSpan::Fast::XS->new() unless $hpatients->{$p->name}->{$type};
+#			$hpatients->{$p->name}->{all}->add($lmdb_index);
+#			$hpatients->{$p->name}->{$type}->add($lmdb_index);
+#		}
+#}
+#
+#}

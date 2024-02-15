@@ -2,7 +2,7 @@ package GenBoLargeDeletionCache;
 use strict;
 use Moo;
 use Data::Dumper;
-extends 'GenBoLargeDeletion','GenBoVariantCache' ;
+extends 'GenBoVariantCache','GenBoLargeDeletion' ;
 
 
 1;

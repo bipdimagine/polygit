@@ -6,6 +6,8 @@ use Data::Dumper;
 use JSON::XS;
 use Number::Format;
 use Carp;
+use Text::Xslate;
+use Cwd 'abs_path';
 
 has project => (
 	is		=> 'ro',
@@ -96,6 +98,17 @@ has short_phenotype => (
 has variant => (
 	is		=> 'rw',
 );
+
+has dir_xslate => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $dir = qq{$Bin/../../xslate/polyviewer/};
+		return abs_path($dir);
+	}
+);
+
 	
 my $minus = qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>};
 my $plus  = qq{<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>};
@@ -171,18 +184,19 @@ sub color_genetic_model {
 
 sub return_genetic_model {
 	my ($self,$model) = @_;
-	return "?" unless $model;
+	return "minus" unless $model;
 	if($model =~ /\+/){
-		return  $plus;
+		return  "plus";
 	}
 	elsif ($model  =~ /\-/) {
-			return  $minus;
+			return  "minus";
 	}
 	elsif (lc($model) =~ /mother/i) {
-		return $self->patient->getFamily->getMother()->small_icon();
+		return "mother";
+		#$self->patient->getFamily->getMother()->small_icon();
 	}
 	elsif (lc($model) =~ /father/i) { 
-		return $self->patient->getFamily->getFather()->small_icon();
+		return "father";
 	}
 	elsif  (lc($model) =~ /strict/i) {
 			return  qq{Strict Denovo};
@@ -260,12 +274,231 @@ sub html_parent_line_variant {
 	return $html;
 }
 
-sub calling_variation {
+sub calling_variation_xslate {
 	my ($self) = @_;
 	my $gene = $self->variant->gene;
 	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
+	my $patient = $self->patient;
 	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
+	my $variation_id = $self->variant->id;
+	my $samples = $self->variant->patients_calling();
+	my $project = $self->project;
+		my $all_validations = $project->validations;
+		
+		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
+		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
+		my $data;
+		$data->{text_caller} ="";
+		$data->{var_id} = $self->variant->id;
+		$data->{gene_id} = $self->project->name;
+		$data->{project_name} = $self->variant->gene->{id};
+		$data->{table_id} = 'ti_'.$variation_id.'_'.$gene->{id}.'_'.$self->patient_id;
+		$data->{patient_name} = $patient_name;
+		 my $fam = $self->patient->getFamily();
+		  if ($self->patient->isChild) {
+		  	if ($fam->getMother){
+		  		my $p = $fam->getMother(); 
+		  		my $type= "mother";
+		  		$data->{$type} = 1;
+		  		my $hsample = $samples->{$p->id};
+		  		$data->{$type."_name"} = $p->name;
+		  		$data->{$type."_icon"} = $p->small_icon_url;
+		  		$data->{$type."_gt"} = $hsample->{gt};
+		  		$data->{$type."_pc"} =  "-";
+		  		$data->{$type} ++  if ($hsample->{pc});
+		  		$data->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+		  		$data->{$type."_dp"} = $hsample->{dp};
+		  		$data->{$type."_model"} = "minus" unless $hsample->{model};
+				$data->{$type."_model"}= $self->return_genetic_model($hsample->{model});
+				$data->{$type."_color_model"} = $self->color_genetic_model($hsample->{model},$patient);
+		  	}
+		  	
+		  	if ($fam->getFather){
+		  		my $p = $fam->getFather(); 
+		  		my $type= "father";
+		  		$data->{$type} = 1;
+		  		my $hsample = $samples->{$p->id};
+		  		$data->{$type."_name"} = $p->name;
+		  		$data->{$type."_icon"} = $p->small_icon_url;
+		  		$data->{$type."_gt"} = $hsample->{gt};
+		  		$data->{$type."_pc"} =  "-";
+		  		$data->{$type} ++  if ($hsample->{pc});
+		  		$data->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+		  		$data->{$type."_dp"} = $hsample->{dp};
+		  		$data->{$type."_model"} = "minus" unless $hsample->{model};
+				$data->{$type."_model"}= $self->return_genetic_model($hsample->{model});
+				$data->{$type."_color_model"}  = $self->color_genetic_model($hsample->{model},$patient);
+		  	}
+		  
+		  my $achild =  [];
+		  	foreach my $child (@{$fam->getChildren()}){
+		  		my $p = $child; 
+	  			my $hsample = $samples->{$child->id};
+	  			my $type = "child";
+	  			my $hchild;
+	  			$hchild->{$type."_name"} = $p->name;
+		  		$hchild->{$type."_icon"} = $p->small_icon_url;
+		  		$hchild->{$type."_gt"} = $hsample->{gt};
+		  		$hchild->{$type."_pc"} =  "-";
+		  		$hchild->{$type} ++  if ($hsample->{pc});
+		  		$hchild->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+		  		$hchild->{$type."_dp"} = $hsample->{dp};
+		  		$hchild->{$type."_model"} = "-" unless $hsample->{model};
+				$hchild->{$type."_model"}= $self->return_genetic_model($hsample->{model});
+				$hchild->{$type."_color_model"}  =$self->color_genetic_model($hsample->{model},$patient);
+				push(@{$data->{child}},$hchild);
+		  	}
+		  }
+		  else{
+		  	my $p = $patient; 
+	  			my $hsample = $samples->{$patient->id};
+	  			my $type = "child";
+	  			my $hchild;
+	  			$hchild->{$type."_name"} = $p->name;
+		  		$hchild->{$type."_icon"} = $p->small_icon_url;
+		  		$hchild->{$type."_gt"} = $hsample->{gt};
+		  		$hchild->{$type."_pc"} =  "-";
+		  		$hchild->{$type} ++  if ($hsample->{pc});
+		  		$hchild->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+		  		$hchild->{$type."_dp"} = $hsample->{dp};
+		  		$hchild->{$type."_model"} = "?";
+				$hchild->{$type."_color_model"}  = "#E0E0E0";
+				push(@{$data->{child}},$hchild);
+		  }
+		  $data->{text_caller} = $text_caller;
+		 my $output = $self->xslate->render("calling.tt", $data);
+	
+		return $output;
+	
+
+}
+
+sub calling_cnv_xslate {
+	my($self) = @_;
+	my $gene = $self->variant->gene;
+	my $gene_name =  $gene->{id};
+	my $patient_name  = $self->patient->name;
+	my $patient = $self->patient;
+	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
+	my $variation_id = $self->variant->id;
+	my $samples = $self->variant->patients_calling();
+	my $project = $self->project;
+		my $all_validations = $project->validations;
+		
+		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
+		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
+		my $data;
+		$data->{text_caller} ="";
+		$data->{var_id} = $self->variant->id;
+		$data->{gene_id} = $self->project->name;
+		$data->{project_name} = $self->variant->gene->{id};
+		$data->{table_id} = 'ti_'.'_'.$gene->{id}.'_'.$self->patient_id."_".rand(10000);
+		$data->{patient_name} = $patient_name;
+		 my $fam = $self->patient->getFamily();
+		  if ($self->patient->isChild) {
+		  	if ($fam->getMother){
+		  		my $p = $fam->getMother(); 
+		  		my $type= "mother";
+		  		$data->{$type} = 1;
+		  		my $hsample = $samples->{$p->id};
+		  		$data->{$type."_name"} = $p->name;
+		  		$data->{$type."_icon"} = $p->small_icon_url;
+		  		$data->{$type."_gt"} = $hsample->{gt};
+		  		$data->{$type."_pc"} =  "-";
+		  		$data->{$type} ++  if ($hsample->{pc});
+		  		$data->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+		  		$data->{$type."_dp"} = $hsample->{dp};
+		  		$data->{$type."_model"} = "minus" unless $hsample->{model};
+				$data->{$type."_model"}= $self->return_genetic_model($hsample->{model});
+				$data->{$type."_color_model"} = $self->color_genetic_model($hsample->{model},$patient);
+				$data->{$type."_pr"} = $hsample->{pr} ;
+				$data->{$type."_sr"} =$hsample->{sr};
+	
+				$hsample->{dude} =0 unless exists  $hsample->{dude};
+				$data->{$type."_score"} = $hsample->{dude_score};
+				$data->{$type."_norm_dp"} = $hsample->{norm_depth};
+				
+				my $text_norm_dp_m = $hsample->{norm_depth}; 
+	
+		  	}
+		  	
+		  	if ($fam->getFather){
+		  		my $p = $fam->getFather(); 
+		  		my $type= "father";
+		  		$data->{$type} = 1;
+		  		my $hsample = $samples->{$p->id};
+		  		$data->{$type."_name"} = $p->name;
+		  		$data->{$type."_icon"} = $p->small_icon_url;
+		  		$data->{$type."_gt"} = $hsample->{gt};
+		  		$data->{$type."_pc"} =  "-";
+		  		$data->{$type} ++  if ($hsample->{pc});
+		  		$data->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+		  		$data->{$type."_dp"} = $hsample->{dp};
+		  		
+		  		$data->{$type."_model"} = "minus" unless $hsample->{model};
+				$data->{$type."_model"}= $self->return_genetic_model($hsample->{model});
+				$data->{$type."_color_model"}  = $self->color_genetic_model($hsample->{model},$patient);
+				$data->{$type."_pr"} = $hsample->{pr} ;
+				$data->{$type."_sr"} =$hsample->{sr};
+	
+				$hsample->{dude} =0 unless exists  $hsample->{dude};
+				$data->{$type."_score"} = $hsample->{dude_score};
+				$data->{$type."_norm_dp"} = $hsample->{norm_depth};
+				my $text_norm_dp_m = $hsample->{norm_depth}; 
+		  	}
+		  
+		  my $achild =  [];
+		  	foreach my $child (@{$fam->getChildren()}){
+		  		my $p = $child; 
+	  			my $hsample = $samples->{$child->id};
+	  			my $type = "child";
+	  			my $hchild;
+	  			$hchild->{$type."_name"} = $p->name;
+		  		$hchild->{$type."_icon"} = $p->small_icon_url;
+		  		$hchild->{$type."_gt"} = $hsample->{gt};
+		  		$hchild->{$type."_pc"} =  "-";
+		  		$hchild->{$type} ++  if ($hsample->{pc});
+		  		$hchild->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+		  		$hchild->{$type."_dp"} = $hsample->{dp};
+		  		$hchild->{$type."_model"} = "-" unless $hsample->{model};
+				$hchild->{$type."_model"}= $self->return_genetic_model($hsample->{model});
+				$hchild->{$type."_color_model"}  =$self->color_genetic_model($hsample->{model},$patient);
+				$hchild->{$type."_pr"} = $hsample->{pr} ;
+				$hchild->{$type."_sr"} =$hsample->{sr};
+	
+				$hchild->{dude} =0 unless exists  $hsample->{dude};
+				$hchild->{$type."_score"} = $hsample->{dude_score};
+				$hchild->{$type."_norm_dp"} = $hsample->{norm_depth};
+				$hchild->{$type."_norm_dp_after"} = $hsample->{norm_depth_after};
+				$hchild->{$type."_norm_dp_before"} = $hsample->{norm_depth_before};
+				my $text_norm_dp_m = $hsample->{norm_depth}; 
+				push(@{$data->{child}},$hchild);
+		  	}
+		  }
+		  $data->{text_caller} = $text_caller;
+		 my $output = $self->xslate->render("calling_sv.tt", $data);
+	
+		return $output;
+	
+	#	if ($self->variant->isMantaImprecise) {
+	 # 	$html .=  $self->cgi->start_Tr({style=>"font-size:09px;position:sticky;z-index:8;top:0;background-color:#fd8253;color:white;"}).$self->cgi->th({style=>"text-align: center;",colspan=>8}, 'IS IMPRECISE')."".$self->cgi->end_Tr();
+	 #	 }
+	
+	
+	
+}
+
+
+
+
+
+sub calling_variation_old {
+	my ($self) = @_;
+	my $gene = $self->variant->gene;
+	my $gene_name =  $gene->{id};
+	my $patient_name  = $self->patient->name;
+	my $text_caller = "";#join( "<br>", @{ $self->variant->text_caller } ); 
 
 	my $samples = $self->variant->patients_calling();
 	my $model = $samples->{$self->patient_id}->{infos_text};
@@ -353,16 +586,15 @@ sub calling {
 		#warn Dumper $self->variant;
 		#warn $self->variant->{pr}." ".$self->variant->{sr};
 		#die($self->variant->id);
-		$self->calling_cnv();
+		$self->calling_cnv_xslate();
 	}
 	elsif ($self->variant->isCnv) {
-		$self->calling_cnv();
+		$self->calling_cnv_xslate();
 	}
 	else {
-		$self->calling_variation();
+		$self->calling_variation_xslate();
 	}
 }
-
 sub calling_dude {
 	my($self) = @_;
 	my $gene = $self->variant->gene;
@@ -422,14 +654,14 @@ sub calling_dude {
 	return $html;	
 }
 
-sub calling_cnv {
+sub calling_cnv_old {
 	my($self) = @_;
 	my $gene = $self->variant->gene;
 	my $variation_id = $self->variant->id;
 	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $samples = $self->variant->patients_calling();
-	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
+	my $text_caller ="";#= join( "<br>", @{ $self->variant->text_caller } ); 
 	$text_caller ="" unless $text_caller;
 	my $color = "#555";
 		#$samples->{$self->patient_id}->{model} = "denovo";#$hsample->{model} = "-";
@@ -608,8 +840,9 @@ sub put_text_minus {
 
 sub varsome {
 my ($self,$debug) = @_;
-warn  $self->variant->id unless $self->variant->gnomad_id;
-confess()  unless $self->variant->gnomad_id;
+#warn  $self->variant->{id} unless $self->variant->gnomad_id;
+#warn Dumper $self->variant;
+#confess()  unless $self->variant->gnomad_id;
 my $url = qq{https://varsome.com/variant/hg19/}.$self->variant->gnomad_id;
 my $text =qq{<a  type="button" class="btn btn-primary btn-xs" href="$url" target="_blank">V</a>};
 return $text;
@@ -717,10 +950,104 @@ sub var_name {
 sub gnomad {
 	my ($self) = @_;
 	my $cgi=$self->cgi;
+	my $type = "AUTOSOME";
+	my $chr_name = $self->variant->chromosome;
+	if ($chr_name eq "X" or $chr_name eq "Y") {
+		$type = "XY";
+	}
+	my $pp = $chr_name."-".$self->variant->start;
+	
+	my $href = qq{https://gnomad.broadinstitute.org/region/$pp};
+	my $min_pop = "-";
+		my $max_pop = "-";
+ if ($self->variant->gnomad_an) { 
+	 	$min_pop = sprintf("%1.4f",$self->variant->gnomad_min_pop) if  defined $self->variant->gnomad_min_pop; # !!!!!! 	$text  = $v->min_pop_name."<br>".sprintf("%.4f", $min_pop) if $min_pop;
+	  $max_pop = sprintf("%1.4f",$self->variant->gnomad_max_pop);
+	}
+	my $data =	 {ac=>"-",ho=>"-",ho_male=>"-",an=>"-",min_pop=>"-",type=>"-"};
+	 if ($self->variant->gnomad_an) { 
+	 	
+	  $data = {ac=>$self->variant->gnomad_ac+0,
+	  	ho=>$self->variant->gnomad_ho,
+	  	ho_male=>$self->variant->gnomad_ho_male,an=>$self->format->format_number($self->variant->gnomad_an),min_pop=>$min_pop,type=>$type,gnomad_id=>$self->variant->gnomad_id,max_pop => $max_pop};
+	 }
+	 $data->{max_pop_name} = $self->variant->gnomad_min_pop_name;
+	  $data->{min_pop_name} = $self->variant->gnomad_max_pop_name;
+	 my $output = $self->xslate->render("gnomad.tt", $data);
+	 return $output;
+	
+}
+
+
+sub gnomad_template {
+	my ($self) = @_;
+	my $cgi=$self->cgi;
+	my $color = "grey";
+	my $chr_name = $self->variant->chromosome;
+	my $ac = $self->put_text_minus($self->variant->gnomad_ac);
+	my $an = $self->put_text_minus($self->variant->gnomad_an);
+	unless ($self->variant->gnomad_an) { 
+		return $self->gnomad_template("EMPTY")
+	}
+	my $type = "AUTOSOME";
+	
+	if ($chr_name eq "X" or $chr_name eq "Y") {
+		$type = "XY";
+	}
+	my $template = $self->gnomad_template($type);
+	my $v = $self->format->format_number($self->variant->gnomad_an);
+	$template =~ s/%AN%/$v/;
+	$template =~ s/%AC%/$ac/;
+	
+	my $min_pop = "-";
+	if ($self->variant->gnomad_min_pop ne "-"){
+	 	$min_pop = $self->variant->gnomad_min_pop_name."<br>".sprintf("%1.4f",$self->variant->gnomad_min_pop) if  $self->variant->gnomad_min_pop; # !!!!!! 	$text  = $v->min_pop_name."<br>".sprintf("%.4f", $min_pop) if $min_pop;
+	}
+	 	$template =~ s/%MIN_POP%/$min_pop/;
+	my $max_pop = "-";
+	if ($self->variant->gnomad_max_pop ne "-"){
+	  $max_pop = $self->variant->gnomad_max_pop_name."<br>".sprintf("%1.4f",$self->variant->gnomad_max_pop);
+	}
+	$template =~ s/%MAX_POP%/$max_pop/;
+	
+	my $ac_ho = $self->put_text_minus($self->variant->gnomad_ho);
+	$template =~ s/%AC_HO%/$ac_ho/;
+	
+	my $ac_ho_male = $self->put_text_minus($self->variant->gnomad_ho_male);
+	$template =~ s/%AC_HO_MALE%/$ac_ho_male/;
+	my $start = $self->variant->start;	
+	
+ 	$self->variant->gnomad_ac (0) unless $self->variant->gnomad_ac;
+	
+	
+	if ($self->variant->gnomad_ac <5){
+		$color = "red";
+	}
+	elsif ($self->variant->gnomad_ac < 20){
+		$color = "orange";
+	} 
+	elsif ($self->variant->gnomad_ac < 50){
+		$color = "blue";
+	} 
+	$template =~ s/%COLOR%/$color/;
+	
+	my $pp = $chr_name."-".$start;
+	
+	
+	my $href = qq{https://gnomad.broadinstitute.org/region/$pp};
+	$template =~ s/%HREF%/$href/;
+
+	return $template;
+}
+
+
+sub gnomad_old {
+	my ($self) = @_;
+	my $cgi=$self->cgi;
 	my $color = "grey";
 	my $ac = $self->variant->gnomad_ac;
 	my $an = $self->variant->gnomad_an;
-	unless ($an){
+	unless ($an) { 
 	my $html;
 	 $html= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px red ;font-size: 7px;font-family:  Verdana;margin-bottom:0px;opacity:0.5"});
 	$html.= $cgi->start_Tr();
@@ -736,8 +1063,8 @@ sub gnomad {
 	$html.= $cgi->td(["-","-","-","-","-"]);
 	$html.=$cgi->end_table();
 	return $html;
-	
 	}
+	
 	my $min_pop = "-";
 	 $min_pop = $self->variant->gnomad_min_pop_name."<br>".sprintf("%1.4f",$self->variant->gnomad_min_pop) if  $self->variant->gnomad_min_pop; # !!!!!! 	$text  = $v->min_pop_name."<br>".sprintf("%.4f", $min_pop) if $min_pop;
 	
@@ -801,6 +1128,85 @@ sub gnomad {
 }
 
 sub dejavu {
+		my ($self,$no_phenotype) = @_;
+		
+		
+	 	my $data = {
+	 		other_projects=>$self->variant->dejavu_other_projects,
+	 		other_patients=>$self->variant->dejavu_other_patients,
+	 		other_ho=>$self->variant->dejavu_other_patients_ho,
+	 		pheno_projects=>$self->variant->dejavu_similar_projects,
+	 		pheno_patients=>$self->variant->dejavu_similar_patients,
+	 		pheno_ho=>$self->variant->dejavu_similar_patients_ho,
+	 		varid=> $self->variant->id,
+	 		this =>$self->variant->dejavu_this_run_patients,
+	 		pheno_name=>$self->short_phenotype,
+	 		genome=>$self->project->isGenome
+	 	};
+	 my $output = $self->xslate->render("dejavu.tt", $data);
+	 return $output;
+		
+		my $opr = $self->variant->dejavu_other_projects;# = $v->other_projects();
+		my $opa =0;
+		 $opa =  $self->variant->dejavu_other_patients if defined  $self->variant->dejavu_other_patients ;;# = $v->other_patients();
+		my $opho =  $self->variant->dejavu_other_patients_ho;# = $v->other_patients_ho();
+		my $smpr =  $self->variant->dejavu_similar_projects;;#= $v->similar_projects();
+		my $smpa = $self->variant->dejavu_similar_patients;
+		my $smho = $self->variant->dejavu_similar_patients_ho;# = $v->similar_patients_ho();
+		my $this = $self->variant->dejavu_this_run_patients;# = '-';
+		my $vid =  $self->variant->id;
+		#$hvariation->{value}->{this_run_patients} = $v->in_this_run_patients()."/".scalar(@{$project->getPatients});
+		my $cgi = $self->cgi;
+		
+		my $color = "#555";
+		if ($opa <5){
+			$color = "red";
+		}
+		elsif ($opa < 10){
+			$color = "orange";
+		} 
+		elsif ($opa < 50){
+			$color = "blue";
+		} 
+		
+#	my $deja_vu_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
+
+	my $html = $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
+	
+	$html.= $cgi->start_Tr();
+	$html.= $cgi->th("");
+	$html.= $cgi->th("Pr");
+	$html.= $cgi->th("Sa");
+	$html.= $cgi->th("Ho");
+	$html.= $cgi->end_Tr();
+	$html.= $cgi->start_Tr();
+	$html.= $cgi->td("other");
+	
+	#my $href = $deja_vu_url.$vid;
+	my $onclick = qq{goto_dejavu("$vid")};
+	$html.= $cgi->td($self->obutton($onclick,$opr));
+	$html.= $cgi->td($self->obutton($onclick,$opa));
+	$html.= $cgi->td($self->obutton($onclick,$opho));
+	$html.= $cgi->end_Tr();
+	
+	if (not $no_phenotype) {
+		$html.= $self->cgi->start_Tr();
+		my $ps = $smpr;
+		my $ph;
+		$ph =  $self->short_phenotype;
+		$html.= $cgi->td("$ph");
+		$html.= $cgi->td($self->obutton($onclick,$smpr));
+		$html.= $cgi->td($self->obutton($onclick,$smpa));
+		$html.= $cgi->td($self->obutton($onclick,$smho));
+		$html.= $cgi->end_Tr();
+	}
+	unless ($self->project->isGenome){
+			$html .= $cgi->td("Run").$cgi->td({colspan=>3},$self->obutton($onclick,$this)).$cgi->end_Tr();
+	}
+	$html.=$cgi->end_table();
+	return $html;	
+}
+sub dejavu_old {
 		my ($self,$no_phenotype) = @_;
 		my $opr = $self->variant->dejavu_other_projects;# = $v->other_projects();
 		my $opa =0;
@@ -906,6 +1312,34 @@ sub printButton {
 
 sub validations {
 		my ($self) = @_;
+		my $project = $self->project;
+		my $all_validations = $project->validations;
+		
+		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
+		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
+		my $data;
+		$data->{local_text} ="";
+		$data->{local_value}  = $local_validation->{validation};
+		
+		$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}}  if $data->{local_value};
+		$data->{local_value}  =  -99 unless $data->{local_value} ;
+		$data->{var_id} = $self->variant->id;
+		$data->{gene_id} = $self->variant->gene->{id};
+		$data->{project_name} = $self->project->name;
+		$data->{hgmd_id} =  $self->variant->hgmd_id;
+		$data->{hgmd_value} =  $self->variant->hgmd_value;
+		$data->{hgmd_text} =  $self->variant->hgmd;
+		
+		$data->{clinvar_value} = $self->variant->clinvar_value;
+		$data->{clinvar_id} = $self->variant->clinvar_id;
+		$data->{clinvar_text} = $self->variant->clinvar;
+		
+		 my $output = $self->xslate->render("validations.tt", $data);
+	 	return $output;
+		
+}
+sub validations_old {
+		my ($self) = @_;
 		my $cgi = $self->cgi;
 		my $color = "#555";
 		my $project = $self->project;
@@ -994,7 +1428,7 @@ sub href {
 
 sub printInvBadge {
         my ($self,$value,$types) = @_;
-         return $minus unless $value;
+         return $minus unless defined $value;
 		return $minus if $value eq "-";
 	
         my $color = "#4CAF50";
@@ -1008,7 +1442,22 @@ sub printInvBadge {
          return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
 }
 
-sub transcripts_cnv {
+sub transcripts_cnv_xslate {
+	my ($self) = @_;
+	my $gene = $self->variant->gene;
+	my $atr = $self->variant->transcripts;
+	my $text_alert = "";
+	my $mane = 0;
+	$mane = exists  $atr->[0]->{mane} if @$atr;
+	 my $data = { items => $atr , mane=>$mane};
+	 my $output = $self->xslate->render("transcripts_cnv.tt", $data);
+	 return $output;
+	
+	
+	
+	
+}
+sub transcripts_cnv_old {
 	my ($self) =@_;
 
 	my $color_header = "white";
@@ -1027,6 +1476,7 @@ sub transcripts_cnv {
 	my $atr = $self->variant->transcripts;
 	my $gene = $self->variant->gene;
 	my $gene_id = $gene->{id};
+	
 	foreach my $htr (@$atr){
 		my $t_id = $htr->{trid};
 		next if not $self->variant->cnv_details_genes;
@@ -1036,6 +1486,7 @@ sub transcripts_cnv {
 		next unless @l_pos_e_i;
 		my $first = $self->variant->cnv_details_genes->{$gene_id}->{$t_id}->{positions}->{$l_pos_e_i[0]};
 		my $last;
+		
 		if (scalar(@l_pos_e_i) > 1) {
 			$last = $self->variant->cnv_details_genes->{$gene_id}->{$t_id}->{positions}->{$l_pos_e_i[-1]};
 		}
@@ -1069,12 +1520,285 @@ sub transcripts_cnv {
 sub transcripts {
 		my ($self) = @_;
 		if ($self->variant->isCnv){
-			return $self->transcripts_cnv();
+			return $self->transcripts_cnv_xslate();
 		}
-		return $self->transcripts_variants();
+		return $self->transcripts_variants_xslate();
 }
 
+
+
+has xslate => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return Text::Xslate->new({cache => 1,path=>$self->dir_xslate,cache_dir=>"/tmp"});
+	},
+);
+
+
+sub transcripts_variants_xslate {
+	my ($self) =@_;
+	my $gene = $self->variant->gene;
+	my $atr = $self->variant->transcripts;
+	
+	# revel
+	my $revel = $self->variant->revel;
+	
+#	 unless( $revel eq "-"){
+#	  	
+#	 	$revel = $self->printBadge($revel,[0.5,0.9]);
+#	 }
+#	 else {
+#	 	$revel = $minus;
+#	 }
+#	my $dbscsnv = $self->variant->rf;
+#	 my $ada =  $self->variant->ada;
+#	  unless( $dbscsnv eq "-"){
+#	 	$dbscsnv = $self->printBadge($dbscsnv,[0.6,0.9]).$self->printBadge($ada,[0.6,0.9]);
+#	 }
+#	 else {
+#	 	$dbscsnv = $minus;
+#	 }
+
+#	 my $cadd =  $self->variant->cadd;
+#	 #warn $cadd;
+#	 $cadd = "-" unless $cadd;
+	 
+	# unless( $cadd eq "-"){
+	 #	$cadd = $self->printBadge($cadd,[20,30]);
+	 #}
+	 #else {
+	 #	$cadd = $minus;
+	 #}
+	 #warn $self->variant->cadd." ".$cadd;
+#	 my $spliceAI = $self->variant->spliceAI;
+#	 my $cat = $self->variant->spliceAI_cat;
+#	 unless ($spliceAI){
+#	 	$spliceAI = -1;
+#	 }
+#	 unless ($spliceAI == -1){
+#		my $text = $cat.':'.$spliceAI;
+#		if ($spliceAI == 0) { $text = '0'; }
+#		my $text_alert = "";
+#		$spliceAI = $self->printButtonWithAlert($spliceAI,[0.5, 0.9],$text,$text_alert);
+#	 }
+#	 else {
+#		$spliceAI = $minus;
+#	 }
+#	 
+	 
+#	 foreach my $htr (@$atr){
+#	 	$htr->{revel} = $revel;
+#	 	$htr->{cadd} = $cadd;
+#	 	$htr->{revel} = $revel;
+#	 	$htr->{dbscsnv} =$dbscsnv;
+#	 	$htr->{$spliceAI} = $b_spliceai;
+#	 	$htr->{dbscsnv} =  $self->printButton($htr->{impact_score},[3,4],$htr->{consequence});
+#	 }
+#$self->variant->spliceAI
+#	my $text_alert = "";
+#	my $var_spliceai_id = 'chr'.$self->variant->id();
+#	my $cmd_btn = qq{onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=$var_spliceai_id&hg=37&distance=1000&mask=0&precomputed=0','_blank')"};
+#	my $b_spliceai = $self->printButtonWithCmd(0,[0.5, 0.9],"<span class='glyphicon glyphicon-pencil' aria-hidden='true'/>",$cmd_btn);
+my $mane = 1;
+ unless ( $self->project->isRocks){
+ 		foreach my $t (@$atr){
+ 			my ($a,$b) = split(":",$t->{dbscsnv});
+ 			$t->{polyphen} = -99 if  $t->{polyphen} eq "-";
+ 			$t->{dbscsnv} = $a ;
+ 		}
+ 		$mane = 0;
+ 		
+ }
+
+	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};
+	 my $output = $self->xslate->render("transcript.tt", $data);
+	 return $output;
+	 
+	 
+}
 sub transcripts_variants {
+	my ($self) =@_;
+	my $gene = $self->variant->gene;
+	
+	my $atr = $self->variant->transcripts;
+	 my $revel = $self->variant->revel;
+	
+	  unless( $revel eq "-"){
+	 	$revel = $self->printBadge($revel,[0.5,0.9]);
+	 }
+	 else {
+	 	$revel = $minus;
+	 }
+	 
+	 
+	 my $dbscsnv = $self->variant->rf;
+	 my $ada =  $self->variant->ada;
+	  unless( $dbscsnv eq "-"){
+	 	$dbscsnv = $self->printBadge($dbscsnv,[0.6,0.9]).$self->printBadge($ada,[0.6,0.9]);
+	 }
+	 else {
+	 	$dbscsnv = $minus;
+	 }
+
+	 my $cadd =  $self->variant->cadd;
+	 #warn $cadd;
+	 $cadd = "-" unless $cadd;
+	 unless( $cadd eq "-"){
+	 	$cadd = $self->printBadge($cadd,[20,30]);
+	 }
+	 else {
+	 	$cadd = $minus;
+	 }
+	 #warn $self->variant->cadd." ".$cadd;
+	 my $spliceAI = $self->variant->spliceAI;
+	 my $b_spliceai = qq{<table><td>};
+	 my $cat = $self->variant->spliceAI_cat;
+	 unless ($spliceAI){
+	 	$spliceAI = -1;
+	 }
+	 unless ($spliceAI == -1){
+		my $text = $cat.':'.$spliceAI;
+		if ($spliceAI == 0) { $text = '0'; }
+		my $text_alert = "";
+		$spliceAI = $self->printButtonWithAlert($spliceAI,[0.5, 0.9],$text,$text_alert);
+	 }
+	 else {
+		$spliceAI = $minus;
+	 }
+	 $b_spliceai .= "$spliceAI</td><td style='padding-left:5px;'>";
+	my $var_spliceai_id = 'chr'.$self->variant->id();
+	$var_spliceai_id =~ s/_/-/g;
+	my $cmd_btn = qq{onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=$var_spliceai_id&hg=37&distance=1000&mask=0&precomputed=0','_blank')"};
+	$b_spliceai .= $self->printButtonWithCmd(0,[0.5, 0.9],"<span class='glyphicon glyphicon-pencil' aria-hidden='true'/>",$cmd_btn)."</td></table>";
+
+	my $level = 2;
+	my $cgi          = $self->cgi;
+	#my $value = $atr->[0]->{value}->{impact_score};
+	my $color = "#555";
+	#if ($value > 3){
+	#	$color = "red";
+	#}
+	#if ($value >= 2){
+	#	$color = "#FF8800";
+	#}
+	
+	my $html;
+	$html .= qq{<div style="max-height:250px;overflow-y:auto;border:solid 1px grey;">};
+	
+	$html .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family: Verdana;margin-bottom:0px;max-height:150px;"});
+	my @colors = ("#F9F6FF","#F9F9F9");
+	
+	my $nb =0;
+	my $nb_skip = 0;
+	 
+	$html .=  $cgi->start_Tr({style=>"position:sticky;z-index:8;top:0;background-color:grey;color:white;"}).$cgi->th({style=>"text-align: center;"}, \@header_transcripts)."".$cgi->end_Tr();
+	 
+	my $rids = [];
+	my $hhide;
+	my $compact_table;
+	foreach my $htr (@$atr){
+			my $template = $self->template_transcripts_variant("row");
+			#$html.= $template;
+			# next;
+			$htr->{enst} = $htr->{name} unless $htr->{enst};
+			my $name  =$htr->{name};
+			$template =~s/%NAME%/$name/g;
+			
+			
+			my $zid = $htr->{enst}."-".$self->variant->gnomad_id;
+			$htr->{impact_score} = 0 unless $htr->{impact_score};
+			$htr->{impact_score} = 0 if $htr->{impact_score} eq "-";
+			my $hide ="";
+			
+			#{style=>"border: 1px solid black;color:lightgrey;$style"}).$cgi->td([$mother->name,qq{<i class="fa fa-female fa-2x" aria-hidden="true" style="color:ligthgrey"></i>},$type,$ps."%",""]);
+		 	#$htr->{html}->{spliceAI} = "-" ;
+		 	my $hide_id= "-";
+		 	 $hide_id = $htr->{ccds} if exists $htr->{ccds} && $htr->{ccds};
+		 #	my $hide_id = 
+		 	$hide_id .= $htr->{nomenclature} if exists $htr->{nomenclature} && $htr->{nomenclature};# eq "" ;
+		 	 
+		 	$hide = "display:none;"  if ($htr->{impact_score}  <  $level and $nb >0) or (exists $hhide->{$hide_id})  ;
+		 	$hide = "display:none;"  if ($compact_table and not $htr->{value}->{ccds} and $nb != $nb_skip)  ;
+		 	$hide = "display:none;"  if ($compact_table and $nb - $nb_skip >= 3)  ;
+		 
+		 	
+		 	$hhide->{$hide_id} ++ ;
+		 	$hhide->{$htr->{nomenclature}} ++ if exists $htr->{nomenclature};
+			$nb_skip ++ if $hide;
+			my $c = $colors[$nb%2];
+			
+			
+			$nb ++;
+			my $rid = "rowTR_"."_".$zid;
+			
+			push(@$rids,$rid) if $hide;
+			my $cons = $self->printButton($htr->{impact_score},[3,4],$htr->{consequence});
+			
+			 
+		 ##cosnequence 
+		 my $nm = $htr->{nm};
+		 $nm= "-" unless $nm;
+ 		
+		  $htr->{ccds} = "-" unless $htr->{ccds};
+		 my $ccds = $htr->{ccds};
+		
+		 my $appris = $htr->{appris};
+		
+		 my $exon = $htr->{exon};
+		 $exon = "-" unless $exon;
+		
+		 my $n = $htr->{nomenclature};
+		 $n = "-" unless $n;
+		
+		 my $codons = $htr->{codons};
+		 $codons = "-" unless $codons;
+		
+		   my $codons_AA = $htr->{codons_AA};
+
+		 my $polyphen = $self->printBadge($htr->{polyphen},[0.446,0.908]);
+		
+		 my $sift = $self->printInvBadge($htr->{sift},[0,1,0,05]);
+		 $template =~s/%CODONS_AA%/$codons_AA/;
+		 $template =~s/%CADD%/$cadd/;
+		 $template =~s/%REVEL%/$revel/;
+		 $template =~s/%DBSCNV%/$dbscsnv/;
+		 $template =~s/%SPLICEAI%/$b_spliceai/;
+		  $template =~s/%POLYPHEN%/$polyphen/;
+		  $template =~s/%SIFT%/$sift/;
+		  $template =~s/%HIDE%/$hide/;
+		$template =~s/%COLOR%/$c/;	
+		 $template =~s/%CODONS%/$codons/;
+		  $template =~s/%NOMENCLATURE%/$n/;
+		   $template =~s/%EXON%/$exon/;
+		    $template =~s/%APPRIS%/$appris/;
+		    $template =~s/%CCDS%/$ccds/;
+		   $template =~s/%NM%/$nm/;
+		    $template =~s/%CONSEQUENCE%/$cons/;
+		    $template =~s/%RID%/$rid/;
+		   
+		 $html.=$template;
+	}
+	 if ($nb_skip ==0){
+		$html.=$cgi->end_table();
+		return $html
+	 }
+	my $js = encode_json $rids;
+	my $za = "hide_tr_".time."_".int(rand(50000));
+	$html .=  $cgi->start_Tr({id=>$za});
+
+	$html.= $cgi->td({style=>"box-shadow: 1px 1px 2px #555;background-color:#CECFCE;",colspan=>scalar(@header_transcripts),onClick=>qq{showTranscripts($js,"$za");}},qq{<span class="glyphicon glyphicon-plus"></span> }."view $nb_skip Transcripts");
+	$html.= $cgi->end_Tr();
+	
+	$html.=$cgi->end_table();
+	$html.=qq{</div>};
+	#$atr->{html} = $html;
+	return $html;
+	
+}
+
+sub transcripts_variants_old {
 	my ($self) =@_;
 	my $gene = $self->variant->gene;
 	
@@ -1322,7 +2046,222 @@ unless ($validation_term){
 	return $out;
 }
 
-
+#sub panel_gene { 
+#	my ($hgene,$panel_id,$project_name,$patient) = @_;
+#	
+#	my $cgi          = new CGI();
+#	my $out;
+#	my $gene_id = $hgene->{id};
+#	my $gene;
+#	$gene = $patient->project->newGene($gene_id) if ($patient);
+#	
+#	#my $homim;
+#	#$homim = $patient->project->lmdbOmim->get($gene_id) if ($patient);
+#	my $data;
+#	
+#	
+#	#warn $omim->{phenotype}->{omim};
+#	my $vval ={};
+#	my $all_validations;
+#	($all_validations) = grep {$_ =~ /$gene_id/ } keys %{$patient->validations} if ($patient);
+#	if ($all_validations) {
+#		 $vval =  $patient->validations->{$all_validations}->[0];
+#		
+#	}
+#	
+#
+#	$data->{label_id} = "label_".$hgene->{uid};
+#	$data->{panel_id} = $panel_id;
+#	$data->{max_score} = $hgene->{max_score};
+#	my $bcolor = "grey";
+#		$data->{bcolor} = "green" if $hgene->{max_score} >= 0;
+#		$data->{bcolor} = "yellow" if $hgene->{max_score} >= 5;
+#		$data->{bcolor} = "orange" if $hgene->{max_score} >= 8;
+#		$data->{bcolor} = "coral" if $hgene->{max_score} >= 12;
+#		$data->{bcolor} = "red" if $hgene->{max_score} >= 14;
+#		
+#		$data->{astyle} ="";
+#		$data->{astyle} = "background-color:#E74C3C"  if $vval->{validation}>4;
+#		 $data->{cnv_status} = "cnv_none";
+#		if ($hgene->{level_dude} ne '-1') {
+#					my ($l,$t) = split(":",$hgene->{level_dude});
+#					if ($t eq "del"){
+#						$data->{cnv_status} = "cnv_del_medium" if $l eq "medium";
+#						$data->{cnv_status} = "cnv_del_high" if $l eq "high";
+#						$data->{cnv_status} = "cnv_del_low" if $l eq "low";
+#					}
+#					if ($t eq "dup"){ 
+#						$data->{cnv_status} = "cnv_dup_medium" if $l eq "medium";
+#						$data->{cnv_status} = "cnv_dup_high" if $l eq "high";
+#						$data->{cnv_status} = "cnv_dup_low" if $l eq "low";
+#					}
+#				}
+#				
+#		$data->{gene_name} = $hgene->{external_name};
+#		$data->{inheritance} ="";
+#				if ($gene) {
+#					if ($gene->getProject->getVersion() =~ /HG/) { $data->{inheritance} = $gene->omim_inheritance; }
+#					else {$data->{inheritance} = '-';}
+#				}
+#				else { $data->{inheritance} = $hgene->{omim_inheritance}; }
+#			$data->{inheritance} ="" if $data->{inheritance} eq "-";
+#			$data->{inheritance} = "X-linked " if $data->{inheritance} =~/X-linked/;
+#			my ($gid,$t) = split("_",$hgene->{id});
+#			$hgene->{gene_id} = $gid;
+#					
+#		$data->{gene} = $hgene; 
+#		
+#my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
+#	 #panel heading
+#	#$out .=  $cgi->start_div({class=>"panel-heading panel-warning warning ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
+#	 #$out.="coucou";
+#			my $glyph = "";
+#				$glyph = qq{<span class="glyphicon glyphicon-star-empty text-default" aria-hidden="true"></span>} if $hgene->{nb_clinvar} > 0;
+#				$glyph = qq{<span class="glyphicon  glyphicon-alert text-alert" aria-hidden="true" style="color:red"></span>} if $hgene->{nb_clinvar_alert} > 0 or $hgene->{dm};
+#				$glyph = qq{<img src="https://img.icons8.com/color/24/000000/treatment-plan.png" style="float:right">} if exists $vval->{validation};# if $hgene->{validations} >2;
+#				my $astyle = "";
+#				
+#				#$astyle = "background-color:#FF8800" ;# if $vval->{validation}>5;#if $hgene->{validations} >2 ;
+#				$astyle = "background-color:#E74C3C"  if $vval->{validation}>4;
+#				
+#				my $gene_name = $hgene->{external_name};
+#				
+#				$out .=  $cgi->start_div({class=>" btn-group btn-xs ",style=>'position:relative;float:left;bottom:5px;'});
+#				my $in;
+#				if ($gene) {
+#					if ($gene->getProject->getVersion() =~ /HG/) { $in = $gene->omim_inheritance; }
+#					else {$in = '-';}
+#				}
+#				else { $in = $hgene->{omim_inheritance}; }
+#				$in ="" if $in eq "-";
+#				$in = "X-linked " if $in =~/X-linked/;
+#				my $pli = 	$hgene->{pLI}*1.0;
+#				#$pli = $pli.;#"/".$hgene->{max_score};
+#				
+#
+#	   			my $nbv = $hgene->{nb};
+#
+#				my $omim = $hgene->{omim_id};
+#				$out .=qq{<a class="btn btn-primary btn-xs" href="http://www.omim.org/entry/$omim" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Omim</a>} if $omim ne "";
+#				$out .=qq{<a class="btn btn-primary btn-xs"   style="$bgcolor2;min-width:40px"><i class="fa fa-minus"></i></a>} if $omim eq "";
+#				
+#				#gtex Portal
+#					my ($gid,$t) = split("_",$hgene->{id});
+#					
+#					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gtexportal.org/home/gene/$gid" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Gtex</a>};# if $omim ne "";
+#				#ENSG00000124155
+#				my $oid = $hgene->{name};
+#				my $type ="green";
+#				#$type = "default" if $pli <= 0.1;
+#				$type = "orange" if $pli >= 0.75;
+#				$type = "red" if $pli >= 0.9;
+#				my $m = $hgene->{max_score};
+#				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
+# 				
+# 				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
+# 				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
+# 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+# 				
+# 				
+# 				
+#	   			my $panel_name1 = join("-",keys %{$hgene->{panels}});
+#	   			my $hPanels;
+#	   			foreach my $panel_name (keys %{$hgene->{panels}}) {
+#	   				my $pheno_name = $hgene->{panels}->{$panel_name}->{phenotype};
+#	   				$hPanels->{$pheno_name}->{$panel_name} = undef;
+#	   			}
+#	   			my $panel_list;
+#	   			foreach my $pheno_name (sort keys %$hPanels) {
+#	   				$panel_list .= "<b><u>Phenotype: ".$pheno_name."</b></u><br>";
+#	   				foreach my $panel_name (sort keys %{$hPanels->{$pheno_name}}) {
+#	   					$panel_list .= '  - '.$panel_name."<br>";
+#	   				}
+#	   				$panel_list .= "<br>";
+#	   			}
+#	   			$panel_name1 = "Panel: ".scalar (keys %{$hgene->{panels}});
+#				$out .=qq{<a class="btn btn-primary btn-xs" href="#" role="button" style="top:-4px;$bgcolor2" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><p style="font-size:10px;text-shadow:0px 1px 1px #000;position:relative;bottom:-4px">$panel_name1</p></a>} if $panel_name1;
+#
+#	   		my ($pheno,$nb_other_terms);
+#	   		if ($gene) {
+#	   			if ($gene->getProject->getVersion() =~ /HG/) { 
+#	   				($pheno,$nb_other_terms) = $gene->polyviewer_phentotypes();
+#	   			}
+#	   			else {
+#	   				$pheno = $gene->description();
+#	   			}
+#	   		}
+#	   		elsif (exists $hgene->{phenotypes}->{pheno} and exists $hgene->{phenotypes}->{nb_other_terms}) {
+#				$pheno = $hgene->{phenotypes}->{pheno};
+#				$nb_other_terms = $hgene->{phenotypes}->{nb_other_terms};
+#	   		}
+#	   		
+#   			my $color ;
+#   			$color = qq{ style = "color:#E74C3C"} if $pheno =~/intellectual/ or $pheno =~/mental/ or $pheno =~/retar/;
+#   			my $jtid = 'zz'.time.rand(500);
+#   			my $div_pheno = qq{<a aria-disabled="true" class="btn btn-primary btn-xs" href="#" role="button" style="text-align:left;font-family: proxima-nova, sans-serif;font-style:normal;text-shadow:0px 1px 1px #000000;position:relative;bottom:4px;font-size: 0.9em;color:white;$bgcolor2;">};
+#   			if ($pheno) {
+#		   		if (length($pheno) > 70) { $pheno = substr($pheno, 0, 70).'...'; }
+#   				if ($nb_other_terms > 0) { $pheno .= " <span style='color:#5cf0d3'>+ $nb_other_terms terms</span>"; }
+#   				if ($project_name) {
+#   					$div_pheno .= qq{<i class="fa fa-circle fa-xs" $color ></i> <span onclick="update_grid_gene_phenotypes(\'$gene_id\', \'$project_name\')";">$pheno</span>};
+#   				}
+#   				else {
+#   					$div_pheno .= qq{<i class="fa fa-circle fa-xs" $color ></i> <span onclick="update_grid_gene_phenotypes(\'$gene_id\')";">$pheno</span>};
+#   				}
+#   			}
+#   			$div_pheno .= qq{</a>};
+#	   		$out .= $div_pheno;
+#	   		$out .= $cgi->end_div();
+#	   		
+#				$out .=  $cgi->start_div({class=>" btn-group btn  ",style=>'position:relative;float:right;bottom:5px;'});
+#			
+#						my $tlabel = "label-grey";
+#						$tlabel = "label-warning" if exists $hgene->{clinvar_hgmd};
+#						$tlabel = "label-danger" if exists $hgene->{pathogenic};
+#						$out .= $cgi->span({class=>"label $tlabel" },qq{<span class="glyphicon glyphicon-alert text-alert " aria-hidden="true" ></span>});
+#					
+#						my $nbv = scalar(@{$hgene->{variants}});
+#						$out .=$cgi->span({class=>"label label-grey"},qq{<span class='badge badge-infos badge-xs ' style="color:#00C851"  >$nbv </span> });
+#						
+#					
+#						$out .=$cgi->span({class=>"label label-grey"},qq{<span class="glyphicon glyphicon glyphicon-menu-hamburger " aria-hidden="true" style="color:orange" ></span>});
+#						my $clabel = " label-default";
+#						$clabel = "label-danger" if $all_validations;#if exists $hgene->{validations};
+#						$out .=$cgi->span({class=>"label $clabel"},qq{<span class="glyphicon glyphicon-pencil " aria-hidden="true" ></span>});
+#						my $style ="";
+#						$clabel = " label-grey";
+#						if ($hgene->{level_dude} eq '-1') {
+#							$out .=$cgi->span({class=>"label $clabel",style=>$style,onclick=>"alert('Not Available - Please contact BioInformatic Platform (genes_level_dude)');"},qq{<s><span>-</span></s> <span class="glyphicon glyphicon-ban-circle"></span>});
+#						}
+#						else {
+#							my ($l,$t) = split(":",$hgene->{level_dude});
+#							if ($t eq "del"){
+#								$style = "background-color:#FF6961" if $l eq "medium";
+#								$style = "background-color:#DD4124" if $l eq "high";
+#								$style = "background-color:#FFB2AE" if $l eq "low";
+#							}
+#							if ($t eq "dup"){ 
+#								$style = "background-color:#0080FF" if $l eq "medium";
+#								$style = "background-color:#0066FF" if $l eq "high";
+#								$style = "background-color:#9DFFFF" if $l eq "low";
+#							}
+#							#$clabel = "label-warning" if  $hgene->{level_dude} eq "medium";
+#							#$clabel = "label-danger" if  $hgene->{level_dude} eq "high";
+#							#onclick="zoomDude(\'$gnames\','50')"
+#							my $gnames = $hgene->{name};
+#							my $pname;
+#							if ($patient) {
+#								$pname = $patient->name();
+#								$out .=$cgi->span({class=>"label $clabel",style=>$style,onclick=>"zoomDude(\'$project_name\', \'$gnames\','$pname', 'force_visualisation')"},qq{<span>CNV</span>});
+#							}
+#							else {
+#								$out .=$cgi->span({class=>"label $clabel",style=>$style,onclick=>"zoomDude(\'$project_name\', \'$gnames\','', 'force_visualisation')"},qq{<span>CNV</span>});
+#							}
+#						}
+#				
+#				
+#			 	$out.= $cgi->end_div(); # end div lavel right 
+#}
 
 
 1;

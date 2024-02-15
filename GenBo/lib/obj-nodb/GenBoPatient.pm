@@ -938,6 +938,7 @@ sub setVariantsForReference {
 	my @objs;
 	my $hashRes;
 	my $z = time;
+	my $nn =0;
 	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
 		my $hfiles = $self->callingFiles->{$this_typeVar};
 		foreach my $method ( keys %{$hfiles} ) {
@@ -945,14 +946,13 @@ sub setVariantsForReference {
 			#next unless $method eq 'haplotypecaller4';
 			my $vcfFile = $hfiles->{$method};
 			next if exists $already_parse->{ $reference->name }->{$vcfFile};
-
-			#	warn "coucou ".$reference->name;
 			$already_parse->{ $reference->name }->{$vcfFile}++;
 			$self->{queryVcf}->{$vcfFile} = $self->getQueryVcf( $vcfFile, $method ) unless exists $self->{queryVcf}->{$vcfFile};
 			my $queryVcf = $self->{queryVcf}->{$vcfFile};
 			my $z        = $queryVcf->parseVcfFileForReference($reference);
 			foreach my $type ( keys %$z ) {
 				foreach my $id ( keys %{ $z->{$type} } ) {
+				$nn++;
 					if ( exists $hashRes->{$type}->{$id} ) {
 						my $h1 = thaw( decompress( $hashRes->{$type}->{$id} ) );
 						my $h2 = thaw( decompress( $z->{$type}->{$id} ) );
@@ -971,7 +971,6 @@ sub setVariantsForReference {
 	}
 
 	my $o = [];
-	#warn "\t end parsing :".abs(time-$z)." ".$self->name;
 	$o = $self->myflushobjects2( $hashRes, $cursor );
 	
 	return $o;
@@ -1105,7 +1104,6 @@ sub myflushobjects2 {
 				$x++;
 				$valHash = thaw( decompress($valHash) );
 				my $varObj = $self->getProject()->flushObject( $valHash->{structuralTypeObject}, $valHash );
-				#warn $varObj;
 				$varObj->patients_object()->{ $self->id() } = undef;
 
 				#here add all method for this variant in method calling hash
@@ -2924,6 +2922,32 @@ sub return_icon {
 	return $icon_sex;
 }
 
+has small_icon_url => (
+	is => 'ro',
+
+	#isa		=> 'ArrayRef[Str]',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $icon;
+		if ( $self->isChild ) {
+				my $type = "s";
+				$type = "d" if $self->isIll;
+				my $sex = "girl";
+				 $sex = "boy" if $self->isMale();
+				$icon =  "/icons/Polyicons/baby-$sex-$type.png";
+		}
+		elsif ( $self->isMother ) {
+			$icon = qq{/icons/Polyicons/female-s.png};
+			$icon = qq{/icons/Polyicons/female-d.png} if ($self->isIll);
+		}
+		elsif ( $self->isFather ) {
+				$icon = qq{/icons/Polyicons/male-s.png};
+				$icon = qq{/icons/Polyicons/male-d.png} if ($self->isIll);
+		}
+		return $icon;
+	}
+);
 has small_icon => (
 	is => 'ro',
 
@@ -3138,7 +3162,7 @@ sub sr_raw {
 	$start -=5;
 	$end += 5;
 	my @res = `$samtools view  -q 30 -h $bamfile $chr_name:$start-$end |  $samblaster --excludeDups --addMateTags --maxSplitCount 1 --minNonOverlap 20 --ignoreUnmated 2>/dev/null  | grep -v "^\@" | cut -f 6  `;
-	
+#	warn qq{$samtools view  -q 30 -h $bamfile $chr_name:$start-$end |  $samblaster --excludeDups --addMateTags --maxSplitCount 1 --minNonOverlap 20 --ignoreUnmated 2>/dev/null  | grep -v "^\@" | cut -f 6};
 	warn qq{$samtools view  -q 30 -h $bamfile $chr_name:$start-$end |  $samblaster --excludeDups --addMateTags --maxSplitCount 1 --minNonOverlap 20 --ignoreUnmated 2>/dev/null  | grep -v "^\@" | cut -f 6 | grep "[[:digit:]]*S"} if $debug;
 	chomp(@res);
 	warn Dumper @res if $debug;

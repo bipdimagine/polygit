@@ -123,41 +123,20 @@ has ncboost_category => (
 	},
 );
 
-has revel_score => (
-	is		=> 'rw',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $sc =  $self->getChromosome->get_lmdb_score("revel",$self);
-		return "-" unless $sc;
-		return $sc;
-		
-	},
-);
-has dbscsnv_ada => (
-	is		=> 'rw',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $chr = $self->getChromosome();
-		my $sc =  $chr->get_lmdb_score("dbscsnv_ada",$self);
-		return "-" unless $sc;
-		return $sc;
-		
-	},
-);
-has dbscsnv_rf => (
-	is		=> 'rw',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $chr = $self->getChromosome();
-		my $sc =  $chr->get_lmdb_score("dbscsnv_rf",$self);
-		return "-" unless $sc;
-		return $sc;
-		
-	},
-);
+sub revel_score {
+	my ($self,$tr) = @_;
+	
+	my $prot = $tr->getProtein();
+	return -99 unless $self->isCoding($tr);
+	my $value =  $self->getChromosome->rocksdb("revel")->revel($self->rocksdb_id);
+	return -99  unless $value; 
+	my $aa  = $self->changeAA($tr->getProtein);
+	return $value->{$aa} if exists  $value->{$aa};
+	return -99;
+}
+
+
+
 
 
 
@@ -321,6 +300,39 @@ sub siftStatus {
 }
 
 
+
+sub _alphamissenseTranscripts {
+	my ($self,$transcript) = @_;
+	return $self->{alphamissense}->{$transcript->id} if exists $self->{alphamissense}->{$transcript->id};
+	my $v ="-";
+	if ($transcript->getProtein){
+	my $aa =  $self->changeAA($transcript->getProtein);
+	my $pos = $self->getProteinPosition($transcript->getProtein);
+	 $v = $self->project->rocksdb("alphamissense")->alphamissense_score($transcript->name,$pos,$aa);
+	}
+	$self->{alphamissense}->{$transcript->id} = $v;
+	return $v;
+}
+
+
+sub alphamissense {
+	my ($self,$obj) = @_;
+	if ($obj->isGene){
+		my $max = -1;
+		foreach my $t (@{$obj->getTranscripts}){
+			my $sc = $self->_alphamissenseTranscripts($t);
+			next unless $sc;
+			next if  $sc eq "-";
+			$max  = $sc if $sc > $max;
+		}
+		return "-" if $max == -1;
+		return $max;
+	}
+	elsif ($obj->isTranscript){
+		return $self->_alphamissenseTranscripts($obj);
+	}
+	return "-";
+}
 
 
 ###

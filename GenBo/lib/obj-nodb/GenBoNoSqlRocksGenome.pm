@@ -331,6 +331,25 @@ sub change_id {
 	return ($start,sprintf("%010d", $key));
 }
 
+sub current {
+	my ($self,$key) = @_;
+	return $self->{current_db};
+}
+sub dejavu {
+	my ($self,$id) = @_;
+	if ($self->current) {
+		
+		my $res =  $self->{current_db}->get_raw($id);
+		return $res ;#if $res;
+	}
+	my ($pos,$a) =split("!",$id);
+	$pos *= 1;
+	
+	$self->{current_db} = $self->get_db($pos);
+	$self->{current_db}->rocks->compact_range();
+	return  $self->current->get_raw($id);
+}
+
 sub spliceAI_id {
 	my ($self,$id) = @_;
 	my ($pos,$a) =split("!",$id);
@@ -349,8 +368,6 @@ sub get_db {
 	my $results = $self->tree_db->fetch($pos,$pos+1);
 	confess(@$results) if scalar(@$results) > 1;
 	return $results->[0];
-#	my $bd = $self->_chunks_rocks($region_id);
-#	return $bd;
 }
 
 

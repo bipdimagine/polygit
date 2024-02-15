@@ -16,8 +16,7 @@ use LMDB_File qw(:flags :cursor_op :error);
  use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Compress::Snappy;
 #use Compress::Zstd;
-
-use Carp qw(cluck longmess shortmess);
+use Carp;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 # use Compress::Zstd;
  # use Compress::LZ4;

@@ -13,7 +13,7 @@ default => sub {
 		return 1;
 }
 );
-
+ 
 has index =>(
 	is		=> 'rw',
 	lazy    => 1,
@@ -61,19 +61,19 @@ sub raw_put_batch_variation {
 sub put_batch_variation {
 	my ($self,$key,$value,$debug) = @_;
 	my $index = $self->index;
-	#$value->{vector_id} = $index;
+	$value->{vector_id} = $index;
 	$self->put_batch_raw($key,$index);
 	$self->put_batch_raw($value->id,$index);
-	
 	$self->put_batch($index,$value);
 	$self->index($index+1);
-	return 1;	
+	return $index;	
 }
 sub put_variation {
 	my ($self,$key,$value,$debug) = @_;
 	my $index = $self->index;
 	#$value->{vector_id} = $index;
 	$self->rocks->put($key,$index);
+	
 	$self->rocks->put($index,$self->encode($value));
 	$self->index($index+1);
 	return 1;	
@@ -82,7 +82,7 @@ sub put_variation {
 
 sub get_variation  {
 	my ($self,$key) = @_;
-	$key =  $self->get_raw($key) if ($key =~ /!/);
+	$key =  $self->get_raw($key) if ($key =~ /_/);
 	return $self->get_index($key);
 }
 sub get_varid {

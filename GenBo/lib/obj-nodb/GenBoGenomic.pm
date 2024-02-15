@@ -91,6 +91,7 @@ has span_position_genomic => (
 	default => sub {
 		my $self = shift;
 		my $intSpan = Set::IntSpan::Fast::XS->new();
+		warn $self->name." ".$self->start()." ".$self->end;
     	$intSpan->add_range($self->start(), $self->end());
     	return $intSpan;
 	},
@@ -233,7 +234,9 @@ sub setLargeDuplications {
 sub setLargeInsertions {
 	my $self = shift;
 	my $hash;
+	
 	foreach my $ref (@{$self->getReferences()}){
+		
 		$hash =  $self->objectsInside($ref->getLargeInsertions());
 	}
 	return $hash;

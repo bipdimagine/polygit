@@ -32,39 +32,54 @@ use Carp;
 use JSON::XS;
 
 my ($project_name, $chr_name, $no_verbose, $skip_pseudo_autosomal,$version,$annot_version);
-
+my $ok_file;
 GetOptions(
 	'project=s'    => \$project_name,
 	'annot_version=s'    => \$annot_version,
-	'chr=s'        => \$chr_name,
 	'no_verbose=s' => \$no_verbose,
 	'skip_pseudo_autosomal=s' => \$skip_pseudo_autosomal,
 	'version=s' => \$version,
+'file=s' => \$ok_file,
 );
-my $coder = JSON::XS->new;
-my $enabled = $coder->get_convert_blessed;
-warn $enabled;
+
+ if ($ok_file && -e $ok_file) {
+ 	system("rm $ok_file");
+ }
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
-unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
 
 my $buffer = new GBuffer;
 
 $buffer->vmtouch(1);
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
-my $final_polyviewer_json = GenBoNoSqlRocks->new(dir=>$project->rocks_directory("polyviewer_global_json"),mode=>"c",name=>$project->name);
-my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory("polyviewer_global"),mode=>"c",name=>$project->name);
+my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"c",name=>"polyviewer_objects",pipleine=>1);
 my $nb =0;
-foreach my $chr (@{$project->getChromosomes} ){
-	
-	warn "!! start ".$chr->name;
-	my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_directory("polyviewer_raw"),mode=>"r",name=>$chr->name.".polyviewer_variant");
+my $hpatients;
+foreach my $patient (sort { $a->{name} cmp $b->{name} } @{ $project->getPatients }){
+	$hpatients->{$patient->id} = $nb;
+	$nb ++;
+}
 
+
+my @patient_names = sort { $a cmp $b } map { $_->name } @{ $project->getPatients };
+my $hpatients2;
+for ( my $i = 0 ; $i < @patient_names ; $i++ ) {
+	$hpatients2->{ $patient_names[$i] } = $i;
+}
+my $root_dir = $project->rocks_directory(). "/deja_vu/";
+mkdir $root_dir unless -e $root_dir;
+my $no = GenBoNoSql->new( dir => $root_dir, mode => "c" );
+$no->put( $project_name, "patients", $hpatients2 );
+my $no_dv_rocks = GenBoNoSqlRocks->new( dir => $root_dir,name=>"dejavu", mode => "c" );
+foreach my $chr (@{$project->getChromosomes} ){
+	my $dv;
+	warn "!! start ".$chr->name;
+	my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"r",name=>$chr->name);
+		warn $project->rocks_pipeline_directory("polyviewer_raw");
 		my $iter = $final_polyviewer->rocks->new_iterator->seek_to_first;
 		my $nb = 0;
 		warn "start chromosome ".$chr->name;
 		while (my ($var_id, $value) = $iter->each) {
-			
 			$nb ++;
 			my $c = $chr->name."!";
 			next unless $var_id =~/^$c/;
@@ -72,28 +87,40 @@ foreach my $chr (@{$project->getChromosomes} ){
 				warn Dumper $var_id;
 				
 			}
-			warn $var_id." ".$nb if $nb%1000 == 0;
+			warn $var_id." ".$nb if $nb%10000 == 0;
+			$final_polyviewer_all->put_batch_raw($var_id,$value);
 			my $v = $final_polyviewer_all->decode($value);
-			my $test;
-			foreach my $k (keys %$v){
+			my $res;
+			my $ap =[];
+			my $aho =[];
+			foreach my $pid (keys %{$v->{patients_calling}}){
 				
-				$test->{$k} = delete $v->{$k};
+				next unless exists $v->{patients_calling}->{$pid}->{array_text_calling};
+				push(@{$res->[0]},$pid);
+				push(@{$res->[1]},$pid)  if   lc($v->{patients_calling}->{$pid}->{gt}) eq "ho";;
+				push( @$ap, $hpatients->{$pid} );
+				push( @$aho, $hpatients->{$pid} ) if   lc($v->{patients_calling}->{$pid}->{gt}) eq "ho";
 			}
-		
-			my $json  = $coder->encode($test); 
-			$final_polyviewer_json->put_batch_raw($var_id,$json);
+			my $heho_string =  join( ",", sort { $a <=> $b } @$ap );
+			if ( scalar(@$aho) ) {
+				$heho_string .= " ".join( ",", sort { $a <=> $b } @$aho ) . " HO";
+			}
+			$dv->{$v->{id}} = $heho_string;
+			#my $rocks_id = $no_dv_rocks->return_rocks_id_from_gnomad_id($v->{gnomad_id});
+			$no_dv_rocks->put_batch_raw($v->{rocksdb_id},$heho_string);
 			$final_polyviewer_all->put_batch_raw($var_id,$value);
 			
 			
 		#$finalrg->write_batch();
 	}
+	
+	$no->put( $project->name, $chr->name, $dv );
 	$final_polyviewer->close();
 	$final_polyviewer_all->write_batch();
-	$final_polyviewer_json->write_batch();
 }
 	$final_polyviewer_all->write_batch();
 	$final_polyviewer_all->close();
-	
-	$final_polyviewer_json->write_batch();
-	$final_polyviewer_json->close();
+	$no->close();
+	warn $root_dir;
+	system("date > $ok_file") if $ok_file;
 	

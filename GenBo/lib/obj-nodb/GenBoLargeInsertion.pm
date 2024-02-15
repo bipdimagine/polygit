@@ -4,8 +4,9 @@ use Moo;
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
+use Carp;
 use Position;
-extends "GenBoCnv";
+extends "GenBoInsertion";
 
 has imprecise => (
 	is		=> 'ro',
@@ -14,19 +15,37 @@ has imprecise => (
 		return undef;
 	},
 );
+
 has rocksdb_id => (
 	is		=> 'ro',
 	lazy=> 1,
 	default => sub {
 	my ($self) = @_;
-	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
-	$pos  = sprintf("%010d", $pos);
-	my $seqid = $alt;
-	$seqid = "+".substr($alt, 1);
-	return  ($pos."!".$seqid);
+	#my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
+	my $pos  = sprintf("%010d", $self->start());
+	return  ($pos."!+".$self->sequence);
 	},
-	
 );
+
+has name => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->getChromosome->id().'-'.$self->start().'-'.$self->nomenclatureType.'-'.$self->sequence;
+	},
+);
+
+#has gnomad_id => (
+#	is		=> 'ro',
+#	lazy=> 1,
+#	default=> sub {
+#	my $self = shift;
+#	warn $self->vcf_id;
+#	die();
+#	}
+#	);
+	
 has isLargeInsertion => (
 	is		=> 'rw',
 	default	=> 1,
@@ -64,21 +83,6 @@ has sv_type => (
 		return "INS";
 	},
 );
-
-sub limit_cnv_value {
-	my ($self,$value) = @_;
-	return 1 if ($value >= 1.4);
-	return;
-}
-sub limit_cnv_value_ho {
-	my ($self,$value) = @_;
-	return 1 if ($value >= 1.8);
-	return;
-}
-
-
-
-
 
 
 has type => (
@@ -125,20 +129,12 @@ has alleles => (
 	default=> sub {
 		my $self = shift;
 		return self->getChromosome->id().'-'.$self->start().'-ins-?' if $self->imprecise;
-		return self->getChromosome->id().'-'.$self->start().'-ins-'.$self->sequence();
+		return $self->sequence();
 	},
 );
 
 
 
-
-
-sub constructNomenclature {
-	my ( $self, $transcript, $debug ) = @_;
-	return $self->name();
-	return;
-	#coding 
-}
 
 
 
@@ -152,9 +148,52 @@ has allele_length => (
 	lazy 	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return -1;
+		return "?" if $self->imprecise;
+		return length($self->sequence);
 	},
 );
+
+sub annotation_coding {
+	my ( $self, $tr, $annot,$span ) = @_;
+	my $protid  = $tr->protein();
+	my $gid   = $tr->getGene->id();
+	my $trid = $tr->id;
+	my $project = $self->getProject();
+	my $l = length($self->sequence()) % 3;
+	my $start = $self->position($self->getChromosome())->start;
+	my $consequence =  $tr->codonsConsequenceForLargeInsertion($self);
+	$annot->{ $tr->id }->{coding}->{sequences} = $consequence;
+	$annot->{ $protid }->{coding}->{sequences} = $consequence;
+	$annot->{ $tr->id }->{coding}->{frameshift}++;
+	$annot->{ $protid }->{coding}->{frameshift}++;
+	$annot->{$gid}->{coding}->{frameshift}++;
+	$annot->{all}->{coding}->{frameshift}++;
+	$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $project->getMaskCoding("frameshift");
+}
+
+
+sub constructNomenclature {
+	my ( $self, $transcript, $debug ) = @_;
+	confess("none transcript for nomenclature") unless $transcript;
+	#return;
+	#$self->annotation() unless exists $self->{annotation};
+	my $id = $transcript->id();
+	my $text;
+	if ($self->isCoding($transcript)) {
+		my $cons = $self->{annotation}->{ $id }->{coding}->{sequences};
+		return "c.".($cons->{orf_position}-1)."_ins";
+		
+	}
+	elsif ($self->isUtr($transcript)){
+		#return;
+		#warn $transcript->name();
+		return "UTR-ins-".$self->length;
+	}
+	else {
+		return "ins-".$self->length;
+	}	
+	#coding 
+}
 
 
 1;

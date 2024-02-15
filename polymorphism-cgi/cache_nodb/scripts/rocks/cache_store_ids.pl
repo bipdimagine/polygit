@@ -16,7 +16,6 @@ use List::MoreUtils qw{ natatime };
 use String::ProgressBar;
 use POSIX qw(strftime);
 use JSON;
-use Compress::Snappy;
 use Getopt::Long;
 use Carp;
 use GBuffer;
@@ -30,6 +29,10 @@ use lib "$RealBin/../../../../GenBo/lib/obj-nodb/polyviewer/";
 use PolyviewerVariant;
 use Deep::Hash::Utils qw(reach slurp nest deepvalue);
 use Carp;
+use polyviewer_html;
+use HTML::Packer;
+use Compress::Zstd;
+
 require "$RealBin/../../../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
  my $host = hostname();
 
@@ -41,7 +44,7 @@ warn "*_*_*_*_*_".$host."*_*_*_*_*_";
 
 my $fork = 1;
 my ($project_name, $chr_name, $no_verbose, $skip_pseudo_autosomal,$version,$annot_version);
-
+my $ok_file;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
@@ -50,7 +53,12 @@ GetOptions(
 	'no_verbose=s' => \$no_verbose,
 	'skip_pseudo_autosomal=s' => \$skip_pseudo_autosomal,
 	'version=s' => \$version,
+	'file=s' => \$ok_file,
 );
+
+ if ($ok_file && -e $ok_file) {
+ 	system("rm $ok_file");
+ }
 
 warn "*_*_*_*_*_ fork :".$fork."*_*_*_*_*_";
 `ulimit -Su unlimited && echo toto`;
@@ -66,6 +74,7 @@ my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
+$project->preload_patients();
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
 }
@@ -82,7 +91,6 @@ warn "\n### CACHE: store ids step\n" if ( $project->cache_verbose() );
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc");#/software/bin/vmtouch -t ".$no1->filename." "
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name);
 
-$project->preload_patients();
 $project->buffer->disconnect();
 $project->buffer->{dbh} ="-";
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name);
@@ -123,8 +131,10 @@ $pm->run_on_finish(
 );
 my $cpt = 1;
 
-
-
+$project->exomeProjects();
+$project->countExomePatients();
+$project->countSimilarPatients();
+$project->in_this_run_patients();
 my $t = time;
 foreach my $region (values @$regions) {
 	$cpt++;
@@ -157,7 +167,7 @@ $rg_polyviewer->close();
 warn "END ANNOTATION => ".abs(time-$t);
 warn " START PHASE 2 ";
 
-
+ 
 
 
 $rg_polyviewer = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("polyviewer"),mode=>"r",index=>"genomic",chromosome=>$chr_name,genome=>"HG19",pack=>"",description=>[]);
@@ -170,8 +180,8 @@ $rg = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("genbo"
 my $final_dir = $project->rocks_directory();
 my $finalrg = GenBoNoSqlRocksVariation->new(dir=>$project->rocks_directory("genbo"),mode=>"c",name=>$chr_name.".genbo.rocks");
 my $final_index_genbo_id = GenBoNoSqlRocksVariation->new(dir=>$project->rocks_directory("index"),mode=>"c",name=>$chr_name);
-my $final_polyviewer = GenBoNoSqlRocksPolyviewerVariant->new(dir=>$project->rocks_directory("polyviewer"),mode=>"c",name=>$chr_name.".polyviewer_variant");
-my $fp = GenBoNoSqlRocks->new(dir=>$project->rocks_directory("polyviewer_raw"),mode=>"c",name=>$chr_name.".polyviewer_variant");
+#my $final_polyviewer = GenBoNoSqlRocksPolyviewerVariant->new(dir=>$project->rocks_directory("polyviewer"),mode=>"c",name=>$chr_name.".polyviewer_variant");
+my $fp = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"c",name=>$chr_name);
 #
 my $nb_regions = 0;
 my $index =0;
@@ -186,8 +196,9 @@ my $ztotal;
 		$nb_regions ++;
 		my $iter = $no->rocks->new_iterator->seek_to_first;
 		while (my ($var_id, $value) = $iter->each) {
-			my $index = $finalrg->raw_put_batch_variation($var_id,$value);
-		
+			my $v = $no->decode($value);
+			
+			my $index = $finalrg->put_batch_variation($var_id,$v);
 			my $pv = $no_polyviewer->get($var_id);
 			
 			$pv->{global_vector_id} = $chr->name."!".$index;
@@ -195,26 +206,26 @@ my $ztotal;
 			$final_index_genbo_id->put("r*".$chr->name."_".$var_id,$pv->{global_vector_id}.":".$pv->{id});
 			$final_index_genbo_id->put("v*".$pv->{global_vector_id},$chr->name."_".$var_id.":".$pv->{id});
 			#$final_index->put_batch_raw($pv->{global_vector_id},)
+			my $html = delete $pv->{html};
 			$fp->put_batch($pv->{global_vector_id},$pv);
+			#$fp2->put_batch($pv->{global_vector_id}."!",$html);
+			
 			my $hgenes = delete $pv->{hgenes};
 			my $patients = delete $pv->{hpatients};
 			$pv->{global_vector_id} = $chr->name."!".$index;
-			$final_polyviewer->put_batch_PolyviewerVariant($pv);
-			$final_polyviewer->put_batch_patient($pv->id,$patients);
-			$final_polyviewer->put_batch_gene($pv->id,$hgenes);
 		
 			$index++;
 		}
 		
-		#push(@$array,[$r->{id},$start,($index-1)]);
 		$no->close();
-		#$finalrg->write_batch();
+		$finalrg->write_batch();
 		$fp->write_batch;
+		#$fp2->write_batch;
 		$final_index_genbo_id->write_batch;
 	}
 	$fp->close();
-	$final_polyviewer->write_batch();
-	$final_polyviewer->close();
+#	$final_polyviewer->write_batch();
+#	$final_polyviewer->close();
 	$finalrg->write_batch();
 	$finalrg->close();
 	$final_index_genbo_id->write_batch;
@@ -224,22 +235,10 @@ my $ztotal;
 	#$rg2->save_vector_index_region($array);
 	#warn Dumper $array;
 	$rg->close();	
+	warn $project->rocks_pipeline_directory();
+	system("date > $ok_file") if $ok_file;
 	exit(0);
-	warn "------------------------------------------------------\n";
-	warn "+++++++++++ TEST ++++++++";
-	 $final_polyviewer = GenBoNoSqlRocksPolyviewerVariant->new(dir=>$final_dir."polyviewer/",mode=>"r",name=>$chr_name.".polyviewer_variant");
-	for (my $i =0 ; $i<100;$i++){
-		my $pv = $final_polyviewer->getPolyviewerVariant($i);
-		foreach my $gid (@{$pv->{genes_id}}){
-			 $final_polyviewer->getGene($i,$gid,$pv);
-		}
-		foreach my $pid (@{$pv->{patients_id}}){
-			 $final_polyviewer->getPatient($i,$pid,$pv);
-		}
-	}
-	
-	
-  exit(0);
+
 
 
 sub get_ids {
@@ -247,8 +246,11 @@ sub get_ids {
 	my $ids = [];
 	my $buffer = new GBuffer;
 	 $buffer->vmtouch(1);
-	
-	
+	my $patient = $project->getPatients()->[0];
+	my @headers;
+	my $packer = HTML::Packer->init();
+	my $print_html = polyviewer_html->new( project => $project, patient => $patient,header=> \@headers,bgcolor=>"background-color:#607D8B" );
+	#$print_html->init();
 	my $project = $buffer->newProject( -name => $project_name );
 	$project->preload_patients();
 	$project->buffer->disconnect();
@@ -265,23 +267,46 @@ sub get_ids {
 		$hpatients->{ $patient_names[$i] } = $i;
 	}
 	my $t = time;
-	my $vs = $reference->getStructuralVariations;#getStructuralVariations
+	my $vs = $reference->getStructuralVariations;
+	my @arocksid = map {$_->rocksdb_id} @$vs;
+	warn "1";
+	if (@arocksid){
+	$chr->rocksdb("gnomad")->prepare(\@arocksid);
+	$chr->rocksdb("cadd")->prepare(\@arocksid);
+	$chr->rocksdb("clinvar")->prepare(\@arocksid);
+	$chr->rocksdb("spliceAI")->prepare(\@arocksid);
+	$chr->rocksdb("dbscSNV")->prepare(\@arocksid);
+	$chr->rocksdb("revel")->prepare(\@arocksid);
+	my $db = $chr->rocks_dejavu()->get_db($vs->[0]->start);
+	#warn Dumper 
+	$db->prepare(\@arocksid);
+	}
+	warn "2";
 	$t =time;
 	my $nb = 0;
 	foreach my $variation ( @{$vs } ) {
 		my $debug ;
 		$nb ++;
-		warn $nb."/".scalar @{$vs } if $nb %3000 == 0; 
-		die() if $variation->name() eq "11-800438-ins-116";
+		warn $nb."/".scalar @{$vs } if $nb %30000 == 0; 
+		if ($variation->type =~ /inversion/ ){
+		 #warn $variation->name." ".$variation->type;
+		# warn $variation;
+		 #warn $variation->name;
+		 $debug =1;
+		}
 		$variation->gnomad("cache");
+
 		$variation->cadd_score();
 		$variation->name();
-		$variation->getGenes();
+	
 		$variation->score_clinical_local();
 		$variation->score_clinvar();
 		$variation->text_clinvar();
 		$variation->hgmd_id();		
 		$variation->getChromosome();	
+		$variation->dejaVuInfosForDiag2();
+	
+		$variation->getGenes();
 		$variation->annotation();
 	
 		my $hv;
@@ -291,25 +316,40 @@ sub get_ids {
 		$variation->getPatients();
 		$variation->sequencing_infos();
 		$variation->split_read_infos();
-		$variation->dejaVuInfosForDiag2();
+	
 		my $a	 = delete $variation->{array_dejavu};
 		$variation->{cad} = pack("w".scalar(@$a),@$a);
+
 		my $vp =  PolyviewerVariant->new();
 		$vp->setLmdbVariant($variation);
+	
 		$vp->{hgenes} = {};
 		$vp->{genes_id} = [];
+		my $code =0;
 		foreach my $g (@{$variation->getGenes}){
 			my $h = $vp->set_gene($variation,$g);
+			$h->{code} = $code;
 			$vp->{hgenes}->{$g->{id}} = $h;
+			
 			push(@{$vp->{genes_id}},$g->{id});
+			$code ++;
 		}
+		##############
+		#	next;
+		##############0
+
 		$vp->{hpatients} ={};
 		$vp->{patients_id} = [];
-		foreach my $p (@{$variation->getPatients}){
-			my $h = $vp->set_patient_cache($variation,$p);
-			$vp->{patients_calling}->{$p->id} =$h; 
+		my $dvp;
+		foreach my $pat (@{$variation->getPatients}){
+			foreach my $p (@{$pat->getFamily()->getMembers}){
+				
+				next if exists $dvp->{$p->id};
+				$dvp->{$p->id} ++;
+				my $h = $vp->set_patient_cache($variation,$p);
+				$vp->{patients_calling}->{$p->id} =$h; 
+			}
 		}
-		
 		
 		# line to prepare dejavu global;
 		my $ref = ref($variation);
@@ -318,10 +358,10 @@ sub get_ids {
 		}
 		elsif  ($ref eq 'GenBoLargeDeletion'){
 					bless $variation , 'GenBoLargeDeletionCache';
-					
 		}
 		elsif  ($ref eq 'GenBoLargeInsertion'){
-					bless $variation , 'GenBoLargeDuplicationCache';
+					bless $variation , 'GenBoLargeInsertionCache';
+				
 		}
 		elsif  ($ref eq 'GenBoDeletion'){
 					bless $variation , 'GenBoDeletionCache'; 
@@ -332,15 +372,25 @@ sub get_ids {
 		elsif  ($ref eq 'GenBoLargeDuplication'){
 					bless $variation , 'GenBoLargeDuplicationCache';
 		}
+		elsif  ($ref eq 'GenBoInversion'){
+					bless $variation , 'GenBoInversionCache';
+		}
 		else {
 			confess($ref);
 		}
-	
+		my $t = 0;
+		foreach my $g (@{$variation->getGenes}){
+			$t++;
+			$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
+		#	$vp->{html}->{$g->id} =  $packer->minify( \$print_html->transcripts());
+			delete  $vp->{transcripts} ;
+		}
+		#$vp->{h} = compress($vp->{h});
+		#die();
 	#	my $hvariant =  update_variant_editor::construct_hash_variant_global ( $project, $variation,undef,1);
 	#	delete $hvariant->{html};
 		#warn Dumper $hvariant ;
 		#die();
-		warn Dumper $vp if $variation->id eq "7_100555983_del-51268";
 		$no_polyviewer->put_batch($variation->rocksdb_id,$vp);
 		delete $variation->{array_dejavu};
 		delete $variation->{references_object};
@@ -348,7 +398,6 @@ sub get_ids {
 		delete $variation->{annex};
 		delete $variation->{buffer};
 		delete $variation->{project};
-		
 		$no->put_batch($variation->rocksdb_id,$variation);
 	
 		#warn Dumper $variation->annex();

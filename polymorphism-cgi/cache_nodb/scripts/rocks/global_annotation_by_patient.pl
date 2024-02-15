@@ -32,18 +32,21 @@ use Deep::Hash::Utils qw(reach slurp nest deepvalue);
 use Carp;
 
 my ($project_name, $chr_name, $no_verbose, $skip_pseudo_autosomal,$version,$annot_version);
-
+my $ok_file;
 GetOptions(
 	'project=s'    => \$project_name,
 	'annot_version=s'    => \$annot_version,
-	'chr=s'        => \$chr_name,
 	'no_verbose=s' => \$no_verbose,
 	'skip_pseudo_autosomal=s' => \$skip_pseudo_autosomal,
 	'version=s' => \$version,
+	'file=s' => \$ok_file,
 );
 
+ if ($ok_file && -e $ok_file) {
+ 	system("rm $ok_file");
+ }
+
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
-unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
 
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
@@ -59,13 +62,14 @@ my $no_p = {};
 
 
 foreach my $patient (@{$project->getPatients}){
-my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name);
+my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name,pipeline=>1);
 
 foreach my $chr (@{$project->getChromosomes} ){
 		warn $chr->name." ".$patient->name;
 		my $no =  GenBoNoSqlRocks->new(dir=>$dir_pipeline."/".$patient->name,mode=>"r",name=>$chr->name);
 		my $iter = $no->rocks->new_iterator->seek_to_first;
 		while (my ($key, $value) = $iter->each) {
+			warn $key;
     		$final_polyviewer_all->put_batch_raw($key,$value);
 		}
 		$final_polyviewer_all->write_batch();
@@ -73,4 +77,4 @@ foreach my $chr (@{$project->getChromosomes} ){
 	$final_polyviewer_all->close();
 }
 
-
+system("date > $ok_file") if $ok_file;

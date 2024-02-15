@@ -370,9 +370,6 @@ sub getReferences {
 		$hThisRefId->{$refId} = undef;
 		$self->references_object()->{$refId} = undef;
 	}
-
-	#warn Dumper $hThisRefId;
-	#confess();
 	return $self->getProject()->myflushobjects( $hThisRefId, "references" );
 }
 
@@ -1343,7 +1340,7 @@ sub rocks_vector {
 	$mode = "r" unless $mode;
 	my $name = "vector-".$mode.$$;
 	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
-	 $self->{rocks}->{$name} = GenBoNoSqlRocksVector->new(chromosome=>$self->name,dir=>$self->project->rocks_directory("vector"),mode=>$mode,name=>$self->name.".vector");
+	 $self->{rocks}->{$name} = GenBoNoSqlRocksVector->new(chromosome=>$self->name,dir=>$self->project->rocks_directory("vector"),mode=>$mode,name=>$self->name);
 	 return $self->{rocks}->{$name};
 
 }
@@ -1604,6 +1601,17 @@ sub get_rocks_variations {
 	return $self->{rocks}->{$hindex} if exists $self->{rocks}->{$hindex};
 	my $rg;
 	$self->{rocks}->{$hindex} = GenBoNoSqlRocksVariation->new(dir=>$self->project->rocks_directory("genbo"),mode=>"r",name=>$self->name.".genbo.rocks");
+	return $self->{rocks}->{$hindex};
+
+}
+sub get_rocks_variations_index {
+	my ( $self, $modefull,$rocks) = @_;
+	my $hindex = "variations_";
+	$hindex = "variations_".$modefull if ($modefull);
+	$hindex .= $$;
+	return $self->{rocks}->{$hindex} if exists $self->{rocks}->{$hindex};
+	my $rg;
+	$self->{rocks}->{$hindex} = GenBoNoSqlRocksVariation->new(dir=>$self->project->rocks_directory("index"),mode=>"r",name=>$self->name);
 	return $self->{rocks}->{$hindex};
 
 }
@@ -1971,7 +1979,7 @@ has transcriptsIntervalTree => (
 
 sub get_lmdb_score_db {
 	my ( $self, $database ) = @_;
-
+	warn $database;
 	#my $database = "cadd";
 	my $buffer = $self->buffer;
 	my $chr    = $self->name;
@@ -2040,28 +2048,7 @@ has intspan_spliceAI => (
 	}
 );
 
-sub score_spliceAI {
-	my ( $self, $pos, $allele ) = @_;
-	confess();
-	return undef unless $self->intspan_spliceAI->contains($pos);
-	my $v = $self->get_lmdb_spliceAI()->get($pos);
-	if ($v) {
-		return $v->{$allele} if exists $v->{$allele};
-		my @a = keys %$v;
-		my @genes = keys %{$v->{$a[0]}};
-		#my @genes = keys %{$v->{$alleles}};
-		if (($allele =~ /\+/ && length($allele) <3) or ($allele =~ /\-/ && length($allele) <6)){
-			my $t= {};
-			foreach my $g (@genes) {
-				$v->{$allele}->{$g} = pack('w4 c4',0,0,0,0,0,0,0,0);
-			}
-			return $v->{$allele};
-		}
 
-		
-	}
-		return 0 ;
-}
 
 sub score_gene_spliceAI {
 	my ( $self, $v, $gene_name ) = @_;
@@ -2083,6 +2070,7 @@ sub score_gene_spliceAI {
 
 sub get_lmdb_score {
 	my ( $self, $database, $variation ) = @_;
+	
 	my $position = $variation->start();
 	my $allele   = $variation->sequence();
 	my $db       = $self->get_lmdb_score_db($database);
@@ -2135,6 +2123,129 @@ sub rocksdb {
 	my $dir = $self->buffer->get_index_database_directory($db);
 	$self->{rocksdb}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$self->name);
 	return $self->{rocksdb}->{$db};
+	
+}
+
+
+sub rocks_dejavu {
+	my ( $self, $mode ) = @_;
+	$mode = "r" unless $mode;
+	my $name = "dejavu-".$mode.$$;
+	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
+	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->rocks_pipeline_directory("dejavu_genomic"),mode=>"w",genome=>"HG19",index=>"genomic",chromosome=>$self->name);;
+	# GenBoNoSqlRocks->new(dir=>$self->project->rocks_pipeline_directory("dejavu"),mode=>"r",name=>$self->name);
+	 # GenBoNoSqlRocksGenome->new(dir=>$self->project->rocks_pipeline_directory("dejavu_genomic"),mode=>"w",genome=>"HG19",index=>"genomic",chromosome=>$self->name);
+	 return $self->{rocks}->{$name};
+
+}
+sub getDejaVuInfos {
+	my ( $self, $id ) = @_;
+	my $hres;
+	confess();
+	my $no = $self->rocks_dejavu();
+	
+	my $no1 = $self->project->lite_deja_vu2();
+	my $string_infos = $no->dejavu($id);
+	#warn $id;
+	#return;
+	return $hres unless ($string_infos);
+	foreach my $string_infos_project (split('!', $string_infos)) {
+		my @lTmp = split(':', $string_infos_project);
+		my $project_name = 'NGS20'.$lTmp[0];
+		my $nb_ho = $lTmp[1];
+		my $nb_all = $lTmp[2];
+		my $nb_he = $nb_all - $nb_ho;
+		my $patients_info = $lTmp[3];
+		$hres->{$project_name}->{nb} = $nb_all;
+		$hres->{$project_name}->{ho} = $nb_ho;
+		$hres->{$project_name}->{he} = $nb_he;
+		$hres->{$project_name}->{patients} = "";
+		$hres->{$project_name}->{string}   = "";
+		my $hpat = $no1->get( "projects", $project_name );
+		next;
+		my $nb_pat = 0;
+		foreach my $pat_id (split(',', $patients_info)) {
+			$nb_pat++;
+			my $pat_name = $hpat->{$pat_id};
+			next unless ($pat_name);
+			if ($nb_pat <= $nb_ho) { $hres->{$project_name}->{string} .= $pat_name.":1;"; }
+			else { $hres->{$project_name}->{string} .= $pat_name.":2;"; }
+			$hres->{$project_name}->{patients} .= $pat_name.";";
+		}
+		chop( $hres->{$project_name}->{patients} );
+		chop( $hres->{$project_name}->{string} );
+	}
+	return $hres;
+}
+
+sub getDejaVuInfosForDiagforVariant{
+	my ($self, $v) = @_;
+	my $chr = $self;
+	my $in_this_run_patients =  $self->project->in_this_run_patients();
+	#my $no1 = $self->project->lite_deja_vu2();
+	my $no = $self->rocks_dejavu();
+	my $h = $no->dejavu($v->rocksdb_id);
+	#my $h = $no1->get($v->getChromosome->name,$v->id);
+	#warn Dumper $h;
+	#die();
+	my $similar = $self->project->similarProjects();
+	my $exomes = $self->project->exomeProjects();
+	my $pe =  $self->project->countExomePatients();
+	my $ps =  $self->project->countSimilarPatients();
+	my $res;
+	$res->{similar_projects} = 0;
+	$res->{other_projects} = 0;
+	$res->{exome_projects} = 0;
+	$res->{other_patients} = 0;
+	$res->{exome_patients} = 0;
+	$res->{similar_patients} = 0;
+	$res->{other_patients_ho} = 0;
+	$res->{exome_patients_ho} = 0;
+	$res->{similar_patients_ho} = 0;
+	$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
+	if ($res->{total_in_this_run_patients} == 0 ){
+		$res->{total_in_this_run_patients} = scalar(@{$self->getPatients});
+	}
+	$res->{in_this_run_patients} = 0;
+	$res->{in_this_run_patients} += scalar(@{$v->getPatients});
+	return $res unless ($h);
+	
+	foreach my $l (split("!",$h)) {
+		my($p,$nho,$nhe,$info) = split(":",$l);
+		$p = "NGS20".$p;
+		next if $p eq $self->name();
+		if (exists $in_this_run_patients->{$p}){
+			
+			my (@samples) = split(",",$info);
+			foreach my $s (@samples){
+				if (exists $in_this_run_patients->{$p}->{$s}){
+					$res->{in_this_run_patients} ++;
+				}
+			}
+		}
+		#IN EXOME 	
+		if (exists $exomes->{$p}){
+			$res->{exome_projects}  ++; 
+			$res->{exome_patients}   += $nhe;
+			$res->{exome_patients_ho}   += $nho;
+		}
+		#in similar;
+		if (exists $similar->{$p}){
+			$res->{similar_projects}  ++;
+			$res->{similar_patients} += $nhe;
+			$res->{similar_patients_ho} += $nho;
+		}
+		else {
+			$res->{other_projects} ++;
+			$res->{other_patients}+= $nhe;
+			$res->{other_patients_ho}+= $nho;
+		}
+	}	
+	$res->{total_exome_projects} =  scalar(keys %{$self->project->exomeProjects()});
+	$res->{total_exome_patients} =  $self->project->countExomePatients();
+	$res->{total_similar_projects} =  scalar(keys %{$self->project->similarProjects()});
+	$res->{total_similar_patients} =  $self->project->countSimilarPatients();
+	return $res;
 	
 }
 

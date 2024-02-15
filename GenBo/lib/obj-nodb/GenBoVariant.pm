@@ -15,7 +15,6 @@ use Carp;
 use Compress::Snappy;
  use List::Util qw( max min sum);
 use Storable qw/thaw freeze/;
-use Try::Tiny;
 #use bytes;
 extends "GenBoGenomic";
 
@@ -160,6 +159,9 @@ sub spliceAI_score {
 }
 
 
+sub alphamissense {
+	return "-";
+}
 sub max_spliceAI_score {
 	my ($self,$gene) = @_;
 #	warn $self->id." ".$self->project->name." ".$self->spliceAI;
@@ -222,16 +224,7 @@ sub alternate_allele {
 
 
 
-has clinvar => (
-		is		=> 'rw',
-		lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-		my $db =  $self->getChromosome->get_lmdb_database("clinvar",$self->type_public_db);
-		my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
-		return $pub;
-	}
-);
+
 #########
 ## HGMD
 #######
@@ -319,7 +312,7 @@ has genes_pathogenic_DM => (
 				if ($@) { $hash->{$gene->id}->{DM} = 1; }
 			 }
 			 if ($self->isClinvarPathogenic && $self->clinvar_id) {
-				eval {  $hash->{$gene->id}->{pathogenic} = $self->getChromosome->is_clinvar_pathogenic_for_gene($self->clinvar_id(), $gene); };
+				eval {  $hash->{$gene->id}->{pathogenic} = $self->is_clinvar_pathogenic_for_gene($self->clinvar_id(), $gene); };
 				if ($@) { $hash->{$gene->id}->{pathogenic} = 1; }
 			}
 		}
@@ -339,17 +332,7 @@ sub isDM_for_gene {
 #	return $res;
 }
 
-sub isClinvarPathogenic_for_gene {
-	my ($self, $gene) = @_;
-	return $self->genes_pathogenic_DM->{$gene->id}->{pathogenic};
-#	return unless ($self->isClinvarPathogenic);
-#	return unless ($self->clinvar_id);
-#	confess unless ($gene);
-#	my $res;
-#	eval { $res = $self->getChromosome->is_clinvar_pathogenic_for_gene($self->clinvar_id(), $gene); };
-#	if ($@) { $res = 1; }
-#	return $res;
-}
+
 
 has hgmd_inheritance => (
 	is		=> 'rw',
@@ -441,49 +424,81 @@ has hgmd_gene_name => (
 	},
 );
 
-has isClinvarPathogenic => (
-	is		=> 'rw',
-	lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-		return undef unless $self->score_clinvar ;
-		if ($self->score_clinvar == 5){
-			return 1;
-		}
-		return undef;
+#####¥###########
+## clinvar
+############### 
 
-	},
-);
-
-
-
-has clinvar_id => (
+has clinvar => (
 		is		=> 'rw',
 		lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		my $pub = $self->clinvar();
-		if ($pub){
-			return $pub->{clinvar_id};
-		}
-	},
-);
-
-has score_clinvar => (
-		is		=> 'rw',
-		lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-	my $pub = $self->clinvar();
-	my $v = 0;
-	if ($pub){
-		$pub->{sig} =~s/,/;/g;
-	   	my $v = max( split(";",$pub->{sig}));
-	   	return $v;
+		my $db =   $self->getChromosome->rocksdb("clinvar");
+		my $pub = $db->clinvar($self->rocksdb_id);
+		$pub ={} unless $pub;
+		return $pub;
 	}
-	return 0;
+);
+
+sub isClinvarPathogenic {
+	my $self = shift;
+	return  $self->score_clinvar >= 5;
+}
+
+
+sub clinvar_id {
+	my $self = shift;
+	return exists $self->clinvar->{clinvar_id};
+}
+
+sub score_clinvar {
+	my $self = shift;
+	return exists $self->clinvar->{score_clinvar};
+}
+
+
+	
+sub text_clinvar {
+	my ($self) = @_;
+	return "" unless exists  $self->clinvar->{clnsig};
+	my $text =  $self->clinvar->{clnsig};
+	$text =~ s/_/ /g;
+	return $text;
+}
+sub is_clinvar_pathogenic_for_gene {
+	my ($self, $gene) = @_;
+	my $name = $gene->external_name;
+	return unless $self->isClinvarPathogenic;
+	return exists $self->clinvar->{genes}->{$name};
+}
+
+sub isClinvarPathogenic_for_gene {
+	my ($self, $gene) = @_;
+	confess();
+}
+has clinvar_class => (
+		is		=> 'rw',
+		lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->clinvar->{clnsig};
+		confess();
+		my $v = $self->score_clinvar();
+		return "" unless $v;
+		if ($v == 0){
+	  		 return "Uncertain"
+	  	}
+	  	elsif ($v ==1 ){return "drug response"}
+	  	elsif ($v ==2 ){return  "Benign"}
+	  	elsif ($v ==3 ){return  "Likely benign"}
+	  	elsif ($v ==4 ){return "Likely pathogenic";}
+	  	elsif ($v ==5 ){return  "pathogenic"	}
+	  	elsif ($v ==-2 ){return  "uncertain_significance";}
+	  	elsif ($v ==-1 ){return  "not_provided";}
+	  	return  "other";
 	},
 );
+
 
 #clinical local database
 
@@ -569,32 +584,6 @@ has text_clinical_local => (
 	  	return  "other";
 	},
 	);
-	
-sub text_clinvar {
-	my ($self) = @_;
-	return $self->clinvar_class;
-}
-
-has clinvar_class => (
-		is		=> 'rw',
-		lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-		my $v = $self->score_clinvar();
-		return -5 unless $v;
-			if ($v == 0){
-	  		 return "Uncertain"
-	  	}
-	  	elsif ($v ==1 ){return "drug response"}
-	  	elsif ($v ==2 ){return  "Benign"}
-	  	elsif ($v ==3 ){return  "Likely benign"}
-	  	elsif ($v ==4 ){return "Likely pathogenic";}
-	  	elsif ($v ==5 ){return  " pathogenic"	}
-	  	elsif ($v ==-2 ){return  " uncertain_significance";}
-	  	elsif ($v ==-1 ){return  " not_provided";}
-	  	return  "other";
-	},
-);
 
 
 ###################
@@ -806,6 +795,12 @@ has rocksdb_id => (
 	
 );
 
+sub genomic_rocksdb_id {
+	my $self = shift;
+	return $self->getChromosome->name."!".$self->rocksdb_id;
+	
+}
+
 has rocksdb_index => (
    is              => 'rw',
         lazy    => 1,
@@ -823,12 +818,9 @@ has ncboost_category => (
         default => sub { return "-" ; },
 );
 
-has revel_score => (
-	is		=> 'ro',
-	default => sub {
-		return "-" ;
-	},
-);
+sub revel_score {
+	return "-" ;
+}
 
 sub get_infos_database {
 	my ($self,$database) = @_;
@@ -861,6 +853,8 @@ has cosmic =>(
 	lazy=> 1,
 	default=> sub {
 		my $self = shift;
+		my $cosmic =  $self->getChromosome->rocksdb("cosmic")->cosmic($self->rocksdb_id);
+		return $cosmic;
 		my $hash = $self->getChromosome()->get_lmdb_database("cosmic",$self->type_public_db)->get_with_sequence($self->start,$self->alternate_allele);
 		return undef unless $hash;
 		$hash->{frequence} ="-" unless $hash->{frequence};
@@ -2046,6 +2040,8 @@ sub score_prediction_refined {
 		$cadd_score = -1 unless $cadd_score;
 		$cadd_score = -1 if $cadd_score eq "-";
 		$cadd_score = -1 if $cadd_score == -1;
+		my $alphamissense = $self->alphamissense($gene);
+		
 		if ($cadd_score > 50){
 			$score =  0.5;
 		}
@@ -2079,11 +2075,11 @@ sub score_refined {
 		$debug= undef;
 		my $refined_score = 0;
 		
-		
 		my $ac = $self->getGnomadHO;
 		$ac = 0 unless $ac;
 		$ac = 0 if $ac eq "-";
 		my $p = $self->getPourcentAllele($patient);
+	
 		$p = 0 if $p eq "-";
 		$p = 50 if $self->project->isSomatic;
 		my$bad;
@@ -2177,7 +2173,6 @@ sub scaledScoreVariant{
 	elsif ($tr->isTranscript) {
 		$gene = $tr->getGene;
 	}
-
 	my $score = $self->scoreVariant( $tr,$patient,$debug);
 	my $scaled_score = 1;
 	$scaled_score = 1;
@@ -2189,11 +2184,40 @@ sub scaledScoreVariant{
 	warn "\t 2- ".$scaled_score." ".$self->score_refined($patient,$debug) if $debug;
 	$scaled_score += $self->score_prediction_refined($patient,$gene);
 	warn "\t 3- ".$scaled_score." ".$self->score_refined($patient,$debug) if $debug;
+	if ($self->isSrPr){
+	my $dp_before = $self->getNormDPBefore($patient);
+	my $dp_after = $self->getNormDPAfter($patient);
+	my $dp = $self->getNormDP($patient);
+	$dp = 0,000001 if $dp == 0;
+	$scaled_score -= 0.5 if ($dp_before < 5 or $dp_after < 5);
+	$dp += 0.0001;
+	my $pcb = int((abs($dp_before-$dp)/$dp)*100);
+	my $pca = int((abs($dp_after-$dp)/$dp)*100);
+	$scaled_score -= 0.5 if $self->event_align_quality($patient) < 20;
+	if ($self->isDeletion) {
+		$scaled_score -= 0.5 if $pcb > -25;
+		$scaled_score -= 0.5 if $pca > -25;
+	}
+	elsif ($self->isLargeDuplication) {
+		$scaled_score -= 0.5 if $pcb < 25;
+		$scaled_score -= 0.5 if $pca < 25;
+	}
+	else {
+		$scaled_score -= 0.5 if $self->pr1($patient) < 5;
+		$scaled_score -= 0.5 if $self->sr1($patient) < 5;
+		
+	}
+	
+		
+		
+		
+	}
 	my $val = $self->score_validations($tr);
 	if ($val){
 			my $score = $val->{validation};
 			$scaled_score = $val->{validation};
 	}
+	
 	
 	if ($patient->isChild && $patient->getFamily->isTrio()) {
 		$scaled_score = $self->score_variants_trio($patient,$scaled_score,$tr,$debug);
@@ -2202,16 +2226,16 @@ sub scaledScoreVariant{
 		$scaled_score = $self->score_variants_solo($patient,$scaled_score,$tr,$debug);
 	}
 	warn "\t trio- ".$scaled_score." :: ".$patient->name if $debug;
-	if ($self->isClinvarPathogenic_for_gene($gene) or $self->isDM_for_gene($gene)  ){
+	if ($self->is_clinvar_pathogenic_for_gene($gene) or $self->isDM_for_gene($gene)  ){
 		my $gac  = $self->getGnomadAC ;
 		$gac = 0 unless $gac;
 		$scaled_score ++;
-		$scaled_score += 0.5 	if ($self->isClinvarPathogenic_for_gene($gene) && $self->isDM_for_gene($gene) && $gac < 100);
+		$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $self->isDM_for_gene($gene));
+		$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $self->isDM_for_gene($gene) && $gac < 1000);
 		$scaled_score +=0.5 	if  $gac < 100 ;
 		$scaled_score ++ 	if  $gac < 30;
-		
 	}
-		
+	
 	warn "\t 4- ".$scaled_score if $debug;
 #	die() if $debug;
 	$self->{scale_score}->{$tr->id}->{$patient->id} = $scaled_score;
@@ -2239,6 +2263,7 @@ sub scaledScoreVariantPolydiag{
 	$scaled_score += $self->score_refined($patient);
 	warn "\t 2- ".$scaled_score." ".$self->score_refined($patient,$debug) if $debug;
 	my $val = $self->score_validations($tr);
+
 	if ($val){
 			my $score = $val->{validation};
 			$scaled_score = $val->{validation};
@@ -2258,7 +2283,8 @@ sub scaledScoreVariantPolydiag{
 		my $gac  = $self->getGnomadAC ;
 		$gac = 0 unless $gac;
 		$scaled_score ++;
-		$scaled_score += 0.5 	if ($self->isClinvarPathogenic_for_gene($tr->getGene()) && $self->isDM_for_gene($tr->getGene()) && $gac < 100);
+		$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($tr->getGene()) && $self->isDM_for_gene($tr->getGene()));
+		$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($tr->getGene()) && $self->isDM_for_gene($tr->getGene()) && $gac < 100);
 		$scaled_score +=0.5 	if  $gac < 100 ;
 		$scaled_score ++ 	if  $gac < 30;
 		
@@ -2804,14 +2830,15 @@ has dp_infos =>(
 					$hash->{$pid} = ["-","-","-"];
 					next;
 				}
-			
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				my $norm_depth = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start, $self->end+1));
+				my $norm_depth_before = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start-500, $self->start-10));
+				my $norm_depth_after = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->end+10, $self->end+500));
 				my $dude = "-";
 				if($self->project->isGenome){
 					$dude = int($patient->cnv_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length)*100);
 				}
-				$hash->{$pid} = [$mean_dp,$norm_depth,$dude];
+				$hash->{$pid} = [$mean_dp,$norm_depth,$dude,$norm_depth_before,$norm_depth_after];
 			}
 						
 		}
@@ -2837,7 +2864,16 @@ sub getNormDP {
 		my $pid = $patient->id;
 		return $self->dp_infos->{$pid}->[1];
 }
-
+sub getNormDPBefore {
+		my ($self,$patient,$method) = @_;
+		my $pid = $patient->id;
+		return $self->dp_infos->{$pid}->[3];
+}
+sub getNormDPAfter {
+		my ($self,$patient,$method) = @_;
+		my $pid = $patient->id;
+		return $self->dp_infos->{$pid}->[4];
+}
 
 sub getCNVDude {
 	my ($self,$patient) = @_;
@@ -3362,13 +3398,19 @@ sub total_similar_patients  {
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
 	unless (exists $self->{array_dejavu}) {
-		my $hash = $self->getProject->getDejaVuInfosForDiag($self->id());
+		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
+	
+#	unless (exists $self->{array_dejavu}) {
+#		my $hash = $self->getProject->getDejaVuInfosForDiagforVariant($self);
+#		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
+#	}
 	return $self->{array_dejavu} unless $key;
 	my $index = $self->buffer->index_dejavu($key);
 	return  $self->{array_dejavu}->[$index];
 }
+
 	
 #	unless  (exists $self->{dejaVuInfosForDiag2}){
 #		$self->{dejaVuInfosForDiag2} = $self->getProject->getDejaVuInfosForDiag($self->id());

@@ -100,6 +100,17 @@ has isMain => (
 );
 
 
+has isMane => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		#return 1;
+		return 1 if  exists $self->{tag}->{MANE};
+	}
+);
+
+
 has gene_id => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -409,6 +420,7 @@ sub codonsConsequenceForVariations {
 	my ($self,$var,$startg,$endg) = @_;
 	return $self->codonsConsequenceForDuplication($var,$startg,$endg) if ($var->isLargeDuplication());
 	return $self->codonsConsequenceForLargeInsertion($var,$startg,$endg) if ($var->isLargeInsertion() or $var->isMei());
+	return $self->codonsConsequenceForInversion($var,$startg,$endg) if ($var->isInversion);
 	return $self->codonsConsequenceForDeletion($var,$startg,$endg) if ($var->isDeletion() or $var->isLargeDeletion());
 	return $self->codonsConsequenceForMnp($var) if $var->isMnp();
 	return $self->codonsConsequenceForInsertion($var) if $var->isInsertion();
@@ -438,6 +450,31 @@ sub codonsConsequenceForDuplication {
 		codon_mut => "",
 		aa => "DUP",#$self->getProject->biotools->translate($codon1,$self->isMT),
 		aa_mut => "dup",
+	};
+	return $results;
+}
+
+sub codonsConsequenceForInversion {
+		my ($self,$var) = @_;
+	my $span =  Set::IntSpan::Fast::XS->new(($var->start()-5)."-".($var->end()+5));
+	my @tt = $self->getGenomicSpan->intersection($span)->as_array();
+	my $real_start = $tt[0];
+	my $real_end = $tt[-1];
+	my $pos_transcript = $self->translate_position($real_start);
+	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
+	my $pos_orf_end = $pos_orf + 1; 
+	my $codon1 = $self->getCodon($pos_orf);
+		
+	my $results = {
+		transcript_position => $pos_transcript,
+		orf_position => $pos_orf,
+		orf_end => $pos_orf_end,
+		seq_orf =>$var->sequence,
+		prot_position => ceil($pos_orf/3),
+		codon => $codon1,
+		codon_mut => "",
+		aa => "INV",#$self->getProject->biotools->translate($codon1,$self->isMT),
+		aa_mut => "inv",
 	};
 	return $results;
 }
@@ -1208,7 +1245,7 @@ has exons_introns_tree => (
     		
     		my $h = {from=>$from,to=>$to,type=>"exon",complement=>$type};
     		#pos_ref is from or to depending of the strand 
-    		$h->{pos_ref} =$from if $self->strand == 1;
+    		$h->{pos_ref} = $from if $self->strand == 1;
     		$h->{pos_ref} = $to if $self->strand == -1;
     		push(@apos,$h);
     }

@@ -6,6 +6,7 @@ use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
 use Position;
+use Carp;
 extends 'GenBoCnv';
 
 
@@ -15,15 +16,30 @@ has rocksdb_id => (
 	default => sub {
 		my $self = shift;
 	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
-	 	$pos  = sprintf("%010d", $pos);
-		my $l1 = length($ref);
-		my $seqid = ($l1 -1);
-		return  ($pos."!".$seqid);
+	 $pos  = sprintf("%010d", $self->start());
+		return  ($pos."!-".$self->length);
 	},
 	
 );
 
+has name => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->getChromosome->id().'-'.$self->start().'-'.$self->nomenclatureType.'-'.$self->length;
+	},
+);
 
+has gnomad_id => (
+	is		=> 'ro',
+	lazy=> 1,
+	default=> sub {
+	my $self = shift;
+	return $self->name;
+	}
+	);
+	
 has isLargeDeletion => (
 	is		=> 'ro',
 	default	=> 1,

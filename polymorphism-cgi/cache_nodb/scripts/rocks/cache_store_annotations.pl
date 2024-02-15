@@ -30,12 +30,19 @@ warn "*_*_*_*_*_".$host."*_*_*_*_*_";
 
 my $fork = 1;
 my ($project_name, $chr_name, $annot_version);
+my $ok_file;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
 	'annot_version=s'    => \$annot_version,
 	'chr=s'        => \$chr_name,
+	'file=s' => \$ok_file,
 );
+
+ if ($ok_file && -e $ok_file) {
+ 	system("rm $ok_file");
+ }
+
 
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
 unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
@@ -79,6 +86,7 @@ if ($no->size == 0 or -e $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->i
 		$no5->put($p->name,$h);
 	}
 	$no5->close();
+	system("date > $ok_file") if $ok_file;
 	exit(0);
 }
 #my $no      = $chr->get_lmdb_variations("r");
@@ -275,6 +283,7 @@ if($size_variants == 0 ){
 	$rocks3->write_batch();
 	$rocks3->close();
 	warn "no variants !!!!";
+		system("date > $ok_file") if $ok_file;
 	exit(0);
 } 
 
@@ -380,6 +389,7 @@ foreach my $family (@{$project->getFamilies}){
 }
 $rocks4->write_batch();
 $rocks4->close();
+	system("date > $ok_file") if $ok_file;
 exit(0);
 
 
@@ -652,6 +662,9 @@ sub get_annotations {
 		elsif ( $variation->isLargeDuplication() ) {
 			$intspan_global_categories->{'large_duplication'}->add($lmdb_index);
 		}
+		elsif ( $variation->isLargeInsertion() ) {
+			$intspan_global_categories->{'large_insertion'}->add($lmdb_index);
+		}
 		else {
 			confess;
 		}
@@ -727,11 +740,11 @@ sub get_annotations {
 			foreach my $c ( split( ",", $cons_text ) ) {
 				confess( $cons_text . " " . $c ) unless exists $intspan_genes_categories->{ $g->id }->{$c};
 				$intspan_genes_categories->{ $g->id }->{$c}->add($lmdb_index);
-				warn 	$intspan_genes_categories->{ $g->id }->{$c}->as_string if $debug;
 				my $prediction = $variation->categorie_frequency_prediction($g);
 				$intspan_genes_categories->{ $g->id }->{$prediction}->add($lmdb_index);
 			}
 		}
+			
 
 		unless (@$genes) {
 			################

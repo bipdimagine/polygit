@@ -1,6 +1,6 @@
 package GenBoNoSqlRocks;
 use Moo;
-#
+##
 use strictures 2;
 use warnings;
 use Data::Dumper;
@@ -46,6 +46,13 @@ has mode => (
 
 has env => ( is => 'rw', );
 
+has compression => (
+	is      => 'rw',
+	default => sub {
+		return "lz4hc";
+
+	}
+);
 has temporary => (
 	is      => 'rw',
 	default => sub {
@@ -136,6 +143,7 @@ sub get_id_dictionary {
 
 sub get_text_dictionary {
 	my ( $self, $id ) = @_;
+	confess($id) unless defined $id;
 	return $self->dictionary_array->[$id];
 }
 
@@ -168,18 +176,15 @@ has json_file => (
 	}
 );
 
-has dictionary_file => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $file = $self->path_rocks . "/dictionary.sereal";
-		if ( $self->mode eq "c" && -e $file ) {
+sub dictionary_file {
+	my ($self) = @_;
+	my $file = $self->path_rocks . "/dictionary.sereal";
+	if ( $self->mode eq "c" && -e $file ) {
 			unlink $file;
 		}
-		return $file;
-	},
-);
+	return $file;
+}
+
 has intspan_file => (
 	is      => 'rw',
 	lazy    => 1,
@@ -304,7 +309,6 @@ sub rocks {
 				filter_policy => $policy 
 			}
 		);
-#$self->{rocks} = RocksDB->new($self->path_rocks,{IncreaseParallelism => 1,keep_log_file_num=>1,create_if_missing => 1,compression=>"lz4hc"});
 
 		#$rocks->IncreaseParallelism();
 		return $self->{rocks};
@@ -312,8 +316,7 @@ sub rocks {
 	elsif ( $self->mode eq "w" ) {
 		
 		$self->load_config() if -e $self->json_file;
-		confess( $self->path_rocks . '/CURRENT' )
-		  unless ( $self->exists_rocks() );
+		confess( $self->path_rocks . '/CURRENT' ) unless ( $self->exists_rocks() );
 
 		#my $options = RocksDB::Options->new();
 		my $bits_per_key = 10;
@@ -356,6 +359,7 @@ sub rocks {
 
 		if ( -e $self->dictionary_file ) {
 			unlink $self->dictionary_file;
+			delete $self->{dictionary_file};
 		}
 		RocksDB->destroy_db( $self->path_rocks ) if -e $self->path_rocks;
 		$self->delete_files( $self->path_rocks ) if -e $self->path_rocks;
@@ -369,7 +373,7 @@ sub rocks {
 				keep_log_file_num     => 1,
 				create_if_missing     => 1,
 				filter_policy => $policy ,
-				compression           => "lz4hc"
+				compression           => $self->compression
 			}
 		);
 		system( "chmod a+rwx " . $self->path_rocks );
@@ -386,7 +390,7 @@ sub rocks {
 				keep_log_file_num     => 1,
 				create_if_missing     => 1,
 				filter_policy => $policy ,
-				compression           => "lz4hc"
+				compression           => $self->compression
 			}
 		);
 		system( "chmod a+rwx " . $self->path_rocks );
@@ -448,10 +452,28 @@ has sereal_decoder => (
 sub decode {
 	my ( $self, $value ) = @_;
 	return unless $value;
-	return sereal_decode_with_object( $self->sereal_decoder, $value );
+	
+	my $x;
+		$x = sereal_decode_with_object( $self->sereal_decoder, $value );
+	return $x;
+}
+sub get_raw {
+	my ( $self, $key ) = @_;
+	confess() unless $self->rocks;
+	return  $self->{buffer}->{$key} if (exists $self->{buffer}->{$key});
+	$self->rocks->get($key);
+}
+sub get {
+	my ( $self, $key,$debug ) = @_;
+	
+	confess("- $key -") unless defined $key;
+	confess() unless $self->rocks;
+	my $v = $self->get_raw($key);
+	return unless $v;
+	return $self->decode($v);
 }
 
-sub get {
+sub get_cached {
 	my ( $self, $key,$debug ) = @_;
 	confess() unless defined $key;
 	confess() unless $self->rocks;
@@ -460,13 +482,12 @@ sub get {
 		$v =  $self->{buffer}->{$key}
 	}
 	else {
-		warn Dumper $self->rocks->get($key) if $debug;
-		die($key) if $debug;
-	 $v = $self->rocks->get($key);
+		confess();
 	}
 	return unless $v;
 	return $self->decode($v);
 }
+
 has batch => (
 	is      => 'rw',
 	lazy    => 1,
@@ -506,11 +527,7 @@ sub put_raw {
 	$self->rocks->put( $key, $value );
 }
 
-sub get_raw {
-	my ( $self, $key ) = @_;
-	confess() unless $self->rocks;
-	$self->rocks->get($key);
-}
+
 
 sub put {
 	my ( $self, $key, $value ) = @_;
@@ -529,7 +546,6 @@ sub exists {
 sub close {
 	my ($self) = @_;
 	if ( $self->mode ne "r" ) {
-		
 		if ( $self->has_config() ) {
 			$self->write_config();
 
@@ -539,6 +555,7 @@ sub close {
 				$self->intspan_keys );
 		}
 		if ( keys %{ $self->dictionary } ) {
+			warn $self->dictionary_file;
 			$self->sereal_encoder->encode_to_file( $self->dictionary_file,
 				$self->dictionary );
 		}
@@ -559,7 +576,6 @@ sub close {
 	}
 
 	if ( $self->pipeline ) {
-		confess();
 		my $dir_prod = $self->dir . "/" . $self->name . ".rocksdb";
 		system("mkdir $dir_prod && chmod a+rwx $dir_prod") unless -e $dir_prod;
 		$self->delete_files($dir_prod);
@@ -591,14 +607,118 @@ sub close {
 
 sub prepare {
 	my ($self,$list) = @_;
+	return  if scalar (@$list) == 0;
 	$self->{buffer} = $self->rocks->get_multi(@$list);
 	return 1;
 }
 
 
+
+sub return_rocks_id_from_gnomad_id {
+	my ($self,$id) = @_;
+	warn $id;
+	my ($chr,$pos,$ref,$alt) = split("-",$id);
+	warn "))))))))";
+		warn $id." ".$ref." "."++++";
+	return $self->return_rocks_id($pos,$ref,$alt);
+}
+sub return_genomic_rocks_id_from_gnomad_id {
+	my ($self,$id) = @_;
+	confess() unless $id;
+	my ($chr,$pos,$ref,$alt) = split("-",$id);
+	return $chr."!".$self->return_rocks_id($pos,$ref,$alt);
+}
+
+sub return_rocks_id_from_genbo_id {
+	my ($self,$id) = @_;
+	my ($chr,$pos,$ref,$alt) = split("_",$id);
+
+	
+	return $self->return_rocks_id($pos,$ref,$alt);
+}
+
+sub return_rocks_id {
+	my ($self,$pos,$ref,$alt) = @_;
+	 $pos  = $self->stringify_pos($pos);
+	 my $zid = $self->compress_vcf_position($ref,$alt);
+	 return $pos."!".$zid;
+	my $l1 = length($ref);
+	my $l2 = length($alt);
+	die($ref." ".$alt) if $alt =~ /INV/;
+	#die(ref." ".$alt) if $alt =~ /DEL/;s
+	die(ref." ".$alt) if $alt =~ /DUP/;
+	return  ($pos."!".$alt) if ($l1 == 1 && $l2 ==1);
+	my $seqid = $alt;
+	if ($alt =~ /del/){
+		return  ($pos."!".$alt);
+	}
+	elsif ($alt=~ /inv/ ){
+		return  ($pos."!".$alt);
+	}
+	elsif ($alt=~ /ins/ ){
+		return  ($pos."!".$alt);
+	}
+	elsif ($alt=~ /dup/ ){
+		return  ($pos."!".$alt);
+	}
+	elsif ($l1 ==1 && $l2 > 1){
+		
+		$seqid = "+".substr($alt, 1);
+		return  ($pos."!".$seqid);
+	}
+	elsif ($l1 >1 && $l2 ==1){
+		$ref = substr($ref, 1);
+		$seqid = ($l1 -1);
+		return  ($pos."!".$seqid);
+	}
+	 elsif ($l1 >1 && $l2 == $l1 && $l2>1 ){
+	 	
+		$ref = substr($ref, 1);
+		$alt = substr($alt, 1);
+		$seqid = "$ref*$alt";
+		return  ($pos."!".$seqid);
+	}
+	
+	else {
+		return  ($pos."!".$ref."*".$alt);
+		confess($l1." ".$l2);
+	}
+	
+}
+sub compress_vcf_position {
+	my ($self,$ref,$alt) = @_;
+	if ($alt =~/INV/){
+		warn $alt;
+		my @z = split("-",$alt);
+		die("!"."@".$z[-1]);
+		return "!"."@".$z[-1];
+	}
+	my $l1 = length($ref);
+	my $l2 = length($alt);
+	if ($l1 ==1 && $l2 ==1){
+		return $alt;
+	}
+	if ($l1 ==1 && $l2 > 1){
+		return "+".substr($alt, 1);
+	}
+	if ($l1 >1 && $l2 == 1){
+		$ref = substr($ref, 1);
+		return ($l1 -1);
+	}
+	if($l2 == 0 ){
+		return ($ref."+");
+	}
+	confess($ref." ".$alt);
+	
+}
+
+sub stringify_pos {
+	my ($self,$pos) = @_;
+	return ($pos,sprintf("%010d", $pos));
+}
+
 sub DESTROY {
 	my ($self) = @_;
-
 	#if ($self->mode ne "r"){
 	#	$self->rocks->compact_range();
 	#}
@@ -615,7 +735,6 @@ sub DESTROY {
 		system( "rmdir " . $self->path_rocks );
 	}
 
-	#warn "destroy rocks ".time;
 }
 
 1;

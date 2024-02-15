@@ -3,7 +3,7 @@ package GenBoReference;
 use strict;
 use Vcf;
 use Moo;
-
+use Carp;
 use Data::Dumper;
 use Config::Std;
 extends "GenBoGenomic";
@@ -52,6 +52,7 @@ sub setVariants {
 			$self->{$o->type_object}->{$o->id} = undef;
 		}
 	}
+	
 }
 sub setVariations {
 	my $self = shift;
@@ -93,7 +94,7 @@ sub setBoundaries {
 sub setLargeInsertions {
 	my $self = shift;
 	$self->setVariants('large_insertions');
-	return $self->{large_duplications_object} ;
+	return $self->{large_insertions_object} ;
 }
 sub setLargeDuplications {
 	my $self = shift;

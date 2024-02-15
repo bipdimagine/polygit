@@ -641,35 +641,55 @@ has lmdb_cache_dir => (
 		return $self->makedir($dir);
 	}
 );
-
-sub getRocksCacheDir {
-	my $self           = shift;
-	return $self->{cache_rocks_dir} if (exists $self->{cache_rocks_dir} and $self->{cache_rocks_dir});
-	my $genome_version = $self->genome_version();
-	my $annot_version = $self->annotation_version();
-	$self->{cache_rocks_dir} = $self->buffer()->getDataDirectory("cache_rocks")."/".$genome_version;
-	$self->{cache_rocks_dir} .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
-	$self->{cache_rocks_dir} .= "/".$self->name();
-	return $self->{cache_rocks_dir} if ( -d $self->{cache_rocks_dir} );
-	system( "mkdir -p " . $self->{cache_rocks_dir} );
-	system( "chmod a+rwx " . $self->{cache_rocks_dir} );
-	return $self->{cache_rocks_dir};
-}
-
-
 has rocks_cache_dir => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $cache_dir = $self->getRocksCacheDir();
-		$self->makedir($cache_dir);
-		$cache_dir .= '/rocks/';
-		return $self->makedir($cache_dir);
-		#my $dir  = $self->getCacheBitVectorDir() . "/rocks";
-		#return $self->makedir($dir);
+	my $genome_version = $self->genome_version();
+	my $annot_version = $self->annotation_version();
+	my $name= "";
+	$name = "/data-beegfs/polycache/rocks/".$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
+	$name .= "/".$self->name();
+	return $name;
+	
 	}
 );
+sub getRocksCacheDir {
+	my $self           = shift;
+	return $self->rocks_cache_dir if exists $self->{create_rocks_cache_dir};
+	confess();
+	 $self->{create_rocks_cache_dir} = 1;
+	return $self->makedir( $self->rocks_cache_dir);
+}
+
+sub rocks_pipeline_directory {
+	my ($self,$type) = @_;
+	my $path = $self->project_pipeline_path . "/rocks_tmp/";
+	$path .="$type/" if $type;
+	return $self->makedir($path);
+}
+
+sub rocks_directory {
+	my ($self,$type,$create) = @_;
+	my $path =  $self->rocks_cache_dir();
+	$path .="/$type/" if $type;
+	unless ($create){
+	confess() unless -e $path;  
+	return $path;
+	}
+	return $self->makedir($path);
+}
+
+sub rocksdb {
+	my($self,$db) = @_;
+	confess unless $db;
+	return $self->{rocksdb}->{$db} if exists $self->{rocksdb}->{$db};
+	my $dir = $self->buffer->get_index_database_directory($db);
+	$self->{rocksdb}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$db);
+	return $self->{rocksdb}->{$db};
+}
 
 has lmdb_cache_variations_dir => (
 	is      => 'ro',
@@ -3218,9 +3238,8 @@ sub flushObject {
 	unless ( exists $self->{objects}->{$type}->{ $hashArgs->{id} } ) {
 		$self->createObject( $type, $hashArgs );
 	}
-
+	
 	$object = $self->{objects}->{$type}->{ $hashArgs->{id} };
-
 	return $object;
 }
 
@@ -3504,6 +3523,8 @@ sub getVariantFromId {
 	my $refAll    = $lFieldsId[2];
 	my $varAll    = $lFieldsId[3];
 	my @find;
+	confess($refAll." ".$varAll);
+	warn "$id";
 	if ( length($refAll) == length($varAll) ) {
 		my $refObj =
 		  $self->getChromosome($chrName)
@@ -3557,6 +3578,7 @@ sub myflushobjects {
 	#confess if $ids =~ /ENSG0/;
 	#unless (exists $ids->{none}) {
 	foreach my $id (@$array_ids) {
+		#warn Dumper  $self->{objects}->{$type};
 		
 		unless ( exists $self->{objects}->{$type}->{$id} ) {
 			if (   $type eq 'genes'
@@ -3594,8 +3616,17 @@ sub myflushobjects {
 			elsif ( $type eq 'indels' )     { die(); }
 			elsif ( $type eq 'insertions' ) { $self->getVariantFromId($id); }
 			elsif ( $type eq 'boundaries' ) { $self->getVariantFromId($id); }
-			elsif ( $type eq 'large_duplications' ) {$self->getVariantFromId($id);}
-			elsif ( $type eq 'large_deletions' ) {$self->getVariantFromId($id);}
+			elsif ( $type eq 'large_duplications' ) {
+				$self->getVariantFromId($id);
+			}
+			elsif ( $type eq 'large_deletions' ) {
+				$self->getVariantFromId($id);}
+			elsif ( $type eq 'large_insertions' ) {
+				warn Dumper keys %{$self->{objects}->{$type}};
+				confess($id);
+
+				$self->getVariantFromId($id);
+			}
 			elsif ( $type eq 'mnps' ) {
 				warn $id . "-";
 				$self->getVariantFromId($id);
@@ -3824,7 +3855,7 @@ sub createObject {
 	#	$object = $self->get_void_object($type);
 	#	die();
 	}
-	elsif (   $type eq "variations"
+	elsif ($type eq "variations"
 		or $type eq "deletions"
 		or $type eq "insertions"
 		or $type eq "large_duplication"
@@ -4004,19 +4035,6 @@ sub getStatsFile {
 
 
 
-sub rocks_pipeline_directory {
-	my ($self,$type) = @_;
-	my $path = $self->project_pipeline_path . "/rocks_tmp/";
-	$path .="$type/" if $type;
-	return $self->makedir($path);
-}
-
-sub rocks_directory {
-		my ($self,$type) = @_;
-		my $path = "/data-beegfs/test-cache/". "/".$self->name."/";
-		$path .="$type/" if $type;
-	return $self->makedir($path);
-}
 
 
 sub makePath {
@@ -5763,10 +5781,8 @@ has in_this_run_patients => (
 		return $res;
 	},
 );
-
-sub getDejaVuInfosForDiag {
-	my ($self, $vid) = @_;
-	my $v = $self->_newVariant($vid);
+sub getDejaVuInfosForDiagforVariant{
+	my ($self, $v) = @_;
 	my $chr = $v->getChromosome()->name();
 	my $in_this_run_patients =  $self->in_this_run_patients();
 	my $no = $self->lite_deja_vu2();
@@ -5829,6 +5845,12 @@ sub getDejaVuInfosForDiag {
 	$res->{total_similar_projects} =  scalar(keys %{$self->similarProjects()});
 	$res->{total_similar_patients} =  $self->countSimilarPatients();
 	return $res;
+	
+}
+sub getDejaVuInfosForDiag {
+	my ($self, $vid) = @_;
+	my $v = $self->_newVariant($vid);
+	return $self->getDejaVuInfosForDiagforVariant($v);
 }
 
 #sub getDejaVuInfosForDiag {
@@ -6017,6 +6039,7 @@ has lite_deja_vu2 => (
 	default => sub {
 		my $self = shift;
 		my $dir  = $self->deja_vu_lite_dir;
+		
 		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 		return $no;
 	}
@@ -6178,7 +6201,7 @@ sub setVariants {
 	elsif ( $type eq 'deletions' )       { $method = 'getDeletions'; }
 	elsif ( $type eq 'large_deletions' ) { $method = 'getLargeDeletions'; }
 	elsif ( $type eq 'large_duplications' ) {$method = 'getLargeDuplications';}
-	elsif ( $type eq 'large_inserttions' ) {$method = 'getLargeInsertions';}
+	elsif ( $type eq 'large_insertions' ) {$method = 'getLargeInsertions';}
 	elsif ( $type eq 'inversions' ) {$method = 'getInversions';}
 	my $h;
 

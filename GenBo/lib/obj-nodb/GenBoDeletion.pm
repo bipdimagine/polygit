@@ -39,7 +39,10 @@ has alleles => (
 		return $self->getChromosome->sequence($self->start(), $self->end())."/".$self->sequence();
 	},
 );
-
+sub nomenclatureType {
+	my ($self) = @_;
+	return "del";
+}
 
 has rocksdb_id => (
 	is		=> 'ro',

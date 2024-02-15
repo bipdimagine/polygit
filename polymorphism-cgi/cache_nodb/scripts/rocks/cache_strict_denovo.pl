@@ -23,12 +23,18 @@ use Sys::Hostname;
 
 my $fork = 1;
 my ($project_name, $chr_name,$annot_version);
+my $ok_file;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
 	'chr=s'        => \$chr_name,
 	'annot_version=s'    => \$annot_version,
+	'file=s' => \$ok_file,
 );
+
+ if ($ok_file && -e $ok_file) {
+ 	system("rm $ok_file");
+ }
 warn "******";
 warn hostname;
 warn "******";
@@ -89,16 +95,8 @@ $no->close;
 	
 foreach my $family (@{$project->getFamilies()}) {
 	foreach my $children  (@{$family->getChildren}){
-		#my $vector_denovo = $family->getVector_individual_denovo($chr,$children)->Clone();
-		#my $vector_ratio_name = $children->name . "_ratio_" . 20;
-
-		#my @lVarIds = @{$chr->getListVarVectorIds($vector_denovo)};
-		#my $nb        = int( scalar(@lVarIds) / $fork + 1 );
-		#my $iter      = natatime( $nb, @lVarIds );
+	
 		my $sam;
-		#warn Dumper  $chr->{rocks};
-		#delete $chr->{rocks}->{"vector-r"};
-		#delete $chr->{rocks};
 		my @tmp;
 		foreach my $r (@$ranges){
 		#while ( my @tmp = $iter->() ) {
@@ -119,13 +117,11 @@ foreach my $family (@{$project->getFamilies()}) {
 			my $hVarDeleted;
 			
 			for (my $vector_id=$r->[0];$vector_id<= $r->[1];$vector_id ++){
-					next unless $vector_denovo->contains($vector_id);
-					warn $vector_id;
+				next unless $vector_denovo->contains($vector_id);
 			#foreach my $vector_id (@tmp){ 
 				my $debug;
 				push(@tmp,$vector_id);
 				my $var = $no->get_index($vector_id);
-		
 				unless ($var) {
 				confess();
 				}
@@ -134,36 +130,28 @@ foreach my $family (@{$project->getFamilies()}) {
 				$var->{project} = $project;
 				my $r = $var->getRatio($children);
 				my $percent;
-				if ($r > 40 ){
+				if ($r > 40 ) {
 					$limit = 5;
 					$percent =0.08;
-					}
+				}
 				
 				
 			
-				$debug =1 if $var->id eq "7_70231236_C_G";
+				$debug =1 if $var->name eq '17-78064045-del-187';
 				
 				#die() if $debug;
 				my $to_keep;
+				warn "coucou " if $var->gnomad_id eq '17-78064045-del-187';
 				foreach my $parent (@{$family->getParents()}) {
 					my $to_keep;
-					if ($var->isLarge()) {
-						
-						#push(@strict_denovo,$vector_id);
-						next;
-					}
-					elsif ($var->isFoundBySVCaller($children)) {
-						#warn "coucou SV****" if $debug;
-						#warn "coucou SV ++++ ".$vector_id unless $debug;
-						if ($var->length > 60 ) {
-							$hVarDeleted->{$vector_id} ++;
+						if ($var->isCnv && $var->isSrPr){
+								$to_keep =check_cnv($var,$children,$parent);	
+								warn "res ".$to_keep if $debug;
+								warn $vector_id if $debug;
 						}
-						elsif ($var->length == 1 &&  length($var->var_allele()) > 60) {
-							$hVarDeleted->{$vector_id} ++;
+					elsif ($var->isSrPr){
+								$to_keep = check_srpr($var,$children,$parent);	
 						}
-						#$hVarDeleted->{$vector_id} ++;
-						next;
-					}
 					elsif ($var->isVariation) {
 						$to_keep = check_substitution($sam->{$parent->name} , $var, $limit,$percent,$parent);
 						warn "keep var ".$to_keep." ".$parent->name if $debug;
@@ -192,15 +180,12 @@ foreach my $family (@{$project->getFamilies()}) {
 						die();
 					}
 					if ($to_keep) { $hVarDeleted->{$vector_id} ++; }
-				#	else {
-				#		last;
-				#	}
-				#die()  if $debug;
-#				warn $hVarDeleted->{$vector_id}."+++"
+					last unless $to_keep;
 				}
 				
 			}
 			my $vector = $chr->getNewVector();
+			warn $hVarDeleted->{168908};
 			
 			foreach my $vector_id (@tmp){ 
 				if ( $hVarDeleted->{$vector_id} == scalar(@{$family->getParents()}) ){
@@ -233,10 +218,56 @@ $rocks4->write_batch();
 $rocks4->close();
 #$nosql->put_bulk($chr->id(), $vector_denovo);
 #$nosql->close();
+system("date > $ok_file") if $ok_file;
 exit(0);
 
 
 
+sub check_srpr {
+	my ($var,$children,$parent) = @_;
+	my @v1 =  $parent->sr_raw($var->getChromosome,$var->start);
+	return if ($v1[0] < 5 or $v1[1]>5 or  $v1[2]>5);
+	@v1 =  $parent->sr_raw($var->getChromosome,$var->end);
+	return if ($v1[0] < 5 or $v1[1]>5 or  $v1[2]>5);
+	return 1;
+}
+
+
+sub check_cnv {
+	my ($var,$children,$parent) = @_;
+	my $debug;
+	$debug =1 if $var->gnomad_id eq '17-78064045-del-187';
+	$debug =1 if $var->name eq '17-78064045-del-187';
+	my $dp = $var->getNormDP($parent);
+	my $dpc = $var->getNormDP($children);
+	warn " dp parent ".$dp." ".$dpc if $debug == 1; 
+	return if $var->getMeanDP($parent) < 5;
+	return if $dp < 5; 
+	
+	$dpc = 0.00000001 if $dpc == 0; 
+	
+	my $pc = int((($dpc-$dp)/$dpc)*100);
+	$pc = abs($pc);
+	return if $pc < 30; 
+	
+	warn $pc if $debug;
+	if ($var->isDeletion) {
+		return if $pc > -30; 
+		return 1;
+		#return 1 if 
+	}
+	elsif ($var->isLargeDuplication) {
+		return 1 if $pc > 30; 
+		return;
+		#return 1 if 
+	}
+	else {
+		confess($var->name." ".$var->type)
+	}
+	
+	
+	
+}
 sub check_substitution {
 	my ($sam, $var, $limit,$pourcent,$parent) = @_;
 	my $debug = "19_13373567_T_G";

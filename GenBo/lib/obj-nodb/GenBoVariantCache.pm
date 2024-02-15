@@ -178,14 +178,9 @@ sub isUniparentalDisomyTransmission {
 
 
 
-sub isBothTransmission{
-		my ($self,$fam,$child,$debug) = @_;
+sub isBothTransmission {
+	my ($self,$fam,$child,$debug) = @_;
 	my $vector = $fam->getVectorBothTransmission($self->getChromosome,$child);
-	#my $vector2 = $fam->getVectorRecessiveTransmission($self->getChromosome,$child);
-	#$vector -= $vector2;
-	#warn "\t\t\t vector : ".$self->vector_id." ".$vector->contains($self->vector_id) if $debug;
-	#warn "\t\t\t vector2 : ".$self->vector_id." ".$vector2->contains($self->vector_id) if $debug;
-	#die() if $debug;
 	return $vector->contains($self->vector_id);
 	
 }
@@ -324,22 +319,17 @@ sub isStrictDenovoTransmission{
 
 sub isMosaicTransmission {
 	my ($self,$fam,$child) = @_;
-	warn $self->id;
 #	my $vector = $fam->getModelVector_fam_mosaique($self->getChromosome);
 #	return $vector->contains($self->vector_id);
 	my $var_id = $self->id();
 	my $chr = $self->getChromosome();
 	return unless ($child->isIll());
 	return unless ($child->getHe($chr)->contains($self->vector_id()));
-	warn $child->getHe($chr)->contains($self->vector_id()) ;
-	warn $child->getHo($chr)->contains($self->vector_id()) ;
-	warn $self->getSequencingGenotype($child);
 	return if $self->isBothTransmission($fam,$child); 
 	my @lOk;
 	my $pc = $self->getPourcentAllele($child);
 	return if $pc eq "-";
 	my $sample_var_1 = $self->text_heho($child);
-	warn $sample_var_1;
 	unless ($sample_var_1) {
 			warn "\n\nERROR: pb with $var_id and patient ".$child->name()."... Die\n\n";
 			confess ();
@@ -348,7 +338,6 @@ sub isMosaicTransmission {
 		#if ($chr->ploidy()
 		next unless ($parent->getHe($chr)->contains($self->vector_id()));
 		my $pcp = $self->getPourcentAllele($parent);
-		warn $pcp;
 		next if $pcp > 20;
 		return if $pcp eq  "-";
 		next if ($pc - $pcp ) < 20;

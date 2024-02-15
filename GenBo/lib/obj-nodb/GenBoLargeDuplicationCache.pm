@@ -3,7 +3,7 @@ use strict;
 use Moo;
 
 use Data::Dumper;
-extends 'GenBoLargeDuplication', 'GenBoVariantCache';
+extends 'GenBoVariantCache','GenBoLargeDuplication';
 
 
 1;

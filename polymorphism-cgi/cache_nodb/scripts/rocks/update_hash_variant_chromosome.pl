@@ -15,7 +15,6 @@ use List::MoreUtils qw{ natatime };
 use String::ProgressBar;
 use POSIX qw(strftime);
 use JSON;
-use Compress::Snappy;
 use Getopt::Long;
 use Carp;
 use GBuffer;
@@ -25,24 +24,30 @@ use File::Temp qw/ tempfile tempdir /;
 use Storable qw(dclone);
 use Clone qw(clone);
 require "$RealBin/../../../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
+#use Try::Tiny;
+
+
 my $host = hostname();
 
 
 #warn "*_*_*_*_*_".$host."*_*_*_*_*_";
 #use Cache_Commons;
-
 my $fork = 1;
 my $force;
 my ($project_name, $chr_name, $annot_version);
+my $ok_file;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
 	'chr_name=s'        => \$chr_name,
 	'annot_version=s'    => \$annot_version,
 	'force=s'  => \$force,
+	'file=s'  => \$ok_file,
 );
 
-
+ if ($ok_file && -e $ok_file) {
+ 	system("rm $ok_file");
+ }
 
 my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","cadd","revel","dbscsnv");
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
@@ -58,11 +63,12 @@ if ($annot_version) {
 
 
 my $file;
+#try {
 foreach my $chr (@{$project->getChromosomes} ){
 	if ($chr_name ne "all"){
 		next if  $chr->name ne $chr_name;
 	}
-	
+	warn "coucou";
 	 $file = run_update_chr($chr->name);
 	warn "OK $file" if -e $file;
 	warn "NOT OK " unless -e $file;
@@ -71,8 +77,13 @@ foreach my $chr (@{$project->getChromosomes} ){
 warn "END seems prefect exit now ...";
 warn "OK $file" if -e $file;
 warn "NOT OK " unless -e $file;
-
+system("date > $ok_file") if $ok_file;
 exit(0);
+#}
+#catch {
+#	$buffer = undef;
+#	die();
+#};
 
 sub run_update_chr {
 	my ($chr_name) = @_;
@@ -124,13 +135,14 @@ $pm->run_on_finish(
     );
     
 $project->getPatients;
+
 my $no_var = $chr->get_rocks_variations("r");
 my $ranges = $no_var->ranges($fork);
 $no_var->close;
 $no_var = undef;
 
 
-
+my @headers = ( "varsome", "igv", "alamut", "var_name", "trio", "gnomad", "deja_vu" );
 
 my $part =0;
 my $index = 0;
@@ -138,6 +150,7 @@ my @files ;
 
 	my $javascript_id = time + int(rand(10000));
 	$project->preload_patients();
+	
 	$project->buffer->dbh_deconnect();
 	foreach my $range (@$ranges){	
 	$part ++;
@@ -147,6 +160,7 @@ my @files ;
 	$index ++;
 	$proc->{$index} ++;
 	my $pid = $pm->start and next;
+
 	warn "start ".$proc->{$index};
 	my $nb =0;
 	$project->buffer->dbh_reconnect();
@@ -155,17 +169,17 @@ my @files ;
 	
 	my $no  = GenBoNoSqlLmdb->new(dir=>$dir_tmp,mode=>"c",name=>$f,is_compress=>1);
 	my $array;
-	
+
 	my $nb =1 ;
 	my $global_genes;
 	my $zh;
 	#sleep(2);
 	my $chr = $project->getChromosome($chr_name);
-	warn $chr->name;
 	my $transmission;
 	my $no_var = $chr->get_rocks_variations("r");
 	my $max = $range->[1] - $range->[0];
 	my @tmp;
+	my $prints;
 	for (my $aid=$range->[0];$aid <= $range->[1];$aid++){
 		push(@tmp,$aid);
 	#while(my $v = $project->nextVariant){
@@ -186,6 +200,7 @@ my @files ;
 	#	warn $v->id;
 		my $vmask;
 		foreach my $patient (@{$v->getPatients}) {
+			
 			my $fam = $patient->getFamily();
 			#my $h = {};
 		 	#update_variant_editor::construct_hash_variant_patient( $project, $v,$patient,$h);
@@ -194,7 +209,6 @@ my @files ;
 			my $mother = $patient->getFamily->getMother();
 			my $father = $patient->getFamily->getFather();
 		  	$transmission->{ $v->global_vector_id}->{$patient->id} = $v->getTransmissionModelType($patient->getFamily(),$patient);
-		 	
 		 	my $agenes =[];
 		 	my $score_genes;
 		 	foreach my $g (@{$v->getGenes}){
@@ -249,19 +263,17 @@ my @files ;
 			die() if exists $hgenes->{variant}->{$v->id};
 			$hgenes->{vector_ids}->{$v->id} = $v->vector_id;
 			$hgenes->{variant}->{$v->id}->{score} = $score_variant;
-			$hgenes->{pathogenic} ++  if  $v->isDM_for_gene($g) or $v->isClinvarPathogenic_for_gene($g);
+			$hgenes->{pathogenic} ++  if  $v->isDM_for_gene($g) or $v->is_clinvar_pathogenic_for_gene($g);
 			$hgenes->{clinvar_hgmd} ++ if  $v->hgmd or $v->clinvar;
 			
 			$hgenes->{cnv_del} ++ if  $v->isLargeDeletion();
 			$hgenes->{cnv_dup} ++ if  $v->isLargeDuplication();
 #			warn $v->id." :: ". $v->isDenovoTransmission($fam,$patient)." :: ".$v->getGnomadAC." denovo_rare : ".$patient->name.":".$hgenes->{denovo_rare}." ".$global_genes->{$patient->name}->{$g->id}->{denovo_rare} if $debug;
 #			warn "\t\t ------- ".$hgenes->{cnv_dup}." ".$hgenes->{cnv_del} if $debug;
-
 			$hgenes->{denovo_rare} ++ if $v->getGnomadAC< 10 && $v->isDenovoTransmission($fam,$patient) ;#&& $v->effectImpact($g) eq "moderate";
 			$global_genes->{$patient->name}->{$g->id}->{denovo_rare} ++ if $v->getGnomadAC< 10 && $v->isDenovoTransmission($fam,$patient);
 			$global_genes->{$patient->name}->{$g->id}->{cnv_del} ++ if  $v->isLargeDeletion();;
 			$global_genes->{$patient->name}->{$g->id}->{cnv_dup} ++ if  $v->isLargeDuplication();
-			
 			
 			my $val = $v->score_validations($g);
 			#my $val = 0;
@@ -351,16 +363,13 @@ my @files ;
 		$no->put($p,$zh->{$p});
 	}
 	$no->put("list",\@tmp);
-	warn "stop 1";
 	$no->close();
-	warn "stop 2";
 	my $h= {};
 	$h->{transmission} = $transmission;
 	$h->{index} = $index;
 	$h->{genes} = $global_genes;
 	$h->{ids} = $zh;
 
-	warn "finish";
 	$pm->finish(0,$h);
 	
 	#die();
@@ -399,9 +408,10 @@ warn "create";
 
 
 
-my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_directory("polyviewer_raw"),mode=>"w",name=>$chr->name.".polyviewer_variant");
+my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
 #$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
 foreach my $k (keys %htansmission){
+	
 	my $a = $final_polyviewer->get($k);
 	# 'patients_calling' => {
      #                                    '55661' => {

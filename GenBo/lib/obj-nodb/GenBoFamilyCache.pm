@@ -581,6 +581,7 @@ sub getVector_individual_strict_denovo {
 	my $key = "strict_denovo_".$child->name;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	if ($self->project->isRocks && (! defined $compute)){
+
 		$self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"ind_strict_denovo");
 		return $self->{vector_transmission}->{$key}->{$chr->id};
 	}

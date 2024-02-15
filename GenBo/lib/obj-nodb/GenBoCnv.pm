@@ -429,19 +429,20 @@ sub score_variants_trio {
 sub score_refined {
 	my ($self,$patient,$debug) = @_;
 		my $refined_score = 0;
-	
+	return 0;
 	return $refined_score unless ($self->getProject->isGenome());
-	
+
 	my $pr = $self->other_projects + $self->similar_projects();
 	if ($debug ){
 		warn "++++ --------> ".$pr;
 		#die();
 	}
 			# return {mean=>0,} unless defined $res->{_};
-			
+			die();	
 	my @data;
 	if($self->project->isGenome){
 	my $sd = $patient->sd_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length);
+	die();
 	my $cnv_value_dude = $patient->sd_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length);
 	if ($sd > 40 ){
 		$refined_score  -= 0.5;
@@ -501,7 +502,7 @@ sub list_same_cnv {
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
 	unless (exists $self->{array_dejavu}) {
-		my $hash = $self->getProject->getDejaVuInfosForDiag($self->id());
+		my $hash = $self->getProject->getDejaVuInfosForDiagforVariant($self);
 		$self->{array_dejavu} = $self->return_dejavu;
 	}
 	return $self->{array_dejavu} unless $key;

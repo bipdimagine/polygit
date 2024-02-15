@@ -40,21 +40,6 @@ has alleles => (
 	},
 );
 
-#has alleles => (
-#	is		=> 'ro',
-#	lazy	=> 1,
-#	default=> sub {
-#		my $self = shift;
-#		if ($self->length() > 20) {
-#			my $len = length($self->var_allele())-1;
-#			my $id = $self->getChromosome->id().'-'.$self->start().'-ins-'.$len;
-#			return $id;
-#		}
-#		return $self->getChromosome->sequence($self->start(), $self->end())."/".$self->sequence();
-#	},
-#);
-
-
 has rocksdb_id => (
 	is		=> 'ro',
 	lazy=> 1,

@@ -284,7 +284,9 @@ has other_genes  => (
 	is		=> 'rw',
 );
 
-
+has rocksdb_id => (
+	is		=> 'rw',
+);
 #GNOMAD 
 
 
@@ -496,14 +498,18 @@ has variants_same_position  => (
 
 sub setCnvValues {
 	my ($self,$chr,$patient,$variant)  =@_;
+	
 	foreach my $p (@{$patient->getFamily()->getMembers}){
 		$self->patients_calling->{ $p->id }->{gt} = $variant->getSequencingGenotype($p);
 		$self->patients_calling->{ $p->id }->{pr} = $variant->pr($p);
 		$self->patients_calling->{ $p->id }->{sr} = $variant->sr($p);
 		$self->patients_calling->{ $p->id }->{norm_depth} = $variant->getNormDP($p);
+		warn $variant->getNormDP($p);;
 		$self->patients_calling->{ $p->id }->{dude_score} = $variant->getCNVDude($p);
 		$self->patients_calling->{ $p->id }->{model}  = $variant->getTransmissionModelType($p->getFamily(),$p);
 	}
+	warn Dumper $variant->dp_infos;
+	confess();
 }
 
 sub setDudeValues {
@@ -530,24 +536,34 @@ sub init {
 	$hh->{sr} =undef;
 	$hh->{norm_depth} = undef;
 	$hh->{dude_score} = undef;
-				
+	$hh->{norm_depth_before} = undef;			
+	$hh->{norm_after_after} = undef;			
 }
 
 sub set_patient_cache {
 		my ($self,$vh,$p) =@_;
+		
 		my $hh = $self->init();
 		$hh->{id} = $p->id;
 		$hh->{pr} = undef;
 		$hh->{sr} = undef;
-			
+		unless ($vh->existsPatient($p)){
+			$hh->{norm_depth} = $vh->getNormDP($p);
+			$hh->{dp} = $vh->getDP($p);
+			if ($vh->isSrPr or $vh->isDude){
+				$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
+				$hh->{norm_depth_after} = $vh->getNormDPAfter($p);
+			}
+			return $hh;
+		}
 		if ($vh->isSrPr){
 			$hh->{gt} = $vh->getSequencingGenotype($p);
-			warn $vh->pr($p)." ".$vh->sr($p).$vh->id if $vh->id eq "1_16376537_del-9592";
-			warn Dumper $vh->array_sequencing_text($p) if $vh->id eq "1_16376537_del-9592";;
 			$hh->{norm_depth} = $vh->getNormDP($p);
 			$hh->{dude_score} = $vh->getCNVDude($p);
 			$hh->{pr} = $vh->pr($p);
 			$hh->{sr} = $vh->sr($p);
+			$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
+			$hh->{norm_depth_after} = $vh->getNormDPAfter($p);
 			
 		}
 		elsif ($vh->isDude){
@@ -556,6 +572,8 @@ sub set_patient_cache {
 			$hh->{norm_depth} = $p->cnv_region_ratio_norm($vh->getChromosome,$primer->start,$primer->end);
 			$hh->{dude_score} = $primer->cnv_score_log2($p);
 			$hh->{gt} = $vh->getSequencingGenotype($p);
+			$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
+			$hh->{norm_after_after} = $vh->getNormDPAfter($p);
 		}
 		else {
 				$hh->{name} = $p->name;
@@ -619,7 +637,7 @@ sub set_patient {
 	my ($self,$vh,$patient) =@_;
 	my $hpatients;
 		if ($vh->isDude){
-			$self->setDudeValues($vh->getChromosome,$patient,$vh);
+			$self->setCnvValues($vh->getChromosome,$patient,$vh);
 		}
 		elsif ($vh->isCnv){
 			$self->setCnvValues($vh->getChromosome,$patient,$vh);
@@ -636,103 +654,41 @@ sub set_patient {
 }
 
 
-
-sub set_gene_generic {
-	my ($self,$v,$gene) =@_;
-	my  $transcripts = $v->getTranscripts();
-	my $all_transcripts = [];
-	my $htr = {};
-	foreach my $tr1 (@$transcripts) {
-			my $htr = {};
-			 my $name = $tr1->name();
-				$htr->{$name} = $tr1->name();
-				$htr->{$name}->{nm} = $tr1->external_name;
-				$htr->{$name}->{ccds} = $tr1->ccds_name;
-				$htr->{$name}->{appris} = $tr1->appris_type;
-				$htr->{$name}->{main}=  0 ;
-		 		$htr->{$name}->{main}  = 1 if $tr1->isMain();
-		 		$htr->{$name}->{nomenclature} = $v->getNomenclature($tr1);
-		 		if ($v->isCoding($tr1)){
-		  	 		foreach my $prot (@{$tr1->getProteins}){
-		  	 			$htr->{$name}->{prot} = $v->getProteinPosition($prot);
-						$htr->{$name}->{codons} = $v->getCodons($tr1);
-						$htr->{$name}->{codons_AA} = $v->protein_nomenclature($prot);
-						$htr->{$name}->{sift} =  $v->siftScore($tr1->getProtein);;
-						$htr->{$name}->{polyphen} =  $v->polyphenScore($tr1->getProtein);
-		  	 		}
-		 	}
+sub return_specific_value {
+	my ($self,$value) =@_;
+	unless (defined $value){
+		return -99;
 	}
-	return $htr;
+	if ($value eq "-"){
+		return -99;
+	}
+	if ($value == -1 ){
+		return -99;
+	}
+	return $value;
 }
 
-sub set_gene_dev {
-		my ($self,$v,$gene) =@_;
-		my  $transcripts = $v->getTranscripts();
-		my $all_transcripts = {};
-		foreach my $tr1 (sort { ($self->impact_sorted->{$v->effectImpact($b)} <=>  $self->impact_sorted->{$v->effectImpact($a)}) or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
-				next if $tr1->getGene->id ne $gene->id;
-				my $htr = {};
-				my $rf = $v->dbscsnv_rf();
-				my $ada = $v->dbscsnv_rf();	
-				my $revel = $v->revel_score;
-				my $enst = $tr1->name;
-				#$htr->{name} = $tr1->name();
-				$htr->{nm} = $tr1->external_name;
-				$htr->{ccds} = $tr1->ccds_name;
-				$htr->{appris} = $tr1->appris_type;
-				$htr->{main}=  0 ;
-		 		$htr->{main}  = 1 if $tr1->isMain();
-				my @coding_infos = ("sift","polyphen","prot","codons","codons_AA","impact_score_text","impact_score","consequence");
-				#initialize
-				foreach my $c (@coding_infos){
-					$htr->{$c} = "-";
-				}
-				$htr->{impact_score_text} = $v->effectImpact($tr1);
-				$htr->{impact_score} = $v->effectImpact($tr1);	
-				$htr->{consequence} = $v->variationTypeInterface($tr1);;	
-				if ($v->isCoding($tr1)){
-					my $prot = $tr1->getProtein();
-					if ($v->isLargeDeletion or $v->isLargeDuplication){
-						foreach my $c (@coding_infos){
-							$htr->{$c} = "-";
-						}
-
-					}
-					else {
-						$htr->{prot} = $v->getProteinPosition($prot);
-						$htr->{codons} = $v->getCodons($tr1);
-						$htr->{codons_AA} = $v->protein_nomenclature($prot);
-						$htr->{sift} =  $v->siftScore($tr1->getProtein);;
-						$htr->{polyphen} =  $v->polyphenScore($tr1->getProtein);($tr1->getProtein);
-						
-					}
-					
-				}
-				$all_transcripts->{$tr1->name()} = $htr;
-		}
-		return $all_transcripts;
-
-		#return {sc=>$score,tr=>$all_transcripts};
-}
 
 sub set_gene {
 		my ($self,$v,$gene) =@_;
 		my  $transcripts = $v->getTranscripts();
 		my $all_transcripts = [];
-		foreach my $tr1 (sort { ($self->impact_sorted->{$v->effectImpact($b)} <=>  $self->impact_sorted->{$v->effectImpact($a)}) or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
+		foreach my $tr1 (sort { ( ($b->isMane <=> $a->isMane) or $self->impact_sorted->{$v->effectImpact($b)} <=>  $self->impact_sorted->{$v->effectImpact($a)})  or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
 				next if $tr1->getGene->id ne $gene->id;
 				my $htr = {};
-				my $rf = $v->dbscsnv_rf();
-				my $ada = $v->dbscsnv_rf();	
-				my $revel = $v->revel_score;
+	
 				my $enst = $tr1->name;
 				$htr->{name} = $tr1->name();
 				$htr->{nm} = $tr1->external_name;
 				$htr->{ccds} = $tr1->ccds_name;
+				$htr->{ccds} = "-" if ($tr1->ccds_name && length($tr1->ccds_name) <3);
 				$htr->{appris} = $tr1->appris_type;
 				$htr->{main}=  0 ;
 		 		$htr->{main}  = 1 if $tr1->isMain();
+		 		$htr->{mane}  = 0 ;
+		 		$htr->{mane}  = 1 if $tr1->isMane();
 				my @coding_infos = ("sift","polyphen","prot","codons","codons_AA","impact_score_text","impact_score","consequence");
+			
 				#initialize
 				foreach my $c (@coding_infos){
 					$htr->{$c} = "-";
@@ -741,7 +697,47 @@ sub set_gene {
 				$htr->{impact_score_text} = $sc;
 				$htr->{impact_score} = $self->impact_sorted->{$sc};	
 				$htr->{consequence} = $v->variationTypeInterface($tr1);;	
-				if ($v->isCoding($tr1)){
+				$htr->{nomenclature} =  $v->getNomenclature($tr1);
+				$htr->{nomenclature} = "-" unless $htr->{nomenclature} ;
+				$htr->{exon} = $tr1->findExonNumber($v->start, $v->end);
+				$htr->{exon} = $tr1->findNearestExon($v->start, $v->end) if $htr->{exon} == -1;
+				$htr->{start} = "";
+				$htr->{end} = "";
+				$htr->{cadd} = $self->return_specific_value($v->cadd_score);
+				$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_rf);
+				$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_ada) if $self->return_specific_value($v->dbscsnv_ada) > $htr->{dbscsnv} ;
+				$htr->{revel} = $self->return_specific_value($v->revel_score($tr1));
+				
+				$htr->{spliceAI} = $self->return_specific_value($v->max_spliceAI_score($gene));
+				 
+				$htr->{spliceAI_cat} = $v->max_spliceAI_categorie($gene);
+				
+				$htr->{sift} = -99;
+				$htr->{polyphen} = -99;
+				$htr->{alphamissense} = -99;
+				
+				my $r1 = $tr1->exons_introns_tree()->fetch($v->start,$v->start+1);
+				if (@$r1){
+					warn Dumper $r1 unless exists $r1->[0]->{type};
+					if ($r1->[0]->{type} eq "intron"){
+						$htr->{start} = "intron".$r1->[0]->{nb};
+					}
+					else {
+						$htr->{start} = $r1->[0]->{name};
+					}
+				}
+				 $r1 = $tr1->exons_introns_tree()->fetch($v->end,$v->end+1);
+				 if (@$r1){
+					
+					if ($r1->[0]->{type} eq "intron"){
+						$htr->{end} = "intron".$r1->[0]->{nb};
+					}
+					else {
+						$htr->{end} = $r1->[0]->{name};
+					}
+				}
+				 
+				if ($v->isCoding($tr1)) {
 					my $prot = $tr1->getProtein();
 					if ($v->isLargeDeletion or $v->isLargeDuplication){
 						foreach my $c (@coding_infos){
@@ -756,8 +752,11 @@ sub set_gene {
 						$htr->{prot} = $v->getProteinPosition($prot);
 						$htr->{codons} = $v->getCodons($tr1);
 						$htr->{codons_AA} = $v->protein_nomenclature($prot);
-						$htr->{sift} =  $v->siftScore($tr1->getProtein);;
-						$htr->{polyphen} =  $v->polyphenScore($tr1->getProtein);($tr1->getProtein);
+						$htr->{sift} =  $self->return_specific_value($v->siftScore($tr1->getProtein));
+						$htr->{polyphen} =  $self->return_specific_value($v->polyphenScore($tr1->getProtein));
+						
+						$htr->{alphamissense} = $self->return_specific_value($v->alphamissense($tr1));
+						
 						
 					}
 				
@@ -776,10 +775,69 @@ sub set_gene {
 				$score->{clinvar_pathogenic} = $v->isClinvarPathogenic;
 		}
 		$score->{spliceAI} = $v->max_spliceAI_score($gene);
+		
 		$score->{spliceAI_cat} = $v->max_spliceAI_categorie($gene);
+		
+		
 		return {sc=>$score,tr=>$all_transcripts};
 }
 
+
+
+
+
+has get_genes_transcripts_details_dup_del => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $h;
+		my $start1 = $self->start();
+		my $end1 = $self->start() + $self->length();
+		my $intspan_v = $self->getGenomicSpan();
+		foreach my $g (@{$self->getGenes()}) {
+			foreach my $t (@{$g->getTranscripts()}) {
+				my $intspan_t = $t->getGenomicSpan();
+				my $inter1 = $intspan_v->intersection( $intspan_t );
+				next if $inter1->is_empty();
+				my $t_id = $t->id();
+				$h->{$g->id()}->{$t_id}->{nm} = 'NM';
+				$h->{$g->id()}->{$t_id}->{ccds} = $t->ccds_name();
+			
+				#$h->{$g->id()}->{$t_id}->{appris} = $t->{tag};
+				foreach my $e (@{$t->getExons()}) {
+					my $intspan_e = $e->getGenomicSpan();
+					my $inter2 = $intspan_v->intersection( $intspan_e );
+					my $e_id = $e->id();
+					$e_id =~ s/$t_id//;
+					next if ($inter2->is_empty());
+					my @lTmp = split('-', $inter2->as_string());
+					my $overlap = $lTmp[-1] - $lTmp[0] + 1;
+					next if ($overlap < 1);
+					$h->{$g->id()}->{$t_id}->{positions}->{$e->start()} = $e_id; 
+					my $perc = sprintf("%.2f", ($overlap / $e->length) * 100);
+					$h->{$g->id()}->{$t_id}->{exons_introns}->{$e_id}->{locus} = $e->getChromosome->id().':'.$e->start().'-'.$e->end();
+					$h->{$g->id()}->{$t_id}->{exons_introns}->{$e_id}->{overlap} = $overlap.' nt ('.$perc.'%)';
+				}
+				foreach my $i (@{$t->getIntrons()}) {
+					my $intspan_i = $i->getGenomicSpan();
+					my $inter2 = $intspan_v->intersection( $intspan_i );
+					my $i_id = $i->id();
+					$i_id =~ s/$t_id//;
+					next if ($inter2->is_empty());
+					my @lTmp = split('-', $inter2->as_string());
+					my $overlap = $lTmp[-1] - $lTmp[0] + 1;
+					next if ($overlap < 1);
+					$h->{$g->id()}->{$t_id}->{positions}->{$i->start()} = $i_id; 
+					my $perc = sprintf("%.2f", ($overlap / $i->length) * 100);
+					$h->{$g->id()}->{$t_id}->{exons_introns}->{$i_id}->{locus} = $overlap.' nt ('.$perc.'%)';
+					$h->{$g->id()}->{$t_id}->{exons_introns}->{$i_id}->{overlap} = $overlap.' nt ('.$perc.'%)';
+				}
+			}
+		}
+		return $h;
+	},
+);
 
 
 sub setLmdbVariant {
@@ -794,25 +852,25 @@ sub setLmdbVariant {
 		$self->end($vh->end);
 		$self->ref_allele($vh->ref_allele);	
 		$self->allele($vh->alternate_allele);
-		if (length ($self->allele) > 50 ){
+		if ($self->allele && length ($self->allele) > 50 ){
 			my $s = "+";
 			$s="-" if $vh->isDeletion;
 			$self->allele($s.length($self->allele));
 		}
 		$self->gnomad_id($vh->gnomad_id);
+		$self->rocksdb_id($vh->rocksdb_id);
 		$self->chromosome($vh->getChromosome->name);
 		$self->name($vh->name);
 		$self->type($vh->type);
 		$self->{reference} = ref($vh);
 		$self->gnomad_id($vh->gnomad_id);
-		
+		$self->rocksdb_id($vh->rocksdb_id);
 		#######################
 		#hgmd et clinvar
 		#######################
 		
 		
-		$self->hgmd($vh->hgmd_class);
-		$self->hgmd_id($vh->hgmd_id);
+		
 
 		$self->clinvar_id($vh->clinvar_id);
 		$self->clinvar($vh->clinvar_class) ;
@@ -854,11 +912,11 @@ sub setLmdbVariant {
 		$self->gnomad_max_pop($vh->max_pop_freq);
 		$self->gnomad_ho($vh->getGnomadHO);
 		$self->gnomad_ho_male($vh->getGnomadAC_Male);
-		
+	
 	#########
 	# DEJAVU
 	#########
-	
+	 
 	$self->dejavu_other_projects($vh->other_projects());
 	$self->dejavu_other_patients($vh->other_patients());
 	$self->dejavu_other_patients_ho($vh->other_patients_ho());
@@ -867,6 +925,24 @@ sub setLmdbVariant {
 	$self->dejavu_similar_patients_ho($vh->similar_patients_ho());
 	$self->dejavu_this_run_patients($vh->in_this_run_patients);# = '-';
 	$self->text_caller([]);
+	$self->hgmd($vh->hgmd_class);
+		$self->hgmd_id($vh->hgmd_id);
+	########
+	# SCORE
+	########
+#	 $self->revel($vh->revel_score());
+#	 $self->rf($vh->dbscsnv_rf());	
+#	 $self->ada($vh->dbscsnv_rf());
+#	 $self->cadd($vh->cadd_score);
+	 my $ag;
+	 my $genes = $vh->getGenes;
+   	$self->{other_genes} = {}; 
+	 if (scalar (@$genes) >1 ){
+	 	foreach my $g (@{$genes}){
+	 		$self->{other_genes}->{$g->id} = $g->external_name;
+		}
+	 }
+	
 }
 sub update_clinvar {
 	my ($self,$project,$gene) = @_;

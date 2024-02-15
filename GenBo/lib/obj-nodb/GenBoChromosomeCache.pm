@@ -372,7 +372,10 @@ has hash_cache_strict_denovo => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
+				warn $self->name;
 		my $nosql = $self->sqlite_strict_denovo();
+		warn $nosql->dir();
+
 		my ($h) = $nosql->get_bulk($self->name());
 		$nosql->close();
 		return $h;
@@ -676,6 +679,7 @@ sub cache_variations {
 		return $self->get_rocks_variations("r");
 	}
 	return $self->get_lmdb_variations("r");;
+	
 }
 
 
@@ -773,11 +777,25 @@ sub getFilterRegionVector {
 	return $var;
 }
 
+sub return_genbo_variant {
+	my ($self,$vid) = @_;
+	my $no = $self->cache_variations();
+	if ($self->project->isRocks){
+		
+		return  $no->get_variation($vid);
+	}
+	else {
+		return $no->get($vid);
+	}
+	
+	
+}
+
 
 # recupere l'objet variation stocke
 sub flushObjectVariantCache {
 	my ($self, $vid, $can_create_variant) = @_;
-	my $var_obj = $self->cache_lmdb_variations->get($vid);
+	my $var_obj = $self->return_genbo_variant($vid);
 	return undef unless $var_obj;
 	$var_obj->{buffer} = $self->project->buffer();
 	$var_obj->{project} = $self->project();
@@ -802,7 +820,10 @@ sub flushObjectVariantCache {
 		bless $var_obj , 'GenBoDeletionCache'; 
 	}
 	elsif  ($ref eq 'GenBoLargeInsertion'){
-		bless $var_obj , 'GenBoInsertionCache';
+		bless $var_obj , 'GenBoLargeInsertionCache';
+	}
+	elsif  ($ref eq 'GenBoInversion'){
+		bless $var_obj , 'GenBoInversionnCache';
 	}
 	elsif  ($ref eq 'GenBoInsertion'){
 		bless $var_obj , 'GenBoInsertionCache';
@@ -814,11 +835,6 @@ sub flushObjectVariantCache {
 		confess("\n\nERROR: $vid not found in cache project. Die.\n\n") unless ($can_create_variant);
 		#Si l'objet n a pas ete stocke correctement pendant le cache, je construit a la volee sa verion NON cache avec GenBoProject
 		my $this_project = $self->getProject();
-		#bless $this_project , 'GenBoProject';
-		#warn $self->
-	#	warn $self->project;
-	#	warn $vid;
-
 		$var_obj = $self->project->SUPER::_newVariant($vid);
 	}
 	my $method;
@@ -844,12 +860,10 @@ sub getVarObject {
 sub getListVarObjects {
 	my ($self, $vector) = @_;
 	my @lVarObj;
-	
 	my $zids;
 	foreach my $v_id (@{$self->getListVarVectorIds($vector)}) {
 		push(@$zids,$self->name."!".$v_id);
 	}
-	
 	return $self->project->myflushobjects($zids,"variants");;
 }
 
@@ -1028,7 +1042,6 @@ sub vector_global_categories {
 			}
 			
 		my $v = $self->rocks_vector("r")->get_vector_chromosome($cat);
-		warn $v;
 		return $v;
 	}
 	else {
@@ -1200,14 +1213,15 @@ sub getVectorCnv {
 
 sub setVariants {
 	my ($self, $type) = @_;
-	
+	confess();
 	my $vector = $self->getNewVector();
 	if ($type eq 'variations') {
-		$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{substitution} ) if (exists $self->global_categories->{substitution});
+		$vector->Intersection( $self->getVariantsVector(), $self->global_categories("substitution") );
+		# if (exists  $self->global_categories("insertion"));
 	}
 	elsif ($type eq 'insertions') {
 		my $vector_ins = $self->getNewVector();
-		$vector_ins += $self->global_categories->{insertion} if (exists $self->global_categories->{insertion});
+		#$vector_ins += $self->global_categories("insertion") if (exists  $self->global_categories("insertion"));
 		$vector->Intersection( $self->getVariantsVector(), $vector_ins );
 	}
 	elsif ($type eq 'deletions') {
@@ -1272,10 +1286,19 @@ sub setJunctions {
 	}
 	return $self->{junctions_object} ;
 }
+sub return_hash_from_vector{
+	my ($self,$vector,$type) = @_;
+	foreach my $var (@{$self->getListVarObjects($vector)}) {
+		$self->{$var->type_object()}->{$var->id()} = undef;
+		unless (exists $self->project->{objects}->{$type}->{$var->id}) {
+			$self->project->{objects}->{$type}->{$var->id()} = $var;
+		}
+	}
+}
 
 sub setVariations {
 	my $self = shift;
-	$self->setVariants('variations');
+	$self->return_hash_from_vector($self->getVectorVariations,"variations");
 	return $self->{variations_object} ;
 }
 
@@ -2542,7 +2565,6 @@ has vectorDM => (
         	my $vector ;
         	if ($self->lmdb_score_impact->exists_db){
         		$vector = $self->lmdb_score_impact("r")->get("dm");	
-        		warn $self->lmdb_score_impact("r")->dir;
         	}
   			return $vector if defined $vector;
   			confess();
