@@ -41,7 +41,6 @@ $| = 1;
 		$patients = [$project->getPatient($patient_name)];
 		#$project->get_only_list_patients($patient_name);
 	}
-	
 	die() unless $project->getPatients();
 	my $tbundle;
 
