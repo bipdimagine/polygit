@@ -16,6 +16,7 @@ use Term::ANSIColor;
 use Moo;
 
 use bds_cache_steps;    
+use bds_cache_rocks; 
 #use file_util;
 use Class::Inspector;
 #use check_utils;
@@ -87,7 +88,7 @@ unless ($steps_name){
 #$predef_steps->{update} = [["update_variants","update_chromosomes","update_genes","polyviewer"]];
 #$predef_steps->{update_type} = ["chromosomes"];
 my $pipeline;
- $pipeline = bds_cache_steps->new( project=>$project, nocluster=>$nocluster,cache=>1 );
+ $pipeline = bds_cache_rocks->new( project=>$project, nocluster=>$nocluster,cache=>1 );
 $pipeline->queue("-q testq") unless $secret;
 my $steps = {
 				"store_ids"=>  sub {$pipeline->store_ids(@_)},
@@ -125,6 +126,8 @@ my $steps = {
 				"polydude" =>sub {$pipeline->polydude(@_)}, 
 				"sashimi_plots"=>sub {$pipeline->sashimi_plots(@_)}, 
 				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)}, 
+				"merge_patients" => sub {$pipeline->merge_patients(@_)}, 
+				"merge_objects" => sub {$pipeline->merge_objects(@_)}, 
 			};
 
 
@@ -137,7 +140,7 @@ $pipeline->unforce(0) if $force;
 #$pipeline->add_sample(patient=>$project);
 
 my @types_steps = ('dude','chromosomes','project','polydiag','html_cache');
- @types_steps = ('chromosomes','project','html_cache') if $project->isGenome or $project->isExome ;
+ @types_steps = ('chromosomes','rocks','html_cache','project') if $project->isGenome or $project->isExome ;
 @types_steps = ('chromosomes') if $giab ;
 my $list_steps;
 my $list_steps_types;
