@@ -114,8 +114,8 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	if ($only_gene) {
 		next if ( $chr->id() ne $only_gene->getChromosome->id() );
 		my $vector_postions =
-		  $chr->getVectorByPosition( ( $only_gene->start - 1000 ),
-			( $only_gene->end + 1000 ) );
+		  $chr->getVectorByPosition( ( $only_gene->start - 1000000 ),
+			( $only_gene->end + 1000000 ) );
 		$vector_patient->Intersection( $vector_patient, $vector_postions );
 	}
 
@@ -341,32 +341,19 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		$n++;
 		print '.' if ( not $only_html_cache and $n % 1000 );
 		my $is_junction_linked_filtred;
-		#next if ( $junction->isCanonique());
-		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 );
+		#next if ( $junction->junction_score_without_dejavu_global($patient) < 0 );
 
 		next if $junction->start == $junction->end();
 
-		my $gene_name  = $junction->annex->{ $patient->name() }->{ensid};
-		my $gene_name2 = $junction->annex->{ $patient->name() }->{gene};
 		my @lGenesNames;
-
-		if ($only_gene) {
-			my $keep;
-			$keep = 1 if ( $only_gene->id() eq $gene_name );
-			$keep = 1 if ( $only_gene->external_name() eq $gene_name );
-			$keep = 1 if ( $only_gene->id() eq $gene_name2 );
-			$keep = 1 if ( $only_gene->external_name() eq $gene_name2 );
-			next unless $keep;
-		}
-
-		if ($gene_name) { push( @lGenesNames, $gene_name ); }
-		else {
-			foreach my $gene ( @{ $junction->getGenes() } ) {
-				push( @lGenesNames, $gene->id() );
+		foreach my $gene ( @{ $junction->getGenes() } ) {
+			if ($only_gene) {
+				push( @lGenesNames, $gene->id() ) if $only_gene->id() eq $gene->id();
 			}
+			else  { push( @lGenesNames, $gene->id() ); }
 		}
 		next unless @lGenesNames;
-
+		
 		if ( not $only_gene ) {
 			if ( $junction->get_percent_new_count($patient) < $min_score ) {
 				next;
@@ -404,7 +391,9 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $jid_tmp = $junction->getChromosome->id().'-'.$junction->start().'-'.$junction->end();
 		if ($h_td_line and $h_td_line->{id} eq $jid_tmp) {
 			my $max_score = $h_td_line->{max_score};
-			my $tmp = pop(@{ $hres->{genes}->{$gene_name}->{$max_score} });
+			foreach my $gene_name (@lGenesNames) {
+				my $tmp = pop(@{ $hres->{genes}->{$gene_name}->{$max_score} });
+			}
 			push (@{$h_td_line->{3}}, "<br>");
 			push (@{$h_td_line->{4}}, "<br>");
 			push (@{$h_td_line->{7}}, "<br>");
@@ -429,14 +418,20 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			$score += int(($g->score/2)+0.5);
 			my $gscore = $g->score;
 			my $ht = $junction->get_hash_exons_introns();
-			next unless $ht;
-
-			#			next if scalar keys %$ht == 0;
-
-			my ( $html_trans, $has_linked_junctions ) = get_html_transcripts( $junction, $patient );
-			my $score_details_text = get_html_score_details( $junction, $patient, $use_percent_dejavu );
 			
-			if (not exists $h_td_line->{6}) { push (@{$h_td_line->{6}}, $html_trans);} 
+			delete $junction->{get_hash_exons_introns} unless $ht;
+			$ht = $junction->get_hash_exons_introns();
+			#			next unless $ht;
+			#			next if scalar keys %$ht == 0;
+			my ( $html_trans, $has_linked_junctions, $tr_found ) = get_html_transcripts( $g, $junction, $patient );
+			
+			my $score_details_text = get_html_score_details( $junction, $patient, $use_percent_dejavu );
+			@{$h_td_line->{6}} = ();
+			@{$h_td_line->{7}} = ();
+			@{$h_td_line->{8}} = ();
+			
+			push (@{$h_td_line->{6}}, $html_trans);
+#			if (not exists $h_td_line->{6}) { push (@{$h_td_line->{6}}, $html_trans);} 
 #			if (exists $h_td_line->{7}) { push (@{$h_td_line->{7}}, qq{<div>---</div>}); }
 			my $badge_color = '#808080';
 			$badge_color = '#92D674' if $score >= 0;
@@ -449,14 +444,15 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 #			if (exists $h_td_line->{8}) { push (@{$h_td_line->{8}}, qq{<div>-------</div>}); }
 			push (@{$h_td_line->{8}}, $score_details_text);
 
-			$hres->{score}->{all}->{$gene_name}->{$score} = $junction->id();
+			next if not $tr_found;
 			
+			$hres->{score}->{all}->{$gene_name}->{$score} = $junction->id();
 			my $html_tr;
 			if ($is_junction_linked_filtred) {
-				$html_tr .= qq{<tr style="text-align:center;font-size:11px;opacity:0.55;">};
+				$html_tr .= qq{<tr style="text-align:center;font-size:11px;opacity:0.55;max-width:130px;overflow-y:auto;">};
 			}
 			else {
-				$html_tr .= qq{<tr style="text-align:center;font-size:11px;">};
+				$html_tr .= qq{<tr style="text-align:center;font-size:11px;max-width:130px;overflow-y:auto;">};
 			}
 			$html_tr .= qq{<td style="width:230px;">@{$h_td_line->{1}}</td>};
 			$html_tr .= qq{<td>@{$h_td_line->{2}}</td>};
@@ -780,7 +776,8 @@ sub get_html_dejavu {
 }
 
 sub get_html_transcripts {
-	my ( $junction, $patient ) = @_;
+	my ( $gene, $junction, $patient ) = @_;
+	
 	my $has_linked_junctions;
 	my $color              = 'black';
 	my $project_name       = $patient->getProject->name();
@@ -793,16 +790,17 @@ sub get_html_transcripts {
 	my @l_group_junctions_colors =
 	  ( '#5D3EFF', '#FF4571', '#8FFF49', '#FF495F' );
 	my $h_exons_introns = $junction->get_hash_exons_introns();
-
-	my $html_tr = $cgi->start_table(
+	my $html_tr .= "<div style='max-height:130px;overflow-y:auto;'";
+	$html_tr = $cgi->start_table(
 		{
 			class =>
 "table table-sm table-striped table-condensed table-bordered table-primary ",
 			style =>
-"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"
+"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px;"
 		}
 	);
 	$html_tr .= "<tr style='background-color:#FFA81E;'>";
+	$html_tr .= $cgi->th("<center><b>gene</b></center>");
 	$html_tr .= $cgi->th("<center><b>enst</b></center>");
 	$html_tr .= $cgi->th("<center><b>nm</b></center>");
 	$html_tr .= $cgi->th("<center><b>ccds</b></center>");
@@ -811,7 +809,9 @@ sub get_html_transcripts {
 	$html_tr .= $cgi->th("<center><b>end</b></center>");
 	$html_tr .= $cgi->end_Tr();
 
+	my (@lResMyGene, $hResOthersGenes, $rids, $rids_tr, $tr_found);
 	foreach my $tid ( sort keys %{$h_exons_introns} ) {
+#		next unless exists $h_g_tr->{$tid};
 		my ( $h_junctions_linked, $h_junctions_exons_introns );
 		if ( exists $h_junctions_color->{ $junction->id() } ) {
 			$bcolor = $h_junctions_color->{ $junction->id() };
@@ -825,11 +825,23 @@ sub get_html_transcripts {
 		}
 
 		my $t = $patient->getProject->newTranscript($tid);
-		$html_tr .= $cgi->start_Tr();
-		$html_tr .= $cgi->td("<center>$tid</center>");
-		$html_tr .= $cgi->td( "<center>" . $t->external_name() . "</center>" );
-		$html_tr .= $cgi->td( "<center>" . $t->ccds_name() . "</center>" );
-		$html_tr .= $cgi->td( "<center>" . $t->appris_type() . "</center>" );
+		my $this_html_tr;
+		my $rid = "tr_".$gene->external_name.'_'.$t->gene_external_name.'_'.$t->external_name.'_'.time."_".int(rand(50000));
+		my $hide = "";
+		if ($gene->external_name eq $t->gene_external_name and not $t->isMain) {
+			push(@$rids_tr,$rid);
+			$hide = "display:none;";
+		}
+		elsif ($gene->external_name ne $t->gene_external_name) {
+			push(@$rids,$rid);
+			$hide = "display:none;";
+		}
+		$this_html_tr .= $cgi->start_Tr({id=>$rid,style=>$hide});
+		$this_html_tr .= $cgi->td( "<center>" . $t->gene_external_name . "</center>" );
+		$this_html_tr .= $cgi->td("<center>$tid</center>");
+		$this_html_tr .= $cgi->td( "<center>" . $t->external_name() . "</center>" );
+		$this_html_tr .= $cgi->td( "<center>" . $t->ccds_name() . "</center>" );
+		$this_html_tr .= $cgi->td( "<center>" . $t->appris_type() . "</center>" );
 		my @lPos = ( sort keys %{ $h_exons_introns->{$tid}->{by_pos} } );
 		my $first_exon_intron =
 		  $h_exons_introns->{$tid}->{by_pos}->{ $lPos[0] };
@@ -987,34 +999,63 @@ sub get_html_transcripts {
 qq{view_linked_junctions(\"$patient_name\",\"$tid\",\"$j_linked\",\"$my_junction_id\",\"$min_score\")};
 		if ( scalar(@lPos) == 1 ) {
 			if ($first_style_color) {
-				$html_tr .= "<td colspan='2' $first_style_color>"
+				$this_html_tr .= "<td colspan='2' $first_style_color>"
 				  . obutton( $cmd_linked, $first_exon_intron ) . "</td>";
 			}
 			else {
-				$html_tr .=
+				$this_html_tr .=
 				  "<td colspan='2' $first_style_color>$first_exon_intron</td>";
 			}
 		}
 		else {
 			if ($first_style_color) {
-				$html_tr .= "<td $first_style_color>"
+				$this_html_tr .= "<td $first_style_color>"
 				  . obutton( $cmd_linked, $first_exon_intron ) . "</td>";
 			}
 			else {
-				$html_tr .= "<td $first_style_color>$first_exon_intron</td>";
+				$this_html_tr .= "<td $first_style_color>$first_exon_intron</td>";
 			}
 			if ($last_style_color) {
-				$html_tr .= "<td $last_style_color>"
+				$this_html_tr .= "<td $last_style_color>"
 				  . obutton( $cmd_linked, $last_exon_intron ) . "</td>";
 			}
-			else { $html_tr .= "<td $last_style_color>$last_exon_intron</td>"; }
+			else { $this_html_tr .= "<td $last_style_color>$last_exon_intron</td>"; }
 		}
-		$has_linked_junctions = 1
-		  if ( $first_style_color or $last_style_color );
+		$has_linked_junctions = 1 if ( $first_style_color or $last_style_color );
+		$this_html_tr .= $cgi->end_Tr();
+		
+		if ($t->gene_external_name eq $gene->external_name and $t->isMain) {
+			$html_tr .= $this_html_tr;
+			$tr_found++;
+		}
+		else {
+			$tr_found++ if $t->gene_external_name eq $gene->external_name;
+			push(@{$hResOthersGenes->{$t->gene_external_name}}, $this_html_tr);
+		} 
 	}
-	$html_tr .= $cgi->end_Tr();
-	$html_tr .= qq{</table>};
-	return ( $html_tr, $has_linked_junctions );
+	
+	if (exists $hResOthersGenes->{$gene->external_name}) {
+		my $js = encode_json $rids_tr;
+		my $za = "hide_tr_".time."_".int(rand(50000));
+		my $nb_skip = scalar(keys @{$hResOthersGenes->{$gene->external_name}});
+		$html_tr .=  $cgi->start_Tr({id=>$za});
+		$html_tr.= $cgi->td({style=>"box-shadow: 1px 1px 2px #555;background-color:#CECFCE;",colspan=>7,onClick=>qq{showTranscripts($js,"$za");}},qq{<span class="glyphicon glyphicon-plus"></span> }."view $nb_skip ALT transcript(s) from gene ".$gene->external_name);
+		$html_tr.= $cgi->end_Tr();
+		$html_tr .= join('', @{$hResOthersGenes->{$gene->external_name}});
+		delete $hResOthersGenes->{$gene->external_name};
+	}
+	
+	if ($hResOthersGenes and scalar keys %$hResOthersGenes > 0) {
+		my $za = "hide_tr_".time."_".int(rand(50000));
+		my $nb_skip = scalar(keys %$hResOthersGenes);
+		my @l = sort keys %{$hResOthersGenes};
+		my $l = join(', ', @l);
+		$html_tr .=  $cgi->start_Tr({id=>$za});
+		$html_tr.= $cgi->td({style=>"box-shadow: 1px 1px 2px #555;background-color:#CECFCE;",colspan=>7,},"FOUND $nb_skip other(s) gene(s) [$l]");
+		$html_tr.= $cgi->end_Tr();
+	}
+	$html_tr .= qq{</table></div>};
+	return ( $html_tr, $has_linked_junctions, $tr_found );
 }
 
 sub obutton {

@@ -47,6 +47,7 @@ my $patient = $project->getPatient($patient_name);
 #$patient->use_not_filtred_junction_files(1);
 
 
+my $score = 0;
 my $NB_MAX_PLOTS = 300;
 
 if (not $project->is_human_genome()) {
@@ -55,62 +56,66 @@ if (not $project->is_human_genome()) {
 	exit(0); 
 }
 
-my $hType_patients;
-$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
-my $h_chr_vectors;
-my $j_total = 0;
-foreach my $chr (@{$project->getChromosomes()}) {
-	my $vector_patient = $patient->getJunctionsVector($chr);
-	$j_total += $chr->countThisVariants($vector_patient);
-	$h_chr_vectors->{$chr->id()} = $vector_patient->Clone();
-}
 
-if ($j_total >= 10000) {
-	my $no_cache = $patient->get_lmdb_cache("r");
-	my $cache_vectors_enum_id = $patient->name().'_chr_vectors_enum';
-	my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
-	if ($h_res_v_enum) {
-		foreach my $chr_id (keys %$h_res_v_enum) {
-			my $v_filters = $project->getChromosome($chr_id)->getNewVector();
-			$v_filters->from_Enum($h_res_v_enum->{$chr_id}->{min6});
-			$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $v_filters);
+my $h_junctions_already_scored;
+my $pm1       = new Parallel::ForkManager($fork);
+my $nbErrors = 0;
+$pm1->run_on_finish(
+	sub {
+		my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $hres ) = @_;
+		unless ( defined($hres) or $exit_code > 0 ) {
+			$nbErrors++;
+			print qq|No message received from child process $exit_code $pid!\n|;
+			return;
 		}
-	}
-	else { die; }
-}
-
-my ($h_junctions_already_scored, $h_junctions_todo);
-my $done;
-my @lScores = (0..10);
-@lScores = sort {$b <=> $a} @lScores;
-foreach my $score (@lScores) {
-	next if $done == 1;
-	foreach my $chr (@{$project->getChromosomes()}) {
-		next if $done == 1;
-		foreach my $junction (@{$chr->getListVarObjects($h_chr_vectors->{$chr->id()})}) {
-			next if $done == 1;
-			next if ($junction->isCanonique());
-			my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
-			my $j_score_with_dv;
-			if (not exists $h_junctions_already_scored->{$junction->id}) {
-				my $j_score = $junction->junction_score_without_dejavu_global($patient);
-				next if ($j_score < $score);
-				next if (exists $h_junctions_todo->{$j_pos});
-				$h_junctions_already_scored->{$junction->id} = $junction->junction_score($patient);
+		delete $hres->{toto};
+		foreach my $score (keys %$hres) {
+			foreach my $chr_id (keys %{$hres->{$score}}) {
+				foreach my $vid (keys %{$hres->{$score}->{$chr_id}}) {
+					$h_junctions_already_scored->{$score}->{$chr_id}->{$vid} = undef;
+				}	
 			}
-			$j_score_with_dv = $h_junctions_already_scored->{$junction->id};
-			next if ($j_score_with_dv < $score);
-			$h_junctions_todo->{$j_pos} = $junction;
-			my $nb_done = scalar (keys %$h_junctions_todo);
-			$done = 1 if $nb_done == $NB_MAX_PLOTS;
 		}
 	}
-}
+);
 
+foreach my $chr (@{$project->getChromosomes()}) {
+	my $pid = $pm1->start and next;
+	$buffer->dbh_deconnect();
+	$buffer->dbh_reconnect();
+	my $hres;
+	my $nb_done;
+	$hres->{toto} = undef;
+	foreach my $junction (@{$chr->getListVarObjects($patient->getJunctionsVector($chr))}) {
+		my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
+		next if ($junction->isCanonique());
+		my $j_score_with_dv;
+		my $j_score = $junction->junction_score_without_dejavu_global($patient);
+		next if ($j_score < $score);
+		my $score_f = $junction->junction_score($patient);
+		next if ($score_f < $score);
+		$hres->{$score_f}->{$chr->id}->{$junction->vector_id()} = undef;
+		$nb_done++;
+	}
+	$chr = undef;
+	$pm1->finish(0,$hres);
+}
+$pm1->wait_all_children();
+
+my $i = 0;
 my @lJunctions;
-foreach my $jid (keys %{$h_junctions_todo}) {
-	push(@lJunctions, $h_junctions_todo->{$jid});
+foreach my $score (sort {$b <=> $a} keys %$h_junctions_already_scored) {
+	foreach my $chr_id (sort {$a <=> $b} keys %{$h_junctions_already_scored->{$score}}) {
+		foreach my $vector_id (sort {$a <=> $b} keys %{$h_junctions_already_scored->{$score}->{$chr_id}}) {
+			my $junction = $project->getChromosome($chr_id)->getVarObject($vector_id);
+			push(@lJunctions, $junction);
+			$i++;
+			last if $i == $NB_MAX_PLOTS;
+		}
+		last if $i == $NB_MAX_PLOTS;
+	}
+	last if $i == $NB_MAX_PLOTS;
 }
 
 my $pm = new Parallel::ForkManager($fork);
@@ -118,9 +123,6 @@ foreach my $junction (@lJunctions) {
 	my $pid = $pm->start and next;
 	$buffer->dbh_deconnect();
 	$buffer->dbh_reconnect();
-
-#	my $locus_text = $junction->getChromosome->name().':'.($junction->start() - 100).'-'.($junction->end() + 100);
-#	$junction->createSashiPlot($patient, $locus_text);
 	$junction->can_create_sashimi_plots(1);
 	$junction->getListSashimiPlotsPathFiles($patient);
 	print FILE 'Ok junction '.$junction->id()."\n";

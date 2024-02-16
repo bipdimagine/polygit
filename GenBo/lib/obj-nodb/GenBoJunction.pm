@@ -89,17 +89,13 @@ has get_hash_exons_introns => (
 	default	=> sub {
 		my $self = shift;
 		my @lPat = @{$self->getPatients()};
-		my $ensid;
-		$ensid = $self->annex->{$lPat[0]->name()}->{ensid} if (exists $self->annex->{$lPat[0]->name()}->{ensid});
 		my $h_exons_introns;
 		my (@lExons, @lIntrons);
 		my $intspan_junction = $self->getStrictGenomicSpan();
 		my $i = 0;
 		foreach my $g (@{$self->getGenes()}) {
 			my @ltmp = split('_', $g->id());
-			next if ($ensid and $ltmp[0] ne $ensid);
 			foreach my $t (@{$g->getTranscripts()}) {
-				next unless $t->isMain();
 				my $intspan_t = $t->getGenomicSpan();
 				my $inter1 = $intspan_junction->intersection( $intspan_t );
 				next if $inter1->is_empty();
@@ -688,19 +684,11 @@ sub junction_score_without_dejavu_global {
 sub junction_score {
 	my ($self, $patient, $use_percent_dejavu) = @_;
 	$self->dejavu_percent_coordinate_similar($use_percent_dejavu) if $use_percent_dejavu;
-	my $gene;
-	if (exists $self->annex->{$patient->name()}->{ensid}) {
-		foreach my $g (@{$self->getGenes()}) {
-			my @ltmp = split('_', $g->id());
-			next if ($ltmp[0] ne $self->annex->{$patient->name()}->{ensid});
-			$gene = $g;
-		}
-		return -999 unless $gene;
-		confess() unless $gene;
-	}
+	my @lGenes = @{$self->getGenes()};
 	my $score = $self->junction_score_without_dejavu_global($patient);
 	$score -= $self->junction_score_penality_dejavu($patient);
 	$score -= $self->junction_score_penality_known_coordinates();
+	$score -= 999 if not @lGenes; 
 	return $score;
 }
 
