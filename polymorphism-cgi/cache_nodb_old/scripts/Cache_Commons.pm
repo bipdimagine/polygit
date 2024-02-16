@@ -2,7 +2,7 @@ package Cache_Commons;
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
-use Moose;
+use Moo;
 use Data::Dumper;
 use Parallel::ForkManager;
 use Bio::DB::Sam;

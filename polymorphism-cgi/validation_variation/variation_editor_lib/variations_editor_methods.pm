@@ -47,10 +47,10 @@ sub new_refine_heterozygote_composite_score_rocks {
 	
 	my $cgi = $print_html->cgi;
 	my $patient= $print_html->patient;
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory("polyviewer_global"),mode=>"r",name=>$project->name);
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"r",name=>"polyviewer_objects");
 	my $noP =  GenBoNoSqlRocksPolyviewerVariant->new(dir=>"/data-beegfs/test-cache/polyviewer/",mode=>"r",name=>$project->name.".polyviewer_variant");
 	my $out_header;
-	$out_header= $print_html->print_header("background-color:#E9DEFF");
+	$out_header= $print_html->print_header("background-color:aliceblue;color:black");
 	my $mother = $patient->getFamily->getMother();
 	my $father = $patient->getFamily->getFather();
 	my $hno;
@@ -143,6 +143,10 @@ sub new_refine_heterozygote_composite_score_rocks {
 			my $t =  time;
 			my $vp = $final_polyviewer_all->get($g->{chr_name}."!".$g->{all_vector_ids}->{$vid},1);
 			$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
+			$vp->{spliceAI} = $vp->{hgenes}->{$g->{id}}->{sc}->{spliceAI};
+			
+			#$vp->{hgenes}->{$g->{id}}->{spliceAI};
+			$vp->{spliceAI_cat} = $vp->{hgenes}->{$g->{id}}->{sc}->{spliceAI_cat};
 			$vp->{text_caller} =  $vp->{patients_calling}->{$patient->id}->{array_text_calling};
 			bless $vp , 'PolyviewerVariant';
 			$time_decode += abs(time -$t) ;
@@ -153,7 +157,6 @@ sub new_refine_heterozygote_composite_score_rocks {
 			
 			unless ($vp) {
 				confess();
-#				$vh = hvariant::hash_variant_2( $patient, $vid );
 			}
 
 			if ( exists $hno->{$vid} ) {

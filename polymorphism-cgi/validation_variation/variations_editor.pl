@@ -833,7 +833,6 @@ sub refine_heterozygote_composite_score_fork {
 	
 	#delete $project->{validations_query1};
 	while ( my @tmp = $iter->() ) {
-		warn scalar @tmp;
 		$vid++;
 		$hrun->{$vid}++;
 		my $pid = $pm->start and next;
@@ -952,7 +951,10 @@ sub fork_annnotations {
 	$project->buffer->dbh_deconnect();
 	#$project->buffer->close_lmdb();
 	my $tt = time;
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
+	my $final_polyviewer_all ;
+	if ($project->isRocks){
+	   $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
+	}
 	while ( my @tmp = $iter->() ) {
 		$id++;
 		$hrun->{$id}++;
@@ -1016,9 +1018,10 @@ sub constructChromosomeVectorsPolyDiagFork {
 	}
 	my $filter_transmission;
 	$filter_transmission->{denovo}          = 1 if $cgi->param('denovo');	
-	$filter_transmission->{"strict_denovo"} = 1 if $cgi->param('denovo');
+	#$filter_transmission->{"strict_denovo"} = 1 if $cgi->param('denovo');
 	$filter_transmission->{"strict_denovo"} = 1 if $cgi->param('strict_denovo');
 	$filter_transmission->{'denovo/?'}      = 1 if $cgi->param('denovo');
+	
 	$filter_transmission->{recessive}       = 1 if $cgi->param('recessive');
 	$filter_transmission->{both}            = 1 if $cgi->param('both');
 	$filter_transmission->{xor_mother}      = 1 if $cgi->param('xor_mother') or $cgi->param('xor');
@@ -1029,6 +1032,10 @@ sub constructChromosomeVectorsPolyDiagFork {
 		delete $filter_transmission->{xor_mother};
 		delete $filter_transmission->{xor_father};
 	}
+	if ( exists $filter_transmission->{denovo} && exists $filter_transmission->{strict_denovo}){
+		delete $filter_transmission->{strict_denovo};
+	}
+	
 	$filter_transmission->{xor}             = 1 if  $cgi->param('xor');
 	warn "\n";
 	
@@ -1201,12 +1208,12 @@ sub constructChromosomeVectorsPolyDiagFork {
 						 $vtr = $patient->getVectorOrigin($chr);
 						last;
 					}
-					if ( $tr eq "strict_denovo" ) {
-						$vtr |= $patient->getFamily()->getVector_individual_strict_denovo( $chr, $patient );
-
+					if ( $tr eq "denovo") {
+							$vtr |= $patient->getFamily()->getVectorDenovoTransmission( $chr, $patient );
 					}
-					elsif ( $tr eq "denovo" ) {
-						$vtr |= $patient->getFamily()->getVectorDenovoTransmission( $chr, $patient );
+					
+					elsif ( $tr eq "strict_denovo" ) {
+							$vtr |= $patient->getFamily()->getVector_individual_strict_denovo( $chr, $patient );
 
 					}
 					elsif ( $tr eq "recessive" ) {

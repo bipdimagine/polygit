@@ -1,6 +1,7 @@
 package hvariant;
 use strict;
 use Data::Dumper;
+use Carp;
 
 sub hash_variant_2 {
 	my ($patient,$vid) = @_;

@@ -41,6 +41,8 @@ sub calculate_rocks {
 	
 	$final_polyviewer_all->prepare(\@ids);
 	warn "\t score :".abs(time -$t)." ".scalar(@ids);
+	my $st =0;
+	my $st2;
 	foreach my $hgene (@$list) {
 		my $gid = $hgene->{id};
 		my $debug ;
@@ -55,7 +57,10 @@ sub calculate_rocks {
 		else {
 			$hgene->{level_dude} = -1;
 		}
-		my $global_gene = $final_polyviewer_all->get($gid); #$chr->get_polyviewer_genes($patient,$gid);
+		my $t1 = time;
+		my $global_gene = $final_polyviewer_all->get_cached($gid); #$chr->get_polyviewer_genes($patient,$gid);
+		$st += abs(time-$t1);
+		$t1 = time;
 		foreach my $k ( keys %{$global_gene} ) {
 			next if $k eq "penality";
 			next if $k eq "denovo_rare";
@@ -83,6 +88,7 @@ sub calculate_rocks {
 			push( @{ $class->{mother} }, $hgene->{all_variants}->{$k}->{score} ) if exists $hgene->{all_variants}->{$k}->{mother};
 			push( @{ $class->{father} }, $hgene->{all_variants}->{$k}->{score} ) if exists $hgene->{all_variants}->{$k}->{father};
 		}
+		
 		if (scalar( @{ $class->{mother} } ) > 0 && scalar( @{ $class->{father} } ) == 0 && exists $hgene->{father}->{id} ) {
 			
 			my $nid = $hgene->{father}->{id};
@@ -113,7 +119,9 @@ sub calculate_rocks {
 			
 			$hgene->{max_score} = $hgene->{score} + $score_biallelic + $hgene->{penality} ;
 		}
+		$st2 += abs(time -$t1);
 	}
+	warn "cache :=> ".$st."  ".$st2;
 	return $list;
 #	$project->buffer->close_lmdb();
 	
