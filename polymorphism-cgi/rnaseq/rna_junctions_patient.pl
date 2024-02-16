@@ -415,8 +415,11 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		foreach my $gene_name (@lGenesNames) {
 			my $g = $project->newGene($gene_name);
 			next unless $g;
-			$score += int(($g->score/2)+0.5);
-			my $gscore = $g->score;
+			my $this_score = $score;
+			
+			my $gscore = int(($g->score/2)+0.5);
+			$this_score += $gscore;
+			
 			my $ht = $junction->get_hash_exons_introns();
 			
 			delete $junction->{get_hash_exons_introns} unless $ht;
@@ -434,19 +437,19 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 #			if (not exists $h_td_line->{6}) { push (@{$h_td_line->{6}}, $html_trans);} 
 #			if (exists $h_td_line->{7}) { push (@{$h_td_line->{7}}, qq{<div>---</div>}); }
 			my $badge_color = '#808080';
-			$badge_color = '#92D674' if $score >= 0;
-			$badge_color = '#FFFF00' if $score >= 5;
-			$badge_color = '#CC8506' if $score >= 8;
+			$badge_color = '#92D674' if $this_score >= 0;
+			$badge_color = '#FFFF00' if $this_score >= 5;
+			$badge_color = '#CC8506' if $this_score >= 8;
 			my $badge_color_text = "white";
 			$badge_color_text = "black" if $badge_color eq '#FFFF00';
-			push (@{$h_td_line->{score}}, $score); 
-			push (@{$h_td_line->{7}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$score - $gscore </span>});
+			push (@{$h_td_line->{score}}, $this_score); 
+			push (@{$h_td_line->{7}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$this_score [G: $gscore] </span>});
 #			if (exists $h_td_line->{8}) { push (@{$h_td_line->{8}}, qq{<div>-------</div>}); }
 			push (@{$h_td_line->{8}}, $score_details_text);
 
 			next if not $tr_found;
 			
-			$hres->{score}->{all}->{$gene_name}->{$score} = $junction->id();
+			$hres->{score}->{all}->{$gene_name}->{$this_score} = $junction->id();
 			my $html_tr;
 			if ($is_junction_linked_filtred) {
 				$html_tr .= qq{<tr style="text-align:center;font-size:11px;opacity:0.55;max-width:130px;overflow-y:auto;">};
