@@ -40,7 +40,8 @@ my $trio_patient	   = $cgi->param('patient');
 my $use_phenotype_score	   = $cgi->param('use_phenotype');
 $use_phenotype_score = lc($phenotype) if ($phenotype and not $use_phenotype_score);
 $use_phenotype_score = 'intellectual disability' unless ($use_phenotype_score);
-
+warn "coucou";
+die();
 my $buffer  = GBuffer->new();
 purge_cgi_session_directory($buffer);
 my $project;
@@ -114,6 +115,7 @@ if ($genes) {
 		next if (exists $h_genes->{$g});
 		$h_genes->{$g} = $g;
 	}
+	die();
 }
 
 my ($h_found_by_locus, $h_found_by_transcript);

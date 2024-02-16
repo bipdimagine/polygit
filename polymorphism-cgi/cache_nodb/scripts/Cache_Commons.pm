@@ -2,7 +2,7 @@ package Cache_Commons;
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
-use Moose;
+use Moo;
 use Data::Dumper;
 use Parallel::ForkManager;
 use Bio::DB::Sam;
@@ -71,6 +71,7 @@ has categories => (
 					deletion       => 1,
 					large_deletion => 1,
 					large_duplication => 1,
+					large_insertion => 1,
 					junction => 1,
 				},
 			},

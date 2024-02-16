@@ -1110,7 +1110,7 @@ sub get_projects_hashes_from_user {
 							$hgenes->{$g->id}->{js_id} = $proj_name."_".$g->id;
 						}
 						$hgenes->{$g->id}->{score_variant}->{$v->id} = $this_score;
-						if ($v->isDM_for_gene($g) or $v->isClinvarPathogenic_for_gene($g) or exists $hAllVarIds->{$var_id}->{local}) {
+						if ($v->isDM_for_gene($g) or $v->is_clinvar_pathogenic_for_gene($g) or exists $hAllVarIds->{$var_id}->{local}) {
 							$hgenes->{$g->id}->{pathogenic} ++;
 							$hvariation->{genes_pathogenic}->{$g->id()}++;
 						}

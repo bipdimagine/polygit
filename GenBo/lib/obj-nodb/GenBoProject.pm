@@ -670,15 +670,21 @@ sub rocks_pipeline_directory {
 	$path .="$type/" if $type;
 	return $self->makedir($path);
 }
-
-sub rocks_directory {
+sub rocks_directory_path {
 	my ($self,$type,$create) = @_;
 	my $path =  $self->rocks_cache_dir();
 	$path .="/$type/" if $type;
-	unless ($create){
-	confess() unless -e $path;  
 	return $path;
-	}
+	
+}
+
+sub rocks_directory {
+	my ($self,$type,$create) = @_;
+	my $path =  $self->rocks_directory_path($type);
+	#unless ($create){
+	#confess() unless -e $path;  
+	#return $path;
+	#}
 	return $self->makedir($path);
 }
 
