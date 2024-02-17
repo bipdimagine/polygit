@@ -52,7 +52,11 @@ var href = window.location.href;
 
 var url_track_ucsc = "http%3A%2F%2Fmendel.necker.fr%2Fcgi-bin%2Fpolymorphism-cgi%2Fucsc_bed.pl%3Fproject%3D";
 if (href.indexOf("aptana", 1)>-1 ) {
-	if (href.indexOf("cecile", 1) > -1) {
+	if (href.indexOf("aptana-git", 1) > -1) {
+		url_path =  "/cgi-bin/aptana-git/polymorphism-cgi/";
+		alert("coucou");
+	}
+	else if (href.indexOf("cecile", 1) > -1) {
 		url_path = "/cgi-bin/cfourrag/polymorphism-cgi/";
 		url_track_ucsc = "http%3A%2F%2Fmendel.necker.fr%2Fcgi-bin%2Fpoly-dev%2Fpolymorphism-cgi%2Fucsc_bed.pl%3Fproject%3D";
 	}
