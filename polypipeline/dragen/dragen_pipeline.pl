@@ -139,6 +139,7 @@ my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6
 #create_list_steps;
 unless ($rna){
 	test_rna($projects);
+	
 	if(test_rna($projects)){
 	print colored::stabilo("orange ","Hey Cecile, You are working  on RNA project and you didn't put RNA=1 option  ", 1)."\n";
 	my $choice = prompt("y","Do you want to the option (y/n) ? ");

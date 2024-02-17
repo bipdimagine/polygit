@@ -50,7 +50,7 @@ foreach my $dragen_cmd (@cmds) {
 	$last_cmd = $dragen_cmd;
 	my $exit = run_cmd($dragen_cmd);
 	unlink $file_lock if -e $file_lock;
-	die() if $exit != 0;
+	die($dragen_cmd) if $exit != 0;
 	$last_cmd = undef;
 }
 
