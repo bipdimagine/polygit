@@ -56,12 +56,15 @@ my $out = $project->getProjectRootPath();
 my $file = $out."/".$project->name()."_igv_session.xml";
 
 open (IGV, ">$file");
-print IGV '<Session genome="hg38" hasGeneTrack="true" hasSequenceTrack="true" locus="All" version="8">\n';
+print IGV '<Session genome="hg38" hasGeneTrack="true" hasSequenceTrack="true" locus="All" version="8">'."\n";
 print IGV "<Resources>\n";
 
 foreach my $patient (@{$patients_name}) {
 	my $name=$patient->name();
-	print IGV '<Resource path="http://www.polyweb.fr/NGS/'.$project->name."/HG38/align/hisat2/".$patient->name.".bam\"/>\n";
+	my $bam =$patient->getBamFile();
+	$bam =~ s/\data-isilon\/sequencing\/ngs/http:\/\/www.polyweb.fr\/NGS\//;
+	
+	print IGV '<Resource path="'.$bam.'"'."/>\n";
 }
 print IGV "</Resources>\n";
 print IGV "</Session>\n";
