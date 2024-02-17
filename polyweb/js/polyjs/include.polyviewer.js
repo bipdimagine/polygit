@@ -222,6 +222,7 @@ var url_cgh_dude = url_path+"/validation_variation/dude_editor_by_position.pl";
 
 
 // POLYVIEWER NEW DEV TEST
+var url_summary_panel_devtest = url_path+"/validation_variation/summary_polyviewer.pl";
 var url_get_random_bam_file = url_path+"/igv/get_random_bam_file.pl";
 var url_fast_patients_devtest = url_path+"/validation_variation/fast_patients_json_devtest.pl";
 var url_header_polyviewer_devtest = url_path+"/validation_variation/header_polyviewer_devtest.pl";
