@@ -52,7 +52,7 @@ method correct_vcf(Str :$filein!){
 	my $stepname = $name."@".$type;
 	 my $cmd = "perl $bin_dev/correct_gatk.pl -vcf=$filein -project=$name -dir=$dir_out -snp_out=$snp_out -indels_out=$indels_out -patient=$patient -method=haplotypecaller";
 	  my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$fork,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 	 if ($self->unforce() && -e $fileout){
 	 	$job_bds->skip();
 	#  	$self->add_skip_steps($stepname);
@@ -85,7 +85,7 @@ method filter_vcf4(Str :$filein!){
 	 my $cmd = "perl $bin_dev/filter_haplotypecaller.pl -vcf=$filein -project=$name -dir=$dir_out  -patient=$patient -method=haplotypecaller4";
 
 	  my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$fork,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 	 if ($self->unforce() && -e $fileout){
 	 	$job_bds->skip();
 	#  	$self->add_skip_steps($stepname);
@@ -120,7 +120,7 @@ method correct_vcf4(Str :$filein!){
 	 my $cmd = "perl $bin_dev/correct_gatk.pl -vcf=$filein -project=$name -dir=$dir_out -snp_out=$snp_out -indels_out=$indels_out -patient=$patient -method=haplotypecaller4";
 	 warn $cmd;
 	  my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$fork,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 	 if ($self->unforce() && -e $fileout){
 	 	$job_bds->skip();
 	#  	$self->add_skip_steps($stepname);
@@ -140,7 +140,6 @@ method genotype_gvcf4 (Str :$filein! ){
 	my $patients = $project->get_list_patients($arg);
 	foreach my $patient (@$patients){
 			my $gvcf = $patient->getGvcfFile("haplotypecaller4");#$dir_out."/".$patient->name.".g.vcf.gz";
-			warn $gvcf;
 			die("$gvcf you don't have gvcf for at least this patient restart after_lifescope on this project ") unless $gvcf ;#-e $gvcf;
 	}
 	my $fork =$self->nproc;
@@ -148,7 +147,7 @@ method genotype_gvcf4 (Str :$filein! ){
 	my $cmd = "perl $bin_dev/gatk-4/genotype_gvcf.pl -project=".$name." -vcf=$fileout -window=$size_window -patient=$arg -fork=$fork ";;
 	warn $cmd;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>40,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-			$self->current_sample->add_job(job=>$job_bds);
+			$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 	  	$job_bds->skip();
 	}
@@ -176,7 +175,7 @@ method genotype_gvcf (Str :$filein! ){
 	my $size_window = 1_000_000;
 	my $cmd = "perl $bin_dev/genotype_gvcf.pl -project=".$name." -vcf=$fileout -window=$size_window -patient=$arg -fork=$fork ";;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>40,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-			$self->current_sample->add_job(job=>$job_bds);
+			$self->current_sample->add_job({job=>$job_bds});
 	if ($self->unforce() && -e $fileout){
 	  	$job_bds->skip();
 	}
@@ -193,7 +192,7 @@ method move_vcf (Str :$filein! ){
 	my $cmd = "perl $bin_dev/move_vcf.pl  -project=$name -vcf_dir=$dir_out -patient=$arg -method_calling=haplotypecaller";
 	my $ppn = 1;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 	#@@@@@@@@@@@@@@@@@@@@@
 	#todo check for all individual file 
 	if ($self->unforce() && -e $fileout){
@@ -218,7 +217,7 @@ method move_and_split_vcf4 (Str :$filein! ){
 	my $cmd = "perl $bin_dev/split_haplotypecaller.pl  -project=$name -vcf=$filein -patient=$arg -method_calling=haplotypecaller4";
 	my $ppn = 1;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 	#@@@@@@@@@@@@@@@@@@@@@
 	#todo check for all individual file 
 	if ($self->unforce() && -e $fileout){
@@ -238,7 +237,7 @@ method move_vcf4 (Str :$filein! ){
 	my $cmd = "perl $bin_dev/move_vcf.pl  -project=$name -vcf_dir=$dir_out -patient=$arg -method_calling=haplotypecaller4";
 	my $ppn = 1;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 	#@@@@@@@@@@@@@@@@@@@@@
 	#todo check for all individual file 
 	if ($self->unforce() && -e $fileout){
@@ -274,7 +273,7 @@ method calling_larges_indels  (Str :$filein! ){
 		my $stepname = $name."@".$type."#$nb";
 			$nb++;
 		my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 		#@@@@@@@@@@@@@@@@@@@@@
 		#todo check for all individual file 
 		if ($self->unforce() && -e $fileout){
@@ -304,7 +303,7 @@ method count_featureCounts  (Str :$filein! ){
 	my @sed_cmd2;
 	my $nb =0;
 	my $align_method;
-	my $strand ;
+	my $profile;
 	foreach my $patient (@$patients){
 		my $run = $patient->getRun();
 		my $type = $run->infosRun->{method};
@@ -314,21 +313,27 @@ method count_featureCounts  (Str :$filein! ){
 		push(@bams,$bam);
 		$bam =~ s/\//\\\//g;
 		$align_method = $patient->alignmentMethod();
+		$profile = $patient->getSampleProfile();
 		push(@sed_cmd,qq{sed -i "2s/$bam/$name/" $fileout} );
 		push(@sed_cmd2,qq{sed -i "2s/$bam/$name/" $fileout2} );
 	}
 	my $ppn =16;
 	my $gtf = $project->gtf_file();
-	$gtf = $project->gtf_file_star() if $align_method eq "star";
+	$gtf = $project->gtf_file_dragen() if $align_method eq "star" || $align_method eq "dragen-align";
+	#die($gtf);
 	
 	my $sed = join(" && ",@sed_cmd);
 	my $featureCounts = $project->buffer->software("featureCounts");
-	my $cmd = "$featureCounts -T $ppn   -a $gtf --ignoreDup -o $fileout -p -t exon  -s 1 ".join(" ",@bams)." && $sed";
+	my $strand = " -s 1 ";
+	$strand = " -s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free";
+	$strand = " -s 0 " if $profile eq "bulk neb pcr-free";
+	
+	my $cmd = "$featureCounts -T $ppn   -a $gtf --ignoreDup -o $fileout -p -t exon  $strand ".join(" ",@bams)." && $sed";
 	#my $cmd = "$featureCounts -T $ppn   -a $gtf  -o $fileout -p -t exon  ".join(" ",@bams)." && $sed";
 	my $type = "featureCounts-genes";
 	my $stepname = $project_name."@".$type;
 		my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[@bams],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 		if ($self->unforce() && -e $fileout){
 	  		$job_bds->skip();
 	}
@@ -340,7 +345,7 @@ method count_featureCounts  (Str :$filein! ){
 		my $type2 = "featureCounts-exons";
 		my $stepname2 = $project_name."@".$type2;
 		my $job_bds2 = job_bds->new(cmd=>[$cmd2],name=>$stepname2,ppn=>$ppn,filein=>[@bams],fileout=>$fileout2,type=>$type2,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds2);
+		$self->current_sample->add_job({job=>$job_bds2});
 		if ($self->unforce() && -e $fileout2){
 	  		$job_bds2->skip();
 	}
@@ -373,7 +378,7 @@ method xhmm (Str :$filein){
 	
 	my $cmd = "perl $bin_dev/xhmm.pl -project=$projectName  ";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>\@$tfilein,fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 		#@@@@@@@@@@@@@@@@@@@@@
 		#todo check for all individual file 
 	if ($self->unforce() && -e $fileout){
@@ -404,7 +409,7 @@ method dude (Str :$filein){
 	
 	my $cmd = "perl $bin_dev/dude/dude.pl -project=$projectName  -fork=$ppn && date > $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>\@$tfilein,fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 		#@@@@@@@@@@@@@@@@@@@@@
 		#todo check for all individual file 
 	if ($self->unforce() && -e $fileout){
@@ -430,7 +435,7 @@ method quality_check (Str :$filein){
 	my $fileout = $dir."/quality_check.log";
 		my $cmd = "perl $bin_dev/quality_check.pl -project=$projectName  -vcf_file=$filein -fork=$ppn >$fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
 		#@@@@@@@@@@@@@@@@@@@@@
 		#todo check for all individual file 
@@ -467,7 +472,7 @@ method cache (Str :$filein){
 		my $fileout = $hcmd->{fileout};
 		push(@$fout,$fileout);
 		my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 		if ($self->unforce() && -e $fileout){
 	  		$job_bds->skip();
 		}
@@ -483,7 +488,7 @@ method cache (Str :$filein){
 	my $type2 = "global_infos";
 	my $stepname = $projectName."@".$type2;
 	my $job_bds = job_bds->new(cmd=>[$cmd2],name=>$stepname,ppn=>$ppn2,filein=>$fout,fileout=>$fileout_gv,type=>$type2,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	
 
 	
@@ -516,7 +521,7 @@ method cache_test (Str :$filein){
 		my $fileout = $hcmd->{fileout};
 		push(@$fout,$fileout);
 		my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job(job=>$job_bds);
+		$self->current_sample->add_job({job=>$job_bds});
 		if ($self->unforce() && -e $fileout){
 	  		$job_bds->skip();
 		}
@@ -532,7 +537,7 @@ method cache_test (Str :$filein){
 	my $type2 = "global_infos";
 	my $stepname = $projectName."@".$type2;
 	my $job_bds = job_bds->new(cmd=>[$cmd2],name=>$stepname,ppn=>$ppn2,filein=>$fout,fileout=>$fileout_gv,type=>$type2,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job(job=>$job_bds);
+	$self->current_sample->add_job({job=>$job_bds});
 	
 
 	
