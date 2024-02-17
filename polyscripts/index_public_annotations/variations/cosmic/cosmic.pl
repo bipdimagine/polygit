@@ -1,13 +1,13 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib "$Bin";
-use lib "$Bin/../../../../../lib/obj-nodb";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use strict; 
 use Set::IntSpan::Fast::XS ;
 use Data::Dumper;
 use Parallel::ForkManager;
 use Vcf;
-use GenBoNoSql;
+use GenBoNoSqlRocksAnnotation;
 use JSON::XS;
 use Digest::MD5::File qw( file_md5_hex );
 use Date::Tiny;
@@ -27,9 +27,15 @@ GetOptions(
 	'version=s'   => \$version,
 );
 die("please add -version=") unless $version;
-my $dir_out  = "/public-data/repository/HG19/cosmic/$version/";
+my $dir_out  = "/data-isilon/public-data/repository/HG19/cosmic/$version/";
 my $dir_vcf = "$dir_out/vcf/";
 
+my $dir_rocks;
+$dir_rocks = "$dir_out/rocksdb/";
+
+unless (-e $dir_rocks){
+	system("mkdir $dir_rocks;chmod a+rwx $dir_rocks");
+}
 
  my @files = `ls $dir_vcf/*.vcf.gz`;
  chomp(@files);
@@ -37,9 +43,6 @@ my $dir_vcf = "$dir_out/vcf/";
  
 
 
-if (-e $dir_out."/lmdb"){
-	die("hey the output directory already exists !!! $dir_out/lmdb");
-}
 
 my $hrun;
 my $id = time;
@@ -58,10 +61,11 @@ foreach my $chr (@$chromosomes){
 	$hrun->{$this_id}++;
 	my $pid = $pm->start and next;
 	warn "start $chr";
-	run_chr($chr);
+	run_chr_rocks($chr);
 	my $hres;
 	$hres->{id} = $this_id;
 	$pm->finish(0, $hres);
+	last;
 }
 $pm->wait_all_children;
 
@@ -98,12 +102,12 @@ exit(0);
 
 
 
-sub run_chr {
+sub run_chr_rocks {
 	my ($chr) = @_;
 
 	#my $db = new save({name=>"cosmic",chromosome=>$chr,mode=>"c",integer=>1,compress=>1});
-	my $db = new save({name=>"lmdb",chromosome=>$chr,mode=>"c",integer=>1,db_type=>"lmdb"});
-	$db->dir_lmdb($dir_out);
+	my $nop = GenBoNoSqlRocksAnnotation->new(dir=>$dir_rocks,factor=>[1],pack=>"",mode=>"c",name=>$chr,version=>"110",pipeline=>1,description=>["rs","frequence"]);	
+	
 
 foreach my $file (@files){
 	my @objs;
@@ -133,12 +137,15 @@ foreach my $file (@files){
 				$x->{ID} =~ s/\.//;
 				my $cnt =  $x->{'INFO'}->{'CNT'};
 				foreach my $vcfVarAllele (@$varAllele) {
+				
 					$vcfRefAllele = $$x{'REF'};
 					my $variation;
 					$variation->{ref_all} = $$x{'REF'};
 					$variation->{alt_all} = $vcfVarAllele;
 					$variation->{frequence} = $cnt;
+					$variation->{start} =  $$x{'POS'};
 					$variation->{rs} = $x->{ID};
+						my $gnomad_id = join("-",$chr,$variation->{start},$variation->{ref_all},$vcfVarAllele);
 					$nb_alt ++;
 					my $type;
 					my $len;
@@ -148,29 +155,10 @@ foreach my $file (@files){
 					my $id;
 							$variation->{len} = abs($len);
 					my $id;
-					$variation->{start} =  $$x{'POS'};
-					if ($type eq 's') {
-						# SNP
-						$db->add_snp($variation);
-						}
-					elsif ($type eq "i" && $len < 0 ){
-						# deletions
-					
-						$db->add_deletion($variation);
-						
-					
-					}
-					elsif ($type eq "i" && $len >= 0 ){
-						# insertion
-						$db->add_insertion($variation);
-					}
-					elsif ($vcfVarAllele eq "." ){
-							$variation->{ht} = $variation->{ref_all} ;
-							$db->add_deletion($variation,1);
-					}
-					elsif ($type eq 'r') { warn "# File: ".$file."\n -> No reason to parse this variant because it's identical to reference )"; warn Dumper $x }
+					if ($type eq 'r') { warn "# File: ".$file."\n -> No reason to parse this variant because it's identical to reference )"; warn Dumper $x }
 					elsif ($type eq 'o') { next;warn($$x{'REF'}." ". $vcfVarAllele." ".$variation->{ht}." ->$type");next;}
-					else {next;warn ("\n\nERROR $type: strange vcf line...\nFile:".$file."\n$x\n"); next;}
+					$variation->{start} =  $$x{'POS'};
+					$nop->put_cosmic($gnomad_id,[$x->{ID},$cnt]);
 					
 				}# for index_alt
 				$nb++;		
@@ -184,8 +172,7 @@ foreach my $file (@files){
     }# while parse vcf
 	$vcf->close();
 }
-	$db->save_intspan();
-	$db->close();
+	$nop->close();
 	return ;
 }
 
