@@ -130,15 +130,11 @@ my $steps = {
 				"cache_html_polycyto" =>sub {$pipeline->html_cache_polycyto(@_)}, 
 				"polydude" =>sub {$pipeline->polydude(@_)}, 
 				"sashimi_plots"=>sub {$pipeline->sashimi_plots(@_)}, 
-<<<<<<< HEAD
-				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)}, 
 				"merge_patients" => sub {$pipeline->merge_patients(@_)}, 
 				"merge_objects" => sub {$pipeline->merge_objects(@_)}, 
-=======
 				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)},
 				"dejavu_rna_junctions"=>sub {$pipeline->dejavu_rna_junctions(@_)},
 				"html_rna_junctions"=>sub {$pipeline->html_rna_junctions(@_)},
->>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
 			};
 
 
