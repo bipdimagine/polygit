@@ -165,6 +165,7 @@
 </head>
 
 
+
 <body onload="launchAnalyse(transloc);" onmouseenter="force_refresh_grids();">
 	<center>
 		<div id="titre"style="height:10%;width:95%" ></div>
@@ -280,8 +281,9 @@
 
  		<div id="CNV" class="tab-pane fade in active" style="height:90%;width:100%">
  			<br>
- 	 	  	<center style="height:6%">
+ 	 	  	<center style="height:10%">
  	 	  			<div class="container" id="chrView" style="height=5%;width:100%;"></div>
+ 	 	  			<div class="container" id="chrView_disomie" style="height=5%;width:100%;"></div>
  			</center><br>
  			
  	
@@ -306,7 +308,7 @@
               			 <th width="3%" field="DUPSEG"  formatter="formaterDUPSEG" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Dup Seg </b></center></th>
              			 
              			 <th width="3%" field="RATIO"  formatter="formaterRatio" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Ratio </b></center></th>
-
+						 <th width="3%" field="GT"  formatter="formaterGenotype" styles="text-align:center;font-size:9px;background-color:white;"><center><b>GT </b></center></th>
       		 			 <th width="3%" field="SCORECNV"  formatter="formaterScoreCNV" styles="text-align:center;font-size:9px;background-color:white;"><center>Score CNV</center></th>  
              			 			             			           
 						<th width="3%" field="wisecondor_elementary"   formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> WC </b></center></th>	

@@ -57,11 +57,11 @@ unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n")
 my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
-warn $buffer->config->{'public_data_annotation'}->{root};
+#warn $buffer->config->{'public_data_annotation'}->{root};
 my @pbd = ("/data-isilon/public-data","/data-isilon/public-data","/data-beegfs/public-data_nfs");#,"/data-beegfs/public-data_nfs");
 @pbd = ("/data-isilon/public-data","/data-isilon/public-data");
 $buffer->config->{'public_data_annotation'}->{root} = $pbd[rand @pbd];
-warn $buffer->config->{'public_data_annotation'}->{root};
+#warn $buffer->config->{'public_data_annotation'}->{root};
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
 warn $project->lmdb_cache_dir();
@@ -230,15 +230,28 @@ $project_cache->getPatients();
 my $chr_cache = $project_cache->getChromosome($chr_name);
 my $no5 = $chr_cache->get_lmdb_variations("w");
 my $vector_junctions = $chr_cache->getJunctionsVector();
-foreach my $junction (@{$chr_cache->getListVarObjects($vector_junctions)}) {
-	foreach my $patient_cache (@{$junction->getPatients()}) {
-		$junction->get_hash_noise($patient_cache);
+
+
+my $nb_elems = int($chr_cache->countThisVariants($vector_junctions) / $fork);
+$nb_elems += 20;
+
+my $pm = new Parallel::ForkManager($fork);
+my $iter = natatime $nb_elems, @{$chr_cache->getListVarObjects($vector_junctions)};
+while ( my @tmp = $iter->() ) {
+	my $pid = $pm->start and next;
+	foreach my $junction (@tmp) {
+		foreach my $patient_cache (@{$junction->getPatients()}) {
+			$junction->get_hash_noise($patient_cache);
+		}
+		my $jid = $junction->id();
+		delete $junction->{buffer};
+		delete $junction->{project};
+		$no5->put( $jid, $junction );
 	}
-	my $jid = $junction->id();
-	delete $junction->{buffer};
-	delete $junction->{project};
-	$no5->put( $jid, $junction );
+	$pm->finish();
 }
+$pm->wait_all_children();
+sleep(10);
 $no5->close();
 
 sub get_junctions_ids {
@@ -254,7 +267,7 @@ sub get_junctions_ids {
 	for ( my $i = 0 ; $i < @patient_names ; $i++ ) {
 		$hpatients->{ $patient_names[$i] } = $i;
 	}
-	my $vs = $project->getJunctions();
+	my $vs = $chr->getJunctions();
 	
 	my $h_ri_aval_amont;
 	#search common ri_aval ri_amont

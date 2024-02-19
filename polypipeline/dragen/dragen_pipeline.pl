@@ -81,6 +81,8 @@ my $cmd_cancel = [];
 my $step_name;
 my $force;
 my $rna;
+my $phased;
+my $neb;
 
 GetOptions(
 	'project=s' => \$project_name,
@@ -92,6 +94,8 @@ GetOptions(
 	'steps=s'=> \$step_name,
 	"dry=s" => \$dry,
 	"RNA=s" => \$rna,
+	"phased=s" => \$phased,
+	"neb=s" => \$neb,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -117,6 +121,8 @@ foreach my $pname (split(",",$project_name)){
  $project_name =~ s/\,/\./g ;
 my $dir_log = $projects->[0]->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time;
 system("mkdir $dir_log && chmod a+rwx $dir_log");
+
+warn $dir_log;
 
 if ($test_umi && !($umi)){
 		print colored::stabilo("red","Hey Sylvain, it seems to me that you didn't put the UMI=1 option but your project had UMIs  ", 1)."\n";
@@ -154,8 +160,9 @@ unless ($rna){
 
 
 if ($rna){
-	$steps = ["dragen pipeline","featurecount"] ;
-	$hsteps = {"align"=>0,"featurecount"=>1};
+	$steps = ["dragen pipeline","vcf","featurecount"] ;
+	$hpipeline_dragen_steps = {"align"=>0,"vcf"=>1,"featurecount"=>2};
+	$hsteps = {"align"=>0,"vcf"=>1, "featurecount"=>2};
 }
 
 
@@ -189,6 +196,7 @@ if($step_name) {
 	my $ts = [];
 	my $ts_rna = [];
 	foreach my $s (@$steps){
+		warn $s;
 		 unless (exists $hh->{$s}){
 		 	delete $hsteps->{$s};
 		 	next;
@@ -196,11 +204,12 @@ if($step_name) {
 	}
 	my @tt = sort {$hsteps->{$a} <=> $hsteps->{$b}} keys %$hsteps;
 	$steps = \@tt;
+	
 	confess() unless @$steps
 }
 
 
-
+##
 ####### Alignement
  my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
@@ -607,6 +616,8 @@ sub run_command {
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -rna=1 " if $rna == 1;
 	$job->{cmd} .= " -version=$version " if $version;
+	$job->{cmd} .= " -phased=$phased " if $phased;
+	$job->{cmd} .= " -neb=$neb " if $neb;
 #	warn $job->{cmd};
 #	die();
 	$job->{jobs_type_list} = join(",",@{$hp->{run_pipeline}});

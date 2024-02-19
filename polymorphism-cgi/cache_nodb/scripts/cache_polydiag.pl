@@ -35,6 +35,7 @@ $| = 1;
 	my $buffer = new GBuffer();
 	$buffer->vmtouch(1);
 	my $project = $buffer->newProjectCache( -name => $project_name, -verbose => 1 , -version=>$version);
+	$project->preload_patients();
 	my $patients = $project->getPatients();
 	if ($patient_name) {
 		
@@ -79,8 +80,9 @@ $| = 1;
 		#next if $pname ne "AS1502552";
 		my $pid = $pm->start and next;
 		#my $resp= {};
-		#
+
 		my $resp = polydiag::run_cache_polydiag_vector( $project_name, $p->name, $tbundle,$version );
+
 		run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
 		$pm->finish( 0, \$resp );

@@ -118,6 +118,9 @@ sub run_alignment_pe {
 	my $filein = $hash->{filein};
 
 	my $method       = $self->patient()->alignmentMethod();
+	if ($method eq "star"){
+		return $self->star_align($hash);
+	}
 	my $name         = $self->patient()->name();
 	my ($dirin)      = $self->patient()->getSequencesDirectory();
 	my $project_name = $self->project->name();
@@ -174,9 +177,8 @@ sub run_alignment_pe {
 
 		my $cmd =
 qq{perl $bin_dev/align.pl -file1=$f1 -file2=$f2 -method=$method -lane=$nb_bam  -project=$project_name -name=$name -bam=$bam -fork=$ppn };
-		my $type     = "align#" . $nb_bam;
-		my $stepname = $self->patient->name . "@" . $type;
-
+		my $type     = "$method#" . $nb_bam;
+		my $stepname = $self->patient->name . "@" .$method;
 		my $job_bds = job_bds_tracking->new(
 			uuid         => $self->bds_uuid,
 			cmd          => [$cmd],
@@ -2271,6 +2273,7 @@ sub move_bam {
 sub rnaseq_metrics {
 	my ( $self, $hash ) = @_;
 	my $filein       = $hash->{filein};
+	$filein = $self->patient->getBamFile() unless  $filein;
 	my $name         = $self->patient()->name();
 	my $project      = $self->patient()->project;
 	my $m            = $self->patient->alignmentMethod();
@@ -2285,21 +2288,26 @@ sub rnaseq_metrics {
 	$ppn = 1 if $self->nocluster;
 
 	die() if $fileout eq $filein;
+	$filein = $self->patient->getBamFileName() unless -e $filein;
 	my $refFlat = $project->refFlat_file();
-	$refFlat = $project->refFlat_file_star() if $method eq "star";
+	warn $refFlat;
+	
+	#$refFlat = "/data-isilon/public-data/repository/HG38/refFlat/refFlat_no_chr.txt" if $method eq "star" ;
+	
+	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
+	#$refFlat = $project->refFlat_file_dragen() if $method eq "dragen-align";
 	my $rRNA_file = $project->rRNA_file();
 	my $opt       = "";
 	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
-	#unless ( -e $refFlat ) {
-	#	die("can't find $refFlat $rRNA_file");
-
-	#}
+	unless ( -e $refFlat ) {
+		die("can't find $refFlat $rRNA_file");
+	}
 
 	my $java   = $project->buffer->software("java");
 	my $picard = $project->buffer->software("picard");
 
 	my $cmd =
-"$java -jar $picard  CollectRnaSeqMetrics I=$filein O=$fileout REF_FLAT=$refFlat STRAND=FIRST_READ_TRANSCRIPTION_STRAND $opt";
+"$java -jar $picard  CollectRnaSeqMetrics I=$filein O=$fileout REF_FLAT=$refFlat STRAND=FIRST_READ_TRANSCRIPTION_STRAND $opt  ";
 	my $type     = "metrics";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
@@ -2423,8 +2431,10 @@ sub bam_sort_bamba {
 
 sub rmdup {
 	my ( $self, $hash ) = @_;
+
 	my $filein = $hash->{filein};
 	return $self->rmdup_bamba( {filein => $filein });
+
 }
 
 sub rmdup_nudup {
@@ -3499,7 +3509,6 @@ my $synonym_program = {
 	"freebayes"                => "freebayes",
 	"p1_freebayes"             => "freebayes",
 	"samtools"                 => "bcftools",
-	"p1_freebayes"             => "p1_freebayes",
 	"eif6_freebayes"           => "eif6_freebayes",
 	"mutect2"                  => "mutect2",
 	"lofreq"                   => "lofreq",
@@ -5050,6 +5059,7 @@ sub htlv1_insertion {
 		my $ucbc = uc($bc);
 		warn $ucbc;
 		$ucbc =~ s/LIN//;
+		warn $ucbc;
 		my $l = $linker[ $ucbc - 1 ];
 
 		my ( $ln, $ls ) = split( /:/, $l );
@@ -5165,6 +5175,85 @@ sub advntr {
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
 
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+sub star_align {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $name         = $self->patient()->name();
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $dir_prod     = $project->getVariationsDir("advntr") ."/";
+	my $dir_pipeline = $project->getAlignmentPipelineDir("star-".$self->patient()->name);
+	
+	#dir_pipeline/$patient_name"."Aligned.sortedByCoord.out.bam
+	#system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
+	my $fileout = "$dir_pipeline/$name".".Aligned.sortedByCoord.out.bam";
+
+
+	my $ppn = 20 ;
+
+	my $bin_dev = $self->script_dir;
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/star/star_align.pl -project=$project_name  -patient=$name";
+	my $type     = "star-align";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "star",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+
+
+sub rnaseqsea_capture {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $name = $project->getPatients->[0]->name();
+	my $ppn    = 40;
+	my $method = "rnaseqsea_capture";
+	my $dirout = $project->project_path . "/analysis/AllRes/";
+	my $fileout = $dirout . "/allResRI.txt.gz";
+	my $bin_dev = $self->script_dir;
+	my $cmd_json = "$bin_dev/polyrnaseqsea/create_config_splices_analyse_file.pl -project=$project_name -force=1";
+	my $json_file = `$cmd_json`;
+	my $cmd = "Rscript $bin_dev/polyrnaseqsea/junctions/RNAseqSEA_capt_js_launch.r idprojet=$project_name fork=$ppn config_file=$json_file";
+	$cmd .= " && $bin_dev/polyrnaseqsea/merge_all_junctions_files.pl -project=$project_name";
+	my $type     = "rnaseqsea_capture";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $name,
+		project_name => $project_name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}

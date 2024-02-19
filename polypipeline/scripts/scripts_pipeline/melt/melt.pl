@@ -112,7 +112,7 @@ close LIST;
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
 	
 	foreach my $f (keys %$files){
-		unless (-e $f){
+		unless (-e $files->{$f}){
 			delete $files->{$f};
 			next;
 		}

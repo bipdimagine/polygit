@@ -9,6 +9,7 @@ use lib "$Bin/";
 use lib "$Bin/../GenBoDB";
 use Set::IntSpan::Fast::XS;
 use Bio::DB::HTS::Tabix;
+use Carp;
 use Storable qw(store retrieve freeze thaw);
 use List::Util qw( shuffle sum max min);
 extends "GenBo";
@@ -450,7 +451,7 @@ has file_name => (
 		return $self->infos()->{filename};
 	}
 );
-
+#https://www.polyweb.fr/NGS/NGS2023_6960/HG19_MT/align/dragen-align/CLE_CHR_6123GM005310_FLP.bam
 has files =>(
 	is		=> 'ro',
 	lazy	=> 1,
@@ -1117,6 +1118,7 @@ foreach my $line (@lines){
 	}
 	print "@" if $print;
 	 $objs = $self->getProject()->flushObjects("primers",$primers);
+	 warn scalar (@$objs);
 	foreach my $o (@$objs){
 		$o->{$self->type_object}->{$self->id} = undef;
 	}

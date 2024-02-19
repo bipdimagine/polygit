@@ -36,13 +36,13 @@ my %REV_IUB = (
 has patient => (
 	is     => 'ro',
 	reader => 'getPatient',
-
 	#required=> 1,
 );
 
 has method => (
 	is       => 'ro',
 	required => 1,
+	required=> 1,
 );
 
 has file => (

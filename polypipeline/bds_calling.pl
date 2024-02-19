@@ -165,7 +165,9 @@ $pipeline->method_calling($haplo);
 
 $pipeline->yes($yes);
 $pipeline->unforce(0) if $force;
-$pipeline->add_sample(patient=>$project);
+
+my $priority = 0;
+$pipeline->add_sample_with_priority($project, $priority);
 
  prepare_calling_jobs();
  $pipeline->print_all_steps();

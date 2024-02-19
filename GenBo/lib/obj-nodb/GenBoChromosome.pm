@@ -3,6 +3,7 @@ package GenBoChromosome;
 use strict;
 use Moo;
 
+use Carp;
 use Data::Dumper;
 use Config::Std;
 use GenBoGenomic;
@@ -70,46 +71,133 @@ sub setJunctions {
 	my ($self) = @_;
 	my $h_ids;
 	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
-	my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
-	my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
+	my $se_file = $self->project->RnaseqSEA_SE;
+	my $ri_file = $self->project->RnaseqSEA_RI;
+	warn $ri_file;
+	my $hash_junc;
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
+			my $id = $hres->{sj_id};
+			warn $id if $hres->{id} eq "18_39550420_39564909_RI";
+			$hash_junc->{$id} = $hres;
+			#push(@ares,$hres);
 		}
 	}
 	if ($se_file and -e $se_file) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
+			my $id = $hres->{sj_id};
+			$hash_junc->{$id} = $hres;
+			#push(@ares,$hres);
+			
 		}
 	}
-	my $path2 = $self->getProject->getVariationsDir('dragen-sj');
-	foreach my $patient (@{$self->getProject->getPatients()}) {
-		my $dragen_file = $path2.'/'.$patient->name().'.SJ.out.tab.gz';
-		next if not -e $dragen_file;
-		foreach my $hres (@{$self->getProject->getQueryJunction($dragen_file,'DRAGEN')->parse_dragen_file($patient, $self)}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
+	
+	warn "step 1";
+ my $hSJ= {};
+
+foreach my $patient (@{$self->getProject->getPatients()}) {
+		my $file = $patient->getSJFile();
+		next unless $file;
+		my $queryJunction = QueryJunctionFile->new( file=>$file );
+		$queryJunction->parse_SJ_file($patient,$self,$hash_junc);
 	}
-	my $path3 = $self->getProject->getJunctionsDir('star');
-	foreach my $patient (@{$self->getProject->getPatients()}) {
-		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
-		my $star_file_bz = $star_file.'.gz';
-		if (-e $star_file) {
-			my $cmd1 = "bgzip $star_file";
-			`$cmd1`;
-			my $cmd2 = "tabix -p bed $star_file_bz";
-			`$cmd2`;
+warn "step 2";
+foreach my $id (keys %{$hash_junc} ){
+	
+	my @ps = keys %{$hash_junc->{$id}->{annex}};
+	foreach my $p (@ps) {
+		
+		#die() unless exists $hash_junc->{$id}->{annex}->{$p}->{canonic_count};
+		if ($hash_junc->{$id}->{annex}->{$p}->{canonic_count} == 0) {
+			unless (exists $hash_junc->{$id}->{annex}->{$p}->{is_sj}){
+				delete $hash_junc->{$id}->{annex}->{$p};
+				next;
+			}
+			else {
+				my $genes = $self->getGenesByPosition($hash_junc->{$id}->{start},$hash_junc->{$id}->{end});
+				my $max ={};
+				$max->{$p} = [];
+				foreach my $g (@$genes){
+					my $tree = $g->tree_junctions();
+					my $res = $tree->fetch($hash_junc->{$id}->{start},$hash_junc->{$id}->{end});
+					unless(@$res) {
+						$res =[];
+						my $r = $tree->fetch_nearest_down($hash_junc->{$id}->{start});
+						push(@$res,$r) if $r;
+						 $r = $tree->fetch_nearest_up($hash_junc->{$id}->{start});
+						push(@$res,$r) if $r;
+						 $r = $tree->fetch_nearest_down($hash_junc->{$id}->{end});
+						push(@$res,$r) if $r;
+						 $r = $tree->fetch_nearest_up($hash_junc->{$id}->{end});
+						push(@$res,$r) if $r;
+					}
+						push( @{$max->{$p}}, map{$_->{count}->{$p} } grep {exists $_->{count}->{$p}} @$res);
+				}
+
+				if (@{$max->{$p}}){
+						$hash_junc->{$id}->{annex}->{$p}->{canonic_count} = max(@{$max->{$p}});
+						$hash_junc->{$id}->{annex}->{$p}->{junc_normale_count} = $hash_junc->{$id}->{annex}->{$p}->{canonic_count};
+					}
+					else {
+						if (exists $hash_junc->{$id}->{annex}->{$p}) {
+							
+						$hash_junc->{$id}->{annex}->{$p}->{canonic_count} = 0;
+						$hash_junc->{$id}->{annex}->{$p}->{junc_normale_count} = 0;
+						
+						delete $hash_junc->{$id}->{annex}->{$p} if ($hash_junc->{$id}->{annex}->{$p}->{alt_count}+0.01) < 5;
+						}
+					}
+				
+				
+				}
+			}
 		}
-		next if not -e $star_file_bz;
-		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
-			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-			$h_ids->{$obj->id()} = undef;
-		}
-	}
-	return $h_ids;
+	
+	next unless keys %{$hash_junc->{$id}->{annex}};
+	
+	#delete $hash_junc->{$id}->{genes};
+	my $obj = $self->getProject->flushObject( 'junctions', $hash_junc->{$id});
+	$h_ids->{$obj->id()} = undef;
+}
+return $h_ids;	
+
+# 
+#foreach my $id (keys %{} ){
+#	my $id = $hres->{sj_id};
+#	if ($hres->{canonic_count} == 0 ){
+#		next unless  exists $hSJ->{$id};
+#	}
+#	
+#	my $obj = $self->getProject->flushObject( 'junctions', $hres );
+#	$obj->{isCanonique} = 1 if (exists $hres->{isCanonique} and $hres->{isCanonique} == 1);
+#	$h_ids->{$obj->id()} = undef;
+#
+# unless  (exists $hSJ->{$id}){
+# 	warn Dumper $hres;
+# 	#die();
+# }
+# 
+#next unless  (exists $hSJ->{$id});
+#	
+#}
+#	my $path3 = $self->getProject->getJunctionsDir('star');
+#	foreach my $patient (@{$self->getProject->getPatients()}) {
+#		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
+#		my $star_file_bz = $star_file.'.gz';
+#		if (-e $star_file) {
+#			my $cmd1 = "bgzip $star_file";
+#			`$cmd1`;
+#			my $cmd2 = "tabix -p bed $star_file_bz";
+#			`$cmd2`;
+#		}
+#		next if not -e $star_file_bz;
+#		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
+#			my $obj = $self->getProject->flushObject( 'junctions', $hres );
+#			$h_ids->{$obj->id()} = undef;
+#		}
+#	}
+#	return $h_ids;
+
 }
 
 has ucsc_name => (
@@ -978,7 +1066,6 @@ sub setPrimers {
 		$self->_constructPrimersFromIntspan($intspan,$captures);
 		return $self->{primers_object};
 	}
-	
 	my %hchrs;
 	my @objs;
 	#if ($self->project->isExome){
@@ -986,9 +1073,10 @@ sub setPrimers {
 #		warn $self->project->getCaptures()->[-1]->name;
 #		$captures = [$self->project->selectCapture ] ;
 #	}
+	my $tt =0;
 	foreach my $c (@$captures) {
 		foreach my $p ( @{ $c->parsePrimersForChromosome($self) } ) {
-
+			$tt ++;
 			$self->{primers_object}->{ $p->id } = 0;
 		}
 
@@ -1546,6 +1634,26 @@ sub get_lmdb_junctions_canoniques {
 	$modefull = "r" unless $modefull;
 	my ( $mode, $pipeline ) = split( '', $modefull );
 	my $dir_out = $self->project->get_dejavu_junctions_path('canoniques');
+	return  GenBoNoSqlLmdb->new(
+		dir         => $dir_out,
+		mode        => $mode,
+		is_index    => 1,
+		name        => $self->name,
+		is_compress => 1,
+		vmtouch     => $self->buffer->vmtouch
+	);
+	return $self->{lmdb}->{$hindex};
+}
+
+sub get_lmdb_junctions_canoniques {
+	my ( $self, $modefull) = @_;
+	my $hindex = "dv_junctions_canoniques_";
+	$hindex = "dv_junctions_canoniques_".$modefull if ($modefull);
+	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+	$modefull = "r" unless $modefull;
+	my ( $mode, $pipeline ) = split( '', $modefull );
+	my $dir_out = $self->project->get_dejavu_junctions_path('canoniques');
+	
 	return  GenBoNoSqlLmdb->new(
 		dir         => $dir_out,
 		mode        => $mode,

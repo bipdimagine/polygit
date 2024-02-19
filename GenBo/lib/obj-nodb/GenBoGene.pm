@@ -62,6 +62,7 @@ has pLI => (
 	lazy	=> 1,
 	default => sub { 
 		my $self = shift;
+		return '-' if not $self->getProject->is_human_genome();
 		my $z = $self->project->lmdbPLI->get($self->name());
 		return "-" unless $z;
 		 return $z;
@@ -205,6 +206,7 @@ has omim_id => (
 	lazy	=> 1,
 	default => sub { 
 		my $self = shift;
+		return '-' if not $self->getProject->is_human_genome();
 		return $self->omim->{omim_id} if exists $self->omim->{omim_id};
 		return undef;
 		 },
@@ -227,6 +229,7 @@ has hash_phenotypes => (
 	default => sub { 
 		my $self = shift;
 		my $hPhen;
+		return $hPhen if (not $self->getProject->is_human_genome);
 		if (exists $self->omim->{version}){
 			$hPhen->{omim} = $self->omim->{phenotypes}->{omim} if (exists $self->omim->{phenotypes}->{omim});
 			$hPhen->{hgmd} = $self->hgmd_disease() if ($self->hgmd and $self->hgmd_disease);
@@ -360,6 +363,7 @@ has omim_inheritance => (
 	lazy	=> 1,
 	default => sub { 
 		my $self = shift;
+		return '-' if not $self->getProject->is_human_genome();
 		return "-" unless exists $self->omim->{inheritance}->{omim};
 		my $in="";
 		$in = "X-linked " if exists $self->omim->{inheritance}->{omim}->{"X-linked"};
@@ -600,14 +604,14 @@ sub setPhenotypes {
 
 sub setPanels {
 	my $self = shift;
-	my %hids;
-	my $query = $self->buffer->queryPanel();
-	my $hs = $query->getPanelsForGeneName($self->external_name);
 	my %hIds;
-	foreach my $k (keys %$hs){
-		$hIds{$hs->{$k}->{panel_id}} ++;
+	if ($self->getProject->is_human_genome()) {
+		my $query = $self->buffer->queryPanel();
+		my $hs = $query->getPanelsForGeneName($self->external_name);
+		foreach my $k (keys %$hs){
+			$hIds{$hs->{$k}->{panel_id}} ++;
+		}
 	}
-	
 	return \%hIds;
 }
 
@@ -720,4 +724,38 @@ sub raw_score {
 		return $score;
 }
 
+sub get_canonic_junctions {
+	my ($self) = @_;
+	return $self->{hexons} if exists $self->{hexons};
+	$self->{hexons} ={};
+	foreach my $tr (@{$self->getTranscripts}) {
+		
+	my @pos = split(",",$tr->getSpanCoding()->as_string());
+	next unless @pos;
+	my (@a) = split("-",$pos[0]);
+	my (@e) = split("-",$pos[-1]);
+	my $intspan = Set::IntSpan::Fast::XS->new($a[0]."-".$e[-1]);
+	 my $i2 = 	$intspan->diff($tr->getSpanCoding());
+	my $iter = $i2->iterate_runs();
+	my @tt;
+    while (my ( $start, $end ) = $iter->()) {
+			my $uid = $self->getChromosome->name."_".$start.'_'.$end;
+			$self->{hexons}->{$uid}->{transcripts}->{$tr->id} ++ ; 
+			$self->{hexons}->{$uid}->{start} = $start; 
+			$self->{hexons}->{$uid}->{end} = $end; 
+		}
+	}
+	return $self->{hexons};
+}
+sub tree_junctions {
+	my ($self) = @_;
+	return $self->{sj_tree} if exists $self->{sj_tree};	
+		$self->{sj_tree} = Set::IntervalTree->new;
+	my $hsj = $self->get_canonic_junctions;
+	foreach my $k (keys %{$hsj}){
+		$self->{sj_tree}->insert($hsj->{$k},$hsj->{$k}->{start},$hsj->{$k}->{end}+1);
+	}
+	return $self->{sj_tree};
+	#	$tree_AC->insert($part,$from,$end+1);
+}
 1;

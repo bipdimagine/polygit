@@ -715,21 +715,21 @@ sub fast_getProjectByName {
 	return $res;
 
 }
-
+ ###
 sub fast_getPatients {
 	my ($self, $project_id) = @_;
 	my $dbh = $self->getDbh();
 	my $query = qq{select * from PolyprojectNGS.patient g where project_id IN ($project_id) };
+	
 	my $sth = $dbh->prepare($query);
 	$sth->execute();
 	my $s = $sth->fetchall_hashref('patient_id');
 	my $res;
 	foreach my $p (values %$s){
 		my $pid = $p->{project_id};
+		
 		push(@{$res->{$pid}},$p);
 	}
-	#warn Dumper $res;
-	#die();
 	#die($project_id);
 	return $res;
 }

@@ -399,10 +399,11 @@ sub run_cache_polydiag_vector {
 
 			}
 		}
+
 		#
 		$buffer1->close_lmdb();
 		$chr->close_lmdb();
-		#
+
 		#$project->purge_memory( $chr->length );
 	}    #end chromosome
 	foreach my $t ( keys %$vtr ) {

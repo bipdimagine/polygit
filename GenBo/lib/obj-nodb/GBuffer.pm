@@ -31,6 +31,7 @@ use POSIX qw(strftime);
 use DateTime;
 use List::Util qw[min max];
 use Cwd qw(abs_path);
+use Auth::GoogleAuth;
 
 #use Sereal qw(sereal_encode_with_object sereal_decode_with_object);
 
@@ -79,11 +80,68 @@ has genbo_dir =>(
 	}
 
 );
+
+has google_auth_issuer =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return 'POLYWEB';
+	}
+);
+
+has google_auth_key_id =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return 'STAFF';
+	}
+);
+
+has google_auth =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $date_now = DateTime->now;
+		my $auth = Auth::GoogleAuth->new({issuer => $self->google_auth_issuer(), key_id => $self->google_auth_key_id()});
+		return $auth;
+	}
+);
+
+sub use_otp_for_login {
+	my ($self, $login) = @_;
+	my $h_otp = $self->getQuery->getSecretOtpKeyForUserId($login);
+	return $h_otp->{'uKey'};
+	return;
+}
+
+sub google_auth_secret_pwd {
+	my ($self, $login) = @_;
+	my $dbh = $self->getQuery();
+	return if not $self->use_otp_for_login($login);
+	my $h_otp = $dbh->getSecretOtpKeyForUserId($login);
+	return $h_otp->{'Key'};
+	confess();
+}
+
+has google_auth_qr_code =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		$self->google_auth->secret32( $self->google_auth_secret_pwd() );
+		return $self->google_auth->qr_code;
+	}
+);
+
 sub hasHgmdAccess {
 	my ($self, $user) = @_;
 	return 1 if ($self->queryHgmd->getHGMD($user) == 1);
 	return;
 }
+
 has config => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -230,9 +288,9 @@ has gencode => (
 		confess($filename2) unless -e $filename2;
 		my $public_data;
 		my $previous;
+
 		foreach my $v ( keys %config1){
 			$config1{$v}->{directory} = $config1{$v}->{name}."/".$config1{$v}->{version}."/".$config1{$v}->{dir};
-			
 		}
 		return \%config1;
 		},
@@ -494,10 +552,13 @@ sub newProject {
 										release	=> $release,
 										test	=> $test,
 										buffer	=> $self );
-									
 	$self->genome_version($project->genome_version);	
 	$self->annotation_genome_version($project->annotation_genome_version);
-	if ($project->gencode_version > -1){
+	if ($project->gencode_version =~ /M/) {
+		$self->annotation_version($project->annotation_version);
+	 	$self->public_data_version($project->public_database_version);	
+	}
+	elsif ($project->gencode_version > -1){
 		$self->annotation_version($project->annotation_version);
 	 	$self->public_data_version($project->public_database_version);	
 	}
@@ -658,13 +719,11 @@ sub software {
 sub software_version {
 		my ($self,$name,$nodie) = @_;
 		my $prog =  $self->getSoftware($name,1);
-		warn Dumper $prog;
 		return {"name" => $prog,"not_avalaible"=>1} unless $prog;
 		my $rp = abs_path($prog);
 		my @p = split("/",$rp);
 		pop @p;
 		my $version_json = join("/",@p)."/version.json";
-		warn $version_json." ".$prog;
 		if ($nodie){
 		return {} unless  -e $version_json;
 		}
@@ -887,6 +946,8 @@ sub get_gnomad {
 				my $pops = $desc->{array}->{populations};
 				my $infos = $desc->{array}->{infos};
 				my $hash = $self->get_lmdb_database($db,$chr,$type)->get($start);
+				
+				
 				next unless $hash;
 				warn $start if $hash =~ /-/;
 				next unless exists $hash->{$allele};
@@ -958,6 +1019,14 @@ sub get_lmdb_database_directory{
 	return $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 }
 
+
+sub get_version_database{
+	my ($self,$database)= @_;
+	my $version = $self->public_data_version;
+	return $self->public_data->{$version}->{$database}->{config}->{version};
+}
+
+
 sub get_index_database_directory{
 	my ($self,$database)= @_;
 	my $version = $self->public_data_version;
@@ -973,7 +1042,6 @@ sub description_public_lmdb_database {
 	my $dir = $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 	
 	my $f ="$dir/description.json";
-	
 	 $f  =  "$dir/version.json"  unless -e $f;
 	 confess($f) unless -e $f;
 	  open(JSON, $f);
@@ -995,7 +1063,6 @@ sub get_lmdb_database {
 	confess() unless $type;
 	return $self->{lmdb}->{$chr}->{$database}->{$type} if exists  $self->{lmdb}->{$chr}->{$database}->{$type};
 	my $dir = $self->get_lmdb_database_directory($database).'/'.$type;
-	
 	confess($dir) unless -e $dir;
 	unless (-e $dir."/".$chr ){
 		if ($chr eq "Y"){

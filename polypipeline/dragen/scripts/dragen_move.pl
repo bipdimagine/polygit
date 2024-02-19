@@ -239,4 +239,3 @@ sub backup {
 		unlink $final_gz;
 		unlink $final_gz.".tbi" if -e $final_gz.".tbi";
 }
-

@@ -15,6 +15,7 @@ use Carp;
 use Compress::Snappy;
  use List::Util qw( max min sum);
 use Storable qw/thaw freeze/;
+use Carp;
 #use bytes;
 extends "GenBoGenomic";
 
@@ -383,10 +384,13 @@ has hgmd_releases => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		my $releases = $self->project->buffer->queryHgmd->database();
-		if (exists $self->project->buffer->queryHgmd->hashOldAccNum->{$self->hgmd_id()}) {
-			$releases .= ', '.join(', ', sort (keys %{$self->project->buffer->queryHgmd->hashOldAccNum->{$self->hgmd_id()}}));
+		my @lReleases;
+		push(@lReleases, $self->project->buffer->queryHgmd->database());
+		foreach my $hgmd_version (keys %{$self->project->buffer->queryHgmd->getHashOldDatabases()}) {
+			my $h_details = $self->project->buffer->queryHgmd->getDataHGMDPro($self->hgmd_id(), $hgmd_version);
+			push(@lReleases, $hgmd_version) if ($h_details);
 		}
+		my $releases = join(', ', reverse sort (@lReleases));
 		return $releases;
 	},
 );
@@ -2154,6 +2158,7 @@ sub score_validations {
 	my ($self,$gene) = @_;
 	my $all_validations = $self->project->validations;
 	my $zid = $gene->id."!".$self->id;
+	warn  $all_validations->{$zid}->[0];
 	return $all_validations->{$zid}->[0] if exists  $all_validations->{$zid};
 	return undef;
 }
@@ -2213,6 +2218,7 @@ sub scaledScoreVariant{
 		
 	}
 	my $val = $self->score_validations($tr);
+	
 	if ($val){
 			my $score = $val->{validation};
 			$scaled_score = $val->{validation};
@@ -2220,7 +2226,12 @@ sub scaledScoreVariant{
 	
 	
 	if ($patient->isChild && $patient->getFamily->isTrio()) {
+		warn "before ".$scaled_score;
 		$scaled_score = $self->score_variants_trio($patient,$scaled_score,$tr,$debug);
+		warn "after ".$scaled_score;
+		
+		
+		
 	}
 	else {
 		$scaled_score = $self->score_variants_solo($patient,$scaled_score,$tr,$debug);
@@ -2239,7 +2250,6 @@ sub scaledScoreVariant{
 	warn "\t 4- ".$scaled_score if $debug;
 #	die() if $debug;
 	$self->{scale_score}->{$tr->id}->{$patient->id} = $scaled_score;
-	
 	return $self->{scale_score}->{$tr->id}->{$patient->id};
 }
 
@@ -2638,15 +2648,12 @@ sub getNomenclatureForUtr {
 
 sub getPositionForNomenclatureIntronic {
 	my ( $self, $transcript, $debug ) = @_;
-
-	#my $pos_transcript = $transcript->translate_position($transcript->start);
+# >>>
 	if ($self->start  < $transcript->start){
 		return (-1,"") unless 		$transcript->genomic_orf_start();
 		my $p1 = ($self->start - $transcript->genomic_orf_start());
 		$p1 = $p1 * $transcript->strand();
 		return($p1,"")
-		
-	#	return "c.".($pos_transcript-$transcript->orf_start())."".$seqr.">".$seqv if ($self->isVariation);
 		
 	}
 	if ($self->end  > $transcript->end){
@@ -2655,14 +2662,20 @@ sub getPositionForNomenclatureIntronic {
 		$p1 = $p1 * $transcript->strand();
 		return($p1,"")
 		
-	#	return "c.".($pos_transcript-$transcript->orf_start())."".$seqr.">".$seqv if ($self->isVariation);
-		
 	}
-#	return;
-	#if ($self->start < )
 	my ($dist,$nearest,$ref_pos) = $transcript->computeNearestExon($self->start,$self->end);
+	
 	my $pos = $transcript->translate_coding_position($ref_pos);
-#	warn $pos." ".$ref_pos;	 
+	if ($pos == -1 && $transcript->genomic_orf_start() ){
+		
+		if ($ref_pos   < $transcript->genomic_orf_start()){
+			$pos = $ref_pos-$transcript->genomic_orf_start();
+		}
+		else {
+			$pos = $ref_pos-$transcript->genomic_orf_end()
+		} 
+	}
+
 #	warn $transcript->strand;
 		 return ($dist,$pos);
 }
@@ -2830,6 +2843,8 @@ has dp_infos =>(
 					$hash->{$pid} = ["-","-","-"];
 					next;
 				}
+
+			next unless $patient->isGenome;
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				my $norm_depth = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start, $self->end+1));
 				my $norm_depth_before = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start-500, $self->start-10));

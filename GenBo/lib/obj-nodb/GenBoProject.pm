@@ -52,7 +52,6 @@ use GenBoNoSqlDejaVuSV;
 use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlDejaVuJunctionsCanoniques;
 use GenBoNoSqlDejaVuJunctionsPhenotype;
-#use GenBoNoSqlDejaVuJunctionsResume;
 use GenBoNoSqlAnnotation;
 use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
@@ -2076,6 +2075,30 @@ has dirCytoManue => (
 
 );
 
+has rds_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
+has rds_junctions_canoniques_gencode_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = my $version = $self->getVersion();
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/Junc_".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		die($file) unless -e $file;
+		return $file;
+	}
+);
+
 has gtf_file => (
 	is      => 'rw',
 	lazy    => 1,
@@ -2091,7 +2114,7 @@ has gtf_file => (
 );
 
 
-has gtf_dragen_file => (
+has gtf_file_dragen => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
@@ -2127,13 +2150,17 @@ has refFlat_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  . $version
-		  . '/refFlat/refFlat.txt';
+		my $file = $self->buffer()->config->{'public_data'}->{root} 
+			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		 	.   '/gencode.v'.$self->gencode_version."/refFlat/refFlat.txt";
+		warn $file;
+		$file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		 	. $version
+		  	. '/refFlat/refFlat.txt' unless -e $file;
+		
 		return $file;
 	},
-);
+); 
 
 has refFlat_file_star => (
 	is      => 'rw',
@@ -2227,7 +2254,7 @@ sub getGenomeIndex {
 	my $dir;
 	confess("\n\nERROR: path "
 		  . $self->dirGenome()
-		  . "/genome/$method doesnt exist. Die.\n\n" )
+		  . "$method doesnt exist. Die.\n\n" )
 	  unless -e $self->dirGenome() . "/$method";
 	$dir = $self->dirGenome() . "/$method";
 	$dir .= "/hg19"   if ( $method eq "bowtie2" );
@@ -2955,11 +2982,18 @@ sub getPatientOrControl {
 	return $patient;
 }
 
+sub species_id {
+	my ($self) = @_;
+	$self->getPatients;
+	return $self->{species_id} ;
+}
+
 sub setPatients {
 	my $self  = shift;
 	my $query = $self->buffer->getQuery();
 	my $res   = $query->getPatients( $self->id );
 	my %names;
+	my $spec;
 	foreach my $h (@$res) {
 		$h->{id} = $h->{patient_id};
 		$names{ $h->{id} } = undef;
@@ -2968,10 +3002,16 @@ sub setPatients {
 		if ( not $h->{status} or $h->{status} eq '0' ) { $h->{status} = 2; }
 		if ( not $h->{sex}    or $h->{sex} eq '0' )    { $h->{sex}    = 1; }
 		$h->{project} = $self;
+		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
+		  $self->{species_id} = $h->{species_id};
+#		  warn $h->{species_id};
+		 
 	}
+	return \%names unless (%names);
+	confess("problem species for project ".$self->name()) if scalar(keys %$spec) ne 1;
 	return \%names;
 }
 
@@ -4229,6 +4269,7 @@ sub getVariationsDir {
 }
 sub getJunctionsDir {
 	my ( $self, $method_name ) = @_;
+	confess() unless $method_name;
 	my $path = $self->project_path . "/junctions/";
 	$self->makedir($path);
 	$path .= $method_name . '/';
@@ -6436,7 +6477,64 @@ has get_path_rna_seq_junctions_analyse_all_res  => (
 		return $path;
 	},
 );
+has RnaseqSEA_SE  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->get_path_rna_seq_junctions_analyse_all_res;
+		my $file = $path.'/allResSE.txt';
+		my $filegz = $file.".gz";
+		if(-e $filegz) {
+			return $filegz;
+		}
+		$self->tabix_gzip_rnaseqsea($filegz,$file);
+		return $filegz;
+	},
+);
+has RnaseqSEA_RI  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $path = $self->get_path_rna_seq_junctions_analyse_all_res;
+		my $file = $path.'/allResRI.txt';
+		my $filegz = $file.".gz";
+		if(-e $filegz) {
+			return $filegz;
+		}
+		warn "coucou";
+		
+		$self->tabix_gzip_rnaseqsea($filegz,$file);
+		return $filegz;
+	},
+);
 
+sub tabix_gzip_rnaseqsea {
+	my ($self,$filegz,$file) = @_;
+	my $chr = 4;
+	my $start = 5;
+	my $end = 6;
+	if ($file =~ /SE/){
+		#$chr = 2;
+		#$start = 6;
+		#$end = 7;
+		
+	}
+	if (-e $file){
+		 	my $bgzip = $self->buffer->software("bgzip");
+		 	my $tabix = $self->buffer->software("tabix");
+		 	my $firstline = `head -n 1 $file`;
+		 	$firstline ="#".$firstline;
+		 	chomp($firstline);
+		 	warn  "(echo \"$firstline\"  && tail -n +2 $file | sort -k$chr,$chr -k$start,$start"."n) | $bgzip -s /dev/stdin  > $filegz && $tabix -f -S 1 -s $chr -b $start  -e $end $file.gz";
+		 	system("(echo \"$firstline\"  && tail -n +2 $file | sort -k$chr,$chr -k$start,$start"."n) | $bgzip -s /dev/stdin  > $filegz && $tabix -f  -s $chr -b $start  -e $end $file.gz");
+		 }
+		 else{
+		 	confess("no $file");
+		 }
+		confess("no $filegz") unless (-e $filegz);
+}
 has get_path_rna_seq_junctions_analyse_description_root  => (
 	is      => 'rw',
 	lazy    => 1,
@@ -6516,6 +6614,17 @@ sub getQueryJunction {
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;
 }
+sub getSJDir {
+	my ( $self, $method_name ) = @_;
+	my $path = $self->project_path . "/junctions/";
+	$self->makedir($path);
+	$path .= $method_name . '/';
+	return $self->makedir($path);
+}
+
+
+
+
 
 sub setJunctions {
 	my ($self) = @_;

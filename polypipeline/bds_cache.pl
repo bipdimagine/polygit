@@ -59,6 +59,11 @@ GetOptions(
 
 check_version($projectName) unless ($steps_name eq 'update' );
 clean($projectName) if $clean;
+my $can_check_version = 1;
+$can_check_version = undef if ($steps_name eq 'update' );
+$can_check_version = undef if ($analyse_type eq 'rna_junctions' );
+check_version($projectName) if ($can_check_version);
+
 my $report;
 my $buffer = GBuffer->new();
 my $define_steps;
@@ -125,9 +130,15 @@ my $steps = {
 				"cache_html_polycyto" =>sub {$pipeline->html_cache_polycyto(@_)}, 
 				"polydude" =>sub {$pipeline->polydude(@_)}, 
 				"sashimi_plots"=>sub {$pipeline->sashimi_plots(@_)}, 
+<<<<<<< HEAD
 				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)}, 
 				"merge_patients" => sub {$pipeline->merge_patients(@_)}, 
 				"merge_objects" => sub {$pipeline->merge_objects(@_)}, 
+=======
+				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)},
+				"dejavu_rna_junctions"=>sub {$pipeline->dejavu_rna_junctions(@_)},
+				"html_rna_junctions"=>sub {$pipeline->html_rna_junctions(@_)},
+>>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
 			};
 
 
@@ -167,26 +178,24 @@ unless ($menu) {
 	}
 }
 else {
-foreach  my $type (@types_steps){
-	my @list = sort {$a cmp $b} keys %{$define_steps->{$type}};
-	push(@list,'none');
-	my $x =  colored ['black ON_BRIGHT_GREEN'];
-	my $banner=" $x Please Pick a $type  for $projectName :";
 	
-   	my $choice = &pick(\@list,$banner,20);
-   	my $text;
-   ($steps_name,$text)=split(":",$choice);
-   next if $steps_name eq 'none';
-   push(@$list_steps,[split(",",$define_steps->{$type}->{$steps_name})]);
-   push(@$list_steps_types,$type);
-}
+	foreach  my $type (@types_steps){
+		my @list = sort {$a cmp $b} keys %{$define_steps->{$type}};
+		push(@list,'none');
+		my $x =  colored ['black ON_BRIGHT_GREEN'];
+		my $banner=" $x Please Pick a $type  for $projectName :";
+		
+	   	my $choice = &pick(\@list,$banner,20);
+	   	my $text;
+	   ($steps_name,$text)=split(":",$choice);
+	   next if $steps_name eq 'none';
+	   push(@$list_steps,[split(",",$define_steps->{$type}->{$steps_name})]);
+	   push(@$list_steps_types,$type);
+	}
 }
 
 #warn Dumper $list_steps_types;
 $pipeline->priority_name($list_steps_types);
-
-
-
 
 
 my $bin_dev = qq{$Bin/scripts/scripts_pipeline/};

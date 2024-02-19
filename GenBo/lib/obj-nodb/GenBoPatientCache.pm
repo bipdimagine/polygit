@@ -911,7 +911,7 @@ sub getVectorRatio {
 	my ($self, $chr, $filter_name) = @_;
 	return Bit::Vector->new(0) unless ($chr->size_vector());
 	my $vector_ok = $self->getVariantsVector($chr)->Clone();
-	$vector_ok->Intersection($vector_ok, $chr->getVectorScore($self->id().'_'.$filter_name));
+	$vector_ok->Intersection($vector_ok, $chr->getVectorScore($self->name().'_'.$filter_name));
 	return $vector_ok;
 }
 

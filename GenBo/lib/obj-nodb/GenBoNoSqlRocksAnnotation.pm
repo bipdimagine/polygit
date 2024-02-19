@@ -323,5 +323,4 @@ sub spliceAI_gnomad_id {
 
 
 
-
 1;

@@ -204,6 +204,7 @@ elsif ($vid) {
 	my $releases = $v->hgmd_releases();
 	my $gene_name;
 	eval { $gene_name = $v->hgmd_gene_name(); };
+	my $disease_hgmd = $data->{disease};
 	
 	print qq{
 	<div class="bs-callout bs-callout-danger">
@@ -222,6 +223,7 @@ elsif ($vid) {
 	  <h4>$cyto: $pos </h4> 
 	  <h4>$gene: $genedesc </h4>
 	  <h4>Refseq: $refseqh   </h4>
+	  <h4>Disease(s): $disease_hgmd </h4>
 	  <h4>Release(s): $releases   </h4>
 	 Comment : $comment
 	</div>
