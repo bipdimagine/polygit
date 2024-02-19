@@ -438,7 +438,7 @@ sub table_gnomad {
 	$vn =~ s/_/-/g;
 	$vn=~ s/chr//;
 
-	if ($v->rs_name() =~ /rs/){
+	if ($v->getGnomadAC && $v->getGnomadAC > 0){
 			$href = qq{https://gnomad.broadinstitute.org/variant/$vn$dataset};
 	}
 
