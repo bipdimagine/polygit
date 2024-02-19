@@ -31,34 +31,33 @@ GetOptions(
 	'project=s'    => \$project_name,
 	'version=s'    => \$version,
 	'chr=s'		   => \$chr,
+	'fork=s'		   => \$fork,
 );
 
-unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
 
 warn "\n### Cache For Deja Vu\n";
-my $buffer1 = new GBuffer;
-$buffer1->vmtouch(1);
-my $project = $buffer1->newProject( -name => $project_name, -verbose => 1 ,-version=>$version);
+my $buffer = new GBuffer;
 
 
-my $dir  = $project->deja_vu_lite_dir;
+
+my $dir = $buffer->config->{deja_vu}->{path};
+my $dir_out = $dir."/rocks/";
+warn $dir_out;
+
 my $dbh = DBI->connect( "dbi:SQLite:dbname=$dir"."/$chr.dejavu.lite", "", "",{ sqlite_use_immediate_transaction => 0, } );
 warn "$dir"."/1.dejavu.lite";
 warn $dbh;
-
  my $sth = $dbh->prepare( 
       'SELECT _key,_value from __DATA__ '
       );			
  warn $sth;     
  my $rc = $sth->execute();
- my $rg = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("dejavu_genomic"),mode=>"c",index=>"genomic",chromosome=>$chr,genome=>"HG19",pack=>"",description=>[]);
- warn $project->rocks_pipeline_directory("dejavu");
+ my $rg = GenBoNoSqlRocksGenome->new(dir=>$dir_out,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>"HG19",pack=>"",description=>[]);
  my $nb =0;
  
    warn "- end -";
  #  $fp->write_batch();
    $rg->close();
-   my $fork =10;
    my $pm = new Parallel::ForkManager($fork);
    
    foreach my $r (@{$rg->regions}) {
@@ -91,8 +90,13 @@ $pm->wait_all_children();
   
   	$nb ++;
   	  my $obj = thaw (decompress($s[1]));
+  	  warn $s[0] if $s[0] =~ /del/;
+  	    warn Dumper $obj   if $s[0] =~ /del/;
   	  my $rid = $no->return_rocks_id_from_genbo_id($s[0]);
+  	  warn $rid if $s[0] =~ /del/;
+  	
   	  next unless $rid;
+  	  
   	 $no->put_raw($rid,$obj->{data});
   		#$fp->put_raw($rid,$obj->{data});
  

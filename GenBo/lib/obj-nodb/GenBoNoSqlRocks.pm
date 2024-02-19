@@ -640,17 +640,17 @@ sub return_rocks_id_from_genbo_id {
 sub return_rocks_id {
 	my ($self,$pos,$ref,$alt) = @_;
 	 $pos  = $self->stringify_pos($pos);
-	 my $zid = $self->compress_vcf_position($ref,$alt);
-	 return $pos."!".$zid;
+#	 my $zid = $self->compress_vcf_position($ref,$alt);
+#	 return $pos."!".$zid;
 	my $l1 = length($ref);
 	my $l2 = length($alt);
-	die($ref." ".$alt) if $alt =~ /INV/;
-	#die(ref." ".$alt) if $alt =~ /DEL/;s
-	die(ref." ".$alt) if $alt =~ /DUP/;
 	return  ($pos."!".$alt) if ($l1 == 1 && $l2 ==1);
 	my $seqid = $alt;
-	if ($alt =~ /del/){
+	if ($alt =~ /del/ ){
 		return  ($pos."!".$alt);
+	}
+	elsif ($ref =~ /del/ ){
+		return  ($pos."!".$ref);
 	}
 	elsif ($alt=~ /inv/ ){
 		return  ($pos."!".$alt);
@@ -661,7 +661,14 @@ sub return_rocks_id {
 	elsif ($alt=~ /dup/ ){
 		return  ($pos."!".$alt);
 	}
-	elsif ($l1 ==1 && $l2 > 1){
+	
+	
+	die($ref." ".$alt) if $alt =~ /INV/;
+	#die(ref." ".$alt) if $alt =~ /DEL/;s
+	die(ref." ".$alt) if $alt =~ /DUP/;
+	
+	
+	if ($l1 ==1 && $l2 > 1){
 		
 		$seqid = "+".substr($alt, 1);
 		return  ($pos."!".$seqid);

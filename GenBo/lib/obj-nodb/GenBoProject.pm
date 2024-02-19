@@ -727,6 +727,7 @@ has lmdb_cache_dejavu_dir => (
 
 	}
 );
+
 has lmdb_cache_dejavuho_dir => (
 	is      => 'ro',
 	lazy    => 1,
@@ -6033,6 +6034,18 @@ has deja_vu_lite_dir => (
 
 		#return "/data-isilon/dejavu/";
 		my $dir = $self->deja_vu_public_dir();
+		return $self->makedir($dir);
+
+	},
+);
+has deja_vu_rocks_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+
+		#return "/data-isilon/dejavu/";
+		my $dir = $self->deja_vu_public_dir()."/rocks/";
 		return $self->makedir($dir);
 
 	},

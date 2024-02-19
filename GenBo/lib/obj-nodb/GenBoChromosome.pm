@@ -1645,25 +1645,7 @@ sub get_lmdb_junctions_canoniques {
 	return $self->{lmdb}->{$hindex};
 }
 
-sub get_lmdb_junctions_canoniques {
-	my ( $self, $modefull) = @_;
-	my $hindex = "dv_junctions_canoniques_";
-	$hindex = "dv_junctions_canoniques_".$modefull if ($modefull);
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	$modefull = "r" unless $modefull;
-	my ( $mode, $pipeline ) = split( '', $modefull );
-	my $dir_out = $self->project->get_dejavu_junctions_path('canoniques');
-	
-	return  GenBoNoSqlLmdb->new(
-		dir         => $dir_out,
-		mode        => $mode,
-		is_index    => 1,
-		name        => $self->name,
-		is_compress => 1,
-		vmtouch     => $self->buffer->vmtouch
-	);
-	return $self->{lmdb}->{$hindex};
-}
+
 
 sub get_lmdb_variations {
 	my ( $self, $modefull,$rocks) = @_;
@@ -2240,8 +2222,8 @@ sub rocks_dejavu {
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
-	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->rocks_pipeline_directory("dejavu_genomic"),mode=>"w",genome=>"HG19",index=>"genomic",chromosome=>$self->name);;
-	# GenBoNoSqlRocks->new(dir=>$self->project->rocks_pipeline_directory("dejavu"),mode=>"r",name=>$self->name);
+	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>"HG19",index=>"genomic",chromosome=>$self->name);
+	 # GenBoNoSqlRocks->new(dir=>$self->project->rocks_pipeline_directory("dejavu"),mode=>"r",name=>$self->name);
 	 # GenBoNoSqlRocksGenome->new(dir=>$self->project->rocks_pipeline_directory("dejavu_genomic"),mode=>"w",genome=>"HG19",index=>"genomic",chromosome=>$self->name);
 	 return $self->{rocks}->{$name};
 
