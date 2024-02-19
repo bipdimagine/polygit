@@ -96,37 +96,37 @@ ENSg<-function(idprojet, esp, biblioPath, resPath)
 formatProjet<-function(resPath, align)
 {
 	formatResComp(resPath, align)
-	formatResAll(resPath, align)
+	#formatResAll(resPath, align)
 }
 
 formatSamplesTypes_1vsAll<-function(idprojet, biblioPath, scriptPath, esp, gcvers, align, nCPUmax, limDecal, bamfiles, gcrds, resPath, sambambaPath, samtoolsPath, picardPath)
 {
 	filePath = paste(resPath, "/RNAseqSEA/", sep="")
 	if(!file.exists(filePath))	dir.create(filePath)
-	
-	path_cmds_global = paste(filePath, "cmds_all.sh", sep="");
-	unlink(path_cmds_global)
-	
 	if(length(bamfiles)>0)
 	{
 		cmds = matrix("", ncol=1, nrow=length(bamfiles))
 		gabSamplesTypes = matrix(0, ncol=3, nrow=0)
 		colnames(gabSamplesTypes) = c("Sample", "Type", "Proj")
-		
 		pathtFileENSg = list.files(paste(resPath, "/RNAseqSEA/", sep=""), full.names=TRUE)
 		pathtFileENSg = pathtFileENSg[grepl("^ENSg.txt", basename(pathtFileENSg))]
-		
-		
-		
+		z <- 1
 		for(B in 1:length(bamfiles))
 		{
 			SamplesTypes = rbind(gabSamplesTypes, c(gsub(".bam", "", basename(bamfiles[B])), "Pat", idprojet))
 			SamplesTypes = rbind(SamplesTypes, cbind(gsub(".bam", "", basename(bamfiles[!(c(1:length(bamfiles))%in%B)])), rep("Ctrl", (length(bamfiles)-1)), rep(idprojet, (length(bamfiles)-1))))
 			write.table(SamplesTypes, file=paste(filePath, "SamplesTypes_", gsub(".bam", "", basename(bamfiles[B])), "_vs_all.txt", sep=""), row.names=FALSE, quote=FALSE, sep="\t")
-			cmds[B] = paste("for i in `cat ", pathtFileENSg, "`;do echo Rscript ", scriptPath, " keepBams=TRUE gene=$i idprojet=", idprojet, " bamsProj=", idprojet, " titre=", gsub(".bam", "", basename(bamfiles[B])), "_vs_all esp=", esp, " gcvers=", gcvers, " align=", align, " nCPUmax=", nCPUmax, " limDecal=", limDecal, " biblioPath=", biblioPath, " gcrds=", gcrds, " resPath=", resPath, " sambambaPath=", sambambaPath, " samtoolsPath=", samtoolsPath, " picardPath=", picardPath, " >>" , path_cmds_global , ";done;", sep="")
+			ensgfile = file(pathtFileENSg, "r")
+			while ( TRUE ) {
+				line = readLines(ensgfile, n = 1)
+				if ( length(line) == 0 ) { break }
+				this_cmd = paste("Rscript ", scriptPath, " keepBams=TRUE gene=", line, " idprojet=", idprojet, " bamsProj=", idprojet, " titre=", gsub(".bam", "", basename(bamfiles[B])), "_vs_all esp=", esp, " gcvers=", gcvers, " align=", align, " nCPUmax=", nCPUmax, " limDecal=", limDecal, " biblioPath=", biblioPath, " gcrds=", gcrds, " resPath=", resPath, " sambambaPath=", sambambaPath, " samtoolsPath=", samtoolsPath, " picardPath=", picardPath, sep="");
+				cmds[z] = this_cmd;
+				z <- z+1
+			}
+			close(ensgfile)
 		}
-		write.table(cmds, file=paste(filePath, "/cmds.sh", sep=""), row.names=FALSE, col.names=FALSE, quote=FALSE, sep='\t')
-		write(paste("\n\n\tLe formatage des comparaisons est ok, pour lancer les analyses:\n\t\tSe placer ici: ", resPath, "/\n\t\tlancer la commande: source \"./RNAseqSEA/cmds.sh\"", sep=""), file="")
+		return(cmds)
 	}else{
 		write(paste("\n\n\t Les fichiers bams sont introuvables à cet endroit:\n\t\t ", resPath, "/align/", align, "/", sep=""), file="")
 	}
@@ -218,7 +218,7 @@ rmdup<-function(I)
 
 exJunBed<-function(J)	#	nom chromosome avec chr
 {
-	tmp = system(paste(sambambaPath, " view ",bamsRMdups[J], " ", CHRbam, Chr, ":", Start-100, "_", End+100, " | cut -f3,4,6  | awk '{if ($3 ~ /N/){printf(\"%s\",$1); start=$2; end=$2; split($3,a,\"[NIMDSH]\"); 
+	tmp = system(paste(sambambaPath, " view -t 4 ",bamsRMdups[J], " ", CHRbam, Chr, ":", Start-100, "_", End+100, " | cut -f3,4,6  | awk '{if ($3 ~ /N/){printf(\"%s\",$1); start=$2; end=$2; split($3,a,\"[NIMDSH]\"); 
 							split($3,b,\"[0-9]*\"); nb=length(b); for(i=2; i<=nb; i++){if(b[i] ~ /[MD]/){ end=end+a[i-1];} if(b[i] ~ /N/){end=end-1; printf(\"\t%s\t%s\",start, end); 
 							start=end+a[i-1]+1; end=start;}} printf(\"\t%s\t%s\\n\", start,end-1);}}' > ", bedpath, gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".mbed", sep=""), intern=TRUE)
 }
@@ -228,7 +228,7 @@ JuncBam<-function(J)
 	#	test du bed pour eviter les bams vides...
 	if(file.size(paste(bedpath,gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".mbed", sep="")) != 0L)
 	{
-		system(paste(sambambaPath, " view ",bamsRMdups[J], " | cut -f3,4,6  | awk '($3 ~ /N/)' > ", juncBamPath, gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".bam", sep=""), intern=TRUE)
+		system(paste(sambambaPath, " view -t 4 ",bamsRMdups[J], " | cut -f3,4,6  | awk '($3 ~ /N/)' > ", juncBamPath, gsub("_rmdup.bam", "", basename(bamsRMdups[J])), "_exons_junction_", Chr, ".bam", sep=""), intern=TRUE)
 	}
 }
 
@@ -337,19 +337,23 @@ formatResComp<-function(resPath, alignMethod)
 		if(!file.exists(resAllpath)) dir.create(resAllpath)
 		pathJunctions = paste(resPath, "/junctions/", sep="")
 		if(!file.exists(pathJunctions)) dir.create(pathJunctions)
-		pathJunctionsRnaSeqSea = paste(pathJunctions, "/rnaseqsea/", sep="")
-		if(!file.exists(pathJunctionsRnaSeqSea)) dir.create(pathJunctionsRnaSeqSea)
-		pathJunctionsAlign = paste(pathJunctionsRnaSeqSea, "/", alignMethod, "/", sep="")
+		pathJunctionsAlignTmp = paste(pathJunctions, "/", alignMethod, "/", sep="")
+		if(!file.exists(pathJunctionsAlignTmp)) dir.create(pathJunctionsAlignTmp)
+		pathJunctionsAlign = paste(pathJunctionsAlignTmp, "/rnaseqsea/", sep="")
 		if(!file.exists(pathJunctionsAlign)) dir.create(pathJunctionsAlign)
 
-		if(length(fichs_NFOjunc)>0)
-		{
-			allNFOjunc = list()
-			for(N in 1:length(fichs_NFOjunc))	allNFOjunc[[length(allNFOjunc)+1]] = as.matrix(read.table(fichs_NFOjunc[N], sep="\t", header=TRUE))
-			allNFOjunc = do.call("rbind",allNFOjunc)
-			write.table(allNFOjunc, file=paste(resAllpath, "allNFOjunc.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
-		}
+#		write(paste("# NFO ", sep=""), file="")
 
+#		if(length(fichs_NFOjunc)>0)
+#		{
+#			allNFOjunc = list()
+#			for(N in 1:length(fichs_NFOjunc))	allNFOjunc[[length(allNFOjunc)+1]] = as.matrix(read.table(fichs_NFOjunc[N], sep="\t", header=TRUE))
+#			allNFOjunc = do.call("rbind",allNFOjunc)
+#			write.table(allNFOjunc, file=paste(resAllpath, "allNFOjunc.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
+#		}
+
+#		write(paste("# RES ALL SE", sep=""), file="")
+		
 		if(length(fichs_resAll_SE)>0)
 		{
 			allResSE = list()
@@ -370,6 +374,8 @@ formatResComp<-function(resPath, alignMethod)
 			cmd_tabix <- paste(c('tabix -s 5 -b 6 ', file2), collapse="")
 			system(cmd_tabix)
 		}
+
+#		write(paste("# RES ALL RI", sep=""), file="")
 
 		if(length(fichs_resAll_RI)>0)
 		{
@@ -438,15 +444,32 @@ sort_bgzip_tabix_RI_file<-function(file) {
 
 formatResAll<-function(resPath, alignMethod)
 {
-	resAllpath = paste(resPath, "/junctions/rnaseqsea/", alignMethod, "/", sep="")
+	resAllpath = paste(resPath, "/junctions/", alignMethod, "/rnaseqsea/", sep="")
 	fileout_RI = paste(c(resAllpath, 'allResRI.txt'), collapse="")
 	fileout_SE = paste(c(resAllpath, 'allResSE.txt'), collapse="")
 	fileout_RI_gz = paste(c(resAllpath, 'allResRI.txt.gz'), collapse="")
 	fileout_SE_gz = paste(c(resAllpath, 'allResSE.txt.gz'), collapse="")
-	cmd_zcat1 <- paste(c('zcat ', resAllpath, '*_RI.txt.gz | tail -n +2 >', fileout_RI), collapse="")
+	
+	if(file.exists(fileout_RI_gz)) { unlink(fileout_RI_gz) }
+	if(file.exists(fileout_SE_gz)) { unlink(fileout_SE_gz) }
+	
+	write(paste("# pat resPath: ", resAllpath, sep=""), file="")
+    listPatsRI = list.files(resAllpath, pattern = paste("_RI.txt.gz$", sep=""), full.names=TRUE)
+    listPatsSE = list.files(resAllpath, pattern = paste("_SE.txt.gz$", sep=""), full.names=TRUE)
+	
+	cmd_head1 <- paste(c('zmore ', listPatsRI[1], ' | grep "#" >', fileout_RI), collapse="")
+	write(paste("# CMD: ", cmd_head1, sep=""), file="")
+	system(cmd_head1)
+	cmd_zcat1 <- paste(c('zcat ', resAllpath, '*_RI.txt.gz | tail -n +2 >>', fileout_RI), collapse="")
+	write(paste("# CMD: ", cmd_zcat1, sep=""), file="")
 	system(cmd_zcat1)
-	cmd_zcat2 <- paste(c('zcat ', resAllpath, '*_SE.txt.gz | tail -n +2 >', fileout_SE), collapse="")
+	
+	cmd_head2 <- paste(c('zmore ', listPatsSE[1],  ' | grep "#" >', fileout_SE), collapse="")
+	write(paste("# CMD: ", cmd_head2, sep=""), file="")
+	system(cmd_head2)
+	cmd_zcat2 <- paste(c('zcat ', resAllpath, '*_SE.txt.gz | tail -n +2 >>', fileout_SE), collapse="")
 	system(cmd_zcat2)
+	
 	sort_bgzip_tabix_RI_file(fileout_RI)
 	sort_bgzip_tabix_SE_file(fileout_SE)
 	pathAnalyse =  paste(resPath, "/analysis/", sep="")
@@ -459,7 +482,7 @@ formatResAll<-function(resPath, alignMethod)
 	if(file.exists(fileout_SE)) { unlink(fileout_SE) }
 }
 
-formatResAll_OLD<-function(resPath)
+formatResAll_old<-function(resPath)
 {
   projPath = paste(resPath, "/analysis/", sep="")
         listProjs = list.files(projPath, pattern = paste("^RNAseqSEA_", sep=""), full.names=TRUE)
