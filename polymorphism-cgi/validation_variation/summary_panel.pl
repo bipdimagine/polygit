@@ -613,10 +613,8 @@ qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text
 #my $key_validation = args_validation($project);
 #push(@$key_quality,"muc1") if $project->getCaptures->[0]->analyse =~ /renom/i;
 $no_cache = $project->get_lmdb_cache_summary("r");
-my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table");
+my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."19-02-2024");
 my $htable = $no_cache->get_cache( $table_id );
-warn $table_id;
-$htable = undef;
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
 
@@ -832,7 +830,7 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	
 	if ($hash_disomy){
 		my $u = $hash_disomy->{patient}->{$p->id};
-		my $url = qq{https://www.polyweb.fr/eollivie/polyweb/html/manta/plotAllBAplots.html?project=}.$project->name.qq{&patient=}.$p->name;
+		my $url = qq{html/manta/plotAllBAplots.html?project=}.$project->name.qq{&patient=}.$p->name;
 		my $text = qq{ <a  class="stamp_disomy" href="$url" target="_blank" ><span>$u</span></a>};
 		if ($u eq "-"){
 			$text = qq{ <a  class="stamp_view" href="$url" target="_blank"><span>View</span></a>};
