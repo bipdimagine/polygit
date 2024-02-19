@@ -2290,6 +2290,9 @@ sub rnaseq_metrics {
 	die() if $fileout eq $filein;
 	$filein = $self->patient->getBamFileName() unless -e $filein;
 	my $refFlat = $project->refFlat_file();
+	warn $refFlat;
+	
+	#$refFlat = "/data-isilon/public-data/repository/HG38/refFlat/refFlat_no_chr.txt" if $method eq "star" ;
 	
 	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
 	#$refFlat = $project->refFlat_file_dragen() if $method eq "dragen-align";
@@ -3506,7 +3509,6 @@ my $synonym_program = {
 	"freebayes"                => "freebayes",
 	"p1_freebayes"             => "freebayes",
 	"samtools"                 => "bcftools",
-	"p1_freebayes"             => "p1_freebayes",
 	"eif6_freebayes"           => "eif6_freebayes",
 	"mutect2"                  => "mutect2",
 	"lofreq"                   => "lofreq",
@@ -5057,6 +5059,7 @@ sub htlv1_insertion {
 		my $ucbc = uc($bc);
 		warn $ucbc;
 		$ucbc =~ s/LIN//;
+		warn $ucbc;
 		my $l = $linker[ $ucbc - 1 ];
 
 		my ( $ln, $ls ) = split( /:/, $l );
@@ -5219,6 +5222,7 @@ sub star_align {
 	return ($fileout);
 }
 
+
 sub deepvariant {
 	my ( $self, $hash ) = @_;
 	my $filein       = $hash->{filein};
@@ -5263,4 +5267,43 @@ sub deepvariant {
 	}
 	return ($fileout);
 }
+
+
+sub rnaseqsea_capture {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $name = $project->getPatients->[0]->name();
+	my $ppn    = 40;
+	my $method = "rnaseqsea_capture";
+	my $dirout = $project->project_path . "/analysis/AllRes/";
+	my $fileout = $dirout . "/allResRI.txt.gz";
+	my $bin_dev = $self->script_dir;
+	my $cmd_json = "$bin_dev/polyrnaseqsea/create_config_splices_analyse_file.pl -project=$project_name -force=1";
+	my $json_file = `$cmd_json`;
+	my $cmd = "Rscript $bin_dev/polyrnaseqsea/junctions/RNAseqSEA_capt_js_launch.r idprojet=$project_name fork=$ppn config_file=$json_file";
+	$cmd .= " && $bin_dev/polyrnaseqsea/merge_all_junctions_files.pl -project=$project_name";
+	my $type     = "rnaseqsea_capture";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $name,
+		project_name => $project_name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+
 1;

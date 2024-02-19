@@ -179,7 +179,9 @@ sub parse_results_global_file {
 				
 				my $cat = $header[$i];
 				$cat =~s/\#//;
-				$h_res->{$cat} = $l_col[$i];
+				my $value = $l_col[$i];
+				$value =~s/ //g;
+				$h_res->{$cat} = $value;
 			
 				$cat = 'start' if (lc($cat) eq 'junc_se_start' or lc($cat) eq 'junc_ri_start');
 				$cat = 'end' if (lc($cat) eq 'junc_se_end' or lc($cat) eq 'junc_ri_end');

@@ -463,9 +463,8 @@ sub export_html {
 		}
 	}
 	
-	foreach my $line (@lTrLines) {
-		$out2 .= $line;
-	}
+	if ($gene_init->strand() == 1) { foreach my $line (@lTrLines) { $out2 .= $line; } }
+	else { foreach my $line (reverse @lTrLines) { $out2 .= $line; }  }
 	$h_count->{total_pass} = scalar(@lTrLines);
 	$gene_init = undef;
 	$gene_init = $project_dejavu->newGene($gene_init_id) unless ($gene_init);

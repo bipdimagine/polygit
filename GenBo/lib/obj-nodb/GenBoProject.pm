@@ -2090,7 +2090,7 @@ has gtf_file => (
 );
 
 
-has gtf_dragen_file => (
+has gtf_file_dragen => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
@@ -2126,13 +2126,17 @@ has refFlat_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  . $version
-		  . '/refFlat/refFlat.txt';
+		my $file = $self->buffer()->config->{'public_data'}->{root} 
+			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
+		 	.   '/gencode.v'.$self->gencode_version."/refFlat/refFlat.txt";
+		warn $file;
+		$file = $self->buffer()->config->{'public_data'}->{root} . '/repository/'
+		 	. $version
+		  	. '/refFlat/refFlat.txt' unless -e $file;
+		
 		return $file;
 	},
-);
+); 
 
 has refFlat_file_star => (
 	is      => 'rw',
@@ -2226,7 +2230,7 @@ sub getGenomeIndex {
 	my $dir;
 	confess("\n\nERROR: path "
 		  . $self->dirGenome()
-		  . "/genome/$method doesnt exist. Die.\n\n" )
+		  . "$method doesnt exist. Die.\n\n" )
 	  unless -e $self->dirGenome() . "/$method";
 	$dir = $self->dirGenome() . "/$method";
 	$dir .= "/hg19"   if ( $method eq "bowtie2" );
