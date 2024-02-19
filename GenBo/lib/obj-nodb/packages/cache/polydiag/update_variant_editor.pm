@@ -64,6 +64,12 @@ sub printSimpleBadge {
 	 return qq{<span class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
 }
 
+sub printBlueSimpleBadge {
+	my ($value) = @_;
+	my $color = "blue";
+	 return qq{<span class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
+}
+
 sub printInvBadge {
         my ($value,$types) = @_;
 
@@ -959,6 +965,8 @@ sub construct_hash_transcript {
 	my $all_transcripts;
 	my $max_ai = $v->max_spliceAI_score($gene);
 	my $max_cat = $v->max_spliceAI_categorie($gene);
+	my $refseq_hgmd_1 = $v->hgmd_details->{refseq};
+	my ($refseq_hgmd, $tmprefseq) = split('\.', $refseq_hgmd_1);
 	foreach my $tr1 (sort { ($himpact_sorted->{$v->effectImpact($b)} <=>  $himpact_sorted->{$v->effectImpact($a)}) or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
 		next if $tr1->getGene->id ne $gene->id;
 		my $htr = {};
@@ -990,8 +998,14 @@ sub construct_hash_transcript {
 		value_html($htr,"trid",$tr1->id);
 		
 		#nm
-		 my $nm =$tr1->external_name;
-		value_html_badge($htr,"nm",$nm);
+		my $nm =$tr1->refseq_names;
+		my $is_same_nm_as_hgmd;
+		if ($refseq_hgmd) {
+			$is_same_nm_as_hgmd = 1 if $nm =~ /$refseq_hgmd/;
+			if ($is_same_nm_as_hgmd) { value_html($htr,"nm",$htr,printBlueSimpleBadge($nm)); }
+			else { value_html_badge($htr,"nm",$nm); }
+		}
+		else { value_html_badge($htr,"nm",$nm); }
 		
 		my $ccds = $tr1->ccds_name;
 		value_html($htr,"ccds",$ccds,href(qq{https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=},$ccds));
@@ -1065,7 +1079,11 @@ sub construct_hash_transcript {
 		my $main =  0 ;
 		 $main  = 1 if $tr1->isMain();
 		value_html($htr,"main",$main,$main);
-		push(@$all_transcripts,$htr)
+		if ($is_same_nm_as_hgmd){
+			unshift(@$all_transcripts,$htr);
+			next;
+		} 
+		push(@$all_transcripts,$htr);
 	}#end for transcript
 	return $all_transcripts;
 }
