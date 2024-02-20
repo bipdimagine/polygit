@@ -1773,6 +1773,7 @@ sub get_dejavu_junctions_path {
 	my ($self, $phenotype_name) = @_;
 	my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
 	$dir .= '/'.$phenotype_name.'/' if ($phenotype_name);
+	
 	confess("junction dejavu $dir") unless -e $dir;
 	return $dir;
 }
@@ -4101,7 +4102,12 @@ sub getPipelineTrackingDir {
 sub getSVDir {
 	my ( $self, $method_name ) = @_;
 	my $path = $self->project_path . "/SV/";
-	return $self->makedir($path);
+	$self->makedir($path);
+	if ($method_name){
+		$path .= $method_name . '/';
+		return $self->makedir($path);
+	}
+	return $path;
 }
 
 sub getCNVDir {

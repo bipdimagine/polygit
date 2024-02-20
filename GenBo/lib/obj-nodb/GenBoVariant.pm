@@ -2243,7 +2243,6 @@ sub score_validations {
 	my ($self,$gene) = @_;
 	my $all_validations = $self->project->validations;
 	my $zid = $gene->id."!".$self->id;
-	warn  $all_validations->{$zid}->[0];
 	return $all_validations->{$zid}->[0] if exists  $all_validations->{$zid};
 	return undef;
 }
@@ -2283,11 +2282,7 @@ sub scaledScoreVariant{
 	}
 	
 	if ($patient->isChild && $patient->getFamily->isTrio()) {
-		warn "before ".$scaled_score;
 		$scaled_score = $self->score_variants_trio($patient,$scaled_score,$tr,$debug);
-		warn "after ".$scaled_score;
-		
-		
 		
 	}
 	else {
@@ -2903,6 +2898,7 @@ has dp_infos =>(
 					$hash->{$pid} = ["-","-","-"];
 					next;
 				}
+
 			next unless $patient->isGenome;
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				my $norm_depth = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start, $self->end+1));

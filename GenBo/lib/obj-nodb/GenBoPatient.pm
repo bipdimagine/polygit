@@ -69,6 +69,30 @@ has capture_id => (
 	required => 1,
 );
 
+has isGenome => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		foreach my $c ( @{ $self->getCaptures } ) {
+			return 1 if lc( $c->analyse ) =~ /genome/;
+		}
+		return undef;
+	},
+);
+
+has isExome => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		foreach my $c ( @{ $self->getCaptures } ) {
+			return 1 if lc( $c->analyse ) =~ /exome/;
+		}
+		return undef;
+	},
+);
+
 has run_id => (
 	is => 'ro',
 
@@ -177,18 +201,6 @@ has kyoto_polydiag_cache => (
 );
 
 
-has isGenome => (
-	is      => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		foreach my $c ( @{ $self->getCaptures } ) {
-			return 1 if lc( $c->analyse ) =~ /genome/;
-			return 1 if lc( $c->analyse ) =~ /all_exons/;
-		}
-		return undef;
-	},
-);
 
 sub transcriptsCoverageLite {
 	my ( $self, $mode, $reopen ) = @_;
@@ -3036,6 +3048,7 @@ has nb_reads => (
 		$h->{norm1} = 1/$h->{all};#/1_000_000_000;
 #		warn $h->{all};
 		$h->{norm} = $h->{all}/1_000_000_000;
+		$h->{norm} = $h->{all}/50_000_000;
 	#	warn $h->{all};
 		#if (!$self->project->isGenome){
 		#	my $max = $project
@@ -3554,5 +3567,9 @@ sub update_software_version {
 	#return 1 if $svid eq $vid;
 	$query->update_software_version($vid,$self->id,$cmd);
 }
-
+sub upd_file {
+	my ($self) = @_;
+	my $dir = $self->project->getSVDir("UPD");
+	return $dir."/".$self->name.".json";
+}
 1;
