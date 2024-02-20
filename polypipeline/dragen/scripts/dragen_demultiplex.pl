@@ -171,9 +171,11 @@ foreach my $data (@{$lines->{"[Data]"}}){
 
 my $guess_mask;
 #if ($mask){
+
 	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read']);
 	$reads = $config->{Run}->{Reads}->{Read};
 	my $i_index =0;
+
 	foreach  my $read (@$reads){
 		if ($read->{IsIndexedRead} eq 'N'){
 			push(@$guess_mask,"Y".$read->{NumCycles});

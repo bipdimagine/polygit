@@ -136,6 +136,7 @@ $pm->run_on_finish(
     $project->buffer->dbh_deconnect();
 foreach my $patobj (@$listPatients)
 {
+	next unless $patobj->isGenome;
 	$job_id ++;
 	$hjobs->{$job_id} ++;
 	my $pid = $pm->start and next;
@@ -356,7 +357,7 @@ $project->buffer->dbh_reconnect();
 
 foreach my $patobj (@$listPatients)
 {
-	
+	next unless $patobj->isGenome;
 	my $patname= $patobj->name();
 	my $hPat_allCNV;
 	

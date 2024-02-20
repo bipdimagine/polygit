@@ -169,7 +169,6 @@ has config => (
 				$hConfig->{$k}->{$k2} = $config2{$k}{$k2};
 			}
 		}
-		
 		return $hConfig;
 	},
 );

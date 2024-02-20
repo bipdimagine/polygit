@@ -855,12 +855,10 @@ sub getVarObject {
 sub getListVarObjects {
 	my ($self, $vector) = @_;
 	my @lVarObj;
-	
 	my $zids;
 	foreach my $v_id (@{$self->getListVarVectorIds($vector)}) {
 		push(@$zids,$self->name."!".$v_id);
 	}
-	
 	return $self->project->myflushobjects($zids,"variants");;
 }
 

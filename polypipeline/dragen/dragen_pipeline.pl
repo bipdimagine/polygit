@@ -239,6 +239,9 @@ run_lmdb_depth($ppd,$jobs_cluster) unless $version =~ /HG38/ ;
 if (exists $hsteps->{melt}){
 run_melt($ppd,$jobs_cluster) unless $version =~ /HG38/;
 }
+if (exists $hsteps->{haplotypecaller4}){
+run_haplotypecaller4($ppd,$jobs_cluster);# unless $version =~ /HG38/;
+}
 if (exists $hsteps->{calling_target}){
 run_calling_target($ppd,$jobs_cluster);
 }
@@ -712,6 +715,7 @@ foreach my $hp (@$patients_jobs) {
 	}
 return ;
 }
+
 
 sub run_featurecount {
 	my ($patients_jobs,$jobs) = @_;
