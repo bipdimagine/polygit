@@ -190,7 +190,7 @@ else{
 	$param_align .= "--enable-duplicate-marking true ";
 }
 
-if (exists $pipeline->{count}){
+if (exists $pipeline->{count}) {
 	my $gtf =  $project->gtf_file();
 	die() unless -e $gtf;
 
@@ -200,11 +200,12 @@ if (exists $pipeline->{count}){
 #	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
 #
 #
-#}
+}
 #
 my $param_calling ="";
 if (exists $pipeline->{vcf} ){
 	$param_calling = qq{--enable-variant-caller true  } ;
+	
 }
 
 
