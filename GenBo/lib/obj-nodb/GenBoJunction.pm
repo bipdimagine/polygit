@@ -485,6 +485,15 @@ sub setGenes {
 	return \@t;
 }
 
+sub getGenes {
+	my $self = shift;
+	my @lGenes;
+	foreach my $g (@{$self->getProject()->myflushobjects($self->genes_object(), "genes")}) {
+		if ($g->start() <= $self->start() and $g->end() >= $self->start()) { push(@lGenes, $g) ; }
+		elsif ($g->start() <= $self->end() and $g->end() >= $self->end()) { push(@lGenes, $g); }
+	}
+	return \@lGenes;
+}
 
 sub get_hash_noise {
 	my ($self, $patient) = @_;
