@@ -213,8 +213,9 @@ sub parse_results_global_file {
 			$h_res->{canonic_count} = $h_res->{junc_normale_count};
 			
 			my $res = $chr->genesIntervalTree->fetch($h_res->{start},$h_res->{end}+1);
-			
-			next if scalar(@$res) > 2 &&  $h_res->{alt_count} < 5;
+			next if scalar(@$res) >= 2 &&  $h_res->{alt_count} < 5;
+			next if scalar(@$res) >= 3 &&  $h_res->{alt_count} < 7;
+			next if scalar(@$res) >= 4 &&  $h_res->{alt_count} < 9;	
 			
 			next if $h_res->{alt_count} <= 2 && $h_res->{len} >= 50000 ;
 			next if $h_res->{alt_count} <= 3 && $h_res->{len} >= 100000;
