@@ -485,6 +485,25 @@ sub setGenes {
 	return \@t;
 }
 
+sub getGenes {
+	my $self = shift;
+	my (@lGenes, @lGenes_default);
+	foreach my $g (@{$self->getProject()->myflushobjects($self->genes_object(), "genes")}) {
+		my $get;
+		foreach my $t (@{$g->getTranscripts()}) {
+			my $intspan_coding = $t->genomic_span();
+			if ($intspan_coding->contains($self->start()) or $intspan_coding->contains($self->start()-1)) { $get = 1; }
+			elsif ($intspan_coding->contains($self->end()) or $intspan_coding->contains($self->end()+1))  { $get = 1; }
+		}
+		if ($get) { push(@lGenes, $g); }
+		elsif (scalar(@lGenes) == 0) {
+			if ($g->getGenomicSpan->contains($self->start()))  { push(@lGenes_default, $g) ; }
+			elsif ($g->getGenomicSpan->contains($self->end())) { push(@lGenes_default, $g); }
+		}
+	}
+	return \@lGenes if (scalar(@lGenes) > 0);
+	return \@lGenes_default;
+}
 
 sub get_hash_noise {
 	my ($self, $patient) = @_;
