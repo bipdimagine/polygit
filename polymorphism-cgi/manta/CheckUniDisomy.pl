@@ -35,6 +35,14 @@ my $project = $buffer->newProjectCache( -name => $project_name, -typeFilters=>""
 
 # boucle sur les patients du projets
 my $listPatients = $project->getPatients();
+
+foreach my $patient (@$listPatients)
+{
+			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
+			system("perl $prg -project=$project_name -patient=".$patient->name." 2>/dev/null >/dev/null");
+
+}
+
 foreach my $child (@$listPatients)
 {
 	next unless($child->isChild);
@@ -45,16 +53,6 @@ foreach my $child (@$listPatients)
 
 	my $dir = $project->getSVDir()."/UPD";
 	
-	my $file = $child->upd_file();
-	unless (-e $file ) 
-	{
-			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
-			system("perl $prg -project=$project_name -patient=".$child->name." 2>/dev/null >/dev/null");
-			#warn "perl $prg -project=$project_name -patient=".$child->name;
-			# if $p->isChild();
-	}
-
-
 	if ($child->isChild && $father && $mother)  # child with both parents
 	{
 			open(JSON,"$dir/".$child->name.".json");
