@@ -48,10 +48,9 @@ foreach my $child (@$listPatients)
 	my $file = $child->upd_file();
 	unless (-e $file ) 
 	{
-			warn "coucou";
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$child->name." 2>/dev/null >/dev/null");
-			warn "perl $prg -project=$project_name -patient=".$child->name;
+			#warn "perl $prg -project=$project_name -patient=".$child->name;
 			# if $p->isChild();
 	}
 
@@ -68,7 +67,7 @@ foreach my $child (@$listPatients)
  			{ 
  		
 				next if $chr eq "X" && $child->sex == 1;
-				next if $chr eq "Y" && $child->sex == 2;
+				next if $chr eq "Y";
 				next if $chr eq "MT";
 	
 				my $name = $child->name;
