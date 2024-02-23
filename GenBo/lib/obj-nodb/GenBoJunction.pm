@@ -291,6 +291,10 @@ sub get_nb_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
 	return $self->{nb_new_count}->{$patient->name()} if (exists $self->{nb_new_count}->{$patient->name()});
+	if ($self->isCanonique()) { 
+		$self->{nb_new_count}->{$patient->name()} = 0;
+		return 0;
+	} 
 	my $count = 0;
 	if (exists $self->annex->{$patient->name()}->{junc_new_count}) {
 		$count  = $self->annex->{$patient->name()}->{junc_new_count};
@@ -329,8 +333,11 @@ sub ratio {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
 	return $self->{ratio}->{$patient->name()} if (exists $self->{ratio}->{$patient->name()});
-	my $ratio;
-	 $ratio = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
+	if ($self->isCanonique()) { 
+		$self->{ratio}->{$patient->name()} = 0;
+		return 0;
+	} 
+	my $ratio  = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
 	$self->{ratio}->{$patient->name()} = $ratio;
 	return $ratio;
 }
