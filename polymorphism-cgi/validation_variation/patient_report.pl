@@ -817,7 +817,7 @@ sub construct_data {
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
-	$text = "";
+	#$text = "";
 	$text = undef if $pipeline;
 
 	$compute_coverage = 1;
