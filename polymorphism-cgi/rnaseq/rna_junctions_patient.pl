@@ -142,6 +142,10 @@ $cache_html_id .= '_'.$j_total;
 if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
 	my $no_cache_2 = $patient->get_lmdb_cache("r");
 	my $h_html    = $no_cache_2->get_cache($cache_html_id);
+	
+	#TODO: supress cache html
+	#$h_html=undef;
+	
 	$no_cache_2->close();
 	if ($h_html) {
 		
@@ -155,22 +159,21 @@ if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
 	}
 }
 my ( $is_partial_results, $use_cat, $min_partial_score );
-	my $no_cache = $patient->get_lmdb_cache("r");
-	my $cache_vectors_enum_id = $patient->name() . '_' . '_chr_vectors_enum';
-	my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
-	$use_cat = countMinCatToUse($h_res_v_enum);
-	print ".$use_cat.";
-	foreach my $chr_id ( keys %$h_res_v_enum ) {
-		my $v_filters = $project->getChromosome($chr_id)->getNewVector();
-		$v_filters->from_Enum( $h_res_v_enum->{$chr_id}->{$use_cat} );
-		$h_chr_vectors->{$chr_id}->Intersection( $h_chr_vectors->{$chr_id}, $v_filters );
-	}
-	$is_partial_results = 1;
-	$min_partial_score  = $use_cat;
-	$min_partial_score =~ s/min//;
-	$min_partial_score -= 4;
-	$min_partial_score = 0 if $min_partial_score < 0;
-
+my $no_cache = $patient->get_lmdb_cache("r");
+my $cache_vectors_enum_id = $patient->name() . '_' . '_chr_vectors_enum';
+my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
+$use_cat = countMinCatToUse($h_res_v_enum);
+print ".$use_cat.";
+foreach my $chr_id ( keys %$h_res_v_enum ) {
+	my $v_filters = $project->getChromosome($chr_id)->getNewVector();
+	$v_filters->from_Enum( $h_res_v_enum->{$chr_id}->{$use_cat} );
+	$h_chr_vectors->{$chr_id}->Intersection( $h_chr_vectors->{$chr_id}, $v_filters );
+}
+$is_partial_results = 1;
+$min_partial_score  = $use_cat;
+$min_partial_score =~ s/min//;
+$min_partial_score -= 4;
+$min_partial_score = 0 if $min_partial_score < 0;
 
 my $percent_dejavu = 0;
 if ( defined($use_percent_dejavu) ) {
@@ -326,6 +329,8 @@ $pm->run_on_finish(
 );
 
 foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
+	#next if $chr_id ne '20';
+	
 	my $chr = $patient->getProject->getChromosome($chr_id);
 	next if $chr->countThisVariants( $h_chr_vectors->{$chr_id} ) == 0;
 
@@ -334,10 +339,47 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	$patient->getProject->buffer->dbh_reconnect();
 
 	my @lJunctionsChr = @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };
-
+	my $size_vector = $h_chr_vectors->{$chr_id}->Size();
 	my $hres;
 	my $h_td_line;
+	
+#	my $h_last_j;
 	foreach my $junction (@lJunctionsChr) {
+#		
+		my $pass_same_position;
+		my $short_id = $junction->getChromosome->id().'_'.$junction->start().'_'.$junction->end();
+		my $min_vid = $junction->vector_id() - 2;
+		my $max_vid = $junction->vector_id() + 2;
+		foreach my $this_vector_id ($min_vid..$max_vid) {
+			next if $this_vector_id < 0;
+			next if $this_vector_id >= $size_vector;
+			next if $this_vector_id == $junction->vector_id();
+			my $this_j = $chr->getVarObject($this_vector_id);
+			my $this_short_id = $this_j->getChromosome->id().'_'.$this_j->start().'_'.$this_j->end();
+			next if $this_short_id ne $short_id;
+			next if $junction->get_nb_new_count($patient) != $this_j->get_nb_new_count($patient);
+			$pass_same_position = 1 if ($junction->get_canonic_count($patient) < $this_j->get_canonic_count($patient));
+		}
+		next if $pass_same_position;
+		
+		
+#		my $pass_same_position;
+#		my $short_id = $junction->getChromosome->id().'_'.$junction->start().'_'.$junction->end();
+#		if (exists $h_last_j->{$short_id} and $junction->get_nb_new_count($patient) == $h_last_j->{$short_id}->{nb_new}) {
+#			if ($h_last_j->{$short_id}->{nb_canonique} < $junction->get_canonic_count($patient)) {
+#				foreach my $gene_name (keys %{$h_last_j->{$short_id}->{genes}}) {
+#					if (scalar(@{$hres->{genes}->{$gene_name}->{$h_last_j->{$short_id}->{max_score}}}) == 0) { delete $hres->{genes}->{$gene_name}->{$h_last_j->{$short_id}->{max_score}}; }
+#					else { pop(@{$hres->{genes}->{$gene_name}->{$h_last_j->{$short_id}->{max_score}}}); }
+#					
+#					
+#					warn $short_id." found";
+#					
+#				}
+#			}
+#			else { $pass_same_position = 1; }
+#		}
+#		next if $pass_same_position;
+		
 		$n++;
 		print '.' if ( not $only_html_cache and $n % 1000 );
 		my $is_junction_linked_filtred;
@@ -355,13 +397,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		next unless @lGenesNames;
 		
 		if ( not $only_gene ) {
-			if ( $junction->get_percent_new_count($patient) < $min_score ) {
-				next;
-				if ( exists $h_var_linked_ids->{ $junction->id() } ) {
-					$is_junction_linked_filtred = 1;
-				}
-				else { next; }
-			}
+			next if ( $junction->get_percent_new_count($patient) < 0 );
 
 			my $nb_dejavu_pat = 0;
 			$use_percent_dejavu = $junction->dejavu_percent_coordinate_similar() unless ($use_percent_dejavu);
@@ -404,7 +440,6 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 
 		$h_td_line->{id} = $jid_tmp;
 		
-		
 		if (not exists $h_td_line->{1}) { push (@{$h_td_line->{1}}, $html_sashimi); }
 		if (not exists $h_td_line->{2}) { push (@{$h_td_line->{2}}, $html_igv); }
 #		if (exists $h_td_line->{3}) { push (@{$h_td_line->{3}}, qq{<div>------------</div>}); }
@@ -413,6 +448,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		push (@{$h_td_line->{4}}, $html_patients);
 		if (not exists $h_td_line->{5}) { push (@{$h_td_line->{5}}, $html_dv); }
 
+		my $html_push_this_j;
 		foreach my $gene_name (@lGenesNames) {
 			my $g = $project->newGene($gene_name);
 			next unless $g;
@@ -431,8 +467,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			
 			my $score_details_text = get_html_score_details( $junction, $patient, $use_percent_dejavu );
 			@{$h_td_line->{6}} = ();
-			@{$h_td_line->{7}} = ();
-			@{$h_td_line->{8}} = ();
+#			@{$h_td_line->{7}} = ();
+#			@{$h_td_line->{8}} = ();
 			
 			push (@{$h_td_line->{6}}, $html_trans);
 #			if (not exists $h_td_line->{6}) { push (@{$h_td_line->{6}}, $html_trans);} 
@@ -443,10 +479,11 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			$badge_color = '#CC8506' if $this_score >= 8;
 			my $badge_color_text = "white";
 			$badge_color_text = "black" if $badge_color eq '#FFFF00';
-			push (@{$h_td_line->{score}}, $this_score); 
-			push (@{$h_td_line->{7}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$this_score [G: $gscore] </span>});
-#			if (exists $h_td_line->{8}) { push (@{$h_td_line->{8}}, qq{<div>-------</div>}); }
-			push (@{$h_td_line->{8}}, $score_details_text);
+			push (@{$h_td_line->{score}}, $this_score);
+			if (not $html_push_this_j) {
+				push (@{$h_td_line->{7}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$this_score [G: $gscore] </span>});
+				push (@{$h_td_line->{8}}, $score_details_text);
+			}
 
 			next if not $tr_found;
 			
@@ -477,6 +514,13 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			foreach my $s (@{$h_td_line->{score}}) { $max_score = $s if $s > $max_score; }
 			$h_td_line->{max_score} = $max_score;
 			push( @{ $hres->{genes}->{$gene_name}->{$max_score} }, $html_tr );
+			
+#			$h_last_j = undef;
+#			$h_last_j->{$short_id}->{nb_canonique} = $junction->get_canonic_count($patient);
+#			$h_last_j->{$short_id}->{nb_new} = $junction->get_nb_new_count($patient);
+#			$h_last_j->{$short_id}->{max_score} = $max_score;
+#			$h_last_j->{$short_id}->{genes}->{$gene_name} = undef;
+			$html_push_this_j++;
 		}
 	}
 	$hres->{done} = 1;
@@ -485,6 +529,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 $pm->wait_all_children();
 
 die if $nbErrors > 0;
+
 
 foreach my $gene_name ( keys %{ $h_junctions_scores->{all} } ) {
 	my @lscores = sort { $a <=> $b } keys %{ $h_junctions_scores->{all}->{$gene_name} };
