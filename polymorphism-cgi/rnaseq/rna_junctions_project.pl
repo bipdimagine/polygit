@@ -24,13 +24,13 @@ my $project = $buffer->newProjectCache( -name => $project_name );
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
 
-my $hType_patients;
-$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
+#my $hType_patients;
+#$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
 my ($h_resume, $h_captures);
 foreach my $patient (@{$project->getPatients}) {
 	#$patient->use_not_filtred_junction_files(0);
-	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
+#	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
 		$h_resume->{$patient->name()}->{nb_junctions_all} = 0;
 		$h_resume->{$patient->name()}->{nb_junctions_ri} = 0;
 		$h_resume->{$patient->name()}->{nb_junctions_se} = 0;
@@ -39,12 +39,12 @@ foreach my $patient (@{$project->getPatients}) {
 			$h_resume->{$patient->name()}->{nb_junctions_ri} += $chr->countThisVariants($patient->getVectorJunctionsRI($chr)) if ($patient->getVectorJunctionsRI($chr));
 			$h_resume->{$patient->name()}->{nb_junctions_se} += $chr->countThisVariants($patient->getVectorJunctionsSE($chr)) if ($patient->getVectorJunctionsSE($chr));
 		}
-	}
-	else {
-		$h_resume->{$patient->name()}->{nb_junctions_all} = 'CONTROL';
-		$h_resume->{$patient->name()}->{nb_junctions_ri} = 'CONTROL';
-		$h_resume->{$patient->name()}->{nb_junctions_se} = 'CONTROL';
-	}
+#	}
+#	else {
+#		$h_resume->{$patient->name()}->{nb_junctions_all} = 'CONTROL';
+#		$h_resume->{$patient->name()}->{nb_junctions_ri} = 'CONTROL';
+#		$h_resume->{$patient->name()}->{nb_junctions_se} = 'CONTROL';
+#	}
 	$h_resume->{$patient->name()}->{bam_file} = $patient->bamUrl();
 	foreach my $capture (@{$patient->getCaptures()}) {
 		$h_captures->{$capture->name()} = undef;
@@ -99,17 +99,20 @@ print '.';
 
 my $hash;
 $hash->{html} = $html_table_patients;
-if ($hType_patients) {
-	my @lPatOk;
-	foreach my $patname (sort keys %$hType_patients) {
-		next if (not exists $h_resume->{$patname});
-		push(@lPatOk, $patname) if exists $hType_patients->{$patname}->{pat};
-	}
-	$hash->{patients} = join(';', @lPatOk);
-}
-else {
-	$hash->{patients} = join(';', sort keys %$h_resume);
-}
+
+$hash->{patients} = join(';', sort keys %$h_resume);
+
+#if ($hType_patients) {
+#	my @lPatOk;
+#	foreach my $patname (sort keys %$hType_patients) {
+#		next if (not exists $h_resume->{$patname});
+#		push(@lPatOk, $patname) if exists $hType_patients->{$patname}->{pat};
+#	}
+#	$hash->{patients} = join(';', @lPatOk);
+#}
+#else {
+#	$hash->{patients} = join(';', sort keys %$h_resume);
+#}
 
 $hash->{captures} = join(', ', sort keys %{$h_captures});
 
