@@ -22,7 +22,7 @@ use CGI qw/:standard :html3/;
 use Number::Format qw(:subs);
 sub init_bundle_infos{
 my $self = shift;
-	
+#
 		
 }
  my $himpact_sorted = {
