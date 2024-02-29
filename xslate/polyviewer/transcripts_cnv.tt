@@ -1,0 +1,72 @@
+<div style="overflow-y:auto;border:solid 1px grey;max-height:150px;">
+	<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px ;font-size: 7px;font-family: Verdana;margin-bottom:0px;max-height:150px;">
+	<tr style="position:sticky;z-index:8;top:0;background-color:#E8FFF8;color:black;">
+	<th style="text-align: center;">consequence</th> <th style="text-align: center;">enst</th>
+ <th style="text-align: center;">nm</th>
+<th style="text-align: center;">confidence</th>
+ <th style="text-align: center;">start</th>
+ <th style="text-align: center;">end</th>
+</tr>
+	
+: for $items -> $item {
+	<tr>
+	<td> 
+	<button type="button" class= "btn btn-xs btn-primary " style="background-color: 
+
+ 	: if $item.impact_score <= 1 {
+   	 	#D0D0D0;color:black;font-size: 7px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+	: else if $item.impact_score < 3 {
+		#EFC051;color:black;font-size: 7px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+	: else if $item.impact_score == 3 {
+		#FF8800;color:white;font-size: 7px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+	: else  {
+		 #e74c3c;color:white;font-size: 7px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+
+
+	</td>
+	<td><a href="https://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=<: $item.name :>" target="_blank"><: $item.name :></a></td>
+	<td><: $item.nm  :></td>
+
+	<td>
+	<table><tr>
+	: if $mane == 1 {
+		<td>
+		: if $item.mane == 1 {
+   	 		 <button type="button" class= "btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">MANE</button> 
+		: }
+		: else {
+ 			 <button type="button" class= "btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;opacity:30%">MANE</button> 
+		: }
+		</td>
+	: }
+	<td>
+	: if $item.ccds == " " {
+		<a class="btn btn-xs btn-primary" role="button" href="https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&amp;DATA=<: $item.ccds :>" target="_blank" style="background-color:#D28140;color:white;font-size: 8px;font-family:  Verdana;border-color:white;opacity:30%">CCDS</button>
+	: }
+	: else {
+		<a class="btn btn-xs btn-primary" role="button" href="https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&amp;DATA=<: $item.ccds :>" target="_blank" style="background-color:#D28140;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">CCDS</button>
+	: } 
+	</td>
+	<td>
+	: if $item.appris == "-" {
+		 <button type="button" class= "btn btn-xs btn-primary " style="background-color:#b67b84;color:white;font-size: 8px;font-family:  Verdana;border-color:white;opacity:30%"><: $item.appris :></button> 
+	: }
+	: else {
+		 <a href="https://appris.bioinfo.cnio.es/#/database/id/homo_sapiens/"<: $GENE_NAME :>"?as=hg38&sc=ensembl" type="button" class= "btn btn-xs btn-primary " style="background-color:#b67b84;color:white;font-size: 8px;font-family:  Verdana;border-color:white;"><: $item.appris :></a> 
+	: }
+	</td>
+	</tr></table>
+	</td>
+
+	<td><span class="badge badge-success badge-xs" style="border-color:#4CAF50;background-color:#FFFFFF;color:#4CAF50;font-size :8px;"><: $item.start :></span></td>
+	<td><span class="badge badge-success badge-xs" style="border-color:#4CAF50;background-color:#FFFFFF;color:#4CAF50;font-size :8px;"><: $item.end :></span></td>
+
+	</tr>
+
+: }
+</table> 
+

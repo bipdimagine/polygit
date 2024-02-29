@@ -1,0 +1,48 @@
+
+: if $other_patients == 0 {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px red;font-size: 8px;font-family:  Verdana;margin-bottom:0px">
+<tbody><tr style="background-color:#FFF8F8">
+:}
+:else if $other_patients < 5 {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px red;font-size: 8px;font-family:  Verdana;margin-bottom:0px;">
+<tbody><tr style="background-color:#FFF8F8">
+:}
+:else if $other_patients < 50 {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px orange;font-size: 8px;font-family:  Verdana;margin-bottom:0px;">
+<tbody><tr style="background-color:#FFF8E8">
+: }
+: else  {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px blue;font-size: 8px;font-family:  Verdana;margin-bottom:0px;">
+<tbody><tr style="background-color:#E8F8FF">
+: }
+
+<th style="text-align:center"></th>
+<th style="text-align:center">Pr</th>
+<th style="text-align:center">Sa</th>
+<th style="text-align:center">Ho</th>
+</tr>
+
+<tr>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu('<: $varid :>')" target="_blank" style="background-color: #F0D0D0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button">other</a></td>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu('<: $varid :>')" target="_blank" style="background-color: #F0D0D0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button"><: $other_projects :></a></td>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu('<: $varid :>')" target="_blank" style="background-color: #F0D0D0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button"><: $other_patients :></a></td>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu'<: $varid :>')" target="_blank" style="background-color: #F0D0D0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button"><: $other_ho :></a></td>
+</tr>
+<tr>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu('<: $varid :>')" target="_blank" style="background-color: #D0D0F0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button"><: $pheno_name :></a></td>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu('<: $varid :>')" target="_blank" style="background-color: #D0D0F0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button"><: $pheno_projects :></a></td>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu('<: $varid :>')" target="_blank" style="background-color: #D0D0F0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button"><: $pheno_patients :></a></td>
+<td><a class="btn btn-xs btn-primary" onclick="goto_dejavu('<: $varid :>')" target="_blank" style="background-color: #D0D0F0;font-size: 7px;font-family:  Verdana;color:black;border-color:white" role="button"><: $pheno_ho :></a></td>
+</tr>
+: if $genome == 0 {
+<tr>
+<td>
+RUN
+</td>
+<td colspan=3>
+<: $this :>
+</td>
+</tr>
+: }
+
+</tbody></table>

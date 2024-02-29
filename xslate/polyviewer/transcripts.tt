@@ -1,0 +1,232 @@
+<div style="max-height:500px;overflow-y:auto;border:solid 1px grey;max-height:150px;">
+	<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px ;font-size: 7px;font-family: Verdana;margin-bottom:0px;max-height:150px;">
+	<tr style="position:sticky;z-index:8;top:0;background-color:#E8FFF8;color:black;">
+	<th style="text-align: center;">consequence</th> <th style="text-align: center;">enst</th>
+ <th style="text-align: center;">nm</th>
+<th style="text-align: center;">confidence</th>
+ <th style="text-align: center;">exon</th>
+ <th style="text-align: center;">nomenclature</th>
+ <th style="text-align: center;">codons</th> 
+<th style="text-align: center;">codons_AA</th> 
+<th style="text-align: center;">polyphen</th> 
+<th style="text-align: center;">sift</th> 
+<th style="text-align: center;">cadd</th> 
+<th style="text-align: center;">revel</th>
+: if $mane == 1 {
+   	 	<th style="text-align: center;">&alpha;missense</th> 
+: }
+ <th style="text-align: center;">dbscsnv</th> <th style="text-align: center;">spliceAI</th>
+</tr>
+	
+: for $items -> $item {
+	<tr>
+	<td> 
+	<button type="button" class= "btn btn-xs btn-primary " style="background-color: 
+
+ 	: if $item.impact_score <= 1 {
+   	 	#D0D0D0;color:black;font-size: 8px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+	: else if $item.impact_score < 3 {
+		#EFC051;color:black;font-size: 8px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+	: else if $item.impact_score == 3 {
+		#fdbe34;color:black;font-size: 8px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+	: else  {
+		 #e74c3c;color:white;font-size: 8px;font-family:  Verdana;"><: $item.consequence :> </button>
+	: }
+
+
+	</td>
+	<td><a href="https://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=<: $item.name :>" target="_blank"><: $item.name :></a></td>
+	<td><: $item.nm  :></td>
+
+	<td>
+	<table><tr>
+	: if $mane == 1 {
+		<td>
+		: if $item.mane == 1 {
+   	 		 <button type="button" class= "btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">MANE</button> 
+		: }
+		: else {
+ 			 <button type="button" class= "btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;opacity:30%">MANE</button> 
+		: }
+		</td>
+	: }
+	<td>
+
+	: if $item.ccds {
+		<a class="btn btn-xs btn-primary" role="button" href="https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&amp;DATA=<: $item.ccds :>" target="_blank" style="background-color:#D28140;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">CCDS</button>
+	: }
+	: else {
+
+		<a class="btn btn-xs btn-primary" role="button" href="https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&amp;DATA=<: $item.ccds :>" target="_blank" style="background-color:#D28140;color:white;font-size: 8px;font-family:  Verdana;border-color:white;opacity:30%">CCDS</button>
+
+			: } 
+	</td>
+	<td>
+	: if $item.appris == "-" {
+		 <button type="button" class= "btn btn-xs btn-primary " style="background-color:#b67b84;color:white;font-size: 8px;font-family:  Verdana;border-color:white;opacity:30%"><: $item.appris :></button> 
+	: }
+	: else {
+		 <a href="https://appris.bioinfo.cnio.es/#/database/id/homo_sapiens/"<: $GENE_NAME :>"?as=hg38&sc=ensembl" type="button" class= "btn btn-xs btn-primary " style="background-color:#b67b84;color:white;font-size: 8px;font-family:  Verdana;border-color:white;"><: $item.appris :></a> 
+	: }
+	</td>
+	</tr></table>
+	</td>
+
+	<td><span class="badge badge-success badge-xs" style="border-color:#4CAF50;background-color:#FFFFFF;color:#4CAF50;font-size :8px;"><: $item.exon :></span></td>
+	<td><span class="badge badge-success badge-xs" style="border-color:#4CAF50;background-color:#FFFFFF;color:#4CAF50;font-size :8px;"><: $item.nomenclature :></span></td>
+	<td><span class="badge badge-success badge-xs" style="border-color:#4CAF50;background-color:#FFFFFF;color:#4CAF50;font-size :8px;"><: $item.codons :></span></td>
+	<td><span class="badge badge-success badge-xs" style="border-color:#4CAF50;background-color:#FFFFFF;color:#4CAF50;font-size :8px;"><: $item.codons_AA :></span></td>
+
+	<td>
+		: if  $item.polyphen == "-" {
+			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+		: }
+		: else  if $item.polyphen >= 0.908 {
+   	 		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.polyphen :></button>
+		: }
+		:else if $item.polyphen >= 0.446 {
+   	 		<button  "type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#ff9800;font-size: 8px;font-family:  Verdana"><: $item.polyphen :></button>
+		: }
+		: else if $item.polyphen > 0 {
+			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:green;background-color:white;color:green;font-size: 8px;font-family:  Verdana"><: $item.polyphen :></button>
+		: }
+		: else  {
+			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+		: }
+       </td>
+	
+
+	<td>
+		: if  $item.sift == "-" {
+			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+		: }
+		: else if $item.sift > 0.05 {
+   	 		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:green;background-color:white;color:green;font-size: 8px;font-family:  Verdana"><: $item.sift :></button>
+		: }
+		: else if $item.sift >= 0.05 {
+   	 		<button  "type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#ff9800;font-size: 8px;font-family:  Verdana"><: $item.sift :></button>
+		: }
+		: else if $item.sift >=0 {
+   	 		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.sift :></button>
+		: }
+		: else  {
+			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+		: }
+	
+	</td>
+
+ 	<td> 
+	: if $item.cadd == "-" {
+   	 	<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+	: }
+	: else if $item.cadd == -99 {
+   	 	<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+	: }
+ 	: else if $item.cadd <= 20 {
+		<button  "type="button" class= "btn btn-xs btn-primary " style="border-color:#188c52;background-color:white;color:#188c52;font-size: 8px;font-family:  Verdana"><: $item.cadd :></button>
+	: }
+	: else if $item.cadd <= 27 {
+		<button  "type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#ff9800;font-size: 8px;font-family:  Verdana"><: $item.cadd :></button>
+	: }
+	: else  {
+		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.cadd :></button>
+	: }
+	</td>
+
+	<td>
+	: if $item.revel == "-"{
+   	 	<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+	: }
+	: else if $item.revel == -99 {
+   	 	<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+	: }
+ 	: else if $item.revel < 0.5 {
+		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:green;background-color:white;color:green;font-size: 8px;font-family:  Verdana"><: $item.revel :></button>
+	: }
+	: else if $item.revel < 0.9 {
+		<button type="button" class= "btn btn-xs btn-primary " style="border-color:#188c52;background-color:white;color:#188c52;font-size: 8px;font-family:  Verdana"><: $item.revel :></button>
+	: }
+	: else if $item.revel <= 1 {
+		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.revel :></button>
+	: }
+	: else  {
+		
+		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.revel :></button>
+	: }
+	</td>
+	 
+	: if $mane == 1 {
+
+		
+		<td>
+			: if $item.alphamissense == -99 {
+   	 			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+			: }
+			: else if $item.alphamissense > 0.564 { 
+				<button type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana">likely pathogenic</button>
+			: }
+			: else if $item.alphamissense < 0.34 {
+				<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#188c52;background-color:white;color:green;font-size: 8px;font-family:  Verdana"> likely benign </button>
+			: }
+			: else  {
+				<button type="button" class= "btn btn-xs btn-primary " style="border-color:blue;background-color:white;color:blue;font-size: 8px;font-family:  Verdana">ambigous</button>
+			: }
+		</td>
+
+	:}
+		
+	<td>
+		<span class="badge badge-success badge-xs" style="border-color:4CAF50;background-color:#FFFFFF;color:
+		: if $item.dbscsnv == "-"  {
+
+   	 		black;font-size :8px;"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></span> 
+		: }
+		: else if $item.dbscsnv ==  "-:-" {
+			black;font-size :8px;"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></span> 
+		: }
+		: else if $item.dbscsnv == -99 {
+   	 		black;font-size :8px;"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></span> 
+		: }
+	 	: else if $item.dbscsnv >= 0.6 {
+   		 	red;font-size :8px;"><: $item.dbscsnv :></span> 
+		: }
+		: else  {
+			#188c52;font-size :8px;"><: $item.dbscsnv :></span>
+		: }
+	</td>
+		
+	<td>
+		<table>
+		<td>
+		
+		: if $item.spliceAI == -99 {
+
+			<button onClick="alert('<: $text_alert :>')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+		:}
+		: else if $item.spliceAI >=  0.8 {
+   	 		<button onClick="alert('<: $text_alert :>')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.spliceAI_cat :>:<: $item.spliceAI :></button>
+		: }
+		: else if $item.spliceAI >= 0.5 {
+			<button onClick="alert('<: $text_alert :>')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#ff9800;font-size: 8px;font-family:  Verdana;border-color:white"><: $item.spliceAI_cat :>:<: $item.spliceAI :></button>
+		: }
+		: else if   $item.spliceAI >= 0 {
+			<button onClick="alert('<: $text_alert :>')" "type="button" class= "btn btn-xs btn-primary " style="border-color::blue;background-color:white;color:blue;font-size: 8px;font-family:  Verdana;border-color:white"><: $item.spliceAI_cat :><: $item.spliceAI :></button>
+		: }
+		: else{
+			
+		: }
+	 
+		</td>
+		<td style='padding-left:3px;'>
+			<button onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=<: $var_id :>&hg=37&distance=1000&mask=0&precomputed=0','_blank')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color: white;font-size: 9px;font-family: Verdana;color:black"><span class='glyphicon glyphicon-pencil' aria-hidden='true'/></button>
+		</td>
+		</table>
+	</td>
+	</tr>
+
+: }
+</table> 
+

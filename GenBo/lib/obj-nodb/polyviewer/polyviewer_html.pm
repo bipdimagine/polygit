@@ -1613,7 +1613,7 @@ my $mane = 1;
  }
 
 	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};
-	 my $output = $self->xslate->render("transcript.tt", $data);
+	 my $output = $self->xslate->render("transcripts.tt", $data);
 	 return $output;
 	 
 	 
