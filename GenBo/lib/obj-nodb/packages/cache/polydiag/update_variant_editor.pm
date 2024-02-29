@@ -1863,10 +1863,12 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
  				if ($gene) {
- 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/}.$gene->external_name().qq{$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 					my ($gidtmp,$gtmp) = split('_',$gene->id());
+ 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
  				}
  				else {
- 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gene_name$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 					my ($gidtmp,$gtmp) = split('_',$hgene->{id});
+ 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
  				}
  				
  				
