@@ -272,7 +272,8 @@ has hgmd_details => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return $self->project->buffer->queryHgmd->getDataHGMDPro($self->hgmd_id());
+		return $self->project->buffer->queryHgmd->getDataHGMDPro($self->hgmd_id()) if $self->hgmd_id;
+		return;
 	}
 );
 
