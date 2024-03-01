@@ -126,11 +126,11 @@ sub zip_files {
 		my $file1 = $dir_dv_proj.'/'.$this_project_name.'.json';
 		my $file2 = $dir_dv_proj.'/'.$this_project_name.'.canoniques.json';
 		if (-e $file1) {
-			my $cmd = "bgzip $file1";
+			my $cmd = "bgzip -f $file1";
 			`$cmd`;
 		}
 		if (-e $file2) {
-			my $cmd = "bgzip $file2";
+			my $cmd = "bgzip -f $file2";
 			`$cmd`;
 		}
 	}
@@ -188,7 +188,7 @@ sub insert_all_junctions {
 			}
 		}
 		close (FILE);
-		my $cmd1 = "bgzip $file_tab";
+		my $cmd1 = "bgzip -f $file_tab";
 		my $cmd2 = "tabix -p bed $file_tab.gz";
 		push(@lCmds, $cmd1);
 		push(@lCmds, $cmd2);
