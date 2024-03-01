@@ -344,8 +344,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	my $h_td_line;
 	
 #	my $h_last_j;
+	my $h_same_j_description;
 	foreach my $junction (@lJunctionsChr) {
-#		
 		my $pass_same_position;
 		my $short_id = $junction->getChromosome->id().'_'.$junction->start().'_'.$junction->end();
 		my $min_vid = $junction->vector_id() - 2;
@@ -358,27 +358,30 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			my $this_short_id = $this_j->getChromosome->id().'_'.$this_j->start().'_'.$this_j->end();
 			next if $this_short_id ne $short_id;
 			next if $junction->get_nb_new_count($patient) != $this_j->get_nb_new_count($patient);
-			$pass_same_position = 1 if ($junction->get_canonic_count($patient) < $this_j->get_canonic_count($patient));
+			if ($junction->get_canonic_count($patient) < $this_j->get_canonic_count($patient)) { $pass_same_position = 1; }
+			elsif ($junction->get_canonic_count($patient) == $this_j->get_canonic_count($patient)) {
+				if ($this_vector_id > $junction->vector_id()) {
+					if ($this_j->isRI($patient)) {
+						$h_same_j_description->{$this_vector_id} = $this_j->annex->{$patient->name}->{type_origin_file};
+						$h_same_j_description->{$this_vector_id} .= '-'.$this_j->getTypeDescription($patient) if ( $this_j->getTypeDescription($patient) and $this_j->getTypeDescription($patient) ne '---' );
+					}
+					elsif ($this_j->isSE($patient)) {
+						$h_same_j_description->{$this_vector_id} = $this_j->annex->{$patient->name}->{type_origin_file};
+						$h_same_j_description->{$this_vector_id} .= '-'.$this_j->getTypeDescription($patient) if ( $this_j->getTypeDescription($patient) and $this_j->getTypeDescription($patient) ne '---' );
+					}
+					if ($junction->isRI($patient)) {
+						$h_same_j_description->{$this_vector_id} .= ' | RI';
+						$h_same_j_description->{$this_vector_id} .= '-'.$junction->getTypeDescription($patient) if ( $junction->getTypeDescription($patient) and $junction->getTypeDescription($patient) ne '---' );
+					}
+					elsif ($junction->isSE($patient)) {
+						$h_same_j_description->{$this_vector_id} .= ' | SE';
+						$h_same_j_description->{$this_vector_id} .= '-'.$junction->getTypeDescription($patient) if ( $junction->getTypeDescription($patient) and $junction->getTypeDescription($patient) ne '---' );
+					}
+					$pass_same_position = 1;
+				}
+			}
 		}
 		next if $pass_same_position;
-		
-		
-#		my $pass_same_position;
-#		my $short_id = $junction->getChromosome->id().'_'.$junction->start().'_'.$junction->end();
-#		if (exists $h_last_j->{$short_id} and $junction->get_nb_new_count($patient) == $h_last_j->{$short_id}->{nb_new}) {
-#			if ($h_last_j->{$short_id}->{nb_canonique} < $junction->get_canonic_count($patient)) {
-#				foreach my $gene_name (keys %{$h_last_j->{$short_id}->{genes}}) {
-#					if (scalar(@{$hres->{genes}->{$gene_name}->{$h_last_j->{$short_id}->{max_score}}}) == 0) { delete $hres->{genes}->{$gene_name}->{$h_last_j->{$short_id}->{max_score}}; }
-#					else { pop(@{$hres->{genes}->{$gene_name}->{$h_last_j->{$short_id}->{max_score}}}); }
-#					
-#					
-#					warn $short_id." found";
-#					
-#				}
-#			}
-#			else { $pass_same_position = 1; }
-#		}
-#		next if $pass_same_position;
 		
 		$n++;
 		print '.' if ( not $only_html_cache and $n % 1000 );
@@ -420,8 +423,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		
 		my $html_sashimi  = get_sashimi_plot( $junction, $patient );
 		my $html_igv      = get_igv_button( $junction, $patient );
-		my $html_id       = get_html_id($junction);
-		my $html_patients = get_html_patients( $junction, $patient );
+		my $html_id       = get_html_id($junction, $h_same_j_description);
+		my $html_patients = get_html_patients( $junction, $patient);
 		my $html_dv       = get_html_dejavu( $junction, $patient );
 
 		my $jid_tmp = $junction->getChromosome->id().'-'.$junction->start().'-'.$junction->end();
@@ -1308,7 +1311,7 @@ sub get_sashimi_plot {
 }
 
 sub get_html_id {
-	my ($junction)     = @_;
+	my ($junction, $h_same_j_description)     = @_;
 	my $chr_id         = $junction->getChromosome->id();
 	my $start          = $junction->start();
 	my $end            = $junction->end();
@@ -1317,15 +1320,22 @@ sub get_html_id {
 	my @lTypes;
 	push( @lTypes, 'RI' ) if $junction->isRI($patient);
 	push( @lTypes, 'SE' ) if $junction->isSE($patient);
-	my $type_junction             = join( '+', @lTypes );
-	my $type_junction_description = $junction->getTypeDescription($patient);
+	
+	my ($type_junction, $type_junction_description);
+	if (exists $h_same_j_description->{$junction->vector_id()}) {
+		$type_junction = $h_same_j_description->{$junction->vector_id()};
+		delete $h_same_j_description->{$junction->vector_id()};
+	}
+	else {
+		$type_junction             = join( '+', @lTypes );
+		$type_junction_description = $junction->getTypeDescription($patient);
+	}
 	my $html_id                   = "<center><table>";
 	$html_id .= "<tr><td><center><b>$junction_locus</b></center></td></tr>";
 	$html_id .= "<tr><td><center>$length nt</td></tr>";
 	$html_id .= "<tr><td><center>";
 	$html_id .= "$type_junction";
-	$html_id .= " - $type_junction_description"
-	  if ( $type_junction_description and $type_junction_description ne '---' );
+	$html_id .= " - $type_junction_description" if ( $type_junction_description and $type_junction_description ne '---' );
 	$html_id .= "</center></td></tr>";
 	$html_id .= "</table></center>";
 	return $html_id;
