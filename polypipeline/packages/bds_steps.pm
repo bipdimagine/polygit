@@ -5275,7 +5275,7 @@ sub rnaseqsea_capture {
 	my $project      = $self->patient()->getProject();
 	my $project_name = $project->name();
 	my $name = $project->getPatients->[0]->name();
-	my $ppn    = 40;
+	my $ppn    = 20;
 	my $method = "rnaseqsea_capture";
 	my $dirout = $project->project_path . "/analysis/AllRes/";
 	my $fileout = $dirout . "/allResRI.txt.gz";
@@ -5286,6 +5286,7 @@ sub rnaseqsea_capture {
 	$cmd .= " && $bin_dev/polyrnaseqsea/merge_all_junctions_files.pl -project=$project_name";
 	my $type     = "rnaseqsea_capture";
 	my $stepname = $self->patient->name . "@" . $type;
+	$ppn = 40;
 	my $job_bds  = job_bds_tracking->new(
 		uuid         => $self->bds_uuid,
 		software     => "",
