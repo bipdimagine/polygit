@@ -400,7 +400,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		next unless @lGenesNames;
 		
 		if ( not $only_gene ) {
-			next if ( $junction->get_percent_new_count($patient) < 0 );
+			next if ( $junction->get_percent_new_count($patient) < $min_score );
 
 			my $nb_dejavu_pat = 0;
 			$use_percent_dejavu = $junction->dejavu_percent_coordinate_similar() unless ($use_percent_dejavu);
