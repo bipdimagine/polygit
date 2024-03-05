@@ -116,6 +116,7 @@ $hash->{patients} = join(';', sort keys %$h_resume);
 
 $hash->{captures} = join(', ', sort keys %{$h_captures});
 
+$hash->{description} = $project->description();
 
 printJson($hash);
 exit(0);
