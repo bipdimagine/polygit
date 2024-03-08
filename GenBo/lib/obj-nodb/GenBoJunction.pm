@@ -313,7 +313,8 @@ sub get_canonic_count {
 	my $nb;
 	$nb = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
 	return $nb if $nb and $nb > 0;
-	return $self->getCoverageInInterval($patient);
+	#return $self->getCoverageInInterval($patient);
+	return $self->getMeanCoverageBeforeAfter($patient, 10);
 }
 
 sub get_dp_count {
@@ -803,6 +804,34 @@ sub dejavu_details   {
 sub getCoverageInInterval {
 	my ($self, $patient) = @_;
 	return sprintf("%.2f",$self->get_coverage($patient)->coverage($self->start() +1, $self->end() -1)->{mean});
+}
+
+has coverage_start => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->start - 20;
+	},
+);
+
+has coverage_end => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return $self->end + 20;
+	},
+);
+
+sub getMeanCoverageBeforeAfter {
+	my ($self, $patient, $nb_nt) = @_;
+	delete $self->{coverage_obj};
+	my $mean_1 = $self->get_coverage($patient)->coverage($self->start()-$nb_nt, $self->start())->{mean};
+	my $mean_2 = $self->get_coverage($patient)->coverage($self->end(), $self->end()+$nb_nt)->{mean};
+	my $mean = 0;
+	$mean = ($mean_1 + $mean_2) / 2 if ($mean_1 > 0 or $mean_2 > 0);
+	return sprintf("%.2f",$mean);
 }
 
 
