@@ -700,6 +700,7 @@
 			}
 			
 			function launch_patient(patient_name, without_filters) {
+				document.getElementById("b_export_xls").classList.remove("disabled");
 				document.getElementById("span_partial_results").innerHTML = "";
 				document.getElementById("content_res").innerHTML = "<br><img src='../images/polyicons/wait18trans.gif' align='absmiddle'/> Please wait...";
 	    		var text_loading = 'Loading patient ' + patient_name;
@@ -959,6 +960,52 @@
 			    })
 			}
 			
+			function exportXls() {
+	    		var text_loading = 'Loading datas for XLS export...' + "<br><br><i>Can take a long time... Please wait...</i>";
+				show_waiting(text_loading);
+				var url = url_last_launch_patient; 
+				if (value_dejavu < 101) { url += "&dejavu=" + value_dejavu; }
+				url += "&dejavu_percent=" + value_dejavu_percent_similar;
+				url += "&min_score=" + value_score;
+				if (is_first_launch == 1) {
+					url += "&only_dejavu_ratio_10=1";
+				}
+				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+					url += "&only_dejavu_ratio_10=1";
+				}
+				var only_gene_positions = document.getElementById('input_gene_positions').value;
+				if (only_gene_positions == '') {}
+				else if (only_gene_positions.match(':')) {
+					url += "&only_positions=" + only_gene_positions;
+				}
+				else {
+					url += "&only_gene=" + only_gene_positions;
+				}
+				url += "&export_xls=1";
+				used_dejavu_percent_value = value_dejavu_percent_similar;
+				used_score_value = value_score;
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'session_id') {
+			    			dijit.byId('waiting').hide();
+			    			generate_xls_file(val);
+						}
+					});
+			    })
+			}
+			
+			dojo.require("dojo.io.iframe");
+			function generate_xls_file(input_session_id) {
+				console.log('use session id: '+input_session_id);
+				var url_xls_2 = url_path + "/rnaseq/rna_junctions_patient.pl?export_xls=1&session_id=" + input_session_id;
+    			console.log(url_xls_2);
+			    var downloadPdfIframeName = "downloadPdfIframe"; 
+			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
+			    dojo.io.iframe.setSrc(iframe, url_xls_2, true);
+			    alert("XLS export downloaded :)");
+			    return;
+			}
+			
 			function view_linked_junctions(patient_name, transcript_name, junction_vector_ids, this_junction, min_ratio) {
 				show_waiting("Show linked junctions found");
 				var url = url_path + "/rnaseq/rna_junctions_linked_view.pl";
@@ -1050,6 +1097,17 @@
 					
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_partial_results" style="color:red;font-size:18px"></span></a></li>
+				</ul>
+				<ul class="nav navbar-nav navbar-right">
+					<li>
+				    	<div class="input-group" style="margin-right:20px;width:100%;"> 		
+							<span class="input-group-btn" style="top:12px;">
+								<button id="b_export_xls" class="btn btn-default disabled" type="submit" onclick="exportXls()" style="font-size:9px;background-color:#38B392;">
+									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">XLS</span></b>
+								</button>
+							</span>
+						</div>
+					</li>
 				</ul>
 			</div>
 		</nav>
