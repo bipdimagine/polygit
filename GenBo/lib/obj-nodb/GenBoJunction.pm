@@ -306,13 +306,15 @@ sub get_nb_new_count {
 	$self->{nb_new_count}->{$patient->name()} = $count;
 	return $count;
 }
+
 sub get_canonic_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	return undef unless (exists $self->annex->{$patient->name()}->{canonic_count});
-	return $self->{annex}->{$patient->name}->{canonic_count};
+	my $nb;
+	$nb = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
+	return $nb if $nb and $nb > 0;
+	return $self->getCoverageInInterval($patient);
 }
-
 
 sub get_dp_count {
 	my ($self, $patient) = @_;
@@ -798,6 +800,10 @@ sub dejavu_details   {
 	return $res;
 }
 
+sub getCoverageInInterval {
+	my ($self, $patient) = @_;
+	return sprintf("%.2f",$self->get_coverage($patient)->coverage($self->start() +1, $self->end() -1)->{mean});
+}
 
 
 1;
