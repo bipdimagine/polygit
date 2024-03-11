@@ -1359,7 +1359,7 @@ sub get_html_score_details {
 "box-shadow: 1px 1px 6px black;font-size: 7px;font-family:  Verdana;margin-bottom:0px"
 		}
 	);
-
+ 
 	if ( $junction->isCanonique() ) {
 		$score_details_text .= $cgi->start_Tr();
 		$score_details_text .= $cgi->td("<center><b>isCanonique</b></center>");
