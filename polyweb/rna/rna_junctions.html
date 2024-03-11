@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>RNA Junctions</title>
+        <title>PolySplice</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -25,12 +25,12 @@
 		        border-radius: 30% 30% 0% 0%;
 		        border:3px solid #FFFF00;
 		      }
+		      
             .navbar-patient > li > a:hover {
 		        background-color: unset !important;
 		        border-radius: 30% 30% 0% 0%;
                 border:3px solid #FFFF00;
-		      }
-            
+			}
             
             #borderContainer {
                 width: 100%;
@@ -557,7 +557,7 @@
             $(document).ready(function () {
 	            setTimeout(function() {
 					document.getElementById("span_project_name").innerHTML = "Project "+project_name;
-					document.title = "RNA Junctions [" + project_name + "]";
+					document.title = "PolySplice [" + project_name + "]";
 					checkPassword();
 				}, 1500);
 	    	});
@@ -605,6 +605,7 @@
 				launch_project();
 			}
 			
+			var list_patients;
 			var is_first_launch;
 			var html_resume = '';
 			function launch_project() {
@@ -631,12 +632,13 @@
 								panel += "</div>";
 								panel += "<ul class='nav navbar-nav navbar-patient' style='width:max-content;overflow-x:scroll;overflow-y:hidden;line-height:10px;'>";
 								panel += "<li onclick='launch_project()' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:3px solid #363945;border-top:1px solid #23527C;'><a href='#' style='padding-top:5px;padding-bottom:5px;'><span style='font-size:13px;text-align:center;'><b>PROJECT<br>RESUME</b></span></a></li>";
-								var list_patients = val.split(';');
+								list_patients = val.split(';');
 								for (var i = 0; i < list_patients.length; i++){
 									var name = list_patients[i];
+									var li_id = 'li_' + name;
 									var cmd = "launch_patient_from_button(\"" + name + "\")";
 									var span_name = 'span_' + name;
-									panel += "<ul class='nav navbar-nav navbar-patient' onclick='" + cmd + "'><li style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#363945;'><a href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
+									panel += "<ul class='nav navbar-nav navbar-patient' onclick='" + cmd + "'><li id='" + li_id + "' style='line-height:10px;border-radius: 30% 30% 0% 0%;border:5px double white;background-color:#363945;'><a href='#' style='padding-top:3px;padding-bottom:3px;padding-left:8px;padding-right:8px;font-size:8px;'><span style='color:#85BAC3;'>View Patient</span><br><span style='color:white;font-size:8px;'><b>";
 									panel += name;
 									panel += "</b></span></a></li></ul>";
 							    }
@@ -651,6 +653,9 @@
 							if (key == 'captures') {
 								document.getElementById("span_captures").innerHTML = "Capture(s) " + val;
 							}
+							if (key == 'description') {
+								document.getElementById("span_description").innerHTML = val;
+							}
 						});
 				    })
 				}
@@ -663,14 +668,25 @@
 			}
 			
 			var hash_pats_done = {};
-			
 			var used_dejavu_value = 10;
 			var used_dejavu_percent_value = 100;
 			var used_score_value = 10;
 			var url_last_launch_patient;
 			
 			function launch_patient_from_button(patient_name) {
+				for (var i = 0; i < list_patients.length; i++){
+					var name = list_patients[i];
+					var li_id = 'li_' + name;
+					document.getElementById(li_id).style.border = "5px double white";
+					document.getElementById(li_id).style.backgroundColor = "#363945";
+				}
+				var li_id = 'li_' + patient_name;
+				document.getElementById(li_id).style.border = "3px solid #FFFF00";
+				document.getElementById(li_id).style.backgroundColor = "unset !important";
+			
 				if (patient_name in hash_pats_done) {
+					const regex = /&patient=[A-Za-z-_0-9]+/i;
+					url_last_launch_patient = url_last_launch_patient.replace(regex, '&patient=' + patient_name + '&');
 					document.getElementById("content_res").innerHTML = "";
 					var myNode = document.getElementById("content_res");
 			    	var myPanel = $(hash_pats_done[patient_name]);
@@ -685,14 +701,14 @@
 			
 			function launch_patient(patient_name, without_filters) {
 				document.getElementById("span_partial_results").innerHTML = "";
-				document.getElementById("content_res").innerHTML = "";
+				document.getElementById("content_res").innerHTML = "<br><img src='../images/polyicons/wait18trans.gif' align='absmiddle'/> Please wait...";
 	    		var text_loading = 'Loading patient ' + patient_name;
 				show_waiting(text_loading);
 				var url = url_path + "/rnaseq/rna_junctions_patient.pl";
 				url += "?project=" + project_name;
-				url += "&patient=" + patient_name;
 				if (isChrome) { url += "&is_chrome=1"; }
 				if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
+				url += "&patient=" + patient_name;
 				url_last_launch_patient = url;
 				url += "&dejavu=" + used_dejavu_value;
 				url += "&dejavu_percent=" + used_dejavu_percent_value;
@@ -893,8 +909,14 @@
 			
 			function launch_dejavu_span_value() {
 				var only_gene_positions = document.getElementById('input_gene_positions').value;
-				if (value_dejavu == 101) { show_waiting("Filter DejaVu - ALL patients"); }
-				else { show_waiting("Filter DejaVu max " + value_dejavu + " patients (" + value_dejavu_percent_similar + "% coord similar)"); }
+				if (only_gene_positions == '') {
+					if (value_dejavu == 101) { show_waiting("Filter DejaVu - ALL patients"); }
+					else { show_waiting("Filter DejaVu max " + value_dejavu + " patients (" + value_dejavu_percent_similar + "% coord similar)"); }
+				}
+				else {
+		    		var text_loading = 'Loading patient ' + patient_name + " for " + only_gene_positions + " (without filter)";
+					show_waiting(text_loading);
+				}
 				var url = url_last_launch_patient; 
 				if (value_dejavu < 101) { url += "&dejavu=" + value_dejavu; }
 				url += "&dejavu_percent=" + value_dejavu_percent_similar;
@@ -1023,7 +1045,8 @@
 				</ul>
 				<ul class="nav navbar-nav">
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_project_name" style="color:white;font-size:18px"></span></a></li>
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_captures" style="color:white;font-size:18px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_description" style="color:white;font-size:14px"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_captures" style="color:white;font-size:14px"></span></a></li>
 					
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_patient_name" style="color:white;font-size:18px"></span></a></li>
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;" disabled><span id="span_partial_results" style="color:red;font-size:18px"></span></a></li>

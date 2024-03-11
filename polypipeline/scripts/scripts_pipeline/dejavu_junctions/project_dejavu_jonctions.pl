@@ -84,9 +84,6 @@ print "LAUNCH $name\n";
 my ($h_proj_junctions, $h_proj_junctions_canoniques);
 
 
-my $hType_patients;
-$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
-
 my $h_vector;
 my $pm = new Parallel::ForkManager($fork);
 my $nbErrors = 0;

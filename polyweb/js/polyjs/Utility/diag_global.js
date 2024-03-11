@@ -874,6 +874,55 @@ function polydiag_url (patient) {
 		return "";
 	}
 
+
+function downloadFile_inprogress() {
+//    document.getElementById("wait2").src="/icons/Polyicons/12-em-check.png";
+//    document.getElementById("waiting_xls_progress_text").innerHTML = "<b> Downloading XLS file</b><br>Sometimes, your browser can download your XLS files in your <i><b><u>Download</i></b></u> or <i><b><u>Telechargements</i></b></u> directory automatically.";
+}
+
+function downloadXlsFiles(base_url, tsamples) {
+	var nb_patient = 0;
+	downloadFile(base_url, tsamples, nb_patient);
+}
+
+function checkBlankOpen(base_url, tsamples, next_nb_patient, w) {
+	setTimeout(function(){
+		console.log(w);
+		if (w == null) {
+			downloadFile(base_url, tsamples, next_nb_patient);
+			return 1;
+		}
+		if (w.closed) { 
+			downloadFile(base_url, tsamples, next_nb_patient);
+			return 1;
+		}
+		else {
+			checkBlankOpen(base_url, tsamples, next_nb_patient, w);
+		}
+	}, 1000);
+}
+
+dojo.require("dojo.io.iframe");
+function downloadFile(base_url, tsamples, nb_patient) {
+	if (nb_patient == tsamples.length) {
+		alert('Export XLS done'); 
+		return;
+	}
+	var patient= tsamples[nb_patient].label;
+	var next_nb_patient = nb_patient + 1;
+	
+	console.log("\n\nLAUNCH "+patient);
+	var promise = new Promise(
+		function(resolve, reject) {
+			setTimeout(function(){
+				var url = base_url + '&patients=' + patient;
+				var w = window.open(url);
+				resolve (checkBlankOpen(base_url, tsamples, next_nb_patient, w));
+			}, 500);
+		}
+	);
+} 
+
 function editor(mode, type) {
 	if (is_project_update == 'yes') {
 		if (panel_editor_stack_changed == 0) {
@@ -982,11 +1031,19 @@ function editor(mode, type) {
 	}
 	if (type == 3) {
 		var tsamples = dijit.byId("gridPatients").selection.getSelected();
-		for (var i = 0; i < tsamples.length; i++) {
-			var n = tsamples[i].label;
-			window.open(url + "&xls=1&patients=" + n);
-		}
+		console.log('INIT XLS');
+		var base_url = url + "&xls=1";
+		console.log('base URL '+base_url);
+		downloadXlsFiles(base_url, tsamples);
 		return;
+		
+//		for (var i = 0; i < tsamples.length; i++) {
+//			var n = tsamples[i].label;
+//			console.log('downloadind '+n);
+//			downloadFiles(patients=" + n);
+//		}
+//		return;
+
 	}
 
 	var tsamples = dijit.byId("gridPatients").selection.getSelected();

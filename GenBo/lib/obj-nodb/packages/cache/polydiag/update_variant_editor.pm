@@ -964,8 +964,11 @@ sub construct_hash_transcript {
 	my $all_transcripts;
 	my $max_ai = $v->max_spliceAI_score($gene);
 	my $max_cat = $v->max_spliceAI_categorie($gene);
-	my $refseq_hgmd_1 = $v->hgmd_details->{refseq};
-	my ($refseq_hgmd, $tmprefseq) = split('\.', $refseq_hgmd_1);
+	my ($refseq_hgmd_1, $refseq_hgmd, $tmprefseq);
+	if ($v->hgmd_details) {
+		$refseq_hgmd_1 = $v->hgmd_details->{refseq};
+		($refseq_hgmd, $tmprefseq) = split('\.', $refseq_hgmd_1);
+	}
 	foreach my $tr1 (sort { ($himpact_sorted->{$v->effectImpact($b)} <=>  $himpact_sorted->{$v->effectImpact($a)}) or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
 		next if $tr1->getGene->id ne $gene->id;
 		my $htr = {};
@@ -1855,9 +1858,18 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				my $m = $hgene->{max_score};
 				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
  				
+ 				
+				my $dataset = "?dataset=gnomad_r2_1";
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
- 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				if ($gene) {
+ 					my ($gidtmp,$gtmp) = split('_',$gene->id());
+ 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				}
+ 				else {
+ 					my ($gidtmp,$gtmp) = split('_',$hgene->{id});
+ 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				}
  				
  				
  				
