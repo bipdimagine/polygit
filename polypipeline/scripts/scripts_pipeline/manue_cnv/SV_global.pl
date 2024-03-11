@@ -58,7 +58,7 @@ die() unless -e $lfile;
 my $prg = qq{$Bin/Set_allSV_byPatient.pl };
  $lfile = "$log_dir/$l"."_allsv.log";
 
-$cmd = qq{$prg fork=$fork projectname=}.$project->name();
+$cmd = qq{$prg -fork=$fork -project=}.$project->name();
 
 system($cmd." &&  date > $lfile");
 die() unless -e $lfile;
