@@ -35,6 +35,19 @@ my $only_positions       = $cgi->param('only_positions');
 my $only_dejavu_ratio_10 = $cgi->param('only_dejavu_ratio_10');
 my $only_html_cache      = $cgi->param('only_html_cache');
 my $view_polyviewer 	 = $cgi->param('view_polyviewer');
+my $export_xls			 = $cgi->param('export_xls');
+my $session_id			 = $cgi->param('session_id');
+
+
+if ($export_xls and $session_id) {
+	my $xls_export = new xls_export();
+	$xls_export->load($session_id);
+	my ($list_datas_junctions) = $xls_export->prepare_generic_datas_junctions();
+	$xls_export->add_page('Junctions', $xls_export->list_generic_header_junctions(), $list_datas_junctions);
+	$xls_export->export();
+	exit(0);
+}
+
 
 #$only_positions = '10:17000000-17080000';
 
@@ -139,7 +152,7 @@ $cache_html_id .= '_only'.$only_gene_name if $only_gene_name;
 $cache_html_id .= '_only'.$only_positions if $only_positions;
 $cache_html_id .= '_onlydvra10' if $only_dejavu_ratio_10;
 $cache_html_id .= '_'.$j_total;
-if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
+if (not $only_gene_name and not $only_positions and not $view_polyviewer and not $export_xls) {
 	my $no_cache_2 = $patient->get_lmdb_cache("r");
 	my $h_html    = $no_cache_2->get_cache($cache_html_id);
 	
@@ -299,7 +312,7 @@ my $_tr_lines_by_genes;
 my $h_junctions_color;
 my $h_dejavu_cnv;
 $n = 0;
-my $h_junctions_scores;
+my ($h_junctions_scores, $h_export_xls);
 my $fork     = 5;
 my $pm       = new Parallel::ForkManager($fork);
 my $nbErrors = 0;
@@ -311,22 +324,35 @@ $pm->run_on_finish(
 			print qq|No message received from child process $exit_code $pid!\n|;
 			return;
 		}
-		foreach my $gene_name ( keys %{ $hres->{genes} } ) {
-			foreach my $score ( keys %{$hres->{genes}->{$gene_name}} ) {
-				foreach my $html_tr ( @{ $hres->{genes}->{$gene_name}->{$score} } ) {
-					push( @{ $_tr_lines_by_genes->{$gene_name}->{$score} }, $html_tr );
+		
+		
+		if ($export_xls) {
+			my $chr_id = $hres->{chr_id}; 
+			delete $hres->{done};
+			delete $hres->{chr_id};
+			$h_export_xls->{$chr_id} = $hres;
+		}
+		else {
+			foreach my $gene_name ( keys %{ $hres->{genes} } ) {
+				foreach my $score ( keys %{$hres->{genes}->{$gene_name}} ) {
+					foreach my $html_tr ( @{ $hres->{genes}->{$gene_name}->{$score} } ) {
+						push( @{ $_tr_lines_by_genes->{$gene_name}->{$score} }, $html_tr );
+					}
 				}
 			}
-		}
-
-		foreach my $gene_name ( keys %{ $hres->{score}->{all} } ) {
-			foreach my $score ( keys %{ $hres->{score}->{all}->{$gene_name} } )
-			{
-				$h_junctions_scores->{all}->{$gene_name}->{$score} = undef;
+	
+			foreach my $gene_name ( keys %{ $hres->{score}->{all} } ) {
+				foreach my $score ( keys %{ $hres->{score}->{all}->{$gene_name} } )
+				{
+					$h_junctions_scores->{all}->{$gene_name}->{$score} = undef;
+				}
 			}
 		}
 	}
 );
+
+
+print '_save_xls_' if ($export_xls);
 
 foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	#next if $chr_id ne '20';
@@ -420,6 +446,63 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $score = $junction->junction_score($patient, $use_percent_dejavu);
 
 		next if ($min_partial_score and $score < $min_partial_score);
+		
+		
+		if ($export_xls) {
+			my @lTypes;
+			push( @lTypes, 'RI' ) if $junction->isRI($patient);
+			push( @lTypes, 'SE' ) if $junction->isSE($patient);
+			my $type_junction_description = join(', ', @lTypes);
+			$type_junction_description .= ' - '.$junction->getTypeDescription($patient);
+			my $pat_name = $patient->name();
+			$hres->{chr_id} = $chr_id;
+			$hres->{$junction->id()}->{global}->{'chr'} = $junction->getChromosome->id();
+			$hres->{$junction->id()}->{global}->{start} = $junction->start();
+			$hres->{$junction->id()}->{global}->{end} = $junction->end();
+			$hres->{$junction->id()}->{global}->{type} = $type_junction_description;
+			$hres->{$junction->id()}->{global}->{dejavu} = $junction->dejavu_patients('all',$patient);
+			$hres->{$junction->id()}->{global}->{dejavu_ratio_10} = $junction->dejavu_patients(10,$patient);
+			$hres->{$junction->id()}->{global}->{dejavu_ratio_20} = $junction->dejavu_patients(20,$patient);
+			
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{name} = $pat_name;
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{fam_name} = $patient->getFamily->name();
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{sex} = $patient->sex();
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{status} = $patient->status();
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_canonique} = $junction->get_nb_new_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_new} = $junction->get_canonic_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{dp} = $junction->get_dp_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{ratio} = sprintf( "%.3f", $junction->get_percent_new_count($patient) ) . '%';
+
+			foreach my $gene_name (@lGenesNames) {
+				my $g = $project->newGene($gene_name);
+				my $this_score = $score;
+				my $gscore = int(($g->score/2)+0.5);
+				$this_score += $gscore;
+				my ($gene_id, $tmp) = split('_', $gene_name);
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{gene_name} = $g->external_name();
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{ensg} = $gene_id;
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{description} = $g->description();
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{phenotypes} = $g->phenotypes();
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{score} = $this_score;
+				my $h_exons_introns = $junction->get_hash_exons_introns();
+				foreach my $tid ( sort keys %{$h_exons_introns} ) {
+					my $t = $patient->getProject->newTranscript($tid);
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{gene} = $t->gene_external_name;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{transcript_name} = $t->external_name;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{ccds_name} = $t->ccds_name;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{appris_type} = $t->appris_type;
+					my @lPos = ( sort keys %{ $h_exons_introns->{$tid}->{by_pos} } );
+					my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{ $lPos[0] };
+					my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{ $lPos[-1] };
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{start} = $first_exon_intron;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{end} = $last_exon_intron;
+				}
+			}
+			$hres->{done} = 1;
+			next;
+		}
+		
+		
 		
 		my $html_sashimi  = get_sashimi_plot( $junction, $patient );
 		my $html_igv      = get_igv_button( $junction, $patient );
@@ -533,6 +616,14 @@ $pm->wait_all_children();
 
 die if $nbErrors > 0;
 
+
+if ($export_xls) {
+	my $session_id = save_export_xls($patient, $h_export_xls);
+	my $hash;
+	$hash->{session_id} = $session_id;
+	printJson($hash);
+	exit(0);
+}
 
 foreach my $gene_name ( keys %{ $h_junctions_scores->{all} } ) {
 	my @lscores = sort { $a <=> $b } keys %{ $h_junctions_scores->{all}->{$gene_name} };
@@ -1214,27 +1305,18 @@ sub get_html_patients {
 	foreach my $fam_name ( sort keys %{$h_by_pat} ) {
 		foreach my $pat_name ( sort keys %{ $h_by_pat->{$fam_name} } ) {
 			$html_patients .= qq{<tr>};
-
 			#$html_patients .= qq{<td>}.$fam_name.qq{</td>};
-			$html_patients .= qq{<td>} . $pat_name . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{status}
-			  . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{percent}
-			  . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{nb_new}
-			  . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{nb_normal}
-			  . qq{</td>};
-			$html_patients .=
-			  qq{<td>} . $h_by_pat->{$fam_name}->{$pat_name}->{dp} . qq{</td>};
+			$html_patients .= qq{<td>}.$pat_name . qq{</td>};
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{status}.qq{</td>};
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{percent}.qq{</td>};
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_new}.qq{</td>};
+			if ($h_by_pat->{$fam_name}->{$pat_name}->{nb_normal} =~ /\./) {
+				$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_normal}.qq{ <br><i>(mean_cov)</i></td>};
+			}
+			else {
+				$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_normal}.qq{</td>};
+			}
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp}.qq{</td>};
 			$html_patients .= qq{</tr>};
 		}
 	}
@@ -1433,4 +1515,15 @@ sub printJson {
 	$json_encode =~ s/{//;
 	print $json_encode;
 	exit(0);
+}
+
+sub save_export_xls {
+	my ($patient, $hres) = @_;
+	$project->buffer->dbh_deconnect();
+	$project->buffer->dbh_reconnect();
+	my $xls_export = new xls_export();
+	$xls_export->title_page('PolySplice_'.$patient->getProject->name().'_'.$patient->name.'.xls');
+	$xls_export->{hash_junctions_global} = $hres;
+	my $session_id = $xls_export->save();
+	return $session_id;
 }
