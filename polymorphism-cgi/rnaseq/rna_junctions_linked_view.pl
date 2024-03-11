@@ -223,7 +223,7 @@ sub get_html_patients {
 		}
 		$h_by_pat->{$fam_name}->{$pat->name()}->{dp} = $junction->get_dp_count($pat);
 		$h_by_pat->{$fam_name}->{$pat->name()}->{nb_new} = $junction->get_nb_new_count($pat);
-		$h_by_pat->{$fam_name}->{$pat->name()}->{nb_normal} = $junction->get_nb_normal_count($pat);
+		$h_by_pat->{$fam_name}->{$pat->name()}->{nb_normal} = $junction->get_canonic_count($pat);
 		$h_by_pat->{$fam_name}->{$pat->name()}->{percent} = sprintf("%.3f", $junction->get_percent_new_count($pat)).'%';
 	}
 	my $color = 'black';
@@ -338,7 +338,7 @@ sub get_html_dejavu {
 	$html.= $cgi->end_Tr();
 	$html.= $cgi->start_Tr();
 	$html.= $cgi->td("<b>Other<b>");
-	$html.= $cgi->td(obutton($cmd_all,$junction->dejavu_nb_others_patients()));
+	$html.= $cgi->td(obutton($cmd_all,$junction->in_this_run_patients()));
 	$html.= $cgi->end_Tr();
 	$html.= $cgi->start_Tr();
 	$html.= $cgi->td("<b>In this run</b>");

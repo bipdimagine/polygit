@@ -344,6 +344,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		#next if ( $junction->isCanonique());
 		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 );
 
+
 		next if $junction->start == $junction->end();
 
 		my $gene_name  = $junction->annex->{ $patient->name() }->{ensid};
@@ -394,7 +395,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $score = $junction->junction_score($patient, $use_percent_dejavu);
 
 		next if ($min_partial_score and $score < $min_partial_score);
-
+		
 		my $html_sashimi  = get_sashimi_plot( $junction, $patient );
 		my $html_igv      = get_igv_button( $junction, $patient );
 		my $html_id       = get_html_id($junction);
@@ -414,6 +415,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		else { $h_td_line = undef; }
 
 		$h_td_line->{id} = $jid_tmp;
+		
 		
 		if (not exists $h_td_line->{1}) { push (@{$h_td_line->{1}}, $html_sashimi); }
 		if (not exists $h_td_line->{2}) { push (@{$h_td_line->{2}}, $html_igv); }
@@ -1037,7 +1039,7 @@ sub get_html_patients {
 
 	foreach my $pat ( @{ $patient->getFamily->getPatients() } ) {
 		next if ( not $junction->get_dp_count($pat) );
-		next if ( not $junction->get_nb_new_count($pat) );
+		next if ( not $junction->get_nb_new_count($pat) and not $junction->isCanonique() );
 		my $fam_name = $pat->getFamily->name();
 		if ( $pat->isFather() ) {
 			if ( $pat->isIll() ) {
