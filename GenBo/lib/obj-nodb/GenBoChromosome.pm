@@ -106,7 +106,7 @@ foreach my $id (keys %{$hash_junc} ){
 	foreach my $p (@ps) {
 		
 		#die() unless exists $hash_junc->{$id}->{annex}->{$p}->{canonic_count};
-		if ($hash_junc->{$id}->{annex}->{$p}->{canonic_count} == 0) {
+		if ($hash_junc->{$id}->{annex}->{$p}->{canonic_count} < 10) {
 			unless (exists $hash_junc->{$id}->{annex}->{$p}->{is_sj}){
 				delete $hash_junc->{$id}->{annex}->{$p};
 				next;
