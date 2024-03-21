@@ -110,7 +110,16 @@ function view_rna_junctions(prj) {
 }
 
 function view_rna_shiny(prj) {
-	window.open("rna/launcher_polyrna.html?project="+prj, '_blank');
+	dijit.byId('waiting').show();
+	var url = url_path + "/polyrnaseq/launch_shiny_polyrna.pl";
+	$.getJSON( url, function( data ) {
+		console.log(data);
+		dijit.byId('waiting').hide();
+		var url_launch = data.url_docker + '?project=' + prj + '&login=' + dojo.cookie("username");
+		console.log(url_launch);
+	    window.open(url_launch, '_blank');
+    })
+    return;
 }
 
 function view_polyviewer(prj, type) {
