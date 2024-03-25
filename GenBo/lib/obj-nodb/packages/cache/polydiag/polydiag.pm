@@ -317,15 +317,13 @@ sub to_array {
 }
 
 sub run_cache_polydiag_vector {
-	my ( $project_name, $patient_name, $tbundle,$version ) = @_;
-	my $buffer1 = new GBuffer;
-	#my $project = $buffer1->newProject( -name => $project_name, -verbose => 1 );
-	my $project = $buffer1->newProjectCache( -name => $project_name ,-version=>$version);
+	my ( $project, $p, $tbundle,$version ) = @_;
+	my $buffer1 = $project->buffer();
 	my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
 		capture_name => $project->validation_db()
 	);
-	my $p      = $project->getPatient($patient_name);
+	my $patient_name = $p->name();
 	#my $p       = $pa->[0];
 	my $db_lite = $project->noSqlPolydiag("c");
 	my $vtr;
