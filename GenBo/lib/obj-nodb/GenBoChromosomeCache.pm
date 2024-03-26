@@ -1040,7 +1040,7 @@ sub vector_global_categories {
 				$v->Fill();
 			return $v;
 			}
-			
+		return 	$self->getNewVector() if $self->size_vector == 0;
 		my $v = $self->rocks_vector("r")->get_vector_chromosome($cat);
 		return $v;
 	}
@@ -1213,43 +1213,31 @@ sub getVectorCnv {
 
 sub setVariants {
 	my ($self, $type) = @_;
-	confess();
 	my $vector = $self->getNewVector();
 	if ($type eq 'variations') {
-		$vector->Intersection( $self->getVariantsVector(), $self->global_categories("substitution") );
-		# if (exists  $self->global_categories("insertion"));
+		$vector = $self->getVectorSubstitutions();
+	
 	}
 	elsif ($type eq 'insertions') {
-		my $vector_ins = $self->getNewVector();
-		#$vector_ins += $self->global_categories("insertion") if (exists  $self->global_categories("insertion"));
-		$vector->Intersection( $self->getVariantsVector(), $vector_ins );
+		$vector = $self->getVectorInsertions();
 	}
 	elsif ($type eq 'deletions') {
-		my $vector_del = $self->getNewVector();
-		$vector_del += $self->global_categories->{deletion} if (exists $self->global_categories->{deletion});
-		$vector->Intersection( $self->getVariantsVector(), $vector_del );
+			$vector = $self->getVectorDeletions();
+	
 	}
 	elsif ($type eq 'large_deletions') {
+			$vector = $self->getVectorLargeDeletions();
 		$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{large_deletion} ) if (exists $self->global_categories->{large_deletion});
 	}
 	elsif ($type eq 'large_duplications') {
+		$vector = $self->getVectorDeletions();
 		$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{large_duplication} ) if (exists $self->global_categories->{large_duplication});
 	}
+	else {
+		confess();
+	}
+	
 	foreach my $var (@{$self->getListVarObjects($vector)}) {
-#		if ($type eq 'large_deletions' and ref($var) eq 'GenBoDeletionCache') {
-#			bless $var , 'GenBoLargeDeletionCache';
-#			$var->isDeletion(undef);
-#			$var->isLargeDeletion(1);
-#			$var->{type} = 'large_deletion';
-#			$var->{type_object} = 'large_deletions_object';
-#		}
-#		if ($type eq 'large_duplication' and ref($var) eq 'GenBoInsertionCache') {
-#			bless $var , 'GenBoLargeDuplicationCache';
-#			$var->isInsertion(undef);
-#			$var->isLargeDuplication(1);
-#			$var->{type} = 'large_duplication';
-#			$var->{type_object} = 'large_duplications_object';
-#		}
 		$self->{$var->type_object()}->{$var->id()} = undef;
 		unless (exists $self->project->{objects}->{$type}->{$var->id()}) {
 			$self->project->{objects}->{$type}->{$var->id()} = $var;
@@ -1478,29 +1466,6 @@ sub get_vector_dejavu {
 	return Bit::Vector->new_Enum($self->getVariantsVector->Size(), join(',', @lNOK));
 }
 
-# methode pour appliquer le filtre dejavu (uniquement pour les TESTS F - dejavu fixe)
-sub get_vector_dejavu_TESTS_F_ONLY {
-	my ($self, $vector, $max_dejavu, $is_only_ho) = @_;
-	return unless ($max_dejavu);
-	if ($max_dejavu eq 'uniq') { $max_dejavu = 0; }
-	my @lNOK;
-	my $no_dejavu = $self->project->get_lmdb_dejavu_tests_f_only('r');
-	foreach my $id (@{$self->getIdsBitOn($vector)}) {
-		$self->project->print_dot(100);
-		my $varId = $self->getVarId( $id );
-		my $h;
-		if ($is_only_ho) { $h = $no_dejavu->get($varId.'_ho'); }
-		else { $h = $no_dejavu->get($varId); }
-		my $nb_var = $h->{nb};
-		unless ($nb_var) { $nb_var = 0; }
-		# -1 car ce projet etait inclus (ex vu sur NGS2015_0760)
-		if (($nb_var-1) > $max_dejavu) {
-			push(@lNOK, $id);
-		}
-	}
-	$no_dejavu->close();
-	return Bit::Vector->new_Enum($self->getVariantsVector->Size(), join(',', @lNOK));
-}
 
 # methode qui update le vector global du chromosome a partir des vector de chaque patient
 sub update_from_patients {
@@ -2532,6 +2497,7 @@ has vectorClinvarPathogenic => (
         	my $self = shift;
         	my $vector ;
         	if ($self->project->isRocks){
+        		return $self->getNewVector() if $self->size_vector == 0;
         		return $self->rocks_vector->get_vector_chromosome("dm");
         	}
         	if ($self->lmdb_score_impact->exists_db){
@@ -2560,6 +2526,7 @@ has vectorDM => (
         default => sub {
         	my $self = shift;
         	if ($self->project->isRocks){
+        		return $self->getNewVector() if $self->size_vector == 0;
         		return $self->rocks_vector->get_vector_chromosome("dm");
         	}
         	my $vector ;
@@ -2888,6 +2855,7 @@ sub get_vector_category {
 				$v->Fill();
 			return $v;
 			}
+	 return $self->getNewVector() if $self->size_vector == 0;	
 	return $self->rocks_vector("r")->get($category);
 	}
 	else {
@@ -2900,6 +2868,7 @@ sub get_vector_category {
  	my ( $self,$categories) = @_;
  	if($self->project->isRocks){
  		my $h = {};
+ 			 return $self->getNewVector() if $self->size_vector == 0;	
 		foreach my $cat (@$categories) {
 			$h->{$cat} = $self->rocks_vector("r")->get($cat);
 		}

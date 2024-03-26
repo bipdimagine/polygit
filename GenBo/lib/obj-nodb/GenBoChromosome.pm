@@ -1762,42 +1762,6 @@ sub get_lmdb_calling_methods {
 	return $self->_get_lmdb( $mode, "calling_methods" );
 }
 
-sub get_lmdb_dejavu {
-	my ( $self, $mode ) = @_;
-	$mode = "r" unless $mode;
-	my $dir_out = $self->project->lmdb_cache_dejavu_dir();
-	my $hindex = "dejavu".$mode;
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	my $no2     = GenBoNoSqlLmdb->new(
-		dir         => $dir_out,
-		mode        => $mode,
-		name        => $self->name,
-		is_compress => 1,
-		vmtouch     => $self->buffer->vmtouch
-	);
-	$no2->clean_files() if ( $mode eq "c" );
-	$self->{lmdb}->{$hindex} = $no2;
-	
-	return $no2;
-}
-
-sub get_lmdb_dejavu_ho {
-	my ( $self, $mode ) = @_;
-	$mode = "r" unless $mode;
-	my $hindex = "dejavuho".$mode;
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	my $dir_out = $self->project->lmdb_cache_dejavuho_dir();
-	my $no2     = GenBoNoSqlLmdb->new(
-		dir         => $dir_out,
-		mode        => $mode,
-		name        => $self->name,
-		is_compress => 1,
-		vmtouch     => $self->buffer->vmtouch
-	);
-	$no2->clean_files() if ( $mode eq "c" );
-	$self->{lmdb}->{$hindex} = $no2;
-	return $no2;
-}
 
 sub lmdb_score_impact {
 	my ( $self, $mode ) = @_;
@@ -1837,6 +1801,7 @@ sub getVectorScore {
 		return $v;
 	}
 	if ($self->project->isRocks){
+		return $self->getNewVector() if $self->size_vector == 0;
 		return $self->rocks_vector->get_vector_chromosome($id);
 		return $self->rocks_vector->get($id);
 	}
