@@ -168,7 +168,6 @@ has config => (
 				$hConfig->{$k}->{$k2} = $config2{$k}{$k2};
 			}
 		}
-		
 		return $hConfig;
 	},
 );
@@ -1653,11 +1652,19 @@ sub log2 {
 #}
 
 
-
+sub get_url_polyrna {
+	my ($self) = shift;
+	return $self->get_base_url_polyrna().':'.$self->get_port_url_polyrna();
+}
 
 sub get_base_url_polyrna {
 	my ($self) = shift;
 	return $self->config->{polyrna}->{base_url_polyrna};
+}
+
+sub get_port_url_polyrna {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{port_url_polyrna};
 }
 
 sub get_polyrna_file_server_to_docker {

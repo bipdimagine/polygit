@@ -81,7 +81,7 @@ $| = 1;
 		my $pid = $pm->start and next;
 		#my $resp= {};
 
-		my $resp = polydiag::run_cache_polydiag_vector( $project_name, $p->name, $tbundle,$version );
+		my $resp = polydiag::run_cache_polydiag_vector( $project, $p, $tbundle,$version );
 
 		run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
@@ -105,8 +105,8 @@ sub run_cache_web_polydiag {
 	my $polydiag = $RealBin."/../../validation_variation/patient_report.pl";
 	for (my $f=2;$f<5;$f++){
 		for (my $imp=2;$imp<4;$imp++){
-			warn "$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1";
-			system("$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1");
+			warn "$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1 fork=1";
+			system("$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1 fork=1");
 		}
 	}
 	

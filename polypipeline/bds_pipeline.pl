@@ -269,6 +269,7 @@ my $steps = {
 				"muc1" => sub {$pipeline->muc1(@_)},
 				"advntr" => sub {$pipeline->advntr(@_)},
 				"star_align" => sub {$pipeline->star_align(@_)},
+				"deepvariant" => sub {$pipeline->deepvariant(@_)},
 				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
 			};
 			

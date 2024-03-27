@@ -250,7 +250,11 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	$h_by_coord->{$v->start()} = $out;
 }
 
-foreach my $start (sort {$a <=> $b} keys %$h_by_coord) {
+my @list_coord;
+if ($gene->strand() == 1) { @list_coord = sort {$a <=> $b} keys %$h_by_coord; }
+else  { @list_coord = sort {$b <=> $a} keys %$h_by_coord; }
+
+foreach my $start (@list_coord) {
 	my $out = $h_by_coord->{$start};
 	push(@list_lines, $out);
 }

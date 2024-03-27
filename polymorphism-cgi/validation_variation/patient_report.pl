@@ -489,6 +489,8 @@ confess() unless $cgi_transcript;
 $cgi_transcript = "all" unless $cgi_transcript;
 my $name =  $cgi->param('name');
 
+$project->getPatients();
+
 $patient_name ="all" unless $patient_name;
 my $patients = $project->get_list_patients($patient_name,",");
 confess() if scalar (@{$patients}) > 1;
@@ -817,7 +819,7 @@ sub construct_data {
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
-	$text = "";
+	#$text = "";
 	$text = undef if $pipeline;
 
 	$compute_coverage = 1;

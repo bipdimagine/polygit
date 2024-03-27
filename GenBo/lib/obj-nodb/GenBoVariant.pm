@@ -256,7 +256,8 @@ has hgmd_details => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return $self->project->buffer->queryHgmd->getDataHGMDPro($self->hgmd_id());
+		return $self->project->buffer->queryHgmd->getDataHGMDPro($self->hgmd_id()) if $self->hgmd_id;
+		return;
 	}
 );
 
@@ -2225,11 +2226,7 @@ sub scaledScoreVariant{
 	
 	
 	if ($patient->isChild && $patient->getFamily->isTrio()) {
-		warn "before ".$scaled_score;
 		$scaled_score = $self->score_variants_trio($patient,$scaled_score,$tr,$debug);
-		warn "after ".$scaled_score;
-		
-		
 		
 	}
 	else {

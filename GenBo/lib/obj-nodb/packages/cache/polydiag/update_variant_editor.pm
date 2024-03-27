@@ -45,7 +45,6 @@ sub printBadge {
 	 $color = "#FF8800" if $value > $types->[0] ;
 	 $color = "#FF0025" if $value > $types->[1] ;
 	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
-
 }
 
 sub printBadgeWithDesc{
@@ -55,12 +54,17 @@ sub printBadgeWithDesc{
 	 $color = "#FF8800" if $value > $types->[0] ;
 	 $color = "#FF0025" if $value > $types->[1] ;
 	 return qq{<span class="badge badge-success badge-xs" style="border-color:$color;background-color:#FFFFFF;color:$color;font-size :8px;">$description:$value</span>} ;
-
 }
 
 sub printSimpleBadge {
 	my ($value) = @_;
 	my $color = "black";
+	 return qq{<span class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
+}
+
+sub printBlueSimpleBadge {
+	my ($value) = @_;
+	my $color = "blue";
 	 return qq{<span class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:$color;font-size :8px;">$value</span>} ;
 }
 
@@ -432,7 +436,8 @@ sub table_gnomad {
 	my $vn=$v->vcf_id;
 	$vn =~ s/_/-/g;
 	$vn=~ s/chr//;
-	if ($v->rs_name() =~ /rs/){
+
+	if ($v->getGnomadAC && $v->getGnomadAC > 0){
 			$href = qq{https://gnomad.broadinstitute.org/variant/$vn$dataset};
 	}
 
@@ -959,6 +964,11 @@ sub construct_hash_transcript {
 	my $all_transcripts;
 	my $max_ai = $v->max_spliceAI_score($gene);
 	my $max_cat = $v->max_spliceAI_categorie($gene);
+	my ($refseq_hgmd_1, $refseq_hgmd, $tmprefseq);
+	if ($v->hgmd_details) {
+		$refseq_hgmd_1 = $v->hgmd_details->{refseq};
+		($refseq_hgmd, $tmprefseq) = split('\.', $refseq_hgmd_1);
+	}
 	foreach my $tr1 (sort { ($himpact_sorted->{$v->effectImpact($b)} <=>  $himpact_sorted->{$v->effectImpact($a)}) or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
 		next if $tr1->getGene->id ne $gene->id;
 		my $htr = {};
@@ -990,8 +1000,14 @@ sub construct_hash_transcript {
 		value_html($htr,"trid",$tr1->id);
 		
 		#nm
-		 my $nm =$tr1->external_name;
-		value_html_badge($htr,"nm",$nm);
+		my $nm =$tr1->refseq_names;
+		my $is_same_nm_as_hgmd;
+		if ($refseq_hgmd) {
+			$is_same_nm_as_hgmd = 1 if $nm =~ /$refseq_hgmd/;
+			if ($is_same_nm_as_hgmd) { value_html($htr,"nm",$htr,printBlueSimpleBadge($nm)); }
+			else { value_html_badge($htr,"nm",$nm); }
+		}
+		else { value_html_badge($htr,"nm",$nm); }
 		
 		my $ccds = $tr1->ccds_name;
 		value_html($htr,"ccds",$ccds,href(qq{https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=},$ccds));
@@ -1065,8 +1081,16 @@ sub construct_hash_transcript {
 		my $main =  0 ;
 		 $main  = 1 if $tr1->isMain();
 		value_html($htr,"main",$main,$main);
+<<<<<<< HEAD
 		delete $htr->{html};
 		push(@$all_transcripts,$htr)
+=======
+		if ($is_same_nm_as_hgmd){
+			unshift(@$all_transcripts,$htr);
+			next;
+		} 
+		push(@$all_transcripts,$htr);
+>>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
 	}#end for transcript
 	return $all_transcripts;
 }
@@ -1839,9 +1863,18 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				my $m = $hgene->{max_score};
 				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
  				
+ 				
+				my $dataset = "?dataset=gnomad_r2_1";
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
- 				$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				if ($gene) {
+ 					my ($gidtmp,$gtmp) = split('_',$gene->id());
+ 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				}
+ 				else {
+ 					my ($gidtmp,$gtmp) = split('_',$hgene->{id});
+ 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 				}
  				
  				
  				

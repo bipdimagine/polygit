@@ -325,7 +325,6 @@ sub getIds_byCache_onlive {
 			$vn =~ s/_/-/g;
 			$vn =~ s/chr//;
 			my $link = "https://gnomad.broadinstitute.org/variant/$vn";
-			$link .= "?dataset=gnomad_r2_1" if ($var->getProject->getVersion() =~ /HG19/);
 			$hash->{'gnomad_ac'} = $var->getGnomadAC().';'.$link;
 			$hash->{'gnomad_ho'} = $var->getGnomadHO().';'.$link;
 			$hash->{'gnomad_an'} = $var->getGnomadAN().';'.$link;

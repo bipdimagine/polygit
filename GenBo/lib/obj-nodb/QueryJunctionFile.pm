@@ -95,26 +95,25 @@ sub _parse_tab_file {
 }
 
 sub parse_SJ_file {
-	my ($self, $patient, $chr,$hh) = @_;
+	my ($self, $patient, $chr,$hh,$hh_sj) = @_;
 
 	my $array =  $self->_parse_tab_file($patient,$chr);
 	foreach my $j (@$array){
-		my $id = $j->{id}; 
-		next unless exists $hh->{$id};
-		
-		$hh->{$id}->{is_sj} = 1;
-		my $pid = $patient->name;
-		$hh->{$id}->{genes} = $j->{genes} if exists $j->{genes} ;
-		$hh->{$id}->{type_canonic} = $j->{annex}->{$pid}->{intron_motif} unless exists $hh->{$id}->{type_canonic};
-		next unless exists $hh->{$id}->{annex}->{$pid};
-		
+		my $id = $j->{id};
+		next unless exists $hh_sj->{$id};
+		my @l_ids = keys %{$hh_sj->{$id}};
+		foreach my $this_id (@l_ids) {
+			$hh->{$this_id}->{is_sj} = 1;
+			my $pid = $patient->name;
+			$hh->{$this_id}->{genes} = $j->{genes} if exists $j->{genes} ;
+			$hh->{$this_id}->{type_canonic} = $j->{annex}->{$pid}->{intron_motif} unless exists $hh->{$this_id}->{type_canonic};
+			next unless exists $hh->{$this_id}->{annex}->{$pid};
 			foreach my $k (keys %{$j->{annex}->{$pid}}){
-				$hh->{$id}->{annex}->{$pid}->{$k} = $j->{annex}->{$pid}->{$k};
+				$hh->{$this_id}->{annex}->{$pid}->{$k} = $j->{annex}->{$pid}->{$k};
 			}
-			
-			 $hh->{$id}->{annex}->{$pid}->{is_sj} = 1;
-			delete $hh->{$id}->{annex}->{$pid}->{intron_motif};
-			
+			$hh->{$this_id}->{annex}->{$pid}->{is_sj} = 1;
+			delete $hh->{$this_id}->{annex}->{$pid}->{intron_motif};
+		}
 	}
 	return $hh;
 }
@@ -213,8 +212,9 @@ sub parse_results_global_file {
 			$h_res->{canonic_count} = $h_res->{junc_normale_count};
 			
 			my $res = $chr->genesIntervalTree->fetch($h_res->{start},$h_res->{end}+1);
-			
-			next if scalar(@$res) > 2 &&  $h_res->{alt_count} < 5;
+			next if scalar(@$res) >= 2 &&  $h_res->{alt_count} < 5;
+			next if scalar(@$res) >= 3 &&  $h_res->{alt_count} < 7;
+			next if scalar(@$res) >= 4 &&  $h_res->{alt_count} < 9;	
 			
 			next if $h_res->{alt_count} <= 2 && $h_res->{len} >= 50000 ;
 			next if $h_res->{alt_count} <= 3 && $h_res->{len} >= 100000;
@@ -231,10 +231,7 @@ sub parse_results_global_file {
 			$sample =~ s/\_$proj_name//;
 			# check et regroupe same jonctions RI SE
 			
-			
-			
 			my $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file};
-				warn $id if $h_res->{start} == 39550420 && $h_res->{end} == 39564909;
 			confess("\n\nERROR: construct junction $id for column chr. Die\n\n") if not exists $h_res->{'chr'};
 			confess("\n\nERROR: construct junction $id for column start. Die\n\n") if not exists $h_res->{'start'};
 			confess("\n\nERROR: construct junction $id for column end. Die\n\n") if not exists $h_res->{'end'};
@@ -263,6 +260,7 @@ sub parse_results_global_file {
 	close (FILE);
 
 	foreach my $id (keys %{$h_global}) {
+		next if $id eq 'sj_ids';
 		my $is_ok;
 		foreach my $patient (@{$self->getProject->getPatients()}) {
 			next if not exists $h_global->{$id}->{annex}->{$patient->name};

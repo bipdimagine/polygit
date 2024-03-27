@@ -311,6 +311,21 @@ has external_name => (
 	is		=> 'ro',
 );
 
+has refseq_names => (
+	is => 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my ($key, $value) = $self->getProject->liteAnnotations->get_key_value( "synonyms", $self->id() );
+		my @lval;
+		foreach my $id (split(' ', $key)) {
+			push (@lval, $id) if $id =~ /NM_[0-9]+/;
+			push (@lval, $id) if $id =~ /NR_[0-9]+/;
+		}
+		return join(';', @lval);
+	}
+);
+
 has external_protein_name => (
 	is		=> 'ro',
 );

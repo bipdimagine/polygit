@@ -291,6 +291,10 @@ sub get_nb_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
 	return $self->{nb_new_count}->{$patient->name()} if (exists $self->{nb_new_count}->{$patient->name()});
+	if ($self->isCanonique()) { 
+		$self->{nb_new_count}->{$patient->name()} = 0;
+		return 0;
+	} 
 	my $count = 0;
 	if (exists $self->annex->{$patient->name()}->{junc_new_count}) {
 		$count  = $self->annex->{$patient->name()}->{junc_new_count};
@@ -302,13 +306,15 @@ sub get_nb_new_count {
 	$self->{nb_new_count}->{$patient->name()} = $count;
 	return $count;
 }
+
 sub get_canonic_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	return undef unless (exists $self->annex->{$patient->name()}->{canonic_count});
-	return $self->{annex}->{$patient->name}->{canonic_count};
+	my $nb;
+	$nb = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
+	return $nb if $nb and $nb > 0;
+	return $self->getCoverageInInterval($patient);
 }
-
 
 sub get_dp_count {
 	my ($self, $patient) = @_;
@@ -329,8 +335,11 @@ sub ratio {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
 	return $self->{ratio}->{$patient->name()} if (exists $self->{ratio}->{$patient->name()});
-	my $ratio;
-	 $ratio = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
+	if ($self->isCanonique()) { 
+		$self->{ratio}->{$patient->name()} = 0;
+		return 0;
+	} 
+	my $ratio  = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
 	$self->{ratio}->{$patient->name()} = $ratio;
 	return $ratio;
 }
@@ -485,6 +494,25 @@ sub setGenes {
 	return \@t;
 }
 
+sub getGenes {
+	my $self = shift;
+	my (@lGenes, @lGenes_default);
+	foreach my $g (@{$self->getProject()->myflushobjects($self->genes_object(), "genes")}) {
+		my $get;
+		foreach my $t (@{$g->getTranscripts()}) {
+			my $intspan_coding = $t->genomic_span();
+			if ($intspan_coding->contains($self->start()) or $intspan_coding->contains($self->start()-1)) { $get = 1; }
+			elsif ($intspan_coding->contains($self->end()) or $intspan_coding->contains($self->end()+1))  { $get = 1; }
+		}
+		if ($get) { push(@lGenes, $g); }
+		elsif (scalar(@lGenes) == 0) {
+			if ($g->getGenomicSpan->contains($self->start()))  { push(@lGenes_default, $g) ; }
+			elsif ($g->getGenomicSpan->contains($self->end())) { push(@lGenes_default, $g); }
+		}
+	}
+	return \@lGenes if (scalar(@lGenes) > 0);
+	return \@lGenes_default;
+}
 
 sub get_hash_noise {
 	my ($self, $patient) = @_;
@@ -772,6 +800,10 @@ sub dejavu_details   {
 	return $res;
 }
 
+sub getCoverageInInterval {
+	my ($self, $patient) = @_;
+	return sprintf("%.2f",$self->get_coverage($patient)->coverage($self->start() +1, $self->end() -1)->{mean});
+}
 
 
 1;

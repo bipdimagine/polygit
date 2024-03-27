@@ -74,20 +74,20 @@ sub setJunctions {
 	my $se_file = $self->project->RnaseqSEA_SE;
 	my $ri_file = $self->project->RnaseqSEA_RI;
 	warn $ri_file;
-	my $hash_junc;
+	my ($hash_junc, $hash_junc_sj_ids);
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
-			my $id = $hres->{sj_id};
-			warn $id if $hres->{id} eq "18_39550420_39564909_RI";
+			my $id = $hres->{id};
 			$hash_junc->{$id} = $hres;
+			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
 			#push(@ares,$hres);
 		}
 	}
 	if ($se_file and -e $se_file) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
-			my $id = $hres->{sj_id};
+			my $id = $hres->{id};
 			$hash_junc->{$id} = $hres;
-			#push(@ares,$hres);
+			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
 			
 		}
 	}
@@ -99,8 +99,9 @@ foreach my $patient (@{$self->getProject->getPatients()}) {
 		my $file = $patient->getSJFile();
 		next unless $file;
 		my $queryJunction = QueryJunctionFile->new( file=>$file );
-		$queryJunction->parse_SJ_file($patient,$self,$hash_junc);
+		$queryJunction->parse_SJ_file($patient,$self,$hash_junc,$hash_junc_sj_ids);
 	}
+	
 warn "step 2";
 foreach my $id (keys %{$hash_junc} ){
 	
@@ -108,7 +109,7 @@ foreach my $id (keys %{$hash_junc} ){
 	foreach my $p (@ps) {
 		
 		#die() unless exists $hash_junc->{$id}->{annex}->{$p}->{canonic_count};
-		if ($hash_junc->{$id}->{annex}->{$p}->{canonic_count} == 0) {
+		if ($hash_junc->{$id}->{annex}->{$p}->{canonic_count} < 10) {
 			unless (exists $hash_junc->{$id}->{annex}->{$p}->{is_sj}){
 				delete $hash_junc->{$id}->{annex}->{$p};
 				next;
@@ -158,6 +159,10 @@ foreach my $id (keys %{$hash_junc} ){
 	#delete $hash_junc->{$id}->{genes};
 	my $obj = $self->getProject->flushObject( 'junctions', $hash_junc->{$id});
 	$h_ids->{$obj->id()} = undef;
+	
+	warn ref($obj).' -> '.$obj->id() if $id eq '20_3194705_3199162_SE';
+	warn Dumper $hash_junc->{$id} if $id eq '20_3194705_3199162_SE';
+	
 }
 return $h_ids;	
 

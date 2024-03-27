@@ -553,9 +553,9 @@ sub get_html_dejavu  {
 	my $dv_other_pat = $junction->dejavu_nb_other_patients();
 	my $dv_other_pat_ratio_10 = $junction->dejavu_nb_other_patients_min_ratio_10();
 	my $dv_other_pat_ratio_20 = $junction->dejavu_nb_other_patients_min_ratio_20();
-	my $dv_run_other_pat = $junction->dejavu_nb_int_this_run_patients();
-	my $dv_run_other_pat_ratio_10 = $junction->dejavu_nb_int_this_run_patients_min_ratio_10();
-	my $dv_run_other_pat_ratio_20 = $junction->dejavu_nb_int_this_run_patients_min_ratio_20();
+	my $dv_run_other_pat = $junction->in_this_run_patients();
+	my $dv_run_other_pat_ratio_10 = $junction->in_this_run_patients(10);
+	my $dv_run_other_pat_ratio_20 = $junction->in_this_run_patients(20);
 	my $html = $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
 	$html .= $cgi->start_Tr();
 	$html .= $cgi->th("");

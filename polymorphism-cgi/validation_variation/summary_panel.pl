@@ -430,7 +430,55 @@ h4 {
 	transform: rotate(0deg);
   border-radius: 0;
 }
+.stamp_view {
 
+	color: black;
+	font-size: 1.4rem;
+	font-weight: 500;
+	border: 0.25rem solid #555;
+	display: inline-block;
+	padding: 0.25rem 1rem;
+	text-transform: uppercase;
+	border-radius: 1rem;
+	font-family: 'Courier';
+  -webkit-mask-size: 944px 604px;
+  mix-blend-mode: multiply;
+  color:#97B4D4;
+	border: 0.2rem solid #97B4D4;
+	-webkit-mask-position: 13rem 6rem;
+	transform: rotate(0deg);
+  border-radius: 0;
+   cursor: pointer; 
+}
+.stamp_view:hover {
+  border-color: #55B4B0; /* Nouvelle couleur de la bordure au survol */
+  color:#55B4B0;
+}
+.stamp_disomy {
+
+	color: black;
+	font-size: 1.4rem;
+	font-weight: 500;
+	border: 0.25rem solid #555;
+	display: inline-block;
+	padding: 0.25rem 1rem;
+	text-transform: uppercase;
+	border-radius: 1rem;
+	font-family: 'Courier';
+  -webkit-mask-size: 944px 604px;
+  mix-blend-mode: multiply;
+  color:#9B2335;
+	border: 0.2rem solid #9B2335;
+	-webkit-mask-position: 13rem 6rem;
+	transform: rotate(0deg);
+  border-radius: 0;
+   cursor: pointer; 
+}
+
+.stamp_disomy:hover {
+  border-color: red; /* Nouvelle couleur de la bordure au survol */
+  color:red;
+}
 .stamp3 {
 
 	color: black;
@@ -529,8 +577,7 @@ my $key_quality = args_quality($project);
 #warn $key_quality;
 # my $key_quality = args_quality($project);
 my $no_cache = $project->get_lmdb_cache_summary("r");
-args_muc1( $project, $key_quality )
-  if $project->getCaptures->[0]->analyse =~ /renom/i;
+args_muc1( $project, $key_quality ) if $project->getCaptures->[0]->analyse =~ /renom/i;
 push( @$key_quality, "muc1.adVntr.10.05.23.6" ) if $project->getCaptures->[0]->analyse =~ /renom/i;
 my $key_validation = args_validation($project);
 push( @$key_quality, @$key_validation );
@@ -546,19 +593,18 @@ my $hmendel;
 my ( $gstats, $lstats, $patient_value );
 my $cache_icon = "";
 unless ($header) {
-	warn "pppppp";
 	print qq{<div style="display: none">};
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project);
 	$hmendel = get_mendelian_statistics($project);
 	foreach my $run ( @{ $project->getRuns() } ) {
 		$header->{ $run->id } = table_run_header($run);
 	}
-	print qq{</div>};
+	print qq{\n</div>};
 	$no_cache = $project->get_lmdb_cache_summary("w");
 	$no_cache->put_cache_hash( $header_id, $header, 2400 );
 	$no_cache->close();
-	$cache_icon .=
-qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;color:red"></span>};
+
+	$cache_icon .= qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;color:red"></span>};
 }
 else {
 	$cache_icon .=
@@ -568,31 +614,26 @@ qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text
 #my $key_validation = args_validation($project);
 #push(@$key_quality,"muc1") if $project->getCaptures->[0]->analyse =~ /renom/i;
 $no_cache = $project->get_lmdb_cache_summary("r");
-my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table");
+my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."19-02-2024");
 my $htable = $no_cache->get_cache( $table_id );
-#$htable = undef;
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
 
 unless ($htable) {
 	print qq{<div style="display: none">};
-	( $gstats, $lstats, $patient_value ) = statistics_projects($project)
-	  unless $patient_value;
+	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
 	$hmendel = get_mendelian_statistics($project) unless $hmendel;
 	foreach my $run ( @{ $project->getRuns() } ) {
 		$htable->{ $run->id } = table_patients($run);
 	}
 	$no_cache = $project->get_lmdb_cache_summary("w");
-	warn "put $table_id";
 	$no_cache->put_cache_hash( $table_id, $htable, 2400 );
 	$no_cache->close();
-	print qq{</div>};
-	$cache_icon .=
-qq{&nbsp; <span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
+	print qq{\n</div>};
+	$cache_icon .= qq{&nbsp; <span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
 }
 else {
-	$cache_icon .=
-qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
+	$cache_icon .= qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
 
 }
 
@@ -643,7 +684,7 @@ sub check_level {
 }
 
 sub print_line_patient {
-	my ( $p, $nb_row ) = @_;
+	my ( $p, $nb_row,$hash_disomy) = @_;
 
 #@title = ("Fam","Patient","Sex","mendelian error","Cov","30x","Sub","Indels","%He","validation");
 	my $line;
@@ -782,16 +823,119 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	else {
 		my $date = $res_muc->[0]->[0];
 		my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
-		$line->{"MUC1"} =
-		  $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
 
 		# $line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
 		#$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
 	}
-
+	
+	if ($hash_disomy){
+		my $u = $hash_disomy->{patient}->{$p->id};
+		my $url = qq{html/manta/plotAllBAplots.html?project=}.$project->name.qq{&patient=}.$p->name;
+		my $text = qq{ <a  class="stamp_disomy" href="$url" target="_blank" ><span>$u</span></a>};
+		if ($u eq "-"){
+			$text = qq{ <a  class="stamp_view" href="$url" target="_blank"><span>View</span></a>};
+			
+		}
+		
+		$line->{"Unidisomy"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+	}
+	
 	return $line;
 }
 
+sub test_disomy {
+	my $uni;
+	$uni->{find_disomy} = 0;
+	foreach my $p (@{$project->getPatients}){
+		my $file = $p->upd_file();
+		unless (-e $file ) {
+			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
+			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
+			warn "perl $prg -project=$project_name -patient=".$p->name;
+			# if $p->isChild();
+		}
+		my $r = exists_disomy($p,$file);
+		
+		if($r){
+			$uni->{patient}->{$p->id} = $r;
+			$uni->{find_disomy} ++;
+		}
+		else {
+			$uni->{patient}->{$p->id} = "-";
+		}
+	}
+	return $uni;
+}
+
+sub exists_disomy {
+	my ($p,$file) = @_;
+	warn $file;
+	open(JSON,$file);
+	my $tt = <JSON>;
+	chomp($tt);
+	my $hash = decode_json $tt;
+	my $type;
+	foreach my $chr (keys %$hash)
+ 		{ 
+			next if $chr eq "X" && $p->sex == 1;
+			next if $chr eq "Y" ;#&& $p->sex == 2;
+			next if $chr eq "MT";
+			my $style;
+			my $etiq;
+			my $id = $chr;
+
+			my $max  = -10;
+			my $show = 0;
+
+		# Detection de larges deletions
+			if (( $hash->{$chr}->{"TRANSMIS_BYF"} > 10 )	&& ( $hash->{$chr}->{"TRANSMIS_BYM"} > 10 )) # pas d'unidisomie
+			{
+				if (( $hash->{$chr}->{"ISO_UPD_M"} > 10 ) && ( $hash->{$chr}->{"HoFrom_M"} > 50 ) )
+				{
+					$type = $chr; # deletion des alleles paternels
+					return "LD"
+				}
+				if (( $hash->{$chr}->{"ISO_UPD_F"} > 10 ) && ( $hash->{$chr}->{"HoFrom_F"} > 50 ) )
+				{
+					
+						return "LD"; # deletion des alleles maternels
+				}
+			}
+			else
+			{
+				if ( $hash->{$chr}->{"TRANSMIS_BYF"} <= 10 )		# si moins de 10% des variants du père transmis : unidisomie Maternelle
+				{
+					if ( $hash->{$chr}->{"ISO_UPD_M"} > 30 )		# si plus de 30% des variants He de la mère sont Ho chez l'enfant : isodisomie 
+					{
+						return "unidisomy&nbsp$chr"
+					}
+					else
+					{
+						return "heterodisomy&nbsp$chr"
+					}
+				}
+				else
+				{
+					if ( $hash->{$chr}->{"TRANSMIS_BYM"} <= 10 )		# si moins de 10% des variants de la mère transmis : unidisomie Paternelle
+					{
+						$style="box-shadow: 1px 1px 2px black;background-color:lightblue; color:white; border:2px solid white; font-size:16px;";
+						$show = 1;
+						my $val = $hash->{$chr}->{"TRANSMIS_BYM"};
+						if ( $hash->{$chr}->{"ISO_UPD_F"} > 30 )		# si plus de 30% des variants He du père sont Ho chez l'enfant : isodisomie 
+						{
+							return "unidisomy&nbsp$chr"
+						}
+						else
+						{
+							return "heterodisomy&nbsp$chr"
+						}
+					}
+				}
+			}
+ 		}
+		return undef;
+}
 sub header_run {
 	my ( $run, $nb_run, $total_run ) = @_;
 	$nb_run    = 1;
@@ -1706,8 +1850,7 @@ sub construct_identito_vigilence {
 	return ( "", 0 ) unless @iv;
 
 	unless ( $p->identity_vigilance_vcf() ) {
-		system(
-"$Bin/../../polypipeline/scripts/scripts_pipeline/identito_vigilence.pl -project="
+		system("$Bin/../../polypipeline/scripts/scripts_pipeline/identito_vigilence.pl -project="
 			  . $project->name
 			  . ">/dev/null 2>/dev/null" );
 	}
@@ -3101,28 +3244,38 @@ sub table_patients {
 	my $col_hgmd = 3;
 	$col_hgmd = 2 unless $hgmd == 1;
 
-	my @title = ( "Fam", "view", "Print", "Patient", "Cov", "30x", )
+	my @title = ( "Fam", "view", "Print", "Patient", "Cov", "30x" )
 	  ;    # if ($project->isFamilial());
 
 #@title = ("Fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 	my $isfam = 1;
 	unless ( $project->isFamilial() ) {
-		@title = ( "fam", "view", "Print", "Patient", "Cov", "30x" )
-		  ;    # if ($project->isFamilial());
+		@title = ( "fam", "view", "Print", "Patient", "Cov", "30x");    # if ($project->isFamilial());
 		 #	@title = ("fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		$isfam = undef;
 	}
-	push( @title, "MUC1" )
-	  if ( -e $project->getVariationsDir("vntyper") . "/muc1/" );
-	$out .=
-	  $cgi->start_Tr( { style => "background-color:#1079B2;color:white" } );
-	$out .= $cgi->th(
-		{ style => "text-align: center;" },
-qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(this)"></input>}
-	);
+	push( @title, "MUC1" ) if ( -e $project->getVariationsDir("vntyper") . "/muc1/" );
+	$out .= $cgi->start_Tr( { style => "background-color:#1079B2;color:white" } );
+	$out .= $cgi->th({ style => "text-align: center;" }, qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(this)"></input>});
 	foreach my $p (@title) {
 		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
 	}
+	###########
+	#Unidysomy
+	###########
+	
+	my $hash_disomy ={};
+	if ($project->isExome or $project->isGenome) {
+		push(@title,"Unidisomy");
+		 ($hash_disomy) = test_disomy();
+		if ($hash_disomy->{find_disomy} > 0) {
+			$out .= $cgi->th( { style => "text-align: center;min-width:5%;background-color:#962D3E" }, "Unidisomy" );
+		}
+		else {
+			$out .= $cgi->th( { style => "text-align: center;min-width:70%" }, "Unidisomy" );
+		}
+	}
+	
 	push( @title, "validation" );
 	$out .=
 	  $cgi->th( { style => "text-align: center;min-width:70%" }, "validation" );
@@ -3152,13 +3305,8 @@ qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(
 
 		#	 if ($nb_members>1){
 
-		$out .= $cgi->td(
-			{ rowspan => $nb_members, style => "vertical-align:middle" },
-qq{<input id="$pname" type="checkbox" aria-label="..." onClick="selection(event,this)"></input>}
-		);
-		$out .= $cgi->td(
-			{ rowspan => $nb_members, style => "vertical-align:middle" },
-			$fam->name );    # if $isfam ;
+		$out .= $cgi->td({ rowspan => $nb_members, style => "vertical-align:middle" },qq{<input id="$pname" type="checkbox" aria-label="..." onClick="selection(event,this)"></input>});
+		$out .= $cgi->td({ rowspan => $nb_members, style => "vertical-align:middle" },$fam->name );    # if $isfam ;
 
 		foreach my $p ( @{ $fam->getMembers } ) {
 			my $pp   = $p->name;
@@ -3174,14 +3322,13 @@ qq{<input id="$pname" type="checkbox" aria-label="..." onClick="selection(event,
 
 			];
 			$out .= $cgi->td( { style => "vertical-align:middle" }, $td );
-			my $line = print_line_patient( $p, 0 );
+			my $line = print_line_patient( $p, 0,$hash_disomy );
 			foreach my $col (@title) {
 				next unless exists $line->{$col};
 				$out .= $line->{$col};
 			}
 			$out .= $cgi->end_Tr;
-			$out .= $cgi->start_Tr( { style => "background-color:$color" } )
-			  if $nb_members > 1;
+			$out .= $cgi->start_Tr( { style => "background-color:$color" } ) if $nb_members > 1;
 		}
 		$out .= $cgi->end_Tr if $nb_members > 1;
 	}
