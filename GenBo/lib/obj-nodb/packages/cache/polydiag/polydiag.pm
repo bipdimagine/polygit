@@ -643,44 +643,44 @@ sub construct_variant {
 		my @apc;
 		my @methods;
 		my $nb_methods;
-		foreach my $method (@{$patient->callingMethods}){
-			next unless exists $v->annex()->{$patient->id}->{method_calling}->{$method}->{nb_all_ref};
-			
-			my $all_annex = $v->annex()->{$patient->id}->{method_calling}->{$method};
-			my $nb_ref =$all_annex->{nb_all_ref};
-			my $nb_alt =  $all_annex->{nb_all_mut};
-			
-		my $method_name = substr $method,0,3;
-		push(@methods,$method_name);
-		my $sequence_info = "he("; 
-		my $pc ="-";		
-		if ($v->annex()->{$patient->id}->{nb_all_ref} eq "?"){
-			$sequence_info = "??";
-		}
-		else {
-		$sequence_info = "ho(" if $all_annex->{ho};
 		
-		my $sum = $nb_ref + $nb_alt;
-		if ($sum >0){
-		 $pc = int ($nb_alt *10000/($sum))/100;
-		}
-		$sequence_info .= $nb_ref."/".$nb_alt.")";
-	
-		}
-		$sequence_info = $method_name.":".$sequence_info;
-		$pc = $method_name.":".$pc."%";
-		push(@apc,$pc);
-		push(@asequence_info,$sequence_info);
-		$nb_methods ++;
-		}
-		
-		 if ($v->validation_method eq "sanger" ) {
-		 	#$sequence_info = "-";
-		 	push(@asequence_info,"-");
-		 }
 		
 	
-		$hvariation->{ngs} = join("<br>",@asequence_info);
+#		foreach my $method (@{$patient->getMethods}){
+#			
+#		my $method_name =$self->project->return_calling_methods_short_name($method);	
+#		push(@methods,$method_name);
+#		
+#		my $sequence_info = "he("; 
+#		my $pc ="-";		
+#		if ($v->annex()->{$patient->id}->{nb_all_ref} eq "?"){
+#			$sequence_info = "??";
+#		}
+#		else {
+#		$sequence_info = "ho(" if $all_annex->{ho};
+#		
+#		my $sum = $nb_ref + $nb_alt;
+#		if ($sum >0){
+#		 $pc = int ($nb_alt *10000/($sum))/100;
+#		}
+#		$sequence_info .= $nb_ref."/".$nb_alt.")";
+#	
+#		}
+#		$sequence_info = $method_name.":".$sequence_info;
+#		$pc = $method_name.":".$pc."%";
+#		push(@apc,$pc);
+#		push(@asequence_info,$sequence_info);
+#		$nb_methods ++;
+#		}
+#		
+#		 if ($v->validation_method eq "sanger" ) {
+#		 	#$sequence_info = "-";
+#		 	push(@asequence_info,"-");
+#		 }
+		
+	
+		$hvariation->{ngs} =  "";
+		#join("<br>",@asequence_info);
 	
 		$hvariation->{ratio} =  join("<br>",@apc);
 		$hvariation->{caller} =  join("<br>",@methods);
