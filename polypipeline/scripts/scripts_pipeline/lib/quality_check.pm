@@ -260,16 +260,11 @@ sub fast_plink {
 				my $d       = $patient->depth( $chrom, $pos, $pos );
 				$geno = "0 0";
 				$geno = "$ref $ref" if ( $d->[0] > 30 );
-<<<<<<< HEAD
-				#warn $d->[0] if ($d->[0] < 20);
-			}
-			elsif ( $a + $b < 10  ) {
-=======
+
 
 				#warn $d->[0] if ($d->[0] < 20);
 			}
 			elsif ( $a + $b < 10 ) {
->>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
 				$geno = "0 0";
 			}
 			elsif ( $string[0] eq "0" && $string[2] eq "0" ) {
@@ -287,20 +282,11 @@ sub fast_plink {
 				$geno = "$alt $alt";
 				$geno = "0 0" if ( $a + $b ) < 20;
 			}
-<<<<<<< HEAD
-=======
-
->>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
 			#elsif ($string =~ /.:./) { $geno ="$ref $ref"; }
 			else {
 				warn scalar(@gsamples);
 				die( $line . " " . @string . " " . $name );
 			}
-<<<<<<< HEAD
-			
-=======
-
->>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
 			warn $name . " " . $geno if $debug;
 			$snp->{samples}->{$name} = $geno;
 		}
