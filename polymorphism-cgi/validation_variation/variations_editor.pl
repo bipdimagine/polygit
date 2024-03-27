@@ -487,7 +487,6 @@ $buffer->disconnect();
 ##################################
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
 	my ( $vectors, $list, $hash_variants_DM ) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$statistics );
-
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;
 
@@ -1074,7 +1073,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
 
 			unless ( defined($h) or $exit_code > 0 ) {
-				print
+				warn
 				  qq|No message received from child process $exit_code $pid!\n|;
 				die();
 				return;
@@ -1107,7 +1106,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 	
 
 	foreach my $chr ( @{ $project->getChromosomes } ) {
-		#warn $chr->name;
 		if ($gene) {
 			next if ( $gene->getChromosome()->name ne $chr->name );
 		}
@@ -1126,7 +1124,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 		$res->{run_id} = $id . "_" . $chr->name;
 		my $hashVector = {};
 		$res->{list_variants_DM} = [];
-		
 		if ($gene) {
 
 			$hashVector->{ $chr->name } = $gene->getVectorOrigin();
@@ -1140,14 +1137,12 @@ sub constructChromosomeVectorsPolyDiagFork {
 		else {
 			$hashVector->{ $chr->name } = $chr->getVariantsVector();
 		}
-		#my $vquality = $chr->getVectorScore($vector_ratio_name);
 		print "=" unless $cgi->param('export_xls');
 			my $testid = 4201;
 		my $debug;
-
+	
 		#	$debug =1 if $chr->name eq  "12";
 		if ($panel) {
-
 			#next unless  (exists $hashVector->{$chr->name});
 			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_ac);    #if $limit_ac ne "all";
 			
@@ -1164,6 +1159,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		else {
 			$hashVector->{ $chr->name } &= $chr->getVariantsVector();
 			$hashVector->{ $chr->name } = $chr->getVectorScore($limit_ac);    # if $limit_ac ne "gnomad_ac_all";;
+			
 			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_ac_ho);    # if $limit_ac_ho ne "all";
 			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_sample_dv);    #  if $limit_sample_dv ne "all";
 			 $hashVector->{$chr->name} &= $chr->getVectorScore($limit_sample_dv_ho);

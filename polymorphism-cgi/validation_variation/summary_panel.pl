@@ -557,7 +557,6 @@ unless ($header) {
 	$no_cache = $project->get_lmdb_cache_summary("w");
 	$no_cache->put_cache_hash( $header_id, $header, 2400 );
 	$no_cache->close();
-	die($header_id);
 	$cache_icon .=
 qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;color:red"></span>};
 }
@@ -571,7 +570,6 @@ qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text
 $no_cache = $project->get_lmdb_cache_summary("r");
 my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table");
 my $htable = $no_cache->get_cache( $table_id );
-warn $table_id;
 #$htable = undef;
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
@@ -3378,8 +3376,9 @@ sub validation_table_new {
 		$color = "coral"   if $val->{validation} == 4;
 		$color = "#217DBB" if $val->{validation} == -3;
 		$color = "orange"  if $val->{validation} == 3;
+		warn $val->{polyid};
 		my $v = $project->_newVariant( $val->{polyid} );
-
+		warn $v->name;
 		#			 		 foreach my $g (@{$v->getGenes}){
 		#			 		 	warn $g->id." ".$k;
 		#			 		 }

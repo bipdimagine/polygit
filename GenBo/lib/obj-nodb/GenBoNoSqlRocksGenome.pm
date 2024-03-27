@@ -261,7 +261,7 @@ sub save_vector_index_region {
 }
 sub write_config {
 	my ($self,$chunks) = @_;
-	open(my $fh,">".$self->json_file) or die("can t open file");
+	open(my $fh,">".$self->json_file) or die("can t open file ".$self->json_file);
 	my $h;
 	$h->{chunks} = $chunks;
 	$h->{compress} = $self->compress;

@@ -91,7 +91,6 @@ has span_position_genomic => (
 	default => sub {
 		my $self = shift;
 		my $intSpan = Set::IntSpan::Fast::XS->new();
-		warn $self->name." ".$self->start()." ".$self->end;
     	$intSpan->add_range($self->start(), $self->end());
     	return $intSpan;
 	},

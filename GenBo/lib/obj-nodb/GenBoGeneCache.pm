@@ -5,7 +5,6 @@ use Moo;
 use Bit::Vector;
 use Bit::Vector::Overload;
 use Data::Dumper;
-use GenBoGene;
 use Storable qw(store retrieve freeze dclone thaw);
 use Carp;
 extends 'GenBoGene', 'GenBoCache';

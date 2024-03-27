@@ -2158,7 +2158,6 @@ sub score_validations {
 	my ($self,$gene) = @_;
 	my $all_validations = $self->project->validations;
 	my $zid = $gene->id."!".$self->id;
-	warn  $all_validations->{$zid}->[0];
 	return $all_validations->{$zid}->[0] if exists  $all_validations->{$zid};
 	return undef;
 }
@@ -2289,7 +2288,7 @@ sub scaledScoreVariantPolydiag{
 	}
 	
 	warn "\t trio- ".$scaled_score." :: ".$patient->name if $debug;
-	if ($self->isClinvarPathogenic_for_gene($tr->getGene()) or $self->isDM_for_gene($tr->getGene())  ){
+	if ($self->is_clinvar_pathogenic_for_gene($tr->getGene()) or $self->isDM_for_gene($tr->getGene())  ){
 		my $gac  = $self->getGnomadAC ;
 		$gac = 0 unless $gac;
 		$scaled_score ++;

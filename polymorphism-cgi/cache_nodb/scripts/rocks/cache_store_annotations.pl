@@ -63,32 +63,34 @@ if ($annot_version) {
 my $chr     = $project->getChromosome($chr_name);
 my $no      = $chr->get_rocks_variations("r");
 
-if ($no->size == 0 or -e $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty") {
-	my $no = $chr->get_lmdb_categories("c");
-	$no->create();
-	warn $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id();
-	my $cmd = "touch ".$project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id()."/genes";
-	`$cmd`;
-	my $cmd2 = "touch ".$project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id()."/genes_index";
-	`$cmd2`;
-	warn "empty ". $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty";
-	warn "here";
-	warn $no->size();
-	$no->close();
-	my $no5 = $chr->get_lmdb_patients("c");
-	$no5->create();
-	my $h;
-	my $vnull =  Bit::Vector->new(0);
-	$h->{bitvector}->{'ho'} = $vnull->Shadow();
-	$h->{bitvector}->{'he'} = $vnull->Shadow();
-	$h->{bitvector}->{'all'} = $vnull->Shadow();
-	foreach my $p (@{$project->getPatients}){
-		$no5->put($p->name,$h);
-	}
-	$no5->close();
-	system("date > $ok_file") if $ok_file;
-	exit(0);
-}
+#if ($no->size == 0 or -e $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty") {
+#	my $no = $chr->get_lmdb_categories("c");
+#	$no->create();
+#	warn $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id();
+#	my $cmd = "touch ".$project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id()."/genes";
+#	`$cmd`;
+#	my $cmd2 = "touch ".$project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id()."/genes_index";
+#	`$cmd2`;
+#	warn "empty ". $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty";
+#	warn "here";
+#	warn $no->size();
+#	$no->close();
+#	my $no5 = $chr->get_lmdb_patients("c");
+#	warn $no5->dir;
+#	$no5->create();
+#	my $h;
+#	my $vnull =  Bit::Vector->new(0);
+#	$h->{bitvector}->{'ho'} = $vnull->Shadow();
+#	$h->{bitvector}->{'he'} = $vnull->Shadow();
+#	$h->{bitvector}->{'all'} = $vnull->Shadow();
+#	foreach my $p (@{$project->getPatients}){
+#		$no5->put($p->name,$h);
+#	}
+#	$no5->close();
+#	system("date > $ok_file") if $ok_file;
+#	die();
+#	exit(0);
+#}
 #my $no      = $chr->get_lmdb_variations("r");
 my $hGenesIds;
 
@@ -279,7 +281,13 @@ my $dir_vector = $project->rocks_directory("vector");
 
 $rocks3->size($size_variants);
 if($size_variants == 0 ){
-	warn $size_variants;
+	my $vnull =  Bit::Vector->new(0);
+	foreach my $patient (@{$project->getPatients}){	
+		$rocks3->put_vector_patient_batch($patient,"all",$vnull);
+		$rocks3->put_vector_patient_batch($patient,"ho",$vnull);
+		$rocks3->put_vector_patient_batch($patient,"he",$vnull);
+	}
+
 	$rocks3->write_batch();
 	$rocks3->close();
 	warn "no variants !!!!";

@@ -68,6 +68,7 @@ sub put_batch_variation {
 	$self->index($index+1);
 	return $index;	
 }
+
 sub put_variation {
 	my ($self,$key,$value,$debug) = @_;
 	my $index = $self->index;
@@ -82,7 +83,9 @@ sub put_variation {
 
 sub get_variation  {
 	my ($self,$key) = @_;
+	warn "\t".$key;
 	$key =  $self->get_raw($key) if ($key =~ /_/);
+	warn "\t".$key;;
 	return $self->get_index($key);
 }
 sub get_varid {

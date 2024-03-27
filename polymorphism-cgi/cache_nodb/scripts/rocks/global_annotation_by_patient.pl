@@ -65,8 +65,9 @@ foreach my $patient (@{$project->getPatients}){
 my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name,pipeline=>1);
 
 foreach my $chr (@{$project->getChromosomes} ){
-		warn $chr->name." ".$patient->name;
+		
 		my $no =  GenBoNoSqlRocks->new(dir=>$dir_pipeline."/".$patient->name,mode=>"r",name=>$chr->name);
+		next unless $no->exists_rocks;
 		my $iter = $no->rocks->new_iterator->seek_to_first;
 		while (my ($key, $value) = $iter->each) {
 			warn $key;

@@ -200,7 +200,6 @@ my $ztotal;
 			
 			my $index = $finalrg->put_batch_variation($var_id,$v);
 			my $pv = $no_polyviewer->get($var_id);
-			
 			$pv->{global_vector_id} = $chr->name."!".$index;
 			$final_index_genbo_id->put("g*".$pv->{id},$pv->{global_vector_id}.":".$var_id);
 			$final_index_genbo_id->put("r*".$chr->name."_".$var_id,$pv->{global_vector_id}.":".$pv->{id});
@@ -391,6 +390,7 @@ sub get_ids {
 	#	delete $hvariant->{html};
 		#warn Dumper $hvariant ;
 		#die();
+		warn $variation->rocksdb_id." ".$vp->id if   $vp->id =~ /128176287/;
 		$no_polyviewer->put_batch($variation->rocksdb_id,$vp);
 		delete $variation->{array_dejavu};
 		delete $variation->{references_object};

@@ -238,7 +238,6 @@ sub get_vector_patient {
 	die("problem ".$search) unless exists $self->vector_type_patient->{$search};
 	my $h = $self->cache_memory_patient($patient);
 	warn Dumper keys %$h  unless exists $h->{$self->id_global_patient($patient,$search)};
-	
 	confess($search." ".$self->id_global_patient($patient,$search)) unless exists $h->{$self->id_global_patient($patient,$search)};
 	return $self->decode($h->{$self->id_global_patient($patient,$search)});
 	

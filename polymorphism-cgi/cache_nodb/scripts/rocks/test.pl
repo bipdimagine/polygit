@@ -45,15 +45,25 @@ unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n")
 
 
 my $buffer  = new GBuffer;
-my $project = $buffer->newProjectCache( -name => $project_name );
-
+my $project = $buffer->newProject( -name => $project_name );
 
 
 my $chr     = $project->getChromosome($chr_name);
-my $no      = $chr->rocks_polyviewer_variants("r");
-#Y_22298473_A_dup-5095
-my $o = $no->testPolyviewerVariant("Y_22298473_A_dup-5095");
-warn Dumper $o;
-warn $o;
-warn $o->chromosome;
-warn "is ? ".$o->isCnv;
+
+my $vs = $chr->getDeletions();
+my $n = 0;
+
+foreach my $v (sort {$a->start <=> $b->start}@$vs){
+	$n++;
+	warn $v->start." ".$v->name." ".$v->id." ".$v->rocksdb_id." ".$v->vcf_id;
+	next if $v->id ne "2_128176287_CCCAGGGC_C";	
+	warn $v->rocksdb_id;
+	warn $v->getChromosome->sequence($v->start,$v->start+6);
+	warn "+++".$v->name." ".$v->id ;
+	warn Dumper $v->sequencing_details();
+	
+	die();
+	
+}
+
+warn $n;

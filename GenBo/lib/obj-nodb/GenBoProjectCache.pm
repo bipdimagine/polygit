@@ -896,17 +896,17 @@ sub get_only_list_patients {
 
 sub returnVariants {
 		my ($self, $id, $type) = @_;
-		confess if $self->isRocks;
-			my ($chr_name,$vid) = split("!",$id);
+		my ($chr_name,$vid) = split("!",$id);
 		my $chr = $self->getChromosome($chr_name);
 	
-		my $gid = $chr->cache_lmdb_variations->get_varid($vid);
-		my $obj = $chr->cache_lmdb_variations->get($gid,1);
+	
+		my $gid = $chr->cache_variations->get_varid($vid);
+		my $obj = $chr->cache_variations->get($gid,1);
 		
-		  $obj->{global_vector_id} = $id;
-		 $obj->{vector_id} = $vid;
+		$obj->{global_vector_id} = $id;
+		$obj->{vector_id} = $vid;
 		 
-		 $obj->{project} =  $self;
+		$obj->{project} =  $self;
 		$obj->{buffer} = $self->buffer;
 		return $obj;
 		

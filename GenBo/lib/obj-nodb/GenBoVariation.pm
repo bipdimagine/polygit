@@ -6,6 +6,7 @@ use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
 use Position;
+use Carp;
 extends "GenBoVariant";
 
 
@@ -125,7 +126,7 @@ has ncboost_category => (
 
 sub revel_score {
 	my ($self,$tr) = @_;
-	
+	confess() unless $tr;
 	my $prot = $tr->getProtein();
 	return -99 unless $self->isCoding($tr);
 	my $value =  $self->getChromosome->rocksdb("revel")->revel($self->rocksdb_id);

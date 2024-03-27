@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use DBD::SQLite;
 use Moo;
-
+use Try::Tiny;
 use Data::Dumper;
 use Set::IntSpan::Fast::XS;
 use Module::Load;
@@ -92,6 +92,7 @@ sub get_cache {
  #		$self->del($key);
  #		return "";
  #	}
+
  	if  ( $h->{snappy_html} == 1 ){
  		return Compress::Zlib::uncompress($h->{cache});
  	}
@@ -104,7 +105,10 @@ sub get_cache {
  		return $x;
  	}
  	elsif ( $h->{snappy_html} == 4 ) {
- 		my $x =  decode_json(Compress::Zstd::uncompress($h->{cache}) );
+ 		my $x;
+ 		try{
+ 		 $x =  decode_json(Compress::Zstd::uncompress($h->{cache}) );
+ 		}
  		return $x;
  	}
  	else {

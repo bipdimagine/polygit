@@ -98,6 +98,7 @@ has path_rocks => (
 	}
 );
 
+
 sub dictionary_array {
 	my ($self) = @_;
 	return $self->{dictionary_array} if exists $self->{dictionary_array};
@@ -466,7 +467,7 @@ sub get_raw {
 sub get {
 	my ( $self, $key,$debug ) = @_;
 	
-	confess("- $key -") unless defined $key;
+	confess("-  -") unless defined $key;
 	confess() unless $self->rocks;
 	my $v = $self->get_raw($key);
 	return unless $v;
