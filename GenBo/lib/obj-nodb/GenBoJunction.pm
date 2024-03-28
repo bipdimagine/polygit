@@ -363,20 +363,21 @@ sub getSvgPlotPath {
 }
 
 sub createSashiPlot {
-	my ($self, $patient, $locus) = @_;
-	my $file = $self->getSashimiPlotPath($patient, $locus);
+	my ($junction, $patient, $locus, $bam_path) = @_;
+	my $file = $junction->getSashimiPlotPath($patient, $locus);
+	warn "\n# check $file\n";
 	return if -e $file;
+	my $nb_new = $junction->get_nb_new_count($patient);
 	my $patient_name = $patient->name();
 	my $path_analysis = $patient->getJunctionsAnalysePath();
-	my $ensg = $self->annex->{$patient->name()}->{'ensid'};
-	my $score = $self->get_score($patient);
+	my $ensg = $junction->annex->{$patient->name()}->{'ensid'};
+	my $score = $junction->get_score($patient);
 	my $project_name = $patient->getProject->name();
+	if (not $bam_path) { confess(); $bam_path = $patient->getBamFiles->[0]; }
 	my $cmd = $patient->getProject->buffer->software('ggsashimi');
-	my $bam_path = $patient->getBamFiles->[0];
-	$cmd .= " -b $bam_path";
-	if ($self->getProject->is_human_genome()) { $cmd .= " -c chr".$locus; }
+	$cmd .= " -b $bam_path ";
+	if ($junction->getProject->is_human_genome()) { $cmd .= " -c chr".$locus; }
 	else { $cmd .= " -c ".$locus; }
-	
 	$cmd .= " -o ".$file;
 #	if ($score and $score >= 100) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/red.txt"; }
 #	elsif ($score and $score >= 10) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/orange.txt"; }
@@ -387,6 +388,10 @@ sub createSashiPlot {
 	$cmd .= " --shrink --alpha 0.25 --base-size=20 --ann-height=4 --height=3 --width=18";
 	$cmd .= " -g ".$patient->getProject->get_gtf_genes_annotations_igv();
 	$cmd .= " -F svg";
+	if ($nb_new >= 1000) { $cmd .= " -M 100"; }
+	elsif ($nb_new >= 100)  { $cmd .= " -M 20"; }
+	elsif ($nb_new >= 50)   { $cmd .= " -M 10"; }
+	elsif ($nb_new >= 20)   { $cmd .= " -M 5"; }
 #	warn "\n";
 #	warn $cmd;
 	`$cmd`;
@@ -398,12 +403,6 @@ has can_create_sashimi_plots => (
 	lazy 	=> 1,
 	default	=> 0,
 );
-
-sub createListSashimiPlots {
-	my ($self, $patient) = @_;
-	$self->can_create_sashimi_plots(1);
-	$self->getListSashimiPlotsPathFiles($patient, '1');
-}
 
 sub getSashimiPlotPath {
 	my ($self, $patient, $locus) = @_;
@@ -440,10 +439,13 @@ sub getSashimiPlotPath {
 }
 
 sub getListSashimiPlotsPathFiles {
-	my ($self, $patient) = @_;
+	my ($self, $patient, $bam_tmp) = @_;
 	my $locus = $self->getChromosome->id().':'.($self->start() - 100).'-'.($self->end() + 100);
 	my $sashimi_file = $self->getSashimiPlotPath($patient, $locus);
-	$self->createSashiPlot($patient, $locus) if ($self->can_create_sashimi_plots());
+	warn $sashimi_file;
+	warn "\n\n";
+	warn $bam_tmp;
+	$self->createSashiPlot($patient, $locus, $bam_tmp) if ($self->can_create_sashimi_plots());
 	my @lFiles;
 	if ($sashimi_file) {
 		push(@lFiles, $sashimi_file);
@@ -457,7 +459,7 @@ sub getListSashimiPlotsPathFiles {
 			$end += (1000*$i);
 			my $locus_extended = $chr_id.':'.$start.'-'.$end;
 			my $sashimi_plot_file = $self->getSashimiPlotPath($patient, $locus_extended);
-			$self->createSashiPlot($patient, $locus_extended) if ($self->can_create_sashimi_plots());
+			$self->createSashiPlot($patient, $locus_extended, $bam_tmp) if ($self->can_create_sashimi_plots());
 			push(@lFiles, $sashimi_plot_file);
 			$i++;
 		}
@@ -701,11 +703,38 @@ sub junction_score_without_dejavu_global {
 	my $score = 10;
 	$score = 0 if ($self->isCanonique());
 	$score -= $self->junction_score_penality_ratio($patient);
-	
 	$score -= $self->junction_score_penality_dp($patient);
 	$score -= $self->junction_score_penality_new_junction($patient);
 	$score -= $self->junction_score_penality_noise($patient);
 	$score -= $self->junction_score_penality_dejavu_inthisrun($patient);
+	if ($self->length < 50) {
+		my $short_j_interesting = 1;
+		my $h_e_i = $self->get_hash_exons_introns();
+		my $h_only_exon_intron;
+		foreach my $enst (keys %{$h_e_i}) {
+			my @lPos =  keys %{$h_e_i->{$enst}->{'by_pos'}};
+			if (scalar @lPos > 1) {
+				$h_only_exon_intron = undef;
+				last;
+			}
+			$h_only_exon_intron->{$enst} = $h_e_i->{$enst}->{'by_pos'}->{$lPos[0]};
+		}
+		if ($h_only_exon_intron) {
+			$short_j_interesting = undef;
+			foreach my $enst (keys %{$h_only_exon_intron}) {
+				my $found;
+				my $t = $self->getProject->newTranscript($enst);
+				foreach my $exon (@{$t->getExons}) {
+					next if $exon->id() ne $t->id.$h_only_exon_intron->{$enst};
+					$short_j_interesting = 1 if ($self->start >= $exon->start - 20) and ($self->start <= $exon->start + 20);
+					$short_j_interesting = 1 if ($self->start >= $exon->end - 20) and ($self->start <= $exon->end + 20);
+					$short_j_interesting = 1 if ($self->end >= $exon->start - 20) and ($self->end <= $exon->start + 20);
+					$short_j_interesting = 1 if ($self->end >= $exon->end - 20) and ($self->end <= $exon->end + 20);
+				}
+			}
+		}
+		$score = $score - 8  if not $short_j_interesting;
+	}
 	return $score;
 }
 
