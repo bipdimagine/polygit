@@ -70,7 +70,6 @@ sub setJunctions {
 	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
 	my $se_file = $self->project->RnaseqSEA_SE;
 	my $ri_file = $self->project->RnaseqSEA_RI;
-	warn $ri_file;
 	my ($hash_junc, $hash_junc_sj_ids);
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {

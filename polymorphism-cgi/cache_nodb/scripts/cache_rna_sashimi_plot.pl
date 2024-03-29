@@ -88,7 +88,14 @@ foreach my $chr (@{$project->getChromosomes()}) {
 	my $hres;
 	my $nb_done;
 	$hres->{toto} = undef;
-	foreach my $junction (@{$chr->getListVarObjects($patient->getJunctionsVector($chr))}) {
+	my $vector_junctions = $patient->getJunctionsVector($chr);
+	if (exists $chr->patients_categories->{$patient->name.'_ratio_10'}) {
+		$vector_junctions &= $chr->patients_categories->{$patient->name.'_ratio_10'};
+	}
+	if (exists $chr->global_categories->{'dejavu_20_r10'}) {
+		$vector_junctions &= $chr->global_categories->{'dejavu_20_r10'};
+	}
+	foreach my $junction (@{$chr->getListVarObjects($vector_junctions)}) {
 		my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
 		next if ($junction->isCanonique());
 		my $j_score_with_dv;
