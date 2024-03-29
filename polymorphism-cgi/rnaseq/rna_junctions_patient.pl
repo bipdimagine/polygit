@@ -110,6 +110,8 @@ my $j_total    = 0;
 my $j_selected = 0;
 my $h_chr_vectors;
 my $h_chr_vectors_counts;
+
+my $exists_vector_ratio_10;
 foreach my $chr ( @{ $project->getChromosomes() } ) {
 
 	#next if $chr->id ne '1' and $patient_name eq 'KUCerc';
@@ -136,6 +138,7 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	$h_chr_vectors_counts->{ $chr->id } =
 	  $chr->countThisVariants( $h_chr_vectors->{ $chr->id } );
 	$j_selected += $h_chr_vectors_counts->{ $chr->id };
+	$exists_vector_ratio_10++ if exists $chr->patients_categories->{$patient->name().'_ratio_10'};
 }
 my $cache_id = 'splices_linked_' . $patient->name();
 my $no_cache = $patient->get_lmdb_cache("r");
@@ -363,7 +366,43 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	$patient->getProject->buffer->dbh_deconnect();
 	$pm->start and next;
 	$patient->getProject->buffer->dbh_reconnect();
-
+	
+	if (not $only_gene ) {
+		#DV vector
+		my $type_vector_dv = 'dejavu';
+		if ($max_dejavu_value >= 90)    { $type_vector_dv .= '_90'; }
+		elsif ($max_dejavu_value >= 80) { $type_vector_dv .= '_80'; }
+		elsif ($max_dejavu_value >= 70) { $type_vector_dv .= '_70'; }
+		elsif ($max_dejavu_value >= 60) { $type_vector_dv .= '_60'; }
+		elsif ($max_dejavu_value >= 50) { $type_vector_dv .= '_50'; }
+		elsif ($max_dejavu_value >= 40) { $type_vector_dv .= '_40'; }
+		elsif ($max_dejavu_value >= 30) { $type_vector_dv .= '_30'; }
+		elsif ($max_dejavu_value >= 25) { $type_vector_dv .= '_25'; }
+		elsif ($max_dejavu_value >= 20) { $type_vector_dv .= '_20'; }
+		elsif ($max_dejavu_value >= 15) { $type_vector_dv .= '_15'; }
+		elsif ($max_dejavu_value >= 10) { $type_vector_dv .= '_10'; }
+		else { $type_vector_dv .= '_5'; }
+		$type_vector_dv .= '_r10' if ($only_dejavu_ratio_10);
+		if (exists $chr->global_categories->{$type_vector_dv}) {
+			$h_chr_vectors->{$chr_id} &= $chr->global_categories->{$type_vector_dv};
+		}
+	
+		# RATIO
+		my $type_vector_ratio = $patient->name.'_ratio';
+		if ($min_score >= 90)    { $type_vector_ratio .= '_90'; }
+		elsif ($min_score >= 80) { $type_vector_ratio .= '_80'; }
+		elsif ($min_score >= 70) { $type_vector_ratio .= '_70'; }
+		elsif ($min_score >= 60) { $type_vector_ratio .= '_60'; }
+		elsif ($min_score >= 50) { $type_vector_ratio .= '_50'; }
+		elsif ($min_score >= 40) { $type_vector_ratio .= '_40'; }
+		elsif ($min_score >= 30) { $type_vector_ratio .= '_30'; }
+		elsif ($min_score >= 20) { $type_vector_ratio .= '_20'; }
+		elsif ($min_score >= 10) { $type_vector_ratio .= '_10'; }
+		if (exists $chr->patients_categories->{$type_vector_ratio}) {
+			$h_chr_vectors->{$chr_id} &= $chr->patients_categories->{$type_vector_ratio};
+		}
+	}
+	
 	my @lJunctionsChr = @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };
 	my $size_vector = $h_chr_vectors->{$chr_id}->Size();
 	my $hres;
@@ -468,8 +507,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			$hres->{$junction->id()}->{patients}->{$pat_name}->{fam_name} = $patient->getFamily->name();
 			$hres->{$junction->id()}->{patients}->{$pat_name}->{sex} = $patient->sex();
 			$hres->{$junction->id()}->{patients}->{$pat_name}->{status} = $patient->status();
-			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_canonique} = $junction->get_nb_new_count($patient);
-			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_new} = $junction->get_canonic_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_new} = $junction->get_nb_new_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_canonique} = $junction->get_canonic_count($patient);
 			$hres->{$junction->id()}->{patients}->{$pat_name}->{dp} = $junction->get_dp_count($patient);
 			$hres->{$junction->id()}->{patients}->{$pat_name}->{ratio} = sprintf( "%.3f", $junction->get_percent_new_count($patient) ) . '%';
 
