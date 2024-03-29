@@ -110,6 +110,7 @@ $pm->run_on_finish(
 
 
 foreach my $chr (@{$project->getChromosomes}) {
+	next if $chr->not_used();
 	$pm->start and next;
 	my $chr_id = $chr->id();
 	my $hres;
