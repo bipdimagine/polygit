@@ -1030,16 +1030,21 @@ sub update_list_variants_from_dejavu {
 		
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 		
+		my $var = $project_dejavu->_newVariant($var_id);
 		if ($hVariantsDetails and exists $hVariantsDetails->{$var_id}) {
 			$var_gnomad = $hVariantsDetails->{$var_id}->{var_gnomad} if ($hVariantsDetails->{$var_id}->{var_gnomad});
 			$var_gnomad_ho = $hVariantsDetails->{$var_id}->{var_gnomad_ho} if ($hVariantsDetails->{$var_id}->{var_gnomad_ho});
 			$var_dejavu = $hVariantsDetails->{$var_id}->{var_dejavu} if ($hVariantsDetails->{$var_id}->{var_dejavu});
 			$var_dejavu_ho = $hVariantsDetails->{$var_id}->{var_dejavu_ho} if ($hVariantsDetails->{$var_id}->{var_dejavu_ho});
-			$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			if ($only_transcript) {
+				$var_annot = $var->variationTypeInterface($transcript_dejavu);
+			}
+			else {
+				$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			}
 			$var_model = $hVariantsDetails->{$var_id}->{model} if ($hVariantsDetails->{$var_id}->{model});
 		}
 		
-		my $var = $project_dejavu->_newVariant($var_id);
 		next if ($var->isCnv() or $var->isLarge());
 		
 		my $not_ok;
@@ -1243,7 +1248,15 @@ sub update_list_variants_from_dejavu {
 #		elsif  ($h_var->{value}->{hgmd_id} or $h_var->{value}->{clinvar_id}) { $color = "orange"; }
 		
 		$h_var->{genes}->{$gene_init_id_for_newgene} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_dejavu);
-		
+		if ($only_transcript) {
+			my @new_list;
+			foreach my $htr (@{$h_var->{genes}->{$gene_init_id_for_newgene}}) {
+				if ($htr->{value}->{trid} eq $only_transcript) {
+					push(@new_list, $htr);
+				}
+			}
+			$h_var->{genes}->{$gene_init_id_for_newgene} = \@new_list;
+		}
 		$hVariantsDetails->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_init_id_for_newgene}, \@header_transcripts, 1);
 		$hVariantsDetails->{$var_id}->{table_gnomad} = $table_gnomad;
 		$hVariantsDetails->{$var_id}->{table_dejavu} = $table_dejavu;
