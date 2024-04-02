@@ -1342,8 +1342,15 @@
 				else {
 			    	var locus_filter = document.getElementById("form_transcripts_exons_introns").value;
 					if (locus_filter != '') {
-				    	url += "&only_interval="+locus_filter;
-				    	use_only_transcript = hash_transcripts_locus[locus_filter];
+						const tmp = locus_filter.split(';');
+						if (tmp.length == 2) {
+				    		url += "&only_interval="+tmp[0];
+				    		url += "&only_transcript="+tmp[1];
+						} 
+						else {
+				    		url += "&only_interval="+tmp[0];
+				    	}
+				    	use_only_transcript = hash_transcripts_locus[tmp[0]];
 					}
 				}
 				last_url_launch_for_gene = url;
