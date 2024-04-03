@@ -1241,7 +1241,7 @@ cfgParse<-function()
 ###############################################################################################################
 #	Formatage des res
 
-formatResAll<-function(pathAllResAnalysis) #  pathAllResAnalysis="/data-isilon/sequencing/ngs/NGS2021_4105/HG19_MT/analysis/AllRes"
+formatResAll<-function(pathAllResAnalysis)
 {
   write(paste("#\tFormatage des resultats", sep=""), file="")
   fichs = list.files(pathAllResAnalysis, full.names=TRUE, recursive=FALSE)
@@ -1261,12 +1261,11 @@ formatResAll<-function(pathAllResAnalysis) #  pathAllResAnalysis="/data-isilon/s
 		allResSE = allResSE[order(as.numeric(allResSE[,"Junc_SE_Start"])),,drop=FALSE]
 		allResSE = allResSE[order(allResSE[,"Chr"]),,drop=FALSE]
 		
-		colnames(allResSE)[1] = paste("#", colnames(allResSE)[1], sep="")
+		#colnames(allResSE)[1] = paste("#", colnames(allResSE)[1], sep="")
 		write.table(allResSE, file=paste(pathAllResAnalysis, "allResSE.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
-		system(paste("bgzip -@ 40 ", pathAllResAnalysis, "allResSE.txt", sep=""))
-		system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResSE)), " -b ", grep("Junc_SE_Start", colnames(allResSE)), " -e ", grep("Junc_SE_End", colnames(allResSE)), " ", pathAllResAnalysis, "allResSE.txt.gz", sep=""))
-
-		unlink(fichs_resAll_SE)
+		#system(paste("bgzip ", pathAllResAnalysis, "allResSE.txt", sep=""))
+		#system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResSE)), " -b ", grep("Junc_SE_Start", colnames(allResSE)), " -e ", grep("Junc_SE_End", colnames(allResSE)), " ", pathAllResAnalysis, "allResSE.txt.gz", sep=""))
+		#unlink(fichs_resAll_SE)
 	}
 	
 	if(length(fichs_resAll_RI)>0)
@@ -1281,12 +1280,15 @@ formatResAll<-function(pathAllResAnalysis) #  pathAllResAnalysis="/data-isilon/s
 		allResRI = allResRI[order(as.numeric(allResRI[,"Junc_RI_Start"])),]
 		allResRI = allResRI[order(allResRI[,"Chr"]),]
 		
-		colnames(allResRI)[1] = paste("#", colnames(allResRI)[1], sep="")
+		#colnames(allResRI)[1] = paste("#", colnames(allResRI)[1], sep="")
 		write.table(allResRI, file=paste(pathAllResAnalysis, "allResRI.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
-		system(paste("bgzip -@ 40 ", pathAllResAnalysis, "allResRI.txt", sep=""))
-		system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResRI)), " -b ", grep("Junc_RI_Start", colnames(allResRI)), " -e ", grep("Junc_RI_End", colnames(allResRI)), " ", pathAllResAnalysis, "allResRI.txt.gz", sep=""))
-		unlink(fichs_resAll_RI)
+		#system(paste("bgzip ", pathAllResAnalysis, "allResRI.txt", sep=""))
+		#system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResRI)), " -b ", grep("Junc_RI_Start", colnames(allResRI)), " -e ", grep("Junc_RI_End", colnames(allResRI)), " ", pathAllResAnalysis, "allResRI.txt.gz", sep=""))
+		#unlink(fichs_resAll_RI)
 	}
+	
+#	system(paste("bgzip ", pathAllResAnalysis, "allResRI.txt", sep=""))
+#	system(paste("bgzip ", pathAllResAnalysis, "allResSE.txt", sep=""))
 	
 	write(paste("#\t\t Compression et suppression res RI / SE par sample", sep=""), file="")
 	resPat = list.files(pathAllResAnalysis, full.names=TRUE, recursive=FALSE, pattern="\\.txt$")

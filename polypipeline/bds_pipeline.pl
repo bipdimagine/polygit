@@ -271,6 +271,7 @@ my $steps = {
 				"star_align" => sub {$pipeline->star_align(@_)},
 				"deepvariant" => sub {$pipeline->deepvariant(@_)},
 				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
+				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');
