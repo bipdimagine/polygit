@@ -5307,4 +5307,41 @@ sub rnaseqsea_capture {
 	return ($fileout);
 }
 
+sub rnaseqsea_rnaseq {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $name = $project->getPatients->[0]->name();
+	my $ppn    = 40;
+	my $method = "rnaseqsea_all";
+	my $dirout = $project->project_path . "/analysis/AllRes/";
+	my $fileout = $dirout . "/allResRI.txt.gz";
+	my $bin_dev = $self->script_dir;
+	my $cmd_json = "$bin_dev/polyrnaseqsea/create_config_splices_analyse_file.pl -project=$project_name -force=1";
+	my $json_file = `$cmd_json`;
+	my $cmd = "Rscript $bin_dev/polyrnaseqsea/all/RNAseqSEA_AllTnjs.r idprojet=$project_name nCPU=$ppn config_file=$json_file";
+	$cmd .= " && $bin_dev/polyrnaseqsea/merge_all_junctions_files_rnaseq_global.pl -project=$project_name";
+	my $type     = "rnaseqsea_all";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $name,
+		project_name => $project_name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+
 1;

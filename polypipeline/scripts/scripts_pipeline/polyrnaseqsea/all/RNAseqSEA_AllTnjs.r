@@ -6,18 +6,60 @@
 
   options(scipen=999)
 
+nCPUmax = 1
+
 	args = commandArgs(trailingOnly=TRUE)
 	saveRDS(args, "./ArgsRNAseqSEAallTnjs.rds")
 	#	args = readRDS("./ArgsRNAseqSEAallTnjs.rds")
 
 	suprTmpFiles=TRUE
-	source("/data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllTnjs/RNAseqSEA_AllTnjs_biblio.r")
+	
 	tmpArgs = t(rbind(apply(as.matrix(unlist(args)), 1, function(x) unlist(strsplit(x, "=")))))
+	if(sum(grepl("^idprojet$", tmpArgs[,1]))>0)	idprojet = tmpArgs[grep("^idprojet$", tmpArgs[,1], ignore.case=TRUE),2]
+	if(sum(grepl("^config_file$", tmpArgs[,1]))>0)	configPath = tmpArgs[grep("^config_file$", tmpArgs[,1], ignore.case=TRUE),2]
+	if(sum(grepl("^fork$", tmpArgs[,1]))>0)	nCPUmax = tmpArgs[grep("^fork$", tmpArgs[,1], ignore.case=TRUE),2]
+	nCPUmax =strtoi(nCPUmax, base=0L)
+	
+	library("rjson")
+	if(sum(grepl("^config_file$", tmpArgs[,1]))>0)	configPath = tmpArgs[grep("^config_file$", tmpArgs[,1], ignore.case=TRUE),2]
+	allNFO <- fromJSON(file = configPath)
+	
+	nfo = c("in total", "duplicates", "mapped", "properly paired")
+	stats = matrix(0, ncol=length(nfo), nrow=0)
+	colnames(stats) = nfo
+	
+	
+	esp = allNFO$project$gencode$release
+	gcvers = allNFO$project$gencode$version
+	pathRes = dirname(allNFO$analyse$path)
+	pathBamJuncs = paste(pathRes, "/BamJuncs/", sep="")
+	align = basename(dirname(unlist(allNFO$inputs$bam)[1]))
+	gcrds = allNFO$project$gencode$rds
+	gtf = allNFO$project$gencode$gtf
+	juncrds = allNFO$project$gencode$junctions_canoniques_rds
+	bams = unlist(allNFO$inputs$bam)
+	bedtoolsPath = allNFO$softwares$bedtools
+	sambambaPath = allNFO$softwares$sambamba
+	samtoolsPath = allNFO$softwares$samtools
+	picardPath = allNFO$softwares$picard
+	  
+	scriptPath = allNFO$rnaseqseapaths$script_rnaseq
+	biblioPath = allNFO$rnaseqseapaths$biblio_rnaseq
+	
+	if(!file.exists(pathRes))	dir.create(pathRes)
+	pathBamJuncs = paste(pathRes, "/BamJuncs/", sep="")
+	if(!file.exists(pathBamJuncs))	dir.create(pathBamJuncs)
+	pathBed = paste(pathRes, "/BedJuncs/", sep="")
+	if(!file.exists(pathBed))	dir.create(pathBed)
+	
+	source(biblioPath)
+	tmpArgs = t(rbind(apply(as.matrix(unlist(args)), 1, function(x) unlist(strsplit(x, "=")))))
+	
+	
+	
 	if(sum(grepl("idprojet", tmpArgs[,1]))>0)	idprojet = tmpArgs[grep("idprojet", tmpArgs[,1], ignore.case=TRUE),2]
-	esp = GenVer(idprojet)
-	align="star"; ReName=NULL; 	nCPU=40; limDecal=5; limCountJun=2; RMdup=FALSE
+	ReName=NULL; 	nCPU=40; limDecal=5; limCountJun=2; RMdup=FALSE
 
-	if(sum(grepl("^esp$", tmpArgs[,1]))>0)	esp = tmpArgs[grep("^esp$", tmpArgs[,1], ignore.case=TRUE),2]
 	if(sum(grepl("nCPU", tmpArgs[,1]))>0)	nCPU = as.numeric(tmpArgs[grep("nCPU", tmpArgs[,1], ignore.case=TRUE),2])
 	if(sum(grepl("align", tmpArgs[,1]))>0)	align = tmpArgs[grep("align", tmpArgs[,1], ignore.case=TRUE),2]
 	if(sum(grepl("limDecal", tmpArgs[,1]))>0)	limDecal = as.numeric(tmpArgs[grep("limDecal", tmpArgs[,1], ignore.case=TRUE),2])
@@ -31,15 +73,7 @@
 	RNAseqSEApath = "/data-isilon/Cagnard/RNAseqSEA/"
 	if(!is.null(ReName))	BamsReNames = as.matrix(read.table(ReName, sep="\t", header=TRUE))
 	
-	nfo = c("in total", "duplicates", "mapped", "properly paired")
-	stats = matrix(0, ncol=length(nfo), nrow=0)
-	colnames(stats) = nfo
-	pathRes = paste("/data-isilon/sequencing/ngs/", idprojet, "/", esp, "/RNAseqSEA/", sep="")
-	if(!file.exists(pathRes))	dir.create(pathRes)
-	pathBamJuncs = paste(pathRes, "/BamJuncs/", sep="")
-	if(!file.exists(pathBamJuncs))	dir.create(pathBamJuncs)
-	pathBed = paste(pathRes, "/BedJuncs/", sep="")
-	if(!file.exists(pathBed))	dir.create(pathBed)
+	
 
 ###############################################################################################################
 #	I Splits les bams
@@ -47,11 +81,11 @@
 write(paste("\n\n#######################################\n#\n#\t\t I Splits les bams \n#\n########################################", sep=""), file="")
 
 	write(paste("\tSelection des reads de junction et filtrage des duplicates", sep=""), file="")
-	sourceBamsPath = paste("/data-isilon/sequencing/ngs/", idprojet, "/", esp, "/align/", align, "/", sep="")
-	bams = list.files(sourceBamsPath, full.names=TRUE, pattern="\\.bam$")
+	paste("\n\n samtools idxstats -@ ", nCPU, " ", bams[1],"\n\n", sep="")
 	if(length(bams)==0){stop(paste("\t\t!!! Aucun bam dans ", sourceBamsPath, " !!!", sep=""))}
 
 	addChr=""
+	paste("\n\n samtools idxstats -@ ", nCPU, " ", bams[1],"\n\n", sep="")
 	if((length(bams)>0)&(sum(grepl("chr", system(paste("samtools idxstats -@ ", nCPU, " ", bams[1], sep=""), intern=TRUE)))>0)) addChr = "chr"
 		
 	if(RMdup)
@@ -84,9 +118,16 @@ write(paste("\n\n#######################################\n#\n#\t\t I Splits les 
 	y = parallelMap(f, c(1:length(bams)))
 	parallelStop()
 	
+	
+	paste("\n\nsplitBamPath: ", splitBamPath, sep="")
+	
+	samples = gsub(".bam$", "", basename(bams))
+	
+	paste("\n\nsamples: ", samples, sep="")
+	
+	
 	bamsSplit = list.files(splitBamPath, recursive=TRUE, full.names=TRUE, pattern="\\.bam$")
 	#	samples = list.files(splitBamPath, recursive=FALSE, full.names=FALSE)
-	samples = gsub(".bam$", "", basename(bams))
 	
 ###############################################################################################################
 #	II Selection des reads de jonctions => bed
