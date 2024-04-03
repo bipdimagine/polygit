@@ -59,7 +59,7 @@ my $cmd_gz1 = join(' | ', @l_cmd_gz1);
 
 
 open (OUT2, ">$dirout_analyse/allResSE.txt");
-print OUT2 "#Junc_SE\tENSID\tGene\tChr\tJunc_SE_Start\tJunc_SE_End\tJunc_SE_Count\tSkippedExonsID\tTranscritsID\tJunc_Normale\tJunc_Normale_Count\tscore\tType\tminMoyNcountParJunc\tmaxMoyNcountParJunc\tSample\n";
+print OUT2 "#Junc_SE\tENSID\tGene\tChr\tJunc_SE_Start\tJunc_SE_End\tJunc_SE_Count\tNbreSkippedExons\tSkippedExonsID\tTranscritsID\tJunc_Normale\tJunc_Normale_Count\tscore\tType\tminMoyNcountParJunc\tmaxMoyNcountParJunc\tSample\n";
 open (RES2, "$dirin_analyse/allResSE.txt");
 while (<RES2>) {
 	my $line = $_;
