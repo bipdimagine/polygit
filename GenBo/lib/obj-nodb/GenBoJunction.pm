@@ -767,11 +767,11 @@ sub hash_in_this_run_patients {
 	$self->{inthisrun}->{15} = {};
 	foreach my $patient (@{$self->getPatients()}) {
 		$self->{inthisrun}->{0}->{$patient->id} ++;
-		$self->{inthisrun}->{10}->{$patient->id} ++  if $self->ratio($patient) < 0.1;
-		$self->{inthisrun}->{15}->{$patient->id} ++  if $self->ratio($patient) < 0.15;
-		$self->{inthisrun}->{20}->{$patient->id} ++  if $self->ratio($patient) < 0.2;
-		$self->{inthisrun}->{30}->{$patient->id} ++  if $self->ratio($patient) < 0.3;
-		$self->{inthisrun}->{40}->{$patient->id} ++  if $self->ratio($patient) < 0.4;
+		$self->{inthisrun}->{10}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 10;
+		$self->{inthisrun}->{15}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 15;
+		$self->{inthisrun}->{20}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 20;
+		$self->{inthisrun}->{30}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 30;
+		$self->{inthisrun}->{40}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 40;
 	}
 	die($ratio) unless exists $self->{inthisrun}->{$ratio};
 	return $self->{inthisrun}->{$ratio};
