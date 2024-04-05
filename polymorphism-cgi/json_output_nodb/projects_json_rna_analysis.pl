@@ -101,6 +101,7 @@ sub getProjectListsRNA {
 			$ri_file = $path.'/allResRI.txt.gz' if (-e $path.'/allResRI.txt.gz');
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
+			#$ok = 1 if (-e $path.'/regtools/'.$p1->name().'_regtools.tsv.gz');
 			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok);
 			$hDone->{$name} = undef if $ok;
 		}
@@ -122,17 +123,40 @@ sub getProjectListsRNA {
 		if (-d $p1->get_path_rna_seq_junctions_root()) {
 			$hDone->{$name} = undef;
 			
-			opendir my $dir, $p1->get_path_rna_seq_junctions_root() or die "Cannot open directory: $!";
-			my @files = readdir $dir;
-			closedir $dir;
-			foreach my $path_2 (sort @files) {
-				my $new_path = $p1->get_path_rna_seq_junctions_root().'/'.$path_2;
-				if (-d $new_path) {
-					my $link = $new_path;
-					$link =~ s/.+ngs/\/NGS/; 
-					my $name_analysis = $path_2;
-					$name_analysis =~ s/_NGS20.+//;
-					push(@lAnalysis, '3::'.$name_analysis.'::'.$link.'/index.html') if (-e $new_path.'/index.html');
+			my $path_DB = $p1->get_path_rna_seq_junctions_root();
+			my @lPotentialPath;
+			push(@lPotentialPath, $path_DB);
+			
+			
+			if ($path_DB =~ /HG19/) {
+				push(@lPotentialPath, $p1->buffer()->getDataDirectory("root")."/".$p1->getProjectType()."/".$p1->name()."/HG38/analysis/");
+				push(@lPotentialPath, $p1->buffer()->getDataDirectory("root")."/".$p1->getProjectType()."/".$p1->name()."/HG38_CNG/analysis/");
+			}
+			elsif ($path_DB =~ /HG38/) {
+				push(@lPotentialPath, $p1->buffer()->getDataDirectory("root")."/".$p1->getProjectType()."/".$p1->name()."/HG19/analysis/");
+				push(@lPotentialPath, $p1->buffer()->getDataDirectory("root")."/".$p1->getProjectType()."/".$p1->name()."/HG19_MT/analysis/");
+				push(@lPotentialPath, $p1->buffer()->getDataDirectory("root")."/".$p1->getProjectType()."/".$p1->name()."/HG19_CNG/analysis/");
+			}
+			elsif ($path_DB =~ /MM38/) {
+				push(@lPotentialPath, $p1->buffer()->getDataDirectory("root")."/".$p1->getProjectType()."/".$p1->name()."/MM39/analysis/");
+			}
+			elsif ($path_DB =~ /MM39/) {
+				push(@lPotentialPath, $p1->buffer()->getDataDirectory("root")."/".$p1->getProjectType()."/".$p1->name()."/MM38/analysis/");
+			}
+			foreach my $path (@lPotentialPath) {
+				next unless -d $path;
+				opendir my $dir, $path or die "Cannot open directory: $!";
+				my @files = readdir $dir;
+				closedir $dir;
+				foreach my $path_2 (sort @files) {
+					my $new_path = $path.'/'.$path_2;
+					if (-d $new_path) {
+						my $link = $new_path;
+						$link =~ s/.+ngs/\/NGS/; 
+						my $name_analysis = $path_2;
+						$name_analysis =~ s/_NGS20.+//;
+						push(@lAnalysis, '3::'.$name_analysis.'::'.$link.'/index.html') if (-e $new_path.'/index.html');
+					}
 				}
 			}
 		}
