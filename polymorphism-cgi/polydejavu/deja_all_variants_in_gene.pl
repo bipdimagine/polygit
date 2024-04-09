@@ -262,7 +262,7 @@ sub save_export_xls {
 	my $h_xls_args;
 	print '_save_xls_';
 	$project_dejavu->cgi_object(1);
-	my @lVarObj;
+	my (@lVarObj, $h_pubmed);
 	foreach my $pos (sort keys %{$hResVariants}) {
 		foreach my $var_id (sort keys %{$hResVariants->{$pos}}) {
 			$project_dejavu->print_dot(50);
@@ -271,6 +271,14 @@ sub save_export_xls {
 				$v->variationTypeInterface($gene_init);
 			}
 			push(@lVarObj, $v);
+			if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+				foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
+					if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
+					}
+				}
+			}
 		}
 	}
 	my $xls_export = new xls_export();
@@ -309,12 +317,15 @@ sub save_export_xls {
 			}
 		}
 	}
+	
 	print "|";
 	$project_dejavu->getProject->buffer->dbh_deconnect();
 	$project_dejavu->getProject->buffer->dbh_reconnect();
 #	delete $project_dejavu->{rocksPartialTranscripts};
 	print "|";
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
+	print "|";
+	$xls_export->store_specific_infos('variants_pubmed', $h_pubmed);
 	print "|";
 	my $session_id = $xls_export->save();
 	print "|";
