@@ -272,6 +272,8 @@ sub save_export_xls {
 			}
 			push(@lVarObj, $v);
 			if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
 				foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
 					if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
 						$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
