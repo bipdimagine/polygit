@@ -239,6 +239,7 @@ sub find_other_patient {
 			my $nbx = 0;
 			warn scalar(@{$project2->getPatients});
 			foreach my $p (@{$project2->getPatients}){
+				next if $p->isRna();
 				my $capture2  = $p->getCapture();
 				next if $p->status == 1;
 				my $bam; 
