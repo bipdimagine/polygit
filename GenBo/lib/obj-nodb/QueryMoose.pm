@@ -878,6 +878,8 @@ sub getGroups {
 	my ($self, $project_id) = @_;
 	my $dbh = $self->getDbh();
 	my $sth = $dbh->prepare($self->sql_get_groups);
+	warn $project_id;
+	warn $self->sql_get_groups;
 	$sth->execute($project_id);
 	my $s = $sth->fetchall_hashref('pname');
 	return [values %$s];
@@ -946,8 +948,14 @@ sub getOwnerProject {
 	my $sth = $dbh->prepare( $self->sql_cmd_owner_project );
 	$sth->execute($pid);
 	my $res = $sth->fetchall_arrayref({});
+	
+	$sth = $dbh->prepare( $self->sql_cmd_owner_group_project );
+	$sth->execute($pid);
+	my $res2 = $sth->fetchall_arrayref({});
+	push(@$res,@$res2);
 	return $res;
 }
+
 
 sub getOwnerProject_byName {
 	my ($self,$projName) = @_;
