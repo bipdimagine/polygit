@@ -1308,6 +1308,7 @@ sub get_table_trio_from_object {
 	my $is_solo_trio = 'SOLO';
 	$is_solo_trio = 'TRIO' if $fam->isTrio();
 	my $project_name = $patient->getProject->name();
+	
 	my $description = $patient->getProject->description();
 	my @l_users = @{$patient->getProject->get_list_emails()};
 	my $patient_name = $patient->name();
@@ -1451,6 +1452,7 @@ sub get_table_trio_from_object {
 		$table_trio .= $cgi->start_Tr();
 		my $users = join("<br>", @l_users);
 		my $proj_text = qq{<button onclick="get_popup_users('$users');">Users</button> - <b>$project_name</b>};
+		$proj_text .= qq{<sup>defidiag</sup>} if $patient->project->isDefidiag; 
 		$proj_text .= " - <span style='color:red;'>$pheno</span>" if ($pheno);
 		$proj_text .= "<br>$description";
 		my $igv_alamut_text = $h_var->{html}->{igv}."&nbsp;".$h_var->{html}->{alamut};
