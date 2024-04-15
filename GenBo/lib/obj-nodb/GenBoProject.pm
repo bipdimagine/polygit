@@ -167,6 +167,11 @@ has get_list_emails => (
 		{
 			push( @lUsers, $h->{email} );
 		}
+		
+		foreach my $g (@{ $self->buffer->getQuery()->getGroups( $self->id() ) } ){
+				push( @lUsers, $g );
+		}
+		
 		return \@lUsers;
 	},
 );
