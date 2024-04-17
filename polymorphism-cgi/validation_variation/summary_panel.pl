@@ -828,8 +828,10 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 		#$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
 	}
 	
-	if ($hash_disomy){
-		my $u = $hash_disomy->{patient}->{$p->id};
+	if (exists $hash_disomy->{patient} ){
+		
+		my $u = "-";
+		$u = $hash_disomy->{patient}->{$p->id} if $hash_disomy->{patient}->{$p->id};
 		my $url = qq{html/manta/plotAllBAplots.html?project=}.$project->name.qq{&patient=}.$p->name;
 		my $text = qq{ <a  class="stamp_disomy" href="$url" target="_blank" ><span>$u</span></a>};
 		if ($u eq "-"){
@@ -886,7 +888,7 @@ sub exists_disomy {
 
 			my $max  = -10;
 			my $show = 0;
-
+		warn Dumper $hash->{$chr} if $chr eq "14";
 		# Detection de larges deletions
 			if (( $hash->{$chr}->{"TRANSMIS_BYF"} > 10 )	&& ( $hash->{$chr}->{"TRANSMIS_BYM"} > 10 )) # pas d'unidisomie
 			{
