@@ -41,7 +41,8 @@ my ( @lJunctions, $h_var_linked_ids );
 
 add_linked_hash_in_cache ($patient );
 
-
+my $cmd = "$Bin/rna_junctions_patient.pl project=$project_name patient=$patient_name dejavu=10 dejavu_percent=100 min_score=10 only_dejavu_ratio_10=1 only_junctions_NDA=1 only_junctions_A=1 only_junctions_D=1";
+`$cmd`;
 
 exit(0);
 

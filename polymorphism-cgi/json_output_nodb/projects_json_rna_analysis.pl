@@ -101,7 +101,7 @@ sub getProjectListsRNA {
 			$ri_file = $path.'/allResRI.txt.gz' if (-e $path.'/allResRI.txt.gz');
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
-			#$ok = 1 if (-e $path.'/regtools/'.$p1->name().'_regtools.tsv.gz');
+			$ok = 1 if (-e $path.'/regtools/'.$p1->name().'_regtools.tsv.gz');
 			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok);
 			$hDone->{$name} = undef if $ok;
 		}
