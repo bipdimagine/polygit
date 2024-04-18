@@ -1902,6 +1902,7 @@ sub changeAnnotationVersion {
 		$self->gencode_version( $lTmp[0] );
 		$self->public_database_version( $lTmp[1] );
 		$self->annotation_version($annot_version);
+		$self->buffer->public_data_version($lTmp[1]);
 		delete $self->{'directory'};
 		delete $self->{'annotation_public_path'};
 		delete $self->{'annotationsDirectory'};
@@ -1909,6 +1910,7 @@ sub changeAnnotationVersion {
 		delete $self->{'lmdbPli'};
 		delete $self->{'omimDirectory'};
 		delete $self->{'litePredictionMatrix'};
+		$self->buffer->queryHgmd();
 		return;
 	}
 	foreach my $history_version ( @{ $self->annotation_version_history() } ) {
@@ -6442,6 +6444,7 @@ has RnaseqSEA_SE  => (
 		if(-e $filegz) {
 			return $filegz;
 		}
+		return if not -e $file;
 		$self->tabix_gzip_rnaseqsea($filegz,$file);
 		return $filegz;
 	},
@@ -6457,8 +6460,7 @@ has RnaseqSEA_RI  => (
 		if(-e $filegz) {
 			return $filegz;
 		}
-		warn "coucou";
-		
+		return if not -e $file;
 		$self->tabix_gzip_rnaseqsea($filegz,$file);
 		return $filegz;
 	},
@@ -6560,10 +6562,11 @@ sub getQueryJunction {
 	my %args;
 	$args{project} = $self;
 	$args{file}    = $fileName;
-	if ($method eq 'RI') { $args{isRI} = 1; }
-	elsif ($method eq 'SE') { $args{isSE} = 1; }
-	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
-	elsif ($method eq 'STAR') { $args{isSTAR} = 1; }
+	if (lc($method) eq 'ri') { $args{isRI} = 1; }
+	elsif (lc($method) eq 'se') { $args{isSE} = 1; }
+	elsif (lc($method) eq 'dragen') { $args{isDRAGEN} = 1; }
+	elsif (lc($method) eq 'star') { $args{isSTAR} = 1; }
+	elsif (lc($method) eq 'regtools') { $args{isREGTOOLS} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;
