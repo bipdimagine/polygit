@@ -71,20 +71,35 @@ unless ($only_users) {
 	warn "First step (check new var) finished.\n\n# START each user cache\n";
 }
 
+my $forkA = int($fork / 2) if $fork > 1;
+my $forkB = 1;
+$forkB = 2 if $fork > 1;
+
 my $i = 0;
-my $pm = new Parallel::ForkManager($fork);
+my $pm = new Parallel::ForkManager($forkA);
 my $h_login = get_hash_login_pwd($buffer);
 foreach my $user (sort keys %$h_login) {
 	my $pid = $pm->start and next;
 	my $pwd = $h_login->{$user}->{PW};
-	my $cmd1 = "$dirname/check_new_hgmd_clinvar.pl user_name=$user pwd=$pwd fork=$fork";
-	my $cmd2 = "$dirname/check_new_hgmd_clinvar.pl user_name=$user pwd=$pwd print=1 view_others=1 fork=$fork";
+	my $cmd1 = "$dirname/check_new_hgmd_clinvar.pl user_name=$user pwd=$pwd fork=$forkB";
+	$cmd1 .= " force_db_annot=$release" if $release;
 	`$cmd1`;
-	`$cmd2`;
 	warn "-> login: $user done.\n";
 	$pm->finish();
 }
 $pm->wait_all_children();
+
+my $pm2 = new Parallel::ForkManager($fork);
+foreach my $user (sort keys %$h_login) {
+	my $pid = $pm2->start and next;
+	my $pwd = $h_login->{$user}->{PW};
+	my $cmd2 = "$dirname/check_new_hgmd_clinvar.pl user_name=$user pwd=$pwd print=1 view_others=1 fork=1";
+	$cmd2 .= " force_db_annot=$release" if $release;
+	`$cmd2`;
+	warn "-> login: $user done.\n";
+	$pm2->finish();
+}
+$pm2->wait_all_children();
 
 
 
