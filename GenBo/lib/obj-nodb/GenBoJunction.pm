@@ -187,20 +187,20 @@ has is_star => (
 has isCanonique => (
 	is		=> 'ro',
 	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-
-		if ($self->is_dragen() or $self->is_star()) {
-			die();
-			my $id = $self->getChromosome->id().'_'.$self->start().'_'.$self->end();
-			return 1 if $self->getChromosome()->get_lmdb_junctions_canoniques('r')->get($id);
-		}
-		else {
-			my $id2 = $self->getChromosome->id().'_'.($self->start() + 1).'_'.($self->end() - 1);
-			return 1 if $self->getChromosome()->get_lmdb_junctions_canoniques('r')->get($id2);
-		}
-		return;
-	},
+#	default	=> sub {
+#		my $self = shift;
+#
+#		if ($self->is_dragen() or $self->is_star()) {
+#			die();
+#			my $id = $self->getChromosome->id().'_'.$self->start().'_'.$self->end();
+#			return 1 if $self->getChromosome()->get_lmdb_junctions_canoniques('r')->get($id);
+#		}
+#		else {
+#			my $id2 = $self->getChromosome->id().'_'.($self->start() + 1).'_'.($self->end() - 1);
+#			return 1 if $self->getChromosome()->get_lmdb_junctions_canoniques('r')->get($id2);
+#		}
+#		return;
+#	},
 );
 
 sub getTypeDescription {
@@ -208,6 +208,16 @@ sub getTypeDescription {
 	confess() unless ($patient);
 	
 	return $self->annex->{$patient->name()}->{type}; 
+}
+
+sub isRegtools {
+	my ($self, $patient) = @_;
+	return 1 if $self->getTypeDescription($patient) eq 'NDA';
+	return 1 if $self->getTypeDescription($patient) eq 'DA';
+	return 1 if $self->getTypeDescription($patient) eq 'N';
+	return 1 if $self->getTypeDescription($patient) eq 'D';
+	return 1 if $self->getTypeDescription($patient) eq 'A';
+	return;
 }
 
 sub isRI {
@@ -291,13 +301,18 @@ sub get_nb_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
 	return $self->{nb_new_count}->{$patient->name()} if (exists $self->{nb_new_count}->{$patient->name()});
-	if ($self->isCanonique()) { 
-		$self->{nb_new_count}->{$patient->name()} = 0;
-		return 0;
-	} 
+	if ($self->isRI($patient) or $self->isSE($patient)) {
+		if ($self->isCanonique()) { 
+			$self->{nb_new_count}->{$patient->name()} = 0;
+			return 0;
+		} 
+	}
 	my $count = 0;
 	if (exists $self->annex->{$patient->name()}->{junc_new_count}) {
 		$count  = $self->annex->{$patient->name()}->{junc_new_count};
+	}
+	elsif (exists $self->annex->{$patient->name()}->{alt_count}) {
+		$count  = $self->annex->{$patient->name()}->{alt_count};
 	}
 	else {
 		$count += $self->annex->{$patient->name()}->{junc_ri_count} if ($self->isRI($patient) and exists $self->annex->{$patient->name()}->{junc_ri_count});
@@ -310,10 +325,14 @@ sub get_nb_new_count {
 sub get_canonic_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	my $nb;
-	$nb = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
-	return $nb if $nb and $nb > 0;
-	return $self->getCoverageInInterval($patient);
+	if ($self->isRI($patient) or $self->isSE($patient)) {
+		my $nb;
+		$nb = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
+		return $nb if $nb and $nb > 0;
+		return $self->getCoverageInInterval($patient);
+	}
+	return $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
+	confess();
 }
 
 sub get_dp_count {
@@ -339,6 +358,17 @@ sub ratio {
 		$self->{ratio}->{$patient->name()} = 0;
 		return 0;
 	} 
+	if ($self->get_dp_count($patient) == 0){
+		warn "\n\n";
+		warn $self->id;
+		warn $patient->name();
+		warn 'NEW: '.$self->get_nb_new_count($patient);
+		warn 'DP: '.$self->get_dp_count($patient);
+		warn Dumper $self->annex();
+		warn "\n\n";
+	}
+	
+	
 	my $ratio  = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
 	$self->{ratio}->{$patient->name()} = $ratio;
 	return $ratio;
@@ -442,9 +472,6 @@ sub getListSashimiPlotsPathFiles {
 	my ($self, $patient, $bam_tmp) = @_;
 	my $locus = $self->getChromosome->id().':'.($self->start() - 100).'-'.($self->end() + 100);
 	my $sashimi_file = $self->getSashimiPlotPath($patient, $locus);
-	warn $sashimi_file;
-	warn "\n\n";
-	warn $bam_tmp;
 	$self->createSashiPlot($patient, $locus, $bam_tmp) if ($self->can_create_sashimi_plots());
 	my @lFiles;
 	if ($sashimi_file) {
@@ -702,6 +729,7 @@ sub junction_score_without_dejavu_global {
 	my ($self, $patient) = @_;
 	my $score = 10;
 	$score = 0 if ($self->isCanonique());
+	$score = 0 if ($self->getTypeDescription($patient) eq 'DA');
 	$score -= $self->junction_score_penality_ratio($patient);
 	$score -= $self->junction_score_penality_dp($patient);
 	$score -= $self->junction_score_penality_new_junction($patient);
@@ -767,11 +795,11 @@ sub hash_in_this_run_patients {
 	$self->{inthisrun}->{15} = {};
 	foreach my $patient (@{$self->getPatients()}) {
 		$self->{inthisrun}->{0}->{$patient->id} ++;
-		$self->{inthisrun}->{10}->{$patient->id} ++  if $self->ratio($patient) < 0.1;
-		$self->{inthisrun}->{15}->{$patient->id} ++  if $self->ratio($patient) < 0.15;
-		$self->{inthisrun}->{20}->{$patient->id} ++  if $self->ratio($patient) < 0.2;
-		$self->{inthisrun}->{30}->{$patient->id} ++  if $self->ratio($patient) < 0.3;
-		$self->{inthisrun}->{40}->{$patient->id} ++  if $self->ratio($patient) < 0.4;
+		$self->{inthisrun}->{10}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 10;
+		$self->{inthisrun}->{15}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 15;
+		$self->{inthisrun}->{20}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 20;
+		$self->{inthisrun}->{30}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 30;
+		$self->{inthisrun}->{40}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 40;
 	}
 	die($ratio) unless exists $self->{inthisrun}->{$ratio};
 	return $self->{inthisrun}->{$ratio};

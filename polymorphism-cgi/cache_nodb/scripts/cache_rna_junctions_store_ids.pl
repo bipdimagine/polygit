@@ -198,7 +198,9 @@ foreach my $hv ( @{$all} ) {
 		$hpatients->{$patient->name()}->{intspan}->{RI}->add($index_lmdb) if ($junction->isRI($patient));
 		$hpatients->{$patient->name()}->{intspan}->{SE}->add($index_lmdb) if ($junction->isSE($patient));
 		
+		my $junction_type_description = $junction->getTypeDescription($patient);
 		my $ratio = int($junction->get_percent_new_count($patient));
+		
 		$hpatients->{$patient->name()}->{intspan}->{ratio_10}->add($index_lmdb) if ($ratio >= 10);
 		$hpatients->{$patient->name()}->{intspan}->{ratio_20}->add($index_lmdb) if ($ratio >= 20);
 		$hpatients->{$patient->name()}->{intspan}->{ratio_30}->add($index_lmdb) if ($ratio >= 30);
@@ -208,6 +210,12 @@ foreach my $hv ( @{$all} ) {
 		$hpatients->{$patient->name()}->{intspan}->{ratio_70}->add($index_lmdb) if ($ratio >= 70);
 		$hpatients->{$patient->name()}->{intspan}->{ratio_80}->add($index_lmdb) if ($ratio >= 80);
 		$hpatients->{$patient->name()}->{intspan}->{ratio_90}->add($index_lmdb) if ($ratio >= 90);
+		
+		unless (exists $intspan_global_type->{$junction_type_description}) {
+			$intspan_global_type->{$junction_type_description} = Set::IntSpan::Fast::XS->new();
+			$categories_junctions->{global}->{$junction_type_description} = undef;
+		}
+		$intspan_global_type->{$junction_type_description}->add($index_lmdb);
 	}
 	unless ( exists $intspan_global_type->{ $junction->type() } ) {
 		warn "\n\nERROR: doesn't exists \$intspan_global_type->{".$junction->type() . "}\n\n";
@@ -243,6 +251,8 @@ foreach my $hv ( @{$all} ) {
 	$intspan_global_type->{dejavu_70_r10}->add($index_lmdb) if ($dv_r10 <= 70);
 	$intspan_global_type->{dejavu_80_r10}->add($index_lmdb) if ($dv_r10 <= 80);
 	$intspan_global_type->{dejavu_90_r10}->add($index_lmdb) if ($dv_r10 <= 90);
+	
+	
 }
 
 my $nb_from_vcf = scalar(keys %{$chr->{cache_hash_get_var_ids}});
