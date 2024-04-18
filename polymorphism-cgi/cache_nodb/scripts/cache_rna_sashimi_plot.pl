@@ -95,6 +95,12 @@ foreach my $chr (@{$project->getChromosomes()}) {
 	if (exists $chr->global_categories->{'dejavu_20_r10'}) {
 		$vector_junctions &= $chr->global_categories->{'dejavu_20_r10'};
 	}
+	if (not $vector_junctions->is_empty and exists $chr->global_categories->{'N'}) {
+		$vector_junctions -= $chr->global_categories->{'N'};
+	}
+	if (not $vector_junctions->is_empty and exists $chr->global_categories->{'DA'}) {
+		$vector_junctions -= $chr->global_categories->{'DA'};
+	}
 	foreach my $junction (@{$chr->getListVarObjects($vector_junctions)}) {
 		my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
 		next if ($junction->isCanonique());

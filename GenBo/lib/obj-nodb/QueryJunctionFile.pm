@@ -121,6 +121,7 @@ sub parse_file {
 	my ($self, $chr) = @_;
 	return $self->parse_file_RI($chr) if $self->isRI();
 	return $self->parse_file_SE($chr) if $self->isSE();
+	return $self->parse_results_global_file($self->file(), $chr);
 	confess();
 }
 
@@ -152,11 +153,15 @@ sub parse_results_global_file {
 	my $project = $chr->project;
 	foreach my $chr_id (@{$tabix->seqnames()}) {
 		$found = 1 if $chr_id eq $chr->name();
+		$found = 2 if $chr_id eq 'chr'.$chr->name();
 	}
 	return ($h_header, \@l_res) if not $found;
 	
-	my $iter = $tabix->query($chr->id);
-	my $type = "RI";
+	my $iter;
+	$iter = $tabix->query($chr->id) if $found == 1;
+	$iter = $tabix->query('chr'.$chr->id) if $found == 2;
+	my $type;
+	$type = "RI" if $tabix->header =~ /RI/; 
 	$type = "SE" if $tabix->header =~ /SE/; 
 	
 	
@@ -174,7 +179,7 @@ sub parse_results_global_file {
 			my $nb_col = 0;
 			# parsing ligne
 			for  (my $i = 0;$i<@l_col;$i++){
-				$h_res->{type_origin_file} = $type;
+				
 				
 				my $cat = $header[$i];
 				$cat =~s/\#//;
@@ -185,20 +190,31 @@ sub parse_results_global_file {
 				$cat = 'start' if (lc($cat) eq 'junc_se_start' or lc($cat) eq 'junc_ri_start');
 				$cat = 'end' if (lc($cat) eq 'junc_se_end' or lc($cat) eq 'junc_ri_end');
 			}
-			$h_res->{isCanonique} = 1 if ($h_res->{type} =~ /canonique/);
-			
+			$h_res->{'chr'} =~ s/chr//;
+			if ($type) { $h_res->{type_origin_file} = $type; }
+			else {
+				$type = $h_res->{'type'};
+				$h_res->{type_origin_file} = $type;
+			}
 			if ($type eq "SE"){
-					
-					$h_res->{end} = delete $h_res->{junc_se_end};
-					$h_res->{start} = delete $h_res->{junc_se_start};
-					$h_res->{alt_count} = $h_res->{junc_se_count};
-					
-				}
-				else {
-					$h_res->{alt_count} = $h_res->{junc_ri_count};
-					$h_res->{end} = delete $h_res->{junc_ri_end};
-					$h_res->{start} = delete $h_res->{junc_ri_start};
-				}
+				$h_res->{end} = delete $h_res->{junc_se_end};
+				$h_res->{start} = delete $h_res->{junc_se_start};
+				$h_res->{alt_count} = $h_res->{junc_se_count};
+				$h_res->{isCanonique} = 1 if ($h_res->{type} =~ /canonique/);
+			}
+			elsif ($type eq "RI"){
+				$h_res->{alt_count} = $h_res->{junc_ri_count};
+				$h_res->{end} = delete $h_res->{junc_ri_end};
+				$h_res->{start} = delete $h_res->{junc_ri_start};
+				$h_res->{isCanonique} = 1 if ($h_res->{type} =~ /canonique/);
+			}
+			#Start + 1 End -1 REGTOOLS
+			else {
+				$h_res->{end} -= 1;
+				$h_res->{start} += 1;
+			}
+			
+			
 			$h_res->{len} = abs(abs($h_res->{end} - $h_res->{start} +1));	
 			$h_res->{canonic_count} = $h_res->{junc_normale_count};
 			# junctions en reverse
@@ -210,6 +226,8 @@ sub parse_results_global_file {
 			}
 			
 			$h_res->{canonic_count} = $h_res->{junc_normale_count};
+			$h_res->{canonic_count} = 0 if $h_res->{canonic_count} eq 'NA';
+			$h_res->{canonic_count} = 0 if $h_res->{canonic_count} eq 'No_matching_DA_junction';
 			
 			my $res = $chr->genesIntervalTree->fetch($h_res->{start},$h_res->{end}+1);
 			next if scalar(@$res) >= 2 &&  $h_res->{alt_count} < 5;
@@ -231,7 +249,9 @@ sub parse_results_global_file {
 			$sample =~ s/\_$proj_name//;
 			# check et regroupe same jonctions RI SE
 			
-			my $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file};
+			my $id;
+			if (exists $h_res->{type_origin_file} and $h_res->{type_origin_file}) { $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type_origin_file}; }
+			else { $id = $chr_id.'_'.$h_res->{'start'}.'_'.$h_res->{'end'}.'_'.$h_res->{type}; }
 			confess("\n\nERROR: construct junction $id for column chr. Die\n\n") if not exists $h_res->{'chr'};
 			confess("\n\nERROR: construct junction $id for column start. Die\n\n") if not exists $h_res->{'start'};
 			confess("\n\nERROR: construct junction $id for column end. Die\n\n") if not exists $h_res->{'end'};

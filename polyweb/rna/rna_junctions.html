@@ -716,9 +716,29 @@
 				url += "&min_score=" + used_score_value;
 				if (is_first_launch == 1) {
 					url += "&only_dejavu_ratio_10=1";
+					url += "&only_junctions_NDA=1";
+					url += "&only_junctions_A=1";
+					url += "&only_junctions_D=1";
 				}
-				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
-					url += "&only_dejavu_ratio_10=1";
+				else {
+					if ($('#b_regtools_nda').prop('checked')) {
+						url += "&only_junctions_NDA=1";
+					}
+					if ($('#b_regtools_da').prop('checked')) {
+						url += "&only_junctions_DA=1";
+					}
+					if ($('#b_regtools_a').prop('checked')) {
+						url += "&only_junctions_A=1";
+					}
+					if ($('#b_regtools_d').prop('checked')) {
+						url += "&only_junctions_D=1";
+					}
+					if ($('#b_regtools_n').prop('checked')) {
+						url += "&only_junctions_N=1";
+					}
+					if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+						url += "&only_dejavu_ratio_10=1";
+					}
 				}
 			    $.getJSON( url, {})
 			    	.done( function( data ) {
@@ -924,9 +944,29 @@
 				url += "&min_score=" + value_score;
 				if (is_first_launch == 1) {
 					url += "&only_dejavu_ratio_10=1";
+					url += "&only_junctions_NDA=1";
+					url += "&only_junctions_A=1";
+					url += "&only_junctions_D=1";
 				}
-				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
-					url += "&only_dejavu_ratio_10=1";
+				else {
+					if ($('#b_regtools_nda').prop('checked')) {
+						url += "&only_junctions_NDA=1";
+					}
+					if ($('#b_regtools_da').prop('checked')) {
+						url += "&only_junctions_DA=1";
+					}
+					if ($('#b_regtools_a').prop('checked')) {
+						url += "&only_junctions_A=1";
+					}
+					if ($('#b_regtools_d').prop('checked')) {
+						url += "&only_junctions_D=1";
+					}
+					if ($('#b_regtools_n').prop('checked')) {
+						url += "&only_junctions_N=1";
+					}
+					if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+						url += "&only_dejavu_ratio_10=1";
+					}
 				}
 				if (only_gene_positions == '') {}
 				else if (only_gene_positions.match(':')) {
@@ -969,9 +1009,29 @@
 				url += "&min_score=" + value_score;
 				if (is_first_launch == 1) {
 					url += "&only_dejavu_ratio_10=1";
+					url += "&only_junctions_NDA=1";
+					url += "&only_junctions_A=1";
+					url += "&only_junctions_D=1";
 				}
-				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
-					url += "&only_dejavu_ratio_10=1";
+				else {
+					if ($('#b_regtools_nda').prop('checked')) {
+						url += "&only_junctions_NDA=1";
+					}
+					if ($('#b_regtools_da').prop('checked')) {
+						url += "&only_junctions_DA=1";
+					}
+					if ($('#b_regtools_a').prop('checked')) {
+						url += "&only_junctions_A=1";
+					}
+					if ($('#b_regtools_d').prop('checked')) {
+						url += "&only_junctions_D=1";
+					}
+					if ($('#b_regtools_n').prop('checked')) {
+						url += "&only_junctions_N=1";
+					}
+					if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+						url += "&only_dejavu_ratio_10=1";
+					}
 				}
 				var only_gene_positions = document.getElementById('input_gene_positions').value;
 				if (only_gene_positions == '') {}

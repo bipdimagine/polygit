@@ -38,6 +38,12 @@ my $view_polyviewer 	 = $cgi->param('view_polyviewer');
 my $export_xls			 = $cgi->param('export_xls');
 my $session_id			 = $cgi->param('session_id');
 
+my $only_junctions_NDA   = $cgi->param('only_junctions_NDA');
+my $only_junctions_DA    = $cgi->param('only_junctions_DA');
+my $only_junctions_A     = $cgi->param('only_junctions_A');
+my $only_junctions_D     = $cgi->param('only_junctions_D');
+my $only_junctions_N     = $cgi->param('only_junctions_N');
+
 
 if ($export_xls and $session_id) {
 	my $xls_export = new xls_export();
@@ -47,7 +53,6 @@ if ($export_xls and $session_id) {
 	$xls_export->export();
 	exit(0);
 }
-
 
 #$only_positions = '10:17000000-17080000';
 
@@ -111,9 +116,12 @@ my $j_selected = 0;
 my $h_chr_vectors;
 my $h_chr_vectors_counts;
 
+my $has_regtools_vectors;
 my $exists_vector_ratio_10;
 foreach my $chr ( @{ $project->getChromosomes() } ) {
-
+#	warn $chr->id;
+#	$chr->global_categories;
+	
 	#next if $chr->id ne '1' and $patient_name eq 'KUCerc';
 	my $vector_patient = $patient->getJunctionsVector($chr);
 	$j_total += $chr->countThisVariants($vector_patient);
@@ -135,10 +143,17 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	}
 
 	$h_chr_vectors->{ $chr->id } = $vector_patient->Clone();
-	$h_chr_vectors_counts->{ $chr->id } =
-	  $chr->countThisVariants( $h_chr_vectors->{ $chr->id } );
+	$h_chr_vectors_counts->{ $chr->id } = $chr->countThisVariants( $h_chr_vectors->{ $chr->id } );
 	$j_selected += $h_chr_vectors_counts->{ $chr->id };
 	$exists_vector_ratio_10++ if exists $chr->patients_categories->{$patient->name().'_ratio_10'};
+	
+	if ($h_chr_vectors_counts->{ $chr->id } > 0) {
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'N'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'D'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'A'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'DA'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'NDA'};
+	}
 }
 my $cache_id = 'splices_linked_' . $patient->name();
 my $no_cache = $patient->get_lmdb_cache("r");
@@ -154,6 +169,11 @@ $cache_html_id .= '_mins'.$min_score if $min_score;
 $cache_html_id .= '_only'.$only_gene_name if $only_gene_name;
 $cache_html_id .= '_only'.$only_positions if $only_positions;
 $cache_html_id .= '_onlydvra10' if $only_dejavu_ratio_10;
+$cache_html_id .= '_onlyNDA' if $has_regtools_vectors and $only_junctions_NDA;
+$cache_html_id .= '_onlyDA' if $has_regtools_vectors and $only_junctions_DA;
+$cache_html_id .= '_onlyA' if $has_regtools_vectors and $only_junctions_A;
+$cache_html_id .= '_onlyD' if $has_regtools_vectors and $only_junctions_D;
+$cache_html_id .= '_onlyN' if $has_regtools_vectors and $only_junctions_N;
 $cache_html_id .= '_'.$j_total;
 if (not $only_gene_name and not $only_positions and not $view_polyviewer and not $export_xls) {
 	my $no_cache_2 = $patient->get_lmdb_cache("r");
@@ -164,7 +184,6 @@ if (not $only_gene_name and not $only_positions and not $view_polyviewer and not
 	
 	$no_cache_2->close();
 	if ($h_html) {
-		
 		if ($view_polyviewer) {
 			print qq{</div>};
 			print $h_html->{html};
@@ -174,6 +193,7 @@ if (not $only_gene_name and not $only_positions and not $view_polyviewer and not
 		exit(0);
 	}
 }
+
 my ( $is_partial_results, $use_cat, $min_partial_score );
 my $no_cache = $patient->get_lmdb_cache("r");
 my $cache_vectors_enum_id = $patient->name() . '_' . '_chr_vectors_enum';
@@ -199,10 +219,13 @@ my $nb_percent_dejavu_value = 90 + $percent_dejavu;
 my $nbErrors = 0;
 
 
-
-
-my $checked_only_dejavu_ratio_10;
+my ($checked_only_dejavu_ratio_10, $checked_regtools_nda, $checked_regtools_d, $checked_regtools_a, $checked_regtools_n, $checked_regtools_da);
 $checked_only_dejavu_ratio_10 = qq{checked="checked"} if $only_dejavu_ratio_10;
+$checked_regtools_nda = qq{checked="checked"} if $only_junctions_NDA;
+$checked_regtools_da = qq{checked="checked"} if $only_junctions_DA;
+$checked_regtools_d = qq{checked="checked"} if $only_junctions_D;
+$checked_regtools_a = qq{checked="checked"} if $only_junctions_A;
+$checked_regtools_n = qq{checked="checked"} if $only_junctions_N;
 
 if (not $view_polyviewer) {
 	my $html_dejavu = qq{
@@ -248,6 +271,28 @@ if (not $view_polyviewer) {
 	my $html_filters = qq{
 		<table style="width:100%;">
 			<tr>
+	};
+	
+	if ($has_regtools_vectors) {
+		$html_filters .= qq{
+			<td style="padding-top:5px;">
+				<center>
+					<table>
+						<tr>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_nda class="form-check-input" type="checkbox" value="" id="b_regtools_nda"><label class="form-check-label" for="b_regtools_nda" style="padding-left:10px;font-size:11px;">NDA</label></div> </td>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_d class="form-check-input" type="checkbox" value="" id="b_regtools_d"><label class="form-check-label" for="b_regtools_d" style="padding-left:10px;font-size:11px;">D</label></div> </td>
+						</tr>
+						<tr>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_a class="form-check-input" type="checkbox" value="" id="b_regtools_a"><label class="form-check-label" for="b_regtools_a" style="padding-left:10px;font-size:11px;">A</label></div> </td>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_n class="form-check-input" type="checkbox" value="" id="b_regtools_n"><label class="form-check-label" for="b_regtools_n" style="padding-left:10px;font-size:11px;">N</label></div> </td>
+						</tr>
+					</table>
+				</center>
+			</td>
+		};
+	}
+	
+	$html_filters .= qq{
 				<td style="padding-top:5px;">
 					<center>
 						<label for="slider_score" class="form-label" style="font-size:10px;font-weight:300;"><i>Ratio >= <span id="nb_score" style="color:blue;">$min_score%</span></i></label>
@@ -262,6 +307,15 @@ if (not $view_polyviewer) {
 						
 			</tr>
 			<tr>
+	};
+	
+	if ($has_regtools_vectors) {
+		$html_filters .= qq{
+			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Category</center></b></td>
+		};
+	}
+	
+	$html_filters .= qq{
 				<td style="padding-top:5px;font-size:11px;"><center><b>Filter Min Ratio</center></b></td>
 				<td style="padding-top:5px;font-size:11px;"><center><b>Filter Only Gene / Positions</center></b></td>
 			</tr>
@@ -370,21 +424,63 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	if (not $only_gene ) {
 		#DV vector
 		my $type_vector_dv = 'dejavu';
-		if ($max_dejavu_value >= 90)    { $type_vector_dv .= '_90'; }
-		elsif ($max_dejavu_value >= 80) { $type_vector_dv .= '_80'; }
-		elsif ($max_dejavu_value >= 70) { $type_vector_dv .= '_70'; }
-		elsif ($max_dejavu_value >= 60) { $type_vector_dv .= '_60'; }
-		elsif ($max_dejavu_value >= 50) { $type_vector_dv .= '_50'; }
-		elsif ($max_dejavu_value >= 40) { $type_vector_dv .= '_40'; }
-		elsif ($max_dejavu_value >= 30) { $type_vector_dv .= '_30'; }
-		elsif ($max_dejavu_value >= 25) { $type_vector_dv .= '_25'; }
-		elsif ($max_dejavu_value >= 20) { $type_vector_dv .= '_20'; }
-		elsif ($max_dejavu_value >= 15) { $type_vector_dv .= '_15'; }
-		elsif ($max_dejavu_value >= 10) { $type_vector_dv .= '_10'; }
-		else { $type_vector_dv .= '_5'; }
+		my $type_vector_dv_sup = 'dejavu';
+		if ($max_dejavu_value >= 90)    {
+			$type_vector_dv .= '_90';
+		}
+		elsif ($max_dejavu_value >= 80) {
+			$type_vector_dv .= '_80';
+			$type_vector_dv_sup .= '_90';
+		}
+		elsif ($max_dejavu_value >= 70) {
+			$type_vector_dv .= '_70';
+			$type_vector_dv_sup .= '_80';
+		}
+		elsif ($max_dejavu_value >= 60) {
+			$type_vector_dv .= '_60';
+			$type_vector_dv_sup .= '_70';
+		}
+		elsif ($max_dejavu_value >= 50) {
+			$type_vector_dv .= '_50';
+			$type_vector_dv_sup .= '_60';
+		}
+		elsif ($max_dejavu_value >= 40) {
+			$type_vector_dv .= '_40';
+			$type_vector_dv_sup .= '_50';
+		}
+		elsif ($max_dejavu_value >= 30) {
+			$type_vector_dv .= '_30';
+			$type_vector_dv_sup .= '_40';
+		}
+		elsif ($max_dejavu_value >= 25) {
+			$type_vector_dv .= '_25';
+			$type_vector_dv_sup .= '_30';
+		}
+		elsif ($max_dejavu_value >= 20) {
+			$type_vector_dv .= '_20';
+			$type_vector_dv_sup .= '_25';
+		}
+		elsif ($max_dejavu_value >= 15) {
+			$type_vector_dv .= '_15';
+			$type_vector_dv_sup .= '_20';
+		}
+		elsif ($max_dejavu_value >= 10) {
+			$type_vector_dv .= '_10';
+			$type_vector_dv_sup .= '_15';
+		}
+		else {
+			$type_vector_dv .= '_5';
+			$type_vector_dv_sup .= '_105';
+		}
 		$type_vector_dv .= '_r10' if ($only_dejavu_ratio_10);
+		$type_vector_dv_sup .= '_r10' if ($only_dejavu_ratio_10);
 		if (exists $chr->global_categories->{$type_vector_dv}) {
 			$h_chr_vectors->{$chr_id} &= $chr->global_categories->{$type_vector_dv};
+#			if ($type_vector_dv_sup and exists $chr->global_categories->{$type_vector_dv_sup}) {
+#				my $v_sup = $chr->global_categories->{$type_vector_dv_sup}->Clone();
+#				$v_sup -= $chr->global_categories->{$type_vector_dv};
+#				$h_chr_vectors->{$chr_id} -= $v_sup;
+#			}
 		}
 	
 		# RATIO
@@ -400,6 +496,14 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		elsif ($min_score >= 10) { $type_vector_ratio .= '_10'; }
 		if (exists $chr->patients_categories->{$type_vector_ratio}) {
 			$h_chr_vectors->{$chr_id} &= $chr->patients_categories->{$type_vector_ratio};
+		}
+
+		if ($has_regtools_vectors) {
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'NDA'} if (not $only_junctions_NDA and exists $chr->global_categories->{'NDA'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'DA'}  if (not $only_junctions_DA and exists $chr->global_categories->{'DA'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'A'}   if (not $only_junctions_A and exists $chr->global_categories->{'A'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'D'}   if (not $only_junctions_D and exists $chr->global_categories->{'D'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'N'}   if (not $only_junctions_N and exists $chr->global_categories->{'N'});
 		}
 	}
 	
@@ -454,7 +558,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 and not $only_gene);
 
 		next if $junction->start == $junction->end();
-
+		
 		my @lGenesNames;
 		foreach my $gene ( @{ $junction->getGenes() } ) {
 			if ($only_gene) {
@@ -1442,6 +1546,7 @@ sub get_html_id {
 	push( @lTypes, 'RI' ) if $junction->isRI($patient);
 	push( @lTypes, 'SE' ) if $junction->isSE($patient);
 	
+	
 	my ($type_junction, $type_junction_description);
 	if (exists $h_same_j_description->{$junction->vector_id()}) {
 		$type_junction = $h_same_j_description->{$junction->vector_id()};
@@ -1455,8 +1560,12 @@ sub get_html_id {
 	$html_id .= "<tr><td><center><b>$junction_locus</b></center></td></tr>";
 	$html_id .= "<tr><td><center>$length nt</td></tr>";
 	$html_id .= "<tr><td><center>";
-	$html_id .= "$type_junction";
-	$html_id .= " - $type_junction_description" if ( $type_junction_description and $type_junction_description ne '---' );
+	if ($type_junction) {
+		$html_id .= "$type_junction - $type_junction_description" if ( $type_junction_description and $type_junction_description ne '---' );
+	}
+	else {
+		$html_id .= "$type_junction_description" if ( $type_junction_description and $type_junction_description ne '---' );
+	}
 	$html_id .= "</center></td></tr>";
 	$html_id .= "</table></center>";
 	return $html_id;
