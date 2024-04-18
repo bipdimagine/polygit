@@ -199,7 +199,7 @@ sub parse_results_global_file {
 			if ($type eq "SE"){
 				$h_res->{end} = delete $h_res->{junc_se_end};
 				$h_res->{start} = delete $h_res->{junc_se_start};
-				if ($h_res->{type} =~ /canonique/) {
+				if (lc($h_res->{type}) =~ /canonique/) {
 					$h_res->{isCanonique} = 1;
 					$h_res->{junc_se_count} = 0;
 				}
@@ -208,7 +208,7 @@ sub parse_results_global_file {
 			elsif ($type eq "RI"){
 				$h_res->{end} = delete $h_res->{junc_ri_end};
 				$h_res->{start} = delete $h_res->{junc_ri_start};
-				if ($h_res->{type} =~ /canonique/) {
+				if (lc($h_res->{type}) =~ /canonique/) {
 					$h_res->{isCanonique} = 1;
 					$h_res->{junc_ri_count} = 0;
 				}
