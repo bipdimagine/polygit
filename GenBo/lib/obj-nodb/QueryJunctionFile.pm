@@ -199,14 +199,20 @@ sub parse_results_global_file {
 			if ($type eq "SE"){
 				$h_res->{end} = delete $h_res->{junc_se_end};
 				$h_res->{start} = delete $h_res->{junc_se_start};
+				if ($h_res->{type} =~ /canonique/) {
+					$h_res->{isCanonique} = 1;
+					$h_res->{junc_se_count} = 0;
+				}
 				$h_res->{alt_count} = $h_res->{junc_se_count};
-				$h_res->{isCanonique} = 1 if ($h_res->{type} =~ /canonique/);
 			}
 			elsif ($type eq "RI"){
-				$h_res->{alt_count} = $h_res->{junc_ri_count};
 				$h_res->{end} = delete $h_res->{junc_ri_end};
 				$h_res->{start} = delete $h_res->{junc_ri_start};
-				$h_res->{isCanonique} = 1 if ($h_res->{type} =~ /canonique/);
+				if ($h_res->{type} =~ /canonique/) {
+					$h_res->{isCanonique} = 1;
+					$h_res->{junc_ri_count} = 0;
+				}
+				$h_res->{alt_count} = $h_res->{junc_ri_count};
 			}
 			#Start + 1 End -1 REGTOOLS
 			else {
