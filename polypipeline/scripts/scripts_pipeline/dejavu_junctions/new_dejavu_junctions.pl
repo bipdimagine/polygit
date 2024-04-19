@@ -206,7 +206,7 @@ sub insert_all_junctions {
 			close (FILE);
 		}
 		elsif (-e $file_canonique_gz) {
-			open (FILE, "gunzip -c $file_gz |");
+			open (FILE, "gunzip -c $file_canonique_gz |");
 			my $json = <FILE>;
 			$h_proj_junctions_canonique = decode_json $json;
 			close (FILE);
