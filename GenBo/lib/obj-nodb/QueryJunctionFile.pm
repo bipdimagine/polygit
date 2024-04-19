@@ -199,20 +199,26 @@ sub parse_results_global_file {
 			if ($type eq "SE"){
 				$h_res->{end} = delete $h_res->{junc_se_end};
 				$h_res->{start} = delete $h_res->{junc_se_start};
-				if (lc($h_res->{type}) =~ /canonique/) {
+				if (lc($h_res->{type}) =~ /se_canonique/) {
 					$h_res->{isCanonique} = 1;
-					$h_res->{junc_se_count} = 0;
+					$h_res->{alt_count} = 0;
+					$h_res->{junc_normale_count} = $h_res->{junc_se_count};
 				}
-				$h_res->{alt_count} = $h_res->{junc_se_count};
+				else {
+					$h_res->{alt_count} = $h_res->{junc_se_count};
+				}
 			}
 			elsif ($type eq "RI"){
 				$h_res->{end} = delete $h_res->{junc_ri_end};
 				$h_res->{start} = delete $h_res->{junc_ri_start};
-				if (lc($h_res->{type}) =~ /canonique/) {
+				if (lc($h_res->{type}) =~ /se_canonique/) {
 					$h_res->{isCanonique} = 1;
-					$h_res->{junc_ri_count} = 0;
+					$h_res->{alt_count} = 0;
+					$h_res->{junc_normale_count} = $h_res->{junc_ri_count};
 				}
-				$h_res->{alt_count} = $h_res->{junc_ri_count};
+				else {
+					$h_res->{alt_count} = $h_res->{junc_ri_count};
+				}
 			}
 			#Start + 1 End -1 REGTOOLS
 			else {
