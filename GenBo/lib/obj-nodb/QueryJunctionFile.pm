@@ -252,8 +252,10 @@ sub parse_results_global_file {
 			
 			#next if $h_res->{alt_count} <5 if h_res->{canonic_count} == 0;
 			
-			next if (($h_res->{alt_count}+0.001)/($h_res->{canonic_count}+0.001)) <0.01;
-		
+			if (exists $h_res->{isCanonique} and  $h_res->{isCanonique} != 1) {
+				next if (($h_res->{alt_count}+0.001)/($h_res->{canonic_count}+0.001) <0.01);
+			}
+			
 			my $ensid = $h_res->{'ensid'};
 			my $sample = $h_res->{'sample'};
 			my $chr_id = $h_res->{'chr'};
