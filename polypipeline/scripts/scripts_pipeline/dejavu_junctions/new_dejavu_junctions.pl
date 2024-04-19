@@ -84,6 +84,20 @@ if (-d $dv_dir_projects_path) {
 print " -> Done!\n";
 print " -> Found ".scalar(keys %{$hash_projects})." projects\n\n";
 
+
+#foreach my $this_project_name (keys %$hash_projects) {
+#	my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+#	my $file = $dir_dv_proj.'/'.$this_project_name.'.json';
+#	my $file_gz = $dir_dv_proj.'/'.$this_project_name.'.json.gz';
+#	if (-e $file_gz) {
+#		my $cmd_zip = "gunzip $dir_dv_proj/*.gz";
+#		my $cmd_rm_tbi = "rm $dir_dv_proj/*.tbi";
+#		`$cmd_zip`;
+#		`$cmd_rm_tbi`;
+#	}
+#}
+
+
 my $h_not_found;
 foreach my $this_project_name (keys %$hash_projects) {
 	my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
@@ -120,7 +134,7 @@ push(@lTypes, 'canoniques');
 
 foreach my $type (@lTypes) {
 	if ($type eq 'all') { insert_all_junctions(); }
-	elsif ($type eq 'canoniques') { insert_all_junctions_canoniques(); }
+#	elsif ($type eq 'canoniques') { insert_all_junctions_canoniques(); }
 #	else { insert_all_junctions_type($type); }
 }
 
@@ -131,13 +145,19 @@ print "\n\nALL DONE!\n\n";
 sub insert_all_junctions {
 	my $h_all_junctions;
 	foreach my $this_project_name (keys %$hash_projects) {
+		
+		#next if $this_project_name ne 'NGS2021_4218';
+		
 		print "-> $this_project_name ";
 		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
 		my $file = $dir_dv_proj.'/'.$this_project_name.'.json';
 		my $file_gz = $dir_dv_proj.'/'.$this_project_name.'.json.gz';
-		my $file_canonique = $dir_dv_proj.'/'.$this_project_name.'.canonique.json';
+		my $file_canonique = $dir_dv_proj.'/'.$this_project_name.'.canoniques.json';
+		my $file_canonique_gz = $dir_dv_proj.'/'.$this_project_name.'.canoniques.json.gz';
 		next if exists $h_not_found->{$this_project_name};
-		my $h_proj_junctions;
+		my ($h_proj_junctions, $h_proj_junctions_canonique);
+		
+		
 		if (-e $file) {
 			open (FILE, $file);
 			my $json = <FILE>;
@@ -155,27 +175,86 @@ sub insert_all_junctions {
 		}
 		
 		my $hres;
+		foreach my $chr_id (1..22, 'X', 'Y', 'MT') {
+			my $todo;
+			if (exists $h_proj_junctions->{$chr_id}) {
+				foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
+					my $start = $h_proj_junctions->{$chr_id}->{$junction_id}->{start};
+					my $end = $h_proj_junctions->{$chr_id}->{$junction_id}->{end};
+					foreach my $pat_name (keys %{$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}}) {
+						$hres->{$chr_id}->{$start}->{$end}->{$pat_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}->{$pat_name};
+						$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{junction_id} = $junction_id;
+					}
+					my $new_id = $h_proj_junctions->{$chr_id}->{$junction_id}->{start}.'-'.$h_proj_junctions->{$chr_id}->{$junction_id}->{end};
+					if (exists $h_all_junctions->{$chr_id}->{$new_id}) {
+						$h_all_junctions->{$chr_id}->{$new_id}->{dejavu}->{$this_project_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+					}
+					else {
+						$h_all_junctions->{$chr_id}->{$new_id} = $h_proj_junctions->{$chr_id}->{$junction_id};
+					}
+				}
+			}
+		}
+		$h_proj_junctions = undef;
+			
+		
+		if (-e $file_canonique) {
+			open (FILE, $file_canonique);
+			my $json = <FILE>;
+			eval { $h_proj_junctions_canonique = decode_json $json; };
+			if ($@) { $h_proj_junctions_canonique = {}; }
+			close (FILE);
+		}
+		elsif (-e $file_canonique_gz) {
+			open (FILE, "gunzip -c $file_gz |");
+			my $json = <FILE>;
+			$h_proj_junctions_canonique = decode_json $json;
+			close (FILE);
+		}	
+		foreach my $chr_id (1..22, 'X', 'Y', 'MT') {
+			if (exists $h_proj_junctions_canonique->{$chr_id}) {
+				foreach my $junction_id (keys %{$h_proj_junctions_canonique->{$chr_id}}) {
+					my $start = $h_proj_junctions_canonique->{$chr_id}->{$junction_id}->{start};
+					my $end = $h_proj_junctions_canonique->{$chr_id}->{$junction_id}->{end};
+					foreach my $pat_name (keys %{$h_proj_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}}) {
+						$hres->{$chr_id}->{$start}->{$end}->{$pat_name} = $h_proj_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}->{$pat_name};
+						$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{junction_id} = $junction_id;
+						my $a = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_junctions};
+						my $b = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_normal};
+						if (($a == 0 and $b > 0) or $a == $b) {
+							$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_junctions} = 0;
+						}
+						else {
+							$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_junctions} = 0;
+							$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_normal} = $a;
+						}
+						$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{score} = 0;
+					}
+					
+					my $new_id = $h_proj_junctions_canonique->{$chr_id}->{$junction_id}->{start}.'-'.$h_proj_junctions_canonique->{$chr_id}->{$junction_id}->{end};
+					if (exists $h_all_junctions->{$chr_id}->{$new_id}) {
+						$h_all_junctions->{$chr_id}->{$new_id}->{dejavu}->{$this_project_name} = $h_proj_junctions_canonique->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+					}
+					else {
+						$h_all_junctions->{$chr_id}->{$new_id} = $h_proj_junctions_canonique->{$chr_id}->{$junction_id};
+					}
+				}
+			}
+		}
+		$h_proj_junctions_canonique = undef;
+			
 		my $file_tab = $dir_dv_proj.'/'.$this_project_name.'.tab';
 		open (FILE, ">$file_tab");
 		foreach my $chr_id (1..22, 'X', 'Y', 'MT') {
-			next unless exists $h_proj_junctions->{$chr_id};
-			foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
-				my $start = $h_proj_junctions->{$chr_id}->{$junction_id}->{start};
-				my $end = $h_proj_junctions->{$chr_id}->{$junction_id}->{end};
-				foreach my $pat_name (keys %{$h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}}) {
-					$hres->{$chr_id}->{$start}->{$end}->{$pat_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name}->{$pat_name};
-					$hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{junction_id} = $junction_id;
-				}
-			}
-			
 			foreach my $start (sort {$a <=> $b} keys %{$hres->{$chr_id}}) {
 				foreach my $end (sort {$a <=> $b} keys %{$hres->{$chr_id}->{$start}}) {
 					foreach my $pat_name (sort keys %{$hres->{$chr_id}->{$start}->{$end}}) {
 						my $junction_id = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{junction_id};
 						my $type = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{type};
-						my $count_junctions = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_junctions};
-						my $count_normal = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_normal};
-						my $ratio = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{score};
+						my ($count_junctions, $count_normal, $ratio);
+						$count_junctions = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_junctions};
+						$count_normal = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{count_normal};
+						$ratio = $hres->{$chr_id}->{$start}->{$end}->{$pat_name}->{score};
 						my @line;
 						push(@line, $chr_id);
 						push(@line, $start);
@@ -193,17 +272,9 @@ sub insert_all_junctions {
 		}
 		close (FILE);
 		
-		foreach my $chr_id (keys %{$h_proj_junctions}) {
-			foreach my $junction_id (keys %{$h_proj_junctions->{$chr_id}}) {
-				my $new_id = $h_proj_junctions->{$chr_id}->{$junction_id}->{start}.'-'.$h_proj_junctions->{$chr_id}->{$junction_id}->{end};
-				if (exists $h_all_junctions->{$chr_id}->{$new_id}) {
-					$h_all_junctions->{$chr_id}->{$new_id}->{dejavu}->{$this_project_name} = $h_proj_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
-				}
-				else {
-					$h_all_junctions->{$chr_id}->{$new_id} = $h_proj_junctions->{$chr_id}->{$junction_id};
-				}
-			}	
-		}
+		$hres = undef;
+		
+		
 		if (-e "$file_tab.gz") {
 			`rm $file_tab.gz`;
 		}
@@ -214,6 +285,8 @@ sub insert_all_junctions {
 		if (not -e $file_gz) {
 			my $cmd3 = "bgzip $file";
 			`$cmd3`;
+		}
+		if (not -e $file_canonique_gz) {
 			my $cmd4 = "bgzip $file_canonique";
 			`$cmd4`;
 		}
@@ -244,7 +317,8 @@ sub insert_all_junctions {
 					my $new = $h_all_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{count_junctions};
 					my $normal = $h_all_junctions->{$chr_id}->{$junction_id}->{dejavu}->{$proj}->{$pat_name}->{count_normal};
 					my $dp = ($new + $normal);
-					my $ratio =  ($new / $dp) * 100;
+					my $ratio = 0;
+					$ratio = ($new / $dp) * 100 if $new > 0;
 					
 					my $patname_text = $proj.'_'.$pat_name;
 					$patname_text =~ s/NGS20//;
@@ -273,38 +347,38 @@ sub insert_all_junctions {
 	print "# INSERT in DejaVuLMDB Junctions Resume -> DONE!\n";
 }
 
-sub insert_all_junctions_canoniques {
-	my $h_all_junctions_canoniques;
-	foreach my $this_project_name (keys %$hash_projects) {
-		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
-		my $file = $dir_dv_proj.'/'.$this_project_name.'.canoniques.json';
-		next if exists $h_not_found->{$this_project_name};
-		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
-		open (FILE, $file);
-		my $json = <FILE>;
-		my $h_proj_junctions_canoniques; 
-		$h_proj_junctions_canoniques = decode_json $json if ($json);
-		close (FILE);
-		next if (not $h_proj_junctions_canoniques); 
-		foreach my $chr_id (keys %{$h_proj_junctions_canoniques}) {
-			foreach my $junction_id (keys %{$h_proj_junctions_canoniques->{$chr_id}}) {
-				my $jid = $junction_id;
-				$jid =~ s/_junction//;
-				if (exists $h_all_junctions_canoniques->{$chr_id}->{$junction_id}) {
-					$h_all_junctions_canoniques->{$chr_id}->{$jid}->{dejavu}->{$this_project_name} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
-				}
-				else {
-					$h_all_junctions_canoniques->{$chr_id}->{$jid} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id};
-				}
-			}	
-		}
-	}
-	
-#	my $nodejavucanoniques = GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $dir_canoniques, mode => "c", is_compress => 1 );
-#	insert_in_dejavu_jonctions($nodejavucanoniques, $h_all_junctions_canoniques);
-#	$nodejavucanoniques->close();
-	print "# INSERT in DejaVuLMDB Junctions canoniques -> DONE!\n";
-}
+#sub insert_all_junctions_canoniques {
+#	my $h_all_junctions_canoniques;
+#	foreach my $this_project_name (keys %$hash_projects) {
+#		my $dir_dv_proj = $dv_dir_path.'/projects/'.$this_project_name.'/';
+#		my $file = $dir_dv_proj.'/'.$this_project_name.'.canoniques.json';
+#		next if exists $h_not_found->{$this_project_name};
+#		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
+#		open (FILE, $file);
+#		my $json = <FILE>;
+#		my $h_proj_junctions_canoniques; 
+#		$h_proj_junctions_canoniques = decode_json $json if ($json);
+#		close (FILE);
+#		next if (not $h_proj_junctions_canoniques); 
+#		foreach my $chr_id (keys %{$h_proj_junctions_canoniques}) {
+#			foreach my $junction_id (keys %{$h_proj_junctions_canoniques->{$chr_id}}) {
+#				my $jid = $junction_id;
+#				$jid =~ s/_junction//;
+#				if (exists $h_all_junctions_canoniques->{$chr_id}->{$junction_id}) {
+#					$h_all_junctions_canoniques->{$chr_id}->{$jid}->{dejavu}->{$this_project_name} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id}->{dejavu}->{$this_project_name};
+#				}
+#				else {
+#					$h_all_junctions_canoniques->{$chr_id}->{$jid} = $h_proj_junctions_canoniques->{$chr_id}->{$junction_id};
+#				}
+#			}	
+#		}
+#	}
+#	
+#	my $nodejavu_resume = GenBoNoSqlDejaVuJunctionsResume->new( dir => $dir, mode => "w", is_compress => 1 );
+#	insert_in_dejavu_jonctions_resume($nodejavu_resume, $h_all_junctions_canoniques);
+#	$nodejavu_resume->close();
+#	print "# INSERT in DejaVuLMDB Junctions canoniques -> DONE!\n";
+#}
 
 #sub insert_all_junctions_type {
 #	my ($pheno_name) = @_;
