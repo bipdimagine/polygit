@@ -208,7 +208,8 @@ sub insert_all_junctions {
 		elsif (-e $file_canonique_gz) {
 			open (FILE, "gunzip -c $file_canonique_gz |");
 			my $json = <FILE>;
-			$h_proj_junctions_canonique = decode_json $json;
+			eval { $h_proj_junctions_canonique = decode_json $json; };
+			if ($@) { $h_proj_junctions_canonique = {}; }
 			close (FILE);
 		}	
 		foreach my $chr_id (1..22, 'X', 'Y', 'MT') {
