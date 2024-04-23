@@ -390,6 +390,8 @@ sub init_matrices {
 
 	foreach my $patient ( @{ $self->ordered_patients } ) {
 		my $no     = $patient->getTranscriptsDude("r");
+		warn Dumper $no;
+		die();
 		my $matrix = $no->get( $transcript->id );
 		next unless $matrix;
 		my $nb = $matrix->{nb};
@@ -573,7 +575,6 @@ qq{<div class="btn   btn-xs btn-info " style="font-size:7px;min-width:30px,posit
 
 		$out .= $cgi->start_Tr();
 		my $primer = $self->transcript->getPrimer( $self->names->[$i] );
-		warn $i;
 		my $exons = $primer->getExons;
 
 		my $ename = "-";
@@ -749,7 +750,6 @@ sub control_ho {
 		}
 
 		#my $primer = $self->transcript->getPrimer( $self->names->[$i] );
-		#warn Dumper $primer->{cnv} if $debug;
 		#die() if $debug;
 	}
 	return $max;
@@ -918,11 +918,7 @@ sub control_transmission {
 
 		next if ( $score_child > 0.7 and $score_child < 1.2 and $level == 0 );
 
-		warn "\t\t--------------------->"
-		  . $score_child . " "
-		  . $self->scores_matrix()->[$i]->[$father_index] . " "
-		  . $self->scores_matrix()->[$i]->[$mother_index]
-		  if $debug;
+		
 		$nb_c++;
 		$child_t = "he";
 		$child_t = "ho" if $score_child < 0.2;
@@ -950,13 +946,7 @@ sub control_transmission {
 				}
 			}
 		}
-		warn "\t\t\t\t-+++--------------------> father : "
-		  . $father_t
-		  . " => mother "
-		  . $mother_t
-		  . " => child "
-		  . $child_t
-		  if $debug;
+		
 		if ( $child_t eq "ho" ) {
 			if ( $father_t eq "he" && $mother_t eq "he" && $child_t eq "ho" ) {
 				$recessive++;
