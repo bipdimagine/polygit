@@ -390,8 +390,6 @@ sub init_matrices {
 
 	foreach my $patient ( @{ $self->ordered_patients } ) {
 		my $no     = $patient->getTranscriptsDude("r");
-		warn Dumper $no;
-		die();
 		my $matrix = $no->get( $transcript->id );
 		next unless $matrix;
 		my $nb = $matrix->{nb};
