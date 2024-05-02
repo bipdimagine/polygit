@@ -573,7 +573,7 @@ my $dev = undef;
 $t = time;
 $| = 1;
 my $key_quality = args_quality($project);
-
+push( @$key_quality, "v1" );
 #warn $key_quality;
 # my $key_quality = args_quality($project);
 my $no_cache = $project->get_lmdb_cache_summary("r");
