@@ -573,7 +573,6 @@ my $dev = undef;
 $t = time;
 $| = 1;
 my $key_quality = args_quality($project);
-push( @$key_quality, "v1" );
 #warn $key_quality;
 # my $key_quality = args_quality($project);
 my $no_cache = $project->get_lmdb_cache_summary("r");
@@ -613,7 +612,7 @@ qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text
 #my $key_validation = args_validation($project);
 #push(@$key_quality,"muc1") if $project->getCaptures->[0]->analyse =~ /renom/i;
 $no_cache = $project->get_lmdb_cache_summary("r");
-my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."19-02-2024");
+my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."02-05-2024");
 my $htable = $no_cache->get_cache( $table_id );
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
@@ -3320,7 +3319,7 @@ sub table_patients {
 #@title = ("Fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 	my $isfam = 1;
 	unless ( $project->isFamilial() ) {
-		@title = ( "fam", "view", "Print", "Patient", "Cov", "30x");    # if ($project->isFamilial());
+		@title = ( "fam", "view", "Print", "Patient","control", "Cov", "30x");    # if ($project->isFamilial());
 		 #	@title = ("fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		$isfam = undef;
 	}
