@@ -682,6 +682,10 @@ sub check_level {
 	return $level;
 }
 
+
+
+
+
 sub print_line_patient {
 	my ( $p, $nb_row,$hash_disomy) = @_;
 
@@ -843,6 +847,71 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	}
 	
 	return $line;
+}
+
+sub column_control {
+	my($p,$line) = @_;
+		my $error =0;
+		my $iv      = "";
+		my $iverror = 0;
+		( $iv, $iverror ) = construct_identito_vigilence($p) if $p->identity_vigilance;
+		my $c1 = "";
+			my $class    = {};
+		if ( $iverror >= 2 ) {
+			my $btn_class = qq{class= "btn btn-xs btn-danger" style = "$fsize"};
+			$line->{identito} =   $cgi->td( {style=>"background-color=#E94B3C"}, qq{<button  type="button" $btn_class > $iv </button>} );
+			$error = 1;
+		}
+		elsif ( $iverror == 1 ) {
+			my $btn_class = qq{class= "btn btn-xs btn-warning" style = "$fsize"};
+			$line->{identito} =   $cgi->td( $class, qq{<button " type="button" $btn_class > $iv </button>} );
+			$error = 1;
+		}
+		else{
+				my $btn_class = qq{class= "btn btn-xs btn-success"  style = "$fsize"};
+				$line->{identito} =   $cgi->td( $class, qq{<button type="button" $btn_class >OK</button>} );
+		}
+		my $cov_sry  = $p->coverage_SRY();
+		my $sex_eval = $p->compute_sex();
+
+		# warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
+		my $color = "#009B77";
+		if ( $sex_eval ne $p->sex() && $sex_eval ne -1 ) {
+
+		   # $class->{class}= "danger";
+		   # $style_btn_name= qq{style ="background-color:#E74C3C;color:white"};
+			$c1 = "danger";
+			$color = "#DD4132";
+			$error++;
+		}
+		
+		my $c2 = $c1 . "1";
+		my $text2 =
+qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2px; "></i>}
+		  . $hsex1->{$sex_eval};
+		
+		
+				if ( $iverror == 2 ) {
+			$c1 = "danger";
+		}
+		if ( $iverror == 1 ) {
+			$c1 = "warning";
+		}
+
+		my $text3 = "<small>(" . $cov_sry . ")</small>";
+		my $text_td = qq{
+			 <table>
+  	  <tr>
+   	  <td>SRY : <span>$text2</span> $text3</td>
+   	  </tr>
+		};
+		$text_td .=qq{<tr>
+		<td> $iv</td>
+		</tr>}  if $p->identity_vigilance;
+		$text_td .= "</table>";
+		
+		$line->{$p->id} = $cgi->td( {style=>"vertical-align:middle"}, $text_td);
+		return $error;
 }
 
 sub test_disomy {
@@ -1969,8 +2038,7 @@ qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2p
 		  . $hsex1->{$sex_eval};
 		my $iv      = "";
 		my $iverror = 0;
-		( $iv, $iverror ) = construct_identito_vigilence($p)
-		  if $p->identity_vigilance;
+		( $iv, $iverror ) = construct_identito_vigilence($p) if $p->identity_vigilance;
 		if ( $iverror == 2 ) {
 			$c1 = "danger";
 			$error++;
@@ -2587,6 +2655,7 @@ sub table_patients_printer2 {
 	  my $patient ( sort { $a->name cmp $b->name } @{ $project->getPatients } )
 	{
 		$out .= $cgi->start_Tr();
+		# FAMILLY
 		$out .= $cgi->td( { style => "border: 1px solid black;" },
 			$patient->getFamily->name );
 		$out .=
@@ -3245,7 +3314,7 @@ sub table_patients {
 	my $col_hgmd = 3;
 	$col_hgmd = 2 unless $hgmd == 1;
 
-	my @title = ( "Fam", "view", "Print", "Patient", "Cov", "30x" )
+	my @title = ( "Fam", "view", "Print", "Patient","control", "Cov", "30x" )
 	  ;    # if ($project->isFamilial());
 
 #@title = ("Fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
@@ -3258,9 +3327,34 @@ sub table_patients {
 	push( @title, "MUC1" ) if ( -e $project->getVariationsDir("vntyper") . "/muc1/" );
 	$out .= $cgi->start_Tr( { style => "background-color:#1079B2;color:white" } );
 	$out .= $cgi->th({ style => "text-align: center;" }, qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(this)"></input>});
+	
+	#####################
+	# Identito Vigilence
+	#####################
+	my $control ={};
+	my $error = 0;
+	foreach my $p ( @{$project->getPatients} ) {
+		$error += column_control($p,$control);
+	}
+	my $ccolor="";
+	$ccolor="background-color:red" if $error > 0;
+	
 	foreach my $p (@title) {
+		if ($p eq "control"){
+			#https://img.icons8.com/ios/50/checked-identification-documents.png
+			#https://img.icons8.com/ios-filled/50/checked-identification-documents--v1.png
+			#<img width="32" height="32" src="https://img.icons8.com/windows/32/checked-identification-documents.png" alt="checked-identification-documents"/>
+			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control });
+		}
 		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
 	}
+	
+	
+	
+	
+	#"Control $error" );
+	
+	
 	###########
 	#Unidysomy
 	###########
@@ -3276,6 +3370,8 @@ sub table_patients {
 			$out .= $cgi->th( { style => "text-align: center;min-width:70%" }, "Unidisomy" );
 		}
 	}
+	
+	
 	
 	push( @title, "validation" );
 	$out .=
@@ -3307,9 +3403,13 @@ sub table_patients {
 		#	 if ($nb_members>1){
 
 		$out .= $cgi->td({ rowspan => $nb_members, style => "vertical-align:middle" },qq{<input id="$pname" type="checkbox" aria-label="..." onClick="selection(event,this)"></input>});
+		# nom de la famille
 		$out .= $cgi->td({ rowspan => $nb_members, style => "vertical-align:middle" },$fam->name );    # if $isfam ;
 
 		foreach my $p ( @{ $fam->getMembers } ) {
+			#######################
+			# bouton view et print
+			#######################
 			my $pp   = $p->name;
 			my $cmd  = qq{printer('$pp');};
 			my $cmd2 = qq{printer2('$pp','1');};
@@ -3322,8 +3422,14 @@ sub table_patients {
 				  . '"><i class="fa fa-print pull-left  "></i>Print</button></a>'
 
 			];
+			#######################
+			# bouton DYSOMY
+			#######################
 			$out .= $cgi->td( { style => "vertical-align:middle" }, $td );
 			my $line = print_line_patient( $p, 0,$hash_disomy );
+			
+			$line->{control} = $control->{$p->id};
+			
 			foreach my $col (@title) {
 				next unless exists $line->{$col};
 				$out .= $line->{$col};
@@ -3338,6 +3444,8 @@ sub table_patients {
 	return $out;
 
 }
+
+
 
 sub table_run_header {
 	my ($run) = @_;
