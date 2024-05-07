@@ -2049,7 +2049,18 @@ has deja_vu_public_dir => (
 		confess("\n\nERROR: path dejavu not found in genbo.cfg  ->  Die\n\n");
 	},
 );
-
+has deja_vu_public_dir_rocks => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self   = shift;
+		my $path;
+		
+		my $dir =  $self->buffer->config->{deja_vu}->{path_rocks}."/".$self->genome_version_generic . "/".$self->buffer->config->{deja_vu}->{variations} if (exists $self->buffer->config->{deja_vu}->{path});
+		return $dir if -e $dir;
+		confess("\n\nERROR: path dejavu not found in genbo.cfg  ->  Die\n\n");
+	},
+);
 has dirCytoManue => (
 	is      => 'rw',
 	lazy    => 1,
@@ -5806,6 +5817,8 @@ has in_this_run_patients => (
 	default => sub {
 		my $self = shift;
 		my $h;
+	warn "warning here a terminer ";
+	confess();
 	my $no      = $self->lite_deja_vu_projects();
 	my $res;
 	my $total = 0;
@@ -5835,6 +5848,7 @@ has in_this_run_patients => (
 
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
+	confess();
 	my $chr = $v->getChromosome()->name();
 	my $in_this_run_patients =  $self->in_this_run_patients();
 	my $no = $self->lite_deja_vu2();

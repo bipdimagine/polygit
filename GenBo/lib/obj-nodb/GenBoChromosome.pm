@@ -2211,7 +2211,7 @@ sub rocks_dejavu {
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
-	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
+	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir_rocks,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->{rocks}->{$name};
 }
 sub getDejaVuInfos {
