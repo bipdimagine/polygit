@@ -129,6 +129,11 @@ coordsJunc<-function(P)
 	coords = coords[as.numeric(coords[,"CountJun"])>=limCountJun,,drop=FALSE]	#	limCountJun=2
 	write(paste("Filtrage ",gsub(".rds", "", basename(listBedRds[P])),  " a limCountJun=", limCountJun, " :", totRawJunc, " => ", nrow(coords), "[", signif(100*((nrow(coords)-totRawJunc)/totRawJunc), digit=4), "%]", sep=""), file="")
 	
+	patient_name = gsub("_chr.*", "", listBedRds[P])
+	AllJuncPath_patient = paste(AllJuncPath, "/", patient_name, "/", sep="")
+	if(!file.exists(AllJuncPath_patient))	dir.create(AllJuncPath_patient)
+	
+	
 	if(nrow(coords)>0) saveRDS(coords, paste(AllJuncPath, "/", basename(listBedRds[P]), sep=""))
 }
 
@@ -140,7 +145,14 @@ caracterizeJuncs<-function(C)	#	patient par patient
 {
 	nom = gsub(".rds", "", gsub("AllJunctionsCounts", "AllRes", basename(listCoordsBed[C])))
 	write(paste("\t#\t", C, "/", length(listCoordsBed), "-", nom, sep=""), file="")
-
+	
+	
+	patient_name = gsub("_chr.*", "", nom)
+	
+	geneListsPath_tmp_patient = paste(geneListsPath, "/", patient_name, "/", sep="")
+	if(!file.exists(geneListsPath_tmp_patient))	dir.create(geneListsPath_tmp_patient)
+	
+	
 	bedtest = readRDS(listCoordsBed[C])
 	
 	Chr = gsub(addChr, "", gsub("_.*", "", rownames(bedtest)[1]))
@@ -158,7 +170,7 @@ caracterizeJuncs<-function(C)	#	patient par patient
 	
 	resIngene = apply(bedtest, 1, function(x) testINgene(x))
 	genesList = unique(unlist(resIngene))
-	saveRDS(genesList, paste(geneListsPath, gsub("AllJunctionsCounts", "ENSg", basename(listCoordsBed[C])), sep=""))
+	saveRDS(genesList, paste(geneListsPath_tmp_patient, gsub("AllJunctionsCounts", "ENSg", basename(listCoordsBed[C])), sep=""))
 }
 
 ###############################################################################################################
