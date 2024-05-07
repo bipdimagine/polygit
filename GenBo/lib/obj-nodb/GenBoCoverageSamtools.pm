@@ -35,11 +35,13 @@ has array => (
 		my @v = ((0) x $len);
 		my $region = $self->chromosome_name.":".$self->start."-".$self->end;
 		my $bam = $self->patient->getBamFile();
+		die() unless -e $bam;
 		#warn "$samtools depth -Q 1 $bam -r $region -Q 1 | cut -f 2-3";
 	#	my @t = `$samtools depth -Q 1 $bam -r $region -Q 1 | cut -f 2-3`;
 		my $opt = "-Q 1";
 		$opt ="" if $self->raw eq 1;
-		my @t = `$samtools depth -d 50000 $opt  $bam -r $region $opt 2>/dev/null| cut -f 2-3` ;
+		my $fa = $self->patient->project->getGenomeFasta();
+		my @t = `$samtools depth -d 50000 $opt  $bam -r $region $opt --reference $fa 2>/dev/null| cut -f 2-3` ;
 	#	warn "$samtools depth $bam -r $region";
 		chomp(@t);
 		foreach my $tt (@t ){

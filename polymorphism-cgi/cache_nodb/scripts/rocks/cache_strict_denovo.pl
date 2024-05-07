@@ -17,9 +17,11 @@ use JSON;
 use Compress::Snappy;
 use Getopt::Long;
 use Carp;
+use Bio::DB::HTS;
 use GBuffer;
 use Bit::Vector::Overload;
 use Sys::Hostname;
+
 
 my $fork = 1;
 my ($project_name, $chr_name,$annot_version);
@@ -108,8 +110,8 @@ foreach my $family (@{$project->getFamilies()}) {
 			my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
 			delete $no->{rocks};
 			foreach my $patient (@{$family->getParents()}) {
-				
-				$sam->{$patient->name} =  Bio::DB::Sam->new(-bam=>$patient->getBamFile, -fasta=>$project->getGenomeFasta());
+				warn $patient->getBamFile;
+				$sam->{$patient->name} =  Bio::DB::HTS->new(-bam=>$patient->getBamFile, -fasta=>$project->getGenomeFasta());
 			}
 			my $res;
 			$res->{run_id} = $run_id;
@@ -132,14 +134,12 @@ foreach my $family (@{$project->getFamilies()}) {
 				my $percent;
 				if ($r > 40 ) {
 					$limit = 5;
-					$percent =0.08;
+					$percent =0.05;
 				}
 				
 				
 			
 				$debug =1 if $var->name eq '17-78064045-del-187';
-				
-				#die() if $debug;
 				my $to_keep;
 				warn "coucou " if $var->gnomad_id eq '17-78064045-del-187';
 				foreach my $parent (@{$family->getParents()}) {
@@ -153,8 +153,8 @@ foreach my $family (@{$project->getFamilies()}) {
 								$to_keep = check_srpr($var,$children,$parent);	
 						}
 					elsif ($var->isVariation) {
-						$to_keep = check_substitution($sam->{$parent->name} , $var, $limit,$percent,$parent);
-						warn "keep var ".$to_keep." ".$parent->name if $debug;
+						next if ($parent->depth($var->getChromosome->name,$var->start,$var->start) < $limit);
+						$to_keep = check_substitution($sam->{$parent->name},$var->getChromosome, $var->start,$var->sequence,$percent);
 						#$hVarDeleted->{$vector_id} ++;
 					}
 					elsif ($var->isDeletion) {
@@ -162,8 +162,7 @@ foreach my $family (@{$project->getFamilies()}) {
 						my $start = $var->start() - 2;
 						my $end = $var->end() + 2;
 						my $locus = $chr.':'.$start.'-'.$end;
-						$to_keep = check_del($parent->getBamFile, $var->type_public_db(), $locus, $limit);
-						warn $to_keep if $debug;
+						$to_keep = check_del($sam->{$parent->name},$var->getChromosome, $start,$var->delete_sequence,$limit);
 					}
 					elsif ($var->isInsertion) {
 						my $chr = $var->getChromosome->fasta_name();
@@ -172,9 +171,7 @@ foreach my $family (@{$project->getFamilies()}) {
 						my $start = $var->start() - $length - 1;
 						my $end = $var->start() + $length;
 						my $locus = $chr.':'.$start.'-'.$end;
-						$limit = 1;
-						$to_keep = check_ins($parent->getBamFile, $var->type_public_db(), $locus, $limit);
-						warn $to_keep." ".$parent->name if $debug;
+						$to_keep = check_ins($sam->{$parent->name},$var->getChromosome, $start,$var->sequence,$limit);
 					}
 					else {
 						die();
@@ -268,96 +265,128 @@ sub check_cnv {
 	
 	
 }
+
 sub check_substitution {
-	my ($sam, $var, $limit,$pourcent,$parent) = @_;
-	my $debug = "19_13373567_T_G";
-	$debug = undef if $var->id ne $debug; 
-	my $chr_name = $chr->fasta_name();
-	my $start = $var->start();
-	my $end = $var->end();
-	my $all_var = $var->var_allele();
+	my ($sam,$chr,$pos, $sequence_alt,$limit) = @_;
+	
+	my ($start,$end) = get_start_end($chr,$pos,$chr->sequence($pos,$pos));
+	
+	my $res = pileup($sam,$chr,$start,$end);
 	my $count = 0;
-	my $nb_mut = 0;
-	 my $nb_reads =0;
-	my $callback = sub {
-		my ($seqid, $pos1, $pileups) = @_;
-		return if ($pos1 ne $start);
-		if (scalar(@$pileups) < 3) {
-			$nb_mut = 99;
-			return;
+	foreach my $pos (sort {$a <=> $b} keys %$res) {
+		if (exists $res->{$pos}->{$sequence_alt}){
+			my ($d) = values %{$res->{$pos}->{ref}};
+			
+			my $v =  ( $res->{$pos}->{$sequence_alt} / ($d + $res->{$pos}->{$sequence_alt}));
+			$count ++ if $v > $limit;
 		}
-		 $nb_reads = scalar(@$pileups);
-		
-		foreach my $pileup (@$pileups){
-			my $b     = $pileup->alignment;
-			my $qbase  = substr($b->qseq,$pileup->qpos,1);
-			warn $qbase." ".$all_var if $debug;
-			$nb_mut ++ if ($qbase eq $all_var);
-			last if $nb_mut/$nb_reads >= $pourcent;
-			last if ($nb_mut >= $limit);
-		}
-	};
-	
-	my $callback2 = sub {
-		my ($seqid, $pos1, $pileups) = @_;
-		return if ($pos1 ne $start);
-		if (scalar(@$pileups) < 3) {
-			$nb_mut = 99;
-			return;
-		}
-		my $nb_reads = scalar(@$pileups);
-		
-		foreach my $pileup (@$pileups){
-			my $b     = $pileup->alignment;
-			my $qbase  = substr($b->qseq,$pileup->qpos,1);
-			warn $qbase." ".$all_var;
-		}
-	};
-	$sam->fast_pileup("$chr_name:$start-$end", $callback);
-	warn $nb_mut."****" if $debug;#." ".$all_var;
-	if ($nb_reads == 0){
-		return;
 	}
-	
-	return if (($nb_mut/$nb_reads > $pourcent) or ($nb_mut >= $limit));
+	return if $count;
 	return 1;
+	
 }
 
 sub check_del {
-	my ($bam_file, $type, $locus, $limit) = @_;
-	my $cmd = $buffer->getSoftware('sambamba')." depth base $bam_file -L $locus 2>/dev/null";
-	my $res = `$cmd`;
-	my @lRes = split("\n", $res);
-	my $name_to_check = 'DEL';
-	my $col_to_check;
-	my $i = 0;
-	foreach my $name (split(' ', shift(@lRes))) {
-		if ($name eq $name_to_check) {
-			$col_to_check = $i;
-			last;
-		}
-		else { $i++; }
+	my ($sam,$chr,$pos, $sequence_alt,$limit) = @_;
+	my ($start,$end) = get_start_end($chr,$pos+1,$sequence_alt,1);
+	my ($start1,$end1) = get_start_end($chr,$pos-1,$sequence_alt,1);
+	$start = $start1 if ($start1 < $start);
+	$end = $end1 if ($end1 > $end);
+	my $res = pileup($sam,$chr,$start,$end);
+
+	my $count = 0;
+	foreach my $pos (sort {$a <=> $b} keys %$res) {
+		$count += $res->{$pos}->{del} if exists $res->{$pos}->{del};
 	}
-	foreach my $res_pos (@lRes) {
-		my @lCol = split(' ', $res_pos);
-		my $value = $lCol[$col_to_check];
-		return if ($value >= $limit)
-	}
+	return if ($count >= $limit);
 	return 1;
+	
+}
+
+
+sub pileup {
+	my ($sam,$chr,$start,$end, $locus) = @_;
+	my %res;
+	my $callback = sub {
+		my ($seqid, $pos1, $pileups) = @_;
+		return if ($pos1 < $start);
+		return if ($pos1 > $end);
+	
+		 my $nb_reads = scalar(@$pileups);
+		
+		foreach my $pileup (@$pileups){
+			
+			
+			if ($pileup->indel > 0){
+				$res{$pos1}->{ins} ++;
+			}
+			elsif ($pileup->indel < 0){
+					$res{$pos1}->{del} ++;
+			}
+			else {
+				my $b     = $pileup->alignment;
+				my $ref = $chr->sequence($pos1,$pos1);
+				my $qbase  = substr($b->qseq,$pileup->qpos,1);
+				if ($ref eq $qbase){
+					$res{$pos1}->{ref}->{$ref} ++;
+				}else {
+					$res{$pos1}->{$qbase} ++;
+				}
+			}
+		}
+	};
+	$sam->fast_pileup($chr->fasta_name.":$start-$end", $callback);
+	return \%res;
+}
+
+
+sub get_start_end {
+	my ($chromosome,$pos,$ref1,$debug) = @_;
+	my $start =$pos;
+	my $ref2 = $chromosome->sequence($start,$start);
+	do {
+		$start --;
+		$ref2 = $chromosome->sequence($start,$start);
+	} while ($ref2 eq $ref1);
+	$start ++ if $start < $pos;
+	my $end = $pos;
+	
+	$ref2 = $chromosome->sequence($end,$end);
+	
+	 do {
+		$end ++;
+		$ref2 = $chromosome->sequence($end,$end);
+	} while ($ref2 eq $ref1);
+	$end -- if $end > $pos;
+	return($start,$end);
+	
+	
 }
 
 sub check_ins {
-	my ($bam_file, $type, $locus, $limit) = @_;
-	#return 1;
-	my $cmd = $buffer->getSoftware('samtools')." mpileup $bam_file -r $locus 2>/dev/null";
-	my $res = `$cmd`;
-	my @lRes = split("\n", $res);
+	my ($sam,$chr,$pos, $sequence_alt,$limit) = @_;
+	my ($start,$end) = get_start_end($chr,$pos,$chr->sequence($pos,$pos));
+	my $res = pileup($sam,$chr,$start,$end);
 	my $count = 0;
-	foreach my $line (@lRes) {
-		my @lCol = split(' ', $line);
-		my $this_count = ($lCol[4] =~ tr/\+//);
-		$count += $this_count;
-		return if ($count >= $limit);
+	foreach my $pos (sort {$a <=> $b} keys %$res) {
+		$count += $res->{$pos}->{ins} if exists $res->{$pos}->{ins};
 	}
+	return if ($count >= $limit);
 	return 1;
+	#return 1;
+#	my $cmd = $buffer->getSoftware('samtools')." mpileup $bam_file -r $locus 2>/dev/null";
+#	warn $cmd;
+#	die($locus);
+#	my $res = `$cmd`;
+#	my @lRes = split("\n", $res);
+#	warn Dumper @lRes;
+#	my $count = 0;
+#	foreach my $line (@lRes) {
+#		my @lCol = split(' ', $line);
+#		
+#		my $this_count = ($lCol[4] =~ tr/\+//);
+#		$count += $this_count;
+#		return if ($count >= $limit);
+#	}
+#	return 1;
 }

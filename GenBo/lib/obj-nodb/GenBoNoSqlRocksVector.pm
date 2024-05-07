@@ -162,6 +162,15 @@ sub put_batch_vector_chromosome {
 	$self->vector_type_chromosome->{$type} = 1;
 	$self->put_batch($self->id_global_chromosome($type),$v);
 }
+sub prepare_vector {
+	my ($self,$types) = @_;
+	my $ids = [];
+	foreach my $t (@$types) {
+		push(@$ids,$self->id_global_chromosome($t));
+	}
+	 $self->prepare($ids);
+}
+
 
 sub get_vector_chromosome {
 	my ($self,$type) =@_;
@@ -169,7 +178,14 @@ sub get_vector_chromosome {
 		return Bit::Vector->new($self->size);
 	}
 	die($type."\n".Dumper $self->vector_type_chromosome) unless exists $self->vector_type_chromosome->{$type};
-	my $v = $self->rocks->get($self->id_global_chromosome($type));
+	my $v;
+	my $id = $self->id_global_chromosome($type);
+	if (exists $self->{buffer}->{$id} ){
+		$v =  $self->{buffer}->{$id};
+	}
+	else {
+		$v = $self->rocks->get($id);
+	}
 	confess($type." ".$self->chromosome) unless $v;
 	return $self->decode($v);
 }

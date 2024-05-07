@@ -1046,11 +1046,7 @@ sub myflushobjects {
 			unless (exists  $self->{objects}->{$type}->{$id}){
 				if ($type =~ /gene/ or $type =~ /transcript/ or  $type =~/protein/ or $type =~ /exon/ or $type  =~ /intron/) {
 					
-					my $obj = $self->lmdbGenBo->get( $id );
-					unless ($obj) {
-						my $syno =  $self->liteAnnotations->get("synonyms", $id);
-						$obj = $self->lmdbGenBo->get( $syno );
-					}
+					my $obj = $self->rocksGenBo->genbo( $id );
 					#cas avec des transcript id sans _ impossible a retrouver
 					confess($id." ".$type) unless $obj;
 					bless $obj , 'GenBoGeneCache' if ($type eq "genes");

@@ -36,6 +36,12 @@ default => sub {
 #		die();
 #		return  $self->SUPER::rocks();
 #}
+has uid =>(
+	is		=> 'ro',
+default => sub {
+		return time.rand(time);
+}
+);
 
 has sereal_encoder => (
 	is      => 'rw',
@@ -160,7 +166,18 @@ sub cadd_score {
 	 return undef unless $v;
 	 return $v->{cadd_score};
 }
-
+sub pli {
+	my ($self,$id) = @_;
+	 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));
+	 return undef unless $v;
+	 return $v->{pli};
+}
+sub loeuf {
+	my ($self,$id) = @_;
+	 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));
+	 return undef unless $v;
+	 return $v->{loeuf};
+}
 sub polyphen_score {
 	my ($self,$id,$pos,$aa) = @_;
 	my $hash = $self->prediction_score($id,$pos,$aa);
@@ -173,6 +190,7 @@ sub alphamissense_score {
 	my $array = $self->get($enst);
 	return "-" unless $array;
 	my $pos_aa_array = $self->hash_description->{$aa};
+	return "-" unless $pos_aa_array;
 	return $array->[$pos]->[$pos_aa_array];
 }
 
@@ -201,23 +219,75 @@ sub clinvar {
 	return $res;
 }
 
+sub hgmd {
+	my ($self,$rocksid) = @_;
+	#warn $self->return_genomic_rocks_id_from_gnomad_id($id);
+	my $array = $self->get($rocksid);
+	return unless $array;
+	return $array;
+	my $res;
+	my $i=0;
+	foreach my $k (@{$self->description}){
+		my $v = shift(@$array);
+		if ($k eq "clinvar_id" or $k eq "score"){
+			$res->{$k} =  $v;
+			
+		}
+		elsif ($k eq "genes" ){
+			foreach my $g (@$v){
+				$res->{$k}->{$self->get_text_dictionary($g) } ++;
+			}
+		}
+		else {
+		$res->{$k} = $self->get_text_dictionary($v);
+		}
+	}
+	return $res;
+}
+
+sub synonym {
+	my ($self,$rocksid) = @_;
+	my $syno = $self->get_raw($rocksid);
+	return $syno;
+}
+sub genbo {
+	my ($self,$rocksid) = @_;
+	my $obj = $self->get("!".$rocksid);
+	return $obj if $obj;
+		my $syno = $self->synonym($rocksid);
+		$obj = $self->get("!".$syno);
+		return $obj if $obj;
+		if    ( $rocksid =~ /_X/ ) { $rocksid =~ s/_X/_Y/; }
+		elsif ( $rocksid =~ /_Y/ ) { $rocksid =~ s/_Y/_X/; }
+		
+	$obj = $self->get("!".$rocksid);	
+	return $obj;
+}
+
+
+has AA =>(
+	is		=> 'ro',
+default => sub {
+		my $self = shift;
+		my %h ;
+		my $cpt = 0;
+		my @aas = qw(A C D E F G H I K L M N P Q R S T V W Y);
+		for (my $i=0 ; $i<@aas;$i++){
+			$h{$aas[$i]} = $i;
+		}
+		return \%h;
+}
+);
 
 sub prediction_score {
-	my ($self,$id,$pos,$aa) = @_;
-	$id = $id."!".$pos;
-	#warn $self->get_raw($id);
-	#next;
-	my $vraw = $self->get_raw($id);
-	#warn $id." ".$vraw;
-	#die();
+	my ($self,$pid,$pos,$aa) = @_;
+	my $id = $pid."!".$pos;
+	
+	my $vraw = $self->get($id);
 	return  {sift=>"-",polyphen=>"-"} unless $vraw;
-	 my $key1 = "polyphen!".$aa;
-	 my $key2 = "sift!".$aa;
-	 my $pos1 = $self->hash_description->{$key1};
-	 my $pos2 = $self->hash_description->{$key2};
-	 my @t = unpack($self->pack,$vraw);
-	 
-	 return ({sift=>$t[$pos2]*$self->factor->[$pos2],polyphen=>$t[$pos1]*$self->factor->[$pos1]*0.1});
+	my $i = $self->AA->{$aa};
+	return ({sift=>$vraw->[0]->[$i]*0.001,polyphen=>$vraw->[1]->[$i]*0.001});
+
 
 }
 sub sift_score {

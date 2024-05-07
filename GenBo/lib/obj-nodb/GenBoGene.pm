@@ -29,17 +29,46 @@ has ensg => (
 		return $ensg;
 	},
 );
-
-sub external_name {
-	my ($self) = @_;
-	return uc($self->{external_name}); 
-}	
 #has external_name => (
 #	is		=> 'ro',
-#	#required=> 1,
+#	lazy    => 1,
+#	default => sub {
+#	return "-";
+#	},
 #);
 
+has external_name => (
+	is		=> 'ro',
+	required=> 1,
+);
 
+
+
+
+sub getTanscriptsAnnotations {
+	my ($self,$start,$end) = @_;
+	my $h ={};
+	my $res = $self->annotations_tree->fetch($start,$end+1);
+	unless (@$res){
+
+		my $nearest = $self->annotations_tree->fetch_nearest_up($end);
+		unless ($nearest){
+			$nearest = $self->annotations_tree->fetch_nearest_down($start);
+		} 
+		$res=[$nearest];
+	}
+	unless (@$res) {
+		die($self->id." ".$self->name." ".$start." ".$end);
+	}
+	my $bug;
+	foreach my $r  (@$res){
+	
+		$bug=1 unless $r->[0];
+		push(@{$h->{$r->[0]}},$r->[1]);
+	}
+	confess() if $bug;
+	return $h;
+}
 has strand => (
 	is		=> 'ro',
 	required=> 1,
@@ -63,7 +92,7 @@ has pLI => (
 	default => sub { 
 		my $self = shift;
 		return '-' if not $self->getProject->is_human_genome();
-		my $z = $self->project->lmdbPLI->get($self->name());
+		my $z = $self->project->rockspLI->pli($self->external_name());
 		return "-" unless $z;
 		 return $z;
 		 },
@@ -113,69 +142,22 @@ has is_HGMD_DM => (
 );
 
 
-	
- 
-has annotations_tree => (
+has main_transcripts => (
 	is		=> 'ro',
 	lazy	=> 1,
 	default => sub {
-		my $self = shift;
-		return $self->project->liteIntervalTree->get("functional_annotations",$self->id);
-		
-		#return  $self->project->liteIntspan->get("intspan_genes",$self->name);
-	}
+		return [];
+	},
 );
+	
+ 
+
 
 
 sub getMainTranscripts{
 	my ($self) = @_;
-#	if ($self->project->isDiagnostic){
-#		my (@t) = grep {$_->getGene->id eq $self->id}  @{$self->project->getListGenBoTranscripts()};
-#		return \@t if @t;
-#	}
-	my $trs = $self->project->lmdbMainTranscripts->get($self->id);
-	return $self->project->myflushobjects($trs,"transcripts");
+	return $self->project->myflushobjects($self->main_transcripts,"transcripts");
 	
-	
-	
-}
-
-###### SET OBJECTS #####
-sub getTanscriptsAnnotations {
-	my ($self,$start,$end) = @_;
-	my $h ={};
-	my $res = $self->annotations_tree->fetch($start,$end+1);
-	unless (@$res){
-#		# TODO: cas des genes avec aucun transcript (exemple: NGS2019_2365 ENSG00000215791_1 -> AL645728.2 0 transcript et 1 sur Ensembl mais SANS Protein)
-#		if (scalar(@{$self->getTranscripts()}) == 0) {
-#			return $h;
-#		}
-#		# TODO: cas gene avec des transcripts mais aucun avec une protein
-#		# TODO: exemple NGS2015_0794, gene RP11-33B1.1, ensembl -> http://grch37.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000245958;r=4:120375946-120473180
-#		my $nbProt = 0;
-#		foreach my $tr (@{$self->getTranscripts()}) {
-#			$nbProt++ if ($tr->getProtein());
-#		}
-#		if ($nbProt == 0) {
-#			return $h;
-#		}
-		my $nearest = $self->annotations_tree->fetch_nearest_up($end);
-		unless ($nearest){
-			$nearest = $self->annotations_tree->fetch_nearest_down($start);
-		} 
-		$res=[$nearest];
-	}
-	unless (@$res) {
-		die($self->id." ".$self->name." ".$start." ".$end);
-	}
-	my $bug;
-	foreach my $r  (@$res){
-	
-		$bug=1 unless $r->[0];
-		push(@{$h->{$r->[0]}},$r->[1]);
-	}
-	confess() if $bug;
-	return $h;
 }
 
 

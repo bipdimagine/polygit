@@ -96,6 +96,14 @@ sub getVectorOrigin {
 	return $v1;
 }
 
+sub getNewVector {
+	my ($self) = @_;
+	my $size = $self->size_vector();
+	
+	$size = 0 unless $size;
+	my $v1 = Bit::Vector->new($size);
+	return $v1;
+}
 sub intersection {
 	my ($self,$vector1)=@_;
 	confess();
@@ -389,6 +397,7 @@ has size_vector => (
 	default => sub {
 		my $self = shift;
 		if ($self->project->isRocks){
+			
 			return $self->rocks_vector("r")->size;
 		}
 		my $no_categories = $self->get_lmdb_categories("r");
@@ -950,16 +959,6 @@ sub getHashForIntergenic {
 	return $hash;
 }
 
-# methode qui renvoie un hash d'informations pour un vrai gene
-sub getHashGeneAnnot {
-	my ($self, $id) = @_;
-	my $selfEnsemblId = $self->getGeneEnsemblId($id);
-	unless ($selfEnsemblId) {
-		warn $selfEnsemblId;
-		confess();
-	}
-	return $self->project->liteAnnotations->get("annotations", $selfEnsemblId);
-}
 
 # reecupere un vector (de meme taille que le chromosome) pour un gene donne
 sub get_variants_from_this_gene {

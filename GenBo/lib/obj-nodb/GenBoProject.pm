@@ -648,7 +648,8 @@ has rocks_cache_dir => (
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
 	my $name= "";
-	$name = "/data-beegfs/polycache/rocks/".$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	$name = "/tmp";
+	$name = "/data-isilon/polycache/rocks/".$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
 	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
 	$name .= "/".$self->name();
 	return $name;
@@ -690,10 +691,10 @@ sub rocks_directory {
 sub rocksdb {
 	my($self,$db) = @_;
 	confess unless $db;
-	return $self->{rocksdb}->{$db} if exists $self->{rocksdb}->{$db};
+	return $self->{rocks}->{$db} if exists $self->{rocks}->{$db};
 	my $dir = $self->buffer->get_index_database_directory($db);
-	$self->{rocksdb}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$db);
-	return $self->{rocksdb}->{$db};
+	$self->{rocks}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$db);
+	return $self->{rocks}->{$db};
 }
 
 has lmdb_cache_variations_dir => (
@@ -1516,11 +1517,9 @@ sub get_gencode_directory {
 	
 	my $database = "gencode";
 	$version = $self->gencode_version unless $version;
-	return $self->{directory}->{$version}->{$database}
-	  if exists $self->{directory}->{$version}->{$database};
+	return $self->{directory}->{$version}->{$database} if exists $self->{directory}->{$version}->{$database};
 	confess() unless exists $self->buffer->gencode->{$version}->{directory};
-	$self->{directory}->{$version}->{$database} =
-		$self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
+	$self->{directory}->{$version}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
 	confess( "score:$database " . $self->{directory}->{$version}->{$database} )
 	  unless -e $self->{directory}->{$version}->{$database};
 
@@ -1529,12 +1528,23 @@ sub get_gencode_directory {
 	return $self->{directory}->{$version}->{$database};
 }
 
+
+
+
 sub get_public_data_directory {
 	my ( $self, $database, $version ) = @_;
 	return $self->{directory}->{$database} if exists $self->{directory}->{$database} ;
 	$version = $self->public_database_version unless $version;
-	$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
-	confess( "public data :$database " . $self->{directory}->{$database} )
+	if (exists $self->buffer->public_data->{$version}->{$database}->{config}->{semantic}){
+		
+		$self->{directory}->{$database} = $self->buffer->config->{public_data}->{root}."repository/semantic/".$self->buffer->public_data->{$version}->{$database}->{config}->{directory};
+	}
+	else {
+	
+		$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
+	}
+	confess( "public data :$database " . $self->{directory}->{$database}.Dumper ($self->buffer->public_data->{$version}->{$database}->{config}) )
+	
 	  unless -e $self->{directory}->{$database};
 	return $self->{directory}->{$database};
 }
@@ -1573,6 +1583,9 @@ sub get_public_data_description {
 
 sub get_public_data_version {
 	my ( $self, $database, $version ) = @_;
+	unless($version){
+		$version = $self->public_database_version unless $version;
+	}
 	return $self->get_public_data_description( $database, $version )->{version};
 }
 
@@ -1595,22 +1608,7 @@ has lmdbHPO_genes_to_phenotypes => (
 	}
 );
 
-has lmdbPLI => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return GenBoNoSqlLmdb->new(
-			name        => "pLI",
-			dir         => $self->get_public_data_directory("pLI"),
-			mode        => "r",
-			is_compress => 0,
-			vmtouch=>$self->buffer->vmtouch
-		);
 
-#	return GenBoNoSqlLmdb->new(name=>"pLI",dir=>$sqliteDir,mode=>"r",is_compress=>1);
-	}
-);
 
 has lmdbpolyScore => (
 	is      => 'rw',
@@ -1702,34 +1700,23 @@ has lmdbPartialTranscripts => (
 	}
 );
 
-has rocksPartialTranscripts => (
-	is      => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $no = GenBoNoSqlRocks->new(
+
+sub rocksPartialTranscripts{
+	my $self = @_;
+	return $self->{rocks}->{partial} if exists $self->{rocks}->{partial};
+	$self->{rocks}->{partial} = GenBoNoSqlRocks->new(
 			dir         => $self->getRockPartialTranscriptDir(),
 			mode        => 'r',
 			is_index    => 1,
 			name        => 'partial_transcripts',
 			is_compress => 1,
 		);	
-		return unless $no->exists_rocks();
-		return $no;
-	}
-);
+		return $self->{rocks}->{partial};
+}
 
-has litePredictionMatrix => (
-	is      => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return GenBoNoSql->new(
-			dir  => $self->get_public_data_directory("prediction_matrix"),
-			mode => "r"
-		);
-	}
-);
+
+
+
 
 has annotation_version_history => (
 	is      => 'rw',
@@ -2056,11 +2043,10 @@ has deja_vu_public_dir => (
 	default => sub {
 		my $self   = shift;
 		my $path;
-		return $self->buffer->config->{deja_vu}->{path} if (exists $self->buffer->config->{deja_vu}->{path});
+		
+		my $dir =  $self->buffer->config->{deja_vu}->{path}."/".$self->genome_version_generic . "/".$self->buffer->config->{deja_vu}->{variations} if (exists $self->buffer->config->{deja_vu}->{path});
+		return $dir if -e $dir;
 		confess("\n\nERROR: path dejavu not found in genbo.cfg  ->  Die\n\n");
-#		my $dir    = $self->dirGenomeGeneric . "/";
-#		my $extend = $self->buffer->config->{deja_vu}->{root};
-#		return $dir . $extend;
 	},
 );
 
@@ -3433,7 +3419,8 @@ sub newGene {
 	my ( $self, $id ) = @_;
 	return $self->{objects}->{genes}->{$id} if (exists $self->{objects}->{genes}->{$id});
 	$self->getChromosomes();
-	my $id1 = $self->getGenBoId($id);
+	my $id1 = $self->rocksGenBo->synonym($id);
+	#my $id1 = $self->getGenBoId($id);
 	return undef unless $id1;
 	return $self->myflushobjects( { $id1 => undef }, "genes" )->[0];
 
@@ -3635,25 +3622,7 @@ sub myflushobjects {
 				or $type eq 'exons'
 				or $type eq 'introns' )
 			{
-
-				my $obj = $self->lmdbGenBo->get($id);
-				unless ($obj) {
-					if    ( $id =~ /_X/ ) { $id =~ s/_X/_Y/; }
-					elsif ( $id =~ /_Y/ ) { $id =~ s/_Y/_X/; }
-					$obj = $self->lmdbGenBo->get(
-						$self->liteAnnotations->get( "synonyms", $id ) );
-				}
-				unless ($obj) {
-					my $sid = $self->getGenBoId($id);
-					confess( $type . " " . $sid ) unless ($sid);
-					$obj = $self->lmdbGenBo->get($id);
-					$id  = $sid;
-				}
-				unless ($obj) {
-					my @t = split( "_", $id );
-					$id  = $t[0] . "_" . $t[-1];
-					$obj = $self->lmdbGenBo->get($id);
-				}
+				my $obj = $self->rocksGenBo->genbo($id);
 				confess( $id . " " . $type ) unless $obj;
 				$obj->{project}                  = $self;
 				$obj->{buffer}                   = $self->buffer;
@@ -4619,23 +4588,58 @@ sub transcriptsCoverageLite {
 	return $self->{transcriptsCoverageSqlite};
 }
 
-has lmdbGenBo => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self      = shift;
-		my $sqliteDir = $self->get_gencode_directory;
-		die( "you don t have the directory : " . $sqliteDir )
-		  unless -e $sqliteDir;
-		return GenBoNoSqlLmdb->new(
+#has lmdbGenBo => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self      = shift;
+#		my $sqliteDir = $self->get_gencode_directory;
+#		die( "you don t have the directory : " . $sqliteDir )
+#		  unless -e $sqliteDir;
+#		return GenBoNoSqlLmdb->new(
+#			name        => "genbo",
+#			dir         => $sqliteDir,
+#			mode        => "r",
+#			is_compress => 1,
+#			vmtouch=>$self->buffer->vmtouch
+#		);
+#	}
+#);
+sub rocksGenBo {
+	my ( $self, $mode ) = @_;
+	$mode = "r" unless $mode;
+	my $name = "genbo-".$mode.$$;
+	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
+	
+	$self->{rocks}->{$name}  = GenBoNoSqlRocksAnnotation->new(
 			name        => "genbo",
-			dir         => $sqliteDir,
+			dir         => $self->get_gencode_directory,
 			mode        => "r",
-			is_compress => 1,
-			vmtouch=>$self->buffer->vmtouch
 		);
-	}
-);
+		return $self->{rocks}->{$name};
+	
+}
+sub random {
+	my ( $self ) = @_;
+	return $self->{rocks}->{random} if exists $self->{rocks}->{random};
+	$self->{rocks}->{random} = rand(time);
+	return $self->{rocks}->{random};
+}
+sub rockspLI {
+	my ( $self, $mode ) = @_;
+	$mode = "r" unless $mode;
+	my $name = "pli-".$mode.$self->random();
+	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
+	$self->{rocks}->{$name} = GenBoNoSqlRocksAnnotation->new(
+			name        => "pLI",
+			dir         => $self->get_public_data_directory("pLI"),
+			mode        => "r",
+			debug		=> $name,
+		);
+		
+		return $self->{rocks}->{$name};
+}
+
 
 has lmdbMainTranscripts => (
 	is      => 'rw',
@@ -4663,8 +4667,7 @@ has liteIntervalTree => (
 	default => sub {
 		my $self      = shift;
 		my $sqliteDir = $self->get_gencode_directory;
-		die( "you don t have the directory : " . $sqliteDir )
-		  unless -e $sqliteDir;
+		die( "you don t have the directory : " . $sqliteDir ) unless -e $sqliteDir;
 		return GenBoNoSqlIntervalTree->new( dir => $sqliteDir, mode => "r" )
 		  ;    #->new(dir=>$sqliteDir,mode=>"r");
 	}
@@ -4923,36 +4926,28 @@ sub getEnsgIDs {
 
 sub if_exists_liteObject {
 	my ( $self, $id, $type ) = @_;
-	foreach
-	  my $text ( @{ $self->liteAnnotations->get_text( "annotations", $id ) } )
-	{
-		if ($type) {
-			my @lFields = split( ' ', $text );
-			foreach my $field (@lFields) {
-				if ( $field eq $type ) { return 1; }
-			}
-		}
-		else { return 1; }
-	}
-	return;
+	confess();
+#	foreach
+#	  my $text ( @{ $self->liteAnnotations->get_text( "annotations", $id ) } )
+#	{
+#		if ($type) {
+#			my @lFields = split( ' ', $text );
+#			foreach my $field (@lFields) {
+#				if ( $field eq $type ) { return 1; }
+#			}
+#		}
+#		else { return 1; }
+#	}
+#	return;
 }
 
 sub liteObject {
 	my ( $self, $id, $type ) = @_;
-
-	#confess();
+	confess();
 	return $self->liteAnnotations->get( "annotations", $id );
 }
 
-sub liteObjectId {
-	my ( $self, $id, $type ) = @_;
-	my $text = $self->liteAnnotations->get_text( "annotations", $id );
-	confess() if scalar(@$text) > 1;
-	my @a   = split( " ", $text->[0] );
-	my $id2 = $a[-1];
-	$id2 =~ s/genboid://;
-	return $id2;
-}
+
 
 sub getGenBoId {
 	my ( $self, $geneId ) = @_;
@@ -5302,6 +5297,8 @@ sub getMaskPrediction {
 	confess("$value") unless exists $maskPrediction->{$value};
 	return $maskPrediction->{$value};
 }
+
+
 
 sub getPredictions {
 	my ( $self, $chr, $prot_id, $pos, $aa ) = @_;
@@ -5724,24 +5721,24 @@ sub purge_memory_reference {
 
 ##### DEJA  VU KYOTO
 
-has deja_vu_positions_file => (
-	is      => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		return $self->deja_vu_public_dir . "/positions.tab.gz";
-	}
-);
+#has deja_vu_positions_file => (
+#	is      => 'ro',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		return $self->deja_vu_public_dir . "/positions.tab.gz";
+#	}
+#);
+
 
 has lite_deja_vu_projects => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $no   = GenBoNoSql->new(
-			dir  => $self->deja_vu_lite_dir.'/projects/',
-			mode => "r"
-		);
+		my $dir  = $self->deja_vu_lite_dir_projects;
+		
+		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 		return $no;
 	}
 );
@@ -5809,7 +5806,7 @@ has in_this_run_patients => (
 	default => sub {
 		my $self = shift;
 		my $h;
-	my $no      = $self->lite_deja_vu2();
+	my $no      = $self->lite_deja_vu_projects();
 	my $res;
 	my $total = 0;
 	foreach my $run (@{$self->getRuns}){
@@ -5835,6 +5832,7 @@ has in_this_run_patients => (
 		return $res;
 	},
 );
+
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
 	my $chr = $v->getChromosome()->name();
@@ -5975,6 +5973,7 @@ sub getDejaVuInfosForDiag {
 
 sub getDejaVuThisProject {
 	my ( $self, $id ) = @_;
+	confess();
 	my ( $chr, @t ) = split( "_", $id );
 	unless ( exists $self->{dejavu_this}->{$chr} ) {
 
@@ -6037,10 +6036,20 @@ has deja_vu_lite_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-
+		confess();
 		#return "/data-isilon/dejavu/";
 		my $dir = $self->deja_vu_public_dir();
 		return $self->makedir($dir);
+
+	},
+);
+has deja_vu_lite_dir_projects => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir =  $self->buffer->config->{deja_vu}->{path}."/projects/";
+		return $dir;
 
 	},
 );
@@ -6104,13 +6113,13 @@ has lite_deja_vu2 => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+		confess();
 		my $dir  = $self->deja_vu_lite_dir;
 		
 		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 		return $no;
 	}
 );
-
 
 sub convertRsNameToIntervalPositions {
 	my ( $self, $rsName ) = @_;
@@ -6409,6 +6418,10 @@ sub disconnect {
 	delete $self->{transcriptsCoverageSqlite};
 	delete $self->{lmdbGenBo};
 	delete $self->{lmdbMainTranscripts};
+	#foreach my $c (values %{$self->{rocks}}){
+	#	$c->close() if $c;
+	#}
+	delete $self->{rocks};
 }
 sub preload_patients {
 	my $self = shift;

@@ -12,6 +12,7 @@ use GenBoNoSqlLmdbPipeline;
 use GenBoNoSqlRocksAnnotation;
 use GenBoNoSqlRocksVariation;
 use GenBoNoSqlRocksVector;
+use GenBoNoSqlRocksGenome;
 use GenBoNoSqlRocksPolyviewerVariant;
 use Carp;
 
@@ -1355,6 +1356,7 @@ sub _get_lmdb {
 
 sub lmdb_hash_variants {
 	my ( $self, $mode ) = @_;
+	confess();
 	if ( $mode eq "close" ) {
 		$self->{lmdb}->{hash_variant}->close
 		  if exists $self->{lmdb}->{hash_variant};
@@ -1431,11 +1433,17 @@ sub lmdb_polyviewer_variants {
 sub rocks_vector {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
-	my $name = "vector-".$mode.$$;
-	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
-	 $self->{rocks}->{$name} = GenBoNoSqlRocksVector->new(chromosome=>$self->name,dir=>$self->project->rocks_directory("vector"),mode=>$mode,name=>$self->name);
-	 return $self->{rocks}->{$name};
+	my $name = $self->name."-vector-".$mode.$$;
+	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
+	 $self->project->{rocks}->{$name} = $self->flush_rocks_vector($mode);
+	 return $self->project->{rocks}->{$name};
 
+}
+
+sub flush_rocks_vector {
+	my ( $self, $mode ) = @_;
+	$mode = "r" unless $mode;
+	return GenBoNoSqlRocksVector->new(chromosome=>$self->name,dir=>$self->project->rocks_directory("vector"),mode=>$mode,name=>$self->name);
 }
 
 #------ lmdb 
@@ -1603,32 +1611,32 @@ sub lmdb_variations {
 	$self->{lmdb}->{variations} = $self->get_lmdb_variations($mode);
 	
 }
-sub get_lmdb_annex {
-	my ( $self, $mode ) = @_;
-	return $self->{lmdb}->{annex} if exists $self->{lmdb}->{annex};
-	my $dir_out = $self->project->lmdb_cache_variations_dir();
-	my $no2 = GenBoNoSqlLmdb->new(
-			dir         => $dir_out,
-			mode        => $mode,
-			name        => $self->name.".annex",
-			is_compress => 3,
-			is_integer=>1,
-			vmtouch     => $self->buffer->vmtouch
-			);
-	$self->{lmdb}->{annex} = $no2;
-	return $no2;
-}
-sub get_old_lmdb_variations {
-	my ($self,$mode,$dir_out) = @_;
-		return  GenBoNoSqlLmdb->new(
-			dir         => $self->project->lmdb_cache_variations_dir(),
-			mode        => $mode,
-			is_index    => 1,
-			name        => $self->name,
-			is_compress => 1,
-			vmtouch     => $self->buffer->vmtouch
-			);
-}
+#sub get_lmdb_annex {
+#	my ( $self, $mode ) = @_;
+#	return $self->{lmdb}->{annex} if exists $self->{lmdb}->{annex};
+#	my $dir_out = $self->project->lmdb_cache_variations_dir();
+#	my $no2 = GenBoNoSqlLmdb->new(
+#			dir         => $dir_out,
+#			mode        => $mode,
+#			name        => $self->name.".annex",
+#			is_compress => 3,
+#			is_integer=>1,
+#			vmtouch     => $self->buffer->vmtouch
+#			);
+#	$self->{lmdb}->{annex} = $no2;
+#	return $no2;
+#}
+#sub get_old_lmdb_variations {
+#	my ($self,$mode,$dir_out) = @_;
+#		return  GenBoNoSqlLmdb->new(
+#			dir         => $self->project->lmdb_cache_variations_dir(),
+#			mode        => $mode,
+#			is_index    => 1,
+#			name        => $self->name,
+#			is_compress => 1,
+#			vmtouch     => $self->buffer->vmtouch
+#			);
+#}
 
 
 sub get_lmdb_junctions_canoniques {
@@ -1652,40 +1660,40 @@ sub get_lmdb_junctions_canoniques {
 
 
 
-sub get_lmdb_variations {
-	my ( $self, $modefull,$rocks) = @_;
-	my $hindex = "variations_";
-	$hindex = "variations_".$modefull if ($modefull);
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	$modefull = "r" unless $modefull;
-	my ( $mode, $pipeline ) = split( '', $modefull );
-	my $dir_out = $self->project->lmdb_cache_variations_dir();
-
-	
-	
-	if ($mode eq "c"){
-		if ($rocks) {
-			my $dir_out_rocks = $self->project->rocks_cache_dir;
-			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
-			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
-
-		}
-		else {
-			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
-		}
-	}
-	else {
-		#if ( -e  $dir_out_rocks){
-		#		$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
-		#}
-		#else {
-			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
-		#}
-	}
-	
-	return $self->{lmdb}->{$hindex};
-}
-
+#sub get_lmdb_variations {
+#	my ( $self, $modefull,$rocks) = @_;
+#	my $hindex = "variations_";
+#	$hindex = "variations_".$modefull if ($modefull);
+#	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+#	$modefull = "r" unless $modefull;
+#	my ( $mode, $pipeline ) = split( '', $modefull );
+#	my $dir_out = $self->project->lmdb_cache_variations_dir();
+#
+#	
+#	
+#	if ($mode eq "c"){
+#		if ($rocks) {
+#			my $dir_out_rocks = $self->project->rocks_cache_dir;
+#			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
+#			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
+#
+#		}
+#		else {
+#			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
+#		}
+#	}
+#	else {
+#		#if ( -e  $dir_out_rocks){
+#		#		$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
+#		#}
+#		#else {
+#			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
+#		#}
+#	}
+#	
+#	return $self->{lmdb}->{$hindex};
+#}
+#
 
 
 sub get_rocks_variations {
@@ -1732,71 +1740,76 @@ sub get_lmdb_cnvs {
 
 
 
-sub get_lmdb_patients_variations {
-	my ( $self, $mode, $patient ) = @_;
-	confess(
-"\n\nERROR: need GenBoPatient object in argument for GenBoChromosome->get_lmdb_patients_variations method. Die...\n\n"
-	) unless ($patient);
-	my $hindex = "patients_variations".$patient->id;
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	$mode = "r" unless $mode;
-	my $dir_out = $self->project->lmdb_cache_patients_dir();
-	my $no2     = GenBoNoSqlLmdb->new(
-		dir     => $dir_out,
-		mode    => $mode,
-		name    => $self->name . "_" . $patient->name,
-		vmtouch => $self->buffer->vmtouch
-	);
-	$self->{lmdb}->{$hindex} = $no2;
-	return $no2;
-}
+#sub get_lmdb_patients_variations {
+#	my ( $self, $mode, $patient ) = @_;
+#	confess(
+#"\n\nERROR: need GenBoPatient object in argument for GenBoChromosome->get_lmdb_patients_variations method. Die...\n\n"
+#	) unless ($patient);
+#	my $hindex = "patients_variations".$patient->id;
+#	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+#	$mode = "r" unless $mode;
+#	my $dir_out = $self->project->lmdb_cache_patients_dir();
+#	my $no2     = GenBoNoSqlLmdb->new(
+#		dir     => $dir_out,
+#		mode    => $mode,
+#		name    => $self->name . "_" . $patient->name,
+#		vmtouch => $self->buffer->vmtouch
+#	);
+#	$self->{lmdb}->{$hindex} = $no2;
+#	return $no2;
+#}
 
 
-sub get_lmdb_categories {
-	my ( $self, $mode ) = @_;
-	return $self->_get_lmdb( $mode, "categories_annotations" );
-}
+#sub get_lmdb_categories {
+#	my ( $self, $mode ) = @_;
+#	return $self->_get_lmdb( $mode, "categories_annotations" );
+#}
+#
+#sub get_lmdb_genes {
+#	my ( $self, $mode ) = @_;
+#	return $self->_get_lmdb( $mode, "genes" );
+#}
+#
+#sub get_lmdb_calling_methods {
+#	my ( $self, $mode ) = @_;
+#	return $self->_get_lmdb( $mode, "calling_methods" );
+#}
+#
 
-sub get_lmdb_genes {
-	my ( $self, $mode ) = @_;
-	return $self->_get_lmdb( $mode, "genes" );
-}
-
-sub get_lmdb_calling_methods {
-	my ( $self, $mode ) = @_;
-	return $self->_get_lmdb( $mode, "calling_methods" );
-}
-
-
-sub lmdb_score_impact {
-	my ( $self, $mode ) = @_;
-	my $buffer = $self->buffer();
-	$mode = "r" unless $mode;
-	#confess() unless $mode;
-	#$mode ="" unless $mode;
-
-	my $hindex = "lmdb_score_impact_".$mode;
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-		
-	my $dir_out = $self->project->dir_lmdb_score_impact();
-	$self->{lmdb}->{$hindex} =
-	  GenBoNoSqlLmdb->new(
-		dir         => $dir_out,
-		mode        => $mode,
-		name        => $self->name,
-		is_compress => 1,
-		vmtouch     => $self->buffer->vmtouch
-	  );    #GenBoNoSql->new(dir=>$output,mode=>$param);
-	 # $self->{lmdb}->{$hindex}->{vmtouch} = 1;
-	$self->{lmdb}->{$hindex}->clean_files() if ( $mode eq "c" );
-	return $self->{lmdb}->{$hindex};
-}
+#sub lmdb_score_impact {
+#	my ( $self, $mode ) = @_;
+#	my $buffer = $self->buffer();
+#	$mode = "r" unless $mode;
+#	#confess() unless $mode;
+#	#$mode ="" unless $mode;
+#
+#	my $hindex = "lmdb_score_impact_".$mode;
+#	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+#		
+#	my $dir_out = $self->project->dir_lmdb_score_impact();
+#	$self->{lmdb}->{$hindex} =
+#	  GenBoNoSqlLmdb->new(
+#		dir         => $dir_out,
+#		mode        => $mode,
+#		name        => $self->name,
+#		is_compress => 1,
+#		vmtouch     => $self->buffer->vmtouch
+#	  );    #GenBoNoSql->new(dir=>$output,mode=>$param);
+#	 # $self->{lmdb}->{$hindex}->{vmtouch} = 1;
+#	$self->{lmdb}->{$hindex}->clean_files() if ( $mode eq "c" );
+#	return $self->{lmdb}->{$hindex};
+#}
 
 sub isVectorScore {
 	my ( $self, $mode ) = @_;
 	return -e $self->project->dir_lmdb_score_impact() . "/" . $self->name;
 }
 
+
+sub prepare_rocks_vector {
+		my ( $self, $ids, $nodie ) = @_;
+		$self->rocks_vector->prepare_vector($ids);
+} 
 sub getVectorScore {
 	my ( $self, $id, $nodie ) = @_;
 	confess() unless $id;
@@ -1812,7 +1825,7 @@ sub getVectorScore {
 	}
 	
 	
-	
+	confess();
 	my $v = $self->lmdb_score_impact("r")->get($id);
 	if ($nodie) {
 		return undef if ref($v) ne "Bit::Vector";
@@ -1970,8 +1983,7 @@ has genesIntervalTree => (
 		my $self = shift;
 
 		if ( exists $self->{set_genes} ) {
-			my $z = $self->project->liteIntervalTree->get_data( "genes_padding",
-				$self->name );
+			my $z = $self->project->liteIntervalTree->get_data( "genes_padding",$self->name );
 			my $tree = Set::IntervalTree->new;
 
 			foreach my $a (@$z) {
@@ -1980,8 +1992,7 @@ has genesIntervalTree => (
 			}
 			return $tree;
 		}
-		return $self->project->liteIntervalTree->get( "genes_padding",
-			$self->name );
+		return $self->project->liteIntervalTree->get( "genes_padding",$self->name );
 
 		#return  $self->project->liteIntspan->get("intspan_genes",$self->name);
 
@@ -2186,17 +2197,22 @@ sub rocksdb {
 	
 }
 
+sub rocks_predictions {
+	my ( $self, $mode ) = @_;
+	$mode = "r" unless $mode;
+	my $name = "prediction-".$mode.$$;
+	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
+	 $self->{rocks}->{$name} =  GenBoNoSqlRocksAnnotation->new(dir=>$self->get_public_data_directory("prediction_matrix"),mode=>$mode,name=>$self->name);
+	 return $self->{rocks}->{$name};
+}
 
 sub rocks_dejavu {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
-	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>"HG19",index=>"genomic",chromosome=>$self->name);
-	 # GenBoNoSqlRocks->new(dir=>$self->project->rocks_pipeline_directory("dejavu"),mode=>"r",name=>$self->name);
-	 # GenBoNoSqlRocksGenome->new(dir=>$self->project->rocks_pipeline_directory("dejavu_genomic"),mode=>"w",genome=>"HG19",index=>"genomic",chromosome=>$self->name);
+	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->{rocks}->{$name};
-
 }
 sub getDejaVuInfos {
 	my ( $self, $id ) = @_;

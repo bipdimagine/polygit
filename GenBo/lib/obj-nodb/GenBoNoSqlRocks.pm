@@ -17,7 +17,12 @@ has version => (
 		return undef;
 	}
 );
-
+has debug => (
+	is      => 'rw',
+	default => sub {
+		return undef;
+	}
+);
 has dir => (
 	is       => 'ro',
 	required => 1,
@@ -127,8 +132,18 @@ has dictionary => (
 
 sub id_dictionary {
 	my ($self) = @_;
-	$self->{id_dictionary} = -1 unless exists $self->{id_dictionary};
-	$self->{id_dictionary}++;
+	if (exists $self->{id_dictionary}){
+		$self->{id_dictionary}++;
+		return $self->{id_dictionary};
+	}
+	if ($self->dictionary_array){
+		$self->{id_dictionary} = scalar(@{$self->dictionary_array});
+		return $self->{id_dictionary};
+	}
+	$self->{id_dictionary} = 0;
+	
+	#$self->{id_dictionary} = -1 unless exists $self->{id_dictionary};
+	#$self->{id_dictionary}++;
 	return $self->{id_dictionary};
 }
 
@@ -305,7 +320,7 @@ sub rocks {
 				verify_checksums              => 0,
 				read_only                     => 1,
 				allow_mmap_reads           => 1,
-				max_background_compactions => 3,
+				#max_background_compactions => 3,
 				IncreaseParallelism        => 1,
 				filter_policy => $policy 
 			}
@@ -455,8 +470,15 @@ sub decode {
 	return unless $value;
 	
 	my $x;
-		$x = sereal_decode_with_object( $self->sereal_decoder, $value );
-	return $x;
+	eval {
+	$x = sereal_decode_with_object( $self->sereal_decoder, $value );
+	
+	};
+if ($@){
+	warn $value;
+	confess();
+}
+return $x;
 }
 sub get_raw {
 	my ( $self, $key ) = @_;
@@ -469,7 +491,15 @@ sub get {
 	
 	confess("-  -") unless defined $key;
 	confess() unless $self->rocks;
-	my $v = $self->get_raw($key);
+	my $v;
+	if (exists $self->{buffer}->{$key}){
+		$v =  $self->{buffer}->{$key}
+	}
+	else {
+	confess() if $debug;;
+	 $v = $self->get_raw($key);
+	}
+	
 	return unless $v;
 	return $self->decode($v);
 }
@@ -544,6 +574,46 @@ sub exists {
 	return $self->rocks->exists($key);
 }
 
+sub start_iter {
+	my ($self,$search) = @_;
+	delete $self->{iter};
+	if ($search){
+	$self->{iter} = $self->rocks->new_iterator->seek($search);
+	}
+	else {
+		$self->{iter} = $self->rocks->new_iterator->seek_to_first();
+	}
+}
+sub next {
+	my ($self,$search) = @_;
+	return undef unless $self->{iter};
+	my ($key, $value) = $self->{iter}->each();
+	return undef unless $key;
+	
+	return undef if $search && $key !~ /$search/ ;
+	return $value;
+}
+sub next_hash {
+	my ($self,$search) = @_;
+	return undef unless $self->{iter};
+	my ($key, $value) = $self->{iter}->each();
+	return undef unless $key;
+	
+	return undef if $search && $key !~ /$search/ ;
+	return {$key=>$value};
+}
+sub seek  {
+	my ($self,$search) = @_;
+		my $iter = $self->rocks->new_iterator->seek($search);
+		my $vp = {};
+		my $res ;
+		while (my ($key, $value) = $iter->each) {
+    		last if $key !~ /$search/;
+    		push(@$res,$value);
+		}
+		return $res;
+}
+
 sub close {
 	my ($self) = @_;
 	if ( $self->mode ne "r" ) {
@@ -580,12 +650,10 @@ sub close {
 		my $dir_prod = $self->dir . "/" . $self->name . ".rocksdb";
 		system("mkdir $dir_prod && chmod a+rwx $dir_prod") unless -e $dir_prod;
 		$self->delete_files($dir_prod);
-		warn "rsync -rav --remove-source-files "
-		  . $self->path_rocks
-		  . "/ $dir_prod/";
-		system( "rsync -rav --remove-source-files "
+	
+		system( "rsync -ra --remove-source-files "
 			  . $self->path_rocks
-			  . "/ $dir_prod/" );
+			  . "/ $dir_prod/ 2>/dev/null " );
 		system( "rmdir " . $self->path_rocks );
 		die() if $? ne 0;
 		$self->pipeline(undef);
@@ -610,6 +678,7 @@ sub prepare {
 	my ($self,$list) = @_;
 	return  if scalar (@$list) == 0;
 	$self->{buffer} = $self->rocks->get_multi(@$list);
+	#delete $self->{rocks};
 	return 1;
 }
 
@@ -640,27 +709,25 @@ sub return_rocks_id_from_genbo_id {
 
 sub return_rocks_id {
 	my ($self,$pos,$ref,$alt) = @_;
-	 $pos  = $self->stringify_pos($pos);
-#	 my $zid = $self->compress_vcf_position($ref,$alt);
-#	 return $pos."!".$zid;
+
 	my $l1 = length($ref);
 	my $l2 = length($alt);
-	return  ($pos."!".$alt) if ($l1 == 1 && $l2 ==1);
+	return  ($self->stringify_pos($pos)."!".$alt) if ($l1 == 1 && $l2 ==1);
 	my $seqid = $alt;
 	if ($alt =~ /del/ ){
-		return  ($pos."!".$alt);
+		return  ($self->stringify_pos($pos)."!".$alt);
 	}
 	elsif ($ref =~ /del/ ){
-		return  ($pos."!".$ref);
+		return  ($self->stringify_pos($pos)."!".$ref);
 	}
 	elsif ($alt=~ /inv/ ){
-		return  ($pos."!".$alt);
+		return  ($self->stringify_pos($pos)."!".$alt);
 	}
 	elsif ($alt=~ /ins/ ){
-		return  ($pos."!".$alt);
+		return  ($self->stringify_pos($pos)."!".$alt);
 	}
 	elsif ($alt=~ /dup/ ){
-		return  ($pos."!".$alt);
+		return  ($self->stringify_pos($pos)."!".$alt);
 	}
 	
 	
@@ -672,31 +739,34 @@ sub return_rocks_id {
 	if ($l1 ==1 && $l2 > 1){
 		
 		$seqid = "+".substr($alt, 1);
-		return  ($pos."!".$seqid);
+		return  ($self->stringify_pos($pos)."!".$seqid);
 	}
 	elsif ($l1 >1 && $l2 ==1){
 		$ref = substr($ref, 1);
 		$seqid = ($l1 -1);
-		return  ($pos."!".$seqid);
+		return  ($self->stringify_pos($pos)."!".$seqid);
 	}
 	 elsif ($l1 >1 && $l2 == $l1 && $l2>1 ){
 	 	
 		$ref = substr($ref, 1);
 		$alt = substr($alt, 1);
 		$seqid = "$ref*$alt";
-		return  ($pos."!".$seqid);
+		return  ($self->stringify_pos($pos)."!".$seqid);
 	}
 	
 	else {
-		return  ($pos."!".$ref."*".$alt);
+		return  ($self->stringify_pos($pos)."!".$ref."*".$alt);
 		confess($l1." ".$l2);
 	}
 	
 }
+
+
+
+
 sub compress_vcf_position {
 	my ($self,$ref,$alt) = @_;
 	if ($alt =~/INV/){
-		warn $alt;
 		my @z = split("-",$alt);
 		die("!"."@".$z[-1]);
 		return "!"."@".$z[-1];
@@ -727,9 +797,6 @@ sub stringify_pos {
 
 sub DESTROY {
 	my ($self) = @_;
-	#if ($self->mode ne "r"){
-	#	$self->rocks->compact_range();
-	#}
 	system( "rm -f " . $self->path_rocks() . "/LOG*" );
 	system( "rm -f " . $self->path_rocks() . "/LOCK" );
 	if ( $self->temporary && -e $self->path_rocks ) {
@@ -742,7 +809,6 @@ sub DESTROY {
 		$self->delete_files( $self->path_rocks );
 		system( "rmdir " . $self->path_rocks );
 	}
-
 }
 
 1;

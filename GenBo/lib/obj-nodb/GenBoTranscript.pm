@@ -40,6 +40,8 @@ has is_partial_transcript => (
 	}
 );
 
+
+
 has hash_partial_infos => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -95,7 +97,7 @@ has isMain => (
 	default => sub {
 		my $self = shift;
 		#return 1;
-		return 1 if  $self->project->lmdbMainTranscripts->exists($self->id);
+		return undef;
 	}
 );
 
@@ -206,7 +208,14 @@ has tag => (
 	},
 );
 
-
+has transcript_support_level => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return;
+	},
+);
 
 has appris_type => (
         is              => 'ro',
@@ -272,7 +281,7 @@ sub getOrfSequence {
 		my $new_id = $self->id();
 		if ($self->getChromosome->id() eq 'Y') { $new_id =~ s/_Y/_X/; }
 		elsif ($self->getChromosome->id() eq 'X') { $new_id =~ s/_X/_Y/; }
-		return $self->getProject->lmdbGenBo->get($new_id)->{coding_sequence};
+		return $self->getProject->rocksGenBo->genbo($new_id)->{coding_sequence};
 	}
 }
 
@@ -1180,25 +1189,6 @@ sub translate_hgvs_vcf {
  	 	$tree->insert($type,$from,$to+1);
  	 }
  }
-
- has annotations_tree => (
- is      => 'ro',
-	lazy    => 1,
-	default => sub { 
-	my $self = shift;
-	 my $tree = Set::IntervalTree->new;
-	 	foreach my $a (@{$self->annotations_array}){
-	 		$tree->insert(@$a);
-	 	}
-	 return $tree;
-	
-	
-	 
-	}
-	
- );
-
-
 
 
 

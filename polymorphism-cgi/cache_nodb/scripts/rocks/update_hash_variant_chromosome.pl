@@ -456,7 +456,6 @@ warn "start phase 3 ";
 		foreach my $g (keys %{$hgenes->{$p} } ){
 			$hgenes->{$p}->{$g}->{penality} = 0;
 			$hgenes->{$p}->{$g}->{penality} = $hgenes->{$p}->{$g}->{denovo_rare}* -0.3  if $hgenes->{$p}->{$g}->{denovo_rare} > 2;
-			
 			 $no_p->{$patient->id}->put_batch($g,$hgenes->{$p}->{$g});
 		}
 		 $no_p->{$patient->id}->write_batch();
@@ -490,6 +489,7 @@ sub save_patient {
 		my $list = $noin->get($patient->name);
 			return  unless $list;
 			foreach my $id (@$list){
+				
 					my $value =  $noin->get($id."-genes@".$patient->name);
 					$a = $value->{id1};
 					$no_p->put_batch($a,$value);

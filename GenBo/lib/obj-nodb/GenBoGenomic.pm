@@ -447,4 +447,30 @@ sub getChromosome {
 	return $self->_getOneObjectByName($self->getChromosomes(),$name);
 }
 
+sub intervaltree {
+	my ($self,$data) = @_;
+	 my $tree = Set::IntervalTree->new;
+	 foreach my $v (@{$data}) {
+	 	next if $v->[1] == -5000;
+	 	$tree->insert(@$v);
+	 }
+	 
+	return $tree;
+}
+has functional_annotations=> (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		return [];
+	}
+);
+has annotations_tree=> (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return $self->intervaltree($self->functional_annotations);
+	}
+);
+
 1;

@@ -17,7 +17,7 @@ has rocksdb_id => (
 		my $self = shift;
 	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
 	 $pos  = sprintf("%010d", $self->start());
-		return  ($pos."!-".$self->length);
+		return  ($pos."!".$self->length);
 	},
 	
 );

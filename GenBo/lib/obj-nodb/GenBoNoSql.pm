@@ -184,6 +184,7 @@ sub dbh {
 		my $dir = $self->dir();
 		system("chmod a+rwx $dir 2>/dev/null" );
 	}
+	
 #	warn $key1." ".$self->db_name($key1);
 	
 	my $db = $self->db_name($key1);

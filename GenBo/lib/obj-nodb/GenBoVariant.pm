@@ -234,7 +234,8 @@ has hgmd => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		my $db =  $self->getChromosome->get_lmdb_database("hgmd",$self->type_public_db);
+		my $db =  $self->getChromosome->rocksdb("hgmd");
+		return $db->hgmd($self->rocksdb_id);
 		my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
 		return $pub;
 	}
@@ -608,7 +609,7 @@ sub gnomad {
 			 $self->{gnomad_rocks}->{min} = $a->{populations}->{$a->{minpop}}->{F};
 		 	$self->{gnomad_rocks}->{max_pop} = $a->{maxpop}; ;
 		 	$self->{gnomad_rocks}->{public} = $a->{populations}->{$a->{maxpop}}->{F};
-			 $self->{gnomad_rocks}->{xy}= $a->{populations}->{all}->{AC_male};
+			$self->{gnomad_rocks}->{xy}= $a->{populations}->{all}->{AC_male};
 		 	$self->{gnomad_rocks}->{an} = $a->{populations}->{all}->{AN};
 		 	$self->{gnomad_rocks}->{ac} = $a->{populations}->{all}->{AC};
 		 	$self->{gnomad_rocks}->{ho} = $a->{populations}->{all}->{HO};
@@ -618,7 +619,7 @@ sub gnomad {
 			return $self->{gnomad_rocks};
 		}
 	else {
-			my $gnomad =  $self->getChromosome->rocksdb("gnomad")->value($self->rocksdb_id); 
+		my $gnomad =  $self->getChromosome->rocksdb("gnomad")->value($self->rocksdb_id); 
 			$self->{gnomad_rocks} = {} ;
 		if ($gnomad){
 			$self->{gnomad_rocks} =  $gnomad;
@@ -2847,7 +2848,8 @@ has dp_infos =>(
 				my $norm_depth_after = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->end+10, $self->end+500));
 				my $dude = "-";
 				if($self->project->isGenome){
-					$dude = int($patient->cnv_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length)*100);
+					$dude = "-";
+					#$dude = int($patient->cnv_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length)*100);
 				}
 				$hash->{$pid} = [$mean_dp,$norm_depth,$dude,$norm_depth_before,$norm_depth_after];
 			}

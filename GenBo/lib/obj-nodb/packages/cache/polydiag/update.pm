@@ -129,7 +129,7 @@ sub construct_table_transcript {
 		$hvariation->{dbscsnv} = printBadge($v->dbscsnv_rf,[0.6,0.9]).printBadge($v->dbscsnv_ada,[0.6,0.9])  if $v->dbscsnv_rf ne "-";
 			$hvariation->{revel} = "-";
 		
-		$hvariation->{revel} = printBadge($v->revel_score,[0.5,0.9]);
+	
 		my @colors = ("#F9F6FF","#F9F9F9");
 		my $nb =0;
 		my $nb_skip = 0;
@@ -147,6 +147,7 @@ sub construct_table_transcript {
 		$hvariation->{polyphen} ="-";
 		$hvariation->{sift} ="-";
 		$hvariation->{transcript} =$tr1->name;
+		$hvariation->{revel} = printBadge($v->revel_score($tr1),[0.5,0.9]);
 		my $u = qq{https://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=}.$tr1->name;
 		$hvariation->{enst} =  qq{<a href="$u" target="_blank">}.$tr1->name."</a>"; 
 		$hvariation->{nm} =$tr1->external_name;
@@ -823,7 +824,7 @@ sub construct_variant {
 		$hvariation->{dbscsnv} = printBadge($v->dbscsnv_rf,[0.6,0.9]).printBadge($v->dbscsnv_ada,[0.6,0.9]);
 			$hvariation->{revel} = "-";
 		
-		$hvariation->{revel} = printBadge($v->revel_score,[0.5,0.9]);
+		$hvariation->{revel} = printBadge($v->revel_score($tr1),[0.5,0.9]);
 		#$v->dbscsnv_ada.":".$v->dbscsnv_rf if $v->dbscsnv_rf;
 		$hvariation->{gene} = $tr1->getGene->external_name();
 		$hvariation->{gene_id} = $tr1->getGene->id();

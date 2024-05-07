@@ -502,12 +502,9 @@ sub setCnvValues {
 		$self->patients_calling->{ $p->id }->{pr} = $variant->pr($p);
 		$self->patients_calling->{ $p->id }->{sr} = $variant->sr($p);
 		$self->patients_calling->{ $p->id }->{norm_depth} = $variant->getNormDP($p);
-		warn $variant->getNormDP($p);;
 		$self->patients_calling->{ $p->id }->{dude_score} = $variant->getCNVDude($p);
 		$self->patients_calling->{ $p->id }->{model}  = $variant->getTransmissionModelType($p->getFamily(),$p);
 	}
-	warn Dumper $variant->dp_infos;
-	confess();
 }
 
 sub setDudeValues {
@@ -602,8 +599,6 @@ sub set_patient_cache_1 {
 			
 			if ($vh->isSrPr){
 			$hh->{gt} = $vh->getSequencingGenotype($p);
-			warn $vh->pr($p)." ".$vh->sr($p).$vh->id if $vh->id eq "1_16376537_del-9592";
-			warn Dumper $vh->array_sequencing_text($p) if $vh->id eq "1_16376537_del-9592";;
 			$hh->{norm_depth} = $vh->getNormDP($p);
 			$hh->{dude_score} = $vh->getCNVDude($p);
 			$hh->{pr} = $vh->pr($p);
@@ -716,7 +711,6 @@ sub set_gene {
 				
 				my $r1 = $tr1->exons_introns_tree()->fetch($v->start,$v->start+1);
 				if (@$r1){
-					warn Dumper $r1 unless exists $r1->[0]->{type};
 					if ($r1->[0]->{type} eq "intron"){
 						$htr->{start} = "intron".$r1->[0]->{nb};
 					}
@@ -946,7 +940,6 @@ sub update_clinvar {
 	my ($self,$project,$gene) = @_;
 		my $vh = $project->_newVariant($self->id);
 		 	
-		 #	die();
 	
 		$self->clinvar_id($vh->clinvar_id);
 		return unless $vh->clinvar_id;

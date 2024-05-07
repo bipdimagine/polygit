@@ -1513,6 +1513,34 @@ sub getBamFile {
 	#return  $self->{files}->{alignment}->{alignment}; # Pas rempli cette table
 }
 
+sub getAlignmentFile {
+	my ( $self, $method_name, $nodie ) = @_;
+	unless ($method_name) {
+		my $files = $self->getBamFiles();
+		return $files->[0] if scalar(@$files) == 1;
+		if ($nodie) {
+			warn "NO BAM FILES " . $self->name;
+			return;
+		}
+
+	  		confess($self->getBamFileName." ".$self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
+	}
+	 
+	confess("ERROR: no bam file with $method_name method name. Exit. "
+		  . $self->name." "
+		  . $self->project->name
+		  . "\n\n" )
+	  unless exists $self->bamFiles()->{$method_name};
+		return $self->bamFiles()->{$method_name};
+}
+
+sub isCram {
+	my ($self,$method) = @_;
+	my $file = $self->getAlignmentFile($method);
+	return $file =~ /\.cram/;
+}
+
+
 sub getSVFiles {
 	my $self      = shift;
 	my @lVcfFiles = values %{ $self->callingSVFiles()->{sv} };
@@ -3042,9 +3070,19 @@ has nb_reads => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $bam  = $self->getBamFile();
+		my $bam  = $self->getAlignmentFile();
+		my $cmd;
+		if ($self->isCram){
+			my $f = $bam;
+			$f =~ s/cram/idxstats/;
+			die($f) unless -e $f;
+			$cmd = qq{cat $f | cut -f 1,3}
+			
+		}
+		else {
 		my $samtools = $self->buffer->software('samtools');
-		my $cmd  = qq{$samtools idxstats $bam | cut -f 1,3};
+		 $cmd  = qq{$samtools idxstats $bam | cut -f 1,3};
+		}
 		my @sums = `$cmd`;
 		chomp(@sums);
 		my $h;

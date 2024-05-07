@@ -95,6 +95,7 @@ has ncboost_score => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+		return ;
 		return if ($self->getChromosome->id() eq 'MT');
 		my $h =  $self->getChromosome()->get_lmdb_score("ncboost",$self);
 		
@@ -167,16 +168,9 @@ sub getPredictions {
 		else {
 			my $pos = $self->position($tr->getProtein)->start();
 			my $aa  = $self->changeAA($tr->getProtein);
-			$self->{predictions}->{$tr->getProtein()->id()} = $self->getProject()->getPredictions($self->getChromosome(),$protid,$pos,$aa);
-			$self->{predictions}->{$protid} = $self->getProject()->getPredictions($self->getChromosome(),$protid,$pos,$aa);
-			$self->{predictions}->{$tr->id}=$self->{predictions}->{$protid};
-			 foreach my $method (keys %{$self->{predictions}->{$protid}}){
-				next if $method eq "mask";
-			#	if ($self->{predictions}->{$protid}->{$method}->{pred} > $self->{predictions}->{all}->{$method}->{pred}){
-					$self->{predictions}->{$tr->getGene->id}->{$method}->{score} = $self->{predictions}->{$protid}->{$method}->{score} ;
-					$self->{predictions}->{$tr->getGene->id}->{$method}->{pred} = $self->{predictions}->{$protid}->{$method}->{pred};
-			#	}
-			 }
+			
+			my $h = $self->getChromosome->rocksdb("prediction_matrix")->prediction_score($tr->id,$pos,$aa);
+	
 		}
 		$self->{predictions}->{$tr->id}->{mask} = $self->{predictions}->{$protid}->{mask};
 		$self->{predictions}->{$gene_id}->{mask} =  0 unless exists $self->{predictions}->{$gene_id}->{mask};

@@ -49,10 +49,11 @@ unless ($project_name) { confess("\n\nERROR: -project option missing... confess.
 
 my $buffer = new GBuffer;
 
-$buffer->vmtouch(1);
+
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
-my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"c",name=>"polyviewer_objects",pipleine=>1);
+warn $project->rocks_directory();
+my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"c",name=>"polyviewer_objects",pipeline=>1);
 my $nb =0;
 my $hpatients;
 foreach my $patient (sort { $a->{name} cmp $b->{name} } @{ $project->getPatients }){
@@ -68,15 +69,13 @@ for ( my $i = 0 ; $i < @patient_names ; $i++ ) {
 }
 my $root_dir = $project->rocks_directory(). "/deja_vu/";
 mkdir $root_dir unless -e $root_dir;
-my $no = GenBoNoSql->new( dir => $root_dir, mode => "c" );
-$no->put( $project_name, "patients", $hpatients2 );
+#my $no = GenBoNoSql->new( dir => $root_dir, mode => "c" );
+#$no->put( $project_name, "patients", $hpatients2 );
 my $no_dv_rocks = GenBoNoSqlRocks->new( dir => $root_dir,name=>"dejavu", mode => "c" );
 foreach my $chr (@{$project->getChromosomes} ){
 	my $dv;
-	warn "!! start ".$chr->name;
 	my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"r",name=>$chr->name);
-		warn $project->rocks_pipeline_directory("polyviewer_raw");
-		my $iter = $final_polyviewer->rocks->new_iterator->seek_to_first;
+	my $iter = $final_polyviewer->rocks->new_iterator->seek_to_first;
 		my $nb = 0;
 		warn "start chromosome ".$chr->name;
 		while (my ($var_id, $value) = $iter->each) {
@@ -85,10 +84,13 @@ foreach my $chr (@{$project->getChromosomes} ){
 			next unless $var_id =~/^$c/;
 			if  (ref ($var_id) =~ /HASH/) {
 				warn Dumper $var_id;
-				
+				die();
 			}
 			warn $var_id." ".$nb if $nb%10000 == 0;
 			$final_polyviewer_all->put_batch_raw($var_id,$value);
+			next;
+			
+			
 			my $v = $final_polyviewer_all->decode($value);
 			my $res;
 			my $ap =[];
@@ -108,19 +110,24 @@ foreach my $chr (@{$project->getChromosomes} ){
 			$dv->{$v->{id}} = $heho_string;
 			#my $rocks_id = $no_dv_rocks->return_rocks_id_from_gnomad_id($v->{gnomad_id});
 			$no_dv_rocks->put_batch_raw($v->{rocksdb_id},$heho_string);
-			$final_polyviewer_all->put_batch_raw($var_id,$value);
+			#$final_polyviewer_all->put_batch_raw($var_id,$value);
 			
 			
 		#$finalrg->write_batch();
 	}
 	
-	$no->put( $project->name, $chr->name, $dv );
+	
+	#$no->put( $project->name, $chr->name, $dv );
 	$final_polyviewer->close();
-	$final_polyviewer_all->write_batch();
+	#$final_polyviewer_all->write_batch();
+	warn "end chromosome ".$chr->name;
 }
-	$final_polyviewer_all->write_batch();
+	warn "end all";
+	my $t =time;
+	#$final_polyviewer_all->write_batch();
 	$final_polyviewer_all->close();
-	$no->close();
+	warn "end all".abs(time - $t);
+	#$no->close();
 	warn $root_dir;
 	system("date > $ok_file") if $ok_file;
 	

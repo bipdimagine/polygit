@@ -47,11 +47,11 @@ has rocksdb_id => (
 	my ($self) = @_;
 	my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
 	$pos =~ s/ins//;
-	$pos  = sprintf("%010d", $pos);
+	$pos  = sprintf("%010d", ($pos));
 	$alt = "X".$ref unless $alt; 
 	my $seqid = $alt;
 	$seqid = "+".substr($alt, 1);
-	return  ($pos."!".$seqid);
+	return  (sprintf("%010d", ($self->start-1))."!".$seqid);
 	},
 	
 );

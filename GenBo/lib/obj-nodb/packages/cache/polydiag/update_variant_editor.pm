@@ -1081,16 +1081,13 @@ sub construct_hash_transcript {
 		my $main =  0 ;
 		 $main  = 1 if $tr1->isMain();
 		value_html($htr,"main",$main,$main);
-<<<<<<< HEAD
 		delete $htr->{html};
 		push(@$all_transcripts,$htr)
-=======
-		if ($is_same_nm_as_hgmd){
-			unshift(@$all_transcripts,$htr);
-			next;
-		} 
-		push(@$all_transcripts,$htr);
->>>>>>> branch 'master' of https://github.com/bipdimagine/polygit.git
+	#	if ($is_same_nm_as_hgmd){
+	#		unshift(@$all_transcripts,$htr);
+	#		next;
+	#	} 
+	#	push(@$all_transcripts,$htr);
 	}#end for transcript
 	return $all_transcripts;
 }
@@ -1903,10 +1900,12 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 	   			else {
 	   				$pheno = $gene->description();
 	   			}
+	   			
 	   		}
-	   		elsif (exists $hgene->{phenotypes}->{pheno} and exists $hgene->{phenotypes}->{nb_other_terms}) {
-				$pheno = $hgene->{phenotypes}->{pheno};
-				$nb_other_terms = $hgene->{phenotypes}->{nb_other_terms};
+	   		
+	   		elsif (exists $hgene->{phenotypes} and exists $hgene->{phenotypes}) {
+				$pheno = $hgene->{phenotypes};
+				$nb_other_terms = scalar(split(";",$pheno));
 	   		}
 	   		
    			my $color ;

@@ -7,6 +7,7 @@ use Data::Dumper;
 use JSON::XS;
 use POSIX;
 #use GenBoNoSqlRocksChunks;
+use Carp;
 use GenBoNoSqlRocksAnnotation;
 
 my $json_chr_length = qq{{"HG19":{"6":"171115067","11":"135006516","9":"141213431","15":"102531392","14":"107349540","1":"249250621","8":"146364022","17":"81195210","7":"159138663","13":"115169878","MT":"16569","22":"51304566","Y":"59373566","3":"198022430","21":"48129895","18":"78077248","5":"180915260","X":"155270560","20":"63025520","16":"90354753","2":"243199373","12":"133851895","19":"59128983","4":"191154276","10":"135534747"},"HG38":{"21":"46709983","Y":"57227415","18":"80373285","3":"198295559","22":"50818468","MT":"16569","20":"64444167","16":"90338345","X":"156040895","5":"181538259","2":"242193529","10":"133797422","4":"190214555","19":"58617616","12":"133275309","11":"135086622","6":"170805979","14":"107043718","15":"101991189","9":"138394717","17":"83257441","8":"145138636","1":"248956422","13":"114364328","7":"159345973"}}};
@@ -23,8 +24,11 @@ has chr_length =>(
 	default => sub {
 		my $self = shift;
 		my $h = decode_json($json_chr_length);
+		
 		die(Dumper $h) unless exists $h->{$self->genome}->{$self->chromosome_name};
-		return  $h->{$self->genome}->{$self->{chromosome_name}};
+		my $v = $h->{HG19}->{$self->{chromosome_name}};
+		$v = $h->{HG38}->{$self->{chromosome_name}} if $h->{HG38}->{$self->{chromosome_name}} > $v;
+		return  $v;
 	}
 
  );
@@ -79,9 +83,10 @@ has dir_db =>(
 	default => sub {
 		my $self = shift;
 		my $dd = $self->dir."/".$self->chromosome_name.".g.rocks/";
+		warn $self->mode;
 		unless (-e $dd){
 			if ($self->mode eq "r"){
-				confess($dd);
+				confess($dd)."-".$self->mode;
 			}
 			system("mkdir -p $dd && chmod a+w $dd");
 		}
@@ -126,6 +131,7 @@ has chunks =>(
 		if($self->mode eq "c" or $self->mode eq "t" or ($self->mode eq "w" && !(-e $self->json_file))){
 			$self->clean() if -e $self->json_file;
 			my $length = $self->chr_length;
+			warn $length;
 			die() unless $length;
 			my $c = $self->divide_by_chunks($length);
 			$self->write_config($c);
@@ -188,6 +194,19 @@ sub nosql_rocks {
 	my $id = $region->{id};
 	return $self->_chunks_rocks($id);
 };
+
+sub nosql_rocks_tmp {
+	my ($self,$region) = @_;
+	my $id = $region->{id};
+	return  GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pack=>$self->pack,description=>$self->description,factor=>$self->factor,pipeline=>1);
+	
+};
+sub nosql_rocks_read {
+	my ($self,$region) = @_;
+	my $id = $region->{id};
+	return  GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>"r",name=>$id,pack=>$self->pack,description=>$self->description,factor=>$self->factor,pipeline=>1);
+	
+};
 sub _pile {
 	my ($self,$id) = @_;
 	$self->{array_rocksdb} = [] unless exists $self->{array_rocksdb};
@@ -204,7 +223,6 @@ sub _chunks_rocks {
 
 	 unless (exists $self->chunks->{$id}->{rocksdb}){
 	 	$self->_pile($id);
-	 	 
 	 	#$self->chunks->{$id}->{rocksdb} = GenBoNoSqlRocksChunks->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,start=>$self->chunks->{$id}->{start},index=>$self->index,compress=>$self->compress,pipeline=>$self->pipeline);
 		$self->chunks->{$id}->{rocksdb} = GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pipeline=>$self->pipeline,pack=>$self->pack,description=>$self->description,factor=>$self->factor);
 	 #	system("vmtouch -q -t ".$self->chunks->{$id}->{rocksdb}->path_rocks);
@@ -212,12 +230,7 @@ sub _chunks_rocks {
 	 return $self->chunks->{$id}->{rocksdb};
 };
 
-#my $iter ; 
-#my $iter = $no->rocks->new_iterator->seek_to_first;
-#while (my ($key, $value) = $iter->each) {
-#    #printf "%s: %s\n", $key, $value;
-#    warn $key." ".join(";",$no->get1($key));
-#}
+
 has regions =>(
 is		=> 'ro',
 	lazy    => 1,
@@ -275,7 +288,7 @@ sub write_config {
 }
 sub load_config {
 	my ($self) = @_;
-	open(my $fh ,$self->json_file) or die("can t open file");
+	open(my $fh ,$self->json_file) or die("can t open file ".$self->json_file);
 	my $json_str = do { local $/; <$fh> };
 	close($fh);
 	my $h = decode_json($json_str);
@@ -304,7 +317,7 @@ sub divide_by_chunks{
         $start = $from;
         $end = $from + $size;
         if ($end > $to){
-            $end = $to;
+            $end = $from + $size;
         }
         my $id_chunk = $self->chromosome_name.".".$from.".".$end;
         $region->{$id_chunk}->{start} = $from;
