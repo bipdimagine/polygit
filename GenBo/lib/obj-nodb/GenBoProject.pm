@@ -2083,10 +2083,9 @@ has gtf_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf};
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
+		$file = $self->buffer()->config->{'public_data'}->{root}.'/repository/'.$version.'/'.$self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
+		die($file) unless -e $file;	
 		return $file;
 	},
 );
