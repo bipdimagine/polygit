@@ -17,18 +17,26 @@ use JSON;
 use xls_export;
 use session_export;
 use Spreadsheet::WriteExcel;
-use POSIX;
+use File::stat;
 
 my $cgi = new CGI;
 my $force = $cgi->param('force');
 my $run_name = $cgi->param('run');
 my $export_xls = $cgi->param('export_xls');
+my $view_all  = $cgi->param('view_all');
+
+
+my $last_demultiplex = 1;
+$last_demultiplex = undef if $view_all;
 
 my ($h_files, $h_files_date);
 my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
-my ($list_paths_found) = list_html_files_in_dir($origin_path);
-my $buffer = new GBuffer;
+my $is_first_check = 1;
+my ($list_paths_found) = list_html_files_in_dir($origin_path, $is_first_check);
+$is_first_check = undef;
 
+
+my $buffer = new GBuffer;
 
 if ($run_name and $export_xls) {
 	my $this_path = $origin_path.'/'.$run_name;
@@ -41,23 +49,17 @@ if ($run_name and $export_xls) {
 
 print $cgi->header('text/json-comment-filtered');
 
+
+
 foreach my $this_path (@$list_paths_found) {
 	if ($run_name) {
 		next if ($this_path ne $run_name);
 	}
+	
 	if (-e $this_path.'/Demultiplex_Stats.csv') {
 		mkdir $this_path.'/html/' if (not -d $this_path.'/html/');
 		if (-e $this_path.'/Demultiplex_Stats.csv' && -e $this_path.'/Top_Unknown_Barcodes.csv') {
 			my @lFiles = ('Demultiplex_Stats.csv', 'Top_Unknown_Barcodes.csv');
-			
-#			if ($this_path =~ /NB501645_0664/) {
-#				warn "\n\n";
-#				warn "$this_path";
-#				warn Dumper @lFiles;
-#				warn "\n\n";
-#				#die;
-#			}
-			
 			my $json_file = convert_csv_to_json($this_path, \@lFiles);
 			my $json_path = $json_file;
 			my $use_force;
@@ -823,7 +825,7 @@ sub convert_csv_to_html {
 }
 
 sub list_html_files_in_dir {
-	my ($path) = @_;
+	my ($path, $is_first_check) = @_;
 	opendir my ($dir), $path;
 	my @found_files = readdir $dir;
 	closedir $dir;
@@ -833,7 +835,16 @@ sub list_html_files_in_dir {
 		next if $file eq '..';
 		my $path_file = $path.'/'.$file;
 		if (-d $path_file) {
-			push(@lDir, $path_file);
+			my $is_ok = 1;
+			if ($is_first_check == 1 and $last_demultiplex == 1) {
+				$is_ok = undef;
+				my $today = time;
+				my $modtime = (stat($path_file)->mtime);
+				my $interval = 86400*48;
+				my $delta = ($today - $modtime);
+				if ($delta < $interval) { $is_ok = 1; }
+			}
+			push(@lDir, $path_file) if $is_ok;
 		}
 		elsif (-e $path_file) {
 			add_file_html($path_file, $file);
