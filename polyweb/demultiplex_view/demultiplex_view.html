@@ -588,6 +588,7 @@
 	    		var text_loading = 'Checking HTML Files';
 				show_waiting(text_loading);
 				var url = url_path + "/demultiplex_view/demultiplex_view.pl";
+				url += "?view_all=1";
 			    $.getJSON( url, function( data ) {
 			    	var i = 1;
 			    	$.each( data, function( key, val ) {
