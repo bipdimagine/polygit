@@ -583,12 +583,18 @@
 	    	function datesSorter(a, b){
 		        return(new Date(a).getTime() - new Date(b).getTime());
 		    }
+		    
+	    	function launch_all() {
+	    		document.getElementById("content_res").innerHTML = '<img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle"/> <span id="waiting_text">Loading Data...</span>';
+	    		var view_all = 1;
+	    		launch(view_all);
+	    	}
 	    	
-	    	function launch() {
+	    	function launch(view_all) {
 	    		var text_loading = 'Checking HTML Files';
 				show_waiting(text_loading);
 				var url = url_path + "/demultiplex_view/demultiplex_view.pl";
-				url += "?view_all=1";
+				if (view_all == 1) { url += "?view_all=1"; }
 			    $.getJSON( url, function( data ) {
 			    	var i = 1;
 			    	$.each( data, function( key, val ) {

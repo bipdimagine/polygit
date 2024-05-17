@@ -17,13 +17,13 @@ use JSON;
 use xls_export;
 use session_export;
 use Spreadsheet::WriteExcel;
-use File::stat;
 
 my $cgi = new CGI;
 my $force = $cgi->param('force');
 my $run_name = $cgi->param('run');
 my $export_xls = $cgi->param('export_xls');
 my $view_all  = $cgi->param('view_all');
+
 
 
 my $last_demultiplex = 1;
@@ -208,7 +208,11 @@ $html_table .= qq{</tbody>};
 $html_table .= qq{</table>};
 
 my $hash;
-$hash->{html} = $html_table;
+
+#<button type="button" class="btn btn-danger">Danger</button>
+$hash->{html} = $html_table; 
+if (not $view_all) { $hash->{html} .= qq{<br><br><center><button type="button" onClick="launch_all()" class="btn btn-danger">View ALL demultiplex</button></center>}; }
+
 $hash->{table_id} = 'table_demultiplex';
 my $json_encode = encode_json $hash;
 print $json_encode;
@@ -839,8 +843,8 @@ sub list_html_files_in_dir {
 			if ($is_first_check == 1 and $last_demultiplex == 1) {
 				$is_ok = undef;
 				my $today = time;
-				my $modtime = (stat($path_file)->mtime);
-				my $interval = 86400*48;
+				my $modtime = (stat ($path_file))[9];
+				my $interval = 86400*90;
 				my $delta = ($today - $modtime);
 				if ($delta < $interval) { $is_ok = 1; }
 			}
