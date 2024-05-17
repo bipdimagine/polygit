@@ -491,7 +491,7 @@ sub getIds_onlive {
 		my $i = $v_id;
 		my $j = $v_id;
 		while ($check_before_done == undef) {
-			$i--;
+			$i-- if $i > 0;
 			my $var_before = $chr->getVarObject($i);
 			if ($var_before->start() == $var->start()) { push(@lVar_same_pos, $var_before); }
 			else { $check_before_done = 1; }
