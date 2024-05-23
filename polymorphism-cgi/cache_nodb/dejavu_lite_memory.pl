@@ -88,7 +88,7 @@ sleep(1);
 
 #$buffer->config->{public_data}->{HG19} = "/data-isilon/DejaVu/HG19/snp/";
 
-my $dir_public_data =  $buffer->config->{deja_vu}->{path};
+my $dir_public_data =  $buffer->config->{deja_vu}->{path}."/HG19/".$buffer->config->{deja_vu}->{variations};
  # $buffer->config->{'public_data'}->{root} . "/HG19/snp/deja_vu/lite/";
 my $dir_projects = $dir_public_data . "/" . "projects/";
 unless ( -d $dir_projects ) {

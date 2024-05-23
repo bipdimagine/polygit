@@ -517,7 +517,8 @@ has cytobandTree => (
 
 		my $self  = shift;
 		my $tree  = Set::IntervalTree->new;
-		my $dir   = $self->project->get_public_data_directory("cytoband");
+		my $dir   = $self->project->get_cytology_directory();
+		
 		my $tabix = Bio::DB::HTS::Tabix->new( filename => $dir . "/cytoband.bed.gz" );
 		
 		my $res = $tabix->query( $self->ucsc_name );    # if $start;
@@ -2211,7 +2212,7 @@ sub rocks_dejavu {
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
-	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir_rocks,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
+	 $self->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->{rocks}->{$name};
 }
 #
@@ -2259,6 +2260,7 @@ sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
 	my $chr = $self;
 	my $in_this_run_patients =  $self->project->in_this_run_patients();
+	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
 	#my $no1 = $self->project->lite_deja_vu2();
 	my $no = $self->rocks_dejavu();
 	my $h = $no->dejavu($v->rocksdb_id);
@@ -2281,7 +2283,7 @@ sub getDejaVuInfosForDiagforVariant{
 	$res->{similar_patients_ho} = 0;
 	$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
 	if ($res->{total_in_this_run_patients} == 0 ){
-		$res->{total_in_this_run_patients} = scalar(@{$self->getPatients});
+		$res->{total_in_this_run_patients} = scalar(@{$self->project->getPatients});
 	}
 	$res->{in_this_run_patients} = 0;
 	$res->{in_this_run_patients} += scalar(@{$v->getPatients});

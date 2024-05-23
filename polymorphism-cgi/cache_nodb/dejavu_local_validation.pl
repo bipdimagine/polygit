@@ -52,10 +52,10 @@ my $buffer = GBuffer->new();
 
 my $vquery = $buffer->validations_query();
 my $zen    = $vquery->getAllValidations(1);
-my $dir    = $buffer->config->{deja_vu}->{path};
+my $dir    = $buffer->config->{deja_vu}->{path}."/HG19/".$buffer->config->{deja_vu}->{variations};
 my $no     = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 my $hprojects;
-my $dir_public_data = $buffer->config->{deja_vu}->{path};
+my $dir_public_data = $buffer->config->{deja_vu}->{path}."/HG19/".$buffer->config->{deja_vu}->{variations};
 
 # $buffer->config->{'public_data'}->{root} . "/HG19/snp/deja_vu/lite/";
 my $dir_projects = $dir . "/" . "projects/";

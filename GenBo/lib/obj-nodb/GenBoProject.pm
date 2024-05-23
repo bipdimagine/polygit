@@ -708,6 +708,7 @@ has lmdb_cache_variations_dir => (
 		return $self->makedir($dir);
 	}
 );
+
 has lmdb_cache_patients_dir => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1529,6 +1530,20 @@ sub get_gencode_directory {
 }
 
 
+sub get_wisecondor_reference {
+	my ( $self, $version ) = @_;
+	$version = "5kb" unless ($version);
+	return $self->{directory}->{wisecondor}->{$version} if exists $self->{directory}->{wisecondor}->{$version};
+	$self->{directory}->{wisecondor}->{$version} = $self->public_data_root . "/". $self->annotation_genome_version . "/wisecondor/$version/ref.npz";
+	return $self->{directory}->{wisecondor}->{$version};
+}
+
+sub get_cytology_directory {
+	my ( $self ) = @_;
+	return $self->{directory}->{cyto} if exists $self->{directory}->{cyto};
+	$self->{directory}->{cyto} = $self->public_data_root . "/". $self->annotation_genome_version . "/cytology/";
+	return $self->{directory}->{cyto};
+}
 
 
 sub get_public_data_directory {
@@ -2037,19 +2052,19 @@ has gnomad_rsname_dir => (
 	},
 );
 
-has deja_vu_public_dir => (
+has deja_vu_public_dir_lmdb => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self   = shift;
 		my $path;
-		
 		my $dir =  $self->buffer->config->{deja_vu}->{path}."/".$self->genome_version_generic . "/".$self->buffer->config->{deja_vu}->{variations} if (exists $self->buffer->config->{deja_vu}->{path});
+		my $dir2 =  $self->buffer->config->{deja_vu}->{path_rocks}."/".$self->genome_version_generic . "/".$self->buffer->config->{deja_vu}->{variations} if (exists $self->buffer->config->{deja_vu}->{path});
 		return $dir if -e $dir;
-		confess("\n\nERROR: path dejavu not found in genbo.cfg  ->  Die\n\n");
+		confess("\n\nERROR: path dejavu not found in genbo.cfg  $dir $dir2->  Die\n\n");
 	},
 );
-has deja_vu_public_dir_rocks => (
+has deja_vu_public_dir => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
@@ -2061,18 +2076,19 @@ has deja_vu_public_dir_rocks => (
 		confess("\n\nERROR: path dejavu not found in genbo.cfg  ->  Die\n\n");
 	},
 );
-has dirCytoManue => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $dir =
-		  $self->buffer()->config->{'public_data'}->{root} . "/CytoManue/";
-		return $dir;
-
-	},
-
-);
+#has dirCytoManue => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $dir =
+#		  $self->buffer()->config->{'public_data'}->{root} . "/CytoManue/";
+#		  confess();
+#		return $dir;
+#
+#	},
+#
+#);
 
 has rds_gencode_file => (
 	is      => 'rw',
@@ -3402,6 +3418,7 @@ sub newRegulatoryRegions {
 sub newGenes {
 	my ( $self, $ids ) = @_;
 	$self->getChromosomes();
+
 	return $self->myflushobjects( $ids, "genes" );
 }
 
@@ -5818,6 +5835,7 @@ has in_this_run_patients => (
 		my $self = shift;
 		my $h;
 	warn "warning here a terminer ";
+	return {};
 	confess();
 	my $no      = $self->lite_deja_vu_projects();
 	my $res;

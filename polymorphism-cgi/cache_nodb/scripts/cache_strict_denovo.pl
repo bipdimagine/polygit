@@ -21,6 +21,7 @@ use GBuffer;
 use Cache_Commons;
 use Bit::Vector::Overload;
 use Sys::Hostname;
+use Bio::DB::HTS;
 
 my $fork = 1;
 my ($project_name, $chr_name,$annot_version);
@@ -105,7 +106,7 @@ $project->preload_patients();
 foreach my $family (@{$project->getFamilies()}) {
 	warn "..";
 	
-	foreach my $children  (@{$family->getChildren}){
+	foreach my $children  (@{$family->getChildren}) {
 		my $vector_denovo = $family->getVector_individual_denovo($chr,$children)->Clone();
 		my $vector_ratio_name = $children->name . "_ratio_" . 20;
 #		 my $vquality2 = $chr->getVectorScore($vector_ratio_name);
@@ -124,8 +125,8 @@ foreach my $family (@{$project->getFamilies()}) {
 			#$project->disconnect();
 			#$buffer->{dbh} = "-";
 			foreach my $patient (@{$family->getParents()}) {
-				
-				$sam->{$patient->name} =  Bio::DB::Sam->new(-bam=>$patient->getBamFile, -fasta=>$project->getGenomeFasta());
+				warn $patient->getBamFile;
+				$sam->{$patient->name} =  Bio::DB::HTS->new(-bam=>$patient->getBamFile, -fasta=>$project->getGenomeFasta());
 			}
 			my $res;
 			$res->{run_id} = $run_id;
@@ -147,7 +148,7 @@ foreach my $family (@{$project->getFamilies()}) {
 				if ($r > 40 ){
 					$limit = 5;
 					$percent =0.08;
-					}
+				}
 				
 				
 			

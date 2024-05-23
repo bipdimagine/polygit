@@ -177,6 +177,7 @@ sub get_vector_chromosome {
 	if ($type eq "all"){
 		return Bit::Vector->new($self->size);
 	}
+	return  Bit::Vector->new($self->size)  unless exists $self->vector_type_chromosome->{$type};
 	die($type."\n".Dumper $self->vector_type_chromosome) unless exists $self->vector_type_chromosome->{$type};
 	my $v;
 	my $id = $self->id_global_chromosome($type);

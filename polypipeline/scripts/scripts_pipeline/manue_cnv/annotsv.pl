@@ -70,7 +70,7 @@ foreach my $patient (@{$project->getPatients}) {
 		#next if $type ne "wisecondor";
 		my $fileout = $patient->getAnnotSVFileName($type);
 		my $file_tmp = $dir_tmp."/".$patient->name.".annotsv.tsv";
-		next if -e $fileout;;
+		#next if -e $fileout;;
 		unlink $fileout if -e $fileout;
 		warn $patient->name;
 		my $filein = $patient->getSVFile($type);
@@ -88,10 +88,10 @@ foreach my $patient (@{$project->getPatients}) {
 			}
 		}
 		$opt = "-svtBEDcol 6" if $filein =~ /\.bed/;
-		
-		my $cmd = qq{ export ANNOTSV=/software/distrib/AnnotSV_2.0 && $load && gunzip -c $filein > $filebed && $annotsv -SVinputFile $filebed -outputFile $file_tmp $opt 2>/dev/null && mv $file_tmp $fileout };
+		my $opt2 = "-genomeBuild GRCh37";
+		$opt2 = "-genomeBuild GRCh38" if $project->genome_version_generic() =~/HG38/;
+			my $cmd = qq{ export ANNOTSV=/software/distrib/AnnotSV_2.0 && $load && gunzip -c $filein > $filebed && $annotsv $opt2 -SVinputFile $filebed -outputFile $file_tmp $opt 2>/dev/null && mv $file_tmp $fileout };
 		warn $cmd;
-		#die();
 		#}
 		system("$cmd");
 		unlink $filebed;

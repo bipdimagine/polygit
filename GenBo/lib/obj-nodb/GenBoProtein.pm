@@ -67,6 +67,7 @@ sub getSequence {
 	my $length =1;
 	$length = ($end-$start) +1 if $end;
 	die() if $length < 0;
+	return '' unless $self->length();
 	return '' if ($self->length() < ($start-1 + $length));
 	return substr $self->sequence,$start-1, $length;
 }

@@ -248,8 +248,10 @@ sub hgmd {
 sub synonym {
 	my ($self,$rocksid) = @_;
 	my $syno = $self->get_raw($rocksid);
+	$syno = $rocksid if  $self->get("!".$rocksid);
 	return $syno;
 }
+
 sub genbo {
 	my ($self,$rocksid) = @_;
 	my $obj = $self->get("!".$rocksid);
