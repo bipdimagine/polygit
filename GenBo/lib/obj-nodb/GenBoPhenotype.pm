@@ -114,6 +114,7 @@ has statistic_genes =>(
 	default => sub {
 		my $self = shift;
 			my $hids = {};
+			#
 		foreach my $panel (@{$self->getPanels}){
 		my $genes =  $panel->genes_name();
 		next unless $genes;
