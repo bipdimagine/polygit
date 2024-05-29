@@ -861,7 +861,7 @@ sub unifiedGenotyper {
 		
 		my $out1 = calling_target::getTmpFile( $dir_out, "$name", "$nb.tmp.vcf" );  
 #		my $cmd_free = qq{  $freebayes -b $onefile -f   $reference --min-coverage 20 -0  -F $freebayes_min_alternate  -t $bed $correct_calling >$out 2>/dev/null};
-		$javac = "/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.111-2.b15.el7_3.x86_64/jre/bin/java";
+		$javac = "/opt/jdk1.8.0_121/bin/java";
 		my $cmd_uni = qq{$javac  -jar $gatk  -T UnifiedGenotyper  --min_indel_fraction_per_sample $unified_min_alternate -rf BadCigar -R $reference -L $bed   -I $onefile  --genotype_likelihoods_model BOTH   -o $out1 };
 		warn $cmd_uni;
 	system( $cmd_uni
