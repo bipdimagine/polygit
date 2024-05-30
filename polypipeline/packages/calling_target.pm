@@ -1353,6 +1353,7 @@ sub duplicate_region_calling {
 	my $bcftools = $buffer->software("bcftools");
 	my $vcfutil  = $buffer->software("vcfutils");
 	my $samtools = $buffer->software("samtools");
+	my $gatk4  = $project->getSoftware('gatk4');
 	my $vcf_uni =	  calling_target::getTmpFile( $dir_out, $patient->name, "dup.vcf" );
 	my $bamtmp =	  calling_target::getTmpFile( $dir_out, $patient->name, "tmp.bam" );
 	my $bed = calling_target::getTmpFile( $dir_out, $patient->name, "tmp.bed" );
@@ -1380,7 +1381,8 @@ sub duplicate_region_calling {
 	my $recal_string       = "";
 	my $bam_file_string_hc = " -I " . $patient->getBamFile();
 	my $gatk_region        = "";
-	my $cmd_uni =qq{$javac -jar $gatk -T HaplotypeCaller   -R $reference     -rf BadCigar    -I $bamtmp   -o $vcf_uni -L $bed --allow_potentially_misencoded_quality_scores};
+	
+	my $cmd_uni =qq{$gatk4  HaplotypeCaller   -R $reference     -rf BadCigar    -I $bamtmp   -o $vcf_uni -L $bed --allow_potentially_misencoded_quality_scores};
 
 	warn $cmd_uni;
 	system($cmd_uni);
