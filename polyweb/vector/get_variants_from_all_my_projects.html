@@ -448,9 +448,19 @@
 				-webkit-print-color-adjust: exact;
 			}
 		</style>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		
+		
         <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
         <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
 		<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
@@ -466,7 +476,6 @@
         <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
 		<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
 		<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.quicksearch/2.3.1/jquery.quicksearch.js"></script>
 		
          
         <style type="text/css">
@@ -729,6 +738,7 @@
 							var myNode = document.getElementById("content_gene_selection");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
+							enable_table_search();
 	    					dijit.byId('waiting').hide();
 			    		}
 			    		if (key == 'filter_concept') {
@@ -769,6 +779,7 @@
 							var myNode = document.getElementById("content_gene_selection");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
+							enable_table_search();
 	    					dijit.byId('waiting').hide();
 			    		}
 			    		if (key == 'filter_concept') {
@@ -894,6 +905,7 @@
 								var myNode = document.getElementById("content_gene_selection");
 						    	var myPanel = $(val);
 								myPanel.appendTo(myNode);
+								enable_table_search();
 		    					dijit.byId('waiting').hide();
 				    		}
 				    		if (key == 'gencode') {
@@ -918,6 +930,7 @@
 							var myNode = document.getElementById("content_gene_selection");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
+							enable_table_search();
 	    					dijit.byId('waiting').hide();
 			    		}
   					});
@@ -1578,6 +1591,7 @@
 							var myNode = document.getElementById("content_gene_selection");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
+							enable_table_search();
 	    					dijit.byId('waiting').hide();
 			    		}
 			    		if (key == 'nb_genes') {
@@ -1623,6 +1637,7 @@
 							var myNode = document.getElementById("content_gene_selection");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
+							enable_table_search();
 	    					dijit.byId('waiting').hide();
 			    		}
   					});
@@ -1701,6 +1716,10 @@
 					dijit.byId("filter_hgmd_essential_splicing").set('checked', true);
 					dijit.byId("filter_hgmd_maturemirna").set('checked', true);
 				}
+			}
+	    	
+	    	function enable_table_search() {
+	    		$('#table_hgmd_genes').bootstrapTable();
 			}
 			
 		</script>
