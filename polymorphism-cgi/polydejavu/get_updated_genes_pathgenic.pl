@@ -500,14 +500,14 @@ $out_th0 .= qq{</select>};
 $out_th0 .= qq{</div>};
 $out_th0 .= qq{</div>};
 
-$out_th0 .= qq{<div class="col-sm-4">};
-$out_th0 .= qq{<form>};
-$out_th0 .= qq{<div class="form-group">};
-$out_th0 .= qq{<label for="form_search">Quick Search</label>};
-$out_th0 .= qq{<input class="form-control" type="search" name="search" value="" id="id_search" />};
-$out_th0 .= qq{</div>};
-$out_th0 .= qq{</form>};
-$out_th0 .= qq{</div>};
+#$out_th0 .= qq{<div class="col-sm-4">};
+#$out_th0 .= qq{<form>};
+#$out_th0 .= qq{<div class="form-group">};
+#$out_th0 .= qq{<label for="form_search">Quick Search</label>};
+#$out_th0 .= qq{<input class="form-control" type="search" name="search" value="" id="id_search" />};
+#$out_th0 .= qq{</div>};
+#$out_th0 .= qq{</form>};
+#$out_th0 .= qq{</div>};
 
 $out_th0 .= qq{</div>};
 
