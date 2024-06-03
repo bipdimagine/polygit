@@ -968,61 +968,8 @@
 							var myNode = document.getElementById("content_gene_selection");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
-							myPanel.appendTo(myNode);
+							enable_table_search();
 			    			dijit.byId('waiting').hide();
-			    			$("#id_search").quicksearch("table#table_hgmd_genes tbody tr", {
-								noResults: '#noresults',
-								stripeRows: ['odd', 'even'],
-								minValLength: 3,
-								onAfter: (function() {
-									var nb = ($('tr.hgmd_gene:visible')).length;
-									document.getElementById("span_nb_genes_filters").innerHTML = "";
-									document.getElementById("span_nb_genes_filters").innerHTML = nb + ' selected';
-								})
-							});
-			    			$("#form_panels").quicksearch("table#table_hgmd_genes tbody tr", {
-								noResults: '#noresults',
-								stripeRows: ['odd', 'even'],
-								minValLength: 3,
-								onBefore: (function() {
-									$("#id_search").val("");
-								}),
-								onAfter: (function() {
-									document.getElementById("resume_f_panel").innerHTML = ""; 
-									var panel_name = document.getElementById("form_panels").value;
-									panel_name = panel_name.toLowerCase();
-									var init_name = panel_name;
-									
-									$("#id_search").val("");
-									var elements = document.getElementsByClassName('hgmd_gene')
-								    for (var i = 0; i < elements.length; i++){
-								    	if (elements[i].classList.contains('hidden')) { }
-								        else { elements[i].classList.add("hidden"); }
-										elements[i].style.display = 'table-row';
-								    }
-								    if (panel_name == 'hgmd_gene') {
-									    for (var i = 0; i < elements.length; i++){
-									        elements[i].classList.remove("hidden");
-											elements[i].style.display = 'table-row';
-									    }
-								    }
-							    	else {
-										var elements2 = document.getElementsByClassName(panel_name)
-									    for (var i = 0; i < elements2.length; i++){
-									        elements2[i].classList.remove("hidden");
-											elements2[i].style.display = 'table-row';
-									    }
-							    	}
-								    if (init_name == 'hgmd_gene') {}
-						    		else {
-						    		 	if (init_name.length > 20) {init_name = init_name.substring(0, 20)+'...';  }
-						    			document.getElementById("resume_f_panel").innerHTML = "only "+init_name;
-						    		}
-									var nb = ($('tr.hgmd_gene:visible')).length;
-									document.getElementById("span_nb_genes_filters").innerHTML = "";
-									document.getElementById("span_nb_genes_filters").innerHTML = nb + ' selected';
-								})
-							});
 		    			}
 			    		if (key == 'filter_concept') {
 			    			document.getElementById("resume_f_concept").innerHTML = val;
