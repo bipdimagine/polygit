@@ -566,8 +566,9 @@ sub haplotypecaller {
 	my $recal_string       = "";
 	my $bam_file_string_hc = " -I " . $patient->getBamFile();
 	my $gatk_region        = "-L $bed1";
+	my $gatk4  = $project->getSoftware('gatk4');
 	my $cmd_uni =
-qq{$javac -jar $gatk -T HaplotypeCaller   $recal_string   -stand_call_conf 30  -rf BadCigar -R $reference $gatk_region   $bam_file_string_hc   -o $out1 -l off };
+qq{$gatk4  HaplotypeCaller   $recal_string   -R $reference $gatk_region   $bam_file_string_hc   -o $out1 -l off };
 	system( $cmd_uni   . qq{&& $bcftools  filter -i " $filter_bcftools " $out1 > $out && rm $out1} );
 	return $out;
 
