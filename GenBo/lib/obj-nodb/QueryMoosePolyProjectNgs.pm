@@ -1501,4 +1501,39 @@ sub getPersonInfos {
 	return $h->{$person_id};
 }
 
+sub getInfosFromRunName {
+	my ($self, $run_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT p.name as "patient_name", r.run_id, r.plateform_run_name as "plateform_run_name", r.name as "run_name", pr.name as "project_name", pr.description, sp.name  as "specie"
+			FROM PolyprojectNGS.run as r, PolyprojectNGS.patient as p, PolyprojectNGS.projects as pr, PolyprojectNGS.species as sp
+				where r.name=?
+					and r.run_id=p.run_id
+					and p.project_id=pr.project_id
+					and p.species_id=sp.species_id;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($run_name);
+	my $h = $sth->fetchall_hashref('patient_name');
+	return $h;
+	
+}
+
+sub getInfosFromRunMachineId {
+	my ($self, $run_machine_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT p.name as "patient_name", r.run_id, r.plateform_run_name as "plateform_run_name", r.name as "run_name", pr.name as "project_name", pr.description, sp.name  as "specie"
+			FROM PolyprojectNGS.run as r, PolyprojectNGS.patient as p, PolyprojectNGS.projects as pr, PolyprojectNGS.species as sp
+				where r.plateform_run_name=?
+					and r.run_id=p.run_id
+					and p.project_id=pr.project_id
+					and p.species_id=sp.species_id;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($run_machine_name);
+	my $h = $sth->fetchall_hashref('patient_name');
+	return $h;
+}
+
 1;
