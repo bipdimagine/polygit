@@ -180,6 +180,11 @@ sub getProjectLists {
 		$project->{users} = "";
 		if (@$groups){
 			$project->{users} = join(";",@$groups);
+		
+		}
+		else {
+			$project->{users} .= join("\n",map{$_->{email}} @$husers);
+		$project->{users} .= scalar(@$husers)." users " if scalar(@$husers) > 6;	
 		}
 		
 		my $ph;
@@ -191,8 +196,7 @@ sub getProjectLists {
 		
 		my $nb_p = 0;
 		$project->{nb_total} = 0;#$database_nb->{$name_database}->{NB};
-		$project->{users} .= join("\n",map{$_->{email}} @$husers);
-		$project->{users} .= scalar(@$husers)." users " if scalar(@$husers) > 6;	
+		
 		if ($project->{users} eq "") {
 			$project->{users} = qq{--??!!!!!!!!??--};
 		}
