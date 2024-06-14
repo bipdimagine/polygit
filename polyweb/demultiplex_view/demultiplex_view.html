@@ -610,6 +610,24 @@
 			    })
 			}
 			
+			var hash_show_hide_div_patients = [];
+			function show_hide_patients(div_id) {
+				if (hash_show_hide_div_patients[div_id]) {
+					if (hash_show_hide_div_patients[div_id] == "block") {
+						document.getElementById(div_id).style.display='none';
+						hash_show_hide_div_patients[div_id] = "none";
+					}
+					else {
+						document.getElementById(div_id).style.display='block';
+						hash_show_hide_div_patients[div_id] = "block";
+					}
+				}
+				else {
+					document.getElementById(div_id).style.display='block';
+					hash_show_hide_div_patients[div_id] = "block";
+				}
+			}
+			
 		</script>
     </head>
 	<body class="container-fluid" style="overflow-y:scroll;">

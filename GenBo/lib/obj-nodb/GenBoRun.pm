@@ -129,6 +129,114 @@ has description => (
 	},
 );
 
+has hash_fastq_screen_patients_files => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $fastq_screen_dir = $self->fastq_screen_dir();
+		return if not $fastq_screen_dir or not -d $fastq_screen_dir;
+		my $h;
+		foreach my $patient (@{$self->getPatients()}) {
+			my $patient_name = $patient->name();
+			my $fastq_screen_pat_dir = $fastq_screen_dir.'/fastq_screen_'.$patient_name;
+			if (-d $fastq_screen_pat_dir) {
+				opendir my ($dir), $fastq_screen_pat_dir;
+				my @found_files = readdir $dir;
+				closedir $dir;
+				my (@lFiles);
+				foreach my $file (@found_files) {
+					next if $file eq '.';
+					next if $file eq '..';
+					next if not $file =~ /\.html/;
+					$h->{html}->{$patient_name} = $fastq_screen_pat_dir.'/'.$file;
+				}
+				$h->{specie}->{$patient_name} = $fastq_screen_pat_dir.'/'.$patient_name.'_screen_nom_espece.txt';
+			}
+		}
+		return $h;
+	},
+);
+
+has hash_fastq_screen_patients_html_files => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h = $self->hash_fastq_screen_patients_files();
+		return if not $h;
+		return if not exists $h->{html};
+		return $h->{html};
+	},
+);
+
+has hash_fastq_screen_patients_specie_files => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h = $self->hash_fastq_screen_patients_files();
+		return if not $h;
+		return if not exists $h->{specie};
+		return $h->{specie};
+	},
+);
+
+has hash_fastq_screen_patients_specie => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h = $self->hash_fastq_screen_patients_specie_files();
+		return if not $h;
+		my $h2;
+		foreach my $patient (@{$self->getPatients()}) {
+			next if not exists $h->{$patient->name()} or not -e $h->{$patient->name()};
+			open (F, $h->{$patient->name()});
+			my $specie_found = <F>;
+			chomp($specie_found);
+			close (F);
+			$h2->{$patient->name()} = $specie_found;
+		}
+		return $h2;
+	},
+);
+
+has demultiplex_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self        = shift;
+		my $fastq_screen_dir;
+		my $run_name = $self->run_name();
+		my $demultiplex_dir = $self->buffer->config->{project_data}->{demultiplex};
+		opendir my ($dir), $demultiplex_dir;
+		my @found_files = readdir $dir;
+		closedir $dir;
+		my (@lFiles);
+		foreach my $file (@found_files) {
+			next if $file eq '.';
+			next if $file eq '..';
+			next if not $file =~ /$run_name/;
+			my $demultiplex_run_dir = $demultiplex_dir.'/'.$file;
+			return $demultiplex_run_dir if -d $demultiplex_run_dir;
+		}
+		return $fastq_screen_dir;
+	},
+);
+
+has fastq_screen_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self        = shift;
+		my $demultiplex_run_dir = $self->demultiplex_dir();
+		return if not -d $demultiplex_run_dir.'/fastq_screen';
+		my $fastq_screen_dir = $demultiplex_run_dir.'/fastq_screen/';
+		return $fastq_screen_dir;
+	},
+);
+
 has fastq_dir => (
 	is      => 'ro',
 	lazy    => 1,
