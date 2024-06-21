@@ -3572,4 +3572,121 @@ sub upd_file {
 	my $dir = $self->project->getSVDir("UPD");
 	return $dir."/".$self->name.".json";
 }
+
+has fastq_screen_path => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->getProject->fastq_screen_path();
+		$dir .= '/fastq_screen_'.$self->name().'/';
+		unless (-d $dir) {
+			$self->getProject->makedir($dir);
+		}
+		return $dir;
+	},
+);
+
+has fastq_screen_file_html => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h;
+		my $fastq_screen_pat_dir = $self->fastq_screen_path();
+		if (-d $fastq_screen_pat_dir) {
+			opendir my ($dir), $fastq_screen_pat_dir;
+			my @found_files = readdir $dir;
+			closedir $dir;
+			my (@lFiles);
+			foreach my $file (@found_files) {
+				next if $file eq '.';
+				next if $file eq '..';
+				next if not $file =~ /\.html/;
+				return $fastq_screen_pat_dir.'/'.$file;
+			}
+		}
+		return;
+	},
+);
+
+has fastq_screen_file_html_url => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h;
+		my $fastq_screen_html = $self->fastq_screen_file_html();
+		return if not $fastq_screen_html or not -e $fastq_screen_html;
+		$fastq_screen_html =~ s/\/\//\//g;
+		$fastq_screen_html =~ s/\/data-isilon\/sequencing\/ngs\///g;
+		my $polyweb_url = $self->getProject->buffer->config->{polyweb_url}->{polyweb_NGS};
+		return $polyweb_url.'/'.$fastq_screen_html;
+	},
+);
+
+has fastq_screen_file_specie => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $file = $self->fastq_screen_path().'/'.$self->name().'_screen_nom_espece.txt';
+		return $file if -e $file;
+		return;
+	},
+); 
+
+has fastq_screen_found_specie => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $file = $self->fastq_screen_file_specie();
+		return if not $file or not -e $file;
+		open (F, $file);
+		my $specie = <F>;
+		chomp($specie);
+		close (F);
+		return $specie;
+	},
+);
+
+has fastq_screen_perc_contaminants => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $html_file = $self->fastq_screen_file_html();
+		return if not $html_file;
+		my $txt_file = $html_file;
+		$txt_file =~s /\.html/\.txt/;
+		return if not -e $txt_file;
+		my $value;
+		open (F, $txt_file);
+		while (<F>) {
+			my $line = $_;
+			chomp($line);
+			my @lTmp = split(' ', $line);
+			next if $lTmp[0] ne 'Contaminants';
+			my $total = $lTmp[1];
+			my $reads = $lTmp[4] + $lTmp[6];
+			$value = $reads / $total;
+		}
+		close (F);
+		return $value;
+	},
+);
+
+has fastq_screen_has_contaminants => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $perc_contaminants = $self->fastq_screen_perc_contaminants();
+		return if not $perc_contaminants;
+		return 1 if $perc_contaminants >= 1;
+		return;
+	},
+);
+
 1;
