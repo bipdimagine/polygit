@@ -8,6 +8,7 @@ use lib "$Bin/../../GenBo";
 use lib "$Bin/../../GenBo/lib/obj-nodb";
 use GBuffer;
 use File::Basename;
+use Carp;
 
 
 #def variables
@@ -17,9 +18,11 @@ my $fork = 1;
 my @patient_name; 
 my @fastq_patient;
 my $project_name;
+my $patient_name_spec;
 
 GetOptions(
-	'project|p=s' => \$project_name, 
+	'project=s' => \$project_name, 
+	'patient=s' => \$patient_name_spec, 
 	'infile|i=s' => \$infile, 
 	'fork|f=s' => \$fork, 
 	'force=s' => \$force, 
@@ -34,52 +37,23 @@ my $h;
 if ($project_name) {
 	my $project = $buffer->newProject( -name => $project_name );
 	foreach my $run (@{$project->getRuns()}) {
-		my $out_dir = $run->demultiplex_dir."/fastq_screen/";
-		if (not -d $out_dir) {
-			my $cmd_dossier = "mkdir $out_dir"; 
-			system($cmd_dossier);  
-		}
 		foreach my $patient (@{$run->getPatients()}) {
 			my $patient_name = $patient->name();
-			my $path_seq = $patient->getSequencesDirectory();
-			my $fastq_file = select_fastq_file($patient_name, $path_seq);
+			next if $patient_name_spec and $patient_name ne $patient_name_spec; 
+			my $fastq_file = get_fastq_file($patient);
 			$h->{$patient_name}->{fastq} = $fastq_file;
-			$h->{$patient_name}->{outdir} = $out_dir;
+			$h->{$patient_name}->{outdir} = $project->fastq_screen_path();
+			if (not $fastq_file or not -e $fastq_file) {
+				my $fileout = $patient->fastq_screen_path().'/'.$patient_name.'_screen_nom_espece.txt';
+				open (F, ">$fileout");
+				print F "no_fastq_found";
+				close (F);
+			}
 		}
 	}
 }
 elsif ($infile)  {
-	my $out_dir = $buffer->config->{project_data}->{demultiplex}.'/'.$infile.'/';
-	if (not -d $out_dir) {
-		die("\n\n$out_dir doesn't exists... DIE !!! \n\n");
-	}
-	#open(FILE, "$infile"); 
-	#
-	#while (<FILE>) {
-	#	
-	#	chomp($_); 
-	#	if ($_ =~ "output_dir"){
-	#		my @split = split(":", $_);
-	#		$out_dir = $split[1]; 
-	#	}
-	#	
-	#	else{
-	#		my @split = split(":", $_);   
-	#		push(@patient_name, $split[0]);
-	#		push(@fastq_patient, $split[1]);		
-	#	}
-	#}
-	#
-	#close(FILE); 
-	#
-	#my $path = "$out_dir" . "fastq_screen_launch.sh";
-	$out_dir = "$out_dir/fastq_screen/";
-	if (not -d $out_dir) {
-		my $cmd_dossier = "mkdir $out_dir"; 
-		system($cmd_dossier);  
-	}
-	$h = fastq_file($infile);
-	foreach my $pat_name(keys %$h) { $h->{$pat_name}->{outdir} = $out_dir; }
+	$h = get_fastq_file_from_run($infile);
 }
 
 
@@ -91,6 +65,30 @@ foreach my $patient_name (keys %$h) {
 	if (-e $fastq) {
 		my $cmd = "perl $Bin/methodes_fqs.pl -i $fastq -o $out_dir -c $Bin/fastq_screen.conf -n $patient_name -t 1";
 		system($cmd);
+		if ($project_name) {
+			my $b = new GBuffer;
+			my $p = $b->newProject( -name => $project_name );
+			my $patient = $p->getPatient($patient_name);
+			my $run = $patient->getRun();
+			my $fileout = $run->demultiplex_dir().'/fastq_screen/fastq_screen_'.$patient_name.'/'.$patient_name.'_screen_nom_espece.txt';
+			my $fileout_error = $fileout.'.error';
+			`rm $fileout_error` if -e $fileout_error;
+			confess ("\n\nERROR: $fileout not found for $patient_name. Die...\n\n") if not -e $fileout;
+			open (F, $fileout);
+			my $specie_found = <F>;
+			chomp($specie_found);
+			close (F);
+			my $h_db = $buffer->get_demultiplex_run_infos($run->run_name());
+			my $specie_db = lc($h_db->{$patient_name}->{specie});
+			if (lc($specie_db) ne lc($specie_found)) {
+				`mv $fileout $fileout_error`;
+				warn "\n\n";
+				warn 'Patient: '.$project_name;
+				warn 'Patient: '.$patient_name;
+				warn Dumper $h_db;
+				warn "\n\nERROR: no same specie found DB:$specie_db - FastqScreen:$specie_found. Die...\n\n";
+			}
+		}
 	}
 	$pm->finish();
 }
@@ -99,8 +97,16 @@ $pm->wait_all_children();
 
 
 
+sub get_fastq_file {
+	my ($patient) = @_;
+	foreach my $h_fastq (@{$patient->fastqFiles()}) {
+		return $h_fastq->{R2} if exists $h_fastq->{R2} and -e $h_fastq->{R2};
+	}
+	return;
+}
 
-sub fastq_file {
+
+sub get_fastq_file_from_run {
 	my ($run_name) = @_ ; #"240527_NB501645_0851_AHV33YAFX5.NGS2024_7774"
 	$run_name =~ s/\.NGS20.+//;
 	my $h = $buffer->get_demultiplex_run_infos($run_name);
@@ -111,37 +117,13 @@ sub fastq_file {
 		$last_patient_name = $patient_name;
 		my $proj = $buffer->newProject( -name => $h->{$patient_name}->{'project_name'} );
 		my $pat = $proj->getPatient($patient_name);
-		my $path_seq = $pat->getSequencesDirectory();
-		my $fastq_file = select_fastq_file($patient_name,$path_seq );
+		my $fastq_file = get_fastq_file($pat);
 		$hash{$patient_name}{fastq} = $fastq_file;
+		$hash{$patient_name}{outdir} = $proj->fastq_screen_path();
 	}
 	return \%hash; 
 }
 
-sub select_fastq_file {
-	my ($patient_name, $path_seq) = @_;
-	my $fastq_file;
-	opendir my ($dir), $path_seq;
-	my @found_files = readdir $dir;
-	closedir $dir;
-	my (@lFiles);
-	foreach my $file (@found_files) {
-		next if $file eq '.';
-		next if $file eq '..';
-		my $file_2 = $path_seq.'/'.$patient_name;
-		my $regexp = $patient_name.'_S.+_R2_[L]?001.fastq.gz';
-		if ($file =~ /$regexp/) {
-			$fastq_file = $path_seq.'/'.$file;
-			last if -e $fastq_file;
-		}
-		my $regexp_RC = $patient_name.'_RC_S.+_R2_[L]?001.fastq.gz';
-		if ($file =~ /$regexp_RC/) {
-			$fastq_file = $path_seq.'/'.$file;
-			last if -e $fastq_file;
-		}
-	}
-	return $fastq_file;
-}
 
 
 

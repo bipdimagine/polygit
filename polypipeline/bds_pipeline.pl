@@ -272,6 +272,7 @@ my $steps = {
 				"deepvariant" => sub {$pipeline->deepvariant(@_)},
 				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
 				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
+				"specie_contaminant_check" => sub {$pipeline->check_specie_contaminant(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');
