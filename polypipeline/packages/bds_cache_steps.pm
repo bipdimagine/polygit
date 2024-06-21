@@ -4,7 +4,7 @@ use FindBin qw($Bin);
 use lib "$Bin";
 #use root_steps;
 use Moose;  
-
+use bds_steps;
 use job_bds;
 use sample;
 use Data::Dumper;
@@ -977,6 +977,11 @@ sub coverage {
 	}
 	return $filein;
 	
+}
+
+sub check_specie_contaminant {
+	my ($self,$hash) = @_;
+	return bds_steps::check_specie_contaminant($self, $hash);
 }
 
 1;

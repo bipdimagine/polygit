@@ -221,78 +221,77 @@ foreach my $date (reverse sort keys %$h_files_date) {
 		$path_run = dirname($path_run);
 	}
 
-	if (-d $path_run.'/fastq_screen/') {
+#	if (-d $path_run.'/fastq_screen/') {
 		
 		
-		my @lTmp = split('/', $path_run);
-		$run_name = $lTmp[-1];
-		$run_name_db = $lTmp[-1];
-		$run_name_db =~ s/\.NGS20.+//;
-		my $h_db = $buffer->get_demultiplex_run_infos($run_name_db);
+	my @lTmp = split('/', $path_run);
+	$run_name = $lTmp[-1];
+	$run_name_db = $lTmp[-1];
+	$run_name_db =~ s/\.NGS20.+//;
+	my $h_db = $buffer->get_demultiplex_run_infos($run_name_db);
 
+	my $h_db_by_proj;
+	foreach my $pat_name (sort keys %{$h_db}) {
+		my $project_name = $h_db->{$pat_name}->{project_name};
+		$h_db_by_proj->{$project_name}->{$pat_name} = undef;
+	}
 		
-		my $h_by_proj;
-		foreach my $pat_name (sort keys %{$h_db}) {
-			my $project_name = $h_db->{$pat_name}->{project_name};
-			opendir my ($dir), $path_run.'/fastq_screen/fastq_screen_'.$pat_name."/";
-			
-			my @found_files = readdir $dir;
-			closedir $dir;
-			my (@lFiles);
-			foreach my $file (@found_files) {
-				next if $file eq '.';
-				next if $file eq '..';
-				my $file_2 = $path_run.'/fastq_screen/fastq_screen_'.$pat_name."/".$file;
-				if ($file_2 =~ /_screen.html/) {
-					my $file_name_html = $file_2;
-					$file_name_html =~ s/_L00.+.html//;
-					$file_name_html =~ s/\/data-isilon\/sequencing\/ngs\///;
-					my $path_html = $file_2;
-					$path_html =~ s/\/data-isilon\/sequencing\/ngs\//\/NGS\//;
-					$file =~ s/_S[0-9]_[RL][0-9][0-9][0-9]_[A-Z][0-9]_[0-9][0-9][0-9]_screen.html//;
-					$file =~ s/_S[0-9]_[RL][0-9][0-9][0-9]_[A-Z][0-9]_[0-9][0-9][0-9]_screen.html//;
-					push(@l_FastqScreen, $path_html);
-					
-					my $specie_found = 'not';	
-					my $path_file_found_specie = $path_run.'/fastq_screen/fastq_screen_'.$pat_name."/".$pat_name."_screen_nom_espece.txt";
-					if (-e $path_file_found_specie) {
-						open (F, $path_file_found_specie);
-						$specie_found = <F>;
-						chomp($specie_found);
-						close (F);
-						my ($glyph, $species_text, $spec1, $spec2);
-						if (lc($h_db->{$pat_name}->{specie}) eq lc($specie_found)) {
-							$color = "#176917";
-							$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-ok" aria-hidden="true"></span>};
-							if (lc($specie_found) eq 'human') { $species_text = 'HS'; }
-							elsif (lc($specie_found) eq 'mouse') { $species_text = 'MM'; }
-							else { $species_text = 'OTHER'; }
-							$h_by_proj->{$project_name}->{$pat_name}->{ok} = 1;
-						}
-						else {
-							$color = "red";
-							$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-remove" aria-hidden="true"></span>};
-							if (lc($h_db->{$pat_name}->{specie}) eq 'human') { $spec1 = 'HS'; }
-							elsif (lc($h_db->{$pat_name}->{specie}) eq 'mouse') { $spec1 = 'MM'; }
-							else { $h_db->{$pat_name}->{specie} = 'OTHER'; }
-							if (lc($specie_found) eq 'human') { $spec2 = 'HS'; }
-							elsif (lc($specie_found) eq 'mouse') { $spec2 = 'MM'; }
-							else { $spec2 = 'OTHER'; }
-							$species_text = $spec1.'/'.$spec2;
-							$h_by_proj->{$project_name}->{$pat_name}->{error} = 1;
-						}
-						my $pat_name_text = $pat_name;
-						$pat_name_text = substr $pat_name_text,0,15;
-						$pat_name_text= '['.lc($h_db->{$pat_name}->{specie}).'/'.lc($specie_found).'] '.$pat_name_text if $color eq 'red';
-						my $b_view_fq = qq{ <a title="$pat_name" target="_blank" href="$path_html"><span style="color:$color;">$pat_name_text</span></a> };
-						my $div = qq{<div class='col-xs-6 col-xl-4' style='padding:0px;margin:0px;background-color:Transparent;'>$glyph $b_view_fq</div>};
-						$h_by_proj->{$project_name}->{$pat_name}->{html} = $div;
+		
+		
+	my $h_by_proj;
+	foreach my $project_name (sort keys %{$h_db_by_proj}) {
+		my $b = new GBuffer;
+		my $proj = $b->newProject( -name => $project_name );
+		foreach my $pat_name (sort keys %{$h_db_by_proj->{$project_name}}) {
+			my $patient = $proj->getPatient($pat_name);
+			my $specie_found = $patient->fastq_screen_found_specie();
+			if ($specie_found) {
+				my ($glyph, $species_text, $spec1, $spec2);
+				if (lc($h_db->{$pat_name}->{specie}) eq lc($specie_found)) {
+					if ($patient->fastq_screen_has_contaminants()) {
+						$color = "#F4A582";
+						$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-remove" aria-hidden="true"></span>};
+						$species_text = 'contamination'; 
+						$h_by_proj->{$project_name}->{$pat_name}->{error} = 1;
+						
+					}
+					else {
+						$color = "#176917";
+						$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-ok" aria-hidden="true"></span>};
+						if (lc($specie_found) eq 'human') { $species_text = 'HS'; }
+						elsif (lc($specie_found) eq 'mouse') { $species_text = 'MM'; }
+						else { $species_text = 'OTHER'; }
+						$h_by_proj->{$project_name}->{$pat_name}->{ok} = 1;
 					}
 				}
+				else {
+					$color = "red";
+					$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-remove" aria-hidden="true"></span>};
+					if (lc($h_db->{$pat_name}->{specie}) eq 'human') { $spec1 = 'HS'; }
+					elsif (lc($h_db->{$pat_name}->{specie}) eq 'mouse') { $spec1 = 'MM'; }
+					else { $h_db->{$pat_name}->{specie} = 'OTHER'; }
+					if (lc($specie_found) eq 'human') { $spec2 = 'HS'; }
+					elsif (lc($specie_found) eq 'mouse') { $spec2 = 'MM'; }
+					else { $spec2 = 'OTHER'; }
+					$species_text = $spec1.'/'.$spec2;
+					$h_by_proj->{$project_name}->{$pat_name}->{error} = 1;
+				}
+				my $path_html = $patient->fastq_screen_file_html_url();
+				my $pat_name_text = $pat_name;
+				$pat_name_text = substr $pat_name_text,0,15;
+				$pat_name_text= '['.lc($h_db->{$pat_name}->{specie}).'/'.lc($specie_found).'] '.$pat_name_text if $color eq 'red';
+				my $b_view_fq = qq{ <a title="$pat_name" target="_blank" href="$path_html"><span style="color:$color;">$pat_name_text</span></a> };
+				my $div = qq{<div class='col-xs-4 col-xl-3' style='padding:0px;margin:0px;background-color:Transparent;'>$glyph $b_view_fq</div>};
+				$h_by_proj->{$project_name}->{$pat_name}->{html} = $div;
 			}
+			
 		}
-		
-		
+		$proj = undef;
+		$b = undef;
+	}
+	
+	if ($h_by_proj) {
+		$tr .= qq{<td style="font-size:8px;padding:0px;margin:0px;"><center><div class="row" style="padding:0px;margin:0px;">};
 		my (@lThisTag, $this_tag, @lThisTR, @lPatOk, @lPatError);
 		foreach my $project_name (sort keys %{$h_by_proj}) {
 			push (@lThisTag, $project_name);
@@ -314,37 +313,37 @@ foreach my $date (reverse sort keys %$h_files_date) {
 			if ($ok > 0) {
 				my $div_id = "div_ok_".$run_name.'_'.$project_name;
 				my $html_ok = qq{<div id="$div_id" class="col-xs-12" style="padding:0px;margin:0px;background-color:Transparent;display:none;"><div class="row" style="padding:0px;margin:0px;">}.join("", @lPatOk).qq{</div></div>};
-				push(@lThisTR, qq{<button onClick="show_hide_patients('$div_id')" style="margin-left:5px;color:green;">Ok $ok/$total</button>});
+				push(@lThisTR, qq{<button onClick="show_hide_patients('$div_id')" style="margin-left:5px;color:green;">Ok $ok/$total</button></div>});
 				push(@lThisTR, $html_ok);
 				
 			}
-			else { push(@lThisTR, qq{<button style="margin-left:5px;" disabled>Ok $ok/$total</button>}); }
+#			else { push(@lThisTR, qq{<button style="margin-left:5px;" disabled>Ok $ok/$total</button>}); }
 			
-			if ($error == 0) {
-				push(@lThisTR, qq{<button style="margin-left:5px;" disabled>Error $error/$total</button></div>});
-			}
-			else {
+#			if ($error == 0) {
+#				push(@lThisTR, qq{<button style="margin-left:5px;" disabled>Error $error/$total</button></div>});
+#			}
+#			else {
+			if ($error > 0) {
 				my $div_id_error = "div_error_".$run_name.'_'.$project_name;
 				my $html_error = qq{<div id="$div_id_error" class="col-xs-12" style="padding:0px;margin:0px;background-color:Transparent;display:none;"><div class="row" style="padding:0px;margin:0px;">}.join("", @lPatError).qq{</div></div>};
 				push(@lThisTR, $html_error);
 				push(@lThisTR, qq{<button onClick="show_hide_patients('$div_id_error')" style="margin-left:5px;color:white;background-color:red;">Error $error/$total</button></div>});
 			}
-			
 			@lPatOk = ();
 			@lPatError = ();
 		}
 		
 		$this_tag = join(';', @lThisTag);
 		
-		$tr .= qq{<td style="font-size:8px;padding:0px;margin:0px;"><center>};
-		$tr .= qq{<div class="row" rowspan="$row_span" style="padding:0px;margin:0px;">};
+		$tr .= qq{<div class="row" style="padding:0px;margin:0px;">};
 		foreach my $this_tr (@lThisTR) { $tr .= $this_tr; }
 		$tr .= qq{</div>};
 		$tr .= qq{</center></td>};
 		$row_span = 1;
 	}
 	else { $tr .= qq{<td></td>}; }
-	$tr .= qq{<td style="min-width:100px;">$b_view</td>};
+		
+	$tr .= qq{</div><td style="min-width:100px;">$b_view</td>};
 #	die if $run_name eq 'run487';
 	$tr .= qq{</tr>};
 	$html_table .= $tr;
@@ -991,7 +990,7 @@ sub list_html_files_in_dir {
 				$is_ok = undef;
 				my $today = time;
 				my $modtime = (stat ($path_file))[9];
-				my $interval = 86400*90;
+				my $interval = 86400*60;
 				my $delta = ($today - $modtime);
 				if ($delta < $interval) { $is_ok = 1; }
 			}

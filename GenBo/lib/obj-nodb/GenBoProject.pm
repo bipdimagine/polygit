@@ -1179,6 +1179,19 @@ has version => (
 	},
 );
 
+has fastq_screen_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->getProjectRootPath().'/fastq_screen/';
+		unless (-d $dir) {
+			$self->makedir($dir);
+		}
+		return $dir;
+	},
+);
+
 has project_root_path => (
 	is      => 'rw',
 	lazy    => 1,
