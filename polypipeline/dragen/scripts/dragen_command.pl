@@ -234,11 +234,15 @@ if (exists $pipeline->{align}){
 	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	 
 }
+if (!($fastq1)) {
+	my $bamfile = $patient->getBamFileName("bwa");
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+}
 if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
 	my $patient_ori = $project_ori->getPatient($patients_name);
-	 $patient_ori->{alignmentMethods} =['dragen-align','bwa'];
+	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
 	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
 	$param_align .= "--output-format CRAM " if $version =~/HG38/;
@@ -249,7 +253,9 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 }	
 elsif (exists $pipeline->{align}){
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-	confess() unless $fastq1;
+	
+#	confess() unless $fastq1;
+	if ($fastq1) {
 	my $runid = $patient->getRun()->id;
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
@@ -264,6 +270,12 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 		$param_align .= qq{ --enable-duplicate-marking true };
 	 }
 	 $param_align .= " --output-format CRAM " if $version =~/HG38/;
+	}
+	else {
+		my $bamfile = $patient->getBamFileName("bwa");
+		confess() unless -e $bamfile;
+		$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+	}
 }
 else {
 	my $bam = $patient->getBamFileName();
