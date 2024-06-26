@@ -81,7 +81,7 @@ my $cmd_cancel = [];
 my $step_name;
 my $force;
 my $rna;
-my $phased;
+my $phased = 0;
 my $neb;
 
 GetOptions(
@@ -615,7 +615,7 @@ sub run_command {
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});;
 	
 	$job->{cmd} .= " -umi=1 " if $umi;
-	$job->{cmd} .= " -rna=1 " if $rna == 1;
+	$job->{cmd} .= " -rna=1 " if $rna;
 	$job->{cmd} .= " -version=$version " if $version;
 	$job->{cmd} .= " -phased=$phased " if $phased;
 	$job->{cmd} .= " -neb=$neb " if $neb;
