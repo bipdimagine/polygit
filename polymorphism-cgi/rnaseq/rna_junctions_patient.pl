@@ -198,18 +198,24 @@ my ( $is_partial_results, $use_cat, $min_partial_score );
 my $no_cache = $patient->get_lmdb_cache("r");
 my $cache_vectors_enum_id = $patient->name() . '_' . '_chr_vectors_enum';
 my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
-$use_cat = countMinCatToUse($h_res_v_enum);
-print ".$use_cat.";
-foreach my $chr_id ( keys %$h_res_v_enum ) {
-	my $v_filters = $project->getChromosome($chr_id)->getNewVector();
-	$v_filters->from_Enum( $h_res_v_enum->{$chr_id}->{$use_cat} );
-	$h_chr_vectors->{$chr_id}->Intersection( $h_chr_vectors->{$chr_id}, $v_filters );
-}
-$is_partial_results = 1;
-$min_partial_score  = $use_cat;
-$min_partial_score =~ s/min//;
-$min_partial_score -= 4;
-$min_partial_score = 0 if $min_partial_score < 0;
+
+
+#warn $j_total;
+#die;
+#
+##$min_partial_score = 0 if ()
+#$use_cat = countMinCatToUse($h_res_v_enum);
+#print ".$use_cat.";
+#foreach my $chr_id ( keys %$h_res_v_enum ) {
+#	my $v_filters = $project->getChromosome($chr_id)->getNewVector();
+#	$v_filters->from_Enum( $h_res_v_enum->{$chr_id}->{$use_cat} );
+#	$h_chr_vectors->{$chr_id}->Intersection( $h_chr_vectors->{$chr_id}, $v_filters );
+#}
+#$is_partial_results = 1;
+#$min_partial_score  = $use_cat;
+#$min_partial_score =~ s/min//;
+#$min_partial_score -= 4;
+$min_partial_score = 0 if $j_total > 20000;
 
 my $percent_dejavu = 0;
 if ( defined($use_percent_dejavu) ) {
