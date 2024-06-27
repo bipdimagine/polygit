@@ -301,12 +301,6 @@ sub get_nb_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
 	return $self->{nb_new_count}->{$patient->name()} if (exists $self->{nb_new_count}->{$patient->name()});
-	if ($self->isRI($patient) or $self->isSE($patient)) {
-		if ($self->isCanonique()) { 
-			$self->{nb_new_count}->{$patient->name()} = 0;
-			return 0;
-		} 
-	}
 	my $count = 0;
 	if (exists $self->annex->{$patient->name()}->{junc_new_count}) {
 		$count  = $self->annex->{$patient->name()}->{junc_new_count};
@@ -325,6 +319,10 @@ sub get_nb_new_count {
 sub get_canonic_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
+	if ($self->isCanonique()) { 
+		$self->{nb_new_count}->{$patient->name()} = 0;
+		return 0;
+	} 
 	if ($self->isRI($patient) or $self->isSE($patient)) {
 		my $nb;
 		$nb = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
@@ -332,6 +330,7 @@ sub get_canonic_count {
 		return $self->getCoverageInInterval($patient);
 	}
 	return $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
+	return 0;
 	confess();
 }
 
