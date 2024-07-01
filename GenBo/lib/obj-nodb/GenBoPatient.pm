@@ -3667,6 +3667,7 @@ has fastq_screen_perc_contaminants => (
 			my $line = $_;
 			chomp($line);
 			my @lTmp = split(' ', $line);
+			next if scalar(@lTmp) < 2;
 			next if $lTmp[0] ne 'Contaminants';
 			my $total = $lTmp[1];
 			my $reads = $lTmp[4] + $lTmp[6];
