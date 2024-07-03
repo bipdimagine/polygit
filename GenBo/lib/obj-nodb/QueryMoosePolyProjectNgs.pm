@@ -1296,8 +1296,7 @@ sub getListProjectsRnaSeq {
 	}
 	my $h = $sth->fetchall_hashref('id');
 	my $h2 = $sth2->fetchall_hashref('project_id');
-	
-	
+
 	my @l_projects_ids = keys %$h;
 	foreach my $pr_id (keys %$h2) {
 		push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});
@@ -1311,11 +1310,14 @@ sub getListProjectsRnaSeq {
 		my $h_patients = $sth2->fetchall_hashref('name');
 		my ($is_rna, $h_captures);
 		foreach my $patient_name (keys %$h_patients) {
+			next if ($h_patients->{$patient_name}->{capAnalyse} eq 'singlecell');
 			$is_rna = 1 if ($h_patients->{$patient_name}->{type} eq 'rna');
 			$is_rna = 1 if ($h_patients->{$patient_name}->{capAnalyse} eq 'rnaseq');
 			$h_captures->{$h_patients->{$patient_name}->{capName}} = undef;
 		}
 		next unless ($is_rna);
+		
+		
 		my @l_versions = split(' ', $h->{$project_id}->{ppversionid});
 		@l_versions = sort {$a <=> $b} @l_versions;
 		my $max_annot = $self->getMaxPublicDatabaseVersion();
