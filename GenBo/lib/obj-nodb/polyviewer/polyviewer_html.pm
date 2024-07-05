@@ -790,7 +790,7 @@ sub init_fam {
 	my @bams;
 	my @names;
 	foreach my $p (@{$self->patient->getFamily->getPatients()}){
-			next unless -e $p->getBamFileName;
+			next unless -e $p->getAlignFileName;
 			push(@bams,$p->bamUrl);
 			push(@names,$p->name());
 		 }

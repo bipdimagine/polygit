@@ -48,7 +48,9 @@ use JSON::XS;
 use GenBoNoSql;
 use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
+use GenBoNoSqlDejaVuCNV;
 use GenBoNoSqlDejaVuSV;
+use GenBoNoSqlDejaVuSV_agregate;
 use GenBoNoSqlDejaVuJunctions;
 use GenBoNoSqlDejaVuJunctionsCanoniques;
 use GenBoNoSqlDejaVuJunctionsPhenotype;
@@ -4723,15 +4725,37 @@ has litregionsIntervalTree => (
 #		return $dir;
 #	}
 #);
-
-has dejavuSV => (
+has dejavuCNV => (
 	is		=> 'ro',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
 		my $sqliteDir =   $self->DejaVuCNV_path;
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
-		return  GenBoNoSqlDejaVu->new( dir => $sqliteDir, mode => "r" );
+		return  GenBoNoSqlDejaVuCNV->new( dir => $sqliteDir, mode => "r" );
+		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
+	}
+);
+has dejavuSV => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $sqliteDir =   $self->DejaVuSVeq_path;
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		return  GenBoNoSqlDejaVuSV->new( dir => $sqliteDir, mode => "r" );
+		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
+	}
+);
+has dejavuSVAgregate => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $sqliteDir =   $self->DejaVuSVeq_path;
+		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		warn $sqliteDir;
+		return  GenBoNoSqlDejaVuSV_agregate->new( dir => $sqliteDir, mode => "r" );
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
 	}
 );

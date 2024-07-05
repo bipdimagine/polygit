@@ -642,7 +642,9 @@ sub score {
 	$score += 1 if $self->is_omim_morbid();
 
 	my $polyScore = $self->project->lmdbpolyScore->get($self->id);
+	return $score unless $polyScore;
 	my $phenotypes = $self->getProject->getPhenotypes();
+	
 	my @pscore;
 	if ($phenotypes){
 		foreach my $ph (@$phenotypes){
@@ -655,7 +657,7 @@ sub score {
 		map {push(@pscore,$polyScore->{$_}->{score})} keys %$polyScore;
 	}
 	#warn Dumper(@pscore);
-
+	
 	$score += max(@pscore) if @pscore;
 	$self->{score} = $score;
 	return $score;
@@ -668,14 +670,13 @@ sub raw_score {
 		my $score = 0;
 		$score += 0.5 if $self->pLI ne "-" && $self->pLI > 0.95;
 		my $gpheno = $self->phenotypes();
-		
 		my $pscore =0;
 		$score += 1 if $self->is_omim_morbid();
 		warn $score if $debug;
 		my $apheno = $self->getPhenotypes();
+
 	#	warn $score if $debug;
 		foreach my $pheno (@{$self->getProject->getPhenotypes}){
-			warn $pheno->name() if $debug;
 			foreach my $k  (@{$pheno->keywords()}) {
 				my $lk = lc($k);
 				if ($gpheno =~ /$lk/){

@@ -311,6 +311,8 @@ sub getModelVector_fam_pb_ho_he {
 sub getVector_individual_uniparental_disomy {	
 	my ($self, $chr,$child,$compute) = @_;
 	return $chr->getNewVector() unless $child->isChild;
+	#return $chr->getNewVector() unless  $self->getMother;
+	return $chr->getNewVector() unless  $self->getFather;
 	my $key = "uniparental_".$child->name;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	if ($self->project->isRocks && (! defined $compute)){
@@ -329,11 +331,15 @@ sub getVector_individual_uniparental_disomy {
 	}
 	
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getVectorOriginHo($chr);
+		warn "++++++++++++++++++++";
+	warn $self->name;
+	warn $self->getMother->name();
+	warn $self->getFather->name();
 	
 	my $v1 = $self->getMother->getVectorOriginHe($chr)->Clone;
 	$v1 -=  $self->getFather->getVectorOrigin($chr);
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $v1;
-	
+
 	my $v2 = $self->getFather->getVectorOriginHe($chr)->Clone;
 	$v2 -=  $self->getMother->getVectorOrigin($chr);
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $v2;

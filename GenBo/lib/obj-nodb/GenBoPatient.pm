@@ -477,12 +477,13 @@ has 'coverage_SRY' => (
 		  grep { $_->name eq 'Y' } @{ $self->project->getChromosomes };
 		return -1 unless $find;
 	
-		my $sambamba = $self->buffer->software("sambamba");
+		my $samtools = $self->buffer->software("samtools");
 		my $intspan_capture =
 		  $self->project->getChromosome('Y')->getCapturesGenomicSpan();
 		my $intSpan = Set::IntSpan::Fast::XS->new(
 			"6736370-6736371,6736442-6736443,6737844-6737845,2654896-2655740");
-
+		$intSpan =  Set::IntSpan::Fast::XS->new(
+			"6868329-868330,6868401-6868402,6869803-6869804,2786855-2787699") if $self->project->version =~/HG38/;
 		my $zint = $intspan_capture->intersection($intSpan);
 
 		return -1 if $zint->is_empty;
@@ -492,10 +493,11 @@ has 'coverage_SRY' => (
 		my $bam      = $self->getBamFile();
 		my $max_mean = -50;
 		while ( my ( $from, $to ) = $iter->() ) {
-			my ($res) =
-`$sambamba depth region $bam -L $chr_name:$from-$to 2>/dev/null | grep $chr_name | cut -f 5`;
-			$res = 0 unless $res;
+			my $cmd = qq{$samtools depth  $bam -r $chr_name:$from-$to 2>/dev/null   | cut -f 3  | awk \'NR==1 \|\| \$1 > max {max=\$1} END {print max}\'};
+			my ($res) = `$cmd`;
 			chomp($res);
+			$res = 0 unless $res;
+			
 
 			#$res = 0 unless $res;
 
@@ -1303,7 +1305,7 @@ has bamUrl => (
 		die() if ( scalar( @$methods > 1 ) );
 		my $method_name = $methods->[0];
 		my $bam_dir     = $self->getProject->getAlignmentUrl($method_name);
-		my $bamf        = $self->getBamFileName();
+		my $bamf        = $self->getAlignFileName();
 		my (@t) = split( "/", $bamf );
 
 		#warn $bam_dir;
@@ -1456,7 +1458,13 @@ sub getRecalFile {
 	  . ".recal.table";
 }
 
-
+sub getAlignFileName {
+	my ( $self, $method_name ) = @_;
+	my $bam = $self->getBamFileName($method_name);
+	return $bam if -e  $bam;
+	my $cram = $self->getCramFileName($method_name);
+	return $cram;
+}
 
 sub getBamFileName {
 	my ( $self, $method_name ) = @_;
@@ -3063,6 +3071,8 @@ has small_icon => (
 	}
 );
 
+
+
 has nb_reads => (
 	is => 'ro',
 
@@ -3386,7 +3396,9 @@ sub get_string_identification {
 	my ($self) = @_;
 	my $idv = $self->identity_vigilance;
 	$idv = "" unless $idv;
-	my $stv =  $self->name.":".$self->id."-".$self->identity_vigilance_vcf()."-".$idv."-".$self->sex."-".$self->status;
+	my $idvcf = $self->identity_vigilance_vcf();
+	 $idvcf ="" unless  $idvcf;
+	my $stv =  $self->name.":".$self->id."-".$idvcf."-".$idv."-".$self->sex."-".$self->status;
 	$stv =~ s/_/-/g;
 	return $stv;
 }

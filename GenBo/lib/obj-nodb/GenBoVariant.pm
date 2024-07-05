@@ -2891,8 +2891,7 @@ sub getNormDPAfter {
 sub getCNVDude {
 	my ($self,$patient) = @_;
 	my $pid = $patient->id;
-
-	
+	return "??" if $self->dp_infos->{$pid}->[2] eq "-";
 	return sprintf("%.2f", $self->buffer->log2($self->dp_infos->{$pid}->[2]/100));
 }
 

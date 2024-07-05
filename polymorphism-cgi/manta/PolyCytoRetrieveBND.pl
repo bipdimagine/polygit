@@ -49,6 +49,10 @@ my $project = $buffer->newProjectCache( -name => $projectname);
 # ceux qui sont de la même famille
 my $thePatient = $project->getPatient($patientname);
 my $thePatientFamily = $thePatient->getFamily();
+
+my $file_in = $thePatient->_getCallingSVFileWithMethodName("manta","variations");
+my $tabix = Bio::DB::HTS::Tabix->new( filename => $file_in );
+
 my $mothername;
 my $fathername;
 
@@ -115,7 +119,6 @@ foreach my $type (keys %{$hdejavuCNVProject})
 	
 ## pour acceder au dejavu global  des CNVs
 my $dejavuCNVdir = $project->DejaVuCNV_path();
-my $lmdbCNV = GenBoNoSqlLmdb->new(dir=>$dejavuCNVdir,mode=>"r",name=>"dejavu_sv",is_compress=>1);	
 
 ###########################################################################################
 
@@ -123,16 +126,12 @@ my $lmdbCNV = GenBoNoSqlLmdb->new(dir=>$dejavuCNVdir,mode=>"r",name=>"dejavu_sv"
 my $hTransLoc = retrieve($BNDfile) or die "Can't retrieve datas from " . $BNDfile . " !\n";
 my $hdejavu = retrieve($TranslocDejavufile) or die "Can't retrieve datas from " . $TranslocDejavufile . " !\n";
 my $hdejavubis;
-
+my $no_sv = $project->dejavuSV();
+#my $no1 = $project->dejavuCNV();
 my $nbPatientTotal = scalar (keys %{$hallPatient});
 
 # pour accelerer le dejavu des BND
-foreach my $djv_event_id (keys %{$hdejavu})
-{
-		my ($c1,$p1,$c2,$p2) = split(/_/,$djv_event_id);
-		my $k = $c1."_".$c2;
-		$hdejavubis->{$k}->{$djv_event_id}=$hdejavu->{$djv_event_id};
-}
+
 
 foreach my $event_id (keys %$hTransLoc)
 {
@@ -144,7 +143,7 @@ foreach my $event_id (keys %$hTransLoc)
 	}
 
 	
-	
+	warn $event_id;
 	# pour le dejavu
 	my $listpat_itp ="";
 	my $listpat_iop ="";
@@ -191,8 +190,11 @@ foreach my $event_id (keys %$hTransLoc)
 		$c2 ="Y";
 	}
 	
+	
 	my $cb1;
 	my $cb2;
+	my $oc1 = $project->getChromosome($c1);
+	my $oc2 = $project->getChromosome($c2);
 	
 	# cas particulier des inversions
 	if ($type eq "inv")
@@ -203,9 +205,14 @@ foreach my $event_id (keys %$hTransLoc)
 	{
 		$hTransLoc->{$event_id}->{"LENGTH"} = "-" ;
 	}
+	 my $dvlite = $no_sv->get_sv($c1,$bp1-50,$c2,$bp2+50,$dejavu + 1);
+	 
+	 next if $dvlite->{dv_patients} > ($dejavu + 1);
+	unless($dejavu eq "all") {next if ( $dvlite->{patients} > $dejavu + 1)};
 	
+	 #20|9852693|9852798|21|20490513|20490613
+	#20|54108694|54108694|21|32583601|32583607
 	$hTransLoc->{$event_id}->{"TRANSLOC"} = $type."##".$c1."##".$hTransLoc->{$event_id}->{"CYTOBAND1"}."##".$c2."##".$hTransLoc->{$event_id}->{"CYTOBAND2"};
-	
 	$hTransLoc->{$event_id}->{"CYTOBAND1"} = $c1.$hTransLoc->{$event_id}->{"CYTOBAND1"};
 	$hTransLoc->{$event_id}->{"CYTOBAND2"} = $c2.$hTransLoc->{$event_id}->{"CYTOBAND2"};
 	
@@ -222,72 +229,77 @@ foreach my $event_id (keys %$hTransLoc)
 	my $identity1;
 	my $identity2;
 	
-	my $k=$chr1."_".$chr2;
-	
-	foreach my $djv_event_id (keys %{$hdejavubis->{$k}})
-	{
-		
-		my ($c1,$p1,$c2,$p2) = split(/_/,$djv_event_id);
 
-		next if ( ($p1 < $bp1-50) || ($p1 >$bp1+50) );
-		next if ( ($p2 < $bp2-50) || ($p2 >$bp2+50) );
-				
-		$identity1 = $p1-$bp1;
-		$identity2 = $p2-$bp2;
-		
-		$transmission=0;
-		
-		foreach my $dejavu_project (keys %{$hdejavu->{$djv_event_id}})
-		{
-			
-			$hdjv_project->{$dejavu_project}++  unless ($dejavu_project eq $projectname);
-		
-			foreach my $dejavu_patient (keys %{$hdejavu->{$djv_event_id}->{$dejavu_project}})
-			{
-				if ($dejavu_project eq $projectname)
-				{
-
-					#dejavu_itp ou transmission
-					if ($dejavu_patient eq $mothername)
-					{
-								$transmission += 2;
-					}
-					else
-					{
-							if ( $dejavu_patient eq $fathername)
-							{
-								$transmission += 1;
-							}
-							else
-							{
-									$hdjv_patient_itp->{$dejavu_patient}++ unless($dejavu_patient eq $patientname);
-							}
-					}
-				}
-				else
-				{
-					$hdjv_patient_iop->{$dejavu_project.":".$dejavu_patient.":bp1=".$identity1."_m bp2=".$identity2."_m"}++; 
-				}
-			}
-		}
 	
-		# etablir la transmission
-		if ($thePatientFamily->isTrio() && $thePatient->isChild() )
-		{
+	## transmission based on dejavu 
+	
+ 	if (exists $dvlite->{infos}->{$projectname}){
+		if( exists $dvlite->{infos}->{$projectname}->{$mothername} && exists $dvlite->{infos}->{$projectname}->{$fathername} ) {
 			$infoTransmission .= "both  " if (($transmission == 3) && ($infoTransmission !~ m/both/));
-			$infoTransmission .= "mother " if (($transmission == 2) && ($infoTransmission !~ m/mother/));
-			$infoTransmission .= "father " if (($transmission == 1) && ($infoTransmission !~ m/father/));
-				
-			if ($transmission == 0)
-			{
-				$infoTransmission .= "denovo " if ($infoTransmission !~ m/denovo/);
-			}
 		}
-		else
-		{
+		elsif ( exists $dvlite->{infos}->{$projectname}->{$mothername}){
+			$infoTransmission .= "mother ";
+		}
+		elsif ( exists $dvlite->{infos}->{$projectname}->{$fathername}){
+			$infoTransmission .= "father ";
+		}
+		elsif ($thePatientFamily->isTrio) {
+				$infoTransmission .= "denovo ";
+		}
+		else {
 			$infoTransmission = "X";
 		}
-	}
+ 	}
+	
+	
+#	my $k=$chr1."_".$chr2;
+#	foreach my $djv_event_id (keys %{$hdejavubis->{$k}}) {
+#		
+#		my ($c1,$p1,$c2,$p2) = split(/_/,$djv_event_id);
+#
+#		next if ( ($p1 < $bp1-50) || ($p1 >$bp1+50) );
+#		next if ( ($p2 < $bp2-50) || ($p2 >$bp2+50) );
+#		$identity1 = $p1-$bp1;
+#		$identity2 = $p2-$bp2;
+#		
+#		$transmission=0;
+#		
+#		foreach my $dejavu_project (keys %{$hdejavu->{$djv_event_id}}) {
+#			
+#			$hdjv_project->{$dejavu_project}++  unless ($dejavu_project eq $projectname);
+#		
+#			foreach my $dejavu_patient (keys %{$hdejavu->{$djv_event_id}->{$dejavu_project}})
+#			{
+#				if ($dejavu_project eq $projectname)
+#				{
+#
+#					#dejavu_itp ou transmission
+#					if ($dejavu_patient eq $mothername)
+#					{
+#								$transmission += 2;
+#					}
+#					else
+#					{
+#							if ( $dejavu_patient eq $fathername)
+#							{
+#								$transmission += 1;
+#							}
+#							else
+#							{
+#									$hdjv_patient_itp->{$dejavu_patient}++ unless($dejavu_patient eq $patientname);
+#							}
+#					}
+#				}
+#				else
+#				{
+#					$hdjv_patient_iop->{$dejavu_project.":".$dejavu_patient.":bp1=".$identity1."_m bp2=".$identity2."_m"}++; 
+#				}
+#			}
+#		}
+#	}
+	
+	
+	
 
 	# filtre sur la transmission
 	
@@ -316,21 +328,23 @@ foreach my $event_id (keys %$hTransLoc)
 				$pass = 1;
 			}
 		}
-		next unless ($pass);
 
 	$hTransLoc->{$event_id}->{"TRANSMISSION"} = $infoTransmission;	
 
-	my $nbdejavu_project = scalar keys %{$hdjv_project};
-	my $nbPatient_itp = scalar keys %{$hdjv_patient_itp };
-	my $nbPatient_iop = scalar keys %{$hdjv_patient_iop };
-	my $nbdejavuTotal = $nbPatient_itp + $nbPatient_iop;
+	my $nbdejavu_project = $dvlite->{projects};
+	my $nbPatient_itp =  $dvlite->{patients};
 	
-	$hTransLoc->{$event_id}->{"nbdejavu"} = $nbdejavuTotal;
+	my $nbPatient_iop = $dvlite->{patients};
+	my $nbdejavuTotal = $dvlite->{patients};
 	
-	$listpat_itp = join(",",sort keys %{$hdjv_patient_itp});
-	$listpat_iop =  join(",",sort keys %{$hdjv_patient_iop});
+	$hTransLoc->{$event_id}->{"nbdejavu"} = $nbdejavuTotal+"0";
+	
+	$listpat_itp = ""; ### !!!!  join(",",sort keys %{$hdjv_patient_itp});
+	$listpat_iop =  ""; ### !!!! join(",",sort keys %{$hdjv_patient_iop});
+	
 	$hTransLoc->{$event_id}->{"dejavu"} = $type."(".$event_id.")+".$nbPatient_itp.";".$listpat_itp.",;".$nbdejavu_project.";".$nbPatient_iop.";".$listpat_iop;
 	
+
 
 	# pour afficher tous les membres de la famille dans IGV si trio
 	my $bam_dir     = $thePatient->getProject->getAlignmentUrl($thePatient->alignmentMethod);
@@ -353,7 +367,6 @@ foreach my $event_id (keys %$hTransLoc)
 	# filtres
 	unless($dejavu eq "all") {next if ( $hTransLoc->{$event_id}->{"nbdejavu"} > $dejavu)};
 	
-	
 	$hTransLoc->{$event_id}->{"SCORE_EVENT"} = getScoreEvent($event_id);
 		
 	# filtre sur le score
@@ -375,26 +388,31 @@ foreach my $event_id (keys %$hTransLoc)
 		$hTransLoc->{$event_id}->{'CNV_mother'}="X";
 		$hTransLoc->{$event_id}->{'CNV_father'}="X";
 	}
-	
 	getLinkedCNV($event_id);
-	
-	
 	#############################################################
 	# pour aller rechercher les infos PR /PR dans les vcfs manta 
 
-	my $file_in = $thePatient->_getCallingSVFileWithMethodName("manta","variations");
-	my $tabix = $buffer->getSoftware("tabix");	
-	my $cmd1 = "$tabix $file_in $c1:$bp1-$bp1 | grep $c2 | cut -f 9,10 ";
-	my $res1 = `$cmd1`;
-			
- 	unless ($res1)
- 	{
- 				$cmd1 = "$tabix $file_in chr$c1:$bp1-$bp1 | grep chr$c2 | cut -f 9,10 ";
-				$res1 = `$cmd1`;
- 	}
- 		
- 	chomp($res1);
-
+	
+		
+	my $res_tabix = $tabix->query($oc1->fasta_name.":".$bp1."-".$bp1 );    # if $start;
+	my $f = $oc2->fasta_name;
+	my $res1 ;
+	while ( my $line = $res_tabix->next ) {
+		next if $line !~ /BND/;
+		next if $line !~ /$f/;
+		my @res = split(" ",$line);
+		$res1 =  $res[8]." ".$res[9];
+	}		
+	
+# 	unless ($res1)
+# 	{
+# 				$cmd1 = "$tabix $file_in chr$c1:$bp1-$bp1 | grep chr$c2 | cut -f 9,10 ";
+# 				warn $cmd1;
+#				$res1 = `$cmd1`;
+# 	}
+# 		
+# 	chomp($res1);
+#	next;
  	my @champs = split(" ",$res1);
  	my @tabLabel = split(/:/,$champs[0]);
  	my @tabValue = split(/:/,$champs[1]);
@@ -422,13 +440,15 @@ foreach my $event_id (keys %$hTransLoc)
 		my $deb = $bp1-50;
 		my $end = $bp1+50; 
 		my $genebp1bis = $c1.":".$deb."_".$end."##";
+		my $genebp2bis=$c2.":".$deb."_".$end."##";
+		
 		my $tabgenesbp1 = $objChr->getGenesByPosition($deb,$end);
 	
 		if ( scalar(@$tabgenesbp1) >=1 )  # si le variant recouvre des gènes
 		{	
 			foreach my $g (@$tabgenesbp1)
 			{
-				$genebp1bis .= $g->external_name.";".$g->raw_score."##";
+				$genebp1bis .= $g->external_name.";".$g->score."##";
 				$genesListe .= $g->external_name;
 			}
 		}
@@ -441,14 +461,14 @@ foreach my $event_id (keys %$hTransLoc)
 		$objChr  = $project->getChromosome($c2) if ($c1 ne $c2);
 		$deb = $bp2-50;
 		$end = $bp2+50; 
-		my $genebp2bis=$c2.":".$deb."_".$end."##";
+		
 		my $tabgenesbp2 = $objChr->getGenesByPosition($deb,$end);
 	
 		if ( scalar(@$tabgenesbp2) >=1 )  # si le variant recouvre des gènes
 		{	
 			foreach my $g (@$tabgenesbp2)
 			{
-				$genebp2bis .= $g->external_name.";".$g->raw_score."##";
+				$genebp2bis .= $g->external_name.";".$g->score."##";
 				$genesListe .= $g->external_name;
 			}
 		}
@@ -462,16 +482,17 @@ foreach my $event_id (keys %$hTransLoc)
 		# dans le cas de inversions 
 		my $geneInv;
 		my $scoremax=0;
-
+		
 		
 		if ($type eq "inv")
 		{
 			my $tabgenesinv = $objChr->getGenesByPosition($bp1,$bp2);
+			warn "INV";
 			if ( scalar(@$tabgenesinv) >=1 )  # si le variant recouvre des gènes
 			{	
 				foreach my $g (@$tabgenesinv)
 				{
-					my $gscore=$g->raw_score; 
+					my $gscore= $g->score; 
 					my $gname= $g->external_name;
 					
 					$genesListe .= $gname;
@@ -518,11 +539,10 @@ foreach my $event_id (keys %$hTransLoc)
 		next unless ($pass);
 	}
 	
-	
 	# pour le json final
+	warn Dumper $hTransLoc->{$event_id} if $event_id =~ /205209478/;
 	push( @listHashRes, { %{$hTransLoc->{$event_id}} } );
 }	
-
 
 
 if ( (scalar(@listHashRes) == 0) )
@@ -557,6 +577,7 @@ if ( (scalar(@listHashRes) == 0) )
 	$hash->{"SR"} = "-";
 	push( @listHashRes, { %{$hash} } );
 }
+
 
 #close($fd);
 printJson( \@listHashRes );
@@ -597,6 +618,7 @@ sub getScoreEvent()
 	
 	# score sur le dejavu
 	my $nbdejavu = $hTransLoc->{$event_id}->{"nbdejavu"};
+	
 	if ($nbdejavu <= 10)
 	{
 		$score += 10 - $nbdejavu;
@@ -667,7 +689,6 @@ sub getScoreEvent()
 sub getDejavuCNV
 {
 	my ($event_id) = @_;
-	
 	my $nbproject=0;
 	my $nbpatient=0;
 	my $scorecaller_evt=0;
@@ -675,7 +696,7 @@ sub getDejavuCNV
 	
 	my ($t,$c,$start1,$end1) = split(/_/,$event_id);
 
-	my $no = $project->dejavuSV();
+	my $no = $project->dejavuCNV();
 	my $hashdv = $no->get_cnv($c,$start1,$end1,$t,$dejavu,90);
 
 	foreach my $project_name (keys %{$hashdv})

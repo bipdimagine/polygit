@@ -870,7 +870,6 @@ sub test_disomy {
 
 sub exists_disomy {
 	my ($p,$file) = @_;
-	warn $file;
 	open(JSON,$file);
 	my $tt = <JSON>;
 	chomp($tt);
@@ -948,20 +947,17 @@ sub header_run {
 	#	$info .=$run->getCapture()->type;
 
 	#$info .= $run->version;
-	my $cno = $project->getChromosomes()->[0]->lmdb_hash_variants("r");
+	my $cno = $project->getChromosomes()->[0]->rocks_polyviewer_variants("r");
 
 	my $version;
 	$version->{gencode} = $project->gencode_version();
-	$version->{gnomad} =
-	  $buffer->description_public_lmdb_database("gnomad-exome")->{version};
-	$version->{hgmd} =
-	  $buffer->description_public_lmdb_database("hgmd")->{version};
-	$version->{cadd} =
-	  $buffer->description_public_lmdb_database("cadd")->{version};
-	$version->{clinvar} =
-	  $buffer->description_public_lmdb_database("clinvar")->{version};
+	warn Dumper $version->{gencode};
+	$version->{gnomad} = ""; #$buffer->description_public_lmdb_database("gnomad-exome")->{version};
+	$version->{hgmd} = "";#$buffer->description_public_lmdb_database("hgmd")->{version};
+	$version->{cadd} = ""; #$buffer->description_public_lmdb_database("cadd")->{version};
+	$version->{clinvar} = "";#$buffer->description_public_lmdb_database("clinvar")->{version};
 
-	my $date_cache = utility::return_date_from_file( $cno->filename );
+	my $date_cache = utility::return_date_from_file( $cno->path_rocks );
 
 	#
 	my $captures;
@@ -1456,6 +1452,7 @@ qq{<div class ="$class"> <img src="https://img.icons8.com/ios/32/000000/decision
 	return "" unless $p;
 	my $v    = $hmendel->{ $p->name };
 	my $type = "btn-success";
+	$v = "?" unless $v;
 	$v = "?" if $v eq "";
 	if ( $v eq "?" ) {
 		$type = "btn-danger";
@@ -1491,6 +1488,7 @@ sub children_box {
 	my $v     = $hmendel->{ $p->name };
 	$class = "circle2F" if $p->sex ne 1;
 	my $type = "btn-success";
+	$v = "?" unless $v;
 	$v = "?" if $v eq "";
 	if ( $v eq "?" ) {
 		$type = "btn-danger";

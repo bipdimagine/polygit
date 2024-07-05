@@ -129,6 +129,7 @@ has intspan => (
 
 sub cache_specific_atrributes {
 	my $self = shift;
+	return;
 	my $chr  = $self->getChromosome();
 	my $lmdb = $chr->get_lmdb_genes("r");
 

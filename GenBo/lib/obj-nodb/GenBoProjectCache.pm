@@ -900,8 +900,7 @@ sub returnVariants {
 		my $chr = $self->getChromosome($chr_name);
 	
 	
-		my $gid = $chr->cache_variations->get_varid($vid);
-		my $obj = $chr->cache_variations->get($gid,1);
+		my $obj = $chr->cache_variations->get_variation($vid,1);
 		
 		$obj->{global_vector_id} = $id;
 		$obj->{vector_id} = $vid;

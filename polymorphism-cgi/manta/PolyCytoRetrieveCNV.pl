@@ -96,6 +96,7 @@ my $text;
 	$no_cache->close();
 #}	
 
+$text = undef;
 $| = 1;
 if ($text){
 	print $text;
@@ -265,19 +266,20 @@ foreach my $type (keys %{$hdejavuProject})
 # pour le dejavu global (tous les projets WGS)
 #############################
 
-my $dejavudir = $project->DejaVuCNV_path();
-my $lmdb = GenBoNoSqlLmdb->new(dir=>$dejavudir,mode=>"r",name=>"dejavu_sv",is_compress=>1);	
-
-print '.';
+print '1';
 # 1) on regroupe les ids strictement identiques
+my $t = time;
 gather_strict_identicalCNV();
-
+warn abs(time - $t);
+$t =time;
 # 2) on regroupe les CNV identiques vus par differents callers 
 gatherSV_byPosition();
-
+warn abs(time - $t);
+$t =time;
 # 3) on filtre en fonction des infos envoyees par l'interface
 filtreCNV();
-
+warn abs(time - $t);
+$t =time;
 # 4) resultat
 my $stdout2 = tee_stdout {
 printJson( \@Filtered_listHashRes );
@@ -373,11 +375,14 @@ sub gather_strict_identicalCNV
 # pour regrouper les ids recouvrant les mêmes positions
 sub gatherSV_byPosition() 
 {
+	
+	my $all;
 	foreach my $type (keys %{$hCNV})
 	{
-			print '*';
+			print '!';
 			foreach my $num (keys %{$hCNV->{$type}})
 			{
+				
 				#pour avoir un objet chromosome
 				my $chr= $project->getChromosome($num);
 				
@@ -388,6 +393,13 @@ sub gatherSV_byPosition()
 				foreach my $id  (keys %{$hCNV->{$type}->{$num}})
 				{
 						my ( $t, $c, $d, $f ) = split( /_/, $id );
+						$hCNV->{$type}->{$num}->{$id}->{chromosome} = $c;
+						$hCNV->{$type}->{$num}->{$id}->{end} = $f;
+						$all->{$id} = $hCNV->{$type}->{$num}->{$id};
+						$all->{$id}->{start} = $d;
+						$all->{$id}->{end} = $f;
+						$all->{$id}->{type} = $t;
+						
 						$htree->{$type}->{$num}->insert($id,$d,$f);
 				}
 				
@@ -395,6 +407,7 @@ sub gatherSV_byPosition()
 				foreach my $id  (keys %{$hCNV->{$type}->{$num}})
 				{	
 						my ( $t, $c, $dtheSV, $ftheSV ) = split( /_/, $id );
+					
 						my $tab_id = $htree->{$type}->{$num}->fetch($dtheSV,$ftheSV);
 						my @tab_id_tmp;
 						
@@ -411,7 +424,7 @@ sub gatherSV_byPosition()
 									
 									my $same = 100;
 									#TODO: Pq les deux bornes en meme temps ?
-									$same = $project->dejavuSV->getIdentityBetweenCNV($start1,$end1,$start2,$end2) unless (($start1==$start2) && ($end1==$end2));
+									$same = $project->dejavuCNV->getIdentityBetweenCNV($start1,$end1,$start2,$end2) unless (($start1==$start2) && ($end1==$end2));
 									push(@tab_id_tmp,$ind_id) if ($same >= $seuilSameEvent);
 							}
 		
@@ -429,12 +442,14 @@ sub gatherSV_byPosition()
 			}# fin boucle num
 		}# fin boucle type		
 		
-																				
+		
+	########################################################
+	########################################################	
+	########################################################	
 		#3) creer l'id_global 
 		my $nb = 0;
 		print 'PP';
-		foreach my $k ( keys( %{$hSVPos} ) ) 
-		{
+		foreach my $k ( keys( %{$hSVPos} ) ) {
 				$project->print_dot(1);
 				my $gdeb;
 				my $gend;
@@ -454,33 +469,32 @@ sub gatherSV_byPosition()
 				
 				foreach my $ind_id ( @tab_ind_id ) 
 				{	
-					my ($t,$n,$d,$e) = split( /_/, $ind_id );
-					$flag = 1 if ( exists($hCNV->{$t}->{$n}->{$ind_id}->{"CALLERS"}->{"wisecondor"}) );
 					
-					if ( exists($hCNV->{$t}->{$n}->{$ind_id}->{"CALLERS"}->{"manta"}) )
+					my $sv =  $all->{$ind_id};
+					$type = $all->{$ind_id}->{type};
+					$flag = 1 if ( exists($sv->{"CALLERS"}->{"wisecondor"}) );
+					
+					if ( exists($sv->{"CALLERS"}->{"manta"}) )
 					{
 						($type,$num,$gdeb,$gend) = split( /_/, $ind_id );
 						$manta++;
+						next;
 					}
 					
-					unless ($manta)
-					{
-						if (exists($hCNV->{$t}->{$n}->{$ind_id}->{"CALLERS"}->{"canvas"}))
+					if (exists($sv->{"CALLERS"}->{"canvas"}))
 						{
 							($type,$num,$gdeb,$gend) = split( /_/, $ind_id );
 							$canvas++;
+							next;
 						}
-						else
-						{
-							unless ($canvas)
-							{
-								($type,$num,$gdeb,$gend) = split( /_/, $ind_id );
-							}
-						}
-					}
+							($type,$num,$gdeb,$gend) = split( /_/, $ind_id );
+					
 				}
 				
-				my $global_id = $type . "_" . $num . "_" . $gdeb . "_" . $gend;
+				my $chr = $project->getChromosome($num);
+				
+				my $global_id = $type . "_" . $chr->name . "_" . $gdeb . "_" . $gend;
+			
 				
 				my $num_int;
 				$num_int = 23 if $num eq "X";			
@@ -500,15 +514,15 @@ sub gatherSV_byPosition()
 				{
 						next if ( $gid_len > $maxlength );
 				} 
+			
+				my ($dj_otherprojects,$dj_patients_otherproject,$nbw,$nbc,$nbm,$scorecaller,$dj_list_globale) = getDejavuGlobal($type,$chr->name,$global_id,$flag);  
+				#next if $dj_otherprojects > 20;
 				
-	
 				# pour le dejavu global
-				my ($dj_otherprojects,$dj_patients_otherproject,$nbw,$nbc,$nbm,$scorecaller,$dj_list_globale) = getDejavuGlobal($type,$num,$global_id,$flag);  
+				#my ($dj_otherprojects,$dj_patients_otherproject,$nbw,$nbc,$nbm,$scorecaller,$dj_list_globale) = getDejavuGlobal($type,$num,$global_id,$flag);  
 
 				# pour le dejavu in this project
 				my ($dj_patients_inproject,$list_patient_inproject,$theTransmission) = getDejavuAndTransmission($type,$num,$global_id);   
-				
-	
 				# enregistrer les infos dans la table de hash finale	
 				$hGroupedCNV->{$global_id}->{'id'} = $global_id;			
 				$hGroupedCNV->{$global_id}->{'TYPE'} = $type;
@@ -525,12 +539,10 @@ sub gatherSV_byPosition()
 			   #pour avoir un objet chromosome
 				my $chr= $project->getChromosome($num);
 				my $chrLength= $chr->length();
-				
 				# pour les cytobandes
 				my @tb;
 				my @band;
 				my $hband = $chr->getCytoband( $gdeb, $gend ) if ( $gend > $gdeb );
-				
 				foreach my $b ( keys %{ $hband->{'name'} } ) {
 					push( @tb, $b );
 				}
@@ -546,7 +558,6 @@ sub gatherSV_byPosition()
 				# pour l'accès à gnomAD
 				my $url_gnomAD = getgnomAD_url($num,$gdeb,$gend);
 				$hGroupedCNV->{$global_id}->{'gnomAD'} = $url_gnomAD;
-				
 				# retrouver les informations correspondant aux differents id regroupes 
 				# ici il faut recuperer les valeurs max ou les concatenation de liste
 					
@@ -577,7 +588,6 @@ sub gatherSV_byPosition()
 				
 				# pour les infos liees au caller
 				$hGroupedCNV->{$global_id}->{'RATIO'} = 0;
-				
 				foreach my $ind_id ( @tab_ind_id )
 				{	
 						$ggfreq = $hCNV->{$type}->{$num}->{$ind_id}->{'GOLD_G_FREQ'} if ($hCNV->{$type}->{$num}->{$ind_id}->{'GOLD_G_FREQ'} > $ggfreq);
@@ -601,7 +611,6 @@ sub gatherSV_byPosition()
 
 
 			# filtre sur le dejavu
-
 			unless ($dejavu eq "all")
 			{
 				unless ( $hGroupedCNV->{$global_id}->{"wisecondor_elementary"} )
@@ -657,10 +666,8 @@ sub gatherSV_byPosition()
 				}
 			}
 			$hGroupedCNV->{$global_id}->{"IGV"} = $bamNames.";".$bamFiles.";".$hGroupedCNV->{$global_id}->{"id"};
-			 
 			 # pour le score caller 
 			 $hGroupedCNV->{$global_id}->{'SCORECALLER'} = getScoreCallers($global_id);
-			 
 			 # pour rechercher les BND associés au CNV
 			 if ($bpok)
 			{
@@ -699,12 +706,10 @@ sub gatherSV_byPosition()
 						$hGroupedCNV->{$global_id}->{'BPManta_father'} = "X";
 					}
 			}
-			 
 			 # pour claculer le score final du CNV
 			 $hGroupedCNV->{$global_id}->{'SCORECNV'} = getScoreCNV($global_id);
 								
 	} # fin boucle sur k = liste des ind_id regroupes dans un global_id
-
 }
 
 
@@ -720,6 +725,8 @@ sub getDejavuAndTransmission
 		my ($t,$c,$start1,$end1) = split(/_/,$global_id);
 					
 		# on recherche dans le dejavu des  CNV chevauchants
+		
+		
 		my $tab_id = $htree_dejavuProject->{$type}->{$num}->fetch($start1,$end1);
 		
 
@@ -732,7 +739,7 @@ sub getDejavuAndTransmission
 		foreach my $djv_id (@$tab_id)
 		{
 				my ($t,$c,$start2,$end2) = split(/_/,$djv_id);
-				my $identity = int($project->dejavuSV->getIdentityBetweenCNV($start1,$end1,$start2,$end2));
+				my $identity = int($project->dejavuCNV->getIdentityBetweenCNV($start1,$end1,$start2,$end2));
 				
 				if ( $identity >= $seuilTransmited*0.8)
 				{
@@ -818,41 +825,47 @@ sub getDejavuGlobal
 	
 	my ($t,$c,$start1,$end1) = split(/_/,$event_id);
 
-	my $no = $project->dejavuSV();
-	my $hashdv = $no->get_cnv($c,$start1,$end1,$t,$dejavuMax,$seuilDejaVu);
-	
-	my %dj;
-
-	foreach my $project_name (keys %{$hashdv})
-	{
-			next if ($project_name eq $TheProjectName);
-			$nbproject++;
-			foreach my $pname (keys %{$hashdv->{$project_name}})
-			{
-					my $scorecaller=0;
-					my $c;
-					$nbpatient++;
-					my $res;
-					foreach my $caller (keys %{$hashdv->{$project_name}->{$pname}})
-					{
-							if ($caller eq "wisecondor") {$scorecaller +=4; $c="w";$nbDJV_Wisecondor++;}
-							if ($caller eq "canvas") {$scorecaller +=2; $c="c";$nbDJV_Canvas++;}
-							if ($caller eq "manta") {$scorecaller +=1; $c="m";$nbDJV_Manta++;}
-							
-							my ($start,$end,$identity) = split(/_/,$hashdv->{$project_name}->{$pname}->{$caller});
-							$res .= int($identity)."%_".$c." ";
-					}
-					$scorecaller_evt += $scorecaller;
-					my $etiq = $project_name.":".$pname.":".$res;
-					$dj{$etiq} ++;
-				}
-		}
-
-		my $theliste;
-		$theliste = join(",",sort keys %dj);
-		$scorecaller_evt /= $nbpatient if $nbpatient;
-		
-		return ($nbproject,$nbpatient,$nbDJV_Wisecondor,$nbDJV_Canvas,$nbDJV_Manta,$scorecaller_evt,$theliste);
+#	my $no = $project->dejavuSV();
+#	warn $start1." ".$end1." ".$t." ".$dejavuMax," ".$seuilDejaVu;
+#	my $hashdv = $no->get_cnv($c,$start1,$end1,$t,$dejavuMax,$seuilDejaVu);
+	my $no1 = $project->dejavuCNV();
+	return  $no1->get_cnv_for_manue($c,$start1,$end1,$t,$dejavuMax,$seuilDejaVu,$TheProjectName);
+#	warn Dumper $hashdv1;
+#	die();
+#	
+#	
+#	my %dj;
+#
+#	foreach my $project_name (keys %{$hashdv})
+#	{
+#			next if ($project_name eq $TheProjectName);
+#			$nbproject++;
+#			foreach my $pname (keys %{$hashdv->{$project_name}})
+#			{
+#					my $scorecaller=0;
+#					my $c;
+#					$nbpatient++;
+#					my $res;
+#					foreach my $caller (keys %{$hashdv->{$project_name}->{$pname}})
+#					{
+#							if ($caller eq "wisecondor") {$scorecaller +=4; $c="w";$nbDJV_Wisecondor++;}
+#							if ($caller eq "canvas") {$scorecaller +=2; $c="c";$nbDJV_Canvas++;}
+#							if ($caller eq "manta") {$scorecaller +=1; $c="m";$nbDJV_Manta++;}
+#							
+#							my ($start,$end,$identity) = split(/_/,$hashdv->{$project_name}->{$pname}->{$caller});
+#							$res .= int($identity)."%_".$c." ";
+#					}
+#					$scorecaller_evt += $scorecaller;
+#					my $etiq = $project_name.":".$pname.":".$res;
+#					$dj{$etiq} ++;
+#				}
+#		}
+#
+#		my $theliste;
+#		$theliste = join(",",sort keys %dj);
+#		$scorecaller_evt /= $nbpatient if $nbpatient;
+#		
+#		return ($nbproject,$nbpatient,$nbDJV_Wisecondor,$nbDJV_Canvas,$nbDJV_Manta,$scorecaller_evt,$theliste);
 }
 
 
@@ -947,12 +960,11 @@ sub filtreCNV
 	{
 		my($type,$num,$gdeb,$gend) = split(/_/,$global_id);
 		my $SV_ok = 1;
-
+		
 		# filtre sur le scoreCNV : pour les bestones on garde ceux dont le score est > a 3 
 		next  if ( ( $hGroupedCNV->{$global_id}->{'SCORECNV'} < 3 ) && ($select_best == 0) );
 		next  if ( ( $hGroupedCNV->{$global_id}->{'SCORECNV'} < 1 ) && ($select_best == 1) );
 		next  if ( ( $hGroupedCNV->{$global_id}->{'SCORECNV'} < 0.5 ) && ($select_best == 2) );	
-		
 		# filtre sur les frequences
 		unless ( $maxfreq eq "nomax" ) {
 			next if ( $hGroupedCNV->{$global_id}->{'GOLD_G_FREQ'} > $maxfreq );
@@ -1036,21 +1048,21 @@ sub filtreCNV
 		#Pour le score_genes
 		my $chr = $project->getChromosome($num);
 		my $tabGenes = $chr->getGenesByPosition($gdeb,$gend);
+	
 		my $genes_liste=$num;
 		my @genes_names;
 		my $gname;
 		my $gscore;
 		my $scoremax=0;
 		my $hasOmim=0;
-	
 		if ( scalar(@$tabGenes) >=1 )  # si le variant recouvre des gènes
 		{	
 			foreach my $g (@$tabGenes)
 			{
-				$gscore=$g->raw_score; 
+				#$gscore= 0;
+				$gscore= $g->score; 
 				$gname= $g->external_name;
 				$hasOmim = 1 if $g->is_omim_morbid();
-				 
 				if($gscore > $scoremax)
 				{
 					$scoremax =$gscore;
@@ -1076,6 +1088,7 @@ sub filtreCNV
 		}
 		
 		# filtre sur les gènes omim
+		
 		if ($omim)
 		{
 			next unless ($hGroupedCNV->{$global_id}->{"OMIM"} == 1);
@@ -1101,7 +1114,6 @@ sub filtreCNV
 			next unless ($pass);
 		}
 
-		
 		#################################################################################
 		# pour aller rechercher les infos PR /PR dans les vcfs manta si et seulement si evt vu par manta
 		
@@ -1277,30 +1289,44 @@ sub getBNDManta{
 	my $djv=0;
 
 	my($type,$num,$gdeb,$gend) = split(/_/,$global_id);
-
+	my ($chr1,$bp1,$chr2,$bp2) = split(/_/,$global_id);
 	$num = "23" if ($num eq "X");
 	$num = "24" if ($num eq "Y");
-	
 	if ( defined ($htree_dejavuBNDProject->{$who}->{$num}) )
 	{
 		
 		my $tab_id1 = $htree_dejavuBNDProject->{$who}->{$num}->fetch($gdeb-5000,$gdeb+5000);
+		return $out unless @$tab_id1;
 		my $tab_id2 = $htree_dejavuBNDProject->{$who}->{$num}->fetch($gend-5000,$gend+5000);
-		
+		return $out  unless @$tab_id1;;
+		push(@{$tab_id1},@$tab_id2);
+		my $hdjv_patient_iop;
 		foreach my $event_id (@$tab_id1)
 		{
-			$djv = getDejavuEvent($event_id);
-			next if ($djv > 20);
-			$out .= $event_id.";"  unless ($out =~ m/$event_id/ ) ;
-		}
-		
-		foreach my $event_id (@$tab_id2)
-		{
-			$djv = getDejavuEvent($event_id);
+			my ($c1,$p1,$c2,$p2) = split(/_/,$event_id);
+			
+			next if $c1 != $chr1;
+			next if $c2 !=  $chr2;
+			next if ( ($p1 < $bp1-50) || ($p1 >$bp1+50) );
+			next if ( ($p2 < $bp2-50) || ($p2 >$bp2+50) );
+			foreach my $dejavu_project (keys %{$htranslocdejavu->{$event_id}})
+			{
+				foreach my $dejavu_patient (keys %{$htranslocdejavu->{$event_id}->{$dejavu_project}})
+				{
+					unless($dejavu_project eq $TheProjectName)
+					{
+						$hdjv_patient_iop->{$dejavu_project.":".$dejavu_patient}++; 
+					}
+				}
+			}
+			
+			$djv = scalar(keys %$hdjv_patient_iop);
 			next if ($djv > 20);
 			$out .= $event_id.";"  unless ($out =~ m/$event_id/ ) ;
 		}
 	}
+		
+
 		return $out;
 }
 
@@ -1309,20 +1335,20 @@ sub getDejavuEvent {
 	my ($event_id ) = @_;
 	my $hdjv_project;
 	my $hdjv_patient_iop;
-	
-		my ($chr1,$bp1,$chr2,$bp2) = split(/_/,$event_id);
-		
+	my ($chr1,$bp1,$chr2,$bp2) = split(/_/,$event_id);
 		#pour ne garder que ceux avec un dejavu < 20
 		foreach my $djv_event_id (keys %{$htranslocdejavu})
 		{
-
+			$djv_event_id."=";
+		}
+		foreach my $djv_event_id (keys %{$htranslocdejavu}){
 			my ($c1,$p1,$c2,$p2) = split(/_/,$djv_event_id);
 			
 			next if $c1 != $chr1;
 			next if $c2 !=  $chr2;
 			next if ( ($p1 < $bp1-50) || ($p1 >$bp1+50) );
 			next if ( ($p2 < $bp2-50) || ($p2 >$bp2+50) );
-		
+			next;			
 	
 			foreach my $dejavu_project (keys %{$htranslocdejavu->{$djv_event_id}})
 			{
@@ -1335,7 +1361,7 @@ sub getDejavuEvent {
 				}
 			}
 		}
-		
+	#	warn "end de";
 		return scalar(keys %$hdjv_patient_iop);
 }
 

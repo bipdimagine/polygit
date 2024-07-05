@@ -502,7 +502,7 @@ sub list_same_cnv {
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
 	unless (exists $self->{array_dejavu}) {
-		my $hash = $self->getProject->getDejaVuInfosForDiagforVariant($self);
+		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
 		$self->{array_dejavu} = $self->return_dejavu;
 	}
 	return $self->{array_dejavu} unless $key;
