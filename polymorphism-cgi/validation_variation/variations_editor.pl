@@ -28,7 +28,6 @@ use Carp;
 use strict;
 use Data::Dumper;
 use GenBo;
-use Compress::Snappy;
 use File::Temp qw/ tempfile tempdir /;
 #require "$Bin/../GenBo/lib/obj-nodb/GBuffer.pm";
 use List::MoreUtils qw{ natatime };
@@ -44,16 +43,12 @@ use QueryValidationAcmg;
 use Date::Tiny;
 use JSON::XS;
 use List::MoreUtils qw{part firstval lastval};
-
-#use PDF::API2;
-#use PDF::Table;
 use constant mm => 25.4 / 72;
 use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
 use Storable qw/thaw freeze/;
 use LMDB_File qw(:flags :cursor_op :error);
-use Proc::Simple;
 use lib "$Bin/variation_editor_lib";
 use hvariant;
 use variations_editor_methods;
@@ -75,7 +70,7 @@ use Storable qw( freeze );
 use xls_export;
 use session_export;
 use session_export_test;
-
+#use Proc::Simple;
 
 ##########################################
 #VAriaable definition 
@@ -89,7 +84,9 @@ my $VERSION_UPDATE_VARIANT_EDITOR = "9dd1dc46f32240dad92ea588d85d9f9d1"; #23/09/
 my $dev;
 $dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
 my $cgi = new CGI();
-my $myproc = Proc::Simple->new();        # Create a new process object
+
+
+#my $myproc = Proc::Simple->new();        # Create a new process object
  
 #$myproc->start("$Bin/vmtouch.pl project=".$cgi->param('project')." patient=".$cgi->param('patients'));
 #warn "$Bin/vmtouch.pl project=".$cgi->param('project')." patient=".$cgi->param('patients');
@@ -411,11 +408,12 @@ my $vquery = QueryValidationAcmg->new(
 );
 warn "no cache ******************** ".$project->name." ".$patient->name unless $cgi->param('export_xls');           
 my $version;
-$version->{gencode} = $project->get_gencode_description();
-$version->{gnomad}  = $project->get_public_data_description("gnomad-exome");
-$version->{hgmd}    = $project->get_public_data_description("hgmd");
-$version->{cadd}    = $project->get_public_data_description("cadd");
-$version->{clinvar} = $project->get_public_data_description("clinvar");
+my $v = $project->public_database_version;
+$version->{gencode}->{version} = "45";#$project->get_public_data_version("gencode");
+$version->{gnomad}->{version} = "-";#-$project->get_public_data_version("gnomad");
+$version->{hgmd}->{version} = "-";#$project->get_public_data_version("hgmd");
+$version->{cadd}->{version} = "-";#$project->get_public_data_version("cadd");
+$version->{clinvar}->{version} = "-";#$project->get_public_data_version("clinvar");
 my $t    = time;
 $patient->getLatestValidationStatus($user);
 $project->getChromosomes();
@@ -481,25 +479,19 @@ $buffer->disconnect();
 
 
 
-
 ##################################
 ################## GET VECTORS 
 ##################################
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
+	warn "start";
 	my ( $vectors, $list, $hash_variants_DM ) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$statistics );
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;
-
-
-
 $t = time;
 ##################################
 ################## GET GENES 
 ##################################
-	warn scalar @$list;
-my ($genes) = fork_annnotations( $list, [], $maskcoding );
-
-
+my ($genes) = fork_annnotations( $list, [], $maskcoding,$vectors);
 save_session_for_test($patient, $genes) if $cgi->param('test_mode');
 export_xls($patient, $genes) if $cgi->param('export_xls');
 
@@ -581,7 +573,7 @@ unless ( $patient->isGenome() ) {
 }
 	
 	
-$myproc->kill();
+#$myproc->kill();
 $t     = time;
 #my $exit_status = $myproc->wait(); 
 #warn "ok *** $exit_status ";
@@ -631,7 +623,7 @@ sub error {
 
 sub calculate_max_score {
 	my ( $project, $list ) = @_;
-	my $fork = 10;
+	my $fork = 1;
 	my $nb        = int( scalar(@$list) / ($fork) +1 );
 	my $iter      = natatime( $nb,  @$list );
 	my $vid        = time;
@@ -658,8 +650,10 @@ sub calculate_max_score {
 	);
 	
 	#TODO: essayer d'integrer XLS Store variant ici pour le forker
+	$project->disconnect();
 	
-	$project->buffer->dbh_deconnect();
+	
+	#$project->buffer->dbh_deconnect();
 	
 	#delete $project->{validations_query1};
 	while ( my @tmp = $iter->() ) {
@@ -667,13 +661,14 @@ sub calculate_max_score {
 		$hrun->{$vid}++;
 		my $pid = $pm->start and next;
 			my $res;
+			$project->disconnect;
 			my $genes  = max_score::calculate($project,$patient,\@tmp);
+			$project->disconnect;
 			$res->{run_id} = $vid;
 			$res->{genes} = $genes;
 		$pm->finish( 0, $res );
 	}
 	$pm->wait_all_children();
-	
 	return $final;
 	
 }
@@ -744,7 +739,6 @@ sub calculate_max_score_toto {
 			push( @{ $class->{father} }, $hgene->{all_variants}->{$k}->{score} ) if exists $hgene->{all_variants}->{$k}->{father};
 		}
 		if (scalar( @{ $class->{mother} } ) > 0 && scalar( @{ $class->{father} } ) == 0 && exists $hgene->{father}->{id} ) {
-			
 			my $nid = $hgene->{father}->{id};
 			$hgene->{all_variants}->{$nid}->{father} = 1;
 			$hgene->{all_variants}->{$nid}->{score} = $hgene->{father}->{score};
@@ -884,13 +878,13 @@ sub refine_heterozygote_composite_score_fork {
 
 
 sub fork_annnotations {
-	my ( $list, $list_saved, $maskcoding ) = @_;
+	my ( $list, $list_saved, $maskcoding,$vector ) = @_;
 	unless ($cgi->param('export_xls')) {
 		print qq{<div style="display: none">};
 		print "annotations";
 	}
 	my $fork = 6;
-	$fork = 10 if $project->isGenome();
+	$fork = 15 if $project->isGenome();
 	$fork=10;
 	#ici $fork= 20;
 	my $nb   = int( (scalar(@$list) +1) / ($fork-1)  );
@@ -1026,6 +1020,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		print "vector";
 	}
 	my $filter_transmission;
+	my $xtime =time;
 	$filter_transmission->{denovo}          = 1 if $cgi->param('denovo');	
 	#$filter_transmission->{"strict_denovo"} = 1 if $cgi->param('denovo');
 	$filter_transmission->{"strict_denovo"} = 1 if $cgi->param('strict_denovo');
@@ -1053,7 +1048,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 	construct_panel_vector( $panel, $hashVector_panel ) if $panel;
 	my $list_transcript;
 	my $trio = $patient->getFamily->isTrio;
-	my $list_variants;
+	my $list_variants =[];
 	my $hash_variants_DM = {};
 	my $gene;
 
@@ -1063,49 +1058,54 @@ sub constructChromosomeVectorsPolyDiagFork {
 		$gene_id_filtering = $gene->id();
 		
 	}
-		#my @exception = ("PCDH19") ;
 	my $gene_exception = $project->newGene("PCDH19");
-	my $fork = 13;
-	my $pm   = new Parallel::ForkManager($fork);
+	my $fork = 24;
+	#my $pm   = new Parallel::ForkManager($fork);
 	my $hrun;
-	$pm->run_on_finish(
-		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
-
-			unless ( defined($h) or $exit_code > 0 ) {
-				warn
-				  qq|No message received from child process $exit_code $pid!\n|;
-				die();
-				return;
-			}
-			my $chr = $h->{chromosome};
-			foreach my $k  (keys %{$h->{statistics}}){
-				$statistics->{$k} += $h->{statistics}->{$k};
-				
-			}
-			unless ( exists $hashVector->{$chr} ) {
-				$hashVector->{$chr} = $h->{vector};
-			}
-			else {
-				$hashVector->{$chr} &= $h->{vector};
-			}
-			my $id = $h->{run_id};
-			delete $hrun->{ $h->{run_id} };
-			error("PROBLEM !!!!") unless exists  $h->{run_id};
-			push( @$list_variants, @{ $h->{list_variants} } ) if  $h->{list_variants};
-			map { $hash_variants_DM->{$_}++ } @{ $h->{list_variants_DM} };
-			
-			
-		}
-		
-	);
+#	$pm->run_on_finish(
+#		sub {
+#			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
+#			unless ( defined($h) or $exit_code > 0 ) {
+#				warn
+#				  qq|No message received from child process $exit_code $pid!\n|;
+#				die();
+#				return;
+#			}
+#		
+#			
+#			my $chr = $h->{chromosome};
+#			foreach my $k  (keys %{$h->{statistics}}){
+#				$statistics->{$k} += $h->{statistics}->{$k};
+#				
+#			}
+#			unless ( exists $hashVector->{$chr} ) {
+#				$hashVector->{$chr} = $h->{vector};
+#			}
+#			else {
+#				$hashVector->{$chr} &= $h->{vector};
+#			}
+#			my $id = $h->{run_id};
+#			delete $hrun->{ $h->{run_id} };
+#			error("PROBLEM !!!!") unless exists  $h->{run_id};
+#			push( @$list_variants, @{ $h->{list_variants} } ) if  $h->{list_variants};
+#			map { $hash_variants_DM->{$_}++ } @{ $h->{list_variants_DM} };
+#
+#		}
+#		
+#	);
 	my $id = time;
-	$project->buffer->dbh_deconnect();
-
-	
-	
-
+	$project->disconnect();
+	delete $project->{rocks};
+	my $hno;
 	foreach my $chr ( @{ $project->getChromosomes } ) {
+		#$hno->{$chr->name} = GenBoNoSqlRocksVector->new(chromosome=>$chr->name,dir=>$project->rocks_directory("vector"),mode=>"r",name=>$chr->name);
+	}
+	my $finalVector = {};
+	warn $project->rocks_directory("vector");
+	warn "------";
+	foreach my $chr ( @{ $project->getChromosomes } ) {
+		warn "start ".$chr->name;
+
 		if ($gene) {
 			next if ( $gene->getChromosome()->name ne $chr->name );
 		}
@@ -1113,17 +1113,21 @@ sub constructChromosomeVectorsPolyDiagFork {
 			next unless exists $hashVector_panel->{ $chr->name };
 		}
 		$id++;
-		$id ++;
 		$hrun->{$id} ++;
-		my $pid = $pm->start and next;
-		$project->buffer->dbh_reconnect();
+		#my $pid = $pm->start and next;
+		my $xxt = time;
+		#$project->buffer->dbh_reconnect();
+		#$chr->rocks_vector->rocks;
+		
+		#my $no = GenBoNoSqlRocksVector->new(chromosome=>$chr->name,dir=>"/tmp/vector",mode=>"r",name=>$chr->name); #$chr->flush_rocks_vector();
+		my $no = $chr->flush_rocks_vector();
+		$no->prepare_vector([$limit_ac,$limit_ac_ho,$limit_sample_dv,$limit_sample_dv_ho,"intergenic","dm",$patient->name]);
+		my $res = {};
 		my $debug;
-		$debug =1 if $chr->name eq "12";
 		my $statistics = {};
-		my $res;
-		$res->{run_id} = $id . "_" . $chr->name;
+		
 		my $hashVector = {};
-		$res->{list_variants_DM} = [];
+		
 		if ($gene) {
 
 			$hashVector->{ $chr->name } = $gene->getVectorOrigin();
@@ -1140,38 +1144,39 @@ sub constructChromosomeVectorsPolyDiagFork {
 		print "=" unless $cgi->param('export_xls');
 			my $testid = 4201;
 		my $debug;
-	
+		
 		#	$debug =1 if $chr->name eq  "12";
 		if ($panel) {
 			#next unless  (exists $hashVector->{$chr->name});
-			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_ac);    #if $limit_ac ne "all";
+			$hashVector->{ $chr->name } &= $no->get($limit_ac);    #if $limit_ac ne "all";
 			
 			#$hashVector->{ $chr->name } &=
 			 # $chr->getVectorScore($limit_ac_ho);    # if $limit_ac_ho ne "all";
-			$hashVector->{ $chr->name } &=
-			  $chr->getVectorScore($limit_sample_dv)
-			  ;    # if $limit_sample_dv ne "all";
-			 $hashVector->{$chr->name} &= $chr->getVectorScore($limit_sample_dv_ho);
-			$hashVector->{ $chr->name } -= $chr->getVectorScore("intergenic");
+			$hashVector->{ $chr->name } &= $no->get_vector_chromosome($limit_sample_dv) ;    # if $limit_sample_dv ne "all";
+			$hashVector->{$chr->name} &= $no->get_vector_chromosome($limit_sample_dv_ho);
+			$hashVector->{ $chr->name } -= $no->get_vector_chromosome("intergenic");
 
 		}
 
 		else {
-			$hashVector->{ $chr->name } &= $chr->getVariantsVector();
-			$hashVector->{ $chr->name } = $chr->getVectorScore($limit_ac);    # if $limit_ac ne "gnomad_ac_all";;
 			
-			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_ac_ho);    # if $limit_ac_ho ne "all";
-			$hashVector->{ $chr->name } &= $chr->getVectorScore($limit_sample_dv);    #  if $limit_sample_dv ne "all";
-			 $hashVector->{$chr->name} &= $chr->getVectorScore($limit_sample_dv_ho);
-			 #$hashVector->{$chr->name} &= $chr->getVectorLargeDeletions;
+			#$hashVector->{ $chr->name } &= $chr->getVariantsVector();
+			warn "++++ $limit_ac $no";
+			$hashVector->{ $chr->name } = $no->get_vector_chromosome($limit_ac);    # if $limit_ac ne "gnomad_ac_all";;
+			warn "++++ $limit_ac_ho";
+			$hashVector->{ $chr->name } &= $no->get_vector_chromosome($limit_ac_ho);    # if $limit_ac_ho ne "all";
+			warn "++++";
+			$hashVector->{ $chr->name } &= $no->get_vector_chromosome($limit_sample_dv);    #  if $limit_sample_dv ne "all";
+			 $hashVector->{$chr->name} &= $no->get_vector_chromosome($limit_sample_dv_ho);
+			#$hashVector->{$chr->name} &= $chr->getVectorLargeDeletions;
 			#$hashVector->{ $chr->name } &= $vquality if $vquality;
-			$hashVector->{ $chr->name } -= $chr->getVectorScore("intergenic");
+			$hashVector->{ $chr->name } -= $no->get_vector_chromosome("intergenic");
+			warn "end";
 			
 		}
-		$hashVector->{ $chr->name } &= $patient->getVectorOrigin($chr);
-		
+		#$hashVector->{ $chr->name } &= $no->get_vector_chromosome($chr);
+		warn "---";
 			
-
 		$statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );
 
 		my $vDM = $chr->vectorDM();
@@ -1179,10 +1184,11 @@ sub constructChromosomeVectorsPolyDiagFork {
 		$vDM &= $patient->getVectorOrigin($chr);
 		#$vDM &= $hashVector->{ $chr->name };
 		$statistics->{DM} += $patient->countThisVariants($vDM);
+		my $vtr               = $chr->getNewVector();
 		#$hashVector->{$chr->name}  |= $v1;
 		if ($trio) {
 			my @list_transmission = keys %$filter_transmission;
-			my $vtr               = $chr->getNewVector();
+			
 			
 			if ( $patient->getFamily()->isDominant() ) {
 				my $none = undef;
@@ -1207,7 +1213,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 
 			}
 			else {
-				
 				foreach my $tr ( keys %$filter_transmission ) {
 						print "__";
 					if ( $tr eq "both" ) {
@@ -1247,33 +1252,32 @@ sub constructChromosomeVectorsPolyDiagFork {
 					}
 				}
 				
-				if ($chr->name eq $gene_exception->getChromosome->name and $patient->getVectorOrigin($chr)){
-					my $vector = $gene_exception->getVectorOrigin();
-				 	$vector &= $patient->getVectorOrigin($chr);
-					my $father = $patient->getFamily->getFather();
-					my $mother = $patient->getFamily->getMother();
-					if ($father){
-						my $v1 = $father->getVectorOrigin($chr);
-						$vector &= $v1;
-						if ($mother){
-							my $v2  = $mother->getVectorOrigin($chr);
-							$vector -= $v2;
-						}
-						 $vtr |= $vector;
-					}
-					
-				}
+#				if ($chr->name eq $gene_exception->getChromosome->name and $patient->getVectorOrigin($chr)){
+#					my $vector = $gene_exception->getVectorOrigin();
+#				 	$vector &= $patient->getVectorOrigin($chr);
+#					my $father = $patient->getFamily->getFather();
+#					my $mother = $patient->getFamily->getMother();
+#					if ($father){
+#						my $v1 = $father->getVectorOrigin($chr);
+#						$vector &= $v1;
+#						if ($mother){
+#							my $v2  = $mother->getVectorOrigin($chr);
+#							$vector -= $v2;
+#						}
+#						 $vtr |= $vector;
+#					}
+#					
+#				}
 			
 				
 			}
-			
 			$hashVector->{ $chr->name } &= $vtr;
+			$hashVector->{ $chr->name } &= $patient->getVectorOrigin($chr);
 
 		}
 		#  die($chr->name) if $debug && $hashVector->{ $chr->name }->contains(7710) && $debug;
 		$hashVector->{ $chr->name } &= $hashVector_panel->{ $chr->name } if exists $hashVector_panel->{ $chr->name };
 		  $statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );
-		$res->{chromosome} = $chr->name;
 		if($only_DM){
 				#keep only pathogenic variation if cgi with option $only_DM
 				$hashVector->{ $chr->name } = $vDM;
@@ -1285,6 +1289,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 
 
 		$res->{vector}        = $hashVector->{ $chr->name };
+	
 		###############
 		# AFFINE RATIO 
 		##############
@@ -1293,22 +1298,20 @@ sub constructChromosomeVectorsPolyDiagFork {
 			my $vquality  =  $chr->getNewVector();
 			if ($limit_ratio1 < 100){
 				my $vector_ratio_name = $patient->name . "_ratio_" . $limit_ratio1;
-				 $vquality = $chr->getVectorScore($vector_ratio_name);
+				 $vquality = $no->get($vector_ratio_name);
 			}
 			
 			if ($limit_ratio2 != $limit_ratio1) {
-				
+				die();
 				my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
 			#	my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
 				my $vector_ratio_name = $patient->name . "_ratio_" . $limit_ratio2;
 				$vector_ratio_name = $patient->name . "_ratio_all" if $limit_ratio2 == -1;
-				 my $vquality2 = $chr->getVectorScore($vector_ratio_name);
+				 my $vquality2 = $no->get($vector_ratio_name);
 				 $vquality2 -= $vquality;
 				
 				$vquality2 &=  $res->{vector};
 				$res->{vector} &= $vquality;	
-				#warn $vquality;
-				#warn $vquality;
 				foreach my $id ( @{ to_array( $vquality2, $chr->name ) } ) {
 					print "!";
 					my $av = $no->get($id);
@@ -1325,6 +1328,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 				$res->{vector} &= $vquality;	
 			}
 		}
+	
 		###############
 		# in this run 
 		##############
@@ -1344,8 +1348,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 			}
 		}
 		
-		$res->{statistics}    = $statistics;
-		$res->{list_variants} = [];
 
 #		my $vLocal = $chr->getVectorLocalValidations();
 #		
@@ -1358,66 +1360,87 @@ sub constructChromosomeVectorsPolyDiagFork {
 #		}
 #
 #		$res->{vector} |= $vLocal;
-		my $xxx;
-		#
-		foreach my $id ( @{ to_array( $res->{vector}, $chr->name ) } ) {
-			$xxx++;
-			print "++" if $xxx % 100 ==0;
-			push( @{ $res->{list_variants} }, $id );
-		}
-		if ($keep_pathogenic){
-#		$vDM |= $vLocal if $keep_pathogenic;
-		foreach my $id ( @{ to_array( $vDM, $chr->name ) } ) {
-		#	warn $id;
-		#	my $vobj   = $project->returnVariants($id);
-		#	warn $vobj->name;
-			push( @{ $res->{list_variants_DM} }, $id );
-		}
-		}
-		$res->{run_id} = $id;
-		$pm->finish( 0, $res );
-	}
-	$pm->wait_all_children();
-	error("ARGGG Problem") if keys %$hrun;
-	$project->buffer->dbh_reconnect();
-	print qq{</div>} unless $cgi->param('export_xls');
-	return ( $hashVector, $list_variants, $hash_variants_DM );
-}
-
-sub listVariants {
-	my ($vectors) = @_;
-	my @list_variants;
-
-	my $already;
-	my $not_saved = 0;
-	foreach my $k ( keys %$vectors ) {
-		print "@";
-
-		foreach my $id ( @{ to_array( $vectors->{$k}, $k ) } ) {
-			my ( $a, $b ) = split( "!", $id );
 		
-			push( @list_variants, $id );
+		###############
+		#¥¥¥ END Chromosome
+		##############
+		my $xxx = 0;
+		#push(@$list_variants,join($chr->name."!",split(",",$res->{vector}->to_Enum)));
+	
+		to_array($res->{vector}, $chr->name,$list_variants);
+		
+		
+		
+		
+		if ($keep_pathogenic){
+			to_hash($vDM, $chr->name,$hash_variants_DM);
+		}
+
+
+				
+			$finalVector->{$chr->name} = $res->{vector} ;
+			warn "end chr".$chr->name;
+			delete $project->{rocks};
+		}
+	#$pm->wait_all_children();
+	warn "END !!!!!!!!! ".abs(time -$xtime);
+	#error("ARGGG Problem") if keys %$hrun;
+	print qq{</div>} unless $cgi->param('export_xls');
+	return ( $finalVector, $list_variants, $hash_variants_DM );
+}
+
+
+
+sub to_hash {
+	my ( $v, $name,$list) = @_;
+	my @pos1 = split(",", $v->to_Enum);
+	$list ={} unless $list;
+	foreach my $pos (@pos1){
+		my ($a,$b) = split("-",$pos);
+		unless ($b) {
+			 $list->{$name."!".$a} ++
+		}
+		else {
+			for my $i ($a..$b) {
+				 $list->{$name."!".$i} ++
+			}	
 		}
 	}
-	return ( \@list_variants, $already, $not_saved );
+	return $list;
+
 }
+
 
 sub to_array {
-	my ( $v, $name ) = @_;
-	my $set  = Set::IntSpan::Fast::XS->new( $v->to_Enum );
-	my $iter = $set->iterate_runs();
-	my @t;
-	while ( my ( $from, $to ) = $iter->() ) {
-		for my $member ( $from .. $to ) {
-			if ($name) {
-				push( @t, $name . "!" . $member );
-			}
-			else {
-				push( @t, $member );
-			}
+	my ( $v, $name,$list) = @_;
+	my @pos1 = split(",", $v->to_Enum);
+	$list =[] unless $list;
+	foreach my $pos (@pos1){
+		my ($a,$b) = split("-",$pos);
+		unless ($b) {
+			push(@$list,$name."!".$a);
+		}
+		else {
+			for my $i ($a..$b) {
+				push(@$list,$name."!".$i);
+			}	
 		}
 	}
-	return \@t;
+	return $list;
+#	my $set  = Set::IntSpan::Fast::XS->new( $v->to_Enum );
+#	my $iter = $set->iterate_runs();
+#	my @t;
+#	while ( my ( $from, $to ) = $iter->() ) {
+#		for my $member ( $from .. $to ) {
+#			if ($name) {
+#				push( @t, $name . "!" . $member );
+#			}
+#			else {
+#				push( @t, $member );
+#			}
+#		}
+#	}
+#	return \@t;
 }
 
 
@@ -1430,7 +1453,7 @@ sub  date_cache_bam {
 
 my $date;
 #( $date->{cache} ) = utility::return_date_from_file( $cno->filename );
-( $date->{bam} )   = utility::return_date_from_file( $patient->getAlignmentFile );
+( $date->{bam} )   = utility::return_date_from_file( $patient->getBamFileName );
 return $date;
 }
 
