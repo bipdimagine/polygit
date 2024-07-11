@@ -78,8 +78,11 @@ else if (href.indexOf("mbras", 1) > -1) {
 else if (href.indexOf("eollivie", 1) > -1) {
 	url_path = "/cgi-bin/eollivie/polymorphism-cgi/";
 }
-else if (href.indexOf("polydev", 1) > -1) {
-	url_path = "/cgi-bin/polydev/polymorphism-cgi/";
+else if (href.indexOf("polydev_git_rocks", 1) > -1) {
+	url_path = "/cgi-bin/polydev_git_rocks/polymorphism-cgi/";
+}
+else if (href.indexOf("preprod", 1) > -1) {
+	url_path = "/cgi-bin/preprod/polymorphism-cgi/";
 }
 else if (href.indexOf("preprod", 1) > -1) {
 	url_path = "/cgi-bin/preprod/polymorphism-cgi/";
