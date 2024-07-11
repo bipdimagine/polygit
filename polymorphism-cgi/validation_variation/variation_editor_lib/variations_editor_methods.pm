@@ -65,7 +65,7 @@ sub new_refine_heterozygote_composite_score_rocks {
 	my $total_time = time;
 	my $gids ;
 	my $print_time = 0;
-	warn "start";
+#	warn "start";
 		foreach my $g (@$list) {
 		foreach my $vid ( keys %{ $g->{all_variants} } ) {
 			push(@$gids,$g->{chr_name}."!".$g->{all_vector_ids}->{$vid});
@@ -74,7 +74,7 @@ sub new_refine_heterozygote_composite_score_rocks {
 		}
 
 		$final_polyviewer_all->prepare($gids);
-		warn "end prpare ".abs(time-$rtime);
+#		warn "end prpare ".abs(time-$rtime);
 	foreach my $g (@$list) {
 		#last if $xp > 100;
 					

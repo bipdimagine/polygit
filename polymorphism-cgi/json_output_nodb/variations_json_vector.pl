@@ -135,8 +135,8 @@ if (defined($vector_ids) or $v_resume) {
 #		}
 		foreach my $v_id (@lIds) {
 		#foreach my $v_id (@lIds) {
-			my $id = $chr_cache->getVarId($v_id);
 			my $var = $chr_cache->getVarObject($v_id);
+			my $id = $var->id();
 			#warn ref($var);
 			$hIds->{$id}->{v_id} = $v_id;
 			$hIds->{$id}->{he} = 0;
@@ -567,10 +567,10 @@ sub purge {
 	$chr->genes_object(1);
 	delete $project->{objects}->{chromosomes}->{$chr->id()}->{fastGenes};
 	delete $project->{objects}->{chromosomes}->{$chr->id()}->{fastTranscripts};
-	$chr->cache_lmdb_variations->close();
-	$chr->get_lmdb_patients->close();
-	$chr->get_lmdb_categories->close();
-	$chr->get_lmdb_genes->close() if ($chr->get_lmdb_genes());
-	$chr->get_lmdb_variations->close();
+#	$chr->cache_lmdb_variations->close();
+#	$chr->get_lmdb_patients->close();
+#	$chr->get_lmdb_categories->close();
+#	$chr->get_lmdb_genes->close() if ($chr->get_lmdb_genes());
+#	$chr->get_lmdb_variations->close();
 }
 

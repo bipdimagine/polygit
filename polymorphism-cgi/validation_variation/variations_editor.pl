@@ -1424,13 +1424,13 @@ sub to_array {
 
 sub  date_cache_bam {
 	my($project) = @_;
-	my $cno = $project->getChromosomes()->[0]->lmdb_hash_variants("r");
+	#my $cno = $project->getChromosomes()->[0]->lmdb_hash_variants("r");
 
 
 
 my $date;
-( $date->{cache} ) = utility::return_date_from_file( $cno->filename );
-( $date->{bam} )   = utility::return_date_from_file( $patient->getBamFileName );
+#( $date->{cache} ) = utility::return_date_from_file( $cno->filename );
+( $date->{bam} )   = utility::return_date_from_file( $patient->getAlignmentFile );
 return $date;
 }
 
