@@ -156,6 +156,14 @@ function init_igv (){
 	return 1;		
 }
 
+function init_igv_hg38 (){
+	var url = "http://localhost:60151/load";
+	url += "?genome=hg38";
+	url += "&merge=true";
+    httpGetFocusOn(url);
+	return 1;		
+}
+
 function igv_reset () {
 	previous_bams = new Array();
 }
