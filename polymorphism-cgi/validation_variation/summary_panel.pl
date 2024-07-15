@@ -872,8 +872,11 @@ sub column_control {
 				my $btn_class = qq{class= "btn btn-xs btn-success"  style = "$fsize"};
 				$line->{identito} =   $cgi->td( $class, qq{<button type="button" $btn_class >OK</button>} );
 		}
-		my $cov_sry  = $p->coverage_SRY();
-		my $sex_eval = $p->compute_sex();
+		my ($cov_sry, $sex_eval);
+		if ($p->alignmentMethod() ne 'no_align') {
+			$cov_sry  = $p->coverage_SRY();
+			$sex_eval = $p->compute_sex();
+		}
 
 		# warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
 		my $color = "#009B77";
