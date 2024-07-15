@@ -167,6 +167,11 @@ has get_list_emails => (
 		{
 			push( @lUsers, $h->{email} );
 		}
+		
+		foreach my $g (@{ $self->buffer->getQuery()->getGroups( $self->id() ) } ){
+				push( @lUsers, $g );
+		}
+		
 		return \@lUsers;
 	},
 );
@@ -2288,6 +2293,7 @@ has genomeFai => (
 			next if $chr =~ /JH/;
 			next if $chr =~ /MU0/;
 			next if $chr =~ /_random/;
+			next if $chr =~ /_hap/i;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -2994,10 +3000,10 @@ sub setPatients {
 		$h->{project} = $self;
 		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
+		
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
 		  $self->{species_id} = $h->{species_id};
-#		  warn $h->{species_id};
 		 
 	}
 	return \%names unless (%names);

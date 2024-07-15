@@ -414,6 +414,23 @@ has sql_cmd_owner_project => (
 	},
 );
 
+
+
+has sql_cmd_owner_group_project => (
+	is		=> 'ro',
+	
+	lazy =>1,
+	default	=> sub {
+		my $self = shift;
+		my $sql = qq{
+			SELECT  bipd_users.USER.email as email, bipd_users.USER.PRENOM_U as firstname,bipd_users.USER.LOGIN as login
+			FROM PolyprojectNGS.ugroup_projects, bipd_users.UGROUP_USER, bipd_users.USER  
+			where ugroup_projects.project_id = ? and ugroup_projects.ugroup_id = bipd_users.UGROUP_USER.ugroup_id and ugroup_projects.ugroup_id <> 12 and bipd_users.USER.user_id =  bipd_users.UGROUP_USER.user_id;
+	};
+	return $sql
+	},
+);
+
 has sql_cmd_owner_project_by_name => (
 	is		=> 'ro',
 	
