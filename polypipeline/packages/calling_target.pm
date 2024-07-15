@@ -566,8 +566,9 @@ sub haplotypecaller {
 	my $recal_string       = "";
 	my $bam_file_string_hc = " -I " . $patient->getBamFile();
 	my $gatk_region        = "-L $bed1";
+	my $gatk4  = $project->getSoftware('gatk4');
 	my $cmd_uni =
-qq{$javac -jar $gatk -T HaplotypeCaller   $recal_string   -stand_call_conf 30  -rf BadCigar -R $reference $gatk_region   $bam_file_string_hc   -o $out1 -l off };
+qq{$gatk4  HaplotypeCaller   $recal_string   -R $reference $gatk_region   $bam_file_string_hc   -o $out1 -l off };
 	system( $cmd_uni   . qq{&& $bcftools  filter -i " $filter_bcftools " $out1 > $out && rm $out1} );
 	return $out;
 
@@ -861,6 +862,7 @@ sub unifiedGenotyper {
 		
 		my $out1 = calling_target::getTmpFile( $dir_out, "$name", "$nb.tmp.vcf" );  
 #		my $cmd_free = qq{  $freebayes -b $onefile -f   $reference --min-coverage 20 -0  -F $freebayes_min_alternate  -t $bed $correct_calling >$out 2>/dev/null};
+		$javac = "/opt/jdk1.8.0_121/bin/java";
 		my $cmd_uni = qq{$javac  -jar $gatk  -T UnifiedGenotyper  --min_indel_fraction_per_sample $unified_min_alternate -rf BadCigar -R $reference -L $bed   -I $onefile  --genotype_likelihoods_model BOTH   -o $out1 };
 		warn $cmd_uni;
 	system( $cmd_uni
@@ -1352,6 +1354,7 @@ sub duplicate_region_calling {
 	my $bcftools = $buffer->software("bcftools");
 	my $vcfutil  = $buffer->software("vcfutils");
 	my $samtools = $buffer->software("samtools");
+	my $gatk4  = $project->getSoftware('gatk4');
 	my $vcf_uni =	  calling_target::getTmpFile( $dir_out, $patient->name, "dup.vcf" );
 	my $bamtmp =	  calling_target::getTmpFile( $dir_out, $patient->name, "tmp.bam" );
 	my $bed = calling_target::getTmpFile( $dir_out, $patient->name, "tmp.bed" );
@@ -1379,9 +1382,9 @@ sub duplicate_region_calling {
 	my $recal_string       = "";
 	my $bam_file_string_hc = " -I " . $patient->getBamFile();
 	my $gatk_region        = "";
-	my $cmd_uni =qq{$javac -jar $gatk -T HaplotypeCaller   -R $reference     -rf BadCigar    -I $bamtmp   -o $vcf_uni -L $bed --allow_potentially_misencoded_quality_scores};
+	
+	my $cmd_uni =qq{$gatk4  HaplotypeCaller   -R $reference         -I $bamtmp   -O $vcf_uni -L $bed };
 
-	warn $cmd_uni;
 	system($cmd_uni);
 	unlink $bamtmp;
 	my @res = `cat $vcf_uni`;

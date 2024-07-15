@@ -493,9 +493,10 @@ sub getAllPatientsFromRunId{
 	my $dbh = $self->getDbh();
 	my $sql = qq{
 		select p.name as patient, p.control as control, pr.name  as project ,p.father,p.mother,p.status,p.patient_id as id,p.sex as sex,p.family as family, cs.name as capture  
-			from PolyprojectNGS.patient p, PolyprojectNGS.projects pr, PolyprojectNGS.capture_systems cs 
+			,p.type as type from PolyprojectNGS.patient p, PolyprojectNGS.projects pr, PolyprojectNGS.capture_systems cs 
 				where p.run_id=? and pr.project_id=p.project_id and p.capture_id=cs.capture_id;
 	};
+	
 	my $sth = $dbh->prepare($sql);
 	$sth->execute($run_id);
 	my $res = $sth->fetchall_arrayref({});
@@ -552,8 +553,6 @@ sub getSimilarProjectsByPhenotype {
 	my ($self,$pheno) = @_;
 	return [] unless ($pheno);
 	my $dbh = $self->getDbh();
-	warn qq{select pr.name as name   FROM PolyprojectNGS.projects as pr ,PolyprojectNGS.phenotype as p , PolyprojectNGS.phenotype_project as pp where pp.project_id=pr.project_id and pp.phenotype_id= p.phenotype_id and p.name=?;};
-	warn $pheno;
 	my $sth = $dbh->prepare(qq{select pr.name as name   FROM PolyprojectNGS.projects as pr ,PolyprojectNGS.phenotype as p , PolyprojectNGS.phenotype_project as pp where pp.project_id=pr.project_id and pp.phenotype_id= p.phenotype_id and p.name=?;});
 	$sth->execute($pheno) or confess();
 	return [keys %{$sth->fetchall_hashref("name")} ];
@@ -781,7 +780,6 @@ sub update_software_version {
 	my $dbh = $self->getDbh();
 	my $config = $self->getConfig();
 	my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
-	warn qq{insert into  PolyprojectNGS.version_patients  (version_id, patient_id,modification_date) VALUES ($version_id, $patient_id,NOW(),"$username:$cmd")};
 	$dbh->do(qq{insert into  PolyprojectNGS.version_patients  (version_id, patient_id,modification_date,cmd) VALUES ($version_id, $patient_id,NOW(),"$username:$cmd" )}) or confess();
 	return 1;
 }
@@ -945,8 +943,14 @@ sub getOwnerProject {
 	my $sth = $dbh->prepare( $self->sql_cmd_owner_project );
 	$sth->execute($pid);
 	my $res = $sth->fetchall_arrayref({});
+	
+	$sth = $dbh->prepare( $self->sql_cmd_owner_group_project );
+	$sth->execute($pid);
+	my $res2 = $sth->fetchall_arrayref({});
+	push(@$res,@$res2);
 	return $res;
 }
+
 
 sub getOwnerProject_byName {
 	my ($self,$projName) = @_;
@@ -1074,7 +1078,6 @@ sub getProjectListForUser {
 	my $dbh = $self->getDbh;
 	my $type_db = $self->getConfig()->{type_db};
 	my $sth = $dbh->prepare($self->sql_list_project_for_user);
-#	warn $self->sql_list_project_for_user;
 	$sth->execute($login,$pwd,$login,$pwd);
 	my $res = $sth->fetchall_hashref("id");
 	my $res_group = $self->getProjectHashForGroup($login,$pwd);
@@ -1094,7 +1097,6 @@ sub getProjectHashForGroup {
 	my ($self,$login,$pwd)=@_;
 	my $dbh = $self->getDbh;
 	my $sth = $dbh->prepare($self->sql_list_project_for_group);
-#	warn $self->sql_list_project_for_group;
 	$sth->execute($login,$pwd);
 	my $res = $sth->fetchall_hashref("id");
 	return $res;
@@ -1202,7 +1204,6 @@ from DEJAVU_STATIC d, RELATION r,GENBO g, RELATION_ANNEX ra
 	};
 	#my $sql = qq{select  d.nb as nb_project ,count(g.genbo_id) as nb_patient, sum(ra.he) as he , sum(ra.ho) as ho  from DEJAVU_STATIC d, RELATION r,GENBO g, RELATION_ANNEX ra where d.NB >1 and d.GENBO_ID = $id and r.genbo2_id= d.genbo_id and g.genbo_id=r.genbo_id and g.type_genbo_id = 5  and ra.relation_id=r.relation_id and ra.he>=0 and ra.ho>=0 group by d.genbo_id;};
 	my $sth = $dbh->prepare($sql);
-	#warn $sql;
 	$sth->execute();
 	my $col1;
 	my $col2;
@@ -1226,7 +1227,6 @@ from DEJAVU_STATIC d, RELATION r,GENBO g, RELATION_ANNEX ra
   and ra.relation_id=r.relation_id  group by ra.relation_id,d.genbo_id ) as tbl ;
 	};
 	my $sth = $dbh->prepare($sql);
-	#warn $sql;
 	$sth->execute();
 	my $col1;
 	my $col2;
