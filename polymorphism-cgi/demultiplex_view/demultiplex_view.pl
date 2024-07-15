@@ -66,7 +66,7 @@ foreach my $this_path (@$list_paths_found) {
 			my $use_force;
 			$use_force = 1 if (not -e $json_file);
 			$json_file =~ s/\/\//\//g;
-			$json_file =~ s/.+\/ngs\//https:\/\/www.polyweb.fr\/NGS\//;
+			$json_file =~ s/.+\/ngs\//\/NGS\//;
 			my $name = $json_file;
 			if ($name =~ /.+\/NGS\/demultiplex\/(.+)\/json.+/) {
 				$name = $1;
