@@ -1164,13 +1164,23 @@ sub setIntersectFamily {
 	foreach my $family (@$families) {
 		my $fam_name = $family->name();
 		$hFamVar->{$fam_name} = $chr->getNewVector();
+		my $nb_pat_inter = 0;
+		my $var_inter_pat = $chr->getNewVector();
 		my $family = $chr->getFamily($fam_name);
 		foreach my $patient (@{$family->getPatients()}) {
 			next if $patient->in_the_attic();
 			my $var_pat = $patient->getVariantsVector($chr);
 			$var_pat->Intersection($var_pat, $chr->getVariantsVector());
 			$hFamVar->{$fam_name} += $var_pat;
+			if ($patient->intersected()) {
+				if ($nb_pat_inter == 0) {
+					$var_inter_pat += $var_pat;
+					$nb_pat_inter++;
+				}
+				else { $var_inter_pat->Intersection($var_inter_pat, $var_pat); }
+			}
 		}
+		$hFamVar->{$fam_name}->Intersection($hFamVar->{$fam_name}, $var_inter_pat) if $nb_pat_inter > 0;
 		foreach my $patient (@{$family->getPatients()}) {
 			next if not $patient->excluded();
 			my $status = $patient->excluded();
