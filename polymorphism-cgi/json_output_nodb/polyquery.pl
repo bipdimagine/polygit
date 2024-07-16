@@ -583,14 +583,14 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	}
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
-	unless ($filter_nbvar_regionho > 0) {
+	if (not $filter_nbvar_regionho or $filter_nbvar_regionho == 0) {
 		QueryVectorFilter::setExcludePatient($chr, $project->getPatientsFromListNames([split(' ', $filter_he)]) , 'he');
 		QueryVectorFilter::setExcludePatient($chr, $project->getPatientsFromListNames([split(' ', $filter_ho)]), 'ho');
 		QueryVectorFilter::setExcludePatient($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), 'all');
 		QueryVectorFilter::setExcludeFamily($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]));
 	}
 	
-	unless ($filter_nbvar_regionho == 0) {
+	if ($filter_nbvar_regionho and $filter_nbvar_regionho > 0) {
 		QueryVectorFilter::setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]), $filter_nbvar_regionho);
 		QueryVectorFilter::setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]), $filter_nbvar_regionho);
 		QueryVectorFilter::setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), $filter_nbvar_regionho);
