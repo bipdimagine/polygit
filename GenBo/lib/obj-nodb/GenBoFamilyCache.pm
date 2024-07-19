@@ -29,13 +29,13 @@ has in_the_attic => (
 has excluded => (
 	is		=> 'rw',
 	lazy	=> 1,
-	default => 0,
+	default => undef,
 );
 
 # tag si famille intersect
 has intersected => (
 	is		=> 'rw',
-	default => 0,
+	default => undef,
 );
 
 has hash_models_genetics_used => (

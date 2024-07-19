@@ -468,7 +468,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Pour XLS, besoin de savoir si un patient possede ou non le variant, meme s il ne passe pas un filtre ou un modele pour rester coherent a la 2e page par gene
 	if ($xls_by_variants) { $chr->save_model_variants_all_patients('for_xls'); }
 	
-	QueryVectorFilter::setInTheAttic($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
+	QueryVectorFilter::setInTheAtticPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
 	QueryVectorFilter::filter_vector_ratio($chr, $filter_ratio_min, 'min');
@@ -584,23 +584,21 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
 	if (not $filter_nbvar_regionho or $filter_nbvar_regionho == 0) {
-		QueryVectorFilter::setExcludePatient($chr, $project->getPatientsFromListNames([split(' ', $filter_he)]) , 'he');
-		QueryVectorFilter::setExcludePatient($chr, $project->getPatientsFromListNames([split(' ', $filter_ho)]), 'ho');
-		QueryVectorFilter::setExcludePatient($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), 'all');
-		QueryVectorFilter::setExcludeFamily($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]));
+		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_he)]) , 'he');
+		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_ho)]), 'ho');
+		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), 'all');
+		QueryVectorFilter::setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]));
 	}
-	
 	if ($filter_nbvar_regionho and $filter_nbvar_regionho > 0) {
 		QueryVectorFilter::setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]), $filter_nbvar_regionho);
 		QueryVectorFilter::setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]), $filter_nbvar_regionho);
 		QueryVectorFilter::setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), $filter_nbvar_regionho);
 		QueryVectorFilter::setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]), $filter_nbvar_regionho);
 	}
-	
-	QueryVectorFilter::setIntersectPatient($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]));
-	QueryVectorFilter::setIntersectPatient_GENES($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]));
-	QueryVectorFilter::setIntersectFamily($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]));
-	QueryVectorFilter::setIntersectFamily_GENES($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]));
+	QueryVectorFilter::setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]));
+	QueryVectorFilter::setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]));
+	QueryVectorFilter::setIntersectExclude_PAT_FAM($chr);
+
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER exclude / intersect - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	if ($project->typeFilters() eq 'individual') {

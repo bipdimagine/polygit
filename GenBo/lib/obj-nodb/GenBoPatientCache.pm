@@ -20,19 +20,19 @@ has chromosome => (
 # tag si patient in the attic
 has in_the_attic => (
 	is		=> 'rw',
-	default => 0,
+	default => undef,
 );
 
 # tag si patient exclue entierement ou he ou ho
 has excluded => (
 	is		=> 'rw',
-	default => 'none',
+	default => undef,
 );
 
 # tag si patient intersect
 has intersected => (
 	is		=> 'rw',
-	default => 0,
+	default => undef,
 );
 
 # ids de tous les genes/intergenic_regions que le patient contient
