@@ -114,7 +114,15 @@ sub getProjectListsRNA {
 			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok_dragen);
 			$hDone->{$name} = undef if $ok_dragen;
 		}
-		if (-d $p1->get_path_rna_seq_polyrna_root()) {
+		
+		my $path_polyrna = $p1->get_path_rna_seq_polyrna_root();
+		$path_polyrna =~ s/HG19_MT/HG19/;
+		$path_polyrna =~ s/HG19_CNG/HG19/;
+		$path_polyrna =~ s/HG19/HG38/;
+		my $path_polyrna_HG38 = $path_polyrna;
+		$path_polyrna_HG38 =~ s/HG38/HG38_CNG/;
+		my $path_polyrna_HG38_CNG = $path_polyrna_HG38;
+		if (-d $p1->get_path_rna_seq_polyrna_root() or -d $path_polyrna_HG38 or -d $path_polyrna_HG38_CNG) {
 			push(@lbuttons_rna, '2::'.$h->{name});			
 			$hDone->{$name} = undef;
 		}
