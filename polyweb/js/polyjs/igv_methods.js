@@ -133,7 +133,7 @@ function displayInIGV(chr, start, end){
 
 function displayOneBAMIGV(file){
     var url = "http://localhost:60151/load?file="+file;
-	url += "&merge=false";
+	url += "&merge=true";
     httpGetFocusOn(url);
 	return 1;
 }
@@ -153,6 +153,14 @@ function init_igv (){
 		url += "?genome=hg19"+"&file="+polyweb_url+url_gene_bed;
 		url += "&merge=false";
 	    httpGetFocusOn(url);
+	return 1;		
+}
+
+function init_igv_hg38 (){
+	var url = "http://localhost:60151/load";
+	url += "?genome=hg38";
+	url += "&merge=true";
+    httpGetFocusOn(url);
 	return 1;		
 }
 
