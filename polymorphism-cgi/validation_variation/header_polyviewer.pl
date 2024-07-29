@@ -151,7 +151,7 @@ my $coverage;
 
 my ($date,$time) = split(" ",$project->creation_date);
 my ($year,$month,$day) =  return_date($project->creation_date);
- my $cno = $project->getChromosomes()->[0]->lmdb_hash_variants("r");
+# my $cno = $project->getChromosomes()->[0]->lmdb_hash_variants("r");
 my $date_cache =  "";#utility::return_date_from_file($cno->filename);
 
 	
