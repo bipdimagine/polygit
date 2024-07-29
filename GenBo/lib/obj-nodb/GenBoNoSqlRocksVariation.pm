@@ -83,9 +83,9 @@ sub put_variation {
 
 sub get_variation  {
 	my ($self,$key) = @_;
-	warn "\t".$key;
+#	warn "\t".$key;
 	$key =  $self->get_raw($key) if ($key =~ /_/);
-	warn "\t".$key;;
+#	warn "\t".$key;;
 	return $self->get_index($key);
 }
 sub get_varid {

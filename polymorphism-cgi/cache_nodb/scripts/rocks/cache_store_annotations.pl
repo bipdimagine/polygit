@@ -391,10 +391,22 @@ foreach my $family (@{$project->getFamilies}){
 
 		my $bitv7 = $family->getVector_individual_uniparental_disomy($chr,$children,1);
 		$rocks4->put_batch_vector_transmission($children,"ind_uniparental",$bitv7);
-		
 	}
-	
 }
+foreach my $patient (@{$project->getPatients()}) {
+	my $bitv8 = $patient->getRegionHo($chr, 25, undef, 1);
+	$rocks4->put_batch_vector_transmission($patient,"region_ho_25",$bitv8);
+	
+	my $bitv9 = $patient->getRegionHo($chr, 50, undef, 1);
+	$rocks4->put_batch_vector_transmission($patient,"region_ho_50",$bitv9);
+	
+	my $bitv10 = $patient->getRegionHo($chr, 75, undef, 1);
+	$rocks4->put_batch_vector_transmission($patient,"region_ho_75",$bitv10);
+	
+	my $bitv11 = $patient->getRegionHo($chr, 100, undef, 1);
+	$rocks4->put_batch_vector_transmission($patient,"region_ho_100",$bitv11);
+}
+
 $rocks4->write_batch();
 $rocks4->close();
 	system("date > $ok_file") if $ok_file;
@@ -808,5 +820,14 @@ sub construct_bitVector_for_gene {
 		my @array = $hgene->as_array;
 		my $v = Bit::Vector->new_Enum($size, $array[0]."-".$array[-1]);
 		$no->put_batch( $g, $v );
+		
+		foreach my $cat (keys %{$intspan_genes_categories->{$g}}) {
+			next if $cat eq 'all';
+			my $hgene_cat = $intspan_genes_categories->{$g}->{$cat};
+			my @array_2 = $hgene_cat->as_array;
+			next if scalar(@array) == 0;
+			my $v_cat = Bit::Vector->new_Enum($size, join(',', @array_2));
+			$no->put_batch( $g.'_'.$cat, $v_cat );
+		}
 	}
 }

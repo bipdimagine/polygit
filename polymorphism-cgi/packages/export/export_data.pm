@@ -184,38 +184,15 @@ sub update_deja_vu {
 	my ( $project,$data,$user) = @_;
 	my $t;
 	# map {push(@{$t->{$_->{chromosome}}},$_->{id})} @$data;
-
-	
 	foreach my $d (@$data) {
-		my $nb_project= 0;
-		my $nb_patient= 0;
-		my $he =0;
-		my $ho =0;
-		my $list = $project->getDejaVuInfos($d->{id});
-		delete $list->{$project->name};
-		my $st_project;
-		foreach my $oproject (keys %$list){
-			$nb_project ++;
-			$st_project=$oproject.":";
-			$st_project .= $list->{$oproject}->{patients};
-			$he += $list->{$oproject}->{he};
-			$ho += $list->{$oproject}->{ho};
-			
-			
-		}
-		$d->{bipd_db} = "-";
-		$nb_patient = $he + $ho;
-		if ($nb_project > 0) {
+		my $v = $project->_newVariant($d->{id});
+		my $nb_project= $v->exome_projects();
+		my $nb_patient= $v->exome_patients();
+		my $ho = $v->exome_patients_ho();
+		my $he = $nb_patient - $ho;
 			$d->{bipd_db} = $nb_project."/".$nb_patient."\nho:$ho,he:$he|".$d->{id};
-			if ($user eq "hgidnyc" || $user eq "pnitschk" || $user eq "masson"){
-				$d->{bipd_db} .= ":".$st_project if $nb_project <  5;
-				
-			}
-		}
-
-		
 	}
-	
+#	die;
 
 }
 sub update_valid {

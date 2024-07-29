@@ -67,6 +67,7 @@ has values_lmdb_genes => (
 	lazy    => 1,
 	default => sub {
 		my ($self) = @_;
+		confess();
 		my $no_genes = $self->get_lmdb_genes("r"); #intspan pour les genes
 		 return [] unless $no_genes;
 		my $genes = $no_genes->get_values();
@@ -167,29 +168,20 @@ has patients_categories => (
 	default => sub {
 		my $self = shift;
 		my $h;
-		confess();
-		#HERE
 		unless ($self->size_vector()) {
-			foreach my $patient (@{$self->getPatients()}) {
+			foreach my $patient (@{$self->getProject->getPatients()}) {
 				$h->{$patient->name()} = Bit::Vector->new(0);
 				$h->{$patient->name().'_he'} = Bit::Vector->new(0);
 				$h->{$patient->name().'_ho'} = Bit::Vector->new(0);
-				$h->{$patient->name().'_RI'} = Bit::Vector->new(0);
-				$h->{$patient->name().'_SE'} = Bit::Vector->new(0);
 			}
 			return $h;
 		}
-		my $no_patients = $self->get_lmdb_patients("r");
-		my $patients = $no_patients->get_values();
-		foreach my $patient (@$patients) {
+		foreach my $patient (@{$self->getProject->getPatients()}) {
 			my $name = $patient->{'name'};
-			$h->{$name} = $patient->{'bitvector'}->{'all'};
-			$h->{$name.'_he'} = $patient->{'bitvector'}->{'he'};
-			$h->{$name.'_ho'} = $patient->{'bitvector'}->{'ho'};
-			$h->{$name.'_RI'} = $patient->{'bitvector'}->{'RI'} if (exists $patient->{'bitvector'}->{'RI'});
-			$h->{$name.'_SE'} = $patient->{'bitvector'}->{'SE'} if (exists $patient->{'bitvector'}->{'SE'});
+			$h->{$name} = $patient->getVectorOrigin($self);
+			$h->{$name.'_he'} = $patient->getVectorOriginHe($self);
+			$h->{$name.'_ho'} = $patient->getVectorOriginHo($self);
 		}
-		$no_patients->close();
 		return $h;
 	},
 );
@@ -236,56 +228,6 @@ has global_categories => (
 	},
 );
 
-# TODO: CORRECTIF Logiciel a cause de freq_ho qui remplissait freq_. A enlever une fois tout MAJ
-sub correct_vectors_filters {
-	my ($self, $h_global_categories) = @_;
-	if (exists $h_global_categories->{junction}) {
-		my $todo;
-		foreach my $freq (sort keys %{$self->project->buffer->config->{frequence_filters}}) { $todo = 1 if exists $h_global_categories->{$freq}; }
-		return $h_global_categories unless $todo;
-	}
-	my $h_v_to_k;
-#	warn "\n\n";
-#	warn 'BEFORE: ';
-#	foreach my $freq (sort keys %{$self->project->buffer->config->{frequence_filters}}) {
-#		warn $freq.': '.$self->countThisVariants($h_global_categories->{$freq});
-#	}
-	foreach my $freq (keys %{$self->project->buffer->config->{frequence_filters}}) {
-		next if ($freq eq 'pheno_snp');
-		my $v = $self->project->buffer->config->{frequence_filters}->{$freq};
-		$h_v_to_k->{$v} = $freq;
-#		warn $v." ".$freq;
-	}
-	foreach my $freq (reverse sort {$a <=> $b} keys %{$h_v_to_k}) {
-		my $cat = $h_v_to_k->{$freq};
-		foreach my $freq_2 (keys %{$h_v_to_k}) {
-			
-			next if ($freq == $freq_2);
-			my $cat_2 = $h_v_to_k->{$freq_2};
-#			warn $cat.' -> '.$cat_2;
-			my $v_common = $self->getNewVector();
-			$v_common->Intersection($h_global_categories->{$cat}, $h_global_categories->{$cat_2});
-			$h_global_categories->{$cat_2}->Difference($h_global_categories->{$cat_2}, $v_common);
-			delete $h_v_to_k->{$freq};
-		}
-	}
-#	warn "\n\n";
-#	warn 'AFTER: ';
-#	foreach my $freq (sort keys %{$self->project->buffer->config->{frequence_filters}}) {
-#		warn $freq.': '.$self->countThisVariants($h_global_categories->{$freq});
-#	}
-#	warn "\n\n";
-#	warn 'VERIF FROM VAR OBJECTS: ';
-#	my $h_count;
-#	foreach my $v (@{$self->getListVarObjects($self->getVariantsVector())}) {
-#		delete $v->{categorie_frequency};
-#		$h_count->{$v->categorie_frequency()}++;
-#	}
-#	foreach my $freq (sort keys %{$h_count}) {
-#		warn $freq.': '.$h_count->{$freq};
-#	}
-	return $h_global_categories;
-}
 
 # hash with each each categories variants INTSPAN
 has categories_intspan => (
@@ -880,6 +822,10 @@ sub getListVarObjects {
 # recupere l'ID d'un variant a partir d'un vector_id
 sub getVarId {
 	my ($self, $index) = @_;
+	if($self->project->isRocks){
+		confess;
+		return $self->rocks_vector("r")->get_varid($index);
+	}
 	return $self->cache_lmdb_variations->get_key_index($index);
 }
 
@@ -901,32 +847,32 @@ sub setTranscripts {
 	return $hTrans;
 }
 
-sub setGenes {
-	my $self = shift;
-	my $hIds;
-	return $hIds if ($self->getVariantsVector->is_empty());
-	my @lValuesGenes = @{$self->values_lmdb_genes()};
-	if (scalar(@lValuesGenes) == 0) { return $hIds; }
-	foreach my $hashArgs (@lValuesGenes) {
-		next unless ($hashArgs);
-		$self->project->print_dot(100);
-		my $vector_id = $hashArgs->{index_lmdb};
-		my @lTmp = split('_', $hashArgs->{name});
-		my $obj;
-		if ($lTmp[0] eq 'intergenic') {
-			$obj = $self->getProject->newIntergenic($lTmp[1], $lTmp[2], $lTmp[3]);
-		}
-		else {
-			$obj = $self->project->newGene($hashArgs->{name});
-		}
-		$obj->{vector_id} = $vector_id;
-		$obj->{chromosome} = $self;
-		$obj->{project} = $self->project;			
-		$hIds->{$obj->id()} = undef;
-	}
-	$self->values_lmdb_genes([]);
-	return $hIds;
-}
+#sub setGenes {
+#	my $self = shift;
+#	my $hIds;
+#	return $hIds if ($self->getVariantsVector->is_empty());
+#	my @lValuesGenes = @{$self->values_lmdb_genes()};
+#	if (scalar(@lValuesGenes) == 0) { return $hIds; }
+#	foreach my $hashArgs (@lValuesGenes) {
+#		next unless ($hashArgs);
+#		$self->project->print_dot(100);
+#		my $vector_id = $hashArgs->{index_lmdb};
+#		my @lTmp = split('_', $hashArgs->{name});
+#		my $obj;
+#		if ($lTmp[0] eq 'intergenic') {
+#			$obj = $self->getProject->newIntergenic($lTmp[1], $lTmp[2], $lTmp[3]);
+#		}
+#		else {
+#			$obj = $self->project->newGene($hashArgs->{name});
+#		}
+#		$obj->{vector_id} = $vector_id;
+#		$obj->{chromosome} = $self;
+#		$obj->{project} = $self->project;			
+#		$hIds->{$obj->id()} = undef;
+#	}
+#	$self->values_lmdb_genes([]);
+#	return $hIds;
+#}
 
 sub getIntergenicExternalName {
 	my ($self, $start, $end) = @_;
@@ -1008,12 +954,11 @@ sub getNbGenes {
 	return 0 if ($self->getVariantsVector->is_empty());
 	my $nb = 0;
 	foreach my $gene (@{$self->getGenes()}) {
+		next unless $gene->getVectorOrigin();
 		next if ($gene->is_intergenic());
-		$gene->getVariantsVector->Intersection($gene->getVariantsVector(), $self->getVariantsVector());
-		next if ($gene->getVariantsVector->is_empty());
-		$nb++;
+		$nb++ if (not $gene->getCurrentVector->is_empty()) ;
 	}
-	return $nb
+	return $nb;
 }
 
 sub getNbGenesIntergenic {
@@ -1022,10 +967,7 @@ sub getNbGenesIntergenic {
 	return 0 if ($self->getVariantsVector->is_empty());
 	my $nb = 0;
 	foreach my $gene (@{$self->getGenes()}) {
-		next unless ($gene->is_intergenic());
-		$gene->getVariantsVector->Intersection($gene->getVariantsVector(), $self->getVariantsVector());
-		next if ($gene->getVariantsVector->is_empty());
-		$nb++;
+		$nb++ if ($gene->is_intergenic() and not $gene->getCurrentVector->is_empty()) ;
 	}
 	return $nb;
 }
@@ -1447,21 +1389,13 @@ sub get_vector_dejavu {
 	return unless ($max_dejavu);
 	if ($max_dejavu eq 'uniq') { $max_dejavu = 0; }
 	my @lNOK;
-	my $no_dejavu = GenBoNoSqlDejaVu->new( dir => $self->project->deja_vu_lite_dir , mode => "r");
-	foreach my $id (@{$self->getIdsBitOn($vector)}) {
+	foreach my $var (@{$self->getListVarObjects($vector)}) {
 		$self->project->print_dot(100);
-		my $varId = $self->getVarId( $id );
-		my $res = $no_dejavu->get_hohe_nbprojects($self->id(), $varId);
-		my $nb = 0;
-		if ($is_only_ho) { $nb = $res->[0]; }
-		else { $nb = $res->[1]; }
-		unless ($nb) { $nb = 0; }
-		# -1 car ce projet etait inclus (ex vu sur NGS2015_0760)
-		if (($nb-1) > $max_dejavu) {
-			push(@lNOK, $id);
+		my $nb = $var->exome_projects();
+		if ($nb > $max_dejavu) {
+			push(@lNOK, $var->vector_id);
 		}
 	}
-	$no_dejavu->close();
 	return Bit::Vector->new_Enum($self->getVariantsVector->Size(), join(',', @lNOK));
 }
 
@@ -1693,21 +1627,6 @@ sub check_gene_count_nb_patient {
 	return $hashIdsByPat;
 }
 
-# methode qui supprime toute trace d'un gene donnee
-sub supressGene {
-	my ($self, $gene) = @_;
-#	unless (ref($gene) eq 'GenBoGeneCache') { confess(); }
-	my $gene_id = $gene->id();
-	my $ensg_id = $gene->name();
-#	delete $self->{available_genes_ids}->{$ensg_id};
-#	delete $self->hash_freeze_file_genes->{$gene->vector_id()};
-	delete $self->{genes_object}->{$gene_id};
-	delete $self->project->{objects}->{genes}->{$gene_id};
-}
-
-# methode pour faire les stats (fin de interface_json.pl)
-
-
 sub construct_tree {
 	my ($self,$tree,$vector,$name) = @_;
 	foreach my $id (@{$self->getIdsBitOn( $vector )}) {
@@ -1884,10 +1803,9 @@ sub save_model_variants_all_patients {
 		$self->{saved_model}->{$model_name}->{$patient->name().'_he'} = $self->getNewVector();
 		$self->{saved_model}->{$model_name}->{$patient->name().'_ho'} = $self->getNewVector();
 		return unless ($self->size_vector());
-		next if (not exists $self->patients_categories->{$patient->name()} and int($self->getProject->annotation_version()) < int($self->getProject->annotation_version_current()));		
-		$self->{saved_model}->{$model_name}->{$patient->name()} += $self->patients_categories->{$patient->name()};
-		$self->{saved_model}->{$model_name}->{$patient->name().'_he'} += $self->patients_categories->{$patient->name().'_he'};
-		$self->{saved_model}->{$model_name}->{$patient->name().'_ho'} += $self->patients_categories->{$patient->name().'_ho'};
+		$self->{saved_model}->{$model_name}->{$patient->name()} += $patient->getVectorOrigin($self);
+		$self->{saved_model}->{$model_name}->{$patient->name().'_he'} += $patient->getVectorOriginHe($self);
+		$self->{saved_model}->{$model_name}->{$patient->name().'_ho'} += $patient->getVectorOriginHo($self);
 	}
 }
 
@@ -2076,7 +1994,7 @@ sub getModelGeneVector_indiv_compound {
 		$patient->{model_indiv_compound}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_indiv_compound}->{$self->id()});
 		$var_tmp->Empty();
 		$patient->used_model('compound');
-		$var_tmp->Intersection( $patient->getVariantsVector($self), $gene->getVariantsVector() );
+		$var_tmp->Intersection( $patient->getVariantsVector($self), $gene->getCurrentVector() );
 		next if ($var_tmp->is_empty());
 		unless ($self->countThisVariants($var_tmp) == 1) {
 #			if ($var_gene_annot_var1 and $var_gene_annot_var2) {
@@ -2115,12 +2033,12 @@ sub getModelGeneVector_indiv_recessif {
 		$patient->{model_indiv_recessif}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_indiv_recessif}->{$self->id()});
 		$var_tmp->Empty();
 		$patient->used_model('recessif');
-		$var_tmp->Intersection( $patient->getVariantsVector($self), $gene->getVariantsVector() );
+		$var_tmp->Intersection( $patient->getVariantsVector($self), $gene->getCurrentVector() );
 		next if ($var_tmp->is_empty());
 		$patient->{model_vector_var_ok}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_vector_var_ok}->{$self->id()});
 		if ($self->countThisVariants($var_tmp) == 1) {
 			$var_tmp_2->Empty();
-			$var_tmp_2->Intersection( $var_tmp, $patient->getCategoryVariantsVector($self, 'ho') );
+			$var_tmp_2->Intersection( $var_tmp, $patient->getVectorOriginHo($self, 'ho') );
 			unless ($self->countThisVariants($var_tmp_2) == 0) {
 				$ok = 1;
 				$patient->{model_vector_var_ok}->{$self->id()} += $var_tmp_2;
@@ -2191,8 +2109,8 @@ sub get_vector_freq_variants {
 	return unless ($hToFilter);
 	my $var_freq = $self->getNewVector();
 	foreach my $filter_name (keys %{$self->project->hash_frequence_filters()}) {
-		next unless (exists $self->global_categories->{$filter_name});
-		unless (exists $hToFilter->{$filter_name}) { $var_freq += $self->global_categories->{$filter_name}; }
+		next if exists $hToFilter->{$filter_name};
+		$var_freq += $self->vector_global_categories($filter_name);
 	}
 	return $var_freq;
 }

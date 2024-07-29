@@ -20,19 +20,19 @@ has chromosome => (
 # tag si patient in the attic
 has in_the_attic => (
 	is		=> 'rw',
-	default => 0,
+	default => undef,
 );
 
 # tag si patient exclue entierement ou he ou ho
 has excluded => (
 	is		=> 'rw',
-	default => 'none',
+	default => undef,
 );
 
 # tag si patient intersect
 has intersected => (
 	is		=> 'rw',
-	default => 0,
+	default => undef,
 );
 
 # ids de tous les genes/intergenic_regions que le patient contient
@@ -356,11 +356,8 @@ sub getGenBoVariant {
 
 # methode pour mettre le patient in the attic
 sub setInTheAttic {
-	my ($self, $chr, $multiple_patients) = @_;
+	my ($self) = @_;
 	$self->in_the_attic(1);
-	$chr->patients_categories->{$self->name()}->Empty() if exists $chr->patients_categories->{$self->name()};
-	$self->hash_list_genes_ids->{$chr->name()} = [];
-	$chr->update_from_patients() unless ($multiple_patients);
 }
 
 # renvoie un hash avec le comptage de chaque categories (nb snps, ins, del, intronic, silent, utr, etc...)
@@ -844,9 +841,14 @@ has hash_stats_regionHo_vector => (
 );
 
 sub getRegionHo {
-	my ($self, $chr, $nbVar, $filter_regionho_sub_only) = @_;
+	my ($self, $chr, $nbVar, $filter_regionho_sub_only, $compute) = @_;
 	confess("\n\nERROR: nedd nbVar ! Die;\n\n") unless ($nbVar);
 	return $self->hash_regionHo_vector->{$chr->id()}->{$nbVar} if (exists $self->hash_regionHo_vector->{$chr->id()}->{$nbVar});
+	my $key = "region_ho_25_".$self->name;
+	if ($nbVar == 25 && $self->project->isRocks && (! defined $compute)){
+		$self->{hash_regionHo_vector}->{$chr->id()}->{$nbVar} = $chr->rocks_vector->get_vector_transmission($self,"region_ho_25");
+		return $self->{hash_regionHo_vector}->{$chr->id()}->{$nbVar};
+	}
 	my $intspan_regionHo = $self->getRegionHo_intspan($chr, $nbVar, $filter_regionho_sub_only);
 	if ($intspan_regionHo->is_empty()) {
 		$self->{hash_regionHo_vector}->{$chr->id()}->{$nbVar} = $chr->getNewVector();
