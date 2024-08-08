@@ -67,6 +67,7 @@ my $version;
 my $rna;
 my $phased; 
 my $neb;
+my $pad;
 
 GetOptions(
 	'project=s' => \$projectName,
@@ -77,6 +78,7 @@ GetOptions(
 	'rna=s' =>\$rna,
 	'phased=s' => \$phased,
 	'neb=s' => \$neb,
+	'padding=s' => \$pad,
 	#'low_calling=s' => \$low_calling,
 );
 my $pipeline = {};
@@ -301,14 +303,25 @@ if (exists $pipeline->{gvcf}){
 	
 }
 my $param_bed ="";
-unless ($project->isGenome) {
+
+unless ($version){
+	unless ($project->isGenome ) {
 		my $capture_file  = $patient->getCapture->gzFileName();
-		$param_bed .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150  };
+		#test prenantome 
+		$param_bed .= qq{  --vc-target-bed $capture_file};
+		if (defined($pad)){
+			$param_bed .= qq{ --vc-target-bed-padding $pad };
+		}
+		else{
+			$param_bed .= qq{  --vc-target-bed-padding 150  };
+		}
+		
 #		if($patient->getCapture->isPcr()){
 #			$param_bed .= qq{--enable-dna-amplicon true --amplicon-target-bed $capture_file} ;
 #			
 #		}
 	}
+}
 my $param_vcf ="";
 if (exists $pipeline->{vcf} && exists $pipeline->{gvcf}){
 	
@@ -335,12 +348,18 @@ if (exists $pipeline->{sv}){
 	 $param_sv .= " --sv-exome true ";
 	}
 }
+
+my $param_str = "";
+if (exists $pipeline->{str}){
+	$param_str = qq{ --repeat-genotype-enable true };
+
+}
 warn $phased;
 $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 $patient->update_software_version("dragen",$cmd_dragen);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;

@@ -1271,6 +1271,17 @@ is      => 'rw',
 		return $path;
 	},
 );
+has project_epi2me_pipeline_path_name => (
+is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = $self->buffer->config->{epi2me}->{pipeline};
+		my $path     = $pathRoot . "/" . $self->name() . "/";
+		$path .= $self->getVersion . "/";
+		return $path;
+	},
+);
 has dragen_fastq => (
 is      => 'rw',
 	lazy    => 1,
@@ -1289,6 +1300,16 @@ has project_dragen_pipeline_path => (
 		return $self->makedir($self->project_dragen_pipeline_path_name);
 	},
 );
+
+has project_epi2me_pipeline_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		return $self->makedir($self->project_epi2me_pipeline_path_name);
+	},
+); 
+
 has project_dragen_demultiplex_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -2502,6 +2523,15 @@ has pipelineDragen => (
 	default => sub {
 		my $self = shift;
 		return $self->project_dragen_pipeline_path;
+	},
+);
+
+has pipelineEpi2me => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->project_epi2me_pipeline_path;
 	},
 );
 has metricsDir => (

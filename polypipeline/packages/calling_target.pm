@@ -1132,6 +1132,83 @@ return $vcf_final;
 }
 
 
+sub p02_freebayes {
+	my ( $project, $patient, $intspans, $fork, $verbose ) = @_;
+	my $buffer      = $project->buffer;
+	my $freebayes   = $buffer->software("freebayes");
+	my $pm_samtools = new Parallel::ForkManager($fork);
+	my $dir_out     = $project->getCallingPipelineDir("freebayes");
+	my $vcf_final = calling_target::getTmpFile( $dir_out, "freebayes", "final.vcf" );
+	my @res_samtools;
+	my @beds;
+	my $c   = 0;
+	my $reference    = $project->genomeFasta();
+	my $onefile    = $patient->getBamFile();
+	my $samtools    = $buffer->software("samtools");
+	my $freebayes_min_alternate = 0.005;
+	my $correct_calling         = "";
+	$correct_calling = 	  qq{| $Bin/correct_tumoral.pl -limit $freebayes_min_alternate };
+	my $beds = return_all_beds( $project, $intspans );
+
+	if ( scalar(@$beds) == 0 ) {
+		print_empty_vcf( $vcf_final, $patient );
+		return $vcf_final;
+	}
+	$pm_samtools->run_on_finish(
+		sub {
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) =
+			  @_;
+			push( @res_samtools, $data ) if $data->{file};
+		}
+	);
+	my $time     = time;
+	my $nb       = 0;
+	my $bcftools = $buffer->software("bcftools");
+
+	my $it = natatime $fork , @$beds;
+	while ( my @vals = $it->() ) {
+		$nb++;
+		my $pid = $pm_samtools->start and next;
+		my $bed = calling_target::getTmpFile( $dir_out, "samtools", "$nb.bed" );
+		open( BED, ">$bed" );
+		foreach my $v (@vals) {
+			print BED $v . "\n";
+		}
+		close BED;
+
+		$nb++;
+		my $region;
+
+		my $out =   calling_target::getTmpFile( $dir_out, "freebayes", "$nb.vcf" );
+		my $cmd_free = qq{  $freebayes -b $onefile -f   $reference  -0  -F $freebayes_min_alternate  -t $bed $correct_calling >$out 2>/dev/null};
+		#my $cmd_free = qq{  $freebayes -b $onefile -f   $reference --min-coverage 20 -0  -F $freebayes_min_alternate  -t $bed $correct_calling >$out 2>/dev/null};
+
+		system($cmd_free);
+#		unlink $bed;
+		my %h;
+		$h{file} = $out;
+		$h{nb}   = $nb;
+		$pm_samtools->finish( 0, \%h );
+
+		#}
+	}
+
+	$pm_samtools->wait_all_children();
+
+	warn "samtools time :" . abs( time - $time );
+	my @all_vcfs =
+	  map { $_->{file} } sort { $a->{nb} <=> $b->{nb} } @res_samtools;
+
+	calling_target::concat_vcf( \@all_vcfs, $vcf_final, $project );
+	foreach my $f (@all_vcfs) {
+		unlink $f;
+	}
+
+	warn "02p freebayes " . abs( $time - time );
+	return $vcf_final;
+}
+
+
 sub return_all_beds {
 	my ( $project, $intspans ) = @_;
 	my @beds;
