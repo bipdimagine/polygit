@@ -144,10 +144,6 @@ my $pipeline = bds_steps->new( project=>$project,argument_patient=>$patients_nam
 if ($limit) {
 	$pipeline->limit($limit);
 }
-#if ($pad) {
-#	$pipeline->padding($pad);
-#}
-
 $pipeline->yes($yes);
 if ($pipeline->bipd){
 	push(@{$predef_steps->{diag_capture}},"gvcf","callable_regions");
@@ -279,6 +275,7 @@ my $steps = {
 				"deepvariant" => sub {$pipeline->deepvariant(@_)},
 				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
 				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
+				"specie_contaminant_check" => sub {$pipeline->check_specie_contaminant(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');
@@ -345,7 +342,7 @@ $SIG{'INT'} = sub {
 
 
 my $patients = file_util::return_patients( $project, $patients_name );
-sconfess("no patients") unless scalar(@$patients);
+confess("no patients") unless scalar(@$patients);
 
 
 
