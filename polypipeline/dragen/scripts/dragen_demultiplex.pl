@@ -39,10 +39,13 @@ my $mask = undef;
 my $l2;
 my $force;
 my $run_name_option;
+my $mismatch; 
+
 GetOptions(
 	'project=s' => \$project_names,
 	'l2=s' => \$l2,
 	'run=s' => \$run_name_option,
+	'mismatch=s' => \$mismatch,
 );
  
 my $bcl_dir;
@@ -288,8 +291,10 @@ if(scalar(@index) == 1){
 
 
 $lines->{"[Settings]"} = [];
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) if scalar(@index) == 2;
+my $nb_mis = 0;
+$nb_mis= $mismatch if $mismatch;
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",$nb_mis]);
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",$nb_mis]) if scalar(@index) == 2;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask; 
 
 my $dj;

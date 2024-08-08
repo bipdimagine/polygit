@@ -2803,6 +2803,14 @@ sub getDragenDirName {
 	$self->{_dir}->{$type} = $dir_out. "/$type/" . $self->name;#."/".$type."/";
 	return $self->{_dir}->{$type};
 }
+sub getEpi2meDirName {
+	my ( $self, $type ) = @_;
+	return $self->{_dir}->{$type} if exists  $self->{_dir}->{$type};
+	my $dir_out      = $self->project->project_epi2me_pipeline_path_name();
+	$self->{_dir}->{$type} = $dir_out. "/$type/" . $self->name;#."/".$type."/";
+	return $self->{_dir}->{$type};
+}
+
 sub getDragenDir {
 	my ( $self, $type ) = @_;
 	$self->project->project_dragen_pipeline_path();
@@ -2811,6 +2819,17 @@ sub getDragenDir {
 		system("mkdir -p ".$dir." && chmod a+rw ".$dir);
 	}
 	return $dir;
+}
+
+sub getEpi2meDir {
+	my ( $self, $type ) = @_;
+	$self->project->project_epi2me_pipeline_path();
+	my $dir = $self->getEpi2meDirName($type);
+	unless ( -e $dir ) {
+		system("mkdir -p ".$dir." && chmod a+rw ".$dir);
+	}
+	return $dir; 
+	
 }
 sub get_lmdb_primers {
 	my ( $self, $mode ) = @_;

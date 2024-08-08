@@ -319,15 +319,13 @@ method count_featureCounts  (Str :$filein! ){
 	}
 	my $ppn =16;
 	my $gtf = $project->gtf_file();
-	$gtf = $project->gtf_file_dragen() if $align_method eq "star" || $align_method eq "dragen-align";
-	#die($gtf);
+	#$gtf = $project->gtf_file_dragen() if $align_method eq "star" || $align_method eq "dragen-align";
 	
 	my $sed = join(" && ",@sed_cmd);
 	my $featureCounts = $project->buffer->software("featureCounts");
 	my $strand = " -s 1 ";
-	$strand = " -s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free";
-	$strand = " -s 0 " if $profile eq "bulk neb pcr-free";
-	
+	$strand = " -s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free" or $profile eq "bulk NEB-directional pcr-free";
+	$strand = " -s 0 " if $profile eq "bulk neb pcr-free" ;
 	my $cmd = "$featureCounts -T $ppn   -a $gtf --ignoreDup -o $fileout -p -t exon  $strand ".join(" ",@bams)." && $sed";
 	#my $cmd = "$featureCounts -T $ppn   -a $gtf  -o $fileout -p -t exon  ".join(" ",@bams)." && $sed";
 	my $type = "featureCounts-genes";
@@ -339,7 +337,7 @@ method count_featureCounts  (Str :$filein! ){
 	}
 		
 		my $sed2 = join(" && ",@sed_cmd2);
-		my $cmd2 = "$featureCounts -T $ppn -a $gtf -f   -t exon  -O --ignoreDup -p  -o $fileout2 -s 1 ".join(" ",@bams)." && $sed2";
+		my $cmd2 = "$featureCounts -T $ppn -a $gtf -f   -t exon  -O --ignoreDup -p  -o $fileout2 $strand ".join(" ",@bams)." && $sed2";
 		#my $cmd2 = "$featureCounts -T $ppn -a $gtf -f   -t exon  -O  -p  -o $fileout2 -s 1 ".join(" ",@bams)." && $sed2";
 	
 		my $type2 = "featureCounts-exons";
