@@ -160,7 +160,45 @@ function igv_reset () {
 	previous_bams = new Array();
 }
 
+function check_align_patients_track_rna(tracks) {
+	var is_ok = 1;
+	var list_tracks = tracks.split(',');
+	$.each( list_tracks, function(i) {
+		var track = list_tracks[i];
+		track = track.replaceAll('//', '/');
+		var ltmp = track.split('/');
+		var pat_name = '';
+		var align = '';
+		var last_item = '';
+		var item = '';
+		$.each( ltmp, function(j) {
+			last_item = item;
+			item = ltmp[j];
+			if (item.match('.bam')) {
+				align = last_item;
+				pat_name = item;
+				pat_name = pat_name.replaceAll('.bam','');
+				if (pat_name in hash_patients_align_DB) {
+					if (hash_patients_align_DB[pat_name] == align) {}
+					else {
+						is_ok = 0;
+						console.log('ERROR track '+pat_name);
+					}
+				}
+				else { is_ok = 0; }
+			}
+		})
+	})
+	if (is_ok == 0) { console.log(list_tracks); }
+	return is_ok;
+}
+
 function launch_igv_tool_rna(fasta, tracks, locus) {
+	var is_ok = check_align_patients_track_rna(tracks);
+	if (is_ok == 0) {
+		alert('ALIGN methods in database and IGV tracks are differents. Exit.');
+		return;
+	}
 	var url = "http://localhost:60151/load";
 	if (fasta) {
 		url += "?genome=" + fasta;
