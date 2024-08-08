@@ -98,7 +98,7 @@ foreach my $junction (@lJunction) {
 			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{start} = $junction->start();
 			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{end} = $junction->end();
 			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_junctions} = $junction->get_nb_new_count($dv_patient);
-			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_normal} = $junction->get_nb_normal_count($dv_patient);
+			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{count_normal} = $junction->get_canonic_count($dv_patient);
 			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{score} = int($junction->get_percent_new_count($dv_patient));
 			$hdv->{'100%'}->{$pos}->{$dv_patient->getProject->name()}->{$dv_patient->name()}->{type} = $junction->getTypeDescription($dv_patient);
 		}

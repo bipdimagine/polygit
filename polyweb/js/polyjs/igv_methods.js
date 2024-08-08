@@ -133,7 +133,7 @@ function displayInIGV(chr, start, end){
 
 function displayOneBAMIGV(file){
     var url = "http://localhost:60151/load?file="+file;
-	url += "&merge=false";
+	url += "&merge=true";
     httpGetFocusOn(url);
 	return 1;
 }

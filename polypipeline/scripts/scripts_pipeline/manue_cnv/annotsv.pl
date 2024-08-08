@@ -38,8 +38,6 @@ $dir->{canvas}->{dir}= $project->getVariationsDir("canvas");
 $dir->{wisecondor}->{dir}= $project->getVariationsDir("wisecondor");
 my $load = qq{module load tcltk/8.6.9};
 my $annotsv = qq{/software/distrib/AnnotSV_2.0/bin/AnnotSV};
-my $prg = qq{/software/polyweb/poly-disk/poly-src/polymorphism-cgi/manta/Set_allSV_byPatient.pl };
-my $prg2 = qq{/software/polyweb/poly-disk/www//cgi-bin/polymorphism-cgi/manta/Retrieve_allSV_Patient.pl };
 my $pm = new Parallel::ForkManager($fork);
 my $hjobs;
 my $job_id = time;
@@ -52,15 +50,15 @@ $pm->run_on_finish(
     );	
 
 foreach my $patient (@{$project->getPatients}) {
+	next unless $patient->isGenome();
 	foreach my $type (keys %$dir){
 		my $fileout = $patient->getAnnotSVFileName($type);
-			my $filein = $patient->getSVFile($type);
-			
-		warn $fileout;
+		my $filein = $patient->getSVFile($type);
 	}
 }
 
 foreach my $patient (@{$project->getPatients}) {
+	next unless $patient->isGenome();
 	$job_id ++;
 	#$hjobs->{$job_id} ++;
 	$hjobs->{$job_id}->{file}=   $dir_tmp."/".$patient->name;

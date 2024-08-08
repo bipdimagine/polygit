@@ -4,7 +4,7 @@ use FindBin qw($Bin);
 use lib "$Bin";
 #use root_steps;
 use Moose;  
-
+use bds_steps;
 use job_bds;
 use sample;
 use Data::Dumper;
@@ -164,7 +164,7 @@ sub store_rna_junction_ids  {
 	$ppn = 1 if $ppn < 1;
 	$ppn = 1;
 	$filein ="";
-	my $fileout = $project->getCacheBitVectorDir()."/lmdb_cache/".$chr_name.".dv.freeze";
+	my $fileout = $project->lmdb_cache_variations_dir().'/chr'.$chr_name.'_store_ids.ok';
 	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_junctions_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	 my $type = "cache_store_junctions_ids";
@@ -911,6 +911,7 @@ sub dejavu {
 }
 
 
+
 sub html_rna_junctions {
 	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
@@ -921,8 +922,8 @@ sub html_rna_junctions {
 	my $stepname = $self->patient->name."@".$type;
 	my $dir = $self->project->getCacheDir();
 	my $fileout = $dir."/".$patientName.".cache.ok";
-	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName only_html_cache=1";
-	$cmd .= "; perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName dejavu=10 dejavu_percent=100 min_score=10 only_dejavu_ratio_10=1 1>$fileout";
+	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/merge_junction.pl project=$projectName patient=$patientName fork=$ppn ";
+	$cmd .= "&& perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName dejavu=10 dejavu_percent=100 min_score=10 only_dejavu_ratio_10=1 1>$fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
@@ -976,6 +977,11 @@ sub coverage {
 	}
 	return $filein;
 	
+}
+
+sub check_specie_contaminant {
+	my ($self,$hash) = @_;
+	return bds_steps::check_specie_contaminant($self, $hash);
 }
 
 1;
