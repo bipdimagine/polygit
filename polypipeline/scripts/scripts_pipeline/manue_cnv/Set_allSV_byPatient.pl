@@ -15,6 +15,7 @@ use Parallel::ForkManager;
 use strict;
 use FindBin qw($Bin);
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
+use Getopt::Long;
 
 use GBuffer;
 
@@ -31,10 +32,23 @@ use GBuffer;
 
 my $fork = 5;
 my $cgi = new CGI;
-my $projectname = $cgi->param('projectname');
-$fork = $cgi->param('fork');
 
 
+my $limit;
+my $projectname;
+my $patient_name;
+my $fork =1 ;
+GetOptions(
+	'project=s' => \$projectname,
+#	'patient=s' => \$patient_name,
+	'fork=s' => \$fork,
+);
+
+ #= $cgi->param('projectname');
+#my $patient_name = $cgi->param('patient');
+#$fork = $cgi->param('fork');
+
+#$fork=1;
 
 # pour récupérer les objets project et patient
 my $buffer = GBuffer->new();
@@ -136,6 +150,12 @@ $pm->run_on_finish(
     $project->buffer->dbh_deconnect();
 foreach my $patobj (@$listPatients)
 {
+	warn "------------";
+	warn $patobj->name;
+	warn "---------------";
+	next if  $patient_name && $patobj->name ne $patient_name ;
+	#or $patobj->name ne "dl-2-E-sg-A";
+	next unless $patobj->isGenome;
 	$job_id ++;
 	$hjobs->{$job_id} ++;
 	my $pid = $pm->start and next;
@@ -296,7 +316,7 @@ foreach my $patobj (@$listPatients)
 				next  if ($SVchr eq "chrMT"); 	
 				next  if ($SVchr =~ m/^GL/); 
 				next  if ($SVchr =~ m/^hs37d5/);
-				
+				next  if ($SVchr =~ m/^NC_/);
 				
 				$SVdeb=$champs[1];
 				$QUAL = $champs[5];
@@ -339,9 +359,7 @@ foreach my $patobj (@$listPatients)
 	
 	# on recupere la liste des genes et le score max corespondant au CNV
 	# et les infos de cytogenetique : duplications segmentaires et cytoband
-	
 	setComplementaryInfos($patname);	
-	
 	# on freeze la table correspondant à chaque patient individuelement
 	store(\ %{$hPat_CNV->{$patname}}, $file_out) or die "Can't store $file_out for ".$patname."!\n";
 $pm->finish(0,{job=>$job_id});
@@ -356,7 +374,7 @@ $project->buffer->dbh_reconnect();
 
 foreach my $patobj (@$listPatients)
 {
-	
+	next unless $patobj->isGenome;
 	my $patname= $patobj->name();
 	my $hPat_allCNV;
 	
@@ -645,7 +663,7 @@ sub setComplementaryInfos()
 						my ($t,$c,$start,$end) = split(/_/, $global_id);
 						
 						# pour trouver les genes compris dans l'interval
-						die if ($c ne $num);
+						die($c." ".$global_id) if ($c ne $num);
 						my $chr = "chr".$num;
 						
 						#TODO: chromosome MT next

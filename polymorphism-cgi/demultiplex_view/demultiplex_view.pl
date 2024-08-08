@@ -17,18 +17,27 @@ use JSON;
 use xls_export;
 use session_export;
 use Spreadsheet::WriteExcel;
-use POSIX;
+use File::Basename;
 
 my $cgi = new CGI;
 my $force = $cgi->param('force');
 my $run_name = $cgi->param('run');
 my $export_xls = $cgi->param('export_xls');
+my $view_all  = $cgi->param('view_all');
+
+
+
+my $last_demultiplex = 1;
+$last_demultiplex = undef if $view_all;
 
 my ($h_files, $h_files_date);
 my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
-my ($list_paths_found) = list_html_files_in_dir($origin_path);
-my $buffer = new GBuffer;
+my $is_first_check = 1;
+my ($list_paths_found) = list_html_files_in_dir($origin_path, $is_first_check);
+$is_first_check = undef;
 
+
+my $buffer = new GBuffer;
 
 if ($run_name and $export_xls) {
 	my $this_path = $origin_path.'/'.$run_name;
@@ -40,30 +49,24 @@ if ($run_name and $export_xls) {
 }
 
 print $cgi->header('text/json-comment-filtered');
+print "{\"progress\":\".";
+
 
 foreach my $this_path (@$list_paths_found) {
 	if ($run_name) {
 		next if ($this_path ne $run_name);
 	}
+	
 	if (-e $this_path.'/Demultiplex_Stats.csv') {
 		mkdir $this_path.'/html/' if (not -d $this_path.'/html/');
 		if (-e $this_path.'/Demultiplex_Stats.csv' && -e $this_path.'/Top_Unknown_Barcodes.csv') {
 			my @lFiles = ('Demultiplex_Stats.csv', 'Top_Unknown_Barcodes.csv');
-			
-#			if ($this_path =~ /NB501645_0664/) {
-#				warn "\n\n";
-#				warn "$this_path";
-#				warn Dumper @lFiles;
-#				warn "\n\n";
-#				#die;
-#			}
-			
 			my $json_file = convert_csv_to_json($this_path, \@lFiles);
 			my $json_path = $json_file;
 			my $use_force;
 			$use_force = 1 if (not -e $json_file);
 			$json_file =~ s/\/\//\//g;
-			$json_file =~ s/.+\/ngs\//https:\/\/www.polyweb.fr\/NGS\//;
+			$json_file =~ s/.+\/ngs\//\/NGS\//;
 			my $name = $json_file;
 			if ($name =~ /.+\/NGS\/demultiplex\/(.+)\/json.+/) {
 				$name = $1;
@@ -108,16 +111,18 @@ foreach my $this_path (@$list_paths_found) {
 
 my $html_table = qq{<table data-sort-name='date' data-sort-order='desc' id="table_demultiplex" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100, 200, 300]" data-resizable='true' id='table_id_patients' class='table table-striped' style='font-size:13px;'>};
 $html_table .= qq{<thead>};
-$html_table .= qq{<th data-field="date" data-sortable="true" data-filter-control='input'><b>Date</b></th>};
-$html_table .= qq{<th data-field="path" data-sortable="true" data-filter-control='input'><b>Path</b></th>};
-$html_table .= qq{<th data-field="file" data-sortable="true" data-filter-control='input'><b>Description / File</b></th>};
-$html_table .= qq{<th data-field="view"><b>View</b></th>};
+$html_table .= qq{<th data-field="date" data-sortable="true" data-filter-control='input'><center><b>Date</b></center></th>};
+$html_table .= qq{<th data-field="path" data-sortable="true" data-filter-control='input'><center><b>Path</b></center></th>};
+#$html_table .= qq{<th data-field="file" data-sortable="true" data-filter-control='input'><center><b>Description / File</b></center></th>};
+$html_table .= qq{<th data-field="fastqscreen" data-sortable="true" data-filter-control='input'><center>FastqScreen<br><b>Check Genome / Contaminations</b></center></th>};
+$html_table .= qq{<th data-field="view"><center><b>View</b></center></th>};
 $html_table .= qq{</thead>};
 $html_table .= qq{<tbody>};
 
-
-
+my $row_span = 1;
+my $last_tag;
 foreach my $date (reverse sort keys %$h_files_date) {
+	print ".";
 	my $file = $h_files_date->{$date};
 	my $path_file_origin = $h_files->{$file};
 	
@@ -133,6 +138,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	
 	$path_file_origin =~ s/$origin_path/https:\/\/www.polyweb.fr\/NGS\/demultiplex/;
 	my $path_file = $h_files->{$file};
+	
 	my ($substring, $color, $date_text);
 	if ($path_file =~ /$origin_path/) {
 		$path_file =~ s/$origin_path/DEMULTIPLEX/;
@@ -191,24 +197,170 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	my $tr = qq{<tr>};
 	$tr .= qq{<td>$date_text</td>};
 	$tr .= qq{<td>$path_file</td>};
-	$tr .= qq{<td>$file</td>};
+#	$tr .= qq{<td>$file</td>};
 	
 	my $name = $file;
 	$name =~ s/\.html//;
-	my $b_view = qq{ <a title="$name" target="_blank" href="$path_file_origin">VIEW</a> };
-	
+	my $b_view = qq{ <a title="$name" target="_blank" href="$path_file_origin"><center>VIEW</center></a> };
 	#my $b_view = qq{<button onclick='' style="color:black">View</button>};
-	$tr .= qq{<td>$b_view</td>};
+	
+	
+	my (@l_FastqScreen, @l_FastqScreen_patfilename, $run_name, $run_name_db);
+	
+	#CAS demultiplex RUN
+	my $path_run = $path_file_origin;
+	$path_run =~ s/https:\/\/www.polyweb.fr\/NGS/\/data-isilon\/sequencing\/ngs/g;
+#	warn "\n";
+	if ($path_run =~ /&json=/) {
+	#	warn $path_file_origin;
+		$path_run =~ s/.+&json=//;
+		$path_run =~ s/json.+//;
+	#	warn $path_run;
+	}
+	if (not $path_run =~ /.+\/$/) {
+		$path_run = dirname($path_run);
+	}
+
+#	if (-d $path_run.'/fastq_screen/') {
+		
+		
+	my @lTmp = split('/', $path_run);
+	$run_name = $lTmp[-1];
+	$run_name_db = $lTmp[-1];
+	$run_name_db =~ s/\.NGS20.+//;
+	my $h_db = $buffer->get_demultiplex_run_infos($run_name_db);
+
+	my $h_db_by_proj;
+	foreach my $pat_name (sort keys %{$h_db}) {
+		my $project_name = $h_db->{$pat_name}->{project_name};
+		$h_db_by_proj->{$project_name}->{$pat_name} = undef;
+	}
+		
+		
+		
+	my $h_by_proj;
+	foreach my $project_name (sort keys %{$h_db_by_proj}) {
+		my $b = new GBuffer;
+		my $proj = $b->newProject( -name => $project_name );
+		foreach my $pat_name (sort keys %{$h_db_by_proj->{$project_name}}) {
+			my $patient = $proj->getPatient($pat_name);
+			my $specie_found = $patient->fastq_screen_found_specie();
+			if ($specie_found) {
+				my ($glyph, $species_text, $spec1, $spec2);
+				if (lc($h_db->{$pat_name}->{specie}) eq lc($specie_found)) {
+					if ($patient->fastq_screen_has_contaminants()) {
+						$color = "#F4A582";
+						$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-remove" aria-hidden="true"></span>};
+						$species_text = 'contamination'; 
+						$h_by_proj->{$project_name}->{$pat_name}->{error} = 1;
+						
+					}
+					else {
+						$color = "#176917";
+						$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-ok" aria-hidden="true"></span>};
+						if (lc($specie_found) eq 'human') { $species_text = 'HS'; }
+						elsif (lc($specie_found) eq 'mouse') { $species_text = 'MM'; }
+						else { $species_text = 'OTHER'; }
+						$h_by_proj->{$project_name}->{$pat_name}->{ok} = 1;
+					}
+				}
+				else {
+					$color = "red";
+					$glyph = qq{<span style="color:$color;" class="glyphicon glyphicon-remove" aria-hidden="true"></span>};
+					if (lc($h_db->{$pat_name}->{specie}) eq 'human') { $spec1 = 'HS'; }
+					elsif (lc($h_db->{$pat_name}->{specie}) eq 'mouse') { $spec1 = 'MM'; }
+					else { $h_db->{$pat_name}->{specie} = 'OTHER'; }
+					if (lc($specie_found) eq 'human') { $spec2 = 'HS'; }
+					elsif (lc($specie_found) eq 'mouse') { $spec2 = 'MM'; }
+					else { $spec2 = 'OTHER'; }
+					$species_text = $spec1.'/'.$spec2;
+					$h_by_proj->{$project_name}->{$pat_name}->{error} = 1;
+				}
+				my $path_html = $patient->fastq_screen_file_html_url();
+				my $pat_name_text = $pat_name;
+				$pat_name_text = substr $pat_name_text,0,15;
+				$pat_name_text= '['.lc($h_db->{$pat_name}->{specie}).'/'.lc($specie_found).'] '.$pat_name_text if $color eq 'red';
+				my $b_view_fq = qq{ <a title="$pat_name" target="_blank" href="$path_html"><span style="color:$color;">$pat_name_text</span></a> };
+				my $div = qq{<div class='col-xs-4 col-xl-3' style='padding:0px;margin:0px;background-color:Transparent;'>$glyph $b_view_fq</div>};
+				$h_by_proj->{$project_name}->{$pat_name}->{html} = $div;
+			}
+			
+		}
+		$proj = undef;
+		$b = undef;
+	}
+	
+	if ($h_by_proj) {
+		$tr .= qq{<td style="font-size:8px;padding:0px;margin:0px;"><center><div class="row" style="padding:0px;margin:0px;">};
+		my (@lThisTag, $this_tag, @lThisTR, @lPatOk, @lPatError);
+		foreach my $project_name (sort keys %{$h_by_proj}) {
+			push (@lThisTag, $project_name);
+			my $ok = 0;
+			my $error = 0;
+			foreach my $patient_name (sort keys %{$h_by_proj->{$project_name}}) {
+				push (@lThisTag, $project_name);
+				if (exists $h_by_proj->{$project_name}->{$patient_name}->{ok}) {
+					$ok++;
+					push(@lPatOk, $h_by_proj->{$project_name}->{$patient_name}->{html});
+				}
+				if (exists $h_by_proj->{$project_name}->{$patient_name}->{error}) {
+					$error++;
+					push(@lPatError, $h_by_proj->{$project_name}->{$patient_name}->{html});
+				}
+			}
+			my $total = $ok + $error;
+			push(@lThisTR, qq{<div class="col-xs-4" style="padding:0px;margin:0px;background-color:Transparent;"><b>$project_name</b>});
+			if ($ok > 0) {
+				my $div_id = "div_ok_".$run_name.'_'.$project_name;
+				my $html_ok = qq{<div id="$div_id" class="col-xs-12" style="padding:0px;margin:0px;background-color:Transparent;display:none;"><div class="row" style="padding:0px;margin:0px;">}.join("", @lPatOk).qq{</div></div>};
+				push(@lThisTR, qq{<button onClick="show_hide_patients('$div_id')" style="margin-left:5px;color:green;">Ok $ok/$total</button></div>});
+				push(@lThisTR, $html_ok);
+				
+			}
+#			else { push(@lThisTR, qq{<button style="margin-left:5px;" disabled>Ok $ok/$total</button>}); }
+			
+#			if ($error == 0) {
+#				push(@lThisTR, qq{<button style="margin-left:5px;" disabled>Error $error/$total</button></div>});
+#			}
+#			else {
+			if ($error > 0) {
+				my $div_id_error = "div_error_".$run_name.'_'.$project_name;
+				my $html_error = qq{<div id="$div_id_error" class="col-xs-12" style="padding:0px;margin:0px;background-color:Transparent;display:none;"><div class="row" style="padding:0px;margin:0px;">}.join("", @lPatError).qq{</div></div>};
+				push(@lThisTR, $html_error);
+				push(@lThisTR, qq{<button onClick="show_hide_patients('$div_id_error')" style="margin-left:5px;color:white;background-color:red;">Error $error/$total</button></div>});
+			}
+			@lPatOk = ();
+			@lPatError = ();
+		}
+		
+		$this_tag = join(';', @lThisTag);
+		
+		$tr .= qq{<div class="row" style="padding:0px;margin:0px;">};
+		foreach my $this_tr (@lThisTR) { $tr .= $this_tr; }
+		$tr .= qq{</div>};
+		$tr .= qq{</center></td>};
+		$row_span = 1;
+	}
+	else { $tr .= qq{<td></td>}; }
+		
+	$tr .= qq{</div><td style="min-width:100px;">$b_view</td>};
+#	die if $run_name eq 'run487';
 	$tr .= qq{</tr>};
 	$html_table .= $tr;
 }
+#die;
 $html_table .= qq{</tbody>};
 $html_table .= qq{</table>};
-
 my $hash;
-$hash->{html} = $html_table;
+
+#<button type="button" class="btn btn-danger">Danger</button>
+$hash->{html} = $html_table; 
+if (not $view_all) { $hash->{html} .= qq{<br><br><center><button type="button" onClick="launch_all()" class="btn btn-danger">View ALL demultiplex</button></center>}; }
+
 $hash->{table_id} = 'table_demultiplex';
 my $json_encode = encode_json $hash;
+print ".\",";
+$json_encode =~ s/{//;
 print $json_encode;
 exit(0);
 
@@ -823,7 +975,7 @@ sub convert_csv_to_html {
 }
 
 sub list_html_files_in_dir {
-	my ($path) = @_;
+	my ($path, $is_first_check) = @_;
 	opendir my ($dir), $path;
 	my @found_files = readdir $dir;
 	closedir $dir;
@@ -833,7 +985,16 @@ sub list_html_files_in_dir {
 		next if $file eq '..';
 		my $path_file = $path.'/'.$file;
 		if (-d $path_file) {
-			push(@lDir, $path_file);
+			my $is_ok = 1;
+			if ($is_first_check == 1 and $last_demultiplex == 1) {
+				$is_ok = undef;
+				my $today = time;
+				my $modtime = (stat ($path_file))[9];
+				my $interval = 86400*60;
+				my $delta = ($today - $modtime);
+				if ($delta < $interval) { $is_ok = 1; }
+			}
+			push(@lDir, $path_file) if $is_ok;
 		}
 		elsif (-e $path_file) {
 			add_file_html($path_file, $file);

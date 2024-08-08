@@ -188,7 +188,8 @@ foreach my $gene_name (@l_genes_name) {
 $nb_genes_all = keys %{$h_genes_all};
 
 my @headers0 = ('', 'HGMD DataBase');
-my @headers = ( 'Gene Score', qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus},  qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','Concept(s)', 'DejaVu', 'Total Mut', 'Total New Mut' );
+my @headers = ( 'Gene Score', 'Locus', 'Gene Name', 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','HGMD: Concept(s)', 'DejaVu', 'HGMD: Total Mut', 'HGMD: Total New Mut' );
+my @lFields = ( 'score', 'locus', 'name', 'phenotypes', 'omim', 'gtex', 'pli', 'panels', 'hgmd', 'variants', 'hgmd_mut', 'hgmd_new' );
 my $last_genecode = $buffer->getQuery->getMaxGencodeVersion();
 my $proj_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
 my $project = $buffer->newProject( -name => $proj_name );
@@ -259,10 +260,14 @@ foreach my $gname (sort keys %{$h_genes_with_dm}) {
 		
 		my $disease_hgmd = $buffer->queryHgmd->get_disease_from_gene_name($gname);
 		my $out_line = $cgi->start_Tr({style=>"font-size:11px;max-height:60pxoverflow-y: auto;", class=>$class});
+		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y: auto;"}, '');
 		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y: auto;"}, qq{<i>Not Found Genecode <span style="color:red;font-size:12px;">$last_genecode</span></i>});
 		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:black;"><i>$gname</i></span>});
-		$out_line .= $cgi->td({rowspan=>1, colspan=>7, style=>"max-height:60px;overflow-y: auto;"}, "<i>$disease_hgmd</i>");
-		
+		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y: auto;"}, "<i>$disease_hgmd</i>");
+		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y: auto;"}, '');
+		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y: auto;"}, '');
+		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y: auto;"}, '');
+		$out_line .= $cgi->td({rowspan=>1, style=>"max-height:60px;overflow-y: auto;"}, '');
 		my $nb_concepts = scalar(@lConcepts);
 		my $nb_concepts_new = scalar(@lConceptsNew);
 		if ($nb_concepts_new > 0) {
@@ -495,32 +500,49 @@ $out_th0 .= qq{</select>};
 $out_th0 .= qq{</div>};
 $out_th0 .= qq{</div>};
 
-$out_th0 .= qq{<div class="col-sm-4">};
-$out_th0 .= qq{<form>};
-$out_th0 .= qq{<div class="form-group">};
-$out_th0 .= qq{<label for="form_search">Quick Search</label>};
-$out_th0 .= qq{<input class="form-control" type="search" name="search" value="" id="id_search" />};
-$out_th0 .= qq{</div>};
-$out_th0 .= qq{</form>};
-$out_th0 .= qq{</div>};
+#$out_th0 .= qq{<div class="col-sm-4">};
+#$out_th0 .= qq{<form>};
+#$out_th0 .= qq{<div class="form-group">};
+#$out_th0 .= qq{<label for="form_search">Quick Search</label>};
+#$out_th0 .= qq{<input class="form-control" type="search" name="search" value="" id="id_search" />};
+#$out_th0 .= qq{</div>};
+#$out_th0 .= qq{</form>};
+#$out_th0 .= qq{</div>};
 
 $out_th0 .= qq{</div>};
 
 my $out1;
 $out1 .= $out_th0;
 $out1 .= $text_hgmd_compare;
-$out1 .= "<div style='text-align:center;font-size:12px;width:100%;overflow-x:scroll;'>";
-$out1 .= "<table id='table_hgmd_genes' class='table table-striped table-bordered' style='text-align:center;font-size:11px;'>";
+$out1 .= "<br><div style='text-align:center;font-size:12px;width:100%;overflow-x:scroll;'>";
+$out1 .= "<table data-filter-control='true' data-searchable='true'  data-toggle='table' data-show-extended-pagination='true' data-cache='false' data-pagination-loop='false' data-virtual-scroll='true' data-pagination-v-align='bottom' data-pagination-pre-text='Previous' data-pagination-next-text='Next' data-pagination='true' data-page-size='20' data-page-list='[20, 50, 100, 200, 300]' data-resizable='true' id='table_hgmd_genes' class='table table-striped table-bordered' >";
 $out1 .= "<thead>";
+#$out1 .= $cgi->start_Tr({style=>"font-size:11px;"});
+#$out1 .= $cgi->th({colspan=>8, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<b>GENE Informations</b>");
+#$out1 .= $cgi->th({colspan=>1, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>HGMD</b></center>");
+#$out1 .= $cgi->th({colspan=>1, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>PolyWeb</b></center>");
+#$out1 .= $cgi->th({colspan=>2, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>HGMD Informations</b></center>");
+#$out1 .= $cgi->end_Tr();
 $out1 .= $cgi->start_Tr({style=>"font-size:11px;"});
-$out1 .= $cgi->th({colspan=>8, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<b>GENE Informations</b>");
-$out1 .= $cgi->th({colspan=>1, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>HGMD</b></center>");
-$out1 .= $cgi->th({colspan=>1, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>PolyWeb</b></center>");
-$out1 .= $cgi->th({colspan=>2, style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>HGMD Informations</b></center>");
-$out1 .= $cgi->end_Tr();
-$out1 .= $cgi->start_Tr({style=>"font-size:11px;"});
+my $z = 0;
 foreach my $h (@headers){
-	$out1 .=  $cgi->th({style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>".ucfirst($h)."</b></center>");
+	next unless $h;
+	my $type =  $lFields[$z];
+	if ($type eq 'name') {
+		$out1 .= qq{<th data-searchable="true" data-filter-control-placeholder='Ex: BRCA1' data-filter-control='input' data-field='name'><center><b>$h</b></center></th>};
+	}
+	elsif ($type eq 'phenotypes') {
+		$out1 .= qq{<th data-searchable="true" data-filter-control-placeholder='Ex: heart, autism' data-filter-control='input' data-field='phenotypes'><center><b>$h</b></center></th>};
+	}
+	elsif ($type eq 'locus') {
+		$out1 .= qq{<th data-searchable="true" data-filter-control-placeholder='Ex: 12:48366750-48398337' data-filter-control='input' data-field='locus'><center><b>$h</b></center></th>};
+	}
+	else {
+		$out1 .= qq{<th data-field="$type"><center><b>}.ucfirst($h).qq{</b></center></th>};
+	}
+	$z++;
+#	$out1 .=  $cgi->th({style=>"background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>".ucfirst($h)."</b></center>");
+#	$z++;
 }
 $out1 .= $cgi->end_Tr();
 $out1 .= "</thead>";

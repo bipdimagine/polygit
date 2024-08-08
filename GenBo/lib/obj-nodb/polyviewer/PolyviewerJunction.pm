@@ -182,7 +182,7 @@ sub setJunction {
 		}
 		$self->{hash_by_pat_dp_count}->{$patient_family->name()} = $junction->get_dp_count($patient_family);
 		$self->{hash_by_pat_nb_new}->{$patient_family->name()} = $junction->get_nb_new_count($patient_family);
-		$self->{hash_by_pat_nb_normal}->{$patient_family->name()} = $junction->get_nb_normal_count($patient_family);
+		$self->{hash_by_pat_nb_normal}->{$patient_family->name()} = $junction->get_canonic_count($patient_family);
 		$self->{hash_by_pat_percent}->{$patient_family->name()} = sprintf("%.3f", $junction->get_percent_new_count($patient_family)).'%';
 	}
 	

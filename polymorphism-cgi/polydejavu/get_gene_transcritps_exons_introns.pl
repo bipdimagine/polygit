@@ -65,7 +65,7 @@ foreach my $tr (@{$gene->getTranscripts()}) {
 	my $locus_tr = $gene->getChromosome->id().':'.$tr->start().'-'.$tr->end();
 	$h_genes_transcripts_exons->{$tr_id}->{'locus'} = $locus_tr;
 	$h_genes_transcripts_exons->{$locus_tr} = $tr_id;
-	$html .= qq{<option value='$locus_tr'><span>$tr_id</span></option>};
+	$html .= qq{<option value='$locus_tr;$tr_all_id'><span>$tr_id</span></option>};
 	
 	my ($h_e, $h_i);
 	foreach my $exon (@{$tr->getExons()}) {
@@ -75,7 +75,7 @@ foreach my $tr (@{$gene->getTranscripts()}) {
 		my $id = $exon->id();
 		$id =~ s/$tr_all_id//;
 		$id =~ s/_//;
-		my $this_html = qq{<option value='$locus'><span>$tr_id $id</span></option>};
+		my $this_html = qq{<option value='$locus;$tr_all_id'><span>$tr_id $id</span></option>};
 		my $nb_exon = $id;
 		$nb_exon =~ s/ex//;
 		$h_e->{$nb_exon} = $this_html;
@@ -87,7 +87,7 @@ foreach my $tr (@{$gene->getTranscripts()}) {
 		my $id = $intron->id();
 		$id =~ s/$tr_all_id//;
 		$id =~ s/_//;
-		my $this_html = qq{<option value='$locus'><span>$tr_id $id</span></option>};
+		my $this_html = qq{<option value='$locus;$tr_all_id'><span>$tr_id $id</span></option>};
 		my $nb_intron = $id;
 		$nb_intron =~ s/intron//;
 		$h_i->{$nb_intron} = $this_html;

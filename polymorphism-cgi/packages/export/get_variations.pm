@@ -325,7 +325,6 @@ sub getIds_byCache_onlive {
 			$vn =~ s/_/-/g;
 			$vn =~ s/chr//;
 			my $link = "https://gnomad.broadinstitute.org/variant/$vn";
-			$link .= "?dataset=gnomad_r2_1" if ($var->getProject->getVersion() =~ /HG19/);
 			$hash->{'gnomad_ac'} = $var->getGnomadAC().';'.$link;
 			$hash->{'gnomad_ho'} = $var->getGnomadHO().';'.$link;
 			$hash->{'gnomad_an'} = $var->getGnomadAN().';'.$link;
@@ -491,6 +490,8 @@ sub getIds_onlive {
 		my ($check_before_done, $check_after_done);
 		my $i = $v_id;
 		my $j = $v_id;
+		$check_before_done = 1 if $i == 0;
+		$check_after_done = 1 if $j+1 == $chr->size_vector();
 		while ($check_before_done == undef) {
 			$i--;
 			my $var_before = $chr->getVarObject($i);

@@ -57,11 +57,11 @@ unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n")
 my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
-warn $buffer->config->{'public_data_annotation'}->{root};
+#warn $buffer->config->{'public_data_annotation'}->{root};
 my @pbd = ("/data-isilon/public-data","/data-isilon/public-data","/data-beegfs/public-data_nfs");#,"/data-beegfs/public-data_nfs");
 @pbd = ("/data-isilon/public-data","/data-isilon/public-data");
 $buffer->config->{'public_data_annotation'}->{root} = $pbd[rand @pbd];
-warn $buffer->config->{'public_data_annotation'}->{root};
+#warn $buffer->config->{'public_data_annotation'}->{root};
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
 warn $project->lmdb_cache_dir();
@@ -80,6 +80,8 @@ warn "\n### CACHE: store ids step\n" if ( $project->cache_verbose() );
 system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc "."/data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name." "."/data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name);#/software/bin/vmtouch -t ".$no1->filename." "
 system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc");#/software/bin/vmtouch -t ".$no1->filename." "
 system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name);
+
+my $file_ok = $project->lmdb_cache_variations_dir().'/chr'.$chr_name.'_store_ids.ok';
 
 $project->preload_patients();
 $project->buffer->disconnect();
@@ -120,7 +122,11 @@ if (scalar keys %{$chr->{cache_hash_get_var_ids}} == 0) {
 	$no2->create();
 	$no2->close();
 	warn "empty";
-	store( {}, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) ;    
+	store( {}, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) ;  
+	
+	open (FILE, ">$file_ok");
+	print FILE "OK - EMPTY";
+	close(FILE);
 	exit(0);
 }
 
@@ -129,7 +135,12 @@ if (scalar keys %{$chr->{cache_hash_get_var_ids}} == 0) {
 my @patient_names = sort { $a cmp $b } map { $_->name } @{ $project->getPatients };
 my $index_patients = 0;
 my $hpatients;
+my $categories_junctions = Cache_Commons::spec_categories_junctions();
 my @categorie_patient = ( "all", "RI", "SE");
+foreach my $c ( keys %{ $categories_junctions->{patients} } ) {
+	push(@categorie_patient, $c);
+}
+
 foreach my $pname (@patient_names) {
 	$hpatients->{$pname}->{index} = $index_patients++;
 	$hpatients->{$pname}->{name}  = $pname;
@@ -139,12 +150,18 @@ foreach my $pname (@patient_names) {
 }
 
 
+
 #initialisation global categorie
 my $intspan_global_type;
 my $categories = Cache_Commons::categories();
 foreach my $g ( keys %{ $categories->{global}->{variation_type} } ) {
 	$intspan_global_type->{$g} = Set::IntSpan::Fast::XS->new();
 }
+foreach my $g ( keys %{ $categories_junctions->{global} } ) {
+	$intspan_global_type->{$g} = Set::IntSpan::Fast::XS->new();
+}
+
+
 my $t = time;
 warn 'store 1/4: lmdb variations' if ( $project->cache_verbose() );
 my $no2 = $chr->get_lmdb_variations("c");    #open lmdb database
@@ -153,20 +170,52 @@ my $uniq;
 my $hh;
 my $size_variants = 0;
 
+my $h_junct_index;
 foreach my $hv ( @{$all} ) {
 	my $var_id = $hv->{id};
 	next if exists $uniq->{$var_id};
 	$uniq->{$var_id} ++;
 	my $junction = thaw( decompress( $hv->{obj} ) );
 	my $index_lmdb = $no2->put( $var_id, $junction );
+	$h_junct_index->{$junction->id()} = $index_lmdb;
+	$hh->{$var_id} = $junction->{heho_string};
+}
+
+warn "close";
+my $t2 = time;
+$no2->close();
+warn "time : ".abs($t-time)." - close ".abs($t2-time);
+	
+foreach my $hv ( @{$all} ) {
+	my $var_id = $hv->{id};
+	my $junction = thaw( decompress( $hv->{obj} ) );
 	$junction->{buffer} = $buffer;
 	$junction->{project} = $project;
+	my $index_lmdb = $h_junct_index->{$junction->id()};
 	$size_variants++;
-	$hh->{$var_id} = $junction->{heho_string};
 	foreach my $patient (@{ $junction->getPatients() }) {
 		$hpatients->{$patient->name()}->{intspan}->{all}->add($index_lmdb);
 		$hpatients->{$patient->name()}->{intspan}->{RI}->add($index_lmdb) if ($junction->isRI($patient));
 		$hpatients->{$patient->name()}->{intspan}->{SE}->add($index_lmdb) if ($junction->isSE($patient));
+		
+		my $junction_type_description = $junction->getTypeDescription($patient);
+		my $ratio = int($junction->get_percent_new_count($patient));
+		
+		$hpatients->{$patient->name()}->{intspan}->{ratio_10}->add($index_lmdb) if ($ratio >= 10);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_20}->add($index_lmdb) if ($ratio >= 20);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_30}->add($index_lmdb) if ($ratio >= 30);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_40}->add($index_lmdb) if ($ratio >= 40);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_50}->add($index_lmdb) if ($ratio >= 50);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_60}->add($index_lmdb) if ($ratio >= 60);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_70}->add($index_lmdb) if ($ratio >= 70);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_80}->add($index_lmdb) if ($ratio >= 80);
+		$hpatients->{$patient->name()}->{intspan}->{ratio_90}->add($index_lmdb) if ($ratio >= 90);
+		
+		unless (exists $intspan_global_type->{$junction_type_description}) {
+			$intspan_global_type->{$junction_type_description} = Set::IntSpan::Fast::XS->new();
+			$categories_junctions->{global}->{$junction_type_description} = undef;
+		}
+		$intspan_global_type->{$junction_type_description}->add($index_lmdb);
 	}
 	unless ( exists $intspan_global_type->{ $junction->type() } ) {
 		warn "\n\nERROR: doesn't exists \$intspan_global_type->{".$junction->type() . "}\n\n";
@@ -174,12 +223,38 @@ foreach my $hv ( @{$all} ) {
 		confess;
 	}
 	$intspan_global_type->{ $junction->type }->add($index_lmdb);
+	
+	my $dv = $junction->dejavu_patients("all");
+	$intspan_global_type->{dejavu_5}->add($index_lmdb) if ($dv <= 5);
+	$intspan_global_type->{dejavu_10}->add($index_lmdb) if ($dv <= 10);
+	$intspan_global_type->{dejavu_15}->add($index_lmdb) if ($dv <= 15);
+	$intspan_global_type->{dejavu_20}->add($index_lmdb) if ($dv <= 20);
+	$intspan_global_type->{dejavu_25}->add($index_lmdb) if ($dv <= 25);
+	$intspan_global_type->{dejavu_30}->add($index_lmdb) if ($dv <= 30);
+	$intspan_global_type->{dejavu_40}->add($index_lmdb) if ($dv <= 40);
+	$intspan_global_type->{dejavu_50}->add($index_lmdb) if ($dv <= 50);
+	$intspan_global_type->{dejavu_60}->add($index_lmdb) if ($dv <= 60);
+	$intspan_global_type->{dejavu_70}->add($index_lmdb) if ($dv <= 70);
+	$intspan_global_type->{dejavu_80}->add($index_lmdb) if ($dv <= 80);
+	$intspan_global_type->{dejavu_90}->add($index_lmdb) if ($dv <= 90);
+	
+	my $dv_r10 =  $junction->dejavu_patients("10");
+	$intspan_global_type->{dejavu_5_r10}->add($index_lmdb) if ($dv_r10 <= 5);
+	$intspan_global_type->{dejavu_10_r10}->add($index_lmdb) if ($dv_r10 <= 10);
+	$intspan_global_type->{dejavu_15_r10}->add($index_lmdb) if ($dv_r10 <= 15);
+	$intspan_global_type->{dejavu_20_r10}->add($index_lmdb) if ($dv_r10 <= 20);
+	$intspan_global_type->{dejavu_25_r10}->add($index_lmdb) if ($dv_r10 <= 25);
+	$intspan_global_type->{dejavu_30_r10}->add($index_lmdb) if ($dv_r10 <= 30);
+	$intspan_global_type->{dejavu_40_r10}->add($index_lmdb) if ($dv_r10 <= 40);
+	$intspan_global_type->{dejavu_50_r10}->add($index_lmdb) if ($dv_r10 <= 50);
+	$intspan_global_type->{dejavu_60_r10}->add($index_lmdb) if ($dv_r10 <= 60);
+	$intspan_global_type->{dejavu_70_r10}->add($index_lmdb) if ($dv_r10 <= 70);
+	$intspan_global_type->{dejavu_80_r10}->add($index_lmdb) if ($dv_r10 <= 80);
+	$intspan_global_type->{dejavu_90_r10}->add($index_lmdb) if ($dv_r10 <= 90);
+	
+	
 }
 
-warn "close";
-my $t2 = time;
-$no2->close();
-warn "time : ".abs($t-time)." - close ".abs($t2-time);
 my $nb_from_vcf = scalar(keys %{$chr->{cache_hash_get_var_ids}});
 my $nb_from_final = scalar(keys %{$hh});
 if ($nb_from_vcf == $nb_from_final) {
@@ -191,6 +266,7 @@ else {
 	warn "   DIE...\n\n";
 	die();
 }
+
 warn "time : ".abs($t-time);
 warn 'store 2/4: lmdb chr_name freeze' if ( $project->cache_verbose() );
 #store htable only fort dejavu by project purpose
@@ -253,6 +329,12 @@ while ( my @tmp = $iter->() ) {
 $pm->wait_all_children();
 sleep(10);
 $no5->close();
+
+
+open (FILE, ">$file_ok");
+print FILE "OK";
+close(FILE);
+
 
 sub get_junctions_ids {
 	my ( $project, $chr ) = @_;

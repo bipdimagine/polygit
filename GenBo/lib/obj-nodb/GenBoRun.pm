@@ -129,6 +129,65 @@ has description => (
 	},
 );
 
+has hash_fastq_screen_patients_files => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h;
+		foreach my $patient (@{$self->getPatients()}) {
+			my $patient_name = $patient->name();
+			$h->{html}->{$patient_name} = $patient->fastq_screen_file_html();
+			$h->{specie}->{$patient_name} = $patient->fastq_screen_file_specie();
+		}
+		return $h;
+	},
+);
+
+has hash_fastq_screen_patients_html_files => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h = $self->hash_fastq_screen_patients_files();
+		return if not $h;
+		return if not exists $h->{html};
+		return $h->{html};
+	},
+);
+
+has hash_fastq_screen_patients_specie_files => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h = $self->hash_fastq_screen_patients_files();
+		return if not $h;
+		return if not exists $h->{specie};
+		return $h->{specie};
+	},
+);
+
+has hash_fastq_screen_patients_specie => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h = $self->hash_fastq_screen_patients_specie_files();
+		return if not $h;
+		my $h2;
+		foreach my $patient (@{$self->getPatients()}) {
+			next if not exists $h->{$patient->name()} or not -e $h->{$patient->name()};
+			open (F, $h->{$patient->name()});
+			my $specie_found = <F>;
+			chomp($specie_found);
+			close (F);
+			$h2->{$patient->name()} = $specie_found;
+		}
+		return $h2;
+	},
+);
+
 has fastq_dir => (
 	is      => 'ro',
 	lazy    => 1,

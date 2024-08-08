@@ -262,7 +262,7 @@ sub save_export_xls {
 	my $h_xls_args;
 	print '_save_xls_';
 	$project_dejavu->cgi_object(1);
-	my @lVarObj;
+	my (@lVarObj, $h_pubmed);
 	foreach my $pos (sort keys %{$hResVariants}) {
 		foreach my $var_id (sort keys %{$hResVariants->{$pos}}) {
 			$project_dejavu->print_dot(50);
@@ -271,6 +271,16 @@ sub save_export_xls {
 				$v->variationTypeInterface($gene_init);
 			}
 			push(@lVarObj, $v);
+			if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
+				foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
+					if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
+					}
+				}
+			}
 		}
 	}
 	my $xls_export = new xls_export();
@@ -309,12 +319,15 @@ sub save_export_xls {
 			}
 		}
 	}
+	
 	print "|";
 	$project_dejavu->getProject->buffer->dbh_deconnect();
 	$project_dejavu->getProject->buffer->dbh_reconnect();
 #	delete $project_dejavu->{rocksPartialTranscripts};
 	print "|";
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
+	print "|";
+	$xls_export->store_specific_infos('variants_pubmed', $h_pubmed);
 	print "|";
 	my $session_id = $xls_export->save();
 	print "|";
@@ -463,9 +476,8 @@ sub export_html {
 		}
 	}
 	
-	foreach my $line (@lTrLines) {
-		$out2 .= $line;
-	}
+	if ($gene_init->strand() == 1) { foreach my $line (@lTrLines) { $out2 .= $line; } }
+	else { foreach my $line (reverse @lTrLines) { $out2 .= $line; }  }
 	$h_count->{total_pass} = scalar(@lTrLines);
 	$gene_init = undef;
 	$gene_init = $project_dejavu->newGene($gene_init_id) unless ($gene_init);
@@ -1031,16 +1043,21 @@ sub update_list_variants_from_dejavu {
 		
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 		
+		my $var = $project_dejavu->_newVariant($var_id);
 		if ($hVariantsDetails and exists $hVariantsDetails->{$var_id}) {
 			$var_gnomad = $hVariantsDetails->{$var_id}->{var_gnomad} if ($hVariantsDetails->{$var_id}->{var_gnomad});
 			$var_gnomad_ho = $hVariantsDetails->{$var_id}->{var_gnomad_ho} if ($hVariantsDetails->{$var_id}->{var_gnomad_ho});
 			$var_dejavu = $hVariantsDetails->{$var_id}->{var_dejavu} if ($hVariantsDetails->{$var_id}->{var_dejavu});
 			$var_dejavu_ho = $hVariantsDetails->{$var_id}->{var_dejavu_ho} if ($hVariantsDetails->{$var_id}->{var_dejavu_ho});
-			$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			if ($only_transcript) {
+				$var_annot = $var->variationTypeInterface($transcript_dejavu);
+			}
+			else {
+				$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			}
 			$var_model = $hVariantsDetails->{$var_id}->{model} if ($hVariantsDetails->{$var_id}->{model});
 		}
 		
-		my $var = $project_dejavu->_newVariant($var_id);
 		next if ($var->isCnv() or $var->isLarge());
 		
 		my $not_ok;
@@ -1244,7 +1261,15 @@ sub update_list_variants_from_dejavu {
 #		elsif  ($h_var->{value}->{hgmd_id} or $h_var->{value}->{clinvar_id}) { $color = "orange"; }
 		
 		$h_var->{genes}->{$gene_init_id_for_newgene} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_dejavu);
-		
+		if ($only_transcript) {
+			my @new_list;
+			foreach my $htr (@{$h_var->{genes}->{$gene_init_id_for_newgene}}) {
+				if ($htr->{value}->{trid} eq $only_transcript) {
+					push(@new_list, $htr);
+				}
+			}
+			$h_var->{genes}->{$gene_init_id_for_newgene} = \@new_list;
+		}
 		$hVariantsDetails->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_init_id_for_newgene}, \@header_transcripts, 1);
 		$hVariantsDetails->{$var_id}->{table_gnomad} = $table_gnomad;
 		$hVariantsDetails->{$var_id}->{table_dejavu} = $table_dejavu;
@@ -1283,6 +1308,7 @@ sub get_table_trio_from_object {
 	my $is_solo_trio = 'SOLO';
 	$is_solo_trio = 'TRIO' if $fam->isTrio();
 	my $project_name = $patient->getProject->name();
+	
 	my $description = $patient->getProject->description();
 	my @l_users = @{$patient->getProject->get_list_emails()};
 	my $patient_name = $patient->name();
@@ -1426,6 +1452,7 @@ sub get_table_trio_from_object {
 		$table_trio .= $cgi->start_Tr();
 		my $users = join("<br>", @l_users);
 		my $proj_text = qq{<button onclick="get_popup_users('$users');">Users</button> - <b>$project_name</b>};
+		$proj_text .= qq{<sup>defidiag</sup>} if $patient->project->isDefidiag; 
 		$proj_text .= " - <span style='color:red;'>$pheno</span>" if ($pheno);
 		$proj_text .= "<br>$description";
 		my $igv_alamut_text = $h_var->{html}->{igv}."&nbsp;".$h_var->{html}->{alamut};

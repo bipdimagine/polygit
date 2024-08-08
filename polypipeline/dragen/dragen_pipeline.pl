@@ -81,7 +81,7 @@ my $cmd_cancel = [];
 my $step_name;
 my $force;
 my $rna;
-my $phased;
+my $phased = 0;
 my $neb;
 my $pad;
 

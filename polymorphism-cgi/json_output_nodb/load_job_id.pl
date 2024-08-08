@@ -121,6 +121,21 @@ sub load_xls() {
 			}
 		}
 	}
+	
+	my ($h_pubmed, @list_datas_pubmed);
+	eval { $h_pubmed = $xls_export->get_specific_infos_stored('variants_pubmed'); };
+	if ($@) {}
+	else {
+		foreach my $var_id (keys %{$h_pubmed}) {
+			foreach my $pubmed_id (keys %{$h_pubmed->{$var_id}}) {
+				my $h;
+				$h->{'variation'} = $var_id;
+				$h->{'url'} = $h_pubmed->{$var_id}->{$pubmed_id}->{url};
+				$h->{'title'} = $h_pubmed->{$var_id}->{$pubmed_id}->{title};
+				push(@list_datas_pubmed, $h);
+			}
+		}
+	}
 	my (@list_datas_annotations_with_patients, $hProjFound, $h_by_tr);
 	my @lHeaderWithProj = @{$xls_export->list_generic_header()};
 	
@@ -173,6 +188,9 @@ sub load_xls() {
 	
 	my @lLinesHeaderPatients = ('Variation', 'Project', 'Description', 'Family', 'Patient', 'Parent_child', 'Sex', 'Status', 'Perc', 'He_Ho', 'Model', 'Phenotypes');
 	$xls_export->add_page('Patients', \@lLinesHeaderPatients, \@list_datas_patients) if @list_datas_patients;
+	
+	my @lLinesHeaderPubmed = ('Variation', 'Url', 'Title');
+	$xls_export->add_page('Pubmed', \@lLinesHeaderPubmed, \@list_datas_pubmed) if @list_datas_pubmed;
 	
 	$xls_export->export();
 	exit(0);

@@ -4,7 +4,7 @@ package GenBoNoSqlText;
 
 # ABSTRACT: An embedded, NoSQL SQLite database with SQL indexing
 use Moo;
-
+use Carp;
 use strict;
 use warnings;
 use Data::Dumper;
