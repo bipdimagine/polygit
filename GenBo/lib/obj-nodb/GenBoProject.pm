@@ -167,6 +167,11 @@ has get_list_emails => (
 		{
 			push( @lUsers, $h->{email} );
 		}
+		
+		foreach my $g (@{ $self->buffer->getQuery()->getGroups( $self->id() ) } ){
+				push( @lUsers, $g );
+		}
+		
 		return \@lUsers;
 	},
 );
@@ -1179,6 +1184,19 @@ has version => (
 	},
 );
 
+has fastq_screen_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->getProjectRootPath().'/fastq_screen/';
+		unless (-d $dir) {
+			$self->makedir($dir);
+		}
+		return $dir;
+	},
+);
+
 has project_root_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1253,6 +1271,17 @@ is      => 'rw',
 		return $path;
 	},
 );
+has project_epi2me_pipeline_path_name => (
+is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = $self->buffer->config->{epi2me}->{pipeline};
+		my $path     = $pathRoot . "/" . $self->name() . "/";
+		$path .= $self->getVersion . "/";
+		return $path;
+	},
+);
 has dragen_fastq => (
 is      => 'rw',
 	lazy    => 1,
@@ -1271,6 +1300,16 @@ has project_dragen_pipeline_path => (
 		return $self->makedir($self->project_dragen_pipeline_path_name);
 	},
 );
+
+has project_epi2me_pipeline_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		return $self->makedir($self->project_epi2me_pipeline_path_name);
+	},
+); 
+
 has project_dragen_demultiplex_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1773,6 +1812,7 @@ sub get_dejavu_junctions_path {
 	my ($self, $phenotype_name) = @_;
 	my $dir = $self->buffer()->config->{'deja_vu_JUNCTION'}->{root} . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
 	$dir .= '/'.$phenotype_name.'/' if ($phenotype_name);
+	
 	confess("junction dejavu $dir") unless -e $dir;
 	return $dir;
 }
@@ -1896,6 +1936,7 @@ sub changeAnnotationVersion {
 		$self->gencode_version( $lTmp[0] );
 		$self->public_database_version( $lTmp[1] );
 		$self->annotation_version($annot_version);
+		$self->buffer->public_data_version($lTmp[1]);
 		delete $self->{'directory'};
 		delete $self->{'annotation_public_path'};
 		delete $self->{'annotationsDirectory'};
@@ -1903,6 +1944,7 @@ sub changeAnnotationVersion {
 		delete $self->{'lmdbPli'};
 		delete $self->{'omimDirectory'};
 		delete $self->{'litePredictionMatrix'};
+		$self->buffer->queryHgmd();
 		return;
 	}
 	foreach my $history_version ( @{ $self->annotation_version_history() } ) {
@@ -2080,10 +2122,9 @@ has gtf_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf};
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
+		$file = $self->buffer()->config->{'public_data'}->{root}.'/repository/'.$version.'/'.$self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
+		die($file) unless -e $file;	
 		return $file;
 	},
 );
@@ -2273,6 +2314,7 @@ has genomeFai => (
 			next if $chr =~ /JH/;
 			next if $chr =~ /MU0/;
 			next if $chr =~ /_random/;
+			next if $chr =~ /_hap/i;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -2481,6 +2523,15 @@ has pipelineDragen => (
 	default => sub {
 		my $self = shift;
 		return $self->project_dragen_pipeline_path;
+	},
+);
+
+has pipelineEpi2me => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->project_epi2me_pipeline_path;
 	},
 );
 has metricsDir => (
@@ -2979,10 +3030,10 @@ sub setPatients {
 		$h->{project} = $self;
 		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
+		
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
 		  $self->{species_id} = $h->{species_id};
-#		  warn $h->{species_id};
 		 
 	}
 	return \%names unless (%names);
@@ -4101,7 +4152,12 @@ sub getPipelineTrackingDir {
 sub getSVDir {
 	my ( $self, $method_name ) = @_;
 	my $path = $self->project_path . "/SV/";
-	return $self->makedir($path);
+	$self->makedir($path);
+	if ($method_name){
+		$path .= $method_name . '/';
+		return $self->makedir($path);
+	}
+	return $path;
 }
 
 sub getCNVDir {
@@ -6431,6 +6487,7 @@ has RnaseqSEA_SE  => (
 		if(-e $filegz) {
 			return $filegz;
 		}
+		return if not -e $file;
 		$self->tabix_gzip_rnaseqsea($filegz,$file);
 		return $filegz;
 	},
@@ -6446,8 +6503,7 @@ has RnaseqSEA_RI  => (
 		if(-e $filegz) {
 			return $filegz;
 		}
-		warn "coucou";
-		
+		return if not -e $file;
 		$self->tabix_gzip_rnaseqsea($filegz,$file);
 		return $filegz;
 	},
@@ -6549,10 +6605,11 @@ sub getQueryJunction {
 	my %args;
 	$args{project} = $self;
 	$args{file}    = $fileName;
-	if ($method eq 'RI') { $args{isRI} = 1; }
-	elsif ($method eq 'SE') { $args{isSE} = 1; }
-	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
-	elsif ($method eq 'STAR') { $args{isSTAR} = 1; }
+	if (lc($method) eq 'ri') { $args{isRI} = 1; }
+	elsif (lc($method) eq 'se') { $args{isSE} = 1; }
+	elsif (lc($method) eq 'dragen') { $args{isDRAGEN} = 1; }
+	elsif (lc($method) eq 'star') { $args{isSTAR} = 1; }
+	elsif (lc($method) eq 'regtools') { $args{isREGTOOLS} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;

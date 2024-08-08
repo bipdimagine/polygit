@@ -101,6 +101,8 @@ my $limit;
 my $version;
 my $arg_steps;
 my $pipeline_name;
+my $pad;
+
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -117,6 +119,7 @@ GetOptions(
 	'pipeline=s' =>\$pipeline_name,
 	'yes=s' =>\$yes,
 	#'low_calling=s' => \$low_calling,
+	'padding=s' =>\$pad,
 );
 $patients_name = "all" unless $patients_name;
 my $report;
@@ -141,6 +144,10 @@ my $pipeline = bds_steps->new( project=>$project,argument_patient=>$patients_nam
 if ($limit) {
 	$pipeline->limit($limit);
 }
+#if ($pad) {
+#	$pipeline->padding($pad);
+#}
+
 $pipeline->yes($yes);
 if ($pipeline->bipd){
 	push(@{$predef_steps->{diag_capture}},"gvcf","callable_regions");
@@ -181,7 +188,7 @@ my $steps = {
 				"splitntrim"=>  sub {$pipeline->SplitNCigarReads(@_)},
 				"callable_region"=>  sub {$pipeline->callable_region(@_)},
 				#"calling_panel"=>  sub {$pipeline->calling_panel(@_,low_calling=>$low_calling)},
-				"calling_panel"=>  sub {$pipeline->calling_panel(@_)},
+				"calling_panel"=>  sub {$pipeline->calling_panel(@_,$pad)},
 				"depthofcoverage"=>  sub {$pipeline->depthofcoverage(@_)},
 				"duplicate_region_calling"=>  sub {$pipeline->calling_generic(@_,method=>"duplicate_region_calling")},
 				"realign_recal"=>  sub {$pipeline->realign_recal(@_)},
@@ -269,6 +276,9 @@ my $steps = {
 				"muc1" => sub {$pipeline->muc1(@_)},
 				"advntr" => sub {$pipeline->advntr(@_)},
 				"star_align" => sub {$pipeline->star_align(@_)},
+				"deepvariant" => sub {$pipeline->deepvariant(@_)},
+				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
+				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');
@@ -335,7 +345,7 @@ $SIG{'INT'} = sub {
 
 
 my $patients = file_util::return_patients( $project, $patients_name );
-confess("no patients") unless scalar(@$patients);
+sconfess("no patients") unless scalar(@$patients);
 
 
 

@@ -67,6 +67,7 @@ my $version;
 my $rna;
 my $phased; 
 my $neb;
+my $pad;
 
 GetOptions(
 	'project=s' => \$projectName,
@@ -77,6 +78,7 @@ GetOptions(
 	'rna=s' =>\$rna,
 	'phased=s' => \$phased,
 	'neb=s' => \$neb,
+	'padding=s' => \$pad,
 	#'low_calling=s' => \$low_calling,
 );
 my $pipeline = {};
@@ -190,15 +192,18 @@ else{
 	$param_align .= "--enable-duplicate-marking true ";
 }
 
-if (exists $pipeline->{count}){
+if (exists $pipeline->{count}) {
 	my $gtf =  $project->gtf_file();
 	die() unless -e $gtf;
-	$gtf = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v43/gtf/gencode.v43lift37.annotation.gtf};
-	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
 
-
+	$param_align .= "-a $gtf --enable-rna-quantification true";
+#PROD
+#	$gtf = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v43/gtf/gencode.v43lift37.annotation.gtf};
+#	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
+#
+#
 }
-
+#
 my $param_calling ="";
 if (exists $pipeline->{vcf} ){
 	$param_calling = qq{--enable-variant-caller true  } ;
@@ -209,7 +214,6 @@ if (exists $pipeline->{vcf} ){
 ##
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling;
 $patient->update_software_version("dragen",$cmd_dragen);
-warn $cmd_dragen;
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 unlink $fastq1 if  $fastq1 =~ /pipeline/;
 unlink $fastq2 if $fastq2 =~ /pipeline/;;
@@ -232,11 +236,15 @@ if (exists $pipeline->{align}){
 	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	 
 }
+if (!($fastq1)) {
+	my $bamfile = $patient->getBamFileName("bwa");
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+}
 if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
 	my $patient_ori = $project_ori->getPatient($patients_name);
-	 $patient_ori->{alignmentMethods} =['dragen-align','bwa'];
+	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
 	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
 	$param_align .= "--output-format CRAM " if $version =~/HG38/;
@@ -247,7 +255,9 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 }	
 elsif (exists $pipeline->{align}){
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-	confess() unless $fastq1;
+	
+#	confess() unless $fastq1;
+	if ($fastq1) {
 	my $runid = $patient->getRun()->id;
 	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
 
@@ -262,6 +272,12 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 		$param_align .= qq{ --enable-duplicate-marking true };
 	 }
 	 $param_align .= " --output-format CRAM " if $version =~/HG38/;
+	}
+	else {
+		my $bamfile = $patient->getBamFileName("bwa");
+		confess() unless -e $bamfile;
+		$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+	}
 }
 else {
 	my $bam = $patient->getBamFileName();
@@ -287,14 +303,25 @@ if (exists $pipeline->{gvcf}){
 	
 }
 my $param_bed ="";
-unless ($project->isGenome) {
+
+unless ($version){
+	unless ($project->isGenome ) {
 		my $capture_file  = $patient->getCapture->gzFileName();
-		$param_bed .= qq{ --vc-target-bed $capture_file --vc-target-bed-padding 150  };
+		#test prenantome 
+		$param_bed .= qq{  --vc-target-bed $capture_file};
+		if (defined($pad)){
+			$param_bed .= qq{ --vc-target-bed-padding $pad };
+		}
+		else{
+			$param_bed .= qq{  --vc-target-bed-padding 150  };
+		}
+		
 #		if($patient->getCapture->isPcr()){
 #			$param_bed .= qq{--enable-dna-amplicon true --amplicon-target-bed $capture_file} ;
 #			
 #		}
 	}
+}
 my $param_vcf ="";
 if (exists $pipeline->{vcf} && exists $pipeline->{gvcf}){
 	
@@ -321,12 +348,18 @@ if (exists $pipeline->{sv}){
 	 $param_sv .= " --sv-exome true ";
 	}
 }
+
+my $param_str = "";
+if (exists $pipeline->{str}){
+	$param_str = qq{ --repeat-genotype-enable true };
+
+}
 warn $phased;
-$param_phased = "--vc-combine-phased-variants-distance ".$phased;
+$param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 $patient->update_software_version("dragen",$cmd_dragen);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
