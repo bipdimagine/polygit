@@ -61,9 +61,10 @@ foreach my $r (@$runs) {
 #		push(@{$controls->{$r->id}},@$hps);
 #		next;
 #	}
-	@$hps = grep{$_->{patient} !~ /CDNA/ && $_->{control} == 0} @$hps;
-	my  @hps2 =  grep{$_->{project} ne $project_name && $_->{status} eq 1 && $_->{patient} =~ /GIAB/  } @$hps;
+	@$hps = grep{$_->{type} eq "dna"} @$hps;
 	
+	@$hps = grep{ $_->{control} == 0} @$hps;
+	my  @hps2 =  grep{$_->{project} ne $project_name && $_->{status} eq 1 && $_->{patient} =~ /GIAB/  } @$hps;
 	if ($excludes){
 		@hps2 = grep {$_->{patient} !~/$excludes/ }@$hps; 
 	}
@@ -82,7 +83,6 @@ foreach my $r (@$runs) {
 		}
 			
 		}
-	warn scalar(@hps2);
 	if (@hps2<=$max_controls) {
 		foreach my $h  (grep{$_->{project} eq $project_name && $_->{status} eq 1} @$hps){
 			push(@hps2,$h);
@@ -90,7 +90,6 @@ foreach my $r (@$runs) {
 			
 		}
 	}
-	warn scalar(@hps2);
 		if (@hps2<=$max_controls) {
 		foreach my $h  (grep{$_->{project} eq $project_name && $_->{status} ne 1} @$hps){
 			push(@hps2,$h);
@@ -105,7 +104,6 @@ foreach my $r (@$runs) {
 	# $max_controls = 50;
 	warn "\tmax control $max_controls ******************* control".scalar (@hps2);
 	if (scalar (@hps2) < 12 ) {
-		warn scalar (@hps2);
 		find_other_patient($r,\@hps2);
 	}
 	
@@ -232,11 +230,16 @@ sub find_other_patient {
 	my $limit = 12 - scalar(@$controls);
 	 foreach my $project_name2 (@$query){
 	 		next if $project_name2 =~ /NGS2010/;
+	 		warn $project_name2;
+	 		next if $project_name2 =~ /7187/;
+	 		next if $project_name2 =~ /7184/;
 	 		my $buffer2 = GBuffer->new();
 	 	
 			my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
 			my $nbx = 0;
+			warn scalar(@{$project2->getPatients});
 			foreach my $p (@{$project2->getPatients}){
+				next if $p->isRna();
 				my $capture2  = $p->getCapture();
 				next if $p->status == 1;
 				my $bam; 
