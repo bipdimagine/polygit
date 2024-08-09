@@ -172,30 +172,40 @@ sub run_pipeline {
 my ($pipeline) = @_;
 warn Dumper $pipeline;
 my $param_align;
+my $align;
 my $ref_fasta = $project->getGenomeFasta();
 my $name = $patient->name();
 my $epi2me_align = $buffer->software("epi2me")."/wf-alignment";
 my $epi2me_calling = $buffer->software("epi2me")."/wf-human-variation";
 my $run_name = $patient->project->getRunFromId($patient->getRunId())->infosRun->{run_name};
 my $bam_pipeline = $dir_pipeline."/".$patient->name."-".$run_name.".sorted.aligned.bam";
+warn "il existe" if -e $bam_pipeline;
+
 my $bam_prod = $patient->getBamFileName();
-warn $bam_pipeline;
+warn "il existe en prod " if -e $bam_prod;
 if (exists $pipeline->{align}){
-	my $fastq1 = epi2me_util::get_fastq_file($patient,$dir_pipeline);
-	confess() unless $fastq1;
-	$param_align = "--fastq $fastq1 --references $ref_fasta  ";
+	unless(-e $bam_prod || -e $bam_pipeline){
+		warn "quest ce que tu fous là";
+		my $fastq1 = epi2me_util::get_fastq_file($patient,$dir_pipeline);
+		confess() unless $fastq1;
+		$param_align = "--fastq $fastq1 --references $ref_fasta  ";
+		$align=1;
+	}
 }
-#elsif ($bam_pipeline){
-#	$param_align = "--bam $bam_pipeline";
-#}
+if (-e $bam_pipeline){
+	warn "pipeline";
+	$param_align = "--bam $bam_pipeline";
+	$align=0;
+}
 else {
-	my $bam = $patient->getBamFileName();
-	warn $bam;
-	$param_align = "--bam $bam";
-	confess() unless -e $bam;
+	warn "prod";
+	$param_align = "--bam $bam_prod";
+	confess() unless -e $bam_prod;
+	$align=0;
 }
-my $cmd_epi2me_align = qq{$epi2me_align --out_dir  $dir_pipeline --prefix $name --threads $fork -profile singularity };
-my $cmd_epi2me_calling = qq{$epi2me_calling --out_dir  $dir_pipeline --sample_name $name --threads $fork -profile singularity --ref $ref_fasta };
+my $cmd_epi2me;
+#my $cmd_epi2me_align = qq{$epi2me_align --out_dir  $dir_pipeline --prefix $name --threads $fork -profile singularity } if (exists $pipeline->{align}) || !$bam_prod;
+#my $cmd_epi2me_calling = qq{$epi2me_calling --out_dir  $dir_pipeline --sample_name $name --threads $fork -profile singularity --ref $ref_fasta };
 
 my $param_gvcf ="";
 if (exists $pipeline->{gvcf} ){
@@ -222,14 +232,20 @@ if (exists $pipeline->{str}){
 	$param_str = qq{ --str };
 
 }
+unless(-e $bam_prod || -e $bam_pipeline){
+	$cmd_epi2me = qq{$epi2me_align --out_dir  $dir_pipeline --prefix $name --threads $fork -profile singularity };
+	$cmd_epi2me .= $param_align." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline "
+}
+else{
+	$cmd_epi2me = qq{$epi2me_calling --out_dir  $dir_pipeline --sample_name $name --threads $fork -profile singularity --ref $ref_fasta };
+	$cmd_epi2me .= $param_align." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_sv." ".$param_str  ." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+}
 
-
-
-$cmd_epi2me_align .= $param_align." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
-warn qq{$Bin/../../../polyscripts/system_utility/run_cluster.pl -cmd=\"$cmd_epi2me_align\" -cpu=\"20\"};
-$cmd_epi2me_calling .= $param_align." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_sv." ".$param_str  ." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
-my $cmd_epi2me = $cmd_epi2me_align;
-$cmd_epi2me = $cmd_epi2me_calling if -e $bam_prod || -e $bam_pipeline;
+#$cmd_epi2me_align .= $param_align." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline " if (exists $pipeline->{align}) || !$bam_prod;;
+warn qq{$Bin/../../../polyscripts/system_utility/run_cluster.pl -cmd=\"$cmd_epi2me\" -cpu=\"20\"};
+#$cmd_epi2me_calling .= $param_align." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_sv." ".$param_str  ." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+#my $cmd_epi2me = $cmd_epi2me_align;
+#$cmd_epi2me = $cmd_epi2me_calling if -e $bam_prod || -e $bam_pipeline;
 
 #$patient->update_software_version("dragen",$cmd_dragen);
 my $exit = system(qq{$Bin/../../../polyscripts/system_utility/run_cluster.pl -cmd=\"$cmd_epi2me\" -cpu=\"20\"}) ;
