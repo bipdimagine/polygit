@@ -229,7 +229,7 @@ start_report($ppd);
 #
 #system("clear") ;
 run_command($ppd);
-#run_move($ppd);
+run_move($ppd);
 
 
 #if (exists $hstep->{lmdb}){
@@ -722,7 +722,7 @@ sub steps_system {
 		die();
 	}
 	running_text($text,$num_jobs);
-	run_cluster($jobs,$num_jobs);
+	run_system($jobs,$num_jobs);
 	text_system($text,$jobs);
 }
 

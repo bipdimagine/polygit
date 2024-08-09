@@ -110,11 +110,12 @@ $patients_name ="" unless $patients_name;
 my @apatients_name = split(":",$patients_name);
 my $status_jobs; 
 my $test_umi;
+my $genome;
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name => $pname , -version =>$version);
 	#my $project = $buffer->newProject( -name => $pname );
-	$project->isGenome;
+	$genome = 1 if  $project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	 $test_umi=1 if grep{$_->umi} @{$project->getCaptures};
 	push(@$projects,$project);
@@ -140,23 +141,23 @@ if ($test_umi && !($umi)){
 system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
-my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target","str"];
-my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5,"str"=>6};
-my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6,"str"=>7};
+my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
+my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
+my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
 
 #create_list_steps;
 unless ($rna){
 	test_rna($projects);
 	if(test_rna($projects)){
-	print colored::stabilo("orange ","Hey Cecile, You are working  on RNA project and you didn't put RNA=1 option  ", 1)."\n";
-	my $choice = prompt("y","Do you want to the option (y/n) ? ");
-	if ($choice eq "y"){
-		$rna = 1;
+		print colored::stabilo("orange ","Hey Cecile, You are working  on RNA project and you didn't put RNA=1 option  ", 1)."\n";
+		my $choice = prompt("y","Do you want to the option (y/n) ? ");
+		if ($choice eq "y"){
+			$rna = 1;
+		}
+		else {
+			$rna =0;
+		}
 	}
-	else {
-		$rna =0;
-	}
-}
 }
 
 
@@ -164,6 +165,12 @@ if ($rna){
 	$steps = ["dragen pipeline","vcf","featurecount"] ;
 	$hpipeline_dragen_steps = {"align"=>0,"vcf"=>1,"featurecount"=>2};
 	$hsteps = {"align"=>0,"vcf"=>1, "featurecount"=>2};
+}
+if($genome ==1){
+	$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","str"];
+	$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5,"str"=>6};
+	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"str"=>7};
+	
 }
 
 
