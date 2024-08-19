@@ -515,7 +515,7 @@ sub return_dejavu {
 	return $self->SUPER::dejaVuInfosForDiag2() if ($self->isDude());
 	my $chr = $self->getChromosome()->name();
 	my $in_this_run_patients =  $self->project->in_this_run_patients();
-	my $no = $project->dejavuSV();
+	my $no = $project->dejavuCNV();
 
 	if ($self->length == 0) {
 		warn $self->end;

@@ -621,15 +621,17 @@ has hash_gene_id_to_name => (
 
 sub cache_lmdb_variations {
 	my $self = shift;
+	confess();
 	return $self->cache_variations;
 }
 
 sub cache_variations {
 	my $self = shift;
-	if ($self->project->isRocks){
-		return $self->get_rocks_variations("r");
-	}
-	return $self->get_lmdb_variations("r");;
+	return $self->get_rocks_variations("r");
+#	if ($self->project->isRocks){
+#		return $self->get_rocks_variations("r");
+#	}
+#	return $self->get_lmdb_variations("r");;
 	
 }
 
@@ -959,6 +961,55 @@ sub getNbGenes {
 		$nb++ if (not $gene->getCurrentVector->is_empty()) ;
 	}
 	return $nb;
+}
+
+has genes_object => (
+	is		=> 'rw',
+	#isa		=> 'HashRef',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $hRes = $self->setGenes();
+		unless ($hRes) { $hRes->{none} = 'none'; }
+		return $hRes;	
+	}
+);
+
+has intervaltree_vector => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default	=> sub {
+	my $self = shift;
+	my $array_tree = $self->rocks_vector("r")->get_vector_gene( "vector_intervaltree" );
+	die() unless $array_tree;
+	my $tree = Set::IntervalTree->new;
+	foreach my $a (@$array_tree){
+		next unless @$a;
+		
+		$tree->insert(@$a);
+	}
+		return $tree;
+	},
+);
+
+
+sub getGenesFromVector {
+	my ($self,$vector) = @_;
+	my $tree = $self->intervaltree_vector;
+	my $start = 0;
+	my $lh;
+	while (($start < $vector->Size()) &&
+    	(my ($min,$max) = $vector->Interval_Scan_inc($start)))
+	{
+		$max ++;
+		 foreach my $g (@{$tree->fetch($min,$max)}){
+		 	next if $g =~ /intergenic/;
+		 	$lh->{$g} ++;
+		 }
+    	$start = $max + 2;
+	}
+	$self->{genes_object} = $lh;
+	return $self->getProject()->myflushobjects($lh, "genes");
 }
 
 sub getNbGenesIntergenic {
@@ -1386,6 +1437,7 @@ sub get_vectors_type_freq_to_keep {
 # methode pour appliquer le filtre dejavu
 sub get_vector_dejavu {
 	my ($self, $vector, $max_dejavu, $is_only_ho) = @_;
+	confess();
 	return unless ($max_dejavu);
 	if ($max_dejavu eq 'uniq') { $max_dejavu = 0; }
 	my @lNOK;
