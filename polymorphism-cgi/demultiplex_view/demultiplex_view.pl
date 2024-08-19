@@ -188,10 +188,11 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	
 	unless ($found_file) {
 		my $file_date = $path_file_origin;
-		$file_date =~ s/https:\/\/www.polyweb.fr\/NGS/\/data-isilon\/sequencing\/ngs/;
+		$file_date =~ s/.+\/NGS/\/data-isilon\/sequencing\/ngs/;
+		$file_date =~ s/\?.+//;
 		$file_to_date = $file_date;
 	}
-	
+
 	$date_text = POSIX::strftime( "20%y-%m-%d", localtime( ( stat $file_to_date )[9]) ) unless ($date_text);
 	
 	my $tr = qq{<tr>};
