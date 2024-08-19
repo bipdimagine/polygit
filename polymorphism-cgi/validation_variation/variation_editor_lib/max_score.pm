@@ -40,7 +40,7 @@ sub calculate_rocks {
 	my @ids = map{$_->{id}} @{$list};
 	
 	$final_polyviewer_all->prepare(\@ids);
-	warn "\t score :".abs(time -$t)." ".scalar(@ids);
+	#warn "\t score :".abs(time -$t)." ".scalar(@ids);
 	my $st =0;
 	my $st2;
 	foreach my $hgene (@$list) {
@@ -121,7 +121,7 @@ sub calculate_rocks {
 		}
 		$st2 += abs(time -$t1);
 	}
-	warn "cache :=> ".$st."  ".$st2;
+	#warn "cache :=> ".$st."  ".$st2;
 	return $list;
 #	$project->buffer->close_lmdb();
 	

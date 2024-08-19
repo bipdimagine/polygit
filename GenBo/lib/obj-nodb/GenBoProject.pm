@@ -48,7 +48,7 @@ use JSON::XS;
 use GenBoNoSql;
 use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
-#use GenBoNoSqlDejaVuCNV;
+use GenBoNoSqlDejaVuCNV;
 use GenBoNoSqlDejaVuSV;
 #use GenBoNoSqlDejaVuSV_agregate;
 use GenBoNoSqlDejaVuJunctions;
@@ -1937,6 +1937,7 @@ sub changeAnnotationVersion {
 		return;
 	}
 	foreach my $history_version ( @{ $self->annotation_version_history() } ) {
+		warn $history_version." ".$annot_version;
 		if ( $history_version eq $annot_version ) {
 			my @lTmp = split( '\.', $annot_version );
 			$self->gencode_version( $lTmp[0] );
@@ -1954,8 +1955,9 @@ sub changeAnnotationVersion {
 	}
 	my $l_annotation_version_history =
 	  join( ', ', sort @{ $self->annotation_version_history() } );
+	  warn Dumper $self->annotation_version_history();
 	confess("\n\nERROR: Project "
-		  . $self->name()
+		  . $self->name().join(";",@{$self->annotation_version_history() })
 		  . " never analised with annotation version $annot_version. Die.\n\nAnnotation Project History: $l_annotation_version_history\n\n"
 	);
 }
@@ -3588,7 +3590,7 @@ sub getVariantFromId {
 	my $refAll    = $lFieldsId[2];
 	my $varAll    = $lFieldsId[3];
 	my @find;
-	confess($refAll." ".$varAll);
+#	confess($refAll." ".$varAll);
 	warn "$id";
 	if ( length($refAll) == length($varAll) ) {
 		my $refObj =
@@ -4731,6 +4733,7 @@ has dejavuCNV => (
 	default => sub {
 		my $self = shift;
 		my $sqliteDir =   $self->DejaVuCNV_path;
+		warn $sqliteDir;
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuCNV->new( dir => $sqliteDir, mode => "r" );
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
@@ -4742,6 +4745,7 @@ has dejavuSV => (
 	default => sub {
 		my $self = shift;
 		my $sqliteDir =   $self->DejaVuSVeq_path;
+		warn $sqliteDir;
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuSV->new( dir => $sqliteDir, mode => "r" );
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
@@ -5860,7 +5864,6 @@ has in_this_run_patients => (
 		my $h;
 	warn "warning here a terminer ";
 	return {};
-	confess();
 	my $no      = $self->lite_deja_vu_projects();
 	my $res;
 	my $total = 0;
@@ -5881,7 +5884,6 @@ has in_this_run_patients => (
 			 }
 			 	
 			 }
-			
 		}
 		$res->{total} = $total;
 		return $res;
@@ -6474,9 +6476,18 @@ sub disconnect {
 	delete $self->{transcriptsCoverageSqlite};
 	delete $self->{lmdbGenBo};
 	delete $self->{lmdbMainTranscripts};
+	$self->close_rocks;
+	
 	#foreach my $c (values %{$self->{rocks}}){
 	#	$c->close() if $c;
 	#}
+}
+sub close_rocks {
+	my $self = shift;
+	foreach my $c (values %{$self->{rocks}}){
+		$c->close();# if $c;
+		delete $self->{rocks}->{$c}
+	}
 	delete $self->{rocks};
 }
 sub preload_patients {

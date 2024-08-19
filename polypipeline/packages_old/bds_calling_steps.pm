@@ -3,8 +3,8 @@ use strict;
 use FindBin qw($Bin);
 use lib "$Bin";
 #use root_steps;
-use Moose;  
-use MooseX::Method::Signatures;
+use Moo;  
+
 use job_bds;
 use sample;
 use Data::Dumper;

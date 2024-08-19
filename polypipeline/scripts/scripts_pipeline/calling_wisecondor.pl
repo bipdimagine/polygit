@@ -70,7 +70,8 @@ my $patient = $project->getPatient($patient_name);
  my $bam = $patient->getBamFile() ;
  my $npz =  $patient->fileWiseCondor();
  
- my $ref = "/data-beegfs/npz/reference/ref5Kb.npz";
+ my $ref = $project->get_wisecondor_reference;
+ #'"/data-beegfs/npz/reference/ref5Kb.npz";
  my $out = $project->getCallingPipelineDir("wiseCondor")."/".$patient->name;
  warn $out;
  my $cmd = "$wise predict  $npz $ref $out --beta 1 --bed";

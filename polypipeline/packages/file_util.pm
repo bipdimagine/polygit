@@ -195,9 +195,6 @@ sub find_paired_files_umi {
 	}
 	
 	return \@couple;;
-
-	
-	
 }
 #	my $couple;
 #	my $associated;

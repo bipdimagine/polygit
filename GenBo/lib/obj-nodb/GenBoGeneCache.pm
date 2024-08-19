@@ -27,6 +27,34 @@ has id => (
 	is       => 'ro',
 	required => 1,
 );
+has hash_annotation => (
+	is		=> 'ro',
+	lazy => 1,
+	default => sub { 
+		my $self = shift;
+		my $hash  = $self->getChromosome->rocks_vector("r")->get_vector_gene( $self->id."_annotations");
+	 },
+);
+
+has hgmd => (
+	is		=> 'ro',
+	lazy => 1,
+	default => sub { 
+		my $self = shift;
+		
+		return $self->hash_annotation->{hgmd};
+	 }
+);
+has polyquery_phenotypes => (
+	is		=> 'ro',
+	lazy => 1,
+	default => sub { 
+		my $self = shift;
+		
+		return $self->hash_annotation->{polyquery_phenotypes};
+	 }
+);
+
 
 # vector id de ce gene
 
@@ -103,6 +131,15 @@ has intspan => (
 	},
 );
 
+has enum => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->getChromosome->rocks_vector("r")->get_vector_gene( $self->id."_enum" );
+	},
+);
+
 sub cache_specific_atrributes {
 	my $self = shift;
 	return;
@@ -141,8 +178,8 @@ sub cache_specific_atrributes {
 
 	#$hashArgs->{project} = $self->project();
 	#$hashArgs->{chromosome} = $self;
-
 }
+
 
 sub getVectorPatient {
 	my ( $self, $patient ) = shift;
@@ -151,131 +188,135 @@ sub getVectorPatient {
 	return $vector;
 }
 
-sub _getVectorOrigin {
-	my $self = shift;
-	if ( $self->project->isRocks ) {
-		return $self->getChromosome->rocks_vector("r")->get_vector_gene( $self->id );
-	}
-	else {
-		my $chr      = $self->getChromosome();
-		my $lmdb     = $chr->get_lmdb_genes("r");
-		my $hashArgs = $lmdb->get( $self->id );
-		unless ( exists $hashArgs->{start} ) {
-			$self->{origin_vector_start} = 0;
-			$self->{origin_vector_end}   = 0;
-			return Bit::Vector->new( $chr->size_vector() )
-			  ; #Bit::Vector->new_Enum($chr->size_vector(), $hashArgs->{start}."-".$hashArgs->{end});
-		}
-		else {
 
-			$self->{origin_vector_start} = $hashArgs->{start};
-			$self->{origin_vector_end}   = $hashArgs->{end};
-			return Bit::Vector->new_Enum( $chr->size_vector(),
-				$hashArgs->{start} . "-" . $hashArgs->{end} );
 
-		}
 
-	}
 
+sub init_gene_vector {
+	my ($self) = @_;
+	my $numbers = $self->getChromosome->rocks_vector("r")->get_vector_gene( $self->id."_vector_characteristic" );
+	#my $enum = $self->enum->{all};
+		
+	#my @numbers = $enum =~ /(\d+)/g;
+	$self->{compact_vector_start} = $numbers->[0];
+	$self->{compact_vector_length} = $numbers->[1];
+		
 }
 
-sub getVectorOrigin {
-	my $self = shift;
-	return $self->{origin_vector} if exists $self->{origin_vector};
-	$self->{origin_vector} = $self->_getVectorOrigin();
-	return $self->{origin_vector};
+has compact_vector_start => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		$self->init_gene_vector;
+		return $self->{compact_vector_start};
+	},
+);
+
+
+has compact_vector_length => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		$self->init_gene_vector;
+		return $self->{compact_vector_length};
+	},
+);
+has chromosome_vector_length  => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->getChromosome->getNewVector;
+	},
+);
+
+sub enlarge_compact_vector{
+	my ($self,$small) = @_;
+	my  $vector = $self->getChromosome->getNewVector;
+	$vector->Interval_Substitute($small,$self->compact_vector_start,$self->compact_vector_length,0,$self->compact_vector_length);
+	return $vector;
+	
+}
+
+sub return_compact_vector {
+	my ($self,$vector) = @_;
+	 my $vsmall = Bit::Vector->new($self->compact_vector_length);
+	 
+	$vsmall->Interval_Copy($vector,0,$self->compact_vector_start,$self->compact_vector_length);
+	return $vsmall;
+}
+
+has compact_vector => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $t  =  $self->getChromosome->rocks_vector("r")->get_vector_gene( $self->id."_compact_vector" );
+		return $t;
+	},
+);
+
+
+
+
+
+sub getNewCompactVector {
+my ($self) = @_;
+ return  Bit::Vector->new($self->compact_vector_length); 
+}
+
+sub getCompactVectorPatient{
+	my ($self,$patient) = @_;
+	return $self->getCompactVectorOriginCategory($patient->id."_all");
 }
 
 sub getVectorOriginCategory {
+	my ($self, $cat) = @_; 
+	return $self->enlarge_compact_vector($self->getCompactVectorOriginCategory($cat));
+}
+sub getCompactVectorOriginCategory {
 	my ($self, $cat) = @_;
-	return $self->{origin_vector_cat}->{$self->id()}->{$cat} if exists $self->{origin_vector_cat}->{$self->id()}->{$cat};
-	$self->{origin_vector_cat}->{$self->id()}->{$cat} = $self->getChromosome->getNewVector();
-	my $v = $self->getChromosome->rocks_vector("r")->get_vector_gene( $self->id().'_'.$cat );
-	$self->{origin_vector_cat}->{$self->id()}->{$cat} += $v if $v;
-	return $self->{origin_vector_cat}->{$self->id()}->{$cat};
+	return $self->compact_vector->{$cat} if exists $self->compact_vector->{$cat};
+	
+	$self->compact_vector->{$cat} = $self->getNewCompactVector();
+	return $self->compact_vector->{$cat};
 }
 
-has global_categories => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $hash;
-		confess();
-#		return {} unless $self->intspan;
-#		foreach my $cat ( keys %{ $self->intspan() } ) {
-#			$hash->{$cat} =
-#			  $self->convert_intspan_to_vector( $self->intspan->{$cat},
-#				$self->getChromosome() );
-#		}
-#		foreach my $cat ( keys %{ $self->global_categories_intspan() } ) {
-#			$hash->{$cat} =
-#			  $self->convert_intspan_to_vector( $self->intspan->{$cat},
-#				$self->getChromosome() );
-#
-#		}
-#		return $hash;
-	},
-);
+sub getCompactVector {
+		my ($self,$cat) = @_;
+		return $self->compact_vector->{all} unless $cat;
+		return $self->getCompactVectorOriginCategory($cat);
+}
 
-has categories => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $hash;
-		confess();
-#		foreach my $cat ( keys %{ $self->categories_intspan() } ) {
-#			$hash->{$cat} =
-#			  $self->convert_intspan_to_vector( $self->intspan->{$cat},
-#				$self->getChromosome() );
-#		}
-#		return $hash;
-	},
-);
+sub getVectorOrigin {
+		my ($self) = @_;
+		return $self->enlarge_compact_vector($self->getCompactVector);
+}
 
-has global_categories_intspan => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		confess();
-#		my $self = shift;
-#		my $hash;
-#
-#		foreach my $cat ( keys %{ $self->intspan() } ) {
-#			next if ( exists $self->project->hash_ensembl_annotations->{$cat} );
-#
-#			#confess();
-#			$hash->{$cat} = $self->intspan->{$cat};
-#		}
-#		return $hash;
-	},
-);
+sub getCompactVectorOriginCategories {
+		my ($self, $cats,$debug) = @_;
+		my $small =  $self->getNewCompactVector();
+		foreach my $cat (@$cats) {
+ 			$small += $self->getCompactVectorOriginCategory($cat);
+ 			warn "\t\t\t ".$cat." ".$small->Norm if $debug;
+	}
+	return $small;
+}
 
-has categories_intspan => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		confess();
-#		my $hash;
-#		return $hash unless ( $self->intspan() );
-#		foreach my $cat ( keys %{ $self->intspan() } ) {
-#			next
-#			  unless (
-#				exists $self->project->hash_ensembl_annotations->{$cat} );
-#			$hash->{$cat} = $self->intspan->{$cat};
-#		}
-#		return $hash;
-	},
-);
+
+sub getVectorOriginCategories {
+	my ($self, $cats) = @_;
+	return $self->enlarge_compact_filter($self->getCompactVectorOriginCategories($cats));
+}
 
 has is_intergenic => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $v_intergenic = $self->getVectorOriginCategory('intergenic');
+		my $v_intergenic = $self->getCompactVectorOriginCategory('intergenic');
 		return if $v_intergenic->is_empty();
 		return 1;
 	},
@@ -308,63 +349,14 @@ sub setTranscripts {
 	return $hTranscriptsId;
 }
 
-# Used for PolyQuery (huge projects)
-sub getCategoriesVariantsVector {
-	my ( $self, $hCat ) = @_;
-	confess();
-	my $vector = $self->getChromosome->getNewVector();
-	return $vector if ( $self->getVariantsVector->is_empty() );
-	foreach my $cat ( keys %{ $self->categories_intspan() } ) {
-		next if ( exists $hCat->{$cat} );
-		unless ( exists $self->{categories}->{$cat} ) {
-			$self->{categories}->{$cat} =
-			  $self->convert_intspan_to_vector( $self->intspan->{$cat},
-				$self->getChromosome() );
-		}
-		$vector += $self->{categories}->{$cat};
-	}
 
- # FILTRE les variants ayant une prediction Sift / Polyphen que le n on veut pas
-	foreach
-	  my $cat ( %{ $self->getChromosome->project->hash_prediction_filters() } )
-	{
-		next unless ( exists $hCat->{$cat} );
-		if ( exists $self->intspan()->{$cat}
-			and not $self->{global_categories}->{$cat} )
-		{
-			$self->{global_categories}->{$cat} =
-			  $self->convert_intspan_to_vector( $self->intspan->{$cat},
-				$self->getChromosome() );
-		}
-		elsif ( exists $self->global_categories_intspan()->{$cat}
-			and not $self->{global_categories}->{$cat} )
-		{
-			$self->{global_categories}->{$cat} =
-			  $self->convert_intspan_to_vector(
-				$self->global_categories_intspan->{$cat},
-				$self->getChromosome() );
-		}
-		else {
-			next;
-		}
-		next unless ( exists $self->{global_categories}->{$cat} );
-		$vector -= $self->{global_categories}->{$cat};
-	}
-	return $vector;
-}
 
 sub setPatients {
 	my $self = shift;
 	my $h;
-	foreach my $patient ( @{ $self->getChromosome->project->getPatients() } ) {
-		if (
-			$self->getVariantsVector->subset(
-				$patient->getVariantsVector( $self->getChromosome() )
-			)
-		  )
-		{
+	foreach my $patient ( @{ $self->project->getPatients() } ) {
+		next if $self->getCompactVectorPatient($patient)->is_empty;
 			$h->{ $patient->id() } = undef;
-		}
 	}
 	return $h;
 }
@@ -389,33 +381,10 @@ sub setFamilies {
 
 sub setVariants {
 	my ( $self, $type ) = @_;
-
-	#die();
+	confess();
 	my $chr    = $self->getChromosome();
-	my $vector = $chr->getNewVector();
-	if ( $type eq 'variations' ) {
-		$vector->Intersection( $self->getVariantsVector(),
-			$chr->{global_categories}->{substitution} )
-		  if ( exists $chr->{global_categories}->{substitution} );
-	}
-	elsif ( $type eq 'insertions' ) {
-		$vector->Intersection( $self->getVariantsVector(),
-			$chr->{global_categories}->{insertion} )
-		  if ( exists $chr->{global_categories}->{insertion} );
-	}
-	elsif ( $type eq 'deletions' ) {
-		my $vector_del = $chr->getNewVector();
-		$vector_del += $chr->{global_categories}->{deletion}
-		  if ( exists $chr->{global_categories}->{deletion} );
-		$vector_del += $chr->{global_categories}->{large_deletion}
-		  if ( exists $chr->{global_categories}->{large_deletion} );
-		$vector->Intersection( $self->getVariantsVector(), $vector_del );
-	}
-	elsif ( $type eq 'large_deletions' ) {
-		$vector->Intersection( $self->getVariantsVector(),
-			$chr->{global_categories}->{large_deletion} )
-		  if ( exists $chr->{global_categories}->{large_deletion} );
-	}
+	my $vsmall = $self->getCompactVectorOriginCategory($type);
+	my $vector = $self->enlarge_comapct_vector($vsmall);
 	foreach my $var ( @{ $chr->getListVarObjects($vector) } ) {
 		$self->{ $var->type_object() }->{ $var->id() } = undef;
 		unless ( exists $self->project->{objects}->{$type}->{ $var->id() } ) {
@@ -468,8 +437,7 @@ sub setLargeDeletions {
 
 sub getLargeDeletions {
 	my $self = shift;
-	return $self->getProject()
-	  ->myflushobjects( $self->large_deletions_object(), "deletions" );
+	return $self->getProject()->myflushobjects( $self->large_deletions_object(), "deletions" );
 }
 
 sub getIndels {
@@ -488,71 +456,79 @@ sub getStructuralVariations {
 	return \@lRes;
 }
 
-sub hasVariantsForAllPatients {
-	my ( $self, $patients ) = @_;
-	my $nb_ok = 0;
-	foreach my $patient (@$patients) {
-		my $var_tmp = $self->getCurrentVector->Clone();
-		$var_tmp->Intersection($var_tmp, $patient->getVectorOrigin($self->getChromosome()));
-		last if $var_tmp->is_empty();
-		$nb_ok++;
+
+#sub getFilteredVariants {
+#	my ( $self, $patient ) = @_;
+#	my $vector = dclone $self->getVariantsVector();
+#	$vector->Intersection( $patient->getVariantsVector( $self->getChromosome ),
+#		$vector );
+#
+#	return $self->getChromosome->getListVarObjects($vector);
+#}
+
+
+sub getCurrentCompactVector {
+	my $self = shift;
+	unless ( exists $self->{current_compact} ) {
+		return $self->compact_vector->{all};
 	}
-	return 1 if $nb_ok == scalar(@$patients);
-	return;
+	
+	return $self->{current_compact};
 }
 
-sub getFilteredVariants {
-	my ( $self, $patient ) = @_;
-	my $vector = dclone $self->getVariantsVector();
-	$vector->Intersection( $patient->getVariantsVector( $self->getChromosome ),
-		$vector );
-
-	return $self->getChromosome->getListVarObjects($vector);
+sub setCurrentVector {
+	my ($self,$vector) = @_;
+	confess() unless defined  $vector;
+	my $size =  $vector->Size;
+	if ($size == $self->compact_vector_length){
+		$self->{current_compact}  = $vector;
+	}
+	elsif ($size == $self->chromosome_vector_length) {
+		$self->{current_compact}  = $self->return_compact_vector($vector);
+	}
+	else{
+		confess($size." ". $self->compact_vector_length." ". $self->chromosome_vector_length);
+	}	
+	return 1;
 }
 
 sub getCurrentVector {
 	my $self = shift;
-	unless ( exists $self->{current} ) {
-		if ($self->variants()) {
-			$self->{current} = dclone $self->variants();
-		}
-		else {
-			#TODO: confess here ??
-			$self->{current} = $self->getChromosome->getNewVector();
-		}
-	}
-
-	$self->{current} &= $self->getChromosome->getVariantsVector();
-	return $self->{current};
+	my $vc = $self->getCurrentCompactVector();
+	return $self->enlarge_compact_vector($vc);
 }
+
+
 
 sub getVariants {
 	my ( $self, $patient, $filters ) = @_;
+	confess() if $filters;
+	
+	
+	my $vector =  $self->getCurrentCompactVector() & $self->getCompactVectorPatient($patient);
+		return $self->getChromosome->getListVarObjects($vector);
 
-	#confess();
-	my $vector = dclone $self->getCurrentVector();
+#	#warn $vector if $self->getChromosome() eq "MT";
+#	
+#
+##warn $self->countThisVariants($v3)." ".$self->countThisVariants($v)." ".$self->countThisVariants($v2);
+#	my $vf;
+#	my $filter = $filters->{frequency};
+#	if ($filter) {
+#		foreach my $f ( keys %{ $self->buffer->config->{frequence_filters} } ) {
+#			my $value = $self->buffer->config->{frequence_filters}->{$f};
+#			if ( $value <= $filter ) {
+#				next unless $self->getChromosome->vector_global_categories($f);
+#				$vf = $self->getChromosome->vector_global_categories($f)
+#				  unless $vf;
+#				$vf += $self->getChromosome->vector_global_categories($f);
+#			}
+#
+#		}
+#		return [] unless $vf;
+#		$vector &= $vf;
+#	}
 
-	#warn $vector if $self->getChromosome() eq "MT";
-	$vector &= $patient->getVectorOrigin( $self->getChromosome ) if $patient;
-
-#warn $self->countThisVariants($v3)." ".$self->countThisVariants($v)." ".$self->countThisVariants($v2);
-	my $vf;
-	my $filter = $filters->{frequency};
-	if ($filter) {
-		foreach my $f ( keys %{ $self->buffer->config->{frequence_filters} } ) {
-			my $value = $self->buffer->config->{frequence_filters}->{$f};
-			if ( $value <= $filter ) {
-				next unless $self->getChromosome->vector_global_categories($f);
-				$vf = $self->getChromosome->vector_global_categories($f)
-				  unless $vf;
-				$vf += $self->getChromosome->vector_global_categories($f);
-			}
-
-		}
-		return [] unless $vf;
-		$vector &= $vf;
-	}
-	return $self->getChromosome->getListVarObjects($vector);
 }
 
 has transcripts_tree => (

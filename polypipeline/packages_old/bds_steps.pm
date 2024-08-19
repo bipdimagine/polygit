@@ -1,8 +1,8 @@
 package bds_steps;
 use Term::ReadKey;
 use IO::Prompt;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use Data::Printer;
 use FindBin qw($Bin);
 use Time::Local;

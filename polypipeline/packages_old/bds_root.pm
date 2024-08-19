@@ -1,6 +1,6 @@
 package bds_root;
-use Moose;  
-use MooseX::Method::Signatures;
+use Moo;  
+
 use strict;
 use FindBin qw($Bin);
 use lib "$Bin";

@@ -12,7 +12,6 @@ sub refine_heterozygote_composite {
 			return new_refine_heterozygote_composite_score_lmdb($project, $print_html,$list, $id);
 		}
 
-	
 }
 
 sub return_vp {
@@ -44,7 +43,6 @@ sub return_vp {
 
 sub new_refine_heterozygote_composite_score_rocks {
 	my ( $project,$print_html,$list, $id ) = @_;
-	
 	my $cgi = $print_html->cgi;
 	my $patient= $print_html->patient;
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"r",name=>"polyviewer_objects");
@@ -74,12 +72,9 @@ sub new_refine_heterozygote_composite_score_rocks {
 		}
 
 		$final_polyviewer_all->prepare($gids);
-#		warn "end prpare ".abs(time-$rtime);
 	foreach my $g (@$list) {
-		#last if $xp > 100;
 					
 		$xp++;
-#		warn "$xp /".scalar(@$list);
 		#warn $xp;
 		print "*" if $xp % 10 == 0 && $id == 1;
 		my $t1 = time;
@@ -175,7 +170,6 @@ sub new_refine_heterozygote_composite_score_rocks {
 			#my $is_gnomad = exists $v->{value}->{ac};
 			
 
-		
 			
 			$print_html->variant($vp);
 			##############

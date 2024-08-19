@@ -204,26 +204,38 @@ sub filter_vector_dejavu {
 	my ($chr, $nb_dejavu, $dejavu_ho, $test) = @_;
 	return unless ($nb_dejavu);
 	my $vector = $chr->getVariantsVector->Clone();
-	foreach my $v (@{$chr->getListVarObjects($vector)}) {
-		$chr->project->print_dot(50);
-		my $nb = $v->exome_projects();
-#		if ($nb > 0) {
-#			warn "\n";
-#			warn $v->id.' -> dv:'.$nb;
-#			warn 'similar_projects:'.$v->similar_projects();
-#			warn 'other_projects:'.$v->other_projects();
-#			warn 'exome_projects:'.$v->exome_projects();
-#			warn 'total_exome_projects:'.$v->total_exome_projects();
-#			warn 'total_similar_projects:'.$v->total_similar_projects();
-#			#die;
-#		}
-		$vector->Bit_Off($v->vector_id()) if $nb > $nb_dejavu;
-		
-		#Pour tester ceux qui ont un DV
-		#$vector->Bit_Off($v->vector_id()) if $nb < $nb_dejavu;
+	my $no = $chr->flush_rocks_vector();
+#	$no->prepare_vector(["sdv_10"]);
+	if ($dejavu_ho){
+		my $v1 = $no->get_vector_chromosome("pdv_".$nb_dejavu);
+		$vector &= $v1 ;
 	}
+	else {
+		my $v1 = $no->get_vector_chromosome("pdv_".$nb_dejavu);
+		$vector &= $v1 ;
+	}
+#	foreach my $v (@{$chr->getListVarObjects($vector)}) {
+#		$chr->project->print_dot(50);
+#		my $nb = $v->other_projects();
+##		if ($nb > 0) {
+##			warn "\n";
+##			warn $v->id.' -> dv:'.$nb;
+##			warn 'similar_projects:'.$v->similar_projects();
+##			warn 'other_projects:'.$v->other_projects();
+##			warn 'exome_projects:'.$v->exome_projects();
+##			warn 'total_exome_projects:'.$v->total_exome_projects();
+##			warn 'total_similar_projects:'.$v->total_similar_projects();
+##			#die;
+##		}
+#		$vector->Bit_Off($v->vector_id()) if $nb > $nb_dejavu;
+#		#Pour tester ceux qui ont un DV
+#		#$vector->Bit_Off($v->vector_id()) if $nb < $nb_dejavu;
+#	}
 #	die;
+
 	$chr->setVariantsVector($vector);
+	warn $chr->countThisVariants($vector);
+	#die();
 	return;
 }
 
@@ -960,7 +972,7 @@ sub getVector_project_or_fam {
 #	die;
 	
 	#renvoie vide si le resultat est vide dans ala famille
-	return $chr->getNewVector() if $var_ok->is_empty();
+	return ($var_ok, $var_excluded, $var_intersect) if $var_ok->is_empty();
 	#renvoie le vector du gene current si level_ind est gene
 	return $vector_chr_gene_init if ($chr->getProject->level_ind() eq 'gene');
 	#renvoie le vector des variants restants si level_ind est ind
@@ -1209,31 +1221,90 @@ sub filter_genes_only_genes_names {
 #	$chr->setVariantsVector($vector_genes);
 }
 
-sub get_vector_filter_gene_annotations {
-	my ($gene, $hFiltersChr) = @_;
-	my $v = $gene->getChromosome->getNewVector();
-	$gene->getCurrentVector();
-	foreach my $cat (keys %{$gene->getChromosome->getProject->buffer->config->{'functional_annotations'}}) {
-		next if exists $hFiltersChr->{$cat};
-		$v += $gene->getVectorOriginCategory($cat);
-	}
-	return $v;
-}
 
+sub get_vector_filter_gene_annotations {
+	my ($gene, $cat,$rocks) = @_;
+	
+	my $vector = $gene->getChromosome->getNewVector();
+	my $z = $gene->getCurrentVector();
+	#warn $z->Min()." ".$z->Max;
+	my $st= "";
+	my $cs = $rocks->get_vector_gene($gene->id);
+ 	foreach my $c (@$cat){
+ 		next unless $cs->{$c};
+ 		$st.= $cs->{$c}.",";
+ 	}
+ 	chop($st);
+ 	my $set = Set::IntSpan::Fast->new($st);
+ 	$vector->from_Enum($st);
+	return $vector;
+}
+sub return_cat {
+	my ($project,@unselect) = @_;
+	my %hcat = %{$project->buffer->config->{'functional_annotations'}};
+
+	foreach my $c (@unselect){
+		delete $hcat{$c};
+	}
+	return keys %hcat;
+}
 sub filter_genes_annotations {
 	my ($chr, $hFiltersChr) = @_;
 	return unless ($hFiltersChr);
-	my $v_cat_ok = $chr->getNewVector();
+	my $tt =time;
+	
+
+	my @all_cat = return_cat($chr->project,keys %$hFiltersChr);
+	
 	my $variants_genes  = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
+	my $vvv = $chr->getVariantsVector();
+	#$chr->rocks_vector("r")->get_vector_chromosome("coding") & $chr->getVariantsVector();
+	
+	my $cc = $chr->getVariantsVector()->Clone;
+	my $nb = 0;
+	my $nb_genes = 0;
+	my $id_genes = {};
+	my $t =time;
+	#$rocks->prepare([keys %$lh]);
+	foreach my $gene ( @{$chr->getGenesFromVector($vvv)}) {
+	#foreach my $gene ( @{$chr->getGenesFromVector($chr->getVariantsVector())}) {
+	#foreach my $gene ( @{$objs}) {
+		$nb_genes ++;
 		$chr->getProject->print_dot(1);
-		my $v = get_vector_filter_gene_annotations($gene, $hFiltersChr);
-		$gene->{current}->Intersection($gene->getCurrentVector(), $v);
-		next if ($gene->getCurrentVector->is_empty());
-		$variants_genes += $gene->getCurrentVector();
+		my $debug;
+		if ($gene->external_name eq "RNF115"){
+			$debug =1;
+		}
+		my $vsmall = $gene->getCompactVectorOriginCategories(\@all_cat,$debug);
+		if ($debug){
+			warn Dumper @all_cat;
+			warn "\t\t ".$vsmall->Norm;
+			#die();
+		}
+		
+		my $vchr = $gene->return_compact_vector( $chr->getVariantsVector());
+		$vsmall &= $vchr;
+		$gene->setCurrentVector($vsmall);
+		if ($vsmall->is_empty()){
+			delete $chr->{genes_object}->{$gene->id};
+		
+			next;
+		}
+		
+		
+		$gene->setCurrentVector($vsmall);
+		
+		$nb ++;
+		$id_genes->{$gene->id} ++;
+		$variants_genes += $gene->enlarge_compact_vector($vsmall);
 	}
+	
 	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
+	$chr->{buffer_vector} = $chr->getVariantsVector();
+	warn "---------------- $nb/$nb_genes/".scalar(keys %{$chr->{genes_object}});
+	warn abs(time - $t);
 }
+
 
 
 1;

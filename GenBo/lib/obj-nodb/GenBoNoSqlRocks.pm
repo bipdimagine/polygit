@@ -669,7 +669,6 @@ sub close {
 	#$self->rocks->close();
 	delete $self->{rocks};
 	$self->{rocks} = undef;
-
 	#$self = undef;
 }
 
@@ -797,6 +796,7 @@ sub stringify_pos {
 
 sub DESTROY {
 	my ($self) = @_;
+	warn "DESTROY ".$self->dir." ".$self->name;
 	system( "rm -f " . $self->path_rocks() . "/LOG*" );
 	system( "rm -f " . $self->path_rocks() . "/LOCK" );
 	if ( $self->temporary && -e $self->path_rocks ) {

@@ -492,7 +492,7 @@ sub getModelVector_fam_denovo() {
 	return $var_ok;
 }
 
-sub getVectorParent {
+sub getVectorParents {
 	my ($self, $chr) = @_;
 	return $self->{vector_transmission}->{parent}->{$chr->id} if exists $self->{vector_transmission}->{parent}->{$chr->id};
 	 $self->{vector_transmission}->{parent}->{$chr->id} = $chr->getNewVector();
@@ -536,6 +536,7 @@ sub getVectorDenovoTransmission {
 		return $vector
 }
 
+
 sub getVector_individual_denovo {
 	my ($self, $chr,$child,$compute) = @_;
 	return $chr->getNewVector() unless $child->isChild; 
@@ -551,7 +552,7 @@ sub getVector_individual_denovo {
 		return  $self->{vector_transmission}->{$key}->{$chr->id};
 	}
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getVariantsVector($chr);
-	$self->{vector_transmission}->{$key}->{$chr->id} -= $self->getVectorParent($chr);
+	$self->{vector_transmission}->{$key}->{$chr->id} -= $self->getVectorParents($chr);
 	return $self->{vector_transmission}->{$key}->{$chr->id};
 }
 

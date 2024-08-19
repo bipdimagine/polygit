@@ -19,8 +19,8 @@ use IO::Prompt;
 use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
-use Moose;
-use MooseX::Method::Signatures;
+use Moo;
+
 use pipeline_steps;   
 use file_util;
 use Class::Inspector;

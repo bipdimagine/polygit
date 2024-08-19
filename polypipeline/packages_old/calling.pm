@@ -1,8 +1,8 @@
 package calling;
 use strict;
 use FindBin qw($Bin);
-use Moose;  
-use MooseX::Method::Signatures;
+use Moo;  
+
 use Data::Dumper;
 use Data::Printer;
 use colored;

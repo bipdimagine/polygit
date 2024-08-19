@@ -41,11 +41,20 @@ my $buffer = GBuffer->new();
 
 my $project = $buffer->newProject( -name => $project_name,-version=>$version);
 my $canvas  = $project->getSoftware('canvas');
+my $samtools  = $project->getSoftware('samtools');
 my $tabix  = $project->getSoftware('tabix');
 my $ref =  $project->genomeFasta();
 my $patient = $project->getPatient($patient_name);
  my $bam = $patient->getBamFile() ;
- my $dirout= $project->getCallingPipelineDir("canvas");
+  my $dirout= $project->getCallingPipelineDir("canvas-".$patient->name);
+ if ($bam =~ /\.cram/){
+ 	#samtools view -b -T ref.fa -o output_bam.bam input_cram.cram
+ 	my $cram = $bam;
+ 	$bam = $dirout."/".$patient->name.".bam";
+ 	warn "$samtools view -b -T $ref -o $bam $cram --thread $fork && $samtools index $bam --threads $fork";
+ 	system("$samtools view -b -T $ref -o $bam $cram -\@ $fork && $samtools index $bam -\@ $fork");
+ 	die() unless -e $bam.".bai";
+ }
  
 my $dd .="$dirout/".$patient->name();
 system("mkdir -p $dirout");
