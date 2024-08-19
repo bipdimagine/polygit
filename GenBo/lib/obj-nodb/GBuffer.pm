@@ -1695,7 +1695,8 @@ my $hash_dejavu = {
           'similar_projects' => 11,
           'similar_patients' => 12,
           'total_similar_patients' => 13,
-          'exome_projects' => 14
+          'exome_projects' => 14,
+          'other_projects_ho' => 15,
         };
 
 sub index_dejavu {
