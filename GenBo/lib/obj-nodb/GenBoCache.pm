@@ -108,13 +108,11 @@ sub countVariants {
 	return $self->countThisVariants($self->getVariantsVector());
 }
 
-
 sub countThisVariants {
-	my ($self, $bitvector) = @_;
-	unless (defined $bitvector) { confess(); }
-	return 0 if ($bitvector->is_empty());
-	return ($bitvector->to_Bin() =~ tr/1//);
+my ($self, $bitvector) = @_;
+    return $bitvector->Norm();
 }
+
 
 sub count {
 		my ($self, $bitvector) = @_;
