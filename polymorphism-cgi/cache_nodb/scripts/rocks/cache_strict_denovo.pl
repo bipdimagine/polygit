@@ -16,11 +16,16 @@ use POSIX qw(strftime);
 use JSON;
 use Compress::Snappy;
 use Getopt::Long;
+use Net::FTP;
 use Carp;
 use Bio::DB::HTS;
+use Devel::Cycle;
 use GBuffer;
 use Bit::Vector::Overload;
 use Sys::Hostname;
+use List::Util qw(min max sum);
+use Parallel::ForkManager;
+
 
 
 my $fork = 1;
@@ -50,10 +55,11 @@ my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name, -cache => '1', -typeFilters => 'familial' );
-my $limit = 2;
+my $limit = 5;
 if ($project->isGenome){
 	$limit = 10;
 }
+
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
 }
@@ -64,169 +70,269 @@ my $hResults;
 my $hErrors;
 
 my $nbErrors = 0;
-
-my $pm = new Parallel::ForkManager($fork);
+$project->preload_patients();
 
 my $vector_denovo;
 my $total_job;
 foreach my $patient (@{$project->getPatients()}) {
 	 	$vector_denovo->{$patient->name} =  $chr->getNewVector();
 }
-$pm->run_on_finish (
+
+
+
+
+
+### Generate BAM file
+my $hfile;
+my $tall = time;
+my $fork_samtools = 10;
+my $fm_fork = int($fork/$fork_samtools);
+$fm_fork = 1 if $fm_fork == 0;
+my $pm = new Parallel::ForkManager($fm_fork);
+
+foreach my $family (@{$project->getFamilies()}) {
+	$family->{tmp_dir}  = $project->getCallingPipelineDir("strict_denovo_".$family->name);
+	my $tmp_dir = $family->{tmp_dir};
+	foreach my $parent  (@{$family->getParents}){
+		
+		$hfile->{$parent->name} = "$tmp_dir/".$parent->name.".".$chr->name.".bam";
+		next if -e $hfile->{$parent->name}.".bai";
+		$pm->start() and next;
+		warn "---> start ".$parent->name;
+		my $cram =  $parent->getBamFile;
+		my $chra = $chr->fasta_name();
+		my $t =time;
+		system("samtools view -T /data-isilon/public-data/genome/HG38_CNG/fasta/all.fa -b $cram $chra -@ $fork_samtools >".$hfile->{$parent->name});
+	
+		system("samtools index ".$hfile->{$parent->name}." -@ $fork_samtools");
+		die($hfile->{$parent->name}) unless -e $hfile->{$parent->name}.".bai";
+		warn "\t\t ++ ".$parent->name." ".abs(time-$t);
+		$pm->finish(0, {});
+	}
+	
+}
+$pm->wait_all_children();
+
+warn "--------------------------------------------------------";
+warn "--- END BAM  ".abs(time-$tall);
+warn "--------------------------------------------------------";
+
+$tall = time ;
+my $hbed ;
+$pm = new Parallel::ForkManager($fork);
+
+my $no = $chr->flush_rocks_vector("r");
+foreach my $family (@{$project->getFamilies()}) {
+		my $tmp_dir = $family->{tmp_dir};
+	foreach my $children  (@{$family->getChildren}){
+		$hbed->{$children->id}= $tmp_dir."/".$children->name.'.'.$chr->name.".bed";
+		#next if -e $hbed->{$children->id};
+		#$pm->start() and next;
+		my $vector_denovo =  $no->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
+		my @bits = $vector_denovo->Index_List_Read();
+		open (BED , ">".$hbed->{$children->id});		
+		my $nov = $project->getChromosome($chr_name)->get_rocks_variations("r");
+		foreach my $vector_id (@bits){
+				
+				my $var = $nov->get_index($vector_id);
+				print BED $chr->fasta_name."\t".($var->start-1)."\t".($var->end+2)."\n";
+		}
+		close BED;
+		
+		#$pm->finish(0, {});
+	}
+}
+$project->close_rocks();
+$no->close;
+$no = undef;
+
+warn "----";
+#$pm->wait_all_children();
+warn "--------------------------------------------------------";
+warn "--- END BED  ".abs(time-$tall);
+warn "--------------------------------------------------------";
+$tall = time ;
+my $res_sambamba;
+my $file_store;
+my $hash_pileup;
+ my $pm2 = new Parallel::ForkManager($fork);
+#my $pm2 = new Parallel::ForkManager(10);
+$pm2->run_on_finish (
 	sub {
 		my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $res) = @_;
-		my $pname = $res->{patient};
-		unless (exists $vector_denovo->{$pname} ) {
-			die();
-		}
-		$vector_denovo->{$pname} +=   $res->{vector};
-		delete $total_job->{$res->{run_id}};
+	
+		warn "\t\t\t ====> END ".$res->{patient}." :: ".$res->{nb};
 		
 	}
 );
-my $id =time;
-$project->preload_patients();
+my $nbp =0;
+foreach my $family (@{$project->getFamilies()}) {
+		my $tmp_dir = $family->{tmp_dir};
+	foreach my $children  (@{$family->getChildren}){
+		my $bed = $hbed->{$children->id};
+		my $hbamba;
+		foreach my $parent (@{$family->getParents()}) {
+				my $file = $hfile->{$parent->name};
+				$res_sambamba->{$parent->id} = $file.".".$children->name.".pileup";
+				$nbp ++;
+				$pm2->start() and next;
+				warn "\t\t ---> start ".$parent->name;
+			 	my $t =time;
+			 	my $cmd = qq{samtools mpileup  $file -l $bed > }.$res_sambamba->{$parent->id};
+			 	system($cmd);
+			 	#`$cmd`;
+				warn " \t\t  ++ pileup ".$parent->name." ".abs(time -$t)." ".$res_sambamba->{$parent->id};	
+				$pm2->finish(0, {nb=>$nbp,patient=>$res_sambamba->{$parent->id}});
+				
+			}
+	}
+}
+warn "wait";
+$pm2->wait_all_children();
 
 
-my $no      = $chr->get_rocks_variations("r");
- my $ranges = $no->ranges($fork);
-$no->close;
-
-	$project->disconnect();
-	$buffer->{dbh} = "-";
+warn "--------------------------------------------------------";
+warn "--- END PILEUP  ".abs(time-$tall);
+warn "--------------------------------------------------------";
+$tall = time ;
+foreach my $family (@{$project->getFamilies()}) {
+		my $tmp_dir = $family->{tmp_dir};
+	foreach my $children  (@{$family->getChildren}){
+		my $bed = $hbed->{$children->id};
+		my $hbamba;
+		foreach my $parent (@{$family->getParents()})  {
 	
+			open (BAMBA,$res_sambamba->{$parent->id});
+				while (my $res = <BAMBA>) {
+					next if $res =~ /^RES/;
+					my @tab = split(" ",$res);
+					chomp($res);
+					my $sequence = uc($tab[4]);
+					my $count_A = () = $sequence =~ /A/g;
+					my $count_T = () = $sequence =~ /T/g;
+					my $count_C = () = $sequence =~ /C/g;
+					my $count_G = () = $sequence =~ /G/g;
+					my @deletions = ($sequence =~ /-(\d+)/g);
+					my @insertions = ($sequence =~ /\+(\d+)/g);
+					push(@{$hbamba->{$tab[1]}->{COV}}, $tab[3]);
+					push(@{$hbamba->{$tab[1]}->{A}}, $count_A);
+					push(@{$hbamba->{$tab[1]}->{C}}, $count_C);
+					push(@{$hbamba->{$tab[1]}->{G} }, $count_G);
+					push(@{$hbamba->{$tab[1]}->{T}} , $count_T);
+					push(@{$hbamba->{$tab[1]}->{DEL}} , sum(@deletions)+0);
+					push(@{$hbamba->{$tab[1]}->{INS}} , sum(@insertions)+0);
+				}
+			close (BAMBA);	
+			
+			
+		}
+		$hash_pileup->{$children->id} = $hbamba;
+	
+	}
+}
+
+warn "--------------------------------------------------------";
+warn "--- END READ PILEUP  ".abs(time-$tall);
+warn "--------------------------------------------------------";
+$tall = time ;
+my $no = $chr->flush_rocks_vector("r");
 foreach my $family (@{$project->getFamilies()}) {
 	foreach my $children  (@{$family->getChildren}){
-	
-		my $sam;
-		my @tmp;
-		foreach my $r (@$ranges){
-		#while ( my @tmp = $iter->() ) {
-			my $run_id = $id ++;
-			$total_job->{$run_id} ++;
-			
-			$pm->start() and next;
-			my $vector_denovo = $family->getVector_individual_denovo($chr,$children)->Clone();
+		my $vector_denovo =  $no->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
+		my @bits = $vector_denovo->Index_List_Read();
 			my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
 			delete $no->{rocks};
-			foreach my $patient (@{$family->getParents()}) {
-				warn $patient->getBamFile;
-				$sam->{$patient->name} =  Bio::DB::HTS->new(-bam=>$patient->getBamFile, -fasta=>$project->getGenomeFasta());
-			}
-			my $res;
-			$res->{run_id} = $run_id;
-			my @strict_denovo;
-			my $hVarDeleted;
-			
-			for (my $vector_id=$r->[0];$vector_id<= $r->[1];$vector_id ++){
-				next unless $vector_denovo->contains($vector_id);
-			#foreach my $vector_id (@tmp){ 
-				my $debug;
-				push(@tmp,$vector_id);
-				my $var = $no->get_index($vector_id);
-				unless ($var) {
-				confess();
-				}
-			confess() unless $var->id;
-				$var->{buffer}  = $buffer;
-				$var->{project} = $project;
-				my $r = $var->getRatio($children);
-				my $percent;
-				if ($r > 40 ) {
-					$limit = 5;
-					$percent =0.05;
-				}
-				
-				
-			
-				$debug =1 if $var->name eq '17-78064045-del-187';
-				my $to_keep;
-				warn "coucou " if $var->gnomad_id eq '17-78064045-del-187';
-				foreach my $parent (@{$family->getParents()}) {
-					my $to_keep;
-						if ($var->isCnv && $var->isSrPr){
-								$to_keep =check_cnv($var,$children,$parent);	
-								warn "res ".$to_keep if $debug;
-								warn $vector_id if $debug;
-						}
-					elsif ($var->isSrPr){
-								$to_keep = check_srpr($var,$children,$parent);	
-						}
-					elsif ($var->isVariation) {
-						next if ($parent->depth($var->getChromosome->name,$var->start,$var->start) < $limit);
-						$to_keep = check_substitution($sam->{$parent->name},$var->getChromosome, $var->start,$var->sequence,$percent);
-						#$hVarDeleted->{$vector_id} ++;
-					}
-					elsif ($var->isDeletion) {
-						my $chr = $var->getChromosome->fasta_name();
-						my $start = $var->start() - 2;
-						my $end = $var->end() + 2;
-						my $locus = $chr.':'.$start.'-'.$end;
-						$to_keep = check_del($sam->{$parent->name},$var->getChromosome, $start,$var->delete_sequence,$limit);
-					}
-					elsif ($var->isInsertion) {
-						my $chr = $var->getChromosome->fasta_name();
-						my $length = 3;
-						if ($length > 3) { $length = $var->length(); }
-						my $start = $var->start() - $length - 1;
-						my $end = $var->start() + $length;
-						my $locus = $chr.':'.$start.'-'.$end;
-						$to_keep = check_ins($sam->{$parent->name},$var->getChromosome, $start,$var->sequence,$limit);
-					}
-					else {
-						die();
-					}
-					if ($to_keep) { $hVarDeleted->{$vector_id} ++; }
-					last unless $to_keep;
-				}
-				
-			}
-			my $vector = $chr->getNewVector();
-			warn $hVarDeleted->{168908};
-			
-			foreach my $vector_id (@tmp){ 
-				if ( $hVarDeleted->{$vector_id} == scalar(@{$family->getParents()}) ){
-					$vector->Bit_On($vector_id);
-				}
-			}
-		
-			$res->{patient} = $children->name;
-			$res->{vector}  = $vector;
-			delete $chr->{rocks};
-			sleep(5);
-			$pm->finish(0, $res);
-		} #end @tmp 
-		
+			my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
+			warn scalar(@bits)." ".$vdenovo->Norm;
 	}
-	
-	
 }
-#warn "wait";
-$pm->wait_all_children();
-confess() if keys %$total_job;
-my $nosql = GenBoNoSql->new(dir => $chr->project->getCacheBitVectorDir().'/strict-denovo', mode => 'c');
+
+warn "--------------------------------------------------------";
+warn "--- END   CONSTRUCT STRICT DENOVO ".abs(time-$tall);
+warn "--------------------------------------------------------";
+
+
 my $rocks4 = $chr->rocks_vector("w");
 foreach my $family (@{$project->getFamilies}){
 	foreach my $child  (@{$family->getChildren}){
+		warn "**** ".$child->name." " .$vector_denovo->{$child->name}->Norm;
 		 $rocks4->put_batch_vector_transmission($child,"ind_strict_denovo",$vector_denovo->{$child->name});
 	}
 }
 $rocks4->write_batch();
-$rocks4->close();
-#$nosql->put_bulk($chr->id(), $vector_denovo);
-#$nosql->close();
+
+
 system("date > $ok_file") if $ok_file;
 exit(0);
-
-
-
-sub check_srpr {
-	my ($var,$children,$parent) = @_;
-	my @v1 =  $parent->sr_raw($var->getChromosome,$var->start);
-	return if ($v1[0] < 5 or $v1[1]>5 or  $v1[2]>5);
-	@v1 =  $parent->sr_raw($var->getChromosome,$var->end);
-	return if ($v1[0] < 5 or $v1[1]>5 or  $v1[2]>5);
-	return 1;
+sub construct_strict_denovo {
+	my ($bits , $children,$vdenovo,$hbamba,$chr) =@_;
+	my $family = $children->getFamily();
+		my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
+			delete $no->{rocks};
+				foreach my $vector_id (@$bits) {
+				my $local_limit = $limit ;
+				
+				my $var = $no->get_index($vector_id);
+				my $percent;
+				my $r = $var->getRatio($children);
+				if ($r > 40 ) {
+					$local_limit = 5;
+					$percent =0.05;
+				}
+				if ($var->getNbAlleleAlt($children) < 10){
+					$local_limit = 3;
+				}
+				if ($var->isCnv && $var->isSrPr){
+					my $to_keep  = 0;
+						foreach my $parent (@{$family->getParents()}) {
+								 $to_keep += check_cnv($var,$children,$parent,$chr);	
+									last  if ($to_keep == 0 );
+								}
+							$vdenovo->Bit_On($vector_id) if $to_keep == 2;
+						}
+					elsif ($var->isSrPr){
+						my $to_keep = 0 ;
+						
+								foreach my $parent (@{$family->getParents()}) {
+									 $to_keep += check_srpr($var,$children,$parent,$chr);	
+									last  if ($to_keep == 0 );
+								}
+							$vdenovo->Bit_On($vector_id) if $to_keep == 2;
+						}
+				elsif ($var->isVariation) {
+					my $alt = uc ($var->sequence);
+					my $start = $var->start;
+					my $nb_alt = $hbamba->{$start}->{$alt}->[0] + $hbamba->{$start}->{$alt}->[1];
+					my $min_cov = min($hbamba->{$start}->{COV}->[0] + $hbamba->{$start}->{COV}->[1]);
+					#warn $nb_alt." ".$min_cov." ".$var->name if $nb_alt >0;
+					$vdenovo->Bit_On($vector_id) if $nb_alt < $local_limit && $min_cov >= 5 ;
+				}
+				elsif ($var->isInsertion) {
+					my $alt = uc ($var->sequence);
+					my $start = $var->start;
+					my $nb_alt = $hbamba->{$start}->{INS}->[0] + $hbamba->{$start}->{INS}->[1]+$hbamba->{$start+1}->{INS}->[0] + $hbamba->{$start+1}->{INS}->[1];
+					# + $hbamba->{$start+2}->{INS}->[0] + $hbamba->{$start+2}->{INS}->[1];
+					my $min_cov = min($hbamba->{$start}->{COV}->[0] + $hbamba->{$start}->{COV}->[1]);
+					
+					#if $nb_alt >0;
+					$vdenovo->Bit_On($vector_id) if $nb_alt < $local_limit && $min_cov >= 5 ;
+				}
+				elsif ($var->isDeletion) {
+					my $alt = uc ($var->sequence);
+					my $start = $var->start;
+					my $nb_alt = $hbamba->{$start}->{DEL}->[0] + $hbamba->{$start}->{DEL}->[1]+$hbamba->{$start+1}->{DEL}->[0] + $hbamba->{$start+1}->{DEL}->[1]+$hbamba->{$start-1}->{DEL}->[0] + $hbamba->{$start-1}->{DEL}->[1];
+					my $min_cov = max (min($hbamba->{$start-1}->{COV}->[0] + $hbamba->{$start-1}->{COV}->[1]),min($hbamba->{$start}->{COV}->[0] + $hbamba->{$start}->{COV}->[1]),min($hbamba->{$start+1}->{COV}->[0] + $hbamba->{$start+1}->{COV}->[1])) ;
+					$vdenovo->Bit_On($vector_id) if $nb_alt < $local_limit && $min_cov >= 5 ;
+				}
+				
+				else {
+					
+				}
+				
+		}
+		return $vdenovo;
+	
+	
 }
 
 
@@ -238,8 +344,8 @@ sub check_cnv {
 	my $dp = $var->getNormDP($parent);
 	my $dpc = $var->getNormDP($children);
 	warn " dp parent ".$dp." ".$dpc if $debug == 1; 
-	return if $var->getMeanDP($parent) < 5;
-	return if $dp < 5; 
+	return 0 if $var->getMeanDP($parent) < 5;
+	return 0 if $dp < 5; 
 	
 	$dpc = 0.00000001 if $dpc == 0; 
 	
@@ -249,144 +355,27 @@ sub check_cnv {
 	
 	warn $pc if $debug;
 	if ($var->isDeletion) {
-		return if $pc > -30; 
+		return 0 if $pc > -30; 
 		return 1;
 		#return 1 if 
 	}
 	elsif ($var->isLargeDuplication) {
 		return 1 if $pc > 30; 
-		return;
+		return 0 ;
 		#return 1 if 
 	}
 	else {
 		confess($var->name." ".$var->type)
 	}
-	
-	
-	
 }
 
-sub check_substitution {
-	my ($sam,$chr,$pos, $sequence_alt,$limit) = @_;
-	
-	my ($start,$end) = get_start_end($chr,$pos,$chr->sequence($pos,$pos));
-	
-	my $res = pileup($sam,$chr,$start,$end);
-	my $count = 0;
-	foreach my $pos (sort {$a <=> $b} keys %$res) {
-		if (exists $res->{$pos}->{$sequence_alt}){
-			my ($d) = values %{$res->{$pos}->{ref}};
-			
-			my $v =  ( $res->{$pos}->{$sequence_alt} / ($d + $res->{$pos}->{$sequence_alt}));
-			$count ++ if $v > $limit;
-		}
-	}
-	return if $count;
+sub check_srpr {
+	my ($var,$children,$parent,$chr) = @_;
+	my @v1 =  $parent->sr_raw($chr,$var->start);
+	return 0  if ($v1[0] < 5 or $v1[1]>5 or  $v1[2]>5);
+	@v1 =  $parent->sr_raw($chr,$var->end);
+	return 0 if ($v1[0] < 3 or $v1[1]>3 or  $v1[2]>3);
 	return 1;
-	
-}
-
-sub check_del {
-	my ($sam,$chr,$pos, $sequence_alt,$limit) = @_;
-	my ($start,$end) = get_start_end($chr,$pos+1,$sequence_alt,1);
-	my ($start1,$end1) = get_start_end($chr,$pos-1,$sequence_alt,1);
-	$start = $start1 if ($start1 < $start);
-	$end = $end1 if ($end1 > $end);
-	my $res = pileup($sam,$chr,$start,$end);
-
-	my $count = 0;
-	foreach my $pos (sort {$a <=> $b} keys %$res) {
-		$count += $res->{$pos}->{del} if exists $res->{$pos}->{del};
-	}
-	return if ($count >= $limit);
-	return 1;
-	
 }
 
 
-sub pileup {
-	my ($sam,$chr,$start,$end, $locus) = @_;
-	my %res;
-	my $callback = sub {
-		my ($seqid, $pos1, $pileups) = @_;
-		return if ($pos1 < $start);
-		return if ($pos1 > $end);
-	
-		 my $nb_reads = scalar(@$pileups);
-		
-		foreach my $pileup (@$pileups){
-			
-			
-			if ($pileup->indel > 0){
-				$res{$pos1}->{ins} ++;
-			}
-			elsif ($pileup->indel < 0){
-					$res{$pos1}->{del} ++;
-			}
-			else {
-				my $b     = $pileup->alignment;
-				my $ref = $chr->sequence($pos1,$pos1);
-				my $qbase  = substr($b->qseq,$pileup->qpos,1);
-				if ($ref eq $qbase){
-					$res{$pos1}->{ref}->{$ref} ++;
-				}else {
-					$res{$pos1}->{$qbase} ++;
-				}
-			}
-		}
-	};
-	$sam->fast_pileup($chr->fasta_name.":$start-$end", $callback);
-	return \%res;
-}
-
-
-sub get_start_end {
-	my ($chromosome,$pos,$ref1,$debug) = @_;
-	my $start =$pos;
-	my $ref2 = $chromosome->sequence($start,$start);
-	do {
-		$start --;
-		$ref2 = $chromosome->sequence($start,$start);
-	} while ($ref2 eq $ref1);
-	$start ++ if $start < $pos;
-	my $end = $pos;
-	
-	$ref2 = $chromosome->sequence($end,$end);
-	
-	 do {
-		$end ++;
-		$ref2 = $chromosome->sequence($end,$end);
-	} while ($ref2 eq $ref1);
-	$end -- if $end > $pos;
-	return($start,$end);
-	
-	
-}
-
-sub check_ins {
-	my ($sam,$chr,$pos, $sequence_alt,$limit) = @_;
-	my ($start,$end) = get_start_end($chr,$pos,$chr->sequence($pos,$pos));
-	my $res = pileup($sam,$chr,$start,$end);
-	my $count = 0;
-	foreach my $pos (sort {$a <=> $b} keys %$res) {
-		$count += $res->{$pos}->{ins} if exists $res->{$pos}->{ins};
-	}
-	return if ($count >= $limit);
-	return 1;
-	#return 1;
-#	my $cmd = $buffer->getSoftware('samtools')." mpileup $bam_file -r $locus 2>/dev/null";
-#	warn $cmd;
-#	die($locus);
-#	my $res = `$cmd`;
-#	my @lRes = split("\n", $res);
-#	warn Dumper @lRes;
-#	my $count = 0;
-#	foreach my $line (@lRes) {
-#		my @lCol = split(' ', $line);
-#		
-#		my $this_count = ($lCol[4] =~ tr/\+//);
-#		$count += $this_count;
-#		return if ($count >= $limit);
-#	}
-#	return 1;
-}
