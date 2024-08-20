@@ -235,14 +235,15 @@ warn "--------------------------------------------------------";
 warn "--- END READ PILEUP  ".abs(time-$tall);
 warn "--------------------------------------------------------";
 $tall = time ;
-my $no = $chr->flush_rocks_vector("r");
+#my $no = $chr->flush_rocks_vector("r");
+my $rocks4 = $chr->rocks_vector("w");
 foreach my $family (@{$project->getFamilies()}) {
 	foreach my $children  (@{$family->getChildren}){
-		my $vector_denovo =  $no->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
+		my $vector_denovo =  $rocks4->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
 		my @bits = $vector_denovo->Index_List_Read();
-			my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
-			delete $no->{rocks};
 			my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
+			 $rocks4->put_batch_vector_transmission($child,"ind_strict_denovo",$vector_denovo);
+			 warn "save";
 			warn scalar(@bits)." ".$vdenovo->Norm;
 	}
 }
@@ -250,17 +251,17 @@ foreach my $family (@{$project->getFamilies()}) {
 warn "--------------------------------------------------------";
 warn "--- END   CONSTRUCT STRICT DENOVO ".abs(time-$tall);
 warn "--------------------------------------------------------";
-
-
-my $rocks4 = $chr->rocks_vector("w");
-foreach my $family (@{$project->getFamilies}){
-	foreach my $child  (@{$family->getChildren}){
-		warn "**** ".$child->name." " .$vector_denovo->{$child->name}->Norm;
-		 $rocks4->put_batch_vector_transmission($child,"ind_strict_denovo",$vector_denovo->{$child->name});
-	}
-}
 $rocks4->write_batch();
 $rocks4->close();
+
+
+#foreach my $family (@{$project->getFamilies}){
+#	foreach my $child  (@{$family->getChildren}){
+#		warn "**** ".$child->name." " .$vector_denovo->{$child->name}->Norm;
+#		 $rocks4->put_batch_vector_transmission($child,"ind_strict_denovo",$vector_denovo->{$child->name});
+#	}
+#}
+
 
 
 system("date > $ok_file") if $ok_file;

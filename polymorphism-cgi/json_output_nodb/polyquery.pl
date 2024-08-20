@@ -542,8 +542,23 @@ while (($start < $vv->Size()) &&
  last;
     # do something with $min and $max
 }	
+
+	if (not $filter_nbvar_regionho or $filter_nbvar_regionho == 0) {
+		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_he)]) , 'he');
+		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_ho)]), 'ho');
+		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), 'all');
+		QueryVectorFilter::setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]));
+	}
+	if ($filter_nbvar_regionho and $filter_nbvar_regionho > 0) {
+		QueryVectorFilter::setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]), $filter_nbvar_regionho);
+		QueryVectorFilter::setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]), $filter_nbvar_regionho);
+		QueryVectorFilter::setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), $filter_nbvar_regionho);
+		QueryVectorFilter::setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]), $filter_nbvar_regionho);
+	}
+	QueryVectorFilter::setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]));
+	QueryVectorFilter::setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]));
 	
-	warn $vv->Max();
+	QueryVectorFilter::setIntersectExclude_PAT_FAM($chr);
 	if ($hFiltersChr and $hFiltersChr_var2) {
 		QueryVectorFilter::filter_genes_annotations($chr, $hFiltersChr_var2);
 	}
@@ -595,21 +610,7 @@ while (($start < $vv->Size()) &&
 	}
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
-	if (not $filter_nbvar_regionho or $filter_nbvar_regionho == 0) {
-		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_he)]) , 'he');
-		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_ho)]), 'ho');
-		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), 'all');
-		QueryVectorFilter::setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]));
-	}
-	if ($filter_nbvar_regionho and $filter_nbvar_regionho > 0) {
-		QueryVectorFilter::setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]), $filter_nbvar_regionho);
-		QueryVectorFilter::setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]), $filter_nbvar_regionho);
-		QueryVectorFilter::setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), $filter_nbvar_regionho);
-		QueryVectorFilter::setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]), $filter_nbvar_regionho);
-	}
-	QueryVectorFilter::setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]));
-	QueryVectorFilter::setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]));
-	QueryVectorFilter::setIntersectExclude_PAT_FAM($chr);
+
 
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER exclude / intersect - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
@@ -950,101 +951,7 @@ my %vector_buffer;
 
 
 
-sub launchStatsProjectAll_genes_fork {
-	my @lStats;
-	my $fork = 3;
-	my $t = time;
-	my $pm = new Parallel::ForkManager($fork);
-	my $i = 0;
-		my $nb =0;
-		my $nbg = 0;
-	$pm->run_on_finish(
-	sub {
-		my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $res) = @_;
-		unless (defined($res) or $exit_code > 0) {
-			print qq|No message received from child process $exit_code $pid!\n|;
-			die();
-			return;
-		}
-		
-		push(@lStats,@{$res->{data}});
-		warn "end";
-		foreach my $k (keys %{$res->{genes}}){
-			$h_all_genes_name->{$k} = $res->{genes}->{$k};
-		}
-		warn "finish;"
-	}
-);	
-		my $process;
-		
-	
-		
-		$buffer->getHashTransIdWithCaptureDiag();
-		
-	foreach my $chr_id (split(',', $filter_chromosome)) {
-		my $chr = $project->getChromosome($chr_id);
-		$vector_buffer{substitution} = $chr->getVectorSubstitutions;
-		$vector_buffer{insertion} =  $chr->getVectorInsertions ;
-		$vector_buffer{deletion} =  $chr->getVectorDeletions;
-		$vector_buffer{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions unless exists $vector_buffer{indel} ;
-		$vector_buffer{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions() unless exists $vector_buffer{cnv} ;	
-		
-		#next if ($chr->not_used());
-		#my @genes = grep {not ($_->getCurrentVector->is_empty())} @{$chr->getGenesFromVector($chr->getVariantsVector())};
-		warn "genes ";
-	
-		my @genes =   @{$chr->getGenes()};
-		$project->disconnect;
-		map{$_->enum} @genes;
-		delete $project->{rocks};
-		 #$chr->flush_rocks_vector();
-		# $chr->flush_rocks_vector();
-		 warn "purge";
-		my $nb        = int( scalar(@genes) / ($fork) +1 );
-		my $iter      = natatime( $nb,  @genes );
-		$t = time;
-		while ( my @tmp = $iter->() ) {
-			$process ++;
-		#	my $pid = $pm->start and next;
-			
-			warn "start $process";
-			my $h_all_genes_name = {};
-		foreach my $gene (@tmp) {	
-		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
-			$nb ++;
-			next if $gene->getCurrentVector->is_empty();
-			warn ref($gene) if ($debug);
-			$project->print_dot(50);
-			next if not $gene->getCurrentVector();
-			warn $gene->external_name() if ($debug);
-			my $hStats = launchStatsGene($gene);
-			
-			if ($hStats) {
-				push(@lStats, $hStats );
-				$h_all_genes_name->{$gene->id()}->{external_name} = uc($gene->external_name());
-				$h_all_genes_name->{$gene->id()}->{patients} = $hStats->{'patients_name'};
-				my @lFam = split(',', $hStats->{'families'});
-				if (scalar(@lFam) > 0) {
-					foreach my $famName (@lFam) {
-						$h_all_genes_name->{$gene->id()}->{families}->{$famName} = undef;
-					}
-				}
-				else { $h_all_genes_name->{$gene->id()}->{families} = undef; }
-			}
-		}
-			warn "end ".$process;
-	#	$project->disconnect();
-		
-				warn "end ".$process;
-	#	$pm->finish( 0, {data=>\@lStats,genes=>$h_all_genes_name} );
-		}
-		$pm->wait_all_children();
-		warn '-> all genes DONE';
-		warn '-> all genes DONE' if ($debug);
-	}
-	warn abs(time - $t);
-	return \@lStats;
-}
+
 
 
 sub launchStatsProjectAll_genes {
@@ -1066,6 +973,9 @@ sub launchStatsProjectAll_genes {
 		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
 		foreach my $gene (@{$chr->getGenes}) {
 			$nb ++;
+#			my $vchr = $gene->return_compact_vector( $vvv);
+#			warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
+#			$vsmall &= $vchr;
 			next if $gene->getCurrentCompactVector->is_empty();
 			$project->print_dot(50);
 #			my $v_to_enum = $gene->_getVectorOrigin->to_Enum();

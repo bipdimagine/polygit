@@ -234,8 +234,6 @@ sub filter_vector_dejavu {
 #	die;
 
 	$chr->setVariantsVector($vector);
-	warn $chr->countThisVariants($vector);
-	#die();
 	return;
 }
 
@@ -1260,7 +1258,6 @@ sub filter_genes_annotations {
 	my $vvv = $chr->getVariantsVector();
 	#$chr->rocks_vector("r")->get_vector_chromosome("coding") & $chr->getVariantsVector();
 	
-	my $cc = $chr->getVariantsVector()->Clone;
 	my $nb = 0;
 	my $nb_genes = 0;
 	my $id_genes = {};
@@ -1272,7 +1269,7 @@ sub filter_genes_annotations {
 		$nb_genes ++;
 		$chr->getProject->print_dot(1);
 		my $debug;
-		if ($gene->external_name eq "RNF115"){
+		if ($gene->external_name eq "DMRTB1"){
 			$debug =1;
 		}
 		my $vsmall = $gene->getCompactVectorOriginCategories(\@all_cat,$debug);
@@ -1282,7 +1279,9 @@ sub filter_genes_annotations {
 			#die();
 		}
 		
-		my $vchr = $gene->return_compact_vector( $chr->getVariantsVector());
+		my $vchr = $gene->return_compact_vector( $vvv);
+		warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
+	#	die() if $debug;
 		$vsmall &= $vchr;
 		$gene->setCurrentVector($vsmall);
 		if ($vsmall->is_empty()){
