@@ -51,6 +51,13 @@ unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n")
 my $buffer  = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProject( -name => $project_name );
+	my $hcat = $buffer->config->{'stats_genes'};
+	warn Dumper $hcat;
+		my %global_hcat;
+	map{push(@{$global_hcat{medium}},$_)} grep {$hcat->{$_} eq "medium" } keys %$hcat unless exists $global_hcat{medium};
+	map{push(@{$global_hcat{low}},$_)}  grep {$hcat->{$_} eq "low" } keys %$hcat unless exists $global_hcat{low};
+	map{push(@{$global_hcat{high}},$_)}   grep {$hcat->{$_} eq "high" } keys %$hcat unless exists $global_hcat{high};
+	
 
 
 
@@ -121,6 +128,10 @@ my $scaled_score_project_dejavu =  $project->buffer->config->{project_dejavu};
 foreach my $c ( keys %{$scaled_score_project_dejavu} ) {
 	$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new();
 }
+my $scaled_score_project_dejavu_ho =  $project->buffer->config->{project_dejavu_ho};
+foreach my $c ( keys %{$scaled_score_project_dejavu_ho} ) {
+	$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new();
+}
 my $scaled_score_sample_dejavu =  $project->buffer->config->{sample_dejavu};
 foreach my $c ( keys %{$scaled_score_sample_dejavu} ) {
 	$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new();
@@ -161,6 +172,8 @@ foreach my $pname (@patient_names) {
 # one fork is finished i could "union"  all the intspan construct in the "sub annotation()"
 #run on finish 	aggregate all result (intpsan) from child
 #########################################
+my $hannotations;
+
 $pm->run_on_finish(
 	sub {
 		my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $hres ) = @_;
@@ -216,6 +229,13 @@ $pm->run_on_finish(
 				$intspan_genes_categories->{$g}->{all} = $intspan_genes_categories->{$g}->{all}->union( $hgene->{$cat} );
 			}
 		}
+		#################
+		#For genes text annotation 
+		#################
+			foreach my $g ( keys %{ $hres->{annotations} } ) {
+				$hannotations->{$g} =  delete $hres->{annotations}->{$g};
+			}
+		
 	}
 );
 #end run on finish
@@ -227,6 +247,7 @@ $pm->run_on_finish(
  $chr_name     = $chr->name();
 my $true = 0;
 my $idp  = 0;
+$project->disconnect();
 while ( $true < 2 ) {   
 	#check if all the region end correctly unless restart region failed
 	my $cpt = 1;
@@ -265,7 +286,6 @@ confess("problem store process") if ( keys %$process );
 
 my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
 my $size_variants = $no->size();
-$no->close();
 warn $size_variants;
 sleep(5);
 #########################
@@ -294,12 +314,16 @@ if($size_variants == 0 ){
 		system("date > $ok_file") if $ok_file;
 	exit(0);
 } 
-
+my $vector_variation_type;
 foreach my $k ( keys %{$intspan_global_categories} ) {
 	my $h;
 	$h->{name}    = $k;
 	$h->{intspan} = $intspan_global_categories->{$k};
-	my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $intspan_global_categories->{$k}->as_array ) );
+	my $bitv =  Bit::Vector->new($size_variants);
+	$bitv->from_Enum($intspan_global_categories->{$k}->as_string) ;
+	if (exists $categories->{global}->{variation_type}->{$k}) {
+		$vector_variation_type->{$k} = $bitv;
+	}
 	$h->{bitvector} = $bitv;
 	$rocks3->put_batch_vector_chromosome($k,$bitv);
 }
@@ -316,13 +340,16 @@ $rocks3->write_batch();
 warn 'store 2/3: lmdb patients';
 #my $no5 = $chr->get_lmdb_patients("c"); #open lmdb database cretae new one or erase older
 
+my $vector_patients1;
 foreach my $patient (@{$project->getPatients}){	
 	my $pn = $patient->name;
 	my $h;
 	$h->{name} = $pn;
 	
 	foreach my $type ( keys %{ $hpatients->{$pn} } ) {
-		my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $hpatients->{$pn}->{$type}->as_array ) );
+		my $bitv =  Bit::Vector->new($size_variants);
+	 	$bitv->from_Enum($hpatients->{$pn}->{$type}->as_string);
+		$vector_patients1->{$patient->id."_".$type} = $bitv if $type eq "all" ;
 		$rocks3->put_vector_patient_batch($patient,$type,$bitv);
 	}
 }
@@ -334,13 +361,19 @@ $rocks3->write_batch();
 # GENES
 #################
 warn 'store 3/3: lmdb genes';
+
+
+foreach my $g (keys %{$hannotations}){
+	$rocks3->put_batch($g."_annotations",$hannotations->{$g});
+}
+
 my @intergenic;
 my $tree = Set::IntervalTree->new;
 my $iter = $intspan_region_intergenic->iterate_runs();
 my $i = 0;
-delete $chr->{lmdb};
-delete $chr->{rocks};
 my $no3 = $chr->get_rocks_variations("r");
+warn $no3->rocks;
+warn $no3;
 while ( my ( $from, $to ) = $iter->() ) {
 	my $id = 'intergenic_' . $chr_name . '_' . $from . '_' . $to;
 	$tree->insert( $id, $from, $to + 1 );
@@ -361,7 +394,7 @@ foreach my $lmdb_id (@array) {
 	$intspan_genes_categories->{$interid}->{all}->add($lmdb_id);
 	$intspan_genes_categories->{$interid}->{intergenic}->add($lmdb_id);
 }
-construct_bitVector_for_gene( $rocks3,$intspan_genes_categories, $size_variants);
+construct_bitVector_for_gene( $rocks3,$intspan_genes_categories, $vector_patients1,$vector_variation_type,$size_variants);
 $rocks3->write_batch();
 $rocks3->close();
 warn 'store 4/3: lmdb fammilly';
@@ -419,16 +452,18 @@ sub get_annotations {
 	my ( $project_name, $chr_name, $region, $annot_version ) = @_;
 	my $hres;
 	my $buffer = new GBuffer;
+		my $hpatients;
 	$buffer->vmtouch(1);
 	my $project = $buffer->newProject( -name => $project_name );
 	$project->preload_patients();
 	$project->buffer->disconnect();
+	
 	if ($annot_version) {
 		$project->changeAnnotationVersion($annot_version);
 	}
 	#variation type 
 	 $hres->{variation_type} = {};
-	
+	my $annotation_genes;
 	
 	# prepare intspan for global categories
 	my $intspan_global_categories;
@@ -439,9 +474,28 @@ sub get_annotations {
 		$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new();
 	}
 	my $intspan_genes_categories = {};
+	my $tree_ratio = Set::IntervalTree->new;
+	foreach my $c ( keys %{ $project->buffer->config->{scaled_score_ratio} } ) {
+		 	my $value = $project->buffer->config->{scaled_score_ratio}->{$c};
+			$tree_ratio->insert("ratio_".$value,0,($value*100)+1);
+			foreach my $p (@{$project->getPatients}){
+				$hpatients->{$p->name}->{"ratio_".$value} = Set::IntSpan::Fast::XS->new();
+			}
+	}
+
+	my $tree_ratio_lower = Set::IntervalTree->new;
+	foreach my $c ( keys %{ $project->buffer->config->{lower_scaled_score_ratio} } ) {
+		 	my $value = $project->buffer->config->{lower_scaled_score_ratio}->{$c};
+			$tree_ratio_lower->insert("lower_ratio_".$value,$value,101);
+			foreach my $p (@{$project->getPatients}){
+					$hpatients->{$p->name}->{"lower_ratio_".$value} = Set::IntSpan::Fast::XS->new();
+			}
+	}
+	
+	
 	#initialisattion categorie patients
 	my $index_patients = 0;
-	my $hpatients;
+
 	#for intergenic variant construct region
 	my $intspan_region_intergenic = Set::IntSpan::Fast::XS->new();
 	#and store intergenic id;
@@ -483,31 +537,15 @@ sub get_annotations {
 			$hpatients->{$p->name}->{all}->add($lmdb_index);
 			$hpatients->{$p->name}->{$type}->add($lmdb_index);
 			my $r = $variation->getRatio($p);
-			for (my $i=10;$i<=80;$i+=10) {
-				$hpatients->{$p->name}->{"ratio_".$i} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{"ratio_".$i};
-				if ($r>=$i) {
-						
-						$hpatients->{$p->name}->{"ratio_".$i}->add($lmdb_index);
-				}
+			my $results = $tree_ratio->fetch(0,($r*100)+1);
+			foreach my $cat (@$results){
+				$hpatients->{$p->name}->{$cat}->add($lmdb_index);
 			}
-			for (my $i=1;$i<=5;$i++){
-				$hpatients->{$p->name}->{"ratio_".$i} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{"ratio_".$i};
-				if ($r>=$i) {
-						$hpatients->{$p->name}->{"ratio_".$i}->add($lmdb_index);
-				}
+			my $results2 = $tree_ratio_lower->fetch($r,101);
+			foreach my $cat (@$results2){
+				$hpatients->{$p->name}->{$cat}->add($lmdb_index);
 			}
-			for (my $i=10;$i<=80;$i+=10) {
-				$hpatients->{$p->name}->{"lower_ratio_".$i} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{"lower_ratio_".$i};
-				if ($r<=$i) {
-						$hpatients->{$p->name}->{"lower_ratio_".$i}->add($lmdb_index);
-				}
-			}
-			for (my $i=1;$i<=5;$i++){
-					$hpatients->{$p->name}->{"lower_ratio_".$i} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{"lower_ratio_".$i};
-				if ($r<=$i) {
-						$hpatients->{$p->name}->{"lower_ratio_".$i}->add($lmdb_index);
-				}
-			}
+
 		}
 		
 		##############
@@ -537,11 +575,19 @@ sub get_annotations {
 		##############
 		
 			my $pdv = $variation->other_projects;
+			my $pdv_ho = $variation->other_projects_ho;
 	 		my $sdv = $variation->other_patients ; 
 	 		my $sdv_ho = $variation->other_patients_ho; 
 	 		
 	 		
-	 		
+	 		foreach my $c (sort {$a <=>$b} keys %$scaled_score_project_dejavu_ho){
+	 			$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
+	 				if ($pdv <= $scaled_score_project_dejavu->{$c} ){
+	 						$intspan_global_categories->{$c}->add($lmdb_index);
+	 					#$vector_categories_chromosomes->{$c}->Bit_On($v->{vector_id});
+	 				}
+	 			}
+	 			
 	 			
 	 		foreach my $c (sort {$a <=>$b} keys %$scaled_score_project_dejavu){
 	 			$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
@@ -730,7 +776,9 @@ sub get_annotations {
 			unless ( exists $intspan_genes_categories->{ $g->id } ) {
 				$intspan_genes_categories->{ $g->id } = init_genes_intspan();
 			}
-			
+			$annotation_genes->{$g->id}->{hgmd} = $g->hgmd;
+			$annotation_genes->{$g->id}->{polyquery_phenotypes} = $g->polyquery_phenotypes();
+			$annotation_genes->{$g->id}->{score} = $g->score();
 			my $h_spliceAI = $variation->spliceAI_score($g);
 			if ($h_spliceAI) {
 				foreach my $cat (keys %$h_spliceAI) {
@@ -789,6 +837,7 @@ sub get_annotations {
 	$hres->{intergenic}->{intspan_region} = $ints;
 	$hres->{intergenic}->{id} = $id_intergenic;
 	$hres->{patients} = $hpatients;
+	$hres->{annotations} = $annotation_genes;
 	$no->close();
 	my $chr     = undef;
 	my $project = undef;
@@ -806,28 +855,126 @@ sub init_genes_intspan {
 	return $hintspan;
 }
 
+
+
 sub construct_bitVector_for_gene {
-	my ( $no, $intspan_genes_categories, $size ) = @_;
+	my ( $no, $intspan_genes_categories,$vector_patient,$vector_variation_type,$size ) = @_;
 	# construction d'une table gene du gene et surtout du bitvector pour un gene
 	# table de hash du gene : {start} {end} , premier et dernier id du gene donc du intspan. {intspan} et  {size}  et bien sur j'ai rajouté {bitvector} apres tout le process et je sauvegarde
-	
-	
 	return unless $intspan_genes_categories;
 	
+	my $stats_categories =  $buffer->config->{'stats_genes'};
+	foreach my $p ( @{$project->getPatients()}){
+		$stats_categories->{$p->id} = $p->id; 
+	}
+	my $order_stats ; 
+	my $i = 0;
+	foreach my $s (keys  %{$stats_categories}){
+		$stats_categories->{$s} = $i ++;
+	}
+	my $size_vector_stats = scalar (keys %{$stats_categories});
+
+	my $tree =[];
+	my $nbgene =0;
 	foreach my $g ( keys %{$intspan_genes_categories} ) {
+		my $hres;;
+		my $hstat_vector = {};
 		my $hgene = $intspan_genes_categories->{$g}->{all};
+		$hres->{intspan}->{all} =  $intspan_genes_categories->{$g}->{all};
+	
+		my $st = $intspan_genes_categories->{$g}->{all}->as_string;
+		my ($vstart,$vend,$vlen) = return_start_end_enum($st);
+		$hres->{compact_vector}->{all} =  return_small_from_intspan($vstart,$vlen, $intspan_genes_categories->{$g}->{all});;
+		$hres->{enum}->{all} =  $st;
+		$hres->{compact_vector_enum}->{all} = $hres->{compact_vector}->{all}->to_Enum;
+		push(@$tree,[$g,$vstart,$vend+1]);
 		# let's start with all variants in genes
-		my @array = $hgene->as_array;
-		my $v = Bit::Vector->new_Enum($size, $array[0]."-".$array[-1]);
-		$no->put_batch( $g, $v );
-		
 		foreach my $cat (keys %{$intspan_genes_categories->{$g}}) {
 			next if $cat eq 'all';
 			my $hgene_cat = $intspan_genes_categories->{$g}->{$cat};
-			my @array_2 = $hgene_cat->as_array;
-			next if scalar(@array) == 0;
-			my $v_cat = Bit::Vector->new_Enum($size, join(',', @array_2));
-			$no->put_batch( $g.'_'.$cat, $v_cat );
+			next if $intspan_genes_categories->{$g}->{$cat}->is_empty;
+		
+			$hres->{intspan}->{$cat} =  $intspan_genes_categories->{$g}->{$cat};
+			my $st =  $intspan_genes_categories->{$g}->{$cat}->as_string;
+			$hres->{enum}->{$cat} = $st;
+			$hres->{compact_vector}->{$cat} =   return_small_from_intspan($vstart,$vlen, $intspan_genes_categories->{$g}->{$cat});
+			
+			$hres->{compact_vector_enum}->{$cat} = $hres->{compact_vector}->{$cat}->to_Enum ;
+			$hstat_vector->{$g} =   Bit::Vector->new($size_vector_stats) unless exists $hstat_vector->{$i};
+			
 		}
+		
+		
+		foreach my $pid (keys %{$vector_patient}){
+			$hres->{compact_vector}->{$pid} =   return_small($vstart,$vlen,$vector_patient->{$pid});
+			$hres->{compact_vector_enum}->{$pid} = $hres->{compact_vector}->{$pid}->to_Enum;
+		}
+		
+		my @level_cal = ("high","medium","low");
+		foreach my $lcat (@level_cal){
+			$hres->{compact_vector}->{$lcat} = Bit::Vector->new($vlen);
+			foreach my $c (@{$global_hcat{$lcat}}){
+				next unless exists $hres->{compact_vector}->{$c};
+				$hres->{compact_vector}->{$lcat} +=   $hres->{compact_vector}->{$c};
+			}
+		}
+
+		foreach my $cat (keys %$vector_variation_type){
+			$hres->{compact_vector}->{$cat} =   return_small($vstart,$vlen,$vector_variation_type->{$cat});
+			$hres->{compact_vector_enum}->{$cat} = $hres->{compact_vector}->{$cat}->to_Enum;
+		}
+		$hres->{compact_vector}->{indel} = $hres->{compact_vector}->{insertion} + $hres->{compact_vector}->{deletion};
+		$hres->{compact_vector}->{cnv} = $hres->{compact_vector}->{large_duplication} + $hres->{compact_vector}->{large_deletion};
+		
+		$no->put_batch( $g.'_compact_vector', $hres->{compact_vector});
+		$no->put_batch( $g.'_vector_characteristic', [$vstart,$vlen]);
 	}
+	$no->put_batch("vector_intervaltree",$tree);
 }
+
+
+sub return_start_end_enum {
+	my ($enum) = @_;
+	my @numbers = $enum =~ /(\d+)/g;
+	return ($numbers[0],$numbers[-1],abs($numbers[0]-$numbers[-1])+1);
+}
+#sub return_small {
+#	my ($start,$vlen,$enum) = @_;
+#	my $vsmall = Bit::Vector->new($vlen);
+#	foreach my $a (split(",",$enum)){
+#		my ($s,$e) = split("-",$a){
+#		
+#		
+#			$e = $s unless $e;
+#			$s = $s - $start;
+#			$e = $e - $start;
+#			for (my $i=$s;$i<=$e;$i++){
+#				$vsmall->bit
+#			}
+#		}
+#	}
+#
+#	my $vsmall = Bit::Vector->new($vlen);
+#	$vsmall->Interval_Copy($vtemp,0,$start,$vlen);
+#	return $vsmall;
+#}
+sub return_small_from_intspan {
+	my ($start,$vlen,$intspan) = @_;
+	my @array = $intspan->as_array();
+	
+	my $vsmall = Bit::Vector->new($vlen);
+	foreach my $v (@array){
+		$v -= $start;
+		$vsmall->Bit_On($v);
+	}
+	return $vsmall;
+}
+
+sub return_small {
+	my ($start,$vlen,$vtemp) = @_;
+
+	my $vsmall = Bit::Vector->new($vlen);
+	$vsmall->Interval_Copy($vtemp,0,$start,$vlen);
+	return $vsmall;
+}
+

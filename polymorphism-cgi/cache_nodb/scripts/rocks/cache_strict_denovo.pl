@@ -260,6 +260,7 @@ foreach my $family (@{$project->getFamilies}){
 	}
 }
 $rocks4->write_batch();
+$rocks4->close();
 
 
 system("date > $ok_file") if $ok_file;

@@ -1706,6 +1706,7 @@ sub get_rocks_variations {
 	#return 
 	return $self->project->{rocks}->{$hindex} if exists $self->project->{rocks}->{$hindex};
 	my $rg;
+	warn "ok ";
 	$self->project->{rocks}->{$hindex} = GenBoNoSqlRocksVariation->new(dir=>$self->project->rocks_directory("genbo"),mode=>"r",name=>$self->name.".genbo.rocks");
 	return $self->project->{rocks}->{$hindex};
 
@@ -2193,11 +2194,10 @@ sub purge_lmdb_score {
 sub rocksdb {
 	my($self,$db) = @_;
 	confess unless $db;
-	confess("$db");
 	return $self->project->{rocks}->{$db} if exists $self->project->{rocks}->{$db};
 	my $dir = $self->buffer->get_index_database_directory($db);
 	$self->project->{rocks}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$self->name);
-	return $self->{rocksdb}->{$db};
+	return $self->project->{rocks}->{$db};
 	
 }
 

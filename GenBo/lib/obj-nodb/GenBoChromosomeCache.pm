@@ -619,11 +619,6 @@ has hash_gene_id_to_name => (
 	default	=> undef,
 );
 
-sub cache_lmdb_variations {
-	my $self = shift;
-	confess();
-	return $self->cache_variations;
-}
 
 sub cache_variations {
 	my $self = shift;
