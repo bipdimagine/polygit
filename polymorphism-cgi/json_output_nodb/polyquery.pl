@@ -109,6 +109,8 @@ my $keep_indels_cadd		= $cgi->param('keep_indels_cadd');
 #my $filter_gnomad_test		= $cgi->param('gnomad_test');
 
 
+my $queryFilter =  new QueryVectorFilter;
+$queryFilter->verbose_debug(1) if $debug;
 
 my $hDeleteModels;
 if ($delete_models) {
@@ -156,9 +158,6 @@ my $project = $buffer->newProjectCache( -name 			=> $projectName,
 									    -typeFilters 	=> $typeFilters, );
 									    
 
-if ($user_name) {
-	#$buffer->getQuery->updateLastConnectionUserProject(lc($user_name), $project->id()) unless ($test or $get_bundles or $check_genes);
-}
 
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
@@ -288,33 +287,7 @@ if ($only_genes) {
 }
 
 if ($test_with_db) { $test = 1; } 
-my ($hFiltersChr, $hFiltersChr_var2);
-foreach my $filter_name (split(',', $filter_type_variation)) {
-	if ($filter_name eq 'cnv') {
-		$hFiltersChr->{'large_deletion'} = undef;
-		$hFiltersChr->{'large_duplication'} = undef;
-	}
-	elsif ($filter_name eq 'upstream_downstream') {
-		$hFiltersChr->{'upstream'} = undef;
-		$hFiltersChr->{'downstream'} = undef;
-	}
-	else { $hFiltersChr->{$filter_name} = undef; }
-}
-
-if ($filter_type_variation_2) {
-	$filter_type_variation_2 =~ s/ /,/g;
-	foreach my $filter_name (split(',', $filter_type_variation_2)) {
-		if ($filter_name eq 'cnv') {
-			$hFiltersChr_var2->{'large_deletion'} = undef;
-			$hFiltersChr_var2->{'large_duplication'} = undef;
-		}
-		elsif ($filter_name eq 'upstream_downstream') {
-			$hFiltersChr_var2->{'upstream'} = undef;
-			$hFiltersChr_var2->{'downstream'} = undef;
-		}
-		else { $hFiltersChr_var2->{$filter_name} = undef; }
-	}
-}
+my ($hFiltersChr, $hFiltersChr_var2) = get_hashes_filters($filter_type_variation, $filter_type_variation_2);
 
 if ($model eq 'recessif' or $model eq 'compound' or $model eq 'recessif_compound') {
 	$hFiltersChr->{intergenic} = undef;
@@ -324,46 +297,7 @@ if ($model eq 'recessif' or $model eq 'compound' or $model eq 'recessif_compound
 }
 
 if ($infos) {
-	print "\n\n######### INFOS CHR$filter_chromosome #########\n\n";
-	
-	my $chr = $project->getChromosome($filter_chromosome);
-	warn ref($chr);
-	print "\n\n";
-	print "### CHR".$chr->id()."\n\n";
-	foreach my $cat_name (sort keys %{$chr->global_categories()}) {
-		print "   global_categories - $cat_name: ".$chr->countThisVariants( $chr->global_categories->{$cat_name} )." variants (Size: ".$chr->global_categories->{$cat_name}->Size().")\n";
-	}
-	warn "\n";
-	foreach my $patient (@{$chr->getPatients()}) {
-		print "# Patient ".$patient->name().' ('.ref($patient)." ):\n";
-		print "   all: ".$chr->countThisVariants( $patient->getVariantsVector($chr) )." variants (Size: ".$patient->getVariantsVector($chr)->Size().")\n";
-		print "   he : ".$chr->countThisVariants( $patient->getHe($chr) )." variants (Size: ".$patient->getHe($chr)->Size().")\n";
-		print "   ho : ".$chr->countThisVariants( $patient->getHo($chr) )." variants (Size: ".$patient->getHo($chr)->Size().")\n";
-		print "\n";
-	}
-	print "\n\n";
-	
-	my @lVar = @{$chr->getListVarObjects( $chr->global_categories->{'large_duplication'} )};
-	foreach my $v (@lVar) {
-		warn ref($v).' -> '.$v->id();
-		warn Dumper $v->annotation();
-		foreach my $g (@{$v->getGenes()}) {
-			warn $g->external_name().': '.$v->variationType($g);
-		}
-		exit(0);
-	}
-	
-	
-	exit(0);
-	foreach my $gene (@{$chr->getGenes()}) {
-		print "# Gene ".$gene->external_name().' ('.ref($gene)." ):\n";
-		foreach my $cat_name (sort keys %{$gene->categories()}) {
-			print "   categories - $cat_name: ".$chr->countThisVariants( $gene->categories->{$cat_name} )." variants (Size: ".$gene->categories->{$cat_name}->Size().")\n";
-			die if ($cat_name eq 'cnv');
-		}
-		print "\n";
-	}
-	print "\n\n";
+	get_infos();
 	exit(0);
 }
 
@@ -397,6 +331,16 @@ if ($xls_by_variants or $xls_by_genes or $xls_load_session) {
 	@{$hResumeFilters->{fam_not}} = split(',', $fam_not);
 	@{$hResumeFilters->{fam_and}} = split(',', $fam_and);
 }
+
+my $h_filters_intersect_exclude;
+$h_filters_intersect_exclude->{filter_he} = $filter_he;
+$h_filters_intersect_exclude->{filter_ho} = $filter_ho;
+$h_filters_intersect_exclude->{filter_not_patient} = $filter_not_patient;
+$h_filters_intersect_exclude->{fam_not} = $fam_not;
+$h_filters_intersect_exclude->{filter_nbvar_regionho} = $filter_nbvar_regionho;
+$h_filters_intersect_exclude->{filter_patient} = $filter_patient;
+$h_filters_intersect_exclude->{fam_and} = $fam_and;
+$h_filters_intersect_exclude->{filter_patient} = $filter_patient;
 
 if ($xls_load_session) {
 	loadSessionsXLS($project, $xls_load_session, $hResumeFilters);
@@ -443,24 +387,11 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	}
 	my $chr = $project->getChromosome($chr_id);
 	$nb_chr++;
-#	if ($chr->not_used()) {
-#		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
-#		next;
-#	}
-	
-#	if ($only_genes and not exists $h_chr_from_only_genes->{$chr->id()}) {
-#		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
-#		next;
-#	}
 	
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
-#	checkEssentialsCategoriesInChr($chr);
+	if (not $export_vcf_for and not $detail_project and not $xls_by_regions_ho) { $project->cgi_object(1); }
 	
-	if ($export_vcf_for) {}
-	elsif ($detail_project) {}
-	elsif ($xls_by_regions_ho) {}
-	else { $project->cgi_object(1); }
 	unless (check_region_filter($chr, $filter_region)) {
 		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 		next;
@@ -472,125 +403,57 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Pour XLS, besoin de savoir si un patient possede ou non le variant, meme s il ne passe pas un filtre ou un modele pour rester coherent a la 2e page par gene
 	if ($xls_by_variants) { $chr->save_model_variants_all_patients('for_xls'); }
 	
-	QueryVectorFilter::setInTheAtticPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
+	foreach my $p (@{$project->getPatients()}) { $p->setOrigin($chr); }
+	
+	$queryFilter->setInTheAtticPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
-	QueryVectorFilter::filter_vector_ratio($chr, $filter_ratio_min, 'min');
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ratio_min - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
-	QueryVectorFilter::filter_vector_ratio($chr, $filter_ratio_max, 'max');
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ratio_max - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+	launch_intersect_excude($chr, $h_filters_intersect_exclude) if not $model =~ /compound/ and not $model_2 =~ /compound/;
 	
-	QueryVectorFilter::filter_vector_ncboost($chr, $filter_ncboost);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ncboost - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	
-#	QueryVectorFilter::filter_vector_global_gnomad_freq($chr, $filter_gnomad_test);
+	$queryFilter->filter_vector_ratio($chr, $filter_ratio_min, 'min');
+	$queryFilter->filter_vector_ratio($chr, $filter_ratio_max, 'max');
+	$queryFilter->filter_vector_ncboost($chr, $filter_ncboost);
+#	$queryFilter->filter_vector_global_gnomad_freq($chr, $filter_gnomad_test);
 #	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER getVectorGnomadCategory - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	my $h_args;	
-	$chr->save_model_variants_all_patients('init');
+	if ($hFiltersChr and $hFiltersChr_var2) { $chr->save_model_variants_all_patients('init'); }
 	
-#	if ($only_genes) {
-#		my $vector_genes = $chr->getNewVector();
-#		foreach my $gene_name (keys %{$h_chr_from_only_genes->{$chr->id()}}) {
-#			my $this_g = $project->newGene($gene_name);
-#			$vector_genes += $chr->getVectorByPosition($this_g->start(), $this_g->end);
-#		}
-#		$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $vector_genes);
-#	}
-	
-	doPolyQueryFilters_global_cat($chr, $hFiltersChr, $dejavu, $polyscore);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER doPolyQueryFilters_global_cat - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	
+	$queryFilter->filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
+	$queryFilter->filter_vector_type_variants($chr, $hFiltersChr);
+	$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr, $keep_indels_cadd);
+	$queryFilter->filter_vector_freq_variants($chr, $hFiltersChr);
+	$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr);
+	$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr);
+	$queryFilter->filter_vector_dejavu($chr, $dejavu, $dejavu_ho, $test) if ($dejavu);
+
+	# Recessif compound multi annot
 	my $vector_filtered = $chr->getVariantsVector->Clone();
 	my $vector_filtered_2;
 	if ($hFiltersChr and $hFiltersChr_var2) {
 		$chr->load_init_variants_all_patients('init');
-		doPolyQueryFilters_global_cat($chr, $hFiltersChr_var2, $dejavu_2) if ($hFiltersChr_var2 or $dejavu_2 or $dejavu_ho or $filter_nbvar_regionho);
+		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
+		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
+		$queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2);
+		$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr_var2);
+		$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr_var2);
+		$queryFilter->filter_vector_dejavu($chr, $dejavu_2, $dejavu_ho, $test) if ($dejavu_2);
 		$vector_filtered_2 = $chr->getVariantsVector->Clone();
 		$h_args->{'filters_1'} = $hFiltersChr;
 		$h_args->{'filters_2'} = $hFiltersChr_var2;
 		$h_args->{'vector_filters_1'} = $vector_filtered;
 		$h_args->{'vector_filters_2'} = $vector_filtered_2;
-		if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER doPolyQueryFilters_global_cat 2 - nb Var: ".$chr->countThisVariants($vector_filtered_2); }
 	}
 	
-	QueryVectorFilter::filter_vector_gnomad_ac($chr, $filter_gnomad) if ($filter_gnomad);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_gnomad_ac - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+	$queryFilter->filter_vector_gnomad_ac($chr, $filter_gnomad) if ($filter_gnomad);
+	$queryFilter->filter_genes_from_ids($chr, $hChr->{$chr->id()}, $can_use_hgmd) if ($panel_name);
+	$queryFilter->filter_genes_text_search($chr, $filter_text);
+	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
 	
-	if ($panel_name) {
-		QueryVectorFilter::filter_genes_from_ids($chr, $hChr->{$chr->id()}, $can_use_hgmd);
-		if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_from_ids - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	}
-#	else {
-#		QueryVectorFilter::filter_usefull_genes_ids($chr, $hFiltersChr, $can_use_hgmd);
-#		if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_usefull_genes_ids - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-#	}
+	if ($hFiltersChr and $hFiltersChr_var2) { $queryFilter->filter_genes_annotations($chr, $hFiltersChr_var2); }
+	else { $queryFilter->filter_genes_annotations($chr, $hFiltersChr); }
 	
-	# FILTRE des genes (annotations, search, selection)
-	QueryVectorFilter::filter_genes_text_search($chr, $filter_text);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_text_search - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	
-	QueryVectorFilter::filter_genes_only_genes_names($chr, $only_genes);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_only_genes_names - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	my $vv = $chr->getVariantsVector()->Clone;
-	my $start = 0;
-while (($start < $vv->Size()) &&
-    (my ($min,$max) = $vv->Interval_Scan_inc($start)))
-{
-	warn $min." ".$max." ".$start;
-    $start = $max + 2;
- last;
-    # do something with $min and $max
-}	
-
-	if (not $filter_nbvar_regionho or $filter_nbvar_regionho == 0) {
-		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_he)]) , 'he');
-		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_ho)]), 'ho');
-		QueryVectorFilter::setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), 'all');
-		QueryVectorFilter::setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]));
-	}
-	if ($filter_nbvar_regionho and $filter_nbvar_regionho > 0) {
-		QueryVectorFilter::setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]), $filter_nbvar_regionho);
-		QueryVectorFilter::setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]), $filter_nbvar_regionho);
-		QueryVectorFilter::setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $filter_not_patient)]), $filter_nbvar_regionho);
-		QueryVectorFilter::setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $fam_not)]), $filter_nbvar_regionho);
-	}
-	QueryVectorFilter::setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_patient)]));
-	QueryVectorFilter::setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $fam_and)]));
-	
-	QueryVectorFilter::setIntersectExclude_PAT_FAM($chr);
-	if ($hFiltersChr and $hFiltersChr_var2) {
-		QueryVectorFilter::filter_genes_annotations($chr, $hFiltersChr_var2);
-	}
-	else {
-		QueryVectorFilter::filter_genes_annotations($chr, $hFiltersChr);
-	}
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_annotations - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	# FILTRE des modeles genetiques
-	if ($model and $project->typeFilters() eq 'individual') {
-		QueryVectorFilter::filter_model_individual_recessif($chr) if ($model eq 'recessif');
-		QueryVectorFilter::filter_model_individual_compound($chr) if ($model eq 'compound');
-	}
-	elsif ($model and $project->typeFilters() eq 'familial') {
-		my @lModels;
-		if ($model eq 'recessif_compound') {
-			push(@lModels, 'recessif');
-			push(@lModels, 'compound');
-		}
-		elsif ($model eq 'uniparental_recessif_compound') {
-			push(@lModels, 'recessif');
-			push(@lModels, 'compound');
-			push(@lModels, 'uniparental_disomy');
-		}
-		else { push(@lModels, $model); }
-		QueryVectorFilter::filter_models_familial_union($chr, \@lModels, $h_args);
-	}
-	elsif ($model and $project->typeFilters() eq 'somatic') {
-		QueryVectorFilter::filter_model_somatic_loh($chr) if ($model eq 'loh');
-		QueryVectorFilter::filter_model_somatic_dbl_evt($chr) if ($model eq 'dbl_evt');
-		QueryVectorFilter::filter_model_somatic_only_tissues_somatic($chr) if ($model eq 'only_tissues_somatic');
-	}
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER models - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+	$queryFilter->filter_genetics_models($chr, $model, $h_args);
 	
 	if ($project->filter_text()) {
 		foreach my $patient (@{$chr->getPatients()}) {
@@ -610,26 +473,17 @@ while (($start < $vv->Size()) &&
 	}
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
-
+	launch_intersect_excude($chr, $h_filters_intersect_exclude) if $model =~ /compound/ or $model_2 =~ /compound/;
 
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER exclude / intersect - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	if ($project->typeFilters() eq 'individual') {
-		QueryVectorFilter::filter_atLeast($chr, $atLeast, $project->typeFilters(), $level_ind);
+		$queryFilter->filter_atLeast($chr, $atLeast, $project->typeFilters(), $level_ind);
 	}
 	else {
-		QueryVectorFilter::filter_atLeast($chr, $atLeast, $project->typeFilters(), $level_fam);
+		$queryFilter->filter_atLeast($chr, $atLeast, $project->typeFilters(), $level_fam);
 	}
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_atLeast - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	
-	# DELETE FILTRE genetic models independant des genes (For PolyDiag)
-#	QueryVectorFilter::delete_filter_model_familial_denovo($chr) 			if (exists $hDeleteModels->{'fam_denovo'});
-#	QueryVectorFilter::delete_filter_model_familial_strict_denovo($chr) 	if (exists $hDeleteModels->{'fam_strict_denovo'});
-#	QueryVectorFilter::delete_filter_model_familial_dominant($chr) 			if (exists $hDeleteModels->{'fam_dominant'});
-#	QueryVectorFilter::delete_filter_model_familial_mosaic($chr) 			if (exists $hDeleteModels->{'fam_mosaic'});
-#	QueryVectorFilter::delete_filter_model_familial_recessif($chr) 			if (exists $hDeleteModels->{'fam_recessif'});
-#	QueryVectorFilter::delete_filter_model_familial_uniparental_disomy($chr)if (exists $hDeleteModels->{'fam_uniparental_disomy'});
-#	QueryVectorFilter::delete_filter_model_familial_both_parents($chr)		if (exists $hDeleteModels->{'fam_both_parents'});
 	
 	launch_filters_region($chr, $filter_region);
 	if ($debug) { warn "\nAfter launch_filters_region"; }
@@ -742,6 +596,105 @@ else {
 ########## [END] FILTRES DE POLYQUERY PAR CHROMOSOME ##########
 
 
+
+sub get_infos {
+	
+	print "\n\n######### INFOS CHR$filter_chromosome #########\n\n";
+	
+	my $chr = $project->getChromosome($filter_chromosome);
+	warn ref($chr);
+	print "\n\n";
+	print "### CHR".$chr->id()."\n\n";
+	foreach my $cat_name (sort keys %{$chr->global_categories()}) {
+		print "   global_categories - $cat_name: ".$chr->countThisVariants( $chr->global_categories->{$cat_name} )." variants (Size: ".$chr->global_categories->{$cat_name}->Size().")\n";
+	}
+	warn "\n";
+	foreach my $patient (@{$chr->getPatients()}) {
+		print "# Patient ".$patient->name().' ('.ref($patient)." ):\n";
+		print "   all: ".$chr->countThisVariants( $patient->getVariantsVector($chr) )." variants (Size: ".$patient->getVariantsVector($chr)->Size().")\n";
+		print "   he : ".$chr->countThisVariants( $patient->getHe($chr) )." variants (Size: ".$patient->getHe($chr)->Size().")\n";
+		print "   ho : ".$chr->countThisVariants( $patient->getHo($chr) )." variants (Size: ".$patient->getHo($chr)->Size().")\n";
+		print "\n";
+	}
+	print "\n\n";
+	
+	my @lVar = @{$chr->getListVarObjects( $chr->global_categories->{'large_duplication'} )};
+	foreach my $v (@lVar) {
+		warn ref($v).' -> '.$v->id();
+		warn Dumper $v->annotation();
+		foreach my $g (@{$v->getGenes()}) {
+			warn $g->external_name().': '.$v->variationType($g);
+		}
+		exit(0);
+	}
+	
+	
+	exit(0);
+	foreach my $gene (@{$chr->getGenes()}) {
+		print "# Gene ".$gene->external_name().' ('.ref($gene)." ):\n";
+		foreach my $cat_name (sort keys %{$gene->categories()}) {
+			print "   categories - $cat_name: ".$chr->countThisVariants( $gene->categories->{$cat_name} )." variants (Size: ".$gene->categories->{$cat_name}->Size().")\n";
+			die if ($cat_name eq 'cnv');
+		}
+		print "\n";
+	}
+	print "\n\n";
+	exit(0);
+	
+}
+sub get_hashes_filters {
+	my ($filter_type_variation, $filter_type_variation_2) = @_;
+	my ($hFiltersChr, $hFiltersChr_var2);
+	foreach my $filter_name (split(',', $filter_type_variation)) {
+		if ($filter_name eq 'cnv') {
+			$hFiltersChr->{'large_deletion'} = undef;
+			$hFiltersChr->{'large_duplication'} = undef;
+		}
+		elsif ($filter_name eq 'upstream_downstream') {
+			$hFiltersChr->{'upstream'} = undef;
+			$hFiltersChr->{'downstream'} = undef;
+		}
+		else { $hFiltersChr->{$filter_name} = undef; }
+	}
+	
+	if ($filter_type_variation_2) {
+		$filter_type_variation_2 =~ s/ /,/g;
+		foreach my $filter_name (split(',', $filter_type_variation_2)) {
+			if ($filter_name eq 'cnv') {
+				$hFiltersChr_var2->{'large_deletion'} = undef;
+				$hFiltersChr_var2->{'large_duplication'} = undef;
+			}
+			elsif ($filter_name eq 'upstream_downstream') {
+				$hFiltersChr_var2->{'upstream'} = undef;
+				$hFiltersChr_var2->{'downstream'} = undef;
+			}
+			else { $hFiltersChr_var2->{$filter_name} = undef; }
+		}
+	}
+	return ($hFiltersChr, $hFiltersChr_var2);
+}
+
+
+
+sub launch_intersect_excude {
+	my ($chr, $h_filters) = @_;
+	if (not $h_filters->{filter_nbvar_regionho} or $h_filters->{filter_nbvar_regionho} == 0) {
+		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_he})]) , 'he');
+		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_ho})]), 'ho');
+		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), 'all');
+		$queryFilter->setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]));
+	}
+	if ($h_filters->{filter_nbvar_regionho} and $h_filters->{filter_nbvar_regionho} > 0) {
+		$queryFilter->setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]), $h_filters->{filter_nbvar_regionho});
+		$queryFilter->setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]), $h_filters->{filter_nbvar_regionho});
+		$queryFilter->setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), $h_filters->{filter_nbvar_regionho});
+		$queryFilter->setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]), $h_filters->{filter_nbvar_regionho});
+	}
+	$queryFilter->setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]));
+	$queryFilter->setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]));
+	$queryFilter->setIntersectExclude_PAT_FAM($chr);
+}
+
 sub launch_filters_region {
 	my ($chr, $filter_region, $first_launch) = @_;
 	return unless ($filter_region);
@@ -827,7 +780,6 @@ sub launchStatsChromosomes {
 
 
 
-
 my $hpatients_genes = {};
 my $hfamillies_genes = {};
 
@@ -863,7 +815,7 @@ sub launchStatsProjectAll {
 	warn "-".abs(time -$t);
 	$t =time;
 	warn "\n# stats_regions_ho_rec" if ($debug);
-	$hash_stats->{regions_ho_rec} = launchStatsPojectRegionsHoRec() if ($filter_nbvar_regionho);
+#	$hash_stats->{regions_ho_rec} = launchStatsPojectRegionsHoRec() if ($filter_nbvar_regionho);
 	return export_regions_ho_xls() if ($filter_nbvar_regionho and $xls_by_regions_ho);
 	warn "\n# purge" if ($debug);
 	foreach my $chr_id (split(',', $filter_chromosome)) {
@@ -951,7 +903,101 @@ my %vector_buffer;
 
 
 
-
+sub launchStatsProjectAll_genes_fork {
+	my @lStats;
+	my $fork = 3;
+	my $t = time;
+	my $pm = new Parallel::ForkManager($fork);
+	my $i = 0;
+		my $nb =0;
+		my $nbg = 0;
+	$pm->run_on_finish(
+	sub {
+		my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $res) = @_;
+		unless (defined($res) or $exit_code > 0) {
+			print qq|No message received from child process $exit_code $pid!\n|;
+			die();
+			return;
+		}
+		
+		push(@lStats,@{$res->{data}});
+		warn "end";
+		foreach my $k (keys %{$res->{genes}}){
+			$h_all_genes_name->{$k} = $res->{genes}->{$k};
+		}
+		warn "finish;"
+	}
+);	
+		my $process;
+		
+	
+		
+		$buffer->getHashTransIdWithCaptureDiag();
+		
+	foreach my $chr_id (split(',', $filter_chromosome)) {
+		my $chr = $project->getChromosome($chr_id);
+		$vector_buffer{substitution} = $chr->getVectorSubstitutions;
+		$vector_buffer{insertion} =  $chr->getVectorInsertions ;
+		$vector_buffer{deletion} =  $chr->getVectorDeletions;
+		$vector_buffer{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions unless exists $vector_buffer{indel} ;
+		$vector_buffer{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions() unless exists $vector_buffer{cnv} ;	
+		
+		#next if ($chr->not_used());
+		#my @genes = grep {not ($_->getCurrentVector->is_empty())} @{$chr->getGenesFromVector($chr->getVariantsVector())};
+		warn "genes ";
+	
+		my @genes =   @{$chr->getGenes()};
+		$project->disconnect;
+		map{$_->enum} @genes;
+		delete $project->{rocks};
+		 #$chr->flush_rocks_vector();
+		# $chr->flush_rocks_vector();
+		 warn "purge";
+		my $nb        = int( scalar(@genes) / ($fork) +1 );
+		my $iter      = natatime( $nb,  @genes );
+		$t = time;
+		while ( my @tmp = $iter->() ) {
+			$process ++;
+		#	my $pid = $pm->start and next;
+			
+			warn "start $process";
+			my $h_all_genes_name = {};
+		foreach my $gene (@tmp) {	
+		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
+			$nb ++;
+			next if $gene->getCurrentVector->is_empty();
+			warn ref($gene) if ($debug);
+			$project->print_dot(50);
+			next if not $gene->getCurrentVector();
+			warn $gene->external_name() if ($debug);
+			my $hStats = launchStatsGene($gene);
+			
+			if ($hStats) {
+				push(@lStats, $hStats );
+				$h_all_genes_name->{$gene->id()}->{external_name} = uc($gene->external_name());
+				$h_all_genes_name->{$gene->id()}->{patients} = $hStats->{'patients_name'};
+				my @lFam = split(',', $hStats->{'families'});
+				if (scalar(@lFam) > 0) {
+					foreach my $famName (@lFam) {
+						$h_all_genes_name->{$gene->id()}->{families}->{$famName} = undef;
+					}
+				}
+				else { $h_all_genes_name->{$gene->id()}->{families} = undef; }
+			}
+		}
+			warn "end ".$process;
+	#	$project->disconnect();
+		
+				warn "end ".$process;
+	#	$pm->finish( 0, {data=>\@lStats,genes=>$h_all_genes_name} );
+		}
+		$pm->wait_all_children();
+		warn '-> all genes DONE';
+		warn '-> all genes DONE' if ($debug);
+	}
+	warn abs(time - $t);
+	return \@lStats;
+}
 
 
 sub launchStatsProjectAll_genes {
@@ -973,9 +1019,6 @@ sub launchStatsProjectAll_genes {
 		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
 		foreach my $gene (@{$chr->getGenes}) {
 			$nb ++;
-#			my $vchr = $gene->return_compact_vector( $vvv);
-#			warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
-#			$vsmall &= $vchr;
 			next if $gene->getCurrentCompactVector->is_empty();
 			$project->print_dot(50);
 #			my $v_to_enum = $gene->_getVectorOrigin->to_Enum();
@@ -1554,53 +1597,53 @@ sub launchStatsGene {
 	$hashStats->{'include'} = 0 if (exists $project->filter_genes_intersect->{$gene->external_name()});
 	
 	# STATS des Regions Ho ou Rec
-	if ($filter_nbvar_regionho > 1){
-		confess();
-		$hashStats->{'region_ho'} = undef;
-		$hashStats->{'region_ho_all'} = undef;
-		$hashStats->{'region_rec'} = undef;
-		$hashStats->{'region_rec_all'} = undef;
-		my (@lObj, $region_method, $stat_method);
-		if ($project->typeFilters() eq 'individual'){
-			foreach my $patient (@{$gene->chromosome->getPatients()}) {
-				my $vec_tmp = $patient->getRegionHo($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only)->Clone();
-				$vec_tmp->Intersection($gene->getCurrentVector(), $patient->getRegionHo($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only));
-				unless ($vec_tmp->is_empty()) {
-					push(@{$hashStats->{'region_ho_all'}}, $project->hash_patients_name->{$patient->name()}->{id});
-					$vec_tmp->Intersection($vec_tmp, $patient->getCurrentVector($gene->chromosome()));
-					unless ($vec_tmp->is_empty()) {
-						push(@{$hashStats->{'region_ho'}}, $project->hash_patients_name->{$patient->name()}->{id});
-					}
-				}
-			}
-		}
-		elsif($project->typeFilters() eq 'familial'){
-			foreach my $family (@{$gene->chromosome->getFamilies()}) {
-				my $vec_tmp = $family->getVectorRegionRec($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only)->Clone();
-				$vec_tmp->Intersection($gene->getCurrentVector(), $family->getVectorRegionRec($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only));
-				unless ($vec_tmp->is_empty()) {
-					push(@{$hashStats->{'region_rec_all'}}, $family->name());
-					$vec_tmp->Intersection($vec_tmp, $family->getHo($gene->chromosome()));
-					unless ($vec_tmp->is_empty()) {
-						push(@{$hashStats->{'region_rec'}}, $family->name());
-					}
-				}
-			}
-			
-		}
-		if ($hashStats->{'region_ho'}) {
-			$hashStats->{'region_ho'} = scalar @{$hashStats->{'region_ho'}}.';'.join('|' , @{$hashStats->{'region_ho'}});
-		}
-		if ($hashStats->{'region_ho_all'}) {
-			$hashStats->{'region_ho_all'} = scalar @{$hashStats->{'region_ho_all'}}.';'.join('|' , @{$hashStats->{'region_ho_all'}});
-		}
-		if ($hashStats->{'region_rec'}) {
-			$hashStats->{'region_rec'} = scalar @{$hashStats->{'region_rec'}}.';'.join('|' , @{$hashStats->{'region_rec'}});
-		}
-		if ($hashStats->{'region_rec_all'}) {
-			$hashStats->{'region_rec_all'} = scalar @{$hashStats->{'region_rec_all'}}.';'.join('|' , @{$hashStats->{'region_rec_all'}});
-		}
-	}
+#	if ($filter_nbvar_regionho > 1){
+#		confess();
+#		$hashStats->{'region_ho'} = undef;
+#		$hashStats->{'region_ho_all'} = undef;
+#		$hashStats->{'region_rec'} = undef;
+#		$hashStats->{'region_rec_all'} = undef;
+#		my (@lObj, $region_method, $stat_method);
+#		if ($project->typeFilters() eq 'individual'){
+#			foreach my $patient (@{$gene->chromosome->getPatients()}) {
+#				my $vec_tmp = $patient->getRegionHo($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only)->Clone();
+#				$vec_tmp->Intersection($gene->getCurrentVector(), $patient->getRegionHo($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only));
+#				unless ($vec_tmp->is_empty()) {
+#					push(@{$hashStats->{'region_ho_all'}}, $project->hash_patients_name->{$patient->name()}->{id});
+#					$vec_tmp->Intersection($vec_tmp, $patient->getCurrentVector($gene->chromosome()));
+#					unless ($vec_tmp->is_empty()) {
+#						push(@{$hashStats->{'region_ho'}}, $project->hash_patients_name->{$patient->name()}->{id});
+#					}
+#				}
+#			}
+#		}
+#		elsif($project->typeFilters() eq 'familial'){
+#			foreach my $family (@{$gene->chromosome->getFamilies()}) {
+#				my $vec_tmp = $family->getVectorRegionRec($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only)->Clone();
+#				$vec_tmp->Intersection($gene->getCurrentVector(), $family->getVectorRegionRec($gene->chromosome(), $filter_nbvar_regionho, $filter_regionho_sub_only));
+#				unless ($vec_tmp->is_empty()) {
+#					push(@{$hashStats->{'region_rec_all'}}, $family->name());
+#					$vec_tmp->Intersection($vec_tmp, $family->getHo($gene->chromosome()));
+#					unless ($vec_tmp->is_empty()) {
+#						push(@{$hashStats->{'region_rec'}}, $family->name());
+#					}
+#				}
+#			}
+#			
+#		}
+#		if ($hashStats->{'region_ho'}) {
+#			$hashStats->{'region_ho'} = scalar @{$hashStats->{'region_ho'}}.';'.join('|' , @{$hashStats->{'region_ho'}});
+#		}
+#		if ($hashStats->{'region_ho_all'}) {
+#			$hashStats->{'region_ho_all'} = scalar @{$hashStats->{'region_ho_all'}}.';'.join('|' , @{$hashStats->{'region_ho_all'}});
+#		}
+#		if ($hashStats->{'region_rec'}) {
+#			$hashStats->{'region_rec'} = scalar @{$hashStats->{'region_rec'}}.';'.join('|' , @{$hashStats->{'region_rec'}});
+#		}
+#		if ($hashStats->{'region_rec_all'}) {
+#			$hashStats->{'region_rec_all'} = scalar @{$hashStats->{'region_rec_all'}}.';'.join('|' , @{$hashStats->{'region_rec_all'}});
+#		}
+#	}
 
 	return $hashStats;
 
@@ -1952,31 +1995,6 @@ sub launch_bundles_request {
 	$hashRes->{'items'} = \@lPar_capture;
 	print $cgi->header('text/json-comment-filtered') unless ($test);
 	printJson($hashRes); 
-}
-
-sub doPolyQueryFilters_global_cat {
-	my ($chr, $hToFilter, $nb_dejavu, $polyscore_value) = @_;
-	QueryVectorFilter::filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_region_ho - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	my $vector_hgmd_dm = $chr->getVectorScore('dm');
-	
-	QueryVectorFilter::filter_vector_type_variants($chr, $hToFilter);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_type_variants - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-#	QueryVectorFilter::filter_vector_predicted_splice_region_global($chr, $hToFilter);
-#	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_predicted_splice_region_global - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	QueryVectorFilter::filter_vector_cadd_variants($chr, $hToFilter, $keep_indels_cadd);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_cadd_variants - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	QueryVectorFilter::filter_vector_freq_variants($chr, $hToFilter);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_freq_variants - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	QueryVectorFilter::filter_vector_gnomad_ho_ac_variants($chr, $hToFilter);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_gnomad_ho_ac_variants - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	QueryVectorFilter::filter_vector_confidence_variants($chr, $hToFilter);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_confidence_variants - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-#	if ($can_use_hgmd and $project->isUpdate()) {}
-	QueryVectorFilter::filter_vector_dejavu($chr, $nb_dejavu, $dejavu_ho, $test) if ($nb_dejavu);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_dejavu - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	#QueryVectorFilter::filter_vector_polyscore($chr, $polyscore_value, $test) if ($polyscore_value);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_polyscore - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 }
 
 sub geneAtlasView {

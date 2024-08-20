@@ -48,7 +48,7 @@ use JSON::XS;
 use GenBoNoSql;
 use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
-use GenBoNoSqlDejaVuCNV;
+#use GenBoNoSqlDejaVuCNV;
 use GenBoNoSqlDejaVuSV;
 #use GenBoNoSqlDejaVuSV_agregate;
 use GenBoNoSqlDejaVuJunctions;
@@ -4346,6 +4346,12 @@ sub getCallingPipelineDir {
 	$self->makedir($path);
 	$path =~ s/\/\//\//;
 	return $self->makedir($path);
+}
+
+sub getNbVarHoRegionsFromType {
+	my ($self, $type) = @_;
+	my $methodName = 'ho_regions_'.$type.'_value';
+	return $self->$methodName();
 }
 
 has ho_regions_short_value => (
