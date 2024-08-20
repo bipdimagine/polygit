@@ -3618,6 +3618,7 @@ function(all, Deferred, dom, on, JSON) {
             myProgressBar.set( { value: 0 } );
             dijit.byId('waiting_progress').show();
         }
+
         if (is_big_data == 1) {
             if (document.getElementById('filter_intergenic').checked == false) {
                 is_big_data = 3;
@@ -3637,39 +3638,24 @@ function(all, Deferred, dom, on, JSON) {
             }).then(function(results) {} );
         }
         else if (run_check_project == 1) {
+
             all({
-                chr1:  checkAndSubmit( '1' ),
-                chr2:  checkAndSubmit( '2' ),
-                chr3:  checkAndSubmit( '3' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr10: checkAndSubmit( '10' ),
-                chr11: checkAndSubmit( '11' ),
-                chr12: checkAndSubmit( '12' ),
-                chr13: checkAndSubmit( '13' ),
-                chr14: checkAndSubmit( '14' ),
-                chr15: checkAndSubmit( '15' ),
-                chr16: checkAndSubmit( '16' ),
-                chr17: checkAndSubmit( '17' ),
-                chr18: checkAndSubmit( '18' ),
-                chr19: checkAndSubmit( '19' ),
-                chr20: checkAndSubmit( '20' ),
-                chr21: checkAndSubmit( '21' ),
-                chr22: checkAndSubmit( '22' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chrMT: checkAndSubmit( 'MT' ),
+            	 tree:     checkAndSubmit( 'tree' ),
+                 launch1:  checkAndSubmit( '1,X,19,MT' ),
+                 launch2:  checkAndSubmit( '2,21,22' ),
+                 launch3:  checkAndSubmit( '3,16,5' ),
+                 launch4:  checkAndSubmit( '6,7,8' ),
+                 launch5:  checkAndSubmit( '9,10,11' ),
+                 launch6:  checkAndSubmit( '12,13,14' ),
+                 launch7:  checkAndSubmit( '15,4,17' ),
+                 launch8:  checkAndSubmit( '18,Y,20' ),
             }).then(function(results) {} );
         }
         // CAS GENOME avec intergenic ou MAJ du project
         else if (is_big_data == 1) {
             all({
                 tree:  checkAndSubmit( 'tree' ),
-                chr1:  checkAndSubmit( '1' ),
+                chr1:  checkAndSubmit( '1,2,3' ),
                 chr2:  checkAndSubmit( '2' ),
                 chr3:  checkAndSubmit( '3' ),
                 chr4:  checkAndSubmit( '4' ),
@@ -3693,7 +3679,7 @@ function(all, Deferred, dom, on, JSON) {
                 chr22: checkAndSubmit( '22' ),
                 chrX:  checkAndSubmit( 'X' ),
                 chrY:  checkAndSubmit( 'Y' ),
-                chrMT: checkAndSubmit( 'MT' ),
+                chrMT: checkAndSubmit( 'MT,1' ),
             }).then(function(results) {} );
         }
         // CAS EXOME beaucoup de patients
@@ -3715,7 +3701,7 @@ function(all, Deferred, dom, on, JSON) {
         	if (get_value_slider_regionho() > 1) {
 	            all({
 	                tree:  checkAndSubmit( 'tree' ),
-	                chr1:  checkAndSubmit( '1' ),
+	                chr1:  checkAndSubmit( '1,2,3s' ),
 	                chr2:  checkAndSubmit( '2' ),
 	                chr3:  checkAndSubmit( '3' ),
 	                chr4:  checkAndSubmit( '4' ),
@@ -4146,11 +4132,13 @@ function(all, Deferred, dom, on, JSON) {
         dijit.byId("b_export_xls_var").set("disabled", true);
         dijit.byId("b_export_xls_vcf").set("disabled", true);
         dijit.byId("b_show_hgmd_dejavu_patient").set("disabled", true);
+        alert("toto");
         var xhrArgs = {
             url: hurl,
             timeout:0,
             handleAs: "json",
             load: function(data) {
+				alert("coucou");
                 nbRunning--;
                 var empty_chr = 0;
                 var lChrIds = chr_id.split(',');
