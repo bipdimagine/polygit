@@ -968,7 +968,7 @@ sub getVector_project_or_fam {
 }
 
 sub updateVectorPatients {
-	my ($lPatients, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect) = @_;
+	my ($self, $lPatients, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect) = @_;
 	foreach my $p (@$lPatients) {
 		if ($var_local_excluded and not $var_local_excluded->is_empty()) {
 			$p->{origin}->{all}->{$chr->name} -= $var_local_excluded;
@@ -1002,12 +1002,12 @@ sub setIntersectExclude_PAT_FAM {
 		$var_excluded += $var_local_excluded;
 		$var_intersect += $var_local_intersect if $var_local_intersect;
 		my @lPat = @{$chr->getProject->getPatients()};
-		updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
+		$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
 		
 	}
 	else {
 		foreach my $family (@{$chr->getProject->getFamilies()}) {
-			my ($self, $var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $chr->getVariantsVector(), $family);
+			my ($var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $chr->getVariantsVector(), $family);
 			if ($family->in_the_attic()) {
 				next;
 			}
@@ -1023,7 +1023,7 @@ sub setIntersectExclude_PAT_FAM {
 			}
 			$var_ok += $var_local_ok;
 			my @lPat = @{$family->getPatients()};
-			updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
+			$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
 		}
 	}
 	$var_ok -= $var_excluded;
@@ -1132,10 +1132,10 @@ sub setIntersectExclude_PAT_FAM_genes {
 		else {
 			$var_ok->Intersection($var_ok, $var_intersect);
 		}
-		updateVectorPatients(\@lPat, $chr, $var_ok, $var_excluded, $var_intersect);
+		$self->updateVectorPatients(\@lPat, $chr, $var_ok, $var_excluded, $var_intersect);
 	}
 	else {
-		updateVectorPatients(\@lPat, $chr, $var_ok, $var_excluded);
+		$self->updateVectorPatients(\@lPat, $chr, $var_ok, $var_excluded);
 	}
 	$chr->setVariantsVector($var_ok);
 }
