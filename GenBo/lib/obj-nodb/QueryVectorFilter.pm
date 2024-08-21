@@ -1007,7 +1007,7 @@ sub setIntersectExclude_PAT_FAM {
 	}
 	else {
 		foreach my $family (@{$chr->getProject->getFamilies()}) {
-			my ($self, $var_local_ok, $var_local_excluded, $var_local_intersect) = getVector_fam($chr, $chr->getVariantsVector(), $family);
+			my ($self, $var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $chr->getVariantsVector(), $family);
 			if ($family->in_the_attic()) {
 				next;
 			}
@@ -1053,7 +1053,7 @@ sub setIntersectExclude_PAT_FAM_genes {
 				next if ($family->in_the_attic());
 				
 				my $var_gene = $gene->getCurrentVector->Clone();
-				my ($self, $var_local_ok, $var_local_excluded, $var_local_intersect) = getVector_fam($chr, $var_gene, $family);
+				my ($self, $var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $var_gene, $family);
 				my $var_fam = $var_local_ok;
 				my $var_to_add = $chr->getNewVector();
 				#ajoute le vecteur du gene level_fam est gene
