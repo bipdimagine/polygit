@@ -32,8 +32,6 @@ foreach my $projectName (@lProjects) {
 		my (@lSnpsFiles, @lIndelsFiles);
 		eval { @lSnpsFiles = @{$pat->getVariationsFiles()}; };
 		if (scalar(@lSnpsFiles) > 0) { $hVcfFiles->{$pat->name()}->{'snps'} = join(',', @lSnpsFiles); }
-		eval { @lIndelsFiles = @{$pat->getIndelsFiles()}; };
-		if (scalar(@lIndelsFiles) > 0) { $hVcfFiles->{$pat->name()}->{'indels'} = join(',', @lIndelsFiles); }
 	}
 	eval { unless (-d $project->getCallingPipelineDir('indiv_merge')) { makedir($project->getCallingPipelineDir('indiv_merge')); } };
 	my $cmd1 = "/opt/java/latest/bin/java -jar /bip-d/soft/distrib/GATK/gatk-latest.2.7/GenomeAnalysisTK.jar -T CombineVariants -R /data-xfs/public-data/$build/genome/fasta/all.fa ";

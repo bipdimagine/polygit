@@ -1255,24 +1255,6 @@ sub start_thread {
 	
 }  
 
-sub checkParseVcfByPatient {
-	my ($project) = @_;
-	my @lPatObj = @{$project->getPatients};
-	my $nbPat = scalar(@lPatObj);
-	my $i = 0;
-	foreach my $pat (@lPatObj) {
-		$i++;
-		warn "\n### [$i/$nbPat] CHECK PATIENT: ".$pat->name();
-		next if ($pat->checkParseVcf());
-		$pat->checkParseVcf('debug');
-		warn "\n\nError check parse for patient ".$pat->name();
-		warn "\n\n";
-		die;
-	}
-}
-
-
-
 
 sub exons_coverage{
 	my ($trs,$dir,$project_name) =@_;

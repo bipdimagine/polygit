@@ -604,7 +604,6 @@ sub export_vcf {
 	my $patient = $project->getPatient($pat_name);
 	my @lVcfFiles;
 	push(@lVcfFiles, @{$patient->getVariationsFiles()}); 
-	push(@lVcfFiles, @{$patient->getIndelsFiles()}); 
 	push(@lVcfFiles, @{$patient->getCnvsFiles()});
 	my $nb = 0; 
 	foreach my $file (@lVcfFiles) {
@@ -657,7 +656,6 @@ sub export_vcf_multi_patients {
 		my $patient = $project->getPatient($pat_name);
 		my (@lVcfFiles, @lLinesHead);
 		push(@lVcfFiles, @{$patient->getVariationsFiles()}); 
-		push(@lVcfFiles, @{$patient->getIndelsFiles()}); 
 		push(@lVcfFiles, @{$patient->getCnvsFiles()});
 		my $nb = 0; 
 		foreach my $file (@lVcfFiles) {

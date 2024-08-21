@@ -308,14 +308,14 @@ sub estim_nb_varids_from_vcf {
 	foreach my $patient (@lPatients) {
 		my @lVcf_Pat;
 		foreach my $vcf (@{$patient->getVariationsFiles()}) {
-			if (scalar(keys %{$patient->callingFiles()->{variations}}) == 1) {
+			if (scalar(keys %{$patient->callingFiles()}) == 1) {
 				push(@lVcf_Pat, $vcf);
 			}
 			elsif ($project->isDiagnostic()) { push(@lVcf_Pat, $vcf); }
-			elsif (exists $patient->callingFiles()->{variations}->{haplotypecaller} and $vcf =~ /haplotypecaller/) {
+			elsif (exists $patient->callingFiles()->{haplotypecaller} and $vcf =~ /haplotypecaller/) {
 				push(@lVcf_Pat, $vcf);
 			}
-			elsif (not exists $patient->callingFiles()->{variations}->{haplotypecaller} and $vcf =~ /unifiedgenotyper/) {
+			elsif (not exists $patient->callingFiles()->{haplotypecaller} and $vcf =~ /unifiedgenotyper/) {
 				push(@lVcf_Pat, $vcf);
 			}
 		}

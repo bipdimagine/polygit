@@ -417,17 +417,6 @@ print $cgi->end_table();
 			print $cgi->td($stats->{clinvar}->{$p->name});
 			print $cgi->td("-");
 			
-			my $nbi =0;
-			my $f1s = $p->getIndelsFiles();
-			
-			foreach my $f1 (@$f1s){
-			#zcat IMB.vcf.gz IMD4.vcf.gz | grep -v "#" | cut -f 1,2 | sort -u
-			
-			my $nbvt += `zgrep -vc "#" $f1` if -e $f1;
-			chomp($nbvt);
-			$nbi += $nbvt;
-			}
-			
 	
 			# $patient->getVectorOrigin($self->getChromosome);
 			#my $vs = $p->getVariations();

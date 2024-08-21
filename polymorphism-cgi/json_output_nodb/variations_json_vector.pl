@@ -117,10 +117,10 @@ if (defined($vector_ids) or $v_resume) {
 		my $chr_cache = $projectCache->getChromosome($chr_name);
 		my $hRegion;
 		foreach my $type ('short', 'medium', 'large', 'extra_large') {
+			my $nb_var = $projectCache->getNbVarHoRegionsFromType($type);
 			$hRegion->{$type} = $chr_cache->getNewVector();
 			foreach my $patient (@{$chr_cache->getPatients()}) {
-				my $method = 'ho_regions_'.$type.'_value';
-				$hRegion->{$type} += $patient->getRegionHo($chr_cache, $project->$method());
+				$hRegion->{$type} += $patient->getRegionHo($chr_cache, $nb_var);
 			}
 		}
 		my $hIds;
@@ -411,6 +411,7 @@ else {
 		
 		my @lRegions;
 		my $vector_resume_ids = Bit::Vector->new_Enum($chr->getVariantsVector->Size(), join(',', @{$select_ids}));
+		#TODO: supress regionHO?
 		foreach my $patient (@{$chr->getPatients()}) {
 			my $vector_region_ho = $patient->getRegionHo($chr, 25)->Clone();
 			my @lReg = split(',', $vector_region_ho->to_Enum());

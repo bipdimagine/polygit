@@ -1068,7 +1068,7 @@ sub myflushobjects {
 						 $chr = $self->getChromosome($chr_name);
 
 						unless (exists $self->{lmdb_id}->{$id}){
-							$self->{lmdb_id}->{$id} =  $chr->cache_lmdb_variations->get_varid($vid);
+							$self->{lmdb_id}->{$id} =  $chr->cache_variations->get_varid($vid);
 
 						}
 						$id = $self->{lmdb_id}->{$id};
@@ -1080,7 +1080,7 @@ sub myflushobjects {
 					 $chr = $self->getChromosome($chr_name);
 					}
 				
-					my $var_obj = $chr->cache_lmdb_variations->get($id);
+					my $var_obj = $chr->cache_variations->get($id);
 					
 					my $ref = ref($var_obj);
 					$var_obj->{vector_id}= $vector_id;

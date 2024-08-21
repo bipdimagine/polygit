@@ -48,7 +48,7 @@ use JSON::XS;
 use GenBoNoSql;
 use GenBoNoSqlText;
 use GenBoNoSqlDejaVu;
-#use GenBoNoSqlDejaVuCNV;
+use GenBoNoSqlDejaVuCNV;
 use GenBoNoSqlDejaVuSV;
 #use GenBoNoSqlDejaVuSV_agregate;
 use GenBoNoSqlDejaVuJunctions;

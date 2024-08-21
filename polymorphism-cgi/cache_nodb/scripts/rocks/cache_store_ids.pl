@@ -122,6 +122,7 @@ system("vmtouch -t /data-isilon/public-data/repository/HG38/*/*/rocksdb/$chr_nam
 $pm->run_on_finish(
 	sub {
 		my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $hRes) = @_;
+		
 		unless (defined($hRes) or $exit_code > 0) {
 			$nbErrors++;
 			print qq|No message received from child process $exit_code $pid!\n|;
@@ -149,7 +150,7 @@ foreach my $region (values @$regions) {
 	my $pid = $pm->start and next;
 	my $time_start = time;
 	my $hres = {};
-	my ($all,$ids)        = get_ids( $project_name, $region );
+	get_ids( $project_name, $region );
 	my $time_end   = time;
 	
 	$hres->{ttime}    = abs( $time_start - $time_end );
@@ -269,7 +270,7 @@ sub get_ids {
 			$project->rocksGenBo->prepare($z);
 	}
 	
-	warn "start ". $region->{start}." ".$region->{end};
+#	warn "start ". $region->{start}." ".$region->{end};
 	my @all;
 	my @patient_names = sort { $a cmp $b } map { $_->name } @{ $project->getPatients };
 	my $hpatients;
@@ -295,13 +296,15 @@ sub get_ids {
 	$db->prepare(\@arocksid);
 	};
 	if ($@){
+		warn "\n\n";
 		warn "bug3 ";
+		warn "\n\n";
 		die();
 	}
 	}
 	$t =time;
 	my $nb = 0;
-	warn "prepare ". $region->{start}." ".$region->{end};
+	#warn "prepare ". $region->{start}." ".$region->{end};
 	my $hvariant;
 	my $hpolyviewer;
 	foreach my $variation ( @{$vs } ) {
@@ -327,8 +330,10 @@ sub get_ids {
 		$variation->annotation();
 		};
 		if ($@){
-		warn "bug here  ";
-		die();
+			warn "\n\n";
+			warn "bug here  ";
+			warn "\n\n";
+			die();
 		}
 		my $hv;
 		my $array_patients;
@@ -437,5 +442,5 @@ sub get_ids {
 		$no_polyviewer->close;
 		$no->close;
 		warn "end variant  ". $region->{start}." ".$region->{end};
-	return undef;
+	return;
 }

@@ -1004,7 +1004,6 @@ sub launchStatsProjectAll_genes {
 	my @lStats;
 	
 	my $i = 0;
-		my $nb =0;
 		my $nbg = 0;
 		$buffer->getHashTransIdWithCaptureDiag();
 	foreach my $chr_id (split(',', $filter_chromosome)) {
@@ -1018,7 +1017,6 @@ sub launchStatsProjectAll_genes {
 		#next if ($chr->not_used());
 		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
 		foreach my $gene (@{$chr->getGenes}) {
-			$nb ++;
 			next if $gene->getCurrentCompactVector->is_empty();
 			$project->print_dot(50);
 #			my $v_to_enum = $gene->_getVectorOrigin->to_Enum();
@@ -1505,7 +1503,7 @@ sub launchStatsGene {
 	
 	my $t1 = $gene->compact_vector;
 	my $va = $gene->getCurrentCompactVector();
-	return if$va->is_empty;
+	return if $va->is_empty;
 	my ($h_vector_type, $hStats, $h_var_ids, $h_models, $hAllPat);
 	my $djvf;
 	foreach my $patient (@{$chr->getProject->getPatients()}) {
@@ -2083,7 +2081,6 @@ sub export_vcf {
 	my $patient = $project->getPatient($pat_name);
 	my @lVcfFiles;
 	push(@lVcfFiles, @{$patient->getVariationsFiles()}); 
-	push(@lVcfFiles, @{$patient->getIndelsFiles()}); 
 	push(@lVcfFiles, @{$patient->getCnvsFiles()});
 	my $nb = 0; 
 	foreach my $file (@lVcfFiles) {
@@ -2136,7 +2133,6 @@ sub export_vcf_multi_patients {
 		my $patient = $project->getPatient($pat_name);
 		my (@lVcfFiles, @lLinesHead);
 		push(@lVcfFiles, @{$patient->getVariationsFiles()}); 
-		push(@lVcfFiles, @{$patient->getIndelsFiles()}); 
 		push(@lVcfFiles, @{$patient->getCnvsFiles()});
 		my $nb = 0; 
 		foreach my $file (@lVcfFiles) {

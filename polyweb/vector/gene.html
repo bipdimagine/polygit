@@ -2285,7 +2285,6 @@ function functional_url_filter_data (){
 function construct_url_filter_data () {
     var filter_args= "";
     var args = new Array();
-    alert("construc");
     filter_args  = "&filter_type_variation=" + functional_url_filter_data();
 	if (genetic_model == 'compound_multi' || genetic_model == 'recessif_compound_multi' || genetic_model == 'uniparental_recessif_compound_multi') {
 		apply_compound_multi_annot();
@@ -3587,7 +3586,6 @@ function check_slider_freq_init() {
 
 function check_slider_dejavu_init() {
 	var value_slider = dijit.byId("slider_dejavu").get("value");
-	alert("couou "+check_slider_dejavu_init);
 	//dijit.byId("slider_dejavu_init").set("value", parseInt(value_slider));
 	dijit.byId("slider_dejavu_2").set("value", parseInt(value_slider));
 	if (parseInt(value_slider) < 100) { document.getElementById('nb_dejavu_init').innerHTML = parseInt(value_slider); }
@@ -4216,7 +4214,6 @@ function(all, Deferred, dom, on, JSON) {
             if (!tree) { construct_tree(); }
         }
         else {
-			alert(nbRunning+" "+maxRunning);
             if (nbRunning >= maxRunning) {
 				
                 setTimeout(function(){ checkAndSubmit(id); }, 500);
@@ -4400,7 +4397,6 @@ function(all, Deferred, dom, on, JSON) {
             cgi_args = '&' + use_args;
         }
         else { cgi_args = construct_url_filter_data(); }
-      console.dir(cgi_args);
         if (lOnlyThesesGenes.length > 0) {
             cgi_args += "&only_genes="+lOnlyThesesGenes.join(",");
         }
@@ -4466,7 +4462,6 @@ function(all, Deferred, dom, on, JSON) {
                     onItem: function (item, result) {
                         //if (json_genes_done < limit_genes_json || chr_id == '1') {
                             var chr_id = store_genes_tmp.getValue(item, 'chromosome');
-                            console.dir(chr_id);
                             if (chr_id == 'X')  { chr_id = '23'; }
                             if (chr_id == 'Y')  { chr_id = '24'; }
                             if (chr_id == 'MT') { chr_id = '25'; }
@@ -5389,8 +5384,6 @@ function addListGenes_OLD(regexp1,regexp2) {
 	    hurl = cache_all_url + "&check_genes=" + tableau.join('+');
     }
     var store_genes = new dojo.data.ItemFileWriteStore({ url: hurl });
-    
-    alert('HURL: '+hurl);
     
     store_genes.fetch({
         onComplete: function(items){

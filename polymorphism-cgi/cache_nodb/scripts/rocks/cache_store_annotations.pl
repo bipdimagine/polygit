@@ -575,7 +575,6 @@ sub get_annotations {
 		##############
 		
 			my $pdv = $variation->other_projects;
-			my $pdv_ho = $variation->other_projects_ho;
 	 		my $sdv = $variation->other_patients ; 
 	 		my $sdv_ho = $variation->other_patients_ho; 
 	 		

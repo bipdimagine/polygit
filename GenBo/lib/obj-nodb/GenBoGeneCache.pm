@@ -70,7 +70,7 @@ has variants => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return $self->_getVectorOrigin();
+		return $self->getVectorOrigin();
 	}
 );
 # les vector d'un gene est sous vector de celui du chr. Ceci est sa position start par rapport au vector chr.
@@ -228,7 +228,7 @@ has chromosome_vector_length  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return $self->getChromosome->getNewVector;
+		return $self->getChromosome->getNewVector->Size;
 	},
 );
 

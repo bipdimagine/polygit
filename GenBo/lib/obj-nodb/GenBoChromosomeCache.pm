@@ -953,7 +953,8 @@ sub getNbGenes {
 	foreach my $gene (@{$self->getGenes()}) {
 		next unless $gene->getVectorOrigin();
 		next if ($gene->is_intergenic());
-		$nb++ if (not $gene->getCurrentVector->is_empty()) ;
+		my $v = $self->getVariantsVector & $gene->getCurrentVector();
+		$nb++ if (not $v->is_empty()) ;
 	}
 	return $nb;
 }

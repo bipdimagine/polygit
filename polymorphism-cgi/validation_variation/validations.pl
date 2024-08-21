@@ -99,10 +99,6 @@ foreach my $patient (@$patients){
 	if ($v->isVariation()){
 		 $vcf_files = $patient->getVariationsFiles();
 	}
-	else  {
-		$vcf_files = $patient->getIndelsFiles();
-		
-	}
 	my ($vcf_chr,$vcf_pos,$vcf_ref,$vcf_all) = split("_",$v->vcf_id);
 	my $tabix_position = $vcf_chr.":".$vcf_pos."-".$vcf_pos; 
 	my $vcf_line = "";

@@ -42,10 +42,6 @@ my $errors;
 foreach my $p (@$patients){
 	my $bam = $p->getBamFile();
 	push(@{$errors->{file}},"NO BAM FOR : ".$p->name()) unless -e $bam;
-	my $vcf_indels = $p->getIndelsFiles();
-	foreach my $vcf_indel (@$vcf_indels){
-	push(@{$errors->{file}},"NO VCF INDEL FOR : ".$p->name()) unless -e $vcf_indel;
-	}
 	
 	my $vcf_vars = $p->getVariationsFiles();
 	foreach my $vcf_var (@$vcf_vars){
@@ -228,7 +224,6 @@ my $tb3 = Text::Table->new(
 #	my $bcftools = $buffer->software("bcftools");
 #	foreach my $p (@{$project->getPatients()}){
 #		my $files = $p->getVariationsFiles();
-#		push(@$files,@{$p->getIndelsFiles()});
 #		
 #		my $nbs =0;
 #		my $nbi =0;
