@@ -71,6 +71,7 @@ sub load_config {
 }
 sub write_config {
 	my ($self) = @_;
+	warn "write config";
 	open(my $fh,">".$self->json_file) or die("can t open file".$self->json_file);
 	my $h;
 	$h->{size} = $self->size;
@@ -129,7 +130,7 @@ sub put_batch_vector_transmission {
 }
 sub get_vector_transmission {
 	my ($self,$patient,$type) =@ _;
-	confess($type.":".join(";",keys %{$self->vector_type_transmission}) ) unless exists $self->vector_type_transmission->{$type};
+	confess("-".$type.":".join(";",keys %{$self->vector_type_transmission}) ) unless exists $self->vector_type_transmission->{$type};
 	my $h = $self->cache_memory_patient($patient);
 	my $id = $self->id_vector_transmission($patient,$type);
 	die() unless $h;
