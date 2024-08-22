@@ -146,21 +146,6 @@ sub  patients_only_filters {
 }
 
 
-
-# hash with each models described in a bitvector
-has models_categories => (
-	is		=> 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $h;
-		$h->{'individual'} = $self->getHashAllVectorsModels_ind();
-		$h->{'familial'} = $self->getHashAllVectorsModels_fam() if ($self->project->isFamilialStudy());
-		$h->{'somatic'} = $self->getHashAllVectorsModels_som() if ($self->project->isSomaticStudy());
-		return $h;
-	},
-);
-
 # hash with each each patient variants vector (all, ho, he for each patient)
 has patients_categories => (
 	is		=> 'rw',
@@ -2017,20 +2002,6 @@ sub getModelVector_fam_both_parents {
 	return $vector_both_parents;
 }
 
-# applique le model no_model (variants presents dans aucun modele genetique) (FAM)
-sub getModelVector_fam_no_model {
-	my $self = shift;
-	my $vector_all_no_models = $self->getVariantsVector->Clone();
-	foreach my $model_name (keys %{$self->models_categories->{familial}->{saved_model}}) {
-		next if ($model_name eq 'init');
-		next if ($model_name eq 'mosaic');
-		foreach my $patient (@{$self->project->getPatients()}) {
-			my $patient_name = $patient->name();
-			$vector_all_no_models -= $self->models_categories->{familial}->{saved_model}->{$model_name}->{$patient_name};
-		}
-	}
-	return $vector_all_no_models;
-}
 
 # applique le model compound (IND)
 sub getModelGeneVector_indiv_compound {
@@ -2189,106 +2160,6 @@ sub get_vector_cadd_variants {
 	return $var;
 }
 
-sub getHashAllVectorsModels_ind {
-	my $self = shift;
-	#$self->save_model_variants_all_patients('init');
-	my $h;
-	$h->{'recessif'} = $self->getNewVector();
-	$h->{'compound'} = $self->getNewVector();
-	foreach my $gene (@{$self->getGenes()}) {
-		$h->{'recessif'} += $self->getModelGeneVector_indiv_recessif($gene);
-		#$self->load_init_variants_all_patients('init');
-		$h->{'compound'} += $self->getModelGeneVector_indiv_compound($gene);
-		#$self->load_init_variants_all_patients('init');
-	}
-	foreach my $patient (@{$self->getPatients()}) {
-		$h->{saved_model}->{'recessif'}->{$patient->name()} = dclone $patient->{model_indiv_recessif}->{$self->id()};
-		$h->{saved_model}->{'compound'}->{$patient->name()} = dclone $patient->{model_indiv_compound}->{$self->id()};
-	}
-	#$self->load_init_variants_all_patients('init');
-	return $h;
-}
-
-sub getHashAllVectorsModels_fam {
-	my $self = shift;
-	$self->save_model_variants_all_patients('init');
-	my $h;
-	$h->{'denovo'} = $self->getModelVector_fam_denovo();
-	$self->save_model_variants_all_patients('denovo');
-	$self->load_init_variants_all_patients('init');
-	
-	$h->{'strict_denovo'} = $self->getModelVector_fam_strict_denovo();
-	$self->save_model_variants_all_patients('strict_denovo');
-	$self->load_init_variants_all_patients('init');
-	
-	$h->{'dominant'} = $self->getModelVector_fam_dominant();
-	$self->save_model_variants_all_patients('dominant');
-	$self->load_init_variants_all_patients('init');
-	
-	$h->{'mosaic'} = $self->getModelVector_mosaique();
-	$self->save_model_variants_all_patients('mosaic');
-	$self->load_init_variants_all_patients('init');
-	
-	$h->{'recessif'} = $self->getModelVector_fam_recessif();
-	$self->save_model_variants_all_patients('recessif');
-	$self->load_init_variants_all_patients('init');
-	
-	my $vector_global_fam_recessif = $self->getNewVector();
-	$vector_global_fam_recessif += $self->getModelVector_fam_recessif();
-	$self->save_model_variants_all_patients('recessif');
-	$self->load_init_variants_all_patients('init');
-	
-	$h->{'compound'} = $self->getNewVector();
-	$h->{'recessif_compound'} = $self->getNewVector();
-	
-	foreach my $gene (@{$self->getGenes()}) {
-		$h->{'compound'} += $self->getModelGeneVector_fam_compound($gene);
-		$self->load_init_variants_all_patients('init');
-		my $vector_fam_recessif = $self->getNewVector();
-		$vector_fam_recessif->Intersection($vector_global_fam_recessif, $gene->getVariantsVector());
-		my $vector_fam_compound = $self->getNewVector();
-		$vector_fam_compound->Intersection($self->getModelGeneVector_fam_compound($gene), $gene->getVariantsVector());
-		my $vector_fam_recessif_compound = $self->getNewVector();
-		$vector_fam_recessif_compound += $vector_fam_recessif;
-		$vector_fam_recessif_compound += $vector_fam_compound;
-		$h->{'recessif_compound'} += $vector_fam_recessif_compound;
-		$self->load_init_variants_all_patients('init');
-	}
-	
-	$h->{saved_model} = $self->{saved_model};
-	$self->load_init_variants_all_patients('init');
-	foreach my $family (@{$self->getFamilies()}) {
-		my $vector_fam = $family->get_vector_keep_var_compound($self);
-		foreach my $patient (@{$family->getPatients()}) {
-			$h->{saved_model}->{'compound'}->{$patient->name()} = dclone $vector_fam;
-			$h->{saved_model}->{'compound'}->{$patient->name()}->Intersection($h->{saved_model}->{'compound'}->{$patient->name()}, $patient->getVariantsVector($self));
-			$h->{saved_model}->{'recessif_compound'}->{$patient->name()} = dclone $h->{saved_model}->{'compound'}->{$patient->name()};
-			$h->{saved_model}->{'recessif_compound'}->{$patient->name()} += $h->{saved_model}->{'recessif'}->{$patient->name()};
-		}
-	}
-	$self->load_init_variants_all_patients('init');
-	return $h;
-}
-
-sub getHashAllVectorsModels_som {
-	my $self = shift;
-	my $h;
-	$self->save_model_variants_all_patients('init');
-	$h->{'loh'} = $self->getModelVector_som_loh();
-	$self->save_model_variants_all_patients('loh');
-	$self->load_init_variants_all_patients('init');
-	$h->{'dbl_evt'} = $self->getNewVector();
-	foreach my $gene (@{$self->getGenes()}) {
-		$h->{'dbl_evt'} += $self->getModelGeneVector_som_dbl_evt($gene);
-		$self->load_init_variants_all_patients('init');
-	}
-	$h->{saved_model} = $self->{saved_model};
-	foreach my $patient (@{$self->getPatients()}) {
-		$h->{saved_model}->{'dbl_evt'}->{$patient->name()} = dclone $patient->{somatic_dbl_evt}->{$self->id()};
-	}
-	$self->load_init_variants_all_patients('init');
-	return $h;
-};
 
 
 has tree_primers =>(

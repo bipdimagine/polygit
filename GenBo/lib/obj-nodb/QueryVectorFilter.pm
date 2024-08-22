@@ -474,7 +474,9 @@ sub get_models_familial_union {
 	my $vector_models = $chr->getNewVector();
 	foreach my $model (@$list_models) {
 		#isMosaicTransmission
-		if ($model eq 'compound') { $vector_models += $self->get_model_familial_compound($chr, $h_arguments); }
+		if ($model eq 'compound') {
+			$vector_models += $self->get_model_familial_compound($chr, $h_arguments);
+		}
 		else {
 			my $model_method_name = $hModelsMethodsNames_familial->{$model};
 			my $model_method_vector_name;
@@ -496,11 +498,7 @@ sub get_models_familial_union {
 				}
 			}
 		}
-		
-		
-#		if ($model eq 'compound') { $vector_models += get_model_familial_compound($chr, $h_arguments); }
-#		else { $vector_models += get_model_familial_common($chr, $model, $h_arguments); }
-	}	
+	}
 	$chr->setVariantsVector($vector_models);
 	return $vector_models;
 }
@@ -586,13 +584,9 @@ sub filter_model_familial_compound {
 
 sub get_model_familial_compound {
 	my ($self, $chr, $h_arguments) = @_;
-	my $hFiltersChr = $h_arguments->{'filters_1'};
-	my $hFiltersChr_var2 = $h_arguments->{'filters_2'};
-	my $vector_filtered = $h_arguments->{'vector_filters_1'};
-	my $vector_filtered_2 = $h_arguments->{'vector_filters_2'};
 	my $variants_genes  = $chr->getNewVector();
 	foreach my $gene (@{$chr->getGenes()}) {
-		my $vector_gene = $self->filter_gene_model_familial_compound($gene, $hFiltersChr, $hFiltersChr_var2, $vector_filtered, $vector_filtered_2);
+		my $vector_gene = $self->filter_gene_model_familial_compound($gene, $h_arguments);
 		$variants_genes += $vector_gene;
 	}
 	$variants_genes->Intersection($chr->getVariantsVector(), $variants_genes);
@@ -612,7 +606,11 @@ sub get_model_familial_compound {
 }
 
 sub get_gene_model_familial_compound_prepare_multi_annot {
-	my ($self, $gene, $hFiltersChr, $hFiltersChr_var2, $vector_filtered, $vector_filtered_2) = @_;
+	my ($self, $gene, $h_arguments) = @_;
+	my $hFiltersChr = $h_arguments->{'filters_1'};
+	my $hFiltersChr_var2 = $h_arguments->{'filters_2'};
+	my $vector_filtered = $h_arguments->{'vector_filters_1'};
+	my $vector_filtered_2 = $h_arguments->{'vector_filters_2'};
 	my $var_gene_annot = $gene->getChromosome->getNewVector();
 	my $var_gene_annot_1 = $self->get_vector_filter_gene_annotations($gene, $hFiltersChr);
 	$var_gene_annot_1->Intersection($var_gene_annot_1, $vector_filtered) if ($vector_filtered);
@@ -626,40 +624,85 @@ sub get_gene_model_familial_compound_prepare_multi_annot {
 }
 
 sub filter_gene_model_familial_compound {
-	my ($self, $gene, $hFiltersChr, $hFiltersChr_var2, $vector_filtered, $vector_filtered_2) = @_;
+	my ($self, $gene,$h_arguments) = @_;
 	confess("\n\nERROR: QueryVectorFilter::filter_gene_model_familial_compound need a GenBoGeneCache. Die.\n\n") unless ($gene);
-	my $vector_gene = $gene->getCurrentVector->Clone();
-	$vector_gene->Intersection($vector_gene, $gene->getChromosome->getVariantsVector());
-	$vector_gene->Intersection($vector_gene, $gene->getModelGeneVector_fam_compound());
-	my $vector_ok = $gene->getChromosome->getNewVector();
-	foreach my $family (@{$gene->getChromosome->getFamilies()}) {
-		my $vector_gene_tmp = $vector_gene->Clone();
-		$vector_gene_tmp->Intersection($vector_gene_tmp, $family->get_vector_keep_var_compound($gene->getChromosome()));
-		$vector_ok += $vector_gene_tmp;
+	my $vector_compound = $gene->getChromosome->getNewVector;
+	foreach my $fam (@{$gene->getFamilies()}) {
+		my $vector_fam_gene_compound = $fam->getModelVector_fam_compound($gene);
+#		if ($h_arguments->{'filters_2'}) {
+#			my ($self, $var_gene_annot_1, $var_gene_annot_2) = $self->get_gene_model_familial_compound_prepare_multi_annot($gene, $h_arguments);
+#			if ($var_gene_annot_1 and $var_gene_annot_2) {
+#				$var_gene_annot_1->Intersection($var_gene_annot_1, $vector_fam_gene_compound);
+#				$vector_fam_gene_compound->Empty() if ($var_gene_annot_1->is_empty());
+#				$var_gene_annot_2->Intersection($var_gene_annot_2, $vector_fam_gene_compound);
+#				$vector_fam_gene_compound->Empty() if ($var_gene_annot_2->is_empty());
+#				$vector_fam_gene_compound->Empty() if ($gene->getChromosome->countThisVariants($vector_fam_gene_compound) < 2);
+#			}
+#			else {
+#				$vector_fam_gene_compound->Empty();
+#			}
+#		}
+		$vector_compound += $vector_fam_gene_compound;
+		
 	}
-	$vector_gene->Intersection($vector_gene, $vector_ok);
+	return $vector_compound;
 	
-	if ($vector_gene->is_empty()) { $vector_gene->Empty(); }
-	elsif ($hFiltersChr_var2) {
-		my ($self, $var_gene_annot_1, $var_gene_annot_2) = $self->get_gene_model_familial_compound_prepare_multi_annot($gene, $hFiltersChr, $hFiltersChr_var2, $vector_filtered, $vector_filtered_2);
-		if ($var_gene_annot_1 and $var_gene_annot_2) {
-			$var_gene_annot_1->Intersection($var_gene_annot_1, $vector_gene);
-			if ($var_gene_annot_1->is_empty()) {
-				$vector_gene->Empty();
-			}
-			$var_gene_annot_2->Intersection($var_gene_annot_2, $vector_gene);
-			if ($var_gene_annot_2->is_empty()) {
-				$vector_gene->Empty();
-			}
-			if ($gene->getChromosome->countThisVariants($vector_gene) < 2) {
-				$vector_gene->Empty();
-			}
-		}
-		else {
-			$vector_gene->Empty();
-		}
-	}
-	return $vector_gene;
+#	
+#	
+#	warn ' -> '.$gene->getVectorOrigin->Norm();
+#	my $vector_gene = $gene->getVectorOrigin() & $gene->getChromosome->getVariantsVector();
+#	warn ' -> '.$vector_gene->Norm();
+#	
+#	
+#	
+#	
+#	if ($vector_gene->Norm() < 2) {
+#		$vector_gene->Empty();
+#		return $vector_gene;
+#	}
+#	
+#	warn  'before comp -> '.$vector_gene->Norm();
+#	$vector_gene = $vector_gene & $gene->getModelGeneVector_fam_compound();
+#	warn ' after comp -> '.$vector_gene->Norm();
+#	
+#	my $vector_ok = $gene->getChromosome->getNewVector();
+#	foreach my $family (@{$gene->getChromosome->getFamilies()}) {
+#		my $vector_gene_tmp = $vector_gene & $family->get_vector_keep_var_compound($gene->getChromosome());
+#		$vector_ok += $vector_gene_tmp;
+#	}
+#	$vector_gene->Intersection($vector_gene, $vector_ok);
+#	
+#	
+#	warn ' after keep fam -> '.$vector_gene->Norm();
+#	
+#	die if $vector_gene > 2;
+#	
+#	if ($vector_gene->is_empty()) { return $vector_gene; }
+#	elsif ($hFiltersChr_var2) {
+#		my ($self, $var_gene_annot_1, $var_gene_annot_2) = $self->get_gene_model_familial_compound_prepare_multi_annot($gene, $hFiltersChr, $hFiltersChr_var2, $vector_filtered, $vector_filtered_2);
+#		if ($var_gene_annot_1 and $var_gene_annot_2) {
+#			
+#			warn $var_gene_annot_1->Norm();
+#			warn $var_gene_annot_2->Norm();
+#			die;
+#			
+#			$var_gene_annot_1->Intersection($var_gene_annot_1, $vector_gene);
+#			if ($var_gene_annot_1->is_empty()) {
+#				$vector_gene->Empty();
+#			}
+#			$var_gene_annot_2->Intersection($var_gene_annot_2, $vector_gene);
+#			if ($var_gene_annot_2->is_empty()) {
+#				$vector_gene->Empty();
+#			}
+#			if ($gene->getChromosome->countThisVariants($vector_gene) < 2) {
+#				$vector_gene->Empty();
+#			}
+#		}
+#		else {
+#			$vector_gene->Empty();
+#		}
+#	}
+#	return $vector_gene;
 }
 
 sub filter_model_familial_common {
@@ -820,22 +863,6 @@ sub filter_gene_model_individual_compound {
 	confess("\n\nERROR: QueryVectorFilter::filter_gene_model_individual_compound need a GenBoGeneCache. Die.\n\n") unless ($gene);
 	my $v = $gene->getCurrentVector;
 	$v->Intersection($gene->getCurrentVector(), $gene->getChromosome->getModelGeneVector_indiv_compound($gene));
-	$gene->setCurrentVector($v);
-	return;
-}
-
-sub filter_gene_model_familial_recessif_compound {
-	my ($self, $gene, $vector_global_fam_recessif) = @_;
-	confess("\n\nERROR: QueryVectorFilter::filter_gene_model_familial_recessif_compound need a GenBoGeneCache. Die.\n\n") unless ($gene);
-	my $vector_fam_recessif = $gene->getChromosome->getNewVector();
-	$vector_fam_recessif->Intersection($vector_global_fam_recessif, $gene->getVariantsVector());
-	my $vector_fam_compound = $gene->getChromosome->getNewVector();
-	$vector_fam_compound->Intersection($gene->getModelGeneVector_fam_compound(), $gene->getVariantsVector());
-	my $vector_fam_recessif_compound = $gene->getChromosome->getNewVector();
-	$vector_fam_recessif_compound += $vector_fam_recessif;
-	$vector_fam_recessif_compound += $vector_fam_compound;
-	my $v = $gene->getCurrentVector;
-	$v->Intersection($gene->getCurrentVector(), $vector_fam_recessif_compound);
 	$gene->setCurrentVector($v);
 	return;
 }
@@ -1260,15 +1287,15 @@ sub filter_genes_annotations {
 		$nb_genes ++;
 		$chr->getProject->print_dot(1);
 		my $debug;
-		if ($gene->external_name eq "RNF115"){
-			$debug =1;
-		}
+#		if ($gene->external_name eq "RNF115"){
+#			$debug =1;
+#		}
 		my $vsmall = $gene->getCompactVectorOriginCategories(\@all_cat,$debug);
-		if ($debug){
-			warn Dumper @all_cat;
-			warn "\t\t ".$vsmall->Norm;
-			#die();
-		}
+#		if ($debug){
+#			warn Dumper @all_cat;
+#			warn "\t\t ".$vsmall->Norm;
+#			#die();
+#		}
 		
 		my $vchr = $gene->return_compact_vector( $chr->getVariantsVector());
 		$vsmall &= $vchr;

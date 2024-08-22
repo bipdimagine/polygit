@@ -430,7 +430,10 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Recessif compound multi annot
 	my $vector_filtered = $chr->getVariantsVector->Clone();
 	my $vector_filtered_2;
-	if ($hFiltersChr and $hFiltersChr_var2) {
+	
+	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
+	if ($is_diff_hash_filters) {
+		die;
 		$chr->load_init_variants_all_patients('init');
 		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
 		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
@@ -450,7 +453,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
 	
-	if ($hFiltersChr and $hFiltersChr_var2) { $queryFilter->filter_genes_annotations($chr, $hFiltersChr_var2); }
+	if ($is_diff_hash_filters) { $queryFilter->filter_genes_annotations($chr, $hFiltersChr_var2); }
 	else { $queryFilter->filter_genes_annotations($chr, $hFiltersChr); }
 	
 	$queryFilter->filter_genetics_models($chr, $model, $h_args);
@@ -596,6 +599,18 @@ else {
 ########## [END] FILTRES DE POLYQUERY PAR CHROMOSOME ##########
 
 
+
+sub is_differents_hash_filters {
+	my ($h1, $h2, $dejavu, $dejavu_2) = @_;
+	return 1 if $dejavu != $dejavu_2 and $dejavu_2;
+	my $h3 = $h2;
+	foreach my $cat (keys %$h1) {
+		delete $h3->{$cat};
+	}
+	my @lDifCats = keys %$h3;
+	return 1 if scalar (@lDifCats > 0);
+	return;
+}
 
 sub get_infos {
 	
