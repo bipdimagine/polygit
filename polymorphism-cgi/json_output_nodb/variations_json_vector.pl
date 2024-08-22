@@ -113,6 +113,7 @@ if (defined($vector_ids) or $v_resume) {
 		@lChr = split(" ", $chr_id);
 		@lIds = split(',', $vector_ids);
 	}
+	$projectCache->getChromosomes();
 	foreach my $chr_name (@lChr) {
 		my $chr_cache = $projectCache->getChromosome($chr_name);
 		my $hRegion;
@@ -130,15 +131,12 @@ if (defined($vector_ids) or $v_resume) {
 		my $vector_all = Bit::Vector->new_Enum($chr_cache->getVariantsVector->Size(), join(',', @lIds));
 		$chr_cache->setVariantsVector($vector_all);
 		
-#		foreach my $gene (@{$chr_cache->getGenes()}) {
-#			$chr_cache->supressGene($gene) unless ($gene->intspan->{'all'}->contains_any(@lIds));
-#		}
 		foreach my $v_id (@lIds) {
-		#foreach my $v_id (@lIds) {
 			my $var = $chr_cache->getVarObject($v_id);
 			my $id = $var->id();
 			#warn ref($var);
 			$hIds->{$id}->{v_id} = $v_id;
+			$hIds->{$id}->{chr_name} = $chr_cache->name;
 			$hIds->{$id}->{he} = 0;
 			$hIds->{$id}->{ho} = 0;
 			$hIds->{$id}->{ho_region} = 0;
@@ -151,12 +149,10 @@ if (defined($vector_ids) or $v_resume) {
 			$hIds->{$id}->{nb_patients} = 0;
 			foreach my $patient (@{$chr_cache->getPatients()}) {
 				$patient->getVariantsVector($chr_cache);
-#				if ($patient->{global_categories}->{$chr_cache->id()}->{he}->contains($v_id)) {
 				if ($patient->getHe($chr_cache)->contains($v_id)) {
 					$hIds->{$id}->{he} = 1;
 					$hIds->{$id}->{nb_patients}++;
 				}
-#				if ($patient->{global_categories}->{$chr_cache->id()}->{ho}->contains($v_id)) {
 				if ($patient->getHo($chr_cache)->contains($v_id)) {
 					$hIds->{$id}->{ho} = 1;
 					$hIds->{$id}->{nb_patients}++;
@@ -374,9 +370,8 @@ if (defined($vector_ids) or $v_resume) {
 			}
 		}
 		
-		my $chr = $project->getChromosome($chr_name);
-		my ($data) = get_variations::getIds_byCache_onlive($buffer, $project, $chr, $hIds, $user);
-
+		my ($data) = get_variations::getIds_byCache_onlive($buffer, $project, $chr_cache, $hIds, $user);
+		
 		export_data::update_deja_vu($project, $data, $user);
 		export_data::print_stream($data) if $stream;
 		push(@final_data,@$data);

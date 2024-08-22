@@ -786,7 +786,6 @@ sub flushObjectVariantCache {
 sub getVarObject {
 	my ($self, $v_id) = @_;
 	return $self->project->myflushobjects([$self->name."!".$v_id],"variants")->[0];
-
 }
 
 # recupere liste d'objets variations stocke du vecteur

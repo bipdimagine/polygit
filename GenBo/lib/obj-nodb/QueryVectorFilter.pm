@@ -1224,15 +1224,10 @@ sub filter_genes_only_genes_names {
 	my $vector_genes = $chr->getNewVector();
 	foreach my $gene (@{$chr->getGenes()}) {
 		$chr->getProject->print_dot(1);
-		if ($chr->getProject->only_genes() and not exists $chr->getProject->only_genes->{uc($gene->external_name())}) {
-			$chr->supressGene($gene);
-			next;
-		}
-		else {
-			$vector_genes += $gene->getVariantsVector();
-		}
+		next if ($chr->getProject->only_genes() and not exists $chr->getProject->only_genes->{uc($gene->external_name())});
+		$vector_genes += $gene->getVariantsVector();
 	}
-#	$chr->setVariantsVector($vector_genes);
+	$chr->setVariantsVector($vector_genes);
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_only_genes_names - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 }
 

@@ -1516,10 +1516,12 @@ sub launchStatsGene {
 	#
 	my ($h_vector_type, $hStats, $h_var_ids, $h_models, $hAllPat);
 	
+	my $vv = $gene->getCurrentVector() & $gene->getChromosome->getVariantsVector();
+	$gene->setCurrentVector($vv);
+	
 	my $t1 = $gene->compact_vector;
 	my $va = $gene->getCurrentCompactVector();
 	return if $va->is_empty;
-	my ($h_vector_type, $hStats, $h_var_ids, $h_models, $hAllPat);
 	my $djvf;
 	foreach my $patient (@{$chr->getProject->getPatients()}) {
 		
@@ -1559,12 +1561,8 @@ sub launchStatsGene {
 	
 	$h_vector_type->{cnv} =$gene->getCompactVector("cnv") & $va;
 	$hStats->{variants}->{cnv} = $chr->countThisVariants($h_vector_type->{cnv}) ;
-	
-	
 
-
-
-	$hashStats->{'vector_ids'}	= join(',', map{$_+$gene->compact_vector_start} @{$gene->getIdsBitOn($h_vector_type->{all})});
+	$hashStats->{'vector_ids'}	= join(',', @{$gene->getIdsBitOn($gene->getCurrentVector())});
 	if ($can_use_hgmd and $gene->hgmd()) {
 		$hashStats->{'has_hgmd'} = 2;
 		$hashStats->{'has_hgmd'} .= ';'.$gene->external_name();
