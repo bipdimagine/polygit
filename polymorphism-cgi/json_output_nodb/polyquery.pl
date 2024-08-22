@@ -951,11 +951,11 @@ sub launchStatsProjectAll_genes_fork {
 		
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
-		$vector_buffer{substitution} = $chr->getVectorSubstitutions;
-		$vector_buffer{insertion} =  $chr->getVectorInsertions ;
-		$vector_buffer{deletion} =  $chr->getVectorDeletions;
-		$vector_buffer{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions unless exists $vector_buffer{indel} ;
-		$vector_buffer{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions() unless exists $vector_buffer{cnv} ;	
+		$vector_buffer{$chr_id}->{substitution} = $chr->getVectorSubstitutions;
+		$vector_buffer{$chr_id}->{insertion} =  $chr->getVectorInsertions ;
+		$vector_buffer{$chr_id}->{deletion} =  $chr->getVectorDeletions;
+		$vector_buffer{$chr_id}->{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions unless exists $vector_buffer{$chr_id}{indel} ;
+		$vector_buffer{$chr_id}->{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions() unless exists $vector_buffer{$chr_id}{cnv} ;	
 		
 		#next if ($chr->not_used());
 		#my @genes = grep {not ($_->getCurrentVector->is_empty())} @{$chr->getGenesFromVector($chr->getVariantsVector())};
@@ -1023,11 +1023,11 @@ sub launchStatsProjectAll_genes {
 		$buffer->getHashTransIdWithCaptureDiag();
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
-		$vector_buffer{substitution} = $chr->getVectorSubstitutions;
-		$vector_buffer{insertion} =  $chr->getVectorInsertions ;
-		$vector_buffer{deletion} =  $chr->getVectorDeletions;
-		$vector_buffer{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions ;
-		$vector_buffer{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions();
+		$vector_buffer{$chr_id}{substitution} = $chr->getVectorSubstitutions;
+		$vector_buffer{$chr_id}{insertion} =  $chr->getVectorInsertions ;
+		$vector_buffer{$chr_id}{deletion} =  $chr->getVectorDeletions;
+		$vector_buffer{$chr_id}{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions ;
+		$vector_buffer{$chr_id}{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions();
 		
 		#next if ($chr->not_used());
 		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
@@ -1719,10 +1719,10 @@ sub launchStatsPatient {
 	my $v_he = $patient->getVectorOriginHe($chr) & $v_all;
 	my $v_ho = $patient->getVectorOriginHo($chr) & $v_all;
 	
-	my $v_substitution = $vector_buffer{substitution} & $v_all;
-	my $v_insertion = $vector_buffer{insertion} & $v_all;
-	my $v_deletion = $vector_buffer{deletion} & $v_all;
-	my $v_cnvs = $vector_buffer{cnv} & $v_all;
+	my $v_substitution = $vector_buffer{$chr->id}{substitution} & $v_all;
+	my $v_insertion = $vector_buffer{$chr->id}{insertion} & $v_all;
+	my $v_deletion = $vector_buffer{$chr->id}{deletion} & $v_all;
+	my $v_cnvs = $vector_buffer{$chr->id}{cnv} & $v_all;
 	
 	my $nb_all = $chr->countThisVariants($v_all);
 	$hStats->{variations} = $nb_all;

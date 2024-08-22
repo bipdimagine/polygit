@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+@<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
     <title>PolyQuery</title>
@@ -3884,191 +3884,22 @@ function(all, Deferred, dom, on, JSON) {
                 xls: checkAndSubmit( '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y,MT' ),
             }).then(function(results) {} );
         }
-        else if (run_check_project == 1) {
-            all({
-                chr1:  checkAndSubmit( '1' ),
-                chr2:  checkAndSubmit( '2' ),
-                chr3:  checkAndSubmit( '3' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr10: checkAndSubmit( '10' ),
-                chr11: checkAndSubmit( '11' ),
-                chr12: checkAndSubmit( '12' ),
-                chr13: checkAndSubmit( '13' ),
-                chr14: checkAndSubmit( '14' ),
-                chr15: checkAndSubmit( '15' ),
-                chr16: checkAndSubmit( '16' ),
-                chr17: checkAndSubmit( '17' ),
-                chr18: checkAndSubmit( '18' ),
-                chr19: checkAndSubmit( '19' ),
-                chr20: checkAndSubmit( '20' ),
-                chr21: checkAndSubmit( '21' ),
-                chr22: checkAndSubmit( '22' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chrMT: checkAndSubmit( 'MT' ),
-            }).then(function(results) {} );
-        }
-        // CAS GENOME avec intergenic ou MAJ du project
-        else if (is_big_data == 1) {
-            all({
-                tree:  checkAndSubmit( 'tree' ),
-                chr1:  checkAndSubmit( '1' ),
-                chr2:  checkAndSubmit( '2' ),
-                chr3:  checkAndSubmit( '3' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr10: checkAndSubmit( '10' ),
-                chr11: checkAndSubmit( '11' ),
-                chr12: checkAndSubmit( '12' ),
-                chr13: checkAndSubmit( '13' ),
-                chr14: checkAndSubmit( '14' ),
-                chr15: checkAndSubmit( '15' ),
-                chr16: checkAndSubmit( '16' ),
-                chr17: checkAndSubmit( '17' ),
-                chr18: checkAndSubmit( '18' ),
-                chr19: checkAndSubmit( '19' ),
-                chr20: checkAndSubmit( '20' ),
-                chr21: checkAndSubmit( '21' ),
-                chr22: checkAndSubmit( '22' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chrMT: checkAndSubmit( 'MT' ),
-            }).then(function(results) {} );
-        }
-        // CAS EXOME beaucoup de patients
-        else if (is_big_data == 2) {
-            all({
-                tree:     checkAndSubmit( 'tree' ),
-                chr1:  checkAndSubmit( '1' ),
-                chrMT: checkAndSubmit( 'MT' ),
-                chr2:  checkAndSubmit( '2' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chr3:  checkAndSubmit( '3' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr22: checkAndSubmit( '22' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr21: checkAndSubmit( '21' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr20: checkAndSubmit( '20' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr19: checkAndSubmit( '19' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr18: checkAndSubmit( '18' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr17: checkAndSubmit( '17' ),
-                chr10: checkAndSubmit( '10' ),
-                chr16: checkAndSubmit( '16' ),
-                chr11: checkAndSubmit( '11' ),
-                chr15: checkAndSubmit( '15' ),
-                chr12: checkAndSubmit( '12' ),
-                chr14: checkAndSubmit( '14' ),
-                chr13: checkAndSubmit( '13' ),
-            }).then(function(results) {} );
-        }
-        // CAS GENOME sans intergenic
-        else if (is_big_data == 3) {
-        	if (get_value_slider_regionho() > 1) {
-	            all({
-	                tree:  checkAndSubmit( 'tree' ),
-	                chr1:  checkAndSubmit( '1' ),
-	                chrMT: checkAndSubmit( 'MT' ),
-	                chr2:  checkAndSubmit( '2' ),
-	                chrY:  checkAndSubmit( 'Y' ),
-	                chr3:  checkAndSubmit( '3' ),
-	                chrX:  checkAndSubmit( 'X' ),
-	                chr4:  checkAndSubmit( '4' ),
-	                chr22: checkAndSubmit( '22' ),
-	                chr5:  checkAndSubmit( '5' ),
-	                chr21: checkAndSubmit( '21' ),
-	                chr6:  checkAndSubmit( '6' ),
-	                chr20: checkAndSubmit( '20' ),
-	                chr7:  checkAndSubmit( '7' ),
-	                chr19: checkAndSubmit( '19' ),
-	                chr8:  checkAndSubmit( '8' ),
-	                chr18: checkAndSubmit( '18' ),
-	                chr9:  checkAndSubmit( '9' ),
-	                chr17: checkAndSubmit( '17' ),
-	                chr10: checkAndSubmit( '10' ),
-	                chr16: checkAndSubmit( '16' ),
-	                chr11: checkAndSubmit( '11' ),
-	                chr15: checkAndSubmit( '15' ),
-	                chr12: checkAndSubmit( '12' ),
-	                chr14: checkAndSubmit( '14' ),
-	                chr13: checkAndSubmit( '13' ),
-	            }).then(function(results) {} );
-        	}
-        	else {
-	            all({
-	                tree:  checkAndSubmit( 'tree' ),
-	                chr1:  checkAndSubmit( '1' ),
-	                chrMT: checkAndSubmit( 'MT' ),
-	                chr2:  checkAndSubmit( '2' ),
-	                chrY:  checkAndSubmit( 'Y' ),
-	                chr3:  checkAndSubmit( '3' ),
-	                chrX:  checkAndSubmit( 'X' ),
-	                chr4:  checkAndSubmit( '4' ),
-	                chr22: checkAndSubmit( '22' ),
-	                chr5:  checkAndSubmit( '5' ),
-	                chr21: checkAndSubmit( '21' ),
-	                chr6:  checkAndSubmit( '6' ),
-	                chr20: checkAndSubmit( '20' ),
-	                chr7:  checkAndSubmit( '7' ),
-	                chr19: checkAndSubmit( '19' ),
-	                chr8:  checkAndSubmit( '8' ),
-	                chr18: checkAndSubmit( '18' ),
-	                chr9:  checkAndSubmit( '9' ),
-	                chr17: checkAndSubmit( '17' ),
-	                chr10: checkAndSubmit( '10' ),
-	                chr16: checkAndSubmit( '16' ),
-	                chr11: checkAndSubmit( '11' ),
-	                chr15: checkAndSubmit( '15' ),
-	                chr12: checkAndSubmit( '12' ),
-	                chr14: checkAndSubmit( '14' ),
-	                chr13: checkAndSubmit( '13' ),
-	            }).then(function(results) {} );
-            }
-        }
         else {
         	maxRunning = 8;
             all({
             	 tree:  checkAndSubmit( 'tree' ),
-            	 chrMT: checkAndSubmit( 'MT' ),
-                 chrY:  checkAndSubmit( 'Y' ),
-                 chr1:  checkAndSubmit( '1' ),
-                 chr2:  checkAndSubmit( '2' ),
-                 chr3:  checkAndSubmit( '3' ),
-                 chr4:  checkAndSubmit( '4' ),
-                 chr19: checkAndSubmit( '19' ),
-                 chr20: checkAndSubmit( '20' ),
-                 chr21: checkAndSubmit( '21' ),
-                 chr18: checkAndSubmit( '18' ),
-                 chr5:  checkAndSubmit( '5' ),
-                 chr6:  checkAndSubmit( '6' ),
-                 chr7:  checkAndSubmit( '7' ),
-                 chr8:  checkAndSubmit( '8' ),
-                 chr9:  checkAndSubmit( '9' ),
-                 chr10: checkAndSubmit( '10' ),
-                 chr11: checkAndSubmit( '11' ),
-                 chr12: checkAndSubmit( '12' ),
-                 chr13: checkAndSubmit( '13' ),
-                 chr14: checkAndSubmit( '14' ),
-                 chr15: checkAndSubmit( '15' ),
-                 chr16: checkAndSubmit( '16' ),
-                 chr17: checkAndSubmit( '17' ),
-                 chr22: checkAndSubmit( '22' ),
-                 chrX:  checkAndSubmit( 'X' ),
-     
-             
+                 partA: checkAndSubmit( '1,Y,MT' ),
+                 partB: checkAndSubmit( '2,X' ),
+                 partC: checkAndSubmit( '3,22' ),
+                 partD: checkAndSubmit( '4,21' ),
+                 partE: checkAndSubmit( '5,20' ),
+                 partF: checkAndSubmit( '6,19' ),
+                 partG: checkAndSubmit( '7,18' ),
+                 partH: checkAndSubmit( '8,17' ),
+                 partI: checkAndSubmit( '9,16' ),
+                 partJ: checkAndSubmit( '10,15' ),
+                 partK: checkAndSubmit( '11,14' ),
+                 partL: checkAndSubmit( '12,13' ),
             }).then(function(results) {} );
         }
     });
