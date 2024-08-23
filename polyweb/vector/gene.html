@@ -3888,8 +3888,9 @@ function(all, Deferred, dom, on, JSON) {
         	maxRunning = 8;
             all({
             	 tree:  checkAndSubmit( 'tree' ),
-                 partA: checkAndSubmit( '1,Y,MT' ),
-                 partB: checkAndSubmit( '2,X' ),
+                 part0: checkAndSubmit( 'X,Y,MT' ),
+                 partA: checkAndSubmit( '1' ),
+                 partB: checkAndSubmit( '2' ),
                  partC: checkAndSubmit( '3,22' ),
                  partD: checkAndSubmit( '4,21' ),
                  partE: checkAndSubmit( '5,20' ),
@@ -4806,10 +4807,10 @@ function(all, Deferred, dom, on, JSON) {
                 		//gridListGenes.setSortIndex(19, false);
 				    	//gridListGenes.layout.setColumnVisibility(19, false);
 				    	if (can_use_hgmd == 'yes') {
-				    		gridListGenes.layout.setColumnVisibility(30, false);
+//				    		gridListGenes.layout.setColumnVisibility(30, false);
 				    		if (is_cache_updated == 'yes') {
 				    			//gridListGenes.layout.setColumnVisibility(19, true);
-				    			gridListGenes.layout.setColumnVisibility(30, true);
+//				    			gridListGenes.layout.setColumnVisibility(30, true);
 			    			}
 				    	}
 				    	else {

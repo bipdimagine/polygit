@@ -162,7 +162,7 @@
 					hidden: true,
 					noresize:true,
 				}, {
-					name: "Name",
+					name: "ENSG",
 					field: "name",
 					formatter: formatReferenceGene,
 					width: "7%",
@@ -170,10 +170,10 @@
 					rowSpan: 2,
 					noresize:true,
 				}, {
-					name: "Xref",
+					name: "Gene Name",
 					field: "xref",
 					width: "7%",
-					styles: 'text-align:center;font-size : 09px;',
+					styles: 'text-align:center;font-size : 10px;bold;font-weight: bold;',
 					rowSpan: 2,
 					noresize:true,
 				},{
@@ -237,21 +237,22 @@
 					noresize:true,
 				}, 
 				
-			/*	{
-					name: "cover",
-					field: "coding_cover",
-					width: 5,
-					styles: 'text-align:center;',
+				{
+					name: "Nb Pat",
+					field: "p_all",
+					width: "4%",
+					formatter: write_bold_lightgrey,
+					styles: 'text-align:center;font-size : 09px;',
 					rowSpan: 2,
 					noresize:true,
-				},*/ 
+					},
 				{
 					name: "All",
 					field: "v_all",
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				}, 
 				{
@@ -260,7 +261,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				}, 
 				{
@@ -269,7 +270,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -278,7 +279,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -287,7 +288,7 @@
 					width: "4%",
 					formatter: write_bold_green,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -296,7 +297,7 @@
 					width: "4%",
 					formatter: write_bold_orange,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -305,7 +306,7 @@
 					width: "4%",
 					formatter: write_bold_red,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -335,68 +336,6 @@
 					rowSpan: 1,
 					noresize:true,
 					
-				},{
-					name: "Pat.",
-					field: "p_all",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_substitution",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_indel",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_cnv",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-				{
-					name: "Pat.",
-					field: "p_low",
-					width: "4%",
-					formatter: write_bold_lightgreen,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-				{
-					name: "Pat.",
-					field: "p_medium",
-					width: "4%",
-					formatter: write_bold_lightorange,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-					{
-					name: "Pat.",
-					field: "p_high",
-					width: "4%",
-					formatter: write_bold_lightred,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
 				},
 				]
 			];
@@ -412,7 +351,7 @@
 					hidden: true,
 					noresize:true,
 				}, {
-					name: "Name",
+					name: "ENSG",
 					field: "name",
 					formatter: formatReferenceGene,
 					width: "7%",
@@ -420,10 +359,10 @@
 					rowSpan: 2,
 					noresize:true,
 				}, {
-					name: "Xref",
+					name: "Gene Name",
 					field: "xref",
 					width: "7%",
-					styles: 'text-align:center;font-size : 09px;',
+					styles: 'text-align:center;font-size : 10px;bold;font-weight: bold;',
 					rowSpan: 2,
 					noresize:true,
 				},{
@@ -495,21 +434,22 @@
 					noresize:true,
 				}, 
 				
-			/*	{
-					name: "cover",
-					field: "coding_cover",
-					width: 5,
-					styles: 'text-align:center;',
+				{
+					name: "Nb Pat",
+					field: "p_all",
+					width: "4%",
+					formatter: write_bold_lightgrey,
+					styles: 'text-align:center;font-size : 09px;',
 					rowSpan: 2,
 					noresize:true,
-				},*/ 
+					}, 
 				{
 					name: "All",
 					field: "v_all",
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				}, 
 				{
@@ -518,7 +458,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				}, 
 				{
@@ -527,7 +467,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -536,7 +476,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -545,7 +485,7 @@
 					width: "4%",
 					formatter: write_bold_green,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -554,7 +494,7 @@
 					width: "4%",
 					formatter: write_bold_orange,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -563,7 +503,7 @@
 					width: "4%",
 					formatter: write_bold_red,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -572,7 +512,7 @@
 					width: "4%",
 					formatter: write_bold_purple,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -602,77 +542,6 @@
 					rowSpan: 1,
 					noresize:true,
 					
-				},{
-					name: "Pat.",
-					field: "p_all",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_substitution",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_indel",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_cnv",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-				{
-					name: "Pat.",
-					field: "p_low",
-					width: "4%",
-					formatter: write_bold_lightgreen,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-				{
-					name: "Pat.",
-					field: "p_medium",
-					width: "4%",
-					formatter: write_bold_lightorange,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-					{
-					name: "Pat.",
-					field: "p_high",
-					width: "4%",
-					formatter: write_bold_lightred,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-				{
-					name: "Pat.",
-					field: "p_hgmd_dm",
-					width: "4%",
-					formatter: write_bold_lightpurple,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
 				},
 				]
 			];
@@ -690,7 +559,7 @@
 					hidden: true,
 					noresize:true,
 				}, {
-					name: "Name",
+					name: "ENSG",
 					field: "name",
 					formatter: formatReferenceGene,
 					width: "7%",
@@ -698,10 +567,10 @@
 					rowSpan: 2,
 					noresize:true,
 				}, {
-					name: "Xref",
+					name: "Gene Name",
 					field: "xref",
 					width: "7%",
-					styles: 'text-align:center;font-size : 09px;',
+					styles: 'text-align:center;font-size : 10px;bold;font-weight: bold;',
 					rowSpan: 2,
 					noresize:true,
 				},{
@@ -774,21 +643,22 @@
 					noresize:true,
 				},  
 				
-			/*	{
-					name: "cover",
-					field: "coding_cover",
-					width: 5,
-					styles: 'text-align:center;',
+				{
+					name: "Nb Pat",
+					field: "p_all",
+					width: "4%",
+					formatter: write_bold_lightgrey,
+					styles: 'text-align:center;font-size : 09px;',
 					rowSpan: 2,
 					noresize:true,
-				},*/ 
+					}, 
 				{
 					name: "All",
 					field: "v_all",
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				}, 
 				{
@@ -797,7 +667,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1
+					rowSpan: 2
 				}, 
 				{
 					name: "Ins/Del",
@@ -805,7 +675,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -814,7 +684,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -823,7 +693,7 @@
 					width: "4%",
 					formatter: write_bold_green,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -832,7 +702,7 @@
 					width: "4%",
 					formatter: write_bold_orange,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -841,7 +711,7 @@
 					width: "4%",
 					formatter: write_bold_red,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -870,68 +740,6 @@
 					formatter: format_is_omim_morbid,
 					rowSpan: 1,
 					
-				},{
-					name: "Pat.",
-					field: "p_all",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_substitution",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_indel",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_cnv",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-				{
-					name: "Pat.",
-					field: "p_low",
-					width: "4%",
-					formatter: write_bold_lightgreen,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-				{
-					name: "Pat.",
-					field: "p_medium",
-					width: "4%",
-					formatter: write_bold_lightorange,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-					{
-					name: "Pat.",
-					field: "p_high",
-					width: "4%",
-					formatter: write_bold_lightred,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
 				},
 				]
 			];
@@ -947,7 +755,7 @@
 					hidden: true,
 					noresize:true,
 				}, {
-					name: "Name",
+					name: "ENSG",
 					field: "name",
 					formatter: formatReferenceGene,
 					width: "7%",
@@ -955,10 +763,10 @@
 					rowSpan: 2,
 					noresize:true,
 				}, {
-					name: "Xref",
+					name: "Gene Name",
 					field: "xref",
 					width: "7%",
-					styles: 'text-align:center;font-size : 09px;',
+					styles: 'text-align:center;font-size : 10px;bold;font-weight: bold;',
 					rowSpan: 2,
 					noresize:true,
 				},{
@@ -1032,21 +840,22 @@
 					
 				}, 
 				
-			/*	{
-					name: "cover",
-					field: "coding_cover",
-					width: 5,
-					styles: 'text-align:center;',
+				{
+					name: "Nb Pat",
+					field: "p_all",
+					width: "4%",
+					formatter: write_bold_lightgrey,
+					styles: 'text-align:center;font-size : 09px;',
 					rowSpan: 2,
 					noresize:true,
-				},*/ 
+					},
 				{
 					name: "All",
 					field: "v_all",
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				}, 
 				{
@@ -1055,7 +864,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				}, 
 				{
@@ -1064,7 +873,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -1073,7 +882,7 @@
 					width: "4%",
 					formatter: write_bold_grey,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -1082,7 +891,7 @@
 					width: "4%",
 					formatter: write_bold_green,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -1100,7 +909,7 @@
 					width: "4%",
 					formatter: write_bold_red,
 					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
+					rowSpan: 2,
 					noresize:true,
 				},
 				{
@@ -1130,68 +939,6 @@
 					rowSpan: 1,
 					noresize:true,
 					
-				},{
-					name: "Pat.",
-					field: "p_all",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_substitution",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_indel",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-					{
-					name: "Pat.",
-					field: "p_cnv",
-					width: "4%",
-					formatter: write_bold_lightgrey,
-					styles: 'text-align:center;font-size : 09px;',
-					rowSpan: 1,
-					noresize:true,
-					},
-				{
-					name: "Pat.",
-					field: "p_low",
-					width: "4%",
-					formatter: write_bold_lightgreen,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-				{
-					name: "Pat.",
-					field: "p_medium",
-					width: "4%",
-					formatter: write_bold_lightorange,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
-				},
-					{
-					name: "Pat.",
-					field: "p_high",
-					width: "4%",
-					formatter: write_bold_lightred,
-					styles: 'text-align:center;font-size : 09px;',
-					colSpan: 1,
-					noresize:true,
 				},
 				]
 			
@@ -1210,7 +957,7 @@
 					hidden: true,
 					noresize:true,
 				}, {
-					name: "Name",
+					name: "ENSG",
 					field: "name",
 					formatter: formatReferenceGene,
 					width: "7%",
@@ -1218,10 +965,10 @@
 					rowSpan: 2,
 					noresize:true,
 				}, {
-					name: "Xref",
+					name: "Gene Name",
 					field: "xref",
 					width: "7%",
-					styles: 'text-align:center;font-size : 09px;',
+					styles: 'text-align:center;font-size : 10px;bold;font-weight: bold;',
 					rowSpan: 2,
 					noresize:true,
 				},{
@@ -1411,7 +1158,7 @@
 					noresize:true,
 					
 				},{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_all",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1420,7 +1167,7 @@
 					noresize:true,
 					},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_substitution",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1429,7 +1176,7 @@
 					noresize:true,
 					},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_indel",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1438,7 +1185,7 @@
 					noresize:true,
 					},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_cnv",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1447,7 +1194,7 @@
 					noresize:true,
 					},
 				{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_low",
 					width: "4%",
 					formatter: write_bold_lightgreen,
@@ -1456,7 +1203,7 @@
 					noresize:true,
 				},
 				{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_medium",
 					width: "4%",
 					formatter: write_bold_lightorange,
@@ -1465,7 +1212,7 @@
 					noresize:true,
 				},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_high",
 					width: "4%",
 					formatter: write_bold_lightred,
@@ -1474,7 +1221,7 @@
 					noresize:true,
 				},
 				{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_hgmd_dm",
 					width: "4%",
 					formatter: write_bold_lightpurple,
@@ -1496,7 +1243,7 @@
 					hidden: true,
 					noresize:true,
 				}, {
-					name: "Name",
+					name: "ENSG",
 					field: "name",
 					formatter: formatReferenceGene,
 					width: "7%",
@@ -1504,10 +1251,10 @@
 					rowSpan: 2,
 					noresize:true,
 				}, {
-					name: "Xref",
+					name: "Gene Name",
 					field: "xref",
 					width: "7%",
-					styles: 'text-align:center;font-size : 09px;',
+					styles: 'text-align:center;font-size : 10px;bold;font-weight: bold;',
 					rowSpan: 2,
 					noresize:true,
 				},{
@@ -1698,7 +1445,7 @@
 					noresize:true,
 					
 				},{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_all",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1707,7 +1454,7 @@
 					noresize:true,
 					},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_substitution",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1716,7 +1463,7 @@
 					noresize:true,
 					},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_indel",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1725,7 +1472,7 @@
 					noresize:true,
 					},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_cnv",
 					width: "4%",
 					formatter: write_bold_lightgrey,
@@ -1734,7 +1481,7 @@
 					noresize:true,
 					},
 				{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_low",
 					width: "4%",
 					formatter: write_bold_lightgreen,
@@ -1743,7 +1490,7 @@
 					noresize:true,
 				},
 				{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_medium",
 					width: "4%",
 					formatter: write_bold_lightorange,
@@ -1752,7 +1499,7 @@
 					noresize:true,
 				},
 					{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_high",
 					width: "4%",
 					formatter: write_bold_lightred,
@@ -1761,7 +1508,7 @@
 					noresize:true,
 				},
 				{
-					name: "Pat.",
+					name: "Nb Pat",
 					field: "p_hgmd_dm",
 					width: "4%",
 					formatter: write_bold_lightpurple,
