@@ -2313,6 +2313,7 @@ function construct_url_filter_data () {
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 3)    { filter_args += "&gnomad=gnomad_ac_20"; }
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 4)    { filter_args += "&gnomad=gnomad_ac_50"; }
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 5)    { filter_args += "&gnomad=gnomad_ac_100"; }
+	    else if (dijit.byId("slider_gnomad_ac").get("value") == 6)    { filter_args += "&gnomad=gnomad_ac_1000"; }
     }
     filter_args +=url_filter_regions();
     //model genetique
