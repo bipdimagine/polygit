@@ -129,6 +129,16 @@ sub filter_vector_predicted_splice_region_global {
 	return;
 }
 
+sub filter_vector_gnomad_ac {
+	my ($self, $chr, $filter_name) = @_;
+	return if not $filter_name;
+	return if not $filter_name =~ /gnomad/;
+	my $no = $chr->flush_rocks_vector();
+	my $vector_ok = $chr->getVariantsVector() & $no->get_vector_chromosome($filter_name);
+	$chr->setVariantsVector($vector_ok);
+	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_gnomad_ac - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+}
+
 sub filter_vector_freq_variants {
 	my ($self, $chr, $hToFilter) = @_;
 	return unless ($hToFilter);
@@ -218,35 +228,23 @@ sub filter_vector_dejavu {
 	my $vector = $chr->getVariantsVector->Clone();
 	my $no = $chr->flush_rocks_vector();
 #	$no->prepare_vector(["sdv_10"]);
-	if ($dejavu_ho){
-		my $v1 = $no->get_vector_chromosome("pdv_".$nb_dejavu);
+	if (defined($dejavu_ho) and $dejavu_ho > 0){
+		my $v1 = $no->get_vector_chromosome("shodv_".$nb_dejavu);
 		$vector &= $v1 ;
 	}
-	else {
-		my $v1 = $no->get_vector_chromosome("pdv_".$nb_dejavu);
+	elsif (defined($dejavu_ho) and $dejavu_ho == 0) {
+		
+	}
+	elsif ($nb_dejavu eq 'uniq') {
+		my $v1 = $no->get_vector_chromosome("sdv_0");
+		$vector &= $v1 ;
+#		#TODO: check direct dans rocks dejavu a faire 
+	}
+	elsif (not $nb_dejavu eq 'all') {
+		my $v1 = $no->get_vector_chromosome("sdv_".$nb_dejavu);
 		$vector &= $v1 ;
 	}
-#	foreach my $v (@{$chr->getListVarObjects($vector)}) {
-#		$chr->project->print_dot(50);
-#		my $nb = $v->other_projects();
-##		if ($nb > 0) {
-##			warn "\n";
-##			warn $v->id.' -> dv:'.$nb;
-##			warn 'similar_projects:'.$v->similar_projects();
-##			warn 'other_projects:'.$v->other_projects();
-##			warn 'exome_projects:'.$v->exome_projects();
-##			warn 'total_exome_projects:'.$v->total_exome_projects();
-##			warn 'total_similar_projects:'.$v->total_similar_projects();
-##			#die;
-##		}
-#		$vector->Bit_Off($v->vector_id()) if $nb > $nb_dejavu;
-#		#Pour tester ceux qui ont un DV
-#		#$vector->Bit_Off($v->vector_id()) if $nb < $nb_dejavu;
-#	}
-#	die;
-
 	$chr->setVariantsVector($vector);
-	#die();
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_dejavu - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	return;
 }
@@ -419,15 +417,6 @@ sub atLeastFilter_genes_som{
 	foreach my $patient (@{$chr->getPatients()}) {
 		$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
 	}
-}
-
-sub filter_vector_gnomad_ac {
-	my ($self, $chr, $filter_name) = @_;
-	return unless ($filter_name =~ /gnomad_/);
-	my $vector_ok = $chr->getVariantsVector->Clone();
-	$vector_ok->Intersection($vector_ok, $chr->getVectorScore($filter_name));
-	$chr->setVariantsVector($vector_ok);
-	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_gnomad_ac - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 }
 
 

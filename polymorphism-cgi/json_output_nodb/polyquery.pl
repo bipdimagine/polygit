@@ -422,7 +422,8 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
 	$queryFilter->filter_vector_type_variants($chr, $hFiltersChr);
 	$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr, $keep_indels_cadd);
-	$queryFilter->filter_vector_freq_variants($chr, $hFiltersChr);
+	if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $filter_gnomad) }
+	else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr); }
 	$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr);
 	$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr);
 	$queryFilter->filter_vector_dejavu($chr, $dejavu, $dejavu_ho, $test) if ($dejavu);
@@ -437,7 +438,8 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		$chr->load_init_variants_all_patients('init');
 		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
 		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
-		$queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2);
+		if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $hFiltersChr_var2) }
+		else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2); }
 		$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr_var2);
 		$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr_var2);
 		$queryFilter->filter_vector_dejavu($chr, $dejavu_2, $dejavu_ho, $test) if ($dejavu_2);
@@ -448,7 +450,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		$h_args->{'vector_filters_2'} = $vector_filtered_2;
 	}
 	
-	$queryFilter->filter_vector_gnomad_ac($chr, $filter_gnomad) if ($filter_gnomad);
+	
 	$queryFilter->filter_genes_from_ids($chr, $hChr->{$chr->id()}, $can_use_hgmd) if ($panel_name);
 	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
