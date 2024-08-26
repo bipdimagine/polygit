@@ -227,18 +227,29 @@ sub filter_vector_dejavu {
 	return unless ($nb_dejavu);
 	my $vector = $chr->getVariantsVector->Clone();
 	my $no = $chr->flush_rocks_vector();
-#	$no->prepare_vector(["sdv_10"]);
-	if (defined($dejavu_ho) and $dejavu_ho > 0){
+	if ($dejavu_ho and $nb_dejavu eq 'uniq'){
+		my $v1 = $no->get_vector_chromosome("shodv_0");
+		$vector &= $v1 ;
+		foreach my $id (@{$chr->getListVarVectorIds($vector)}) {
+			$chr->project->print_dot(200);
+			my $v = $chr->getProject->returnVariants($chr->name."!".$id);
+			$vector->Bit_Off($id) if ($v->other_patients_ho() > 0);
+		}
+	}
+	elsif ($dejavu_ho) {
 		my $v1 = $no->get_vector_chromosome("shodv_".$nb_dejavu);
 		$vector &= $v1 ;
-	}
-	elsif (defined($dejavu_ho) and $dejavu_ho == 0) {
 		
 	}
 	elsif ($nb_dejavu eq 'uniq') {
-		my $v1 = $no->get_vector_chromosome("sdv_0");
-		$vector &= $v1 ;
-#		#TODO: check direct dans rocks dejavu a faire 
+		my $v0 = $no->get_vector_chromosome("sdv_0");
+		$vector &= $v0 ;
+		foreach my $id (@{$chr->getListVarVectorIds($vector)}) {
+			$chr->project->print_dot(200);
+			my $v = $chr->getProject->returnVariants($chr->name."!".$id);
+			$vector->Bit_Off($id) if ($v->other_patients() > 0);
+		}
+
 	}
 	elsif (not $nb_dejavu eq 'all') {
 		my $v1 = $no->get_vector_chromosome("sdv_".$nb_dejavu);
