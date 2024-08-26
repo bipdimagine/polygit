@@ -49,6 +49,9 @@ my $patient =  $project->getPatient($patient_name);
 my $dir_in = $project->getAlignmentDir("bwa");
 my $ref = $project->genomeFasta();
 my $bam_prod = $patient->getBamFile();
+my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
+unlink $fileout.".tbi" if -e $fileout;
+unlink $fileout if -e $fileout;
 
 my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name);
 warn $melt_dir;
@@ -106,11 +109,29 @@ close LIST;
 	
 	#system("sambamba slice $bam ".$chr->fasta_name." >$bout && samtools index $bout");
 
-	warn "$melt -h $ref -bamfile $bam_tmp -n $bed  -w $dir_out -t $list  -exome 1";
-	system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1");
+	my $done = $dir_out."melt.done";
+	unless (-e $done){
+	if ($patient->isGenome){
+		#cat gencode.v43.annotation.gtf |  awk 'OFS="\t" {if ($3=="gene") {print $1,$4-1,$5,$10,$16,$7}}' | tr -d '";'
+		my $bed = $dir_out."/".$patient->name.".genes.bed";
+		my $gtf ="";
+		#system qq{cat gencode.v43.annotation.gtf |  awk 'OFS="\t" {if ($3=="gene") {print \$1,\$4-1,\$5,\$10,\$16,\$7}}' | tr -d '";'" > $bed};
+		warn "$melt -h $ref -bamfile $bam_tmp  -w $dir_out -t $list  -n /data-isilon/software/distrib/centos/MELTv2.2.2/add_bed_files/1KGP_Hg19/hg19.genes.bed -b hs37d5/NC_007605 && touch $done" ;
+		die($done);	
+		#system("$melt -h $ref -bamfile $bam_tmp  -w $dir_out -t $list  -n /data-isilon/software/distrib/centos/MELTv2.2.2/add_bed_files/1KGP_Hg19/hg19.genes.bed -b hs37d5/NC_007605 && touch $done") unless -e $done;
+		
+	}
+	else {
+	warn "$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1 ";
 
+		system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1 && touch $done");
+		die() unless -e $done;
+	}
+	}
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};
+	warn Dumper $files;
 	foreach my $f (keys %$files){
+		system("gunzip ".$files->{$f}.".gz") if -e $files->{$f}.".gz";
 		unless (-e $files->{$f}){
 			delete $files->{$f};
 			next;
@@ -124,6 +145,7 @@ close LIST;
 		delete  $files->{$f} if $res == 0 ;
 		
 	}
+	
 	unless (keys %$files){
 		my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf";
 		print_empty_vcf($fileout,$patient);
@@ -140,16 +162,14 @@ close LIST;
 
 #close (LIST);
 
-
+my $dict = $ref;
+$dict =~ s/\.fa/\.dict/;
 $bed = $buffer->gzip_tabix($bed,"bed");
-	
-	
- 	my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
-
-	#warn "$bcftools concat $list_file | $bcftools view - -R $bed | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; tabix -f -p vcf $fileout";
-	my $cmd = qq{$bcftools concat -a $list_file  | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf;$gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace;};
-	system ($cmd);
-	warn $cmd;
+my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
+#warn "$bcftools concat $list_file | $bcftools view - -R $bed | $bcftools view  - -U -c 1  > $tvcf; $gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary /data-isilon/public-data/genome/HG19/fasta/all.dict  --output $tvcf2 --replace; $bcftools sort $tvcf2 -O z -o $fileout; tabix -f -p vcf $fileout";
+my $cmd = qq{$bcftools concat -a $list_file  | perl -lane 's/GL,Number=\\d/GL,Number=G/;print \$_' | $bcftools view  - -U -c 1  > $tvcf;$gatk UpdateVCFSequenceDictionary -V $tvcf --source-dictionary $dict  --output $tvcf2 --replace 2>/dev/null;};
+system ($cmd);
+warn $cmd;
 	
 	my $tvcf3 = $dir_out."/".$patient->name.".".time.".3.vcf.gz";
 	my $cmd2 = qq{$bcftools sort $tvcf2 -O z -o $tvcf3 ;$tabix -p vcf $tvcf3; $bcftools view $tvcf3 -R $bed -O z -o $fileout};
