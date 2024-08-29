@@ -1368,7 +1368,7 @@ sub get_html_patients {
 		$junction->end() + 25 );
 
 
-	foreach my $pat ( @{ $patient->getFamily->getPatients() } ) {
+	foreach my $pat ( @{ $patient->getProject->getPatients() } ) {
 		next if ( not $junction->get_dp_count($pat) );
 		next if ( not $junction->get_nb_new_count($pat) and not $junction->isCanonique() );
 		my $fam_name = $pat->getFamily->name();
@@ -1434,9 +1434,9 @@ sub get_html_patients {
 	);
 	$html_patients .= qq{<thead style="text-align:center;">};
 
-#$html_patients .= qq{<th data-field="famname"><b><center>Family</center></b></th>};
+	$html_patients .= qq{<th data-field="famname"><b><center>Fam</center></b></th>};
 	$html_patients .=
-	  qq{<th data-field="patname"><b><center>Patient</center></b></th>};
+	  qq{<th data-field="patname"><b><center>Pat</center></b></th>};
 	$html_patients .=
 	  qq{<th data-field="status"><b><center>Status</center></b></th>};
 	$html_patients .=
@@ -1454,7 +1454,7 @@ sub get_html_patients {
 	foreach my $fam_name ( sort keys %{$h_by_pat} ) {
 		foreach my $pat_name ( sort keys %{ $h_by_pat->{$fam_name} } ) {
 			$html_patients .= qq{<tr>};
-			#$html_patients .= qq{<td>}.$fam_name.qq{</td>};
+			$html_patients .= qq{<td>}.$fam_name.qq{</td>};
 			$html_patients .= qq{<td>}.$pat_name . qq{</td>};
 			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{status}.qq{</td>};
 			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{percent}.qq{</td>};
