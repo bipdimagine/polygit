@@ -790,15 +790,10 @@ sub hash_in_this_run_patients {
 	my($self,$ratio) = @_;
 	$ratio = 0 unless $ratio;
 	return $self->{inthisrun}->{$ratio} if exists $self->{inthisrun}->{ratio};
-	$self->{inthisrun}->{10} = $self->{inthisrun}->{20} =$self->{inthisrun}->{30} =$self->{inthisrun}->{40} = {};
-	$self->{inthisrun}->{15} = {};
+	$self->{inthisrun}->{$ratio} = undef;
 	foreach my $patient (@{$self->getPatients()}) {
-		$self->{inthisrun}->{0}->{$patient->id} ++;
-		$self->{inthisrun}->{10}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 10;
-		$self->{inthisrun}->{15}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 15;
-		$self->{inthisrun}->{20}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 20;
-		$self->{inthisrun}->{30}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 30;
-		$self->{inthisrun}->{40}->{$patient->id} ++  if $self->get_percent_new_count($patient) >= 40;
+		my $fam_name = $patient->getFamily->name();
+		$self->{inthisrun}->{$ratio}->{$fam_name}->{$patient->name()} = $ratio  if $self->get_percent_new_count($patient) >= $ratio;
 	}
 	die($ratio) unless exists $self->{inthisrun}->{$ratio};
 	return $self->{inthisrun}->{$ratio};
@@ -808,11 +803,10 @@ sub in_this_run_patients {
 	my($self,$ratio,$patient) = @_;
 	$ratio =0 unless $ratio;
 	my $hash = $self->hash_in_this_run_patients($ratio);
-	my $nb = scalar (keys %$hash);
 	if ($patient){
-		$nb -- if exists $hash->{$patient->id};
+		delete $hash->{$patient->getFamily->name()} if exists $hash->{$patient->getFamily->name()};
 	}
-	$nb = 0 if $nb < 0;
+	my $nb = scalar (keys %$hash);
 	return $nb;	
 }
 sub in_this_run_ratio {
