@@ -991,33 +991,31 @@ sub setVariantsForReference {
 	my $hashRes;
 	my $z = time;
 	my $nn =0;
-	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
-		my $hfiles = $self->callingFiles->{$this_typeVar};
-		foreach my $method ( keys %{$hfiles} ) {
-			#next unless $method eq 'manta';
-			#next unless $method eq 'haplotypecaller4';
-			my $vcfFile = $hfiles->{$method};
-			next if exists $already_parse->{ $reference->name }->{$vcfFile};
-			$already_parse->{ $reference->name }->{$vcfFile}++;
-			$self->{queryVcf}->{$vcfFile} = $self->getQueryVcf( $vcfFile, $method ) unless exists $self->{queryVcf}->{$vcfFile};
-			my $queryVcf = $self->{queryVcf}->{$vcfFile};
-			my $z        = $queryVcf->parseVcfFileForReference($reference);
-			foreach my $type ( keys %$z ) {
-				foreach my $id ( keys %{ $z->{$type} } ) {
-				$nn++;
-					if ( exists $hashRes->{$type}->{$id} ) {
-						my $h1 = thaw( decompress( $hashRes->{$type}->{$id} ) );
-						my $h2 = thaw( decompress( $z->{$type}->{$id} ) );
+	my $hfiles = $self->callingFiles;
+	foreach my $method ( keys %{$hfiles} ) {
+		#next unless $method eq 'manta';
+		#next unless $method eq 'haplotypecaller4';
+		my $vcfFile = $hfiles->{$method};
+		next if exists $already_parse->{ $reference->name }->{$vcfFile};
+		$already_parse->{ $reference->name }->{$vcfFile}++;
+		$self->{queryVcf}->{$vcfFile} = $self->getQueryVcf( $vcfFile, $method ) unless exists $self->{queryVcf}->{$vcfFile};
+		my $queryVcf = $self->{queryVcf}->{$vcfFile};
+		my $z        = $queryVcf->parseVcfFileForReference($reference);
+		foreach my $type ( keys %$z ) {
+			foreach my $id ( keys %{ $z->{$type} } ) {
+			$nn++;
+				if ( exists $hashRes->{$type}->{$id} ) {
+					my $h1 = thaw( decompress( $hashRes->{$type}->{$id} ) );
+					my $h2 = thaw( decompress( $z->{$type}->{$id} ) );
 
-						$h1->{annex}->{ $self->id }->{method_calling}->{$method}= $h2->{annex}->{ $self->id }->{method_calling}->{$method};
-						$hashRes->{$type}->{$id} = compress( freeze $h1);
-
-					}
-					else {
-						$hashRes->{$type}->{$id} = $z->{$type}->{$id};
-					}
+					$h1->{annex}->{ $self->id }->{method_calling}->{$method}= $h2->{annex}->{ $self->id }->{method_calling}->{$method};
+					$hashRes->{$type}->{$id} = compress( freeze $h1);
 
 				}
+				else {
+					$hashRes->{$type}->{$id} = $z->{$type}->{$id};
+				}
+
 			}
 		}
 	}
@@ -1038,51 +1036,6 @@ has tempArray => (
 	},
 );
 
-#sub setVariantsForReference2 {
-#	my ( $self, $reference, $typeVar ) = @_;
-#	$self->setValidatedVariants() if $self->project->isDiagnostic();
-#	my @objs;
-#	my $hashRes;
-#	my $z = time;
-#	foreach my $this_typeVar ( keys %{ $self->callingFiles() } ) {
-#		my $hfiles = $self->callingFiles->{$this_typeVar};
-#		foreach my $method ( keys %{$hfiles} ) {
-#			my $vcfFile = $hfiles->{$method};
-#			next if exists $already_parse->{ $reference->name }->{$vcfFile};
-#
-#			#	warn "coucou ".$reference->name;
-#			$already_parse->{ $reference->name }->{$vcfFile}++;
-#			$self->{queryVcf}->{$vcfFile} =
-#			  $self->getQueryVcf( $vcfFile, $method )
-#			  unless exists $self->{queryVcf}->{$vcfFile};
-#			my $queryVcf = $self->{queryVcf}->{$vcfFile};
-#			my $z        = $queryVcf->parseVcfFileForReference($reference);
-#			foreach my $type ( keys %$z ) {
-#				foreach my $id ( keys %{ $z->{$type} } ) {
-#					if ( exists $hashRes->{$type}->{$id} ) {
-#						my $h1 = thaw( decompress( $hashRes->{$type}->{$id} ) );
-#						my $h2 = thaw( decompress( $z->{$type}->{$id} ) );
-#
-#						$h1->{annex}->{ $self->id }->{method_calling}->{$method}
-#						  = $h2->{annex}->{ $self->id }->{method_calling}
-#						  ->{$method};
-#						$hashRes->{$type}->{$id} = compress( freeze $h1);
-#
-#					}
-#					else {
-#						$hashRes->{$type}->{$id} = $z->{$type}->{$id};
-#					}
-#
-#				}
-#			}
-#		}
-#	}
-#	my $o = [];
-#
-#	warn "\t end parsing :" . abs( time - $z ) . " " . $self->name;
-#	$o = $self->myflushobjects2($hashRes);
-#	return $o;
-#}
 
 sub _newDeletions {
 	my ( $self, $pos, $ref, $alt, $len, $chr ) = @_;
@@ -1113,11 +1066,6 @@ has vcfParsed => (
 		foreach my $chrObj (@$lChr) {
 			my $lVcfSnp = $self->getVariationsFiles();
 			foreach my $vcfFile (@$lVcfSnp) {
-				$hashVcf{$vcfFile}->{ $chrObj->id } =
-				  Set::IntSpan::Fast::XS->new();
-			}
-			my $lVcfIndel = $self->getIndelsFiles();
-			foreach my $vcfFile (@$lVcfIndel) {
 				$hashVcf{$vcfFile}->{ $chrObj->id } =
 				  Set::IntSpan::Fast::XS->new();
 			}
@@ -1280,6 +1228,7 @@ sub isFather {
 	return 1;
 }
 
+#TODO: menage a faire indels / 
 has callingFiles => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1289,40 +1238,11 @@ has callingFiles => (
 		my $files   = {};
 		foreach my $method_name (@$methods) {
 			my $file = $self->_getCallingFileWithMethodName( $method_name, "variations" );
-			$files->{variations}->{$method_name} = $file if $file;
-
-		}
-		foreach my $method_name (@$methods) {
-			my $file2 = $self->_getCallingFileWithMethodName( $method_name, "indels" );
-			$files->{indels}->{$method_name} = $file2 if $file2;
-		}
-		my $file3 = $self->getLargeIndelsFile();
-		$files->{large_indels}->{'lifinder'} = $file3 if ( -e $file3 );
-
-#		die();
-#		foreach my $method_name (@$methods) {
-#			my $file2 = $self->_getCallingFileWithMethodName($method_name,"large_indels");
-#			$files->{large_indels}->{$method_name} = $file2 if $file2;
-#		}
-
-		return $files;
-	},
-
-);
-
-has callingCNVFiles => (
-	is      => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self    = shift;
-		my $methods = $self->callingCNVMethods();
-		my $files   = {};
-		foreach my $method_name (@$methods) {
-			my $file = $self->_getCallingSVFileWithMethodName( $method_name,"variations" );
-			$files->{sv}->{$method_name} = $file if $file;
+			$files->{$method_name} = $file if $file;
 		}
 		return $files;
 	},
+
 );
 
 
@@ -1702,7 +1622,7 @@ sub getBestOne {
 
 sub getVariationsFiles {
 	my $self      = shift;
-	my @lVcfFiles = values %{ $self->callingFiles()->{variations} };
+	my @lVcfFiles = values %{ $self->callingFiles() };
 	warn( " warn I was unable to find variation vcf file for :  "
 		  . $self->name() )
 	  unless scalar @lVcfFiles;
@@ -1725,13 +1645,13 @@ sub getVariationsFile {
 	if ($method) {
 		if ($nodie) {
 			return ""
-			  unless exists( $self->callingFiles()->{variations}->{$method} );
+			  unless exists( $self->callingFiles()->{$method} );
 		}
 		confess( "can t find vcf for $method" . Dumper $self->callingFiles() )
-		  unless exists( $self->callingFiles()->{variations}->{$method} );
-		return $self->callingFiles()->{variations}->{$method};
+		  unless exists( $self->callingFiles()->{$method} );
+		return $self->callingFiles()->{$method};
 	}
-	my @all = values %{ $self->callingFiles()->{variations} };
+	my @all = values %{ $self->callingFiles() };
 	return "" if scalar(@all) eq 0;
 
 	confess($self->name
@@ -1743,29 +1663,6 @@ sub getVariationsFile {
 	return $all[0];
 }
 
-sub getIndelsFiles {
-	my $self      = shift;
-	my @lVcfFiles = values %{ $self->callingFiles()->{indels} };
-
-#warn ("no indels file ".$self->name." ".$self->getProject->name) unless scalar @lVcfFiles;
-	return \@lVcfFiles;
-}
-
-sub getIndelsFile {
-	my ( $self, $method, $nodie ) = @_;
-	if ($method) {
-		confess("can t find vcf for $method")
-		  unless exists( $self->callingFiles()->{indels}->{$method} );
-		return $self->callingFiles()->{indels}->{$method};
-	}
-	my @all = values %{ $self->callingFiles()->{indels} };
-	return "" if scalar(@all) eq 0;
-	confess("you have exactly "
-		  . scalar(@all)
-		  . " methods defined on your project " )
-	  if scalar(@all) ne 1;
-	return $all[0];
-}
 
 sub getCnvsFiles {
 	my $self = shift;
@@ -2585,41 +2482,6 @@ sub count_multiplex {
 	#$self->{count_multiplex}->{$multiplex} ->{$gene_id} = sum(@data);
 	return $self->{count_multiplex}->{$multiplex};
 
-}
-
-sub checkParseVcf {
-	my $self      = shift;
-	my $nbVar_vcf = 0;
-	foreach my $fileName ( @{ $self->getVariationsFiles } ) {
-		my $hIds = $self->parseVcfFile($fileName);
-		$nbVar_vcf += scalar keys(%$hIds);
-	}
-	my $nbInd_vcf = 0;
-	foreach my $fileName ( @{ $self->getIndelsFiles } ) {
-		my $hIds = $self->parseVcfFile($fileName);
-		$nbInd_vcf += scalar keys(%$hIds);
-	}
-	my $nbVar_obj = scalar( @{ $self->getVariations() } );
-	my $nbInd_obj = scalar( @{ $self->getIndels() } );
-	my $hRes;
-	if ( $nbVar_obj != $nbVar_vcf ) {
-		my $msg =
-		  "\n\nERROR: $nbVar_obj var objects for $nbVar_vcf var in VCF...\n";
-		$msg .=
-"To see missing ID(s), please use debug mode for GenboPatient::checkParseVcf. Die...\n\n";
-		warn $msg;
-		return;
-	}
-	elsif ( $nbInd_obj != $nbInd_vcf ) {
-		warn "Nb var obj: $nbVar_obj  -  Nb var vcf: $nbVar_vcf\n";
-		warn
-		  "\n\nWARN: $nbInd_obj ind objects for $nbInd_vcf ind in VCF...\n\n";
-		return;
-	}
-	warn "[SNPs] Obj: $nbVar_obj  -  Vcf: $nbVar_vcf\n";
-	warn "[INDELs] Obj: $nbInd_obj  -  Vcf: $nbInd_vcf\n";
-	warn "QueryVcf parsing seems ok !\n";
-	return 1;
 }
 
 sub parseVcfFile {
@@ -3550,7 +3412,7 @@ sub getSJFile {
 			  unless exists( $self->SJFiles()->{$method} );
 		}
 		confess( "can t find vcf for $method" . Dumper $self->SJFiles() )
-		 unless exists( $self->callingFiles()->{variations}->{$method} );
+		 unless exists( $self->callingFiles()->{$method} );
 		return $self->SJFiles->{$method};
 	}
 	my @all = values %{ $self->SJFiles};

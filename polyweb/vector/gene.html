@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+@<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
     <title>PolyQuery</title>
@@ -566,7 +566,10 @@ function Filter (name, value) {
 }
 
 function okfunction (items, request){
-    dojo.connect(document.getElementById("passwd").textContent, "onKeyUp", check_enter);   
+    dojo.connect(document.getElementById("passwd").textContent, "onKeyUp", check_enter);
+    dijit.byId("use_db_freq_gnomad_ac").value = "off";
+    update_slider_db_freq_or_gnomac_ac(); 
+    change_db_public_gnomad_ac('gnomad_ac');
     if (items.length==0) {
         dijit.byId('login').show();
         return;
@@ -606,21 +609,6 @@ function okfunction (items, request){
     project_type = items[0].type;
     max_project = items[0].nb_total;
     var widget_slider_dejavu = dijit.byId("slider_dejavu");
-    if (max_project <= 100) {
-        widget_slider_dejavu.set('value', max_project);
-        document.getElementById("nb_projects").innerHTML = '<font color="#28A24C">100</font>';
-        document.getElementById("nb_projects_init").innerHTML = '<font color="#28A24C">100</font>';
-        document.getElementById("nb_projects_2").innerHTML = '<font color="#28A24C">100</font>';
-    }
-    else {
-        widget_slider_dejavu.set('value', 5);
-        document.getElementById("nb_projects").innerHTML = '<font color="#28A24C">' + max_project + '</font>';
-        document.getElementById("nb_projects_init").innerHTML = '<font color="#28A24C">' + max_project + '</font>';
-        document.getElementById("nb_projects_2").innerHTML = '<font color="#28A24C">' + max_project + '</font>';
-    }
-    document.getElementById("nb_dejavu").innerHTML = '<font color="#28A24C">' + max_project + '</font>';
-    document.getElementById("nb_dejavu_init").innerHTML = document.getElementById("nb_projects").innerHTML;
-    document.getElementById("nb_dejavu_2").innerHTML = document.getElementById("nb_projects").innerHTML;
     url_get_filter += dojo.cookie("username");
     lock_button.set("label", dojo.cookie("username"));
     if (error_vcf_md5 == 0) {
@@ -1315,15 +1303,6 @@ function initRegion() {
 
 function initDejaVu() {
     dijit.byId("dejavu_ho").set("value", "on");
-    alert("initDejaVu");
-    if (max_project <= 100) {
-        dijit.byId("slider_dejavu").set('value', max_project);
-        document.getElementById('nb_dejavu').innerHTML = '<font color="#28A24C">' + max_project + ' max</font>';
-    }
-    else {
-        dijit.byId("slider_dejavu").set('value', 100);
-        document.getElementById('nb_dejavu').innerHTML = '<font color="#28A24C">' + max_project + '</font>';
-    }
 }
 
 function changeButtonPatFamStatutOnly(itemsAll, request){
@@ -2285,7 +2264,6 @@ function functional_url_filter_data (){
 function construct_url_filter_data () {
     var filter_args= "";
     var args = new Array();
-    alert("construc");
     filter_args  = "&filter_type_variation=" + functional_url_filter_data();
 	if (genetic_model == 'compound_multi' || genetic_model == 'recessif_compound_multi' || genetic_model == 'uniparental_recessif_compound_multi') {
 		apply_compound_multi_annot();
@@ -2335,6 +2313,7 @@ function construct_url_filter_data () {
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 3)    { filter_args += "&gnomad=gnomad_ac_20"; }
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 4)    { filter_args += "&gnomad=gnomad_ac_50"; }
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 5)    { filter_args += "&gnomad=gnomad_ac_100"; }
+	    else if (dijit.byId("slider_gnomad_ac").get("value") == 6)    { filter_args += "&gnomad=gnomad_ac_1000"; }
     }
     filter_args +=url_filter_regions();
     //model genetique
@@ -2363,11 +2342,9 @@ function construct_url_filter_data () {
     filter_args +="&level_fam="+filtering_level_fam;
     //dejavu
     var dejavu_value = get_value_slider_dejavu();
-    if (dejavu_value < max_project) {
-        if      (dejavu_value == 0)  { filter_args += "&dejavu=uniq"; }
-        else if (dejavu_value < 100) { filter_args += "&dejavu=" + dejavu_value; }
-        if (dijit.byId("dejavu_ho").get("value") == "off") { filter_args +="&dejavu_ho=1"; }
-    }
+    if      (dejavu_value == 0)  { filter_args += "&dejavu=uniq"; }
+    else  { filter_args += "&dejavu=" + dejavu_value; }
+    if (dijit.byId("dejavu_ho").get("value") == "off") { filter_args +="&dejavu_ho=1"; }
     
     if (dijit.byId("filter_cadd_keep_indels").checked == true) { filter_args +="&keep_indels_cadd=1"; }
     
@@ -2861,7 +2838,7 @@ function hide_attic(){
 }
 
 
-var use_db_public_gnomad_ac = 'db_public';
+var use_db_public_gnomad_ac = 'gnomad_ac';
 function change_db_public_gnomad_ac(mode) {
 	if (mode == 'db_public') {
 		use_db_public_gnomad_ac = 'db_public';  
@@ -2871,7 +2848,7 @@ function change_db_public_gnomad_ac(mode) {
 	}
 	else if (mode == 'gnomad_ac') {
 		use_db_public_gnomad_ac = 'gnomad_ac';
-		dijit.byId("drop_db_public_gnomad").set("label", "Use gnomAD AC");
+		dijit.byId("drop_db_public_gnomad").set("label", "Max Allele Count");
 		document.getElementById("td_slider_frequence").style.display = "none";
 		document.getElementById("td_slider_gnomad_ac").style.display = "block";
 	}
@@ -2967,6 +2944,7 @@ function change_filtering_model(model, launch_run) {
         	document.getElementById("span_run_msg").innerHTML = "<b>&nbsp;&nbsp;2nd VAR&nbsp;</b>";
 			if (launch_run) {}
 			else {
+			alert('HERE');
 				check_slider_dejavu_init();
 				check_slider_freq_init();
 			}
@@ -3218,8 +3196,8 @@ function loadAnalyseInfos() {
                 else if (this_attr == "VERSION COSMIC") { document.getElementById("info_cosmic").textContent = this_val; }
                 else if (this_attr == "VERSION PREDICTION_MATRIX") { document.getElementById("info_matrix").textContent = this_val; }
                 else if (this_attr == "CACHE DEJAVU") {
-                    document.getElementById("info_dejavu").textContent = this_val;
-                    document.getElementById("info_dejavu_2").textContent = this_val;
+                    //document.getElementById("info_dejavu").textContent = this_val;
+                    //document.getElementById("info_dejavu_2").textContent = this_val;
                 }
                 else if (this_attr == "CACHE STRICT_DENOVO") { document.getElementById("info_strict_denovo").textContent = this_val; }
                 else if (this_attr == "CACHE") {  }
@@ -3258,7 +3236,7 @@ function update_choice_filter() {
     choice_filter(dd_db_public,["filter_clinical","filter_nofreq","filter_not_cosmic","filter_cosmic"],["Clinical","","Not_Cosmic","Cosmic"],"Options");
 }
 
-var use_db_freq_or_gnomad_ac = 'db_freq';
+var use_db_freq_or_gnomad_ac = 'gnomad_ac';
 function update_slider_db_freq_or_gnomac_ac() {
     if (is_cache_updated == 'no') {
 		document.getElementById("use_db_freq_gnomad_ac").style.display = "none";
@@ -3587,7 +3565,6 @@ function check_slider_freq_init() {
 
 function check_slider_dejavu_init() {
 	var value_slider = dijit.byId("slider_dejavu").get("value");
-	alert("couou "+check_slider_dejavu_init);
 	//dijit.byId("slider_dejavu_init").set("value", parseInt(value_slider));
 	dijit.byId("slider_dejavu_2").set("value", parseInt(value_slider));
 	if (parseInt(value_slider) < 100) { document.getElementById('nb_dejavu_init').innerHTML = parseInt(value_slider); }
@@ -3652,19 +3629,21 @@ function get_value_slider_dejavu(second_slider) {
 	var nb_proj_span;
 	if (second_slider) {
 		widget = dijit.byId("slider_dejavu_2");
-		nb_proj_span = document.getElementById('nb_projects_2');
 	}
     else {
     	widget = dijit.byId("slider_dejavu");
-		nb_proj_span = document.getElementById('nb_projects');
 		var value = widget.get("value");
 		if (value == 1 ) {return 0 };
-		 if (value == 2 ) {return 5 };
-		 if (value == 3 ) {return 10 };
-		 if (value == 4 ) {return 20 };
-		 if (value == 5 ) {return 50 };
-		 if (value == 6 ) {return 100 };
-		 if (value == 7 ) {return 500 };
+		 if (value == 2 ) {return 1 };
+		 if (value == 3 ) {return 3 };
+		 if (value == 4 ) {return 5 };
+		 if (value == 5 ) {return 10 };
+		 if (value == 6 ) {return 20 };
+		 if (value == 7 ) {return 30 };
+		 if (value == 8 ) {return 50 };
+		 if (value == 9 ) {return 100 };
+		 if (value == 10 ) {return 500 };
+		 if (value == 11 ) {return 'all'; };
 		return "all" ;
 	}
     var value = widget.get("value");
@@ -3886,192 +3865,39 @@ function(all, Deferred, dom, on, JSON) {
                 xls: checkAndSubmit( '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y,MT' ),
             }).then(function(results) {} );
         }
-        else if (run_check_project == 1) {
-            all({
-                chr1:  checkAndSubmit( '1' ),
-                chr2:  checkAndSubmit( '2' ),
-                chr3:  checkAndSubmit( '3' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr10: checkAndSubmit( '10' ),
-                chr11: checkAndSubmit( '11' ),
-                chr12: checkAndSubmit( '12' ),
-                chr13: checkAndSubmit( '13' ),
-                chr14: checkAndSubmit( '14' ),
-                chr15: checkAndSubmit( '15' ),
-                chr16: checkAndSubmit( '16' ),
-                chr17: checkAndSubmit( '17' ),
-                chr18: checkAndSubmit( '18' ),
-                chr19: checkAndSubmit( '19' ),
-                chr20: checkAndSubmit( '20' ),
-                chr21: checkAndSubmit( '21' ),
-                chr22: checkAndSubmit( '22' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chrMT: checkAndSubmit( 'MT' ),
-            }).then(function(results) {} );
-        }
-        // CAS GENOME avec intergenic ou MAJ du project
-        else if (is_big_data == 1) {
-            all({
-                tree:  checkAndSubmit( 'tree' ),
-                chr1:  checkAndSubmit( '1' ),
-                chr2:  checkAndSubmit( '2' ),
-                chr3:  checkAndSubmit( '3' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr10: checkAndSubmit( '10' ),
-                chr11: checkAndSubmit( '11' ),
-                chr12: checkAndSubmit( '12' ),
-                chr13: checkAndSubmit( '13' ),
-                chr14: checkAndSubmit( '14' ),
-                chr15: checkAndSubmit( '15' ),
-                chr16: checkAndSubmit( '16' ),
-                chr17: checkAndSubmit( '17' ),
-                chr18: checkAndSubmit( '18' ),
-                chr19: checkAndSubmit( '19' ),
-                chr20: checkAndSubmit( '20' ),
-                chr21: checkAndSubmit( '21' ),
-                chr22: checkAndSubmit( '22' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chrMT: checkAndSubmit( 'MT' ),
-            }).then(function(results) {} );
-        }
-        // CAS EXOME beaucoup de patients
-        else if (is_big_data == 2) {
-            all({
-                tree:     checkAndSubmit( 'tree' ),
-                chr1:  checkAndSubmit( '1' ),
-                chrMT: checkAndSubmit( 'MT' ),
-                chr2:  checkAndSubmit( '2' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chr3:  checkAndSubmit( '3' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr22: checkAndSubmit( '22' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr21: checkAndSubmit( '21' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr20: checkAndSubmit( '20' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr19: checkAndSubmit( '19' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr18: checkAndSubmit( '18' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr17: checkAndSubmit( '17' ),
-                chr10: checkAndSubmit( '10' ),
-                chr16: checkAndSubmit( '16' ),
-                chr11: checkAndSubmit( '11' ),
-                chr15: checkAndSubmit( '15' ),
-                chr12: checkAndSubmit( '12' ),
-                chr14: checkAndSubmit( '14' ),
-                chr13: checkAndSubmit( '13' ),
-            }).then(function(results) {} );
-        }
-        // CAS GENOME sans intergenic
-        else if (is_big_data == 3) {
-        	if (get_value_slider_regionho() > 1) {
-	            all({
-	                tree:  checkAndSubmit( 'tree' ),
-	                chr1:  checkAndSubmit( '1' ),
-	                chrMT: checkAndSubmit( 'MT' ),
-	                chr2:  checkAndSubmit( '2' ),
-	                chrY:  checkAndSubmit( 'Y' ),
-	                chr3:  checkAndSubmit( '3' ),
-	                chrX:  checkAndSubmit( 'X' ),
-	                chr4:  checkAndSubmit( '4' ),
-	                chr22: checkAndSubmit( '22' ),
-	                chr5:  checkAndSubmit( '5' ),
-	                chr21: checkAndSubmit( '21' ),
-	                chr6:  checkAndSubmit( '6' ),
-	                chr20: checkAndSubmit( '20' ),
-	                chr7:  checkAndSubmit( '7' ),
-	                chr19: checkAndSubmit( '19' ),
-	                chr8:  checkAndSubmit( '8' ),
-	                chr18: checkAndSubmit( '18' ),
-	                chr9:  checkAndSubmit( '9' ),
-	                chr17: checkAndSubmit( '17' ),
-	                chr10: checkAndSubmit( '10' ),
-	                chr16: checkAndSubmit( '16' ),
-	                chr11: checkAndSubmit( '11' ),
-	                chr15: checkAndSubmit( '15' ),
-	                chr12: checkAndSubmit( '12' ),
-	                chr14: checkAndSubmit( '14' ),
-	                chr13: checkAndSubmit( '13' ),
-	            }).then(function(results) {} );
-        	}
-        	else {
-	            all({
-	                tree:  checkAndSubmit( 'tree' ),
-	                chr1:  checkAndSubmit( '1' ),
-	                chrMT: checkAndSubmit( 'MT' ),
-	                chr2:  checkAndSubmit( '2' ),
-	                chrY:  checkAndSubmit( 'Y' ),
-	                chr3:  checkAndSubmit( '3' ),
-	                chrX:  checkAndSubmit( 'X' ),
-	                chr4:  checkAndSubmit( '4' ),
-	                chr22: checkAndSubmit( '22' ),
-	                chr5:  checkAndSubmit( '5' ),
-	                chr21: checkAndSubmit( '21' ),
-	                chr6:  checkAndSubmit( '6' ),
-	                chr20: checkAndSubmit( '20' ),
-	                chr7:  checkAndSubmit( '7' ),
-	                chr19: checkAndSubmit( '19' ),
-	                chr8:  checkAndSubmit( '8' ),
-	                chr18: checkAndSubmit( '18' ),
-	                chr9:  checkAndSubmit( '9' ),
-	                chr17: checkAndSubmit( '17' ),
-	                chr10: checkAndSubmit( '10' ),
-	                chr16: checkAndSubmit( '16' ),
-	                chr11: checkAndSubmit( '11' ),
-	                chr15: checkAndSubmit( '15' ),
-	                chr12: checkAndSubmit( '12' ),
-	                chr14: checkAndSubmit( '14' ),
-	                chr13: checkAndSubmit( '13' ),
-	            }).then(function(results) {} );
-            }
-        }
         else {
         	maxRunning = 8;
+        	var dejavu_value = get_value_slider_dejavu();
+        	if (dejavu_value == 0) { maxRunning = 4; }
+        	else { maxRunning = 8; }
             all({
-            	 tree:  checkAndSubmit( 'tree' ),
-            	 chrMT: checkAndSubmit( 'MT' ),
-                 chrY:  checkAndSubmit( 'Y' ),
-                 chr1:  checkAndSubmit( '1' ),
-                 chr2:  checkAndSubmit( '2' ),
-                 chr3:  checkAndSubmit( '3' ),
-                 chr4:  checkAndSubmit( '4' ),
-                 chr19: checkAndSubmit( '19' ),
-                 chr20: checkAndSubmit( '20' ),
-                 chr21: checkAndSubmit( '21' ),
-                 chr18: checkAndSubmit( '18' ),
-                 chr5:  checkAndSubmit( '5' ),
-                 chr6:  checkAndSubmit( '6' ),
-                 chr7:  checkAndSubmit( '7' ),
-                 chr8:  checkAndSubmit( '8' ),
-                 chr9:  checkAndSubmit( '9' ),
-                 chr10: checkAndSubmit( '10' ),
-                 chr11: checkAndSubmit( '11' ),
-                 chr12: checkAndSubmit( '12' ),
-                 chr13: checkAndSubmit( '13' ),
-                 chr14: checkAndSubmit( '14' ),
-                 chr15: checkAndSubmit( '15' ),
-                 chr16: checkAndSubmit( '16' ),
-                 chr17: checkAndSubmit( '17' ),
-                 chr22: checkAndSubmit( '22' ),
-                 chrX:  checkAndSubmit( 'X' ),
-     
-             
-            }).then(function(results) {alert ("end")} );
+            	tree:  checkAndSubmit( 'tree' ),
+                chr1:  checkAndSubmit( '1' ),
+                chr2:  checkAndSubmit( '2' ),
+                chr3:  checkAndSubmit( '3' ),
+                chr4:  checkAndSubmit( '4' ),
+                chr5:  checkAndSubmit( '5' ),
+                chr6:  checkAndSubmit( '6' ),
+                chr7:  checkAndSubmit( '7' ),
+                chr8:  checkAndSubmit( '8' ),
+                chr9:  checkAndSubmit( '9' ),
+                chr10: checkAndSubmit( '10' ),
+                chr11: checkAndSubmit( '11' ),
+                chr12: checkAndSubmit( '12' ),
+                chr13: checkAndSubmit( '13' ),
+                chr14: checkAndSubmit( '14' ),
+                chr15: checkAndSubmit( '15' ),
+                chr16: checkAndSubmit( '16' ),
+                chr17: checkAndSubmit( '17' ),
+                chr18: checkAndSubmit( '18' ),
+                chr19: checkAndSubmit( '19' ),
+                chr20: checkAndSubmit( '20' ),
+                chr21: checkAndSubmit( '21' ),
+                chr22: checkAndSubmit( '22' ),
+                chrX:  checkAndSubmit( 'X' ),
+                chrY:  checkAndSubmit( 'Y' ),
+                chrMT: checkAndSubmit( 'MT' ),
+            }).then(function(results) {} );
         }
     });
     
@@ -4216,7 +4042,6 @@ function(all, Deferred, dom, on, JSON) {
             if (!tree) { construct_tree(); }
         }
         else {
-			alert(nbRunning+" "+maxRunning);
             if (nbRunning >= maxRunning) {
 				
                 setTimeout(function(){ checkAndSubmit(id); }, 500);
@@ -4400,7 +4225,6 @@ function(all, Deferred, dom, on, JSON) {
             cgi_args = '&' + use_args;
         }
         else { cgi_args = construct_url_filter_data(); }
-      console.dir(cgi_args);
         if (lOnlyThesesGenes.length > 0) {
             cgi_args += "&only_genes="+lOnlyThesesGenes.join(",");
         }
@@ -4466,7 +4290,6 @@ function(all, Deferred, dom, on, JSON) {
                     onItem: function (item, result) {
                         //if (json_genes_done < limit_genes_json || chr_id == '1') {
                             var chr_id = store_genes_tmp.getValue(item, 'chromosome');
-                            console.dir(chr_id);
                             if (chr_id == 'X')  { chr_id = '23'; }
                             if (chr_id == 'Y')  { chr_id = '24'; }
                             if (chr_id == 'MT') { chr_id = '25'; }
@@ -4980,10 +4803,10 @@ function(all, Deferred, dom, on, JSON) {
                 		//gridListGenes.setSortIndex(19, false);
 				    	//gridListGenes.layout.setColumnVisibility(19, false);
 				    	if (can_use_hgmd == 'yes') {
-				    		gridListGenes.layout.setColumnVisibility(30, false);
+//				    		gridListGenes.layout.setColumnVisibility(30, false);
 				    		if (is_cache_updated == 'yes') {
 				    			//gridListGenes.layout.setColumnVisibility(19, true);
-				    			gridListGenes.layout.setColumnVisibility(30, true);
+//				    			gridListGenes.layout.setColumnVisibility(30, true);
 			    			}
 				    	}
 				    	else {
@@ -5389,8 +5212,6 @@ function addListGenes_OLD(regexp1,regexp2) {
 	    hurl = cache_all_url + "&check_genes=" + tableau.join('+');
     }
     var store_genes = new dojo.data.ItemFileWriteStore({ url: hurl });
-    
-    alert('HURL: '+hurl);
     
     store_genes.fetch({
         onComplete: function(items){
@@ -6524,7 +6345,7 @@ function selectFamilies_recregion(value) {
                             <div data-dojo-type="dijit.TooltipDialog" onHide='update_choice_filter()' >
                                 <div  dojoType="dijit.Toolbar" style ="font-size : 10px;">
                                     <table style="border:1px solid #9f9f9f;">
-                                        <td style="padding:5px;"><input type="checkbox" id="use_db_freq_gnomad_ac" onClick="update_slider_db_freq_or_gnomac_ac()" data-dojo-type="dojox/mobile/Switch" value="on" leftLabel="Use gnomAD AC" rightLabel="Use DB Freq" style="width:90px;"></td>
+                                        <td style="padding:5px;"><input type="checkbox" id="use_db_freq_gnomad_ac" onClick="update_slider_db_freq_or_gnomac_ac()" data-dojo-type="dojox/mobile/Switch" value="off" leftLabel="Use gnomAD AC" rightLabel="Use DB Freq" style="width:90px;"></td>
                                         <td style="padding:5px;"><input type="checkbox" id="filter_clinical" data-dojo-type="dojox/mobile/Switch" value="on" leftLabel="Clinical" rightLabel="Clinical" style="width:65px;"></td>
                                         <td style="padding:5px;"><input type="checkbox" id="filter_hgmd_dm" data-dojo-type="dojox/mobile/Switch" value="on" leftLabel="HGMD DM" rightLabel="HGMD DM" style="width:85px;"></td>
                                         <td style="padding:5px;display:none;"><input type="checkbox" id="filter_nofreq" data-dojo-type="dojox/mobile/Switch" value="off"  leftLabel="No Freq" rightLabel="No Freq" style="width: 65px;"></td>
@@ -6550,14 +6371,15 @@ function selectFamilies_recregion(value) {
                                     </div>
                                 </td>
                                 <td id="td_slider_gnomad_ac" hidden>
-                                	<div id="slider_gnomad_ac" jsId="slider_gnomad_ac" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:2,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
-						                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+                                	<div id="slider_gnomad_ac" jsId="slider_gnomad_ac" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:6,maximum:7,discreteValues:7,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
+						                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:7, style:{height:"5px"}'> </div>
 						                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
 						                    <li>5</li>
 						                    <li>10</li>
 						                    <li>20</li>
 						                    <li>50</li>
 						                    <li>100</li>
+						                    <li>1000</li>
 						                    <li>All</li>
 						                </ol>
 					                </div>
@@ -6574,37 +6396,29 @@ function selectFamilies_recregion(value) {
                             </table>
                         </div>
                         <div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'help_dejavu',position:['above']">
-                            <b>Examples :</b>
-                            <br><br>
-                            <span><b>0 + <font color="#28A24C">Ho/He</font>:</b> Only keep variants of this project never found on OTHERS projects.</span>
-                            <br>
-                            <span><b>10 + <font color="#28A24C">He/He</font>:</b> Keep variants of this project but found in 10 (or less) OTHERS projects too.</span>
-                            <br><br>
-                            <span><b>0 + <font color="#EA3434">Only Ho</font>:</b> Only keep Ho variants of this project, but never foud Ho on others projects (can be found He in OTHER projects).</span>
-                            <br>
-                            <span><b>10 + <font color="#EA3434">Only Ho</font>:</b> Keep variants of this project but found in 10 (or less) OTHERS projects Ho too (can be found He in 10+ OTHERS projects).</span>
-                            <br><br>
-                            <span>Last DEJAVU update for this project: <b><span id="info_dejavu_2"---</span></b></span>
                         </div>
                   </td>
                    <td>
 						      
-                        <div id="slider_dejavu" jsId="slider_dejavu"  data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:1,maximum:8,discreteValues:8,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:210px; height: 20px;"'>
+                        <div id="slider_dejavu" jsId="slider_dejavu"  data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:8,maximum:11,discreteValues:11,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:210px; height: 20px;"'>
                             <div>
-                                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:8, style:{height:"5px"}'> </div>
+                                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:11, style:{height:"5px"}'> </div>
                                 <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
                                     <li><span><font color="#EA3434">0</font></span></li>
+                                    <li><span><font color="#EA3434">1</font></span></li>
+                                    <li><span><font color="#EA3434">3</font></span></li>
                                     <li><span><font color="#EA3434">5</font></span></li>
                                     <li><span><font color="#EAA134">10</font></span></li>
                                     <li><span><font color="#EAA134">20</font></span></li>
+                                    <li><span><font color="#EAA134">30</font></span></li>
                                     <li><span><font color="#EAA134">50</font></span></li>
                                     <li><span><font color="#EACC34">100</font></span></li>
                                     <li><span><font color="#EACC34">500</font></span></li>
-                                    <li><span id="nb_projects"/></li>
+                                    <li><span><font color="#28A24C">All</font></span></li>
                                 </ol>
                                 <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
                                     <li><font color="#EA3434"><span><i>None</i></span></font></li>
-                                    <li><span id="text_dejavu"><i><b>Others</b> Projects: </i></span><span style="font-weight: bold;color: #28A24C" id ="nb_dejavu"></li>
+                                    <li><span id="text_dejavu"><i>Max Samples</i></span></li>
                                     <li><font color="#28A24C"><span><i>All</i></span></font></li>
                                 </ol>
                             </div>
@@ -9092,21 +8906,21 @@ function selectFamilies_recregion(value) {
 	                        <div><span class="filterLabelActif2">Check Deja Vu</span></div>
 	                  	</td>
 	                   <td>
-	                        <div id="slider_dejavu_init" jsId="slider_dejavu_init" onChange="check_slider_dejavu_init()" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:0,value:100,maximum:100,discreteValues:100,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:230px; height: 25px;margin-left:20px;"' disabled>
+	                        <div id="slider_dejavu_init" jsId="slider_dejavu_init" onChange="check_slider_dejavu_init()" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:0,value:8,maximum:11,discreteValues:11,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:230px; height: 25px;margin-left:20px;"' disabled>
 	                            <div>
 	                                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:11, style:{height:"5px"}'> </div>
 	                                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
 	                                    <li><span><font color="#EA3434">0</font></span></li>
-	                                    <li><span><font color="#EA3434">10</font></span></li>
-	                                    <li><span><font color="#EAA134">20</font></span></li>
-	                                    <li><span><font color="#EAA134">30</font></span></li>
-	                                    <li><span><font color="#EACC34">40</font></span></li>
-	                                    <li><span><font color="#EACC34">50</font></span></li>
-	                                    <li><span><font color="#28A24C">60</font></span></li>
-	                                    <li><span><font color="#28A24C">70</font></span></li>
-	                                    <li><span><font color="#28A24C">80</font></span></li>
-	                                    <li><span><font color="#28A24C">90</font></span></li>
-	                                    <li><span id="nb_projects_init"/></li>
+	                                    <li><span><font color="#EA3434">1</font></span></li>
+	                                    <li><span><font color="#EAA134">3</font></span></li>
+	                                    <li><span><font color="#EAA134">5</font></span></li>
+	                                    <li><span><font color="#EACC34">10</font></span></li>
+	                                    <li><span><font color="#EACC34">20</font></span></li>
+	                                    <li><span><font color="#28A24C">30</font></span></li>
+	                                    <li><span><font color="#28A24C">50</font></span></li>
+	                                    <li><span><font color="#28A24C">100</font></span></li>
+	                                    <li><span><font color="#28A24C">500</font></span></li>
+                                    <li><span><font color="#28A24C">All</font></span></li>
 	                                </ol>
 	                                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
 	                                    <li><font color="#EA3434"><span><i>None</i></span></font></li>
@@ -9272,25 +9086,25 @@ function selectFamilies_recregion(value) {
 	                        <div><span class="filterLabelActif2">Check Deja Vu</span></div>
 	                  	</td>
 	                   <td>
-	                        <div id="slider_dejavu_2" jsId="slider_dejavu_2" onChange="check_slider_dejavu('second_slider')" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:0,value:100,maximum:100,discreteValues:100,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:230px; height: 25px;margin-left:20px;"' >
+	                        <div id="slider_dejavu_2" jsId="slider_dejavu_2" onChange="check_slider_dejavu('second_slider')" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:11,maximum:11,discreteValues:11,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:230px; height: 25px;margin-left:20px;"' >
 	                            <div>
 	                                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:11, style:{height:"5px"}'> </div>
 	                                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
 	                                    <li><span><font color="#EA3434">0</font></span></li>
-	                                    <li><span><font color="#EA3434">10</font></span></li>
-	                                    <li><span><font color="#EAA134">20</font></span></li>
-	                                    <li><span><font color="#EAA134">30</font></span></li>
-	                                    <li><span><font color="#EACC34">40</font></span></li>
-	                                    <li><span><font color="#EACC34">50</font></span></li>
-	                                    <li><span><font color="#28A24C">60</font></span></li>
-	                                    <li><span><font color="#28A24C">70</font></span></li>
-	                                    <li><span><font color="#28A24C">80</font></span></li>
-	                                    <li><span><font color="#28A24C">90</font></span></li>
-	                                    <li><span id="nb_projects_2"/></li>
+	                                    <li><span><font color="#EA3434">1</font></span></li>
+	                                    <li><span><font color="#EAA134">3</font></span></li>
+	                                    <li><span><font color="#EAA134">5</font></span></li>
+	                                    <li><span><font color="#EACC34">10</font></span></li>
+	                                    <li><span><font color="#EACC34">20</font></span></li>
+	                                    <li><span><font color="#28A24C">30</font></span></li>
+	                                    <li><span><font color="#28A24C">50</font></span></li>
+	                                    <li><span><font color="#28A24C">100</font></span></li>
+	                                    <li><span><font color="#28A24C">500</font></span></li>
+                                    <li><span><font color="#28A24C">All</font></span></li>
 	                                </ol>
 	                                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
 	                                    <li><font color="#EA3434"><span><i>None</i></span></font></li>
-	                                    <li><span id="text_dejavu_2"><i><b>Others</b> Projects: </i></span><span style="font-weight: bold;color: #28A24C" id ="nb_dejavu_2"></li>
+	                                    <li><span id="text_dejavu_2"><i>Max Samples</i></span></li>
 	                                    <li><font color="#28A24C"><span><i>All</i></span></font></li>
 	                                </ol>
 	                            </div>

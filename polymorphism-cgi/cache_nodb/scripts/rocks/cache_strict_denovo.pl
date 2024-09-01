@@ -242,7 +242,7 @@ foreach my $family (@{$project->getFamilies()}) {
 		my $vector_denovo =  $rocks4->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
 		my @bits = $vector_denovo->Index_List_Read();
 			my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
-			 $rocks4->put_batch_vector_transmission($child,"ind_strict_denovo",$vector_denovo);
+			 $rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vector_denovo);
 			 warn "save";
 			warn scalar(@bits)." ".$vdenovo->Norm;
 	}

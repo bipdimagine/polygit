@@ -131,8 +131,30 @@ function displayInIGV(chr, start, end){
 	// }
 // }
 
+function getUrlLoadingGenome(file) {
+	var url = '';
+	var re_hg19 = new RegExp('HG19*');
+	var re_hg38 = new RegExp('HG38*');
+	var re_mm38 = new RegExp('MM38*');
+	var re_mm39 = new RegExp('MM39*');
+	if (re_hg19.test(file)) {
+	    url += "&genome=hg19";
+	}
+	else if (re_hg38.test(file)) {
+	    url += "&genome=hg38";
+	}
+	else if (re_mm38.test(file)) {
+	    url += "&genome=mm38";
+	}
+	else if (re_mm39.test(file)) {
+	    url += "&genome=mm39";
+	}
+	return url;
+}
+
 function displayOneBAMIGV(file){
     var url = "http://localhost:60151/load?file="+file;
+    url += getUrlLoadingGenome(file);
 	url += "&merge=true";
     httpGetFocusOn(url);
 	return 1;

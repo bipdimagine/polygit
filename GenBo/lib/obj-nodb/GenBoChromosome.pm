@@ -1701,12 +1701,11 @@ sub get_lmdb_junctions_canoniques {
 sub get_rocks_variations {
 	my ( $self, $modefull,$rocks) = @_;
 	my $hindex = "variations_";
-	$hindex = "variations_".$modefull if ($modefull);
+	$hindex = "variations_".$modefull.'_' if ($modefull);
+	$hindex .= $self->name.'_';
 	$hindex .= $$;
-	#return 
 	return $self->project->{rocks}->{$hindex} if exists $self->project->{rocks}->{$hindex};
 	my $rg;
-	warn "ok ";
 	$self->project->{rocks}->{$hindex} = GenBoNoSqlRocksVariation->new(dir=>$self->project->rocks_directory("genbo"),mode=>"r",name=>$self->name.".genbo.rocks");
 	return $self->project->{rocks}->{$hindex};
 

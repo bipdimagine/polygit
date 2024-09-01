@@ -427,12 +427,6 @@ sub run_cache_polydiag_vector {
 	}
 	$db_lite->put( $patient_name, "variations_vcf_md5", $tf );
 	$tf = {};
-	my $f2s = $p->getIndelsFiles();
-	foreach my $f1 (@$f2s) {
-		$tf->{$f1} = file_md5_hex($f1);
-
-		# 			push(@$tf,file_md5_hex($f1)) if -e $f1;;
-	}
 
 	$db_lite->put( $patient_name, "indels_vcf_md5", $tf );
 
@@ -550,12 +544,6 @@ sub run_cache_polydiag {
 	}
 	$db_lite->put( $patient_name, "variations_vcf_md5", $tf );
 	$tf = {};
-	my $f2s = $p->getIndelsFiles();
-	foreach my $f1 (@$f2s) {
-		$tf->{$f1} = file_md5_hex($f1);
-
-		# 			push(@$tf,file_md5_hex($f1)) if -e $f1;;
-	}
 
 	$db_lite->put( $patient_name, "indels_vcf_md5", $tf );
 

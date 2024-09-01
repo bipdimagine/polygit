@@ -565,7 +565,7 @@ sub get_annotations {
 	 	
 	 	foreach my $c (keys %$scaled_score_gnomad){
 	 			$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
-	 		if ($nb_ho <= $scaled_score_gnomad->{$c} ){
+	 		if ($nb_ac <= $scaled_score_gnomad->{$c} ){
 	 			$intspan_global_categories->{$c}->add($lmdb_index);
 	 		}
 	 	}
@@ -575,7 +575,6 @@ sub get_annotations {
 		##############
 		
 			my $pdv = $variation->other_projects;
-			my $pdv_ho = $variation->other_projects_ho;
 	 		my $sdv = $variation->other_patients ; 
 	 		my $sdv_ho = $variation->other_patients_ho; 
 	 		

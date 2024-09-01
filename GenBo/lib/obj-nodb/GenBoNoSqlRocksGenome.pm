@@ -83,7 +83,7 @@ has dir_db =>(
 	default => sub {
 		my $self = shift;
 		my $dd = $self->dir."/".$self->chromosome_name.".g.rocks/";
-		warn $self->mode;
+#		warn $self->mode;
 		unless (-e $dd){
 			if ($self->mode eq "r"){
 				confess($dd)."-".$self->mode;
@@ -131,7 +131,7 @@ has chunks =>(
 		if($self->mode eq "c" or $self->mode eq "t" or ($self->mode eq "w" && !(-e $self->json_file))){
 			$self->clean() if -e $self->json_file;
 			my $length = $self->chr_length;
-			warn $length;
+#			warn $length;
 			die() unless $length;
 			my $c = $self->divide_by_chunks($length);
 			$self->write_config($c);

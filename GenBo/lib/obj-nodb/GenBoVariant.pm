@@ -2703,46 +2703,6 @@ sub getReference {
 	return $self->getChromosome->getReferences($self->start()-1, $self->end()+1)->[0];
 }
 
-sub getPatientsInfos {
-        my $self = shift;
-        my $chr = $self->getChromosome();
-        my ($start, $end) = $self->getNeededCoord();
-        my $refObj = $chr->getReference();
-        my $hIds;
-        
-        foreach my $patient (@{$self->project->getPatients()}) {
-                my @lVcfFiles;
-                my $typeVar = "";
-               
-            foreach my $hfiles (values  %{$patient->callingFiles()}){
-				foreach my $method (keys %{$hfiles}){
-				
-               		# foreach my $vcfFile (@lVcfFiles) {
-               		 		my $vcfFile = $hfiles->{$method};
-                        my $queryVcf = $patient->getQueryVcf($vcfFile,$method);
-                        my $hashRes = $queryVcf->parseVcfFileForReference($refObj);
-                        if (scalar keys %$hashRes > 0) {
-                                foreach my $type (keys %$hashRes) {
-                                        foreach my $var_id (keys %{$hashRes->{$type}}) {
-                                                if ($var_id eq $self->id()) {
-                                                		my $hTmp = thaw(decompress($hashRes->{$type}->{$var_id}));
-                                                        $hIds->{$patient->id()}->{name} = $patient->name();
-                                                        $hIds->{$patient->id()}->{var_allele} = $hTmp->{annex}->{$patient->id()}->{var_allele};
-                                                        $hIds->{$patient->id()}->{score} = $hTmp->{annex}->{$patient->id()}->{score};
-                                                        $hIds->{$patient->id()}->{he} = $hTmp->{annex}->{$patient->id()}->{he};
-                                                        $hIds->{$patient->id()}->{ho} = $hTmp->{annex}->{$patient->id()}->{ho};
-                                                        $hIds->{$patient->id()}->{nb_all_ref} = $hTmp->{annex}->{$patient->id()}->{nb_all_ref};
-                                                        $hIds->{$patient->id()}->{nb_all_mut} = $hTmp->{annex}->{$patient->id()}->{nb_all_mut};
-                                                        $hIds->{$patient->id()}->{dp} = $hTmp->{annex}->{$patient->id()}->{dp};
-                                                }
-                                        }
-                                }
-                        }
-				}
-                }
-        }
-        return $hIds;
-}
 sub nearest_exons{
 	my ($self,$tr1) = @_;
 #	confess();
@@ -2786,15 +2746,6 @@ sub getGeneticModel {
 		my $vector = 
 		confess("code it by yourself")
 }
-
-
-
-
-
-
-
-
-
 
 sub returnTextGenotype {
 	 my ($self,$value) = @_;

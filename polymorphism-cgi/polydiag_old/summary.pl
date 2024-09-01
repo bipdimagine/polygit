@@ -359,15 +359,7 @@ print $cgi->end_table();
 				print $cgi->td($nbc->{$p->name});
 				print $cgi->td($nbcl->{$p->name});
 				my $nbi =0;
-				my $f1s = $p->getIndelsFiles();
 					my $nbv = "0";
-				foreach my $f1 (@$f1s){
-				#zcat IMB.vcf.gz IMD4.vcf.gz | grep -v "#" | cut -f 1,2 | sort -u
-				
-				my $nbvt += `zgrep -vc "#" $f1` if -e $f1;
-				chomp($nbvt);
-				$nbi += $nbvt;
-				}
 				#my $vs = $p->getVariations();
 				#warn $p->name();
 				if ($nbi == 0){

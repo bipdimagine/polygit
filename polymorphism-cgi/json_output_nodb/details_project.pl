@@ -35,8 +35,7 @@ if ($type eq 'annot_infos') {
 	
 	$h = undef;
 	$h->{id} = 'is_cache_updated';
-	if ($project->isUpdate()) { $h->{value} = 'YES'; }
-	else { $h->{value} = 'NO'; }
+	$h->{value} = 'YES';
 	push(@lItems, $h);
 	
 	$h = undef;

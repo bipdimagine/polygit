@@ -327,7 +327,7 @@ has only_genes_found => (
 		return undef unless ($self->only_genes());
 		my $h;
 		foreach my $gene_name (keys %{$self->only_genes()}) {
-			if ($self->if_exists_liteObject($gene_name, 'gene')) {
+			if ($self->rocksGenBo->synonym($gene_name)) {
 				$h->{uc($gene_name)} = undef;
 			}
 		}

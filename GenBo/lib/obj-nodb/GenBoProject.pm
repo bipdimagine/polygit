@@ -4348,6 +4348,12 @@ sub getCallingPipelineDir {
 	return $self->makedir($path);
 }
 
+sub getNbVarHoRegionsFromType {
+	my ($self, $type) = @_;
+	my $methodName = 'ho_regions_'.$type.'_value';
+	return $self->$methodName();
+}
+
 has ho_regions_short_value => (
 	is      => 'ro',
 	lazy    => 1,
