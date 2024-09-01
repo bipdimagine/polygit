@@ -917,18 +917,14 @@ sub getMethods{
 	my @lRes = sort(keys(%$s));
 	return \@lRes;
 }
-sub getCallingSVMethods {
-	my ($self,%arg) = @_;
-	my $patient_name = $arg{patient_name};
-	my $project_id = $arg{project_id};
-	return $self->getMethods(type=>"SV", patient_name=>$patient_name,project_id=>$project_id);
 
-}
 sub getCallingMethods{
 	my ($self,%arg) = @_;
 	my $patient_name = $arg{patient_name};
 	my $project_id = $arg{project_id};
-	return $self->getMethods(type=>"SNP", patient_name=>$patient_name,project_id=>$project_id);
+	my $type = "SNP";
+	$type = $arg{type} if exists $arg{type};
+	return $self->getMethods(type=>$type, patient_name=>$patient_name,project_id=>$project_id);
 
 }
 sub getAlignmentMethods {

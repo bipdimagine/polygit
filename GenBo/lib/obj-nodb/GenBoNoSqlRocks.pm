@@ -626,7 +626,6 @@ sub close {
 				$self->intspan_keys );
 		}
 		if ( keys %{ $self->dictionary } ) {
-			warn $self->dictionary_file;
 			$self->sereal_encoder->encode_to_file( $self->dictionary_file,
 				$self->dictionary );
 		}

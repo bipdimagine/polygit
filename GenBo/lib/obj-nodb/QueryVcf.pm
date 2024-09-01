@@ -202,6 +202,7 @@ sub parseVcfFileForReference {
 	if ( $self->method() eq "manta" or $self->method() eq "dragen-sv" ) {
 		return $self->parseVcfFileForReference_manta( $reference, $useFilter );
 	}
+	
 	if ( $file =~ /\.sam/ ) {
 		my @res = `zgrep "#INFO=<ID" $file`;
 
@@ -478,19 +479,13 @@ sub getRandomInsertion {
 
 sub parseVCFLine {
 	my ( $self, $line ) = @_;
-	my ( $chr, $pos, $id, $ref, $alt, $qual, $filter, $info, @all ) =
-	  split( "\t", $line );
+	my ( $chr, $pos, $id, $ref, $alt, $qual, $filter, $info, @all ) = split( "\t", $line );
 	confess() if scalar(@all) ne 2;
-
 	my @alts = defined $alt ? split( ",", $alt ) : ();
-	my %infos =
-	  defined $info
-	  ? map { my ( $k, $v ) = split '='; $k => $v } split ';', $info
-	  : ();
+	my %infos = defined $info ? map { my ( $k, $v ) = split '='; $k => $v } split ';', $info : ();
 	my @a = split( ":", $all[0] );
 	my @b = split( ":", $all[1] );
 	my $gt;
-
 	for ( my $i = 0 ; $i < @a ; $i++ ) {
 		$gt->{ $a[$i] } = $b[$i];
 	}
@@ -499,15 +494,27 @@ sub parseVCFLine {
 	$gt->{ho}         = 0;
 	$gt->{isref}      = 0;
 	$gt->{is_cas_1_2} = 0;
-	if ( $gt->{genotype}->[0] eq $gt->{genotype}->[1] ) {
+		if ( $gt->{genotype}->[0] eq $gt->{genotype}->[1] ) {
 		$gt->{he}    = 0;
 		$gt->{ho}    = 1;
 		$gt->{isref} = 1 if $gt->{genotype}->[0] == 0;
 
 	}
+	elsif ( $gt->{genotype}->[0] + $gt->{genotype}->[1] == 1 ) {
+		$gt->{he}    = 0;
+		$gt->{ho}    = 1;
+		$gt->{isref} = 1 if $gt->{genotype}->[0] == 0;
+
+	}
+	elsif (($gt->{genotype}->[0] + $gt->{genotype}->[1] ) > 2) {
+		$gt->{is_cas_1_2} = 1;
+	}
+	
 	else {
-		$gt->{is_cas_1_2} = 1
-		  if ( $gt->{genotype}->[0] + $gt->{genotype}->[1] ) > 2;
+		warn $line;
+		warn Dumper  $gt->{genotype};
+		
+		die();
 	}
 	return {
 		chr    => $chr,
@@ -753,8 +760,7 @@ sub genericSVInv {
 	$hash->{annex}->{$patient_id}->{he}     = $x->{gt}->{he};
 	$hash->{annex}->{$patient_id}->{ho}     = $x->{gt}->{ho};
 	$hash->{annex}->{$patient_id}->{method} = $self->method();
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }
-	  ->{nb_all_other_mut} = 0;
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{nb_all_other_mut} = 0;
 
 	$hash->{annex}->{$patient_id}->{method} = $self->method();
 	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }
@@ -791,9 +797,10 @@ sub genericSVBnd {
 		return $self->genericSVInv( $x, $reference );
 	}
 	else {
+		return;
 		return $self->genericSVTransLoc( $x, $reference );
 	}
-
+	confess();
 	my $pos       = $x->{pos};
 	my $genbo_pos = $pos + 1;
 
@@ -834,18 +841,12 @@ sub genericSVBnd {
 	  ->{nb_all_other_mut} = 0;
 
 	$hash->{annex}->{$patient_id}->{method} = $self->method();
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }
-	  ->{nb_all_other_mut} = 0;
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }
-	  ->{nb_all_ref} = $hash->{annex}->{$patient_id}->{nb_all_mut};
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{score}
-	  = $x->{qual};
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }
-	  ->{nb_all_mut} = $hash->{annex}->{$patient_id}->{nb_all_ref};
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{he} =
-	  $x->{gt}->{he};
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{ho} =
-	  $x->{gt}->{ho};
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{nb_all_other_mut} = 0;
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{nb_all_ref} = $hash->{annex}->{$patient_id}->{nb_all_mut};
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{score} = $x->{qual};
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{nb_all_mut} = $hash->{annex}->{$patient_id}->{nb_all_ref};
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{he} = $x->{gt}->{he};
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{ho} =	  $x->{gt}->{ho};
 	return $hash;
 }
 
@@ -862,8 +863,7 @@ sub genericSVDel {
 	my $debug;
 	$debug = 1 if $pos == 46011645;
 	my $genbo_pos = $pos + 1;
-	my $id =
-	  $chr->name . "_" . $genbo_pos . "_del-" . abs( $x->{infos}->{SVLEN} );
+	my $id = $chr->name . "_" . $genbo_pos . "_del-" . abs( $x->{infos}->{SVLEN} );
 
 	my $res = $chr->genesIntervalTree->fetch( $genbo_pos,
 		$genbo_pos + abs( $x->{infos}->{SVLEN} ) );
@@ -1251,7 +1251,9 @@ sub parseVcfFileForReference_gatk {
 	my $hash_alleles;
 	my $seqpilot;
 	unless ($useFilter) { $useFilter = 0; }
-
+	if ( $self->method() eq 'manta' ) {
+				confess();
+	}
 	#	my $project = $self->getPatient()->getProject();
 	return {} if $self->isUcsc() eq "empty";
 	my $t = time;
@@ -1263,13 +1265,10 @@ sub parseVcfFileForReference_gatk {
 	my ( %hashRes, $chr, $idchr, $vcf );
 	my $file = $self->file();
 
-	#	warn $self->$self->getPatient()->name();
 	if ($reference) {
 		$chr   = $reference->getChromosome();
 		$idchr = $chr->name();
 		$idchr = $chr->ucsc_name() if $self->isUcsc();
-
-		#  $file =~ s/dibayes/unifiedgenotyper/;
 		$vcf = Vcf->new(
 			file   => $file,
 			region => $idchr . ":" . $reference->start . "-" . $reference->end,
@@ -1280,9 +1279,6 @@ sub parseVcfFileForReference_gatk {
 		$vcf =
 		  Vcf->new( file => $file, tabix => $self->buffer->software("tabix") );
 	}
-
-#	$chr = $reference->getProject->getChromosome('21');
-#	$vcf = Vcf -> new (file=>$file, region=>'21:38858930-38858940',tabix=>$self->buffer->software("tabix"));
 
 	$vcf->parse_header();
 	my $type;
@@ -1301,41 +1297,22 @@ sub parseVcfFileForReference_gatk {
 	$hash_alleles->{deletion}  = [];
 	$hash_alleles->{indel}     = [];
 	while ( my $x = $vcf->next_data_hash() ) {
+		
 		if ( $self->method() eq 'manta' or $self->method() eq 'dragen-sv' ) {
 			confess();
-			$debug = 1 if $$x{'POS'} == 50251556;    #18770711;#50251556;
-			my $type_found = $$x{'INFO'}->{'SVTYPE'};
-			next if ( $type_found ne 'DUP' and $type_found ne 'DEL' );
-			next if ( abs( $$x{'INFO'}->{'SVLEN'} ) < 50 );
-			next if ( abs( $$x{'INFO'}->{'SVLEN'} ) > 10000 );
-			warn $$x{'POS'} . " " . $self->method();
 
-			#next if ($$x{'CHROM'} =~ m/chrMT/);
-			next if ( $$x{'CHROM'} =~ m/^GL/ );
-			next if ( $$x{'CHROM'} =~ m/^hs37d5/ );
-
-			#TODO: pb position manta
-			#$$x{'POS'}++;
-			my $chr_obj =
-			  $self->getPatient->getProject->getChromosome( $$x{'CHROM'} );
-			my $ref = $chr_obj->getSequence( $$x{'POS'}, $$x{'POS'} );
-			my $alt = $chr_obj->getSequence( $$x{'POS'}, $$x{'INFO'}->{'END'} );
-			$chr_obj = undef;
-			if ( $type_found eq 'DUP' ) {
-				$$x{'REF'} = $ref;
-				$$x{'ALT'} = [$alt];
-				$$x{'INFO'}->{'CIGAR'} =
-				  '1M' . abs( $$x{'INFO'}->{'SVLEN'} ) . 'I';
-			}
-			elsif ( $type_found eq 'DEL' ) {
-				$$x{'REF'} = $alt;
-				$$x{'ALT'} = [$ref];
-
-				#warn $ref->sequence($$x{'POS'},)
-				$$x{'INFO'}->{'CIGAR'} =
-				  '1M' . abs( $$x{'INFO'}->{'SVLEN'} ) . 'D';
-			}
 		}
+		if ( $self->method() eq 'pbsv') {
+			my $vcfRefAllele = $$x{'REF'};
+			my $varAllele    = $$x{'ALT'};
+			if ($varAllele =~ />/){
+				confess();
+			}
+			
+			confess();
+
+		}
+		
 
 		if ( ( $useFilter == 1 ) and ( exists $$x{'FILTER'} ) ) {
 			die();
@@ -1512,8 +1489,6 @@ sub parseVcfFileForReference_gatk {
 				next;
 			}
 			else {
-				#warn Dumper $x if $x->{'INFO'}->{'AB'} eq "0.53,0.4";
-				#	die() if $x->{'INFO'}->{'AB'} eq "0.53,0.4";
 				my @AB    = split( ",", $x->{'INFO'}->{'AB'} );
 				my $nbAlt = int( $gtypes->{'DP'} ) * $AB[0];
 				$ad[0] = int( $gtypes->{'DP'} ) - int($nbAlt);
@@ -1539,16 +1514,6 @@ sub parseVcfFileForReference_gatk {
 
 		# Champ MANTA PR a cumuler avec SR pour le nb reads REF/ALT
 
-		if ( exists $gtypes->{'PR'} and exists $gtypes->{'SR'} ) {
-			@ad = split( ",", $gtypes->{'PR'} );
-			$pr = $gtypes->{'PR'};
-			my $i_sr = 0;
-			foreach my $n_sr ( split( ",", $gtypes->{'SR'} ) ) {
-				$ad[$i_sr] += $n_sr;
-				$i_sr++;
-			}
-			$sr = $gtypes->{'SR'};
-		}
 
 		# correct bug in GATK allele with no reads
 		my $test = 0;
@@ -1630,28 +1595,8 @@ sub parseVcfFileForReference_gatk {
 
 			$allele->{is_imprecise} = undef;
 			my ( $type, $len, $ht );
-			if ( $self->method() eq 'manta' ) {
-				if ( $$x{'INFO'}->{'SVTYPE'} eq 'DEL' ) {
-					$type = 'i';
-					$$x{'INFO'}->{'SVLEN'} = abs( $$x{'INFO'}->{'SVLEN'} ) * -1;
-				}
-				if ( $$x{'INFO'}->{'SVTYPE'} eq 'DUP' ) {
-					$type = 'i';
-					$$x{'INFO'}->{'SVLEN'} = abs( $$x{'INFO'}->{'SVLEN'} );
-				}
-				$len                    = $$x{'INFO'}->{'SVLEN'};
-				$ht                     = $$x{'ALT'}[0];
-				$allele->{is_imprecise} = 1
-				  if ( exists $$x{'INFO'}->{'IMPRECISE'} );
-				$allele->{sr} = "-1,-1";
-				$allele->{pr} = "-1,-1";
-				$allele->{sr} = $sr if ($sr);
-				$allele->{pr} = $pr if ($pr);
-			}
-			else {
-				( $type, $len, $ht ) =
-				  $vcf->event_type( $vcfRefAllele, $vcfVarAllele );
-			}
+
+				( $type, $len, $ht ) = $vcf->event_type( $vcfRefAllele, $vcfVarAllele );
 
 			my $htype;
 			warn "LEN ==>" . $len . " type : $type " if $debug;
@@ -1661,10 +1606,6 @@ sub parseVcfFileForReference_gatk {
 			elsif ( $set eq 'freebayes' ) {
 				$htype = "indel";
 			}
-
-			#	if ($type eq 's' && length ($ht) == 1){
-			#	$htype = "snp";
-			#}
 			elsif ( $type eq "i" && $len >= 0 ) {
 				$htype = "insertion";
 
@@ -1672,15 +1613,12 @@ sub parseVcfFileForReference_gatk {
 			elsif ( $type eq "i" && $len < 0 ) {
 				$htype = "deletion";
 
-				#next;
 			}
 			else {
-				#$len, $ht
 				$htype = "indel";
 			}
 
 			if ($set) {
-
 				if ( lc($set) eq "intersection" ) {
 					$allele->{method} = "inter";
 				}
@@ -1727,8 +1665,7 @@ sub parseVcfFileForReference_gatk {
 			#############
 			my $nb_alleles = 0;
 			my @al         = sort { $a <=> $b } split( "/", $allele->{gt} );
-			map { $nb_alleles++ if ( $_ ne 0 || $_ ne "." ) }
-			  split( "/", $allele->{gt} );
+			map { $nb_alleles++ if ( $_ ne 0 || $_ ne "." ) } split( "/", $allele->{gt} );
 			if ( $al[0] eq $al[1] ) {
 				$allele->{he} = 0;
 				$allele->{ho} = 1;
@@ -1753,7 +1690,6 @@ sub parseVcfFileForReference_gatk {
 				$allele->{is_cas_1_2} = 1;
 			}
 
-			#warn Dumper $allele;
 			push( @{ $hash_alleles->{$htype} }, compress( freeze $allele) );
 			$index++;
 		}
@@ -2236,19 +2172,12 @@ sub parseVcfFileForReference_gatk {
 				  $allele->{dp}->{raw};
 				$hashRes{$structType}->{$id}->{annex}->{$patient_id}
 				  ->{nb_all_mut} = $allele->{dp}->{alt};
-				$hashRes{$structType}->{$id}->{annex}->{$patient_id}
-				  ->{nb_all_ref} = $allele->{dp}->{ref};
-				$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{pr} =
-				  $allele->{pr}
-				  if ( exists $allele->{pr} and $allele->{pr} );
+				$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{nb_all_ref} = $allele->{dp}->{ref};
+				$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{pr} = $allele->{pr}	if ( exists $allele->{pr} and $allele->{pr} );
 
-				$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{sr} =
-				  $allele->{sr}
-				  if ( exists $allele->{sr} and $allele->{sr} );
+				$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{sr} =$allele->{sr} if ( exists $allele->{sr} and $allele->{sr} );
 
-				$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{set} =
-				  $allele->{vcf_parse}->{INFO}->{set}
-				  if exists $allele->{vcf_parse}->{INFO}->{set};
+				$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{set} = $allele->{vcf_parse}->{INFO}->{set} if exists $allele->{vcf_parse}->{INFO}->{set};
 
 #$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{info_vcf} = $allele->{vcf_parse}->{INFO};#compress(freeze($allele->{vcf_parse}->{INFO}));
 

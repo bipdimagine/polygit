@@ -3354,7 +3354,10 @@ sub other_projects  {
         my ($self) = @_;
      	return $self->dejaVuInfosForDiag2("other_projects");
 }
-
+sub other_projects_ho  {
+        my ($self) = @_;
+     	return $self->dejaVuInfosForDiag2("other_projects_ho");
+}
 sub other_patients{
           my $self = shift;
            return $self->dejaVuInfosForDiag2("other_patients");

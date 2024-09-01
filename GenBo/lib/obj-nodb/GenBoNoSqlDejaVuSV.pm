@@ -5,6 +5,7 @@ use Moo;
 use strict;
 use warnings;
 use Data::Dumper;
+use Hash::Merge qw/ merge /;
 extends "GenBoNoSqlDejaVu";
 
 has toto =>(
@@ -15,7 +16,8 @@ default => sub {
 }
 );
 sub create_table {
-	my ($self,$key1) = @_;
+	my ($self) = @_;
+	my $key1 = "SV";
 	return $self->{table}->{$key1}   if (exists $self->{table}->{$key1});
 	 my $table_name =$self->name_table_data;
 	 $self->{table}->{$key1} = $table_name;
@@ -23,74 +25,97 @@ sub create_table {
 	$self->dbh($key1)->do("DROP TABLE IF EXISTS $table_name")  or die $DBI::errstr  if $self->mode eq 'c'  ;
 
 	#$self->dbh($chr)->do("CREATE TABLE if not exists $table_name (_key TEXT PRIMARY KEY, _value BLOB) ;")  or die $DBI::errstr;;
-	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),ho INTEGER, projects INTEGER, _value BLOB,start INTEGER,end INTEGER, variation_type VARCHAR(2), length INTEGER, caller_infos VARCHAR(100), patients INTEGER)")  or die $DBI::errstr;;
-	warn "coucou";
-	#$self->dbh($key1)->do("CREATE UNIQUE INDEX if not exists _key_idx  on $table_name (_key); ")  or die $DBI::errstr;;
-#	my $T2 = 	$table_name."POSITION";
-#	$self->dbh($key1)->do("CREATE VIRTUAL TABLE  if not exists $T2  USING rtree( id ,start,end)")  or die $DBI::errstr;
-#	$self->dbh($key1)->do("CREATE VIRTUAL TABLE  if not exists $table_name USING fts3(_key VARCHAR(250) NOT NULL ,_value blob ) ;")  or die $DBI::errstr;
-	
+	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),ho INTEGER, _value BLOB,chromosome2 VARCHAR(2),chromosome1 VARCHAR(2) , start1 INTEGER, start2 INTEGER, variation_type VARCHAR(2), caller VARCHAR(20),nb_project INTEGER, nb_patient INTEGER)")  or die $DBI::errstr;;
+
 	return 	$self->{table}->{$key1} ;
 }
 
+sub sth_insert {
+	my ($self) = @_;
+	return $self->{dbh_insert} if exists  $self->{dbh_insert};
+	 $self->{dbh_insert}= $self->dbh("SV")->prepare(
+		'insert into  __DATA__(_key,_value,chromosome1,start1,chromosome2,start2,caller,nb_project,nb_patient)  values(?,?,?,?,?,?,?,?,?) ;') or die $DBI::errstr;
+	return $self->{dbh_insert};
+}
+
+sub insert_sv {
+		my ($self,$id,$value,$caller) = @_;
+		my ( $c1, $start1, $c2, $start2 ) = split( /_/,$id);
+		my $new_hash ={};
+		my $npa = 0;
+		my $np =0;
+		foreach my $p (keys %$value){
+			push(@{$new_hash->{projects}},$p);
+			$np ++;
+			foreach my $pa (keys %{$value->{$p}}){
+					$new_hash->{patients}->{$p."!".$pa} = $id;
+					$npa ++;
+			} 
+			
+		}
+		$self->sth_insert->execute($id,$self->encode($new_hash),$self->change_chr($c1),$start1,$self->change_chr($c2),$start2,$caller,$np,$npa);
+		return;
+}
 
 
+sub change_chr {
+	my ($self,$chr) = @_;
+	return "X" if $chr == 23;
+	return "Y" if $chr == 24;
+	return "MT" if $chr == 25;
+	return $chr;
+}
+
+sub create_index {
+	my ($self) = @_;
+	my $chr = "SV";
+	$self->dbh($chr)->do(qq{CREATE UNIQUE INDEX if not exists _key_idx  on __DATA__ (_key);});
+	$self->dbh($chr)->do(qq{CREATE  INDEX if not exists _start_idx  on __DATA__ (start1);});
+	$self->dbh($chr)->do(qq{CREATE  INDEX if not exists _end_idx  on __DATA__ (start2);});
+	$self->dbh($chr)->do(qq{CREATE  INDEX if not exists _type_idx  on __DATA__ (chromosome1,chromosome2);});
+	$self->dbh($chr)->do(qq{CREATE  INDEX if not exists _type_idx1  on __DATA__ (chromosome1);});
+	$self->dbh($chr)->do(qq{CREATE  INDEX if not exists _type_idx2  on __DATA__ (chromosome2);});
+	$self->dbh($chr)->do(qq{CREATE  INDEX if not exists _type_idx2  on __DATA__ (nb_patient);});
+}
 
 
-sub prepare_cnv {
+sub prepare_sv{
 	my ($self,$chr) = @_;
 
 	return $self->{prepare_cnv}->{$chr} if exists $self->{prepare_cnv}->{$chr};
-		 my $table_name = $self->create_table($chr);
-	warn $self->dir." ".$chr;
-	$self->{prepare_cnv}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type, $table_name.projects,$table_name.start,$table_name.end,$table_name._value from $table_name  where end>=? and start<=?  and variation_type=? and length<? and length>? and projects<?  });
+	my $table_name = $self->create_table($chr);
+
+	$self->{prepare_cnv}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.chromosome1, $table_name.start1,$table_name.chromosome2,$table_name.start2,nb_patient,_value from $table_name
+	  where chromosome1=? and chromosome2=? and start1 between ? and ?  and start2 between ? and ? order by nb_patient});
+	
 	return $self->{prepare_cnv}->{$chr};
 }
 
-sub get_cnv {
-	my ($self,$chr,$start,$end,$type,$dejavu,$seuil) = @_;
-	
-	 my $table_name = $self->create_table($chr);
-	 my $T2 = $table_name."POSITION";
-	 
-	 #my $max = int( ($end-$start)*0.75);
-	 #my $lmax = ($end-$start) * 1.25;
-	  #my $lmin = ($end-$start) * 0.75;
 
-	  #$lmax = 1_000_000;
-	 #my $sth = $self->dbh($chr)->prepare(qq{select $table_name.variation_type, $table_name.projects,$table_name.start,$table_name.end,$table_name._value from $table_name  where start<=$end and end>=$start   and variation_type="$type";});
-	 #$self->sth_insert_dejavu_cached($chr)->execute($key,$hash->{$key}->{ho},$hash->{$key}->{all},$self->encode($hash->{$key}->{data}) )  or die $DBI::errstr." $key";;
-	 
-	# my $sth = $self->dbh($chr)->prepare(qq{select $table_name.variation_type, $table_name.projects,$table_name.start,$table_name.end,$table_name._value from $table_name, $T2  where $T2.start<=$end and $T2.end>=$start and $T2.id=$table_name.rowid  and $table_name.variation_type="$type";});
-	#	my $sth = $self->dbh($chr)->prepare(qq{select ($table_name.start - $table_name.end),$table_name.variation_type,$table_name.projects,$table_name._value from $table_name, $T2  where $T2.start<=$end and $T2.end>=$start and $T2.id=$table_name.rowid   and $table_name.variation_type="$type";});
-    #	warn qq{select $table_name.variation_type,$table_name.projects,$table_name._value from $table_name, $T2  where $T2.start<=$end and $T2.end>=$start and $T2.id=$table_name.rowid   and $table_name.variation_type="$type";};
-	# $self->prepare_cnv->execute($start,$end,$type);
-    # $self->{prepare_cnv}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type, $table_name.projects,$table_name.start,$table_name.end,$table_name._value from $table_name  where end>=? and start<=?  and variation_type=? and  (min(end,$end)-max(start,$start))>=$lmin and  (max(end,$end) - min($start,start)<=$lmax) limit 20;});
-	 my $length = abs($start-$end) +1;
-	 my $sp = int($length*abs(100-$seuil));
-	  $self->prepare_cnv($chr)->execute($start,$end,$type,$length+$sp,$length-$sp,$dejavu+1);
-	
-	my $x;
-	my$nb;
-	while (my @row = $self->prepare_cnv($chr)->fetchrow_array)     # retrieve one row
-	{ 
-	 	my $start1 = $row[2];
-	 	my $end1 = $row[3];
-	 
-	 	my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
-	 	next if $identity <  $seuil;
 
-	 	$nb++;
-		my $z = $self->decode($row[-1]);
-		foreach my $zz (keys %$z){
-			foreach my $zzz (keys %{$z->{$zz}}) {
-				foreach my $zzzz (keys %{$z->{$zz}->{$zzz}}) {
-					$x->{$zz}->{$zzz}->{$zzzz} = $start1."_".$end1."_".$identity;
-				}
-			}
-			unless ($dejavu eq "all") {last if scalar(keys %$x) > $dejavu+1};
-		}
-		unless ($dejavu eq "all") {last if scalar(keys %$x) > $dejavu+1};
+sub get_sv {
+		my ($self,$chr1,$start1,$chr2,$start2,$dejavu) = @_;
+		
+	 my $table_name = $self->create_table("SV");
+	 
+	  $self->prepare_sv("SV")->execute($chr1,$chr2,$start1-50,$start1+50,$start2-50,$start2+50);
+
+	my $x = {};
+	my $nb = 0;
+	$x->{infos} = {};
+	while (my @row = $self->prepare_cnv("SV")->fetchrow_array){ 
+		 if ($row[4]  > $dejavu) {
+		 	$x->{dv_patients}  = $row[4];
+		 	last;
+		 } 
+		$x->{infos} = merge $x->{infos}, $self->decode($row[-1]);
+		
+		$x->{dv_patients} += keys %{$x->{infos}->{patients}};
+		
+		 if ($x->{dv_patients}  > $dejavu){
+		 	last;
+		 } 
+		
 	 }
 	 return $x;
 }

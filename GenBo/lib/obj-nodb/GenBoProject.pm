@@ -4739,6 +4739,13 @@ has dejavuCNV => (
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
 	}
 );
+sub localdejavuCNV {
+	my ($self,$mode) = @_;
+	return $self->{lite}->{"ldv".$mode} if exists  $self->{lite}->{"ldv".$mode};
+	my $sqliteDir =  $self->getCNVDir()."/dejavu/";
+	$self->{lite}->{"ldv".$mode} = GenBoNoSqlDejaVuCNV->new( dir => $sqliteDir, mode => $mode );
+}
+
 has dejavuSV => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -6485,6 +6492,7 @@ sub disconnect {
 sub close_rocks {
 	my $self = shift;
 	foreach my $c (values %{$self->{rocks}}){
+		warn $c;
 		$c->close();# if $c;
 		delete $self->{rocks}->{$c}
 	}
