@@ -970,8 +970,8 @@ sub launchStatsProjectAll_genes {
 		$vector_buffer{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions();
 		
 		#next if ($chr->not_used());
-		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
-		foreach my $gene (@{$chr->getGenes}) {
+		foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
+		#foreach my $gene (@{$chr->getGenes}) {
 			$nb ++;
 #			my $vchr = $gene->return_compact_vector( $vvv);
 #			warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
