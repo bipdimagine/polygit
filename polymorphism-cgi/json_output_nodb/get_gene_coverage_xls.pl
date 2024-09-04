@@ -22,6 +22,9 @@ my $gene_name		= $cgi->param('gene');
 my $only_coding		= $cgi->param('only_coding');
 my $intronic		= $cgi->param('intronic');
 
+my $details_by_pos	= $cgi->param('details_by_pos');
+my $session_id	= $cgi->param('session_id');
+
 #confess("\n\nOption -dir_out mandatory. Die\n\n") unless $dir_out;
 confess("\n\nOption -project mandatory. Die\n\n") unless $project_name;
 confess("\n\nOption -gene mandatory. Die\n\n") unless $gene_name;
@@ -29,6 +32,7 @@ confess("\n\nOption -gene mandatory. Die\n\n") unless $gene_name;
 
 my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name);
+$project->cgi_object(1);
 my $gene = $project->newGene($gene_name);
 
 
@@ -42,47 +46,115 @@ foreach my $p (@lPatients) {
 }
 #print "\n# NB PATIENTS: ".scalar(@lPatients)."\n";
 
-my $xls_export = new xls_export();
-my $title_xls = 'Coverage_'.$project->name().'_'.$gene_name;
-$title_xls .= '_only_coding' if ($only_coding);
-$title_xls .= '.xls';
-$xls_export->title_page($title_xls);
 
-
-if ($dir_out) { $xls_export->output_dir($dir_out); }
-$xls_export->open_xls_file();
 
 my $h_res;
-foreach my $t (sort @{$gene->getTranscripts()}) {
-	#warn Dumper $t->getSpanCoding();
-	
-	my $t_id = $t->id();
-	foreach my $e (@{$t->getExons()}) {
-		my $e_id = $e->id();
-		$e_id =~ s/$t_id//;
-		foreach my $p (@lPatients) {
-			my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $t, $e);
-			my $pos = $e_id;
-			$pos =~ s/ex//;
-			$h_res->{$pos}->{$e_id}->{$p->name()} = $h;
+
+if ($session_id) {
+	my $xls_export = get_xls_handler();
+	$h_res = loadSessionXLS($session_id);
+	if ($details_by_pos) {
+		write_xls_pos($xls_export, $gene, $h_res);
+		exit(0);
+	}
+	else {
+		foreach my $t (sort @{$gene->getTranscripts()}) {
+			write_xls_transcript($xls_export, $t, $h_res);
+			exit(0);
 		}
 	}
-	if ($intronic) {
-		foreach my $i (@{$t->getIntrons()}) {
-			my $i_id = $i->id();
-			$i_id =~ s/$t_id//;
+	exit(0);
+}
+else {
+	if ($details_by_pos) {
+		print $cgi->header('text/json-comment-filtered');
+		print "{\"progress\":\".";
+		my $start = $gene->start();
+		my $end = $gene->end();
+		my $pos = $start;
+		while ($pos <= $end) {
+			$project->print_dot(250);
 			foreach my $p (@{$project->getPatients()}) {
-				my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $t, $i);
-				my $pos = $i_id;
-				$pos =~ s/intron//;
-				$h_res->{$pos}->{$i_id}->{$p->name()} = $h;
+				my $cov = get_coverage_at_positions_start($p, $gene->getChromosome->name, $pos);
+				$h_res->{$pos}->{'all'}->{$p->name()} = $cov;
+			}
+			$pos++;
+		}
+		saveSessionXLS($project, $h_res);
+	}
+	
+	else {
+		print $cgi->header('text/json-comment-filtered');
+		print "{\"progress\":\".";
+		foreach my $t (sort @{$gene->getTranscripts()}) {
+			$project->print_dot(1);
+			#warn Dumper $t->getSpanCoding();
+			
+			my $t_id = $t->id();
+			foreach my $e (@{$t->getExons()}) {
+				my $e_id = $e->id();
+				$e_id =~ s/$t_id//;
+				foreach my $p (@lPatients) {
+					my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $t, $e);
+					my $pos = $e_id;
+					$pos =~ s/ex//;
+					$h_res->{$pos}->{$e_id}->{$p->name()} = $h;
+				}
+			}
+			if ($intronic) {
+				foreach my $i (@{$t->getIntrons()}) {
+					my $i_id = $i->id();
+					$i_id =~ s/$t_id//;
+					foreach my $p (@{$project->getPatients()}) {
+						my $h = get_coverage_at_positions($p, $gene->getChromosome->name, $t, $i);
+						my $pos = $i_id;
+						$pos =~ s/intron//;
+						$h_res->{$pos}->{$i_id}->{$p->name()} = $h;
+					}
+				}
 			}
 		}
+		saveSessionXLS($project, $h_res);
+		exit(0);
 	}
-	write_xls_transcript($xls_export, $t, $h_res);
 }
-exit(0);
 
+
+
+
+
+
+sub saveSessionXLS {
+	my ($project, $hashRes) = @_;
+	print ".";
+	my $xls_export = new xls_export();
+	$xls_export->{hash_specific_infos} = $hashRes;
+	my $session_id = $xls_export->save();
+	print '@@@';
+	print "\",\"session_id\":\"";
+	print $session_id;
+	print "\"}";
+    exit(0);
+}
+
+sub loadSessionXLS {
+	my ($session_id) = @_;
+	my $session = new xls_export();
+	$session->load($session_id);
+	my $hashRes = $session->{hash_specific_infos};
+	return $hashRes;
+}
+
+sub get_xls_handler {
+	my $xls_export = new xls_export();
+	my $title_xls = 'Coverage_'.$project->name().'_'.$gene_name;
+	$title_xls .= '_only_coding' if ($only_coding);
+	$title_xls .= '.xls';
+	$xls_export->title_page($title_xls);
+	if ($dir_out) { $xls_export->output_dir($dir_out); }
+	$xls_export->open_xls_file();
+	return $xls_export;
+}
 
 sub write_xls_transcript {
 	my ($xls_export, $t, $h_res) = @_;
@@ -175,6 +247,136 @@ sub write_xls_transcript {
 	$xls_tr->write( $i, 1, 'Mean coverage of this patient > Mean coverage project * 1.4');
 }
 
+sub write_xls_pos {
+	my ($xls_export, $g, $h_res) = @_;
+	my $xls_tr = $xls_export->workbook->add_worksheet('ALL POS');
+	my $xls_cov_low = $xls_export->workbook->add_worksheet('COV < 30');
+	my $xls_cov_null = $xls_export->workbook->add_worksheet('COV 0');
+	my @lHeaders;
+	push(@lHeaders, 'chr'.$g->getChromosome->id().' pos');
+	foreach my $p_name (sort keys %{$h_patients}) { push(@lHeaders, $p_name); }
+	my $i = 0;
+	my $j = 0;
+	foreach my $cat (@lHeaders) {
+		$xls_tr->write( $i, $j, $cat, $xls_export->get_format_header() );
+		$j++;
+	}
+	$j = 0;
+	foreach my $cat (@lHeaders) {
+		$xls_cov_low->write( $i, $j, $cat, $xls_export->get_format_header() );
+		$j++;
+	}
+	$j = 0;
+	foreach my $cat (@lHeaders) {
+		$xls_cov_null->write( $i, $j, $cat, $xls_export->get_format_header() );
+		$j++;
+	}
+	
+	my $h_lines;
+	my $nb_line = 1;
+	my $h_lines_low_cov;
+	my $nb_line_low_cov = 1;
+	my $h_lines_null_cov;
+	my $nb_line_null_cov = 1;
+	my $limit_down = 15;
+	my $limit_up = 30;
+	
+	my @lPos = sort {$a <=> $b} keys %$h_res;
+	foreach my $pos (@lPos) {
+		my @_this_line;
+		push(@_this_line, $pos);
+		
+		$h_lines->{$nb_line}->{format}->{0} = $xls_export->get_format_header();
+		
+		my $nb_pat = 0;
+		my $total_pat = 0;
+		foreach my $p_name (sort keys %{$h_res->{$pos}->{'all'}}) {
+			$nb_pat++;
+			$total_pat += $h_res->{$pos}->{'all'}->{$p_name};
+		}
+		my $mean_pat = $total_pat / $nb_pat;
+		
+		$nb_pat = 0;
+		my ($has_low_cov, $has_null_cov);
+		foreach my $p_name (sort keys %{$h_res->{$pos}->{'all'}}) {
+			$nb_pat++;
+			my $cov = $h_res->{$pos}->{'all'}->{$p_name};
+			my $text = "$cov";
+			push(@_this_line, $text);
+			
+			if ($cov == 0) {
+				$h_lines->{$nb_line}->{format}->{$nb_pat} = $xls_export->get_format_red();
+				$h_lines_low_cov->{$nb_line_low_cov}->{format}->{$nb_pat} = $xls_export->get_format_red();
+				$h_lines_null_cov->{$nb_line_null_cov}->{format}->{$nb_pat} = $xls_export->get_format_red();
+				$has_low_cov = 1;
+				$has_null_cov = 1;
+			}
+			elsif ($cov < $limit_down) {
+				$h_lines->{$nb_line}->{format}->{$nb_pat} = $xls_export->get_format_orange();
+				$h_lines_low_cov->{$nb_line_low_cov}->{format}->{$nb_pat} = $xls_export->get_format_orange();
+				$h_lines_null_cov->{$nb_line_null_cov}->{format}->{$nb_pat} = $xls_export->get_format_orange();
+				$has_low_cov = 1;
+			}
+			elsif ($cov < $limit_up) {
+				$h_lines->{$nb_line}->{format}->{$nb_pat} = $xls_export->get_format_blue();
+				$h_lines_low_cov->{$nb_line_low_cov}->{format}->{$nb_pat} = $xls_export->get_format_blue();
+				$h_lines_null_cov->{$nb_line_null_cov}->{format}->{$nb_pat} = $xls_export->get_format_blue();
+			}
+			else {
+				$h_lines->{$nb_line}->{format}->{$nb_pat} = undef;
+				$h_lines_low_cov->{$nb_line_low_cov}->{format}->{$nb_pat} = undef;
+				$h_lines_null_cov->{$nb_line_null_cov}->{format}->{$nb_pat} = undef;
+			}
+		}
+		
+		my $text2 = sprintf("%.2f", $mean_pat);
+		push(@_this_line, $text2);
+		$h_lines->{$nb_line}->{line} = \@_this_line;
+		$nb_line++;
+		
+		if ($has_low_cov) {
+			$h_lines_low_cov->{$nb_line_low_cov}->{line} = \@_this_line;
+			$nb_line_low_cov++;
+		}
+		if ($has_null_cov) {
+			$h_lines_null_cov->{$nb_line_null_cov}->{line} = \@_this_line;
+			$nb_line_null_cov++;
+		}
+		$has_low_cov = undef;
+		$has_null_cov = undef;
+	}
+	
+	foreach my $nb_line (sort {$a <=> $b} keys %{$h_lines}) {
+		$i = $nb_line;
+		$j = 0;
+		foreach my $col (@{$h_lines->{$nb_line}->{line}}) {
+			my $format = $h_lines->{$nb_line}->{format}->{$j};
+			$xls_tr->write( $i, $j, $col, $format );
+			$j++;
+		}
+	}
+	
+	foreach my $nb_line (sort {$a <=> $b} keys %{$h_lines_low_cov}) {
+		$i = $nb_line;
+		$j = 0;
+		foreach my $col (@{$h_lines_low_cov->{$nb_line}->{line}}) {
+			my $format = $h_lines_low_cov->{$nb_line}->{format}->{$j};
+			$xls_cov_low->write( $i, $j, $col, $format );
+			$j++;
+		}
+	}
+	
+	foreach my $nb_line (sort {$a <=> $b} keys %{$h_lines_null_cov}) {
+		$i = $nb_line;
+		$j = 0;
+		foreach my $col (@{$h_lines_null_cov->{$nb_line}->{line}}) {
+			my $format = $h_lines_null_cov->{$nb_line}->{format}->{$j};
+			$xls_cov_null->write( $i, $j, $col, $format );
+			$j++;
+		}
+	}
+}
+
 
 sub get_coverage_at_positions {
 	my ($patient, $chr_name, $t, $ei) = @_;
@@ -210,6 +412,18 @@ sub get_coverage_at_positions {
 	return $h;
 }
 
+sub get_coverage_at_positions_start {
+	my ($patient, $chr_name, $start) = @_;
+	my $end = $start;
+	
+	my $array = $patient->getNoSqlDepth->getDepth($chr_name, $start, $end);
+	my $min = 99999;
+	my $max = 0;
+	my $total = 0;
+	my $nb = 0;
+	my $i = 0;
+	return $$array[0];
+}
 
 
 
