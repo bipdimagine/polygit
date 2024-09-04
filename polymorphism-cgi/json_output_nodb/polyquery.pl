@@ -538,6 +538,9 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	}
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_annotations - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
+	QueryVectorFilter::filter_vector_dejavu($chr, $dejavu, $dejavu_ho, $test) if ($dejavu);
+	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_dejavu - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+	
 	# FILTRE des modeles genetiques
 	if ($model and $project->typeFilters() eq 'individual') {
 		QueryVectorFilter::filter_model_individual_recessif($chr) if ($model eq 'recessif');
@@ -1894,8 +1897,6 @@ sub doPolyQueryFilters_global_cat {
 	QueryVectorFilter::filter_vector_confidence_variants($chr, $hToFilter);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_confidence_variants - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 #	if ($can_use_hgmd and $project->isUpdate()) {}
-	QueryVectorFilter::filter_vector_dejavu($chr, $nb_dejavu, $dejavu_ho, $test) if ($nb_dejavu);
-	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_dejavu - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	#QueryVectorFilter::filter_vector_polyscore($chr, $polyscore_value, $test) if ($polyscore_value);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_polyscore - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 }
@@ -2872,6 +2873,7 @@ sub export_xls {
 	my $xls_export = new xls_export();
 	$xls_export->title_page('PolyQuery_'.$project->name().'.xls');
 	$xls_export->store_variants_infos($lVar, $project, $project->getPatients());
+	warn '$xls_save_session: '.$xls_save_session;
 	if ($xls_save_session) {
 		my $session_id = $xls_export->save();
 	    print '@@@';
@@ -2879,6 +2881,9 @@ sub export_xls {
 	    print $session_id;
 	    print "\"}";
 		exit(0);
+	}
+	elsif ($xls_outfile) {
+		$xls_export->output_dir($xls_outfile);
 	}
 	create_xls_variants($xls_export, $hResumeFilters);
 }
