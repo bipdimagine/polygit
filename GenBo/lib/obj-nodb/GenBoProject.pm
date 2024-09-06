@@ -6498,8 +6498,8 @@ sub disconnect {
 sub close_rocks {
 	my $self = shift;
 	foreach my $c (values %{$self->{rocks}}){
-		warn $c;
-		$c->close();# if $c;
+		#warn $c;
+		#$c->close() if $c;
 		delete $self->{rocks}->{$c}
 	}
 	delete $self->{rocks};

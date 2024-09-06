@@ -19,10 +19,7 @@ sub parseVcfFileForReference {
 	my $v      = Bio::DB::HTS::VCF->new( filename => $self->file() );
 	my $v1     = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 	my $header = $v->header();
-	warn Dumper $header->get_sample_names();
 	confess() if $header->num_samples() ne 1;
-	warn  $header->get_sample_names()->[0];
-	confess() if $header->get_sample_names()->[0] ne "Imag_3";
 	#die( $header->get_sample_names->[0] . " " . $self->getPatient->barcode )
 	 # if $self->getPatient->name ne $header->get_sample_names->[0]
 	 # and $header->get_sample_names->[0] ne $self->getPatient->barcode;

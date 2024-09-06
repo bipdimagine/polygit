@@ -175,6 +175,50 @@ sub get_cnv {
 	 return $x;
 }
 
+
+
+########±±±±#####
+# get CNV local
+################
+
+
+######################
+# for position
+################
+
+ sub get_cnv_project {
+	my ($self,$type,$chr,$start,$end,$seuil,$pid) = @_;
+	 my $l = (100 - $seuil)/100;
+	 my $len = abs($start - $end);
+	 $l = abs($l*$len)-1;
+	  my $table_name = $self->create_table($chr);
+	  my $min = $len - $l;
+	  my $max = $len + $l;
+	    $self->prepare_cnv_2($chr)->execute($start,$end,$type,($len - $l),($len + $l));
+		my $nb = 0;
+		my @dj;
+	while (my $row = $self->prepare_cnv_2($chr)->fetchrow_hashref)     # retrieve one row
+	{ 
+	 	my $start1 = $row->{start};
+	 	my $end1 = $row->{end};
+	 	my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
+	 	next if $identity <  $seuil;
+	 	
+	 	my $hashdv = $self->decode($row->{hash2});
+	 	if($pid){
+	 	next unless exists $hashdv->{$pid};
+	 	}
+	 	my $l = abs($start-$end);
+	 	push(@dj,$self->decode($row->{hash}));
+	}
+	return \@dj;
+	
+ }
+
+
+
+
+
  #
  
  sub prepare_cnv_2 {
@@ -186,7 +230,7 @@ sub get_cnv {
 
 	$self->{prepare_cnv2}->{$chr} = $self->dbh($chr)->prepare(qq{select 
 		$table_name.variation_type as type , $table_name.projects as projects ,$table_name.start as start ,
-		$table_name.end as end  ,$table_name._value2 as hash 
+		$table_name.end as end  ,$table_name._value2 as hash2 ,$table_name._value as hash
 		from $table_name  where end >= ? and start<=?  and variation_type=?  and length between  ? and  ?});
 	return $self->{prepare_cnv2}->{$chr};
 }

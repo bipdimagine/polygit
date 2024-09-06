@@ -297,9 +297,11 @@ sub getSequence{
 }
 sub nomenclatureType {
 	my ($self) = @_;
+	return "ins";
 	my $seq1 = $self->sequence();
 	my $seq2 = $self->getChromosome()->getSequence($self->start-2,$self->start+$self->length+5);
 	 #warn "dup".$self->id." ".$seq1." ".$self->length.$seq2  if $seq2 =~ /$seq1/;
+	 return "ins" unless $seq1;
 	return "dup" if $seq2 =~ /$seq1/;
 	return "ins";
 }

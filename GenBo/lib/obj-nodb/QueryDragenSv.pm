@@ -17,9 +17,7 @@ sub parseVcfFileForReference {
 	my $chr    = $reference->getChromosome();
 	my $v      = Bio::DB::HTS::VCF->new( filename => $self->file() );
 	my $v1     = Bio::DB::HTS::Tabix->new( filename => $self->file() );
-	warn $self->file();
 	my $header = $v->header();
-	warn Dumper $header->get_sample_names();
 	confess() if $header->num_samples() ne 1;
 	
 	#die( $header->get_sample_names->[0] . " " . $self->getPatient->barcode )
@@ -55,7 +53,7 @@ sub parseVcfFileForReference {
 			#my ($self,$x,$patient,$chr,$reference) = @_;
 		}
 		elsif ( $x->{infos}->{SVTYPE} eq "INV" ) {
-			$hash = $self->genericSVInv( $x, $chr );
+			$hash = $self->genericSVBnd( $x, $chr );
 			next unless $hash;
 
 			#my ($self,$x,$patient,$chr,$reference) = @_;

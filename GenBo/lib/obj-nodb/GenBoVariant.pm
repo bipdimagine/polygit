@@ -2842,6 +2842,7 @@ sub getNormDPAfter {
 sub getCNVDude {
 	my ($self,$patient) = @_;
 	my $pid = $patient->id;
+	return "??" unless exists  $self->dp_infos->{$pid};
 	return "??" if $self->dp_infos->{$pid}->[2] eq "-";
 	return sprintf("%.2f", $self->buffer->log2($self->dp_infos->{$pid}->[2]/100));
 }
