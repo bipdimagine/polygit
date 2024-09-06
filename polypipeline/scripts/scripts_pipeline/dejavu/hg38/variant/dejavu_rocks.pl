@@ -9,7 +9,7 @@ use IO::Compress::Gzip qw(gzip $GzipError) ;
 use IO::Uncompress::Gunzip qw(gunzip $GunzipError) ;
 use Cwd 'abs_path';
 use Digest::MD5 qw(md5_hex);
-use lib "$RealBin/../../../GenBo/lib/obj-nodb/";
+use lib "$RealBin/../../../../../../GenBo/lib/obj-nodb/";
 use List::MoreUtils qw{ natatime };
 use String::ProgressBar;
 use POSIX qw(strftime);
@@ -40,12 +40,16 @@ my $ucsc_chr = "chr".$chr;
 $ucsc_chr = "chrM" if $ucsc_chr eq "chrMT";
 
 
-my $dir = $buffer->config->{deja_vu}->{path}."/HG19/".$buffer->config->{deja_vu}->{variations};
+my $dir = $buffer->config->{deja_vu}->{path_rocks}."/HG19/".$buffer->config->{deja_vu}->{variations};
 my $dir_out = $dir."/rocks/";
 warn $dir_out;
-my $dir38 = $buffer->config->{deja_vu}->{path}."/HG38/".$buffer->config->{deja_vu}->{variations}."/rocks/";
+my $dir38 = $buffer->config->{deja_vu}->{path_rocks}."/HG38/".$buffer->config->{deja_vu}->{variations}."/rocks/";
 my $dir_put_38 = $dir38."/rocks/";
-my $dbh = DBI->connect( "dbi:SQLite:dbname=$dir"."/$chr.dejavu.lite", "", "",{ sqlite_use_immediate_transaction => 0, } );
+ warn $buffer->config->{deja_vu}->{path_rocks}."/XXXXX" . "/".$buffer->config->{deja_vu}->{variations};
+warn  $dir38;
+warn $chr;
+warn "dbi:SQLite:dbname=$dir/$chr.dejavu.lite";
+my $dbh = DBI->connect( "dbi:SQLite:dbname=$dir/$chr.dejavu.lite", "", "",{ sqlite_use_immediate_transaction => 0, } );
 warn "$dir"."/1.dejavu.lite";
 warn $dbh;
  my $sth = $dbh->prepare( 
@@ -56,7 +60,7 @@ warn $dbh;
  my $rg = GenBoNoSqlRocksGenome->new(dir=>$dir_out,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>"HG19",pack=>"",description=>[],pipeline=>1);
  my $rg38 = GenBoNoSqlRocksGenome->new(dir=>$dir38,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>"HG38",pack=>"",description=>[],pipeline=>1);
  my $nb =0;
- 
+ warn $dir38;
    warn "- end -";
  #  $fp->write_batch();
    $rg->close();
@@ -99,7 +103,7 @@ warn "---------------------------------------- STEP 2 --------------------------
 
 system ("sort -u -k 2,2n $f4 > $f4.sort && bgzip -f $f4.sort && tabix -f -p bed $f4.sort.gz");
 
-unlink $f4;
+#unlink $f4;
 warn "$RealBin/dejavu_rocks2.pl -chr=$chr -file=$f4.sort.gz";
 system("$RealBin/dejavu_rocks2.pl -chr=$chr -file=$f4.sort.gz");
 warn "$RealBin/dejavu_rocks2.pl -chr=$chr -file=$f4.sort.gz";
@@ -142,6 +146,8 @@ $rg38 = GenBoNoSqlRocksGenome->new(dir=>$dir38,mode=>"w",index=>"genomic",chromo
    	my $dbh = DBI->connect( "dbi:SQLite:dbname=$dir"."/$chr.dejavu.lite", "", "",{ sqlite_use_immediate_transaction => 0, } );
 	my $start = $region->{start};
 	my $end = $region->{end};
+	#return if $end != 45000001;
+	
 	warn $start." ".$end;
  	my $sth = $dbh->prepare( 
       "SELECT _key,_value,start,end from __DATA__ where start > $start and end <= $end"
@@ -167,29 +173,37 @@ $rg38 = GenBoNoSqlRocksGenome->new(dir=>$dir38,mode=>"w",index=>"genomic",chromo
    my $f3 = "$tmp_dir/"."$chr.$start.$end.error.bed";
   
    write_file("$tmp_dir/"."$chr.$start.$end.bed", @pos);
-   
+   warn "$tmp_dir/"."$chr.$start.$end.bed";
    system("/software/distrib/ucsc_util/liftOver $f1 /data-isilon/bipd-src/pnitschk/git2-polyweb/polygit/polymorphism-cgi/cache_nodb/scripts/rocks/hg19ToHg38.over.chain $f2 $f3");
    open (BED,"$f2");
   
    my @unsave;
    while(my $line = <BED>){
+   	my $debug;
+   	$debug =1 if $line =~ /42565845/;
    	chomp($line);
    	my ($chr,$pos38,$end,$id,$data) = split(" ",$line);
+   	warn "coucou $chr,$pos38,$end,$id " if $debug;
 	next if $chr ne $ucsc_chr;   	
+	warn "1 " if $debug;
    	if ($pos38>$start && $pos38 <= $end){
    		my ($a,$b,$c,$d) = split("_",$id);
    		my $id =  join("_",$a,$pos38,$c,$d);
-   		$no38->put_batch_raw($id,$d);
+   		my $rockid = $no38->return_rocks_id_from_genbo_id($id);
+   		$no38->put_batch_raw($rockid,$data);
+   		warn "**********".$id." ".$d if $debug;
    	}
    	else {
    		push(@unsave,$line."\n");
    	}
    }
    	warn "END ".$start." ".$end;
-   	unlink $f1;
-   	unlink $f2;
-   	unlink $f3;
+   #	unlink $f1;
+  # 	unlink $f2;
+  # 	unlink $f3;
    	warn "$f1 unlink";
+   $no38->write_batch;
+   $no->write_batch;
   $no->close();
   $no38->close();
   return \@unsave;
