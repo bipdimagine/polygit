@@ -160,12 +160,11 @@ my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
 my $len_cb;
  $len_cb->[0] = length($lines->{"[Data]"}->[0]->[$pos_cb1]);
  $len_cb->[1] = length($lines->{"[Data]"}->[0]->[$pos_cb2]); ;
-
+ 
 foreach my $data (@{$lines->{"[Data]"}}){
 	next unless  $data->[$pos_cb1];
 	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if  $len_cb->[0] ne length($data->[$pos_cb1]);
-	die("CB de taille differente") if  $len_cb->[1] ne length($data->[$pos_cb2]);
-	
+	die("CB de taille differente") if  ($pos_cb2 ne '-1') and ($len_cb->[1] ne length($data->[$pos_cb2]));
 }
 
 
