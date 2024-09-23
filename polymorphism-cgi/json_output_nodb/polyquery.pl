@@ -1032,8 +1032,17 @@ sub launchStatsProjectAll_genes {
 		$vector_buffer{$chr_id}{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions();
 		
 		#next if ($chr->not_used());
+<<<<<<< HEAD
+		foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
+		#foreach my $gene (@{$chr->getGenes}) {
+			$nb ++;
+#			my $vchr = $gene->return_compact_vector( $vvv);
+#			warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
+#			$vsmall &= $vchr;
+=======
 		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
 		foreach my $gene (@{$chr->getGenes}) {
+>>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 			next if $gene->getCurrentCompactVector->is_empty();
 			$project->print_dot(50);
 #			my $v_to_enum = $gene->_getVectorOrigin->to_Enum();

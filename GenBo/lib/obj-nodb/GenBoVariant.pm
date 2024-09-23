@@ -2844,6 +2844,7 @@ sub getNormDPAfter {
 sub getCNVDude {
 	my ($self,$patient) = @_;
 	my $pid = $patient->id;
+	return "??" unless exists  $self->dp_infos->{$pid};
 	return "??" if $self->dp_infos->{$pid}->[2] eq "-";
 	return sprintf("%.2f", $self->buffer->log2($self->dp_infos->{$pid}->[2]/100));
 }
@@ -3310,7 +3311,10 @@ sub other_projects  {
         my ($self) = @_;
      	return $self->dejaVuInfosForDiag2("other_projects");
 }
-
+sub other_projects_ho  {
+        my ($self) = @_;
+     	return $self->dejaVuInfosForDiag2("other_projects_ho");
+}
 sub other_patients{
           my $self = shift;
            return $self->dejaVuInfosForDiag2("other_patients");

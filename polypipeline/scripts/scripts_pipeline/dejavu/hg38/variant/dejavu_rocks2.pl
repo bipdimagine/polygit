@@ -9,7 +9,7 @@ use IO::Compress::Gzip qw(gzip $GzipError) ;
 use IO::Uncompress::Gunzip qw(gunzip $GunzipError) ;
 use Cwd 'abs_path';
 use Digest::MD5 qw(md5_hex);
-use lib "$RealBin/../../../GenBo/lib/obj-nodb/";
+use lib "$RealBin/../../../../../../GenBo/lib/obj-nodb/";
 use List::MoreUtils qw{ natatime };
 use String::ProgressBar;
 use POSIX qw(strftime);
@@ -40,7 +40,7 @@ my $buffer = new GBuffer;
 my $ucsc_chr = "chr".$chr;
 $ucsc_chr = "chrM" if $ucsc_chr eq "chrMT";
 
-my $dir38 = my $dir38 = $buffer->config->{deja_vu}->{path}."/HG38/".$buffer->config->{deja_vu}->{variations}."/rocks/";
+my $dir38 = my $dir38 = $buffer->config->{deja_vu}->{path_rocks}."/HG38/".$buffer->config->{deja_vu}->{variations}."/rocks/";
 $dir38 =~ s/HG19/HG38/;
 my $rg38 = GenBoNoSqlRocksGenome->new(dir=>$dir38,mode=>"w",index=>"genomic",chromosome=>$chr,genome=>"HG38",pack=>"",description=>[]);
 

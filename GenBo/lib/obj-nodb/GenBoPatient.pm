@@ -4,7 +4,6 @@ use strict;
 use Moo;
 use Data::Dumper;
 use Config::Std;
-use GenBoCapture;
 use GenBoPcrMultiplex;
 use QueryVcf;
 use QueryJunctionFile;
@@ -20,6 +19,11 @@ use JSON::XS;
 use Statistics::Descriptive;
 use GenBoNoSqlLmdbCache;
 use Carp;
+use QueryPbsv;
+
+use QueryDragenSv;
+use GenBoCapture;
+
 use List::MoreUtils qw(firstidx );
 extends "GenBo";
 
@@ -687,7 +691,8 @@ has callingMethods => (
 		my $query    = $self->getProject()->buffer->getQuery();
 		my $lMethods = $query->getCallingMethods(
 			patient_name => $self->name() . "",
-			project_id   => $self->getProject->id
+			project_id   => $self->getProject->id,
+			type=> "SNP"
 		);
 		my %order_methods = (
 			ion_merge        => 1,
@@ -717,6 +722,7 @@ has callingMethods => (
 	},
 );
 
+
 has callingSVMethods => (
 	is      => 'rw',
 	lazy    => 1,
@@ -724,18 +730,29 @@ has callingSVMethods => (
 		my $self = shift;
 		my @lMethods;
 		my $query    = $self->getProject()->buffer->getQuery();
-		my $lMethods = $query->getCallingSVMethods(
+		my $lMethods = $query->getCallingMethods(
 			patient_name => $self->name() . "",
-			project_id   => $self->getProject->id
+			project_id   => $self->getProject->id,
+			type => "SV"
 		);
-		my @final;
-		foreach my $methName (@$lMethods) {
-			if ( $self->getProject()->getVariationsDir($methName) ) {
-				push( @final, $methName );
-			}
-		}
+		return $lMethods;
+	},
+);
 
-		return \@final;
+
+has callingCNVMethods => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my @lMethods;
+		my $query    = $self->getProject()->buffer->getQuery();
+		my $lMethods = $query->getCallingMethods(
+			patient_name => $self->name() . "",
+			project_id   => $self->getProject->id,
+			type => "CNV"
+		);
+		return $lMethods;
 	},
 );
 
@@ -1147,8 +1164,9 @@ sub getStructuralVariations {
 	push( @$lRes, @{ $self->getMnps( $chrName, $start, $end ) } );
 	push( @$lRes, @{ $self->getLargeDeletions( $chrName, $start, $end ) } );
 	push( @$lRes, @{ $self->getLargeDuplications( $chrName, $start, $end ) } );
+	push( @$lRes, @{ $self->getLargeInsertions( $chrName, $start, $end ) } );
 	push( @$lRes, @{ $self->getInversions( $chrName, $start, $end ) } );
-	push( @$lRes, @{ $self->getBoundaries( $chrName, $start, $end ) } );
+	#push( @$lRes, @{ $self->getBoundaries( $chrName, $start, $end ) } );
 	return $lRes;
 }
 
@@ -1158,7 +1176,20 @@ sub getQueryVcf {
 	$args{patient} = $self;
 	$args{file}    = $fileName;
 	$args{method}  = $method;
-	my $queryVcf = QueryVcf->new( \%args );
+	
+	my $queryVcf;
+	
+	if ($method eq "pbsv"){
+		 $queryVcf = QueryPbsv->new( \%args );
+	}
+	elsif ($method eq "dragen-sv"){
+		 $queryVcf = QueryDragenSv->new( \%args );
+	}
+	else {
+		$queryVcf = QueryVcf->new( \%args );
+	}
+	 
+	
 	return $queryVcf;
 }
 
@@ -1221,6 +1252,7 @@ has callingSVFiles => (
 	default => sub {
 		my $self    = shift;
 		my $methods = $self->callingSVMethods();
+		
 		my $files   = {};
 		foreach my $method_name (@$methods) {
 			my $file = $self->_getCallingSVFileWithMethodName( $method_name,"variations" );
@@ -1229,6 +1261,83 @@ has callingSVFiles => (
 		return $files;
 	},
 );
+
+has callingSRMethods => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my @lMethods;
+		my $query    = $self->getProject()->buffer->getQuery();
+		my $lMethods = $query->getCallingMethods(
+			patient_name => $self->name() . "",
+			project_id   => $self->getProject->id,
+			type => "SR"
+		);
+		return $lMethods;
+	},
+);
+
+has callingSRFiles => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		my $methods = $self->callingSRMethods();
+		my $files   = {};
+		foreach my $method_name (@$methods) {
+			my $file = $self->_getCallingSVFileWithMethodName( $method_name,"variations" );
+			$files->{$method_name} = $file if $file;
+		}
+		return $files;
+	},
+);
+
+
+sub getSVFiles {
+	my $self      = shift;
+	my @lVcfFiles = values %{ $self->callingSVFiles()->{sv} };
+	warn( " warn I was unable to find variation vcf file for :  "
+		  . $self->name() )
+	  unless scalar @lVcfFiles;
+	return \@lVcfFiles;
+}
+
+sub getSVFile {
+	my ( $self, $method ) = @_;
+	return $self->_getFile($method,$self->callingSVFiles()->{sv});
+}
+
+sub getSRFiles {
+	my $self      = shift;
+	my @t  = values %{$self->callingSRFiles};
+	warn( " warn I was unable to find variation vcf file SR for :  ". $self->name() ) unless scalar @t;
+	return \@t;
+}
+sub getSRFile {
+	my ( $self, $method ) = @_;
+	return $self->_getFile($method,$self->callingSRFiles());
+}
+
+sub _getFile {
+	my ( $self, $method, $hash ) = @_;
+	if ($method) {
+		
+		confess( "can t find vcf for $method " . $self->name ) unless exists( $hash->{$method} );
+		return $hash->{$method};
+	}
+	my @all = values %$hash;
+	return "" if scalar(@all) == 0;
+	return $all[0] if scalar(@all) == 1;
+	confess($self->name
+		  . "you have exactly "
+		  . scalar(@all)
+		  . " methods defined on your project "
+		  . $self->getProject->name() );
+}
+
+
+
 
 has bamUrl => (
 	is      => 'ro',
@@ -1483,35 +1592,9 @@ sub isCram {
 }
 
 
-sub getSVFiles {
-	my $self      = shift;
-	my @lVcfFiles = values %{ $self->callingSVFiles()->{sv} };
-	warn( " warn I was unable to find variation vcf file for :  "
-		  . $self->name() )
-	  unless scalar @lVcfFiles;
-	return \@lVcfFiles;
-}
 
-sub getSVFile {
-	my ( $self, $method ) = @_;
-	if ($method) {
 
-		#	warn Dumper $self->callingSVFiles();
-		confess( "can t find vcf for $method " . $self->name )
-		  unless exists( $self->callingSVFiles()->{sv}->{$method} );
-		return $self->callingSVFiles()->{sv}->{$method};
-	}
-	my @all = values %{ $self->callingSVFiles()->{sv} };
-	return "" if scalar(@all) eq 0;
 
-	confess($self->name
-		  . "you have exactly "
-		  . scalar(@all)
-		  . " methods defined on your project "
-		  . $self->getProject->name() )
-	  if scalar(@all) ne 1;
-	return $all[0];
-}
 
 sub getAnnotSVFileName {
 	my ( $self, $method ) = @_;
@@ -1676,6 +1759,22 @@ sub _getCallingFileWithMethodName {
 	return $dir . "/" . $file;
 }
 
+has SV_extension => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $t = {
+			"canavas" => ".vcf.gz",
+			"manta"	=> ".vcf.gz",
+			"wisecondor" => "_aberrations.bed.gz",
+			"dragen-sv" =>  ".sv.vcf.gz",
+			"dragen-cnv" => ".cnv.vcf.gz",
+		};
+		return $t;
+
+	}
+);
+
 sub _getCallingSVFileWithMethodName {
 	my ( $self, $method_name, $type ) = @_;
 	confess() unless $method_name;
@@ -1689,19 +1788,16 @@ sub _getCallingSVFileWithMethodName {
 		  . " patient !!\n\n";
 		return;
 	}
-	my $SV_vcf = $self->name() . ".vcf.gz";
-	my $SV_bed = $self->name() . "_aberrations.bed.gz";
-
-	my $file;
-	$file = $SV_vcf if -e $dir . "/" . $SV_vcf;
-	$file = $SV_bed if -e $dir . "/" . $SV_bed;
-
-	confess("no vcf or bed file for "
+	my $ext = ".vcf.gz";
+	$ext = $self->SV_extension->{$method_name} if exists $self->SV_extension->{$method_name};
+	
+	my $file =  $dir . "/" .$self->name() . $ext;
+	confess("no vcf or bed file  $file  "
 		  . $self->name()
 		  . " method is "
 		  . $method_name )
-	  unless $file;
-	return $dir . "/" . $file;
+	  unless -e $file;
+	return $file;
 }
 
 sub _getFileByExtention {
