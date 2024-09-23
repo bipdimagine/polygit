@@ -1517,6 +1517,9 @@ sub get_gencode_directory {
 	if ($self->annotation_genome_version() =~ /MM39/) {
 		return "/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/lmdb/";
 	}
+	if ($self->annotation_genome_version() =~ /HG19/) {
+		return "/data-isilon/public-data/repository/HG19/annotations/gencode.v43/lmdb/";
+	}
 	
 	my $database = "gencode";
 	$version = $self->gencode_version unless $version;
@@ -1997,7 +2000,7 @@ sub getCellRangerIndex {
 }
 
 has annotation_genome_version => (
-	is      => 'ro',
+	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self    = shift;
@@ -3451,8 +3454,9 @@ sub newGene {
 	my ( $self, $id ) = @_;
 	return $self->{objects}->{genes}->{$id} if (exists $self->{objects}->{genes}->{$id});
 	$self->getChromosomes();
-	my $id1 = $self->rocksGenBo->synonym($id);
-	#my $id1 = $self->getGenBoId($id);
+	my $id1;
+	if ($self->getVersion() =~ /HG38/) { $id1 = $self->rocksGenBo->synonym($id); }
+	else { $id1 = $self->getGenBoId($id); }
 	return undef unless $id1;
 	return $self->myflushobjects( { $id1 => undef }, "genes" )->[0];
 
@@ -3625,6 +3629,23 @@ sub getVariantFromId {
 	confess("\n\nERROR: no variant found with ID $id. Exit...\n\n");
 }
 
+has hash_patients_name => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $h;
+		my $id = 1;
+		foreach my $patient (@{$self->getPatients()}) {
+			$h->{$patient->name()}->{id} = $id;
+			$h->{$patient->name()}->{fam} = $patient->family();
+			$h->{by_id}->{$id} = $patient->name();
+			$id++;
+		}
+		return $h;
+	},
+);
+
 sub myflushobjects {
 	my ( $self, $ids, $type ) = @_;
 	my $array_ids;
@@ -3654,7 +3675,32 @@ sub myflushobjects {
 				or $type eq 'exons'
 				or $type eq 'introns' )
 			{
-				my $obj = $self->rocksGenBo->genbo($id);
+				
+				my $obj;
+				if ($self->getVersion() =~ /HG38/) {
+					$obj = $self->rocksGenBo->genbo($id);
+				}
+				else {
+					$obj = $self->lmdbGenBo->get($id);
+					unless ($obj) {
+						if    ( $id =~ /_X/ ) { $id =~ s/_X/_Y/; }
+						elsif ( $id =~ /_Y/ ) { $id =~ s/_Y/_X/; }
+						$obj = $self->lmdbGenBo->get(
+							$self->liteAnnotations->get( "synonyms", $id ) );
+					}
+					unless ($obj) {
+						my $sid = $self->getGenBoId($id);
+						confess( $type . " " . $sid ) unless ($sid);
+						$obj = $self->lmdbGenBo->get($id);
+						$id  = $sid;
+					}
+					unless ($obj) {
+						my @t = split( "_", $id );
+						$id  = $t[0] . "_" . $t[-1];
+						$obj = $self->lmdbGenBo->get($id);
+					}
+				}
+				
 				confess( $id . " " . $type ) unless $obj;
 				$obj->{project}                  = $self;
 				$obj->{buffer}                   = $self->buffer;
@@ -4626,23 +4672,24 @@ sub transcriptsCoverageLite {
 	return $self->{transcriptsCoverageSqlite};
 }
 
-#has lmdbGenBo => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self      = shift;
-#		my $sqliteDir = $self->get_gencode_directory;
-#		die( "you don t have the directory : " . $sqliteDir )
-#		  unless -e $sqliteDir;
-#		return GenBoNoSqlLmdb->new(
-#			name        => "genbo",
-#			dir         => $sqliteDir,
-#			mode        => "r",
-#			is_compress => 1,
-#			vmtouch=>$self->buffer->vmtouch
-#		);
-#	}
-#);
+has lmdbGenBo => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self      = shift;
+		my $sqliteDir = $self->get_gencode_directory;
+		die( "you don t have the directory : " . $sqliteDir )
+		  unless -e $sqliteDir;
+		return GenBoNoSqlLmdb->new(
+			name        => "genbo",
+			dir         => $sqliteDir,
+			mode        => "r",
+			is_compress => 1,
+			vmtouch=>$self->buffer->vmtouch
+		);
+	}
+);
+
 sub rocksGenBo {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
@@ -4706,8 +4753,7 @@ has liteIntervalTree => (
 		my $self      = shift;
 		my $sqliteDir = $self->get_gencode_directory;
 		die( "you don t have the directory : " . $sqliteDir ) unless -e $sqliteDir;
-		return GenBoNoSqlIntervalTree->new( dir => $sqliteDir, mode => "r" )
-		  ;    #->new(dir=>$sqliteDir,mode=>"r");
+		return GenBoNoSqlIntervalTree->new( dir => $sqliteDir, mode => "r" );    #->new(dir=>$sqliteDir,mode=>"r");
 	}
 );
 
@@ -5825,7 +5871,7 @@ sub getDejaVuIdsFromInterval {
 	my $end_search   = $end + 1000;
 	my @lRes;
 	my @lVarIds =
-	  @{ $self->get_deja_vu_from_position2( $chr, $start_search, $end_search ) };
+	  @{ $self->get_deja_vu_from_position( $chr, $start_search, $end_search ) };
 
 	foreach my $var_id (@lVarIds) {
 		my @lTmp = split( '_', $var_id );
@@ -5838,14 +5884,13 @@ sub getDejaVuIdsFromInterval {
 
 sub get_deja_vu_from_position {
 	my ( $self, $chr, $start, $end ) = @_;
-	my $no = $self->lite_deja_vu();
+	
+	my $no = $chr->rocks_dejavu();
+	
 	my $h  = $no->get_position( $chr, ( $start - 1 ), ( $end + 1 ) );
-	return $h;
-}
-sub get_deja_vu_from_position2 {
-	my ( $self, $chr, $start, $end ) = @_;
-	my $no = $self->lite_deja_vu2();
-	my $h  = $no->get_position( $chr, ( $start - 1 ), ( $end + 1 ) );
+	
+	#TODO: utiliser ROCKS
+	
 	return $h;
 }
 has countInThisRunPatients => (
@@ -5865,40 +5910,12 @@ has countInThisRunPatients => (
 has in_this_run_patients => (
 	is      => 'ro',
 	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $h;
-	warn "warning here a terminer ";
-	return {};
-	my $no      = $self->lite_deja_vu_projects();
-	my $res;
-	my $total = 0;
-	foreach my $run (@{$self->getRuns}){
-		my $patients = $run->getAllPatientsInfos();
-		my $inthisrunp;
-		map{push(@{$inthisrunp->{$_->{project} } },$_->{patient}) } @$patients;
-		foreach my $pr (keys %$inthisrunp){
-			 my $hpat = $no->get( "projects", $pr);
-			 my $hh ;
-			 map{$hh->{$hpat->{$_}} = $_} keys %$hpat;
-			
-			 foreach my $pa (@{$inthisrunp->{$pr}}){
-			 	if (exists $hh->{$pa}){
-			 		$res->{$pr}->{$hh->{$pa}} = $pa;
-			 		$total ++;
-			 	}
-			 }
-			 	
-			 }
-		}
-		$res->{total} = $total;
-		return $res;
-	},
+	default => 0,
 );
 
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
-	confess();
+#	confess();
 	my $chr = $v->getChromosome()->name();
 	my $in_this_run_patients =  $self->in_this_run_patients();
 	my $no = $self->lite_deja_vu2();
@@ -6100,13 +6117,14 @@ has deja_vu_lite_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		confess();
 		#return "/data-isilon/dejavu/";
 		my $dir = $self->deja_vu_public_dir();
-		return $self->makedir($dir);
-
+		#TODO: ajouter makedir si createion automatique
+		#return $self->makedir($dir);
+		return $dir;
 	},
 );
+
 has deja_vu_lite_dir_projects => (
 	is      => 'ro',
 	lazy    => 1,
@@ -6151,10 +6169,11 @@ has lite_deja_vu => (
 #	default => sub {
 #		my $self = shift;
 #		my $dir  = $self->deja_vu_lite_dir;
-#		warn $dir;
+##		warn $dir;
 #		my $no = GenBoNoSql->new( dir => $dir, mode => "r" );
 #		return $no;
 #	}
+#
 #);
 
 sub lite_deja_vu_local_validation {
@@ -6177,7 +6196,6 @@ has lite_deja_vu2 => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		confess();
 		my $dir  = $self->deja_vu_lite_dir;
 		
 		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );

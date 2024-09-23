@@ -775,20 +775,18 @@ sub store_variants_infos {
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'snp' if ( $var->isVariation() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'ins' if ( $var->isInsertion() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'del' if ( $var->isDeletion() );
-			my $h_dejavu   = $var->deja_vu();
+			
+			#TODO: here
+#			my $nb_project = $var->other_projects;
+#			my $nb_patient = $var->other_patients ; 
+#			my $ho         = $var->other_patients_ho; 
+#			my $he         = $nb_patient - $ho;
+			
 			my $nb_project = 0;
-			my $nb_patient = 0;
+			my $nb_patient = 0 ; 
+			my $ho         = 0; 
 			my $he         = 0;
-			my $ho         = 0;
-			my $st_project;
-
-			foreach my $projName ( keys %$h_dejavu ) {
-				$nb_project++;
-				$st_project = $projName . ":";
-				$st_project .= $h_dejavu->{$projName}->{patients};
-				$he += $h_dejavu->{$projName}->{he};
-				$ho += $h_dejavu->{$projName}->{ho};
-			}
+			
 			$hash->{$chr_h_id}->{$var_id}->{'dejavu'} = "";
 			$nb_patient = $he + $ho;
 			if ( $nb_project > 0 ) {
@@ -866,7 +864,7 @@ sub store_variants_infos {
 							$max_cat = $cat;
 						}
 					}
-					$splice_ai_txt = $max_cat.':'.$max_value;
+					$splice_ai_txt = $max_cat.':'.$max_value if $max_cat and $max_value;
 				}
 				
 				foreach my $t ( @{ $gene->getTranscripts() } ) {

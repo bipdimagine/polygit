@@ -66,6 +66,17 @@ has sql_cmd_delete_last_connection_user_project => (
 	},
 );
 
+has sql_cmd_get_all_patients_from_project => (
+	is	 => 'ro',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT pat.name as pat_name FROM PolyprojectNGS.patient as pat, PolyprojectNGS.projects as proj
+				where pat.project_id = proj.project_id and proj.name=?;
+		};
+		return $sql;
+	},
+);
 
 has sql_cmd_get_ill_patients_from_project => (
 	is	 => 'ro',

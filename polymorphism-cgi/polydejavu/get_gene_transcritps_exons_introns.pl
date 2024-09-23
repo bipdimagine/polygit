@@ -50,7 +50,12 @@ my $gene_id = $cgi->param('gene');
 
 my $buffer_init = new GBuffer;
 my $project_init_name = $buffer_init->get_random_project_name_with_this_annotations_and_genecode();
-my $project_init = $buffer_init->newProjectCache( -name => $project_init_name);
+
+
+#TODO: prendre projet HG38
+my $project_init = $buffer_init->newProjectCache( -name => 'NGS2024_7792');
+	
+#my $project_init = $buffer_init->newProjectCache( -name => $project_init_name);
 my $genomeFai_init = $project_init->getGenomeFai();
 my $gene = $project_init->newGene($gene_id);
 

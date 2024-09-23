@@ -348,10 +348,15 @@ sub current {
 	my ($self,$key) = @_;
 	return $self->{current_db};
 }
+
+sub convert_rocksId_varId {
+	my ($self, $rocksId) = @_;
+	
+}
+
 sub dejavu {
 	my ($self,$id) = @_;
 	if ($self->current) {
-		
 		my $res =  $self->{current_db}->get_raw($id);
 		return $res ;#if $res;
 	}
@@ -361,6 +366,54 @@ sub dejavu {
 	$self->{current_db} = $self->get_db($pos);
 	$self->{current_db}->rocks->compact_range();
 	return  $self->current->get_raw($id);
+}
+
+sub stringify_pos {
+	my ($self,$pos) = @_;
+	return ($pos,sprintf("%010d", $pos));
+}
+
+sub dejavu_hg19_id {
+	my ($self, $rocks_id) = @_;
+	my $var_id_hg19 = $self->current->get_raw('#'.$rocks_id);
+	return $var_id_hg19;
+}
+
+sub dejavu_interval {
+	my ($self, $start, $end) = @_;
+	my $pos = $self->stringify_pos($start);
+	$self->{current_db} = $self->get_db($pos);
+	$self->{current_db}->start_iter($pos);
+	my $h_res;
+	my $continue = 1;
+	while ($continue) {
+		my ($key, $value) = $self->current->next_key_value();
+		my ($this_pos, $id) = split('!', $key);
+		next if int($this_pos) < $start;
+		if ($this_pos > $end) {
+			$continue = undef;
+			last;
+		}
+		my $var_id_hg19 = $self->dejavu_hg19_id($key);
+		
+#		warn "\n---";
+#		warn 'pos: '.$key;
+		
+		my @lTmp = split('_', $var_id_hg19);
+		$h_res->{$key}->{hg19} = $var_id_hg19;
+		if ($id =~ /[0-9]+/) { $this_pos++; }
+		elsif ($id =~ /\+/) { $this_pos++; }
+		$h_res->{$key}->{hg38} = $lTmp[0].'_'.int($this_pos).'_'.$lTmp[2].'_'.$lTmp[3];
+		
+#		warn 'hg19: '.$h_res->{$key}->{hg38};
+#		warn "---\n";
+	}
+	
+#	warn "\n\ngene start: ".$start;
+#	warn "gene end: ".$end;
+#	warn "\n\n";
+#	die;
+	return $h_res;
 }
 
 sub spliceAI_id {

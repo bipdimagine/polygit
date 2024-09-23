@@ -2,7 +2,7 @@ package QueryHgmd;
 use strict;
 use Vcf;
 use Moo;
-
+use Carp;
 use Data::Dumper;
 use JSON;
 use GBuffer;
@@ -183,7 +183,7 @@ sub getDataHGMDPro_from_gene_name {
 	confess("\n\nERROR: need a gene_name for QueryMoose::getDataHGMDPro_from_gene_name. Die.\n\n") unless ($gene_name);
 	confess("\n\nERROR: need a class_name for QueryMoose::getDataHGMDPro_from_gene_name. Die.\n\n") unless ($class_name);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT gene FROM `$database`.allmut where gene=? and tag=?; };
+	my $sql = qq{ SELECT gene FROM `$database`.allmut where gene="?" and tag="?"; };
 	my $sth = $dbh->prepare($sql);
 	$sth->execute($gene_name, $class_name);
 	my $toto = $sth->fetchall_hashref("gene");

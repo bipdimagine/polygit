@@ -261,7 +261,6 @@ sub setInsertions {
 sub setGenes {
 	my $self = shift;
 #	return [keys %{$self->vannot_chr->{genes}}];
-
 	my $hGenesid;
 	my $upstream = $self->buffer->config->{definitions}->{upstream};
 	my $downstream = $self->buffer->config->{definitions}->{downstream};

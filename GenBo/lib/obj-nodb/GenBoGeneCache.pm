@@ -142,13 +142,8 @@ has enum => (
 
 sub cache_specific_atrributes {
 	my $self = shift;
-	return;
 	my $chr  = $self->getChromosome();
-	
-	confess();
-	
 	my $lmdb = $chr->get_lmdb_genes("r");
-
 	$self->{intspan} = {};
 	return unless $lmdb;
 	my $hashArgs = $lmdb->get( $self->id );
@@ -292,7 +287,14 @@ sub getCompactVector {
 
 sub getVectorOrigin {
 		my ($self) = @_;
-		return $self->enlarge_compact_vector($self->getCompactVector);
+		if ($self->getProject->isRocks) {
+			return $self->enlarge_compact_vector($self->getCompactVector);
+		}
+		else {
+			$self->cache_specific_atrributes unless exists $self->{origin_vector};
+			return  $self->{origin_vector};
+		}
+		confess();
 }
 
 sub getCompactVectorOriginCategories {

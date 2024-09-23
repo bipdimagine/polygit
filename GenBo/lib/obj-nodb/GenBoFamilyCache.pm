@@ -331,10 +331,10 @@ sub getVector_individual_uniparental_disomy {
 	}
 	
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getVectorOriginHo($chr);
-		warn "++++++++++++++++++++";
-	warn $self->name;
-	warn $self->getMother->name();
-	warn $self->getFather->name();
+#		warn "++++++++++++++++++++";
+#	warn $self->name;
+#	warn $self->getMother->name();
+#	warn $self->getFather->name();
 	
 	my $v1 = $self->getMother->getVectorOriginHe($chr)->Clone;
 	$v1 -=  $self->getFather->getVectorOrigin($chr);

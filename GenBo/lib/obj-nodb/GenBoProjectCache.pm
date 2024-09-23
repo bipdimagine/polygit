@@ -45,6 +45,7 @@ is		=> 'rw',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
+		return undef if (not $self->getVersion() =~ /HG38/);
 		if (-e  $self->rocks_cache_dir."/vector"){
 			return 1;
 		}
@@ -378,23 +379,6 @@ has used_interface_filters => (
 	default => undef,	
 );
 
-has hash_patients_name => (
-	is		=> 'rw',
-	lazy 	=> 1,
-	default	=> sub {
-		my $self = shift;
-		my $h;
-		my $id = 1;
-		foreach my $patient (@{$self->getPatients()}) {
-			$h->{$patient->name()}->{id} = $id;
-			$h->{$patient->name()}->{fam} = $patient->family();
-			$h->{by_id}->{$id} = $patient->name();
-			$id++;
-		}
-		return $h;
-	},
-);
-
 # nom du model utilise
 has model => (
 	is      => 'rw',
@@ -710,7 +694,7 @@ sub setGenes {
 	my $self = shift;
 	my $hGenes;
 	foreach my $chr (@{$self->getChromosomes()}) {
-		next if ($chr->not_used());
+		#next if ($chr->not_used());
 		foreach my $g (@{$chr->getGenes()}) {
 			$hGenes->{$g->id()} = undef;
 		} 
@@ -1045,7 +1029,19 @@ sub myflushobjects {
 			unless (exists  $self->{objects}->{$type}->{$id}){
 				if ($type =~ /gene/ or $type =~ /transcript/ or  $type =~/protein/ or $type =~ /exon/ or $type  =~ /intron/) {
 					
-					my $obj = $self->rocksGenBo->genbo( $id );
+					my $obj;
+#					warn $self->isRocks();
+					if ($self->isRocks()) {
+						$obj = $self->rocksGenBo->genbo( $id );
+					}
+					else {
+						$obj = $self->lmdbGenBo->get( $id );
+						unless ($obj) {
+							my $syno =  $self->liteAnnotations->get("synonyms", $id);
+							$obj = $self->lmdbGenBo->get( $syno );
+						}
+					}
+					
 					#cas avec des transcript id sans _ impossible a retrouver
 					confess($id." ".$type) unless $obj;
 					bless $obj , 'GenBoGeneCache' if ($type eq "genes");

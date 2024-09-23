@@ -254,55 +254,64 @@ sub vsequencing  {
 	my $max_pc =-1;
 	my $max_dp =  -1;
 	 my $pid = $patient->id;
+	 
+	my $isCachedPatient;
+	$isCachedPatient = 1 if (ref($patient) =~ /Cache/);
+	
 	foreach my $method (keys %{$v->sequencing_infos->{$pid}}) {
+			next if $method eq "ok";
 			next if $method eq "max";
+			next if $method eq "values";
 			#next if $method eq "dude";
 
 		push(@methods,$method);
-		my $array = $v->sequencing_infos->{$pid}->{$method};
-		 
-		 
-		my $sequence_info ; 
-		my $pc ="-";		
-		if ($v->getNbAlleleRef($patient,$method) eq "?"){
-			$sequence_info = "??";
-		}
-		else {
-		$sequence_info .=	$array->[2]."(";
-		#$sequence_info = "ho(" if $all_annex->{ho};
-		$sequence_info .= $v->getNbAlleleRef($patient,$method)."/".$v->getNbAlleleAlt($patient,$method).")";
-	
-		}
-		$sequence_info = $method.":".$sequence_info;
-		 $pc = $method.":".$v->getRatio($patient,$method)."%";
-		push(@apc,$pc);
-		push(@asequence_info,$sequence_info);
-		$nb_methods ++;
-		}
 		
-		 if ($v->validation_method eq "sanger" ) {
-		 	#$sequence_info = "-";
-		 	push(@asequence_info,"-");
-		 }
+		if ($isCachedPatient) {
+			my $array = $v->sequencing_infos->{$pid}->{$method};
+			 
+			my $sequence_info ; 
+			my $pc ="-";		
+			if ($v->getNbAlleleRef($patient,$method) eq "?"){
+				$sequence_info = "??";
+			}
+			else {
+				$sequence_info .=	$array->[2]."(";
+				#$sequence_info = "ho(" if $all_annex->{ho};
+				$sequence_info .= $v->getNbAlleleRef($patient,$method)."/".$v->getNbAlleleAlt($patient,$method).")";
+			
+				}
+				$sequence_info = $method.":".$sequence_info;
+				 $pc = $method.":".$v->getRatio($patient,$method)."%";
+				push(@apc,$pc);
+				push(@asequence_info,$sequence_info);
+				$nb_methods ++;
+			}
+			
+			 if ($v->validation_method eq "sanger" ) {
+			 	#$sequence_info = "-";
+			 	push(@asequence_info,"-");
+			 }
+		}
 		
 		$hvariation->{max_dp} = $v->getDP($patient);
 		$hvariation->{value}->{max_dp} = $hvariation->{max_dp};
 		$hvariation->{html}->{max_dp} = $hvariation->{max_dp};
 		
-		$hvariation->{max_pc} = $v->getRatio($patient);;
-		$hvariation->{value}->{max_pc} =$hvariation->{max_pc};
-		$hvariation->{html}->{max_pc} = $hvariation->{max_pc};
+		if ($isCachedPatient) {
+			$hvariation->{max_pc} = $v->getRatio($patient);;
+			$hvariation->{value}->{max_pc} =$hvariation->{max_pc};
+			$hvariation->{html}->{max_pc} = $hvariation->{max_pc};
+			
+			$hvariation->{value}->{ngs} = \@asequence_info;
 		
-		$hvariation->{value}->{ngs} = \@asequence_info;
+			$hvariation->{ngs} = printSimpleBadge(join("<br>",@asequence_info));
+			$hvariation->{value}->{ngs} = \@asequence_info;
+			$hvariation->{html}->{ngs} = printSimpleBadge(join("<br>",@asequence_info));
+			$hvariation->{ratio} =  printSimpleBadge(join("<br>",@apc));
+			$hvariation->{value}->{ratio} =  \@apc;
+			$hvariation->{html}->{ratio} =  printSimpleBadge(join("<br>",@apc));
+		}
 		
-		$hvariation->{ngs} = printSimpleBadge(join("<br>",@asequence_info));
-		$hvariation->{value}->{ngs} = \@asequence_info;
-		$hvariation->{html}->{ngs} = printSimpleBadge(join("<br>",@asequence_info));
-		
-		
-		$hvariation->{ratio} =  printSimpleBadge(join("<br>",@apc));
-		$hvariation->{value}->{ratio} =  \@apc;
-		$hvariation->{html}->{ratio} =  printSimpleBadge(join("<br>",@apc));
 		$hvariation->{caller} =  printSimpleBadge(join("<br>",@methods));
 		$hvariation->{value}->{caller} =  \@methods;
 		$hvariation->{html}->{caller} =  printSimpleBadge(join("<br>",@methods));
@@ -332,7 +341,7 @@ sub vdivers {
 sub vvarsome {
 	my ($hvariation,$debug) = @_;
 	return if exists $hvariation->{html}->{varsome}; 
-	my $url = qq{https://varsome.com/variant/hg19/}.$hvariation->{value}->{gnomad_id};
+	my $url = qq{https://varsome.com/variant/hg38/}.$hvariation->{value}->{gnomad_id};
 	my $text =qq{<button dojoType="dijit.form.Button"   iconClass='https://img.icons8.com/ios-filled/24/000000/vimeo.png' onclick='window.open($url,"_blank")' style="color:black"></button>};
 	my $text =qq{<a  type="button" class="btn btn-primary btn-xs" href="$url" target="_blank">V</a>};
 	value_html($hvariation,"varsome",$url,$text);
@@ -432,6 +441,9 @@ sub table_gnomad {
 	
 	my $pp = $v->getChromosome->name."-".$v->start;
 	my $dataset = "?dataset=gnomad_r2_1";
+	if ($v->getProject->buffer->annotation_genome_version() =~ /HG38/) {
+		$dataset = "?dataset=gnomad_r4";
+	}
 	my $href = qq{https://gnomad.broadinstitute.org/region/$pp$dataset};
 	my $vn=$v->vcf_id;
 	$vn =~ s/_/-/g;
@@ -442,7 +454,6 @@ sub table_gnomad {
 	}
 
 	my $html= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary table_gnomad",style=>"box-shadow: 1px 1px 6px $color ;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
-	my $po = $v->other_projects();
 	$html.= $cgi->start_Tr();
 	
 	$html.= $cgi->th("AC");
@@ -603,7 +614,7 @@ sub table_validation {
 		my ($patient,$hvariation,$gene) = @_;
 		my $cgi = new CGI();
 		my $color = "#555";
-		check_is_hgmd_dm_for_gene($patient->getProject(), $hvariation, $gene);
+		#check_is_hgmd_dm_for_gene($patient->getProject(), $hvariation, $gene);
 		check_is_clinvar_pathogenic_for_gene($patient->getProject(), $hvariation, $gene);
 		if ($hvariation->{value}->{dm} or $hvariation->{value}->{clinvar_pathogenic}){
 			$color = "red";
@@ -970,6 +981,7 @@ sub construct_hash_transcript {
 		($refseq_hgmd, $tmprefseq) = split('\.', $refseq_hgmd_1);
 	}
 	foreach my $tr1 (sort { ($himpact_sorted->{$v->effectImpact($b)} <=>  $himpact_sorted->{$v->effectImpact($a)}) or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
+		
 		next if $tr1->getGene->id ne $gene->id;
 		my $htr = {};
 		# score
@@ -982,8 +994,11 @@ sub construct_hash_transcript {
 		value_html($htr,"dbscsnv",$rf.":".$ada,printBadge($v->dbscsnv_rf,[0.6,0.9]).printBadge($v->dbscsnv_ada,[0.6,0.9]));
 		
 		#revel 
-		my $revel =  $v->revel_score;
-		value_html($htr,"revel",$revel,printBadge($v->revel_score,[0.5,0.9]));
+		
+		#TODO: a corriger
+		my $revel = 0;
+		#my $revel =  $v->revel_score;
+		value_html($htr,"revel",$revel,printBadge($revel,[0.5,0.9]));
 		
 		
 		
@@ -1000,7 +1015,10 @@ sub construct_hash_transcript {
 		value_html($htr,"trid",$tr1->id);
 		
 		#nm
-		my $nm =$tr1->refseq_names;
+		
+		#TODO: a corriger
+		my $nm = '-';
+		#my $nm =$tr1->refseq_names;
 		my $is_same_nm_as_hgmd;
 		if ($refseq_hgmd) {
 			$is_same_nm_as_hgmd = 1 if $nm =~ /$refseq_hgmd/;
@@ -1081,7 +1099,7 @@ sub construct_hash_transcript {
 		my $main =  0 ;
 		 $main  = 1 if $tr1->isMain();
 		value_html($htr,"main",$main,$main);
-		delete $htr->{html};
+#		delete $htr->{html};
 		push(@$all_transcripts,$htr)
 	#	if ($is_same_nm_as_hgmd){
 	#		unshift(@$all_transcripts,$htr);
