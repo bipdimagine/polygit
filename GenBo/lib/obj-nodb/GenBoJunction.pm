@@ -821,9 +821,13 @@ sub dejavu_patients {
 	my($self,$ratio,$patient) = @_;
 	$ratio = "all" unless $ratio;
 	return 0 unless exists $self->dejavu->{$ratio};
-	my $nb = scalar(keys %{$self->dejavu->{$ratio}});
-	if ($patient){
-		$nb -- if exists $self->dejavu->{$ratio}->{$patient->name};
+	my $nb = 0;
+	my $h_details = $self->dejavu_details_by_patnames();
+	foreach my $pat_name (keys %{$self->dejavu->{$ratio}}) {
+		next if $patient and $patient->name() eq $pat_name;
+		my $proj_name = $h_details->{$pat_name};
+		next if $proj_name eq $self->getProject->name();
+		$nb++;
 	}
 	return $nb;
 }
@@ -842,10 +846,25 @@ sub dejavu_details   {
 	my @l_pat = split(';', $h->{details});
 	my $res ={};
 	foreach my $patinfos (@l_pat) {
-				my @lTmp = split('_', $patinfos);
-				my $project_name_dv = 'NGS20'.shift(@lTmp).'_'.shift(@lTmp);
-				my $patient_name_dv = join('_', @lTmp);
-				push(@{$res->{$project_name_dv}},$patient_name_dv);
+		my @lTmp = split('_', $patinfos);
+		my $project_name_dv = 'NGS20'.shift(@lTmp).'_'.shift(@lTmp);
+		my $patient_name_dv = join('_', @lTmp);
+		push(@{$res->{$project_name_dv}},$patient_name_dv);
+	}
+	return $res;
+}
+
+sub dejavu_details_by_patnames   {
+	my($self) =@_;
+	my $h = $self->dejavu();
+	return {} unless $h;
+	my @l_pat = split(';', $h->{details});
+	my $res ={};
+	foreach my $patinfos (@l_pat) {
+		my @lTmp = split('_', $patinfos);
+		my $project_name_dv = 'NGS20'.shift(@lTmp).'_'.shift(@lTmp);
+		my $patient_name_dv = join('_', @lTmp);
+		$res->{$patient_name_dv} = $project_name_dv;
 	}
 	return $res;
 }
