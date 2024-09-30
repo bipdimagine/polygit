@@ -118,7 +118,7 @@ foreach my $r (@$runs) {
 		my $project1 = $buffer1->newProjectCache( -name 			=> $pr );
 		#next() if $project1->name() eq "NGS2018_2286";
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
-		
+			eval {
 			my $patient = $project1->getPatient($p->{patient});
 			my $b = $patient->getBamFileName();
 			next unless -e $b;		
@@ -146,6 +146,7 @@ foreach my $r (@$runs) {
 			}
 			
 			push(@{$controls->{$r->id}},$p) ;
+			};
 		} 
 		
 	}
@@ -216,17 +217,20 @@ sub find_other_patient {
 	 		my $buffer2 = GBuffer->new();
 			my $project2 =  $buffer2->newProject( -name 			=> $c->{project});
 			my $patient = $project2->getPatient($c->{patient});
+			next unless -e $patient->NoSqlDepthDir()."/".$patient->name . ".depth.lmdb";
 			my $hp = $patient->nb_reads;
 			foreach my $ps (@apos){
+				eval {
 				$mean_norm += ($patient->maxDepth($ps->{chr},$ps->{start},$ps->{end})/$hp->{$ps->{chr}});
 				$nv ++;
+				};
 			}
 	 }
 	 $mean_norm /= $nv;
 	 
 	 my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
 	my $x;
-	my $res;
+	my $res =[];
 	my $limit = 12 - scalar(@$controls);
 	 foreach my $project_name2 (@$query){
 	 		next if $project_name2 =~ /NGS2010/;
@@ -248,7 +252,6 @@ sub find_other_patient {
 				next if $capture->name ne $capture2->name;
 				$bam =  $p->getBamFileName();
 				
-				};
 				next unless -e $bam;
 				next unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
 			#	warn Dumper $p->nb_reads();
@@ -277,6 +280,7 @@ sub find_other_patient {
 				 $hp->{mean_max} = $mean_norm1;
 				 $hp->{mean_sort} = abs($mean_norm1-$mean_norm);
 				push(@$res,$hp);
+				};
 				last if $nbx > 3;
 		
 			}
