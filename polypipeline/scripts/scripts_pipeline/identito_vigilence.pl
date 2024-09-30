@@ -70,7 +70,6 @@ foreach my $var_id (@list) {
 	#next;
 	unless (defined $v->vector_id){
 		foreach my $patient (@{$project->getPatients()}) {
-			warn $v->id;
 			push(@{$id_bc->{$patient->name}->{code}},1);
 		}
 		next;
@@ -85,7 +84,12 @@ foreach my $var_id (@list) {
 		}
 		else {
 			my $depth= $patient->depth($v->getChromosome()->id(),$v->start,$v->start+1);
-			push(@{$id_bc->{$patient->name}->{code}},1);
+			if ($depth > 10){
+				push(@{$id_bc->{$patient->name}->{code}},1) ;
+			}
+			else {
+					push(@{$id_bc->{$patient->name}->{code}},4) ;
+			}
 		#	warn $depth->[0];
 			
 		}
