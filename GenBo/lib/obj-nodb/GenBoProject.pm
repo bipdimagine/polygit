@@ -2914,6 +2914,7 @@ sub setRuns {
 		$hids{ $h->{id} } = undef;
 		$h->{project} = $self;
 		next if exists $self->{objects}->{runs}->{ $h->{id} };
+		
 		$self->{objects}->{runs}->{ $h->{id} } = new GenBoRun($h);
 	}
 	return \%hids;
@@ -4750,6 +4751,7 @@ sub noSqlCoverage {
 	#	my $output   =$self->getCacheDir() . "/coverage_lite_test";
 	my $output = $self->getCacheDir() . "/coverage_lite";
 	$self->{noSqlCoverage} = GenBoNoSql->new( dir => $output, mode => "$mode" );
+	
 	return $self->{noSqlCoverage};
 
 }
