@@ -482,7 +482,7 @@ my $project = $buffer->newProjectCache(
 $project->cgi_user($user);
 my $version;
 $version->{gencode} = $project->get_gencode_description();
-$version->{gnomad}  = $project->get_public_data_description("gnomad-exome");
+$version->{gnomad}  = $project->get_public_data_description("gnomad");
 $version->{hgmd}    = $project->get_public_data_description("hgmd");
 $version->{cadd}    = $project->get_public_data_description("cadd");
 $version->{clinvar} = $project->get_public_data_description("clinvar");

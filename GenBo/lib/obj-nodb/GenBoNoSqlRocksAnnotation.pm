@@ -245,6 +245,8 @@ sub hgmd {
 	return $res;
 }
 
+#TODO: seek -> synonym en ENST000 qq chose
+
 sub synonym {
 	my ($self,$rocksid) = @_;
 	my $syno = $self->get_raw($rocksid);

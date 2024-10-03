@@ -404,7 +404,24 @@ has transcripts_name =>(
 	default => sub {
 		my $self = shift;
 		#my @ls =   keys %{$self->infos()->{transcripts}};
-		return $self->infos()->{transcripts_name};
+		my @ltrs;
+		foreach my $tr_id (@{$self->infos()->{transcripts_name}}) {
+			if ($tr_id =~ /_[0-9]+/) {
+				push(@ltrs, $tr_id);
+				next;
+			}
+			else {
+				foreach my $chr (@{$self->getProject->getChromosomes()}) {
+					my $tr_id_2 = $tr_id.'_'.$chr->id();
+					if ($self->getProject->rocksGenBo->exists($tr_id_2)) {
+						push(@ltrs, $tr_id_2);
+						last;
+					}
+				}
+			}
+		}
+		return \@ltrs;
+		#return $self->infos()->{transcripts_name};
 	}
 );
 
@@ -623,7 +640,7 @@ has primers_lines =>(
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		warn "*********";
+#		warn "*********";
 		if ($self->analyse eq "genome"){
 			my @lines;
 			foreach my $chr (@{$self->project->getChromosomes()}){
@@ -1118,7 +1135,6 @@ foreach my $line (@lines){
 	}
 	print "@" if $print;
 	 $objs = $self->getProject()->flushObjects("primers",$primers);
-	 warn scalar (@$objs);
 	foreach my $o (@$objs){
 		$o->{$self->type_object}->{$self->id} = undef;
 	}

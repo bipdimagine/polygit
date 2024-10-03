@@ -287,6 +287,7 @@ sub select_transcripts {
 	while ( my @tmp = $iter->() ) {
 		$id++;
 		$proc->{$id} ++;
+		$project->disconnect();
 		my $pid         = $pm->start and next;
 		my $transcripts = $project->newTranscripts( \@tmp );
 		my $himages;

@@ -485,6 +485,8 @@ my $mode_report = $cgi->param('report_mode');
 
 my $cgi_transcript =  $cgi->param('transcripts');
 
+$cgi_transcript = 'all' if not $cgi_transcript;
+
 confess() unless $cgi_transcript;
 $cgi_transcript = "all" unless $cgi_transcript;
 my $name =  $cgi->param('name');
@@ -493,7 +495,10 @@ $project->getPatients();
 
 $patient_name ="all" unless $patient_name;
 my $patients = $project->get_list_patients($patient_name,",");
-confess() if scalar (@{$patients}) > 1;
+
+#TODO: Toujours vrai le confess ?
+#confess() if scalar (@{$patients}) > 1;
+
 my $patient = $patients->[0];
 my $nb_patients = scalar @{$patient->getRun->getAllPatientsInfos()};
 
@@ -889,6 +894,7 @@ sub construct_data {
 	while ( my @tmp = $iter->() ) {
 		$id ++;
 		$hrun->{$id} ++;
+		$project->disconnect();
 		my $pid = $pm->start and next;
 		my $t   = time;
 		my $res;
@@ -1829,7 +1835,7 @@ sub print_project_summary {
 	$out.= $cgi->td($project->get_gencode_description()->{version});
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("gnomad ");
-	$out.= $cgi->td($buffer->description_public_lmdb_database("gnomad-exome")->{version});
+	$out.= $cgi->td($buffer->description_public_lmdb_database("gnomad")->{version});
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("hgmd");
 	
@@ -2708,7 +2714,7 @@ sub printTableGenesXls {
 		}
 		# @infos = ("gene","trans","phenotypes","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","clinvar","freq","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 		
-		my $desc = $buffer->description_public_lmdb_database("gnomad-exome");
+		my $desc = $buffer->description_public_lmdb_database("gnomad");
 		push(@infos,grep {$_ ne "ALL"} @{$desc->{array}->{populations}});
 		my $col = 0; 
 		my $row =0;
@@ -3777,7 +3783,7 @@ print qq{
     <div class="content" >
       <div class="icon">
 };
-print Dumper($cgi->Vars);
+#print Dumper($cgi->Vars);
 print qq{
 	<br>
         <svg height="50" viewBox="0 0 512 512" width="50" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M449.07,399.08,278.64,82.58c-12.08-22.44-44.26-22.44-56.35,0L51.87,399.08A32,32,0,0,0,80,446.25H420.89A32,32,0,0,0,449.07,399.08Zm-198.6-1.83a20,20,0,1,1,20-20A20,20,0,0,1,250.47,397.25ZM272.19,196.1l-5.74,122a16,16,0,0,1-32,0l-5.74-121.95v0a21.73,21.73,0,0,1,21.5-22.69h.21a21.74,21.74,0,0,1,21.73,22.7Z"/></svg>

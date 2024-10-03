@@ -903,6 +903,13 @@ var tab_editor = new Array();
 				
 		
 		}
+
+		function view_time_exec_buttons(value) {
+			var list_b_ids = value.split(';');
+			for (i=0; i<list_b_ids.length; i++) {
+				document.getElementById(list_b_ids[i]).style.display = "block";
+			}
+		}
 		
 		function open_report_quality() {
 			

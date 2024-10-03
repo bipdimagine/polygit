@@ -2817,22 +2817,27 @@ sub elprep {
 
 	my $samtools = $project->buffer->software("samtools");
 
-	my $ref_root = $project->get_public_data_directory;
+	my $ref_root = $project->get_public_data_directory('elprep');
 	my $ref      = $project->dirGenome() . $project->buffer->index("elprep");
 	die($ref) unless -e $ref;
-	my $known_sites = $ref_root
-	  . "/elprep/dbsnp_137.hg19.elsites,$ref_root/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
-	die($known_sites) unless -e $ref_root . "/elprep/dbsnp_137.hg19.elsites";
-	die($known_sites)
-	  unless -e $ref_root
-	  . "/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
+	
+	my $release;
+	$release = 'hg19' if $project->genome_version() =~ /HG19/;
+	$release = 'hg38' if $project->genome_version() =~ /HG38/;
+	
+	my $file1 = $ref_root."/elprep/dbsnp.".$release.".elsites";
+	my $file2 = $ref_root."/elprep/Mills_and_1000G_gold_standard.indels.".$release.".sites.elsite";
+	
+	my $known_sites = $file1.','.$file2;
+	die("\n\nERROR: not found: ".$file1."\n\n") if not -e $file1;
+	die("\n\nERROR: not found: ".$file2."\n\n") if not -e $file2;
+	
 	my $recal =
 		$self->patient->project->getRecalDir($m) . "/"
 	  . $self->patient->name
 	  . ".recal.table";
+	my $cmd = qq{$elprep  sfm $filein $fileout --tmp-path $tmpdir --replace-read-group "$rg_string" --mark-duplicates  --sorting-order coordinate --bqsr $recal --bqsr-reference $ref --known-sites $known_sites };
 
-	my $cmd =
-qq{$elprep  sfm $filein $fileout --tmp-path $tmpdir --replace-read-group "$rg_string" --mark-duplicates  --sorting-order coordinate --bqsr $recal --bqsr-reference $ref --known-sites $known_sites };
 	my $ppn      = 40;
 	my $type     = "elprep";
 	my $stepname = $self->patient->name . "@" . $type;

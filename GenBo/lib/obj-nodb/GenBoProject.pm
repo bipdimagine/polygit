@@ -832,12 +832,11 @@ has bundle_infos => (
 			foreach my $capture (@$captures) {
 				my $hquery = $query->getCaptureTranscripts( $capture->id );
 				%temp_bundle = ( %temp_bundle, %{ $hquery->{bundle} } );
-				foreach my $tr_id ( @{ $hquery->{transcripts_name} } ) {
-
-					die($tr_id)					  unless $self->liteAnnotations->get( "synonyms", $tr_id );
+				foreach my $tr_id ( @{ $capture->transcripts_name() } ) {
+					die($tr_id) unless $self->getProject->rocksGenBo->synonym($tr_id);
 					push(
 						@{ $res->{transcripts_name} },
-						$self->liteAnnotations->get( "synonyms", $tr_id )
+						$self->getProject->rocksGenBo->synonym($tr_id)
 					);
 
 				}
@@ -846,17 +845,23 @@ has bundle_infos => (
 			foreach my $b ( keys %temp_bundle ) {
 				foreach my $bc ( @{ $temp_bundle{$b} } ) {
 					my $tr = $bc->{ENSEMBL_ID};
+					if (not $tr =~ /_.+/) {
+						foreach my $chr (@{$self->getChromosomes()}) {
+							my $id2 = $tr.'_'.$chr->id();
+							if ($self->rocksGenBo->synonym($id2)) {
+								$tr = $id2;
+								last;
+							}
+						}
+					}
 					push(
 						@{
-							$res->{transcripts}->{
-								$self->liteAnnotations->get( "synonyms", $tr )
-							}
+							$res->{transcripts}->{$self->getProject->rocksGenBo->synonym($tr)}
 						},
 						$b
 					);
 				}
 			}
-
 			return $res;
 		}
 	},
@@ -1563,9 +1568,7 @@ sub get_public_data_directory {
 	
 		$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
 	}
-	confess( "public data :$database " . $self->{directory}->{$database}.Dumper ($self->buffer->public_data->{$version}->{$database}->{config}) )
-	
-	  unless -e $self->{directory}->{$database};
+	confess( "\n\nERROR: Public data :\nDatabase: $database\nDir: " . $self->{directory}->{$database}."\n\n".Dumper ($self->buffer->public_data->{$version}->{$database}->{config}) ) unless -e $self->{directory}->{$database};
 	return $self->{directory}->{$database};
 }
 
@@ -3441,7 +3444,15 @@ sub newRegulatoryRegion {
 sub newTranscript {
 	my ( $self, $id ) = @_;
 	$self->getChromosomes();
-
+	if (not $id =~ /_.+/) {
+		foreach my $chr (@{$self->getChromosomes()}) {
+			my $id2 = $id.'_'.$chr->id();
+			if ($self->rocksGenBo->synonym($id2)) {
+				$id = $id2;
+				last;
+			}
+		}
+	}
 	#	my $id1 =  $self->getGenBoId($id);
 	#	return undef unless $id1;
 	my $s = $self->myflushobjects( [$id], "transcripts" );
@@ -4926,7 +4937,7 @@ has transcriptsCacheDir => (
 	lazy    => 1,
 	default => sub {
 		my $self   = shift;
-		my $output = $self->getCacheDir() . "/transcripts";
+		my $output = $self->rocks_cache_dir() . "/transcripts";
 		return $self->makedir($output);
 
 	},

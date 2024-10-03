@@ -2272,8 +2272,8 @@ sub getShortResumeDejaVuInfosForDiagforRocksId {
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
 	my $chr = $self;
-	my $in_this_run_patients =  $self->project->{in_this_run_patients};
-	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
+#	my $in_this_run_patients =  $self->project->{in_this_run_patients};
+#	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
 	#my $no1 = $self->project->lite_deja_vu2();
 	my $no = $self->rocks_dejavu();
 	my $h = $no->dejavu($v->rocksdb_id);
@@ -2294,7 +2294,8 @@ sub getDejaVuInfosForDiagforVariant{
 	$res->{other_patients_ho} = 0;
 	$res->{exome_patients_ho} = 0;
 	$res->{similar_patients_ho} = 0;
-	$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
+	$res->{total_in_this_run_patients} = 0;
+	#$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
 	if ($res->{total_in_this_run_patients} == 0 ){
 		$res->{total_in_this_run_patients} = scalar(@{$self->project->getPatients});
 	}
@@ -2306,15 +2307,17 @@ sub getDejaVuInfosForDiagforVariant{
 		my($p,$nho,$nhe,$info) = split(":",$l);
 		$p = "NGS20".$p;
 		next if $p eq $self->name();
-		if (exists $in_this_run_patients->{$p}){
-			
-			my (@samples) = split(",",$info);
-			foreach my $s (@samples){
-				if (exists $in_this_run_patients->{$p}->{$s}){
-					$res->{in_this_run_patients} ++;
-				}
-			}
-		}
+		
+		#TODO: here ! a faire
+#		if (exists $in_this_run_patients->{$p}){
+#			
+#			my (@samples) = split(",",$info);
+#			foreach my $s (@samples){
+#				if (exists $in_this_run_patients->{$p}->{$s}){
+#					$res->{in_this_run_patients} ++;
+#				}
+#			}
+#		}
 		#IN EXOME 	
 		if (exists $exomes->{$p}){
 			$res->{exome_projects}  ++; 

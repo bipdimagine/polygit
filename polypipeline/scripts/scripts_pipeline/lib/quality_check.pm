@@ -17,6 +17,7 @@ sub mendelian_statistics {
 	#$fork=1;
 	my $pm = new Parallel::ForkManager($fork);
 	my $results;
+	
 	$pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $hres ) =
@@ -41,7 +42,7 @@ sub mendelian_statistics {
 	my $pid;
 	foreach my $f ( @{ $project->getFamilies } ) {
 		$f->getMembers();
-
+		$project->disconnect();
 		#next if $f->name ne "DOU";
 		$pid = $pm->start and next;
 		warn $f->name;
@@ -1487,6 +1488,7 @@ sub fork_patients {
 	$project->buffer->dbh_deconnect();
 	foreach my $p (@patients_name) {
 		my $pid;
+		$project->disconnect();
 		$pid = $pm->start and next;
 		$project->buffer->dbh_reconnect();
 		my $patient = $project->getPatient($p);
