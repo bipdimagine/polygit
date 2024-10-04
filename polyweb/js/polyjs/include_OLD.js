@@ -73,6 +73,9 @@ else if (href.indexOf("eollivie", 1) > -1) {
 else if (href.indexOf("polydev", 1) > -1) {
 	url_path = "/cgi-bin/polydev/polymorphism-cgi/";
 }
+else if (href.indexOf("preprod_rocks", 1) > -1) {
+	url_path = "/cgi-bin/preprod_rocks/polymorphism-cgi/";
+}
 else if (href.indexOf("preprod", 1) > -1) {
 	url_path = "/cgi-bin/preprod/polymorphism-cgi/";
 }
