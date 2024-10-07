@@ -965,8 +965,8 @@ has intervaltree_vector => (
 	default	=> sub {
 	my $self = shift;
 	my $array_tree = $self->rocks_vector("r")->get_vector_gene( "vector_intervaltree" );
-	die() unless $array_tree;
 	my $tree = Set::IntervalTree->new;
+	return $tree unless $tree;
 	foreach my $a (@$array_tree){
 		next unless @$a;
 		
