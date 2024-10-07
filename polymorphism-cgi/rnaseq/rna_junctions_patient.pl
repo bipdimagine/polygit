@@ -658,6 +658,9 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $html_id       = get_html_id($junction, $h_same_j_description);
 		my $html_patients = get_html_patients( $junction, $patient);
 		my $html_dv       = get_html_dejavu( $junction, $patient );
+		my $html_spliceai = get_html_spliceAI( $junction );
+		
+				
 
 		my $jid_tmp = $junction->getChromosome->id().'-'.$junction->start().'-'.$junction->end();
 		if ($h_td_line and $h_td_line->{id} eq $jid_tmp) {
@@ -667,8 +670,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			}
 			push (@{$h_td_line->{3}}, "<br>");
 			push (@{$h_td_line->{4}}, "<br>");
-			push (@{$h_td_line->{7}}, "<br>");
 			push (@{$h_td_line->{8}}, "<br>");
+			push (@{$h_td_line->{9}}, "<br>");
 			
 		}
 		else { $h_td_line = undef; }
@@ -682,6 +685,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 #		if (exists $h_td_line->{4}) { push (@{$h_td_line->{4}}, qq{<div>------------</div>}); }
 		push (@{$h_td_line->{4}}, $html_patients);
 		if (not exists $h_td_line->{5}) { push (@{$h_td_line->{5}}, $html_dv); }
+		if (not exists $h_td_line->{7}) { push (@{$h_td_line->{7}}, $html_spliceai); }
 
 		my $html_push_this_j;
 		foreach my $gene_name (@lGenesNames) {
@@ -702,12 +706,12 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			
 			my $score_details_text = get_html_score_details( $junction, $patient, $use_percent_dejavu );
 			@{$h_td_line->{6}} = ();
-#			@{$h_td_line->{7}} = ();
 #			@{$h_td_line->{8}} = ();
+#			@{$h_td_line->{9}} = ();
 			
 			push (@{$h_td_line->{6}}, $html_trans);
 #			if (not exists $h_td_line->{6}) { push (@{$h_td_line->{6}}, $html_trans);} 
-#			if (exists $h_td_line->{7}) { push (@{$h_td_line->{7}}, qq{<div>---</div>}); }
+#			if (exists $h_td_line->{8}) { push (@{$h_td_line->{8}}, qq{<div>---</div>}); }
 			my $badge_color = '#808080';
 			$badge_color = '#92D674' if $this_score >= 0;
 			$badge_color = '#FFFF00' if $this_score >= 5;
@@ -716,8 +720,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			$badge_color_text = "black" if $badge_color eq '#FFFF00';
 			push (@{$h_td_line->{score}}, $this_score);
 			if (not $html_push_this_j) {
-				push (@{$h_td_line->{7}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$this_score [G: $gscore] </span>});
-				push (@{$h_td_line->{8}}, $score_details_text);
+				push (@{$h_td_line->{8}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$this_score [G: $gscore] </span>});
+				push (@{$h_td_line->{9}}, $score_details_text);
 			}
 
 			next if not $tr_found;
@@ -740,10 +744,11 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 
 			#	$html_tr .= qq{<td>$html_validation</td>};
 			$html_tr .= qq{<td>@{$h_td_line->{6}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{7}}</td>};
 
 			#	$html_tr .= qq{<td>$html_to_validate</td>};
-			$html_tr .= qq{<td>@{$h_td_line->{7}}</td>};
 			$html_tr .= qq{<td>@{$h_td_line->{8}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{9}}</td>};
 			$html_tr .= qq{</tr>};
 			my $max_score = -999;
 			foreach my $s (@{$h_td_line->{score}}) { $max_score = $s if $s > $max_score; }
@@ -764,7 +769,6 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 $pm->wait_all_children();
 
 die if $nbErrors > 0;
-
 
 if ($export_xls) {
 	my $session_id = save_export_xls($patient, $h_export_xls);
@@ -886,24 +890,17 @@ foreach my $gene_name (@lGenesNames) {
 	$html_table_2 .= "</table>";
 
 	$html_table_2 .= qq{<div class="collapse" id="$div_id">};
-	$html_table_2 .=
-qq{<table id='$this_table_id' data-sort-name='locus' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="both" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
+	$html_table_2 .= qq{<table id='$this_table_id' data-sort-name='locus' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="both" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 	$html_table_2 .= qq{<thead style="text-align:center;">};
-	$html_table_2 .=
-	  qq{<th data-field="plot"><b><center>Sashimi Plot</center></b></th>};
+	$html_table_2 .= qq{<th data-field="plot"><b><center>Sashimi Plot</center></b></th>};
 	$html_table_2 .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
-	$html_table_2 .=
-qq{<th data-sortable='true' data-field="var_name"><b><center>Var name</center></b></th>};
-	$html_table_2 .=
-	  qq{<th data-field="trio"><b><center>Trio</center></b></th>};
-	$html_table_2 .=
-qq{<th data-field="deja_vu"><b><center>DejaVu (Nb Samples)</center></b></th>};
-	$html_table_2 .=
-	  qq{<th data-field="transcripts"><b><center>Transcripts</center></b></th>};
-	$html_table_2 .=
-qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></th>};
-	$html_table_2 .=
-	  qq{<th data-field="noise"><b><center>Details Score</center></b></th>};
+	$html_table_2 .= qq{<th data-sortable='true' data-field="var_name"><b><center>Var name</center></b></th>};
+	$html_table_2 .= qq{<th data-field="trio"><b><center>Trio</center></b></th>};
+	$html_table_2 .= qq{<th data-field="deja_vu"><b><center>DejaVu (Nb Samples)</center></b></th>};
+	$html_table_2 .= qq{<th data-field="transcripts"><b><center>Transcripts</center></b></th>};
+	$html_table_2 .= qq{<th data-field="spliceai"><b><center>Potential SpliceAI</center></b></th>};
+	$html_table_2 .= qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></th>};
+	$html_table_2 .= qq{<th data-field="noise"><b><center>Details Score</center></b></th>};
 	$html_table_2 .= qq{</thead>};
 	$html_table_2 .= qq{<tbody>};
 
@@ -914,7 +911,7 @@ qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></t
 		$html_table_2 .= $l;
 		$nb_limit++;
 		if (not $only_gene_name and $nb_limit == 100) {
-			$html_table_2 .= "<tr><td colspan='8'><center><span style='color:red'><i> ---------------- Limit junctions view... Search only this gene to see all junctions ---------------- </i></span></td></tr>";
+			$html_table_2 .= "<tr><td colspan='9'><center><span style='color:red'><i> ---------------- Limit junctions view... Search only this gene to see all junctions ---------------- </i></span></td></tr>";
 			last;
 		}
 	}
@@ -1013,6 +1010,95 @@ sub get_sashimi_plot_file {
 	my $path = $patient->getProject->getProjectPath . '/align/sashimi_plots/';
 	my $outfile = $path.'/sashimi_'.$patient_name.'.'.$ensg.'.'.$locus_text.'.pdf';
 	return $outfile if ( -e $outfile );
+}
+
+sub get_html_spliceAI_cmd_button {
+	my ($junction, $h) = @_;
+	my $hTypes;
+	$hTypes->{'DL'} = 'Donor Loss';
+	$hTypes->{'AL'} = 'Acceptor Loss';
+	$hTypes->{'AG'} = 'Acceptor Gain';
+	$hTypes->{'DG'} = 'Donor Gain';
+	my @lSpliceValues;
+	foreach my $this_pos (sort {$a <=> $b} keys %{$h}) {
+		foreach my $this_alt (sort keys %{$h->{$this_pos}}) {
+			foreach my $this_gname (sort keys %{$h->{$this_pos}->{$this_alt}}) {
+				my @lValues;
+				foreach my $this_type (sort keys %{$h->{$this_pos}->{$this_alt}->{$this_gname}}) {
+					my $value = $h->{$this_pos}->{$this_alt}->{$this_gname}->{$this_type};
+					my $this_color = 'black';
+					$this_color = 'green' if ($value*100) >= 20;
+					$this_color = 'orange' if ($value*100) >= 50;
+					$this_color = '#e74c3c' if ($value*100) >= 80;
+					if ($value > 0) { push(@lValues, '<button><span style=\"color:'.$this_color.'\">'.$hTypes->{$this_type}.':'.$value.'</span></button>'); }
+				}
+				if (scalar @lValues > 0) {
+					my @ltmp;
+					push(@ltmp, 'chr'.$junction->getChromosome->id().':'.$this_pos);
+					push(@ltmp, $this_alt);
+					push(@ltmp, $this_gname);
+					push(@ltmp, '<nobr>'.join(' ', @lValues).'</nobr>');
+					my $tr = join(',', @ltmp);
+					push(@lSpliceValues, $tr);
+				}
+			}
+		}
+	}
+	my $text = join(';', @lSpliceValues);
+	my $cmd_all = qq{view_splice_ai_junction(\"$text\");};
+	return $cmd_all;
+}
+
+sub get_html_spliceAI {
+	my ($junction) = @_;
+	my $h_spai = $junction->getHashSpliceAiNearStartEnd();
+	my $color = 'black';
+	my $html = $cgi->start_table(
+		{
+			class => "table table-sm table-striped table-condensed table-bordered table-primary ",
+			style => "box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"
+		}
+	);
+	$html .= $cgi->start_Tr();
+	$html .= $cgi->th("<center><b>Near Start</b></center>");
+	$html .= $cgi->th("<center><b>Near End</b></center>");
+	$html .= $cgi->end_Tr();
+	
+	my $max_score_infos_start = $h_spai->{start}->{max_infos};
+	my @lt1 = split(';', $max_score_infos_start);
+	
+	my $max_score_infos_end = $h_spai->{end}->{max_infos};
+	my @lt2 = split(';', $max_score_infos_end);
+	
+	my $cmd_all = qq{alert(\"no result\")};
+	$html .= $cgi->start_Tr();
+	if ($h_spai->{start}->{max_score} > 0) {
+		$cmd_all = get_html_spliceAI_cmd_button($junction, $h_spai->{start}->{all});
+		my $this_color;
+		$this_color = '#8FFF49' if ($h_spai->{start}->{max_score}*100) >= 20;
+		$this_color = '#f5b041' if ($h_spai->{start}->{max_score}*100) >= 50;
+		$this_color = '#e74c3c' if ($h_spai->{start}->{max_score}*100) >= 80;
+		if ($this_color) { $html .= "<td style='background-color:$this_color;'>".obutton( $cmd_all, $lt1[-1] )."</td>"; }
+		else { $html .= $cgi->td( obutton( $cmd_all, $lt1[-1]) ); }
+	}
+	else {
+		$html .= $cgi->td( obutton( $cmd_all, '-') );
+	}
+	if ($h_spai->{end}->{max_score} > 0) {
+		$cmd_all = get_html_spliceAI_cmd_button($junction,$h_spai->{end}->{all});
+		my $this_color;
+		$this_color = '#8FFF49' if ($h_spai->{end}->{max_score}*100) >= 20;
+		$this_color = '#f5b041' if ($h_spai->{end}->{max_score}*100) >= 50;
+		$this_color = '#e74c3c ' if ($h_spai->{end}->{max_score}*100) >= 80;
+		if ($this_color) { $html .= "<td style='background-color:$this_color;'>".obutton( $cmd_all, $lt2[-1] )."</td>"; }
+		else {$html .= $cgi->td( obutton( $cmd_all, $lt2[-1]) ); }
+	}
+	else {
+		$html .= $cgi->td( obutton( $cmd_all, '-') );
+	}
+	$html .= $cgi->end_Tr();
+	$html .= $cgi->end_table();
+	return $html;
 }
 
 sub get_html_dejavu {
@@ -1352,9 +1438,7 @@ qq{view_linked_junctions(\"$patient_name\",\"$tid\",\"$j_linked\",\"$my_junction
 
 sub obutton {
 	my ( $onclick, $value ) = @_;
-	return
-qq{<a class="btn btn-xs btn-primary" onclick=\'$onclick\' target="_blank" style="background-color: #D0D0D0;font-size: 7px;font-family:  Verdana;color:black" role="button">}
-	  . $value . "</a>";
+	return qq{<a class="btn btn-xs btn-primary" onclick=\'$onclick\' target="_blank" style="background-color: #D0D0D0;font-size: 7px;font-family:  Verdana;color:black" role="button">}. $value . "</a>";
 }
 
 sub get_html_patients {
