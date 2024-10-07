@@ -56,6 +56,7 @@ my $fam_and 				= $cgi->param('fam_and');
 my $filter_he 				= $cgi->param('filter_he');
 my $filter_ho 				= $cgi->param('filter_ho');
 my $filter_region			= $cgi->param('filter_region');
+my $filter_bed				= $cgi->param('filter_bed');
 my $filter_nbvar_regionho	= $cgi->param('filter_nbvar_regionho');
 my $filter_regionho_sub_only= $cgi->param('filter_region_ho_rec_only_sub');
 my $filter_diseases			= $cgi->param('filter_diseases');
@@ -577,6 +578,10 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	}
 	
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
+	my $add_filter_region = launch_filters_bed($chr, $filter_bed);
+	if ($add_filter_region ne '') {
+		$filter_region .= $add_filter_region;
+	}
 	launch_filters_region($chr, $filter_region, 1);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER launch_filters_region - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
@@ -730,6 +735,31 @@ else {
 ########## [END] FILTRES DE POLYQUERY PAR CHROMOSOME ##########
 
 
+sub launch_filters_bed {
+	my ($chr, $filter_bed) = @_;
+	return unless ($filter_bed);
+	my $add_filter_regions = '';
+	my $bed_dir = $chr->getProject->getBedPolyQueryDir();
+	foreach my $bed_file (split(',', $filter_bed)) {
+		my $bed_path = $bed_dir.'/'.$bed_file;
+		confess ("\n\nERROR: BED file doesn't exist. Die...\n\n") if not -e $bed_path;
+		open (FILE, $bed_path);
+		while (<FILE>) {
+			my $line = $_;
+			chomp ($line);
+			my @lTmp = split(' ', $line);
+			my $chr_id = $lTmp[0];
+			$chr_id =~ s/chr//;
+			next if $chr->id ne $chr_id;
+			$add_filter_regions .= ' '.$chr_id.':'.$lTmp[1].':'.$lTmp[2].':99';
+			#TODO: ajout add ou del bed file
+		}
+		close (FILE);
+	}
+	$add_filter_regions = $chr->id.':1:2:99'if $add_filter_regions eq '';
+	return $add_filter_regions;
+}
+
 sub launch_filters_region {
 	my ($chr, $filter_region, $first_launch) = @_;
 	return unless ($filter_region);
@@ -742,7 +772,7 @@ sub launch_filters_region {
 		my ($chrId, $start, $end, $include) = split(":", $this_filter);
 		next unless ($chrId eq $chr->id());
 		$chr->check_each_var_filter_region($this_filter, $first_launch);
-		$isIntersect = 1 if ($include eq '0');
+		$isIntersect = 1 if ($include eq '0' or $include eq 'bed');
 	}
 	$chr->variants_regions_add();
 	if ($chr->variants_regions_add->is_empty()) {
@@ -825,6 +855,24 @@ sub launchStatsProjectAll {
 	$hash_stats->{patients} 	= launchStatsProjectAll_patients();
 	warn "\n# stats_region" if ($debug);
 	$hash_stats->{regions} 	    = $project->stats_region();
+	if ($filter_bed and $filter_chromosome =~ /X/) {
+		my @lBed;
+		foreach my $bed_file (split(',', $filter_bed)) {
+			my $h_bed;
+			$h_bed = {
+	            'deletion' => 0,
+	            'chromosome' => 'file:'.$bed_file,
+	            'start' => 1,
+	            'id' => 'file:'.$bed_file.':1:2:0',
+	            'include' => '0',
+	            'insertion' => 0,
+	            'substitution' => 0,
+	            'genes' => 0,
+	            'end' => 1
+			};
+			unshift(@{$hash_stats->{regions}}, $h_bed);
+		}
+	}
 	warn "\n# launchStatsProjectAll_groups" if ($debug);
 	$hash_stats->{groups}		= launchStatsProjectAll_groups() if ($project->isSomaticStudy());
 	warn "\n# json_all_genes_name" if ($debug);

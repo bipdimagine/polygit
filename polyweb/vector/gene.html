@@ -524,6 +524,87 @@ function disable_mbl_switch_button(b_name) {
         domClass.add(dijit.byId(b_name).domNode, "mblToolBarButtonDisabled");
     });
 }
+
+function addBedFile() {
+	dijit.byId('waiting').show();
+	const selectedFile = document.getElementById("inputBed").files[0];
+	var txt_bed;
+	if (selectedFile) {
+	    var reader = new FileReader();
+	    reader.readAsText(selectedFile, "UTF-8");
+	    reader.onload = function (evt) {
+	        txt_bed = evt.target.result;
+	        split_and_savebed_content(selectedFile.name, txt_bed);
+	        
+	    }
+	    reader.onerror = function (evt) {
+			dijit.byId('waiting').hide();
+	        alert("error reading BED  file");
+	    }
+	}
+}
+
+
+
+var max_bed_part;
+function split_and_savebed_content (selectedFile, txt_bed) {
+	var reg = new RegExp(/[\n]+/, "g");
+    var tableau = txt_bed.split(reg);
+    var nb = 0;
+    var nb_part = 1;
+    var txt_bed_part = '';
+    var list_jobs = [];
+    var nb_length = tableau.length;
+    if (nb_length < 500) { max_bed_part = 1; }
+    else { max_bed_part = nb_length / 500; }
+    for (var i=0; i<nb_length; i++) {
+        nb++;
+        var line = tableau[i];
+		line = line.replace(/\s+/g, '_');
+        txt_bed_part += "," + line;
+        if (nb == 500) {
+    		save_bed_file(selectedFile, txt_bed_part, nb_part, 0);
+        	txt_bed_part = '';
+        	nb_part++;
+        	nb = 0;
+        }
+    }
+   	save_bed_file(selectedFile, txt_bed_part, nb_part, 1);
+}
+
+function save_bed_file(selectedFile, txt_bed, nb_part, is_last) {
+	dijit.byId('waiting').show();
+    txt_bed = txt_bed.replace(/\n/g, ',');
+	txt_bed = txt_bed.replace(/\s+/g, '_')
+	var url = url_path + "json_output_nodb/save_bed.pl?project_name=" + projectName;
+	url += '&bed_file_name=' + selectedFile + '.part' + nb_part;
+	if (is_last == 1) {
+		url += '&is_last=1';
+	}
+	url += '&content=' + txt_bed;
+	var xhrArgs = {
+        handleAs: "json",
+        url: url,
+        load: function(data) {
+			var file_name = data.file;
+			if (nb_part == parseInt(max_bed_part)) {
+				dijit.byId('waiting').hide();
+			    var txt_file = "file:"+selectedFile+"\t.\t.";
+			    addRegion('[\n]+','[ \t]+',txt_file);
+			}
+        },
+        error: function(error) {
+            alert("error");
+        }
+	};
+	var deferred = dojo.xhrGet(xhrArgs);
+}
+     
+     
+     
+     
+     
+     
         
 function launch_web_igv() {
     var items = [];
@@ -659,6 +740,7 @@ function okfunction (items, request){
     dojo.connect(gridGroups,'onRowClick',displayGroups);
     dojo.connect(gridRegionsHoRec,'onRowClick',show_genes_region_ho_rec);
     testStore = new dojo.store.Memory({data: []});
+    document.getElementById("inputBed").value = null;
     dijit.byId("listcompletion").set("store", testStore);
     dijit.byId('checking').hide();
 	
@@ -1048,7 +1130,7 @@ function displayGeneForChromosome(e){
     var args = construct_url_filter_data();
     args += "&filter_chromosome="+name;
     if (lOnlyThesesGenes.length > 0) {
-        args += "&only_genes="+lOnlyThesesGenes.join(",");
+        args += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
     }
     if (name == "Game Over"){
         return;
@@ -1149,7 +1231,13 @@ function addRegion(regexp1,regexp2,text) {
         nb++;
         var reg2=new RegExp(regexp2, "g");  
         var region = tableau[i].split(reg2);
+        var regChr = new RegExp(/chr/);
+        region[0] = region[0].replace(regChr, '');
         var include_val = 0;
+        if (region[0].match(/file/)) {
+        	include_val = 'bed';
+        	alert (include_val+' for '+text);
+        }
         //if (region.length == 4) { include_val = region[3]; }
         store_region.newItem({
             id:  nb+"_"+region[1]+"_"+region[0]+"_"+region[2],
@@ -2144,7 +2232,7 @@ function export_filter_by_genes(){
     hurl += "&xls_by_genes=1";
     hurl += "&xls_outfile=none";
     if (lOnlyThesesGenes.length > 0) {
-        hurl += "&only_genes="+lOnlyThesesGenes.join(",");
+        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
     }
     hurl = hurl.replace('?', ' ');
     hurl = hurl.replace(/&/g, ' ');
@@ -2165,7 +2253,7 @@ function export_filter_by_variations(){
     hurl += "&xls_by_variants=1";
     hurl += "&xls_outfile=none";
     if (lOnlyThesesGenes.length > 0) {
-        hurl += "&only_genes="+lOnlyThesesGenes.join(",");
+        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
     }
     hurl = hurl.replace('?', ' ');
     hurl = hurl.replace(/&/g, ' ');
@@ -2215,20 +2303,44 @@ function downloadFile(url) {
 
 var REGION_FILTER = new Array();
 
-function url_filter_regions() {
-     var args ="&filter_region=";
+function url_filter_regions(chr_id) {
+	var list_bed = [];
+    var list_regions = '';
     for (i=0;i<REGION_FILTER.length;i++){   
         var item = REGION_FILTER[i];
         if (item){
-            var id = item.chromosome+":"+item.start+":"+item.end+":"+item.include;
-            if (id != ':::0' && id != ':::1' && id != ':::-1') { args += id + "+"; }
+        	var first = String(item.chromosome);
+        	if (first.match("file")) {
+        		var ltmp = first.split(':');
+        		list_bed.push(ltmp[1]);
+        	}
+        	else {
+	        	var id = item.chromosome+":"+item.start+":"+item.end+":"+item.include;
+	        	if (chr_id) {
+	        		if (chr_id == item.chromosome) {
+		            	if (id != ':::0' && id != ':::1' && id != ':::-1') { list_regions += id + "+"; }
+	        		}
+	        	}
+	        	else {
+	            		if (id != ':::0' && id != ':::1' && id != ':::-1') { list_regions += id + "+"; }
+	        	}
+        	}
         }
         else{
-            console.log(i);
+            //console.log(i);
         }
     }
+    var args = '';
     if (REGION_FILTER.length == 0){
-        return "" ;
+        return args;
+    }
+    if (list_regions != '') {
+	    args ="&filter_region=";
+	    args += list_regions;
+    }
+    if (list_bed.length > 0) {
+    	args = "&filter_bed=";
+    	args += list_bed.join(',');
     }
     return args;
 }
@@ -2281,7 +2393,7 @@ function functional_url_filter_data (){
 
 //var nb_atleast = 0;
 
-function construct_url_filter_data () {
+function construct_url_filter_data (chr_id) {
     var filter_args= "";
     var args = new Array();
     filter_args  = "&filter_type_variation=" + functional_url_filter_data();
@@ -2334,7 +2446,7 @@ function construct_url_filter_data () {
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 4)    { filter_args += "&gnomad=gnomad_ac_50"; }
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 5)    { filter_args += "&gnomad=gnomad_ac_100"; }
     }
-    filter_args +=url_filter_regions();
+    filter_args +=url_filter_regions(chr_id);
     //model genetique
     if (genetic_model != "None") {
 		if (genetic_model == 'compound_multi') { filter_args +="&model=compound"; }
@@ -4272,7 +4384,7 @@ function(all, Deferred, dom, on, JSON) {
         if (is_export_xls_genes == 1) { hurl += "&xls_by_genes=1"; }
         hurl += "&xls_save_session=1";
         if (lOnlyThesesGenes.length > 0) {
-            hurl += "&only_genes="+lOnlyThesesGenes.join(",");
+            hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
         }
         hurl += "&user_name="+dojo.cookie("username");
         if (force_annotation_version != 'not') {
@@ -4381,7 +4493,7 @@ function(all, Deferred, dom, on, JSON) {
             use_args = use_args.replace(/;/g, '&');
             cgi_args = '&' + use_args;
         }
-        else { cgi_args = construct_url_filter_data(); }
+        else { cgi_args = construct_url_filter_data(chr_id); }
         if (lOnlyThesesGenes.length > 0) {
             cgi_args += "&only_genes="+lOnlyThesesGenes.join(",");
         }
@@ -5996,8 +6108,9 @@ function selectFamilies_recregion(value) {
         
         <div dojoType="dijit.layout.ContentPane" title="Regions">
        <div  dojoType="dijit.Toolbar" >
+       			<center>
                         <div dojoType="dijit.form.Button" iconClass="plusIcon" onClick='addRow();' showLabel="true">
-                            Add Region
+                            ADD Region(s)
                         </div>
                         <div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconRemoveFormat" showLabel="true" onclick="delete_filter()"> 
                             Delete
@@ -6009,12 +6122,25 @@ function selectFamilies_recregion(value) {
                         <div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconDelete" showLabel="true" onClick='changeRegionsState(-1,"include");' > 
                             Exclude
                         </div>
+                        <div dojoType="dijit.ToolbarSeparator"></div>
+                        <div>
+	                        <table>
+		                        <td>
+			                        <div dojoType="dijit.form.Button" iconClass="plusIcon" onClick='addBedFile();' showLabel="true">
+			                            ADD BED File
+			                        </div>
+		                        </td>
+		                        <td>
+		                        	<input type="file"  id="inputBed">
+		                        </td>
+	                        </table>
+                        </div>
                         <!--
                         <div dojoType="dijit.form.Button"  iconClass="dijitEditorIcon dijitEditorIconUnlink" showLabel="true" onClick='changeRegionsState(2,"include");'> 
                             Remove
                         </div>
                         -->
-
+				</center>
             </div> <!-- END TOOLBAR -->
             
             <div id="gridRegion"  class="grid" dojoType="dojox.grid.DataGrid" jsId="gridRegion"  selectable="1" style="width=100%;height:85%;padding:1px" structure="layoutRegion"> </div>  

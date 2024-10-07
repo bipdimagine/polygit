@@ -4337,6 +4337,12 @@ sub getLargeIndelsDir {
 	return $self->makedir($path);
 }
 
+sub getBedPolyQueryDir {
+	my ($self) = @_;
+	my $path = $self->getCacheDir . "/bed_polyquery/";
+	return $self->makedir($path);
+}
+
 sub makedir {
 	my ( $self, $dir ) = @_;
 	$dir =~ s/\/\//\//g;
