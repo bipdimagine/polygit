@@ -21,26 +21,17 @@ sub annotations {
 sub annotations_rocks {
 	my ( $project,$patient, $list, $list_saved, $maskcoding,$final_polyviewer_all,$hash_genes_panel,$hash_variants_DM ) = @_;
 	my $cgi = new CGI();
-
-	#$project->buffer->dbh_reconnect();
 	print "." unless ($cgi->param('export_xls'));
 	my $tsum = 0;
-
-	#my $vs =  $project->myflushobjects($list,"variants");;
 	my $tglobal = time;
 	my $res     = {};
 	my $agenes  = [];
 	my $e;
 	my $nb = 1;
 	my $javascript_id = int( time + rand(400000) );
-
-	#	$project->setListVariants($list);
-	#	my $t = time;
 	my $list2 = [];
 	my $dchr;
 	my $t = time;
-
-	#$self->rocks_polyviewer_variants
 	my $chr_view;
 	my $current;
 	my $values;
@@ -48,46 +39,32 @@ sub annotations_rocks {
 	my $tt1 = time;
 	my $no;
 	my ($all_hash) = $final_polyviewer_all->prepare($list);
+	
 	foreach my $id (@$list) {
-			
 		my $debug;
 		$nb++;
 		unless ($cgi->param('export_xls')) {
 			print "." if $nb % 100 == 0;
 		}
-
-		my $hg;
-
-			$hg = $final_polyviewer_all->get($id,1);
-			#$hg = $final_polyviewer_all->get($id);
-			
-		unless ($hg){
-			confess($patient->name." ".$id);
+		my $hg = $final_polyviewer_all->get($id);
+		if ($hash_genes_panel) {
+			foreach my $ag ( @{ $hg->{array} } ) {
+				next unless exists $hash_genes_panel->{ $ag->{id} };
+				push( @$agenes, $ag );    # if $ag->{mask} & $maskcoding;
+			}
 		}
-		
-		#TODO: faire EXPORT XLS ici pour simplifier MAJ
-
-			if ($hash_genes_panel) {
-				foreach my $ag ( @{ $hg->{array} } ) {
-					next unless exists $hash_genes_panel->{ $ag->{id} };
-					push( @$agenes, $ag );    # if $ag->{mask} & $maskcoding;
-				}
+		elsif ( exists $hash_variants_DM->{$id} ) {
+			foreach my $a ( @{ $hg->{array} } ) {
+				$a->{DM}++;
+				push( @$agenes, $a );
 			}
-			elsif ( exists $hash_variants_DM->{$id} ) {
-				foreach my $a ( @{ $hg->{array} } ) {
-					$a->{DM}++;
-					push( @$agenes, $a );
-				}
-			}
-			else {
-				push( @$agenes,grep { $_->{mask} & $maskcoding } @{ $hg->{array} } );
-			}
-
+		}
+		else {
+			push( @$agenes,grep { $_->{mask} & $maskcoding } @{ $hg->{array} } );
+		}
 	}
 	$res->{genes} = $agenes;
 	return $res ;
-
-
 }
 
 
