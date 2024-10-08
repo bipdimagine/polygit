@@ -775,7 +775,7 @@ sub launch_filters_region {
 		my ($chrId, $start, $end, $include) = split(":", $this_filter);
 		next unless ($chrId eq $chr->id());
 		$chr->check_each_var_filter_region($this_filter, $first_launch);
-		$isIntersect = 1 if ($include eq '0' or $include eq 'bed');
+		$isIntersect = 1 if ($include eq '0' or $include eq '99');
 	}
 	$chr->variants_regions_add();
 	if ($chr->variants_regions_add->is_empty()) {
