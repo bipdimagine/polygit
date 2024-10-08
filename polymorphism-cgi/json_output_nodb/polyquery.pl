@@ -741,6 +741,7 @@ sub launch_filters_bed {
 	my $add_filter_regions = '';
 	my $bed_dir = $chr->getProject->getBedPolyQueryDir();
 	foreach my $bed_file (split(',', $filter_bed)) {
+		print $chr->getProject->print_dot(1);
 		my $bed_path = $bed_dir.'/'.$bed_file;
 		confess ("\n\nERROR: BED file doesn't exist. Die...\n\n") if not -e $bed_path;
 		open (FILE, $bed_path);
@@ -755,6 +756,7 @@ sub launch_filters_bed {
 			#TODO: ajout add ou del bed file
 		}
 		close (FILE);
+		print $chr->getProject->print_dot(1);
 	}
 	$add_filter_regions = $chr->id.':1:2:99'if $add_filter_regions eq '';
 	return $add_filter_regions;
@@ -767,6 +769,7 @@ sub launch_filters_region {
 	my $isIntersect;
 	my $hFilters;
 	foreach my $this_filter (split(" ", $filter_region)) {
+		print $chr->getProject->print_dot(1000);
 		next if (exists $hFilters->{$this_filter});
 		$hFilters->{$this_filter} = undef;
 		my ($chrId, $start, $end, $include) = split(":", $this_filter);
@@ -778,6 +781,7 @@ sub launch_filters_region {
 	if ($chr->variants_regions_add->is_empty()) {
 		if ($isIntersect) {
 			foreach my $patient (@{$chr->getPatients()}) {
+				print $chr->getProject->print_dot(5);
 				$patient->getVariantsVector($chr)->Empty();
 			}
 			$chr->update_from_patients();
