@@ -116,6 +116,7 @@ foreach my $family (@{$project->getFamilies()}) {
 		
 		$hfile->{$parent->name} = "$tmp_dir/".$parent->name.".".$chr->name.".bam";
 		next if -e $hfile->{$parent->name}.".bai";
+		$project->disconnect();
 		$pm->start() and next;
 		warn "---> start ".$parent->name;
 		my $cram =  $parent->getBamFile;
@@ -197,6 +198,7 @@ foreach my $family (@{$project->getFamilies()}) {
 				my $file = $hfile->{$parent->name};
 				$res_sambamba->{$parent->id} = $file.".".$children->name.".pileup";
 				$nbp ++;
+				$project->disconnect();
 				$pm2->start() and next;
 				warn "\t\t ---> start ".$parent->name;
 			 	my $t =time;
