@@ -2166,8 +2166,12 @@ sub get_lmdb_database {
 	return $self->buffer->get_lmdb_database( $database, $self->name, $type );
 }
 
+#TODO: hgms DM for gene to do for HG38
 sub is_hgmd_DM_for_gene {
 	my ($self, $hgmd_id, $gene) = @_;
+	
+	return;
+	
 	my $db =  $self->getChromosome->get_lmdb_database("hgmd",'relation_variant_gene');
 	my $pub = $db->get($hgmd_id);
 	return 1 if ($pub and exists $pub->{$gene->external_name()});
