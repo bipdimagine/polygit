@@ -44,6 +44,10 @@ require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update.pm";
 my $io = IO::Handle->new();
 $io->autoflush(1);
 
+my $max_dejavu = 999999999999;
+my $max_dejavu_ho = 999999999999;
+my $max_gnomad = 999999999999;
+my $max_gnomad_ho = 999999999999;
 
 my $cgi = new CGI();
 my $user_name = $cgi->param('user');
@@ -51,10 +55,10 @@ my $pwd = $cgi->param('pwd');
 my $gene_id = $cgi->param('gene');
 my $gene_id_alt = $cgi->param('gene_alt');
 my $only_transcript = $cgi->param('only_transcript');
-my $max_dejavu = $cgi->param('dejavu');
-my $max_dejavu_ho = $cgi->param('dejavu_ho');
-my $max_gnomad = $cgi->param('gnomad');
-my $max_gnomad_ho = $cgi->param('gnomad_ho');
+$max_dejavu = $cgi->param('dejavu');
+$max_dejavu_ho = $cgi->param('dejavu_ho');
+$max_gnomad = $cgi->param('gnomad');
+$max_gnomad_ho = $cgi->param('gnomad_ho');
 my $filters_cons = $cgi->param('filters_cons');
 my $only_ill = $cgi->param('only_ill');
 my $only_my_projects = $cgi->param('only_my_projects');
