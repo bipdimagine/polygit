@@ -106,6 +106,9 @@ my $keep_indels_cadd		= $cgi->param('keep_indels_cadd');
 #my $filter_gnomad_test		= $cgi->param('gnomad_test');
 
 
+if ($xls_save_session or $xls_load_session) {
+	$detail_project = 1;
+}
 
 my $hDeleteModels;
 if ($delete_models) {
