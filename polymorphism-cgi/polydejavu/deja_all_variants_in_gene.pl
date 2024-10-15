@@ -92,6 +92,9 @@ foreach my $model (split(',', $models)) {
 }
 exit(0) unless $h_models;
 
+
+supressCoreFilesFound();
+
 my $fork = 5;
 $user_name = lc($user_name);
 my $buffer_init = new GBuffer;
@@ -240,7 +243,7 @@ my $color_yellow = 'yellow';
 my $session_id = save_export_xls();
 print "|";
 export_html($hResVariants, $session_id);
-print "|";
+supressCoreFilesFound();
 exit(0);
 
 
@@ -250,6 +253,12 @@ exit(0);
 ####################
 
 
+
+sub supressCoreFilesFound {
+	my $cmd = "rm $Bin/core.*";
+	warn $cmd;
+	`$cmd`;
+}
 
 sub save_export_xls {
 	print '.saveExport.';
@@ -546,20 +555,10 @@ sub export_html {
 	
 	$hRes->{hash_filters} = $h_annot_categories;
 	
-	
-	
-	
-#	warn Dumper $hRes;
-	
-#	warn "\n\n";
-#	warn $session_id;
-#	warn "\n\n";
-	
 	save_html($session_id, $hRes);
 	my $hRes2;
 	$hRes2->{session_id} = $session_id;
 	printJson($hRes2);
-	exit(0);
 }
 
 sub save_html {
@@ -1514,7 +1513,6 @@ sub printJson {
 	print ".\",";
 	$json_encode =~ s/{//;
 	print $json_encode;
-	exit(0);
 }
 
 sub validation_table_new {
