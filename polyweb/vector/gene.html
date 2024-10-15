@@ -2217,6 +2217,7 @@ function get_args_vector(chr_ok){
     if (chr_ok == 'other') { url += "&filter_chromosome=all"; }
     else if (ok == 0)         { return 'not'; }
     // else                      { lChrXlsSubPart.push(chr_ok); }
+    else if (chr_ok != null) { url += "&filter_chromosome="+chr_ok; }
     else { url += "&filter_chromosome=" + lOk.join(','); }
     return url;
 }
@@ -2248,9 +2249,28 @@ function export_filter_by_variations(){
     document.getElementById("wait2").src="../images/polyicons/wait18trans.gif";
     dijit.byId('waiting_xls_progress').set('title', 'Export XLS by Variations'); 
     var can_launch = can_launch_export_xls_var();
-    var hurl = get_args_vector('other');
+    
+    var ok = 0;
+    var lOk = [];
+    dojo.forEach(gridChromosome._by_idx, function(item, index){
+        var chr_name;
+        var selectedItem = gridChromosome.getItem(index);
+        dojo.forEach(gridChromosome.store.getAttributes(selectedItem), function(attribute) {
+            if (gridChromosome.selection.isSelected(index)) {
+                var value = gridChromosome.store.getValues(selectedItem, attribute);
+                if (attribute == "id" ) {
+                    chr_name = value;
+                    lOk.push(chr_name);
+                }
+            }
+        });
+    });
+    
+    var list_chr = lOk.join(",");
+    var hurl = get_args_vector(list_chr);
     hurl += "&view_all_genes=1";
     hurl += "&xls_by_variants=1";
+    hurl += "&user=" + dojo.cookie("username");
     hurl += "&xls_outfile=none";
     if (lOnlyThesesGenes.length > 0) {
         hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
@@ -3981,8 +4001,25 @@ function(all, Deferred, dom, on, JSON) {
         else { maxRunning = 5; }
         var hasConfidenceFilter;
         if (is_export_xls == 1) {
+        	var ok = 0;
+		    var lOk = [];
+		    dojo.forEach(gridChromosome._by_idx, function(item, index){
+		        var chr_name;
+		        var selectedItem = gridChromosome.getItem(index);
+		        dojo.forEach(gridChromosome.store.getAttributes(selectedItem), function(attribute) {
+		            if (gridChromosome.selection.isSelected(index)) {
+		                var value = gridChromosome.store.getValues(selectedItem, attribute);
+		                if (attribute == "id" ) {
+		                    chr_name = value;
+		                    lOk.push(chr_name);
+		                }
+		            }
+		        });
+		    });
+		    var chr_options = lOk.join(',');
+        
             all({
-                xls: checkAndSubmit( '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y,MT' ),
+                xls: checkAndSubmit( chr_options ),
             }).then(function(results) {} );
         }
         else if (run_check_project == 1) {
@@ -4384,7 +4421,7 @@ function(all, Deferred, dom, on, JSON) {
         if (is_export_xls_genes == 1) { hurl += "&xls_by_genes=1"; }
         hurl += "&xls_save_session=1";
         if (lOnlyThesesGenes.length > 0) {
-            hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
+            hurl += "&only_genes="+lOnlyThesesGenes.join(",");
         }
         hurl += "&user_name="+dojo.cookie("username");
         if (force_annotation_version != 'not') {
