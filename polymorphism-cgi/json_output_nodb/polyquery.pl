@@ -59,6 +59,7 @@ my $fam_and 				= $cgi->param('fam_and');
 my $filter_he 				= $cgi->param('filter_he');
 my $filter_ho 				= $cgi->param('filter_ho');
 my $filter_region			= $cgi->param('filter_region');
+my $filter_bed				= $cgi->param('filter_bed');
 my $filter_nbvar_regionho	= $cgi->param('filter_nbvar_regionho');
 my $filter_regionho_sub_only= $cgi->param('filter_region_ho_rec_only_sub');
 my $filter_diseases			= $cgi->param('filter_diseases');
@@ -111,7 +112,6 @@ my $keep_indels_cadd		= $cgi->param('keep_indels_cadd');
 
 my $queryFilter =  new QueryVectorFilter;
 $queryFilter->verbose_debug(1) if $debug;
-
 my $hDeleteModels;
 if ($delete_models) {
 	foreach my $model (split(' ', $delete_models)) {
@@ -469,6 +469,10 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		}
 	}
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
+	my $add_filter_region = launch_filters_bed($chr, $filter_bed);
+	if ($add_filter_region ne '') {
+		$filter_region .= $add_filter_region;
+	}
 	launch_filters_region($chr, $filter_region, 1);
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER launch_filters_region - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
@@ -509,8 +513,9 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	}
 	elsif ($xls_save_session or $xls_by_variants or $export_list_var_ids) {
 		foreach my $v_id (@{$chr->getListVarVectorIds($chr->getVariantsVector())}) {
-			my $var_id = $chr->getVarId($v_id);
-			my $var = $chr->get_lmdb_variations("r")->get($var_id);
+#			my $var_id = $chr->getVarId($v_id);
+#			my $var = $chr->get_lmdb_variations("r")->get($var_id);
+			my $var = $chr->getProject->returnVariants($chr->name."!".$v_id);
 			$var->{project} = $project;
 			$var->{buffer} = $buffer;
 			$var->{vector_id} = $v_id;
@@ -601,6 +606,34 @@ else {
 ########## [END] FILTRES DE POLYQUERY PAR CHROMOSOME ##########
 
 
+
+
+sub launch_filters_bed {
+	my ($chr, $filter_bed) = @_;
+	return unless ($filter_bed);
+	my $add_filter_regions = '';
+	my $bed_dir = $chr->getProject->getBedPolyQueryDir();
+	foreach my $bed_file (split(',', $filter_bed)) {
+		print $chr->getProject->print_dot(1);
+		my $bed_path = $bed_dir.'/'.$bed_file;
+		confess ("\n\nERROR: BED file doesn't exist. Die...\n\n") if not -e $bed_path;
+		open (FILE, $bed_path);
+		while (<FILE>) {
+			my $line = $_;
+			chomp ($line);
+			my @lTmp = split(' ', $line);
+			my $chr_id = $lTmp[0];
+			$chr_id =~ s/chr//;
+			next if $chr->id ne $chr_id;
+			$add_filter_regions .= ' '.$chr_id.':'.$lTmp[1].':'.$lTmp[2].':99';
+			#TODO: ajout add ou del bed file
+		}
+		close (FILE);
+		print $chr->getProject->print_dot(1);
+	}
+	$add_filter_regions = $chr->id.':1:2:99'if $add_filter_regions eq '';
+	return $add_filter_regions;
+}
 
 sub is_differents_hash_filters {
 	my ($h1, $h2, $dejavu, $dejavu_2) = @_;
@@ -719,17 +752,19 @@ sub launch_filters_region {
 	my $isIntersect;
 	my $hFilters;
 	foreach my $this_filter (split(" ", $filter_region)) {
+		print $chr->getProject->print_dot(1000);
 		next if (exists $hFilters->{$this_filter});
 		$hFilters->{$this_filter} = undef;
 		my ($chrId, $start, $end, $include) = split(":", $this_filter);
 		next unless ($chrId eq $chr->id());
 		$chr->check_each_var_filter_region($this_filter, $first_launch);
-		$isIntersect = 1 if ($include eq '0');
+		$isIntersect = 1 if ($include eq '0' or $include eq '99');
 	}
 	$chr->variants_regions_add();
 	if ($chr->variants_regions_add->is_empty()) {
 		if ($isIntersect) {
 			foreach my $patient (@{$chr->getPatients()}) {
+				print $chr->getProject->print_dot(5);
 				$patient->getVariantsVector($chr)->Empty();
 			}
 			$chr->update_from_patients();
@@ -823,6 +858,24 @@ sub launchStatsProjectAll {
 	$hash_stats->{regions} 	    = $project->stats_region();
 	warn "-".abs(time -$t);
 	$t =time;
+	if ($filter_bed and $filter_chromosome =~ /X/) {
+		my @lBed;
+		foreach my $bed_file (split(',', $filter_bed)) {
+			my $h_bed;
+			$h_bed = {
+	            'deletion' => 0,
+	            'chromosome' => 'file:'.$bed_file,
+	            'start' => 1,
+	            'id' => 'file:'.$bed_file.':1:2:0',
+	            'include' => '0',
+	            'insertion' => 0,
+	            'substitution' => 0,
+	            'genes' => 0,
+	            'end' => 1
+			};
+			unshift(@{$hash_stats->{regions}}, $h_bed);
+		}
+	}
 	warn "\n# launchStatsProjectAll_groups" if ($debug);
 	$hash_stats->{groups}		= launchStatsProjectAll_groups() if ($project->isSomaticStudy());
 	warn "-".abs(time -$t);
@@ -1724,10 +1777,15 @@ sub launchStatsPatient {
 	my $v_he = $patient->getVectorOriginHe($chr) & $v_all;
 	my $v_ho = $patient->getVectorOriginHo($chr) & $v_all;
 	
-	my $v_substitution = $vector_buffer{$chr->id}{substitution} & $v_all;
-	my $v_insertion = $vector_buffer{$chr->id}{insertion} & $v_all;
-	my $v_deletion = $vector_buffer{$chr->id}{deletion} & $v_all;
-	my $v_cnvs = $vector_buffer{$chr->id}{cnv} & $v_all;
+	my $v_substitution = $chr->getNewVector();
+	my $v_insertion = $chr->getNewVector();
+	my $v_deletion = $chr->getNewVector();
+	my $v_cnvs = $chr->getNewVector();
+	
+	$v_substitution = $vector_buffer{$chr->id}{substitution} & $v_all if $vector_buffer{$chr->id}{substitution};
+	$v_insertion = $vector_buffer{$chr->id}{insertion} & $v_all if $vector_buffer{$chr->id}{insertion};
+	$v_deletion = $vector_buffer{$chr->id}{deletion} & $v_all if $vector_buffer{$chr->id}{deletion};
+	$v_cnvs = $vector_buffer{$chr->id}{cnv} & $v_all if $vector_buffer{$chr->id}{cnv};
 	
 	my $nb_all = $chr->countThisVariants($v_all);
 	$hStats->{variations} = $nb_all;
@@ -2943,6 +3001,8 @@ sub checkEssentialsCategoriesInChr {
 
 sub saveSessionXLS {
 	my ($project, $hashRes, $hResumeFilters) = @_;
+	
+	die;
 	my ($h, $ok);
 	print ".";
 	if ($xls_by_variants) {
@@ -2984,6 +3044,7 @@ sub export_xls {
 	my $xls_export = new xls_export();
 	$xls_export->title_page('PolyQuery_'.$project->name().'.xls');
 	$xls_export->store_variants_infos($lVar, $project, $project->getPatients());
+	warn '$xls_save_session: '.$xls_save_session;
 	if ($xls_save_session) {
 		my $session_id = $xls_export->save();
 	    print '@@@';
@@ -2991,6 +3052,9 @@ sub export_xls {
 	    print $session_id;
 	    print "\"}";
 		exit(0);
+	}
+	elsif ($xls_outfile) {
+		$xls_export->output_dir($xls_outfile);
 	}
 	create_xls_variants($xls_export, $hResumeFilters);
 }

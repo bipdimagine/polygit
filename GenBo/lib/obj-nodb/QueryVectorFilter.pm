@@ -1311,8 +1311,8 @@ sub filter_genes_annotations {
 	
 	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
 	$chr->{buffer_vector} = $chr->getVariantsVector();
-	warn "---------------- $nb/$nb_genes/".scalar(keys %{$chr->{genes_object}});
-	warn abs(time - $t);
+#	warn "---------------- $nb/$nb_genes/".scalar(keys %{$chr->{genes_object}});
+#	warn abs(time - $t);
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_annotations - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 }
 
