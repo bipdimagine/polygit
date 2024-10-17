@@ -190,7 +190,6 @@ function formaterButtonRNA(this_value) {
 }
 
 function formaterButton(this_value) {
-	alert(this_value);
 	var list = this_value.split('::');
 	var tt = " ";
 	var dd = " disabled ";
