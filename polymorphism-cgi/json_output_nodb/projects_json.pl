@@ -108,11 +108,11 @@ sub getProjectLists {
 	#pour chacun des id de projet 
 	if ($project_query){
 	 foreach my $project ( @$res) {
-	 	
 	 	next if ($project_query && $project_query ne $project->{name}); 		
 	 	
 	 	my $buffer2 = GBuffer->new;
-	 	my $project2 = $buffer2->newProject( -name => $project->{name} ); 	
+	 	my $project2 = $buffer2->newProject( -name => $project->{name} );
+	 	 	
 	 	my $captures = $project2->getCaptures();
 	 	my $runs = $project2->getRuns();
 	 	$project->{nb_run} = scalar(@$runs);
@@ -160,7 +160,6 @@ sub getProjectLists {
 	 }
 	export_data::print_simpleJson($cgi,$res) if $project_query;
 	}
-	
 	my (@res2, $h_proj_new_path);
 	my @test;
 	my @test2;
@@ -177,6 +176,8 @@ sub getProjectLists {
 		next unless	 $project->{name} =~ /NGS/;
 		my $husers = $buffer->getQuery()->getOwnerProject($project->{id});
 		my $groups = $buffer->getQuery()->getUserGroupsForProject($project->{id});
+	 	$project->{genome} = $buffer->getQuery()->getBuildFromProjectName($project->{name});
+
 		$project->{users} = "";
 		if (@$groups){
 			$project->{users} = join(";",@$groups);

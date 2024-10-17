@@ -121,9 +121,16 @@ footer{
 	    	}
 	    }
       
-       function viewProject(prj, type) {
-           //attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
-            this.location.href = "vector/gene.html?project="+prj+"&type="+type;
+       function viewProject(prj, type, genome) {
+           var url;
+           var regexp = /HG19/g;
+           if (String(genome).match(regexp)) {
+           		url = 'https://'+window.location.hostname + "/polyweb/vector/gene.html?project="+prj+"&type="+type;
+           }
+           else {
+				url = "vector/gene.html?project="+prj+"&type="+type;
+			}
+			window.open(url,'_blank');
         }
         
         function checkInterfaceVersion(version) {

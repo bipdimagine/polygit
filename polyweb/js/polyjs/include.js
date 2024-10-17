@@ -78,6 +78,9 @@ else if (href.indexOf("mbras", 1) > -1) {
 else if (href.indexOf("eollivie", 1) > -1) {
 	url_path = "/cgi-bin/eollivie/polymorphism-cgi/";
 }
+else if (href.indexOf("HG38", 1) > -1) {
+	url_path = "/cgi-bin/HG38/polymorphism-cgi/";
+}
 else if (href.indexOf("preprod_rocks", 1) > -1) {
 	url_path = "/cgi-bin/preprod_rocks/polymorphism-cgi/";
 }

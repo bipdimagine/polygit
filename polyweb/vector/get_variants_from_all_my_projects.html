@@ -844,16 +844,10 @@
 	    	var use_release = 'HG19';
 	    	function launch_gene_search(use_input) {
 	    		var regexp_prod = '/cgi-bin/polymorphism-cgi/';
-	    		var regexp_preprodrocks = '/cgi-bin/preprod_rocks/polymorphism-cgi/';
 	    		if (document.getElementById('b_use_hg19').checked) {
 	    			if (url_path == regexp_prod) {  }
-	    			else if (url_path == regexp_preprodrocks) { url_path = '/cgi-bin/polymorphism-cgi/'; }
+	    			else  { url_path = '/cgi-bin/polymorphism-cgi/'; }
 	    			use_release = 'HG19';
-    			}
-    			if (document.getElementById('b_use_hg38').checked) {
-	    			if (url_path == regexp_prod) { url_path = '/cgi-bin/preprod_rocks/polymorphism-cgi/'; }
-	    			else if (url_path == regexp_preprodrocks) {  }
-	    			use_release = 'HG38';
     			}
 	    	
 		    	var value;
