@@ -521,9 +521,10 @@
             var input_session_id = param("job_id");
             
             $(document).ready(function () {
+	            document.getElementById("content_res_variants").innerHTML = "<center>Loading datas... <img src='../images/polyicons/wait18trans.gif' align='absmiddle'></center>";
 	            setTimeout(function() {
 	            	launch_for_gene();
-				}, 1500);
+				}, 2500);
 	    	});
 	    	
 	    	function enable_table_search() {
