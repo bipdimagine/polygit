@@ -1047,6 +1047,7 @@ sub update_list_variants_from_dejavu {
 		
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 		
+		next if $var_id =~ /ALU/;
 		my $var = $project_dejavu->_newVariant($var_id);
 		if ($hVariantsDetails and exists $hVariantsDetails->{$var_id}) {
 			$var_gnomad = $hVariantsDetails->{$var_id}->{var_gnomad} if ($hVariantsDetails->{$var_id}->{var_gnomad});
