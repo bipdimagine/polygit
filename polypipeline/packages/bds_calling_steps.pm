@@ -315,39 +315,40 @@ method count_featureCounts  (Str :$filein! ){
 		$align_method = $patient->alignmentMethod();
 		$profile = $patient->getSampleProfile();
 		push(@sed_cmd,qq{sed -i "2s/$bam/$name/" $fileout} );
+		push(@sed_cmd,qq{sed -i "1s/$bam/$name/" $fileout.summary} );
 		push(@sed_cmd2,qq{sed -i "2s/$bam/$name/" $fileout2} );
+		push(@sed_cmd2,qq{sed -i "1s/$bam/$name/" $fileout2.summary} );
 	}
 	my $ppn =16;
 	my $gtf = $project->gtf_file();
-	$gtf = $project->gtf_file_dragen() if $align_method eq "star" || $align_method eq "dragen-align";
-	#die($gtf);
+	#$gtf = $project->gtf_file_dragen() if $align_method eq "star" || $align_method eq "dragen-align";
 	
 	my $sed = join(" && ",@sed_cmd);
 	my $featureCounts = $project->buffer->software("featureCounts");
-	my $strand = " -s 1 ";
-	$strand = " -s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free";
-	$strand = " -s 0 " if $profile eq "bulk neb pcr-free";
-	
-	my $cmd = "$featureCounts -T $ppn   -a $gtf --ignoreDup -o $fileout -p -t exon  $strand ".join(" ",@bams)." && $sed";
-	#my $cmd = "$featureCounts -T $ppn   -a $gtf  -o $fileout -p -t exon  ".join(" ",@bams)." && $sed";
+	my $strand = " -s 0 ";
+#	my $strand = " -s 1 ";
+#	$strand = " -s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free";
+#	$strand = " -s 0 " if $profile eq "bulk neb pcr-free";
+	my $cmd = "$featureCounts -T $ppn -a $gtf --ignoreDup -o $fileout -p -t exon $strand ".join(" ",@bams)." && $sed";
+	#my $cmd = "$featureCounts -T $ppn -a $gtf -o $fileout -p -t exon  ".join(" ",@bams)." && $sed";
 	my $type = "featureCounts-genes";
 	my $stepname = $project_name."@".$type;
-		my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[@bams],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job({job=>$job_bds});
-		if ($self->unforce() && -e $fileout){
-	  		$job_bds->skip();
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[@bams],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job({job=>$job_bds});
+	if ($self->unforce() && -e $fileout){
+  		$job_bds->skip();
 	}
-		
-		my $sed2 = join(" && ",@sed_cmd2);
-		my $cmd2 = "$featureCounts -T $ppn -a $gtf -f   -t exon  -O --ignoreDup -p  -o $fileout2 -s 1 ".join(" ",@bams)." && $sed2";
-		#my $cmd2 = "$featureCounts -T $ppn -a $gtf -f   -t exon  -O  -p  -o $fileout2 -s 1 ".join(" ",@bams)." && $sed2";
 	
-		my $type2 = "featureCounts-exons";
-		my $stepname2 = $project_name."@".$type2;
-		my $job_bds2 = job_bds->new(cmd=>[$cmd2],name=>$stepname2,ppn=>$ppn,filein=>[@bams],fileout=>$fileout2,type=>$type2,dir_bds=>$self->dir_bds);
-		$self->current_sample->add_job({job=>$job_bds2});
-		if ($self->unforce() && -e $fileout2){
-	  		$job_bds2->skip();
+	my $sed2 = join(" && ",@sed_cmd2);
+	my $cmd2 = "$featureCounts -T $ppn -a $gtf -f --ignoreDup -o $fileout2 -O -p -t exon $strand ".join(" ",@bams)." && $sed2";
+	#my $cmd2 = "$featureCounts -T $ppn -a $gtf -f -t exon -O -p -o $fileout2 -s 1 ".join(" ",@bams)." && $sed2";
+
+	my $type2 = "featureCounts-exons";
+	my $stepname2 = $project_name."@".$type2;
+	my $job_bds2 = job_bds->new(cmd=>[$cmd2],name=>$stepname2,ppn=>$ppn,filein=>[@bams],fileout=>$fileout2,type=>$type2,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job({job=>$job_bds2});
+	if ($self->unforce() && -e $fileout2){
+  		$job_bds2->skip();
 	}
 	return ($filein);
 }
