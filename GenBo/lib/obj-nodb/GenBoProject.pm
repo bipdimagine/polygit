@@ -1184,6 +1184,19 @@ has version => (
 	},
 );
 
+has fastq_screen_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->getProjectRootPath().'/fastq_screen/';
+		unless (-d $dir) {
+			$self->makedir($dir);
+		}
+		return $dir;
+	},
+);
+
 has project_root_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1258,6 +1271,17 @@ is      => 'rw',
 		return $path;
 	},
 );
+has project_epi2me_pipeline_path_name => (
+is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = $self->buffer->config->{epi2me}->{pipeline};
+		my $path     = $pathRoot . "/" . $self->name() . "/";
+		$path .= $self->getVersion . "/";
+		return $path;
+	},
+);
 has dragen_fastq => (
 is      => 'rw',
 	lazy    => 1,
@@ -1276,6 +1300,16 @@ has project_dragen_pipeline_path => (
 		return $self->makedir($self->project_dragen_pipeline_path_name);
 	},
 );
+
+has project_epi2me_pipeline_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		return $self->makedir($self->project_epi2me_pipeline_path_name);
+	},
+); 
+
 has project_dragen_demultiplex_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -2088,10 +2122,9 @@ has gtf_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf};
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
+		$file = $self->buffer()->config->{'public_data'}->{root}.'/repository/'.$version.'/'.$self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
+		die($file) unless -e $file;	
 		return $file;
 	},
 );
@@ -2218,7 +2251,7 @@ has sequencing_machines => (
 	},
 );
 
-has genomeFasta => (
+has _genomeFasta => (
 	is      => 'rw',
 	lazy    => 1,
 	reader  => 'getGenomeFasta',
@@ -2232,6 +2265,21 @@ has genomeFasta => (
 	},
 );
 
+sub genomeFasta {
+	my ( $self, $bam ) = @_;
+	my $ref = $self->_genomeFasta();
+	return $ref unless $bam;
+	my $samtools = $self->buffer->software("samtools");
+	my @header = `$samtools view -H  $bam`;
+	chomp(@header);
+	my ($pangenome) =  grep{$_ =~ /chr6_cox_hap2/} @header;
+	if ($pangenome ){
+		# Remplacer "HG19_*" par "HG19_DRAGEN" en utilisant des délimiteurs "|"
+		$ref =~ s|/HG19_[^/]+|/HG19_DRAGEN|;
+		$ref =~ s|/HG38_[^/]+|/HG38_DRAGEN|;
+	}
+	return $ref;
+}
 sub getGenomeIndex {
 	my ( $self, $method ) = @_;
 	my $dir;
@@ -2281,6 +2329,7 @@ has genomeFai => (
 			next if $chr =~ /JH/;
 			next if $chr =~ /MU0/;
 			next if $chr =~ /_random/;
+			next if $chr =~ /_hap/i;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -2489,6 +2538,15 @@ has pipelineDragen => (
 	default => sub {
 		my $self = shift;
 		return $self->project_dragen_pipeline_path;
+	},
+);
+
+has pipelineEpi2me => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->project_epi2me_pipeline_path;
 	},
 );
 has metricsDir => (
@@ -2915,6 +2973,7 @@ sub setRuns {
 		$hids{ $h->{id} } = undef;
 		$h->{project} = $self;
 		next if exists $self->{objects}->{runs}->{ $h->{id} };
+		
 		$self->{objects}->{runs}->{ $h->{id} } = new GenBoRun($h);
 	}
 	return \%hids;
@@ -2987,10 +3046,10 @@ sub setPatients {
 		$h->{project} = $self;
 		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
+		
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
 		  $self->{species_id} = $h->{species_id};
-#		  warn $h->{species_id};
 		 
 	}
 	return \%names unless (%names);
@@ -4072,12 +4131,13 @@ sub makePath {
 	system("chmod -R a+rwx $dd");
 	foreach my $p ( @{ $self->getPatients() } ) {
 		my $methods  = $p->getCallingMethods();
-		my $methods2 = $p->callingSVMethods();
+		my   $methods2  = $p->callingSVMethods();
 		foreach my $method_name (@$methods) {
 
 			$self->getVariationsDir($method_name);
 			$self->getIndelsDir($method_name);
 		}
+		
 		foreach my $method_name (@$methods2) {
 			$self->getVariationsDir($method_name);
 		}
@@ -4290,6 +4350,12 @@ sub getLargeIndelsDir {
 	my $path = $self->project_path . "/large_indels/";
 	$self->makedir($path);
 	$path .= $method_name . '/';
+	return $self->makedir($path);
+}
+
+sub getBedPolyQueryDir {
+	my ($self) = @_;
+	my $path = $self->getCacheDir . "/bed_polyquery/";
 	return $self->makedir($path);
 }
 
@@ -4751,6 +4817,7 @@ sub noSqlCoverage {
 	#	my $output   =$self->getCacheDir() . "/coverage_lite_test";
 	my $output = $self->getCacheDir() . "/coverage_lite";
 	$self->{noSqlCoverage} = GenBoNoSql->new( dir => $output, mode => "$mode" );
+	
 	return $self->{noSqlCoverage};
 
 }

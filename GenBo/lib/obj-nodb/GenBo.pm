@@ -1261,11 +1261,11 @@ sub getPatient {
 	$self->getPatients();
 	$self->patients_object;
 	unless ($patientIdName) { $self->_errorMethod('getPatient'); }
-
 	my $p = $self->_getOneObjectByName($self->getPatients(), $patientIdName,1);
 	
 	return $p if $p;
 	if (exists($self->getProject()->{objects}->{patients}->{$patientIdName})) { 
+		warn Dumper keys %{$self->getProject()->{objects}->{patients}};
 		confess();
 	#	confess("problem") if  $self->getProject()->{objects}->{patients}->{$patientIdName}->name ne $patientIdName ; 
 		return $self->getProject()->{objects}->{patients}->{$patientIdName};
@@ -1287,6 +1287,10 @@ sub getChromosome {
 	return $self->_getOneObjectByName($self->getChromosomes(),$name,$nodie);
 }
 
+sub existsChromosome {
+	my ($self, $name) = @_;
+	return $self->getChromosome($name,1);
+}
 sub getReference {
 	my ($self, $name) = @_;
 	my $toto = $self->getReferences();
