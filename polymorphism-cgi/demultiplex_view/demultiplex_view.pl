@@ -242,7 +242,7 @@ sub parse_csv_file {
 		else {
 			my $j = 0;
 			my $id = $lCol[0].'_'.$lCol[1].'_'.$lCol[2];
-			if ($id =~ /(.+)_RC/) {
+			if ($id =~ /(.+)_RC$/) {
 				$h->{has_RC}++ if (exists $h->{values}->{$1});
 			}
 			my $sample_id;
@@ -253,9 +253,9 @@ sub parse_csv_file {
 				$h->{values}->{$id}->{$j} = $value;
 				if ($cat eq 'SampleID') {
 					$sample_id = $value;
-					$nb_samples++ if (not lc($sample_id) eq 'undetermined' and not lc($sample_id) =~ /_rc/);
+					$nb_samples++ if (not lc($sample_id) eq 'undetermined' and not lc($sample_id) =~ /_rc$/);
 					
-					if (not lc($sample_id) =~ /_rc/) {
+					if (not lc($sample_id) =~ /_rc$/) {
 						my $runs = 'no_run_info';
 						if (lc($sample_id) eq 'undetermined') {
 							$runs = 'undetermined';
@@ -588,7 +588,7 @@ sub convert_csv_to_json {
 		my ($mean_reads, $limit_errors_reads_min, $limit_errors_reads_max);
 		
 		foreach my $id (sort keys %{$h->{$file}->{values}}) {
-			next if ($id =~ /.+_RC/);
+			next if ($id =~ /.+_RC$/);
 			my $is_all_lanes;
 			$is_all_lanes = 1 if ($h->{$file}->{values}->{$id}->{'Lane'} eq 'ALL');
 			
