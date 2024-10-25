@@ -101,6 +101,8 @@ my $limit;
 my $version;
 my $arg_steps;
 my $pipeline_name;
+my $pad;
+
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -117,6 +119,7 @@ GetOptions(
 	'pipeline=s' =>\$pipeline_name,
 	'yes=s' =>\$yes,
 	#'low_calling=s' => \$low_calling,
+	'padding=s' =>\$pad,
 );
 $patients_name = "all" unless $patients_name;
 my $report;
@@ -181,7 +184,7 @@ my $steps = {
 				"splitntrim"=>  sub {$pipeline->SplitNCigarReads(@_)},
 				"callable_region"=>  sub {$pipeline->callable_region(@_)},
 				#"calling_panel"=>  sub {$pipeline->calling_panel(@_,low_calling=>$low_calling)},
-				"calling_panel"=>  sub {$pipeline->calling_panel(@_)},
+				"calling_panel"=>  sub {$pipeline->calling_panel(@_,$pad)},
 				"depthofcoverage"=>  sub {$pipeline->depthofcoverage(@_)},
 				"duplicate_region_calling"=>  sub {$pipeline->calling_generic(@_,method=>"duplicate_region_calling")},
 				"realign_recal"=>  sub {$pipeline->realign_recal(@_)},
@@ -272,6 +275,7 @@ my $steps = {
 				"deepvariant" => sub {$pipeline->deepvariant(@_)},
 				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
 				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
+				"specie_contaminant_check" => sub {$pipeline->check_specie_contaminant(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');

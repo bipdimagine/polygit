@@ -54,7 +54,8 @@ GetOptions(
 my $buffer = GBuffer->new();
 
 my $project = $buffer->newProjectCache( -name => $projectname);
-
+$buffer->hash_genes_omim_morbid();
+$project->getPhenotypes();
 my $listCallers = $project->callingSVMethods();
 my $listPatients = $project->getPatients();
 
@@ -147,7 +148,12 @@ $pm->run_on_finish(
     		
     }
     );
-    $project->buffer->dbh_deconnect();
+  $project->buffer->hash_genes_omim_morbid();
+  $project->setPhenotypes();
+   $project->getPhenotypes();
+  $project->disconnect();
+  $buffer->dbh_deconnect();
+    
 foreach my $patobj (@$listPatients)
 {
 	warn "------------";
@@ -251,7 +257,9 @@ foreach my $patobj (@$listPatients)
 					my @champsPAT= split(/:/,$champs[9]);
 					
 					$SVchr=$champs[0];
-
+					my $oc = $project->existsChromosome($SVchr);
+					next unless $oc;
+					$SVchr = $oc->ucsc_name;
 					next  if ($SVchr eq "chrMT"); 	
 					next  if ($SVchr =~ m/^GL/); 
 					next  if ($SVchr =~ m/^hs37d5/);
@@ -312,7 +320,9 @@ foreach my $patobj (@$listPatients)
 				my @champsPAT = split(/:/,$champs[9]);
 
 				$SVchr=$champs[0];
-				
+				my $oc = $project->existsChromosome($SVchr);
+					next unless $oc;
+					$SVchr = $oc->ucsc_name;
 				next  if ($SVchr eq "chrMT"); 	
 				next  if ($SVchr =~ m/^GL/); 
 				next  if ($SVchr =~ m/^hs37d5/);
@@ -420,7 +430,7 @@ sub saveVariant()
 	my ($patobj,$Caller,$SVtype,$SVchr,$SVdeb,$SVend,$GT,$CN,$WC_ratio,$QUAL) = @_;
 	my $patname = $patobj->name();
 	
-	print $patobj->name." Save : $compteur :  $patname $Caller $SVtype $SVchr $SVdeb $SVend \n" if $compteur %100 ==0 ;
+	print $patobj->name." Save : $compteur :  $patname $Caller $SVtype $SVchr $SVdeb $SVend \n" if $compteur %500 ==0 ;
 	
 	my $num;
 	my $ch;

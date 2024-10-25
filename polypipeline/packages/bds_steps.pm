@@ -107,7 +107,7 @@ sub alignment {
 	my $name   = $self->patient()->name();
 	my $method = $self->patient()->alignmentMethod();
 	my $run    = $self->patient->getRun();
-	if ( $run->infosRun->{method} eq "fragment" ) {
+	if ( $run->infosRun->{method} eq "fragment" ||  $run->infosRun->{method} eq "longread") {
 		return $self->run_alignment_frag({ filein => $filein} );
 	}
 	return $self->run_alignment_pe( {filein => $filein} );
@@ -3478,8 +3478,9 @@ sub callable_region_panel {
 }
 
 sub calling_panel {
-	my ( $self, $hash ) = @_;
+	my ( $self, $hash, $padding ) = @_;
 	my $filein      = $hash->{filein};
+	#my $padding= $hash->{padding};
 	my $low_calling = $hash->{low_calling};
 	my $methods     = $self->patient()->getCallingMethods();
 
@@ -3495,6 +3496,7 @@ sub calling_panel {
 		$self->calling_generic(
 			{filein      => $filein,
 			method      => $m,
+			padding	    => $padding,
 			low_calling => $low_calling}
 		);
 	}
@@ -3508,6 +3510,7 @@ my $synonym_program = {
 	"duplicate_region_calling" => "gatk",
 	"freebayes"                => "freebayes",
 	"p1_freebayes"             => "freebayes",
+	"p02_freebayes"             => "freebayes",
 	"samtools"                 => "bcftools",
 	"eif6_freebayes"           => "eif6_freebayes",
 	"mutect2"                  => "mutect2",
@@ -3520,6 +3523,7 @@ sub calling_generic {
 	my $filein       = $hash->{filein};
 	my $method       = $hash->{method};
 	my $low_calling  = $hash->{low_calling};
+	my $padding      = $hash->{padding};
 	my $name         = $self->patient()->name();
 	my $project      = $self->patient()->getProject();
 	my $project_name = $project->name();
@@ -3536,6 +3540,8 @@ sub calling_generic {
 
 	#my $low_calling_string = $low_calling;
 	#	 $low_calling_string = "-low_calling=1"  if $low_calling;
+	
+	my $padding_string = "-padding=$padding"  if $padding;
 
 	my $m       = $self->patient()->alignmentMethod();
 	my $dir_bam = $project->getAlignmentDir($m);
@@ -3543,7 +3549,7 @@ sub calling_generic {
 
 #my $cmd = "perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein $low_calling_string";
 	my $cmd =
-"perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein ";
+"perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein $padding_string ";
 	my $type = "calling-" . $method;
 
 	#	$type = "lc-".$type  if $low_calling;
@@ -3559,6 +3565,7 @@ sub calling_generic {
 		filein       => [$filein],
 		fileout      => $fileout,
 		type         => $type,
+		padding		 => $padding_string,
 		dir_bds      => $self->dir_bds,
 		software     => $synonym_program->{$method},
 		sample_name  => $self->patient->name(),
@@ -5341,6 +5348,42 @@ sub rnaseqsea_rnaseq {
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
+	return ($fileout);
+}
+
+sub check_specie_contaminant {
+	my ( $self, $hash ) = @_;
+	my $filein = $hash->{filein};
+	my $patient_name = $self->patient()->name();
+	my $project = $self->patient()->project;
+	my $project_name = $project->name();
+	my $bin_dev = $self->script_dir;
+	my $ppn = 2;
+	my $cmd = "perl $bin_dev/../../../polymorphism-cgi/fastq_screen/launcher_fqs.pl -project=$project_name -patient=$patient_name -fork=1";
+	my $type = "specie_contaminant";
+	my $fileout = $self->patient->fastq_screen_path().'/'.$patient_name.'_screen_nom_espece.txt';
+	
+	my $stepname = $patient_name."@".$type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds,
+		software     => "",
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+
 	return ($fileout);
 }
 

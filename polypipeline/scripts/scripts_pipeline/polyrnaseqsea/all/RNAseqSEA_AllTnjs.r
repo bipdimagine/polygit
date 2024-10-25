@@ -73,6 +73,8 @@ nCPUmax = 1
 	RNAseqSEApath = "/data-isilon/Cagnard/RNAseqSEA/"
 	if(!is.null(ReName))	BamsReNames = as.matrix(read.table(ReName, sep="\t", header=TRUE))
 	
+
+
 	
 
 ###############################################################################################################
@@ -242,10 +244,13 @@ write(paste("\n\n#######################################\n#\n#\t\t V Selection d
 
 write(paste("\n\n#######################################\n#\n#\t\t\t Concatene les listes de gènes \n#\n########################################", sep=""), file="")
 
-	AllGenesLists = list.files(geneListsPath, full.names=TRUE, pattern="\\.rds$")
 
 	for(S in 1:length(samples))
 	{
+			
+		geneListsPath_patient = paste(geneListsPath, "/", samples[S], "/", sep="")
+		AllGenesLists = list.files(geneListsPath_patient, full.names=TRUE, pattern="\\.rds$")
+		
 		write(paste("\t ", S, "/", length(samples), " - ", samples[S], " : Concatene genes lists ", sep=""), file="")
 		
 		tmpGenesLists = AllGenesLists[grepl(paste("^", samples[S], "_", sep=""), basename(AllGenesLists))]
@@ -266,7 +271,10 @@ write(paste("\n\n#######################################\n#\n#\t\t\t Concatene l
 	for(S in 1:length(samples))
 	{
 		write(paste("\t ", S, "/", length(samples), " - ", samples[S], " : Concatene junctions counts ", sep=""), file="")
-		tmpBeds = listCoordsBed[grepl(paste("^", samples[S], "_", sep=""), basename(listCoordsBed))]
+		
+		reg_exp =  paste(samples[S], "_chr.+rds$", sep="")
+		tmpBeds = list.files(AllJuncPath, full.names=TRUE, pattern=reg_exp)
+		
 		PatRDS = readRDS(tmpBeds[1])
 		if(length(tmpBeds)>1)	for(B in 2:length(tmpBeds))
 		{

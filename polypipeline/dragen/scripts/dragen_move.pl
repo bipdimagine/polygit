@@ -165,10 +165,15 @@ sub move_stats {
 sub move_bam {
 	my ($bam,$patient) = @_;
 	my $prod = $patient->getBamFileName("dragen-align");
+	if( $bam =~ /cram/){
 	 $prod = $patient->getCramFileName("dragen-align") if $bam =~ /cram/;
+	 my $filename = $prod."/".$patient->name.".idxstats";
+	 warn "/software/bin/samtools idxstats $url.$bam $prod/ -\@ 20  > $filename";
+	 system("/software/bin/samtools idxstats $url.$bam $prod/ -\@ 20  > $filename");
+	}
 	system("rsync -rav --remove-source-files $url"."$bam $prod ");
 	system("rsync -rav  $url"."$bam.bai $prod.bai ");
-	system("rsync -rav  $url"."$bam.cai $prod.cai ") if $bam =~ /cram/;
+	system("rsync -rav  $url"."$bam.crai $prod.crai ") if $bam =~ /cram/;
 	
 }
 

@@ -490,6 +490,8 @@ sub getIds_onlive {
 		my ($check_before_done, $check_after_done);
 		my $i = $v_id;
 		my $j = $v_id;
+		$check_before_done = 1 if $i == 0;
+		$check_after_done = 1 if $j+1 == $chr->size_vector();
 		while ($check_before_done == undef) {
 			$i--;
 			my $var_before = $chr->getVarObject($i);

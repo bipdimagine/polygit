@@ -59,6 +59,7 @@ my $predef_type;
 my $define_steps;
 my $step;
 my $umi;
+my $lpad;
 
 
 my $limit;
@@ -68,6 +69,7 @@ GetOptions(
 	'step=s'=> \$step,
 	'type=s' => \$type,
 	'umi=s' => \$umi,
+	'padding=s' =>\$lpad,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -118,9 +120,13 @@ my $gvcf_pipeline = $dir_pipeline."/".$prefix.".hard-filtered.gvcf.gz";
 
 
 #--vc-enable-vcf-output true
-my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true  --vc-target-bed $capture_file --vc-target-bed-padding 150 --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
+my $cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true  --vc-target-bed $capture_file  --enable-cnv true --cnv-enable-self-normalization true --cnv-target-bed $capture_file};
 #warn $cmd;
 #die();
+$lpad = 150 unless $lpad;
+my $padding = " --vc-target-bed-padding $lpad ";
+$cmd .= qq{ $padding};
+
 
 if ($project->isGenome){
 	$cmd = qq{dragen -f -r $ref_dragen --intermediate-results-dir $tmp --output-directory $dir_pipeline --output-file-prefix $prefix -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix  --vc-emit-ref-confidence GVCF --enable-variant-caller true   --enable-map-align-output true   --enable-cnv true --cnv-enable-self-normalization true };

@@ -147,12 +147,14 @@ sub move_patient{
  	my $pn = $patient->name();
 
  #my @files = `find $dir1 -name $pn.*`;
+
 	my @files = File::Find::Rule->file()
 				->name( "$pn.*", "$pn"."_aberrations.bed.gz*", "$pn"."_bins.bed.gz*")
 				->in( $dir1);
  my (@bam) = grep {/\.(bam|cram)$/} @files;
   my (@vcf) = grep {/vcf.gz$/} @files;
   
+
   if (scalar(@bam) == 0 || scalar(@vcf) ==0){
   	colored::stabilo("yellow","---------------- $pn NO FILES ---------------");
   } 
