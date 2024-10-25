@@ -40,24 +40,24 @@ foreach my $patient (@{$project->getPatients}){
 }
 
 foreach my $l (@list_cmd){
-my $time = time;
-warn " START => $l  ************* ";
-if ($debug){
-	 system ("$Bin/$l.pl -project=$project_name -fork=$fork") == 0  or die("");
-}
-else {
-	$myproc->start("$Bin/$l.pl",             # Launch an external program
-                  "-project=$project_name","-fork=$fork"); 
-                  my $exit_status = $myproc->wait(); 
-                  if ($exit_status == 0){
-						warn "end $l ==> $exit_status ".abs(time-$time);
-	
-					}
-			else {
-				warn "ERROR on  $Bin/$l.pl  ==> $exit_status ";
-				die();
-				}
-}
+	my $time = time;
+	warn " START => $l  ************* ";
+	if ($debug){
+		system ("$Bin/$l.pl -project=$project_name -fork=$fork") == 0  or die("");
+	}
+	else {
+		$myproc->start("$Bin/$l.pl",             # Launch an external program
+	                  "-project=$project_name","-fork=$fork"); 
+		my $exit_status = $myproc->wait(); 
+		if ($exit_status == 0){
+			warn "end $l ==> $exit_status ".abs(time-$time);
+	                  			
+		}
+		else {
+			warn "ERROR on  $Bin/$l.pl  ==> $exit_status ";
+			die();
+		}
+	}
 
 }
 
