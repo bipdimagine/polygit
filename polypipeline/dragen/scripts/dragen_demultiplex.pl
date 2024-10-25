@@ -95,10 +95,10 @@ foreach my $project_name (split(",",$project_names)){
 	$bcl_dir = $run->bcl_dir;
 	next if $aoa;
 	my $csv_tmp = $bcl_dir."/SP.".time.".csv";
-		die("no sample sheet in database ") unless ($run->sample_sheet);
+	die("no sample sheet in database ") unless ($run->sample_sheet);
 	my $toto = $run->sample_sheet;
 	#$run->sample_sheet =~ s/;/,/g;	
-	$toto  =~ s/;/,/g;
+	$toto =~ s/;/,/g;
 	open(TOTO,">$csv_tmp");
 	print TOTO $toto;
 	close TOTO;
@@ -135,17 +135,17 @@ my $cb1_len;
 my $cb2_len;
 
 my $lheader_data = shift @{$lines->{"[Data]"}};
-if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
+if (scalar (@$lheader_data) ne scalar (@{$lines->{"[Data]"}->[0]})){
 	my $tb = Text::Table->new(
 	{is_sep => 1},
 	@$lheader_data,
-    );
-    $tb->load($lines->{"[Data]"}->[0]);
-    print $tb;
+	);
+	$tb->load($lines->{"[Data]"}->[0]);
+	print $tb;
 	print "\n";
 	die(scalar (@$lheader_data)."vs" .scalar (@{$lines->{"[Data]"}->[0]}));
 }
-
+# Récupère l'index de chaque colonne data
 my $error_not_in_project = {};
 my $ok;
 my $pos_sample = firstidx{ $_ eq "Sample_ID" } @$lheader_data;
@@ -158,11 +158,11 @@ my $len_cb;
  $len_cb->[0] = length($lines->{"[Data]"}->[0]->[$pos_cb1]);
  $len_cb->[1] = length($lines->{"[Data]"}->[0]->[$pos_cb2]); ;
 
+# Vérifie que tous les BC soient de la même taille
 foreach my $data (@{$lines->{"[Data]"}}){
-	next unless  $data->[$pos_cb1];
-	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if  $len_cb->[0] ne length($data->[$pos_cb1]);
-	die("CB de taille differente") if  $len_cb->[1] ne length($data->[$pos_cb2]);
-	
+	next unless $data->[$pos_cb1];
+	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if $len_cb->[0] ne length($data->[$pos_cb1]);
+	die("CB de taille differente") if ($pos_cb2 ne '-1') and ($len_cb->[1] ne length($data->[$pos_cb2]));
 }
 
 
@@ -176,7 +176,7 @@ my $guess_mask;
 	$reads = $config->{Run}->{Reads}->{Read};
 	my $i_index =0;
 
-	foreach  my $read (@$reads){
+	foreach my $read (@$reads){
 		if ($read->{IsIndexedRead} eq 'N'){
 			push(@$guess_mask,"Y".$read->{NumCycles});
 		}
@@ -206,7 +206,7 @@ my $guess_mask;
 my @real_mask;
 my @index = (1,2);
 @index = ();
-if ($umi_name ){
+if ($umi_name){
 	
 	my @vmask = split(";",$mask);
 	die() if scalar(@vmask) ne scalar(@$reads);
@@ -227,13 +227,13 @@ if ($umi_name ){
 		} 
 		$l -= $nr;
 		$vmask[$i] = join("",@mread) ;
-		$vmask[$i]  =~ s/\*/$l/;
+		$vmask[$i] =~ s/\*/$l/;
 	}
 	$mask = join(";",@vmask);	
 }
 else {
 		foreach my $read (@$reads){
-			if ($read->{IsIndexedRead} eq  "Y"){
+			if ($read->{IsIndexedRead} eq "Y"){
 				push(@index,$read->{Number});
 			}
 		}
@@ -245,7 +245,7 @@ $mask = join(";",@$guess_mask) unless $mask;
 
 my $choice = prompt("use - ".colored(['bright_red on_black'],"$mask")." - for demultipexing  (y/n) ? ");
 if ($choice ne "y") {
-	$mask =  prompt("enter your mask  ? ");
+	$mask = prompt("enter your mask: ");
 	warn "use this mask $mask";
 	#die($mask);
 }
@@ -293,18 +293,20 @@ push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) if scalar(@index) 
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask; 
 
 my $dj;
+my $ok_in_project;
 foreach my $data (@{$lines->{"[Data]"}}){
 	
 	if($l2){
- 		my $index2 =  $data->[$pos_cb2];
+ 		my $index2 = $data->[$pos_cb2];
  		$data->[$pos_cb2] = substr($index2, 0, $l2);
  	}
 	my $name = $data->[$pos_sample];
 	$data->[$pos_sample_name] = $name;
-	next if $name =~ /_RC/; 
+	next if $name =~ /_RC$/; 
 	next if exists $dj->{$name};
 	next unless $name;
-	$error_not_in_project->{$name} = $patients{$name}  unless exists $patients{$name};
+	$error_not_in_project->{$name} = $patients{$name} unless exists $patients{$name};
+	$ok_in_project->{$name} ++ unless not $patients{$name};
 	$ok->{$name} ++;
  	delete $patients{$name};
  	$dj->{$name}++;
@@ -314,7 +316,11 @@ foreach my $data (@{$lines->{"[Data]"}}){
 
 my $error;
 if (keys %$ok) {
-	print colored(['bright_green on_black']," SAMPLE OK : ".scalar(keys %$ok) )."\n";
+	print colored(['bright_green on_black']," SAMPLE OK IN SAMPLE SHEET: ".scalar(keys %$ok) )."\n";
+}
+if (keys %$ok_in_project) {
+	print colored(['bright_green on_black']," SAMPLE OK IN PROJECT : ".scalar(keys %$ok_in_project) )."\n";
+#	map {print $_."\n"} keys %$ok_in_project;
 }
 if (keys %patients) {
 	print colored(['bright_red on_black']," SAMPLE IN PROJECT NOT IN SAMPLE SHEET :")."\n";
@@ -329,7 +335,7 @@ if (keys %patients) {
 }
 
 if (keys %$error_not_in_project) {
-		print colored(['bright_red on_black']," SAMPLE IN SAMPLE SHEET  NOT IN PROJECT :")."\n";
+		print colored(['bright_red on_black']," SAMPLE IN SAMPLE SHEET NOT IN PROJECT : ".scalar(keys %$error_not_in_project) )."\n";
 		map {print $_."\n"} keys %$error_not_in_project;
 		print " nb error : ".scalar (keys %$error_not_in_project)."\n";
 		my $choice = prompt("continue anyway  (y/n) ? ");
@@ -342,21 +348,43 @@ if ($error && $run_name_option) {
 		my $choice = prompt("continue anyway  (y/n) ? ");
 		die() if ($choice ne "y"); 
 }
-elsif  ($error) {die();}
+elsif ($error) {die();}
 
 unshift( @{$lines->{"[Data]"}},$lheader_data);
 my $outcsv;
 
+# Réécrit la sample sheet
 foreach my $title (@{$titles}){
 	push(@$outcsv,[$title]);
 	push(@$outcsv,@{$lines->{$title}});
+#	push(@$outcsv,@{$lines->{$title}}) unless ($title eq '[Data]');
+#	# Garde que les lignes des BC des patients dans le projet
+#	if ($title eq '[Data]') {
+#		push(@$outcsv,[$lines->{$title}->[0]]);
+#		foreach my $line (@{$lines->{$title}}) {
+#			my $name = $line->[$pos_sample];
+#			if ($ok_in_project->{$name =~ s/_RC$//r}) {
+#				push(@$outcsv,[@$line]);
+#			}
+#		}
+#	}
 }
 my $ss = $bcl_dir."/file".time.".csv";
 csv (in => $outcsv, out => $ss, sep_char=> ",");
 
 sleep(1);
 
-my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force  };
+my $complete = $bcl_dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
+warn $complete;
+my $checkComplete = 1;
+$checkComplete = 0 if -f $complete;
+while($checkComplete == 1){
+	warn "Run not complete, sleep 30 min (1800 s)";
+	sleep(1800);
+	$checkComplete = 0 if -f $complete;
+}
+
+my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force };
 warn $cmd;
 
 my $exit = 0;
@@ -368,7 +396,7 @@ die() if $exit ne 0;
 #exit(0);
 warn "END DEMULTIPEX \n let's copy ";
 my $fork =6;
-my $pm   = new Parallel::ForkManager($fork);
+my $pm = new Parallel::ForkManager($fork);
 
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
@@ -430,7 +458,7 @@ sub report {
 	}
 	
 print "-- BY LINES : --\n";	
-my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# read") ) ; # if ($type == 1);
+my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1), "# read") ) ; # if ($type == 1);
 my @l ;
 my @rows;
 my $stat = Statistics::Descriptive::Full->new();
@@ -462,7 +490,7 @@ foreach my $l (keys %$byline){
 		print "\n ------------------------------\n";
 
 print "-- By Sample : --\n";	
-my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
+my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1), "# read") ) ; # if ($type == 1);
  @rows = ();
 foreach my $l (keys %$bypatient){
 		my @row;
@@ -484,7 +512,7 @@ foreach my $l (keys %$bypatient){
 	
 sub create_3_fastq {
 	my ($fastq1,$fastq2,$patient) = @_;
-	my $fastq3_prod  = $fastq2;
+	my $fastq3_prod = $fastq2;
 	$fastq3_prod =~ s/_R2/_R3/;
 	#system("mv $fastq2 $fastq3");
 	open(FASTQR,"zcat $fastq2 | ");
