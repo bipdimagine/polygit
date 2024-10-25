@@ -48,7 +48,6 @@ my $reports_dir = "/data-isilon/sequencing/ngs/demultiplex/$run";
 
 if (-d $tmp){
 	die("$tmp already exists ");
-	die();
 }
 
 my $final_dir = $root."/ILLUMINA/$hiseq/IMAGINE/$run";
@@ -59,19 +58,18 @@ if (-d $final_dir){
 	die($final_dir. " already exists "); 
 }
 
-mkdir $tmp;
-my $wtmp = "$tmp/Unaligned";
-warn $dir;
-my $complete = "$dir/RTAComplete.txt";
+my $complete = $dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
 warn $complete;
-my $checkComplete=1;
-$checkComplete =0 if -f $complete;
-while($checkComplete ==1){
-	warn "sleep 3300s";
-	sleep(3300);
-	$checkComplete =0 if -f $complete;
+my $checkComplete = 1;
+$checkComplete = 0 if -f $complete;
+while($checkComplete == 1){
+	warn "sleep 1800s";
+	sleep(1800);
+	$checkComplete = 0 if -f $complete;
 }
 
+mkdir $tmp;
+my $wtmp = "$tmp/Unaligned";
 my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
 die($basecall_dir ." doesnt exists") unless -e $basecall_dir;
 my $cmd1 = "$cmd_cfg --input-dir $basecall_dir  --output-dir=$wtmp --ignore-missing-bcl --ignore-missing-positions --ignore-missing-filter --ignore-missing-control --minimum-trimmed-read-length 0 --mask-short-adapter-reads 0  --reports-dir $reports_dir -R $dir";
@@ -118,6 +116,8 @@ if (-e $tmp."/done.txt"){
 mkdir $final_dir;
 system("move_fastq.sh $wtmp  $final_dir");
 system("rm $final_dir/*Undetermined");
+my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/$run";
+system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats");
 my $fileReport= $run."_laneBarcode.html";
 system("cp $tmp/Unaligned/Reports/html/*/all/all/all/laneBarcode.html /data-isilon/sequencing/ngs/demultiplex/$run/$fileReport");
 #system("rm -rf $tmp");
