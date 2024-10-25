@@ -274,7 +274,7 @@ foreach my $patient (@{$project->getPatients}){
 	if  (scalar keys %$jobs ne 0){
 		die("problem ");
 	}
-		my $bgzip = $buffer->software("bgzip");
+	my $bgzip = $buffer->software("bgzip");
 	my $tabix = $buffer->software("tabix");
 	
 	foreach my $patient (@{$project->getPatients}){
@@ -406,14 +406,14 @@ sub smooth_data {
 	my @data2;
 		for (my $i = 0;$i<@$data;$i++){
 		my @trio;
-		 push (@trio,$data->[$i-2]) if ($i>1);
-		 push (@trio,$data->[$i+1]) if ($i+1<@$data);
-		 push (@trio,$data->[$i-1]) if ($i>0);
-		 push (@trio,$data->[$i+1]) if ($i+1<@$data);
-		  push (@trio,$data->[$i+2]) if ($i+2<@$data);
-		  push (@trio,$data->[$i]*2) ;#if ($i+1<@data);
-		  my $z = sum(@trio);
-		  push(@data2,$z/(scalar(@trio)+1));
+		push (@trio,$data->[$i-2]) if ($i>1);
+		push (@trio,$data->[$i+1]) if ($i+1<@$data);
+		push (@trio,$data->[$i-1]) if ($i>0);
+		push (@trio,$data->[$i+1]) if ($i+1<@$data);
+		push (@trio,$data->[$i+2]) if ($i+2<@$data);
+		push (@trio,$data->[$i]*2) ;#if ($i+1<@data);
+		my $z = sum(@trio);
+		push(@data2,$z/(scalar(@trio)+1));
 		 
 	}
 	return \@data2;
