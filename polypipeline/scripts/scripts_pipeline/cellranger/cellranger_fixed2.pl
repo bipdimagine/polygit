@@ -62,11 +62,6 @@ GetOptions(
 	#'low_calling=s' => \$low_calling,
 );
 
-if ($step eq "all" || $step eq "demultiplex"){
-#	die ("-bcl, -run and -nb_lane options are required") unless $bcl_dir || $run || $lane;
-}
-
-
 
 
 my $buffer = GBuffer->new();
@@ -77,6 +72,14 @@ $patients_name = $project->get_only_list_patients($patients_name);
 my $run = $project->getRun();
 my $run_name = $run->plateform_run_name;
 my $bcl_dir = $run->bcl_dir;
+
+if ($step eq "all" || $step eq "demultiplex"){
+	unless ( $lane ){
+		my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
+		$lane = $config->{Run}->{FlowcellLayout}->{LaneCount};
+		warn "LaneCount=$lane";
+	}
+}
 
 my $sampleSheet = $bcl_dir."/sampleSheet.csv";
 my $exec = "cellranger";
@@ -141,7 +144,7 @@ foreach my $k (keys(%$hfamily)){
 	print CSV "[gene-expression]\n";
 	print CSV "reference,".$index."\n";
 	print CSV "probe-set,".$set."\n";
-	print CSV "\#no-bam,true \#do not generate BAM file\n";
+	print CSV "create-bam,true\n";
 	print CSV "\n";
 	print CSV "[libraries]\n";
 	my $pobj=$pat[0]->{objet};
@@ -150,12 +153,12 @@ foreach my $k (keys(%$hfamily)){
 	print CSV $poolName.",".$fastq.",Gene Expression\n";
 	print CSV "\n";
 	print CSV "[samples]\n";
-	print CSV "sample_id,probe_barcode_ids,description\n";
+	print CSV "sample_id,probe_barcode_ids\n";
 	foreach my $p (@pat){
 		print CSV $p->{name}.",";
 		print CSV $p->{bc}."\n";
 	}
-	print JOBS "cd $dir; cellranger multi --id=".$poolName." --csv=".$csv."\n";
+	print JOBS "cd $dir; cellranger multi --id=$poolName --csv=$csv\n";
 }
 
 close JOBS;
@@ -420,7 +423,7 @@ if ($step eq "aggr" or $step eq "all"){
 ##commande pour copier sur /data-isilon/singleCell
 #
 if ($step eq "tar" or $step eq "all"){
-	my $tar_cmd = "tar -cvzf $dir/$run.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
+	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/outs/per_sample_outs/*/web_summary.html $dir/*/outs/per_sample_outs/*/count/sample_cloupe.cloupe $dir/*/outs/per_sample_outs/*/count/*vloupe.vloupe $dir/*/outs/per_sample_outs/*/count/*_bc_matrix/* ";
 	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
 	system ($tar_cmd)  unless $no_exec==1;
 	#or die "impossible $tar_cmd";
