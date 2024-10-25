@@ -118,34 +118,37 @@ foreach my $r (@$runs) {
 		my $project1 = $buffer1->newProjectCache( -name 			=> $pr );
 		#next() if $project1->name() eq "NGS2018_2286";
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
-		
-			my $patient = $project1->getPatient($p->{patient});
-			my $b = $patient->getBamFileName();
-			next unless -e $b;		
-			my $scompute = &compute_sex($patient);
-			my $cov_file = $patient->fileNoSqlDepth;
-			if ($project1->name eq $project_name && !( -e $cov_file) ){
-				warn "coverage"; 
-				warn "$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name;
-				system("$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name);
-				die($cov_file) unless -e $cov_file;
-			}
-			warn $patient->name." ".$pr  unless -e $cov_file;
-			next unless -e $cov_file;
-			$p->{file_depth} = $cov_file;
-			$p->{dir_depth} = $project1->getCoverageDir()."/lmdb_depth";
-			$p->{bam} = $patient->getBamFile();
-			$p->{compute_sex} = compute_sex($patient);
-			$p->{bd_sex} = $patient->sex;
-			if($p->{compute_sex} ne $p->{bd_sex}){
-				#warn ("--> pb sexe patient : " .$patient->name."\n compute sex : ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex}) ;
-				warn ("pb sexe patient : " .$patient->name."\n compute sex : ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex});# if $patient->project->name eq $project_name ;
-				$p->{bd_sex} = $p->{compute_sex};
-#				die();
-				#next;
-			}
-			
-			push(@{$controls->{$r->id}},$p) ;
+			eval {
+				my $patient = $project1->getPatient($p->{patient});
+				warn $patient->project->name();
+				warn $patient->name();
+				my $b = $patient->getBamFileName();
+				next unless -e $b;		
+				my $scompute = &compute_sex($patient);
+				my $cov_file = $patient->fileNoSqlDepth;
+				if ($project1->name eq $project_name && !( -e $cov_file) ){
+					warn "coverage"; 
+					warn "$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name;
+					system("$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name);
+					die($cov_file) unless -e $cov_file;
+				}
+				warn $patient->name." ".$pr  unless -e $cov_file;
+				next unless -e $cov_file;
+				$p->{file_depth} = $cov_file;
+				$p->{dir_depth} = $project1->getCoverageDir()."/lmdb_depth";
+				$p->{bam} = $patient->getBamFile();
+				$p->{compute_sex} = compute_sex($patient);
+				$p->{bd_sex} = $patient->sex;
+				if($p->{compute_sex} ne $p->{bd_sex}){
+					#warn ("--> pb sexe patient : " .$patient->name."\n compute sex : ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex}) ;
+					warn ("pb sexe patient : " .$patient->name."\n compute sex : ". $patient->project->name()." ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex});# if $patient->project->name eq $project_name ;
+					$p->{bd_sex} = $p->{compute_sex};
+	#				die();
+					#next;
+				}
+				
+				push(@{$controls->{$r->id}},$p) ;
+			};
 		} 
 		
 	}
@@ -216,39 +219,42 @@ sub find_other_patient {
 	 		my $buffer2 = GBuffer->new();
 			my $project2 =  $buffer2->newProject( -name 			=> $c->{project});
 			my $patient = $project2->getPatient($c->{patient});
+			next unless -e $patient->NoSqlDepthDir()."/".$patient->name . ".depth.lmdb";
 			my $hp = $patient->nb_reads;
 			foreach my $ps (@apos){
+				eval {
 				$mean_norm += ($patient->maxDepth($ps->{chr},$ps->{start},$ps->{end})/$hp->{$ps->{chr}});
 				$nv ++;
+				};
 			}
 	 }
 	 $mean_norm /= $nv;
 	 
-	 my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
+	my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
 	my $x;
-	my $res;
+	my $res =[];
 	my $limit = 12 - scalar(@$controls);
-	 foreach my $project_name2 (@$query){
-	 		next if $project_name2 =~ /NGS2010/;
-	 		warn $project_name2;
-	 		next if $project_name2 =~ /7187/;
-	 		next if $project_name2 =~ /7184/;
-	 		my $buffer2 = GBuffer->new();
+	foreach my $project_name2 (@$query){
+		next if $project_name2 =~ /NGS2010/;
+		warn $project_name2;
+		next if $project_name2 =~ /7187/;
+		next if $project_name2 =~ /7184/;
+		my $buffer2 = GBuffer->new();
 	 	
-			my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
-			my $nbx = 0;
-			warn scalar(@{$project2->getPatients});
-			foreach my $p (@{$project2->getPatients}){
-				next if $p->isRna();
-				my $capture2  = $p->getCapture();
-				next if $p->status == 1;
-				my $bam; 
-				eval {
-				
+		my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
+		my $nbx = 0;
+		warn scalar(@{$project2->getPatients});
+		foreach my $p (@{$project2->getPatients}){
+			warn $p->name;
+			next if $p->isRna();
+			my $capture2  = $p->getCapture();
+			next if $p->status == 1;
+			my $bam; 
+			eval {
+			
 				next if $capture->name ne $capture2->name;
 				$bam =  $p->getBamFileName();
 				
-				};
 				next unless -e $bam;
 				next unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
 			#	warn Dumper $p->nb_reads();
@@ -265,32 +271,32 @@ sub find_other_patient {
 				$hp->{norm} =  $nb_reads->{norm};
 				$hp->{norm_c} =  abs($mean_norm - $nb_reads->{norm});
 				$hp->{project} = $project2->name;#->getFamily()->getMother->name;
-				 my $nv1;
-				 my $mean_norm1 =0;
-				 my $hpp = $p->nb_reads;
+				my $nv1;
+				my $mean_norm1 =0;
+				my $hpp = $p->nb_reads;
 				foreach my $ps (@apos){
-					
 					$mean_norm1 += ($p->maxDepth($ps->{chr},$ps->{start},$ps->{end})/$hpp->{$ps->{chr}});
 					$nv1 ++;
 				}
-				 $mean_norm1 /= $nv1;
-				 $hp->{mean_max} = $mean_norm1;
-				 $hp->{mean_sort} = abs($mean_norm1-$mean_norm);
+				$mean_norm1 /= $nv1;
+				$hp->{mean_max} = $mean_norm1;
+				$hp->{mean_sort} = abs($mean_norm1-$mean_norm);
 				push(@$res,$hp);
-				last if $nbx > 3;
+			};
+			last if $nbx > 3;
 		
-			}
-			last if scalar(@$res) > 50;
-	 }
+		}
+		last if scalar(@$res) > 50;
+	}
 	
-	  @$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);
-	 my @toto = splice (@$res,0,$limit);
+	@$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);
+	my @toto = splice (@$res,0,$limit);
 	# warn Dumper(@toto);
-	 # die();
+	# die();
 #	warn Dumper $res;
 	#die();
 	$patients_captures{$capture->name} = \@toto;
-	 push(@$controls, @toto ); 
+	push(@$controls, @toto ); 
 	
 }
 	
