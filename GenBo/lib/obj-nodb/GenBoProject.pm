@@ -2216,7 +2216,7 @@ has sequencing_machines => (
 	},
 );
 
-has genomeFasta => (
+has _genomeFasta => (
 	is      => 'rw',
 	lazy    => 1,
 	reader  => 'getGenomeFasta',
@@ -2230,6 +2230,21 @@ has genomeFasta => (
 	},
 );
 
+sub genomeFasta {
+	my ( $self, $bam ) = @_;
+	my $ref = $self->_genomeFasta();
+	return $ref unless $bam;
+	my $samtools = $self->buffer->software("samtools");
+	my @header = `$samtools view -H  $bam`;
+	chomp(@header);
+	my ($pangenome) =  grep{$_ =~ /chr6_cox_hap2/} @header;
+	if ($pangenome ){
+		# Remplacer "HG19_*" par "HG19_DRAGEN" en utilisant des délimiteurs "|"
+		$ref =~ s|/HG19_[^/]+|/HG19_DRAGEN|;
+		$ref =~ s|/HG38_[^/]+|/HG38_DRAGEN|;
+	}
+	return $ref;
+}
 sub getGenomeIndex {
 	my ( $self, $method ) = @_;
 	my $dir;
@@ -4072,12 +4087,13 @@ sub makePath {
 	system("chmod -R a+rwx $dd");
 	foreach my $p ( @{ $self->getPatients() } ) {
 		my $methods  = $p->getCallingMethods();
-		my $methods2 = $p->callingSVMethods();
+		my   $methods2  = $p->callingSVMethods();
 		foreach my $method_name (@$methods) {
 
 			$self->getVariationsDir($method_name);
 			$self->getIndelsDir($method_name);
 		}
+		
 		foreach my $method_name (@$methods2) {
 			$self->getVariationsDir($method_name);
 		}
