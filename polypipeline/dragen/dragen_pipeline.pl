@@ -96,6 +96,7 @@ GetOptions(
 	"RNA=s" => \$rna,
 	"phased=s" => \$phased,
 	"neb=s" => \$neb,
+	"limit=i" => \$limit,
 	#'low_calling=s' => \$low_calling,
 );
 
@@ -138,9 +139,9 @@ if ($test_umi && !($umi)){
 system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
-my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
+my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target","check_sex"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
-my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
+my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>7,"check_sex"=>8};
 
 #create_list_steps;
 unless ($rna){
@@ -163,7 +164,6 @@ if ($rna){
 	$hpipeline_dragen_steps = {"align"=>0,"vcf"=>1,"featurecount"=>2};
 	$hsteps = {"align"=>0,"vcf"=>1, "featurecount"=>2};
 }
-
 
 
 
@@ -210,14 +210,14 @@ if($step_name) {
 
 ##
 ####### Alignement
- my $calling_target_methods ={};
+my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
 warn Dumper $ppd;
-	my $index = firstidx { $_ eq "calling_target" } @$steps;
-	if ($index >= 0){
-		splice(@$steps,$index,1);
-		push(@$steps,keys %{$calling_target_methods});
-	}
+my $index = firstidx { $_ eq "calling_target" } @$steps;
+if ($index >= 0){
+	splice(@$steps,$index,1);
+	push(@$steps,keys %{$calling_target_methods});
+}
 purge_files($ppd) if $force==1;
 start_report($ppd);
 
@@ -249,8 +249,14 @@ if (exists $hsteps->{featurecount}){
 run_featurecount($ppd,$jobs_cluster);
 exit(0);
 }
+if (exists $hsteps->{check_sex}){
+run_check_sex_control($ppd,$jobs_cluster);
+exit(0);
+}
 
-steps_cluster("LMDBDepth+Melt ",$jobs_cluster) if @$jobs_cluster;
+
+
+steps_cluster("LMDBDepth+Melt ",$jobs_cluster,$limit) if @$jobs_cluster;
 
 
 
@@ -262,9 +268,9 @@ exit(0);
 
 sub start_report {
 	my ($patients_jobs) = @_;
-my @lines;
-my $done = 0;
-my $job = 0;
+	my @lines;
+	my $done = 0;
+	my $job = 0;
 	foreach  my $hp (@$patients_jobs) {
 		my @line;
 		push(@line, $hp->{name});
@@ -352,7 +358,7 @@ my @apatients_name = split(":",$patients_name);
 my $dir_log ;;
 foreach my $project (@$projects){
 	my $projectName = $project->name;
-	 $dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
+	$dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatients}){
@@ -435,7 +441,7 @@ foreach my $project (@$projects){
 		#####  
 		#####  SV
 		#####  
-		my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
+#		my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>7};
 		if (exists $hsteps->{sv}){
 		my $dir_prod2 = $project->getVariationsDir("dragen-sv");
 	 	$h->{prod}->{sv}  =  $dir_prod2."/".$patient->name.".sv.vcf.gz";
@@ -482,6 +488,14 @@ foreach my $project (@$projects){
 	 		}
 	 		
 	 	}
+	 	
+	 	#TODO: ajout script melo
+		if (exists $hsteps->{check_sex}){
+			my $dir_out= "/data-isilon/sequencing/ngs/NGS2019_2429/HG38_CNG/sex_control/";
+			$h->{prod}->{check_sex} = $dir_out.$patient->name().".sex_control.log";		 	
+		 	$h->{exists_file}->{check_sex} = 1 if -e $h->{prod}->{check_sex};
+		}
+	 	
 		}
 		push(@{$patients_jobs},$h);
 	}
@@ -723,7 +737,7 @@ sub run_featurecount {
 		my $cmd = "perl $script_pipeline/count/featurecount.pl   -fork=40  -project=".$project->name;
 		system (qq{ run_cluster.pl -cpu=40  -cmd="$cmd"});
 	}
-	
+
 #	push(@all_list,"featurecount");
 #	my $cmd = "perl $script_pipeline/count/featurecount.pl   -fork=$ppn  -project=$project_name";
 #	$job->{name} =  ".lmdb";
@@ -851,6 +865,33 @@ foreach my $project (@$projects){
 	steps_cluster("DUDE ",$jobs);
 }
 
+
+
+sub run_check_sex_control {
+	my ($patients_jobs,$jobs) = @_;
+	push(@all_list,"check_sex");
+	
+	foreach my $hp (@$patients_jobs) {
+		my $project_name = $hp->{project};
+		my $ppn = 1;
+		my $job;
+		my $nname  = $hp->{name}."_".$hp->{project};
+		my $name = $hp->{name};
+		$job->{patient} = $nname;
+		$status_jobs->{$nname}->{progress} = "failed" unless -e $hp->{prod}->{align};
+		next if $status_jobs->{$nname}->{progress} eq "failed";
+		my $fileout = $hp->{prod}->{check_sex};
+		$lims->{$nname}->{check_sex} = "SKIP" if -e $fileout; 
+		next if -e $fileout;
+		my $cmd1 = "perl $script_pipeline/check_sex_after_dragen.pl -project=$project_name  -patient=$name ";
+		$job->{name} = $name.".check_sex";
+		$job->{cmd} =$cmd1;
+		$job->{cpus} = $ppn;
+		$job->{jobs_type} ="check_sex";
+		push(@$jobs,$job);
+	}		
+	return;
+}
 
 
 ########################################################################################################
@@ -1110,142 +1151,137 @@ sub steps_cluster {
 }
 
 sub run_cluster { 
-my ($commands,$row,$limit_jobs)	= @_;
-# init 
- $runnings_jobs = {};
- $cluster_jobs = {};
+	my ($commands,$row,$limit_jobs)	= @_;
+	# init 
+	$runnings_jobs = {};
+	 $cluster_jobs = {};
+	
+	my $t =0;
+	
+	#STATUS BAR
+	my $status = new Term::StatusBar (
+						label => 'jobs Done : ',
+						showTime=>1,
+						subTextAlign =>"center",
+						totalItems => scalar(@$commands),  ## Equiv to $status->setItems(10)
+						startRow => $row,
+					);
+	 $status->{maxCol} = 200;
+	 $limit_jobs =10000 unless $limit_jobs;
+	 
+	 
+	 
+	my $nb_jobs = scalar(@$commands);
+	while (@$commands) {
+		last if ($t>=$limit_jobs); 
+		my $cmd = shift(@$commands);
+		$t++;
+		run_cmd($cmd);
+	}
 
-my $t =0;
-
-#STATUS BAR
-my $status = new Term::StatusBar (
-                    label => 'jobs Done : ',
-                   showTime=>1,
-                   subTextAlign =>"center",
-                    totalItems => scalar(@$commands),  ## Equiv to $status->setItems(10)
-                    startRow => $row,
-                   
- );
- $status->{maxCol} = 200;
- $limit_jobs =10000 unless $limit_jobs;
- 
- 
- 
- my $nb_jobs = scalar(@$commands);
-while (@$commands) {
+	$status->subText("Submitting Jobs ...." );
 	
-	last if ($t>=$limit_jobs); 
-	my $cmd = shift(@$commands);
-	$t++;
-	run_cmd($cmd);
-	
-	
-}
-
-$status->subText("Submitting Jobs ...." );
-
-sleep(1);
-$|=1;
-#system("clear");
-$status->start();
-my $completed ;
-my $failed ;	
-my $cancel;
-my $start_time = time;
-while (keys %$runnings_jobs ) {
-	my $jobidline = join(",", keys %$runnings_jobs);	
-	
-	my @t = `/cm/shared/apps/slurm/16.05.8/bin/sacct -b -n -j $jobidline`;
-	chomp(@t);
-	
-	my $hstatus;
-	my $running = 0;
-	my $pending =0;
-	foreach my $l (@t) {
-		my @case = split(" ",$l);
-		my $jobid = $case[0];
-		next unless exists $cluster_jobs->{$jobid};
-		my $exit = pop(@case);
-		my $stat = pop(@case);
-		$cluster_jobs->{$jobid}->{status} = $stat;
+	sleep(1);
+	$|=1;
+	#system("clear");
+	$status->start();
+	my $completed ;
+	my $failed ;	
+	my $cancel;
+	my $start_time = time;
+	while (keys %$runnings_jobs ) {
+		my $jobidline = join(",", keys %$runnings_jobs);	
 		
-		$hstatus->{$stat}->{$jobid} ++;
-		my $pname = $cluster_jobs->{$jobid}->{patient};
-		my $tj = $cluster_jobs->{$jobid}->{jobs_type};
-		if (lc($stat) eq "failed"){
-			my $ttt = Time::Seconds->new( time - $cluster_jobs->{$jobid}->{t1} );
-			$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
-			$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
-			$cluster_jobs->{$jobid}->{failed} ++;
+		my @t = `/cm/shared/apps/slurm/16.05.8/bin/sacct -b -n -j $jobidline`;
+		chomp(@t);
+		
+		my $hstatus;
+		my $running = 0;
+		my $pending =0;
+		foreach my $l (@t) {
+			my @case = split(" ",$l);
+			my $jobid = $case[0];
+			next unless exists $cluster_jobs->{$jobid};
+			my $exit = pop(@case);
+			my $stat = pop(@case);
+			$cluster_jobs->{$jobid}->{status} = $stat;
+			
+			$hstatus->{$stat}->{$jobid} ++;
 			my $pname = $cluster_jobs->{$jobid}->{patient};
 			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
-			push(@$cmd_failed,$cluster_jobs->{$jobid}->{cmd}->{cmd});
-			$lims->{$pname}->{$tj} = "FAILED"; 
-			#system("mv slurm-".$jobid."out"." slurm-".$jobid."failed")
-		}
-		if (lc($stat) eq "completed"){
-			$cluster_jobs->{$jobid}->{t1} = time unless exists $cluster_jobs->{$jobid}->{t1};
-			$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
-			$cluster_jobs->{$jobid}->{time} = 1 if $cluster_jobs->{$jobid}->{time}  ==0;
-			my $ttt = Time::Seconds->new( time - $cluster_jobs->{$jobid}->{t1} );
-			$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
-			$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
-			
-			$elapsed->{$pname}->{$tj} = $cluster_jobs->{$jobid}->{elapse};
-			$lims->{$pname}->{$tj} = "OK"; 
-			delete $cluster_jobs->{$jobid}->{failed};
-			$cluster_jobs->{$jobid}->{ok} ++;
-			delete $runnings_jobs->{$jobid};
-#			unlink "slurm-".$jobid.".out";
-			$completed->{$jobid} ++;
-#			unlink "slurm-".$jobid."out";
-			if (@$commands){
-				my $cmd = shift(@$commands);
-				run_cmd($cmd);
+			if (lc($stat) eq "failed"){
+				my $ttt = Time::Seconds->new( time - $cluster_jobs->{$jobid}->{t1} );
+				$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
+				$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
+				$cluster_jobs->{$jobid}->{failed} ++;
+				my $pname = $cluster_jobs->{$jobid}->{patient};
+				my $tj = $cluster_jobs->{$jobid}->{jobs_type};
+				push(@$cmd_failed,$cluster_jobs->{$jobid}->{cmd}->{cmd});
+				$lims->{$pname}->{$tj} = "FAILED"; 
+				#system("mv slurm-".$jobid."out"." slurm-".$jobid."failed")
 			}
-			#$status->update();
-		}
-		elsif (lc($stat) eq "pending"){
-			$pending ++;
+			if (lc($stat) eq "completed"){
+				$cluster_jobs->{$jobid}->{t1} = time unless exists $cluster_jobs->{$jobid}->{t1};
+				$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
+				$cluster_jobs->{$jobid}->{time} = 1 if $cluster_jobs->{$jobid}->{time}  ==0;
+				my $ttt = Time::Seconds->new( time - $cluster_jobs->{$jobid}->{t1} );
+				$cluster_jobs->{$jobid}->{time} = time - $cluster_jobs->{$jobid}->{t1};
+				$cluster_jobs->{$jobid}->{elapse} = $ttt->pretty;
+				
+				$elapsed->{$pname}->{$tj} = $cluster_jobs->{$jobid}->{elapse};
+				$lims->{$pname}->{$tj} = "OK"; 
+				delete $cluster_jobs->{$jobid}->{failed};
+				$cluster_jobs->{$jobid}->{ok} ++;
+				delete $runnings_jobs->{$jobid};
+	#			unlink "slurm-".$jobid.".out";
+				$completed->{$jobid} ++;
+	#			unlink "slurm-".$jobid."out";
+				if (@$commands){
+					my $cmd = shift(@$commands);
+					run_cmd($cmd);
+				}
+				#$status->update();
+			}
+			elsif (lc($stat) eq "pending"){
+				$pending ++;
+			}
+			elsif (lc($stat) eq "running"){
+				$cluster_jobs->{$jobid}->{t1} = time  unless exists $cluster_jobs->{$jobid}->{t1};
+				$running ++;
+			}
+			elsif (lc($stat) =~ /cancel/){
+				$cluster_jobs->{$jobid}->{failed} ++;
+				push(@$cmd_cancel,$cluster_jobs->{$jobid}->{cmd}->{cmd});
+				delete $runnings_jobs->{$jobid};
+				$cancel->{$jobid} ++;
+				my $tj = $cluster_jobs->{$jobid}->{jobs_type};
+				$lims->{$pname}->{$tj} = "CANCEL"; 
+	#			unlink "slurm-".$jobid."out";
+				$status->update()  ;
+			}
+			
+			else {
+				delete $runnings_jobs->{$jobid};
+				if (@$commands){
+					my $cmd = shift(@$commands);
+					run_cmd($cmd);
+				}
+				$failed->{$jobid} ++;
+				$status->update();
+			}
+			my $failed = scalar(keys %$failed) +scalar(keys %$cancel);
+			my $ok = scalar(keys %$completed);
+			my $ttt = Time::Seconds->new( time -$start_time );
+			$status->subText(colored(['bright_yellow on_black'],$ttt->pretty));
+			
+			my $FH = $status->{fh};
+			my $r = 4;
+			$r = ($row -1) + $r if $row > 0;
+			print $FH "\033[$r;0H", (' 'x(5))."total: ".colored(['bright_cyan on_black'],$nb_jobs)." Pending: ".colored(['bright_blue on_black'],$pending)." Running: ".colored(['bright_magenta on_black'],$running)." OK: ".colored(['bright_green on_black'],$ok)."  Failed: ".colored(['bright_red on_black'],$failed)."  ";
 			
 		}
-		elsif (lc($stat) eq "running"){
-			$cluster_jobs->{$jobid}->{t1} = time  unless exists $cluster_jobs->{$jobid}->{t1};
-			$running ++;
-		}
-		elsif (lc($stat) =~ /cancel/){
-			$cluster_jobs->{$jobid}->{failed} ++;
-			push(@$cmd_cancel,$cluster_jobs->{$jobid}->{cmd}->{cmd});
-			delete $runnings_jobs->{$jobid};
-			$cancel->{$jobid} ++;
-			my $tj = $cluster_jobs->{$jobid}->{jobs_type};
-			$lims->{$pname}->{$tj} = "CANCEL"; 
-#			unlink "slurm-".$jobid."out";
-			$status->update()  ;
-		}
 		
-		else {
-			delete $runnings_jobs->{$jobid};
-			if (@$commands){
-				my $cmd = shift(@$commands);
-				run_cmd($cmd);
-			}
-			$failed->{$jobid} ++;
-			$status->update();
-		}
-		my $failed = scalar(keys %$failed) +scalar(keys %$cancel);
-		my $ok = scalar(keys %$completed);
-		my $ttt = Time::Seconds->new( time -$start_time );
-		$status->subText(colored(['bright_yellow on_black'],$ttt->pretty));
-		
-		my $FH = $status->{fh};
-		my $r = 4;
-		$r = ($row -1) + $r if $row > 0;
-		print $FH "\033[$r;0H", (' 'x(5))."total: ".colored(['bright_cyan on_black'],$nb_jobs)." Pending: ".colored(['bright_blue on_black'],$pending)." Running: ".colored(['bright_magenta on_black'],$running)." OK: ".colored(['bright_green on_black'],$ok)."  Failed: ".colored(['bright_red on_black'],$failed)."  ";
-		
-	}
-	
-	sleep(2) if keys %$runnings_jobs;
+		sleep(2) if keys %$runnings_jobs;
 	}
 	
 	my @j = values %$cluster_jobs;
