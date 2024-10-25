@@ -14,7 +14,7 @@ use Data::Dumper;
 #use illumina_util;
 use IO::Prompt;
 use Sys::Hostname;
- use File::Find::Rule ;
+use File::Find::Rule ;
  
 
 use colored; 
@@ -33,8 +33,9 @@ my $type;
 my $fastq_ext;
 GetOptions(
 	'project=s' => \$projectName,
-
+	'force=s' => \$force,
 );
+
 my $cmd_quality_check = $Bin."/../quality_check_project.pl -project=";
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
@@ -83,7 +84,7 @@ foreach my $pdes (keys %$moove){
 	my $sql = qq{
 		UPDATE `PolyprojectNGS`.`patient` SET `project_id`=$new_project_id  WHERE `patient_id`=? and`project_id`=$project_id;
 		};
-foreach my $p (@{$moove->{$pdes}}){
+foreach my $p (sort{$a->name cmp $b->name} @{$moove->{$pdes}}){
 		my $pid = $p->id;
 		colored::stabilo("blue"," move : ".$p->name); 
 		my $sth= $dbh->prepare($sql);
@@ -142,74 +143,76 @@ sub move_patient{
  	my $dir2 = $newProject->getProjectPath();
  	my $dir3 = $project->getSequencesRootDir();
 
-
- 	my $pn = $patient->name();
-
- #my @files = `find $dir1 -name $pn.*`;
-  my @files = File::Find::Rule->file()
-                                  ->name( "$pn.*" )
-                                  ->in( $dir1);
+	my @files = File::Find::Rule->file()
+				->name( "$pn.*", "$pn"."_aberrations.bed.gz*", "$pn"."_bins.bed.gz*")
+				->in( $dir1);
                                   
-  my (@bam) = grep {/bam$/} @files;
-   my (@vcf) = grep {/vcf.gz$/} @files;
- #   my (@vcf) = grep {/.gz$/} @files;
-  
- if (scalar(@bam) ne 1 || scalar(@vcf) < 2){
- 	colored::stabilo("red","----------------$pn problem with files---------------");
-	colored::stabilo("red","----------------".join(",",@bam)." bam file  ---------------");
-	colored::stabilo("red","---------------- ".join(",",@vcf)." vcf  file  ---------------");
-	colored::stabilo("red","-----------------------------------------------------"); 
- 	
- }
+	my (@bam) = grep {/\.(bam|cram)$/} @files;
+	my (@vcf) = grep {/vcf.gz$/} @files;
+	if (scalar(@bam) == 0 || scalar(@vcf) ==0){
+	  	colored::stabilo("yellow","---------------- $pn NO FILES ---------------");
+	} 
+	elsif (scalar(@bam) ne 1 || scalar(@vcf) < 2){
+		colored::stabilo("red","----------------$pn problem with files---------------");
+		colored::stabilo("red","----------------".join(",",@bam)." bam file  ---------------");
+		colored::stabilo("red","---------------- ".join(",",@vcf)." vcf  file  ---------------");
+		colored::stabilo("red","-----------------------------------------------------"); 
+		
+ 	}
  
-my @files2 = File::Find::Rule->file()
+	my @files2 = File::Find::Rule->file()
                                   ->name( "$pn.*" )
                                   ->in( $dir3);
 
 
-push(@files,@files2);
-my @files3 = File::Find::Rule->file()
-                                  ->name( $pn."_*" )
-                                  ->in( $dir1);
-
-
-push(@files,@files3);
-my $bam;
-my $vcf;
-my @cmd;
-my %dv;
-foreach my $f (@files){
-	next if exists $dv{$f};
-	$dv{$f} ++;
-	my $f2 = $f;
-	$bam ++ if $f2 =~ /bam$/;
-	$vcf ++ if $f2 =~ /vcf.gz$/;
-	$f2 =~   s/$project_in/$projectName/;
-	warn ("file exists $f2") if -e $f2;
-	die ("file exists $f2 $f") if -e $f2;
-	my @dir = split("/",$f2);
-	pop(@dir);
+	push(@files,@files2);
+	#my @files3 = File::Find::Rule->file()
+	#                                  ->name( $pn."_*" )
+	#                                  ->in( $dir1);
+	#
+	#push(@files,@files3);
+	my $bam =0;
+	my $vcf =0;
+	my @cmd;
+	my %dv;
+	foreach my $f (@files){
+		next if exists $dv{$f};
+		$dv{$f} ++;
+		my $f2 = $f;
+		$bam ++ if $f2 =~ /\.(bam|cram)$/;
+		$vcf ++ if $f2 =~ /vcf.gz$/;
+		$f2 =~   s/$project_in/$projectName/;
+		warn ("file exists $f2") if -e $f2;
+		die ("file exists $f2 $f") if -e $f2;
+		my @dir = split("/",$f2);
+		pop(@dir);
+		
+		my $dir_out = join("/",@dir);
+		system("mkdir -p $dir_out") unless -e $dir_out;
+		
+		die("no directory  $dir_out") unless -e $dir_out;
+		push(@cmd,"mv $f $f2");
+		
+	} 
+	if ($bam ne 1 || $vcf < 2){
+		if ($force ne 1) {
+			warn ($bam+$vcf);
+			if (($bam+$vcf) == 0 ){
+				colored::stabilo("red","---------------- $pn NO FILES ---------------");
+				die();
+			}
+			else {
+				colored::stabilo("red","----------------$pn problem with files---------------");
+				colored::stabilo("red","---------------- +$bam+ bam file  ---------------") if $bam ne 1; 
+				colored::stabilo("red","---------------- $vcf vcf  file  ---------------") if $vcf < 2; 
+				colored::stabilo("red","-----------------------------------------------------"); 
+			
+				warn Dumper @cmd;
+			}
+			die();
+		}
+	}
 	
-	my $dir_out = join("/",@dir);
-	system("mkdir -p $dir_out") unless -e $dir_out;
-	
-	die("no directory  $dir_out") unless -e $dir_out;
-	push(@cmd,"mv $f $f2");
-	
-} 
-
-if ($bam ne 1 || $vcf < 2){
-	warn $bam;
-	warn $vcf;
-	colored::stabilo("red","----------------$pn problem with files---------------");
-	colored::stabilo("red","----------------$bam bam file  ---------------") if $bam ne 1; 
-	colored::stabilo("red","---------------- $vcf vcf  file  ---------------") if $vcf < 2; 
-	colored::stabilo("red","-----------------------------------------------------"); 
-	warn Dumper @cmd;
-	die();
-}
-	
-	
- return @cmd;
+	 return @cmd;
 }
 exit(0);
