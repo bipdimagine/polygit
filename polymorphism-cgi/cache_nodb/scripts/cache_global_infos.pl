@@ -74,9 +74,9 @@ foreach my $patient (@{$project->getPatients()}) {
 	foreach my $file (@{$patient->getVariationsFiles()}) {
 		$hash->{check}->{vcf}->{variations}->{$patient->name()}->{$file} = md5_hex($file);
 	}
-	foreach my $file (@{$patient->getIndelsFiles()}) {
-		$hash->{check}->{vcf}->{indels}->{$patient->name()}->{$file} = md5_hex($file);
-	}
+#	foreach my $file (@{$patient->getIndelsFiles()}) {
+#		$hash->{check}->{vcf}->{indels}->{$patient->name()}->{$file} = md5_hex($file);
+#	}
 }
 my @lMethodsAlign = sort keys(%$hash_align);
 my @lMethodsCalling = sort keys(%$hash_calling);
