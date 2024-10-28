@@ -972,6 +972,33 @@ has intervaltree_vector => (
 	},
 );
 
+sub getGenesIdFromVector {
+	my ($self,$vector) = @_;
+	my $tree = $self->intervaltree_vector;
+	my $start = 0;
+	my $lh;
+	my $toto;
+	while (($start < $vector->Size()) &&
+    	(my ($min,$max) = $vector->Interval_Scan_inc($start)))
+	{
+		$max ++;
+		 foreach my $g (@{$tree->fetch($min,$max)}){
+		 	next if $g =~ /intergenic/;
+		 	next if exists $lh->{$g};
+		 	push(@$toto,"!".$g);
+		 	
+		 	$lh->{$g} ++;
+		 }
+    	$start = $max + 2;
+	}
+#	$self->project->rocksGenBo->prepare($toto);
+#	foreach my $t (@$toto){
+#		 $self->project->rocksGenBo->get($t);
+#	}
+#	warn "end";
+	
+	return [keys %$lh];
+}
 
 sub getGenesFromVector {
 	my ($self,$vector) = @_;
@@ -984,11 +1011,12 @@ sub getGenesFromVector {
 		$max ++;
 		 foreach my $g (@{$tree->fetch($min,$max)}){
 		 	next if $g =~ /intergenic/;
+		 	
 		 	$lh->{$g} ++;
+		 	
 		 }
     	$start = $max + 2;
 	}
-	$self->{genes_object} = $lh;
 	return $self->getProject()->myflushobjects($lh, "genes");
 }
 
