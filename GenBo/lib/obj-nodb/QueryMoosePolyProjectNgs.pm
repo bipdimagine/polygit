@@ -66,6 +66,17 @@ has sql_cmd_delete_last_connection_user_project => (
 	},
 );
 
+has sql_cmd_get_all_patients_from_project => (
+	is	 => 'ro',
+	lazy => 1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT pat.name as pat_name FROM PolyprojectNGS.patient as pat, PolyprojectNGS.projects as proj
+				where pat.project_id = proj.project_id and proj.name=?;
+		};
+		return $sql;
+	},
+);
 
 has sql_cmd_get_ill_patients_from_project => (
 	is	 => 'ro',
@@ -1043,8 +1054,8 @@ has sql_cmd_get_proj_ids_genes_datatbase_version => (
         default => sub {
                 my $self = shift;
 		        my $query = qq{
-		        	SELECT p.project_id, p.name, prg.rel_gene_id, prpd.version_id FROM PolyprojectNGS.projects as p, PolyprojectNGS.project_release_gene as prg, PolyprojectNGS.project_release_public_database as prpd
-						where p.project_id=prg.project_id and p.project_id=prpd.project_id;
+		        	SELECT p.project_id, p.name, prg.rel_gene_id, prpd.version_id FROM PolyprojectNGS.projects as p, PolyprojectNGS.project_release_gene as prg, PolyprojectNGS.project_release_public_database as prpd, PolyprojectNGS.project_release as pr
+						where p.project_id=prg.project_id and p.project_id=prpd.project_id and pr.project_id=p.project_id and pr.release_id=938;
 		        };
 				return $query;
         },
@@ -1499,6 +1510,20 @@ sub getPersonInfos {
 	$sth->execute($person_id);
 	my $h = $sth->fetchall_hashref('person_id');
 	return $h->{$person_id};
+}
+
+sub getBuildFromProjectName {
+	my ($self, $project_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT p.name, r.name as build 
+			FROM PolyprojectNGS.projects p, PolyprojectNGS.releases r, PolyprojectNGS.project_release pr
+				where p.name=? and p.project_id=pr.project_id and pr.release_id=r.release_id;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($project_name);
+	my $h = $sth->fetchall_hashref('name');
+	return $h->{$project_name}->{build};
 }
 
 1;

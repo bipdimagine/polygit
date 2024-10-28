@@ -331,6 +331,7 @@ sub get_ids {
 		};
 		if ($@){
 			warn "\n\n";
+			warn Dumper $@;
 			warn "bug here  ";
 			warn "\n\n";
 			die();

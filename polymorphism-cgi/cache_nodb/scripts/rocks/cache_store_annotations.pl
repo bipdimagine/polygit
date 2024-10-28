@@ -311,7 +311,7 @@ if($size_variants == 0 ){
 	$rocks3->write_batch();
 	$rocks3->close();
 	warn "no variants !!!!";
-		system("date > $ok_file") if $ok_file;
+	system("date > $ok_file") if $ok_file;
 	exit(0);
 } 
 my $vector_variation_type;
@@ -404,7 +404,7 @@ $buffer = new GBuffer;
  my $rocks4 = $chr->rocks_vector("w");
 foreach my $family (@{$project->getFamilies}){
 	foreach my $children  (@{$family->getChildren}){
-		my $bitv1  = $family->getVector_individual_denovo($chr,$children,1); 
+		my $bitv1  = $family->getVector_individual_denovo($chr,$children,1);
 		$rocks4->put_batch_vector_transmission($children,"ind_denovo",$bitv1);
 		
 		my $bitv2  = $family->getVector_individual_dominant($chr,$children,1);

@@ -1,7 +1,7 @@
 var layoutProject = [
-	{ name: "Row", et: getRow, width: "5%", styles: 'text-align:center;' },
 	{ field: "name", name: "Name", width: "10%", styles: 'text-align:center;' },
 	{ field: "description", name: "Description", width: "35%", styles: 'text-align:center;' },
+	{ field: "genome", name: "Genome", width: "5%", styles: 'text-align:center;' },
 	{ field: "capture_name", name: "Capture", width: "15%", styles: 'text-align:center;' },
 	{ field: "patient", name: "Patient", width: "10%", styles: 'text-align:center;' },
 	{ field: "users", name: "Users", width: "20%", styles: 'text-align:center;' },
@@ -122,16 +122,34 @@ function view_rna_shiny(prj) {
     return;
 }
 
-function view_polyviewer(prj, type) {
-    //attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
-	window.open("polyviewer.html?project="+prj, '_blank');
-     //this.location.href = "polyviewer.html?project="+prj;
+function view_polyviewer(this_value) {
+	var list = this_value.split('::');
+	var prj = list[1];
+	var genome = list[2];
+   var url;
+   var regexp = /HG19/g;
+   if (String(genome).match(regexp)) {
+   		url = 'https://'+window.location.hostname + "/polyweb/polyviewer.html?project="+prj;
+   }
+   else {
+		url = "polyviewer.html?project="+prj;
+	}
+	window.open(url,'_blank');
  }
 
-function view_polyquery(prj, type) {
-	window.open("vector/gene.html?project="+prj, '_blank');
-    //attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
-   //  this.location.href = "polyviewer.html?project="+prj;
+function view_polyquery(this_value) {
+	var list = this_value.split('::');
+	var prj = list[1];
+	var genome = list[2];
+   var url;
+   var regexp = /HG19/g;
+   if (String(genome).match(regexp)) {
+   		url = 'https://'+window.location.hostname + "/polyweb/vector/gene.html?project="+prj;
+   }
+   else {
+		url = "vector/gene.html?project="+prj;
+	}
+	window.open(url,'_blank');
  }
  
 function formaterButtonRNA(this_value) {
@@ -176,10 +194,9 @@ function formaterButton(this_value) {
 	var tt = " ";
 	var dd = " disabled ";
 	var style =" style='margin-top: 3px ;opacity: 0.25;' ";
-
-	var tt1 = "onClick=view_polyquery('" + list[1] + "') ";
+	var tt1 = "onClick=view_polyquery('" + this_value + "') ";
 	if (list[0] == 1) {
-		tt = " onClick=view_polyviewer('" + list[1]+"') ";
+		tt = " onClick=view_polyviewer('" + this_value + "') ";
 		style =" style='margin-top: 3px ' ";
 		dd = ""
 	} 
@@ -471,7 +488,7 @@ function formaterBadges(this_value) {
             	 
                // var prj = gridProject.getCell(1).getNode(e.rowNode.gridRowIndex).textContent;
                 var project_type = "ng";//gridProject.getCell(2).getNode(e.rowNode.gridRowIndex).textContent;
-                viewProject(items[0].name, project_type);
+                viewProject(items[0].name, project_type, items[0].genome);
             };
             
             //fonction appelée par dblclickGrid suite au dbl click sur une ligne du tableau

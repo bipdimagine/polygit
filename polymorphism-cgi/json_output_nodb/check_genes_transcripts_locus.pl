@@ -37,9 +37,12 @@ my $use_project        = $cgi->param('use_project');
 my $sort			   = $cgi->param('sort');
 my $trio_project	   = $cgi->param('project');
 my $trio_patient	   = $cgi->param('patient');
+my $use_release	   		= $cgi->param('release');
 my $use_phenotype_score	   = $cgi->param('use_phenotype');
 $use_phenotype_score = lc($phenotype) if ($phenotype and not $use_phenotype_score);
 $use_phenotype_score = 'intellectual disability' unless ($use_phenotype_score);
+
+#$use_release = 'HG38';
 
 my $buffer  = GBuffer->new();
 purge_cgi_session_directory($buffer);
@@ -48,7 +51,13 @@ if ($trio_project) {
 	$project = $buffer->newProjectCache( -name => $trio_project );
 }
 else {
-	$project = $buffer->newProject( -name => $buffer->get_random_project_name_with_this_annotations_and_genecode() );
+	
+	#TODO: prendre projet HG38
+	my $project_name = 'NGS2016_1231';
+	if ($use_release eq 'HG38') { $project_name = 'NGS2024_7792'; }
+	$project = $buffer->newProject( -name => $project_name );
+	
+	#$project = $buffer->newProject( -name => $buffer->get_random_project_name_with_this_annotations_and_genecode() );
 	my ( $genecode_version, $annot_version );
 	unless ($annotation) {
 		$genecode_version = $buffer->getQuery()->getMaxGencodeVersion();
@@ -112,7 +121,6 @@ if ($genes) {
 		next if (exists $h_genes->{$g});
 		$h_genes->{$g} = $g;
 	}
-	die();
 }
 
 my ($h_found_by_locus, $h_found_by_transcript);

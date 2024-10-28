@@ -1079,29 +1079,31 @@ has alamut_id => (
 
 
 
-has nb_dejavu =>(
-	is	    => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $no_dejavu = GenBoNoSqlDejaVu->new( dir => $self->project->deja_vu_lite_dir , mode => "r");
-		my $res = $no_dejavu->get_hohe_nbprojects($self->getChromosome->id(), $self->id());
-		return 0 unless ($res);
-		return $res->[1];
-	},
-);
-
-has nb_dejavu_ho =>(
-	is	    => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $no_dejavu = GenBoNoSqlDejaVu->new( dir => $self->project->deja_vu_lite_dir , mode => "r");
-		my $res = $no_dejavu->get_hohe_nbprojects($self->getChromosome->id(), $self->id());
-		return 0 unless ($res);
-		return $res->[0];
-	},
-);
+#has nb_dejavu =>(
+#	is	    => 'ro',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		confess();
+#		my $no_dejavu = GenBoNoSqlDejaVu->new( dir => $self->project->deja_vu_lite_dir , mode => "r");
+#		my $res = $no_dejavu->get_hohe_nbprojects($self->getChromosome->id(), $self->id());
+#		return 0 unless ($res);
+#		return $res->[1];
+#	},
+#);
+#
+#has nb_dejavu_ho =>(
+#	is	    => 'ro',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		confess();
+#		my $no_dejavu = GenBoNoSqlDejaVu->new( dir => $self->project->deja_vu_lite_dir , mode => "r");
+#		my $res = $no_dejavu->get_hohe_nbprojects($self->getChromosome->id(), $self->id());
+#		return 0 unless ($res);
+#		return $res->[0];
+#	},
+#);
 
 
 ####
@@ -2948,6 +2950,10 @@ sub getNbAlleleRef {
 		elsif ($self->project->return_calling_methods_short_name($method)) {
 			$method =$self->project->return_calling_methods_short_name($method);
 		}
+#		warn "\n";
+#		warn Dumper  $self->sequencing_infos;
+#		warn 'PID: '.$pid;
+#		warn $method;
 		my $res = $self->sequencing_infos->{$pid}->{$method}->[0];
 		return $res;
 }
@@ -3015,6 +3021,7 @@ sub getPourcentAllele {
 sub getRatio {
         my ($self,$patient,$method) = @_;
         my $pid = $patient->id;
+        
 		unless (exists $self->sequencing_infos->{$pid}){
 			return 0;
 		}
@@ -3024,14 +3031,12 @@ sub getRatio {
 		elsif ($self->project->return_calling_methods_short_name($method)) {
 			$method =$self->project->return_calling_methods_short_name($method);
 		}
-			warn Dumper $self->sequencing_infos->{$pid}->{$method} unless @{$self->sequencing_infos->{$pid}->{$method}};
-			warn $self->name." ".$patient->name." ".$method  unless @{$self->sequencing_infos->{$pid}->{$method}};
-			warn Dumper  $self->sequencing_infos->{$pid} unless @{$self->sequencing_infos->{$pid}->{$method}};
-			confess() unless exists $self->sequencing_infos->{$pid};
-			my $sum = ($self->sequencing_infos->{$pid}->{$method}->[0]+$self->sequencing_infos->{$pid}->{$method}->[1]);
-			return 100 if $sum == 0;
-			my $pc = sprintf("%.0f", ($self->sequencing_infos->{$pid}->{$method}->[1]/$sum)*100);
-			return $pc;
+		confess() unless exists $self->sequencing_infos->{$pid};
+		
+		my $sum = (int($self->sequencing_infos->{$pid}->{$method}->[0])+int($self->sequencing_infos->{$pid}->{$method}->[1]));
+		return 100 if $sum == 0;
+		my $pc = sprintf("%.0f", ($self->sequencing_infos->{$pid}->{$method}->[1]/$sum)*100);
+		return $pc;
 }
 
 sub array_sequencing_text {
@@ -3360,7 +3365,21 @@ sub total_similar_patients  {
                return   $self->dejaVuInfosForDiag2("total_similar_patients");
         }
         
-
+sub dejavu_hash_projects_patients {
+	my ($self) = @_;
+	my $hres;
+	my $v = $self->getChromosome->rocks_dejavu->dejavu($self->rocksdb_id);
+	my @list = split("!",$v);
+	foreach my $l (@list) {
+		my($p,$nho,$nhe,$info) = split(":",$l);
+		$p = "NGS20".$p;
+		my (@samples) = split(",",$info);
+		foreach my $s (@samples){
+			$hres->{$p}->{$s} = undef;
+		}
+	}
+	return $hres;
+}
 
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;

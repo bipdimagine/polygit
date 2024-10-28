@@ -63,6 +63,8 @@ foreach my $patient (@$patients){
 	#confess($gz.".tbi") unless -e $gz.".tbi";
 	push(@gvcf,$gz); 
 }	
+
+
 	
 my $string_variant = join (" --variant ",@gvcf);
 
@@ -112,7 +114,8 @@ my $index =0;
  
   foreach my $slice (@{$slice_regions}){
   	$index ++;
-
+	
+	$project->disconnect();
   	 my $pid = $pm->start and next;
   		genotype($slice);
   		$pm->finish();

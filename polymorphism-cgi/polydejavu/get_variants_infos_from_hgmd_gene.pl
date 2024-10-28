@@ -59,16 +59,21 @@ $class->{style} = "min-width:10%;padding:1px";
 $class_default->{style} = "max-width:350px;overflow-x:auto;vertical-align:middle;padding:5px;";
 			
 
+my $max_dejavu = 999999999999;
+my $max_dejavu_ho = 999999999999;
+my $max_gnomad = 999999999999;
+my $max_gnomad_ho = 999999999999;
+
 
 my $cgi = new CGI();
 my $hgmd_version = $cgi->param('hgmd_version');
 my $gene_name = $cgi->param('gene_name');
 my $only_new = $cgi->param('only_new');
 my $only_dm = $cgi->param('only_dm');
-my $max_dejavu = $cgi->param('dejavu');
-my $max_dejavu_ho = $cgi->param('dejavu_ho');
-my $max_gnomad = $cgi->param('gnomad');
-my $max_gnomad_ho = $cgi->param('gnomad_ho');
+$max_dejavu = $cgi->param('dejavu');
+$max_dejavu_ho = $cgi->param('dejavu_ho');
+$max_gnomad = $cgi->param('gnomad');
+$max_gnomad_ho = $cgi->param('gnomad_ho');
 my $filters_cons = $cgi->param('filters_cons');
 
 my $h_filters_cons;
@@ -91,13 +96,12 @@ my $h_v_hgmd_ids = $buffer->queryHgmd->search_variant_for_gene($gene_name);
 my $h_new_dm = $buffer->queryHgmd->get_hash_last_released_DM();
 my $h_no_coord = $buffer->queryHgmd->search_variant_for_gene_without_coord($gene_name);
 
-
 my $h_by_coord;
 my $hVarErrors;
 my @lVar;
 foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	next if (exists $h_no_coord->{$v_hgmd_id});
-	next if ($only_new and not exists $h_new_dm->{$v_hgmd_id});
+	#next if ($only_new and not exists $h_new_dm->{$v_hgmd_id});
 	
 	$nb_var++;
 	my $tag = $h_v_hgmd_ids->{$v_hgmd_id}->{tag};
@@ -149,11 +153,11 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	next unless ($is_ok_annot);
 	
 	my $not_ok;
-	my $var_dejavu = $v->nb_dejavu();
+	my $var_dejavu = $v->other_patients();
 	$not_ok++ if ($max_dejavu and $var_dejavu > $max_dejavu);
 	next if $not_ok;
 	
-	my $var_dejavu_ho = $v->nb_dejavu();
+	my $var_dejavu_ho = $v->other_patients_ho();
 	$not_ok++ if ($max_dejavu_ho and $var_dejavu_ho > $max_dejavu_ho);
 	next if $not_ok;
 	
@@ -247,7 +251,7 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	}
 	$out .= $cgi->end_Tr();
 	$out =~ s/zoomHgmd/zoomHgmdWithoutCss/;
-	$h_by_coord->{$v->start()} = $out;
+	$h_by_coord->{$v->start()}->{$var_id} = $out;
 }
 
 my @list_coord;
@@ -255,8 +259,10 @@ if ($gene->strand() == 1) { @list_coord = sort {$a <=> $b} keys %$h_by_coord; }
 else  { @list_coord = sort {$b <=> $a} keys %$h_by_coord; }
 
 foreach my $start (@list_coord) {
-	my $out = $h_by_coord->{$start};
-	push(@list_lines, $out);
+	foreach my $varid (sort keys %{$h_by_coord->{$start}}) {
+		my $out = $h_by_coord->{$start}->{$varid};
+		push(@list_lines, $out);
+	}
 }
 
 my ($hResGene, $h_panels_found);

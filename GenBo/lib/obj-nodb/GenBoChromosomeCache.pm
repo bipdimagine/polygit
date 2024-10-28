@@ -307,10 +307,7 @@ has hash_cache_strict_denovo => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-				warn $self->name;
 		my $nosql = $self->sqlite_strict_denovo();
-		warn $nosql->dir();
-
 		my ($h) = $nosql->get_bulk($self->name());
 		$nosql->close();
 		return $h;
@@ -327,6 +324,7 @@ has size_vector => (
 			
 			return $self->rocks_vector("r")->size;
 		}
+		
 		my $no_categories = $self->get_lmdb_categories("r");
 		return 0 unless $no_categories->is_lmdb_exists('categories_annotations');
 		
@@ -604,14 +602,18 @@ has hash_gene_id_to_name => (
 	default	=> undef,
 );
 
+sub cache_lmdb_variations {
+	my $self = shift;
+	return $self->get_lmdb_variations("r");
+}
 
 sub cache_variations {
 	my $self = shift;
-	return $self->get_rocks_variations("r");
-#	if ($self->project->isRocks){
-#		return $self->get_rocks_variations("r");
-#	}
-#	return $self->get_lmdb_variations("r");;
+	#return $self->get_rocks_variations("r");
+	if ($self->project->isRocks){
+		return $self->get_rocks_variations("r");
+	}
+	return $self->get_lmdb_variations("r");;
 	
 }
 
@@ -692,13 +694,15 @@ sub getHashTypeVariants {
 # donne le vector d'une region donnee 
 sub getFilterRegionVector {
 	my ($self, $filter) = @_;
+	confess(warn "\n\nTODO getFilterRegionVector\n\n");
 	my ($chrId_filter, $start_filter, $end_filter, $type_filter) = split(':', $filter);
 	my @lIdsOn;
 	my $found;
 	my $still_ok = 1;
 	foreach my $index (@{$self->getIdsBitOn( $self->getVariantsVector() )}) {
 		last unless ($still_ok);
-		my $varId = $self->getVarId($index);
+		#my $varId = $self->getVarId($index);
+		my $varId = $self->getProject->returnVariants($self->name."!".$index)->id;
 		my ($chrId_var, $pos_var, $ref_var, $alt_var) = split( '_', $varId );
 		if (int($start_filter) <= int($pos_var) and int($pos_var) <= int($end_filter)) {
 			push (@lIdsOn, $index);
@@ -961,8 +965,8 @@ has intervaltree_vector => (
 	default	=> sub {
 	my $self = shift;
 	my $array_tree = $self->rocks_vector("r")->get_vector_gene( "vector_intervaltree" );
-	die() unless $array_tree;
 	my $tree = Set::IntervalTree->new;
+	return $tree unless $tree;
 	foreach my $a (@$array_tree){
 		next unless @$a;
 		

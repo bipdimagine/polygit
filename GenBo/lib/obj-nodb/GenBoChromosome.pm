@@ -940,10 +940,15 @@ sub getIntSpanCaptureForCalling {
 		#my $span3 = Set::IntSpan::Fast::XS->new() ;
 		my $trs;
 		foreach my $capture ( @{ $project->getCaptures } ) {
-
 			push( @$trs, @{ $capture->transcripts_name() } );
 		}
 		my $span_transcript = Set::IntSpan::Fast::XS->new();
+		
+		my $nb_ok = 0;
+		my $nb_ok_1 = 0;
+		my $nb_ok_2 = 0;
+		my $nb_error = 0;
+		
 		foreach my $tr (@$trs) {
 			my $t = $project->newTranscript($tr);
 			next if $t->getChromosome()->name ne $self->getChromosome()->name;
@@ -1627,17 +1632,18 @@ sub lmdb_variations {
 #	$self->{lmdb}->{annex} = $no2;
 #	return $no2;
 #}
-#sub get_old_lmdb_variations {
-#	my ($self,$mode,$dir_out) = @_;
-#		return  GenBoNoSqlLmdb->new(
-#			dir         => $self->project->lmdb_cache_variations_dir(),
-#			mode        => $mode,
-#			is_index    => 1,
-#			name        => $self->name,
-#			is_compress => 1,
-#			vmtouch     => $self->buffer->vmtouch
-#			);
-#}
+
+sub get_old_lmdb_variations {
+	my ($self,$mode,$dir_out) = @_;
+		return  GenBoNoSqlLmdb->new(
+			dir         => $self->project->lmdb_cache_variations_dir(),
+			mode        => $mode,
+			is_index    => 1,
+			name        => $self->name,
+			is_compress => 1,
+			vmtouch     => $self->buffer->vmtouch
+			);
+}
 
 
 sub get_lmdb_junctions_canoniques {
@@ -1661,40 +1667,40 @@ sub get_lmdb_junctions_canoniques {
 
 
 
-#sub get_lmdb_variations {
-#	my ( $self, $modefull,$rocks) = @_;
-#	my $hindex = "variations_";
-#	$hindex = "variations_".$modefull if ($modefull);
-#	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-#	$modefull = "r" unless $modefull;
-#	my ( $mode, $pipeline ) = split( '', $modefull );
-#	my $dir_out = $self->project->lmdb_cache_variations_dir();
-#
-#	
-#	
-#	if ($mode eq "c"){
-#		if ($rocks) {
-#			my $dir_out_rocks = $self->project->rocks_cache_dir;
-#			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
-#			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
-#
-#		}
-#		else {
-#			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
-#		}
-#	}
-#	else {
-#		#if ( -e  $dir_out_rocks){
-#		#		$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
-#		#}
-#		#else {
-#			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
-#		#}
-#	}
-#	
-#	return $self->{lmdb}->{$hindex};
-#}
-#
+sub get_lmdb_variations {
+	my ( $self, $modefull,$rocks) = @_;
+	my $hindex = "variations_";
+	$hindex = "variations_".$modefull if ($modefull);
+	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+	$modefull = "r" unless $modefull;
+	my ( $mode, $pipeline ) = split( '', $modefull );
+	my $dir_out = $self->project->lmdb_cache_variations_dir();
+
+	
+	
+	if ($mode eq "c"){
+		if ($rocks) {
+			my $dir_out_rocks = $self->project->rocks_cache_dir;
+			system ("mkdir $dir_out && chmod a+rwx $dir_out" ) unless -e  $dir_out_rocks;
+			$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
+
+		}
+		else {
+			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
+		}
+	}
+	else {
+		#if ( -e  $dir_out_rocks){
+		#		$self->{lmdb}->{$hindex} =  $self->get_rocks_variations($mode);
+		#}
+		#else {
+			$self->{lmdb}->{$hindex} =  $self->get_old_lmdb_variations($mode,$dir_out);
+		#}
+	}
+	
+	return $self->{lmdb}->{$hindex};
+}
+
 
 
 
@@ -1763,16 +1769,16 @@ sub get_lmdb_cnvs {
 #}
 
 
-#sub get_lmdb_categories {
-#	my ( $self, $mode ) = @_;
-#	return $self->_get_lmdb( $mode, "categories_annotations" );
-#}
-#
-#sub get_lmdb_genes {
-#	my ( $self, $mode ) = @_;
-#	return $self->_get_lmdb( $mode, "genes" );
-#}
-#
+sub get_lmdb_categories {
+	my ( $self, $mode ) = @_;
+	return $self->_get_lmdb( $mode, "categories_annotations" );
+}
+
+sub get_lmdb_genes {
+	my ( $self, $mode ) = @_;
+	return $self->_get_lmdb( $mode, "genes" );
+}
+
 #sub get_lmdb_calling_methods {
 #	my ( $self, $mode ) = @_;
 #	return $self->_get_lmdb( $mode, "calling_methods" );
@@ -2160,8 +2166,12 @@ sub get_lmdb_database {
 	return $self->buffer->get_lmdb_database( $database, $self->name, $type );
 }
 
+#TODO: hgms DM for gene to do for HG38
 sub is_hgmd_DM_for_gene {
 	my ($self, $hgmd_id, $gene) = @_;
+	
+	return;
+	
 	my $db =  $self->getChromosome->get_lmdb_database("hgmd",'relation_variant_gene');
 	my $pub = $db->get($hgmd_id);
 	return 1 if ($pub and exists $pub->{$gene->external_name()});
@@ -2217,7 +2227,7 @@ sub rocks_dejavu {
 	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->project->{rocks}->{$name};
 }
-#
+
 sub getDejaVuInfos {
 	my ( $self, $id ) = @_;
 	my $hres;
@@ -2258,11 +2268,16 @@ sub getDejaVuInfos {
 	return $hres;
 }
 
+sub getShortResumeDejaVuInfosForDiagforRocksId {
+	my ($self, $rocks_id) = @_;
+	
+}
+
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
 	my $chr = $self;
-	my $in_this_run_patients =  $self->project->in_this_run_patients();
-	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
+#	my $in_this_run_patients =  $self->project->{in_this_run_patients};
+#	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
 	#my $no1 = $self->project->lite_deja_vu2();
 	my $no = $self->rocks_dejavu();
 	my $h = $no->dejavu($v->rocksdb_id);
@@ -2283,7 +2298,8 @@ sub getDejaVuInfosForDiagforVariant{
 	$res->{other_patients_ho} = 0;
 	$res->{exome_patients_ho} = 0;
 	$res->{similar_patients_ho} = 0;
-	$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
+	$res->{total_in_this_run_patients} = 0;
+	#$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
 	if ($res->{total_in_this_run_patients} == 0 ){
 		$res->{total_in_this_run_patients} = scalar(@{$self->project->getPatients});
 	}
@@ -2295,15 +2311,17 @@ sub getDejaVuInfosForDiagforVariant{
 		my($p,$nho,$nhe,$info) = split(":",$l);
 		$p = "NGS20".$p;
 		next if $p eq $self->name();
-		if (exists $in_this_run_patients->{$p}){
-			
-			my (@samples) = split(",",$info);
-			foreach my $s (@samples){
-				if (exists $in_this_run_patients->{$p}->{$s}){
-					$res->{in_this_run_patients} ++;
-				}
-			}
-		}
+		
+		#TODO: here ! a faire
+#		if (exists $in_this_run_patients->{$p}){
+#			
+#			my (@samples) = split(",",$info);
+#			foreach my $s (@samples){
+#				if (exists $in_this_run_patients->{$p}->{$s}){
+#					$res->{in_this_run_patients} ++;
+#				}
+#			}
+#		}
 		#IN EXOME 	
 		if (exists $exomes->{$p}){
 			$res->{exome_projects}  ++; 

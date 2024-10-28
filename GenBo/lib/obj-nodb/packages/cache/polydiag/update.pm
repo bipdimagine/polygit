@@ -1546,26 +1546,54 @@ sub deja_vu{
 		my $vid = $hvariation->{id};
 		my $debug;
 	
-		my $similar = $project->similarProjects();
-		my $hres = $project->getDejaVuInfosForDiag($vid);
+#		my $similar = $project->similarProjects();
+#		my $hres = $project->getDejaVuInfosForDiag($vid);
 	
 		my $nb_pat =0;
 		my $pname = $project->name();
 		my $proj_dejavu =0;
-		$hvariation->{sim_deja_vu} =$hres->{similar_patients};
-		$hvariation->{sim_proj_deja_vu} = $hres->{similar_projects};
+	
+		my $v = $project->_newVariant($vid);
+		$hvariation->{sim_deja_vu} = $v->similar_patients();
+		$hvariation->{sim_proj_deja_vu} = $v->similar_projects();
+		$hvariation->{this_deja_vu} = $v->in_this_run_patients();
+		$hvariation->{diff_project_deja_vu} = $v->other_projects();
+		$hvariation->{diff_patient_deja_vu} = $v->other_patients();
+		$hvariation->{project_deja_vu} = $v->other_projects() + $v->similar_projects();
+		$hvariation->{deja_vu} = $v->other_projects().':'.$v->other_patients();
+		$hvariation->{deja_vu_value} = $hvariation->{deja_vu};
+		$hvariation->{in_this_run} = $v->in_this_run_patients()."/".scalar(@{$project->getPatients});
+		$hvariation->{similar_projects} = $v->similar_projects().':'.$v->similar_patients();
 	
 	
-		my ($nb_dejavu, $nb_ho) = $project->getDejaVuThisProject($vid);
-		die() if $nb_dejavu eq 0;
-		$hvariation->{this_deja_vu} = $hres->{in_this_run_patients};
-		$hvariation->{diff_project_deja_vu} =$hres->{other_projects}  ; 
-		$hvariation->{diff_patient_deja_vu} =$hres->{other_patients}  ;
-		$hvariation->{project_deja_vu} = $hres->{other_projects} + $hres->{similar_projects}; 
-		$hvariation->{deja_vu} =  $hres->{other_projects}.":". $hres->{other_patients};#printBadge($hres->{other_project}.":".$hres->{other_patient});;
-		 $hvariation->{deja_vu_value} = $hres->{other_projects}.":".$hres->{other_patients};
-		$hvariation->{in_this_run} =  $hres->{in_this_run_patients}."/". $hres->{total_in_this_run_patients};
-		$hvariation->{similar_projects} =  $hres->{similar_projects}.":". $hres->{similar_patients}; #printBadge($hres->{similar_project}.":". $hres->{similar_patient});
+#		$hvariation->{sim_deja_vu} =$hres->{similar_patients};
+#		$hvariation->{sim_proj_deja_vu} = $hres->{similar_projects};
+		
+#		my ($nb_dejavu, $nb_ho) = $project->getDejaVuThisProject($vid);
+#		die() if $nb_dejavu eq 0;
+		
+		
+#		$hvariation->{value}->{other_project} = $v->other_projects();
+#		$hvariation->{value}->{other_patients} = $v->other_patients();
+#		$hvariation->{value}->{other_patients_ho} = $v->other_patients_ho();
+#		$hvariation->{value}->{similar_projects} = $v->similar_projects();
+#		$hvariation->{value}->{similar_patients} = $v->similar_patients();
+#		$hvariation->{value}->{similar_patients_ho} = $v->similar_patients_ho();
+#		$hvariation->{value}->{this_run_project} = '-';
+#		$hvariation->{value}->{this_run_patients} = $v->in_this_run_patients()."/".scalar(@{$project->getPatients});
+		#$v->{value}->{this_run__patients_ho} = $v->similar_patients_ho();
+#		value_html($hvariation,"deja_vu",$v->other_projects(),table_dejavu($v));
+		
+		
+		
+#		$hvariation->{this_deja_vu} = $hres->{in_this_run_patients};
+#		$hvariation->{diff_project_deja_vu} =$hres->{other_projects}  ; 
+#		$hvariation->{diff_patient_deja_vu} =$hres->{other_patients}  ;
+#		$hvariation->{project_deja_vu} = $hres->{other_projects} + $hres->{similar_projects}; 
+#		$hvariation->{deja_vu} =  $hres->{other_projects}.":". $hres->{other_patients};#printBadge($hres->{other_project}.":".$hres->{other_patient});;
+#		 $hvariation->{deja_vu_value} = $hres->{other_projects}.":".$hres->{other_patients};
+#		$hvariation->{in_this_run} =  $hres->{in_this_run_patients}."/". $hres->{total_in_this_run_patients};
+#		$hvariation->{similar_projects} =  $hres->{similar_projects}.":". $hres->{similar_patients}; #printBadge($hres->{similar_project}.":". $hres->{similar_patient});
 		my $freq_score;
 		my $freq_level;
 		

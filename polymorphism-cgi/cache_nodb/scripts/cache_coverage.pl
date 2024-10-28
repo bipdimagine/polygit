@@ -96,6 +96,7 @@ $pm2->run_on_finish(
 unless ($diag) {
 	
 	foreach my $patient_name (@patients_name) {
+		$projectP->disconnect();
 		my $pid = $pm2->start() and next;
 		polydiag::compute_coverage_exome( $project_name, $patient_name );
 	    
@@ -112,6 +113,7 @@ $nbb = 0;
 $pr->update(0);
 $pr->write();
 foreach my $patient_name (@patients_name) {
+	$projectP->disconnect();
 	my $pid = $pm2->start() and next;
 	polydiag::compute_coverage_diagnostic1( $project_name, $patient_name );
 
@@ -128,6 +130,7 @@ $nbb = 0;
 $pr->update(0);
 $pr->write();
 foreach my $patient_name (@patients_name) {
+	$projectP->disconnect();
 	my $pid = $pm2->start() and next;
 	polydiag::compute_coverage_diagnostic2( $project_name, $patient_name );
 	$pm2->finish(0);
@@ -148,6 +151,7 @@ my @utrs = (1);
 
 foreach my $patient_name (@patients_name) {
 	$nb++;
+	$projectP->disconnect();
 	my $pid = $pm2->start() and next;
 	polydiag::compute_coverage_diagnostic3( $project_name, $patient_name, 0 );
 	$pm2->finish(0);
@@ -162,8 +166,11 @@ change_table_status($steps++);
 
 
 
+$projectP->disconnect();
 polydiag::cache_cnv( $project_name, $fork );
 change_table_status($steps++);
+
+$projectP->disconnect();
 polydiag::compute_coverage_diagnostic4( $project_name, $fork );
 change_table_status($steps++);
 my $no_cache = $projectP->get_lmdb_cache_cnv("c");

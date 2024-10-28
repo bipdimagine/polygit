@@ -71,17 +71,18 @@ $| = 1;
 		}
 	);
 
+	my $db_lite = $project->noSqlPolydiag("c");
 	my $project_name = $project->name();
 
 	$pr->write();
 	foreach my $p ( @{ $patients } ) {
 		my $pname = $p->name();
-
+		$project->disconnect();
 		#next if $pname ne "AS1502552";
 		my $pid = $pm->start and next;
 		#my $resp= {};
 
-		my $resp = polydiag::run_cache_polydiag_vector( $project, $p, $tbundle,$version );
+		my $resp = polydiag::run_cache_polydiag_vector( $project, $p, $db_lite, $tbundle,$version );
 
 		run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
@@ -90,7 +91,11 @@ $| = 1;
 
 	$pm->wait_all_children;
 	$project->buffer->dbh->disconnect();
-	
+	$db_lite->close();
+	#$project->buffer->dbh->disconnect();
+	if ( exists $project->{cosmic_db} ) {
+		$project->{cosmic_db}->close();
+	}
 	#warn Dumper $project
 	die() if $error;
 

@@ -87,7 +87,8 @@ my $nb =0;
 my $lastp =0;
 my $nb_error;
 $pm->run_on_finish(
-    sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
+    sub {
+    	my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
     	$nb ++;
     		push (@$delete_file,$data->{error}) if exists $data->{error};
     		warn "error $data->{error}" if exists $data->{error};
@@ -100,8 +101,7 @@ $pm->run_on_finish(
 			my $nb_error = scalar(@$delete_file);
 			print " ** checking gvcf file elapsed   $list_patients :".$elapsed." remaining : ".$remaining." :: $p % Done  :: Error detected :: $nb_error \n";
 			$lastp = $p;
-	    		}
-				    
+	    		}	    
     	
     }
   );
@@ -125,7 +125,10 @@ $pm->run_on_finish(
 				 my $bam = $patient->getBamFile();
 				 	my $outfile = $window->{outfile};
 			
-				push (@$files,$outfile);    		
+				push (@$files,$outfile);  
+				
+				$project->disconnect();
+					
 				 my $pid = $pm->start and next;
 
  					my $callable_intspan = $intspan0->intersection($window->{intspan});
@@ -134,9 +137,12 @@ $pm->run_on_finish(
 				 my %h;
 				my $ok_file = $outfile.".ok";
 				
+				
+				
 				if (-e  $ok_file ){
 					$h{file} = $outfile;
-					$pm->finish(0,\%h);
+					$pm->finish(0, \%h);
+					next;
 				}
 				
 				
@@ -149,9 +155,10 @@ $pm->run_on_finish(
 						$h{error} = $outfile;
 					print "MISSING FILE  : $outfile \n";
 					$pm->finish(0,\%h);
-				
+					next;
 					
 				}
+				
 				open (IN,"cat $outfile | grep -v '#' | cut -f 1,2,4,8 |");
 			
   				my $intspan = Set::IntSpan::Fast::XS->new();

@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>Index PolyViewer</title>
+        <title>HG38 PolyViewer Index</title>
         <link rel="icon" type="image/png" sizes="16x16" href="images/polyicons/iconfinder_baby-girl_16.png">
 		<!-- chargement des feuilles de styles necessaires à l'affichage -->
         <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
@@ -204,9 +204,16 @@ footer{
 	    	}
 	    }
       
-       function viewProject(prj, type) {
-           //attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
-            this.location.href = "polyviewer.html?project="+prj;
+       function viewProject(prj, type, genome) {
+           var url;
+           var regexp = /HG19/g;
+           if (String(genome).match(regexp)) {
+           		url = 'https://'+window.location.hostname + "/polyweb/vector/gene.html?project="+prj+"&type="+type;
+           }
+           else {
+				url = "vector/gene.html?project="+prj+"&type="+type;
+			}
+			window.open(url,'_blank');
         }
         
         function checkInterfaceVersion(version) {

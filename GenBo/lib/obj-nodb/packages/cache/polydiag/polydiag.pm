@@ -165,6 +165,7 @@ sub compute_coverage_diagnostic1 {
 	my ( $project_name, $patient_name ) = @_;
 	my $buffer  = new GBuffer;
 	my $project = $buffer->newProject( -name => $project_name, -verbose => 1 );
+	$project->disconnect();
 	my $patient = $project->getPatient($patient_name);
 	my $no      = $project->noSqlCoverage();
 	$no->clear( $patient->name );
@@ -181,6 +182,7 @@ sub compute_coverage_diagnostic2 {
 	my ( $project_name, $patient_name ) = @_;
 	my $buffer  = new GBuffer;
 	my $project = $buffer->newProject( -name => $project_name, -verbose => 1 );
+	$project->disconnect();
 	my $patient = $project->getPatient($patient_name);
 	my $no      = $project->noSqlCoverage();
 	my @trs =
@@ -214,6 +216,7 @@ sub compute_coverage_diagnostic4 {
 	my ( $project_name, $patient_name, $utr ) = @_;
 	my $buffer   = new GBuffer;
 	my $project  = $buffer->newProject( -name => $project_name, -verbose => 1 );
+	$project->disconnect();
 	my $patients  = $project->getPatients();
 	my $no       = $project->noSqlCoverage();
 	my @paddings = ( 0, 5, 10, 15, 20, 30 );
@@ -237,6 +240,7 @@ sub run_cache_polydiag_cache {
 	my ( $project_name, $patient_name, $tbundle ) = @_;
 	my $buffer1 = new GBuffer;
 	my $project = $buffer1->newProjectCache( -name 			=> $project_name, -typeFilters=>'individual' );
+	$project->disconnect();
 	warn $project;
 	my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
@@ -317,7 +321,8 @@ sub to_array {
 }
 
 sub run_cache_polydiag_vector {
-	my ( $project, $p, $tbundle,$version ) = @_;
+	my ( $project, $p, $db_lite, $tbundle,$version ) = @_;
+	$project->disconnect();
 	my $buffer1 = $project->buffer();
 	my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
@@ -325,7 +330,7 @@ sub run_cache_polydiag_vector {
 	);
 	my $patient_name = $p->name();
 	#my $p       = $pa->[0];
-	my $db_lite = $project->noSqlPolydiag("c");
+	#my $db_lite = $project->noSqlPolydiag("c");
 	my $vtr;
 	my %th;
 	
@@ -399,8 +404,8 @@ sub run_cache_polydiag_vector {
 		}
 
 		#
-		$buffer1->close_lmdb();
-		$chr->close_lmdb();
+		#$buffer1->close_lmdb();
+		#$chr->close_lmdb();
 
 		#$project->purge_memory( $chr->length );
 	}    #end chromosome
@@ -430,11 +435,11 @@ sub run_cache_polydiag_vector {
 
 	$db_lite->put( $patient_name, "indels_vcf_md5", $tf );
 
-	$db_lite->close();
-	$project->buffer->dbh->disconnect();
-	if ( exists $project->{cosmic_db} ) {
-		$project->{cosmic_db}->close();
-	}
+#	$db_lite->close();
+#	$project->buffer->dbh->disconnect();
+#	if ( exists $project->{cosmic_db} ) {
+#		$project->{cosmic_db}->close();
+#	}
 	
 	$project = undef;
 
@@ -450,6 +455,7 @@ sub run_cache_polydiag {
 	my $buffer1 = new GBuffer;
 	#my $project = $buffer1->newProject( -name => $project_name, -verbose => 1 );
 	my $project = $buffer1->newProjectCache( -name => $project_name ,-version=>$version);
+	$project->disconnect();
 	my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
 		capture_name => $project->validation_db()
@@ -564,6 +570,7 @@ sub cache_cnv {
 	my $buffer1 = new GBuffer;
 	my $projectP =
 	  $buffer1->newProject( -name => $project_name, -verbose => 1 );
+	  $projectP->disconnect();
 	my @transcripts_cgi = @{ $projectP->bundle_transcripts() };
 	my @transcripts =
 	  sort { $a->getGene->external_name cmp $b->getGene->external_name }
@@ -585,6 +592,7 @@ sub construct_variant_database {
 		my $buffer1 = new GBuffer;
 		my $project =
 	  	$buffer1->newProject( -name => $project_name, -verbose => 1 );
+	  	$project->disconnect();
 	  	my $chr = $project->getChromosome();
 	  	
 	
@@ -594,6 +602,7 @@ sub construct_variant_database {
 sub construct_variant {
 	my ($project,$v,$tr1,$patient,$vquery) = @_;
 	#die();
+	$project->disconnect();
 	my $hvariation;
 	$hvariation->{id} = $v->id;
 	if ($project->isSomatic){
@@ -788,7 +797,7 @@ sub construct_variant {
 
 sub construct_intergenic_variant {
 	my ($project,$v,$patient,$vquery) = @_;
-
+	$project->disconnect();
 	my $hvariation;
 	$hvariation->{id} = $v->id;
 
@@ -805,20 +814,20 @@ sub construct_intergenic_variant {
 		
 			my $sequence_info = "he("; 
 		my $pc ="-";		
-		if ($v->annex()->{$patient->id}->{nb_all_ref} eq "?"){
-			$sequence_info = "??";
-		}
-		else {
+#		if ($v->annex()->{$patient->id}->{nb_all_ref} eq "?"){
+#			$sequence_info = "??";
+#		}
+#		else {
 
-		$sequence_info = "ho(" if $v->annex()->{$patient->id}->{ho};
+		$sequence_info = "ho(" if $v->isHomozygote($patient);
 		
-		my $sum = $v->annex()->{$patient->id}->{nb_all_ref}+$v->annex()->{$patient->id}->{nb_all_mut};
+		my $sum = $v->getNbAlleleRef($patient) + $v->getNbAlleleAlt($patient);
 		if ($sum >0){
-		 $pc = int ($v->annex()->{$patient->id}->{nb_all_mut} *100/($sum));
+		 $pc = int ($v->getNbAlleleAlt($patient) *100/($sum));
 		}
-		$sequence_info .= $v->annex()->{$patient->id}->{nb_all_ref}."/".$v->annex()->{$patient->id}->{nb_all_mut}.")<br>";
+		$sequence_info .= $v->getNbAlleleRef($patient)."/".$v->getNbAlleleAlt($patient).")<br>";
 	
-		}
+#		}
 		
 		 if ($v->validation_method eq "sanger" ) {
 		 	$sequence_info = "-";

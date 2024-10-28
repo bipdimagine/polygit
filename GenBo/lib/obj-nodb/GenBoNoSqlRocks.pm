@@ -593,6 +593,16 @@ sub next {
 	return undef if $search && $key !~ /$search/ ;
 	return $value;
 }
+
+sub next_key_value {
+	my ($self,$search) = @_;
+	return undef unless $self->{iter};
+	my ($key, $value) = $self->{iter}->each();
+	return undef unless $key;
+	return undef if $search && $key !~ /$search/ ;
+	return ($key, $value);
+}
+
 sub next_hash {
 	my ($self,$search) = @_;
 	return undef unless $self->{iter};

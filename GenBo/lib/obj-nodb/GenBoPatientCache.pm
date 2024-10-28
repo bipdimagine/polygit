@@ -473,7 +473,7 @@ sub getIntspan {
 # renvoies le nombre de genes de ce patient
 sub countGenes {
 	my ($self, $chr) = @_;
-	return 0 if ($self->excluded() eq '1');
+	return 0 if ($self->excluded() and $self->excluded() eq '1');
 	my $nb = 0;
 	my $vector_tmp = $chr->getNewVector();
 	foreach my $gene (@{$chr->getGenes()}) {

@@ -726,16 +726,16 @@ sub store_cnvs_infos {
 		if ($list_patients) {
 			foreach my $patient (@$list_patients) {
 				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'cnv_confidence'} = '.';
-				next unless exists ($var->{annex}->{$patient->id()});
-				foreach my $caller (keys %{$var->{annex}->{$patient->id()}->{'method_calling'}}) {
-					my $h_caller = $var->{'annex'}->{$patient->id()}->{'method_calling'}->{$caller};
+				next unless exists ($var->sequencing_infos->{$patient->id()});
+				foreach my $caller (keys %{$var->sequencing_infos->{$patient->id()}->{'method_calling'}}) {
+					my $h_caller = $var->sequencing_infos->{$patient->id()}->{'method_calling'}->{$caller};
 					$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'nb_all_ref'} = $h_caller->{'nb_all_ref'};
 					$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'nb_all_mut'} = $h_caller->{'nb_all_mut'};
 					$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'score'} = '-';
 					$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'score'} = $h_caller->{'score'} if (exists $h_caller->{'score'});
 				}
-				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->{annex}->{$patient->id()}->{he} eq '1';
-				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->{annex}->{$patient->id()}->{ho} eq '1';
+				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->sequencing_infos->{$patient->id()}->{he} eq '1';
+				$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->sequencing_infos->{$patient->id()}->{ho} eq '1';
 				#$self->{hash_cnvs_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'cnv_confidence'} = $var->cnv_confidence($patient);
 			}
 		}
@@ -775,20 +775,18 @@ sub store_variants_infos {
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'snp' if ( $var->isVariation() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'ins' if ( $var->isInsertion() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'del' if ( $var->isDeletion() );
-			my $h_dejavu   = $var->deja_vu();
+			
+			#TODO: here
+#			my $nb_project = $var->other_projects;
+#			my $nb_patient = $var->other_patients ; 
+#			my $ho         = $var->other_patients_ho; 
+#			my $he         = $nb_patient - $ho;
+			
 			my $nb_project = 0;
-			my $nb_patient = 0;
+			my $nb_patient = 0 ; 
+			my $ho         = 0; 
 			my $he         = 0;
-			my $ho         = 0;
-			my $st_project;
-
-			foreach my $projName ( keys %$h_dejavu ) {
-				$nb_project++;
-				$st_project = $projName . ":";
-				$st_project .= $h_dejavu->{$projName}->{patients};
-				$he += $h_dejavu->{$projName}->{he};
-				$ho += $h_dejavu->{$projName}->{ho};
-			}
+			
 			$hash->{$chr_h_id}->{$var_id}->{'dejavu'} = "";
 			$nb_patient = $he + $ho;
 			if ( $nb_project > 0 ) {
@@ -866,7 +864,7 @@ sub store_variants_infos {
 							$max_cat = $cat;
 						}
 					}
-					$splice_ai_txt = $max_cat.':'.$max_value;
+					$splice_ai_txt = $max_cat.':'.$max_value if $max_cat and $max_value;
 				}
 				
 				foreach my $t ( @{ $gene->getTranscripts() } ) {
@@ -953,14 +951,14 @@ sub store_variants_infos {
 		}
 		if ($list_patients) {
 			foreach my $patient (@$list_patients) {
-				if (exists ($var->annex->{$patient->id()})) {
-					foreach my $caller (keys %{$var->annex->{$patient->id()}->{'method_calling'}}) {
-						my $h_caller = $var->{'annex'}->{$patient->id()}->{'method_calling'}->{$caller};
+				if (exists ($var->sequencing_infos->{$patient->id()})) {
+					foreach my $caller (keys %{$var->sequencing_infos->{$patient->id()}->{'method_calling'}}) {
+						my $h_caller = $var->sequencing_infos->{$patient->id()}->{'method_calling'}->{$caller};
 						$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'nb_all_ref'} = $h_caller->{'nb_all_ref'};
 						$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'nb_all_mut'} = $h_caller->{'nb_all_mut'};
 					}
-					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->{annex}->{$patient->id()}->{he} eq '1';
-					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->{annex}->{$patient->id()}->{ho} eq '1';
+					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->isHeterozygote($patient);
+					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->isHomozygote($patient);
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} ='';
 					if (not $var->isMei()) {
 						$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} = $var->getTransmissionModelType($patient->getFamily(), $patient);

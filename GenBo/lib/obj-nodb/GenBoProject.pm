@@ -168,6 +168,11 @@ has get_list_emails => (
 		{
 			push( @lUsers, $h->{email} );
 		}
+		
+		foreach my $g (@{ $self->buffer->getQuery()->getGroups( $self->id() ) } ){
+				push( @lUsers, $g );
+		}
+		
 		return \@lUsers;
 	},
 );
@@ -832,12 +837,11 @@ has bundle_infos => (
 			foreach my $capture (@$captures) {
 				my $hquery = $query->getCaptureTranscripts( $capture->id );
 				%temp_bundle = ( %temp_bundle, %{ $hquery->{bundle} } );
-				foreach my $tr_id ( @{ $hquery->{transcripts_name} } ) {
-
-					die($tr_id)					  unless $self->liteAnnotations->get( "synonyms", $tr_id );
+				foreach my $tr_id ( @{ $capture->transcripts_name() } ) {
+					die($tr_id) unless $self->getProject->rocksGenBo->synonym($tr_id);
 					push(
 						@{ $res->{transcripts_name} },
-						$self->liteAnnotations->get( "synonyms", $tr_id )
+						$self->getProject->rocksGenBo->synonym($tr_id)
 					);
 
 				}
@@ -846,17 +850,23 @@ has bundle_infos => (
 			foreach my $b ( keys %temp_bundle ) {
 				foreach my $bc ( @{ $temp_bundle{$b} } ) {
 					my $tr = $bc->{ENSEMBL_ID};
+					if (not $tr =~ /_.+/) {
+						foreach my $chr (@{$self->getChromosomes()}) {
+							my $id2 = $tr.'_'.$chr->id();
+							if ($self->rocksGenBo->synonym($id2)) {
+								$tr = $id2;
+								last;
+							}
+						}
+					}
 					push(
 						@{
-							$res->{transcripts}->{
-								$self->liteAnnotations->get( "synonyms", $tr )
-							}
+							$res->{transcripts}->{$self->getProject->rocksGenBo->synonym($tr)}
 						},
 						$b
 					);
 				}
 			}
-
 			return $res;
 		}
 	},
@@ -1209,6 +1219,19 @@ has version => (
 	},
 );
 
+has fastq_screen_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->getProjectRootPath().'/fastq_screen/';
+		unless (-d $dir) {
+			$self->makedir($dir);
+		}
+		return $dir;
+	},
+);
+
 has project_root_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1283,6 +1306,17 @@ is      => 'rw',
 		return $path;
 	},
 );
+has project_epi2me_pipeline_path_name => (
+is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $pathRoot = $self->buffer->config->{epi2me}->{pipeline};
+		my $path     = $pathRoot . "/" . $self->name() . "/";
+		$path .= $self->getVersion . "/";
+		return $path;
+	},
+);
 has dragen_fastq => (
 is      => 'rw',
 	lazy    => 1,
@@ -1301,6 +1335,16 @@ has project_dragen_pipeline_path => (
 		return $self->makedir($self->project_dragen_pipeline_path_name);
 	},
 );
+
+has project_epi2me_pipeline_path => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		return $self->makedir($self->project_epi2me_pipeline_path_name);
+	},
+); 
+
 has project_dragen_demultiplex_path => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1517,6 +1561,9 @@ sub get_gencode_directory {
 	if ($self->annotation_genome_version() =~ /MM39/) {
 		return "/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/lmdb/";
 	}
+	if ($self->annotation_genome_version() =~ /HG19/) {
+		return "/data-isilon/public-data/repository/HG19/annotations/gencode.v43/lmdb/";
+	}
 	
 	my $database = "gencode";
 	$version = $self->gencode_version unless $version;
@@ -1560,9 +1607,7 @@ sub get_public_data_directory {
 	
 		$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
 	}
-	confess( "public data :$database " . $self->{directory}->{$database}.Dumper ($self->buffer->public_data->{$version}->{$database}->{config}) )
-	
-	  unless -e $self->{directory}->{$database};
+	confess( "\n\nERROR: Public data :\nDatabase: $database\nDir: " . $self->{directory}->{$database}."\n\n".Dumper ($self->buffer->public_data->{$version}->{$database}->{config}) ) unless -e $self->{directory}->{$database};
 	return $self->{directory}->{$database};
 }
 
@@ -1997,7 +2042,7 @@ sub getCellRangerIndex {
 }
 
 has annotation_genome_version => (
-	is      => 'ro',
+	is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self    = shift;
@@ -2124,10 +2169,9 @@ has gtf_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file =
-			$self->buffer()->config->{'public_data'}->{root} . '/repository/'
-		  .  $self->annotation_genome_version  . '/'
-		  . $self->buffer()->config->{'public_data'}->{gtf};
+		my $file = $self->buffer()->config->{'public_data'}->{root}.'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
+		$file = $self->buffer()->config->{'public_data'}->{root}.'/repository/'.$version.'/'.$self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
+		die($file) unless -e $file;	
 		return $file;
 	},
 );
@@ -2317,6 +2361,7 @@ has genomeFai => (
 			next if $chr =~ /JH/;
 			next if $chr =~ /MU0/;
 			next if $chr =~ /_random/;
+			next if $chr =~ /_hap/i;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -2525,6 +2570,15 @@ has pipelineDragen => (
 	default => sub {
 		my $self = shift;
 		return $self->project_dragen_pipeline_path;
+	},
+);
+
+has pipelineEpi2me => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->project_epi2me_pipeline_path;
 	},
 );
 has metricsDir => (
@@ -3026,7 +3080,6 @@ sub setPatients {
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
 		  $self->{species_id} = $h->{species_id};
-#		  warn $h->{species_id};
 		 
 	}
 	return \%names unless (%names);
@@ -3438,7 +3491,15 @@ sub newRegulatoryRegion {
 sub newTranscript {
 	my ( $self, $id ) = @_;
 	$self->getChromosomes();
-
+	if (not $id =~ /_.+/) {
+		foreach my $chr (@{$self->getChromosomes()}) {
+			my $id2 = $id.'_'.$chr->id();
+			if ($self->rocksGenBo->synonym($id2)) {
+				$id = $id2;
+				last;
+			}
+		}
+	}
 	#	my $id1 =  $self->getGenBoId($id);
 	#	return undef unless $id1;
 	my $s = $self->myflushobjects( [$id], "transcripts" );
@@ -3451,8 +3512,9 @@ sub newGene {
 	my ( $self, $id ) = @_;
 	return $self->{objects}->{genes}->{$id} if (exists $self->{objects}->{genes}->{$id});
 	$self->getChromosomes();
-	my $id1 = $self->rocksGenBo->synonym($id);
-	#my $id1 = $self->getGenBoId($id);
+	my $id1;
+	if ($self->getVersion() =~ /HG38/) { $id1 = $self->rocksGenBo->synonym($id); }
+	else { $id1 = $self->getGenBoId($id); }
 	return undef unless $id1;
 	return $self->myflushobjects( { $id1 => undef }, "genes" )->[0];
 
@@ -3625,6 +3687,23 @@ sub getVariantFromId {
 	confess("\n\nERROR: no variant found with ID $id. Exit...\n\n");
 }
 
+has hash_patients_name => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $h;
+		my $id = 1;
+		foreach my $patient (@{$self->getPatients()}) {
+			$h->{$patient->name()}->{id} = $id;
+			$h->{$patient->name()}->{fam} = $patient->family();
+			$h->{by_id}->{$id} = $patient->name();
+			$id++;
+		}
+		return $h;
+	},
+);
+
 sub myflushobjects {
 	my ( $self, $ids, $type ) = @_;
 	my $array_ids;
@@ -3654,7 +3733,32 @@ sub myflushobjects {
 				or $type eq 'exons'
 				or $type eq 'introns' )
 			{
-				my $obj = $self->rocksGenBo->genbo($id);
+				
+				my $obj;
+				if ($self->getVersion() =~ /HG38/) {
+					$obj = $self->rocksGenBo->genbo($id);
+				}
+				else {
+					$obj = $self->lmdbGenBo->get($id);
+					unless ($obj) {
+						if    ( $id =~ /_X/ ) { $id =~ s/_X/_Y/; }
+						elsif ( $id =~ /_Y/ ) { $id =~ s/_Y/_X/; }
+						$obj = $self->lmdbGenBo->get(
+							$self->liteAnnotations->get( "synonyms", $id ) );
+					}
+					unless ($obj) {
+						my $sid = $self->getGenBoId($id);
+						confess( $type . " " . $sid ) unless ($sid);
+						$obj = $self->lmdbGenBo->get($id);
+						$id  = $sid;
+					}
+					unless ($obj) {
+						my @t = split( "_", $id );
+						$id  = $t[0] . "_" . $t[-1];
+						$obj = $self->lmdbGenBo->get($id);
+					}
+				}
+				
 				confess( $id . " " . $type ) unless $obj;
 				$obj->{project}                  = $self;
 				$obj->{buffer}                   = $self->buffer;
@@ -4329,6 +4433,12 @@ sub getLargeIndelsDir {
 	return $self->makedir($path);
 }
 
+sub getBedPolyQueryDir {
+	my ($self) = @_;
+	my $path = $self->rocks_cache_dir . "/bed_polyquery/";
+	return $self->makedir($path);
+}
+
 sub makedir {
 	my ( $self, $dir ) = @_;
 	$dir =~ s/\/\//\//g;
@@ -4626,23 +4736,24 @@ sub transcriptsCoverageLite {
 	return $self->{transcriptsCoverageSqlite};
 }
 
-#has lmdbGenBo => (
-#	is      => 'rw',
-#	lazy    => 1,
-#	default => sub {
-#		my $self      = shift;
-#		my $sqliteDir = $self->get_gencode_directory;
-#		die( "you don t have the directory : " . $sqliteDir )
-#		  unless -e $sqliteDir;
-#		return GenBoNoSqlLmdb->new(
-#			name        => "genbo",
-#			dir         => $sqliteDir,
-#			mode        => "r",
-#			is_compress => 1,
-#			vmtouch=>$self->buffer->vmtouch
-#		);
-#	}
-#);
+has lmdbGenBo => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self      = shift;
+		my $sqliteDir = $self->get_gencode_directory;
+		die( "you don t have the directory : " . $sqliteDir )
+		  unless -e $sqliteDir;
+		return GenBoNoSqlLmdb->new(
+			name        => "genbo",
+			dir         => $sqliteDir,
+			mode        => "r",
+			is_compress => 1,
+			vmtouch=>$self->buffer->vmtouch
+		);
+	}
+);
+
 sub rocksGenBo {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
@@ -4706,8 +4817,7 @@ has liteIntervalTree => (
 		my $self      = shift;
 		my $sqliteDir = $self->get_gencode_directory;
 		die( "you don t have the directory : " . $sqliteDir ) unless -e $sqliteDir;
-		return GenBoNoSqlIntervalTree->new( dir => $sqliteDir, mode => "r" )
-		  ;    #->new(dir=>$sqliteDir,mode=>"r");
+		return GenBoNoSqlIntervalTree->new( dir => $sqliteDir, mode => "r" );    #->new(dir=>$sqliteDir,mode=>"r");
 	}
 );
 
@@ -4880,7 +4990,7 @@ has transcriptsCacheDir => (
 	lazy    => 1,
 	default => sub {
 		my $self   = shift;
-		my $output = $self->getCacheDir() . "/transcripts";
+		my $output = $self->rocks_cache_dir() . "/transcripts";
 		return $self->makedir($output);
 
 	},
@@ -5832,7 +5942,7 @@ sub getDejaVuIdsFromInterval {
 	my $end_search   = $end + 1000;
 	my @lRes;
 	my @lVarIds =
-	  @{ $self->get_deja_vu_from_position2( $chr, $start_search, $end_search ) };
+	  @{ $self->get_deja_vu_from_position( $chr, $start_search, $end_search ) };
 
 	foreach my $var_id (@lVarIds) {
 		my @lTmp = split( '_', $var_id );
@@ -5845,14 +5955,13 @@ sub getDejaVuIdsFromInterval {
 
 sub get_deja_vu_from_position {
 	my ( $self, $chr, $start, $end ) = @_;
-	my $no = $self->lite_deja_vu();
+	
+	my $no = $chr->rocks_dejavu();
+	
 	my $h  = $no->get_position( $chr, ( $start - 1 ), ( $end + 1 ) );
-	return $h;
-}
-sub get_deja_vu_from_position2 {
-	my ( $self, $chr, $start, $end ) = @_;
-	my $no = $self->lite_deja_vu2();
-	my $h  = $no->get_position( $chr, ( $start - 1 ), ( $end + 1 ) );
+	
+	#TODO: utiliser ROCKS
+	
 	return $h;
 }
 has countInThisRunPatients => (
@@ -5872,40 +5981,12 @@ has countInThisRunPatients => (
 has in_this_run_patients => (
 	is      => 'ro',
 	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $h;
-	warn "warning here a terminer ";
-	return {};
-	my $no      = $self->lite_deja_vu_projects();
-	my $res;
-	my $total = 0;
-	foreach my $run (@{$self->getRuns}){
-		my $patients = $run->getAllPatientsInfos();
-		my $inthisrunp;
-		map{push(@{$inthisrunp->{$_->{project} } },$_->{patient}) } @$patients;
-		foreach my $pr (keys %$inthisrunp){
-			 my $hpat = $no->get( "projects", $pr);
-			 my $hh ;
-			 map{$hh->{$hpat->{$_}} = $_} keys %$hpat;
-			
-			 foreach my $pa (@{$inthisrunp->{$pr}}){
-			 	if (exists $hh->{$pa}){
-			 		$res->{$pr}->{$hh->{$pa}} = $pa;
-			 		$total ++;
-			 	}
-			 }
-			 	
-			 }
-		}
-		$res->{total} = $total;
-		return $res;
-	},
+	default => 0,
 );
 
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
-	confess();
+#	confess();
 	my $chr = $v->getChromosome()->name();
 	my $in_this_run_patients =  $self->in_this_run_patients();
 	my $no = $self->lite_deja_vu2();
@@ -6107,13 +6188,14 @@ has deja_vu_lite_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		confess();
 		#return "/data-isilon/dejavu/";
 		my $dir = $self->deja_vu_public_dir();
-		return $self->makedir($dir);
-
+		#TODO: ajouter makedir si createion automatique
+		#return $self->makedir($dir);
+		return $dir;
 	},
 );
+
 has deja_vu_lite_dir_projects => (
 	is      => 'ro',
 	lazy    => 1,
@@ -6158,10 +6240,11 @@ has lite_deja_vu => (
 #	default => sub {
 #		my $self = shift;
 #		my $dir  = $self->deja_vu_lite_dir;
-#		warn $dir;
+##		warn $dir;
 #		my $no = GenBoNoSql->new( dir => $dir, mode => "r" );
 #		return $no;
 #	}
+#
 #);
 
 sub lite_deja_vu_local_validation {
@@ -6184,7 +6267,6 @@ has lite_deja_vu2 => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		confess();
 		my $dir  = $self->deja_vu_lite_dir;
 		
 		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
@@ -6601,6 +6683,7 @@ has RnaseqSEA_SE  => (
 		if(-e $filegz) {
 			return $filegz;
 		}
+		return if not -e $file;
 		$self->tabix_gzip_rnaseqsea($filegz,$file);
 		return $filegz;
 	},
@@ -6719,10 +6802,11 @@ sub getQueryJunction {
 	my %args;
 	$args{project} = $self;
 	$args{file}    = $fileName;
-	if ($method eq 'RI') { $args{isRI} = 1; }
-	elsif ($method eq 'SE') { $args{isSE} = 1; }
-	elsif ($method eq 'DRAGEN') { $args{isDRAGEN} = 1; }
-	elsif ($method eq 'STAR') { $args{isSTAR} = 1; }
+	if (lc($method) eq 'ri') { $args{isRI} = 1; }
+	elsif (lc($method) eq 'se') { $args{isSE} = 1; }
+	elsif (lc($method) eq 'dragen') { $args{isDRAGEN} = 1; }
+	elsif (lc($method) eq 'star') { $args{isSTAR} = 1; }
+	elsif (lc($method) eq 'regtools') { $args{isREGTOOLS} = 1; }
 	else { confess(); }
 	my $queryJunction = QueryJunctionFile->new( \%args );
 	return $queryJunction;

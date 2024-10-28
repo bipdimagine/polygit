@@ -2,7 +2,7 @@ package QueryHgmd;
 use strict;
 use Vcf;
 use Moo;
-
+use Carp;
 use Data::Dumper;
 use JSON;
 use GBuffer;
@@ -23,7 +23,7 @@ has build => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		return 'HG19';
+		return 'HG38';
 	}
 );
 
@@ -149,6 +149,17 @@ sub getAllAccNum_with_hg19_coord {
         return keys %{$sth->fetchall_hashref("acc_num")};
 }
 
+sub getAllAccNum_with_hg38_coord {
+        my ($self, $database, $class) = @_;
+        my $dbh =  $self->getDbh;
+        my $sql = qq{ SELECT a.acc_num FROM `$database`.allmut as a, `$database`.hg38_coords as c where a.acc_num=c.acc_num };
+        if ($class) { $sql .= qq{ and a.tag='$class'; }; }
+        else { $sql .= ';'; }
+        my $sth = $dbh->prepare($sql);
+        $sth->execute();
+        return keys %{$sth->fetchall_hashref("acc_num")};
+}
+
 sub getDataHGMDPro {
 	my ($self,$id,$database) = @_;
 	$database = $self->database() unless $database;
@@ -183,7 +194,7 @@ sub getDataHGMDPro_from_gene_name {
 	confess("\n\nERROR: need a gene_name for QueryMoose::getDataHGMDPro_from_gene_name. Die.\n\n") unless ($gene_name);
 	confess("\n\nERROR: need a class_name for QueryMoose::getDataHGMDPro_from_gene_name. Die.\n\n") unless ($class_name);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT gene FROM `$database`.allmut where gene=? and tag=?; };
+	my $sql = qq{ SELECT gene FROM `$database`.allmut where gene="?" and tag="?"; };
 	my $sth = $dbh->prepare($sql);
 	$sth->execute($gene_name, $class_name);
 	my $toto = $sth->fetchall_hashref("gene");
@@ -208,7 +219,7 @@ sub getDataHGMDPro_positions_for_class {
 	confess("\n\nERROR: need a chr_name for QueryMoose::getDataHGMDPro_positions_for_class. Die.\n\n") unless ($chr_name);
 	confess("\n\nERROR: need a class_name for QueryMoose::getDataHGMDPro_positions_for_class. Die.\n\n") unless ($class_name);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT hg19.coordSTART FROM `$database`.allmut as allmut, `$database`.hg19_coords as hg19 where allmut.tag='DM' and allmut.chromosome=? and allmut.acc_num=hg19.acc_num and hg19.coordSTART; };
+	my $sql = qq{ SELECT hg38.coordSTART FROM `$database`.allmut as allmut, `$database`.hg38_coords as hg38 where allmut.tag='DM' and allmut.chromosome=? andhg38mut.acc_num=hg38.acc_num and hg38.coordSTART; };
 	my $sth = $dbh->prepare($sql);
 	$sth->execute($chr_name);
 	my $toto = $sth->fetchall_hashref("coordSTART");
@@ -262,7 +273,7 @@ sub search_acc_num {
 	my $database = $self->database();
 	confess("\n\nERROR: need a acc_num for QueryMoose::search_acc_num. Die.\n\n") unless ($acc_num);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg19_coords as c where a.acc_num=c.acc_num and a.acc_num like ?; };
+	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg38_coords as c where a.acc_num=c.acc_num and a.acc_num like ?; };
 	my $sth = $dbh->prepare($sql);
 	$acc_num = '%'.$acc_num.'%';
 	$sth->execute($acc_num);
@@ -274,7 +285,7 @@ sub search_rsname {
 	my $database = $self->database();
 	confess("\n\nERROR: need a rsname for QueryMoose::search_rsname. Die.\n\n") unless ($rsname);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg19_coords as c where a.acc_num=c.acc_num and a.dbsnp like ?; };
+	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg38_coords as c where a.acc_num=c.acc_num and a.dbsnp like ?; };
 	my $sth = $dbh->prepare($sql);
 	$rsname = '%'.$rsname.'%';
 	$sth->execute($rsname);
@@ -316,7 +327,7 @@ sub search_variant_for_description {
 	my $database = $self->database();
 	confess("\n\nERROR: need a description for QueryMoose::search_variant_for_description. Die.\n\n") unless ($description);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg19_coords as c where a.acc_num=c.acc_num and (a.dbsnp like ? or a.disease like ? or a.gene like ? or a.acc_num like ?); };
+	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg38_coords as c where a.acc_num=c.acc_num and (a.dbsnp like ? or a.disease like ? or a.gene like ? or a.acc_num like ?); };
 	my $sth = $dbh->prepare($sql);
 	$description = '%'.$description.'%';
 	$sth->execute($description, $description, $description, $description);
@@ -328,7 +339,7 @@ sub search_variant_for_disease {
 	my $database = $self->database();
 	confess("\n\nERROR: need a disease for QueryMoose::search_variant_for_disease. Die.\n\n") unless ($disease);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg19_coords as c where a.acc_num=c.acc_num and a.disease like ?; };
+	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hg38_coords as c where a.acc_num=c.acc_num and a.disease like ?; };
 	my $sth = $dbh->prepare($sql);
 	$sth->execute($disease);
 	return $sth->fetchall_hashref("acc_num");
@@ -350,7 +361,7 @@ sub search_variant_for_gene {
 	my $database = $self->database();
 	confess("\n\nERROR: need a gene_name for QueryMoose::search_variant_for_gene. Die.\n\n") unless ($gene_name);
 	my $dbh =  $self->getDbh;
-	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hgmd_hg19_vcf as vcf, `$database`.hg19_coords as c where a.acc_num=c.acc_num and a.gene=? and vcf.id=a.acc_num;; };
+	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hgmd_hg38_vcf as vcf, `$database`.hg38_coords as c where a.acc_num=c.acc_num and a.gene=? and vcf.id=a.acc_num;; };
 	my $sth = $dbh->prepare($sql);
 	$sth->execute($gene_name);
 	return $sth->fetchall_hashref("acc_num");
@@ -409,7 +420,7 @@ sub get_hash_last_released_DM {
 	my $dbh =  $self->getDbh;
 	
 	# Requete 1: HGMD DM dans la derniere release
-	my $sql = qq{ SELECT vcf.id, vcf.chrom, vcf.pos, vcf.ref, vcf.alt, new.tag, new.gene, new.disease, new.expected_inheritance, new.hgvs, new.rankscore FROM `$new_database`.hgmd_hg19_vcf as vcf, `$new_database`.allmut as new 
+	my $sql = qq{ SELECT vcf.id, vcf.chrom, vcf.pos, vcf.ref, vcf.alt, new.tag, new.gene, new.disease, new.expected_inheritance, new.hgvs, new.rankscore FROM `$new_database`.hgmd_hg38_vcf as vcf, `$new_database`.allmut as new 
 	    LEFT JOIN `$old_database`.allmut as old 
 	        ON old.acc_num=new.acc_num 
 	            WHERE old.acc_num IS NULL and new.tag='DM' and vcf.id=new.acc_num; };
@@ -419,7 +430,7 @@ sub get_hash_last_released_DM {
 	
 	# Requete 2: Variants note nouveau HGMD DM dans historique derniere release.
 	# ATTENTION: historique pas seulement depuis la release precedente MAIS historique global de TOUTES les releases
-	my $sql2 = qq{ SELECT vcf.id, vcf.chrom, vcf.pos, vcf.ref, vcf.alt, new.tag, new.mutype, new.gene, new.new_date, new.disease, new.expected_inheritance, new.hgvs, new.rankscore  FROM `$new_database`.hgmd_hg19_vcf as vcf, `$new_database`.allmut as new,`$new_database`.history as h 
+	my $sql2 = qq{ SELECT vcf.id, vcf.chrom, vcf.pos, vcf.ref, vcf.alt, new.tag, new.mutype, new.gene, new.new_date, new.disease, new.expected_inheritance, new.hgvs, new.rankscore  FROM `$new_database`.hgmd_hg38_vcf as vcf, `$new_database`.allmut as new,`$new_database`.history as h 
     					WHERE new.acc_num=h.acc_num and vcf.id=new.acc_num and h.afterUpd ="DM"; };
 	my $sth2 = $dbh->prepare($sql2);
 	$sth2->execute();

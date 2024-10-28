@@ -841,7 +841,15 @@
 	    	var last_url_genes;
 	    	var gene_id_ok_old = 'FIRSTFIRST';
 	    	var gene_id_old = '';
+	    	var use_release = 'HG19';
 	    	function launch_gene_search(use_input) {
+	    		var regexp_prod = '/cgi-bin/polymorphism-cgi/';
+	    		if (document.getElementById('b_use_hg19').checked) {
+	    			if (url_path == regexp_prod) {  }
+	    			else  { url_path = '/cgi-bin/polymorphism-cgi/'; }
+	    			use_release = 'HG19';
+    			}
+	    	
 		    	var value;
 				var project = param("project");
 				var patient = param("patient");
@@ -881,6 +889,7 @@
 		    		url += get_search_args(value);
 					if (project) { url += "&project=" + project; }
 					if (patient) { url += "&patient=" + patient; }
+					url += '&release=' + use_release;
 		    		last_url_genes = url;
 			    	var html_table;
 				    $.getJSON( url, function( data ) {

@@ -74,11 +74,30 @@ $project->preload_patients();
 
 my $vector_denovo;
 my $total_job;
+my $vector_total = $chr->getNewVector();
+
+warn 'here';
 foreach my $patient (@{$project->getPatients()}) {
-	 	$vector_denovo->{$patient->name} =  $chr->getNewVector();
+	 $vector_denovo->{$patient->name} =  $chr->getNewVector();
+	 $vector_total += $patient->getVariantsVector($chr);
 }
 
-
+if ($vector_total->is_empty()) {
+	warn 'empty chromosome';
+	my $rocks4 = $chr->rocks_vector("w");
+	foreach my $family (@{$project->getFamilies()}) {
+		foreach my $children  (@{$family->getChildren}){
+			my $vector_denovo = $chr->getNewVector();
+			$rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vector_denovo);
+			warn "save";
+		}
+	}
+	$rocks4->write_batch();
+	$rocks4->close();
+	
+	system("date > $ok_file") if $ok_file;
+	exit(0);
+}
 
 
 # AO-F2
@@ -98,6 +117,7 @@ foreach my $family (@{$project->getFamilies()}) {
 		
 		$hfile->{$parent->name} = "$tmp_dir/".$parent->name.".".$chr->name.".bam";
 		next if -e $hfile->{$parent->name}.".bai";
+		$project->disconnect();
 		$pm->start() and next;
 		warn "---> start ".$parent->name;
 		my $cram =  $parent->getBamFile;
@@ -130,7 +150,10 @@ foreach my $family (@{$project->getFamilies()}) {
 		$hbed->{$children->id}= $tmp_dir."/".$children->name.'.'.$chr->name.".bed";
 		#next if -e $hbed->{$children->id};
 		#$pm->start() and next;
+		warn "\n";
+		warn $children->name;
 		my $vector_denovo =  $no->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
+		warn $vector_denovo;
 		my @bits = $vector_denovo->Index_List_Read();
 		open (BED , ">".$hbed->{$children->id});		
 		my $nov = $project->getChromosome($chr_name)->get_rocks_variations("r");
@@ -181,6 +204,7 @@ foreach my $family (@{$project->getFamilies()}) {
 				my $file = $hfile->{$parent->name};
 				$res_sambamba->{$parent->id} = $file.".".$children->name.".pileup";
 				$nbp ++;
+				$project->disconnect();
 				$pm2->start() and next;
 				warn "\t\t ---> start ".$parent->name;
 			 	my $t =time;
