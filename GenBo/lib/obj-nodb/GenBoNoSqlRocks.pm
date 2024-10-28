@@ -493,7 +493,7 @@ sub get {
 	confess() unless $self->rocks;
 	my $v;
 	if (exists $self->{buffer}->{$key}){
-		$v =  $self->{buffer}->{$key}
+		$v =  $self->{buffer}->{$key};
 	}
 	else {
 	confess() if $debug;;
