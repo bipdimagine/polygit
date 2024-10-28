@@ -522,9 +522,9 @@ has cytobandTree => (
 		my $tree  = Set::IntervalTree->new;
 		my $dir   = $self->project->get_public_data_directory("cytoband");
 		my $tabix = Bio::DB::HTS::Tabix->new( filename => $dir . "/cytoband.bed.gz" );
-		
 		my $res = $tabix->query( $self->ucsc_name );    # if $start;
-
+		return $tree if not $res;
+		
 		while ( my $line = $res->next ) {
 			chomp($line);
 			my ( $chr, $start, $end, $name, $color ) = split( " ", $line );
