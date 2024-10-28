@@ -81,6 +81,7 @@ foreach my $patient (@{$project->getPatients()}) {
 
 
 
+# AO-F2
 
 ### Generate BAM file
 my $hfile;
@@ -120,6 +121,7 @@ warn "--------------------------------------------------------";
 $tall = time ;
 my $hbed ;
 $pm = new Parallel::ForkManager($fork);
+my $all_var;
 
 my $no = $chr->flush_rocks_vector("r");
 foreach my $family (@{$project->getFamilies()}) {
@@ -135,10 +137,14 @@ foreach my $family (@{$project->getFamilies()}) {
 		foreach my $vector_id (@bits){
 				
 				my $var = $nov->get_index($vector_id);
+				$all_var->{$vector_id}->{start} = $var->start;
+				$all_var->{$vector_id}->{end} = $var->end;
+				 $all_var->{$vector_id}->{seq} = uc ($var->sequence);
+				 
 				print BED $chr->fasta_name."\t".($var->start-1)."\t".($var->end+2)."\n";
 		}
 		close BED;
-		
+		warn $hbed->{$children->id};
 		#$pm->finish(0, {});
 	}
 }
@@ -182,6 +188,7 @@ foreach my $family (@{$project->getFamilies()}) {
 			 	system($cmd);
 			 	#`$cmd`;
 				warn " \t\t  ++ pileup ".$parent->name." ".abs(time -$t)." ".$res_sambamba->{$parent->id};	
+				
 				$pm2->finish(0, {nb=>$nbp,patient=>$res_sambamba->{$parent->id}});
 				
 			}
@@ -189,7 +196,6 @@ foreach my $family (@{$project->getFamilies()}) {
 }
 warn "wait";
 $pm2->wait_all_children();
-
 
 warn "--------------------------------------------------------";
 warn "--- END PILEUP  ".abs(time-$tall);
@@ -221,6 +227,8 @@ foreach my $family (@{$project->getFamilies()}) {
 					push(@{$hbamba->{$tab[1]}->{T}} , $count_T);
 					push(@{$hbamba->{$tab[1]}->{DEL}} , sum(@deletions)+0);
 					push(@{$hbamba->{$tab[1]}->{INS}} , sum(@insertions)+0);
+					
+					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 43361164);
 				}
 			close (BAMBA);	
 			
@@ -242,8 +250,7 @@ foreach my $family (@{$project->getFamilies()}) {
 		my $vector_denovo =  $rocks4->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
 		my @bits = $vector_denovo->Index_List_Read();
 			my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
-			 $rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vector_denovo);
-			 warn "save";
+			 $rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vdenovo);
 			warn scalar(@bits)." ".$vdenovo->Norm;
 	}
 }
@@ -273,8 +280,9 @@ sub construct_strict_denovo {
 			delete $no->{rocks};
 				foreach my $vector_id (@$bits) {
 				my $local_limit = $limit ;
-				
 				my $var = $no->get_index($vector_id);
+				my $debug;
+			
 				my $percent;
 				my $r = $var->getRatio($children);
 				if ($r > 40 ) {
@@ -304,13 +312,16 @@ sub construct_strict_denovo {
 				elsif ($var->isVariation) {
 					my $alt = uc ($var->sequence);
 					my $start = $var->start;
+					my $min_cov = min($hbamba->{$start}->{COV}->[0],$hbamba->{$start}->{COV}->[1]);
+					#next if $min_cov <5;
+					
 					my $nb_alt = $hbamba->{$start}->{$alt}->[0] + $hbamba->{$start}->{$alt}->[1];
-					my $min_cov = min($hbamba->{$start}->{COV}->[0] + $hbamba->{$start}->{COV}->[1]);
 					#warn $nb_alt." ".$min_cov." ".$var->name if $nb_alt >0;
-					$vdenovo->Bit_On($vector_id) if $nb_alt < $local_limit && $min_cov >= 5 ;
+					if ($nb_alt < $local_limit && $min_cov >= 5){
+						$vdenovo->Bit_On($vector_id);
+					}
 				}
 				elsif ($var->isInsertion) {
-					my $alt = uc ($var->sequence);
 					my $start = $var->start;
 					my $nb_alt = $hbamba->{$start}->{INS}->[0] + $hbamba->{$start}->{INS}->[1]+$hbamba->{$start+1}->{INS}->[0] + $hbamba->{$start+1}->{INS}->[1];
 					# + $hbamba->{$start+2}->{INS}->[0] + $hbamba->{$start+2}->{INS}->[1];
@@ -320,7 +331,6 @@ sub construct_strict_denovo {
 					$vdenovo->Bit_On($vector_id) if $nb_alt < $local_limit && $min_cov >= 5 ;
 				}
 				elsif ($var->isDeletion) {
-					my $alt = uc ($var->sequence);
 					my $start = $var->start;
 					my $nb_alt = $hbamba->{$start}->{DEL}->[0] + $hbamba->{$start}->{DEL}->[1]+$hbamba->{$start+1}->{DEL}->[0] + $hbamba->{$start+1}->{DEL}->[1]+$hbamba->{$start-1}->{DEL}->[0] + $hbamba->{$start-1}->{DEL}->[1];
 					my $min_cov = max (min($hbamba->{$start-1}->{COV}->[0] + $hbamba->{$start-1}->{COV}->[1]),min($hbamba->{$start}->{COV}->[0] + $hbamba->{$start}->{COV}->[1]),min($hbamba->{$start+1}->{COV}->[0] + $hbamba->{$start+1}->{COV}->[1])) ;
