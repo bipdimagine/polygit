@@ -1,0 +1,198 @@
+#!/usr/bin/perl
+use strict;
+use FindBin qw($Bin);
+use lib "$Bin/../../../GenBo/lib/";
+use lib "$Bin/../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../../../GenBo/lib/obj-nodb/packages/";
+use lib "$Bin/../../../GenBo/lib/GenBoDB/writeDB/";
+use lib "$Bin/packages";
+use Data::Dumper;
+use Getopt::Long;
+use Carp;
+use IO::Prompt;
+use colored;
+use Cwd 'abs_path';
+use Vcf;
+use LWP::UserAgent;
+use URI;
+use JSON;
+use HTTP::Request::Common qw(POST);
+use List::Util qw( min max );
+
+
+
+use GBuffer;
+my $buffer = new GBuffer;
+
+my $project_name = 'NGS2024_8164';
+#my $project_name = 'NGS2022_6048';
+my $project = $buffer->newProject(-name=>$project_name) or confess ("can\'t open project '$project_name'");
+warn $project_name;
+my $patients = $project->getPatients;
+
+my $release = $project->annotation_genome_version;
+my $hmmfile;
+$hmmfile = 'homo_sapiens_dfam.hmm' if ($release =~ /^HG/);
+$hmmfile = 'mus_musculus_dfam.hmm' if ($release =~ /^MM/);
+$hmmfile = 'rattus_norvegicus_dfam.hmm' if ($release =~ /^RN/);
+$hmmfile = prompt("Choose a dfam.hmm file :") unless $hmmfile;
+confess ($hmmfile) unless (-e '/home/mperin/git/polygit/polyscripts/melo/dfamscan/'.$hmmfile and $hmmfile =~ /_dfam.hmm$/);
+
+
+
+#foreach my $pat (@$patients) {
+	my $pat = $project->getPatient('OHO_Emm');
+#	my $pat = $project->getPatient('DCAS');
+	my $pat_name = $pat->name;
+	warn $pat_name;
+#	my $vcf_file = $pat->getVariationsFile("dragen-sv");
+	my $vcf_file = '/data-isilon/sequencing/ngs/NGS2024_8164/HG19_DRAGEN/variations/dragen-sv/OHO_Emm.sv.vcf.gz';
+#	my $vcf_file = '/data-isilon/sequencing/ngs/NGS2022_6048/HG38/variations/dragen-sv/DCAS.vcf.gz';
+	warn $vcf_file;
+	my $vcf = Vcf->new(file=>$vcf_file) or confess ("Can\'t open vcf file $vcf_file");
+	$vcf->parse_header();
+	
+	my $fasta_path = "/home/mperin/git/polygit/polyscripts/melo/dfamscan/$pat_name\_ins.fasta";
+#	warn $fasta_path;
+	open(my $fasta_ins, '>', $fasta_path);
+	while (my $x=$vcf->next_data_hash) {
+	if ($x->{'INFO'}->{'SVTYPE'} eq 'INS') {
+		my $lsvinsseq = $x->{'INFO'}->{'LEFT_SVINSSEQ'};
+		my $rsvinsseq = $x->{'INFO'}->{'RIGHT_SVINSSEQ'};
+		my $alt_svinsseq = $x->{'ALT'}[0];
+		
+ 		# Récupère les séquences des insertions (si >= 10 nt)
+		# todo: est-ce qu'on impose un taille min de la seq pour faire la recherche Dfam ? sur le site seq min = 50 nt
+		print $fasta_ins '>'.$x->{'ID'}."-ALT\n$alt_svinsseq\n" if ($alt_svinsseq ne '<INS>'); # && length $alt_svinsseq >= 50);
+		print $fasta_ins '>'.$x->{'ID'}."-LEFT_SVINSSEQ\n$lsvinsseq\n" if $lsvinsseq; # if (length $lsvinsseq >= 50);
+		print $fasta_ins '>'.$x->{'ID'}."-RIGHT_SVINSSEQ\n$rsvinsseq\n" if $rsvinsseq; # if (length $rsvinsseq >= 50);
+	}}
+
+	close($fasta_ins);
+	$vcf->close();
+	
+	
+	# Lance dfamscan
+	my $dfamscan_outfile = "/home/mperin/git/polygit/polyscripts/melo/dfamscan/$pat_name.dfamscan.out";
+#	warn $dfamscan_outfile;
+	my $cmd = "cd /home/mperin/git/polygit/polyscripts/melo/dfamscan/; perl dfamscan.pl --fastafile=$fasta_path --hmmfile=$hmmfile --dfam_outfile=$dfamscan_outfile";
+	warn $cmd;
+	# todo: lancer sur cluster ? (option dfamscan --cpu)
+	system($cmd);
+	my $dfamscan_results = parse_dfamscan ($dfamscan_outfile);
+#	print Dumper $dfamscan_results;
+
+	my $dfamscan_vcf = "/home/mperin/git/polygit/polyscripts/melo/dfamscan/$pat_name.dfamscan.vcf";
+	warn $dfamscan_vcf;
+	write_results ($dfamscan_results, $vcf_file, $dfamscan_vcf);
+#}
+
+
+
+
+
+sub parse_dfamscan {
+	my $dfam_out_file = shift;
+	
+	open(my $dfam_out, '<', $dfam_out_file) or confess("Can't open $dfam_out_file: $!");
+	my @columns = ('target name', 'acc', 'query name', 'bits', 'e-value', 'bias', 'hmm-st', 'hmm-en', 'strand', 'ali-st', 'ali-en', 'env-st', 'env-en', 'modlen', 'description of target');
+	my $dfamscan_results;
+	while (my $line = readline($dfam_out)) {
+		next if $line =~ /^#/;
+		my @hit = (split(/ {2,}/, $line));
+		chomp @hit;
+		confess if scalar @hit != scalar @columns;
+		my %hit = map { $columns[$_] => $hit[$_] } 0..$#columns;
+		push (@$dfamscan_results, \%hit);
+	}
+	close($dfam_out);
+	return $dfamscan_results;
+}
+
+
+
+sub write_results {
+	my ($dfamscan_results, $vcf_file, $out_path) = @_;
+
+	open( my $out_file, '>', $out_path );
+	
+	# copy header and add the corresponding meta-informations to describe the INFO entries to be added
+	open (my $vcf_fh, "zcat $vcf_file |");
+	while ( my $x = <$vcf_fh> ) {
+		next unless $x =~ /^#/;
+		print $out_file $x;
+		if ($x =~ /##INFO=<ID=JUNCTION_QUAL/){
+			print $out_file q{##INFO=<ID=DFAMSCAN_TARGET_NAME,Number=.,Type=String,Description="Target name">
+##INFO=<ID=DFAMSCAN_ACC,Number=.,Type=String,Description="Accesion">
+##INFO=<ID=DFAMSCAN_QUERY,Number=.,Type=String,Description="Name of the query sequence">
+##INFO=<ID=DFAMSCAN_TARGET_DESCRIPTION,Number=.,Type=String,Description="Description of the target">
+##INFO=<ID=DFAMSCAN_BITS,Number=.,Type=Float,Description="Bit score">
+##INFO=<ID=DFAMSCAN_E-VALUE,Number=.,Type=Float,Description="E-value">
+##INFO=<ID=DFAMSCAN_BIAS,Number=.,Type=Float,Description="Bias">
+##INFO=<ID=DFAMSCAN_HMM-ST,Number=.,Type=Integer,Description="Start of the hmm alignement">
+##INFO=<ID=DFAMSCAN_HMM-EN,Number=.,Type=Integer,Description="End of the hmm alignement">
+##INFO=<ID=DFAMSCAN_STRAND,Number=.,Type=String,Description="Strand">
+##INFO=<ID=DFAMSCAN_ENV-ST,Number=.,Type=Integer,Description="Start of the alignement on the entry sequence">
+##INFO=<ID=DFAMSCAN_ENV-EN,Number=.,Type=Integer,Description="End of the alignment on the entry sequence">
+##INFO=<ID=DFAMSCAN_ALI-ST,Number=.,Type=Integer,Description="Start of alignment on the model sequence">
+##INFO=<ID=DFAMSCAN_ALI-EN,Number=.,Type=Integer,Description=>"End of alignment on the model sequence">
+##INFO=<ID=DFAMSCAN_MODLEN,Number=.,Type=Integer,Description="Model length">
+};
+		}
+	}
+	close($vcf_fh);
+	
+	# add INFO entries for the Dfamscan results
+	my $vcf = Vcf->new( file => $vcf_file );
+	$vcf->parse_header();
+	while ( my $x = $vcf->next_data_array ) {
+		my @dfamscan_query = grep { $_->{'query name'} =~ $$x[2] } @$dfamscan_results;
+		while (my $hit = shift @dfamscan_query) {
+			my %added_info = 
+			$$x[7] = $vcf->add_info_field( $$x[7], 
+				'DFAMSCAN_TARGET_NAME'			=> $hit->{'target name'},
+				'DFAMSCAN_ACC'					=> $hit->{'acc'},
+				'DFAMSCAN_QUERY'				=> $hit->{'query name'}, # split('-', $hit->{'query name'})[1]; 
+				'DFAMSCAN_TARGET_DESCRIPTION'	=> '"'.$hit->{'description of target'}.'"',
+				'DFAMSCAN_BITS'					=> $hit->{'bits'},
+				'DFAMSCAN_E-VALUE'				=> $hit->{'e-value'},
+				'DFAMSCAN_BIAS'					=> $hit->{'bias'},
+				'DFAMSCAN_HMM-ST'				=> $hit->{'hmm-st'},
+				'DFAMSCAN_HMM-EN'				=> $hit->{'hmm-en'},
+				'DFAMSCAN_STRAND'				=> $hit->{'strand'},
+				'DFAMSCAN_ENV-ST'				=> $hit->{'env-st'},
+				'DFAMSCAN_ENV-EN'				=> $hit->{'env-en'},
+				'DFAMSCAN_ALI-ST'				=> $hit->{'ali-st'},
+				'DFAMSCAN_ALI-EN'				=> $hit->{'ali-en'},
+				'DFAMSCAN_MODLEN'				=> $hit->{'modlen'},
+			);
+#			$$x[7] = $vcf->add_info_field( $$x[7], %added_info );
+			print $out_file join( "\t", @$x ) . "\n"; # Est-ce que je mets toutes les insertions ou seules celles qui ont un résultat Dfamscan ?
+		}
+	}
+	close($out_file);
+	$vcf->close();
+	
+	return;
+}
+
+
+
+
+
+
+#	# Réécrire les résultats dans un csv (séparé par \t plus facile à parser)
+#	my $dfamscan_csv_path = "/home/mperin/git/polygit/polyscripts/melo/dfamscan/$pat_name\_dfamscan.csv";
+#	warn $dfamscan_csv_path;
+#	my @dfamscan_keys = ('target name', 'acc', 'query name', 'bits', 'e-value', 'bias', 'hmm-st', 'hmm-en', 'strand', 'ali-st', 'ali-en', 'env-st', 'env-en', 'modlen', 'description of target');
+##	print '#'.join("\t", @dfamscan_keys)."\n";
+#	print $dfamscan_csv '#'.join("\t", @dfamscan_keys)."\n";
+#	foreach my $hit (@$dfamscan_results) {
+##		print join("\t", map {$hit->{$_}} @dfamscan_keys)."\n";
+#		print $dfamscan_csv join("\t", map {$hit->{$_}} @dfamscan_keys)."\n";
+#	}
+#	close($dfamscan_csv);
+
+
+
+
