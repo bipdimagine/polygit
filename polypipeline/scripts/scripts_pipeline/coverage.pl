@@ -104,7 +104,7 @@ my $patient = $project->getPatientOrControl($patient_name);
 my $capture = $patient->getCapture();
 my $transcripts_cgi = $project->bundle_transcripts() ;
 #$diag =1 if $transcripts_cgi;
-  $diag=1 if $project->isDiagnostic();
+$diag=1 if $project->isDiagnostic();
 
 my $pm = new Parallel::ForkManager($fork);
 my $pr = String::ProgressBar->new( max => scalar(@chrs) );
@@ -632,7 +632,7 @@ my $bam_file = $filein;
 
 	return unless $span_extended;
 	
-      my $is_ucsc; 
+    my $is_ucsc; 
     $is_ucsc =1 ;#   if ($seq_ids[0] =~ /chr/);
 	my $array_intspan =  Array::IntSpan->new();
 	my $out = $filetemp->filename;
