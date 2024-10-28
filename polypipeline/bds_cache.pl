@@ -401,7 +401,7 @@ sub check_version {
 		if (exists $hchange->{gencode}){
 			$project->update_gencode_version();
 			delete $project->{gencode_version};
-			print colored ['red'],"\nHmmm .... it's look like your upgrade is OK ...\n".$project->gencode_version();
+			print colored ['red'],"\nHmmm .... it looks like your upgrade is OK ...\n".$project->gencode_version();
 		}
 		if (exists $hchange->{public_database}){
 			
