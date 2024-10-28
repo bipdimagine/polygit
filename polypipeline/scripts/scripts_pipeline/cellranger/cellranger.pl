@@ -89,9 +89,7 @@ $exec .= '-arc' if ($type eq 'arc');
 $exec = 'spaceranger' if  ($type eq 'spatial');
 warn $exec;
 my $dir = $project->getProjectRootPath();
-#my $dir = $project->getProjectPath(); getAlignmentPipelineDir
 
-#my $prog =  $patient->alignmentMethod();
 my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
 warn $tmp;
 
@@ -125,8 +123,6 @@ if ($step eq "demultiplex" || $step eq "all"){
 	}
 	close(SAMPLESHEET);
 	
-	#warn $exec;
-	#my $cmd = "cd $tmp; /software/bin/demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
 	my $cmd = "cd $tmp; $Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=1";
 	warn $cmd;
 	system $cmd or die "Impossible $cmd" unless $no_exec;
@@ -134,7 +130,7 @@ if ($step eq "demultiplex" || $step eq "all"){
 
 
 if ($step eq 'teleport') {
-	system("teleport.pl -project=$projectName -force=1");
+	system("teleport.sh -project=$projectName -force=1");
 #	system("perl /home/mperin/git/polygit/polypipeline/teleport_SC.pl -project=$projectName");
 #	system("perl /software/polyweb/poly-disk/poly-src/polypipeline/teleport_SC.pl -project=$projectName");
 }
@@ -183,7 +179,7 @@ if ($step eq "count" || $step eq "all"){
 		my $cmd = "cd $dir; $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$index ";
 		$cmd .= " --include-introns " if $type eq "nuclei";
 		$cmd .= "\n";
-		warn $cmd;
+#		warn $cmd;
 		print JOBS $cmd;
 	}	
 	close(JOBS);
@@ -253,7 +249,7 @@ if ($step eq "count" || $step eq "all"){
 				my $sname = $s->name(); 
 				my $bc2 = $s->barcode2();
 				my ($slide,$slide2,$area) = split("-",$bc2);
-				warn $sname;
+#				warn $sname;
 				my $sfam = $s->family();
 				#my $des_file = $dir."/".$sname."_spatial_descript.csv";
 		
@@ -377,43 +373,49 @@ if ($step eq "count" || $step eq "all"){
 	warn $cmd2;
 	system $cmd2  unless $no_exec;
 	
+	my $open_web_sum = "firefox $dir/*/outs/web_summary.html";
+	warn $open_web_sum;
+	system($open_web_sum) unless $no_exec;
+	
 }
 
 
 
 if ($step eq "aggr" or $step eq "all"){
-	my $aggr_file = $dir."/jobs_aggr.txt";
 	my $id = $projectName;
 	$id = $aggr_name if $aggr_name;
+	my ($aggr_cmd, $aggr_cmd_vdj);
+	my $aggr_file = $dir."/jobs_aggr.txt";
 	open (JOBS_AGGR, ">$aggr_file");
 	print JOBS_AGGR "sample_id,molecule_h5\n";
 	my $type = $project->getRun->infosRun->{method};
 	foreach my $patient (@{$patients_name}) {
-		my $group_type = uc($patient->somatic_group());
-		if ($group_type ne "ADT" or $_ ne "VDJ") {	
+		my $group_type = lc($patient->somatic_group());
+		if ($group_type eq "exp") {	# ne "adt" or $_ ne "vdj"
 			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/outs/molecule_info.h5\n";
 		}
 	}
 	close JOBS_AGGR;
-	my $aggr_cmd = "cd $dir ; $exec aggr --id=$id --csv=$aggr_file";
+	$aggr_cmd = "cd $dir ; $exec aggr --id=$id --csv=$aggr_file";
 	warn $aggr_cmd;
-	system ($aggr_cmd)  unless $no_exec;
+#	system ($aggr_cmd)  unless $no_exec;
 	
 	if ($type =~ /vdj/) {
 		my $aggr_file_vdj = $dir."/jobs_aggr_vdj.txt";
 		open (JOBS_AGGR_VDJ, ">$aggr_file_vdj");
 		print JOBS_AGGR_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
 		foreach my $patient (@{$patients_name}) {
-			my $group_type = uc($patient->somatic_group());
-			if ($group_type eq "VDJ") {
+			my $group_type = lc($patient->somatic_group());
+			if ($group_type eq "vdj") {
 				print JOBS_AGGR_VDJ $patient->name().",".$dir."/".$patient->name()."/outs/vdj_contig_info.pb\n";
 			}
 		}
 		close JOBS_AGGR_VDJ;
-		my $aggr_cmd_vdj = "cd $dir ; $exec aggr --id=$id --csv=$aggr_file_vdj";
+		$aggr_cmd_vdj = "cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_file_vdj";
 		warn $aggr_cmd_vdj;
-		system ($aggr_cmd_vdj)  unless $no_exec;
+#		system ($aggr_cmd_vdj)  unless $no_exec;
 	}
+	system ("echo \"$aggr_cmd\n$aggr_cmd_vdj\" | run_cluster.pl -cpu=20")  unless $no_exec;
 }
 
 #if ($step eq "aggr" or $step eq "all"){
