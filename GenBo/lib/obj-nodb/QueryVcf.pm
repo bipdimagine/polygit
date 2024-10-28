@@ -199,7 +199,7 @@ sub parseVcfFileForReference {
 	if ( $self->method() eq "melt" ) {
 		return $self->parseVcfFileForReference_melt( $reference, $useFilter );
 	}
-	if ( $self->method() eq "manta" or $self->method() eq "dragen-sv" ) {
+	if ( $self->method() eq "manta" or $self->method() eq "dragen-sv" or  $self->method() eq "Sniffles2") {
 		return $self->parseVcfFileForReference_manta( $reference, $useFilter );
 	}
 	
@@ -1076,9 +1076,9 @@ sub parseVcfFileForReference_manta {
 	my $v1     = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 	my $header = $v->header();
 	confess() if $header->num_samples() ne 1;
-	die( $header->get_sample_names->[0] . " " . $self->getPatient->barcode )
-	  if $self->getPatient->name ne $header->get_sample_names->[0]
-	  and $header->get_sample_names->[0] ne $self->getPatient->barcode;
+#	die( $header->get_sample_names->[0] . " " . $self->getPatient->barcode." ".$self->file()." ".$header->num_samples())
+#	  if $self->getPatient->name ne $header->get_sample_names->[0]
+#	  and $header->get_sample_names->[0] ne $self->getPatient->barcode;
 
 	#confess() if
 	my $patient_id = $self->getPatient->id;
@@ -1862,8 +1862,9 @@ sub parseVcfFileForReference_gatk {
 #	foreach my $allele (map{thaw(decompress($_))} shift @{$hash_alleles->{deletion}} ){
 		$allele->{type} = 'del';
 		$allele->{obj}  = 'deletions';
-		if ( $self->method() eq 'manta' or $self->method() eq 'dragen-sv' ) {
+		if ( $self->method() eq 'manta' or $self->method() eq 'dragen-sv' or $self->method() eq 'Sniffles2' ) {
 			$allele->{method} = 'manta';
+			
 			if ( abs( $allele->{len} ) >= 50 ) {
 				$allele->{type} = 'l_del';
 				$allele->{obj}  = 'deletions';
@@ -2562,6 +2563,7 @@ sub parse_cigar {
 
 	warn " $len_ref => $ref  $alt $cigar" if $len_ref ne length($ref);
 	confess( Dumper $allele)              if $len_ref ne length($ref);
+	
 	die()                                 if $len_ref ne length($ref);
 	confess( Dumper $allele)              if $len_ref ne length($ref);
 

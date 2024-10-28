@@ -39,13 +39,15 @@ my $sqliteDir =  "/tmp/lmdb/annotation";
 
 my $dir;
 my $version;
+my $genome_version;
 GetOptions(
 	'version=s' => \$version,
+	'genome=s' => \$genome_version,
 );
 my $dir =  "/tmp/lmdb/$version/annotations";
 
 #my $gff = "$Bin/imagine.gff.gz";
-my $gff = "$Bin/miss.gff3.gz";
+my $gff = "$Bin/$genome_version/miss.gff3.gz";
 my $translate_id ={};
 my $gene_code_version = "IMG1";
  my $no2 = GenBoNoSqlAnnotation->new(dir=>$dir,mode=>"w");
@@ -63,8 +65,8 @@ foreach my $id (keys %$genes){
  parse_gff::save_sqlite ($no2,$transcripts,"transcript",2);
  parse_gff::save_sqlite ($no2,$proteins,"protein",2);
  
- warn Dumper $no2->get("annotations","LCR");
- warn "end";
+ #warn Dumper $no2->get("annotations","LCR");
+ #warn "end";
  
 $no2->close();
 

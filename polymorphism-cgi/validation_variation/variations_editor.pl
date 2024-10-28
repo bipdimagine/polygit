@@ -270,13 +270,12 @@ if ($cgi->param('force') == 1) {
  $dev = 2;	
 }
 $no_cache = $patient->get_lmdb_cache("w");
-my $keys =[ "toto+".time,rand(1000)];#return_uniq_keys($patient,$cgi);
+my $keys = return_uniq_keys($patient,$cgi);
 my $level_dude = 'high,medium';
 
 
 my $cache_dude_id = "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
 my $cache_id = join( ";", @$keys );
-
 if ($project->isDiagnostic){
 	$cache_id.="121222";
 }
@@ -383,14 +382,15 @@ else {
 my $maskcoding = 0;
 confess() unless $annot;
 
+my $annotation_filer =[];
 foreach my $a (@annots) {
 	foreach my $this_a ( split( ',', $buffer->get_genbo_annotation_name($a) ) )
 	{
+		warn $this_a;
 		$maskcoding = $maskcoding | $project->getMaskCoding($this_a);
 		push( @tconsequences, $this_a );
 	}
 }
-
 
 
 
@@ -484,13 +484,16 @@ $buffer->disconnect();
 ##################################
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
 	warn "start";
-	my ( $vectors, $list, $hash_variants_DM ) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$statistics );
+	
+	my ( $vectors, $list, $hash_variants_DM,$list_genes) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$statistics);
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;
 $t = time;
+
 ##################################
 ################## GET GENES 
 ##################################
+
 my ($genes) = fork_annnotations( $list, [], $maskcoding,$vectors);
 save_session_for_test($patient, $genes) if $cgi->param('test_mode');
 export_xls($patient, $genes) if $cgi->param('export_xls');
@@ -581,8 +584,10 @@ $t     = time;
 my $stdout_end = tee_stdout {
 #warn "genes:".scalar(@$genes);
 if (@$genes){
+	warn "refine";
 $genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
 #warn "genes fin:".scalar(@$genes);
+
 }
 else {
 	if ($gene_name_filtering ) {
@@ -598,9 +603,7 @@ print $ztime;
 
 };
 
-
 $no_cache->put_cache_text($cache_id,$stdout.$stdout_nav_bar.$stdoutcnv.$stdout_end,2400) ;#unless $dev;
-
 $no_cache->close();
 exit(0);
 
@@ -797,6 +800,9 @@ sub refine_heterozygote_composite_score_fork {
 	my $vres;
 	my @res_final;
 	my @toto;
+	my $wtime = 0;
+	my $maxgene =1000;
+	my $ngene =0;
 	$pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
@@ -809,21 +815,25 @@ sub refine_heterozygote_composite_score_fork {
 			}
 			my $id = $h->{run_id};
 			delete $hrun->{ $h->{run_id} };
-			warn "==>" . abs( time - $h->{time} ) if $print;
+			warn "==>" . abs( time - $h->{time} );# if $print;
 			$h->{genes} = [] unless $h->{genes};
 			$vres->{$id} = $h->{genes};
 			while (exists $vres->{$current}){
 				print qq{</div>} if $current  == 1 ;
+				 my $xtime =time;
 					foreach my $g (@{ $vres->{$current}}){
+						last if $ngene > $maxgene;
 						push(@toto,$g->{name});
 						#warn $g->{out};
 						print $g->{out};
 						print  "\n<!--SPLIT-->\n";
+						$ngene ++;
+						
 					#	push(@res_final,$g->{out})
 					}
 					delete $vres->{$current};
 					$current ++;
-					
+					$wtime += abs($xtime - time);
 				
 			}
 			push( @$res_genes, @{ $h->{genes} } );
@@ -858,14 +868,19 @@ sub refine_heterozygote_composite_score_fork {
 	warn "....";
 	while (exists $vres->{$current}){
 				print qq{</div>} if $current  == 1 ;
+				 my $xtime =time;
 					foreach my $g (@{ $vres->{$current}}){
+						last if $ngene > $maxgene;
 						print $g->{out} . "\n";
+							$ngene ++;
 					}
 					delete $vres->{$current};
 					$current ++;
-					
+				$wtime += abs($xtime - time);	
 				
 			}
+		print "<br>". $wtime;
+		warn "***** ".$wtime;
 	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
 	return ;
 	exit(0);
@@ -908,6 +923,7 @@ sub fork_annnotations {
 			}
 
 			my $id = $h->{run_id};
+			warn  abs( time - $h->{ttime});
 			$ttsum += abs( time - $h->{ttime} );
 			delete $h->{run_id};
 			delete $hrun->{$id};
@@ -976,7 +992,6 @@ sub fork_annnotations {
 	  . abs( $tt - time ) . ' :: '
 	  . $ttsum
 	  if $print;
-	  
 	warn '----- nb genes ' . scalar( values %$hgenes ) if $print;
 	error("Hey it looks like you're having an error  !!! ")
 	  if scalar keys %$hrun;
@@ -1021,6 +1036,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 	}
 	my $filter_transmission;
 	my $xtime =time;
+	my $list_genes;
 	$filter_transmission->{denovo}          = 1 if $cgi->param('denovo');	
 	#$filter_transmission->{"strict_denovo"} = 1 if $cgi->param('denovo');
 	$filter_transmission->{"strict_denovo"} = 1 if $cgi->param('strict_denovo');
@@ -1171,12 +1187,18 @@ sub constructChromosomeVectorsPolyDiagFork {
 			#$hashVector->{$chr->name} &= $chr->getVectorLargeDeletions;
 			#$hashVector->{ $chr->name } &= $vquality if $vquality;
 			$hashVector->{ $chr->name } -= $no->get_vector_chromosome("intergenic");
+		
 			warn "end";
 			
 		}
+		my $vannotations =  $chr->getNewVector ;
+		$no->prepare(\@tconsequences);
+		foreach my $annot  (@tconsequences){
+			 $vannotations += $no->get_vector_chromosome("$annot");
+		}
+		$hashVector->{ $chr->name } &=$vannotations;
 		#$hashVector->{ $chr->name } &= $no->get_vector_chromosome($chr);
 		warn "---";
-			
 		$statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );
 
 		my $vDM = $chr->vectorDM();
@@ -1368,15 +1390,12 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#push(@$list_variants,join($chr->name."!",split(",",$res->{vector}->to_Enum)));
 	
 		to_array($res->{vector}, $chr->name,$list_variants);
-		
-		
-		
-		
+		push(@$list_genes,@{$chr->getGenesIdFromVector($res->{vector})});
 		if ($keep_pathogenic){
 			to_hash($vDM, $chr->name,$hash_variants_DM);
 		}
 
-
+		
 				
 			$finalVector->{$chr->name} = $res->{vector} ;
 			warn "end chr".$chr->name;
@@ -1386,7 +1405,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 	warn "END !!!!!!!!! ".abs(time -$xtime);
 	#error("ARGGG Problem") if keys %$hrun;
 	print qq{</div>} unless $cgi->param('export_xls');
-	return ( $finalVector, $list_variants, $hash_variants_DM );
+	return ( $finalVector, $list_variants, $hash_variants_DM,$list_genes);
 }
 
 
@@ -1519,9 +1538,73 @@ sub update_score_clinvar {
 	return 0;
 	
 }
-sub count {
-		my ( $bitvector) = @_;
-		return 0 unless $bitvector;
-		#if ($bitvector->is_empty());
-		return ($bitvector->to_Bin() =~ tr/1//);
+
+
+
+sub return_uniq_keys {
+my ($patient,$cgi) = @_;
+	
+my %hkeys = $cgi->Vars;
+my @keys;
+my $string;
+foreach my $k  (sort {$a cmp $b} keys %hkeys){
+	next if $k =~ /force/;
+	next if $k =~ /user/;
+	push(@keys,"$k");
+	my $c = $hkeys{$k};
+	$c =~ s/\"//g;
+	$c =~ s/\+/ /g;
+	push(@keys,$c);
+}
+
+
+$project->validations_query(1);
+
+
+
+foreach my $chr  (@{$project->getChromosomes}){
+		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
+		my @st = (stat($no->filename));
+		 push(@keys, ($st[9].$st[11].$st[12]));
+		my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
+		@st = (stat($no2->filename));
+		 push(@keys, ($st[9].$st[11].$st[12]));
+}
+#push(@keys,file_md5_hex($Bin."/variations_editor.pl") );
+push(@keys,$VERSION);
+push(@keys,$VERSION_UPDATE_VARIANT_EDITOR );
+my $stv = $patient->get_string_validations();
+unless ($patient->isGenome ) {
+	$stv .= ':::'.$patient->get_string_identification();
+}
+#warn $stv;
+#keep compatibilty 
+if  ($stv ){
+push(@keys,"validation".":".md5_hex($stv));
+
+}
+else{
+push(@keys,encode_json ({}));
+push(@keys,encode_json ({}));
+push(@keys,encode_json ({}));
+#push(@keys,encode_json ($h2));	
+}
+
+
+
+
+return \@keys;
+}
+
+sub  date_cache_bam {
+	my($project) = @_;
+	
+	#my $cno = $project->getChromosomes()->[0]->lmdb_hash_variants("r");
+
+
+
+my $date;
+( $date->{cache} ) = "toto";#utility::return_date_from_file( $cno->filename );
+( $date->{bam} )   = "tutu";#utility::return_date_from_file( $patient->getBamFileName );
+return $date;
 }

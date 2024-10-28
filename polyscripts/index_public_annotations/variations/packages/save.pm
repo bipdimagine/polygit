@@ -1,10 +1,10 @@
 package save;
 use FindBin qw($RealBin);
 use strict;
-use Moose;
+use Moo;
 use Data::Dumper;
 use Storable qw(store retrieve freeze thaw fd_retrieve);
-use MooseX::Method::Signatures;
+
 use Data::Dumper;
 use lib "$RealBin";
 use lib "$RealBin/../../GenBo/lib/obj-nodb/";

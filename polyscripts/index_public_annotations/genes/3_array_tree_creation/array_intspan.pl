@@ -40,18 +40,22 @@ my $sqliteDir ;
 my $out;
 my $type;
 my $version;
-
-
+my $genome_version;
 GetOptions(
 	'version=s' => \$version,
+	'genome=s' => \$genome_version,
 	'type=s' => \$type,
 );
-my $sqliteDir =  "/tmp/lmdb/$version/annotations";
+
+
+
+my $sqliteDir =  "/tmp/lmdb/$version.$genome_version/annotations";
 warn $sqliteDir;
 die(" -dir= ") unless $sqliteDir;
 
 warn "work on $sqliteDir";
 
+confess("obsolete replace in lmdb_objects");
 intervaltree_freeze();
 array_intspan() if $type eq "all";
 exit(0);
@@ -64,7 +68,7 @@ warn "end freeze";
 sub intervaltree_freeze {
 	my $annot =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"r");
 	
-		my $type = "gene";
+	my $type = "gene";
  	my $z = $annot->get_like("annotations","*".$type."*");
  	my @genes_id = values %{$z};
  my $hintspan;
@@ -123,7 +127,7 @@ sub intervaltree_freeze {
 	push(@{$hintspan->{genes}->{$chr}},[$gene->{genbo_id},$gstart-$limit,$gend+$limit+1]);
 	
  }
-  my $no = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"c");
+  my $no = GenBoNoSqlIntervalTree->new(dir=>$rocks_dir,mode=>"c");
  foreach my $type  (keys %$hintspan){
  	foreach my $chr (keys %{$hintspan->{$type}}){
  
@@ -137,7 +141,8 @@ sub intervaltree_freeze {
 sub array_intspan {
 	
 	my $annot =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"r");
-
+	
+die();
 my $type = "gene";
  my $z = $annot->get_like("annotations","*".$type."*");
  #warn Dumper $annot->get("annotations","NP001257972");

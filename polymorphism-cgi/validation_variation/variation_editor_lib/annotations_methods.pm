@@ -21,11 +21,14 @@ sub annotations {
 sub annotations_rocks {
 	my ( $project,$patient, $list, $list_saved, $maskcoding,$final_polyviewer_all,$hash_genes_panel,$hash_variants_DM ) = @_;
 	my $cgi = new CGI();
-
+	warn ".....";
 	#$project->buffer->dbh_reconnect();
+	#my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"r",name=>"polyviewer_objects");
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
+	
+	#delete $project->{rocks};
 	print "." unless ($cgi->param('export_xls'));
 	my $tsum = 0;
-
 	#my $vs =  $project->myflushobjects($list,"variants");;
 	my $tglobal = time;
 	my $res     = {};
@@ -47,6 +50,7 @@ sub annotations_rocks {
 	my $tsumz = 0;
 	my $tt1 = time;
 	my $no;
+	warn "start prepare ".$final_polyviewer_all->dir;
 	my ($all_hash) = $final_polyviewer_all->prepare($list);
 	foreach my $id (@$list) {
 			
@@ -57,10 +61,8 @@ sub annotations_rocks {
 		}
 
 		my $hg;
-
-			$hg = $final_polyviewer_all->get($id,1);
-			#$hg = $final_polyviewer_all->get($id);
-			
+		$hg = $final_polyviewer_all->get($id,1);
+		#$hg = $final_polyviewer_all->get($id);
 		unless ($hg){
 			confess($patient->name." ".$id);
 		}
@@ -82,7 +84,6 @@ sub annotations_rocks {
 			else {
 				push( @$agenes,grep { $_->{mask} & $maskcoding } @{ $hg->{array} } );
 			}
-
 	}
 	$res->{genes} = $agenes;
 	return $res ;

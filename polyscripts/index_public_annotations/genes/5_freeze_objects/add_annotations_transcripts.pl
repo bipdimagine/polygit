@@ -42,12 +42,16 @@ use Bio::ToolBox::GeneTools qw(:all);
  
 my $sqliteDir ;#=  "/tmp/lmdb/annotation_75";
 my $version;
+my $genome_version;
 GetOptions(
 	'version=s' => \$version,
+		'genome=s' => \$genome_version,
 );
 
 
-my $dir =  "/tmp/lmdb/$version/annotations/";
+my $dir =  "/tmp/lmdb/$version.$genome_version/annotations/";
+my $rocks_dir = "/tmp/lmdb/$version.$genome_version/rocks";
+my $rocks = GenBoNoSqlRocksAnnotation->new(dir=>$rocks_dir."/",mode=>"r",name=>"genbo");
 #my $notools =  GenBoNoSqlLmdb->new(name=>"genetools",dir=>$dir,mode=>"r",is_compress=>1); 
 my $annot2 =  GenBoNoSqlLmdb->new(name=>"genbo",dir=>$dir,mode=>"r",is_compress=>1);
 my $annot_main =  GenBoNoSqlLmdb->new(name=>"main_transcripts",dir=>$dir,mode=>"c",is_compress=>1);
@@ -55,27 +59,35 @@ my $short_annot_main =  GenBoNoSqlLmdb->new(name=>"shortlist_main_transcripts",d
 #my $annot =  GenBoNoSqlAnnotation->new(dir=>$dir,mode=>"r");
 my $annot =  GenBoNoSqlAnnotation->new(dir=>$dir,mode=>"r");
 my $type ="gene";
- my $z = $annot->get_like("synonyms","*"."gene*");
+my $z = $annot->get_like("synonyms","*"."gene*");
+ 
 my $total;
 my %all;
- foreach my $id (values %$z) {
- 	my $obj = $annot2->get($id);
+$rocks->start_iter("g:");
+while (my $id = $rocks->next("g:")){
+
+ 	my $obj = $rocks->genbo($id);
  	my $hg;
  	my $tr_mains;
  	my $tr_synonyms;
  	my $tlevel;
+ 	my $htr;
  	foreach my $tid (keys %{$obj->{transcripts_object}}){
- 		my $tr = $annot2->get($tid);
- 		
+ 		my $tr = $rocks->genbo("!".$tid);
+ 		die() unless $tr;
  		my $span = $tr->getSpanCoding;
  		$span = $tr->getGenomicSpan if $span->is_empty;
- 		my $to = $annot->get("annotations",$tid);
- 		my $tl = $to->{'transcript_support_level'};
+ 		my $to = $rocks->genbo($tid);
+ 		$htr->{$tid} = $to;
+ 		
+ 		my $tl = $to->transcript_support_level;
+ 		
  		$tl = 6 if $tl eq "NA";
 		$tl = 6 if $tl eq "Missing";
+		
  		push(@{$tlevel->{$tl}},$tid);
  		my $tags = join(";",keys %{$tr->{tag}});
- 		 if ($tags =~ /CCDS/ or $tags =~ /appris_principal/ or $tl == 1) {
+ 		 if ($tags =~ /MANE/  or $tags =~ /CCDS/ or $tags =~ /appris_principal/ or $tl == 1) {
  		 	
  		 	push(@{$tr_mains->{$span->as_string}},$tr);
  		 }
@@ -85,12 +97,12 @@ my %all;
  	}
  	unless  ($tr_mains) {
  		foreach my $tid (keys %{$obj->{transcripts_object}}){
- 		my $tr = $annot2->get($tid);
+ 		my $tr = $htr->{$tid};
  		
  		my $span = $tr->getSpanCoding;
  		$span = $tr->getGenomicSpan if $span->is_empty;
- 		my $to = $annot->get("annotations",$tid);
- 		my $tl = $to->{'transcript_support_level'};
+ 		my $to = $htr->{$tid};
+ 		my $tl = $to->transcript_support_level;
  		$tl = 6 if $tl eq "NA";
 		$tl = 6 if $tl eq "Missing";
  		#push(@{$tlevel->{$tl}},$tid);
@@ -110,13 +122,11 @@ my %all;
 # 		warn scalar(@{$tlevel->{$min}}).' '.$min;
  		
 		foreach my $tid ( @{$tlevel->{$min}}) {
-#			warn $tid;
 
-			my $tr = $annot2->get($tid);
+			my $tr =  $htr->{$tid};
 			if ( $tr->{biotype} =~/processed_pseudogen/){
 				next;
 			}
-			warn scalar(@{$tlevel->{$min}}).' '.$min.' '.$tid;
  			my $span = $tr->getSpanCoding;
  			$span = $tr->getGenomicSpan if $span->is_empty;
 			#$annot_main->put($tid,1);
@@ -134,6 +144,7 @@ my %all;
 		$all{$id}++;
 		$total ++;	
 	}
+	warn $id;
 	$annot_main->put($id,$hg);
 	
 		#	$annot_main->put($id,$hg);

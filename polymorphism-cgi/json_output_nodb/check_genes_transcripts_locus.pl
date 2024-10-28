@@ -87,7 +87,6 @@ if ($phenotype) {
 	}
 	$buffer_tmp = undef;
 }
-
 if ($capture) {
 	push(@lSearched, 'Capture ' . $capture);
 	my ( $hCapture, $hTr );
@@ -298,6 +297,9 @@ if ($trio_project and $trio_patient) {
 my $h_lines_sorted;
 my $nb_genes_error = 0;
 my $last_gene_name;
+my $gene = $project->newGene("ENSG00000114861_3");
+my $gene_score = get_gene_score($gene);
+
 if ($h_genes) {
 	foreach my $gene_key_name ( sort keys %$h_genes ) {
 		my $gene;
@@ -340,7 +342,6 @@ if ($h_genes) {
 
 		my ( $hResGene, @lAllVar );
 		my $external_name = $gene->external_name();
-		
 		my ( $nb_concepts, $concept_list, $total_mut, $total_new );
 		if ( $gene->hgmd() ) {
 			$total_mut = $buffer->queryHgmd->get_gene_mut_total($external_name);
@@ -378,7 +379,6 @@ if ($h_genes) {
 		
 
 		my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;vertical-align:center !important;"} );
-
 		my $gene_score;
 		if ($trio_project and $trio_patient) {
 			$sort = 'gene_score' unless $sort;

@@ -1,27 +1,23 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib "$Bin";
-use lib "$Bin/../../../../GenBo/lib/obj-nodb";
+use lib "$Bin/../../../../../../GenBo/lib/obj-nodb";
 use strict; 
 use Bio::SearchIO;
 use strict;
 use Data::Printer;
 use Getopt::Long;
 use Carp;
-
+use GenBoNoSqlRocksAnnotation;
 use Data::Dumper;
 use Getopt::Long; 
-use Storable qw/retrieve freeze thaw nfreeze nstore_fd nstore/;
 use GBuffer;
-use Sys::Hostname;
 use Parallel::ForkManager;
 use Vcf;
 use JSON::XS;
 use Digest::MD5::File qw( file_md5_hex );
 use Date::Tiny;
-#use GenBoNoSql;
-#require "$Bin/dbsnp.pm";
- require "$Bin/../packages/save.pm";
+ require "$Bin/../packages/rocks_util.pm";
 my $allsnps;
 
 my $chromosomes = [1..22,'X','Y','MT'];
@@ -30,11 +26,13 @@ my $chromosomes = [1..22,'X','Y','MT'];
 my $pm = new Parallel::ForkManager(24);
 my $buffer = GBuffer->new();
 my $version;
+my $genome;
 GetOptions(
 	'version=s'   => \$version,
+	'genome=s'   => \$genome,
 );
 die("please add -version=") unless $version;
-my $dir_vcf  = "/data-isilon/public-data/repository/HG19/hgmd/$version/vcf/";
+my $dir_vcf  = "/data-isilon/public-data/repository/$genome/hgmd/$version/vcf/";
   my @files = `ls $dir_vcf/*.vcf.gz`;
   chomp(@files);
   my $file = $files[0];
@@ -42,11 +40,9 @@ my $dir_vcf  = "/data-isilon/public-data/repository/HG19/hgmd/$version/vcf/";
   warn $file." ".$md5_1;
 
 die("clinar file doesn t exists " .$file ) unless -e $file;
-my $dir_out  = "/data-isilon/public-data/repository/HG19/hgmd/$version/";
+my $dir_out  = "/data-isilon/public-data/repository/$genome/hgmd/$version/rocksdb/";
 
-if (-e $dir_out."/lmdb"){
-	die("hey the output directory already exists !!! $dir_out/lmdb");
-}
+
 
 
 my $hrun;
@@ -108,13 +104,10 @@ sub run_chr {
 
 
 die() unless -e $file;
-	my $db = new save({name=>"lmdb",chromosome=>$chr,mode=>"c",integer=>1,db_type=>"lmdb"});
+	my $finalrg = GenBoNoSqlRocksAnnotation->new(dir=>$dir_out,mode=>"t",name=>$chr,pack=>[],version=>"",description=>{},pipeline=>1);
 	$db->dir_lmdb($dir_out);
-	#my $db = new save({name=>"dbsnp",chromosome=>$chr});
 	my @objs;
-	#   warn $file;
-	 #  $file =~ s/dibayes/unifiedgenotyper/;
-	    my $vcf = Vcf -> new (file=>$file, region=>$chr,tabix=>"tabix"); 
+	 my $vcf = Vcf -> new (file=>$file, region=>$chr,tabix=>"tabix"); 
 	  	eval {
 	    	$vcf->parse_header();
 			
@@ -164,41 +157,14 @@ die() unless -e $file;
 					$previous_allele = $variation->{ht};
 					my $lenVar = length($vcfVarAllele);
 					my $id;
-					$variation->{fields}->{class} = $x->{INFO}->{CLASS};
-					$variation->{fields}->{rsname} = $x->{INFO}->{DB};
-					$variation->{fields}->{phen} = $x->{INFO}->{PHEN};
-					$variation->{fields}->{hgmd_score} = $x->{INFO}->{RANKSCORE};
-					$variation->{fields}->{hgmd_id} =  $$x{'ID'};
-					$variation->{start} =  $$x{'POS'};
-					
-					my $hrelation_variant_gene;
-					$hrelation_variant_gene->{type_id} = 'hgmd_id';
-					$hrelation_variant_gene->{hgmd_id} = $variation->{fields}->{hgmd_id};
-					$hrelation_variant_gene->{gene} = $x->{INFO}->{GENE};
-					$db->add_relation_variant_gene($hrelation_variant_gene);
-	
-					if ($type eq 's') {
-						# SNP
-						$db->add_snp($variation);
-					}
-					elsif ($type eq "i" && $len < 0 ){
-						# deletions
-					
-						$db->add_deletion($variation);
-						
-					
-					}
-					elsif ($type eq "i" && $len >= 0 ){
-						# insertion
-						$db->add_insertion($variation);
-					}
-					elsif ($type eq 'r') {   $vcfVarAllele = $vcfRefAllele }
-					elsif ($type eq 'o') { next;warn($$x{'REF'}." ". $vcfVarAllele." ".$variation->{ht}." ->$type");next;}
-					else {warn ("\n\nERROR $type: strange vcf line...\nFile:".$file."\n$x\n"); next;}
-					
-				#	warn $id;
-					
-				
+					$variation->{class} = $x->{INFO}->{CLASS};
+					$variation->{rsname} = $x->{INFO}->{DB};
+					$variation->{phen} = $x->{INFO}->{PHEN};
+					$variation->{hgmd_score} = $x->{INFO}->{RANKSCORE};
+					$variation->{hgmd_id} =  $$x{'ID'};
+					$variation->{gene} =  $x->{INFO}->{GENE};
+					my $rocks_id = rocks_util::rocks_id($$x{'POS'},$$x{'REF'},$vcfVarAllele);
+					$no->put_batch($rocks_id,$variation);						
 						
 				}# for index_alt
 				$nb++;		
@@ -211,11 +177,8 @@ die() unless -e $file;
 			
 		
     }# while parse vcf
-	$vcf->close();
+    $no->close();
 	#warn Dumper (keys %sig); 
-	$db->save_intspan();
-	#die() if $debug;
-	$db->close();
 	
 	return \@objs;
 }

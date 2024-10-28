@@ -45,8 +45,10 @@ sub new_refine_heterozygote_composite_score_rocks {
 	my ( $project,$print_html,$list, $id ) = @_;
 	my $cgi = $print_html->cgi;
 	my $patient= $print_html->patient;
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"r",name=>"polyviewer_objects");
-	my $noP =  GenBoNoSqlRocksPolyviewerVariant->new(dir=>"/data-beegfs/test-cache/polyviewer/",mode=>"r",name=>$project->name.".polyviewer_variant");
+	my $diro = "/data-beegfs/tmp//NGS2024_8251/";
+	$diro =$project->rocks_directory();
+	$diro ="/tmp/NGS2024_8251/";
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects");
 	my $out_header;
 	$out_header= $print_html->print_header("background-color:aliceblue;color:black");
 	my $mother = $patient->getFamily->getMother();
@@ -70,8 +72,9 @@ sub new_refine_heterozygote_composite_score_rocks {
 	
 		}
 		}
-
-		$final_polyviewer_all->prepare($gids);
+	warn "prepare";
+	$final_polyviewer_all->prepare($gids);
+	warn "end prepare";
 	foreach my $g (@$list) {
 					
 		$xp++;

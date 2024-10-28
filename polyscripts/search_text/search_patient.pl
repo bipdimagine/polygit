@@ -18,14 +18,16 @@ my $buffer = new GBuffer;
 
 my $dbh = $buffer->dbh;
 
-my $sql = qq{SELECT p.name patient ,pr.name project FROM PolyprojectNGS.patient as p ,PolyprojectNGS.projects as pr where pr.project_id=p.project_id;};
-#my $sql = qq{SELECT GROUP_CONCAT(p.name  SEPARATOR ' ') patient  ,pr.name project FROM PolyprojectNGS.patient as p ,PolyprojectNGS.projects as pr where pr.project_id=p.project_id group by pr.project_id ;};
+my $sql = qq{SELECT p.name patient ,pr.name,p.patient_id  pid FROM PolyprojectNGS.patient as p,PolyprojectNGS.projects as pr where pr.project_id=p.project_id;};
 my $sth = $dbh->prepare($sql);
 $sth->execute();
-my $h = $sth->fetchall_hashref('patient');
+my $h = $sth->fetchall_hashref('pid');
 my $res;
-
-foreach my $p (keys %$h){
+my $xx; 
+my $hid;
+foreach my $pid (keys %$h) {
+ my $p = $h->{$pid}->{patient};
+ push(@{$hid->{$p}},$pid);
 if ($p eq $search){
 		 $res->{$p} = -1;
 		 next;
@@ -45,9 +47,9 @@ unless (keys %$res){
 my @sort = sort{$res->{$a} <=> $res->{$b}} keys %$res;
 my $min = $res->{$sort[0]};
 
-
 my $nearest;
 foreach my $p (@sort){
+	#next if $res->{$p} ne -1;
 	last if $res->{$p}>$min;
 	push(@$nearest,$p)
 	#warn $p." ".$res->{$p};
@@ -55,10 +57,43 @@ foreach my $p (@sort){
 }
 my $text;
 
+
+#if ($min == -1) {
+#	
+#	foreach my $p (@sort){
+#		next if $res->{$p} ne -1;
+#		foreach my $pid (@{$hid->{$p}}){
+#			 push(@$text,$p."\t".$h->{$pid}->{project}."\t".$min);
+#		}
+#	}
+#	
+#		
+#}
+#exit(0);
+#my $nearest;
+#foreach my $p (@sort){
+#	next if $res->{$p} ne -1;
+#	#last if $res->{$p}>$min;
+#	push(@$nearest,$p)
+#	#warn $p." ".$res->{$p};
+#	#last;
+#}
+#my $text;
+
 foreach my $near (@$nearest){
-	 push(@$text,$near."\t".$h->{$near}->{project}."\t".$min);
-}	
-print $search."\t".join("\t",@$text)."\n";
+	foreach my $pid (@{$hid->{$near}}){
+	 push(@$text,$search."\t".$near."\t".$h->{$pid}->{name});
+	}
+}
+if (scalar(@$text)>2){
+	print join("\t",@$text)." ***\n" ;
+	
+}
+else {
+	print join("\t",@$text)."\n" ;
+}
+	
+
 #my $indexer = Search::Indexer->new();
 #my $z = 0;
 #foreach my $p (keys %$h){

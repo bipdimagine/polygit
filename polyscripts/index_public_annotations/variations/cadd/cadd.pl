@@ -1,208 +1,188 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
-use lib "$Bin/../../../../../lib/obj-nodb";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use strict; 
-use Bio::SearchIO;
-use strict;
-use Tabix;
+use GenBoNoSqlRocks;
 use Data::Printer;
 use Getopt::Long;
 use Carp;
-use JSON::XS;
 use Data::Dumper;
 use Getopt::Long; 
-use Storable qw/retrieve freeze thaw nfreeze nstore_fd nstore/;
-use Set::IntSpan::Fast::XS ;
-use Sys::Hostname;
 use GBuffer;
 use GenBoProject;
-use  Set::IntSpan::Island;
 use Parallel::ForkManager;
-use Vcf;
 use GenBoNoSql;
  use Time::ETA;
 use List::MoreUtils qw(any uniq natatime);
-use GenBoNoSqlLmdb; 
-use GenBoNoSqlLmdbInteger;
- use POSIX;
+use Bio::DB::HTS::Tabix;
+use POSIX;
 my $allsnps;
 use Getopt::Long;
 use Date::Tiny;
-my $c;
+use Bio::DB::HTS::Faidx;
+use GenBoNoSqlRocksGenome;
+
+my $chr_name;
 my $version;
+my $fork;
+my $genome_version;
+my $merge;
 GetOptions(
-	'chr=s' => \$c,
+	'chr=s' => \$chr_name,
 	'version=s' => \$version,
+	'fork=s' => \$fork,
+	'genome=s' => \$genome_version,
+	'merge=s' => \$merge,
 );
-my $file = "/public-data/repository/HG19/cadd/$version/tabix/whole_genome_SNVs.tsv.gz";
+die() unless $fork;
+die("genome") unless $genome_version; 
+my $dir_public= "/data-isilon/public-data/repository/$genome_version/cadd/$version/";
+my $file = $dir_public."tabix/whole_genome_SNVs.tsv.gz";
+
 die($file) unless -e $file;
-#my $chromosomes = [1..22,'X','Y','MT'];
-#my $chromosomes = [22];
-#my $dir = "/data-xfs/public-data/HG19/snp/exac/latest/";
-my $buffer = new GBuffer;
-my $project_name= "NGS2016_1186";
-my $dir_out = "/data-beegfs/marc/cadd_1.6/$version/";
-system("mkdir -p $dir_out");
+my $file_indel = $dir_public."tabix/InDels.tsv.gz";
+my $hash_proc ={};
+my $dir_out;
 
-my $description;
-$description->{name} = "cadd";
-$description->{version} = "1.6";
-$description->{file} = $file;
- my $d = Date::Tiny->now;
-$description->{date} =  $d->as_string;
-$description->{code_unpack} =  "C4";
-$description->{order} =  {'A'=>0,'C'=>1,'G'=>2,'T'=>3};
-$description->{pack_string} =  "C4";
-$description->{factor} = [1,1,1,1];
-$description->{score_description} = ["A","C","G","T"];
-
-system("mkdir -p $dir_out");
-open(JSON,">$dir_out/description.json");
-#open(JSON,">$dir_out/description.json");
-print JSON encode_json $description;
-close JSON;
-die("write $dir_out/description.json");
-my $project = $buffer->newProject( -name => $project_name,);
-my $nb;
-my $size = 500000;
-
-	my $chr = $project->getChromosome($c);
-	my $no = GenBoNoSqlLmdb->new(dir=>$dir_out,mode=>"c",name=>$chr->name,is_compress=>0,is_integer=>1);
-	$no->put("-1","coucou");
-	$no->close();
-	my $length = $chr->length();
-	my $region;
-	
-		
-		my $from =1;
-    		my $to = $length;
-  
-    	my $start;
-    	my $end;
-    	
-    	while ($from < $to){
-        $start = $from;
-        $end = $from + $size;
-        if ($end > $to){
-            $end = $to;
-        }
-        push(@$region,{start=>$from,end=>$end});
-      #  push(@$res,{start=>$from,end=>$end,intspan=>$intspan_region,ext_gvcf=>$self->ucsc_name.".$from.$end.g.vcf",chromosome=>$self->ucsc_name}) unless $intspan_region->is_empty;
-      
-        #print chrom_name + ":" + str(region_start) + "-" + str(end)
-        $from = $end;
-       }
-	
-
-	
-my $pm = new Parallel::ForkManager(10);
+$dir_out= "/data-isilon/public-data/repository/$genome_version/cadd/$version/"."rocksdb_split/";
+my $pack = "C";
 
 
+my $rg;
+$rg = GenBoNoSqlRocksGenome->new(pipeline=>1,dir=>$dir_out,mode=>"c",index=>"genomic",chromosome=>$chr_name,genome=>$genome_version,pack=>$pack,description=>["cadd_score"]);
+
+
+
+my $pm = new Parallel::ForkManager($fork);
 #my $lmdb_out  =  $save_out->get_lmdb_db("snps");
 my $nbb =0;
-my $nb_regions = scalar(@$region);
+my $nb_regions = scalar(@{$rg->regions});
  	my $eta = Time::ETA->new(
     milestones =>$nb_regions,
 );
+my $paths;
 	$pm->run_on_finish (
 		sub {
 			my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $hres) = @_;
 			$nbb ++;
+			delete $hash_proc->{$hres->{process}};
 			my $cc= $hres->{chr};
-			
-		#	
-		#	my $lmdb_out3  =  $save_out->get_lmdb_db("snps3");
-			my $data = $hres->{data};
-			return unless $data;
-			my $t = time;
-			my $nb =0;
-			my $no = GenBoNoSqlLmdb->new(dir=>$dir_out,mode=>"w",name=>$chr->name,is_compress=>0,is_integer=>1);
-			foreach my $k (sort {$a <=> $b} keys %$data){
-				$nb ++;
-			#	$lmdb_out3->put($k,$data->{$k}->{h});
-				delete $data->{$k}->{h};
-				#$lmdb_out->put($k,$data->{$k}->{s});
-				my $nb = scalar(@{$data->{$k}->{s}});
-				#warn join(";",@{$data->{$k}->{s}}) ." ".$k;
-				my $rec = pack("C$nb",@{$data->{$k}->{s}});
-				$no->put($k,$rec);
-			
-				
-			}
+			my $name = $hres->{data};
+			my $rid = $hres->{region_id};
 			 $eta->pass_milestone();
  			my $remaining = $eta->get_remaining_time();
 			my $elapsed = $eta->get_elapsed_time();
 			my $p = int($eta->get_completed_percent());
-			print $chr->name." complete $p % => elapsed :".$elapsed." remaining : ".$remaining."\n";
-			$no->close;
+			print $chr_name." complete $p % => elapsed :".$elapsed." remaining : ".$remaining."\n";
 		});
 
 
-#	$size = int($length/10);
 	my $i;
-	my $cname = $chr->name();
-	
-	while (my $r = shift(@$region)){
+	my $idp = time;
+	my $cname = $chr_name;
+	foreach my $r (@{$rg->regions}) {
+	$idp ++;
+	$hash_proc->{$idp} ++;
 	my $pid = $pm->start and next;
-	my $array = run_chr($cname,$r->{start},$r->{end});
+	my $name = $chr_name.".".$r->{start}.".".$r->{end};
+	my $no = $rg->nosql_rocks($r);
+	run_chr_key($chr_name,$r,$file,$no);
+	run_chr_key($chr_name,$r,$file_indel,$no,1);
+	warn "compact";
+	$no->rocks->compact_range();
+	my $h = $no->rocks->get("0005264624!A");
+	warn Dumper  $h;
+	$no->close();
+	
+	#$rg->nosql_rocks($r)->close;
 	my $hres;
 	$hres->{chr} = $cname;
-	$hres->{data} = $array;
-			
+	$hres->{data} = $name;
+	$hres->{process} = $idp;
+	$hres->{region_id} = $r->{id};
 	$pm->finish(0,$hres);
 	}
 	
   $pm->wait_all_children;
-  warn $i." ".$length;
-
-#$lmdb_out->close();
-exit(0);
+die(Dumper $hash_proc) if scalar(keys %$hash_proc);
+  exit(0);
 
 
+sub run_chr_key {
+	my ($chr,$r,$file_cadd,$no,$add) = @_;
 
+	die($file_cadd) unless -e $file_cadd;
 
-
-sub run_chr {
-	my ($chr,$start,$end) = @_;
-
-die() unless -e $file;
-my $ACGT = {'A'=>0,'C'=>1,'G'=>2,'T'=>3};
-#my $db = new save({name=>"caad",chromosome=>$chr});
-my $nb= 0;
+	
+	my $ACGT = {'A'=>0,'C'=>1,'G'=>2,'T'=>3};
+	my $nb= 0;
 	my $obj;
-my $variation;
-	#   warn $file;
-	 #  $file =~ s/dibayes/unifiedgenotyper/;
-	 my $tabix  = new Tabix(-data =>$file);
-	  my $res = $tabix->query($chr,$start,$end);
-	 
-	  	 while(my $line = $tabix->read($res)) {
+	my $variation;
+	my $vdebug;
+	my $tabix  = Bio::DB::HTS::Tabix->new( filename => $file_cadd );
+	#warn $r->{start}." ".$r->{end};
+	my $res = $tabix->query($r->{tabix});
+	my $pos;
+	my $xx = 1;
+	my $vs ={};
+	my $old_id;
+	my $id;
+	my $test =0;
+	 while ( my $line = $res->next ) {
 				my(@array) = split(" ",$line);
 				my $start = $array[1];
+				unless ($pos) {
+					$pos = $start;
+				}
 				
 				my $alternate_allele = $array[3];
-				#$variation->{$start}->{$alternate_allele}->{c} = [$array[114],$array[115]];
+				my $ref_allele = $array[2];
+#				warn ($ref_allele." ".$alternate_allele) if length($ref_allele) >1 && length($alternate_allele)>1;
+				next if length($ref_allele) >1 && length($alternate_allele)>1;
 				unless (exists $variation->{$start}->{s}) {
 					$variation->{$start}->{s} = [0,0,0,0];
 				}
-				my $id = $ACGT->{$alternate_allele};
-				#$variation->{$start."_".$alternate_allele} = $array[5];
-				my $v = ceil($array[5]);
-				#$variation->{$start}->{h}->{$alternate_allele} = $v;
-				#push(@{$variation->{$start}->{a}},$alternate_allele);	
-				#push(@{$variation->{$start}->{s}},$v);			
-				$variation->{$start}->{s}->[$id] = $v;
-				#$variation->{$start}->[$id] =$v;
-				
+				my $v = int($array[5]+0.5);
+				$id = sprintf("%010d", $start);
+				# if $self->index eq "genomic";;
+				my $zid = compress_vcf_position($ref_allele,$alternate_allele);
+				my $cc= pack("$pack",$v);
+				my $zid = $no->return_rocks_id($start,$ref_allele,$alternate_allele);
+				#warn $zid;
+				warn $id."!".$zid ." ".$v." $pack++=".$cc if $id eq "0005264624";
+				$no->put_batch_raw($zid,$cc);
+				$test ++;
+		#		last if $id."!".$zid eq "0005264624!G";
+				#last if $test > 10000;
 
 	  	 }
-#	  	 $db->close();
-#	  	my $db2 = $db->get_snp_db_lite("caad2"); 
-#		warn Dumper $db2->stat();
-#		 	my $db3 = $db->get_snp_db_lite("caad"); 
-#		warn Dumper $db3->stat();
-#warn Dumper $obj;
-my @base = ["A","T","C","G"];
+	 warn "write";
+	 sleep(5);
+	 $no->write_batch();
+	 warn $pack;
+	 warn unpack("$pack",$no->get_raw("0005264624!G"));
+	#$no->rocks->write($no->batch);
+	
+	#delete $no->{batch};
+	warn "end";
+return ;
+}
 
-return $variation;
+
+
+sub compress_vcf_position {
+	my ($ref,$alt) = @_;
+	my $l1 = length($ref);
+	my $l2 = length($alt);
+	if ($l1 ==1 && $l2 ==1){
+		return $alt;
+	}
+	if ($l1 ==1 && $l2 > 1){
+		return "+".substr($alt, 1);
+	}
+	if ($l1 >1 ){
+		$ref = substr($ref, 1);
+		return ($l1 -1);
+	}
+	
 }

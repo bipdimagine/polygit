@@ -69,6 +69,51 @@ foreach my $gid (@$genes){
 $no->put($gid,$score_gene);
 }
 $no->close();
+sub raw_score {
+	my ($self) = @_;
+	my $debug;
+	$debug = 1 if  $self->external_name eq "MED12";
+		my $score = 0;
+		$score += 0.5 if $self->pLI ne "-" && $self->pLI > 0.95;
+		my $gpheno = $self->phenotypes();
+		my $pscore =0;
+		$score += 1 if $self->is_omim_morbid();
+		warn $score if $debug;
+		my $apheno = $self->getPhenotypes();
+
+	#	warn $score if $debug;
+		foreach my $pheno (@{$self->getProject->getPhenotypes}){
+			foreach my $k  (@{$pheno->keywords()}) {
+				my $lk = lc($k);
+				if ($gpheno =~ /$lk/){
+					$score += 1 ;
+					last;
+				}
+			}
+			warn $score if $debug;
+			if (exists $pheno->statistic_genes->{$self->id}){
+				$score += 1;
+				my $p = ($pheno->statistic_genes->{$self->id} / $pheno->nb_panels) *100;
+				$score += 0.5 if $p >= 25;
+				$score += 0.5 if $p >= 50;
+				$score += 0.5 if $p >= 75;
+				$score += 0.5 if $p >= 90;
+				$score += 0.5 if $p >= 100;
+			}
+			else {
+				my @o = grep{$pheno->id ne $_->id;} @$apheno; 
+				$score += 0.2 * (scalar(@o));
+			}
+			warn $score if $debug;
+		} 
+		warn $score if $debug;
+		#die() if $debug;
+		
+		
+		return $score;
+}
+
+
 
 sub score_phenotype {
 	my ($gene,$phenotype) = @_;

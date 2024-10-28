@@ -2,6 +2,7 @@
 use FindBin qw($Bin);
 use lib $Bin;
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
+use lib "/data-isilon/bipd-src/pnitschk/git2-polyweb/polygit/GenBo/lib/obj-nodb";
 use lib "$Bin/../packages/";
 use GBuffer;
 #use lib "/bip-d/perl/ensembl64/ensembl/modules";
@@ -35,15 +36,20 @@ use GenBoProtein;
 use GenBoExon;
 use GenBoIntron;
  use Storable;
-my ($version,$fork,$use_dir);
+ use GenBoNoSqlRocksAnnotation;
+my ($version,$fork,$use_dir,$genome_version);
 GetOptions(
 	'version=s' => \$version,
 	'fork=s' => \$fork,
 	'use_dir=s' => \$use_dir,
+	'genome=s' => \$genome_version,
 );
+
 $fork = 3 unless ($fork);
-my $sqliteDir =  "/tmp/lmdb/$version/annotations";
+my $sqliteDir =  "/tmp/lmdb/$version.$genome_version/annotations";
 $sqliteDir = $use_dir if ($use_dir);
+my $rocks_dir = "/data-isilon/public-data/repository/$genome_version/annotations/gencode.v$version/rocksdb/";
+confess()  unless -e $rocks_dir;
 
 my $annot =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"r");
 
@@ -63,168 +69,32 @@ die(" -version= $sqliteDir ") unless -e $sqliteDir;
  	
 		};
 
-my (@types) = ("transcript","protein","gene");
- #(@types) = ("gene");
 
+my $rocks = GenBoNoSqlRocksAnnotation->new(dir=>$rocks_dir."/",mode=>"w",name=>"genbo");	
 
- # my $z = $annot->get_like("annotations","ENSG00000169093_Y");
-    #my @transcripts_id = keys %{$z};
-    #warn Dumper @transcripts_id;
-    #warn Dumper $z;
-    #die();
-    
-my %genes_annot_array;
-my $first = 1;
-my $pm = Parallel::ForkManager->new($fork);
-
-my $mode = "w";
-$mode ="c" if $first;
-my $synonym =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>$mode);
-	my $annot4 =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>$mode);
-	my $annot2 =  GenBoNoSqlLmdb->new(name=>"genbo",dir=>$sqliteDir,mode=>$mode,is_compress=>1);
-	$annot2->create();
-	#$annot2->delete("date");
-	$annot2->close;
-	
-	$annot4->put("synonyms","datex",time);
-	$annot4->close();
-	my $no3 = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"c");
-	$no3->put("functional_annotations","date",time);
-	$no3->close;
-	 $first =1;
-$pm->run_on_finish(
-    sub { 
-    	my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$h)=@_;
-  
-    	unless (defined($h) or $exit_code > 0) {
-				print qq|No message received from child process $exit_code $pid!\n|;
-				return;
-			}
-		#$mode ='w';	
-		#my $mode = 'c' if $first;
-		#$first = undef;
-	  	my $annot2 =  GenBoNoSqlLmdb->new(name=>"genbo",dir=>$sqliteDir,mode=>"w",is_compress=>1);
-	  	my $annot4 =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"w");
-	  	 my $no3 = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"w");
-	  	
-     	my $objs = $h->{objs};
-     	 warn "start save ".$h->{nb};
-     	foreach my $obj (@$objs){
-     		$no3->put("functional_annotations",$obj->{id},$obj->{annotations_array});
-     		
-     		delete $obj->{annotations_array};
-     	 	$annot2->put($obj->{id},$obj);
-     	 	
-     	 	if (exists $obj->{total_index}){
-     	 		my $id1 =  $obj->{total_index};
-     	 		delete $obj->{total_index};
-     	 		$annot4->put("synonyms",$id1."  ".$obj->{id},$obj->{id});
-     	 	}
-     	 	else {
-     	 		$annot4->put("synonyms",$obj->{id},$obj->{id});
-     	 		#	$annot4->put("annotations.objects",$obj->{id},$obj);
-     	 	}
-     	 	
-     	}
-     	
-     	 $annot2->close();
-     	 $annot4->close();
-     	 warn "end save ".$h->{nb};
-    }
-   
-   );
-   
-   ##################### 
-   ##  Work on transcripts
-   ###################
-   
-  
-    $z = $annot->get_like("annotations","*"."transcript"."*");
- 
-   $annot->close();
-    my @transcripts_id = keys %{$z};
-     my $iter = natatime 9000, @transcripts_id;
-      $nb = 0;
-     
-     while( my @tmp = $iter->() ){
-     		$nb ++;
-     	my $pid = $pm->start and next;
-     		warn "start $nb/".scalar(@tmp);
-     	
-     		my $objs;
-     		my $annot =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"r");
-     	 foreach my $id (@tmp){
-     	 	
-     	 		unless (exists $z->{$id}->{id}) {
- 					$z->{$id}->{id} = $z->{$id}->{genbo_id};
- 				}
- 			
- 				warn 'cpoucou $id' if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
-     	 	my $obj = create($z->{$id},"transcript");
-     	 	warn Dumper $obj if $z->{$id}->{genbo_id} eq 'ENST00000628650_2'; 
-     	 	die() if $z->{$id}->{genbo_id} eq 'ENST00000628650_2';
-     	 	#next;
-     	 $obj->{object_type} ="transcript";
- 			
-
- 		
- 		die($id) unless exists $obj->{genes_object};
- 		 
- 		#$obj->{genes_object}->{$z->{$id}->{gene_kyoto_id}} =undef;
- 		$obj->{total_index} = $id;
- 		my $exons = create_exons($obj);
- 		my $introns = create_introns($obj);
- #		warn $introns:
- 		my $hgene =  $annot->get("annotations",$z->{$id}->{gene_kyoto_id});
- 		 annotations_array($obj	,$hgene);
- 		
- 		unless (keys %{$obj->{genes_object}}){
- 			warn Dumper $z->{$id};
- 			confess();
- 		}
- 		die($id) unless $z->{$id}->{gene};
- 		die($id) unless $obj->{genes_object};
- 		die($id) unless scalar(keys %{$obj->{genes_object}});
- 		push(@$objs,$obj);
- 		push(@$objs,@$exons);
- 		 push(@$objs,@$introns);
-     	 }
-     	 my $h;
-     	 $h->{objs} = $objs;
-     	 
-     	 $h->{nb} = $nb;
-       	 warn "end $nb";
-     	 $pm->finish(0,$h); 
-     }
-$pm->wait_all_children;
-
-
-
-
-warn "end transcripts";
-
-
-my $array_chr;
-my $no3 = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"w");
+my $no3 = GenBoNoSqlIntervalTree->new(dir=>$rocks_dir,mode=>"w");
 my $annot4 =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"w");
- #my $no_lmdb_tree =  GenBoNoSqlLmdb->new(name=>"intervals.tree.lmdb",dir=>$sqliteDir,mode=>"c",is_compress=>1);
+ my $puid =0;
+ my $guid =0; 
    ##################### 
    ##  END TRANSCRIPTS WORK ON GENES AND PROTEIN NO FORK
    ###################
-  	my $annot2 =  GenBoNoSqlLmdb->new(name=>"genbo",dir=>$sqliteDir,mode=>"w",is_compress=>1);
 	my (@types) = ("gene","protein");
-	 #(@types) = ("protein");
-	my $tree_global;
-
- 	my $annot_read =  GenBoNoSqlLmdb->new(name=>"genbo",dir=>$sqliteDir,mode=>"r",is_compress=>1);
+	my @main_transcripts;
 	
+	
+	
+	my $tree_global;
+	my $debug;
 foreach my $type (@types){
 	warn "START $type";
-	
-	$first = undef;
+	$debug =1 if $type eq "gene";
  my $z = $annot->get_like("annotations","*".$type."*");
  
  foreach my $id (keys %$z){
+ 	warn $id." ".$z->{$id}->{external_name} if $debug && $id =~ /ENSG00000264462/;
+ 	#warn $id;
+ 	#next unless $id =~ /ENSG00000291050_21/;
  	#$gene->{id} = "toto";
  	unless (exists $z->{$id}->{id}) {
  		$z->{$id}->{id} = $z->{$id}->{genbo_id};
@@ -246,73 +116,79 @@ foreach my $type (@types){
  		warn $id;
  		die();
  	}
+ 	my $rocks_uid = $obj->id;
+ 	$puid ++;
  	if ($type eq "gene"){
  		my $gene_array=[];
- 		foreach my $t (keys %{$obj->{transcripts_object}}){
+ 		warn $id." ".$obj->{external_name} if $debug && $id =~ /ENSG00000264462/;
+ 		my $count =0;
+ 		foreach my $t (sort {$a cmp $b} keys %{$obj->{transcripts_object}}){
  			my $tid = $t;
  			$tid .= "_".$z->{$id}->{chromosome} unless $tid=~/_/;
- 			my $tr = $annot_read->get($tid);
+ 			my $tr = $rocks->get("!".$tid);
  			die($tid) unless $tr;
- 			my $annotations_array = $no3->get_data("functional_annotations",$tid);
+ 			my $annotations_array = $tr->functional_annotations;#$no3->get_data("functional_annotations",$tid);
  			my $chr = $z->{$id}->{chromosome};
- 			#warn Dumper $annotations_array;
  			foreach my $tt (@{$annotations_array}) {
  				my @a = ([$tid,$tt->[0]],$tt->[1],$tt->[2]);
  				push(@$gene_array,\@a);
  				push(@{$tree_global->{$chr}},[[$obj->id,$tid,$tt->[0]],$tt->[1],$tt->[2]]);
  			}
- 			
- 			
- 			
- 			#delete $obj->{array_annotations_tree};
- 			push(@{$obj->{array_transcripts_tree}},[$tr->id,$tr->start,$tr->end]);
+ 			$obj->{functional_annotations} = $gene_array;
+ 		
+ 			#push(@{$obj->{array_transcripts_tree}},[$tr->id,$tr->start,$tr->end]);
  			
  		}
- 	#	warn $obj->{id};
- 		$no3->put("functional_annotations",$obj->{id},$gene_array);
+		$rocks->put_raw($obj->{external_name},$rocks_uid);
+ 		my ($a,$b) = split("_",$rocks_uid);
+     	$rocks->put_raw("g:".$b.":".$puid,$rocks_uid);
+     	$rocks->put_raw($a,$rocks_uid);
+     	
+     	$obj->{functional_annotations} = $gene_array;
+     	 
+ 		#$no3->put("functional_annotations",$obj->{id},$gene_array);
  		die() unless $obj->{strand} ;
  		my $limit = 10000;
- 		 my $tree = Set::IntervalTree->new;
-	 foreach my $a (@{$obj->{array_transcripts_tree}}){
-	 	#foreach my $a (@{$tr->annotations_array}){
-	 		$tree->insert(@$a);
-	 #	}
-	 }
- 		
-
+ 
+		my $toto = return_main_transcript($rocks,$obj);
+		push(@main_transcripts,@$toto);
  		
  	}
  
  	
  	
  
- 	$obj->{object_type} = $type;
+ 		$obj->{object_type} = $type;
  	
  		if ($type  eq "protein"){
  				$obj->{genes_object}->{$z->{$id}->{gene}."_".$z->{$id}->{chromosome}} = undef;
  				die($id) unless scalar(keys %{$obj->{genes_object}});
- 			#	my $tid = $z->{$id}->{transcript};
- 			#		$tid .= "_".$z->{$id}->{chromosome} unless $tid=~/_/;
- 			#	$obj->{transcripts_object}->{$tid} = undef;
- 			
+ 				my ($a,$b) = split("_",$rocks_uid);
+     	 		$rocks->put_raw("p:".$b.":".$puid++,$rocks_uid);
+ 				$rocks->put_raw($a,$rocks_uid);
  		}
  		my $tid = $obj->{id};
  		$id.=" ".$obj->{id} unless $id=~/$tid/;
- 		$annot4->put("synonyms",$id,$tid);
- 		$annot2->put($obj->{id},$obj);
+ 		
+ 		
+ 		
+ 		#foreach my $a (split(" ",$obj->{id})){
+ 		#	 $rocks->put_raw($a,$rocks_uid);
+ 			
+ 		#}
+ 			
+		$rocks->put("!".$rocks_uid,$obj);
+ }#end objects	
 
- 
- }	
-$annot2->close();
 if ($type eq "gene"){
-	  my $no3 = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"c");
-	  foreach my $chr (keys %$tree_global){
+	  my $no3 = GenBoNoSqlIntervalTree->new(dir=>$rocks_dir,mode=>"c");
+	  foreach my $chr (keys %$tree_global) {
 	  	$no3->put("annotations",$chr,$tree_global->{$chr});
 	  }
 	  $no3->close();
 	}
 	if ($type eq "gene"){
-	  my $no3 = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");
+	  my $no3 = GenBoNoSqlIntervalTree->new(dir=>$rocks_dir,mode=>"r");
 	  my $t = time;
 	  foreach my $chr (keys %$tree_global){
 	  	my $tree = $no3->get("annotations",$chr);
@@ -327,12 +203,29 @@ if ($type eq "gene"){
 
 $annot4->close();
 
+warn "put main";
+
+foreach my $tid (@main_transcripts){
+	my $t = $rocks->genbo($tid);
+	die() unless $t;
+	$t->{isMain} = 1;
+	$rocks->put("!".$tid,$t);
 	
+}
+$rocks->start_iter("g:");
+
 	
 
+my $rocks = GenBoNoSqlRocksAnnotation->new(dir=>$rocks_dir."/",mode=>"r",name=>"genbo");	
 
-
-
+my $xx =0;
+while (my $id = $rocks->next("g:")){
+	my $oi = $rocks->genbo($id);
+	$xx++;
+	warn Dumper $oi->functional_annotations;
+	last if $xx > 10;
+}
+$rocks->close();
 
 sub create {
 	my ($hash,$type) = @_;
@@ -351,6 +244,7 @@ sub create {
 		 $hash->{id} = $hash->{id}."_". $hash->{chromosome};
 		  $hash->{genbo_id} = $hash->{id}."_". $hash->{chromosome};
 	}
+	$hash->{remap_status} = 0 unless exists $hash->{remap_status} ;
 	my $obj = $hashTypeObject->{$type}->new($hash);
 	
 	unless (exists $obj->{chromosomes_object}) {
@@ -365,267 +259,110 @@ sub create {
 	
 }
 
-sub create_introns {
-	my ($obj) = @_;
-	my $out_objs;
-	my $span_genomic = $obj->genomic_span();
-	my $span1 =  new Set::IntSpan::Fast::XS($obj->start."-".$obj->end);
-	my $span_intronic = $span1->diff($span_genomic);
-	#my $span_coding = $self->span_coding();
-	
-	my $exons;
-	
-	
-	my $hpos;
-	my $iter     = $span_intronic->iterate_runs();
-	return [] if $span_intronic->is_empty; 
-	my $hreturn;
-	my $pos= [];
-	while ( my ( $from, $to ) = $iter->() ) {
-		my $hpos;
-		$hpos->{start} = $from;
-		$hpos->{end} = $to;
-	
-		push(@$pos,$hpos);
-	}
-	my $num_exon = 1;
-	my $start_cds =1;
-	$num_exon = scalar(@$pos)+1 if  $obj->strand == -1;
-	
-	foreach my $hp (@$pos){
-		my $from = $hp->{start};
-		my $to = $hp->{end};
-		
-		my $hpos;
-		my $ps = new Set::IntSpan::Fast::XS($from."-".$to);
-		
-		$hpos->{chromosomes_object}->{$obj->{chromosome}} =undef;
-		$hpos->{transcripts_object}->{$obj->id}= undef;
-	
-		$hpos->{gstart} = $from;
-		$hpos->{gend} = $to;
-		$hpos->{id}= $num_exon;
-		$num_exon+= $obj->strand;
-		$hpos->{ext} ="intron";
-		$hpos->{start} = $from;
-		$hpos->{end}   = $to;
-		$hpos->{name}= $hpos->{ext}."[".$hpos->{id}."-".($num_exon)."]";#.$hpos->{ext2};
-		
-		$hpos->{id}= $obj->id.$hpos->{ext}.$hpos->{id};#.$hpos->{ext2};
-		$hreturn->{$hpos->{id}} = undef;
-		$hpos->{length}   = ($to-$from)+1;
-		$hpos->{strand}   = $obj->strand();
-		$hpos->{intspan} = $ps;
-		$hpos->{utr} = $ps->diff($obj->getSpanCoding);
-		
-		#$hpos->{name} .= "NC" if $hpos->{utr}->equals($hpos->{intspan});
-		
-		my $len = $hpos->{start}-$hpos->{end}+1;
-		push( @$exons, $hpos );
-	}
-	if (scalar(@$exons) == 1){
-		 $exons->[0]->{utr}->empty ;
-		
-	}
-	my @temp = sort {$a->{start} <=> $b->{start}} @$exons;
-	my $objs;
-	foreach my $hash (@$exons){
-		my $obj_intron = $hashTypeObject->{intron}->new($hash);
-		push(@{$obj->{array_tree_introns}},[$obj_intron->{id},$obj_intron->start,$obj_intron->end+1]);
-		$obj_intron->{chromosomes_object}->{$obj->{chromosome}} = undef;
-		$obj_intron->{transcripts_object}->{$obj->id} = undef;
-		$obj->{introns_object}->{$obj_intron->{id}} = undef;
-		push(@$out_objs,$obj_intron);
-		
-	}
 
-	return $out_objs;
+
+
+
+
+
+
+
+sub return_main_transcript {
+	my ($rocks,$gene) = @_; 
+	my $htr;
+	my @kh = keys %{$gene->{transcripts_object}};
+	if (scalar (@kh) == 1 ){
+		return [$kh[0]];
+	}
 	
+ 	foreach my $tid (sort {$a cmp $b} @kh ){
+ 		$htr->{$tid} = $rocks->genbo($tid);
+		 		
+ 	}
+ 	
+ 	my $res = 	mane_ccds_principal([values %$htr]);
+ 	$res = alternative([values %$htr]) unless $res;
+ 	$res = last_chance([values %$htr]) unless $res;
+ 	$res = longest([values %$htr]) unless $res;
+ 	my $tmain = [];
+ 	foreach my $k (keys %$res) {
+		my $id = $res->{$k}->[0];
+		push(@$tmain,$id);
+	}
+	$gene->{main_transcripts} = $tmain 	
+ 	
 }
 
-sub create_exons {
-	my ($obj,$annot2,$annot3) = @_;
-	my $out_objs;
-	my $span_genomic = $obj->genomic_span();
-	#my $span_coding = $self->span_coding();
-	
-	my $exons;
-	
-	
-	my $hpos;
-	my $iter     = $span_genomic->iterate_runs();
-	my $hreturn;
-	my $pos= [];
-	while ( my ( $from, $to ) = $iter->() ) {
-		my $hpos;
-		$hpos->{start} = $from;
-		$hpos->{end} = $to;
-	
-		push(@$pos,$hpos);
-	}
-
-	my $num_exon = 1;
-	my $start_cds =1;
-	$num_exon = scalar(@$pos) if  $obj->strand == -1;
-
-	foreach my $hp (@$pos){
-		my $from = $hp->{start};
-		my $to = $hp->{end};
-		
-		my $hpos;
-		my $ps = new Set::IntSpan::Fast::XS($from."-".$to);
-		#$hpos->{chromosomes_object}->{$obj->getChromosome->id} =undef;
-		$hpos->{transcripts_object}->{$obj->id}= undef;
-		
-		$hpos->{gstart} = $from;
-		$hpos->{gend} = $to;
-		$hpos->{id}= $num_exon;
-		$num_exon+= $obj->strand;
-		$hpos->{ext} ="ex";
-		$hpos->{start} = $from;
-		$hpos->{end}   = $to;
-		$hpos->{name}= $hpos->{ext}.$hpos->{id};#.$hpos->{ext2};
-		$hpos->{id}= $obj->id.$hpos->{ext}.$hpos->{id};#.$hpos->{ext2};
-	
-		$hreturn->{$hpos->{id}} = undef;
-		$hpos->{length}   = ($to-$from)+1;
-		$hpos->{strand}   = $obj->strand();
-		$hpos->{intspan} = $ps;
-		$hpos->{utr} = $ps->diff($obj->getSpanCoding);
-		$hpos->{name} .= "NC" if $hpos->{utr}->equals($hpos->{intspan});
-		
-		my $len = $hpos->{start}-$hpos->{end}+1;
-		push( @$exons, $hpos );
-	}
-	my $objs;
-	foreach my $exon (@$exons){
-		
-		my $exon_obj = $hashTypeObject->{exon}->new($exon);
-		push(@{$obj->{array_tree_exons}},[$exon_obj->{id},$exon_obj->start,$exon_obj->end+1]);
-		$exon_obj->{chromosomes_object}->{$obj->{chromosome}} = undef;
-		$exon_obj->{transcripts_object}->{$obj->id} = undef;
-		$obj->{exons_object}->{$exon_obj->{id}} = undef;
-		push(@$out_objs,$exon_obj);
-		
-	}
-
-	return $out_objs;
-	
-}
-
-sub test_all {
-	
-	my @chrs = (1..22,"X","Y","MT");
-	my $no = GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");
-	my $no_test = GenBoNoSqlLmdb->new(name=>"genbo",dir=>$sqliteDir,mode=>"r",is_compress=>1);
-	my @types = ("transcripts","genes","proteins");
-	foreach my $t (@types){
-		
-	foreach my $chr (@chrs){
-		
-		my $array = $no->get_data("$t",$chr);
-		foreach my $a (@$array){
-			my $id =$a->[0];
-			warn $id;
-			my $z = $no_test->get($id);
-			die($id) unless $z; 
-			
+sub mane_ccds_principal {
+	my ($transcripts) = @_;
+	my $tr_mains = {};
+	foreach my $tr (@$transcripts){
+		my $span = $tr->getSpanCoding;
+ 		$span = $tr->getGenomicSpan if $span->is_empty;
+ 		my $tl = $tr->transcript_support_level;
+ 		die() if $tl eq "NA";
+		die()  if $tl eq "Missing";
+ 		my $tags = join(";",keys %{$tr->{tag}});
+ 		if ($tags =~ /MANE/){
+ 			push(@{$tr_mains->{$span->as_string."*"}},$tr->id);
+ 			next;
+ 		}
+ 		 if ( $tags =~ /CCDS/ or $tags =~ /appris_principal/ or $tl == 1) {
+ 		 	
+ 		 	push(@{$tr_mains->{$span->as_string}},$tr->id);
+ 		 }
 		}
-		
-	}
-	
-	}
-	
-	
-	
+	return $tr_mains;
 }
 
-
-
- sub transform_instpan_to_array {
- 	my ($intspan,$type) = @_;
- 	my $array = [];
- 	my $iter = $intspan->iterate_runs();
- 	 while (my ( $from, $to ) = $iter->()) {
- 	 	push(@$array,["$type",$from,$to+1]);
- 	 }
- 	 return @$array;
- 	 
- }
- 
-
-
-sub annotations_array {
-
-	my ($self,$hgene) = @_;
-	my $debug;
-	$debug = 1   if $self->name eq "ENST00000445884";
-	 #my $intspan = $self->getGene->getGenomicSpan($self->getGenomicSpan);
-	 my $array =[];
-	#exonic
-	#$self->transform_instpan_to_interval_tree($self->getGenomicSpan(),$tree,"exonic");
-	 my $span1 =  new Set::IntSpan::Fast::XS($self->start."-".$self->end);
-	 
-	 #splice site 
-	 my $i1 = $self->getSpanSpliceSite()->intersection($span1);
-	 push(@$array,transform_instpan_to_array($i1,"splice_site"));
-	 
-	 #essential splicing
-	  $i1 = $self->getSpanEssentialSpliceSite()->intersection($span1);
-	  push(@$array,transform_instpan_to_array($i1,"essential_splicing"));
-	#intronic
-	my $type_intronic = "intronic";
-	$type_intronic = "non_coding_transcript_intron_variant" if $self->isncRNA ;
-	$type_intronic = "non_coding_transcript_intron_variant" if $self->ispseudoGene;
-	push(@$array,transform_instpan_to_array($self->intronic_span(),$type_intronic));
-	
-	
-	
-	if ( $self->isncRNA() ) {
-			if ($self->span_mature()->is_empty){
-				
-				  push(@$array,transform_instpan_to_array($self->getGenomicSpan,"ncrna"));
-			}	
-			else {
-				 push(@$array,transform_instpan_to_array($self->span_mature(),"maturemirna"));
-					my $i1 = $self->getGenomicSpan->diff($self->span_mature);
-					 push(@$array,transform_instpan_to_array($i1,"non_coding_transcript_exon_variant"));
-			}	
-		
-	}
-	elsif ( $self->ispseudoGene ) {
-			  		push(@$array,transform_instpan_to_array($self->getGenomicSpan,"pseudogene"));
-					push(@$array,transform_instpan_to_array($self->getGenomicSpan,"non_coding_transcript_exon_variant"));
-	}
-	else {
-		push(@$array,transform_instpan_to_array($self->getSpanCoding,"coding"));
-		my $i1 = $self->getGenomicSpan->diff($self->getSpanCoding);
-		push(@$array,transform_instpan_to_array($i1,"utr"));
-	
-	}
-		if ($self->{chromosome} ne "MT"){
-			if ($self->strand == 1){
-				push(@$array,["upstream",$self->start-5001,$self->start]);
-				push(@$array,["downstream",$self->end+1,$self->end+5001]);
-			} 
-			else {
-				push(@$array,["downstream",$self->start-5001,$self->start]);
-				push(@$array,["upstream",$self->end+1,$self->end+5001]);
-			}
+sub alternative {
+	my ($transcripts) = @_;
+	my $tr_mains = {};
+	foreach my $tr (@$transcripts){
+ 		
+ 		my $span = $tr->getSpanCoding;
+ 		$span = $tr->getGenomicSpan if $span->is_empty;
+ 		my $tl = $tr->transcript_support_level;
+ 		$tl = 6 if $tl eq "NA";
+		$tl = 6 if $tl eq "Missing";
+ 		my $tags = join(";",keys %{$tr->{tag}});
+ 		 if ( $tags =~ /appris_alternative/ and $tl <= 3){
+ 		 	push(@{$tr_mains->{$span->as_string}},$tr->id);
+ 		 
 		}
+ 		}
+	return $tr_mains;
+}
+
+sub last_chance {
+	my ($transcripts) = @_;
+	my $tr_mains = {};
+
+	my @t  =sort {$a->transcript_support_level <=> $b->transcript_support_level} @{$transcripts} ;
+ 	my $min = $t[0]->transcript_support_level;
 	
-	warn $self->name() unless $array; 
-	#die() if $debug;
-	die() unless $array;
-	$self->{annotations_array} = $array;
-	return;
-	return $array;
-	
-	 
-	}
+	foreach my $tr (sort {$a->transcript_support_level <=> $b->transcript_support_level} @$transcripts){
+		last if $tr->transcript_support_level > $min;
+ 		next if ( $tr->{biotype} =~/processed_pseudogen/);
+ 		my $span = $tr->getSpanCoding;
+ 		$span = $tr->getGenomicSpan if $span->is_empty;
+		push(@{$tr_mains->{$span->as_string}},$tr->id);
+ 		
+ 		}
+	return $tr_mains;
+}
 
+sub longest {
+	my ($transcripts) = @_;
+	my $tr_mains = {};
 
-
+	my @t  =sort {$a->length <=> $b->length} @{$transcripts} ;
+	my $tr = $t[-1];
+	my $span = $tr->getSpanCoding;
+ 	$span = $tr->getGenomicSpan if $span->is_empty;
+	push(@{$tr_mains->{$span->as_string}},$tr->id);
+	return $tr_mains;
+}
 #sub get_void_object {
 #	my ($self,$type) = @_;
 #	return dclone ($self->{void}->{$type}) if exists $self->{void}->{$type};

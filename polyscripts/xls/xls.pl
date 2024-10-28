@@ -17,11 +17,10 @@ my $cache ;
 GetOptions(
 	'file=s'    => \$file,
 	'transcript' => \$transcript,
-	'cache' => \$cache,
+	'cache=s' => \$cache,
 );
 ##
-my $root_cmd = "perl $RealBin/../../polymorphism-cgi//cache_nodb/scripts/cache_polydiag.pl";
-	
+my $root_cmd = "perl /software/polyweb/poly-disk/www/cgi-bin/polymorphism-cgi//cache_nodb/scripts/cache_polydiag.pl";
 	
 	
 my $opt_transcript = "transcripts=$transcript ";
@@ -33,8 +32,6 @@ while(<FILE>){
 	my $project = $buffer->newProjectCache( -name => $_);
 	my $dir_out= " /data-beegfs/tmp/".$project->name;
 	system ("mkdir $dir_out") unless -e $dir_out;
-		#foreach my $chr (@{$project->getChromosomes}){
-		#next if $chr->name eq "MT";
 		my $ppn=1;
 		foreach my $patient (@{$project->getPatients}){
 			my $cmd_root = " $root_cmd -fork=$ppn -project=".$project->name." -patient=".$patient->name." && ";
@@ -42,8 +39,9 @@ while(<FILE>){
 			my $cmd3.=$opt2." | tail -n +4 > $dir_out/".$patient->name.".xls";
 			
 			if ($cache){
-				print $cmd_root."\n";
+				#print $cmd_root."\n";
 				print $cmd_root.$cmd." $cmd3\n";	
+				
 			}
 			else {
 				print $cmd." $cmd3\n";

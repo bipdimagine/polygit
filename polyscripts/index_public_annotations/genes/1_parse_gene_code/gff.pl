@@ -37,18 +37,17 @@ require "$Bin/../packages/parse_gff.pm";
 
 my $csv = Text::CSV->new({ sep_char => ',' });
 require "$Bin/../packages/ensembl_buffer.pm";
-#my $sqliteDir =  "/data-xfs/public-data/HG19/sqlite/75/annotation_test";
 my $sqliteDir =  "/tmp/lmdb/annotation";
 my $gene_code_version = "30";
-#my $gff = "/data-xfs/public-data/HG19/gencode/v28/gencode.v28lift37.annotation.gff3.gz";
 
 my $version;
-my $genome_version = "HG19";
+my $genome_version;
 GetOptions(
 	'version=s' => \$version,
+	'genome=s' => \$genome_version,
 );
 die("add version ") unless $version; 
-my $sqliteDir =  "/tmp/lmdb/$version/annotations";
+my $sqliteDir =  "/tmp/lmdb/$version.$genome_version/annotations";
 system("mkdir -p $sqliteDir") unless -e $sqliteDir;
 my $dir_genecode =  "/data-isilon/public-data/repository/$genome_version/annotations/gencode.v$version/tabix/";
 my @files = `ls $dir_genecode/*.gz`;
@@ -60,20 +59,28 @@ my $ftype = {
 	fasta_proteins =>{name => ".pc_translations.fa"},
 	refseq =>{name => "RefSeq"},
 	swissprot =>{name => "SwissProt"},
-	mart =>{name => "mart"},
 	
 };
+my $dir_semantic =  "/data-isilon/public-data/repository/semantic/annotations/gencode.v$version/";
+my $description_file =  "/data-isilon/public-data/repository/semantic/genes/gencode.v$version/description/mart_export.txt.gz";
+die("miss : ".$description_file) unless -e $description_file;
+
 my $add_genes = {};
 my $add_genes = {
-	miss =>{file => "$Bin/missed/genes.gff3.gz"},
-	regulatory => {file => "$Bin/regulatory/regulatory.gff.gz"},
-	fasta_transcripts=> {file => "$Bin/missed/transcripts.fa.gz"},
-	fasta_proteins=> {file => "$Bin/missed/translations.fa.gz"},
+	miss =>{file => "$Bin/missed/$genome_version/genes.gff3.gz"},
+	regulatory => {file => "$Bin/regulatory/$genome_version/regulatory.gff.gz"},
+	fasta_transcripts=> {file => "$Bin/missed/$genome_version/transcripts.fa.gz"},
+	fasta_proteins=> {file => "$Bin/missed/$genome_version/translations.fa.gz"},
 };
+#$add_genes = {} if $genome_version eq "HG38";
 
 foreach my $ft (keys %$add_genes){
-	
-	die("problem with file $ft  ".Dumper $add_genes) unless -e $add_genes->{$ft}->{file};
+	if ($genome_version eq "HG19"){
+		die("problem with file $ft  ".Dumper $add_genes) unless -e $add_genes->{$ft}->{file};
+	}
+	else {
+		$add_genes->{$ft}->{file} = "/dev/null" unless -e $add_genes->{$ft}->{file};
+	}
 }
 
 my $hversion;
@@ -119,8 +126,8 @@ my $gene_name;
 my $translate_id ={};
 warn 'parse gene';
 my $genes = parse_gff::read_gff_genes($ftype->{gff_all}->{file},$translate_id,$gene_code_version);
+readMetaDataMartGenes($description_file,$translate_id,$genes,"description");
 
-readMetaDataMartGenes($ftype->{mart}->{file},$translate_id,$genes,"description");
 my $transcripts;
 my $proteins;
 if (-e $sqliteDir."/translate_id.freeze"){
@@ -279,83 +286,28 @@ sub readMetaDataMartGenes{
 		my ($file,$translate_id,$genes,$type) = @_;
 warn "mart ".$file;
 open (READ, "zcat $file | ") || die "Cannot open $file: $!.\n";
+my $csv = Text::CSV->new({ sep_char => ',' });
 	while (my $line = <READ>){
 		chomp($line);
-		
-		my($zid,$description,@t) = split(",",$line) ;
-		next unless exists $translate_id->{$zid};
-		warn $zid unless exists $translate_id->{$zid};
+	if ($csv->parse($line)) {
+      	my($zid,$description,@t)  = $csv->fields();
+      	next unless exists $translate_id->{$zid};
 		foreach my $rid (@{$translate_id->{$zid}}) {
-		if ($description){
-		 $genes->{$rid}->{description} = $description unless $genes->{$rid}->{description};
-		}
-	
-		}
-	
-
-	}
-close (READ);
-}
-
-sub readMetaDataMartGenes_old{
-		my ($file,$translate_id,$genes,$type) = @_;
-warn "mart ".$file;
-open (READ, "zcat $file | ") || die "Cannot open $file: $!.\n";
-	while (my $line = <READ>){
-		chomp($line);
-		
-		my($zid,$description,$pheno,$source,@t);
-		if ($line =~/"/){
-			if ($csv->parse($line)) {
-				
-				($zid,$pheno,$source,$description,@t) =  $csv->fields();
+			if ($description){
+		 		$genes->{$rid}->{description} = $description unless $genes->{$rid}->{description};
+		 		warn $rid." ".$description;
 			}
 		}
-		else {
-			($zid,$pheno,$source,$description,@t) =  split(",",$line);
-		#	warn $zid;
-		#	warn $description.' '.$pheno;
-		#	die();
-			#next;
-		}
-		#warn $zid;
-		
-		next unless exists $translate_id->{$zid};
-		warn $zid unless exists $translate_id->{$zid};
-		foreach my $rid (@{$translate_id->{$zid}}){
-			
-		
-			
-#		warn $rid." -->".$description;
-		if ($description){
-		 $genes->{$rid}->{description} = $description unless $genes->{$rid}->{description};
-		}
-		
-		 next unless $pheno;
-		 next if $pheno eq "";
-		 $genes->{$rid}->{hphenotype}->{ensembl}->{lc($pheno)} ++;
-		$source = "omim" if $source =~/MIM/;
-		$source = lc($source);
-		$genes->{$rid}->{hphenotype}->{$source}->{lc($pheno)} ++;
-	 
-	
-		}
-	
-
 	}
+  	else {
+    	 	 	warn "Line could not be parsed: $line\n";
+    	  		die();
+  		}
+	}
+	
 close (READ);
-foreach my $rid  (keys %$genes){
-	next unless exists $genes->{$rid}->{hphenotype};
-	foreach my $source (keys %{$genes->{$rid}->{hphenotype}}){
-		$genes->{$rid}->{phenotype}->{$source} = join(';',keys %{$genes->{$rid}->{hphenotype}->{$source}});
-		delete $genes->{$rid}->{hphenotype}->{$source};
-#		warn $source.' '.$genes->{$rid}->{phenotype}->{$source};
-	}
-#	warn $genes->{$rid}->{description};
-	
 }
-		
-}
+
 
 
 

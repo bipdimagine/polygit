@@ -67,7 +67,6 @@ sub save_cache_text {
 		$end = time + $limit;
 	}
 	require "Compress/Zstd.pm";	
-		
 	$self->put($key1,{expiration=>$end,cache=>Compress::Zstd::compress($key2),snappy_html=>4,date=>time});
 	#$self->put($key1,{expiration=>$end,cache=>Compress::Zlib::compress($key2),snappy_html=>1,date=>time});
 }
@@ -106,9 +105,8 @@ sub get_cache {
  	}
  	elsif ( $h->{snappy_html} == 4 ) {
  		my $x;
- 		try{
- 		 $x =  decode_json(Compress::Zstd::uncompress($h->{cache}) );
- 		}
+			
+ 		 $x =  Compress::Zstd::uncompress($h->{cache});
  		return $x;
  	}
  	else {

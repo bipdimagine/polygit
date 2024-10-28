@@ -1548,7 +1548,7 @@ sub getBamFile {
 		my $files = $self->getBamFiles();
 		return $files->[0] if scalar(@$files) == 1;
 		if ($nodie) {
-			warn "NO BAM FILES " . $self->name;
+			warn "NO BAM FILES " . $self->name." methods :".Dumper  $self->alignmentMethods();
 			return;
 		}
 
