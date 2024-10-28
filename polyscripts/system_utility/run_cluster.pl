@@ -36,7 +36,7 @@ GetOptions(
 	'cpu=s' => \$cpus,
 	'cmd=s' => \$cmd,
 	'fork=s' => \$fork,
-	'limit=s' => \$limit,
+	'limit=i' => \$limit,
 	'row=s' => \$row,
 );
 unless ($noprint){
