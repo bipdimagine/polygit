@@ -166,17 +166,17 @@ foreach my $project_name (@$project_names) {
 				push(@$files, @$htlv1_files);
 			}
 			if (scalar @$htlv1_files < 4) {
-				colored::stabilo("magenta", 4-scalar(@$htlv1_files)." file(s) missing:");
-				if (grep {$_ =~ /-clonalityResults.txt$/ } @$htlv1_files) {
+				colored::stabilo("magenta", 4-scalar(@$htlv1_files)." missing file(s):");
+				unless (grep {$_ =~ /-clonalityResults.txt$/ } @$htlv1_files) {
 					print "\t\t$htlv1_dir_path$pat_name-clonalityResults.txt\n";
 				}
-				if (grep {$_ =~ /-mergedIS.txt$/ } @$htlv1_files) {
+				unless (grep {$_ =~ /-mergedIS.txt$/ } @$htlv1_files) {
 					print "\t\t$htlv1_dir_path$pat_name-mergedIS.txt\n";
 				}
-				if (grep {$_ =~ /-mergedIS.xls$/ } @$htlv1_files) {
+				unless (grep {$_ =~ /-mergedIS.xls$/ } @$htlv1_files) {
 					print "\t\t$htlv1_dir_path$pat_name-mergedIS.xls\n";
 				}
-				if (grep {$_ =~ /-SIMPLIFIED_mergedIS.txt$/ } @$htlv1_files) {
+				unless (grep {$_ =~ /-SIMPLIFIED_mergedIS.txt$/ } @$htlv1_files) {
 					print "\t\t$htlv1_dir_path$pat_name-SIMPLIFIED_mergedIS.txt\n";
 				}
 			}
