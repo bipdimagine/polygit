@@ -266,7 +266,7 @@ if ($transfert_sftp and $no_archive) {
 	$archive_name =~ s/\.tar$//;
 	$sftp = Net::SFTP->new("192.168.2.111", user=>"bioinfo", key_path=>"/home/masson/.ssh/known_hosts");
 	$sftp->do_mkdir("$archive_dir/$archive_name");
-	print "Putting the files on the sftp...\n";
+#	print "Putting the files on the sftp...\n";
 	my $i=0;
 	for my $file (@$files) {
 		printf("%d / %d", $i, scalar @$files);
@@ -315,7 +315,7 @@ Optional arguments
 sub callback {
     my($sftp, $data, $offset, $size) = @_;
     my $percent = int($offset/$size*100);
-    printf ("Wrote $offset / $size bytes:\t%d%%\r",$percent);
+    printf ("Putting the files on the sftp...\t%d%%\r",$percent);
 #	print "\n" if ($offset == $size);
 }
 
