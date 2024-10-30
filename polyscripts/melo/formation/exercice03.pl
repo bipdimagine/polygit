@@ -2,7 +2,7 @@
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
-use lib "$RealBin/../../GenBo/lib/obj-nodb/";
+use lib "$RealBin/../../../GenBo/lib/obj-nodb/";
 use Data::Dumper;
 use Getopt::Long;
 use Carp;
@@ -25,7 +25,7 @@ my $project_path = $project->project_path;
 $variations_dir = $project_path."variations/";
 
 
-open(my $output, '>', '/home/mperin/output_ex3.txt');
+open(my $output, '>', 'output_ex3.txt');
 
 sub recurrent_open_dir {
 	my ($dir_path) = @_;

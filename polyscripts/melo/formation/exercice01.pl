@@ -2,14 +2,14 @@
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
-use lib "$RealBin/../../GenBo/lib/obj-nodb/";
+use lib "$RealBin/../../../GenBo/lib/obj-nodb/";
 use Data::Dumper;
 
 use GBuffer;
 
 my $project_name = 'NGS2015_0794';
 
-my $filename = '/home/mperin/test.ped';
+my $filename = 'test.ped';
 open(my $pedigree, '<', $filename) or die "Could not open file '$filename' $!";
 
 

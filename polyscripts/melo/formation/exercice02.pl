@@ -2,7 +2,7 @@
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
-use lib "$RealBin/../../GenBo/lib/obj-nodb/";
+use lib "$RealBin/.;/../../GenBo/lib/obj-nodb/";
 use Data::Dumper;
 use Getopt::Long; # librairie pour récuper les options depuis le terminal
 use Carp; # librairie pour `confess`
