@@ -26,6 +26,7 @@ use GBuffer;
 use Set::IntSpan::Fast::XS;
 use image_coverage;
  use List::Util qw( min sum max);
+ use Statistics::Descriptive::Smoother;
 #use Cache_Commons;
 
 my $fork = 1;
@@ -68,6 +69,7 @@ $project->getRuns();
 my $dir2 = $project->noSqlCnvsDir();
 system("rsync -av  $dir2/*  /$tmp/");
 #For coverage prepare 
+
 foreach my $chr ( @{$project->getChromosomes()}){
 	$chr->getIntSpanCapture();
 	$chr->length;
@@ -77,7 +79,6 @@ $project->noSqlCnvsDir($tmp);
 warn "end";	
 my $array;
 my $hgene;
-
 
 foreach my $p (@{$project->get_only_list_patients($patient_name)}){	
 	my $array ={};
@@ -230,10 +231,11 @@ sub uri_image {
     }
     );
 	
-	
+	$project->disconnect;
 	$project->getRuns();
 	$project->getCaptures();
   	$project->buffer->dbh_deconnect();
+  	delete $project->{rocksGenBo};
   	$|=1;
   	my $t =time;
   	my $id = 0;
@@ -258,11 +260,14 @@ sub uri_image {
 			my $t = time;
 			
 			my $ts = $project->newTranscripts(\@tmp);
-			
+			foreach my $transcript (@$ts){
+				$transcript->getExons();
+				$transcript->getIntrons();
+			}
 			my $z;
-			
+			delete $project->{rocksGenBo};
 #			warn "get Transcripts :".abs($t -time)." ".scalar(@$ts); 
-			$project->lmdbGenBo->close();
+
 			delete $project->{lmdbGenBo};
 			my $h;
 			 $t = time;
