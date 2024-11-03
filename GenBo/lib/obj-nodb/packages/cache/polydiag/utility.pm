@@ -32,7 +32,6 @@ sub return_date_from_file {
       return $date;       
 }
 
-
 sub get_date {
 		my ($patient) = @_;
 		my $file_out;
@@ -78,6 +77,7 @@ sub return_list_variants {
 my $tm = 0;
 sub return_hash_variant {
 	my ($project,$vid,$tr_id,$patient,$vquery) = @_;
+	die();
 	my $d = $project->getCacheDir();
 	my $project_name= $project->name;
 	my $patient_name = $patient->name();
@@ -85,8 +85,9 @@ sub return_hash_variant {
 	my $id = join(";",$tr_id,$vid);
 	#my $id = $patient->name()."_".$tr1->id."_".$v->id;
 	my $z;
-		return undef unless $project->noSqlPolydiag()->exists_db($patient->name);
-		$z = $project->noSqlPolydiag()->get($patient->name,$id);
+	return undef unless $project->noSqlPolydiag()->exists_db($patient->name);
+	warn $project->noSqlPolydiag()->dir();
+	$z = $project->noSqlPolydiag()->get($patient->name,$id);
 	unless ($z) {
 		return undef;
 		die($id."-");

@@ -61,6 +61,8 @@ my $rg38 = GenBoNoSqlRocksGenome->new(dir=>$dir38,mode=>"w",index=>"genomic",chr
  		my ($a,$b,$c,$d) = split("_",$id);
    		my $id =  join("_",$a,$pos38,$c,$d);
    		my $rockid = $no38->return_rocks_id_from_genbo_id($id);
+   		$no38->put_raw("#".$rockid,$id);
+   		$no38->put_raw("#".$id,$rockid);
    		$no38->put_raw($rockid,$data);
 	}
 	

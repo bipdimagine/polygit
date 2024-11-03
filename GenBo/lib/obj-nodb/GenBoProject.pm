@@ -2362,6 +2362,8 @@ has genomeFai => (
 			next if $chr =~ /MU0/;
 			next if $chr =~ /_random/;
 			next if $chr =~ /_hap/i;
+			next if $chr =~ /HLA/i;
+			next if $chr =~ /KB/i;
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;
@@ -6413,6 +6415,12 @@ sub getVariantVcfInfos {
 
 sub noSqlPolydiag {
 	my ( $self, $param ) = @_;
+	if ($param && $param eq "close") {
+		return unless exists $self->{nosqlpolydiag};
+		$self->{nosqlpolydiag}->close();
+		delete $self->{nosqlpolydiag};
+		return;
+	}
 	return $self->{nosqlpolydiag} if exists $self->{nosqlpolydiag};
 	$param = "r" unless $param;
 	my $output = $self->getCacheDir() . "/polydiag_lite";

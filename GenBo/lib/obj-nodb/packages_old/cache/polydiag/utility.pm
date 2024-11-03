@@ -1,7 +1,7 @@
 package utility;
 use strict;
 use FindBin qw($RealBin);
-
+use Data::Dumper;
 
 
 sub return_list_all_transcripts {
@@ -87,16 +87,14 @@ sub return_list_variants {
 
 sub return_hash_variant {
 	my ($project,$vid,$tr_id,$patient,$vquery) = @_;
-	my $d = $project->getCacheDir();
 	my $project_name= $project->name;
 	my $patient_name = $patient->name();
 		#my $db = return_db($patient);
 	my $id = join(";",$tr_id,$vid);
 	#my $id = $patient->name()."_".$tr1->id."_".$v->id;
 	my $z;
-		
+	
 		$z = $project->noSqlPolydiag()->get($patient->name,$id);
-
 	unless ($z) {
 		return undef;
 		die($id."-");

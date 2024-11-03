@@ -320,6 +320,183 @@ sub to_array {
     return \@t;
 }
 
+
+
+sub run_cache_polydiag_fork {
+	my ( $project, $p, $db_lite, $tbundle,$version ) = @_;
+	
+	$project->disconnect();
+	my $buffer1 = $project->buffer();
+	
+	my $patient_name = $p->name();
+	#my $p       = $pa->[0];
+	my $db_lite = $project->noSqlPolydiag("c");
+	
+	my @months = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+	my @days   = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
+
+	my ( $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst ) =
+	  localtime();
+	my $date = $mday . "/" . ( $mon + 1 ) . "/" . ( 1900 + $year );
+
+	$db_lite->put( $patient_name, "date", $date );
+	my $f1s = $p->getVariationsFiles();
+	my $tf;
+	foreach my $f1 (@$f1s) {
+		if ( -e $f1 ) {
+			$tf->{$f1} = file_md5_hex($f1);
+
+		}
+	}
+	$db_lite->put( $patient_name, "variations_vcf_md5", $tf );
+	$tf = {};
+	$db_lite->put( $patient_name, "indels_vcf_md5", $tf );
+	$project->noSqlPolydiag("close");
+	my $vtr = {};
+	my %th;
+	
+	#my $variations = $p->getStructuralVariations();
+	 my $pm = new Parallel::ForkManager(15);
+	
+	 $pm->run_on_finish(
+		sub {
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
+			die()  if $exit_code ne 0;
+			warn "end process";
+			my $count;
+			my $db_lite = $project->noSqlPolydiag("w");
+			foreach my $t ( keys %{$data->{vtr}} ) {
+				warn $t;
+				$db_lite->put( $patient_name, "list_$t", join( ";", @{ $data->{vtr}->{$t} } ) );
+				
+			}
+			warn "2";
+			$db_lite->put( $patient_name, "transcripts", join( ";", keys %{$data->{th}} ) );
+			foreach my $h (@{$data->{hv}}){
+				$db_lite->put( $patient_name, $h->{polydiag_id}, $h );
+			}
+			$project->noSqlPolydiag("close");
+		}
+	);
+	
+	
+	
+	
+	foreach my $chr ( @{ $project->getChromosomes } ) {
+		 my $pid      = $pm->start() and next;	
+		 warn "start ".$chr->name();
+		 my $vquery = validationQuery->new(
+		dbh          => $buffer1->dbh,
+		capture_name => $project->validation_db()
+	);
+		my $vector = $p->getVectorOrigin($chr)->Clone;
+		
+		my $list = to_array($vector,$chr->name);
+		$project->setListVariants($list);
+		#next unless $chr->name eq "5";
+		#	my $db = $project->buffer->open_kyoto_db($file_out,'c');
+		#my $variations = $chr->getStructuralVariations();
+
+		#	warn scalar(@$variations);
+		#	die();
+		my $ii = 0;
+		my $dd = 0;
+		my $hh ;
+		while (my $v = $project->nextVariant){
+			my $ps =  $v->getPatients;
+		
+		#foreach my $v ( @{$variations} ) {
+			next if $v->getChromosome->name ne $chr->name;
+			my $debug;
+			my $toto=  0;
+			#
+				$dd++;
+			#$debug = 1 if $v->id eq "14_93670213_A_AT";
+			#die() if $debug;
+			#warn $ii++;
+
+			my $ok;
+			my $transcripts = $v->getTranscripts;
+			foreach my $tr ( @{$transcripts} ) {
+				#warn $tr->id();
+				#next unless exists $tbundle->{ $tr->name };
+				$ok = 1;
+				my $h = construct_variant( $project, $v, $tr, $p,
+					$vquery );
+					$h->{obj} = $v;
+					update::deja_vu($project,$tr,$h); 
+					update::annotations($project,$h); 
+						
+				my $id = join( ";", $tr->id, $v->id );
+				 $h->{polydiag_id} = $id;
+				delete $h->{obj} ;
+				$h->{vector_id} = $v->vector_id();
+				#############################################
+				#$db_lite->put( $patient_name, $id, $h );
+				##############################################
+				#		$db->set($id,freeze $h );
+				push( @{ $vtr->{ $tr->id } }, $v->id );
+				push(@$hh,$h);
+				$th{ $tr->id }++;
+			}
+
+			if ( $v->isIntergenic ) {
+				my $h =
+				  construct_intergenic_variant( $project, $v, $p,
+					$vquery );
+						$h->{obj} = $v;
+						update::deja_vu( $project, undef,$h );
+					update::annotations($project,$h); 
+					
+				my $id = join( ";", "intergenic", $v->id );
+				 $h->{polydiag_id} = $id;
+					delete $h->{obj} ;
+				#	$db->set($id,freeze $h );
+				push( @{ $vtr->{intergenic} }, $v->id );
+				$th{"intergenic"}++;
+				push(@$hh,$h);
+			}
+			
+		}
+
+		#
+		#$buffer1->close_lmdb();
+		#$chr->close_lmdb();
+		my $res;
+		 $res->{vtr} = $vtr;
+		$res->{th}= \%th;
+		$res->{hv}= $hh;
+		warn "end ".$chr->name;
+		$pm->finish(0,$res);
+		#$project->purge_memory( $chr->length );
+	}    #end chromosome
+	
+	
+		$pm->wait_all_children;
+	$project->buffer->dbh_reconnect();
+
+
+
+#	$db_lite->close();
+#	$project->buffer->dbh->disconnect();
+#	if ( exists $project->{cosmic_db} ) {
+#		$project->{cosmic_db}->close();
+#	}
+	
+	$project = undef;
+
+
+	return 1;
+}
+
+
+
+
+
+
+
+
+
 sub run_cache_polydiag_vector {
 	my ( $project, $p, $db_lite, $tbundle,$version ) = @_;
 	$project->disconnect();
@@ -359,8 +536,7 @@ sub run_cache_polydiag_vector {
 			my $debug;
 			my $toto=  0;
 			#
-			#	$dd++;
-			#warn $dd."/".scalar(@$variations);
+				$dd++;
 			#$debug = 1 if $v->id eq "14_93670213_A_AT";
 			#die() if $debug;
 			#warn $ii++;
@@ -391,8 +567,9 @@ sub run_cache_polydiag_vector {
 				  construct_intergenic_variant( $project, $v, $p,
 					$vquery );
 						$h->{obj} = $v;
+						update::deja_vu( $project, undef,$h );
 					update::annotations($project,$h); 
-					update::deja_vu( $project, $v, $h );
+					
 				my $id = join( ";", "intergenic", $v->id );
 					delete $h->{obj} ;
 				$db_lite->put( $patient_name, $id, $h );
@@ -640,38 +817,7 @@ sub construct_variant {
 		my $nb_methods;
 		
 		
-	
-#		foreach my $method (@{$patient->getMethods}){
-#			
-#		my $method_name =$self->project->return_calling_methods_short_name($method);	
-#		push(@methods,$method_name);
-#		
-#		my $sequence_info = "he("; 
-#		my $pc ="-";		
-#		if ($v->annex()->{$patient->id}->{nb_all_ref} eq "?"){
-#			$sequence_info = "??";
-#		}
-#		else {
-#		$sequence_info = "ho(" if $all_annex->{ho};
-#		
-#		my $sum = $nb_ref + $nb_alt;
-#		if ($sum >0){
-#		 $pc = int ($nb_alt *10000/($sum))/100;
-#		}
-#		$sequence_info .= $nb_ref."/".$nb_alt.")";
-#	
-#		}
-#		$sequence_info = $method_name.":".$sequence_info;
-#		$pc = $method_name.":".$pc."%";
-#		push(@apc,$pc);
-#		push(@asequence_info,$sequence_info);
-#		$nb_methods ++;
-#		}
-#		
-#		 if ($v->validation_method eq "sanger" ) {
-#		 	#$sequence_info = "-";
-#		 	push(@asequence_info,"-");
-#		 }
+
 		
 	
 		$hvariation->{ngs} =  "";

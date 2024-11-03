@@ -154,16 +154,16 @@ $rg38 = GenBoNoSqlRocksGenome->new(dir=>$dir38,mode=>"w",index=>"genomic",chromo
       );			
  my $rc = $sth->execute();
  my @pos;
+ my $genbo_id;
   while (my @s = $sth->fetchrow()) {
   	warn $nb if $nb%1000000 ==0;
   	# $no->write_batch() if $nb%2000000 ==0; 
-  
   	$nb ++;
   	  my $obj = thaw (decompress($s[1]));
   	  push(@pos,$ucsc_chr."\t".$s[2]."\t".$s[3]."\t".$s[0]."\t".$obj->{data}."\n");
   	  my $rid = $no->return_rocks_id_from_genbo_id($s[0]);
   	  next unless $rid;
-  	 $no->put_batch_raw($rid,$obj->{data});
+  	  $no->put_batch_raw($rid,$obj->{data});
  
    }
 
@@ -182,15 +182,18 @@ $rg38 = GenBoNoSqlRocksGenome->new(dir=>$dir38,mode=>"w",index=>"genomic",chromo
    	my $debug;
    	$debug =1 if $line =~ /42565845/;
    	chomp($line);
-   	my ($chr,$pos38,$end,$id,$data) = split(" ",$line);
-   	warn "coucou $chr,$pos38,$end,$id " if $debug;
+   	my ($chr,$pos38,$end,$genbo_id,$data) = split(" ",$line);
+   	warn "coucou $chr,$pos38,$end,$genbo_id " if $debug;
 	next if $chr ne $ucsc_chr;   	
 	warn "1 " if $debug;
    	if ($pos38>$start && $pos38 <= $end){
-   		my ($a,$b,$c,$d) = split("_",$id);
+   		my ($a,$b,$c,$d) = split("_",$genbo_id);
    		my $id =  join("_",$a,$pos38,$c,$d);
    		my $rockid = $no38->return_rocks_id_from_genbo_id($id);
    		$no38->put_batch_raw($rockid,$data);
+   		warn $genbo_id;
+   		$no38->put_batch_raw("#".$genbo_id,$rockid);
+   		$no38->put_batch_raw("#".$rockid,$genbo_id);
    		warn "**********".$id." ".$d if $debug;
    	}
    	else {

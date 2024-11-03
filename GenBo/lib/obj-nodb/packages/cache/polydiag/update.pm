@@ -1541,7 +1541,7 @@ sub deja_vu2 {
 sub deja_vu{
 	 my ($project,$tr,$hvariation,$debug) = @_;
 	#my $dejavu =$tr->getChromosome->hash_kyoto_dejavu;
-	
+		my $v =  $hvariation->{obj};
 	 
 		my $vid = $hvariation->{id};
 		my $debug;
@@ -1552,8 +1552,7 @@ sub deja_vu{
 		my $nb_pat =0;
 		my $pname = $project->name();
 		my $proj_dejavu =0;
-	
-		my $v = $project->_newVariant($vid);
+		confess($vid." ".$v) unless $v;
 		$hvariation->{sim_deja_vu} = $v->similar_patients();
 		$hvariation->{sim_proj_deja_vu} = $v->similar_projects();
 		$hvariation->{this_deja_vu} = $v->in_this_run_patients();

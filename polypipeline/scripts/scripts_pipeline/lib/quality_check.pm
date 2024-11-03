@@ -118,11 +118,10 @@ sub concatVcf {
 
 		}
 		else {
-			warn 
 			($m) = grep { $_ =~ /dragen-calling/ } @$methods unless $m;
 			($m) = grep { $_ =~ /deepvariant/ } @$methods unless $m;
-			($m) = grep { $_ eq "unifiedgenotyper" } @$methods;
 			($m) = grep { $_ =~ /haplotypecaller4/ } @$methods unless $m;
+			($m) = grep { $_ eq "unifiedgenotyper" } @$methods;
 			($m) = grep { $_ =~ /dragen_calling/ } @$methods unless $m;
 			($m) = grep { $_ =~ /haplotypecaller/ } @$methods unless $m;
 			($m) = grep { $_ =~ /SMRTlink/i } @$methods unless $m;

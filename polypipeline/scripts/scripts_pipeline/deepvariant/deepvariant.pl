@@ -45,7 +45,7 @@ my $bed = $dir_gvcf_out."/".$patient->name.".bed";
 unless ($project->isGenome){
 my @zbed;
 foreach my $chr (@{$project->getChromosomes}) {
-	my $intspan = $chr->getIntSpanCaptureForCalling(100);
+	my $intspan = $chr->getIntSpanCaptureForCalling(150);
 	push (@zbed,$buffer->intspanToBed($chr,$intspan));
 } 
 open (BED , ">".$bed);

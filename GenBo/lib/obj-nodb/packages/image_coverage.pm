@@ -9,6 +9,7 @@ use Data::Dumper;
  use Statistics::Descriptive;
  use List::MoreUtils qw(indexes);
  use URI;
+ use Carp;
 
 #method image (ArrayRef :$patients, GenBoTranscript :$transcript, Int :$intronic, Int :$utr,  Int :$padding,  Int :$limit ){
 	

@@ -82,7 +82,7 @@ $| = 1;
 		my $pid = $pm->start and next;
 		#my $resp= {};
 
-		my $resp = polydiag::run_cache_polydiag_vector( $project, $p, $db_lite, $tbundle,$version );
+		my $resp = polydiag::run_cache_polydiag_fork( $project, $p, $db_lite, $tbundle,$version );
 
 		run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
