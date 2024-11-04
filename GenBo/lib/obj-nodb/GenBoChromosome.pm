@@ -687,6 +687,7 @@ sub getTranscriptsByPosition {
 
 sub getGenesByPosition {
 	my ( $self, $start, $end ) = @_;
+	warn $start.' - '.$end;
 	my $ids   = $self->genesIntervalTree->fetch( $start, $end + 1 );
 	my $genes = [];
 	foreach my $id (@$ids) {

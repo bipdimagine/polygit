@@ -35,6 +35,7 @@ GetOptions(
 	'force=s' => \$force,
 	'yes=s'	=> \$yes,
 	'nolimit=s' => \$secret,
+	'annot_version=s' => \$annot_version,
 );
 
 print "\n\n##### CACHE Junctions #####\n\n";
@@ -48,6 +49,9 @@ if ($secret) {
 }
 if ($yes) {
 	$cmd .= " -yes=1";
+}
+if ($yes) {
+	$cmd .= " -annot_version=".$annot_version;
 }
 system ($cmd);
 

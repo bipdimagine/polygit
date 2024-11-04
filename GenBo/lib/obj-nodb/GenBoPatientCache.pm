@@ -297,29 +297,75 @@ sub getVectorOrigin {
 	#warn   $self->{origin}->{all}->{$chr->name};
 	return $self->{origin}->{all}->{$chr->name}->Clone;
 }
-sub getVectorOriginHe {
-	my ($self,$chr) = @_;
-	my $type = "he";
-	return $self->{origin}->{$type}->{$chr->name}->Clone if exists$self->{origin}->{$type}->{$chr->name};
+
+sub getVectorOriginCategory  {
+	my ($self,$chr,$type) = @_;
+	confess() unless $chr;
+	confess() unless $type;
+	return $self->{origin}->{$type}->{$chr->name}->Clone if exists $self->{origin}->{$type}->{$chr->name};
 	if ($self->project->isRocks){
-		$self->{origin}->{$type}->{$chr->name} = $self->_getRocksVector($chr,"he");
+		my $vector_all = $self->getVectorOrigin($chr)->Clone();
+		if ($vector_all->Norm() == 0) {
+			$self->{origin}->{$type}->{$chr->name} = $vector_all;
+		}
+		else {
+			$self->{origin}->{$type}->{$chr->name} = $self->_getRocksVector($chr,$type);
+		}
 		return $self->{origin}->{$type}->{$chr->name};
 	}
 	$self->setOrigin($chr);
+	return $self->{origin}->{$type}->{$chr->name}->Clone;
+}
 
-	return $self->{origin}->{he}->{$chr->name}->Clone;
+sub getVectorOriginHe {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'he');
 }
 
 sub getVectorOriginHo {
 	my ($self,$chr) = @_;
-	confess() unless $chr;
-	return $self->{origin}->{ho}->{$chr->name}->Clone if exists $self->{origin}->{ho}->{$chr->name};
-	if ($self->project->isRocks){
-		return $self->_getRocksVector($chr,"ho");
-	}
-	$self->setOrigin($chr);
+	return $self->getVectorOriginCategory($chr, 'ho');
+}
 
-	return $self->{origin}->{ho}->{$chr->name}->Clone;
+sub getVectorOriginJunctionsRI {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'ri');
+}
+
+sub getVectorOriginJunctionsSE {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'se');
+}
+
+sub getVectorOriginJunctionsN {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'n');
+}
+
+sub getVectorOriginJunctionsD {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'd');
+}
+
+sub getVectorOriginJunctionsA {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'a');
+}
+
+sub getVectorOriginJunctionsDA {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'da');
+}
+
+sub getVectorOriginJunctionsNDA {
+	my ($self,$chr) = @_;
+	return $self->getVectorOriginCategory($chr, 'nda');
+}
+
+sub getVectorOriginJunctionsRatio {
+	my ($self,$chr,$ratio) = @_;
+	confess() if not $ratio =~ /^[1-9]0$/; 
+	return $self->getVectorOriginCategory($chr, 'junc_ratio_'.$ratio);
 }
 
 
@@ -927,15 +973,60 @@ sub getJunctionsVector {
 
 sub getVectorJunctionsRI {
 	my ($self, $chr) = @_;
-	my $vector = $chr->patients_categories->{$self->name().'_RI'};
-	return $vector;
+	my $vector_ri = $self->getVectorOriginJunctionsRI($chr)->Clone();
+	$vector_ri->Intersection($vector_ri, $chr->getJunctionsVector());
+	return $vector_ri;
 }
 
 sub getVectorJunctionsSE {
-	my ($self, $chr, ) = @_;
-	my $vector = $chr->patients_categories->{$self->name().'_SE'};
+	my ($self, $chr) = @_;
+	my $vector_se = $self->getVectorOriginJunctionsSE($chr)->Clone();
+	$vector_se->Intersection($vector_se, $chr->getJunctionsVector());
+	return $vector_se;
+}
+
+sub getVectorJunctionsN {
+	my ($self, $chr) = @_;
+	my $vector = $self->getVectorOriginJunctionsN($chr)->Clone();
+	$vector->Intersection($vector, $chr->getJunctionsVector());
 	return $vector;
 }
+
+sub getVectorJunctionsD {
+	my ($self, $chr) = @_;
+	my $vector = $self->getVectorOriginJunctionsD($chr)->Clone();
+	$vector->Intersection($vector, $chr->getJunctionsVector());
+	return $vector;
+}
+
+sub getVectorJunctionsA {
+	my ($self, $chr) = @_;
+	my $vector = $self->getVectorOriginJunctionsA($chr)->Clone();
+	$vector->Intersection($vector, $chr->getJunctionsVector());
+	return $vector;
+}
+
+sub getVectorJunctionsDA {
+	my ($self, $chr) = @_;
+	my $vector = $self->getVectorOriginJunctionsDA($chr)->Clone();
+	$vector->Intersection($vector, $chr->getJunctionsVector());
+	return $vector;
+}
+
+sub getVectorJunctionsNDA {
+	my ($self, $chr) = @_;
+	my $vector = $self->getVectorOriginJunctionsNDA($chr)->Clone();
+	$vector->Intersection($vector, $chr->getJunctionsVector());
+	return $vector;
+}
+
+sub getVectorJunctionsRatio {
+	my ($self, $chr, $ratio) = @_;
+	my $vector = $self->getVectorOriginJunctionsRatio($chr, $ratio)->Clone();
+	$vector->Intersection($vector, $chr->getJunctionsVector());
+	return $vector;
+}
+
 
 sub setJunctions {
 	my $self = shift;

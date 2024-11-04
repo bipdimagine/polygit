@@ -1049,6 +1049,7 @@ sub vector_global_categories {
 		return $v;
 	}
 	else {
+		die;
 		my $v = $self->hash_vector_global_categories()->{$cat};
 		return $self->getNewVector() unless $v; 
 		return $v;
@@ -1182,6 +1183,11 @@ sub getVectorVariations {
 	return $v;
 }
 
+sub getJunctionsVector {
+	my $self = shift;
+	return $self->vector_global_categories("junction");
+}
+
 sub getVectorSubstitutions {
 	my $self = shift;
 	return $self->vector_global_categories("substitution");
@@ -1260,22 +1266,9 @@ sub getTreeVariants {
 	return $tree;
 }
 
-sub getJunctionsVector {
-	my $self = shift;
-	my $vector = $self->getNewVector();
-	$vector += $self->global_categories->{junction} if (exists $self->global_categories->{junction});
-	return $vector;
-}
-
 sub setJunctions {
 	my $self = shift;
-	my $vector = $self->getJunctionsVector();
-	foreach my $junction (@{$self->getListVarObjects($vector)}) {
-		$self->{$junction->type_object()}->{$junction->id()} = undef;
-		unless (exists $self->project->{objects}->{junctions}->{$junction->id()}) {
-			$self->project->{objects}->{junctions}->{$junction->id()} = $junction;
-		}
-	}
+	$self->return_hash_from_vector($self->getJunctionsVector,"junctions");
 	return $self->{junctions_object} ;
 }
 sub return_hash_from_vector{

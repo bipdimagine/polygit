@@ -813,8 +813,8 @@ sub DESTROY {
 		system( "rmdir " . $self->path_rocks );
 	}
 	if ( $self->pipeline && $self->path_rocks =~ /tmp/ ) {
-		warn "warning destruct object without closing delete "
-		  . $self->path_rocks();
+		$self->close();
+		#warn "warning destruct object without closing delete ". $self->path_rocks();
 		$self->delete_files( $self->path_rocks );
 		system( "rmdir " . $self->path_rocks );
 	}

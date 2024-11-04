@@ -37,11 +37,31 @@ has name => (
 	},
 );
 
+has rocksdb_id => (
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my ($self) = @_;
+		my ($chr,$pos,$pos2,$type) = split("_",$self->id);
+		$pos = sprintf("%010d", $pos);
+		$pos2 = sprintf("%010d", $pos2);
+		return  ($pos."!".$pos2.'!'.$type);
+	},
+	
+);
+
 has isJunction => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> 1,
 );
+
+sub existsPatient {
+	my ($self,$patient) = @_;
+	$self->getPatients() unless exists  $self->{patients_object};
+	return exists $self->{patients_object}->{$patient->id};
+}
+
 has sj_id => (
 	is		=> 'ro',
 );
@@ -819,6 +839,11 @@ sub in_this_run_ratio {
 
 sub dejavu_patients {
 	my($self,$ratio,$patient) = @_;
+	
+	#TODO: a faire dejavu hg38
+	return 0;
+	
+	
 	$ratio = "all" unless $ratio;
 	return 0 unless exists $self->dejavu->{$ratio};
 	my $nb = 0;
@@ -872,6 +897,59 @@ sub dejavu_details_by_patnames   {
 sub getCoverageInInterval {
 	my ($self, $patient) = @_;
 	return sprintf("%.2f",$self->get_coverage($patient)->coverage($self->start() +1, $self->end() -1)->{mean});
+}
+
+sub getHashSpliceAiNearStartEnd {
+	my ($self) = @_;
+	my $h;
+	return $h if $self->isCanonique();
+	my ($max_start_score, $max_start_infos, $h_start_details) = $self->getHashSpliceAiInInterval($self->start() - 10, $self->start() + 10);
+	my ($max_end_score, $max_end_infos, $h_end_details) = $self->getHashSpliceAiInInterval($self->end() - 10, $self->end() + 10);
+
+	if ($max_start_score > 0) {
+		$h->{start}->{max_score} = $max_start_score;
+		$h->{start}->{max_infos} = $max_start_infos;
+		$h->{start}->{all} = $h_start_details;
+	}
+	if ($max_end_score > 0) {
+		$h->{end}->{max_score} = $max_end_score;
+		$h->{end}->{max_infos} = $max_end_infos;
+		$h->{end}->{all} = $h_end_details;
+	}
+	return $h;
+}
+
+sub getHashSpliceAiInInterval {
+	my ($self, $start, $end) = @_;
+	my @lPositions = ($start..$end);
+	my $i = $start;
+	my $max_score = 0;
+	my $max_score_infos = '';
+	
+	my $b = new GBuffer;
+	my $p = $b->newProject( -name => $self->getProject->name());
+	my $chr = $p->getChromosome($self->getChromosome->id());
+
+	my $h;
+	foreach my $pos (@lPositions) {
+		my $h2 = $chr->get_lmdb_spliceAI()->get($i);
+		foreach my $alt (keys %$h2) {
+			foreach my $gene_name (keys %{$h2->{$alt}}) {
+				my @data = unpack( "W4 C4", $h2->{$alt}->{$gene_name});
+				my @type = ( "AG", "AL", "DG", "DL" );
+				for ( my $j = 0 ; $j < 4 ; $j++ ) {
+					my $score = sprintf("%.2f", $data[$j] / 100);
+					next if $score == 0;
+					$h->{$pos}->{$alt}->{$gene_name}->{$type[$j]} = $score;
+					if ($score > $max_score) {
+						$max_score = $score;
+						$max_score_infos = $chr->id().':'.$pos.';'.$alt.';'.$type[$j].':'.$score;
+					}
+				}
+			}
+		}
+	}
+	return ($max_score, $max_score_infos, $h);
 }
 
 

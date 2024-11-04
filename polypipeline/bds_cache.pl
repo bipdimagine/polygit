@@ -60,8 +60,8 @@ GetOptions(
 check_version($projectName) unless ($steps_name eq 'update' );
 clean($projectName) if $clean;
 my $can_check_version = 1;
-$can_check_version = undef if ($steps_name eq 'update' );
-$can_check_version = undef if ($analyse_type eq 'rna_junctions' );
+$can_check_version = undef if ($steps_name and $steps_name eq 'update' );
+$can_check_version = undef if ($analyse_type and $analyse_type eq 'rna_junctions' );
 check_version($projectName) if ($can_check_version);
 
 my $report;

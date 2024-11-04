@@ -20,6 +20,10 @@
                 overflow: hidden;
             }
             
+            .gosling-component {
+            	padding: 2px !important;
+            } 
+            
             .navbar-patient > li > a:focus {
 		        background-color: unset !important;
 		        border-radius: 30% 30% 0% 0%;
@@ -455,11 +459,19 @@
 				-webkit-print-color-adjust: exact;
 			}
 		</style>
+		
+		
+		
+	  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+	  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+	  <script src="https://unpkg.com/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+	  <script src="https://unpkg.com/higlass@1.13.4/dist/hglib.js"></script>
+	  <script src="https://unpkg.com/gosling.js@0.11.0/dist/gosling.js"></script>
+	    <link rel="stylesheet" href="https://esm.sh/higlass@1.13.4/dist/hglib.css">
+		
         
-		<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-		
-		
+
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
 	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
@@ -497,10 +509,11 @@
         	input[type="checkbox"], input[type="radio"] { margin: 0px 0 0 !important; }
         </style>
         
-        <script type="text/javascript">
-        	dojo.require("dijit.TitlePane");
+        
+        
+        <script type="text/javascript" >
+        
             dojo.require("dojo.fx.easing");
-            dojo.require("dojo.cookie");
             dojo.require("dojox.widget.Dialog");
             dojo.require("dojo.data.ItemFileReadStore");
             dojo.require("dojo.data.ItemFileWriteStore");
@@ -563,6 +576,260 @@
 	    	});
 	    	
 	    	var is_checking = 0;
+		
+			function start_gosling(div_id, my_chr_id, my_start, my_end, my_junction_start, my_junction_end, my_min_cov, my_bam_file) {
+		        var gosObj = get_gosObj(div_id, my_chr_id, my_start, my_end, my_junction_start, my_junction_end, my_min_cov, my_bam_file);
+		        //console.log(gosObj);
+				gosling.embed(document.getElementById(div_id), gosObj);
+				
+				
+				//console.log(gosling.validateGoslingSpec(gosObj));
+				
+				
+//				var locus = my_chr_id + ":" + (parseInt(my_junction_start)-200) + "-" + (parseInt(my_junction_end)+200);
+//				console.log(locus);
+//				gosling.zoomTo("link_all", locus);
+			}
+			
+			function get_gosObj(div_id, my_chr_id, my_start, my_end, my_junction_start, my_junction_end, my_min_cov, my_bam_file) {
+					var bam_file = 'https://www.polyweb.fr/' + my_bam_file;
+					const bai_file = bam_file + ".bai"
+		        	var is_static = false;
+		        	
+					const gencode_csv = "https://www.polyweb.fr/public-data/HG19/igv/gencode.v43.basic.annotation.bed.gz";
+					const gencode_csv_tbi = "https://www.polyweb.fr/public-data/HG19/igv/gencode.v43.basic.annotation.bed.gz.tbi";
+		        	
+					//const gencode_gff = "https://www.polyweb.fr/public-data/HG19/igv/gencode.43.gff3.gz";
+					const gencode_gff = "https://www.polyweb.fr/public-data/HG19/igv/gencode.v43.TEST.sort.gff3.gz";
+					const gencode_tbi = gencode_gff + ".tbi";
+					
+					var width = 290;
+					var height1 = 90;
+					var height2 = 30;
+					var height3 = 60;
+					
+					
+					//console.log(my_chr_id);
+					//console.log(my_start);
+					//console.log(my_end);
+					//console.log(bam_file);
+					//console.log(bai_file);
+					
+					console.log(my_junction_start);
+					console.log(my_junction_end);
+					
+	        		gosObj = {
+					  "style": {"outlineWidth": 0, "enableSmoothPath": true},
+					  "static": is_static,
+					   "assembly": "hg19",
+				      "xDomain": {"chromosome": my_chr_id, "interval": [parseInt(my_start), parseInt(my_end)]},
+					  "views": [
+					    {
+					      "tracks": [
+					        {
+					          "data": {
+					            "type": "bam",
+					            "url": bam_file,
+					            "indexUrl": bai_file,
+					            "extractJunction": true,
+					            "junctionMinCoverage": 1
+					          },
+					          "alignment": "overlay",
+					          "tracks": [
+					            {
+					            	"mark": "withinLink",
+				          	  		"stroke": {"value": "grey"},
+					            },
+					            {
+					            	"dataTransform": [
+								          { "type": "filter", "field": "start", "include": my_junction_start, "not": true },
+								          { "type": "filter", "field": "end", "include": my_junction_end, "not": true },
+								          { "type": "filter", "field": "strand", "include": "+"},
+								    ],
+					            	"mark": "withinLink",
+				          	  		"stroke": {"value": "red"},
+					            },
+					            {
+					              "mark": "text",
+					              "text": {"field": "score", "type": "nominal"},
+					              "color": {"value": "black"},
+					              "stroke": {"value": "black"},
+					              "strokeWidth": {"value": 1},
+					              "visibility": [
+					                {
+					                  "target": "mark",
+					                  "measure": "width",
+					                  "threshold": "|xe-x|",
+					                  "transitionPadding": 10,
+					                  "operation": "LT"
+					                }
+					              ]
+					            },
+					            {
+					            	"dataTransform": [
+								          { "type": "filter", "field": "start", "include": my_junction_start, "not": true },
+								          { "type": "filter", "field": "end", "include": my_junction_end, "not": true },
+								          { "type": "filter", "field": "strand", "include": "+"},
+								    ],
+					              "mark": "text",
+					              "text": {"field": "score", "type": "nominal"},
+					              "color": {"value": "red"},
+					              "stroke": {"value": "red"},
+					              "strokeWidth": {"value": 1},
+					              "visibility": [
+					                {
+					                  "target": "mark",
+					                  "measure": "width",
+					                  "threshold": "|xe-x|",
+					                  "transitionPadding": 10,
+					                  "operation": "LT"
+					                }
+					              ]
+					            },
+					          ],
+					          "x": {"field": "start", "type": "genomic", "axis": "none", "linkingId": "link_all"},
+					          "xe": {"field": "end", "type": "genomic"},
+					          "y": {"field": "score", "type": "quantitative", "axis": "right"},
+				          	  "stroke": {"value": "black"},
+					          "strokeWidth": {
+					            "field": "score",
+					            "type": "quantitative",
+					            "range": [2, 3]
+					          },
+					          "opacity": {"value": 0.6},
+					          "style": {"linkStyle": "elliptical"},
+					          "width": width,
+					          "height": height1,
+					          "tooltip": [
+					            {"field": "start", "type": "genomic", "alt": "Start"},
+					            {"field": "end", "type": "genomic", "alt": "End"},
+					            {"field": "score", "type": "quantitative", "alt": "Nb Junctions"},
+					          ],
+					        },
+					        
+					        
+					        {
+					          "data": {
+					            "type": "bam",
+					            "url": bam_file,
+					            "indexUrl": bai_file,
+					          },
+					          "dataTransform": [
+					            {"type": "coverage", "startField": "start", "endField": "start"}
+					          ],
+					          "mark": "bar",
+					          "x": {"field": "start", "type": "genomic", "axis": "none", "linkingId": "link_all"},
+					          "xe": {"field": "end", "type": "genomic"},
+					          "y": {"field": "coverage", "type": "quantitative"},
+					          "color": {"value": "black"},
+					          "width": width,
+					          "height": height2,
+					          "tooltip": [
+					            {"field": "start", "type": "genomic", "alt": "Position"},
+					            {"field": "coverage", "type": "quantitative", "alt": "Coverage"},
+					          ],
+					        },
+				    
+				    
+				    
+	
+					        {
+					          "data": {
+					            "type": "gff",
+					            "url": "https://www.polyweb.fr/public-data/HG19/igv/gencode.v43.TEST.sort.gff3.gz",
+					            "indexUrl": "https://www.polyweb.fr/public-data/HG19/igv/gencode.v43.TEST.sort.gff3.gz.tbi",
+						        "attributesToFields": [
+						          {"attribute": "gene_biotype", "defaultValue": "unknown"},
+						          {"attribute": "gene_name", "defaultValue": "unknown"},
+						          {"attribute": "gene_id", "defaultValue": "unknown"},
+						          
+						          {"attribute": "ID", "defaultValue": "unknown"},
+						          {"attribute": "exon_number", "defaultValue": "not"},
+						        ],
+					          },
+					          "alignment": "overlay",
+					          "tracks": [
+					          
+						        
+						        {
+						        
+						          "dataTransform": [
+						            {"type": "filter", "field": "type", "oneOf": ["gene"]},
+						          ],
+						          "mark": "rect",
+						          "color": "grey",
+						          "x": {"field": "start", "type": "genomic", "axis": "none", "linkingId": "link_all"},
+						          "xe": {"field": "end", "type": "genomic", "axis": "none", "linkingId": "link_all"},
+						          "size": {"value": 10},
+						          "tooltip": [
+						            {"field": "gene_name", "type": "nominal", "alt": "Gene Name"},
+						            {"field": "gene_id", "type": "nominal", "alt": "Gene ID"},
+						            {"field": "start", "type": "genomic", "alt": "Start"},
+						            {"field": "end", "type": "genomic", "alt": "End"},
+						            {"field": "strand", "type": "nominal", "alt": "Strand"},
+						          ],
+						        },
+						        
+
+					          ],
+						      "opacity": {"value": 0.8},
+						      "width": width,
+						      "height": height3,
+					        },
+	
+					        {
+					          "data": {
+					            "type": "gff",
+					            "url": "https://www.polyweb.fr/public-data/HG19/igv/gencode.v43.TEST.sort.gff3.gz",
+					            "indexUrl": "https://www.polyweb.fr/public-data/HG19/igv/gencode.v43.TEST.sort.gff3.gz.tbi",
+						        "attributesToFields": [
+						          {"attribute": "gene_biotype", "defaultValue": "unknown"},
+						          {"attribute": "gene_name", "defaultValue": "unknown"},
+						          {"attribute": "gene_id", "defaultValue": "unknown"},
+						          
+						          {"attribute": "ID", "defaultValue": "unknown"},
+						          {"attribute": "exon_number", "defaultValue": "not"},
+						        ],
+					          },
+					          "alignment": "overlay",
+					          "tracks": [
+					          
+						        
+						        {
+						        
+						          "dataTransform": [
+						            {"type": "filter", "field": "type", "value": "exon"},
+						          ],
+						          "x": {"field": "start", "type": "genomic", "axis": "none", "linkingId": "link_all"},
+						          "xe": {"field": "end", "type": "genomic", "axis": "none", "linkingId": "link_all"},
+						          "size": {"value": 10},
+						          "mark": "rect",
+						          "color": {"value": "blue"},
+						          "tooltip": [
+						            {"field": "gene_name", "type": "nominal", "alt": "Gene Name"},
+						            {"field": "gene_id", "type": "nominal", "alt": "Gene ID"},
+						            {"field": "start", "type": "genomic", "alt": "Start"},
+						            {"field": "end", "type": "genomic", "alt": "End"},
+						            {"field": "strand", "type": "nominal", "alt": "Strand"},
+						            {"field": "type", "type": "nominal", "alt": "Type"},
+						          ],
+						        },
+
+					          ],
+						      "opacity": {"value": 0.8},
+						      "width": width,
+						      "height": height3,
+					        },
+				        
+				      ]
+				    },
+				  ]
+				};
+				
+				
+				return gosObj;
+        	}
+			
 			function checkPassword(new_log){
 				if (is_checking == 1) { return; }
 				is_checking = 1;
@@ -716,9 +983,29 @@
 				url += "&min_score=" + used_score_value;
 				if (is_first_launch == 1) {
 					url += "&only_dejavu_ratio_10=1";
+					url += "&only_junctions_NDA=1";
+					url += "&only_junctions_A=1";
+					url += "&only_junctions_D=1";
 				}
-				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
-					url += "&only_dejavu_ratio_10=1";
+				else {
+					if ($('#b_regtools_nda').prop('checked')) {
+						url += "&only_junctions_NDA=1";
+					}
+					if ($('#b_regtools_da').prop('checked')) {
+						url += "&only_junctions_DA=1";
+					}
+					if ($('#b_regtools_a').prop('checked')) {
+						url += "&only_junctions_A=1";
+					}
+					if ($('#b_regtools_d').prop('checked')) {
+						url += "&only_junctions_D=1";
+					}
+					if ($('#b_regtools_n').prop('checked')) {
+						url += "&only_junctions_N=1";
+					}
+					if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+						url += "&only_dejavu_ratio_10=1";
+					}
 				}
 			    $.getJSON( url, {})
 			    	.done( function( data ) {
@@ -855,6 +1142,29 @@
 			    })
 			}
 			
+			function view_splice_ai_junction(text) {
+				document.getElementById("div_dejavu_junction").innerHTML = "";
+				var html = "<table class='table table-sm table-striped table-condensed table-bordered table-primary' style='padding:5px;box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px'";
+				html += "<tr>";
+				html += "<td><center><b>Position</b></center></td>";
+				html += "<td><center><b>Alt</b></center></td>";
+				html += "<td><center><b>Gene Name</b></center></td>";
+				html += "<td><center><b>Values</b></center></td>";
+				html += "</tr>";
+				var list_tr = String(text).split(';');
+				for (var i = 0; i < list_tr.length; i++){
+					html += "<tr>";
+					var list_td = String(list_tr[i]).split(',');
+					for (var j = 0; j < list_td.length; j++){
+						html += "<td><center>" + list_td[j] + "</center></td>";
+					}
+					html += "</tr>";
+				}
+				html += "</table><br><br>";
+				document.getElementById("div_dejavu_junction").innerHTML += html;
+				dijit.byId('dialog_dejavu_junction').show();
+			}
+			
 			function view_dejavu_nb_int_this_run_patients(project_name, patient_name, junction_vector_id, min_ratio) {
 				document.getElementById("div_dejavu_junction").innerHTML = "";
 				show_waiting("Search DejaVu (in this run)");
@@ -924,9 +1234,29 @@
 				url += "&min_score=" + value_score;
 				if (is_first_launch == 1) {
 					url += "&only_dejavu_ratio_10=1";
+					url += "&only_junctions_NDA=1";
+					url += "&only_junctions_A=1";
+					url += "&only_junctions_D=1";
 				}
-				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
-					url += "&only_dejavu_ratio_10=1";
+				else {
+					if ($('#b_regtools_nda').prop('checked')) {
+						url += "&only_junctions_NDA=1";
+					}
+					if ($('#b_regtools_da').prop('checked')) {
+						url += "&only_junctions_DA=1";
+					}
+					if ($('#b_regtools_a').prop('checked')) {
+						url += "&only_junctions_A=1";
+					}
+					if ($('#b_regtools_d').prop('checked')) {
+						url += "&only_junctions_D=1";
+					}
+					if ($('#b_regtools_n').prop('checked')) {
+						url += "&only_junctions_N=1";
+					}
+					if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+						url += "&only_dejavu_ratio_10=1";
+					}
 				}
 				if (only_gene_positions == '') {}
 				else if (only_gene_positions.match(':')) {
@@ -969,9 +1299,29 @@
 				url += "&min_score=" + value_score;
 				if (is_first_launch == 1) {
 					url += "&only_dejavu_ratio_10=1";
+					url += "&only_junctions_NDA=1";
+					url += "&only_junctions_A=1";
+					url += "&only_junctions_D=1";
 				}
-				else if ($('#b_dejavu_min_ratio_10').prop('checked')) {
-					url += "&only_dejavu_ratio_10=1";
+				else {
+					if ($('#b_regtools_nda').prop('checked')) {
+						url += "&only_junctions_NDA=1";
+					}
+					if ($('#b_regtools_da').prop('checked')) {
+						url += "&only_junctions_DA=1";
+					}
+					if ($('#b_regtools_a').prop('checked')) {
+						url += "&only_junctions_A=1";
+					}
+					if ($('#b_regtools_d').prop('checked')) {
+						url += "&only_junctions_D=1";
+					}
+					if ($('#b_regtools_n').prop('checked')) {
+						url += "&only_junctions_N=1";
+					}
+					if ($('#b_dejavu_min_ratio_10').prop('checked')) {
+						url += "&only_dejavu_ratio_10=1";
+					}
 				}
 				var only_gene_positions = document.getElementById('input_gene_positions').value;
 				if (only_gene_positions == '') {}
@@ -1075,6 +1425,7 @@
 	
 				var config = { modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: false};
 				Plotly.newPlot(plotname, data, layout,config);
+				
 			}
 			
 		</script>

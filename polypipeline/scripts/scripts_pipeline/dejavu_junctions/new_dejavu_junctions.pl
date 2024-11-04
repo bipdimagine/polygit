@@ -30,7 +30,7 @@ use GenBoNoSqlIntervalTree;
 
 my $cgi = new CGI;
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => 'NGS2022_5612' );
+my $project = $buffer->newProject( -name => 'NGS2023_7217' );
 $project->getChromosomes();
 
 my $nbok;
@@ -51,7 +51,9 @@ GetOptions(
 
 my $dv_dir_path = $project->DejaVuJunction_path();
 if ($release =~ /HG19/) { $release = 'HG19'; }
+elsif ($release =~ /HG38/) { $release = 'HG38'; }
 else { $dv_dir_path =~ s/HG19/$release/; }
+
 
 my $dv_dir_projects_path = $dv_dir_path.'/projects/';
 print "\n# Checking RNA-Projects Junctions";

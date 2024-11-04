@@ -40,6 +40,19 @@ sub setStructuralVariants {
 	}
 }
 
+
+sub setJunctions {
+	my ($self) = @_;
+	my @objs;
+	foreach my $p (@{$self->getProject()->getPatients}){
+		foreach my $o (@{$p->setJunctionsForReference($self)}){
+			$o->{references_object}->{$self->id} = undef;
+			$self->{$o->type_object}->{$o->id} = undef;
+		}
+	}
+	return $self->{junctions_object} ;
+}
+
 sub setVariants {
 	my ($self, $typeVar) = @_;
 	return if $self->deja_set;
@@ -52,8 +65,9 @@ sub setVariants {
 			$self->{$o->type_object}->{$o->id} = undef;
 		}
 	}
-	
 }
+
+
 sub setVariations {
 	my $self = shift;
 	$self->setVariants('variations');

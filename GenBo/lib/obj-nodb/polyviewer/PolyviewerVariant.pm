@@ -551,7 +551,23 @@ sub set_patient_cache {
 			}
 			return $hh;
 		}
-		if ($vh->isSrPr){
+		if ($vh->isJunction()) {
+			$hh->{name} = $p->name;
+			$hh->{isRI} = $vh->isRI($p);
+			$hh->{isSE} = $vh->isSE($p);
+			$hh->{is_sj} = $vh->is_sj($p);
+			$hh->{is_ri_aval} = $vh->is_ri_aval($p);
+			$hh->{is_ri_amont} = $vh->is_ri_amont($p);
+			$hh->{isRegtools} = $vh->isRegtools($p);
+			$hh->{get_nb_new_count} = $vh->get_nb_new_count($p);
+			$hh->{get_canonic_count} = $vh->get_canonic_count($p);
+			$hh->{get_dp_count} = $vh->get_dp_count($p);
+			$hh->{ratio} = $vh->ratio($p);
+			$hh->{get_percent_new_count} = $vh->get_percent_new_count($p);
+			$hh->{multiple_align_count} = $vh->multiple_align_count($p);
+			$hh->{is_sj} = $vh->is_sj($p);
+		}
+		elsif ($vh->isSrPr){
 			$hh->{gt} = $vh->getSequencingGenotype($p);
 			$hh->{norm_depth} = $vh->getNormDP($p);
 			$hh->{dude_score} = $vh->getCNVDude($p);
@@ -571,16 +587,16 @@ sub set_patient_cache {
 			$hh->{norm_after_after} = $vh->getNormDPAfter($p);
 		}
 		else {
-				$hh->{name} = $p->name;
-				$hh->{id} = $p->id;
-				$hh->{gt} = $vh->getSequencingGenotype($p);
-				$hh->{pc} = $vh->getRatio($p);
-				$hh->{dp} = $vh->getDP($p);
-				#$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
-				
-			}
-			$hh->{array_text_calling} = $vh->array_sequencing_text($p);
-			return $hh;
+			$hh->{name} = $p->name;
+			$hh->{id} = $p->id;
+			$hh->{gt} = $vh->getSequencingGenotype($p);
+			$hh->{pc} = $vh->getRatio($p);
+			$hh->{dp} = $vh->getDP($p);
+			#$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
+			
+		}
+		$hh->{array_text_calling} = $vh->array_sequencing_text($p) if not $vh->isJunction();
+		return $hh;
 }
 
 sub set_patient_cache_1 {
@@ -629,7 +645,10 @@ sub set_patient_cache_1 {
 sub set_patient {
 	my ($self,$vh,$patient) =@_;
 	my $hpatients;
-		if ($vh->isDude){
+		if ($vh->isJunction()) {
+			
+		}
+		elsif ($vh->isDude){
 			$self->setCnvValues($vh->getChromosome,$patient,$vh);
 		}
 		elsif ($vh->isCnv){
@@ -775,7 +794,59 @@ sub set_gene {
 }
 
 
-
+sub set_gene_junction {
+		my ($self,$j,$gene) =@_;
+		my  $transcripts = $gene->getTranscripts();
+		my $all_transcripts = [];
+		foreach my $tr1 (sort { ( ($b->isMane <=> $a->isMane))  or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
+				next if $tr1->getGene->id ne $gene->id;
+				my $htr = {};
+	
+				my $enst = $tr1->name;
+				$htr->{name} = $tr1->name();
+				$htr->{nm} = $tr1->external_name;
+				$htr->{ccds} = $tr1->ccds_name;
+				$htr->{ccds} = "-" if ($tr1->ccds_name && length($tr1->ccds_name) <3);
+				$htr->{appris} = $tr1->appris_type;
+				$htr->{main}=  0 ;
+		 		$htr->{main}  = 1 if $tr1->isMain();
+		 		$htr->{mane}  = 0 ;
+		 		$htr->{mane}  = 1 if $tr1->isMane();
+				my @coding_infos = ("sift","polyphen","prot","codons","codons_AA","impact_score_text","impact_score","consequence");
+			
+				#initialize
+				foreach my $c (@coding_infos){
+					$htr->{$c} = "-";
+				}
+				$htr->{exon} = $tr1->findExonNumber($j->start, $j->end);
+				$htr->{exon} = $tr1->findNearestExon($j->start, $j->end) if $htr->{exon} == -1;
+				$htr->{start} = "";
+				$htr->{end} = "";
+				my $r1 = $tr1->exons_introns_tree()->fetch($j->start,$j->start+1);
+				if (@$r1){
+					if ($r1->[0]->{type} eq "intron"){
+						$htr->{start} = "intron".$r1->[0]->{nb};
+					}
+					else {
+						$htr->{start} = $r1->[0]->{name};
+					}
+				}
+				 $r1 = $tr1->exons_introns_tree()->fetch($j->end,$j->end+1);
+				 if (@$r1){
+					
+					if ($r1->[0]->{type} eq "intron"){
+						$htr->{end} = "intron".$r1->[0]->{nb};
+					}
+					else {
+						$htr->{end} = $r1->[0]->{name};
+					}
+				}
+				 
+				push(@$all_transcripts,$htr);
+		}
+		my $score;
+		return {sc=>$score,tr=>$all_transcripts};
+}
 
 
 has get_genes_transcripts_details_dup_del => (
@@ -871,6 +942,7 @@ sub setLmdbVariant {
 		################
 		# Calling
 		##################
+		$self->isJunction(0);
 		$self->isSrPr($vh->isSrPr);
 		if ($vh->isCnv){
 			$self->isCnv(1);
@@ -936,6 +1008,49 @@ sub setLmdbVariant {
 	 }
 	
 }
+
+sub setLmdbJunction {
+	my ($self,$vh,$project,$gene,$patient) = @_; 
+		if ($project){
+			$vh->{project} = $project;
+			$vh->{buffer} = $project->buffer;
+		}
+		$self->id($vh->id);
+		$self->start($vh->start);
+		$self->end($vh->end);
+		$self->rocksdb_id($vh->rocksdb_id);
+		$self->chromosome($vh->getChromosome->name);
+		$self->name($vh->name);
+		$self->type($vh->type);
+		$self->{reference} = ref($vh);
+		$self->rocksdb_id($vh->rocksdb_id);
+		$self->isJunction(1);
+		
+		if($patient) {
+			my $hpatients = $self->set_patient_cache($vh, $patient);
+			$self->patients_calling($hpatients);
+		};
+		if($gene){
+			my $h = $self->set_gene_junction($gene);
+			$self->transcripts($h->{tr});
+			foreach my $k (keys %{$h->{sc}}){
+				$self->{$k} = $h->{sc}->{$k};
+			}
+		}
+		
+#	 my $ag;
+	 my $genes = $vh->getGenes;
+	$self->{other_genes} = {}; 
+	 if (scalar (@$genes) >1 ){
+	 	foreach my $g (@{$genes}){
+	 		$self->{other_genes}->{$g->id} = $g->external_name;
+		}
+	 }
+	
+}
+
+
+
 sub update_clinvar {
 	my ($self,$project,$gene) = @_;
 		my $vh = $project->_newVariant($self->id);
