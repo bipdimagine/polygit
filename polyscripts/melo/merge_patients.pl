@@ -60,15 +60,16 @@ foreach my $pdes (keys %$merge){
 	warn $project->getAlignmentDirName .'jobs_merge.txt';
 	
 	my $cmd_mv_bam;
+	my $cmd_lien_fastq;
 	foreach my $pat (@{$merge->{$pdes}}){
 		my $pname = $pat->name;
 		my $pat_dest = $newProject->getPatient($pat->name)
 			or confess ("Can't find patient '$pname' to merge in the destination project $pdes ");
 		
 		# Vérifie que les infos des 2 patients à merger sont identiques (méthodes alignement et calling)
-		die ("Alignment methods for the two patients to merge are not the same: $project_name".$pat->alignmentMethod." ; $pdes ".$pat_dest->alignmentMethod) if ($pat->alignmentMethod ne $pat_dest->alignmentMethod);
-		die ("Calling methods for the two patients to merge are not the same: $project_name ".join(', ',@{$pat->callingMethods})." ; $pdes ".join(', ',@{$pat_dest->callingMethods})) if (join(', ',@{$pat->callingMethods}) ne join(', ',@{$pat_dest->callingMethods}));
-		die ("Captures for the two patients to merge are not the same: $project_name".$pat->getCapture->name." ; $pdes ".$pat_dest->getCapture->name) if ($pat->getCapture->name ne $pat_dest->getCapture->name);
+		die ("Alignment method for the two patients to merge are different: $project_name".$pat->alignmentMethod." ; $pdes ".$pat_dest->alignmentMethod) if ($pat->alignmentMethod ne $pat_dest->alignmentMethod);
+		die ("Calling method(s) for the two patients to merge are different: $project_name ".join(', ',@{$pat->callingMethods})." ; $pdes ".join(', ',@{$pat_dest->callingMethods})) if (join(', ',@{$pat->callingMethods}) ne join(', ',@{$pat_dest->callingMethods}));
+		die ("Captures for the two patients to merge are different: $project_name".$pat->getCapture->name." ; $pdes ".$pat_dest->getCapture->name) if ($pat->getCapture->name ne $pat_dest->getCapture->name);
 		
 		# Merge les bam, puis trie le bam obtenu
 		my $samtools = $buffer->software("samtools");
@@ -80,9 +81,6 @@ foreach my $pdes (keys %$merge){
 		my $cmd_samtools_merge = "$samtools merge -f $merged_bam $bam1 $bam2";
 		my $cmd_samtools_index = "$samtools index $merged_bam";
 		warn ("'$merged_bam' already exits, overwritting") if (-e $merged_bam);
-#		warn $cmd_samtools_merge;
-#		warn $cmd_samtools_index;
-#		system("echo \"$cmd_samtools_merge -@ 20 ; $cmd_samtools_index -@ 20 \" | run_cluster.pl -cpu=20");
 		print {$fh} "$cmd_samtools_merge -@ 20 ; $cmd_samtools_index -@ 20 ; \n";
 		
 		# Efface les bams partiels ou les renomme
@@ -90,22 +88,31 @@ foreach my $pdes (keys %$merge){
 			$cmd_mv_bam->{$merged_bam} = "rm $bam1 $bam2 $bam1.bai $bam2.bai ; mv $merged_bam $bam1 ; mv $merged_bam.bai $bam1.bai";
 		}
 		else {
-#			my $bam1part = $bam1 =~ s/bam/part\.bam/r;
-#			my $bam2part = $bam2 =~ s/bam/part\.bam/r;
 			$cmd_mv_bam->{$merged_bam} = "mv $bam1 $bam1.part ; mv $bam1.bai $bam1.bai.part ; mv $bam2 $bam2.part ; mv $bam2.bai $bam2.bai.part ; mv $merged_bam $bam1 ; mv $merged_bam.bai $bam1.bai";
 		}
-#		warn $cmd_mv_bam;
-#		system($cmd_mv_bam);
-#		print {$fh} "$cmd_mv_bam\n";
 
 		#todo: déplacer fastq ?
+		my $fastq_files = $pat->fastqFiles;
+		my @fastq_files = map {values %$_} @$fastq_files;
+		my $dir_fastq_dest = $pat_dest->getSequencesDirectory;
+		foreach my $fastq (@fastq_files) {
+			$cmd_lien_fastq->{$fastq} = "ln -s $fastq $dir_fastq_dest" unless (-e $dir_fastq_dest.$fastq);
+		}
+		
 	}
 	close($fh);
 	system('cat '. $project->getAlignmentDirName ."jobs_merge.txt | run_cluster.pl -cpu=20") unless ($no_exec);
 	my @errors;
+#	warn Dumper $cmd_mv_bam;
 	foreach my $file (keys %$cmd_mv_bam){
+		warn $cmd_mv_bam->{$file};
 		system($cmd_mv_bam->{$file}) if (-e $file and not $no_exec);
-		push(@errors, $file=~s/\.merged\.bam//r) unless (-e $file);
+		push(@errors, $file) unless (-e $file);
+	}
+#	warn Dumper $cmd_lien_fastq;
+	foreach my $file (keys %$cmd_lien_fastq) {
+		warn $cmd_lien_fastq->{$file};
+		system ($cmd_lien_fastq->{$file}) unless (-e $file or $no_exec);
 	}
 	die ("Error while merging: ".join(', ',@errors)) if (scalar(@errors) and not $no_exec);
 	
