@@ -1030,7 +1030,7 @@ sub myflushobjects {
 					
 					my $obj;
 #					warn $self->isRocks();
-					if ($self->isRocks()) {
+					if ($self->isRocks() or $self->getVersion() =~ /HG38/) {
 						$obj = $self->rocksGenBo->genbo( $id );
 					}
 					else {
