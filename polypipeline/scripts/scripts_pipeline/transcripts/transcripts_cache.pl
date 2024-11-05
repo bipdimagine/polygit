@@ -80,7 +80,7 @@ warn "end";
 my $array;
 my $hgene;
 
-foreach my $p (@{$project->get_only_list_patients($patient_name)}){	
+my $p = $project->getPatient($patient_name);
 	my $array ={};
 	my $dir3 = $p->NoSqlDepthDir;
 	my $no2 = $p->getTranscriptsCoverageDepth("w");
@@ -105,7 +105,6 @@ foreach my $p (@{$project->get_only_list_patients($patient_name)}){
  		$hgene->{low} = {};
  		uri_image($lists,$p->name,$tmp);
 
-}
 system("rm -r $tmp") if $tmp=~/tmp/;
 
 #warn abs(time-$globaltime);

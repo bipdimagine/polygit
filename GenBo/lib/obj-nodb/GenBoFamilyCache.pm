@@ -335,13 +335,15 @@ sub getVector_individual_uniparental_disomy {
 #	warn $self->name;
 #	warn $self->getMother->name();
 #	warn $self->getFather->name();
-	
-	my $v1 = $self->getMother->getVectorOriginHe($chr)->Clone;
-	$v1 -=  $self->getFather->getVectorOrigin($chr);
+
+	my $v1 = $chr->getNewVector();
+	$v1 += $self->getMother->getVectorOriginHe($chr) if $self->getMother();
+	$v1 -=  $self->getFather->getVectorOrigin($chr)  if $self->getFather();
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $v1;
 
-	my $v2 = $self->getFather->getVectorOriginHe($chr)->Clone;
-	$v2 -=  $self->getMother->getVectorOrigin($chr);
+	my $v2 = $chr->getNewVector();
+	$v2 += $self->getFather->getVectorOriginHe($chr) if $self->getFather();;
+	$v2 -=  $self->getMother->getVectorOrigin($chr)  if $self->getMother();
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $v2;
 
 	return $self->{vector_transmission}->{$key}->{$chr->id};

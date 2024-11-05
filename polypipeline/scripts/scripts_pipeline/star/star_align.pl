@@ -51,7 +51,6 @@ my $fileout = "$dir_pipeline/$patient_name".".Aligned.sortedByCoord.out.bam";
 
 if (-e $fileout) {
 	system("samtools index   -@ $fork "."$fileout");
-	warn $bam_prod;
 }
 else {
 	die();
@@ -66,8 +65,6 @@ my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
 system ("$bgzip -f $sjprod &&  $tabix -f -p bed $sjprod".".gz");
 $sjprod = $sjprod.".gz";
-warn $sjprod;
-warn $sjfile;
 die("$sjprod") unless -e "$sjprod";
 die($bam_prod) unless -e $fileout.".bai";
 exit(0);

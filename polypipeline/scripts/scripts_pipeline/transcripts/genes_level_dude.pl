@@ -51,15 +51,15 @@ my $project = $buffer->newProjectCache( -name => $project_name);
 
 
 my $lists = $project-> getListTranscripts();
-$patient_name = "all" unless $patient_name;
-$project->get_only_list_patients($patient_name);
+confess() unless $patient_name;
+my $patient = $project->getPatient($patient_name);
 $project->getCaptures();
 $project->getRuns();
 
 #if ($patient_name eq "all" ){
- foreach my $patient (sort {$a->name cmp $b->name} @{$project->getPatients} ){
+ #foreach my $patient (sort {$a->name cmp $b->name} @{$project->getPatients} ){
  		by_gene($patient);
- }
+ #}
 exit(0);
 	sub by_gene {
 		my ($patient) = @_;
