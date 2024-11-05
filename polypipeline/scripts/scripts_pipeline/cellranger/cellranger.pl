@@ -78,6 +78,7 @@ my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
 #$patients_name = "all" unless $patients_name;
 $patients_name = $project->get_only_list_patients($patients_name);
+die("No patient in project $projectName") unless $patients_name;
 
 warn 'step='.$step;
 
@@ -130,13 +131,13 @@ if ($step eq "demultiplex" || $step eq "all"){
 
 
 if ($step eq 'teleport') {
-	system("teleport.sh -project=$projectName -force=1");
+	system("teleport_patient.sh -project=$projectName -force=1");
 #	system("perl /home/mperin/git/polygit/polypipeline/teleport_SC.pl -project=$projectName");
 #	system("perl /software/polyweb/poly-disk/poly-src/polypipeline/teleport_SC.pl -project=$projectName");
 }
 
 
-die ("Project $projectName is not in somatic mode. Activate somatic mode and check that the groups have been filled in, so that they can be taken into account in the analysis.") unless ($project->isSomatic or $step eq 'demultiplex');
+die ("Project $projectName is not in somatic mode. Activate somatic mode and check that the groups have been filled in, so that they can be taken into account in the analysis.") unless ($project->isSomatic or $step eq 'demultiplex' or $step eq 'teleport');
 my @group;
 foreach my $patient (@{$patients_name}) {
 	my $group = $patient->somatic_group();
@@ -384,79 +385,73 @@ if ($step eq "count" || $step eq "all"){
 if ($step eq "aggr" or $step eq "all"){
 	my $id = $projectName;
 	$id = $aggr_name if $aggr_name;
-	my ($aggr_cmd, $aggr_cmd_vdj);
 	my $aggr_file = $dir."/jobs_aggr.txt";
 	open (JOBS_AGGR, ">$aggr_file");
-	print JOBS_AGGR "sample_id,molecule_h5\n";
 	my $type = $project->getRun->infosRun->{method};
-	foreach my $patient (@{$patients_name}) {
-		my $group_type = lc($patient->somatic_group());
-		if ($group_type eq "exp") {	# ne "adt" or $_ ne "vdj"
-			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/outs/molecule_info.h5\n";
-		}
-	}
-	close JOBS_AGGR;
-	$aggr_cmd = "cd $dir ; $exec aggr --id=$id --csv=$aggr_file";
-	warn $aggr_cmd;
-#	system ($aggr_cmd)  unless $no_exec;
-	
-	if ($type =~ /vdj/) {
-		my $aggr_file_vdj = $dir."/jobs_aggr_vdj.txt";
-		open (JOBS_AGGR_VDJ, ">$aggr_file_vdj");
-		print JOBS_AGGR_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
+#	if ($type !~ /vdj/) {
+		my $aggr_csv = $dir."/aggr.csv";
+		open (AGGR_CSV, ">$aggr_csv");
+		print AGGR_CSV "sample_id,molecule_h5\n";
 		foreach my $patient (@{$patients_name}) {
 			my $group_type = lc($patient->somatic_group());
-			if ($group_type eq "vdj") {
-				print JOBS_AGGR_VDJ $patient->name().",".$dir."/".$patient->name()."/outs/vdj_contig_info.pb\n";
-			}
+#			if ($group_type eq "exp") {	# ne "adt" or $_ ne "vdj"
+				print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/outs/molecule_info.h5\n";
+#				print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/outs/per_sample_outs/Sample1/count/sample_molecule_info.h5\n";	# multi
+#			}
 		}
-		close JOBS_AGGR_VDJ;
-		$aggr_cmd_vdj = "cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_file_vdj";
-		warn $aggr_cmd_vdj;
-#		system ($aggr_cmd_vdj)  unless $no_exec;
-	}
-	system ("echo \"$aggr_cmd\n$aggr_cmd_vdj\" | run_cluster.pl -cpu=20")  unless $no_exec;
+		close AGGR_CSV;
+		print JOBS_AGGR "cd $dir ; $exec aggr --id=$id --csv=$aggr_csv";
+#	}
+	
+#	if ($type =~ /vdj/) {
+#		my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
+#		open (AGGR_CSV_VDJ, ">$aggr_csv_vdj");
+#		print AGGR_CSV_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
+#		foreach my $patient (@{$patients_name}) {
+#			my $group_type = lc($patient->somatic_group());
+#			if ($group_type eq "vdj") {
+#				print AGGR_CSV_VDJ $patient->name().",".$dir."/".$patient->name()."/outs/vdj_contig_info.pb,,\n";
+#			}
+#		}
+#		close (AGGR_CSV_VDJ);
+#		print JOBS_AGGR "cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj";
+##		print "Fill the 'donor' and 'origin' columns for each vdj sample in '$aggr_csv_vdj'.";
+##		print "Then run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=20'";
+##		print "Then run 'cat $aggr_file | run_cluster.pl -cpu=20'";
+#	}
+	close (JOBS_AGGR);
+	warn ("cat $aggr_file | run_cluster.pl -cpu=20");
+	system ("cat $aggr_file | run_cluster.pl -cpu=20")  unless $no_exec;
 }
 
-#if ($step eq "aggr" or $step eq "all"){
-#	my $aggr_file = $dir."/jobs_aggr.txt";
-#	my $id = $projectName;
-#	$id = $aggr_name if $aggr_name;
-#	open (JOBS_AGGR, ">$aggr_file");
-#	my $type = $project->getRun->infosRun->{method};
-#	if ($type =~ /vdj/) {
-#		print JOBS_AGGR "sample_id,vdj_contig_info,donor,origin\n" ;
-#	}
-#	else{
-#		print JOBS_AGGR "sample_id,molecule_h5\n";
-#	}	
-#	foreach my $patient (@{$patients_name}) {
-#		my $group_type = uc($patient->somatic_group());
-#		if ($group_type eq "VDJ") {
-#			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/"."outs/vdj_contig_info.pb\n";
-#		}
-#		else{	
-#			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/"."outs/molecule_info.h5\n";
-#		}
-#	}
-#	close JOBS_AGGR;
-#	my $aggr_cmd = "cd $dir ; $exec aggr --id=$id --csv=$aggr_file";
-#	warn $aggr_cmd;
-#	die();
-#	system ($aggr_cmd)  unless $no_exec==1;
-#}
 
 
-#foreach my $patient (@{$patients_name}) {
-#	my $name = $patient->name();
-#	my $file = $dir."/".$name."/outs/web_summary.html";
-#	print $file."\n" if -e $file ;
-#}
 
-##commande pour copier sur /data-isilon/singleCell
+if ($step eq "aggr_vdj") {
+	my $type = $project->getRun->infosRun->{method};
+	die ("No vdj in project $projectName") if ($type !~ /vdj/);
+	my $id = $projectName.'_VDJ';
+	$id = $aggr_name if $aggr_name;
+#	my $aggr_file_vdj = $dir."/jobs_aggr_vdj.txt";
+#	open (JOBS_AGGR_VDJ, ">$aggr_file_vdj");
+	my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
+	open (AGGR_CSV_VDJ, ">$aggr_csv_vdj");
+	print AGGR_CSV_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
+	foreach my $patient (@{$patients_name}) {
+		my $group_type = lc($patient->somatic_group());
+		if ($group_type eq "vdj") {
+			print AGGR_CSV_VDJ $patient->name().",".$dir."/".$patient->name()."/outs/vdj_contig_info.pb,,\n";
+		}
+	}
+	close (AGGR_CSV_VDJ);
+#	print JOBS_AGGR_VDJ "cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj";
+#	close (JOBS_AGGR_VDJ);
+	colored::stabilo('white', "Fill the 'donor' and 'origin' columns for each vdj sample in '$aggr_csv_vdj'.");
+	colored::stabilo('white', "Then run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=20'");
+#	print "Then run 'cat $aggr_file_vdj | run_cluster.pl -cpu=20'";
+	
+}
 
-#my $RefDateActuelle = date();
-#my $date = $RefDateActuelle->{date};
 
 
 
@@ -481,6 +476,7 @@ if ($step eq "cp" or $step eq "all"){
 	system ($cp_cmd) unless $no_exec;
 	foreach my $patient (@{$patients_name}) {
 		my $name = $patient->name();
+		next if ($name =~ /^ADT_/);
 		my $cp_cmd = "cp -ru $dir/$name $dirout/.";
 		warn $cp_cmd;
 		system ($cp_cmd) unless $no_exec;
@@ -498,14 +494,15 @@ cellranger.pl
 -------------
 Obligatoire:
 	project <s>				nom du projet
-	step <s>				étape à réaliser: demultiplex, count, tar, cp, aggr ou all
+	step <s>				étape à réaliser: demultiplex, count, tar, cp, aggr, aggr_vdj ou all (= demultiplex, count, aggr, tar, cp)
 	feature_ref				(si ADT et step=count) tableau des ADT
 Optionels:
 	patients <s>			noms de patients/échantillons, séparés par des virgules
 	nb_lane <s>				nombre de lanes utilisées pour le run, à regarder dans le RunInfo.xml. Par défaut, va lire le RunInfo.xml
 	create-bam/nocreate-bam	générer ou non les bams lors du count, défaut: create-bam
-	aggr_name				(si step=aggr) noms des patients/échantillons à aggréger
+	aggr_name				(si step=aggr ou aggr_vdj) noms de l'aggrégation
 	no_exec					ne pas exécuter les commandes
+	help
 
 ";
 	exit(1);
