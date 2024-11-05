@@ -728,7 +728,6 @@ sub software_version {
 		else {
 			confess("$name no version $version_json") unless -e $version_json;
 		}
-		warn $version_json;
 		open(JSON, $version_json);
 		#warn $self->lmdb_public_dir."$database/"."description.json";
  		my $desc = decode_json <JSON>;

@@ -935,16 +935,9 @@ sub getSomaticGroup {
 
 sub getNbGenes {
 	my $self = shift;
-	my $hash;
-	return 0 if ($self->getVariantsVector->is_empty());
-	my $nb = 0;
-	foreach my $gene (@{$self->getGenes()}) {
-		next unless $gene->getVectorOrigin();
-		next if ($gene->is_intergenic());
-		my $v = $self->getVariantsVector & $gene->getCurrentVector();
-		$nb++ if (not $v->is_empty()) ;
-	}
-	return $nb;
+	my @lGenes = @{$self->getGenesIdFromVector($self->getVariantsVector())};
+	return scalar (@lGenes);
+	return;
 }
 
 has genes_object => (
