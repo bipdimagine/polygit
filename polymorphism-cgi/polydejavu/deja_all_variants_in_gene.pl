@@ -1048,7 +1048,7 @@ sub update_list_variants_from_dejavu {
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 		
 		next if $var_id =~ /ALU/;
-		next if not $var_id =~ /[0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
+		next if not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
 		my $var = $project_dejavu->_newVariant($var_id);
 		if ($hVariantsDetails and exists $hVariantsDetails->{$var_id}) {
 			$var_gnomad = $hVariantsDetails->{$var_id}->{var_gnomad} if ($hVariantsDetails->{$var_id}->{var_gnomad});
@@ -1063,7 +1063,6 @@ sub update_list_variants_from_dejavu {
 			}
 			$var_model = $hVariantsDetails->{$var_id}->{model} if ($hVariantsDetails->{$var_id}->{model});
 		}
-		
 		next if ($var->isCnv() or $var->isLarge());
 		
 		my $not_ok;
@@ -1143,6 +1142,7 @@ sub update_list_variants_from_dejavu {
 			$total_pass++;
 			next;
 		}
+		
 		my ($has_proj, $ok_model);
 		my $hashVarId = $project_init->getDejaVuInfos($var_id);
 		
@@ -1192,6 +1192,7 @@ sub update_list_variants_from_dejavu {
 			}
 		}
 		next unless ($has_proj);
+		
 		next unless ($ok_model);
 		
 		my $table_gnomad = update_variant_editor::table_gnomad($var);
