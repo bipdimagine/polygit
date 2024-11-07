@@ -78,26 +78,29 @@ foreach my $patient (@{$project->getPatients()}) {
 	$path_out .= $patient->name().'/';
 	
 	my $out1 = "$path_out/extracted_$patient_name.bed";
-	system("rm $out1") if -e $out1;
 	my $cmd = "singularity run --writable-tmpfs";
 	$cmd .= " --pwd $path_out -B /data-isilon:/data-isilon -B /data-beegfs:/data-beegfs";
 	$cmd .= " /data-isilon/bipd-src/mhamici/Regtools/regtools_v_1_0_0.sif regtools junctions extract -o $out1";
 	$cmd .= " -s FR ".$patient->getBamFiles->[0];
-#	print "\necho  ---- CMD1\n$cmd\n";
+	system("rm $out1") if -e $out1;
 	system($cmd);
 	
 	my $out2 = "$path_out/annotated_$patient_name.bed";
-	system("rm $out2") if -e $out2;
 	my $cmd2 = "singularity run --writable-tmpfs";
 	$cmd2 .= " --pwd $path_out -B /data-isilon:/data-isilon -B /data-beegfs:/data-beegfs";
 	$cmd2 .= " /data-isilon/bipd-src/mhamici/Regtools/regtools_v_1_0_0.sif regtools junctions annotate -o $out2";
 	$cmd2 .= " $path_out/extracted_$patient_name.bed";
 	$cmd2 .= " ".$project->genomeFasta();
 	$cmd2 .= " ".$project->gtf_file();
-#	print "\necho  ---- CMD2\n$cmd2\n";
+	system("rm $out2") if -e $out2;
 	system($cmd2);
 	
-	my $cmd3 = "/bin/python $Bin/regtools_annotate_merge_polysplice.py -p $path_out -o $final_file";
+	my $python = $project->buffer->getSoftware("python_3.8");
+	my $python_path = $project->buffer->getSoftware("python_3.8_path");
+	my $cmd_path = 'export PYTHONPATH="${PYTHONPATH}:'.$python_path.'"';
+	system($cmd_path);
+	
+	my $cmd3 = "$python $Bin/regtools_annotate_merge_polysplice.py -p $path_out -o $final_file";
 	system($cmd3);
 	
 	my $cmd4 = "sort -k2,2 -k3,3n $final_file | bgzip > $final_file.gz";

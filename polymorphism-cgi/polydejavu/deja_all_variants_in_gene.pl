@@ -268,7 +268,7 @@ sub save_export_xls {
 	my $h_xls_args;
 	print '_save_xls_';
 	$project_dejavu->cgi_object(1);
-	my @lVarObj;
+	my (@lVarObj, $h_pubmed);
 	foreach my $pos (sort keys %{$hResVariants}) {
 		foreach my $var_id (sort keys %{$hResVariants->{$pos}}) {
 			$project_dejavu->print_dot(50);
@@ -277,6 +277,16 @@ sub save_export_xls {
 				$v->variationTypeInterface($gene_init);
 			}
 			push(@lVarObj, $v);
+			if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
+				foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
+					if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
+					}
+				}
+			}
 		}
 	}
 	my $xls_export = new xls_export();
@@ -324,6 +334,8 @@ sub save_export_xls {
 #	delete $project_dejavu->{rocksPartialTranscripts};
 	print "|";
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
+	print "|";
+	$xls_export->store_specific_infos('variants_pubmed', $h_pubmed);
 	print "|";
 	my $session_id = $xls_export->save();
 	print "|";
@@ -1031,17 +1043,21 @@ sub update_list_variants_from_dejavu {
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 		
 		next if $var_id =~ /ALU/;
-		next if not $var_id =~ /[0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
+		next if not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
+		my $var = $project_dejavu->_newVariant($var_id);
 		if ($hVariantsDetails and exists $hVariantsDetails->{$var_id}) {
 			$var_gnomad = $hVariantsDetails->{$var_id}->{var_gnomad} if ($hVariantsDetails->{$var_id}->{var_gnomad});
 			$var_gnomad_ho = $hVariantsDetails->{$var_id}->{var_gnomad_ho} if ($hVariantsDetails->{$var_id}->{var_gnomad_ho});
 			$var_dejavu = $hVariantsDetails->{$var_id}->{var_dejavu} if ($hVariantsDetails->{$var_id}->{var_dejavu});
 			$var_dejavu_ho = $hVariantsDetails->{$var_id}->{var_dejavu_ho} if ($hVariantsDetails->{$var_id}->{var_dejavu_ho});
-			$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			if ($only_transcript) {
+				$var_annot = $var->variationTypeInterface($transcript_dejavu);
+			}
+			else {
+				$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			}
 			$var_model = $hVariantsDetails->{$var_id}->{model} if ($hVariantsDetails->{$var_id}->{model});
 		}
-		
-		my $var = $project_dejavu->_newVariant($var_id);
 		next if ($var->isCnv() or $var->isLarge());
 		
 #		$var->{rocksdb_id} = $h_dv_rocks_ids->{$var_id}->{rocks_id};
@@ -1185,7 +1201,15 @@ sub update_list_variants_from_dejavu {
 #		if ($h_var->{value}->{dm} or $h_var->{value}->{clinvar_pathogenic}) { $color = "red"; }
 #		elsif  ($h_var->{value}->{hgmd_id} or $h_var->{value}->{clinvar_id}) { $color = "orange"; }
 		
-		
+		if ($only_transcript) {
+			my @new_list;
+			foreach my $htr (@{$h_var->{genes}->{$gene_init_id_for_newgene}}) {
+				if ($htr->{value}->{trid} eq $only_transcript) {
+					push(@new_list, $htr);
+				}
+			}
+			$h_var->{genes}->{$gene_init_id_for_newgene} = \@new_list;
+		}
 		$hVariantsDetails->{$var_id}->{alamut_link_variant} = html_polygenescout::print_alamut_variant_button($var->alamut_id());
 		$hVariantsDetails->{$var_id}->{table_varsome} = $table_varsome;
 #		$hVariantsDetails->{$var_id}->{var_gnomad} = $var_gnomad;
@@ -1360,6 +1384,7 @@ sub get_table_trio_from_object {
 		$table_trio .= $cgi->start_Tr();
 		my $users = join("<br>", @l_users);
 		my $proj_text = qq{<button onclick="get_popup_users('$users');">Users</button> - <b>$project_name</b>};
+		$proj_text .= qq{<sup>defidiag</sup>} if $patient->project->isDefidiag; 
 		$proj_text .= " - <span style='color:red;'>$pheno</span>" if ($pheno);
 		$proj_text .= "<br>$description";
 		my $igv_alamut_text = $h_var->{html}->{igv}."&nbsp;".$h_var->{html}->{alamut};

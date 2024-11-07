@@ -5401,9 +5401,6 @@ sub regtools_splices {
 	my $log_file = $self->project->project_log().'/regtools.'.$self->project->getVersion().'.log';
 	
 	my $cmd = "perl $bin_dev/../../../polypipeline/scripts/scripts_pipeline/regtools_caller.pl -project=$project_name -fork=$ppn -log=$log_file";
-	
-	warn $cmd;
-	
 	my $type = "regtools";
 	my $stepname = $project_name."@".$type;
 	my $job_bds  = job_bds_tracking->new(
