@@ -542,17 +542,18 @@ sub getVectorDenovoTransmission {
 sub getVector_individual_denovo {
 	my ($self, $chr,$child,$compute) = @_;
 	return $chr->getNewVector() unless $child->isChild; 
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	my $key = "denovo_".$child->name;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
+	unless ($self->isTrio) {
+		$self->{vector_transmission}->{$key}->{$chr->id} = $chr->getNewVector();
+		return  $self->{vector_transmission}->{$key}->{$chr->id};
+	}
 	if ($self->project->isRocks && !(defined $compute)){
 		 $self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"ind_denovo");
 		 return  $self->{vector_transmission}->{$key}->{$chr->id};
 	}
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
-	unless ($self->isTrio) {
-		 $self->{vector_transmission}->{$key}->{$chr->id} = $chr->getNewVector();
-		return  $self->{vector_transmission}->{$key}->{$chr->id};
-	}
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getVariantsVector($chr);
 	$self->{vector_transmission}->{$key}->{$chr->id} -= $self->getVectorParents($chr);
 	return $self->{vector_transmission}->{$key}->{$chr->id};
@@ -715,14 +716,13 @@ sub getModelVector_som_only_tissues_somatic {
 sub getVector_individual_recessive {
 	my ($self,$chr,$child,$compute) = @_;
 	return $chr->getNewVector() unless $child->isChild;
-		my $key = "recessive_".$child->id;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
+	my $key = "recessive_".$child->id;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	if ($self->project->isRocks && (! defined $compute)){
 		$self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"ind_recessive");
 		return $self->{vector_transmission}->{$key}->{$chr->id};
 	}
-	
-
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getHo($chr);
 	#my $vparent = $chr->getNewVector();
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $self->getMother->getHe($chr) if ($self->getMother());
