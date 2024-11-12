@@ -337,6 +337,12 @@ sub getIds_byCache_onlive {
 		$hash->{'cadd_score'} = $var->cadd_score();
 		$hash->{'cadd_score'} = '.' if $hash->{'cadd_score'} == -1;
 		$hash->{'ncboost'} = $var->ncboost_category().';'.$var->ncboost_score();
+		
+		my $release = 'hg38';
+		$release = 'hg19' if ($var->getProject->annotation_genome_version() =~ /HG19/);
+		my $varsome_url = qq{https://varsome.com/variant/$release/}.$var->gnomad_id();
+		$hash->{'varsome'} = $varsome_url;
+		
 		$hash->{'spliceAI'} = '-';
 		my (@lGenesIds, @GenesNames, @lGenesCons, @lGenesOmim, @lGenesPolywebScore);
 #		if ($var->isCnv() or $var->isLarge()) {
