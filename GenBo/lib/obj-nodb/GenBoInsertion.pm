@@ -190,6 +190,22 @@ has length => (
 	default	=> 1
 );
 
+sub theoric_vcf_id {
+	my ($self) = @_;
+	return $self->{theoric_vcf} if exists $self->{theoric_vcf} ;
+	my $start = $self->start;
+	my $pos = $self->start -1;
+	my $ref = $self->getChromosome()->sequence($start-1,$start-1);
+	my $allele_ref = $ref.$self->alternate_allele;
+	$self->{theoric_vcf}->{chromsome} = $self->getChromosome()->fasta_name;
+	$self->{theoric_vcf}->{ref} = $allele_ref;
+	$self->{theoric_vcf}->{alt} = $$ref;
+	$self->{theoric_vcf}->{position} = $pos;
+	
+	return $self->{theoric_vcf};
+}
+
+
 sub polyphenStatus {
 	my ( $self, $obj ) = @_;
 	if (not $obj) {

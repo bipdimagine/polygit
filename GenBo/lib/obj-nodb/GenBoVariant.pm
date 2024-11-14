@@ -112,9 +112,22 @@ default => sub {
 }
 );
 
-#populations frequence
+# lift_over
 
-#frequence homozygote from gnomad
+sub lift_over {
+	my ($self) = @_;
+	return $self->{lift_over_38} if exists $self->{lift_over_38};
+	my ($c,$s,$a,$b) = split("_",$self->vcf_id);
+	$self->{lift_over_38} = liftOver::lift_over_variant($self);
+	my $pvcf = $self->{lift_over_38}->{position_vcf} ;
+	$self->{lift_over_38}->{position} = $self->{lift_over_38}->{position_vcf} ;
+	$self->{lift_over_38}->{position} +=  1 unless $self->isVariation;
+	$self->{lift_over_38}->{vcf_id} = join("_",$self->{lift_over_38}->{chromosome}, $self->{lift_over_38}->{position_vcf},$a,$b);
+	($c,$s,$a,$b) = split("_",$self->id);
+	my $chr = $self->project->getChromosome($self->{lift_over_38}->{chromosome});
+	$self->{lift_over_38}->{id} = join("_",$chr->name, $self->{lift_over_38}->{position},$a,$b);
+	return $self->{lift_over_38};
+}
 
 #################
 #
@@ -238,6 +251,7 @@ has clinvar => (
 	default	=> sub {
 		my $self = shift;
 		my $db =  $self->getChromosome->get_lmdb_database("clinvar",$self->type_public_db);
+		warn $self->getChromosome->get_lmdb_database("clinvar",$self->type_public_db)->dir;
 		my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
 		return $pub;
 	}
