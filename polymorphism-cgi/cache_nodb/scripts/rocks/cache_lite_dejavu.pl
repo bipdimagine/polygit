@@ -89,39 +89,31 @@ foreach my $chr (@{$project->getChromosomes} ){
 		$hh->{$variation->id} = $variation->{heho_string};
 	}
 	store( $hh, $dir_out."/$chr_name.dv.freeze" ) if $hh;
-	warn $dir_out."/$chr_name.dv.freeze STORED!";
+	print $dir_out."/$chr_name.dv.freeze STORED!\n";
 	
 	$pm->finish();
 }
 $pm->wait_all_children();
 
+my $no = GenBoNoSql->new( dir => $root_dir, mode => "c" );
+$no->put( $project_name, "patients", $hpatients );
+my $atleast;
+foreach my $chr ( @{ $project->getChromosomes } ) {
+	print ' -> dejavu chr'.$chr->id()."\n";
+	my $fileout = $dir_out . "/" . $chr->name . ".dv.freeze";
+	warn "miss $fileout " unless -e $fileout;
+	next unless -e $fileout;
+	$atleast++;
+	my $h = retrieve $fileout;
+	$no->put( $project_name, $chr->name, $h );
+#	warn Dumper $h;
+}
+$no->close();
 
+if (-e $root_dir.'.'.$project_name.'.lite') {
+	warn $root_dir.'.'.$project_name.'.lite STORED';
+}
 
 exit(0);
 
-my $chr = $project->getChromosome("Y");
-#foreach my $chr (@{$project->getChromosomes} ){
-	
-	warn "!! start ".$chr->name;
-	my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->getRocksCacheDir("polyviewer_raw"),mode=>"r",name=>$chr->name);
-		warn $project->rocks_pipeline_directory("polyviewer_raw");
-		my $iter = $final_polyviewer->rocks->new_iterator->seek_to_first;
-		my $nb = 0;
-		warn "start chromosome ".$chr->name;
-		while (my ($var_id, $value) = $iter->each) {
-			$nb ++;
-			my $c = $chr->name."!";
-			next unless $var_id =~/^$c/;
-			if  (ref ($var_id) =~ /HASH/) {
-				warn Dumper $var_id;
-				
-			}
-			warn $var_id." ".$nb if $nb%1000 == 0;
-			my $v = $final_polyviewer->decode($value);
-			warn Dumper $v;
-			die();
-		
-	}
-	$final_polyviewer->close();
-#}
 
