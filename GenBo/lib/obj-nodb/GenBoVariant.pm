@@ -112,9 +112,28 @@ default => sub {
 }
 );
 
-#populations frequence
+# lift_over
 
-#frequence homozygote from gnomad
+sub lift_over {
+	my ($self,$version) = @_;
+	confess() unless $version;
+	my $origin_version = $self->project->genome_version_generic();
+	if ($origin_version eq $version) {
+		die();
+	}
+	
+	my $key = "lift_over_$version";
+	return $self->{$key} if exists $self->{$key};
+	
+	
+	liftOver::lift_over_variant($self,$version,$key);
+	return $self->{$key};
+	
+	return $self->{$key} unless $self->{$key};
+	
+	
+	return $self->{$key};
+}
 
 #################
 #
@@ -238,6 +257,7 @@ has clinvar => (
 	default	=> sub {
 		my $self = shift;
 		my $db =  $self->getChromosome->get_lmdb_database("clinvar",$self->type_public_db);
+		warn $self->getChromosome->get_lmdb_database("clinvar",$self->type_public_db)->dir;
 		my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
 		return $pub;
 	}

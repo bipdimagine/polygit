@@ -112,6 +112,19 @@ has ncboost_category => (
 	},
 );
 
+sub theoric_vcf_id {
+	my ($self) = @_;
+	return $self->{theoric_vcf} if exists $self->{theoric_vcf} ;
+	my $start = $self->start;
+	$self->{theoric_vcf}->{chromsome} = $self->getChromosome()->fasta_name;
+	$self->{theoric_vcf}->{ref} = $self->ref_allele;
+	$self->{theoric_vcf}->{alt} = $self->sequence;
+	$self->{theoric_vcf}->{position} = $self->start;
+	$self->{theoric_vcf}->{snp} = 1;
+	return $self->{theoric_vcf};
+}
+
+
 has revel_score => (
 	is		=> 'rw',
 	lazy	=> 1,

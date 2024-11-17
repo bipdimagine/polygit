@@ -2041,7 +2041,25 @@ has capture_dir => (
 	},
 
 );
+has chain_dir => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir  = $self->buffer()->config->{'public_data'}->{root} . "/chain/";
+		return $dir;
 
+	},
+
+);
+sub liftover_chain_file {
+	my ($self,$vto) = @_;
+	my $vfrom = $self->genome_version_generic;
+	my $file = $self->chain_dir.$self->buffer()->config->{'public_data'}->{"liftover_chain_".$vfrom."_".$vto};
+	confess($file." : chain file not found ") unless -e $file;
+	return $file;
+	
+}
 has dirGenomeGeneric => (
 	is      => 'rw',
 	lazy    => 1,
