@@ -4,6 +4,7 @@ use warnings;
 use IPC::Run3;
 use Exporter 'import';
 use Data::Dumper;
+use Bio::DB::Fasta;
 # Déclare les fonctions exportées
 our @EXPORT_OK = qw(lift_over_variants);
 #####
@@ -15,6 +16,7 @@ sub lift_over_variants {
     # Crée une entrée au format VCF
     my $vcf_input = "##fileformat=VCFv4.2\n";
     $vcf_input   .= "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+    my $bed_input="";
     my @string;
     my $vpos;
     my $res = {};
@@ -27,16 +29,19 @@ sub lift_over_variants {
    	 		$res->{$v->id}->{position_vcf} = $v->start;
    	 		next;
   		}
-  		
-    	push(@string, join("\t", $v->getChromosome->ucsc_name,$vcf_id->{position}, '.', $vcf_id->{ref},$vcf_id->{alt}, '.', '.',$v->id ));
+  		push(@string,join("\t", $v->getChromosome->ucsc_name,$vcf_id->{position},($vcf_id->{position}+1),$v->id ));
+    	#push(@string, join("\t", $v->getChromosome->ucsc_name,$vcf_id->{position}, '.', $vcf_id->{ref},$vcf_id->{alt}, '.', '.',$v->id ));
     	$vpos->{$v->id} = length($allele_ref) - length($allele_var);
     	
 	}
 	$vcf_input .= join("\n",@string);
+	$bed_input .= join("\n",@string);
+	
   # 	my $res =  run_crossmap ($project,$vcf_input,$version);
   
 
-   run_crossmap($project,$vcf_input,$version,$res);
+   #run_crossmap($project,$vcf_input,$version,$res);
+   run_liftOver($project,$bed_input,$version,$res);
    foreach my $v (@$variations){
    	my $id = $v->id;
    	die() unless exists $res->{$id};
@@ -59,7 +64,44 @@ sub lift_over_variant {
 	   my $id = $variation->id;
 		lift_over_variants($variation->project,[$variation],$version,$key);
 }
+sub run_liftOver {
+	my ($project,$bed,$version,$res) = @_;
+	my $chain_file = $project->liftover_chain_file($version);
+	die "Fichier de chaîne manquant !" unless -e $chain_file;
+	
+	my $fht = File::Temp->new(
+    	DIR    => "/tmp",     # Optionnel : répertoire pour le fichier
+    	SUFFIX => '.bed'      # Optionnel : suffixe du fichier
+	);
 
+	# Récupérer le nom du fichier
+	my $fileout = $fht->filename;
+		my $fht2 = File::Temp->new(
+    	DIR    => "/tmp",     # Optionnel : répertoire pour le fichier
+    	SUFFIX => '.bed'      # Optionnel : suffixe du fichier
+	);
+
+	# Récupérer le nom du fichier
+	my $fileout2 = $fht->filename;
+    # Vérifie si le fichier de chaîne existe
+    # Prépare la commande CrossMap
+    my $vg = "HG38_DRAGEN";
+    $vg = "HG19_MT" if $version eq "HG19";
+    my $fasta  = $project->buffer()->config->{'public_data'}->{root} . "/genome/"
+		  . $vg . "/fasta/all.fa";
+		  
+	my @cmd = (
+    	$project->buffer->software("liftOver"), "/dev/stdin", $chain_file,$fileout,"/dev/stderr"
+	);
+	
+	my $stdout;
+	my $stderr;
+	warn join(" ",@cmd);
+	run3 \@cmd, \$bed, \$stdout, \$stderr;
+	my $db = Bio::DB::Fasta->new($fasta);
+ parse_bed($fileout,$res,$db);
+ return 1;
+}
 sub run_crossmap {
 	my ($project,$vcf,$version,$res) = @_;
 	my $chain_file = $project->liftover_chain_file($version);
@@ -92,6 +134,8 @@ sub run_crossmap {
 	my $stdout;
 	my $stderr;
 	run3 \@cmd, \$vcf, \$stdout, \$stderr;
+	warn $stdout;
+	warn $stderr;
 
  parse_vcf($fileout,$res);
 }
@@ -128,6 +172,26 @@ sub run_crossmap {
 #	 parse_vcf($fileout);
 #	
 #}
+
+sub parse_bed {
+	my ($fileout,$res,$db) = @_;
+	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
+
+	# Lis le fichier ligne par ligne
+	while (my $line = <$fh>) {
+		warn $line;
+		chomp $line;  # Supprime le caractère de fin de ligne (\n)
+   	 	next if $line =~/^#/;
+   	 	my @t = split("\t",$line);
+   	 	
+   	 	my $id = $t[3];
+   	 	$res->{$id}->{chromosome} = $t[0];
+   	 	$res->{$id}->{position_vcf} = $t[1];
+	}
+
+# Ferme le fichier
+close($fh);
+}
 sub parse_vcf {
 	my ($fileout,$res) = @_;
 	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
@@ -140,6 +204,7 @@ sub parse_vcf {
    	 	my $id = $t[7];
    	 	$res->{$id}->{chromosome} = $t[0];
    	 	$res->{$id}->{position_vcf} = $t[1];
+   	 	
 	}
 
 # Ferme le fichier
