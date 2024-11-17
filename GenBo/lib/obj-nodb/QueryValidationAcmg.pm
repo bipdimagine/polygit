@@ -133,7 +133,6 @@ sub insertVariationLiftOverVariant {
 sub createVariation {
 	my ($self,$v) = @_;
 	my $id = $self->getIdFromVariation($v);
-	warn $id;
 	unless ($id){
 		
 		$id = $self->insertVariation($v);

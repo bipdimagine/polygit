@@ -54,15 +54,9 @@ my $bam_lines2 ="";
 my $gene = $project->newGene($gene_id);
 my $id = $vquery->createVariation($variation);
 die() unless $id;
-warn "coucou";
-warn $vquery->db;
-warn $vquery;
 $vquery->createValidation($id,$variation,$patient,$gene,$user,$value);
-warn "create";
 $buffer->dbh->commit() if $id;
-
 sendOK("ok");
-1;
 }
 or do {
 	warn "Error captured : $@\n";
