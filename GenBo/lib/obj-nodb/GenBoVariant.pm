@@ -115,18 +115,24 @@ default => sub {
 # lift_over
 
 sub lift_over {
-	my ($self) = @_;
-	return $self->{lift_over_38} if exists $self->{lift_over_38};
-	my ($c,$s,$a,$b) = split("_",$self->vcf_id);
-	$self->{lift_over_38} = liftOver::lift_over_variant($self);
-	my $pvcf = $self->{lift_over_38}->{position_vcf} ;
-	$self->{lift_over_38}->{position} = $self->{lift_over_38}->{position_vcf} ;
-	$self->{lift_over_38}->{position} +=  1 unless $self->isVariation;
-	$self->{lift_over_38}->{vcf_id} = join("_",$self->{lift_over_38}->{chromosome}, $self->{lift_over_38}->{position_vcf},$a,$b);
-	($c,$s,$a,$b) = split("_",$self->id);
-	my $chr = $self->project->getChromosome($self->{lift_over_38}->{chromosome});
-	$self->{lift_over_38}->{id} = join("_",$chr->name, $self->{lift_over_38}->{position},$a,$b);
-	return $self->{lift_over_38};
+	my ($self,$version) = @_;
+	confess() unless $version;
+	my $origin_version = $self->project->genome_version_generic();
+	if ($origin_version eq $version) {
+		die();
+	}
+	
+	my $key = "lift_over_$version";
+	return $self->{$key} if exists $self->{$key};
+	
+	
+	liftOver::lift_over_variant($self,$version,$key);
+	return $self->{$key};
+	
+	return $self->{$key} unless $self->{$key};
+	
+	
+	return $self->{$key};
 }
 
 #################

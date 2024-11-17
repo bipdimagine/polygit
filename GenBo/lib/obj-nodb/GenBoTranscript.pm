@@ -11,6 +11,7 @@ use List::Util qw(min sum);
 use List::MoreUtils qw(any bsearch_index  );
  use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
  use Scalar::Util qw(looks_like_number);
+ use Carp;
 extends "GenBoGenomic";
 
 has isTranscript => (

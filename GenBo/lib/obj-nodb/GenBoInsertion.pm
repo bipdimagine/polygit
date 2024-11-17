@@ -199,7 +199,7 @@ sub theoric_vcf_id {
 	my $allele_ref = $ref.$self->alternate_allele;
 	$self->{theoric_vcf}->{chromsome} = $self->getChromosome()->fasta_name;
 	$self->{theoric_vcf}->{ref} = $allele_ref;
-	$self->{theoric_vcf}->{alt} = $$ref;
+	$self->{theoric_vcf}->{alt} = $ref;
 	$self->{theoric_vcf}->{position} = $pos;
 	
 	return $self->{theoric_vcf};

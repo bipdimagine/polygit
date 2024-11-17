@@ -293,6 +293,8 @@ has tabix_coverage => (
 	}
 );
 
+
+
 #has bio_db_sam => (
 #	is		=> 'ro',
 #	lazy	=> 1,
@@ -418,6 +420,18 @@ has sequencesDir => (
 		return $seq_dir;
 
 	},
+);
+
+
+has constructor => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self        = shift;
+		my $run         = $self->getRun();
+		warn Dumper $run->infosRun;
+		return  "short-read";
+	}
 );
 
 sub getCaptureFile {
@@ -1474,13 +1488,36 @@ sub getBamFileName {
 	}
 	else {
 	my $methods = $self->alignmentMethods();
-	die( $self->project->name." ".Dumper($methods)) if scalar(@$methods) > 1;
+	confess( $self->project->name." ".Dumper($methods)) if scalar(@$methods) > 1;
 	 $bam_dir = $self->getProject->getAlignmentDir( $methods->[0] );
 	}
 	die() unless $bam_dir;
 	my $bam     = $bam_dir . "/" . $self->name . ".bam";
 	return $bam;
 }
+
+sub getPhysicalFilesDir {
+	my ( $self, $method_name,$version ) = @_;
+	return $self->{files_dir} if exists $self->{cram_dir};
+	$self->{files_dir} = "/data-isilon/sequencing/ngs/FILES/".$self->id."/";
+	return $self->project->makedir($self->{files_dir});
+	return $self->{files_dir};
+}
+
+sub getPhysicalFileName {
+	my ( $self, $method_name,$version,$type ) = @_;
+	confess("bam or cram" ) unless $type;
+	
+	my $bam_dir = $self->getPhysicalFilesDir();
+	unless ($method_name){
+		confess("miss method name ")  unless $type;
+	}
+	die() unless $bam_dir;
+	my $bam     = $bam_dir . "/" . $self->name .".$version.".$method_name.".$type";
+	return $bam;
+}
+
+
 sub getCramFileName {
 	my ( $self, $method_name,$version ) = @_;
 	my $bam_dir;
@@ -2237,6 +2274,7 @@ sub get_data_primers {
 	return undef;
 }
 
+
 sub getCoverage {
 	my ( $self, $chr, $start, $end ) = @_;
 	my $tabix = $self->tabix_coverage();
@@ -2303,8 +2341,7 @@ sub load_cached_statistics {
 		if ( $chr_name =~ /X/ ) {
 			my $chr = $self->project->getChromosome("X");
 			unless ( $chr->isPseudoAutosomal( $start, $end ) ) {
-				$self->{statistics}->{$key}->{corrected_mean} *= 2
-				  if $self->isMale();
+				$self->{statistics}->{$key}->{corrected_mean} *= 2 if $self->isMale();
 			}
 
 		 #$self->{statistics}->{$key}->{corrected_mean} *= 2 if $self->isMale();
@@ -3073,6 +3110,7 @@ sub sd_value_dude {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	my $chr_name_control = $chr_name;
  	$chr_name_control.="_".$self->sex if $chr_name eq "X";
+ 	return 1 unless ($self->isGenome);
  	confess() unless $self->project->isGenome();
 	return $self->getCapture->sd_controls_dude->getMean( $chr_name_control, $start, $end );
 }
