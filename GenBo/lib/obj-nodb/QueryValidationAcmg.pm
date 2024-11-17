@@ -129,13 +129,10 @@ sub insertVariationLiftOverVariant {
 		insert into $db.variations (polyid,vcfid,version,chromosome,start,end,sequence,type,rs,uniq_id) values ("$genbo_id","$vcf_id","$version1" ,"$chr",$start,$end,"$seq","$type","$name",$id);
 	};
 	$self->dbh->do($query) || die($query);
-	warn "end 38";
-	
 	}
 sub createVariation {
 	my ($self,$v) = @_;
 	my $id = $self->getIdFromVariation($v);
-	warn $id;
 	unless ($id){
 		
 		$id = $self->insertVariation($v);
