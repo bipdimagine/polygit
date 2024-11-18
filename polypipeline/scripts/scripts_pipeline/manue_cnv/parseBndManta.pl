@@ -137,7 +137,7 @@ foreach my $thePatient (@listPatients)
 			
 			next  if ($chrnum eq "MT"); 	
 			next  if ($chrnum eq "M"); 
-
+			next unless $project->isChromosomeName($chrnum);
 			$chrnum = 23 if ($chrnum eq "X");
 			$chrnum = 24 if ($chrnum eq "Y");
 			

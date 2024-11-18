@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-
+use FindBin qw($Bin);
 use Carp;
 use strict;
 use JSON;
@@ -13,11 +13,13 @@ use Storable qw(store retrieve freeze);
 use Clone qw(clone);
 use Parallel::ForkManager;
 use strict;
-use FindBin qw($Bin);
+use Text::CSV qw( csv );
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use Getopt::Long;
-
+use lib "$Bin";
+require  "$Bin/SVParser.pm";
 use GBuffer;
+
 
 
 
@@ -40,7 +42,7 @@ my $patient_name;
 my $fork =1 ;
 GetOptions(
 	'project=s' => \$projectname,
-#	'patient=s' => \$patient_name,
+	'patient=s' => \$patient_name,
 	'fork=s' => \$fork,
 );
 
@@ -55,8 +57,11 @@ my $buffer = GBuffer->new();
 
 my $project = $buffer->newProjectCache( -name => $projectname);
 
-my $listCallers = $project->callingSVMethods();
+
 my $listPatients = $project->getPatients();
+if ($patient_name) {
+	$listPatients = [$project->getPatient($patient_name)];
+}
 
 
 
@@ -74,7 +79,7 @@ my $fd;
 my $compteur=0;
 	
 # pour stocker les SV
-my $hPat_elementaryCNV;  # tous les CNV du vcf  (élémentaires = avant regroupement)
+
 my $hPat_CNV; # pour les id_globaux
 
 # pour le dejavu
@@ -85,9 +90,8 @@ my $hdejavu;
 #########################################
 #  Pour les duplications segmentales
 #########################################
-my $cytodir = $project->dirCytoManue;	
-my $fichier_dupseg = $cytodir."/super_Duplication.gff3";
-warn $fichier_dupseg;
+my $cytodir = $project->get_cytology_directory;	
+my $fichier_dupseg = $cytodir."/segmental_duplication.bed";
 my $fdds;
 
 #  Lecture du fichier dupseg
@@ -99,17 +103,12 @@ my $fdds;
 	{
 		next unless ($ligne =~ m/^chr/ );
 		my @champs = split(/\t/,$ligne);
-		my @info = split(/;/,$champs[8]);
-		
-		my ($n,$idd) = split(/=/,$info[0]);
-		my ($i,$percentid) = split(/=/,$info[1]);
 		
 		my $chr = $champs[0];
-		my $start = $champs[3];
-		my $end = $champs[4];
+		my $start = $champs[1];
+		my $end = $champs[2];
 		
-		my $idLocation = $idd.":".$start."_".$end;
-		
+		my $idLocation = $chr.":".$start."_".$end;
 		# version avec IntervalTree
 		if (!exists $hdupseg->{$chr})
 		{
@@ -135,11 +134,19 @@ my $SVdeb;
 # pour la sauvegarde des fichiers de sortie
 #my $variationsDir = "/data-xfs/Manue/Test_SV/".$projectname."/newVersion/";
 #my $variationsDir= $project->getVariationsDir();
-my $variationsDir= $project->getCNVDir();
+my $variationsDir = $project->getCNVDir();
+
 my $pm = new Parallel::ForkManager($fork);
 $project->getChromosomes();		
 my $job_id = time;
 my $hjobs ;
+my $chrs;
+foreach my $c (@{$project->getChromosomes}){
+	next if $c->name eq "MT";
+	$chrs->{$c->name} ++;
+	$chrs->{$c->ucsc_name} ++;
+}
+
 $pm->run_on_finish(
     	sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
     		my $j = $data->{job};
@@ -147,33 +154,45 @@ $pm->run_on_finish(
     		
     }
     );
-    $project->buffer->dbh_deconnect();
+  $project->buffer->hash_genes_omim_morbid();
+  $project->setPhenotypes();
+    
+  $project->disconnect();
+  $buffer->dbh_deconnect();
+  
+  
+  foreach my $patobj (@$listPatients)
+{
+	my $listCallers = $patobj->callingSVMethods();
+	 $patobj->isGenome;
+}
+  $project->disconnect();
+  $buffer->dbh_deconnect();
+
 foreach my $patobj (@$listPatients)
 {
 	warn "------------";
 	warn $patobj->name;
 	warn "---------------";
-	next if  $patient_name && $patobj->name ne $patient_name ;
+	my $listCallers = $patobj->callingSVMethods();
 	#or $patobj->name ne "dl-2-E-sg-A";
 	next unless $patobj->isGenome;
 	$job_id ++;
 	$hjobs->{$job_id} ++;
 	my $pid = $pm->start and next;
+	$listCallers = $patobj->callingSVMethods();
 	$project->buffer->dbh_reconnect();
 	my $patname= $patobj->name();
 	my $file_out = $variationsDir.$patname.".allCNV";
 	unlink  $file_out if -e $file_out;
 	#next if (-e $file_out);
-	
-	
+	my $patient = $patobj;
+	my $hPat_elementaryCNV;  # tous les CNV du vcf  (élémentaires = avant regroupement)
+	warn Dumper @$listCallers;
 	foreach my $caller (@$listCallers)
 	{
 		next if $caller eq "lumpy";
-		my $GT = "-";
-		my $CN = "-";
-		my $WC_ratio=0;
-		my $WC_zscore=0;
-		my $QUAL=0;
+		warn "+++".$caller;
 		
 		my $dir = $project->getVariationsDir($caller);
 	
@@ -181,231 +200,118 @@ foreach my $patobj (@$listPatients)
 		#    pour recuperer le format
 
 		my $fichier_Annot = $patobj->getAnnotSVFileName($caller);
-				
+			warn $fichier_Annot;
 		if ($fichier_Annot)
 		{
-			open($fdannot,$fichier_Annot) or die("open: $!");
+			open($fdannot,$fichier_Annot) or die("*************  open: $!  $fichier_Annot");
 	
 			# lecture de la première ligne
 			$ligne = <$fdannot>;
 			my @champs = split(/\t/,$ligne);
 			my $ind=0;
-	
 			foreach my $c (@champs)
 			{
 				chomp($c);
 				$hannot->{$caller}->{$c}=$ind;   	#on stocke le numero du champs
 				$ind++;
 			}
+			close($fdannot);
 		}
-				
 		my $fichierPatient = $patobj->getSVFile($caller);
-				
+		my $res;	
 		if ($caller  eq "wisecondor")
 		{
-			# ouverture du fichier wisecondor et parsing
-			open($fd," zcat $fichierPatient | ") or die("open: $!");
-			
-			# lecture de la première ligne
-			$ligne = <$fd>;
-
-			# traitement des lignes suivantes pour le fichier en entier
-			while( defined( $ligne = <$fd> ) )
-			{
-						my @champs = split(/\t/,$ligne);
-		
-						$SVchr="chr".$champs[0];
-						$SVdeb=$champs[1];
-						$SVend=$champs[2];
-						$WC_ratio=$champs[3];
-						$QUAL=$champs[4];
-						$SVtype = $champs[5];
-		
-				  		$SVtype = "DEL" if  ($SVtype =~ m/loss/);
-						$SVtype = "DUP" if ($SVtype =~ m/gain/);
-		
-						# on ne garde que les lignes qui de longueur > length
-						#my $SVlength = $SVend-$SVdeb;
-						#next if ( abs($SVlength) < $length);		
-						
-						# si ca passe ...	
-						saveVariant($patobj,$caller,$SVtype,$SVchr,$SVdeb,$SVend,$GT,$CN,$WC_ratio,$QUAL);
-			}
+				my $hash = SVParser::parse_wisecondor($patient);
+				$hPat_CNV->{'wisecondor'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
 		}
-
-		if ($caller eq "canvas")
-		{
-	
-			# ouverture du fichier canvas et parsing
-			open($fd," zcat $fichierPatient | ") or die("open: $!");
-
-			# on skipe le Header et la ligne des champs
-			while( defined( $ligne = <$fd> ) &&  $ligne =~ m/^#/ ) {}
-
-			# traitement des lignes suivantes pour le fichier en entier
-			while( defined( $ligne = <$fd> ) )
-			{
-		
-					my @champs = split(/\t/,$ligne);
-					my @champsINFO= split(/;/,$champs[7]);
-					my @champsPAT= split(/:/,$champs[9]);
-					
-					$SVchr=$champs[0];
-
-					next  if ($SVchr eq "chrMT"); 	
-					next  if ($SVchr =~ m/^GL/); 
-					next  if ($SVchr =~ m/^hs37d5/);
-					
-					
-					$SVdeb=$champs[1];
-					my $CN = $champs[4];
-					$CN =~ s/<//g;
-					$CN =~ s/>//g;
-					
-					$QUAL = $champs[5];
-		 
-					my @canvasinfo=split(/:/,$champs[2]);
-					$SVtype = $canvasinfo[1];
-		
-					$SVtype = "DEL" if ($SVtype eq "LOSS");
-					$SVtype = "DUP" if ($SVtype eq "GAIN");
-					$SVtype = "LOH" if ($SVtype eq "LOH");
-		
-
-					next unless ( ($SVtype eq "DUP") || ($SVtype eq "DEL") );				# pour l'instant on ne s'interresse que au DUP/DEL 
-					next if ( ( $champs[6] ne "PASS"));													# on ne garde que les lignes ou PASS
-		
-					# recuperation des donnees de INFO : TYPE  END et length
-					$SVend=0;
-					$SVlength=0;
-					foreach my $c (@champsINFO)
-					{
-							my ($key,$val)=split(/=/,$c);
-							$SVend = $val if ($key eq "END");
-							$SVlength = $val if ($key eq "CNVLEN");
-					}
-		
-					# on ne garde que les lignes qui de longueur > length
-					#next if ( abs($SVlength) < $length);		
-					
-					my $GT = $champsPAT[0];
-					
-					# si ca passe ...	
-					saveVariant($patobj,$caller,$SVtype,$SVchr,$SVdeb,$SVend,$GT,$CN,$WC_ratio,$QUAL);
-			}
+		elsif ($caller  eq "manta" or $caller  eq "pbsv" or $caller  eq "dragen-sv") {
+			$hPat_CNV->{'manta'}  = SVParser::parse_vcf($patient,$caller);
 		}
-	
-		if ($caller eq "manta")
-		{	
-				# ouverture du fichier manta zippé
-				open($fd," zcat $fichierPatient | ") or die("open: $!");
-		
-				# on skipe le Header et la ligne des champs
-				while( defined( $ligne = <$fd> ) &&  $ligne =~ m/^##/ ) {}
-	
-			# traitement des lignes suivantes pour le fichier en entier
-			while( defined( $ligne = <$fd> ) )
-			{
-			
-				my @champs = split(/\t/,$ligne);
-				my @champsINFO= split(/;/,$champs[7]);
-				my @champsPAT = split(/:/,$champs[9]);
-
-				$SVchr=$champs[0];
-				
-				next  if ($SVchr eq "chrMT"); 	
-				next  if ($SVchr =~ m/^GL/); 
-				next  if ($SVchr =~ m/^hs37d5/);
-				next  if ($SVchr =~ m/^NC_/);
-				
-				$SVdeb=$champs[1];
-				$QUAL = $champs[5];
-		
-				# recuperation des donnees de INFO : TYPE  END et length
-				$SVend=0;
-				$SVlength=0;
-				$SVtype="-";
-				
-				foreach my $c (@champsINFO)
-				{
-					my ($key,$val)=split(/=/,$c);
-					$SVtype = $val if ($key eq "SVTYPE");
-					$SVend = $val if ($key eq "END");
-					$SVlength = $val if ($key eq "SVLEN");
-				}
-				
-		
-				#next unless ($QUAL > 400); 																# on ne garde que les lignes de bonne qualite
-				next unless ( ($SVtype eq "DUP") || ($SVtype eq "DEL") );				# pour l'instant on ne s'interresse que au DUP/DEL 
-				#next if ( abs($SVlength) < $length);													# on ne garde que les lignes qui de longueur > length
-				next if ( ( $champs[6] ne "PASS")); 													# on ne garde que les lignes ou PASS
-	
-				$GT = $champsPAT[0];		
-
-				# si ca passe 			
-				saveVariant($patobj,$caller,$SVtype,$SVchr,$SVdeb,$SVend,$GT,$CN,$WC_ratio,$QUAL);
-				
-			} # fin du fichier
-		}	# fin du if
-		
-	} # fin de la boucle sur les callers
-	
-	#on recopie tels quel sles CNV manta
-	$hPat_CNV->{$patname}->{'manta'} = clone($hPat_elementaryCNV->{$patname}->{'manta'});
-	
-	# gestion des CNV fragmentes par wisecondor et canvas
-	gatherCNV_from_samecaller($patname,"wisecondor");
-	gatherCNV_from_samecaller($patname,"canvas");
+		elsif ($caller  eq "hificnv" or $caller  eq "canvas" or $caller  eq "dragen-cnv") {
+			my $hash  = SVParser::parse_vcf($patient,$caller);
+			$hPat_CNV->{'canvas'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
+		}
+	}
 	
 	# on recupere la liste des genes et le score max corespondant au CNV
 	# et les infos de cytogenetique : duplications segmentaires et cytoband
-	setComplementaryInfos($patname);	
+	
+	$project->buffer->disconnect();
+	#$project->buffer->dbh_reconnect();
+	
+	
+	
+	
 	# on freeze la table correspondant à chaque patient individuelement
-	store(\ %{$hPat_CNV->{$patname}}, $file_out) or die "Can't store $file_out for ".$patname."!\n";
-$pm->finish(0,{job=>$job_id});
+	store($hPat_CNV, $file_out) or die "Can't store $file_out for ".$patname."!\n";
+	
+	
+	
+#	warn "--- end gather --- ";
+##	my $file_out_gather = $variationsDir.$patname.".gatherCNV";
+#	unlink  $file_out_gather if -e $file_out_gather;
+#	store($gather, $file_out_gather) or die "Can't store $file_out_gather for ".$patname."!\n";
+#	warn "end freeze";
+	$pm->finish(0,{job=>$job_id});
 } # fin boucle sur les patients
 $pm->wait_all_children();
+warn "END PATIENT !!!";
 confess() if scalar(keys %{$hjobs});
 $project->buffer->dbh_reconnect();
 
 ###############
 # pour le dejavu
 ###############
+warn "end fork ";
+warn "=================";
+warn "=================";
+warn "=================";
+my $hPat_allCNV;
 
-foreach my $patobj (@$listPatients)
+foreach my $patObj (@{$project->getPatients()})
 {
-	next unless $patobj->isGenome;
-	my $patname= $patobj->name();
-	my $hPat_allCNV;
+	next unless $patObj->isGenome;
+	my $patname= $patObj->name();
 	
-	warn "dejavu ".$patname;
 	
 	my $CNVfile = $variationsDir.$patname.".allCNV";
-	my $hPat_allCNV = retrieve($CNVfile) or die "Can't retrieve datas from " . $CNVfile . " !\n";
+	 $hPat_allCNV->{$patObj->id} = retrieve($CNVfile) or die "Can't retrieve datas from " . $CNVfile . " !\n";
 	
-	foreach my $caller (keys %{$hPat_allCNV})
+	foreach my $caller (keys %{$hPat_allCNV->{$patObj->id}})
 	{
-		foreach my $type (keys %{$hPat_allCNV->{$caller}})
-		{
-			foreach my $num (keys %{$hPat_allCNV->{$caller}->{$type}})
-			{
-				foreach my $global_id  (keys %{$hPat_allCNV->{$caller}->{$type}->{$num}})
+		
+				foreach my $global_id  (keys %{$hPat_allCNV->{$patObj->id}->{$caller}})
 				{
-						$hdejavu->{$type}->{$num}->{$global_id}->{$patname}->{$caller}++;
+						$hdejavu->{$global_id}->{$patname}->{$caller}++;
+						#$csv->print($fh, [$global_id,"$type",$num,$patname,$caller]) or die "Erreur d'écriture dans le fichier CSV : " . $csv->error_diag();
 				}
-			}
-		}
+		
 	}
 }
-						
-						
-						
+
+warn $variationsDir."/dejavu/";	
+				
+my $nodejavu = GenBoNoSqlDejaVuCNV->new( dir =>$variationsDir."/dejavu/", mode => "c" );	
+foreach my $chr (@{$project->getChromosomes}){
+	$nodejavu->create_table($chr->name);
+}
+foreach my $gb (keys %{$hdejavu}){
+	$nodejavu->insert_cnv($gb,$hdejavu->{$gb},{});
+	
+}		
+
+
+# Fermer le fichier
+			
 		
 # freeze la table du dejavu pour le projet
 my $file_dejavu_inthisproject = $variationsDir.$projectname."_dejavu.allCNV";
 my $file_dejavu = $project->DejaVuCNVFile();
-store(\ %{$hdejavu}, $file_dejavu_inthisproject) or die "Can't store $file_dejavu_inthisproject!\n";
-store(\ %{$hdejavu}, $file_dejavu) or die "Can't store $file_dejavu!\n";
+store($hdejavu, $file_dejavu_inthisproject) or die "Can't store $file_dejavu_inthisproject!\n";
+store($hdejavu, $file_dejavu) or die "Can't store $file_dejavu!\n";
+
+
+
 
 exit(0);
 
@@ -415,274 +321,30 @@ exit(0);
 ####################################		
 
 
-sub saveVariant()
+
+sub setComplementaryInfos
 {
-	my ($patobj,$Caller,$SVtype,$SVchr,$SVdeb,$SVend,$GT,$CN,$WC_ratio,$QUAL) = @_;
-	my $patname = $patobj->name();
-	
-	print $patobj->name." Save : $compteur :  $patname $Caller $SVtype $SVchr $SVdeb $SVend \n" if $compteur %100 ==0 ;
-	
-	my $num;
-	my $ch;
-	if ($SVchr =~ m/chr/)
-	{
-			($ch,$num)  = split(/r/,$SVchr);
-	}
-	else
-	{
-			$num =$SVchr;
-			$SVchr = "chr".$SVchr;
-	}
-	
-	my $id = $SVtype."_".$num."_".$SVdeb."_".$SVend;		
-
-	# on stocke dans la table $hPat_elementaryCNV les variants élémentaires
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'id'}=$id;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'SVTYPE'}=$SVtype;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'CHROM'}=$num;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'START'}=$SVdeb;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'END'}=$SVend;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'SVLEN'}=abs($SVdeb-$SVend);
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'GT'}=$GT;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'CN'}=$CN;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'RATIO'}=$WC_ratio;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'QUAL'}=$QUAL;
-	$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'ELEMENTARY'}= $id;
-	
-	annotVariant($patobj,$Caller,$SVtype,$SVchr,$SVdeb,$SVend,$GT); 
-}
-
-sub annotVariant()
-{
-	my ($patobj,$Caller,$SVtype,$SVchrFromVcf,$SVdeb,$SVend,$GT) = @_;
-	my $patname = $patobj->name();
-	my $l = abs( $SVdeb-$SVend);
-	my $num;
-	my $ch;
-	my $SVchr;
-	
-	#warn " Annot : $compteur :  $patname $Caller $SVtype $SVchrFromVcf $SVdeb $SVend";
-	
-	if ($SVchrFromVcf =~ m/chr/)
-	{
-			($ch,$num)  = split(/r/,$SVchrFromVcf);
-			$SVchr=$SVchrFromVcf;
-	}
-	else
-	{
-			$num =$SVchrFromVcf;
-			$SVchr = "chr".$SVchrFromVcf;
-	}		
-	my $id = $SVtype."_".$num."_".$SVdeb."_".$SVend;
-		
-	
-		#  annotations a partir de AnnotSV
-
-		#DGV
-		my $dgv_gain_freq = getAnnots($patobj,$Caller,$SVchr,$SVdeb,$SVend,$hannot->{$Caller}->{'DGV_GAIN_Frequency'});
-		my $dgv_loss_freq =  getAnnots($patobj,$Caller,$SVchr,$SVdeb,$SVend,$hannot->{$Caller}->{'DGV_LOSS_Frequency'});
-		
-	
-		$dgv_gain_freq = -1 if ($dgv_gain_freq eq "-");
-		$dgv_loss_freq = -1 if ($dgv_loss_freq eq "-");
-		
-		#SV_rank
-		my $SV_rank = getAnnots($patobj,$Caller,$SVchr,$SVdeb,$SVend,$hannot->{$Caller}->{'AnnotSV ranking'});	
-
-		#OMIM
-		my $OMIN_MG = getAnnots($patobj,$Caller,$SVchr,$SVdeb,$SVend,$hannot->{$Caller}->{'morbidGenes'});	
-		
-		#dbVar
-		my $dbVar_status =  getAnnots($patobj,$Caller,$SVchr,$SVdeb,$SVend,$hannot->{$Caller}->{'dbVar_status'});
-		$dbVar_status =~ s/;/ /g;	
-		
-		# on stocke
-		$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'GOLD_G_FREQ'}= $dgv_gain_freq;
-		$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'GOLD_L_FREQ'}= $dgv_loss_freq;
-		$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'OMIN_MG'}= $OMIN_MG;
-		$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'dbVar_status'}= $dbVar_status;
-		$hPat_elementaryCNV->{$patname}->{$Caller}->{$SVtype}->{$num}->{$id}->{'RANKAnnot'}= $SV_rank;
-		$compteur++;
-}
-
-sub gatherCNV_from_samecaller()
-{
-	my ($patname,$caller) = @_;
-	
-	my $htree;
-	my $hintspan;
-
-	# 1)  detecter les SV chevauchants 
-	
-	# creer les arbres
-	foreach my $type (keys %{$hPat_elementaryCNV->{$patname}->{$caller}})
-	{
-			foreach my $num (keys %{$hPat_elementaryCNV->{$patname}->{$caller}->{$type}})
-			{
-				foreach my $id  (keys %{$hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}})
-				{
-						my ($t,$c,$d,$f) = split( /_/, $id );
-						$htree->{$t}->{$c}= Set::IntervalTree->new;
-						$hintspan->{$t}->{$c}= Set::IntSpan::Fast->new();
-				}
-			}
-	}	
-
-	# remplir les arbres :  regrouper les SV chevauchants
-	foreach my $type (keys %{$hPat_elementaryCNV->{$patname}->{$caller}})
-	{
-			foreach my $num (keys %{$hPat_elementaryCNV->{$patname}->{$caller}->{$type}})
-			{
-				foreach my $id  (keys %{$hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}})
-				{
-						my ($t,$c,$d,$f) = split( /_/, $id );
-						$htree->{$t}->{$c}->insert($id,$d,$f);
-				}
-			}
-	}
-	
-	# 2) associer a chaque SV trouve avec le même caller ceux qui lui sont proches	
-	foreach my $type (keys %{$hPat_elementaryCNV->{$patname}->{$caller}})
-	{
-			foreach my $num (keys %{$hPat_elementaryCNV->{$patname}->{$caller}->{$type}})
-			{
-				foreach my $id  (keys %{$hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}})
-				{
-		
-						#on cherche les regroupements
-						my ($t,$c,$dtheSV,$ftheSV) = split( /_/, $id );
-		
-						my $padding = 0.1 * abs($ftheSV-$dtheSV);
-		
-						my $tab_id = $htree->{$t}->{$c}->fetch($dtheSV-$padding,$ftheSV+$padding);
-
-						# on regroupe les id dans un intspan
-						my $gdeb=0;
-						my $gend=0;
-			
-						foreach my $ind_id ( @$tab_id ) 
-						{
-							my ($t,$c,$d,$f) = split(/_/, $ind_id);
-				
-		 				   	$gdeb = $d if ( ($d < $gdeb) || ($gdeb==0));
-		 					$gend = $f if ( ($f > $gend) );
- 						}
-						$hintspan->{$t}->{$c}->add_range($gdeb,$gend);
-				}
-			}
-	}
-	gather_id($htree,$hintspan,$patname,$caller);
-}
-
-sub gather_id() {
-	
-		my ($htree,$hintspan,$patname,$caller) = @_;
-		my $nb = 0;
-
-		foreach my $type (keys %{$hintspan})
-		{
-			foreach my $num (keys %{$hintspan->{$type}})
-			{
-				my $liste_of_bornes = $hintspan->{$type}->{$num}->as_string() if defined( $hintspan->{$type}->{$num});
-				$liste_of_bornes .= "," if ($liste_of_bornes !~ m/,/);
-				my @tab_bornes = split(/,/,$liste_of_bornes);
-				
-				foreach my $bornes (@tab_bornes)
-				{
-					my ($start,$end) = split(/-/,$bornes);
-					
-					my $tab_ind_id = $htree->{$type}->{$num}->fetch($start,$end);
-					
-					my $global_id = $type."_".$num."_".$start."_". $end;
-		
-					# enregistrer les infos dans la table de hash 
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'id'} = $global_id;			
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'SVTYPE'} = $type;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'CHROM'} = $num;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'START'} = $start;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'END'} = $end;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'SVLEN'}  = abs( $start - $end );
-		
-					# retrouver les informations correspondant aux differents id regroupes 
-					# ici il faut recuperer les valeurs max ou les concatenation de liste
-					
-					my $ggfreq = -1;
-					my $glfreq = -1;
-					my $mg ="no";
-					my $dbVar_status = "";
-					my $rankannot = 0;
-					my $gt = "";
-					my $elementary_ids = "";
-					my $cn;
-					my $ratio;
-					my $qual;
-					my $index;
-					
-					foreach my $id ( @$tab_ind_id )
-					{					
-						$ggfreq = $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'GOLD_G_FREQ'} if ($hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'GOLD_G_FREQ'} > $ggfreq);
-						$glfreq = $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'GOLD_L_FREQ'} if ($hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'GOLD_L_FREQ'} > $glfreq);
-						$mg = "yes" if ($hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'OMIN_MG'} eq "yes");
-						$dbVar_status .= $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'dbVar_status'}." ";
-						$rankannot = $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'RANKAnnot'} if ($hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'RANKAnnot'} > $rankannot);
-						$gt .= $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'GT'}." " unless ($gt =~ m/$hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'GT'}/) ;
-						$cn .= $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'CN'}." " unless ($cn =~ m/$hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'CN'}/) ;
-						$ratio += $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'RATIO'};
-						$qual += $hPat_elementaryCNV->{$patname}->{$caller}->{$type}->{$num}->{$id}->{'QUAL'};
-						$elementary_ids .= $id." ";
-					}
-					
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'ELEMENTARY'}= $elementary_ids;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'GOLD_G_FREQ'} = $ggfreq;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'GOLD_L_FREQ'} = $glfreq;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'OMIN_MG'} = $mg;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'dbVar_status'} = $dbVar_status;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'RANKAnnot'} = $rankannot;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'GT'}=$gt;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'CN'}=$cn;
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'RATIO'}=$ratio/scalar(@$tab_ind_id);			#on prend la moyenne
-					$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'QUAL'}=$qual/scalar(@$tab_ind_id);			#on prend la moyenne
-			}
-		}
-	}
-}
-
-
-sub setComplementaryInfos()
-{
-	my ($patname) =@_;
-	
-	foreach my $caller (keys %{$hPat_CNV->{$patname}})
-	{
-		foreach my $type (keys %{$hPat_CNV->{$patname}->{$caller}})
-		{
-			foreach my $num (keys %{$hPat_CNV->{$patname}->{$caller}->{$type}})
-			{
-				foreach my $global_id  (keys %{$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}})
-				{
-						my ($t,$c,$start,$end) = split(/_/, $global_id);
-						
-						# pour trouver les genes compris dans l'interval
-						die($c." ".$global_id) if ($c ne $num);
-						my $chr = "chr".$num;
-						
-						#TODO: chromosome MT next
-						next if ($chr eq 'chrMT');
-						my $objChr = $project->getChromosome($chr);
+	my ($hcnv,$patient)  =@_;
+	my $project = $patient->project;
+	foreach my $global_id  (keys %{$hcnv}){
+		my ($t,$c,$start,$end) = split(/_/, $global_id);
+			my $objChr = $project->getChromosome($c);
 						
 						my $tabGenes = $objChr->getGenesByPosition($start,$end);
-	
+						
 						my $genes_liste="";
 	
 						foreach my $g (@$tabGenes)
 						{
+							warn $objChr->name." $start $end" unless $g;
+							warn Dumper $tabGenes unless $g;
 							$genes_liste .= $g->external_name.",";
 						} 
 
 
 						# calculer le score gene max correspondant a la liste de gene associe au variant
-						$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'GENES'} = " ";
-						$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'SCORE_GENES'} = 0;
+						$hcnv->{$global_id}->{'GENES'} = " ";
+						$hcnv->{$global_id}->{'SCORE_GENES'} = 0;
 						if ( scalar(@$tabGenes) )  # si le variant recouvre des gènes
 						{	
 							my @names;
@@ -692,35 +354,34 @@ sub setComplementaryInfos()
 										push (@names,$g->external_name);
 							}
 		
-							$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'SCORE_GENES'}=$max;
-							$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'BEST_GENE'}= $names[0];
-							$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'GENES'} =join(" ",@names);
+							$hcnv->{$global_id}->{'SCORE_GENES'}=$max;
+							$hcnv->{$global_id}->{'BEST_GENE'}= $names[0];
+							$hcnv->{$global_id}->{'GENES'} =join(" ",@names);
 						}
 						
 						# pour detecter la presence de duplication segmentaire
-						$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'DUPSEG'}= getDupSeg($chr,$start,$end);
+						$hcnv->{$global_id}->{'DUPSEG'}= getDupSeg($objChr->ucsc_name,$start,$end);
 						
 						# pour les cytobandes
 						my @tb;
 						my @band;
-						my $hband = $project->getChromosome($num)->getCytoband( $start, $end ) if ( $end> $start);
+						my $hband = $objChr->getCytoband( $start, $end ) if ( $end> $start);
 
 						foreach my $b ( keys %{ $hband->{'name'} } ) {
 								push( @tb, $b );
 						}
 						@band = sort( { $a cmp $b } @tb );
-						$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'CYTOBAND'} = join( ",", @band );
+						$hcnv->{$global_id}->{'CYTOBAND'} = join( ",", @band );
 						
 						# pour l'acces a DGV
-						my $url_DGV = getDGV_url( $chr, $start, $end );
-						$hPat_CNV->{$patname}->{$caller}->{$type}->{$num}->{$global_id}->{'DGV'} = $url_DGV;
-						
+						my $url_DGV = getDGV_url( $objChr->ucsc_name, $start, $end );
+						$hcnv->{$global_id}->{'DGV'} = $url_DGV;
 						# pour le dejavu in this project
-						#$hdejavu->{$type}->{$num}->{$global_id}->{$patname}->{$caller}++;
-				}
-			}
-		}
+						#$hdejavu->{$global_id}->{$patname}->{$caller}++;
 	}
+	
+	
+	
 	
 }
 
@@ -817,4 +478,177 @@ sub getDupSeg
 	return $globale_cov/($f-$d)*100;
 }
 
+
+
+
+sub gather_CNV
+{
+	
+	my ($hcnv,$patient) = @_;
+	my $hCNV;
+	
+	warn "START";
+	foreach my $caller (keys %{$hcnv})
+	{
+		print $caller."++";
+
+				foreach my $id  (keys %{$hPat_CNV->{$caller}})
+				{
+					$hCNV->{$id}->{'id'} = $hPat_CNV->{$caller}->{$id}->{'id'};			
+					$hCNV->{$id}->{'TYPE'} = $hPat_CNV->{$caller}->{$id}->{'SVTYPE'};		
+					$hCNV->{$id}->{'CHROM'} = $hPat_CNV->{$caller}->{$id}->{'CHROM'};
+					$hCNV->{$id}->{'START'} = $hPat_CNV->{$caller}->{$id}->{'START'};
+					$hCNV->{$id}->{'END'} = $hPat_CNV->{$caller}->{$id}->{'END'};
+					$hCNV->{$id}->{'LEN'} = $hPat_CNV->{$caller}->{$id}->{'SVLEN'};				
+					$hCNV->{$id}->{'GOLD_G_FREQ'} = $hPat_CNV->{$caller}->{$id}->{'GOLD_G_FREQ'};
+					$hCNV->{$id}->{'GOLD_L_FREQ'} = $hPat_CNV->{$caller}->{$id}->{'GOLD_L_FREQ'};
+					$hCNV->{$id}->{'dbVar_status'} = $hPat_CNV->{$caller}->{$id}->{'dbVar_status'};
+					$hCNV->{$id}->{'RANKAnnot'} = $hPat_CNV->{$caller}->{$id}->{'RANKAnnot'};
+					$hCNV->{$id}->{'DUPSEG'} = $hPat_CNV->{$caller}->{$id}->{'DUPSEG'};
+					$hCNV->{$id}->{'CYTOBAND'} = $hPat_CNV->{$caller}->{$id}->{'CYTOBAND'};
+					$hCNV->{$id}->{'DGV'} = $hPat_CNV->{$caller}->{$id}->{'DGV'};
+					$hCNV->{$id}->{'KARYOTYPE_ID'}=$hPat_CNV->{$caller}->{$id}->{'KARYOTYPE_ID'};
+					# pour sauvegarder l'info propre aux differents callers
+					$hCNV->{$id}->{'CALLERS'}->{$caller}++;
+					$hCNV->{$id}->{'INFOS'}->{$caller}= $hPat_CNV->{$caller}->{$id}->{'INFOS'};
+					$hCNV->{$id}->{'ELEMENTARY'}->{$caller} = $hPat_CNV->{$caller}->{$id}->{'ELEMENTARY'};
+					$hCNV->{$id}->{'GT'}->{$caller} = $hPat_CNV->{$caller}->{$id}->{'GT'};
+					$hCNV->{$id}->{'CN'}->{$caller} = $hPat_CNV->{$caller}->{$id}->{'CN'};
+					$hCNV->{$id}->{'RATIO'}->{$caller} = $hPat_CNV->{$caller}->{$id}->{'RATIO'};
+					$hCNV->{$id}->{'QUAL'}->{$caller} = $hPat_CNV->{$caller}->{$id}->{'QUAL'};
+					
+				}
+	}
+	return gatherSV_byPosition($hCNV,$patient);
+	
+}
+
+
+	
+# pour regrouper les ids recouvrant les mêmes positions
+
+#sub getDejavuAndTransmission
+#{
+#		my ($global_id,$patient) = @_;
+#
+#		my $chr= $project->getChromosome($num);
+#					
+#		my $nbdejavuProject = 0;
+#		my $list_of_other_patient = "";
+#		
+#		my ($t,$c,$start1,$end1) = split(/_/,$global_id);
+#					
+#		# on recherche dans le dejavu des  CNV chevauchants
+#		
+#		
+#		my $tab_id = $htree_dejavuProject->{$type}->{$num}->fetch($start1,$end1);
+#		
+#
+#		# puis pour chacun d'eux on regarde ceux qui sont identiques au sens de areSameCNV
+#		my $theTransmission;
+#		my $transmission=" ";
+#		my $maxidM = 0;
+#		my $maxidF = 0;
+#
+#		foreach my $djv_id (@$tab_id)
+#		{
+#				my ($t,$c,$start2,$end2) = split(/_/,$djv_id);
+#				my $identity = int($project->dejavuCNV->getIdentityBetweenCNV($start1,$end1,$start2,$end2));
+#				
+#				if ( $identity >= $seuilTransmited*0.8)
+#				{
+#						#dejavu ou transmission ?
+#						foreach my $pname (keys %{$hdejavuProject->{$type}->{$num}->{$djv_id}})
+#						{		
+#								next if ($pname eq $thePatientName);
+#								
+#								if ( ($pname eq $mothername) || ($pname eq $fathername))
+#								{
+#									if ($pname eq $mothername) 
+#									{
+#										 if ($identity >= $seuilTransmited)
+#										 {
+#										 	$transmission .= "mother " unless ($transmission =~ m/mother/); 		# identity a plus de 90 = transmission
+#										 }
+#										 else
+#										 {
+#										 	$transmission .= "maybeM(".$identity."%) " unless ( ($transmission =~ m/mother/) ||  ( ($transmission =~ m/maybeM/) && ($identity>$maxidM)) ); 	# identity entre 70 et 90 = denovo bof
+#											$maxidM = $identity if ($identity > $maxidM);
+#										 }
+#									}
+#									
+#									if ($pname eq $fathername)
+#									{
+#										if ($identity >= $seuilTransmited)
+#										{
+#										 	$transmission .= "father " unless ( $transmission =~ m/father/);
+#										}
+#										else
+#										{
+#											$transmission .= "maybeF(".$identity."%) " unless ( ($transmission =~ m/father/) ||  ( ($transmission =~ m/maybeF/) && ($identity>$maxidF)) ); 	# identity entre 70 et 90 = denovo bof
+#											$maxidF = $identity if ($identity > $maxidF);
+#										}
+#									}
+#								}
+#								else
+#								{
+#											unless($list_of_other_patient =~ m/$pname/ )
+#											{
+#												$list_of_other_patient .= $pname.",";
+#												$nbdejavuProject++;
+#											}
+#								}
+#						}
+#				}
+#		}
+#		
+#		if ($thePatientFamily->isTrio() && $thePatient->isChild() )
+#		{
+#				 if ($transmission eq " ")
+#				 {
+#				 	$theTransmission = "strict-denovo";
+#				 }
+#				 else
+#				 {
+#				 	$theTransmission = $transmission;
+#				 }
+#		}
+#		else 
+#		{
+#				$theTransmission = "X";
+#		}
+#		return ($nbdejavuProject,$list_of_other_patient,$theTransmission);
+#}
+#
+
+
+sub getScoreQual {
+	my ($hash ) = @_;
+	
+	
+	my $scorequal;
+	my $nbcaller= scalar keys %$hash;
+	if (exists $hash->{wisecondor}){
+		if ( $hash->{wisecondor} >= 40)
+				{
+					$scorequal++;
+				}
+	}
+	if (exists $hash->{canvas}){
+		if ( $hash->{canvas} >= 20)
+				{
+					$scorequal++;
+				}
+	}
+		if (exists $hash->{manta}){
+		if ( $hash->{manta} >= 400)
+				{
+					$scorequal++;
+				}
+	}
+	
+	
+	$scorequal /= $nbcaller;
+	return $scorequal; 
+}
  	
