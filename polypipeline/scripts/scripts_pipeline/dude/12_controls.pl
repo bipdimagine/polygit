@@ -50,7 +50,7 @@ my @a_excludes;
 
 #choose control by run .
 my $controls;
-my $max_controls = 50;
+my $max_controls = 7;
 foreach my $r (@$runs) {
 	#find_other_patient($r);
 	#die();
@@ -103,9 +103,9 @@ foreach my $r (@$runs) {
 	
 	#die();
 	# $max_controls = 50;
-	warn "\tmax control $max_controls ******************* control".scalar (@hps2);
-	if (scalar (@hps2) < 12 ) {
-		warn scalar (@hps2);
+	warn "\tmax control $max_controls ******************* control ==> ".scalar (@hps2);
+	if (scalar (@hps2) < 10 ) {
+		#warn scalar (@hps2);
 		find_other_patient($r,\@hps2);
 	}
 	
@@ -116,6 +116,7 @@ foreach my $r (@$runs) {
 
 
 	foreach my $pr (keys %contr_projects){
+		next if $pr =~ /5409/; 
 		my $buffer1 = new GBuffer;
 		my $project1 = $buffer1->newProjectCache( -name 			=> $pr );
 		#next() if $project1->name() eq "NGS2018_2286";
@@ -228,8 +229,8 @@ sub find_other_patient {
 	 
 	 my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
 	my $x;
-	my $res;
-	my $limit = 12 - scalar(@$controls);
+	my $res =[];
+	my $limit = 30 - scalar(@$controls);
 	 foreach my $project_name2 (@$query){
 	 		next if $project_name2 =~ /NGS2010/;
 	 		my $buffer2 = GBuffer->new();
@@ -246,6 +247,10 @@ sub find_other_patient {
 				$bam =  $p->getBamFileName();
 				
 				};
+				 my $capture = $p->getCapture;	
+				my $machine     = $p->getRun->machine;
+				warn $machine;
+				next unless  $machine =~/NOVA/i;
 				next unless -e $bam;
 				next unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
 			#	warn Dumper $p->nb_reads();
@@ -277,7 +282,7 @@ sub find_other_patient {
 				last if $nbx > 3;
 		
 			}
-			last if scalar(@$res) > 50;
+			last if scalar(@$res) > 2*$limit;
 	 }
 	
 	  @$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);

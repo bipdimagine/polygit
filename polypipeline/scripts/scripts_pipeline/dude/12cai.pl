@@ -168,7 +168,7 @@ foreach my $chr (@{$project->getChromosomes}){
 						 	} 
 						
 						}
-						
+						warn $cov." ".$name if $cov ==0;
 						$res->{cai_count}->{$primer->id}->{$hp->{id}} = $cov;
 						#warn $cov;	
 				}
