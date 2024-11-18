@@ -4,13 +4,14 @@ use strict;
 use Vcf;
 use Moo;
 use Data::Dumper;
-use GenBoCoverageSamtools;
-use GenBoCoverageTabix;
-use GenBoCoverageLmdb;
-use Carp;
-#use GenBoCoverageLmdb;
-use Storable qw(store retrieve freeze thaw);
-use Compress::Snappy;
+
+ use GenBoCoverageSamtools;
+ use GenBoCoverageTabix;
+ use GenBoCoverageLmdb;
+ #use GenBoCoverageLmdb;
+ use packages::liftOver qw(lift_over_variant);
+ use Storable qw(store retrieve freeze thaw);
+  use Compress::Snappy;
 
 extends "GenBo";
 

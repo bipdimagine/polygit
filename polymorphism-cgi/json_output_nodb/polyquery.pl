@@ -112,6 +112,7 @@ my $keep_indels_cadd		= $cgi->param('keep_indels_cadd');
 
 my $queryFilter =  new QueryVectorFilter;
 $queryFilter->verbose_debug(1) if $debug;
+
 my $hDeleteModels;
 if ($delete_models) {
 	foreach my $model (split(' ', $delete_models)) {
@@ -519,6 +520,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 			$var->{project} = $project;
 			$var->{buffer} = $buffer;
 			$var->{vector_id} = $v_id;
+
 			push( @lVarObj, $var );
 		}
 		if ($debug) { warn "\nAfter chr->getStructuralVariations()"; }
@@ -606,6 +608,7 @@ else {
 ########## [END] FILTRES DE POLYQUERY PAR CHROMOSOME ##########
 
 
+<<<<<<< HEAD
 
 
 sub launch_filters_bed {
@@ -856,8 +859,7 @@ sub launchStatsProjectAll {
 	$t =time;
 	warn "\n# stats_region" if ($debug);
 	$hash_stats->{regions} 	    = $project->stats_region();
-	warn "-".abs(time -$t);
-	$t =time;
+
 	if ($filter_bed and $filter_chromosome =~ /X/) {
 		my @lBed;
 		foreach my $bed_file (split(',', $filter_bed)) {

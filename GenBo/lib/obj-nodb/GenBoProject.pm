@@ -1972,6 +1972,7 @@ sub changeAnnotationVersion {
 		$self->gencode_version( $lTmp[0] );
 		$self->public_database_version( $lTmp[1] );
 		$self->annotation_version($annot_version);
+		$self->buffer->public_data_version($lTmp[1]);
 		delete $self->{'directory'};
 		delete $self->{'annotation_public_path'};
 		delete $self->{'annotationsDirectory'};
@@ -1979,6 +1980,7 @@ sub changeAnnotationVersion {
 		delete $self->{'lmdbPli'};
 		delete $self->{'omimDirectory'};
 		delete $self->{'litePredictionMatrix'};
+		$self->buffer->queryHgmd();
 		return;
 	}
 	foreach my $history_version ( @{ $self->annotation_version_history() } ) {
@@ -2077,7 +2079,25 @@ has capture_dir => (
 	},
 
 );
+has chain_dir => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir  = $self->buffer()->config->{'public_data'}->{root} . "/chain/";
+		return $dir;
 
+	},
+
+);
+sub liftover_chain_file {
+	my ($self,$vto) = @_;
+	my $vfrom = $self->genome_version_generic;
+	my $file = $self->chain_dir.$self->buffer()->config->{'public_data'}->{"liftover_chain_".$vfrom."_".$vto};
+	confess($file." : chain file not found ") unless -e $file;
+	return $file;
+	
+}
 has dirGenomeGeneric => (
 	is      => 'rw',
 	lazy    => 1,
@@ -2298,7 +2318,7 @@ has sequencing_machines => (
 	},
 );
 
-has genomeFasta => (
+has _genomeFasta => (
 	is      => 'rw',
 	lazy    => 1,
 	reader  => 'getGenomeFasta',
@@ -2312,6 +2332,21 @@ has genomeFasta => (
 	},
 );
 
+sub genomeFasta {
+	my ( $self, $bam ) = @_;
+	my $ref = $self->_genomeFasta();
+	return $ref unless $bam;
+	my $samtools = $self->buffer->software("samtools");
+	my @header = `$samtools view -H  $bam`;
+	chomp(@header);
+	my ($pangenome) =  grep{$_ =~ /chr6_cox_hap2/} @header;
+	if ($pangenome ){
+		# Remplacer "HG19_*" par "HG19_DRAGEN" en utilisant des délimiteurs "|"
+		$ref =~ s|/HG19_[^/]+|/HG19_DRAGEN|;
+		$ref =~ s|/HG38_[^/]+|/HG38_DRAGEN|;
+	}
+	return $ref;
+}
 sub getGenomeIndex {
 	my ( $self, $method ) = @_;
 	my $dir;
@@ -3007,6 +3042,7 @@ sub setRuns {
 		$hids{ $h->{id} } = undef;
 		$h->{project} = $self;
 		next if exists $self->{objects}->{runs}->{ $h->{id} };
+		
 		$self->{objects}->{runs}->{ $h->{id} } = new GenBoRun($h);
 	}
 	return \%hids;
@@ -3079,6 +3115,7 @@ sub setPatients {
 		$h->{project} = $self;
 		$spec->{$h->{species_id}} ++;
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
+		
 		$self->{objects}->{patients}->{ $h->{id} } =
 		  $self->flushObject( 'patients', $h );
 		  $self->{species_id} = $h->{species_id};
@@ -4214,12 +4251,13 @@ sub makePath {
 	system("chmod -R a+rwx $dd");
 	foreach my $p ( @{ $self->getPatients() } ) {
 		my $methods  = $p->getCallingMethods();
-		my $methods2 = $p->callingSVMethods();
+		my   $methods2  = $p->callingSVMethods();
 		foreach my $method_name (@$methods) {
 
 			$self->getVariationsDir($method_name);
 			$self->getIndelsDir($method_name);
 		}
+		
 		foreach my $method_name (@$methods2) {
 			$self->getVariationsDir($method_name);
 		}
@@ -4437,7 +4475,11 @@ sub getLargeIndelsDir {
 
 sub getBedPolyQueryDir {
 	my ($self) = @_;
+<<<<<<< HEAD
 	my $path = $self->rocks_cache_dir . "/bed_polyquery/";
+=======
+	my $path = $self->getCacheDir . "/bed_polyquery/";
+>>>>>>> refs/remotes/origin/master
 	return $self->makedir($path);
 }
 
@@ -4981,6 +5023,7 @@ sub noSqlCoverage {
 	#	my $output   =$self->getCacheDir() . "/coverage_lite_test";
 	my $output = $self->getCacheDir() . "/coverage_lite";
 	$self->{noSqlCoverage} = GenBoNoSql->new( dir => $output, mode => "$mode" );
+	
 	return $self->{noSqlCoverage};
 
 }
@@ -6707,8 +6750,7 @@ has RnaseqSEA_RI  => (
 		if(-e $filegz) {
 			return $filegz;
 		}
-		warn "coucou";
-		
+		return if not -e $file;
 		$self->tabix_gzip_rnaseqsea($filegz,$file);
 		return $filegz;
 	},

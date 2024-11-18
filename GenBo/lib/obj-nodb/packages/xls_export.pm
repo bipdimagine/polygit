@@ -415,6 +415,9 @@ sub add_page {
 sub open_page {
 	my ( $self, $number ) = @_;
 	my $title     = $self->pages->{$number}->{title};
+	if (length($title) > 30) {
+		$title = substr($title, 0, 29);
+	}
 	my $worksheet = $self->workbook->add_worksheet($title);
 	return $worksheet;
 }

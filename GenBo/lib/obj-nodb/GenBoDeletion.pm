@@ -150,6 +150,25 @@ has isDeletion => (
 
 
 
+sub theoric_vcf_id {
+	my ($self) = @_;
+	return $self->{theoric_vcf} if exists $self->{theoric_vcf} ;
+	my $start = $self->start;
+	my $pos = $self->start -1;
+	my $ref = $self->getChromosome()->sequence($start-1,$start-1);
+	my $alt = $ref.$self->alternate_allele;
+	
+	$self->{theoric_vcf}->{chromsome} = $self->getChromosome()->fasta_name;
+	$self->{theoric_vcf}->{ref} = $ref;
+	$self->{theoric_vcf}->{alt} = $alt;
+	$self->{theoric_vcf}->{position} = $pos;
+	
+	
+	
+	return $self->{theoric_vcf};
+}
+
+
 sub checkLargeDeletion_newVariant {
 	my $self = shift;
 	return 1 if (length($self->ref_allele()) >= 30);

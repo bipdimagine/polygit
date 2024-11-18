@@ -1,5 +1,6 @@
 package GenBoTranscript;
 use strict;
+use Carp;
 use Moo;
 use GenBoCoverage;
 use Data::Dumper;
@@ -11,6 +12,7 @@ use List::Util qw(min sum);
 use List::MoreUtils qw(any bsearch_index  );
  use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
  use Scalar::Util qw(looks_like_number);
+ use Carp;
 extends "GenBoGenomic";
 
 has isTranscript => (
@@ -282,7 +284,9 @@ sub getOrfSequence {
 		if ($self->getChromosome->id() eq 'Y') { $new_id =~ s/_Y/_X/; }
 		elsif ($self->getChromosome->id() eq 'X') { $new_id =~ s/_X/_Y/; }
 		return $self->getProject->rocksGenBo->genbo($new_id)->{coding_sequence};
+
 	}
+	return;
 }
 
 has coding_sequence => (
@@ -679,7 +683,7 @@ sub codonsConsequenceForSubstitution {
 	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
 	my $codon1 = $self->getCodon($pos_orf);
 	#warn $codon1." ".$pos_orf." ".$self->name." ".length($self->getOrfSequence);
-	my $seq_orf = substr($self->getOrfSequence,$pos_orf-1,1);
+	my $seq_orf = substr($self->getOrfSequence,$pos_orf-1,1) if $self->getOrfSequence;
 	
 	my $seq= $var->getSequence();
 	
@@ -688,7 +692,7 @@ sub codonsConsequenceForSubstitution {
 	my $codon2 = $codon1;
 	my $splice = ($pos_orf+2) % 3;
 	
-	substr($codon2,$splice,1,$seq);
+	substr($codon2,$splice,1,$seq) if $codon2 and $seq;
 	my $results = {
 		transcript_position => $pos_transcript,
 		orf_position => $pos_orf,

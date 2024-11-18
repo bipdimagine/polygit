@@ -166,6 +166,7 @@ has patients_categories => (
 			$h->{$name} = $patient->getVectorOrigin($self);
 			$h->{$name.'_he'} = $patient->getVectorOriginHe($self);
 			$h->{$name.'_ho'} = $patient->getVectorOriginHo($self);
+
 		}
 		return $h;
 	},
@@ -1487,7 +1488,7 @@ sub convertSubPartToCompleteVector {
 sub check_each_var_filter_region {
 	my ($self, $filter, $first_launch) = @_;
 	my ($chrId, $start_filter, $end_filter, $include) = split(':', $filter);
-	if ($include eq '0') {
+	if ($include eq '0' or $include eq '99') {
 		$self->check_each_var_filter_region_add($filter, $first_launch);
 	}
 	elsif ($include eq '-1') {

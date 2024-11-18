@@ -1716,4 +1716,12 @@ sub hash_to_array_dejavu{
 }
 
 
+sub get_demultiplex_run_infos {
+	my ($self, $run_name) = @_;
+	my $h_db = $self->getQuery->getInfosFromRunMachineId($run_name);
+	$h_db = $self->getQuery->getInfosFromRunName($run_name) if scalar keys %$h_db == 0;
+	return $h_db;
+} 
+
+
 1;

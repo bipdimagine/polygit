@@ -118,7 +118,9 @@ foreach my $thePatient (@listPatients)
 		
 			# champ chromosome
 			my $chrom = $champs[0];
-			
+			my $oc = $project->existsChromosome($chrom);
+			next unless $oc;
+			$chrom = $oc->ucsc_name;
 			next  if ($chrom =~ m/GL/); 
 			next  if ($chrom =~ m/hs37d5/);
 			next  if ($chrom =~ m/M/);
@@ -186,6 +188,10 @@ foreach my $thePatient (@listPatients)
 			my @tabmateid = split(/:/,$infomateid);
 			
 			my $chr = $tabmateid[1];
+			my $oc = $project->existsChromosome($chr);
+			next unless $oc;
+			$chr = $oc->ucsc_name;
+			
 			next  if ($chr =~ m/hs37d5/);
 			next  if ($chr =~ m/GL/); 
 			

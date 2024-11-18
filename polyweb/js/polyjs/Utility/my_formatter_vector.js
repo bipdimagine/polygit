@@ -62,6 +62,7 @@ formatters["formatNcboost"] = formatNcboost;
 formatters["formatGeneMaxScoreVariant"] = formatGeneMaxScoreVariant;
 formatters["formatPolywebScoreDetailProject"] = formatPolywebScoreDetailProject;
 formatters["formatSpliceAI"] = formatSpliceAI;
+formatters["formatVarsome"] = formatVarsome;
 formatters["formatColorPhenotypes"] = formatColorPhenotypes;
 formatters["formatColorProjectAndPhenotypes"] = formatColorProjectAndPhenotypes;
 formatters["formatColorCadd"] = formatColorCadd;
@@ -78,6 +79,10 @@ function formatGnomadLink(value) {
 	var link = list[1];
 	return "<a href='"+link+"' target='_blank'>"+res+"</a>";
 }
+
+function formatVarsome(value) {
+	return "<a href='"+value+"' target='_blank'>Varsome</a>";
+} 
 
 function formatSpliceAI(value) {
 	if (value == '-') { return value; }
@@ -580,6 +585,9 @@ function formatInclude(value){
 		}
 		case 0: {
 			return "<img src='/icons/Polyicons/add.png'>";	
+		}
+		case 99: {
+			return "<img src='/icons/Polyicons/add.png'> BED";	
 		}
 		case 3: {
 			return "<img src='/icons/Polyicons/12-em-check.png'>";

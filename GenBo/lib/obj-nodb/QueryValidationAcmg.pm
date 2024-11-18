@@ -52,25 +52,43 @@ has 'exists_db'=>(
 
 
 sub getIdFromPositionSequence{
-		my ($self,$chr,$start,$end,$seq,$type) = @_; 
+		my ($self,$chr,$start,$end,$seq,$type,$version) = @_; 
 	my $db = $self->db;
 	my $query = qq{
-		select variation_id as id  from $db.variations where chromosome = "$chr" and start=$start and end = $end and sequence = "$seq"  and type = "$type" and version = 'HG19';
+		select variation_id as id ,uniq_id as uid from $db.variations where chromosome = "$chr" and start=$start and end = $end and sequence = "$seq"  and type = "$type" and version = "$version";
 	};
 	my $sth = $self->dbh->prepare($query);
 	$sth->execute();
 	my $s = $sth->fetchrow_hashref();	
-	return $s->{id};
+	return ($s->{id},$s->{uid});
 }
 		
 sub getIdFromVariation{
 		my ($self,$v) = @_; 
-		return $self->getIdFromPositionSequence($v->getChromosome->name,$v->start,$v->end,$v->alternate_allele,$v->type_public_db);
+		my ($id,$uid) = $self->getIdFromPositionSequence($v->getChromosome->name,$v->start,$v->end,$v->alternate_allele,$v->type_public_db,$v->project->genome_version_generic);
+		return $id unless $uid;
+		return $uid;
 }
 
-sub insertVariation {
+sub getIdsFromVariation{
 		my ($self,$v) = @_; 
-	my $id = $v->id;
+		my ($id,$uid) = $self->getIdFromPositionSequence($v->getChromosome->name,$v->start,$v->end,$v->alternate_allele,$v->type_public_db,$v->project->genome_version_generic);
+		return ($id,$uid);
+}
+sub update_uniq_id {
+	my ($self,$id) = @_;
+	
+	 my $db = $self->db;
+	my $query = qq{
+		UPDATE $db.variations
+		SET uniq_id = $id where variation_id=$id;
+	};
+	
+	$self->dbh->do($query) || die($query);
+}
+sub insertVariation {
+	my ($self,$v) = @_; 
+	 my $genboid= $v->id;
 	 my $vcf_id = $v->vcf_id;
 	 my $chr = $v->getChromosome->name();
 	 my $start = $v->start;
@@ -79,19 +97,42 @@ sub insertVariation {
 	 my $type = $v->type_public_db();
 	 my $name = $v->name;
 	 my $db = $self->db;
+	 my $version = $v->getProject->genome_version_generic();
 	my $query = qq{
-		insert into $db.variations (polyid,vcfid,version,chromosome,start,end,sequence,type,rs) values ("$id","$vcf_id",'HG19',"$chr",$start,$end,"$seq","$type","$name");
+		insert into $db.variations (polyid,vcfid,version,chromosome,start,end,sequence,type,rs,uniq_id) values ("$genboid","$vcf_id","$version" ,"$chr",$start,$end,"$seq","$type","$name",-1);
 	};
-
 	$self->dbh->do($query) || die($query);
+	my ($id,$uid) = $self->getIdsFromVariation($v);
+	$self->update_uniq_id($id);
 	
-	return $self->getIdFromVariation($v);
+	my $version1 = "HG38";
+	$version1 = "HG19" if  $version eq "HG38";
+	confess() if $version eq "HG38";
+	$self->insertVariationLiftOverVariant($v,$version1,$id);
+	return $id;
 }
-
+sub insertVariationLiftOverVariant {
+	my ($self,$v,$version1,$id) = @_; 
+	$id = $self->getIdFromVariation($v) unless $id;
+	confess() unless $id;
+	my $lo = $v->lift_over($version1);
+	my $chr = $lo->{chromosome};
+	my $start = $lo->{position};
+	my $end = $lo->{position};
+	my $genbo_id= $lo->{id};
+	my $vcf_id = $lo->{vcf_id};
+	my $seq = $v->alternate_allele();
+	my $type = $v->type_public_db();
+	my $name = $lo->{name};
+	 my $db = $self->db;
+	 my $query = qq{
+		insert into $db.variations (polyid,vcfid,version,chromosome,start,end,sequence,type,rs,uniq_id) values ("$genbo_id","$vcf_id","$version1" ,"$chr",$start,$end,"$seq","$type","$name",$id);
+	};
+	$self->dbh->do($query) || die($query);
+	}
 sub createVariation {
 	my ($self,$v) = @_;
 	my $id = $self->getIdFromVariation($v);
-
 	unless ($id){
 		
 		$id = $self->insertVariation($v);
@@ -130,8 +171,9 @@ sub createValidation {
 sub getValidationPatientVariation {
 	my ($self,$v,$patient) = @_;
 	my $id = $self->getIdFromVariation($v);
-		 my $db = $self->db;
+	my $db = $self->db;
 	return unless $id;
+	
 	my $patient_name = $patient->name();
 	my $project_name = $v->project->name();
 	my $query = qq{select * from $db.validations where variation_id=$id and sample_name = "$patient_name" and project_name = "$project_name" order by validation_id}; 

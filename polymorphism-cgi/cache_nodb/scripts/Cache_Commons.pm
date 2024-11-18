@@ -73,7 +73,7 @@ has categories => (
 					large_duplication => 1,
 					large_insertion => 1,
 					junction => 1,
-				},
+				}
 			},
 			genes => {
 				annotations => {
@@ -106,7 +106,54 @@ has categories => (
 				all => 1,
 				he  => 1,
 				ho  => 1,
-			  }
+		    },
+		};
+		return $categories;
+	}
+);
+
+has spec_categories_junctions => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $categories = {
+			patients => {
+				ratio_10 => 1,
+				ratio_20 => 1,
+				ratio_30 => 1,
+				ratio_40 => 1,
+				ratio_50 => 1,
+				ratio_60 => 1,
+				ratio_70 => 1,
+				ratio_80 => 1,
+				ratio_90 => 1,
+			},
+			global => {
+				dejavu_5 => 1,
+				dejavu_10 => 1,
+				dejavu_15 => 1,
+				dejavu_20 => 1,
+				dejavu_25 => 1,
+				dejavu_30 => 1,
+				dejavu_40 => 1,
+				dejavu_50 => 1,
+				dejavu_60 => 1,
+				dejavu_70 => 1,
+				dejavu_80 => 1,
+				dejavu_90 => 1,
+				dejavu_5_r10 => 1,
+				dejavu_10_r10 => 1,
+				dejavu_15_r10 => 1,
+				dejavu_20_r10 => 1,
+				dejavu_25_r10 => 1,
+				dejavu_30_r10 => 1,
+				dejavu_40_r10 => 1,
+				dejavu_50_r10 => 1,
+				dejavu_60_r10 => 1,
+				dejavu_70_r10 => 1,
+				dejavu_80_r10 => 1,
+				dejavu_90_r10 => 1,
+			},
 		};
 		return $categories;
 	}

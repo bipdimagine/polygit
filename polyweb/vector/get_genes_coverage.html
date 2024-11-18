@@ -538,6 +538,7 @@
 			}
 			
 			function export_xls(mode) {
+				disabled_buttons();
 		    	var value_project = document.getElementById("project_name").value;
 		    	var value_gene = document.getElementById("gene_name").value;
 		    	var url_xls_2 = url_path + "json_output_nodb/get_gene_coverage_xls.pl";
@@ -550,17 +551,71 @@
 					url_xls_2 += "&only_coding=1";
 				}
 				console.log(url_xls_2);
-				downloadFile(url_xls_2);
-			    return;
+				$.getJSON( url_xls_2, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == "progress") {  }
+			    		if (key == 'session_id') {
+			                var sessionId = val;
+			                var url_download = url_xls_2 + "&session_id=" + sessionId;
+			                downloadFile(url_download);
+							enabled_buttons();
+			    		}
+					});
+			    });
 			}
 			
+			
+			function export_detailed_xls(mode) {
+				disabled_buttons();
+		    	var value_project = document.getElementById("project_name").value;
+		    	var value_gene = document.getElementById("gene_name").value;
+		    	var url_xls_2 = url_path + "json_output_nodb/get_gene_coverage_xls.pl";
+				url_xls_2 += "?project=" + value_project;
+				url_xls_2 += "&gene=" + value_gene;
+				url_xls_2 += "&details_by_pos=1";
+				if (document.getElementById("intronic").checked) {
+					url_xls_2 += "&intronic=1";
+				}
+				if (document.getElementById("coding").checked) {
+					url_xls_2 += "&only_coding=1";
+				}
+				console.log(url_xls_2);
+				$.getJSON( url_xls_2, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == "progress") {  }
+			    		if (key == 'session_id') {
+			                var sessionId = val;
+			                var url_download = url_xls_2 + "&session_id=" + sessionId;
+			                downloadFile(url_download);
+							enabled_buttons();
+			    		}
+					});
+			    });
+			}
+			
+			
 			function view_coverage_view() {
+				disabled_buttons();
 		    	var value_project = document.getElementById("project_name").value;
 		    	var value_gene = document.getElementById("gene_name").value;
 				var url = window.location.protocol + "//" + window.location.host + "/polyweb/polyweb_coverage.html"
 				url += "?project=" + value_project;
 				url += "&gene=" + value_gene;
 				window.open(url,'_blank');
+			}
+			
+			function disabled_buttons() {
+				document.getElementById("b_1").setAttribute("disabled","disabled");
+				document.getElementById("b_2").setAttribute("disabled","disabled");
+				document.getElementById("b_3").setAttribute("disabled","disabled");
+				document.getElementById("span_wait").innerHTML = "LAUNCHED ! Please wait your file.";
+			}
+			
+			function enabled_buttons() {
+				document.getElementById('b_1').removeAttribute("disabled");
+				document.getElementById('b_2').removeAttribute("disabled");
+				document.getElementById('b_3').removeAttribute("disabled");
+				document.getElementById("span_wait").innerHTML = "DONE ! Building your XLS file";
 			}
 			
 			dojo.require("dojo.io.iframe");
@@ -615,8 +670,14 @@
 						<label class="form-check-label" for="intronic">Get Introns (for XLS)</label>
 					</div>
 					<br><br>
-					<button type='button' onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Export XLS</button>
-					<button type='button' onClick="view_coverage_view()" class='btn btn-info' style="background-color:blue;color:white;">Coverage VIEW</button>
+					<button type='button' id='b_1' onClick="view_coverage_view()" class='btn btn-info' style="background-color:blue;color:white;">Coverage VIEW</button>
+					<button type='button' id='b_2' onClick="export_xls()" class='btn btn-info' style="background-color:green;color:white;">Coverage VIEW - XLS</button>
+					<br><br>
+					<center>--------------</center>
+					<br><br>
+					<button type='button' id='b_3' onClick="export_detailed_xls()" class='btn btn-info' style="background-color:orange;color:white;">Coverage by POS - XLS</button>
+					<br><br>
+					<center><span id="span_wait"></span></center>
 				</form>
 			
 				

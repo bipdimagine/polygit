@@ -114,6 +114,7 @@ my $res;
 my $nb_5;
 my $nb_15;
 my $nb_30;
+my $nb_50;
 my $nb_100;
 my $nb_all;
 my $tot;
@@ -123,6 +124,7 @@ $pm->run_on_finish(
 	$nb_5 += $h->{5}; 
 	$nb_15 +=$h->{15};
 	$nb_30 +=$h->{30};
+	$nb_50 +=$h->{50};
 	$nb_100 +=$h->{100};
 	$tot += $h->{99};
       
@@ -207,6 +209,7 @@ if ($diag){
 	$nb_all =0;
 	$nb_5 =0;
 	$nb_15 =0;
+	$nb_50=0;
 	$nb_30 =0;
 	$nb_100 =0;
 	$tot =0;
@@ -240,6 +243,7 @@ $pm->run_on_finish(
 	 		$nb_5+=$h->{nb_5};
 	 		$nb_15+=$h->{nb_15};
 	 		$nb_30+=$h->{nb_30};
+	 		$nb_50+=$h->{nb_50};
 	 		$nb_100+=$h->{nb_100};
     }
     );
@@ -270,6 +274,7 @@ foreach my $g (keys %$hrequest){
 	 		$h->{nb_5}++ if $z>5;
 	 		$h->{nb_15}++ if $z>15;
 	 		$h->{nb_30} ++ if $z>30;
+	 		$h->{nb_50} ++ if $z>50;
 	 		$h->{nb_100} ++ if $z>100;
 	 	}
     			
@@ -288,12 +293,13 @@ my $mean    = $tot / $nb_all;
 my $mean_5  = $nb_5 / $nb_all;
 my $mean_15 = $nb_15 / $nb_all;
 my $mean_30 = $nb_30 / $nb_all;
+my $mean_50 = $nb_50 / $nb_all;
 my $mean_100 = $nb_100 / $nb_all;
 print TOTO "mean_all\t1\t$nb_all\n";
 print TOTO "mean_all\t5\t$mean_5\n";
 print TOTO "mean_all\t15\t$mean_15\n";
 print TOTO "mean_all\t30\t$mean_30\n";
-
+print TOTO "mean_all\t50\t$mean_50\n";
 print TOTO "mean_all\t99\t$mean\n";
 print TOTO "mean_all\t100\t$mean_100\n";
 close TOTO;
@@ -489,6 +495,10 @@ foreach my $pos (split(",",$span_extended->{$chr_ucsc}->as_string)){
   		
    			$nb_30++;
    		}   
+   		if ($score >= 50){
+  		
+   			$nb_50++;
+   		}
    		if ($score >= 15){
    			$nb_15++;
    		}  	 
@@ -503,7 +513,7 @@ foreach my $pos (split(",",$span_extended->{$chr_ucsc}->as_string)){
 	print TITI "mean_$chr_ucsc\t5\t$nb_5\n";
 	print TITI "mean_$chr_ucsc\t15\t$nb_15\n";
 	print TITI "mean_$chr_ucsc\t30\t$nb_30\n";
-
+	print TITI "mean_$chr_ucsc\t50\t$nb_50\n";
 	print TITI "mean_$chr_ucsc\t99\t$tot\n";
 			print TITI "mean_$chr_ucsc\t100\t$nb_100\n";
 	print "end $chr\n" unless $verbose; 
@@ -595,6 +605,9 @@ my $bam_file = $filein;
 				if ($depth >= 100){
    				$nb_100++;
    			}   
+   			if ($depth >= 50){
+   				$nb_50++;
+   			}   
    			if ($depth >= 30){
    				$nb_30++;
    			}   
@@ -613,7 +626,7 @@ my $bam_file = $filein;
 	print TITI "mean_$chr_ucsc\t5\t$nb_5\n";
 	print TITI "mean_$chr_ucsc\t15\t$nb_15\n";
 	print TITI "mean_$chr_ucsc\t30\t$nb_30\n";
-	
+	print TITI "mean_$chr_ucsc\t50\t$nb_50\n";	
 	print TITI "mean_$chr_ucsc\t99\t$tot\n";
 	print TITI "mean_$chr_ucsc\t100\t$nb_100\n";
 	print "end $chr\n" unless $verbose; 
@@ -649,6 +662,7 @@ my $bam_file = $filein;
 	my $nb_5=0;
 	my $nb_15=0;
 	my $nb_30=0;
+	my $nb_50=0;
 	my $nb_100=0;
 	my $window = 100;
 	open (TITI,">$out",) or die("can't open $out");
@@ -674,7 +688,10 @@ my $bam_file = $filein;
 		
    			if ($depth >= 100){
    				$nb_100++;
-   			}   
+   			}  
+   			if ($depth >= 50){
+   				$nb_50++;
+   			}    
    			if ($depth >= 30){
    				$nb_30++;
    			}   
@@ -699,6 +716,7 @@ my $bam_file = $filein;
 	$h->{5} =  $nb_5;
 	$h->{15} =  $nb_15;
 	$h->{30} =  $nb_30;
+	$h->{50} =  $nb_50;
 	$h->{100} =  $nb_100;
 	$h->{99} =  $tot;
 	my $fasta_name = $chr->fasta_name;
@@ -706,7 +724,7 @@ my $bam_file = $filein;
 	print TITI "mean_$fasta_name\t5\t$nb_5\n";
 	print TITI "mean_$fasta_name\t15\t$nb_15\n";
 	print TITI "mean_$fasta_name\t30\t$nb_30\n";
-	
+	print TITI "mean_$fasta_name\t50\t$nb_50\n";
 	print TITI "mean_$fasta_name\t99\t$tot\n";
 		print TITI "mean_$fasta_name\t100\t$nb_100\n";
 	print "end $chr\n" unless $verbose; 

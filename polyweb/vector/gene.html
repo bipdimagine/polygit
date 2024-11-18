@@ -1118,7 +1118,7 @@ function displayGeneForChromosome(e){
     var args = construct_url_filter_data();
     args += "&filter_chromosome="+name;
     if (lOnlyThesesGenes.length > 0) {
-        args += "&only_genes="+lOnlyThesesGenes.join(",");
+        args += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
     }
     if (name == "Game Over"){
         return;
@@ -2213,7 +2213,7 @@ function export_filter_by_genes(){
     hurl += "&xls_by_genes=1";
     hurl += "&xls_outfile=none";
     if (lOnlyThesesGenes.length > 0) {
-        hurl += "&only_genes="+lOnlyThesesGenes.join(",");
+        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
     }
     hurl = hurl.replace('?', ' ');
     hurl = hurl.replace(/&/g, ' ');
@@ -2253,7 +2253,7 @@ function export_filter_by_variations(){
     hurl += "&user=" + dojo.cookie("username");
     hurl += "&xls_outfile=none";
     if (lOnlyThesesGenes.length > 0) {
-        hurl += "&only_genes="+lOnlyThesesGenes.join(",");
+        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
     }
     hurl = hurl.replace('?', ' ');
     hurl = hurl.replace(/&/g, ' ');

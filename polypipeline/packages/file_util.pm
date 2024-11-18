@@ -675,4 +675,23 @@ warn "end";
 return \%dir_patients;
 }
 
+
+
+sub find_file_epi2me{
+	my ($patient,$dir,$ext) = @_;
+	my $name = $patient->name();
+	die("no patient with name : ".$name) unless $patient; 
+	my $bc = lc($patient->barcode);
+	$bc = $name unless $patient->barcode;
+	my($f) = File::Util->new();
+	my (@titi) = $f->list_dir($dir=> { 
+			no_fsdots =>1,
+			files_only => 1,
+			files_match => {or => [qr/$name/ , qr/$bc/ , qr/fastq/]}
+	});
+	return if (scalar(@titi) == 0);
+#	die() if (scalar(@titi) > 1);
+	return \@titi;
+}
+
 1;

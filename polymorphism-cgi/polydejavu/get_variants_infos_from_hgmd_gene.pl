@@ -93,6 +93,8 @@ my $gene = $project->newGene($gene_name);
 my @list_lines;
 my $nb_var = 0;
 my $h_v_hgmd_ids = $buffer->queryHgmd->search_variant_for_gene($gene_name);
+
+
 my $h_new_dm = $buffer->queryHgmd->get_hash_last_released_DM();
 my $h_no_coord = $buffer->queryHgmd->search_variant_for_gene_without_coord($gene_name);
 
@@ -160,7 +162,6 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	my $var_dejavu_ho = $v->other_patients_ho();
 	$not_ok++ if ($max_dejavu_ho and $var_dejavu_ho > $max_dejavu_ho);
 	next if $not_ok;
-	
 	
 	push(@lVar, $v);
 
@@ -400,7 +401,19 @@ sub save_export_xls {
 	my $xls_export = new xls_export();
 	$xls_export->title_page('HGMD_'.$gene->external_name().'.xls');
 	$xls_export->store_variants_infos(\@$list_var, $project);
-	
+	my $h_pubmed;
+	foreach my $v (@$list_var) {
+		if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
+			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
+			foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
+				if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
+					$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
+					$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
+				}
+			}
+		}
+	}
 	my ($h_patients, $h_row_span);
 	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
 		foreach my $var_id (keys %{$xls_export->{hash_variants_global}->{$chr_id}}) {
@@ -420,8 +433,8 @@ sub save_export_xls {
 			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'model'} = '';
 		}
 	}
-	
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
+	$xls_export->store_specific_infos('variants_pubmed', $h_pubmed);
 	my $session_id = $xls_export->save();
 	return $session_id;
 }

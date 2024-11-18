@@ -26,6 +26,7 @@ use List::Util qw(sum);
  my $callable_intspan_file;
  my $patient_name;
  #my $low_calling;
+ my $pad;
  my $method;
 
 
@@ -35,6 +36,7 @@ GetOptions(
 	"patient=s" => \$patient_name,
 	"fileout=s"=>\$fileout,
 	"filein=s"=>\$callable_intspan_file,
+	"padding=s" => \$pad,
 #	"low_calling=s"=>\$low_calling,
 	"method=s"=>\$method,
 );
@@ -57,6 +59,9 @@ my $java = $project->getSoftware('java');
 	my $ref =  $project->genomeFasta();
 
 my $patient = $project->getPatientOrControl($patient_name);
+#pour ne pas etendre les zones de capture
+warn "#######". $pad;
+$project->{isDiagnostic} =undef if defined($pad); 
 
  my $bam = $patient->getBamFile() ;
 my $intspan;
@@ -70,7 +75,13 @@ my $intspan;
 #else {
 	#die();
 	foreach my $chr (@{$project->getChromosomes}) {
-	 $intspan->{$chr->fasta_name} = $chr->getIntSpanCaptureForCalling(300);
+		if($pad){
+			$intspan->{$chr->fasta_name} = $chr->getIntSpanCaptureForCalling($pad);
+		}
+		else{
+			$intspan->{$chr->fasta_name} = $chr->getIntSpanCaptureForCalling(300);
+		}
+	
 }
 #	die("error callable region - file .freeze is absent");
 
@@ -90,11 +101,13 @@ my $intspan;
 			"hpduplicate_region_calling"		=> { "method" => sub{calling_target::duplicate_region_calling2(@_)},priority=>2},
 			"haplotypecaller"		=> { "method" => sub{calling_target::haplotypecaller(@_)},priority=>1},
 			"haplotypecaller4"		=> { "method" => sub{calling_target::haplotypecaller4(@_)},priority=>1},
-			"p1_freebayes" => { "method" => sub{calling_target::p1_freebayes(@_)}, priority =>3}, 
+			"p1_freebayes" => { "method" => sub{calling_target::p1_freebayes(@_,padding=> $pad)}, priority =>3}, 
+			"p02_freebayes" => { "method" => sub{calling_target::p02_freebayes(@_,padding=> $pad)}, priority =>3}, 
 			"eif6_freebayes" => { "method" => sub{calling_target::eif6_freebayes(@_)}, priority =>3}, 
 			"mutect2" => { "method" => sub{calling_target::mutect2(@_)}, priority =>3}, 
 			"lofreq" => { "method" => sub{calling_target::lofreq(@_)}, priority =>3}, 
 			"deepvariant" => { "method" => sub{calling_target::deepvariant(@_)}, priority =>3}, 
+#			"dragen-calling" => { "method" => sub{calling_target::dragen-calling(@_)}, priority =>3}, 
 };
 die($method) unless exists  $methods->{$method};
 warn $method;

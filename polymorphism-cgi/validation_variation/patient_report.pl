@@ -697,6 +697,12 @@ sub construct_htranscripts {
 					update::update_cosmic($hvariation,$project) if ($project->isSomatic);
 					update::deja_vu($project,$tr1,$hvariation,$debug);
 					my $zfilter = 1;
+					
+					if ($hvariation->{caller}  =~ /mel/){
+						$zfilter = undef;
+						$hvariation->{melt} =1;
+						
+					}
 					$zfilter = undef if $hvariation->{clinvar_alert} ;	
 					$zfilter = undef if $hvariation->{clinical_local} ;
 					#$zfilter = undef if $hvariation->{hgmd} ;
@@ -784,8 +790,8 @@ sub construct_htranscripts {
 						$hvariation->{freq_score} = 1; 
 				}
 				
-				
-				
+				$hvariation->{scaled_score} = 4 if exists $hvariation->{melt};
+				$hvariation->{impact_score} = 4 if exists $hvariation->{melt};
 				my $href = qq{<a  href = "$deja_vu_light_url};
 					 if (exists $hvariation->{dup}){
 					 		$href .= qq{?project=$project_name&transcript=$tr_id&variation_id=$var" target="_blank" style="color:white;font-weight:bold">};
@@ -825,9 +831,8 @@ sub construct_data {
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
-	#$text = "";
+	$text = undef;
 	$text = undef if $pipeline;
-
 	$compute_coverage = 1;
 
 	if ($text){
@@ -835,6 +840,7 @@ sub construct_data {
 		push(@$data,$text->{patient});
 		return  $data;
 	}
+	
 	my $hpatient;
 	$hpatient->{name} = $patient->name();
 	#$hpatient->{obj} = $patient;

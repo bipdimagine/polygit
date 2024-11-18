@@ -306,7 +306,7 @@ method count_featureCounts  (Str :$filein! ,Object :$previous! ){
 	}
 	my $fork =16;
 	my $gtf = $project->gtf_file();
-	$gtf = $project->gtf_file_star() if $align_method eq "star";
+	#$gtf = $project->gtf_file_star() if $align_method eq "star";
 
 	my $sed = join(" && ",@sed_cmd);
 	my $featureCounts = $project->buffer->software("featureCounts");

@@ -45,8 +45,15 @@ sub mendelian_statistics {
 		$project->disconnect();
 		#next if $f->name ne "DOU";
 		$pid = $pm->start and next;
-		warn $f->name;
-
+		
+		my $has_no_bam;
+		foreach my $patient (@{$f->getPatients()}) {
+			$has_no_bam = 1 if $patient->alignmentMethod() eq 'no_align';
+		}
+		if ($has_no_bam) {
+			$pm->finish();
+			next;
+		}
 		$project->buffer->dbh_reconnect();
 
 		#my $ps = $f->getMembers();
@@ -468,19 +475,24 @@ sub files {
 		map { $hmethods{$_}++ } @$methods;
 		my $line;
 		my $hline;
-		my $bam       = $p->getBamFile();
-		my $timestamp = ctime( stat($bam)->mtime );
 		$hline->{"patients"} = { text => $p->name, type => "default" };
 		push( @$line, { text => $p->name, type => "default" } );
-		my $col_bam = { text => "NONE", type => "error" };
-
-		if ( -e $bam ) {
-			my $t = utility::return_date_from_file($bam);
-			$col_bam = { text => "$t", type => "success" };
+		if ($p->alignmentMethod() eq 'no_align') {
+			my $col_bam = { text => "NoBam", type => "error" };
+			push( @$line, $col_bam );
+			$hline->{"bam"} = $col_bam;
 		}
-		push( @$line, $col_bam );
-		$hline->{"bam"} = $col_bam;
-
+		else {
+			my $bam       = $p->getBamFile();
+			my $timestamp = ctime( stat($bam)->mtime );
+			my $col_bam = { text => "NONE", type => "error" };
+			if ( -e $bam ) {
+				my $t = utility::return_date_from_file($bam);
+				$col_bam = { text => "$t", type => "success" };
+			}
+			push( @$line, $col_bam );
+			$hline->{"bam"} = $col_bam;
+		}
 		#push(@{$errors->{file}},"NO BAM FOR : ".$p->name()) unless -e $bam;
 
 		my $vcf_vars = $p->getVariationsFiles();
@@ -522,7 +534,6 @@ sub statistics_variations {
 	my ( $project, $fork ) = @_;
 	my $resume;
 	my $patients = $project->getPatients();
-	warn $project;
 	my $h = fork_patients( $project, \&statistics_variations_patient, $fork );
 	push(
 		@{ $resume->{header} },
@@ -1306,6 +1317,7 @@ sub coverage_stats {
 	my $samtools = $project->buffer->software("samtools");
 	my $mean_cov;
 	foreach my $p (@$patients) {
+		next if $p->alignmentMethod() eq 'no_align';
 		my $bam = $p->getBamFile();
 		my $cov = $p->coverage();
 		$mean_cov += $cov->{mean};
@@ -1362,6 +1374,7 @@ sub bam_stats {
 	my $samtools = $project->buffer->software("samtools");
 	my $mean_cov;
 	foreach my $p (@$patients) {
+		next if $p->alignmentMethod() eq 'no_align';
 		my $bam = $p->getBamFile();
 		my $cov = $p->coverage();
 		$mean_cov += $cov->{mean};
