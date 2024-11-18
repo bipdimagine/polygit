@@ -47,7 +47,6 @@ sub new_refine_heterozygote_composite_score_rocks {
 	my $patient= $print_html->patient;
 	my $diro = "/data-beegfs/tmp//NGS2024_8251/";
 	$diro =$project->rocks_directory();
-	$diro ="/tmp/NGS2024_8251/";
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects");
 	my $out_header;
 	$out_header= $print_html->print_header("background-color:aliceblue;color:black");
