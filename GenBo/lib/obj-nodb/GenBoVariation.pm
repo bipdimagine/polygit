@@ -1,7 +1,6 @@
 package GenBoVariation;
 use strict;
 use Moo;
-
 use Data::Dumper;
 use Config::Std;
 use GenBoCapture;
@@ -124,6 +123,7 @@ has ncboost_category => (
 		return $find_cat;
 	},
 );
+
 
 sub revel_score {
 	my ($self,$tr) = @_;

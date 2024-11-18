@@ -113,9 +113,25 @@ default => sub {
 }
 );
 
-#populations frequence
 
-#frequence homozygote from gnomad
+
+# lift_over
+
+sub lift_over {
+	my ($self) = @_;
+	return $self->{lift_over_38} if exists $self->{lift_over_38};
+	my ($c,$s,$a,$b) = split("_",$self->vcf_id);
+	$self->{lift_over_38} = CrossMapConverter::lift_over_variant($self);
+	my $pvcf = $self->{lift_over_38}->{position_vcf} ;
+	$self->{lift_over_38}->{position} = $self->{lift_over_38}->{position_vcf} ;
+	$self->{lift_over_38}->{position} +=  1 unless $self->isVariation;
+	$self->{lift_over_38}->{vcf_id} = join("_",$self->{lift_over_38}->{chromosome}, $self->{lift_over_38}->{position_vcf},$a,$b);
+	($c,$s,$a,$b) = split("_",$self->id);
+	my $chr = $self->project->getChromosome($self->{lift_over_38}->{chromosome});
+	$self->{lift_over_38}->{id} = join("_",$chr->name, $self->{lift_over_38}->{position},$a,$b);
+	return $self->{lift_over_38};
+}
+
 
 #################
 #
@@ -1022,6 +1038,10 @@ has vcf_id => (
 	#required	=> 1,
 );
 
+sub theoric_vcf_id {
+	my ($self) = @_;
+	confess($self);
+}
 has check_id => (
 	is		=> 'rw',
 	#required	=> 1,
@@ -2168,6 +2188,7 @@ sub score_validations {
 
 sub scaledScoreVariant{
 	my ($self, $tr,$patient,$vquery,$debug) = @_;
+	$vquery = undef;
 	#$debug = 1;
 	# $debug = 1 if $self->id eq "7_158708074_CG_C";# && $patient->name eq "GEF2000057";
 	#	if ($self->isClinvarPathogenic or $self->isDM && $self->scaled_score_frequence >= 2 ){

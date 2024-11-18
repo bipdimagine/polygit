@@ -4,13 +4,13 @@ use strict;
 use Vcf;
 use Moo;
 use Data::Dumper;
- use GenBoCoverageSamtools;
- use GenBoCoverageTabix;
- use GenBoCoverageLmdb;
- use Carp;
- #use GenBoCoverageLmdb;
- use Storable qw(store retrieve freeze thaw);
-  use Compress::Snappy;
+use GenBoCoverageSamtools;
+use GenBoCoverageTabix;
+use GenBoCoverageLmdb;
+use Carp;
+#use GenBoCoverageLmdb;
+use Storable qw(store retrieve freeze thaw);
+use Compress::Snappy;
 
 extends "GenBo";
 
@@ -47,6 +47,10 @@ has chromosome_name =>(
 	#required=> 1,
 	
 );
+
+
+
+
 has start => (
 	is		=> 'rw',
 	#required=> 1,

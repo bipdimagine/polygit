@@ -149,6 +149,7 @@ has isDeletion => (
 );
 
 
+
 sub checkLargeDeletion_newVariant {
 	my $self = shift;
 	return 1 if (length($self->ref_allele()) >= 30);
