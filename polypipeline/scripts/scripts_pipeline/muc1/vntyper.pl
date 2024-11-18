@@ -80,7 +80,7 @@ my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
 #my $scommand ="python3 /SOFT/VNtyper/VNtyper.py -t 5 -k 20 -ref_VNTR /tmp/pipeline/MUC1-VNTR.fa  -f /SOFT/VNtyper/Files/ -ref /tmp/pipeline/MUC1-VNTR.fa -p Scripts/ -w $dir_pipeline -r1 $fastq1 -r2 $fastq2 -o $patient_name -m Files/vntr_data/hg19_genic_VNTRs.db --ignore_advntr  -p /SOFT/VNtyper/";
-my $scommand ="python3 /SOFT/VNtyper/VNtyper.py   -t 1    --bam  -ref chr1.fa -ref_VNTR /SOFT/VNtyper/Files/MUC1-VNTR.fa -p /SOFT/VNtyper/Scripts/ -w $dir_pipeline -a $bam   -o $patient_name  -m /SOFT/VNtyper/Files/hg19_genic_VNTRs.db   -p /SOFT/VNtyper/";
+my $scommand ="python3 /SOFT/VNtyper/VNtyper.py   -t 1    --bam  -ref chr1.fa -ref_VNTR /SOFT/VNtyper/Files/MUC1-VNTR.fa -p /SOFT/VNtyper/Scripts/ -w $dir_pipeline -a $bam   -o $patient_name  -m /SOFT/VNtyper/Files/hg19_genic_VNTRs.db  --ignore_advntr -p /SOFT/VNtyper/";
 my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 
 #system("samtools index $bam -\@2");
