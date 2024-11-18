@@ -1259,7 +1259,7 @@ has sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name => (
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
-			SELECT pr.project_id as id, pr.name as name, pr.creation_date as cDate FROM PolyprojectNGS.patient as pa, PolyprojectNGS.projects as pr
+			SELECT pr.project_id as project_id, pr.name as name, pr.creation_date as cDate FROM PolyprojectNGS.patient as pa, PolyprojectNGS.projects as pr
 				where pa.type='rna' and pa.project_id=pr.project_id and pr.name=?;
 		};
 		return $sql;
@@ -1324,7 +1324,6 @@ sub getListProjectsRnaSeq {
 	}
 	my $h = $sth->fetchall_hashref('id');
 	my $h2 = $sth2->fetchall_hashref('project_id');
-
 	my @l_projects_ids = keys %$h;
 	foreach my $pr_id (keys %$h2) {
 		push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});

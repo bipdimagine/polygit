@@ -27,39 +27,38 @@ print "{\"progress\":\".";
 #my $hType_patients;
 #$hType_patients = $project->get_hash_patients_description_rna_seq_junction_analyse() if (-d $project->get_path_rna_seq_junctions_analyse_description_root());
 
-my ($h_resume, $h_captures, $has_regtools_vectors);
+
+my ($h_resume, $h_captures, $has_rnaseqsea_vectors, $has_regtools_vectors);
 foreach my $patient (@{$project->getPatients}) {
-	#$patient->use_not_filtred_junction_files(0);
-#	if (($hType_patients and exists $hType_patients->{$patient->name()}->{pat}) or not $hType_patients) {
-		$h_resume->{$patient->name()}->{nb_junctions_all} = 0;
-		$h_resume->{$patient->name()}->{nb_junctions_ri} = 0;
-		$h_resume->{$patient->name()}->{nb_junctions_se} = 0;
-		foreach my $chr (@{$project->getChromosomes()}) {
-			my $nb_chr = $chr->countThisVariants($patient->getJunctionsVector($chr));
-			$h_resume->{$patient->name()}->{nb_junctions_all} += $nb_chr;
-			$h_resume->{$patient->name()}->{nb_junctions_ri} += $chr->countThisVariants($patient->getVectorJunctionsRI($chr)) if ($patient->getVectorJunctionsRI($chr));
-			$h_resume->{$patient->name()}->{nb_junctions_se} += $chr->countThisVariants($patient->getVectorJunctionsSE($chr)) if ($patient->getVectorJunctionsSE($chr));
-			if ($nb_chr > 0) {
-				$has_regtools_vectors = 1 if exists $chr->global_categories->{'N'};
-				$has_regtools_vectors = 1 if exists $chr->global_categories->{'D'};
-				$has_regtools_vectors = 1 if exists $chr->global_categories->{'A'};
-				$has_regtools_vectors = 1 if exists $chr->global_categories->{'DA'};
-				$has_regtools_vectors = 1 if exists $chr->global_categories->{'NDA'};
-			}
-			if ($has_regtools_vectors and $nb_chr > 0) {
-				$h_resume->{$patient->name()}->{nb_junctions_nda} += $chr->countThisVariants($patient->getVectorJunctionsNDA($chr));
-				$h_resume->{$patient->name()}->{nb_junctions_da} += $chr->countThisVariants($patient->getVectorJunctionsDA($chr));
-				$h_resume->{$patient->name()}->{nb_junctions_n} += $chr->countThisVariants($patient->getVectorJunctionsN($chr));
-				$h_resume->{$patient->name()}->{nb_junctions_d} += $chr->countThisVariants($patient->getVectorJunctionsD($chr));
-				$h_resume->{$patient->name()}->{nb_junctions_a} += $chr->countThisVariants($patient->getVectorJunctionsA($chr));
-			}
-		}
-#	}
-#	else {
-#		$h_resume->{$patient->name()}->{nb_junctions_all} = 'CONTROL';
-#		$h_resume->{$patient->name()}->{nb_junctions_ri} = 'CONTROL';
-#		$h_resume->{$patient->name()}->{nb_junctions_se} = 'CONTROL';
-#	}
+
+	$h_resume->{$patient->name()}->{nb_junctions_all} = 0;
+	$h_resume->{$patient->name()}->{nb_junctions_ri} = 0;
+	$h_resume->{$patient->name()}->{nb_junctions_se} = 0;
+	$h_resume->{$patient->name()}->{nb_junctions_nda} = 0;
+	$h_resume->{$patient->name()}->{nb_junctions_da} = 0;
+	$h_resume->{$patient->name()}->{nb_junctions_n} = 0;
+	$h_resume->{$patient->name()}->{nb_junctions_d} = 0;
+	$h_resume->{$patient->name()}->{nb_junctions_a} = 0;
+	foreach my $chr (@{$project->getChromosomes()}) {
+		my $nb_chr = $chr->countThisVariants($patient->getJunctionsVector($chr));
+		$h_resume->{$patient->name()}->{nb_junctions_all} += $nb_chr;
+		$h_resume->{$patient->name()}->{nb_junctions_ri} += $chr->countThisVariants($patient->getVectorJunctionsRI($chr));
+		$h_resume->{$patient->name()}->{nb_junctions_se} += $chr->countThisVariants($patient->getVectorJunctionsSE($chr));
+		$h_resume->{$patient->name()}->{nb_junctions_nda} += $chr->countThisVariants($patient->getVectorJunctionsNDA($chr));
+		$h_resume->{$patient->name()}->{nb_junctions_da} += $chr->countThisVariants($patient->getVectorJunctionsDA($chr));
+		$h_resume->{$patient->name()}->{nb_junctions_n} += $chr->countThisVariants($patient->getVectorJunctionsN($chr));
+		$h_resume->{$patient->name()}->{nb_junctions_d} += $chr->countThisVariants($patient->getVectorJunctionsD($chr));
+		$h_resume->{$patient->name()}->{nb_junctions_a} += $chr->countThisVariants($patient->getVectorJunctionsA($chr));
+	}
+	
+	foreach my $cat ('ri', 'se') {
+		my $type = 'nb_junctions_'.$cat;
+		$has_rnaseqsea_vectors = 1 if $h_resume->{$patient->name()}->{$type} > 0;
+	}
+	foreach my $cat ('n', 'd', 'a', 'da', 'nda') {
+		my $type = 'nb_junctions_'.$cat;
+		$has_regtools_vectors = 1 if $h_resume->{$patient->name()}->{$type} > 0;
+	}
 	$h_resume->{$patient->name()}->{bam_file} = $patient->bamUrl();
 	foreach my $capture (@{$patient->getCaptures()}) {
 		$h_captures->{$capture->name()} = undef;
@@ -79,7 +78,8 @@ if ($has_regtools_vectors) {
 	$html_table_patients .= qq{<th data-field="nb_junctions_da" data-sortable="true"><center><b>DA</b></center></th>};
 	
 }
-else {
+
+if ($has_rnaseqsea_vectors) {
 	$html_table_patients .= qq{<th data-field="nb_junctions_ri" data-sortable="true"><center><b>Nb Junctions RI</b></center></th>};
 	$html_table_patients .= qq{<th data-field="nb_junctions_se" data-sortable="true"><center><b>Nb Junctions SE</b></center></th>};
 }
@@ -108,7 +108,8 @@ foreach my $patient_name (sort keys %$h_resume) {
 		$tr .= "<td>".$h_resume->{$patient_name}->{nb_junctions_n}."</td>";
 		$tr .= "<td>".$h_resume->{$patient_name}->{nb_junctions_da}."</td>";
 	}
-	else {
+
+	if ($has_rnaseqsea_vectors) {
 		my $ri = $h_resume->{$patient_name}->{nb_junctions_ri};
 		my $se = $h_resume->{$patient_name}->{nb_junctions_se};
 		my $ri_perc = '0%';

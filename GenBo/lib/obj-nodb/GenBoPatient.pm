@@ -1040,6 +1040,138 @@ sub setVariantsForReference {
 	return $o;
 }
 
+has RnaseqSEA_SE => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self  = shift;
+		my $align_method = $self->alignmentMethods->[0];
+		my $path = $self->getProject->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
+		my $file = $path.'/'.$self->name().'_SE.txt.gz';
+		return $file if -e $file;
+		return;
+	}
+);
+
+has RnaseqSEA_RI => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self  = shift;
+		my $align_method = $self->alignmentMethods->[0];
+		my $path = $self->getProject->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
+		my $file = $path.'/'.$self->name().'_RI.txt.gz';
+		return $file if -e $file;
+		return;
+	}
+);
+
+has regtools_file => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self  = shift;
+		my $file = $self->project->getJunctionsDir('regtools').'/'.$self->alignmentMethod().'/'.$self->name().'.tsv.gz';
+		return $file if -e $file;
+		return;
+	}
+); 
+
+sub setJunctionsForReference {
+	my ($self, $reference) = @_;
+	my @l_obj;
+	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
+	my $se_file = $self->project->RnaseqSEA_SE;
+	my $ri_file = $self->project->RnaseqSEA_RI;
+	my ($hash_junc, $hash_junc_sj_ids);
+	if ($ri_file and -e $ri_file ) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($reference)}) {
+			my $id = $hres->{id};
+			$hash_junc->{$id} = $hres;
+			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
+			#push(@ares,$hres);
+		}
+	}
+	if ($se_file and -e $se_file) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($reference)}) {
+			my $id = $hres->{id};
+			$hash_junc->{$id} = $hres;
+			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
+			
+		}
+	}
+	
+ 	my $hSJ= {};
+ 	my $regtools_file = $self->regtools_file();
+	if ($regtools_file and -e $regtools_file) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($regtools_file, 'regtools')->parse_file($reference)}) {
+			my $id = $hres->{id};
+			$hash_junc->{$id} = $hres;
+			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
+		}
+	}
+	
+	foreach my $id (keys %{$hash_junc} ){
+		my @ps = keys %{$hash_junc->{$id}->{annex}};
+		foreach my $p (@ps) {
+			
+			#die() unless exists $hash_junc->{$id}->{annex}->{$p}->{canonic_count};
+			
+			if (int($hash_junc->{$id}->{annex}->{$p}->{canonic_count}) < 10) {
+				unless (exists $hash_junc->{$id}->{annex}->{$p}->{is_sj}){
+					delete $hash_junc->{$id}->{annex}->{$p};
+					next;
+				}
+				else {
+					my $genes = $reference->getChromosome->getGenesByPosition($hash_junc->{$id}->{start},$hash_junc->{$id}->{end});
+					my $max ={};
+					$max->{$p} = [];
+					foreach my $g (@$genes){
+						my $tree = $g->tree_junctions();
+						my $res = $tree->fetch($hash_junc->{$id}->{start},$hash_junc->{$id}->{end});
+						unless(@$res) {
+							$res =[];
+							my $r = $tree->fetch_nearest_down($hash_junc->{$id}->{start});
+							push(@$res,$r) if $r;
+							 $r = $tree->fetch_nearest_up($hash_junc->{$id}->{start});
+							push(@$res,$r) if $r;
+							 $r = $tree->fetch_nearest_down($hash_junc->{$id}->{end});
+							push(@$res,$r) if $r;
+							 $r = $tree->fetch_nearest_up($hash_junc->{$id}->{end});
+							push(@$res,$r) if $r;
+						}
+							push( @{$max->{$p}}, map{$_->{count}->{$p} } grep {exists $_->{count}->{$p}} @$res);
+					}
+	
+					if (@{$max->{$p}}){
+							$hash_junc->{$id}->{annex}->{$p}->{canonic_count} = max(@{$max->{$p}});
+							$hash_junc->{$id}->{annex}->{$p}->{junc_normale_count} = $hash_junc->{$id}->{annex}->{$p}->{canonic_count};
+						}
+						else {
+							if (exists $hash_junc->{$id}->{annex}->{$p}) {
+								
+							$hash_junc->{$id}->{annex}->{$p}->{canonic_count} = 0;
+							$hash_junc->{$id}->{annex}->{$p}->{junc_normale_count} = 0;
+							
+							delete $hash_junc->{$id}->{annex}->{$p} if ($hash_junc->{$id}->{annex}->{$p}->{alt_count}+0.01) < 5;
+							}
+						}
+					
+					
+					}
+				}
+			}
+		next unless keys %{$hash_junc->{$id}->{annex}};
+		
+		#delete $hash_junc->{$id}->{genes};
+		my $obj = $self->getProject->flushObject( 'junctions', $hash_junc->{$id});
+		warn ref($obj).' -> '.$obj->id();
+		push(@l_obj, $obj);
+		
+	}
+	return \@l_obj;	
+}
+
 has tempArray => (
 	is => 'rw',
 
@@ -1768,6 +1900,7 @@ sub getLargeIndelsFile {
 	return $file;
 }
 
+
 sub _getCallingFileWithMethodName {
 	my ( $self, $method_name, $type ) = @_;
 	confess() unless $method_name;
@@ -1775,6 +1908,9 @@ sub _getCallingFileWithMethodName {
 	my $dir;
 	if ( $type eq 'variations' ) {
 		$dir = $project->getVariationsDir($method_name);
+	}
+	elsif ( $type eq 'junctions' ) {
+		$dir = $project->getJunctionsDir($method_name).'/'.$self->alignmentMethod().'/';
 	}
 	elsif ( $type eq 'large_indels' ) {
 		$dir = $project->getLargeIndelsDir($method_name);
@@ -1844,7 +1980,7 @@ sub _getFileByExtention {
 	my $exts = {
 		"variation" => [
 			"vcf.gz", "gz",  "vcf", "gff3", "sam", "txt",
-			"casava", "tab", "casava2"
+			"casava", "tab", "casava2", "tsv", "tsv.gz"
 		],
 		"align" => ["bam","cram"],
 		"SJ" => ["gz"]
@@ -2891,7 +3027,7 @@ sub get_lmdb_cache {
 	my ( $self, $mode ) = @_;
 	
 	$mode = "r" unless $mode;
-	my $dir_out = $self->project->getCacheDir();
+	my $dir_out = $self->project->rocks_directory();
 	unless (-e $dir_out."/".$self->name.".cache"){
 		$mode = "c";
 	}
@@ -3463,6 +3599,9 @@ sub get_string_validations {
 
 sub getSJFile {
 	my ( $self, $method, $nodie ) = @_;
+	confess();
+	
+	
 	if ($method) {
 		if ($nodie) {
 			return ""

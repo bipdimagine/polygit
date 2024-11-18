@@ -37,11 +37,31 @@ has name => (
 	},
 );
 
+has rocksdb_id => (
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my ($self) = @_;
+		my ($chr,$pos,$pos2,$type) = split("_",$self->id);
+		$pos = sprintf("%010d", $pos);
+		$pos2 = sprintf("%010d", $pos2);
+		return  ($pos."!".$pos2.'!'.$type);
+	},
+	
+);
+
 has isJunction => (
 	is		=> 'ro',
 	lazy 	=> 1,
 	default	=> 1,
 );
+
+sub existsPatient {
+	my ($self,$patient) = @_;
+	$self->getPatients() unless exists  $self->{patients_object};
+	return exists $self->{patients_object}->{$patient->id};
+}
+
 has sj_id => (
 	is		=> 'ro',
 );
@@ -819,6 +839,11 @@ sub in_this_run_ratio {
 
 sub dejavu_patients {
 	my($self,$ratio,$patient) = @_;
+	
+	#TODO: a faire dejavu hg38
+	return 0;
+	
+	
 	$ratio = "all" unless $ratio;
 	return 0 unless exists $self->dejavu->{$ratio};
 	my $nb = 0;
@@ -880,6 +905,7 @@ sub getHashSpliceAiNearStartEnd {
 	return $h if $self->isCanonique();
 	my ($max_start_score, $max_start_infos, $h_start_details) = $self->getHashSpliceAiInInterval($self->start() - 10, $self->start() + 10);
 	my ($max_end_score, $max_end_infos, $h_end_details) = $self->getHashSpliceAiInInterval($self->end() - 10, $self->end() + 10);
+
 	if ($max_start_score > 0) {
 		$h->{start}->{max_score} = $max_start_score;
 		$h->{start}->{max_infos} = $max_start_infos;

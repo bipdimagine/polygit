@@ -52,6 +52,7 @@ use GenBoNoSqlDejaVuCNV;
 use GenBoNoSqlDejaVuSV;
 #use GenBoNoSqlDejaVuSV_agregate;
 use GenBoNoSqlDejaVuJunctions;
+use GenBoNoSqlDejaVuJunctionsResume;
 use GenBoNoSqlDejaVuJunctionsCanoniques;
 use GenBoNoSqlDejaVuJunctionsPhenotype;
 use GenBoNoSqlAnnotation;
@@ -4965,8 +4966,12 @@ has dejavuJunctionsResume => (
 		my $self = shift;
 		my $release = $self->annotation_genome_version();
 		$release = 'HG19' if ($release =~ /HG19/);
+		$release = 'HG38' if ($release =~ /HG38/);
 		my $sqliteDir = $self->DejaVuJunction_path();
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		
+		confess();
+		
 		return  GenBoNoSqlDejaVuJunctionsResume->new( dir => $sqliteDir, mode => "r" );
 	}
 );
@@ -4978,8 +4983,12 @@ has dejavuJunctionsCanoniques => (
 		my $self = shift;
 		my $release = $self->annotation_genome_version();
 		$release = 'HG19' if ($release =~ /HG19/);
+		$release = 'HG38' if ($release =~ /HG38/);
 		my $sqliteDir = $self->get_dejavu_junctions_path('canoniques');
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+		
+		confess();
+		
 		return  GenBoNoSqlDejaVuJunctionsCanoniques->new( dir => $sqliteDir, mode => "r" );
 	}
 );
@@ -4992,8 +5001,12 @@ sub dejavuJunctionsPhenotype {
 	return $self->{'dv_junctions_'.$phenotype_name} if (exists $self->{'dv_junctions_'.$phenotype_name});
 	my $release = $self->annotation_genome_version();
 	$release = 'HG19' if ($release =~ /HG19/);
+	$release = 'HG38' if ($release =~ /HG38/);
 	my $sqliteDir = $self->get_dejavu_junctions_path($phenotype_name);
 	die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
+	
+	confess();
+		
 	$self->{'dv_junctions_'.$phenotype_name} = GenBoNoSqlDejaVuJunctionsPhenotype->new( phenotype_name => $phenotype_name, dir => $sqliteDir, mode => "r" );
 	return $self->{'dv_junctions_'.$phenotype_name};
 }

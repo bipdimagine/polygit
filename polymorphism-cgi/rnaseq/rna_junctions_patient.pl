@@ -116,7 +116,9 @@ my $j_selected = 0;
 my $h_chr_vectors;
 my $h_chr_vectors_counts;
 
-my $has_regtools_vectors;
+
+my $has_regtools_vectors = 1;
+>>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 my $exists_vector_ratio_10;
 foreach my $chr ( @{ $project->getChromosomes() } ) {
 #	warn $chr->id;
@@ -154,6 +156,10 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 		$has_regtools_vectors = 1 if exists $chr->global_categories->{'DA'};
 		$has_regtools_vectors = 1 if exists $chr->global_categories->{'NDA'};
 	}
+=======
+#	$exists_vector_ratio_10++ if exists $chr->patients_categories->{$patient->name().'_ratio_10'};
+	
+>>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 }
 my $cache_id = 'splices_linked_' . $patient->name();
 my $no_cache = $patient->get_lmdb_cache("r");
@@ -422,95 +428,87 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	
 	my $chr = $patient->getProject->getChromosome($chr_id);
 	next if $chr->countThisVariants( $h_chr_vectors->{$chr_id} ) == 0;
-
+	
 	$patient->getProject->buffer->dbh_deconnect();
+	$patient->getProject->disconnect();
 	$pm->start and next;
 	$patient->getProject->buffer->dbh_reconnect();
 	
+
+	
+	#TODO: travailler ici sur les vector
 	if (not $only_gene ) {
 		#DV vector
-		my $type_vector_dv = 'dejavu';
-		my $type_vector_dv_sup = 'dejavu';
-		if ($max_dejavu_value >= 90)    {
-			$type_vector_dv .= '_90';
-		}
-		elsif ($max_dejavu_value >= 80) {
-			$type_vector_dv .= '_80';
-			$type_vector_dv_sup .= '_90';
-		}
-		elsif ($max_dejavu_value >= 70) {
-			$type_vector_dv .= '_70';
-			$type_vector_dv_sup .= '_80';
-		}
-		elsif ($max_dejavu_value >= 60) {
-			$type_vector_dv .= '_60';
-			$type_vector_dv_sup .= '_70';
-		}
-		elsif ($max_dejavu_value >= 50) {
-			$type_vector_dv .= '_50';
-			$type_vector_dv_sup .= '_60';
-		}
-		elsif ($max_dejavu_value >= 40) {
-			$type_vector_dv .= '_40';
-			$type_vector_dv_sup .= '_50';
-		}
-		elsif ($max_dejavu_value >= 30) {
-			$type_vector_dv .= '_30';
-			$type_vector_dv_sup .= '_40';
-		}
-		elsif ($max_dejavu_value >= 25) {
-			$type_vector_dv .= '_25';
-			$type_vector_dv_sup .= '_30';
-		}
-		elsif ($max_dejavu_value >= 20) {
-			$type_vector_dv .= '_20';
-			$type_vector_dv_sup .= '_25';
-		}
-		elsif ($max_dejavu_value >= 15) {
-			$type_vector_dv .= '_15';
-			$type_vector_dv_sup .= '_20';
-		}
-		elsif ($max_dejavu_value >= 10) {
-			$type_vector_dv .= '_10';
-			$type_vector_dv_sup .= '_15';
-		}
-		else {
-			$type_vector_dv .= '_5';
-			$type_vector_dv_sup .= '_105';
-		}
-		$type_vector_dv .= '_r10' if ($only_dejavu_ratio_10);
-		$type_vector_dv_sup .= '_r10' if ($only_dejavu_ratio_10);
-		if (exists $chr->global_categories->{$type_vector_dv}) {
-			$h_chr_vectors->{$chr_id} &= $chr->global_categories->{$type_vector_dv};
-#			if ($type_vector_dv_sup and exists $chr->global_categories->{$type_vector_dv_sup}) {
-#				my $v_sup = $chr->global_categories->{$type_vector_dv_sup}->Clone();
-#				$v_sup -= $chr->global_categories->{$type_vector_dv};
-#				$h_chr_vectors->{$chr_id} -= $v_sup;
-#			}
-		}
+#		my $type_vector_dv = 'dejavu';
+#		my $type_vector_dv_sup = 'dejavu';
+#		if ($max_dejavu_value >= 90)    {
+#			$type_vector_dv .= '_90';
+#		}
+#		elsif ($max_dejavu_value >= 80) {
+#			$type_vector_dv .= '_80';
+#			$type_vector_dv_sup .= '_90';
+#		}
+#		elsif ($max_dejavu_value >= 70) {
+#			$type_vector_dv .= '_70';
+#			$type_vector_dv_sup .= '_80';
+#		}
+#		elsif ($max_dejavu_value >= 60) {
+#			$type_vector_dv .= '_60';
+#			$type_vector_dv_sup .= '_70';
+#		}
+#		elsif ($max_dejavu_value >= 50) {
+#			$type_vector_dv .= '_50';
+#			$type_vector_dv_sup .= '_60';
+#		}
+#		elsif ($max_dejavu_value >= 40) {
+#			$type_vector_dv .= '_40';
+#			$type_vector_dv_sup .= '_50';
+#		}
+#		elsif ($max_dejavu_value >= 30) {
+#			$type_vector_dv .= '_30';
+#			$type_vector_dv_sup .= '_40';
+#		}
+#		elsif ($max_dejavu_value >= 25) {
+#			$type_vector_dv .= '_25';
+#			$type_vector_dv_sup .= '_30';
+#		}
+#		elsif ($max_dejavu_value >= 20) {
+#			$type_vector_dv .= '_20';
+#			$type_vector_dv_sup .= '_25';
+#		}
+#		elsif ($max_dejavu_value >= 15) {
+#			$type_vector_dv .= '_15';
+#			$type_vector_dv_sup .= '_20';
+#		}
+#		elsif ($max_dejavu_value >= 10) {
+#			$type_vector_dv .= '_10';
+#			$type_vector_dv_sup .= '_15';
+#		}
+#		else {
+#			$type_vector_dv .= '_5';
+#			$type_vector_dv_sup .= '_105';
+#		}
+#		$type_vector_dv .= '_r10' if ($only_dejavu_ratio_10);
+#		$type_vector_dv_sup .= '_r10' if ($only_dejavu_ratio_10);
+#		if (exists $chr->global_categories->{$type_vector_dv}) {
+#			$h_chr_vectors->{$chr_id} &= $chr->global_categories->{$type_vector_dv};
+##			if ($type_vector_dv_sup and exists $chr->global_categories->{$type_vector_dv_sup}) {
+##				my $v_sup = $chr->global_categories->{$type_vector_dv_sup}->Clone();
+##				$v_sup -= $chr->global_categories->{$type_vector_dv};
+##				$h_chr_vectors->{$chr_id} -= $v_sup;
+##			}
+#		}
 	
 		# RATIO
-		my $type_vector_ratio = $patient->name.'_ratio';
-		if ($min_score >= 90)    { $type_vector_ratio .= '_90'; }
-		elsif ($min_score >= 80) { $type_vector_ratio .= '_80'; }
-		elsif ($min_score >= 70) { $type_vector_ratio .= '_70'; }
-		elsif ($min_score >= 60) { $type_vector_ratio .= '_60'; }
-		elsif ($min_score >= 50) { $type_vector_ratio .= '_50'; }
-		elsif ($min_score >= 40) { $type_vector_ratio .= '_40'; }
-		elsif ($min_score >= 30) { $type_vector_ratio .= '_30'; }
-		elsif ($min_score >= 20) { $type_vector_ratio .= '_20'; }
-		elsif ($min_score >= 10) { $type_vector_ratio .= '_10'; }
-		if (exists $chr->patients_categories->{$type_vector_ratio}) {
-			$h_chr_vectors->{$chr_id} &= $chr->patients_categories->{$type_vector_ratio};
+		if ($min_score and $min_score =~ /^[1-9]0$/) {
+			$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $patient->getVectorOriginJunctionsRatio($chr, $min_score));
 		}
-
-		if ($has_regtools_vectors) {
-			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'NDA'} if (not $only_junctions_NDA and exists $chr->global_categories->{'NDA'});
-			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'DA'}  if (not $only_junctions_DA and exists $chr->global_categories->{'DA'});
-			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'A'}   if (not $only_junctions_A and exists $chr->global_categories->{'A'});
-			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'D'}   if (not $only_junctions_D and exists $chr->global_categories->{'D'});
-			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'N'}   if (not $only_junctions_N and exists $chr->global_categories->{'N'});
-		}
+		
+		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsNDA($chr) if (not $only_junctions_NDA);
+		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsDA($chr)  if (not $only_junctions_DA);
+		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsA($chr)   if (not $only_junctions_A);
+		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsD($chr)   if (not $only_junctions_D);
+		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsN($chr)   if (not $only_junctions_N);
 	}
 	
 	my @lJunctionsChr = @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };
@@ -1051,7 +1049,15 @@ sub get_html_spliceAI_cmd_button {
 
 sub get_html_spliceAI {
 	my ($junction) = @_;
-	my $h_spai = $junction->getHashSpliceAiNearStartEnd();
+
+	
+	#TODO: faire splice_AI;
+	#my $h_spai = $junction->getHashSpliceAiNearStartEnd();
+	
+	my $h_spai;
+	$h_spai->{start}->{max_score} = 0;
+	$h_spai->{end}->{max_score} = 0;
+	
 	my $color = 'black';
 	my $html = $cgi->start_table(
 		{

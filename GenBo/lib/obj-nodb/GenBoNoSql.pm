@@ -652,7 +652,15 @@ sub close {
 	}
 	foreach my $key (keys %{$self->{dbh}}){
 		next unless $self->{dbh}->{$key};
-		$self->{dbh}->{$key}->disconnect();
+		eval {
+			$self->{dbh}->{$key}->disconnect();
+		};
+		if ($@) {
+			warn "\n\n";
+			warn $key;
+			warn $self->{dir};
+			confess();
+		};
 		delete $self->{dbh}->{$key};
 	}
 	$self->is_closed(1);

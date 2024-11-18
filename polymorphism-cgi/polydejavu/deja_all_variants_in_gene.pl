@@ -1201,6 +1201,15 @@ sub update_list_variants_from_dejavu {
 #		elsif  ($h_var->{value}->{hgmd_id} or $h_var->{value}->{clinvar_id}) { $color = "orange"; }
 		
 
+		if ($only_transcript) {
+			my @new_list;
+			foreach my $htr (@{$h_var->{genes}->{$gene_init_id_for_newgene}}) {
+				if ($htr->{value}->{trid} eq $only_transcript) {
+					push(@new_list, $htr);
+				}
+			}
+			$h_var->{genes}->{$gene_init_id_for_newgene} = \@new_list;
+		}
 		$hVariantsDetails->{$var_id}->{alamut_link_variant} = html_polygenescout::print_alamut_variant_button($var->alamut_id());
 		$hVariantsDetails->{$var_id}->{table_varsome} = $table_varsome;
 #		$hVariantsDetails->{$var_id}->{var_gnomad} = $var_gnomad;

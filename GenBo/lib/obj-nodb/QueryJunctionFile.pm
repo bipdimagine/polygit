@@ -144,6 +144,7 @@ sub return_hash_from_rnaseqsea_line {
 }
 sub parse_results_global_file {
 	my ($self, $file_name, $chr) = @_;
+	$chr = $chr->getChromosome();
 	my ($h_global, @l_res);
 	my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->file() );
 	my $h_header = parse_header($tabix->header);
@@ -240,6 +241,8 @@ sub parse_results_global_file {
 			$h_res->{canonic_count} = $h_res->{junc_normale_count};
 			$h_res->{canonic_count} = 0 if $h_res->{canonic_count} eq 'NA';
 			$h_res->{canonic_count} = 0 if $h_res->{canonic_count} eq 'No_matching_DA_junction';
+
+			$h_res->{canonic_count} = 0 if (exists $h_res->{canonic_count} and not $h_res->{canonic_count});
 			
 			my $res = $chr->genesIntervalTree->fetch($h_res->{start},$h_res->{end}+1);
 			next if scalar(@$res) >= 2 &&  $h_res->{alt_count} < 5;

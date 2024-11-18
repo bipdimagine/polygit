@@ -25,7 +25,10 @@ my $project = $buffer->newProject( -name => $project_name );
 my ($dirout_method, @l_RI, @l_SE);
 foreach my $patient (@{$project->getPatients()}) {
 	my $align_method = $patient->alignmentMethods->[0];
-	$dirout_method = $project->project_path."junctions/".$align_method."/rnaseqsea";
+	$dirout_method = $project->project_path."junctions/".$align_method;
+	mkdir $dirout_method if not -d $dirout_method;
+	$dirout_method .= "/rnaseqsea";
+	mkdir $dirout_method if not -d $dirout_method;
 	my $fileRI = $dirout_method.'/'.$patient->name().'_RI.txt.gz';
 	my $fileSE = $dirout_method.'/'.$patient->name().'_SE.txt.gz';
 	confess("\n\nERROR: file $fileRI not found. Die...\n\n") unless -e $fileRI;
@@ -93,6 +96,18 @@ my $cmd_t2 = "tabix -s 5 -b 6 $fileout_analyse_SE_gz";
 `rm $fileout_analyse_RI` if -e $fileout_analyse_RI;
 `rm $fileout_analyse_SE` if -e $fileout_analyse_SE;
 
-my $cmd_cp = "cp $fileout_analyse_RI_gz* $fileout_analyse_SE* $dirout_method/.";
+
+
+	
+
+my $cmd_cp = "cp $fileout_analyse_RI_gz* $fileout_analyse_SE_gz* $dirout_method/.";
 `$cmd_cp`;
+
+
+
+
+
+
+
+
 

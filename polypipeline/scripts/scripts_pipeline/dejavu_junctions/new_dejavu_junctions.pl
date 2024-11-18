@@ -32,7 +32,7 @@ use GenBoNoSqlIntervalTree;
 
 my $cgi = new CGI;
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => 'NGS2022_5612' );
+my $project = $buffer->newProject( -name => 'NGS2023_7217' );
 $project->getChromosomes();
 
 my $nbok;
@@ -53,22 +53,9 @@ GetOptions(
 
 my $dv_dir_path = $project->DejaVuJunction_path();
 if ($release =~ /HG19/) { $release = 'HG19'; }
+elsif ($release =~ /HG38/) { $release = 'HG38'; }
 else { $dv_dir_path =~ s/HG19/$release/; }
 
-
-
-print "\n# BACKUP";
-my $dv_dir_backup_path = $dv_dir_path.'/backup/';
-if (-d $dv_dir_backup_path.'/3/') { `rm -r $dv_dir_backup_path/3/`; }
-if (-d $dv_dir_backup_path.'/2/') { `mv $dv_dir_backup_path/2/ $dv_dir_backup_path/3/`; }
-if (-d $dv_dir_backup_path.'/1/') { `mv $dv_dir_backup_path/1/ $dv_dir_backup_path/2/`; }
-`mkdir $dv_dir_backup_path/1/`;
-`chmod 777 $dv_dir_backup_path/1/`;
-`mkdir $dv_dir_backup_path/1/lite/`;
-`chmod 777 $dv_dir_backup_path/1/lite/`;
-`cp $dv_dir_path/*.lite $dv_dir_backup_path/1/lite/.`;
-`zip -r $dv_dir_backup_path/1/lite.zip $dv_dir_backup_path/1/lite/`;
-`rm -r $dv_dir_backup_path/1/lite/`;
 
 
 my $dv_dir_projects_path = $dv_dir_path.'/projects/';

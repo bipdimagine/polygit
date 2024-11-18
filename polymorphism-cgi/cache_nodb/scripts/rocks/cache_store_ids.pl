@@ -43,24 +43,25 @@ require "$RealBin/../../../GenBo/lib/obj-nodb/packages/cache/polydiag/update_var
 
 
 my $fork = 1;
-my ($project_name, $chr_name, $no_verbose, $skip_pseudo_autosomal,$version,$annot_version);
+my ($project_name, $chr_name, $verbose, $skip_pseudo_autosomal,$version,$annot_version);
 my $ok_file;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
 	'annot_version=s'    => \$annot_version,
 	'chr=s'        => \$chr_name,
-	'no_verbose=s' => \$no_verbose,
+	'verbose=s' => \$verbose,
 	'skip_pseudo_autosomal=s' => \$skip_pseudo_autosomal,
 	'version=s' => \$version,
 	'file=s' => \$ok_file,
 );
-warn "*_*_*_*_*_".$host."*_*_*_*_*_".$chr_name;
- if ($ok_file && -e $ok_file) {
- 	system("rm $ok_file");
- }
 
-warn "*_*_*_*_*_ fork :".$fork."*_*_*_*_*_";
+
+if ($ok_file && -e $ok_file) {
+ 	system("rm $ok_file");
+}
+
+
 
 `ulimit -Su unlimited && echo toto`;
 system("ulimit -Su unlimited");
@@ -69,18 +70,23 @@ my (@z) = `ulimit -a `;
 
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
 unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
-warn hostname;
 my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
+
+if (not $verbose) {
+	$project->cache_verbose(0);
+}
+warn "*_*_*_*_*_".$host."*_*_*_*_*_".$chr_name  if ( $project->cache_verbose() );
+warn "*_*_*_*_*_ fork :".$fork."*_*_*_*_*_"  if ( $project->cache_verbose() );
+warn hostname if ( $project->cache_verbose() );
+$ok_file = $project->rocks_directory("logs")."/cache_store_ids.".$chr_name.".ok" if not $ok_file;
+
 $project->preload_patients();
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
-}
-if ($no_verbose) {
-	$project->cache_verbose(0);
 }
 my $chr = $project->getChromosome($chr_name);
 if (-e $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty") {
@@ -92,8 +98,8 @@ warn "\n### CACHE: store ids step\n" if ( $project->cache_verbose() );
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc");#/software/bin/vmtouch -t ".$no1->filename." "
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name);
 
-$project->buffer->disconnect();
-$project->buffer->{dbh} ="-";
+#$project->buffer->disconnect();
+#$project->buffer->{dbh} ="-";
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name);
 #warn "/data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name;
 #warn "------------------------";
@@ -147,7 +153,10 @@ foreach my $region (values @$regions) {
 	$t ++;
 	$process->{$cpt}  ++;
 	
+	
+	$project->disconnect();
 	my $pid = $pm->start and next;
+#	warn 'BEFORE '.$cpt.'/'.scalar(@$regions).'  -  '.$region->{start}." ".$region->{end};
 	my $time_start = time;
 	my $hres = {};
 	get_ids( $project_name, $region );
@@ -156,9 +165,17 @@ foreach my $region (values @$regions) {
 	$hres->{ttime}    = abs( $time_start - $time_end );
 	$hres->{end}    =  $cpt;
 	delete $buffer->{lmdb_score};
+#	warn 'END '.$cpt.'/'.scalar(@$regions).'  -  '.$region->{start}." ".$region->{end};
+	
+	$project->disconnect();
+	$project->buffer->disconnect();
+	$project->close_rocks();
 	$pm->finish( 0, $hres );
 }
 $pm->wait_all_children();
+
+#warn 'AFTER WAIT CHILDREN deb';
+
 if(keys %$process){
 	warn Dumper $process;
 	die();
@@ -166,19 +183,30 @@ if(keys %$process){
 $rg->close();
 $rg_polyviewer->close();
 
-warn "END ANNOTATION => ".abs(time-$t);
-warn " START PHASE 2 ";
+$project->disconnect();
+$project->buffer->disconnect();
+$project->buffer->dbh_deconnect();
+$project->close_rocks();
+
+#warn 'AFTER WAIT CHILDREN';
+#
+#warn "END ANNOTATION => ".abs(time-$t);
+#warn " START PHASE 2 ";
 
 
+my $rg_polyviewer_2 = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("polyviewer"),mode=>"r",index=>"genomic",chromosome=>$chr_name,genome=>"HG19",pack=>"",description=>[]);
+my $rg_2 = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("genbo"),mode=>"r",index=>"genomic",chromosome=>$chr_name,genome=>"HG19",pack=>"",description=>[]);
 
-$rg_polyviewer = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("polyviewer"),mode=>"r",index=>"genomic",chromosome=>$chr_name,genome=>"HG19",pack=>"",description=>[]);
-
-
-
-
-$rg_polyviewer = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("polyviewer"),mode=>"r",index=>"genomic",chromosome=>$chr_name,genome=>"HG19",pack=>"",description=>[]);
-$rg = GenBoNoSqlRocksGenome->new(dir=>$project->rocks_pipeline_directory("genbo"),mode=>"r",index=>"genomic",chromosome=>$chr_name,genome=>"HG19",pack=>"",description=>[]);
 my $final_dir = $project->rocks_directory();
+
+#warn "\n\n";
+#warn $final_dir;
+#warn $project->rocks_directory("genbo");
+#warn $project->rocks_directory("index");
+#warn $project->rocks_directory("polyviewer_raw");
+#warn "\n\n";
+
+
 my $finalrg = GenBoNoSqlRocksVariation->new(dir=>$project->rocks_directory("genbo"),mode=>"c",name=>$chr_name.".genbo.rocks");
 my $final_index_genbo_id = GenBoNoSqlRocksVariation->new(dir=>$project->rocks_directory("index"),mode=>"c",name=>$chr_name);
 #my $final_polyviewer = GenBoNoSqlRocksPolyviewerVariant->new(dir=>$project->rocks_directory("polyviewer"),mode=>"c",name=>$chr_name.".polyviewer_variant");
@@ -188,17 +216,17 @@ my $nb_regions = 0;
 my $index =0;
 my $array;
  $t = time;
- warn "------------------------------------------------------\n";
+ warn "------------------------------------------------------\n"  if ( $project->cache_verbose() );
 my $ztotal;
-	foreach my $r (@{$rg->regions}) {
+	foreach my $r (@{$rg_2->regions}) {
 		my $start = $index;
-		my $no = $rg->nosql_rocks($r);
-		my $no_polyviewer = $rg_polyviewer->nosql_rocks($r);
+		my $no = $rg_2->nosql_rocks($r);
+		my $no_polyviewer = $rg_polyviewer_2->nosql_rocks($r);
 		$nb_regions ++;
 		my $iter = $no->rocks->new_iterator->seek_to_first;
 		while (my ($var_id, $value) = $iter->each) {
+			warn $var_id if ( $project->cache_verbose() );
 			my $v = $no->decode($value);
-			
 			my $index = $finalrg->put_batch_variation($var_id,$v);
 			my $pv = $no_polyviewer->get($var_id);
 			$pv->{global_vector_id} = $chr->name."!".$index;
@@ -218,25 +246,38 @@ my $ztotal;
 		}
 		
 		$no->close();
+		$no_polyviewer->close();
 		$finalrg->write_batch();
 		$fp->write_batch;
 		#$fp2->write_batch;
 		$final_index_genbo_id->write_batch;
 	}
-	$fp->close();
+	
+	
 #	$final_polyviewer->write_batch();
 #	$final_polyviewer->close();
-	$finalrg->write_batch();
+	
+	$rg_polyviewer_2->close();
+	$rg_2->close();	
+	$fp->close();
 	$finalrg->close();
-	$final_index_genbo_id->write_batch;
 	$final_index_genbo_id->close();
-	warn "------------------------------------------------------\n";
-	warn "********* END   ".abs(time -$t)." :: ".$index;
+	
+	warn "------------------------------------------------------\n"  if ( $project->cache_verbose() );
+	warn "********* END   ".abs(time -$t)." :: ".$index  if ( $project->cache_verbose() );
+	if ($ok_file) {
+		my $date = system("date");
+		open (LOG, ">$ok_file");
+		print LOG "OK\n";
+		print LOG $date;
+		close (LOG);
+	}
+	warn 'OK FILE: '.$ok_file  if ( $project->cache_verbose() );
+	$project->close_rocks();
+	
 	#$rg2->save_vector_index_region($array);
 	#warn Dumper $array;
-	$rg->close();	
-	warn $project->rocks_pipeline_directory();
-	system("date > $ok_file") if $ok_file;
+#	warn $project->rocks_pipeline_directory();
 	exit(0);
 
 
@@ -252,8 +293,7 @@ sub get_ids {
 	#$print_html->init();
 	my $project = $buffer->newProject( -name => $project_name );
 	$project->preload_patients();
-	$project->buffer->disconnect();
-	
+	#$project->buffer->disconnect();
 	
 	#$project->buffer->{dbh} ="-";
 	my $chr = $project->getChromosome( $region->{chromosome} );
@@ -278,36 +318,38 @@ sub get_ids {
 		$hpatients->{ $patient_names[$i] } = $i;
 	}
 	my $t = time;
+#	warn '   - check variants';
 	my $vs = $reference->getStructuralVariations;
+	
 	my @arocksid = map {$_->rocksdb_id} @$vs;
-	if (@arocksid){
-	eval{
-	$chr->rocksdb("gnomad")->prepare(\@arocksid);
-	$chr->rocksdb("cadd")->prepare(\@arocksid);
-	$chr->rocksdb("clinvar")->prepare(\@arocksid);
-	$chr->rocksdb("spliceAI")->prepare(\@arocksid);
-	$chr->rocksdb("dbscSNV")->prepare(\@arocksid);
-	$chr->rocksdb("revel")->prepare(\@arocksid);
-	$chr->rocksdb("hgmd")->prepare(\@arocksid);
-	
-	my $db = $chr->rocks_dejavu()->get_db($vs->[0]->start);
-	
-	#warn Dumper 
-	$db->prepare(\@arocksid);
-	};
-	if ($@){
-		warn "\n\n";
-		warn "bug3 ";
-		warn "\n\n";
-		die();
+	if (scalar(@$vs) > 0 and @arocksid){
+		eval{
+			$chr->rocksdb("gnomad")->prepare(\@arocksid);
+			$chr->rocksdb("cadd")->prepare(\@arocksid);
+			$chr->rocksdb("clinvar")->prepare(\@arocksid);
+			$chr->rocksdb("spliceAI")->prepare(\@arocksid);
+			$chr->rocksdb("dbscSNV")->prepare(\@arocksid);
+			$chr->rocksdb("revel")->prepare(\@arocksid);
+			$chr->rocksdb("hgmd")->prepare(\@arocksid);
+			my $db = $chr->rocks_dejavu()->get_db($vs->[0]->start);
+			$db->prepare(\@arocksid);
+		};
+		if ($@){
+			warn "\n\n";
+			warn "bug3 ";
+			warn "\n\n";
+			die();
+		}
 	}
-	}
+	
+	
 	$t =time;
 	my $nb = 0;
 	#warn "prepare ". $region->{start}." ".$region->{end};
 	my $hvariant;
 	my $hpolyviewer;
 	foreach my $variation ( @{$vs } ) {
+		next if ($variation->type =~ /junction/ );
 		my $debug ;
 		$nb ++;
 		warn $nb."/".scalar @{$vs } if $nb %30000 == 0; 
@@ -432,16 +474,104 @@ sub get_ids {
 		#die();
 		
 	}
-	warn "before save  ". $region->{start}." ".$region->{end};
 	
-		my $no_polyviewer = $rg_polyviewer->nosql_rocks_tmp($region);
-		my $no = $rg->nosql_rocks_tmp($region);
-		foreach my $k (keys %$hpolyviewer){
-			$no_polyviewer->put_batch($k,$hpolyviewer->{$k});
-			$no->put_batch($k,$hvariant->{$k});
+#	warn '   - check junctions';
+	my $js = $reference->getJunctions;
+	
+	my $h_ri_aval_amont;
+	foreach my $junction ( @{$js } ) {
+		next if (not $junction->type =~ /junction/ );
+		my $debug ;
+		$nb ++;
+#		warn $nb."/".scalar @{$js } if $nb %30000 == 0; 
+		$junction->id();
+		$junction->name();
+		$junction->annex();
+		$junction->setPatients();
+		#$junction->get_hash_exons_introns();
+		
+		my $vp =  PolyviewerVariant->new();
+		$vp->setLmdbJunction($junction);
+		$vp->{hgenes} = {};
+		$vp->{genes_id} = [];
+		my $code =0;
+		foreach my $g (@{$junction->getGenes}){
+			my $h = $vp->set_gene_junction($junction,$g);
+			$h->{code} = $code;
+			$vp->{hgenes}->{$g->{id}} = $h;
+			
+			push(@{$vp->{genes_id}},$g->{id});
+			$code ++;
 		}
-		$no_polyviewer->close;
-		$no->close;
-		warn "end variant  ". $region->{start}." ".$region->{end};
+		##############
+		#	next;
+		##############0
+		$vp->{hpatients} ={};
+		$vp->{patients_id} = [];
+		my $dvp;
+		foreach my $pat (@{$junction->getPatients}){
+			
+			foreach my $p (@{$pat->getFamily()->getMembers}){
+				
+				next if exists $dvp->{$p->id};
+				$dvp->{$p->id} ++;
+				my $h = $vp->set_patient_cache($junction,$p);
+				$vp->{patients_calling}->{$p->id} =$h; 
+			}
+		}
+		bless $junction , 'GenBoJunctionCache';
+		my $t = 0;
+		
+		$hpolyviewer->{$junction->rocksdb_id} = $vp;
+#		delete $junction->{annex};
+		delete $junction->{array_dejavu};
+		delete $junction->{references_object};
+		delete $junction->{dejaVuInfosForDiag2};
+		delete $junction->{coverage_obj};
+		delete $junction->{buffer};
+		delete $junction->{project};
+		
+		$hvariant->{$junction->rocksdb_id} = $junction;
+		
+		warn $junction->id;
+		
+		
+#		my $h_exons_introns;
+#		my @lPatients = @{ $junction->getPatients() };
+#		foreach my $patient (@lPatients) {
+#			next if (not $junction->is_ri_aval($patient) and not $junction->is_ri_amont($patient));
+#			$h_exons_introns = $junction->get_hash_exons_introns() unless ($h_exons_introns);
+#			my $type_ri;
+#			$type_ri = 'ri_aval'  if ($junction->is_ri_aval($patient));
+#			$type_ri = 'ri_amont' if ($junction->is_ri_amont($patient));
+#			foreach my $tid (sort keys %{$h_exons_introns}) {
+#				my @lPos = (sort keys %{$h_exons_introns->{$tid}->{by_pos}});
+#				my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[0]};
+#				my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[-1]};
+#				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$type_ri} = $junction->id(); 
+#				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$last_exon_intron}->{$type_ri} = $junction->id(); 
+#			} 
+#		}
+
+
+
+	}
+#	warn "   - end objs  ". $region->{start}." ".$region->{end};
+	
+#	warn "   - before save  ". $region->{start}." ".$region->{end};
+	$project->disconnect();
+	
+	
+	my $no_polyviewer = $rg_polyviewer->nosql_rocks($region);
+	my $no = $rg->nosql_rocks($region);
+	foreach my $k (keys %$hpolyviewer){
+		$no_polyviewer->put_batch($k,$hpolyviewer->{$k});
+		$no->put_batch($k,$hvariant->{$k});
+	}
+	$no_polyviewer->close;
+	$no->close;
+#	warn "   - end variant  ". $region->{start}." ".$region->{end};
 	return;
 }
+
+

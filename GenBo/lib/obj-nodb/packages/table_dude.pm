@@ -645,6 +645,7 @@ sub get_transcripts {
 		}
 	);
 
+	$patient->getProject->disconnect();
 	my $iter = natatime $nb, @$aa;
 	while ( my @ltr_tmp = $iter->() ) {
 		my $pid       = $pm->start and next;
@@ -1014,6 +1015,7 @@ sub get_images {
 	);
 	$patient->project->preload_patients();
 	$patient->project->buffer->dbh_deconnect();
+	$patient->project->disconnect();
 	while ( my @ltr_tmp = $iter->() ) {
 		my $pid       = $pm->start and next;
 		my $new_lists = compute_uri( $patient, \@ltr_tmp, $print );

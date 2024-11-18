@@ -89,11 +89,12 @@ sub getProjectListsRNA {
 		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
 		my (@lbuttons_splices, @lbuttons_rna);
 		
-		if (-d $path) {
+		if (-d $path or -d $p1->getJunctionsDir('regtools')) {
 			my $ok;
 			foreach my $patient (@{$p1->getPatients()}) { 
 				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
 				$ok = 1 if (-e $dragen_file);
+				$ok = 1 if ($patient->regtools_file() and -e $patient->regtools_file());
 			}
 			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
 			$se_file = $path.'/allResSE.txt.gz' if (-e $path.'/allResSE.txt.gz');

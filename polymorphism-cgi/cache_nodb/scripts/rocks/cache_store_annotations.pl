@@ -52,8 +52,7 @@ my $buffer  = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProject( -name => $project_name );
 	my $hcat = $buffer->config->{'stats_genes'};
-	warn Dumper $hcat;
-		my %global_hcat;
+	my %global_hcat;
 	map{push(@{$global_hcat{medium}},$_)} grep {$hcat->{$_} eq "medium" } keys %$hcat unless exists $global_hcat{medium};
 	map{push(@{$global_hcat{low}},$_)}  grep {$hcat->{$_} eq "low" } keys %$hcat unless exists $global_hcat{low};
 	map{push(@{$global_hcat{high}},$_)}   grep {$hcat->{$_} eq "high" } keys %$hcat unless exists $global_hcat{high};
@@ -159,7 +158,7 @@ my $id_intergenic = Set::IntSpan::Fast::XS->new();
 my $hintspan_patients;
 ### init hpatients;
 my $hpatients = {};
-my @categorie_patient = ( "all", "he", "ho" );
+my @categorie_patient = ( "all", "he", "ho", "ri", "se", "a", "d", "n", "da", "nda" );
 my @patient_names = sort { $a cmp $b } map { $_->name } @{ $project->getPatients };
 my $index_patients = 0;
 foreach my $pname (@patient_names) {
@@ -187,7 +186,8 @@ $pm->run_on_finish(
 			return;
 		}
 		delete $process->{ $hres->{idp} };
-			
+		
+		
 		######################
 		#For Patient  Type
 		######################
@@ -250,7 +250,7 @@ my $idp  = 0;
 $project->disconnect();
 while ( $true < 2 ) {   
 	#check if all the region end correctly unless restart region failed
-	my $cpt = 1;
+	my $cpt = 0;
 	
 	foreach my $r (@$ranges) {
 		#warn "$cpt/".scalar(@$ranges) if ( $project->cache_verbose() );
@@ -258,17 +258,18 @@ while ( $true < 2 ) {
 		$process->{ $r->[0] . "-" . $r->[1] } = $r;
 		my $pid;
 		$pid = $pm->start and next;
+		$project->disconnect();
 		my $hres;
-		warn "$cpt/".scalar(@$ranges);
 		my $hres = get_annotations( $project_name, $chr_name, $r, $annot_version );
 		$hres->{start} = $r->[0] . "-" . $r->[1];
 		$hres->{idp} = $r->[0] . "-" . $r->[1];
 		delete $hres->{start};
 		$hres->{done} = 1;
+		$project->disconnect();
 		$pm->finish( 0, $hres );
 	}    #end for range range
+	
 	$pm->wait_all_children();
-	warn "end process" if ( $chr->project->cache_verbose() );
 	
 	if ($nbErrors > 0) {
 		confess("\n\nERRORS: $nbErrors errors found... confess...\n\n");
@@ -284,6 +285,7 @@ while ( $true < 2 ) {
 }
 confess("problem store process") if ( keys %$process );
 
+
 my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
 my $size_variants = $no->size();
 warn $size_variants;
@@ -292,7 +294,7 @@ sleep(5);
 #GLOBAL CATEGORIES
 # ok now all part is finished I can store the global intspan and construct bitvector for each global categories
 ##########################
-warn 'store 1/3: complete lmdb categories';
+warn 'store 1/4: complete lmdb categories';
 
 my $rocks3 = $chr->rocks_vector("c");
 my $dir_vector = $project->rocks_directory("vector");
@@ -331,13 +333,14 @@ my $v1 = Bit::Vector->new($size_variants);
 $v1->Fill;
 $rocks3->put_batch("all",$v1);
 $rocks3->write_batch();
+#$rocks3->close();
 #$no3->close();
 
 #########################
 #Patients  CATEGORIES
 # ok now all part is finished saved patients intspan , all , he,  ho
 ##########################
-warn 'store 2/3: lmdb patients';
+warn 'store 2/4: lmdb patients';
 #my $no5 = $chr->get_lmdb_patients("c"); #open lmdb database cretae new one or erase older
 
 my $vector_patients1;
@@ -360,7 +363,7 @@ $rocks3->write_batch();
 #################
 # GENES
 #################
-warn 'store 3/3: lmdb genes';
+warn 'store 3/4: lmdb genes';
 
 
 foreach my $g (keys %{$hannotations}){
@@ -372,8 +375,6 @@ my $tree = Set::IntervalTree->new;
 my $iter = $intspan_region_intergenic->iterate_runs();
 my $i = 0;
 my $no3 = $chr->get_rocks_variations("r");
-warn $no3->rocks;
-warn $no3;
 while ( my ( $from, $to ) = $iter->() ) {
 	my $id = 'intergenic_' . $chr_name . '_' . $from . '_' . $to;
 	$tree->insert( $id, $from, $to + 1 );
@@ -381,6 +382,7 @@ while ( my ( $from, $to ) = $iter->() ) {
 my @array = $id_intergenic->as_array;
 my $t = time;
 foreach my $lmdb_id (@array) {
+	warn $lmdb_id;
 	my $v = $no3->get_index($lmdb_id);
 	my $results = $tree->fetch( $v->{start}, $v->{end} + 1 );
 	confess() unless @$results;
@@ -396,70 +398,71 @@ foreach my $lmdb_id (@array) {
 }
 construct_bitVector_for_gene( $rocks3,$intspan_genes_categories, $vector_patients1,$vector_variation_type,$size_variants);
 $rocks3->write_batch();
-$rocks3->close();
-warn 'store 4/3: lmdb fammilly';
-$buffer = new GBuffer;
- $project = $buffer->newProjectCache( -name => $project_name );
- $chr = $project->getChromosome($chr_name);
- my $rocks4 = $chr->rocks_vector("w");
-foreach my $family (@{$project->getFamilies}){
+$rocks3->write_config();
+$project = undef;
+$buffer = undef;
+
+warn 'store 4/4: lmdb fammilly';
+my $buffer_fam = new GBuffer;
+my $project_fam = $buffer_fam->newProjectCache( -name => $project_name );
+my $chr_fam = $project_fam->getChromosome($chr_name);
+
+
+foreach my $family (@{$project_fam->getFamilies}){
 	foreach my $children  (@{$family->getChildren}){
-		my $bitv1  = $family->getVector_individual_denovo($chr,$children,1);
-		$rocks4->put_batch_vector_transmission($children,"ind_denovo",$bitv1);
+		my $bitv1  = $family->getVector_individual_denovo($chr_fam,$children,1);
+		$rocks3->put_batch_vector_transmission($children,"ind_denovo",$bitv1);
 		
-		my $bitv2  = $family->getVector_individual_dominant($chr,$children,1);
-		$rocks4->put_batch_vector_transmission($children,"ind_dominant",$bitv2);
+		my $bitv2  = $family->getVector_individual_dominant($chr_fam,$children,1);
+		$rocks3->put_batch_vector_transmission($children,"ind_dominant",$bitv2);
 		
-		my $bitv3  = $family->getVector_individual_recessive($chr,$children,1);
-		$rocks4->put_batch_vector_transmission($children,"ind_recessive",$bitv3);
+		my $bitv3  = $family->getVector_individual_recessive($chr_fam,$children,1);
+		$rocks3->put_batch_vector_transmission($children,"ind_recessive",$bitv3);
 			
-		my $bitv4 = $family->getVector_individual_father($chr,$children,1);
-		$rocks4->put_batch_vector_transmission($children,"ind_father",$bitv4);
+		my $bitv4 = $family->getVector_individual_father($chr_fam,$children,1);
+		$rocks3->put_batch_vector_transmission($children,"ind_father",$bitv4);
 		
-		my $bitv5 = $family->getVector_individual_mother($chr,$children,1);
-		$rocks4->put_batch_vector_transmission($children,"ind_mother",$bitv5);
+		my $bitv5 = $family->getVector_individual_mother($chr_fam,$children,1);
+		$rocks3->put_batch_vector_transmission($children,"ind_mother",$bitv5);
 
-		my $bitv6 = $family->getVectorBothTransmission($chr,$children,1);
-		$rocks4->put_batch_vector_transmission($children,"ind_both",$bitv6);
+		my $bitv6 = $family->getVectorBothTransmission($chr_fam,$children,1);
+		$rocks3->put_batch_vector_transmission($children,"ind_both",$bitv6);
 
-		my $bitv7 = $family->getVector_individual_uniparental_disomy($chr,$children,1);
-		$rocks4->put_batch_vector_transmission($children,"ind_uniparental",$bitv7);
+		my $bitv7 = $family->getVector_individual_uniparental_disomy($chr_fam,$children,1);
+		$rocks3->put_batch_vector_transmission($children,"ind_uniparental",$bitv7);
 	}
 }
-foreach my $patient (@{$project->getPatients()}) {
-	my $bitv8 = $patient->getRegionHo($chr, 25, undef, 1);
-	$rocks4->put_batch_vector_transmission($patient,"region_ho_25",$bitv8);
+foreach my $patient (@{$project_fam->getPatients()}) {
+	my $bitv8 = $patient->getRegionHo($chr_fam, 25, undef, 1);
+	$rocks3->put_batch_vector_transmission($patient,"region_ho_25",$bitv8);
 	
-	my $bitv9 = $patient->getRegionHo($chr, 50, undef, 1);
-	$rocks4->put_batch_vector_transmission($patient,"region_ho_50",$bitv9);
+	my $bitv9 = $patient->getRegionHo($chr_fam, 50, undef, 1);
+	$rocks3->put_batch_vector_transmission($patient,"region_ho_50",$bitv9);
 	
-	my $bitv10 = $patient->getRegionHo($chr, 75, undef, 1);
-	$rocks4->put_batch_vector_transmission($patient,"region_ho_75",$bitv10);
+	my $bitv10 = $patient->getRegionHo($chr_fam, 75, undef, 1);
+	$rocks3->put_batch_vector_transmission($patient,"region_ho_75",$bitv10);
 	
-	my $bitv11 = $patient->getRegionHo($chr, 100, undef, 1);
-	$rocks4->put_batch_vector_transmission($patient,"region_ho_100",$bitv11);
+	my $bitv11 = $patient->getRegionHo($chr_fam, 100, undef, 1);
+	$rocks3->put_batch_vector_transmission($patient,"region_ho_100",$bitv11);
 }
-
-$rocks4->write_batch();
-$rocks4->close();
-	system("date > $ok_file") if $ok_file;
-exit(0);
-
+$rocks3->write_batch();
+$rocks3->close();
+system("date > $ok_file") if $ok_file;
 
 exit(0);
 
 sub get_annotations {
 	my ( $project_name, $chr_name, $region, $annot_version ) = @_;
 	my $hres;
-	my $buffer = new GBuffer;
-		my $hpatients;
+	my $buffer_tmp = new GBuffer;
+	my $hpatients;
 	$buffer->vmtouch(1);
-	my $project = $buffer->newProject( -name => $project_name );
-	$project->preload_patients();
-	$project->buffer->disconnect();
-	
+	my $project_tmp = $buffer_tmp->newProject( -name => $project_name );
+	$project_tmp->preload_patients();
+	$project_tmp->disconnect();
+	$project_tmp->buffer->disconnect();
 	if ($annot_version) {
-		$project->changeAnnotationVersion($annot_version);
+		$project_tmp->changeAnnotationVersion($annot_version);
 	}
 	#variation type 
 	 $hres->{variation_type} = {};
@@ -475,19 +478,19 @@ sub get_annotations {
 	}
 	my $intspan_genes_categories = {};
 	my $tree_ratio = Set::IntervalTree->new;
-	foreach my $c ( keys %{ $project->buffer->config->{scaled_score_ratio} } ) {
-		 	my $value = $project->buffer->config->{scaled_score_ratio}->{$c};
+	foreach my $c ( keys %{ $project_tmp->buffer->config->{scaled_score_ratio} } ) {
+		 	my $value = $project_tmp->buffer->config->{scaled_score_ratio}->{$c};
 			$tree_ratio->insert("ratio_".$value,0,($value*100)+1);
-			foreach my $p (@{$project->getPatients}){
+			foreach my $p (@{$project_tmp->getPatients}){
 				$hpatients->{$p->name}->{"ratio_".$value} = Set::IntSpan::Fast::XS->new();
 			}
 	}
 
 	my $tree_ratio_lower = Set::IntervalTree->new;
-	foreach my $c ( keys %{ $project->buffer->config->{lower_scaled_score_ratio} } ) {
-		 	my $value = $project->buffer->config->{lower_scaled_score_ratio}->{$c};
+	foreach my $c ( keys %{ $project_tmp->buffer->config->{lower_scaled_score_ratio} } ) {
+		 	my $value = $project_tmp->buffer->config->{lower_scaled_score_ratio}->{$c};
 			$tree_ratio_lower->insert("lower_ratio_".$value,$value,101);
-			foreach my $p (@{$project->getPatients}){
+			foreach my $p (@{$project_tmp->getPatients}){
 					$hpatients->{$p->name}->{"lower_ratio_".$value} = Set::IntSpan::Fast::XS->new();
 			}
 	}
@@ -501,7 +504,7 @@ sub get_annotations {
 	#and store intergenic id;
 	my $id_intergenic = Set::IntSpan::Fast::XS->new();
 
-	my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
+	my $no = $project_tmp->getChromosome($chr_name)->get_rocks_variations("r");
 #	my $cursor = $no->cursor( $region->[0], $region->[1] );
 	my $nb     = 0;
 	my $l      = abs( $region->[0] - $region->[1] );
@@ -510,7 +513,13 @@ sub get_annotations {
 	#while ( my $var_id = $cursor->next_key ) {
 		my $variation;
 		my $lmdb_index = $i;
+		
+		#next;
+		warn ref($no);
+		warn 'INDEX '.$i;
+		warn 'REGION '.$region->[0].' - '.$region->[1];
 		$variation = $no->get_index($i);
+		warn ref($variation);
 		
 		if ( $lmdb_index < 0 ) {
 			confess("index out of range <0");
@@ -520,8 +529,86 @@ sub get_annotations {
 			confess();
 		}
 		confess() unless $variation->id;
-		$variation->{buffer}  = $buffer;
-		$variation->{project} = $project;
+		$variation->{buffer}  = $buffer_tmp;
+		$variation->{project} = $project_tmp;
+		
+		
+
+		################
+		#	get sub/ins/del/large_del categories and construct intspan for each
+		###############
+		if ( $variation->isVariation() ) {
+			$intspan_global_categories->{'substitution'}->add($lmdb_index);
+		}
+		elsif ( $variation->isInsertion() ) {
+			$intspan_global_categories->{'insertion'}->add($lmdb_index);
+		}
+		elsif ( $variation->isDeletion() ) {
+			$intspan_global_categories->{'deletion'}->add($lmdb_index);
+		}
+		elsif ( $variation->isLargeDeletion() ) {
+			$intspan_global_categories->{'large_deletion'}->add($lmdb_index);
+		}
+		elsif ( $variation->isLargeDuplication() ) {
+			$intspan_global_categories->{'large_duplication'}->add($lmdb_index);
+		}
+		elsif ( $variation->isLargeInsertion() ) {
+			$intspan_global_categories->{'large_insertion'}->add($lmdb_index);
+		}
+		elsif ( $variation->isJunction()) {
+			$intspan_global_categories->{'junction'}->add($lmdb_index);
+		}
+		else {
+			confess;
+		}
+
+
+		if ($variation->isJunction()) {
+			################
+			#	get Genes annotations prediction and functional
+			###############
+			my $genes = $variation->getGenes();
+			my $debug;
+			$debug =1 if  $variation->name eq "rs747758472";
+			foreach my $g (@$genes) {
+				unless ( exists $intspan_genes_categories->{ $g->id } ) {
+					$intspan_genes_categories->{ $g->id } = init_genes_intspan();
+				}
+				$annotation_genes->{$g->id}->{hgmd} = $g->hgmd;
+				$annotation_genes->{$g->id}->{polyquery_phenotypes} = $g->polyquery_phenotypes();
+				$annotation_genes->{$g->id}->{score} = $g->score();
+			}
+			
+			foreach my $p (@{$variation->getPatients}){
+				$hpatients->{$p->name}->{all} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{all};
+				$hpatients->{$p->name}->{all}->add($lmdb_index);
+				if ($variation->isRegtools($p)) {
+					my $type = $variation->getTypeDescription($p);
+					$hpatients->{$p->name}->{lc($type)} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{lc($type)};
+					$hpatients->{$p->name}->{lc($type)}->add($lmdb_index);
+				}
+				else {
+					$hpatients->{$p->name}->{ri} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{ri};
+					$hpatients->{$p->name}->{se} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{se};
+					$hpatients->{$p->name}->{ri}->add($lmdb_index) if $variation->isRI($p);
+					$hpatients->{$p->name}->{se}->add($lmdb_index) if $variation->isSE($p);
+				}
+				foreach my $type_ratio ("90", "80", "70", "60", "50", "40", "30", "20", "10") {
+					$hpatients->{$p->name}->{'junc_ratio_'.$type_ratio} = Set::IntSpan::Fast::XS->new() unless exists $hpatients->{$p->name}->{'junc_ratio_'.$type_ratio};
+				}
+				my $ratio = $variation->get_percent_new_count($p);
+				if ($ratio >= 90) { $hpatients->{$p->name}->{junc_ratio_90}->add($lmdb_index); }
+				if ($ratio >= 80) { $hpatients->{$p->name}->{junc_ratio_80}->add($lmdb_index); }
+				if ($ratio >= 70) { $hpatients->{$p->name}->{junc_ratio_70}->add($lmdb_index); }
+				if ($ratio >= 60) { $hpatients->{$p->name}->{junc_ratio_60}->add($lmdb_index); }
+				if ($ratio >= 50) { $hpatients->{$p->name}->{junc_ratio_50}->add($lmdb_index); }
+				if ($ratio >= 40) { $hpatients->{$p->name}->{junc_ratio_40}->add($lmdb_index); }
+				if ($ratio >= 30) { $hpatients->{$p->name}->{junc_ratio_30}->add($lmdb_index); }
+				if ($ratio >= 20) { $hpatients->{$p->name}->{junc_ratio_20}->add($lmdb_index); }
+				if ($ratio >= 10) { $hpatients->{$p->name}->{junc_ratio_10}->add($lmdb_index); }
+			}
+		}
+		next if $variation->isJunction();
 
 		################
 		# patient  Ratio
@@ -547,6 +634,8 @@ sub get_annotations {
 			}
 
 		}
+		
+		
 		
 		##############
 		# GNOMAD
@@ -668,9 +757,9 @@ sub get_annotations {
 		# annotation_mask
 		#####################
 	 		 my $mask = $variation->{annotation}->{all}->{mask} ;
-	 		 foreach my $c ( keys %{$project->buffer->config->{functional_annotations}}){
+	 		 foreach my $c ( keys %{$project_tmp->buffer->config->{functional_annotations}}){
 	 		 		$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
-	 		 	 if ($mask & $project->getMaskCoding($c)){
+	 		 	 if ($mask & $project_tmp->getMaskCoding($c)){
 	 		 		$intspan_global_categories->{$c}->add($lmdb_index);
 	 		 	}
 	 		 }
@@ -687,7 +776,7 @@ sub get_annotations {
 	 		 		next unless exists $g->panels_name->{'ACMG-Actionable'};
 	 		 		$intspan_global_categories->{$c1}->add($lmdb_index);
 	 		 	}
-	 		 	$project->buffer->disconnect();
+	 		 	$project_tmp->buffer->disconnect();
 	 		 }
 	 		 else {
 	 		 	my $c = "intergenic";
@@ -707,31 +796,6 @@ sub get_annotations {
 		$intspan_global_categories->{$cat_freq_ho}->add($lmdb_index);
 		if ( $variation->isClinical() ) {
 			$intspan_global_categories->{'pheno_snp'}->add($lmdb_index);
-		}
-
-		################
-		#	get sub/ins/del/large_del categories and construct intspan for each
-		###############
-		if ( $variation->isVariation() ) {
-			$intspan_global_categories->{'substitution'}->add($lmdb_index);
-		}
-		elsif ( $variation->isInsertion() ) {
-			$intspan_global_categories->{'insertion'}->add($lmdb_index);
-		}
-		elsif ( $variation->isDeletion() ) {
-			$intspan_global_categories->{'deletion'}->add($lmdb_index);
-		}
-		elsif ( $variation->isLargeDeletion() ) {
-			$intspan_global_categories->{'large_deletion'}->add($lmdb_index);
-		}
-		elsif ( $variation->isLargeDuplication() ) {
-			$intspan_global_categories->{'large_duplication'}->add($lmdb_index);
-		}
-		elsif ( $variation->isLargeInsertion() ) {
-			$intspan_global_categories->{'large_insertion'}->add($lmdb_index);
-		}
-		else {
-			confess;
 		}
 
 		################
@@ -832,15 +896,15 @@ sub get_annotations {
 	
 	$hres->{frequency} = $intspan_global_categories;
 	$hres->{genes}     = $intspan_genes_categories;
-	my $ints = $project->getChromosome($chr_name)->intergenic_intspan()->intersection($intspan_region_intergenic);
+	my $ints = $project_tmp->getChromosome($chr_name)->intergenic_intspan()->intersection($intspan_region_intergenic);
 	$hres->{intergenic}->{intspan_region} = $ints;
 	$hres->{intergenic}->{id} = $id_intergenic;
 	$hres->{patients} = $hpatients;
 	$hres->{annotations} = $annotation_genes;
 	$no->close();
 	my $chr     = undef;
-	my $project = undef;
-	my $buffer  = undef;
+	$project_tmp = undef;
+	$buffer_tmp  = undef;
 	return $hres;
 }
 

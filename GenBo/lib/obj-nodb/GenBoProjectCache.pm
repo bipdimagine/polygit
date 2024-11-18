@@ -45,7 +45,6 @@ is		=> 'rw',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		return undef if (not $self->getVersion() =~ /HG38/);
 		if (-e  $self->rocks_cache_dir."/vector"){
 			return 1;
 		}
@@ -1031,7 +1030,7 @@ sub myflushobjects {
 					
 					my $obj;
 #					warn $self->isRocks();
-					if ($self->isRocks()) {
+					if ($self->isRocks() or $self->getVersion() =~ /HG38/) {
 						$obj = $self->rocksGenBo->genbo( $id );
 					}
 					else {
@@ -1136,7 +1135,6 @@ sub myflushobjects {
 				elsif ($type eq 'runs') {$self->getRunFromId($id); }
 				elsif ($type eq 'patients') {
 					$self->setPatients(); 
-					warn Dumper  keys %{$self->{objects}->{patients}};
 					confess($id) unless exists $self->{objects}->{$type}->{$id};
 				}
 				elsif ($type eq 'captures') {

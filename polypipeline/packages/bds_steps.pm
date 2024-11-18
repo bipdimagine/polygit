@@ -5333,7 +5333,8 @@ sub rnaseqsea_rnaseq {
 	my $cmd_json = "$bin_dev/polyrnaseqsea/create_config_splices_analyse_file.pl -project=$project_name -force=1";
 	my $json_file = `$cmd_json`;
 	my $cmd = "Rscript $bin_dev/polyrnaseqsea/all/RNAseqSEA_AllTnjs.r idprojet=$project_name nCPU=$ppn config_file=$json_file";
-	$cmd .= " && $bin_dev/polyrnaseqsea/merge_all_junctions_files_rnaseq_global.pl -project=$project_name";
+
+	$cmd .= " && $bin_dev/polyrnaseqsea/split_junctions_files_by_patient.pl -project=$project_name";
 	my $type     = "rnaseqsea_all";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
@@ -5390,6 +5391,38 @@ sub check_specie_contaminant {
 	}
 
 	return ($fileout);
+}
+
+sub regtools_splices {
+	my ( $self, $hash ) = @_;
+	my $filein = $hash->{filein};
+	my $project_name = $self->project->name();
+	my $bin_dev = $self->script_dir;
+	my $ppn = 20;
+	my $log_file = $self->project->project_log().'/regtools.'.$self->project->getVersion().'.log';
+	
+	my $cmd = "perl $bin_dev/../../../polypipeline/scripts/scripts_pipeline/regtools_caller.pl -project=$project_name -fork=$ppn -log=$log_file";
+	my $type = "regtools";
+	my $stepname = $project_name."@".$type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $self->argument_patient,
+		project_name => $project_name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $log_file,
+		type         => $type,
+		dir_bds      => $self->dir_bds,
+		software     => "",
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+	if ( $self->unforce() && -e $log_file ) {
+		$job_bds->skip();
+	}
+	return ($log_file);
 }
 
 1;

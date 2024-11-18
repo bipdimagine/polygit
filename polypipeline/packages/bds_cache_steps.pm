@@ -899,7 +899,7 @@ sub dejavu {
 	my $stepname = $projectName."@".$type;
 	my $dir = $self->project->project_log();
 	my $fileout = $dir."/dejavu.log";
-	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_lite_dejavu.pl -project=$projectName >$fileout";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/cache_lite_dejavu.pl -project=$projectName >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
@@ -920,10 +920,10 @@ sub html_rna_junctions {
 	my $ppn = $self->nproc;
 	my $type = "html_splices";
 	my $stepname = $self->patient->name."@".$type;
-	my $dir = $self->project->getCacheDir();
+	my $dir = $self->project->rocks_directory();
 	my $fileout = $dir."/".$patientName.".cache.ok";
 	my $cmd = "perl $Bin/../polymorphism-cgi/rnaseq/merge_junction.pl project=$projectName patient=$patientName fork=$ppn ";
-	$cmd .= "&& perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName dejavu=10 dejavu_percent=100 min_score=10 only_dejavu_ratio_10=1 1>$fileout";
+	$cmd .= "&& perl $Bin/../polymorphism-cgi/rnaseq/rna_junctions_patient.pl project=$projectName patient=$patientName dejavu=10 dejavu_percent=100 min_score=10 only_dejavu_ratio_10=1 only_junctions_NDA=1 only_junctions_A=1 only_junctions_D=1 1>$fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);

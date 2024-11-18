@@ -1133,8 +1133,6 @@ sub launchStatsProjectAll_chromosomes {
 	if (scalar(@lStats) == 0 and $without_stats) {
 		my $chr = $project->getChromosome('1');
 		my $hashChr = launchStatsChr_null($chr);
-		my $vector_bin = $chr->getVariantsVector->to_Bin();
-		$hashChr->{vector_HEX} = $chr->compress_vector_bin($vector_bin);
 		push(@lStats, $hashChr);
 	}
 	elsif (scalar(@lStats) == 0) { push(@lStats, launchStatsProjectAll_chromosomes_null()); }
@@ -1491,19 +1489,6 @@ sub launchStatsChr {
 	$hash->{cnvs} = $chr->countThisVariants($v_l_del);
 	$hash->{cnvs} = $chr->countThisVariants($v_l_dup);
 	$hash->{variations}	= $chr->countThisVariants( $chr->getVariantsVector() );
-	
-	my $vector_bin = $chr->getVariantsVector->to_Bin();
-	$hash->{vector_HEX} = $chr->compress_vector_bin($vector_bin);
-	my $bin = $chr->decompress_vector_bin($hash->{vector_HEX});
-	unless($vector_bin eq $bin) {
-		warn "\n\n";
-		warn '[BEFORE decompress] Nb var: '.$chr->countThisVariants($chr->getVariantsVector());
-		my $vector = $chr->getNewVector();
-		$vector->from_Bin($bin);
-		warn '[AFTER decompress] Nb var: '.$chr->countThisVariants($vector);
-		confess("\n\nERROR: [chr$name] vector_bin and GenBoCache::decompress_vector_bin different... Die !\n\n");
-	}
-	
 	return $hash;
 }
 

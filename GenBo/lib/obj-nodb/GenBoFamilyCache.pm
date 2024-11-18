@@ -335,13 +335,15 @@ sub getVector_individual_uniparental_disomy {
 #	warn $self->name;
 #	warn $self->getMother->name();
 #	warn $self->getFather->name();
-	
-	my $v1 = $self->getMother->getVectorOriginHe($chr)->Clone;
-	$v1 -=  $self->getFather->getVectorOrigin($chr);
+
+	my $v1 = $chr->getNewVector();
+	$v1 += $self->getMother->getVectorOriginHe($chr) if $self->getMother();
+	$v1 -=  $self->getFather->getVectorOrigin($chr)  if $self->getFather();
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $v1;
 
-	my $v2 = $self->getFather->getVectorOriginHe($chr)->Clone;
-	$v2 -=  $self->getMother->getVectorOrigin($chr);
+	my $v2 = $chr->getNewVector();
+	$v2 += $self->getFather->getVectorOriginHe($chr) if $self->getFather();;
+	$v2 -=  $self->getMother->getVectorOrigin($chr)  if $self->getMother();
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $v2;
 
 	return $self->{vector_transmission}->{$key}->{$chr->id};
@@ -540,17 +542,18 @@ sub getVectorDenovoTransmission {
 sub getVector_individual_denovo {
 	my ($self, $chr,$child,$compute) = @_;
 	return $chr->getNewVector() unless $child->isChild; 
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	my $key = "denovo_".$child->name;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
+	unless ($self->isTrio) {
+		$self->{vector_transmission}->{$key}->{$chr->id} = $chr->getNewVector();
+		return  $self->{vector_transmission}->{$key}->{$chr->id};
+	}
 	if ($self->project->isRocks && !(defined $compute)){
 		 $self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"ind_denovo");
 		 return  $self->{vector_transmission}->{$key}->{$chr->id};
 	}
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
-	unless ($self->isTrio) {
-		 $self->{vector_transmission}->{$key}->{$chr->id} = $chr->getNewVector();
-		return  $self->{vector_transmission}->{$key}->{$chr->id};
-	}
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getVariantsVector($chr);
 	$self->{vector_transmission}->{$key}->{$chr->id} -= $self->getVectorParents($chr);
 	return $self->{vector_transmission}->{$key}->{$chr->id};
@@ -601,6 +604,7 @@ sub getVector_individual_strict_denovo {
 
 sub getVector_family_strict_denovo() {
 	my ($self, $chr) = @_;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	my $key = "strict_denovo_fam";
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	 if (@{$self->getChildrenIll()}  == 1 ){
@@ -622,6 +626,7 @@ sub getVector_family_strict_denovo() {
 }
 sub getVector_individual_dominant {
 	my ($self,$chr,$child,$compute) = @_;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	my $key = "dominant_".$child->id;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	if ($self->project->isRocks && (! defined $compute)){
@@ -647,6 +652,7 @@ sub getVector_individual_dominant {
 
 sub getVector_family_dominant() {
 	my ($self, $chr) = @_;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	my $key = "family_dominant";
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	my @lPatIll = @{$self->getPatientsIll()};
@@ -670,6 +676,7 @@ sub getVector_family_dominant() {
 
 sub getModelVector_som_only_tissues_somatic {
 	my ($self, $chr) = @_;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	my $key = "only_tissues_somatic";
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	$self->{vector_transmission}->{$key}->{$chr->id} = $chr->getNewVector();
@@ -685,6 +692,7 @@ sub getModelVector_som_only_tissues_somatic {
  
  sub getVectorRecessiveTransmission {
 	my ($self,$chr,$child,$compute) = @_;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	return $self->getVector_individual_recessive($chr,$child,$compute);
 #	$chr->getModelVector_fam_strict_denovo;
 #	warn Dumper $self->{vector};
@@ -713,14 +721,13 @@ sub getModelVector_som_only_tissues_somatic {
 sub getVector_individual_recessive {
 	my ($self,$chr,$child,$compute) = @_;
 	return $chr->getNewVector() unless $child->isChild;
-		my $key = "recessive_".$child->id;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
+	my $key = "recessive_".$child->id;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	if ($self->project->isRocks && (! defined $compute)){
 		$self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"ind_recessive");
 		return $self->{vector_transmission}->{$key}->{$chr->id};
 	}
-	
-
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getHo($chr);
 	#my $vparent = $chr->getNewVector();
 	$self->{vector_transmission}->{$key}->{$chr->id} &= $self->getMother->getHe($chr) if ($self->getMother());
@@ -737,6 +744,7 @@ sub getVector_individual_recessive {
 
 sub getVector_family_recessive() {
 	my ($self, $chr) = @_;
+	return $chr->getNewVector() if ($chr->getVariantsVector()->is_empty());
 	my $key = "family_recessive";
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	foreach my $child (@{$self->getChildrenIll()}) {
@@ -767,12 +775,9 @@ sub getVector_individual_mother  {
 	return $chr->getNewVector() unless $child->isChild();
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	if ($self->project->isRocks && (! defined $compute)){
-			$self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"ind_mother");
-			return $self->{vector_transmission}->{$key}->{$chr->id};
-		}
-	
-	
-	
+		$self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"ind_mother");
+		return $self->{vector_transmission}->{$key}->{$chr->id};
+	}
 	return $chr->getNewVector()  unless $self->getMother;
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	$self->{vector_transmission}->{$key}->{$chr->id} = $child->getVariantsVector($chr);

@@ -541,7 +541,7 @@ sub return_dejavu {
 	$res->{other_patients_ho} = 0;
 	$res->{exome_patients_ho} = 0;
 	$res->{similar_patients_ho} = 0;
-	$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
+	$res->{total_in_this_run_patients} = $in_this_run_patients + 0;
 	if ($res->{total_in_this_run_patients} == 0 ){
 		$res->{total_in_this_run_patients} = scalar(@{$project->getPatients});
 	}
