@@ -682,6 +682,7 @@ sub construct_htranscripts {
 		foreach my $var (@{$kvars}){   
 				my $debug;
 				$debug =1 if $var eq "17_8006708_G_A"; 
+				warn $var;
 				my $hvariation = utility::return_hash_variant($project,$var,$tr_id,$patient,$vquery);
 				if ($print ==1){
 					$hvariation->{min_pop} =~ s/<[^>]*>//gs;
@@ -3690,6 +3691,7 @@ my $tab_ids;
 };
 if ($@) {
 	my $error = $@;
+	warn Dumper $error;
 	print $cgi -> header;
 	
 	print $cgi -> start_html (
