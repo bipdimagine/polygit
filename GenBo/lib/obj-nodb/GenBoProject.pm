@@ -4476,11 +4476,7 @@ sub getLargeIndelsDir {
 
 sub getBedPolyQueryDir {
 	my ($self) = @_;
-<<<<<<< HEAD
-	my $path = $self->rocks_cache_dir . "/bed_polyquery/";
-=======
 	my $path = $self->getCacheDir . "/bed_polyquery/";
->>>>>>> refs/remotes/origin/master
 	return $self->makedir($path);
 }
 
@@ -4894,7 +4890,7 @@ has dejavuCNV => (
 	default => sub {
 		my $self = shift;
 		my $sqliteDir =   $self->DejaVuCNV_path;
-		warn $sqliteDir;
+#		warn $sqliteDir;
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuCNV->new( dir => $sqliteDir, mode => "r" );
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");

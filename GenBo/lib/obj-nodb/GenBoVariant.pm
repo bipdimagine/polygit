@@ -3113,9 +3113,9 @@ has sequencing_infos =>(
 					my $all_annex = $self->{annex}->{$patient->id}->{method_calling}->{$method};
 					
 					my $nb_ref =$all_annex->{nb_all_ref};
-					$nb_ref = 0 if $all_annex->{nb_all_ref} eq "?";
+					$nb_ref = 0 if $all_annex->{nb_all_ref} and $all_annex->{nb_all_ref} eq "?";
 					my $nb_alt =  $all_annex->{nb_all_mut};
-					$nb_alt = 0 if $all_annex->{nb_all_mut} eq "?";
+					$nb_alt = 0 if $all_annex->{nb_all_mut} and $all_annex->{nb_all_mut} eq "?";
 					my $nb_all_other_mut = 0;
 					$nb_ref += $all_annex->{nb_all_other_mut} if (exists $all_annex->{nb_all_other_mut});
 					my $method_name = $self->project->return_calling_methods_short_name($method);
