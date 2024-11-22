@@ -82,14 +82,6 @@ sub mendelian_statistics {
 	return $results;
 }
 
-sub mendelian_statistics2 {
-	my ($project) = @_;
-
-	my $vcf = concatVcf($project);
-	warn ":::>" . $vcf;
-	return fast_plink( $project, $vcf );
-}
-
 sub concatVcf {
 	my ( $project, $fam ) = @_;
 
@@ -118,7 +110,6 @@ sub concatVcf {
 
 	foreach my $p ( @{ $fam->getMembers } ) {
 		my $methods = $p->getCallingMethods();
-		warn Dumper @$methods;
 		my $m;
 		if ( scalar(@$methods) == 1 ) {
 			($m) = $methods->[0];
@@ -617,104 +608,9 @@ sub statistics_variations {
 
 }
 
-sub statistics_variations2 {
-	my ($project) = @_;
-	my $patients = $project->getPatients();
-	my $resume;
-	my $hnb;
-	my $sum;
-
-	foreach my $p (@$patients) {
-		$hnb->{ho}->{ $p->name }     = $p->countHomozygote();
-		$hnb->{he}->{ $p->name }     = $p->countHeterozygote();
-		$hnb->{snp}->{ $p->name }    = $p->countSubstitutions();
-		$hnb->{indel}->{ $p->name }  = $p->countIndels();
-		$hnb->{total}->{ $p->name }  = $p->countVariations();
-		$hnb->{public}->{ $p->name } = $p->countPublicVariations();
-		$sum->{snp}   += $hnb->{snp}->{ $p->name };
-		$sum->{indel} += $hnb->{indel}->{ $p->name };
-
-		#warn $p->countPublicVariations()." ".$hnb->{total}->{$p->name};
-	}
-	push(
-		@{ $resume->{header} },
-		( "patients", "snp", "indel", "%he", "%public" )
-	);
-	my $nbp = scalar( @{$patients} );
-	my $mean;
-	$mean->{indel} = int( $sum->{indel} / $nbp );
-
-	$mean->{snp} = int( $sum->{snp} / $nbp );
-
-	foreach my $p (@$patients) {
-		my $line2;
-		push( @$line2, { text => $p->name, type => "default" } );
-		my $color = "success";
-
-		#my $d = $hnb->{snp}->{$p->name}/abs();
-		if (   $hnb->{snp}->{ $p->name } > $mean->{snp} * 1.25
-			or $hnb->{snp}->{ $p->name } < $mean->{snp} * 0.75 )
-		{
-			$color = "warning";
-		}
-		if (   $hnb->{snp}->{ $p->name } > $mean->{snp} * 1.5
-			or $hnb->{snp}->{ $p->name } < $mean->{snp} * 0.5 )
-		{
-			$color = "danger";
-		}
-		push( @$line2,
-			{ text => $hnb->{snp}->{ $p->name }, type => "$color" } );
-		$color = "success";
-
-		#my $d = $hnb->{snp}->{$p->name}/abs();
-		if (   $hnb->{indel}->{ $p->name } > $mean->{indel} * 1.25
-			or $hnb->{indel}->{ $p->name } < $mean->{indel} * 0.75 )
-		{
-			$color = "warning";
-		}
-		if (   $hnb->{indel}->{ $p->name } > $mean->{indel} * 1.5
-			or $hnb->{indel}->{ $p->name } < $mean->{indel} * 0.5 )
-		{
-			$color = "danger";
-		}
-		push( @$line2,
-			{ text => $hnb->{indel}->{ $p->name }, type => "$color" } );
-		my $z = int(
-			( $hnb->{he}->{ $p->name } / $hnb->{total}->{ $p->name } ) * 100 );
-		my $type = "success";
-		if ( $z < 60 ) {
-			$type = "success";
-		}
-		elsif ( $z <= 50 ) {
-			$type = "danger";
-		}
-		push( @$line2, { text => "$z%", type => "$type" } );
-
-		my $p =
-		  int( ( $hnb->{public}->{ $p->name } / $hnb->{total}->{ $p->name } ) *
-			  100 );
-		if ( $p >= 90 ) {
-			push( @$line2, { text => "$p%", type => "success" } );
-		}
-		elsif ( $p >= 85 ) {
-			push( @$line2, { text => "$p%", type => "success" } );
-		}
-		elsif ( $p >= 75 ) {
-			push( @$line2, { text => "$p%", type => "warning" } );
-		}
-		else {
-			push( @$line2, { text => "$p%", type => "danger" } );
-		}
-
-		push( @{ $resume->{lines} }, $line2 );
-	}
-	return ( transform_array_to_json_like($resume) );
-
-}
 
 sub statistics_variations2 {
 	my ($project) = @_;
-	die();
 	my $patients = $project->getPatients();
 	my $resume;
 	my $hnb;
@@ -745,15 +641,15 @@ sub statistics_variations2 {
 		@{ $resume->{header} },
 		( "patients", "snp", "indel", "%he", "%public" )
 	);
-	foreach my $p (@$patients) {
+	foreach my $pat (@$patients) {
 		my $line2;
-		push( @$line2, { text => $p->name, type => "default" } );
+		push( @$line2, { text => $pat->name, type => "default" } );
 		push( @$line2,
-			{ text => $hnb->{snp}->{ $p->name }, type => "default" } );
+			{ text => $hnb->{snp}->{ $pat->name }, type => "default" } );
 		push( @$line2,
-			{ text => $hnb->{indel}->{ $p->name }, type => "default" } );
+			{ text => $hnb->{indel}->{ $pat->name }, type => "default" } );
 		my $z = int(
-			( $hnb->{he}->{ $p->name } / $hnb->{total}->{ $p->name } ) * 100 );
+			( $hnb->{he}->{ $pat->name } / $hnb->{total}->{ $pat->name } ) * 100 );
 		my $type = "success";
 		if ( $z < 60 ) {
 			$type = "success";
@@ -764,7 +660,7 @@ sub statistics_variations2 {
 		push( @$line2, { text => "$z%", type => "$type" } );
 
 		my $p =
-		  int( ( $hnb->{public}->{ $p->name } / $hnb->{snp}->{ $p->name } ) *
+		  int( ( $hnb->{public}->{ $pat->name } / $hnb->{snp}->{ $pat->name } ) *
 			  100 );
 		if ( $p > 90 ) {
 			push( @$line2, { text => "$p%", type => "success" } );
@@ -1532,8 +1428,7 @@ sub coverage_transcripts_patient {
 	push( @$cols, { text => $patient->name, type => "default" } );
 	my $tsum = 0;
 	foreach my $t (@$transcripts) {
-		my $toto = $t->getGene()->get_coverage($patient)
-		  ->coverage_intspan( $t->getSpanCoding );
+		my $toto = $t->getGene()->get_coverage($patient)->coverage_intspan( $t->getSpanCoding );
 		my $n    = int( $toto->{mean} );
 		my $min  = $toto->{min};
 		my $type = "success";

@@ -138,18 +138,16 @@ else {
 			$no->close();
 	},
 	"mendelian" =>  sub{
-			warn "mendelian" ;
-			my $buffer = GBuffer->new();
-			my $project;
-
-
-if ($cache == 1){
-	warn "cache";
-	 $project = $buffer->newProjectCache( -name => $projectName );
-}
-else {
- $project = $buffer->newProject( -name => $projectName );
-}
+		warn "mendelian" ;
+		my $buffer = GBuffer->new();
+		my $project;
+		if ($cache == 1){
+			warn "cache";
+			 $project = $buffer->newProjectCache( -name => $projectName );
+		}
+		else {
+			$project = $buffer->newProject( -name => $projectName );
+		}
 		$project->get_only_list_patients(join(",",@selected_patient));
 		$project->disconnect();
 		my $res = $project->name,"mendelian",quality_check::mendelian_statistics($project,$fork);
@@ -171,23 +169,21 @@ else {
 	},
 	"coverage_transcripts" =>sub{
 		warn "coverage_transcripts" ;
-			my $buffer = GBuffer->new();
-			my $project;
-
-
-if ($cache == 1){
-	warn "cache";
-	 $project = $buffer->newProjectCache( -name => $projectName );
-}
-else {
- $project = $buffer->newProject( -name => $projectName );
-}
-	$project->get_only_list_patients(join(",",@selected_patient));
-			$project->disconnect();
-			my $res = $project->name,"coverage_transcripts",quality_check::coverage_transcripts($project,$fork);
-			my $no = $project->noSqlQuality("w");
-			$no->put($res);
-			$no->close();
+		my $buffer = GBuffer->new();
+		my $project;
+		if ($cache == 1){
+			warn "cache";
+			 $project = $buffer->newProjectCache( -name => $projectName );
+		}
+		else {
+		 $project = $buffer->newProject( -name => $projectName );
+		}
+		$project->get_only_list_patients(join(",",@selected_patient));
+		$project->disconnect();
+		my $res = $project->name,"coverage_transcripts",quality_check::coverage_transcripts($project,$fork);
+		my $no = $project->noSqlQuality("w");
+		$no->put($res);
+		$no->close();
 	},
 	
 	"bam_stats" => sub{
