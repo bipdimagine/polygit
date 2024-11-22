@@ -737,14 +737,14 @@ sub countIndels {
 sub countHomozygote {
 	my($self,$chr) = @_;
 	if ($chr){
-		my $v = $self->getVectorHo($chr);
-		return $self->countThisVariants($v);
+		my $v = $self->getVectorOriginHo($chr);
+		return $v->Norm()
 	}
 	else {
 		my $nb = 0;
 		foreach my $chr (@{$self->project->getChromosomes}){
-			my $v = $self->getVectorHo($chr);
-			$nb+= $self->countThisVariants($v);
+			my $v = $self->getVectorOriginHo($chr);
+			$nb+= $v->Norm();
 		}
 		return $nb;
 	}
@@ -753,14 +753,14 @@ sub countHomozygote {
 sub countHeterozygote {
 	my($self,$chr) = @_;
 	if ($chr){
-		my $v = $self->getVectorHe($chr);
-		return $self->countThisVariants($v);
+		my $v = $self->getVectorOriginHe($chr);
+		return $v->Norm();
 	}
 	else {
 		my $nb = 0;
 		foreach my $chr (@{$self->project->getChromosomes}){
-			my $v = $self->getVectorHe($chr);
-			$nb+= $self->countThisVariants($v);
+			my $v = $self->getVectorOriginHe($chr);
+			$nb+= $v->Norm();
 		}
 		return $nb;
 	}

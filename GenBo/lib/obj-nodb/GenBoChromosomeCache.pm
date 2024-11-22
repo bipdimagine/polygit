@@ -1146,13 +1146,16 @@ sub getVectorConsequence {
 
 sub getVectorNoFreq {
 	my $self = shift;
-	return $self->vector_global_categorie("freq_none");
-	return $self->getNewVector();
+	return $self->vector_global_categories("freq_none");
+	
 }
 
 sub getVectorPublicVariations {
 	my $self = shift;
 	my $vector = $self->getVectorVariations->Clone();
+	
+#	warn "\n\n";
+#	warn Dumper sort keys %{$self->rocks_vector("r")->vector_type_chromosome()};
 	
 	return $vector if $self->countThisVariants($vector) == 0;
 	$vector -= $self->getVectorNoFreq();
