@@ -1973,7 +1973,6 @@ sub changeAnnotationVersion {
 		$self->gencode_version( $lTmp[0] );
 		$self->public_database_version( $lTmp[1] );
 		$self->annotation_version($annot_version);
-		$self->buffer->public_data_version($lTmp[1]);
 		delete $self->{'directory'};
 		delete $self->{'annotation_public_path'};
 		delete $self->{'annotationsDirectory'};
@@ -1981,7 +1980,6 @@ sub changeAnnotationVersion {
 		delete $self->{'lmdbPli'};
 		delete $self->{'omimDirectory'};
 		delete $self->{'litePredictionMatrix'};
-		$self->buffer->queryHgmd();
 		return;
 	}
 	foreach my $history_version ( @{ $self->annotation_version_history() } ) {
@@ -4476,7 +4474,7 @@ sub getLargeIndelsDir {
 
 sub getBedPolyQueryDir {
 	my ($self) = @_;
-	my $path = $self->getCacheDir . "/bed_polyquery/";
+	my $path = $self->rocks_cache_dir . "/bed_polyquery/";
 	return $self->makedir($path);
 }
 

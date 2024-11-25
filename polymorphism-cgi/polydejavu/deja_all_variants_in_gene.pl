@@ -255,8 +255,15 @@ exit(0);
 
 
 sub supressCoreFilesFound {
+	my $found_core;
+	opendir my $dir, "$Bin/" or die "Cannot open directory: $!";
+	my @files = readdir $dir;
+	closedir $dir;
+	foreach my $file (@files) {
+		$found_core = 1 if ($file =~ /core\./);
+	}
+	return if not $found_core;
 	my $cmd = "rm $Bin/core.*";
-	warn $cmd;
 	`$cmd`;
 }
 
@@ -602,6 +609,7 @@ sub get_variants_infos_from_projects {
 	
 	
 	my $fork = 5;
+	#my $fork = 1;
 	my $pm = new Parallel::ForkManager($fork);
 	
 	my $nb_errors=0;
@@ -670,7 +678,6 @@ sub get_variants_infos_from_projects {
 			my $project_fork_hg19 = $buffer_fork_hg19->newProjectCache( -name => $project_name );
 			my $gene_fork_hg19;
 			$gene_fork_hg19 = $project_fork_hg19->newGene($gene_init_id);
-			
 			my ($var_hg19, $var_id_hg19, $var_id_hg38);
 			eval {
 				my $var = $project_fork->_newVariant($var_id);
@@ -679,7 +686,6 @@ sub get_variants_infos_from_projects {
 				$var_id_hg19 = $hVariantsDetails->{$var_id}->{id_hg19};
 				$var_id_hg38 = $var_id;
 				my @ltmp = split('_', $var_id_hg19);
-
 				
 				my $v_pos = $project_fork_hg19->getChromosome($ltmp[0])->getVectorByPosition(int($ltmp[1]) -10000, int($ltmp[1]) +10000);
 				foreach my $v_tmp (@{$project_fork_hg19->getChromosome($var->getChromosome->id())->getListVarObjects($v_pos)}) {
@@ -696,7 +702,6 @@ sub get_variants_infos_from_projects {
 				$hres->{variants}->{$var->start()}->{$var_id}->{html}->{id} =  $var->id;
 				$hres->{variants}->{$var->start()}->{$var_id}->{value}->{type} = $var->type;
 				$hres->{variants}->{$var->start()}->{$var_id}->{html}->{type} = $var->type;
-				
 				foreach my $p_id (keys %{$hVariantsDetails->{$var_id}->{dejavu_details}->{$project_name}}) {
 					my $p_name =  $l_pat_dv[$p_id];
 					$hres->{variants}->{$var->start()}->{$var_id}->{html}->{patients} .= $p_name." ";
@@ -711,18 +716,16 @@ sub get_variants_infos_from_projects {
 				$hres->{variants}->{$var->start()}->{$var_id}->{value}->{is_cnv} = 0;
 				
 				my $chr = $var->getChromosome();
-				
 				my $gene = $gene_init;
 				my @lPhen;
 				foreach my $pheno (@{$project_fork->getPhenotypes()}) {
 					push(@lPhen, $pheno->name());
 				}
 				my $pheno_name = join(", ",@lPhen);
-				
 				update_variant_editor::vgnomad($var,$hres->{variants}->{$var->start()}->{$var_id});
 				update_variant_editor::vname($var,$hres->{variants}->{$var->start()}->{$var_id});
 				update_variant_editor::vspliceAI($var,$hres->{variants}->{$var->start()}->{$var_id});
-			
+				
 				my $found_one;
 				foreach my $p_name (@l_pat_dv) {
 					next unless $p_name;
@@ -737,15 +740,12 @@ sub get_variants_infos_from_projects {
 						warn "\n\n";
 						next;
 					}
-					
 					next if $only_ill and not $p->isIll();
 					
 					$found_one++;
-					
 					if ($var_hg19->vector_id) {
 						update_variant_editor::vsequencing($var_hg19,$hres->{variants}->{$var->start()}->{$var_id},$p_hg19);
 					}
-					
 					update_variant_editor::vdivers($var_hg19,$hres->{variants}->{$var->start()}->{$var_id});
 					update_variant_editor::valamut_igv($var,$hres->{variants}->{$var->start()}->{$var_id},$p);
 					update_variant_editor::vvarsome($hres->{variants}->{$var->start()}->{$var_id},$p);
@@ -774,7 +774,7 @@ sub get_variants_infos_from_projects {
 						my $table_gnomad = update_variant_editor::table_gnomad($var);
 						$hres->{variants_details}->{$var_id}->{table_gnomad} = $table_gnomad;
 					}
-									
+							
 					unless (exists $hVariantsDetails->{$var_id}->{table_transcript}) {
 						$hres->{variants}->{$var->start()}->{$var_id}->{genes}->{$gene_init_id_for_newgene} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_fork);
 						$hres->{variants_details}->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($hres->{variants}->{$var->start()}->{$var_id}->{genes}->{$gene_init_id_for_newgene}, \@header_transcripts, 1);
@@ -786,7 +786,7 @@ sub get_variants_infos_from_projects {
 					if (-d $p_hg19->NoSqlDepthDir() and -e $p_hg19->NoSqlDepthDir().$p_hg19->name.".depth.lmdb") {
 						update_variant_editor::trio($var_hg19,$hres->{variants}->{$var->start()}->{$var_id},$p_hg19);
 					}
-							
+					
 					my $b_igv = $hres->{variants}->{$var->start()}->{$var_id}->{'html'}->{'igv'};
 					my $chr_id = $chr->id();
 					my $start = $var->start();
@@ -797,6 +797,7 @@ sub get_variants_infos_from_projects {
 						push(@bams,$p->bamUrl);
 						push(@names,$p->name());
 					}
+					
 					my $f =  join(";",@bams);#$patient->{obj}->bamUrl;;
 					my $f2 =  join(",",@bams);#$patient->{obj}->bamUrl;;
 					my $v1 = $hres->{variants}->{$var->start()}->{$var_id}->{ref_allele}."/".$hres->{variants}->{$var->start()}->{$var_id}->{allele};	
@@ -804,11 +805,11 @@ sub get_variants_infos_from_projects {
 					my $project_name = $p->project->name;
 					my $pnames = join(";",@names);
 					my $locus = $chr_id.':'.$start.'-'.$start;
+					
 					my $gene_name = $gene->external_name();
 					$hres->{variants}->{$var->start()}->{$var_id}->{'html'}->{'igv'} =qq{<button class='igvIcon2' style="width:22px;height:22px;" onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus",)' style="color:black"></button>};
 					$hres->{variants}->{$var->start()}->{$var_id}->{'html'}->{'alamut'} = qq{<button class="alamutView3" style="width:22px;height:22px;" onClick="httpGetLoadOnlyListBamInGene('$gene_name','$f2');"></button>};
 					$hres->{variants}->{$var->start()}->{$var_id}->{html}->{pheno_name} = $pheno_name;
-					
 					
 					if (not exists $hResVariantsListPatients->{$var_id}->{$project_fork_hg19->name()}->{$p_hg19->name()}) {
 						my $perc_allele = $var->getPourcentAllele($p_hg19);
@@ -830,7 +831,6 @@ sub get_variants_infos_from_projects {
 						$ok_model = 1 if (lc($model_found) eq "?");
 						
 						#warn "\n$ok_model";
-						
 						next if not $ok_model;
 						
 						$h_project_res->{hResVariantsModels}->{$var_id}->{$p->getProject->name()}->{$p->name} = $model_found;
@@ -843,7 +843,7 @@ sub get_variants_infos_from_projects {
 						$hres->{variants_list_patients}->{$var_id}->{$project_fork_hg19->name()}->{$p_hg19->name()}->{'values'}->{'name'} = $p_hg19->name();
 						$hres->{variants_list_patients}->{$var_id}->{$project_fork_hg19->name()}->{$p_hg19->name()}->{'values'}->{'sex'} = $p_hg19->sex();
 						$hres->{variants_list_patients}->{$var_id}->{$project_fork_hg19->name()}->{$p_hg19->name()}->{'values'}->{'status'} = $p_hg19->status();
-						
+							
 						my $is_heho = '-';
 						eval { $is_heho = 'ho' if $var->isHomozygote($p_hg19); };
 						if ($@) { $is_heho = 'pb'; }
@@ -905,7 +905,7 @@ sub get_variants_infos_from_projects {
 #				warn ' HG19 VAR: '.$var_hg19->id;
 				$project_fork_hg19 = undef;
 				$buffer_fork_hg19 = undef;
-				$project_fork->close_rocks();
+				$project_fork->disconnect();
 				$project_fork = undef;
 				$buffer_fork = undef;
 		 	 	$hres->{end_job} = 1;
@@ -914,7 +914,7 @@ sub get_variants_infos_from_projects {
 			}
 			$project_fork_hg19 = undef;
 			$buffer_fork_hg19 = undef;
-			$project_fork->close_rocks();
+			$project_fork->disconnect();
 			$project_fork = undef;
 			$buffer_fork = undef;
 		}
@@ -1114,10 +1114,12 @@ sub update_list_variants_from_dejavu {
 		$not_ok++ if ($max_dejavu_ho and $var_dejavu_ho > $max_dejavu_ho);
 		next if $not_ok;
 		
-		if ($hResVariants_loaded and exists $hResVariants_loaded->{$var->start()}->{$var_id}->{table_validation}) {
-			$hResVariants->{$var->start()}->{$var_id} = $hResVariants_loaded->{$var->start()}->{$var_id};
-			$total_pass++;
-			next;
+		my ($has_proj, $ok_model);
+		my $hashVarId = $var->dejavu_hash_projects_patients();
+		foreach my $proj_id (keys %{$hashVarId}) {
+			next if ($only_pat_with_var and not exists $h_projects_filters_he_comp->{$proj_id});
+			$hVariantsIdsDejavu->{$var_id}->{$proj_id} = undef;
+			$has_proj = 1;
 		}
 		
 		
