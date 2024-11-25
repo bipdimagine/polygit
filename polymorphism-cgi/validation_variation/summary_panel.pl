@@ -3354,7 +3354,9 @@ sub table_patients {
 			#<img width="32" height="32" src="https://img.icons8.com/windows/32/checked-identification-documents.png" alt="checked-identification-documents"/>
 			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control }) if $has_identito;
 		}
-		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
+		else {
+			$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
+		}
 	}
 	
 	
