@@ -10,8 +10,6 @@ use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
 
 sub mendelian_statistics {
 	my ( $project, $fork ) = @_;
-	my $res;
-	$res  = {};
 	$fork = 1 unless $fork;
 
 	#$fork=1;
@@ -20,18 +18,14 @@ sub mendelian_statistics {
 	
 	$pm->run_on_finish(
 		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $hres ) =
-			  @_;
+			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,$hres) = @_;
 			unless ( defined($hres) or $exit_code > 0 ) {
 				print
 				  qq|No message received from child process $exit_code $pid!\n|;
 				warn Dumper $hres;
 				return;
 			}
-
-			#warn $hres->{data};
-
-			die( Dumper $res) unless $hres->{data};
+			die( Dumper $hres) unless $hres->{data};
 			push( @{ $results->{data} }, @{ $hres->{data} } );
 
 		}
@@ -45,6 +39,7 @@ sub mendelian_statistics {
 		$project->disconnect();
 		#next if $f->name ne "DOU";
 		$pid = $pm->start and next;
+		my $res;
 		
 		my $has_no_bam;
 		foreach my $patient (@{$f->getPatients()}) {
@@ -62,11 +57,12 @@ sub mendelian_statistics {
 
 		my $hres;
 		$hres->{data} = fast_plink( $project, $vcf, $f );
-
+		
 		#warn Dumper $hres->{data};
 		$pm->finish( 0, $hres );
 	}    #end for range range
 	$pm->wait_all_children();
+
 
 	#	die();
 	add_columns(
@@ -79,6 +75,7 @@ sub mendelian_statistics {
 	add_columns( $results,
 		[ "results", "familly", 'sample', "sex", "SRY", "plink_sex" ] )
 	  unless $project->isFamilial;
+	  
 	return $results;
 }
 
@@ -348,8 +345,7 @@ sub fast_plink {
 	close TPED;
 	warn $tped_file;
 	if ( @{ $fam->getParents } ) {
-		my $cmd2 =
-"$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
+		my $cmd2 = "$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
 
 		#	warn $cmd2;
 		my @log   = `$cmd2`;
@@ -431,6 +427,7 @@ sub add_columns {
 	foreach my $name (@$names) {
 		push( @{ $h->{columns} }, { field => $name, title => $name } );
 	}
+	
 }
 
 sub transform_array_to_json_like {
@@ -1224,7 +1221,7 @@ sub coverage_stats {
 	$limit_cov->{warning} = $mean_cov * 0.75;
 
 	my @header = ("patient");
-	$resume->{header} = [ "patients", "mean", "15X", "30X", "100X" ];
+	$resume->{header} = [ "patients", "mean", "15x", "30x", "100x" ];
 
 	# my $it = natatime , @tchromosomes;
 
@@ -1234,25 +1231,25 @@ sub coverage_stats {
 		my $hline;
 		push( @$hline, { text => $patients->[$i]->name, type => "default" } );
 		my $cov   = $patients->[$i]->coverage();
+		
 		my $color = "success";
 		$color = "warning" if $cov->{mean} < $limit_cov->{warning};
 		$color = "danger"  if $cov->{mean} < $limit_cov->{danger};
-
 		push( @$hline, { text => $cov->{mean}, type => "$color" } );
+
 		$color = "success";
 		$color = "warning" if $cov->{"15x"} < 95;
 		$color = "danger" if $cov->{"15x"} < 85;
-
 		push( @$hline, { text => $cov->{"15x"}, type => "$color" } );
+
 		$color = "success";
 		$color = "warning" if $cov->{"30x"} < 92;
 		$color = "danger" if $cov->{"30x"} < 80;
-
 		push( @$hline, { text => $cov->{"30x"}, type => "$color" } );
-		$color = "success";
-		$color = "warning" if $cov->{"30x"} < 90;
-		$color = "danger" if $cov->{"30x"} < 75;
 
+		$color = "success";
+		$color = "warning" if $cov->{"100x"} < 90;
+		$color = "danger" if $cov->{"100x"} < 75;
 		push( @$hline, { text => $cov->{"100x"}, type => "$color" } );
 		push( @{ $resume->{lines} }, $hline );
 	}
@@ -1306,7 +1303,7 @@ sub bam_stats {
 		  ->karyotypeId <=> $project->getChromosome($b)->karyotypeId
 	} keys %$bam_stats;
 	$resume->{header} =
-	  [ "patients", "mean", "15X", "30X", "100X", @tchromosomes ];
+	  [ "patients", "mean", "15x", "30x", "100x", @tchromosomes ];
 
 	# my $it = natatime , @tchromosomes;
 
@@ -1338,8 +1335,8 @@ sub bam_stats {
 		$color = "warning" if $cov->{"30x"} < 92;
 		push( @$hline, { text => $cov->{"30x"}, type => "$color" } );
 		$color = "success";
-		$color = "danger" if $cov->{"30x"} < 75;
-		$color = "warning" if $cov->{"30x"} < 90;
+		$color = "danger" if $cov->{"100x"} < 75;
+		$color = "warning" if $cov->{"100x"} < 90;
 		push( @$hline, { text => $cov->{"100x"}, type => "$color" } );
 
 		foreach my $chr (@tchromosomes) {
