@@ -2708,8 +2708,7 @@ sub elprep5 {
 
 #--tmp-path /tmp --target-regions $bed --known-sites $known_sites --haplotypecaller $vcfout
 
-	my $cmd =
-qq{/home/pnitschk/go/bin/elprep  $cmd2  $filein $fileout $tmp  --replace-read-group "$rg_string" --mark-duplicates  --sorting-order coordinate --reference $ref  $gvcf_arg };
+	my $cmd = "home/pnitschk/go/bin/elprep  $cmd2  $filein $fileout $tmp  --replace-read-group '".$rg_string."' --mark-duplicates  --sorting-order coordinate --reference $ref  $gvcf_arg";
 	die();
 	my $ppn      = 40;
 	my $type     = "elprep";
@@ -2831,8 +2830,7 @@ sub elprep {
 	  . $self->patient->name
 	  . ".recal.table";
 
-	my $cmd =
-qq{$elprep  sfm $filein $fileout --tmp-path $tmpdir --replace-read-group "$rg_string" --mark-duplicates  --sorting-order coordinate --bqsr $recal --bqsr-reference $ref --known-sites $known_sites };
+	my $cmd = "$elprep  sfm $filein $fileout --tmp-path $tmpdir --replace-read-group '".$rg_string."' --mark-duplicates  --sorting-order coordinate --bqsr $recal --bqsr-reference $ref --known-sites $known_sites";
 	my $ppn      = 40;
 	my $type     = "elprep";
 	my $stepname = $self->patient->name . "@" . $type;
