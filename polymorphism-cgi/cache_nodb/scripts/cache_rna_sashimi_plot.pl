@@ -82,13 +82,14 @@ $pm1->run_on_finish(
 );
 
 foreach my $chr (@{$project->getChromosomes()}) {
+	my $vector_junctions = $patient->getJunctionsVector($chr);
+	next if $vector_junctions->is_empty();
 	my $pid = $pm1->start and next;
 	$buffer->dbh_deconnect();
 	$buffer->dbh_reconnect();
 	my $hres;
 	my $nb_done;
 	$hres->{toto} = undef;
-	my $vector_junctions = $patient->getJunctionsVector($chr);
 	if (exists $chr->patients_categories->{$patient->name.'_ratio_10'}) {
 		$vector_junctions &= $chr->patients_categories->{$patient->name.'_ratio_10'};
 	}
@@ -193,12 +194,16 @@ if (not -e $bam_rmdup) {
 
 my $pm = new Parallel::ForkManager($fork);
 foreach my $junction (@lJunctions) {
+	warn ref($junction).' -> '.$junction->id();
 	my $pid = $pm->start and next;
 	$buffer->dbh_deconnect();
 	$buffer->dbh_reconnect();
 #	warn $junction->id;
 	$junction->can_create_sashimi_plots(1);
-	$junction->getListSashimiPlotsPathFiles($patient, $bam_rmdup);
+	my @lfiles = @{$junction->getListSashimiPlotsPathFiles($patient, $bam_rmdup)};
+	if (@lfiles and not -e $lfiles[0]) {
+		$junction->getListSashimiPlotsPathFiles($patient, $bam_file);
+	}
 	print FILE 'Ok junction '.$junction->id()."\n";
 	$pm->finish();
 }
