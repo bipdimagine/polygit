@@ -719,7 +719,6 @@ sub return_genbo_variant {
 	my ($self,$vid) = @_;
 	my $no = $self->cache_variations();
 	if ($self->project->isRocks){
-		
 		return  $no->get_variation($vid);
 	}
 	else {
@@ -769,7 +768,7 @@ sub flushObjectVariantCache {
 	elsif  ($ref eq 'GenBoMei'){
 		bless $var_obj , 'GenBoMeiCache';
 	}
-	elsif  ($ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache') {
+	elsif  ($ref ne 'GenBoLargeInsertionCache' && $ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache') {
 		confess("\n\nERROR: $vid not found in cache project. Die.\n\n") unless ($can_create_variant);
 		#Si l'objet n a pas ete stocke correctement pendant le cache, je construit a la volee sa verion NON cache avec GenBoProject
 		my $this_project = $self->getProject();
