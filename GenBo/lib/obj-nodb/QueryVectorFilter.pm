@@ -1195,7 +1195,6 @@ sub filter_genes_text_search {
 	foreach my $gene (@{$chr->getGenes()}) {
 		$chr->getProject->print_dot(1);
 		unless ($chr->check_filter_text($gene)) {
-			$chr->supressGene($gene);
 			next;
 		}
 		$vector_genes += $gene->getVariantsVector();
@@ -1294,14 +1293,10 @@ sub filter_genes_annotations {
 		
 		my $vchr = $gene->return_compact_vector( $chr->getVariantsVector());
 		$vsmall &= $vchr;
-		$gene->setCurrentVector($vsmall);
 		if ($vsmall->is_empty()){
-			delete $chr->{genes_object}->{$gene->id};
-		
+			delete $chr->project->{genes_object}->{$gene->id};
 			next;
 		}
-		
-		
 		$gene->setCurrentVector($vsmall);
 		
 		$nb ++;
@@ -1344,6 +1339,7 @@ sub filter_genetics_models {
 		$self->filter_model_somatic_only_tissues_somatic($chr) if ($model eq 'only_tissues_somatic');
 	}
 	foreach my $gene (@{$chr->getGenes()}) {
+		next if not $gene->compact_vector();
 		my $vv = $chr->getVariantsVector() & $gene->getCurrentVector();
 		$gene->setCurrentVector($vv);
 	}
