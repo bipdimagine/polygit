@@ -617,7 +617,7 @@ my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."02-05-2024");
 my $htable = $no_cache->get_cache( $table_id );
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
-
+warn "here";
 unless ($htable) {
 	print qq{<div style="display: none">};
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
@@ -1923,6 +1923,7 @@ sub construct_identito_vigilence {
 	return ( "", 0 ) unless @iv;
 
 	unless ( $p->identity_vigilance_vcf() ) {
+		die();
 		system("$Bin/../../polypipeline/scripts/scripts_pipeline/identito_vigilence.pl -project="
 			  . $project->name
 			  . ">/dev/null 2>/dev/null" );
@@ -2016,6 +2017,7 @@ sub table_sex {
 	foreach my $p ( sort { $a->name cmp $b->name } @{ $run->getPatients } ) {
 		print ".";
 		next if $p->alignmentMethod() eq 'no_align';
+		warn "Patient sex";
 		my $icon = $p->return_icon;
 		my $name = $p->name;
 		my $c1   = "pink";
@@ -2024,8 +2026,10 @@ sub table_sex {
 		my $mean     = $cov->{mean};
 		my $x30      = $cov->{"30x"};
 		my $cov_sry  = $p->coverage_SRY();
+		
 		my $sex_eval = $p->compute_sex();
-
+		
+		warn "coucou";
 		# warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
 		my $color = "#009B77";
 		if ( $sex_eval ne $p->sex() && $sex_eval ne -1 ) {
@@ -2036,13 +2040,16 @@ sub table_sex {
 			$error++;
 			$color = "#DD4132";
 		}
+		warn "2";
 		my $c2 = $c1 . "1";
 		my $text2 =
 qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2px; "></i>}
 		  . $hsex1->{$sex_eval};
 		my $iv      = "";
 		my $iverror = 0;
-		( $iv, $iverror ) = construct_identito_vigilence($p) if $p->identity_vigilance;
+		warn "id";
+		( $iv, $iverror ) = (0,0);#construct_identito_vigilence($p) if $p->identity_vigilance;
+		warn "end";
 		if ( $iverror == 2 ) {
 			$c1 = "danger";
 			$error++;
@@ -3339,25 +3346,26 @@ sub table_patients {
 	#####################
 	my $control ={};
 	my $error = 0;
-	my $has_identito;
+#	my $has_identito;
 	foreach my $p ( @{$project->getPatients} ) {
+		warn  $p->identity_vigilance;
 		$error += column_control($p,$control);
-		$has_identito = 1 if $p->identity_vigilance;
+#		$has_identito = 1 if $p->identity_vigilance;
 	}
-	my $ccolor="";
-	$ccolor="background-color:red" if $error > 0;
-	
-	foreach my $p (@title) {
-		if ($p eq "control"){
-			#https://img.icons8.com/ios/50/checked-identification-documents.png
-			#https://img.icons8.com/ios-filled/50/checked-identification-documents--v1.png
-			#<img width="32" height="32" src="https://img.icons8.com/windows/32/checked-identification-documents.png" alt="checked-identification-documents"/>
-			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control }) if $has_identito;
-		}
-		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
-	}
-	
-	
+#	my $ccolor="";
+#	$ccolor="background-color:red" if $error > 0;
+#	
+#	foreach my $p (@title) {
+#		if ($p eq "control"){
+#			#https://img.icons8.com/ios/50/checked-identification-documents.png
+#			#https://img.icons8.com/ios-filled/50/checked-identification-documents--v1.png
+#			#<img width="32" height="32" src="https://img.icons8.com/windows/32/checked-identification-documents.png" alt="checked-identification-documents"/>
+#			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control }) if $has_identito;
+#		}
+#		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
+#	}
+#	
+#	
 	
 	
 	#"Control $error" );
@@ -3557,14 +3565,23 @@ sub table_run_header {
 "margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"
 		}
 	);
-	my ( $b,  $p )  = table_sex($run);
+	warn "===>";
+	my ( $b,  $p ) = table_sex($run);
+	warn "-->";
 	my ( $b1, $p1 ) = table_duplicate($run);
+	warn "-->";
 	my ( $b2, $p2 ) = table_control($run);
+	warn "-->";
 	my ( $b3, $p3 ) = table_mendelian($run);
+	warn "-->";
 	my ( $b4, $p4 ) = table_quality($run);
+	warn "-->";
 	my ( $b5, $p5 ) = table_design($run);
+	warn "-->";
 	my ( $b6, $p6 ) = table_muc1($run);
+	warn "-->";
 	my ( $b7, $p7 ) = table_fastq_screen($run);
+	warn "-->";
 	$out .= $cgi->start_Tr;
 	$out .= $cgi->th(
 		{
@@ -3633,6 +3650,7 @@ sub table_run_header {
 	$out .= $p4;
 	$out .= $p5;
 	$out .= $p6;
+	warn "END";
 	return $out;
 }
 
