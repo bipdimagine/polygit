@@ -272,6 +272,15 @@ sub listProjectsExomeForDejaVu {
 	return \@list;
 }
 
+
+sub listProjectsIdExomeForDejaVu {
+	my $self = shift;
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare($self->sql_cmd_list_projects_id_exome_for_dejaVu);
+	$sth->execute() || confess();
+	return [keys %{$sth->fetchall_hashref("id")} ];
+}
+
 sub listAllProjects {
 	my ($self,$user,$pwd) = @_;
 	my $dbh = $self->getDbh();
@@ -493,7 +502,7 @@ sub getAllPatientsFromRunId{
 	my $dbh = $self->getDbh();
 	my $sql = qq{
 		select p.name as patient, p.control as control, pr.name  as project ,p.father,p.mother,p.status,p.patient_id as id,p.sex as sex,p.family as family, cs.name as capture  
-			,p.type as type from PolyprojectNGS.patient p, PolyprojectNGS.projects pr, PolyprojectNGS.capture_systems cs 
+			,p.type as type , pr.project_id as project_id from PolyprojectNGS.patient p, PolyprojectNGS.projects pr, PolyprojectNGS.capture_systems cs 
 				where p.run_id=? and pr.project_id=p.project_id and p.capture_id=cs.capture_id;
 	};
 	
@@ -540,7 +549,14 @@ sub getSimilarProjectsByValidation_db {
 	
 	return [keys %{$sth->fetchall_hashref("name")} ];
 }
-
+sub getSimilarProjectsIdByValidation_db {
+	my ($self,$vdb) = @_;
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare($self->sql_get_similar_projects_id_by_validation_db);
+	$sth->execute($vdb);# || confess();
+	
+	return [keys %{$sth->fetchall_hashref("id")} ];
+}
 
 sub getSimilarProjectsByAnalyse {
 	my ($self,$vdb) = @_;
@@ -549,6 +565,16 @@ sub getSimilarProjectsByAnalyse {
 	$sth->execute($vdb);
 	return [keys %{$sth->fetchall_hashref("name")} ];
 }
+
+sub getSimilarProjectsIdByAnalyse {
+	my ($self,$vdb) = @_;
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare($self->sql_get_similar_projects_id_by_analyse);
+	$sth->execute($vdb);
+	return [keys %{$sth->fetchall_hashref("id")} ];
+}
+
+
 sub getSimilarProjectsByPhenotype {
 	my ($self,$pheno) = @_;
 	return [] unless ($pheno);
@@ -558,6 +584,14 @@ sub getSimilarProjectsByPhenotype {
 	return [keys %{$sth->fetchall_hashref("name")} ];
 }
 
+sub getSimilarProjectsIdByPhenotype {
+	my ($self,$pheno) = @_;
+	return [] unless ($pheno);
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare(qq{select pr.project_id as id   FROM PolyprojectNGS.projects as pr ,PolyprojectNGS.phenotype as p , PolyprojectNGS.phenotype_project as pp where pp.project_id=pr.project_id and pp.phenotype_id= p.phenotype_id and p.name=?;});
+	$sth->execute($pheno) or confess();
+	return [keys %{$sth->fetchall_hashref("id")} ];
+}
 
 sub getPhenotypesForProject {
 	my ($self,$id) = @_;

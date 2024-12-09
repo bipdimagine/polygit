@@ -3408,6 +3408,7 @@ sub dejavu_hash_projects_patients {
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
 	unless (exists $self->{array_dejavu}) {
+		
 		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}

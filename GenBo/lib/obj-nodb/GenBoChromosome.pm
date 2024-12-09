@@ -693,7 +693,6 @@ sub getTranscriptsByPosition {
 
 sub getGenesByPosition {
 	my ( $self, $start, $end ) = @_;
-	warn $start.' - '.$end;
 	my $ids   = $self->genesIntervalTree->fetch( $start, $end + 1 );
 	my $genes = [];
 	foreach my $id (@$ids) {
@@ -2231,7 +2230,9 @@ sub rocks_dejavu {
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
-	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
+	my $dir = $self->project->deja_vu_rocks_dir;
+	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
+	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->project->{rocks}->{$name};
 }
 
@@ -2283,7 +2284,9 @@ sub getShortResumeDejaVuInfosForDiagforRocksId {
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
 	my $chr = $self;
+	
 #	my $in_this_run_patients =  $self->project->{in_this_run_patients};
+	my $in_this_run_patients =  $self->project->{in_this_run_patients};
 #	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
 	#my $no1 = $self->project->lite_deja_vu2();
 	my $no = $self->rocks_dejavu();
@@ -2291,8 +2294,9 @@ sub getDejaVuInfosForDiagforVariant{
 	#my $h = $no1->get($v->getChromosome->name,$v->id);
 	#warn Dumper $h;
 	#die();
-	my $similar = $self->project->similarProjects();
-	my $exomes = $self->project->exomeProjects();
+	my $similar = $self->project->similarProjectsId();
+	
+	my $exomes = $self->project->exomeProjectsId();
 	my $pe =  $self->project->countExomePatients();
 	my $ps =  $self->project->countSimilarPatients();
 	my $res;
@@ -2306,37 +2310,41 @@ sub getDejaVuInfosForDiagforVariant{
 	$res->{exome_patients_ho} = 0;
 	$res->{similar_patients_ho} = 0;
 	$res->{total_in_this_run_patients} = 0;
-	#$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
 	if ($res->{total_in_this_run_patients} == 0 ){
 		$res->{total_in_this_run_patients} = scalar(@{$self->project->getPatients});
 	}
 	$res->{in_this_run_patients} = 0;
-	$res->{in_this_run_patients} += scalar(@{$v->getPatients});
+	$res->{in_this_run_patients} = scalar(@{$v->getPatients});
+	
 	return $res unless ($h);
 	
-	foreach my $l (split("!",$h)) {
-		my($p,$nho,$nhe,$info) = split(":",$l);
-		$p = "NGS20".$p;
-		next if $p eq $self->name();
+	
+	
+	
+	
+	foreach my $pid (keys %$h){
 		
-		#TODO: here ! a faire
-#		if (exists $in_this_run_patients->{$p}){
-#			
-#			my (@samples) = split(",",$info);
-#			foreach my $s (@samples){
-#				if (exists $in_this_run_patients->{$p}->{$s}){
-#					$res->{in_this_run_patients} ++;
-#				}
-#			}
-#		}
+		my $nho = $h->{$pid}->{ho};
+		my $nhe = $h->{$pid}->{he};
+		my $patients = $h->{$pid}->{patients};
+		
+		if (exists $in_this_run_patients->{$pid}){
+			$res->{in_this_run_patients} += scalar(keys %{$in_this_run_patients->{$pid}} );
+			foreach my $s (@$patients){
+				if (exists $in_this_run_patients->{$pid}->{$s}){
+					$res->{in_this_run_patients} ++;
+				}
+			}
+		}
+		next if  $self->project->id == $pid;
 		#IN EXOME 	
-		if (exists $exomes->{$p}){
+		if (exists $exomes->{$pid}){
 			$res->{exome_projects}  ++; 
 			$res->{exome_patients}   += $nhe;
 			$res->{exome_patients_ho}   += $nho;
 		}
 		#in similar;
-		if (exists $similar->{$p}){
+		if (exists $similar->{$pid}){
 			$res->{similar_projects}  ++;
 			$res->{similar_patients} += $nhe;
 			$res->{similar_patients_ho} += $nho;

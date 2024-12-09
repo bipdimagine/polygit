@@ -294,6 +294,15 @@ has gencode => (
 		},
 );	
 
+sub deja_vu_public_dir {
+	my ($self,$version)= @_;
+	confess() unless $version;
+	return $self->{dj_pub_dir}->{$version} if exists $self->{dj_pub_dir}->{$version};
+	 $self->{dj_pub_dir}->{$version} =  $self->config->{deja_vu}->{path_rocks}."/".$version . "/".$self->config->{deja_vu}->{variations} if (exists $self->config->{deja_vu}->{path});
+	return $self->{dj_pub_dir}->{$version}  if -e $self->{dj_pub_dir}->{$version};
+	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_pub_dir}->{$version} );
+}
+
 sub getNeedlemanWunsch {
 	my ($self,$opt,$type) = @_;
 	$type ++;

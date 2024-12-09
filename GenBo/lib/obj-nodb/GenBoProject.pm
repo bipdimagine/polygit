@@ -973,6 +973,55 @@ has phenotypes => (
 	},
 );
 
+
+has similarProjectsId => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $results;
+		my $query = $self->buffer->getQuery();
+	#	
+			my $phenotypes = $self->getPhenotypes();
+			return {} unless $phenotypes;
+			return {} unless @$phenotypes;
+			
+			foreach my $ph (@$phenotypes){
+				map { $results->{$_}++ } @{ $query->getSimilarProjectsIdByPhenotype($ph)};
+			}
+			 
+		if ( $self->isExome or $self->isGenome() ) { 
+			return {} unless $results;
+			return $results;
+		}
+		
+		foreach my $c ( @{ $self->getCaptures() } ) {
+			my $analyse = $c->infos->{analyse};
+			my $vdb     = $c->validation_db;
+			if ( $self->isExome or $self->isGenome() ) {
+				my $phenotypes = $self->phenotypes();
+				foreach my $ph (@$phenotypes){
+					map { $results->{$_}++ }  @{ $query->getSimilarProjectsIdByPhenotype( $ph )};
+				}
+			}
+			elsif ($analyse) {
+				map { $results->{$_}++ }  @{ $query->getSimilarProjectsIdByAnalyse($analyse) };
+			}
+			else {
+				confess();
+				map { $results->{$_}++ } @{ $query->getSimilarProjects( $c->id ) };
+			}
+			if ($vdb) {
+				map { $results->{$_}++ }
+				  @{ $query->getSimilarProjectsIdByValidation_db($vdb) };
+			}
+
+		}
+		delete $results->{ $self->id };
+		return $results;
+	},
+);
+
 has similarProjects => (
 	is      => 'ro',
 	lazy    => 1,
@@ -984,8 +1033,7 @@ has similarProjects => (
 			my $phenotypes = $self->getPhenotypes();
 			return {} unless $phenotypes;
 			return {} unless @$phenotypes;
-			map { $results->{$_}++ }
-			  @{ $phenotypes->[0]->projects_name } if $phenotypes;
+			map { $results->{$_}++ } @{ $phenotypes->[0]->projects_name } if $phenotypes;
 			 # warn Dumper $results;
 			 
 		if ( $self->isExome or $self->isGenome() ) { 
@@ -1022,50 +1070,7 @@ has similarProjects => (
 );
 
 
-#has similarProjects => (
-#	is      => 'ro',
-#	lazy    => 1,
-#	default => sub {
-#		my $self = shift;
-#		my $results;
-#		my $query = $self->buffer->getQuery();
-#		if ( $self->isExome or $self->isGenome() ) {
-#			my $phenotypes = $self->getPhenotypes();
-#			warn  $p
-#			foreach my $pheno (@$phenotypes) {
-#				$results->{ $pheno->name }++;
-#			}
-#			return {} unless $results;
-#			return $results;
-#		}
-#		foreach my $c ( @{ $self->getCaptures() } ) {
-#			my $analyse    = $c->infos->{analyse};
-#			my $vdb        = $c->validation_db;
-#			my $phenotypes = $self->getPhenotypes();
-#			foreach my $pheno (@$phenotypes) {
-#				$results->{ $pheno->name }++;
-#			}
-#			if ($analyse) {
-#				map { $results->{$_}++ }
-#				  @{ $query->getSimilarProjectsByAnalyse($analyse) };
-#
-#				#next;
-#			}
-#			else {
-#				map { $results->{$_}++ }
-#				  @{ $query->getSimilarProjects( $c->id ) };
-#			}
-#			if ($vdb) {
-#				map { $results->{$_}++ }
-#				  @{ $query->getSimilarProjectsByValidation_db($vdb) };
-#			}
-#
-#		}
-#
-#		delete $results->{ $self->name };
-#		return $results;
-#	},
-#);
+
 
 has countSimilarPatients => (
 	is      => 'ro',
@@ -1081,6 +1086,17 @@ has countSimilarPatients => (
 	},
 );
 
+has exomeProjectsId => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self  = shift;
+		my @lists = $self->buffer()->listProjectsExomeForDejaVu();
+		my %hash;
+		map { $hash{$_}++ } @{ $self->buffer()->getQuery->listProjectsIdExomeForDejaVu() };
+		return \%hash;
+	},
+);
 has exomeProjects => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1088,7 +1104,7 @@ has exomeProjects => (
 		my $self  = shift;
 		my @lists = $self->buffer()->listProjectsExomeForDejaVu();
 		my %hash;
-		map { $hash{$_}++ } @{ $self->buffer()->listProjectsExomeForDejaVu() };
+		map { $hash{$_}++ } @{ $self->buffer()->getQuery->listProjectsExomeForDejaVu() };
 		return \%hash;
 	},
 );
@@ -2055,6 +2071,24 @@ has annotation_genome_version => (
 		return $version;
 	}
 );
+has current_genome_version => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		return $self->annotation_genome_version();
+	}
+);
+has lift_genome_version => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		return "HG38" if $self->current_genome_version() eq "HG19";
+		return "HG19" if $self->current_genome_version() eq "HG38";
+		confess();
+	}
+);
 
 has genome_version_generic => (
 	is      => 'ro',
@@ -2134,18 +2168,9 @@ has deja_vu_public_dir_lmdb => (
 		confess("\n\nERROR: path dejavu not found in genbo.cfg  $dir $dir2->  Die\n\n");
 	},
 );
-has deja_vu_public_dir => (
-	is      => 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self   = shift;
-		my $path;
-		
-		my $dir =  $self->buffer->config->{deja_vu}->{path_rocks}."/".$self->genome_version_generic . "/".$self->buffer->config->{deja_vu}->{variations} if (exists $self->buffer->config->{deja_vu}->{path});
-		return $dir if -e $dir;
-		confess("\n\nERROR: path dejavu not found in genbo.cfg  ->  Die\n\n");
-	},
-);
+
+
+
 #has dirCytoManue => (
 #	is      => 'rw',
 #	lazy    => 1,
@@ -2375,7 +2400,7 @@ has genomeFai => (
 		#open(FAI1, $file_fai ) or die ("Can't open, $!");
 		my @data = `cat $file_fai`;
 		unless (@data) {
-			die($file_fai) unless @data;
+			die("problem: ".$file_fai) unless @data;
 		}
 		#chomp(@data);
 		my $arrayChrs = [];
@@ -4476,11 +4501,7 @@ sub getLargeIndelsDir {
 
 sub getBedPolyQueryDir {
 	my ($self) = @_;
-<<<<<<< HEAD
 	my $path = $self->rocks_cache_dir . "/bed_polyquery/";
-=======
-	my $path = $self->getCacheDir . "/bed_polyquery/";
->>>>>>> refs/remotes/origin/master
 	return $self->makedir($path);
 }
 
@@ -6039,74 +6060,26 @@ has countInThisRunPatients => (
 has in_this_run_patients => (
 	is      => 'ro',
 	lazy    => 1,
-	default => 0,
-);
-
-sub getDejaVuInfosForDiagforVariant{
-	my ($self, $v) = @_;
-#	confess();
-	my $chr = $v->getChromosome()->name();
-	my $in_this_run_patients =  $self->in_this_run_patients();
-	my $no = $self->lite_deja_vu2();
-	my $h = $no->get($v->getChromosome->name,$v->id);
-	my $similar = $self->similarProjects();
-	my $exomes = $self->exomeProjects();
-	my $pe =  $self->countExomePatients();
-	my $ps =  $self->countSimilarPatients();
+	default => sub {
+		my $self = shift;
+		my $h;
 	my $res;
-	$res->{similar_projects} = 0;
-	$res->{other_projects} = 0;
-	$res->{exome_projects} = 0;
-	$res->{other_patients} = 0;
-	$res->{exome_patients} = 0;
-	$res->{similar_patients} = 0;
-	$res->{other_patients_ho} = 0;
-	$res->{exome_patients_ho} = 0;
-	$res->{similar_patients_ho} = 0;
-	$res->{total_in_this_run_patients} = $in_this_run_patients->{total} + 0;
-	if ($res->{total_in_this_run_patients} == 0 ){
-		$res->{total_in_this_run_patients} = scalar(@{$self->getPatients});
-	}
-	$res->{in_this_run_patients} = 0;
-	$res->{in_this_run_patients} += scalar(@{$v->getPatients});
-	return $res unless ($h);
-	
-	foreach my $l (split("!",$h)) {
-		my($p,$nho,$nhe,$info) = split(":",$l);
-		$p = "NGS20".$p;
-		next if $p eq $self->name();
-		if (exists $in_this_run_patients->{$p}){
-			
-			my (@samples) = split(",",$info);
-			foreach my $s (@samples){
-				if (exists $in_this_run_patients->{$p}->{$s}){
-					$res->{in_this_run_patients} ++;
-				}
+	my $total = 0;
+	my $inthisrunp;
+	foreach my $run (@{$self->getRuns}){
+		my $patients = $run->getAllPatientsInfos();
+			foreach my $p (@$patients){
+				$inthisrunp->{$p->{project_id} }->{$p->{id}} ++;
 			}
 		}
-		#IN EXOME 	
-		if (exists $exomes->{$p}){
-			$res->{exome_projects}  ++; 
-			$res->{exome_patients}   += $nhe;
-			$res->{exome_patients_ho}   += $nho;
-		}
-		#in similar;
-		if (exists $similar->{$p}){
-			$res->{similar_projects}  ++;
-			$res->{similar_patients} += $nhe;
-			$res->{similar_patients_ho} += $nho;
-		}
-		else {
-			$res->{other_projects} ++;
-			$res->{other_patients}+= $nhe;
-			$res->{other_patients_ho}+= $nho;
-		}
-	}	
-	$res->{total_exome_projects} =  scalar(keys %{$self->exomeProjects()});
-	$res->{total_exome_patients} =  $self->countExomePatients();
-	$res->{total_similar_projects} =  scalar(keys %{$self->similarProjects()});
-	$res->{total_similar_patients} =  $self->countSimilarPatients();
-	return $res;
+		#$res->{total} = $total;
+		return $inthisrunp;
+	},
+);
+sub getDejaVuInfosForDiagforVariant{
+	my ($self, $v) = @_;
+	my $chr = $v->getChromosome()->name();
+	return  $v->getChromosome()->getDejaVuInfosForDiagforVariant($v);
 	
 }
 sub getDejaVuInfosForDiag {
@@ -6115,71 +6088,7 @@ sub getDejaVuInfosForDiag {
 	return $self->getDejaVuInfosForDiagforVariant($v);
 }
 
-#sub getDejaVuInfosForDiag {
-#	my ( $self, $id ) = @_;
-#	my ( $chr, @t ) = split( "_", $id );
-#	my $no      = $self->lite_deja_vu();
-#	my $h       = $no->get( $chr, $id );
-#	my $similar = $self->similarProjects();
-#	my $exomes  = $self->exomeProjects();
-#	my $query   = $self->buffer->getQuery();
-#	my $pe      = $self->countExomePatients();
-#	my $ps      = $self->countSimilarPatients();
-#	my $in_this_run_patients =  $self->in_this_run_patients();
-#	
-#	my $res;
-#	$res->{similar_project}        = 0;
-#	$res->{other_project}          = 0;
-#	$res->{similar_patient}        = 0;
-#	$res->{other_patient}          = 0;
-#	$res->{exome_patients}         = 0;
-#	$res->{exome_project}          = 0;
-#	$res->{total_exome_project}    = scalar( keys %$exomes );
-#	$res->{total_similar_project}  = scalar( keys %$similar );
-#	$res->{total_exome_patients}   = $pe;
-#	$res->{total_similar_patients} = $ps;
-#	$res->{total_in_this_run_patients} = $in_this_run_patients->{total};#scalar (keys %$in_this_run_patients);
-#	#$res->{in_this_run_patients} = scalar (keys %$in_this_run_patients);
-#	foreach my $p ( keys %$h ) {
-#		if (exists $in_this_run_patients->{$p}){
-#			my ( $p1, $p2, $HO ) = split( " ", $h->{$p} );
-#			foreach my $v (split(",",$p1.",".$p2)){
-#				if (exists $in_this_run_patients->{$p}->{$v}){
-#					 $res->{in_this_run_patients} ++;
-#				}
-#			}
-#		
-#			#$res->{in_this_run} ++;
-#		}
-#		next if $p eq $self->name();
-#		
-#		my ( $p1, $p2, $HO ) = split( " ", $h->{$p} );
-#		my @hho;
-#		@hho = split( ",", $p2 ) if $p2;
-#		my $n   = () = $p1 =~ /,/g;
-#		my $nho = scalar(@hho);
-#		if ( exists $exomes->{$p} ) {
-#			$res->{exome_project}++;
-#			$res->{exome_patients}    += $n + 1;
-#			$res->{exome_patients_ho} += $nho;
-#		}
-#	
-#		if ( exists $similar->{$p} ) {
-#			$res->{similar_project}++;
-#			$res->{similar_patient}    += $n + 1;
-#			$res->{similar_patient_ho} += $nho;
-#		}
-#		else {
-#			$res->{other_project}++;
-#			$res->{other_patient}    += $n + 1;
-#			$res->{other_patient_ho} += $nho;
-#		}
-#		
-#	}
-#
-#	return $res;
-#
-#}
+
 
 sub getDejaVuThisProject {
 	my ( $self, $id ) = @_;
@@ -6209,6 +6118,7 @@ sub getDejaVuThisProject {
 sub getDejaVuInfos {
 	my ( $self, $id ) = @_;
 	my ( $chr, @t ) = split( "_", $id );
+	confess();
 	my $hres;
 	my $no = $self->lite_deja_vu2();
 	my $string_infos = $no->get( $chr, $id );
@@ -6264,6 +6174,7 @@ has deja_vu_lite_dir_projects => (
 
 	},
 );
+
 has deja_vu_rocks_dir => (
 	is      => 'ro',
 	lazy    => 1,
@@ -6271,11 +6182,24 @@ has deja_vu_rocks_dir => (
 		my $self = shift;
 
 		#return "/data-isilon/dejavu/";
-		my $dir = $self->deja_vu_public_dir()."/rocks/";
+		my $dir = $self->deja_vu_public_dir()."/rocks.new/";
 		return $self->makedir($dir);
 
 	},
 );
+
+
+sub deja_vu_public_dir {
+	my ($self,$version)= @_;
+	$version = $self->genome_version_generic unless $version;
+	return $self->buffer->deja_vu_public_dir($version);
+}
+
+sub deja_vu_rocks_project_dir {
+	my ($self,$version)= @_;
+	my $root = $self->deja_vu_public_dir($version)."/projects.tar";
+	return $root;
+}
 
 has lite_deja_vu => (
 	is      => 'ro',
@@ -6661,12 +6585,14 @@ sub preload_patients {
 
 }
 $self->getRuns();
+$self->getPhenotypes();
 $self->similarProjects();
+$self->similarProjectsId();
 $self->in_this_run_patients();
 $self->exomeProjects();
 $self->countSimilarPatients();
 $self->countExomePatients();
-$self->getPhenotypes();
+
 
 }
 

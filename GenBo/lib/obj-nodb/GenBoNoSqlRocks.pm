@@ -8,7 +8,7 @@ use Storable qw/thaw freeze/;
 use JSON::XS;
 use Sereal
   qw(sereal_encode_with_object sereal_decode_with_object write_sereal_file read_sereal_file);
-use Carp;
+use Carp qw(cluck longmess shortmess confess);
 use RocksDB;
 
 has version => (
@@ -54,6 +54,7 @@ has env => ( is => 'rw', );
 has compression => (
 	is      => 'rw',
 	default => sub {
+		
 		return "lz4hc";
 
 	}
@@ -332,8 +333,20 @@ sub rocks {
 	elsif ( $self->mode eq "w" ) {
 		
 		$self->load_config() if -e $self->json_file;
-		confess( $self->path_rocks . '/CURRENT' ) unless ( $self->exists_rocks() );
-
+		 unless ( $self->exists_rocks() ) {
+		 	$self->{rocks} = RocksDB->new(
+			$self->path_rocks,
+			{
+				log_file_time_to_roll => 1,
+				IncreaseParallelism   => 1,
+				keep_log_file_num     => 1,
+				create_if_missing     => 1,
+				filter_policy => $policy ,
+				compression           => $self->compression
+			}
+			);
+		 }
+		else {
 		#my $options = RocksDB::Options->new();
 		my $bits_per_key = 10;
 
@@ -347,7 +360,9 @@ sub rocks {
 				IncreaseParallelism        => 1,
 				filter_policy => $policy 
 			}
-		);
+			);
+		}
+		
 		return $self->{rocks};
 	}
 	elsif ( $self->mode eq "m" ) {
@@ -447,7 +462,7 @@ has sereal_encoder => (
 
 #return Sereal::Encoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
 		return Sereal::Encoder->new(
-			{ compress => Sereal::SRL_UNCOMPRESSED, compress_threshold => 0 } );
+			{ compress => Sereal::SRL_ZSTD, compress_threshold => 0 } );
 		return 0;
 	},
 );
@@ -537,7 +552,6 @@ sub write_batch {
 
 sub put_batch_raw {
 	my ( $self, $key, $value, $debug ) = @_;
-
 	$self->batch->put( $key, $value );
 }
 
@@ -649,7 +663,6 @@ sub close {
 
 		#confess() if $self->path_rocks =~ /_nosplit/;
 		#warn "\t\t compact ".$self->path_rocks;
-
 		$self->rocks->compact_range();
 
 		#warn "\t\t end compact ".$self->path_rocks;
@@ -696,8 +709,6 @@ sub return_rocks_id_from_gnomad_id {
 	my ($self,$id) = @_;
 	warn $id;
 	my ($chr,$pos,$ref,$alt) = split("-",$id);
-	warn "))))))))";
-		warn $id." ".$ref." "."++++";
 	return $self->return_rocks_id($pos,$ref,$alt);
 }
 sub return_genomic_rocks_id_from_gnomad_id {
@@ -717,7 +728,6 @@ sub return_rocks_id_from_genbo_id {
 
 sub return_rocks_id {
 	my ($self,$pos,$ref,$alt) = @_;
-
 	my $l1 = length($ref);
 	my $l2 = length($alt);
 	return  ($self->stringify_pos($pos)."!".$alt) if ($l1 == 1 && $l2 ==1);

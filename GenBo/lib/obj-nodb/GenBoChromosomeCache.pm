@@ -614,6 +614,7 @@ sub cache_variations {
 	if ($self->project->isRocks){
 		return $self->get_rocks_variations("r");
 	}
+	confess();
 	return $self->get_lmdb_variations("r");;
 	
 }
@@ -719,7 +720,6 @@ sub return_genbo_variant {
 	my ($self,$vid) = @_;
 	my $no = $self->cache_variations();
 	if ($self->project->isRocks){
-		
 		return  $no->get_variation($vid);
 	}
 	else {

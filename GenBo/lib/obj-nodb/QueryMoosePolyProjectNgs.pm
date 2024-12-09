@@ -356,6 +356,19 @@ has sql_cmd_list_projects_name_exome_for_dejaVu => (
 	},
 );
 
+has sql_cmd_list_projects_id_exome_for_dejaVu => (
+	is	 => 'ro',
+
+	lazy =>1,
+	default	=> sub {
+		my $self = shift;
+		my $sql = qq{
+				select distinct (pr.project_id) as id from PolyprojectNGS.projects as pr ,PolyprojectNGS.capture_systems as cs, PolyprojectNGS.patient as p where p.project_id = pr.project_id and pr.dejaVu=1 AND p.capture_id = cs.capture_id and (cs .analyse="exome" or cs.analyse = "genome") ;;
+		};
+	return $sql
+	},
+);
+
 has sql_cmd_list_projects_name_for_dejaVu => (
 	is	 => 'ro',
 
@@ -662,6 +675,15 @@ is		=> 'ro',
 	return $sql
 	},
 );
+has sql_get_similar_projects_id_by_validation_db =>(
+is		=> 'ro',
+	
+	lazy =>1,
+	default	=> sub {
+	my $sql = qq{SELECT pr.project_id as id ,p.patient_id as patient_id FROM PolyprojectNGS.patient p,PolyprojectNGS.projects pr ,PolyprojectNGS.capture_systems cs  where cs.validation_db = ? and p.capture_id=cs.capture_id  and p.project_id = pr.project_id group by pr.project_id};
+	return $sql
+	},
+);
 has sql_get_similar_projects_by_analyse =>(
 is		=> 'ro',
 	
@@ -674,6 +696,20 @@ is		=> 'ro',
 	return $sql;#return $sql
 	},
 );
+
+has sql_get_similar_projects_id_by_analyse =>(
+is		=> 'ro',
+	
+	lazy =>1,
+	
+	default	=> sub {
+		my $sql = qq{
+				select distinct (pr.project_id) as id from PolyprojectNGS.projects as pr ,PolyprojectNGS.capture_systems as cs, PolyprojectNGS.patient as p where p.project_id = pr.project_id and pr.dejaVu=1 AND p.capture_id = cs.capture_id and cs .analyse=?  ;
+		};
+	return $sql;#return $sql
+	},
+);
+
 has sql_get_methods =>(
 	is		=> 'ro',
 	

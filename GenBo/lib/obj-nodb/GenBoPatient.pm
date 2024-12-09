@@ -503,7 +503,7 @@ has 'coverage_SRY' => (
 		$intSpan =  Set::IntSpan::Fast::XS->new(
 			"6868329-868330,6868401-6868402,6869803-6869804,2786855-2787699") if $self->project->version =~/HG38/;
 		my $zint = $intspan_capture->intersection($intSpan);
-
+		
 		return -1 if $zint->is_empty;
 		my $iter = $zint->iterate_runs();
 		my @tt;
@@ -527,7 +527,6 @@ has 'coverage_SRY' => (
 
 	},
 );
-
 has 'compute_sex' => (
 	is => 'rw',
 
@@ -535,7 +534,9 @@ has 'compute_sex' => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+
 		my $covm = $self->coverage_SRY();
+
 		return 1 if $covm > 30;
 		return -1 if $covm == -1;
 		my $covh = $self->coverage();

@@ -25,7 +25,7 @@ has chr_length =>(
 		my $self = shift;
 		my $h = decode_json($json_chr_length);
 		
-		die(Dumper $h) unless exists $h->{$self->genome}->{$self->chromosome_name};
+		die(Dumper $h ) unless exists $h->{$self->genome}->{$self->chromosome_name};
 		my $v = $h->{HG19}->{$self->{chromosome_name}};
 		$v = $h->{HG38}->{$self->{chromosome_name}} if $h->{HG38}->{$self->{chromosome_name}} > $v;
 		return  $v;
@@ -353,20 +353,44 @@ sub convert_rocksId_varId {
 	my ($self, $rocksId) = @_;
 	
 }
-
+sub decode_dejavu {
+	my ($self,$value) = @_;
+	return undef unless $value;
+	my @tab = split("!-x-!",$value);
+	#warn $value;
+	my $hash;
+	foreach my $z (@tab){
+		next unless $z;
+	#	warn $z." ***";
+		my ($p,$he,$ho,@a)=  unpack("w*",$z);
+	#	warn "ok";
+		$hash->{$p}->{he} = $he;
+		$hash->{$p}->{ho} = $ho;
+		
+		$hash->{$p}->{patients} = \@a;
+	} 
+	return $hash;
+}
 sub dejavu {
 	my ($self,$id) = @_;
 	if ($self->current) {
 		my $res =  $self->{current_db}->get_raw($id);
-		return $res ;#if $res;
+		return $self->decode_dejavu($res);
 	}
 	my ($pos,$a) =split("!",$id);
 	$pos *= 1;
-	
 	$self->{current_db} = $self->get_db($pos);
-	$self->{current_db}->rocks->compact_range();
-	return  $self->current->get_raw($id);
+#	my $iter = $self->current->rocks->new_iterator->seek_to_first;
+#	warn $id;
+#	while (my ($key, $value) = $iter->each) {
+#    	printf "%s : %s \n", $key,$id;
+#    	warn $id;
+#	}
+#	#$self->{current_db}->rocks->compact_range();
+	my $h = $self->current->get_raw($id);
+	return $self->decode_dejavu($h);
 }
+
 
 sub stringify_pos {
 	my ($self,$pos) = @_;
@@ -405,14 +429,9 @@ sub dejavu_interval {
 		elsif ($id =~ /\+/) { $this_pos++; }
 		$h_res->{$key}->{hg38} = $lTmp[0].'_'.int($this_pos).'_'.$lTmp[2].'_'.$lTmp[3];
 		
-#		warn 'hg19: '.$h_res->{$key}->{hg38};
-#		warn "---\n";
 	}
 	
-#	warn "\n\ngene start: ".$start;
-#	warn "gene end: ".$end;
-#	warn "\n\n";
-#	die;
+
 	return $h_res;
 }
 
