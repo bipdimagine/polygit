@@ -177,6 +177,8 @@ has hash_fastq_screen_patients_specie => (
 		return if not $h;
 		my $h2;
 		foreach my $patient (@{$self->getPatients()}) {
+			next unless exists $h->{$patient->name()};
+			next unless  $h->{$patient->name()};
 			next if not exists $h->{$patient->name()} or not -e $h->{$patient->name()};
 			open (F, $h->{$patient->name()});
 			my $specie_found = <F>;
