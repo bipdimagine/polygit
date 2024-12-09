@@ -2364,4 +2364,5 @@ sub getDejaVuInfosForDiagforVariant{
 	
 }
 
+
 1;
