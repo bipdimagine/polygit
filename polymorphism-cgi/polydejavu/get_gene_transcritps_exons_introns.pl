@@ -58,6 +58,8 @@ my $project_init = $buffer_init->newProjectCache( -name => 'NGS2024_7792');
 #my $project_init = $buffer_init->newProjectCache( -name => $project_init_name);
 my $genomeFai_init = $project_init->getGenomeFai();
 my $gene = $project_init->newGene($gene_id);
+$gene = $project_init->newGene(uc($gene_id)) if not $gene;
+$gene = $project_init->newGene(lc($gene_id)) if not $gene;
 
 my $html = qq{<div class="input-group" style="width:100%">};
 $html .= qq{<select class="form-control" id="form_transcripts_exons_introns" style="font-size:9px;height:auto;width:100%;">};

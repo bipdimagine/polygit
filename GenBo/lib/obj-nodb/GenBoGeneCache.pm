@@ -41,7 +41,7 @@ has hgmd => (
 	lazy => 1,
 	default => sub { 
 		my $self = shift;
-		
+		return if not $self->hash_annotation;
 		return $self->hash_annotation->{hgmd};
 	 }
 );

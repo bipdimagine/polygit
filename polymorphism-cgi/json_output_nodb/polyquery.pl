@@ -608,9 +608,6 @@ else {
 ########## [END] FILTRES DE POLYQUERY PAR CHROMOSOME ##########
 
 
-<<<<<<< HEAD
-
-
 sub launch_filters_bed {
 	my ($chr, $filter_bed) = @_;
 	return unless ($filter_bed);

@@ -1989,7 +1989,6 @@ sub changeAnnotationVersion {
 		$self->gencode_version( $lTmp[0] );
 		$self->public_database_version( $lTmp[1] );
 		$self->annotation_version($annot_version);
-		$self->buffer->public_data_version($lTmp[1]);
 		delete $self->{'directory'};
 		delete $self->{'annotation_public_path'};
 		delete $self->{'annotationsDirectory'};
@@ -1997,7 +1996,6 @@ sub changeAnnotationVersion {
 		delete $self->{'lmdbPli'};
 		delete $self->{'omimDirectory'};
 		delete $self->{'litePredictionMatrix'};
-		$self->buffer->queryHgmd();
 		return;
 	}
 	foreach my $history_version ( @{ $self->annotation_version_history() } ) {
@@ -4915,7 +4913,7 @@ has dejavuCNV => (
 	default => sub {
 		my $self = shift;
 		my $sqliteDir =   $self->DejaVuCNV_path;
-		warn $sqliteDir;
+#		warn $sqliteDir;
 		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
 		return  GenBoNoSqlDejaVuCNV->new( dir => $sqliteDir, mode => "r" );
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");

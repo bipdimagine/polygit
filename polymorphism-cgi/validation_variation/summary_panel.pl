@@ -1286,13 +1286,11 @@ sub table_mendelian {
 	my $out2;
 	my $disabled = "disabled";
 	my $btn      = "";
-	my $text =
-qq{  <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Mendelian Control };
+	my $text = qq{  <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Mendelian Control };
 	my $label;
 	if ( exists $greport->{fam} ) {
 		$btn = " btn-success";
-		$text =
-qq{ <img src="https://img.icons8.com/material-sharp/22/000000/genealogy.png">  Mendelian Control };
+		$text = qq{ <img src="https://img.icons8.com/material-sharp/22/000000/genealogy.png">  Mendelian Control };
 		$label    = qq{	<span class="badge badge-success">0</span>};
 		$disabled = "";
 	}
@@ -1301,23 +1299,20 @@ qq{ <img src="https://img.icons8.com/material-sharp/22/000000/genealogy.png">  M
 	$label = "";
 
 	if ( exists $greport->{warning} ) {
-		$text =
-qq{ <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Mendelian control };
+		$text = qq{ <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Mendelian control };
 		$btn     = " btn-warning";
 		$warning = $greport->{warning};
 		$label   = qq{	<span class="badge badge-warning">$warning</span>};
 	}
 	if ( exists $greport->{error} ) {
-		$text =
-qq{ <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Mendelian control };
+		$text = qq{ <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Mendelian control };
 		$btn   = " btn-danger";
 		$error = $greport->{error};
 		$label = qq{	<span class="badge badge-danger">$error</span>};
 	}
 	my $run_id = $run->id;
 
-	$out2 =
-qq{<div class="btn   btn-xs $btn " style="position:relative;bottom:1px;min-width:200px;border-color:black;" onClick='collapse_panel("control_mendel","$list_control_panels","$run_id")'  style="border : 1px"  $disabled>  $text $label </div>};
+	$out2 = qq{<div class="btn   btn-xs $btn " style="position:relative;bottom:1px;min-width:200px;border-color:black;" onClick='collapse_panel("control_mendel","$list_control_panels","$run_id")'  style="border : 1px"  $disabled>  $text $label </div>};
 
 	return ( $out2, $out );
 
@@ -1561,6 +1556,7 @@ sub children_box {
 	my ( $p, $r ) = @_;
 	my $class = "circle2M";
 	my $v     = $hmendel->{ $p->name };
+	
 	$class = "circle2F" if $p->sex ne 1;
 	my $type = "btn-success";
 	$v = "?" unless $v;
@@ -1597,6 +1593,7 @@ sub get_mendelian_statistics {
 	my $no = $project->noSqlQuality("r");
 	my $data    = $no->get( $project->name, "mendelian" );
 	my $hmendel = {};
+	
 	return $hmendel unless $data;
 
 	#warn scalar @{$data->{data}};
@@ -3366,6 +3363,8 @@ sub table_patients {
 #	}
 #	
 #	
+
+
 	
 	
 	#"Control $error" );

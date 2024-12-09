@@ -283,7 +283,7 @@ sub getIds_byCache_onlive {
 			shift(@lTmp);
 			$id = join('_', @lTmp);
 		}
-		my $var = $project->_newVariant($id);
+		my $var = $project->getVariant($id);
 		my @lGenesObj = @{$var->getGenes()};
 		my $hash;
 		$hash->{'name'} = $var->name();

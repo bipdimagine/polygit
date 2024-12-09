@@ -45,7 +45,7 @@ is		=> 'rw',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		if (-e  $self->rocks_cache_dir."/vector"){
+		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
 			return 1;
 		}
 		return undef;
@@ -1030,7 +1030,7 @@ sub myflushobjects {
 					
 					my $obj;
 #					warn $self->isRocks();
-					if ($self->isRocks() or $self->getVersion() =~ /HG38/) {
+					if ($self->isRocks() and $self->getVersion() =~ /HG38/) {
 						$obj = $self->rocksGenBo->genbo( $id );
 					}
 					else {

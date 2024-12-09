@@ -10,8 +10,6 @@ use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
 
 sub mendelian_statistics {
 	my ( $project, $fork ) = @_;
-	my $res;
-	$res  = {};
 	$fork = 1 unless $fork;
 
 	#$fork=1;
@@ -20,18 +18,14 @@ sub mendelian_statistics {
 	
 	$pm->run_on_finish(
 		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $hres ) =
-			  @_;
+			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,$hres) = @_;
 			unless ( defined($hres) or $exit_code > 0 ) {
 				print
 				  qq|No message received from child process $exit_code $pid!\n|;
 				warn Dumper $hres;
 				return;
 			}
-
-			#warn $hres->{data};
-
-			die( Dumper $res) unless $hres->{data};
+			die( Dumper $hres) unless $hres->{data};
 			push( @{ $results->{data} }, @{ $hres->{data} } );
 
 		}
@@ -45,6 +39,7 @@ sub mendelian_statistics {
 		$project->disconnect();
 		#next if $f->name ne "DOU";
 		$pid = $pm->start and next;
+		my $res;
 		
 		my $has_no_bam;
 		foreach my $patient (@{$f->getPatients()}) {
@@ -62,11 +57,12 @@ sub mendelian_statistics {
 
 		my $hres;
 		$hres->{data} = fast_plink( $project, $vcf, $f );
-
+		
 		#warn Dumper $hres->{data};
 		$pm->finish( 0, $hres );
 	}    #end for range range
 	$pm->wait_all_children();
+
 
 	#	die();
 	add_columns(
@@ -79,15 +75,8 @@ sub mendelian_statistics {
 	add_columns( $results,
 		[ "results", "familly", 'sample', "sex", "SRY", "plink_sex" ] )
 	  unless $project->isFamilial;
+	  
 	return $results;
-}
-
-sub mendelian_statistics2 {
-	my ($project) = @_;
-
-	my $vcf = concatVcf($project);
-	warn ":::>" . $vcf;
-	return fast_plink( $project, $vcf );
 }
 
 sub concatVcf {
@@ -118,7 +107,6 @@ sub concatVcf {
 
 	foreach my $p ( @{ $fam->getMembers } ) {
 		my $methods = $p->getCallingMethods();
-		warn Dumper @$methods;
 		my $m;
 		if ( scalar(@$methods) == 1 ) {
 			($m) = $methods->[0];
@@ -357,8 +345,7 @@ sub fast_plink {
 	close TPED;
 	warn $tped_file;
 	if ( @{ $fam->getParents } ) {
-		my $cmd2 =
-"$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
+		my $cmd2 = "$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
 
 		#	warn $cmd2;
 		my @log   = `$cmd2`;
@@ -440,6 +427,7 @@ sub add_columns {
 	foreach my $name (@$names) {
 		push( @{ $h->{columns} }, { field => $name, title => $name } );
 	}
+	
 }
 
 sub transform_array_to_json_like {
@@ -617,104 +605,9 @@ sub statistics_variations {
 
 }
 
-sub statistics_variations2 {
-	my ($project) = @_;
-	my $patients = $project->getPatients();
-	my $resume;
-	my $hnb;
-	my $sum;
-
-	foreach my $p (@$patients) {
-		$hnb->{ho}->{ $p->name }     = $p->countHomozygote();
-		$hnb->{he}->{ $p->name }     = $p->countHeterozygote();
-		$hnb->{snp}->{ $p->name }    = $p->countSubstitutions();
-		$hnb->{indel}->{ $p->name }  = $p->countIndels();
-		$hnb->{total}->{ $p->name }  = $p->countVariations();
-		$hnb->{public}->{ $p->name } = $p->countPublicVariations();
-		$sum->{snp}   += $hnb->{snp}->{ $p->name };
-		$sum->{indel} += $hnb->{indel}->{ $p->name };
-
-		#warn $p->countPublicVariations()." ".$hnb->{total}->{$p->name};
-	}
-	push(
-		@{ $resume->{header} },
-		( "patients", "snp", "indel", "%he", "%public" )
-	);
-	my $nbp = scalar( @{$patients} );
-	my $mean;
-	$mean->{indel} = int( $sum->{indel} / $nbp );
-
-	$mean->{snp} = int( $sum->{snp} / $nbp );
-
-	foreach my $p (@$patients) {
-		my $line2;
-		push( @$line2, { text => $p->name, type => "default" } );
-		my $color = "success";
-
-		#my $d = $hnb->{snp}->{$p->name}/abs();
-		if (   $hnb->{snp}->{ $p->name } > $mean->{snp} * 1.25
-			or $hnb->{snp}->{ $p->name } < $mean->{snp} * 0.75 )
-		{
-			$color = "warning";
-		}
-		if (   $hnb->{snp}->{ $p->name } > $mean->{snp} * 1.5
-			or $hnb->{snp}->{ $p->name } < $mean->{snp} * 0.5 )
-		{
-			$color = "danger";
-		}
-		push( @$line2,
-			{ text => $hnb->{snp}->{ $p->name }, type => "$color" } );
-		$color = "success";
-
-		#my $d = $hnb->{snp}->{$p->name}/abs();
-		if (   $hnb->{indel}->{ $p->name } > $mean->{indel} * 1.25
-			or $hnb->{indel}->{ $p->name } < $mean->{indel} * 0.75 )
-		{
-			$color = "warning";
-		}
-		if (   $hnb->{indel}->{ $p->name } > $mean->{indel} * 1.5
-			or $hnb->{indel}->{ $p->name } < $mean->{indel} * 0.5 )
-		{
-			$color = "danger";
-		}
-		push( @$line2,
-			{ text => $hnb->{indel}->{ $p->name }, type => "$color" } );
-		my $z = int(
-			( $hnb->{he}->{ $p->name } / $hnb->{total}->{ $p->name } ) * 100 );
-		my $type = "success";
-		if ( $z < 60 ) {
-			$type = "success";
-		}
-		elsif ( $z <= 50 ) {
-			$type = "danger";
-		}
-		push( @$line2, { text => "$z%", type => "$type" } );
-
-		my $p =
-		  int( ( $hnb->{public}->{ $p->name } / $hnb->{total}->{ $p->name } ) *
-			  100 );
-		if ( $p >= 90 ) {
-			push( @$line2, { text => "$p%", type => "success" } );
-		}
-		elsif ( $p >= 85 ) {
-			push( @$line2, { text => "$p%", type => "success" } );
-		}
-		elsif ( $p >= 75 ) {
-			push( @$line2, { text => "$p%", type => "warning" } );
-		}
-		else {
-			push( @$line2, { text => "$p%", type => "danger" } );
-		}
-
-		push( @{ $resume->{lines} }, $line2 );
-	}
-	return ( transform_array_to_json_like($resume) );
-
-}
 
 sub statistics_variations2 {
 	my ($project) = @_;
-	die();
 	my $patients = $project->getPatients();
 	my $resume;
 	my $hnb;
@@ -745,15 +638,15 @@ sub statistics_variations2 {
 		@{ $resume->{header} },
 		( "patients", "snp", "indel", "%he", "%public" )
 	);
-	foreach my $p (@$patients) {
+	foreach my $pat (@$patients) {
 		my $line2;
-		push( @$line2, { text => $p->name, type => "default" } );
+		push( @$line2, { text => $pat->name, type => "default" } );
 		push( @$line2,
-			{ text => $hnb->{snp}->{ $p->name }, type => "default" } );
+			{ text => $hnb->{snp}->{ $pat->name }, type => "default" } );
 		push( @$line2,
-			{ text => $hnb->{indel}->{ $p->name }, type => "default" } );
+			{ text => $hnb->{indel}->{ $pat->name }, type => "default" } );
 		my $z = int(
-			( $hnb->{he}->{ $p->name } / $hnb->{total}->{ $p->name } ) * 100 );
+			( $hnb->{he}->{ $pat->name } / $hnb->{total}->{ $pat->name } ) * 100 );
 		my $type = "success";
 		if ( $z < 60 ) {
 			$type = "success";
@@ -764,7 +657,7 @@ sub statistics_variations2 {
 		push( @$line2, { text => "$z%", type => "$type" } );
 
 		my $p =
-		  int( ( $hnb->{public}->{ $p->name } / $hnb->{snp}->{ $p->name } ) *
+		  int( ( $hnb->{public}->{ $pat->name } / $hnb->{snp}->{ $pat->name } ) *
 			  100 );
 		if ( $p > 90 ) {
 			push( @$line2, { text => "$p%", type => "success" } );
@@ -1328,7 +1221,7 @@ sub coverage_stats {
 	$limit_cov->{warning} = $mean_cov * 0.75;
 
 	my @header = ("patient");
-	$resume->{header} = [ "patients", "mean", "15X", "30X", "100X" ];
+	$resume->{header} = [ "patients", "mean", "15x", "30x", "100x" ];
 
 	# my $it = natatime , @tchromosomes;
 
@@ -1338,25 +1231,25 @@ sub coverage_stats {
 		my $hline;
 		push( @$hline, { text => $patients->[$i]->name, type => "default" } );
 		my $cov   = $patients->[$i]->coverage();
+		
 		my $color = "success";
 		$color = "warning" if $cov->{mean} < $limit_cov->{warning};
 		$color = "danger"  if $cov->{mean} < $limit_cov->{danger};
-
 		push( @$hline, { text => $cov->{mean}, type => "$color" } );
+
 		$color = "success";
 		$color = "warning" if $cov->{"15x"} < 95;
 		$color = "danger" if $cov->{"15x"} < 85;
-
 		push( @$hline, { text => $cov->{"15x"}, type => "$color" } );
+
 		$color = "success";
 		$color = "warning" if $cov->{"30x"} < 92;
 		$color = "danger" if $cov->{"30x"} < 80;
-
 		push( @$hline, { text => $cov->{"30x"}, type => "$color" } );
-		$color = "success";
-		$color = "warning" if $cov->{"30x"} < 90;
-		$color = "danger" if $cov->{"30x"} < 75;
 
+		$color = "success";
+		$color = "warning" if $cov->{"100x"} < 90;
+		$color = "danger" if $cov->{"100x"} < 75;
 		push( @$hline, { text => $cov->{"100x"}, type => "$color" } );
 		push( @{ $resume->{lines} }, $hline );
 	}
@@ -1410,7 +1303,7 @@ sub bam_stats {
 		  ->karyotypeId <=> $project->getChromosome($b)->karyotypeId
 	} keys %$bam_stats;
 	$resume->{header} =
-	  [ "patients", "mean", "15X", "30X", "100X", @tchromosomes ];
+	  [ "patients", "mean", "15x", "30x", "100x", @tchromosomes ];
 
 	# my $it = natatime , @tchromosomes;
 
@@ -1442,8 +1335,8 @@ sub bam_stats {
 		$color = "warning" if $cov->{"30x"} < 92;
 		push( @$hline, { text => $cov->{"30x"}, type => "$color" } );
 		$color = "success";
-		$color = "danger" if $cov->{"30x"} < 75;
-		$color = "warning" if $cov->{"30x"} < 90;
+		$color = "danger" if $cov->{"100x"} < 75;
+		$color = "warning" if $cov->{"100x"} < 90;
 		push( @$hline, { text => $cov->{"100x"}, type => "$color" } );
 
 		foreach my $chr (@tchromosomes) {
@@ -1532,8 +1425,7 @@ sub coverage_transcripts_patient {
 	push( @$cols, { text => $patient->name, type => "default" } );
 	my $tsum = 0;
 	foreach my $t (@$transcripts) {
-		my $toto = $t->getGene()->get_coverage($patient)
-		  ->coverage_intspan( $t->getSpanCoding );
+		my $toto = $t->getGene()->get_coverage($patient)->coverage_intspan( $t->getSpanCoding );
 		my $n    = int( $toto->{mean} );
 		my $min  = $toto->{min};
 		my $type = "success";
