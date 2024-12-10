@@ -809,6 +809,8 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	}
 	##
 	my $res_muc = $p->kestrel();
+	$res_muc->[0]->[0] = 1 unless $res_muc;
+	warn $project->getVariationsDir("vntyper") . "/muc1/";
 	unless ( -e $project->getVariationsDir("vntyper") . "/muc1/" ) {
 
 	}
@@ -1920,7 +1922,6 @@ sub construct_identito_vigilence {
 	return ( "", 0 ) unless @iv;
 
 	unless ( $p->identity_vigilance_vcf() ) {
-		die();
 		system("$Bin/../../polypipeline/scripts/scripts_pipeline/identito_vigilence.pl -project="
 			  . $project->name
 			  . ">/dev/null 2>/dev/null" );
@@ -2010,7 +2011,7 @@ sub table_sex {
 <div class="table1">
 <ul>
 	 };
-
+my $t = time;
 	foreach my $p ( sort { $a->name cmp $b->name } @{ $run->getPatients } ) {
 		print ".";
 		next if $p->alignmentMethod() eq 'no_align';
@@ -2071,7 +2072,7 @@ qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2p
 	  	};
 
 	}
-
+warn abs(time -$t);
 	$out .= qq{	  	
 </ul>
 </div>
@@ -3343,24 +3344,23 @@ sub table_patients {
 	#####################
 	my $control ={};
 	my $error = 0;
-#	my $has_identito;
+	my $has_identito;
 	foreach my $p ( @{$project->getPatients} ) {
-		warn  $p->identity_vigilance;
 		$error += column_control($p,$control);
-#		$has_identito = 1 if $p->identity_vigilance;
+		$has_identito = 1 if $p->identity_vigilance;
 	}
-#	my $ccolor="";
-#	$ccolor="background-color:red" if $error > 0;
+	my $ccolor="";
+	$ccolor="background-color:red" if $error > 0;
 #	
-#	foreach my $p (@title) {
-#		if ($p eq "control"){
-#			#https://img.icons8.com/ios/50/checked-identification-documents.png
-#			#https://img.icons8.com/ios-filled/50/checked-identification-documents--v1.png
-#			#<img width="32" height="32" src="https://img.icons8.com/windows/32/checked-identification-documents.png" alt="checked-identification-documents"/>
-#			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control }) if $has_identito;
-#		}
-#		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
-#	}
+	foreach my $p (@title) {
+		if ($p eq "control"){
+			#https://img.icons8.com/ios/50/checked-identification-documents.png
+			#https://img.icons8.com/ios-filled/50/checked-identification-documents--v1.png
+			#<img width="32" height="32" src="https://img.icons8.com/windows/32/checked-identification-documents.png" alt="checked-identification-documents"/>
+			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control }) if $has_identito;
+		}
+		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
+	}
 #	
 #	
 
