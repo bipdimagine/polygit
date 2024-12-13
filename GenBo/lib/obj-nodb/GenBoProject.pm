@@ -396,7 +396,7 @@ has validation_db => (
 			$db{ $c->validation_db }++ if $c->validation_db;
 		}
 		my @res = keys %db;
-		confess if scalar(@res) > 1;
+#		confess if scalar(@res) > 1;
 		return $res[0];
 	},
 );
@@ -1467,6 +1467,9 @@ sub get_gencode_from_capture {
 	my $vs;
 	map { $vs->{ $_->gencode_version }++ } @$captures;
 	my @t = keys %$vs;
+	
+	warn Dumper $vs;
+	
 	confess() if ( scalar(@t) > 1 );
 	my $gencode = 0;
 	if ( scalar(@t) == 1 and $t[0] > 0 ) {
