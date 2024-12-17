@@ -2286,7 +2286,7 @@ sub getDejaVuInfosForDiagforVariant{
 	my $chr = $self;
 	
 #	my $in_this_run_patients =  $self->project->{in_this_run_patients};
-	my $in_this_run_patients =  $self->project->{in_this_run_patients};
+	my $in_this_run_patients =  $self->project->in_this_run_patients;
 #	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
 	#my $no1 = $self->project->lite_deja_vu2();
 	my $no = $self->rocks_dejavu();
@@ -2309,27 +2309,22 @@ sub getDejaVuInfosForDiagforVariant{
 	$res->{other_patients_ho} = 0;
 	$res->{exome_patients_ho} = 0;
 	$res->{similar_patients_ho} = 0;
-	$res->{total_in_this_run_patients} = 0;
+	$res->{total_in_this_run_patients} = $in_this_run_patients->{nb_patients};
+	
 	if ($res->{total_in_this_run_patients} == 0 ){
 		$res->{total_in_this_run_patients} = scalar(@{$self->project->getPatients});
 	}
-	$res->{in_this_run_patients} = 0;
-	$res->{in_this_run_patients} = scalar(@{$v->getPatients});
 	
 	return $res unless ($h);
 	
 	
 	
 	
-	
 	foreach my $pid (keys %$h){
-		
-		my $nho = $h->{$pid}->{ho};
-		my $nhe = $h->{$pid}->{he};
-		my $patients = $h->{$pid}->{patients};
-		
+			my $patients = $h->{$pid}->{patients};
 		if (exists $in_this_run_patients->{$pid}){
-			$res->{in_this_run_patients} += scalar(keys %{$in_this_run_patients->{$pid}} );
+			#$res->{in_this_run_patients} += scalar(keys %{$in_this_run_patients->{$pid}} );
+			
 			foreach my $s (@$patients){
 				if (exists $in_this_run_patients->{$pid}->{$s}){
 					$res->{in_this_run_patients} ++;
@@ -2337,6 +2332,12 @@ sub getDejaVuInfosForDiagforVariant{
 			}
 		}
 		next if  $self->project->id == $pid;
+		next unless $h->{$pid}->{he};
+		my $nho = $h->{$pid}->{ho};
+		my $nhe = $h->{$pid}->{he};
+	
+		
+	
 		#IN EXOME 	
 		if (exists $exomes->{$pid}){
 			$res->{exome_projects}  ++; 

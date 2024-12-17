@@ -48,19 +48,20 @@ use Compress::Snappy;
 my $fork = 10;
 my $project_name;
 my $chr;
+my $version;
 GetOptions(
 	'chr=s'		   => \$chr,
 	'fork=s'		   => \$fork,
+	'version=s'   => \$version,
 );
 my $buffer = new GBuffer;
-my $version ="HG38";
+die ("version ?") unless $version;
 my $dir38_sereal = $buffer->config->{deja_vu}->{path_rocks}."/".$version. "/".$buffer->config->{deja_vu}->{variations}."/projects.tar/";
 #$dir38 = "/data-beegfs/tmp/projects/";
 
-my $dir_final="/data-beegfs/tmp/rocks";
+my $dir_final= $buffer->deja_vu_public_dir($version);
 
-
-my $rg38 = GenBoNoSqlRocksGenome->new(chunk_size=>2_500_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>"HG38",pack=>"",description=>[]);
+my $rg38 = GenBoNoSqlRocksGenome->new(chunk_size=>2_500_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);
 $rg38->regions();
  my $pm = new Parallel::ForkManager($fork);
  

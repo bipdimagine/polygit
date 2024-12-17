@@ -55,7 +55,7 @@ has compression => (
 	is      => 'rw',
 	default => sub {
 		
-		return "lz4hc";
+		return "bzip2";
 
 	}
 );

@@ -379,13 +379,21 @@ sub dejavu {
 	}
 	my ($pos,$a) =split("!",$id);
 	$pos *= 1;
+	warn $pos;
 	$self->{current_db} = $self->get_db($pos);
+	warn $self->{current_db};
+#	warn $self->{current_db};
 #	my $iter = $self->current->rocks->new_iterator->seek_to_first;
-#	warn $id;
+###	warn $id;
+#my $x;
 #	while (my ($key, $value) = $iter->each) {
-#    	printf "%s : %s \n", $key,$id;
-#    	warn $id;
+#		$x ++;
+#		next unless $key =~ /0082461765/;
+#    	printf "%s  \n", $key;
+#    	#warn Dumper($self->decode_dejavu($value));
+#    	#warn $id;
 #	}
+#	die($x);
 #	#$self->{current_db}->rocks->compact_range();
 	my $h = $self->current->get_raw($id);
 	return $self->decode_dejavu($h);
@@ -403,35 +411,37 @@ sub dejavu_hg19_id {
 	return $var_id_hg19;
 }
 
+sub get_dbs_interval {
+	my ($self,$start,$end) = @_;
+	my $results = $self->tree_db->fetch($start,$end);
+	foreach my $db (@$results){
+		my ($a,$b,$c)  = split(/\./,$db->name);
+		$db->{start} = $b;
+	}
+	return $results;
+}
+
+
 sub dejavu_interval {
 	my ($self, $start, $end) = @_;
+	
 	my $pos = $self->stringify_pos($start);
-	$self->{current_db} = $self->get_db($pos);
-	$self->{current_db}->start_iter($pos);
+	my $dbs = $self->get_dbs_interval($start,$end);
 	my $h_res;
-	my $continue = 1;
-	while ($continue) {
-		my ($key, $value) = $self->current->next_key_value();
-		my ($this_pos, $id) = split('!', $key);
-		next if int($this_pos) < $start;
-		if ($this_pos > $end) {
-			$continue = undef;
-			last;
+	foreach my $db (sort{$a->{start} <=> $b->{start}} @$dbs){
+		warn $db->{start};
+		$self->{current_db} = $db;
+		my $iter = $db->rocks->new_iterator->seek($pos);
+		while (my ($key, $value) = $iter->each) {
+			my ($this_pos, $id) = split('!', $key);
+			next if int($this_pos) < $start;
+			if ($this_pos > $end) {
+				last;
+			}
+			$h_res->{$key} = $self->decode_dejavu($value);
 		}
-		my $var_id_hg19 = $self->dejavu_hg19_id($key);
-		
-#		warn "\n---";
-#		warn 'pos: '.$key;
-		
-		my @lTmp = split('_', $var_id_hg19);
-		$h_res->{$key}->{hg19} = $var_id_hg19;
-		if ($id =~ /[0-9]+/) { $this_pos++; }
-		elsif ($id =~ /\+/) { $this_pos++; }
-		$h_res->{$key}->{hg38} = $lTmp[0].'_'.int($this_pos).'_'.$lTmp[2].'_'.$lTmp[3];
-		
 	}
 	
-
 	return $h_res;
 }
 

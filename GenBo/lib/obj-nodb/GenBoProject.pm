@@ -6068,9 +6068,10 @@ has in_this_run_patients => (
 		my $patients = $run->getAllPatientsInfos();
 			foreach my $p (@$patients){
 				$inthisrunp->{$p->{project_id} }->{$p->{id}} ++;
+				$total ++;
 			}
 		}
-		#$res->{total} = $total;
+		$inthisrunp->{nb_patients} = $total;
 		return $inthisrunp;
 	},
 );
@@ -6155,6 +6156,7 @@ has deja_vu_lite_dir => (
 	default => sub {
 		my $self = shift;
 		#return "/data-isilon/dejavu/";
+		confess();
 		my $dir = $self->deja_vu_public_dir();
 		#TODO: ajouter makedir si createion automatique
 		#return $self->makedir($dir);
@@ -6180,7 +6182,7 @@ has deja_vu_rocks_dir => (
 		my $self = shift;
 
 		#return "/data-isilon/dejavu/";
-		my $dir = $self->deja_vu_public_dir()."/rocks.new/";
+		my $dir =$self->buffer->deja_vu_public_dir($self->genome_version_generic)."/rocks/";
 		return $self->makedir($dir);
 
 	},
@@ -6188,14 +6190,17 @@ has deja_vu_rocks_dir => (
 
 
 sub deja_vu_public_dir {
-	my ($self,$version)= @_;
+	my ($self,$version,$type)= @_;
+	$type = "variations" unless $type;
 	$version = $self->genome_version_generic unless $version;
-	return $self->buffer->deja_vu_public_dir($version);
+	return $self->buffer->deja_vu_public_dir($version,$type);
 }
 
 sub deja_vu_rocks_project_dir {
-	my ($self,$version)= @_;
-	my $root = $self->deja_vu_public_dir($version)."/projects.tar";
+	my ($self,$version,$type)= @_;
+	$type = "variations" unless $type;
+	#return "/data-beegfs/tmp/projects.tar" if $version eq "HG19";
+	my $root =  $self->buffer->deja_vu_project_dir($version,$type);
 	return $root;
 }
 

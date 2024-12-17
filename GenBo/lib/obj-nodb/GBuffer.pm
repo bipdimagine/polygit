@@ -295,14 +295,30 @@ has gencode => (
 );	
 
 sub deja_vu_public_dir {
-	my ($self,$version)= @_;
+	my ($self,$version,$type)= @_;
 	confess() unless $version;
-	return $self->{dj_pub_dir}->{$version} if exists $self->{dj_pub_dir}->{$version};
-	 $self->{dj_pub_dir}->{$version} =  $self->config->{deja_vu}->{path_rocks}."/".$version . "/".$self->config->{deja_vu}->{variations} if (exists $self->config->{deja_vu}->{path});
-	return $self->{dj_pub_dir}->{$version}  if -e $self->{dj_pub_dir}->{$version};
-	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_pub_dir}->{$version} );
+	$type ="variations" unless $type;
+	return $self->{dj_pub_dir}->{$version}->{$type} if exists $self->{dj_pub_dir}->{$version}->{$type};
+	 $self->{dj_pub_dir}->{$version}->{$type} =  $self->config->{deja_vu}->{path_rocks}."/".$version . "/".$self->config->{deja_vu}->{$type} if (exists $self->config->{deja_vu}->{path});
+	return $self->{dj_pub_dir}->{$version}->{$type}  if -e $self->{dj_pub_dir}->{$version}->{$type};
+	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_pub_dir}->{$version}->{$type} );
+}
+sub deja_vu_project_dir {
+	my ($self,$version,$type)= @_;
+	confess() unless $version;
+	$type ="variations" unless $type;
+	return $self->{dj_prj_dir}->{$version}->{$type} if exists $self->{dj_prj_dir}->{$version}->{$type};
+	 $self->{dj_prj_dir}->{$version}->{$type} =  $self->config->{deja_vu}->{path_tar}."/".$version . "/".$self->config->{deja_vu}->{$type}."/projects.tar/" if (exists $self->config->{deja_vu}->{path});
+	return $self->{dj_prj_dir}->{$version}->{$type}  if -e $self->{dj_prj_dir}->{$version}->{$type};
+	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_prj_dir}->{$version}->{$type} );
 }
 
+sub deja_vu_project_sqlite_dir {
+		my ($self,$version,$type)= @_;
+			confess() unless $version;
+		$type ="variations" unless $type;
+		return $self->config->{deja_vu}->{path_tar}."/".$version . "/".$self->config->{deja_vu}->{$type}."/projects/";
+}
 sub getNeedlemanWunsch {
 	my ($self,$opt,$type) = @_;
 	$type ++;

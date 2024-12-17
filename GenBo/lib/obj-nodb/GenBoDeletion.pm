@@ -66,7 +66,7 @@ has rocksdb_id => (
 	lazy=>1,
 	default => sub {
 		my $self = shift;
-		return sprintf("%010d", $self->start-1)."!".$self->length();
+		return sprintf("%010d", $self->start)."!".$self->length();
 	},
 	
 );

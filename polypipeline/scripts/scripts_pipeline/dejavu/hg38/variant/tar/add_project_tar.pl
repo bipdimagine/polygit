@@ -25,7 +25,7 @@ use Storable qw/thaw freeze/;
 use GenBoNoSqlRocksGenome;
 use GenBoNoSqlRocksAnnotation;
 use File::Slurp qw(write_file);
-
+use List::Util qw/shuffle/;
 use lib "$RealBin/../../../utility";
 use liftOverRegions;
 use chunks;
@@ -47,23 +47,72 @@ GetOptions(
 my $buffer = new GBuffer;
 
 my $project = $buffer->newProjectCache( -name => "$project_name");
+my $f2 = "/tmp/".$project->name.".lite";
+
+$SIG{INT} = sub { cleanup_and_exit() };  # CTRL+C
+$SIG{TERM} = sub { cleanup_and_exit() };
+sub cleanup_and_exit {
+    unlink $f2 if -e $f2; # Supprime le fichier si il existe
+    exit 0;
+}
 my $hp;
 
 my $nb;
+my $exists_current = chunks::exists_project($project,$project->current_genome_version);
+my $exists_lift  = chunks::exists_project($project,$project->lift_genome_version);
+warn "ok ".$project->lift_genome_version;
+#exit(0) if $exists_lift;
 
-my ($chunks,$tree) = chunks::chunks_and_tree($project,$project->current_genome_version);
-my ($chunks_lift,$tree_lift) = chunks::chunks_and_tree($project,$project->lift_genome_version);
+#exit(0) if chunks::exists_project($project,$project->current_genome_version);
 
-warn $project->deja_vu_rocks_project_dir($project->current_genome_version);
-warn $project->deja_vu_rocks_project_dir($project->lift_genome_version);
+#exit(0) if 	$project->current_genome_version ne "HG19";
  my $pm = new Parallel::ForkManager($fork);
- 
+ warn chunks::exists_project($project,$project->lift_genome_version);
  $project->getPatients();
  
 my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome_version);  
 my $data_lift;	
 $data_lift = HG38_HG19() if $project->current_genome_version eq "HG38";
 $data_lift = HG19_HG38() if $project->current_genome_version eq "HG19"; ;
+
+
+my ($chunks_lift,$tree_lift) = chunks::chunks_and_tree($project,$project->lift_genome_version);
+#### save liftover
+exit(0) unless $chunks_lift;
+ my $pm2 = new Parallel::ForkManager(5);
+		my $ht = time;
+	 
+		foreach my $chr ( keys %$data_lift){
+			next unless $project->isChromosomeName($chr);
+			my $pid = $pm2->start and next;
+			warn $chr;
+			my $chr_obj = $project->getChromosome($chr);
+			my $chr_name = $chr_obj->name;
+			my $current_regions = $chunks_lift->{$chr_name}->[0];
+			
+			foreach my $vhh (sort {$a->{LIFT}->{start} <=> $b->{LIFT}->{start}} @{$data_lift->{$chr}}) {
+				
+				if ($vhh->{LIFT}->{start} >= $current_regions->{end}){
+					my $oid = $current_regions->{id};
+					 $current_regions = chunks::get_region($tree_lift->{$chr_name},$vhh->{LIFT}->{start});
+					 die($oid." : : ". $vhh->{LIFT}->{start}." :: ".$current_regions->{id} ) if $oid eq $current_regions->{id};
+				}
+				
+				my $genoboid = $vhh->{LIFT}->{chromosome}."_".$vhh->{LIFT}->{start}."_".$vhh->{ref}."_".$vhh->{alt};
+				my $rocksid = chunks::return_rocks_id_from_genbo_id($genoboid);
+				push(@{$current_regions->{variants}},{id=>$rocksid,value=>$vhh->{value}});
+			}
+			chunks::save_chromosome_chunks($project,$chr_obj,$chunks_lift->{$chr_name},$project->lift_genome_version);
+			$pm2->finish( 0, {data=>[],jobid=>0,snps=>[]} );
+ 			}
+		 $pm2->wait_all_children();	
+		chunks::save_final($project,$project->lift_genome_version);	
+	
+
+
+
+
+
 
 sub HG38_HG19 {
 
@@ -84,10 +133,12 @@ my $process;
 	}
 );
 
-
+my ($chunks,$tree) = chunks::chunks_and_tree($project,$project->current_genome_version);
 
 my $jobid = time;
-foreach my $chr (@{$project->getChromosomes}){		
+my @chromosomes = shuffle (@{$project->getChromosomes});
+
+foreach my $chr (@chromosomes){		
 	#my $list =listVariants($chr);
 	#$project->setListVariants($list);
 	 $jobid ++;
@@ -127,29 +178,55 @@ foreach my $chr (@{$project->getChromosomes}){
 	
 	chunks::save_chromosome_chunks($project,$chr,$chunks->{$chr->name},$project->current_genome_version);
 	$pm->finish( 0, {data=>[],jobid=>$jobid,snps=>$snps} );
-	last;
  }
  $pm->wait_all_children();
  
+ return (undef,undef) if chunks::exists_project($project,$project->lift_genome_version);	
 chunks::save_final($project,$project->current_genome_version);
 return $lift->liftOver_regions();;
 }
 
 sub HG19_HG38 {
+	 my $pm = new Parallel::ForkManager($fork);
+	 my $process;
+		 $pm->run_on_finish(
+		sub {
+			my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $hRes) = @_;
+		
+			unless (defined($hRes) or $exit_code > 0) {
+				print qq|No message received from child process $exit_code $pid!\n|;
+				return;
+			}
+			delete $process->{$hRes->{jobid}};
+			foreach my $s (@{$hRes->{snps}}){
+				$lift->add_region($s);
+			}
+
+		}
+		);
+		my $dir1 = $buffer->deja_vu_project_sqlite_dir("HG19","variations");
 	
-	
-		my $dir_hg19_dv = "/data-isilon/DejaVu/HG19/variations/projects/";
-		my $no = GenBoNoSql->new( dir => $dir_hg19_dv, mode => "r" );
+		my $f1 = "/data-isilon/DejaVu/HG19/variations/projects/".$project->name.".lite";
+
+		my $no = GenBoNoSql->new( dir => $dir1 , mode => "r" );
 		my $patients = $no->get($project_name, "patients");
 		my $hpat ={};
 		my $lt = time;
+		my ($chunks,$tree) = chunks::chunks_and_tree($project,$project->current_genome_version);
 		foreach my $name (keys %$patients){
 			$hpat->{$patients->{$name}} = $project->getPatient($name)->id;
 			}
 		$nb ++;
-		foreach my $chr (@{$project->getChromosomes}){
-			
+		my @chromosomes = shuffle( @{$project->getChromosomes});
+		my $jobid = time;
+		foreach my $chr (@chromosomes){
+			 $jobid ++;
+	 		$process->{$jobid};
+			my $pid = $pm->start and next;
+			my $snps;
+			warn $chr->name;
 			my $h_hg19 = $no->get($project_name, $chr->name);
+			my $variations;
 			foreach my $vid (keys %{$h_hg19}){
 				my $vh;
 				my ($c,$p,$a,$b) = split("_",$vid);
@@ -186,51 +263,41 @@ sub HG19_HG38 {
 				$vhh->{ho} = scalar(@ho);
 				$vhh->{ref} = $a;
 				$vhh->{alt} = $b;
-				$lift->add_region($vhh);
-				#push(@$vh,$vhh)
+				push(@$variations,$vhh);
+				push(@$snps,$vhh);
 			}
-			
-		}
+			my $current_regions = $chunks->{$chr->name}->[0];
+			warn "save";
+			my $t =time;
+			my @vorder = sort{$a->{start} <=> $b->{start}} @$variations;
+			warn "order ".abs(time-$t);
+			$t =time;
+				foreach my $vhh (@vorder){
+					if ($vhh->{start} >= $current_regions->{end}){
+						my $oid = $current_regions->{id};
+					 	$current_regions = chunks::get_region($tree->{$chr->name},$vhh->{start});
+					 	die($oid." : : ". $vhh->{LIFT}->{start}." :: ".$current_regions->{id} ) if $oid eq $current_regions->{id};
+					}
+					my $genoboid = $chr->name."_".$vhh->{start}."_".$vhh->{ref}."_".$vhh->{alt};
+					my $rocksid = chunks::return_rocks_id_from_genbo_id($genoboid);
+					push(@{$current_regions->{variants}},{id=>$rocksid,value=>$vhh->{value}});
+					
+				}
+			warn "before save :".abs(time-$t);		
+				$t = time;
+				chunks::save_chromosome_chunks($project,$chr,$chunks->{$chr->name},$project->current_genome_version);		
+				warn "after save :".abs(time-$t);	
+				$pm->finish( 0, {data=>[],jobid=>$jobid,snps=>$snps} );
+				
+		}#END CHROMOSOME
 		$no->close();
+		warn "end";
+		 $pm->wait_all_children();
+		chunks::save_final($project,$project->current_genome_version);	
 		return $lift->liftOver_regions();
 	
 }
 
-
-
-
-#### save liftover
-warn "LIFT  !!!!  ";
-	my $dir19;
-	
-		my $ht = time;
-		foreach my $chr ( keys %$data_lift){
-			next unless $project->isChromosomeName($chr);
-			my $chr_obj = $project->getChromosome($chr);
-			my $chr_name = $chr_obj->name;
-			my $current_regions = $chunks_lift->{$chr_name}->[0];
-			
-			foreach my $vhh (sort {$a->{LIFT}->{start} <=> $b->{LIFT}->{start}} @{$data_lift->{$chr}}) {
-				
-				if ($vhh->{LIFT}->{start} >= $current_regions->{end}){
-					my $oid = $current_regions->{id};
-					 $current_regions = chunks::get_region($tree_lift->{$chr_name},$vhh->{LIFT}->{start});
-					 die($oid." : : ". $vhh->{LIFT}->{start}." :: ".$current_regions->{id} ) if $oid eq $current_regions->{id};
-				}
-				#	$nb1 ++;
-				#	warn "$nb1 " if $nb1 % 500000 == 0;
-				
-				my $genoboid = $vhh->{LIFT}->{chromosome}."_".$vhh->{LIFT}->{start}."_".$vhh->{ref}."_".$vhh->{alt};
-				my $rocksid = chunks::return_rocks_id_from_genbo_id($genoboid);
-				push(@{$current_regions->{variants}},{id=>$rocksid,value=>$vhh->{value}});
-			}
-			chunks::save_chromosome_chunks($project,$chr_obj,$chunks->{$chr_name},$project->lift_genome_version);
-			
-			}#end chromosome
-			
-			
-		chunks::save_final($project,$project->lift_genome_version);	
-	
 
 
 exit(0);
@@ -248,7 +315,9 @@ sub decompress1{
 	warn $a." ".$b." ".join(";",@decompressed_list1)." ++ ".join(";",@decompressed_list2);
 }
 
-
+END {
+    unlink $f2 if -e $f2; # Supprime le fichier si il existe
+}
 
 
 

@@ -190,11 +190,10 @@ sub put_rocks_with_lock_file {
 
 
 sub add_to_tar_with_lock_file {
-    my ($dir_tar,$region_id,$project_name,$data,$htime) = @_;
+    my ($dir_tar,$region_id,$project_name,$data,$htime,$debug) = @_;
     system("mkdir $dir_tar") unless -e  $dir_tar;
     my $tar_file = $dir_tar.$region_id.".tar";
     my $lock_file = $tar_file.".lock";
-    warn $lock_file;
     if (my $lock = new File::NFSLock {
   file      => $lock_file,
   lock_type => LOCK_EX,
@@ -203,25 +202,33 @@ sub add_to_tar_with_lock_file {
 }) {
     uncache($tar_file);
     my $x;
-
+	my $tar_file2 = "/tmp/pipeline/".$region_id.".tar.new";
+	my $t = time;
+	system("cp $tar_file $tar_file2");
+	 $htime->{cp} += abs(time -$t);
     # Ouvrir et modifier le fichier TAR
     my $tar = Archive::Tar->new;
-    my $t = time;
-    $tar->read($tar_file) if -e $tar_file;
+     $t = time;
+    
+    $tar->read($tar_file2) if -e $tar_file;
     $htime->{read} += abs(time -$t);
     $t = time;
     if ($tar->contains_file($project_name)){
 			 $tar->replace_content ($project_name, $data);
 	}
 	else {
+		
+		
     	$tar->add_data ( $project_name, $data);
     }
     $htime->{add} += abs(time -$t);
     $t = time;
-    my $tar_file2 = $dir_tar.$region_id.".tar.new";
     $tar->write($tar_file2);
+     $htime->{write} += abs(time -$t);
+      $t = time;
     system("mv $tar_file2 $tar_file");
-    $htime->{write} += abs(time -$t);
+     $htime->{mv} += abs(time -$t);
+   
     $lock->unlock();
 }else{
   die "I couldn't lock the file [$File::NFSLock::errstr]";
@@ -240,11 +247,26 @@ sub save_chromosome_chunks {
 	
 	foreach my $region (@vht){
 		next  unless exists $region->{variants};
-			  my $t = time;
+		next unless @{$region->{variants}};
+		
+			my $t = time;
 			my $data= $encoder->encode($region->{variants});
+			my $debug;
 			 $htime->{encode} += abs(time -$t);
-			add_to_tar_with_lock_file($tar_dir,$region->{id},$project->name,$data,$htime);
+			add_to_tar_with_lock_file($tar_dir,$region->{id},$project->name,$data,$htime,$debug);
 	}
+	warn Dumper $htime;
+}
+
+sub exists_project {
+	 my ($project,$version) = @_;
+	 my $dirout = $project->deja_vu_rocks_project_dir($version);
+	 my $tar_file = $dirout."/"."projects.tar";
+	 return unless  -e $tar_file;
+	 my $tar = Archive::Tar->new;
+	  $tar->read($tar_file);
+	   return $tar->contains_file($project->name);
+	  
 }
 sub save_final {
 	 my ($project,$version) = @_;

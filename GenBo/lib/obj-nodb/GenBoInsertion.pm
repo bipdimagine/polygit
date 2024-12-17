@@ -51,7 +51,7 @@ has rocksdb_id => (
 	$alt = "X".$ref unless $alt; 
 	my $seqid = $alt;
 	$seqid = "+".substr($alt, 1);
-	return  (sprintf("%010d", ($self->start-1))."!".$seqid);
+	return  (sprintf("%010d", ($self->start))."!".$seqid);
 	},
 	
 );
