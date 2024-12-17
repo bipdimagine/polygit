@@ -1520,6 +1520,20 @@ sub getPersonInfos {
 	return $h->{$person_id};
 }
 
+sub getBuildFromProjectName {
+	my ($self, $project_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT p.name, r.name as build 
+			FROM PolyprojectNGS.projects p, PolyprojectNGS.releases r, PolyprojectNGS.project_release pr
+				where p.name=? and p.project_id=pr.project_id and pr.release_id=r.release_id;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($project_name);
+	my $h = $sth->fetchall_hashref('name');
+	return $h->{$project_name}->{build};
+}
+
 sub getInfosFromRunName {
 	my ($self, $run_name) = @_;
 	my $dbh = $self->getDbh();
