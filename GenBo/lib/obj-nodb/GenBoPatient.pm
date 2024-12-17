@@ -534,9 +534,9 @@ has 'compute_sex' => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-
+		warn "start";
 		my $covm = $self->coverage_SRY();
-
+		warn $covm;
 		return 1 if $covm > 30;
 		return -1 if $covm == -1;
 		my $covh = $self->coverage();
@@ -2187,6 +2187,7 @@ sub adVNTR {
 sub vntyperResults {
 		my $self = shift;
 		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		$self->{kestrel} =[];
 		unless( -e $file){
 			$self->{kestrel} =[];
 			#$self->{adVNTR} =[];

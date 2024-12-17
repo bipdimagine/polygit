@@ -4,15 +4,146 @@ use warnings;
 use IPC::Run3;
 use Exporter 'import';
 use Data::Dumper;
-use Bio::DB::Fasta;
+use Moo;
+use JSON::XS;
 # Déclare les fonctions exportées
 our @EXPORT_OK = qw(lift_over_variants);
 #####
 
+
+has project => (
+	is		=> 'ro',
+	required=> 1,
+);
+
+has version => (
+	is		=> 'ro',
+	required=> 1,
+);
+has regions => (
+	is		=> 'ro',
+	default => sub {
+		return ;
+	},
+);
+
+has file_regions => (
+	is		=> 'rw',
+	#isa		=> 'Str',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $fht2 = File::Temp->new(
+    	DIR    =>  $self->tmp_dir,     # Optionnel : répertoire pour le fichier
+    	SUFFIX => '.bed'      # Optionnel : suffixe du fichier
+	);
+	return $fht2;
+	},
+);
+has tmp_dir => (
+	is		=> 'rw',
+	#isa		=> 'Str',
+	lazy	=> 1,
+	default	=> sub {
+		return "/tmp";
+	},
+);
+
+has fh_write_regions  => (
+	is		=> 'rw',
+	#isa		=> 'Str',
+	lazy	=> 1,
+	default	=> sub {
+	my $self = shift;	
+	 my $fh1;
+	open  $fh1, '>', $self->file_regions->filename or die "Impossible d'ouvrir le fichier temporaire: $!\n";
+	return $fh1;
+	},
+);
+has chain_file  => (
+	is		=> 'ro',
+	#isa		=> 'Str',
+	lazy	=> 1,
+	default	=> sub {
+	my $self = shift(@_);
+	 return $self->project->liftover_chain_file($self->version);
+	},
+);
+
+	
+sub add_region {
+	  my ($self,$region) = @_;
+	  my $fh = $self->fh_write_regions;
+	  print  $fh  join("\t",$region->{chromosome},$region->{start},$region->{end},encode_json($region))."\n";
+}
+
+
+sub liftOver_regions {
+	   my ($self) = @_;
+	   close $self->fh_write_regions;
+	   delete $self->{fh_write_regions};
+		my $fht2 = File::Temp->new(
+    	DIR    => $self->tmp_dir,     # Optionnel : répertoire pour le fichier
+    	SUFFIX => '.bed'      # Optionnel : suffixe du fichier
+		);
+		
+		my $fileout = $fht2->filename;
+		my $fht21 = File::Temp->new(
+    	DIR    => $self->tmp_dir,     # Optionnel : répertoire pour le fichier
+    	SUFFIX => '.bed'      # Optionnel : suffixe du fichier
+		);
+		
+		my $fileoutsort = $fht21->filename;
+		
+	   my $cmd = $self->project->buffer->software("liftOver")." ".$self->file_regions->filename." ". $self->chain_file." ".$fileout." /dev/stderr >/dev/null 2>/dev/null";
+	   warn $cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout";
+	   system($cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout"  );
+	   warn "end lift";
+	   return $self->parse_bed_region($fileoutsort);
+}
+
+
+sub parse_bed_region {
+	my ($self,$fileout) = @_;
+	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
+
+	# Lis le fichier ligne par ligne
+	my $tab = {};
+	while (my $line = <$fh>) {
+		chomp $line;  # Supprime le caractère de fin de ligne (\n)
+   	 	next if $line =~/^#/;
+   	 	my @t = split("\t",$line);
+   	 	my $h = decode_json($t[3]);
+   	 	$h->{$self->{version}}->{start} =  $t[1];
+   	 	$h->{$self->{version}}->{end} =  $t[2];
+   	 	$h->{$self->{version}}->{chromosome} =  $t[0];
+   	 	push(@{$tab->{$t[0]}},$h);
+	}
+	close($fh);
+return $tab;
+}
+
+sub add_variant {
+	 my ($self,$v) = @_;
+	  my $fh = $self->fh_write_regions;
+	  my $vcf_id = $v->theoric_vcf_id();
+	  print  $fh, join("\t",$v->getChromosome->ucsc_name,$vcf_id->{position},($vcf_id->{position}+1),$v->id);
+}
+
+sub lift_over_variant {
+	   my ($self,$variation,$version,$key) = @_;
+	   my $id = $variation->id;
+	   my $cmd = 
+		$self->lift_over_variants([$variation],$key);
+}
+
+
 # Fonction exportable pour effectuer le lift-over d'un variant
 sub lift_over_variants {
-    my ($project,$variations,$version,$key) = @_;
-	 $key = "lift_over_$version" unless $key;
+    my ($self,$variations,$key,$db) = @_;
+    my $version = $self->version;
+    my $project= $self->project;
+	 $key = "lift_over_".$self->version unless $key;
     # Crée une entrée au format VCF
     my $vcf_input = "##fileformat=VCFv4.2\n";
     $vcf_input   .= "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
@@ -41,7 +172,7 @@ sub lift_over_variants {
   
 
    #run_crossmap($project,$vcf_input,$version,$res);
-   run_liftOver($project,$bed_input,$version,$res);
+   run_liftOver($project,$bed_input,$res);
    foreach my $v (@$variations){
    	my $id = $v->id;
    	die() unless exists $res->{$id};
@@ -59,14 +190,13 @@ sub lift_over_variants {
    }
 }
 
-sub lift_over_variant {
-	   my ($variation,$version,$key) = @_;
-	   my $id = $variation->id;
-		lift_over_variants($variation->project,[$variation],$version,$key);
-}
+
+
 sub run_liftOver {
-	my ($project,$bed,$version,$res) = @_;
-	my $chain_file = $project->liftover_chain_file($version);
+	my ($self,$bed,$res) = @_;
+	my $version = $self->version;
+	my $project = $self->project;
+	my $chain_file = $self->project->liftover_chain_file($version);
 	die "Fichier de chaîne manquant !" unless -e $chain_file;
 	
 	my $fht = File::Temp->new(
@@ -98,83 +228,14 @@ sub run_liftOver {
 	my $stderr;
 	warn join(" ",@cmd);
 	run3 \@cmd, \$bed, \$stdout, \$stderr;
-	my $db = Bio::DB::Fasta->new($fasta);
- parse_bed($fileout,$res,$db);
+ 	parse_bed($fileout,$res);
  return 1;
 }
-sub run_crossmap {
-	my ($project,$vcf,$version,$res) = @_;
-	my $chain_file = $project->liftover_chain_file($version);
-	die "Fichier de chaîne manquant !" unless -e $chain_file;
-	
-	my $fht = File::Temp->new(
-    	DIR    => "/tmp",     # Optionnel : répertoire pour le fichier
-    	SUFFIX => '.vcf'      # Optionnel : suffixe du fichier
-	);
 
-	# Récupérer le nom du fichier
-	my $fileout = $fht->filename;
-    # Vérifie si le fichier de chaîne existe
-    # Prépare la commande CrossMap
-    my $vg = "HG38_DRAGEN";
-    $vg = "HG19_MT" if $version eq "HG19";
-    my $fasta  = $project->buffer()->config->{'public_data'}->{root} . "/genome/"
-		  . $vg . "/fasta/all.fa";
-		  
-	my @cmd = (
-    $project->buffer()->software("singularity"), 'run',
-    '-B', $project->buffer()->config->{'singularity'}->{mount_data},
-    $project->buffer()->config->{'singularity'}->{dir}.$project->buffer()->config->{'singularity'}->{crossmap},
-    'CrossMap.py', 'vcf',
-    $chain_file,
-    '-',   # Lecture de VCF depuis stdin
-    $fasta,
-    $fileout    # Écriture de VCF vers stdout
-	);
-	my $stdout;
-	my $stderr;
-	run3 \@cmd, \$vcf, \$stdout, \$stderr;
-	warn $stdout;
-	warn $stderr;
 
- parse_vcf($fileout,$res);
-}
-#sub run_picard {
-#	my ($project,$vcf,$version) = @_;
-#	my $chain_file = $project->liftover_chain_file($version);
-#	die "Fichier de chaîne manquant !" unless -e $chain_file;
-#	
-#	my $fht = File::Temp->new(
-#    	DIR    => "/tmp",     # Optionnel : répertoire pour le fichier
-#    	SUFFIX => '.vcf'      # Optionnel : suffixe du fichier
-#	);
-#
-#	# Récupérer le nom du fichier
-#	my $fileout = $fht->filename;
-#    # Vérifie si le fichier de chaîne existe
-#    # Prépare la commande CrossMap
-#    my $vg = "HG38_DRAGEN";
-#    my $java      = $project->getSoftware('java');
-#    $vg = "HG19_MT" if $version eq "HG19";
-#    my $fasta  = $project->buffer()->config->{'public_data'}->{root} . "/genome/"
-#		  . $vg . "/fasta/all.fa";
-#	my $picard = $java . " -jar " . $project->getSoftware('picard_path');
-#	my @cmd = (
-#	$java , "-jar" , $project->getSoftware('picard_path'),
-#    "LiftoverVcf" , 'I=/dev/stdin',
-#    "O=$fileout", 'REJECT=/dev/null',
-#    "R=$fasta", "CHAIN=$chain_file",
-#	);
-#	my $stdout;
-#	my $stderr;
-#	run3 \@cmd, \$vcf, \$stdout, \$stderr;
-#	
-#	 parse_vcf($fileout);
-#	
-#}
 
 sub parse_bed {
-	my ($fileout,$res,$db) = @_;
+	my ($fileout,$res) = @_;
 	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
 
 	# Lis le fichier ligne par ligne
@@ -192,22 +253,5 @@ sub parse_bed {
 # Ferme le fichier
 close($fh);
 }
-sub parse_vcf {
-	my ($fileout,$res) = @_;
-	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
 
-	# Lis le fichier ligne par ligne
-	while (my $line = <$fh>) {
-    	chomp $line;  # Supprime le caractère de fin de ligne (\n)
-   	 	next if $line =~/^#/;
-   	 	my @t = split("\t",$line);
-   	 	my $id = $t[7];
-   	 	$res->{$id}->{chromosome} = $t[0];
-   	 	$res->{$id}->{position_vcf} = $t[1];
-   	 	
-	}
-
-# Ferme le fichier
-close($fh);
-}
 1;
