@@ -729,9 +729,9 @@ sub getFindPatientDescription {
 }
 
 sub getProjectNameFromId {
-	my $self = shift;
+	my ($self,$poject_id) = @_;
 	my $query = $self->getQuery();
-	return $query->getProjectNameFromId();
+	return $query->getProjectNameFromId($poject_id);
 }
 
 sub software {
