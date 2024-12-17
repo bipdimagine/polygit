@@ -894,12 +894,14 @@ sub dejavu {
 	my $filein = $hash->{filein};
 	my $projectName = $self->project->name();
 	my $logPlink = $self->project->getProjectPath().'../'.$projectName.'.dejavu.resume';
-	my $ppn = $self->nproc;
+	my $ppn = 5;
 	my $type = "dejavu";
 	my $stepname = $projectName."@".$type;
 	my $dir = $self->project->project_log();
 	my $fileout = $dir."/dejavu.log";
-	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/cache_lite_dejavu.pl -project=$projectName >$fileout";
+	#/dejavu/hg38/variant/tar
+	my $cmd = "perl $Bin/../polypipeline/scripts/scripts_pipeline//dejavu/hg38/variant/tar/add_project_tar.pl -project=$projectName -fork=$ppn";
+	#my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/cache_lite_dejavu.pl -project=$projectName >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
