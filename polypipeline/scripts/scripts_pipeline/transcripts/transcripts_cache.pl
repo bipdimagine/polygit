@@ -51,6 +51,7 @@ my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 warn "$t";
 my $project = $buffer->newProjectCache( -name => $project_name);
+$project->isRocks(1);
 warn "end";
 #	 my $no = $project->noSqlCoverage();
 #	 warn Dumper $no;

@@ -47,7 +47,7 @@ my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name);
- 
+$project->isRocks(1);
 
 
 my $lists = $project-> getListTranscripts();
