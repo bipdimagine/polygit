@@ -208,10 +208,10 @@ footer{
            var url;
            var regexp = /HG38/g;
            if (String(genome).match(regexp)) {
-           		url = 'https://'+window.location.hostname + "/HG38/polyweb/vector/gene.html?project="+prj+"&type="+type;
+           		url = 'https://'+window.location.hostname + "/HG38/polyweb/polyviewer.html?project="+prj+"&type="+type;
            }
            else {
-				url = "vector/gene.html?project="+prj+"&type="+type;
+				url = "polyviewer.html?project="+prj+"&type="+type;
 			}
 			window.open(url,'_blank');
         }
