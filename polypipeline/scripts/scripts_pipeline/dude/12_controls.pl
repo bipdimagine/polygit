@@ -233,11 +233,7 @@ sub find_other_patient {
 	 my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
 	my $x;
 	my $res =[];
-<<<<<<< HEAD
 	my $limit = 30 - scalar(@$controls);
-=======
-	my $limit = 12 - scalar(@$controls);
->>>>>>> refs/remotes/origin/master
 	 foreach my $project_name2 (@$query){
 	 		next if $project_name2 =~ /NGS2010/;
 	 		warn $project_name2;
@@ -258,14 +254,11 @@ sub find_other_patient {
 				next if $capture->name ne $capture2->name;
 				$bam =  $p->getBamFileName();
 				
-<<<<<<< HEAD
-				};
 				 my $capture = $p->getCapture;	
 				my $machine     = $p->getRun->machine;
 				warn $machine;
 				next unless  $machine =~/NOVA/i;
-=======
->>>>>>> refs/remotes/origin/master
+
 				next unless -e $bam;
 				next unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
 			#	warn Dumper $p->nb_reads();
