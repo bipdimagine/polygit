@@ -239,7 +239,7 @@ sub save_chromosome_chunks {
 	confess() unless $version;
 	my $htime = {};
 	my $dirout = $project->deja_vu_rocks_project_dir($version);
-	 my $encoder = Sereal::Encoder->new({compress=>Sereal::SRL_ZSTD,compress_threshold=>0});
+	my $encoder = Sereal::Encoder->new({compress=>'Sereal::SRL_ZSTD',compress_threshold=>0});
 	system("mkdir $dirout/".$chr->name) unless -e "$dirout/".$chr->name;
 	my $tar_dir = $dirout."/".$chr->name."/";
 	$tar_dir =~ s/\/\//\//g;
@@ -255,7 +255,7 @@ sub save_chromosome_chunks {
 			 $htime->{encode} += abs(time -$t);
 			add_to_tar_with_lock_file($tar_dir,$region->{id},$project->name,$data,$htime,$debug);
 	}
-	warn Dumper $htime;
+	#warn Dumper $htime;
 }
 
 sub exists_project {

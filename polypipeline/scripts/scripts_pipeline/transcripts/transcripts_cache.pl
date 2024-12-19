@@ -56,7 +56,7 @@ warn "end";
 #	 my $no = $project->noSqlCoverage();
 #	 warn Dumper $no;
 #	 die ();
-my $lists = $project->getListTranscripts();
+my $lists = $project->getListTranscripts() if not $project->isExome and not $project->isGenome;
 my $tmp1 = "/tmp/pipeline/";
 system("mkdir /tmp/pipeline;chmod a+rwx  /tmp/pipeline") unless -e $tmp1;
 
@@ -104,7 +104,7 @@ my $p = $project->getPatient($patient_name);
  		$hgene->{high} = {};
  		$hgene->{medium} = {};
  		$hgene->{low} = {};
- 		uri_image($lists,$p->name,$tmp);
+ 		uri_image($lists,$p->name,$tmp) if not $project->isExome and not $project->isGenome;
 
 system("rm -r $tmp") if $tmp=~/tmp/;
 
