@@ -52,11 +52,23 @@ $buffer->vmtouch(1);
 warn "$t";
 my $project = $buffer->newProjectCache( -name => $project_name);
 $project->isRocks(1);
+$fork = 5 if $project->isExome() or $project->isGenome();
+
 warn "end";
 #	 my $no = $project->noSqlCoverage();
 #	 warn Dumper $no;
 #	 die ();
 my $lists = $project->getListTranscripts() if not $project->isExome and not $project->isGenome;
+if ($project->isExome()) {
+	foreach my $tr (@{$project->getTranscripts()}) {
+		next if not $tr->appris_type();
+		next if $tr->appris_type() eq '-';
+#		warn $tr->id.' - appris: '.$tr->appris_type();
+		push (@{$lists}, $tr->id());
+	}
+}
+warn 'nb:'.scalar(@{$lists});
+
 my $tmp1 = "/tmp/pipeline/";
 system("mkdir /tmp/pipeline;chmod a+rwx  /tmp/pipeline") unless -e $tmp1;
 
@@ -104,7 +116,7 @@ my $p = $project->getPatient($patient_name);
  		$hgene->{high} = {};
  		$hgene->{medium} = {};
  		$hgene->{low} = {};
- 		uri_image($lists,$p->name,$tmp) if not $project->isExome and not $project->isGenome;
+ 		uri_image($lists,$p->name,$tmp);
 
 system("rm -r $tmp") if $tmp=~/tmp/;
 
@@ -119,7 +131,7 @@ sub run_on_finish_coverage {
 			#$type ="c" unless $first;
 			#warn $type;
 			#$first = 1; 
-			warn $tmp;
+			#warn $tmp;
 			my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"w",is_compress=>1);;#$patient->getTranscriptsCoverageDepth("w");
 			my $dir = $no->dir;
 			
