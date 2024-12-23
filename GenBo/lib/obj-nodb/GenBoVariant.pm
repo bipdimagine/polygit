@@ -257,7 +257,6 @@ has clinvar => (
 	default	=> sub {
 		my $self = shift;
 		my $db =  $self->getChromosome->get_lmdb_database("clinvar",$self->type_public_db);
-		warn $self->getChromosome->get_lmdb_database("clinvar",$self->type_public_db)->dir;
 		my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
 		return $pub;
 	}
