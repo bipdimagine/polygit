@@ -253,7 +253,10 @@ sub save_chromosome_chunks {
 			my $data= $encoder->encode($region->{variants});
 			my $debug;
 			 $htime->{encode} += abs(time -$t);
+			 $t =time;
+			 
 			add_to_tar_with_lock_file($tar_dir,$region->{id},$project->name,$data,$htime,$debug);
+			 $htime->{total} += abs(time -$t);
 	}
 	warn Dumper $htime;
 }
