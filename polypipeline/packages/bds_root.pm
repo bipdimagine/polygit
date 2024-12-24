@@ -3,7 +3,7 @@ use Moo;
 
 use strict;
 use FindBin qw($Bin);
-
+use Term::StatusBar;
 use lib "$Bin";
 use lib ".";
 #use root_steps;
@@ -333,6 +333,77 @@ sub print_bds{
 	}
 }
 
+sub shell2 {
+		my ($self) = @_;
+	my @samples = grep { $_->is_pending_jobs()}  $self->samples;
+
+	my $hSampleByPriority;
+	my @commands;
+	foreach my $s (@samples) {
+		push(@{$hSampleByPriority->{$s->priority()}}, $s);
+	}
+	my $xx =0;
+	foreach my $priority (sort keys %$hSampleByPriority) {
+		
+		foreach my $s (@{$hSampleByPriority->{$priority}}) {
+			my $jobs = $s->jobs;
+			warn $priority;
+			
+			foreach my $j (@$jobs){
+				next if $j->is_skip();
+					foreach my $c (@{$j->cmd}){
+						push(@commands,{cmd=>$c,log=>$j->bds_log,name=>$j->type,sample=>$s->name});
+					}
+			}
+			
+	}
+	
+			#die($priority);
+	}
+	$self->run(\@commands);
+
+	#warn Dumper $hSampleByPriority; die;
+
+}
+
+sub run {
+	my ($self,$commands) = @_;
+	my $total = scalar @$commands;
+
+# Création de la barre de progression
+my $progress = new Term::StatusBar (
+                    label => 'jobs Done : ',
+                   showTime=>1,
+                   subTextAlign =>"center",
+                    totalItems => scalar(@$commands),  ## Equiv to $status->setItems(10)
+                    #startRow => $row,
+                   
+ );
+# Exécution des commandes séquentiellement
+my $index =0;
+system("clear");
+$progress->start();
+foreach my $job (@$commands) {
+    # Exécuter la commande
+    my $output_file = $job->{log};
+    print "\n\033[2K"; # Effacer la ligne précédente
+ 	print colored::stabilo("green",$job->{name}.":".$job->{sample});
+    my $status = system($job->{cmd}."> $output_file 2>&1");
+ 	
+  
+    # Vérification des erreurs
+    if ($status != 0) {
+        my $exit_code = $status >> 8;
+        my $command = $job->{cmd};
+        print "\nErreur détectée lors de l'exécution de la commande '$command' (code de sortie : $exit_code).\n";
+        print "log file is here : $output_file \n";
+        exit 1;
+    }
+    # Mettre à jour la barre de progression
+    $progress->update();
+}
+
+}
 sub print_bds_by_priority{
 		my ($self) = @_;
 	my $dir = $self->dir_bds;
@@ -340,8 +411,9 @@ sub print_bds_by_priority{
 	my @samples = grep { $_->is_pending_jobs()}  $self->samples;
 	foreach my $s (@samples){
 		print  BDS $s->bds_sub();
+		warn $s->bds_sub();
+		
 	}
-	
 	my $hSampleByPriority;
 	foreach my $s (@samples) {
 		push(@{$hSampleByPriority->{$s->priority()}}, $s);
@@ -374,9 +446,12 @@ sub launch_bds_daemon{
 sub launch_bds_daemon_by_priority{
 		my ($self) = @_;
 	#return $self->launch_shell()  if $self->nocluster;
+	return $self->shell2()  if $self->nocluster;
 	$self->print_bds_by_priority();
 	$self->launch_bds_daemon_common();
 }
+
+
 
 sub launch_bds_daemon_common{
 		my ($self) = @_;
@@ -389,7 +464,7 @@ sub launch_bds_daemon_common{
 	my $bds_exe = $self->project->buffer->software("bds-cluster")."  ";
 	
 	$bds_exe = $self->project->buffer->software("bds") if $self->nocluster > 0;
-	return $self->launch_shell2 if $self->nocluster == 2;
+	return $self->shell2 if $self->nocluster == 2;
 	return $self->launch_shell3 if $self->nocluster == 3;
 	
 	warn "mode  $bds_exe =>  ".$self->nocluster;#  if $self->nocluster == 2;
@@ -476,56 +551,50 @@ has   'start_jobs' =>(
 
 sub launch_shell2{
 		my ($self) = @_;
-	my $max_proc = $self->nproc;
-	my @samples = grep { $_->is_pending_jobs()} $self->samples;
-	
-	foreach my $s (@samples) {
-			my @categories =  $s->list_categories();
-			my $h = $samples[0]->list_hashes_categories();
-			my $error = 0;
-			foreach my $c (@categories){
-				warn "-*-*-*-*-*-*-*-*-*-*-*--*\n";
-				warn "$c : ".scalar(@{$h->{$c}->{jobs}}) ."\n";
-				warn "-*-*-*-*-*-*-*-*-*-*-*--*\n";
-				my $ppn= $h->{$c}->{ppn};
-				my $cpu = $self->nproc;
-				my $real_fork = int($cpu/$ppn);
-				#warn $real_fork;
-				$real_fork =1 if $real_fork ==0;
-		 		$real_fork = $self->nproc if $real_fork>$self->nproc;
-				my $pm = new Parallel::ForkManager($real_fork);
-				
-				$pm->run_on_finish(
-				sub {
-					my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
-					warn "END";
-						$error ++ unless (exists $data->{status});
-						$error ++ if $data->{status} ne 1;
-						$self->print_status_bds();
-						
-				}
-				);
-				
-				foreach my $j (@{$h->{$c}->{jobs}}){
-					next if $error == 1;
-					next if $j->is_skip;
-					$self->print_status_bds();
-					my $pid = $pm->start and next;
-			  			foreach my $c ($j->command_bds){
-  							system ($c);
-  							#warn $c;
-  							
-  					}
-  					sleep 10;
-  					my $status = 0;
-  					$status = 1 if $j->is_ok;
-  					$status = 1 ;
-  					$pm->finish(0,{status=>$status});
-				}
-				$pm->wait_all_children();
-			} #end categories
-			
-	}#end samples
+		die();
+#	my $max_proc = $self->nproc;
+#	my @samples = grep { $_->is_pending_jobs()} $self->samples;
+#	my @categories =  $samples[0]->list_categories();
+#	foreach my $c (@categories){
+#	
+#		foreach my $s (@samples) {
+#		
+#			my $error = 0;
+#			
+#			my $jobs = $s->get_jobs_category({category=>$ctaegory});
+#			my $nbr = scalar(grep{$_->is_run} @$jobs);
+#			next if $nbr ==0;
+#			
+#				warn "-*-*-*-*-*-*-*-*-*-*-*--*\n";
+#				warn "$c : ".scalar(@{$h->{$c}->{jobs}}) ."\n";
+#				warn "-*-*-*-*-*-*-*-*-*-*-*--*\n";
+#				
+#				my $cpu = $self->nproc;
+#				my $real_fork = int($cpu/$ppn);
+#				#warn $real_fork;
+#				$real_fork =1 if $real_fork ==0;
+#		 		$real_fork = $self->nproc if $real_fork>$self->nproc;
+#
+#				
+#				foreach my $j (@{$jobs}){
+#					next if $error == 1;
+#					next if $j->is_skip;
+#					$self->print_status_bds();
+#					my $pid = $pm->start and next;
+#			  			foreach my $c ($j->command_bds){
+#  							system ($c);
+#  							#warn $c;
+#  							
+#  					}
+#  					sleep 1;
+#  					my $status = 0;
+#  					$status = 1 if $j->is_ok;
+#  					$status = 1 ;
+#  						$self->print_status_bds();
+#				}
+#			} #end categories
+#			
+#	}#end samples
 	
 }
 
