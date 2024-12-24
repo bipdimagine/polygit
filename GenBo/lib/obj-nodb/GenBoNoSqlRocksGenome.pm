@@ -379,9 +379,7 @@ sub dejavu {
 	}
 	my ($pos,$a) =split("!",$id);
 	$pos *= 1;
-	warn $pos;
 	$self->{current_db} = $self->get_db($pos);
-	warn $self->{current_db};
 #	warn $self->{current_db};
 #	my $iter = $self->current->rocks->new_iterator->seek_to_first;
 ###	warn $id;
