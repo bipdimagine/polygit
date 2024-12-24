@@ -534,9 +534,9 @@ has 'compute_sex' => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		warn "start";
+#		warn "start";
 		my $covm = $self->coverage_SRY();
-		warn $covm;
+#		warn $covm;
 		return 1 if $covm > 30;
 		return -1 if $covm == -1;
 		my $covh = $self->coverage();

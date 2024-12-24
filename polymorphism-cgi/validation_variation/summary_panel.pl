@@ -1028,7 +1028,7 @@ sub header_run {
 
 	my $version;
 	$version->{gencode} = $project->gencode_version();
-	warn Dumper $version->{gencode};
+	#warn Dumper $version->{gencode};
 	$version->{gnomad} = ""; #$buffer->description_public_lmdb_database("gnomad-exome")->{version};
 	$version->{hgmd} = "";#$buffer->description_public_lmdb_database("hgmd")->{version};
 	$version->{cadd} = ""; #$buffer->description_public_lmdb_database("cadd")->{version};
@@ -2015,7 +2015,7 @@ my $t = time;
 	foreach my $p ( sort { $a->name cmp $b->name } @{ $run->getPatients } ) {
 		print ".";
 		next if $p->alignmentMethod() eq 'no_align';
-		warn "Patient sex";
+#		warn "Patient sex";
 		my $icon = $p->return_icon;
 		my $name = $p->name;
 		my $c1   = "pink";
@@ -2027,7 +2027,7 @@ my $t = time;
 		
 		my $sex_eval = $p->compute_sex();
 		
-		warn "coucou";
+#		warn "coucou";
 		# warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
 		my $color = "#009B77";
 		if ( $sex_eval ne $p->sex() && $sex_eval ne -1 ) {
@@ -2038,16 +2038,16 @@ my $t = time;
 			$error++;
 			$color = "#DD4132";
 		}
-		warn "2";
+#		warn "2";
 		my $c2 = $c1 . "1";
 		my $text2 =
 qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2px; "></i>}
 		  . $hsex1->{$sex_eval};
 		my $iv      = "";
 		my $iverror = 0;
-		warn "id";
+#		warn "id";
 		( $iv, $iverror ) = (0,0);#construct_identito_vigilence($p) if $p->identity_vigilance;
-		warn "end";
+#		warn "end";
 		if ( $iverror == 2 ) {
 			$c1 = "danger";
 			$error++;
@@ -2072,7 +2072,7 @@ qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2p
 	  	};
 
 	}
-warn abs(time -$t);
+#warn abs(time -$t);
 	$out .= qq{	  	
 </ul>
 </div>
@@ -3564,23 +3564,27 @@ sub table_run_header {
 "margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"
 		}
 	);
-	warn "===>";
+#	warn "===>";
 	my ( $b,  $p ) = table_sex($run);
-	warn "-->";
-	my ( $b1, $p1 ) = table_duplicate($run);
-	warn "-->";
+#	warn "-->";
+	my ( $b1, $p1 );
+	
+	#TODO: a corriger erreur getTranscript by pos
+	#my ( $b1, $p1 ) = table_duplicate($run);
+	
+#	warn "-->";
 	my ( $b2, $p2 ) = table_control($run);
-	warn "-->";
+#	warn "-->";
 	my ( $b3, $p3 ) = table_mendelian($run);
-	warn "-->";
+#	warn "-->";
 	my ( $b4, $p4 ) = table_quality($run);
-	warn "-->";
+#	warn "-->";
 	my ( $b5, $p5 ) = table_design($run);
-	warn "-->";
+#	warn "-->";
 	my ( $b6, $p6 ) = table_muc1($run);
-	warn "-->";
+#	warn "-->";
 	my ( $b7, $p7 ) = table_fastq_screen($run);
-	warn "-->";
+#	warn "-->";
 	$out .= $cgi->start_Tr;
 	$out .= $cgi->th(
 		{

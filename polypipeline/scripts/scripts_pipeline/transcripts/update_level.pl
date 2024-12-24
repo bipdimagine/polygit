@@ -50,10 +50,11 @@ my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name);
+$project->isRocks(1);
  warn $project->name;
 my $level_value = {"high" => 3, "medium" =>2 ,"low"=>1 };
 
-my $lists = $project-> getListTranscripts();
+#my $lists = $project-> getListTranscripts();
 $patient_name = "all" unless $patient_name;
 #$project->get_only_list_patients($patient_name);
 $project->getCaptures();

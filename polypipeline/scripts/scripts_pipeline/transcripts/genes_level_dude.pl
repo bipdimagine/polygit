@@ -47,10 +47,19 @@ my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name);
- 
+$project->isRocks(1);
+$fork = 5 if $project->isExome() or $project->isGenome();
 
+#my $lists = $project-> getListTranscripts();
+my $lists = $project->getListTranscripts() if not $project->isExome and not $project->isGenome;
+if ($project->isExome()) {
+	foreach my $tr (@{$project->getTranscripts()}) {
+		next if not $tr->appris_type();
+		next if $tr->appris_type() eq '-';
+		push (@{$lists}, $tr->id());
+	}
+}
 
-my $lists = $project-> getListTranscripts();
 confess() unless $patient_name;
 my $patient = $project->getPatient($patient_name);
 $project->getCaptures();
@@ -70,8 +79,6 @@ exit(0);
 		foreach my $l (@levels){
 			get_list_genes($l,$no2,$no3);
 		}
-		warn $no3->filename;
-		warn Dumper $no3->get("ENSG00000120733_5");
 		$no3->close();
 		$no2->close();
 	}
@@ -79,7 +86,6 @@ exit(0);
 		my ($level,$no2,$no3 ) = @_;
 		my $array = $no2->get("$level");
 		
-		warn Dumper $array;#." ".$level;
 		my $ts = $project->newTranscripts($array);
 		my $h;
 		foreach my $t (@$ts){
@@ -96,7 +102,7 @@ exit(0);
 			}
 			$h->{$t->getGene->id}->{dup} += $dup; 
 			$h->{$t->getGene->id}->{del} += $del; 
-			warn $t->getGene->id." ".$h->{$t->getGene->id}->{dup}." ".$h->{$t->getGene->id}->{dup} if $debug;
+#			warn $t->getGene->id." ".$h->{$t->getGene->id}->{dup}." ".$h->{$t->getGene->id}->{dup} if $debug;
 		}
 		foreach my $g (keys %{$h}){
 		#	warn $level." ".$g;
@@ -108,11 +114,11 @@ exit(0);
 			 }
 			 
 			$type = "del" if $h->{$g}->{del} >= $h->{$g}->{dup};
-			warn "$level:$type";
+#			warn "$level:$type";
 			$no3->put($g,"$level:$type"); 
 			
 		}
-		warn Dumper $h;
+#		warn Dumper $h;
 		$no3->put("genes_".$level,$h);
 	}
 	

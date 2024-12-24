@@ -616,8 +616,9 @@ sub transcripts_dude {
 	
 	my $cmd = qq{perl $bin_dev/transcripts/transcripts_cache.pl -patient=$name  -fork=$ppn  -project=$project_name };
 	my $type = "transcripts_dude";
-	 my $stepname = $self->patient->name."@".$type;
-	 $ppn =20;
+	my $stepname = $self->patient->name."@".$type;
+	$ppn = 20;
+	 
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	
 	$self->current_sample->add_job({job=>$job_bds});
@@ -900,7 +901,7 @@ sub dejavu {
 	my $dir = $self->project->project_log();
 	my $fileout = $dir."/dejavu.log";
 	#/dejavu/hg38/variant/tar
-	my $cmd = "perl $Bin/../polypipeline/scripts/scripts_pipeline//dejavu/hg38/variant/tar/add_project_tar.pl -project=$projectName -fork=$ppn";
+	my $cmd = "perl $Bin/../polypipeline/scripts/scripts_pipeline//dejavu/hg38/variant/tar/add_project_tar.pl -project=$projectName -fork=$ppn >$fileout";
 	#my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/cache_lite_dejavu.pl -project=$projectName >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);

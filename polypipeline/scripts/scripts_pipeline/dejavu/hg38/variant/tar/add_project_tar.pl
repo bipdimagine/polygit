@@ -85,7 +85,7 @@ exit(0) unless $chunks_lift;
 		foreach my $chr ( keys %$data_lift){
 			next unless $project->isChromosomeName($chr);
 			my $pid = $pm2->start and next;
-			warn $chr;
+#			warn $chr;
 			my $chr_obj = $project->getChromosome($chr);
 			my $chr_name = $chr_obj->name;
 			my $current_regions = $chunks_lift->{$chr_name}->[0];
@@ -148,7 +148,7 @@ foreach my $chr (@chromosomes){
 	my $current_regions = $chunks->{$chr->name}->[0];
 	
 	my $no = $chr->get_rocks_variations("r");
-	warn $chr_name;
+#	warn $chr_name;
 	my $snps =[];
 	for (my $i =0;$i<$chr->size_vector();$i++) {
 		my $v = $no->get_index( $i);
