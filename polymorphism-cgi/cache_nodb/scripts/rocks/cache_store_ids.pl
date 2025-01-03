@@ -384,7 +384,7 @@ sub get_ids {
 		my $ap  = [];
 		$variation->getPatients();
 		$variation->sequencing_infos();
-		$variation->split_read_infos();
+		#$variation->split_read_infos();
 		my $a	 = delete $variation->{array_dejavu};
 		$a =[] unless $a;
 		$variation->{cad} = pack("w".scalar(@$a),@$a);
