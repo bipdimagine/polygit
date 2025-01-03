@@ -122,7 +122,7 @@ foreach my $pname (split(",",$project_name)){
 	push(@$buffers,$buffer);
 }
  $project_name =~ s/\,/\./g ;
-my $dir_log = $projects->[0]->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time;
+my $dir_log = $projects->[0]->buffer->config_path("bds")."/".$project_name.".dragen.".time;
 system("mkdir $dir_log && chmod a+rwx $dir_log");
 
 warn $dir_log;
@@ -362,7 +362,7 @@ my @apatients_name = split(":",$patients_name);
 my $dir_log ;;
 foreach my $project (@$projects){
 	my $projectName = $project->name;
-	 $dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
+	 $dir_log = $project->buffer->config_path("bds")."/".$project_name.".dragen.".time unless $dir_log;
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatients}){

@@ -57,7 +57,6 @@ my $no     = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 my $hprojects;
 my $dir_public_data = $buffer->config->{deja_vu}->{path}."/HG19/".$buffer->config->{deja_vu}->{variations};
 
-# $buffer->config->{'public_data'}->{root} . "/HG19/snp/deja_vu/lite/";
 my $dir_projects = $dir . "/" . "projects/";
 
 #2_37319312_C_T NGS2021_3816

@@ -62,7 +62,7 @@ $| = 1;
  my @chromosomes = (1..22,'X','Y','MT');
  my $dir_tmp = "/data-isilon/tmp/dejavu/";
  my $buffer    = GBuffer->new();
- my $dir_prod = $buffer->config->{deja_vu}->{path};
+ my $dir_prod = $buffer->config_path("deja_vu")};
  my $dir_backup =  $dir_prod."/backup";
  
 

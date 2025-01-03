@@ -56,11 +56,7 @@ unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n")
 my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
-warn $buffer->config->{'public_data_annotation'}->{root};
-my @pbd = ("/data-isilon/public-data","/data-isilon/public-data","/data-beegfs/public-data_nfs");#,"/data-beegfs/public-data_nfs");
-@pbd = ("/data-isilon/public-data","/data-isilon/public-data");
-$buffer->config->{'public_data_annotation'}->{root} = $pbd[rand @pbd];
-warn $buffer->config->{'public_data_annotation'}->{root};
+
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
 if ($annot_version) {
@@ -126,7 +122,7 @@ foreach my $region (@$regions) {
                         SUFFIX => '.freeze');
                         
     $region->{freeze}= $region->{freeze_tmp}->filename;                
-	$region->{dir_freeze}= $buffer->config->{project_pipeline}->{tmp};
+	$region->{dir_freeze}= $buffer->config_path("tmp");
 	$region->{full_name} = $project->name.".".$region->{chromosome}.".".$region->{start}."-".$region->{end};
 	$hregion->{$region->{chromosome}.".".$region->{start}."-".$region->{end}} = $region;
 	

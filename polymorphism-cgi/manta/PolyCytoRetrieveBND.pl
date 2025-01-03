@@ -50,8 +50,8 @@ my $thePatient = $project->getPatient($patientname);
 my $patient = $thePatient;
 my $thePatientFamily = $thePatient->getFamily();
 
-my $file_in = $thePatient->getSRFile;
-my $tabix = Bio::DB::HTS::Tabix->new( filename => $file_in );
+#my $file_in = $thePatient->getSRFile;
+#my $tabix = Bio::DB::HTS::Tabix->new( filename => $file_in );
 
 my $mothername;
 my $fathername;
@@ -124,8 +124,6 @@ my $hCNV;
 my $dir = $project->getCacheDir(). "/SV/";
 my $nodejavu = GenBoNoSqlDejaVuSV->new( dir => $dir, mode => "r" );
 my $hTransLoc = $nodejavu->get_all_sv(10,$patient);
-
-
 my $hdejavubis;
 my $no_sv = $project->dejavuSV();
 #my $no1 = $project->dejavuCNV();
@@ -581,6 +579,7 @@ sub getScoreEvent()
 
 sub get_local_CNV {
 my ($sv,$chr_name,$start,$type,$pid,$mid,$fid) = @_;
+return;
 my $dir = $project->getCacheDir(). "/CNV/";
 my $nodejavu = GenBoNoSqlDejaVuCNV->new( dir => $dir, mode => "r" );
 
@@ -588,6 +587,7 @@ my $chr = $patient->project->getChromosome($chr_name);
 my $l = abs ($start- $chr->length);
 my $a = $start;
 my $b =  $chr->length;
+warn "coucou ".$chr_name;
 my $del1 = $nodejavu->get_cnv_project($type,$chr_name,$a,$b,30);
 $a = 1;
 $b =  $start;

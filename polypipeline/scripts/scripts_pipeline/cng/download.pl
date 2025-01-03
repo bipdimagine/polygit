@@ -27,7 +27,7 @@ die("type = devodecode or defidiag") unless $type;
 
 
 my $dir = "/data-isilon/download/$type/";
-die() unless -e $dir;
+die($type." ".$dir) unless -e $dir;
 
 my $cmd_bam="wget --recursive --no-parent --user $name  --password  $password https://www.cnrgh.fr/data/$name/alignements/$set/ -R cram";  
 my $cmd_var="wget --recursive --no-parent --user $name  --password  $password https://www.cnrgh.fr/data/$name/variants/$set/ -R cram";  

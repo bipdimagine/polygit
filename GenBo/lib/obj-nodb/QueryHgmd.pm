@@ -535,7 +535,7 @@ sub json_hgmd_new_dm {
 	unless ($version) {
 		$version = $buffer->config->{hgmd_db_current_version}->{$self->database()};
 	}
-	my $json_file = $buffer->config->{public_data_annotation}->{root}.'/repository/'.$build.'/hgmd/'.$version.'/new_dm.json';
+	my $json_file = $buffer->config_path("public_data").'/repository/'.$build.'/hgmd/'.$version.'/new_dm.json';
 	return $json_file;
 }
 

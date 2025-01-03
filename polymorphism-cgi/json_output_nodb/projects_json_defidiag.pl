@@ -338,7 +338,7 @@ sub getCoverage {
 	my ($project) = @_;
 	my $projectName = $project->name();
 	my $build = $project->getVersion();
-	my $coverage_dir = $buffer->{config}->{project_data}->{root}."/". $buffer->{config}->{project_data}->{ngs}."/$projectName/$build/align/coverage/";
+	my $coverage_dir = $buffer->config_path("project_data")."/". $buffer->{config}->{project_data}->{ngs}."/$projectName/$build/align/coverage/";
 	my @files = `ls $coverage_dir/*.cov.gz 2>/dev/null`;
 	chomp (@files);
 	

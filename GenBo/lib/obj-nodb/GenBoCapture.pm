@@ -386,11 +386,14 @@ has infos =>(
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
+		warn "coucou";
 		confess() unless $self->getProject;
 		my $query = $self->getProject->buffer->getQuery();
 		my $hash1 = $query->getCaptureInfos($self->id);
-		
+		warn Dumper $hash1;
+		die();
 		my $hash2 = $query->getCaptureTranscripts($self->id);
+		
 		my %newHash = (%$hash1, %$hash2);
 		$self->{gencode_version} = $newHash{gencode_version};
 		$self->{version} = $newHash{version};

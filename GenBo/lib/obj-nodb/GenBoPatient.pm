@@ -401,7 +401,7 @@ has sequencesDir => (
 		my $run_name    = $run->plateform_run_name();
 		my $constructor = $run->machine_constructor();
 		my $plateform   = $run->plateform();
-		my $path        = $self->buffer()->getDataDirectory("sequences");
+		my $path        = $self->buffer()->config_path("sequences");
 
 		my $seq_dir =
 			$path . "/"
@@ -1047,7 +1047,7 @@ has RnaseqSEA_SE => (
 	default => sub {
 		my $self  = shift;
 		my $align_method = $self->alignmentMethods->[0];
-		my $path = $self->getProject->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
+		my $path = $self->getProject->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
 		my $file = $path.'/'.$self->name().'_SE.txt.gz';
 		return $file if -e $file;
 		return;
@@ -1060,7 +1060,7 @@ has RnaseqSEA_RI => (
 	default => sub {
 		my $self  = shift;
 		my $align_method = $self->alignmentMethods->[0];
-		my $path = $self->getProject->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
+		my $path = $self->getProject->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
 		my $file = $path.'/'.$self->name().'_RI.txt.gz';
 		return $file if -e $file;
 		return;
@@ -1469,7 +1469,7 @@ sub getSRFile {
 sub _getFile {
 	my ( $self, $method, $hash ) = @_;
 	if ($method) {
-		
+		warn Dumper $hash;
 		confess( "can t find vcf for $method " . $self->name ) unless exists( $hash->{$method} );
 		return $hash->{$method};
 	}

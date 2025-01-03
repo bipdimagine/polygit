@@ -1,0 +1,16 @@
+[root]
+public_data:/poly-disk/public-data
+dejavu:/poly-disk/DejaVu
+dejavu_projects:/poly-disk/DejaVu
+
+project_data:/poly-disk/poly-data/
+sequences:/poly-disk/poly-data/sequences
+global_search:/poly-disk/polycache/global_search/
+btf:/poly-disk/polycache/polybtf/
+cache:/poly-disk/polycache/rocks/
+project_pipeline:/poly-disk/pipeline/
+tmp:/tmp
+bds:/poly-disk/bds/
+dragen_pipeline:/data-dragen/pipeline/
+software:/software/bin
+singularity:/data-beegfs/software/sif/

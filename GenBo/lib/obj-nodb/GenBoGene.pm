@@ -429,6 +429,7 @@ has hgmd => (
 	default => sub { 
 		my $self = shift;
 		my $query = $self->buffer->queryHgmd();
+		return unless $query;
 		my $h;
 		 $h = $query->getDataHGMDPro_gene_infos($self->external_name());
 		return unless ($h);

@@ -36,7 +36,7 @@ GetOptions(
 
 my @projects;
 if($set){
-	 @projects = `cat ../../../../defidiag/project/$name/set$set.txt`;
+	 @projects = `cat /software/polyweb/poly-disk/poly-src/defidiag/project/$name/set$set.txt`;
 	chomp(@projects);
 }
 elsif ($project_name){

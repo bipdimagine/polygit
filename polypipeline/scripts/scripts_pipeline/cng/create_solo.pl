@@ -36,13 +36,13 @@ my $dir2 = "";
 
 $set = "set".$set unless $set=~/set/;
 if($name){
- @list = `cat ../../../../defidiag/project/$name/$set.txt`;
+ @list = `cat /software/polyweb/poly-disk/poly-src/defidiag/project/$name/$set.txt`;
  chomp(@list);
 }
 elsif($project_name){
 	push(@list,$project_name);
 }
-die("../../../../defidiag/project/$name/$set.txt") unless @list;
+die("/software/polyweb/poly-disk/poly-src/defidiag/project/$name/$set.txt") unless @list;
 
 
 

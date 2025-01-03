@@ -61,6 +61,8 @@ sub create_table {
 	 return  $self->{table}->{$key1} unless  $self->write();
 	$self->dbh($key1)->do("DROP TABLE IF EXISTS $table_name")  or die $DBI::errstr  if $self->mode eq 'c'  ;
 	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),ho INTEGER, projects INTEGER, _value BLOB, _value2 BLOB,dv_project INTEGER,dv_sample INTEGER,dv_sr INTEGER,dv_depth INTEGER,dv_cov INTEGER,start INTEGER,end INTEGER, variation_type VARCHAR(3), length INTEGER) ")  or die $DBI::errstr;;
+	warn $table_name." ".$key1;
+	warn "CREATE TABLE if not exists $table_name (_key VARCHAR(250),ho INTEGER, projects INTEGER, _value BLOB, _value2 BLOB,dv_project INTEGER,dv_sample INTEGER,dv_sr INTEGER,dv_depth INTEGER,dv_cov INTEGER,start INTEGER,end INTEGER, variation_type VARCHAR(3), length INTEGER) ";
 	return 	$self->{table}->{$key1} ;
 }
 
@@ -227,16 +229,19 @@ sub get_cnv {
 	
 	return $self->{prepare_cnv2}->{$chr} if exists $self->{prepare_cnv2}->{$chr};
 	 my $table_name = $self->create_table($chr);
-
+warn $chr; 
+warn $self->dir;
 	$self->{prepare_cnv2}->{$chr} = $self->dbh($chr)->prepare(qq{select 
 		$table_name.variation_type as type , $table_name.projects as projects ,$table_name.start as start ,
-		$table_name.end as end  ,$table_name._value2 as hash2 ,$table_name._value as hash
+		$table_name.end as end  ,$table_name._value as hash ,$table_name._value2 as hash2
 		from $table_name  where end >= ? and start<=?  and variation_type=?  and length between  ? and  ?});
 	return $self->{prepare_cnv2}->{$chr};
 }
 
  sub get_all_cnv {
  	my ($self,$chr,$dv,$patient) = @_;
+ 	warn $self->dir."/".$chr.".".$self->extension;;
+ 	return [] unless -e $self->dir."/".$chr.".".$self->extension;
  	  $self->prepare_select_global($chr)->execute($dv);
 		my $nb = 0;
 		my @dj;
@@ -258,7 +263,6 @@ sub get_cnv {
 	
 	return $self->{prepare_select_global}->{$chr} if exists $self->{prepare_select_global}->{$chr};
 	 my $table_name = $self->create_table($chr);
-	
 	$self->{prepare_select_global}->{$chr} = $self->dbh($chr)->prepare(qq{select 
 		$table_name._value as hash  ,$table_name._value2 as hash 																				
 		from $table_name where dv_sample < ? });
@@ -289,6 +293,7 @@ sub get_cnv {
 	 	my $start1 = $row[2];
 	 	my $end1 = $row[3];
 	 	my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
+	 	
 	 	next if $identity <  $seuil;
 	 	$identity = int($identity);
 		my $hashdv = $self->decode($row[-1]);
@@ -296,7 +301,8 @@ sub get_cnv {
 		my $string ="";
 		foreach my $pr (keys %$hashdv){
 			#warn $hashdv->{$pr}->{string} ;
-			$nbpatient += $hashdv->{$pr}->{patients};
+			next unless $hashdv->{$pr}->{patients};
+			$nbpatient += $hashdv->{$pr}->{patients} if $hashdv->{$pr}->{patients};
 			$nbproject ++;
 			$string .= $hashdv->{$pr}->{string};
 			$nbDJV_Wisecondor += $hashdv->{$pr}->{coverage} if exists $hashdv->{$pr}->{coverage};

@@ -71,9 +71,9 @@ $| = 1;
 		}
 	);
 
-	my $db_lite = $project->noSqlPolydiag("c");
+	my $db_lite ;
 	my $project_name = $project->name();
-
+	$db_lite->close();
 	$pr->write();
 	foreach my $p ( @{ $patients } ) {
 		my $pname = $p->name();
@@ -91,7 +91,7 @@ $| = 1;
 
 	$pm->wait_all_children;
 	$project->buffer->dbh->disconnect();
-	$db_lite->close();
+	
 	#$project->buffer->dbh->disconnect();
 	if ( exists $project->{cosmic_db} ) {
 		$project->{cosmic_db}->close();
