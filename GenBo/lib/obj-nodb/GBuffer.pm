@@ -188,8 +188,7 @@ has hconfig_path => (
 	default	=> sub {
 		my $self = shift; 
 		my $dir = $self->config_dir;
-		my $filename = $dir."paths.cfg.imagine";
-		warn $filename;
+		my $filename = $dir."paths.cfg";
 		confess($filename) unless -e $filename;
 		read_config $filename => my %config1;
 	
