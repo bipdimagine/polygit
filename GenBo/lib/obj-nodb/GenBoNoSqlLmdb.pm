@@ -203,7 +203,6 @@ sub lmdb {
 	 		}
  	 	#warn $self->dir."/$name";
  	 	my $sname = $self->dir."/$name";
- 	 #	confess() if $sname eq "/data-isilon/polycache/HG19_CNG.34.9/NGS2019_2651/vector/lmdb_cache/1/genes";
  	  my $t = time;
  	  #system("/software/bin/vmtouch -t $sname   ");
  	   	system("/software/bin/vmtouch -t $sname -q  ") if $self->vmtouch;
@@ -211,7 +210,6 @@ sub lmdb {
  	   #	system("rsync -av $sname /tmp/toto.xxx");
  	   #
 # 	   	 warn ($sname);
- #	   	 cluck $sname if $sname eq "/data-isilon/polycache/HG19_CNG.34.11/NGS2021_3602/vector/lmdb_cache/1/ID17_3.variants.polyviewer";
 	 	}
 		else {
 			 

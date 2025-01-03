@@ -1569,13 +1569,13 @@ has gencode_version => (
 sub get_gencode_directory {
 	my ( $self, $version ) = @_;
 	if ($self->annotation_genome_version() =~ /MM38/) {
-		return "/data-isilon/public-data/repository/MM38/annotations/gencode.vM25/lmdb/";
+		return $self->buffer->config_path("public_data")."/repository/MM38/annotations/gencode.vM25/lmdb/";
 	}
 	if ($self->annotation_genome_version() =~ /MM39/) {
-		return "/data-isilon/public-data/repository/MM39/annotations/gencode.vM32/lmdb/";
+		return $self->buffer->config_path("public_data")."/repository/MM39/annotations/gencode.vM32/lmdb/";
 	}
 	if ($self->annotation_genome_version() =~ /HG19/) {
-		return "/data-isilon/public-data/repository/HG19/annotations/gencode.v43/lmdb/";
+		return $self->buffer->config_path("public_data")."/repository/HG19/annotations/gencode.v43/lmdb/";
 	}
 	
 	my $database = "gencode";
@@ -4923,19 +4923,6 @@ has dejavuSVAgregate => (
 	}
 );
 
-has dejavuSV1 => (
-	is		=> 'ro',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $sqliteDir =   $self->DejaVuCNV_path;
-		$sqliteDir = "/data-isilon/bipd-src/pnitschk/svn-genbo/polypipeline/scripts/scripts_pipeline/manue_cnv/tmp";
-		die("you don t have the directory : ".$sqliteDir) unless -e $sqliteDir;
-		
-		return  GenBoNoSqlDejaVuSV->new( dir => $sqliteDir, mode => "r" );
-		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
-	}
-);
 
 has dejavuJunctions => (
 	is		=> 'ro',
@@ -6127,7 +6114,6 @@ has deja_vu_lite_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		#return "/data-isilon/dejavu/";
 		confess();
 		my $dir = $self->deja_vu_public_dir();
 		#TODO: ajouter makedir si createion automatique
@@ -6144,7 +6130,6 @@ has deja_vu_rocks_dir => (
 	default => sub {
 		my $self = shift;
 
-		#return "/data-isilon/dejavu/";
 		my $dir =$self->buffer->deja_vu_public_dir($self->genome_version_generic)."/rocks/";
 		return $self->makedir($dir);
 
@@ -6162,7 +6147,6 @@ sub deja_vu_lite_public_dir {
 sub deja_vu_rocks_project_dir {
 	my ($self,$version,$type)= @_;
 	$type = "variations" unless $type;
-	#return "/data-beegfs/tmp/projects.tar" if $version eq "HG19";
 	my $root =  $self->buffer->deja_vu_project_dir($version);
 	return $root;
 }
@@ -6176,7 +6160,6 @@ has lite_deja_vu => (
 		confess();
 		my $dir  = $self->deja_vu_lite_dir;
 
-		#	$dir = "/data-isilon/public-data/repository/dejavu/lite";
 		#	wanr $dir;
 		my $no = GenBoNoSqlDejaVu->new( dir => $dir, mode => "r" );
 		return $no;

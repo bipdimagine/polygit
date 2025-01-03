@@ -93,7 +93,6 @@ sub setJunctions {
 		$check_sj_junc = 1;
 	}
 	my $regtools_file = $self->getProject->get_path_rna_seq_junctions_analyse_all_res().'/regtools/'.$self->getProject->name().'_regtools.tsv.gz';
-#	my $regtools_file = '/data-isilon/bipd-src/mbras/test_GOSR2.tsv.gz';
 	if (-e $regtools_file) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($regtools_file, 'regtools')->parse_file($self)}) {
 			my $id = $hres->{id};

@@ -1676,7 +1676,7 @@ sub getBamFileName {
 sub getPhysicalFilesDir {
 	my ( $self, $method_name,$version ) = @_;
 	return $self->{files_dir} if exists $self->{cram_dir};
-	$self->{files_dir} = "/data-isilon/sequencing/ngs/FILES/".$self->id."/";
+	$self->{files_dir} = $self->buffer->config_path("project_data")."/ngs/FILES/".$self->id."/";
 	return $self->project->makedir($self->{files_dir});
 	return $self->{files_dir};
 }

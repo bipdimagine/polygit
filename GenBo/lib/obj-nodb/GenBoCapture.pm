@@ -546,7 +546,6 @@ has hotspots_filename => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		#return "/data-isilon/bipd-src/pnitschk/git2-polyweb/polygit/polyscripts/hotspot/cloves.bed"; 
 		return $self->files()->{hotspot}; 
 		
 	},

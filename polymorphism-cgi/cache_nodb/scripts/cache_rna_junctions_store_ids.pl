@@ -57,9 +57,6 @@ unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n")
 my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
-my @pbd = ("/data-isilon/public-data","/data-isilon/public-data","/data-beegfs/public-data_nfs");#,"/data-beegfs/public-data_nfs");
-@pbd = ("/data-isilon/public-data","/data-isilon/public-data");
-$buffer->config_path("public_data") = $pbd[rand @pbd];
 #warn $buffer->config->{'public_data_annotation'}->{root};
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
@@ -76,9 +73,9 @@ if (-e $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty") {
 }
 warn "\n### CACHE: store ids step\n" if ( $project->cache_verbose() );
 #warn "------------------------";
-system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc "."/data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name." "."/data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name);#/software/bin/vmtouch -t ".$no1->filename." "
-system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc");#/software/bin/vmtouch -t ".$no1->filename." "
-system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name);
+#system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc "."/data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name." "."/data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name);#/software/bin/vmtouch -t ".$no1->filename." "
+#system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc");#/software/bin/vmtouch -t ".$no1->filename." "
+#system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name);
 
 my $file_ok = $project->lmdb_cache_variations_dir().'/chr'.$chr_name.'_store_ids.ok';
 

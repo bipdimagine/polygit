@@ -230,7 +230,7 @@ has bcl_dir => (
 		my $run_name    = $self->run_name();
 		my $constructor = $self->machine_constructor();
 		my $plateform   = $self->plateform();
-		my $path        = "/data-isilon/raw-data/";#$self->buffer()->getDataDirectory("bcl");
+		my $path        = $self->buffer()->getDataDirectory("bcl");
 
 		my $seq_dir =
 			$path . "/"
