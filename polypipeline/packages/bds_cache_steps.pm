@@ -135,7 +135,8 @@ sub store_ids {
 	#warn $chr->karyotypeId." ".$ppn;
 	
 	$ppn = 1 if $ppn < 1;
-	$ppn = 15;
+	$ppn = 20;
+	$ppn = 40 if $self->nocluster;
 	$filein ="";
 	my $fileout = $project->getCacheBitVectorDir()."/lmdb_cache/".$chr_name.".dv.freeze";
 	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn";

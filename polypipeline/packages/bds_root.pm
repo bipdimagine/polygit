@@ -390,8 +390,7 @@ foreach my $job (@$commands) {
  	print colored::stabilo("green",$job->{name}.":".$job->{sample});
  	my @cmd1 = split("&&",$job->{cmd});
  	my $cmd = $cmd1[0]." >$output_file 2>&1";
- 	$cmd .= "&& ".$cmd1[1];
- 	warn $cmd;
+ 	$cmd .= " && ".$cmd1[1];
  	die() if scalar(@cmd1) > 2;
     my $status = system($cmd);
  	
