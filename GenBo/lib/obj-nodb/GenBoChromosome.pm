@@ -1161,6 +1161,20 @@ sub lmdb_image_transcripts_uri {
 ## lmdb cache
 
 
+has lmdb_cache_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $dir_root = $self->project->lmdb_cache_dir();
+		my $dir_out  = $dir_root . "/" . $self->name();
+		unless ( -e $dir_out ) {
+			system("mkdir  $dir_out");
+			system("chmod a+rwx $dir_out");
+		}
+		return $dir_out;
+	}
+);
 
 sub get_lmdb_ncboost_chromosomes {
 	my ( $self, $mode ) = @_;
