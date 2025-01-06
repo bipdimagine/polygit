@@ -124,7 +124,7 @@ $rg_polyviewer->regions();
 my $pm = new Parallel::ForkManager($fork);
 my $all;
 my $process;
-system("vmtouch -t ".$buffer->config_path("public-data")"/repository/".$project->annotation_genome_version()."/*/*/rocksdb/$chr_name.rocksdb");
+system("vmtouch -t ".$buffer->config_path("public_data")."/repository/".$project->annotation_genome_version()."/*/*/rocksdb/$chr_name.rocksdb");
 $pm->run_on_finish(
 	sub {
 		my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $hRes) = @_;
