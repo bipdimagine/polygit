@@ -428,10 +428,7 @@ sub createSashiPlot {
 	if ($junction->getProject->is_human_genome()) { $cmd .= " -c chr".$locus; }
 	else { $cmd .= " -c ".$locus; }
 	$cmd .= " -o ".$file;
-#	if ($score and $score >= 100) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/red.txt"; }
-#	elsif ($score and $score >= 10) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/orange.txt"; }
-#	elsif ($score and $score >= 1) { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/green.txt"; }
-#	else { $cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/black.txt"; }
+	confess("pourquoi isilon ecrit en dur");
 	$cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/black.txt";
 	$cmd .= " -C 1";
 	$cmd .= " --shrink --alpha 0.25 --base-size=20 --ann-height=4 --height=3 --width=18";
