@@ -70,13 +70,10 @@ foreach my $chr (@{$project->getChromosomes} ){
 	}
 	warn "coucou";
 	 $file = run_update_chr($chr->name);
-	warn "OK $file" if -e $file;
-	warn "NOT OK " unless -e $file;
 }
 
-warn "END seems prefect exit now ...";
-warn "OK $file" if -e $file;
-warn "NOT OK " unless -e $file;
+
+
 system("date > $ok_file") if $ok_file;
 exit(0);
 #}
@@ -471,12 +468,14 @@ foreach my $f (@files){
 }
 
 
-my $dir = $chr->lmdb_cache_dir();
+my $dir = $project->rocks_cache_dir();
+my $file = "$dir/lmdb".$chr->name.".ok";
+
 warn "date >$dir/lmdb.ok && chmod a+rw $dir/lmdb.ok";
-system ("date >$dir/lmdb.ok && chmod a+rw $dir/lmdb.ok");
+system ("date >$dir/$file && chmod a+rw $dir/$file");
 warn "$dir/lmdb.ok";
 $dir_tmp = undef;
-return ("$dir/lmdb.ok");
+return ("$dir/$file");
 }
 
 

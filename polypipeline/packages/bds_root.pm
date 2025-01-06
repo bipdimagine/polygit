@@ -388,7 +388,12 @@ foreach my $job (@$commands) {
     my $output_file = $job->{log};
     print "\n\033[2K"; # Effacer la ligne précédente
  	print colored::stabilo("green",$job->{name}.":".$job->{sample});
-    my $status = system($job->{cmd}."> $output_file 2>&1");
+ 	my @cmd1 = split("&&",$job->{cmd});
+ 	my $cmd = $cmd1[0]." >$output_file 2>&1";
+ 	$cmd .= "&& ".$cmd1[1];
+ 	warn $cmd;
+ 	die() if scalar(@cmd1) > 2;
+    my $status = system($cmd);
  	
   
     # Vérification des erreurs
