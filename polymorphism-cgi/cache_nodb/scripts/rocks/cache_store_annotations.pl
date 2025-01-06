@@ -515,11 +515,7 @@ sub get_annotations {
 		my $lmdb_index = $i;
 		
 		#next;
-		warn ref($no);
-		warn 'INDEX '.$i;
-		warn 'REGION '.$region->[0].' - '.$region->[1];
 		$variation = $no->get_index($i);
-		warn ref($variation);
 		
 		if ( $lmdb_index < 0 ) {
 			confess("index out of range <0");
