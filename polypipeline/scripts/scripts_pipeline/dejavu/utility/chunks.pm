@@ -8,7 +8,6 @@ use Fcntl ':flock';
 use File::NFSLock qw(uncache);
 use List::Util qw(shuffle);
 use Data::Dumper;
-use Archive::SevenZip;
 sub hg38_tar {
 	return "/data-beegfs/tmp/sereal";
 	return  "/data-isilon/DejaVu/HG38/variations/projects/rocks.sereal.tar/";
