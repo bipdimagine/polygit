@@ -72,7 +72,7 @@ warn "ok ".$project->lift_genome_version;
  
 my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome_version);  
 my $data_lift;	
-$data_lift = HG38_HG19() if $project->current_genome_version eq "HG38";
+$data_lift = HG38_HG19() if $project->current_genome_version eq "HG38"  && !($project->isGenome);
 $data_lift = HG19_HG38() if $project->current_genome_version eq "HG19"; ;
 
 
