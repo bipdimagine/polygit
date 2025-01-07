@@ -61,6 +61,7 @@ my $nb;
 my $exists_current = chunks::exists_project($project,$project->current_genome_version);
 my $exists_lift  = chunks::exists_project($project,$project->lift_genome_version);
 warn "ok ".$project->lift_genome_version;
+$project->isGenome();
 #exit(0) if $exists_lift;
 
 #exit(0) if chunks::exists_project($project,$project->current_genome_version);
