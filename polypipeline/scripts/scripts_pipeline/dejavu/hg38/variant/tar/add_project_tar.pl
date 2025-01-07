@@ -70,11 +70,14 @@ warn "ok ".$project->lift_genome_version;
  warn chunks::exists_project($project,$project->lift_genome_version);
  $project->getPatients();
  
+ 
+ 
 my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome_version);  
 my $data_lift;	
 $data_lift = HG38_HG19() if $project->current_genome_version eq "HG38"  && !($project->isGenome);
 $data_lift = HG19_HG38() if $project->current_genome_version eq "HG19"; ;
 
+exit(0) if $project->isGenome && $project->current_genome_version eq "HG38";
 
 my ($chunks_lift,$tree_lift) = chunks::chunks_and_tree($project,$project->lift_genome_version);
 #### save liftover
