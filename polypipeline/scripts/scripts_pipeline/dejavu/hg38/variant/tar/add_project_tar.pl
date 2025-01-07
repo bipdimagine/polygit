@@ -74,7 +74,7 @@ warn "ok ".$project->lift_genome_version;
  
 my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome_version);  
 my $data_lift;	
-$data_lift = HG38_HG19() if $project->current_genome_version eq "HG38"  && !($project->isGenome);
+$data_lift = HG38_HG19() if $project->current_genome_version eq "HG38"  ;
 $data_lift = HG19_HG38() if $project->current_genome_version eq "HG19"; ;
 
 exit(0) if $project->isGenome && $project->current_genome_version eq "HG38";
@@ -186,7 +186,7 @@ foreach my $chr (@chromosomes){
  
  return (undef,undef) if chunks::exists_project($project,$project->lift_genome_version);	
 chunks::save_final($project,$project->current_genome_version);
-return $lift->liftOver_regions();;
+return $lift->liftOver_regions() unless $project->isGenome();;;
 }
 
 sub HG19_HG38 {
