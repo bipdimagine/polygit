@@ -17,3 +17,8 @@ software:/software/bin
 
 
 
+[dejavu]
+variants:variations.rocks/
+projects:projects.tar/
+CNV:CNV/
+SVeq:SVeq/

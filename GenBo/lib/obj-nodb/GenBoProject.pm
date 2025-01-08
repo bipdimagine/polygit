@@ -1884,11 +1884,8 @@ has DejaVuCNV_path => (
 
 #		confess();
 #confess("\n\nERROR: no annotation version found for this project in DataBase. Die\n\n") unless ($self->annotation_version);
-		my $dir =
-			$self->buffer()->config_path("dejavu")
-		  . $self->annotation_genome_version . "/"
-		  . $self->buffer()->config->{'deja_vu_SV'}->{CNV};
-		confess("cnv dejavu $dir") unless -e $dir;
+return $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"CNV");
+
 		return $dir;
 
 	},
@@ -1902,11 +1899,8 @@ has DejaVuProjectsCNV_path => (
 
 #		confess();
 #confess("\n\nERROR: no annotation version found for this project in DataBase. Die\n\n") unless ($self->annotation_version);
-		my $dir =
-			$self->buffer()->config_path("dejavu")
-		  . $self->annotation_genome_version . "/"
-		  . $self->buffer()->config->{'deja_vu_SV'}->{CNV}
-		  . "/projects";
+
+		my $dir =  $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"CNV")."/projects/";
 		system("mkdir $dir && chmod a+rwx $dir ") unless -e $dir;
 		confess("cnv dejavu $dir") unless -e $dir;
 
@@ -1935,10 +1929,7 @@ has DejaVuSVeq_path => (
 
 #		confess();
 #confess("\n\nERROR: no annotation version found for this project in DataBase. Die\n\n") unless ($self->annotation_version);
-		my $dir =
-			$self->buffer()->config_path("dejavu")."/"
-		  . $self->annotation_genome_version . "/"
-		  . $self->buffer()->config->{'deja_vu_SV'}->{SVeq};
+		my $dir =  $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"SVeq");
 		confess("sveq dejavu $dir") unless -e $dir;
 
 		return $dir;
@@ -1954,16 +1945,11 @@ has DejaVuProjectsSVeq_path => (
 
 #		confess();
 #confess("\n\nERROR: no annotation version found for this project in DataBase. Die\n\n") unless ($self->annotation_version);
-		my $dir =
-			$self->buffer()->config_path("dejavu")."/"
-		  . $self->annotation_genome_version . "/"
-		  . $self->buffer()->config->{'deja_vu_SV'}->{SVeq}
-		  . "/projects";
-		system("mkdir $dir && chmod a+rwx $dir ") unless -e $dir;
-		confess("SVeq dejavu $dir") unless -e $dir;
+ $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"SVeq")."/projects";
+	my $dir = 
+confess("sveq dejavu $dir") unless -e $dir;
 
 		return $dir;
-
 	},
 );
 

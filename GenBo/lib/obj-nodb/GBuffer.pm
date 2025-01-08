@@ -182,7 +182,7 @@ has config => (
 		return $hConfig;
 	},
 );
-has hconfig_path => (
+has hash_config_path => (
 	is		=> 'ro',
 	lazy	=> 1,
 	default	=> sub {
@@ -192,14 +192,18 @@ has hconfig_path => (
 		confess($filename) unless -e $filename;
 		read_config $filename => my %config1;
 	
-		return \%{$config1{root}};
+		return \%config1;
 	},
 );
 sub config_path {
-	my ($self,$type)=@_;
-	confess($type) unless exists $self->hconfig_path->{$type};
-	return $self->hconfig_path->{$type};
+	my ($self,$key,$type)=@_;
+	unless ($type){
+		confess();
+	} 
+	confess($type) unless exists $self->hconfig_path->{$key}->{$type};
+	return $self->hconfig_path->{$key}->{$type};
 }
+
 has public_data_versions => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -328,16 +332,14 @@ sub deja_vu_public_dir {
 	confess() unless $version;
 	$type ="variations" unless $type;
 	return $self->{dj_pub_dir}->{$version}->{$type} if exists $self->{dj_pub_dir}->{$version}->{$type};
-	 $self->{dj_pub_dir}->{$version}->{$type} =  $self->config_path("dejavu")."/".$version . "/".$self->config->{deja_vu}->{$type};
+	$self->{dj_pub_dir}->{$version}->{$type} =  $self->config_path("root","dejavu")."/".$version . "/".$self->config_path("dejavu",$type);
 	return $self->{dj_pub_dir}->{$version}->{$type}  if -e $self->{dj_pub_dir}->{$version}->{$type};
 	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_pub_dir}->{$version}->{$type} );
 }
 sub deja_vu_project_dir {
 	my ($self,$version,$type)= @_;
-	confess() unless $version;
-	my $dir = $self->config_path("dejavu_projects")."/".$version."/projects.tar/";
-	confess("not found $dir") unless -e $dir;
-	return $dir;
+	return $self->deja_vu_public_dir($version,"projects");
+
 }
 
 sub deja_vu_project_sqlite_dir {
@@ -585,7 +587,7 @@ has public_data_root => (
 	lazy => 1,
 	default => sub {
 		my $self = shift;
-		my $d = $self->config_path("public_data") ."/repository/";
+		my $d = $self->config_path("root","public_data") ."/repository/";
 		confess($d) unless -e $d;
 		return $d;
 	},
@@ -649,7 +651,7 @@ sub config_database {
 
 sub getDataDirectory {
 	my ($self, $type) = @_;
-	return $self->config_path("$type");
+	return $self->config_path("root","$type");
 	confess unless exists  $self->config->{'project_data'}->{$type};
 	return $self->config->{'project_data'}->{$type};
 } 
@@ -812,7 +814,7 @@ sub samtools {
 sub getListAllProjectName {
 	my $self = shift;
 	my @lProjectName;
-	my $dir = $self->config_path("project_data").'/'.$self->config()->{project_data}->{'ngs'}.'/';
+	my $dir = $self->config_path("root","project_data").'/'.$self->config()->{project_data}->{'ngs'}.'/';
 	opendir(PROJECTS_PATH, "$dir");
 	### TODO: change method (use DB and not readdir... can have some dir (not deleted) from deleted project)
 	my @lProjectsPath = sort(readdir(PROJECTS_PATH));
@@ -1331,7 +1333,7 @@ sub gzip_tabix {
 
 sub public_data_annotation_root {
 		my ($self) = @_;
-		return $self->config_path("public_data");
+		return $self->config_path("root","public_data");
 }
 
 sub Intspan_length{
@@ -1779,7 +1781,7 @@ sub get_demultiplex_run_infos {
 
 sub liftover_chain_file {
 	my ($self,$vfrom,$vto) = @_;
-	my $file = $self->config_path("public_data") . "/chain/".$self->config->{'public_data'}->{"liftover_chain_".$vfrom."_".$vto};
+	my $file = $self->config_path("root","public_data") . "/chain/".$self->config->{'public_data'}->{"liftover_chain_".$vfrom."_".$vto};
 	confess($file." : chain file not found ") unless -e $file;
 	return $file;
 	
