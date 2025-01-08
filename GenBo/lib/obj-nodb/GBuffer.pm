@@ -200,7 +200,7 @@ sub config_path {
 	unless ($type){
 		confess();
 	} 
-	confess($type) unless exists $self->hconfig_path->{$key}->{$type};
+	confess($type) unless exists $self->hash_config_path->{$key}->{$type};
 	return $self->hconfig_path->{$key}->{$type};
 }
 
