@@ -1945,8 +1945,8 @@ has DejaVuProjectsSVeq_path => (
 
 #		confess();
 #confess("\n\nERROR: no annotation version found for this project in DataBase. Die\n\n") unless ($self->annotation_version);
+ 	my $dir =$self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"SVeq")."/projects";
  
-	my $dir = $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"SVeq")."/projects"; 
 confess("sveq dejavu $dir") unless -e $dir;
 
 		return $dir;
