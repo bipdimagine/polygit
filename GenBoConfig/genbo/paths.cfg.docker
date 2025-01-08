@@ -14,3 +14,10 @@ bds:/poly-disk/bds/
 dragen_pipeline:/data-dragen/pipeline/
 software:/software/bin
 singularity:/data-beegfs/software/sif/
+
+
+[dejavu]
+variants:variants/rocks/
+projects:variants/projects.tar/
+CNV:CNV/
+SVeq:SVeq/
