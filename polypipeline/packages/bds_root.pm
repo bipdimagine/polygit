@@ -347,7 +347,6 @@ sub shell2 {
 		
 		foreach my $s (@{$hSampleByPriority->{$priority}}) {
 			my $jobs = $s->jobs;
-			warn $priority;
 			
 			foreach my $j (@$jobs){
 				next if $j->is_skip();
@@ -390,10 +389,9 @@ foreach my $job (@$commands) {
  	print colored::stabilo("green",$job->{name}.":".$job->{sample});
  	my @cmd1 = split("&&",$job->{cmd});
  	my $cmd = $cmd1[0]." >$output_file 2>&1";
- 	$cmd .= " && ".$cmd1[1];
+ 	$cmd .= " && ".$cmd1[1] if  $cmd1;
  	die() if scalar(@cmd1) > 2;
     my $status = system($cmd);
- 	
   
     # Vérification des erreurs
     if ($status != 0) {
