@@ -201,7 +201,7 @@ sub config_path {
 		confess();
 	} 
 	confess($type) unless exists $self->hash_config_path->{$key}->{$type};
-	return $self->hconfig_path->{$key}->{$type};
+	return $self->hash_config_path->{$key}->{$type};
 }
 
 has public_data_versions => (
