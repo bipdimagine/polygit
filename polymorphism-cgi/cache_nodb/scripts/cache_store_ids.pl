@@ -122,7 +122,7 @@ foreach my $region (@$regions) {
                         SUFFIX => '.freeze');
                         
     $region->{freeze}= $region->{freeze_tmp}->filename;                
-	$region->{dir_freeze}= $buffer->config_path("tmp");
+	$region->{dir_freeze}= $buffer->config_path("root","tmp");
 	$region->{full_name} = $project->name.".".$region->{chromosome}.".".$region->{start}."-".$region->{end};
 	$hregion->{$region->{chromosome}.".".$region->{start}."-".$region->{end}} = $region;
 	

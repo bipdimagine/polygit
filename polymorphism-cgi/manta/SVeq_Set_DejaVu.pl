@@ -46,7 +46,7 @@ my $buffer = GBuffer->new();
 my @releases = ("HG19");	
 
 # pour acceder aux dejavu de chaque projet
-my $dir = $buffer->config_path("dejavu").$releases[0]."/".$buffer->config->{'deja_vu_SV'}->{SVeq};
+my $dir = $buffer->config_path("root","dejavu").$releases[0]."/".$buffer->config->{'deja_vu_SV'}->{SVeq};
 my $cmd = "ls $dir/projects/*.SVeqDejavu";
 my @res = `$cmd`;
 

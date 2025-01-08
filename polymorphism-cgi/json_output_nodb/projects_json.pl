@@ -128,8 +128,8 @@ sub getProjectLists {
 		$project->{nb_total} = $nb_project; 
 		$project->{pedigree} = 0;
 		$project->{somatic} = 0;
-		$project->{pedigree} = 1 if -e $buffer->config_path("project_data")."/".$project->{type}."/".$project->{name}."/".$project->{name}.".ped";
-		$project->{somatic} = 1 if -e $buffer->config_path("project_data")."/".$project->{type}."/".$project->{name}."/".$project->{name}.".somatic";
+		$project->{pedigree} = 1 if -e $buffer->config_path("root","project_data")."/".$project->{type}."/".$project->{name}."/".$project->{name}.".ped";
+		$project->{somatic} = 1 if -e $buffer->config_path("root","project_data")."/".$project->{type}."/".$project->{name}."/".$project->{name}.".somatic";
 			$project->{sequencing} = $sm_string;
 		if (lc($project->{dbname}) eq "polyexome" || lc($project->{dbname}) eq "polyrock"){
 			$project->{dbname} = $project->{dbname}."_".$ph->{version};
@@ -352,7 +352,7 @@ sub getCoverage {
 	my ($project) = @_;
 	my $projectName = $project->name();
 	my $build = $project->getVersion();
-	my $coverage_dir = $buffer->config_path("project_data")."/". $buffer->{config}->{project_data}->{ngs}."/$projectName/$build/align/coverage/";
+	my $coverage_dir = $buffer->config_path("root","project_data")."/". $buffer->{config}->{project_data}->{ngs}."/$projectName/$build/align/coverage/";
 	my @files = `ls $coverage_dir/*.cov.gz 2>/dev/null`;
 	chomp (@files);
 	

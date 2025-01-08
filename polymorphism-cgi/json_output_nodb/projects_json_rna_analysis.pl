@@ -138,19 +138,19 @@ sub getProjectListsRNA {
 			
 			
 			if ($path_DB =~ /HG19/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG38/analysis/");
-				push(@lPotentialPath, $p1->buffer()->config_path("project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG38_CNG/analysis/");
+				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG38/analysis/");
+				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG38_CNG/analysis/");
 			}
 			elsif ($path_DB =~ /HG38/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19/analysis/");
-				push(@lPotentialPath, $p1->buffer()->config_path("project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19_MT/analysis/");
-				push(@lPotentialPath, $p1->buffer()->config_path("project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19_CNG/analysis/");
+				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19/analysis/");
+				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19_MT/analysis/");
+				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19_CNG/analysis/");
 			}
 			elsif ($path_DB =~ /MM38/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("project_data")."/".$p1->getProjectType()."/".$p1->name()."/MM39/analysis/");
+				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/MM39/analysis/");
 			}
 			elsif ($path_DB =~ /MM39/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("project_data")."/".$p1->getProjectType()."/".$p1->name()."/MM38/analysis/");
+				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/MM38/analysis/");
 			}
 			foreach my $path (@lPotentialPath) {
 				next unless -d $path;

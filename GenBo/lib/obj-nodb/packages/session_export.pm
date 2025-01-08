@@ -20,7 +20,7 @@ has tmp_dir => (
 	default => sub {
 		my $self = shift;
 		my $buffer = new GBuffer;
-		my $tmp_dir = $buffer->config->{project_data}->{global_search};
+		my $tmp_dir = $buffer->config_path("root","global_search");
 		#my $tmp_dir = '/data-isilon/bipd-src/mbras/tmp_session/';
 		unless ( -d $tmp_dir ) {
 			`mkdir $tmp_dir`;

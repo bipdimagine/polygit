@@ -401,7 +401,7 @@ has sequencesDir => (
 		my $run_name    = $run->plateform_run_name();
 		my $constructor = $run->machine_constructor();
 		my $plateform   = $run->plateform();
-		my $path        = $self->buffer()->config_path("sequences");
+		my $path        = $self->buffer()->config_path("root","sequences");
 
 		my $seq_dir =
 			$path . "/"
@@ -1047,7 +1047,7 @@ has RnaseqSEA_SE => (
 	default => sub {
 		my $self  = shift;
 		my $align_method = $self->alignmentMethods->[0];
-		my $path = $self->getProject->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
+		my $path = $self->getProject->buffer()->config_path("root","project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
 		my $file = $path.'/'.$self->name().'_SE.txt.gz';
 		return $file if -e $file;
 		return;
@@ -1060,7 +1060,7 @@ has RnaseqSEA_RI => (
 	default => sub {
 		my $self  = shift;
 		my $align_method = $self->alignmentMethods->[0];
-		my $path = $self->getProject->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
+		my $path = $self->getProject->buffer()->config_path("root","project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/junctions/$align_method/rnaseqsea/";
 		my $file = $path.'/'.$self->name().'_RI.txt.gz';
 		return $file if -e $file;
 		return;
@@ -1676,7 +1676,7 @@ sub getBamFileName {
 sub getPhysicalFilesDir {
 	my ( $self, $method_name,$version ) = @_;
 	return $self->{files_dir} if exists $self->{cram_dir};
-	$self->{files_dir} = $self->buffer->config_path("project_data")."/ngs/FILES/".$self->id."/";
+	$self->{files_dir} = $self->buffer->config_path("root","project_data")."/ngs/FILES/".$self->id."/";
 	return $self->project->makedir($self->{files_dir});
 	return $self->{files_dir};
 }

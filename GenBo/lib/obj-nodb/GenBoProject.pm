@@ -655,7 +655,7 @@ has rocks_cache_dir => (
 		my $self = shift;
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
-	my $name = $self->buffer->config_path("cache").$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	my $name = $self->buffer->config_path("root","cache").'/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
 	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
 	$name .= "/".$self->name();
 	$self->makedir($name);
@@ -1250,7 +1250,7 @@ has project_root_path => (
 	default => sub {
 		my $self     = shift;
 		my $dirNgs   = $self->buffer->config->{project_data}->{ngs};
-		my $pathRoot = $self->buffer->config_path("project_data");
+		my $pathRoot = $self->buffer->config_path("root","project_data");
 		my $path1    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
 		$self->makedir($path1);
 
@@ -1299,7 +1299,7 @@ has project_pipeline_path => (
 	lazy    => 1,
 	default => sub {
 		my $self     = shift;
-		my $pathRoot = $self->buffer->config_path("project_pipeline");
+		my $pathRoot = $self->buffer->config_path("root","project_pipeline");
 		my $path     = $pathRoot . "/tmp." . $self->name() . "/";
 		$self->makedir($path);
 		$path .= $self->getVersion . "/";
@@ -1311,7 +1311,7 @@ is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self     = shift;
-		my $pathRoot = $self->buffer->config_path->{dragen_pipeline};
+		my $pathRoot = $self->buffer->config_path("root","dragen_pipeline");
 		my $path     = $pathRoot . "/" . $self->name() . "/";
 		$path .= $self->getVersion . "/";
 		return $path;
@@ -1322,7 +1322,7 @@ is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self     = shift;
-		my $pathRoot = $self->buffer->config_path("pipeline");
+		my $pathRoot = $self->buffer->config_path("root","pipeline");
 		my $path     = $pathRoot . "/" . $self->name() . "/";
 		$path .= $self->getVersion . "/";
 		return $path;
@@ -1333,7 +1333,7 @@ is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self     = shift;
-		my $pathRoot = $self->buffer->config_path("dragen_pipeline");
+		my $pathRoot = $self->buffer->config_path("root","dragen_pipeline");
 		my $path     = $pathRoot . "/" . $self->getRun->name()."/";
 		return ($self->makedir($path));
 	},
@@ -1428,7 +1428,7 @@ has sequenceRootDir => (
 		my $self = shift;
 		confess();
 		return;
-		my $path = $self->buffer()->config_path("project_data");
+		my $path = $self->buffer()->config_path("root","project_data");
 		$path =
 			$path . "/"
 		  . $self->getProjectType() . "/"
@@ -1569,13 +1569,13 @@ has gencode_version => (
 sub get_gencode_directory {
 	my ( $self, $version ) = @_;
 	if ($self->annotation_genome_version() =~ /MM38/) {
-		return $self->buffer->config_path("public_data")."/repository/MM38/annotations/gencode.vM25/lmdb/";
+		return $self->buffer->config_path("root","public_data")."/repository/MM38/annotations/gencode.vM25/lmdb/";
 	}
 	if ($self->annotation_genome_version() =~ /MM39/) {
-		return $self->buffer->config_path("public_data")."/repository/MM39/annotations/gencode.vM32/lmdb/";
+		return $self->buffer->config_path("root","public_data")."/repository/MM39/annotations/gencode.vM32/lmdb/";
 	}
 	if ($self->annotation_genome_version() =~ /HG19/) {
-		return $self->buffer->config_path("public_data")."/repository/HG19/annotations/gencode.v43/lmdb/";
+		return $self->buffer->config_path("root","public_data")."/repository/HG19/annotations/gencode.v43/lmdb/";
 	}
 	
 	my $database = "gencode";
@@ -1616,7 +1616,7 @@ sub get_public_data_directory {
 	
 	if (exists $self->buffer->public_data->{$version}->{$database}->{config}->{semantic}){
 		
-		$self->{directory}->{$database} = $self->buffer->config_path("public_data")."/repository/semantic/".$self->buffer->public_data->{$version}->{$database}->{config}->{directory};
+		$self->{directory}->{$database} = $self->buffer->config_path("root","public_data")."/repository/semantic/".$self->buffer->public_data->{$version}->{$database}->{config}->{directory};
 	}
 	else {
 		$self->{directory}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->public_data->{$version}->{$database}->{config}->{directory};
@@ -1847,7 +1847,7 @@ has annotation_public_path => (
 "\n\nERROR: no annotation version found for this project in DataBase. Die\n\n"
 		) unless ( $self->annotation_version );
 		my $dir =
-			$self->buffer()->config_path("public_data")
+			$self->buffer()->config_path("root","public_data")
 		  . '/annotations/'
 		  . $self->annotation_version . "/";
 		confess("public_data annotation $dir") unless -e $dir;
@@ -1860,7 +1860,7 @@ has annotation_public_path => (
 
 sub get_dejavu_junctions_path {
 	my ($self, $phenotype_name) = @_;
-	my $dir = $self->buffer->config_path("dejavu") . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
+	my $dir = $self->buffer->config_path("root","dejavu") . $self->annotation_genome_version . "/" . $self->buffer()->config->{'deja_vu_JUNCTION'}->{junctions};
 	$dir .= '/'.$phenotype_name.'/' if ($phenotype_name);
 	
 	confess("junction dejavu $dir") unless -e $dir;
@@ -1886,7 +1886,7 @@ has DejaVuCNV_path => (
 #confess("\n\nERROR: no annotation version found for this project in DataBase. Die\n\n") unless ($self->annotation_version);
 return $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"CNV");
 
-		return $dir;
+		#return $dir;
 
 	},
 );
@@ -1945,8 +1945,8 @@ has DejaVuProjectsSVeq_path => (
 
 #		confess();
 #confess("\n\nERROR: no annotation version found for this project in DataBase. Die\n\n") unless ($self->annotation_version);
- $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"SVeq")."/projects";
-	my $dir = 
+ 
+	my $dir = $self->buffer()->deja_vu_public_dir($self->annotation_genome_version,"SVeq")."/projects"; 
 confess("sveq dejavu $dir") unless -e $dir;
 
 		return $dir;
@@ -2012,7 +2012,7 @@ has dirGenome => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir  = $self->buffer()->config_path("public_data") . "/genome/"
+		my $dir  = $self->buffer()->config_path("root","public_data") . "/genome/"
 		  . $self->genome_version . "/";
 		return $dir;
 
@@ -2024,7 +2024,7 @@ has dirCellranger => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir  = $self->buffer()->config_path("public_data")
+		my $dir  = $self->buffer()->config_path("root","public_data")
 		  . "/cellranger";
 		return $dir;
 
@@ -2088,7 +2088,7 @@ has capture_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir  = $self->buffer()->config_path("public_data") . "/capture/"
+		my $dir  = $self->buffer()->config_path("root","public_data") . "/capture/"
 		  . $self->genome_version_generic . "/";
 		return $dir;
 
@@ -2100,7 +2100,7 @@ has chain_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir  = $self->buffer()->config_path("public_data") . "/chain/";
+		my $dir  = $self->buffer()->config_path("root","public_data") . "/chain/";
 		return $dir;
 
 	},
@@ -2119,7 +2119,7 @@ has dirGenomeGeneric => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir  = $self->buffer()->config_path("public_data") . "/genome/"
+		my $dir  = $self->buffer()->config_path("root","public_data") . "/genome/"
 		  . $self->genome_version_generic . "/";
 		return $dir;
 
@@ -2148,7 +2148,7 @@ has rds_gencode_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config_path("public_data").'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		my $file = $self->buffer()->config_path("root","public_data").'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
 		die($file) unless -e $file;
 		return $file;
 	}
@@ -2160,7 +2160,7 @@ has rds_junctions_canoniques_gencode_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config_path("public_data").'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/Junc_".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
+		my $file = $self->buffer()->config_path("root","public_data").'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/rds/Junc_".$self->annotation_genome_version."_gencode".$self->gencode_version.".rds";
 		die($file) unless -e $file;
 		return $file;
 	}
@@ -2172,8 +2172,8 @@ has gtf_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config_path("public_data").'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
-		$file = $self->buffer()->config_path("public_data").'/repository/'.$version.'/'.$self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
+		my $file = $self->buffer()->config_path("root","public_data").'repository/'.$self->annotation_genome_version.'/annotations/'.'/gencode.v'.$self->gencode_version."/gtf/annotation.gtf";
+		$file = $self->buffer()->config_path("root","public_data").'/repository/'.$version.'/'.$self->buffer()->config->{'public_data'}->{gtf} unless -e $file;
 		die($file) unless -e $file;	
 		return $file;
 	},
@@ -2187,7 +2187,7 @@ has gtf_file_dragen => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config_path("public_data") . '/repository/'
+			$self->buffer()->config_path("root","public_data") . '/repository/'
 		  .  $self->annotation_genome_version  . '/'
 		  . $self->buffer()->config->{'public_data'}->{gtf_dragen};
 		return $file;
@@ -2202,7 +2202,7 @@ has gtf_file_star => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config_path("public_data") . '/repository/'
+			$self->buffer()->config_path("root","public_data") . '/repository/'
 		  . $version . '/'
 		  . $self->buffer()->config->{'public_data'}->{gtf_star};
 		return $file;
@@ -2216,11 +2216,11 @@ has refFlat_file => (
 	default => sub {
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
-		my $file = $self->buffer()->config_path("public_data") 
+		my $file = $self->buffer()->config_path("root","public_data") 
 			. 'repository/'.$self->annotation_genome_version  .'/annotations/'
 		 	.   '/gencode.v'.$self->gencode_version."/refFlat/refFlat.txt";
 		warn $file;
-		$file = $self->buffer()->config_path("public_data") . '/repository/'
+		$file = $self->buffer()->config_path("root","public_data") . '/repository/'
 		 	. $version
 		  	. '/refFlat/refFlat.txt' unless -e $file;
 		
@@ -2235,7 +2235,7 @@ has refFlat_file_star => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config_path("public_data") . '/'
+			$self->buffer()->config_path("root","public_data") . '/'
 		  . $version
 		  . '/refFlat/refFlat_no_chr.txt';
 		return $file;
@@ -2249,7 +2249,7 @@ has rRNA_file => (
 		my $self = shift;
 		my $path = my $version = $self->getVersion();
 		my $file =
-			$self->buffer()->config_path("public_data") . '/'
+			$self->buffer()->config_path("root","public_data") . '/'
 		  . $version
 		  . '/refFlat/rRNA.interval_list';
 		return $file;
@@ -2550,7 +2550,7 @@ has allPath => (
 			  $rootDir . "" . $align . "/" . lc($m) . "/";
 		}
 
-		my $sequenceDir       = $self->{buffer}->config_path("project_data");
+		my $sequenceDir       = $self->{buffer}->config_path("root","project_data");
 		my $methodsSequencing = $self->getSequencingMachines();
 		my @dirs;
 		foreach my $m (@$methodsSequencing) {
@@ -2948,7 +2948,7 @@ has getTsoAdaptors => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		my $dir = $self->buffer->config_path("public_data");
+		my $dir = $self->buffer->config_path("root","public_data");
 		my $file = $dir . "/".$self->buffer->config->{adaptor_flexbar}->{tso};
 		return $file if (-e $file);
 		confess();
@@ -2960,7 +2960,7 @@ has getIlluminaAdaptors => (
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		my $dir = $self->buffer->config_path("public_data");
+		my $dir = $self->buffer->config_path("root","public_data");
 		my $file = $dir."/".$self->buffer->config->{adaptor_flexbar}->{illumina};
 		warn $file;
 		return $file if (-e $file);
@@ -3531,6 +3531,7 @@ sub newTranscript {
 
 sub newGene {
 	my ( $self, $id ) = @_;
+	confess if not $id;
 	return $self->{objects}->{genes}->{$id} if (exists $self->{objects}->{genes}->{$id});
 	$self->getChromosomes();
 	my $id1;
@@ -4215,7 +4216,7 @@ sub makePath {
 	my $self = shift;
 	$self->allPath unless exists $self->{dir};
 
-	my $dir = $self->buffer()->config_path("project_data");
+	my $dir = $self->buffer()->config_path("root","project_data");
 	my $dd =
 		$dir . ""
 	  . $self->buffer()->getDataDirectory( $self->getProjectType ) . "/"
@@ -6116,8 +6117,11 @@ has deja_vu_rocks_dir => (
 	default => sub {
 		my $self = shift;
 
-		my $dir =$self->buffer->deja_vu_public_dir($self->genome_version_generic)."/rocks/";
-		return $self->makedir($dir);
+		#my $dir =$self->buffer->deja_vu_public_dir($self->genome_version_generic)."/rocks/";
+		#return $self->makedir($dir);
+		my $dir =$self->buffer->deja_vu_public_dir($self->genome_version_generic);
+		return $dir;
+		
 
 	},
 );
@@ -6131,9 +6135,18 @@ sub deja_vu_lite_public_dir {
 }
 
 sub deja_vu_rocks_project_dir {
+	my ($self,$version)= @_;
+	$version = $self->genome_version_generic unless $version;
+	my $type = "projects";
+	my $root =  $self->buffer->deja_vu_project_dir($version,$type);
+	return $root;
+}
+
+sub deja_vu_rocks_public_dir {
 	my ($self,$version,$type)= @_;
 	$type = "variations" unless $type;
-	my $root =  $self->buffer->deja_vu_project_dir($version);
+	$version = $self->genome_version_generic unless $version;
+	my $root =  $self->buffer->deja_vu_public_dir($version,$type);
 	return $root;
 }
 
@@ -6566,11 +6579,11 @@ has get_path_rna_seq_polyrna_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
+		my $path = $self->buffer()->config_path("root","project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
 		return $path if -d $path;
 		my @lPotentialRelease = ('HG19', 'HG19_CNG', 'HG19_MT', 'HG38', 'HG38-ERCC', 'MM38', 'MM39');
 		foreach my $rel2 (@lPotentialRelease) {
-			my $alt_path = $self->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$rel2."/polyRNA/";
+			my $alt_path = $self->buffer()->config_path("root","project_data")."/".$self->getProjectType()."/".$self->name()."/".$rel2."/polyRNA/";
 			return $alt_path if -d $alt_path;
 			
 		}
@@ -6583,7 +6596,7 @@ has get_path_rna_seq_junctions_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
+		my $path = $self->buffer()->config_path("root","project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
 		return $path;
 	},
 );
@@ -6660,7 +6673,7 @@ has get_path_rna_seq_junctions_analyse_description_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->config_path("project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/RNAseqSEA/";
+		my $path = $self->buffer()->config_path("root","project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/RNAseqSEA/";
 		return $path;
 	},
 );
@@ -6710,7 +6723,7 @@ has get_hash_patients_description_rna_seq_junction_analyse => (
 sub get_gtf_genes_annotations_igv {
 	my ($self) = @_;
 	if ($self->getVersion() =~ /HG19/) {
-		my $igv_dir = $self->buffer->config_path("public_data").'/igv/';
+		my $igv_dir = $self->buffer->config_path("root","public_data").'/igv/';
 		if (defined $self->gencode_version() && $self->gencode_version() ne '-1') {
 			my $file = $igv_dir.'/gencode.'.$self->gencode_version().'.gtf.gz';
 			return $file if (-e $file);
@@ -6718,7 +6731,7 @@ sub get_gtf_genes_annotations_igv {
 		my $file = $igv_dir.'/gencode.gtf.gz';
 		return $file;
 	}
-	return $self->buffer->config_path("public_data")."/".$self->getVersion()."/igv/gencode.gtf.gz";
+	return $self->buffer->config_path("root","public_data")."/".$self->getVersion()."/igv/gencode.gtf.gz";
 }
 
 sub getQueryJunction {

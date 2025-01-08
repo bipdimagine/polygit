@@ -1,24 +1,24 @@
 
 [root]
-public_data:/data-isilon/public-data
-dejavu:/data-isilon/DejaVu
-dejavu_projects:/data-isilon/DejaVu
+public_data:/data-isilon/public-data/
+dejavu:/data-isilon/DejaVu/
+dejavu_projects:/data-isilon/DejaVu/
 singularity:/data-beegfs/software/sif/
 project_data:/data-isilon/sequencing/
 sequences:/data-isilon/data/sequences
 global_search:/data-isilon/polycache/global_search/
 btf:/data-isilon/polycache/polybtf/
-cache:/data-isilon/polycache/rocks
+cache:/data-isilon/polycache/rocks/
 project_pipeline:data-beegfs/sequencing/pipeline/
-tmp:/data-beegfs/tmp
+tmp:/data-beegfs/tmp/
 bds:/data-beegfs/bds/
 dragen_pipeline:/data-dragen/pipeline/
-software:/software/bin
+software:/software/bin/
 
 
 
 [dejavu]
-variants:variants/rocks/
-projects:variants/projects.tar/
+variations:variations/rocks/
+projects:variations/projects.tar/
 CNV:CNV/
 SVeq:SVeq/

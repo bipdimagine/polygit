@@ -200,8 +200,8 @@ sub config_path {
 	unless ($type){
 		confess();
 	} 
-	confess($type) unless exists $self->hconfig_path->{$key}->{$type};
-	return $self->hconfig_path->{$key}->{$type};
+	confess($type) unless exists $self->hash_config_path->{$key}->{$type};
+	return $self->hash_config_path->{$key}->{$type};
 }
 
 has public_data_versions => (
@@ -332,7 +332,7 @@ sub deja_vu_public_dir {
 	confess() unless $version;
 	$type ="variations" unless $type;
 	return $self->{dj_pub_dir}->{$version}->{$type} if exists $self->{dj_pub_dir}->{$version}->{$type};
-	$self->{dj_pub_dir}->{$version}->{$type} =  $self->config_path("root","dejavu")."/".$version . "/".$self->config_path("dejavu",$type);
+	$self->{dj_pub_dir}->{$version}->{$type} =  $self->config_path("root","dejavu")."/".$version.'/'. "/".$self->config_path("dejavu",$type);
 	return $self->{dj_pub_dir}->{$version}->{$type}  if -e $self->{dj_pub_dir}->{$version}->{$type};
 	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_pub_dir}->{$version}->{$type} );
 }
