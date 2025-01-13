@@ -1583,8 +1583,7 @@ sub get_gencode_directory {
 	return $self->{directory}->{$version}->{$database} if exists $self->{directory}->{$version}->{$database};
 	confess() unless exists $self->buffer->gencode->{$version}->{directory};
 	$self->{directory}->{$version}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
-	confess( "score:$database " . $self->{directory}->{$version}->{$database} )
-	  unless -e $self->{directory}->{$version}->{$database};
+	confess( "\n\nERROR: score:$database " . $self->{directory}->{$version}->{$database}."\n/n" ) unless -e $self->{directory}->{$version}->{$database};
 
 	#$self->{directory}->{$version}->{$database} = "/tmp/pipeline/annot/lmdb/";
 	#warn $self->{directory}->{$version}->{$database};
@@ -1612,7 +1611,7 @@ sub get_public_data_directory {
 	my ( $self, $database, $version ) = @_;
 	return $self->{directory}->{$database} if exists $self->{directory}->{$database} ;
 	$version = $self->public_database_version unless $version;
-	warn $database." ".$version;
+	#warn $database." ".$version;
 	
 	if (exists $self->buffer->public_data->{$version}->{$database}->{config}->{semantic}){
 		

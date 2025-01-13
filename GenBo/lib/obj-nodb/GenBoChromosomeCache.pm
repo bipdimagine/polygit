@@ -614,7 +614,7 @@ sub cache_variations {
 	if ($self->project->isRocks){
 		return $self->get_rocks_variations("r");
 	}
-	confess();
+#	confess();
 	return $self->get_lmdb_variations("r");;
 	
 }
@@ -1043,7 +1043,6 @@ sub vector_global_categories {
 		return $v;
 	}
 	else {
-		die;
 		my $v = $self->hash_vector_global_categories()->{$cat};
 		return $self->getNewVector() unless $v; 
 		return $v;

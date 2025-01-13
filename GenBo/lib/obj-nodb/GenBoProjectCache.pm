@@ -48,6 +48,7 @@ is		=> 'rw',
 		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
 			return 1;
 		}
+		$self->buffer->hash_config_path->{root}->{cache} = $self->buffer->hash_config_path->{root}->{cache_lmdb}; 
 		return undef;
 	},
 );
@@ -654,7 +655,6 @@ sub setVariants {
 	elsif ($type eq 'junctions') 		{ $method = 'getJunctions'; }
 	my $h;
 	foreach my $chr (@{$self->getChromosomes()}) {
-		next if ($chr->not_used());
 		foreach my $var (@{$chr->$method()}) {
 			$h->{$var->id()} = undef;
 		}

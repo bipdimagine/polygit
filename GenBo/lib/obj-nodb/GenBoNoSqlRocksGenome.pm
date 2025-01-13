@@ -369,7 +369,8 @@ sub decode_dejavu {
 #		warn 'project_id:'.$p.' - he:'.$he.' - ho:'.$ho.' - he+ho:'.scalar(@a);
 #		warn Dumper unpack("w*",$z);
 		
-		#next if ($he+$ho != scalar(@a));
+		next if not @a;		
+		next if ($he+$ho != scalar(@a));
 		
 		confess("\n\nERRROR: problem DEJAVU rocks unpack. Die\n\n") if ($he+$ho != scalar(@a));
 	#	warn "ok";
@@ -456,7 +457,6 @@ sub dejavu_interval {
 	my $dbs = $self->get_dbs_interval($start,$end);
 	my $h_res;
 	foreach my $db (sort{$a->{start} <=> $b->{start}} @$dbs){
-		warn $db->{start};
 		$self->{current_db} = $db;
 		my $iter = $db->rocks->new_iterator->seek($pos);
 		while (my ($key, $value) = $iter->each) {
@@ -465,8 +465,8 @@ sub dejavu_interval {
 			if ($this_pos > $end) {
 				last;
 			}
-			warn "\n\n";
-			warn $key.': '.$value;
+#			warn "\n\n";
+#			warn $key.': '.$value;
 			$h_res->{$key} = $self->decode_dejavu($value);
 		}
 	}

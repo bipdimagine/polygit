@@ -2365,5 +2365,24 @@ sub getDejaVuInfosForDiagforVariant{
 	
 }
 
+sub transform_rocksid_to_varid {
+	my ($self, $rocksid) = @_;
+	my $var_id = $self->id;
+	my ($pos, $alt) = split('!', $rocksid);
+	
+	my $ref = $self->getSequence(int($pos), int($pos));
+	if ($alt =~ /\+/) {
+		$alt =~ s/\+/$ref/;
+	}
+	elsif ($alt =~ /^[0-9]+$/) {
+		my $length_del = int($alt);
+		$alt = $ref;
+		$ref = $self->getSequence(int($pos), (int($pos)+$length_del));
+	}
+	else { return; }
+	$var_id .= '_'.int($pos).'_'.$ref.'_'.$alt;
+	return $var_id;
+}
+
 
 1;

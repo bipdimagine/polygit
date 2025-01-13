@@ -20,6 +20,14 @@ has version => (
 	is		=> 'ro',
 	required=> 1,
 );
+
+has debug => (
+	is		=> 'ro',
+	default => sub {
+		return ;
+	},
+);
+
 has regions => (
 	is		=> 'ro',
 	default => sub {
@@ -96,9 +104,9 @@ sub liftOver_regions {
 		my $fileoutsort = $fht21->filename;
 		
 	   my $cmd = $self->project->buffer->software("liftOver")." ".$self->file_regions->filename." ". $self->chain_file." ".$fileout." /dev/stderr >/dev/null 2>/dev/null";
-	   warn $cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout";
+	   warn $cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout" if $self->debug;
 	   system($cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout"  );
-	   warn "end lift";
+	   warn "end lift" if $self->debug;
 	   return $self->parse_bed_region($fileoutsort);
 }
 
@@ -132,6 +140,8 @@ sub add_variant {
 
 sub lift_over_variant {
 	   my ($self,$variation,$version,$key) = @_;
+	   warn ref($self) if $self->debug;
+	   warn $variation if $self->debug;
 	   my $id = $variation->id;
 	   my $cmd = 
 		$self->lift_over_variants([$variation],$key);
@@ -172,7 +182,7 @@ sub lift_over_variants {
   
 
    #run_crossmap($project,$vcf_input,$version,$res);
-   run_liftOver($project,$bed_input,$res);
+   run_liftOver($self,$bed_input,$res);
    foreach my $v (@$variations){
    	my $id = $v->id;
    	die() unless exists $res->{$id};
@@ -226,7 +236,7 @@ sub run_liftOver {
 	
 	my $stdout;
 	my $stderr;
-	warn join(" ",@cmd);
+	warn join(" ",@cmd) if $self->debug;
 	run3 \@cmd, \$bed, \$stdout, \$stderr;
  	parse_bed($fileout,$res);
  return 1;
@@ -240,7 +250,6 @@ sub parse_bed {
 
 	# Lis le fichier ligne par ligne
 	while (my $line = <$fh>) {
-		warn $line;
 		chomp $line;  # Supprime le caractère de fin de ligne (\n)
    	 	next if $line =~/^#/;
    	 	my @t = split("\t",$line);
