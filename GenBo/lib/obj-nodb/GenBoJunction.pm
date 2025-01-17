@@ -422,7 +422,7 @@ sub createSashiPlot {
 	elsif ($nb_new >= 50)   { $cmd .= " -M 10"; }
 	elsif ($nb_new >= 20)   { $cmd .= " -M 5"; }
 #	warn "\n";
-#	warn $cmd;
+	warn $cmd;
 	`$cmd`;
 	return $file;
 }

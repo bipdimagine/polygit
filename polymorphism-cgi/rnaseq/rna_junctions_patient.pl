@@ -658,7 +658,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $html_id       = get_html_id($junction, $h_same_j_description);
 		my $html_patients = get_html_patients( $junction, $patient);
 		my $html_dv       = get_html_dejavu( $junction, $patient );
-		my $html_spliceai = get_html_spliceAI( $junction );
+		my $html_spliceai = "";
+		$html_spliceai = get_html_spliceAI( $junction ) if $patient->project->is_human_genome();
 		
 				
 
@@ -692,9 +693,11 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			my $g = $project->newGene($gene_name);
 			next unless $g;
 			my $this_score = $score;
-			
-			my $gscore = int(($g->score/2)+0.5);
-			$this_score += $gscore;
+			my $gscore;
+			if ($g->getProject->is_human_genome()) {
+				$gscore = int(($g->score/2)+0.5);
+				$this_score += $gscore;
+			}
 			
 			my $ht = $junction->get_hash_exons_introns();
 			
