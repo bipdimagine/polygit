@@ -2379,7 +2379,6 @@ sub transform_rocksid_to_varid {
 		$alt = $ref;
 		$ref = $self->getSequence(int($pos), (int($pos)+$length_del));
 	}
-	else { return; }
 	$var_id .= '_'.int($pos).'_'.$ref.'_'.$alt;
 	return $var_id;
 }

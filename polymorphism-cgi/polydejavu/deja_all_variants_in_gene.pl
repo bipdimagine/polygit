@@ -172,7 +172,10 @@ $project_init = $buffer_init->newProjectCache( -name => 'NGS2024_7792');
 my $genomeFai_init = $project_init->getGenomeFai();
 my $gene_init;
 eval { $gene_init = $project_init->newGene($gene_id); };
-if ($@) { $gene_init = $project_init->newGene($gene_id_alt); }
+if ($@) {
+	$gene_init = $project_init->newGene($gene_id_alt);
+	supressCoreFilesFound();
+}
 my $gene_init_id_for_newgene = $gene_id;
 my ($gene_ensg, $gene_chr_id);
 eval { ($gene_ensg, $gene_chr_id) = split('_', $gene_init->id()); };
@@ -180,6 +183,7 @@ if ($@) {
 	$gene_init_id_for_newgene = $gene_id_alt;
 	$gene_init = $project_init->newGene($gene_id_alt);
 	($gene_ensg, $gene_chr_id) = split('_', $gene_init->id());
+	supressCoreFilesFound();
 }
 
 my ($use_start, $use_end);
@@ -194,7 +198,7 @@ if ($only_interval) {
 		$locus_start = $locus_end;
 		$locus_end = $t;
 	}
-	confess("\n\nERROR chromosome problem... Die...\n\n") if ($gene_init->getChromosome->id() ne $locus_chr);
+	next if ($gene_init->getChromosome->id() ne $locus_chr);
 	$use_start = $locus_start;
 	$use_end = $locus_end;
 }
@@ -227,11 +231,6 @@ print "{\"progress\":\".";
 my $h_count;
 ($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels) = get_variants_infos_from_projects($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript);
 my $nb_var_after = scalar(keys %$hVariantsDetails);
-
-
-#warn "\n\n\n";
-#warn "EXPORT";
-
 
 
 my $fsize = "font-size:10px";
@@ -678,12 +677,12 @@ sub get_variants_infos_from_projects {
 			eval {
 				$project_fork = $buffer_fork->newProjectCache( -name => $project_name );
 			};
-			
 			if ($@) {
 				$project_fork->disconnect();
 				$project_fork = undef;
 				$buffer_fork = undef;
 		 	 	$hres->{not_found} = 1;
+				supressCoreFilesFound();
 			}
 			
 			else {
@@ -1161,12 +1160,15 @@ sub update_list_variants_from_dejavu {
 		
 		my $is_ok_annot;
 		unless ($var_annot) {
-			$var->annotation();
+			#$var->annotation();
 			eval {
 				if ($transcript_dejavu) { $var_annot = $var->variationTypeInterface($transcript_dejavu); }
 				else { $var_annot = $var->variationTypeInterface($gene_dejavu); }
 			};
-			if ($@) { $var_annot = 'error'; }
+			if ($@) {
+				$var_annot = 'error';
+				supressCoreFilesFound();
+			}
 		}
 		warn $var_annot if $debug;
 		foreach my $this_annot (split(',', $var_annot)) {
@@ -1180,7 +1182,8 @@ sub update_list_variants_from_dejavu {
 		
 		warn 'rocks: '.$var->rocksdb_id if $debug;
 		warn $h_dv_var_ids->{$var_id}->{rocks_id} if $debug;
-		confess if not exists $h_dv_rocks_ids->{$var->rocksdb_id};
+		next if not exists $h_dv_rocks_ids->{$var->rocksdb_id};
+
 		foreach my $proj_id (keys %{$h_dv_rocks_ids->{$var->rocksdb_id}}) {
 			next if not exists $hProjectsIds->{$proj_id};
 			$hVariantsIdsDejavu->{$var_id}->{$hProjectsIds->{$proj_id}} = $proj_id;
@@ -1193,7 +1196,6 @@ sub update_list_variants_from_dejavu {
 		warn '8 - ok dejavu ho' if $debug;
 		
 		
-#		my $table_dejavu = update_variant_editor::table_dejavu($var, 'no_phenotype');
 		my $table_dejavu;
 		my $h_var;
 		$h_var->{html}->{done_here} = 1;
@@ -1206,20 +1208,12 @@ sub update_list_variants_from_dejavu {
 		my $vn = $var->id();
 		$vn =~ s/_/-/g;
 		$vn =~ s/chr//;
-#		$h_var->{value}->{gnomad_id} = $vn;
-#		$h_var->{html}->{gnomad_id} = $vn;
-#		update_variant_editor::vname2($var,$h_var);
 		update_variant_editor::vhgmd($var,$h_var);
 		
 		$h_var->{'html'}->{'no_css_polydiag'} = 1;
 		my $val1 = 'onClick="zoomHgmd';
 		my $Val2 = 'onClick="zoomHgmdWithoutCss';
 		$h_var->{'html'}->{'hgmd'} =~ s/$val1/$Val2/;
-		#$h_var->{'html'}->{'var_name'} .= "<br><br><span style='font-size:8px;'><b>".$var->getChromosome->id().':'.$var->start().'-'.$var->end()."</span></b>";
-		
-#		my $cmd_search_he_comp = qq{search_he_comp_with_variant('$var_id', '$user_name');};
-#		my $b_search_he_comp = qq{<button onClick="$cmd_search_he_comp" style="margin-top:7px;font-size:9px;">Search He Composite</button>};
-#		$table_vname .= qq{<center>$b_search_he_comp</center>};
 		
 		if ($var->hgmd) {
 			$h_var->{value}->{hgmd_id} = $var->hgmd_id;
@@ -1230,16 +1224,10 @@ sub update_list_variants_from_dejavu {
 			$h_var->{html}->{hgmd} = update_variant_editor::printButton(4,[3,4], $var->hgmd->{class},qq{onClick="$cmd_hgmd"});
 			if ($var->isDM()) {
 				$h_var->{value}->{dm} = 1;
-				#TODO: here
-#				if ($var->getChromosome->is_hgmd_DM_for_gene($var->hgmd_id, $gene_dejavu)) {
-#					$h_var->{value}->{dm_for_this_gene} = 1;
-#				}
-#				else {
-					$h_var->{value}->{dm_for_this_gene} = undef;
-					$h_var->{value}->{dm} = undef;
-					$h_var->{value}->{hgmd} = '';
-					$h_var->{html}->{hgmd} = '';
-#				}
+				$h_var->{value}->{dm_for_this_gene} = undef;
+				$h_var->{value}->{dm} = undef;
+				$h_var->{value}->{hgmd} = '';
+				$h_var->{html}->{hgmd} = '';
 			}
 		}
 		else { $h_var->{value}->{dm} = ''; }

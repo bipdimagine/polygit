@@ -3,6 +3,7 @@ package GenBoGene;
 use strict;
 use Vcf;
 use Moo;
+use Carp;
 use Data::Dumper;
 use Config::Std;
  use List::Util qw( max );
