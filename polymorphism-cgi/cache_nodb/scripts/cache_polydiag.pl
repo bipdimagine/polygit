@@ -73,7 +73,6 @@ $| = 1;
 
 	my $db_lite ;
 	my $project_name = $project->name();
-	$db_lite->close();
 	$pr->write();
 	foreach my $p ( @{ $patients } ) {
 		my $pname = $p->name();
