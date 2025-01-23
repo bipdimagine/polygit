@@ -28,6 +28,17 @@ GetOptions(
 );
 
 
+my $complete = $dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
+warn $complete;
+my $checkComplete = 1;
+$checkComplete = 0 if -f $complete;
+while($checkComplete == 1){
+	warn "Run not complete, sleep 30 min (1800 s)";
+	sleep(1800);
+	$checkComplete = 0 if -f $complete;
+}
+
+
 my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
 die("no basecall dir $basecall_dir") unless -e  $basecall_dir;
 exit(0) unless -e  $basecall_dir;
@@ -58,16 +69,6 @@ if (-d $final_dir){
 	die($final_dir. " already exists "); 
 }
 
-my $complete = $dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
-warn $complete;
-my $checkComplete = 1;
-$checkComplete = 0 if -f $complete;
-while($checkComplete == 1){
-	warn "sleep 1800s";
-	sleep(1800);
-	$checkComplete = 0 if -f $complete;
-}
-
 mkdir $tmp;
 my $wtmp = "$tmp/Unaligned";
 my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
@@ -80,7 +81,7 @@ elsif($dragen == 1){
 	my $dragen_output = "/staging/RUN/".$run;
 	$cmd1="	dragen --bcl-input-directory $dir  --output-directory $dragen_output --bcl-conversion-only true";
 	$cmd1 = $cmd1. " --sample-sheet=$sample_sheet" if $sample_sheet ;
-warn $cmd1;
+	warn $cmd1;
 }
 
 else{
@@ -104,10 +105,10 @@ else{
 	system("cd $tmp &&"."/software/bin/run_cluster.pl -cpu=40 -cmd=\"$cmd1 && touch $tmp/done.txt\"") if (-e "/software/bin/run_cluster.pl");
 	system("cd $tmp &&"."$cmd1 "." && touch done.txt") unless (-e "/software/bin/run_cluster.pl");
 	if ($? == -1) {
- 	 print "configure failed !!!!!!!! \n";
- 	 rmdir $wtmp;
- 	 rmdir $tmp;
-  	 die();
+		print "configure failed !!!!!!!! \n";
+		rmdir $wtmp;
+ 		rmdir $tmp;
+  		die();
 	}
 }
 

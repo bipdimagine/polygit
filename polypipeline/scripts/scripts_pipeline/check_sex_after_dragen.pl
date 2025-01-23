@@ -47,7 +47,8 @@ if (not -d $dragen_pipeline_dir . "$patient_name/") {
 	next;
 }
 my $ploidy_estimation_file = $dragen_pipeline_dir . "$patient_name/$patient_name.ploidy_estimation_metrics.csv";
-
+my $ploidy_estimation_file2 = $project->getAlignmentStatsDir."$patient_name.ploidy_estimation_metrics.csv";
+$ploidy_estimation_file = $ploidy_estimation_file2 if (-e $ploidy_estimation_file2 and not -e $ploidy_estimation_file);
 
 my $output_path = $project->project_path;
 
@@ -70,7 +71,7 @@ print {$output} $patient_sex ."\t";
 
 
 # Estimated sex chr
-open(my $file, '<', $ploidy_estimation_file) or confess ("ERROR: Could not open file '$ploidy_estimation_file'.\n");
+open(my $file, '<', $ploidy_estimation_file) or confess ("ERROR: Could not open file '$ploidy_estimation_file': $!.\n");
 my $sex_chr;
 while (my $line = readline($file)) {
 	chomp $line;

@@ -5072,7 +5072,7 @@ sub htlv1_insertion {
 		my ( $ln, $ls ) = split( /:/, $l );
 		my $out_dir = $name . "_" . $ln;
 
-		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
+#		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
 		my $cmd =
 "perl $bin_dev/htlv1.pl -project=$project_name  -patient=$name  -f1=$f1 -f2=$f2 $out_dir -ls=$ls -ln=$ln -fork=$ppn ";
 		warn $cmd;
@@ -5348,6 +5348,42 @@ sub rnaseqsea_rnaseq {
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
+	return ($fileout);
+}
+
+sub check_specie_contaminant {
+	my ( $self, $hash ) = @_;
+	my $filein = $hash->{filein};
+	my $patient_name = $self->patient()->name();
+	my $project = $self->patient()->project;
+	my $project_name = $project->name();
+	my $bin_dev = $self->script_dir;
+	my $ppn = 2;
+	my $cmd = "perl $bin_dev/../../../polymorphism-cgi/fastq_screen/launcher_fqs.pl -project=$project_name -patient=$patient_name -fork=1";
+	my $type = "specie_contaminant";
+	my $fileout = $self->patient->fastq_screen_path().'/'.$patient_name.'_screen_nom_espece.txt';
+	
+	my $stepname = $patient_name."@".$type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds,
+		software     => "",
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+
 	return ($fileout);
 }
 

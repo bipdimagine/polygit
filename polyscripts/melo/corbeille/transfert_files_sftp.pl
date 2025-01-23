@@ -9,6 +9,7 @@ use lib "$Bin/packages";use Data::Dumper;
 use Getopt::Long;
 use Carp;
 use IO::Prompt;
+use Term::Menus;
 use colored;
 use Cwd 'abs_path';
 use Net::SFTP;
@@ -20,7 +21,7 @@ my $buffer = new GBuffer;
 
 my $project_names;
 my $patient_names;
-my $file_types;
+my @file_types;
 my $archive_dir = "/data-isilon/download/";
 my $no_die;
 my $archive_name;
@@ -29,14 +30,14 @@ my $help;
 GetOptions(
 	'project=s'		=> \$project_names,		# Projet(s)
 	'patients=s'	=> \$patient_names,		# Patient(s)
-	'files=s'		=> \$file_types,		# fastq, bam, vcf, htlv1 or all
+	'files=s'		=> \@file_types,		# fastq, bam, vcf, htlv1 or all
 	'archive_dir=s'	=> \$archive_dir,
 	'archive_name=s'=> \$archive_name,
 	'nodie'			=> \$no_die,	
 	'help'			=> \$help,		
 );
 
-usage() unless ($project_names and $file_types);
+usage() unless ($project_names);
 usage() if ($help);
 confess ("Directory \"$archive_dir\" does not exit") unless (-d $archive_dir);
 
@@ -56,9 +57,25 @@ $dir_sftp .= '/filetransfer/' unless $dir_sftp =~ /filetransfer$/;
 print "\n";
 
 
+unless (@file_types) {
+	my @types  = [ 'fastq', 'bam', 'vcf', 'htlv1' ];
+	my %Menu_1 = (
+		Item_1 => {
+			Text   => "]Convey[",
+			Convey => @types,
+		},
+		Select => 'Many',
+		Banner => "   Select file types to transfert:"
+	);
+	@file_types = &Menu( \%Menu_1 );
+	die if ( @file_types eq ']quit[' );
+}
+else {
+	@file_types = [ split( ',', @file_types ) ];
+}
 
 # Récupère les fichiers
-$file_types = [split(',', $file_types)];
+@file_types = [split(',', @file_types)];
 my $files;
 my @patient_names = split(',', $patient_names) if ($patient_names ne "all");
 
@@ -76,7 +93,7 @@ foreach my $project_name (@$project_names) {
 		colored::stabilo("yellow", $pat_name);
 		
 		#fastq
-		if (grep {$_ =~ /fastq/i or $_ =~ /all/i} @$file_types) {
+		if (grep {$_ =~ /fastq/i or $_ =~ /all/i} @file_types) {
 			my $fastq_files;
 			print "fastq:\n";
 			eval {
@@ -97,7 +114,7 @@ foreach my $project_name (@$project_names) {
 		}
 		
 		# bam
-		if (grep {$_ =~ /bam/i or $_ =~ /all/i} @$file_types) {
+		if (grep {$_ =~ /bam/i or $_ =~ /all/i} @file_types) {
 			print "bam:\n";
 			my $bam_files = $pat->getBamFiles;
 			if (scalar @$bam_files) {
@@ -118,7 +135,7 @@ foreach my $project_name (@$project_names) {
 		}
 		
 		# vcf
-		if (grep {$_ =~ /vcf/i or $_ =~ /all/i} @$file_types) {
+		if (grep {$_ =~ /vcf/i or $_ =~ /all/i} @file_types) {
 			print "vcf:\n";
 			my $vcf_files = $pat->getVariationsFiles;
 			if (scalar @$vcf_files) {
@@ -140,7 +157,7 @@ foreach my $project_name (@$project_names) {
 		}
 		
 		# htlv1
-		if (grep {$_ =~ /htlv1/i} @$file_types) {
+		if (grep {$_ =~ /htlv1/i} @file_types) {
 			print "htlv1:\n";
 			my $htlv1_dir_path = $project->getVariationsDir("htlv1_calling");
 			opendir(my $htlv1_dir, $htlv1_dir_path) or confess ("Can not open dir '$htlv1_dir_path': $!");
@@ -202,15 +219,15 @@ die ("No file to copy\n") unless $files;
 # todo: vérifier qu'il n'y ait pas déjà un fichier de ce nom dans le sftp ?
 
 # Create the archive
-$archive_name = join('_',@$project_names) .'-'. join('_',@$file_types) .'.tar' unless ($archive_name);
+$archive_name = join('_',@$project_names) .'-'. join('_',@file_types) .'.tar' unless ($archive_name);
 $archive_name .= '.tar' unless ($archive_name && $archive_name =~ /.tar$/);
-$archive_name .= '.gz' if (lc($file_types) eq 'htlv1' && /.tar.gz$/);
+$archive_name .= '.gz' if (lc(@file_types) eq 'htlv1' && /.tar.gz$/);
 
 my $choice = prompt("Make an archive '$archive_name' of these files in '". abs_path($archive_dir) ."/' then put it on the sftp in '$dir_sftp' ?   (y/n)   ");
 die() if ($choice ne "y");
 
 my $cmd = "tar -cvf $archive_dir/$archive_name ". join(" \\\n", @$files);
-$cmd =~ s/-cvf/-cvzf/ if (lc($file_types) eq 'htlv1');
+$cmd =~ s/-cvf/-cvzf/ if (lc(@file_types) eq 'htlv1');
 print "\n";
 #warn $cmd;
 system $cmd;

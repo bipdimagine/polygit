@@ -34,27 +34,26 @@ GetOptions(
 usage() unless ($project_name and $dest_project);
 usage() if ($help);
 
-my @patient_names = split(',', $patient_names) if ($patient_names ne "all");
-
 my $buffer = new GBuffer;
 my $project = $buffer->newProject(-name=>$project_name);
 #warn("Project ".$project_name);
-my $patients = $project->get_only_list_patients(@patient_names);
-#my $patients = $project->getPatients;
+my $patients = $project->get_only_list_patients($patient_names);
 die("No patient in project ".$project_name."\n") unless $patients;
 
-#my $merge;
-#foreach my $pat (@$patients){
-#	my $dest_project = $buffer->getQuery->getProjectDestination($pat->id);
-#	push(@{$merge->{$dest_project}},$pat) if ($dest_project && $dest_project ne $project_name)
-#}
 #die("No patient to merge in project $project_name\n") unless $merge;
+#my $merge;
+#foreach my $p (@$patients) {
+#	push(@{$merge->{$dest_project}}, $p);
+#}
 my $merge->{$dest_project} = $patients;
+
 
 foreach my $pdes (keys %$merge){
 	my $buffer2 = GBuffer->new();
 	my $newProject = $buffer2->newProject(-name=>$pdes);
 	warn("Project $pdes");
+	
+	die ("Genome release for the two projects to merge are different: $project_name ".$project->getVersion." ; $pdes ".$newProject->getVersion) if ($project->getVersion ne $newProject->getVersion);
 	
 	open(my $fh, '>', $project->getAlignmentDirName .'jobs_merge.txt') or confess("Can't open ".$project->getAlignmentDirName .'jobs_merge.txt');
 	warn $project->getAlignmentDirName .'jobs_merge.txt';
@@ -63,18 +62,25 @@ foreach my $pdes (keys %$merge){
 	my $cmd_lien_fastq;
 	foreach my $pat (@{$merge->{$pdes}}){
 		my $pname = $pat->name;
+		warn $pname;
 		my $pat_dest = $newProject->getPatient($pat->name)
 			or confess ("Can't find patient '$pname' to merge in the destination project $pdes ");
 		
-		# Vérifie que les infos des 2 patients à merger sont identiques (méthodes alignement et calling)
-		die ("Alignment method for the two patients to merge are different: $project_name".$pat->alignmentMethod." ; $pdes ".$pat_dest->alignmentMethod) if ($pat->alignmentMethod ne $pat_dest->alignmentMethod);
-		die ("Calling method(s) for the two patients to merge are different: $project_name ".join(', ',@{$pat->callingMethods})." ; $pdes ".join(', ',@{$pat_dest->callingMethods})) if (join(', ',@{$pat->callingMethods}) ne join(', ',@{$pat_dest->callingMethods}));
-		die ("Captures for the two patients to merge are different: $project_name".$pat->getCapture->name." ; $pdes ".$pat_dest->getCapture->name) if ($pat->getCapture->name ne $pat_dest->getCapture->name);
+		# Vérifie que les infos des 2 patients à merger sont identiques
+		# todo: sex, family, status, calling,  ?
+		die ("Sex for the two patients to merge are different: $project_name ".$pat->sex." ; $pdes ".$pat_dest->sex) if ($pat->sex ne $pat_dest->sex);
+		die ("Status for the two patients to merge are different: $project_name ".$pat->status." ; $pdes ".$pat_dest->status) if ($pat->status ne $pat_dest->status);
+		die ("Captures for the two patients to merge are different: $project_name ".$pat->getCapture->name." ; $pdes ".$pat_dest->getCapture->name) if ($pat->getCapture->name ne $pat_dest->getCapture->name);
+		die ("Sequencing machine for the two patients to merge are different: $project_name ".$pat->getRun->machine." ; $pdes ".$pat_dest->getRun->machine) if ($pat->getRun->machine ne $pat_dest->getRun->machine);
+		die ("Sequencing plateform method for the two patients to merge are different: $project_name ".$pat->getRun->plateform." ; $pdes ".$pat_dest->getRun->plateform) if ($pat->getRun->plateform ne $pat_dest->getRun->plateform);
+		die ("Alignment method for the two patients to merge are different: $project_name ".$pat->alignmentMethod." ; $pdes ".$pat_dest->alignmentMethod) if ($pat->alignmentMethod ne $pat_dest->alignmentMethod);
+#		die ("Calling method(s) for the two patients to merge are different: $project_name ".join(', ',@{$pat->callingMethods})." ; $pdes ".join(', ',@{$pat_dest->callingMethods})) if (join(', ',@{$pat->callingMethods}) ne join(', ',@{$pat_dest->callingMethods}));
 		
 		# Merge les bam, puis trie le bam obtenu
 		my $samtools = $buffer->software("samtools");
 		my ($bam1, $bam2);
 		eval {$bam1 = $pat_dest->getBamFile};
+		confess ("Can't find bam file:\n$@") if ($@);
 		eval {$bam2 = $pat->getBamFile} ;
 		confess ("Can't find bam file:\n$@") if ($@);
 		my $merged_bam = $bam1 =~ s/bam/merged\.bam/r;
@@ -82,16 +88,19 @@ foreach my $pdes (keys %$merge){
 		my $cmd_samtools_index = "$samtools index $merged_bam";
 		warn ("'$merged_bam' already exits, overwritting") if (-e $merged_bam);
 		print {$fh} "$cmd_samtools_merge -@ 20 ; $cmd_samtools_index -@ 20 ; \n";
+		warn ("$cmd_samtools_merge -@ 20 ; $cmd_samtools_index -@ 20 ; \n");
 		
-		# Efface les bams partiels ou les renomme
+		# Efface ou  renomme les bams partiels et mergés
 		if ($rm_bam) {
-			$cmd_mv_bam->{$merged_bam} = "rm $bam1 $bam2 $bam1.bai $bam2.bai ; mv $merged_bam $bam1 ; mv $merged_bam.bai $bam1.bai";
+			$cmd_mv_bam->{$bam1} = "rm $bam1 $bam2 $bam1.bai $bam2.bai ; mv $merged_bam $bam1 ; mv $merged_bam.bai $bam1.bai";
+			warn ($cmd_mv_bam->{$bam1}."\n");
 		}
 		else {
-			$cmd_mv_bam->{$merged_bam} = "mv $bam1 $bam1.part ; mv $bam1.bai $bam1.bai.part ; mv $bam2 $bam2.part ; mv $bam2.bai $bam2.bai.part ; mv $merged_bam $bam1 ; mv $merged_bam.bai $bam1.bai";
+			$cmd_mv_bam->{$bam1} = "mv $bam1 $bam1.sans_preseq ; mv $bam1.bai $bam1.bai.sans_preseq ;\n mv $bam2 $bam2.sans_preseq ; mv $bam2.bai $bam2.bai.sans_preseq ;\n mv $merged_bam $bam1 ; mv $merged_bam.bai $bam1.bai";
+			warn ($cmd_mv_bam->{$bam1}."\n");
 		}
 
-		#todo: déplacer fastq ?
+		# Créé des liens des fastq complémentaires dans le run du projet d'origine
 		my $fastq_files = $pat->fastqFiles;
 		my @fastq_files = map {values %$_} @$fastq_files;
 		my $dir_fastq_dest = $pat_dest->getSequencesDirectory;
@@ -102,30 +111,34 @@ foreach my $pdes (keys %$merge){
 	}
 	close($fh);
 	system('cat '. $project->getAlignmentDirName ."jobs_merge.txt | run_cluster.pl -cpu=20") unless ($no_exec);
+	
+	# Efface ou  renomme les bams partiels et mergés
 	my @errors;
-#	warn Dumper $cmd_mv_bam;
 	foreach my $file (keys %$cmd_mv_bam){
 		warn $cmd_mv_bam->{$file};
 		system($cmd_mv_bam->{$file}) if (-e $file and not $no_exec);
 		push(@errors, $file) unless (-e $file);
 	}
-#	warn Dumper $cmd_lien_fastq;
+	
+	# Créé des liens des fastq complémentaires dans le run du projet d'origine
 	foreach my $file (keys %$cmd_lien_fastq) {
 		warn $cmd_lien_fastq->{$file};
 		system ($cmd_lien_fastq->{$file}) unless (-e $file or $no_exec);
 	}
+	warn Dumper \@errors if (scalar(@errors));
 	die ("Error while merging: ".join(', ',@errors)) if (scalar(@errors) and not $no_exec);
 	
 	# Relance les pipelines pour le calling, coverage, etc.
 	my @patients_merged = map {$_->name} @{$merge->{$pdes}};
-#	my $cmd_dragen = "dragen_pipeline.sh -project=$pdes -patient=".join(',',@patients_merged)." -force=1";
-	my $cmd_bds = "bds_pipeline.sh -project=$pdes -patient=".join(',',@patients_merged)." -steps=coverage,binary_depth -force=1";
+	my $cmd_dragen = "dragen_pipeline.sh -project=$pdes -patient=".join(',',@patients_merged)." -force=1";
+	my $cmd_bds = "bds_pipeline.sh -project=$pdes -patient=".join(',',@patients_merged)." -force=1";
 	my $cmd_calling = "bds_calling.sh -project=$pdes -patient=all -force=1";
 #	my $cmd_cache = "bds_cache.sh -project=$pdes -force=1";
 #	my $cmd_cache_splice = "bds_cache_rna_junctions.sh -project=$pdes -force=1";
 	unless ($no_exec) {
 		colored::stabilo('white', "--------DONE--------");
 		colored::stabilo('yellow', "Now, run coverage and calling on the merged patients:");
+		colored::stabilo('yellow', $cmd_dragen);
 		colored::stabilo('yellow', $cmd_bds);
 		colored::stabilo('yellow', $cmd_calling);
 	}

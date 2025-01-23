@@ -1287,6 +1287,10 @@ sub getChromosome {
 	return $self->_getOneObjectByName($self->getChromosomes(),$name,$nodie);
 }
 
+sub existsChromosome {
+	my ($self, $name) = @_;
+	return $self->getChromosome($name,1);
+}
 sub getReference {
 	my ($self, $name) = @_;
 	my $toto = $self->getReferences();

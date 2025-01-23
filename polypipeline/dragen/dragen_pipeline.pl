@@ -500,7 +500,7 @@ foreach my $project (@$projects){
 	 	
 	 	#TODO: ajout script melo
 		if (exists $hsteps->{check_sex}){
-			my $dir_out= "/data-isilon/sequencing/ngs/NGS2019_2429/HG38_CNG/sex_control/";
+			my $dir_out= $project->project_path."sex_control/";
 			$h->{prod}->{check_sex} = $dir_out.$patient->name().".sex_control.log";		 	
 		 	$h->{exists_file}->{check_sex} = 1 if -e $h->{prod}->{check_sex};
 		}

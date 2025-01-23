@@ -1510,9 +1510,9 @@ has gencode_version => (
 		my $query = $self->buffer->getQuery();
 		my $id    = $query->getGencodeVersion( $self->id );
 		
-		return $id if $id =~ /M/;
+		return $id if (defined $id and $id =~ /M/);
 		
-		return $id if defined $id && $id > -1;
+		return $id if (defined $id && $id > -1);
 
 		return $self->update_gencode_version();
 	},
