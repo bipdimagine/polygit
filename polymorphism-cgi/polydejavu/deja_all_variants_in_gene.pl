@@ -894,10 +894,6 @@ sub get_variants_infos_from_projects {
 							elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
 							if (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
 							elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
-							else {
-								warn $Bin;
-								confess("\n\nPath polyweb not found. die.\n\n");
-							}
 							my $html_icon = $p->return_icon();
 							$html_icon =~ s/<img src='//;
 							$html_icon =~ s/' style='padding-right:1px'>//;
@@ -1047,8 +1043,11 @@ sub update_list_variants_from_dejavu {
 		
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 		
+		$var_id = uc($var_id);
 		next if $var_id =~ /ALU/;
 		next if not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
+		
+		
 		my $var = $project_dejavu->_newVariant($var_id);
 		if ($hVariantsDetails and exists $hVariantsDetails->{$var_id}) {
 			$var_gnomad = $hVariantsDetails->{$var_id}->{var_gnomad} if ($hVariantsDetails->{$var_id}->{var_gnomad});
