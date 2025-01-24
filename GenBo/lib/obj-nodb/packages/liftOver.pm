@@ -5,6 +5,7 @@ use IPC::Run3;
 use Exporter 'import';
 use Data::Dumper;
 use Moo;
+use Carp;
 use JSON::XS;
 # Déclare les fonctions exportées
 our @EXPORT_OK = qw(lift_over_variants);

@@ -1111,7 +1111,7 @@ sub update_list_variants_from_dejavu {
 		warn '1 - ok perc' if $debug;
 		
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
-		
+		$var_id = uc($var_id);
 		next if $var_id =~ /ALU/;
 		next if not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
 		warn '2 - ok id' if $debug;
