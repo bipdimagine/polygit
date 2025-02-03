@@ -273,10 +273,23 @@ has seqnames => (
 		if ($self->project->is_human_genome) {
 			my @lChrNames;
 			foreach my $chr_name (@{$self->tabix->seqnames()}) {
-				next if ($chr_name =~ /alt/);
-				next if ($chr_name =~ /random/);
-				next if ($chr_name =~ /KI/);
-				next if ($chr_name =~ /_/);
+				next if $chr_name =~ /alt/;
+				next if $chr_name =~ /random/;
+				next if $chr_name =~ /KI/;
+				next if $chr_name =~ /_/;
+				next if $chr_name =~ /^GL/;
+				next if $chr_name =~ /^Un_/;
+				next if $chr_name =~ /^hs37d5/;
+				next if $chr_name =~ /^NC_007605/;
+				next if $chr_name =~ /KI/;
+				next if $chr_name =~ /GL/;
+				next if $chr_name =~ /EBV/;
+				next if $chr_name =~ /JH/;
+				next if $chr_name =~ /MU0/;
+				next if $chr_name =~ /_random/;
+				next if $chr_name =~ /_hap/i;
+				next if $chr_name =~ /HLA/i;
+				next if $chr_name =~ /KB/i;
 				push(@lChrNames, $chr_name);
 				
 			}
