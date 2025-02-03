@@ -270,8 +270,19 @@ has seqnames => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
+		if ($self->project->is_human_genome) {
+			my @lChrNames;
+			foreach my $chr_name (@{$self->tabix->seqnames()}) {
+				next if ($chr_name =~ /alt/);
+				next if ($chr_name =~ /random/);
+				next if ($chr_name =~ /KI/);
+				next if ($chr_name =~ /_/);
+				push(@lChrNames, $chr_name);
+				
+			}
+			return \@lChrNames;
+		}
 		return $self->tabix->seqnames();#$self->infos()->{name};
-		
 	},
 );
 
