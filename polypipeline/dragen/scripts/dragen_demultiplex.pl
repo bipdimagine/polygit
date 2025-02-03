@@ -133,6 +133,7 @@ foreach my $line(@$aoa){
 		}	
 }
 unshift (@$titles, "[Settings]") unless grep(/^\[Settings\]$/, @$titles);
+# todo: faire pareil avec [Header] et [Reads] ?
 
 my $cb1_len;
 my $cb2_len;
