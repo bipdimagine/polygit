@@ -490,7 +490,7 @@ sub find_file_pe {
 		}
 	}
 	}
-	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir unless $couple;	
+	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir unless scalar @$couple;
 	return $couple if scalar(@$couple)>0;
 	return [] if $nodie;
 	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir;
