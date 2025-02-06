@@ -417,7 +417,19 @@ has getGerminals => (
 	},
 );
 
-
+has orderVntyper => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		#bvbvb
+		my $sc =0;
+		foreach my $p (@{$self->getMembers}){
+			$sc += $p->isKestrel + $p->isadVNTR;
+		}
+		return $sc;
+	}
+);
 
 
 1;
