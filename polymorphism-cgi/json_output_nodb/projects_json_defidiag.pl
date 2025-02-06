@@ -85,6 +85,7 @@ sub getProjectListsDefidiag {
 		$pro->{gencode} = $buffer->getQuery->getGencodeVersion($pro->{id});
 		$pro->{genome} = $buffer->getQuery->getReleaseGenome($pro->{id});
 		$pro->{annotation} = $buffer->getQuery->getPublicDatabaseVersion($pro->{id});
+	 	$pro->{build} = $buffer->getQuery()->getBuildFromProjectName($pro->{name});
 		my $husers = $buffer->getQuery()->getOwnerProject($pro->{id});
 		my $hstatus = $vquery->getLatestStatusProject($pro->{id});
 		my $nb_validation = scalar(keys %$hstatus);
@@ -122,11 +123,13 @@ sub getProjectListsDefidiag {
 		my @trio = grep{$_->{status} == 2 && ($_->{mother} or $_->{father})} @samples;
 		my $dir = $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
 		my $dir_polyviewer =   $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
+		my $dir_polyviewer_rocks =   $buffer->getDataDirectory("cache")."/rocks/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/polyviewer_objects.rocksdb/IDENTITY";
 		if ($pro->{genome} eq 'MT') {
 			$dir_polyviewer =   $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/MT";
 		}
 		$pro->{polyviewer} = 2;
 		$pro->{polyviewer} = 1 if @samples && -e "$dir_polyviewer/".$samples[0]->{name}.".variants-genes.polyviewer";
+		$pro->{polyviewer} = 1 if @samples && -e $dir_polyviewer_rocks;
 #		warn $pro->{polyviewer} if $pro->{name} eq "NGS2020_3165";
 		my $t = (stat $dir )[9];
 		my ($dc,$h) = split(" ", $pro->{creation_date});
@@ -230,7 +233,7 @@ sub getProjectListsDefidiag {
 			push(@c,$capt->{name});
 		}
 		$pro->{capture_name} = join(",",@c);
-		$pro->{button} = $pro->{polyviewer}."::".$pro->{name};
+		$pro->{button} = $pro->{polyviewer}."::".$pro->{name}.'::'.$pro->{genome};
 
 		
 	}

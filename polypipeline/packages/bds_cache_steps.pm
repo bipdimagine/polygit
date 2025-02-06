@@ -4,7 +4,7 @@ use FindBin qw($Bin);
 use lib "$Bin";
 #use root_steps;
 use Moose;  
-
+use bds_steps;
 use job_bds;
 use sample;
 use Data::Dumper;
@@ -164,7 +164,7 @@ sub store_rna_junction_ids  {
 	$ppn = 1 if $ppn < 1;
 	$ppn = 1;
 	$filein ="";
-	my $fileout = $project->getCacheBitVectorDir()."/lmdb_cache/".$chr_name.".dv.freeze";
+	my $fileout = $project->lmdb_cache_variations_dir().'/chr'.$chr_name.'_store_ids.ok';
 	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_junctions_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	 my $type = "cache_store_junctions_ids";
@@ -977,6 +977,11 @@ sub coverage {
 	}
 	return $filein;
 	
+}
+
+sub check_specie_contaminant {
+	my ($self,$hash) = @_;
+	return bds_steps::check_specie_contaminant($self, $hash);
 }
 
 1;

@@ -337,6 +337,12 @@ sub getIds_byCache_onlive {
 		$hash->{'cadd_score'} = $var->cadd_score();
 		$hash->{'cadd_score'} = '.' if $hash->{'cadd_score'} == -1;
 		$hash->{'ncboost'} = $var->ncboost_category().';'.$var->ncboost_score();
+		
+		my $release = 'hg38';
+		$release = 'hg19' if ($var->getProject->annotation_genome_version() =~ /HG19/);
+		my $varsome_url = qq{https://varsome.com/variant/$release/}.$var->gnomad_id();
+		$hash->{'varsome'} = $varsome_url;
+		
 		$hash->{'spliceAI'} = '-';
 		my (@lGenesIds, @GenesNames, @lGenesCons, @lGenesOmim, @lGenesPolywebScore);
 #		if ($var->isCnv() or $var->isLarge()) {
@@ -490,6 +496,8 @@ sub getIds_onlive {
 		my ($check_before_done, $check_after_done);
 		my $i = $v_id;
 		my $j = $v_id;
+		$check_before_done = 1 if $i == 0;
+		$check_after_done = 1 if $j+1 == $chr->size_vector();
 		while ($check_before_done == undef) {
 			$i--;
 			my $var_before = $chr->getVarObject($i);

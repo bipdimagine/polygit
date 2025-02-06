@@ -1652,11 +1652,19 @@ sub log2 {
 #}
 
 
-
+sub get_url_polyrna {
+	my ($self) = shift;
+	return $self->get_base_url_polyrna().':'.$self->get_port_url_polyrna();
+}
 
 sub get_base_url_polyrna {
 	my ($self) = shift;
 	return $self->config->{polyrna}->{base_url_polyrna};
+}
+
+sub get_port_url_polyrna {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{port_url_polyrna};
 }
 
 sub get_polyrna_file_server_to_docker {
@@ -1668,5 +1676,12 @@ sub get_polyrna_file_docker_to_server {
 	my ($self) = shift;
 	return $self->config->{polyrna}->{docker_to_server};
 }
+
+sub get_demultiplex_run_infos {
+	my ($self, $run_name) = @_;
+	my $h_db = $self->getQuery->getInfosFromRunMachineId($run_name);
+	$h_db = $self->getQuery->getInfosFromRunName($run_name) if scalar keys %$h_db == 0;
+	return $h_db;
+} 
 
 1;

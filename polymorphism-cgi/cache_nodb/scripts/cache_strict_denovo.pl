@@ -74,7 +74,7 @@ my $pm = new Parallel::ForkManager($fork);
 my $vector_denovo;
 my $total_job;
 foreach my $patient (@{$project->getPatients()}) {
-	 	$vector_denovo->{$patient->name} =  $chr->getNewVector();
+	$vector_denovo->{$patient->name} =  $chr->getNewVector();
 }
 $pm->run_on_finish (
 	sub {
@@ -107,6 +107,17 @@ foreach my $family (@{$project->getFamilies()}) {
 	
 	foreach my $children  (@{$family->getChildren}){
 		my $vector_denovo = $family->getVector_individual_denovo($chr,$children)->Clone();
+		
+		if ($children->alignmentMethod() eq 'no_align') {
+			$pm->start() and next;
+			my $res;
+			$res->{run_id} = 0;
+			$res->{patient} = $children->name;
+			$res->{vector}  = $vector_denovo;
+			$pm->finish(0, $res);
+		}
+		
+		
 		my $vector_ratio_name = $children->name . "_ratio_" . 20;
 #		 my $vquality2 = $chr->getVectorScore($vector_ratio_name);
 #		 $vector_ratio_name = $children->name . "_ratio_" . 40;

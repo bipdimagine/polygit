@@ -51,6 +51,16 @@ has can_use_hgmd => (
 	default => 1,
 );
 
+has list_generic_header_junctions => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my @lLinesHeader = ('Junction', 'Type', 'Dejavu', 'Dejavu_Ratio_10', 'Dejavu_Ratio_20', 'Chr', 'Start', 'End', 'Gene', 'Description', 'Phenotypes', 'Transcript', 'Transcript_xref', 'Appris_type', 'Tr_start', 'Tr_end', 'Family', 'Patient', 'Sex', 'Status', 'Dp', 'Nb_new', 'Nb_canonique', 'Ratio', 'Score');
+		return \@lLinesHeader;
+	}
+);
+
 has list_generic_header_cnvs => (
 	is      => 'rw',
 	lazy    => 1,
@@ -78,6 +88,12 @@ has hash_variants_global => (
 );
 
 has hash_cnvs_global => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub { return {}; }
+);
+
+has hash_junctions_global => (
 	is      => 'rw',
 	lazy    => 1,
 	default => sub { return {}; }
@@ -187,6 +203,14 @@ has hash_format_categories => (
 		$h->{'cnv_confidence'}->{'equal'}->{'medium'} = 'get_format_orange';
 		$h->{'cnv_confidence'}->{'equal'}->{'high'} = 'get_format_red';
 		$h->{'cnv_confidence'}->{'equal'}->{'-'} = 'get_format_default';
+
+		$h->{'score'}->{'>='}->{'0'} = 'get_format_green';
+		$h->{'score'}->{'>='}->{'5'} = 'get_format_orange';
+		$h->{'score'}->{'>='}->{'8'} = 'get_format_red';
+
+		$h->{'ratio'}->{'>='}->{'10'} = 'get_format_green';
+		$h->{'ratio'}->{'>='}->{'20'} = 'get_format_orange';
+		$h->{'ratio'}->{'>='}->{'30'} = 'get_format_red';
 		return $h;
 	}
 );
@@ -391,6 +415,9 @@ sub add_page {
 sub open_page {
 	my ( $self, $number ) = @_;
 	my $title     = $self->pages->{$number}->{title};
+	if (length($title) > 30) {
+		$title = substr($title, 0, 29);
+	}
 	my $worksheet = $self->workbook->add_worksheet($title);
 	return $worksheet;
 }
@@ -966,6 +993,60 @@ sub get_specific_infos_stored {
 	return $self->{hash_specific_infos}->{datas}->{$cat_name};
 }
 
+sub prepare_generic_datas_junctions {
+	my $self = shift;
+	my @lDatas;
+	my ($h_patients_found);
+	foreach my $chr_id ( sort { $a <=> $b } keys %{ $self->hash_junctions_global() } ) {
+		foreach my $junc_id (sort keys %{$self->hash_junctions_global->{$chr_id}}) {
+			my $h_junc = $self->hash_junctions_global->{$chr_id}->{$junc_id};
+			my $h;
+			$h->{'junction'}		= $junc_id;
+			$h->{'type'}     	 	= $h_junc->{global}->{'type'};
+			$h->{'dejavu'}			= $h_junc->{global}->{'dejavu'};
+			$h->{'dejavu_ratio_10'}	= $h_junc->{global}->{'dejavu_ratio_10'};
+			$h->{'dejavu_ratio_20'} = $h_junc->{global}->{'dejavu_ratio_20'};
+			$h->{'chr'}				= $h_junc->{global}->{'chr'};
+			$h->{'start'}			= $h_junc->{global}->{'start'};
+			$h->{'end'}				= $h_junc->{global}->{'end'};
+			foreach my $gene_name (sort keys %{$h_junc->{annotation}}) {
+				my $h_junc_gene = $h_junc->{annotation}->{$gene_name};
+				if (exists $h_junc_gene->{'gene_name'} and $h_junc_gene->{'gene_name'}) {
+					$h->{'gene'} = $h_junc_gene->{'gene_name'}.' ['.$h_junc_gene->{'ensg'}.']';
+				}
+				else { $h->{'gene'} = $h_junc_gene->{'ensg'}; }
+				$h->{'description'} = $h_junc_gene->{'description'};
+				$h->{'phenotypes'}	= $h_junc_gene->{'phenotypes'};
+				if ($h_junc_gene->{'score'} < -100) { $h->{'score'} = -100; }
+				else { $h->{'score'} = $h_junc_gene->{'score'}; }
+				
+				foreach my $tid (sort keys %{$h_junc_gene->{transcripts}}) {
+					my $hjunc_tr			 = $h_junc_gene->{transcripts}->{$tid};
+					$h->{'transcript'}		 = $tid;
+					$h->{'transcript_xref'}	 = $hjunc_tr->{transcript_name};
+					$h->{'appris_type'}		 = $hjunc_tr->{appris_type};
+					$h->{'tr_start'}		 = $hjunc_tr->{start};
+					$h->{'tr_end'}			 = $hjunc_tr->{end};
+					
+					foreach my $patient_name (sort keys %{$h_junc->{patients}}) {
+						my $j_junc_pat = $h_junc->{patients}->{$patient_name};
+						$h->{'family'}		 = $j_junc_pat->{fam_name};
+						$h->{'patient'}		 = $patient_name;
+						$h->{'sex'}			 = $j_junc_pat->{sex};
+						$h->{'status'}		 = $j_junc_pat->{status};
+						$h->{'dp'}			 = $j_junc_pat->{dp};
+						$h->{'nb_new'}		 = $j_junc_pat->{nb_new};
+						$h->{'nb_canonique'} = $j_junc_pat->{nb_canonique};
+						$h->{'ratio'}		 = $j_junc_pat->{ratio};
+						push( @lDatas, $h );
+					}
+				}
+			}
+		}
+	}
+	return ( \@lDatas );
+}
+
 sub prepare_generic_datas_cnvs {
 	my $self = shift;
 	my @lDatas;
@@ -1015,7 +1096,6 @@ sub prepare_generic_datas_cnvs {
 						if (exists $h_caller->{score}) {
 							$h->{lc('patient_'.$patient_name)} .= ';score:'.$h_caller->{score};
 						}
-						
 					}
 				}
 				else { $h->{lc('patient_'.$patient_name)} .= '-'; }
@@ -1221,6 +1301,7 @@ sub save {
 	$session->save('xls_title', $self->title_page());
 	$session->save_compress('hash_variants_global', $self->hash_variants_global());
 	$session->save_compress('hash_cnvs_global', $self->hash_cnvs_global());
+	$session->save_compress('hash_junctions_global', $self->hash_junctions_global());
 	$session->save_compress('hash_specific_infos', $self->hash_specific_infos());
 	return $session->session_id();
 }
@@ -1232,6 +1313,7 @@ sub load {
 	$self->{title_page} = $session->load('xls_title');
 	$self->{hash_variants_global} = $session->load_compress('hash_variants_global');
 	$self->{hash_cnvs_global} = $session->load_compress('hash_cnvs_global');
+	$self->{hash_junctions_global} = $session->load_compress('hash_junctions_global');
 	$self->{hash_specific_infos} = $session->load_compress('hash_specific_infos');
 }
 

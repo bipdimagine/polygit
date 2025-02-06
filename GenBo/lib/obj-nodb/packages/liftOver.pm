@@ -43,19 +43,27 @@ sub lift_over_variants {
    #run_crossmap($project,$vcf_input,$version,$res);
    run_liftOver($project,$bed_input,$version,$res);
    foreach my $v (@$variations){
-   	my $id = $v->id;
-   	die() unless exists $res->{$id};
-   	$v->{$key} = delete $res->{$id};
-   	my $pvcf = $v->{$key}->{position_vcf} ;
-	$v->{$key}->{position} = $v->{$key}->{position_vcf} ;
-	$v->{$key}->{position} +=  1 unless $v->isVariation;
-	my ($c,$s,$a,$b) = split("_",$v->vcf_id);
-	$v->{$key}->{vcf_id} = join("_",$v->{$key}->{chromosome}, $v->{$key}->{position_vcf},$a,$b);
-	 ($c,$s,$a,$b) = split("_",$v->id);
-	my $chr = $v->project->getChromosome($v->{$key}->{chromosome});
-	$v->{$key}->{id} = join("_",$chr->name, $v->{$key}->{position},$a,$b);
-	($c,$s,$a,$b) = split("-",$v->name);
-	$v->{$key}->{name} = join("-",$chr->name,$v->{$key}->{position},$a,$b);
+	   	my $id = $v->id;
+	   	next unless exists $res->{$id};
+	   	die() unless exists $res->{$id};
+	   	$v->{$key} = delete $res->{$id};
+	   	my $pvcf = $v->{$key}->{position_vcf} ;
+		$v->{$key}->{position} = $v->{$key}->{position_vcf} ;
+		$v->{$key}->{position} +=  1 unless $v->isVariation;
+		my ($c,$s,$a,$b) = split("_",$v->vcf_id);
+		$v->{$key}->{vcf_id} = join("_",$v->{$key}->{chromosome},$v->{$key}->{position_vcf},$a,$b);
+		($c,$s,$a,$b) = split("_",$v->id);
+		if (not $v->{$key}->{chromosome} =~ /^[0-9XYMT]+$/) {
+			$v->{$key}->{id} = join("_",$v->{$key}->{chromosome},$v->{$key}->{position},$a,$b);
+			($c,$s,$a,$b) = split("-",$v->name);
+			$v->{$key}->{name} = join("-",$v->{$key}->{chromosome},$v->{$key}->{position},$a,$b);
+		} 
+		else {
+			my $chr = $v->project->getChromosome($v->{$key}->{chromosome});
+			$v->{$key}->{id} = join("_",$chr->name, $v->{$key}->{position},$a,$b);
+			($c,$s,$a,$b) = split("-",$v->name);
+			$v->{$key}->{name} = join("-",$chr->name,$v->{$key}->{position},$a,$b);
+		}
    }
 }
 
@@ -96,7 +104,7 @@ sub run_liftOver {
 	
 	my $stdout;
 	my $stderr;
-	warn join(" ",@cmd);
+	#warn join(" ",@cmd);
 	run3 \@cmd, \$bed, \$stdout, \$stderr;
 	my $db = Bio::DB::Fasta->new($fasta);
  parse_bed($fileout,$res,$db);
@@ -179,7 +187,7 @@ sub parse_bed {
 
 	# Lis le fichier ligne par ligne
 	while (my $line = <$fh>) {
-		warn $line;
+		#warn $line;
 		chomp $line;  # Supprime le caractère de fin de ligne (\n)
    	 	next if $line =~/^#/;
    	 	my @t = split("\t",$line);

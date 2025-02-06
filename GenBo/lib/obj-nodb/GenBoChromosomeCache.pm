@@ -178,6 +178,15 @@ has patients_categories => (
 			$h->{$name.'_ho'} = $patient->{'bitvector'}->{'ho'};
 			$h->{$name.'_RI'} = $patient->{'bitvector'}->{'RI'} if (exists $patient->{'bitvector'}->{'RI'});
 			$h->{$name.'_SE'} = $patient->{'bitvector'}->{'SE'} if (exists $patient->{'bitvector'}->{'SE'});
+			$h->{$name.'_ratio_10'} = $patient->{'bitvector'}->{'ratio_10'} if (exists $patient->{'bitvector'}->{'ratio_10'});
+			$h->{$name.'_ratio_20'} = $patient->{'bitvector'}->{'ratio_20'} if (exists $patient->{'bitvector'}->{'ratio_20'});
+			$h->{$name.'_ratio_30'} = $patient->{'bitvector'}->{'ratio_30'} if (exists $patient->{'bitvector'}->{'ratio_30'});
+			$h->{$name.'_ratio_40'} = $patient->{'bitvector'}->{'ratio_40'} if (exists $patient->{'bitvector'}->{'ratio_40'});
+			$h->{$name.'_ratio_50'} = $patient->{'bitvector'}->{'ratio_50'} if (exists $patient->{'bitvector'}->{'ratio_50'});
+			$h->{$name.'_ratio_60'} = $patient->{'bitvector'}->{'ratio_60'} if (exists $patient->{'bitvector'}->{'ratio_60'});
+			$h->{$name.'_ratio_70'} = $patient->{'bitvector'}->{'ratio_70'} if (exists $patient->{'bitvector'}->{'ratio_70'});
+			$h->{$name.'_ratio_80'} = $patient->{'bitvector'}->{'ratio_80'} if (exists $patient->{'bitvector'}->{'ratio_80'});
+			$h->{$name.'_ratio_90'} = $patient->{'bitvector'}->{'ratio_90'} if (exists $patient->{'bitvector'}->{'ratio_90'});
 		}
 		$no_patients->close();
 		return $h;
@@ -1493,7 +1502,7 @@ sub convertSubPartToCompleteVector {
 sub check_each_var_filter_region {
 	my ($self, $filter, $first_launch) = @_;
 	my ($chrId, $start_filter, $end_filter, $include) = split(':', $filter);
-	if ($include eq '0') {
+	if ($include eq '0' or $include eq '99') {
 		$self->check_each_var_filter_region_add($filter, $first_launch);
 	}
 	elsif ($include eq '-1') {

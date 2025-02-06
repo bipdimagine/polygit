@@ -69,6 +69,9 @@ $hash->{softwares}->{picard} = $project->getSoftware('picard');
 $hash->{rnaseqseapaths}->{script} = "$Bin/junctions/RNAseqSEA_capt_js_dev.r";
 $hash->{rnaseqseapaths}->{biblio} = "$Bin/junctions/biblio_RNAseqSEA_capt_js.r";
 
+$hash->{rnaseqseapaths}->{script_rnaseq} = "$Bin/all/RNAseqSEA_AllTnjs.r";
+$hash->{rnaseqseapaths}->{biblio_rnaseq} = "$Bin/all/RNAseqSEA_AllTnjs_biblio.r";
+
 # PATIENTS
 foreach my $patient (@{$project->getPatients()}) {
 	$hash->{inputs}->{bam}->{$patient->name()} = $patient->getBamFile();
