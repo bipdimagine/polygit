@@ -357,22 +357,36 @@ sub decode_dejavu {
 	my ($self,$value) = @_;
 	return undef unless $value;
 	my @tab = split("!-x-!",$value);
-	#warn $value;
+#	warn "\n\n";
+#	warn 'value: '.$value;
 	my $hash;
 	foreach my $z (@tab){
 		next unless $z;
-	#	warn $z." ***";
+#		warn "\n\n";
+#		warn $z." ***";
 		my ($p,$he,$ho,@a)=  unpack("w*",$z);
+#		warn "\n";
+#		warn 'project_id:'.$p.' - he:'.$he.' - ho:'.$ho.' - he+ho:'.scalar(@a);
+#		warn Dumper unpack("w*",$z);
+		
+		next if not @a;		
+		next if ($he+$ho != scalar(@a));
+		
+		confess("\n\nERRROR: problem DEJAVU rocks unpack. Die\n\n") if ($he+$ho != scalar(@a));
 	#	warn "ok";
 		$hash->{$p}->{he} = $he;
 		$hash->{$p}->{ho} = $ho;
-		
 		$hash->{$p}->{patients} = \@a;
 	} 
 	return $hash;
 }
+
 sub dejavu {
 	my ($self,$id) = @_;
+	
+#	warn "\n\n";
+#	warn 'rocks id: '.$id;
+	
 	if ($self->current) {
 		my $res =  $self->{current_db}->get_raw($id);
 		return $self->decode_dejavu($res);
@@ -403,11 +417,27 @@ sub stringify_pos {
 	return ($pos,sprintf("%010d", $pos));
 }
 
-sub dejavu_hg19_id {
-	my ($self, $rocks_id) = @_;
-	my $var_id_hg19 = $self->current->get_raw('#'.$rocks_id);
-	return $var_id_hg19;
-}
+#sub dejavu_hg19_id {
+#	my ($self, $rocks_id) = @_;
+#	my $var_id_hg19 = $self->current->get_raw('#'.$rocks_id);
+#	return $var_id_hg19;
+#}
+#
+#sub dejavu_hg38_id {
+#	my ($self, $rocks_id) = @_;
+#	warn "\n\n";
+#	warn $rocks_id;
+#	
+#	my $var_id_hg19 = $self->current->get_raw('#'.$rocks_id);
+#	
+#	warn $var_id_hg19;
+#	die;
+#	
+#	my ($chr_id, $pos_hg19, $ref, $var) = split('_', $var_id_hg19);
+#	my ($pos_hg38, $a) = split('!', $rocks_id);
+#	my $var_id_hg38 = $chr_id.'_'.int($pos_hg38).'_'.$ref.'_'.$var;
+#	return $var_id_hg38;
+#}
 
 sub get_dbs_interval {
 	my ($self,$start,$end) = @_;
@@ -427,7 +457,6 @@ sub dejavu_interval {
 	my $dbs = $self->get_dbs_interval($start,$end);
 	my $h_res;
 	foreach my $db (sort{$a->{start} <=> $b->{start}} @$dbs){
-		warn $db->{start};
 		$self->{current_db} = $db;
 		my $iter = $db->rocks->new_iterator->seek($pos);
 		while (my ($key, $value) = $iter->each) {
@@ -436,6 +465,8 @@ sub dejavu_interval {
 			if ($this_pos > $end) {
 				last;
 			}
+#			warn "\n\n";
+#			warn $key.': '.$value;
 			$h_res->{$key} = $self->decode_dejavu($value);
 		}
 	}

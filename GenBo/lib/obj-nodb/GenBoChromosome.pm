@@ -2230,7 +2230,7 @@ sub rocks_dejavu {
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
-	my $dir = $self->project->deja_vu_rocks_dir;
+	my $dir = $self->project->deja_vu_rocks_public_dir();
 	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->project->{rocks}->{$name};
@@ -2363,6 +2363,24 @@ sub getDejaVuInfosForDiagforVariant{
 	$res->{total_similar_patients} =  $self->project->countSimilarPatients();
 	return $res;
 	
+}
+
+sub transform_rocksid_to_varid {
+	my ($self, $rocksid) = @_;
+	my $var_id = $self->id;
+	my ($pos, $alt) = split('!', $rocksid);
+	
+	my $ref = $self->getSequence(int($pos), int($pos));
+	if ($alt =~ /\+/) {
+		$alt =~ s/\+/$ref/;
+	}
+	elsif ($alt =~ /^[0-9]+$/) {
+		my $length_del = int($alt);
+		$alt = $ref;
+		$ref = $self->getSequence(int($pos), (int($pos)+$length_del));
+	}
+	$var_id .= '_'.int($pos).'_'.$ref.'_'.$alt;
+	return $var_id;
 }
 
 

@@ -86,6 +86,11 @@ has structural_type => (
 	},
 );
 
+sub nomenclatureType {
+	my ($self) = @_;
+	return "ins";
+}
+
 has string_dejavu => (
 	is		=> 'ro',
 	lazy 	=> 1,

@@ -521,10 +521,9 @@
             var input_session_id = param("job_id");
             
             $(document).ready(function () {
-	            document.getElementById("content_res_variants").innerHTML = "<center>Loading datas... <img src='../images/polyicons/wait18trans.gif' align='absmiddle'></center>";
 	            setTimeout(function() {
 	            	launch_for_gene();
-				}, 2500);
+				}, 1500);
 	    	});
 	    	
 	    	function enable_table_search() {
@@ -643,17 +642,19 @@
 			}
 			
 			function show_hide_hgmd_not_in_polyweb() {
-				var elements = document.getElementsByClassName('tr_hgmd_not_found')
-				if (document.getElementById('b_found_hgmd_in_polyweb').checked == true) {
-				    for (var i = 0; i < elements.length; i++){
-				    	elements[i].classList.add("hidden");
-				    }
-				}
-				else {
-				    for (var i = 0; i < elements.length; i++){
-				    	elements[i].classList.remove("hidden");
-				    }
-				}
+	            setTimeout(function() {
+					var elements = document.getElementsByClassName('tr_hgmd_not_found')
+					if (document.getElementById('b_found_hgmd_in_polyweb').checked == true) {
+					    for (var i = 0; i < elements.length; i++){
+					    	elements[i].classList.add("hidden");
+					    }
+					}
+					else {
+					    for (var i = 0; i < elements.length; i++){
+					    	elements[i].classList.remove("hidden");
+					    }
+					}
+				}, 2000);
 			}
 	    	
 	    	
@@ -700,7 +701,9 @@
 		
 		<div style="padding-top:8px;background-color:#607D8B;border:1px black solid;" class='container-fluid hidden' id='content_res_gene'></div>
 		
-		<div class='container-fluid' id='content_res_variants' style='height:auto;max-width:100%;overflow-x:auto;border:1px black solid;'></div>
+		<div class='container-fluid' id='content_res_variants' style='height:auto;max-width:100%;overflow-x:auto;border:1px black solid;'>
+			<center>Loading datas... <img src='../images/polyicons/wait18trans.gif' align='absmiddle'></center>
+		</div>
 		
 		<div id="dialog_validation" dojoType="dojox.widget.Dialog" dimensions="[800,300]" title="USER Validation">
 	        <div id="content_validation" jsId="content_validation" data-dojo-type="dijit/layout/ContentPane"></div>	

@@ -124,6 +124,7 @@ sub concatVcf {
 			($m) = grep { $_ =~ /dibayes/ } @$methods unless $m;
 			($m) = grep { $_ =~ /gatk/ } @$methods unless $m;
 			($m) = grep { $_ =~ /p1_freebayes/ } @$methods unless $m;
+			($m) = grep { $_ =~ /dragen-calling/ } @$methods unless $m;
 		}
 		unless ($m) {
 			warn "---";

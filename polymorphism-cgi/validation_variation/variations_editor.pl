@@ -1164,7 +1164,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#	$debug =1 if $chr->name eq  "12";
 		if ($panel) {
 			#next unless  (exists $hashVector->{$chr->name});
-			$hashVector->{ $chr->name } &= $no->get($limit_ac);    #if $limit_ac ne "all";
+			$hashVector->{ $chr->name } &= $no->get_vector_chromosome($limit_ac);    #if $limit_ac ne "all";
 			
 			#$hashVector->{ $chr->name } &=
 			 # $chr->getVectorScore($limit_ac_ho);    # if $limit_ac_ho ne "all";

@@ -161,7 +161,7 @@ foreach my $TransLocFile (@res)
 	
 }
    
- my $dir_HG38 = $buffer->config_path("dejavu_SV")."/HG38/SVeq/";
+ my $dir_HG38 = $buffer->config_path("root","dejavu_SV")."/HG38/SVeq/";
  warn scalar(keys %$newTotal);
  save_dejavu($dir_HG38,$newTotal);
 
