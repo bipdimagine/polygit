@@ -21,11 +21,8 @@ software:/software/bin/
 
 [dejavu]
 variations:variations/rocks/
-<<<<<<< HEAD
 projects:variations/projects.lmdb/
 projects_lite:variations/projects/
-=======
-projects:variations/projects.tar/
->>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
+
 CNV:CNV/
 SVeq:SVeq/
