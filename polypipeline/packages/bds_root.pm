@@ -349,6 +349,8 @@ sub shell2 {
 			my $jobs = $s->jobs;
 			
 			foreach my $j (@$jobs){
+				warn $j->type." ".$s->name." ".$priority;
+				
 				next if $j->is_skip();
 					foreach my $c (@{$j->cmd}){
 						push(@commands,{cmd=>$c,log=>$j->bds_log,name=>$j->type,sample=>$s->name});
@@ -359,9 +361,19 @@ sub shell2 {
 	
 			#die($priority);
 	}
+	die();
 	$self->run(\@commands);
-
+	
 	#warn Dumper $hSampleByPriority; die;
+
+}
+sub run_one_priority {
+	my ($self,$hash) = @_;
+	my $list_cmd;
+	my $ppn;
+	my $nproc = 40;
+	my $nb_process = int($nproc/$ppn);
+	
 
 }
 
@@ -389,7 +401,7 @@ foreach my $job (@$commands) {
  	print colored::stabilo("green",$job->{name}.":".$job->{sample});
  	my @cmd1 = split("&&",$job->{cmd});
  	my $cmd = $cmd1[0]." >$output_file 2>&1";
- 	$cmd .= " && ".$cmd1[1] if  $cmd1;
+ 	$cmd .= " && ".$cmd1[1] if  $cmd1[1];
  	die() if scalar(@cmd1) > 2;
     my $status = system($cmd);
   
