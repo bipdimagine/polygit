@@ -52,14 +52,14 @@ sub divide_by_chunks{
  		return $r; 
 }
 sub chunks_and_tree {
-	my ($project,$version) = @_;
-	 $version = $project->genome_version_generic unless $version;
+	my ($buffer,$version) = @_;
+	die() unless $version;
 	 my $chunks;
 	 my $tree;
-	foreach my $chr (@{$project->getChromosomes}){
-			my @rs = sort {$a->{start} <=> $b->{start}} @{chunks::divide_by_chunks($chr->name,$version)};
-			$chunks->{$chr->name} = \@rs;
-			$tree->{$chr->name} = chunks::construct_tree($chunks->{$chr->name});
+	foreach my $chr (@{$buffer->get_canonical_chromosomes}){
+			my @rs = sort {$a->{start} <=> $b->{start}} @{chunks::divide_by_chunks($chr,$version)};
+			$chunks->{$chr} = \@rs;
+			$tree->{$chr} = chunks::construct_tree($chunks->{$chr});
 }
 	return ($chunks,$tree);
 }
@@ -216,8 +216,6 @@ sub add_to_tar_with_lock_file {
 			 $tar->replace_content ($project_name, $data);
 	}
 	else {
-		
-		
     	$tar->add_data ( $project_name, $data);
     }
     $htime->{add} += abs(time -$t);
@@ -233,6 +231,75 @@ sub add_to_tar_with_lock_file {
   die "I couldn't lock the file [$File::NFSLock::errstr]";
 }
 }
+
+sub write_lmdb {
+	my ($dir,$name_db,$key,$data) = @_;
+	 my $lmdb_file = $dir."/".$name_db;
+	 my $lock_file = $lmdb_file.".A.lock";
+	
+	   if (my $lock = new File::NFSLock {
+  		file      => $lock_file,
+  		lock_type => LOCK_EX,
+  			#blocking_timeout   => 600,      # 10 sec
+  		stale_lock_timeout => 5 * 60, # 30 min
+		}) {
+			uncache($lmdb_file);
+			my $lmdb = GenBoNoSqlLmdb->new(dir=>$dir,mode=>"w",name=>$name_db,is_compress=>1,is_index=>0) ;
+			 $lmdb->put($key,$data);
+			 $lmdb->close();
+	}
+}
+
+sub add_to_lmdb_with_lock_file {
+    my ($dir_tar,$region_id,$project_name,$data,$htime,$debug) = @_;
+    system("mkdir $dir_tar") unless -e  $dir_tar;
+    
+    my $lmdb_file = $dir_tar.$region_id;
+    my $lock_file = $lmdb_file.".lock";
+    if (my $lock = new File::NFSLock {
+  file      => $lock_file,
+  lock_type => LOCK_EX,
+  #blocking_timeout   => 600,      # 10 sec
+  stale_lock_timeout => 5 * 60, # 30 min
+}) {
+    uncache($lmdb_file);
+    my $x;
+    system("vmtouch -t ".$dir_tar."/".$region_id." -q ");
+     my $lmdb = GenBoNoSqlLmdb->new(dir=>$dir_tar,mode=>"w",name=>$region_id) ;
+     $lmdb->put($project_name,$data);
+     $lmdb->close();
+      
+    $lock->unlock();
+}else{
+  die "I couldn't lock the file [$File::NFSLock::errstr]";
+}
+}
+
+
+
+sub save_chromosome_chunks_lmdb {
+	my ($project,$chr,$chunks,$version,$dir) = @_;
+	confess() unless $version;
+	my $htime = {};
+	my $dirout = $project->deja_vu_rocks_project_dir($version);
+	$dirout = $dir if $dir;
+	my $encoder = Sereal::Encoder->new({compress=>'Sereal::SRL_ZSTD',compress_threshold=>0});
+	system("mkdir $dirout/".$chr->name) unless -e "$dirout/".$chr->name;
+	my $tar_dir = $dirout."/".$chr->name."/";
+	$tar_dir =~ s/\/\//\//g;
+	my @vht =  shuffle @{$chunks} ;
+	my $lmdb_dir =  $project->deja_vu_rocks_project_dir($version);
+	
+	foreach my $region (@vht){
+		next  unless exists $region->{variants};
+		next unless @{$region->{variants}};
+			my $t = time;
+			 add_to_lmdb_with_lock_file($lmdb_dir,$region->{id},$project->name,$region->{variants},$htime);
+			 
+			#add_to_tar_with_lock_file($tar_dir,$region->{id},$project->name,$data,$htime,$debug);
+			 $htime->{total} += abs(time -$t);
+	}
+}
 sub save_chromosome_chunks {
 	my ($project,$chr,$chunks,$version) = @_;
 	confess() unless $version;
@@ -243,7 +310,7 @@ sub save_chromosome_chunks {
 	my $tar_dir = $dirout."/".$chr->name."/";
 	$tar_dir =~ s/\/\//\//g;
 	my @vht =  shuffle @{$chunks} ;
-	
+	 my $dir_tar = $project->deja_vu_rocks_project_dir($version);
 	foreach my $region (@vht){
 		next  unless exists $region->{variants};
 		next unless @{$region->{variants}};
@@ -253,13 +320,11 @@ sub save_chromosome_chunks {
 			my $debug;
 			 $htime->{encode} += abs(time -$t);
 			 $t =time;
-			 
 			add_to_tar_with_lock_file($tar_dir,$region->{id},$project->name,$data,$htime,$debug);
 			 $htime->{total} += abs(time -$t);
 	}
 	#warn Dumper $htime;
 }
-
 sub exists_project {
 	 my ($project,$version) = @_;
 	 my $dirout = $project->deja_vu_rocks_project_dir($version);
@@ -287,6 +352,56 @@ sub save_chunks {
 		save_final($project,$project->deja_vu_rocks_project_dir());
 		#chunks::add_to_sqlite($dir38."/","projects",$project->name,"!!!");
 }
+
+sub save_index {
+	my ($project,$version,$data) = @_;
+	my $dir = $project->deja_vu_rocks_project_dir($version);  
+	warn $dir;
+ 	my $lmdb = GenBoNoSqlLmdb->new(dir=>"$dir",mode=>"w",name=>"projects.idx");
+ 	$lmdb->put($project->name,$data);
+	$lmdb->close();
+}
+sub get_index {
+	my ($project,$version) = @_;
+	my $dir = $project->deja_vu_rocks_project_dir($version);
+ 	my $lmdb = GenBoNoSqlLmdb->new(dir=>"$dir",mode=>"w",name=>"projects.idx");
+ 	my $value = $lmdb->get($project->name);
+	$lmdb->close();
+	return $value;
+}
+sub del_index {
+	my ($project,$version) = @_;
+	my $dir = $project->deja_vu_rocks_project_dir($version);
+ 	my $lmdb = GenBoNoSqlLmdb->new(dir=>"$dir",mode=>"w",name=>"projects.idx");
+ 	my $value = $lmdb->del($project->name);
+	$lmdb->close();
+	return $value;
+}
+
+sub delete_project {
+    my ($project,$region_id,$version) = @_;
+    my $dir_tar = $project->deja_vu_rocks_project_dir($version);
+    my $lmdb_file = $dir_tar."/".$region_id;
+    my $lock_file = $lmdb_file.".lock";
+    if (my $lock = new File::NFSLock {
+  file      => $lock_file,
+  lock_type => LOCK_EX,
+  #blocking_timeout   => 600,      # 10 sec
+  stale_lock_timeout => 5 * 60, # 30 min
+	}) {
+    	uncache($lmdb_file);
+    	
+     	my $lmdb = GenBoNoSqlLmdb->new(dir=>$dir_tar,mode=>"w",name=>$region_id) ;
+     	return undef unless $lmdb->get($project->name);
+     	 $lmdb->del($project->name);
+     	$lmdb->close();
+    	$lock->unlock();
+	}else{
+  		die "I couldn't lock the file [$File::NFSLock::errstr]";
+	}
+	return 1;
+}
+	
 
 
 1;

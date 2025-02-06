@@ -500,6 +500,27 @@ h4 {
   border-radius: 0;
 }
 
+ .panelM {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .panelM-header {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .panelM-content {
+            padding: 20px;
+            font-size: 12px;
+            color: #333;
+        }
+
 	</style>
 };
 
@@ -808,32 +829,22 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 
 	}
 	##
-	my $res_muc = $p->kestrel();
-	$res_muc->[0]->[0] = 1 unless $res_muc;
-	warn $project->getVariationsDir("vntyper") . "/muc1/";
-	unless ( -e $project->getVariationsDir("vntyper") . "/muc1/" ) {
-
-	}
-	elsif ( scalar( @{ $res_muc->[0] } > 3 ) ) {
-		my $date = $res_muc->[0]->[0];
+	
+	if ($p->isKestrel == 1 )  {
+		my $date = $p->kestrel->{data}->{date};
 		my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
-		$line->{"MUC1"} =
-		  $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
 	}
-	elsif ( -e $project->getVariationsDir("vntyper") . "/muc1/"
-		&& !( -e $p->vntyperTsv ) )
+	elsif ( $p->isKestrel == -1 )
 	{
 		my $text = qq{ <span  class="stamp1"><span>PROBLEM !!!!!</span></span>};
 		$line->{"MUC1"} =
 		  $cgi->td( { style => "vertical-align:middle" }, "$text" );
 	}
 	else {
-		my $date = $res_muc->[0]->[0];
+		my $date = $p->kestrel->{data}->{date};
 		my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
 		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
-
-		# $line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
-		#$line->{"MUC1"}  = $cgi->td({style=>"vertical-align:middle"},"-");
 	}
 	
 	if (exists $hash_disomy->{patient} ){
@@ -2245,38 +2256,42 @@ sub table_muc1 {
 	my $nb_vntr = 0;
 	my @color   = ( "#F9F6FF", "white" );
 	my $pn      = 0;
+	my $kestrel_header =["Caller","Date","Confidence","Ref","Alt","Pos","Motif","Sequence","depth"];
+	my $kestrel_negatif =["Caller","Date","Confidence"];
+	
 	foreach
-	  my $fam ( sort { $a->name cmp $b->name } @{ $project->getFamilies } )
+	  my $fam ( sort { $b->orderVntyper <=> $a->orderVntyper } @{ $project->getFamilies } )
 	{
+		my $name = $fam->name;
 
+       
 		foreach
 		  my $patient ( sort { $a->name cmp $b->name } @{ $fam->getMembers } )
 		{
 			$pn++;
+			 $out_table .=$cgi->start_table({
+			class => "table table-striped table-bordered table-hover",
+			style =>
+"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;",
+			'data-click-to-select' => "true",
+			'data-toggle'          => "table"
+		});
+		
 			my $t = $patient->kestrel;
-			push( @$t, @{ $patient->adVNTR } );    # if $patient->adVNTR;
-			next unless @{$t};
-
-#				$nb ++ if (scalar(@{$t->[0]}) > 1) ;
-#			if (scalar(@{$t->[1]}) <=1){
-#				if(-e $patient->vntyperTsv()){
-#			 	$out_table .= $cgi->start_Tr({class=>""});
-#			 	$out_table .= $cgi->td($patient->name);
-#			 	$out_table .= $cgi->td([$t->[0]->[0],$t->[0]->[1],"-","-","-","-","-","-","-","-","-","-"]);
-#			 	#,"-","-","-","-","-","-","-","-","-","-","-"]);
-#				$out_table .= $cgi->end_Tr({class=>""});
-#				}
-#				else {
-#				$out_table .= $cgi->start_Tr({class=>""});
-#			 	$out_table .= $cgi->td([$patient->name,"PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM","PROBLEM"]);
-#				$out_table .= $cgi->end_Tr({class=>""});
-#				}
-#				next;
-#			 }
-
-			unless ( -e $patient->vntyperTsv() ) {
+			 $out_table .=$cgi->start_Tr();
+			 my $adVNTR = $patient->adVNTR;
+			 $out_table .= $cgi->td(
+				{
+					rowspan => 4,
+					style   => "vertical-align: middle;",
+				},
+				[ $fam->name, $patient->name, $patient->return_icon ]
+			);
+			
+			my $style2 = "background-color:" . $color[ $pn % 2 ];
+			if ( $patient->kestrel == -1 ) {
+				confess();
 				$out_table .=
-				  $cgi->start_Tr( { class => "background-color:grey" } );
 				$out_table .= $cgi->td(
 					[
 						$patient->name, "PROBLEM", "PROBLEM", "PROBLEM",
@@ -2287,59 +2302,45 @@ sub table_muc1 {
 				$out_table .= $cgi->end_Tr( { class => "" } );
 				next;
 			}
-			my $style2 = "background-color:" . $color[ $pn % 2 ];
-
-			my $level    = 0;
-			my $first    = 1;
-			my @ladvntr  = grep { $_->[0] =~ /VNTR/ } @$t;
-			my @lkestrel = grep { $_->[0] !~ /VNTR/ } @$t;
-			$nb_k++    if ( @lkestrel && scalar( @{ $lkestrel[0] } ) > 3 );
-			$nb_vntr++ if ( @ladvntr  && scalar( @{ $ladvntr[0] } ) > 3 );
-			$style2 = "background-color:#E0B589"
-			  if ( @lkestrel && scalar( @{ $lkestrel[0] } ) > 3 );
-			$out_table .= $cgi->td(
-				{
-					rowspan => scalar(@$t),
-					style   => "vertical-align: middle;" . $style2
-				},
-				[ $fam->name, $patient->name, $patient->return_icon ]
-			);
-
-			foreach my $tt (@$t) {
-				my $type = 0;
-				$type = 1 if $tt->[0] =~ /VNTR/;
-
-				for ( my $i = 0 ; $i < @$tt ; $i++ ) {
-
-		#	my $color ="#34495E";
-		#	$color = "#9896A4" if $type == 1;
-		#	if ($i==1){
-		#	 	$style = "background-color:$color";
-		#	}
-		#if ($i==0 && $type ne 1 && @$tt && scalar(@$tt) > 3){
-		#	$style2 = "background-color:#FFA500";
-		#$out_table .= $cgi->td({style=> "background-color:#FFA500"},$tt->[$i]);
-		#next;
-		#}
-		#else {
-		#	$style2 = "background-color:".$color[$pn%2];
-		#}
-					if ( $i == 4 && $type == 1 ) {
-						$out_table .=
-						  $cgi->td( { colspan => 3, style => $style2 },
-							$tt->[$i] );
-					}
-					else {
-						$out_table .=
-						  $cgi->td( { style => $style2 }, $tt->[$i] );
-					}
-				}
-
-				$out_table .= $cgi->end_Tr( { class => "" } );
+			my $kestrel = $patient->kestrel;
+			my $opacity = 1;
+			if ( $patient->isKestrel == 0 ) {
+				$opacity = 0.4;
+				$out_table .=$cgi->th({style=>"opacity:0.4;text-align: center; vertical-align: middle;"},$kestrel_negatif);
+			      $out_table .=$cgi->end_Tr();
+			   $out_table .=$cgi->start_Tr();
+			   my $data = ["kestrel",$kestrel->{data}->{date},$kestrel->{data}->{Confidence}];
+			  	$out_table .=$cgi->td({style=>"opacity:0.4;text-align: center; vertical-align: middle;$style2"},$data);
+				$out_table .=$cgi->end_Tr();
+ 				
+				
 			}
-
-			#$out_table .= $cgi->end_Tr({class=>""});
-
+			else {
+			$nb_k ++;
+			
+			
+			 
+			   #caller	date	Motif	Variant	POS	REF	ALT	Motif_sequence (RevCom)	Estimated_Depth_AlternateVariant	Estimated_Depth_Variant_ActiveRegion	Depth_Score	Confidence	K
+			  
+			  $out_table .=$cgi->td({style=>"text-align: center; vertical-align: middle;background-color:#e6dced"},$kestrel_header);
+			   $out_table .=$cgi->end_Tr();
+			   $out_table .=$cgi->start_Tr();
+			   my $data = ["kestrel",$kestrel->{data}->{date},$kestrel->{data}->{Confidence},$kestrel->{data}->{REF},$kestrel->{data}->{ALT},$kestrel->{data}->{POS},$kestrel->{data}->{Motif},$kestrel->{data}->{Motif_sequence},$kestrel->{data}->{Estimated_Depth_AlternateVariant}];
+			  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black"},$data);
+			     
+ 			$out_table .=$cgi->end_Tr();
+ 			
+			}
+			$nb_vntr ++ if $patient->isadVNTR();
+			 $out_table .=$cgi->start_Tr();
+			 $out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{header});
+			 $out_table .=$cgi->end_Tr();
+			   $out_table .=$cgi->start_Tr();
+			  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{data}->[0]);
+		
+			$out_table .=$cgi->end_table();
+			} #end for patient
+	$out_table .="<hr>";
 		}
 		$out_table .= $cgi->start_Tr( { style => "background-color:black" } );
 		$out_table .= $cgi->td(
@@ -2351,17 +2352,14 @@ sub table_muc1 {
 			["<div style='height: 1px; overflow:hidden;'></div> "]
 		);
 		$out_table .= $cgi->end_Tr();
-	}
+	
 
 	my $out1;
 
 	#my $nb =  1;
 	my $run_id = $run->id;
-	$out1 =
-qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
-	unless ( -e $project->getVariationsDir("vntyper") . "/muc1/" ) {
-		return ( "", "" );
-	}
+	
+	$out1 = qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
 	my $out;
 	$out .= $cgi->start_div( { class => "row" } );
 	my $pstyle = "panel-primary";    #.$style;
@@ -2382,31 +2380,31 @@ qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:
 			'data-toggle'          => "table"
 		}
 	);
-	$out .= $cgi->start_Tr( { class => "$style" } );
-	$out .= $cgi->th( { style => "text-align: center;" }, "Fam" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "name" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "status" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "caller" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "date" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "Motif" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "Variant" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "POS" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "REF" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "ALT" );
-	$out .=
-	  $cgi->th( { style => "text-align: center;" }, "Motif_sequence (RevCom)" );
-	$out .= $cgi->th(
-		{ style => "text-align: center;" },
-		"Estimated_Depth_AlternateVariant"
-	);
-	$out .= $cgi->th(
-		{ style => "text-align: center;" },
-		"Estimated_Depth_Variant_ActiveRegion"
-	);
-	$out .= $cgi->th( { style => "text-align: center;" }, "Depth_Score" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "Confidence" );
-	$out .= $cgi->th( { style => "text-align: center;" }, "Kmer" );
-	$out .= $cgi->end_Tr();
+#	$out .= $cgi->start_Tr( { class => "$style" } );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "Fam" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "name" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "status" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "caller" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "date" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "Motif" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "Variant" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "POS" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "REF" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "ALT" );
+#	$out .=
+#	  $cgi->th( { style => "text-align: center;" }, "Motif_sequence (RevCom)" );
+#	$out .= $cgi->th(
+#		{ style => "text-align: center;" },
+#		"Estimated_Depth_AlternateVariant"
+#	);
+#	$out .= $cgi->th(
+#		{ style => "text-align: center;" },
+#		"Estimated_Depth_Variant_ActiveRegion"
+#	);
+#	$out .= $cgi->th( { style => "text-align: center;" }, "Depth_Score" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "Confidence" );
+#	$out .= $cgi->th( { style => "text-align: center;" }, "Kmer" );
+#	$out .= $cgi->end_Tr();
 	$out .= $out_table;
 	$out .= $cgi->end_table();
 	$out .= $cgi->end_div();
@@ -3570,7 +3568,7 @@ sub table_run_header {
 	my ( $b1, $p1 );
 	
 	#TODO: a corriger erreur getTranscript by pos
-	#my ( $b1, $p1 ) = table_duplicate($run);
+	my ( $b1, $p1 ) = table_duplicate($run);
 	
 #	warn "-->";
 	my ( $b2, $p2 ) = table_control($run);
@@ -3854,24 +3852,11 @@ sub args_quality {
 sub args_muc1 {
 	my ( $project, $args ) = @_;
 	my @z;
-	my $dir = $project->getVariationsDir("vntyper") . "/muc1/";
-	if ( -e $dir ) {
-		my $file = `ls -Art $dir/*.tsv | tail -n 1`;
-		chomp($file);
-		if ($file) {
-			my $t = stat($file)->[9];
-			push( @$args, $t );
-		}
+	my $dir = $project->getVariationsDir("vntyper");
+	foreach my $patient (@{$project->getPatients}){
+		push( @$args, $t );
 	}
-	$dir = $project->getVariationsDir("advntr");
-	if ( -e $dir ) {
-		my $file = `ls -Art $dir/*.vcf | tail -n 1`;
-		chomp($file);
-		if ($file) {
-			my $t = stat($file)->[9];
-			push( @$args, $t );
-		}
-	}
+	
 }
 
 sub args_validation {

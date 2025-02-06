@@ -215,7 +215,7 @@ sub run_liftOver {
     # Prépare la commande CrossMap
     my $vg = "HG38_DRAGEN";
     $vg = "HG19_MT" if $version eq "HG19";
-    my $fasta  = $project->buffer()->config->{'public_data'}->{root} . "/genome/"
+    my $fasta  = $project->buffer()->config_path("public_data") . "/genome/"
 		  . $vg . "/fasta/all.fa";
 		  
 	my @cmd = (

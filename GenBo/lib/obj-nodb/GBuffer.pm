@@ -198,9 +198,10 @@ has hash_config_path => (
 sub config_path {
 	my ($self,$key,$type)=@_;
 	unless ($type){
-		confess();
+		$type = $key;
+		$key = "root";
 	} 
-	confess($type) unless exists $self->hash_config_path->{$key}->{$type};
+	confess($type." $key ".$self->hash_config_path->{$key}->{$type}) unless exists $self->hash_config_path->{$key}->{$type};
 	return $self->hash_config_path->{$key}->{$type};
 }
 
@@ -345,7 +346,6 @@ sub deja_vu_project_dir {
 sub deja_vu_project_sqlite_dir {
 		my ($self,$version,$type)= @_;
 			confess() unless $version;
-			confess();
 		$type ="variations" unless $type;
 		return $self->config->{deja_vu}->{path_tar}."/".$version . "/".$self->config->{deja_vu}->{$type}."/projects/";
 }
@@ -1787,5 +1787,10 @@ sub liftover_chain_file {
 	
 }
 
+sub get_canonical_chromosomes {
+	my ($self) = @_;
+	return ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y","MT"];
+	
+}
 
 1;

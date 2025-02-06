@@ -17,7 +17,8 @@ singularity:/data-beegfs/software/sif/
 
 
 [dejavu]
-variants:variants/rocks/
-projects:variants/projects.tar/
+variations:variations/rocks/
+projects:variations/projects.lmdb/
+projects_lite:variations/projects/
 CNV:CNV/
 SVeq:SVeq/

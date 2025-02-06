@@ -9,7 +9,7 @@ sequences:/data-isilon/data/sequences
 global_search:/data-isilon/polycache/global_search/
 btf:/data-isilon/polycache/polybtf/
 cache:/data-isilon/polycache/rocks
-project_pipeline:data-beegfs/sequencing/pipeline/
+project_pipeline:/data-beegfs/sequencing/pipeline/
 tmp:/data-beegfs/tmp
 bds:/data-beegfs/bds/
 dragen_pipeline:/data-dragen/pipeline/
@@ -18,7 +18,8 @@ software:/software/bin
 
 
 [dejavu]
-variants:variants/rocks/
-projects:variants/projects.tar/
+variations:variations/rocks/
+projects:variations/projects.lmdb/
+projects_lite:variations/projects/
 CNV:CNV/
 SVeq:SVeq/

@@ -15,7 +15,7 @@ use Thread::Queue;
 use Set::IntSpan::Fast::XS;
 use String::ProgressBar;
 use List::Util qw(sum);
-
+use JSON::XS;
 use file_util;
 
 
@@ -79,32 +79,156 @@ my $image = "/software/distrib/ADVNTR/SINGLARITY/vntyper.sif";
 my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
-#my $scommand ="python3 /SOFT/VNtyper/VNtyper.py -t 5 -k 20 -ref_VNTR /tmp/pipeline/MUC1-VNTR.fa  -f /SOFT/VNtyper/Files/ -ref /tmp/pipeline/MUC1-VNTR.fa -p Scripts/ -w $dir_pipeline -r1 $fastq1 -r2 $fastq2 -o $patient_name -m Files/vntr_data/hg19_genic_VNTRs.db --ignore_advntr  -p /SOFT/VNtyper/";
+my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir  --extra-modules advntr --reference-assembly hg38"; 
 
-my $scommand = "python3 /SOFT/VNtyper/VNtyper.py   -t 1    --bam  -ref chr1.fa -ref_VNTR /SOFT/VNtyper/Files/MUC1-VNTR.fa -p /SOFT/VNtyper/Scripts/ -w $dir_pipeline -a $bam  -o $patient_name -p /SOFT/VNtyper/  ";
-
-$scommand .= "  -m /SOFT/VNtyper/Files/hg19_genic_VNTRs.db " if $project->getVersion() =~ /HG19/;
-$scommand .= "  --ignore_advntr " if $project->getVersion() =~ /HG38/; #Pas trouver le fichier DB equivalant en HG38 pour l etape 2. Uniquement HG19 de 2019
-
-my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
+#my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 
 #system("samtools index $bam -\@2");
-system($cmd." && touch $dir_pipeline/$patient_name.ok");
+my $fad = $tmp_dir."/advntr/output_adVNTR.vcf" ;
+system($cmd." && touch $dir_pipeline/$patient_name.ok") unless -e $fad;
+
 
 unless (-e "$dir_pipeline/$patient_name.ok"){
  #	system("rm -r $dir_pipeline");
  	die();
  }
-warn "ok ************";
-warn $dir_pipeline2;
-my $dir_prod = $project->getVariationsDir("vntyper")."/muc1/";
-my $tsv = $dir_prod."/".$patient->name."_Final_result.tsv";
-if (-e $tsv ){
-	system("$Bin/../rm_vcf.pl $tsv");
+ 
+ my $dir_prod = $project->getVariationsDir("vntyper");
+ my $fk = $tmp_dir."/kestrel/kestrel_result.tsv";
+  die() unless -e $fk;
+  my $kestrel = parse_tsv($fk);
+  returnkestrel_hash($kestrel);
+
+  die() unless -e $fad;
+  my $advntr = parse_adVNTR($fad);
+  my $json_text = encode_json {kestrel=>$kestrel,adVNTR=>$advntr};
+  my $file_json = $dir_prod."/".$patient->name.".json";
+open(my $fh, ">", $file_json) or die "Impossible d'ouvrir le fichier $file_json: $!";
+	print $fh $json_text;
+	close($fh);
+	warn $file_json;
 }
-system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
-system("cp $dir_pipeline2/".$patient->name."* $dir_prod");
+ exit(0);
+
+sub returnkestrel_hash{
+	my($hash) = @_;
+	return if $hash->{data}->{Confidence} eq "Negative";
+	my $ref = $hash->{data}->{REF} ;
+	my $alt = $hash->{data}->{ALT};
+	my $motif = $hash->{data}->{Motif_sequence};
+	
+	my $l = length ($motif);
+	my $pos = $hash->{data}->{POS};
+	my $position = ($l - $pos);
+	$hash->{data}->{Motif_sequence_origin} =$hash->{data}->{Motif_sequence};
+	if (length($alt)> length($ref)){
+			#insertion 
+			my $seq_alt = substr($motif, 0, $pos)."XXX".substr($motif, $pos);
+			my $reverse_alt = BioTools::complement_sequence($seq_alt);
+			 my $ralt = BioTools::complement_sequence(substr($alt, 1));
+			my $ins = qq{<span style="color:#0F79B2;">[<span style="text-emphasis: double-circle #0F79B2; ">$ralt</span/>]</span/>};
+			#  my $ins = qq{<span style="color:blue;text-emphasis: double-circle blue; ">$ralt</span/>};
+			$reverse_alt =~ s/XXX/$ins/;
+			$hash->{data}->{Motif_sequence_origin} =$hash->{data}->{Motif_sequence};
+			 $hash->{data}->{Motif_sequence} = $reverse_alt;
+			$hash->{data}->{Motif_sequence} = $reverse_alt;
+		}
+		elsif (length($alt)< length($ref)){
+			$pos ++;
+			 $ref  = substr($ref, 1);
+			my $end = $pos + length($ref);
+			my $seq_alt = $motif;
+			my $lref = length($motif);
+			if ($end > $lref ){
+				my $add = substr($ref,($lref-$pos)+1);
+				$seq_alt .= lc($add);
+			}
+			 my $seq_alt2 = substr($seq_alt, 0, $pos-1)."XXX".substr($seq_alt, ($pos+length($ref)-1));
+			my $alt = substr($seq_alt,$pos-1,length($ref));
+			my $ralt = BioTools::complement_sequence($alt);
+			my $ins = qq{<span style="color:red;">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
+			$seq_alt2 =  BioTools::complement_sequence($seq_alt2);
+			$seq_alt2 =~ s/XXX/$ins/;
+			$hash->{data}->{Motif_sequence}  =$seq_alt2;
+		}
+		elsif (length($alt) == length($ref)){
+			my $reverse = BioTools::complement_sequence($hash->{data}->{Motif_sequence});
+			my $ralt = BioTools::complement_sequence($alt);
+			 my $ins = qq{<span style="color:red">[$ref/$ralt]</span/>};
+			 my $left = substr($reverse, 0, $position);
+			my $right = substr($reverse, $position+2);
+			$hash->{data}->{Motif_sequence}  =$left.$ins.$right;
+		}
+		
+	
+	
+}
+
+sub parse_adVNTR {
+	my ($file) = @_;
+	my $res;
+	unless( -e $file){
+		confess();
+	}
+	warn $file;
+	my @lines = `grep -v "#" $file`;  
+	chomp(@lines);
+	
+	$res->{header} = ["date","State","NumberOfSupportingReads","MeanCoverage","Pvalue"];
+	my $date = POSIX::strftime( 
+             "%d/%m/%y", 
+             localtime( 
+               		(stat $file )[10]
+                 )
+             );
+	my @hs = split(" ",shift @lines);
+	$res->{header} = ["caller","date",@hs];
+	foreach my $l (@lines) {
+		my @tt = split(" ",$l);
+		my @aa = split("&",$tt[1]);
+		my @bb = split("_",$aa[0]);
+		my $repeat = $bb[1];
+		$tt[0] = "Insertion" ;
+		$tt[0] = "Deletetion" if $aa[0] =~ /^D/;
+		push( @{$res->{data}},["adVNTR",$date,$repeat,$tt[0],$tt[1],"-",$tt[2],$tt[3],$tt[4]] ) ;
+	}
+	push(@{$res->{data}},["adVNTR",$date]) unless @lines; 
+	return $res;
 }
 
 
-exit(0);
+
+sub parse_tsv {
+	my ($fk) =@_;
+	open (FH,"$fk");
+ my @lines;
+ while (<FH>) {
+ 	next if $_ =~/^#/;
+ 	chomp($_);
+ 	push(@lines,$_);
+ }
+ close (FH);
+ my @header = split(" ",shift @lines);
+ 
+ my @data;
+ my $res;
+  $res->{date} = POSIX::strftime( 
+             "%d/%m/%y", 
+             localtime( 
+               		(stat $fk )[10]
+                 )
+             );
+ foreach my $l (@lines) {
+ 	my @dataa = split(" ",$l);
+ 	
+ 	for (my $i =0;$i<@header;$i++){
+ 		$res->{$header[$i]} = $dataa[$i];
+ 	}
+ 	push(@data,$res);
+ 	last;
+ }
+ my $t;
+ $t->{header} = \@header;
+  $t->{data} = $res;
+ return $t;
+}

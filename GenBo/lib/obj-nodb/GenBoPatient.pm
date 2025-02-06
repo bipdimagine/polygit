@@ -2059,134 +2059,61 @@ has vntyperTsv => (
 		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
 	}
 );
-has isVntyperPositif => (
+has isKestrel => (
 is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return 0 unless -e  $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
-		
-		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
-		my @lines = `tail -n +4 $file`;
-		#warn Dumper @lines;
-		chomp(@lines);
-		#confess() if scalar(@lines) > 1;
-		 return undef unless $lines[0];    
-		 return 1;
+		return -1 unless $self->kestrel;
+		return 0 if $self->kestrel->{data}->{Confidence} eq "Negative";
+		return 1;
 	}
 );
-
+has isadVNTR => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		
+		return -1 unless $self->adVNTR;
+		return 0 if $self->adVNTR->{data}->[0]->[2] eq "Negative";
+		return 1;
+	}
+);
 sub kestrel {
 	my ($self) = @_;
 	return $self->{kestrel} if exists $self->{kestrel};
 	$self->vntyperResults();
-	return $self->{kestrel} unless @{$self->{kestrel}};
-	
-	if (@{$self->{kestrel}->[0]} > 3){
-		my $l = length ($self->{kestrel}->[0]->[7]);
-		my $pos = $self->{kestrel}->[0]->[4];
-		my $position = ($l - $pos);
-		my $reverse = BioTools::complement_sequence($self->{kestrel}->[0]->[7]);
-		my $ref = $self->{kestrel}->[0]->[5] ;
-		my $alt = $self->{kestrel}->[0]->[6];
-		my $left = substr($reverse, 0, $position-1);
-		my $right = substr($reverse, $position-1);
-		if (length($alt)> length($ref)){
-			#insertion 
-			my $seq_alt = substr($self->{kestrel}->[0]->[7], 0, $pos)."XXX".substr($self->{kestrel}->[0]->[7], $pos);
-			my $reverse_alt = BioTools::complement_sequence($seq_alt);
-			 my $ralt = BioTools::complement_sequence(substr($alt, 1));
-			my $ins = qq{<span style="color:#0F79B2;">[<span style="text-emphasis: double-circle #0F79B2; ">$ralt</span/>]</span/>};
-			#  my $ins = qq{<span style="color:blue;text-emphasis: double-circle blue; ">$ralt</span/>};
-			$reverse_alt =~ s/XXX/$ins/;
-			$self->{kestrel}->[0]->[7] = $reverse_alt;
-		}
-		elsif (length($alt)< length($ref)){
-			$pos ++;
-			
-			 $ref  = substr($ref, 1);
-			my $end = $pos + length($ref);
-			my $seq_alt = $self->{kestrel}->[0]->[7];
-			my $lref = length($self->{kestrel}->[0]->[7]);
-			if ($end > $lref ){
-				my $add = substr($ref,($lref-$pos)+1);
-				$seq_alt .= lc($add);
-			}
-			
-			 my $seq_alt2 = substr($seq_alt, 0, $pos-1)."XXX".substr($seq_alt, ($pos+length($ref)-1));
-			my $alt = substr($seq_alt,$pos-1,length($ref));
-			
-			#my $seq_alt = substr($self->{kestrel}->[0]->[7], 0, $pos)."XXX".substr($self->{kestrel}->[0]->[7], $pos);
-			#my $ralt = BioTools::complement_sequence(substr($ref, 1));
-			 #my $ins = qq{<span style="color:red">[$ralt]</span/>};
-			 #my $start = $l - ($pos+length($ralt));
-			 #$start = 0 if $start < 0;
-			#my $left = substr($reverse, 0, $start); 
-			#my $right = substr($reverse, $start+length($ralt));
-			my $ralt = BioTools::complement_sequence($alt);
-			my $ins = qq{<span style="color:red;">[<span style="text-emphasis: double-circle red; ">$ralt</span/>]</span/>};
-			$seq_alt2 =  BioTools::complement_sequence($seq_alt2);
-			$seq_alt2 =~ s/XXX/$ins/;
-			$self->{kestrel}->[0]->[7] =$seq_alt2;
-		}
-		elsif (length($alt) == length($ref)){
-			my $ralt = BioTools::complement_sequence($alt);
-			 my $ins = qq{<span style="color:red">[$ref/$ralt]</span/>};
-			  #my $ins = qq{<span style="color:red;text-decoration=underline overline">[$ref/$ralt]</span/>};
-			 $left = substr($reverse, 0, $position);
-			my $right = substr($reverse, $position+2);
-			$self->{kestrel}->[0]->[7] =$left.$ins.$right;
-		}
-		
-		#my @ins = split("",$self->{kestrel}->[0]->[6]); 
-		#shift(@ins);
-		#my $t = join("",@ins);
-		#$self->{kestrel}->[0]->[5] = BioTools::complement_sequence($self->{kestrel}->[0]->[5]);
-		#$self->{kestrel}->[0]->[6] = BioTools::complement_sequence($self->{kestrel}->[0]->[6]);
-		#$self->{kestrel}->[0]->[7] = $self->{kestrel}->[0]->[7]."<BR>".$left."[".$position.$self->{kestrel}->[0]->[5]."/".$self->{kestrel}->[0]->[6]."]".$right."<BR>".$self->{kestrel}->[0]->[7];
-		#$self->{kestrel}->[0]->[7] = $left.$right."<BR>".$self->{kestrel}->[0]->[7];
-		
-	}
-	
 	return $self->{kestrel};
+	
+	
 }
+
+
 sub adVNTR {
 	my ($self) = @_;
+	
 	return $self->{adVNTR} if exists $self->{adVNTR};
-	my $file = $self->project->getVariationsDir("advntr").$self->name.".vcf";
-	unless( -e $file){
-		$self->{adVNTR} =[];
-		return $self->{adVNTR};
-	}
-	
-	my @lines = `grep -v "#" $file`;  
-	chomp(@lines);
-	
-	$self->{header_adVNTR} = ["date","State","NumberOfSupportingReads","MeanCoverage","Pvalue"];
-	my $date = POSIX::strftime( 
-             "%d/%m/%y", 
-             localtime( 
-               		(stat $file )[10]
-                 )
-             );
-	
-	foreach my $l (@lines) {
-		my @tt = split(" ",$l);
-		my @aa = split("&",$tt[1]);
-		my @bb = split("_",$aa[0]);
-		my $repeat = $bb[1];
-		$tt[0] = "Insertion" ;
-		$tt[0] = "Deletetion" if $aa[0] =~ /^D/;
-		push( @{$self->{adVNTR}},["adVNTR",$date,$repeat,$tt[0],$tt[1],"-",$tt[2],$tt[3],$tt[4]] ) ;
-	}
-	push(@{$self->{adVNTR}},["adVNTR",$date]) unless @lines; 
-	#$self->vntyperResults();
+	$self->vntyperResults();
 	return $self->{adVNTR};
+
 }
 	
 sub vntyperResults {
 		my $self = shift;
-		my $file = $self->project->getVariationsDir("vntyper")."/muc1/".$self->name."_Final_result.tsv";
+		my $file = $self->project->getVariationsDir("vntyper")."/".$self->name.".json";
+		unless (-e $file){
+			$self->{kestrel} = undef;
+			$self->{adVNTR} = undef;
+			return;
+		}
+		my $json_text = `cat $file`;
+		my $h = decode_json $json_text;
+		$self->{kestrel} = $h->{kestrel};
+		$self->{adVNTR} = $h->{adVNTR};
+		return;
+		my $json = JSON::XS->new->utf8->decode($json_text);
+		$self->{kestrel} = 
 		$self->{kestrel} =[];
 		unless( -e $file){
 			$self->{kestrel} =[];

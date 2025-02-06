@@ -24,15 +24,10 @@ use Compress::Zlib qw( zlib_version);
 use Storable qw/thaw freeze/;
 use JSON::XS;
 use Carp;
-#use  Compress::Zstd;
-use Compress::Zlib qw( zlib_version); 
-has lmdb_extension =>(
-	is		=> 'rw',
-default => sub {
-		return "lmdb";
-		
-}
-);
+ use Sereal  qw(sereal_encode_with_object sereal_decode_with_object );
+
+  
+
 
 has dir => (
 	is		=> 'ro',
@@ -70,7 +65,7 @@ has txn => (
 has is_compress =>(
 	is		=> 'rw',
 default => sub {
-		return undef;
+		return 1;
 		
 }
 );
@@ -134,14 +129,24 @@ sub create {
 		$self->lmdb($db_name."_index")->del(1);
 			system ("chmod a+rw ".$self->filename_index);
 	}
-
 }
+
+has sereal =>(
+	is		=> 'rw',
+	default => sub {
+		return undef;
+		
+}
+);
+
+
 
 sub lmdb {
 	my ($self,$name) = @_;
 	confess($name) unless $name;
+	
 	unless ($self->is_compress){
-		$name.=".uc";
+		$name.=".uc" ;
 	}
 	if (exists $self->{lmdb_file}->{$name}){
 		return  $self->{lmdb_file}->{$name};
@@ -159,7 +164,6 @@ sub lmdb {
 		if ($self->mode eq "c"){
 			#$self->clean_files();
   			unlink $filename  if -e $filename;
-  		
  	 }
 	
 	
@@ -172,10 +176,6 @@ sub lmdb {
 	 		#warn "read only ".$self->dir."/$name";
 	 		
 	 		if ($self->test  ){
-#	 		my $newname =  md5_hex($self->dir."/$name");
-#	 		my $filename = "/mnt/ramdisk/$newname";
-#	 		system("rsync -auvz ".$self->dir."/$name $filename") unless -e "$filename" ;
-
 	 		$env = LMDB::Env->new("$filename", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
@@ -186,12 +186,6 @@ sub lmdb {
  			system("/software/bin/vmtouch -t $filename -q  ") if -e "/software/bin/vmtouch";
 	 		}
 	 		else {
-	 	#	warn "rsync -rav ".$self->dir."/$name /tmp/tt/$newname";
-	 		#warn "rsync -rav ".$self->dir."/$name /mnt/ramdisk/$newname";
-	 		#$self->{dir} =  "/mnt/ramdisk/".$newdir; 
-	 		#my $new_name = "/mnt/ramdisk/$name.".rand(10000);
-	 		#
-	 		
 	 		$env = LMDB::Env->new($self->dir."/$name", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
@@ -201,15 +195,8 @@ sub lmdb {
       # More options
  			 });
 	 		}
- 	 	#warn $self->dir."/$name";
- 	 	my $sname = $self->dir."/$name";
- 	  my $t = time;
- 	  #system("/software/bin/vmtouch -t $sname   ");
- 	   	system("/software/bin/vmtouch -t $sname -q  ") if $self->vmtouch;
- 	   	#warn (abs(time -$t)." ".$sname) if $self->vmtouch;
- 	   #	system("rsync -av $sname /tmp/toto.xxx");
- 	   #
-# 	   	 warn ($sname);
+ 	 		my $sname = $self->dir."/$name";
+ 	   		system("/software/bin/vmtouch -t $sname -q  ") if $self->vmtouch;
 	 	}
 		else {
 			 
@@ -236,31 +223,26 @@ sub lmdb {
  			$self->{lmdb_file}->{$name} = $txn->OpenDB( {    # Create a new database
       		flags => MDB_CREATE | MDB_INTEGERKEY 
   	});
-  	
  	}
  	else {
- 	if ($self->is_integer){
-
- 	#$self->{txn}->{$name}->set_compare( sub { $a <=> $b } ) if $self->is_integer;
-  	$self->{lmdb_file}->{$name} = $txn->OpenDB( {    # Create a new database
-      #	dbname => "$name",
-      flags => MDB_CREATE  | MDB_INTEGERKEY
-  	});
-  		#$$self->{lmdb_file}->{$name}->set_compare( sub { my($a,$b) =@_; $a <=> $b } ) if $self->is_integer;
+ 		if ($self->is_integer){
+  			$self->{lmdb_file}->{$name} = $txn->OpenDB( {flags => MDB_CREATE  | MDB_INTEGERKEY});
  	}
  	else {	
-
- 	$self->{lmdb_file}->{$name} = $txn->OpenDB( {    # Create a new database
-      #	dbname => "$name",
-      flags => MDB_CREATE
-  	});
-  	
+ 		$self->{lmdb_file}->{$name} = $txn->OpenDB( {flags => MDB_CREATE});
  	}
+ 	
  	}
- 
-  	return $self->{lmdb_file}->{$name} ;
+ 	if ($self->mode eq "c" && $self->sereal){
+		$self->lmdb($name)->put("__sereal","1");	
+	}
+	else {
+		$self->sereal($self->lmdb($name)->get("__sereal"));
+	}
+  	return $self->{lmdb_file}->{$name};
 	
 }
+
 sub _compress {
 	my ($self,$data) = @_;
 	  if ($self->is_compress == 3){
@@ -268,7 +250,7 @@ sub _compress {
 	#	return Compress::Zstd::compress($data);
 	  	return  Compress::Zlib::compress($data);
 	  }
-	#return  Compress::Zlib::compress($data);
+
 	require "Compress/Zstd.pm";
 	return Compress::Zstd::compress($data);
 #	return Compress::Snappy::compress($data);
@@ -287,9 +269,34 @@ sub _uncompress {
 	return Compress::Snappy::uncompress($data);
 }
 
+has sereal_encoder => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		#return Sereal::Encoder->new();
+		return Sereal::Encoder->new({compress=>Sereal::SRL_ZLIB});
+		return 0;
+	},
+);
+
+has sereal_decoder => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return Sereal::Decoder->new({compress=>Sereal::SRL_ZLIB});
+		return 0;
+	},
+);
+
+
 sub decode {
 	my ($self,$code) = @_;
 	return undef unless $code;
+	if ($self->sereal){
+		return sereal_decode_with_object( $self->sereal_decoder, $code );
+	}
 	return $code unless $self->is_compress;
 	my $obj = thaw ($self->_uncompress($code));
 	return $obj->{data};
@@ -300,20 +307,13 @@ sub decode {
 sub encode {
 		my ($self,$code) = @_;
 		return $code unless $self->is_compress;
-		
+		if ($self->sereal){
+			return sereal_encode_with_object( $self->sereal_encoder, $code );
+		}
 	if  ($self->is_compress == 2){
 		require "Compress/Zstd.pm";
-		#return thaw(Compress::Zlib::compress($code));
-		#my $string =  encode_json $code->{annex};
-		#delete   $code->{annex};
-		#$code->{annex_json} = $string;
 		return  Compress::Zstd::compress(freeze ({data=>$code}));
 		}
-		
-		#die();
-#		return compress(freeze ({data=>$code}));
-	#	return  Compress::Zstd::compress(freeze ({data=>$code}));
-	#
 		return $self->_compress(freeze ({data=>$code}));
 }
 
@@ -424,6 +424,9 @@ sub next_key_value {
 	my ($self) = @_;
 	my $db_name = $self->name();
 	my @t = $self->_next($db_name);
+	my $debug ;
+	$debug =1 if $t[0] eq "__sereal";
+	@t = $self->_next($db_name) if $t[0] eq "__sereal";
 	return ($t[0],$self->decode($t[1]));
 }
 
@@ -443,6 +446,7 @@ sub get_keys {
 		$dh->{$key} ++;
 	
 	while( $key ne $key_end ){
+		next if $key eq "____sereal";
 		 $cursor->get($key, $data, MDB_NEXT);
 		 push(@data,$key);
 		$dh->{$key} ++;
@@ -563,7 +567,6 @@ sub get_first_index {
 	my $value;
 	my $cursor =  $self->get_lmdb_cursor();
 	 $cursor->get($key, $value, MDB_FIRST);
-	 warn $key;
 	 my $t = time;
 	 my $nb;
 	 my $previous = $key;
@@ -592,7 +595,6 @@ sub put{
 	 	}
 	 	
 	 }
-	 
 	$self->lmdb($db_name)->put($self->lmdb_key($key),$self->encode($value));
 	return  $index;
 	#$self->_put_index($key) if ($self->is_index);

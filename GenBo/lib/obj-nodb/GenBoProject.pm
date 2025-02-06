@@ -655,7 +655,8 @@ has rocks_cache_dir => (
 		my $self = shift;
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
-	my $name = $self->buffer->config_path("cache").$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	
+	my $name = $self->buffer->config_path("cache")."/".$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
 	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
 	$name .= "/".$self->name();
 	$self->makedir($name);
