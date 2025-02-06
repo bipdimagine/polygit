@@ -232,7 +232,7 @@ foreach my $chr (@chromosomes){
 	}
 	warn $chr->name." ::  end : ". abs (time - $t1);
 	$t1 =time;
-	chunks::save_chromosome_chunks_lmdb($project,$chr,$chunks->{$chr->name},$project->current_genome_version,"/data-isilon/DejaVu/HG38/variations/projects.lmdb/");
+	chunks::save_chromosome_chunks_lmdb($project,$chr,$chunks->{$chr->name},$project->current_genome_version);
 	warn "\t".$chr_name." save : ". abs (time - $t1);
 	$pm->finish( 0, {data=>[],jobid=>$jobid,snps=>$snps,regions=>$hregions} );
  }
