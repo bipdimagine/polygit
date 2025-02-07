@@ -307,7 +307,7 @@ sub save_chromosome_chunks {
 	my $dirout = $project->deja_vu_rocks_project_dir($version);
 	my $encoder = Sereal::Encoder->new({compress=>'Sereal::SRL_ZSTD',compress_threshold=>0});
 	system("mkdir $dirout/".$chr->name) unless -e "$dirout/".$chr->name;
-	my $tar_dir = $dirout."/".$chr->name."/";
+	my $tar_dir = $dirout."/";#.$chr->name."/";
 	$tar_dir =~ s/\/\//\//g;
 	my @vht =  shuffle @{$chunks} ;
 	 my $dir_tar = $project->deja_vu_rocks_project_dir($version);
