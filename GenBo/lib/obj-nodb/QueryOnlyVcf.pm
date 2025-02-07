@@ -9,6 +9,7 @@ use GenBoDeletion;
 use Moo;
 use Data::Dumper;
 use Compress::Snappy;
+use Carp;
 use List::MoreUtils qw{ natatime };
 use Storable qw/thaw freeze/;
 extends 'QueryVcf';
@@ -30,7 +31,9 @@ has project => (
 	lazy => 1,
 	default => sub { 
 		my $self = shift;
-		return $self->newPseudoProject('NGS2019');
+		my $project_name = $self->buffer->getRandomProjectName();
+		my $project = $self->buffer->newProject( -name => $project_name );
+		return $project;
 	}
 );
 
@@ -155,44 +158,45 @@ has force_all_gt_he => (
 
 
 
-sub newPseudoProject {
-	my ($self, $project_name) = @_;
-	my $test = 0;
-	my $annot_version = $self->annotation_version();
-	my $max_gencode = $self->max_gencode_version();
-	my $max_db_annot = $self->max_public_data_annot();
-	my @lTmp = split('\.', $annot_version);
-	my $project = GenBoProject -> new ( name	=> $project_name,
-										version => $self->version(),
-										genome_version_generic => $self->version(),
-										genome_version => $self->version(),
-										gencode_version => $max_gencode,
-										annotation_version => $max_db_annot,
-										public_database_version => $max_db_annot,
-										release => undef,
-										buffer	=> $self->buffer() );
-	$self->buffer->genome_version($project->gencode_version());	
-	$self->buffer->annotation_version($project->public_database_version());		
-	#$self->buffer->lmdb_public_dir($project->annotation_public_path);
-	my $buffer2 = GBuffer->new();
-	my $project2 = $buffer2->newProjectCache ( -name	=> $buffer2->get_random_project_name_with_this_annotations_and_genecode() );
-	#$project2->changeAnnotationVersion($annot_version, '1');
-	
-#	warn "\n\n";
-#	warn $annot_version;
-#	warn $project2->annotation_public_path;
-#	warn "\n\n";
-	
-	$project->public_data_root($project2->public_data_root());
-#	$self->buffer->public_data_version($project2->public_data_version());
-#	$self->buffer->lmdb_public_dir($project2->annotation_public_path);	
-	$self->buffer->annotation_genome_version($project2->annotation_genome_version());
-	$self->buffer->public_data_version($project2->buffer->public_data_version());
-	$self->buffer->{public_data} = $project2->buffer->public_data();
-	$project2 = undef;
-	$buffer2 = undef;
-	return $project;
-}
+#sub newPseudoProject {
+#	my ($self, $project_name) = @_;
+#	my $test = 0;
+#	
+#	confess();
+#	
+#	my $annot_version = $self->annotation_version();
+#	my $max_gencode = $self->max_gencode_version();
+#	my $max_db_annot = $self->max_public_data_annot();
+#	my @lTmp = split('\.', $annot_version);
+#	my $project = GenBoProject -> new ( name	=> $project_name,
+#										version => $self->version(),
+#										genome_version_generic => $self->version(),
+#										genome_version => $self->version(),
+#										gencode_version => $max_gencode,
+#										annotation_version => $max_db_annot,
+#										public_database_version => $max_db_annot,
+#										release => undef,
+#										buffer	=> $self->buffer() );
+#	$self->buffer->genome_version($project->gencode_version());	
+#	$self->buffer->annotation_version($project->public_database_version());		
+#	#$self->buffer->lmdb_public_dir($project->annotation_public_path);
+#	my $buffer2 = GBuffer->new();
+#	my $project2 = $buffer2->newProject ( -name	=> $buffer2->getRandomProjectName() );
+#	#$project2->changeAnnotationVersion($annot_version, '1');
+#	
+#	
+#	$project->public_data_root($project2->public_data_root());
+##	$self->buffer->public_data_version($project2->public_data_version());
+##	$self->buffer->lmdb_public_dir($project2->annotation_public_path);
+#	$self->buffer->annotation_version($project2->annotation_version());
+#	$self->buffer->annotation_genome_version($project2->annotation_genome_version());
+#	$self->buffer->public_data_version($project2->buffer->public_data_version());
+#	$self->buffer->{public_data} = $project2->buffer->public_data();
+#	
+#	$project2 = undef;
+#	$buffer2 = undef;
+#	return $project;
+#}
 
 sub getReferences {
 	my $self = shift;

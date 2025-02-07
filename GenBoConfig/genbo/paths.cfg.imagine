@@ -23,6 +23,10 @@ software:/software/bin/
 variations:variations/rocks/
 projects:variations/projects.lmdb/
 projects_lite:variations/projects/
-
 CNV:CNV/
 SVeq:SVeq/
+
+[polyproject_default]
+release:HG38_CNG
+genecode:43
+annotation:20

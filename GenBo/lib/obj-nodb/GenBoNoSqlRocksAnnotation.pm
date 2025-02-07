@@ -286,7 +286,6 @@ default => sub {
 sub prediction_score {
 	my ($self,$pid,$pos,$aa) = @_;
 	my $id = $pid."!".$pos;
-	
 	my $vraw = $self->get($id);
 	return  {sift=>"-",polyphen=>"-"} unless $vraw;
 	my $i = $self->AA->{$aa};

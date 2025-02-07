@@ -545,6 +545,21 @@ sub ucsc2ensembl {
 	return $chr;
 }
 
+sub getHashProjectWithReleaseGencodeAnnotation {
+	my ($self, $release_version, $genecode_version, $annotation_version) = @_;
+	return $self->getQuery->getHashProjectWithReleaseGencodeAnnotation($release_version, $genecode_version, $annotation_version);
+}
+
+sub getRandomProjectName {
+	my ($self, $release_version, $genecode_version, $annotation_version) = @_;
+	$release_version = $self->config_path('polyproject_default', 'release') if not $release_version;
+	$genecode_version = $self->config_path('polyproject_default', 'genecode') if not $genecode_version;
+	$annotation_version = $self->config_path('polyproject_default', 'annotation') if not $annotation_version;
+	my $h = $self->getHashProjectWithReleaseGencodeAnnotation($release_version, $genecode_version, $annotation_version);
+	my @lProject_names = keys %$h;
+	return $lProject_names[0];
+}
+
 sub newProjectCache {
 	my $self = shift;
 	my $args = _checkArguments(@_);
@@ -1083,7 +1098,11 @@ sub get_version_database{
 sub get_index_database_directory{
 	my ($self,$database)= @_;
 	my $version = $self->public_data_version;
-	return $self->public_data_root."/".$self->annotation_genome_version."/$database/".$self->public_data->{$version}->{$database}->{config}->{version}."/".$self->public_data->{$version}->{$database}->{config}->{dir};
+	my $database_config_name = $database;
+	if ($self->annotation_genome_version() eq 'HG19' and $database eq 'gnomad') {
+		$database_config_name .= '-hg19';
+	}
+	return $self->public_data_root."/".$self->annotation_genome_version."/$database/".$self->public_data->{$version}->{$database_config_name}->{config}->{version}."/".$self->public_data->{$version}->{$database_config_name}->{config}->{dir};
 }
 
 

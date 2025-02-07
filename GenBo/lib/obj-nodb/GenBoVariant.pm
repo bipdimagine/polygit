@@ -478,17 +478,13 @@ sub clinvar_id {
 
 sub score_clinvar {
 	my $self = shift;
-	return exists $self->clinvar->{score_clinvar};
+	return exists $self->clinvar->{score};
 }
 
-
-	
 sub text_clinvar {
 	my ($self) = @_;
-	return "" unless exists  $self->clinvar->{clnsig};
-	my $text =  $self->clinvar->{clnsig};
-	$text =~ s/_/ /g;
-	return $text;
+	return $self->clinvar->{clnsig} if (exists $self->clinvar->{clnsig});
+	return;
 }
 sub is_clinvar_pathogenic_for_gene {
 	my ($self, $gene) = @_;
