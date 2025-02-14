@@ -803,15 +803,15 @@ sub cnv_manue {
 	my $projectName = $self->project->name();
 	
 	my $ppn = $self->nproc;
-	my $type = "cnv-manue";
+	my $type = "cnv-polycyto";
 	my $stepname = $projectName."@".$type;
 	my $dir = $self->project->project_log();
 	my $methods = $self->project->callingSVMethods();
 	return $filein unless @$methods;
 	my $fileout   = $self->project->getCNVDir()."/".$self->project->name.".done";
-
+	my $cmd = "perl $bin_dev/manue_cnv/SV_global.pl -project=$projectName -fork=$ppn";
+	$cmd .= " && perl $bin_dev/manue_cnv/parseBND.pl -project=$projectName -fork=$ppn > $fileout";
 	
-	my $cmd = "perl $bin_dev/manue_cnv/SV_global.pl -project=$projectName -fork=$ppn > $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);

@@ -29,7 +29,7 @@ use GenBoNoSqlIntervalTree;
 
 #my $cgi = new CGI;
 my $buffer = GBuffer->new();
-my @releases = ("HG19");
+my @releases = ("HG19","HG38");
 
 # lister les fichiers allSV
 system("$Bin/new_dejavu_CNV.pl ");
@@ -48,7 +48,7 @@ my $nbSV;
 my $halldejavu;
 #my $nbCNV=0;
 
-
+die();
 my $htree_dejavu;
 my $ids;
 my $total;
@@ -62,6 +62,8 @@ foreach my $CNVFile (@res)
 	#warn $projectname;
 
 	my $hdejavu = retrieve($CNVFile) or die "Can't retrieve datas from ".$CNVFile." !\n";
+	warn Dumper $hdejavu;
+	die();
  	#my $no = GenBoNoSqlIntervalTree->new(dir=>"/data-xfs/Manue/Test_SV/DejaVu/newVersion/" ,mode=>"c");
   
  
