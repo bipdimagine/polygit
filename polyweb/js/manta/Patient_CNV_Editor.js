@@ -851,17 +851,14 @@ function igv_view_CNV()
 
  function launch_web_igv_start_and_end(value) 
 {
-	var val = value.split("et");
-	var titre = val[0];
-	
-	var v = val[1].split(";");
-	var locusstart = v[0];
+	var v = value.split(";");
+	var first_col =  v[0].split("et");
+	var titre = first_col[0];
+	var locusstart = first_col[1];
 	var locusend = v[1];
 	var bamfile =v[2];
-	
 	var patient_name = v[3];
 	var taille = 1;
-	
 	if (v.length > 4) 
 	{
 		taille = v[4];
