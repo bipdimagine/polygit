@@ -575,7 +575,6 @@ sub compute_level {
 		#my $zscore = 0;
 		if ($debug){
 			warn "score and sd ".$score." =+> ".$sdp;
-			warn $score + $sdp/2 ;
 			
 		}
 			if ($self->id =~ /chrX_41393905/){
