@@ -66,6 +66,7 @@ my $low_calling;
 my $predef_type;
 my $define_steps;
 my $yes =0;
+my $cnv =0;
 
 
 #$define_steps->{pipeline}->{all} = ["alignment","elprep","move_bam","coverage","gvcf4","callable_regions","binary_depth"];
@@ -118,6 +119,7 @@ GetOptions(
 	'version=s' => \$version,
 	'pipeline=s' =>\$pipeline_name,
 	'yes=s' =>\$yes,
+	'cnv=s' =>\$cnv,
 	#'low_calling=s' => \$low_calling,
 	'padding=s' =>\$pad,
 );
@@ -128,9 +130,14 @@ my $buffer = GBuffer->new();
 unless ($filename_cfg) {
  $filename_cfg = $buffer->config_directory()."/pipeline/pipeline.cfg";
 }
-
-read_config $filename_cfg =>  %{$define_steps};
-
+if ($cnv == 1) {
+	$define_steps = {}; 
+	$define_steps->{pipeline}->{short_read} = "binary_depth,manta,cnvnator,canvas,wisecondor,calling_wisecondor,hificnv";
+	$define_steps->{pipeline}->{pacbio} = "binary_depth,hificnv";
+}
+else {
+	read_config $filename_cfg =>  %{$define_steps};
+}
 unless ($projectName) {
 	usage();
 }
@@ -274,8 +281,10 @@ my $steps = {
 				"star_align" => sub {$pipeline->star_align(@_)},
 				"deepvariant" => sub {$pipeline->deepvariant(@_)},
 				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
+				"hificnv" => sub {$pipeline->hificnv(@_)},	
 				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
 				"specie_contaminant_check" => sub {$pipeline->check_specie_contaminant(@_)},
+
 			};
 			
 my @types_steps = ('pipeline','calling');
@@ -406,7 +415,6 @@ my $nb_type = 0;
 warn Dumper $list_steps;
 
 foreach my $list_requests (@{$list_steps}) {
-	warn  Dumper $list_requests;
 	
 	my $type_objects = $list_steps_types->[$nb_type];
 	warn $type_objects;

@@ -108,18 +108,18 @@ sub get_cached {
 	my ($self,$id) = @_;
 	#return $self->no->get($id);
 	return $self->{cached}->{$id} if exists $self->{cached}->{$id};
-	$self->{cached}->{$id} = $self->no->get($id);
+	my $toto = $self->no->get($id);
 	#$self->{cached}->{$id} = $self->no->get($id);
 	
-	if (scalar(@{$self->array_cached}) < 10){
-		push(@{$self->array_cached},$id);
-	} 
-	else {
-		my $zid = shift(@{$self->array_cached});
-		delete 	$self->{cached}->{$zid};
-	}
+#	if (scalar(@{$self->array_cached}) < 10){
+#		push(@{$self->array_cached},$id);
+#	} 
+#	else {
+#		my $zid = shift(@{$self->array_cached});
+#		delete 	$self->{cached}->{$zid};
+#	}
 	#$self->{cached}->{$id} = $self->no->get($id);
-	return $self->{cached}->{$id};
+	return $toto;
 }
 
 sub getDepthForIntspan {

@@ -2348,6 +2348,7 @@ has genomeFai => (
 			next if $chr =~ /MU0/;
 			next if $chr =~ /_random/;
 			next if $chr =~ /_hap/i;
+			next if (length($chr)>6);
 			$chrfai->{id}                 = $chr;
 			$chrfai->{name}               = $chr;
 			$chrfai->{fasta_name}         = $ochr;

@@ -248,6 +248,34 @@ has plateform_run_name => (
 		return $self->infosRun->{plateform_run_name};
 	},
 );
+has method => (
+	is		=> 'ro',
+
+	lazy 	=> 1,
+	default => sub {
+		my $self = shift;
+		return $self->infosRun->{method};
+	},
+);
+
+has isLongRead => (
+	is		=> 'ro',
+
+	lazy 	=> 1,
+	default => sub {
+		my $self = shift;
+		return $self->infosRun->{method} =~/long/i;
+	},
+);
+has isShortRead => (
+	is		=> 'ro',
+
+	lazy 	=> 1,
+	default => sub {
+		my $self = shift;
+		return $self->infosRun->{method} !~/long/i;
+	},
+);
 has run_name => (
 	is		=> 'ro',
 
@@ -266,6 +294,8 @@ has sample_sheet => (
 		return connect::uncompressData($self->infosRun->{document});
 	},
 );
+
+
 
 has date => (
 	is		=> 'ro',

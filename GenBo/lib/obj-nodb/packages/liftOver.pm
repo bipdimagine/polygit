@@ -107,7 +107,7 @@ sub run_liftOver {
 	#warn join(" ",@cmd);
 	run3 \@cmd, \$bed, \$stdout, \$stderr;
 	my $db = Bio::DB::Fasta->new($fasta);
- parse_bed($fileout,$res,$db);
+ 	parse_bed($fileout,$res,$db);
  return 1;
 }
 sub run_crossmap {

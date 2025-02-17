@@ -954,16 +954,7 @@ sub getHashForIntergenic {
 	return $hash;
 }
 
-# methode qui renvoie un hash d'informations pour un vrai gene
-sub getHashGeneAnnot {
-	my ($self, $id) = @_;
-	my $selfEnsemblId = $self->getGeneEnsemblId($id);
-	unless ($selfEnsemblId) {
-		warn $selfEnsemblId;
-		confess();
-	}
-	return $self->project->liteAnnotations->get("annotations", $selfEnsemblId);
-}
+
 
 # reecupere un vector (de meme taille que le chromosome) pour un gene donne
 sub get_variants_from_this_gene {

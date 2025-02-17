@@ -105,44 +105,41 @@ foreach my $junction (@lJunction) {
 	}
 	else {
 		$dejavu_percent = $junction->dejavu_percent_coordinate_similar() unless ($dejavu_percent);
-		my $h_dv = $project->dejavuJunctionsResume->get_junctions($junction->getChromosome->id(), $junction->start(),$junction->end(), $dejavu_percent);
-		foreach my $pos (keys %{$h_dv}) {
-			my $id_part = $pos;
-			$id_part =~ s/-/_/;
-			
-			my @l_pat = split(';', $h_dv->{$pos}->{details});
-			foreach my $patinfos (@l_pat) {
-				my @lTmp = split('_', $patinfos);
-				my $project_name_dv = 'NGS20'.shift(@lTmp).'_'.shift(@lTmp);
-				my $patient_name_dv = join('_', @lTmp);
-				my $dir_proj_dv_path = $project->DejaVuJunction_path().'/projects/'.$project_name_dv;
-				my $patient_dv_file = $dir_proj_dv_path.'/'.$project_name_dv.'.tab.gz';
-				my $cmd = "tabix $patient_dv_file ".$junction->getChromosome->id().':'.$junction->start().'-'.$junction->end().' | grep "'.$patient_name_dv.'" | grep "'.$id_part.'"';
+		my $hdejavu = $junction->dejavu();
+		my $dv = $junction->dejavu_details();
+		my $id_dev = $junction->start."_".$junction->end;
+		my $pos = $junction->start."-".$junction->end;
+		foreach my $pdv (keys %$dv){
+			foreach my $patdv (@{$dv->{$pdv}}){
+				my $dir_proj_dv_path = $project->DejaVuJunction_path().'/projects/'.$pdv;
+				my $project_dv_file = $dir_proj_dv_path.'/'.$pdv.'.tab.gz';
+				my $cmd = "tabix $project_dv_file ".$junction->getChromosome->id().':'.$junction->start().'-'.$junction->end().' | grep "'.$patdv.'" | grep "'.$id_dev.'"';
 				my $dv_infos = `$cmd`;
 				if ($dv_infos) {
 					my ($dv_chr, $dv_start, $dv_end, $dv_pat_name, $dv_type, $dv_j_new, $dv_j_normal, $dv_ratio, $dv_j_id) = split('\t', $dv_infos);
 					$dv_infos =~ s/ //g;
 					my $this_dv_percent = int($project->dejavuJunctionsResume->getIdentityBetweenCNV($junction->start() ,$junction->end(), $dv_start, $dv_end));
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{type} = $dv_type;
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_junctions} = $dv_j_new;
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_normal} = $dv_j_normal;
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{score} = $dv_ratio;
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{start} = $dv_start;
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{end} = $dv_end;
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{type} = $dv_type;
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{count_junctions} = $dv_j_new;
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{count_normal} = $dv_j_normal;
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{score} = $dv_ratio;
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{start} = $dv_start;
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{end} = $dv_end;
 				}
 				else {
-					my $this_dv_percent = int($project->dejavuJunctionsResume->getIdentityBetweenCNV($junction->start() ,$junction->end(), $h_dv->{start}, $h_dv->{end}));
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{type} = 'pb_dv_proj';
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_junctions} = '-';
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{count_normal} = '-';
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{score} = '-';
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{start} = $h_dv->{start};
-					$hdv->{$this_dv_percent}->{$pos}->{$project_name_dv}->{$patient_name_dv}->{end} = $h_dv->{end};
+					my $this_dv_percent = 100;
+					#int($project->dejavuJunctionsResume->getIdentityBetweenCNV($junction->start() ,$junction->end(), $h_dv->{start}, $h_dv->{end}));
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{type} = 'pb_dv_proj';
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{count_junctions} = '-';
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{count_normal} = '-';
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{score} = '-';
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{start} = $hdejavu->{start};
+					$hdv->{$this_dv_percent}->{$pos}->{$pdv}->{$patdv}->{end} = $hdejavu->{end};
 					
 				}
 			}
 		}
-	}
+	} 
 	
 	foreach my $identity (reverse sort keys %{$hdv}) {
 		foreach my $pos (sort keys %{$hdv->{$identity}}) {
