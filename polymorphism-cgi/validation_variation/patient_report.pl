@@ -618,6 +618,7 @@ sub construct_htranscripts {
 				$htranscript->{name} = $tr1->getGene->external_name();
 				$htranscript->{mean} = $tr1->mean_coding_coverage($patient);
 				$htranscript->{mean} = $tr1->mean_exonic_coverage($patient) if $htranscript->{mean} == 0;
+				
 				$htranscript->{obj} = $tr1;
 				$htranscript->{exons} = [];
 				$htranscript->{variations} = [];
@@ -661,8 +662,7 @@ sub construct_htranscripts {
 
 			unless ($cdata){
 		#	unless ($cdata && $cdata->{color2} ) {
-
-					my $ret = image_coverage::image ([$patient], $tr1,$intronic,$show_utr, $padding, $cov_limit,1);
+					my $ret = image_coverage::image_depth_lmdb ([$patient], $tr1,$intronic,$show_utr, $padding, $cov_limit,1);
 					$cdata = $ret->{data};
 			}
 			
@@ -682,7 +682,7 @@ sub construct_htranscripts {
 		foreach my $var (@{$kvars}){   
 				my $debug;
 				$debug =1 if $var eq "17_8006708_G_A"; 
-				warn $var;
+				#warn $var;
 				my $hvariation = utility::return_hash_variant($project,$var,$tr_id,$patient,$vquery);
 				if ($print ==1){
 					$hvariation->{min_pop} =~ s/<[^>]*>//gs;
@@ -1294,11 +1294,11 @@ foreach my $transcript (sort {$a->{name} cmp $b->{name}} @{$patient->{transcript
 		  		@tds=();
 		  		@ths=();
 		}
-			my ($r,$g,$b) = @{$exon->{color2}};
 			my $hash_font = {};
-			 $hash_font = {nowrap=>1, style=>"background-color:rgb($r,$g,$b);"};# if ($g == 255 );
-
-
+			if (exists $exon->{color2} and $exon->{color2}) {
+				my ($r,$g,$b) = @{$exon->{color2}};
+				$hash_font = {nowrap=>1, style=>"background-color:rgb($r,$g,$b);"};# if ($g == 255 );
+			}
 			
 			my $name = $exon->{name};
 			$name =~s/ex//;

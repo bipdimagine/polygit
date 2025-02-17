@@ -1569,18 +1569,30 @@ sub getGenomicPositionFromNomenclature {
 # methods for coverage
 ########################
 
+sub mean_coverage_from_intspan {
+	my ($self,$patient,$intspan) = @_;
+	my $sum = 0;
+	my $nb = 0;
+	my $iter = $intspan->iterate_runs();
+	while (my ( $from, $to ) = $iter->()) {
+	    for my $pos ($from .. $to) {
+	        $sum += $patient->depth($self->getChromosome->id(), $from, $from)->[0];
+	        $nb++;
+	    }
+	}
+	my $mean = 0;
+	$mean = $sum / $nb if $nb > 0;
+	return int($mean);
+}
+
 sub mean_exonic_coverage {
 	my ($self,$patient) = @_;
-	my $toto = $self->getGene()->get_coverage($patient)->coverage_intspan($self->getGenomicSpan);
-	return int($toto->{mean});
+	return $self->mean_coverage_from_intspan($patient,$self->getGenomicSpan());
 }
 
 sub mean_coding_coverage {
 	my ($self,$patient) = @_;
-#	warn $self->id;
-	my $toto = $self->getGene()->get_coverage($patient)->coverage_intspan($self->getSpanCoding);
-	return int($toto->{mean});
-	
+	return $self->mean_coverage_from_intspan($patient,$self->getSpanCoding());
 }
 
 
