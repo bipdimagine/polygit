@@ -181,7 +181,6 @@ sub getPredictions {
 		else {
 			my $pos = $self->position($tr->getProtein)->start();
 			my $aa  = $self->changeAA($tr->getProtein);
-			
 			my $h = $self->getChromosome->rocksdb("prediction_matrix")->prediction_score($tr->id,$pos,$aa);
 	
 		}
@@ -209,7 +208,6 @@ sub polyphenScore {
 	my ( $self, $obj ) = @_;
 	
 	$self->getPredictions() unless exists $self->{predictions};
-	warn Dumper $self->getPredictions();
 	die($obj->name) unless $obj->isProtein()||  $obj->isTranscript();
 	$self->{predictions}->{$obj->id}->{polyphen_humvar}->{score} = "-" unless $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};
 	return $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};
