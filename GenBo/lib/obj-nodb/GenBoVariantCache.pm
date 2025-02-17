@@ -24,6 +24,9 @@ sub dejaVuInfosForDiag2 {
 		my $hash = delete $self->{dejaVuInfosForDiag2};
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
+#		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
+#		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
+		
 	if (exists $self->{cad}){
 		my $a = delete $self->{cad}; #aka compress dejavu for diag
 		my @aa = unpack("w*",$a);

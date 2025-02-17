@@ -132,6 +132,7 @@ sub _get_no_sereal_pack {
 
 sub value {
 		my ($self,$id) = @_;
+		
 		 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));
 		 return undef unless $v;
 		  return $v;

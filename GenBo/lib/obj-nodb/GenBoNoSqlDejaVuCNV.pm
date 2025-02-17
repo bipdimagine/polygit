@@ -61,8 +61,6 @@ sub create_table {
 	 return  $self->{table}->{$key1} unless  $self->write();
 	$self->dbh($key1)->do("DROP TABLE IF EXISTS $table_name")  or die $DBI::errstr  if $self->mode eq 'c'  ;
 	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),ho INTEGER, projects INTEGER, _value BLOB, _value2 BLOB,dv_project INTEGER,dv_sample INTEGER,dv_sr INTEGER,dv_depth INTEGER,dv_cov INTEGER,start INTEGER,end INTEGER, variation_type VARCHAR(3), length INTEGER) ")  or die $DBI::errstr;;
-	warn $table_name." ".$key1;
-	warn "CREATE TABLE if not exists $table_name (_key VARCHAR(250),ho INTEGER, projects INTEGER, _value BLOB, _value2 BLOB,dv_project INTEGER,dv_sample INTEGER,dv_sr INTEGER,dv_depth INTEGER,dv_cov INTEGER,start INTEGER,end INTEGER, variation_type VARCHAR(3), length INTEGER) ";
 	return 	$self->{table}->{$key1} ;
 }
 

@@ -207,7 +207,9 @@ sub getPredictionMask {
 
 sub polyphenScore {
 	my ( $self, $obj ) = @_;
+	
 	$self->getPredictions() unless exists $self->{predictions};
+	warn Dumper $self->getPredictions();
 	die($obj->name) unless $obj->isProtein()||  $obj->isTranscript();
 	$self->{predictions}->{$obj->id}->{polyphen_humvar}->{score} = "-" unless $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};
 	return $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};

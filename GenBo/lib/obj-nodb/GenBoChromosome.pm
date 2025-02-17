@@ -2230,51 +2230,14 @@ sub rocks_dejavu {
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
-	my $dir = $self->project->deja_vu_rocks_public_dir();
+	my $dir = "/data-beegfs/tmp/HG38/";
+	#my $dir = $self->project->deja_vu_rocks_public_dir();
 	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->project->{rocks}->{$name};
 }
 
-sub getDejaVuInfos {
-	my ( $self, $id ) = @_;
-	my $hres;
-	confess();
-	my $no = $self->rocks_dejavu();
-	
-	my $no1 = $self->project->lite_deja_vu2();
-	my $string_infos = $no->dejavu($id);
-	#warn $id;
-	#return;
-	return $hres unless ($string_infos);
-	foreach my $string_infos_project (split('!', $string_infos)) {
-		my @lTmp = split(':', $string_infos_project);
-		my $project_name = 'NGS20'.$lTmp[0];
-		my $nb_ho = $lTmp[1];
-		my $nb_all = $lTmp[2];
-		my $nb_he = $nb_all - $nb_ho;
-		my $patients_info = $lTmp[3];
-		$hres->{$project_name}->{nb} = $nb_all;
-		$hres->{$project_name}->{ho} = $nb_ho;
-		$hres->{$project_name}->{he} = $nb_he;
-		$hres->{$project_name}->{patients} = "";
-		$hres->{$project_name}->{string}   = "";
-		my $hpat = $no1->get( "projects", $project_name );
-		next;
-		my $nb_pat = 0;
-		foreach my $pat_id (split(',', $patients_info)) {
-			$nb_pat++;
-			my $pat_name = $hpat->{$pat_id};
-			next unless ($pat_name);
-			if ($nb_pat <= $nb_ho) { $hres->{$project_name}->{string} .= $pat_name.":1;"; }
-			else { $hres->{$project_name}->{string} .= $pat_name.":2;"; }
-			$hres->{$project_name}->{patients} .= $pat_name.";";
-		}
-		chop( $hres->{$project_name}->{patients} );
-		chop( $hres->{$project_name}->{string} );
-	}
-	return $hres;
-}
+
 
 sub getShortResumeDejaVuInfosForDiagforRocksId {
 	my ($self, $rocks_id) = @_;
@@ -2321,7 +2284,8 @@ sub getDejaVuInfosForDiagforVariant{
 	
 	
 	foreach my $pid (keys %$h){
-			my $patients = $h->{$pid}->{patients};
+	
+		my $patients = $h->{$pid}->{patients};
 		if (exists $in_this_run_patients->{$pid}){
 			#$res->{in_this_run_patients} += scalar(keys %{$in_this_run_patients->{$pid}} );
 			
@@ -2332,7 +2296,10 @@ sub getDejaVuInfosForDiagforVariant{
 			}
 		}
 		next if  $self->project->id == $pid;
-		next unless $h->{$pid}->{he};
+		
+		next unless ($h->{$pid}->{he} + $h->{$pid}->{ho});
+		warn $pid;
+		
 		my $nho = $h->{$pid}->{ho};
 		my $nhe = $h->{$pid}->{he};
 	

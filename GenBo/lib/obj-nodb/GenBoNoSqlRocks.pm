@@ -721,7 +721,6 @@ sub return_genomic_rocks_id_from_gnomad_id {
 sub return_rocks_id_from_genbo_id {
 	my ($self,$id) = @_;
 	my ($chr,$pos,$ref,$alt) = split("_",$id);
-
 	
 	return $self->return_rocks_id($pos,$ref,$alt);
 }

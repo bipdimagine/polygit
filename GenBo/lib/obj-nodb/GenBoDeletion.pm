@@ -66,7 +66,8 @@ has rocksdb_id => (
 	lazy=>1,
 	default => sub {
 		my $self = shift;
-		return sprintf("%010d", $self->start)."!".$self->length();
+		my ($chr,$pos,$ref,$alt) = split("-",$self->gnomad_id);
+		return sprintf("%010d", ($pos))."!".$self->length();
 	},
 	
 );

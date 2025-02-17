@@ -3410,6 +3410,7 @@ sub dejaVuInfosForDiag2 {
 	unless (exists $self->{array_dejavu}) {
 		
 		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
+		warn Dumper $hash;
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
 	

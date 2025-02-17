@@ -1,4 +1,4 @@
-package GenBoNoSqlRocksGenome;
+package GenBoNoSqlDuckDBGenome;
 #use lib "$Bin/";
 use strict;
 use warnings;
@@ -8,7 +8,6 @@ use JSON::XS;
 use POSIX;
 #use GenBoNoSqlRocksChunks;
 use Carp;
-use GenBoNoSqlRocksAnnotation;
 
 my $json_chr_length = qq{{"HG19":{"6":"171115067","11":"135006516","9":"141213431","15":"102531392","14":"107349540","1":"249250621","8":"146364022","17":"81195210","7":"159138663","13":"115169878","MT":"16569","22":"51304566","Y":"59373566","3":"198022430","21":"48129895","18":"78077248","5":"180915260","X":"155270560","20":"63025520","16":"90354753","2":"243199373","12":"133851895","19":"59128983","4":"191154276","10":"135534747"},"HG38":{"21":"46709983","Y":"57227415","18":"80373285","3":"198295559","22":"50818468","MT":"16569","20":"64444167","16":"90338345","X":"156040895","5":"181538259","2":"242193529","10":"133797422","4":"190214555","19":"58617616","12":"133275309","11":"135086622","6":"170805979","14":"107043718","15":"101991189","9":"138394717","17":"83257441","8":"145138636","1":"248956422","13":"114364328","7":"159345973"}}};
 
@@ -82,7 +81,7 @@ has dir_db =>(
 	lazy => 1,
 	default => sub {
 		my $self = shift;
-		my $dd = $self->dir."/".$self->chromosome_name.".g.rocks/";
+		my $dd = $self->dir."/".$self->chromosome_name."/";
 #		warn $self->mode;
 		unless (-e $dd){
 			if ($self->mode eq "r"){
@@ -139,6 +138,10 @@ has chunks =>(
 		}
 		
 		else {
+			my $length = $self->chr_length;
+			my $c = $self->divide_by_chunks($length);
+			$self->write_config($c);
+			return $c;
 			die() unless -e $self->json_file;
 			return $self->load_config();
 		}
@@ -147,24 +150,15 @@ has chunks =>(
 );
 sub clean {
 	my ($self) =@_;
-	my $tchunks = $self->load_config();
-	foreach my $id (keys %{$tchunks}){
-		my $dir = $self->dir_db."$id";
-		#warn $dir;
-		RocksDB->destroy_db($dir) if -e $dir;
-	}
-	foreach my $id (keys %{$tchunks}){
-		system("rmdir ".$self->dir_db."$id") if -e $self->dir_db."$id";
-	}
+	
 	#die();
 }
 
 has tree =>(
-is		=> 'ro',
+	is		=> 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		
  		my $tree =  Set::IntervalTree->new;
  		for my $r (@{$self->regions}){
  			  $tree->insert($r->{id}, $r->{start}, $r->{end});
@@ -173,62 +167,8 @@ is		=> 'ro',
 	}
 );
 
-has tree_db =>(
-is		=> 'ro',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
- 		my $tree =  Set::IntervalTree->new;
- 		for my $r (@{$self->regions}){
- 			#$self->chunks->{$id}->{rocksdb};
- 			my $id = $r->{id};
- 			my $db  = GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pipeline=>$self->pipeline,pack=>$self->pack,description=>$self->description,factor=>$self->factor);
- 			 $tree->insert($db, $r->{start}, $r->{end});
- 		}
- 		return $tree;
-	}
-);
 
-sub nosql_rocks {
-	my ($self,$region) = @_;
-	my $id = $region->{id};
-	return $self->_chunks_rocks($id);
-};
 
-sub nosql_rocks_tmp {
-	my ($self,$region) = @_;
-	my $id = $region->{id};
-	return  GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pack=>$self->pack,description=>$self->description,factor=>$self->factor,pipeline=>1);
-	
-};
-sub nosql_rocks_read {
-	my ($self,$region) = @_;
-	my $id = $region->{id};
-	return  GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>"r",name=>$id,pack=>$self->pack,description=>$self->description,factor=>$self->factor,pipeline=>1);
-	
-};
-sub _pile {
-	my ($self,$id) = @_;
-	$self->{array_rocksdb} = [] unless exists $self->{array_rocksdb};
-	if (scalar(@{$self->{array_rocksdb}} > 1)){
-		my $sid = shift(@{$self->{array_rocksdb}});
-		$self->chunks->{$sid}->{rocksdb}->close();
-		$self->chunks->{$sid}->{rocksdb} = undef;
-		delete $self->chunks->{$sid}->{rocksdb};
-	}
-	push(@{$self->{array_rocksdb}},$id);
-}
-sub _chunks_rocks {
-	my ($self,$id) = @_;
-
-	 unless (exists $self->chunks->{$id}->{rocksdb}){
-	 	$self->_pile($id);
-	 	#$self->chunks->{$id}->{rocksdb} = GenBoNoSqlRocksChunks->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,start=>$self->chunks->{$id}->{start},index=>$self->index,compress=>$self->compress,pipeline=>$self->pipeline);
-		$self->chunks->{$id}->{rocksdb} = GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pipeline=>$self->pipeline,pack=>$self->pack,description=>$self->description,factor=>$self->factor);
-	 #	system("vmtouch -q -t ".$self->chunks->{$id}->{rocksdb}->path_rocks);
-	 }
-	 return $self->chunks->{$id}->{rocksdb};
-};
 
 
 has regions =>(
@@ -353,125 +293,95 @@ sub convert_rocksId_varId {
 	my ($self, $rocksId) = @_;
 	
 }
-sub decode_dejavu {
-	my ($self,$value,$id) = @_;
-	return undef unless $value;
-	
-	my @tab = unpack("w*",$value);
-	my $hash;
-	my $nb = 0;
-	while (@tab){
-		my ($p,$he,$ho)=  splice(@tab, 0, 3);
-		$hash->{$p}->{he} = $he;
-		$hash->{$p}->{ho} = $ho;
-		$nb += $he+$ho;
-	} 
-	warn "==>".$nb." ".$id;
-	return $hash;
+
+sub get_dbh {
+	my ($self,$region) = @_;
+	my $id = $region->{id};
+	$self->{dbh}->{$id} = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 });
+	# Charger le fichier Parquet dans une table temporaire
+	my $d = $self->dir_db;
+	$self->{dbh}->{$id}->do(qq{CREATE TEMP TABLE variants AS SELECT *  FROM read_parquet("$d/$id.parquet") ;});
+	return $self->{dbh}->{$id};
+}
+sub get_db {
+	my ($self,$pos,$pn) = @_;
+	my $results = $self->tree->fetch($pos,$pos+1);
+	confess(@$results) if scalar(@$results) > 1;
+	my $id = $results->[0];
+	return $self->{dbh}->{$id} if exists $self->{dbh}->{$id};
+	foreach my $k (keys %{$self->{dbh}}){
+		$self->{dbh}->{$k}->disconnect();
+	}
+	delete $self->{dbh};
+	$self->{dbh}->{$id} = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 });
+	# Charger le fichier Parquet dans une table temporaire
+	my $d = $self->dir_db;
+	warn $d." ".$id;
+	$self->{dbh}->{$id}->do(qq{CREATE TEMP TABLE variants AS SELECT *  FROM read_parquet("$d/$id.parquet") ;});
+	return $self->{dbh}->{$id};
 }
 
-sub _decode_dejavu {
-	my ($self,$value) = @_;
-	return undef unless $value;
-	my @tab = split("!-x-!",$value);
-#	warn "\n\n";
-#	warn 'value: '.$value;
-	my $hash;
-	foreach my $z (@tab){
-		next unless $z;
-		my ($p,$he,$ho,@a)=  unpack("w*",$z);
-		
-		next if not @a;		
-		next if ($he+$ho != scalar(@a));
-		
-		confess("\n\nERRROR: problem DEJAVU rocks unpack. Die\n\n") if ($he+$ho != scalar(@a));
-	#	warn "ok";
-		$hash->{$p}->{he} = $he;
-		$hash->{$p}->{ho} = $ho;
-		$hash->{$p}->{patients} = \@a;
-	} 
-	return $hash;
-}
 sub dejavu {
-	my ($self,$id) = @_;
-	
-	
-	if ($self->current) {
-		my $res =  $self->{current_db}->get_raw($id);
-		return $self->decode_dejavu($res,$id) if $res;
-	}
-	
+	my ($self,$id,$pn) = @_;
 	my ($pos,$a) =split("!",$id);
 	$pos *= 1;
-	$self->{current_db} = $self->get_db($pos);
+	my $dbh =  $self->get_db($pos,$pn);
 	
-#
-	my $h = $self->current->get_raw($id);
-	return $self->decode_dejavu($h,$id);
+	my $sth = $dbh->prepare("SELECT  key, he as he, ho as ho,value as t  FROM variants where key = '$id' ");
+	#my $sth = $dbh->prepare("SELECT   key, he as he, ho as ho,value as t FROM variants  where start>$pos-2 and start<$pos+2 ");
+	$sth->execute();
+	my $st;
+	my $n =0;
+	
+	while (my $row = $sth->fetchrow_hashref) {
+	#	warn $row->{key}." ".$row->{he}." ".$row->{ho};
+		$st.=$row->{t};
+		$n += $row->{he} + $row->{ho};
+	}
+	#warn "dejavu duck ".$n if $n>0;
+}
+sub dejavu2 {
+	my ($self,$id,$pn) = @_;
+	my ($pos,$a) =split("!",$id);
+	$pos *= 1;
+	my $dbh =  $self->get_db($pos,$pn);
+	my $sth = $dbh->prepare("SELECT  key, he as he, ho as ho,value as t  FROM variants where key='$id' ");
+	#my $sth = $dbh->prepare("SELECT  key,SUM(he) as he, sum(ho) as ho FROM variants  where key='$id' group by key");
+	$sth->execute();
+	my $st;
+	my $n =0;
+	
+	while (my $row = $sth->fetchrow_hashref) {
+		
+		$st.=$row->{t};
+		$n += $row->{he} + $row->{ho};
+	}
 }
 
+sub dejavu1 {
+	my ($self,$pos) = @_;
+	my $dbh =  $self->get_db($pos);
+	my $sth = $dbh->prepare("SELECT  key, he as he, ho as ho,value as t  FROM variants where start = $pos ");
+	#my $sth = $dbh->prepare("SELECT  key,SUM(he) as he, sum(ho) as ho FROM variants  where key='$id' group by key");
+	$sth->execute();
+	my $st;
+	my $n =0;
+	my $id;
+	while (my $row = $sth->fetchrow_hashref) {
+		$id->{$row->{key}} ++;
+		
+		#$st.=$row->{t};
+		#$n += $row->{he} + $row->{ho};
+	}
+	warn Dumper $id;
+}
 
 sub stringify_pos {
 	my ($self,$pos) = @_;
 	return ($pos,sprintf("%010d", $pos));
 }
 
-#sub dejavu_hg19_id {
-#	my ($self, $rocks_id) = @_;
-#	my $var_id_hg19 = $self->current->get_raw('#'.$rocks_id);
-#	return $var_id_hg19;
-#}
-#
-#sub dejavu_hg38_id {
-#	my ($self, $rocks_id) = @_;
-#	warn "\n\n";
-#	warn $rocks_id;
-#	
-#	my $var_id_hg19 = $self->current->get_raw('#'.$rocks_id);
-#	
-#	warn $var_id_hg19;
-#	die;
-#	
-#	my ($chr_id, $pos_hg19, $ref, $var) = split('_', $var_id_hg19);
-#	my ($pos_hg38, $a) = split('!', $rocks_id);
-#	my $var_id_hg38 = $chr_id.'_'.int($pos_hg38).'_'.$ref.'_'.$var;
-#	return $var_id_hg38;
-#}
 
-sub get_dbs_interval {
-	my ($self,$start,$end) = @_;
-	my $results = $self->tree_db->fetch($start,$end);
-	foreach my $db (@$results){
-		my ($a,$b,$c)  = split(/\./,$db->name);
-		$db->{start} = $b;
-	}
-	return $results;
-}
-
-
-sub dejavu_interval {
-	my ($self, $start, $end) = @_;
-	
-	my $pos = $self->stringify_pos($start);
-	my $dbs = $self->get_dbs_interval($start,$end);
-	my $h_res;
-	foreach my $db (sort{$a->{start} <=> $b->{start}} @$dbs){
-		$self->{current_db} = $db;
-		my $iter = $db->rocks->new_iterator->seek($pos);
-		while (my ($key, $value) = $iter->each) {
-			my ($this_pos, $id) = split('!', $key);
-			next if int($this_pos) < $start;
-			if ($this_pos > $end) {
-				last;
-			}
-#			warn "\n\n";
-#			warn $key.': '.$value;
-			$h_res->{$key} = $self->decode_dejavu($value);
-		}
-	}
-	
-	return $h_res;
-}
 
 sub spliceAI_id {
 	my ($self,$id) = @_;
@@ -486,13 +396,7 @@ sub spliceAI {
 	return $self->get_db($pos)->spliceAI($id);
 }
 
-sub get_db {
-	my ($self,$pos) = @_;
-	my $results = $self->tree_db->fetch($pos,$pos+1);
-	confess(@$results) if scalar(@$results) > 1;
-	warn Dumper $results;
-	return $results->[0];
-}
+
 
 
 sub close {
