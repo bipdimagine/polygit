@@ -219,20 +219,24 @@ foreach my $patobj (@$listPatients)
 		}
 		my $fichierPatient = $patobj->getSVFile($caller);
 		my $res;	
+		warn $caller;
 		if ($caller  eq "wisecondor")
 		{
+	
 				my $hash = SVParser::parse_wisecondor($patient);
+				warn Dumper $hash;
 				$hPat_CNV->{'wisecondor'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
 		}
 		elsif ($caller  eq "manta" or $caller  eq "pbsv" or $caller  eq "dragen-sv") {
 			$hPat_CNV->{'manta'}  = SVParser::parse_vcf($patient,$caller);
+		
 		}
 		elsif ($caller  eq "hificnv" or $caller  eq "canvas" or $caller  eq "dragen-cnv") {
 			my $hash  = SVParser::parse_vcf($patient,$caller);
 			$hPat_CNV->{'canvas'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
+			warn Dumper $hPat_CNV->{'canvas'};
 		}
 	}
-	
 	# on recupere la liste des genes et le score max corespondant au CNV
 	# et les infos de cytogenetique : duplications segmentaires et cytoband
 	
@@ -242,6 +246,8 @@ foreach my $patobj (@$listPatients)
 	
 	
 	
+	warn Dumper keys %$hPat_CNV;
+	warn $file_out;
 	# on freeze la table correspondant à chaque patient individuelement
 	store($hPat_CNV, $file_out) or die "Can't store $file_out for ".$patname."!\n";
 	
@@ -307,6 +313,8 @@ foreach my $gb (keys %{$hdejavu}){
 # freeze la table du dejavu pour le projet
 my $file_dejavu_inthisproject = $variationsDir.$projectname."_dejavu.allCNV";
 my $file_dejavu = $project->DejaVuCNVFile();
+warn $file_dejavu_inthisproject;
+warn $file_dejavu;
 store($hdejavu, $file_dejavu_inthisproject) or die "Can't store $file_dejavu_inthisproject!\n";
 store($hdejavu, $file_dejavu) or die "Can't store $file_dejavu!\n";
 
