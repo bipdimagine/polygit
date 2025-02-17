@@ -809,13 +809,14 @@ sub cnv_manue {
 	my $methods = $self->project->callingSVMethods();
 	return $filein unless @$methods;
 	my $fileout   = $self->project->getCNVDir()."/".$self->project->name.".done";
+	my $file1 = $self->project->getCacheDir().'/CNV2/1.dejavu.lite';
+	my $file2 = $self->project->getCacheDir().'/SV/SV.dejavu.lite';
 	my $cmd = "perl $bin_dev/manue_cnv/SV_global.pl -project=$projectName -fork=$ppn";
 	$cmd .= " && perl $bin_dev/manue_cnv/parseBND.pl -project=$projectName -fork=$ppn > $fileout";
-	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
-	if ($self->unforce() && -e $fileout){
+	if ($self->unforce() && -e $fileout && -e $file1 && -e $file2){
 		$job_bds->skip();
 	}
 	return ($filein);

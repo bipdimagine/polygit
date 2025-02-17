@@ -149,20 +149,20 @@ sub merge_objects {
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
 	if ($self->unforce() && -e $fileout){
-		my $no = $self->project->noSqlQuality("r");
-		my $data = $no->get($self->project->name,"mendelian");
-		my $quality_patients;
-		foreach my $line (@{$data->{data}}){
-			my $name = $line->{sample}->{text};
-			$quality_patients->{$name} ++;
-		}
-		my $error;
-		foreach my $p (@{$self->project->getPatients}){
-			warn $p->name unless exists $quality_patients->{$p->name};
-			$error =1 unless exists $quality_patients->{$p->name};
-		}
-		
-  		$job_bds->skip() unless $error;
+#		my $no = $self->project->noSqlQuality("r");
+#		my $data = $no->get($self->project->name,"mendelian");
+#		my $quality_patients;
+#		foreach my $line (@{$data->{data}}){
+#			my $name = $line->{sample}->{text};
+#			$quality_patients->{$name} ++;
+#		}
+#		my $error;
+#		foreach my $p (@{$self->project->getPatients}){
+#			warn $p->name unless exists $quality_patients->{$p->name};
+#			$error =1 unless exists $quality_patients->{$p->name};
+#		}
+#  		$job_bds->skip() unless $error;
+		$job_bds->skip();
 	}
 	return ($filein);
 }
@@ -183,20 +183,20 @@ sub merge_patients {
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
 	if ($self->unforce() && -e $fileout){
-		my $no = $self->project->noSqlQuality("r");
-		my $data = $no->get($self->project->name,"mendelian");
-		my $quality_patients;
-		foreach my $line (@{$data->{data}}){
-			my $name = $line->{sample}->{text};
-			$quality_patients->{$name} ++;
-		}
-		my $error;
-		foreach my $p (@{$self->project->getPatients}){
-			warn $p->name unless exists $quality_patients->{$p->name};
-			$error =1 unless exists $quality_patients->{$p->name};
-		}
-		
-  		$job_bds->skip() unless $error;
+#		my $no = $self->project->noSqlQuality("r");
+#		my $data = $no->get($self->project->name,"mendelian");
+#		my $quality_patients;
+#		foreach my $line (@{$data->{data}}){
+#			my $name = $line->{sample}->{text};
+#			$quality_patients->{$name} ++;
+#		}
+#		my $error;
+#		foreach my $p (@{$self->project->getPatients}){
+#			warn $p->name unless exists $quality_patients->{$p->name};
+#			$error =1 unless exists $quality_patients->{$p->name};
+#		}
+#  		$job_bds->skip() unless $error;
+		$job_bds->skip();
 	}
 	return ($filein);
 }
