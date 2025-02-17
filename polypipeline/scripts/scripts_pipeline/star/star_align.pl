@@ -41,6 +41,7 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 my $ref_root =  $project->dirGenome()."/star/";
 
 my $star = "/software/distrib/star/STAR-2.7.5a/bin/Linux_x86_64_static/STAR";
+
 my $readgroupstar = "ID:".$patient->name." SM:".$patient->name." PL:ILLUMINA DS:".$patient->name." PG:star";
 #my $cmd = "$star --runThreadN $fork  --genomeDir $ref_root --readFilesIn $fastq1 $fastq2  --readFilesCommand zcat  --twopassMode Basic --outFileNamePrefix $dir_pipeline/$patient_name."." --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate ";
 my $cmd = "$star --runThreadN $fork  --genomeDir $ref_root --readFilesIn $fastq1 $fastq2  --readFilesCommand zcat  --twopassMode Basic --outFileNamePrefix $dir_pipeline/$patient_name."." --outSAMstrandField intronMotif --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate --outSAMattrRGline $readgroupstar";

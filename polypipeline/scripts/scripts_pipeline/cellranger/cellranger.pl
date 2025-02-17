@@ -141,7 +141,7 @@ foreach my $patient (@{$patients_name}) {
 	$exec = "cellranger-arc" if $type eq "arc";
 	$index = $project->getGenomeIndex($prog)."_atac" if $type eq "atac";
 	$index = $project->getGenomeIndex($prog)."_arc" if $type eq "arc";
-	my $cmd = "cd $tmp; $exec count --id=$name --sample=$name --fastqs=$fastq --transcriptome=$index ";
+	my $cmd = "cd $dir; $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam false --transcriptome=$index ";
 	$cmd .= " --include-introns " if $type eq "nuclei";
 	$cmd .= "\n";
 	warn $cmd;
@@ -167,7 +167,7 @@ foreach my $patient (@{$patients_name}) {
 			my $index_vdj = $index."_vdj";
 		#my $vdj_file = $dir."/".$ename."_librarytest.csv";
 		#my $prog =  $e->alignmentMethod();
-			print JOBS_VDJ "cd $tmp; cellranger vdj --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_vdj  \n"
+			print JOBS_VDJ "cd $dir; cellranger vdj --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_vdj  \n"
 		}
 	}
 	close(JOBS_VDJ);
@@ -399,7 +399,7 @@ if ($step eq "aggr" or $step eq "all"){
 #my $date = $RefDateActuelle->{date};
 
 if ($step eq "tar" or $step eq "all"){
-	my $tar_cmd = "tar -cvzf $dir/cellranger7"."_"."$projectName.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
+	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
 	warn $tar_cmd;
 	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
 	system ($tar_cmd)  unless $no_exec==1;

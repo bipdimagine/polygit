@@ -135,6 +135,13 @@ $layout->{variations}->{ngs} = [
 		styles    => 'text-align:center;'
 	},
 	{
+		name      => "Varsome",
+		field     => "varsome",
+		formatter => "formatVarsome",
+		width     => "5%",
+		styles    => 'text-align:center;'
+	},
+	{
 		name      => "gAD AC",
 		field     => "gnomad_ac",
 		formatter => "formatGnomadLink",

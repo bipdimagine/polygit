@@ -98,13 +98,18 @@
 		 dojo.addOnLoad(init_gridProject);
         
        
-			//fonction appelée par dblclickGrid suite au dbl click sur une ligne du tableau
-            function viewProject(prj, type){
-             
-				//attention c'est ici que j'ai changé le html à la place de detailProject.html j'ai mis detailGene.html
-              // this.location.href = "coverage.html?project="+prj+"&type="+type;
-				window.open("coverage.html?project="+prj+"&type="+type,'_blank');
-            }
+      
+       function viewProject(prj, type, genome) {
+           var url;
+           var regexp = /HG38/g;
+           if (String(genome).match(regexp)) {
+           		url = 'https://'+window.location.hostname + "/HG38/polyweb/coverage.html?project="+prj+"&type="+type,'_blank'
+           }
+           else {
+				url = "coverage.html?project="+prj+"&type="+type,'_blank'
+			}
+			window.open(url,'_blank');
+        }
 			
 			
      

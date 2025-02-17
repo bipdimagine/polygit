@@ -534,8 +534,7 @@
 		    	if (user_name) {}
 		    	else { user_name = 'masson'; }
 		    	var url = url_path + "polyrnaseq/launch_shiny_polyrna.pl";
-		    	url += "?project=" + project_name;
-		    	url += "&user=" + user_name;
+		    	url += "/app/" + project_name;
 		    	//alert(url);
 			    $.getJSON( url, function( data ) {
 			    	var url_docker = data.url_docker;

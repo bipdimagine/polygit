@@ -110,6 +110,7 @@ $pm->run_on_finish(
 
 
 foreach my $chr (@{$project->getChromosomes}) {
+	next if $chr->not_used();
 	$pm->start and next;
 	my $chr_id = $chr->id();
 	my $hres;
@@ -124,6 +125,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 		my $junction_id = $chr_id.'_'.$start.'_'.$end.'_junction';
 		$junction_id =~ s/ //g;
 		foreach my $pat_j (@{$junction->getPatients()}) {
+#			warn ref($junction).' -> '.$junction->id.' -> canonique: '.$junction->isCanonique;
 			my $type = $junction->getTypeDescription($pat_j);
 			my $gene_name = $junction->annex->{$pat_j->name()}->{ensid};
 			my $count_new_junction = $junction->get_nb_new_count($pat_j);
@@ -161,9 +163,12 @@ foreach my $chr (@{$project->getChromosomes}) {
 $pm->wait_all_children();
 die if $nbErrors > 0;
 
-my $json_encode = encode_json $h_proj_junctions;
+
 open (JSON1, '>'.$dir_dv_proj.'/'.$name.'.json');
-print JSON1 $json_encode;
+if ($h_proj_junctions) {
+	my $json_encode = encode_json $h_proj_junctions;
+	print JSON1 $json_encode;
+}
 close (JSON1);
 
 open (JSON2, '>'.$dir_dv_proj.'/'.$name.'.canoniques.json');

@@ -65,13 +65,11 @@ sub setStructuralVariants {
 
 sub setJunctions {
 	my ($self) = @_;
-	warn $self->name;
 	my $h_ids;
 	my $path = $self->getProject->get_path_rna_seq_junctions_analyse_all_res();
 	my $se_file = $self->project->RnaseqSEA_SE;
 	my $ri_file = $self->project->RnaseqSEA_RI;
-	warn $ri_file;
-	my ($hash_junc, $hash_junc_sj_ids);
+	my ($hash_junc, $hash_junc_sj_ids, $check_sj_junc);
 	if ($ri_file and -e $ri_file ) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($ri_file, 'RI')->parse_file($self)}) {
 			my $id = $hres->{id};
@@ -79,32 +77,44 @@ sub setJunctions {
 			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
 			#push(@ares,$hres);
 		}
+		$check_sj_junc = 1;
 	}
 	if ($se_file and -e $se_file) {
 		foreach my $hres (@{$self->getProject->getQueryJunction($se_file, 'SE')->parse_file($self)}) {
 			my $id = $hres->{id};
 			$hash_junc->{$id} = $hres;
 			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
-			
+		}
+		$check_sj_junc = 1;
+	}
+	my $regtools_file = $self->getProject->get_path_rna_seq_junctions_analyse_all_res().'/regtools/'.$self->getProject->name().'_regtools.tsv.gz';
+#	my $regtools_file = '/data-isilon/bipd-src/mbras/test_GOSR2.tsv.gz';
+	if (-e $regtools_file) {
+		foreach my $hres (@{$self->getProject->getQueryJunction($regtools_file, 'regtools')->parse_file($self)}) {
+			my $id = $hres->{id};
+			$hash_junc->{$id} = $hres;
+			$hash_junc_sj_ids->{$hres->{sj_id}}->{$id} = undef;
+			#push(@ares,$hres);
 		}
 	}
 	
-	warn "step 1";
+#	warn "step 1";
  my $hSJ= {};
-
-foreach my $patient (@{$self->getProject->getPatients()}) {
+if ($check_sj_junc) {
+	foreach my $patient (@{$self->getProject->getPatients()}) {
 		my $file = $patient->getSJFile();
 		next unless $file;
 		my $queryJunction = QueryJunctionFile->new( file=>$file );
 		$queryJunction->parse_SJ_file($patient,$self,$hash_junc,$hash_junc_sj_ids);
 	}
+}
 	
-warn "step 2";
+#warn "step 2";
 foreach my $id (keys %{$hash_junc} ){
 	
-	my @ps = keys %{$hash_junc->{$id}->{annex}};
-	foreach my $p (@ps) {
-		
+	if ($check_sj_junc) {
+		my @ps = keys %{$hash_junc->{$id}->{annex}};
+		foreach my $p (@ps) {
 		#die() unless exists $hash_junc->{$id}->{annex}->{$p}->{canonic_count};
 		if ($hash_junc->{$id}->{annex}->{$p}->{canonic_count} < 10) {
 			unless (exists $hash_junc->{$id}->{annex}->{$p}->{is_sj}){
@@ -145,21 +155,16 @@ foreach my $id (keys %{$hash_junc} ){
 						delete $hash_junc->{$id}->{annex}->{$p} if ($hash_junc->{$id}->{annex}->{$p}->{alt_count}+0.01) < 5;
 						}
 					}
-				
-				
 				}
 			}
 		}
+	}
 	
 	next unless keys %{$hash_junc->{$id}->{annex}};
 	
 	#delete $hash_junc->{$id}->{genes};
 	my $obj = $self->getProject->flushObject( 'junctions', $hash_junc->{$id});
 	$h_ids->{$obj->id()} = undef;
-	
-	warn ref($obj).' -> '.$obj->id() if $id eq '20_3194705_3199162_SE';
-	warn Dumper $hash_junc->{$id} if $id eq '20_3194705_3199162_SE';
-	
 }
 return $h_ids;	
 
@@ -517,9 +522,9 @@ has cytobandTree => (
 		my $tree  = Set::IntervalTree->new;
 		my $dir   = $self->project->get_public_data_directory("cytoband");
 		my $tabix = Bio::DB::HTS::Tabix->new( filename => $dir . "/cytoband.bed.gz" );
-		
 		my $res = $tabix->query( $self->ucsc_name );    # if $start;
-
+		return $tree if not $res;
+		
 		while ( my $line = $res->next ) {
 			chomp($line);
 			my ( $chr, $start, $end, $name, $color ) = split( " ", $line );

@@ -44,6 +44,10 @@ require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update.pm";
 my $io = IO::Handle->new();
 $io->autoflush(1);
 
+my $max_dejavu = 999999999999;
+my $max_dejavu_ho = 999999999999;
+my $max_gnomad = 999999999999;
+my $max_gnomad_ho = 999999999999;
 
 my $cgi = new CGI();
 my $user_name = $cgi->param('user');
@@ -51,10 +55,10 @@ my $pwd = $cgi->param('pwd');
 my $gene_id = $cgi->param('gene');
 my $gene_id_alt = $cgi->param('gene_alt');
 my $only_transcript = $cgi->param('only_transcript');
-my $max_dejavu = $cgi->param('dejavu');
-my $max_dejavu_ho = $cgi->param('dejavu_ho');
-my $max_gnomad = $cgi->param('gnomad');
-my $max_gnomad_ho = $cgi->param('gnomad_ho');
+$max_dejavu = $cgi->param('dejavu');
+$max_dejavu_ho = $cgi->param('dejavu_ho');
+$max_gnomad = $cgi->param('gnomad');
+$max_gnomad_ho = $cgi->param('gnomad_ho');
 my $filters_cons = $cgi->param('filters_cons');
 my $only_ill = $cgi->param('only_ill');
 my $only_my_projects = $cgi->param('only_my_projects');
@@ -262,7 +266,7 @@ sub save_export_xls {
 	my $h_xls_args;
 	print '_save_xls_';
 	$project_dejavu->cgi_object(1);
-	my @lVarObj;
+	my (@lVarObj, $h_pubmed);
 	foreach my $pos (sort keys %{$hResVariants}) {
 		foreach my $var_id (sort keys %{$hResVariants->{$pos}}) {
 			$project_dejavu->print_dot(50);
@@ -271,6 +275,16 @@ sub save_export_xls {
 				$v->variationTypeInterface($gene_init);
 			}
 			push(@lVarObj, $v);
+			if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
+				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
+				foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
+					if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
+						$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
+					}
+				}
+			}
 		}
 	}
 	my $xls_export = new xls_export();
@@ -309,12 +323,15 @@ sub save_export_xls {
 			}
 		}
 	}
+	
 	print "|";
 	$project_dejavu->getProject->buffer->dbh_deconnect();
 	$project_dejavu->getProject->buffer->dbh_reconnect();
 #	delete $project_dejavu->{rocksPartialTranscripts};
 	print "|";
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
+	print "|";
+	$xls_export->store_specific_infos('variants_pubmed', $h_pubmed);
 	print "|";
 	my $session_id = $xls_export->save();
 	print "|";
@@ -877,10 +894,6 @@ sub get_variants_infos_from_projects {
 							elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
 							if (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
 							elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
-							else {
-								warn $Bin;
-								confess("\n\nPath polyweb not found. die.\n\n");
-							}
 							my $html_icon = $p->return_icon();
 							$html_icon =~ s/<img src='//;
 							$html_icon =~ s/' style='padding-right:1px'>//;
@@ -1030,16 +1043,25 @@ sub update_list_variants_from_dejavu {
 		
 		my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 		
+		$var_id = uc($var_id);
+		next if $var_id =~ /ALU/;
+		next if not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
+		
+		
+		my $var = $project_dejavu->_newVariant($var_id);
 		if ($hVariantsDetails and exists $hVariantsDetails->{$var_id}) {
 			$var_gnomad = $hVariantsDetails->{$var_id}->{var_gnomad} if ($hVariantsDetails->{$var_id}->{var_gnomad});
 			$var_gnomad_ho = $hVariantsDetails->{$var_id}->{var_gnomad_ho} if ($hVariantsDetails->{$var_id}->{var_gnomad_ho});
 			$var_dejavu = $hVariantsDetails->{$var_id}->{var_dejavu} if ($hVariantsDetails->{$var_id}->{var_dejavu});
 			$var_dejavu_ho = $hVariantsDetails->{$var_id}->{var_dejavu_ho} if ($hVariantsDetails->{$var_id}->{var_dejavu_ho});
-			$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			if ($only_transcript) {
+				$var_annot = $var->variationTypeInterface($transcript_dejavu);
+			}
+			else {
+				$var_annot = $hVariantsDetails->{$var_id}->{annotation} if ($hVariantsDetails->{$var_id}->{annotation});
+			}
 			$var_model = $hVariantsDetails->{$var_id}->{model} if ($hVariantsDetails->{$var_id}->{model});
 		}
-		
-		my $var = $project_dejavu->_newVariant($var_id);
 		next if ($var->isCnv() or $var->isLarge());
 		
 		my $not_ok;
@@ -1119,6 +1141,7 @@ sub update_list_variants_from_dejavu {
 			$total_pass++;
 			next;
 		}
+		
 		my ($has_proj, $ok_model);
 		my $hashVarId = $project_init->getDejaVuInfos($var_id);
 		
@@ -1168,6 +1191,7 @@ sub update_list_variants_from_dejavu {
 			}
 		}
 		next unless ($has_proj);
+		
 		next unless ($ok_model);
 		
 		my $table_gnomad = update_variant_editor::table_gnomad($var);
@@ -1243,7 +1267,15 @@ sub update_list_variants_from_dejavu {
 #		elsif  ($h_var->{value}->{hgmd_id} or $h_var->{value}->{clinvar_id}) { $color = "orange"; }
 		
 		$h_var->{genes}->{$gene_init_id_for_newgene} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_dejavu);
-		
+		if ($only_transcript) {
+			my @new_list;
+			foreach my $htr (@{$h_var->{genes}->{$gene_init_id_for_newgene}}) {
+				if ($htr->{value}->{trid} eq $only_transcript) {
+					push(@new_list, $htr);
+				}
+			}
+			$h_var->{genes}->{$gene_init_id_for_newgene} = \@new_list;
+		}
 		$hVariantsDetails->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_init_id_for_newgene}, \@header_transcripts, 1);
 		$hVariantsDetails->{$var_id}->{table_gnomad} = $table_gnomad;
 		$hVariantsDetails->{$var_id}->{table_dejavu} = $table_dejavu;
