@@ -50,32 +50,33 @@ $pm->run_on_finish(
     );	
 
 foreach my $patient (@{$project->getPatients}) {
-	next unless $patient->isGenome();
-	foreach my $type (keys %$dir){
-		my $fileout = $patient->getAnnotSVFileName($type);
-		my $filein = $patient->getSVFile($type);
-	}
+	 $patient->isGenome();
+	 my $listCallers = $patient->callingSVMethods();
 }
+$project->disconnect();
 
 foreach my $patient (@{$project->getPatients}) {
+	#next unless $patient->name eq "AO-LR-EA2";
 	next unless $patient->isGenome();
+	my $listCallers = $patient->callingSVMethods();
 	$job_id ++;
 	#$hjobs->{$job_id} ++;
 	$hjobs->{$job_id}->{file}=   $dir_tmp."/".$patient->name;
-	
+	$project->disconnect();
 	 my $pid = $pm->start and next;
+	 	$listCallers = $patient->callingSVMethods();
 	 	$dir_tmp= $dir_tmp."/".$patient->name;
 	 	system("mkdir $dir_tmp && chmod a+rwx $dir_tmp") unless -e $dir_tmp;
-		foreach my $type (keys %$dir){
+	 	warn Dumper @$listCallers;
+		foreach my $type (@$listCallers){
 		#next if $type ne "wisecondor";
 		my $fileout = $patient->getAnnotSVFileName($type);
 		my $file_tmp = $dir_tmp."/".$patient->name.".annotsv.tsv";
 		#next if -e $fileout;;
 		unlink $fileout if -e $fileout;
 		warn $patient->name;
+		
 		my $filein = $patient->getSVFile($type);
-		#{
-			
 		my $filebed = $filein;
 		$filebed =~ s/\.gz//;
 		my $opt = "";
@@ -92,12 +93,13 @@ foreach my $patient (@{$project->getPatients}) {
 		$opt2 = "-genomeBuild GRCh38" if $project->genome_version_generic() =~/HG38/;
 			my $cmd = qq{ export ANNOTSV=/software/distrib/AnnotSV_2.0 && $load && gunzip -c $filein > $filebed && $annotsv $opt2 -SVinputFile $filebed -outputFile $file_tmp $opt 2>/dev/null && mv $file_tmp $fileout };
 		warn $cmd;
-		#}
+		
 		system("$cmd");
 		unlink $filebed;
 		die("problem ") unless -e $fileout;
 		#my $dir_out = $dir->{$type}->{dir}."/".
-	}
+		}
+	
 		$pm->finish(0,{job=>$job_id});
 	
 }
