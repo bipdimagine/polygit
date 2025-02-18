@@ -152,11 +152,11 @@ sub cache_coverage_list_primers {
 	
 	foreach my $capture ( @{ $projectP->getCaptures } ) {
 		next if $capture->isPcr();
-		warn "start";
+		#warn "start";
 		my $list = $capture->getListPrimers();
 	
 		$no->put( $projectP->name(), $capture->id, $list );
-		warn Dumper $no->get($projectP->name(), $capture->id );
+		#warn Dumper $no->get($projectP->name(), $capture->id );
 	}
 	$no->close();
 }
@@ -241,7 +241,7 @@ sub run_cache_polydiag_cache {
 	my $buffer1 = new GBuffer;
 	my $project = $buffer1->newProjectCache( -name 			=> $project_name, -typeFilters=>'individual' );
 	$project->disconnect();
-	warn $project;
+	#warn $project;
 	my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
 		capture_name => $project->validation_db()
@@ -362,15 +362,13 @@ sub run_cache_polydiag_fork {
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
 			die()  if $exit_code ne 0;
-			warn "end process";
 			my $count;
 			my $db_lite = $project->noSqlPolydiag("w");
 			foreach my $t ( keys %{$data->{vtr}} ) {
-				warn $t;
+				#warn $t;
 				$db_lite->put( $patient_name, "list_$t", join( ";", @{ $data->{vtr}->{$t} } ) );
 				
 			}
-			warn "2";
 			$db_lite->put( $patient_name, "transcripts", join( ";", keys %{$data->{th}} ) );
 			foreach my $h (@{$data->{hv}}){
 				$db_lite->put( $patient_name, $h->{polydiag_id}, $h );
@@ -384,7 +382,6 @@ sub run_cache_polydiag_fork {
 	
 	foreach my $chr ( @{ $project->getChromosomes } ) {
 		 my $pid      = $pm->start() and next;	
-		 warn "start ".$chr->name();
 		 my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
 		capture_name => $project->validation_db()
@@ -465,7 +462,7 @@ sub run_cache_polydiag_fork {
 		 $res->{vtr} = $vtr;
 		$res->{th}= \%th;
 		$res->{hv}= $hh;
-		warn "end ".$chr->name;
+	#	warn "end ".$chr->name;
 		$pm->finish(0,$res);
 		#$project->purge_memory( $chr->length );
 	}    #end chromosome
@@ -512,9 +509,9 @@ sub run_cache_polydiag_vector {
 	
 	#my $variations = $p->getStructuralVariations();
 	
-	warn "end";
+	#warn "end";
 	foreach my $chr ( @{ $project->getChromosomes } ) {
-		warn $chr->name;
+		#warn $chr->name;
 		my $vector = $p->getVectorOrigin($chr)->Clone;
 		
 		my $list = to_array($vector,$chr->name);
@@ -641,9 +638,9 @@ sub run_cache_polydiag {
 	my $vtr;
 	my %th;
 	my $variations = $p->getStructuralVariations();
-	warn "end";
+	#warn "end";
 	foreach my $chr ( @{ $project->getChromosomes } ) {
-		warn $chr->name;
+		#warn $chr->name;
 		#next unless $chr->name eq "5";
 		#	my $db = $project->buffer->open_kyoto_db($file_out,'c');
 		#my $variations = $chr->getStructuralVariations();
@@ -904,7 +901,7 @@ sub construct_variant {
 		
 		if ($v->isCoding($tr1) && $tr1->getProtein){
 			my $prot = $tr1->getProtein();
-			warn $tr1->name unless $prot;
+			#warn $tr1->name unless $prot;
 			$hvariation->{cds} = $v->getOrfPosition($prot);
 			$hvariation->{prot} = $v->getProteinPosition($prot);
 			$hvariation->{codons_AA} =   $v->protein_nomenclature($prot);#$v->getProteinAA($prot).$hvariation->{prot}.$v->changeAA($prot);

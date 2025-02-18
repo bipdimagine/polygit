@@ -956,7 +956,6 @@ sub nextVariant {
 	return unless scalar(@{$self->{list_variant}});
 	my $id = shift(@{$self->{list_variant}} );
 	my $var_obj = $self->returnVariants($id);
-	warn $var_obj;
 	confess() unless defined $var_obj;
 	my $ref = ref($var_obj);
 	if ($ref eq 'GenBoVariation'){
