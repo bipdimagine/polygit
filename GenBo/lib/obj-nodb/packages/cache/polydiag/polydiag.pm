@@ -773,8 +773,6 @@ sub construct_variant_database {
 
 sub construct_variant {
 	my ($project,$v,$tr1,$patient,$vquery) = @_;
-	#die();
-	$project->disconnect();
 	my $hvariation;
 	$hvariation->{id} = $v->id;
 	if ($project->isSomatic){
@@ -959,7 +957,6 @@ sub construct_variant {
 
 sub construct_intergenic_variant {
 	my ($project,$v,$patient,$vquery) = @_;
-	$project->disconnect();
 	my $hvariation;
 	$hvariation->{id} = $v->id;
 
