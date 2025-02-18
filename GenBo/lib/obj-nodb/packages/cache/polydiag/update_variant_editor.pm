@@ -161,6 +161,7 @@ sub vname2 {
 	my $project_name = $v->project->name();
 	my $gnames = join(';',map{$_->name} @{$v->getGenes});
 	my $dataset = "?dataset=gnomad_r2_1";
+	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $url_gnomad = qq{https://gnomad.broadinstitute.org};
 	if ($v->isCnv()){
 		my $len = $v->length();
@@ -213,6 +214,7 @@ sub vname2 {
 sub vname {
 	my ($v,$hvariation) = @_;
 	my $dataset = "?dataset=gnomad_r2_1";
+	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $vn=$v->vcf_id;
 	$vn =~ s/_/-/g;
 	$vn=~ s/chr//;
@@ -441,9 +443,7 @@ sub table_gnomad {
 	
 	my $pp = $v->getChromosome->name."-".$v->start;
 	my $dataset = "?dataset=gnomad_r2_1";
-	if ($v->getProject->buffer->annotation_genome_version() =~ /HG38/) {
-		$dataset = "?dataset=gnomad_r4";
-	}
+	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $href = qq{https://gnomad.broadinstitute.org/region/$pp$dataset};
 	my $vn=$v->vcf_id;
 	$vn =~ s/_/-/g;
@@ -1880,6 +1880,7 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
  				
  				
 				my $dataset = "?dataset=gnomad_r2_1";
+				$dataset = "?dataset=gnomad_r4" if $gene->getProject->getVersion() =~ /HG38/;
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
  				if ($gene) {
