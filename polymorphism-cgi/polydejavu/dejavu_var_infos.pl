@@ -107,7 +107,7 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 	}
 	my @lMails;
 	foreach my $hashOwners (@{$query->getOwnerProject_byName($projName)}) { push(@lMails, $hashOwners->{'email'});  }
-	foreach my $patName (sort keys %{$hDejaVuGlobal->{$projName}}) {
+	foreach my $patName (sort keys %{$hDejaVuGlobal->{$projName}->{patients}}) {
 		next if ($in_this_run and not exists $h_this_run_patients->{$projName}->{$patName});
 		my $pp = $thisProject->getPatient($patName);
 		next if exists $solo_fam->{$pp->getFamily()->name} ;

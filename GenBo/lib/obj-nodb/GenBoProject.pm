@@ -3582,6 +3582,25 @@ sub newVariant {
 	return $self->myflushobjects( $toto, $typeObject )->[0];
 }
 
+sub _newVariantFromRockdbId {
+	my ($self, $chr, $rocksid, $patient) = @_;
+	my ($pos, $alt) = split('!', $rocksid);
+	my $ref = $chr->sequence($pos, $pos);
+	my $var_id = $chr->id.'_'.int($pos);
+	if ($alt =~ /\+/) {
+		$alt = $ref.$alt;
+		$alt =~ s/\+//;
+	}
+	if ($alt =~ /[0-9]+/) {
+		my $alt_del = $chr->sequence($pos, $pos+int($alt));
+		$var_id .= '_'.$alt_del.'_'.$ref;
+	}
+	else {
+		$var_id .= '_'.$ref.'_'.$alt;
+	}
+	return $self->_newVariant($var_id, $patient);
+}
+
 sub _newVariant {
 	my ( $self, $id, $patient ) = @_;
 	my $hash;
@@ -5956,37 +5975,14 @@ has lite_deja_vu_rsname => (
 	}
 );
 
-sub getDejaVuIdsFromInterval {
-	my ( $self, $region ) = @_;
-	my $hashTmpRes = undef;
-	my ( $chr, $start, $end ) = split( '_', $region );
-	$end = $start + 1 unless $end;
-	my $start_search = $start - 1000;
-	my $end_search   = $end + 1000;
-	my @lRes;
-	my @lVarIds =
-	  @{ $self->get_deja_vu_from_position( $chr, $start_search, $end_search ) };
-
-	foreach my $var_id (@lVarIds) {
-		my @lTmp = split( '_', $var_id );
-		if ( $start <= int( $lTmp[1] ) and int( $lTmp[1] ) <= $end ) {
-			push( @lRes, $var_id );
-		}
-	}
-	return \@lRes;
-}
 
 sub get_deja_vu_from_position {
 	my ( $self, $chr, $start, $end ) = @_;
-	
 	my $no = $chr->rocks_dejavu();
-	
-	my $h  = $no->get_position( $chr, ( $start - 1 ), ( $end + 1 ) );
-	
-	#TODO: utiliser ROCKS
-	
+	my $h = $no->dejavu_interval( ($start-1), ($end+1) );
 	return $h;
 }
+
 has countInThisRunPatients => (
 	is      => 'ro',
 	lazy    => 1,

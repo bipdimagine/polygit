@@ -698,8 +698,8 @@ function formatRsName(value){
 		var tabIdFields = id.split("_");
 		var alleles = tabIdFields[2] + '/' + tabIdFields[3];
 		if (tab[1].match(/TMP/)) { eurl = '<a href="http://www.ensembl.org/Homo_sapiens/Variation/Summary?v=' + tab[1] + '" target="_blank">' + tab[1] + '</a> (' + alleles + ')'; }
-		else if (tab[1].match(/rs/)) { eurl = '<a href="http://www.ncbi.nlm.nih.gov/SNP/snp_ref.cgi?rs=' + tab[1] + '" target="_blank">' + tab[1] + '</a> (' + alleles + ')'; }
-		else { eurl = tab[1]; }
+		else if (tab[1].match(/rs/)) { eurl = tab[0] + ' / <a href="http://www.ncbi.nlm.nih.gov/SNP/snp_ref.cgi?rs=' + tab[1] + '" target="_blank">' + tab[1] + '</a> (' + alleles + ')'; }
+		else { eurl = tab[0]; }
 	}
 	return eurl;
 }

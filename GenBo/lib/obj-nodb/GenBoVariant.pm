@@ -3396,8 +3396,10 @@ sub dejavu_hash_projects_patients {
 			$h_pat_proj->{$h->{patient_id}} = $h->{name};
 		}
 		foreach my $pat_id (@{$h_dv->{$proj_id}->{patients}}) {
-			$hres->{$proj_name}->{$h_pat_proj->{$pat_id}} = undef;
+			$hres->{$proj_name}->{patients}->{$h_pat_proj->{$pat_id}} = undef;
 		}
+		$hres->{$proj_name}->{nb_he} = $h_dv->{$proj_id}->{he};
+		$hres->{$proj_name}->{nb_ho} = $h_dv->{$proj_id}->{ho};
 	}
 	return $hres;
 }
