@@ -2249,24 +2249,8 @@ function export_filter_by_variations(){
     document.getElementById("wait2").src="../images/polyicons/wait18trans.gif";
     dijit.byId('waiting_xls_progress').set('title', 'Export XLS by Variations'); 
     var can_launch = can_launch_export_xls_var();
-    
     var ok = 0;
-    var lOk = [];
-    dojo.forEach(gridChromosome._by_idx, function(item, index){
-        var chr_name;
-        var selectedItem = gridChromosome.getItem(index);
-        dojo.forEach(gridChromosome.store.getAttributes(selectedItem), function(attribute) {
-            if (gridChromosome.selection.isSelected(index)) {
-                var value = gridChromosome.store.getValues(selectedItem, attribute);
-                if (attribute == "id" ) {
-                    chr_name = value;
-                    lOk.push(chr_name);
-                }
-            }
-        });
-    });
-    
-    var list_chr = lOk.join(",");
+    var list_chr = 'all';
     var hurl = get_args_vector(list_chr);
     hurl += "&view_all_genes=1";
     hurl += "&xls_by_variants=1";
@@ -6115,10 +6099,12 @@ function selectFamilies_recregion(value) {
         <div dojoType="dijit.layout.ContentPane" title="Chromosomes" style="padding:1px">
             <div dojoType="dijit.layout.ContentPane" region="top" style="padding:0px;height:14%" splitter="false"> 
              <div  dojoType="dijit.Toolbar">
+             		<!--
                     <div dojoType="dijit.form.Button" iconClass="eyeIcon" onClick='viewAllChromosome();' showLabel="true">
                         Get All
                     </div>
                     <span dojoType="dijit.ToolbarSeparator"></span>
+                    -->
                     <button id="b_export_xls_genes" dojoType="dijit.form.Button" onClick='export_filter_by_genes()' iconClass="exportIcon" style="padding-left:3px" disabled>
                         <b>XLS</b> genes
                     </button>
