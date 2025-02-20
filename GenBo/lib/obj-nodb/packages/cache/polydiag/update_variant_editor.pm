@@ -1879,8 +1879,9 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
  				
  				
-				my $dataset = "?dataset=gnomad_r2_1";
-				$dataset = "?dataset=gnomad_r4" if $gene->getProject->getVersion() =~ /HG38/;
+				my $dataset = "?dataset=gnomad_r4";
+				$dataset = "?dataset=gnomad_r2_1" if $gene and $gene->getProject->getVersion() =~ /HG19/;
+				$dataset = "?dataset=gnomad_r2_1" if $patient and $patient->getProject->getVersion() =~ /HG19/;
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
  				if ($gene) {
