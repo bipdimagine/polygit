@@ -2227,52 +2227,71 @@ var is_export_xls_var = 0;
 var is_export_xls_genes = 0;
 function export_filter_by_genes(){
     document.getElementById("wait2").src="../images/polyicons/wait18trans.gif";
-    dijit.byId('waiting_xls_progress').set('title', 'Export XLS by Genes'); 
-    var hurl = get_args_vector('other');
-    hurl += "&view_all_genes=1";
-    hurl += "&xls_by_genes=1";
-    hurl += "&xls_outfile=none";
-    if (lOnlyThesesGenes.length > 0) {
-        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
-    }
-    hurl = hurl.replace('?', ' ');
-    hurl = hurl.replace(/&/g, ' ');
-    dijit.byId("url_xls").set("value", hurl);
-    is_export_xls = 1;
-    is_export_xls_var = 0;
-    is_export_xls_genes = 1;
-    document.getElementById("startButton").click();
-    return;
+    setTimeout(function () {
+	    dijit.byId('waiting_xls_progress').set('title', 'Export XLS by Genes'); 
+	    var hurl = get_args_vector('other');
+	    hurl += "&view_all_genes=1";
+	    hurl += "&xls_by_genes=1";
+	    hurl += "&xls_outfile=none";
+	    if (lOnlyThesesGenes.length > 0) {
+	        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
+	    }
+	    hurl = hurl.replace('?', ' ');
+	    hurl = hurl.replace(/&/g, ' ');
+	    dijit.byId("url_xls").set("value", hurl);
+	    is_export_xls = 1;
+	    is_export_xls_var = 0;
+	    is_export_xls_genes = 1;
+	    document.getElementById("startButton").click();
+	    return;
+    }, 1000);
 }
 
 function export_filter_by_variations(){
     document.getElementById("wait2").src="../images/polyicons/wait18trans.gif";
-    dijit.byId('waiting_xls_progress').set('title', 'Export XLS by Variations'); 
-    var can_launch = can_launch_export_xls_var();
-    var ok = 0;
-    var list_chr = 'all';
-    var hurl = get_args_vector(list_chr);
-    hurl += "&view_all_genes=1";
-    hurl += "&xls_by_variants=1";
-    hurl += "&user=" + dojo.cookie("username");
-    hurl += "&xls_outfile=none";
-    if (lOnlyThesesGenes.length > 0) {
-        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
-    }
-    hurl = hurl.replace('?', ' ');
-    hurl = hurl.replace(/&/g, ' ');
-    dijit.byId("url_xls").set("value", hurl);
-    if (can_launch == 1) {
-        is_export_xls = 1;
-        is_export_xls_var = 1;
-        is_export_xls_genes = 0;
-        document.getElementById("startButton").click();
-        return;
-    }
-    document.getElementById("waiting_xls_progress_text").innerHTML = "<b><u>Sorry, export XLS by var is impossible: ERROR process or too much variants (LIMIT: 10000 uniq variants)...</b></u>";
-    myProgressBarXls.set( { value: 125 } );
-    dijit.byId('waiting_xls_progress').show();
-    return;
+    setTimeout(function () {
+	    dijit.byId('waiting_xls_progress').set('title', 'Export XLS by Variations'); 
+	    var can_launch = can_launch_export_xls_var();
+	    var ok = 0;
+	    var lOk = [];
+	    dojo.forEach(gridChromosome._by_idx, function(item, index){
+	        var chr_name;
+	        var selectedItem = gridChromosome.getItem(index);
+	        dojo.forEach(gridChromosome.store.getAttributes(selectedItem), function(attribute) {
+	            if (gridChromosome.selection.isSelected(index)) {
+	                var value = gridChromosome.store.getValues(selectedItem, attribute);
+	                if (attribute == "id" ) {
+	                    chr_name = value;
+	                    lOk.push(chr_name);
+	                }
+	            }
+	        });
+	    });
+	    
+	    var list_chr = lOk.join(",");
+	    var hurl = get_args_vector(list_chr);
+	    hurl += "&view_all_genes=1";
+	    hurl += "&xls_by_variants=1";
+	    hurl += "&user=" + dojo.cookie("username");
+	    hurl += "&xls_outfile=none";
+	    if (lOnlyThesesGenes.length > 0) {
+	        hurl += "&only_genes='"+lOnlyThesesGenes.join(",")+"'";
+	    }
+	    hurl = hurl.replace('?', ' ');
+	    hurl = hurl.replace(/&/g, ' ');
+	    dijit.byId("url_xls").set("value", hurl);
+	    if (can_launch == 1) {
+	        is_export_xls = 1;
+	        is_export_xls_var = 1;
+	        is_export_xls_genes = 0;
+	        document.getElementById("startButton").click();
+	        return;
+	    }
+	    document.getElementById("waiting_xls_progress_text").innerHTML = "<b><u>Sorry, export XLS by var is impossible: ERROR process or too much variants (LIMIT: 10000 uniq variants)...</b></u>";
+	    myProgressBarXls.set( { value: 125 } );
+	    dijit.byId('waiting_xls_progress').show();
+	    return;
+    }, 1000);
 }
 
 function can_launch_export_xls_var() {
@@ -6099,12 +6118,10 @@ function selectFamilies_recregion(value) {
         <div dojoType="dijit.layout.ContentPane" title="Chromosomes" style="padding:1px">
             <div dojoType="dijit.layout.ContentPane" region="top" style="padding:0px;height:14%" splitter="false"> 
              <div  dojoType="dijit.Toolbar">
-             		<!--
                     <div dojoType="dijit.form.Button" iconClass="eyeIcon" onClick='viewAllChromosome();' showLabel="true">
                         Get All
                     </div>
                     <span dojoType="dijit.ToolbarSeparator"></span>
-                    -->
                     <button id="b_export_xls_genes" dojoType="dijit.form.Button" onClick='export_filter_by_genes()' iconClass="exportIcon" style="padding-left:3px" disabled>
                         <b>XLS</b> genes
                     </button>
