@@ -293,8 +293,6 @@ if(scalar(@index) == 1){
 $lines->{"[Settings]"} = [];
 my $nb_mis = 0;
 $nb_mis= $mismatch if $mismatch;
-#push(@{$lines->{"[Settings]"}},"AdapterRead1,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA");
-#push(@{$lines->{"[Settings]"}},"AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT");
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",$nb_mis]);
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",$nb_mis]) if scalar(@index) == 2;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask; 
@@ -366,7 +364,8 @@ csv (in => $outcsv, out => $ss, sep_char=> ",");
 sleep(1);
 
 # sleep tant que le run n'est pas fini
-my $complete = $bcl_dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
+my $complete = $bcl_dir.'RTAComplete.txt';
+$complete = $bcl_dir.'CopyComplete.txt' if ($bcl_dir =~ m{/NOVASEQ/});
 warn $complete;
 my $checkComplete = 1;
 $checkComplete = 0 if -f $complete;
