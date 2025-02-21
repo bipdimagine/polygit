@@ -364,7 +364,8 @@ csv (in => $outcsv, out => $ss, sep_char=> ",");
 sleep(1);
 
 # sleep tant que le run n'est pas fini
-my $complete = $bcl_dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
+my $complete = $bcl_dir.'RTAComplete.txt'; # MISEQ
+$complete = $bcl_dir.'CopyComplete.txt' if ($bcl_dir =~ m{/(10X|ISEQ|NEXTSEQ500|NOVASEQ)/}); # 10X, ISEQ, NEXTSEQ500, NOVASEQ
 warn $complete;
 my $checkComplete = 1;
 $checkComplete = 0 if -f $complete;

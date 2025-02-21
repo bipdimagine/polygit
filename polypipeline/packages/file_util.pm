@@ -448,7 +448,7 @@ sub find_file_pe_umi {
 	NAME: foreach my $name (@names){
 	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
 	foreach my $find (@pattern){
-		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
+		my (@titi) = grep { /$find/} grep { /\.fastq(\.gz)?$/} @{$cached_dir{$dir}} ;
 		
 		if (@titi) {
 			warn Dumper @titi;
@@ -482,7 +482,7 @@ sub find_file_pe {
 	NAME: foreach my $name (@names){
 	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
 	foreach my $find (@pattern){
-		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
+		my (@titi) = grep { /$find/} grep { /\.fastq(\.gz)?$/} @{$cached_dir{$dir}} ;
 	
 		if (@titi) {
 			$couple = find_paired_files(\@titi,$dir);
@@ -490,7 +490,7 @@ sub find_file_pe {
 		}
 	}
 	}
-	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir unless $couple;	
+	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir unless scalar @$couple;
 	return $couple if scalar(@$couple)>0;
 	return [] if $nodie;
 	warn "NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir;
@@ -514,7 +514,7 @@ sub find_file_in_dir {
 	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
 	#my @pattern = ("^".$name."_F");
 	foreach my $find (@pattern){
-		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
+		my (@titi) = grep { /$find/} grep { /\.fastq(\.gz)?$/} @{$cached_dir{$dir}} ;
 	
 		if (@titi) {
 			$couple = find_paired_files(\@titi,$dir);
