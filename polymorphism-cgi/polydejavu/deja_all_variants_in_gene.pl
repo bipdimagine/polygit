@@ -96,7 +96,7 @@ exit(0) unless $h_models;
 
 supressCoreFilesFound();
 
-my $fork = 4;
+my $fork = 6;
 $user_name = lc($user_name);
 my $buffer_init = new GBuffer;
 my $can_use_hgmd = $buffer_init->hasHgmdAccess($user_name);
@@ -164,9 +164,7 @@ foreach my $project_name (@lProjectNames) {
 }
 
 $project_init_name = $buffer_init->get_random_project_name_with_this_annotations_and_genecode();
-#$project_init = $buffer_init->newProjectCache( -name => $project_init_name);
 
-#TODO: here HG38
 my $project_name_hg38 = $buffer_init->getRandomProjectName('HG38_CNG');
 my $project_name_hg19 = $buffer_init->getRandomProjectName('HG19_CNG');
 $project_init = $buffer_init->newProject( -name => $project_name_hg38 );
@@ -665,15 +663,12 @@ sub get_variants_infos_from_projects {
  	 	$hres->{start_job} = 1;
 		my $buffer_fork_hg38 = new GBuffer;
 		my $project_fork_hg38 = $buffer_fork_hg38->newProject( -name => $project_name_hg38 );
+		$project_fork_hg38->getChromosomes();
+		my $gene_fork_hg38 = $project_fork_hg38->newGene($gene_init_id);
+		
 		foreach my $project_name (reverse sort @tmp) {
 			print '.'.$project_name.'.';
-			
-			
 			$project_fork_hg38->disconnect();
-			
-			my $gene_fork_hg38 = $project_fork_hg38->newGene($gene_init_id);
-			$project_fork_hg38->getChromosomes();
-		
 			my $buffer_fork = new GBuffer;
 			my $project_fork;
 			eval {
@@ -686,20 +681,50 @@ sub get_variants_infos_from_projects {
 		 	 	$hres->{not_found} = 1;
 				supressCoreFilesFound();
 			}
-			
 			else {
-				
-				$project_fork->disconnect();
-				$project_fork_hg38->disconnect();
-				
-				my $gene_fork = $project_fork->newGene($gene_init_id);
 				$project_fork->getChromosomes();
+				my $gene_fork = $project_fork->newGene($gene_init_id);
 				my $chr_fork = $gene_fork->getChromosome();
 				
 				my $is_project_hg19;
 				$is_project_hg19 = 1 if $project_fork->version =~ /HG19/;
 				
 				my $v_pos = $chr_fork->getVectorByPosition(int($gene_fork->start) -5000, int($gene_fork->end) +5000);
+
+				#TODO: accelerer le process
+				if ($only_ill) {
+					my $v_ill = $chr_fork->getNewVector();
+					foreach my $patient_fork (@{$project_fork->getPatients()}) {
+						next if $patient_fork->isHealthy();
+						$v_ill += $patient_fork->getVariantsVector($chr_fork);
+					}
+					$v_pos &= $v_ill;
+				}
+				
+				eval {
+					if ($max_gnomad) {
+						my $filter_name = 'gnomad_ac_'.$max_gnomad;
+						my $no_score = $chr_fork->lmdb_score_impact("r");
+						if ($no_score->exists_db()) {
+							my $v = $no_score->get($filter_name);
+							$v_pos &= $v;
+						}
+					}
+				};
+				if ($@) { $v_pos = $v_pos; }
+				
+				eval {
+					if ($max_gnomad_ho) {
+						my $filter_name = 'gnomad_ho_ac_'.$max_gnomad_ho;
+						my $no_score = $chr_fork->lmdb_score_impact("r");
+						if ($no_score->exists_db()) {
+							my $v = $no_score->get($filter_name);
+							$v_pos &= $v;
+						}
+					}
+				};
+				if ($@) { $v_pos = $v_pos; }
+				
 				
 				my @lVar;
 				foreach my $var (@{$chr_fork->getListVarObjects($v_pos)}) {
@@ -757,8 +782,11 @@ sub get_variants_infos_from_projects {
 							$hres->{variants_details}->{$var_id_hg38}->{table_vname} .= "<br><span><b>HG19: </b></span>".$html_var_name_hg19 if $html_var_name_hg19;
 						}
 					}
-						
-					update_variant_editor::vspliceAI($var,$hres->{variants}->{$var_start}->{$var_id_hg38});
+					
+					eval {
+						update_variant_editor::vspliceAI($var,$hres->{variants}->{$var_start}->{$var_id_hg38});
+					};
+					if ($@) { print 'error_spliceai'; }
 						
 					foreach my $p (@{$var->getPatients()}) {
 						my $p_name = $p->name();
@@ -876,14 +904,7 @@ sub get_variants_infos_from_projects {
 							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{html} = $table_trio;
 							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{percent_allele} = $perc_allele;
 						}
-					
 						$p = undef;
-					
-						#TODO: here				
-						#if (not $hResVariantsTableLocal->{$var_id_hg38} or not $hResVariantsTableLocal->{$var_id_hg38}) {
-						#	$hResVariantsTableLocal->{$var_id_hg38} = update_variant_editor::table_validation($p, $h_var, $hgene);
-						#}
-						#$hres->{gene}->{$gene_init_id} = $hres->{variants}->{$var_start}->{$var_id_hg38}->{'genes'}->{$gene_init_id}->[0]->{'html'};
 					}
 					
 					
@@ -912,44 +933,12 @@ sub get_variants_infos_from_projects {
 					}
 					$var = undef;
 				}
-		 	 	
-		#		if (exists $hres->{variants} and $hres->{variants_details} and $hres->{variants_list_patients}) {
-		#			foreach my $start (keys %{$hres->{variants}}) {
-		#				foreach my $var_id (keys %{$hres->{variants}->{$start}}) {
-		#					$hResVariants->{$start}->{$var_id} = $hres->{variants}->{$start}->{$var_id};
-		#					$hVariantsDetails->{$var_id} = $hres->{variants_details}->{$var_id};
-		#					foreach my $proj_name (keys %{$hres->{variants_list_patients}->{$var_id}}){
-		#						foreach my $pat_name (keys %{$hres->{variants_list_patients}->{$var_id}->{$proj_name}}) {
-		#							$hResVariantsListPatients->{$var_id}->{$proj_name}->{$pat_name} = $hres->{variants_list_patients}->{$var_id}->{$proj_name}->{$pat_name};
-		#						}
-		#					}
-		#				}
-		#			}
-		#			foreach my $gene_id (keys %{$hres->{gene}}) {
-		#				$hResGene->{$gene_id} = $hres->{gene}->{$gene_id};
-		#			}
-		#		}
-		
-	#			delete $chr_fork->{hash_cache_strict_denovo};
-	#			$chr_fork->sqlite_strict_denovo->close();
-	#			delete $chr_fork->{sqlite_strict_denovo};
-	#			
-	#			$chr_fork = undef;
 			}
-			
-				
-			
 			$project_fork->close_rocks();
 			$project_fork->disconnect();
 			$project_fork = undef;
 			$buffer_fork = undef;
-			
-	# 	 	print "\n\nEND\n\n";
 		}
-			
-		$project_fork_hg38->close_rocks();
-		$project_fork_hg38->disconnect();
-		$project_fork_hg38 = undef;
 		$project_fork_hg38 = undef;
 	 	$pm->finish(0, $hres);
 	}
@@ -1552,8 +1541,13 @@ sub get_table_trio_from_object {
 	if ($var->getProject->isGenome() && $var->isCnv) {
 		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'pr:'.$var->pr($patient));
 		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'sr:'.$var->sr($patient));
-		my $cnv_score = sprintf("%.2f", log2($patient->cnv_value_dude($var->getChromosome->name,$var->start,$var->start+$var->length)));
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'cnv_score:'.$cnv_score);
+		eval {
+			my $cnv_score = sprintf("%.2f", log2($patient->cnv_value_dude($var->getChromosome->name,$var->start,$var->start+$var->length)));
+			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'cnv_score:'.$cnv_score);
+		};
+		if ($@) {
+			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'cnv_score:pb');
+		}
 	}
 	else {
 		my $perc_allele = $var->getPourcentAllele($patient);

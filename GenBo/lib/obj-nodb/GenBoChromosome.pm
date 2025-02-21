@@ -1791,29 +1791,29 @@ sub get_lmdb_genes {
 #}
 #
 
-#sub lmdb_score_impact {
-#	my ( $self, $mode ) = @_;
-#	my $buffer = $self->buffer();
-#	$mode = "r" unless $mode;
-#	#confess() unless $mode;
-#	#$mode ="" unless $mode;
-#
-#	my $hindex = "lmdb_score_impact_".$mode;
-#	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-#		
-#	my $dir_out = $self->project->dir_lmdb_score_impact();
-#	$self->{lmdb}->{$hindex} =
-#	  GenBoNoSqlLmdb->new(
-#		dir         => $dir_out,
-#		mode        => $mode,
-#		name        => $self->name,
-#		is_compress => 1,
-#		vmtouch     => $self->buffer->vmtouch
-#	  );    #GenBoNoSql->new(dir=>$output,mode=>$param);
-#	 # $self->{lmdb}->{$hindex}->{vmtouch} = 1;
-#	$self->{lmdb}->{$hindex}->clean_files() if ( $mode eq "c" );
-#	return $self->{lmdb}->{$hindex};
-#}
+sub lmdb_score_impact {
+	my ( $self, $mode ) = @_;
+	my $buffer = $self->buffer();
+	$mode = "r" unless $mode;
+	#confess() unless $mode;
+	#$mode ="" unless $mode;
+
+	my $hindex = "lmdb_score_impact_".$mode;
+	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+		
+	my $dir_out = $self->project->dir_lmdb_score_impact();
+	$self->{lmdb}->{$hindex} =
+	  GenBoNoSqlLmdb->new(
+		dir         => $dir_out,
+		mode        => $mode,
+		name        => $self->name,
+		is_compress => 1,
+		vmtouch     => $self->buffer->vmtouch
+	  );    #GenBoNoSql->new(dir=>$output,mode=>$param);
+	 # $self->{lmdb}->{$hindex}->{vmtouch} = 1;
+	$self->{lmdb}->{$hindex}->clean_files() if ( $mode eq "c" );
+	return $self->{lmdb}->{$hindex};
+}
 
 sub isVectorScore {
 	my ( $self, $mode ) = @_;
