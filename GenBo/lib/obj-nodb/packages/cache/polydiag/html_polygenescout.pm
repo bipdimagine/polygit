@@ -228,6 +228,32 @@ sub print_locus {
 	return $cgi->td({ rowspan => 1, style => "max-height:60px;overflow-y:auto;font-size:12px;" }, $gene_locus );
 }
 
+sub print_locus_hg38_hg19 {
+	my ($gene) = @_;
+	my $chr_locus = $gene->getChromosome->id();
+	my $start_locus = $gene->start();
+	my $end_locus = $gene->end();
+	my $gene_locus_hg38 = $chr_locus.':'.$start_locus.'-'.$end_locus;
+	my $gene_locus_hg19;
+	my $buffer_hg19 = new GBuffer;
+	my $proj_hg19_name = $buffer_hg19->getRandomProjectName('HG19');
+	my $proj_hg19 = $buffer_hg19->newProject( -name => $proj_hg19_name );
+	$proj_hg19->{version} = 'HG19';
+	my $gene_hg19;
+	eval {
+		$gene_hg19 = $proj_hg19->newGene($gene->external_name());
+		$gene_locus_hg19 = $gene_hg19->getChromosome->id().':'.$gene_hg19->start().'-'.$gene_hg19->end();
+	};
+	if ($@) {
+		$gene_locus_hg19 = 'not found';
+	}
+	$gene_hg19 = undef;
+	$proj_hg19 = undef;
+	$buffer_hg19 = undef;
+	my $html_text = "<b>HG38: </b>$gene_locus_hg38<br><b>HG19: </b>$gene_locus_hg19";
+	return $cgi->td({ rowspan => 1, style => "max-height:60px;overflow-y:auto;font-size:12px;" }, $html_text );
+}
+
 sub print_gene_basic_tables_infos {
 	my ($gene_id, $use_phenotype_score) = @_;
 	return print_table_base_line_gene($gene_id, $use_phenotype_score);
