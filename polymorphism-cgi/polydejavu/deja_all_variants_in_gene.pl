@@ -48,7 +48,7 @@ my $max_dejavu = 999999999999;
 my $max_dejavu_ho = 999999999999;
 my $max_gnomad = 999999999999;
 my $max_gnomad_ho = 999999999999;
-my $fork = 6;
+my $fork;
 
 my $cgi = new CGI();
 my $user_name = $cgi->param('user');
@@ -75,12 +75,8 @@ my $only_pat_with_var_he = $cgi->param('only_pat_with_var_he');
 my $only_pat_with_var_ho = $cgi->param('only_pat_with_var_ho');
 my $debug = $cgi->param('debug');
 $fork = $cgi->param('fork');
-#my $only_project = $cgi->param('project');
-#my $only_patient = $cgi->param('patient');
-#if ($only_project and $only_patient) {
-#	$only_ill = undef;
-#	$only_my_projects = 1;
-#}
+
+$fork = 6 if not $fork;
 
 my ($only_project, $only_patient);
 my ($project_dejavu, $gene_with_partial_transcrit);
