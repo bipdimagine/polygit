@@ -622,6 +622,7 @@ sub get_variants_infos_from_projects {
 	$pm->run_on_finish(
 		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
 			if (exists $data->{variants} and $data->{variants_details} and $data->{variants_list_patients}) {
+				delete $data->{start_job};
 				foreach my $start (keys %{$data->{variants}}) {
 					foreach my $var_id (keys %{$data->{variants}->{$start}}) {
 						
@@ -1000,6 +1001,7 @@ sub update_list_variants_from_dejavu {
 		}
 	}
 	
+	my $nb_i;
 	foreach my $var (@lVar) {
 		my $var_id = $var->id;
 		warn "\n\n\n" if $debug;
@@ -1007,7 +1009,11 @@ sub update_list_variants_from_dejavu {
 		my $var_id_hg19 = $var->lift_over('HG19')->{id};
 		warn 'hg19: '.$var_id_hg19 if $debug;
 		$total++;
-		print '.' if $total % 100;
+		$nb_i++;
+		if ($nb_i == 100) {
+			print '.';
+			$nb_i = 0;
+		}
 		my $is_ok_perc = 1;
 		if ($filter_perc_allelic_max and $hResVariantsRatioAll and exists $hResVariantsRatioAll->{$var_id}) {
 			$is_ok_perc = 0;

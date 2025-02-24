@@ -237,7 +237,8 @@ sub lmdb {
 		$self->lmdb($name)->put("__sereal","1");	
 	}
 	else {
-		$self->sereal($self->lmdb($name)->get("__sereal"));
+		#TODO: donne erre __sereal et ne semble pas empecher bon fonctionnement
+#		$self->sereal($self->lmdb($name)->get("__sereal"));
 	}
   	return $self->{lmdb_file}->{$name};
 	

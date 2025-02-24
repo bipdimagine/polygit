@@ -309,7 +309,10 @@ has hash_cache_strict_denovo => (
 	default => sub {
 		my $self = shift;
 		my $nosql = $self->sqlite_strict_denovo();
-		my ($h) = $nosql->get_bulk($self->name());
+		my $h = \{};
+		if ($nosql->exists_table($self->name(), '__DATA__')) {
+			($h) = $nosql->get_bulk($self->name());
+		}
 		$nosql->close();
 		return $h;
 	},
