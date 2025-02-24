@@ -55,8 +55,6 @@ $session->load_session( $use_session_id );
 my $hRes;
 $hRes->{'html_variants'} = 'Session expired... Please, Rrload your filters...';
 
-warn $session->load('html_variants');
-
 eval { $hRes->{'html_gene'} = $session->load('html_gene'); };
 if ($@) { warn 'no html_gene'; }
 eval { $hRes->{'html_variants'} = $session->load('html_variants'); };

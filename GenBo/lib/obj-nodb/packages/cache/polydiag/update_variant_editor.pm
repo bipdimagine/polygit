@@ -1065,6 +1065,10 @@ sub construct_hash_transcript {
 		}
 		
 		value_html($htr,"spliceAI",$max_ai,printButton($max_ai,[0.5, 0.9],$max_ai,undef,$max_ai."/".$max_cat) );
+		
+		my $alphamissense = $v->alphamissense($tr1);
+		value_html($htr,"alphamissense",$alphamissense,printBadge($alphamissense,[0.5, 0.9]));
+		
 	#	my $text_alert = 'SpliceAI values - '.join(', ', @l_score_spliceAI);
 			#$htr->{html}->{spliceAI} = printButton($max_ai,[0.5, 0.9],$max_cat,undef,$max_cat);
 		#exons information
@@ -1205,7 +1209,7 @@ sub table_transcripts {
 			
 		 $html .=  $cgi->start_Tr({id=>$rid,style=>"border: 1px solid;background-color:$c ;".$hide});
 		 foreach my $c (@$header_transcripts){
-		 	$html.= $cgi->td($htr->{html}->{$c});
+		 	$html.= $cgi->td("<center>".$htr->{html}->{$c}."</center>");
 		 }
 		 $html.= $cgi->end_Tr();
 	}
