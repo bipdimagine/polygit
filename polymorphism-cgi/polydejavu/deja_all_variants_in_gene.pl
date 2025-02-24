@@ -48,6 +48,7 @@ my $max_dejavu = 999999999999;
 my $max_dejavu_ho = 999999999999;
 my $max_gnomad = 999999999999;
 my $max_gnomad_ho = 999999999999;
+my $fork = 6;
 
 my $cgi = new CGI();
 my $user_name = $cgi->param('user');
@@ -73,6 +74,7 @@ my $only_pat_with_var = $cgi->param('only_pat_with_var');
 my $only_pat_with_var_he = $cgi->param('only_pat_with_var_he');
 my $only_pat_with_var_ho = $cgi->param('only_pat_with_var_ho');
 my $debug = $cgi->param('debug');
+$fork = $cgi->param('fork');
 #my $only_project = $cgi->param('project');
 #my $only_patient = $cgi->param('patient');
 #if ($only_project and $only_patient) {
@@ -93,10 +95,8 @@ foreach my $model (split(',', $models)) {
 }
 exit(0) unless $h_models;
 
-
 supressCoreFilesFound();
 
-my $fork = 6;
 $user_name = lc($user_name);
 my $buffer_init = new GBuffer;
 my $can_use_hgmd = $buffer_init->hasHgmdAccess($user_name);
@@ -769,24 +769,12 @@ sub get_variants_infos_from_projects {
 					}
 					my $pheno_name = join(", ",@lPhen);
 					
-					if (not exists $hVariantsDetails->{$var_id_hg38}->{table_vname}) {
-						update_variant_editor::vname2($var_hg38,$hres->{variants}->{$var_start}->{$var_id_hg38});
-						my $html_var_name_hg19 = $hres->{variants}->{$var_start}->{$var_id_hg38}->{html}->{var_name};
-						my $html_var_name_hg38 = $hres->{variants}->{$var_start}->{$var_id_hg38}->{html}->{var_name};
-						$html_var_name_hg38 =~ s/gnomad_r2_1/gnomad_r4/;
-						$hres->{variants_details}->{$var_id_hg38}->{table_vname} = "<span><b>HG38: </b></span>".$html_var_name_hg38 if $html_var_name_hg38;
-						if ($is_project_hg19) {
-							my $gnomad_id_38 = $var_hg38->gnomad_id;
-							my $gnomad_id_19 = $var->gnomad_id;
-							$html_var_name_hg19 =~ s/$gnomad_id_38/$gnomad_id_19/g;
-							$hres->{variants_details}->{$var_id_hg38}->{table_vname} .= "<br><span><b>HG19: </b></span>".$html_var_name_hg19 if $html_var_name_hg19;
-						}
-					}
-					
-					eval {
-						update_variant_editor::vspliceAI($var,$hres->{variants}->{$var_start}->{$var_id_hg38});
-					};
-					if ($@) { print 'error_spliceai'; }
+					$hres->{variants_details}->{$var_id_hg38}->{table_vname} = $hVariantsDetails->{$var_id_hg38}->{table_vname};
+					$hres->{variants_details}->{$var_id_hg38}->{table_dejavu} = $hVariantsDetails->{$var_id_hg38}->{table_dejavu};
+					$hres->{variants_details}->{$var_id_hg38}->{table_gnomad} = $hVariantsDetails->{$var_id_hg38}->{table_gnomad};
+					$hres->{variants_details}->{$var_id_hg38}->{table_varsome} = $hVariantsDetails->{$var_id_hg38}->{table_varsome};
+					$hres->{variants_details}->{$var_id_hg38}->{table_transcript} = $hVariantsDetails->{$var_id_hg38}->{table_transcript};
+					$hres->{variants_details}->{$var_id_hg38}->{table_validation} = $hVariantsDetails->{$var_id_hg38}->{table_validation};
 						
 					foreach my $p (@{$var->getPatients()}) {
 						my $p_name = $p->name();
@@ -796,12 +784,6 @@ sub get_variants_infos_from_projects {
 						
 						if ($var->vector_id) {
 							update_variant_editor::vsequencing($var,$hres->{variants}->{$var_start}->{$var_id_hg38},$p);
-						}
-						#update_variant_editor::vdivers($var,$hres->{variants}->{$var_start}->{$var_id_hg38});
-						
-						unless (exists $hVariantsDetails->{$var_id_hg38}->{table_validation}) {
-							update_variant_editor::vhgmd($var_hg38,$hres->{variants}->{$var_start}->{$var_id_hg38});
-							$hres->{variants_details}->{$var_id_hg38}->{table_validation} = update_variant_editor::table_validation($p, $hres->{variants}->{$var_start}->{$var_id_hg38}, $gene_init);
 						}
 						
 						unless (exists $hres->{variants_details}->{$var_id_hg38}->{alamut_link_variant}) {
@@ -908,29 +890,6 @@ sub get_variants_infos_from_projects {
 					}
 					
 					
-					unless (exists $hVariantsDetails->{$var_hg38->id}->{table_dejavu}) {
-						update_variant_editor::vdejavu($var_hg38,$hres->{variants}->{$var_start}->{$var_hg38->id});
-						$hres->{variants_details}->{$var_id_hg38}->{table_dejavu} = $hres->{variants}->{$var_start}->{$var_hg38->id}->{html}->{deja_vu};
-					}
-					
-					unless (exists $hres->{variants_details}->{$var_id_hg38}->{table_gnomad}) {
-						my $table_gnomad = update_variant_editor::table_gnomad($var_hg38);
-						$table_gnomad =~ s/gnomad_r2_1/gnomad_r4/;
-						$hres->{variants_details}->{$var_id_hg38}->{table_gnomad} = $table_gnomad;
-						
-						my $table_varsome = update_variant_editor::vvarsome($hres->{variants}->{$var_start}->{$var_id_hg38});
-						if ($is_project_hg19) {
-							my $gnomad_id_38 = $var_hg38->gnomad_id;
-							my $gnomad_id_19 = $var->gnomad_id;
-							$table_varsome =~ s/$gnomad_id_19/$gnomad_id_38/g;
-						}
-						$hres->{variants_details}->{$var_id_hg38}->{table_varsome} = $table_varsome;
-					}
-					
-					unless (exists $hVariantsDetails->{$var_id_hg38}->{table_transcript}) {
-						$hres->{variants}->{$var_start}->{$var_id_hg38}->{genes}->{$gene_init_id_for_newgene} = update_variant_editor::construct_hash_transcript($var_hg38, $cgi, \@header_transcripts, 2, $gene_fork_hg38);
-						$hres->{variants_details}->{$var_id_hg38}->{table_transcript} = update_variant_editor::table_transcripts($hres->{variants}->{$var_start}->{$var_id_hg38}->{genes}->{$gene_init_id_for_newgene}, \@header_transcripts, 1);
-					}
 					$var = undef;
 				}
 			}
@@ -965,18 +924,13 @@ sub get_html_gene {
 	$hResGene->{$gene_init_id}->{external_name} = "<span style='color:white;'>".$gene_init->external_name()."<span>";
 	$hResGene->{$gene_init_id}->{variants} = \@lAllVar;
 	my ($pheno,$nb_other_terms) = $gene_init->polyviewer_phentotypes();
-	$hResGene->{$gene_init_id}->{phenotypes}->{pheno} = $pheno;
-	$hResGene->{$gene_init_id}->{phenotypes}->{nb_other_terms} = $nb_other_terms;
+	$hResGene->{$gene_init_id}->{phenotypes} = $pheno.';'.$nb_other_terms;
 	my $description_gene = $gene_init->description();
 	$gene_init->getProject->buffer->dbh_deconnect();
 	$gene_init->getProject->buffer->dbh_reconnect();
-#	delete $gene_init->getProject->{rocksPartialTranscripts};
-#	eval {
-		foreach my $panel (@{$gene_init->getPanels()}) {
-			$hResGene->{$gene_init_id}->{panels}->{$panel->name()}->{phenotype} = $panel->getPhenotypes()->[0]->name();
-		}
-#	};
-#	if ($@) { $hResGene->{$gene_init_id}->{panels} = undef; }
+	foreach my $panel (@{$gene_init->getPanels()}) {
+		$hResGene->{$gene_init_id}->{panels}->{$panel->name()}->{phenotype} = $panel->getPhenotypes()->[0]->name();
+	}
 	my $html_gene = update_variant_editor::panel_gene($hResGene->{$gene_init_id});
 	$html_gene =~ s/CNV//;
 	my $regexp1 = qq{<span class=\'badge badge-infos badge-xs \' style="color:#00C851"  >[0-9]+ </span>};
@@ -994,25 +948,8 @@ sub update_list_variants_from_dejavu {
 	my ($proj_name, $gene_init_id_for_newgene, $h_proj_pat_all, $h_proj_pat_ill, $hResVariants_loaded, $hVariantsDetails, $hResVariantsRatioAll, $hResVariantsModels, $use_locus, $only_transcript) = @_;
 	my $time = time;
 	my $buffer_dejavu = new GBuffer;
-	
 	$project_dejavu = $buffer_dejavu->newProject( -name => $buffer_init->getRandomProjectName());
-	#$project_dejavu = $buffer_dejavu->newProject( -name => $buffer_dejavu->get_random_project_name_with_this_annotations_and_genecode());
-	
-	
-	
-#	my $var = $project_dejavu->_newVariant('11_5226970_T_A');
-#	warn Dumper $var->getChromosome->rocks_dejavu->dejavu($var->rocksdb_id);
-#	die;
-	
 	my $gene_dejavu = $project_dejavu->newGene($gene_init_id_for_newgene);
-	
-	
-#	warn "\n\n";
-#	warn ref($gene_dejavu);
-#	warn $gene_dejavu->id();
-#	warn $gene_dejavu->external_name();
-#	warn $project_dejavu->name();
-	
 	
 	my $transcript_dejavu;
 	foreach my $tr (@{$gene_dejavu->getTranscripts()}) {
@@ -1020,13 +957,9 @@ sub update_list_variants_from_dejavu {
 		$gene_with_partial_transcrit = 1 if ($tr->is_partial_transcript());
 	}
 	
-	# SELECT paquet de $max_variants variants
 	my @lProjectNames;
 	my ($total, $total_pass);
 	my $hVarErrors;
-	
-#	warn "\n";
-#	warn $gene_dejavu->id();
 	my $h_dv_rocks_ids = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($gene_dejavu->start(), $gene_dejavu->end());
 	my ($h_dv_var_ids, @lVarIds, @lVar);
 	foreach my $rocks_id (keys %{$h_dv_rocks_ids}) {
@@ -1050,13 +983,9 @@ sub update_list_variants_from_dejavu {
 		push(@lVarIds, $var_id);
 		push(@lVar, $project_dejavu->_newVariant($var_id));
 		$h_dv_var_ids->{$var_id}->{rocks_id} = $rocks_id;
-		
-		
 	}
 	my $buffer_fork_hg19 = new GBuffer;
 	my $project_fork_hg19 = $buffer_fork_hg19->newProjectCache( -name => $buffer_init->getRandomProjectName('HG19_CNG', '43', '20') );
-	#warn $project_fork_hg19->lift_genome_version;
-	#die;
 	
 	my $lift = liftOver->new(project=>$project_dejavu, version=>$project_dejavu->lift_genome_version);
 	$lift->lift_over_variants(\@lVar);
@@ -1074,19 +1003,14 @@ sub update_list_variants_from_dejavu {
 		}
 	}
 	
-#	warn Dumper @lVarIds;
-#	die;
-	
 	foreach my $var (@lVar) {
-		
 		my $var_id = $var->id;
-		
 		warn "\n\n\n" if $debug;
 		warn 'hg38: '.$var_id if $debug;
 		my $var_id_hg19 = $var->lift_over('HG19')->{id};
 		warn 'hg19: '.$var_id_hg19 if $debug;
-		print '.';
 		$total++;
+		print '.' if $total % 100;
 		my $is_ok_perc = 1;
 		if ($filter_perc_allelic_max and $hResVariantsRatioAll and exists $hResVariantsRatioAll->{$var_id}) {
 			$is_ok_perc = 0;
@@ -1236,11 +1160,40 @@ sub update_list_variants_from_dejavu {
 			}
 		}
 		
-#		my $color = '#555';
-#		if ($h_var->{value}->{dm} or $h_var->{value}->{clinvar_pathogenic}) { $color = "red"; }
-#		elsif  ($h_var->{value}->{hgmd_id} or $h_var->{value}->{clinvar_id}) { $color = "orange"; }
+		update_variant_editor::vspliceAI($var, $h_var);
+		$hVariantsDetails->{$var_id}->{spliceAI} = $h_var->{html}->{spliceAI}->{$gene_dejavu->id};
+						
+		update_variant_editor::vhgmd($var, $h_var);
+		$hVariantsDetails->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_dejavu);
 		
-
+		
+		$hVariantsDetails->{$var_id}->{table_gnomad} = update_variant_editor::table_gnomad($var);
+		$hVariantsDetails->{$var_id}->{table_gnomad} =~ s/gnomad_r2_1/gnomad_r4/;
+		
+		$hVariantsDetails->{$var_id}->{table_varsome} = update_variant_editor::vvarsome($h_var);
+		
+		$hVariantsDetails->{$var_id}->{table_dejavu} = update_variant_editor::vdejavu($var, $h_var);
+		
+		$h_var->{genes}->{$gene_dejavu->id} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_dejavu);
+		$hVariantsDetails->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_dejavu->id}, \@header_transcripts, 1);
+		
+		
+		my $gnomad_id_hg38 = $var->gnomad_id;
+		my $html_vname_hg38 = update_variant_editor::vname2($var, $h_var);
+		my $gnomad_id_hg19 = $var->lift_over('HG19')->{name};
+		my $html_vname_hg19 = $html_vname_hg38;
+		$html_vname_hg19 =~ s/gnomad_r4/gnomad_r2_1/g;
+		$html_vname_hg19 =~ s/$gnomad_id_hg38/$gnomad_id_hg19/g;
+		my $html_vname = qq{
+			<table>
+				<center>
+					<tr><td><b>HG38:</b></td><td style="padding-left:10px;">$html_vname_hg38</td></tr>
+					<tr><td><b>HG19:</b></td><td style="padding-left:10px;">$html_vname_hg19</td></tr>
+				</center>
+			</table>
+		};
+		$hVariantsDetails->{$var_id}->{table_vname} = $html_vname;
+		
 		if ($only_transcript) {
 			my @new_list;
 			foreach my $htr (@{$h_var->{genes}->{$gene_init_id_for_newgene}}) {
@@ -1258,9 +1211,6 @@ sub update_list_variants_from_dejavu {
 		$hVariantsDetails->{$var_id}->{annotation} = $var_annot;
 		$hVariantsDetails->{$var_id}->{id_hg19} = $var_id_hg19;
 		
-							
-		
-		
 		my $rocksdb_hg38 = $var->rocksdb_id();
 		my $rocksdb_hg19 = $var->rocksdb_id();
 		my $pos_hg38 = $var->start();
@@ -1268,10 +1218,7 @@ sub update_list_variants_from_dejavu {
 		$rocksdb_hg19 =~ s/$pos_hg38/$pos_hg19/;
 		$hVariantsDetails->{rocksdb_id}->{hg38}->{$rocksdb_hg38} = $var_id;
 		$hVariantsDetails->{rocksdb_id}->{hg19}->{$rocksdb_hg19} = $var_id;
-		
 	}
-	
-	#warn Dumper $hVariantsDetails;
 	
 	$total_pass = scalar keys %$hVariantsDetails;
 	
@@ -1283,15 +1230,7 @@ sub update_list_variants_from_dejavu {
 	my $h_count;
 	$h_count->{total} = $total;
 	$h_count->{total_pass} = $total_pass;
-	
-#	delete $project_dejavu->{rocksPartialTranscripts};
 	$project_dejavu->buffer->dbh_deconnect();
-	
-#	warn "\n\n";
-#	warn 'results';
-#	warn Dumper $hVariantsIdsDejavu;
-#	die;
-	
 	return ($h_count, $hVariantsDetails, $hVariantsIdsDejavu);
 }
 
