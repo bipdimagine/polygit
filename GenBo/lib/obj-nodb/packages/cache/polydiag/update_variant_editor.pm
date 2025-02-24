@@ -364,12 +364,14 @@ sub alamut_link_js {
 sub valamut_igv {
 	my ($v,$hvariation,$patient,$debug) = @_;
 		
-		my $bam = $patient->getBamFileName();
+		my $bam;
+		eval { $bam = $patient->getBamFileName(); };
+		if ($@) { $bam = undef; }
 		my $start = $v->start();
 		my $chr = $v->getChromosome();
 		my $chr_name = $v->getChromosome();
 			
-		unless (-e $bam) {
+		if (not $bam or not -e $bam) {
 			value_html($hvariation,"igv",$chr.":".$start,qq{<img src="https://img.icons8.com/ios/24/000000/select-none.png">});
 			value_html($hvariation,"alamut",$chr.":".$start,qq{<img src="https://img.icons8.com/ios/24/000000/select-none.png">});
 			return;

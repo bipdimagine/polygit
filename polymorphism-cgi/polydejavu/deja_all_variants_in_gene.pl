@@ -689,7 +689,6 @@ sub get_variants_infos_from_projects {
 				
 				my $v_pos = $chr_fork->getVectorByPosition(int($gene_fork->start) -5000, int($gene_fork->end) +5000);
 
-				#TODO: accelerer le process
 				if ($only_ill) {
 					my $v_ill = $chr_fork->getNewVector();
 					foreach my $patient_fork (@{$project_fork->getPatients()}) {
@@ -798,9 +797,14 @@ sub get_variants_infos_from_projects {
 						
 						my (@bams,@names);
 						foreach my $p (@{$p->getFamily->getPatients()}){
-							next unless -e $p->getBamFileName;
-							push(@bams,$p->bamUrl);
-							push(@names,$p->name());
+							my $bam_file;
+							eval {
+								$bam_file = $p->getBamFileName;
+								next unless -e $bam_file;
+								push(@bams,$p->bamUrl);
+								push(@names,$p->name());
+							};
+							if ($@) { $bam_file = undef; }
 						}
 						
 						my $f =  join(";",@bams);#$patient->{obj}->bamUrl;;
@@ -1000,6 +1004,11 @@ sub update_list_variants_from_dejavu {
 			}
 		}
 	}
+	
+	
+	#TODO: FORK here with exemple BRCA1
+	
+	
 	
 	my $nb_i;
 	foreach my $var (@lVar) {
