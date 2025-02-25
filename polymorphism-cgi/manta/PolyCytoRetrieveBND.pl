@@ -348,7 +348,7 @@ foreach my $event_id (keys %$hTransLoc)
 			$bamNames .= ",".$membername unless ($membername eq $patientname);
 		}
 	}
-	$hTransLoc->{$event_id}->{'IGV'} = $bamFiles.";".$bamNames."et".$chr1."_".$bp1."_".$chr2."_".$bp2;
+	$hTransLoc->{$event_id}->{'IGV'} = $bamFiles.";".$bamNames.";".$chr1."_".$bp1."_".$chr2."_".$bp2;
 	
 	# filtres
 	unless($dejavu eq "all") {next if ( $hTransLoc->{$event_id}->{"nbdejavu"} > $dejavu)};

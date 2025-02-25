@@ -1590,23 +1590,22 @@ function formater_BND_IGV(value)
 		
   		 var projectname = arg1[1];
   	  	var patientname = arg2[1];
-    	
-    
 		var out = " ";
+		var infos = value.split(';');
+		var bamfiles = infos[0];
+		var bamnames = infos[1];
+		var real_value = infos[2];
 		
-		var tv =  value.split('et');
-		var baminfo = tv[0];
-		var tbam = baminfo.split(';');
-		
-		var bamfiles = tbam[0];
-		var bamnames = patientname;
-		
-		if(tbam.length ==2)
-		{
-			bamnames = tbam[1];
-		}
-		
-		var real_value = tv[1];
+//		var tv =  value.split('et');
+//		var baminfo = tv[0];
+//		var tbam = baminfo.split(';');
+//		var bamfiles = tbam[0];
+//		var bamnames = patientname;
+//		if(tbam.length ==2)
+//		{
+//			bamnames = tbam[1];
+//		}
+//		var real_value = tv[1];
 	
 		var w =  real_value.split("_");
 		var chr1 = w[0];
@@ -1630,7 +1629,6 @@ function formater_BND_IGV(value)
 		var start2 = s2 - 500;
 		var end2   = s2 + 500;
 		var locus2 = 'chr' + chr2  + ':' + start2 + '-' + end2;
-   			
    		
    		nb++;
    		
@@ -1644,6 +1642,9 @@ function formater_BND_IGV(value)
    		
    		var boutonID = 'boutonIGVTI'+ nb;					
    		var igv_value = locus1 + ';' + locus2 + ';' + bamfiles + ";" +bamnames;	
+   		
+		const regex_idCNV = /et/g;
+   		idCNV = idCNV.replace(regex_idCNV, "ET")
    		
    		// pour lancer web_igv
 		var etiquette   = '<button class="igvIcon2"  id="' + boutonID + '" onclick="launch_web_igv_start_and_end(\'' + idCNV + "et" + igv_value + '\')"></button>';
