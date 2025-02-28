@@ -442,6 +442,9 @@ sub get_ids {
 		elsif  ($ref eq 'GenBoInversion'){
 					bless $variation , 'GenBoInversionCache';
 		}
+		elsif  ($ref eq 'GenBoMei'){
+					bless $variation , 'GenBoMeiCache';
+		}
 		else {
 			confess($ref);
 		}
