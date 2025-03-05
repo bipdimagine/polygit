@@ -318,7 +318,11 @@ $variation_script =~s/patient_/variation_/;
 
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "www.polyweb.fr" if $server =~/10\.200\.27/;
-my $deja_vu_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
+
+my $buffer = GBuffer->new();
+
+my $polyweb_url = $buffer->config->{polyweb_url}->{polyweb_ROCKS};
+my $deja_vu_url = "$polyweb_url/polyweb/polydejavu/dejavu.html?input=";
 #my $lcdb_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
 my $deja_vu_light_url = "http://$server/$variation_script";
 my $lcdb_url = $deja_vu_light_url;
@@ -327,7 +331,6 @@ $lcdb_url =~s/variation_/lcdb_/;
 my $nb_gene_by_patient = 3;
 my $nb_exon_by_genes = 10;
 
-my $buffer = GBuffer->new();
 
 my $project_name = $cgi->param('project');
 my $force_cache =  $cgi->param('force_cache');
