@@ -67,33 +67,10 @@ my $hProjAuthorized;
 foreach my $hash (@{$query->getProjectListForUser($user, $pass)}) { $hProjAuthorized->{$hash->{'name'}} = undef; }
 my @lAuthProj = keys(%$hProjAuthorized);
 
-my $projectTmp;
-if ($origin_project) {
-	$projectTmp = $buffer->newProject(-name => $origin_project);
-}
-else {
-	foreach my $project_name (@lAuthProj) {
-		my $buffer_test = GBuffer->new();
-		my $project_test = $buffer_test->newProject(-name => $project_name);
-		if ($project_test->annotation_genome_version() eq $build_use and ($project_test->isDiagnostic() or $project_test->isGenome() or $project_test->isExome())) {
-			
-			$project_test = undef;
-			$buffer_test = undef;
-			$projectTmp = $buffer->newProject(-name => $project_name);
-			last;
-		}
-	}
-	die unless ($projectTmp);
-	if ($annot_version) { $projectTmp->changeAnnotationVersion( $annot_version, 1 ); }
-	else {
-		my $max_gencode = $projectTmp->buffer->getQuery->getMaxGencodeVersion();
-		my $max_annot = $projectTmp->buffer->getQuery->getMaxPublicDatabaseVersion();
-		$projectTmp->changeAnnotationVersion( $max_gencode.'.'.$max_annot, 1 );
-	}
-}
+my $project_init_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
+my $projectTmp = $buffer->newProject(-name => $project_init_name);
 
 $projectTmp->cgi_object(1);
-$projectTmp->version($build_use);
 my $tabix = $projectTmp->getSoftware('tabix');
 
 if ( $input =~ 'id:' ) {
@@ -249,7 +226,6 @@ if ( $input =~ 'geneId:' ) {
 	$input = join(',', @lOutput);
 	$originInput = join(',', @lGenesId2);
 }
-print '0';
 
 unless ($export_xls) {
 	print $cgi->header('text/json-comment-filtered');
@@ -281,8 +257,63 @@ foreach my $input (sort(@lTmp)) {
 		my $posId = $input;
 		$posId =~ s/region://;
 		$posId =~ s/:/_/;
-		$posId =~ s/-/_/;
-		@listSnp = @{$projectTmp->getDejaVuIdsFromInterval($posId)};
+		$posId =~ s/-/_/g;
+		my ($chr_name, $start, $end) = split('_', $posId);
+		my $chr_tmp = $projectTmp->getChromosome($chr_name);
+		my $h_dv_interval = $projectTmp->get_deja_vu_from_position($chr_tmp, $start, $end);
+		#warn Dumper $h_dv_interval;
+#		my $i= 0;
+		foreach my $rocks_id (keys %{$h_dv_interval}) {
+#			$i++;
+#			last if $i == 30;
+			$projectTmp->print_dot(10);
+#			warn $rocks_id;
+			my $h_dv = $h_dv_interval->{$rocks_id};
+#			warn Dumper $h_dv;
+			my $hres;
+			foreach my $proj_id (keys %{$h_dv}) {
+				my $proj_name = $projectTmp->buffer->getProjectNameFromId($proj_id);
+				my $h_pat_proj;
+				foreach my $h (@{$projectTmp->buffer->getQuery->getPatients($proj_id)}) {
+					$h_pat_proj->{$h->{patient_id}} = $h->{name};
+				}
+				foreach my $pat_id (@{$h_dv->{$proj_id}->{patients}}) {
+					$hres->{$proj_name}->{patients}->{$h_pat_proj->{$pat_id}} = undef;
+				}
+				$hres->{$proj_name}->{nb_he} = $h_dv->{$proj_id}->{he};
+				$hres->{$proj_name}->{nb_ho} = $h_dv->{$proj_id}->{ho};
+			}
+#			warn Dumper $hres;
+			
+			my $var = $projectTmp->_newVariantFromRockdbId($chr_tmp, $rocks_id);
+			if (not $var) {
+				warn "\n;";
+				warn $rocks_id;
+				die;
+			}
+			
+			my $varId = $var->id();
+#			warn ref ($var);
+			if ($details eq 'true') {
+				foreach my $hDetails (_getVarTranscriptsDetails($varId)) { $hashRes->{$hDetails->{'transcript'}} = $hDetails; }
+			}
+			elsif ($hres) { 
+				my $hashVar = _getVarGeneralDetails($varId, $var, $hres);
+				if ($hashVar) {
+					my $nb_ok;
+					if ($hPolyqueryFilters) {
+						foreach my $annot_name (split(', ', $hashVar->{'consequence'})) {
+							$nb_ok++ unless (exists $hPolyqueryFilters->{$annot_name});
+						}
+					}
+					else { $nb_ok++; }
+					if ($max_dejavu and $max_dejavu < int($hashVar->{'nbProj_value'})) { $nb_ok = undef; }
+					if ($filters_freq and exists $hFreqFilters->{$hashVar->{'cat_freq'}}) { $nb_ok = undef; }
+					$hashRes->{$varId} = $hashVar if ($nb_ok);
+				}
+			}
+			$var = undef;
+		}
 	}
 	my $nbSnpsSearching = scalar(@listSnp);
 	my $hRes;
@@ -291,12 +322,13 @@ foreach my $input (sort(@lTmp)) {
 	if (scalar(@listSnp) > 0) {
 		foreach my $varId (@listSnp) {
 			$projectTmp->print_dot(10);
-			my $hashVarId = $projectTmp->getDejaVuInfos($varId);
+			my $var = $projectTmp->_newVariant($varId);
+			my $hashVarId = $var->dejavu_hash_projects_patients();
 			if ($details eq 'true') {
 				foreach my $hDetails (_getVarTranscriptsDetails($varId)) { $hashRes->{$hDetails->{'transcript'}} = $hDetails; }
 			}
 			elsif ($hashVarId) { 
-				my $hashVar = _getVarGeneralDetails($originInput, $varId, $hashVarId);
+				my $hashVar = _getVarGeneralDetails($originInput, $var, $hashVarId);
 				if ($hashVar) {
 					my $nb_ok;
 					if ($hPolyqueryFilters) {
@@ -392,11 +424,10 @@ sub getHashInError {
 }
 
 sub _getVarGeneralDetails {
-	my ($input, $varId, $hash_input) = @_;
-	my ($proj, $pat, $nbHo, $nbHe, $myProj, $nbProj, $pheno) = _getPatProjHoHeNbFromHash($hash_input);
-	my @lTmp = split('_', $varId);
+	my ($input, $var, $hash_input) = @_;
 	my $hash;
-	my $var = $projectTmp->_newVariant($varId);
+	my ($proj, $pat, $nbHo, $nbHe, $myProj, $nbProj, $pheno) = _getPatProjHoHeNbFromHash($hash_input);
+	my $varId = $var->id();
 	if ($var->isVariation()) { $hash->{'type'} = 'snp'; }
 	if ($var->isInsertion()) { $hash->{'type'} = 'ins'; }
 	if ($var->isDeletion()) {
@@ -408,7 +439,7 @@ sub _getVarGeneralDetails {
 	}
 	$hash->{'chr'} = $var->getChromosomes()->[0]->name();
 	$hash->{'pos'} = $var->start();
-	$hash->{'locus'} = 'chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
+	$hash->{'locus'} = 'HG38  chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
 	my $cadd_score = $var->cadd_score();
 	if ($cadd_score and $cadd_score ne '-1' and $cadd_score ne '-') {
 		if (int($cadd_score) < 10) { $hash->{'cadd_score'} = '0'.$cadd_score; }
@@ -601,7 +632,7 @@ sub _getVarGeneralDetails {
 		foreach my $proj_name (sort keys %{$hash_input}) {
 			my $thisProject;
 			$thisProject = $buffer->newProject(-name => $proj_name) if $export_xls_details;
-			foreach my $pat_info (split(';', $hash_input->{$proj_name}->{string})) {
+			foreach my $pat_info (keys %{$hash_input->{$proj_name}->{patients}}) {
 				my ($pat_name, $he_ho) = split(':', $pat_info);
 				$hash->{my_patients}->{$proj_name}->{$pat_name}->{status} = '';
 				if ($export_xls_details) {
@@ -612,6 +643,7 @@ sub _getVarGeneralDetails {
 				}
 				if    ($he_ho eq '1') { $he_ho = 'Ho'; }
 				elsif ($he_ho eq '2') { $he_ho = 'He'; }
+				$he_ho = 'He' if not $he_ho;
 				$hash->{my_patients}->{$proj_name}->{$pat_name}->{heho} = $he_ho;
 				#TODO: ici
 			}
@@ -686,6 +718,8 @@ sub _getPatProjHoHeNbFromHash {
 	my $nbHe  = 0;
 	my $h_phenotypes;
 	foreach my $projName (keys %$hash) {
+		$nbHo += $hash->{$projName}->{nb_ho};
+		$nbHe += $hash->{$projName}->{nb_he};
 		$projectTmp->print_dot(50);
 		my ($authorized, $res);
 		if (exists ($hProjAuthorized->{$projName})) {
@@ -695,12 +729,10 @@ sub _getPatProjHoHeNbFromHash {
 		}
 		else { push(@lProjects, 'X'); }
 		my @lPatTmp;
-		foreach my $patString (split(';', $hash->{$projName}->{string})) {
+		foreach my $patString (keys %{$hash->{$projName}->{patients}}) {
 			$nbPat++;
 			my ($patName, $heho) = split(':', $patString);
 			#warn $patString;
-			$nbHo++ if ($heho eq '1');
-			$nbHe++ if ($heho eq '2');
 			$hPatiens->{$projName}->{$patName} = undef;
 #			if ($authorized) {
 				if ($heho eq '1') { push(@lPatTmp, '(Ho)'.$patName); }

@@ -962,40 +962,40 @@ has patients_object => (
 );
 
 
-sub deja_vu {
-	my ($self) = @_;
-	 return $self->getProject->getDejaVuInfos($self->id);
-}
-
-has nb_deja_vu_projects =>(
-	is		=> 'ro',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $h = $self->getProject->getDejaVuInfos($self->id);
-		my $nb = 0;
-		foreach my $k (keys %$h){
-			$nb += $h->{$k}->{nb};
-		}
-		$self->{nb_deja_vu_samples} = $nb;
-		return scalar (keys %{$h});
-	},
-);
-
-has nb_deja_vu_samples=>(
-	is		=> 'ro',
-	lazy	=> 1,
-	default => sub {
-		my $self = shift;
-		my $h = $self->getProject->getDejaVuInfos($self->id);
-		$self->{nb_deja_vu_projects} = scalar (keys %{$h});
-		my $nb = 0;
-		foreach my $k (keys %$h){
-			$nb += $h->{$k}->{nb};
-		}
-		return $nb;
-	},
-);
+#sub deja_vu {
+#	my ($self) = @_;
+#	 return $self->getProject->getDejaVuInfos($self->id);
+#}
+#
+#has nb_deja_vu_projects =>(
+#	is		=> 'ro',
+#	lazy	=> 1,
+#	default => sub {
+#		my $self = shift;
+#		my $h = $self->getProject->getDejaVuInfos($self->id);
+#		my $nb = 0;
+#		foreach my $k (keys %$h){
+#			$nb += $h->{$k}->{nb};
+#		}
+#		$self->{nb_deja_vu_samples} = $nb;
+#		return scalar (keys %{$h});
+#	},
+#);
+#
+#has nb_deja_vu_samples=>(
+#	is		=> 'ro',
+#	lazy	=> 1,
+#	default => sub {
+#		my $self = shift;
+#		my $h = $self->getProject->getDejaVuInfos($self->id);
+#		$self->{nb_deja_vu_projects} = scalar (keys %{$h});
+#		my $nb = 0;
+#		foreach my $k (keys %$h){
+#			$nb += $h->{$k}->{nb};
+#		}
+#		return $nb;
+#	},
+#);
 
 
 has kyoto_id => (
@@ -3388,15 +3388,18 @@ sub total_similar_patients  {
 sub dejavu_hash_projects_patients {
 	my ($self) = @_;
 	my $hres;
-	my $v = $self->getChromosome->rocks_dejavu->dejavu($self->rocksdb_id);
-	my @list = split("!",$v);
-	foreach my $l (@list) {
-		my($p,$nho,$nhe,$info) = split(":",$l);
-		$p = "NGS20".$p;
-		my (@samples) = split(",",$info);
-		foreach my $s (@samples){
-			$hres->{$p}->{$s} = undef;
+	my $h_dv = $self->getChromosome->rocks_dejavu->dejavu($self->rocksdb_id);
+	foreach my $proj_id (keys %{$h_dv}) {
+		my $proj_name = $self->buffer->getProjectNameFromId($proj_id);
+		my $h_pat_proj;
+		foreach my $h (@{$self->buffer->getQuery->getPatients($proj_id)}) {
+			$h_pat_proj->{$h->{patient_id}} = $h->{name};
 		}
+		foreach my $pat_id (@{$h_dv->{$proj_id}->{patients}}) {
+			$hres->{$proj_name}->{patients}->{$h_pat_proj->{$pat_id}} = undef;
+		}
+		$hres->{$proj_name}->{nb_he} = $h_dv->{$proj_id}->{he};
+		$hres->{$proj_name}->{nb_ho} = $h_dv->{$proj_id}->{ho};
 	}
 	return $hres;
 }

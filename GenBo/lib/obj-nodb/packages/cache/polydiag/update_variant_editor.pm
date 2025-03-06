@@ -161,6 +161,7 @@ sub vname2 {
 	my $project_name = $v->project->name();
 	my $gnames = join(';',map{$_->name} @{$v->getGenes});
 	my $dataset = "?dataset=gnomad_r2_1";
+	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $url_gnomad = qq{https://gnomad.broadinstitute.org};
 	if ($v->isCnv()){
 		my $len = $v->length();
@@ -213,6 +214,7 @@ sub vname2 {
 sub vname {
 	my ($v,$hvariation) = @_;
 	my $dataset = "?dataset=gnomad_r2_1";
+	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $vn=$v->vcf_id;
 	$vn =~ s/_/-/g;
 	$vn=~ s/chr//;
@@ -362,12 +364,14 @@ sub alamut_link_js {
 sub valamut_igv {
 	my ($v,$hvariation,$patient,$debug) = @_;
 		
-		my $bam = $patient->getBamFileName();
+		my $bam;
+		eval { $bam = $patient->getBamFileName(); };
+		if ($@) { $bam = undef; }
 		my $start = $v->start();
 		my $chr = $v->getChromosome();
 		my $chr_name = $v->getChromosome();
 			
-		unless (-e $bam) {
+		if (not $bam or not -e $bam) {
 			value_html($hvariation,"igv",$chr.":".$start,qq{<img src="https://img.icons8.com/ios/24/000000/select-none.png">});
 			value_html($hvariation,"alamut",$chr.":".$start,qq{<img src="https://img.icons8.com/ios/24/000000/select-none.png">});
 			return;
@@ -441,9 +445,7 @@ sub table_gnomad {
 	
 	my $pp = $v->getChromosome->name."-".$v->start;
 	my $dataset = "?dataset=gnomad_r2_1";
-	if ($v->getProject->buffer->annotation_genome_version() =~ /HG38/) {
-		$dataset = "?dataset=gnomad_r4";
-	}
+	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $href = qq{https://gnomad.broadinstitute.org/region/$pp$dataset};
 	my $vn=$v->vcf_id;
 	$vn =~ s/_/-/g;
@@ -1065,6 +1067,10 @@ sub construct_hash_transcript {
 		}
 		
 		value_html($htr,"spliceAI",$max_ai,printButton($max_ai,[0.5, 0.9],$max_ai,undef,$max_ai."/".$max_cat) );
+		
+		my $alphamissense = $v->alphamissense($tr1);
+		value_html($htr,"alphamissense",$alphamissense,printBadge($alphamissense,[0.34, 0.564]));
+		
 	#	my $text_alert = 'SpliceAI values - '.join(', ', @l_score_spliceAI);
 			#$htr->{html}->{spliceAI} = printButton($max_ai,[0.5, 0.9],$max_cat,undef,$max_cat);
 		#exons information
@@ -1205,7 +1211,7 @@ sub table_transcripts {
 			
 		 $html .=  $cgi->start_Tr({id=>$rid,style=>"border: 1px solid;background-color:$c ;".$hide});
 		 foreach my $c (@$header_transcripts){
-		 	$html.= $cgi->td($htr->{html}->{$c});
+		 	$html.= $cgi->td("<center>".$htr->{html}->{$c}."</center>");
 		 }
 		 $html.= $cgi->end_Tr();
 	}
@@ -1879,7 +1885,9 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				#$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$oid" target="_blank" style="$bgcolor2;min-width:30px;height:22px;padding-top:3px;"><span class="badge" style="color:$type">$pli</span></a>};
  				
  				
-				my $dataset = "?dataset=gnomad_r2_1";
+				my $dataset = "?dataset=gnomad_r4";
+				$dataset = "?dataset=gnomad_r2_1" if $gene and $gene->getProject->getVersion() =~ /HG19/;
+				$dataset = "?dataset=gnomad_r2_1" if $patient and $patient->getProject->getVersion() =~ /HG19/;
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
  				if ($gene) {

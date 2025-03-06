@@ -814,7 +814,7 @@ sub store_variants_infos {
 			}
 			else { $hash->{$chr_h_id}->{$var_id}->{'cosmic'} = '-'; }
 			$hash->{$chr_h_id}->{$var_id}->{'clinvar'} = '-';
-			$hash->{$chr_h_id}->{$var_id}->{'clinvar'} = $var->text_clinvar() if ( $var->text_clinvar() ne '-5' );
+			$hash->{$chr_h_id}->{$var_id}->{'clinvar'} = $var->text_clinvar() if ($var->text_clinvar() and  $var->text_clinvar() ne '-5' );
 			my $min_pop = '-';
 			if ( $var->min_pop_name() ) {
 				$min_pop = $var->min_pop_name();

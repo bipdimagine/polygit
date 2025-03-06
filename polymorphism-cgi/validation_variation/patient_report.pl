@@ -318,7 +318,11 @@ $variation_script =~s/patient_/variation_/;
 
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "www.polyweb.fr" if $server =~/10\.200\.27/;
-my $deja_vu_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
+
+my $buffer = GBuffer->new();
+
+my $polyweb_url = $buffer->config->{polyweb_url}->{polyweb_ROCKS};
+my $deja_vu_url = "$polyweb_url/polyweb/polydejavu/dejavu.html?input=";
 #my $lcdb_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
 my $deja_vu_light_url = "http://$server/$variation_script";
 my $lcdb_url = $deja_vu_light_url;
@@ -327,7 +331,6 @@ $lcdb_url =~s/variation_/lcdb_/;
 my $nb_gene_by_patient = 3;
 my $nb_exon_by_genes = 10;
 
-my $buffer = GBuffer->new();
 
 my $project_name = $cgi->param('project');
 my $force_cache =  $cgi->param('force_cache');
@@ -831,7 +834,7 @@ sub construct_data {
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
-	$text = undef;
+	#$text = undef;
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
 
@@ -865,7 +868,7 @@ sub construct_data {
 	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
 	die () if scalar(@$list_transcript) == 0;
 	my $fork      =  5;
-	#$fork = 2 if $pipeline;
+	$fork = 2 if $pipeline;
 	my $nb        = int( scalar(@$list_transcript) / $fork + 1 );
 	my $pm        = new Parallel::ForkManager($fork);
 	my $iter      = natatime( $nb, @$list_transcript );

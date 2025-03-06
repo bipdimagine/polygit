@@ -289,16 +289,20 @@ my $cache_icon;
 
  $cache_icon = qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
 if($text){
+		my $dataset = "gnomad_r2_1";
+		$dataset = "gnomad_r4" if $project->getVersion() =~ /HG38/;
+	
 		$text =~ s/onClick='editor\(1,2\);'/onClick='load_polyviewer_export_xls\(1\);'/g;
 		
 		my $regex = qq{href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/(.+)' target};
-		$text =~ s/$regex/href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/$1\?dataset\=gnomad_r2_1' target/g;
+		$text =~ s/\?dataset\=gnomad_r2_1//g;
+		$text =~ s/$regex/href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/$1\?dataset\=$dataset' target/g;
 		
 		my $regex2 = qq{https:\/\/gnomad\.broadinstitute\.org\/region\/([0-9]+-[0-9]+)};
-		$text =~ s/$regex2/https:\/\/gnomad\.broadinstitute\.org\/region\/$1\?dataset\=gnomad_r2_1/g;
+		$text =~ s/$regex2/https:\/\/gnomad\.broadinstitute\.org\/region\/$1\?dataset\=$dataset/g;
 		
 		my $regex3 = qq{https:\/\/gnomad\.broadinstitute\.org\/gene\/([0-9A-Za-z]+)};
-		$text =~ s/$regex3/https:\/\/gnomad\.broadinstitute\.org\/gene\/$1\?dataset\=gnomad_r2_1/g;
+		$text =~ s/$regex3/https:\/\/gnomad\.broadinstitute\.org\/gene\/$1\?dataset\=$dataset/g;
 		
 	 	$cache_icon = qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
 		print $text;

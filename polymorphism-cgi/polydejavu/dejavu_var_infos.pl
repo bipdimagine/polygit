@@ -38,18 +38,29 @@ my $p;
 my $h_this_run_patients;
 my $solo;
 my $solo_fam = {};
+my $var;
+
+my $projectTmp;
+unless ($varId) {
+	my $hash;
+	$hash->{'varId'} = "No result...";
+	push(@listHashRes, $hash);
+	printJson(\@listHashRes);
+}
+elsif ($varId =~ /;/) {
+	$varId = split(';', $varId)->[0];
+}
 if ($project_name and $project_name =~ /NGS/){
-	my $buffer = GBuffer->new();
-	my $p1 = $buffer->newProjectCache(-name => $project_name);
-	if($p1->isDefidiagSolo){
+	$projectTmp = $buffer->newProjectCache(-name => $project_name);
+	$var = $projectTmp->_newVariant($varId);
+	if($projectTmp->isDefidiagSolo){
 		$solo =1 ;
-		my $variant = $p1->_newVariant($varId);
-		foreach my $patient (@{$variant->getPatients}){
+		foreach my $patient (@{$var->getPatients}){
 			$solo_fam->{$patient->getFamily->name()} ++;
 		}
 	}
 	if ($in_this_run) {
-		my $in_this_run_patients =  $p1->in_this_run_patients();
+		my $in_this_run_patients =  $projectTmp->in_this_run_patients();
 		foreach my $k (keys %{$in_this_run_patients}) {
 			next unless ($k =~ /NGS20/);
 			my $run_proj_name = $k;
@@ -60,6 +71,11 @@ if ($project_name and $project_name =~ /NGS/){
 		}
 	}
 }
+else {
+	my $project_init_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
+	$projectTmp = $buffer->newProject(-name => $project_init_name);
+	$var = $projectTmp->_newVariant($varId);
+}
 
 unless ($build_use) {
 	die();
@@ -68,26 +84,12 @@ unless ($build_use) {
 	push(@listHashRes, $hash);
 	printJson(\@listHashRes);
 }
-	
-unless ($varId) {
-		die();
-	my $hash;
-	$hash->{'varId'} = "No result...";
-	push(@listHashRes, $hash);
-	printJson(\@listHashRes);
-}
-elsif ($varId =~ /;/) {
-	$varId = split(';', $varId)->[0];
-}
 
 my $hProjAuthorized;
 foreach my $hash (@{$query->getProjectListForUser($user, $pass)}) { $hProjAuthorized->{$hash->{'name'}} = undef; }
-my @lAuthProj = keys(%$hProjAuthorized);
-my $projectTmp = $buffer->newProject(-name => $lAuthProj[0]);
-$projectTmp->version($build_use);
 
 my $id = 0;
-my $hDejaVuGlobal = $projectTmp->getDejaVuInfos($varId);
+my $hDejaVuGlobal = $var->dejavu_hash_projects_patients();
 foreach my $projName (sort keys %$hDejaVuGlobal) {
 	next if ($in_this_run and not exists $h_this_run_patients->{$projName});
 	print '.';
@@ -103,15 +105,11 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 	foreach my $pheno_obj (@{$thisProject->getPhenotypes()}) {
 		push(@lPheno, $pheno_obj->name());
 	}
-	my $var = $thisProject->_newVariant($varId);
 	my @lMails;
 	foreach my $hashOwners (@{$query->getOwnerProject_byName($projName)}) { push(@lMails, $hashOwners->{'email'});  }
-	foreach my $field (split(';', $hDejaVuGlobal->{$projName}->{string})) {
-		my ($patName, $ho_he) = split(':', $field);
+	foreach my $patName (sort keys %{$hDejaVuGlobal->{$projName}->{patients}}) {
 		next if ($in_this_run and not exists $h_this_run_patients->{$projName}->{$patName});
-		my $pp;
-		eval { $pp = $thisProject->getPatient($patName); };
-		if ($@) { next; }
+		my $pp = $thisProject->getPatient($patName);
 		next if exists $solo_fam->{$pp->getFamily()->name} ;
 		#die();
 		my $hash;
@@ -128,11 +126,10 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 		else {
 			$hash->{implicated} = '';
 		}
-		$hash->{ho_he} = 'he' if ($ho_he eq '2');
-		$hash->{ho_he} = 'ho' if ($ho_he eq '1');
-#		$hash->{dp} = $hashAnnex->{dp};
-#		$hash->{nb_all_ref} = $hashAnnex->{nb_all_ref};
-#		$hash->{nb_all_mut} = $hashAnnex->{nb_all_mut};
+		$hash->{ho_he} = 'todo';
+#		$hash->{ho_he} = 'he' if ($ho_he eq '2');
+#		$hash->{ho_he} = 'ho' if ($ho_he eq '1');
+
 		$hash->{variation_id} = $varId;
 		$hash->{poly_id} = $varId;
 		my ($chr, $pos, $ref, $mut) = split('_', $varId);

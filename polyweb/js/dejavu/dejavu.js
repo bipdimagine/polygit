@@ -209,7 +209,7 @@ function init_dejavu() {
 	if (param("input")) { document.getElementById("id").value = param("input"); }
     else if (document.getElementById("id").value == "") { document.getElementById("id").value = "Write your ID here"; }
     if (param("build")) { document.getElementById("aff_build").innerHTML = param("build"); }
-    else { document.getElementById("aff_build").innerHTML = "HG19"; }
+    else { document.getElementById("aff_build").innerHTML = "HG38"; }
     var url_input = window.location.search;
     var username = null;
     var passwd = null;

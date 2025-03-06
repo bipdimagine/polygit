@@ -51,20 +51,7 @@ if ($trio_project) {
 	$project = $buffer->newProjectCache( -name => $trio_project );
 }
 else {
-	
-	#TODO: prendre projet HG38
-	my $project_name = 'NGS2016_1231';
-	if ($use_release eq 'HG38') { $project_name = 'NGS2024_7792'; }
-	$project = $buffer->newProject( -name => $project_name );
-	
-	#$project = $buffer->newProject( -name => $buffer->get_random_project_name_with_this_annotations_and_genecode() );
-	my ( $genecode_version, $annot_version );
-	unless ($annotation) {
-		$genecode_version = $buffer->getQuery()->getMaxGencodeVersion();
-		$annot_version    = $buffer->getQuery()->getMaxPublicDatabaseVersion();
-		$annotation       = $genecode_version . '.' . $annot_version;
-	}
-	$project->changeAnnotationVersion( $annotation, 1 );
+	$project = $buffer->newProject( -name => $buffer->getRandomProjectName() );
 }
 
 if ($use_phenotype_score) {
@@ -387,7 +374,7 @@ if ($h_genes) {
 			$sort = 'gene_score' unless $sort;
 			$gene_score = get_gene_score($gene);
 			$out_line .= html_polygenescout::print_gene_score($gene_score);
-			$out_line .= html_polygenescout::print_locus($gene);
+			$out_line .= html_polygenescout::print_locus_hg38_hg19($gene);
 			$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name}, $trio_phenotype);
 			if ( $buffer->hasHgmdAccess($user) ) {
 				$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
@@ -407,7 +394,7 @@ if ($h_genes) {
 				#$gene_score = get_gene_score_from_phenotype($external_name, $use_phenotype_score);
 				$out_line .= html_polygenescout::print_gene_score($gene_score);
 			}
-			$out_line .= html_polygenescout::print_locus($gene);
+			$out_line .= html_polygenescout::print_locus_hg38_hg19($gene);
 			if ($use_phenotype_score) {
 				$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name}, $use_phenotype_score);
 			}
