@@ -402,14 +402,13 @@ sub _decode_dejavu {
 }
 sub dejavu {
 	my ($self,$id) = @_;
-	$id ="2!".$id;
 	
 	if ($self->current) {
 		my $res =  $self->{current_db}->get_raw($id);
 		return $self->decode_dejavu($res,$id) if $res;
 	}
 	
-	my ($chr,$pos,$a) =split("!",$id);
+	my ($pos,$a) =split("!",$id);
 	$pos *= 1;
 	$self->{current_db} = $self->get_db($pos);
 	
