@@ -2259,12 +2259,9 @@ sub table_muc1 {
 	my $kestrel_header =["Caller","Date","Confidence","Ref","Alt","Pos","Motif","Sequence","depth"];
 	my $kestrel_negatif =["Caller","Date","Confidence"];
 	
-	foreach
-	  my $fam ( sort { $b->orderVntyper <=> $a->orderVntyper } @{ $project->getFamilies } )
-	{
+	foreach my $fam ( sort { $b->orderVntyper <=> $a->orderVntyper } @{ $project->getFamilies } ) {
+	#foreach my $fam ( sort { $b->name <=> $a->name } @{ $project->getFamilies } ) {
 		my $name = $fam->name;
-
-       
 		foreach
 		  my $patient ( sort { $a->name cmp $b->name } @{ $fam->getMembers } )
 		{
@@ -2455,9 +2452,14 @@ qq{<div class="btn  btn-xs btn-dark "  style="position:relative;bottom:1px;min-w
 		my $iter = $hash_dup->{$cn}->iterate_runs();
 		while ( my ( $from, $to ) = $iter->() ) {
 
-			my $ts = $chr->getTranscriptsByPosition( $from, $to );
+			my $gs = $chr->getGenesByPosition( $from, $to );
+#				my $ts = $chr->getTranscriptsByPosition( $from, $to );
+			my @ts;
+			foreach my $g (@{$gs}) { 
+				foreach my $t (@{$g->getTranscripts()}) { push(@ts,$t); }
+			}
 
-			foreach my $t (@$ts) {
+			foreach my $t (@ts) {
 				next unless exists $htr->{ $t->id };
 				foreach my $e ( @{ $t->getExons } ) {
 					next if exists $he->{ $e->name . "_" . $t->id };

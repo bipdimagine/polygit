@@ -58,8 +58,8 @@ my $nb;
 
 
 
-my ($chunks,$tree) = chunks::chunks_and_tree($project,$project->current_genome_version);
-my ($chunks_lift,$tree_lift) = chunks::chunks_and_tree($project,$project->lift_genome_version);
+my ($chunks,$tree) = chunks::chunks_and_tree($project->buffer(),$project->current_genome_version);
+my ($chunks_lift,$tree_lift) = chunks::chunks_and_tree($project->buffer(),$project->lift_genome_version);
 
 
 

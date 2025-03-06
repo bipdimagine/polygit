@@ -1,5 +1,6 @@
 package GenBoNoSqlRocks;
 use Moo;
+ use Compress::Zstd;
 ##
 use strictures 2;
 use warnings;

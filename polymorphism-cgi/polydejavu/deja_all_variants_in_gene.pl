@@ -167,7 +167,9 @@ $project_init_name = $buffer_init->get_random_project_name_with_this_annotations
 #$project_init = $buffer_init->newProjectCache( -name => $project_init_name);
 
 #TODO: here HG38
-$project_init = $buffer_init->newProjectCache( -name => 'NGS2024_7792');
+my $project_name_hg38 = $buffer_init->getRandomProjectName('HG38_CNG');
+my $project_name_hg19 = $buffer_init->getRandomProjectName('HG19_CNG');
+$project_init = $buffer_init->newProject( -name => $project_name_hg38 );
 
 my $genomeFai_init = $project_init->getGenomeFai();
 my $gene_init;
@@ -662,7 +664,7 @@ sub get_variants_infos_from_projects {
  	 	my $hres;
  	 	$hres->{start_job} = 1;
 		my $buffer_fork_hg38 = new GBuffer;
-		my $project_fork_hg38 = $buffer_fork_hg38->newProject( -name => 'NGS2024_7792' );
+		my $project_fork_hg38 = $buffer_fork_hg38->newProject( -name => $project_name_hg38 );
 		foreach my $project_name (reverse sort @tmp) {
 			print '.'.$project_name.'.';
 			
@@ -1004,7 +1006,7 @@ sub update_list_variants_from_dejavu {
 	my $time = time;
 	my $buffer_dejavu = new GBuffer;
 	
-	$project_dejavu = $buffer_dejavu->newProject( -name => 'NGS2024_7792');
+	$project_dejavu = $buffer_dejavu->newProject( -name => $buffer_init->getRandomProjectName());
 	#$project_dejavu = $buffer_dejavu->newProject( -name => $buffer_dejavu->get_random_project_name_with_this_annotations_and_genecode());
 	
 	
@@ -1063,7 +1065,7 @@ sub update_list_variants_from_dejavu {
 		
 	}
 	my $buffer_fork_hg19 = new GBuffer;
-	my $project_fork_hg19 = $buffer_fork_hg19->newProjectCache( -name => 'NGS2015_0794' );
+	my $project_fork_hg19 = $buffer_fork_hg19->newProjectCache( -name => $buffer_init->getRandomProjectName('HG19_CNG', '43', '20') );
 	#warn $project_fork_hg19->lift_genome_version;
 	#die;
 	

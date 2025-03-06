@@ -3,7 +3,7 @@ package QueryMoosePolyProjectNgs;
 use strict;
 use Vcf;
 use Moo;
-
+use Carp;
 use Data::Dumper;
 use Config::Std;
 extends "QueryMoose";
@@ -1612,6 +1612,41 @@ sub getInfosFromRunMachineId {
 	$sth->execute($run_machine_name);
 	my $h = $sth->fetchall_hashref('patient_name');
 	return $h;
+}
+
+sub getHashProjectWithReleaseGencodeAnnotation {
+	my ($self, $release, $genecode, $annotation) = @_;
+	confess("\n\nERROR: release version mandatory. Die\n\n") if not $release;
+	confess("\n\nERROR: gencode version mandatory. Die\n\n") if not $genecode;
+	confess("\n\nERROR: annotation version mandatory. Die\n\n") if not $annotation; 
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT 
+		    p.project_id AS project_id,
+		    p.name AS project_name,
+		    r.name AS release_name,
+		    prg.rel_gene_id AS gencode_version,
+		    prpd.version_id AS annotation_version
+		FROM
+		    PolyprojectNGS.releases AS r,
+		    PolyprojectNGS.projects AS p,
+		    PolyprojectNGS.project_release AS pr,
+		    PolyprojectNGS.project_release_gene AS prg,
+		    PolyprojectNGS.project_release_public_database AS prpd
+		WHERE
+		    p.project_id = pr.project_id
+		        AND r.release_id = pr.release_id
+		        AND prpd.project_id = pr.project_id
+		        AND prg.project_id = pr.project_id
+		        AND r.name = ?
+		        AND prg.rel_gene_id = ?
+		        AND prpd.version_id = ?;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($release, $genecode, $annotation);
+	my $h = $sth->fetchall_hashref('project_name');
+	return $h;
+	
 }
 
 1;

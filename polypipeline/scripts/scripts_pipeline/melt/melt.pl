@@ -98,7 +98,7 @@ my $meltd = "/software/distrib/MELT/MELTv2.2.2";
 my $melt = $buffer->software("melt");
 my $java = $buffer->software("java");
 my $melt = "$java -jar $melt Single -a -c 8 ";
-my $dir_melt = $buffer->config->{'public_data'}->{root} . '/repository/'.$project->annotation_genome_version  . '/mei/';
+my $dir_melt = $buffer->config_path("public_data") . '/repository/'.$project->annotation_genome_version  . '/mei/';
 
 my $bedg = $dir_melt."/bed/hg19.genes.bed";
 

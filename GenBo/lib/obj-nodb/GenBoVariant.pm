@@ -478,17 +478,13 @@ sub clinvar_id {
 
 sub score_clinvar {
 	my $self = shift;
-	return exists $self->clinvar->{score_clinvar};
+	return exists $self->clinvar->{score};
 }
 
-
-	
 sub text_clinvar {
 	my ($self) = @_;
-	return "" unless exists  $self->clinvar->{clnsig};
-	my $text =  $self->clinvar->{clnsig};
-	$text =~ s/_/ /g;
-	return $text;
+	return $self->clinvar->{clnsig} if (exists $self->clinvar->{clnsig});
+	return;
 }
 sub is_clinvar_pathogenic_for_gene {
 	my ($self, $gene) = @_;
@@ -2033,7 +2029,7 @@ sub score_variants_trio {
 			my $n = $self->getGnomadAC();
 			$n = 0 unless $n;
 			$score += 0.5 if $n == 0;
-			$score -= 0.4 if $n > 3;
+			$score -= 0.4 if $n > 30;
 			$score -= 0.75 if ($self->project->isGenome && ($self->isLargeDeletion or $self->isLargeDuplication)); 
 			if ($self->isStrictDenovoTransmission($fam) && $fam->getFather && $fam->getMother){
 					$score += 0.3 if   $pc > 20  ;
@@ -2318,8 +2314,8 @@ sub scaledScoreVariantPolydiag{
 		$scaled_score ++;
 		$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($tr->getGene()) && $self->isDM_for_gene($tr->getGene()));
 		$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($tr->getGene()) && $self->isDM_for_gene($tr->getGene()) && $gac < 100);
-		$scaled_score +=0.5 	if  $gac < 100 ;
-		$scaled_score ++ 	if  $gac < 30;
+		$scaled_score +=0.5 	if  $gac < 500 ;
+		$scaled_score ++ 	if  $gac < 80;
 		
 	}
 		
@@ -3410,7 +3406,6 @@ sub dejaVuInfosForDiag2 {
 	unless (exists $self->{array_dejavu}) {
 		
 		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
-		warn Dumper $hash;
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
 	

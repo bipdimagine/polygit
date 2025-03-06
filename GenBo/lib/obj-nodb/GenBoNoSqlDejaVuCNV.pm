@@ -61,6 +61,7 @@ sub create_table {
 	 return  $self->{table}->{$key1} unless  $self->write();
 	$self->dbh($key1)->do("DROP TABLE IF EXISTS $table_name")  or die $DBI::errstr  if $self->mode eq 'c'  ;
 	$self->dbh($key1)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250),ho INTEGER, projects INTEGER, _value BLOB, _value2 BLOB,dv_project INTEGER,dv_sample INTEGER,dv_sr INTEGER,dv_depth INTEGER,dv_cov INTEGER,start INTEGER,end INTEGER, variation_type VARCHAR(3), length INTEGER) ")  or die $DBI::errstr;;
+
 	return 	$self->{table}->{$key1} ;
 }
 
@@ -227,8 +228,8 @@ sub get_cnv {
 	
 	return $self->{prepare_cnv2}->{$chr} if exists $self->{prepare_cnv2}->{$chr};
 	 my $table_name = $self->create_table($chr);
-warn $chr; 
-warn $self->dir;
+#warn $chr; 
+#warn $self->dir;
 	$self->{prepare_cnv2}->{$chr} = $self->dbh($chr)->prepare(qq{select 
 		$table_name.variation_type as type , $table_name.projects as projects ,$table_name.start as start ,
 		$table_name.end as end  ,$table_name._value as hash ,$table_name._value2 as hash2
@@ -238,7 +239,7 @@ warn $self->dir;
 
  sub get_all_cnv {
  	my ($self,$chr,$dv,$patient) = @_;
- 	warn $self->dir."/".$chr.".".$self->extension;;
+# 	warn $self->dir."/".$chr.".".$self->extension;;
  	return [] unless -e $self->dir."/".$chr.".".$self->extension;
  	  $self->prepare_select_global($chr)->execute($dv);
 		my $nb = 0;
@@ -387,8 +388,8 @@ sub get_cnv_for_manue_old {
 	my $theliste;
 	$theliste = join(",",sort keys %dj);
 	$scorecaller_evt /= $nbpatient if $nbpatient;
-	warn join (";",($nbproject,$nbpatient,$nbDJV_Wisecondor,$nbDJV_Canvas,$nbDJV_Manta,$scorecaller_evt,$theliste));
-	warn $self->dir();
+#	warn join (";",($nbproject,$nbpatient,$nbDJV_Wisecondor,$nbDJV_Canvas,$nbDJV_Manta,$scorecaller_evt,$theliste));
+#	warn $self->dir();
 	return ($nbproject,$nbpatient,$nbDJV_Wisecondor,$nbDJV_Canvas,$nbDJV_Manta,$scorecaller_evt,$theliste);
 	
 }

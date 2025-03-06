@@ -151,7 +151,6 @@ sub dbscSNV_score {
 	 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));
 	 
 	 return undef unless $v;
-	 warn Dumper $v;
 	 return $v;
 }
 sub dbscSNV_score_gnomad_id {
@@ -287,7 +286,6 @@ default => sub {
 sub prediction_score {
 	my ($self,$pid,$pos,$aa) = @_;
 	my $id = $pid."!".$pos;
-	
 	my $vraw = $self->get($id);
 	return  {sift=>"-",polyphen=>"-"} unless $vraw;
 	my $i = $self->AA->{$aa};

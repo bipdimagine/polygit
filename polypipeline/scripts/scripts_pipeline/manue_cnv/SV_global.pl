@@ -41,14 +41,14 @@ my $log_dir = $project->getCNVDir();
 my $load = qq{module load tcltk/8.6.9};
 my $annotsv = qq{/software/distrib/AnnotSV_2.0/bin/AnnotSV};
 
-warn "SV ANNOT";
+#warn "SV ANNOT";
 #launch annotsv  step 1
 my $l = time;
 my $lfile = "$log_dir/$l"."_sv.log";
 my $cmd = qq{$Bin/annotsv.pl -project=$project_name -fork=$fork};
 
 system("$cmd && date > $lfile");
-die() unless -e $lfile;
+#die() unless -e $lfile;
 
 
 #my $prg = qq{/software/polyweb/poly-disk/poly-src/polymorphism-cgi/manta/Set_allSV_byPatient.pl };
@@ -56,12 +56,11 @@ die() unless -e $lfile;
 #my $prg = qq{/data-xfs/dev/eollivie/polymorphism-cgi/manta/Set_allSV_byPatient.pl};
 
 my $prg = qq{$Bin/Set_allSV_byPatient.pl };
- $lfile = "$log_dir/$l"."_allsv.log";
+$lfile = "$log_dir/$l"."_allsv.log";
 
 $cmd = qq{$prg -fork=$fork -project=}.$project->name();
-
 system($cmd." &&  date > $lfile");
-die() unless -e $lfile;
+#die() unless -e $lfile;
 
  #$prg = qq{$Bin/bestone.pl -project=$project_name -fork=$fork};
  #$lfile = "$log_dir/$l"."_svPatients.log";
@@ -70,24 +69,35 @@ die() unless -e $lfile;
 #die() unless -e $lfile;
 
 
-my $prg4 = qq{$Bin/parseBndManta.pl project=$project_name};
- $lfile = "$log_dir/$l"."_eq.log";
-system($prg4." &&  date > $lfile" );
-die() unless -e $lfile;
+my $prg_gather_cnv = qq{$Bin/gather_cnv.pl };
+$cmd = qq{$prg_gather_cnv -fork=$fork -project=}.$project->name();
+system($cmd." &&  date > $lfile");
 
-unless ($nodejavu){
-my $prg3 = qq{$Bin/CNV_Set_DejaVu.pl };
- $lfile = "$log_dir/$l"."_dv.log";
-system($prg3." &&  date > $lfile" );
-die() unless -e $lfile;
+my $prg_gather_cnv_project = qq{$Bin/gather_cnv_project.pl };
+$cmd = qq{$prg_gather_cnv_project -fork=$fork -project=}.$project->name();
+system($cmd." &&  date > $lfile");
 
+#TODO: besoin ici ??
 
-my $prg5 = qq{$Bin/SVeq_Set_DejaVu.pl };
- $lfile = "$log_dir/$l"."_dveq.log";
-system($prg5." &&  date > $lfile" );
-die() unless -e $lfile;
-}
-system("date > $file_done");
+#my $prg4 = qq{$Bin/parseBndManta.pl project=$project_name};
+# $lfile = "$log_dir/$l"."_eq.log";
+#system($prg4." &&  date > $lfile" );
+#die() unless -e $lfile;
+#
+#unless ($nodejavu){
+#my $prg3 = qq{$Bin/CNV_Set_DejaVu.pl };
+# $lfile = "$log_dir/$l"."_dv.log";
+#system($prg3." &&  date > $lfile" );
+#die() unless -e $lfile;
+#
+#
+#my $prg5 = qq{$Bin/SVeq_Set_DejaVu.pl };
+# $lfile = "$log_dir/$l"."_dveq.log";
+#system($prg5." &&  date > $lfile" );
+#die() unless -e $lfile;
+#}
+
+#system("date > $file_done");
 exit(0);
 
 

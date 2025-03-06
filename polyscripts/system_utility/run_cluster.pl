@@ -3,22 +3,11 @@
 use strict;
 use FindBin qw($Bin);
 use Getopt::Long;
-#!/usr/bin/perl
 use POSIX;
-use Proc::Simple;
 use Data::Dumper;
-use File::Temp qw/tempfile tempdir /;
-use File::Slurp;
 use String::ProgressBar;
 use Term::StatusBar;
-#use Timer::Simple;
-use Parallel::ForkManager;
  use Digest::MD5 qw(md5 md5_hex md5_base64);
-use Term::ANSIColor;
- use warnings;
-use IPC::Run3 'run3';
-use Time::Piece;
-use Time::Seconds qw/ ONE_DAY /;
 #$qsub .= "-n 1 --ntasks-per-node=1 --cpus-per-task=$cpus " if( $cpus > 0 );
 
 
@@ -46,7 +35,6 @@ for  (my $i=$row;$i<($row+5);$i++){
 system("clear") if $row ==0;
 }
 
-my $pm = new Parallel::ForkManager($fork);
 my $running_jobs ={};
 $SIG{'INT'} = sub {
 	print "\n wait killing jobs !!!\n";
@@ -321,8 +309,6 @@ sub run_cmd {
 	my $jobid = `/cm/shared/apps/slurm/16.05.8/bin/sbatch  --parsable $file`;
 	unlink $file;
 	chomp($jobid);
-	#warn $file;
-	#run3 ["sbatch  "],\$file,\$out ;
 	$cmd->{jobid} = $jobid;
 	$jobs->{$jobid}->{cmd} = $cmd->{cmd};
 	

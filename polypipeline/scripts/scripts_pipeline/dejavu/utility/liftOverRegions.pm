@@ -78,26 +78,31 @@ sub add_region {
 }
 
 sub liftOver_regions {
-	   my ($self) = @_;
+	   my ($self,$name) = @_;
 	   close $self->fh_write_regions;
 	   delete $self->{fh_write_regions};
+	   
 		my $fht2 = File::Temp->new(
     	DIR    => $self->tmp_dir,     # Optionnel : répertoire pour le fichierliftOver_regions
     	SUFFIX => '.bed'      # Optionnel : suffixe du fichier
 		);
 		
 		my $fileout = $fht2->filename;
+		if ($name){
+			$fileout =$self->tmp_dir."/".$name.time.".tmp";
+		}
 		my $fht21 = File::Temp->new(
     	DIR    => $self->tmp_dir,     # Optionnel : répertoire pour le fichier
     	SUFFIX => '.bed'      # Optionnel : suffixe du fichier
 		);
 		
 		my $fileoutsort = $fht21->filename;
-		
+		if ($name){
+			$fileout =$self->tmp_dir."/".$name.time.".sort.tmp";
+		}
 	   my $cmd = $self->project->buffer->software("liftOver")." ".$self->file_regions->filename." ". $self->chain_file." ".$fileout." /dev/stderr >/dev/null 2>/dev/null";
-	   warn $cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout";
 	   system($cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout"  );
-	   warn "end lift  -----";
+	   
 	   return $self->parse_bed_region($fileoutsort);
 }
 
@@ -118,6 +123,7 @@ sub parse_bed_region {
    	 	push(@{$tab->{$t[0]}},$h);
 	}
 	close($fh);
+	unlink $fileout;
 return $tab;
 }
 

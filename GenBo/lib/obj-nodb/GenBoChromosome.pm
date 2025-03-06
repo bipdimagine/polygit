@@ -2230,8 +2230,8 @@ sub rocks_dejavu {
 	$mode = "r" unless $mode;
 	my $name = "dejavu-".$mode.$$;
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
-	my $dir = "/data-beegfs/tmp/HG38/";
-	#my $dir = $self->project->deja_vu_rocks_public_dir();
+	my $dir = "/data-beegfs/rocks2/HG38";
+	#smy $dir = $self->project->deja_vu_rocks_public_dir();
 	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->project->{rocks}->{$name};
@@ -2298,7 +2298,6 @@ sub getDejaVuInfosForDiagforVariant{
 		next if  $self->project->id == $pid;
 		
 		next unless ($h->{$pid}->{he} + $h->{$pid}->{ho});
-		warn $pid;
 		
 		my $nho = $h->{$pid}->{ho};
 		my $nhe = $h->{$pid}->{he};

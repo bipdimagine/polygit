@@ -141,11 +141,8 @@ sub add_variant {
 
 sub lift_over_variant {
 	   my ($self,$variation,$version,$key) = @_;
-	   warn ref($self) if $self->debug;
-	   warn $variation if $self->debug;
 	   my $id = $variation->id;
-	   my $cmd = 
-		$self->lift_over_variants([$variation],$key);
+	   my $cmd = $self->lift_over_variants([$variation],$key);
 }
 
 

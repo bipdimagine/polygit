@@ -85,6 +85,7 @@ my $annot4 =  GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"w");
 	
 	
 	my $tree_global;
+	my $gene_padding;
 	my $debug;
 foreach my $type (@types){
 	warn "START $type";
@@ -134,6 +135,10 @@ foreach my $type (@types){
  				push(@$gene_array,\@a);
  				push(@{$tree_global->{$chr}},[[$obj->id,$tid,$tt->[0]],$tt->[1],$tt->[2]]);
  			}
+ 			my $limit = 5000;
+			$limit= 0 if $chr eq 'MT';
+			
+			push(@{$gene_padding->{$chr}},[$obj->id,$obj->start-$limit,$obj->end+$limit+1]);
  			$obj->{functional_annotations} = $gene_array;
  		
  			#push(@{$obj->{array_transcripts_tree}},[$tr->id,$tr->start,$tr->end]);
@@ -149,7 +154,6 @@ foreach my $type (@types){
  		#$no3->put("functional_annotations",$obj->{id},$gene_array);
  		die() unless $obj->{strand} ;
  		my $limit = 10000;
- 
 		my $toto = return_main_transcript($rocks,$obj);
 		push(@main_transcripts,@$toto);
  		
@@ -181,11 +185,16 @@ foreach my $type (@types){
  }#end objects	
 
 if ($type eq "gene"){
+	warn $rocks_dir;
 	  my $no3 = GenBoNoSqlIntervalTree->new(dir=>$rocks_dir,mode=>"c");
 	  foreach my $chr (keys %$tree_global) {
 	  	$no3->put("annotations",$chr,$tree_global->{$chr});
 	  }
-	  $no3->close();
+	 
+	  foreach my $chr (keys %$gene_padding) {
+	  	$no3->put("genes_padding",$chr,$gene_padding->{$chr});
+	  }
+	   $no3->close();
 	}
 	if ($type eq "gene"){
 	  my $no3 = GenBoNoSqlIntervalTree->new(dir=>$rocks_dir,mode=>"r");

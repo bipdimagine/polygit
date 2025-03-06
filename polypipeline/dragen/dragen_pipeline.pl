@@ -111,12 +111,21 @@ my @apatients_name = split(":",$patients_name);
 my $status_jobs; 
 my $test_umi;
 my $genome;
+my $cram;
+$cram = 1 if $version =~/HG38/;
+
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name => $pname , -version =>$version);
 	#my $project = $buffer->newProject( -name => $pname );
 	$genome = 1 if  $project->isGenome;
+	unless  ($version){
+		$cram = 1 if $project->genome_version =~ /HG38/;
+	}
 	$project->get_only_list_patients($apatients_name[0]);
+	unless  ($version){
+		$cram = 1 if $project->genome_version =~ /HG38/;
+	}
 	 $test_umi=1 if grep{$_->umi} @{$project->getCaptures};
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
@@ -181,7 +190,7 @@ unless ($step_name){
 	my $tdna = "DNA";
 	$tdna = "RNA" if $rna == 1;
 	my $tumi = "NO UMI ";
-	my $tumi = " UMI " if $umi==1;
+	 $tumi = " UMI " if $umi==1;
 	my $banner=colored::stabilo("Green  ","  it's a $tdna  project with $tumi  bu twhat can I do for you    ", 1);
 	my %menu1 = (
 	Item_1 => {
@@ -366,7 +375,7 @@ foreach my $project (@$projects){
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatients}){
-		if ($version =~ /HG38/){
+		if ($cram){
 			my ($m) = grep{$_ eq "bwa" or $_ eq "dragen-align" } @{$patient->alignmentMethods};
 			next unless $m;
 		}
@@ -399,15 +408,18 @@ foreach my $project (@$projects){
 		#####  BAM
 		#####  
 		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".bam";
-		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".cram" if $version && $version =~ /HG38/;
-		
-		$h->{prod}->{align} = $patient->getBamFileName(); 
-		$h->{prod}->{align} = $patient->getBamFileName("dragen-align") unless -e $patient->getBamFileName; 
-		
+		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".cram" if $cram;
+		if ($cram){
+		$h->{prod}->{align} = $patient->getCramFileName(); 
+		$h->{prod}->{align} = $patient->getCramFileName("dragen-align") unless -e $patient->getCramFileName; 
+		}
+		else {
+			$h->{prod}->{align} = $patient->getBamFileName(); 
+			$h->{prod}->{align} = $patient->getBamFileName("dragen-align") unless -e $patient->getBamFileName; 
+		}
 		
 		#$h->{prod}->{align_HG38} = $patient->getBamFileName("dragen-align"); 
-		$h->{prod}->{file}   = $patient->getBamFileName("dragen-align") if $version;
-		$h->{prod}->{align}   = $patient->getCramFileName("dragen-align") if $version && $version =~ /HG38/; 
+		$h->{prod}->{file}   = $patient->getBamFileName("dragen-align") if $cram;
 		$h->{exists_file}->{align} = 1 if -e $h->{prod}->{align};
 		$h->{exists_file_pipeline}->{align} = 1 if -e $h->{pipeline}->{align};
 		#warn  $patient->name()." ".$h->{prod}->{file}." :: ".$h->{exists_file}->{align}."::".$h->{exists_file_pipeline}->{align} ;
@@ -623,6 +635,7 @@ sub run_command {
 #	}
 #	else {
 	#$lims->{$pname}->{$t} = "PLANNED"; 
+	$pad.="";
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}})." -padding=".$pad;
 	
 	$job->{cmd} .= " -umi=1 " if $umi;
@@ -630,6 +643,8 @@ sub run_command {
 	$job->{cmd} .= " -version=$version " if $version;
 	$job->{cmd} .= " -phased=$phased " if $phased;
 	$job->{cmd} .= " -neb=$neb " if $neb;
+	
+	$job->{cmd} .= " -cram=$cram " if $cram;
 #	warn $job->{cmd};
 #	die();
 	$job->{jobs_type_list} = join(",",@{$hp->{run_pipeline}});
@@ -686,6 +701,7 @@ foreach my $hp (@$patients_jobs) {
 	$job->{cmd} = "perl $script_perl/dragen_move.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".$option;
 	#$status_jobs->{patient}=$nname;
 	$job->{cmd} .= " -version=$version " if $version;
+	$job->{cmd} .= " -cram=$cram " if $cram;
 	$job->{cpus} = $ppn;
 	push(@$jobs,$job);
 }

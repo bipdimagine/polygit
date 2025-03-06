@@ -955,8 +955,19 @@ sub nextVariant {
 	$self->setListVariants() unless exists $self->{list_variant};
 	return unless scalar(@{$self->{list_variant}});
 	my $id = shift(@{$self->{list_variant}} );
-	my $var_obj = $self->returnVariants($id);
-	warn $var_obj;
+	warn $id;
+	my $var_obj = $self->returnVariants("2!0");
+	my $no = $self->getChromosome(1)->cache_variations;
+	warn $no;
+	warn $no->get_variation(0,1);
+	die();
+	warn Dumper  $var_obj;
+	warn "------ ".$var_obj;
+	warn Dumper keys %{$var_obj};
+	warn $var_obj->{id};
+	
+	#
+	die();
 	confess() unless defined $var_obj;
 	my $ref = ref($var_obj);
 	if ($ref eq 'GenBoVariation'){
@@ -992,6 +1003,9 @@ sub nextVariant {
 		}
 		elsif  ($ref eq 'GenBoMei'){
 					bless $var_obj , 'GenBoMeiCache';
+		}
+		else {
+			confess();
 		}		
 
 		return $var_obj;

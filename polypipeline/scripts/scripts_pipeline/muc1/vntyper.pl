@@ -100,7 +100,8 @@ unless (-e "$dir_pipeline/$patient_name.ok"){
   returnkestrel_hash($kestrel);
 
   die() unless -e $fad;
-  my $advntr = parse_adVNTR($fad);
+ my $fad2 = $tmp_dir."/advntr/output_adVNTR_result.tsv" ;
+  my $advntr = parse_adVNTR($fad2,$fad);
   my $json_text = encode_json {kestrel=>$kestrel,adVNTR=>$advntr};
   my $file_json = $dir_prod."/".$patient->name.".json";
 open(my $fh, ">", $file_json) or die "Impossible d'ouvrir le fichier $file_json: $!";
@@ -165,22 +166,24 @@ sub returnkestrel_hash{
 }
 
 sub parse_adVNTR {
-	my ($file) = @_;
+	my ($file,$file2) = @_;
 	my $res;
+	my $date = POSIX::strftime( 
+             "%d/%m/%y", 
+             localtime( 
+               		(stat $file2 )[10]
+                 )
+             );
 	unless( -e $file){
-		confess();
+		$res->{header} = ["Caller","date","Confidence"];
+		push( @{$res->{data}},["adVNTR",$date,"Negative"]);
+		return $res;
 	}
-	warn $file;
 	my @lines = `grep -v "#" $file`;  
 	chomp(@lines);
 	
 	$res->{header} = ["date","State","NumberOfSupportingReads","MeanCoverage","Pvalue"];
-	my $date = POSIX::strftime( 
-             "%d/%m/%y", 
-             localtime( 
-               		(stat $file )[10]
-                 )
-             );
+	
 	my @hs = split(" ",shift @lines);
 	$res->{header} = ["caller","date",@hs];
 	foreach my $l (@lines) {

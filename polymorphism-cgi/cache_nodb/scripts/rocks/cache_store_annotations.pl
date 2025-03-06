@@ -382,7 +382,7 @@ while ( my ( $from, $to ) = $iter->() ) {
 my @array = $id_intergenic->as_array;
 my $t = time;
 foreach my $lmdb_id (@array) {
-	warn $lmdb_id;
+
 	my $v = $no3->get_index($lmdb_id);
 	my $results = $tree->fetch( $v->{start}, $v->{end} + 1 );
 	confess() unless @$results;
@@ -516,7 +516,7 @@ sub get_annotations {
 		
 		#next;
 		$variation = $no->get_index($i);
-		
+		warn Dumper($variation) if $i == 14773;
 		if ( $lmdb_index < 0 ) {
 			confess("index out of range <0");
 		}
@@ -641,6 +641,8 @@ sub get_annotations {
 	 	my $nb_ac = $variation->getGnomadAC();
 	 	$nb_ac = 0 unless $nb_ac;
 	 	$nb_ho = 0 unless defined $nb_ho;
+	 	warn $nb_ho." ".$nb_ac if $i == 14773;
+	 	
 	 	foreach my $c (keys %$scaled_score_gnomad_ho){
 	 			$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
 	 		if ($nb_ho <= $scaled_score_gnomad_ho->{$c} ){
@@ -662,7 +664,6 @@ sub get_annotations {
 			my $pdv = $variation->other_projects;
 	 		my $sdv = $variation->other_patients ; 
 	 		my $sdv_ho = $variation->other_patients_ho; 
-	 		
 	 		
 	 		foreach my $c (sort {$a <=>$b} keys %$scaled_score_project_dejavu_ho){
 	 			$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};

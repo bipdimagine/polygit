@@ -803,19 +803,20 @@ sub cnv_manue {
 	my $projectName = $self->project->name();
 	
 	my $ppn = $self->nproc;
-	my $type = "cnv-manue";
+	my $type = "cnv-polycyto";
 	my $stepname = $projectName."@".$type;
 	my $dir = $self->project->project_log();
 	my $methods = $self->project->callingSVMethods();
 	return $filein unless @$methods;
 	my $fileout   = $self->project->getCNVDir()."/".$self->project->name.".done";
-
-	
-	my $cmd = "perl $bin_dev/manue_cnv/SV_global.pl -project=$projectName -fork=$ppn > $fileout";
+	my $file1 = $self->project->getCacheDir().'/CNV2/1.dejavu.lite';
+	my $file2 = $self->project->getCacheDir().'/SV/SV.dejavu.lite';
+	my $cmd = "perl $bin_dev/manue_cnv/SV_global.pl -project=$projectName -fork=$ppn";
+	$cmd .= " && perl $bin_dev/manue_cnv/parseBND.pl -project=$projectName -fork=$ppn > $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
-	if ($self->unforce() && -e $fileout){
+	if ($self->unforce() && -e $fileout && -e $file1 && -e $file2){
 		$job_bds->skip();
 	}
 	return ($filein);
@@ -902,7 +903,7 @@ sub dejavu {
 	my $dir = $self->project->project_log();
 	my $fileout = $dir."/dejavu.log";
 	#/dejavu/hg38/variant/tar
-	my $cmd = "perl $Bin/../polypipeline/scripts/scripts_pipeline//dejavu/hg38/variant/lmdb/add_project.pl -project=$projectName -fork=$ppn >$fileout";
+	my $cmd = "perl $Bin/scripts/scripts_pipeline/dejavu/hg38/variant/lmdb/add_project.pl -project=$projectName -fork=$ppn >$fileout";
 	#my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/cache_lite_dejavu.pl -project=$projectName >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);

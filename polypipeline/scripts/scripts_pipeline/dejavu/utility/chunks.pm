@@ -101,18 +101,23 @@ sub return_rocks_id {
 	return  (stringify_pos($pos)."!".$alt) if ($l1 == 1 && $l2 ==1);
 	my $seqid = $alt;
 	if ($alt =~ /del/ ){
+		$pos --;
 		return  (stringify_pos($pos)."!".$alt);
 	}
 	elsif ($ref =~ /del/ ){
+		$pos --;
 		return  (stringify_pos($pos)."!".$ref);
 	}
 	elsif ($alt=~ /inv/ ){
+		$pos --;
 		return  (stringify_pos($pos)."!".$alt);
 	}
 	elsif ($alt=~ /ins/ ){
+		$pos --;
 		return  (stringify_pos($pos)."!".$alt);
 	}
 	elsif ($alt=~ /dup/ ){
+		$pos --;
 		return  (stringify_pos($pos)."!".$alt);
 	}
 	
@@ -123,17 +128,18 @@ sub return_rocks_id {
 	
 	
 	if ($l1 ==1 && $l2 > 1){
-		
+		$pos --;
 		$seqid = "+".substr($alt, 1);
 		return  (stringify_pos($pos)."!".$seqid);
 	}
 	elsif ($l1 >1 && $l2 ==1){
 		$ref = substr($ref, 1);
 		$seqid = ($l1 -1);
+		$pos --;
 		return  (stringify_pos($pos)."!".$seqid);
 	}
 	 elsif ($l1 >1 && $l2 == $l1 && $l2>1 ){
-	 	
+	 	$pos --;
 		$ref = substr($ref, 1);
 		$alt = substr($alt, 1);
 		$seqid = "$ref*$alt";
@@ -250,6 +256,32 @@ sub write_lmdb {
 	}
 }
 
+
+sub add_to_parquet_with_lock_file {
+    my ($dir_tar,$region_id,$project_name,$data,$htime,$debug) = @_;
+    system("mkdir $dir_tar") unless -e  $dir_tar;
+    
+    my $lmdb_file = $dir_tar.$region_id;
+    my $lock_file = $lmdb_file.".lock";
+    if (my $lock = new File::NFSLock {
+  file      => $lock_file,
+  lock_type => LOCK_EX,
+  #blocking_timeout   => 600,      # 10 sec
+  stale_lock_timeout => 5 * 60, # 30 min
+}) {
+    uncache($lmdb_file);
+    my $x;
+    system("vmtouch -t ".$dir_tar."/".$region_id." -q ");
+     my $lmdb = GenBoNoSqlLmdb->new(dir=>$dir_tar,mode=>"w",name=>$region_id) ;
+     $lmdb->put($project_name,$data);
+     $lmdb->close();
+      
+    $lock->unlock();
+}else{
+  die "I couldn't lock the file [$File::NFSLock::errstr]";
+}
+}
+
 sub add_to_lmdb_with_lock_file {
     my ($dir_tar,$region_id,$project_name,$data,$htime,$debug) = @_;
     system("mkdir $dir_tar") unless -e  $dir_tar;
@@ -274,6 +306,7 @@ sub add_to_lmdb_with_lock_file {
   die "I couldn't lock the file [$File::NFSLock::errstr]";
 }
 }
+
 
 
 
@@ -307,7 +340,7 @@ sub save_chromosome_chunks {
 	my $dirout = $project->deja_vu_rocks_project_dir($version);
 	my $encoder = Sereal::Encoder->new({compress=>'Sereal::SRL_ZSTD',compress_threshold=>0});
 	system("mkdir $dirout/".$chr->name) unless -e "$dirout/".$chr->name;
-	my $tar_dir = $dirout."/".$chr->name."/";
+	my $tar_dir = $dirout."/";#.$chr->name."/";
 	$tar_dir =~ s/\/\//\//g;
 	my @vht =  shuffle @{$chunks} ;
 	 my $dir_tar = $project->deja_vu_rocks_project_dir($version);

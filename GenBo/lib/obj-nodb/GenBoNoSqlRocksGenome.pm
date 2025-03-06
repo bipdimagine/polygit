@@ -182,7 +182,11 @@ is		=> 'ro',
  		for my $r (@{$self->regions}){
  			#$self->chunks->{$id}->{rocksdb};
  			my $id = $r->{id};
- 			my $db  = GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pipeline=>$self->pipeline,pack=>$self->pack,description=>$self->description,factor=>$self->factor);
+ 			my $set = Set::IntSpan::Fast::XS->new();
+ 			
+ 			$set->add_range($r->{start}, ($r->{end}-1));
+ 			my $db  = GenBoNoSqlRocksAnnotation->new(dir=>$self->dir_db,mode=>$self->mode,name=>$id,pipeline=>$self->pipeline,pack=>$self->pack,description=>$self->description,factor=>$self->factor,intspan=>$set);
+ 			$db->{intspan} = $set;
  			 $tree->insert($db, $r->{start}, $r->{end});
  		}
  		return $tree;
@@ -237,7 +241,9 @@ is		=> 'ro',
 	default => sub {
 		my $self = shift;
 		my $r;
+		
 		foreach my $id (sort{$self->chunks->{$a}->{start} <=> $self->chunks->{$b}->{end}} keys %{$self->chunks}){
+			
 			push(@$r,{id=>$id,start=>$self->chunks->{$id}->{start},end=>$self->chunks->{$id}->{end},tabix=>$self->chromosome.":".$self->chunks->{$id}->{start}."-".$self->chunks->{$id}->{end}});
 		}
  		return $r;
@@ -360,13 +366,15 @@ sub decode_dejavu {
 	my @tab = unpack("w*",$value);
 	my $hash;
 	my $nb = 0;
+	warn  $id." $value ".scalar(@tab)." ".(scalar(@tab)/3)." ".$self->dir if (scalar(@tab)%3) > 0;
+	warn (scalar(@tab)/3);
+	confess() if (scalar(@tab)%3) > 0;
 	while (@tab){
 		my ($p,$he,$ho)=  splice(@tab, 0, 3);
 		$hash->{$p}->{he} = $he;
 		$hash->{$p}->{ho} = $ho;
 		$nb += $he+$ho;
 	} 
-	warn "==>".$nb." ".$id;
 	return $hash;
 }
 
@@ -394,14 +402,14 @@ sub _decode_dejavu {
 }
 sub dejavu {
 	my ($self,$id) = @_;
-	
+	$id ="2!".$id;
 	
 	if ($self->current) {
 		my $res =  $self->{current_db}->get_raw($id);
 		return $self->decode_dejavu($res,$id) if $res;
 	}
 	
-	my ($pos,$a) =split("!",$id);
+	my ($chr,$pos,$a) =split("!",$id);
 	$pos *= 1;
 	$self->{current_db} = $self->get_db($pos);
 	
@@ -488,10 +496,13 @@ sub spliceAI {
 
 sub get_db {
 	my ($self,$pos) = @_;
+	if ($self->{_currentdb} ){
+		return $self->{_currentdb} if $self->{_currentdb}->{intspan}->contains($pos);
+	}
 	my $results = $self->tree_db->fetch($pos,$pos+1);
 	confess(@$results) if scalar(@$results) > 1;
-	warn Dumper $results;
-	return $results->[0];
+	 $self->{_currentdb} = $results->[0];
+	return $self->{_currentdb};
 }
 
 

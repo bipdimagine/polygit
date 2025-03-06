@@ -54,8 +54,6 @@ my $bam_dir = $patient->getProject->getAlignmentDir("bwa");
  system ("mkdir $dir_working");
  }
 my $singularity = $buffer->software("singularity");
-my $image = "/software/distrib/ADVNTR/SINGLARITY/advntr_2718.sif";
-my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 #my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B $dir_working:/TMP -B $db:/DB/ -B $dirout:/OUT -B $bam_dir:/BAM $image  advntr genotype -a /BAM/$patient_name.bam -fs -vid 25561 -t 4  -of bed -o /OUT/$patient_name.bed --min_read_length 100 -m /DB/hg19_genic_VNTRs.db --working_directory  /TMP/};
 #my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B $dir_working:/TMP -B $db:/DB/ -B $dirout:/OUT -B $bam_dir:/BAM $image  advntr genotype -a /BAM/$patient_name.bam -fs -vid 25561 -t 4  -o /OUT/$patient_name.bed --min_read_length 100 -m /DB/hg19_genic_VNTRs.db --working_directory  /TMP/};
 my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B $dir_working:/TMP -B $db:/DB/ -B $dirout:/OUT -B $bam_dir:/BAM $image  advntr genotype -a /BAM/$patient_name.bam -fs -vid 25561 -t 4  -o /OUT/$patient_name.bed  -m /DB/hg19_genic_VNTRs.db --working_directory  /TMP/};

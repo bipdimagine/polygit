@@ -50,6 +50,7 @@ GetOptions(
 
 
 my $sqliteDir =  "/tmp/lmdb/$version.$genome_version/annotations";
+my $rocks_dir = "/data-isilon/public-data/repository/$genome_version/annotations/gencode.v$version/rocksdb/";
 warn $sqliteDir;
 die(" -dir= ") unless $sqliteDir;
 

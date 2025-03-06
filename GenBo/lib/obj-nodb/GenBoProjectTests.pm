@@ -25,7 +25,7 @@ has test => (
 
 has release => (
 	is		=> 'rw',
-	default => 'HG19',
+	default => 'HG38',
 );
 
 has test_name => (
@@ -70,7 +70,22 @@ has project_root_path => (
 has year => (
 	is		=> 'rw',
 	lazy 	=> 1,
-	default => '2017',
+	default => '2025',
+);
+
+has in_this_run_patients => (
+	is => 'rw',
+	default => sub {
+		my $self = shift;
+		my $h;
+		$h->{nb_patients} = 1;
+		return $h;
+	},
+);
+
+has annotation_version => (
+	is => 'rw',
+	default => undef,
 );
 
 has infosProject => (
@@ -79,7 +94,7 @@ has infosProject => (
 	default => sub {
 		my $self = shift;
 		my $res = {
-          'version' => 'HG19',
+          'version' => 'HG38',
           'name' => 'NGSTEST_FREQ',
           'description' => 'Project Tests',
           'dbname' => 'Polyexome',

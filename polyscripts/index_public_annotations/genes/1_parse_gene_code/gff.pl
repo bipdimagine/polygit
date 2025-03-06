@@ -257,7 +257,6 @@ foreach my $prot_id (keys %$proteins) {
 
 
 warn "SAVE";
-	warn Dumper %$genes;
  my $no2 = GenBoNoSqlAnnotation->new(dir=>$sqliteDir,mode=>"c");
  warn "\t genes";
  parse_gff::save_sqlite ($no2,$genes,"gene");

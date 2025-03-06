@@ -73,7 +73,7 @@ if($align){
 
 
 
-my $dir = $project->getAlignmentPipelineDir($patient_name."_depth");#$buffer->config->{project_pipeline}->{tmp};
+my $dir = $project->getAlignmentPipelineDir($patient_name."_depth");
 my $process;
 my $pm = new Parallel::ForkManager($fork);
 $pm->run_on_finish(

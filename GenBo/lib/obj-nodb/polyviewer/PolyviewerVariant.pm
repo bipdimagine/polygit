@@ -763,8 +763,8 @@ sub set_gene {
 						$htr->{prot} = $v->getProteinPosition($prot);
 						$htr->{codons} = $v->getCodons($tr1);
 						$htr->{codons_AA} = $v->protein_nomenclature($prot);
-						$htr->{sift} =  $self->return_specific_value($v->siftScore($tr1->getProtein));
-						$htr->{polyphen} =  $self->return_specific_value($v->polyphenScore($tr1->getProtein));
+						$htr->{sift} =  $self->return_specific_value($v->siftScore($tr1));
+						$htr->{polyphen} =  $self->return_specific_value($v->polyphenScore($tr1));
 						
 						$htr->{alphamissense} = $self->return_specific_value($v->alphamissense($tr1));
 						

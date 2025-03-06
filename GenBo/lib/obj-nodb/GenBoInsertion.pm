@@ -40,6 +40,22 @@ has alleles => (
 	},
 );
 
+has gnomad_id => (
+	is		=> 'ro',
+	lazy=> 1,
+	default=> sub {
+	my $self = shift;
+	my $b =  $self->getChromosome->sequence($self->start-1,$self->start-1);
+	my $name = $self->getChromosome->name."-".($self->start()-1)."-". $b."-".$b.$self->sequence;
+	return $name;
+	my $vn=$self->vcf_id;
+	#confess unless $vn;
+	$vn =~ s/_/-/g;
+	$vn=~ s/chr//;
+	return $vn;
+	}
+	);
+	
 has rocksdb_id => (
 	is		=> 'ro',
 	lazy=> 1,

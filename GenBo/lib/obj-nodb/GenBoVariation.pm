@@ -165,7 +165,6 @@ sub getPredictions {
 	my %methods;
 	foreach my $tr (@$transcripts){
 		next unless $self->isCoding($tr);
-		warn $tr->id unless $tr->getProtein();
 		#my $protid = $tr->getProtein()->id;
 		my ($protid, $chr_id) = split('_', $tr->getProtein()->id());
 		my $gene_id = $tr->getGene()->id;
@@ -181,8 +180,10 @@ sub getPredictions {
 		else {
 			my $pos = $self->position($tr->getProtein)->start();
 			my $aa  = $self->changeAA($tr->getProtein);
-			my $h = $self->getChromosome->rocksdb("prediction_matrix")->prediction_score($tr->id,$pos,$aa);
-	
+
+			my $h = $self->getChromosome->rocksdb("prediction_matrix")->prediction_score($tr->getProtein->id,$pos,$aa);
+			$self->{predictions}->{$tr->id}->{score_polyphen} = $h->{polyphen};
+			$self->{predictions}->{$tr->id}->{score_sift} = $h->{sift};
 		}
 		$self->{predictions}->{$tr->id}->{mask} = $self->{predictions}->{$protid}->{mask};
 		$self->{predictions}->{$gene_id}->{mask} =  0 unless exists $self->{predictions}->{$gene_id}->{mask};
@@ -209,8 +210,9 @@ sub polyphenScore {
 	
 	$self->getPredictions() unless exists $self->{predictions};
 	die($obj->name) unless $obj->isProtein()||  $obj->isTranscript();
-	$self->{predictions}->{$obj->id}->{polyphen_humvar}->{score} = "-" unless $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};
-	return $self->{predictions}->{$obj->id}->{polyphen_humvar}->{score};
+	return $self->{predictions}->{$obj->id}->{score_polyphen} if $obj->isTranscript() and exists $self->{predictions}->{$obj->id}->{score_polyphen};
+	return $self->{predictions}->{$obj->getTranscript->id}->{score_polyphen} if $obj->isProtein() and exists $self->{predictions}->{$obj->getTranscript->id}->{score_polyphen};
+	return '-';
 }
 sub polyphenScore2 {
 	my ( $self, $obj ) = @_;
@@ -228,10 +230,14 @@ sub siftScore {
 	my ( $self, $obj ) = @_;
 	$self->getPredictions() unless exists $self->{predictions};
 	die() unless $obj->isProtein() ||  $obj->isTranscript();
-	return '-' unless ($self->{predictions}->{$obj->id}->{sift});
-	return '-' unless (exists $self->{predictions}->{$obj->id}->{sift}->{score});
- 	return 0 if (exists $self->{predictions}->{$obj->id}->{sift}->{score} and $self->{predictions}->{$obj->id}->{sift}->{score} == 0);
-	return $self->{predictions}->{$obj->id}->{sift}->{score}+0;
+	die($obj->name) unless $obj->isProtein()||  $obj->isTranscript();
+	return $self->{predictions}->{$obj->id}->{score_sift} if $obj->isTranscript() and exists $self->{predictions}->{$obj->id}->{score_sift};
+	return $self->{predictions}->{$obj->getTranscript->id}->{score_sift} if $obj->isProtein() and exists $self->{predictions}->{$obj->getTranscript->id}->{score_sift};
+	return '-';
+#	return '-' unless ($self->{predictions}->{$obj->id}->{sift});
+#	return '-' unless (exists $self->{predictions}->{$obj->id}->{sift}->{score});
+# 	return 0 if (exists $self->{predictions}->{$obj->id}->{sift}->{score} and $self->{predictions}->{$obj->id}->{sift}->{score} == 0);
+#	return $self->{predictions}->{$obj->id}->{sift}->{score}+0;
 }
 
 sub polyphenStatusText {

@@ -403,10 +403,9 @@ sub run_cache_polydiag_fork {
 		my $dd = 0;
 		my $hh ;
 		while (my $v = $project->nextVariant){
-			my $ps =  $v->getPatients;
 		
 		#foreach my $v ( @{$variations} ) {
-			next if $v->getChromosome->name ne $chr->name;
+			#next if $v->getChromosome->name ne $chr->name;
 			my $debug;
 			my $toto=  0;
 			#
@@ -529,7 +528,6 @@ sub run_cache_polydiag_vector {
 		my $ii = 0;
 		my $dd = 0;
 		while (my $v = $project->nextVariant){
-			my $ps =  $v->getPatients;
 		
 		#foreach my $v ( @{$variations} ) {
 			next if $v->getChromosome->name ne $chr->name;
@@ -815,13 +813,34 @@ sub construct_variant {
 		my @apc;
 		my @methods;
 		my $nb_methods;
+		foreach my $method (@{$patient->callingMethods}){
+			my $nb_ref = $v->getNbAlleleRef($patient, $method);
+			my $nb_alt = $v->getNbAlleleAlt($patient, $method);
+			my $method_name = substr $method,0,3;
+			my $sequence_info = "he("; 
+			my $pc ="-";		
+			$sequence_info = "ho(" if $v->isHomozygote($patient);
+			my $sum = $nb_ref + $nb_alt;
+			if ($sum >0) { $pc = int ($nb_alt *10000/($sum))/100; }
+			next if defined($pc) and $pc eq '0';
+			next if defined($pc) and $pc eq '-';
+			$sequence_info .= $nb_ref."/".$nb_alt.")";
+			$sequence_info = $method_name.":".$sequence_info;
+			$pc = $method_name.":".$pc."%";
+			push(@methods,$method_name);
+			push(@apc,$pc);
+			push(@asequence_info,$sequence_info);
+			$nb_methods ++;
+		}
 		
 		
-
+		 if ($v->validation_method eq "sanger" ) {
+		 	#$sequence_info = "-";
+		 	push(@asequence_info,"-");
+		 }
 		
 	
-		$hvariation->{ngs} =  "";
-		#join("<br>",@asequence_info);
+		$hvariation->{ngs} = join("<br>",@asequence_info);
 	
 		$hvariation->{ratio} =  join("<br>",@apc);
 		$hvariation->{caller} =  join("<br>",@methods);

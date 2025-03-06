@@ -3675,7 +3675,7 @@ sub getVariantFromId {
 	my $varAll    = $lFieldsId[3];
 	my @find;
 #	confess($refAll." ".$varAll);
-	warn "$id";
+
 	if ( length($refAll) == length($varAll) ) {
 		my $refObj =
 		  $self->getChromosome($chrName)

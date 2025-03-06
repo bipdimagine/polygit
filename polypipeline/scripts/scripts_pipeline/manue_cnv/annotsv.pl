@@ -67,14 +67,13 @@ foreach my $patient (@{$project->getPatients}) {
 	 	$listCallers = $patient->callingSVMethods();
 	 	$dir_tmp= $dir_tmp."/".$patient->name;
 	 	system("mkdir $dir_tmp && chmod a+rwx $dir_tmp") unless -e $dir_tmp;
-	 	warn Dumper @$listCallers;
+
 		foreach my $type (@$listCallers){
 		#next if $type ne "wisecondor";
 		my $fileout = $patient->getAnnotSVFileName($type);
 		my $file_tmp = $dir_tmp."/".$patient->name.".annotsv.tsv";
 		#next if -e $fileout;;
 		unlink $fileout if -e $fileout;
-		warn $patient->name;
 		
 		my $filein = $patient->getSVFile($type);
 		my $filebed = $filein;
@@ -92,7 +91,7 @@ foreach my $patient (@{$project->getPatients}) {
 		my $opt2 = "-genomeBuild GRCh37";
 		$opt2 = "-genomeBuild GRCh38" if $project->genome_version_generic() =~/HG38/;
 			my $cmd = qq{ export ANNOTSV=/software/distrib/AnnotSV_2.0 && $load && gunzip -c $filein > $filebed && $annotsv $opt2 -SVinputFile $filebed -outputFile $file_tmp $opt 2>/dev/null && mv $file_tmp $fileout };
-		warn $cmd;
+
 		
 		system("$cmd");
 		unlink $filebed;
@@ -105,6 +104,6 @@ foreach my $patient (@{$project->getPatients}) {
 }
 $pm->wait_all_children();
 confess(Dumper %$hjobs ) if scalar(keys %$hjobs); 
-warn "end ";
+#warn "end ";
 exit(0);
 

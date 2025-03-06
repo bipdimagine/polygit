@@ -13,6 +13,8 @@ use Compress::Snappy;
 use Parallel::ForkManager;
 use Storable qw/thaw freeze/;
 
+#perl ./GenBoVcfAnnot.pl -vcf_file=FILE.vcf.gz -tab_out=OUTFILE.tab -parse_all -fork=10
+
 my ($help, $format, $fork, $fileName, $tab_outfile, $join_characters, $method, $getObjects, $addAnnotVcf, $filterTrans, @lFiltersAnnot, $filter_score_polyphen, $filter_score_sift, $filter_freq_5P, $filter_freq_1P, $filter_freq_01P, $filter_freq_001P,$no_dejavu );
 my ($use_main_transcripts, $use_ccds_transcripts);
 my $patientName = 'none';
@@ -131,6 +133,7 @@ warn "# Parsing / Annoting VCF\n";
 warn '-> File: '.$fileName."\n";
 my $queryVcf = QueryOnlyVcf -> new(\%args);
 my $gencode_version = $queryVcf->project->gencode_version();
+print "# Build: ".$queryVcf->project->getVersion()."\n";
 print "# GenCode Version: $gencode_version\n";
 my $version = $queryVcf->project->annotation_version();
 print "# GenBo Annotation Version: $version\n";
@@ -159,6 +162,8 @@ $pm->run_on_finish(
 
 foreach my $reference (@lRef) {
 	my $pid = $pm->start() and next;
+	$queryVcf->project->disconnect();
+	$queryVcf->project->buffer->dbh_deconnect();
 	my $res; 
 	$res->{ok} = 1;
 	$res->{data} = $queryVcf->parseVcfFile($reference);
@@ -174,6 +179,7 @@ sleep(3);
 if ($tab_outfile) {
 	open (FILE, '>'.$tab_outfile);
 	my $version = $queryVcf->project->annotation_version();
+	print FILE "# Build: ".$queryVcf->project->getVersion()."\n";
 	print FILE "# GenBo Annotation Version: $version\n";
 	my @lTmp = split('\.', $version);
 	my $annot_version = $lTmp[1];
@@ -197,7 +203,19 @@ if ($tab_outfile) {
 	close (FILE);
 }
 
-warn "\n\n-> Parsing / Annoting Done !\n\n";
+print "\n\n-> Parsing / Annoting Done !\n\n";
+
+print 'bgzip file '; 
+my $cmd_bgzip = qq{bgzip -f $tab_outfile};
+`$cmd_bgzip`;
+print "-> Ok!\n\n";
+
+print 'tabix file '; 
+my $cmd_tabix = qq{tabix -f -b 4 -e 5 -s 3 $tab_outfile.gz};
+`$cmd_tabix`;
+print "-> Ok!\n\n";
+
+
 
 exit(0);
 
@@ -270,8 +288,25 @@ sub annote_output_file {
 				$h->{frequency} = sprintf("%.3f", $var->percent()).'%' if ($var->frequency());
 				$h->{frequency} = '-' unless ($h->{frequency});
 				
-				$h->{dejavu} = 'NA';
-				$h->{dejavu} = $var->nb_deja_vu_projects().'/'.$var->nb_deja_vu_samples() unless ($no_dejavu);
+#				$h->{dejavu} = 'NA';
+#				$h->{dejavu} = $var->other_projects().'/'.$var->other_patients() if not ($no_dejavu);
+#				
+#				warn "\n";
+#				warn "\n";
+#				warn Dumper $var-> dejaVuInfosForDiag2;
+				my $h_dv = $var->getChromosome->rocks_dejavu->dejavu($var->rocksdb_id);
+				my $dv_proj = 0;
+				my $dv_samples_he = 0;
+				my $dv_samples_ho = 0;
+				foreach my $proj_id (keys %$h_dv) {
+					$dv_proj++;
+					$dv_samples_he += $h_dv->{$proj_id}->{he};
+					$dv_samples_ho += $h_dv->{$proj_id}->{ho};
+				}
+				my $dv_samples = $dv_samples_he + $dv_samples_ho;
+				$h->{dejavu} = $dv_proj.'/'.$dv_samples.'('.$dv_samples_ho.'ho)';
+				
+				
 				
 				$h->{hgmd_class} = $var->hgmd_class();
 				$h->{hgmd_class} = '-' unless ($h->{hgmd_class});
@@ -281,6 +316,9 @@ sub annote_output_file {
 				
 				$h->{ncboost_score} = $var->ncboost_score();
 				$h->{ncboost_score} = '-' unless ($h->{ncboost_score});
+				
+				$h->{class_clinvar} = '-';
+				$h->{class_clinvar} = $var->text_clinvar() if $var->text_clinvar();
 				
 				$h->{score_clinvar} = $var->score_clinvar();
 				$h->{score_clinvar} = '-' unless ($h->{score_clinvar});
@@ -303,7 +341,7 @@ sub annote_output_file {
 					}
 					# SPLICE_AI
 					my $h_score_spliceAI = $var->spliceAI_score($gene);
-					if ($h_score_spliceAI) {
+					if ($h_score_spliceAI and exists $h_score_spliceAI->{'AG'}) {
 						my @l_score_spliceAI;
 						foreach my $cat (sort keys %$h_score_spliceAI) {
 							push(@l_score_spliceAI, $cat.'='.$h_score_spliceAI->{$cat});
@@ -331,20 +369,39 @@ sub annote_output_file {
 					$h->{transcripts}->{$tr->id()}->{annotations} = $var->variationTypeInterface($tr);
 					
 					if ($tr->getProtein) {
-						$h->{transcripts}->{$tr->id()}->{polyphen_status} = $var->polyphenStatusText($tr);
-						$h->{transcripts}->{$tr->id()}->{polyphen_status} = '-' unless ($h->{transcripts}->{$tr->id()}->{polyphen_status});
-						$h->{transcripts}->{$tr->id()}->{polyphen_score} = $var->polyphenScore($tr);
-						$h->{transcripts}->{$tr->id()}->{polyphen_score} = '-' unless ($h->{transcripts}->{$tr->id()}->{polyphen_score});
-						$h->{transcripts}->{$tr->id()}->{sift_status} = $var->siftStatusText($tr);
-						$h->{transcripts}->{$tr->id()}->{sift_status} = '-' unless ($h->{transcripts}->{$tr->id()}->{sift_status});
-						$h->{transcripts}->{$tr->id()}->{sift_score} = $var->siftScore($tr);
-						$h->{transcripts}->{$tr->id()}->{sift_score} = '-' unless ($h->{transcripts}->{$tr->id()}->{sift_score});
+						$h->{transcripts}->{$tr->id()}->{alphamissense} = $var->alphamissense($tr);
+						
+#						my $polyphen_status = $var->polyphenStatus($tr);
+#						if ($polyphen_status) { $polyphen_status =~ s/ /_/g; }
+#						else { $polyphen_status = '-'; }
+#						$h->{transcripts}->{$tr->id()}->{polyphen_status} = $polyphen_status;
+						
+						
+#						my $sift_status = $var->siftStatus($tr);
+#						if ($sift_status) { $sift_status =~ s/ /_/g; }
+#						else { $sift_status = '-'; }
+#						$h->{transcripts}->{$tr->id()}->{sift_status} = $sift_status;
+						
+						my $polyphen_score = '-';
+						my $sift_score = '-';
+						if ($var->isVariation()) {
+							$polyphen_score = $var->polyphenScore($tr);
+							$h->{transcripts}->{$tr->id()}->{polyphen_score} = $polyphen_score;
+							$sift_score = $var->siftScore($tr);
+							$h->{transcripts}->{$tr->id()}->{sift_score} = $sift_score;
+						}
+						
+						
+						
+						
+						
 					}
 					else {
 						$h->{transcripts}->{$tr->id()}->{polyphen_status} = '-';
 						$h->{transcripts}->{$tr->id()}->{polyphen_score} = '-';
 						$h->{transcripts}->{$tr->id()}->{sift_status} = '-';
 						$h->{transcripts}->{$tr->id()}->{sift_score} = '-';
+						$h->{transcripts}->{$tr->id()}->{alphamissense} = '-';
 					}
 				}
 				$h->{id} = $var->id();
@@ -373,6 +430,7 @@ sub annote_output_file {
 					push(@lCol, 'hgmd_class:'.$h->{hgmd_class});
 					push(@lCol, 'cadd:'.$h->{cadd_score});
 					push(@lCol, 'ncboost:'.$h->{ncboost_score});
+					push(@lCol, 'clinvar_class:'.$h->{class_clinvar});
 					push(@lCol, 'clinvar_score:'.$h->{score_clinvar});
 					push(@lCol, 'clinvar_pathogenic:'.$h->{isClinvarPathogenic});
 					if ($h->{genes}) {
@@ -388,10 +446,11 @@ sub annote_output_file {
 									my @lCol_tr;
 									push(@lCol_tr, $join_characters);
 									push(@lCol_tr, $tr_id.':'.$h->{transcripts}->{$tr_id}->{annotations});
-									push(@lCol_tr, 'polyphen_status:'.$h->{transcripts}->{$tr_id}->{polyphen_status});
+									#push(@lCol_tr, 'polyphen_status:'.$h->{transcripts}->{$tr_id}->{polyphen_status});
 									push(@lCol_tr, 'polyphen_score:'.$h->{transcripts}->{$tr_id}->{polyphen_score});
-									push(@lCol_tr, 'sift_status:'.$h->{transcripts}->{$tr_id}->{sift_status});
+									#push(@lCol_tr, 'sift_status:'.$h->{transcripts}->{$tr_id}->{sift_status});
 									push(@lCol_tr, 'sift_score:'.$h->{transcripts}->{$tr_id}->{sift_score});
+									push(@lCol_tr, 'alphamissense:'.$h->{transcripts}->{$tr_id}->{alphamissense});
 									$hres->{$var->getChromosome->id()}->{$var->id().'_'.$gene_id.'_'.$tr_id}  = join($join_characters, @lCol).$join_characters.join($join_characters, @lCol_g).$join_characters.join($join_characters, @lCol_tr);
 								}
 							}

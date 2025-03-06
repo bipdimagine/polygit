@@ -5115,10 +5115,9 @@ sub muc1 {
 	my $name         = $self->patient()->name();
 	my $project      = $self->patient()->getProject();
 	my $project_name = $project->name();
-	my $dir_prod     = $project->getVariationsDir("vntyper") . "/muc1/";
+	my $dir_prod     = $project->getVariationsDir("vntyper") ;
 	system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
-	my $fileout = $dir_prod . "/" . $name . ".vcf";
-
+	my $fileout = $dir_prod . "/" . $name . ".json";
 	$filein = $self->patient()->getBamFileName();    # unless $filein;
 
 	my $ppn = 2;

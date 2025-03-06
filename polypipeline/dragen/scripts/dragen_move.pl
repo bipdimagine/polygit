@@ -51,6 +51,7 @@ my $spipeline;
 my $rna;
 my $limit;
 my $version;
+my $cram;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -59,6 +60,7 @@ GetOptions(
 	'command=s'=>\$spipeline,
 	'version=s' =>\$version,
 	'rna=s' =>\$rna,
+	'cram=s' =>\$cram,
 	#'low_calling=s' => \$low_calling,
 );
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
@@ -75,6 +77,7 @@ foreach my $l (split(",",$spipeline)){
 #my $user = system("whoami");
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version =>$version);
+$version = $project->genome_version unless $version;
 my $tm = "/staging/tmp/";
 
 #system ("mkdir -p $dir_dragen/".$project->name );
@@ -94,7 +97,7 @@ $url ="";
 if (exists $pipeline->{align}){
 	
 	my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
-	if ($version && !(-e $bam_pipeline)){
+	if ($cram){
 	$bam_pipeline =~ s/bam/cram/;
 	$bam_prod =~ s/bam/cram/;
 	
@@ -129,6 +132,11 @@ if (exists $pipeline->{sv}){
 	my $sv_file = $dir_pipeline."/".$prefix.".sv.vcf.gz";
 	move_sv($sv_file,$patient);
 }
+my $ploidy_file = $dir_pipeline."/".$prefix."ploidy.vcf.gz";
+if (-e $ploidy_file){
+	move_ploidy($ploidy_file,$patient);
+}
+
 if ( $rna ==1){
 	my $sv_file = $dir_pipeline."/".$prefix.".SJ.out.tab";
 	move_sj($sv_file,$patient);
@@ -161,37 +169,71 @@ sub move_stats {
 	
 }
 
+sub move_file {
+	my ($file,$patient,$method,$type,$idxtype,$backup) = @_;	
+	
+	my $physical_name = $patient->getPhysicalFileName($method,$version,$type);
+	if($backup && -e $physical_name ) {
+		backup($physical_name);
+	}
+	#--remove-source-files
+	warn "rsync -rav  $url"."$file $physical_name ";
+	system("rsync -rav  $url"."$file $physical_name ");
+	system ("rsync -rav  $url"."$file.".$idxtype." $physical_name.".$idxtype);
+	return $physical_name;
+}
+
+sub move_cram {
+	my ($bam,$patient,$type,$idxtype) = @_;
+	my $physical_name = move_file($bam,$patient,"dragen-align","cram","crai");
+	my $prod = $patient->getCramFileName("dragen-align",$version);
+	system("ln -sf  $physical_name $prod");
+	system("ln -sf  $physical_name.crai $prod.crai");
+	 my $filename = $prod;
+	 $filename =~ s/cram/idxstats/;
+	 my $samtools = $buffer->software("samtools");
+	 system("$samtools idxstats $physical_name  -\@ 20  > $filename");
+}
 
 sub move_bam {
 	my ($bam,$patient) = @_;
 	my $prod = $patient->getBamFileName("dragen-align");
-	if( $bam =~ /cram/){
-	 $prod = $patient->getCramFileName("dragen-align") if $bam =~ /cram/;
-	 my $filename = $prod."/".$patient->name.".idxstats";
-	 warn "/software/bin/samtools idxstats $url.$bam $prod/ -\@ 20  > $filename";
-	 system("/software/bin/samtools idxstats $url.$bam $prod/ -\@ 20  > $filename");
+	if( $cram){
+		move_cram($bam,$patient);
+		return;
 	}
-	system("rsync -rav --remove-source-files $url"."$bam $prod ");
-	system("rsync -rav  $url"."$bam.bai $prod.bai ");
-	system("rsync -rav  $url"."$bam.crai $prod.crai ") if $bam =~ /cram/;
-	
+	my $physical_name = move_file($bam,$patient,"bam","bai");
+	system("ln -sf  $physical_name $prod");
+	system("ln -sf  $physical_name.bai $prod.bai");
 }
+
 
 sub move_gvcf {
 	my ($gvcf,$patient) = @_;
+	my $physical_name = move_file($gvcf,$patient,"dragen-calling","gvcf.gz","tbi","backup");
 	my $prod = $patient->gvcfFileName("dragen-calling");
-	backup($prod) if -e $prod;
-	system("rsync -rav  $url"."$gvcf $prod");
-	system("rsync -rav  $url"."$gvcf.tbi $prod.tbi");
+	
+	system("ln -sf  $physical_name $prod");
+	tabix($prod,"vcf");
 }
+
+sub move_ploidy {
+	my ($vcf,$patient) = @_;
+	my $physical_name = move_file($vcf,$patient,"dragen-ploidy","vcf.gz","tbi");
+	
+	my $prod = $patient->vcfFileName("dragen-ploidy");
+	system("ln -sf  $physical_name $prod");
+	tabix($prod,"vcf");
+}
+
 sub move_vcf {
 	my ($vcf,$patient) = @_;
+	my $physical_name = move_file($vcf,$patient,"dragen-calling","vcf.gz","tbi","backup");
+	
 	my $prod = $patient->getVariationsFileName("dragen-calling");
 	my $prod = $patient->vcfFileName("dragen-calling");
-
-	backup($prod) if -e $prod;
-	system("rsync -rav  $url"."$vcf $prod");
-	system("rsync -rav  $url"."$vcf.tbi $prod.tbi");
+	system("ln -sf  $physical_name $prod");
+	tabix($prod,"vcf");
 }
 sub move_count {
 	my ($t1,$t2,$patient) = @_;
@@ -203,23 +245,31 @@ sub move_count {
 
 sub move_cnv {
 	my ($t1,$patient) = @_;
+	my $physical_name = move_file($t1,$patient,"dragen-cnv","vcf.gz","tbi","backup");
 	my $dir = $patient->project->getVariationsDir("dragen-cnv");
-	system("rsync -rav  $url"."$t1 $dir/");
-	system("rsync -rav  $url"."$t1.tbi $dir/");
+	my $prod = "$dir/".$prefix.".cnv.vcf.gz";
+	system("ln -fs  $physical_name $prod");
+	tabix($prod,"vcf");
+	
 }
-
+sub tabix {
+	my ($file,$type) = @_;
+	my $tabix = $buffer->software("tabix");
+	warn "$tabix -f -p $type $file";
+	system("$tabix -f -p $type $file");
+}
 sub move_sv {
 	my ($t1,$patient) = @_;
 	my $dir = $project->getVariationsDir("dragen-sv");
-	warn "rsync -rav  $url"."$t1 $dir/";
-	system("rsync -rav  $url"."$t1 $dir/");
-	system("rsync -rav  $url"."$t1.tbi $dir/");
+	my $physical_name = move_file($t1,$patient,"dragen-sv","vcf.gz","tbi","backup");
+	my $prod = $dir."/".$prefix.".sv.vcf.gz";
+	system("ln -sf  $physical_name $prod");
+	tabix($prod,"vcf");
 	
 }
 sub move_sj {
 	my ($t1,$patient) = @_;
 	my $dir = $project->getJunctionsDir("dragen-sj");
-	warn $dir;
 	system("rsync -rav  $url"."$t1 $dir/");
 	#system("rsync -rav  $url"."$t1.tbi $dir/");
 	
@@ -227,7 +277,7 @@ sub move_sj {
 sub backup {
 	my ($final_gz) = @_;
 	my $dir =  dirname($final_gz);
-	my $dirb = $dir."/backup";
+	my $dirb = $dir."/.backup";
 	unless (-e $dirb){
 		mkdir $dirb unless -e $dirb;
 		system("chmod a+w $dirb");

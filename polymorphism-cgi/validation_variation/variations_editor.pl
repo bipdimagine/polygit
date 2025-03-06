@@ -1175,20 +1175,15 @@ sub constructChromosomeVectorsPolyDiagFork {
 		}
 
 		else {
-			
 			#$hashVector->{ $chr->name } &= $chr->getVariantsVector();
-			warn "++++ $limit_ac $no";
 			$hashVector->{ $chr->name } = $no->get_vector_chromosome($limit_ac);    # if $limit_ac ne "gnomad_ac_all";;
-			warn "++++ $limit_ac_ho";
 			$hashVector->{ $chr->name } &= $no->get_vector_chromosome($limit_ac_ho);    # if $limit_ac_ho ne "all";
-			warn "++++";
 			$hashVector->{ $chr->name } &= $no->get_vector_chromosome($limit_sample_dv);    #  if $limit_sample_dv ne "all";
 			 $hashVector->{$chr->name} &= $no->get_vector_chromosome($limit_sample_dv_ho);
 			#$hashVector->{$chr->name} &= $chr->getVectorLargeDeletions;
 			#$hashVector->{ $chr->name } &= $vquality if $vquality;
 			$hashVector->{ $chr->name } -= $no->get_vector_chromosome("intergenic");
 		
-			warn "end";
 			
 		}
 		my $vannotations =  $chr->getNewVector ;
@@ -1197,8 +1192,9 @@ sub constructChromosomeVectorsPolyDiagFork {
 			 $vannotations += $no->get_vector_chromosome("$annot");
 		}
 		$hashVector->{ $chr->name } &=$vannotations;
+		
+		
 		#$hashVector->{ $chr->name } &= $no->get_vector_chromosome($chr);
-		warn "---";
 		$statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );
 
 		my $vDM = $chr->vectorDM();
@@ -1297,6 +1293,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 			$hashVector->{ $chr->name } &= $patient->getVectorOrigin($chr);
 
 		}
+		
 		#  die($chr->name) if $debug && $hashVector->{ $chr->name }->contains(7710) && $debug;
 		$hashVector->{ $chr->name } &= $hashVector_panel->{ $chr->name } if exists $hashVector_panel->{ $chr->name };
 		  $statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );

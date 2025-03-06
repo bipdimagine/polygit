@@ -536,22 +536,6 @@ sub get_ids {
 		warn $junction->id;
 		
 		
-#		my $h_exons_introns;
-#		my @lPatients = @{ $junction->getPatients() };
-#		foreach my $patient (@lPatients) {
-#			next if (not $junction->is_ri_aval($patient) and not $junction->is_ri_amont($patient));
-#			$h_exons_introns = $junction->get_hash_exons_introns() unless ($h_exons_introns);
-#			my $type_ri;
-#			$type_ri = 'ri_aval'  if ($junction->is_ri_aval($patient));
-#			$type_ri = 'ri_amont' if ($junction->is_ri_amont($patient));
-#			foreach my $tid (sort keys %{$h_exons_introns}) {
-#				my @lPos = (sort keys %{$h_exons_introns->{$tid}->{by_pos}});
-#				my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[0]};
-#				my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[-1]};
-#				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$type_ri} = $junction->id(); 
-#				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$last_exon_intron}->{$type_ri} = $junction->id(); 
-#			} 
-#		}
 
 
 

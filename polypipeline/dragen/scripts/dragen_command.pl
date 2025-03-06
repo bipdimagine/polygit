@@ -68,7 +68,7 @@ my $rna;
 my $phased; 
 my $neb;
 my $pad;
-
+my $cram;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -79,15 +79,19 @@ GetOptions(
 	'phased=s' => \$phased,
 	'neb=s' => \$neb,
 	'padding=s' => \$pad,
+	'cram=s' => \$cram,
 	#'low_calling=s' => \$low_calling,
 );
 my $pipeline = {};
+
+
 foreach my $l (split(",",$spipeline)){
 	$pipeline->{$l} ++;
 }
 my $user = system("whoami");
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version =>$version);
+
 my $tm = "/staging/tmp/";
 
 if ($project->isGenome){
@@ -118,11 +122,10 @@ else {
 #die() unless  -e $bam_pipeline;
 if ($rna == 1) {
 	$spipeline.=",sj";
-	
 }
 warn "move";
 warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version && touch $ok_move";
-system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version && touch $ok_move");
+system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version && touch $ok_move");
 exit(0);
 
 ################################################
@@ -214,6 +217,7 @@ if (exists $pipeline->{vcf} ){
 ##
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling;
 $patient->update_software_version("dragen",$cmd_dragen);
+warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 unlink $fastq1 if  $fastq1 =~ /pipeline/;
 unlink $fastq2 if $fastq2 =~ /pipeline/;;
@@ -227,13 +231,16 @@ die if $exit != 0;
 ################################################
 sub run_pipeline {
 my ($pipeline) = @_;
+
 my $param_align;
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $param_umi = "";
 my $param_phased = ""; 
 my ($fastq1,$fastq2);
 if (exists $pipeline->{align}){
+	warn "1";
 	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+	 warn "2";
 	 
 }
 if (!($fastq1)) {
@@ -247,15 +254,16 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
 	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
-	$param_align .= "--output-format CRAM " if $version =~/HG38/;
+	$param_align .= "--output-format CRAM " if $cram;
 	if ($umi){
 		confess();
 	}
 	
 }	
 elsif (exists $pipeline->{align}){
-my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-	
+warn "start";
+ ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline) unless -e $fastq1;
+	warn "end";
 #	confess() unless $fastq1;
 	if ($fastq1) {
 	my $runid = $patient->getRun()->id;
@@ -271,7 +279,7 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	else {
 		$param_align .= qq{ --enable-duplicate-marking true };
 	 }
-	 $param_align .= " --output-format CRAM " if $version =~/HG38/;
+	 $param_align .= " --output-format CRAM " if $cram;
 	}
 	else {
 		my $bamfile = $patient->getBamFileName("bwa");
@@ -282,11 +290,11 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 else {
 	my $bam = $patient->getBamFileName();
 		my $opt = "--bam-input";
-	$bam = $patient->getCramFileName("dragen-align") if $version =~ /38/;
+	$bam = $patient->getCramFileName("dragen-align") if $cram;
 	warn $bam;
 	unless (-e $bam){
 		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".bam";
-		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".cram" if $version =~ /38/;
+		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".cram" if $cram;
 		confess() unless -e $bam;
 	}
 
@@ -333,7 +341,6 @@ if (exists $pipeline->{vcf} or exists $pipeline->{gvcf}){
 	$param_calling = qq{--enable-variant-caller true } ;
 	
 }
-
 
 my $param_cnv = "";
 if (exists $pipeline->{cnv}){
