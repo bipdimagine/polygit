@@ -107,7 +107,7 @@ sub run_liftOver {
 	#warn join(" ",@cmd);
 	run3 \@cmd, \$bed, \$stdout, \$stderr;
 	my $db = Bio::DB::Fasta->new($fasta);
- 	parse_bed($fileout,$res,$db);
+ parse_bed($fileout,$res,$db);
  return 1;
 }
 sub run_crossmap {
@@ -194,6 +194,8 @@ sub parse_bed {
    	 	
    	 	my $id = $t[3];
    	 	$res->{$id}->{chromosome} = $t[0];
+   	 	$res->{$id}->{chromosome} =~ s/chrM/chrMT/;
+   	 	$res->{$id}->{chromosome} =~ s/chr//;
    	 	$res->{$id}->{position_vcf} = $t[1];
 	}
 
