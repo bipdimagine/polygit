@@ -359,7 +359,8 @@ sub convert_rocksId_varId {
 	my ($self, $rocksId) = @_;
 	
 }
-sub decode_dejavu {
+
+sub _decode_dejavu {
 	my ($self,$value,$id) = @_;
 	return undef unless $value;
 	
@@ -378,7 +379,7 @@ sub decode_dejavu {
 	return $hash;
 }
 
-sub _decode_dejavu {
+sub decode_dejavu {
 	my ($self,$value) = @_;
 	return undef unless $value;
 	my @tab = split("!-x-!",$value);

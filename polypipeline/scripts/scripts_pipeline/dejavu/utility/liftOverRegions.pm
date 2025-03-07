@@ -251,6 +251,8 @@ sub parse_bed {
    	 	
    	 	my $id = $t[3];
    	 	$res->{$id}->{chromosome} = $t[0];
+   	 	$res->{$id}->{chromosome} =~ s/chrM/chrMT/;
+   	 	$res->{$id}->{chromosome} =~ s/chr//;
    	 	$res->{$id}->{position_vcf} = $t[1];
 	}
 
