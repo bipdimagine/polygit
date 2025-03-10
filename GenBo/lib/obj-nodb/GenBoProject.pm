@@ -2017,6 +2017,26 @@ has annotation_genome_version => (
 	}
 );
 
+has current_genome_version => (
+        is      => 'ro',
+        lazy    => 1,
+        default => sub {
+                my $self    = shift;
+                return $self->annotation_genome_version();
+        }
+);
+
+has lift_genome_version => (
+        is      => 'ro',
+        lazy    => 1,
+        default => sub {
+                my $self    = shift;
+                return "HG38" if $self->current_genome_version() eq "HG19";
+                return "HG19" if $self->current_genome_version() eq "HG38";
+                confess();
+        }
+);
+
 has genome_version_generic => (
 	is      => 'ro',
 	lazy    => 1,
@@ -2080,6 +2100,16 @@ has gnomad_rsname_dir => (
 		my $self   = shift;
 		my $dir = $self->buffer->get_lmdb_database_directory('gnomad-genome').'/rsname/';
 		return $dir;
+	},
+);
+
+has deja_vu_public_projects_parquet  => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self   = shift;
+		my $path = $self->deja_vu_public_dir();
+		$path .= '/../../projects_parquet/';
 	},
 );
 

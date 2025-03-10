@@ -126,6 +126,7 @@ my $steps = {
 				"store_rna_junction_ids"=>sub {$pipeline->store_rna_junction_ids(@_)},
 				"dejavu_rna_junctions"=>sub {$pipeline->dejavu_rna_junctions(@_)},
 				"html_rna_junctions"=>sub {$pipeline->html_rna_junctions(@_)},
+				"dejavu_parquet"=>sub {$pipeline->dejavu_parquet(@_)},
 			};
 
 
