@@ -164,7 +164,6 @@ sub HG19_HG38 {
 		$vhh->{start} = $p;
 		$vhh->{end} = $p+length($b);
 		
-		my $annex = $v->{annex};
 		my $index_lmdb = $v->vector_id();
 		my @ho;
 		my @he;
@@ -174,19 +173,19 @@ sub HG19_HG38 {
 		my $nbho = 0;
 		my $max_dp = 0;
 		my $max_ratio = 0;
-		foreach my $pid (keys %$annex){
+		foreach my $patient (@{$v->getPatients}){
 			my @values;
-			push(@values,$pid);
-			my $dp = $annex->{$pid}->{dp};
-			my $alt = $annex->{$pid}->{nb_all_mut};
+			push(@values,$patient->id);
+			my $dp = $v->getDP($patient);
+			my $alt = $v->getNbAlleleAlt($patient);
 			$dp = 1 if not $dp;
 			$max_dp = $dp if $dp > $max_dp;
 			my $ratio = ($alt/$dp)*100;
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;	
 			push(@values,$dp);
 			push(@values,$alt);
-			my $model = find_variant_model($vectors, $index_lmdb, $pid);
-			if ($annex->{$pid}->{he} == 1){
+			my $model = find_variant_model($vectors, $index_lmdb, $patient->id);
+			if ($v->isHeterozygote($patient) == 1){
 				push(@he,@values);		
 				$nbhe ++;
 				push(@models_he, $model);
@@ -240,10 +239,20 @@ sub HG19_HG38 {
 		my $he = shift @vvs;
 		my $ho = shift @vvs;
 		my $value = pack("w*",@vvs);
-		my $pos19 = $chr->name."!".sprintf("%010d", $vhh->{start});
-		my $pos38 ="0!0";
-		if (exists $vhh->{LIFT}){
-			$pos38 =$project->getChromosome($vhh->{LIFT}->{chromosome})->name."!".sprintf("%010d", $vhh->{LIFT}->{start}) if $project->isChromosomeName($vhh->{LIFT}->{chromosome});
+		my ($pos19, $pos38);
+		if ($project->genome_version eq "HG19"){
+			$pos19 = $chr->name."!".sprintf("%010d", $vhh->{start});
+			$pos38 ="0!0";
+			if (exists $vhh->{LIFT}){
+				$pos38 =$project->getChromosome($vhh->{LIFT}->{chromosome})->name."!".sprintf("%010d", $vhh->{LIFT}->{start}) if $project->isChromosomeName($vhh->{LIFT}->{chromosome});
+			}
+		}
+		else {
+			$pos38 = $chr->name."!".sprintf("%010d", $vhh->{start});
+			$pos19 ="0!0";
+			if (exists $vhh->{LIFT}){
+				$pos19 =$project->getChromosome($vhh->{LIFT}->{chromosome})->name."!".sprintf("%010d", $vhh->{LIFT}->{start}) if $project->isChromosomeName($vhh->{LIFT}->{chromosome});
+			}
 		}
 		if ($chr->name eq 'MT' ){
 			if ($project->genome_version eq "HG19"){
