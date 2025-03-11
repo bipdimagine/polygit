@@ -107,7 +107,6 @@ sub insertVariation {
 	
 	my $version1 = "HG38";
 	$version1 = "HG19" if  $version eq "HG38";
-	confess() if $version eq "HG38";
 	$self->insertVariationLiftOverVariant($v,$version1,$id);
 	return $id;
 }
@@ -153,7 +152,10 @@ sub createValidation {
 	my $patient_id = $patient->id;
 	my $gene_name = $gene->external_name;
 	my $gene_id = $gene->id;
-	my $i =  $v->annex()->{$patient->id};
+	my $i =  $v->sequencing_infos->{$patient->id};
+	$i->{dp} = $v->getDP($patient);
+	$i->{nb_all_mut} = $v->getNbAlleleAlt($patient);
+	$i->{nb_all_ref} = $v->getNbAlleleRef($patient);
 	 my $infos = encode_json $i;
 	 my $db = $self->db;
 	my $query = qq{

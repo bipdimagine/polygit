@@ -1488,13 +1488,13 @@ sub test_fisher {
 
 
 		my $validation =  {
-		 pathogenic => 5,
-  		"likely pathogenic" => 4,
-  		"Uncertain significance" =>3,
+		"Pathogenic" => 5,
+  		"Likely pathogenic" => 4,
+  		"Uncertain significance" => 3,
   		"Likely benign" => 2,
-  		"benign" => 1,
+  		"Benign" => 1,
   		"False Positive" => -1,
-  		"ToDo" => -3
+  		"ToDo" =>- 3
 	};
 
 

@@ -3,6 +3,9 @@ package GenBoVariant;
 use strict;
 use Moo;
 
+use FindBin qw($Bin);
+use lib "$Bin/packages/";
+
 use Parallel::ForkManager;
 use Data::Dumper;
 use Config::Std;
@@ -16,6 +19,7 @@ use Compress::Snappy;
  use List::Util qw( max min sum);
 use Storable qw/thaw freeze/;
 use Carp;
+use liftOver;
 #use bytes;
 extends "GenBoGenomic";
 
@@ -122,17 +126,12 @@ sub lift_over {
 	if ($origin_version eq $version) {
 		die();
 	}
-	
 	my $key = "lift_over_$version";
 	return $self->{$key} if exists $self->{$key};
-	
-	
-	liftOver::lift_over_variant($self,$version,$key);
+	my $lift = liftOver->new(project=>$self->project,version=>$version);
+	$lift->lift_over_variant($self, $version);
 	return $self->{$key};
-	
 	return $self->{$key} unless $self->{$key};
-	
-	
 	return $self->{$key};
 }
 
