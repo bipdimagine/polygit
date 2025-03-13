@@ -2349,6 +2349,25 @@ sub getVariantsVector_from_coord {
 }
 
 
+has vectorVariantsForcedViewing => (
+        is      => 'rw',
+        lazy    => 1,
+        default => sub {
+        	my $self = shift;
+        	my $vector = $self->getNewVector();
+			my $h_var_forced_viewing = $self->project->buffer->config_variants_forced_viewing->{lc($self->project->current_genome_version())};
+			foreach my $gene_name (keys %{$h_var_forced_viewing}) {
+				foreach my $var_id (keys %{$h_var_forced_viewing->{$gene_name}}) {
+					my $v = $self->project->_newVariant($var_id);
+					next if $v->getChromosome->id ne $self->id;
+					next if not defined($v->vector_id);
+					$vector->Bit_On($v->vector_id);
+				}
+			}
+  			return $vector;
+        },
+);
+
 has vectorClinvarPathogenic => (
         is      => 'rw',
         lazy    => 1,

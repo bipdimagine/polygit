@@ -43,8 +43,18 @@ has external_name => (
 	required=> 1,
 );
 
-
-
+has hash_variants_forced_viewing => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $config = $self->project->buffer->config_variants_forced_viewing->{lc($self->project->current_genome_version())};
+		return $config->{$self->external_name()} if (exists $config->{$self->external_name()});
+		return $config->{$self->name()} if (exists $config->{$self->name()});
+		return $config->{$self->id()} if (exists $config->{$self->name()});
+		return undef;
+	},
+);
 
 sub getTanscriptsAnnotations {
 	my ($self,$start,$end) = @_;

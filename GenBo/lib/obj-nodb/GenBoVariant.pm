@@ -3567,8 +3567,6 @@ sub sr_align_quality {
 	return int(($self->split_read_infos->{$pid}->[4]+$self->split_read_infos->[5])/2);
 }
 
-
-
 sub event_align_quality {
 	my ($self, $patient) = @_;
 	my $pid = $patient->id;
@@ -3596,9 +3594,6 @@ sub pr {
 	return  $self->pr0($patient).",". $self->pr1($patient);
 }
 
-
-
-
 sub is_manta {
 	my ($self) = @_;
 	#my $pid = $p->id;
@@ -3606,6 +3601,18 @@ sub is_manta {
 	
 }
 
-
+has is_forced_viewing => (
+	is              => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		foreach my $gene (@{$self->getGenes()}) {
+			next if not $gene->hash_variants_forced_viewing();
+			next if not exists $gene->hash_variants_forced_viewing->{$self->id()};
+			return $gene->hash_variants_forced_viewing->{$self->id()};
+		}
+		return;
+	}
+);
 
 1;

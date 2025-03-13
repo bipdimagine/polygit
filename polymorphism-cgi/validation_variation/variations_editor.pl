@@ -1203,6 +1203,8 @@ sub constructChromosomeVectorsPolyDiagFork {
 
 		my $vDM = $chr->vectorDM();
 		$vDM += $chr->vectorClinvarPathogenic();
+		#TODO: ajout susceptibilité ici;
+		$vDM += $chr->vectorVariantsForcedViewing();
 		$vDM &= $patient->getVectorOrigin($chr);
 		#$vDM &= $hashVector->{ $chr->name };
 		$statistics->{DM} += $patient->countThisVariants($vDM);
@@ -1306,13 +1308,10 @@ sub constructChromosomeVectorsPolyDiagFork {
 				$hashVector->{ $chr->name } = $vDM;
 		}
 		if ($keep_pathogenic) {
-			$vDM &= $hashVector->{ $chr->name };
-			$hashVector->{ $chr->name } |= $vDM;
+			$hashVector->{ $chr->name } += $vDM;
 		}
-
-
 		$res->{vector}        = $hashVector->{ $chr->name };
-	
+
 		###############
 		# AFFINE RATIO 
 		##############
@@ -1391,10 +1390,10 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#push(@$list_variants,join($chr->name."!",split(",",$res->{vector}->to_Enum)));
 	
 		to_array($res->{vector}, $chr->name,$list_variants);
-		push(@$list_genes,@{$chr->getGenesIdFromVector($res->{vector})});
 		if ($keep_pathogenic){
 			to_hash($vDM, $chr->name,$hash_variants_DM);
 		}
+		push(@$list_genes,@{$chr->getGenesIdFromVector($res->{vector})});
 
 		
 				
