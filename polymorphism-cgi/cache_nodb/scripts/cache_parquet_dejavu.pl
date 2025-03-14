@@ -275,7 +275,7 @@ sub HG19_HG38 {
 
 sub find_variant_model {
 	my ($h_models, $vid, $patient_id) = @_;
-	return $h_models_ids->{solo} if exists $h_models->{$patient_id};
+	return $h_models_ids->{solo} if exists $h_models->{$patient_id}->{solo};
 	if (exists $h_models->{$patient_id}->{dominant}) {
 		return $h_models_ids->{dominant} if $h_models->{$patient_id}->{dominant}->contains($vid);
 	}

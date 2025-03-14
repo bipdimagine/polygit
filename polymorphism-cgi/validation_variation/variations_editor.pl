@@ -1620,8 +1620,8 @@ sub print_hotspot {
 	my $out ="";
 	
 	#$out .=  $cgi->start_div({class=>"panel-heading panel-alert alert ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
-	my $label_id = "hs_".$patient->id;
-	my $panel_id = "pa_".$patient->id;
+	my $label_id = "hs_polyviewer_".$patient->id;
+	my $panel_id = "pa_polyviewer_".$patient->id;
 	$out .= qq{<div class="btn  btn-warning btn-xs " style="position:relative;bottom:1px;min-width:150px;" onClick='collapse("$panel_id","$label_id")'>  <span id= "$label_id" class="glyphicon glyphicon-triangle-right  "   style="float:left;"></span> HOTSPOT &nbsp</div>};
 	#$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >-</span>});
 	$out .=  $cgi->start_div({class=>"panel-body panel-collapse  collapse",style=>"width:50%;font-size: 09px;font-family:  Verdana;",id=>$panel_id});
