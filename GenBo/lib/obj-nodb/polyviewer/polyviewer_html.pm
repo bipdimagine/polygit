@@ -949,9 +949,12 @@ sub var_name {
 
 sub gnomad {
 	my ($self) = @_;
+	#12-89472277-TAGAAAGAAGA-T
+	
 	my $cgi=$self->cgi;
 	my $type = "AUTOSOME";
 	my $chr_name = $self->variant->chromosome;
+	
 	if ($chr_name eq "X" or $chr_name eq "Y") {
 		$type = "XY";
 	}
@@ -974,6 +977,9 @@ sub gnomad {
 	 $data->{max_pop_name} = $self->variant->gnomad_min_pop_name;
 	  $data->{min_pop_name} = $self->variant->gnomad_max_pop_name;
 	 my $output = $self->xslate->render("gnomad.tt", $data);
+	# warn $self->variant->name;
+	# warn Dumper $output if ($self->variant->name eq "12-89472277-TAGAAAGAAGA-T");
+	# die() if ($self->variant->name eq "12-89472277-TAGAAAGAAGA-T");
 	 return $output;
 	
 }
