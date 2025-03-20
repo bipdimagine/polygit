@@ -607,7 +607,6 @@ sub construct_htranscripts {
 	foreach my $tr (@$list_transcripts) {
 		my $utr = $cgi->param('utr')+0;
 		my $debug;
-		$debug =1 if  $tr eq "ENST00000448843_17";
 		#warn "coucou " if $tr eq "ENST00000448843_17";
 		print "+";
 	my $tr_id = $tr;
