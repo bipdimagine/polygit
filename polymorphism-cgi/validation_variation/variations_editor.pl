@@ -214,6 +214,9 @@ my $project = $buffer->newProjectCache(
 );
 #my $clinvar_lmdb =  $project->getChromosome->get_lmdb_database("clinvar",$project->type_public_db);
 
+
+
+
 my $version_db =  $project->public_database_version;
 if($version_db>=13){
 	$VERSION = $VERSION."-".$version_db."1";
@@ -390,7 +393,7 @@ my $annotation_filer =[];
 foreach my $a (@annots) {
 	foreach my $this_a ( split( ',', $buffer->get_genbo_annotation_name($a) ) )
 	{
-		warn $this_a;
+#		warn $this_a;
 		$maskcoding = $maskcoding | $project->getMaskCoding($this_a);
 		push( @tconsequences, $this_a );
 	}
@@ -446,7 +449,30 @@ if ( $project->isDefidiag ) {
 #$panel_name="ACMG-Actionable";
 my $panel;
 $panel = $project->getPanel($panel_name) if $panel_name && lc($panel_name) ne "all" && lc($panel_name) ne "all panels genes";
+
+
+my @list_genes;
 my $hash_genes_panel;
+my $start_vector ;
+foreach my $c (@{$project->getChromosomes}){
+		$start_vector->{$c->name} = $c->getVectorOrigin();
+}
+if ($project->isDiagnostic ){
+	my @transcripts_cgi = @{$project->bundle_transcripts() } ;
+	foreach my $c (@{$project->getChromosomes}){
+		$start_vector->{$c->name} = $c->getNewVector();
+	}
+	foreach my $ts (@transcripts_cgi){
+		my $t = $project->newTranscript($ts);
+		my $v = $t->getGene->getVectorPatient($patient);
+		
+		$start_vector->{$t->getChromosome->name} += $v;
+		$hash_genes_panel->{$t->getGene->id} = undef;
+	}
+}
+
+
+
 if ($panel) {
 	$panel->getGenes();
 	$hash_genes_panel = $panel->{genes_object};
@@ -489,7 +515,7 @@ $buffer->disconnect();
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
 	warn "start";
 	
-	my ( $vectors, $list, $hash_variants_DM,$list_genes) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$statistics);
+	my ( $vectors, $list, $hash_variants_DM,$list_genes) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$start_vector,$statistics);
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;
 $t = time;
@@ -1033,7 +1059,7 @@ sub construct_panel_vector {
 
 
 sub constructChromosomeVectorsPolyDiagFork {
-	my ( $project, $patient,$statistics ) = @_;
+	my ( $project, $patient,$startVector,$statistics ) = @_;
 	unless ($cgi->param('export_xls')) {
 		print qq{<div style="display: none">};
 		print "vector";
@@ -1121,10 +1147,9 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#$hno->{$chr->name} = GenBoNoSqlRocksVector->new(chromosome=>$chr->name,dir=>$project->rocks_directory("vector"),mode=>"r",name=>$chr->name);
 	}
 	my $finalVector = {};
-	warn $project->rocks_directory("vector");
-	warn "------";
+#	warn $project->rocks_directory("vector");
+#	warn "------";
 	foreach my $chr ( @{ $project->getChromosomes } ) {
-		warn "start ".$chr->name;
 
 		if ($gene) {
 			next if ( $gene->getChromosome()->name ne $chr->name );
@@ -1159,8 +1184,10 @@ sub constructChromosomeVectorsPolyDiagFork {
 
 		}
 		else {
-			$hashVector->{ $chr->name } = $chr->getVariantsVector();
+			$hashVector->{ $chr->name } = $startVector->{$chr->name};
 		}
+		
+		
 		print "=" unless $cgi->param('export_xls');
 			my $testid = 4201;
 		my $debug;
@@ -1399,7 +1426,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		
 				
 			$finalVector->{$chr->name} = $res->{vector} ;
-			warn "end chr".$chr->name;
+#			warn "end chr".$chr->name;
 			delete $project->{rocks};
 		}
 	#$pm->wait_all_children();
