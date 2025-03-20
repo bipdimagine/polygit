@@ -115,7 +115,7 @@ function view_rna_shiny(prj) {
 	$.getJSON( url, function( data ) {
 		console.log(data);
 		dijit.byId('waiting').hide();
-		var url_launch = data.url_docker + '/app/' + prj;
+		var url_launch = data.url_docker + '?' + prj;
 		console.log(url_launch);
 	    window.open(url_launch, '_blank');
     })
