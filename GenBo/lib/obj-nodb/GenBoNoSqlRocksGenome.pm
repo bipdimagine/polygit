@@ -366,8 +366,6 @@ sub decode_dejavu {
 	my @tab = unpack("w*",$value);
 	my $hash;
 	my $nb = 0;
-	warn  $id." $value ".scalar(@tab)." ".(scalar(@tab)/3)." ".$self->dir if (scalar(@tab)%3) > 0;
-	warn (scalar(@tab)/3);
 	confess() if (scalar(@tab)%3) > 0;
 	while (@tab){
 		my ($p,$he,$ho)=  splice(@tab, 0, 3);
