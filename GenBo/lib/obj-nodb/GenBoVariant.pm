@@ -3,6 +3,9 @@ package GenBoVariant;
 use strict;
 use Moo;
 
+use FindBin qw($Bin);
+use lib "$Bin/packages/";
+
 use Parallel::ForkManager;
 use Data::Dumper;
 use Config::Std;
@@ -16,6 +19,7 @@ use Compress::Snappy;
  use List::Util qw( max min sum);
 use Storable qw/thaw freeze/;
 use Carp;
+use liftOver;
 #use bytes;
 extends "GenBoGenomic";
 
@@ -122,17 +126,12 @@ sub lift_over {
 	if ($origin_version eq $version) {
 		die();
 	}
-	
 	my $key = "lift_over_$version";
 	return $self->{$key} if exists $self->{$key};
-	
-	
-	liftOver::lift_over_variant($self,$version,$key);
+	my $lift = liftOver->new(project=>$self->project,version=>$version);
+	$lift->lift_over_variant($self, $version);
 	return $self->{$key};
-	
 	return $self->{$key} unless $self->{$key};
-	
-	
 	return $self->{$key};
 }
 
@@ -3568,8 +3567,6 @@ sub sr_align_quality {
 	return int(($self->split_read_infos->{$pid}->[4]+$self->split_read_infos->[5])/2);
 }
 
-
-
 sub event_align_quality {
 	my ($self, $patient) = @_;
 	my $pid = $patient->id;
@@ -3597,9 +3594,6 @@ sub pr {
 	return  $self->pr0($patient).",". $self->pr1($patient);
 }
 
-
-
-
 sub is_manta {
 	my ($self) = @_;
 	#my $pid = $p->id;
@@ -3607,6 +3601,18 @@ sub is_manta {
 	
 }
 
-
+has is_forced_viewing => (
+	is              => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		foreach my $gene (@{$self->getGenes()}) {
+			next if not $gene->hash_variants_forced_viewing();
+			next if not exists $gene->hash_variants_forced_viewing->{$self->id()};
+			return $gene->hash_variants_forced_viewing->{$self->id()};
+		}
+		return;
+	}
+);
 
 1;

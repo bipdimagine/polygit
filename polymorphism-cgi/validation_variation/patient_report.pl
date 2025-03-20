@@ -499,9 +499,6 @@ $project->getPatients();
 $patient_name ="all" unless $patient_name;
 my $patients = $project->get_list_patients($patient_name,",");
 
-#TODO: Toujours vrai le confess ?
-#confess() if scalar (@{$patients}) > 1;
-
 my $patient = $patients->[0];
 my $nb_patients = scalar @{$patient->getRun->getAllPatientsInfos()};
 
@@ -685,7 +682,10 @@ sub construct_htranscripts {
 				my $debug;
 				$debug =1 if $var eq "17_8006708_G_A"; 
 				#warn $var;
+				
+				
 				my $hvariation = utility::return_hash_variant($project,$var,$tr_id,$patient,$vquery);
+				
 				if ($print ==1){
 					$hvariation->{min_pop} =~ s/<[^>]*>//gs;
 					$hvariation->{max_pop} =~ s/<[^>]*>//gs;
@@ -714,7 +714,7 @@ sub construct_htranscripts {
 					if ($zfilter){
 						next  if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
 						#next if $hvariation->{impact_score} < $impact_score_limit;
-						next if $hvariation->{freq_level} > $vfreq ;
+						next if $hvariation->{freq_level} > $vfreq;
 					}
 						warn  $hvariation->{id} if $debug;
 				$hvariation->{ratio} = $hvariation->{ratio};
@@ -758,7 +758,7 @@ sub construct_htranscripts {
 					
 					next if $hvariation->{this_deja_vu} > $hscore_this_run->{$this_run};
 					next if $hvariation->{impact_score} < $impact_score_limit;
-					next if $hvariation->{freq_level} > $vfreq ;
+					next if $hvariation->{freq_level} > $vfreq;
 					}
 					#my @vration = split("<BR>",$hvariation->{ratio});
 					my @all_nums    = $hvariation->{ratio} =~ /(\d+)/g;
@@ -833,7 +833,10 @@ sub construct_data {
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
+	
+	#TODO: here enlever cache
 	#$text = undef;
+	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
 
@@ -3397,10 +3400,11 @@ foreach my $g (keys %$hotspots){
 	foreach my $hotspot (@{$hotspots->{$g}}){
 		my @td;
 		my $chr = $project->getChromosome($hotspot->{REF});
-		my $var_obj = $chr->cache_lmdb_variations->get($hotspot->{GENBO_ID});
+		#my $var_obj = $chr->cache_lmdb_variations->get($hotspot->{GENBO_ID});
+		my $var_obj = $project->_newVariant($hotspot->{GENBO_ID});
 		#warn $chr->cache_lmdb_variations->get(0);
 		my $style ={};
-		 $style = {style=>"background-color:#D2386C;color:white"} if $var_obj && $var_obj->existsPatient($patient);
+		 $style = {style=>"background-color:#D2386C;color:white"} if $var_obj && defined $var_obj->vector_id() && $var_obj->existsPatient($patient);
 		 $out.= $cgi->start_Tr($style);
 		 my $nba;
 		 my $chrn = $chr->name;

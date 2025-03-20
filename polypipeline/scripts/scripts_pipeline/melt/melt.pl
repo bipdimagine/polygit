@@ -95,15 +95,11 @@ close(BED);
 
 
 my $meltd = "/software/distrib/MELT/MELTv2.2.2";
-my $melt = $buffer->software("melt");
+my $melt_soft = $buffer->software("melt");
 my $java = $buffer->software("java");
-my $melt = "$java -jar $melt Single -a -c 8 ";
-<<<<<<< HEAD
+my $melt = "$java -jar $melt_soft Single -a -c 8 ";
 my $dir_melt = $buffer->config_path("public_data") . '/repository/'.$project->annotation_genome_version  . '/mei/';
-=======
->>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
-
-my $dir_melt = $buffer->public_data_root . '/'.$project->annotation_genome_version  . '/mei/';
+#my $dir_melt = $buffer->public_data_root . '/'.$project->annotation_genome_version  . '/mei/';
 my $bedg = $dir_melt."/bed/".lc($project->annotation_genome_version).".genes.bed";
 
 my @files = `ls $dir_melt/me_refs/*.zip`;

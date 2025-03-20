@@ -64,7 +64,7 @@
 
 :}
 : else if  $local_value >= -3 {
-<button onclick="view_variation_validation('<: $var_id :>', '$<: $gene_id :>\)" "type="button" class="btn btn-xs  btn-primary" style="color:black;background-color: #EFC051;font-size: 7px;font-family:  Verdana;color:white"><: $local_value :></button>
+<button onclick="view_variation_validation('<: $var_id :>', '$<: $gene_id :>\)" "type="button" class="btn btn-xs  btn-primary" style="color:black;background-color: #EFC051;font-size: 7px;font-family:  Verdana;color:white"><: $local_text :></button>
 
 :}
 : else {

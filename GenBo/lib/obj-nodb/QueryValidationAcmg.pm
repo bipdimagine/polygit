@@ -107,7 +107,6 @@ sub insertVariation {
 	
 	my $version1 = "HG38";
 	$version1 = "HG19" if  $version eq "HG38";
-	confess() if $version eq "HG38";
 	$self->insertVariationLiftOverVariant($v,$version1,$id);
 	return $id;
 }
@@ -153,7 +152,10 @@ sub createValidation {
 	my $patient_id = $patient->id;
 	my $gene_name = $gene->external_name;
 	my $gene_id = $gene->id;
-	my $i =  $v->annex()->{$patient->id};
+	my $i =  $v->sequencing_infos->{$patient->id};
+	$i->{dp} = $v->getDP($patient);
+	$i->{nb_all_mut} = $v->getNbAlleleAlt($patient);
+	$i->{nb_all_ref} = $v->getNbAlleleRef($patient);
 	 my $infos = encode_json $i;
 	 my $db = $self->db;
 	my $query = qq{
@@ -240,6 +242,8 @@ sub  hresults {
 	while (my $s =$sth->fetchrow_hashref()){
 		my $gid = $s->{gene_id};
 		my $vid = $s->{polyid};
+		$vid =~ s/chrM/chrMT/;
+		$vid =~ s/chr//;
 		$gid="+" unless $gid;
 		push(@{$res->{$gid."!".$vid}},$s);
 	}
@@ -271,7 +275,7 @@ sub getAllValidations {
 	my ($self,$validation) = @_;
 	my $db = $self->db;
 	$validation = -100 unless $validation;
-	my $query = qq{select *,UNIX_TIMESTAMP(va.modification_date) as unix_time from $db.validations as va ,$db.variations as v,$db.acmg     where va.variation_id=v.variation_id and idacmg=validation and validation >= $validation order by unix_time desc}; 
+	my $query = qq{select *,UNIX_TIMESTAMP(va.modification_date) as unix_time from $db.validations as va ,$db.variations as v,$db.acmg     where va.variation_id=v.uniq_id and idacmg=validation and validation >= $validation order by unix_time desc}; 
 	my $sth = $self->dbh->prepare($query) ;
 	$sth->execute() || die();
 	return $self->hresults($sth);

@@ -892,6 +892,26 @@ sub quality_check {
 	return ($filein);
 }
 
+sub dejavu_parquet {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
+	my $projectName = $self->project->name();
+	my $ppn = $self->nproc;
+	my $type = "dejavu_parquet";
+	my $stepname = $projectName."@".$type;
+	my $dir_parquet = $self->project->deja_vu_public_projects_parquet();
+	my $fileout = $dir_parquet."/".$projectName.'.'.$self->project->id.'.parquet';
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_parquet_dejavu.pl -project=$projectName -fork=$ppn";
+	
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job({job=>$job_bds});
+	$job_bds->isLogging(1);
+	if ($self->unforce() && -e $fileout){
+  		$job_bds->skip();
+	}
+	return ($filein);
+}
+
 sub dejavu {
 	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};

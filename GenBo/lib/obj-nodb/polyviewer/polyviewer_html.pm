@@ -1320,15 +1320,31 @@ sub validations {
 		my ($self) = @_;
 		my $project = $self->project;
 		my $all_validations = $project->validations;
-		
 		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
 		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
 		my $data;
-		$data->{local_text} ="";
-		$data->{local_value}  = $local_validation->{validation};
+		$data->{local_text} = "";
+		$data->{local_value} = -99;
+		if ($local_validation->{validation}) {
+#			my $is_STAFF_login = $self->project->buffer->getQuery->isLoginSTAFF($local_validation->{user_name});
+#			if ($is_STAFF_login) {
+#				$data->{local_value}  = 99;
+#				$data->{local_text} = 'STAFF';
+#			} 
+#			else {
+#				$data->{local_value}  = $local_validation->{validation};
+#				$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}};
+#			}
+			$data->{local_value}  = $local_validation->{validation};
+			$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}};
+		}
+		my $h_var_forced_viewing = $project->buffer->config_variants_forced_viewing->{lc($self->project->current_genome_version())};
+		if (exists $h_var_forced_viewing->{$self->variant->gene->{name}}) {
+			my $is_forced_viewing = $h_var_forced_viewing->{$self->variant->gene->{name}}->{$self->variant->id};
+			$data->{local_value}  = -1;
+			$data->{local_text} = $is_forced_viewing;
+		}
 		
-		$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}}  if $data->{local_value};
-		$data->{local_value}  =  -99 unless $data->{local_value} ;
 		$data->{var_id} = $self->variant->id;
 		$data->{gene_id} = $self->variant->gene->{id};
 		$data->{project_name} = $self->project->name;

@@ -224,6 +224,23 @@ has config_directory => (
 	}
 	);
 	
+has config_variants_forced_viewing => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $conf_dir = $self->config_directory();
+		my $filename1 = $conf_dir.'/variants/hg19_variants_forced_viewing.cfg';
+		my $filename2 = $conf_dir.'/variants/hg38_variants_forced_viewing.cfg';
+		read_config $filename1 => my %config1;
+		read_config $filename2 => my %config2;
+		my $h;
+		$h->{hg19} = \%config1;
+		$h->{hg38} = \%config2;
+		return $h;
+	},
+);
+	
 has polybtf_infos => (
 	is		=> 'ro',
 	lazy	=> 1,
@@ -1487,15 +1504,15 @@ sub test_fisher {
 }
 
 
-		my $validation =  {
-		 pathogenic => 5,
-  		"likely pathogenic" => 4,
-  		"Uncertain significance" =>3,
-  		"Likely benign" => 2,
-  		"benign" => 1,
-  		"False Positive" => -1,
-  		"ToDo" => -3
-	};
+my $validation =  {
+	"Pathogenic" => 5,
+	"Likely pathogenic" => 4,
+	"Uncertain significance" => 3,
+	"Likely benign" => 2,
+	"Benign" => 1,
+	"False Positive" => -1,
+	"ToDo" =>- 3,
+};
 
 
 has value_validation => (

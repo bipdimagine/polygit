@@ -478,6 +478,14 @@ has isDude => (
 	}		
 );
 
+has is_variant_forced_viewing  => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		return undef;
+	}		
+);
+
 has isMantaImprecise  => (
 	is		=> 'rw',
 	lazy	=> 1,

@@ -5952,6 +5952,16 @@ sub purge_memory_reference {
 #);
 
 
+
+has deja_vu_public_projects_parquet  => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self   = shift;
+		return $self->buffer->config_path("root","dejavu").'/projects_parquet/';
+	},
+);
+
 has lite_deja_vu_projects => (
 	is      => 'ro',
 	lazy    => 1,

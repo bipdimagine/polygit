@@ -955,50 +955,46 @@ sub nextVariant {
 	$self->setListVariants() unless exists $self->{list_variant};
 	return unless scalar(@{$self->{list_variant}});
 	my $id = shift(@{$self->{list_variant}} );
-
 	my $var_obj = $self->returnVariants($id);
 	confess() unless defined $var_obj;
 	my $ref = ref($var_obj);
 	if ($ref eq 'GenBoVariation'){
-					bless $var_obj , 'GenBoVariationCache';
-		}
-		elsif  ($ref eq 'GenBoLargeDeletion'){
-					bless $var_obj , 'GenBoLargeDeletionCache';
-					
-		}
-		elsif  ($ref eq 'GenBoInversion'){
-					bless $var_obj , 'GenBoInversionCache';
-					
-		}
-		elsif  ($ref eq 'GenBoBoundary'){
-					bless $var_obj , 'GenBoBoundaryCache';
-					
-		}
-		elsif  ($ref eq 'GenBoLargeInsertion'){
-					bless $var_obj , 'GenBoLargeInsertionCache';
-		}
-		elsif  ($ref eq 'GenBoDeletion'){
-					bless $var_obj , 'GenBoDeletionCache'; 
-		}
-		elsif  ($ref eq 'GenBoInsertion'){
-					bless $var_obj , 'GenBoInsertionCache';
-		}
-		elsif  ($ref eq 'GenBoLargeDuplication'){
-					bless $var_obj , 'GenBoLargeDuplicationCache';
-		}
-
-		elsif  ($ref eq 'GenBoLargeDeletion'){
-					bless $var_obj , 'GenBoLargeDeletionCache';
-		}
-		elsif  ($ref eq 'GenBoMei'){
-					bless $var_obj , 'GenBoMeiCache';
-		}
-		else {
-			confess();
-		}		
-
-		return $var_obj;
+		bless $var_obj , 'GenBoVariationCache';
+	}
+	elsif  ($ref eq 'GenBoLargeDeletion'){
+		bless $var_obj , 'GenBoLargeDeletionCache';
+	}
+	elsif  ($ref eq 'GenBoInversion'){
+		bless $var_obj , 'GenBoInversionCache';
+	}
+	elsif  ($ref eq 'GenBoBoundary'){
+		bless $var_obj , 'GenBoBoundaryCache';
+	}
+	elsif  ($ref eq 'GenBoLargeInsertion'){
+		bless $var_obj , 'GenBoLargeInsertionCache';
+	}
+	elsif  ($ref eq 'GenBoDeletion'){
+		bless $var_obj , 'GenBoDeletionCache'; 
+	}
+	elsif  ($ref eq 'GenBoInsertion'){
+		bless $var_obj , 'GenBoInsertionCache';
+	}
+	elsif  ($ref eq 'GenBoLargeDuplication'){
+		bless $var_obj , 'GenBoLargeDuplicationCache';
+	}
+	elsif  ($ref eq 'GenBoLargeDeletion'){
+		bless $var_obj , 'GenBoLargeDeletionCache';
+	}
+	elsif  ($ref eq 'GenBoMei'){
+		bless $var_obj , 'GenBoMeiCache';
+	}
 	
+	if ($ref eq 'GenBoVariationCache' or $ref eq 'GenBoLargeDeletionCache' or $ref eq 'GenBoInversionCache' or $ref eq 'GenBoBoundaryCache' or $ref eq 'GenBoLargeInsertionCache' or $ref eq 'GenBoDeletionCache' or $ref eq 'GenBoInsertionCache' or $ref eq 'GenBoLargeDuplicationCache' or $ref eq 'GenBoLargeDeletionCache' or $ref eq 'GenBoMeiCache'){
+		return $var_obj;
+	}		
+	warn "\n\n";
+	warn ref ($var_obj);
+	confess();
 }
 
 

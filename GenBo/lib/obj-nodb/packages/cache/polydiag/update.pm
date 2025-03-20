@@ -1736,9 +1736,14 @@ sub edit {
 				my $saved = $local_validation->{validation};
 				$hvariation->{local} = $patient->buffer->value_validation->{$saved};
 				$hvariation->{local} = printButton($saved,[3,5],$patient->buffer->value_validation->{$saved},$saved) ;
-				$hvariation->{clinical_local} ++;
+				$hvariation->{clinical_local}++;
 		}
 		
+		if ($gene->hash_variants_forced_viewing() and exists $gene->hash_variants_forced_viewing->{$hvariation->{id}}) {
+			my $is_forced_viewing = $gene->hash_variants_forced_viewing->{$hvariation->{id}};
+			$hvariation->{local} = printButton(1,[3,5],$is_forced_viewing) ;
+			$hvariation->{clinical_local}++;
+		}
 }
  1;
  
