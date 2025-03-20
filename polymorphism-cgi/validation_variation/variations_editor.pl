@@ -214,9 +214,6 @@ my $project = $buffer->newProjectCache(
 );
 #my $clinvar_lmdb =  $project->getChromosome->get_lmdb_database("clinvar",$project->type_public_db);
 
-
-
-
 my $version_db =  $project->public_database_version;
 if($version_db>=13){
 	$VERSION = $VERSION."-".$version_db."1";
