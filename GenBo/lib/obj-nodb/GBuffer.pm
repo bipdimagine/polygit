@@ -1654,7 +1654,9 @@ sub log2 {
 
 sub get_url_polyrna {
 	my ($self) = shift;
-	return $self->get_base_url_polyrna().':'.$self->get_port_url_polyrna();
+	my $url = $self->get_base_url_polyrna().':'.$self->get_port_url_polyrna();
+	$url .= '/'.$self->get_extended_app_url_polyrna() if ($self->get_extended_app_url_polyrna());
+	return $url;
 }
 
 sub get_base_url_polyrna {
@@ -1665,6 +1667,11 @@ sub get_base_url_polyrna {
 sub get_port_url_polyrna {
 	my ($self) = shift;
 	return $self->config->{polyrna}->{port_url_polyrna};
+}
+
+sub get_extended_app_url_polyrna {
+	my ($self) = shift;
+	return $self->config->{polyrna}->{extended_app_url_polyrna};
 }
 
 sub get_polyrna_file_server_to_docker {
