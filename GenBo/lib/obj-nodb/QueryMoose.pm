@@ -251,6 +251,16 @@ sub listProjects {
 
 }
 
+sub listProjectsWithoutDejaVu {
+	my $self = shift;
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare($self->sql_cmd_list_projects_name_without_dejavu);
+	$sth->execute() || die();
+	my $toto = $sth->fetchall_hashref("name");
+	my @list = grep {$_ =~ /NGS/ or $_ =~ /ROCK/} keys %$toto; 
+	return \@list;
+} 
+
 sub listProjectsForDejaVu {
 	my $self = shift;
 	my $dbh = $self->getDbh();

@@ -53,10 +53,10 @@ my $project_init_name = $buffer_init->get_random_project_name_with_this_annotati
 
 
 #TODO: prendre projet HG38
-my $project_init = $buffer_init->newProjectCache( -name => 'NGS2024_7792');
-	
-#my $project_init = $buffer_init->newProjectCache( -name => $project_init_name);
-my $genomeFai_init = $project_init->getGenomeFai();
+my $project_name_hg38 = $buffer_init->getRandomProjectName('HG38_CNG');
+my $project_init = $buffer_init->newProject( -name => $project_name_hg38 );
+
+
 my $gene = $project_init->newGene($gene_id);
 $gene = $project_init->newGene(uc($gene_id)) if not $gene;
 $gene = $project_init->newGene(lc($gene_id)) if not $gene;

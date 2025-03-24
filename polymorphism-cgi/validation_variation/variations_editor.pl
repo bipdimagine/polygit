@@ -1080,7 +1080,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		$gene_id_filtering = $gene->id();
 		
 	}
-	my $gene_exception = $project->newGene("PCDH19");
+#	my $gene_exception = $project->newGene("PCDH19");
 	my $fork = 24;
 	#my $pm   = new Parallel::ForkManager($fork);
 	my $hrun;
