@@ -965,7 +965,7 @@ sub getVector_project_or_fam {
 			elsif ($status eq 'he') { $var_excluded += $patient->getVectorOriginHe( $chr ); }
 			elsif ($status eq 'ho') { $var_excluded += $patient->getVectorOriginHo( $chr ); }
 		}
-		elsif ($patient->intersected() and $nb_intersected == 0) {
+		if ($patient->intersected() and $nb_intersected == 0) {
 #			warn '-> intersected ';
 			$nb_intersected++;
 			$var_intersect += $var_pat;

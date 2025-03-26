@@ -323,14 +323,14 @@ if ($xls_by_variants or $xls_by_genes or $xls_load_session) {
 	$hResumeFilters->{dejavu} = $dejavu;
 	$hResumeFilters->{dejavu} .= ' only HO' if ($dejavu_ho);
 	$hResumeFilters->{atLeast} = $atLeast;
-	@{$hResumeFilters->{filter_region}} = split(',', $filter_region);
-	@{$hResumeFilters->{filter_attic}} = split(',', $filter_attic);
-	@{$hResumeFilters->{filter_patient}} = split(',', $filter_patient);
-	@{$hResumeFilters->{filter_not_patient}} = split(',', $filter_not_patient);
-	@{$hResumeFilters->{filter_he}} = split(',', $filter_he);
-	@{$hResumeFilters->{filter_ho}} = split(',', $filter_ho);
-	@{$hResumeFilters->{fam_not}} = split(',', $fam_not);
-	@{$hResumeFilters->{fam_and}} = split(',', $fam_and);
+	@{$hResumeFilters->{filter_region}} = split(' ', $filter_region);
+	@{$hResumeFilters->{filter_attic}} = split(' ', $filter_attic);
+	@{$hResumeFilters->{filter_patient}} = split(' ', $filter_patient);
+	@{$hResumeFilters->{filter_not_patient}} = split(' ', $filter_not_patient);
+	@{$hResumeFilters->{filter_he}} = split(' ', $filter_he);
+	@{$hResumeFilters->{filter_ho}} = split(' ', $filter_ho);
+	@{$hResumeFilters->{fam_not}} = split(' ', $fam_not);
+	@{$hResumeFilters->{fam_and}} = split(' ', $fam_and);
 }
 
 my $h_filters_intersect_exclude;
@@ -409,7 +409,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->setInTheAtticPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
-	launch_intersect_excude($chr, $h_filters_intersect_exclude) if not $model =~ /compound/ and not $model_2 =~ /compound/;
+#	launch_intersect_excude($chr, $h_filters_intersect_exclude) if not $model =~ /compound/ and not $model_2 =~ /compound/;
 	
 	$queryFilter->filter_vector_ratio($chr, $filter_ratio_min, 'min');
 	$queryFilter->filter_vector_ratio($chr, $filter_ratio_max, 'max');
@@ -483,7 +483,8 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	}
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
-	launch_intersect_excude($chr, $h_filters_intersect_exclude) if $model =~ /compound/ or $model_2 =~ /compound/;
+#	launch_intersect_excude($chr, $h_filters_intersect_exclude) if $model =~ /compound/ or $model_2 =~ /compound/;
+	launch_intersect_excude($chr, $h_filters_intersect_exclude);
 
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER exclude / intersect - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
