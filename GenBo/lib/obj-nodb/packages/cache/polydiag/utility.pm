@@ -67,7 +67,8 @@ sub return_list_variants {
 	my $key =$tr_id;
 	my $string ="";
 	$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
-	#warn $patient->name." ".$string;
+	warn $project->noSqlPolydiag()->dir;
+	warn $patient->name." list_$key ".$string;
 	#confess() unless $string;
 	return [split(";",$string)];
 

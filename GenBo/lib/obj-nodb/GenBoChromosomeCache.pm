@@ -1232,7 +1232,6 @@ sub setVariants {
 	}
 	elsif ($type eq 'deletions') {
 			$vector = $self->getVectorDeletions();
-	
 	}
 	elsif ($type eq 'large_deletions') {
 			$vector = $self->getVectorLargeDeletions();

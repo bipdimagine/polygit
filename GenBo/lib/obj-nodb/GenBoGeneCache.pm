@@ -230,6 +230,7 @@ has chromosome_vector_length  => (
 sub enlarge_compact_vector{
 	my ($self,$small) = @_;
 	my  $vector = $self->getChromosome->getNewVector;
+	return $vector unless $small;
 	$vector->Interval_Substitute($small,$self->compact_vector_start,$self->compact_vector_length,0,$self->compact_vector_length);
 	return $vector;
 	
@@ -472,6 +473,7 @@ sub getStructuralVariations {
 sub getCurrentCompactVector {
 	my $self = shift;
 	unless ( exists $self->{current_compact} ) {
+		return undef unless $self->compact_vector;
 		return $self->compact_vector->{all};
 	}
 	
