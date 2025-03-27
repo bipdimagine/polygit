@@ -482,8 +482,10 @@ sub get_models_familial_union {
 			my $model_method_vector_name;
 			$model_method_vector_name = $hModelsMethodsNames_familial->{$model.'_vector'} if exists $hModelsMethodsNames_familial->{$model.'_vector'};
 			foreach my $family (@{$chr->getProject->getFamilies()}) {
+				next if $family->in_the_attic();
 				if ($model eq 'dominant') { $family->{isDominant} = 1; }
 				foreach my $child (@{$family->getChildrenIll()}) {
+					next if $child->in_the_attic();
 					my $var_pat = $child->getVectorOrigin($chr);
 					$var_pat->Intersection($var_pat, $chr->getVariantsVector());
 					if ($model_method_vector_name) {
