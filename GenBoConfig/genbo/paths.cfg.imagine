@@ -3,7 +3,7 @@
 public_data:/data-isilon/public-data/
 dejavu:/data-isilon/DejaVu/
 dejavu_projects:/data-isilon/DejaVu/
-dejavu_parquet:/data-beegfs/projects.parquet/
+dejavu_parquet:/data-isilon/DejaVu/projects.parquet_NEW/
 singularity:/data-beegfs/software/sif/
 project_data:/data-isilon/sequencing/
 sequences:/data-isilon/data/sequences
@@ -21,7 +21,7 @@ software:/software/bin/
 
 
 [dejavu]
-variations:variations/rocks_TEST/
+variations:variations/rocks/
 projects:variations/projects.lmdb/
 projects_lite:variations/projects/
 CNV:CNV/

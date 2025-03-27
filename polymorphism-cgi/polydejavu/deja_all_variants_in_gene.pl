@@ -1382,8 +1382,40 @@ sub get_hash_annot_categories {
 
 sub get_hash_users_projects {
 	my ($user_name, $pwd) = @_;
-	my $h_projects;
-	my @list_hash = @{$buffer_init->getQuery()->getProjectListForUser($user_name, $pwd)};
+	my ($h_projects, @list_hash);
+	
+	
+	
+	
+	if ($buffer_init->getQuery->isUserMagic($user_name, $pwd)) {
+		
+		my $h_project_dejavu;
+		foreach my $proj_name (@{$buffer_init->getQuery()->listProjectsForDejaVu()}) {
+			$h_project_dejavu->{$proj_name} = undef;
+		}
+		
+		@list_hash = @{$buffer_init->getQuery()->getAllProjects()};
+		
+		foreach my $h (@list_hash) {
+			next if not exists $h_project_dejavu->{$h->{name}};
+			next if not $h->{name} =~ /NGS20/;
+			my $ok;
+			my $file1 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet';
+			$ok = 1 if -e $file1;
+			my $file2 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet.no_dejavu';
+			$ok = 1 if -e $file2;
+			
+			if (not $ok) {
+				warn $h->{name};
+				warn $file1;
+			}			
+		}
+		die;
+		
+	}
+	else {
+		@list_hash = @{$buffer_init->getQuery()->getProjectListForUser($user_name, $pwd)};
+	}
 	foreach my $hash (@list_hash) {
 		my $proj_name = $hash->{name};
 		next unless ($proj_name =~ /NGS20/);
