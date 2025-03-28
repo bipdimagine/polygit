@@ -39,22 +39,22 @@ use MCE::Flow;
 use dejavu_duckdb;
 my $fork = 1;
 my $project_name;
-
+my $force;
 
 GetOptions(
 	'fork=s' => \$fork,
 	'project=s' => \$project_name,
+	'force=s' => \$force,
 );
 
 
 my $f2;
 
 
-my $dir_tmp = "/tmp/pipeline";
-
 my $buffer = new GBuffer;
-
 my $project = $buffer->newProjectCache( -name => "$project_name");
+my $dir_tmp = $project->lmdb_pipeline_dir();
+
 
 
 my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome_version); 
@@ -62,10 +62,29 @@ my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome
 my $data_lift;	
 my @chromosomes = shuffle (@{$project->getChromosomes});
 #my $dir_parquet = "/data-beegfs/parquet_HG19_HG38/";
-my $dir_parquet = "/data-beegfs/projects.parquet/";
- my $pm2 = new Parallel::ForkManager($fork);
+
+
+#my $dir_parquet = "/data-beegfs/projects.parquet/";
+
+
+
+my $pm2 = new Parallel::ForkManager($fork);
+
+my $dir_parquet = $buffer->config_path("root","dejavu_projects");
 my $parquet_file = $dir_parquet."/".$project->name.".".$project->id.".parquet";
-#exit(0) if -e $parquet_file;
+
+my $can_dejavu = 1;
+foreach my $pname (@{$buffer->getQuery->listProjectsWithoutDejaVu()}) {
+	next if $pname ne $project_name;
+	$can_dejavu = undef;
+	last;
+}
+
+if (not $can_dejavu) { $parquet_file .= '.no_dejavu'; }
+
+exit(0) if -e $parquet_file and not $force;
+
+
 $project->getPatients;
 $project->preload_patients();
 
