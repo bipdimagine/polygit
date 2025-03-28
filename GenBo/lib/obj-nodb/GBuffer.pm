@@ -345,6 +345,15 @@ has gencode => (
 		},
 );	
 
+has dejavu_parquet_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->config_path("root","dejavu_parquet");
+	}
+);
+
 sub deja_vu_public_dir {
 	my ($self,$version,$type)= @_;
 	confess() unless $version;
