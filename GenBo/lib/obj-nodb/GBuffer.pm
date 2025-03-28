@@ -293,6 +293,15 @@ has gencode => (
 		}
 		return \%config1;
 		},
+);
+
+has dejavu_parquet_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->config->{public_data}->{dejavu_parquet};
+	}
 );	
 
 sub getNeedlemanWunsch {
