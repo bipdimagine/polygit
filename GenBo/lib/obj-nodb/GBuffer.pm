@@ -350,7 +350,7 @@ has dejavu_parquet_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return $self->config_path("root","dejavu_parquet")
+		return $self->config_path("root","dejavu_parquet");
 	}
 );
 

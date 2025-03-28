@@ -119,22 +119,6 @@ foreach my $project_name_excluded (split(',', $projects_excluded)) {
 }
 
 my $hProjects_not_dejavu;
-#foreach my $project_name_excluded (sort @{$buffer_init->getQuery->listProjectsWithoutDejaVu()}) {
-#	$hProjects_not_dejavu->{$project_name_excluded} = undef;
-#	
-#	my $b = new GBuffer;
-#	my $p = $b->newProject( -name => $project_name_excluded);
-#	my $file1 = $dir_parquet.'/'.$project_name_excluded.'.'.$p->id().'.parquet';
-#	my $file2 = $dir_parquet.'/'.$project_name_excluded.'.'.$p->id().'.parquet.no_dejavu';
-#	
-#	if (-e $file1) {
-#		warn "mv $file1 $file2";
-#		`mv $file1 $file2`;
-#	}
-#	#sdie if $p->name eq "NGS2022_4858";	
-#	#warn $project_name_excluded;
-#}
-#die;
 
 my @headers_validations = ("#", "varsome","alamut variant","var_name","projects / patients","gnomad","deja_vu","table_validation","table_transcript");
 #my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
@@ -925,6 +909,10 @@ sub update_list_variants_from_dejavu {
 				my $parquet = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet';
 				push(@list_parquets, "'".$parquet."'") if (-e $parquet);
 				
+				
+				my $parquet2 = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet.no_dejavu';
+				push(@list_parquets, "'".$parquet2."'") if (-e $parquet2);
+				
 			}
 			if (not @list_parquets) {
 				delete $hres->{$var_id};
@@ -1388,30 +1376,29 @@ sub get_hash_users_projects {
 	
 	
 	if ($buffer_init->getQuery->isUserMagic($user_name, $pwd)) {
-		
-		my $h_project_dejavu;
-		foreach my $proj_name (@{$buffer_init->getQuery()->listProjectsForDejaVu()}) {
-			$h_project_dejavu->{$proj_name} = undef;
-		}
-		
 		@list_hash = @{$buffer_init->getQuery()->getAllProjects()};
 		
-		foreach my $h (@list_hash) {
-			next if not exists $h_project_dejavu->{$h->{name}};
-			next if not $h->{name} =~ /NGS20/;
-			my $ok;
-			my $file1 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet';
-			$ok = 1 if -e $file1;
-			my $file2 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet.no_dejavu';
-			$ok = 1 if -e $file2;
-			
-			if (not $ok) {
-				warn $h->{name};
-				warn $file1;
-			}			
-		}
-		die;
-		
+#		my $h_project_dejavu;
+#		foreach my $proj_name (@{$buffer_init->getQuery()->listProjectsForDejaVu()}) {
+#			$h_project_dejavu->{$proj_name} = undef;
+#		}
+#		
+#		
+#		foreach my $h (@list_hash) {
+#			next if not exists $h_project_dejavu->{$h->{name}};
+#			next if not $h->{name} =~ /NGS20/;
+#			my $ok;
+#			my $file1 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet';
+#			$ok = 1 if -e $file1;
+#			my $file2 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet.no_dejavu';
+#			$ok = 1 if -e $file2;
+#			
+#			if (not $ok) {
+#				warn $h->{name};
+#				warn $file1;
+#			}			
+#		}
+#		die;
 	}
 	else {
 		@list_hash = @{$buffer_init->getQuery()->getProjectListForUser($user_name, $pwd)};
