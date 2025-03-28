@@ -70,7 +70,7 @@ my @chromosomes = shuffle (@{$project->getChromosomes});
 
 my $pm2 = new Parallel::ForkManager($fork);
 
-my $dir_parquet = $buffer->config_path("root","dejavu_projects");
+my $dir_parquet = $buffer->config_path("root","dejavu_parquet");
 my $parquet_file = $dir_parquet."/".$project->name.".".$project->id.".parquet";
 
 my $can_dejavu = 1;
