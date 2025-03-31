@@ -57,7 +57,7 @@ GetOptions(
 
 #$steps_name = "all" unless $steps_name;
 
-check_version($projectName) unless ($steps_name eq 'update' );
+#check_version($projectName) unless ($steps_name eq 'update' );
 clean($projectName) if $clean;
 my $can_check_version = 1;
 $can_check_version = undef if ($steps_name and $steps_name eq 'update' );
@@ -333,7 +333,10 @@ sub check_version {
 	my $change;
 	my $gencode_available = $query->getMaxGencodeVersion($project->id);;
 	my $cache_directory_actual = $project->getCacheDir();
-	colored::stabilo("magenta","======================= Check Version   =========================");
+	my $genome_version = $project->annotation_genome_version();
+	colored::stabilo("magenta","\n\n======================= Check Version =========================");
+	colored::stabilo("green","\nGenome Version: $genome_version\n");
+	
 	#colored::stabilo("red","Too bad you are not eligible to a genCode update.") unless $project->is_gencode_upgradable();
 	my @lines;
 	push(@{$lines[0]},"GENCODE");
