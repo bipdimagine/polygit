@@ -908,11 +908,6 @@ sub update_list_variants_from_dejavu {
 				}
 				my $parquet = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet';
 				push(@list_parquets, "'".$parquet."'") if (-e $parquet);
-				
-				
-				my $parquet2 = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet.no_dejavu';
-				push(@list_parquets, "'".$parquet2."'") if (-e $parquet2);
-				
 			}
 			if (not @list_parquets) {
 				delete $hres->{$var_id};
