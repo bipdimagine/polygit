@@ -1031,7 +1031,6 @@ sub update_list_variants_from_dejavu {
 	sleep(3); 
 	$pm->wait_all_children();
 	
-#	#TODO: here
 #	warn Dumper $hVariantsDetails;	
 #	die
 	
@@ -1049,7 +1048,10 @@ sub update_list_variants_from_dejavu {
 
 
 sub get_table_project_patients_infos {
-	my ($project_name, $hash) = @_;
+	my ($project_name, $hash, $hVar_infos) = @_;
+	
+	my $locus_hg19 = $hVar_infos->{locus_hg19};
+	my $locus_hg38 = $hVar_infos->{locus_hg38};
 	
 	my $nb_he = $hash->{he};
 	
@@ -1067,9 +1069,6 @@ sub get_table_project_patients_infos {
 	foreach my $info (unpack("w*",decode_base64($hash->{dp_ratios}))) {
 #		warn Dumper $info;
 		$i++;
-		
-		#TODO: a voir pour le 1 2 et 3 - j ai limpression que 3 est plus la transmission
-		
 		if ($i == 1) { $h_infos_patients->{$nb_pat}->{dp} = $info; }
 		elsif ($i == 2) {
 			my $ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100;
@@ -1077,7 +1076,6 @@ sub get_table_project_patients_infos {
 			$h_infos_patients->{$nb_pat}->{ratio} = $text;
 		}
 		elsif ($i == 3) {
-    
     		my $model;
     		if ($info == 1) { $model = 'solo'; }
     		elsif ($info == 2) { $model = 'father'; }
@@ -1092,7 +1090,6 @@ sub get_table_project_patients_infos {
     		else { $model = 'error2'; }
 			$h_infos_patients->{$nb_pat}->{model} = $model;
 			
-			
 			$i = 0;
 			$nb_pat++;
 		}
@@ -1100,6 +1097,11 @@ sub get_table_project_patients_infos {
 	
 	my $b = new GBuffer;
 	my $p = $b->newProject( -name => $project_name);
+		
+#	if ($p->name eq 'NGS2025_08773') {
+#		warn "\n";
+#		warn Dumper $h_tmp_pat;
+#	}
 	foreach my $pat (@{$p->getPatients()}) {
 		if (not $pat->isIll() and $only_ill) {
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
@@ -1146,118 +1148,73 @@ sub get_table_project_patients_infos {
 	$table_trio .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:3px"});
 	
 	
-	my $pheno;
+	my @lPhenotypes = @{$p->phenotypes()};
+	my $pheno = join(', ', sort @lPhenotypes);
+	
+	my $version = $p->annotation_genome_version();
+	my $color_version = '#85f283';
+	$color_version = '#f2c37c' if $version eq 'HG38';
+	
 	my $users = join("<br>", @l_users);
-	my $proj_text = qq{<button onclick="get_popup_users('$users');">Users</button> - <b>$project_name</b>};
+	my $proj_text = qq{<button style="color:black;" onclick="get_popup_users('$users');">Users</button> - <b>$project_name</b>};
 	$proj_text .= qq{<sup>defidiag</sup>} if $p->isDefidiag; 
-	$proj_text .= " - <span style='color:red;'>$pheno</span>" if ($pheno);
-	$proj_text .= "<br>$description";
+	$proj_text .= " - <span style='color:#82d0f5;'>$pheno</span>" if ($pheno);
+	$proj_text .= "<br>";
+	$proj_text .= "<b><span style='color:$color_version;'>$version</span></b>  ";
+	$proj_text .= "$description";
 		
-		
+	my (@l_pat_names, @l_pat_bam);
+	foreach my $id (sort keys %$h_infos_patients) {
+		next if not (exists $h_infos_patients->{$id}->{name});
+		push(@l_pat_names, $h_infos_patients->{$id}->{name});
+		push(@l_pat_bam, $p->getPatient($h_infos_patients->{$id}->{name})->bamUrl());
+	}
+	my $pnames = join(';', @l_pat_names);
+	my $f = join(';', @l_pat_bam);
+	my $gn = $p->getVersion();
+	my $chr_name = $hVar_infos->{chr_id};
+	my ($locus, $start);
+	if ($p->annotation_genome_version() eq 'HG19') {
+		$locus = $locus_hg19;
+		$start = $hVar_infos->{start_hg19};
+	}
+	elsif ($p->annotation_genome_version() eq 'HG38') {
+		$locus = $locus_hg38;
+		$start = $hVar_infos->{start_hg38};
+	}
+	my $a0 = $hVar_infos->{ref_all};
+	my $a1 = $hVar_infos->{alt_all};
+	my $igb_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus","/","$gn")' style="color:black"></button>};	
+	my $alamut_b = qq{<button class="alamutView3" onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']);"></button>};
+
 	my $no_header_project ;
 	my $no_header_project_pat;
-#	unless ($no_header_project) {
-		$table_trio .= $cgi->start_Tr();
-		#my $igv_alamut_text = $h_var->{html}->{igv}."&nbsp;".$h_var->{html}->{alamut};
-		my $igv_alamut_text;
-		my $b_others_var;
-		#my $pat_name = $patient->name();
-		my $pat_name = 'ALL';
-		#my $var_id = $var->id();
-		my $var_id = 'VARID';
-		my $father_trans = undef;
-		my $mother_trans = undef;
-		my $other_trans = undef;
-		
-#		if ($patient->isChild() and $patient->getFamily->isTrio()) {
-#			my ($father_name, $mother_name);
-#			eval { $father_name = $patient->getFamily->getFather->name(); };
-#			if ($@) {}
-#			else {
-#				my $cmd_f = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'father');};
-#				$father_trans = qq{<button style="text-align:middle;vertical-align:bottom;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_f"><img style='width:8px;height:8px;' src='/icons/Polyicons/male.png'></button>};
-#			}
-#			eval { $mother_name = $patient->getFamily->getMother->name(); };
-#			if ($@) {}
-#			else {
-#				my $cmd_m = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'mother');};
-#				$mother_trans = qq{<button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_m"><img style='width:8px;height:8px;' src='/icons/Polyicons/female.png'></button>};
-#			}
-#		}
-#		if ($patient->isChild() and $patient->getFamily->isTrio()) {
-#			my ($father_name, $mother_name);
-#			if ($patient->getFamily->father()) {
-#				$father_name = $patient->getFamily->getFather->name();
-#				my $cmd_f = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'father');};
-#				$father_trans = qq{<button style="text-align:middle;vertical-align:bottom;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_f"><img style='width:8px;height:8px;' src='/icons/Polyicons/male.png'></button>};
-#			}
-#			if ($patient->getFamily->mother()) {
-#				$mother_name = $patient->getFamily->getMother->name();
-#				my $cmd_m = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'mother');};
-#				$mother_trans = qq{<button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_m"><img style='width:8px;height:8px;' src='/icons/Polyicons/female.png'></button>};
-#			}
-#		}
-#		else {
-			my $img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-boy.png'>};
-			#$img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-girl.png'>} if ($patient->sex() == 2);
-			my $cmd_others = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id');};
-			$other_trans = qq{<button style="text-align:middle;vertical-align:top;width:28px;border:solid 0.5px black;background-color:white;" onClick="$cmd_others">$img_child</button>};
-#		}
-		
-		#TODO: voit pour enlever ligne de trop projet
-		#$table_trio .= $cgi->td({colspan=>($nb_col_span-1)}, $proj_text);
-		$table_trio .= $cgi->td({colspan=>($nb_col_span)}, $proj_text);
-		
-		my $child_trans_strict_denovo = undef;
-		
-#		#if ($is_solo_trio eq 'SOLO') {
-#		if ($model eq 'strict_enovo' or $model2 eq 'denovo' or $is_solo_trio eq 'solo') {
-#			my $img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-boy.png'>};
-#			#$img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-girl.png'>} if ($patient->sex() == 2);
-#			my $cmd_others = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id');};
-#			$child_trans_strict_denovo = qq{<td rowspan=2><button style="text-align:middle;vertical-align:top;width:28px;border:solid 0.5px black;background-color:white;" onClick="$cmd_others">$img_child</button></td>};
-#			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, qq{<table style='width:100%;'><tr><td>$igv_alamut_text &nbsp;</td>$child_trans_strict_denovo</tr></table>});
-#		}
-#		elsif ($model eq 'both' and not $no_header_project_pat) {
-#			my $local_table = "<table style='width:100%;'>";
-#			$local_table .= qq{<tr><td rowspan=2>$igv_alamut_text &nbsp;</td><td>$father_trans</td>$child_trans_strict_denovo</tr>};
-#			$local_table .= qq{<tr><td>$mother_trans</td></tr>};
-#			$local_table .= qq{</table>};
-#			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-#		}
-#		elsif ($model eq 'father' and not $no_header_project_pat) {
-#			my $local_table = "<table style='width:100%;'>";
-#			$local_table .= qq{<tr><td rowspan=2>$igv_alamut_text &nbsp;</td><td>$father_trans</td>$child_trans_strict_denovo</tr>};
-#			$local_table .= qq{<tr><td><button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;opacity:0.3;" disabled><img style='width:8px;height:8px;' src='/icons/Polyicons/baby-girl.png'></button></td></tr>};
-#			$local_table .= qq{</table>};
-#			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-#		}
-#		elsif ($model eq 'mother' and not $no_header_project_pat) {
-#			my $local_table = "<table style='width:100%;'>";
-#			$local_table .= qq{<tr><td rowspan=2>$igv_alamut_text &nbsp;</td><td>$mother_trans</td>$child_trans_strict_denovo</tr>};
-#			$local_table .= qq{<tr><td><button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;opacity:0.3;" disabled><img style='width:8px;height:8px;' src='/icons/Polyicons/baby-boy.png'></button></td></tr>};
-#			$local_table .= qq{</table>};
-#			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-#		}
-##		elsif ($other_trans and not $no_header_project_pat) {
-##			my $local_table = "<table style='width:100%;'>";
-##			$local_table .= qq{<tr><td>$igv_alamut_text &nbsp;</td><td>$other_trans</td>$child_trans_strict_denovo</tr>};
-##			$local_table .= qq{</table>};
-##			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-##		}
-#		else {
-#			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, qq{<table style='width:100%;'><tr><td>$igv_alamut_text &nbsp;</td>$child_trans_strict_denovo</tr></table>});
-#		}
-		$no_header_project_pat = 1;
-		$table_trio .= $cgi->end_Tr();
-		if ($no_header_project_pat) {
-			$table_trio .= '</table>';
-			$table_trio .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:3px"});
-		}
-#	}
 	
+	$table_trio .= $cgi->start_Tr({style=>"background-color:#949292; color:white;"});
+	my $b_others_var;
+	my $pat_name = 'ALL';
+	my $var_id = 'VARID';
+	my $father_trans = undef;
+	my $mother_trans = undef;
+	my $other_trans = undef;
+	
+	my $img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-boy.png'>};
+	#$img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-girl.png'>} if ($patient->sex() == 2);
+	my $cmd_others = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id');};
+	$other_trans = qq{<button style="text-align:middle;vertical-align:top;width:28px;border:solid 0.5px black;background-color:white;" onClick="$cmd_others">$img_child</button>};
+
+	$table_trio .= $cgi->td({colspan=>($nb_col_span)-1}, $proj_text);
+	$table_trio .= $cgi->td({colspan=>1, style=>"padding:0px;width:60px;"}, '<center>'.$igb_b.' '.$alamut_b.'</center>');
+	
+	$no_header_project_pat = 1;
+	$table_trio .= $cgi->end_Tr();
+	if ($no_header_project_pat) {
+		$table_trio .= '</table>';
+		$table_trio .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:3px"});
+	}
 	
 	foreach my $nb (keys %{$h_infos_patients}) {
+		next if not exists $h_infos_patients->{$nb}->{name};
 		my $patient_name = $h_infos_patients->{$nb}->{name};
 		my $patient = $p->getPatient($patient_name);
 		my $patient_status = $h_infos_patients->{$nb}->{status};
@@ -1266,40 +1223,64 @@ sub get_table_project_patients_infos {
 		my $perc_allele = $h_infos_patients->{$nb}->{ratio};
 		my $model = $h_infos_patients->{$nb}->{model};
 		
-		if ($model eq 'denovo' or $model eq 'strict_denovo' or $model eq 'dominant') { $color = '#e74c3c'; }
-		elsif ($model eq 'father') { $color = '#779ECB'; }
-		elsif ($model eq 'mother') { $color = '#fa97fa'; }
-		elsif ($model eq 'both') { $color = '#555'; }
-		else { $color = 'white'; }
+		if ($model eq 'denovo' or $model eq 'strict_denovo' or $model eq 'dominant') {
+			$color = 'background-color:#f54e4e';
+			$model = ucfirst($model);
+		}
+		elsif ($model eq 'recessif') {
+			$color = 'background-color:#e99ff7';
+			$model = ucfirst($model);
+		}
+		elsif ($model eq 'father') {
+			$color = 'background: linear-gradient(to right, white, #ddfbff);';
+			if ($p->getPatient($patient_name)->getFamily->getFather->isIll()) { $model = qq{<img src="/icons/Polyicons/male-d.png">}; }
+			else { $model = qq{<img src="/icons/Polyicons/male-s.png">}; }
+		}
+		elsif ($model eq 'mother') {
+			$color = 'background: linear-gradient(to right, white, #ffddfd);';
+			if ($p->getPatient($patient_name)->getFamily->getMother->isIll()) { $model = qq{<img src="/icons/Polyicons/female-d.png">}; }
+			else { $model = qq{<img src="/icons/Polyicons/female-s.png">}; }
+		}
+		elsif ($model eq 'both') {
+			$color = 'background: linear-gradient(to right, #ddfbff, #ffddfd);';
+			if ($p->getPatient($patient_name)->getFamily->getFather->isIll()) { $model = qq{<img src="/icons/Polyicons/male-d.png">}; }
+			else { $model = qq{<img src="/icons/Polyicons/male-s.png">}; }
+			if ($p->getPatient($patient_name)->getFamily->getMother->isIll()) { $model .= qq{<img style="padding-left:5px;" src="/icons/Polyicons/female-d.png">}; }
+			else { $model .= qq{<img style="padding-left:5px;" src="/icons/Polyicons/female-s.png">}; }
+			 
+		}
+		elsif ($model eq 'solo') {
+			$color = 'background: linear-gradient(to right, white, #c7c6c5);';
+			$model = ucfirst($model);
+		}
+		else { $color = 'background-color:white'; }
 	
 		my $local_text;
-		$table_trio .= $cgi->start_Tr({style=>"background-color:$color;"});
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, "<span style='text-align:left;'>$patient_name $local_text</span>");
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, "<div>".$patient_status."</div>");
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, "$patient_heho");
+		$table_trio .= $cgi->start_Tr({style=>"$color;"});
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, "<span style='text-align:left;'>$patient_name $local_text</span>");
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, "<div>".$patient_status."</div>");
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, "$patient_heho");
 	#	if ($var->getProject->isGenome() && $var->isCnv) {
-	#		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'pr:'.$var->pr($patient));
-	#		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'sr:'.$var->sr($patient));
+	#		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'pr:'.$var->pr($patient));
+	#		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'sr:'.$var->sr($patient));
 	#		eval {
 	#			my $cnv_score = sprintf("%.2f", log2($patient->cnv_value_dude($var->getChromosome->name,$var->start,$var->start+$var->length)));
-	#			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'cnv_score:'.$cnv_score);
+	#			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'cnv_score:'.$cnv_score);
 	#		};
 	#		if ($@) {
-	#			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'cnv_score:pb');
+	#			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'cnv_score:pb');
 	#		}
 	#	}
 	#	else {
 			#my $perc_allele = $var->getPourcentAllele($patient);
 			
-			#TODO: a changer
-			
 #			return 'perc_all_filter' if ($filter_perc_allelic_min and $perc_allele < $filter_perc_allelic_min);
 #			return 'perc_all_filter' if ($filter_perc_allelic_max and $perc_allele > $filter_perc_allelic_max);
 #			$perc_allele .= "%" if ($perc_allele ne '-');
-			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, $perc_allele);
-			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, $dp);
+			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, $perc_allele);
+			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, $dp);
 	#	}
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, $model);
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, $model);
 		$table_trio .= $cgi->end_Tr();
 	#	if ($local_text_tab) {
 	#		$table_trio .=qq{ <div onClick="document.getElementById('$table_validation_id').style.display='none';" id='$table_validation_id' style='display:none;'>$local_text_tab</div> };
@@ -1335,9 +1316,19 @@ sub get_from_duckdb_project_patients_infos {
 				my $project_name = $hProjectsIds->{$project_id};
 				$h_by_proj->{$project_name} = $h;
 			}
+			my $hVar_infos;
+			$hVar_infos->{locus_hg19} = $var->getChromosome->id().":".$var->lift_over('HG19')->{position}."-".$var->lift_over('HG19')->{position};;
+			$hVar_infos->{locus_hg38} = $var->getChromosome->id().":".$var->start."-".$var->end;
+			$hVar_infos->{start_hg19} = $var->lift_over('HG19')->{position};
+			$hVar_infos->{start_hg38} = $var->start;
+			$hVar_infos->{chr_id} = $var->getChromosome->id();
+			$hVar_infos->{ref_all} = $var->ref_allele();
+			$hVar_infos->{alt_all} = $var->var_allele();
+			$hVar_infos->{alt_all} = '*' unless $var->var_allele();
+			
 			foreach my $project_name (reverse sort keys %$h_by_proj) {
 				my $h = $h_by_proj->{$project_name};
-				my ($table_trio, $model) = get_table_project_patients_infos($project_name, $h);
+				my ($table_trio, $model) = get_table_project_patients_infos($project_name, $h, $hVar_infos);
 				push(@list_table_trio, $table_trio) if $table_trio;
 			}
 		}	
