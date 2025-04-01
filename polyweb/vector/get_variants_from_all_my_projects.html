@@ -847,13 +847,44 @@
 			    search_text_wait += '!';
 			    show_waiting(search_text_wait);
 			    return args;
-	    	}	
+	    	}
+	    	
+	    	function launch_variant_search(use_input) {
+	    		alert ('CHECK VARIANT '+use_input);
+	    	}
+	    	
+	    	function on_write_input() {
+	    		var regex = /[0-9XYMT]+-[0-9]+-.+-.+/g;
+	    		var regex2 = /[0-9XYMT]+_[0-9]+_.+_.+/g;
+	    		var value = document.getElementById("input_search").value;
+				var found_variant = value.match(regex);
+				var found_variant2 = value.match(regex2);
+				if (found_variant) {
+		    		document.getElementById("div_select_release").style.display = "block";
+		    		document.getElementById("div_select_without_release").style.display = "none";
+				}
+				else if (found_variant2) {
+		    		document.getElementById("div_select_release").style.display = "block";
+		    		document.getElementById("div_select_without_release").style.display = "none";
+				}
+				else {
+		    		document.getElementById("div_select_release").style.display = "none";
+		    		document.getElementById("div_select_without_release").style.display = "block";
+				}
+				return;
+	    	}
 	    	
 	    	var last_url_genes;
 	    	var gene_id_ok_old = 'FIRSTFIRST';
 	    	var gene_id_old = '';
 	    	var use_release = 'HG38';
 	    	function launch_gene_search(use_input) {
+	    		var regex = /[0-9XYMT]+-[0-9]+-.+-.+/g;
+	    		var value = document.getElementById("input_search").value;
+				var found_variant = value.match(regex);
+				if (found_variant) {
+					return launch_variant_search(value);
+				}
 	    		var regexp_prod = '/cgi-bin/polymorphism-cgi/';
 	    		if (document.getElementById('b_use_hg19').checked) {
 	    			if (url_path == regexp_prod) {  }

@@ -1,56 +1,54 @@
 <center>
 	<div class='row no-gutters' style="height:100px;width:99%;background-color:#F0F0F0;border: 2px double black;">
-		<div class='col-sm-3' style="height:95px;padding-top:5px;border-right: 1px dashed grey;display:none;" id="div_search_control">
+		<div class='col-sm-4' style="height:95px;padding-top:5px;border-right: 1px dashed grey;display:none;" id="div_search_control">
 			<div class="form-group row" style="vertical-align:center;">
 				
-				<div class="col-sm-8" style="margin-right:0px;margin-top:0px;">
-					<label for="input_search" class="col-sm-12 col-form-label" style="font-size:11px;text-align:left;">Search Gene(s), Transcript(s), Locus</label>
+				<div class="col-sm-9" style="margin-right:0px;margin-top:0px;">
+					<label for="input_search" class="col-sm-12 col-form-label" style="font-size:11px;text-align:left;">Search Gene(s), Transcript(s), Locus, Variant</label>
 			    	<div class="input-group" style="width:100%;height:100%;">
-					  <textarea id='input_search' class="form-control form-control-sm z-depth-999" placeholder="HBB, ENST00000633227, 1:1000000-1500000" aria-label="With textarea" style="max-height:70px;z-index:999;width:100%;height:100%;"></textarea>
+					  <textarea onkeyup="on_write_input()" id='input_search' class="form-control form-control-sm z-depth-999" placeholder="HBB, ENST00000633227, 1:1000000-1500000, 17-43124343-C-T" aria-label="With textarea" style="max-height:70px;z-index:999;width:100%;height:100%;"></textarea>
 					</div>
 			    
 			    </div>
 			    
-			    <div class="col-sm-4" style="margin-left:0px;text-align:middle;">
-			    	<div class="input-group" style="width:100%;padding-top:35px;">
-			    		<center>
-							<button class="btn btn-default disabled" id="div_b_search_icon" type="submit" onclick="launch_gene_search()" style="border:solid 1px black;font-size:9px;">
-						      	<b>RUN</b>
-							</button>
-						</center>
-					</div>
-			    </div>
-			    
-			    <div class="col-sm-4" style="margin-left:0px;text-align:middle;" hidden>
-			    	<table style="padding-top:5px;">
-			    		<tr>
-			    			<div class="form-check form-check-inline">
-								<input class="form-check-input" type="radio" name="flexRadioHg19or38" id="b_use_hg19" value="hg19" disabled>
-								<label class="form-check-label" for="b_use_hg19">
-									HG19
-								</label>
-							</div>
-							<div class="form-check form-check-inline">
-								<input class="form-check-input" type="radio" name="flexRadioHg19or38" id="b_use_hg38" value="hg38" disabled checked>
-								<label class="form-check-label" for="b_use_hg38">
-									HG38
-								</label>
-							</div>
-			    		</tr>
-			    		<!--
-			    		<tr>
-					    	<div class="input-group" style="width:100%;">
+			    <div class="col-sm-3" style="margin-left:0px;text-align:middle;">
+			    	<div class="form-group row" style="vertical-align:center;">
+			    		<div class="col-sm-12" style="margin-left:0px;text-align:middle;display:none;" id="div_select_release">
+			    			<table style="padding-top:5px;height:25px;">
+					    		<tr>
+					    			<div class="form-check form-check-inline">
+										<input class="form-check-input" type="radio" name="flexRadioHg19or38" id="b_use_hg19" value="hg19">
+										<label class="form-check-label" for="b_use_hg19">
+											HG19
+										</label>
+									</div>
+									<div class="form-check form-check-inline">
+										<input class="form-check-input" type="radio" name="flexRadioHg19or38" id="b_use_hg38" value="hg38" checked>
+										<label class="form-check-label" for="b_use_hg38">
+											HG38
+										</label>
+									</div>
+							    	<div class="input-group" style="width:100%;padding-top:10px;">
+							    		<center>
+											<button class="btn btn-default disabled" id="div_b_search_icon_2" type="submit" onclick="launch_variant_search()" style="border:solid 1px black;font-size:9px;">
+										      	<b>RUN</b>
+											</button>
+										</center>
+									</div>
+					    		</tr>
+							</table>
+						</div>
+			    		<div class="col-sm-12" style="margin-right:0px;margin-top:0px;" id="div_select_without_release">
+					    	<div class="input-group" style="width:100%;padding-top:35px;">
 					    		<center>
-									<button class="btn btn-default disabled" id="div_b_search_icon" type="submit" onclick="launch_gene_search()" style="border:solid 1px black;font-size:9px;">
+									<button class="btn btn-default" id="div_b_search_icon" type="submit" onclick="launch_gene_search()" style="border:solid 1px black;font-size:9px;">
 								      	<b>RUN</b>
 									</button>
 								</center>
 							</div>
-						</tr>
-						-->
-					</table>
-				</div>
-				
+						</div>
+					</div>
+			    </div>
 			</div>
 		</div>
 		
@@ -143,6 +141,7 @@
 			    </div>
 			</div>
 		</div>
+		
 		
 </center>
 
