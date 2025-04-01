@@ -850,7 +850,21 @@
 	    	}
 	    	
 	    	function launch_variant_search(use_input) {
-	    		alert ('CHECK VARIANT '+use_input);
+    			show_waiting('Checking... your variation!<br><i>-> A new page will open...</i>');
+		    	var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&variant=" + document.getElementById("input_search").value;
+		    	url += "&filters_cons='mature-mirna,splice_acc/don,splice_acceptor/donor,frameshift,stop-gained,(start/stop)-lost,ncrna,missense,no-frameshift,splice_region,predicted_splice_region,pseudogene,utr,synonymous,upstream,downstream,intronic'";
+		    	url += "&models=strict_denovo,denovo,recessive,both,any_parent,solo"
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'session_id') {
+							dijit.byId('waiting').hide();
+			    			use_session_id = data.session_id;
+			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
+			    			window.open(window_url, '_blank').focus();
+			    		}
+  					});
+			    });
+	    		
 	    	}
 	    	
 	    	function on_write_input() {

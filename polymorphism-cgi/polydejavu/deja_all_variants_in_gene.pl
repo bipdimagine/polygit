@@ -196,7 +196,6 @@ if ($gene_id) {
 elsif ($variant_id) {
 	$variant_id =~ s/-/_/g;
 	$only_variant = $project_init->_newVariant($variant_id);
-	warn ref($only_variant).' -> '.$only_variant->id;
 	my @lGenes = @{$only_variant->getGenes()};
 	$gene_init = $lGenes[0];
 	$gene_init_id_for_newgene = $gene_init->id();
