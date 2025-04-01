@@ -3646,7 +3646,8 @@ sub infos_dejavu_parquet {
 		$sql .= " WHERE chr19='".$self->getChromosome->id()."' and pos19 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 	}
 	else { confess("\n\nERROR VAR PARQUET DEJAVU !\n\n"); }
-	my $cmd = qq{set +H | duckdb -json -c "$sql"};
+	my $duckdb = $project->buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 	my $json_duckdb = `$cmd`;
 	if ($json_duckdb) {
 		my $decode = decode_json $json_duckdb;
