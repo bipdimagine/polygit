@@ -55,6 +55,7 @@ my $cgi = new CGI();
 my $user_name = $cgi->param('user');
 my $pwd = $cgi->param('pwd');
 my $variant_id = $cgi->param('variant');
+my $release = $cgi->param('release');
 my $gene_id = $cgi->param('gene');
 my $gene_id_alt = $cgi->param('gene_alt');
 my $only_transcript = $cgi->param('only_transcript');
@@ -193,7 +194,17 @@ if ($gene_id) {
 		supressCoreFilesFound();
 	}
 }
+#TODO: here
 elsif ($variant_id) {
+	if ($release eq 'HG19') {
+		my $buffer_hg19 = new GBuffer;
+		my $project_hg19 = $buffer_hg19->newProject( -name => $buffer_hg19->getRandomProjectName('HG19_CNG') );
+		$variant_id =~ s/-/_/g;
+		my $v_hg19 = $project_hg19->_newVariant($variant_id);
+		$variant_id = $v_hg19->lift_over('HG38')->{id};
+		$project_hg19 = undef;
+		$buffer_hg19 = undef;
+	}
 	$variant_id =~ s/-/_/g;
 	$only_variant = $project_init->_newVariant($variant_id);
 	my @lGenes = @{$only_variant->getGenes()};
