@@ -210,6 +210,7 @@ my $vectors = dejavu_duckdb::get_hash_model_variant($chr);
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
 			my $model= dejavu_duckdb::find_variant_model($vectors, $index_lmdb, $pid);
 			$bit_models = $bit_models | $model;
+			
 			push(@values,$dp);
 			push(@values,$alt);
 			push(@values,$model);
@@ -300,12 +301,11 @@ sub save_and_lift_rocks {
 			my $dp = $v->{patients_calling}->{$pid}->{dp};
 			my $ratio = $v->{patients_calling}->{$pid}->{pc};
 			my $alt = int($dp*($ratio/100));
-			my $model = $v->{patients_calling}->{$pid}->{model};
-			$bit_models = $bit_models | $model;
 			$max_dp = $dp if $dp > $max_dp;
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
 			my $model= dejavu_duckdb::find_variant_model($vectors, $i, $pid);
-			
+			$bit_models = $bit_models | $model;
+
 			push(@values,$dp);
 			push(@values,$alt);
 			push(@values,$model);
