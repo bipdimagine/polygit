@@ -226,7 +226,7 @@ sub HG19_HG38 {
 			
 			$max_dp = $dp if $dp > $max_dp;
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
-			my $model= dejavu_duckdb::find_variant_model($vectors, $index_lmdb, $pid);
+			my $model= dejavu_duckdb::find_variant_model($vectors, int($index_lmdb), $pid);
 			$bit_models = $bit_models | $model;
 			push(@values,$dp);
 			push(@values,$alt);

@@ -93,20 +93,17 @@ my $h_models_ids = {
     error         => 1 << 9,  # 2^9 = 512
 };
 
-	
-	sub find_variant_model {
+sub find_variant_model {
 	my ($h_models, $vid, $patient_id) = @_;
-	
 	return $h_models_ids->{solo} if exists $h_models->{$patient_id}->{solo};
-	if (exists $h_models->{$patient_id}->{dominant}) {
-		return $h_models_ids->{dominant} if $h_models->{$patient_id}->{dominant}->contains($vid);
+	if (exists $h_models->{$patient_id}->{'dominant'}) {
+		return $h_models_ids->{dominant} if $h_models->{$patient_id}->{dominant}->contains(int($vid));
 	}
 	foreach my $model_name ('strict_denovo', 'denovo', 'recessif', 'father', 'mother', 'both') {
-		return $h_models_ids->{$model_name} if $h_models->{$patient_id}->{$model_name}->contains($vid);
+		return $h_models_ids->{$model_name} if $h_models->{$patient_id}->{$model_name}->contains(int($vid));
 	}
 	return $h_models_ids->{error};
 }
-
 
 sub get_hash_model_variant {
 	my ($chr, $vector_id) = @_;
@@ -124,15 +121,15 @@ sub get_hash_model_variant {
 			$hvector->{$patient_id}->{recessif} = $fam->getVector_individual_recessive($chr,$patient);
 			$hvector->{$patient_id}->{father} = $fam->getFatherVector($chr);
 			$hvector->{$patient_id}->{mother} = $fam->getMotherVector($chr);
-			$hvector->{$patient_id}->{both}  = $hvector->{father}->{$patient_id} & $hvector->{mother}->{$patient_id};
-			$hvector->{$patient_id}->{both} -= $hvector->{recessif}->{$patient_id};
+			$hvector->{$patient_id}->{both}  = $hvector->{$patient_id}->{father} & $hvector->{$patient_id}->{father};
+			$hvector->{$patient_id}->{both} -= $hvector->{$patient_id}->{recessif};
 		}
 		else {
 			$hvector->{$patient_id}->{solo} = 1;
 		}
 	}
 	return $hvector;
-}	
+}		
 
 
 sub compress1 {
