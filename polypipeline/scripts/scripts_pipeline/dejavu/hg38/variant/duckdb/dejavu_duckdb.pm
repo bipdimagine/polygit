@@ -93,19 +93,17 @@ my $h_models_ids = {
     error         => 1 << 9,  # 2^9 = 512
 };
 
-	
 sub find_variant_model {
 	my ($h_models, $vid, $patient_id) = @_;
 	return $h_models_ids->{solo} if exists $h_models->{$patient_id}->{solo};
-	if (exists $h_models->{$patient_id}->{dominant}) {
-		return $h_models_ids->{dominant} if $h_models->{$patient_id}->{dominant}->contains($vid);
+	if (exists $h_models->{$patient_id}->{'dominant'}) {
+		return $h_models_ids->{dominant} if $h_models->{$patient_id}->{dominant}->contains(int($vid));
 	}
 	foreach my $model_name ('strict_denovo', 'denovo', 'recessif', 'father', 'mother', 'both') {
-		return $h_models_ids->{$model_name} if $h_models->{$patient_id}->{$model_name}->contains(defined($vid));
+		return $h_models_ids->{$model_name} if $h_models->{$patient_id}->{$model_name}->contains(int($vid));
 	}
 	return $h_models_ids->{error};
 }
-
 
 sub get_hash_model_variant {
 	my ($chr, $vector_id) = @_;
@@ -131,7 +129,7 @@ sub get_hash_model_variant {
 		}
 	}
 	return $hvector;
-}	
+}		
 
 
 sub compress1 {

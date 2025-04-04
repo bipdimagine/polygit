@@ -303,7 +303,7 @@ sub save_and_lift_rocks {
 			my $alt = int($dp*($ratio/100));
 			$max_dp = $dp if $dp > $max_dp;
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
-			my $model= dejavu_duckdb::find_variant_model($vectors, $i, $pid);
+			my $model= dejavu_duckdb::find_variant_model($vectors, int($i), $pid);
 			$bit_models = $bit_models | $model;
 
 			push(@values,$dp);
