@@ -88,8 +88,7 @@ my $global_id;
 
 # pour construire le path d'acces au bam pour IGV
 
-my $bam_dir  = $patient->getProject->getAlignmentUrl($patient->alignmentMethod);
-my $bamFiles = $bam_dir.$patientname.".bam";
+my $bamFiles = $patient->bamUrl();
 my $bamNames = $patientname;
 
 my $patientFamily = $patient->getFamily();
@@ -102,7 +101,7 @@ if ($patientFamily->isTrio())
 	foreach my $m (@$members)
 	{
 		my $membername = $m->name();
-		$bamFiles .= ",".$bam_dir.$membername.".bam" unless ($membername eq $patientname);
+		$bamFiles .= ",".$bamFiles unless ($membername eq $patientname);
 		$bamNames .= ",".$membername unless ($membername eq $patientname);
 	}
 }
