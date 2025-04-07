@@ -1303,7 +1303,14 @@
 					return;
 				}
 		    	
-				if (document.getElementById('b_only_pat_ill').checked == true) { url += "&only_ill=1"; }
+				if (document.getElementById('b_only_pat_ill').checked == true) {
+					if (document.getElementById('b_only_strict_pat_ill').checked == true) {
+						url += "&only_strict_ill=1";
+					}
+					else {
+						url += "&only_ill=1";
+					}
+				}
 				if (document.getElementById('b_only_my_projects').checked == true) {
 					var filter_type_project = document.getElementById("form_only_my_projects_type").value;
 					if (filter_type_project == "") { url += "&only_my_projects=1"; }

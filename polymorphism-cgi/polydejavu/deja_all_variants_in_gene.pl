@@ -65,6 +65,7 @@ $max_gnomad = $cgi->param('gnomad');
 $max_gnomad_ho = $cgi->param('gnomad_ho');
 my $filters_cons = $cgi->param('filters_cons');
 my $only_ill = $cgi->param('only_ill');
+my $only_strict_ill = $cgi->param('only_strict_ill');
 my $only_my_projects = $cgi->param('only_my_projects');
 my $models = $cgi->param('models');
 my $use_session_id = $cgi->param('session_id');
@@ -80,6 +81,8 @@ my $debug = $cgi->param('debug');
 $fork = $cgi->param('fork');
 
 $fork = 6 if not $fork;
+
+$only_ill = 1 if ($only_strict_ill);
 
 my ($only_project, $only_patient);
 my ($project_dejavu, $gene_with_partial_transcrit);
@@ -610,6 +613,7 @@ sub export_html {
 	$h_annot_categories->{'gnomad_'.$max_gnomad} = 1 if ($max_gnomad);
 	$h_annot_categories->{'gnomad_ho_'.$max_gnomad_ho} = 1 if ($max_gnomad_ho);
 	$h_annot_categories->{'only_ill_patients'} = 1 if ($only_ill);
+	$h_annot_categories->{'only_strict_ill_patients'} = 1 if ($only_strict_ill);
 	if ($only_my_projects) {
 		if ($only_my_projects eq '1') { $h_annot_categories->{'only_my_projects'} = 1; }
 		else { $h_annot_categories->{"only_my_projects <span style='color:red;'>$only_my_projects</span>"} = 1; }
@@ -1085,8 +1089,11 @@ sub get_table_project_patients_infos {
 #		warn "\n";
 #		warn Dumper $h_tmp_pat;
 #	}
+	
+	my $found_healthy_patient;
 	foreach my $pat (@{$p->getPatients()}) {
 		if (not $pat->isIll() and $only_ill) {
+			$found_healthy_patient = 1;
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
 			next;
 		}
@@ -1104,6 +1111,7 @@ sub get_table_project_patients_infos {
 	}
 	
 	return undef if not $h_infos_patients or scalar keys %$h_infos_patients == 0;
+	return undef if ($only_strict_ill and $found_healthy_patient);
 	
 #	my $gene_name =$gene_used->external_name();
 #	my $fam = $patient->getFamily();

@@ -1484,9 +1484,7 @@ sub _getFile {
 }
 
 
-
-
-has bamUrl => (
+has alignmentUrl => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
@@ -1500,6 +1498,15 @@ has bamUrl => (
 
 		#warn $bam_dir;
 		return $bam_dir . "/" . $t[-1];
+	},
+);
+
+has bamUrl => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		return $self->alignmentUrl();
 	},
 );
 
