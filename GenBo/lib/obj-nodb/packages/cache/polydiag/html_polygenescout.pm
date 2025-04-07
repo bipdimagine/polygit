@@ -236,7 +236,7 @@ sub print_locus_hg38_hg19 {
 	my $gene_locus_hg38 = $chr_locus.':'.$start_locus.'-'.$end_locus;
 	my $gene_locus_hg19;
 	my $buffer_hg19 = new GBuffer;
-	my $proj_hg19_name = $buffer_hg19->getRandomProjectName('HG19');
+	my $proj_hg19_name = $buffer_hg19->getRandomProjectName('HG19', '46.20');
 	my $proj_hg19 = $buffer_hg19->newProject( -name => $proj_hg19_name );
 	$proj_hg19->{version} = 'HG19';
 	my $gene_hg19;

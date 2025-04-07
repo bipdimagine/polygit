@@ -124,6 +124,7 @@ foreach my $project_name_excluded (split(',', $projects_excluded)) {
 
 my $hProjects_not_dejavu;
 
+my $nb_variants_before_filters;
 my @headers_validations = ("#", "varsome","alamut variant","var_name","projects / patients","gnomad","deja_vu","table_validation","table_transcript");
 #my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift",'alphamissense',"cadd","revel","dbscsnv",'spliceAI');
@@ -680,7 +681,7 @@ sub get_html_gene {
 	my $html_gene = update_variant_editor::panel_gene($hResGene->{$gene_init_id});
 	$html_gene =~ s/CNV//;
 	my $regexp1 = qq{<span class=\'badge badge-infos badge-xs \' style="color:#00C851"  >[0-9]+ </span>};
-	my $regexp2 = qq{<span class=\'badge badge-infos badge-xs \' style="color:#00C851"  > $nb_selected/$total_v </span>};
+	my $regexp2 = qq{<span class=\'badge badge-infos badge-xs \' style="color:#00C851"  > $nb_selected/$nb_variants_before_filters </span>};
 	$html_gene =~ s/$regexp1/$regexp2/;
 	if ($description_gene) {
 		$html_gene =~ s/<\/table>//;
@@ -733,7 +734,9 @@ sub update_list_variants_from_dejavu {
 	my $lift = liftOver->new(project=>$project_dejavu, version=>$project_dejavu->lift_genome_version);
 	$lift->lift_over_variants(\@lVar);
 	
-	print '.!nbRocksIds:'.scalar(keys %{$h_dv_var_ids}).'!.';
+	
+	$nb_variants_before_filters = scalar(keys %{$h_dv_var_ids});
+	print '.!nbRocksIds:'.$nb_variants_before_filters.'!.';
 	my $h_projects_filters_he_comp;
 	if ($only_pat_with_var) {
 		my $var_dv = $project_dejavu->_newVariant($only_pat_with_var);
