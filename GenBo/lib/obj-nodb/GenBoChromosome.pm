@@ -1502,8 +1502,6 @@ sub get_lmdb_patients {
 
 
 
-
-
 sub rocks_polyviewer_directory {
 	my ($self) = @_;
 	return $self->project->rocks_directory("polyviewer");
