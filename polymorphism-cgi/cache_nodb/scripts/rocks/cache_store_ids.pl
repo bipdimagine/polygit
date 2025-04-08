@@ -306,7 +306,6 @@ sub get_ids {
 		for (my $i=0;$i<@$gene_ids;$i++){
 			$z->[$i] = "!".$gene_ids->[$i] ;
 		}
-		
 			$project->rocksGenBo->prepare($z);
 	}
 	
@@ -350,6 +349,11 @@ sub get_ids {
 	my $hpolyviewer;
 	foreach my $variation ( @{$vs } ) {
 		next if ($variation->type =~ /junction/ );
+		
+		#TODO: a ne pas oublier d'enlever apres TEST
+		#next if ($variation->isCnv() );
+		
+		
 		my $debug ;
 		$nb ++;
 		warn $nb."/".scalar @{$vs } if $nb %30000 == 0; 

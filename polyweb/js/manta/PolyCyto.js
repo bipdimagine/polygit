@@ -1846,18 +1846,19 @@ function launch_web_igv_start_and_end(value)
 		taille = v[4];
 	} 
 	
-	// pour lancer web_igv
-	var url_viewer = "PolyCyto_IGV_Viewer.html?titre=" + titre + "&locusstart=" + locusstart + "&locusend=" + locusend + "&bamfile=" + bamfile + "&patient_name=" + patient_name + "&taille=" + taille;
-	if (url_gene_bed) { url_viewer += "&genes_bed=" + url_gene_bed; }
-	if (url_fasta) { url_viewer += "&fasta=" + url_fasta; }
-	var myWindow = window.open(url_viewer,"_blank",""); 
- 
  	// pour lancer appli IGV si elle est ouverte
 	var tab_bamfile = bamfile.split(',');
 	displayListBamInIgvApp(tab_bamfile); 
 		
 	var locus =locusstart+ ' ' +locusend;
     displayInIGVLocus(locus);
+	
+	// pour lancer web_igv
+	var url_viewer = "PolyCyto_IGV_Viewer.html?titre=" + titre + "&locusstart=" + locusstart + "&locusend=" + locusend + "&bamfile=" + bamfile + "&patient_name=" + patient_name + "&taille=" + taille;
+	if (url_gene_bed) { url_viewer += "&genes_bed=" + url_gene_bed; }
+	if (url_fasta) { url_viewer += "&fasta=" + url_fasta; }
+	var myWindow = window.open(url_viewer,"_blank",""); 
+ 
 	
  }
  

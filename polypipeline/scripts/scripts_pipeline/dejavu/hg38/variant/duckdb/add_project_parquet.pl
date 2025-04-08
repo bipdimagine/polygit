@@ -39,11 +39,12 @@ use MCE::Flow;
 use dejavu_duckdb;
 my $fork = 1;
 my $project_name;
-
+my $force;
 
 GetOptions(
 	'fork=s' => \$fork,
 	'project=s' => \$project_name,
+	'force=s' => \$force,
 );
 
 
@@ -62,10 +63,24 @@ my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome
 my $data_lift;	
 my @chromosomes = shuffle (@{$project->getChromosomes});
 #my $dir_parquet = "/data-beegfs/parquet_HG19_HG38/";
-my $dir_parquet = "/data-beegfs/projects.parquet/";
- my $pm2 = new Parallel::ForkManager($fork);
+#my $dir_parquet = "/data-beegfs/projects.parquet/";
+my $dir_parquet = $buffer->dejavu_parquet_dir();
+
 my $parquet_file = $dir_parquet."/".$project->name.".".$project->id.".parquet";
-#exit(0) if -e $parquet_file;
+
+my $can_dejavu = 1;
+foreach my $pname (@{$buffer->getQuery->listProjectsWithoutDejaVu()}) {
+	next if $pname ne $project_name;
+	$can_dejavu = undef;
+	last;
+}
+
+if (not $can_dejavu) { $parquet_file .= '.no_dejavu'; }
+warn $parquet_file;
+
+exit(0) if -e $parquet_file and not $force;
+
+my $pm2 = new Parallel::ForkManager($fork);
 $project->getPatients;
 $project->preload_patients();
 
@@ -195,6 +210,7 @@ my $vectors = dejavu_duckdb::get_hash_model_variant($chr);
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
 			my $model= dejavu_duckdb::find_variant_model($vectors, $index_lmdb, $pid);
 			$bit_models = $bit_models | $model;
+			
 			push(@values,$dp);
 			push(@values,$alt);
 			push(@values,$model);
@@ -285,12 +301,11 @@ sub save_and_lift_rocks {
 			my $dp = $v->{patients_calling}->{$pid}->{dp};
 			my $ratio = $v->{patients_calling}->{$pid}->{pc};
 			my $alt = int($dp*($ratio/100));
-			my $model = $v->{patients_calling}->{$pid}->{model};
-			$bit_models = $bit_models | $model;
 			$max_dp = $dp if $dp > $max_dp;
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
-			my $model= dejavu_duckdb::find_variant_model($vectors, $i, $pid);
-			
+			my $model= dejavu_duckdb::find_variant_model($vectors, int($i), $pid);
+			$bit_models = $bit_models | $model;
+
 			push(@values,$dp);
 			push(@values,$alt);
 			push(@values,$model);

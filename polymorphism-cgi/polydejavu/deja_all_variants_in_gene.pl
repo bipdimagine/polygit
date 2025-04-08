@@ -36,6 +36,7 @@ use QueryVectorFilter;
 use IO::Handle;
 use xls_export;
 use session_export;
+use MIME::Base64;
 
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/html_polygenescout.pm";
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
@@ -53,6 +54,8 @@ my $fork;
 my $cgi = new CGI();
 my $user_name = $cgi->param('user');
 my $pwd = $cgi->param('pwd');
+my $variant_id = $cgi->param('variant');
+my $release = $cgi->param('release');
 my $gene_id = $cgi->param('gene');
 my $gene_id_alt = $cgi->param('gene_alt');
 my $only_transcript = $cgi->param('only_transcript');
@@ -62,6 +65,7 @@ $max_gnomad = $cgi->param('gnomad');
 $max_gnomad_ho = $cgi->param('gnomad_ho');
 my $filters_cons = $cgi->param('filters_cons');
 my $only_ill = $cgi->param('only_ill');
+my $only_strict_ill = $cgi->param('only_strict_ill');
 my $only_my_projects = $cgi->param('only_my_projects');
 my $models = $cgi->param('models');
 my $use_session_id = $cgi->param('session_id');
@@ -77,6 +81,8 @@ my $debug = $cgi->param('debug');
 $fork = $cgi->param('fork');
 
 $fork = 6 if not $fork;
+
+$only_ill = 1 if ($only_strict_ill);
 
 my ($only_project, $only_patient);
 my ($project_dejavu, $gene_with_partial_transcrit);
@@ -97,6 +103,8 @@ $user_name = lc($user_name);
 my $buffer_init = new GBuffer;
 my $can_use_hgmd = $buffer_init->hasHgmdAccess($user_name);
 
+my $dir_parquet = $buffer_init->dejavu_parquet_dir();
+
 my $h_filters_cons;
 if ($filters_cons) {
 	foreach my $cons (split(',', $filters_cons)) {
@@ -109,10 +117,14 @@ my $hRes;
 $hRes->{ok} = 1;
 my @lItemsProjects;
 my $hProjects = get_hash_users_projects($user_name, $pwd);
+
 foreach my $project_name_excluded (split(',', $projects_excluded)) {
 	delete $hProjects->{$project_name_excluded};
 }
 
+my $hProjects_not_dejavu;
+
+my $nb_variants_before_filters;
 my @headers_validations = ("#", "varsome","alamut variant","var_name","projects / patients","gnomad","deja_vu","table_validation","table_transcript");
 #my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift",'alphamissense',"cadd","revel","dbscsnv",'spliceAI');
@@ -125,7 +137,8 @@ my $dbh_init = $buffer_init->dbh();
 my $query_init = $buffer_init->getQuery();
 my $project_init;
 
-my ($h_projects_name_with_capture,$h_proj_pat_all,$h_proj_pat_ill);
+my @lProjectNames;
+my ($h_projects_name_with_capture,$h_proj_pat_all);
 if ($only_my_projects and $only_my_projects ne '1') {
 	if ($only_my_projects eq 'only_genomes') {
 		foreach my $p_name (@{$query_init->getSimilarProjectsByAnalyse('genome')}) {
@@ -142,21 +155,22 @@ if ($only_my_projects and $only_my_projects ne '1') {
 			$h_projects_name_with_capture->{$p_name} = undef;
 		}
 	}
+	foreach my $p_name (reverse sort keys %{$hProjects}) {
+		next if not exists $h_projects_name_with_capture->{$p_name};
+		push(@lProjectNames, $p_name);
+	}
 }
-my @lProjectNames = reverse sort keys %{$hProjects};
+else {
+	@lProjectNames = reverse sort keys %{$hProjects};
+}
 
 my $hProjectsIds;
 foreach my $project_name (@lProjectNames) {
 	$hProjectsIds->{$hProjects->{$project_name}->{id}} = $project_name;
-	
 	my $h;
 	$h->{name} = $project_name;
 	$h->{description} = $hProjects->{$project_name}->{description};
 	$h->{id} = $hProjects->{$project_name}->{id};
-	if ($only_ill) {
-		$h_proj_pat_ill->{$project_name} = get_hash_patients_ill_from_project_name($dbh_init, $query_init, $project_name);
-	}
-	$h_proj_pat_all->{$project_name} = get_hash_patients_all_from_project_name($dbh_init, $query_init, $project_name);
 	push(@lItemsProjects, $h);
 }
 
@@ -167,23 +181,52 @@ my $project_name_hg19 = $buffer_init->getRandomProjectName('HG19_CNG');
 $project_init = $buffer_init->newProject( -name => $project_name_hg38 );
 
 my $genomeFai_init = $project_init->getGenomeFai();
-my $gene_init;
-eval { $gene_init = $project_init->newGene($gene_id); };
-if ($@) {
-	$gene_init = $project_init->newGene($gene_id_alt);
-	supressCoreFilesFound();
+my $only_variant;
+my ($gene_init, $gene_ensg, $gene_chr_id, $gene_init_id, $gene_init_id_for_newgene);
+if ($gene_id) {
+	eval { $gene_init = $project_init->newGene($gene_id); };
+	if ($@) {
+		$gene_init = $project_init->newGene($gene_id_alt);
+		supressCoreFilesFound();
+	}
+	$gene_init_id_for_newgene = $gene_id;
+	eval { ($gene_ensg, $gene_chr_id) = split('_', $gene_init->id()); };
+	if ($@) {
+		$gene_init_id_for_newgene = $gene_id_alt;
+		$gene_init = $project_init->newGene($gene_id_alt);
+		($gene_ensg, $gene_chr_id) = split('_', $gene_init->id());
+		supressCoreFilesFound();
+	}
 }
-my $gene_init_id_for_newgene = $gene_id;
-my ($gene_ensg, $gene_chr_id);
-eval { ($gene_ensg, $gene_chr_id) = split('_', $gene_init->id()); };
-if ($@) {
-	$gene_init_id_for_newgene = $gene_id_alt;
-	$gene_init = $project_init->newGene($gene_id_alt);
+#TODO: here
+elsif ($variant_id) {
+	if ($release eq 'HG19') {
+		my $buffer_hg19 = new GBuffer;
+		my $project_hg19 = $buffer_hg19->newProject( -name => $buffer_hg19->getRandomProjectName('HG19_CNG') );
+		$variant_id =~ s/-/_/g;
+		my $v_hg19 = $project_hg19->_newVariant($variant_id);
+		$variant_id = $v_hg19->lift_over('HG38')->{id};
+		$project_hg19 = undef;
+		$buffer_hg19 = undef;
+	}
+	$variant_id =~ s/-/_/g;
+	$only_variant = $project_init->_newVariant($variant_id);
+	my @lGenes = @{$only_variant->getGenes()};
+	$gene_init = $lGenes[0];
+	$gene_init_id_for_newgene = $gene_init->id();
 	($gene_ensg, $gene_chr_id) = split('_', $gene_init->id());
-	supressCoreFilesFound();
+	$max_dejavu = 999999999999;
+	$max_dejavu_ho = 999999999999;
+	$max_gnomad = 999999999999;
+	$max_gnomad_ho = 999999999999;
+	$fork = 1; 
 }
+my $chr_init = $project_init->getChromosome($gene_chr_id);
+my $chr_init_id = $chr_init->id();
+$gene_init->getTranscripts();
+$gene_init_id = $gene_init->id();
 
-my ($use_start, $use_end);
+my ($use_locus, $only_rocks_id);
 if ($only_interval) {
 	$only_interval =~ s/chr//g;
 	$only_interval =~ s/:/_/g;
@@ -196,19 +239,12 @@ if ($only_interval) {
 		$locus_end = $t;
 	}
 	next if ($gene_init->getChromosome->id() ne $locus_chr);
-	$use_start = $locus_start;
-	$use_end = $locus_end;
+	$use_locus = $gene_chr_id.'_'.$locus_start.'_'.$locus_end;
 }
-else {
-	$use_start = $gene_init->start();
-	$use_end = $gene_init->end();
+elsif ($only_variant) {
+	$only_rocks_id = $only_variant->rocksdb_id();
+	$use_locus = $gene_chr_id.'_'.($only_variant->start() - 1).'_'.($only_variant->end() + 1);
 }
-my $use_locus = $gene_chr_id.'_'.$use_start.'_'.$use_end;
-
-my $chr_init = $project_init->getChromosome($gene_chr_id);
-my $chr_init_id = $chr_init->id();
-$gene_init->getTranscripts();
-my $gene_init_id = $gene_init->id();
 
 $project_init->getChromosomes();
 my $hchr_init = $project_init->{chromosomes_object};
@@ -226,9 +262,10 @@ my ($filters_saved, $hResVariants_loaded, $h_count_loaded, $gene_id_loaded);
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
 my $h_count;
-($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels) = get_variants_infos_from_projects($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript);
-my $nb_var_after = scalar(keys %$hVariantsDetails);
+#($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels) = get_variants_infos_from_projects($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript);
+#my $nb_var_after = scalar(keys %$hVariantsDetails);
 
+($hResVariants) = get_variants_infos_from_projects($use_locus, $only_transcript, $only_rocks_id);
 
 my $fsize = "font-size:10px";
 my $value_red = 14;
@@ -276,26 +313,26 @@ sub save_export_xls {
 	print '_save_xls_';
 	$project_dejavu->cgi_object(1);
 	my (@lVarObj, $h_pubmed);
-	foreach my $pos (sort keys %{$hResVariants}) {
-		foreach my $var_id (sort keys %{$hResVariants->{$pos}}) {
-			$project_dejavu->print_dot(50);
-			my $v = $project_dejavu->_newVariant($var_id);
-			if ($gene_with_partial_transcrit) {
-				$v->variationTypeInterface($gene_init);
-			}
-			push(@lVarObj, $v);
-			if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
-				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
-				$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
-				foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
-					if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
-						$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
-						$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
-					}
+#	foreach my $pos (sort keys %{$hResVariants}) {
+	foreach my $var_id (sort keys %{$hResVariants}) {
+		$project_dejavu->print_dot(50);
+		my $v = $project_dejavu->_newVariant($var_id);
+		if ($gene_with_partial_transcrit) {
+			$v->variationTypeInterface($gene_init);
+		}
+		push(@lVarObj, $v);
+		if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
+			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
+			foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
+				if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
+					$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
+					$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
 				}
 			}
 		}
 	}
+#	}
 	my $xls_export = new xls_export();
 	$xls_export->title_page('GeneScout_'.$gene_init->external_name().'.xls');
 	$project_dejavu->buffer->dbh_deconnect();
@@ -399,112 +436,124 @@ sub export_html {
 	$out2 .= "</thead>";
 	$out2 .= "<tbody>";
 	
-	#warn "\n\n";
-	#warn 'Nb Var Init: '.scalar keys %$hResVariants;
-	
 	my @lTrLines;
 	my $nb_var = 0;
 	my $nb_var_filtred = 0;
 	
-	
-#	warn Dumper $hResVariants;
-#	die;
-	
-	foreach my $pos (sort keys %{$hResVariants}) {
-		foreach my $var_id (sort keys %{$hResVariants->{$pos}}) {
-			next if not exists $hResVariantsListPatients->{$var_id};
-			next if scalar keys %{$hResVariantsListPatients->{$var_id}} == 0;
-			$nb_var++;
-						
-			my $hvariation->{html} = $hResVariants->{$pos}->{$var_id};
-			unless ($can_use_hgmd) {
-				$hvariation->{html}->{hgmd} = qq{<span class="glyphicon glyphicon-ban-circle" aria-hidden="true" style='font-size:12px;color:black;'></span>};
-			}
-			my $class_default;
-			$class_default->{style} = "max-width:350px;overflow-x:auto;vertical-align:middle;padding:5px;";
-			
-			my @l_pat;
-			foreach my $project_name (keys %{$hResVariantsListPatients->{$var_id}}) {
-				foreach my $pat_name (keys %{$hResVariantsListPatients->{$var_id}->{$project_name}}) {
-					my $html_table = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{html};
-					my $percent_allele = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{percent_allele};
-					if ($filter_perc_allelic_max) {
-						push(@l_pat, $html_table) if ($percent_allele < $filter_perc_allelic_max);
-					}
-					else {
-						push(@l_pat, $html_table);
-					}
-				}	
-			}
-			
-			next unless (@l_pat);
-			my $nb_pat = scalar(@l_pat);
-			my $table_trio;
-			if (not $only_project and not $only_patient) {
-				$table_trio .= qq{<div style="text-align:center;font-size:9px;padding-bottom:5px;"><div style="border:solid 0.5px black;"><b><i>Nb Patients: $nb_pat</b></i></div></div>} if ($nb_pat > 1);
-			}
-			$table_trio .= qq{<div style="max-height:170px;max-width:400px;overflow-y:auto;">};
-			
-			if ($only_project and $only_patient) { $table_trio .= join("", @l_pat); }
-			else { $table_trio .= join("<br>", @l_pat); }
-			$table_trio .= qq{</div>};
-			
-			my $out = $cgi->start_Tr();
-			foreach my $h (@headers_validations){
-				if ($h eq "trio" or "table_transcript"){
-					$class->{style} = "min-width:200px;max-width:750px;max-height:200px;overflow-x:auto;vertical-align:middle;padding:5px;white-space: nowrap;";
-				}
-				elsif ($h eq 'var_name') {
-					$class->{style} = "max-width:130px;overflow-x:auto;vertical-align:left;padding:5px;";
-				}
-				elsif ($h eq "projects / patients") {
-					$class->{style} = "width:400px;overflow-x:auto;vertical-align:middle;padding:5px;";
-				}
-				else {
-					$class->{style} = "vertical-align:middle;padding:5px;";
-				}
-				
-				if ($h eq "projects / patients") {
-					$out .= $cgi->td($class, $table_trio);
-				}
-				elsif ($h eq "gnomad") {
-					$out .= $cgi->td($class_default,$hVariantsDetails->{$var_id}->{table_gnomad});
-				}
-				elsif ($h eq "deja_vu") {
-					$out .= $cgi->td($class_default,$hVariantsDetails->{$var_id}->{table_dejavu});
-				}
-				elsif ($h eq 'table_validation') {
-					$out .= $cgi->td($class_default,$hVariantsDetails->{$var_id}->{table_validation});
-				}
-				elsif ($h eq 'table_transcript') {
-					$out .= qq{<div style="max-height:200px;overflow-y:auto;max-width:220px;overflow-x:auto;">};
-					$out .= $cgi->td($class, $hVariantsDetails->{$var_id}->{table_transcript});
-					$out .= qq{</div>};
-				}
-				elsif ($h eq '#') {
-					$out.= $cgi->td($class_default,$nb_var);
-				}
-				elsif ($h eq 'alamut variant') {
-					$out .= $cgi->td($class_default, "<center>".$hVariantsDetails->{$var_id}->{alamut_link_variant}."</center>");
-				}
-				elsif ($h eq 'var_name') {
-					$out .= $cgi->td($class_default, "<center>".$hVariantsDetails->{$var_id}->{table_vname}."</center>");
-				}
-				elsif ($h eq 'varsome') {
-					$out .= $cgi->td($class_default, "<center>".$hVariantsDetails->{$var_id}->{table_varsome}."</center>");
-				}
-				else {
-					$out.= $cgi->td($class_default,$hvariation->{html}->{$h});
-				}
-			}
-			
-			warn Dumper $hVariantsDetails if $debug;
-			warn 'toto' if $debug;
-			
-			$out .= $cgi->end_Tr();
-			push(@lTrLines, $out);
+#	foreach my $pos (sort keys %{$hResVariants}) {
+	foreach my $var_id (sort keys %{$hResVariants}) {
+#		next if not exists $hResVariantsListPatients->{$var_id};
+#		next if scalar keys %{$hResVariantsListPatients->{$var_id}} == 0;
+		$nb_var++;
+					
+		my $hvariation->{html} = $hResVariants->{$var_id};
+		unless ($can_use_hgmd) {
+			$hvariation->{html}->{hgmd} = qq{<span class="glyphicon glyphicon-ban-circle" aria-hidden="true" style='font-size:12px;color:black;'></span>};
 		}
+		my $class_default;
+		$class_default->{style} = "max-width:350px;overflow-x:auto;vertical-align:middle;padding:5px;";
+		
+#		my @l_pat;
+#		foreach my $project_name (keys %{$hResVariantsListPatients->{$var_id}}) {
+#			foreach my $pat_name (keys %{$hResVariantsListPatients->{$var_id}->{$project_name}}) {
+#				my $html_table = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{html};
+#				my $percent_allele = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{percent_allele};
+#				if ($filter_perc_allelic_max) {
+#					push(@l_pat, $html_table) if ($percent_allele < $filter_perc_allelic_max);
+#				}
+#				else {
+#					push(@l_pat, $html_table);
+#				}
+#			}	
+#		}
+#		
+#		next unless (@l_pat);
+#		my $nb_pat = scalar(@l_pat);
+		my $table_trio;
+#		if (not $only_project and not $only_patient) {
+#			$table_trio .= qq{<div style="text-align:center;font-size:9px;padding-bottom:5px;"><div style="border:solid 0.5px black;"><b><i>Nb Patients: $nb_pat</b></i></div></div>} if ($nb_pat > 1);
+#		}
+		$table_trio .= qq{<div style="max-height:170px;max-width:400px;overflow-y:auto;">};
+		
+		if ($hResVariants->{$var_id}->{table_projects_patients}) {
+			$table_trio .= $hResVariants->{$var_id}->{table_projects_patients};
+		}
+		
+#		if ($only_project and $only_patient) { $table_trio .= join("", @l_pat); }
+#		else { $table_trio .= join("<br>", @l_pat); }
+		$table_trio .= qq{</div>};
+		
+#		$VAR1 = 'alamut_link_variant';
+#		$VAR2 = 'annotation';
+#		$VAR3 = 'dejavu_details';
+#		$VAR4 = 'id_hg19';
+#		$VAR5 = 'spliceAI';
+#		$VAR6 = 'table_dejavu';
+#		$VAR7 = 'table_gnomad';
+#		$VAR8 = 'table_projects_patients';
+#		$VAR9 = 'table_transcript';
+#		$VAR10 = 'table_validation';
+#		$VAR11 = 'table_varsome';
+#		$VAR12 = 'table_vname';
+#		$VAR13 = 'var_dejavu';
+#		$VAR14 = 'var_dejavu_ho';
+#		$VAR15 = 'var_gnomad';
+#		$VAR16 = 'var_gnomad_ho';
+		
+		
+		my $out = $cgi->start_Tr();
+		foreach my $h (@headers_validations){
+			if ($h eq "trio" or "table_transcript"){
+				$class->{style} = "min-width:200px;max-width:750px;max-height:200px;overflow-x:auto;vertical-align:middle;padding:5px;white-space: nowrap;";
+			}
+			elsif ($h eq 'var_name') {
+				$class->{style} = "max-width:130px;overflow-x:auto;vertical-align:left;padding:5px;";
+			}
+			elsif ($h eq "projects / patients") {
+				$class->{style} = "width:400px;overflow-x:auto;vertical-align:middle;padding:5px;";
+			}
+			else {
+				$class->{style} = "vertical-align:middle;padding:5px;";
+			}
+			
+			if ($h eq "projects / patients" or $h eq "table_projects_patients") {
+				$out .= $cgi->td($class, $table_trio);
+			}
+			elsif ($h eq "gnomad") {
+				$out .= $cgi->td($class_default,$hResVariants->{$var_id}->{table_gnomad});
+			}
+			elsif ($h eq "deja_vu") {
+				$out .= $cgi->td($class_default,$hResVariants->{$var_id}->{table_dejavu});
+			}
+			elsif ($h eq 'table_validation') {
+				$out .= $cgi->td($class_default,$hResVariants->{$var_id}->{table_validation});
+			}
+			elsif ($h eq 'table_transcript') {
+				$out .= qq{<div style="max-height:200px;overflow-y:auto;max-width:220px;overflow-x:auto;">};
+				$out .= $cgi->td($class, $hResVariants->{$var_id}->{table_transcript});
+				$out .= qq{</div>};
+			}
+			elsif ($h eq '#') {
+				$out.= $cgi->td($class_default,$nb_var);
+			}
+			elsif ($h eq 'alamut variant') {
+				$out .= $cgi->td($class_default, "<center>".$hResVariants->{$var_id}->{alamut_link_variant}."</center>");
+			}
+			elsif ($h eq 'var_name') {
+				$out .= $cgi->td($class_default, "<center>".$hResVariants->{$var_id}->{table_vname}."</center>");
+			}
+			elsif ($h eq 'varsome') {
+				$out .= $cgi->td($class_default, "<center>".$hResVariants->{$var_id}->{table_varsome}."</center>");
+			}
+			else {
+				$out.= $cgi->td($class_default,$hvariation->{html}->{$h});
+			}
+		}
+		
+		$out .= $cgi->end_Tr();
+		push(@lTrLines, $out);
 	}
+#	}
 	
 #	warn Dumper @lTrLines;
 #	die;
@@ -565,6 +614,7 @@ sub export_html {
 	$h_annot_categories->{'gnomad_'.$max_gnomad} = 1 if ($max_gnomad);
 	$h_annot_categories->{'gnomad_ho_'.$max_gnomad_ho} = 1 if ($max_gnomad_ho);
 	$h_annot_categories->{'only_ill_patients'} = 1 if ($only_ill);
+	$h_annot_categories->{'only_strict_ill_patients'} = 1 if ($only_strict_ill);
 	if ($only_my_projects) {
 		if ($only_my_projects eq '1') { $h_annot_categories->{'only_my_projects'} = 1; }
 		else { $h_annot_categories->{"only_my_projects <span style='color:red;'>$only_my_projects</span>"} = 1; }
@@ -602,319 +652,13 @@ sub save_html {
 	$session->save( 'gencode_version', $hRes->{'gencode_version'} );
 }
 
-
 sub get_variants_infos_from_projects {
-	my ($hResVariants_loaded, $hVariantsDetails, $hVariantsIds, $hResVariantsModels, $use_locus, $only_transcript) = @_;
+	my ($use_locus, $only_transcript, $only_rocks_id) = @_;
 	my ($h_count, $hVariantsProj);
 	print '_update_dv_';
-	($h_count, $hVariantsDetails, $hVariantsIds) = update_list_variants_from_dejavu($project_init_name, $gene_init_id_for_newgene, $h_proj_pat_all, $h_proj_pat_ill, $hResVariants_loaded, $hVariantsDetails, $hResVariantsRatioAll, $hResVariantsModels, $use_locus, $only_transcript);
-	
-	
-	my $hgene;
-	$hgene->{id} = $gene_init_id;
-	my @l_p = keys %$hVariantsProj;
-	my $hResVariants;
-	
-	print '.use_fork'.$fork.'.';
-	print 'nbVarFiltred:'.scalar keys %{$hVariantsIds};
-	
-	my $pm = new Parallel::ForkManager($fork);
-	my $nb_errors=0;
-	$pm->run_on_finish(
-		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
-			if (exists $data->{variants} and $data->{variants_details} and $data->{variants_list_patients}) {
-				delete $data->{start_job};
-				foreach my $start (keys %{$data->{variants}}) {
-					foreach my $var_id (keys %{$data->{variants}->{$start}}) {
-						
-						
-						$hResVariants->{$start}->{$var_id} = $data->{variants}->{$start}->{$var_id};# if ($data->{variants}->{$start}->{$var_id}->{table_vname});
-						
-						#$hVariantsDetails->{$var_id} = $data->{variants_details}->{$var_id};
-						foreach my $cat (keys %{$data->{variants_details}->{$var_id}}) {
-							my $value = $data->{variants_details}->{$var_id}->{$cat};
-							next if (not $value);
-							$hVariantsDetails->{$var_id}->{$cat} = $value;
-						}
-						
-						
-						foreach my $proj_name (keys %{$data->{variants_list_patients}->{$var_id}}){
-							foreach my $pat_name (keys %{$data->{variants_list_patients}->{$var_id}->{$proj_name}}) {
-								$hResVariantsListPatients->{$var_id}->{$proj_name}->{$pat_name} = $data->{variants_list_patients}->{$var_id}->{$proj_name}->{$pat_name};
-							}
-						}
-					}
-				}
-				foreach my $gene_id (keys %{$data->{gene}}) {
-					$hResGene->{$gene_id} = $data->{gene}->{$gene_id};
-				}
-			}
-		}
-	);
-	
-	my @lProjectName = keys %{$hVariantsDetails->{projects}};
-	my $nb = int((scalar(@lProjectName)+1)/($fork));
-	$nb = 20 if $nb == 0;
-	my $iter = natatime($nb, @lProjectName);
-	while( my @tmp = $iter->() ){
- 	 	my $pid = $pm->start and next;
- 	 	my $hres;
- 	 	$hres->{start_job} = 1;
-		my $buffer_fork_hg38 = new GBuffer;
-		my $project_fork_hg38 = $buffer_fork_hg38->newProject( -name => $project_name_hg38 );
-		$project_fork_hg38->getChromosomes();
-		my $gene_fork_hg38 = $project_fork_hg38->newGene($gene_init_id);
-		
-		foreach my $project_name (reverse sort @tmp) {
-			print '.'.$project_name.'.';
-			$project_fork_hg38->disconnect();
-			my $buffer_fork = new GBuffer;
-			my $project_fork;
-			eval {
-				$project_fork = $buffer_fork->newProjectCache( -name => $project_name );
-			};
-			if ($@) {
-				$project_fork->disconnect();
-				$project_fork = undef;
-				$buffer_fork = undef;
-		 	 	$hres->{not_found} = 1;
-				supressCoreFilesFound();
-			}
-			else {
-				$project_fork->getChromosomes();
-				my $gene_fork = $project_fork->newGene($gene_init_id);
-				my $chr_fork = $gene_fork->getChromosome();
-				
-				my $is_project_hg19;
-				$is_project_hg19 = 1 if $project_fork->version =~ /HG19/;
-				
-				my $v_pos = $chr_fork->getVectorByPosition(int($gene_fork->start) -5000, int($gene_fork->end) +5000);
-
-				if ($only_ill) {
-					my $v_ill = $chr_fork->getNewVector();
-					foreach my $patient_fork (@{$project_fork->getPatients()}) {
-						next if $patient_fork->isHealthy();
-						$v_ill += $patient_fork->getVariantsVector($chr_fork);
-					}
-					$v_pos &= $v_ill;
-				}
-				
-				eval {
-					if ($max_gnomad) {
-						my $filter_name = 'gnomad_ac_'.$max_gnomad;
-						my $no_score = $chr_fork->lmdb_score_impact("r");
-						if ($no_score->exists_db()) {
-							my $v = $no_score->get($filter_name);
-							$v_pos &= $v;
-						}
-					}
-				};
-				if ($@) { $v_pos = $v_pos; }
-				
-				eval {
-					if ($max_gnomad_ho) {
-						my $filter_name = 'gnomad_ho_ac_'.$max_gnomad_ho;
-						my $no_score = $chr_fork->lmdb_score_impact("r");
-						if ($no_score->exists_db()) {
-							my $v = $no_score->get($filter_name);
-							$v_pos &= $v;
-						}
-					}
-				};
-				if ($@) { $v_pos = $v_pos; }
-				
-				
-				my @lVar;
-				foreach my $var (@{$chr_fork->getListVarObjects($v_pos)}) {
-					#next if $var->type_object() =~ /large/;
-					
-					my ($var_hg38, $var_id_hg38, $var_start);
-					if ($is_project_hg19) {
-						if (exists $hVariantsDetails->{rocksdb_id}->{hg19}->{$var->rocksdb_id}) {
-							$var_id_hg38 = $hVariantsDetails->{rocksdb_id}->{hg19}->{$var->rocksdb_id};
-							my ($chr, $pos, $r, $a) = split('_', $var_id_hg38);
-							$var_start = int($pos);
-							$var_hg38 = $project_fork_hg38->_newVariant($var_id_hg38);
-						}
-					}
-					else {
-						if (exists $hVariantsDetails->{rocksdb_id}->{hg38}->{$var->rocksdb_id}) {
-							$var_id_hg38 = $var->id();
-							$var_start = $var->start();
-							$var_hg38 = $var;
-						}
-					}
-					next if not $var_id_hg38;
-					print '.';
-					
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{value}->{id} =  $var->id;
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{html}->{id} =  $var->id;
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{value}->{type} = $var->type;
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{html}->{type} = $var->type;
-					
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{html}->{infos} .= $var->{infos};
-					my $vn = $var->vcf_id;
-					$vn =~ s/_/-/g;
-					$vn =~ s/chr//;
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{value}->{gnomad_id} = $vn;
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{html}->{gnomad_id} = $vn;	
-					$hres->{variants}->{$var_start}->{$var_id_hg38}->{value}->{is_cnv} = 0;
-					
-					my $gene = $gene_init;
-					my @lPhen;
-					foreach my $pheno (@{$project_fork->getPhenotypes()}) {
-						push(@lPhen, $pheno->name());
-					}
-					my $pheno_name = join(", ",@lPhen);
-					
-					$hres->{variants_details}->{$var_id_hg38}->{table_vname} = $hVariantsDetails->{$var_id_hg38}->{table_vname};
-					$hres->{variants_details}->{$var_id_hg38}->{table_dejavu} = $hVariantsDetails->{$var_id_hg38}->{table_dejavu};
-					$hres->{variants_details}->{$var_id_hg38}->{table_gnomad} = $hVariantsDetails->{$var_id_hg38}->{table_gnomad};
-					$hres->{variants_details}->{$var_id_hg38}->{table_varsome} = $hVariantsDetails->{$var_id_hg38}->{table_varsome};
-					$hres->{variants_details}->{$var_id_hg38}->{table_transcript} = $hVariantsDetails->{$var_id_hg38}->{table_transcript};
-					$hres->{variants_details}->{$var_id_hg38}->{table_validation} = $hVariantsDetails->{$var_id_hg38}->{table_validation};
-						
-					foreach my $p (@{$var->getPatients()}) {
-						my $p_name = $p->name();
-						next if $only_ill and not $p->isIll();
-					
-						update_variant_editor::valamut_igv($var,$hres->{variants}->{$var_start}->{$var_id_hg38},$p);
-						
-						if ($var->vector_id) {
-							update_variant_editor::vsequencing($var,$hres->{variants}->{$var_start}->{$var_id_hg38},$p);
-						}
-						
-						unless (exists $hres->{variants_details}->{$var_id_hg38}->{alamut_link_variant}) {
-							$hres->{variants_details}->{$var_id_hg38}->{alamut_link_variant} = $hVariantsDetails->{$var_id_hg38}->{alamut_link_variant};
-						}
-						
-						if (-d $p->NoSqlDepthDir() and -e $p->NoSqlDepthDir().$p->name.".depth.lmdb") {
-							update_variant_editor::trio($var,$hres->{variants}->{$var_start}->{$var_id_hg38},$p);
-						}
-						
-						my $b_igv = $hres->{variants}->{$var_start}->{$var_id_hg38}->{'html'}->{'igv'};
-						my $chr_id = $chr_fork->id();
-						my $start = $var->start();
-						
-						my (@bams,@names);
-						foreach my $p (@{$p->getFamily->getPatients()}){
-							my $bam_file;
-							eval {
-								$bam_file = $p->getBamFileName;
-								next unless -e $bam_file;
-								push(@bams,$p->bamUrl);
-								push(@names,$p->name());
-							};
-							if ($@) { $bam_file = undef; }
-						}
-						
-						my $f =  join(";",@bams);#$patient->{obj}->bamUrl;;
-						my $f2 =  join(",",@bams);#$patient->{obj}->bamUrl;;
-						my $v1 = $hres->{variants}->{$var_start}->{$var_id_hg38}->{ref_allele}."/".$hres->{variants}->{$var_start}->{$var_id_hg38}->{allele};	
-						my $gn = $p->project->getVersion();
-						my $project_name = $p->project->name;
-						my $pnames = join(";",@names);
-						my $locus = $chr_id.':'.$start.'-'.$start;
-						
-						my $gene_name = $gene->external_name();
-						$hres->{variants}->{$var_start}->{$var_id_hg38}->{'html'}->{'igv'} =qq{<button class='igvIcon2' style="width:22px;height:22px;" onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus",)' style="color:black"></button>};
-						$hres->{variants}->{$var_start}->{$var_id_hg38}->{'html'}->{'alamut'} = qq{<button class="alamutView3" style="width:22px;height:22px;" onClick="httpGetLoadOnlyListBamInGene('$gene_name','$f2');"></button>};
-						$hres->{variants}->{$var_start}->{$var_id_hg38}->{html}->{pheno_name} = $pheno_name;
-						
-						if (not exists $hResVariantsListPatients->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}) {
-							my $perc_allele = $var->getPourcentAllele($p);
-							$hResVariantsRatioAll->{$var_id_hg38}->{$project_fork->id()}->{$p->name()} = $perc_allele;
-							$hres->{variants}->{$var_start}->{$var_id_hg38}->{scaled_score_gene_used} = $gene->id;
-							my ($table_trio, $model_found) = get_table_trio_from_object($var, $p, $gene_fork, $hres->{variants}->{$var_start}->{$var_id_hg38});
-							
-							my $ok_model;
-							$ok_model = 1 if (lc($model_found) eq 'solo' and $h_models and exists $h_models->{solo});
-							$ok_model = 1 if (lc($model_found) eq "father" and exists $h_models->{any_parent});
-							$ok_model = 1 if (lc($model_found) eq "father_c" and exists $h_models->{any_parent});
-							$ok_model = 1 if (lc($model_found) eq "mother" and exists $h_models->{any_parent});
-							$ok_model = 1 if (lc($model_found) eq "mother_c" and exists $h_models->{any_parent});
-							$ok_model = 1 if (lc($model_found) eq "strict_denovo" and $h_models and exists $h_models->{denovo});
-							$ok_model = 1 if (lc($model_found) eq "denovo" and $h_models and exists $h_models->{denovo});
-							$ok_model = 1 if (lc($model_found) eq "recessive" and $h_models and exists $h_models->{recessive});
-							$ok_model = 1 if (lc($model_found) eq "mosaic" and $h_models and exists $h_models->{any_parent});
-							$ok_model = 1 if (lc($model_found) eq "uniparental" and $h_models and exists $h_models->{any_parent});
-							$ok_model = 1 if (lc($model_found) eq "?");
-							
-							#warn "\n$ok_model";
-							next if not $ok_model;
-							
-							#$h_project_res->{hResVariantsModels}->{$var_id_hg38}->{$p->getProject->name()}->{$p->name} = $model_found;
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'phenotypes'} = '';
-							if ($project_fork->getPhenotypes()) {
-								$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'phenotypes'} = join(', ', sort @{$project_fork->phenotypes()});
-							}
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'description'} = $project_fork->description();
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'fam'} = $p->getFamily->name();
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'name'} = $p->name();
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'sex'} = $p->sex();
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'status'} = $p->status();
-								
-							my $is_heho = '-';
-							eval { $is_heho = 'ho' if $var->isHomozygote($p); };
-							if ($@) { $is_heho = 'pb'; }
-							eval { $is_heho = 'he' if $var->isHeterozygote($p); };
-							if ($@) {
-								if ($is_heho eq 'ho') { $is_heho = 'ho'; }
-								else { $is_heho = 'pb'; } 
-							}
-							
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'he_ho'} = $is_heho;
-							
-							my $parent_child = 'solo';
-							if ($p->getFamily->isTrio()) {
-								$parent_child = 'mother' if ($p->isMother());
-								$parent_child = 'father' if ($p->isFather());
-								$parent_child = 'child' if ($p->isChild());
-							}
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'parent_child'} = $parent_child;
-							
-							my $path_polyweb;
-							if (-d $Bin.'/../../polyweb/') { $path_polyweb = $Bin.'/../../polyweb/'; }
-							elsif (-d $Bin.'/../../PolyWeb/') { $path_polyweb = $Bin.'/../../PolyWeb/'; }
-							if (-d $Bin.'/../../../polyweb/') { $path_polyweb = $Bin.'/../../../polyweb/'; }
-							elsif (-d $Bin.'/../../../PolyWeb/') { $path_polyweb = $Bin.'/../../../PolyWeb/'; }
-							my $html_icon = $p->return_icon();
-							$html_icon =~ s/<img src='//;
-							$html_icon =~ s/' style='padding-right:1px'>//;
-							my $icon = "$path_polyweb/$html_icon";
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'sex_status_icon'} = $icon;
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'percent'} = $perc_allele;
-							
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{'values'}->{'model'} = $model_found;
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{html} = $table_trio;
-							$hres->{variants_list_patients}->{$var_id_hg38}->{$project_fork->name()}->{$p->name()}->{percent_allele} = $perc_allele;
-						}
-						$p = undef;
-					}
-					
-					
-					$var = undef;
-				}
-			}
-			$project_fork->close_rocks();
-			$project_fork->disconnect();
-			$project_fork = undef;
-			$buffer_fork = undef;
-		}
-		$project_fork_hg38 = undef;
-	 	$pm->finish(0, $hres);
-	}
-	sleep(3); 
-	$pm->wait_all_children();
-		
-
-#	warn  Dumper sort  keys %$hResVariants;
-	return ($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels);
+	my ($hVariantsDetails) = update_list_variants_from_dejavu($use_locus, $only_transcript, $only_rocks_id);
+	return ($hVariantsDetails);
 }
-	
-	
-	
-
 
 sub get_html_gene {
 	my ($gene_init_id, $gene_init, $h_count) = @_;
@@ -937,7 +681,7 @@ sub get_html_gene {
 	my $html_gene = update_variant_editor::panel_gene($hResGene->{$gene_init_id});
 	$html_gene =~ s/CNV//;
 	my $regexp1 = qq{<span class=\'badge badge-infos badge-xs \' style="color:#00C851"  >[0-9]+ </span>};
-	my $regexp2 = qq{<span class=\'badge badge-infos badge-xs \' style="color:#00C851"  > $nb_selected/$total_v </span>};
+	my $regexp2 = qq{<span class=\'badge badge-infos badge-xs \' style="color:#00C851"  > $nb_selected/$nb_variants_before_filters </span>};
 	$html_gene =~ s/$regexp1/$regexp2/;
 	if ($description_gene) {
 		$html_gene =~ s/<\/table>//;
@@ -948,7 +692,7 @@ sub get_html_gene {
 
 
 sub update_list_variants_from_dejavu {
-	my ($proj_name, $gene_init_id_for_newgene, $h_proj_pat_all, $h_proj_pat_ill, $hResVariants_loaded, $hVariantsDetails, $hResVariantsRatioAll, $hResVariantsModels, $use_locus, $only_transcript) = @_;
+	my ($use_locus, $only_transcript, $only_rocks_id) = @_;
 	my $time = time;
 	my $buffer_dejavu = new GBuffer;
 	$project_dejavu = $buffer_dejavu->newProject( -name => $buffer_init->getRandomProjectName());
@@ -963,10 +707,17 @@ sub update_list_variants_from_dejavu {
 	my @lProjectNames;
 	my ($total, $total_pass);
 	my $hVarErrors;
-	my $h_dv_rocks_ids = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($gene_dejavu->start(), $gene_dejavu->end());
+	
+	my $h_dv_rocks_ids;
+	if ($use_locus) {
+		my (@lTmp) = split('_', $use_locus);
+		$h_dv_rocks_ids = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($lTmp[1], $lTmp[2]);
+	}
+	else {
+		$h_dv_rocks_ids = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($gene_dejavu->start(), $gene_dejavu->end());
+	}
 	my ($h_dv_var_ids, @lVarIds, @lVar);
 	foreach my $rocks_id (keys %{$h_dv_rocks_ids}) {
-		
 		my $nb_pat_he = 0;
 		my $nb_pat_ho = 0;
 		foreach my $proj_id (keys %{$h_dv_rocks_ids->{$rocks_id}}) {
@@ -974,26 +725,18 @@ sub update_list_variants_from_dejavu {
 			$nb_pat_ho += $h_dv_rocks_ids->{$rocks_id}->{$proj_id}->{ho};
 		}
 		my $nb_pat_total = $nb_pat_he + $nb_pat_ho;
-		
-		next if ($max_dejavu and $nb_pat_total > $max_dejavu);
-		next if ($max_dejavu_ho and $nb_pat_ho > $max_dejavu_ho);
-		
 		my $var_id = $gene_dejavu->getChromosome->transform_rocksid_to_varid($rocks_id);
-		next if not $var_id;
-
-		warn $rocks_id.' -> '.$var_id if $debug;
-		
 		push(@lVarIds, $var_id);
 		push(@lVar, $project_dejavu->_newVariant($var_id));
 		$h_dv_var_ids->{$var_id}->{rocks_id} = $rocks_id;
 	}
-	my $buffer_fork_hg19 = new GBuffer;
-	my $project_fork_hg19 = $buffer_fork_hg19->newProjectCache( -name => $buffer_init->getRandomProjectName('HG19_CNG', '43', '20') );
 	
 	my $lift = liftOver->new(project=>$project_dejavu, version=>$project_dejavu->lift_genome_version);
 	$lift->lift_over_variants(\@lVar);
 	
-	print '.nbRocksIds:'.scalar(keys %{$h_dv_var_ids});
+	
+	$nb_variants_before_filters = scalar(keys %{$h_dv_var_ids});
+	print '.!nbRocksIds:'.$nb_variants_before_filters.'!.';
 	my $h_projects_filters_he_comp;
 	if ($only_pat_with_var) {
 		my $var_dv = $project_dejavu->_newVariant($only_pat_with_var);
@@ -1005,33 +748,19 @@ sub update_list_variants_from_dejavu {
 			}
 		}
 	}
-	
-	my $this_fork = int(scalar(@lVar) / 5000) + 1;
-	$this_fork = $fork if $this_fork > $fork;
-	print '.use_fork'.$this_fork.'.';
+	print '.use_fork'.$fork.'.';
 	
 	$project_dejavu->disconnect();
-	my $pm = new Parallel::ForkManager($this_fork);
+	my $pm = new Parallel::ForkManager($fork);
 	my $nb_errors=0;
 	$pm->run_on_finish(
 		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
 			delete $data->{start_job};
-			if ($this_fork == 1) {
+			if ($fork == 1) {
 				$hVariantsDetails = $data;
 				$total_pass = scalar(keys %{$hVariantsDetails}) - 2;
 			}
 			else {
-				foreach my $rocks_id (keys %{$data->{rocksdb_id}->{hg38}}) {
-					$hVariantsDetails->{rocksdb_id}->{hg38}->{$rocks_id} = $data->{rocksdb_id}->{hg38}->{$rocks_id};
-				}
-				foreach my $rocks_id (keys %{$data->{rocksdb_id}->{hg19}}) {
-					$hVariantsDetails->{rocksdb_id}->{hg19}->{$rocks_id} = $data->{rocksdb_id}->{hg19}->{$rocks_id};
-				}
-				delete $data->{rocksdb_id};
-				foreach my $proj_id (keys %{$data->{projects}}) {
-					$hVariantsDetails->{projects}->{$proj_id} = $data->{projects}->{$proj_id};
-				}
-				delete $data->{projects};
 				foreach my $var_id (keys %{$data}) {
 					$hVariantsDetails->{$var_id} = $data->{$var_id};
 					$total_pass++;
@@ -1040,7 +769,7 @@ sub update_list_variants_from_dejavu {
 		}
 	);
 	
-	my $nb = int((scalar(@lVar)+1)/($this_fork));
+	my $nb = int((scalar(@lVar)+1)/($fork));
 	$nb = 20 if $nb == 0;
 	my $iter = natatime($nb, @lVar);
 	while( my @tmp = $iter->() ){
@@ -1048,12 +777,10 @@ sub update_list_variants_from_dejavu {
  	 	my $hres;
  	 	$hres->{start_job} = 1;
 		my $nb_i;
+		
 		foreach my $var (@tmp) {
 			my $var_id = $var->id;
-			warn "\n\n\n" if $debug;
-			warn 'hg38: '.$var_id if $debug;
 			my $var_id_hg19 = $var->lift_over('HG19')->{id};
-			warn 'hg19: '.$var_id_hg19 if $debug;
 			$total++;
 			$nb_i++;
 			if ($nb_i == 100) {
@@ -1072,16 +799,26 @@ sub update_list_variants_from_dejavu {
 				}
 			}
 			next unless ($is_ok_perc);
+			if (not $is_ok_perc) {
+				delete $hres->{$var_id};
+				next;
+			}
 			warn '1 - ok perc' if $debug;
 			
 			my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 			$var_id = uc($var_id);
-			next if $var_id =~ /ALU/;
-			next if not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/;
+			if ($var_id =~ /ALU/) {
+				delete $hres->{$var_id};
+				next;
+			}
+			if (not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/) {
+				delete $hres->{$var_id};
+				next;
+			}
 			warn '2 - ok id' if $debug;
 			
 			#my $var = $project_dejavu->_newVariant($var_id);
-			warn ref($var).' -> using: '.$var->id if $debug;
+#			warn ref($var).' -> using: '.$var->id if $debug;
 			if ($hres and exists $hres->{$var_id}) {
 				$var_gnomad = $hres->{$var_id}->{var_gnomad} if ($hres->{$var_id}->{var_gnomad});
 				$var_gnomad_ho = $hres->{$var_id}->{var_gnomad_ho} if ($hres->{$var_id}->{var_gnomad_ho});
@@ -1095,7 +832,10 @@ sub update_list_variants_from_dejavu {
 				}
 				$var_model = $hres->{$var_id}->{model} if ($hres->{$var_id}->{model});
 			}
-			next if ($var->isCnv() or $var->isLarge());
+			if ($var->isCnv() or $var->isLarge()) {
+				delete $hres->{$var_id};
+				next;
+			}
 			warn '3 - ok cnv large' if $debug;
 			
 	#		$var->{rocksdb_id} = $h_dv_var_ids->{$var_id}->{rocks_id};
@@ -1112,14 +852,20 @@ sub update_list_variants_from_dejavu {
 			}
 			
 			$not_ok++ if ($var_gnomad and $max_gnomad and $var_gnomad > $max_gnomad);
-			next if $not_ok;
+			if ($not_ok) {
+				delete $hres->{$var_id};
+				next;
+			}
 			warn '4 - ok gnomad' if $debug;
 			
 			unless ($var_gnomad_ho) {
 				$var_gnomad_ho = $var->getGnomadHO();
 			}
 			$not_ok++ if ($max_gnomad_ho and $var_gnomad_ho > $max_gnomad_ho);
-			next if $not_ok;
+			if ($not_ok) {
+				delete $hres->{$var_id};
+				next;
+			}
 			warn '5 - ok gnomad ho' if $debug;
 			
 			my $is_ok_annot;
@@ -1139,7 +885,10 @@ sub update_list_variants_from_dejavu {
 				$this_annot =~ s/ /_/g;
 				$is_ok_annot ++ if (exists $h_filters_cons->{lc($this_annot)});
 			}
-			next unless ($is_ok_annot);
+			if (not $is_ok_annot) {
+				delete $hres->{$var_id};
+				next;
+			}
 			warn '6 - ok annot' if $debug;
 	
 			my ($has_proj, $ok_model);
@@ -1148,15 +897,22 @@ sub update_list_variants_from_dejavu {
 			warn $h_dv_var_ids->{$var_id}->{rocks_id} if $debug;
 			next if not exists $h_dv_rocks_ids->{$var->rocksdb_id};
 	
+			my @list_parquets;
 			foreach my $proj_id (keys %{$h_dv_rocks_ids->{$var->rocksdb_id}}) {
 				next if not exists $hProjectsIds->{$proj_id};
-				$hVariantsIdsDejavu->{$var_id}->{$hProjectsIds->{$proj_id}} = $proj_id;
+				my $proj_name = $hProjectsIds->{$proj_id};
+				$hVariantsIdsDejavu->{$var_id}->{$proj_name} = $proj_id;
 				foreach my $pat_id (@{$h_dv_rocks_ids->{$var->rocksdb_id}->{$proj_id}->{patients}}) {
-					$hres->{$var_id}->{dejavu_details}->{$hProjectsIds->{$proj_id}}->{$pat_id} = undef;
+					$hres->{$var_id}->{dejavu_details}->{$proj_name}->{$pat_id} = undef;
 				}
-				$hres->{projects}->{$hProjectsIds->{$proj_id}} = undef;
+				my $parquet = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet';
+				push(@list_parquets, "'".$parquet."'") if (-e $parquet);
 			}
-			
+			if (not @list_parquets) {
+				delete $hres->{$var_id};
+				next;
+			}
+
 			warn '8 - ok dejavu ho' if $debug;
 			
 			
@@ -1260,304 +1016,326 @@ sub update_list_variants_from_dejavu {
 			$hres->{$var_id}->{annotation} = $var_annot;
 			$hres->{$var_id}->{id_hg19} = $var_id_hg19;
 			
-			my $rocksdb_hg38 = $var->rocksdb_id();
-			my $rocksdb_hg19 = $var->rocksdb_id();
-			my $pos_hg38 = $var->start();
-			my $pos_hg19 = $var->lift_over('HG19')->{position};
-			$rocksdb_hg19 =~ s/$pos_hg38/$pos_hg19/;
-			$hres->{rocksdb_id}->{hg38}->{$rocksdb_hg38} = $var_id;
-			$hres->{rocksdb_id}->{hg19}->{$rocksdb_hg19} = $var_id;
+			my $table_projects_patients = get_from_duckdb_project_patients_infos($var, \@list_parquets);
+			if ($table_projects_patients) {
+				$hres->{$var_id}->{table_projects_patients} = $table_projects_patients;
+			}
+			else {
+				delete $hres->{$var_id};
+			}
 		}
+		
 	 	$pm->finish(0, $hres);
 	}
 	sleep(3); 
 	$pm->wait_all_children();
 	
+#	warn Dumper $hVariantsDetails;	
+#	die
+	
 	$buffer_dejavu = undef;
 	print 'nbVarPass:'.$total_pass;
 	print 'nbProj:'.scalar(@lProjectNames);
 	print '@time:'.abs(time) - $time;
-	my $h_count;
-	$h_count->{total} = $total;
-	$h_count->{total_pass} = $total_pass;
 	$project_dejavu->buffer->dbh_deconnect();
-	return ($h_count, $hVariantsDetails, $hVariantsIdsDejavu);
+	return ($hVariantsDetails);
 }
 
-sub get_table_trio_from_object {
-	my ($var, $patient, $gene_used, $h_var, $no_header_project_pat, $no_header_project) = @_;
-	my $gene_name =$gene_used->external_name();
-	my $fam = $patient->getFamily();
+
+sub get_table_project_patients_infos {
+	my ($project_name, $hash, $hVar_infos) = @_;
+	my $locus_hg19 = $hVar_infos->{locus_hg19};
+	my $locus_hg38 = $hVar_infos->{locus_hg38};
+	
+	my $nb_he = $hash->{he};
+	my ($h_infos_patients, $h_tmp_pat);
+	my $nb_pat = 0;
+	foreach my $pat_id (unpack("w*",decode_base64($hash->{patients}))) {
+		$nb_pat++;
+		$h_infos_patients->{$nb_pat}->{id} = $pat_id;
+		$h_tmp_pat->{$pat_id} = $nb_pat;
+	}
+	my $i = 0;
+	$nb_pat = 1;
+	foreach my $info (unpack("w*",decode_base64($hash->{dp_ratios}))) {
+		$i++;
+		if ($i == 1) { $h_infos_patients->{$nb_pat}->{dp} = $info; }
+		elsif ($i == 2) {
+			my $ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100;
+			my $text = 'AC:'.$info.' ('.int($ratio).'%)';
+			$h_infos_patients->{$nb_pat}->{ratio} = $text;
+		}
+		elsif ($i == 3) {
+    		my $model;
+    		if ($info == 1) { $model = 'solo'; }
+    		elsif ($info == 2) { $model = 'father'; }
+    		elsif ($info == 4) { $model = 'mother'; }
+    		elsif ($info == 8) { $model = 'both'; }
+    		elsif ($info == 16) { $model = 'is_parent'; }
+    		elsif ($info == 32) { $model = 'recessif'; }
+    		elsif ($info == 64) { $model = 'dominant'; }
+    		elsif ($info == 128) { $model = 'denovo'; }
+    		elsif ($info == 256) { $model = 'strict_denovo'; }
+    		elsif ($info == 512) { $model = 'error'; }
+    		else { $model = 'error2'; }
+			$h_infos_patients->{$nb_pat}->{model} = $model;
+			
+			$i = 0;
+			$nb_pat++;
+		}
+	}
+	
+	my $b = new GBuffer;
+	my $p = $b->newProject( -name => $project_name);
+		
+#	if ($p->name eq 'NGS2025_08773') {
+#		warn "\n";
+#		warn Dumper $h_tmp_pat;
+#	}
+	
+	my $found_healthy_patient;
+	foreach my $pat (@{$p->getPatients()}) {
+		if (not $pat->isIll() and $only_ill) {
+			$found_healthy_patient = 1;
+			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
+			next;
+		}
+		next if not exists $h_tmp_pat->{$pat->id};
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
+#		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = 'healthy';
+#		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = 'ill' if $pat->isIll();
+		
+		my $icon = $pat->small_icon();
+		$icon =~ s/"/'/g;
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = $icon;
+		
+		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'He'; }
+		else { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'Ho'; }
+	}
+	
+	return undef if not $h_infos_patients or scalar keys %$h_infos_patients == 0;
+	return undef if ($only_strict_ill and $found_healthy_patient);
+	
+#	my $gene_name =$gene_used->external_name();
+#	my $fam = $patient->getFamily();
 	my $is_solo_trio = 'SOLO';
-	$is_solo_trio = 'TRIO' if $fam->isTrio();
-	my $project_name = $patient->getProject->name();
+#	$is_solo_trio = 'TRIO' if $fam->isTrio();
+#	my $project_name = $patient->getProject->name();
 	
-	my $description = $patient->getProject->description();
-	my @l_users = @{$patient->getProject->get_list_emails()};
-	my $patient_name = $patient->name();
-	my $pheno = undef;
-	$pheno = $h_var->{html}->{pheno_name} if ($h_var and exists $h_var->{html}->{pheno_name});
+	my $description = $p->description();
+	my @l_users = @{$p->get_list_emails()};
+#	my $patient_name = $patient->name();
+#	my $pheno = undef;
+#	$pheno = $h_var->{html}->{pheno_name} if ($h_var and exists $h_var->{html}->{pheno_name});
 	
-	my $color_local = 'black';
 	my $color = "#c1c1c1";
 	my $model;
-	my $model2 = "?";
 	my $patient_heho = "-";
 	
-	if ($var->vector_id()) {
-		$patient_heho = "ho" if $var->isHomozygote($patient);
-		$patient_heho = "he" if $var->isHeterozygote($patient);
-		my $isMotherTransmission = $var->isMotherTransmission($fam,$patient);
-		my $isFatherTransmission = $var->isFatherTransmission($fam,$patient);
-		my $mode;
-		eval { $model = $var->getTransmissionModel($fam,$patient,$gene_used); };
-		if ($@) { $model = '?'; }
-		$model2 = qq{<i class="fa fa-male  fa-2x" style="color:lightgrey"></i><i class="fa fa-female  fa-2x" style="color:lightgrey"></i>};
-		$h_var->{model} = lc($model);
-		if ($is_solo_trio eq 'SOLO') {
-			return ('model_filter', lc($model)) if ($h_models and not exists $h_models->{solo});
-			$model2 = "<center><span style='font-color:black'>SOLO</span></center>";
-			$color_local = "black";
-		}
-		elsif (lc($model) eq "father" or (lc($model) eq 'father_c' and $isFatherTransmission)) {
-			return ('model_filter', lc($model)) if (not exists $h_models->{any_parent});
-			my $text_compound = ' ';
-			if ($patient->getFamily->getFather && $patient->getFamily->getFather->isIll() ) {
-				$model2 = "<center><img src='/icons/Polyicons/male-d.png'>$text_compound</center>";;
-			}
-			else {
-				$model2 = "<center><img src='/icons/Polyicons/male-s.png'>$text_compound</center>";
-			}
-		}
-		elsif (lc($model) eq "mother" or (lc($model) eq 'mother_c')) {
-			return ('model_filter', lc($model)) if ($h_models and not exists $h_models->{any_parent});
-			my $text_compound = ' ';
-			#$text_compound = ' mother_c' if(lc($model) eq 'mother_c');
-			if ($patient->getFamily->getMother && $patient->getFamily->getMother->isIll()) {
-				$model2 = "<center><img src='/icons/Polyicons/female-d.png'>$text_compound</center>";
-			}
-			else { $model2 = "<center><img src='/icons/Polyicons/female-s.png'>$text_compound</center>"; }
-		}
-		elsif (lc($model) =~ "strict") {
-			return ('model_filter', lc($model)) if ($h_models and not exists $h_models->{strict_denovo});
-			$model2 = qq{Strict Denovo};
-			$model = 'strict_denovo';
-			$color_local = "white";
-		}
-		elsif (lc($model) =~ "denovo") {
-			return ('model_filter', lc($model)) if ($h_models and not exists $h_models->{denovo});
-			$model2 = qq{Denovo};
-			$model = 'denovo';
-			$color_local = "white";
-		}
-		elsif (lc($model) eq "#E74C3C") {
-			return ('model_filter', lc($model)) if ($h_models and not exists $h_models->{recessive});
-			$model2 = qq{Recessive};
-			$color_local = "white";
-		}
-		elsif (lc($model) eq "mosaic") {
-			return ('model_filter', lc($model)) if ($h_models and not exists $h_models->{any_parent});
-			$model2 = qq{mosaic }.$var->isMosaicTransmission($fam,$patient);
-			$color_local = "white";
-		}
-		elsif (lc($model) =~ /uniparental/) {
-			return ('model_filter', lc($model)) if ($h_models and not exists $h_models->{any_parent});
-			$model2 = qq{Uniparental}  if (lc($model) =~ /uniparental/);
-		}
-		else {
-			return 'model_filter' if ($h_models and not exists $h_models->{both});
-			$color_local = "white";
-		}
-		
-		if ($is_solo_trio eq 'SOLO') { $color = "white"; }
-		else { $color = update_variant_editor::color_model(lc($model)); }
-	}
-	
-	my $patient_status;
-	if ($patient->isIll()) {
-		if ($patient->isMother()) { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/female-d.png'></center>"; }
-		elsif ($patient->isFather()) { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/male-d.png'></center>"; }
-		else {
-			if ($patient->sex() eq '1') { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/baby-boy-d.png'></center>"; }
-			else { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/baby-girl-d.png'></center>"; }
-		}
-	}
-	else {
-		if ($patient->isMother()) { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/female-s.png'></center>"; }
-		elsif ($patient->isFather()) { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/male-s.png'></center>"; }
-		else {
-			if ($patient->sex() eq '1') { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/baby-boy-s.png'></center>"; }
-			else { $patient_status = "<center><img style='width:20px;height:20px;' src='/icons/Polyicons/baby-girl-s.png'></center>"; }
-		}
-	}
-		
 	my $nb_col_span = 6;
-	$nb_col_span = 7 if ($var->getProject->isGenome() && $var->isCnv);
-	my $hstatus = $patient->validation_status();
-	my $hval = $patient->validations();
+#	$nb_col_span = 7 if ($var->getProject->isGenome() && $var->isCnv);
+#	my $hstatus = $patient->validation_status();
+#	my $hval = $patient->validations();
 	
-	my $table_validation_id = 'tr_val_'.$var->id().'_'.$patient->getProject->name().'_'.$patient->name();
-	my ($local_text, $local_text_tab, $var_id_validated, $gene_name_validated);
-	if (exists $hstatus->{$patient->id()}) {
-		my @lRes = @{$hstatus->{$patient->id()}}; 
-		$hstatus = $lRes[0];
-		my $term = $hstatus->{term};
-		if ($term eq 'uncertain significance') { $term = 'uncertain sign.'; }
-		if ($term eq 'likely pathogenic') { $term = 'likely path.'; }
-		my $user_name = $hstatus->{user_name};
-		my ($date, $hour) = split(' ', $hstatus->{date});
-		($local_text_tab,$var_id_validated,$gene_name_validated) = validation_table_new($patient, $hval);
-		my $style_flou;
-		if ($term eq 'negative') {
-			$local_text = qq{<center><div style='text-align:center;width:90%;padding-bottom:2px;padding-top:2px;color:$color_local;$style_flou'><div style='background-color:$color;border:solid 0.5px $color_local;width:95%;'><b>$term</b></div></div></center>};
-		}
-		elsif ($var_id_validated eq $var->id()) {
-			if ($gene_name_validated eq $gene_name) {
-				$style_flou = "opacity: 0.35;";
-				$local_text = qq{<center><div style='text-align:center;width:90%;padding-bottom:2px;padding-top:2px;color:$color_local;$style_flou'><button onclick="document.getElementById('$table_validation_id').style.display='block';" style='background-color:$color;border:solid 0.5px $color_local;width:95%;'><b><u>$term</u></b><br>SAME Gene<br>SAME variant</button></div></center>};
-			}
-			else {
-				$local_text = qq{<center><div style='text-align:center;width:90%;padding-bottom:2px;padding-top:2px;color:$color_local;$style_flou'><button onclick="document.getElementById('$table_validation_id').style.display='block';" style='background-color:$color;border:solid 0.5px $color_local;width:95%;'><b><u>$term</u></b><br>OTHER Gene<br>SAME variant</button></div></center>};
-			}
-		}
-		else { 
-			$local_text = qq{<center><div style='text-align:center;width:90%;padding-bottom:2px;padding-top:2px;color:$color_local;$style_flou'><button onclick="document.getElementById('$table_validation_id').style.display='block';" style='background-color:$color;border:solid 0.5px $color_local;width:95%;'><b><u>$term</u></b><br>OTHER gene<br>OTHER variant</button></div></center>};
-		}
-	}
+	
 	my $table_trio = qq{ <div> };
 	$table_trio .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:3px"});
-	unless ($no_header_project) {
-		$table_trio .= $cgi->start_Tr();
-		my $users = join("<br>", @l_users);
-		my $proj_text = qq{<button onclick="get_popup_users('$users');">Users</button> - <b>$project_name</b>};
-		$proj_text .= qq{<sup>defidiag</sup>} if $patient->project->isDefidiag; 
-		$proj_text .= " - <span style='color:red;'>$pheno</span>" if ($pheno);
-		$proj_text .= "<br>$description";
-		my $igv_alamut_text = $h_var->{html}->{igv}."&nbsp;".$h_var->{html}->{alamut};
-		my $b_others_var;
-		my $pat_name = $patient->name();
-		my $var_id = $var->id();
-		my $father_trans = undef;
-		my $mother_trans = undef;
-		my $other_trans = undef;
+	
+	
+	my @lPhenotypes = @{$p->phenotypes()};
+	my $pheno = join(', ', sort @lPhenotypes);
+	
+	my $version = $p->annotation_genome_version();
+	my $color_version = '#85f283';
+	$color_version = '#f2c37c' if $version eq 'HG38';
+	
+	my $users = join("<br>", @l_users);
+	my $proj_text = qq{<button style="color:black;" onclick="get_popup_users('$users');">Users</button> - <b>$project_name</b>};
+	$proj_text .= qq{<sup>defidiag</sup>} if $p->isDefidiag; 
+	$proj_text .= " - <span style='color:#82d0f5;'>$pheno</span>" if ($pheno);
+	$proj_text .= "<br>";
+	$proj_text .= "<b><span style='color:$color_version;'>$version</span></b>  ";
+	$proj_text .= "$description";
 		
-		if ($patient->isChild() and $patient->getFamily->isTrio()) {
-			my ($father_name, $mother_name);
-			eval { $father_name = $patient->getFamily->getFather->name(); };
-			if ($@) {}
-			else {
-				my $cmd_f = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'father');};
-				$father_trans = qq{<button style="text-align:middle;vertical-align:bottom;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_f"><img style='width:8px;height:8px;' src='/icons/Polyicons/male.png'></button>};
-			}
-			eval { $mother_name = $patient->getFamily->getMother->name(); };
-			if ($@) {}
-			else {
-				my $cmd_m = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'mother');};
-				$mother_trans = qq{<button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_m"><img style='width:8px;height:8px;' src='/icons/Polyicons/female.png'></button>};
-			}
-		}
-		if ($patient->isChild() and $patient->getFamily->isTrio()) {
-			my ($father_name, $mother_name);
-			if ($patient->getFamily->father()) {
-				$father_name = $patient->getFamily->getFather->name();
-				my $cmd_f = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'father');};
-				$father_trans = qq{<button style="text-align:middle;vertical-align:bottom;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_f"><img style='width:8px;height:8px;' src='/icons/Polyicons/male.png'></button>};
-			}
-			if ($patient->getFamily->mother()) {
-				$mother_name = $patient->getFamily->getMother->name();
-				my $cmd_m = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id', 'mother');};
-				$mother_trans = qq{<button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;" onClick="$cmd_m"><img style='width:8px;height:8px;' src='/icons/Polyicons/female.png'></button>};
-			}
-		}
-		else {
-			my $img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-boy.png'>};
-			$img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-girl.png'>} if ($patient->sex() == 2);
-			my $cmd_others = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id');};
-			$other_trans = qq{<button style="text-align:middle;vertical-align:top;width:28px;border:solid 0.5px black;background-color:white;" onClick="$cmd_others">$img_child</button>};
-		}
-		$table_trio .= $cgi->td({colspan=>($nb_col_span-1)}, $proj_text);
-		
-		my $child_trans_strict_denovo = undef;
-		
-		#if ($is_solo_trio eq 'SOLO') {
-		if ($model2 eq 'Strict Denovo' or $model2 eq 'Denovo' or $is_solo_trio eq 'SOLO') {
-			my $img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-boy.png'>};
-			$img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-girl.png'>} if ($patient->sex() == 2);
-			my $cmd_others = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id');};
-			$child_trans_strict_denovo = qq{<td rowspan=2><button style="text-align:middle;vertical-align:top;width:28px;border:solid 0.5px black;background-color:white;" onClick="$cmd_others">$img_child</button></td>};
-			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, qq{<table style='width:100%;'><tr><td>$igv_alamut_text &nbsp;</td>$child_trans_strict_denovo</tr></table>});
-		}
-		elsif ($father_trans and $mother_trans and not $no_header_project_pat) {
-			my $local_table = "<table style='width:100%;'>";
-			$local_table .= qq{<tr><td rowspan=2>$igv_alamut_text &nbsp;</td><td>$father_trans</td>$child_trans_strict_denovo</tr>};
-			$local_table .= qq{<tr><td>$mother_trans</td></tr>};
-			$local_table .= qq{</table>};
-			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-		}
-		elsif ($father_trans and not $no_header_project_pat) {
-			my $local_table = "<table style='width:100%;'>";
-			$local_table .= qq{<tr><td rowspan=2>$igv_alamut_text &nbsp;</td><td>$father_trans</td>$child_trans_strict_denovo</tr>};
-			$local_table .= qq{<tr><td><button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;opacity:0.3;" disabled><img style='width:8px;height:8px;' src='/icons/Polyicons/baby-girl.png'></button></td></tr>};
-			$local_table .= qq{</table>};
-			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-		}
-		elsif ($mother_trans and not $no_header_project_pat) {
-			my $local_table = "<table style='width:100%;'>";
-			$local_table .= qq{<tr><td rowspan=2>$igv_alamut_text &nbsp;</td><td>$mother_trans</td>$child_trans_strict_denovo</tr>};
-			$local_table .= qq{<tr><td><button style="text-align:middle;vertical-align:top;width:20px;border:solid 0.5px black;background-color:white;opacity:0.3;" disabled><img style='width:8px;height:8px;' src='/icons/Polyicons/baby-boy.png'></button></td></tr>};
-			$local_table .= qq{</table>};
-			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-		}
-		elsif ($other_trans and not $no_header_project_pat) {
-			my $local_table = "<table style='width:100%;'>";
-			$local_table .= qq{<tr><td>$igv_alamut_text &nbsp;</td><td>$other_trans</td>$child_trans_strict_denovo</tr>};
-			$local_table .= qq{</table>};
-			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, $local_table);
-		}
-#		else {
-#			$table_trio .= $cgi->td({colspan=>1, style=>"text-align:center;vertical-align:middle;width:12px;"}, qq{<table style='width:100%;'><tr><td>$igv_alamut_text &nbsp;</td>$child_trans_strict_denovo</tr></table>});
-#		}
-		$table_trio .= $cgi->end_Tr();
-		if ($no_header_project_pat) {
-			$table_trio .= '</table>';
-			$table_trio .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:3px"});
-		}
+	my (@l_pat_names, @l_pat_bam);
+	foreach my $id (sort keys %$h_infos_patients) {
+		next if not (exists $h_infos_patients->{$id}->{name});
+		push(@l_pat_names, $h_infos_patients->{$id}->{name});
+		push(@l_pat_bam, $p->getPatient($h_infos_patients->{$id}->{name})->bamUrl());
 	}
-	$table_trio .= $cgi->start_Tr({style=>"background-color:$color;"});
-	$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, "<span style='text-align:left;'>$patient_name $local_text</span>");
-	$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, "$patient_status");
-	$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, "$patient_heho");
-	if ($var->getProject->isGenome() && $var->isCnv) {
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'pr:'.$var->pr($patient));
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'sr:'.$var->sr($patient));
-		eval {
-			my $cnv_score = sprintf("%.2f", log2($patient->cnv_value_dude($var->getChromosome->name,$var->start,$var->start+$var->length)));
-			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'cnv_score:'.$cnv_score);
-		};
-		if ($@) {
-			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, 'cnv_score:pb');
-		}
+	my $pnames = join(';', @l_pat_names);
+	my $f = join(';', @l_pat_bam);
+	my $gn = $p->getVersion();
+	my $chr_name = $hVar_infos->{chr_id};
+	my ($locus, $start);
+	if ($p->annotation_genome_version() eq 'HG19') {
+		$locus = $locus_hg19;
+		$start = $hVar_infos->{start_hg19};
 	}
-	else {
-		my $perc_allele = $var->getPourcentAllele($patient);
-		return 'perc_all_filter' if ($filter_perc_allelic_min and $perc_allele < $filter_perc_allelic_min);
-		return 'perc_all_filter' if ($filter_perc_allelic_max and $perc_allele > $filter_perc_allelic_max);
-		$perc_allele .= "%" if ($perc_allele ne '-');
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, $perc_allele);
-		my $dp;
-		eval { $dp = 'DP: '.$var->getDepth($patient); };
-		if ($@) { $dp = '?'; }
-		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, $dp);
+	elsif ($p->annotation_genome_version() eq 'HG38') {
+		$locus = $locus_hg38;
+		$start = $hVar_infos->{start_hg38};
+	}
+	my $a0 = $hVar_infos->{ref_all};
+	my $a1 = $hVar_infos->{alt_all};
+	my $igb_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus","/","$gn")' style="color:black"></button>};	
+	my $alamut_b = qq{<button class="alamutView3" onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']);"></button>};
+
+	my $no_header_project ;
+	my $no_header_project_pat;
+	
+	$table_trio .= $cgi->start_Tr({style=>"background-color:#949292; color:white;"});
+	my $b_others_var;
+	my $pat_name = 'ALL';
+	my $var_id = 'VARID';
+	my $father_trans = undef;
+	my $mother_trans = undef;
+	my $other_trans = undef;
+	
+	my $img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-boy.png'>};
+	#$img_child = qq{<img style='width:14px;height:14px;' src='/icons/Polyicons/baby-girl.png'>} if ($patient->sex() == 2);
+	my $cmd_others = qq{view_var_from_proj_gene_pat('$project_name','$gene_init_id','$pat_name','$var_id');};
+	$other_trans = qq{<button style="text-align:middle;vertical-align:top;width:28px;border:solid 0.5px black;background-color:white;" onClick="$cmd_others">$img_child</button>};
+
+	$table_trio .= $cgi->td({colspan=>($nb_col_span)-1}, $proj_text);
+	$table_trio .= $cgi->td({colspan=>1, style=>"padding:0px;width:60px;"}, '<center>'.$igb_b.' '.$alamut_b.'</center>');
+	
+	$no_header_project_pat = 1;
+	$table_trio .= $cgi->end_Tr();
+	if ($no_header_project_pat) {
+		$table_trio .= '</table>';
+		$table_trio .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:3px"});
 	}
 	
-	$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;background-color:$color;"}, $model2);
-	$table_trio .= $cgi->end_Tr();
-	$table_trio .= "</table></div>";
-	if ($local_text_tab) {
-		$table_trio .=qq{ <div onClick="document.getElementById('$table_validation_id').style.display='none';" id='$table_validation_id' style='display:none;'>$local_text_tab</div> };
+	foreach my $nb (keys %{$h_infos_patients}) {
+		next if not exists $h_infos_patients->{$nb}->{name};
+		my $patient_name = $h_infos_patients->{$nb}->{name};
+		my $patient = $p->getPatient($patient_name);
+		my $patient_status = $h_infos_patients->{$nb}->{status};
+		my $patient_heho = $h_infos_patients->{$nb}->{heho};
+		my $dp = 'DP:'.$h_infos_patients->{$nb}->{dp};
+		my $perc_allele = $h_infos_patients->{$nb}->{ratio};
+		my $model = $h_infos_patients->{$nb}->{model};
+		
+		if ($model eq 'denovo' or $model eq 'strict_denovo' or $model eq 'dominant') {
+			$color = 'background-color:#f54e4e';
+			$model = ucfirst($model);
+		}
+		elsif ($model eq 'recessif') {
+			$color = 'background-color:#e99ff7';
+			$model = ucfirst($model);
+		}
+		elsif ($model eq 'father') {
+			$color = 'background: linear-gradient(to right, white, #ddfbff);';
+			if ($p->getPatient($patient_name)->getFamily->getFather->isIll()) { $model = qq{<img src="/icons/Polyicons/male-d.png">}; }
+			else { $model = qq{<img src="/icons/Polyicons/male-s.png">}; }
+		}
+		elsif ($model eq 'mother') {
+			$color = 'background: linear-gradient(to right, white, #ffddfd);';
+			if ($p->getPatient($patient_name)->getFamily->getMother->isIll()) { $model = qq{<img src="/icons/Polyicons/female-d.png">}; }
+			else { $model = qq{<img src="/icons/Polyicons/female-s.png">}; }
+		}
+		elsif ($model eq 'both') {
+			$color = 'background: linear-gradient(to right, #ddfbff, #ffddfd);';
+			if ($p->getPatient($patient_name)->getFamily->getFather->isIll()) { $model = qq{<img src="/icons/Polyicons/male-d.png">}; }
+			else { $model = qq{<img src="/icons/Polyicons/male-s.png">}; }
+			if ($p->getPatient($patient_name)->getFamily->getMother->isIll()) { $model .= qq{<img style="padding-left:5px;" src="/icons/Polyicons/female-d.png">}; }
+			else { $model .= qq{<img style="padding-left:5px;" src="/icons/Polyicons/female-s.png">}; }
+			 
+		}
+		elsif ($model eq 'solo') {
+			$color = 'background: linear-gradient(to right, white, #c7c6c5);';
+			$model = ucfirst($model);
+		}
+		else { $color = 'background-color:white'; }
+	
+		my $local_text;
+		$table_trio .= $cgi->start_Tr({style=>"$color;"});
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, "<span style='text-align:left;'>$patient_name $local_text</span>");
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, "<div>".$patient_status."</div>");
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, "$patient_heho");
+	#	if ($var->getProject->isGenome() && $var->isCnv) {
+	#		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'pr:'.$var->pr($patient));
+	#		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'sr:'.$var->sr($patient));
+	#		eval {
+	#			my $cnv_score = sprintf("%.2f", log2($patient->cnv_value_dude($var->getChromosome->name,$var->start,$var->start+$var->length)));
+	#			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'cnv_score:'.$cnv_score);
+	#		};
+	#		if ($@) {
+	#			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, 'cnv_score:pb');
+	#		}
+	#	}
+	#	else {
+			#my $perc_allele = $var->getPourcentAllele($patient);
+			
+#			return 'perc_all_filter' if ($filter_perc_allelic_min and $perc_allele < $filter_perc_allelic_min);
+#			return 'perc_all_filter' if ($filter_perc_allelic_max and $perc_allele > $filter_perc_allelic_max);
+#			$perc_allele .= "%" if ($perc_allele ne '-');
+			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, $perc_allele);
+			$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, $dp);
+	#	}
+		$table_trio .= $cgi->td({style=>"text-align:center;vertical-align:middle;"}, $model);
+		$table_trio .= $cgi->end_Tr();
+	#	if ($local_text_tab) {
+	#		$table_trio .=qq{ <div onClick="document.getElementById('$table_validation_id').style.display='none';" id='$table_validation_id' style='display:none;'>$local_text_tab</div> };
+	#	}
 	}
+	$table_trio .= "</table></div>";
+	
 	return ($table_trio, lc($model));
 }
+
+sub get_from_duckdb_project_patients_infos {
+	my ($var, $list_files) = @_;
+	return if scalar(@$list_files) == 0;
+	my @list_table_trio;
+	my $sql = "SELECT * FROM read_parquet([".join(', ', @$list_files)."])";
+	my $find_pos_s = $var->start() - 20;
+	my $find_pos_e = $var->start() + 20;
+	if ($var->getProject->current_genome_version() eq 'HG38') {
+		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+		my $duckdb = $buffer_init->software('duckdb');
+		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
+		my $json_duckdb = `$cmd`;
+		if ($json_duckdb) {
+			my $decode = decode_json $json_duckdb;
+			my $h_by_proj;
+			foreach my $h (@$decode) {
+				next if $h->{'chr38'} ne $var->getChromosome->id;
+				my $var_start = $var->start();
+				$var_start-- if $var->isInsertion() or $var->isDeletion();
+				next if $h->{'pos38'} ne $var_start;
+				my $var_all = $h->{'allele'};
+				$var_all =~ s/\+//;
+				next if $var_all ne $var->var_allele();
+				my $project_id = $h->{project};
+				my $project_name = $hProjectsIds->{$project_id};
+				$h_by_proj->{$project_name} = $h;
+			}
+			my $hVar_infos;
+			$hVar_infos->{locus_hg19} = $var->getChromosome->id().":".$var->lift_over('HG19')->{position}."-".$var->lift_over('HG19')->{position};;
+			$hVar_infos->{locus_hg38} = $var->getChromosome->id().":".$var->start."-".$var->end;
+			$hVar_infos->{start_hg19} = $var->lift_over('HG19')->{position};
+			$hVar_infos->{start_hg38} = $var->start;
+			$hVar_infos->{chr_id} = $var->getChromosome->id();
+			$hVar_infos->{ref_all} = $var->ref_allele();
+			$hVar_infos->{alt_all} = $var->var_allele();
+			$hVar_infos->{alt_all} = '*' unless $var->var_allele();
+			foreach my $project_name (reverse sort keys %$h_by_proj) {
+				my $h = $h_by_proj->{$project_name};
+				my ($table_trio, $model) = get_table_project_patients_infos($project_name, $h, $hVar_infos);
+				push(@list_table_trio, $table_trio) if $table_trio;
+			}
+		}	
+	}
+	else {
+		warn "HG19";
+		confesss("HG19!!");
+	}
+	return join("<br>",@list_table_trio) if scalar(@list_table_trio) >= 1;
+	return undef;
+}
+
 
 sub get_hash_annot_categories {
 	my $h_annot_categories;
@@ -1574,8 +1352,39 @@ sub get_hash_annot_categories {
 
 sub get_hash_users_projects {
 	my ($user_name, $pwd) = @_;
-	my $h_projects;
-	my @list_hash = @{$buffer_init->getQuery()->getProjectListForUser($user_name, $pwd)};
+	my ($h_projects, @list_hash);
+	
+	
+	
+	
+	if ($buffer_init->getQuery->isUserMagic($user_name, $pwd)) {
+		@list_hash = @{$buffer_init->getQuery()->getAllProjects()};
+		
+#		my $h_project_dejavu;
+#		foreach my $proj_name (@{$buffer_init->getQuery()->listProjectsForDejaVu()}) {
+#			$h_project_dejavu->{$proj_name} = undef;
+#		}
+#		
+#		
+#		foreach my $h (@list_hash) {
+#			next if not exists $h_project_dejavu->{$h->{name}};
+#			next if not $h->{name} =~ /NGS20/;
+#			my $ok;
+#			my $file1 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet';
+#			$ok = 1 if -e $file1;
+#			my $file2 = $dir_parquet.'/'.$h->{name}.'.'.$h->{id}.'.parquet.no_dejavu';
+#			$ok = 1 if -e $file2;
+#			
+#			if (not $ok) {
+#				warn $h->{name};
+#				warn $file1;
+#			}			
+#		}
+#		die;
+	}
+	else {
+		@list_hash = @{$buffer_init->getQuery()->getProjectListForUser($user_name, $pwd)};
+	}
 	foreach my $hash (@list_hash) {
 		my $proj_name = $hash->{name};
 		next unless ($proj_name =~ /NGS20/);

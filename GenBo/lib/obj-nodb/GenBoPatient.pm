@@ -1484,22 +1484,29 @@ sub _getFile {
 }
 
 
+has alignmentUrl => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		my $methods = $self->alignmentMethods();
+#		die() if ( scalar( @$methods > 1 ) );
+		my $method_name = $methods->[0];
+		my $bam_dir     = $self->getProject->getAlignmentUrl($method_name);
+		my $bamf        = $self->getAlignFileName($method_name);
+		my (@t) = split( "/", $bamf );
 
+		#warn $bam_dir;
+		return $bam_dir . "/" . $t[-1];
+	},
+);
 
 has bamUrl => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self    = shift;
-		my $methods = $self->alignmentMethods();
-		die() if ( scalar( @$methods > 1 ) );
-		my $method_name = $methods->[0];
-		my $bam_dir     = $self->getProject->getAlignmentUrl($method_name);
-		my $bamf        = $self->getAlignFileName();
-		my (@t) = split( "/", $bamf );
-
-		#warn $bam_dir;
-		return $bam_dir . "/" . $t[-1];
+		return $self->alignmentUrl();
 	},
 );
 

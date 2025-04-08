@@ -343,6 +343,32 @@ has sql_cmd_list_projects_name => (
 	},
 );
 
+has sql_cmd_list_projects_name_for_dejavu => (
+	is	 => 'ro',
+
+	lazy =>1,
+	default	=> sub {
+		my $self = shift;
+		my $sql = qq{
+				select project_id,name,description from PolyprojectNGS.projects where type_project_id=3 and dejaVu=1 order by project_id;
+		};
+	return $sql
+	},
+);
+
+has sql_cmd_list_projects_name_without_dejavu => (
+	is	 => 'ro',
+
+	lazy =>1,
+	default	=> sub {
+		my $self = shift;
+		my $sql = qq{
+				select project_id,name,description from PolyprojectNGS.projects where type_project_id=3 and dejaVu!=1 order by project_id;
+		};
+	return $sql
+	},
+);
+
 has sql_cmd_list_projects_name_exome_for_dejaVu => (
 	is	 => 'ro',
 

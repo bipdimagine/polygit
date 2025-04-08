@@ -69,6 +69,17 @@ sub put_batch_variation {
 	return $index;	
 }
 
+sub write_variation {
+	my ($self,$key,$value,$debug) = @_;
+	my $index = $self->index;
+	$value->{vector_id} = $index;
+	$self->rocks->put($key,$index);
+	$self->rocks->put($value->id,$index);
+	$self->rocks->put($index,$value);
+	$self->index($index+1);
+	return $index;	
+}
+
 sub put_variation {
 	my ($self,$key,$value,$debug) = @_;
 	my $index = $self->index;

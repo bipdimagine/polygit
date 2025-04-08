@@ -45,11 +45,13 @@ is		=> 'rw',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
-			return 1;
-		}
-		$self->buffer->hash_config_path->{root}->{cache} = $self->buffer->hash_config_path->{root}->{cache_lmdb}; 
-		return undef;
+		return 1;
+		
+#		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
+#			return 1;
+#		}
+#		$self->buffer->hash_config_path->{root}->{cache} = $self->buffer->hash_config_path->{root}->{cache_lmdb}; 
+#		return undef;
 	},
 );
 
@@ -1028,8 +1030,7 @@ sub myflushobjects {
 				if ($type =~ /gene/ or $type =~ /transcript/ or  $type =~/protein/ or $type =~ /exon/ or $type  =~ /intron/) {
 					
 					my $obj;
-					#warn 
-					#if ($self->isRocks() and $self->getVersion() =~ /HG38/) {
+
 						$obj = $self->rocksGenBo->genbo( $id );
 #					}
 #					else {

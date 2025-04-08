@@ -1575,9 +1575,6 @@ sub get_gencode_directory {
 	if ($self->annotation_genome_version() =~ /MM39/) {
 		return $self->buffer->config_path("root","public_data")."/repository/MM39/annotations/gencode.vM32/lmdb/";
 	}
-	if ($self->annotation_genome_version() =~ /HG19/) {
-		return $self->buffer->config_path("root","public_data")."/repository/HG19/annotations/gencode.v43/lmdb/";
-	}
 	
 	my $database = "gencode";
 	$version = $self->gencode_version unless $version;
@@ -3533,16 +3530,9 @@ sub newGene {
 	confess if not $id;
 	return $self->{objects}->{genes}->{$id} if (exists $self->{objects}->{genes}->{$id});
 	$self->getChromosomes();
-	my $id1;
-	if ($self->getVersion() =~ /HG38/) { $id1 = $self->rocksGenBo->synonym($id); }
-	else { $id1 = $self->getGenBoId($id); }
+	my $id1 = $self->rocksGenBo->synonym($id);
 	return undef unless $id1;
 	return $self->myflushobjects( { $id1 => undef }, "genes" )->[0];
-
-	#my $h = $self->liteObject($id);
-	#confess() unless $h;
-	#$self->getChromosomes();
-	#return $self->myflushobjects({$h->{genbo_id}=>undef},"genes")->[0];
 }
 
 sub newIntergenic {
@@ -3775,29 +3765,29 @@ sub myflushobjects {
 			{
 				
 				my $obj;
-				if ($self->getVersion() =~ /HG38/) {
+#				if ($self->getVersion() =~ /HG38/) {
 					$obj = $self->rocksGenBo->genbo($id);
-				}
-				else {
-					$obj = $self->lmdbGenBo->get($id);
-					unless ($obj) {
-						if    ( $id =~ /_X/ ) { $id =~ s/_X/_Y/; }
-						elsif ( $id =~ /_Y/ ) { $id =~ s/_Y/_X/; }
-						$obj = $self->lmdbGenBo->get(
-							$self->liteAnnotations->get( "synonyms", $id ) );
-					}
-					unless ($obj) {
-						my $sid = $self->getGenBoId($id);
-						confess( $type . " " . $sid ) unless ($sid);
-						$obj = $self->lmdbGenBo->get($id);
-						$id  = $sid;
-					}
-					unless ($obj) {
-						my @t = split( "_", $id );
-						$id  = $t[0] . "_" . $t[-1];
-						$obj = $self->lmdbGenBo->get($id);
-					}
-				}
+#				}
+#				else {
+#					$obj = $self->lmdbGenBo->get($id);
+#					unless ($obj) {
+#						if    ( $id =~ /_X/ ) { $id =~ s/_X/_Y/; }
+#						elsif ( $id =~ /_Y/ ) { $id =~ s/_Y/_X/; }
+#						$obj = $self->lmdbGenBo->get(
+#							$self->liteAnnotations->get( "synonyms", $id ) );
+#					}
+#					unless ($obj) {
+#						my $sid = $self->getGenBoId($id);
+#						confess( $type . " " . $sid ) unless ($sid);
+#						$obj = $self->lmdbGenBo->get($id);
+#						$id  = $sid;
+#					}
+#					unless ($obj) {
+#						my @t = split( "_", $id );
+#						$id  = $t[0] . "_" . $t[-1];
+#						$obj = $self->lmdbGenBo->get($id);
+#					}
+#				}
 				
 				confess( $id . " " . $type ) unless $obj;
 				$obj->{project}                  = $self;

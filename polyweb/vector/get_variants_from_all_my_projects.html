@@ -847,13 +847,62 @@
 			    search_text_wait += '!';
 			    show_waiting(search_text_wait);
 			    return args;
-	    	}	
+	    	}
+	    	
+	    	function launch_variant_search() {
+    			show_waiting('Checking... your variation!<br><i>-> A new page will open...</i>');
+    			var value = document.getElementById("input_search").value;
+    			value = value.replaceAll(" ", "");
+		    	var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&variant=" + value;
+		    	url += "&filters_cons='mature-mirna,splice_acc/don,splice_acceptor/donor,frameshift,stop-gained,(start/stop)-lost,ncrna,missense,no-frameshift,splice_region,predicted_splice_region,pseudogene,utr,synonymous,upstream,downstream,intronic'";
+		    	url += "&models=strict_denovo,denovo,recessive,both,any_parent,solo"
+		    	if (document.getElementById("b_use_hg19").checked) { url += "&release=HG19"; }
+		    	else if (document.getElementById("b_use_hg38").checked) { url += "&release=HG38"; }
+			    $.getJSON( url, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'session_id') {
+							dijit.byId('waiting').hide();
+			    			use_session_id = data.session_id;
+			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
+			    			window.open(window_url, '_blank').focus();
+			    		}
+  					});
+			    });
+	    		
+	    	}
+	    	
+	    	function on_write_input() {
+	    		var regex = /[0-9XYMT]+-[0-9]+-.+-.+/g;
+	    		var regex2 = /[0-9XYMT]+_[0-9]+_.+_.+/g;
+	    		var value = document.getElementById("input_search").value;
+				var found_variant = value.match(regex);
+				var found_variant2 = value.match(regex2);
+				if (found_variant) {
+		    		document.getElementById("div_select_release").style.display = "block";
+		    		document.getElementById("div_select_without_release").style.display = "none";
+				}
+				else if (found_variant2) {
+		    		document.getElementById("div_select_release").style.display = "block";
+		    		document.getElementById("div_select_without_release").style.display = "none";
+				}
+				else {
+		    		document.getElementById("div_select_release").style.display = "none";
+		    		document.getElementById("div_select_without_release").style.display = "block";
+				}
+				return;
+	    	}
 	    	
 	    	var last_url_genes;
 	    	var gene_id_ok_old = 'FIRSTFIRST';
 	    	var gene_id_old = '';
 	    	var use_release = 'HG38';
 	    	function launch_gene_search(use_input) {
+	    		var regex = /[0-9XYMT]+-[0-9]+-.+-.+/g;
+	    		var value = document.getElementById("input_search").value;
+				var found_variant = value.match(regex);
+				if (found_variant) {
+					return launch_variant_search(value);
+				}
 	    		var regexp_prod = '/cgi-bin/polymorphism-cgi/';
 	    		if (document.getElementById('b_use_hg19').checked) {
 	    			if (url_path == regexp_prod) {  }
@@ -1254,7 +1303,14 @@
 					return;
 				}
 		    	
-				if (document.getElementById('b_only_pat_ill').checked == true) { url += "&only_ill=1"; }
+				if (document.getElementById('b_only_pat_ill').checked == true) {
+					if (document.getElementById('b_only_strict_pat_ill').checked == true) {
+						url += "&only_strict_ill=1";
+					}
+					else {
+						url += "&only_ill=1";
+					}
+				}
 				if (document.getElementById('b_only_my_projects').checked == true) {
 					var filter_type_project = document.getElementById("form_only_my_projects_type").value;
 					if (filter_type_project == "") { url += "&only_my_projects=1"; }

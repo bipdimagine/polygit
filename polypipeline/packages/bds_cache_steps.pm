@@ -899,9 +899,8 @@ sub dejavu_parquet {
 	my $ppn = $self->nproc;
 	my $type = "dejavu_parquet";
 	my $stepname = $projectName."@".$type;
-	my $dir_parquet = $self->project->deja_vu_public_projects_parquet();
-	my $fileout = $dir_parquet."/".$projectName.'.'.$self->project->id.'.parquet';
-	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_parquet_dejavu.pl -project=$projectName -fork=$ppn";
+	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
+	my $cmd = "perl $Bin/scripts/scripts_pipeline/dejavu/hg38/variant/duckdb/add_project_parquet.pl -project=$projectName -fork=$ppn >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
@@ -924,7 +923,6 @@ sub dejavu {
 	my $fileout = $dir."/dejavu.log";
 	#/dejavu/hg38/variant/tar
 	my $cmd = "perl $Bin/scripts/scripts_pipeline/dejavu/hg38/variant/lmdb/add_project.pl -project=$projectName -fork=$ppn >$fileout";
-	#my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/cache_lite_dejavu.pl -project=$projectName >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});

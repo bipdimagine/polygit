@@ -31,6 +31,8 @@ my $in_this_run = $cgi->param('in_this_run');
 
 $build_use = 'HG19' unless ($build_use);
 
+$build_use = 'HG38';
+
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
 my $fam;
@@ -90,8 +92,10 @@ foreach my $hash (@{$query->getProjectListForUser($user, $pass)}) { $hProjAuthor
 
 my $id = 0;
 my $hDejaVuGlobal = $var->dejavu_hash_projects_patients();
+
 foreach my $projName (sort keys %$hDejaVuGlobal) {
 	next if ($in_this_run and not exists $h_this_run_patients->{$projName});
+	
 	print '.';
 	my $thisProject = $buffer->newProject(-name => $projName);
 	delete $thisProject->{version};
@@ -107,10 +111,17 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 	}
 	my @lMails;
 	foreach my $hashOwners (@{$query->getOwnerProject_byName($projName)}) { push(@lMails, $hashOwners->{'email'});  }
+	
+	if (not exists $hDejaVuGlobal->{$projName}->{patients}) {
+		my $h = $var->infos_dejavu_parquet($thisProject);
+		$hDejaVuGlobal->{$projName}->{patients} = $h->{patients_infos} if $h and exists $h->{patients_infos};
+	}
+	
 	foreach my $patName (sort keys %{$hDejaVuGlobal->{$projName}->{patients}}) {
 		next if ($in_this_run and not exists $h_this_run_patients->{$projName}->{$patName});
 		my $pp = $thisProject->getPatient($patName);
 		next if exists $solo_fam->{$pp->getFamily()->name} ;
+		
 		#die();
 		my $hash;
 		$hash->{id} = $id;
@@ -157,6 +168,10 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 			$hash->{family} = $patient->family();
 			$hash->{sex} = $patient->sex();
 			$hash->{status} = $patient->status();
+			$hash->{ho_he} = $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{heho} if exists $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{heho};
+			$hash->{model} = $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{model} if exists $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{model};
+			$hash->{dp} = $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{dp} if exists $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{dp};
+			$hash->{ratio} = $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{ratio} if exists $hDejaVuGlobal->{$projName}->{patients}->{$patName}->{ratio};
 			my $sex = $patient->sex();
 			my $status = $patient->status();
 			if ($patient->isFather()) { $hash->{sex_status} = 'F'.$status; }
@@ -184,8 +199,8 @@ sub printHtml_bootstrap {
 	my ($listHash) = @_;
 	my $cgi = new CGI();
 	my $hash;
-	my @lHeaders = ('Acc', 'Project', 'Family', 'Patient', 'Sex/Status', 'He/Ho', 'Run Id', 'Machine', 'Capture', 'Contacts', 'IGV');
-	my @lCat = ('implicated', 'project', 'family', 'name', 'sex_status', 'ho_he', 'run_id', 'machine', 'captures', 'contacts', 'igv');
+	my @lHeaders = ('Acc', 'Project', 'Family', 'Patient', 'Sex/Status', 'He/Ho', "Ratio", "Model", 'Run Id', 'Machine', 'Capture', 'Contacts', 'IGV');
+	my @lCat = ('implicated', 'project', 'family', 'name', 'sex_status', 'ho_he', 'ratio', 'model', 'run_id', 'machine', 'captures', 'contacts', 'igv');
 	my $out = "<table class='table table-bordered' style='font-size:11px;'>";
 	$out .= "<thead>";
 	$out .= $cgi->start_Tr();

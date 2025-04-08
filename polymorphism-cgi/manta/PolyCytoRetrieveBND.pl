@@ -255,8 +255,7 @@ foreach my $sv (@$hTransLoc) {
 
 
 	# pour afficher tous les membres de la famille dans IGV si trio
-	my $bam_dir     = $thePatient->getProject->getAlignmentUrl($thePatient->alignmentMethod);
-	my $bamFiles = $bam_dir.$patientname.".bam";
+	my $bamFiles = $patient->bamUrl();
 	my $bamNames = $patientname;
 	
 	if ($thePatientFamily->isTrio() )
@@ -266,7 +265,7 @@ foreach my $sv (@$hTransLoc) {
 		foreach my $m (@$members)
 		{
 			my $membername = $m->name();
-			$bamFiles .= ",".$bam_dir.$membername.".bam" unless ($membername eq $patientname);
+			$bamFiles .= ",".$patient->bamUrl() unless ($membername eq $patientname);
 			$bamNames .= ",".$membername unless ($membername eq $patientname);
 		}
 	}

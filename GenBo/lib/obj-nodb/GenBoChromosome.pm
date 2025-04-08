@@ -2305,17 +2305,20 @@ sub getDejaVuInfosForDiagforVariant{
 		if (exists $exomes->{$pid}){
 			$res->{exome_projects}  ++; 
 			$res->{exome_patients}   += $nhe;
+			$res->{exome_patients}   += $nho;
 			$res->{exome_patients_ho}   += $nho;
 		}
 		#in similar;
 		if (exists $similar->{$pid}){
 			$res->{similar_projects}  ++;
 			$res->{similar_patients} += $nhe;
+			$res->{similar_patients} += $nho;
 			$res->{similar_patients_ho} += $nho;
 		}
 		else {
 			$res->{other_projects} ++;
 			$res->{other_patients}+= $nhe;
+			$res->{other_patients}   += $nho;
 			$res->{other_patients_ho}+= $nho;
 			$res->{other_projects_ho} ++ if $nho > 0;
 		}
@@ -2336,6 +2339,7 @@ sub transform_rocksid_to_varid {
 	my $ref = $self->getSequence(int($pos), int($pos));
 	if ($alt =~ /\+/) {
 		$alt =~ s/\+/$ref/;
+		$pos++;
 	}
 	elsif ($alt =~ /^[0-9]+$/) {
 		my $length_del = int($alt);

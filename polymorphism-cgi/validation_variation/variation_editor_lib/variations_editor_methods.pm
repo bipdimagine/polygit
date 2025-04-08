@@ -71,9 +71,9 @@ sub new_refine_heterozygote_composite_score_rocks {
 	
 		}
 		}
-	warn "prepare";
+#	warn "prepare";
 	$final_polyviewer_all->prepare($gids);
-	warn "end prepare";
+#	warn "end prepare";
 	foreach my $g (@$list) {
 					
 		$xp++;

@@ -20,6 +20,7 @@ use Compress::Snappy;
 use Storable qw/thaw freeze/;
 use Carp;
 use liftOver;
+use MIME::Base64;
 #use bytes;
 extends "GenBoGenomic";
 
@@ -3614,5 +3615,84 @@ has is_forced_viewing => (
 		return;
 	}
 );
+
+my $h_parquet_models_id;
+$h_parquet_models_id->{1} = 'solo';
+$h_parquet_models_id->{2} = 'father';
+$h_parquet_models_id->{4} = 'mother';
+$h_parquet_models_id->{8} = 'both';
+$h_parquet_models_id->{16} = 'is_parent';
+$h_parquet_models_id->{32} = 'recessif';
+$h_parquet_models_id->{64} = 'dominant';
+$h_parquet_models_id->{128} = 'denovo';
+$h_parquet_models_id->{256} = 'strict_denovo';
+$h_parquet_models_id->{512} = 'error';
+
+sub infos_dejavu_parquet {
+	my ($self, $project) = @_;
+	$project = $self->getProject() if not $project;
+	my $dir_parquet = $project->buffer->dejavu_parquet_dir();	
+	my $parquet = $dir_parquet.'/'.$project->name().'.'.$project->id().'.parquet';
+	return undef if not -e $parquet;
+#	confess("\n\nERROR $parquet file doesn't exist. die \n\n") if not -e $parquet;
+	
+	my $sql = "SELECT * FROM read_parquet(['".$parquet."'])";
+	my $find_pos_s = $self->start() - (20 + $self->length());
+	my $find_pos_e = $self->start() + (20 + $self->length());
+	if ($self->getProject->current_genome_version() eq 'HG38') {
+		$sql .= " WHERE chr38='".$self->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+	}
+	elsif ($self->getProject->current_genome_version() eq 'HG19') {
+		$sql .= " WHERE chr19='".$self->getChromosome->id()."' and pos19 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+	}
+	else { confess("\n\nERROR VAR PARQUET DEJAVU !\n\n"); }
+	my $duckdb = $project->buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
+	my $json_duckdb = `$cmd`;
+	if ($json_duckdb) {
+		my $decode = decode_json $json_duckdb;
+		my $h_by_proj;
+		foreach my $h (@$decode) {
+			next if $h->{'chr38'} ne $self->getChromosome->id;
+			next if $h->{'pos38'} ne $self->start();
+			next if $h->{'allele'} ne $self->var_allele();
+			my $nb_he = $h->{he};
+			my ($h_infos_patients, $h_tmp_pat);
+			my $nb_pat = 0;
+			foreach my $pat_id (unpack("w*",decode_base64($h->{patients}))) {
+				$nb_pat++;
+				$h_infos_patients->{$nb_pat}->{id} = $pat_id;
+				$h_tmp_pat->{$pat_id} = $nb_pat;
+			}
+			my $i = 0;
+			$nb_pat = 1;
+			foreach my $info (unpack("w*",decode_base64($h->{dp_ratios}))) {
+				$i++;
+				if ($i == 1) { $h_infos_patients->{$nb_pat}->{dp} = $info; }
+				elsif ($i == 2) { $h_infos_patients->{$nb_pat}->{ratio} = $info; }
+				elsif ($i == 3) {
+		    		my $model = 'error';
+		    		$model = $h_parquet_models_id->{$info} if exists $h_parquet_models_id->{$info};
+					$h_infos_patients->{$nb_pat}->{model} = $model;
+					$i = 0;
+					$nb_pat++;
+				}
+			}
+			
+			foreach my $pat (@{$project->getPatients()}) {
+				next if not exists $h_tmp_pat->{$pat->id};
+				$h->{patients_infos}->{$pat->name}->{patient_id} = $pat->id();
+				$h->{patients_infos}->{$pat->name}->{patient_parquet_id} = $h_tmp_pat->{$pat->id};
+				if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $h->{patients_infos}->{$pat->name}->{heho} = 'he'; }
+				else { $h->{patients_infos}->{$pat->name}->{heho} = 'ho'; }
+				$h->{patients_infos}->{$pat->name}->{model} = $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{model};
+				$h->{patients_infos}->{$pat->name}->{ratio} = $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{ratio};
+				$h->{patients_infos}->{$pat->name}->{dp} = $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{dp};
+			}
+			return $h;
+		}
+	}	
+	return undef;
+}
 
 1;

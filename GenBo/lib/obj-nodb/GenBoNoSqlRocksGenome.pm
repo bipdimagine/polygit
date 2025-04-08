@@ -380,22 +380,27 @@ sub _decode_dejavu {
 sub decode_dejavu {
 	my ($self,$value) = @_;
 	return undef unless $value;
-	my @tab = split("!-x-!",$value);
-#	warn "\n\n";
-#	warn 'value: '.$value;
+	my @tab = unpack("w*",$value);
 	my $hash;
+	my $i = 0;
+	my ($p, $he, $ho);
 	foreach my $z (@tab){
-		next unless $z;
-		my ($p,$he,$ho,@a)=  unpack("w*",$z);
-		
-		next if not @a;		
-		next if ($he+$ho != scalar(@a));
-		
-		confess("\n\nERRROR: problem DEJAVU rocks unpack. Die\n\n") if ($he+$ho != scalar(@a));
-	#	warn "ok";
-		$hash->{$p}->{he} = $he;
-		$hash->{$p}->{ho} = $ho;
-		$hash->{$p}->{patients} = \@a;
+		$i++;
+		if ($i == 1) {
+			$p = $z;
+			$he = undef;
+			$ho = undef;
+		}
+		elsif ($i == 2) {
+			$he = $z;
+		}
+		elsif ($i == 3) {
+			$ho = $z;
+			$hash->{$p}->{he} = $he;
+			$hash->{$p}->{ho} = $ho;
+			#$hash->{$p}->{patients} = \@a;
+			$i = 0;
+		}
 	} 
 	return $hash;
 }
