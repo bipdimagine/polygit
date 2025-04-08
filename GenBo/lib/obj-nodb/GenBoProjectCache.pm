@@ -1028,16 +1028,17 @@ sub myflushobjects {
 				if ($type =~ /gene/ or $type =~ /transcript/ or  $type =~/protein/ or $type =~ /exon/ or $type  =~ /intron/) {
 					
 					my $obj;
-					if ($self->isRocks() and $self->getVersion() =~ /HG38/) {
+					#warn 
+					#if ($self->isRocks() and $self->getVersion() =~ /HG38/) {
 						$obj = $self->rocksGenBo->genbo( $id );
-					}
-					else {
-						$obj = $self->lmdbGenBo->get( $id );
-						unless ($obj) {
-							my $syno =  $self->liteAnnotations->get("synonyms", $id);
-							$obj = $self->lmdbGenBo->get( $syno );
-						}
-					}
+#					}
+#					else {
+#						$obj = $self->lmdbGenBo->get( $id );
+#						unless ($obj) {
+#							my $syno =  $self->liteAnnotations->get("synonyms", $id);
+#							$obj = $self->lmdbGenBo->get( $syno );
+#						}
+#					}
 					
 					#cas avec des transcript id sans _ impossible a retrouver
 					confess($id." ".$type) unless $obj;
