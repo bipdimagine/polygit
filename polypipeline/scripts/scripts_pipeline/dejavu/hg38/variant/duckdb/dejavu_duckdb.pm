@@ -15,7 +15,6 @@ use MIME::Base64;
 
 sub save_csv {
 	my ($chr,$snps,$dir_tmp) = @_;
-	
 	my $project = $chr->project;
 	my $filename = "$dir_tmp/".$chr->project->name."_".$chr->name.".csv";
 	
@@ -38,7 +37,7 @@ sub save_csv {
 		my $pos0 = $vhh->{start};
 		my $poslift ="0";
 		my $chrlift ="Z";
-		if (exists $vhh->{LIFT}) {
+		if (exists $vhh->{LIFT} ) {
 			 if ($project->isChromosomeName($vhh->{LIFT}->{chromosome})){
 			 	
 				$poslift = $vhh->{LIFT}->{start};
