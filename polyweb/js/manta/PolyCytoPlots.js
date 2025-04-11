@@ -764,11 +764,11 @@ function launch_plotAllChr()
  
  function viewGeneByName(name,project,patient)
  {
- 	//var url_view_gene = "PolyCytoTest.html?genes=" + name;
- 	
  	var username = dojo.cookie("username");
- 	var url_view_gene = "/polyweb/vector/get_variants_from_all_my_projects.html?input=" + name + "&project="+ project + "&patient="+patient + "&user="+username;
- 	
+ 	var url = window.location.href;
+ 	url = url.replace(window.location.search, '');
+ 	url = url.replace("polyweb/html/manta/PolyCyto.html", "");
+ 	var url_view_gene = url + "polyweb/vector/get_variants_from_all_my_projects.html?input=" + name + "&project="+ project + "&patient="+patient + "&user="+username;
 	var myWindow = window.open(url_view_gene,"_blank",""); 
  }
  
