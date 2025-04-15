@@ -177,7 +177,7 @@ sub cache_specific_atrributes {
 
 
 sub getVectorPatient {
-	my ( $self, $patient ) = shift;
+	my ( $self, $patient ) = @_;
 	my $vector = dclone $self->getCurrentVector();
 	$vector &= $patient->getVectorOrigin( $self->getChromosome ); # if $patient;
 	return $vector;
