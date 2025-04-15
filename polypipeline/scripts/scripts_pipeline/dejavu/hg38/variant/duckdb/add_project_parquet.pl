@@ -52,7 +52,7 @@ my $f2;
 
 
 my $dir_tmp = "/tmp/pipeline";
-
+system("mkdir /tmp/pipeline") unless -e "/tmp/pipeline";
 my $buffer = new GBuffer;
 
 my $project = $buffer->newProjectCache( -name => "$project_name");
@@ -76,14 +76,11 @@ foreach my $pname (@{$buffer->getQuery->listProjectsWithoutDejaVu()}) {
 }
 
 if (not $can_dejavu) { $parquet_file .= '.no_dejavu'; }
-warn $parquet_file;
+
 
 exit(0) if -e $parquet_file and not $force;
-
-my $pm2 = new Parallel::ForkManager($fork);
 $project->getPatients;
 $project->preload_patients();
-
 MCE::Loop->init(
    max_workers => $fork, chunk_size => 'auto'
 );
@@ -95,7 +92,6 @@ my @results = mce_loop {
    my $local_project;
    my $files;
    foreach my $chr (@$tregions){
-   	
    	my $t = time;
    	my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome_version);
    	my $file;
@@ -106,7 +102,6 @@ my @results = mce_loop {
     	$file = save_and_lift_lmdb($chr,$lift);
     }
     push(@$files,$file);
-   	 
    }
 	 MCE->gather($files);
 } @chromosomes;	
@@ -119,9 +114,9 @@ foreach my $t (@results) {
     ($b =~ /_X\.csv$/) <=> ($a =~ /_X\.csv$/)  # "_X" en premier
     || $a cmp $b                                # Trie alphabétique normal après
 } @files;
-my $filename = join(",",@files);
+my $filename = join(",",grep {$_}@files);
 
-
+exit(0) if $filename eq "";
 
 my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 my $query = "
@@ -142,7 +137,6 @@ sub save_and_lift_lmdb {
 	warn $chr->name." --- ";
 	my $dir1 = $buffer->deja_vu_public_dir("HG19","projects_lite");
 	my $f1 = "$dir1".$project->name.".lite";
-	 
 	my $no = GenBoNoSql->new( dir => $dir1 , mode => "r" );
 	my $h_hg19 = $no->get($project_name, $chr->name);
 	my $patients = $no->get($project_name, "patients");
@@ -165,6 +159,7 @@ sub save_and_lift_lmdb {
 	
 	my $lmdb_dir = $project->lmdb_cache_variations_dir();
 	$lmdb_dir =~ s/rocks\///;
+	warn $lmdb_dir;
 	my $lmdb = GenBoNoSqlLmdb->new(
 		dir         => $lmdb_dir,
 		mode        => 'r',
@@ -175,10 +170,22 @@ sub save_and_lift_lmdb {
 	);
 	
 	my $time = time;
-my $vectors = dejavu_duckdb::get_hash_model_variant($chr);
+	
+	unless ($h_hg19 ) {
+		my $file = dejavu_duckdb::save_csv($chr,undef,$dir_tmp);
+		$no->close();
+		return $file;
+	}
+	unless (keys %$h_hg19) {
+		my $file = dejavu_duckdb::save_csv($chr,undef,$dir_tmp);
+		$no->close();
+		return $file;
+	}
+	
+	my $vectors = dejavu_duckdb::get_hash_model_variant($chr);
 	foreach my $vid (keys %{$h_hg19}){
 		$cpt ++ ;
-		
+
 		my $vh;
 		my ($c,$p,$a,$b) = split("_",$vid);
 		my $vhh;
@@ -228,10 +235,7 @@ my $vectors = dejavu_duckdb::get_hash_model_variant($chr);
 		
 		
 		my  $rocksdb_id = chunks::return_rocks_id_from_genbo_id($vid);
-		if ($rocksdb_id =~ /0000000000/){
-			warn "********* ".$rocksdb_id." ********* ".$vid;
-			die();
-		}
+	
 
 		my ($s,$all) = split("!",$rocksdb_id);
 		$s = $s +0;

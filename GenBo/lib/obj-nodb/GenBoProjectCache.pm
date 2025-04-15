@@ -1030,7 +1030,7 @@ sub myflushobjects {
 				if ($type =~ /gene/ or $type =~ /transcript/ or  $type =~/protein/ or $type =~ /exon/ or $type  =~ /intron/) {
 					
 					my $obj;
-#					if ($self->isRocks() and $self->getVersion() =~ /HG38/) {
+
 						$obj = $self->rocksGenBo->genbo( $id );
 #					}
 #					else {

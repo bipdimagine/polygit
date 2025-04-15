@@ -63,7 +63,7 @@ die ("version ?") unless $version;
 #my $dir_final= $buffer->deja_vu_public_dir($version,"variations");
 # $dir_final ="/data-beegfs/rocks.dejavu/$version";
  
-my $dir_final = "/data-beegfs/mbras/";
+my $dir_final = "/data-beegfs/dejavu/rocks/";
 #warn $dir_final;
 #die;
  
@@ -116,8 +116,8 @@ sub save_regions {
  	my $string_chr = $chr."!";
 	my $sql = qq {PRAGMA threads=8;COPY (
           SELECT pos38,allele, STRING_AGG(project || ';' || he || ';' || ho, ';') AS value
-          FROM read_parquet('$ff') where chr38 = '$chr' and  pos38 between '$start_string' and '$end_string'
-          GROUP BY pos38,allele  
+          FROM read_parquet('$ff') where chr38 = '$chr' and  pos38 between '$start_string' and '$end_string' 
+          GROUP BY pos38,allele 
       ) TO '$file1' (FORMAT 'csv', COMPRESSION 'ZSTD');
  	};
 
@@ -130,7 +130,7 @@ sub save_regions {
  	}
 	}
 
- 	open(my $fh, '>', $sql_file) or die "Impossible d'ouvrir $sql_file: $!";
+ open(my $fh, '>', $sql_file) or die "Impossible d'ouvrir $sql_file: $!";
 print $fh $sql;
 close($fh);
 # Exécuter DuckDB avec le fichier SQL

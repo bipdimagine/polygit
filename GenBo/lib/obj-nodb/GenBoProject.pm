@@ -2037,7 +2037,6 @@ sub getCellRangerIndex {
 
 	return $dir;
 }
-
 has annotation_genome_version => (
 	is      => 'rw',
 	lazy    => 1,
@@ -4228,7 +4227,7 @@ sub makePath {
 	my $dir = $self->buffer()->config_path("root","project_data");
 	my $dd =
 		$dir . ""
-	  . $self->buffer()->getDataDirectory( $self->getProjectType ) . "/"
+	  .  $self->getProjectType . "/"
 	  . $self->name();
 
 	my @dirs;
@@ -6538,6 +6537,11 @@ $self->countSimilarPatients();
 $self->countExomePatients();
 
 
+}
+sub preload{
+	my $self = shift;
+	$self->preload_patients;
+	
 }
 
 has get_polybtf_project_path => (

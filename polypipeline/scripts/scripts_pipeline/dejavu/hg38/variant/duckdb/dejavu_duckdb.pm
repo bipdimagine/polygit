@@ -15,7 +15,6 @@ use MIME::Base64;
 
 sub save_csv {
 	my ($chr,$snps,$dir_tmp) = @_;
-	
 	my $project = $chr->project;
 	my $filename = "$dir_tmp/".$chr->project->name."_".$chr->name.".csv";
 	
@@ -24,9 +23,13 @@ sub save_csv {
 	my $fh;		
 	open( $fh, ">", $filename) or die "Impossible d'ouvrir $filename: $!";
 	$csv->print($fh, ["project","chr38","pos38","chr19","pos19","allele","max_ratio","max_dp","transmissions","he","ho","patients","dp_ratios"]); 
-	$csv->print($fh, [0,"Z",-1,"Z","-1","W",0,0,"z",0,0,"value","value2"]); 
+	$csv->print($fh, [0,"NONE",-1,"NONE",-1,"W",0,0,"z",0,0,"NONE","NONE"]); 
+	$csv->print($fh, [0,$chr->name,-1,$chr->name,-1,"W",0,0,"z",0,0,"NONE","NONE"]); 
 	
-	
+	unless ($snps){
+		close($fh);
+		return "\'".$filename."\'"  ;
+	}
 	my $mt;
 	if ($chr->name eq "MT"){
 		$mt=1 if $project->getChromosome("MT")->length() == 16571 or $project->current_genome_version eq "HG38";
@@ -37,8 +40,8 @@ sub save_csv {
 		my $chr0 = $chr->name;
 		my $pos0 = $vhh->{start};
 		my $poslift ="0";
-		my $chrlift ="Z";
-		if (exists $vhh->{LIFT}) {
+		my $chrlift ="NONE";
+		if (exists $vhh->{LIFT} ) {
 			 if ($project->isChromosomeName($vhh->{LIFT}->{chromosome})){
 			 	
 				$poslift = $vhh->{LIFT}->{start};
