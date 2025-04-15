@@ -78,6 +78,8 @@ my $only_pat_with_var = $cgi->param('only_pat_with_var');
 my $only_pat_with_var_he = $cgi->param('only_pat_with_var_he');
 my $only_pat_with_var_ho = $cgi->param('only_pat_with_var_ho');
 my $debug = $cgi->param('debug');
+my $is_polybtf = $cgi->param('is_polybtf');
+
 $fork = $cgi->param('fork');
 
 $fork = 6 if not $fork;
@@ -176,7 +178,7 @@ foreach my $project_name (@lProjectNames) {
 
 $project_init_name = $buffer_init->get_random_project_name_with_this_annotations_and_genecode();
 
-my $project_name_hg38 = $buffer_init->getRandomProjectName('HG38_CNG');
+my $project_name_hg38 = $buffer_init->getRandomProjectName('HG38_DRAGEN');
 my $project_name_hg19 = $buffer_init->getRandomProjectName('HG19_CNG');
 $project_init = $buffer_init->newProject( -name => $project_name_hg38 );
 
@@ -221,51 +223,58 @@ elsif ($variant_id) {
 	$max_gnomad_ho = 999999999999;
 	$fork = 1; 
 }
-my $chr_init = $project_init->getChromosome($gene_chr_id);
-my $chr_init_id = $chr_init->id();
-$gene_init->getTranscripts();
-$gene_init_id = $gene_init->id();
 
-my ($use_locus, $only_rocks_id);
-if ($only_interval) {
-	$only_interval =~ s/chr//g;
-	$only_interval =~ s/:/_/g;
-	$only_interval =~ s/-/_/g;
-	my ( $locus_chr, $locus_start, $locus_end ) = split( '_', $only_interval );
-	$locus_end = $locus_start + 1 unless ($locus_end);
-	if ($locus_start > $locus_end){
-		my $t = $locus_start;
-		$locus_start = $locus_end;
-		$locus_end = $t;
-	}
-	next if ($gene_init->getChromosome->id() ne $locus_chr);
-	$use_locus = $gene_chr_id.'_'.$locus_start.'_'.$locus_end;
-}
-elsif ($only_variant) {
-	$only_rocks_id = $only_variant->rocksdb_id();
-	$use_locus = $gene_chr_id.'_'.($only_variant->start() - 1).'_'.($only_variant->end() + 1);
-}
-
-$project_init->getChromosomes();
-my $hchr_init = $project_init->{chromosomes_object};
-$project_init->{genes_object}->{$gene_init->id}++;
-my $hgene_init = $project_init->{genes_object};
-my $objects_init = $project_init->{objects};
-foreach my $type (keys %$objects_init) {
-	foreach my $id (keys %{$objects_init->{$type}}) {
-		delete $objects_init->{$type}->{$id}->{buffer};
-		delete $objects_init->{$type}->{$id}->{project};
-	}
-}
-
-my ($filters_saved, $hResVariants_loaded, $h_count_loaded, $gene_id_loaded);
-print $cgi->header('text/json-comment-filtered');
-print "{\"progress\":\".";
 my $h_count;
-#($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels) = get_variants_infos_from_projects($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript);
-#my $nb_var_after = scalar(keys %$hVariantsDetails);
+if ($is_polybtf) {
+	($hResVariants) = get_variants_infos_from_polybtf();
+}
+else {
+	my $chr_init = $project_init->getChromosome($gene_chr_id);
+	my $chr_init_id = $chr_init->id();
+	$gene_init->getTranscripts();
+	$gene_init_id = $gene_init->id();
+	
+	my ($use_locus, $only_rocks_id);
+	if ($only_interval) {
+		$only_interval =~ s/chr//g;
+		$only_interval =~ s/:/_/g;
+		$only_interval =~ s/-/_/g;
+		my ( $locus_chr, $locus_start, $locus_end ) = split( '_', $only_interval );
+		$locus_end = $locus_start + 1 unless ($locus_end);
+		if ($locus_start > $locus_end){
+			my $t = $locus_start;
+			$locus_start = $locus_end;
+			$locus_end = $t;
+		}
+		next if ($gene_init->getChromosome->id() ne $locus_chr);
+		$use_locus = $gene_chr_id.'_'.$locus_start.'_'.$locus_end;
+	}
+	elsif ($only_variant) {
+		$only_rocks_id = $only_variant->rocksdb_id();
+		$use_locus = $gene_chr_id.'_'.($only_variant->start() - 1).'_'.($only_variant->end() + 1);
+	}
+	
+	$project_init->getChromosomes();
+	my $hchr_init = $project_init->{chromosomes_object};
+	$project_init->{genes_object}->{$gene_init->id}++;
+	my $hgene_init = $project_init->{genes_object};
+	my $objects_init = $project_init->{objects};
+	foreach my $type (keys %$objects_init) {
+		foreach my $id (keys %{$objects_init->{$type}}) {
+			delete $objects_init->{$type}->{$id}->{buffer};
+			delete $objects_init->{$type}->{$id}->{project};
+		}
+	}
+	
+	my ($filters_saved, $hResVariants_loaded, $h_count_loaded, $gene_id_loaded);
+	print $cgi->header('text/json-comment-filtered');
+	print "{\"progress\":\".";
+	#($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels) = get_variants_infos_from_projects($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript);
+	#my $nb_var_after = scalar(keys %$hVariantsDetails);
 
-($hResVariants) = get_variants_infos_from_projects($use_locus, $only_transcript, $only_rocks_id);
+	($hResVariants) = get_variants_infos_from_projects($use_locus, $only_transcript, $only_rocks_id);
+}
+
 
 my $fsize = "font-size:10px";
 my $value_red = 14;
@@ -306,17 +315,17 @@ sub supressCoreFilesFound {
 
 sub save_export_xls {
 	print '.saveExport.';
-	$project_dejavu->getProject->buffer->dbh_deconnect();
-	$project_dejavu->getProject->buffer->dbh_reconnect();
+	$project_init->buffer->dbh_deconnect();
+	$project_init->buffer->dbh_reconnect();
 #	delete $project_dejavu->{rocksPartialTranscripts};
 	my $h_xls_args;
 	print '_save_xls_';
-	$project_dejavu->cgi_object(1);
+	$project_init->cgi_object(1);
 	my (@lVarObj, $h_pubmed);
 #	foreach my $pos (sort keys %{$hResVariants}) {
 	foreach my $var_id (sort keys %{$hResVariants}) {
-		$project_dejavu->print_dot(50);
-		my $v = $project_dejavu->_newVariant($var_id);
+		$project_init->print_dot(50);
+		my $v = $project_init->_newVariant($var_id);
 		if ($gene_with_partial_transcrit) {
 			$v->variationTypeInterface($gene_init);
 		}
@@ -334,11 +343,16 @@ sub save_export_xls {
 	}
 #	}
 	my $xls_export = new xls_export();
-	$xls_export->title_page('GeneScout_'.$gene_init->external_name().'.xls');
-	$project_dejavu->buffer->dbh_deconnect();
-	$project_dejavu->buffer->dbh_reconnect();
+	if ($is_polybtf) {
+		$xls_export->title_page('Polybtf.xls');
+	}
+	else {
+		$xls_export->title_page('GeneScout_'.$gene_init->external_name().'.xls');
+	}
+	$project_init->buffer->dbh_deconnect();
+	$project_init->buffer->dbh_reconnect();
 	
-	$xls_export->store_variants_infos(\@lVarObj, $project_dejavu);
+	$xls_export->store_variants_infos(\@lVarObj, $project_init);
 	my ($h_patients, $h_row_span);
 	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
 		foreach my $var_id (keys %{$xls_export->{hash_variants_global}->{$chr_id}}) {
@@ -374,8 +388,8 @@ sub save_export_xls {
 	}
 	
 	print "|";
-	$project_dejavu->buffer->dbh_deconnect();
-	$project_dejavu->buffer->dbh_reconnect();
+	$project_init->buffer->dbh_deconnect();
+	$project_init->buffer->dbh_reconnect();
 #	delete $project_dejavu->{rocksPartialTranscripts};
 	print "|";
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
@@ -384,7 +398,7 @@ sub save_export_xls {
 	print "|";
 	my $session_id = $xls_export->save();
 	print "|";
-	$project_dejavu->buffer->dbh_deconnect();
+	$project_init->buffer->dbh_deconnect();
 #	delete $project_dejavu->{rocksPartialTranscripts};
 #	warn $session_id;
 #	die;
@@ -500,7 +514,7 @@ sub export_html {
 #		$VAR15 = 'var_gnomad';
 #		$VAR16 = 'var_gnomad_ho';
 		
-		
+				
 		my $out = $cgi->start_Tr();
 		foreach my $h (@headers_validations){
 			if ($h eq "trio" or "table_transcript"){
@@ -558,16 +572,23 @@ sub export_html {
 #	warn Dumper @lTrLines;
 #	die;
 	
-	if ($gene_init->strand() == 1) { foreach my $line (@lTrLines) { $out2 .= $line; } }
-	else { foreach my $line (reverse @lTrLines) { $out2 .= $line; }  }
-	$h_count->{total_pass} = scalar(@lTrLines);
-	$gene_init = undef;
-	$gene_init = $project_dejavu->newGene($gene_init_id) unless ($gene_init);
-	$gene_init->hgmd();
-	$gene_init->omim();
-	$gene_init->is_omim_morbid();
-
-	$hRes->{html_gene} = get_html_gene($gene_init_id, $gene_init, $h_count);
+	if ($is_polybtf) {
+		$hRes->{html_gene_polybtf} = "polybtf";
+		foreach my $line (@lTrLines) { $out2 .= $line; }
+	}
+	else {
+		if ($gene_init->strand() == 1) { foreach my $line (@lTrLines) { $out2 .= $line; } }
+		else { foreach my $line (reverse @lTrLines) { $out2 .= $line; }  }
+		$h_count->{total_pass} = scalar(@lTrLines);
+		$gene_init = undef;
+		$gene_init = $project_dejavu->newGene($gene_init_id) unless ($gene_init);
+		$gene_init->hgmd();
+		$gene_init->omim();
+		$gene_init->is_omim_morbid();
+	
+		$hRes->{html_gene} = get_html_gene($gene_init_id, $gene_init, $h_count);
+	}
+	
 	if ($nb_var_filtred > 0) {
 		$out2 .= $cgi->start_Tr();
 		$out2 .= "<td colspan='4' style='color:red;font-size:12px;'><b><u>and $nb_var_filtred variants fitred...</b></u></td>";
@@ -592,12 +613,19 @@ sub export_html {
 	
 	$hRes->{html_variants} = $out2;
 	$hRes->{project_init_name} = $project_init_name;
-	$hRes->{gencode_version} = $project_dejavu->gencode_version;
+	$hRes->{gencode_version} = $project_init->gencode_version;
 	$hRes->{session_id} = $session_id;
-	$hRes->{html_page_title} = 'DV '.$gene_init->external_name();
-	$hRes->{html_source} = 'PolyDejaVu';
-	$hRes->{html_title} = 'Gene '.$gene_init->external_name();
 	
+	if ($is_polybtf) {
+		$hRes->{html_page_title} = 'PolyBTF';
+		$hRes->{html_source} = 'PolyBTF';
+		$hRes->{html_title} = 'PolyBTF';
+	}
+	else {
+		$hRes->{html_page_title} = 'DV '.$gene_init->external_name();
+		$hRes->{html_source} = 'PolyDejaVu';
+		$hRes->{html_title} = 'Gene '.$gene_init->external_name();
+	}
 	
 	my $h_annot_categories = get_hash_annot_categories();
 	foreach my $this_annot (keys %{$h_annot_categories}) {
@@ -646,10 +674,18 @@ sub save_html {
 	$session->save( 'html_page_title', $hRes->{'html_page_title'} );
 	$session->save( 'html_source', $hRes->{'html_source'} );
 	$session->save( 'html_title', $hRes->{'html_title'} );
-	$session->save( 'html_gene', $hRes->{'html_gene'} );
+	if (exists $hRes->{'html_gene_polybtf'}) { $session->save( 'html_gene', $hRes->{'html_gene_polybtf'} ); }
+	elsif (exists $hRes->{'html_gene'}) { $session->save( 'html_gene', $hRes->{'html_gene'} ); }
 	$session->save( 'html_variants', $hRes->{'html_variants'} );
 	$session->save( 'hash_filters', $hRes->{'hash_filters'} );
 	$session->save( 'gencode_version', $hRes->{'gencode_version'} );
+}
+
+sub get_variants_infos_from_polybtf {
+	my ($h_count, $hVariantsProj);
+	print '_polybtf_dv_';
+	my ($hVariantsDetails) = update_list_variants_from_polybtf();
+	return ($hVariantsDetails);
 }
 
 sub get_variants_infos_from_projects {
@@ -690,6 +726,48 @@ sub get_html_gene {
 	return $html_gene;
 }
 
+sub update_list_variants_from_polybtf {
+	my $time = time;
+	my $h_dv_rocks_ids;
+	my $sql = "SELECT * FROM '/data-isilon/public-data/repository/HG38/polybtf/20/new_hgmd_clinvar.parquet';";
+	my $duckdb = $buffer_init->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
+	my $json_duckdb = `$cmd`;
+	if ($json_duckdb) {
+		my $decode = decode_json $json_duckdb;
+		
+		my $h_found;
+		foreach my $h_json (@$decode) {
+			my $chr_id = $h_json->{'chr'};
+			my $rocksid = $h_json->{'rocksid'};
+			$h_found->{$chr_id}->{$rocksid} = $h_json;
+		}
+		
+		foreach my $chr_id (sort keys %$h_found) {
+			
+			$buffer_init = new GBuffer;
+			$project_init = $buffer_init->newProject( -name => $project_name_hg38 );
+			my $chr = $project_init->getChromosome($chr_id);
+			my $no = $chr->rocks_dejavu();
+			foreach my $rocksid (sort keys %{$h_found->{$chr_id}}) {
+#				warn $chr_id.' -> '.$rocksid;
+				my $h_dv = $no->dejavu($rocksid);
+				if ($h_dv) {
+					$h_dv_rocks_ids->{$chr_id}->{$rocksid} = $h_dv;
+					$h_dv_rocks_ids->{$chr_id}->{$rocksid}->{'polybtf'} = $h_found->{$chr_id}->{$rocksid};
+				}
+			}
+			$no->close();
+		}
+	}
+	
+	($hVariantsDetails) = check_variants($h_dv_rocks_ids);
+	print '@time:'.abs(time) - $time;
+	
+	warn Dumper keys %{$hVariantsDetails} if $debug;
+	
+	return ($hVariantsDetails);
+}
 
 sub update_list_variants_from_dejavu {
 	my ($use_locus, $only_transcript, $only_rocks_id) = @_;
@@ -698,43 +776,53 @@ sub update_list_variants_from_dejavu {
 	$project_dejavu = $buffer_dejavu->newProject( -name => $buffer_init->getRandomProjectName());
 	my $gene_dejavu = $project_dejavu->newGene($gene_init_id_for_newgene);
 	
-	my $transcript_dejavu;
-	foreach my $tr (@{$gene_dejavu->getTranscripts()}) {
-		$transcript_dejavu = $tr if ($only_transcript and $tr->id() =~ /$only_transcript/);
-		$gene_with_partial_transcrit = 1 if ($tr->is_partial_transcript());
-	}
-	
-	my @lProjectNames;
-	my ($total, $total_pass);
-	my $hVarErrors;
-	
 	my $h_dv_rocks_ids;
 	if ($use_locus) {
 		my (@lTmp) = split('_', $use_locus);
-		$h_dv_rocks_ids = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($lTmp[1], $lTmp[2]);
+		$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()} = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($lTmp[1], $lTmp[2]);
 	}
 	else {
-		$h_dv_rocks_ids = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($gene_dejavu->start(), $gene_dejavu->end());
+		$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()} = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($gene_dejavu->start(), $gene_dejavu->end());
 	}
+	($hVariantsDetails) = check_variants($h_dv_rocks_ids, $gene_dejavu);
+	$buffer_dejavu = undef;
+	$project_dejavu->buffer->dbh_deconnect();
+	print '@time:'.abs(time) - $time;
+	return ($hVariantsDetails);
+}
+
+sub check_variants {
+	my ($h_dv_rocks_ids, $gene_dejavu) = @_;
+	$project_init = undef;
+	$buffer_init = undef;
+	
+	$buffer_init = new GBuffer;
+	$project_init = $buffer_init->newProject( -name => $project_name_hg38 );
+	
 	my ($h_dv_var_ids, @lVarIds, @lVar);
-	foreach my $rocks_id (keys %{$h_dv_rocks_ids}) {
-		my $nb_pat_he = 0;
-		my $nb_pat_ho = 0;
-		foreach my $proj_id (keys %{$h_dv_rocks_ids->{$rocks_id}}) {
-			$nb_pat_he += $h_dv_rocks_ids->{$rocks_id}->{$proj_id}->{he};
-			$nb_pat_ho += $h_dv_rocks_ids->{$rocks_id}->{$proj_id}->{ho};
+	my ($total, $total_pass);
+	foreach my $chr_id (sort keys %{$h_dv_rocks_ids}) {
+		
+		my $chr = $project_init->getChromosome($chr_id);
+		foreach my $rocks_id (sort keys %{$h_dv_rocks_ids->{$chr_id}}) {
+			my $nb_pat_he = 0;
+			my $nb_pat_ho = 0;
+			foreach my $proj_id (keys %{$h_dv_rocks_ids->{$chr_id}->{$rocks_id}}) {
+				next if ($proj_id eq 'polybtf');
+				$nb_pat_he += $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$proj_id}->{he};
+				$nb_pat_ho += $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$proj_id}->{ho};
+			}
+			my $nb_pat_total = $nb_pat_he + $nb_pat_ho;
+			my $var_id = $chr->transform_rocksid_to_varid($rocks_id);
+			push(@lVarIds, $var_id);
+			push(@lVar, $project_init->_newVariant($var_id));
+			$h_dv_var_ids->{$var_id}->{rocks_id} = $rocks_id;
 		}
-		my $nb_pat_total = $nb_pat_he + $nb_pat_ho;
-		my $var_id = $gene_dejavu->getChromosome->transform_rocksid_to_varid($rocks_id);
-		push(@lVarIds, $var_id);
-		push(@lVar, $project_dejavu->_newVariant($var_id));
-		$h_dv_var_ids->{$var_id}->{rocks_id} = $rocks_id;
+	
+		my $lift = liftOver->new(project=>$project_init, version=>$project_init->lift_genome_version);
+		$lift->lift_over_variants(\@lVar);
 	}
-	
-	my $lift = liftOver->new(project=>$project_dejavu, version=>$project_dejavu->lift_genome_version);
-	$lift->lift_over_variants(\@lVar);
-	
-	
+		
 	$nb_variants_before_filters = scalar(keys %{$h_dv_var_ids});
 	print '.!nbRocksIds:'.$nb_variants_before_filters.'!.';
 	my $h_projects_filters_he_comp;
@@ -750,7 +838,19 @@ sub update_list_variants_from_dejavu {
 	}
 	print '.use_fork'.$fork.'.';
 	
-	$project_dejavu->disconnect();
+	$project_init->disconnect();
+	
+	my $transcript_dejavu;
+	if ($gene_dejavu) {
+		foreach my $tr (@{$gene_dejavu->getTranscripts()}) {
+			$transcript_dejavu = $tr if ($only_transcript and $tr->id() =~ /$only_transcript/);
+			$gene_with_partial_transcrit = 1 if ($tr->is_partial_transcript());
+		}
+	}
+	
+	my @lProjectNames;
+	my $hVarErrors;
+	
 	my $pm = new Parallel::ForkManager($fork);
 	my $nb_errors=0;
 	$pm->run_on_finish(
@@ -777,10 +877,23 @@ sub update_list_variants_from_dejavu {
  	 	my $hres;
  	 	$hres->{start_job} = 1;
 		my $nb_i;
-		
 		foreach my $var (@tmp) {
 			my $var_id = $var->id;
+			
+			
+#			warn "\n\n";
+#			warn $var_id;
+			
 			my $var_id_hg19 = $var->lift_over('HG19')->{id};
+			
+			my $gene_variant;
+			
+			my $is_ok_gene;
+			foreach my $gene (@{$var->getGenes()}) {
+				$is_ok_gene = 1 if $gene->id eq $gene_dejavu->id;
+			} 
+			if ($is_ok_gene) { $gene_variant = $gene_dejavu; }
+			else { $gene_variant = $var->getGenes->[0]; }
 			$total++;
 			$nb_i++;
 			if ($nb_i == 100) {
@@ -872,8 +985,13 @@ sub update_list_variants_from_dejavu {
 			unless ($var_annot) {
 				#$var->annotation();
 				eval {
-					if ($transcript_dejavu) { $var_annot = $var->variationTypeInterface($transcript_dejavu); }
-					else { $var_annot = $var->variationTypeInterface($gene_dejavu); }
+					$var->annotation();
+					if ($var->{annotation}->{all}->{$var->getProject->getMaskCoding("intergenic")}) {
+						$var_annot = 'intergenic';
+					}
+					elsif ($transcript_dejavu) { $var_annot = $var->variationTypeInterface($transcript_dejavu); }
+					elsif (exists $var->{annotation}->{$gene_variant->id()}) { $var_annot = $var->variationTypeInterface($gene_variant); }
+					else { $var_annot = $var->variationTypeInterface(); }
 				};
 				if ($@) {
 					$var_annot = 'error';
@@ -885,6 +1003,8 @@ sub update_list_variants_from_dejavu {
 				$this_annot =~ s/ /_/g;
 				$is_ok_annot ++ if (exists $h_filters_cons->{lc($this_annot)});
 			}
+			
+			$is_ok_annot++ if $is_polybtf;
 			if (not $is_ok_annot) {
 				delete $hres->{$var_id};
 				next;
@@ -895,14 +1015,14 @@ sub update_list_variants_from_dejavu {
 			
 			warn 'rocks: '.$var->rocksdb_id if $debug;
 			warn $h_dv_var_ids->{$var_id}->{rocks_id} if $debug;
-			next if not exists $h_dv_rocks_ids->{$var->rocksdb_id};
+			next if not exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id};
 	
 			my @list_parquets;
-			foreach my $proj_id (keys %{$h_dv_rocks_ids->{$var->rocksdb_id}}) {
+			foreach my $proj_id (keys %{$h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id}}) {
 				next if not exists $hProjectsIds->{$proj_id};
 				my $proj_name = $hProjectsIds->{$proj_id};
 				$hVariantsIdsDejavu->{$var_id}->{$proj_name} = $proj_id;
-				foreach my $pat_id (@{$h_dv_rocks_ids->{$var->rocksdb_id}->{$proj_id}->{patients}}) {
+				foreach my $pat_id (@{$h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id}->{$proj_id}->{patients}}) {
 					$hres->{$var_id}->{dejavu_details}->{$proj_name}->{$pat_id} = undef;
 				}
 				my $parquet = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet';
@@ -912,6 +1032,8 @@ sub update_list_variants_from_dejavu {
 				delete $hres->{$var_id};
 				next;
 			}
+			
+			#warn Dumper @list_parquets;
 
 			warn '8 - ok dejavu ho' if $debug;
 			
@@ -954,7 +1076,7 @@ sub update_list_variants_from_dejavu {
 			
 			if ($h_var->{value}->{clinvar_pathogenic}) {
 				my $clinvar_id = $h_var->{value}->{clinvar_id};
-				if ($var->getChromosome->is_clinvar_pathogenic_for_gene($clinvar_id, $gene_dejavu)) {
+				if ($var->getChromosome->is_clinvar_pathogenic_for_gene($clinvar_id, $gene_variant)) {
 					$h_var->{value}->{clinvar_pathogenic_for_this_gene} = 1;
 				}
 				else {
@@ -966,10 +1088,10 @@ sub update_list_variants_from_dejavu {
 			}
 			
 			update_variant_editor::vspliceAI($var, $h_var);
-			$hres->{$var_id}->{spliceAI} = $h_var->{html}->{spliceAI}->{$gene_dejavu->id};
+			$hres->{$var_id}->{spliceAI} = $h_var->{html}->{spliceAI}->{$gene_variant->id};
 							
 			update_variant_editor::vhgmd($var, $h_var);
-			$hres->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_dejavu);
+			$hres->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_variant);
 			
 			
 			$hres->{$var_id}->{table_gnomad} = update_variant_editor::table_gnomad($var);
@@ -979,8 +1101,22 @@ sub update_list_variants_from_dejavu {
 			
 			$hres->{$var_id}->{table_dejavu} = update_variant_editor::vdejavu($var, $h_var);
 			
-			$h_var->{genes}->{$gene_dejavu->id} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_dejavu);
-			$hres->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_dejavu->id}, \@header_transcripts, 1);
+			$h_var->{genes}->{$gene_variant->id} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_variant);
+			
+			
+			if ($is_polybtf or not $is_ok_gene) {
+				my $gene_name = $gene_variant->external_name();
+				my $gene_id = $gene_variant->id();
+				my ($pheno,$nb_other_terms) = $gene_variant->polyviewer_phentotypes();
+				my $html_g = qq{<div><table>};
+				$html_g .= qq{<tr><td>Gene <b>$gene_name</b> <i>[$gene_id]</i></td></tr> };
+				$html_g .= qq{<tr><td>$pheno</td></tr> };
+				$html_g .= qq{</table></div>};
+				$hres->{$var_id}->{table_transcript} = $html_g."<br>".update_variant_editor::table_transcripts($h_var->{genes}->{$gene_variant->id}, \@header_transcripts, 1);
+			}
+			else {
+				$hres->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_variant->id}, \@header_transcripts, 1);
+			}
 			
 			
 			my $gnomad_id_hg38 = $var->gnomad_id;
@@ -1033,14 +1169,10 @@ sub update_list_variants_from_dejavu {
 #	warn Dumper $hVariantsDetails;	
 #	die
 	
-	$buffer_dejavu = undef;
 	print 'nbVarPass:'.$total_pass;
 	print 'nbProj:'.scalar(@lProjectNames);
-	print '@time:'.abs(time) - $time;
-	$project_dejavu->buffer->dbh_deconnect();
 	return ($hVariantsDetails);
 }
-
 
 sub get_table_project_patients_infos {
 	my ($project_name, $hash, $hVar_infos) = @_;
