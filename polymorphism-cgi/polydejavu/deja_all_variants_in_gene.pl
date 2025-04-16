@@ -729,7 +729,7 @@ sub get_html_gene {
 sub update_list_variants_from_polybtf {
 	my $time = time;
 	my $h_dv_rocks_ids;
-	my $sql = "SELECT * FROM '/data-isilon/public-data/repository/HG38/polybtf/20/new_hgmd_clinvar.parquet';";
+	my $sql = "PRAGMA threads=6; SELECT * FROM '/data-isilon/public-data/repository/HG38/polybtf/20/new_hgmd_clinvar.parquet';";
 	my $duckdb = $buffer_init->software('duckdb');
 	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 	my $json_duckdb = `$cmd`;
@@ -1421,7 +1421,7 @@ sub get_from_duckdb_project_patients_infos {
 	my ($var, $list_files) = @_;
 	return if scalar(@$list_files) == 0;
 	my @list_table_trio;
-	my $sql = "SELECT * FROM read_parquet([".join(', ', @$list_files)."])";
+	my $sql = "PRAGMA threads=6; SELECT * FROM read_parquet([".join(', ', @$list_files)."])";
 	my $find_pos_s = $var->start() - 20;
 	my $find_pos_e = $var->start() + 20;
 	if ($var->getProject->current_genome_version() eq 'HG38') {
