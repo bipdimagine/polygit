@@ -61,6 +61,7 @@ foreach my $phenotype_id (@{$query_phenotypes->getAllPhenotypes()}) {
 	foreach my $panel_id (@{$query_phenotypes->getPanelsId($phenotype_id, $only_current_panels)}) {
 		print "." unless ($export_panel_name);
 		my $panel_name = $hPanels->{$panel_id}->{name};
+		warn $panel_id.' -> '.$panel_name;
 		next unless ($panel_name);
 		my $correct_panel_name;
 		if ($export_panel_name) {
@@ -73,7 +74,7 @@ foreach my $phenotype_id (@{$query_phenotypes->getAllPhenotypes()}) {
 		print "." unless ($export_panel_name);
 		my $hGenes;
 		if ($export_panel_name) {		
-			$hGenes = $query_panels->getGenesForPanels($panel_name);
+			$hGenes = $query_panels->getGenesForPanels($panel_id);
 			$panel_name = $correct_panel_name;
 		} 
 		$hPhenotypes->{$phenotype_name}->{$panel_name} = $hPanels->{$panel_id};
@@ -90,7 +91,7 @@ foreach my $phenotype_id (@{$query_phenotypes->getAllPhenotypes()}) {
 			$hPhenotypes->{$phenotype_name}->{$panel_name}->{nb_genes} = scalar keys %{$hGenes};
 		}
 		else {
-			$hPhenotypes->{$phenotype_name}->{$panel_name}->{nb_genes} = $query_panels->getNbGenesForPanels($panel_name);
+			$hPhenotypes->{$phenotype_name}->{$panel_name}->{nb_genes} = $query_panels->getNbGenesForPanels($panel_id);
 		}
 	}
 }
