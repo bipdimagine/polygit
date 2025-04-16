@@ -61,7 +61,6 @@ foreach my $phenotype_id (@{$query_phenotypes->getAllPhenotypes()}) {
 	foreach my $panel_id (@{$query_phenotypes->getPanelsId($phenotype_id, $only_current_panels)}) {
 		print "." unless ($export_panel_name);
 		my $panel_name = $hPanels->{$panel_id}->{name};
-		warn $panel_id.' -> '.$panel_name;
 		next unless ($panel_name);
 		my $correct_panel_name;
 		if ($export_panel_name) {

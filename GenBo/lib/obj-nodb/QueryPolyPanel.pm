@@ -325,7 +325,7 @@ sub getGenesForPanels {
 		$self->{genes_prepare} = $dbh->prepare($self->sql_genes_by_panel_id);
 	}
 	#warn $self->sql_genes_by_panel_name;
-	$self->{genes_prepare}->execute($self,$id);
+	$self->{genes_prepare}->execute($id);
 	my $s = $self->{genes_prepare}->fetchall_hashref("ensg");
 	return $s;
 }
