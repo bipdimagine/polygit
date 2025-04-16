@@ -932,6 +932,7 @@ sub fork_annnotations {
 	$fork=10;
 	#ici $fork= 20;
 	my $nb   = int( (scalar(@$list) +1) / ($fork-1)  );
+	$nb = 1 if scalar(@$list) < $fork;
 	my $pm   = new Parallel::ForkManager($fork);
 	my $hrun = {};
 	my $hvariations;
