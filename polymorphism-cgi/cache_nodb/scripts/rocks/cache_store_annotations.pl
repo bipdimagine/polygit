@@ -665,15 +665,6 @@ sub get_annotations {
 	 		my $sdv = $variation->other_patients ; 
 	 		my $sdv_ho = $variation->other_patients_ho; 
 	 		
-	 		foreach my $c (sort {$a <=>$b} keys %$scaled_score_project_dejavu_ho){
-	 			$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
-	 				if ($pdv <= $scaled_score_project_dejavu->{$c} ){
-	 						$intspan_global_categories->{$c}->add($lmdb_index);
-	 					#$vector_categories_chromosomes->{$c}->Bit_On($v->{vector_id});
-	 				}
-	 			}
-	 			
-	 			
 	 		foreach my $c (sort {$a <=>$b} keys %$scaled_score_project_dejavu){
 	 			$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
 	 				if ($pdv <= $scaled_score_project_dejavu->{$c} ){
