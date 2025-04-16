@@ -57,7 +57,8 @@ foreach my $phenotype_id (@{$query_phenotypes->getAllPhenotypes()}) {
 	$hPhenotypes->{$phenotype_name}->{'All Panels Genes'}->{genes}->{'All Panels Genes'} = 'All Panels Genes';
 	$hPhenotypes->{$phenotype_name}->{'All Panels Genes'}->{nb_genes} = 'all';
 	$hPhenotypes->{$phenotype_name}->{'All Panels Genes'}->{description} = 'All Panels Genes';
-	foreach my $panel_id (@{$query_phenotypes->getPanelsId($phenotype_id)}) {
+	my $only_current_panels = 1;
+	foreach my $panel_id (@{$query_phenotypes->getPanelsId($phenotype_id, $only_current_panels)}) {
 		print "." unless ($export_panel_name);
 		my $panel_name = $hPanels->{$panel_id}->{name};
 		next unless ($panel_name);
