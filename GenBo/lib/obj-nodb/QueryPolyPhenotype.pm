@@ -79,10 +79,16 @@ sub getProjectsId {
 } 
 
 sub getPanelsId {
-	my ($self, $id) = @_;
+	my ($self, $id, $only_current) = @_;
 	my $dbh = $self->getDbh();
 	my $db = $self->database;
-	my $sql = qq{SELECT panel_id FROM $db.phenotype_panel where phenotype_id = ?; }; 
+	my $sql;
+	if ($only_current) {
+		$sql = qq{SELECT panel_id FROM $db.phenotype_panel where phenotype_id = ? and current=1; };
+	}
+	else {
+		$sql = qq{SELECT panel_id FROM $db.phenotype_panel where phenotype_id = ?; };
+	} 
 	 my $sth = $dbh->prepare($sql);
 	$sth->execute($id);
 	my $s = $sth->fetchall_hashref('panel_id');
