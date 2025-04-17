@@ -1219,14 +1219,12 @@ sub get_table_project_patients_infos {
 	
 	my $b = new GBuffer;
 	my $p = $b->newProject( -name => $project_name);
-		
-#	if ($p->name eq 'NGS2025_08773') {
-#		warn "\n";
-#		warn Dumper $h_tmp_pat;
-#	}
+	
+	my @lPat = @{$p->getPatients()};
+	return undef if scalar(@lPat) == 0;
 	
 	my $found_healthy_patient;
-	foreach my $pat (@{$p->getPatients()}) {
+	foreach my $pat (@lPat) {
 		if (not $pat->isIll() and $only_ill) {
 			$found_healthy_patient = 1;
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
