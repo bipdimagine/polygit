@@ -322,7 +322,6 @@ sub save_export_xls {
 	print '_save_xls_';
 	$project_init->cgi_object(1);
 	my (@lVarObj, $h_pubmed);
-#	foreach my $pos (sort keys %{$hResVariants}) {
 	foreach my $var_id (sort keys %{$hResVariants}) {
 		$project_init->print_dot(50);
 		my $v = $project_init->_newVariant($var_id);
@@ -341,7 +340,6 @@ sub save_export_xls {
 			}
 		}
 	}
-#	}
 	my $xls_export = new xls_export();
 	if ($is_polybtf) {
 		$xls_export->title_page('Polybtf.xls');
@@ -356,19 +354,23 @@ sub save_export_xls {
 	my ($h_patients, $h_row_span);
 	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
 		foreach my $var_id (keys %{$xls_export->{hash_variants_global}->{$chr_id}}) {
-			foreach my $project_name (keys %{$hResVariantsListPatients->{$var_id}}) {
-				foreach my $pat_name (keys %{$hResVariantsListPatients->{$var_id}->{$project_name}}) {
-					my $phenotypes = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'phenotypes'};
-					my $description = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'description'};
-					my $fam = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'fam'};
-					my $name = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'name'};
-					my $sex = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'sex'};
-					my $status = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'status'};
-					my $parent_child = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'parent_child'};
-					my $sex_status_icon = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'sex_status_icon'};
-					my $perc = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'percent'};
-					my $model = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'model'};
-					my $he_ho = $hResVariantsListPatients->{$var_id}->{$project_name}->{$pat_name}->{'values'}->{'he_ho'};
+			foreach my $project_name (keys %{$hResVariants->{$var_id}->{projects}}) {
+				foreach my $pat_name (keys %{$hResVariants->{$var_id}->{projects}->{$project_name}}) {
+					my $h_pat = $hResVariants->{$var_id}->{projects}->{$project_name}->{$pat_name};
+					my $phenotypes = '';
+					my $description = $h_pat->{'description'};
+					my $fam = $h_pat->{'family'};
+					my $name = $h_pat->{'name'};
+					my $sex = $h_pat->{'sex'};
+					my $status = $h_pat->{'status_txt'};
+					my $sex_status_icon = $h_pat->{'status'};
+					my $perc = $h_pat->{'ratio'};
+					my $model = $h_pat->{'model'};
+					my $parent_child;
+					if (lc($model) eq 'father') { $parent_child = 'parent'; }
+					elsif (lc($model) eq 'mother') { $parent_child = 'parent'; }
+					else { $parent_child = 'child'; }
+					my $he_ho = $h_pat->{'heho'};
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'variation'} = $var_id;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'project'} = $project_name;
 					$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'description'} = $description;
@@ -744,7 +746,7 @@ sub update_list_variants_from_polybtf {
 		}
 		
 		foreach my $chr_id (sort keys %$h_found) {
-			
+			print '.';
 			$buffer_init = new GBuffer;
 			$project_init = $buffer_init->newProject( -name => $project_name_hg38 );
 			my $chr = $project_init->getChromosome($chr_id);
@@ -798,11 +800,11 @@ sub check_variants {
 	
 	$buffer_init = new GBuffer;
 	$project_init = $buffer_init->newProject( -name => $project_name_hg38 );
-	
+	print '!';
 	my ($h_dv_var_ids, @lVarIds, @lVar);
 	my ($total, $total_pass);
 	foreach my $chr_id (sort keys %{$h_dv_rocks_ids}) {
-		
+		print '.';
 		my $chr = $project_init->getChromosome($chr_id);
 		foreach my $rocks_id (sort keys %{$h_dv_rocks_ids->{$chr_id}}) {
 			my $nb_pat_he = 0;
@@ -879,18 +881,12 @@ sub check_variants {
 		my $nb_i;
 		foreach my $var (@tmp) {
 			my $var_id = $var->id;
-			
-			
-#			warn "\n\n";
-#			warn $var_id;
-			
 			my $var_id_hg19 = $var->lift_over('HG19')->{id};
-			
 			my $gene_variant;
-			
 			my $is_ok_gene;
 			foreach my $gene (@{$var->getGenes()}) {
-				$is_ok_gene = 1 if $gene->id eq $gene_dejavu->id;
+				if ($gene_dejavu and $gene->id eq $gene_dejavu->id) { $is_ok_gene = 1; }
+				else { $is_ok_gene = 1; }
 			} 
 			if ($is_ok_gene) { $gene_variant = $gene_dejavu; }
 			else { $gene_variant = $var->getGenes->[0]; }
@@ -1087,8 +1083,13 @@ sub check_variants {
 				}
 			}
 			
-			update_variant_editor::vspliceAI($var, $h_var);
-			$hres->{$var_id}->{spliceAI} = $h_var->{html}->{spliceAI}->{$gene_variant->id};
+			if ($gene_variant) {
+				update_variant_editor::vspliceAI($var, $h_var);
+				$hres->{$var_id}->{spliceAI} = $h_var->{html}->{spliceAI}->{$gene_variant->id};
+			}
+			else {
+				$hres->{$var_id}->{spliceAI} = '';
+			}
 							
 			update_variant_editor::vhgmd($var, $h_var);
 			$hres->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_variant);
@@ -1101,23 +1102,26 @@ sub check_variants {
 			
 			$hres->{$var_id}->{table_dejavu} = update_variant_editor::vdejavu($var, $h_var);
 			
-			$h_var->{genes}->{$gene_variant->id} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_variant);
-			
-			
-			if ($is_polybtf or not $is_ok_gene) {
-				my $gene_name = $gene_variant->external_name();
-				my $gene_id = $gene_variant->id();
-				my ($pheno,$nb_other_terms) = $gene_variant->polyviewer_phentotypes();
-				my $html_g = qq{<div><table>};
-				$html_g .= qq{<tr><td>Gene <b>$gene_name</b> <i>[$gene_id]</i></td></tr> };
-				$html_g .= qq{<tr><td>$pheno</td></tr> };
-				$html_g .= qq{</table></div>};
-				$hres->{$var_id}->{table_transcript} = $html_g."<br>".update_variant_editor::table_transcripts($h_var->{genes}->{$gene_variant->id}, \@header_transcripts, 1);
+			if ($gene_variant) {
+				$h_var->{genes}->{$gene_variant->id} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_variant);
+				if ($is_polybtf or not $is_ok_gene) {
+					my $gene_name = $gene_variant->external_name();
+					my $gene_id = $gene_variant->id();
+					my ($pheno,$nb_other_terms) = $gene_variant->polyviewer_phentotypes();
+					my $html_g = qq{<div><table>};
+					$html_g .= qq{<tr><td>Gene <b>$gene_name</b> <i>[$gene_id]</i></td></tr> };
+					$html_g .= qq{<tr><td>$pheno</td></tr> };
+					$html_g .= qq{</table></div>};
+					$hres->{$var_id}->{table_transcript} = $html_g."<br>".update_variant_editor::table_transcripts($h_var->{genes}->{$gene_variant->id}, \@header_transcripts, 1);
+				}
+				else {
+					$hres->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_variant->id}, \@header_transcripts, 1);
+				}
 			}
 			else {
-				$hres->{$var_id}->{table_transcript} = update_variant_editor::table_transcripts($h_var->{genes}->{$gene_variant->id}, \@header_transcripts, 1);
-			}
-			
+				$h_var->{genes}->{'no_gene'} = 'intergenic';
+				$hres->{$var_id}->{table_transcript} = 'intergenic';
+			}	
 			
 			my $gnomad_id_hg38 = $var->gnomad_id;
 			my $html_vname_hg38 = update_variant_editor::vname2($var, $h_var);
@@ -1152,8 +1156,9 @@ sub check_variants {
 			$hres->{$var_id}->{annotation} = $var_annot;
 			$hres->{$var_id}->{id_hg19} = $var_id_hg19;
 			
-			my $table_projects_patients = get_from_duckdb_project_patients_infos($var, \@list_parquets);
+			my ($h_projects_patients, $table_projects_patients) = get_from_duckdb_project_patients_infos($var, \@list_parquets);
 			if ($table_projects_patients) {
+				$hres->{$var_id}->{projects} = $h_projects_patients;
 				$hres->{$var_id}->{table_projects_patients} = $table_projects_patients;
 			}
 			else {
@@ -1165,9 +1170,6 @@ sub check_variants {
 	}
 	sleep(3); 
 	$pm->wait_all_children();
-	
-#	warn Dumper $hVariantsDetails;	
-#	die
 	
 	print 'nbVarPass:'.$total_pass;
 	print 'nbProj:'.scalar(@lProjectNames);
@@ -1232,13 +1234,17 @@ sub get_table_project_patients_infos {
 		}
 		next if not exists $h_tmp_pat->{$pat->id};
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
-#		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = 'healthy';
-#		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = 'ill' if $pat->isIll();
-		
 		my $icon = $pat->small_icon();
 		$icon =~ s/"/'/g;
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = $icon;
-		
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = '-';
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = 'male' if $pat->sex() eq '1';
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = 'female' if $pat->sex() eq '2';
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = '-';
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'healthy' if $pat->status() eq '1';
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'ill' if $pat->status() eq '2';
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{family} = $pat->getFamily->name();
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{description} = $p->description();
 		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'He'; }
 		else { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'Ho'; }
 	}
@@ -1412,7 +1418,7 @@ sub get_table_project_patients_infos {
 	}
 	$table_trio .= "</table></div>";
 	
-	return ($table_trio, lc($model));
+	return ($h_infos_patients, $table_trio, lc($model));
 }
 
 sub get_from_duckdb_project_patients_infos {
@@ -1422,6 +1428,9 @@ sub get_from_duckdb_project_patients_infos {
 	my $sql = "PRAGMA threads=6; SELECT * FROM read_parquet([".join(', ', @$list_files)."])";
 	my $find_pos_s = $var->start() - 20;
 	my $find_pos_e = $var->start() + 20;
+	
+	my $h_projects_patients;
+	
 	if ($var->getProject->current_genome_version() eq 'HG38') {
 		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 		my $duckdb = $buffer_init->software('duckdb');
@@ -1453,8 +1462,12 @@ sub get_from_duckdb_project_patients_infos {
 			$hVar_infos->{alt_all} = '*' unless $var->var_allele();
 			foreach my $project_name (reverse sort keys %$h_by_proj) {
 				my $h = $h_by_proj->{$project_name};
-				my ($table_trio, $model) = get_table_project_patients_infos($project_name, $h, $hVar_infos);
+				my ($h_infos_patients, $table_trio, $model) = get_table_project_patients_infos($project_name, $h, $hVar_infos);
 				push(@list_table_trio, $table_trio) if $table_trio;
+				foreach my $id (sort keys %$h_infos_patients) {
+					my $p_name = $h_infos_patients->{$id}->{'name'};
+					$h_projects_patients->{$project_name}->{$p_name} = $h_infos_patients->{$id};
+				}
 			}
 		}	
 	}
@@ -1462,7 +1475,10 @@ sub get_from_duckdb_project_patients_infos {
 		warn "HG19";
 		confesss("HG19!!");
 	}
-	return join("<br>",@list_table_trio) if scalar(@list_table_trio) >= 1;
+	if (scalar(@list_table_trio) >= 1) {
+		my $html = join("<br>",@list_table_trio);
+		return ($h_projects_patients, $html);
+	}
 	return undef;
 }
 
