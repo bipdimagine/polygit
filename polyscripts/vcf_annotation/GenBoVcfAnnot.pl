@@ -20,6 +20,7 @@ my ($help, $format, $fork, $fileName, $tab_outfile, $join_characters, $method, $
 my ($use_main_transcripts, $use_ccds_transcripts);
 my $patientName = 'none';
 my $force_all_gt_he;
+my $release;
 GetOptions(
 	'help|h!'          => \$help,
 	'vcf_file|f=s'     => \$fileName,
@@ -44,6 +45,7 @@ GetOptions(
 	'use_main_transcripts=s' => \$use_main_transcripts,
 	'use_ccds_transcripts=s' => \$use_ccds_transcripts,
 	'format=s'	=> \$format,
+	'release=s'	=> \$release,
 );
 die "\n\nNo -file or -f option... Die...\n\n" unless ($fileName);
 die "\n\nNeed -tab_outfile option... Die...\n\n" unless ($tab_outfile);
@@ -52,7 +54,10 @@ my $buffer = new GBuffer;
 my $genecode = $buffer->getQuery->getMaxGencodeVersion();
 my $annotdb = $buffer->getQuery->getMaxPublicDatabaseVersion();
 my $last_annot_version = $genecode.'.'.$annotdb;
-my $proj_tmp = $buffer->newProject( -name => $buffer->get_random_project_name_with_this_annotations_and_genecode() );
+my $proj_tmp_name;
+if ($release) { $proj_tmp_name = $buffer->getRandomProjectName($release); }
+else { $proj_tmp_name = $buffer->getRandomProjectName($release); }
+my $proj_tmp = $buffer->newProject( -name => $proj_tmp_name );
 my $getGenomeFasta = $proj_tmp->getGenomeFasta();
 my $getGenomeFai = $proj_tmp->getGenomeFai(); 
 
@@ -98,6 +103,7 @@ $args{method}      = $method if ($method);
 $args{getObjects}  = $getObjects if ($getObjects);
 $args{genomeFasta} = $getGenomeFasta;
 $args{genomeFai}   = $getGenomeFai;
+$args{release}     = $release if ($release);
 if ($patientName) {
 	if ($patientName eq 'none') {
 		$args{noPatient} = 1;
@@ -128,8 +134,6 @@ if ($filterTrans) {
 warn "\n";
 warn "Fork used: $fork\n";
 
-
-
 my $hashRes;
 my $nb_ref_done = 1;
 my $nb_var_total = 0;
@@ -138,7 +142,6 @@ my $hNbVarTotal_byRef;
 
 my $tmpdir_name = mkdtemp('/tmp/tmp_genbovcfannot_XXXX');
 print "TMP dir: ".$tmpdir_name."\n";
-
 
 my $hChr_found;
 my @lChrVcf = `tabix -l $fileName`;
@@ -166,7 +169,6 @@ foreach my $chr_id (1..22, 'X', 'Y', 'MT', 'M') {
 		$nb++;
 	}
 }
-warn Dumper @lPartFiles;
 
 print "NB References: ".scalar(@lRef)."\n";
 

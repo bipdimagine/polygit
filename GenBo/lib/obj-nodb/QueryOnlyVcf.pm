@@ -31,10 +31,24 @@ has project => (
 	lazy => 1,
 	default => sub { 
 		my $self = shift;
-		my $project_name = $self->buffer->getRandomProjectName();
+		my $project_name;
+		if ($self->release()) {
+			if ($self->release() =~ /HG19/) {
+				$project_name = $self->buffer->getRandomProjectName($self->release(), '46');
+			}
+			else {
+				$project_name = $self->buffer->getRandomProjectName($self->release());
+			}
+		}
+		else { $project_name = $self->buffer->getRandomProjectName(); }
 		my $project = $self->buffer->newProject( -name => $project_name );
 		return $project;
 	}
+);
+
+has release => (
+	is		=> 'rw',
+	default => undef,
 );
 
 has patient => (
