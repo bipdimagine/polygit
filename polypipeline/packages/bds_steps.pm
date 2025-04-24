@@ -2380,7 +2380,7 @@ sub fastqScreen {
 sub bam_sort {
 	my ( $self, $hash ) = @_;
 	my $filein = $hash->{filein};
-	return $self->bam_sort_bamba( filein => $filein );
+	return $self->bam_sort_bamba( {filein => $filein} );
 }
 
 sub bam_sort_bamba {
@@ -3256,7 +3256,10 @@ sub cnvnator {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
-
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3298,7 +3301,11 @@ sub canvas {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
-
+	
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3339,7 +3346,10 @@ sub melt {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
-
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3421,7 +3431,53 @@ sub manta {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
 
+sub hificnv {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $name         = $self->patient()->name();
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $fileout = $project->getVariationsDir("hificnv") . "/" . $name . ".vcf.gz";
+	$filein = $self->patient()->getBamFileName();    # unless $filein;
+
+	my $ppn = $self->nproc;
+
+	$ppn = int( $self->nproc / 2 ) if $self->nocluster;
+	die( "-" . $filein ) unless $filein;
+
+	my $bin_dev = $self->script_dir;
+	my $version = $self->patient()->project->genome_version();
+	my $cmd =
+"perl $bin_dev/pacbio/hificnv.pl -project=$project_name  -patient=$name -fork=$ppn -version=$version -proc=$ppn";
+	my $type     = "hificnv-calling";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "hificnv",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isShortRead){
+	#	$job_bds->skip();
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3998,8 +4054,7 @@ sub wisecondor {
 
 	my $bin_dev = $self->script_dir;
 
-	my $cmd =
-qq{perl $bin_dev/wisecondor.pl -patient=$name    -project=$project_name -fork=$ppn};
+	my $cmd = qq{perl $bin_dev/wisecondor.pl -patient=$name    -project=$project_name -fork=$ppn};
 
 	my $type     = "wisecondor";
 	my $stepname = $self->patient->name . "@" . $type;
@@ -4018,6 +4073,10 @@ qq{perl $bin_dev/wisecondor.pl -patient=$name    -project=$project_name -fork=$p
 		project_name => $self->patient->getProject->name
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -4069,6 +4128,10 @@ qq{perl $bin_dev/calling_wisecondor.pl -patient=$name    -project=$project_name 
 		project      => $self->patient->getProject->name
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
