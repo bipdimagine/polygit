@@ -156,10 +156,8 @@ if ($transcripts) {
 }
 
 my ($buffer_trio, $project_trio, $patient_trio);
-my @headers;
+my (@headers, @lFields, $out_phenos);
 if ($use_phenotype_score) {
-	my $out_phenos;
-	$out_phenos .= qq{<div class="input-group" style="width:100%">};
 	$out_phenos .= qq{<select class="form-control" id="form_polyphenotypes_init" style="font-size:9px;height:auto;width:100%;">};
 	my $list_all_phenotypes = $buffer->queryPhenotype->getAllPhenotypesName();
 	foreach my $pheno (sort @$list_all_phenotypes) {
@@ -190,99 +188,96 @@ if ($use_phenotype_score) {
 		}
 		$out_phenos .= qq{<option value='$value' $cmd_score $selected><span>$name</span></option>};
 	}
-	$out_phenos .= qq{</select>};
 	$out_phenos .= qq{</div>};
-	@headers = ( 'Gene Score<br>'.$out_phenos, qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus}, qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)' );
+	@headers = ( 'Gene Score', 'Locus', 'Gene Name', 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)' );
+	@lFields = ( 'score', 'locus', 'name', 'phenotypes', 'omim', 'gtex', 'pli', 'panels' );
+	
 }
 else {
-	@headers = ( qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus}, qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)' );
+	@headers = ( 'Locus', 'Gene Name', 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)' );
+	@lFields = ( 'locus', 'name', 'phenotypes', 'omim', 'gtex', 'pli', 'panels' );
 }
 if ( $buffer->hasHgmdAccess($user) ) {
-	push(@headers, 'Concept(s)');
+	push(@headers, 'HGMD: Concept(s)');
+	push(@lFields, 'hgmd');
 }
 if ($trio_project and $trio_patient) {
 	push(@headers, 'Gene Score');
+	push(@lFields, 'score');
 }
 push(@headers, 'DejaVu');
+push(@lFields, 'dejavu');
 if ($trio_project and $trio_patient) {
 	push(@headers, 'Variants '.$trio_patient);
 }
 if ( $buffer->hasHgmdAccess($user) ) {
-	push(@headers, 'Total Mut');
-	push(@headers, 'Total New Mut');
+	push(@headers, 'HGMD: Total Mut');
+	push(@headers, 'HGMD: Total New Mut');
+	push(@lFields, 'hgmd_mut');
+	push(@lFields, 'hgmd_new');
 }
 
 my $last_genecode = $buffer->getQuery->getMaxGencodeVersion();
 my $proj_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
 my $out;
 $out .= "<div style='text-align:center;font-size:12px;width:100%;overflow-x:scroll;'>";
-$out .= "<table id='table_hgmd_genes' class='table table-striped table-bordered' style='text-align:center;font-size:12px;width:100%;overflow-x:scroll;'>";
-$out .= "<thead>";
-$out .= $cgi->start_Tr( { style => "font-size:11px;" } );
 
 my $hgmd_version_used = $buffer->queryHgmd->database();
 my $searched = join(' - ', @lSearched);
 
 
 my $gencode_version = $project->gencode_version();
-my ($trio_phenotype, $used_hgmd);
+my ($trio_phenotype, $used_hgmd, $out_infos);
 if ($trio_project and $trio_patient) {
 	$trio_phenotype = get_project_phenotype($trio_project);
 	my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($trio_phenotype);
 	$used_hgmd = $h_pheno_infos->{$use_phenotype_score}->{concept};
 	$out .= "<center><b>Gencode:</b> <font color='green'>$gencode_version</font> | <b>Phenotype:</b> <font color='green'>$trio_phenotype</font> | <b>HGMD Concept:</b> <font color='green'>$used_hgmd</font> | <b>Searched:</b> <font color='green'>$searched</font><b> | HGMD:</b> <font color='green'>$hgmd_version_used</font></center>";
-	$out .= $cgi->start_Tr({style=>"font-size:12px;"});
-	$out .= $cgi->th({colspan=>8, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>GENE Informations</b>");
-	$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>HGMD</b>") if ( $buffer->hasHgmdAccess($user) );
-	#$out .= $cgi->th({colspan=>2, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>POLYWEB</b>");
-	$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>POLYWEB</b>");
-	$out .= $cgi->th({colspan=>2, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>HGMD</b>") if ( $buffer->hasHgmdAccess($user) );
-	$out .= $cgi->end_Tr();
-	$out .= $cgi->start_Tr({style=>"font-size:11px;"});
-	#@headers = ( 'Gene Score', qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus},  qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','Concept(s)', 'DejaVu', 'Variants', 'Total Mut', 'Total New Mut' );
-	@headers = ( 'Gene Score', qq{<button style="border-radius:10px" onClick="reload_and_sort('locus');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Locus},  qq{<button style="border-radius:10px" onClick="reload_and_sort('gene');"><span style="font-size:9px;" class="glyphicon glyphicon-sort-by-attributes"></span></button>  Gene Name}, 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','Concept(s)', 'Variants', 'Total Mut', 'Total New Mut' );
+	@headers = ( 'Gene Score', 'Locus', 'Gene Name', 'Phenotype(s)', 'Omim', 'Gtex', 'pLi', 'Panel(s)','HGMD: Concept(s)', 'Variants', 'HGMD: Total Mut', 'HGME: Total New Mut' );
+	@lFields = ( 'score', 'locus', 'name', 'phenotypes', 'omim', 'gtex', 'pli', 'panels', 'hgmd', 'variants', 'hgmd_mut', 'hgmd_new' );
 }
 else {
 	if ( $buffer->hasHgmdAccess($user) ) {
 		my $h_pheno_infos = $buffer->queryPhenotype->getPhenotypeInfosFromName($use_phenotype_score);
 		$used_hgmd = $h_pheno_infos->{$use_phenotype_score}->{concept};
-		$out .= "<center><b>Gencode:</b> <font color='green'>$gencode_version</font> | <b>Phenotype:</b> <font color='green'>$use_phenotype_score</font> | <b>HGMD Concept:</b> <font color='green'>$used_hgmd</font> | <b>Searched:</b> <font color='green'>$searched</font><b> | HGMD:</b> <font color='green'>$hgmd_version_used</font></center>";
-		#$out .= "<center>".$out_phenos."</center>";
-		$out .= $cgi->start_Tr({style=>"font-size:11px;"});
-		if ($trio_project and $trio_patient) {
-			my $nb_col = 8;
-			$nb_col++ if ($use_phenotype_score);
-			$out .= $cgi->th({colspan=>$nb_col, style=>"text-align:left;background-color:white;font-size:11px;color:#607D8B;"}, "<b>GENE Informations</b>");
-		}
-		else {
-			my $nb_col = 7;
-			$nb_col++ if ($use_phenotype_score);
-			$out .= $cgi->th({colspan=>$nb_col, style=>"text-align:left;background-color:white;font-size:11px;color:#607D8B;"}, "<b>GENE Informations</b>");
-		}
-		$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>HGMD</b>");
-		if ($trio_project and $trio_patient) {
-			$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>$trio_project</b></center>");
-		}
-		$out .= $cgi->th({colspan=>1, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<b>PolyWeb</b>");
-		$out .= $cgi->th({colspan=>2, style=>"text-align:center;background-color:white;font-size:11px;color:#607D8B;"}, "<center><b>HGMD Informations</b></center>");
-		$out .= $cgi->end_Tr();
-		$out .= $cgi->start_Tr({style=>"font-size:11px;"});
+		$out_infos .= "<center><b>Gencode:</b> <font color='green'>$gencode_version</font> | <b>Phenotype:</b> <font color='green'>$use_phenotype_score</font> | <b>HGMD Concept:</b> <font color='green'>$used_hgmd</font> | <b>Searched:</b> <font color='green'>$searched</font><b> | HGMD:</b> <font color='green'>$hgmd_version_used</font></center>";
 	}
 	else {
-		$out .= "<center><b>Phenotype:</b> <font color='green'>$use_phenotype_score</font> | <b>Searched:</b> <font color='green'>$searched</font></center>";
-		#$out .= "<center>".$out_phenos."</center>";
-		my $out_th0;
-		$out_th0 .= qq{<div class="row" style="padding:4px;">};
-		$out_th0 .= qq{<div class="col-sm-6">};
-		$out_th0 .= qq{<span style="font-size:12px;"><br><b>GENE Informations</b></span>};
-		$out_th0 .= qq{</div>};
-		$out_th0 .= qq{</div>};
-		$out .= $out_th0;
+		$out_infos .= "<center><b>Phenotype:</b> <font color='green'>$use_phenotype_score</font> | <b>Searched:</b> <font color='green'>$searched</font></center>";
+	}
+	if ($out_phenos) {
+		$out .= qq{<table><tr>};
+		$out .= qq{<td><span><b>Phenotype / Concept for Gene Score: </b></span><div class="input-group" style="width:100%"></td>};
+		$out .= qq{<td style="padding-left:10px;">$out_phenos</td>};
+		$out .= qq{<td style="padding-left:100px;">$out_infos</td>};
+		$out .= qq{</tr></table><br>};
+	}
+	else {
+		$out .= qq{<center>$out_infos</center>};
 	}
 }
 
+$out .= "<table data-filter-control='true' data-searchable='true'  data-toggle='table' data-show-extended-pagination='true' data-cache='false' data-pagination-loop='false' data-virtual-scroll='true' data-pagination-v-align='bottom' data-pagination-pre-text='Previous' data-pagination-next-text='Next' data-pagination='true' data-page-size='20' data-page-list='[20, 50, 100, 200, 300]' data-resizable='true' id='table_hgmd_genes' class='table table-striped table-bordered' >";
+$out .= "<thead>";
+$out .= $cgi->start_Tr( { style => "font-size:11px;" } );
+
+my $z = 0;
 foreach my $h (@headers) {
-	$out .= $cgi->th({ style => "background-color:white;font-size:12px;color:#607D8B;" }, "<center><b>" . ucfirst($h) . "</b></center>");
+	next unless $h;
+	my $type =  $lFields[$z];
+	if ($type eq 'name') {
+		$out .= qq{<th data-searchable="true" data-filter-control-placeholder='Ex: BRCA1' data-filter-control='input' data-field='name'><center><b>$h</b></center></th>};
+	}
+	elsif ($type eq 'phenotypes') {
+		$out .= qq{<th data-searchable="true" data-filter-control-placeholder='Ex: heart, autism' data-filter-control='input' data-field='phenotypes'><center><b>$h</b></center></th>};
+	}
+	elsif ($type eq 'locus') {
+		$out .= qq{<th data-searchable="true" data-filter-control-placeholder='Ex: 12:48366750-48398337' data-filter-control='input' data-field='locus'><center><b>$h</b></center></th>};
+	}
+	else {
+		$out .= qq{<th data-field="$type"><center><b>}.ucfirst($h).qq{</b></center></th>};
+	}
+	$z++;
 }
 
 $out .= $cgi->end_Tr();
@@ -305,7 +300,7 @@ if ($h_genes) {
 			$hRes->{$gene_key_name} = 'NOT;' . $annotation;
 			
 			my $out_line = $cgi->start_Tr({ style => "background-color:#f5a260;font-size:11px;max-height:60px;overflow-y: auto;" });
-			$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:red;font-size:12px;">Not Found Genecode $last_genecode</span>});
+			$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, '');
 			if ($gene_key_name ne $gene_id) {
 				$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>$gene_key_name / $gene_id</strike></span>});
 			}
@@ -316,10 +311,10 @@ if ($h_genes) {
 				$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:white;"><strike>-</strike></span>});
 			}
 			if ( $buffer->hasHgmdAccess($user) ) {
-				$out_line .= $cgi->td({ rowspan => 1, colspan => 9, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, '');
+				$out_line .= $cgi->td({ rowspan => 1, colspan => 10, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:red;font-size:12px;">Not Found Genecode $last_genecode</span>});
 			}
 			else {
-				$out_line .= $cgi->td({ rowspan => 1, colspan => 6, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, '');
+				$out_line .= $cgi->td({ rowspan => 1, colspan => 1, style =>"max-height:60px;overflow-y:auto;padding-left:20px;font-size:12px;"}, qq{<span style="color:red;font-size:12px;">Not Found Genecode $last_genecode</span>});
 			}
 			$out_line .= $cgi->end_Tr();
 			

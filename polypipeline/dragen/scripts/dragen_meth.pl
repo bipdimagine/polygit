@@ -73,13 +73,17 @@ foreach my $p (@$patients) {
 	my $dir_pipeline = $p->getDragenDir("pipeline");
 	my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$dir_pipeline);
 	#
-	my $cmd = "dragen -f --enable-sort true --enable-bam-indexing true --enable-duplicate-marking true --enable-methylation-calling true --methylation-protocol $protocol --methylation-generate-mbias-report true --methylation-generate-cytosine-report true --intermediate-results-dir $tmp --ref-dir $ref_dragen --RGID=$runid --RGSM=$name --RGPL illumina --RGPU 1 -1 $fastq1 -2 $fastq2 --output-directory $dir_pipeline --output-file-prefix $name ";
+	my $cmd = "dragen -f --enable-sort true --enable-bam-indexing true  --enable-methylation-calling true --methylation-protocol $protocol --methylation-generate-mbias-report true --methylation-generate-cytosine-report true --intermediate-results-dir $tmp --ref-dir $ref_dragen --RGID=$runid --RGSM=$name --RGPL illumina --RGPU 1 -1 $fastq1 -2 $fastq2 --output-directory $dir_pipeline --output-file-prefix $name ";
+	
 	if ($umi){
-		$cmd .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 };
+		$cmd .= qq{ --umi-enable true  --umi-library-type random-simplex  --umi-min-supporting-reads 1 };
 	}
-#	else {
-#		$cmd .= qq{ --enable-duplicate-marking true };
-#	 }
+	elsif($p->getCapture->isPcr()){
+		$cmd .= qq{ --enable-duplicate-marking false };
+	}
+	else {
+		$cmd .= qq{ --enable-duplicate-marking true };
+	 }
 	#--methylation-protocol $directional
 	#my $gvcf_pipeline = "$dir_pipeline/".$name.".hard-filtered.gvcf.gz";
 #	warn $gvcf_pipeline;

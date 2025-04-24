@@ -59,16 +59,21 @@ $class->{style} = "min-width:10%;padding:1px";
 $class_default->{style} = "max-width:350px;overflow-x:auto;vertical-align:middle;padding:5px;";
 			
 
+my $max_dejavu = 999999999999;
+my $max_dejavu_ho = 999999999999;
+my $max_gnomad = 999999999999;
+my $max_gnomad_ho = 999999999999;
+
 
 my $cgi = new CGI();
 my $hgmd_version = $cgi->param('hgmd_version');
 my $gene_name = $cgi->param('gene_name');
 my $only_new = $cgi->param('only_new');
 my $only_dm = $cgi->param('only_dm');
-my $max_dejavu = $cgi->param('dejavu');
-my $max_dejavu_ho = $cgi->param('dejavu_ho');
-my $max_gnomad = $cgi->param('gnomad');
-my $max_gnomad_ho = $cgi->param('gnomad_ho');
+$max_dejavu = $cgi->param('dejavu');
+$max_dejavu_ho = $cgi->param('dejavu_ho');
+$max_gnomad = $cgi->param('gnomad');
+$max_gnomad_ho = $cgi->param('gnomad_ho');
 my $filters_cons = $cgi->param('filters_cons');
 
 my $h_filters_cons;
@@ -88,6 +93,8 @@ my $gene = $project->newGene($gene_name);
 my @list_lines;
 my $nb_var = 0;
 my $h_v_hgmd_ids = $buffer->queryHgmd->search_variant_for_gene($gene_name);
+
+
 my $h_new_dm = $buffer->queryHgmd->get_hash_last_released_DM();
 my $h_no_coord = $buffer->queryHgmd->search_variant_for_gene_without_coord($gene_name);
 
@@ -156,7 +163,6 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	my $var_dejavu_ho = $v->nb_dejavu();
 	$not_ok++ if ($max_dejavu_ho and $var_dejavu_ho > $max_dejavu_ho);
 	next if $not_ok;
-	
 	
 	push(@lVar, $v);
 
@@ -247,7 +253,7 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	}
 	$out .= $cgi->end_Tr();
 	$out =~ s/zoomHgmd/zoomHgmdWithoutCss/;
-	$h_by_coord->{$v->start()} = $out;
+	$h_by_coord->{$v->start()}->{$var_id} = $out;
 }
 
 my @list_coord;
@@ -255,8 +261,10 @@ if ($gene->strand() == 1) { @list_coord = sort {$a <=> $b} keys %$h_by_coord; }
 else  { @list_coord = sort {$b <=> $a} keys %$h_by_coord; }
 
 foreach my $start (@list_coord) {
-	my $out = $h_by_coord->{$start};
-	push(@list_lines, $out);
+	foreach my $varid (sort keys %{$h_by_coord->{$start}}) {
+		my $out = $h_by_coord->{$start}->{$varid};
+		push(@list_lines, $out);
+	}
 }
 
 my ($hResGene, $h_panels_found);
@@ -394,7 +402,19 @@ sub save_export_xls {
 	my $xls_export = new xls_export();
 	$xls_export->title_page('HGMD_'.$gene->external_name().'.xls');
 	$xls_export->store_variants_infos(\@$list_var, $project);
-	
+	my $h_pubmed;
+	foreach my $v (@$list_var) {
+		if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
+			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
+			foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
+				if (exists $v->hgmd_details->{pubmed}->{$pubmed_id}->{title}) {
+					$h_pubmed->{$v->id()}->{$pubmed_id}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$pubmed_id;
+					$h_pubmed->{$v->id()}->{$pubmed_id}->{title} = $v->hgmd_details->{pubmed}->{$pubmed_id}->{title};
+				}
+			}
+		}
+	}
 	my ($h_patients, $h_row_span);
 	foreach my $chr_id (keys %{$xls_export->{hash_variants_global}}) {
 		foreach my $var_id (keys %{$xls_export->{hash_variants_global}->{$chr_id}}) {
@@ -414,8 +434,8 @@ sub save_export_xls {
 			$h_patients->{$var_id}->{$project_name}->{$pat_name}->{'model'} = '';
 		}
 	}
-	
 	$xls_export->store_specific_infos('projects_patients_infos', $h_patients);
+	$xls_export->store_specific_infos('variants_pubmed', $h_pubmed);
 	my $session_id = $xls_export->save();
 	return $session_id;
 }

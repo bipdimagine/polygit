@@ -39,10 +39,13 @@ my $mask = undef;
 my $l2;
 my $force;
 my $run_name_option;
+my $mismatch; 
+
 GetOptions(
 	'project=s' => \$project_names,
 	'l2=s' => \$l2,
 	'run=s' => \$run_name_option,
+	'mismatch=s' => \$mismatch,
 );
  
 my $bcl_dir;
@@ -127,10 +130,11 @@ foreach my $line(@$aoa){
 		else {
 			next unless $current_title;
 			push(@{$lines->{$current_title}},$line);
-		}
-	
-	
+		}	
 }
+unshift (@$titles, "[Settings]") unless grep(/^\[Settings\]$/, @$titles);
+# todo: faire pareil avec [Header] et [Reads] ?
+
 my $cb1_len;
 my $cb2_len;
 
@@ -157,12 +161,11 @@ my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
 my $len_cb;
  $len_cb->[0] = length($lines->{"[Data]"}->[0]->[$pos_cb1]);
  $len_cb->[1] = length($lines->{"[Data]"}->[0]->[$pos_cb2]); ;
-
+ 
 foreach my $data (@{$lines->{"[Data]"}}){
 	next unless  $data->[$pos_cb1];
 	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if  $len_cb->[0] ne length($data->[$pos_cb1]);
-	die("CB de taille differente") if  $len_cb->[1] ne length($data->[$pos_cb2]);
-	
+	die("CB de taille differente") if  ($pos_cb2 ne '-1') and ($len_cb->[1] ne length($data->[$pos_cb2]));
 }
 
 
@@ -288,11 +291,14 @@ if(scalar(@index) == 1){
 
 
 $lines->{"[Settings]"} = [];
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",0]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",0]) if scalar(@index) == 2;
+my $nb_mis = 0;
+$nb_mis= $mismatch if $mismatch;
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",$nb_mis]);
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",$nb_mis]) if scalar(@index) == 2;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask; 
 
 my $dj;
+my $ok_in_project;
 foreach my $data (@{$lines->{"[Data]"}}){
 	
 	if($l2){
@@ -301,10 +307,11 @@ foreach my $data (@{$lines->{"[Data]"}}){
  	}
 	my $name = $data->[$pos_sample];
 	$data->[$pos_sample_name] = $name;
-	next if $name =~ /_RC/; 
+	next if $name =~ /_RC$/; 
 	next if exists $dj->{$name};
 	next unless $name;
 	$error_not_in_project->{$name} = $patients{$name}  unless exists $patients{$name};
+	$ok_in_project->{$name} ++ unless not $patients{$name};
 	$ok->{$name} ++;
  	delete $patients{$name};
  	$dj->{$name}++;
@@ -314,10 +321,10 @@ foreach my $data (@{$lines->{"[Data]"}}){
 
 my $error;
 if (keys %$ok) {
-	print colored(['bright_green on_black']," SAMPLE OK : ".scalar(keys %$ok) )."\n";
+	print colored(['bright_green on_black']," SAMPLES OK : ".scalar(keys %$ok) )."\n";
 }
 if (keys %patients) {
-	print colored(['bright_red on_black']," SAMPLE IN PROJECT NOT IN SAMPLE SHEET :")."\n";
+	print colored(['bright_red on_black']," SAMPLES IN PROJECT NOT IN SAMPLE SHEET :".scalar(keys %patients))."\n";
 	map {print $_."\t".$patients{$_}."\n"} keys %patients;
 	if ($run_name_option) {
 		my $choice = prompt("continue anyway  (y/n) ? ");
@@ -329,7 +336,7 @@ if (keys %patients) {
 }
 
 if (keys %$error_not_in_project) {
-		print colored(['bright_red on_black']," SAMPLE IN SAMPLE SHEET  NOT IN PROJECT :")."\n";
+		print colored(['bright_red on_black']," SAMPLES IN SAMPLE SHEET NOT IN PROJECT : ".scalar(keys %$error_not_in_project) )."\n";
 		map {print $_."\n"} keys %$error_not_in_project;
 		print " nb error : ".scalar (keys %$error_not_in_project)."\n";
 		my $choice = prompt("continue anyway  (y/n) ? ");
@@ -355,6 +362,17 @@ my $ss = $bcl_dir."/file".time.".csv";
 csv (in => $outcsv, out => $ss, sep_char=> ",");
 
 sleep(1);
+
+# sleep tant que le run n'est pas fini
+my $complete = $bcl_dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
+warn $complete;
+my $checkComplete = 1;
+$checkComplete = 0 if -f $complete;
+while($checkComplete == 1){
+	warn "Run not complete, sleep 1h";
+	sleep(3600);
+	$checkComplete = 0 if (-f $complete);
+}
 
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force  };
 warn $cmd;

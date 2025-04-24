@@ -536,7 +536,7 @@ if ( $cgi->param('xls') ) {
 
 #my @array_control_panels = ("control_mendel","control_quality","control_sex","control_duplicate");
 my $list_control_panels =
-"control_design,control_mendel,control_quality,control_sex,control_duplicate,control_muc1";
+"control_specie_contamination,control_design,control_mendel,control_quality,control_sex,control_duplicate,control_muc1";
 
 #html::print_cgi_header($cgi,$CSS,1,$project_name." - PolyDiag");
 if ( $cgi->param('print') ) {
@@ -565,7 +565,7 @@ $t = time;
 my $hv;
 my $stat;
 
-my $dev = undef;
+my $dev = 1;
 
 #$dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
 #$dev = 1;
@@ -690,7 +690,8 @@ sub print_line_patient {
 
 #@title = ("Fam","Patient","Sex","mendelian error","Cov","30x","Sub","Indels","%He","validation");
 	my $line;
-	my $sex_eval = $p->compute_sex();
+	my $sex_eval;
+	$sex_eval = $p->compute_sex() if $p->alignmentMethod() ne 'no_align';
 	my $pname    = "check_" . $p->name();
 	my $class    = {};
 	my $hval     = $p->validations();
@@ -703,7 +704,8 @@ sub print_line_patient {
 	$class->{style} = "vertical-align:middle";
 	my $fam     = $p->getFamily();
 	my $ir      = $p->return_icon . " " . $p->name;
-	my $cov_sry = $p->coverage_SRY();
+	my $cov_sry;
+	$cov_sry = $p->coverage_SRY() if $p->alignmentMethod() ne 'no_align';
 
 	#$line->{Fam}  = $cgi->td($class,$p->name);
 
@@ -870,8 +872,11 @@ sub column_control {
 				my $btn_class = qq{class= "btn btn-xs btn-success"  style = "$fsize"};
 				$line->{identito} =   $cgi->td( $class, qq{<button type="button" $btn_class >OK</button>} );
 		}
-		my $cov_sry  = $p->coverage_SRY();
-		my $sex_eval = $p->compute_sex();
+		my ($cov_sry, $sex_eval);
+		if ($p->alignmentMethod() ne 'no_align') {
+			$cov_sry  = $p->coverage_SRY();
+			$sex_eval = $p->compute_sex();
+		}
 
 		# warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
 		my $color = "#009B77";
@@ -2011,6 +2016,7 @@ sub table_sex {
 
 	foreach my $p ( sort { $a->name cmp $b->name } @{ $run->getPatients } ) {
 		print ".";
+		next if $p->alignmentMethod() eq 'no_align';
 		my $icon = $p->return_icon;
 		my $name = $p->name;
 		my $c1   = "pink";
@@ -2854,6 +2860,8 @@ qq{<i class="fa fa-child fa-1x" aria-hidden="true" style="color:red"></i>}
 			$out .= $cgi->td( { style => "border: 1px solid black;" }, "" );
 
 		}
+		
+		
 		$out .= $cgi->end_Tr();
 
 	}
@@ -3332,8 +3340,10 @@ sub table_patients {
 	#####################
 	my $control ={};
 	my $error = 0;
+	my $has_identito;
 	foreach my $p ( @{$project->getPatients} ) {
 		$error += column_control($p,$control);
+		$has_identito = 1 if $p->identity_vigilance;
 	}
 	my $ccolor="";
 	$ccolor="background-color:red" if $error > 0;
@@ -3343,7 +3353,7 @@ sub table_patients {
 			#https://img.icons8.com/ios/50/checked-identification-documents.png
 			#https://img.icons8.com/ios-filled/50/checked-identification-documents--v1.png
 			#<img width="32" height="32" src="https://img.icons8.com/windows/32/checked-identification-documents.png" alt="checked-identification-documents"/>
-			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control });
+			$out .= $cgi->th( { style => "text-align: center;min-width:5%; $ccolor" }, qq{ <img width="22px" height="22px" src="https://img.icons8.com/windows/32/checked-identification-documents.png"> IV Control }) if $has_identito;
 		}
 		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, $p );
 	}
@@ -3444,7 +3454,99 @@ sub table_patients {
 
 }
 
+sub table_fastq_screen {
+	my ($run) = @_;
+	my $out;
+	my $fams = $run->getFamilies;
+	my $fastq_screen_id = "control_specie_contamination_" . $run->id;
+	$out = $cgi->start_div(
+		{
+			class => "panel-body panel-primary panel-collapse collapse ",
+			style => "font-size: 09px;font-family:  Verdana;border: 5px coral; border-color: coral;",
+			id => $fastq_screen_id,
+		}
+	);
+	$out .= qq{
+		<div class="container">
+		<div class="row">
+	};
+	my $ok = 0;
+	my $error = 0;
+	
+	$out .= qq{<div class='col-xs-6' style='padding:0px;margin:0px;'><div class="row">};
+	$out .= qq{<div class='col-xs-1' style='padding:0px;margin:0px;'><center></center></div>};
+	$out .= qq{<div class='col-xs-6'><center><b>Patient Name</b></center></div>};
+	$out .= qq{<div class='col-xs-2'><center><b>HTML Link</b></center></div>};
+	$out .= qq{<div class='col-xs-2'><center><b>Specie Check</b></center></div>};
+	$out .= qq{<div class='col-xs-1' style='padding:0px;margin:0px;'><center></center></div>};
+	$out .= qq{</div></div>};
+	$out .= qq{<div class='col-xs-6' style='padding:0px;margin:0px;'><div class="row">};
+	$out .= qq{<div class='col-xs-1' style='padding:0px;margin:0px;'><center></center></div>};
+	$out .= qq{<div class='col-xs-6'><center><b>Patient Name</b></center></div>};
+	$out .= qq{<div class='col-xs-2'><center><b>HTML Link</b></center></div>};
+	$out .= qq{<div class='col-xs-2'><center><b>Specie Check</b></center></div>};
+	$out .= qq{<div class='col-xs-1' style='padding:0px;margin:0px;'><center></center></div>};
+	$out .= qq{</div></div>};
+	
+	my $specie_db;
+	if ($run->getProject->getVersion() =~ /HG/) { $specie_db = 'human'; }
+	elsif ($run->getProject->getVersion() =~ /MM/) { $specie_db = 'mouse'; }
+	else { $specie_db = $run->getProject->getVersion(); }
 
+	my $h_html = $run->hash_fastq_screen_patients_html_files();
+	my $h_specie = $run->hash_fastq_screen_patients_specie();
+	foreach my $patient (@{$run->getPatients()}) {
+		my $patient_name = $patient->name();
+		my $fastq_screen_html = $patient->fastq_screen_file_html_url();
+		next if not $fastq_screen_html;
+		my $specie_fc = lc($patient->fastq_screen_found_specie());
+		
+		my $color;
+		next if $specie_fc eq 'no_fastq_found';
+		if ($specie_db eq $specie_fc) {
+			$ok++;
+			$color = "#009B77";
+		}
+		else {
+			$error++;
+			$color = "red";
+		}
+		$out .= qq{<div class='col-xs-6' style='padding:0px;margin:0px;'><div class="row">};
+		$out .= qq{<div class='col-xs-1' style='padding:0px;margin:0px;'><center></center></div>};
+		$out .= qq{<div class='col-xs-6' style='padding:0px;margin:0px;background-color:$color;color:white;border:solid 1px #75818C;'><center>$patient_name</center></div>};
+		$out .= qq{<div class='col-xs-2' style='padding:0px;margin:0px;border:solid 1px #75818C;'><center><a href="$fastq_screen_html" target="_blank">Fastq Screen</a></center></div>};
+		$out .= qq{<div class='col-xs-2' style='padding:0px;margin:0px;color:black;border:solid 1px #75818C;'><center>$specie_db/$specie_fc</center></div>};
+		$out .= qq{<div class='col-xs-1' style='padding:0px;margin:0px;'><center></center></div>};
+		$out .= qq{</div></div>};
+	}
+	
+	$out .= qq{
+		</div>
+		</div>
+		</div>
+	};
+
+	my $out2;
+	my $disabled = "disabled";
+	my $text = qq{  <b><span class="glyphicon glyphicon-search"></span></b> Contamination Control };
+	my $label;
+	$label = "";
+	my $run_id = $run->id;
+	my $btn = "";
+	if ($error > 0) {
+		$btn = " btn-danger";
+		$label = qq{ <span class="badge badge-danger">$error</span> };
+		$disabled = undef;
+	}
+	elsif ($ok > 0) {
+		$btn = " btn-success";
+		$label = qq{ <span class="badge badge-success">0</span> };
+		$disabled = undef;
+	}
+	$out2 = qq{<div class="btn   btn-xs $btn " style="position:relative;bottom:1px;min-width:200px;border-color:black;" onClick='collapse_panel("control_specie_contamination","$list_control_panels","$run_id")'  style="border : 1px"  $disabled>  $text $label </div>};
+	return ( $out2, $out );
+	
+}
 
 sub table_run_header {
 	my ($run) = @_;
@@ -3463,7 +3565,15 @@ sub table_run_header {
 	my ( $b4, $p4 ) = table_quality($run);
 	my ( $b5, $p5 ) = table_design($run);
 	my ( $b6, $p6 ) = table_muc1($run);
+	my ( $b7, $p7 ) = table_fastq_screen($run);
 	$out .= $cgi->start_Tr;
+	$out .= $cgi->th(
+		{
+			style =>
+"margin-bottom: 5px;margin-right: 10px;margin-left: 100px;margin-top: 5px;"
+		},
+		$b7
+	);
 	$out .= $cgi->th(
 		{
 			style =>
@@ -3516,6 +3626,7 @@ sub table_run_header {
 	$out .= $cgi->end_Tr;
 	$out .= $cgi->end_table();
 
+	$out .= $p7;
 	$out .= $p1;
 	$out .= $p;
 	$out .= $p2;

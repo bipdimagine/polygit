@@ -177,6 +177,7 @@ sub getProjectLists {
 		next unless	 $project->{name} =~ /NGS/;
 		my $husers = $buffer->getQuery()->getOwnerProject($project->{id});
 		my $groups = $buffer->getQuery()->getUserGroupsForProject($project->{id});
+	 	$project->{genome} = $buffer->getQuery()->getBuildFromProjectName($project->{name});
 		$project->{users} = "";
 		if (@$groups){
 			$project->{users} = join(";",@$groups);

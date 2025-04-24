@@ -35,6 +35,24 @@ my $only_positions       = $cgi->param('only_positions');
 my $only_dejavu_ratio_10 = $cgi->param('only_dejavu_ratio_10');
 my $only_html_cache      = $cgi->param('only_html_cache');
 my $view_polyviewer 	 = $cgi->param('view_polyviewer');
+my $export_xls			 = $cgi->param('export_xls');
+my $session_id			 = $cgi->param('session_id');
+
+my $only_junctions_NDA   = $cgi->param('only_junctions_NDA');
+my $only_junctions_DA    = $cgi->param('only_junctions_DA');
+my $only_junctions_A     = $cgi->param('only_junctions_A');
+my $only_junctions_D     = $cgi->param('only_junctions_D');
+my $only_junctions_N     = $cgi->param('only_junctions_N');
+
+
+if ($export_xls and $session_id) {
+	my $xls_export = new xls_export();
+	$xls_export->load($session_id);
+	my ($list_datas_junctions) = $xls_export->prepare_generic_datas_junctions();
+	$xls_export->add_page('Junctions', $xls_export->list_generic_header_junctions(), $list_datas_junctions);
+	$xls_export->export();
+	exit(0);
+}
 
 #$only_positions = '10:17000000-17080000';
 
@@ -97,8 +115,13 @@ my $j_total    = 0;
 my $j_selected = 0;
 my $h_chr_vectors;
 my $h_chr_vectors_counts;
-foreach my $chr ( @{ $project->getChromosomes() } ) {
 
+my $has_regtools_vectors;
+my $exists_vector_ratio_10;
+foreach my $chr ( @{ $project->getChromosomes() } ) {
+#	warn $chr->id;
+#	$chr->global_categories;
+	
 	#next if $chr->id ne '1' and $patient_name eq 'KUCerc';
 	my $vector_patient = $patient->getJunctionsVector($chr);
 	$j_total += $chr->countThisVariants($vector_patient);
@@ -120,9 +143,17 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	}
 
 	$h_chr_vectors->{ $chr->id } = $vector_patient->Clone();
-	$h_chr_vectors_counts->{ $chr->id } =
-	  $chr->countThisVariants( $h_chr_vectors->{ $chr->id } );
+	$h_chr_vectors_counts->{ $chr->id } = $chr->countThisVariants( $h_chr_vectors->{ $chr->id } );
 	$j_selected += $h_chr_vectors_counts->{ $chr->id };
+	$exists_vector_ratio_10++ if exists $chr->patients_categories->{$patient->name().'_ratio_10'};
+	
+	if ($h_chr_vectors_counts->{ $chr->id } > 0) {
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'N'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'D'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'A'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'DA'};
+		$has_regtools_vectors = 1 if exists $chr->global_categories->{'NDA'};
+	}
 }
 my $cache_id = 'splices_linked_' . $patient->name();
 my $no_cache = $patient->get_lmdb_cache("r");
@@ -138,8 +169,13 @@ $cache_html_id .= '_mins'.$min_score if $min_score;
 $cache_html_id .= '_only'.$only_gene_name if $only_gene_name;
 $cache_html_id .= '_only'.$only_positions if $only_positions;
 $cache_html_id .= '_onlydvra10' if $only_dejavu_ratio_10;
+$cache_html_id .= '_onlyNDA' if $has_regtools_vectors and $only_junctions_NDA;
+$cache_html_id .= '_onlyDA' if $has_regtools_vectors and $only_junctions_DA;
+$cache_html_id .= '_onlyA' if $has_regtools_vectors and $only_junctions_A;
+$cache_html_id .= '_onlyD' if $has_regtools_vectors and $only_junctions_D;
+$cache_html_id .= '_onlyN' if $has_regtools_vectors and $only_junctions_N;
 $cache_html_id .= '_'.$j_total;
-if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
+if (not $only_gene_name and not $only_positions and not $view_polyviewer and not $export_xls) {
 	my $no_cache_2 = $patient->get_lmdb_cache("r");
 	my $h_html    = $no_cache_2->get_cache($cache_html_id);
 	
@@ -148,7 +184,6 @@ if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
 	
 	$no_cache_2->close();
 	if ($h_html) {
-		
 		if ($view_polyviewer) {
 			print qq{</div>};
 			print $h_html->{html};
@@ -158,22 +193,29 @@ if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
 		exit(0);
 	}
 }
+
 my ( $is_partial_results, $use_cat, $min_partial_score );
 my $no_cache = $patient->get_lmdb_cache("r");
 my $cache_vectors_enum_id = $patient->name() . '_' . '_chr_vectors_enum';
 my $h_res_v_enum = $no_cache->get_cache($cache_vectors_enum_id);
-$use_cat = countMinCatToUse($h_res_v_enum);
-print ".$use_cat.";
-foreach my $chr_id ( keys %$h_res_v_enum ) {
-	my $v_filters = $project->getChromosome($chr_id)->getNewVector();
-	$v_filters->from_Enum( $h_res_v_enum->{$chr_id}->{$use_cat} );
-	$h_chr_vectors->{$chr_id}->Intersection( $h_chr_vectors->{$chr_id}, $v_filters );
-}
-$is_partial_results = 1;
-$min_partial_score  = $use_cat;
-$min_partial_score =~ s/min//;
-$min_partial_score -= 4;
-$min_partial_score = 0 if $min_partial_score < 0;
+
+
+#warn $j_total;
+#die;
+#
+##$min_partial_score = 0 if ()
+#$use_cat = countMinCatToUse($h_res_v_enum);
+#print ".$use_cat.";
+#foreach my $chr_id ( keys %$h_res_v_enum ) {
+#	my $v_filters = $project->getChromosome($chr_id)->getNewVector();
+#	$v_filters->from_Enum( $h_res_v_enum->{$chr_id}->{$use_cat} );
+#	$h_chr_vectors->{$chr_id}->Intersection( $h_chr_vectors->{$chr_id}, $v_filters );
+#}
+#$is_partial_results = 1;
+#$min_partial_score  = $use_cat;
+#$min_partial_score =~ s/min//;
+#$min_partial_score -= 4;
+$min_partial_score = 0 if $j_total > 20000;
 
 my $percent_dejavu = 0;
 if ( defined($use_percent_dejavu) ) {
@@ -183,10 +225,13 @@ my $nb_percent_dejavu_value = 90 + $percent_dejavu;
 my $nbErrors = 0;
 
 
-
-
-my $checked_only_dejavu_ratio_10;
+my ($checked_only_dejavu_ratio_10, $checked_regtools_nda, $checked_regtools_d, $checked_regtools_a, $checked_regtools_n, $checked_regtools_da);
 $checked_only_dejavu_ratio_10 = qq{checked="checked"} if $only_dejavu_ratio_10;
+$checked_regtools_nda = qq{checked="checked"} if $only_junctions_NDA;
+$checked_regtools_da = qq{checked="checked"} if $only_junctions_DA;
+$checked_regtools_d = qq{checked="checked"} if $only_junctions_D;
+$checked_regtools_a = qq{checked="checked"} if $only_junctions_A;
+$checked_regtools_n = qq{checked="checked"} if $only_junctions_N;
 
 if (not $view_polyviewer) {
 	my $html_dejavu = qq{
@@ -232,6 +277,28 @@ if (not $view_polyviewer) {
 	my $html_filters = qq{
 		<table style="width:100%;">
 			<tr>
+	};
+	
+	if ($has_regtools_vectors) {
+		$html_filters .= qq{
+			<td style="padding-top:5px;">
+				<center>
+					<table>
+						<tr>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_nda class="form-check-input" type="checkbox" value="" id="b_regtools_nda"><label class="form-check-label" for="b_regtools_nda" style="padding-left:10px;font-size:11px;">NDA</label></div> </td>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_d class="form-check-input" type="checkbox" value="" id="b_regtools_d"><label class="form-check-label" for="b_regtools_d" style="padding-left:10px;font-size:11px;">D</label></div> </td>
+						</tr>
+						<tr>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_a class="form-check-input" type="checkbox" value="" id="b_regtools_a"><label class="form-check-label" for="b_regtools_a" style="padding-left:10px;font-size:11px;">A</label></div> </td>
+							<td style="padding-left:3px;"> <div class="form-check"><input $checked_regtools_n class="form-check-input" type="checkbox" value="" id="b_regtools_n"><label class="form-check-label" for="b_regtools_n" style="padding-left:10px;font-size:11px;">N</label></div> </td>
+						</tr>
+					</table>
+				</center>
+			</td>
+		};
+	}
+	
+	$html_filters .= qq{
 				<td style="padding-top:5px;">
 					<center>
 						<label for="slider_score" class="form-label" style="font-size:10px;font-weight:300;"><i>Ratio >= <span id="nb_score" style="color:blue;">$min_score%</span></i></label>
@@ -246,6 +313,15 @@ if (not $view_polyviewer) {
 						
 			</tr>
 			<tr>
+	};
+	
+	if ($has_regtools_vectors) {
+		$html_filters .= qq{
+			<td style="padding-top:5px;font-size:11px;"><center><b>Filter Category</center></b></td>
+		};
+	}
+	
+	$html_filters .= qq{
 				<td style="padding-top:5px;font-size:11px;"><center><b>Filter Min Ratio</center></b></td>
 				<td style="padding-top:5px;font-size:11px;"><center><b>Filter Only Gene / Positions</center></b></td>
 			</tr>
@@ -299,7 +375,7 @@ my $_tr_lines_by_genes;
 my $h_junctions_color;
 my $h_dejavu_cnv;
 $n = 0;
-my $h_junctions_scores;
+my ($h_junctions_scores, $h_export_xls);
 my $fork     = 5;
 my $pm       = new Parallel::ForkManager($fork);
 my $nbErrors = 0;
@@ -311,22 +387,35 @@ $pm->run_on_finish(
 			print qq|No message received from child process $exit_code $pid!\n|;
 			return;
 		}
-		foreach my $gene_name ( keys %{ $hres->{genes} } ) {
-			foreach my $score ( keys %{$hres->{genes}->{$gene_name}} ) {
-				foreach my $html_tr ( @{ $hres->{genes}->{$gene_name}->{$score} } ) {
-					push( @{ $_tr_lines_by_genes->{$gene_name}->{$score} }, $html_tr );
+		
+		
+		if ($export_xls) {
+			my $chr_id = $hres->{chr_id}; 
+			delete $hres->{done};
+			delete $hres->{chr_id};
+			$h_export_xls->{$chr_id} = $hres;
+		}
+		else {
+			foreach my $gene_name ( keys %{ $hres->{genes} } ) {
+				foreach my $score ( keys %{$hres->{genes}->{$gene_name}} ) {
+					foreach my $html_tr ( @{ $hres->{genes}->{$gene_name}->{$score} } ) {
+						push( @{ $_tr_lines_by_genes->{$gene_name}->{$score} }, $html_tr );
+					}
 				}
 			}
-		}
-
-		foreach my $gene_name ( keys %{ $hres->{score}->{all} } ) {
-			foreach my $score ( keys %{ $hres->{score}->{all}->{$gene_name} } )
-			{
-				$h_junctions_scores->{all}->{$gene_name}->{$score} = undef;
+	
+			foreach my $gene_name ( keys %{ $hres->{score}->{all} } ) {
+				foreach my $score ( keys %{ $hres->{score}->{all}->{$gene_name} } )
+				{
+					$h_junctions_scores->{all}->{$gene_name}->{$score} = undef;
+				}
 			}
 		}
 	}
 );
+
+
+print '_save_xls_' if ($export_xls);
 
 foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	#next if $chr_id ne '20';
@@ -337,7 +426,93 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	$patient->getProject->buffer->dbh_deconnect();
 	$pm->start and next;
 	$patient->getProject->buffer->dbh_reconnect();
+	
+	if (not $only_gene ) {
+		#DV vector
+		my $type_vector_dv = 'dejavu';
+		my $type_vector_dv_sup = 'dejavu';
+		if ($max_dejavu_value >= 90)    {
+			$type_vector_dv .= '_90';
+		}
+		elsif ($max_dejavu_value >= 80) {
+			$type_vector_dv .= '_80';
+			$type_vector_dv_sup .= '_90';
+		}
+		elsif ($max_dejavu_value >= 70) {
+			$type_vector_dv .= '_70';
+			$type_vector_dv_sup .= '_80';
+		}
+		elsif ($max_dejavu_value >= 60) {
+			$type_vector_dv .= '_60';
+			$type_vector_dv_sup .= '_70';
+		}
+		elsif ($max_dejavu_value >= 50) {
+			$type_vector_dv .= '_50';
+			$type_vector_dv_sup .= '_60';
+		}
+		elsif ($max_dejavu_value >= 40) {
+			$type_vector_dv .= '_40';
+			$type_vector_dv_sup .= '_50';
+		}
+		elsif ($max_dejavu_value >= 30) {
+			$type_vector_dv .= '_30';
+			$type_vector_dv_sup .= '_40';
+		}
+		elsif ($max_dejavu_value >= 25) {
+			$type_vector_dv .= '_25';
+			$type_vector_dv_sup .= '_30';
+		}
+		elsif ($max_dejavu_value >= 20) {
+			$type_vector_dv .= '_20';
+			$type_vector_dv_sup .= '_25';
+		}
+		elsif ($max_dejavu_value >= 15) {
+			$type_vector_dv .= '_15';
+			$type_vector_dv_sup .= '_20';
+		}
+		elsif ($max_dejavu_value >= 10) {
+			$type_vector_dv .= '_10';
+			$type_vector_dv_sup .= '_15';
+		}
+		else {
+			$type_vector_dv .= '_5';
+			$type_vector_dv_sup .= '_105';
+		}
+		$type_vector_dv .= '_r10' if ($only_dejavu_ratio_10);
+		$type_vector_dv_sup .= '_r10' if ($only_dejavu_ratio_10);
+		if (exists $chr->global_categories->{$type_vector_dv}) {
+			$h_chr_vectors->{$chr_id} &= $chr->global_categories->{$type_vector_dv};
+#			if ($type_vector_dv_sup and exists $chr->global_categories->{$type_vector_dv_sup}) {
+#				my $v_sup = $chr->global_categories->{$type_vector_dv_sup}->Clone();
+#				$v_sup -= $chr->global_categories->{$type_vector_dv};
+#				$h_chr_vectors->{$chr_id} -= $v_sup;
+#			}
+		}
+	
+		# RATIO
+		my $type_vector_ratio = $patient->name.'_ratio';
+		if ($min_score >= 90)    { $type_vector_ratio .= '_90'; }
+		elsif ($min_score >= 80) { $type_vector_ratio .= '_80'; }
+		elsif ($min_score >= 70) { $type_vector_ratio .= '_70'; }
+		elsif ($min_score >= 60) { $type_vector_ratio .= '_60'; }
+		elsif ($min_score >= 50) { $type_vector_ratio .= '_50'; }
+		elsif ($min_score >= 40) { $type_vector_ratio .= '_40'; }
+		elsif ($min_score >= 30) { $type_vector_ratio .= '_30'; }
+		elsif ($min_score >= 20) { $type_vector_ratio .= '_20'; }
+		elsif ($min_score >= 10) { $type_vector_ratio .= '_10'; }
+		if (exists $chr->patients_categories->{$type_vector_ratio}) {
+			$h_chr_vectors->{$chr_id} &= $chr->patients_categories->{$type_vector_ratio};
+		}
 
+		if ($has_regtools_vectors) {
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'NDA'} if (not $only_junctions_NDA and exists $chr->global_categories->{'NDA'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'DA'}  if (not $only_junctions_DA and exists $chr->global_categories->{'DA'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'A'}   if (not $only_junctions_A and exists $chr->global_categories->{'A'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'D'}   if (not $only_junctions_D and exists $chr->global_categories->{'D'});
+			$h_chr_vectors->{$chr_id} -= $chr->global_categories->{'N'}   if (not $only_junctions_N and exists $chr->global_categories->{'N'});
+		}
+	}
+	
 	my @lJunctionsChr = @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };
 	my $size_vector = $h_chr_vectors->{$chr_id}->Size();
 	my $hres;
@@ -389,7 +564,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 and not $only_gene);
 
 		next if $junction->start == $junction->end();
-
+		
 		my @lGenesNames;
 		foreach my $gene ( @{ $junction->getGenes() } ) {
 			if ($only_gene) {
@@ -421,11 +596,72 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 
 		next if ($min_partial_score and $score < $min_partial_score);
 		
+		
+		if ($export_xls) {
+			my @lTypes;
+			push( @lTypes, 'RI' ) if $junction->isRI($patient);
+			push( @lTypes, 'SE' ) if $junction->isSE($patient);
+			my $type_junction_description = join(', ', @lTypes);
+			$type_junction_description .= ' - '.$junction->getTypeDescription($patient);
+			my $pat_name = $patient->name();
+			$hres->{chr_id} = $chr_id;
+			$hres->{$junction->id()}->{global}->{'chr'} = $junction->getChromosome->id();
+			$hres->{$junction->id()}->{global}->{start} = $junction->start();
+			$hres->{$junction->id()}->{global}->{end} = $junction->end();
+			$hres->{$junction->id()}->{global}->{type} = $type_junction_description;
+			$hres->{$junction->id()}->{global}->{dejavu} = $junction->dejavu_patients('all',$patient);
+			$hres->{$junction->id()}->{global}->{dejavu_ratio_10} = $junction->dejavu_patients(10,$patient);
+			$hres->{$junction->id()}->{global}->{dejavu_ratio_20} = $junction->dejavu_patients(20,$patient);
+			
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{name} = $pat_name;
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{fam_name} = $patient->getFamily->name();
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{sex} = $patient->sex();
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{status} = $patient->status();
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_new} = $junction->get_nb_new_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{nb_canonique} = $junction->get_canonic_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{dp} = $junction->get_dp_count($patient);
+			$hres->{$junction->id()}->{patients}->{$pat_name}->{ratio} = sprintf( "%.3f", $junction->get_percent_new_count($patient) ) . '%';
+
+			foreach my $gene_name (@lGenesNames) {
+				my $g = $project->newGene($gene_name);
+				my $this_score = $score;
+				my $gscore = int(($g->score/2)+0.5);
+				$this_score += $gscore;
+				my ($gene_id, $tmp) = split('_', $gene_name);
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{gene_name} = $g->external_name();
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{ensg} = $gene_id;
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{description} = $g->description();
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{phenotypes} = $g->phenotypes();
+				$hres->{$junction->id()}->{annotation}->{$gene_name}->{score} = $this_score;
+				my $h_exons_introns = $junction->get_hash_exons_introns();
+				foreach my $tid ( sort keys %{$h_exons_introns} ) {
+					my $t = $patient->getProject->newTranscript($tid);
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{gene} = $t->gene_external_name;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{transcript_name} = $t->external_name;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{ccds_name} = $t->ccds_name;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{appris_type} = $t->appris_type;
+					my @lPos = ( sort keys %{ $h_exons_introns->{$tid}->{by_pos} } );
+					my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{ $lPos[0] };
+					my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{ $lPos[-1] };
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{start} = $first_exon_intron;
+					$hres->{$junction->id()}->{annotation}->{$gene_name}->{transcripts}->{$tid}->{end} = $last_exon_intron;
+				}
+			}
+			$hres->{done} = 1;
+			next;
+		}
+		
+		
+		
 		my $html_sashimi  = get_sashimi_plot( $junction, $patient );
 		my $html_igv      = get_igv_button( $junction, $patient );
 		my $html_id       = get_html_id($junction, $h_same_j_description);
 		my $html_patients = get_html_patients( $junction, $patient);
 		my $html_dv       = get_html_dejavu( $junction, $patient );
+		my $html_spliceai = "";
+		$html_spliceai = get_html_spliceAI( $junction ) if $patient->project->is_human_genome();
+		
+				
 
 		my $jid_tmp = $junction->getChromosome->id().'-'.$junction->start().'-'.$junction->end();
 		if ($h_td_line and $h_td_line->{id} eq $jid_tmp) {
@@ -435,8 +671,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			}
 			push (@{$h_td_line->{3}}, "<br>");
 			push (@{$h_td_line->{4}}, "<br>");
-			push (@{$h_td_line->{7}}, "<br>");
 			push (@{$h_td_line->{8}}, "<br>");
+			push (@{$h_td_line->{9}}, "<br>");
 			
 		}
 		else { $h_td_line = undef; }
@@ -450,15 +686,18 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 #		if (exists $h_td_line->{4}) { push (@{$h_td_line->{4}}, qq{<div>------------</div>}); }
 		push (@{$h_td_line->{4}}, $html_patients);
 		if (not exists $h_td_line->{5}) { push (@{$h_td_line->{5}}, $html_dv); }
+		if (not exists $h_td_line->{7}) { push (@{$h_td_line->{7}}, $html_spliceai); }
 
 		my $html_push_this_j;
 		foreach my $gene_name (@lGenesNames) {
 			my $g = $project->newGene($gene_name);
 			next unless $g;
 			my $this_score = $score;
-			
-			my $gscore = int(($g->score/2)+0.5);
-			$this_score += $gscore;
+			my $gscore;
+			if ($g->getProject->is_human_genome()) {
+				$gscore = int(($g->score/2)+0.5);
+				$this_score += $gscore;
+			}
 			
 			my $ht = $junction->get_hash_exons_introns();
 			
@@ -470,12 +709,12 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			
 			my $score_details_text = get_html_score_details( $junction, $patient, $use_percent_dejavu );
 			@{$h_td_line->{6}} = ();
-#			@{$h_td_line->{7}} = ();
 #			@{$h_td_line->{8}} = ();
+#			@{$h_td_line->{9}} = ();
 			
 			push (@{$h_td_line->{6}}, $html_trans);
 #			if (not exists $h_td_line->{6}) { push (@{$h_td_line->{6}}, $html_trans);} 
-#			if (exists $h_td_line->{7}) { push (@{$h_td_line->{7}}, qq{<div>---</div>}); }
+#			if (exists $h_td_line->{8}) { push (@{$h_td_line->{8}}, qq{<div>---</div>}); }
 			my $badge_color = '#808080';
 			$badge_color = '#92D674' if $this_score >= 0;
 			$badge_color = '#FFFF00' if $this_score >= 5;
@@ -484,8 +723,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			$badge_color_text = "black" if $badge_color eq '#FFFF00';
 			push (@{$h_td_line->{score}}, $this_score);
 			if (not $html_push_this_j) {
-				push (@{$h_td_line->{7}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$this_score [G: $gscore] </span>});
-				push (@{$h_td_line->{8}}, $score_details_text);
+				push (@{$h_td_line->{8}}, qq{<span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:$badge_color_text;margin-bottom: 15px;font-size:9px;">$this_score [G: $gscore] </span>});
+				push (@{$h_td_line->{9}}, $score_details_text);
 			}
 
 			next if not $tr_found;
@@ -508,10 +747,11 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 
 			#	$html_tr .= qq{<td>$html_validation</td>};
 			$html_tr .= qq{<td>@{$h_td_line->{6}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{7}}</td>};
 
 			#	$html_tr .= qq{<td>$html_to_validate</td>};
-			$html_tr .= qq{<td>@{$h_td_line->{7}}</td>};
 			$html_tr .= qq{<td>@{$h_td_line->{8}}</td>};
+			$html_tr .= qq{<td>@{$h_td_line->{9}}</td>};
 			$html_tr .= qq{</tr>};
 			my $max_score = -999;
 			foreach my $s (@{$h_td_line->{score}}) { $max_score = $s if $s > $max_score; }
@@ -533,6 +773,13 @@ $pm->wait_all_children();
 
 die if $nbErrors > 0;
 
+if ($export_xls) {
+	my $session_id = save_export_xls($patient, $h_export_xls);
+	my $hash;
+	$hash->{session_id} = $session_id;
+	printJson($hash);
+	exit(0);
+}
 
 foreach my $gene_name ( keys %{ $h_junctions_scores->{all} } ) {
 	my @lscores = sort { $a <=> $b } keys %{ $h_junctions_scores->{all}->{$gene_name} };
@@ -646,24 +893,17 @@ foreach my $gene_name (@lGenesNames) {
 	$html_table_2 .= "</table>";
 
 	$html_table_2 .= qq{<div class="collapse" id="$div_id">};
-	$html_table_2 .=
-qq{<table id='$this_table_id' data-sort-name='locus' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="both" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
+	$html_table_2 .= qq{<table id='$this_table_id' data-sort-name='locus' data-sort-order='desc' data-filter-control='true' data-toggle="table" data-pagination-v-align="both" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10]" data-resizable='true' class='table table-striped' style='font-size:11px;'>};
 	$html_table_2 .= qq{<thead style="text-align:center;">};
-	$html_table_2 .=
-	  qq{<th data-field="plot"><b><center>Sashimi Plot</center></b></th>};
+	$html_table_2 .= qq{<th data-field="plot"><b><center>Sashimi Plot</center></b></th>};
 	$html_table_2 .= qq{<th data-field="igv"><b><center>IGV</center></b></th>};
-	$html_table_2 .=
-qq{<th data-sortable='true' data-field="var_name"><b><center>Var name</center></b></th>};
-	$html_table_2 .=
-	  qq{<th data-field="trio"><b><center>Trio</center></b></th>};
-	$html_table_2 .=
-qq{<th data-field="deja_vu"><b><center>DejaVu (Nb Samples)</center></b></th>};
-	$html_table_2 .=
-	  qq{<th data-field="transcripts"><b><center>Transcripts</center></b></th>};
-	$html_table_2 .=
-qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></th>};
-	$html_table_2 .=
-	  qq{<th data-field="noise"><b><center>Details Score</center></b></th>};
+	$html_table_2 .= qq{<th data-sortable='true' data-field="var_name"><b><center>Var name</center></b></th>};
+	$html_table_2 .= qq{<th data-field="trio"><b><center>Trio</center></b></th>};
+	$html_table_2 .= qq{<th data-field="deja_vu"><b><center>DejaVu (Nb Samples)</center></b></th>};
+	$html_table_2 .= qq{<th data-field="transcripts"><b><center>Transcripts</center></b></th>};
+	$html_table_2 .= qq{<th data-field="spliceai"><b><center>Potential SpliceAI</center></b></th>};
+	$html_table_2 .= qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></th>};
+	$html_table_2 .= qq{<th data-field="noise"><b><center>Details Score</center></b></th>};
 	$html_table_2 .= qq{</thead>};
 	$html_table_2 .= qq{<tbody>};
 
@@ -674,7 +914,7 @@ qq{<th data-sortable='true' data-field="jscore"><b><center>Score</center></b></t
 		$html_table_2 .= $l;
 		$nb_limit++;
 		if (not $only_gene_name and $nb_limit == 100) {
-			$html_table_2 .= "<tr><td colspan='8'><center><span style='color:red'><i> ---------------- Limit junctions view... Search only this gene to see all junctions ---------------- </i></span></td></tr>";
+			$html_table_2 .= "<tr><td colspan='9'><center><span style='color:red'><i> ---------------- Limit junctions view... Search only this gene to see all junctions ---------------- </i></span></td></tr>";
 			last;
 		}
 	}
@@ -773,6 +1013,95 @@ sub get_sashimi_plot_file {
 	my $path = $patient->getProject->getProjectPath . '/align/sashimi_plots/';
 	my $outfile = $path.'/sashimi_'.$patient_name.'.'.$ensg.'.'.$locus_text.'.pdf';
 	return $outfile if ( -e $outfile );
+}
+
+sub get_html_spliceAI_cmd_button {
+	my ($junction, $h) = @_;
+	my $hTypes;
+	$hTypes->{'DL'} = 'Donor Loss';
+	$hTypes->{'AL'} = 'Acceptor Loss';
+	$hTypes->{'AG'} = 'Acceptor Gain';
+	$hTypes->{'DG'} = 'Donor Gain';
+	my @lSpliceValues;
+	foreach my $this_pos (sort {$a <=> $b} keys %{$h}) {
+		foreach my $this_alt (sort keys %{$h->{$this_pos}}) {
+			foreach my $this_gname (sort keys %{$h->{$this_pos}->{$this_alt}}) {
+				my @lValues;
+				foreach my $this_type (sort keys %{$h->{$this_pos}->{$this_alt}->{$this_gname}}) {
+					my $value = $h->{$this_pos}->{$this_alt}->{$this_gname}->{$this_type};
+					my $this_color = 'black';
+					$this_color = 'green' if ($value*100) >= 20;
+					$this_color = 'orange' if ($value*100) >= 50;
+					$this_color = '#e74c3c' if ($value*100) >= 80;
+					if ($value > 0) { push(@lValues, '<button><span style=\"color:'.$this_color.'\">'.$hTypes->{$this_type}.':'.$value.'</span></button>'); }
+				}
+				if (scalar @lValues > 0) {
+					my @ltmp;
+					push(@ltmp, 'chr'.$junction->getChromosome->id().':'.$this_pos);
+					push(@ltmp, $this_alt);
+					push(@ltmp, $this_gname);
+					push(@ltmp, '<nobr>'.join(' ', @lValues).'</nobr>');
+					my $tr = join(',', @ltmp);
+					push(@lSpliceValues, $tr);
+				}
+			}
+		}
+	}
+	my $text = join(';', @lSpliceValues);
+	my $cmd_all = qq{view_splice_ai_junction(\"$text\");};
+	return $cmd_all;
+}
+
+sub get_html_spliceAI {
+	my ($junction) = @_;
+	my $h_spai = $junction->getHashSpliceAiNearStartEnd();
+	my $color = 'black';
+	my $html = $cgi->start_table(
+		{
+			class => "table table-sm table-striped table-condensed table-bordered table-primary ",
+			style => "box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"
+		}
+	);
+	$html .= $cgi->start_Tr();
+	$html .= $cgi->th("<center><b>Near Start</b></center>");
+	$html .= $cgi->th("<center><b>Near End</b></center>");
+	$html .= $cgi->end_Tr();
+	
+	my $max_score_infos_start = $h_spai->{start}->{max_infos};
+	my @lt1 = split(';', $max_score_infos_start);
+	
+	my $max_score_infos_end = $h_spai->{end}->{max_infos};
+	my @lt2 = split(';', $max_score_infos_end);
+	
+	my $cmd_all = qq{alert(\"no result\")};
+	$html .= $cgi->start_Tr();
+	if ($h_spai->{start}->{max_score} > 0) {
+		$cmd_all = get_html_spliceAI_cmd_button($junction, $h_spai->{start}->{all});
+		my $this_color;
+		$this_color = '#8FFF49' if ($h_spai->{start}->{max_score}*100) >= 20;
+		$this_color = '#f5b041' if ($h_spai->{start}->{max_score}*100) >= 50;
+		$this_color = '#e74c3c' if ($h_spai->{start}->{max_score}*100) >= 80;
+		if ($this_color) { $html .= "<td style='background-color:$this_color;'>".obutton( $cmd_all, $lt1[-1] )."</td>"; }
+		else { $html .= $cgi->td( obutton( $cmd_all, $lt1[-1]) ); }
+	}
+	else {
+		$html .= $cgi->td( obutton( $cmd_all, '-') );
+	}
+	if ($h_spai->{end}->{max_score} > 0) {
+		$cmd_all = get_html_spliceAI_cmd_button($junction,$h_spai->{end}->{all});
+		my $this_color;
+		$this_color = '#8FFF49' if ($h_spai->{end}->{max_score}*100) >= 20;
+		$this_color = '#f5b041' if ($h_spai->{end}->{max_score}*100) >= 50;
+		$this_color = '#e74c3c ' if ($h_spai->{end}->{max_score}*100) >= 80;
+		if ($this_color) { $html .= "<td style='background-color:$this_color;'>".obutton( $cmd_all, $lt2[-1] )."</td>"; }
+		else {$html .= $cgi->td( obutton( $cmd_all, $lt2[-1]) ); }
+	}
+	else {
+		$html .= $cgi->td( obutton( $cmd_all, '-') );
+	}
+	$html .= $cgi->end_Tr();
+	$html .= $cgi->end_table();
+	return $html;
 }
 
 sub get_html_dejavu {
@@ -1112,9 +1441,7 @@ qq{view_linked_junctions(\"$patient_name\",\"$tid\",\"$j_linked\",\"$my_junction
 
 sub obutton {
 	my ( $onclick, $value ) = @_;
-	return
-qq{<a class="btn btn-xs btn-primary" onclick=\'$onclick\' target="_blank" style="background-color: #D0D0D0;font-size: 7px;font-family:  Verdana;color:black" role="button">}
-	  . $value . "</a>";
+	return qq{<a class="btn btn-xs btn-primary" onclick=\'$onclick\' target="_blank" style="background-color: #D0D0D0;font-size: 7px;font-family:  Verdana;color:black" role="button">}. $value . "</a>";
 }
 
 sub get_html_patients {
@@ -1128,7 +1455,7 @@ sub get_html_patients {
 		$junction->end() + 25 );
 
 
-	foreach my $pat ( @{ $patient->getFamily->getPatients() } ) {
+	foreach my $pat ( @{ $patient->getProject->getPatients() } ) {
 		next if ( not $junction->get_dp_count($pat) );
 		next if ( not $junction->get_nb_new_count($pat) and not $junction->isCanonique() );
 		my $fam_name = $pat->getFamily->name();
@@ -1194,9 +1521,9 @@ sub get_html_patients {
 	);
 	$html_patients .= qq{<thead style="text-align:center;">};
 
-#$html_patients .= qq{<th data-field="famname"><b><center>Family</center></b></th>};
+	$html_patients .= qq{<th data-field="famname"><b><center>Fam</center></b></th>};
 	$html_patients .=
-	  qq{<th data-field="patname"><b><center>Patient</center></b></th>};
+	  qq{<th data-field="patname"><b><center>Pat</center></b></th>};
 	$html_patients .=
 	  qq{<th data-field="status"><b><center>Status</center></b></th>};
 	$html_patients .=
@@ -1214,27 +1541,18 @@ sub get_html_patients {
 	foreach my $fam_name ( sort keys %{$h_by_pat} ) {
 		foreach my $pat_name ( sort keys %{ $h_by_pat->{$fam_name} } ) {
 			$html_patients .= qq{<tr>};
-
-			#$html_patients .= qq{<td>}.$fam_name.qq{</td>};
-			$html_patients .= qq{<td>} . $pat_name . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{status}
-			  . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{percent}
-			  . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{nb_new}
-			  . qq{</td>};
-			$html_patients .=
-				qq{<td>}
-			  . $h_by_pat->{$fam_name}->{$pat_name}->{nb_normal}
-			  . qq{</td>};
-			$html_patients .=
-			  qq{<td>} . $h_by_pat->{$fam_name}->{$pat_name}->{dp} . qq{</td>};
+			$html_patients .= qq{<td>}.$fam_name.qq{</td>};
+			$html_patients .= qq{<td>}.$pat_name . qq{</td>};
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{status}.qq{</td>};
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{percent}.qq{</td>};
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_new}.qq{</td>};
+			if ($h_by_pat->{$fam_name}->{$pat_name}->{nb_normal} =~ /\./) {
+				$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_normal}.qq{ <br><i>(mean_cov)</i></td>};
+			}
+			else {
+				$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{nb_normal}.qq{</td>};
+			}
+			$html_patients .= qq{<td>}.$h_by_pat->{$fam_name}->{$pat_name}->{dp}.qq{</td>};
 			$html_patients .= qq{</tr>};
 		}
 	}
@@ -1321,6 +1639,7 @@ sub get_html_id {
 	push( @lTypes, 'RI' ) if $junction->isRI($patient);
 	push( @lTypes, 'SE' ) if $junction->isSE($patient);
 	
+	
 	my ($type_junction, $type_junction_description);
 	if (exists $h_same_j_description->{$junction->vector_id()}) {
 		$type_junction = $h_same_j_description->{$junction->vector_id()};
@@ -1334,8 +1653,12 @@ sub get_html_id {
 	$html_id .= "<tr><td><center><b>$junction_locus</b></center></td></tr>";
 	$html_id .= "<tr><td><center>$length nt</td></tr>";
 	$html_id .= "<tr><td><center>";
-	$html_id .= "$type_junction";
-	$html_id .= " - $type_junction_description" if ( $type_junction_description and $type_junction_description ne '---' );
+	if ($type_junction) {
+		$html_id .= "$type_junction - $type_junction_description" if ( $type_junction_description and $type_junction_description ne '---' );
+	}
+	else {
+		$html_id .= "$type_junction_description" if ( $type_junction_description and $type_junction_description ne '---' );
+	}
 	$html_id .= "</center></td></tr>";
 	$html_id .= "</table></center>";
 	return $html_id;
@@ -1433,4 +1756,15 @@ sub printJson {
 	$json_encode =~ s/{//;
 	print $json_encode;
 	exit(0);
+}
+
+sub save_export_xls {
+	my ($patient, $hres) = @_;
+	$project->buffer->dbh_deconnect();
+	$project->buffer->dbh_reconnect();
+	my $xls_export = new xls_export();
+	$xls_export->title_page('PolySplice_'.$patient->getProject->name().'_'.$patient->name.'.xls');
+	$xls_export->{hash_junctions_global} = $hres;
+	my $session_id = $xls_export->save();
+	return $session_id;
 }

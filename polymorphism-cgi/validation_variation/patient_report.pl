@@ -489,6 +489,8 @@ confess() unless $cgi_transcript;
 $cgi_transcript = "all" unless $cgi_transcript;
 my $name =  $cgi->param('name');
 
+$project->getPatients();
+
 $patient_name ="all" unless $patient_name;
 my $patients = $project->get_list_patients($patient_name,",");
 confess() if scalar (@{$patients}) > 1;
