@@ -2380,7 +2380,7 @@ sub fastqScreen {
 sub bam_sort {
 	my ( $self, $hash ) = @_;
 	my $filein = $hash->{filein};
-	return $self->bam_sort_bamba( filein => $filein );
+	return $self->bam_sort_bamba( {filein => $filein} );
 }
 
 sub bam_sort_bamba {
@@ -3258,7 +3258,10 @@ sub cnvnator {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
-
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3300,7 +3303,11 @@ sub canvas {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
-
+	
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3341,7 +3348,10 @@ sub melt {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
-
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3423,7 +3433,53 @@ sub manta {
 		dir_bds      => $self->dir_bds
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
 
+sub hificnv {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $name         = $self->patient()->name();
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $fileout = $project->getVariationsDir("hificnv") . "/" . $name . ".vcf.gz";
+	$filein = $self->patient()->getBamFileName();    # unless $filein;
+
+	my $ppn = $self->nproc;
+
+	$ppn = int( $self->nproc / 2 ) if $self->nocluster;
+	die( "-" . $filein ) unless $filein;
+
+	my $bin_dev = $self->script_dir;
+	my $version = $self->patient()->project->genome_version();
+	my $cmd =
+"perl $bin_dev/pacbio/hificnv.pl -project=$project_name  -patient=$name -fork=$ppn -version=$version -proc=$ppn";
+	my $type     = "hificnv-calling";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "hificnv",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isShortRead){
+	#	$job_bds->skip();
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -3993,8 +4049,7 @@ sub wisecondor {
 
 	my $bin_dev = $self->script_dir;
 
-	my $cmd =
-qq{perl $bin_dev/wisecondor.pl -patient=$name    -project=$project_name -fork=$ppn};
+	my $cmd = qq{perl $bin_dev/wisecondor.pl -patient=$name    -project=$project_name -fork=$ppn};
 
 	my $type     = "wisecondor";
 	my $stepname = $self->patient->name . "@" . $type;
@@ -4013,6 +4068,10 @@ qq{perl $bin_dev/wisecondor.pl -patient=$name    -project=$project_name -fork=$p
 		project_name => $self->patient->getProject->name
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -4064,6 +4123,10 @@ qq{perl $bin_dev/calling_wisecondor.pl -patient=$name    -project=$project_name 
 		project      => $self->patient->getProject->name
 	);
 	$self->current_sample->add_job( { job => $job_bds } );
+	if ($self->patient()->getRun->isLongRead){
+		$job_bds->skip();
+		
+	}
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
@@ -5304,6 +5367,79 @@ sub rnaseqsea_capture {
 	if ( $self->unforce() && -e $fileout ) {
 		$job_bds->skip();
 	}
+	return ($fileout);
+}
+
+sub rnaseqsea_rnaseq {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $project      = $self->patient()->getProject();
+	my $project_name = $project->name();
+	my $name = $project->getPatients->[0]->name();
+	my $ppn    = 40;
+	my $method = "rnaseqsea_all";
+	my $dirout = $project->project_path . "/analysis/AllRes/";
+	my $fileout = $dirout . "/allResRI.txt.gz";
+	my $bin_dev = $self->script_dir;
+	my $cmd_json = "$bin_dev/polyrnaseqsea/create_config_splices_analyse_file.pl -project=$project_name -force=1";
+	my $json_file = `$cmd_json`;
+	my $cmd = "Rscript $bin_dev/polyrnaseqsea/all/RNAseqSEA_AllTnjs.r idprojet=$project_name nCPU=$ppn config_file=$json_file";
+	$cmd .= " && $bin_dev/polyrnaseqsea/merge_all_junctions_files_rnaseq_global.pl -project=$project_name";
+	my $type     = "rnaseqsea_all";
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $name,
+		project_name => $project_name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
+
+sub check_specie_contaminant {
+	my ( $self, $hash ) = @_;
+	my $filein = $hash->{filein};
+	my $patient_name = $self->patient()->name();
+	my $project = $self->patient()->project;
+	my $project_name = $project->name();
+	my $bin_dev = $self->script_dir;
+	my $ppn = 2;
+	my $cmd = "perl $bin_dev/../../../polymorphism-cgi/fastq_screen/launcher_fqs.pl -project=$project_name -patient=$patient_name -fork=1";
+	my $type = "specie_contaminant";
+	my $fileout = $self->patient->fastq_screen_path().'/'.$patient_name.'_screen_nom_espece.txt';
+	
+	my $stepname = $patient_name."@".$type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		software     => "",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name,
+		cmd          => [$cmd],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds,
+		software     => "",
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+
 	return ($fileout);
 }
 
