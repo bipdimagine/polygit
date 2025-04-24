@@ -71,11 +71,11 @@ my $pm2 = new Parallel::ForkManager($fork);
 		my $chr1    = $project->getChromosome($chr_name);
 		warn $chr_name." read";
 		my $primers = $chr1->getPrimers();
-			warn $chr_name." end ".scalar(@$primers);
+		warn "\t\t --------> ".$chr_name." end ".scalar(@$primers);
 	#	map { delete $_->{project}; delete $_->{buffer} } @$primers;
 	#	my $dir_out   =$project->getCacheDir() . "/cnv_lite";
 		my $no2 = GenBoNoSqlLmdb->new(dir=>$dir_out,mode=>"c",name=>$chr->name,is_compress=>1);
-			warn $chr_name." create ".scalar(@$primers)." ".$dir_out;
+		warn $chr_name." create ===> ".scalar(@$primers)." ".$dir_out;
 		$no2->put("toto","tutu");
 		warn $chr_name." put ".scalar(@$primers);
 		my $captures;
@@ -83,7 +83,7 @@ my $pm2 = new Parallel::ForkManager($fork);
 		warn "--->".scalar(@$primers);
 		my $nbp =0;
 		foreach my $primer (@$primers){
-			warn $nbp."/". scalar(@$primers) if $nbp %100==0;
+			warn $nbp."/". scalar(@$primers) if $nbp %1==0;
 			$nbp++;
 		#warn $primer->start()." ".$primer->end;
 			foreach my $c (@{$primer->getCaptures}){
