@@ -738,7 +738,7 @@ sub freebayes {
 	my $time     = time;
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
-
+	$project->disconnect();
 	my $it = natatime $fork , @$beds;
 	while ( my @vals = $it->() ) {
 
@@ -843,7 +843,7 @@ sub unifiedGenotyper {
 	my $time     = time;
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
-
+	$project->disconnect;
 	my $it = natatime $fork , @$beds;
 	while ( my @vals = $it->() ) {
 		$nb++;
@@ -923,7 +923,7 @@ sub p1_freebayes {
 	my $time     = time;
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
-
+	$project->disconnect();
 	my $it = natatime $fork , @$beds;
 	while ( my @vals = $it->() ) {
 		$nb++;
@@ -1000,7 +1000,7 @@ sub eif6_freebayes {
 	my $time     = time;
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
-
+	$project->disconnect();
 	my $it = natatime $fork , @$beds;
 	while ( my @vals = $it->() ) {
 		$nb++;
@@ -1087,7 +1087,7 @@ sub freebayes_eif6 {
  my $onefile = $patient->getBamFile();
  my $bcftools = $buffer->software("bcftools");
 
-	
+	$project->disconnect();
  	foreach my $bed (@$beds){
  		
 	$nb ++;
@@ -1164,7 +1164,7 @@ sub p02_freebayes {
 	my $time     = time;
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
-
+$project->disconnect();
 	my $it = natatime $fork , @$beds;
 	while ( my @vals = $it->() ) {
 		$nb++;
@@ -1284,6 +1284,7 @@ sub samtools {
 	my $nb       = 0;
 	my $onefile  = $patient->getBamFile();
 	my $bcftools = $buffer->software("bcftools");
+	$project->disconnect();
 	my $it       = natatime $fork , @$beds;
 	while ( my @vals = $it->() ) {
 
@@ -1634,6 +1635,7 @@ sub mutect2 {
 	my $nb       = 0;
 	my $onefile  = $patient->getBamFile();
 	my $bcftools = $buffer->software("bcftools");
+	$project->disconnect();
 	my $it       = natatime $fork , @$beds;
 	my $bam_file_string_hc = " -I " . $patient->getBamFile();
 	while ( my @vals = $it->() ) {
