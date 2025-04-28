@@ -2380,7 +2380,7 @@ sub fastqScreen {
 sub bam_sort {
 	my ( $self, $hash ) = @_;
 	my $filein = $hash->{filein};
-	return $self->bam_sort_bamba( filein => $filein );
+	return $self->bam_sort_bamba( {filein => $filein });
 }
 
 sub bam_sort_bamba {

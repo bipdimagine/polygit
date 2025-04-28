@@ -188,7 +188,8 @@ has 'root_dir' =>(
 	lazy=>1,
 	default => sub {
 		my $self = shift;
-		return $self->project->buffer->config->{project_pipeline}->{bds};;
+		confess("") unless -e $self->project->buffer->config_path("root","bds");
+		return $self->project->buffer->config_path("root","bds");
 	}
 );
 has 'timestamp' => (
@@ -400,9 +401,13 @@ foreach my $job (@$commands) {
     print "\n\033[2K"; # Effacer la ligne précédente
  	print colored::stabilo("green",$job->{name}.":".$job->{sample});
  	my @cmd1 = split("&&",$job->{cmd});
- 	my $cmd = $cmd1[0]." >$output_file 2>&1";
- 	$cmd .= " && ".$cmd1[1] if  @cmd1;
- 	die() if scalar(@cmd1) > 2;
+ 	my @cs;
+ 	foreach my $c1 (@cmd1){
+ 			my $cmd = $c1." >>$output_file 2>&1";
+ 			push(@cs,$cmd);
+ 	}
+ 
+ 	$cmd = join (" && ",@cs);
     my $status = system($cmd);
   
     # Vérification des erreurs
