@@ -513,12 +513,14 @@ sub concat_vcf {
 	}
 
 	my $vcffilter = $buffer->software("vcffilter");
-	my $join_cmd =
-"cat $cat_name | $vcffirstheader | $vcfstreamsort -w 1000 | $vcfuniq | $vcffilter -f  'DP > 10'  > $vcf"
-	  if -e $cat_name;
+	my $join_cmd = "cat $cat_name | $vcffirstheader | $vcfstreamsort -w 1000 | $vcfuniq | $vcffilter -f  'DP > 10'  > $vcf"  if -e $cat_name;
 
-	system($join_cmd);
-
+	my $exit_status = system($join_cmd);
+	if ($exit_status != 0) {  
+    	print "Failure";  
+    	confess()
+	}
+	
 	unlink $cat_name;
 	die() unless -e $vcf;
 }
@@ -688,6 +690,13 @@ sub print_empty_vcf {
 	close OUT;
 }
 
+sub get_iteration {
+	my ($beds,$fork) = @_;
+	my $chunk_size = ceil(@$beds / $fork);
+	my $it = natatime $chunk_size , @$beds;
+	return $it;
+}
+
 sub freebayes {
 	my ( $project, $patient, $intspans, $fork, $verbose ) = @_;
 
@@ -739,7 +748,7 @@ sub freebayes {
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
 	$project->disconnect();
-	my $it = natatime $fork , @$beds;
+	my $it = get_iteration($beds,$fork);
 	while ( my @vals = $it->() ) {
 
 		#foreach my $bed (@$beds){
@@ -844,7 +853,7 @@ sub unifiedGenotyper {
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
 	$project->disconnect;
-	my $it = natatime $fork , @$beds;
+	my $it = get_iteration($beds,$fork);
 	while ( my @vals = $it->() ) {
 		$nb++;
 		my $out =
@@ -924,7 +933,7 @@ sub p1_freebayes {
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
 	$project->disconnect();
-	my $it = natatime $fork , @$beds;
+	my $it = get_iteration($beds,$fork);
 	while ( my @vals = $it->() ) {
 		$nb++;
 		my $pid = $pm_samtools->start and next;
@@ -1001,7 +1010,7 @@ sub eif6_freebayes {
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
 	$project->disconnect();
-	my $it = natatime $fork , @$beds;
+	my $it = get_iteration($beds,$fork);
 	while ( my @vals = $it->() ) {
 		$nb++;
 		my $pid = $pm_samtools->start and next;
@@ -1165,7 +1174,7 @@ sub p02_freebayes {
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
 $project->disconnect();
-	my $it = natatime $fork , @$beds;
+	my $it = get_iteration($beds,$fork);
 	while ( my @vals = $it->() ) {
 		$nb++;
 		my $pid = $pm_samtools->start and next;
@@ -1285,7 +1294,7 @@ sub samtools {
 	my $onefile  = $patient->getBamFile();
 	my $bcftools = $buffer->software("bcftools");
 	$project->disconnect();
-	my $it       = natatime $fork , @$beds;
+	my $it = get_iteration($beds,$fork);
 	while ( my @vals = $it->() ) {
 
 		#foreach my $bed (@$beds){
@@ -1636,7 +1645,7 @@ sub mutect2 {
 	my $onefile  = $patient->getBamFile();
 	my $bcftools = $buffer->software("bcftools");
 	$project->disconnect();
-	my $it       = natatime $fork , @$beds;
+	my $it = get_iteration($beds,$fork);
 	my $bam_file_string_hc = " -I " . $patient->getBamFile();
 	while ( my @vals = $it->() ) {
 
