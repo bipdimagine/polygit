@@ -972,6 +972,9 @@ sub check_variants {
 				delete $hres->{$var_id};
 				next;
 			}
+			
+			warn "\n" if $debug;
+			warn $var_id if $debug;
 			warn '1 - ok perc' if $debug;
 			
 			my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
@@ -980,6 +983,7 @@ sub check_variants {
 				delete $hres->{$var_id};
 				next;
 			}
+			
 			if (not $var_id =~ /[XYMT0-9]+_[0-9]+_[ATGC]+_[ATGC]+/) {
 				delete $hres->{$var_id};
 				next;
@@ -1090,10 +1094,20 @@ sub check_variants {
 			my @list_parquets;
 			my $h_dv;
 			$h_dv = $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id} if (exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id});
-			$h_dv = $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id} if (exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$h_dv_var_ids->{$var_id}->{rocks_id}});
+			$h_dv = $h_dv_rocks_ids->{$var->getChromosome->id()}->{$h_dv_var_ids->{$var_id}->{rocks_id}} if (exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$h_dv_var_ids->{$var_id}->{rocks_id}});
+			
 			foreach my $proj_id (keys %{$h_dv}) {
-				next if not exists $hProjectsIds->{$proj_id};
-				my $proj_name = $hProjectsIds->{$proj_id};
+				#next if not exists $hProjectsIds->{$proj_id};
+				my $proj_name;
+				if (exists $hProjectsIds->{$proj_id}) {
+					$proj_name = $hProjectsIds->{$proj_id};
+				}
+				else {
+					my $b_tmp = new GBuffer;
+					$proj_name = $b_tmp->getQuery->getProjectNameFromId($proj_id);
+					$hProjectsIds->{$proj_id} = $proj_name;
+					#warn "\n\n$proj_id -> $proj_name\n";
+				}
 				$hVariantsIdsDejavu->{$var_id}->{$proj_name} = $proj_id;
 				foreach my $pat_id (@{$h_dv->{$proj_id}->{patients}}) {
 					$hres->{$var_id}->{dejavu_details}->{$proj_name}->{$pat_id} = undef;
@@ -1131,6 +1145,7 @@ sub check_variants {
 			$vn =~ s/_/-/g;
 			$vn =~ s/chr//;
 			update_variant_editor::vhgmd($var,$h_var);
+			warn '9 - ok hgmd' if $debug;
 			
 			$h_var->{'html'}->{'no_css_polydiag'} = 1;
 			my $val1 = 'onClick="zoomHgmd';
@@ -1166,6 +1181,7 @@ sub check_variants {
 					$h_var->{html}->{clinvar} = '';
 				}
 			}
+			warn '10 - ok clinvar' if $debug;
 			
 			if ($gene_variant) {
 				update_variant_editor::vspliceAI($var, $h_var);
@@ -1174,10 +1190,12 @@ sub check_variants {
 			else {
 				$hres->{$var_id}->{spliceAI} = '';
 			}
+			warn '11 - ok spliceai' if $debug;
 							
 			update_variant_editor::vhgmd($var, $h_var);
 			$hres->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_variant);
 			
+			warn '12 - ok table validations' if $debug;
 			
 			$hres->{$var_id}->{table_gnomad} = update_variant_editor::table_gnomad($var);
 			$hres->{$var_id}->{table_gnomad} =~ s/gnomad_r2_1/gnomad_r4/;
@@ -1185,6 +1203,16 @@ sub check_variants {
 			$hres->{$var_id}->{table_varsome} = update_variant_editor::vvarsome($h_var);
 			
 			$hres->{$var_id}->{table_dejavu} = update_variant_editor::vdejavu($var, $h_var);
+			
+			if ($var->id eq '12_6943817_AGT_A') {
+				warn "\n\n";
+				warn ref($var).' -> '.$var->id();
+				warn Dumper $h_var;
+				warn Dumper $hres->{$var_id}->{table_dejavu};
+				warn "\n\n";
+			}
+			
+			warn '12 - ok table vdejavu' if $debug;
 			
 			if ($gene_variant) {
 				$h_var->{genes}->{$gene_variant->id} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene_variant);
@@ -1206,6 +1234,7 @@ sub check_variants {
 				$h_var->{genes}->{'no_gene'} = 'intergenic';
 				$hres->{$var_id}->{table_transcript} = 'intergenic';
 			}	
+			warn '12 - ok table table_transcript' if $debug;
 			
 			my $gnomad_id_hg38 = $var->gnomad_id;
 			my $html_vname_hg38 = update_variant_editor::vname2($var, $h_var);
@@ -1240,15 +1269,19 @@ sub check_variants {
 			$hres->{$var_id}->{annotation} = $var_annot;
 			$hres->{$var_id}->{id_hg19} = $var_id_hg19;
 			
+			warn 'Nb parquet: '.scalar(@list_parquets) if $debug;
+			
 			my ($h_projects_patients, $table_projects_patients) = get_from_duckdb_project_patients_infos($var, \@list_parquets);
 			if ($table_projects_patients) {
 				$hres->{$var_id}->{projects} = $h_projects_patients;
 				$hres->{$var_id}->{table_projects_patients} = $table_projects_patients;
 				push (@lOk, $var) if $fork == 1;
+				warn '13 - ok parquet' if $debug;
 			}
-#			else {
-#				delete $hres->{$var_id} if $is_from_no_dejavu;
-#			}
+			else {
+				warn '13 - NOT OK PARQUET' if $debug;
+				delete $hres->{$var_id};
+			}
 		}
 		
 		if ($fork == 1) {
@@ -1555,6 +1588,9 @@ sub get_from_duckdb_project_patients_infos {
 	
 	if ($var->getProject->current_genome_version() eq 'HG38') {
 		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+		
+		warn $sql if $debug;
+		
 		my $duckdb = $buffer_init->software('duckdb');
 		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 		my $json_duckdb = `$cmd`;
@@ -1562,17 +1598,23 @@ sub get_from_duckdb_project_patients_infos {
 			my $decode = decode_json $json_duckdb;
 			my $h_by_proj;
 			foreach my $h (@$decode) {
-				next if $h->{'chr38'} ne $var->getChromosome->id;
+				#next if $h->{'chr38'} ne $var->getChromosome->id;
 				my $var_start = $var->start();
-				#$var_start++ if $var->isInsertion() or $var->isDeletion();
+				$var_start-- if $var->isInsertion() or $var->isDeletion();
 				next if $h->{'pos38'} ne $var_start;
+				
 				my $var_all = $h->{'allele'};
 				$var_all =~ s/\+//;
-				next if $var_all ne $var->var_allele();
+				
+				if (not $var->isDeletion) {
+					next if $var_all ne $var->var_allele();
+				}
+				
 				my $project_id = $h->{project};
 				my $project_name = $hProjectsIds->{$project_id};
 				$h_by_proj->{$project_name} = $h;
 			}
+			
 			my $hVar_infos;
 			$hVar_infos->{locus_hg19} = $var->getChromosome->id().":".$var->lift_over('HG19')->{position}."-".$var->lift_over('HG19')->{position};;
 			$hVar_infos->{locus_hg38} = $var->getChromosome->id().":".$var->start."-".$var->end;
@@ -1595,6 +1637,7 @@ sub get_from_duckdb_project_patients_infos {
 	}
 	else {
 		warn "HG19";
+		warn $sql if $debug;
 		confesss("HG19!!");
 	}
 	if (scalar(@list_table_trio) >= 1) {

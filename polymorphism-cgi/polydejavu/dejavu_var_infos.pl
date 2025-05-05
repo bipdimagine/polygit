@@ -95,7 +95,7 @@ my $hDejaVuGlobal = $var->dejavu_hash_projects_patients();
 
 foreach my $projName (sort keys %$hDejaVuGlobal) {
 	next if ($in_this_run and not exists $h_this_run_patients->{$projName});
-	
+
 	print '.';
 	my $thisProject = $buffer->newProject(-name => $projName);
 	delete $thisProject->{version};
@@ -130,12 +130,13 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 			$hash->{project} .= ';'.join(' ', sort @lPheno);
 		}
 		$hash->{name} = $patName;
-		$hash->{contacts} = join(' - ', sort @lMails);
+		$hash->{contacts} = ' ';
+		$hash->{contacts} = join(' - ', sort @lMails) if scalar(@lMails) > 0;
 		if (exists $hProjAuthorized->{$projName}) {
 			$hash->{implicated} = 'X';
 		}
 		else {
-			$hash->{implicated} = '';
+			$hash->{implicated} = ' ';
 		}
 		$hash->{ho_he} = 'todo';
 #		$hash->{ho_he} = 'he' if ($ho_he eq '2');
