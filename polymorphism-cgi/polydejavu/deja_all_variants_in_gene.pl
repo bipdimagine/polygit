@@ -1102,7 +1102,7 @@ sub check_variants {
 				if (exists $hProjectsIds->{$proj_id}) {
 					$proj_name = $hProjectsIds->{$proj_id};
 				}
-				else {
+				elsif (not $only_my_projects) {
 					my $b_tmp = new GBuffer;
 					$proj_name = $b_tmp->getQuery->getProjectNameFromId($proj_id);
 					$hProjectsIds->{$proj_id} = $proj_name;
