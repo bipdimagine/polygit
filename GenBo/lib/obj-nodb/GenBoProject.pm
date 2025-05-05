@@ -456,6 +456,17 @@ has isCiliome => (
 		return undef;
 	},
 );
+has isDiag => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return undef if $self->isExome;
+		return undef if $self->isGenome;
+		return 1;
+	},
+);
+
 has isGenome => (
 	is      => 'ro',
 	lazy    => 1,

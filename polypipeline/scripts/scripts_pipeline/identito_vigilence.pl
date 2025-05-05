@@ -84,7 +84,7 @@ foreach my $var_id (@list) {
 		}
 		else {
 			my $depth= $patient->depth($v->getChromosome()->id(),$v->start,$v->start+1);
-			if ($depth > 10){
+			if ($depth > $limit){
 				push(@{$id_bc->{$patient->name}->{code}},1) ;
 			}
 			else {

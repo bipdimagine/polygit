@@ -81,7 +81,7 @@ my $cmd_cancel = [];
 my $step_name;
 my $force;
 my $rna;
-my $phased = 0;
+my $phased ;
 my $neb;
 my $pad;
 
@@ -221,7 +221,6 @@ if($step_name) {
 ####### Alignement
  my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
-warn Dumper $ppd;
 	my $index = firstidx { $_ eq "calling_target" } @$steps;
 	if ($index >= 0){
 		splice(@$steps,$index,1);
@@ -376,6 +375,7 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
+		warn $patient->getBamFileName("dragen-align");
 		#warn  $patient->name()." ".$h->{align_dragen}->{file};
 		$h->{rna} = 0;
 		

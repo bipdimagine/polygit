@@ -121,7 +121,6 @@ if ($rna == 1) {
 	
 }
 warn "move";
-warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version && touch $ok_move";
 system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version && touch $ok_move");
 exit(0);
 
@@ -155,7 +154,6 @@ if ($version && exists $pipeline->{align} ){
 	my $bamfile = $patient_ori->getBamFile();
 	$param_align = "-b $bamfile --enable-map-align-output true  --enable-rna=true ";
 	#$param_align .= "--output-format CRAM " if $version =~/HG38/;
-	
 }	
 elsif (-e $patient->getBamFileName()) {
 	my $opt = "--bam-input";
@@ -254,8 +252,8 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	
 }	
 elsif (exists $pipeline->{align}){
-my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-	
+ ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline) unless -e $fastq1;
+	warn $fastq1." ".$fastq2;
 #	confess() unless $fastq1;
 	if ($fastq1) {
 	my $runid = $patient->getRun()->id;
