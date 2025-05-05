@@ -867,6 +867,12 @@ sub check_variants {
 				$nb_pat_ho += $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$proj_id}->{ho};
 			}
 			my $nb_pat_total = $nb_pat_he + $nb_pat_ho;
+			if ($max_dejavu) {
+				next if $nb_pat_total >  $max_dejavu;
+			}
+			if ($max_dejavu_ho) {
+				next if $nb_pat_ho >  $max_dejavu_ho;
+			}
 			my $var_id = $chr->transform_rocksid_to_varid($rocks_id);
 			push(@lVarIds, $var_id);
 			push(@lVar, $project_init->_newVariant($var_id));
@@ -1203,14 +1209,6 @@ sub check_variants {
 			$hres->{$var_id}->{table_varsome} = update_variant_editor::vvarsome($h_var);
 			
 			$hres->{$var_id}->{table_dejavu} = update_variant_editor::vdejavu($var, $h_var);
-			
-			if ($var->id eq '12_6943817_AGT_A') {
-				warn "\n\n";
-				warn ref($var).' -> '.$var->id();
-				warn Dumper $h_var;
-				warn Dumper $hres->{$var_id}->{table_dejavu};
-				warn "\n\n";
-			}
 			
 			warn '12 - ok table vdejavu' if $debug;
 			
