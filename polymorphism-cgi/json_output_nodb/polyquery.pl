@@ -371,8 +371,13 @@ my $nb_chr = 0;
 
 my @l_genome_fai = @{$project->getGenomeFai};
 
+foreach my $chr (@{$project->getChromosomes()}) {
+	$chr->not_used(1);
+}
+
 foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Cas genome MT uniquement par exemple
+	
 	my $chr_found;
 	foreach my $h_fai (@l_genome_fai) {
 		$chr_found = 1 if (exists $h_fai->{chromosomes_object}->{$chr_id});
@@ -387,6 +392,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		exit(0);
 	}
 	my $chr = $project->getChromosome($chr_id);
+	$chr->not_used(0);
 	$nb_chr++;
 	
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
@@ -844,16 +850,15 @@ sub launchStatsProjectAll {
 	warn "\n# launchStatsProjectAll_genes" if ($debug);
 	my $t =time;
 	$hash_stats->{genes} 		= launchStatsProjectAll_genes();
-	
-	warn "-".abs(time -$t);
+	warn "-".abs(time -$t) if ($debug);
 	$t =time;
 	warn "\n# launchStatsProjectAll_families" if ($debug);
 	$hash_stats->{families} 	= launchStatsProjectAll_families();
 	warn "\n# launchStatsProjectAll_patients" if ($debug);
-	warn "- fam".abs(time -$t);
+	warn "- fam".abs(time -$t) if ($debug);
 	$t =time;
 	$hash_stats->{patients} 	= launchStatsProjectAll_patients();
-	warn "-".abs(time -$t);
+	warn "-".abs(time -$t) if ($debug);
 	$t =time;
 	warn "\n# stats_region" if ($debug);
 	$hash_stats->{regions} 	    = $project->stats_region();
@@ -878,11 +883,11 @@ sub launchStatsProjectAll {
 	}
 	warn "\n# launchStatsProjectAll_groups" if ($debug);
 	$hash_stats->{groups}		= launchStatsProjectAll_groups() if ($project->isSomaticStudy());
-	warn "-".abs(time -$t);
+	warn "-".abs(time -$t) if ($debug);
 	$t =time;
 	warn "\n# json_all_genes_name" if ($debug);
 	$hash_stats->{genes_name}	= json_all_genes_name();
-	warn "-".abs(time -$t);
+	warn "-".abs(time -$t) if ($debug);
 	$t =time;
 	warn "\n# stats_regions_ho_rec" if ($debug);
 #	$hash_stats->{regions_ho_rec} = launchStatsPojectRegionsHoRec() if ($filter_nbvar_regionho);
@@ -891,9 +896,10 @@ sub launchStatsProjectAll {
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
 		purge($chr);
-#		next if ($chr->not_used());
+		next if ($chr->not_used());
 	}
 	warn "\n# END" if ($debug);
+	
 	return $hash_stats;
 }
 
@@ -1012,7 +1018,7 @@ sub launchStatsProjectAll_genes_fork {
 		$vector_buffer{$chr_id}->{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions unless exists $vector_buffer{$chr_id}{indel} ;
 		$vector_buffer{$chr_id}->{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions() unless exists $vector_buffer{$chr_id}{cnv} ;	
 		
-		#next if ($chr->not_used());
+		next if ($chr->not_used());
 		#my @genes = grep {not ($_->getCurrentVector->is_empty())} @{$chr->getGenesFromVector($chr->getVariantsVector())};
 		warn "genes ";
 	
@@ -1084,7 +1090,7 @@ sub launchStatsProjectAll_genes {
 		$vector_buffer{$chr_id}{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions ;
 		$vector_buffer{$chr_id}{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions();
 		
-		#next if ($chr->not_used());
+		next if ($chr->not_used());
 		foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
 		#foreach my $gene (@{$chr->getGenes}) {
 #			my $vchr = $gene->return_compact_vector( $vvv);
@@ -1115,7 +1121,7 @@ sub launchStatsProjectAll_genes {
 		}
 		warn '-> all genes DONE' if ($debug);
 	}
-	warn scalar @lStats;
+#	warn scalar @lStats;
 	return \@lStats;
 }
 		
@@ -1123,7 +1129,7 @@ sub launchStatsProjectAll_chromosomes {
 	my @lStats;
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
-		#next if ($chr->not_used());
+		next if ($chr->not_used());
 		my $hashChr = launchStatsChr($chr);
 		if ($hashChr->{'variations'} == 0) { $hashChr = launchStatsChr_null($chr); }
 		else { push(@lStats, $hashChr); }
@@ -1154,12 +1160,39 @@ sub launchStatsProjectAll_chromosomes_null {
 	return $hash;
 }
 
+sub launchStatsProjectAll_groups {
+	my @lStats;
+	my $hash_global_stats_fam;
+	foreach my $chr_id (split(',', $filter_chromosome)) {
+		my $chr = $project->getChromosome($chr_id);
+		if ($chr->not_used()) { $chr->getVariantsVector->Empty(); }
+		foreach my $group (@{$project->getSomaticGroups()}) {
+			$project->print_dot(100);
+			my $famName = $group->name();
+			my $hStatsFam = launchStatsFamily($group, $chr);
+			my @lCat1 = ('model', 'include', 'name', 'nb', 'id');
+			foreach my $category (@lCat1) {
+				$hash_global_stats_fam->{$famName}->{$category} = $hStatsFam->{$category};
+			}
+			my @lCat2 = ('homozygote', 'heterozygote', 'substitution', 'insertion', 'deletion', 'genes', 'cnv');
+			foreach my $category (@lCat2) {
+				unless (exists $hash_global_stats_fam->{$famName}->{$category}) { $hash_global_stats_fam->{$famName}->{$category} = 0; }
+				$hash_global_stats_fam->{$famName}->{$category} += $hStatsFam->{$category};
+			}
+		}
+	}
+	foreach my $famName (sort keys %{$hash_global_stats_fam}) {
+		push(@lStats, $hash_global_stats_fam->{$famName});
+	}
+	return \@lStats;
+}
+
 sub launchStatsProjectAll_families {
 	my @lStats;
 	my $hash_global_stats_fam;
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
-#		if ($chr->not_used()) { $chr->getVariantsVector->Empty(); }
+		if ($chr->not_used()) { $chr->getVariantsVector->Empty(); }
 		foreach my $family (@{$project->getFamilies()}) {
 			$project->print_dot(100);
 			my $famName = $family->name();
@@ -1195,7 +1228,7 @@ sub launchStatsProjectAll_patients {
 			foreach my $category (@lCat1) {
 				$hash_global_stats_pat->{$patName}->{$category} = $hStatsPat->{$category};
 			}
-			#next if ($chr->not_used()); 
+			next if ($chr->not_used()); 
 			my @lCat2 = ('homozygote', 'heterozygote', 'substitutions', 'insertions', 'deletions', 'cnvs', 'genes', 'variations', 'composite');
 			foreach my $category (@lCat2) {
 				$hash_global_stats_pat->{$patName}->{$category} += $hStatsPat->{$category};
@@ -1219,28 +1252,29 @@ sub launchStatsProjectAll_patients {
 	
 }
 
-sub launchStatsProjectAll_groups {
-	my @lStats;
-	my $hash_global_stats_groups;
-	foreach my $chr (@{$project->getChromosomes()}) {
-		next if ($chr->not_used());
-		my $hashGroups = $chr->stats_groups();
-		foreach my $famName (keys %{$hashGroups}) {
-			my @lCat1 = ('model', 'include', 'name', 'nb', 'id');
-			foreach my $category (@lCat1) {
-				$hash_global_stats_groups->{$famName}->{$category} = $hashGroups->{$famName}->{$category};
-			}
-			my @lCat2 = ('homozygote', 'heterozygote', 'substitution', 'insertion', 'deletion');#, 'genes');
-			foreach my $category (@lCat2) {
-				$hash_global_stats_groups->{$famName}->{$category} += $hashGroups->{$famName}->{$category};
-			}
-		}
-	}
-	foreach my $groupName (sort keys %{$hash_global_stats_groups}) {
-		push(@lStats, $hash_global_stats_groups->{$groupName});
-	}
-	return \@lStats;
-}
+#sub launchStatsProjectAll_groups {
+#	my @lStats;
+#	my $hash_global_stats_groups;
+#	foreach my $chr_id (split(',', $filter_chromosome)) {
+#		my $chr = $project->getChromosome($chr_id);
+#		warn 'CHR '.$chr->id().' -> '.$chr->not_used() if ($debug);
+#		my $hashGroups = $chr->stats_groups();
+#		foreach my $famName (keys %{$hashGroups}) {
+#			my @lCat1 = ('model', 'include', 'name', 'nb', 'id');
+#			foreach my $category (@lCat1) {
+#				$hash_global_stats_groups->{$famName}->{$category} = $hashGroups->{$famName}->{$category};
+#			}
+#			my @lCat2 = ('homozygote', 'heterozygote', 'substitution', 'insertion', 'deletion');#, 'genes');
+#			foreach my $category (@lCat2) {
+#				$hash_global_stats_groups->{$famName}->{$category} += $hashGroups->{$famName}->{$category};
+#			}
+#		}
+#	}
+#	foreach my $groupName (sort keys %{$hash_global_stats_groups}) {
+#		push(@lStats, $hash_global_stats_groups->{$groupName});
+#	}
+#	return \@lStats;
+#}
 
 sub launchStatsGlobalChr {
 	my $chr = shift;

@@ -20,7 +20,11 @@ sub get {
 	my ($self,$key1,$key2,$debug) = @_;
 	my $data = $self->get_lite($key1,$key2);
 	 my $tree = Set::IntervalTree->new;
+	 my $uniq;
 	 foreach my $v (@{$data}) {
+	 	my $uid = join(";",@$v);
+	 	next if exists $uniq->{$uid};
+	 	$uniq->{$uid} ++;
 	 	#warn  $v->[0]  if $v->[1] == -5000;
 	 	next if $v->[1] == -5000;
 	 	$tree->insert(@$v);
@@ -44,8 +48,13 @@ sub get_intspan {
 sub get_data  {
 	my ($self,$key1,$key2,$debug) = @_;
 	my $data = $self->get_lite($key1,$key2);
-	
-#	warn Dumper $data; 
-	return $data;
+	my $data2;
+	my $uniq;
+	foreach my $v (@{$data}) {
+	 	my $uid = join(";",@$v);
+	 	next if exists $uniq->{$uid};
+	 	push(@$data2,$v);
+	}
+	return $data2;
 }
 1;
