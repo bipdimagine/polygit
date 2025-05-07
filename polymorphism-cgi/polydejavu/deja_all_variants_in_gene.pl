@@ -1577,7 +1577,7 @@ sub get_from_duckdb_project_patients_infos {
 	my ($var, $list_files) = @_;
 	return if scalar(@$list_files) == 0;
 	my @list_table_trio;
-	my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
+	my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
 	
 	my $find_pos_s = $var->start() - 20;
 	my $find_pos_e = $var->start() + 20;
