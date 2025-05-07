@@ -565,7 +565,8 @@ $t = time;
 my $hv;
 my $stat;
 
-my $dev = 1;
+my $dev;
+#my $dev = 1;
 
 #$dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
 #$dev = 1;
