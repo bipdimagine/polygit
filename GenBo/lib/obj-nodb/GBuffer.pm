@@ -157,10 +157,10 @@ has config => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift; 
-		my $dir = $self->genbo_dir;
-		my $filename = $dir."genbo.cfg";
+		my $dir = ;
+		my $filename =  $self->config_dir."genbo.cfg";
 		
-		my $filename2 = $dir."genbo-vector-filter.cfg";
+		my $filename2 = $self->genbo_dir."genbo-vector-filter.cfg";
 		confess($filename) unless -e $filename;
 		confess($filename2) unless -e $filename2;
 	#	warn $filename2;

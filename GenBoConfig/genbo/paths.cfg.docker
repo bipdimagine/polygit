@@ -2,7 +2,7 @@
 public_data:/poly-disk/public-data
 dejavu:/poly-disk/DejaVu
 dejavu_projects:/poly-disk/DejaVu
-
+dejavu_parquet:/poly-disk/DejaVu/projects_parquet/
 project_data:/poly-disk/poly-data/
 sequences:/poly-disk/poly-data/sequences
 global_search:/poly-disk/polycache/global_search/
