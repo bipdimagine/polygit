@@ -460,13 +460,13 @@ if ($project->isDiagnostic ){
 	foreach my $c (@{$project->getChromosomes}){
 		$start_vector->{$c->name} = $c->getNewVector();
 	}
-	foreach my $ts (@transcripts_cgi){
-		my $t = $project->newTranscript($ts);
-		my $v = $t->getGene->getVectorPatient($patient);
-		
-		$start_vector->{$t->getChromosome->name} += $v;
-		$hash_genes_panel->{$t->getGene->id} = undef;
-	}
+#	foreach my $ts (@transcripts_cgi){
+#		my $t = $project->newTranscript($ts);
+#		my $v = $t->getGene->getVectorPatient($patient);
+#		
+#		$start_vector->{$t->getChromosome->name} += $v;
+#		$hash_genes_panel->{$t->getGene->id} = undef;
+#	}
 }
 
 
