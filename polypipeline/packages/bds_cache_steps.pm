@@ -900,7 +900,7 @@ sub dejavu_parquet {
 	my $type = "dejavu_parquet";
 	my $stepname = $projectName."@".$type;
 #	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
-	my $dir_parquet = $buffer->dejavu_parquet_dir();
+	my $dir_parquet = $self->project->buffer->dejavu_parquet_dir();
 
 	my $fileout = $dir_parquet."/".$self->project->name.".".$self->project->id.".parquet";
 	my $cmd = "perl $Bin/scripts/scripts_pipeline/dejavu/hg38/variant/duckdb/add_project_parquet.pl -project=$projectName -fork=$ppn -force=1 >$fileout";
