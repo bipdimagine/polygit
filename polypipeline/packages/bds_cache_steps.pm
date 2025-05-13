@@ -899,8 +899,11 @@ sub dejavu_parquet {
 	my $ppn = $self->nproc;
 	my $type = "dejavu_parquet";
 	my $stepname = $projectName."@".$type;
-	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
-	my $cmd = "perl $Bin/scripts/scripts_pipeline/dejavu/hg38/variant/duckdb/add_project_parquet.pl -project=$projectName -fork=$ppn >$fileout";
+#	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
+	my $dir_parquet = $buffer->dejavu_parquet_dir();
+
+	my $fileout = $dir_parquet."/".$self->project->name.".".$self->project->id.".parquet";
+	my $cmd = "perl $Bin/scripts/scripts_pipeline/dejavu/hg38/variant/duckdb/add_project_parquet.pl -project=$projectName -fork=$ppn -force=1 >$fileout";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
