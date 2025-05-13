@@ -1998,7 +1998,7 @@ has genesIntervalTree => (
 		if ( exists $self->{set_genes} ) {
 			my $z = $self->project->liteIntervalTree->get_data( "genes_padding",$self->name );
 			my $tree = Set::IntervalTree->new;
-
+			
 			foreach my $a (@$z) {
 				next unless exists $self->{hset_genes}->{ $a->[0] };
 				$tree->insert(@$a);
