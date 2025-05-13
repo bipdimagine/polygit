@@ -2045,6 +2045,7 @@ has annotation_genome_version => (
 		my $version = $self->getVersion();
 		$version = "HG19" if $version =~ /HG19/;
 		$version = "HG38" if $version =~ /HG38/;
+		$version = "HG38" if $version =~ /MT/;
 		return $version;
 	}
 );
@@ -2063,7 +2064,7 @@ has lift_genome_version => (
 		my $self    = shift;
 		return "HG38" if $self->current_genome_version() eq "HG19";
 		return "HG19" if $self->current_genome_version() eq "HG38";
-		confess();
+		confess($self->current_genome_version);
 	}
 );
 
@@ -5614,14 +5615,49 @@ sub getCacheDir {
 	return $self->{cache_dir} if (exists $self->{cache_dir} and $self->{cache_dir});
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
-	$self->{cache_dir} = $self->buffer()->getDataDirectory("cache")."/".$genome_version;
-	$self->{cache_dir} .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
+	$genome_version .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
+	$self->{cache_dir} = $self->buffer()->config_path("root","cache").$genome_version;
+	unless (-d $self->{cache_dir}){
+		system( "mkdir  " . $self->{cache_dir} );
+		system( "chmod a+rwx " . $self->{cache_dir} );
+	}
 	$self->{cache_dir} .= "/".$self->name();
+	$self->{cache_dir} =~ s/ \/\//\//g;
 	return $self->{cache_dir} if ( -d $self->{cache_dir} );
-	system( "mkdir -p " . $self->{cache_dir} );
+	system( "mkdir  " . $self->{cache_dir} );
 	system( "chmod a+rwx " . $self->{cache_dir} );
 	return $self->{cache_dir};
 }
+
+has getCacheCNV => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir_root = $self->getCacheDir();
+		my $dir = $dir_root."/CNV/";
+		unless (-d $dir){
+			system( "mkdir  " . $dir );
+			system( "chmod a+rwx " . $dir );
+		}
+		return $dir;
+	},
+);
+
+has getCacheSV => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir_root = $self->getCacheDir();
+		my $dir = $dir_root."/SV/";
+		unless (-d $dir){
+			system( "mkdir  " . $dir );
+			system( "chmod a+rwx " . $dir );
+		}
+		return $dir;
+	},
+);
 
 sub isCacheVectorDone {
 	my $self = shift;

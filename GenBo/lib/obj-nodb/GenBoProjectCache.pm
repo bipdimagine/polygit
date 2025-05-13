@@ -45,13 +45,13 @@ is		=> 'rw',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		return 1;
+	#	return 1;
 		
-#		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
-#			return 1;
-#		}
-#		$self->buffer->hash_config_path->{root}->{cache} = $self->buffer->hash_config_path->{root}->{cache_lmdb}; 
-#		return undef;
+		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
+			return 1;
+		}
+		$self->buffer->hash_config_path->{root}->{cache} = $self->buffer->hash_config_path->{root}->{cache_lmdb}; 
+		return undef;
 	},
 );
 

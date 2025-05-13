@@ -309,6 +309,7 @@ sub getVectorOriginCategory  {
 			$self->{origin}->{$type}->{$chr->name} = $vector_all;
 		}
 		else {
+			warn $self->_getRocksVector($chr,$type);
 			$self->{origin}->{$type}->{$chr->name} = $self->_getRocksVector($chr,$type);
 		}
 		return $self->{origin}->{$type}->{$chr->name};
@@ -321,6 +322,7 @@ sub getVectorOriginHe {
 	my ($self,$chr) = @_;
 	return $self->getVectorOriginCategory($chr, 'he');
 }
+
 
 sub getVectorOriginHo {
 	my ($self,$chr) = @_;
