@@ -362,7 +362,6 @@ sub shell2 {
 	
 			#die($priority);
 	}
-	die();
 	$self->run(\@commands);
 	
 	#warn Dumper $hSampleByPriority; die;
