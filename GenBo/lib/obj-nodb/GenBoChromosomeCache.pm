@@ -46,19 +46,19 @@ has isChromosome => (
 has not_used => (
 	is       => 'rw',
 	lazy	 => 1,
-	default	 => sub {
-		my $self = shift;
-		confess();#to deleteX
-		return 1 unless $self->get_lmdb_categories("r")->is_lmdb_exists('categories_annotations');
-		eval { $self->get_lmdb_categories("r")->get_keys(); };
-		if ($@) { return 1; }
-		return 1 unless $self->get_lmdb_categories("r")->get_keys();
-		if ($self->project->filter_chromosome()) {
-			return 1 unless (exists $self->project->filter_chromosome->{$self->id()});
-		}
-		if ($self->getVariantsVector->is_empty()) { return 1; }
-		return;
-	},
+#	default	 => sub {
+#		my $self = shift;
+#		confess();#to deleteX
+#		return 1 unless $self->get_lmdb_categories("r")->is_lmdb_exists('categories_annotations');
+#		eval { $self->get_lmdb_categories("r")->get_keys(); };
+#		if ($@) { return 1; }
+#		return 1 unless $self->get_lmdb_categories("r")->get_keys();
+#		if ($self->project->filter_chromosome()) {
+#			return 1 unless (exists $self->project->filter_chromosome->{$self->id()});
+#		}
+#		if ($self->getVariantsVector->is_empty()) { return 1; }
+#		return;
+#	},
 );
 
 # vector defined for all variants in this chromosome
@@ -379,20 +379,28 @@ has variants_regions_exclude => (
 
 
 # hash stats used for each group
-has stats_groups => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $hash;
-		return unless ($self->project->isSomaticStudy());
-		foreach my $group ( @{ $self->getSomaticGroups() } ) {
-			$self->project->print_dot(100);
-			$hash->{ $group->name() } = $group->stats($self);
-		}
-		return $hash;
-	},
-);
+#has stats_groups => (
+#	is      => 'rw',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $hash;
+#		return unless ($self->project->isSomaticStudy());
+#		foreach my $group ( @{ $self->getSomaticGroups() } ) {
+#			$self->project->print_dot(100);
+#			if ($self->not_used or $self->getVariantsVector->is_empty()) {
+#				$hash->{ $group->name() } = $group->stats_null($self);
+#				die;
+#			}
+#			else {
+#				$hash->{ $group->name() } = $group->stats($self);
+#				
+#				#warn Dumper $hash->{ $group->name() }; die; 
+#			}
+#		}
+#		return $hash;
+#	},
+#);
 
 # hash stats for regions ho / rec
 has stats_regions_ho_rec => (

@@ -559,6 +559,13 @@
 								enable_table_search();
 							}
 			    		}
+			    		if (key == 'html_gene_polybtf') {
+							document.getElementById("content_res_gene").innerHTML = "";
+							html_gene_done = 1;
+							if (html_variants_done == 1 && html_gene_done == 1) {
+								enable_table_search();
+							}
+						}
 			    		if (key == 'html_gene') {
 							document.getElementById("content_res_gene").innerHTML = "";
 							var myNode = document.getElementById("content_res_gene");

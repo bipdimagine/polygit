@@ -58,6 +58,9 @@ my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name);
 my $samtools = $buffer->software("samtools");
 my $dir_out = $melt_dir;
 my $bam_tmp = $dir_out."/".$patient->name.".bam";
+
+my $done = $dir_out."melt.done";
+
 warn $bam_prod;
 my @header = `$samtools view -H  $bam_prod`;
 chomp(@header);
@@ -123,7 +126,7 @@ my @files = `ls $dir_melt/me_refs/*.zip`;
 chomp @files;
 my $list = $dir_out."/list.txt";
 
-update_method($buffer->dbh,$patient->id);
+#update_method($buffer->dbh,$patient->id);
 system("add_calling_method.sh -project=$project_name -patient=$patient_name -method=melt");
 open (LIST,">$list");
 print LIST join("\n",@files);
@@ -135,7 +138,6 @@ close LIST;
 	
 	#system("sambamba slice $bam ".$chr->fasta_name." >$bout && samtools index $bout");
 
-	my $done = $dir_out."melt.done";
 	unless (-e $done){
 	if ($patient->isGenome){
 		#cat gencode.v43.annotation.gtf |  awk 'OFS="\t" {if ($3=="gene") {print $1,$4-1,$5,$10,$16,$7}}' | tr -d '";'
@@ -149,10 +151,25 @@ close LIST;
 		
 	}
 	else {
-	warn "$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1 ";
-
-		system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1 && touch $done");
-		die() unless -e $done;
+		warn "$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1 ";
+		my $log = $dir_out."melt.log";
+		warn $log;
+		system("$melt -h $ref -bamfile $bam_tmp -n $bedg  -w $dir_out -t $list  -exome 1 1>$log 2>>$log && touch $done");
+		unless (-e $done) {
+			my $no_results_found;
+			open (LOG, $log);
+			while (<LOG>) {
+				my $line = $_;
+				if ($line =~ /MELT likely did not find any mobile elements during/) { $no_results_found = 1; }
+			}
+			close (LOG);
+			if ($no_results_found) {
+				print "\n\nExiting no mobile elements found\n\n";
+				system("touch $done");
+				exit(0);
+			}
+			die();
+		}
 	}
 	}
 	my $files = {ALU=>"$dir_out/ALU.final_comp.vcf",LINE1=>"$dir_out/LINE1.final_comp.vcf",SVA=>"$dir_out/SVA.final_comp.vcf"};

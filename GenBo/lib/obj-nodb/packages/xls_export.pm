@@ -779,16 +779,10 @@ sub store_variants_infos {
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'ins' if ( $var->isInsertion() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'del' if ( $var->isDeletion() );
 			
-			#TODO: here
-#			my $nb_project = $var->other_projects;
-#			my $nb_patient = $var->other_patients ; 
-#			my $ho         = $var->other_patients_ho; 
-#			my $he         = $nb_patient - $ho;
-			
-			my $nb_project = 0;
-			my $nb_patient = 0 ; 
-			my $ho         = 0; 
-			my $he         = 0;
+			my $nb_project = $var->other_projects;
+			my $nb_patient = $var->other_patients ;
+			my $ho         = $var->other_patients_ho ;
+			my $he         = $nb_patient - $ho;
 			
 			$hash->{$chr_h_id}->{$var_id}->{'dejavu'} = "";
 			$nb_patient = $he + $ho;

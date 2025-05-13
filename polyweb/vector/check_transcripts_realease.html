@@ -422,10 +422,11 @@
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
             
-            var release_annotation = '43';
+            var release = 'HG19';
+            var release_annotation = '46';
             $(document).ready(function () {
             	document.getElementById("text_list_genes").value = "";
-		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + release_annotation + "</b></font>";
+		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + release + "<br> g:" + release_annotation + "</b></font>";
 	    	});
 	    	
 	    	function eraseText() {
@@ -439,7 +440,12 @@
 		    	document.getElementById("span_not").innerHTML = "";
 		    	var value = document.getElementById("text_list_genes").value;
 		    	var list_tr = value.split("\n");
-		    	var url = url_path + "json_output_nodb/check_transcripts_annotation.pl?annotation=" + release_annotation + "&tr=" + list_tr.join(',');
+		    	//var url = url_path + "json_output_nodb/check_transcripts_annotation.pl?annotation=" + release_annotation + "&tr=" + list_tr.join(',');
+		    	if (release == 'HG38') {
+		    		release = 'HG38_DRAGEN';
+		    	}
+		    	var url = url_path + "json_output_nodb/check_transcripts_annotation.pl?release=" + release + "&annotation=" + release_annotation + "&tr=" + list_tr.join(',');
+		    	
 		    	var html_table = "<table class='table'>";
 				html_table += "<thead>";
 				html_table += "<tr>";
@@ -513,9 +519,12 @@
 			    });
 		    }
 		    
-		    function change_annotation(annot) {
+		    function change_annotation(annot, select_release) {
+		    	release = select_release;
 		    	release_annotation = annot;
-		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + annot + "</b></font>";
+		    	var color = 'red';
+		    	if (release == 'HG19') { color = 'green'; }
+		    	document.getElementById("span_release_annotation").innerHTML = "<font color='" + color + "'><b>" + release + "<br>g:" + annot + "</b></font>";
 		    }
 		    
 		</script>
@@ -542,31 +551,23 @@
 		
 		<center>
 		<div class="row" style="height:900px;width:98%;">
-			<div class="col-sm-3" style="height:100%;padding:5px;">
+			<div class="col-sm-2" style="height:100%;padding:5px;">
 				<b>COPY / PASTE Transcript(s) List</b>
 				<br>
 				<textarea jsId="text_list_genes" id='text_list_genes' dojoType="dijit.form.SimpleTextarea"  style="align:center;width:100%;height:97%;resize:none;border-radius:0;font-size:16px;"></textarea>
 			</div>
 			
-			<div class="col-sm-2" vertical-align="center" style="height:900px;">
+			<div class="col-sm-3" vertical-align="center" style="height:900px;">
 				<div class="dropdown" style="padding-top:25px;">
 					<ul class="list-group" style="max-width:100px;">
 						<li class="list-group-item list-group-item-info dropdown-toggle" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 							Release<br>Annotation<br><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
 						</li>
 						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-							<a class="dropdown-item" href="#" onClick="change_annotation('43')"><center>HG19 / Gencode 43</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('42')"><center>HG19 / Gencode 42</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('41')"><center>HG19 / Gencode 41</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('40')"><center>HG19 / Gencode 40</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('39')"><center>HG19 / Gencode 39</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('38')"><center>HG19 / Gencode 38</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('34')"><center>HG19 / Gencode 34</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('33')"><center>HG19 / Gencode 33</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('31')"><center>HG19 / Gencode 31</center></a>
-							<a class="dropdown-item" href="#" onClick="change_annotation('19')"><center>HG19 / Gencode 19</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('43', 'HG38')"><center>HG38 / Gencode 43</center></a>
+							<a class="dropdown-item" href="#" onClick="change_annotation('46', 'HG19')"><center>HG19 / Gencode 46</center></a selected>
 						</div>
-						<li class="list-group-item"><span id="span_release_annotation">43</span></li>
+						<li class="list-group-item"><span id="span_release_annotation">HG19<br> g:46 </span></li>
 					</ul>
 				</div>
 				<br>

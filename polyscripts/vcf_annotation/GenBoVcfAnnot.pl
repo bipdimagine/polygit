@@ -12,6 +12,7 @@ use String::ProgressBar;
 use Compress::Snappy;
 use Parallel::ForkManager;
 use Storable qw/thaw freeze/;
+use File::Temp qw/ :mktemp  /;
 
 #perl ./GenBoVcfAnnot.pl -vcf_file=FILE.vcf.gz -tab_out=OUTFILE.tab -parse_all -fork=10
 
@@ -19,6 +20,7 @@ my ($help, $format, $fork, $fileName, $tab_outfile, $join_characters, $method, $
 my ($use_main_transcripts, $use_ccds_transcripts);
 my $patientName = 'none';
 my $force_all_gt_he;
+my $release;
 GetOptions(
 	'help|h!'          => \$help,
 	'vcf_file|f=s'     => \$fileName,
@@ -43,18 +45,21 @@ GetOptions(
 	'use_main_transcripts=s' => \$use_main_transcripts,
 	'use_ccds_transcripts=s' => \$use_ccds_transcripts,
 	'format=s'	=> \$format,
+	'release=s'	=> \$release,
 );
 die "\n\nNo -file or -f option... Die...\n\n" unless ($fileName);
+die "\n\nNeed -tab_outfile option... Die...\n\n" unless ($tab_outfile);
 
 my $buffer = new GBuffer;
 my $genecode = $buffer->getQuery->getMaxGencodeVersion();
 my $annotdb = $buffer->getQuery->getMaxPublicDatabaseVersion();
 my $last_annot_version = $genecode.'.'.$annotdb;
-my $proj_tmp = $buffer->newProject( -name => $buffer->get_random_project_name_with_this_annotations_and_genecode() );
+my $proj_tmp_name;
+if ($release) { $proj_tmp_name = $buffer->getRandomProjectName($release); }
+else { $proj_tmp_name = $buffer->getRandomProjectName($release); }
+my $proj_tmp = $buffer->newProject( -name => $proj_tmp_name );
 my $getGenomeFasta = $proj_tmp->getGenomeFasta();
-my $getGenomeFai = $proj_tmp->getGenomeFai();
-$proj_tmp = undef;
-$buffer = undef; 
+my $getGenomeFai = $proj_tmp->getGenomeFai(); 
 
 if ($filter_score_polyphen) { $filter_score_polyphen =~ s/,/./; }
 if ($filter_score_sift) { $filter_score_sift =~ s/,/./; }
@@ -98,6 +103,7 @@ $args{method}      = $method if ($method);
 $args{getObjects}  = $getObjects if ($getObjects);
 $args{genomeFasta} = $getGenomeFasta;
 $args{genomeFai}   = $getGenomeFai;
+$args{release}     = $release if ($release);
 if ($patientName) {
 	if ($patientName eq 'none') {
 		$args{noPatient} = 1;
@@ -128,6 +134,44 @@ if ($filterTrans) {
 warn "\n";
 warn "Fork used: $fork\n";
 
+my $hashRes;
+my $nb_ref_done = 1;
+my $nb_var_total = 0;
+my $hNbVarTotal_byRef;
+#my @lRef = @{$queryVcf->getReferences()};
+
+my $tmpdir_name = mkdtemp('/tmp/tmp_genbovcfannot_XXXX');
+print "TMP dir: ".$tmpdir_name."\n";
+
+my $hChr_found;
+my @lChrVcf = `tabix -l $fileName`;
+foreach my $chr_id (@lChrVcf) {
+	chomp($chr_id);
+	$hChr_found->{$chr_id} = undef;
+	$chr_id =~ s/chr//;
+	$hChr_found->{$chr_id} = undef;
+	if ($chr_id eq 'M') { $hChr_found->{'MT'} = undef; }
+	if ($chr_id eq 'MT') { $hChr_found->{'M'} = undef; }
+}
+
+my (@lRef, @lPartFiles);
+$proj_tmp->getChromosomes();
+my $h_tmp_ref;
+my $nb = 0;
+foreach my $chr_id (1..22, 'X', 'Y', 'MT', 'M') {
+	next if not exists $hChr_found->{$chr_id};
+	my $chr = $proj_tmp->getChromosome($chr_id);
+	foreach my $ref (@{$chr->getReferences($chr->start(), $chr->end(), 50)}) {
+		push(@lRef, $ref);
+		$h_tmp_ref->{$ref->id()} = $nb;
+		my $tmp = $tmpdir_name.'/vcf_annot.part.'.$nb.'.tab';
+		push(@lPartFiles, $tmp);
+		$nb++;
+	}
+}
+
+print "NB References: ".scalar(@lRef)."\n";
+
 warn "\n";
 warn "# Parsing / Annoting VCF\n";
 warn '-> File: '.$fileName."\n";
@@ -138,54 +182,27 @@ print "# GenCode Version: $gencode_version\n";
 my $version = $queryVcf->project->annotation_version();
 print "# GenBo Annotation Version: $version\n";
 
-
 $queryVcf->project();
 $queryVcf->buffer->hash_genes_omim_morbid();
 
-my $hashRes;
-my $nb_ref_done = 1;
-my $nb_var_total = 0;
-my $hNbVarTotal_byRef;
-my @lRef = @{$queryVcf->getReferences()};
+my @lTmp = split('\.', $version);
+my $annot_version = $lTmp[1];
+
 
 my (@lGlobal, $hok);
 my $pm = new Parallel::ForkManager($fork);
-$pm->run_on_finish(
-	sub {
-		my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
-		foreach my $chr_id (keys %$data) {
-			$hok->{$chr_id} = $data->{$chr_id};
-			warn "chr$chr_id annotation done.\n";
-		}
-	}
-);
 
 foreach my $reference (@lRef) {
 	my $pid = $pm->start() and next;
+	print 'parsing '.$reference->id()."\n";
 	$queryVcf->project->disconnect();
 	$queryVcf->project->buffer->dbh_deconnect();
 	my $res; 
 	$res->{ok} = 1;
 	$res->{data} = $queryVcf->parseVcfFile($reference);
-	$res->{id} = $reference->getChromosome->id();
-	my $chr_id = $reference->getChromosome->id();
-	my $hres = annote_output_file($res->{id}, $res->{data});
-	$pm->finish( 0, $hres );
-}
-$pm->wait_all_children;
-
-sleep(3);
-
-if ($tab_outfile) {
-	open (FILE, '>'.$tab_outfile);
-	my $version = $queryVcf->project->annotation_version();
-	print FILE "# Build: ".$queryVcf->project->getVersion()."\n";
-	print FILE "# GenBo Annotation Version: $version\n";
-	my @lTmp = split('\.', $version);
-	my $annot_version = $lTmp[1];
-	foreach my $cat (sort keys %{$queryVcf->buffer->public_data->{$annot_version}}) {
-		print FILE "# $cat: ".$queryVcf->buffer->public_data->{$annot_version}->{$cat}->{'version'}."\n";
-	}
+	my $hok = annote_output_file($res->{data});
+	my $nb = int($h_tmp_ref->{$reference->id()});
+	open (TMP, '>'.$lPartFiles[$nb]);
 	foreach my $chr_id (1..22, 'X', 'Y', 'MT', 'M') {
 		next unless exists $hok->{$chr_id};
 		
@@ -196,14 +213,37 @@ if ($tab_outfile) {
 		}
 		foreach my $pos (sort {$a <=> $b} keys %{$hPos}) {
 			foreach my $var_id (sort keys %{$hPos->{$pos}}) {
-				print FILE $hPos->{$pos}->{$var_id}."\n";
+				if ($tab_outfile) {
+					print TMP $hPos->{$pos}->{$var_id}."\n";
+				}
 			}
 		}
 	}
-	close (FILE);
+	close (TMP);
+	
+	$pm->finish();
 }
+$pm->wait_all_children;
+
+sleep(3);
+
 
 print "\n\n-> Parsing / Annoting Done !\n\n";
+
+
+open (FILE, '>'.$tab_outfile);
+print FILE "# Build: ".$queryVcf->project->getVersion()."\n";
+print FILE "# GenBo Annotation Version: $version\n";
+foreach my $cat (sort keys %{$queryVcf->buffer->public_data->{$annot_version}}) {
+	print FILE "# $cat: ".$queryVcf->buffer->public_data->{$annot_version}->{$cat}->{'version'}."\n";
+}
+close (FILE);
+
+
+print 'cat tmp files ';
+my $cmd_cat = "cat ".join(' ', @lPartFiles)." >>$tab_outfile";
+`$cmd_cat`;
+print "-> Ok!\n\n";
 
 print 'bgzip file '; 
 my $cmd_bgzip = qq{bgzip -f $tab_outfile};
@@ -215,7 +255,14 @@ my $cmd_tabix = qq{tabix -f -b 4 -e 5 -s 3 $tab_outfile.gz};
 `$cmd_tabix`;
 print "-> Ok!\n\n";
 
+print 'rm tmpDir ';
+`rm -r $tmpdir_name`;
+print "-> Ok!\n\n";
 
+print "\n\nJOB Done: $tab_outfile.gz\n\n";
+
+$proj_tmp = undef;
+$buffer = undef;
 
 exit(0);
 
@@ -247,7 +294,7 @@ sub getAllPatientsNameInVcf {
 }
 
 sub annote_output_file {
-	my ($part_id, $hashRes) = @_;
+	my ($hashRes) = @_;
 	my $hres;
 	my $buffer = $queryVcf->buffer();
 	$queryVcf->project->{buffer} = $buffer;

@@ -115,7 +115,7 @@ my $hsample_dv = {
 	"2" => "sdv_10",
 	"3" => "sdv_50",
 	"4" => "sdv_100",
-	"5" => "sdv_500",
+	"5" => "sdv_1000",
 	"6" => "sdv_all",
 };
 
@@ -932,6 +932,7 @@ sub fork_annnotations {
 	$fork=10;
 	#ici $fork= 20;
 	my $nb   = int( (scalar(@$list) +1) / ($fork-1)  );
+	$nb = 1 if scalar(@$list) < $fork;
 	my $pm   = new Parallel::ForkManager($fork);
 	my $hrun = {};
 	my $hvariations;

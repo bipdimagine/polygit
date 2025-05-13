@@ -3646,16 +3646,20 @@ sub infos_dejavu_parquet {
 		$sql .= " WHERE chr19='".$self->getChromosome->id()."' and pos19 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 	}
 	else { confess("\n\nERROR VAR PARQUET DEJAVU !\n\n"); }
+	
 	my $duckdb = $project->buffer->software('duckdb');
 	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 	my $json_duckdb = `$cmd`;
 	if ($json_duckdb) {
 		my $decode = decode_json $json_duckdb;
 		my $h_by_proj;
+		my $rocks = $self->rocksdb_id();
+		my ($pos, $alt) = split('!', $rocks);
+		$pos = int($pos);
 		foreach my $h (@$decode) {
 			next if $h->{'chr38'} ne $self->getChromosome->id;
-			next if $h->{'pos38'} ne $self->start();
-			next if $h->{'allele'} ne $self->var_allele();
+			next if $h->{'pos38'} ne $pos;
+			next if $h->{'allele'} ne $alt;
 			my $nb_he = $h->{he};
 			my ($h_infos_patients, $h_tmp_pat);
 			my $nb_pat = 0;

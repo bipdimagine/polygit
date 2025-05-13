@@ -7,6 +7,7 @@ use strict;
 use FindBin qw($Bin);
 use Data::Dumper;
 use JSON;
+use Carp;
 
 use lib "$Bin/../GenBo/lib/obj-nodb/";
 use GBuffer;
@@ -18,17 +19,14 @@ my $annotation	= $cgi->param('annotation');
 my $file_name	= $cgi->param('file');
 my $transcripts	= $cgi->param('tr');
 my $genes	= $cgi->param('genes');
+my $release	= $cgi->param('release');
+
+confess() unless $release;
 
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject(-name=>'NGS2015_0794');
-my ($genecode_version, $annot_version);
-unless ($annotation) {
-	$genecode_version = $buffer->getQuery()->getMaxGencodeVersion();
-	$annot_version = $buffer->getQuery()->getMaxPublicDatabaseVersion();
-	$annotation = $genecode_version.'.'.$annot_version;
-}
+my $project_name = $buffer->getRandomProjectName($release, $annotation);
+my $project = $buffer->newProject(-name=>$project_name);
 
-$project->changeAnnotationVersion($annotation, 1);
 warn 'release: '.$project->annotation_version();
 
 my (@lTranscripts, @lGenes);
@@ -81,12 +79,10 @@ if ($transcripts) {
 				$hRes->{$tr_name} .= ';'.$remap;
 			};
 			if ($@) {
-				
 				warn "\n\n";
 				warn Dumper $@;
 				warn Dumper $transcript->hash_partial_infos;
 				warn "\n\n";
-				
 				$hRes->{$tr_name} .= ";<font color='orange'>?</font>";
 			}
 		}
@@ -101,7 +97,7 @@ if ($genes) {
 			my $gene = $project->newGene($gene_name);
 			if ($gene->isGene()) {
 				my $locus = 'chr'.$gene->getChromosome->id().':'.$gene->start().'-'.$gene->end();
-				$hRes->{$gene_name} = 'OK;'.$genecode_version.';'.$gene->id().';'.$gene->external_name().';'.$locus;
+				$hRes->{$gene_name} = 'OK;'.$annotation.';'.$gene->id().';'.$gene->external_name().';'.$locus;
 			}
 			else {
 				$hRes->{$gene_name} = 'NOT; ---> '.$gene_name.' is not a GENE';

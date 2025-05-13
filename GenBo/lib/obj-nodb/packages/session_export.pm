@@ -39,7 +39,7 @@ has session_id => (
 has session_expiration => (
 	is		=> 'rw',
 	lazy 	=> 1,
-	default => "1d",
+	default => "50d",
 );
 
 has session => (
@@ -49,7 +49,7 @@ has session => (
 		my $self = shift;
 		my $cgi = new CGI();
 		my $session = new CGI::Session( undef, $cgi, { Directory => $self->tmp_dir() } );
-		$session->expire("1d"); 
+		$session->expire( $self->session_expiration() ); 
 		$self->{session_id} = $session->id();
 		return $session;
 	}

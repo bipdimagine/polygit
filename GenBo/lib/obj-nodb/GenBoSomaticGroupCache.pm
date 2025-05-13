@@ -6,6 +6,7 @@ use Bit::Vector;
 use Bit::Vector::Overload;
 use Bio::DB::Sam;
 use Data::Dumper;
+use Carp;
 extends 'GenBoSomaticGroup', 'GenBoCache';
 
 
@@ -234,42 +235,83 @@ sub setExcludePatients {
 #	}
 #}
 
-sub stats {
-	my ($self, $chr) = @_;
-	my $hashCount = $self->getHashCountTypeVariants($chr);
-	my $typeFilters = $chr->project->typeFilters();
-	my $hash;
-	$hash->{name} 			= $self->name();
-	$hash->{id} 			= $self->name();
-	$hash->{nb} 			= scalar(keys %{$self->patients()});
-	$hash->{model} 			= $self->used_model();
-	$hash->{model} 			= undef if ($typeFilters eq 'individual' or $typeFilters eq 'familial');
-	$hash->{include} 		= 1;
-	$hash->{include} 		= 0 if ($self->intersected());
-	$hash->{include} 		= 2 if ($self->in_the_attic());
-	$hash->{include} 		= -1 if ($self->excluded());
-	$hash->{substitution} 	= $hashCount->{substitution};
-	$hash->{insertion} 		= $hashCount->{insertion};
-	$hash->{deletion} 		= $hashCount->{deletion};
-	$hash->{homozygote} 	= $hashCount->{ho};
-	$hash->{heterozygote} 	= $hashCount->{he};
-	$hash->{genes} 			= $self->getNbGenes($chr);
-	return $hash;
-}
+#sub stats {
+#	my ($self, $chr) = @_;
+#	my $hashCount = $self->getHashCountTypeVariants($chr);
+#	my $typeFilters = $chr->project->typeFilters();
+#	my $hash;
+#	$hash->{name} 			= $self->name();
+#	$hash->{id} 			= $self->name();
+#	$hash->{nb} 			= scalar(keys %{$self->patients()});
+#	$hash->{model} 			= $self->used_model();
+#	$hash->{model} 			= undef if ($typeFilters eq 'individual' or $typeFilters eq 'familial');
+#	$hash->{include} 		= 1;
+#	$hash->{include} 		= 0 if ($self->intersected());
+#	$hash->{include} 		= 2 if ($self->in_the_attic());
+#	$hash->{include} 		= -1 if ($self->excluded());
+#	$hash->{substitution} 	= $hashCount->{substitution};
+#	$hash->{insertion} 		= $hashCount->{insertion};
+#	$hash->{deletion} 		= $hashCount->{deletion};
+#	$hash->{homozygote} 	= $hashCount->{ho};
+#	$hash->{heterozygote} 	= $hashCount->{he};
+#	$hash->{genes} 			= 1;
+#	#$hash->{genes} 			= $self->getNbGenes($chr) if ($hashCount->{total} > 0);
+#	#warn Dumper $hash; die;
+#	return $hash;
+#}
+#
+#sub stats_null {
+#	my ($self, $chr) = @_;
+#	my $hashCount = $self->getHashCountTypeVariants($chr);
+#	my $typeFilters = $chr->project->typeFilters();
+#	my $hash;
+#	$hash->{name} 			= $self->name();
+#	$hash->{id} 			= $self->name();
+#	$hash->{nb} 			= scalar(keys %{$self->patients()});
+#	$hash->{model} 			= undef;
+#	$hash->{include} 		= 1;
+#	$hash->{include} 		= 0 if ($self->intersected());
+#	$hash->{include} 		= 2 if ($self->in_the_attic());
+#	$hash->{include} 		= -1 if ($self->excluded());
+#	$hash->{substitution} 	= 0;
+#	$hash->{insertion} 		= 0;
+#	$hash->{deletion} 		= 0;
+#	$hash->{homozygote} 	= 0;
+#	$hash->{heterozygote} 	= 0;
+#	$hash->{genes} 			= 0;
+#	return $hash;
+#}
 
 # renvoie un hash avec le comptage ds variants par annotation
 sub getHashCountTypeVariants {
 	my ($self, $chr) = @_;
 	my $hash;
-	my $hashTypeVariants = $self->getHashTypeVariants($chr);
-	my @categories = ('substitution', 'insertion', 'deletion', 'ho', 'he');
-	foreach my $type (@categories) {
-		if (exists $hashTypeVariants->{$type}) {
-			$hash->{$type} = $self->countThisVariants( $hashTypeVariants->{$type} );
-		}
-		else { $hash->{$type} = 0; }
+	$hash->{'substitution'} = 0;
+	$hash->{'insertion'} = 0;
+	$hash->{'deletion'} = 0;
+	$hash->{'ho'} = 0;
+	$hash->{'he'} = 0;
+	foreach my $patient (@{$self->getPatients()}) {
+		my $v_pat = $patient->getVariantsVector($chr)->Clone();
+		my $v_pat_he = $patient->getHe($chr)->Clone();
+		my $v_pat_ho = $patient->getHo($chr)->Clone();
+		
+		my $v_sub = $chr->getVectorSubstitutions();
+		$v_sub->Intersection($v_sub, $v_pat);
+		
+		my $v_ins = $chr->getVectorInsertions();
+		$v_ins->Intersection($v_ins, $v_pat);
+		
+		my $v_del = $chr->getVectorDeletions();
+		$v_del->Intersection($v_del, $v_pat);
+		
+		$hash->{'substitution'} += $v_sub->Norm();
+		$hash->{'insertion'} += $v_ins->Norm();
+		$hash->{'deletion'} += $v_del->Norm();
+		$hash->{'ho'} += $v_pat_ho->Norm();
+		$hash->{'he'} += $v_pat_he->Norm();
+		$hash->{'total'} += $v_pat->Norm();
 	}
-	#warn Dumper $hash; die;
 	return $hash;
 }
 

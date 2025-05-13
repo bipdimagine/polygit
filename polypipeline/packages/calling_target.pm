@@ -502,7 +502,7 @@ sub concat_vcf {
 	my $vcffirstheader = $buffer->software("vcffirstheader");
 	my $vcfstreamsort  = $buffer->software("vcfstreamsort");
 	my $vcfuniq        = $buffer->software("vcfuniq");
-
+	$project->disconnect();
 	my $cat_name = getTmpFile( $dir, "vcf_cat", "vcf" );
 	unlink $cat_name if -e $cat_name;
 	for my $list_tmp_file (@$files) {
@@ -932,8 +932,12 @@ sub p1_freebayes {
 	my $time     = time;
 	my $nb       = 0;
 	my $bcftools = $buffer->software("bcftools");
+
+
+	$fork = scalar(@$beds) if scalar(@$beds) < $fork;
+	my $it = natatime $fork , @$beds;
+	
 	$project->disconnect();
-	my $it = get_iteration($beds,$fork);
 	while ( my @vals = $it->() ) {
 		$nb++;
 		my $pid = $pm_samtools->start and next;
@@ -960,9 +964,11 @@ sub p1_freebayes {
 
 		#}
 	}
-
+	sleep(3);
 	$pm_samtools->wait_all_children();
 
+	$project->disconnect();
+	
 	warn "samtools time :" . abs( time - $time );
 	my @all_vcfs =
 	  map { $_->{file} } sort { $a->{nb} <=> $b->{nb} } @res_samtools;
@@ -1617,7 +1623,6 @@ sub mutect2 {
 	my $vcf_final = 	 calling_target::getTmpFile( $dir_out, $project->name, "mutect.vcf" );
 	my $gatk      = $buffer->getSoftware('gatk4');
 	
-	my $pm_samtools = new Parallel::ForkManager($fork);
 	my $beds = return_all_beds( $project, $intspans );
 	
 	if ( scalar(@$beds) == 0 ) {
@@ -1628,54 +1633,51 @@ sub mutect2 {
 	#my $pr = String::ProgressBar->new( max => scalar(@$beds) );
 	my @res_samtools;
 	my $c = 0;
-	$pm_samtools->run_on_finish(
+	my $pm = new Parallel::ForkManager($fork);
+	$pm->run_on_finish(
 		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) =
-			  @_;
-
-			#  $pr->update($c++);
-
-			#$pr->write() if $verbose;
-			push( @res_samtools, $data ) if $data->{file};
-
+			my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
+			push(@res_samtools, $data);
 		}
 	);
 	my $time     = time;
 	my $nb       = 0;
 	my $onefile  = $patient->getBamFile();
 	my $bcftools = $buffer->software("bcftools");
-	$project->disconnect();
-	my $it = get_iteration($beds,$fork);
-	my $bam_file_string_hc = " -I " . $patient->getBamFile();
-	while ( my @vals = $it->() ) {
 
+	
+	$fork = scalar(@$beds) if scalar(@$beds) < $fork;
+	my $it       = natatime $fork , @$beds;
+	my $bam_file_string_hc = " -I " . $patient->getBamFile();
+	
+	$project->disconnect();
+	while ( my @vals = $it->() ) {
+ 	 	my $pid = $pm->start and next;
+		my $res;
+		$res->{start}   = 'started';
 		#foreach my $bed (@$beds){
 
 		$nb++;
-		my $pid = $pm_samtools->start and next;
 		my $bed = calling_target::getTmpFile( $dir_out, "mutect", "$nb.bed" );
 		open( BED, ">$bed" );
 		foreach my $v (@vals) {
 			print BED $v . "\n";
 		}
 		close BED;
-
 		my $mutect_out = calling_target::getTmpFile( $dir_out, "mutect.tmp.", "$nb.vcf" );
 		my $vcf_out = calling_target::getTmpFile( $dir_out, "mutect", "$nb.vcf" );
 		my $gatk_region        = "-L $bed";
 		my $cmd_mutect2 = qq{ $gatk Mutect2 --base-quality-score-threshold 25 --dont-use-soft-clipped-bases -tumor $name -R $reference $gatk_region   $bam_file_string_hc   -O $mutect_out ;  $bcftools norm -f $reference -m -any $mutect_out -o $vcf_out  };
-		warn $cmd_mutect2;
 		system($cmd_mutect2);
 		unlink $bed;
-		my %h;
-		$h{file} = $vcf_out;
-		$h{nb}   = $nb;
-		$pm_samtools->finish( 0, \%h );
-
-		#}
+		$res->{file} = $vcf_out;
+		$res->{nb}   = $nb;
+	 	$pm->finish(0, $res);
 	}
-
-	$pm_samtools->wait_all_children();
+	sleep(3); 
+	$pm->wait_all_children();
+	
+	$project->disconnect;
 
 	warn "samtools time :" . abs( time - $time );
 	my @all_vcfs =

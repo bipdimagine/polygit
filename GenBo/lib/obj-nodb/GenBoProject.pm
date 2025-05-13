@@ -3848,8 +3848,12 @@ sub myflushobjects {
 				$id = $obj->id;
 				confess($type." ".$id) unless exists $self->{objects}->{$type}->{$obj->id};
 			}
+			elsif ( $type eq 'chromosomes' ) {
+				my $obj = $self->getChromosome($id);
+			}
 			else {
 				warn "\n\nproblem... no $type";
+				warn 'TYPE: '.$type.' -> id: '.$id;
 				confess("je fais quoi ici $type");
 			}
 
