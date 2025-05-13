@@ -157,7 +157,6 @@ has config => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift; 
-		my $dir = ;
 		my $filename =  $self->config_dir."genbo.cfg";
 		
 		my $filename2 = $self->genbo_dir."genbo-vector-filter.cfg";
