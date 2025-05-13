@@ -177,7 +177,7 @@ sub cache_specific_atrributes {
 
 
 sub getVectorPatient {
-	my ( $self, $patient ) = shift;
+	my ( $self, $patient ) = @_;
 	my $vector = dclone $self->getCurrentVector();
 	$vector &= $patient->getVectorOrigin( $self->getChromosome ); # if $patient;
 	return $vector;
@@ -292,6 +292,7 @@ sub getVectorOrigin {
 			return $self->enlarge_compact_vector($self->getCompactVector);
 		}
 		else {
+			die();
 			$self->cache_specific_atrributes unless exists $self->{origin_vector};
 			return  $self->{origin_vector};
 		}
