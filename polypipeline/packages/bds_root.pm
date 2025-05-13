@@ -407,7 +407,7 @@ foreach my $job (@$commands) {
  			push(@cs,$cmd);
  	}
  
- 	$cmd = join (" && ",@cs);
+ 	my $cmd = join (" && ",@cs);
     my $status = system($cmd);
   
     # Vérification des erreurs
