@@ -177,7 +177,7 @@ hisat2:/software/bin/hisat2
 AnnotSV:/software/distrib/AnnotSV_2.0/bin/AnnotSV
 
 # BROAD 
-gatk4:/software/distrib/GATK/gatk-4/gatk-4.2.3.0/gatk
+gatk4:/software/bin/gatk4
 gatk:/software/bin/GenomeAnalysisTK.jar
 picard_path:/software/bin/picard.jar
 picard:/software/bin/picard.jar

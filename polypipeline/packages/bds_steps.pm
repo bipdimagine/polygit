@@ -2920,7 +2920,7 @@ sub rmdup_bamba {
 	my $tmpdir = "";
 	$tmpdir = "--tmpdir=/tmp" if $self->host eq "morgan";
 	my $ppn = $self->nproc;    # if $self->nocluster;
-	$ppn = 40;
+	#$ppn = 40;
 
 	#$tmpdir = "" if $self->nocluster;
 	my $cmd =
@@ -3545,16 +3545,15 @@ sub calling_generic {
 
 	#my $low_calling_string = $low_calling;
 	#	 $low_calling_string = "-low_calling=1"  if $low_calling;
-	
-	my $padding_string = "-padding=$padding"  if $padding;
+	my $padding_string ="";
+	 $padding_string = "-padding=$padding"  if $padding;
 
 	my $m       = $self->patient()->alignmentMethod();
 	my $dir_bam = $project->getAlignmentDir($m);
 	my $bin_dev = $self->script_dir;
 
 #my $cmd = "perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein $low_calling_string";
-	my $cmd =
-"perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein $padding_string ";
+	my $cmd ="perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein $padding_string ";
 	my $type = "calling-" . $method;
 
 	#	$type = "lc-".$type  if $low_calling;

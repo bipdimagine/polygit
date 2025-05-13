@@ -472,7 +472,6 @@ sub prepare_jobs {
 	my ($running_steps,$steps) = @_;
 	my $next_file = "";
 	foreach my $step (@$running_steps){
-		warn $step." ".$next_file;
 		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;
