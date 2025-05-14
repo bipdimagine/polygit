@@ -422,7 +422,7 @@
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
             
-            var release_annotation = '43';
+            var release_annotation = '46';
             $(document).ready(function () {
             	document.getElementById("text_list_genes").value = "";
 		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + release_annotation + "</b></font>";
@@ -439,7 +439,11 @@
 		    	document.getElementById("span_not").innerHTML = "";
 		    	var value = document.getElementById("text_list_genes").value;
 		    	var list_tr = value.split("\n");
-		    	var url = url_path + "json_output_nodb/check_transcripts_annotation.pl?annotation=" + release_annotation + "&tr=" + list_tr.join(',');
+		    	var this_url_path = url_path;
+		    	if (release_annotation >= 46) {
+		    		this_url_path = '/cgi-bin/HG38/polymorphism-cgi/';
+		    	}
+		    	var url = this_url_path + "json_output_nodb/check_transcripts_annotation.pl?release=HG19&annotation=" + release_annotation + "&tr=" + list_tr.join(',');
 		    	var html_table = "<table class='table'>";
 				html_table += "<thead>";
 				html_table += "<tr>";
@@ -555,6 +559,7 @@
 							Release<br>Annotation<br><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
 						</li>
 						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+							<a class="dropdown-item" href="#" onClick="change_annotation('46')"><center>HG19 / Gencode 46</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('43')"><center>HG19 / Gencode 43</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('42')"><center>HG19 / Gencode 42</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('41')"><center>HG19 / Gencode 41</center></a>
@@ -566,7 +571,7 @@
 							<a class="dropdown-item" href="#" onClick="change_annotation('31')"><center>HG19 / Gencode 31</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('19')"><center>HG19 / Gencode 19</center></a>
 						</div>
-						<li class="list-group-item"><span id="span_release_annotation">43</span></li>
+						<li class="list-group-item"><span id="span_release_annotation">46</span></li>
 					</ul>
 				</div>
 				<br>
