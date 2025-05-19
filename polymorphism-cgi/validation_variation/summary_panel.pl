@@ -1335,10 +1335,10 @@ sub table_design {
 	return ( "", "" ) unless $project->isDiagnostic();
 	my $out;
 	my $nbp;
-	
+	my $problem;
+	my $hgenes;
 	foreach my $capture (@{$run->getCaptures()}) {
 		my @transcripts_cgi = @{ $project->bundle_transcripts() };
-		my $problem;
 		my $capture_intspan_keep;
 	
 		foreach my $tr_name (@transcripts_cgi) {
@@ -1367,7 +1367,6 @@ sub table_design {
 			}
 		}
 	
-		my $hgenes;
 		foreach my $chr_name ( keys %{$capture_intspan_keep} ) {
 			my $iter = $capture_intspan_keep->{$chr_name}->iterate_runs();
 	
@@ -1384,114 +1383,114 @@ sub table_design {
 				}
 			}
 		}
+	}
 	
-		my $style  = "background-color:#DD4132;color:black;";
-		my $shadow = "rgba(221, 65,36, .7)";
-		$out = $cgi->start_div(
+	my $style  = "background-color:#DD4132;color:black;";
+	my $shadow = "rgba(221, 65,36, .7)";
+	$out = $cgi->start_div(
+		{
+			class => "panel-body panel-primary  panel-collapse collapse ",
+			style =>
+"font-size: 09px;font-family:  Verdana;border: 5px coral; border-color: coral;",
+			id => "control_design_" . $run->id
+		}
+	);
+	$out .= qq{
+		<div class="container">
+		<div class="row">
+	   };
+	my @gs = grep { $hgenes->{$_}->{nb} > 1 } keys %{$hgenes};
+
+	#   @gs =();
+	if (@gs) {
+		$nbp++;
+		$out .= qq{
+	 	 <div class="col-xs-6 col-md-4 col-lg-3">
+			
+	 		};
+		$out .= $cgi->start_table(
 			{
-				class => "panel-body panel-primary  panel-collapse collapse ",
+				class => "table table-striped table-bordered table-hover",
 				style =>
-	"font-size: 09px;font-family:  Verdana;border: 5px coral; border-color: coral;",
-				id => "control_design_" . $run->id
+"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;box-shadow: 1px 1px 2px 1px YYY ;",
+				'data-click-to-select' => "true",
+				'data-toggle'          => "table"
 			}
 		);
+		$out .= $cgi->start_Tr( { style => "font-weight: bold;XXX " } );
 		$out .= qq{
-			<div class="container">
-			<div class="row">
-		   };
-		my @gs = grep { $hgenes->{$_}->{nb} > 1 } keys %{$hgenes};
-	
-		#   @gs =();
-		if (@gs) {
-			$nbp++;
-			$out .= qq{
-		 	 <div class="col-xs-6 col-md-4 col-lg-3">
-				
-		 		};
-			$out .= $cgi->start_table(
-				{
-					class => "table table-striped table-bordered table-hover",
-					style =>
-	"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;box-shadow: 1px 1px 2px 1px YYY ;",
-					'data-click-to-select' => "true",
-					'data-toggle'          => "table"
-				}
-			);
-			$out .= $cgi->start_Tr( { style => "font-weight: bold;XXX " } );
-			$out .= qq{
-						<td colspan="2"> Potential missing genes  </td>
-						</tr>
-					};
-	
-			#my @gs = grep{$hgenes->{$_}->{nb}>1} keys %{$hgenes};
-			my $max = 0;
-			foreach my $gid (@gs) {
-				$out .= $cgi->start_Tr();
-				$out .=
-					qq{<td colspan="2">}
-				  . $hgenes->{$gid}->{obj}->external_name
-				  . " miss : "
-				  . $hgenes->{$gid}->{nb}
-				  . " exons </td>";
-				$max = $hgenes->{$gid}->{nb} if $hgenes->{$gid}->{nb} > $max;
-	
-	#$out .= qq{<td colspan="2">}.$exon->name." ".$exon->getChromosome->name.":".$exon->start."-".$exon->end."</td>";
-				$out .= $cgi->end_Tr();
-			}
-			$out .= qq{</table></div>};
+					<td colspan="2"> Potential missing genes  </td>
+					</tr>
+				};
+
+		#my @gs = grep{$hgenes->{$_}->{nb}>1} keys %{$hgenes};
+		my $max = 0;
+		foreach my $gid (@gs) {
+			$out .= $cgi->start_Tr();
+			$out .=
+				qq{<td colspan="2">}
+			  . $hgenes->{$gid}->{obj}->external_name
+			  . " miss : "
+			  . $hgenes->{$gid}->{nb}
+			  . " exons </td>";
+			$max = $hgenes->{$gid}->{nb} if $hgenes->{$gid}->{nb} > $max;
+
+#$out .= qq{<td colspan="2">}.$exon->name." ".$exon->getChromosome->name.":".$exon->start."-".$exon->end."</td>";
+			$out .= $cgi->end_Tr();
 		}
-	
-	#$out = $cgi->start_div({class=>"panel-body panel-primary panel-collapse collapse  ",style=>"font-size: 09px;font-family:  Verdana;border: 5px coral; border-color: coral;",id=>"control_design_".$run->id});
-	
-		foreach my $tid ( keys %{ $problem->{problem} } ) {
-	
-			my $transcript = $problem->{problem}->{$tid}->[0]->getTranscript();
-	
-			$out .= qq{
-		 	 <div class="col-xs-6 col-md-4 col-lg-3">
-				
-		 		};
-			$out .= $cgi->start_table(
-				{
-					class => "table table-striped table-bordered table-hover",
-					style =>
-	"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;box-shadow: 1px 1px 2px 1px YYY ;",
-					'data-click-to-select' => "true",
-					'data-toggle'          => "table"
-				}
-			);
-			$out .= $cgi->start_Tr( { style => "font-weight: bold;XXX " } );
-			my $gname = $transcript->getGene->external_name;
-			my $tname = $transcript->name;
-			$out .= qq{
-						<td colspan="2"> $gname :  $tname </td>
-						</tr>
-					};
-	
-			foreach my $exon ( @{ $problem->{problem}->{$tid} } ) {
-				$out .= $cgi->start_Tr();
-				$out .=
-					qq{<td colspan="2">}
-				  . $exon->name
-				  . ": &nbsp;["
-				  . $exon->getChromosome->ucsc_name . ":"
-				  . $exon->start . "-"
-				  . $exon->end
-				  . "]</td>";
-	
-	#$out .= qq{<td colspan="2">}.$exon->name." ".$exon->getChromosome->name.":".$exon->start."-".$exon->end."</td>";
-				$out .= $cgi->end_Tr();
-			}
-			$out .= qq{</table></div>};
-		}
-		$out =~ s/XXX/$style/g;
-		$out =~ s/YYY/$shadow/g;
-		$out .= qq{
-		 	</div>
-			</div>
-			</div>
-		   };
+		$out .= qq{</table></div>};
 	}
+
+#$out = $cgi->start_div({class=>"panel-body panel-primary panel-collapse collapse  ",style=>"font-size: 09px;font-family:  Verdana;border: 5px coral; border-color: coral;",id=>"control_design_".$run->id});
+
+	foreach my $tid ( keys %{ $problem->{problem} } ) {
+
+		my $transcript = $problem->{problem}->{$tid}->[0]->getTranscript();
+
+		$out .= qq{
+	 	 <div class="col-xs-6 col-md-4 col-lg-3">
+			
+	 		};
+		$out .= $cgi->start_table(
+			{
+				class => "table table-striped table-bordered table-hover",
+				style =>
+"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;box-shadow: 1px 1px 2px 1px YYY ;",
+				'data-click-to-select' => "true",
+				'data-toggle'          => "table"
+			}
+		);
+		$out .= $cgi->start_Tr( { style => "font-weight: bold;XXX " } );
+		my $gname = $transcript->getGene->external_name;
+		my $tname = $transcript->name;
+		$out .= qq{
+					<td colspan="2"> $gname :  $tname </td>
+					</tr>
+				};
+
+		foreach my $exon ( @{ $problem->{problem}->{$tid} } ) {
+			$out .= $cgi->start_Tr();
+			$out .=
+				qq{<td colspan="2">}
+			  . $exon->name
+			  . ": &nbsp;["
+			  . $exon->getChromosome->ucsc_name . ":"
+			  . $exon->start . "-"
+			  . $exon->end
+			  . "]</td>";
+
+#$out .= qq{<td colspan="2">}.$exon->name." ".$exon->getChromosome->name.":".$exon->start."-".$exon->end."</td>";
+			$out .= $cgi->end_Tr();
+		}
+		$out .= qq{</table></div>};
+	}
+	$out =~ s/XXX/$style/g;
+	$out =~ s/YYY/$shadow/g;
+	$out .= qq{
+	 	</div>
+		</div>
+		</div>
+	   };
 	my $out2;
 	my $disabled = "disabled";
 	my $btn      = "";
