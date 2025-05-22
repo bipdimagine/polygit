@@ -2816,7 +2816,9 @@ sub elprep {
 
 	my $samtools = $project->buffer->software("samtools");
 
-	my $ref_root = $project->get_public_data_directory;
+	my $ref_root = $project->get_public_data_directory("root");
+	warn $ref_root;
+	die();
 	my $ref      = $project->dirGenome() . $project->buffer->index("elprep");
 	die($ref) unless -e $ref;
 	my $known_sites = $ref_root
@@ -2825,6 +2827,8 @@ sub elprep {
 	die($known_sites)
 	  unless -e $ref_root
 	  . "/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
+	  warn $known_sites;
+	  die();
 	my $recal =
 		$self->patient->project->getRecalDir($m) . "/"
 	  . $self->patient->name
@@ -3594,8 +3598,8 @@ sub calling_generic {
 
 	#my $low_calling_string = $low_calling;
 	#	 $low_calling_string = "-low_calling=1"  if $low_calling;
-	
-	my $padding_string = "-padding=$padding"  if $padding;
+	my $padding_string ="";
+	 $padding_string = "-padding=$padding"  if $padding;
 
 	my $m       = $self->patient()->alignmentMethod();
 	my $dir_bam = $project->getAlignmentDir($m);
