@@ -394,7 +394,7 @@ sub launch_bds_daemon_common{
 	
 	warn "mode  $bds_exe =>  ".$self->nocluster;#  if $self->nocluster == 2;
 	my $libe = "$bds_exe  -reportYaml    pipeline.bds";
-	$libe= "$bds_exe ".$self->queue." -reportYaml    pipeline.bds" if $self->cache ==1;
+	$libe= "$bds_exe ".$self->queue." -reportYaml    pipeline.bds";# if $self->cache ==1;
 	my $daemon = Proc::Daemon->new(
         work_dir => "$dir",
    		exec_command =>$libe,
