@@ -2817,8 +2817,6 @@ sub elprep {
 	my $samtools = $project->buffer->software("samtools");
 
 	my $ref_root = $project->get_public_data_directory("root");
-	warn $ref_root;
-	die();
 	my $ref      = $project->dirGenome() . $project->buffer->index("elprep");
 	die($ref) unless -e $ref;
 	my $known_sites = $ref_root
@@ -2827,8 +2825,6 @@ sub elprep {
 	die($known_sites)
 	  unless -e $ref_root
 	  . "/elprep/Mills_and_1000G_gold_standard.indels.hg19.sites.elsite";
-	  warn $known_sites;
-	  die();
 	my $recal =
 		$self->patient->project->getRecalDir($m) . "/"
 	  . $self->patient->name
