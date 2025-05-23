@@ -84,34 +84,15 @@ function check_new_hgmd_clinvar(first_elem, release) {
 	if (launch_new_hgmd == 1) { return; }
 	launch_new_hgmd = 1;
 	var this_user_name = dojo.cookie("username");
-	var url = url_path + "json_output_nodb/check_new_hgmd_clinvar.pl?user_name=" + this_user_name + "&pwd=" + dojo.cookie("passwd") + "&first_elem=" + first_elem;
-	if (print_check_new_hgmd == 1) { url += "&print=1&view_others=1"; }
-//	if (view_others_projects_new_hgmd_clinvar == 1) { url += "&view_others=1"; }
-    if (release) {
-    	var list_releases_selected = [];
-    	var list_releases = String(release).split(',');
-    	for(i=0; i<list_releases.length; i++) {
-    		var release_name = list_releases[i];
-	    	var b_check_id = 'dropdownCheck_' + release_name;
-	    	if (document.getElementById(b_check_id).checked == true) {
-	    		list_releases_selected.push(release_name);
-	    	}
-    	}
-    	if (list_releases_selected.length == 0) {
-    		alert("Please select your Release(s) Version(s)");
-    		return;
-    	}
-    	else if (list_releases_selected.length == 1) {
-    		url += "&release=" + list_releases_selected.join(',');
-		}
-		else {
-			url += "&multi_release=" + list_releases_selected.join(',');
-		}
-    }
+	var url = url_path + "json_output_nodb/user_polybtf.pl?login=" + this_user_name + "&pwd=" + dojo.cookie("passwd") + "&count=1";
 	dijit.byId('waiting').show();
     job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
     	dijit.byId('waiting').hide();
     	$.each( data, function( key, val ) {
+    		if (key == 'count') {
+    			resume_new_hgmd = val;
+    		}
+    		<!--
     		if (key == 'news') {
     			document.getElementById("span_polybtf_wait").innerHTML = "";
     			document.getElementById("span_polybtf_news").innerHTML = "<font style='color:white;font-size:18px;'><i>PolyBTF <b>(" + val + ")</b></i></font>";
@@ -124,9 +105,6 @@ function check_new_hgmd_clinvar(first_elem, release) {
     		}
     		if (key == 'date_release') {
     			date_release_hgmd = val;
-    		}
-    		if (key == 'nb_new') {
-    			document.getElementById("span_dialog_new_dm_global").innerHTML = "<i>New Pathogenic Variants found in DataBases: <b>" + val + "</b></i>";
     		}
     		if (key == 'nb_new_in_projects') {
     			if (resume_new_hgmd == '') {
@@ -185,6 +163,7 @@ function check_new_hgmd_clinvar(first_elem, release) {
 			if (key == 'releases_used') {
 				document.getElementById("dropdown_releases_selected").innerHTML = val;
 			}
+			-->
 		});
 		if (value_dont_show_dialog_again_index == 1) {
 			document.getElementById("img_dont_show_me_again").setAttribute("src", "images/polyicons/12-em-check.png");
@@ -242,8 +221,12 @@ function view_var_from_proj_gene_pat(project_name, gene_tr_name, patient_name, k
     });
 }
 
-function open_new_hgmd_var() {
-	copy_new_hgmd_table();
+function open_new_hgmd_var(btf_total_var) {
+	var url = window.location.origin;
+	console.log(url);
+	url += '/mbras/polyweb/polydejavu/polybtf_view.html?btf_total_var='+btf_total_var;
+	var win = window.open(url, '_blank');
+	win.focus();
 }
 
 function zoomHgmdWithoutCss(p,hid,vid){
@@ -386,7 +369,10 @@ function is_new_polybtf_for_username(this_user_name) {
 //		else if (is_new_polybtf == 1 && parseInt(date_last_days) <= 30) { color_hgmd = 'green'; }
 		document.getElementById("span_polybtf_wait").innerHTML = "";
 		document.getElementById("span_polybtf_date_release").innerHTML = "<font style='color:white;font-size:18px;'>&nbsp;&nbsp;&nbsp;<span class='glyphicon glyphicon-arrow-right' font style='color:white;font-size:17px;' aria-hidden='true'></span>&nbsp;&nbsp;&nbsp;<b>Latest update " + date_release_hgmd + ", " + date_last_days + " days ago</b></font>";
-		document.getElementById("span_polybtf_button").innerHTML = "&nbsp;&nbsp;&nbsp;<span class='glyphicon glyphicon-arrow-right' font style='color:white;font-size:17px;' aria-hidden='true'></span>&nbsp;&nbsp;&nbsp;<button style='font-size:12px;vertical-align:text-bottom;color:" + color_hgmd + ";background-color:white;border-radius:8px;' onclick='open_new_hgmd_var();'><u><i>View " + resume_new_hgmd + " New Variants</u></i></button>";
+		document.getElementById("span_polybtf_button").innerHTML = "&nbsp;&nbsp;&nbsp;<span class='glyphicon glyphicon-arrow-right' font style='color:white;font-size:17px;' aria-hidden='true'></span>&nbsp;&nbsp;&nbsp;<button style='font-size:12px;vertical-align:text-bottom;color:" + color_hgmd + ";background-color:white;border-radius:8px;' onclick='open_new_hgmd_var(resume_new_hgmd);'><u><i>View " + resume_new_hgmd + " (potential) New Variants</u></i></button>";
+		
+		
+		
 		
 		if (color_hgmd) {
 			document.getElementById("div_toolbar_polybtf").style.backgroundColor = color_hgmd;

@@ -586,6 +586,7 @@ $t = time;
 my $hv;
 my $stat;
 
+#my $dev;
 my $dev = 1;
 
 #$dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
@@ -638,7 +639,7 @@ my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."02-05-2024");
 my $htable = $no_cache->get_cache( $table_id );
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
-warn "here";
+#warn "here";
 unless ($htable) {
 	print qq{<div style="display: none">};
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
@@ -1338,56 +1339,57 @@ sub table_design {
 	#return ("","");
 	return ( "", "" ) unless $project->isDiagnostic();
 	my $out;
-	my $capture         = $run->getCapture();
-	my @transcripts_cgi = @{ $project->bundle_transcripts() };
-	my $problem;
 	my $nbp;
-	my $capture_intspan_keep;
-
-	foreach my $tr_name (@transcripts_cgi) {
-		my $transcript = $project->newTranscript($tr_name);
-		my $chr        = $transcript->getChromosome;
-		my $capture_intspan =
-		  $transcript->getChromosome->getIntSpanCapture(100);
-		unless ( exists $capture_intspan_keep->{ $chr->name } ) {
-			$capture_intspan_keep->{ $chr->name } =
-			  $transcript->getChromosome->getIntSpanCapture();
-		}
-
-		foreach my $exon ( sort { $a->start <=> $b->start }
-			@{ $transcript->getExons } )
-		{
-			$capture_intspan_keep->{ $chr->name }
-			  ->remove_range( $exon->start - 1000, $exon->end + 1000 );
-			next if $exon->is_noncoding;
-			my $s1 = $exon->getGenomicSpan()->intersection($capture_intspan);
-			if ( $s1->is_empty ) {
-				push( @{ $problem->{problem}->{ $transcript->name } }, $exon );
-				$nbp++;
-			}
-
-			#$covered = -1 if $s1->is_empty;
-		}
-	}
-
+	my $problem;
 	my $hgenes;
-	foreach my $chr_name ( keys %{$capture_intspan_keep} ) {
-		my $iter = $capture_intspan_keep->{$chr_name}->iterate_runs();
-
-		#	 	warn $capture_intspan_keep->{$chr_name}->as_string();
-		my $chr = $project->getChromosome($chr_name);
-		my @tt;
-		while ( my ( $from, $to ) = $iter->() ) {
-			my $genes = $chr->getGenesByPosition( $from, $to );
-			foreach my $g (@$genes) {
-				$hgenes->{ $g->id }->{obj} = $g;
-				$hgenes->{ $g->id }->{nb}++;
-
-				#warn $g->external_name;
+	foreach my $capture (@{$run->getCaptures()}) {
+		my @transcripts_cgi = @{ $project->bundle_transcripts() };
+		my $capture_intspan_keep;
+	
+		foreach my $tr_name (@transcripts_cgi) {
+			my $transcript = $project->newTranscript($tr_name);
+			my $chr        = $transcript->getChromosome;
+			my $capture_intspan =
+			  $transcript->getChromosome->getIntSpanCapture(100);
+			unless ( exists $capture_intspan_keep->{ $chr->name } ) {
+				$capture_intspan_keep->{ $chr->name } =
+				  $transcript->getChromosome->getIntSpanCapture();
+			}
+	
+			foreach my $exon ( sort { $a->start <=> $b->start }
+				@{ $transcript->getExons } )
+			{
+				$capture_intspan_keep->{ $chr->name }
+				  ->remove_range( $exon->start - 1000, $exon->end + 1000 );
+				next if $exon->is_noncoding;
+				my $s1 = $exon->getGenomicSpan()->intersection($capture_intspan);
+				if ( $s1->is_empty ) {
+					push( @{ $problem->{problem}->{ $transcript->name } }, $exon );
+					$nbp++;
+				}
+	
+				#$covered = -1 if $s1->is_empty;
+			}
+		}
+	
+		foreach my $chr_name ( keys %{$capture_intspan_keep} ) {
+			my $iter = $capture_intspan_keep->{$chr_name}->iterate_runs();
+	
+			#	 	warn $capture_intspan_keep->{$chr_name}->as_string();
+			my $chr = $project->getChromosome($chr_name);
+			my @tt;
+			while ( my ( $from, $to ) = $iter->() ) {
+				my $genes = $chr->getGenesByPosition( $from, $to );
+				foreach my $g (@$genes) {
+					$hgenes->{ $g->id }->{obj} = $g;
+					$hgenes->{ $g->id }->{nb}++;
+	
+					#warn $g->external_name;
+				}
 			}
 		}
 	}
-
+	
 	my $style  = "background-color:#DD4132;color:black;";
 	my $shadow = "rgba(221, 65,36, .7)";
 	$out = $cgi->start_div(
@@ -1494,12 +1496,10 @@ sub table_design {
 		</div>
 		</div>
 	   };
-
 	my $out2;
 	my $disabled = "disabled";
 	my $btn      = "";
-	my $text =
-qq{  <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Panel design };
+	my $text = qq{  <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> Panel design };
 	my $label;
 	$nbp += 0;
 	if ( $nbp > 0 ) {
@@ -1509,8 +1509,7 @@ qq{  <img src="https://img.icons8.com/material-sharp/20/000000/genealogy.png"> P
 	$label = qq{	<span class="badge badge-danger"> $nbp</span>};
 	my $run_id = $run->id;
 
-	$out2 =
-qq{<div class="btn   btn-xs $btn " style="position:relative;bottom:1px;min-width:200px;border-color:black;" onClick='collapse_panel("control_design","$list_control_panels","$run_id")'  style="border : 1px"  $disabled>  $text $label </div>};
+	$out2 = qq{<div class="btn   btn-xs $btn " style="position:relative;bottom:1px;min-width:200px;border-color:black;" onClick='collapse_panel("control_design","$list_control_panels","$run_id")'  style="border : 1px"  $disabled>  $text $label </div>};
 	return ( $out2, $out );
 
 }

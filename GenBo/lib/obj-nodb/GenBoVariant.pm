@@ -266,7 +266,7 @@ has isNewHgmd => (
 	default	=> sub {
 		my $self = shift;
 		return unless ($self->hgmd_id());
-		return if (exists $self->project->buffer->queryHgmd->hashOldAccNum->{$self->hgmd_id()});
+		return if ($self->project->buffer->queryHgmd->hashOldAccNum and exists $self->project->buffer->queryHgmd->hashOldAccNum->{$self->hgmd_id()});
 		return 1;
 	}
 );

@@ -1195,11 +1195,11 @@ sub getJunctionsVector {
 	return $self->vector_global_categories("junction");
 }
 
-#sub getVectorSubstitutions {
-#	my $self = shift;
-#	return $self->vector_global_categories("substitution");
-#}
-#*/
+sub getVectorSubstitutions {
+	my $self = shift;
+	return $self->vector_global_categories("substitution");
+}
+
 sub getVectorInsertions {
 	my $self = shift;
 	return $self->vector_global_categories("insertion");

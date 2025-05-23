@@ -1576,7 +1576,7 @@ sub get_polybtf_path {
 	unless ($release) {
 		$release = $self->get_polybtf_default_release();
 	}
-	my $dir = $self->config->{project_data}->{btf}.'/'.$release.'/';
+	my $dir = $self->config_path("root","btf").'/'.$release.'/';
 	return $dir;
 }
 
