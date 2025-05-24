@@ -87,7 +87,7 @@ unless ($steps_name){
 #$predef_steps->{update_type} = ["chromosomes"];
 my $pipeline;
  $pipeline = bds_cache_steps->new( project=>$project, nocluster=>$nocluster,cache=>1 );
-$pipeline->queue("-q testq") unless $secret;
+$pipeline->queue("-q pipeline") unless $secret;
 my $steps = {
 				"store_ids"=>  sub {$pipeline->store_ids(@_)},
 				"store_annotations"=> sub {$pipeline->store_annotations(@_)},
