@@ -166,6 +166,8 @@ if ($json_duckdb) {
 	}
 	else {
 		my $i = 0;
+		
+		my $h_proj_pat_done;
 		foreach my $h (@$decode) {
 			$i++;
 			if ($i ==50) {
@@ -249,15 +251,37 @@ if ($json_duckdb) {
 				foreach my $gene (@lGenes) {
 					$h_var->{genes}->{$gene->id} = update_variant_editor::construct_hash_transcript($var, $cgi, \@header_transcripts, 2, $gene);
 					
+					my $hgenes;
+					$hgenes->{project_name} = $h_proj->{$project_id}->{name};
+					$hgenes->{id} = $gene->id();
+					$hgenes->{external_name} = $gene->external_name();
+					$hgenes->{name} = $gene->external_name;
+					$hgenes->{description} = $gene->description;
+					$hgenes->{phenotypes} = $gene->phenotypes;
+					$hgenes->{score_mother} = 0;
+					$hgenes->{score_father} = 0;
+					$hgenes->{score_biallelic} = -10;
+					$hgenes->{score} = $gene->score;
+					$hgenes->{id} = $gene->id;
+					$hgenes->{omim_inheritance} = $gene->omim_inheritance;
+					$hgenes->{external_name} = $gene->external_name;
+					$hgenes->{pLI} = $gene->pLI;
+					$hgenes->{omim_id} = $gene->omim_id;
+					$hgenes->{panels} = $buffer->queryPanel()->getPanelsForGeneName($gene->external_name);
+					$hgenes->{js_id} = $h_proj->{$project_id}->{name}."_".$gene->id;
+					
 					my $is_good_gene;
 					$is_good_gene = 1 if $gene->external_name() eq $hgmd_gene;
-					
+					my $project_name_gene = $h_proj->{$project_id}->{name};
 					my $html_gene;
+					my $class_tr_gene->{style} = "background-color:#4A4F53;height:25px;padding:0px;white-space: nowrap;";
 					if ($is_good_gene) { 
 						$html_gene = qq{<div style="opacity: 1">};
-						$html_gene .= '<span>Gene: <b>'.$gene->external_name().'</b> | '.$gene->id().'</span><br>';
-						$html_gene .= update_variant_editor::table_transcripts($h_var->{genes}->{$gene->id}, \@header_transcripts, 1);
-						$html_gene .= '</div>';
+						$html_gene .= "<table>";
+						#$html_gene .= '<span>Gene: <b>'.$gene->external_name().'</b> | '.$gene->id().'</span><br>';
+						$html_gene .= "<tr>".$cgi->td($class_tr_gene, update_variant_editor::panel_gene_short_button($hgenes, $project_name_gene))."</tr>";
+						$html_gene .= "<tr><td>".update_variant_editor::table_transcripts($h_var->{genes}->{$gene->id}, \@header_transcripts, 1)."</td></tr>";
+						$html_gene .= "</table>";
 						$html_gene .= '</div>';
 						$html_gene .= '<br>' if $hVarHtml->{$var_id}->{table_gene};
 						$hVarHtml->{$var_id}->{table_gene} = $html_gene.$hVarHtml->{$var_id}->{table_gene};
@@ -265,9 +289,13 @@ if ($json_duckdb) {
 					else {
 						$html_gene = '<br>' if $hVarHtml->{$var_id}->{table_gene};
 						$html_gene .= qq{<div style="opacity: 0.33">};
-						$html_gene .= '<span>Gene: <b>'.$gene->external_name().'</b> | '.$gene->id().'</span><br>';
+						$html_gene .= "<table>";
+						#$html_gene .= '<span>Gene: <b>'.$gene->external_name().'</b> | '.$gene->id().'</span><br>';
+						$html_gene .= "<tr>".$cgi->td($class_tr_gene, update_variant_editor::panel_gene_short_button($hgenes, $project_name_gene))."</tr>";
+						$html_gene .= "<tr><td>";
 						$html_gene .= update_variant_editor::table_transcripts($h_var->{genes}->{$gene->id}, \@header_transcripts, 1);
-						$html_gene .= '</div>';
+						$html_gene .= "</td></tr>";
+						$html_gene .= "</table>";
 						$html_gene .= '</div>';
 						$hVarHtml->{$var_id}->{table_gene} .= $html_gene;
 					}
@@ -278,8 +306,19 @@ if ($json_duckdb) {
 			my $parquet = $buffer->dejavu_parquet_dir().'/'.$h_proj->{$project_id}->{name}.'.'.$project_id.'.parquet';
 			if (-e $parquet) {
 				push(@list_parquets, "'".$parquet."'");
-				my $html = get_from_duckdb_project_patients_infos($var, \@list_parquets);
-				if ($html) {
+				my ($h_projects_patients, $html) = get_from_duckdb_project_patients_infos($var, \@list_parquets);
+				my $can_add;
+				foreach my $pr_name (keys %{$h_projects_patients}) {
+					foreach my $p_name(keys %{$h_projects_patients->{$pr_name}}) {
+						if (exists $h_proj_pat_done->{$var->id()}->{$pr_name}->{$p_name}) {
+							$ok = 1;
+							next;
+						}
+						$h_proj_pat_done->{$var->id()}->{$pr_name}->{$p_name} = undef;
+						$can_add = 1;
+					}
+				}
+				if ($html and $can_add) {
 					$hVarHtml->{$var_id}->{table_patients} .= "<br>" if exists $hVarHtml->{$var_id}->{table_patients};			
 					$hVarHtml->{$var_id}->{table_patients} .= $html;
 					$ok = 1;	
@@ -305,9 +344,9 @@ if ($json_duckdb) {
 		$out2 .= qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="25" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' id='table_variants' class='table table-striped' style='font-size:13px;'>};
 		$out2 .= "<thead>";
 		$out2 .= $cgi->start_Tr({style=>"background-color:#E9DEFF;$fsize"});
-		$out2 .= qq{<th data-field="project_name" data-filter-control="input" data-sortable="true">Project(s) / Patient(s)</th>};
 		$out2 .= qq{<th data-field="var_name" data-filter-control="input" data-sortable="true" data-filter-control-placeholder=7-15456-A-G">Var Name</th>};
 		$out2 .= qq{<th data-field="varsome">Varsome</th>};
+		$out2 .= qq{<th data-field="project_name" data-filter-control="input" data-sortable="true">Project(s) / Patient(s)</th>};
 		$out2 .= qq{<th data-field="gnomad">gnomAD</th>};
 		$out2 .= qq{<th data-field="dejavu">DejaVu</th>};
 		$out2 .= qq{<th data-field="hgmd" data-filter-control="input" data-sortable="true">HGMD</th>};
@@ -318,18 +357,13 @@ if ($json_duckdb) {
 		$out2 .= "<tbody>";
 		foreach my $var_id (sort keys %{$hVarHtml}) {
 			$out2 .= $cgi->start_Tr();
-			$out2 .= qq{<td><div style="max-height:250px;max-width:400px;overflow-y:auto;">}.$hVarHtml->{$var_id}->{table_patients}.qq{</div></td>};
-			$out2 .= qq{<td><center>}.$hVarHtml->{$var_id}->{table_vname}.qq{<br>[HG19: }.$h_liftover->{$var_id}.qq{]</center></td>};
+			$out2 .= qq{<td><center><span style="font-size:8px;"><b>HG38:</b></span>}.$hVarHtml->{$var_id}->{table_vname}.qq{<br><br><span style="font-size:8px;"><b>HG19:</b> }.$h_liftover->{$var_id}.qq{</span></center></td>};
 			$out2 .= qq{<td><center>}.$hVarHtml->{$var_id}->{table_varsome}.qq{</center></td>};
+			$out2 .= qq{<td><div style="max-height:250px;max-width:400px;overflow-y:auto;">}.$hVarHtml->{$var_id}->{table_patients}.qq{</div></td>};
 			$out2 .= qq{<td><center>}.$hVarHtml->{$var_id}->{table_gnomad}.qq{</center></td>};
 			$out2 .= qq{<td><center>}.$hVarHtml->{$var_id}->{table_dejavu}.qq{</center></td>};
-			
-			#HGMD
 			$out2 .= qq{<td><center>}.$hVarHtml->{$var_id}->{hgmd}.qq{</center></td>};
 			$out2 .= qq{<td><center>}.$hVarHtml->{$var_id}->{clinvar}.qq{</center></td>};
-			#CLINVAR
-			
-			
 			$out2 .= qq{<td><div style="max-height:250px;overflow-y:auto;">}.$hVarHtml->{$var_id}->{table_gene}.qq{</div></td>};
 			$out2 .= $cgi->end_Tr();
 		}
@@ -345,6 +379,7 @@ if ($json_duckdb) {
 my $hRes;
 $hRes->{html} = $out2;
 $hRes->{var_filtred} = scalar(keys %$h_var_already_filtered);
+$hRes->{release} = $annotation;
 printJson($hRes);
 
  

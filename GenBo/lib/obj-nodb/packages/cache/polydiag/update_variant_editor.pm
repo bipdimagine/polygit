@@ -1722,7 +1722,7 @@ sub panel_gene_short_button {
 	my @t = split(";",$pheno);
 	$pheno = $t[0];
 	my $nb_other_terms = scalar(@t) - 1;
-	my $b_desc = $hgene->{description};
+	my $b_desc = qq{<span style='color:white;'>}.$hgene->{description}.qq{</span>};
 	my $to;
 	($pheno,$to) = split(/\[/,$hgene->{description}) unless $pheno;
 	my $color ;
@@ -1732,12 +1732,12 @@ sub panel_gene_short_button {
 	if ($pheno) {
 		if (length($pheno) > 70) { $pheno = substr($pheno, 0, 70).'...'; }
 		if ($nb_other_terms > 0) { $pheno .= " <span style='color:#5cf0d3'>+ $nb_other_terms terms</span>"; }
-		if ($project_name) {
-			$b_pheno .= qq{<span onclick="update_grid_gene_phenotypes(\'$gene_id\', \'$project_name\')";">$pheno</span>};
-		}
-		else {
-			$b_pheno .= qq{<span onclick="update_grid_gene_phenotypes(\'$gene_id\')";">$pheno</span>};
-		}
+#		if ($project_name) {
+#			$b_pheno .= qq{<span onclick="update_grid_gene_phenotypes(\'$gene_id\', \'$project_name\')">$pheno</span>};
+#		}
+#		else {
+			$b_pheno .= qq{<span onclick="update_grid_gene_phenotypes(\'$gene_id\')">$pheno</span>};
+#		}
 	}
 	$b_pheno .= qq{</div>};
 	

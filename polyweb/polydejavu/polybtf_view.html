@@ -578,9 +578,8 @@
 							}
 	    					dijit.byId('waiting').hide();
 						}
-			    		if (key == 'var_filtred') {
-							
-							
+			    		if (key == 'release') {
+							document.getElementById("span_release").innerHTML = "Release Version: " + val;
 			    		}
 					});
 			    })
@@ -599,8 +598,9 @@
 				</div>
 				<ul class="nav navbar-nav">
 					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">HG38 - PolyBTF VIEW</span></a></li>
-					<li><a href="#" style="padding-top: 25px;padding-left: 135px;"><span style="color:white;font-size:14px">only variants with gAD AC <= 50 / gAD <=10 / Dv Samples <= 50 / Dv Samples Ho <= 10</span></a></li>
-					<li><a href="#" style="padding-top: 25px;padding-left: 135px;"><span style="color:green;font-size:16px"><span id="span_var_filtred"></span></a></li>
+					<li><a href="#" style="padding-top: 25px;padding-left: 20px;"><span style="color: #97d0fa;font-size:18px" id='span_release'></span></a></li>
+					<li><a href="#" style="padding-top: 25px;float: right;"><span style="color:white;font-size:14px">only variants with gAD AC <= 50 / gAD <=10 / Dv Samples <= 50 / Dv Samples Ho <= 10</span></a></li>
+					<li><a href="#" style="padding-top: 25px;float: right;"><span style="color:green;font-size:16px"><span id="span_var_filtred"></span></a></li>
 				</ul>
 			</div>
 		</nav>
@@ -633,6 +633,26 @@
 					</div>
 				</div> 
 			</div>
+		</div>
+		<div id="dialog_dejavu_var_infos" dojoType="dijit.Dialog" title="DejaVu Infos" style="background-color:white;overflow:auto;min-width:250px;">
+			<center><a id="url_dejavu_var" href="polydejavu/dejavu.html" target="_blank"><i><u>Go to PolyDejaVu Interface</i></u></a></center>
+	        <div  id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
+		
+		<div dojoType="dijit.Dialog"  jsId="dialog_list_panels" id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
+			 <span id="span_list_panels"></span>
+		</div>
+		
+		<div id="dialog_list_phenotypes" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="List Phenotype(s)"> 
+			 <table class="table">
+				<tbody>
+					<tr>
+						<td><div id="container_wordcloud" style="height:450px;border: solid black 1px;"></div></td>
+					</tr>
+				</tbody>
+			</table>
+			<br>
+			<div class="container-fluid" id="content_table_phenotypes" style="height:99%;width:99%;"></div>
 		</div>
 	</body>
 </html>

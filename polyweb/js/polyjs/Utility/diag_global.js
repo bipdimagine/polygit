@@ -674,7 +674,7 @@ function add_wordcloud(container_name, json_data) {
 function get_gene_phenotypes(gene_id, this_proj_name) {
 	var this_url = url_path + "/json_output_nodb/getGenePhenotypes.pl";
 	var this_args;
-	if (this_proj_name) { this_args = "project=" + project_name + "&gene=" + gene_id; }
+	if (this_proj_name) { this_args = "project=" + this_proj_name + "&gene=" + gene_id; }
 	else { this_args = "gene=" + gene_id; }
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', this_url, true);
