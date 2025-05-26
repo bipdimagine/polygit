@@ -223,8 +223,7 @@ function view_var_from_proj_gene_pat(project_name, gene_tr_name, patient_name, k
 
 function open_new_hgmd_var(btf_total_var) {
 	var url = window.location.origin;
-	console.log(url);
-	url += '/mbras/polyweb/polydejavu/polybtf_view.html?btf_total_var='+btf_total_var;
+	url += '/HG38/polyweb/polydejavu/polybtf_view.html?btf_total_var='+btf_total_var;
 	var win = window.open(url, '_blank');
 	win.focus();
 }
