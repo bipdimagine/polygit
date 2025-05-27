@@ -2816,7 +2816,7 @@ sub elprep {
 
 	my $samtools = $project->buffer->software("samtools");
 
-	my $ref_root = $project->get_public_data_directory;
+	my $ref_root = $project->get_public_data_directory("root");
 	my $ref      = $project->dirGenome() . $project->buffer->index("elprep");
 	die($ref) unless -e $ref;
 	my $known_sites = $ref_root
@@ -3594,8 +3594,8 @@ sub calling_generic {
 
 	#my $low_calling_string = $low_calling;
 	#	 $low_calling_string = "-low_calling=1"  if $low_calling;
-	
-	my $padding_string = "-padding=$padding"  if $padding;
+	my $padding_string ="";
+	 $padding_string = "-padding=$padding"  if $padding;
 
 	my $m       = $self->patient()->alignmentMethod();
 	my $dir_bam = $project->getAlignmentDir($m);

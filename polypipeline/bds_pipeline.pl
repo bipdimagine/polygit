@@ -325,8 +325,9 @@ foreach  my $type (@types_steps){
 }
 }
 $pipeline->priority_name($list_steps_types);
-$pipeline->queue("-q testq") if $project->isDiag;
-$pipeline->queue("") if $secret;
+$pipeline->queue("-q pipeline");
+# if $project->isDiag;
+#$pipeline->queue("") if $secret;
 my $dir_bds =$pipeline->dir_bds();
 #$pipeline->fastq_extend($fastq_ext) if $fastq_ext;
 $pipeline->max_cpu($max_cpu) if $max_cpu ;
@@ -483,7 +484,6 @@ sub prepare_jobs {
 	my ($running_steps,$steps) = @_;
 	my $next_file = "";
 	foreach my $step (@$running_steps){
-		warn $step." ".$next_file;
 		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;
