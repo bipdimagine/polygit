@@ -92,7 +92,6 @@ function check_new_hgmd_clinvar(first_elem, release) {
     		if (key == 'count') {
     			resume_new_hgmd = val;
     		}
-    		<!--
     		if (key == 'news') {
     			document.getElementById("span_polybtf_wait").innerHTML = "";
     			document.getElementById("span_polybtf_news").innerHTML = "<font style='color:white;font-size:18px;'><i>PolyBTF <b>(" + val + ")</b></i></font>";
@@ -106,6 +105,8 @@ function check_new_hgmd_clinvar(first_elem, release) {
     		if (key == 'date_release') {
     			date_release_hgmd = val;
     		}
+    		
+    		<!--
     		if (key == 'nb_new_in_projects') {
     			if (resume_new_hgmd == '') {
 	    			//document.getElementById("span_nb_new_hgmd").innerHTML = "<b>" + val + " New Pathogenic Var !</b>";
@@ -222,10 +223,50 @@ function view_var_from_proj_gene_pat(project_name, gene_tr_name, patient_name, k
 }
 
 function open_new_hgmd_var(btf_total_var) {
-	var url = window.location.origin;
-	url += '/HG38/polyweb/polydejavu/polybtf_view.html?btf_total_var='+btf_total_var;
-	var win = window.open(url, '_blank');
-	win.focus();
+	var url = url_path + "json_output_nodb/user_polybtf.pl?login=" + dojo.cookie("username") + "&pwd=" + dojo.cookie("passwd");
+	
+	dijit.byId('waiting').show();
+    job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
+    	dijit.byId('waiting').hide();
+    	$.each( data, function( key, val ) {
+    		if (key == 'html') {
+    			document.getElementById("content_res").innerHTML = val;
+    			enable_table_search();
+    			
+    			
+    			document.getElementById("span_dialog_new_dm_global").innerHTML = "<i>New Pathogenic Variants found in DataBases and your projects: <b>" + btf_total_var + "</b></i>";
+    			
+    			
+				dijit.byId("dialog_hgmd").show();
+    		}
+    		
+    		if (key == 'max_dejavu') {
+    			document.getElementById("span_dialog_max_dejavu").innerHTML = "<span class='glyphicon glyphicon-share-alt' aria-hidden='true'></span> <u><i>variants with DejaVu > <b>" + val + "</b> samples are filtered...</u></i>";
+    		}
+    		if (key == 'max_gnomadac') {
+    			document.getElementById("span_dialog_max_gnomad").innerHTML = "<span class='glyphicon glyphicon-share-alt' aria-hidden='true'></span> <u><i>variants with gnomAD AC > <b>" + val + "</b> are filtered...</u></i>";
+    		}
+    		if (key == 'current_version') {
+    			document.getElementById("hgmd_current_version").innerHTML = "<b><i>" + val + "</b></i>";
+				if(document.getElementById("hgmd_current_version_2")){
+	    			document.getElementById("hgmd_current_version_2").innerHTML = "<b><i>" + val + "</b></i>";
+	    		}	
+    		}
+    		if (key == 'last_hgmd_release') {
+    			document.getElementById("span_last_hgmd").innerHTML = val;
+    		}
+    		if (key == 'last_clinvar_release') {
+    			document.getElementById("span_last_clinvar").innerHTML = val;
+    		}
+			if (key == 'releases_used') {
+				document.getElementById("dropdown_releases_selected").innerHTML = val;
+			}
+		});
+    });
+}
+
+function enable_table_search() {
+	$('#table_variants').bootstrapTable();
 }
 
 function zoomHgmdWithoutCss(p,hid,vid){
@@ -254,7 +295,6 @@ function open_dejavu_infos(value,pname,is_in_this_run) {
         load: function(data) {
 			document.getElementById("content_dejavu_var_infos").innerHTML = data.html_table;
 			dijit.byId('waiting').hide();
-			dijit.byId('dialog_dejavu_var_infos').show();
         },
         error: function(error) {
             alert("error");

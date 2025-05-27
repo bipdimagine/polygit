@@ -42,6 +42,10 @@ use Getopt::Long;
 use File::Basename;
 use MIME::Base64;
 
+my $max_gnomadac = 50;
+my $max_gnomadho = 10;
+my $max_dejavu = 50;
+my $max_dejavu_ho = 10;
 
 my $cgi = new CGI();
 my $login = $cgi->param('login');
@@ -161,6 +165,11 @@ if ($json_duckdb) {
 	if ($count) {
 		my $hres;
 		$hres->{count} = $decode->[0]->{'count(DISTINCT rocksid)'};
+		my $h_polybtf_infos = $buffer->polybtf_infos();
+		$hres->{news} = join(', ', @{$h_polybtf_infos->{news}});
+		$hres->{date_release} = $h_polybtf_infos->{date_release};
+		$hres->{date_now} = $h_polybtf_infos->{date_now};
+		$hres->{date_last_days} = $h_polybtf_infos->{date_last_days};
 		printJson($hres);
 		exit(0);
 	}
@@ -196,19 +205,19 @@ if ($json_duckdb) {
 			my $var = $project->_newVariant($var_id);
 			
 			my $ok = 1;
-			$ok = undef if $var->getGnomadAC() > 50;
+			$ok = undef if $var->getGnomadAC() > $max_gnomadac;
 			$h_var_already_filtered->{$chr38.'-'.$rocksid} = undef if not $ok;
 			next if not $ok;
 			
-			$ok = undef if $var->getGnomadHO() > 10;
+			$ok = undef if $var->getGnomadHO() > $max_gnomadho;
 			$h_var_already_filtered->{$chr38.'-'.$rocksid} = undef if not $ok;
 			next if not $ok;
 			
-			$ok = undef if $var->other_patients() > 50;
+			$ok = undef if $var->other_patients() > $max_dejavu;
 			$h_var_already_filtered->{$chr38.'-'.$rocksid} = undef if not $ok;
 			next if not $ok;
 			
-			$ok = undef if $var->other_patients_ho() > 10;
+			$ok = undef if $var->other_patients_ho() > $max_dejavu_ho;
 			$h_var_already_filtered->{$chr38.'-'.$rocksid} = undef if not $ok;
 			next if not $ok;
 			
@@ -380,6 +389,17 @@ my $hRes;
 $hRes->{html} = $out2;
 $hRes->{var_filtred} = scalar(keys %$h_var_already_filtered);
 $hRes->{release} = $annotation;
+
+$hRes->{max_dejavu} = $max_dejavu.' (max_ho:'.$max_dejavu_ho.')';
+$hRes->{max_gnomadac} = $max_gnomadac.' (max_ho:'.$max_gnomadho.')';
+
+
+$hRes->{last_hgmd_release} = $buffer->queryHgmd->database();
+$hRes->{last_hgmd_release} =~ s/hgmd_pro-//; 
+$hRes->{last_clinvar_release} = $buffer->queryClinvarPathogenic->last_release_name();
+$hRes->{current_version} = '<span style="color:green;">Version: '.$annotation.'</span><br><br>HGMD: '.$hRes->{last_hgmd_release}.'<br>Clinvar: '.$hRes->{last_clinvar_release};
+
+
 printJson($hRes);
 
  
