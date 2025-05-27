@@ -222,9 +222,13 @@ function view_var_from_proj_gene_pat(project_name, gene_tr_name, patient_name, k
     });
 }
 
+var open_new_hgmd_var_done = 0;
 function open_new_hgmd_var(btf_total_var) {
+	if (open_new_hgmd_var_done == 1) {
+		dijit.byId("dialog_hgmd").show();
+		return;
+	}
 	var url = url_path + "json_output_nodb/user_polybtf.pl?login=" + dojo.cookie("username") + "&pwd=" + dojo.cookie("passwd");
-	
 	dijit.byId('waiting').show();
     job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
     	dijit.byId('waiting').hide();
@@ -232,11 +236,8 @@ function open_new_hgmd_var(btf_total_var) {
     		if (key == 'html') {
     			document.getElementById("content_res").innerHTML = val;
     			enable_table_search();
-    			
-    			
     			document.getElementById("span_dialog_new_dm_global").innerHTML = "<i>New Pathogenic Variants found in DataBases and your projects: <b>" + btf_total_var + "</b></i>";
-    			
-    			
+    			open_new_hgmd_var_done = 1;
 				dijit.byId("dialog_hgmd").show();
     		}
     		
