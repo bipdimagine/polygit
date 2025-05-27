@@ -124,7 +124,11 @@ footer{
        function viewProject(prj, type, genome) {
            var url;
            var regexp = /HG38/g;
+           var regexp2 = /rocks/g;
            if (String(genome).match(regexp)) {
+           		url = 'https://'+window.location.hostname + "/HG38/polyweb/vector/gene.html?project="+prj+"&type="+type;
+           }
+           else  if (String(genome).match(regexp2)) {
            		url = 'https://'+window.location.hostname + "/HG38/polyweb/vector/gene.html?project="+prj+"&type="+type;
            }
            else {

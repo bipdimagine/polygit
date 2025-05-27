@@ -194,6 +194,13 @@ sub getProjectLists {
 		my $patients =$phpatients->{$project->{id}};
 	
 		$project->{genome_version} = $ph->{version};#join(",",map{$_->{name}}@$release);
+		$project->{annotation} = $buffer->getQuery->getPublicDatabaseVersion($project->{id});
+		my $gencode = $buffer->getQuery->getGencodeVersion($project->{id});
+		my $dir_polyviewer_rocks = $buffer->getDataDirectory("cache")."/rocks/".$project->{genome}.'.'.$gencode.".".$project->{annotation}."/".$project->{name}."/polyviewer_objects.rocksdb/IDENTITY";
+		if (-e $dir_polyviewer_rocks and $gencode >= 46) {
+			$project->{genome} .= '-rocks';
+		}
+		
 		
 		my $nb_p = 0;
 		$project->{nb_total} = 0;#$database_nb->{$name_database}->{NB};

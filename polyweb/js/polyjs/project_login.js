@@ -128,7 +128,11 @@ function view_polyviewer(this_value) {
 	var genome = list[2];
    var url;
    var regexp = /HG38/g;
+   var regexp2 = /rocks/g;
    if (String(genome).match(regexp)) {
+   		url = 'https://'+window.location.hostname + "/HG38/polyweb/polyviewer.html?project="+prj;
+   }
+   else if (String(genome).match(regexp2)) {
    		url = 'https://'+window.location.hostname + "/HG38/polyweb/polyviewer.html?project="+prj;
    }
    else {
@@ -143,7 +147,11 @@ function view_polyquery(this_value) {
 	var genome = list[2];
    var url;
    var regexp = /HG38/g;
+   var regexp2 = /rocks/g;
    if (String(genome).match(regexp)) {
+   		url = 'https://'+window.location.hostname + "/HG38/polyweb/vector/gene.html?project="+prj;
+   }
+   else if (String(genome).match(regexp2)) {
    		url = 'https://'+window.location.hostname + "/HG38/polyweb/vector/gene.html?project="+prj;
    }
    else {

@@ -130,6 +130,11 @@ sub getProjectListsDefidiag {
 		$pro->{polyviewer} = 2;
 		$pro->{polyviewer} = 1 if @samples && -e "$dir_polyviewer/".$samples[0]->{name}.".variants-genes.polyviewer";
 		$pro->{polyviewer} = 1 if @samples && -e $dir_polyviewer_rocks;
+		
+		if (-e $dir_polyviewer_rocks and $gencode >= 46) {
+			$pro->{genome} .= '-rocks';
+		}
+		
 #		warn $pro->{polyviewer} if $pro->{name} eq "NGS2020_3165";
 		my $t = (stat $dir )[9];
 		my ($dc,$h) = split(" ", $pro->{creation_date});
