@@ -46,8 +46,7 @@ is		=> 'rw',
 	default => sub {
 		my $self = shift;
 	#	return 1;
-		
-		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
+		if (($self->getVersion() =~ /HG38/ or $self->getVersion() =~ /HG19/ and $self->gencode_version() >= 46) and -e  $self->rocks_cache_dir."/vector"){
 			return 1;
 		}
 		$self->buffer->hash_config_path->{root}->{cache} = $self->buffer->hash_config_path->{root}->{cache_lmdb}; 

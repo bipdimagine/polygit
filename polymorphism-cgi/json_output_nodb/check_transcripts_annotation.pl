@@ -48,7 +48,7 @@ elsif ($genes) {
 my $hRes;
 if ($transcripts) {
 	foreach my $tr_name (@lTranscripts) {
-		next unless ($tr_name =~ /ENST/);
+		#next unless ($tr_name =~ /ENST/);
 		my ($transcript, $gene);
 		eval {
 			$transcript = $project->newTranscript($tr_name);
