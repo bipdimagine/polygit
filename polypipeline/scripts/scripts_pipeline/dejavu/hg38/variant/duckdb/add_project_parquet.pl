@@ -77,8 +77,8 @@ foreach my $pname (@{$buffer->getQuery->listProjectsWithoutDejaVu()}) {
 
 if (not $can_dejavu) { $parquet_file .= '.no_dejavu'; }
 
-
-exit(0) if -e $parquet_file and not $force;
+warn $parquet_file;
+#exit(0) if -e $parquet_file and not $force;
 $project->getPatients;
 $project->preload_patients();
 MCE::Loop->init(
@@ -212,7 +212,10 @@ sub save_and_lift_lmdb {
 			$dp =1 if $dp == 0;
 			my $ratio = int ($alt/$dp)*100;
 			
-			
+			if ($dp =~ /,/){
+			 my ($a,$b) = split(",",$dp);
+			 $dp = $a;
+			 }
 			$max_dp = $dp if $dp > $max_dp;
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
 			my $model= dejavu_duckdb::find_variant_model($vectors, $index_lmdb, $pid);
