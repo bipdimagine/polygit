@@ -1,0 +1,292 @@
+package GenBoDuckDejaVuCNV;
+
+use Moo;
+
+use strict;
+use warnings;
+use Data::Dumper;
+use List::Util qw[min max];
+	
+has project =>(
+	is		=> 'rw',
+	required=>1,
+);
+
+has version =>(
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my ($self)= @_;
+		return 38 if $self->project->current_genome_version =~/38/ ;
+		return 19;
+}	
+);
+
+has dir =>(
+	is		=> 'ro',
+	lazy=>1,
+default => sub {
+		my ($self)= @_;
+		return $self->project->buffer->config_path("dejavu","cnv");;
+}	
+);
+
+
+has colstart =>(
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my ($self)= @_;
+		return "start".$self->version;
+}	
+);
+
+has colend =>(
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my ($self)= @_;
+		return "end".$self->version;
+}
+);
+
+has colchr =>(
+	is		=> 'ro',
+	lazy=>1,
+	default => sub {
+		my ($self)= @_;
+		return "chr".$self->version;
+}
+);
+
+has dbh =>  (
+	is		=> 'rw',
+	lazy=>1,
+default => sub {
+	my $dbh =   DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+	return $dbh;
+});
+
+has rawcol =>  (
+	is		=> 'rw',
+	lazy=>1,
+default => sub {
+	my $col = ["project","patient","chr38","start38","end38","chr19","start19","end19","type","callers","caller_type_flag",'sr1','sr2','sr_qual','pr1','pr2',"depth_qual",'depth_CN','coverage_zscore','coverage_ratio','elementary','cn'];
+	
+});
+
+has caller_type_flag =>  (
+	is		=> 'rw',
+	lazy=>1,
+default => sub {
+return  {
+	"caller_sr" => 1,
+	"caller_depth" => 2,
+	"caller_coverage" => 4,
+};
+}
+);
+has type_by_caller =>  (
+	is		=> 'rw',
+	lazy=>1,
+default => sub {
+return  {
+	"wisecondor" => 4,
+	"manta" => 1,
+	"pbsv" => 1,
+	"dragen-sv" =>1,
+	"hificnv" =>2,
+	"canvas" =>2,
+	"dragen-cnv" =>2,
+	"cnvnator" =>2,
+}
+}
+);
+
+has cnv_callers =>  (
+	is		=> 'rw',
+	lazy=>1,
+default => sub {
+return  {
+    "wisecondor"          => 1 << 0,  # 2^0 = 1
+    "canvas"        => 1 << 1,  # 2^1 = 2
+    "manta"        => 1 << 2,  # 2^2 = 4
+    "pbsv"        => 1 << 3,  
+    "dragen-sv"        => 1 << 4,  
+    "hificnv"        => 1 << 5,  
+    "dragen-cnv"        => 1 << 6, 
+     "cnvnator"        => 1 << 7, 
+}
+}
+);
+
+
+
+has sth_query_project =>(
+	is		=> 'rw',
+	lazy=>1,
+default => sub {
+	my ($self) =@_;
+	my $table = $self->create_table_project();
+	my $project_id = $self->project->id;
+	 my $sql = qq{
+	 SELECT *
+		FROM $table 
+		WHERE project=? and patient = ?;
+	 };
+	 
+	 my $sth = $self->dbh->prepare($sql);
+	 return $sth;
+}
+);
+sub create_table_project {
+	my ($self) =@_;
+	my $uid = "cnv_".$self->project->id;
+	return $self->{$uid} if exists  $self->{$uid};
+	my $colchr = $self->colchr;
+	my $colstart = $self->colstart;
+	my $colend = $self->colend;
+	my $dir = $self->dir;
+	my $file = $self->project->name."*.parquet";
+	my $parquet_file = $dir."$file";
+	my $query = qq{CREATE TABLE $uid AS
+                           SELECT *, abs($colend - $colstart) AS length,
+                           FROM '$parquet_file'
+                           WHERE $colstart > -1  order by $colchr,$colstart,$colend;
+	};
+	$self->dbh->do($query);
+	$self->{$uid} = $uid;
+	return $self->{$uid};
+}
+
+sub get_cnvs_by_project {
+	my ($self,$patient ) = @_;
+	$self->sth_query_project->execute($self->project->id,$patient->id);
+	# Récupération des résultats dans un tableau de hash
+		my @results;
+		my $colchr = $self->colchr;
+		my $colstart = $self->colstart;
+		my $colend = $self->colend;
+		while (my $row = $self->sth_query_project->fetchrow_hashref) {
+			$row->{chromosome} = delete $row->{$colchr};
+			$row->{start} = delete $row->{$colstart};
+			$row->{end} = delete $row->{$colend};
+			$row->{uid} = join("_",$row->{chromosome},$row->{start},$row->{end},$row->{patient});
+			$row->{id} = join("_",$row->{chromosome},$row->{start},$row->{end});
+			push(@results,$row);
+		}
+		return \@results;
+}
+
+
+
+sub create_table_total {
+	my ($self) =@_;
+	return $self->{create_table_total} if exists  $self->{create_table_total};
+	my $colchr = $self->colchr;
+	my $colstart = $self->colstart;
+	my $colend = $self->colend;
+	my $dir = $self->dir;
+	my $file = "*.parquet";
+	my $parquet_file = $dir."$file";
+	my $query = qq{CREATE TABLE cnv_call_project AS
+                           SELECT *, abs($colend - $colstart) AS length,
+                           FROM '$parquet_file'
+                           WHERE $colstart > -1  order by $colchr,$colstart,$colend;
+	};
+	$self->dbh->do($query);
+	$self->{create_table_total} = "cnv_call_project";
+	return $self->{create_table_total};
+}
+
+
+
+has sth_query_identity =>(
+	is		=> 'rw',
+	lazy=>1,
+default => sub {
+	my ($self) =@_;
+	my $colchr = $self->colchr;
+	my $colstart = $self->colstart;
+	my $colend = $self->colend;
+	$self->create_table_total;
+	 my $sql = qq{
+	 SELECT $colstart as start ,$colend as end ,project,patient,callers,caller_type_flag,
+		FROM cnv_call_project 
+		WHERE type = ? AND $colchr = ?
+		AND $colstart BETWEEN ? AND ?
+  		AND $colend   BETWEEN ? AND ?
+  		AND length  BETWEEN ? AND ?
+  		AND  project != ?;
+	 };
+	 
+	 my $sth = $self->dbh->prepare($sql);
+	 
+	 return $sth;
+}
+);
+
+
+sub dejavu {
+	my ($self,$type,$chr,$start,$end,$seuil ) = @_;
+	my $project_id = $self->project->id;
+	my $p = (100 - $seuil)/100;
+	my $len = abs($end - $start) +1;
+	my $vv =   int($len * $p);
+	 my $minl = $len - $vv;
+	 my $maxl = $len + $vv;
+	 my $minx = $start - $vv;
+	 my $maxx = $start + $vv;
+	  my $miny = $end - $vv;
+	 my $maxy = $end + $vv;
+	$self->sth_query_identity->execute($type,$chr, $minx, $maxx, $miny, $maxy, $minl, $maxl,$project_id);
+	# Récupération des résultats dans un tableau de hash
+	my @results;
+	my $nb;
+	my $hash;
+	$hash->{nb_patients} = 0;
+	$hash->{nb_projects} = 0;
+	$hash->{caller_sr} = 0 ;
+	$hash->{caller_depth} =0;
+	$hash->{caller_coverage} = 0;
+	$hash->{string} = "";
+		my %pp;
+		my @dj;
+		while (my $row = $self->sth_query_identity->fetchrow_hashref) {
+			
+	 		my $start1 = $row->{start};
+	 		my $end1 = $row->{end};	
+	 		my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
+	 		my $project1 = $row->{project};
+	 		my $patient1 = $row->{patient};
+	 		my $caller1 = $row->{callers};
+	 		$pp{$project1} ++;
+		
+			$hash->{nb_patients} ++;
+			$hash->{caller_coverage} ++ if $caller1 & $self->caller_type_flag->{caller_coverage};
+			$hash->{caller_depth} ++  if $caller1 & $self->caller_type_flag->{caller_depth};
+			$hash->{caller_sr} ++  if $caller1 & $self->caller_type_flag->{caller_sr};
+	 	
+	 		$identity = int($identity);
+			my $string ="$identity";
+			push(@dj,$string) if $string;
+		}
+	$hash->{nb_projects} = scalar(keys %pp);
+	$hash->{string}  = join(",",@dj);
+	return  $hash;
+}
+
+sub getIdentityBetweenCNV {
+	my ( $self, $start1, $end1, $start2, $end2) = @_;
+	
+	#retourne le recouvrement en % de la longueur du plus long des deux evenements 
+	
+	my $overlap = min( $end1, $end2 ) - max( $start1, $start2 );
+	die() if abs( $start1 - $end1 ) ==0;
+	my $overlap1 = $overlap / abs( $start1 - $end1 );
+	my $overlap2 = $overlap / abs( $start2 - $end2 );
+
+	return min($overlap1*100,$overlap2*100);
+}
+
+1;
