@@ -57,7 +57,7 @@ $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name, -cache => '1', -typeFilters => 'familial' );
 my $limit = 5;
 if ($project->isGenome){
-	$limit = 10;
+	$limit = 3;
 }
 
 if ($annot_version) {
@@ -153,18 +153,18 @@ foreach my $family (@{$project->getFamilies()}) {
 		warn "\n";
 		warn $children->name;
 		my $vector_denovo =  $no->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
-		warn $vector_denovo;
 		my @bits = $vector_denovo->Index_List_Read();
 		open (BED , ">".$hbed->{$children->id});		
 		my $nov = $project->getChromosome($chr_name)->get_rocks_variations("r");
 		foreach my $vector_id (@bits){
 				
 				my $var = $nov->get_index($vector_id);
+				
 				$all_var->{$vector_id}->{start} = $var->start;
 				$all_var->{$vector_id}->{end} = $var->end;
 				 $all_var->{$vector_id}->{seq} = uc ($var->sequence);
 				 
-				print BED $chr->fasta_name."\t".($var->start-1)."\t".($var->end+2)."\n";
+				print BED $chr->fasta_name."\t".($var->start-2)."\t".($var->end+2)."\n";
 		}
 		close BED;
 		warn $hbed->{$children->id};
@@ -210,6 +210,7 @@ foreach my $family (@{$project->getFamilies()}) {
 			 	my $t =time;
 			 	my $cmd = qq{samtools mpileup  $file -l $bed > }.$res_sambamba->{$parent->id};
 			 	system($cmd);
+			 	
 			 	#`$cmd`;
 				warn " \t\t  ++ pileup ".$parent->name." ".abs(time -$t)." ".$res_sambamba->{$parent->id};	
 				
@@ -225,6 +226,7 @@ warn "--------------------------------------------------------";
 warn "--- END PILEUP  ".abs(time-$tall);
 warn "--------------------------------------------------------";
 $tall = time ;
+print join("\t","pos","A","C",,"G","T","del","ins")."\n";
 foreach my $family (@{$project->getFamilies()}) {
 		my $tmp_dir = $family->{tmp_dir};
 	foreach my $children  (@{$family->getChildren}){
@@ -236,6 +238,7 @@ foreach my $family (@{$project->getFamilies()}) {
 				while (my $res = <BAMBA>) {
 					next if $res =~ /^RES/;
 					my @tab = split(" ",$res);
+				
 					chomp($res);
 					my $sequence = uc($tab[4]);
 					my $count_A = () = $sequence =~ /A/g;
@@ -244,6 +247,8 @@ foreach my $family (@{$project->getFamilies()}) {
 					my $count_G = () = $sequence =~ /G/g;
 					my @deletions = ($sequence =~ /-(\d+)/g);
 					my @insertions = ($sequence =~ /\+(\d+)/g);
+					print join("\t",$tab[1],$count_A,$count_C,$count_G,$count_T,scalar(@deletions),scalar(@insertions))."\n";
+					
 					push(@{$hbamba->{$tab[1]}->{COV}}, $tab[3]);
 					push(@{$hbamba->{$tab[1]}->{A}}, $count_A);
 					push(@{$hbamba->{$tab[1]}->{C}}, $count_C);
@@ -251,8 +256,9 @@ foreach my $family (@{$project->getFamilies()}) {
 					push(@{$hbamba->{$tab[1]}->{T}} , $count_T);
 					push(@{$hbamba->{$tab[1]}->{DEL}} , sum(@deletions)+0);
 					push(@{$hbamba->{$tab[1]}->{INS}} , sum(@insertions)+0);
-					
-					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 43361164);
+					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 61190108);
+					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 61190108);
+					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 61190108);
 				}
 			close (BAMBA);	
 			
@@ -275,7 +281,6 @@ foreach my $family (@{$project->getFamilies()}) {
 		my @bits = $vector_denovo->Index_List_Read();
 			my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
 			 $rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vdenovo);
-			warn scalar(@bits)." ".$vdenovo->Norm;
 	}
 }
 
@@ -306,7 +311,9 @@ sub construct_strict_denovo {
 				my $local_limit = $limit ;
 				my $var = $no->get_index($vector_id);
 				my $debug;
-			
+				$debug =1 if $var ->start  == 61190109;
+				
+				
 				my $percent;
 				my $r = $var->getRatio($children);
 				if ($r > 40 ) {
@@ -357,7 +364,11 @@ sub construct_strict_denovo {
 				elsif ($var->isDeletion) {
 					my $start = $var->start;
 					my $nb_alt = $hbamba->{$start}->{DEL}->[0] + $hbamba->{$start}->{DEL}->[1]+$hbamba->{$start+1}->{DEL}->[0] + $hbamba->{$start+1}->{DEL}->[1]+$hbamba->{$start-1}->{DEL}->[0] + $hbamba->{$start-1}->{DEL}->[1];
+				
 					my $min_cov = max (min($hbamba->{$start-1}->{COV}->[0] + $hbamba->{$start-1}->{COV}->[1]),min($hbamba->{$start}->{COV}->[0] + $hbamba->{$start}->{COV}->[1]),min($hbamba->{$start+1}->{COV}->[0] + $hbamba->{$start+1}->{COV}->[1])) ;
+						warn $nb_alt." ".$min_cov." limit ".$local_limit if $debug;
+					warn Dumper $hbamba->{$start}->{DEL} if $debug;
+					warn Dumper $hbamba->{$start-1}->{DEL} if $debug;
 					$vdenovo->Bit_On($vector_id) if $nb_alt < $local_limit && $min_cov >= 5 ;
 				}
 				

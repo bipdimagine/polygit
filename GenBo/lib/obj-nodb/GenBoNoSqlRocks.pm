@@ -308,7 +308,7 @@ sub rocks {
 	}
 	confess unless $self->mode;
 	if ( $self->mode eq "r" ) {
-
+		system("vmtouch -q  -t ".$self->path_rocks);
 		#confess($self->json_file) if -e $self->json_file;
 		$self->load_config() if -e $self->json_file;
 		confess( $self->path_rocks . '/CURRENT' )

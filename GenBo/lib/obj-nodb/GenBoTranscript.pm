@@ -556,7 +556,8 @@ sub codonsConsequenceForInsertion {
 		$seq_orf ="";
 		foreach my $a (split("",$rseq_orf)){
 			warn $self->sequence() if $a eq "-";
-			$seq_orf .= reverse_base($a);
+			warn $rseq_orf if $a eq "+";
+			$seq_orf .= reverse_base($a,$var->sequence());
 		} 
 	}
 	substr($codon2,$splice,0) = $seq_orf;
@@ -824,13 +825,14 @@ sub search {
 }
  
 sub reverse_base {
-	my $base = shift;
+	my ($base,$string) = @_;
 	return "T" if $base eq "A" ;
 	return "A" if $base eq "T" ;
 	return "C" if $base eq "G" ;
 	return "G" if $base eq "C" ;
 	return "N" if $base eq "N" ;
-	confess("base ".$base);
+	return "N" if $base eq "+" ;
+	confess("base ".$base." ".$string);
 }
 
 #here you have an array with all genomic_position use to trabnslate genomic position to transcript position

@@ -67,6 +67,7 @@ sub load_config {
 		
 		
 	}
+	
 	return 1;
 }
 sub write_config {
@@ -232,6 +233,7 @@ has vector_type_patient =>(
 		}
 		else {
 			$self->load_config;
+			
 			return $self->{vector_type_patient};
 		}
 	}
@@ -253,7 +255,7 @@ sub cache_memory_patient{
 
 sub get_vector_patient {
 	my ($self,$patient,$search) = @_;
-	die("problem ".$search) unless exists $self->vector_type_patient->{$search};
+	confess("problem ".$search." ".$self->dir) unless exists $self->vector_type_patient->{$search};
 	my $h = $self->cache_memory_patient($patient);
 	warn Dumper keys %$h  unless exists $h->{$self->id_global_patient($patient,$search)};
 	confess($search." ".$self->id_global_patient($patient,$search)) unless exists $h->{$self->id_global_patient($patient,$search)};

@@ -169,7 +169,7 @@ sub  PbsvDel {
 	my $infos      = $x->{infos};
 	$hash->{'id'}                   = $id;
 	$hash->{'isSrPr'}               = 1;
-	$hash->{'isLargeDeletion'}      = 1;
+	#$hash->{'isLargeDeletion'}      = 1;
 	$hash->{'structuralType'}       = 'del';
 	$hash->{'structuralTypeObject'} = 'deletions';
 	$hash->{'id'}                   = $id;
@@ -240,8 +240,8 @@ sub PbsvIns {
 		$hash->{'isLarge'}              = 1;
 		$hash->{'end'}                  = $genbo_pos + $len;
 		$hash->{'length'}               = abs($len);
-		$hash->{'structuralType'}       = 'l_dup';
-		$hash->{'structuralTypeObject'} = 'large_duplications';
+		$hash->{'structuralType'}       = 'insertion';
+		$hash->{'structuralTypeObject'} = 'insertions';
 		$hash->{'allele_length'}        = $len;
 	}
 	elsif ( $infos->{SVTYPE} eq "INS")

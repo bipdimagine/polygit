@@ -61,7 +61,6 @@ use GenBoJunction;
 use GenBoJunctionCache;
 use GenBoNoSqlRocks;
 use Storable qw(store retrieve freeze dclone thaw);
-
 #use LMDB_File qw(:flags :cursor_op);
 use GenBoNoSqlLmdb;
 use GenBoNoSqlIntervalTree;
@@ -497,6 +496,14 @@ has isDefidiagSolo => (
 		}
 
 		return $find;
+	},
+);
+has getStudy => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->validation_db();
 	},
 );
 
@@ -1916,6 +1923,7 @@ has DejaVuCNVFile => (
 		return $file;
 	},
 );
+
 
 
 has DejaVuSVeq_path => (

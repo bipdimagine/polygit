@@ -20,6 +20,7 @@ use Statistics::Descriptive;
 use GenBoNoSqlLmdbCache;
 use Carp;
 use QueryPbsv;
+use QuerySniffles;
 
 use QueryDragenSv;
 use GenBoCapture;
@@ -1328,6 +1329,9 @@ sub getQueryVcf {
 	
 	if ($method eq "pbsv"){
 		 $queryVcf = QueryPbsv->new( \%args );
+	}
+	elsif ($method eq "Sniffles2"){
+		 $queryVcf = QuerySniffles->new( \%args );
 	}
 	elsif ($method eq "dragen-sv"){
 		 $queryVcf = QueryDragenSv->new( \%args );
@@ -2688,10 +2692,33 @@ sub is_multiplex_ok {
 	#}
 	return $self->{is_multiplex_ok}->{$multi};
 }
-
+#sub hotspot_genome {
+#	my ( $self) = @_;
+#	my $bam = $self->getBamFile();
+#	my $samtools = $self->buffer()->software("samtools");
+#	my $chr = $self->project->getChromosome("chrM");
+#	my $start = "3243";
+#	my $end = "3243";
+#	my $ref ="A";
+#	my $alt ="G";
+#	my $region = $chr->fasta_name.":".$start."-".$end;
+#	my $pileup = `$samtools mpileup $bam -r $region | cut -f 5`;
+#	$pileup =~ s/[+-]\d+[ACGTNacgtn]+//g; 
+#	my $nref = ($pileup =~ tr/$ref//i);
+#	my $nalt = ($pileup =~ tr/$alt//i);
+#	my $res
+#	my $hash;
+#	$hash->{A_REF} = $h->{ref};
+#		$hash->{A_ALT} = $h->{alt};
+#		$hash->{NAME} = $h->{name};
+#		$hash->{ID} = $hash->{REF}.":".($hash->{POS}+1);
+#		$hash->{GENBO_ID} =$h->{genbo_id};
+#		$hash->{PROT} =$h->{protid};
+#	push(@{$res->{"MT-TL1"}},$hash);	
+#}
 sub hotspot {
 	my ( $self) = @_;
-
+	return if $self->isGenome;
 	my $capture = $self->getCapture();
 	my $file =$capture->hotspots_filename; 
 	my $bam = $self->getBamFile();

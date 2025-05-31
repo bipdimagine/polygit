@@ -242,30 +242,52 @@ has hash_phenotypes => (
 	},
 );
 
+#sub resume_phenotype  {
+#			my ($self,$len) = @_;
+#			my $apheno = $self->array_phenotypes();
+#			unless (@$pheno){
+#				my $string = " -"; 
+#				($string,$to) = split(/\[/,$self->description) if $self->description;
+#				return({array=>[$string],nb=>1});
+#			}
+#			return({array=>$apheno,nb=>scalar(@$apheno)});
+#	}
+	
 has array_phenotypes  => (
 	is		=> 'ro',
 	lazy	=> 1,
 	default => sub { 
 		my $self = shift;
 		my @lPhen;
-#		foreach my $cat (keys %{$self->hash_phenotypes()}) {
-#			push(@lPhen, @{$self->hash_phenotypes->{$cat}});
-#		}
 		if (exists $self->omim->{version}){
-			push(@lPhen, @{$self->omim->{phenotypes}->{omim}} ) if (exists $self->omim->{phenotypes}->{omim});
 			push(@lPhen, @{$self->hgmd_disease} ) if ($self->hgmd and $self->hgmd_disease);
+			push(@lPhen, @{$self->omim->{phenotypes}->{omim}} ) if (exists $self->omim->{phenotypes}->{omim});
 			push(@lPhen, @{$self->omim->{phenotypes}->{ddg2p}} ) if (exists $self->omim->{phenotypes}->{ddg2p});
 			push(@lPhen, @{$self->omim->{phenotypes}->{orphanet}}) if (exists $self->omim->{phenotypes}->{orphanet});
 			push(@lPhen,  sort @{$self->hpo_phenotypes_names()}) if ($self->hpo());
-			return \@lPhen;
 		}
 		else {
-			push(@lPhen, split(";",$self->omim->{phenotype}->{omim}) )   if (exists $self->omim->{phenotype}->{omim} and $self->omim->{phenotype}->{omim});
 			push(@lPhen,  @{$self->hgmd_disease}) if ($self->hgmd and $self->hgmd_disease);
+			push(@lPhen, split(";",$self->omim->{phenotype}->{omim}) )   if (exists $self->omim->{phenotype}->{omim} and $self->omim->{phenotype}->{omim});
+		
 			push(@lPhen,   split(";",$self->omim->{phenotype}->{ensembl})) if (exists   $self->omim->{phenotype}->{ensembl});
 			push(@lPhen,  sort @{$self->hpo_phenotypes_names()}) if ($self->hpo());
 		}
-		#
+		my $string = " -"; 
+		my $to;
+		($string,$to) = split(/\[/,$self->description) if $self->description;
+		push(@lPhen,$string);
+		my $term;
+		my (@autism, @autres);
+	foreach my $term (@lPhen) {
+    	if ($term =~ /autism/i) {
+        	push @autism, $term;
+    	} else {
+        	push @autres, $term;
+    	}
+	}
+	@lPhen = (@autres,@autism);
+
 		return \@lPhen;
 	},
 );

@@ -45,7 +45,7 @@ is		=> 'rw',
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-	#	return 1;
+		return 1;
 		
 		if ($self->getVersion() =~ /HG38/ and -e  $self->rocks_cache_dir."/vector"){
 			return 1;

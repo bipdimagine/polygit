@@ -147,6 +147,7 @@ sub delete_bulk {
 
 sub sth_insert_dejavu_cached {
 	my ($self,$chr) = @_;
+	warn "$chr";
 	return $self->{sth_insert_dejavu_cached}->{$chr} if exists $self->{sth_insert_dejavu_cached}->{$chr};
 	 my $table = $self->create_table($chr);
 	$self->{sth_insert_dejavu_cached}->{$chr} = $self->dbh($chr)->prepare("insert  into $table (_key,ho,projects,_value) values(?,?,?,?)");
@@ -214,7 +215,7 @@ sub prepare_cnv {
 
 sub get_cnv {
 	my ($self,$chr,$start,$end,$type,$dejavu,$seuil) = @_;
-	#confess();
+	confess();
 	 my $table_name = $self->create_table($chr);
 	 my $l = (100 - $seuil)/100;
 	 my $len = abs($start - $end);

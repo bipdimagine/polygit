@@ -72,12 +72,10 @@ my $filein_pat_tbi = $dir."/".$patient_name."_bins.bed.gz.tbi";
 my @st = (stat($filein_pat_tbi));
 
 my $cache_id= "$chr_name;$project_name;$patient_name;$type"."polycyto_plot_cnv".file_md5_hex($Bin."/PolyCytoPlotCNV.pl").$st[9].$st[11].$st[12];
-#warn $cache_id;
 my $no_cache;
 my $text;
 #
 $no_cache = $patient->get_lmdb_cache("r");
-#warn $no_cache->filename;
 $text = $no_cache->get_cache($cache_id);
 $no_cache->close();
 
@@ -226,18 +224,17 @@ if ($trio == 3)	#both parents
 	my $v2;
 	my $v1bis;
 	my $v2bis;
-	
 	# (1) selection des snps informatifs a partir des variants Ho : version patrick
 	
 	if ($type == 1)	# DEL on regarde tous les variants de l'enfant / au niveau de la deletion tous les variants He du parent non délété deviennent Ho
 	{
 		$v1 = $mother->getVectorOriginHe($chr);
-		$v1 &= $chr->getVectorSubstitutions();
+		$v1 &= $mother->getVectorSubstitutions($chr);
  		$v1 -= $father->getVectorOrigin($chr);
 		$v1 &= $patient->getVectorOrigin($chr);
 
 		$v2 = $father->getVectorOriginHe($chr);
-		$v2 &= $chr->getVectorSubstitutions();
+		$v2 &= $father->getVectorSubstitutions($chr);
  		$v2 -= $mother->getVectorOrigin($chr);
 		$v2 &= $patient->getVectorOrigin($chr);
 	}
@@ -245,12 +242,12 @@ if ($trio == 3)	#both parents
 	if ($type >= 2 ) # DUP les snps informatifs sont ceux Ho chez un des parents non présents chez l'autre et He chez l'enfant 
 	{
 		$v1 = $mother->getVectorOriginHo($chr);
-		$v1 &= $chr->getVectorSubstitutions();
+		$v1 &= $mother->getVectorSubstitutions($chr);
  		$v1 -= $father->getVectorOrigin($chr);
 		$v1 &= $patient->getVectorOriginHe($chr);
 
 		$v2 = $father->getVectorOriginHo($chr);
-		$v2 &= $chr->getVectorSubstitutions();
+		$v2 &= $father->getVectorSubstitutions($chr);
  		$v2 -= $mother->getVectorOrigin($chr);
 		$v2 &= $patient->getVectorOriginHe($chr);
 	}
@@ -288,7 +285,6 @@ if ($trio == 3)	#both parents
 		next if  $p2 eq "-";
 		$p2= "" if $p2 eq "-";
 	}
-	#warn abs(time-$t);
 	#die($x);
 	
 	my $lpos="";

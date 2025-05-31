@@ -321,6 +321,7 @@ sub get_ids {
 	my $vs = $reference->getStructuralVariations;
 	
 	my @arocksid = map {$_->rocksdb_id} @$vs;
+	
 	if (scalar(@$vs) > 0 and @arocksid){
 		eval{
 			$chr->rocksdb("gnomad")->prepare(\@arocksid);
@@ -349,14 +350,13 @@ sub get_ids {
 	my $hpolyviewer;
 	foreach my $variation ( @{$vs } ) {
 		next if ($variation->type =~ /junction/ );
-		
 		#TODO: a ne pas oublier d'enlever apres TEST
 		#next if ($variation->isCnv() );
 		
 		
 		my $debug ;
 		$nb ++;
-		warn $nb."/".scalar @{$vs } if $nb %30000 == 0; 
+		warn $nb."/".scalar @{$vs } if $nb %5000 == 0; 
 		
 		if ($variation->type =~ /inversion/ ){
 		 $debug =1;

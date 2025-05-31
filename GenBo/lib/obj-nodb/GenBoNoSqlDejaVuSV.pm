@@ -100,13 +100,14 @@ sub get_sv {
 	$x->{infos} = {};
 	$x->{dv_patients} = 0;
 	$x->{dv_projects} = 0;
+
 	while (my $row = $self->prepare_sv("SV")->fetchrow_hashref){ 
 		
 		my $hashdv = $self->decode($row->{hash});
-		 
 		$hashdv->{identity1}  = abs($row->{start1} - $start1);
 		
 		$hashdv->{identity2} = abs($row->{start2} - $start2);
+		
 		my $nbp = 0;
 		my $nbproject = 0;
 		
@@ -119,12 +120,16 @@ sub get_sv {
 		
 	#	warn Dumper $hashdv if $hashdv;
 	#	die() if $hashdv;
+	warn "++++";
+	warn Dumper $hashdv;
+	warn "-----";
 		$x->{infos} = merge $x->{infos},$hashdv;
 		$x->{dv_patients} = $row->{nb_patient} - $nbp;
 		$x->{dv_projects} = $row->{nb_project} - $nbproject;
 		 
 		
 	 }
+		die() if $x->{dv_patients} > 10; 
 	 return $x;
 }
 

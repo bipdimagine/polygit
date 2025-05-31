@@ -7,7 +7,7 @@ use Config::Std;
 use GenBoCapture;
 use Position;
 use Carp;
-extends 'GenBoCnv';
+extends 'GenBoDeletion';
 
 
 has rocksdb_id => (

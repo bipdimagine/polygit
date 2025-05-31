@@ -255,154 +255,154 @@ sub return_tabix_query {
 
 sub parseLid {
 	my ( $self, $reference ) = @_;
-
+	confess();
 	#return {};
 
-	my $project    = $self->getPatient()->getProject();
-	my $file       = $self->file();
-	my $chromosome = $reference->getChromosome();
-	my $res        = $self->tabix->query_full(
-		$self->return_tabix_chromosome_name($chromosome),
-		$reference->start, $reference->end );
-
-#my $res =  $self->tabix->query($chromosome->name.":".$reference->start."-".$reference->end);
-#	my $res =  $self->tabix->query($chromosome->fasta_name);
-	return {} unless $res;
-
-	my @data;
-	my %hashRes;
-	my $patient_id = $self->getPatient()->id;
-	while ( my $line = $res->next ) {
-
-#22	38540870	38540989	1/1	dup	ENSG00000184381-PLA2G6	2.66	1.1;0.8;0.9;1.2;0.7;0.8;1.3;1.0;0.7;1.0;1.0;1.3	117	45;30;36;48;26;41;63;49;25;34;39;41
-		my (
-			$chr_name, $start,  $end, $status, $type,
-			$gene,     $score1, $a,   $score2, $b
-		) = split( " ", $line );
-		if ( $project->isGenome ) {
-
-		#don't construct object > 10000 for genome project better use wisecondor
-			next if abs( $start - $end ) > 10_000;
-		}
-		my $ref_seq = $chromosome->getSequence( $start,     $end );
-		my $first   = $chromosome->getSequence( $start - 1, $start - 1 );
-		my $id;
-		my $sequence_id;
-		my $structType;
-
-		#warn $score1."-".$a."-".$score2;
-		if ( $type eq "del" ) {
-
-			$sequence_id = $first . $ref_seq . "_" . $first;
-			$id         = $chromosome->name . "_" . $start . "_" . $sequence_id;
-			$structType = 'del';
-			$hashRes{$structType}->{$id}->{'id'}              = $id;
-			$hashRes{$structType}->{$id}->{'vcf_id'}          = $id;
-			$hashRes{$structType}->{$id}->{'check_id'}        = $id;
-			$hashRes{$structType}->{$id}->{'isLargeDeletion'} = 1;
-			$hashRes{$structType}->{$id}->{'isLarge'}         = 1;
-			$hashRes{$structType}->{$id}->{'structuralType'}  = 'l_del';
-			$hashRes{$structType}->{$id}->{'structuralTypeObject'} =
-			  'large_deletions';
-			$hashRes{$structType}->{$id}->{'start'}      = $start;
-			$hashRes{$structType}->{$id}->{'end'}        = $end;
-			$hashRes{$structType}->{$id}->{'ref_allele'} = $ref_seq;
-			$hashRes{$structType}->{$id}->{'var_allele'} = "-";
-		}    #end deletion
-		else {
-			$sequence_id = $first . "_" . $first . $ref_seq;
-			$id         = $chromosome->name . "_" . $start . "_" . $sequence_id;
-			$structType = 'ins';
-			$hashRes{$structType}->{$id}->{'id'}                 = $id;
-			$hashRes{$structType}->{$id}->{'vcf_id'}             = $id;
-			$hashRes{$structType}->{$id}->{'check_id'}           = $id;
-			$hashRes{$structType}->{$id}->{'isLargeDuplication'} = 1;
-			$hashRes{$structType}->{$id}->{'isLarge'}            = 1;
-			$hashRes{$structType}->{$id}->{'structuralType'}     = 'l_dup';
-			$hashRes{$structType}->{$id}->{'structuralTypeObject'} =
-			  'large_duplications';
-			$hashRes{$structType}->{$id}->{'start'}         = $start;
-			$hashRes{$structType}->{$id}->{'end'}           = $start + 1;
-			$hashRes{$structType}->{$id}->{'allele_length'} = $end - $start;
-			$hashRes{$structType}->{$id}->{'ref_allele'}    = $ref_seq;
-			$hashRes{$structType}->{$id}->{'var_allele'}    = $ref_seq;
-			$hashRes{$structType}->{$id}->{'sequence'}      = $ref_seq;
-
-			#			$hashRes{$structType}->{$id}->{'var_allele'} = "-";
-		}
-		die() unless $sequence_id;
-		$hashRes{$structType}->{$id}->{'chromosomes_object'} =
-		  { $chromosome->id() => undef };
-
-		$hashRes{$structType}->{$id}->{'line_infos'} = {};
-		$hashRes{$structType}->{$id}->{'references_object'}->{ $reference->id }
-		  = undef;
-
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method} =
-		  $self->method();
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{'ref_allele'} =
-		  $ref_seq;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{'var_allele'} =
-		  "-";
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{dp} = '-';
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{nb_all_mut} = 0;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{nb_all_ref} = 0;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score1} =
-		  $score1;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score2} =
-		  $score2;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score3} = 0;
-
-#$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score3} = int(($score1+$score2)*100);
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{info_vcf} = {};
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score}    = 0;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{nb_all_ref} = 0;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{nb_all_mut} = 0;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{dp} = '-';
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{score1} = $score1;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{score2} = $score2;
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{score3} = 0;
-
-#$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{score3} = int(($score1+$score2)*100);
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{info_vcf} = {};
-		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
-		  ->{ $self->method }->{score} = 0;
-		if ( $status eq "1/1" ) {
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{he} = 0;
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{ho} = 1;
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
-			  ->{method_calling}->{ $self->method }->{he} = 0;
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
-			  ->{method_calling}->{ $self->method }->{ho} = 1;
-		}
-		else {
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{he} = 1;
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{ho} = 0;
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
-			  ->{method_calling}->{ $self->method }->{he} = 1;
-			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
-			  ->{method_calling}->{ $self->method }->{ho} = 0;
-		}
-
-		$hashRes{$structType}->{$id} =
-		  compress( freeze( $hashRes{$structType}->{$id} ) );
-
-	}
-	return \%hashRes;
+#	my $project    = $self->getPatient()->getProject();
+#	my $file       = $self->file();
+#	my $chromosome = $reference->getChromosome();
+#	my $res        = $self->tabix->query_full(
+#		$self->return_tabix_chromosome_name($chromosome),
+#		$reference->start, $reference->end );
+#
+##my $res =  $self->tabix->query($chromosome->name.":".$reference->start."-".$reference->end);
+##	my $res =  $self->tabix->query($chromosome->fasta_name);
+#	return {} unless $res;
+#
+#	my @data;
+#	my %hashRes;
+#	my $patient_id = $self->getPatient()->id;
+#	while ( my $line = $res->next ) {
+#
+##22	38540870	38540989	1/1	dup	ENSG00000184381-PLA2G6	2.66	1.1;0.8;0.9;1.2;0.7;0.8;1.3;1.0;0.7;1.0;1.0;1.3	117	45;30;36;48;26;41;63;49;25;34;39;41
+#		my (
+#			$chr_name, $start,  $end, $status, $type,
+#			$gene,     $score1, $a,   $score2, $b
+#		) = split( " ", $line );
+#		if ( $project->isGenome ) {
+#
+#		#don't construct object > 10000 for genome project better use wisecondor
+#			next if abs( $start - $end ) > 10_000;
+#		}
+#		my $ref_seq = $chromosome->getSequence( $start,     $end );
+#		my $first   = $chromosome->getSequence( $start - 1, $start - 1 );
+#		my $id;
+#		my $sequence_id;
+#		my $structType;
+#
+#		#warn $score1."-".$a."-".$score2;
+#		if ( $type eq "del" ) {
+#
+#			$sequence_id = $first . $ref_seq . "_" . $first;
+#			$id         = $chromosome->name . "_" . $start . "_" . $sequence_id;
+#			$structType = 'del';
+#			$hashRes{$structType}->{$id}->{'id'}              = $id;
+#			$hashRes{$structType}->{$id}->{'vcf_id'}          = $id;
+#			$hashRes{$structType}->{$id}->{'check_id'}        = $id;
+#			$hashRes{$structType}->{$id}->{'isLargeDeletion'} = 1;
+#			$hashRes{$structType}->{$id}->{'isLarge'}         = 1;
+#			$hashRes{$structType}->{$id}->{'structuralType'}  = 'l_del';
+#			$hashRes{$structType}->{$id}->{'structuralTypeObject'} =
+#			  'large_deletions';
+#			$hashRes{$structType}->{$id}->{'start'}      = $start;
+#			$hashRes{$structType}->{$id}->{'end'}        = $end;
+#			$hashRes{$structType}->{$id}->{'ref_allele'} = $ref_seq;
+#			$hashRes{$structType}->{$id}->{'var_allele'} = "-";
+#		}    #end deletion
+#		else {
+#			$sequence_id = $first . "_" . $first . $ref_seq;
+#			$id         = $chromosome->name . "_" . $start . "_" . $sequence_id;
+#			$structType = 'ins';
+#			$hashRes{$structType}->{$id}->{'id'}                 = $id;
+#			$hashRes{$structType}->{$id}->{'vcf_id'}             = $id;
+#			$hashRes{$structType}->{$id}->{'check_id'}           = $id;
+#			$hashRes{$structType}->{$id}->{'isLargeDuplication'} = 1;
+#			$hashRes{$structType}->{$id}->{'isLarge'}            = 1;
+#			$hashRes{$structType}->{$id}->{'structuralType'}     = 'l_dup';
+#			$hashRes{$structType}->{$id}->{'structuralTypeObject'} =
+#			  'large_duplications';
+#			$hashRes{$structType}->{$id}->{'start'}         = $start;
+#			$hashRes{$structType}->{$id}->{'end'}           = $start + 1;
+#			$hashRes{$structType}->{$id}->{'allele_length'} = $end - $start;
+#			$hashRes{$structType}->{$id}->{'ref_allele'}    = $ref_seq;
+#			$hashRes{$structType}->{$id}->{'var_allele'}    = $ref_seq;
+#			$hashRes{$structType}->{$id}->{'sequence'}      = $ref_seq;
+#
+#			#			$hashRes{$structType}->{$id}->{'var_allele'} = "-";
+#		}
+#		die() unless $sequence_id;
+#		$hashRes{$structType}->{$id}->{'chromosomes_object'} =
+#		  { $chromosome->id() => undef };
+#
+#		$hashRes{$structType}->{$id}->{'line_infos'} = {};
+#		$hashRes{$structType}->{$id}->{'references_object'}->{ $reference->id }
+#		  = undef;
+#
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method} =
+#		  $self->method();
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{'ref_allele'} =
+#		  $ref_seq;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{'var_allele'} =
+#		  "-";
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{dp} = '-';
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{nb_all_mut} = 0;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{nb_all_ref} = 0;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score1} =
+#		  $score1;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score2} =
+#		  $score2;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score3} = 0;
+#
+##$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score3} = int(($score1+$score2)*100);
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{info_vcf} = {};
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{score}    = 0;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{nb_all_ref} = 0;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{nb_all_mut} = 0;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{dp} = '-';
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{score1} = $score1;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{score2} = $score2;
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{score3} = 0;
+#
+##$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}->{$self->method}->{score3} = int(($score1+$score2)*100);
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{info_vcf} = {};
+#		$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{method_calling}
+#		  ->{ $self->method }->{score} = 0;
+#		if ( $status eq "1/1" ) {
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{he} = 0;
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{ho} = 1;
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
+#			  ->{method_calling}->{ $self->method }->{he} = 0;
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
+#			  ->{method_calling}->{ $self->method }->{ho} = 1;
+#		}
+#		else {
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{he} = 1;
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}->{ho} = 0;
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
+#			  ->{method_calling}->{ $self->method }->{he} = 1;
+#			$hashRes{$structType}->{$id}->{annex}->{$patient_id}
+#			  ->{method_calling}->{ $self->method }->{ho} = 0;
+#		}
+#
+#		$hashRes{$structType}->{$id} =
+#		  compress( freeze( $hashRes{$structType}->{$id} ) );
+#
+#	}
+#	return \%hashRes;
 }
 
 sub parseBed {
 	my ( $self, $reference ) = @_;
 	my $project = $self->getPatient()->getProject();
 	my $file    = $self->file();
-
+	confess();
 	my $chromosome = $reference->getChromosome();
 	return {} if $chromosome->name eq "Y";
 	my $res = $self->tabix->query_full(
@@ -860,21 +860,19 @@ sub genericSVDel {
 	$ref = substr( $ref, 1 );
 	my $alt = $x->{alt}->[0];
 	my $pos = $x->{pos};
-	my $debug;
-	$debug = 1 if $pos == 46011645;
 	my $genbo_pos = $pos + 1;
 	my $id = $chr->name . "_" . $genbo_pos . "_del-" . abs( $x->{infos}->{SVLEN} );
 
 	my $res = $chr->genesIntervalTree->fetch( $genbo_pos,
 		$genbo_pos + abs( $x->{infos}->{SVLEN} ) );
-	return if scalar(@$res) > 2;
+	return if scalar(@$res) > 3;
 	my $len;
 	my $var_allele = $alt;
 	my $infos      = $x->{infos};
 	$hash->{'id'}                   = $id;
 	$hash->{'isSrPr'}               = 1;
-	$hash->{'isLargeDeletion'}      = 1;
-	$hash->{'structuralType'}       = 'del';
+	#$hash->{'isLargeDeletion'}      = 1;
+	$hash->{'structuralType'}       = 'deletion';
 	$hash->{'structuralTypeObject'} = 'deletions';
 	$hash->{'id'}                   = $id;
 	$hash->{'vcf_id'} = join( "_", $chr->name, $pos, $ref, $x->{alt}->[0] );
@@ -887,7 +885,8 @@ sub genericSVDel {
 	$hash->{'var_allele'}         = $var_allele;
 	$hash->{'line_infos'}         = "-";
 	$hash->{'vcf_position'}       = $pos;
-	$hash->{'isCnv'}              = 1;
+	$hash->{'CUUCUUCU'}       = $pos;
+	#$hash->{'isCnv'}              = 1;
 	###OBJECTS
 	$hash->{'references_object'}->{ $reference->id } = undef;
 	### ANNEX
@@ -916,7 +915,6 @@ sub genericSVDel {
 	  $x->{gt}->{he};
 	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{ho} =
 	  $x->{gt}->{ho};
-	warn Dumper $hash if $debug;
 	return $hash;
 }
 
@@ -934,12 +932,13 @@ sub genericSVIns {
 	my $len;
 	my $var_allele;
 	my $infos = $x->{infos};
-	$hash->{'structuralType'}       = 'l_ins';
-	$hash->{'structuralTypeObject'} = 'large_insertions';
+	$hash->{'structuralType'}       = 'insertion';
+	#$hash->{'structuralTypeObject'} = 'large_insertions';
 
 	if ( $infos->{SVTYPE} eq "DUP" ) {
 		$len = $infos->{SVLEN};
 		$len = $infos->{DUPSVLEN} if exists $infos->{DUPSVLEN};
+		return if $len > 2000;
 		my $res =
 		  $chr->genesIntervalTree->fetch( $genbo_pos, $genbo_pos + $len );
 		return if @$res > 2;
@@ -955,13 +954,15 @@ sub genericSVIns {
 		$id = $chr->name . "_" . $genbo_pos . "_" . $ref . "_dup-" . $len;
 		$var_allele = $chr->sequence( $genbo_pos, $genbo_pos + $len );
 		$hash->{'isDup'} = 1;
-
+		$hash->{var_allele} = $var_allele;
 		#$hash->{'isLargeDuplication'} = 1;
-		$hash->{'isLarge'}              = 1;
+		#$hash->{'isLarge'}              = 1;
 		$hash->{'end'}                  = $genbo_pos + $len;
 		$hash->{'length'}               = abs($len);
-		$hash->{'structuralType'}       = 'l_dup';
-		$hash->{'structuralTypeObject'} = 'large_duplications';
+		$hash->{'structuralType'}       = 'insertion';
+		$hash->{'structuralTypeObject'} = 'insertions';
+		$hash->{'COUCOU'} = 'insertions';
+		
 		$hash->{'allele_length'}        = $len;
 
 	}
@@ -977,6 +978,8 @@ sub genericSVIns {
 		$hash->{'allele_length'} = "~" . length($var_allele);
 	}
 	elsif ( $infos->{SVTYPE} eq "INS" && $alt =~ /INS/ ) {
+	
+		$hash->{'CUICUI'} = 'insertions';
 		if ( exists $infos->{SVINSSEQ} ) {
 			$var_allele              = $infos->{SVINSSEQ};
 			$hash->{'var_allele'}    = $var_allele;
@@ -996,16 +999,20 @@ sub genericSVIns {
 
 		$hash->{'var_allele'}    = $var_allele;
 		$hash->{'allele_length'} = length($var_allele);
+		
 	}
 	else {
 		confess();
 	}
+		$hash->{'structuralTypeObject'} = 'insertions';
+		$hash->{'structuralType'}       = 'insertion';
 	$hash->{'start'}  = $genbo_pos;
 	$hash->{'end'}    = $genbo_pos;
 	$hash->{'id'}     = $id;
 	$hash->{'vcf_id'} = join( "_", $chr->name, $pos, $ref, $x->{alt}->[0] );
 	$hash->{'isSrPr'} = 1;
 	$hash->{'isSV'}   = 1;
+	
 	$hash->{'chromosomes_object'} = { $chr->id => undef };
 
 	$hash->{'ref_allele'}   = $ref;
@@ -1053,7 +1060,9 @@ sub add_DP_AD {
 		$hash->{annex}->{$patient_id}->{nb_all_mut} = $aa[ $i + 1 ];
 		$hash->{annex}->{$patient_id}->{nb_all_ref} = $aa[$i];
 	}
-	$hash->{annex}->{$patient_id}->{dp} =
+		warn Dumper $hash unless $hash->{annex}->{$patient_id}->{nb_all_mut};
+		warn Dumper $hash unless $hash->{annex}->{$patient_id}->{nb_all_ref};
+		$hash->{annex}->{$patient_id}->{dp} =
 	  $hash->{annex}->{$patient_id}->{nb_all_mut} +
 	  $hash->{annex}->{$patient_id}->{nb_all_ref};
 
@@ -1924,7 +1933,7 @@ sub parseVcfFileForReference_gatk {
 		if ( $self->method() eq 'manta' or $self->method() eq 'dragen-sv' ) {
 			$allele->{method} = $self->method();
 			if ( abs( $allele->{len} ) >= 50 ) {
-				$allele->{type} = 'l_dup';
+				$allele->{type} = 'insertion';
 				$allele->{obj}  = 'insertions';
 			}
 		}

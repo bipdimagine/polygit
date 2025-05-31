@@ -5,6 +5,7 @@ use Moo;
 use strict;
 use warnings;
 use Data::Dumper;
+ use Carp;
 use Sereal qw(sereal_encode_with_object sereal_decode_with_object write_sereal_file read_sereal_file);
 extends "GenBoNoSqlDejaVu";
 
@@ -103,7 +104,7 @@ sub prepare_cnv {
 	
 	return $self->{prepare_cnv}->{$chr} if exists $self->{prepare_cnv}->{$chr};
 	 my $table_name = $self->create_table($chr);
-
+	confess();
 	$self->{prepare_cnv}->{$chr} = $self->dbh($chr)->prepare(qq{select $table_name.variation_type, $table_name.projects,$table_name.start,$table_name.end,$table_name._value from $table_name  where end >= ? and start<=?  and variation_type=?  and length between  ? and  ?});
 	return $self->{prepare_cnv}->{$chr};
 }

@@ -46,7 +46,16 @@ has gnomad_id => (
 	default=> sub {
 	my $self = shift;
 	my $b =  $self->getChromosome->sequence($self->start-1,$self->start-1);
+	
 	my $name = $self->getChromosome->name."-".($self->start()-1)."-". $b."-".$b.$self->sequence;
+	unless ($self->sequence){
+		delete $self->{project};
+		delete $self->{buffer};
+		warn Dumper $self;
+		die();
+	}
+	warn $name unless $self->sequence;
+	warn $name unless $b;
 	return $name;
 	my $vn=$self->vcf_id;
 	#confess unless $vn;
@@ -328,14 +337,22 @@ sub getSequence{
 	my $self = shift;
 	return $self->{var_allele};
 }
-sub nomenclatureType {
+
+has isDuplication => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default=> sub {
 	my ($self) = @_;
-	return "ins";
 	my $seq1 = $self->sequence();
 	my $seq2 = $self->getChromosome()->getSequence($self->start-2,$self->start+$self->length+5);
 	 #warn "dup".$self->id." ".$seq1." ".$self->length.$seq2  if $seq2 =~ /$seq1/;
-	 return "ins" unless $seq1;
-	return "dup" if $seq2 =~ /$seq1/;
+	return 1 if $seq2 =~ /$seq1/;
+	return ;
+	},
+);
+sub nomenclatureType {
+	my ($self) = @_;
+	return "dup" if $self->isDuplication;
 	return "ins";
 }
 sub constructNomenclature {

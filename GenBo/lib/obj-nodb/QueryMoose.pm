@@ -45,7 +45,13 @@ sub getDbh {
 
 ##### METHODS #####
 
-
+sub insert_cache_type_rocks {
+	my ($self, $project_id) = @_;
+	my $sql = qq { UPDATE `PolyprojectNGS`.`projects` SET `cache`='rocks' WHERE `project_id`=$project_id; };
+	my $dbh = $self->getDbh();
+	$dbh->do($sql) or confess();
+	return 1;	
+}
 
 sub delteLastConnectionUser {
 	my ($self, $user_name) = @_;

@@ -50,396 +50,121 @@ my $thePatient = $project->getPatient($patientname);
 my $patient = $thePatient;
 my $thePatientFamily = $thePatient->getFamily();
 
+my $dir = $project->getCacheSV(). "/rocks/";
+my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"sv");
+
 #my $file_in = $thePatient->getSRFile;
 #my $tabix = Bio::DB::HTS::Tabix->new( filename => $file_in );
-
-my $mothername;
-my $fathername;
-my $mother_id;
-my $father_id;
-if ($thePatient->isChild())
-{
-		
-		$mother_id = $thePatientFamily->getMother()->id if ( $thePatientFamily->mother() );
-		$father_id = $thePatientFamily->getFather()->id if ( $thePatientFamily->father() );
+	
+my $trio;
+my $mother;
+my $father;
+if ($patient->isChild){
+	 $mother = $patient->getFamily->getMother();
+	 $father = $patient->getFamily->getFather();
+	
 }
-	
-					
-# pour acceder au fichier allBND
-
-# pour acceder au  dejavu global
-
-###################################
-# pour recuperer les evenements DUP DEL associés 
-###################################
-
-#my $pathCNV = $project->getCNVDir();
-my $hCNV;
 
 
-#my $dejavuCNVProject_file = $pathCNV.$projectname."_dejavu.allCNV";
-#my $hdejavuCNVProject= retrieve($dejavuCNVProject_file) or die "Can't retrieve datas from " . $dejavuCNVProject_file . " !\n";
-#
-#foreach my $t (keys %{$hdejavuCNVProject})
-#{
-#	foreach my $n (keys %{$hdejavuCNVProject->{$t}})
-#	{
-#		foreach my $id (keys %{$hdejavuCNVProject->{$t}->{$n}})
-#		{
-#			foreach my $name (keys %{$hdejavuCNVProject->{$t}->{$n}->{$id}})
-#			{
-#				$hCNV->{$name}->{$id}=1;
-#			}
-#		
-#		}
-#	}
-#}
-
-# pour accelerer acces = intervall tree
-#my $htree_dejavuCNVProject;
-#foreach my $type (keys %{$hdejavuCNVProject})
-#{
-#		foreach my $num (keys %{$hdejavuCNVProject->{$type}})
-#		{
-#				
-#				# 1)  detecter les SV identiques 
-#				$htree_dejavuCNVProject->{$type}->{$num}= Set::IntervalTree->new;
-#				
-#				# remplir les arbres :  regrouper les SV chevauchants
-#				foreach my $id  (keys %{$hdejavuCNVProject->{$type}->{$num}})
-#				{
-#						my ( $t, $c, $d, $f ) = split( /_/, $id );
-#						$htree_dejavuCNVProject->{$t}->{$c}->insert($id,$d-5000,$d+5000);
-#						$htree_dejavuCNVProject->{$t}->{$c}->insert($id,$f-5000,$f+5000);
-#				}
-#		}
-#}	
-#	
-## pour acceder au dejavu global  des CNVs
-#my $dejavuCNVdir = $project->DejaVuCNV_path();
-
-###########################################################################################
-
-# on recupère les données
-my $dir = $project->getCacheDir(). "/SV/";
-my $nodejavu = GenBoNoSqlDejaVuSV->new( dir => $dir, mode => "r" );
-my $hTransLoc = $nodejavu->get_all_sv(10,$patient);
-my $hdejavubis;
-my $no_sv = $project->dejavuSV();
-#my $no1 = $project->dejavuCNV();
-my $nbPatientTotal = scalar (keys %{$hallPatient});
-
-# pour accelerer le dejavu des BND
+my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+my $parquet_file = $project->getCacheSV()."/".$project->name.".".$project->id.".parquet";
+my $dir = $project->getCacheSV(). "/rocks/";
+my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"sv");
 
 
-foreach my $sv (@$hTransLoc) {
 
-	# filtre sur les gènes omim
-	if ($omim)
-	{
-		next unless ( ($sv->{"OMIM1"}) ||  ($sv->{"OMIM2"}));
-	}
+#my $patient = $project->getPatients()->[0];
+my $patient = $project->getPatient($patientname);
+my $patient_id = $patient->id;
+my $colpatient = "p".$patient->id;
+my $query = qq{CREATE TABLE SV  AS
+                           SELECT * 
+                           FROM '$parquet_file'
+                           WHERE pos1 > -1  and patient = $patient_id  ;
+	};
 	
-	# pour le dejavu
-	my $listpat_itp ="";
-	my $listpat_iop ="";
-	
-	# pour les chromosomes
-	$type = "transloc";
-	$type = "inv" if $sv->{TYPE} eq "INV";
-	
-#
-#	unless($chr==0) {
-#		if ( $chr == 25 && ($type eq "transloc"))  #chromosomes acrocentriques = 13,14,15,21,22
-#		{
-#			next unless ((($chr1 == 13) || ($chr1 == 14) || ($chr1 == 15) || ($chr1 == 21) || ($chr1 == 22)) && (($chr2 == 13) || ($chr2 == 14) || ($chr2 == 15) || ($chr2 == 21) || ($chr2 == 22)));
-#		}
-#		if ( $chr == 25 && ($type eq "inv"))  #chromosomes acrocentriques = 13,14,15,21,22 
-#		{
-#			next unless ( ($chr1 == 13) || ($chr1 == 14) || ($chr1 == 15) || ($chr1 == 21) || ($chr1 == 22) );
-#		}
-#		
-#		if ( $chr != 25 )
-#		{
-#			next unless (($chr1 == $chr) || ($chr2 == $chr));
-#		}
-#	}
-	
-	
-	
-	
-	
-	
-	# cas particulier des inversions
+$dbh->do($query);
+my $sql = qq{select * from SV ;};			
+my $sth = $dbh->prepare($sql);
+$sth->execute();
+	while (my $row = $sth->fetchrow_hashref) {
 
+	 my $sv = $rocks->get($row->{id});
+	 next if $sv->{dejavu}->{nb_patients} > 10;
+	 delete $sv->{score};
+	 getScoreEvent($sv);
+	  my $hash;
+	my $name = "t(".$sv->{chrom1}.",".$sv->{chrom2}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";
+	 $hash->{"LENGTH"}=  "-";
+	 if ($sv->{type} eq "INV") {
+	 	$name = "inv(".$sv->{chrom1}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";
+	 	$hash->{"LENGTH"}=  $sv->{type}.";".abs($sv->{pos1}  -$sv->{pos2});
+	 }
+		#$name = "INV(".$sv->{chrom1}."[".$sv->{pos1}."-".$sv->{pos2}."])" if ($sv->{type} eq "INV");
+	 
 	
-	 #20|9852693|9852798|21|20490513|20490613
-	#20|54108694|54108694|21|32583601|32583607
-	$sv->{"TRANSLOC"} = $sv->{TYPE}."##".$sv->{CHROM1}."##".$sv->{"CYTOBAND1"}."##".$sv->{CHROM2}."##".$sv->{"CYTOBAND2"};
-	$sv->{"CYTOBAND1"} = $sv->{CHROM1}.$sv->{"CYTOBAND1"};
-	$sv->{"CYTOBAND2"} = $sv->{CHROM2}.$sv->{"CYTOBAND2"};
+	
+	$hash->{TRANSLOC} = $sv->{type}.";".$name;
+	$hash->{"id"}= $sv->{id};
+	$hash->{"QUAL"}=$sv->{qual};
 	
 	
 	
-	my $hdjv_project;
-	my $hdjv_patient_itp;
-	my $hdjv_patient_iop;
-
-	#pour la transmission
-	my $transmission=0;
-
-		
-	my $identity1;
-	my $identity2;
+	$hash->{"POS1"}= $sv->{pos1};
+	$hash->{"CYTOBAND1"}=  $sv->{type}.";".$sv->{cytoband1};
 	
-	if (exists $sv->{PATIENTS}->{$mother_id} && exists $sv->{PATIENTS}->{$father_id}){
-		$sv->{PATIENTS}->{$patient->id}->{transmission} =  "both";
-	}
-	elsif (exists $sv->{PATIENTS}->{$mother_id}) {
-			$sv->{PATIENTS}->{$patient->id}->{transmission} =  "mother";
-	}
-	elsif (exists $sv->{PATIENTS}->{$father_id}) {
-			$sv->{PATIENTS}->{$patient->id}->{transmission} =  "father";
-	}
-	elsif ($father_id > 0 && $mother_id > 0 ) {
-			$sv->{PATIENTS}->{$patient->id}->{transmission} =  "denovo";
-	}
-	else {
-			$sv->{PATIENTS}->{$patient->id}->{transmission} = "X";
-		}
 	
-
-
-	# filtre sur la transmission
-	
-		my $pass = 1;
-	
-#		unless ( ($transmis  eq "all")  || ( $sv->{PATIENTS}->{$patient->id}->{transmission} eq "X"))
-#		{
-#			$pass = 0;
-#			if ( ($transmis eq "mother") &&  ($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/mother/ ) &&  !($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/father/ ) )
-#			{
-#				$pass = 1;
-#			}
-#			
-#			if ( ($transmis eq "father") &&  ($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/father/ ) &&  !($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/mother/ ) )
-#			{
-#				$pass = 1;
-#			}
-#			
-#			if ( ($transmis eq "both") && ( ($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/both/ ) || (($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/father/ ) &&  ($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/mother/ ) )))
-#			{
-#				$pass = 1;
-#			}
-#			
-#			if ( ($transmis eq "denovo") &&  ($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/denovo/ ) &&  !($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/father/ ) &&  !($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/mother/ ) &&  !($sv->{PATIENTS}->{$patient->id}->{transmission} =~ m/both/ ) )
-#			{
-#				$pass = 1;
-#			}
-#		}
-
-
-	my $nbdejavu_project = $sv->{DEJAVU}->{PROJECTS};
-	my $nbPatient_itp =  scalar(keys%{$sv->{PATIENTS}}) - 1 ;
-	
-	my $nbPatient_iop = $sv->{DEJAVU}->{PATIENTS};
-	my $nbdejavuTotal = $nbPatient_itp + $nbPatient_iop;
-	
-	$sv->{"nbdejavu"} = $nbdejavuTotal+"0";
-	
-	$listpat_itp = join(",",sort map {$sv->{PATIENTS}->{$_}->{PATIENT_NAME}}keys %{$sv->{PATIENTS}});    ### !!!!  join(",",sort keys %{$hdjv_patient_itp});
-	$listpat_iop =   join(",",sort @{$sv->{DEJAVU}->{ARRAY}}) if exists $sv->{DEJAVU}->{ARRAY};
-	
-	$sv->{"DEJAVU"}->{STRING} = $type."(".$sv->{ID}.")+".$nbPatient_itp.";".$listpat_itp.",;".$nbdejavu_project.";".$nbPatient_iop.";".$listpat_iop;
-	
-
-
-	# pour afficher tous les membres de la famille dans IGV si trio
-	my $bamFiles = $patient->bamUrl();
+#	$hash->{"REF/ALT1"}= "-";
+	$hash->{"TYPE"}= $sv->{type};
+	$hash->{"POS2"}= $sv->{pos2};
+	$hash->{"CYTOBAND2"}=  $sv->{type}.";".$sv->{cytoband2};
+	##################
+	## GENES 
+	##################
+	$hash->{"ALLGENES"}= "-";	
+	my $before = $sv->{chromosome}.":".$sv->{pos1}."_".$sv->{pos2}."##";
+	my $debug;
+	$debug=1 if $sv->{pos1} == 90072610;
+	$hash->{"GENES1"}= listGenes($sv->{genes},$sv->{id},$debug);"-";#$sv->{genes1};
+	##################
+	## OMIM
+	##################
+	$hash->{"OMIM2"}= $sv->{omim2};
+	$hash->{"OMIM1"}= $sv->{omim1};
+	#IGV 
+	my $members = $thePatientFamily->getMembers();
 	my $bamNames = $patientname;
-	
-	if ($thePatientFamily->isTrio() )
-	{
-		my $members = $thePatientFamily->getMembers();
-
-		foreach my $m (@$members)
-		{
+	my $bamFiles = $patient->bamUrl();
+		foreach my $m (@$members)		{
 			my $membername = $m->name();
 			$bamFiles .= ",".$patient->bamUrl() unless ($membername eq $patientname);
 			$bamNames .= ",".$membername unless ($membername eq $patientname);
 		}
-	}
-	$sv->{'IGV'} = $bamFiles.";".$bamNames."et".$sv->{CHROM1}."_".$sv->{POS1}."_".$sv->{CHROM2}."_".$sv->{POS2};
+	$hash->{'IGV'} = $bamFiles.";".$bamNames."et".$sv->{chrom1}."_".$sv->{pos1}."_".$sv->{chrom2}."_".$sv->{pos2};
 	
-	# filtres
-	
-	$sv->{SCORE_EVENT} = getScoreEvent($sv,$patient);
-	die($sv->{SCORE_EVENT}) if 	$sv->{SCORE_EVENT} eq "NaN";
-	# filtre sur le score
-
-	
-	#next if ($sv->{"SCORE_EVENT"} < 10) && $scoreEvent==0;
-	#next if ($sv->{"SCORE_EVENT"} < 5) && $scoreEvent== 1;
-	
-	############################################
-	# pour afficher les CNVs lies a l'evenement
-	
-	$sv->{'CNV'}=";";
-	
-	if ($thePatientFamily->isTrio() )
-	{
-		$sv->{'CNV_mother'}=";";
-		$sv->{'CNV_father'}=";";
-	}
-	else
-	{
-		$sv->{'CNV_mother'}="X";
-		$sv->{'CNV_father'}="X";
-	}
-	#getLinkedCNV($sv->{ID});
-	#############################################################
-	# pour aller rechercher les infos PR /PR dans les vcfs manta 
-
-	
-	$sv->{'PR'} = join("/",@{$sv->{PATIENTS}->{$patient->id}->{INFOS}->{PR}}) if exists $sv->{PATIENTS}->{$patient->id}->{INFOS}->{PR};
-	$sv->{'SR'} = join("/",@{$sv->{PATIENTS}->{$patient->id}->{INFOS}->{SR}}) if exists $sv->{PATIENTS}->{$patient->id}->{INFOS}->{SR};
-	$sv->{'PR'} = join("/",@{$sv->{PATIENTS}->{$patient->id}->{INFOS}->{AD}}) if exists $sv->{PATIENTS}->{$patient->id}->{INFOS}->{AD};
- 
- 
-  	# calculer le score des gènes compris dans l'evenement
-	
-		my $genesListe;
-		my $objChr  = $project->getChromosome($sv->{CHROM1});
-		my $deb = $sv->{POS1}-50;
-		my $end = $sv->{POS1}+50; 
-		
-		my $genebp1bis = $sv->{CHROM1}.":".$deb."_".$end."##";
-		
-
-		
-		if ($sv->{GENES1}){
-			foreach my $g (keys %{$sv->{GENES1}}){
-				$genesListe .= $g;
-				$genebp1bis .= $g.";".$sv->{GENES1}->{$g}."##";
-			}
-		}
-		else
-		{
-			$genebp1bis="-";
-		}
-		$sv->{"GENES1"}=$genebp1bis;
-		
-		$deb = $sv->{POS2}-50;
-		 $end = $sv->{POS2}+50; 
-		my $genebp2bis=$sv->{CHROM2}.":".$deb."_".$end."##";
-		if ($sv->{GENES2}){
-			foreach my $g (keys %{$sv->{GENES2}}){
-				$genesListe .= $g;
-				$genebp2bis .= $g.";".$sv->{GENES2}->{$g}."##";
-			}
-		}
-		else
-		{
-			$genebp2bis="-";
-		}
-		
-		$sv->{"GENES2"}=$genebp2bis;
-		
-		
-		# dans le cas de inversions 
-		my $geneInv;
-		my $scoremax=0;
-		$sv->{"ALLGENES"}="";
-		
-		get_local_CNV($sv,$sv->{CHROM1},$sv->{POS1},"DEL",$patient->id,$mother_id,$father_id);
-		get_local_CNV($sv,$sv->{CHROM1},$sv->{POS1},"DUP",$patient->id,$mother_id,$father_id);
-#		if ($type eq "inv")
-#		{
-#			my $tabgenesinv = $objChr->getGenesByPosition($bp1,$bp2);
-#			if ( scalar(@$tabgenesinv) >=1 )  # si le variant recouvre des gènes
-#			{	
-#				foreach my $g (@$tabgenesinv)
-#				{
-#					my $gscore= $g->score; 
-#					my $gname= $g->external_name;
-#					
-#					$genesListe .= $gname;
-#					
-#					if($gscore > $scoremax)
-#					{
-#						$scoremax  =$gscore;
-#						$geneInv = $gname.";".$gscore."##".$geneInv;
-#					}
-#					else
-#					{
-#						$geneInv .= $gname.";".$gscore."##";
-#					} 
-#				}
-#				$geneInv = $c1.":".$bp1."_".$bp2."##".$geneInv;
-#				$hTransLoc->{$event_id}->{"ALLGENES"}=$geneInv;
-#			}
-#			else
-#			{
-#				$hTransLoc->{$event_id}->{"ALLGENES"}="-";
-#			}
-#		}
-#		else
-#		{
-#			$hTransLoc->{$event_id}->{"ALLGENES"}="-";
-#		}
-		
-	
-	
-	# dernier filtre sur la liste de gènes
-#
-#	unless ($listOfGenes eq "all")
-#	{
-#		$pass   = 0;
-#		my @tabgenes = split(/,/,$listOfGenes);
-#		foreach my $gene (@tabgenes) 
-#		{
-#			if ( $genesListe =~ m/$gene/ )
-#			{
-#				$pass = 1;
-#			}
-#			last if ( $pass == 1 );
-#		}
-#		next unless ($pass);
-#	}
-#	
-	# pour le json final
-	my $hash;
-	$hash->{"id"}= $sv->{ID};
-	$hash->{"TRANSLOC"}= $sv->{TRANSLOC};
-	$hash->{"IGV"}= $sv->{IGV};
-	$hash->{"QUAL"}=$sv->{QUAL};
-	$hash->{"ALLGENES"}= "-";	
-	$hash->{"LENGTH"}=  $sv->{LENGTH};
-	$hash->{"POS1"}= $sv->{POS1};
-	$hash->{"CYTOBAND1"}=  $sv->{CYTOBAND1};
-	$hash->{"GENES1"}= $sv->{GENES1};
-	$hash->{"OMIM1"}= $sv->{OMIM1};
-	$hash->{"REF/ALT1"}= "-";
-	$hash->{"TYPE"}= $sv->{TYPE};
-	$hash->{"POS2"}= $sv->{POS2};
-	$hash->{"CYTOBAND2"}=  $sv->{CYTOBAND2};
-	$hash->{"GENES2"}= $sv->{GENES2};
-	$hash->{"OMIM2"}= $sv->{OMIM2};
-	$hash->{"REF/ALT2"}= "-";
 	$hash->{"dejavuBP1"} = "-";
 	$hash->{"dejavuBP2"} = "-";
-	$hash->{"dejavu"} = $sv->{DEJAVU}->{STRING};
-	$hash->{'TRANSMISSION'} = $sv->{PATIENTS}->{$patient->id}->{transmission};
-	$hash->{'CNV'}= $sv->{CNV};
-	$hash->{'CNV_mother'}= $sv->{CNV_mother};
-	$hash->{'CNV_father'}= $sv->{CNV_father};
-	
-	$hash->{"SCORE_EVENT"} = $sv->{SCORE_EVENT};
-	$hash->{"PR"} = $sv->{PR};
-	$hash->{"SR"} =  $sv->{SR};
+	$sv->{dejavu}->{nb_projects} +=0;
+	$sv->{dejavu}->{nb_patients} +=0;
+	$sv->{dejavu}->{nb_itp} +=0;
+	$sv->{dejavu}->{nb_itp} = scalar(keys %{$sv->{dejavu}->{this_project}});
+	$sv->{dejavu}->{total_itp} = scalar(@{$project->getPatients});
+	$hash->{"dejavu"} = encode_json $sv->{dejavu};#$sv->{DEJAVU}->{STRING};
+	$hash->{'TRANSMISSION'} =  getTransmission($sv,$mother,$father); 
+	$hash->{'CNV'}= "-";#$sv->{CNV};
+	$hash->{'CNV_mother'}= "#";#$sv->{CNV_mother};
+	$hash->{'CNV_father'}= "#";#$sv->{CNV_father};
+#	
+	$hash->{"SCORE_EVENT"} = $sv->{score};
+	$hash->{"PR"} = $sv->{pr1}."/".$sv->{pr2};
+	$hash->{"SR"} =  $sv->{sr1}."/".$sv->{sr2};
 	push( @listHashRes, $hash);
-}	
 
+
+}	
+#<span onclick="update_grid_gene_phenotypes('ENSG00000006377_7', 'NGS2019_2653')" ;"="">Autism | Autism spectrum disorder | Cochlear incomplete partition, typ... <span style="color:#5cf0d3">+ 16 terms</span></span>
+#
+#warn "coucou";
 
 if ( (scalar(@listHashRes) == 0) )
 {
@@ -501,31 +226,159 @@ sub printJson {
 	print "\n";
 }
 
-sub getScoreEvent()
+sub getScoreEvent
  {
-	my ($sv,$patient) = @_;
-
+	my ($sv) = @_;
+	
 	my $score = 0;
 	
 	# break point dans un gene omim morbid
-	$score += 1  if $sv->{"OMIM1"};	
-	$score += 1  if $sv->{"OMIM2"};
-	# score sur le dejavu
-	my $nbdejavu = $sv->{"nbdejavu"};
 	
+	#27374152
+	my $debug;
+	$debug=1 if $sv->{pos1} == 90072610;
+	
+	$score += 1  if $sv->{"max_score_gene"} >= 5 ;	
+	$score += 1  if $sv->{"max_score_gene"} >= 4 ;
+	$score += 0.5  if $sv->{"max_score_gene"} > 3 ;	
+	warn $sv->{type};
+	if ($sv->{type} eq "INV" && scalar(@{$sv->{genes}}) == 0){
+		$score -= 5;
+		warn "couc ou";
+	}
+	# score sur le dejavu
+	my $nbdejavu = $sv->{dejavu}->{nb_patients};#$sv->{"nbdejavu"};
+	warn $nbdejavu if $debug;
 	if ($nbdejavu <= 10)
 	{
-		$score += 10 - $nbdejavu;
+		$score +=0.5;
 	}
-	# score sur la QUAL
-	$score += int($sv->{"QUAL"} /100)/10;
-	#pour présenter en premier les CNV denovo
-	if ( ($sv->{PATIENTS}->{$patient->id}->{'TRANSMISSION'}  =~ m/denovo/) && !($sv->{PATIENTS}->{$patient->id}->{'TRANSMISSION'} =~ m/mother/ ) && !($sv->{PATIENTS}->{$patient->id}->{'TRANSMISSION'}  =~ m/father/ ) && !($sv->{PATIENTS}->{$patient->id}  =~ m/both/) )
+	if ($nbdejavu <= 5)
 	{
-			$score += 1.5; 
+		$score +=0.5;
 	}
+	if ($nbdejavu ==0)
+	{
+		$score ++;
+	}
+	warn $score if $debug;
+	# score sur la QUAL
+	$score += int($sv->{qual} /100)/10;
+	warn $score if $debug;
+	my $dsr = ($sv->{sr2}/($sv->{sr2}+$sv->{sr1}+1));
+	my $dpr = ($sv->{pr2}/($sv->{pr2}+$sv->{pr1}+1));
+	$score += $dsr;
+	$score += $dpr;
+	warn $score if $debug;
+	#die() if $debug;
+	$score = sprintf("%.1f", $score);
+	#pour présenter en premier les CNV denovo
+#	if ( ($sv->{PATIENTS}->{$patient->id}->{'TRANSMISSION'}  =~ m/denovo/) && !($sv->{PATIENTS}->{$patient->id}->{'TRANSMISSION'} =~ m/mother/ ) && !($sv->{PATIENTS}->{$patient->id}->{'TRANSMISSION'}  =~ m/father/ ) && !($sv->{PATIENTS}->{$patient->id}  =~ m/both/) )
+#	{
+#			$score += 1.5; 
+#	}
+$sv->{score} = $score;
 	return $score;
  }
+  sub listGenes {
+ 	my ($agenes,$id,$debug) = @_;
+ 	my $debug ;
+ 	my @merged;
+
+	my $res;
+	$res->{genes} = [];
+	$res->{nb_genes} = scalar(@$agenes);
+	my $n =0;
+	foreach my $g (@$agenes){
+		delete $g->{phenotypes};
+		push(@{$res->{genes}},$g);
+		last if $n >= 4;
+		$n ++;
+	}
+	$res->{project} = $project->name;
+	$res->{id} = $id;
+	$res->{patient} = $patient->name;
+	$res->{nbh} = 0;
+	$res->{nbm} = 0;
+	$res->{nbl} = 0;
+	
+ 	return encode_json $res;
+ }
+# sub listGenes1 {
+# 	my ($agenes,$id,$debug) = @_;
+# 	warn $id;
+#
+# 	my @genes_list_bp0 = sort{$b->{score} <=> $a->{score}}  @{$agenes};
+# 	my @merged1;
+#	while (@genes_list_bp1 or @genes_list_bp2 ) {
+# 		push @merged, shift @genes_list_bp1 if @genes_list_bp1;
+#    	push @merged, shift @genes_list_bp2 if @genes_list_bp2;
+#	}
+#	push (@merged, @genes_list_bp0);
+#	@merged = sort{$b->{score} <=> $a->{score}} @merged;
+#	my $res;
+#	$res->{nb} = scalar(@merged);
+#	my $n = 0;
+#	foreach my $g (@merged){
+#		delete $g->{phenotypes};
+#		push(@{$res->{genes}},$g);
+#		last if $n >= 4;
+#		$n ++;
+#	}
+#	$res->{project} = $project->name;
+#	$res->{id} = $id;
+#	$res->{patient} = $patient->name;
+# 	
+#	$res->{table_id} = "table_".time."_".$id;
+# 	return encode_json $res;
+# }
+
+
+sub getTransmission
+{
+	my ($sv,$mother,$father) = @_;
+	
+	return "?" unless $mother && $father;
+		
+	my $trm;
+	$trm = "?";
+	my $hash =  $sv->{dejavu}->{this_project};
+	
+	if ($mother){
+		$trm = "-";
+		$trm = "+"  if (exists $hash->{$mother->id});
+	}
+	my $trf;
+	$trf = "?";
+	if ($father){
+		$trf = "-";
+		$trf = "+"  if (exists $hash->{$father->id});
+	}
+	
+	if ($trf eq "?" && $trm eq "?") {
+		return "?";
+	}
+	if ($trf eq "?" && $trm eq "m") {
+		return "m?";
+	}
+	if ($trf eq "+" && $trm eq "?") {
+		return "f?";
+	}
+	if ($trf eq "+" && $trm eq "+") {
+		return "fm";
+	}
+	if ($trf eq "+" && $trm eq "-") {
+		return "f";
+	}
+	if ($trf eq "-" && $trm eq "+") {
+		return "m";
+	}
+	if ($trf eq "-" && $trm eq "-") {
+		return "d";
+	}
+	return "?";
+}
+
  
 # sub getLinkedCNV{
 #	
@@ -575,63 +428,63 @@ sub getScoreEvent()
 #		}
 #	}
 #}
-
-sub get_local_CNV {
-my ($sv,$chr_name,$start,$type,$pid,$mid,$fid) = @_;
-return;
-my $dir = $project->getCacheDir(). "/CNV/";
-my $nodejavu = GenBoNoSqlDejaVuCNV->new( dir => $dir, mode => "r" );
-
-my $chr = $patient->project->getChromosome($chr_name);
-my $l = abs ($start- $chr->length);
-my $a = $start;
-my $b =  $chr->length;
-warn "coucou ".$chr_name;
-my $del1 = $nodejavu->get_cnv_project($type,$chr_name,$a,$b,30);
-$a = 1;
-$b =  $start;
-
-my $del2 = $nodejavu->get_cnv_project($type,$chr_name,$a,$b,30);
-
-my @objs;
-push(@objs,@$del1);
-push(@objs,@$del2);
-
-return  unless @objs;
-
-		foreach my $cnv (@objs)
-		{
-			next if $cnv->{dejavu}->{nb_patients} > 30;
-			$sv->{'CNV'}.=$cnv->{ID}.";" if exists $cnv->{PATIENTS}->{$pid};
-			$sv->{'CNV_mother'}.=$cnv->{ID}.";" if exists $cnv->{PATIENTS}->{$mid};
-			$sv->{'CNV_father'}.=$cnv->{ID}.";" if exists $cnv->{PATIENTS}->{$fid};
-		}
-		
-return $objs[-1];
-}
-
-
-sub getDejavuCNV
-{
-	my ($event_id) = @_;
-	my $nbproject=0;
-	my $nbpatient=0;
-	my $scorecaller_evt=0;
-	my $list_of_other_patient;
-	
-	my ($t,$c,$start1,$end1) = split(/_/,$event_id);
-
-	my $no = $project->dejavuCNV();
-	my $hashdv = $no->get_cnv($c,$start1,$end1,$t,$dejavu,90);
-
-	foreach my $project_name (keys %{$hashdv})
-	{
-			$nbproject++;
-			foreach my $pname (keys %{$hashdv->{$project_name}})
-			{
-					$nbpatient++;
-			}
-	}
-
-	return $nbpatient;
-}
+#
+#sub get_local_CNV {
+#my ($sv,$chr_name,$start,$type,$pid,$mid,$fid) = @_;
+#return;
+#my $dir = $project->getCacheDir(). "/CNV/";
+#my $nodejavu = GenBoNoSqlDejaVuCNV->new( dir => $dir, mode => "r" );
+#
+#my $chr = $patient->project->getChromosome($chr_name);
+#my $l = abs ($start- $chr->length);
+#my $a = $start;
+#my $b =  $chr->length;
+#warn "coucou ".$chr_name;
+#my $del1 = $nodejavu->get_cnv_project($type,$chr_name,$a,$b,30);
+#$a = 1;
+#$b =  $start;
+#
+#my $del2 = $nodejavu->get_cnv_project($type,$chr_name,$a,$b,30);
+#
+#my @objs;
+#push(@objs,@$del1);
+#push(@objs,@$del2);
+#
+#return  unless @objs;
+#
+#		foreach my $cnv (@objs)
+#		{
+#			next if $cnv->{dejavu}->{nb_patients} > 30;
+#			$sv->{'CNV'}.=$cnv->{ID}.";" if exists $cnv->{PATIENTS}->{$pid};
+#			$sv->{'CNV_mother'}.=$cnv->{ID}.";" if exists $cnv->{PATIENTS}->{$mid};
+#			$sv->{'CNV_father'}.=$cnv->{ID}.";" if exists $cnv->{PATIENTS}->{$fid};
+#		}
+#		
+#return $objs[-1];
+#}
+#
+#
+#sub getDejavuCNV
+#{
+#	my ($event_id) = @_;
+#	my $nbproject=0;
+#	my $nbpatient=0;
+#	my $scorecaller_evt=0;
+#	my $list_of_other_patient;
+#	
+#	my ($t,$c,$start1,$end1) = split(/_/,$event_id);
+#
+#	my $no = $project->dejavuCNV();
+#	my $hashdv = $no->get_cnv($c,$start1,$end1,$t,$dejavu,90);
+#
+#	foreach my $project_name (keys %{$hashdv})
+#	{
+#			$nbproject++;
+#			foreach my $pname (keys %{$hashdv->{$project_name}})
+#			{
+#					$nbpatient++;
+#			}
+#	}
+#
+#	return $nbpatient;
+#}
