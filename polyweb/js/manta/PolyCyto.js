@@ -5,6 +5,7 @@ var tabPos ="";
 var tabRatio = "";
 
 var nb=0;
+require([ "dojo/_base/xhr","dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
 
 
 function LaunchPolycyto(project,patient)
@@ -140,37 +141,47 @@ function formaterNB(value)
 	}
 	return (value);
 }
+var color_del = "#D62C1A";
+var color_dup = "#1079B2";
 
 function formaterDUPDEL(value)
 {
 
 	var eurl;
-	
 	if (value == "-")
 	{   
 		return value;
 	}
-	
+	var text ='';
+	var color = return_color_by_type(value);
 	 if ( /DEL/.test(value)) {
 	 	//eurl = '<b><font style="color:red"> '+ value +' </font></b>';
-	 	eurl = '<p style="font-size:10px;color:white;background-color:rgb(255,74,42);padding:8px">' + value + ' </p>';
+	 	text = "DEL";
+	 	
+	 	//eurl=  '<button type="button" class="btn btn-xs btn-primary " style="border-color:black;padding:5px;background-color:'+color_del+';color:white;font-size: 14px;font-family:  Verdana;border-color:white;">DEL'+'</button>';
+	 	//eurl = '<p style="font-size:10px;color:white;background-color:rgb(255,74,42);padding:8px">' + value + ' XXX</p>';
 	 }
 	 
 	 if ( /DUP/.test(value)) {
+		 text = "DUP";
 	 	//eurl = '<b><font style="color:blue"> '+ value +' </font></b>';
-	 	eurl = '<p style="font-size:10px;color:white;background-color:rgb(12,148,230);padding:8px">' + value + ' </p>';
+	 	eurl=  '<button type="button" class="btn btn-xs btn-primary " style="padding:5px;background-color:'+color_dup+';color:white;font-size: 14px;font-family:  Verdana;border-color:white;">DUP'+'</button>';
+	 	//eurl = '<p style="font-size:10px;color:white;background-color:rgb(12,148,230);padding:8px">' + value + ' </p>';
 	 }
 	 
 	 if ( /TRI/.test(value)) {
 			//eurl = '<b><font style="color:blue"> '+ value +' </font></b>';	 
+				 text = "TRI";
 			eurl = '<p style="font-size:10px;color:white;background-color:rgb(12,98,228);padding:8px">' + value + ' </p>';	
 	}
 	 
 	 if ( /QUA/.test(value)) {
+		 	 text = "QUA";
 	 	//eurl = '<b><font style="color:indigo"> '+ value +' </font></b>';
 	 	eurl = '<p style="font-size:10px;color:white;background-color:rgb(1,26,255);padding:8px">' + value + ' </p>';	
 	 }
-	 
+	 return return_style_value(color,value,11);
+	 return '<button type="button" class="btn btn-xs btn-primary " style="background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+text+'</button>';
 	return eurl;
 }
 
@@ -181,25 +192,29 @@ function formaterRatio(value)
 		var val;
 		var eurl="-";
 		
-		if (value == "-")
-		{
-			return value;
-		}		
 		
-		if (value == 0)
+			if (value == "-")
 		{
-			return eurl;
+			return "-";
 		}
+		
+	var color;
+	var val = parseInt(value);
 
-		if (value < 0)
-		{
-				eurl = '<b><font style="color:red">' + value.toFixed(2) + '</font></b>';
-		}
-		if (value > 0)
-		{
-				eurl = '<b><font style="color:blue">' + value.toFixed(2) + '</font></b>';
-		}
-		return eurl;	
+	if (val == 0 ){
+		color="green";
+	}
+	else  if (val < 0){
+		color="blue";
+	}
+	else {
+		 color="tomato";
+	}
+	
+	return '<button "type="button" class="btn btn-xs btn-primary " style="border-color:'+color+';background-color:white;color:'+color+';font-size: 11px;font-family:  Verdana">'+val.toFixed(2)+'</button>';
+	
+		
+		
 }
 
 function formaterScoreDude(value)
@@ -222,32 +237,29 @@ function formaterScoreDude(value)
 	
 function formaterDUPSEG(value)
 {
+	var color;
+	value = value +0;
+	if (value == "-")
+	{
+			return "-";
+	}
+	var val = parseInt(value);
 	
-		var eurl = '<b><font size="4" style="color:green"> - </font></b>';
-
-		if (value == "-")
-		{
-			return value;
-		}
-
-		var val = parseInt(value);
-		
-		if (val == 0)
-		{
-				eurl = '<b><font size="4" style="color:green"> - </font></b>';
-				return eurl;
-		}
-		
-		
-		if (val < 40)
-		{
-				eurl = '<font style="color:green">' + val + ' % </font>';
-		}
-		if (val >= 40)
-		{
-				eurl = '<font style="color:red">' + val +  ' % </font>';
-		}
-		return eurl;	
+	if (val == 0 ){
+		color="green";
+	}
+	else  if (val < 40){
+		color="orange";
+	}
+	else {
+		 color="tomato";
+	}
+	 return return_style_value (color,val,8);
+	return '<button type="button" class="btn btn-xs btn-primary " style="background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+val+'%</button>';
+	
+	return '<button "type="button" class="btn btn-xs btn-primary " style="border-color:'+color+';background-color:white;color:'+color+';font-size: 11px;font-family:  Verdana">'+val+'%</button>';
+	
+	
 }
 
 	
@@ -355,11 +367,13 @@ function formaterCHROM_int(value)
 {
 	var eurl = value;
 
-		if (value == "-")
+	if (value == "-")
 		{
 			return value;
-		}
-	
+	}
+	var v1 = value.split(";");
+	var color = return_color_by_type(v1[0]); 
+	value = v1[1];
 	if (value == 23)
 	{
 		 eurl ="X";
@@ -370,28 +384,51 @@ function formaterCHROM_int(value)
 	}
 	
 	eurl = '<b>' + eurl + '</b>';
+	return return_style_value(color,value);
+}
+
+function return_color_by_type(value){
+	var color = "grey";
+	 if ( /DEL/.test(value)) {
+	 	//eurl = '<b><font style="color:red"> '+ value +' </font></b>';
+	 	color ="#D62C1A";
+	 }
+	 
+	 if ( /DUP/.test(value)) {
+	 	color ="#1079B2";
+	 }
+	 
+	 if ( /TRI/.test(value)) {
+	 		color ="rgb(12,98,228)";
+	}
+	 
+	 if ( /QUA/.test(value)) {
+	 		color ="rgb(1,26,255)";
+	 }
+	 if ( /TL/.test(value)) {
+	 		color ="#00AB78";
+	 }
+	  if ( /INV/.test(value)) {
+	 		color ="#42BDCB";
+	 }
+	 return color;
 	
-	return eurl;
 }
 
 function formaterCytoBand(value)
 {
 	var out=" ";
 	var outshort;
-	
-	var names = value.split(",");
-	var len = names.length;
-
 	if (value == "-")
 	{
 		return value;
 	}
+	
+	var v1 = value.split(";");
+	var color = return_color_by_type(v1[0]); 
+	var names = v1[1].split(",");
+	var len = names.length;
 
-
-	if (value == "--")
-	{
-		return "-";
-	}
 	
 	for ( i = 0 ; i < len; i++)
 	{
@@ -405,27 +442,75 @@ function formaterCytoBand(value)
 	
 	if (len < 3 )
 	{
-			out = '<font style="color:black">'+ out + '</font>';
+			out = ''+ out + '';
 	}
 	else
 	{
 			out = '<a href="#" data-toggle="tooltip" title="' + out + '"> ' + outshort + '</a>';
 	}
-	return out;
+	return return_style_value(color,out);
+	//return out;
 }	
+
+function string_length(value) {
+	var eurl;
+	
+	 if (value > 1000000 ) {
+	 	value = value / 1000000;
+	 	eurl = '<b>' + value.toFixed(2)  + ' Mb </b>';
+	 }
+	 
+	 else if (value > 1000 ) {
+	 	value = value / 1000;
+	 	eurl = value.toFixed(2)  + ' kb';
+	 }	
+	 
+	 else if (value < 1000 ) {
+	 	eurl = value  + " pb";
+	 }	
+	 return eurl;
+}
 
 function formaterLocus(value)
 {
-	if (value == "-")
-	{
-		return value;
-	}
-	
+	let obj = JSON.parse(value);
+
+	var color = return_color_by_type(obj.type); 
 	var out=" ";
-	var pos = value.split("-");
-	out = '<font style="color:grey">' + pos[0] + '</font><font style="color:black">-</font><font style="color:black">' + pos[1] + '</font>';
-	return out;
+	var l = obj.len;
+	
+	 
+	out += '<font style="color:white">' + obj.start + '</font><font style="color:white">-</font><font style="color:white">' + obj.end + '</font><br>'+obj.cytoband+" ("+l+")";
+	
+	var text =  return_style_value(color,out);
+	var out2 = "<div>"+formater_viewers1(obj.viewers)+' <span style=\"white-space: nowrap;position: relative; top: -5px; left: -5px;\">'+text+"</span><div>";
+	
+	return out2;
 }	
+
+function formater_viewers1(obj)
+{
+   			nb++;
+   			var boutonID = 'boutonIGVCNV'+ nb;		
+   				
+   			var igv_value = obj.igv.locus_start + ';' + obj.igv.locus_end + ';' + obj.igv.bam_files + ";" + obj.igv.bam_names + ";"+ obj.igv.l;	
+			var onvIGV = ' onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"';		
+			var bigv  = return_simple_button_with_onclick("IGV","#F0A30A",onvIGV,"white");
+			var onclick = 'onclick="launch_plot(\''+ obj.plot.transmission + '\',' + obj.plot.type + ',' + obj.plot.chromosome + ',' + obj.plot.start + ',' + obj.plot.end + ' )" ';
+			var bplot   = return_simple_button_with_onclick("SNP Array","#A20025",onclick,"white");
+			
+			//var bigv   = '<button class="igvIcon2"  id="' + boutonID + '" onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"></button>';
+			//var bdgv = '<a href="' + obj.dgv.url  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><i><font style="color:red;font-size:10px;padding:0px; ">  DGV  </font></i></b></button></a>';
+			var bdgv  =  button_url("DGV",obj.dgv.url,"#3AB795","white");
+			var bgnomad = button_url("GNOMAD",obj.gnomad.url,"#217DBB","white");
+			out = ' <span style="white-space: nowrap;position: relative; top: -10px; left:0px;">'+bigv+bplot+bgnomad+bdgv+'</span></div>';
+	return out;
+}
+
+function button_url(text,url,color1,color2){
+	var onclickdgv='onclick=window.open(\"' + url + '\",\"_blank\")';
+	return return_simple_button_with_onclick(text,color1,onclickdgv,color2);
+}
 
 function formaterPlot(value)
 {
@@ -460,32 +545,71 @@ function formaterPlot(value)
 }	
 
 
-function formaterLength(value)
+function formaterLength(val)
 {
 	var eurl;
 	
-	if (value == "-")
+	if (val== "-")
 	{
-		return value;
+		return val;
 	}
-	
+	var v1 = val.split(";");
+	var color = return_color_by_type(v1[0]); 
+	var value = v1[1];
 	 if (value > 1000000 ) {
 	 	value = value / 1000000;
 	 	eurl = '<b>' + value.toFixed(2)  + ' Mb </b>';
-	 	return eurl;
 	 }
 	 
-	 if (value > 1000 ) {
+	 else if (value > 1000 ) {
 	 	value = value / 1000;
 	 	eurl = value.toFixed(2)  + ' kb';
-	 	return eurl;
 	 }	
 	 
-	 if (value < 1000 ) {
+	 else if (value < 1000 ) {
 	 	eurl = value  + " pb";
-	 	return eurl;
 	 }	
+	 return return_style_value(color,eurl);
+	 
 }
+
+
+function formater_viewers(value)
+{
+		let obj = JSON.parse(value);
+   			nb++;
+   			var boutonID = 'boutonIGVCNV'+ nb;		
+   				
+   			var igv_value = obj.igv.locus_start + ';' + obj.igv.locus_end + ';' + obj.igv.bam_files + ";" + obj.igv.bam_names + ";"+ obj.igv.l;	
+			var onvIGV = ' onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"';		
+			var bigv  = return_simple_button_with_onclick("igv","#2E5283",onvIGV,"#700CBC");
+			//var bigv   = '<button class="igvIcon2"  id="' + boutonID + '" onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"></button>';
+			var url_dgv ="";
+			var bdgv = '<a href="' + obj.dgv.url  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><i><font style="color:red;font-size:10px;padding:0px; ">  DGV  </font></i></b></button></a>';
+			var url_gnomad ="";
+			//onclick="window.open(\'' + url + '\', \'_blank\')"
+			var bgnomad = '<a href="' + obj.gnomad.url  + '" target="_blank">'+return_simple_button("gnomAD","#C67FAE")+'</a>';
+			var bdgv = '<a href="' + obj.dgv.url  + '" target="_blank">'+return_simple_button("DGV","#C67FAE")+'</a>';
+			var bgnomad2 = '<a href="' + obj.gnomad.url  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><font style="color:blue;font-size:8px; ">gnom</font><font style="color:black;font-size:10px; ">AD</font></b></button></a>';
+			var onclick = 'onclick="launch_plot(\''+ obj.plot.transmission + '\',' + obj.plot.type + ',' + obj.plot.chromosome + ',' + obj.plot.start + ',' + obj.plot.end + ' )" ';
+			
+			var bplot   = return_simple_button_with_onclick("snp array","#2E5283",onclick,"#700CBC");
+			//'<button type="button" class="btn btn-xs btn-primary " style="background-color:blue'+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;"'+onclick+'>Snp Array'+'</button>';
+
+			
+			//var bplot   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px" " style="font-size:16px;">Snp array</button>';
+  			//var bplot   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px"></button> '
+  			var out = "";
+  
+			out = ' <span style="white-space: nowrap;">'+bigv+bplot+'</span><span style="white-space: nowrap;"'+bgnomad+bdgv+'</span></div>';
+			
+	return out;
+}		
+
+function return_simple_button_with_onclick(value,color,onclick,color2="white") {
+	return '<button type="button" class="btn btn-xs btn-primary " style="background-color:'+color+';color:'+color2+';font-size: 8px;font-family:  Verdana;border-color:white;box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);"'+onclick+'>'+value+'</button>';
+	}
+
 
 function formater_infoPATIENTIGV(value)
 {
@@ -546,63 +670,168 @@ function formater_infoPATIENTIGV(value)
    			var boutonID = 'boutonIGVCNV'+ nb;					
    			var igv_value = locusstart + ';' + locusend + ';' + bamfiles + ";" + bamnames + ";"+ taille;	
 			var etiquette   = '<button class="igvIcon2"  id="' + boutonID + '" onclick="launch_web_igv_start_and_end(\'' + idCNV + "et" + igv_value + '\')"></button>';
-			
-	return etiquette;
+			var url_dgv ="";
+			var bdgv = '<a href="' + url_dgv  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><i><font style="color:red;font-size:10px;padding:0px; ">  DGV  </font></i></b></button></a>';
+			var url_gnomad ="";
+			var bgnomad = '<a href="' + url_gnomad  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><font style="color:blue;font-size:8px; ">gnom</font><font style="color:black;font-size:10px; ">AD</font></b></button></a>';
+		//	var bplot   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px" id="' + boutonID + '" onclick="launch_plot(\''+ transmission + '\',' + type + ',' + chr + ',' + debcnv + ',' + fincnv + ' )" style="font-size:16px;">&#128200;</button>';
+  				var bplot   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px"></button> '
+  			var out = "";
+  			out =  '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px;opacity:0.2" >';
+			out += '<tr>';
+			out += '<td>'+etiquette+'</td>'+'<td>'+bdgv+'</td>'+'<td>'+bgnomad+'</td>'+'<td>'+bplot+'</td>';
+			out += '</tr></table>';
+	return out;
 }		
 
-
-function formaterInfoCaller(value)
-{
-	var out=""; 
-
-	if ( (value == "Sorry") || (value == "No") || (value == "Results") )
+function formaterInfoCallerCoverage(value) {
+	var color= "#8D71B4";
+	if (value === "-")
 	{
-		return '<i><font size = "2" color="red">' + value + '</font></i>';
-	}
+	var out = '<div style ="opacity:0.2"> wisecondor';
 	
-	if (value == "-")
+	out =  '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px;opacity:0.2" >';
+	out = out + '<caption style="caption-side: top; text-align: center; font-weight: bold;opacity:0.2">wisecondor</caption>';
+	out = out + '<tr>';
+	out = out + '<th  '+th_style+'>Ratio</th>';
+	out = out + '<th '+th_style+'>Score</th>';
+	out = out + '</tr>';
+	out = out + '<tr>';
+	var b = return_simple_button ("-",color);
+	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+	b = return_simple_button ("-",color);
+	out +=  '<td >' + b + '</td>';
+	out = out + '</tr>';
+	out = out + '</table></div>';
+	return out;
+	}
+	var tvalue = value.split(";");
+	 color = return_color_by_type(tvalue[3]);
+	 
+	var name = tvalue[0];
+//	var qual = tvalue[1];
+//	var text= name
+	
+	var hcolor = "#E8FFF8";
+	var th_style = 'style="padding:1px;border: none;text-align: center;"';
+	var out = name;
+	out =   '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+		out = out + '<caption style="caption-side: top; text-align: center; font-weight: bold;">wisecondor</caption>';
+	out = out + '<tr>';
+	out = out + '<th  '+th_style+'>Ratio</th>';
+	out = out + '<th '+th_style+'>Score</th>';
+	out = out + '</tr>';
+	out = out + '<tr>';
+	var b = return_simple_button (tvalue[1],color);
+	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+	b = return_simple_button (tvalue[2],color);
+	out +=  '<td >' + b + '</td>';
+	out = out + '</tr>';
+	out = out + '</table>';
+	return out;
+	
+}
+
+function formaterInfoCallerSr(value) {
+	if (value === "-")
 	{
+		var out = "manta";
+		out =  '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px;opacity:0.2" >';
+		out = out + '<caption style="caption-side: top; text-align: center; font-weight: bold;opacity:0.2">Manta</caption>';
+		out = out + '<tr>';
+		out = out + '<th  '+th_style+'>sr</th>';
+		out = out + '<th  '+th_style+'>Pr</th>';
+		out = out + '<th '+th_style+'>Score</th>';
+		out = out + '</tr>';
+		out = out + '<tr>';
+		var b = return_simple_button ("-",color);
+		out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+		b = return_simple_button ("-",color);
+		out +=  '<td >' + b + '</td>';
+		b = return_simple_button ("-","red");
+		out +=  '<td >' + b + '</td>';
+		out = out + '</tr>';
+		out = out + '</table>';
+	return out;
+	}
+		
+	
+	var tvalue = value.split(";");
+	var name = tvalue[0];
+//	var qual = tvalue[1];
+//	var text= name
+	var color= "#8D71B4";
+	 color = return_color_by_type(tvalue[4]);
+	var hcolor = "#E8FFF8";
+var th_style = 'style="padding:1px;border: none;text-align: center;"';
+	var out = name;
+	out =  '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<caption style="caption-side: top; text-align: center; font-weight: bold">Manta</caption>';
+	out = out + '<tr>';
+	out = out + '<th  '+th_style+'>sr</th>';
+	out = out + '<th  '+th_style+'>Pr</th>';
+	out = out + '<th '+th_style+'>Score</th>';
+	out = out + '</tr>';
+	out = out + '<tr>';
+	var b = return_simple_button (tvalue[1],color);
+	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+	b = return_simple_button (tvalue[2],color);
+	out +=  '<td >' + b + '</td>';
+	b = return_simple_button (tvalue[3],color);
+	out +=  '<td >' + b + '</td>';
+	out = out + '</tr>';
+	out = out + '</table>';
+	return out;
+	
+}
+function formaterInfoCallerDepth(value) {
+	
+	
+	if (value === "-")
+	{
+		var out = "manta";
+		out =  '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px;opacity:0.2" >';
+		out = out + '<caption style="caption-side: top; text-align: center; font-weight: bold;opacity:0.2">Canvas</caption>';
+		out = out + '<tr>';
+		out = out + '<th  '+th_style+'>Ratio</th>';
+		out = out + '<th '+th_style+'>Score</th>';
+		out = out + '</tr>';
+		out = out + '<tr>';
+		var b = return_simple_button ("-",color);
+		out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+		b = return_simple_button ("-",color);
+		out +=  '<td >' + b + '</td>';
+		out = out + '</tr>';
+		out = out + '</table>';
+	return out;
 		return  value;
 	}
+	var tvalue = value.split(";");
+	var name = tvalue[0];
+//	var qual = tvalue[1];
+//	var text= name
+	var color= "#8D71B4";
+	var hcolor = "#E8FFF8";
+	 color = return_color_by_type(tvalue[3]);
+	var th_style = 'style="padding:1px;border: none;text-align: center;"';
+	var out = name;
+	out =  '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<caption style="caption-side: top; text-align: center; font-weight: bold;">Canvas</caption>';
+	out = out + '<tr>';
+	out = out + '<th  '+th_style+'>Ratio</th>';
+	out = out + '<th '+th_style+'>Score</th>';
+	out = out + '</tr>';
+	out = out + '<tr>';
+	var b = return_simple_button (tvalue[1],color);
+	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+	b = return_simple_button (tvalue[2],color);
+	out +=  '<td >' + b + '</td>';
+	out = out + '</tr>';
+	out = out + '</table>';
+	return out;
 	
-	if (value == 0)
-	{
-		etiquette = '<font size = "2" color="red"><span class="glyphicon glyphicon-minus-sign"></span></font>';
-		return etiquette;
-	}
-	else
-	{
-		
-		var tvalue = value.split(";");
-		var val = tvalue[0];
-		var qual = tvalue[1];
-		
-	
-		var tval = val.split(" ");
-		
-		var len = tval.length-1;
-	
-		for ( i = 0 ; i < len-1 ; i++)
-		{
-				out = out +  tval[i] + " / ";
-				
-		}
-		out = out + tval[i];
-		
-		if (qual == 1) 
-		{
-			etiquette = '<font size = "2" color="green"> <span class="glyphicon glyphicon-ok-sign"></span></font>';
-		}
-		
-		if (qual == 0.75)
-		{
-			etiquette = '<font size = "2" color="lightgreen"> <span class="glyphicon glyphicon-ok-sign"></span></font>';
-		}
-		
-		out = '<a href="#" data-toggle="tooltip" title="' + out + '">' +  etiquette  +'  </a>';
-		return out;
-	}
 }
+
 
 function formaterBP(value)
 {
@@ -666,6 +895,10 @@ function formaterBP(value)
 	return out;
 }
 
+function return_style_value (color,value,font = "9" ){
+	return '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(255, 0, 0, 0.2) ;background-color:'+color+';color:white;font-size: '+font+'px;font-family:  Verdana;border-color:white;">'+value+'</button>';
+}
+
 function formaterScoreCNV(value)
 {
 
@@ -674,20 +907,19 @@ function formaterScoreCNV(value)
 		return "-";
 	}
 
-
 	var eurl;
-	
-	var score = Number(value);
-	
-	 	if (score >= 1 ) {
-	 			eurl = '<label style="color:red">' + score + ' </label>';
-		 }
-	 	else {
-	 			eurl = '<label style="color:black">'+ score + '</label>';
-	 	}
+	var val = Number(value);
+	if (val >= 4  ){
+		color="tomato";
+	}
+	else  if (val >= 2){
+		color="orange";
+	}
+	else {
+		 color="blue";
+	}
+	return_style_value(color,val);
 
-	 
-	return eurl;
 	
 }	
 
@@ -696,58 +928,34 @@ function formaterScoreGene(value)
 
 	if (value <= -2 )
 	{
-		return "-";
+		return '<button "type="button" class="btn btn-xs btn-primary " style="border-color:grey;background-color:white;color:grey;font-size: 12px;font-family:  Verdana">-</button>';
 	}
+	var val = Number(value);
+	if (val >= 4  ){
+		color="tomato";
+	}
+	else  if (val >= 3){
+		color="#cd5c5c";
+	}
+	else  if (val >= 2){
+		color="orange";
+	}
+	else {
+		 color="blue";
+	}
+	return return_style_value(color,val);
 
-
-	var eurl;
-	
-	var score = Number(value);
-	
-	 	if (score >= 4 ) {
-	 			//eurl = '<label style="color:red">' + score + ' </label>';
-	 			eurl = '<label style="font-size:10px;color:white;background-color:rgb(255,0,0);padding:3px">' + score + ' </label>';
-		}
-	 	else 
-	 	{
-	 		if (score >= 3 ) 
-	 		{
-	 			//eurl = '<label style="color:Tomato">' + score + ' </label>';
-	 			eurl = '<label style="font-size:10px;color:white;background-color:rgb(255,127,79);padding:3px">' + score + ' </label>';	 			
-			}
-			else
-			
-				 if (score >= 2 ) 
-	 			{
-	 				//eurl = '<label style="color:orange">' + score + ' </label>';
-	 				eurl = '<label style="font-size:10px;color:white;background-color:rgb(255,165,0);padding:3px">' + score + ' </label>';	 				
-				}
-				else
-				{
-					if (score >= 1 ) 
-	 				{
-	 					//eurl = '<label style="color:black;background-color:yellow">' + score + ' </label>';
-	 					eurl = '<label style="font-size:10px;color:black;background-color:rgb(255,255,2);padding:3px">' + score + ' </label>';
-					}
-					else
-					{
-	 					//eurl = '<label style="color:black">'+ score + '</label>';
-	 					eurl = '<label style="font-size:10px;color:black;background-color:rgb(204,204,204);padding:3px">' + score + ' </label>';
-	 				}
-	 			}
-	 	}
-	 	
-	return eurl;
-	
 }	
 
 
 function formaterTransmission(value)
 {
 
-	if (value == "-")
+	
+	if (value === "?")
 	{
-		return value;
+		 return return_style_value('grey','<span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>');;
+		 return return_style_value('','<span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>');;
 	}
 	
 	if ( value == "X" )
@@ -755,62 +963,79 @@ function formaterTransmission(value)
 			out ='<b><label  style="color:grey"> X </label></b>';
 			return out;
 	}
+	var img = "?";
+	var color = "white";
 	
-	var TransM="";
-	var TransF="";
-	var valM="";
-	var valF="";
-	var res;
-	
-	var tval = value.split(" ");
-	var len = tval.length;
-		
-	for ( i = 1 ; i < len-1 ; i++)
-	{
-		var val = tval[i];
-		
-		if ( val == "mother")
-		{
-			TransM =  '<img src="../../images/polyicons/icons8-person-female-24.png" >';
-		}
-		if (/maybeM/.test(val))
-		{
-			valM = val.replace("maybeM","mother");
-		}
-		
-		if ( val == "father")
-		{
-			TransF = '<img src="../../images/polyicons/icons8-person-24.png" >';
-		}
-		if (/maybeF/.test(val))
-		{
-			valF = val.replace("maybeF","father");
-		}
+	if ( value === "m"){
+		img = '<img src="../../images/polyicons/icons8-person-female-24.png" width="20" height="20">';
 	}
-	
-	if (TransM=="" && valM != "" )
-	{ 
-		TransM = '<b><i><label style="font-size:10px;color:pink">' + valM  + '</label></i></b>';
+	else if ( value === "f"){
+		img = '<img src="../../images/polyicons/icons8-person-24.png" width="20" height="20">';
 	}
-	
-	if (TransF=="" && valF != "" )
-	{ 
-		TransF = '<b><i><label style="font-size:10px;color:lightblue">' + valF  + '</label></i></b>';
+	else if ( value === "fm") {
+		img = '<img src="../../images/polyicons/icons8-person-24.png" width="16" height="16">'+'<img src="../../images/polyicons/icons8-person-female-24.png" width="16" height="16">';
 	}
-	
-	if (TransM=="" && TransF == "" )
-	{
-		res = '<b><i><label style="font-size:10px;color:red"> strict-denovo  </label></i></b>';;
+	else if ( value === "d"){
+		img = 'denovo';
+		color = " #FF5733"
 	}
-	else
-	{
-		res = TransM+TransF;
-	}
+	return return_style_value(color,img);
 	
-	var eurl = '<div>' + res +  '</div>';
-	
-	
-	 return eurl;
+//	var TransM="";
+//	var TransF="";
+//	var valM="";
+//	var valF="";
+//	var res;
+//	
+//	var tval = value.split(" ");
+//	var len = tval.length;
+//		
+//	for ( i = 1 ; i < len-1 ; i++)
+//	{
+//		var val = tval[i];
+//		
+//		if ( val == "mother")
+//		{
+//			TransM =  '<img src="../../images/polyicons/icons8-person-female-24.png" >';
+//		}
+//		if (/maybeM/.test(val))
+//		{
+//			valM = val.replace("maybeM","mother");
+//		}
+//		
+//		if ( val == "father")
+//		{
+//			TransF = '<img src="../../images/polyicons/icons8-person-24.png" >';
+//		}
+//		if (/maybeF/.test(val))
+//		{
+//			valF = val.replace("maybeF","father");
+//		}
+//	}
+//	
+//	if (TransM=="" && valM != "" )
+//	{ 
+//		TransM = '<b><i><label style="font-size:10px;color:pink">' + valM  + '</label></i></b>';
+//	}
+//	
+//	if (TransF=="" && valF != "" )
+//	{ 
+//		TransF = '<b><i><label style="font-size:10px;color:lightblue">' + valF  + '</label></i></b>';
+//	}
+//	
+//	if (TransM=="" && TransF == "" )
+//	{
+//		res = '<b><i><label style="font-size:10px;color:red"> strict-denovo  </label></i></b>';;
+//	}
+//	else
+//	{
+//		res = TransM+TransF;
+//	}
+//	
+//	var eurl = '<div>' + res +  '</div>';
+//	
+//	
+//	 return eurl;
 }	
 
 
@@ -894,7 +1119,7 @@ function formatergnomAD(value)
 			return value;
 		}
 
-	var eurl = '<a href="' + value  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><font style="color:blue;font-size:8px; ">gnom</font><font style="color:black;font-size:10px; ">AD</font></b></button></a>';
+		var eurl = '<a href="' + value  + '" target="_blank"><button class="btn btn-default btn-xs" ><b><font style="color:blue;font-size:8px; ">gnom</font><font style="color:black;font-size:10px; ">AD</font></b></button></a>';
 	return eurl;
 }
 
@@ -1137,7 +1362,126 @@ function formaterCHROM_BND2(value)
 	return out;
 }
 
+function formaterGENES_SV(value) {
+	
+	let obj = JSON.parse(value);
+	if  (obj.genes.length == 0) {return "-";}
+	//unless  (obj.genes) {return "-";}
+		
+	var tid = obj.table_id;
+	var hcolor = "#E8FFF8";
+var th_style = 'style="padding:1px;border: none;text-align: center;"';
+th_style = '';
+	var out ="";
+	out = out + '<table id="'+tid+'" class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<tr>';
 
+		var data =obj.genes.slice(0, 4); 
+    
+    	  data.forEach(gene => {
+			  var color = return_color_by_score_gene(gene.score);
+			  var url = 'https:\/\/www.ensembl.org\/Homo_sapiens\/Gene\/Summary\?db=core;g='+gene.name;
+			  var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;" onclick="window.open(\'' + url + '\', \'_blank\')">'+gene.name+'</button>';
+				out = out +'<td>'+ b_djv_itp+'</td>'
+			});
+		out = out + '</tr>';
+
+
+	var stid="";
+	out = out + '</tr>';
+
+	out = out + '<tr>';
+	
+
+	out = out + '<td colspan=4>';
+	var onclick = 'onclick=get_all_genes(\"'+obj.project+'\",\"'+obj.id+'\")';
+	var tname = "all";
+	
+	//var text = "+ high("+obj.nbh+") medium("+obj.nbm+") low("+obj.nbl+")";
+	text =  obj.nb_genes;
+	                                                                                  
+	var ball=  '<button type="button" class="btn btn-xs btn-primary " style="  box-shadow: 1px 1px 4px rgba(0, 0, 255, 0.3);background-color:#0468BF;color:white;font-size: 8px;font-family:  Verdana;border-color:white;" '+onclick+'> View  details  ('+text+' genes)</button>';
+	out = out + ball+'</td></tr>';
+	
+	out = out + '</table>';
+	return out;
+	
+	
+}
+
+
+
+function get_all_genes(this_proj_name,id) {
+	
+	var this_url = url_path + "/manta/getGenesForEvent.pl";
+	var this_args;
+	this_args = "project=" + this_proj_name + "&id=" + id+"&patient=9802"; 
+		dijit.byId("genes_popup").show();
+	 document.getElementById('genes_div').innerHTML = "Loading ...";
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', this_url, true);
+	xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+	xhr.onreadystatechange = function() {
+		if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+			var data = JSON.parse(this.responseText);
+			var out ="";
+			var out ="";
+	out = out + '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<tr>';
+
+			var project = data.project;
+			 data.genes.forEach(gene => {
+			  var color = return_color_by_score_gene(gene.score);
+			  var name = gene.name+"<sup>"+gene.score+"</sup>";
+			  var url = 'https:\/\/www.genecards.org\/cgi-bin\/carddisp.pl?gene='+gene.name;
+			  var url2 = 'https:\/\/www.ensembl.org\/Homo_sapiens\/Gene\/Summary\?db=core;g='+gene.name;
+			  var url3 = 'https:\/\/gnomad.broadinstitute.org/gene/'+gene.name+'?dataset=gnomad_r4';
+			  
+			  https://gnomad.broadinstitute.org/gene/ENSG00000171634?dataset=gnomad_r4
+			  var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);background-color:'+color+';color:white;font-size: 12px;font-family:  Verdana;border-color:white;" onclick="window.open(\'' + url2 + '\', \'_blank\')">'+name+'</button>';
+			   var b_ensembl=  '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;" onclick="window.open(\'' + url2 + '\', \'_blank\')">Ensembl</button>';
+		 	 var b_card=  '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;" onclick="window.open(\'' + url + '\', \'_blank\')">gene cards</button>';
+			var b_gnomad=  '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;" onclick="window.open(\'' + url3 + '\', \'_blank\')">Gnomad</button>';
+		
+			  
+			  var button_view =  '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);background-color:'+color+';color:white;font-size: 10px;font-family:  Verdana;border-color:white;\" ';
+			
+			  var phenotypes = '<ul style="list-style-type: disc; padding-left: 20px; font-family: Verdana; font-size: 14px; color: #333;">';
+			  var ap  = gene.phenotypes.slice(0, 3); 
+			  for (let i = 0; i < ap.length; i ++) {
+				  phenotypes+='<li>'+gene.phenotypes[i]+"</li>";
+				 }
+				  button_view += 'onclick=get_gene_phenotypes2(\"'+project+'\",\"'+gene.id+ '\")>View All Phenotypes ('+gene.phenotypes.length+')</button>';
+				  
+				  phenotypes+='<li>'+button_view+'</li>';
+			   phenotypes += '</ul>';
+			 out = out +'<td>'+'<span style="white-space: nowrap;">'+b_ensembl+b_card+b_gnomad+'</span><br><center>'+b_djv_itp+'</center></td><td><span style="font-size: 10px;font-family:  Verdana;color:black">'+phenotypes+"</span></td>";
+			out = out + '</tr>';
+			});
+				out = out + '</table>';
+
+	document.getElementById('genes_div').innerHTML = out;
+			}
+		}
+	
+	xhr.send(this_args);
+}
+
+function return_color_by_score_gene(value){
+	if(value >= 5){
+		return "#CC202A";
+	}
+	else if(value >= 4){
+		return "#E2542D";
+	}
+	else if(value >= 3){
+		return "#D1805E";
+	}
+	else if(value >= 2){
+		return "#E3BC33";
+	}
+	else {return "#BDBEBF"}
+}
 function formaterGENES(value)
 {
 	//alert("genes =" + value);
@@ -1261,199 +1605,6 @@ function formaterGENES(value)
 	return out;
 }	
 
-function formaterGENESNew(value)
-{
-	//alert("genes =" + value);
-	var parameters = location.search.split("&");
-	var par0 = parameters[0].split("=");
-	var par1 = parameters[1].split("=");
-   	
-   	var project =par0[1];
-   	var patient = par1[1];
-   	
-  
-	if (value == "")
-	{
-		return "-";
-	}
-	
-	if (value=="-")
-	{
-		return(value);
-	}
-	
-	var out ="";
-	var name = "";
-	var score;
-	var locus;
-	var phen = "";
-	
-	var outshort;
-	var values = value.split("##");
-	var len = values.length-1;
-	
-	var liste0="";
-	var liste1="";
-	var liste2="";
-	var liste3="";
-	var liste4="";
-
-	
-	var etiq0="";
-	var etiq1="";
-	var etiq2="";
-	var etiq3="";
-	var etiq4="";
-
-	
-	var nb0=0;
-	var nb1=0;
-	var nb2=0;
-	var nb3=0;
-	var nb4=0;
-
-
-	locus = values[0];
-
-	for ( i = 1 ; i < len; i++)
-	{
-		if (values[i] != "-")
-		{	
-			var geneinfos = values[i].split(";");
-			name = geneinfos[0];
-			score = geneinfos[1];
-			
-			if (score < 1 )
-			{
-				nb0++;
-				if(nb0 < 4)
-				{
-					liste0 = liste0 + '<font style="font-size:10px;color:white;background-color:rgb(128,128,128);padding:1px;border: 1px solid white">' + name + '</font><br>';
-				}
-			}
-			else
-			{
-				if (score < 2 )
-				{
-					nb1++;
-					if(nb1 < 4)
-					{
-						liste1 = liste1 + '<font style="font-size:10px;color:black;background-color:rgb(255,255,2);padding:1px;border: 1px solid black">' + name +'</font><br>';
-					}
-				}
-				else
-				{
-					if (score < 3 )
-					{
-						nb2++;
-						if(nb2 < 4)
-						{
-							liste2 = liste2 + '<font style="font-size:10px;color:white;background-color:rgb(255,165,0);padding:1px;border: 1px solid black">' + name +'</font><br>';
-						}
-					}
-					else
-					{
-						if (score < 4 )
-						{
-							nb3++;
-							if(nb3 < 4)
-							{
-								liste3 = liste3 + '<font style="font-size:10px;color:white;background-color:rgb(255,127,79);padding:1px;border: 1px solid black">' + name + '</font><br>';
-							}
-						}
-						else
-						{
-						
-							nb4++;
-							if(nb4 < 6)
-							{
-								liste4 = liste4 + '<font style="font-size:10px;color:white;background-color:rgb(255,0,0);padding:1px;border: 1px solid black">' + name + '</font><br>';
-							}						
-						}
-					}
-				}
-			}
-		}
-	}
-	
-
-	
-	if(liste4 != "")
-	{
-		outshort = liste4;
-		nb4 -= 5;
-	}
-	else
-	{
-		if(liste3 != "")
-		{
-			outshort = liste3;
-			nb3 -= 3;
-
-		}
-		else
-		{
-			if(liste2 != "")
-			{
-				outshort = liste2;
-				nb2 -= 3;
-			}
-			else
-			{
-				if(liste1 != "")
-				{
-					outshort = liste1;
-					nb1 -= 3;
-				}
-				else
-				{
-					outshort = liste0;
-					nb0 -= 3;
-				}
-			}
-		}
-	}
-		
-	out = out + '<button class="btn btn-classic btn-xs" style="color:black;border: 1px solid black;padding:2px" onclick="viewGeneByName(\'' + locus + '\', \''+ project + '\',\'' + patient + '\')">';
-	out = out + outshort;
-	
-	if( nb0+nb1+nb2+nb3+nb4 > 0)
-	{
-	
-	out = out + '<center width="80%"> <table><tr>';
-	
-	if(nb0>0)
-	{
-		etiq0 =  '<font style="font-size:9px;color:white;background-color:rgb(128,128,128);padding:3px"> +' + nb0 + '</font>';
-		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq0  + '</center></td>';
-	}
-	if(nb1>0)
-	{
-		etiq1 = '<font style="font-size:9px;color:black;background-color:rgb(255,255,2);padding:3px"> +' + nb1 +'</font>';
-		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq1  + '</center></td>';		
-	}
-	if(nb2>0)
-	{
-		etiq2 = '<font style="font-size:9px;color:white;background-color:rgb(255,165,0);padding:3px"> +' + nb2 +'</font>';
-		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq2  + '</center></td>';
-	}
-	if(nb3>0)
-	{
-		etiq3 = '<font style="font-size:9px;color:white;background-color:rgb(255,127,79);padding:3px"> +' + nb3 +'</font>';
-		out = out + '<td width="20%"style="padding:2px" ><center>' +  etiq3  + '</center></td>';
-	}
-	if(nb4>0)
-	{	
-		etiq4 = '<font style="font-size:9px;color:white;background-color:rgb(255,0,0);padding:3px"> +' + nb4 +'</font>';
-		out = out + '<td width="20%" style="padding:2px"><center>' +  etiq4  + '</center></td>';
-	}
-
-	out = out + '</tr></table></center>'; 
-	}
-	
-	out = out + '</button>';
-	return out;
-}	
 
 function formaterOMIM(value)
 {
@@ -1499,22 +1650,15 @@ function formaterTransloc(value)
 	{
 		return(value);
 	}
+	var infos = value.split(";");
 	
-	var infos = value.split("##");
-	var eurl;
-	
-	if (infos[0] == "inv" )
-	{
-		eurl = '<p style="font-size:12px;color:purple;background-color:rgb(204,204,204);padding:8px"> <b>inv</b> (' + infos[1] + ',' + infos[3] + ') (' + infos[2] + ',' + infos[4] + ') </p>';
-		
-	}
-	
-	else
-	{
-		eurl = '<p style="font-size:12px;color:white;background-color:rgb(255,165,0);padding:8px"> <b>t </b> (' + infos[1] + ',' + infos[3] + ') (' + infos[2] + ',' + infos[4] + ') </p>';
-	}
-	
+	var color = return_color_by_type(infos[0]);
+	 	var text = infos[1];
+	 	eurl=  '<button type="button" class="btn btn-xs btn-primary " style="border-color:black;padding:5px;background-color:'+color+';color:white;font-size: 14px;font-family:  Verdana;border-color:white;">'+text+'</button>';
+	 	//eurl = '<p style="font-size:10px;color:white;background-color:rgb(255,74,42);padding:8px">' + value + ' XXX</p>';
+	 return return_style_value(color,text,11);
 	return eurl;
+	
 }
 
 function formaterInv(value)
@@ -1535,6 +1679,7 @@ function formaterInv(value)
 	{
 		 chrs[0]="Y";
 	}
+	
 	
 	var out = '<center><table><tr><td style="border: 2px solid indigo;width:30px; vertical-align:middle;text-align:center;font-size: 10px;">' + chrs[0] + '</td></tr></table></center>';
 	return out;
@@ -1790,7 +1935,6 @@ function GetTriplets_Post()
 		var url = url_TRIPLETS;
 		var args = "project=" + project + "&patient=" + patient;
 		
-		alert("coucou_post");
 		
 		var xhr = new XMLHttpRequest();
 		xhr.responseType = 'json';
@@ -1918,31 +2062,32 @@ function formaterDejavuCNV(value)
 		dejavu_seuil = 1000000;
 	}	
 	
-	var args = value.split("+");
+	var args = value.split(";");
 	var event_id=args[0];
-	var values = args[1].split(";");
 	
-	var djv_itp = values[0];			// nb echantillon
+	var values = args[1];
+	
 	var liste_djv_itp="";				// liste des echantillons du projet
 	
-	var liste = values[1];	
-	var tab = liste.split(",");
-	var len = tab.length-1;
+//	var liste = ""	
+//	var tab = liste.split(",");
+//	var len = tab.length-1;
+//	
+//	for (i=0;i<len;i++)
+//	{
+//		liste_djv_itp = liste_djv_itp + tab[i]+' ';
+//	}
+//	
+	var djv_in_nbother_project = args[1];
+	var djv_in_nbother_patient = args[2];
+	var liste_djv_iop ="";
+	var nbwisecondor=args[3];
+	var nbcanvas=args[4];
+	var nbmanta=args[5];
+	var flagwc = 0;
+	var djv_itp = args[6];
 	
-	for (i=0;i<len;i++)
-	{
-		liste_djv_itp = liste_djv_itp + tab[i]+' ';
-	}
-	
-	var djv_in_nbother_project = values[2];
-	var djv_in_nbother_patient = values[3];
-	var liste_djv_iop =values[4];
-	var nbwisecondor=parseInt(values[5]);
-	var nbcanvas=values[6];
-	var nbmanta=values[7];
-	var flagwc =values[8];
-	
-	var out;
+	var out = "";;
    	var boutonID = 'boutondjv' + nb;	
    	
  
@@ -1950,93 +2095,175 @@ function formaterDejavuCNV(value)
    var couleur ="white";
    var bgcolor = "#E6E6E6";
    
+/*      if (djv_in_nbother_patient < 20  && djv_in_nbother_patient >= 10){
+	  bgcolor="#faf0e6;color:black;";
+   }
+     if (djv_in_nbother_patient < 10  && djv_in_nbother_patient >= 5 ){
+	  bgcolor="#7de3b4;color:black;";
+   }
+
+   if (djv_in_nbother_patient < 5 ){
+	  bgcolor="#52c891;color:black;";
+   }*/
+   
+  
    var boutonType= "btn btn-classic btn-xs";
    
-   if ( (flagwc == 1) && (nbwisecondor < dejavu_seuil) )
-   {
-   		bgcolor="#FFBF00;color:black;";
    
-  		 if ( nbwisecondor > (dejavu_seuil/2) )
-   		{
-   			bgcolor="#F5DA81;color:black;";
-  		 }
-  	}
-  
    
-	out =   '<center> <table  width="100%"><tr style="font-size:9px;">';
-	out = out + '<td><center><button style="width:90%; background-color:' + bgcolor + ';"  id="' + boutonID + '" onclick="my_view_dejavu_polycyto(\'' + value + '\')">';
-	out = out + '<table width="100%"><tr style="font-size:9px">';
-	out = out + '<td  width="20%" style="padding:4px;border: 1px solid ' + couleur + ';"><center>  Pro </center></td>';
-	out = out + '<td width="20%" style="padding:4px;border: 1px solid '  + couleur + ';"><center> Pat </center></td>';
-	out = out + '<td width="20%"style="padding:4px;border: 1px solid ' + couleur + ';"><center> Wis  </center></td>';
-	out = out + '<td width="20%" style="padding:4px;border: 1px solid ' + couleur + ';"><center> Can </center></td>';
-	out = out + '<td width="20%"style="padding:4px;border: 1px solid ' + couleur + ';"><center> Man  </center></td></tr>';
+//   if ( (flagwc == 1) && (nbwisecondor < dejavu_seuil) )
+//   {
+//   		bgcolor="#FFBF00;color:black;";
+//   
+//  		 if ( nbwisecondor > (dejavu_seuil/2) )
+//   		{
+//   			bgcolor="#F5DA81;color:black;";
+//  		 }
+//  	}
+//  
+var hcolor = "#E8FFF8";
+var th_style = 'style="padding:1px;border: none;text-align: center;"';
+th_style = '';
+	//<button "type="button" class="btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana">0.999</button>
+	var b2 = '<button "type="button" class="padding:0px;btn btn-xs btn-primary " style="border-color:black;background-color:white;color:#e74c3c;font-size: 10px;font-family:  Verdana">'+djv_in_nbother_patient+'</button>';
+   
+	//out =   '<center> <table  width="100%"><tr style="font-size:9px;">';
+	//out = out + '<td><center><button style="width:95%; background-color:white;"  id="' + boutonID + '" onclick="my_view_dejavu_polycyto(\'' + value + '\')">';
 	
-	out = out + '<tr style="font-size:9px"><td style="border: 1px solid ' + couleur + ';">' + djv_in_nbother_project + '</td>';
-	out = out + '<td style="border: 1px solid ' + couleur + ';">' + djv_in_nbother_patient + ' </td>';
-	out = out +  '<td style="border: 1px solid ' + couleur + ';">' +  nbwisecondor + '</td>';
-	out = out + '<td style="border: 1px solid ' + couleur + ';">' + nbcanvas + '</td>';
-	out = out +' <td style="border: 1px solid ' + couleur + ';">' + nbmanta + ' </td>';
-	out = out + '</tr></table></button></center></td>'; 
-	out = out + '<td style="padding:4px;"><a href="#" data-toggle="tooltip" title=" ' + liste_djv_itp + ' "><center><button class="btn btn-classic btn-xs" style="width=10%;border: 1px solid black;">' +  djv_itp + ' </button></center></a></td></tr></table></center>';
+	out = out + '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<tr>';
+	out = out + '<th  '+th_style+'>Prj</td>';
+	out = out + '<th  '+th_style+'>Sam</td>';
+	out = out + '<th '+th_style+'>Cov</td>';
+	out = out + '<th  '+th_style+'>Dep</td>';
+	out = out + '<th '+th_style+'>sr</td>';
+	out = out + '<th '+th_style+'>itp</td>';
+	out = out + '</tr>';
+	out = out + '<tr>';
+	var b = return_button (djv_in_nbother_project);
+	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+	b = return_button (djv_in_nbother_patient);
+	out +=  '<td >' + b + '</td>';
+	b = return_button (nbwisecondor);
+	out +=  '<td >' + b + '</td>';
+	b = return_button (nbcanvas);
+	out = out + '<td>' + b +'</td>';
+	b = return_button (nbmanta);
+	out = out + '<td>' + b + '</td>';			
+	//out = out + '</tr></table></center></td>'; 
+	var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+djv_itp+'</button>';
+	out = out + '<td ><a href="#" data-toggle="tooltip" title=" ' + liste_djv_itp + ' ">' +  b_djv_itp + ' </a></td>';
+	out = out + '</tr>';
+	out = out + '</table>';
 	return out;
 }
 
+function return_simple_button(value,color) {
+	return '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
+	}
+function return_button(value) {
+	var color;
+	if (value > 20) {
+		 color="tomato";
+	}
+	else if (value > 10) {
+		color="#E2552D";
+	}
+	else if (value > 1) {
+		color="#6F8D6A";
+	}
+	else {
+		color="#A6BE47";
+	}
+	
+	return return_simple_button(value,color);
+	return '<button type="button" class="btn btn-xs btn-primary " style="background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
+	return '<button "type="button" class="btn btn-xs btn-primary " style="border-color:'+color+';background-color:white;color:'+color+';font-size: 10px;font-family:  Verdana">'+value+'</button>';
+	
+}
+
+var myAlertDialog;
+function warning(text){
+	if (!myAlertDialog) {
+			 myAlertDialog = new dijit.Dialog({
+        			title: "Warning",
+        			content: text,
+        			style: "width: 200px;height:150px;font-size: 13px;"
+    				});
+    			}
+  
+    	myAlertDialog.show();
+    				return;
+	}
+
+
+
+
+function show_lines (value){
+	let arr = value.split('!');
+	dijit.byId("genes_popup").show();
+	 document.getElementById('genes_div').innerHTML = "Loading ...";
+	var out ="";
+	out = out + '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<tr>';
+	 for (let i = 0; i < arr.length; i ++) {
+    	 var data =arr.slice(i, i + 1); 
+    	  out = out + '<tr>';
+    	  data.forEach(gene => {
+			  let ds = gene.split('$');
+			  var color = return_color_by_score_gene(ds[2]);
+			  var name = ds[0];
+			  var id = ds[1];
+			  var pheno = ds[3];
+			  var url = 'https:\/\/www.ensembl.org\/Homo_sapiens\/Gene\/Summary\?db=core;g='+ds[0];
+			  var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="background-color:'+color+';color:white;font-size: 10px;font-family:  Verdana;border-color:white;" onclick="window.open(\'' + url + '\', \'_blank\')">'+name+'</button>';
+			  
+			 out = out +'<td>'+ b_djv_itp+'</td><td><span style="font-size: 10px;font-family:  Verdana;color:black">'+pheno+"</span></td>";
+			});
+		out = out + '</tr>';
+  	}
+  		out = out + '</table>';
+
+	document.getElementById('genes_div').innerHTML = out;
+	
+	return;
+	
+}
 function formaterDejavuSVeq(value)
 {
 	//alert(value);
-	if (value == "-")
-	{
-			return value;
-	}
 	
-	var dejavu_seuil = document.getElementById('dejavu').value;
-	
-	var args = value.split("+");
-	var event_id=args[0];
-	
+	let obj = JSON.parse(value);
+	var dejavu_seuil;
 
-	var values = args[1].split(";");
-	
-	var djv_itp = values[0];			// nb echantillon
-	var liste_djv_itp="";				// liste des echantillons du projet
-	
-	var liste = values[1];	
-	var tab = liste.split(",");
-	var len = tab.length-1;
-	
-	for (i=0;i<len;i++)
-	{
-		liste_djv_itp = liste_djv_itp + tab[i]+' ';
-	}
-	
-	var djv_in_nbother_project = values[2];
-	var djv_in_nbother_patient = values[3];
-	var liste_djv_iop =values[4];
-	
-	var out;
-   	var boutonID = 'boutondjv' + nb;	
-   	
-   	
-   
-   	// pour l'affichage
-   	if ( parseInt(djv_in_nbother_project) > parseInt(dejavu_seuil))
-   	{
-   		djv_in_nbother_project = '+' + dejavu_seuil;
-   	}
-   	if (parseInt(djv_in_nbother_patient) > parseInt(dejavu_seuil))
-   	{
-   		djv_in_nbother_patient = '+' + djv_in_nbother_patient;
-   	}
-   		
- 
-   	var boutonType= "btn btn-primary btn-xs";
-   
-	out =   '<button  class="'+ boutonType + '" id="' + boutonID + '" onclick="my_view_dejavu_polycyto(\'' + value + '\')">' +  djv_in_nbother_project + ' : ' + djv_in_nbother_patient + ' </button>';  
-	out = out + '<a href="#" data-toggle="tooltip" title=" ' + liste_djv_itp + ' ">    <button class="btn btn-classic btn-xs">' +  djv_itp + ' </button></a>';
-	
+	var djv_in_nbother_project = obj.nb_projects;
+	var djv_in_nbother_patient = obj.nb_patients;
+	var djv_in_this_project = obj.nb_itp+"/"+obj.total_itp;
+
+var hcolor = "#E8FFF8";
+var th_style = 'style="padding:1px;border: none;text-align: center;"';
+th_style = '';
+var out ='';
+	//<button "type="button" class="btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana">0.999</button>
+	out = out + '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<tr>';
+	out = out + '<th  '+th_style+'>Prj</td>';
+	out = out + '<th  '+th_style+'>Sam</td>';
+	out = out + '<th '+th_style+'>itp</td>';
+	out = out + '</tr>';
+	out = out + '<tr>';
+	var b = return_button (djv_in_nbother_project);
+	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
+	b = return_button (djv_in_nbother_patient);
+	out +=  '<td >' + b + '</td>';
+
+	var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+djv_in_this_project+'</button>';
+	out = out + '<td ><a href="#" data-toggle="tooltip" title=" ' + djv_in_this_project + ' ">' +  b_djv_itp + ' </a></td>';
+	out = out + '</tr>';
+	out = out + '</table>';
 	return out;
 }
+
 
 function formaterGeneDejavu(value)
 {
@@ -2126,7 +2353,6 @@ function launch_resum()
  function formaterEVENT(value)
 {
 	var eurl;
-	
 	 if ( /DEL/.test(value)) {
 	 	eurl = '<font style="color:red"> '+ value +' </font>';
 	 }
@@ -2300,8 +2526,61 @@ function GetChrsDisomie()
 }
 
 
-
-
+function get_gene_phenotypes2(this_proj_name,gene_id ) {
+	var this_url = url_path + "/json_output_nodb/getGenePhenotypes.pl";
+	var this_args;
+	if (this_proj_name) { this_args = "project=" + this_proj_name + "&gene=" + gene_id; }
+	else { this_args = "gene=" + gene_id; }
+	dijit.byId('dialog_list_phenotypes2').show();
+	
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', this_url, true);
+	xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+	xhr.onreadystatechange = function() {
+		if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+			var data = JSON.parse(this.responseText);
+			var store_tmp = new dojo.data.ItemFileWriteStore({
+				data: {
+					identifier: 'name',
+					label: 'name',
+					items: data.items
+				}
+			});
+			store_tmp.fetch({
+				onItem: function(item, result) {
+					document.getElementById("content_table_phenotypes2").innerHTML = item.html;
+					if (item.txt_all != '-') {
+						add_wordcloud2('container_wordcloud2', item.txt_all);
+						document.getElementById("container_wordcloud2").style.display = "block";
+					}
+					else {
+						document.getElementById("container_wordcloud2").style.display = "none";
+					}
+					
+					dijit.byId('dialog_list_phenotypes2').show();
+				}
+			});
+		}
+	}
+	xhr.send(this_args);
+}
+function add_wordcloud2(container_name, json_data) {
+	document.getElementById(container_name).innerHTML = '';
+	anychart.onDocumentReady(function() {
+		var data = JSON.parse(json_data);
+		var chart = anychart.tagCloud(data);// set a chart title
+		chart.title('Most described words in HGMD / HPO / OMIM')
+		// set an array of angles at which the words will be laid out
+		chart.angles([0, -45, 90]);
+		// enable a color range
+		chart.colorRange(true);
+		// set the color range length
+		chart.colorRange().length('80%');// display the word cloud chart
+		chart.container(container_name);
+		chart.draw();
+	});
+	return;
+}
 
 
 

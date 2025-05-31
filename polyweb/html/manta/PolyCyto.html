@@ -78,6 +78,8 @@
   }
 }     
 
+
+
  </style> 	
 	<!-- <LINK rel="stylesheet" type="text/css" href="../css/dejavu/dejavu.css"> -->
 	<link rel="icon" type="image/png" href="images/polyicons/igv_button_small.png">
@@ -95,9 +97,11 @@
 	<script type="text/javascript" src="../../js/polyviewer/methods_polyviewer.js" djConfig="parseOnLoad: true"></script> 
 	<script type="text/javascript" src="../../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
 	<script src='https://kit.fontawesome.com/a076d05399.js'></script>
-	
+			<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
 	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript">
 			dojo.require("dojo.store");
+			
 	</script>
 	
 	<!-- <script type="text/javascript" src="../js/polyjs/Utility/vp.js" ></script> -->
@@ -132,7 +136,7 @@
 			dojo.require("dojox.charting.plot3d.Bars");
 			dojo.require("dojox.data.AndOrReadStore");
 			dojo.require("dojox.widget.Standby");
-
+			dojo.require("dojox.widget.Dialog");
 			require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/TabContainer","dijit/layout/ContentPane"]);
 			require([ "dojo/_base/xhr","dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
 			require(["dijit/form/Select", "dojo/data/ObjectStore","dojo/store/Memory","dojo/domReady!"]);
@@ -166,7 +170,7 @@
 
 
 
-<body onload="launchAnalyse(transloc);" onmouseenter="force_refresh_grids();">
+<body onload="launchAnalyse(transloc);" onmouseenter="force_refresh_grids()">
 	<center>
 		<div id="titre"style="height:10%;width:95%" ></div>
  	</center>
@@ -302,38 +306,44 @@
     
              			<th width="3%" field="TYPE" formatter="formaterDUPDEL" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Type</b></center></th>            			
              			 <th width="2%" field="CHROM" formatter="formaterCHROM_int" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Chr</b></center></th>
- 			            <th width="4%" field="CYTOBAND" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><img src="../../images/polyicons/cytoband.png" alt="cytoband"></th>
-			             <th width="8%" field="LOCUS"  formatter="formaterLocus" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Start - End </b> </center></th>	
-             			 <th width="6%" field="LEN" formatter="formaterLength" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Length</b></center></th>
+ 		<!--	            <th width="4%" field="CYTOBAND" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><img src="../../images/polyicons/cytoband.png" alt="cytoband"></th>
+			-->
+			             <th width="12%" field="LOCUS"  formatter="formaterLocus" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Start - End </b> </center></th>	
               			 <th width="3%" field="DUPSEG"  formatter="formaterDUPSEG" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Dup Seg </b></center></th>
-             			 
+             			 <!--
              			 <th width="3%" field="RATIO"  formatter="formaterRatio" styles="text-align:center;font-size:9px;background-color:white;"><center><b>Ratio </b></center></th>
 						 <th width="3%" field="GT"  formatter="formaterGenotype" styles="text-align:center;font-size:9px;background-color:white;"><center><b>GT </b></center></th>
+      		 			 
       		 			 <th width="3%" field="SCORECNV"  formatter="formaterScoreCNV" styles="text-align:center;font-size:9px;background-color:white;"><center>Score CNV</center></th>  
-             			 			             			           
-						<th width="3%" field="wisecondor_elementary"   formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> WC </b></center></th>	
-						<th width="3%"  field="canvas_elementary"  formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Canvas </b></center></th>	
-						<th width="3%" field="manta_elementary"   formatter="formaterInfoCaller" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Manta </b></center></th>	
-						
+             					 -->		             			           
+						<th width="10%" field="caller_coverage"   formatter="formaterInfoCallerCoverage" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Call cov </b></center></th>	
+						<th width="10%"  field="caller_depth"  formatter="formaterInfoCallerDepth" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Call depth </b></center></th>	
+						<th width="11%" field="caller_sr"   formatter="formaterInfoCallerSr" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Call sr/pr </b></center></th>	
+						 <!--
 						<th width="3%" field="PR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> PR (ref/alt) </b></center></th>
           				<th width="3%" field="SR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> SR (ref/alt) </b></center></th>
-					    
+          				-->
 						<th width="4%" field="TRANSMISSION"    formatter="formaterTransmission" styles="text-align:center;font-size:9px;background-color:white;"><center><img src="../../images/polyicons/family256_24779.png"></center></th>			
-						<th width="12%" field="DEJAVU_G"  formatter="formaterDejavuCNV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DejaVu  </b></center></th>			
-								
+						<th width="15%" field="DEJAVU_G"  formatter="formaterDejavuCNV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DejaVu  </b></center></th>			
+					<!--			
 						<th width="3%" field="SCORE_GENES" formatter="formaterScoreGene" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Score Gene </b></center></th>
-				<!--		<th width="4%" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:9px;background-color:white;"><center><b> AnnotSV Ranking</b></center></th>	-->			
-						<th width="8%" field="GENES" formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Genes </b></center></th> 
-						<th width="3%" field="OMIM" formatter="formaterOMIM" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Omin </b></center></th>
-					
+						
+						<th width="4%" field="RANKAnnot" formatter="formaterRANK" styles="text-align:center;font-size:9px;background-color:white;"><center><b> AnnotSV Ranking</b></center></th>	-->			
+						<th width="15%" field="GENES" formatter="formaterGENES_SV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Genes </b></center></th> 
+				<!--		<th width="3%" field="OMIM" formatter="formaterOMIM" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Omin </b></center></th>
+					-->
+					<!--
+						<th width="12%" field="VIEWERS"  formatter="formater_viewers" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Viewer  </b> </center></th>		
+						
 						<th width="4%" field="PLOT"  formatter="formaterPlot" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Plot  </b> </center></th>		
 						<th width="4%" field="IGV"   formatter="formater_infoPATIENTIGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> IGV </b></center></th>						
 						<th width="3%" field="DGV" formatter="formaterDGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DGV</b></center></th>			 								
 						<th width="5%" field="gnomAD" formatter="formatergnomAD" styles="text-align:center;font-size:9px;background-color:white;"><center><b> gnomAD</b></center></th>
-						<th width="8%" field="BPManta"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta  <img src="../../images/polyicons/iconfinder_baby-boy_d.png"> </b></center></th>
-						<th width="8%" field="BPManta_mother"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta <img src="../../images/polyicons/icons8-person-female-24.png" > </b></center></th>
-						<th width="8%" field="BPManta_father"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta <img src="../../images/polyicons/icons8-person-24.png"> </b></center></th>
-						<th width="3%" field="GOLD_G_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DGV G-freq </b></center></th>   
+						-->
+<!--						<th width="4%" field="BPManta"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta  <img src="../../images/polyicons/iconfinder_baby-boy_d.png"> </b></center></th>
+						<th width="4%" field="BPManta_mother"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta <img src="../../images/polyicons/icons8-person-female-24.png" > </b></center></th>
+						<th width="4%" field="BPManta_father"   formatter="formaterBP" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BND manta <img src="../../images/polyicons/icons8-person-24.png"> </b></center></th>
+-->						<th width="3%" field="GOLD_G_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DGV G-freq </b></center></th>   
 						<th width="3%" field="GOLD_L_FREQ" formatter="formaterFreq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> DGV L-freq </b></center></th> 
 						<th width="4%" field="dbVar_status"  formatter="formaterdbvarStatus" styles="text-align:center;font-size:9px;background-color:white;"><center><b> dbVar status</b></center></th>		
 
@@ -361,6 +371,8 @@
                         query = "{ id: '*' }"> 
              	<thead>
              	<tr>
+					 <th width="5%" field="IGV" formatter="formater_BND_IGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> IGV  </b></center></th> 
+
           			<th width="8%" field="TRANSLOC"  formatter="formaterTransloc" styles="text-align:center;font-size:10px;background-color:white;"><center><b> SVeq  </b></center></th>	
           			<th width="3%" field="SCORE_EVENT"  styles="text-align:center;font-size:10px;background-color:white;"><center><b> Score Event  </b></center></th>
           			
@@ -368,29 +380,19 @@
           			
              		<th width="4%" field="CYTOBAND1" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob1<img src="../../images/polyicons/cytoband.png"> </b></center></th>
 		        	<th width="5%" field="POS1" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BP1 </b></center></th>
-			        <th width="5%" field="GENES1" formatter="formaterGENES"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes BP1 </b></center></th>
-			        <th width="3%" field="OMIM1" formatter="formaterOMIM"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
-			        
+			         
 					<th width="4%" field="CYTOBAND2" formatter="formaterCytoBand" styles="text-align:center;font-size:9px;background-color:white;"><center><b> cytob2<img src="../../images/polyicons/cytoband.png"> </b></center></th>	
 			        <th width="5%" field="POS2" formatter="formaterPosBND" styles="text-align:center;font-size:9px;background-color:white;"><center><b> BP2 </b></center></th>
-			        <th width="5%" field="GENES2" formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes BP2 </b></center></th>
-			        <th width="3%" field="OMIM2" formatter="formaterOMIM"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Omim </b></center></th>
-			        			        
-			        <th width="6%" field="ALLGENES"   formatter="formaterGENES" styles="text-align:center;font-size:9px;background-color:white;"><center><b> Genes INV </b></center></th>
-			        			        
+			         <th width="20%" field="GENES1" formatter="formaterGENES_SV"styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Genes BP1 </b></center></th>
+			    
 			        <th width="3%" field="QUAL"  styles="text-align:center;font-size:9px;background-color:white;" ><center><b> Qual </b></center></th> 					        
 			       	<th width="3%" field="PR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> PR (ref/alt) </b></center></th>
           			<th width="3%" field="SR"  styles="text-align:center;font-size:9px;background-color:white;"><center><b> SR (ref/alt) </b></center></th>
 	
 	
-					<th width="5%" field="IGV" formatter="formater_BND_IGV" styles="text-align:center;font-size:9px;background-color:white;"><center><b> IGV  </b></center></th> 
-					<th width="5%" field="TRANSMISSION"    formatter="formaterTransmissionBND" styles="text-align:center;font-size:9px;background-color:white;"><center><img src="../../images/polyicons/family256_24779.png"></center></th>		
-					<th width="8%" field="CNV"   formatter="formaterCNVlinked" styles="text-align:center;font-size:9px;background-color:white;"><center><b> CNV <img src="../../images/polyicons/iconfinder_baby-boy_d.png"> </b></center></th>	
-					
-					<th width="8%" field="CNV_mother"   formatter="formaterCNVlinked" styles="text-align:center;font-size:9px;background-color:white;"><center><b> CNV <img src="../../images/polyicons/icons8-person-female-24.png" > </b></center></th>
-					<th width="8%" field="CNV_father"   formatter="formaterCNVlinked" styles="text-align:center;font-size:9px;background-color:white;"><center><b> CNV <img src="../../images/polyicons/icons8-person-24.png"> </b></center></th> 			
-							
-					<th width="8%" field="dejavu" formatter="formaterDejavuSVeq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> dejavu  </b></center></th>  				
+					<th width="5%" field="TRANSMISSION"    formatter="formaterTransmission" styles="text-align:center;font-size:9px;background-color:white;"><center><img src="../../images/polyicons/family256_24779.png"></center></th>		
+					<th width="7%" field="CNV"   formatter="formaterCNVlinked" styles="text-align:center;font-size:9px;background-color:white;"><center><b> CNV <img src="../../images/polyicons/iconfinder_baby-boy_d.png"> </b></center></th>	
+					<th width="7%" field="dejavu" formatter="formaterDejavuSVeq" styles="text-align:center;font-size:9px;background-color:white;"><center><b> dejavu  </b></center></th>  				
 				</tr></thead>
              	</table>
 			</div>
@@ -422,8 +424,22 @@
                 </div>
 			</div>
 </div>
-
-
+<div id="genes_popup" jsId="genes_popup" dojoType="dojox.widget.Dialog"   dimensions="[900,1100]" > 
+<div id="genes_div" jsId="genes_div">
+</div>
+</div>
+ 
+ <div id="dialog_list_phenotypes2" dojoType="dojox.widget.Dialog" dimensions="[1050,850]" title="List Phenotype(s)"> 
+		 <table class="table">
+			<tbody>
+				<tr>
+					<td><div id="container_wordcloud2" style="height:450px;border: solid black 1px;"></div></td>
+				</tr>
+			</tbody>
+		</table>
+		<br>
+		<div class="container-fluid" id="content_table_phenotypes2" style="height:99%;width:99%;"></div>
+	</div>   
  </body>
  </html>
                  
