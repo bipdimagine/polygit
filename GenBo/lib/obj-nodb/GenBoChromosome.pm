@@ -2226,7 +2226,7 @@ sub rocks_predictions {
 sub rocks_dejavu {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
-	my $name = "dejavu-".$mode.$$;
+	my $name = "dejavu-".$mode.'-'.$self->name();
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
 	my $dir = $self->project->deja_vu_rocks_public_dir();
 	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);

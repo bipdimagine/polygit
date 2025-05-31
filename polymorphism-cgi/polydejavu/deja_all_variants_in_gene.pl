@@ -278,7 +278,7 @@ else {
 	print "{\"progress\":\".";
 	#($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels) = get_variants_infos_from_projects($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript);
 	#my $nb_var_after = scalar(keys %$hVariantsDetails);
-
+	
 	($hResVariants) = get_variants_infos_from_projects($use_locus, $only_transcript, $only_rocks_id);
 }
 
@@ -321,7 +321,7 @@ sub supressCoreFilesFound {
 }
 
 sub save_export_xls {
-	my ($list_var) = @_;
+	my ($list_var, $hres) = @_;
 	print '.saveExport.';
 	$project_init->buffer->dbh_deconnect();
 	$project_init->buffer->dbh_reconnect();
@@ -345,6 +345,7 @@ sub save_export_xls {
 			push(@lVarObj, $v);
 		}
 	}
+	if ($hres) { $hResVariants = $hres; }
 	
 	foreach my $v (@lVarObj) {
 		if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
@@ -476,7 +477,7 @@ sub export_html {
 		}
 		foreach my $var_id (sort keys %{$hResVariants}) {
 			push (@lVarIds, $var_id) if $var_id ne $only_variant->id();
-		}				
+		}
 	}
 	else {
 		@lVarIds = sort keys %{$hResVariants};
@@ -1281,9 +1282,8 @@ sub check_variants {
 				delete $hres->{$var_id};
 			}
 		}
-		
 		if ($fork == 1) {
-			$hres->{session} = save_export_xls(\@lOk);
+			$hres->{session} = save_export_xls(\@lOk, $hres);
 		}
 		
 	 	$pm->finish(0, $hres);

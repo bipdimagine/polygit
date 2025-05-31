@@ -504,7 +504,7 @@
 		    function change_annotation(annot, select_release) {
 		    	release = select_release;
 		    	release_annotation = annot;
-		    	var color = 'red';
+		    	var color = 'blue';
 		    	if (release == 'HG19') { color = 'green'; }
 		    	document.getElementById("span_release_annotation").innerHTML = "<font color='" + color + "'><b>" + release + "<br>g:" + annot + "</b></font>";
 		    }
@@ -545,6 +545,7 @@ l		</script>
 							Release<br>Annotation<br><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
 						</li>
 						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+							<a class="dropdown-item" href="#" onClick="change_annotation('46', 'HG38')"><center>HG38 / Gencode 46</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('43', 'HG38')"><center>HG38 / Gencode 43</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('46', 'HG19')"><center>HG19 / Gencode 46</center></a selected>
 						</div>
