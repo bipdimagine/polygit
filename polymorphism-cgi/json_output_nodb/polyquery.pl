@@ -2924,7 +2924,6 @@ sub export_xls {
 	my $xls_export = new xls_export();
 	$xls_export->title_page('PolyQuery_'.$project->name().'.xls');
 	$xls_export->store_variants_infos($lVar, $project, $project->getPatients());
-	warn '$xls_save_session: '.$xls_save_session;
 	if ($xls_save_session) {
 		my $session_id = $xls_export->save();
 	    print '@@@';
