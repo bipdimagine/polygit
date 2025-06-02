@@ -286,7 +286,6 @@ function open_dejavu_infos(value,pname,is_in_this_run) {
 	if (project_name && pname) { this_url += "&patient="+pname; }
 	if (is_in_this_run) { this_url += "&in_this_run=1"; }
 	//alert (this_url);
-	console.log(this_url);
 	
 	//var this_url = url_path + "json_output_nodb/captures_diag_from_transcripts.pl?tr_ids=" + values;
     dijit.byId('waiting').show();
@@ -294,6 +293,7 @@ function open_dejavu_infos(value,pname,is_in_this_run) {
         handleAs: "json",
         url: this_url,
         load: function(data) {
+			 dijit.byId('dialog_dejavu_var_infos').show();
 			document.getElementById("content_dejavu_var_infos").innerHTML = data.html_table;
 			dijit.byId('waiting').hide();
         },
