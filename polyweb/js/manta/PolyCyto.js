@@ -1394,7 +1394,7 @@ th_style = '';
 	
 
 	out = out + '<td colspan=4>';
-	var onclick = 'onclick=get_all_genes(\"'+obj.project+'\",\"'+obj.id+'\")';
+	var onclick = 'onclick=get_all_genes(\"'+obj.project+'\",\"'+obj.id+'\",\"'+obj.patient+'\")';
 	var tname = "all";
 	
 	//var text = "+ high("+obj.nbh+") medium("+obj.nbm+") low("+obj.nbl+")";
@@ -1411,11 +1411,11 @@ th_style = '';
 
 
 
-function get_all_genes(this_proj_name,id) {
+function get_all_genes(this_proj_name,id,patient) {
 	
 	var this_url = url_path + "/manta/getGenesForEvent.pl";
 	var this_args;
-	this_args = "project=" + this_proj_name + "&id=" + id+"&patient=9802"; 
+	this_args = "project=" + this_proj_name + "&id=" + id+"&patient="+patient; 
 		dijit.byId("genes_popup").show();
 	 document.getElementById('genes_div').innerHTML = "Loading ...";
 	var xhr = new XMLHttpRequest();
