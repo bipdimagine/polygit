@@ -70,15 +70,38 @@ has chain_file  => (
 	},
 );
 
+has hash_regions  => (
+	is		=> 'ro',
+	#isa		=> 'Str',
+	lazy	=> 1,
+	default	=> sub {
+	return {};
+	},
+);
 	
 sub add_region {
 	  my ($self,$region) = @_;
 	  my $fh = $self->fh_write_regions;
+	  my $id = $region->{id};
+	  $id =  $region->{rocksid} unless $id;
+	  confess() unless $id;
+	  $self->hash_regions->{$id} =  $region;
 	  print  $fh  join("\t",$region->{chromosome},$region->{start},$region->{end},encode_json($region))."\n";
 }
 
-sub liftOver_regions {
-	   my ($self,$name) = @_;
+sub add_region_id  {
+	  my ($self,$region) = @_;
+	  my $fh = $self->fh_write_regions;
+	  my $id = $region->{id};
+	  confess() unless $id;
+	  die() if exists $self->hash_regions->{$id};
+	  $self->hash_regions->{$id} =  $region;
+	  print  $fh  join("\t",$region->{chromosome},$region->{start},$region->{end},$id)."\n";
+}
+
+sub _liftOver_regions{
+	 my ($self,$name,$opt) = @_;
+	 $opt = "" unless $opt;
 	   close $self->fh_write_regions;
 	   delete $self->{fh_write_regions};
 	   
@@ -98,21 +121,28 @@ sub liftOver_regions {
 		
 		my $fileoutsort = $fht21->filename;
 		if ($name){
-			$fileout =$self->tmp_dir."/".$name.time.".sort.tmp";
+			$fileoutsort =$self->tmp_dir."/".$name.time.".sort.tmp";
 		}
-	   my $cmd = $self->project->buffer->software("liftOver")." ".$self->file_regions->filename." ". $self->chain_file." ".$fileout." /dev/stderr >/dev/null 2>/dev/null";
+	   my $cmd = $self->project->buffer->software("liftOver")." ".$self->file_regions->filename." ". $self->chain_file." $opt ".$fileout." /dev/stderr >/dev/null 2>/dev/null";
 	   system($cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout"  );
-	   
-	   return $self->parse_bed_region($fileoutsort);
+	   return $fileoutsort;
 }
 
+sub liftOver_regions {
+	   my ($self,$name) = @_;
+		my $fileoutsort = $self->_liftOver_regions($name);
+		
+	   return $self->parse_bed_region($fileoutsort);
+}
 
 sub parse_bed_region {
 	my ($self,$fileout) = @_;
 	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
 	# Lis le fichier ligne par ligne
 	my $tab = {};
+	my $hv;
 	while (my $line = <$fh>) {
+		
 		chomp $line;  # Supprime le caractère de fin de ligne (\n)
    	 	next if $line =~/^#/;
    	 	my @t = split("\t",$line);
@@ -124,7 +154,78 @@ sub parse_bed_region {
 	}
 	close($fh);
 	unlink $fileout;
-return $tab;
+	return $tab;
+}
+
+
+
+sub liftOver_regions_cnv {
+	   my ($self,$name) = @_;
+		my $fileoutsort = $self->_liftOver_regions($name,"-multiple -minMatch=0.95 ");
+	   return $self->parse_bed_cnv($fileoutsort);
+}
+
+sub parse_bed_cnv {
+	my ($self,$fileout) = @_;
+	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
+	# Lis le fichier ligne par ligne
+	my $tab = {};
+	my $hv;
+	while (my $line = <$fh>) {
+		chomp $line;  # Supprime le caractère de fin de ligne (\n)
+   	 	next if $line =~/^#/;
+   	 	my @t = split("\t",$line);
+   	 	my $id = $t[3];
+   	 	die() unless exists $self->hash_regions->{$id};
+   	 	my $sv = $self->hash_regions->{$id};
+   	 	$self->hash_regions->{$id}->{LIFT}->{MULTI} ++;
+   	 	$self->hash_regions->{$id}->{LIFT}->{start} =  $t[1];
+   	 	$self->hash_regions->{$id}->{LIFT}->{end} =  $t[2];
+   	 	$self->hash_regions->{$id}->{LIFT}->{chromosome} =  $t[0];
+	}
+	close($fh);
+	unlink $fileout;
+	return $self->hash_regions
+}
+
+sub add_region_bnd  {
+	  my ($self,$region) = @_;
+	  my $fh = $self->fh_write_regions;
+	  my $id = $region->{id};
+	  confess() unless $id;
+	  die() if exists $self->hash_regions->{$id};
+	  $self->hash_regions->{$id} =  $region;
+	  print  $fh  join("\t",$region->{chromosome1},$region->{position1},$region->{position1},$id)."\n";
+	  print  $fh  join("\t",$region->{chromosome2},$region->{position2},$region->{position2},$id)."\n";
+}
+
+sub liftOver_bnd {
+	   my ($self,$name) = @_;
+	   my $fileoutsort = $self->_liftOver_regions($name);
+	   return $self->parse_bed_bnd($fileoutsort);
+}
+
+
+sub parse_bed_bnd {
+	my ($self,$fileout) = @_;
+	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
+	# Lis le fichier ligne par ligne
+	my $tab = {};
+	my $vh;
+	while (my $line = <$fh>) {
+		chomp $line;  # Supprime le caractère de fin de ligne (\n)
+   	 	next if $line =~/^#/;
+   	 	my @t = split("\t",$line);
+   	 	my $id = $t[3];
+   	 	die() unless exists $self->hash_regions->{$id};
+   	 	my $sv = $self->hash_regions->{$id};
+   	 	push(@{$self->hash_regions->{$id}->{LIFT}},{position=>$t[1],chromosome=>$t[0]});
+   	 	$self->hash_regions->{$id}->{NB_LIFT} ++;
+	}
+	close($fh);
+
+	unlink $fileout;
+return $self->hash_regions;
 }
 
 sub add_variant {
@@ -230,7 +331,6 @@ sub run_liftOver {
 	
 	my $stdout;
 	my $stderr;
-	warn join(" ",@cmd);
 	run3 \@cmd, \$bed, \$stdout, \$stderr;
  	parse_bed($fileout,$res);
  return 1;
@@ -244,7 +344,6 @@ sub parse_bed {
 
 	# Lis le fichier ligne par ligne
 	while (my $line = <$fh>) {
-		warn $line;
 		chomp $line;  # Supprime le caractère de fin de ligne (\n)
    	 	next if $line =~/^#/;
    	 	my @t = split("\t",$line);
