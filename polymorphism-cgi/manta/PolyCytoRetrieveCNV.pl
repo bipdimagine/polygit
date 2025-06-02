@@ -367,7 +367,7 @@ while (my $row = $sth->fetchrow_hashref) {
    		$hGroupedCNV->{$global_id}->{'BPManta_father'}="-";	   # manquant
 		 
 		# scoreCNV 
-		$hGroupedCNV->{$global_id}->{'SCORECNV'}= getScoreCNV($hGroupedCNV->{$global_id}->{'SCORECALLER'},$hGroupedCNV->{$global_id}->{'TRANSMISSION'},$hGroupedCNV->{$global_id}->{'DUPSEG'});
+		$hGroupedCNV->{$global_id}->{'SCORECNV'}= getScoreCNV($cnv->{genes},$hGroupedCNV->{$global_id}->{'SCORECALLER'},$hGroupedCNV->{$global_id}->{'TRANSMISSION'},$hGroupedCNV->{$global_id}->{'DUPSEG'});
 				
 		# utile mais non affiché	
 		$hGroupedCNV->{$global_id}->{'START'} = $cnv->{'START'};
@@ -514,7 +514,7 @@ sub getTransmission
 
 sub getScoreCNV
 {
-	my ($listgenes;$score_caller,$transmission,$dupseg) = @_;
+	my ($listgenes,$score_caller,$transmission,$dupseg) = @_;
 		my $score;
 	
 		$score = $score_caller;
@@ -531,7 +531,8 @@ sub getScoreCNV
 			my $sd_score= int($dupseg/40); 
 			$score -= $sd_score;		#	(de -1 à -2,5 )
 		}
-		$score -- unelss @$listgenes;
+		warn $score;
+		$score -- unless @$listgenes;
 		
 		# pour remonter  ceux qui presentent un BP dans une region de 1kb autour des positions debut ou fin
 		#$score += 1 if ($hGroupedCNV->{$gid}->{'BPManta'} ne ";");		
