@@ -474,7 +474,7 @@ has sql_list_project_for_user =>(
 	default	=> sub {
 		####
 		my $sql = qq{	  	
-			select distinct(o.project_id) as id,o.name as name, pt.name as type , db.name as dbname ,o.description as description, BU.EQUIPE_ID team, o.validation_db,o.creation_date,BU.uKey otp 
+			select distinct(o.project_id) as id,o.name as name, o.cache as cache, pt.name as type , db.name as dbname ,o.description as description, BU.EQUIPE_ID team, o.validation_db,o.creation_date,BU.uKey otp 
 			from PolyprojectNGS.projects o , PolyprojectNGS.databases_projects dp,PolyprojectNGS.polydb db,  PolyprojectNGS.user_projects  up ,  bipd_users.USER BU, PolyprojectNGS.project_types pt
 			  where 
 			  	up.project_id=o.project_id and (
@@ -493,7 +493,7 @@ has sql_list_project_for_group =>(
 	lazy =>1,
 	default	=> sub {
 		my $sql = qq{
-			SELECT distinct(O.project_id) as id, O.name as name, pt.name as type, db.name as dbname, O.description as description, BU.EQUIPE_ID team, O.validation_db,O.creation_date,UGG.NAME as "group"  FROM bipd_users.UGROUP as UGG, bipd_users.UGROUP_USER as UGU, bipd_users.USER as BU, PolyprojectNGS.ugroup_projects as UGP, PolyprojectNGS.projects O, PolyprojectNGS.polydb db , PolyprojectNGS.project_types pt, PolyprojectNGS.databases_projects dp  
+			SELECT distinct(O.project_id) as id, O.name as name, O.cache as cache, pt.name as type, db.name as dbname, O.description as description, BU.EQUIPE_ID team, O.validation_db,O.creation_date,UGG.NAME as "group"  FROM bipd_users.UGROUP as UGG, bipd_users.UGROUP_USER as UGU, bipd_users.USER as BU, PolyprojectNGS.ugroup_projects as UGP, PolyprojectNGS.projects O, PolyprojectNGS.polydb db , PolyprojectNGS.project_types pt, PolyprojectNGS.databases_projects dp  
 				where 
 					BU.LOGIN=? 
 		            and BU.password_txt=password(?) 
