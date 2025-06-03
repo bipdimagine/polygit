@@ -4,7 +4,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin";
 use Data::Dumper;
 use Parallel::ForkManager;
-use Storable qw(store retrieve freeze thaw);
+use Storable qw(store retrieve freeze );
 use IO::Compress::Gzip qw(gzip $GzipError) ;
 use IO::Uncompress::Gunzip qw(gunzip $GunzipError) ;
 use Cwd 'abs_path';
@@ -46,7 +46,7 @@ my $t = `hostname`;
 my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
-my $project = $buffer->newProjectCache( -name => $project_name);
+my $project = $buffer->newProject( -name => $project_name);
 
 
 

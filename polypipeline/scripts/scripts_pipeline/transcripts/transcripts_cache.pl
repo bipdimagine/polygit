@@ -58,6 +58,7 @@ warn "end";
 #	 my $no = $project->noSqlCoverage();
 #	 warn Dumper $no;
 #	 die ();
+
 my $lists = $project->getListTranscripts() if not $project->isExome and not $project->isGenome;
 if ($project->isExome()) {
 	foreach my $tr (@{$project->getTranscripts()}) {
