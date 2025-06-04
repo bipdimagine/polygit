@@ -2086,6 +2086,7 @@ function formaterDejavuCNV(value)
 	var nbmanta=args[5];
 	var flagwc = 0;
 	var djv_itp = args[6];
+	var projectname = args[7];
 	
 	var out = "";;
    	var boutonID = 'boutondjv' + nb;	
@@ -2130,7 +2131,7 @@ th_style = '';
 	//out =   '<center> <table  width="100%"><tr style="font-size:9px;">';
 	//out = out + '<td><center><button style="width:95%; background-color:white;"  id="' + boutonID + '" onclick="my_view_dejavu_polycyto(\'' + value + '\')">';
 	
-	out = out + '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<table onClick="alert(\"toto\")" class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
 	out = out + '<tr>';
 	out = out + '<th  '+th_style+'>Prj</td>';
 	out = out + '<th  '+th_style+'>Sam</td>';
@@ -2140,15 +2141,18 @@ th_style = '';
 	out = out + '<th '+th_style+'>itp</td>';
 	out = out + '</tr>';
 	out = out + '<tr>';
-	var b = return_button (djv_in_nbother_project);
+	
+	var cmd = "onclick=\"window.open('https://www.polyweb.fr/HG38/polyweb/polydejavu/dejavu_cnv_sv.html?project=" + projectname + "&id=" + event_id + "', '_blank')\"";
+	
+	var b = return_button (djv_in_nbother_project, cmd);
 	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
-	b = return_button (djv_in_nbother_patient);
+	b = return_button (djv_in_nbother_patient, cmd);
 	out +=  '<td >' + b + '</td>';
-	b = return_button (nbwisecondor);
+	b = return_button (nbwisecondor, cmd);
 	out +=  '<td >' + b + '</td>';
-	b = return_button (nbcanvas);
+	b = return_button (nbcanvas, cmd);
 	out = out + '<td>' + b +'</td>';
-	b = return_button (nbmanta);
+	b = return_button (nbmanta, cmd);
 	out = out + '<td>' + b + '</td>';			
 	//out = out + '</tr></table></center></td>'; 
 	var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+djv_itp+'</button>';
@@ -2161,7 +2165,7 @@ th_style = '';
 function return_simple_button(value,color) {
 	return '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
 	}
-function return_button(value) {
+function return_button(value, cmd) {
 	var color;
 	if (value > 20) {
 		 color="tomato";
@@ -2176,9 +2180,7 @@ function return_button(value) {
 		color="#A6BE47";
 	}
 	
-	return return_simple_button(value,color);
-	return '<button type="button" class="btn btn-xs btn-primary " style="background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
-	return '<button "type="button" class="btn btn-xs btn-primary " style="border-color:'+color+';background-color:white;color:'+color+';font-size: 10px;font-family:  Verdana">'+value+'</button>';
+	return '<button '+ cmd + ' type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
 	
 }
 

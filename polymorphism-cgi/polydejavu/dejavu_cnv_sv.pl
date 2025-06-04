@@ -56,14 +56,14 @@ my $buffer = new GBuffer;
 my $project = $buffer->newProjectCache( -name => $project_name );
 
 
-
 my $duck = GenBoDuckDejaVuCNV->new( project => $project );
 
 #$type,$chr,$start,$end,$seuil
 #warn Dumper $duck->dejavu_details('DUP', 11, 7237519, 7238614, 90);
 
 
-my ($type, $chr, $start, $end) = split('_',$cnv_id);
+my @ltmp = split('!', $cnv_id);
+my ($type, $chr, $start, $end) = split('_',$ltmp[-1]);
 
 #DEL_5_101278034_101279143
 #DUP_11_7237519_7238614
