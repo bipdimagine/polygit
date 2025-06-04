@@ -42,6 +42,7 @@ require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/html_polygenescout.p
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update.pm";
 require  "$Bin/../GenBo/lib/obj-nodb/GenBoDuckDejaVuCnv.pm";
+require  "$Bin/../GenBo/lib/obj-nodb/GenBoDuckDejaVuSv.pm";
 
 my $io = IO::Handle->new();
 $io->autoflush(1);
@@ -56,7 +57,6 @@ my $buffer = new GBuffer;
 my $project = $buffer->newProjectCache( -name => $project_name );
 
 
-my $duck = GenBoDuckDejaVuCNV->new( project => $project );
 
 #$type,$chr,$start,$end,$seuil
 #warn Dumper $duck->dejavu_details('DUP', 11, 7237519, 7238614, 90);
@@ -68,35 +68,78 @@ my ($type, $chr, $start, $end) = split('_',$ltmp[-1]);
 #DEL_5_101278034_101279143
 #DUP_11_7237519_7238614
 
-my $h = $duck->dejavu_details($type, $chr, $start, $end, 90);
-
 my @lTR;
-foreach my $proj_id (sort keys %{$h}) {
-	foreach my $pat_id (sort keys %{$h->{$proj_id}}) {
-		my $proj_name = $buffer->getProjectNameFromId($proj_id);
-		my $b = new GBuffer;
-		my $p = $b->newProjectCache( -name => $proj_name );
-		foreach my $pat (@{$p->getPatients}) {
-			next if $pat->id ne $pat_id;
-			my $pat_name = $pat->name();
-			my $start = $h->{$proj_id}->{$pat_id}->{start};
-			my $end = $h->{$proj_id}->{$pat_id}->{end};
-			my $caller_sr = $h->{$proj_id}->{$pat_id}->{caller_sr};
-			my $caller_cov = $h->{$proj_id}->{$pat_id}->{caller_coverage};
-			my $caller_depth = $h->{$proj_id}->{$pat_id}->{caller_depth};
-			my $identity = $h->{$proj_id}->{$pat_id}->{identity}.'%';
-			
-			my $out = "<td>".$proj_name."</td>";
-			$out .= "<td>".$pat_name."</td>";
-			$out .= "<td>".$start."</td>";
-			$out .= "<td>".$end."</td>";
-			$out .= "<td>".$caller_sr."</td>";
-			$out .= "<td>".$caller_cov."</td>";
-			$out .= "<td>".$caller_depth."</td>";
-			$out .= "<td>".$identity."</td>";
-			push(@lTR, $out);
-		}
-	} 
+my ($duck);
+if ($type eq 'DUP' or $type eq 'DEL') {
+	$duck = GenBoDuckDejaVuCNV->new( project => $project );
+	my $h = $duck->dejavu_details($type, $chr, $start, $end, 90);
+	
+	foreach my $proj_id (sort keys %{$h}) {
+		foreach my $pat_id (sort keys %{$h->{$proj_id}}) {
+			my $proj_name = $buffer->getProjectNameFromId($proj_id);
+			my $b = new GBuffer;
+			my $p = $b->newProjectCache( -name => $proj_name );
+			foreach my $pat (@{$p->getPatients}) {
+				next if $pat->id ne $pat_id;
+				my $pat_name = $pat->name();
+				my $start = $h->{$proj_id}->{$pat_id}->{start};
+				my $end = $h->{$proj_id}->{$pat_id}->{end};
+				my $caller_sr = $h->{$proj_id}->{$pat_id}->{caller_sr};
+				my $caller_cov = $h->{$proj_id}->{$pat_id}->{caller_coverage};
+				my $caller_depth = $h->{$proj_id}->{$pat_id}->{caller_depth};
+				my $identity = $h->{$proj_id}->{$pat_id}->{identity}.'%';
+				
+				my $out = "<td>".$proj_name."</td>";
+				$out .= "<td>".$pat_name."</td>";
+				$out .= "<td>".$start."</td>";
+				$out .= "<td>".$end."</td>";
+				$out .= "<td>".$caller_sr."</td>";
+				$out .= "<td>".$caller_cov."</td>";
+				$out .= "<td>".$caller_depth."</td>";
+				$out .= "<td>".$identity."</td>";
+				push(@lTR, $out);
+			}
+		} 
+	}
+}
+else {
+	my ($type, $chr1, $start1, $chr2, $start2) = split('_',$ltmp[-1]);
+	
+	my $duck = GenBoDuckDejaVuSv->new( project => $project );
+	my $h = $duck->get_dejavu_details($chr1, $start1, $chr2, $start2, 100);
+	
+	foreach my $proj_id (sort keys %{$h}) {
+		foreach my $pat_id (sort keys %{$h->{$proj_id}}) {
+			my $proj_name = $buffer->getProjectNameFromId($proj_id);
+			my $b = new GBuffer;
+			my $p = $b->newProjectCache( -name => $proj_name );
+			foreach my $pat (@{$p->getPatients}) {
+				next if $pat->id ne $pat_id;
+				my $pat_name = $pat->name();
+				
+				my $caller_sr = 0;
+				my $caller_cov = 0;
+				my $caller_depth = 0;
+				
+				my $start = $h->{$proj_id}->{$pat_id}->{'chr1'}.':'.$h->{$proj_id}->{$pat_id}->{'pos1'};
+				my $end = $h->{$proj_id}->{$pat_id}->{'chr2'}.':'.$h->{$proj_id}->{$pat_id}->{'pos2'};
+				$caller_sr += $h->{$proj_id}->{$pat_id}->{caller_sr};
+				$caller_cov += $h->{$proj_id}->{$pat_id}->{caller_coverage};
+				$caller_depth += $h->{$proj_id}->{$pat_id}->{caller_depth};
+				my $identity = '-';
+				
+				my $out = "<td>".$proj_name."</td>";
+				$out .= "<td>".$pat_name."</td>";
+				$out .= "<td>".$start."</td>";
+				$out .= "<td>".$end."</td>";
+				$out .= "<td>".$caller_sr."</td>";
+				$out .= "<td>".$caller_cov."</td>";
+				$out .= "<td>".$caller_depth."</td>";
+				$out .= "<td>".$identity."</td>";
+				push(@lTR, $out);
+			}
+		} 
+	}
 }
 
 my $out2 = $cgi->start_div();
@@ -105,8 +148,14 @@ $out2 .= "<thead>";
 $out2 .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:10px"});
 $out2 .= qq{<th data-field="name" data-sortable="true" data-filter-control="select" data-filter-control-placeholder="ALL Projects">Name</th>};
 $out2 .= qq{<th data-field="samples" data-sortable="true" data-filter-control="input" data-filter-control-placeholder="Patient Name">Sample</th>};
-$out2 .= qq{<th data-field="start" data-sortable="true">Start</th>};
-$out2 .= qq{<th data-field="end" data-sortable="true">End</th>};
+if ($type eq 'DUP' or $type eq 'DEL') {
+	$out2 .= qq{<th data-field="start" data-sortable="true">Start</th>};
+	$out2 .= qq{<th data-field="end" data-sortable="true">End</th>};
+}
+else {
+	$out2 .= qq{<th data-field="start" data-sortable="true">Coord 1</th>};
+	$out2 .= qq{<th data-field="end" data-sortable="true">Coord 2</th>};
+}
 $out2 .= qq{<th data-field="call_sr" data-sortable="true">Caller SR</th>};
 $out2 .= qq{<th data-field="call_cov" data-sortable="true">Caller Coverage</th>};
 $out2 .= qq{<th data-field="call_depth" data-sortable="true">Caller Depth</th>};
