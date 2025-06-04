@@ -242,7 +242,7 @@ sub prepare_sv{
 	my $colchr1 = $self->colchr1;
 	my $colchr2 = $self->colchr2;
 	my $table = $self->create_table_total;
-	$self->{prepare_sv} = $self->dbh->prepare_sv_details(qq{SELECT patient,project from $table
+	$self->{prepare_sv} = $self->dbh->prepare(qq{SELECT patient,project from $table
 	  where   CHROM1=? and CHROM2=? and POS1 > ? and   POS1 < ?  and POS2>? and  POS2 < ?});
 	
 	return $self->{prepare_sv};
