@@ -496,7 +496,7 @@ function formater_viewers1(obj)
    			var igv_value = obj.igv.locus_start + ';' + obj.igv.locus_end + ';' + obj.igv.bam_files + ";" + obj.igv.bam_names + ";"+ obj.igv.l;	
 			var onvIGV = ' onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"';		
 			var bigv  = return_simple_button_with_onclick("IGV","#F0A30A",onvIGV,"white");
-			var onclick = 'onclick="launch_plot(\''+ obj.plot.transmission + '\',' + obj.plot.type + ',' + obj.plot.chromosome + ',' + obj.plot.start + ',' + obj.plot.end + ' )" ';
+			var onclick = 'onclick="launch_plot(\''+ obj.plot.transmission + '\',' + obj.plot.type + ',\'' + obj.plot.chromosome + '\',' + obj.plot.start + ',' + obj.plot.end + ' )" ';
 			var bplot   = return_simple_button_with_onclick("SNP Array","#A20025",onclick,"white");
 			
 			//var bigv   = '<button class="igvIcon2"  id="' + boutonID + '" onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"></button>';
@@ -539,7 +539,7 @@ function formaterPlot(value)
 	if (type == "QUA") { type=4; }
 	
 	var boutonID = 'boutonPlot'+ nb;				
-   	var out   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px" id="' + boutonID + '" onclick="launch_plot(\''+ transmission + '\',' + type + ',' + chr + ',' + debcnv + ',' + fincnv + ' )" style="font-size:16px;">&#128200;</button>';
+   	var out   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px" id="' + boutonID + '" onclick="launch_plot(\''+ transmission + '\',' + type + ',\'' + chr + '\',' + debcnv + ',' + fincnv + ' )" style="font-size:16px;">&#128200;</button>';
   
 	return out;
 }	
