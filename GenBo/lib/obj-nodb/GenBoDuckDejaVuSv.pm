@@ -189,7 +189,6 @@ sub create_table_total {
 
 sub prepare_sv{
 	my ($self) = @_;
-
 	return $self->{prepare_sv} if exists $self->{prepare_sv};
 	my $colpos1 = $self->colpos1;
 	my $colpos2 = $self->colpos2;
