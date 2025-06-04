@@ -2233,7 +2233,7 @@ function show_lines (value){
 }
 function formaterDejavuSVeq(value)
 {
-	//alert(value);
+	//console.log(value);
 	
 	let obj = JSON.parse(value);
 	var dejavu_seuil;
@@ -2241,6 +2241,9 @@ function formaterDejavuSVeq(value)
 	var djv_in_nbother_project = obj.nb_projects;
 	var djv_in_nbother_patient = obj.nb_patients;
 	var djv_in_this_project = obj.nb_itp+"/"+obj.total_itp;
+	
+	var event_id = obj.id;
+	var projectname = obj.project;
 
 var hcolor = "#E8FFF8";
 var th_style = 'style="padding:1px;border: none;text-align: center;"';
@@ -2254,9 +2257,12 @@ var out ='';
 	out = out + '<th '+th_style+'>itp</td>';
 	out = out + '</tr>';
 	out = out + '<tr>';
-	var b = return_button (djv_in_nbother_project);
+	
+	var cmd = "onclick=\"window.open('https://www.polyweb.fr/HG38/polyweb/polydejavu/dejavu_cnv_sv.html?project=" + projectname + "&id=" + event_id + "', '_blank')\"";
+	
+	var b = return_button (djv_in_nbother_project, cmd);
 	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
-	b = return_button (djv_in_nbother_patient);
+	b = return_button (djv_in_nbother_patient, cmd);
 	out +=  '<td >' + b + '</td>';
 
 	var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+djv_in_this_project+'</button>';
