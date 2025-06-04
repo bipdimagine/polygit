@@ -392,7 +392,7 @@ function onRowClick_varInfos(value) {
 	var toFilter = val_proj.replace(/; /g, "|");
 	var id = details(value, 'variant');
 	var gridInfos = dijit.byId("gridInfos");
-	var build = 'HG19';
+	var build = 'HG38';
 	if (document.getElementById("aff_build")) { build = document.getElementById("aff_build").innerHTML; }
 	var urlLaunch_dejavu = url_varInfos + "?login=" + dojo.cookie("username") + "&pwd=" + dojo.cookie("passwd") + "&input=" + id + "&build=" + build;
 	dataStore_details = new dojo.data.ItemFileReadStore({ url: urlLaunch_dejavu });
