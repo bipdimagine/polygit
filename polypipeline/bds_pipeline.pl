@@ -325,7 +325,7 @@ foreach  my $type (@types_steps){
 }
 }
 $pipeline->priority_name($list_steps_types);
-$pipeline->queue("-q pipeline");
+$pipeline->queue("-q pipeline") unless $secret;
 # if $project->isDiag;
 #$pipeline->queue("") if $secret;
 my $dir_bds =$pipeline->dir_bds();
