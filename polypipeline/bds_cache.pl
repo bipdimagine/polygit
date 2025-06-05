@@ -59,6 +59,7 @@ GetOptions(
 
 #check_version($projectName) unless ($steps_name eq 'update' );
 clean($projectName) if $clean;
+$force=1  if $clean;
 my $can_check_version = 1;
 $can_check_version = undef if ($steps_name and $steps_name eq 'update' );
 $can_check_version = undef if ($analyse_type and $analyse_type eq 'rna_junctions' );
@@ -94,7 +95,7 @@ unless ($steps_name){
 #$predef_steps->{update_type} = ["chromosomes"];
 my $pipeline;
  $pipeline = bds_cache_rocks->new( project=>$project, nocluster=>$nocluster,cache=>1 );
-$pipeline->queue("-q testq") unless $secret;
+$pipeline->queue("-q pipeline") unless $secret;
 my $steps = {
 				"store_ids"=>  sub {$pipeline->store_ids(@_)},
 				"store_annotations"=> sub {$pipeline->store_annotations(@_)},
@@ -124,7 +125,8 @@ my $steps = {
 				"update_variants" =>sub {$pipeline->update_variants(@_)},
 				"update_chromosomes" =>sub {$pipeline->update_chromosomes(@_)},
 				"update_genes" =>sub {$pipeline->update_genes(@_)},
-				"cnv" =>sub {$pipeline->cnv_manue(@_)},
+				"cnv_dejavu_parquet" =>sub {$pipeline->cnv_dejavu_parquet(@_)},
+				"cnv_cache_parquet" =>sub {$pipeline->cnv_cache_parquet(@_)},
 				"identito_vigilence" =>sub {$pipeline->identito_vigilence(@_)}, 
 				"cache_html_polyviewer" =>sub {$pipeline->html_cache_polyviewer(@_)}, 
 				"cache_html_polycyto" =>sub {$pipeline->html_cache_polycyto(@_)}, 
@@ -266,7 +268,8 @@ if ($pipeline->nocluster ne 2){
 		 exit(1);
 	};
 }
-
+my $query =  $buffer->getQuery();
+$query->insert_cache_type_rocks($project->id);
 $pipeline->launch_bds_daemon_by_priority();
 
 exit(0);
