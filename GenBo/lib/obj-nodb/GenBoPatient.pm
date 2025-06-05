@@ -2985,7 +2985,28 @@ sub get_lmdb_primers {
 	);
 	return $no2;
 }
-
+sub get_lmdb_cache_beegfs {
+	my ( $self, $mode ) = @_;
+	
+	$mode = "r" unless $mode;
+	my $dir_out = $self->project->rocks_directory_beegfs();
+	unless (-e $dir_out."/".$self->name.".cache"){
+		$mode = "c";
+	}
+	my $no2     = GenBoNoSqlLmdbCache->new(
+		dir     => $dir_out,
+		mode    => $mode,
+		name    => $self->name.".cache",
+		is_compress => 1,
+		vmtouch => $self->buffer->vmtouch
+	);
+	if ( $mode eq "c"){
+		#confess();
+		$no2->put("cdate",time);
+		system("chmod a+w ".$no2->filename);
+	}
+	return $no2;
+}
 sub get_lmdb_cache {
 	my ( $self, $mode ) = @_;
 	

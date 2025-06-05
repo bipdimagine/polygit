@@ -687,8 +687,26 @@ sub rocks_directory_path {
 	return $path;
 	
 }
-
+sub rocks_directory_beegfs {
+	my ($self,$type,$create) = @_;
+	my $genome_version = $self->genome_version();
+	my $annot_version = $self->annotation_version();
+	my $name = '/data-beegfs/polycache.polyviewer/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
+	$name .= "/".$self->name();
+	return $self->makedir($name);
+}
 sub rocks_directory {
+	my ($self,$type,$create) = @_;
+	my $path =  $self->rocks_directory_path($type);
+	#unless ($create){
+	#confess() unless -e $path;  
+	#return $path;
+	#}
+	return $self->makedir($path);
+}
+
+sub rocks_cache_polyviewer_directory {
 	my ($self,$type,$create) = @_;
 	my $path =  $self->rocks_directory_path($type);
 	#unless ($create){

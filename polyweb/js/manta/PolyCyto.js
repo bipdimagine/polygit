@@ -496,7 +496,7 @@ function formater_viewers1(obj)
    			var igv_value = obj.igv.locus_start + ';' + obj.igv.locus_end + ';' + obj.igv.bam_files + ";" + obj.igv.bam_names + ";"+ obj.igv.l;	
 			var onvIGV = ' onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"';		
 			var bigv  = return_simple_button_with_onclick("IGV","#F0A30A",onvIGV,"white");
-			var onclick = 'onclick="launch_plot(\''+ obj.plot.transmission + '\',' + obj.plot.type + ',' + obj.plot.chromosome + ',' + obj.plot.start + ',' + obj.plot.end + ' )" ';
+			var onclick = 'onclick="launch_plot(\''+ obj.plot.transmission + '\',' + obj.plot.type + ',\'' + obj.plot.chromosome + '\',' + obj.plot.start + ',' + obj.plot.end + ' )" ';
 			var bplot   = return_simple_button_with_onclick("SNP Array","#A20025",onclick,"white");
 			
 			//var bigv   = '<button class="igvIcon2"  id="' + boutonID + '" onclick="launch_web_igv_start_and_end(\'' + obj.igv.id + "et" + igv_value + '\')"></button>';
@@ -539,7 +539,7 @@ function formaterPlot(value)
 	if (type == "QUA") { type=4; }
 	
 	var boutonID = 'boutonPlot'+ nb;				
-   	var out   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px" id="' + boutonID + '" onclick="launch_plot(\''+ transmission + '\',' + type + ',' + chr + ',' + debcnv + ',' + fincnv + ' )" style="font-size:16px;">&#128200;</button>';
+   	var out   = '<button class="btn btn-classic btn-m" style="border: 1px solid black;padding:3px" id="' + boutonID + '" onclick="launch_plot(\''+ transmission + '\',' + type + ',\'' + chr + '\',' + debcnv + ',' + fincnv + ' )" style="font-size:16px;">&#128200;</button>';
   
 	return out;
 }	
@@ -2086,6 +2086,7 @@ function formaterDejavuCNV(value)
 	var nbmanta=args[5];
 	var flagwc = 0;
 	var djv_itp = args[6];
+	var projectname = args[7];
 	
 	var out = "";;
    	var boutonID = 'boutondjv' + nb;	
@@ -2130,7 +2131,7 @@ th_style = '';
 	//out =   '<center> <table  width="100%"><tr style="font-size:9px;">';
 	//out = out + '<td><center><button style="width:95%; background-color:white;"  id="' + boutonID + '" onclick="my_view_dejavu_polycyto(\'' + value + '\')">';
 	
-	out = out + '<table class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
+	out = out + '<table onClick="alert(\"toto\")" class= "table table-sm table-striped table-condensed table-bordered table-primary table_gnomad" style="box-shadow: 1px 1px 6px #337AB7 ;font-size: 7px;font-family:  Verdana;margin-bottom:0px" >';
 	out = out + '<tr>';
 	out = out + '<th  '+th_style+'>Prj</td>';
 	out = out + '<th  '+th_style+'>Sam</td>';
@@ -2140,15 +2141,18 @@ th_style = '';
 	out = out + '<th '+th_style+'>itp</td>';
 	out = out + '</tr>';
 	out = out + '<tr>';
-	var b = return_button (djv_in_nbother_project);
+	
+	var cmd = "onclick=\"window.open('https://www.polyweb.fr/HG38/polyweb/polydejavu/dejavu_cnv_sv.html?project=" + projectname + "&id=" + event_id + "', '_blank')\"";
+	
+	var b = return_button (djv_in_nbother_project, cmd);
 	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
-	b = return_button (djv_in_nbother_patient);
+	b = return_button (djv_in_nbother_patient, cmd);
 	out +=  '<td >' + b + '</td>';
-	b = return_button (nbwisecondor);
+	b = return_button (nbwisecondor, cmd);
 	out +=  '<td >' + b + '</td>';
-	b = return_button (nbcanvas);
+	b = return_button (nbcanvas, cmd);
 	out = out + '<td>' + b +'</td>';
-	b = return_button (nbmanta);
+	b = return_button (nbmanta, cmd);
 	out = out + '<td>' + b + '</td>';			
 	//out = out + '</tr></table></center></td>'; 
 	var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+djv_itp+'</button>';
@@ -2161,7 +2165,7 @@ th_style = '';
 function return_simple_button(value,color) {
 	return '<button type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
 	}
-function return_button(value) {
+function return_button(value, cmd) {
 	var color;
 	if (value > 20) {
 		 color="tomato";
@@ -2176,9 +2180,7 @@ function return_button(value) {
 		color="#A6BE47";
 	}
 	
-	return return_simple_button(value,color);
-	return '<button type="button" class="btn btn-xs btn-primary " style="background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
-	return '<button "type="button" class="btn btn-xs btn-primary " style="border-color:'+color+';background-color:white;color:'+color+';font-size: 10px;font-family:  Verdana">'+value+'</button>';
+	return '<button '+ cmd + ' type="button" class="btn btn-xs btn-primary " style="box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);background-color:'+color+';color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+value+'</button>';
 	
 }
 
@@ -2231,7 +2233,7 @@ function show_lines (value){
 }
 function formaterDejavuSVeq(value)
 {
-	//alert(value);
+	//console.log(value);
 	
 	let obj = JSON.parse(value);
 	var dejavu_seuil;
@@ -2239,6 +2241,9 @@ function formaterDejavuSVeq(value)
 	var djv_in_nbother_project = obj.nb_projects;
 	var djv_in_nbother_patient = obj.nb_patients;
 	var djv_in_this_project = obj.nb_itp+"/"+obj.total_itp;
+	
+	var event_id = obj.id;
+	var projectname = obj.project;
 
 var hcolor = "#E8FFF8";
 var th_style = 'style="padding:1px;border: none;text-align: center;"';
@@ -2252,9 +2257,12 @@ var out ='';
 	out = out + '<th '+th_style+'>itp</td>';
 	out = out + '</tr>';
 	out = out + '<tr>';
-	var b = return_button (djv_in_nbother_project);
+	
+	var cmd = "onclick=\"window.open('https://www.polyweb.fr/HG38/polyweb/polydejavu/dejavu_cnv_sv.html?project=" + projectname + "&id=" + event_id + "', '_blank')\"";
+	
+	var b = return_button (djv_in_nbother_project, cmd);
 	out +=  '<td style="vertical-align: middle;">' + b + '</td>';
-	b = return_button (djv_in_nbother_patient);
+	b = return_button (djv_in_nbother_patient, cmd);
 	out +=  '<td >' + b + '</td>';
 
 	var b_djv_itp=  '<button type="button" class="btn btn-xs btn-primary " style="background-color:#8D71B4;color:white;font-size: 8px;font-family:  Verdana;border-color:white;">'+djv_in_this_project+'</button>';

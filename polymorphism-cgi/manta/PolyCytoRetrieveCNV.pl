@@ -313,7 +313,7 @@ while (my $row = $sth->fetchrow_hashref) {
 		$flag = 1 if ($nbcoverage > 0);
 		my $nb_patient = scalar(@{$project->getPatients}) -1;
 		my $itp = scalar (keys %{$cnv->{patients}}) - 1;
-		$hGroupedCNV->{$global_id}->{'DEJAVU_G'} = $global_id.";".$nb_projects.";".$nb_patients.";".$nbcoverage.";".$nbdepth.";".$nbsr.";"."$itp/$nb_patient";
+		$hGroupedCNV->{$global_id}->{'DEJAVU_G'} = $global_id.";".$nb_projects.";".$nb_patients.";".$nbcoverage.";".$nbdepth.";".$nbsr.";"."$itp/$nb_patient".";".$project->name();
 		$hGroupedCNV->{$global_id}->{'PLOT'} =  $cnv->{'type'}.";".$cnv->{'chromosome'}.":".$cnv->{'start'}."-".$cnv->{'end'}.";".$hGroupedCNV->{$global_id}->{'TRANSMISSION'};	 
 		$hGroupedCNV->{$global_id}->{"viewer"};
 		

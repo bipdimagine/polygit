@@ -199,8 +199,6 @@ sub create_table_total {
 	return $self->{create_table_total};
 }
 
-
-
 has sth_query_identity =>(
 	is		=> 'rw',
 	lazy=>1,
@@ -227,6 +225,80 @@ default => sub {
 );
 
 
+sub create_table_partial {
+	my ($self, $chr, $minx, $maxx, $miny, $maxy) =@_;
+	my $colchr = $self->colchr;
+	my $colstart = $self->colstart;
+	my $colend = $self->colend;
+	my $dir = $self->dir;
+	my $file = "*.parquet";
+	my $parquet_file = $dir."$file";
+	my $query = qq{
+		PRAGMA threads=4;
+		CREATE TABLE cnv_call_project AS
+                           SELECT *, abs($colend - $colstart) AS length,
+                           FROM '$parquet_file'
+                           WHERE $colchr = $chr
+                           AND $colstart BETWEEN $minx AND $maxx
+                           AND $colend   BETWEEN $miny AND $maxy
+                           order by $colchr,$colstart,$colend;
+	};
+	$self->dbh->do($query);
+	$self->{create_table_total} = "cnv_call_project";
+	return $self->{create_table_total};
+}
+
+
+sub dejavu_details {
+	my ($self,$type,$chr,$start,$end,$seuil ) = @_;
+	#my $project_id = $self->project->id;
+	my $project_id = '1';
+	my $p = (100 - $seuil)/100;
+	my $len = abs($end - $start) +1;
+	my $vv =   int($len * $p);
+	my $minl = $len - $vv;
+	my $maxl = $len + $vv;
+	my $minx = $start - $vv;
+	my $maxx = $start + $vv;
+	my $miny = $end - $vv;
+	my $maxy = $end + $vv;
+	$self->create_table_partial($chr, $minx, $maxx, $miny, $maxy);
+	$self->sth_query_identity->execute($type,$chr, $minx, $maxx, $miny, $maxy, $minl, $maxl,$project_id);
+	# Récupération des résultats dans un tableau de hash
+	my @results;
+	my $nb;
+	my $hash;
+	my %pp;
+	my @dj;
+	
+	while (my $row = $self->sth_query_identity->fetchrow_hashref) {
+ 		my $start1 = $row->{start};
+ 		my $end1 = $row->{end};	
+ 		my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
+ 		my $project1 = $row->{project};
+ 		my $patient1 = $row->{patient};
+ 		
+		$hash->{$project1}->{$patient1}->{caller_sr} = 0 ;
+		$hash->{$project1}->{$patient1}->{caller_depth} =0;
+		$hash->{$project1}->{$patient1}->{caller_coverage} = 0;
+		$hash->{$project1}->{$patient1}->{start} = $start1;
+		$hash->{$project1}->{$patient1}->{end} = $end1;
+ 		
+ 		#ici detail projet et patient
+ 		my $caller1 = $row->{callers};
+		$hash->{$project1}->{$patient1}->{caller_coverage} ++ if $caller1 & $self->caller_type_flag->{caller_coverage};
+		$hash->{$project1}->{$patient1}->{caller_depth} ++  if $caller1 & $self->caller_type_flag->{caller_depth};
+		$hash->{$project1}->{$patient1}->{caller_sr} ++  if $caller1 & $self->caller_type_flag->{caller_sr};
+ 		$identity = int($identity);
+		my $string ="$identity";
+ 		$hash->{$project1}->{$patient1}->{identity} = int($string);
+ 		
+	}
+	return  $hash;
+}
+
+
+#seuil: 90%
 sub dejavu {
 	my ($self,$type,$chr,$start,$end,$seuil ) = @_;
 	my $project_id = $self->project->id;

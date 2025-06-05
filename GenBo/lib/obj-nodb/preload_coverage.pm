@@ -8,9 +8,12 @@ sub computeLowTranscripts{
 	my ($project,$transcripts,$no,$intronic,$utr,$padding,$print) = @_;
 	print qq{<div  style="visibility: hidden">} if $print;
  	my $hp; 
+ 	
 	foreach my $t (@$transcripts){
+		my $tutr = $utr;
+		warn $t->id." ".$t->isncRNA();
 		my $capture_intspan = $t->getChromosome->getIntSpanCapture();
-		print $t->name if $print;
+		$tutr = 1 if ($t->getChromosome->name eq "MT");  
 		my $debug;
 	#	$debug = 1 if $t->name eq "ENST00000339618";
 		my $exons;
@@ -20,7 +23,7 @@ sub computeLowTranscripts{
 		else {
 	 		my $exons1 = $t->getExons();
 	 		foreach my $e (@$exons1){
-	 			 if ($e->is_noncoding && $utr ne 1){
+	 			 if ($e->is_noncoding && $tutr ne 1){
 	 			 	next;
 	 			 }
 	 			my $s1 = $e->getGenomicSpan()->intersection($capture_intspan);

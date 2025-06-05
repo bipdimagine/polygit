@@ -144,6 +144,8 @@ $sth->execute();
 	
 	$hash->{"dejavuBP1"} = "-";
 	$hash->{"dejavuBP2"} = "-";
+	$sv->{dejavu}->{id} = $sv->{id};
+	$sv->{dejavu}->{project} = $project->name();
 	$sv->{dejavu}->{nb_projects} +=0;
 	$sv->{dejavu}->{nb_patients} +=0;
 	$sv->{dejavu}->{nb_itp} +=0;

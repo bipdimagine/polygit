@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>DejaVu CNV SV</title>
+        <link rel="icon" type="image/png" sizes="16x16" href="images/polyicons/iconfinder_baby-girl_16.png">
+		<!-- chargement des feuilles de styles necessaires à l'affichage -->
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+        <style type="text/css">
+			@import "//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojox/grid/resources/Grid.css";
+			  @import "//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojox/grid/resources/tundraGrid.css";
+			 @import "//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/tundra/tundra.css";
+			 @import "//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojox/layout/resources/ExpandoPane.css";
+			  @import "//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojox/widget/Dialog/Dialog.css";
+        	
+		 	@import "../css/polycss/button.css";
+			@import "../css/polycss/general.css";
+			@import "../css/polycss/login.css";
+			@import "../css/polycss/header-footer.css";
+	
+	body, html {
+	margin:0; padding:0; width:100%; background:#fff;
+	
+
+	color:#000;
+	
+}
+
+
+
+.name {
+	color:#2962A7;
+	font-weight:bold;
+	
+}	
+
+.label_21 {
+    color: #FFF;
+    letter-spacing: 1px;
+    padding: 0 0px;
+}
+     .colorgraph {
+  height: 8px;
+  border-top: 0;
+  background: #c4e17f;
+  border-radius: 8px;
+  background-image: -webkit-linear-gradient(left, #c4e17f, #c4e17f 12.5%, #f7fdca 12.5%, #f7fdca 25%, #fecf71 25%, #fecf71 37.5%, #f0776c 37.5%, #f0776c 50%, #db9dbe 50%, #db9dbe 62.5%, #c49cde 62.5%, #c49cde 75%, #669ae1 75%, #669ae1 87.5%, #62c2e4 87.5%, #62c2e4);
+  background-image: -moz-linear-gradient(left, #c4e17f, #c4e17f 12.5%, #f7fdca 12.5%, #f7fdca 25%, #fecf71 25%, #fecf71 37.5%, #f0776c 37.5%, #f0776c 50%, #db9dbe 50%, #db9dbe 62.5%, #c49cde 62.5%, #c49cde 75%, #669ae1 75%, #669ae1 87.5%, #62c2e4 87.5%, #62c2e4);
+  background-image: -o-linear-gradient(left, #c4e17f, #c4e17f 12.5%, #f7fdca 12.5%, #f7fdca 25%, #fecf71 25%, #fecf71 37.5%, #f0776c 37.5%, #f0776c 50%, #db9dbe 50%, #db9dbe 62.5%, #c49cde 62.5%, #c49cde 75%, #669ae1 75%, #669ae1 87.5%, #62c2e4 87.5%, #62c2e4);
+  background-image: linear-gradient(to right, #c4e17f, #c4e17f 12.5%, #f7fdca 12.5%, #f7fdca 25%, #fecf71 25%, #fecf71 37.5%, #f0776c 37.5%, #f0776c 50%, #db9dbe 50%, #db9dbe 62.5%, #c49cde 62.5%, #c49cde 75%, #669ae1 75%, #669ae1 87.5%, #62c2e4 87.5%, #62c2e4);
+}
+.Mcontainer {
+			display: flex;
+			flex-flow: row wrap;
+			flex-direction: row;
+			justify-content: space-between;
+			}
+.input_label {
+    background: transparent url(images/polyicons/map_pin_brown.png) no-repeat top left;
+    cursor: pointer;
+    display: block;
+    height: 17px;
+    left: 70px;
+    position: relative;
+    text-indent: -99999px;
+    top: -21px;
+    width: 18px;
+}
+
+
+ #gridProject {
+	border:solid;
+	border-color:#AAAAAA;
+	border-style:groove;
+	top: 2px;
+	bottom: 0;
+ 	/*background-image: -moz-linear-gradient(top, #b4b4b4, #707070);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#b4b4b4), to(#707070));
+    */
+    padding:1px 2px 4px 1px;
+
+}
+.bcircle  {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 28px;
+  text-align: center;
+  line-height: 29px;
+  background: red;
+  border-radius: 50%;
+  font-size: 15px;
+  color: white;
+  box-shadow: 4px 1px 15px grey;
+}
+
+ .bcircle:before {
+  content: '';
+  position: absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  border-radius:90%;
+   z-index: -1;
+}
+
+footer{
+	padding: 10 10px;
+}
+
+    </style>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+	<script type="text/javascript" src="../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+  	<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+   	<script type="text/javascript" src="../js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+   	<script type="text/javascript" src="../js/polyviewer/methods_polyviewer.js"></script>
+	<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+	<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
+	
+	<script type="text/javascript">
+		//chargement de modules dojo necessaires
+		dojo.require("dojox.grid.EnhancedGrid");
+		dojo.require("dojox.grid.DataGrid");
+		dojo.require("dojox.grid.enhanced.plugins.Filter");
+		dojo.require("dojox.grid.enhanced.plugins.Search");
+		dojo.require("dojo.cookie");
+		dojo.require("dijit.Dialog");
+		dojo.require("dijit.Tooltip");
+		dojo.require("dijit.form.Button");
+		dojo.require("dijit.form.TextBox");
+	    dojo.require("dojo.data.ItemFileReadStore");
+		dojo.require("dojo.data.ItemFileWriteStore");
+		dojo.require("dojox.data.AndOrReadStore");
+		dojo.require("dijit.Toolbar");
+  
+  		require([ "dojo/_base/xhr","dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+  		var projectName = param("project");
+  		var id = param("id");
+      	
+      	
+      	
+        dojo.addOnLoad(function(){
+        	document.getElementById("span_project").innerHTML = projectName;
+        	document.getElementById("span_id").innerHTML = id;
+        	
+        	
+        
+            var url1 = url_path + "/polydejavu/dejavu_cnv_sv.pl" + "?project=" + projectName + '&id=' + id;
+		    $.getJSON( url1, function( data ) {
+		    	$.each( data, function( key, val ) {
+		    		if (key == 'html') {
+						document.getElementById("content_res_projects").innerHTML = "";
+						var myNode = document.getElementById("content_res_projects");
+				    	var myPanel = $(val);
+						myPanel.appendTo(myNode);
+						enable_table_search();
+		    		}
+				});
+		    });
+        });
+	    	
+    	function enable_table_search() {
+    		$('#table_projects').bootstrapTable();
+		}
+        
+        
+    </script>
+		
+	
+    </head>
+    <body class="tundra">
+        	<nav class="navbar navbar-inverse " style="margin-bottom: 0px;background-color:rgb(34, 34, 34)">
+			<div class="container-fluid">
+				<div class="navbar-header">
+	      			<a class="navbar-brand" href="#"><span style="color:rgb(255, 113, 97)">DejaVu CNV/SV </span> <span style="color:#80aaf2">  
+	      				&nbsp;&nbsp;<span class = "label_21" style="border-top:3px solid rgb(196, 225, 127);margin-left: 75px;">From Project: <label  id="span_project">??</label></span>
+    					<span class = "label_21"  style="border-top:3px solid rgb(102, 154, 225)">ID: <label  id="span_id">??</label></span>
+    					</span></a>
+	    		</div>
+	    		
+	    		<div class="collapse navbar-collapse" id="myNavbar">
+	      			<ul class="nav navbar-nav navbar-right">
+	      			<div class=" btn btn-success  " aria-label="Left Align" onClick='relogin();' style="float:right;margin-top: 9px;margin-left: 2px;" >
+		 				<b><i class="fa fa-sign-in pull-left" ></i> Login</b>
+		 			</div>
+	      			
+	      			<!--
+	      				<div class=" btn btn-danger  " aria-label="Left Align" onClick='open_new_hgmd_var();' style="float:right;margin-top: 9px;margin-left: 2px;">	 
+                			<span id='span_nb_new_hgmd'>Waiting...</<span>
+            			</div>
+            		-->
+            			
+            			<div class=" btn btn-primary  " aria-label="Left Align" onClick='export_xls();' style="float:right;margin-top: 9px;margin-left: 25px;" >	
+            				export list 
+
+            			</div> 
+            			
+         
+						
+			
+	      			</ul>
+	    		</div>
+	  		</div>
+	  		<!--
+	  		<div id="toolbar_polybtf" dojoType="dijit.Toolbar" style="height:27px;">
+	        	<center>
+	        		<div id='div_toolbar_polybtf'>
+	        			<span style="font-size:14px;" id="span_polybtf_wait"><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle"> <i>PolyBTF Loading...</i></span> <span "color:black;font-size:20px;" id="span_polybtf_news"></span> <span id="span_polybtf_date_release"></span> <span id="span_polybtf_button"></span>
+	    			</div>
+	    		</center>
+	        </div>
+	        -->
+		</nav>
+		
+		
+		
+        <div id="toolbar" dojoType="dijit.Toolbar" style="height:27px;background:#4A4F53;background-color:#4A4F53;display: none;">
+        </div>
+     
+        
+        <div>
+            <div class='container-fluid' id='content_res_projects' style='height:auto;max-width:100%;overflow-x:auto;border:1px black solid;'>
+				<center>Loading datas... <img src='../images/polyicons/wait18trans.gif' align='absmiddle'></center>
+			</div>
+            
+        </div>
+        
+    
+    
+      	<!-- div pour le login -->
+      	
+      	
+	 <!-- /container -->
+        </div>
+      	
+        <div id="dialog_hgmd" dojoType="dijit.Dialog" title="PolyBTF: New Variants Pathogenic" style="background-color:white;overflow: auto;">
+			<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+			<div>
+				<table style="padding-left:3%;width:94%;padding-bottom:20px;">
+					<td>
+						<center>
+							<div class="dropdown">
+							  <button style="background-color:white;color:green;border: 1px solid #D7D7D7" class="btn dropdown-toggle" href="#" role="button" id="dropdown_release_version" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							     <span class="glyphicon glyphicon-menu-down" aria-hidden="true"></span> Release Version: <span id="dropdown_releases_selected"></span>
+							  </button>
+							  <div style="background-color:#F0F0F0;padding-left:25px;width:400px;border:1px solid black;text-align:center;" id="dropdown_releases_new_pathogenics" class="dropdown-menu" aria-labelledby="dropdown_release_version"></div>
+							</div>
+							<br>
+							<span id='hgmd_current_version'></span>
+							<br><br>
+							<div hidden style="padding-left:15px;padding-right:15px;padding-bottom:15px;"><button onclick="dont_show_dialog_again_index()"><img id="img_dont_show_me_again" style="height:12px;padding-bottom:2px;" src="images/polyicons/cross.png" alt='X'> <i>Don't show me again</i></button>
+						</center>
+					</td>
+				</table>
+			</div>
+			<br>
+            <div class="container-fluid" id="content_res" style="height:99%;width:99%;"></div>
+			<br>
+		</div>
+		
+	    
+    </body>
+</html>

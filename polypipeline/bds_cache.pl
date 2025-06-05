@@ -150,7 +150,7 @@ $pipeline->unforce(0) if $force;
 #$pipeline->add_sample(patient=>$project);
 
 my @types_steps = ('dude','chromosomes','project','polydiag','html_cache');
- @types_steps = ('chromosomes','rocks','html_cache','project') if $project->isGenome;
+ @types_steps = ('chromosomes','rocks','project','html_cache') if $project->isGenome;
 @types_steps = ('chromosomes') if $giab ;
 my $list_steps;
 my $list_steps_types;

@@ -807,7 +807,8 @@ sub cnv_dejavu_parquet {
 	my $stepname = $projectName."@".$type;
 	my $dir = $self->project->project_log();
 	my $fileout   = $parquet_file;
-	my $cmd = "perl $bin_dev/manue_cnv/cnv/1.pl -project=$projectName -fork=$ppn";
+
+	my $cmd = "perl $bin_dev/manue_cnv/cnv/1_cnv.pl -project=$projectName -fork=$ppn | perl $bin_dev/manue_cnv/sv/1_sv.pl -project=$projectName -fork=$ppn";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
@@ -827,7 +828,7 @@ sub cnv_cache_parquet {
 	my $stepname = $projectName."@".$type;
 	my $dir = $self->project->project_log();
 	my $fileout   = $parquet_file;
-	my $cmd = "perl $bin_dev/manue_cnv/cnv/2.pl -project=$projectName -fork=$ppn";
+	my $cmd = "perl $bin_dev/manue_cnv/cnv/2_cnv.pl -project=$projectName -fork=$ppn | perl $bin_dev/manue_cnv/sv/2_sv.pl -project=$projectName -fork=$ppn";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
