@@ -90,7 +90,7 @@ $sth->execute();
 	while (my $row = $sth->fetchrow_hashref) {
 
 	 my $sv = $rocks->get($row->{id});
-	 next if $sv->{dejavu}->{nb_patients} > 10;
+	# next if $sv->{dejavu}->{nb_patients} > 10;
 	 delete $sv->{score};
 	 getScoreEvent($sv);
 	  my $hash;

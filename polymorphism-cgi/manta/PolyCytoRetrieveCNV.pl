@@ -170,6 +170,9 @@ while (my $row = $sth->fetchrow_hashref) {
 		#pour les gènes emportés par le CNV
 		$hGroupedCNV->{$global_id}->{'SCORE_GENES'} = $cnv->{genes}->[0]->{score};
 		my $genes_liste;
+		$cnv->{genes} = [] unless defined $cnv->{genes}->[0]->{name};
+		warn scalar @{$cnv->{genes}};
+		warn Dumper $cnv->{genes};
 			foreach my $g (@{$cnv->{genes}})
 			{
 				my $gname= $g->{name};
@@ -210,6 +213,7 @@ while (my $row = $sth->fetchrow_hashref) {
 		$hGroupedCNV->{$global_id}->{'SR'} = "-";
 		$hGroupedCNV->{$global_id}->{'SCORECALLER'} = 0;
 		$hGroupedCNV->{$global_id}->{'SCORECALLER'} = $cnv->{score_caller};
+		
 		$hGroupedCNV->{$global_id}->{'SCORECNV'} = 1;#$cnv->{score_caller};
 		$hGroupedCNV->{$global_id}->{'GT'}=" ";
 		
@@ -531,8 +535,19 @@ sub getScoreCNV
 			my $sd_score= int($dupseg/40); 
 			$score -= $sd_score;		#	(de -1 à -2,5 )
 		}
-		warn $score;
-		$score -- unless @$listgenes;
+		
+		$score  = -10 unless @$listgenes;
+		my $nb = 0;
+;		foreach my $g (@$listgenes){
+			$nb ++ if $g->{name};
+			my ($f) = grep{$_ =~ /gluco/i or $_ =~ /diab/i} @{$g->{phenotypes}};
+			if ($f) {
+				warn Dumper  @{$g->{phenotypes}};
+				die($f);
+				$score += 2;
+			}
+			
+		}
 		
 		# pour remonter  ceux qui presentent un BP dans une region de 1kb autour des positions debut ou fin
 		#$score += 1 if ($hGroupedCNV->{$gid}->{'BPManta'} ne ";");		
