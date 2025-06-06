@@ -3429,10 +3429,11 @@ sub table_patients {
 			# bouton view et print
 			#######################
 			my $pp   = $p->name;
+			my $pname2 = "check_" . $p->name();
 			my $cmd  = qq{printer('$pp');};
 			my $cmd2 = qq{printer2('$pp','1');};
 			my $td   = [
-				'<a type="button" class="btn btn-xs btn-info" onclick="'
+				'<a type="button" id="'.$pname2.'" class="btn btn-xs btn-info" onclick="'
 				  . $cmd
 				  . '"><i class="fa fa-clipboard pull-left  "></i>View</button></a>',
 				'<a type="button" class="btn btn-xs btn-success" onclick="'
