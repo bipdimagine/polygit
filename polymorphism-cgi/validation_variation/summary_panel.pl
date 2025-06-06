@@ -1534,7 +1534,7 @@ qq{<div class ="$class"> <img src="https://img.icons8.com/ios/32/000000/decision
 	return "" unless $p;
 	my $v    = $hmendel->{ $p->name };
 	my $type = "btn-success";
-	$v = "?" unless $v;
+	$v = "?" if not defined($v);
 	$v = "?" if $v eq "";
 	if ( $v eq "?" ) {
 		$type = "btn-danger";
@@ -1571,7 +1571,7 @@ sub children_box {
 	
 	$class = "circle2F" if $p->sex ne 1;
 	my $type = "btn-success";
-	$v = "?" unless $v;
+	$v = "?" if not defined($v);
 	$v = "?" if $v eq "";
 	if ( $v eq "?" ) {
 		$type = "btn-danger";
