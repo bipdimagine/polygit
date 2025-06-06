@@ -95,7 +95,7 @@ if ($project->isGenome){
 }
 #system ("mkdir -p $dir_dragen/".$project->name );
 
-my $patient = $project->getPatient($patients_name);
+my $patient = $project->getPatientOrControl($patients_name);
 my $dir_pipeline = $patient->getDragenDir("pipeline");
 my $prefix = $patient->name;
 my $bam_prod = $patient->gvcfFileName("dragen-calling");
@@ -147,7 +147,7 @@ if (-e $bam){
 
 my $buffer_ori = GBuffer->new();
 my $project_ori = $buffer_ori->newProject( -name => $projectName );
-my $patient_ori = $project_ori->getPatient($patients_name);
+my $patient_ori = $project_ori->getPatientOrControl($patients_name);
 
 if ($version && exists $pipeline->{align} ){
 	$patient_ori->{alignmentMethods} =['dragen-align','hisat2'];
@@ -241,7 +241,7 @@ if (!($fastq1)) {
 if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
-	my $patient_ori = $project_ori->getPatient($patients_name);
+	my $patient_ori = $project_ori->getPatientOrControl($patients_name);
 	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
 	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
