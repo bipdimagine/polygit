@@ -54,7 +54,7 @@ my $java = $project->getSoftware('java');
 
 	my $ref =  $project->genomeFasta();
 
-my $patient = $project->getPatient($patient_name);
+my $patient = $project->getPatientOrControl($patient_name);
 
  $bam = $patient->getBamFile() unless $bam;
 

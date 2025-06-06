@@ -1204,7 +1204,7 @@ sub table_mendelian {
 		}
 	);
 	$out .= qq{
-		<div class="container">
+		<div class="container" style="width:auto;">
 		<div class="row">
 	   };
 
@@ -1229,7 +1229,7 @@ sub table_mendelian {
 		my $mother = $fam->getMother;
 
 		$out .= qq{
-	 	 <div class="col-xs-6 col-md-4 col-lg-3">
+	 	 <div class="col-xs-6 col-md-4">
 			
 	 		};
 		$out .= $cgi->start_table(
@@ -1553,7 +1553,7 @@ qq{<div class ="$class"> <img src="https://img.icons8.com/ios/32/000000/decision
 qq{class= "btn btn-xs $type " style="font-size:10px;padding-left: 1px;padding-right: 1px;"};
 	my $name = $p->name;
 	my $value =
-qq{<button type="button" $btn_class  > $name - $v <span>&#37;</span> </button>};
+qq{<button type="button" $btn_class  > $name<br>$v <span>&#37;</span> </button>};
 	my $icon = qq{<div class ="$class">} . $p->return_icon . "  </div>";
 	$out .= qq{
  			
@@ -1589,7 +1589,7 @@ sub children_box {
 	my $btn_class = qq{class= "btn btn-xs $type"  style="font-size:10px" };
 	my $name      = $p->name;
 	my $value =
-qq{<button type="button" $btn_class > $name - $v <span>&#37;</span> </button>};
+qq{<button type="button" $btn_class > $name<br>$v <span>&#37;</span> </button>};
 	my $out;
 
 	my $icon = qq{<div class ="$class">} . $p->return_icon . "  </div>";
@@ -2356,6 +2356,9 @@ sub table_muc1 {
 	my $run_id = $run->id;
 	
 	$out1 = qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
+	unless ( -e $project->getVariationsDir("vntyper") . "/muc1/" ) {
+		return ( "", "" );
+	}
 	my $out;
 	$out .= $cgi->start_div( { class => "row" } );
 	my $pstyle = "panel-primary";    #.$style;

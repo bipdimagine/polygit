@@ -36,7 +36,7 @@ chomp($date);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
-my $patient = $project->getPatient($patient_name);
+my $patient = $project->getPatientOrControl($patient_name);
 my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
