@@ -33,6 +33,7 @@ use Carp;
 
 my ($project_name, $chr_name, $no_verbose, $skip_pseudo_autosomal,$version,$annot_version);
 my $ok_file;
+my $fork = 5;
 GetOptions(
 	'project=s'    => \$project_name,
 	'annot_version=s'    => \$annot_version,
@@ -40,6 +41,7 @@ GetOptions(
 	'skip_pseudo_autosomal=s' => \$skip_pseudo_autosomal,
 	'version=s' => \$version,
 	'file=s' => \$ok_file,
+	'fork=s' => \$fork,
 );
 
  if ($ok_file && -e $ok_file) {
@@ -61,21 +63,23 @@ my $dir_pipeline = $project->rocks_pipeline_directory("patients");
 my $no_p = {};
 
 
+my $pm = new Parallel::ForkManager($fork);
 foreach my $patient (@{$project->getPatients}){
-my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name,pipeline=>1);
-
-foreach my $chr (@{$project->getChromosomes} ){
-		
+	my $pid = $pm->start and next;
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name,pipeline=>1);
+	foreach my $chr (@{$project->getChromosomes} ){
 		my $no =  GenBoNoSqlRocks->new(dir=>$dir_pipeline."/".$patient->name,mode=>"r",name=>$chr->name);
 		next unless $no->exists_rocks;
 		my $iter = $no->rocks->new_iterator->seek_to_first;
 		while (my ($key, $value) = $iter->each) {
-			warn $key;
     		$final_polyviewer_all->put_batch_raw($key,$value);
 		}
 		$final_polyviewer_all->write_batch();
 	}
 	$final_polyviewer_all->close();
+ 	$pm->finish();
 }
+sleep(3); 
+$pm->wait_all_children();
 
 system("date > $ok_file") if $ok_file;
