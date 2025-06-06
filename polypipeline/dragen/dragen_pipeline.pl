@@ -363,7 +363,7 @@ foreach my $project (@$projects){
 	 $dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
-	foreach my $patient (@{$project->getPatients}){
+	foreach my $patient (@{$project->getPatientsAndControl}){
 		if ($version =~ /HG38/){
 			my ($m) = grep{$_ eq "bwa" or $_ eq "dragen-align" } @{$patient->alignmentMethods};
 			next unless $m;
@@ -847,7 +847,7 @@ foreach my $project (@$projects){
 	
 	my $ppn = 20;
 	my $project_name = $project->name;
-	my $patients = $project->getPatients($patients_name);
+	my $patients = $project->getPatientsAndControl($patients_name);
 	 	my	 $cmd = qq{perl $script_pipeline/dude/dude.pl -fork=$ppn  -project=$project_name  };
 	 	my $final_dir = $project->getVariationsDir("dude");
 		my $fileout = $final_dir."/".$project->name.".dude";
@@ -881,7 +881,7 @@ my ($projects,$force) = @_;
 foreach my $project (@$projects){
 	my $projectName = $project->name;
  my @ps;
- my $patients = $project->getPatients();
+ my $patients = $project->getPatientsAndControl();
  my @ps1;
  foreach my $p (@$patients) {
  	my $nname = $p->name."_".$project_name;
@@ -919,7 +919,7 @@ sub run_pon {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $dir_prod = $project->getVariationsDir("dragen-pon");
-	my $patients = $project->getPatients($patients_name);
+	my $patients = $project->getPatientsAndControl($patients_name);
 	my $cmd = qq{perl $script_perl/dragen_cnv.pl -project=$projectName};
 	foreach my $patient (@$patients){
 		my $fileout = $dir_prod."/".$patient->name.".cnv.vcf.gz";
@@ -940,7 +940,7 @@ sub run_target {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $dir_prod = $project->getVariationsDir("dragen-target");
-	my $patients = $project->getPatients($patients_name);
+	my $patients = $project->getPatientsAndControl($patients_name);
 	 foreach my $patient (@$patients){
 	 	#	push(@$jobs,{name=>$patient->name.".target", cmd=>"sleep 3",out=> $patient->targetGCFile()});
 	 	next if -e $patient->targetGCFile();
