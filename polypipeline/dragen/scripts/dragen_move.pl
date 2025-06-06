@@ -79,7 +79,7 @@ my $tm = "/staging/tmp/";
 
 #system ("mkdir -p $dir_dragen/".$project->name );
 
-my $patient = $project->getPatient($patients_name);
+my $patient = $project->getPatientOrControl($patients_name);
 my $dir_pipeline = $patient->getDragenDirName("pipeline");
 my $cmd_dir = qq{test -d $dir_pipeline || mkdir -p $dir_pipeline};
 my ($out, $err, $exit) = $ssh->cmd($cmd_dir);
