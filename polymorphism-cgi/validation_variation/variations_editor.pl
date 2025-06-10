@@ -305,7 +305,10 @@ if($text){
 		$text =~ s/$regex3/https:\/\/gnomad\.broadinstitute\.org\/gene\/$1\?dataset\=$dataset/g;
 		
 	 	$cache_icon = qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
-		
+	 	
+		my $regexp_varsome = qq{varsome.com\/variant\/hg19\/};
+		$text =~ s/$regexp_varsome/varsome.com\/variant\/hg38\//g if $project->getVersion() =~ /HG38/;
+	 	
 		print $text;
 		print"<br><div style='float:right;'><small>$cache_icon</small></div><br>"; 
 	  	$no_cache->close();
