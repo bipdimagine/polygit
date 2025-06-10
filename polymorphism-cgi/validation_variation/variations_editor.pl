@@ -308,8 +308,17 @@ if($text){
 	 	
 		my $regexp_varsome = qq{varsome.com\/variant\/hg19\/};
 		$text =~ s/$regexp_varsome/varsome.com\/variant\/hg38\//g if $project->getVersion() =~ /HG38/;
-	 	
+	 	$|= 1;
+		my @toto = split("\n<!--SPLIT-->\n",$text);
+		my $t = time;
+		my $html;
+		for (my $i = 0;$i<110;$i++){
+			$html.= $toto[$i];
+		}
+		print $html;
+		print"<br>".abs(time-$t)."<br>";
 		print $text;
+  		
 		print"<br><div style='float:right;'><small>$cache_icon</small></div><br>"; 
 	  	$no_cache->close();
 	  	exit(0);
