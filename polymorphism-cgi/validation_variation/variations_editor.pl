@@ -851,7 +851,7 @@ sub refine_heterozygote_composite_score_fork {
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
 	  $final_polyviewer_all->activate_cache();
 	
-	$pm->run_on_finish(
+	$pm->run_on_finish( 
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
 
