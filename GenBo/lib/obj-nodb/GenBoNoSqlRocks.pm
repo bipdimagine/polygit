@@ -80,10 +80,36 @@ has pipeline => (
 		return undef;
 	}
 );
+has cache => (
+	is      => 'rw',
+	default => sub {
+		return undef;
+	}
+);
+
+sub activate_cache {
+	my ($self) = @_;
+			if ($self->cache){
+			my $zz = (time + rand(5000)).".".$$;
+			$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
+			system("cp -r ".$self->original_path_rocks." ".$self->path_rocks);
+			#system("vmtouch -q  -t ".$self->path_rocks);
+		}
+}
+sub deactivate_cache {
+	my ($self) = @_;
+	if ($self->cache){
+		my $dt = $self->tmp_dir;
+		system("rm -r ".$self->path_rocks) if $self->path_rocks =~ /$dt/;
+	}
+}
+
 has tmp_dir => (
 	is      => 'rw',
 	default => sub {
-		return "/tmp/pipeline/";
+		my $dir = "/tmp/pipeline/";
+		system("mkdir -p $dir") unless -e $dir;
+		return $dir;
 	}
 );
 
@@ -105,6 +131,16 @@ has path_rocks => (
 	}
 );
 
+has original_path_rocks => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $st   = $self->dir . "/" . $self->name . ".rocksdb";
+		return $st;
+
+	}
+);
 
 sub dictionary_array {
 	my ($self) = @_;
@@ -298,7 +334,7 @@ sub rocks {
 	my $bits_per_key = 10;
 	my $policy = RocksDB::BloomFilterPolicy->new($bits_per_key);
 	if ( $self->pipeline ) {
-		my $zz = time + rand(5000);
+		my $zz = (time + rand(5000)).".".$$;
 		$self->path_rocks(
 			$self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
 	}
@@ -308,7 +344,14 @@ sub rocks {
 	}
 	confess unless $self->mode;
 	if ( $self->mode eq "r" ) {
-		system("vmtouch -q  -t ".$self->path_rocks);
+		if ($self->cache){
+#			my $zz = (time + rand(5000)).".".$$;
+#		$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
+#			warn $self->original_path_rocks." COPY---------";
+#		system("cp -r ".$self->original_path_rocks." ".$self->path_rocks);
+			warn "+++++".$self->path_rocks."++";
+		}
+	
 		#confess($self->json_file) if -e $self->json_file;
 		$self->load_config() if -e $self->json_file;
 		confess( $self->path_rocks . '/CURRENT' )
@@ -328,7 +371,6 @@ sub rocks {
 			}
 		);
 
-		#$rocks->IncreaseParallelism();
 		return $self->{rocks};
 	}
 	elsif ( $self->mode eq "w" ) {

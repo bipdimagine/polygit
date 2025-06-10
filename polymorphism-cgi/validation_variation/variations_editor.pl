@@ -64,12 +64,13 @@ use PolyviewerVariant;
 #use HTML::TableExtract ;
 use polyviewer_html;
 use HTML::TableExtract ;
-
+#use HTML::Minifier;
 #use CHI;
 use Storable qw( freeze );
 use xls_export;
 use session_export;
 use session_export_test;
+use HTML::Packer;
 #use Proc::Simple;
 
 ##########################################
@@ -270,7 +271,7 @@ if ($cgi->param('force') == 1) {
  $dev = 2;	
 }
 $no_cache = $patient->get_lmdb_cache("w");
-my $keys = return_uniq_keys($patient,$cgi);
+my $keys = return_uniq_keys($patient,$cgi); 
 my $level_dude = 'high,medium';
 
 
@@ -279,6 +280,7 @@ my $cache_id = join( ";", @$keys );
 if ($project->isDiagnostic){
 	$cache_id.="121222";
 }
+warn @$keys;
 
 my $text = $no_cache->get_cache($cache_id);
 #$dev=1;
@@ -289,24 +291,35 @@ my $cache_icon;
 
  $cache_icon = qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
 if($text){
-		my $dataset = "gnomad_r2_1";
-		$dataset = "gnomad_r4" if $project->getVersion() =~ /HG38/;
-	
-		$text =~ s/onClick='editor\(1,2\);'/onClick='load_polyviewer_export_xls\(1\);'/g;
-		
-		my $regex = qq{href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/(.+)' target};
-		$text =~ s/\?dataset\=gnomad_r2_1//g;
-		$text =~ s/$regex/href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/$1\?dataset\=$dataset' target/g;
-		
-		my $regex2 = qq{https:\/\/gnomad\.broadinstitute\.org\/region\/([0-9]+-[0-9]+)};
-		$text =~ s/$regex2/https:\/\/gnomad\.broadinstitute\.org\/region\/$1\?dataset\=$dataset/g;
-		
-		my $regex3 = qq{https:\/\/gnomad\.broadinstitute\.org\/gene\/([0-9A-Za-z]+)};
-		$text =~ s/$regex3/https:\/\/gnomad\.broadinstitute\.org\/gene\/$1\?dataset\=$dataset/g;
-		
-	 	$cache_icon = qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
-		
-		print $text;
+#		my $dataset = "gnomad_r2_1";
+#		$dataset = "gnomad_r4" if $project->getVersion() =~ /HG38/;
+#	
+#		$text =~ s/onClick='editor\(1,2\);'/onClick='load_polyviewer_export_xls\(1\);'/g;
+#		
+#		my $regex = qq{href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/(.+)' target};
+#		$text =~ s/\?dataset\=gnomad_r2_1//g;
+#		$text =~ s/$regex/href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/$1\?dataset\=$dataset' target/g;
+#		
+#		my $regex2 = qq{https:\/\/gnomad\.broadinstitute\.org\/region\/([0-9]+-[0-9]+)};
+#		$text =~ s/$regex2/https:\/\/gnomad\.broadinstitute\.org\/region\/$1\?dataset\=$dataset/g;
+#		
+#		my $regex3 = qq{https:\/\/gnomad\.broadinstitute\.org\/gene\/([0-9A-Za-z]+)};
+#		$text =~ s/$regex3/https:\/\/gnomad\.broadinstitute\.org\/gene\/$1\?dataset\=$dataset/g;
+#		
+#	 	$cache_icon = qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
+#		
+		$|= 1;
+		my @toto = split("\n<!--SPLIT-->\n",$text);
+		my $t = time;
+		my $html;
+		for (my $i = 0;$i<110;$i++){
+			$html.= $toto[$i];
+		}
+		# Supprimer les commentaires HTML (hors IE conditionnels)
+		#my $packer = HTML::Packer->init();
+		#$packer->minify( $html );
+		print $html;
+		print"<br>".abs(time-$t)."<br>";
 		print"<br><div style='float:right;'><small>$cache_icon</small></div><br>"; 
 	  	$no_cache->close();
 	  	exit(0);
@@ -613,10 +626,8 @@ $t     = time;
 my $stdout_end = tee_stdout {
 #warn "genes:".scalar(@$genes);
 if (@$genes){
-	warn "refine";
 $genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
 #warn "genes fin:".scalar(@$genes);
-
 }
 else {
 	if ($gene_name_filtering ) {
@@ -725,7 +736,7 @@ sub calculate_max_score_toto {
 	my $h_all_variants_validations = $patient->getProject->validations();
 	my $no_dude                    = $patient->getGenesDude();
 	$no_dude = undef if $project->isGenome();
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(cache=>1,dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
 	my @ids = map{$_->{id}} @{$list};
 	$final_polyviewer_all->prepare(\@ids);
 	foreach my $hgene (@$list) {
@@ -830,8 +841,16 @@ sub refine_heterozygote_composite_score_fork {
 	my @res_final;
 	my @toto;
 	my $wtime = 0;
-	my $maxgene =1000;
+	my $maxgene =200;
 	my $ngene =0;
+	
+	
+	my $final_polyviewer_all ;
+	#if ($project->isRocks){
+		my $diro = $project->rocks_directory();
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
+	  $final_polyviewer_all->activate_cache();
+	
 	$pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
@@ -883,7 +902,7 @@ sub refine_heterozygote_composite_score_fork {
 		$res->{tmp}  = \@tmp;
 		$res->{time} = time;
 		$project->buffer->dbh_reconnect();
-		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid);
+		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
 		$res->{run_id} = $vid;
 		$pm->finish( 0, $res );
 	}
@@ -910,6 +929,7 @@ sub refine_heterozygote_composite_score_fork {
 			}
 		print "<br>". $wtime;
 		warn "***** ".$wtime;
+		$final_polyviewer_all->deactivate_cache();
 	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
 	return ;
 	exit(0);
@@ -1001,9 +1021,10 @@ sub fork_annnotations {
 	#$project->buffer->close_lmdb();
 	my $tt = time;
 	my $final_polyviewer_all ;
-	if ($project->isRocks){
-	   $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
-	}
+	#if ($project->isRocks){
+	   $final_polyviewer_all = GenBoNoSqlRocks->new(cache=>1,dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
+	   $final_polyviewer_all->activate_cache();
+	#}
 	while ( my @tmp = $iter->() ) {
 		$id++;
 		$hrun->{$id}++;
@@ -1016,6 +1037,7 @@ sub fork_annnotations {
 
 	}
 	$pm->wait_all_children();
+	$final_polyviewer_all->deactivate_cache();
 	print qq{</div>} unless ($cgi->param('export_xls'));
 	warn '----- after Annotation: '
 	  . $tsum . ' final :'
@@ -1165,7 +1187,9 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#$chr->rocks_vector->rocks;
 		
 		#my $no = GenBoNoSqlRocksVector->new(chromosome=>$chr->name,dir=>"/tmp/vector",mode=>"r",name=>$chr->name); #$chr->flush_rocks_vector();
-		my $no = $chr->flush_rocks_vector();
+		#my $no = $chr->flush_rocks_vector();
+		my $no = GenBoNoSqlRocksVector->new(cache=>1,chromosome=>$chr->name,dir=>$project->rocks_directory("vector"),mode=>"r",name=>$chr->name);
+		$no->activate_cache();
 		$no->prepare_vector([$limit_ac,$limit_ac_ho,$limit_sample_dv,$limit_sample_dv_ho,"intergenic","dm",$patient->name]);
 		my $res = {};
 		my $debug;
@@ -1427,6 +1451,8 @@ sub constructChromosomeVectorsPolyDiagFork {
 			$finalVector->{$chr->name} = $res->{vector} ;
 #			warn "end chr".$chr->name;
 			delete $project->{rocks};
+			$no->deactivate_cache();
+			$no = undef;
 		}
 	#$pm->wait_all_children();
 	warn "END !!!!!!!!! ".abs(time -$xtime);
