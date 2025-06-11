@@ -1844,17 +1844,17 @@ sub print_project_summary {
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	my $buffer = $patient->{obj}->buffer();
 	$out.= $cgi->th("Gencode ");
-	$out.= $cgi->td($project->get_gencode_description()->{version});
+	$out.= $cgi->td($project->gencode_version);
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("gnomad ");
-	$out.= $cgi->td($buffer->description_public_lmdb_database("gnomad")->{version});
+	$out.= $cgi->td($buffer->get_version_database("gnomad"));
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("hgmd");
 	
-	$out.= $cgi->td($buffer->description_public_lmdb_database("hgmd")->{version});
+	$out.= $cgi->td($buffer->get_version_database("hgmd"));
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	$out.= $cgi->th("clinvar ");
-	$out.= $cgi->td($buffer->description_public_lmdb_database("clinvar")->{version});
+	$out.= $cgi->td($buffer->get_version_database("clinvar"));
 	$out.= $cgi->end_Tr().$cgi->start_Tr();
 	
 		

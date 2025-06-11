@@ -481,11 +481,11 @@ my $project = $buffer->newProjectCache(
 );
 $project->cgi_user($user);
 my $version;
-$version->{gencode} = $project->get_gencode_description();
-$version->{gnomad}  = $project->get_public_data_description("gnomad");
-$version->{hgmd}    = $project->get_public_data_description("hgmd");
-$version->{cadd}    = $project->get_public_data_description("cadd");
-$version->{clinvar} = $project->get_public_data_description("clinvar");
+$version->{gencode} = $project->gencode_version();
+$version->{gnomad}  = $buffer->get_version_database("gnomad");
+$version->{hgmd}    = $buffer->get_version_database("hgmd");
+$version->{cadd}    = $buffer->get_version_database("cadd");
+$version->{clinvar} = $buffer->get_version_database("clinvar");
 $project->validations_query(1);
 $project->validations;
 $project->getChromosomes();

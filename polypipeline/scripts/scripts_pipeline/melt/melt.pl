@@ -45,8 +45,7 @@ my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
 my $gatk  = $buffer->software("gatk4");
 
-my $patient =  $project->getPatient($patient_name);
-my $dir_in = $project->getAlignmentDir("bwa");
+my $patient =  $project->getPatientOrControl($patient_name);
 my $bam_prod = $patient->getBamFile();
 my $ref = $project->genomeFasta($bam_prod);
 

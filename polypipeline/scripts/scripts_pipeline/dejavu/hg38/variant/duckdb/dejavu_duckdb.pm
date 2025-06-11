@@ -99,7 +99,7 @@ my $h_models_ids = {
 sub find_variant_model {
 	my ($h_models, $vid, $patient_id) = @_;
 	return $h_models_ids->{solo} if exists $h_models->{$patient_id}->{solo};
-	if (exists $h_models->{$patient_id}->{'dominant'}) {
+	if (exists $h_models->{$patient_id}->{'dominant'} and $h_models->{$patient_id}->{'dominant'}) {
 		return $h_models_ids->{dominant} if $h_models->{$patient_id}->{dominant}->contains(int($vid));
 	}
 	foreach my $model_name ('strict_denovo', 'denovo', 'recessif', 'father', 'mother', 'both') {

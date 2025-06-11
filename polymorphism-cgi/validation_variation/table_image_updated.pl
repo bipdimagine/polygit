@@ -261,14 +261,14 @@ sub uri_image {
     );
   
 	
-  	$project->buffer->dbh_deconnect();
+  	$project->disconnect();
   	$|=1;
   	my $t =time;
   	
  	 while( my @tmp = $iter->() ){
  	 		my $pid = $pm->start and next;
  	 	
-			$project->buffer->dbh_reconnect();
+			$project->disconnect();
 			my $himages ={};
 			my $znb =0;
 			my $dj;
@@ -298,47 +298,23 @@ sub uri_image {
 			$znb ++;
 			my $res;
 			
- 			if (-e $project->getCoverageDir()."/lmdb_images_uri/".$tr1->getChromosome->name) {
- 				my $no = $tr1->getChromosome->lmdb_image_transcripts_uri("r");
- 	 			my $z  = $no->get($tr1->id);
- 	 			warn $z;
- 	 			if ($z ){
- 	 				$nbtp ++ if $z->{alert};
- 	 				next unless  $z->{alert};
- 	 				$himages->{$tr1->id} = $z->{uri};
- 	 				next;
- 	 			}
- 			}
- 	 		elsif ($project->isNoSqlDepth){
-					#$res = image_coverage::image_depth_lmdb ($patients, $tr1,$intronic,$utr, $padding, $limit );
- 	 				$res = image_coverage::image_depth_lmdb($patients, $tr1,$intronic,$utr, $padding, $limit );
- 	 				my $uri = URI->new("data:");
-					$uri->media_type("image/png");
-					$uri->data($res->{image}->png);
- 	 				$himages->{$tr1->id} = $uri;
- 	 				#	warn Dumper $res;
- 	 					#die();
- 	 			}
- 		#	}
- 	 			else {
- 	 				
-				$res = image_coverage::image ($patients, $tr1,$intronic,$utr, $padding, $limit );
-				my $uri = URI->new("data:");
-				$uri->media_type("image/png");
-				$uri->data($res->{image}->png);
- 	 			$himages->{$tr1->id} = $uri;
- 	 			}
- 	 		
-
-			
- 
- 	 	
- 	 	
+			eval {
+				$res = image_coverage::image_depth_lmdb($patients, $tr1,$intronic,$utr, $padding, $limit );
+			};
+			if($@) {
+				print '!';
+				next;
+			}
+ 	 		my $uri = URI->new("data:");
+			$uri->media_type("image/png");
+			$uri->data($res->{image}->png);
+ 	 		$himages->{$tr1->id} = $uri;
 		
  	 	}
  	 	$himages->{nb} = $nbtp;
  	 	$pm->finish(0,$himages);
 	}
+	sleep(3);
 	$pm->wait_all_children();
 	$project->buffer->dbh_reconnect();
 	print qq{</div>};

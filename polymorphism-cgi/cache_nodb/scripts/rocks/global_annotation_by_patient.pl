@@ -33,12 +33,13 @@ use Carp;
 
 my ($project_name, $chr_name, $no_verbose, $skip_pseudo_autosomal,$version,$annot_version);
 my $ok_file;
-my $fork =2;
+my $fork = 5;
 GetOptions(
 	'project=s'    => \$project_name,
 	'version=s' => \$version,
 	'fork=s' => \$fork,
 	'file=s' => \$ok_file,
+	'fork=s' => \$fork,
 );
 
  if ($ok_file && -e $ok_file) {
@@ -61,13 +62,12 @@ my $no_p = {};
 
 my $pm = new Parallel::ForkManager($fork);
 
+my $pm = new Parallel::ForkManager($fork);
 foreach my $patient (@{$project->getPatients}){
-		my $pid = $pm->start and next;
-		warn $patient->name;
-my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name,pipeline=>1);
 
-foreach my $chr (@{$project->getChromosomes} ){
-	
+	my $pid = $pm->start and next;
+	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name,pipeline=>1);
+	foreach my $chr (@{$project->getChromosomes} ){
 		my $no =  GenBoNoSqlRocks->new(dir=>$dir_pipeline."/".$patient->name,mode=>"r",name=>$chr->name);
 		next unless $no->exists_rocks;
 		my $iter = $no->rocks->new_iterator->seek_to_first;
@@ -78,8 +78,7 @@ foreach my $chr (@{$project->getChromosomes} ){
 	}
 	$final_polyviewer_all->close();
 
-	$project->close_rocks();
-	$pm->finish( 0, {} );
+ 	$pm->finish();
 }
 $pm->wait_all_children();
 

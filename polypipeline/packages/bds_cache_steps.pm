@@ -797,7 +797,7 @@ sub polydiag {
 	return $filein;
 }
 
-sub cnv_dejavu_parquet {
+sub cnv_dejavu_cache {
 	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
 	my $projectName = $self->project->name();
@@ -807,36 +807,19 @@ sub cnv_dejavu_parquet {
 	my $stepname = $projectName."@".$type;
 	my $dir = $self->project->project_log();
 	my $fileout   = $parquet_file;
+	my $cmd = "perl $bin_dev/manue_cnv/cnv/1_cnv.pl -project=$projectName -fork=$ppn";
+	$cmd .= " | perl $bin_dev/manue_cnv/sv/1_sv.pl -project=$projectName -fork=$ppn";
+	$cmd .= " | perl $bin_dev/manue_cnv/sv/2_sv.pl -project=$projectName -fork=$ppn";
+	$cmd .= " | perl $bin_dev/manue_cnv/cnv/2_cnv.pl -project=$projectName -fork=$ppn";
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job({job=>$job_bds});
+	$job_bds->isLogging(1);
+	if ($self->unforce() && -e $fileout ){
+		$job_bds->skip();
+	}
+	return ($fileout);
+}
 
-	my $cmd = "perl $bin_dev/manue_cnv/cnv/1_cnv.pl -project=$projectName -fork=$ppn | perl $bin_dev/manue_cnv/sv/1_sv.pl -project=$projectName -fork=$ppn";
-	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job({job=>$job_bds});
-	$job_bds->isLogging(1);
-	if ($self->unforce() && -e $fileout ){
-		$job_bds->skip();
-	}
-	return ($fileout);
-}
-sub cnv_cache_parquet {
-	my ($self,$hash) = @_;
-	my $filein = $hash->{filein};
-	my $projectName = $self->project->name();
-	my $project= $self->project;
-	my $parquet_file = $project->getCacheCNV()."/".$project->name.".".$project->id.".parquet";
-	my $ppn = $self->nproc;
-	my $type = "cnv-cache";
-	my $stepname = $projectName."@".$type;
-	my $dir = $self->project->project_log();
-	my $fileout   = $parquet_file;
-	my $cmd = "perl $bin_dev/manue_cnv/cnv/2_cnv.pl -project=$projectName -fork=$ppn | perl $bin_dev/manue_cnv/sv/2_sv.pl -project=$projectName -fork=$ppn";
-	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job({job=>$job_bds});
-	$job_bds->isLogging(1);
-	if ($self->unforce() && -e $fileout ){
-		$job_bds->skip();
-	}
-	return ($fileout);
-}
 sub cnv_manue {
 	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};

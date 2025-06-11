@@ -2716,15 +2716,48 @@ sub is_multiplex_ok {
 #		$hash->{PROT} =$h->{protid};
 #	push(@{$res->{"MT-TL1"}},$hash);	
 #}
+
+sub getBamFile_for_hotspot {
+	my ($self) = @_;
+	my $cram = $self->getBamFile();
+	my $capture = $self->getCapture();
+	my $file = $capture->hotspots_filename; 
+	
+	my @ltmp = split('/', $file);
+	my $hotspot_name = $ltmp[-1];
+	$hotspot_name =~ s/\.bed//;
+	
+	my $dir_hotspot_bam = $self->getProject->getAlignmentDir('bam_hotspot');
+	my @ltmp2 = split('/', $cram);
+	my $bam = $dir_hotspot_bam.'/'.$ltmp2[-1];
+	my $ext = '-hotspot-'.$hotspot_name.'.bam';
+	$bam =~ s/\.cram/$ext/;
+	return $bam if -e $bam;
+	
+	my $samtools = $self->buffer()->software("samtools");
+	my $cmd = "$samtools view $cram -L $file -b -o $bam";
+	
+	my $res = `$cmd`;
+	my $cmd2 = "$samtools index $bam";
+	my $res2 = `$cmd2`;
+	return $bam if -e $bam;
+	confess();
+}
+
 sub hotspot {
 	my ( $self) = @_;
 	return if $self->isGenome;
 	my $capture = $self->getCapture();
 	my $file =$capture->hotspots_filename; 
-	my $bam = $self->getBamFile();
-	my $sambamba = $self->buffer()->software("sambamba");
-	my @lines = `$sambamba depth base $bam -L $file 2>/dev/null`;
 	
+	my $bam = $self->getBamFile();
+	if ($file and $bam =~ /\.cram/) {
+		$bam = $self->getBamFile_for_hotspot();
+	}
+	
+	my $sambamba = $self->buffer()->software("sambamba");
+	my $cmd = "$sambamba depth base $bam -L $file 2>/dev/null";
+	my @lines = `$cmd`;
 
 	chomp(@lines);
 	#REF	POS	COV	A	C	G	T	DEL	REFSKIP	SAMPLE

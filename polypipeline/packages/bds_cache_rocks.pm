@@ -178,7 +178,8 @@ sub merge_patients {
 	my $dir = $self->project->project_log();
 	my $output   = $self->project->quality_dir;#$self->getCacheDir() . "/check_quality";
 	my $fileout =  $project->rocks_directory("logs")."/merge_objects".".ok";
-	my $cmd = "/usr/bin/perl $bin_cache/global_annotation_by_patient.pl -fork=$ppn -project=$project_name  -file=$fileout &&  test -e  $fileout";
+
+	my $cmd = "/usr/bin/perl $bin_cache/global_annotation_by_patient.pl -project=$project_name -file=$fileout -fork=$ppn &&  test -e  $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);

@@ -157,7 +157,8 @@ my $out;
 	my @sequences;
 	for (my $i = 0;$i<scalar(@$pdata);$i++){
 		$len ++;
-		my $covm = int($data_coverage{all}->[$i] /$nb_patient_in_run);
+		my $covm = int($data_coverage{all}->[$i]);
+		$covm = int($data_coverage{all}->[$i] /$nb_patient_in_run) if $nb_patient_in_run and $nb_patient_in_run > 0;
 		my $cov = $data_coverage{$patient_name}->[$i];
 		my $value; 
 		my $valuem; 

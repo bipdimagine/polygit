@@ -66,10 +66,13 @@ sub return_list_variants {
 	my @vars;
 	my $key =$tr_id;
 	my $string ="";
-	$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
-	warn $project->noSqlPolydiag()->dir;
-	warn $patient->name." list_$key ".$string;
-	#confess() unless $string;
+	eval {
+		$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
+	};
+	if ($@) {
+		my @l;
+		return \@l;
+	}
 	return [split(";",$string)];
 
 	return \@vars;
