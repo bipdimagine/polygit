@@ -49,7 +49,7 @@ sub get_date {
 			 $file_out = $patient->project->noSqlPolydiag()->dir."/".$patient->name.".".$patient->project->noSqlPolydiag()->extension;
 		}
 		else {
-			confess();
+			#confess();
 		}
 		
 		my $t = (stat $file_out )[9];
@@ -76,7 +76,13 @@ sub return_list_variants {
 	my @vars;
 	my $key =$tr_id;
 	my $string ="";
-	$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
+	eval {
+		$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
+	};
+	if ($@) {
+		my @l;
+		return \@l;
+	}
 	#warn $patient->name." ".$string;
 	#confess() unless $string;
 	return [split(";",$string)];
