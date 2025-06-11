@@ -243,10 +243,8 @@ sub getScoreEvent
 	$score += 1  if $sv->{"max_score_gene"} >= 5 ;	
 	$score += 1  if $sv->{"max_score_gene"} >= 4 ;
 	$score += 0.5  if $sv->{"max_score_gene"} > 3 ;	
-	warn $sv->{type};
 	if ($sv->{type} eq "INV" && scalar(@{$sv->{genes}}) == 0){
 		$score -= 5;
-		warn "couc ou";
 	}
 	# score sur le dejavu
 	my $nbdejavu = $sv->{dejavu}->{nb_patients};#$sv->{"nbdejavu"};

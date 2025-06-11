@@ -835,7 +835,7 @@ sub construct_data {
 	my $text = $no_cache->get_cache($cache_id);
 	
 	#TODO: here enlever cache
-	#$text = undef;
+	$text = undef;
 	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;

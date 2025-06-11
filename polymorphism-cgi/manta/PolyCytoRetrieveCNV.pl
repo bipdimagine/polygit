@@ -171,8 +171,6 @@ while (my $row = $sth->fetchrow_hashref) {
 		$hGroupedCNV->{$global_id}->{'SCORE_GENES'} = $cnv->{genes}->[0]->{score};
 		my $genes_liste;
 		$cnv->{genes} = [] unless defined $cnv->{genes}->[0]->{name};
-		warn scalar @{$cnv->{genes}};
-		warn Dumper $cnv->{genes};
 			foreach my $g (@{$cnv->{genes}})
 			{
 				my $gname= $g->{name};
@@ -542,8 +540,6 @@ sub getScoreCNV
 			$nb ++ if $g->{name};
 			my ($f) = grep{$_ =~ /gluco/i or $_ =~ /diab/i} @{$g->{phenotypes}};
 			if ($f) {
-				warn Dumper  @{$g->{phenotypes}};
-				die($f);
 				$score += 2;
 			}
 			
