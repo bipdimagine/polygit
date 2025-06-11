@@ -289,27 +289,36 @@ my $cache_icon;
 
  $cache_icon = qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
 if($text){
+		my @toto = split("\n<!--SPLIT-->\n",$text);
+		my $t = time;
+		my $html;
+		for (my $i = 0;$i<110;$i++){
+			$html.= $toto[$i];
+		}
+		
 		my $dataset = "gnomad_r2_1";
 		$dataset = "gnomad_r4" if $project->getVersion() =~ /HG38/;
 	
-		$text =~ s/onClick='editor\(1,2\);'/onClick='load_polyviewer_export_xls\(1\);'/g;
+		$html =~ s/onClick='editor\(1,2\);'/onClick='load_polyviewer_export_xls\(1\);'/g;
 		
 		my $regex = qq{href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/(.+)' target};
-		$text =~ s/\?dataset\=gnomad_r2_1//g;
-		$text =~ s/$regex/href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/$1\?dataset\=$dataset' target/g;
+		$html =~ s/\?dataset\=gnomad_r2_1//g;
+		$html =~ s/$regex/href\='https:\/\/gnomad\.broadinstitute\.org\/variant\/$1\?dataset\=$dataset' target/g;
 		
 		my $regex2 = qq{https:\/\/gnomad\.broadinstitute\.org\/region\/([0-9]+-[0-9]+)};
-		$text =~ s/$regex2/https:\/\/gnomad\.broadinstitute\.org\/region\/$1\?dataset\=$dataset/g;
+		$html =~ s/$regex2/https:\/\/gnomad\.broadinstitute\.org\/region\/$1\?dataset\=$dataset/g;
 		
 		my $regex3 = qq{https:\/\/gnomad\.broadinstitute\.org\/gene\/([0-9A-Za-z]+)};
-		$text =~ s/$regex3/https:\/\/gnomad\.broadinstitute\.org\/gene\/$1\?dataset\=$dataset/g;
+		$html =~ s/$regex3/https:\/\/gnomad\.broadinstitute\.org\/gene\/$1\?dataset\=$dataset/g;
 		
 	 	$cache_icon = qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
 	 	
 		my $regexp_varsome = qq{varsome.com\/variant\/hg19\/};
-		$text =~ s/$regexp_varsome/varsome.com\/variant\/hg38\//g if $project->getVersion() =~ /HG38/;
-	 	
-		print $text;
+		$html =~ s/$regexp_varsome/varsome.com\/variant\/hg38\//g if $project->getVersion() =~ /HG38/;
+	 			
+		
+		print $html;
+		print"<br>".abs(time-$t)."<br>";
 		print"<br><div style='float:right;'><small>$cache_icon</small></div><br>"; 
 	  	$no_cache->close();
 	  	exit(0);
