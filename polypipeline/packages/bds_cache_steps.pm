@@ -805,7 +805,7 @@ sub cnv_dejavu_cache {
 	my $ppn = $self->nproc;
 	my $type = "cnv-dv-parquet";
 	my $stepname = $projectName."@".$type;
-	my $ok = $self->project->getCacheBitVectorDir()."/log/cnv-dv-parquet.ok";
+	my $ok = $self->project->getCacheBitVectorDir()."/../logs/cnv-dv-parquet.ok";
 	my $fileout   = $ok;
 	my $cmd = "perl $bin_dev/manue_cnv/cnv/1_cnv.pl -project=$projectName -fork=$ppn >/dev/null";
 	$cmd .= " && perl $bin_dev/manue_cnv/sv/1_sv.pl -project=$projectName -fork=$ppn >/dev/null";
