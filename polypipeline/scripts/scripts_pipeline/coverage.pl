@@ -79,7 +79,7 @@ my $span_extended;
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject(-name=>$project_name);
 
-my $dir_temp =  $buffer->config->{project_pipeline}->{tmp};
+my $dir_temp =  $buffer->config_path("tmp");
 #my $patient = $project->get_only_list_patients($name);
 
 foreach my $chr (@{$project->getChromosomes()}) {
@@ -134,7 +134,7 @@ $pm->run_on_finish(
   my %temp_file;
 foreach my $chr (@chrs){
 	 $temp_file{$chr} =  File::Temp->new( TEMPLATE =>"$name.$chr.".'XXXXXX',
-                        DIR => $buffer->config->{project_pipeline}->{tmp},
+                        DIR => $buffer->config_path("tmp"),
                         SUFFIX => '.cov');
                         
 	
@@ -348,7 +348,7 @@ my %regions;
 foreach my $chr (@{$project2->getChromosomes}){
 		warn "bed file ".$chr->name();
 		
-		my $bed_file =$buffer2->config->{project_pipeline}->{tmp}."/test.".$chr->name.".$patient_name.bed";
+		my $bed_file =$buffer2->config_path("tmp")."/test.".$chr->name.".$patient_name.bed";
 		 my $file_cat_tmp =  File::Temp->new( TEMPLATE =>"TMP.XXXXXXX",
                         DIR => $dir_out,
                         SUFFIX => ".bed");
