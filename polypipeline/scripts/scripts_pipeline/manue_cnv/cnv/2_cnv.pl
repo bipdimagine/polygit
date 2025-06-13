@@ -457,13 +457,12 @@ sub dejavu {
 									$h->{omim} ++ if $g->is_omim_morbid();;
 									$h->{omim_id} = $g->omim->{omim_id} if $g->is_omim_morbid();
 									$h->{phenotypes} = $g->array_phenotypes;
-									my $study = $g->project->getStudy();
-									foreach my $p (@{$g->getPanels()}){
-									if ($study eq "glucogen") {
-										$h->{score} = 8 if ($p->name =~ /glucogen/i);
-									}
-									}
 									
+									my $study = $g->project->getStudy();
+									$h->{panels} = [];
+									foreach my $p (@{$g->getPanels()}){
+										push(@{$h->{panels}},$p->name);
+									}
 									$max = $g->score unless $max;
 									$cnv->{omim} ++ if $g->is_omim_morbid();
 									push(@{$cnv->{genes}},$h);	
