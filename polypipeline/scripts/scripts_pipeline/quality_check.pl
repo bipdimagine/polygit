@@ -59,9 +59,9 @@ my @types = ();
 #@types =  ("identity","statistics_variations");
 my $project = $buffer->newProject( -name => $projectName );
 unless($steps){
-	 @types = ("files","mendelian","duplicate_regions","coverage_stats","bam_stats","coverage_transcripts","statistics_variations");
+	 @types = ("files","mendelian","statistics_variations","coverage_stats","bam_stats","duplicate_regions","coverage_transcripts");
 	 if ($project->isGenome){
-	 	@types = ("files","mendelian","coverage_stats","bam_stats","coverage_transcripts","statistics_variations");
+	 	@types = ("files","mendelian","coverage_stats","bam_stats","statistics_variations","coverage_transcripts");
 	 	
 	 }
 }

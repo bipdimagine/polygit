@@ -148,8 +148,8 @@ $pipeline->yes($yes);
 $pipeline->unforce(0) if $force;
 #$pipeline->add_sample(patient=>$project);
 
-my @types_steps = ('dude','chromosomes','project','polydiag','html_cache');
- @types_steps = ('chromosomes','rocks','project','html_cache') if $project->isGenome;
+my @types_steps = ('dude','chromosomes','project','dejavu','polydiag','html_cache');
+ @types_steps = ('chromosomes','rocks','project','dejavu','html_cache') if $project->isGenome;
 @types_steps = ('chromosomes') if $giab ;
 my $list_steps;
 my $list_steps_types;
@@ -218,6 +218,10 @@ foreach my $list_requests (@{$list_steps}) {
 		}
 	}
 	elsif ($type_objects eq 'project') {
+		$pipeline->add_sample_with_priority($project, $priority);
+		push(@$end_files,prepare_calling_jobs($list_requests, $steps));
+	}
+	elsif ($type_objects eq 'dejavu') {
 		$pipeline->add_sample_with_priority($project, $priority);
 		push(@$end_files,prepare_calling_jobs($list_requests, $steps));
 	}

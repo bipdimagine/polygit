@@ -132,7 +132,9 @@ $buffer->hash_genes_omim_morbid();
     	sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
     		my $j = $data->{job};
     		delete $hjobs->{$j};
-    		push(@$all_cnvs,@{$data->{array}});
+    		if ($data->{array} and scalar @{$data->{array}} > 0) {
+    			push(@$all_cnvs,@{$data->{array}});
+    		}
     }
     );
 	
@@ -165,9 +167,11 @@ $buffer->hash_genes_omim_morbid();
 	$pm->wait_all_children();
 	warn "END STEP 1";
 	warn "start dejavu";
-	 $duck = GenBoDuckDejaVuCNV->new( project => $project );
-	 my $nb = scalar (@$all_cnvs);
-	 my $c =0;
+	my $nb = 0;
+	 $nb = scalar (@$all_cnvs) if $all_cnvs;
+	exit(0) if $nb == 0; 
+	my $c =0;
+	$duck = GenBoDuckDejaVuCNV->new( project => $project );
 	foreach my $cnv  (@$all_cnvs){
 		$c++;
 		warn ($c/$nb) if $nb%1000 ==0;
