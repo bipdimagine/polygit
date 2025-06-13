@@ -282,6 +282,7 @@ sub getCompactVectorOriginCategory {
 
 sub getCompactVector {
 		my ($self,$cat) = @_;
+		return $self->getNewVector() if not $self->compact_vector;
 		return $self->compact_vector->{all} unless $cat;
 		return $self->getCompactVectorOriginCategory($cat);
 }
