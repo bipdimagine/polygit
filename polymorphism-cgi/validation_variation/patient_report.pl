@@ -539,9 +539,6 @@ else {
 
 my $table_id = "hor-minimalist-b";
 
-
-
-
 $| =1;
 my $out_global ="";
 my $data;
@@ -572,7 +569,6 @@ else {
 	 print qq{<div style="visibility: hidden">};
 	
 	 $data = construct_data(1);
-
 	 print qq{</div>};
 	if ($mode_report == 1){
 		$out_global = alacarte($data,$cgi);
@@ -855,7 +851,6 @@ sub construct_data {
 	$hpatient->{capture_type} = $patient->getCapture()->type;
 	$hpatient->{capture_description} = $patient->getCapture()->description;
 	$hpatient->{capture_version}  = $patient->getCapture()->version;
-
 	
 	my $nbv = scalar(@transcripts_cgi);
 	
@@ -1632,10 +1627,10 @@ my $left_edge_of_table = 50;
 	#$out.= $cgi->legend
 	$out.= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover",style=>"font-size: 8px;font-family:  Verdana;"});;
 	$out.= $cgi->start_Tr();
-	$out.= $cgi->th({class=>"th1"},["name","<input type ='text' size ='50'>"]);
+	$out.= $cgi->th({class=>"th1"},["Name","<input type ='text' size ='50'>"]);
 	$out.= $cgi->end_Tr();
 	$out.= $cgi->start_Tr();
-	$out.= $cgi->th({class=>"th1"},["identifiant",$patient->{name}]);
+	$out.= $cgi->th({class=>"th1"},["Identifiant",$patient->{name}]);
 	$out.= $cgi->end_Tr();
 	$out.= $cgi->start_Tr();
 	$out.= $cgi->th({class=>"th1"},"Validation");
@@ -1740,11 +1735,17 @@ sub print_project_summary {
 	$out.= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover",style=>"font-size: 10px;font-family:  Verdana;width:1000px"});;
 	$out.= $cgi->start_Tr();
 	$name = uc($name);
-	$out.= $cgi->th(["name","<input type ='text' size ='50' value='$name'></input>"]);
+	$out.= $cgi->th(["Name","<input type ='text' size ='50' value='$name'></input>"]);
 	$out.= $cgi->end_Tr();
 	$out.= $cgi->start_Tr();
-	$out.= $cgi->th(["identifiant",$patient->{name}]);
+	$out.= $cgi->th(["Identifiant",$patient->{name}]);
 	$out.= $cgi->end_Tr();
+	
+	#TODO: IV here
+	$out.= $cgi->start_Tr();
+	$out.= $cgi->th({class=>"th"},["IV",construct_identito_vigilence($patient->{obj}->identity_vigilance, $patient->{obj}->identity_vigilance_vcf)]);
+	$out.= $cgi->end_Tr();
+	
 	$out.= $cgi->start_Tr();
 	$out.= $cgi->th("Validation");
 	if (exists $patient->{user_validated}) {
@@ -3885,4 +3886,79 @@ push(@keys,encode_json ({}));
 }
 return \@keys;
 }
+
+
+
+sub construct_identito_vigilence {
+	my ($identity_vigilance, $identity_vigilance_vcf) = @_;
+	my @iv = split( "", $identity_vigilance );
+
+	return ( "-" ) unless @iv;
+
+	my @iv_vcf;
+	@iv_vcf = split( "", $identity_vigilance_vcf )
+	  if $identity_vigilance_vcf;
+	my $level;
+	unless (@iv_vcf) {
+		for ( my $i = 0 ; $i < @iv ; $i++ ) {
+			$iv_vcf[$i] = "";
+		}
+	}
+	elsif ( scalar(@iv_vcf) > scalar(@iv) ) {
+		$level = pop(@iv_vcf);
+	}
+	my $out;
+	my $error = 0;
+
+	for ( my $i = 0 ; $i < @iv ; $i++ ) {
+		if ( $iv[$i] eq $iv_vcf[$i] ) {
+			$out .= $cgi->span(
+				{
+					style =>
+					  "background-color:#00A591;color:white;font-size:10px"
+				},
+				$iv[$i]
+			);
+		}
+		elsif ( $iv[$i] eq "4" ) {
+			$out .= $cgi->span(
+				{
+					style =>
+					  "background-color:#6C4F3D;color:white;font-size:10px"
+				},
+				$iv_vcf[$i]
+			);
+		}
+		elsif ( $iv_vcf[$i] eq "" ) {
+
+			$out .= $cgi->span(
+				{ style => "background-color:grey;color:white;font-size:10px" },
+				$iv[$i]
+			);
+		}
+		else {
+			$error++;
+			$out .= $cgi->span(
+				{
+					style =>
+					  "background-color:#E94B3C;color:white;font-size:10px"
+				},
+				$iv_vcf[$i]
+			);
+		}
+
+	}
+	if ($level) {
+		$error = 0;
+		$error = 2 if $level eq "e";
+		$error = 1 if $level eq "w";
+	}
+	else {
+		$error = 2 if $error >= 2;
+	}
+
+	return ( $out );
+
+}
+
 #
