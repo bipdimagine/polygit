@@ -514,7 +514,12 @@ has files =>(
 		my $file2 = $dir . "/" . $self->type . "/" . $self->file_name;
 		$files->{bed} = $file2;
 		#warn $files->{bed};
-		$files->{hotspot} = $dir . "/hotspot/" .lc($self->analyse) . ".bed";;
+		$files->{hotspot} = $dir . "/hotspot/" .lc($self->analyse) . ".bed";
+		if ($self->analyse eq "genome") {
+			my $validation_db =  $self->getProject->validation_db();
+			my $file = $dir.'/hotspot/'.$validation_db.'.bed';
+			$files->{hotspot} = $file if -e $file;
+		}
 		my $fp =  $dir . "/" . $self->type . "/" . $self->primers_filename;
 		
 	#	if (-s $fp){

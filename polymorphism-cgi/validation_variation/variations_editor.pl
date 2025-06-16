@@ -507,8 +507,6 @@ $buffer->disconnect();
 
 #my $list_saved;
 
-
-
 ##################################
 ################## GET VECTORS 
 ##################################
@@ -580,29 +578,27 @@ $t = time;
 
 
 
-
-print print_hotspot($patient);
-
 $ztime .= ' polycyto:' . ( abs( time - $t ) );
 $t     = time;
 my $stdout_nav_bar = tee_stdout {
 	print"<br><div style='float:right;'>$cache_icon</div><br>"; 
     update_variant_editor::printNavBar( $patient, $genes, $statistics, $version,$date, $user, $ztime,update_variant_editor::compose_string_filtering($cgi) );
+	update_variant_editor::print_hotspot( $patient, $panel );
 };
 my $stdoutcnv;
-unless ( $patient->isGenome() ) {
-		 $stdoutcnv = $no_cache->get_cache($cache_dude_id);
-		 
-		if ($stdoutcnv){
-			print $stdoutcnv;
-		}
-		else {
-			$stdoutcnv = tee_stdout {
-		update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
+if (not $patient->isGenome() ) {
+	$stdoutcnv .= $no_cache->get_cache($cache_dude_id);
+	if ($stdoutcnv){
+		print $stdoutcnv;
+	}
+	else {
+		$stdoutcnv = tee_stdout {
+			update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
 		};
-			 $no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
-		}
+		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
+	}
 }
+
 	
 	
 #$myproc->kill();
@@ -611,22 +607,23 @@ $t     = time;
 #warn "ok *** $exit_status ";
 #exit(0);
 my $stdout_end = tee_stdout {
-#warn "genes:".scalar(@$genes);
-if (@$genes){
-$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
-#warn "genes fin:".scalar(@$genes);
-}
-else {
-	if ($gene_name_filtering ) {
-	print qq{<div class="knockout">No Variation Found for gene $gene_name_filtering</div>};
-}
-else {
-	print qq{<div class="knockout">No Variation Found</div>};
-}
-}
-warn "hetero " . abs( time - $t ) if $print;
-$ztime .= ' hetero:' . ( abs( time - $t ) );
-print $ztime;
+	
+	#warn "genes:".scalar(@$genes);
+	if (@$genes){
+	$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
+	#warn "genes fin:".scalar(@$genes);
+	}
+	else {
+		if ($gene_name_filtering ) {
+		print qq{<div class="knockout">No Variation Found for gene $gene_name_filtering</div>};
+	}
+	else {
+		print qq{<div class="knockout">No Variation Found</div>};
+	}
+	}
+	warn "hetero " . abs( time - $t ) if $print;
+	$ztime .= ' hetero:' . ( abs( time - $t ) );
+	print $ztime;
 
 };
 
@@ -1649,111 +1646,3 @@ my $date;
 return $date;
 }
 
-
-sub print_hotspot {
-	my ($patient) = @_;
-	my $hotspots = $patient->hotspot;
-	return "" unless $hotspots;
-
-	my $out ="";
-	
-	#$out .=  $cgi->start_div({class=>"panel-heading panel-alert alert ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
-	my $label_id = "hs_polyviewer_".$patient->id;
-	my $panel_id = "pa_polyviewer_".$patient->id;
-	$out .= qq{<div class="btn  btn-warning btn-xs " style="position:relative;bottom:1px;min-width:150px;" onClick='collapse("$panel_id","$label_id")'>  <span id= "$label_id" class="glyphicon glyphicon-triangle-right  "   style="float:left;"></span> HOTSPOT &nbsp</div>};
-	#$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >-</span>});
-	$out .=  $cgi->start_div({class=>"panel-body panel-collapse  collapse",style=>"width:50%;font-size: 09px;font-family:  Verdana;",id=>$panel_id});
-	my $div_alert;	
-	my $s_id = $patient->{name};
-
-my $t = time;
-
-
-#$out .=  $cgi->start_div({class=>"panel-heading panel-warning warning ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
-#	$out .= qq{<div class="btn  btn-success btn-xs " style="position:relative;bottom:1px;min-width:150px;" onClick='collapse("$panel_id","$label_id")'>  <span id= "$label_id" class="glyphicon glyphicon-triangle-right  "   style="float:left;"></span> $text &nbsp</div>};
-	   		#	$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});
-#		my $nbv = scalar (keys %{$hotspot->{results}->{$s_id}});
-#		$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});	
-	my @header = ("ID","NAME","PROT","A","C","G","T","DEL","COV");	 
-	$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"font-size: 9px;font-family:  Verdana;"});
-foreach my $g (keys %$hotspots){
-	#$out .=  $cgi->start_div({class=>"panel panel-info" });
-	 #panel heading
-	 
-	 # $out.= $cgi->end_div();
-		#REF	POS	COV	A	C	G	T	DEL	REFSKIP	SAMPLE
-	#my $var_obj = $self->cache_lmdb_variations->get($vid);
-	#  panel table
-	$out.= $cgi->start_Tr();
-	$out.=$cgi->th({colspan=>(scalar(@header)+1),style=>"background-color:#217DBB;color:white;font-size:12px"},$g);
-	$out.= $cgi->end_Tr();
-	$out.= $cgi->start_Tr();
-	$out.=$cgi->th({style=>"background:#E0E0FF"},["igv",@header]);
-	$out.= $cgi->end_Tr();
-	
-	my @bams;
-	my @names;
-	foreach my $p (@{$patient->getFamily->getPatients()}){
-		push(@bams,$patient->bamUrl);
-		push(@names,$patient->name());
-	}
-					
-	my $f =  join(";",@bams);#$patient->{obj}->bamUrl;;
-	 my $pnames = join(";",@names);
-	foreach my $hotspot (@{$hotspots->{$g}}){
-		my @td;
-		my $chr = $project->getChromosome($hotspot->{REF});
-		#my $var_obj = $chr->cache_lmdb_variations->get($hotspot->{GENBO_ID});
-		my $var_obj = $project->_newVariant($hotspot->{GENBO_ID});
-		#warn $chr->cache_lmdb_variations->get(0);
-		my $style ={};
-		 $style = {style=>"background-color:#D2386C;color:white"} if $var_obj && defined $var_obj->vector_id() && $var_obj->existsPatient($patient);
-		 $out.= $cgi->start_Tr($style);
-		 my $nba;
-		 my $chrn = $chr->name;
-		 my $start = $hotspot->{POS};
-		 my $l = $chr->name.":".$start;
-		 my $gn = $project->getVersion();
-		 my $project_name = $project->name; 
-		 my $v1 = "?/?";#.$hvariation->{allele};	
-		# launch_web_igv_js
-		my $text =qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$pnames","$f","$l","$v1","$gn")' style="color:black"></button>};
-		#my $text =qq{<button dojoType="dijit.form.Button"   iconClass='igvIcon' onclick='view_web_igv_bam("dialog_igv", "div_igv", "$l", "$f", "$pnames")' style="color:black"></button>};
-		 
-		 
-		$out.=$cgi->td($text);
-		foreach my $h (@header){
-			if ($h eq  $hotspot->{A_ALT}){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
-				my $color = "#f2dedc";
-				$color = "#F7BFB9" if $pc>2;
-				$color = "#E9897E" if $pc>5;
-				$out.=$cgi->td({style=>"background-color:$color;color:black"},"$pc% (".$hotspot->{$h}.")");
-			}
-			elsif ($h eq  $hotspot->{A_REF}){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
-				$out.=$cgi->td({style=>"background-color:#c7eadd;color:black"},"$pc% (".$hotspot->{$h}.")");
-			}
-			elsif ($h eq  "DEL" && $hotspot->{A_ALT} eq "-"){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
-				my $color = "#f2dedc";
-				$color = "#F7BFB9" if $pc>2;
-				$color = "#E9897E" if $pc>5;
-				$out.=$cgi->td({style=>"background-color:#F7BFB9;color:black"},"$pc% (".$hotspot->{$h}.")");
-			}
-			else {
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
-				$out .= $cgi->td($hotspot->{$h});
-			}
-			#push(@td, $hotspot->{$h});
-		}
-	
-		#$out.=$cgi->td(\@td);	
-		$out.= $cgi->end_Tr();
-	}
-	
-	}
-	$out.= $cgi->end_table();	
-	$out.= $cgi->end_div();	#$out.="<!-- 3 -->";	
-	return $out;
-}
