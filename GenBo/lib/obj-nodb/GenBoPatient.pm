@@ -2722,8 +2722,10 @@ sub is_multiplex_ok {
 sub hotspot {
 	my $self = shift;
 	my @lRegions;
+	return if $self->isGenome;
 	my $capture = $self->getCapture;
 	my $file = $capture->hotspots_filename;
+	return undef if not $file;
 	my $cram = $self->getBamFile();
 	my $samtools = $self->buffer()->software("samtools");
 	my $res;
