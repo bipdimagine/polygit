@@ -513,8 +513,6 @@ $buffer->disconnect();
 ################## GET VECTORS 
 ##################################
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
-	warn "start";
-	
 	my ( $vectors, $list, $hash_variants_DM,$list_genes) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$start_vector,$statistics);
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;

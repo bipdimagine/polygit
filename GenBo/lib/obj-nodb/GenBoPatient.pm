@@ -2717,217 +2717,48 @@ sub is_multiplex_ok {
 #	push(@{$res->{"MT-TL1"}},$hash);	
 #}
 
-sub getBamFile_for_hotspot {
-	my ($self) = @_;
-	my $cram = $self->getBamFile();
-	my $capture = $self->getCapture();
-	my $file = $capture->hotspots_filename; 
-	
-	my @ltmp = split('/', $file);
-	my $hotspot_name = $ltmp[-1];
-	$hotspot_name =~ s/\.bed//;
-	
-	my $dir_hotspot_bam = $self->getProject->getAlignmentDir('bam_hotspot');
-	my @ltmp2 = split('/', $cram);
-	my $bam = $dir_hotspot_bam.'/'.$ltmp2[-1];
-	my $ext = '-hotspot-'.$hotspot_name.'.bam';
-	$bam =~ s/\.cram/$ext/;
-	return $bam if -e $bam;
-	
-	my $samtools = $self->buffer()->software("samtools");
-	my $cmd = "$samtools view $cram -L $file -b -o $bam";
-	
-	my $res = `$cmd`;
-	my $cmd2 = "$samtools index $bam";
-	my $res2 = `$cmd2`;
-	return $bam if -e $bam;
-	confess();
-}
+
 
 sub hotspot {
-	my ( $self) = @_;
-	return if $self->isGenome;
-	my $capture = $self->getCapture();
-	my $file =$capture->hotspots_filename; 
-	
-	my $bam = $self->getBamFile();
-	if ($file and $bam =~ /\.cram/) {
-		$bam = $self->getBamFile_for_hotspot();
-	}
-	
-	my $sambamba = $self->buffer()->software("sambamba");
-	my $cmd = "$sambamba depth base $bam -L $file 2>/dev/null";
-	my @lines = `$cmd`;
-
-	chomp(@lines);
-	#REF	POS	COV	A	C	G	T	DEL	REFSKIP	SAMPLE
-	my @header = split(" ",shift @lines);
+	my $self = shift;
+	my @lRegions;
+	my $capture = $self->getCapture;
+	my $file = $capture->hotspots_filename;
+	my $cram = $self->getBamFile();
+	my $samtools = $self->buffer()->software("samtools");
 	my $res;
-	foreach my $l  (@lines){
-		my @data = split(" ",$l);
-			my $hash ={};
-		foreach (my $i=0;$i<@header;$i++){
-			
-			$hash->{$header[$i]} = $data[$i];
+	my $h = $capture->hotspots;
+	foreach my $id (keys %{$h}) {
+		my @ltmp = split('_', $h->{$id}->{genbo_id});
+		my $chr_name = $ltmp[0];
+		my $chr = $self->getProject->getChromosome($ltmp[0]);
+		my $start = $ltmp[1];
+		my $end = $start;
+		my $region = $chr->fasta_name.":".$start."-".$end;
+		my $cmd = "$samtools mpileup $cram -r $region | cut -f 5";
+		my $pileup = `$cmd`;
+		my $hash = {};
+		$hash->{'A'} = 0;
+		$hash->{'T'} = 0;
+		$hash->{'G'} = 0;
+		$hash->{'C'} = 0;
+		foreach my $s (split('', $pileup)) {
+			$hash->{'A'}++ if lc($s) eq 'a';
+			$hash->{'T'}++ if lc($s) eq 't';
+			$hash->{'G'}++ if lc($s) eq 'g';
+			$hash->{'C'}++ if lc($s) eq 'c';
 		}
-		
-	#	my $chromosome = $self->project->getChromosome($hash->{REF});
-	#	$hash->{POS} ++;
-	#	my $t = $chromosome->genesIntervalTree->fetch($hash->{POS},$hash->{POS}+1);
-		my $id = $hash->{REF}.":".$hash->{POS};
-		my $h = $capture->hotspots->{$id};
-		$hash->{A_REF} = $h->{ref};
-		$hash->{A_ALT} = $h->{alt};
-		$hash->{NAME} = $h->{name};
-		$hash->{ID} = $hash->{REF}.":".($hash->{POS}+1);
-		$hash->{GENBO_ID} =$h->{genbo_id};
-		$hash->{PROT} =$h->{protid};
-		push(@{$res->{$h->{gene}}},$hash);	
+		$hash->{'REF'} = $chr_name;
+		$hash->{'COV'} = $hash->{'A'} + $hash->{'T'} + $hash->{'G'} + $hash->{'C'};
+		$hash->{'A_REF'} = $h->{$id}->{'ref'};
+		$hash->{'A_ALT'} = $h->{$id}->{'alt'};
+		$hash->{'NAME'} = $h->{$id}->{'name'};
+		$hash->{'ID'} = $id;
+		$hash->{'GENBO_ID'} = $h->{$id}->{'genbo_id'};
+		$hash->{'PROT'} = $h->{$id}->{'protid'};
+		push(@{$res->{$h->{$id}->{gene}}},$hash);	
 	}
 	return $res;
-}
-
-sub hotspot2 {
-	my ( $self, $motif ) = @_;
-	confess();
-	my $bam = $self->getBamFile();
-	my $sam = Bio::DB::Sam->new(
-		-fasta => $self->project->genomeFasta,
-		-bam   => $bam
-	);
-	my @alignments = $sam->get_features_by_location(
-		-seq_id => $motif->{chromosome},
-		-start  => $motif->{start},
-		-end    => $motif->{end}
-	);
-
-	my $cpt = 0;
-	my $res;
-	for my $a (@alignments) {
-		my $seqid   = $a->seq_id;
-		my $starta  = $a->start;
-		my $enda    = $a->end;
-		my $strand  = $a->strand;
-		my $ref_dna = $a->dna;
-		next if $enda < $motif->{end};
-		next if $starta > $motif->{start};
-
-		my $query_dna = $a->query->dna;
-
-		my ( $ref, $matches, $query ) = $a->padded_alignment();
-		my @scores = $a->qscore;
-		my @tref   = split( "", $ref );
-
-		my $start          = -1;
-		my $motif_sequence = $motif->{sequence};
-		my $z              = 0;
-		for ( my $i = 0 ; $i < @tref ; $i++ ) {
-			next if index( "ATCG", $tref[$i] ) == -1;
-			$z++;
-
-			#next if $tref[$i] ne "T";
-			my $string = substr( $ref, $i );
-			$string =~ s/\-//g;
-
-			if ( $string =~ /^$motif_sequence/ ) {
-				$start = $i;
-				last;
-			}
-		}
-		next if $start == -1;
-		my $end      = -1;
-		my $temp_seq = "";
-		$z = $start;
-		for ( my $i = $start ; $i < @tref ; $i++ ) {
-			next if index( "ATCG", $tref[$i] ) == -1;
-			$z++;
-			$temp_seq .= $tref[$i];
-
-			#	next if $tref[$i] ne "A";
-			if ( $temp_seq eq $motif_sequence ) {
-				$end = $i;
-				last;
-			}
-		}
-		next if $end == -1;
-		my @tquery = split( '', $query_dna );
-
-		my $haplo = substr( $query, $start, abs( $start - $end ) + 1 );
-		$haplo =~ s/\-//g;
-
-		my $index = index( $query_dna, $haplo );
-		my $find  = 0;
-		foreach ( my $i = 1 ; $i < length($haplo) - 2 ; $i++ ) {
-			my $m =
-			  ( $scores[ $i + $index ] +
-				  $scores[ $i + $index - 1 ] +
-				  $scores[ $i + $index + 1 ] ) / 3;
-			$find++ if $m < 15;
-
-			#print $tquery[$i+$index]." ".$scores[$i+$index]."\n";
-		}
-		if ( $find < 3 ) {
-			$cpt++;
-			$res->{$haplo}->{p}  += 0;
-			$res->{$haplo}->{m}  += 0;
-			$res->{$haplo}->{dp} += 1;
-			$res->{$haplo}->{p}++ if $a->strand == 1;
-			$res->{$haplo}->{m}++ if $a->strand == -1;
-			unless ( exists $res->{$haplo}->{align} ) {
-
-				$res->{$haplo}->{align}->[0] =
-				  substr( $ref, $start, abs( $start - $end ) + 1 );
-				$res->{$haplo}->{align}->[1] =
-				  "";    #substr($matches,$start,abs($start-$end)+1);
-				$res->{$haplo}->{align}->[2] =
-				  substr( $query, $start, abs( $start - $end ) + 1 );
-				my @t1 = split( '', $res->{$haplo}->{align}->[0] );
-				my @t2 = split( '', $res->{$haplo}->{align}->[2] );
-				my @to;
-				for ( my $i = 0 ; $i < @t1 ; $i++ ) {
-					if ( $t1[$i] eq $t2[$i] ) {
-						$res->{$haplo}->{align}->[1] .= "|";
-						push( @to, "|" );    #616464
-						$t1[$i] =
-						  "<td  style='background-color:#48B04B;color:white' >"
-						  . $t1[$i] . "</td>";
-						$t2[$i] = "<td style='background-color:#E7E7E7'>"
-						  . $t2[$i] . "</td>";
-					}
-
-					#					elsif ($t1[$i] eq '-' || $t2[$i] eq '-'){
-					#						$res->{$haplo}->{align}->[1] .=" ";
-					#					}
-					else {
-						$t1[$i] =
-						  "<td style='background-color:#FF4136;color:white' >"
-						  . $t1[$i] . "</td>";
-						$t2[$i] =
-						  "<td style='background-color:#FF4136;color:white' >"
-						  . $t2[$i] . "</td>";
-						$res->{$haplo}->{align}->[1] .= "X";
-					}
-				}
-				$res->{$haplo}->{table_align}->[0] = \@t1;
-
-				#	$res->{$haplo}->{array_align}->[1] = \@to;
-				$res->{$haplo}->{table_align}->[1] = \@t2;
-			}
-		}
-
-	}
-
-	my $limit = ( $cpt * 10 ) / 100;
-	foreach my $k ( keys %$res ) {
-		$res->{$k}->{pourcent} = int( ( $res->{$k}->{dp} / $cpt ) * 100 );
-		delete( $res->{$k} ) if ( $res->{$k}->{p} + $res->{$k}->{m} ) < $limit;
-
-		#	delete($res->{$k}) if ($res->{$k}->{p} +  $res->{$k}->{m}) < $limit;
-
-	}
-	$motif->{results}->{ $self->name() } = $res;
-	return $res;
-
 }
 
 sub getFamily {

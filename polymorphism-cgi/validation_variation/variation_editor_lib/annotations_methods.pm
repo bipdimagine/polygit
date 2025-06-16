@@ -43,7 +43,7 @@ sub annotations_rocks {
 	my $tsumz = 0;
 	my $tt1 = time;
 	my $no;
-	warn "start prepare ".$final_polyviewer_all->dir;
+#	warn "start prepare ".$final_polyviewer_all->dir;
 	my ($all_hash) = $final_polyviewer_all->prepare($list);
 	
 	foreach my $id (@$list) {

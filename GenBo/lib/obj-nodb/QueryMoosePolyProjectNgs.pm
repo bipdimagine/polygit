@@ -581,7 +581,7 @@ has sql_cmd_project_by_name => (
 	lazy =>1,
 	default	=> sub {
 	my $self = shift;
-	my $sqlCmd = "select o.project_id as id, o.name as name,o.creation_date as creation_date,o.description as description,o.validation_db as validation_db,  pt.type_project_id as projectTypeId, pt.name as projectType, db.name as dbname, r.name as version, o.somatic as is_somatic";
+	my $sqlCmd = "select o.project_id as id, o.name as name,o.creation_date as creation_date,o.description as description,o.validation_db as validation_db,  pt.type_project_id as projectTypeId, pt.name as projectType, db.name as dbname, r.name as version, o.somatic as is_somatic, o.dejaVu as dejavu";
 	$sqlCmd .= " from PolyprojectNGS.projects o , PolyprojectNGS.databases_projects dp, PolyprojectNGS.polydb db, PolyprojectNGS.project_release pr , PolyprojectNGS.releases r, PolyprojectNGS.project_types pt";
 	$sqlCmd .= " where o.name= ? ";
 	$sqlCmd .= " and dp.project_id=o.project_id and db.db_id=dp.db_id";

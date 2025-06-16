@@ -925,8 +925,8 @@ sub dejavu_parquet {
 	my $stepname = $projectName."@".$type;
 #	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
 	my $dir_parquet = $self->project->buffer->dejavu_parquet_dir();
-
 	my $fileout = $dir_parquet."/".$self->project->name.".".$self->project->id.".parquet";
+	if (not $self->project->infosProject->{dejavu}) { $fileout .= '.no_dejavu'; }
 	my $cmd = "perl $Bin/scripts/scripts_pipeline/dejavu/hg38/variant/duckdb/add_project_parquet.pl -project=$projectName -fork=$ppn -force=1  >/dev/null";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
