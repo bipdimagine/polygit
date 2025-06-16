@@ -2734,6 +2734,9 @@ sub hotspot {
 		my $chr_name = $ltmp[0];
 		my $chr = $self->getProject->getChromosome($ltmp[0]);
 		my $start = $ltmp[1];
+		
+		
+		#ATTENTION: le start presente un decalage d une base (+1) apr rapport au BED. Samtools + bed = demarage a 0 donc decalage d une base
 		my $end = $start;
 		my $region = $chr->fasta_name.":".$start."-".$end;
 		my $cmd = "$samtools mpileup $cram -r $region | cut -f 5";
@@ -2753,8 +2756,8 @@ sub hotspot {
 		$hash->{'COV'} = $hash->{'A'} + $hash->{'T'} + $hash->{'G'} + $hash->{'C'};
 		$hash->{'A_REF'} = $h->{$id}->{'ref'};
 		$hash->{'A_ALT'} = $h->{$id}->{'alt'};
-		$hash->{'NAME'} = $h->{$id}->{'name'};
-		$hash->{'ID'} = $id;
+		$hash->{'NAME'} = $chr_name.':'.$start;
+		$hash->{'ID'} = $h->{$id}->{'genbo_id'};
 		$hash->{'GENBO_ID'} = $h->{$id}->{'genbo_id'};
 		$hash->{'PROT'} = $h->{$id}->{'protid'};
 		push(@{$res->{$h->{$id}->{gene}}},$hash);	
