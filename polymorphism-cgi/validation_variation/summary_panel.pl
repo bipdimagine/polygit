@@ -610,6 +610,13 @@ $header = undef if $dev or $cgi->param('force');
 $no_cache->close();
 $project->getChromosomes();
 $project->getPatients();
+
+
+my $has_MUC1 = 1;
+foreach my $p (@{$project->getPatients()}) {
+	$has_MUC1 = undef if not -e $project->getVariationsDir("advntr").'/'.$p->name.'.vcf';
+}
+
 my $hmendel;
 my ( $gstats, $lstats, $patient_value );
 my $cache_icon = "";
@@ -2356,7 +2363,7 @@ sub table_muc1 {
 	my $run_id = $run->id;
 	
 	$out1 = qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
-	if (not -e $project->getVariationsDir("vntyper") or not $project->getCaptures->[0]->analyse =~ /renom/i ) {
+	if (not $has_MUC1 ) {
 		return ( "", "" );
 	}
 	my $out;
@@ -3337,7 +3344,7 @@ sub table_patients {
 		 #	@title = ("fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		$isfam = undef;
 	}
-	push( @title, "MUC1" ) if ( -e $project->getVariationsDir("vntyper") . "/muc1/" );
+	push( @title, "MUC1" ) if ( $has_MUC1 );
 	$out .= $cgi->start_Tr( { style => "background-color:#1079B2;color:white" } );
 	$out .= $cgi->th({ style => "text-align: center;" }, qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(this)"></input>});
 	
@@ -3858,7 +3865,7 @@ sub args_quality {
 sub args_muc1 {
 	my ( $project, $args ) = @_;
 	my @z;
-	my $dir = $project->getVariationsDir("vntyper");
+	my $dir = $project->getVariationsDir("advntr");
 	foreach my $patient (@{$project->getPatients}){
 		push( @$args, $t );
 	}
