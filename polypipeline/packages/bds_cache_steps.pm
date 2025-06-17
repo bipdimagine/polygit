@@ -907,7 +907,7 @@ sub quality_check {
 		}
 		my $error;
 		foreach my $p (@{$self->project->getPatients}){
-			warn $p->name unless exists $quality_patients->{$p->name};
+#			warn $p->name unless exists $quality_patients->{$p->name};
 			$error =1 unless exists $quality_patients->{$p->name};
 		}
 		

@@ -91,17 +91,6 @@ my $nb_var_region = 0;
 #warn $fork;
 $regions = Cache_Commons::get_regions( $chr, $fork);
 
-
-#TEST fichiers caller presents pour chacun des patients ?
-foreach my $pat (@{$patients}) {
-	foreach my $method (@{$pat->getCallingMethods()}) {
-		next if $method eq 'melt';
-		confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not exists $pat->callingFiles->{$method};
-		confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not -e $pat->callingFiles->{$method};
-	}
-}
-
-
 my $pm = new Parallel::ForkManager($fork);
 my $all;
 my $process;
