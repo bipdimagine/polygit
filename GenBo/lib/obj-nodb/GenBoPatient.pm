@@ -2741,19 +2741,24 @@ sub hotspot {
 		my $region = $chr->fasta_name.":".$start."-".$end;
 		my $cmd = "$samtools mpileup $cram -r $region | cut -f 5";
 		my $pileup = `$cmd`;
+		
 		my $hash = {};
 		$hash->{'A'} = 0;
 		$hash->{'T'} = 0;
 		$hash->{'G'} = 0;
 		$hash->{'C'} = 0;
+		$hash->{'INS'} = 0;
+		$hash->{'DEL'} = 0;
 		foreach my $s (split('', $pileup)) {
 			$hash->{'A'}++ if lc($s) eq 'a';
 			$hash->{'T'}++ if lc($s) eq 't';
 			$hash->{'G'}++ if lc($s) eq 'g';
 			$hash->{'C'}++ if lc($s) eq 'c';
+			$hash->{'INS'}++ if lc($s) eq '+';
+			$hash->{'DEL'}++ if lc($s) eq '-';
 		}
 		$hash->{'REF'} = $chr_name;
-		$hash->{'COV'} = $hash->{'A'} + $hash->{'T'} + $hash->{'G'} + $hash->{'C'};
+		$hash->{'COV'} = $hash->{'A'} + $hash->{'T'} + $hash->{'G'} + $hash->{'C'} + $hash->{'INS'} + $hash->{'DEL'};
 		$hash->{'A_REF'} = $h->{$id}->{'ref'};
 		$hash->{'A_ALT'} = $h->{$id}->{'alt'};
 		$hash->{'NAME'} = $chr_name.':'.$start;
