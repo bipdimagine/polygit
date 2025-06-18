@@ -257,7 +257,7 @@ sub new_refine_heterozygote_composite_score_rocks {
 	}
 	$project->buffer->close_lmdb();
 	
-	warn "\t\t decode : ".$time_decode." gene : ".$time_gene." print_time : $print_time  total : ".abs(time -$total_time);
+	warn "decode : ".$time_decode." gene : ".$time_gene." print_time : $print_time  total : ".abs(time -$total_time);
 	return ( $list, abs(time -$total_time) );
 
 }

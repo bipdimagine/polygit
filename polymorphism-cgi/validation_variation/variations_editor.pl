@@ -875,13 +875,13 @@ sub refine_heterozygote_composite_score_fork {
 	#TODO: essayer d'integrer XLS Store variant ici pour le forker
 	
 	$project->buffer->dbh_deconnect();
+	$project->disconnect;
 	
 	#delete $project->{validations_query1};
 	while ( my @tmp = $iter->() ) {
 		$vid++;
 		$hrun->{$vid}++;
 		my $pid = $pm->start and next;
-#		$project->disconnect;
 		my $t   = time;
 		my $res;
 		$res->{tmp}  = \@tmp;
@@ -1003,6 +1003,8 @@ sub fork_annnotations {
 	my $id   = time;
 	$project->getChromosomes();
 	$project->buffer->dbh_deconnect();
+	$project->disconnect;
+	
 	#$project->buffer->close_lmdb();
 	my $tt = time;
 	my $final_polyviewer_all ;
@@ -1014,7 +1016,6 @@ sub fork_annnotations {
 		$id++;
 		$hrun->{$id}++;
 		my $pid = $pm->start and next;
-#		$project->disconnect;
 		my $t   = time;
 		my $res = annotations_methods::annotations( $project,$patient, \@tmp, $list_saved, $maskcoding,$final_polyviewer_all,$hash_genes_panel,$hash_variants_DM );
 		$res->{run_id} = $id;
