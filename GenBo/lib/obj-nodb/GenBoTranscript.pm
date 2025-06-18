@@ -433,15 +433,13 @@ sub setProteins {
 
 sub isncRNA {
 	my $self = shift;
-	return undef if $self->getChromosome->name eq "MT";
 	return $self->biotype() !~ /pseudo/ && $self->biotype() =~ /RNA/; 
 	return undef;	
 }
 
 sub ispseudoGene{
 	my $self = shift;
-
-	return 1 unless  $self->protein();
+	return  $self->biotype() =~ /pseudo/;
 	return undef;
 }
 
