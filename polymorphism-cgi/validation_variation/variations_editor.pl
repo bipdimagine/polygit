@@ -881,7 +881,7 @@ sub refine_heterozygote_composite_score_fork {
 		$vid++;
 		$hrun->{$vid}++;
 		my $pid = $pm->start and next;
-		$project->disconnect;
+#		$project->disconnect;
 		my $t   = time;
 		my $res;
 		$res->{tmp}  = \@tmp;
@@ -1014,7 +1014,7 @@ sub fork_annnotations {
 		$id++;
 		$hrun->{$id}++;
 		my $pid = $pm->start and next;
-		$project->disconnect;
+#		$project->disconnect;
 		my $t   = time;
 		my $res = annotations_methods::annotations( $project,$patient, \@tmp, $list_saved, $maskcoding,$final_polyviewer_all,$hash_genes_panel,$hash_variants_DM );
 		$res->{run_id} = $id;
