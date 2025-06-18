@@ -3372,7 +3372,7 @@ my $t = time;
 	   		#	$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});
 #		my $nbv = scalar (keys %{$hotspot->{results}->{$s_id}});
 #		$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});	
-	my @header = ("ID","NAME","PROT","A","C","G","T","DEL","COV");	 
+	my @header = ("ID","NAME","PROT","A","C","G","T","DEL","INS","COV");	 
 	$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"font-size: 9px;font-family:  Verdana;"});
 foreach my $g (keys %$hotspots){
 	#$out .=  $cgi->start_div({class=>"panel panel-info" });
