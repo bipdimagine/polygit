@@ -89,12 +89,14 @@ has cache => (
 
 sub activate_cache {
 	my ($self) = @_;
-			if ($self->cache){
-			my $zz = (time + rand(5000)).".".$$;
-			$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
-			system("cp -r ".$self->original_path_rocks." ".$self->path_rocks);
-			#system("vmtouch -q  -t ".$self->path_rocks);
-		}
+		$self->{cache} =undef;
+#		system("vmtouch -q  -t ".$self->path_rocks)
+#			if ($self->cache){
+#			my $zz = (time + rand(5000)).".".$$;
+#			$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
+#			system("cp -r ".$self->original_path_rocks." ".$self->path_rocks);
+#			#system("vmtouch -q  -t ".$self->path_rocks);
+#		}
 }
 sub deactivate_cache {
 	my ($self) = @_;
