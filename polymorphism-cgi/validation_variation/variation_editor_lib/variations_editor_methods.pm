@@ -3,16 +3,16 @@ use strict;
 use Data::Dumper;
 use Time::HiRes qw( time);
 
-sub refine_heterozygote_composite {
-	my ($project,$print_html,$list, $id, ) = @_;
-		if ($project->isRocks){
-		return new_refine_heterozygote_composite_score_rocks($project, $print_html,$list, $id);
-		}
-		else {
-			return new_refine_heterozygote_composite_score_lmdb($project, $print_html,$list, $id);
-		}
-
-}
+#sub refine_heterozygote_composite {
+#	my ($project,$print_html,$list, $id, ) = @_;
+#		if ($project->isRocks){
+#		return new_refine_heterozygote_composite_score_rocks($project, $print_html,$list, $id);
+#		}
+#		else {
+#			return new_refine_heterozygote_composite_score_lmdb($project, $print_html,$list, $id);
+#		}
+#
+#}
 
 sub return_vp {
 	 my ($project,$chr,$patient,$vid,$g) =@_;
@@ -41,13 +41,12 @@ sub return_vp {
 				"trio",    "gnomad", "deja_vu"
 			);
 
-sub new_refine_heterozygote_composite_score_rocks {
-	my ( $project,$print_html,$list, $id ) = @_;
+sub refine_heterozygote_composite {
+	my ( $project,$print_html,$list, $id,$final_polyviewer_all) = @_;
 	my $cgi = $print_html->cgi;
 	my $patient= $print_html->patient;
 
 	my $diro = $project->rocks_directory();
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects");
 	my $out_header;
 	$out_header= $print_html->print_header("background-color:aliceblue;color:black");
 	my $mother = $patient->getFamily->getMother();
@@ -256,7 +255,7 @@ sub new_refine_heterozygote_composite_score_rocks {
 
 	}
 	$project->buffer->close_lmdb();
-	
+	delete $final_polyviewer_all->{rocks};
 	warn "\t\t decode : ".$time_decode." gene : ".$time_gene." print_time : $print_time  total : ".abs(time -$total_time);
 	return ( $list, abs(time -$total_time) );
 
