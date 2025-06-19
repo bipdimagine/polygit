@@ -21,7 +21,6 @@ sub annotations {
 sub annotations_rocks {
 	my ( $project,$patient, $list, $list_saved, $maskcoding,$final_polyviewer_all,$hash_genes_panel,$hash_variants_DM ) = @_;
 	my $cgi = new CGI();
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
 	
 	#delete $project->{rocks};
 
@@ -43,7 +42,6 @@ sub annotations_rocks {
 	my $tsumz = 0;
 	my $tt1 = time;
 	my $no;
-	warn "start prepare ".$final_polyviewer_all->dir;
 	my ($all_hash) = $final_polyviewer_all->prepare($list);
 	
 	foreach my $id (@$list) {
@@ -72,6 +70,7 @@ sub annotations_rocks {
 		}
 	}
 	$res->{genes} = $agenes;
+	delete $final_polyviewer_all->{rocks};
 	return $res ;
 }
 
