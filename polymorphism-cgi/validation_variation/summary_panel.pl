@@ -838,7 +838,7 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	}
 	##
 	
-	if ($p->isKestrel == 1 )  {
+	if ($p->isKestrel == 1 or $p->isadVNTR() == 1)  {
 		my $date = $p->kestrel->{data}->{date};
 		my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
 		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
@@ -2306,6 +2306,7 @@ sub table_muc1 {
 				next;
 			}
 			my $kestrel = $patient->kestrel;
+			
 			my $opacity = 1;
 			if ( $patient->isKestrel == 0 ) {
 				$opacity = 0.4;
@@ -2319,7 +2320,7 @@ sub table_muc1 {
 				
 			}
 			else {
-			$nb_k ++;
+				$nb_k ++;
 			
 			
 			 
@@ -2334,13 +2335,22 @@ sub table_muc1 {
  			$out_table .=$cgi->end_Tr();
  			
 			}
-			$nb_vntr ++ if $patient->isadVNTR();
-			 $out_table .=$cgi->start_Tr();
-			 $out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{header});
-			 $out_table .=$cgi->end_Tr();
-			   $out_table .=$cgi->start_Tr();
-			  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{data}->[0]);
-		
+			if ($patient->isadVNTR()) {
+				$nb_vntr ++;
+				 $out_table .=$cgi->start_Tr();
+				 $out_table .=$cgi->td({style=>"background-color:#e6dced;color:black;"},$adVNTR->{header});
+				 $out_table .=$cgi->end_Tr();
+				   $out_table .=$cgi->start_Tr();
+				  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;"},$adVNTR->{data}->[0]);
+			}
+			else {
+				 $out_table .=$cgi->start_Tr();
+				 $out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{header});
+				 $out_table .=$cgi->end_Tr();
+				   $out_table .=$cgi->start_Tr();
+				  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{data}->[0]);
+				
+			}
 			$out_table .=$cgi->end_table();
 			} #end for patient
 	$out_table .="<hr>";
