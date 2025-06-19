@@ -257,6 +257,7 @@ sub refine_heterozygote_composite {
 	$project->buffer->close_lmdb();
 	delete $final_polyviewer_all->{rocks};
 	warn "\t\t decode : ".$time_decode." gene : ".$time_gene." print_time : $print_time  total : ".abs(time -$total_time);
+
 	return ( $list, abs(time -$total_time) );
 
 }

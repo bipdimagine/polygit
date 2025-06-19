@@ -76,6 +76,16 @@ $buffer->vmtouch(1);
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
 
+foreach my $pat (@{$project->getPatients()}) {
+	foreach my $method (@{$pat->getCallingMethods()}) {
+		next if $method eq 'melt';
+		next if $method eq 'lifinder';
+		confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not exists $pat->callingFiles->{$method};
+		confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not -e $pat->callingFiles->{$method};
+	}
+}
+
+
 if (not $verbose) {
 	$project->cache_verbose(0);
 }

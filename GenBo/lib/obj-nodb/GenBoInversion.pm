@@ -2,6 +2,9 @@ package GenBoInversion;
 
 use strict;
 use Moo;
+use Carp;
+use Data::Dumper;
+
 extends 'GenBoVariant';
 
 
@@ -56,15 +59,44 @@ has rocksdb_id => (
 	},
 	
 );
+
+has dejavu => (
+	is		=> 'ro',
+	lazy => 1,
+	default => sub {
+		my $self = shift;
+		my $dvlite = $self->getProject->dejavuDuckSV->get_dejavu($self->getChromosome->id(), $self->start(), $self->getChromosome->id(), $self->end(), 90);
+		return $dvlite;
+	}
+);
+
+sub other_projects  {
+	my ($self) = @_;
+	return $self->dejavu->{"nb_projects"} if $self->dejavu->{"nb_projects"};
+	return 0;
+}
+
+sub other_projects_ho  {
+	my ($self) = @_;
+	return 0;
+}
+
+sub other_patients{
+	my $self = shift;
+	return $self->dejavu->{"nb_patients"} if $self->dejavu->{"nb_patients"};
+	return 0;
+}
+
+sub other_patients_ho {
+	my $self = shift;
+	return 0;
+}
 	
 	
 sub nomenclatureType {
 	my ($self) = @_;
 	return "inv";
 }
-
-
-
 
 has isLargeDeletion => (
 	is		=> 'ro',

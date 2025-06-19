@@ -60,6 +60,7 @@ use GenBoNoSqlLmdbInteger;
 use GenBoJunction;
 use GenBoJunctionCache;
 use GenBoNoSqlRocks;
+use GenBoDuckDejaVuSv;
 use Storable qw(store retrieve freeze dclone thaw);
 #use LMDB_File qw(:flags :cursor_op);
 use GenBoNoSqlLmdb;
@@ -4917,6 +4918,7 @@ has dejavuCNV => (
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
 	}
 );
+
 sub localdejavuCNV {
 	my ($self,$mode) = @_;
 	return $self->{lite}->{"ldv".$mode} if exists  $self->{lite}->{"ldv".$mode};
@@ -4936,6 +4938,16 @@ has dejavuSV => (
 		#return GenBoNoSqlIntervalTree->new(dir=>$sqliteDir,mode=>"r");#->new(dir=>$sqliteDir,mode=>"r");
 	}
 );
+
+has dejavuDuckSV => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		return  GenBoDuckDejaVuSv->new( project => $self );
+	}
+);
+
 has dejavuSVAgregate => (
 	is		=> 'ro',
 	lazy	=> 1,

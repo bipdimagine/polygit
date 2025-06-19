@@ -68,16 +68,10 @@ my $dir_parquet = $buffer->dejavu_parquet_dir();
 
 my $parquet_file = $dir_parquet."/".$project->name.".".$project->id.".parquet";
 
-my $can_dejavu = 1;
-foreach my $pname (@{$buffer->getQuery->listProjectsWithoutDejaVu()}) {
-	next if $pname ne $project_name;
-	$can_dejavu = undef;
-	last;
-}
-
+my $can_dejavu = $project->infosProject->{dejavu};
 if (not $can_dejavu) { $parquet_file .= '.no_dejavu'; }
 
-warn $parquet_file;
+#warn $parquet_file;
 #exit(0) if -e $parquet_file and not $force;
 $project->getPatients;
 $project->preload_patients();
@@ -124,7 +118,7 @@ my $query = "
         SELECT * from read_csv_auto([$filename]) order by chr38,pos38,chr19,pos19,allele
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);";
-    warn $query;
+#    warn $query;
 $dbh->do($query);
 $filename =~s/,/ /g;
 system("rm $filename");

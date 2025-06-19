@@ -610,6 +610,13 @@ $header = undef if $dev or $cgi->param('force');
 $no_cache->close();
 $project->getChromosomes();
 $project->getPatients();
+
+
+my $has_MUC1 = 1;
+foreach my $p (@{$project->getPatients()}) {
+	$has_MUC1 = undef if not -e $project->getVariationsDir("advntr").'/'.$p->name.'.vcf';
+}
+
 my $hmendel;
 my ( $gstats, $lstats, $patient_value );
 my $cache_icon = "";
@@ -831,7 +838,7 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	}
 	##
 	
-	if ($p->isKestrel == 1 )  {
+	if ($p->isKestrel == 1 or $p->isadVNTR() == 1)  {
 		my $date = $p->kestrel->{data}->{date};
 		my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
 		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
@@ -2299,6 +2306,7 @@ sub table_muc1 {
 				next;
 			}
 			my $kestrel = $patient->kestrel;
+			
 			my $opacity = 1;
 			if ( $patient->isKestrel == 0 ) {
 				$opacity = 0.4;
@@ -2312,7 +2320,7 @@ sub table_muc1 {
 				
 			}
 			else {
-			$nb_k ++;
+				$nb_k ++;
 			
 			
 			 
@@ -2327,13 +2335,22 @@ sub table_muc1 {
  			$out_table .=$cgi->end_Tr();
  			
 			}
-			$nb_vntr ++ if $patient->isadVNTR();
-			 $out_table .=$cgi->start_Tr();
-			 $out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{header});
-			 $out_table .=$cgi->end_Tr();
-			   $out_table .=$cgi->start_Tr();
-			  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{data}->[0]);
-		
+			if ($patient->isadVNTR()) {
+				$nb_vntr ++;
+				 $out_table .=$cgi->start_Tr();
+				 $out_table .=$cgi->td({style=>"background-color:#e6dced;color:black;"},$adVNTR->{header});
+				 $out_table .=$cgi->end_Tr();
+				   $out_table .=$cgi->start_Tr();
+				  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;"},$adVNTR->{data}->[0]);
+			}
+			else {
+				 $out_table .=$cgi->start_Tr();
+				 $out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{header});
+				 $out_table .=$cgi->end_Tr();
+				   $out_table .=$cgi->start_Tr();
+				  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{data}->[0]);
+				
+			}
 			$out_table .=$cgi->end_table();
 			} #end for patient
 	$out_table .="<hr>";
@@ -2356,7 +2373,7 @@ sub table_muc1 {
 	my $run_id = $run->id;
 	
 	$out1 = qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
-	if (not -e $project->getVariationsDir("vntyper") or not $project->getCaptures->[0]->analyse =~ /renom/i ) {
+	if (not $has_MUC1 ) {
 		return ( "", "" );
 	}
 	my $out;
@@ -3337,7 +3354,7 @@ sub table_patients {
 		 #	@title = ("fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		$isfam = undef;
 	}
-	push( @title, "MUC1" ) if ( -e $project->getVariationsDir("vntyper") . "/muc1/" );
+	push( @title, "MUC1" ) if ( $has_MUC1 );
 	$out .= $cgi->start_Tr( { style => "background-color:#1079B2;color:white" } );
 	$out .= $cgi->th({ style => "text-align: center;" }, qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(this)"></input>});
 	
@@ -3858,7 +3875,7 @@ sub args_quality {
 sub args_muc1 {
 	my ( $project, $args ) = @_;
 	my @z;
-	my $dir = $project->getVariationsDir("vntyper");
+	my $dir = $project->getVariationsDir("advntr");
 	foreach my $patient (@{$project->getPatients}){
 		push( @$args, $t );
 	}

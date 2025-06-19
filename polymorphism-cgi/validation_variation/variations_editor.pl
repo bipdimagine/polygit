@@ -508,14 +508,10 @@ $buffer->disconnect();
 
 #my $list_saved;
 
-
-
 ##################################
 ################## GET VECTORS 
 ##################################
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
-	warn "start";
-	
 	my ( $vectors, $list, $hash_variants_DM,$list_genes) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$start_vector,$statistics);
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;
@@ -583,29 +579,27 @@ $t = time;
 
 
 
-
-print print_hotspot($patient);
-
 $ztime .= ' polycyto:' . ( abs( time - $t ) );
 $t     = time;
 my $stdout_nav_bar = tee_stdout {
 	print"<br><div style='float:right;'>$cache_icon</div><br>"; 
     update_variant_editor::printNavBar( $patient, $genes, $statistics, $version,$date, $user, $ztime,update_variant_editor::compose_string_filtering($cgi) );
+	update_variant_editor::print_hotspot( $patient, $panel );
 };
 my $stdoutcnv;
-unless ( $patient->isGenome() ) {
-		 $stdoutcnv = $no_cache->get_cache($cache_dude_id);
-		 
-		if ($stdoutcnv){
-			print $stdoutcnv;
-		}
-		else {
-			$stdoutcnv = tee_stdout {
-		update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
+if (not $patient->isGenome() ) {
+	$stdoutcnv .= $no_cache->get_cache($cache_dude_id);
+	if ($stdoutcnv){
+		print $stdoutcnv;
+	}
+	else {
+		$stdoutcnv = tee_stdout {
+			update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
 		};
-			 $no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
-		}
+		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
+	}
 }
+
 	
 	
 #$myproc->kill();
@@ -614,22 +608,23 @@ $t     = time;
 #warn "ok *** $exit_status ";
 #exit(0);
 my $stdout_end = tee_stdout {
-#warn "genes:".scalar(@$genes);
-if (@$genes){
-$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
-#warn "genes fin:".scalar(@$genes);
-}
-else {
-	if ($gene_name_filtering ) {
-	print qq{<div class="knockout">No Variation Found for gene $gene_name_filtering</div>};
-}
-else {
-	print qq{<div class="knockout">No Variation Found</div>};
-}
-}
-warn "hetero " . abs( time - $t ) if $print;
-$ztime .= ' hetero:' . ( abs( time - $t ) );
-print $ztime;
+	
+	#warn "genes:".scalar(@$genes);
+	if (@$genes){
+	$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
+	#warn "genes fin:".scalar(@$genes);
+	}
+	else {
+		if ($gene_name_filtering ) {
+		print qq{<div class="knockout">No Variation Found for gene $gene_name_filtering</div>};
+	}
+	else {
+		print qq{<div class="knockout">No Variation Found</div>};
+	}
+	}
+	warn "hetero " . abs( time - $t ) if $print;
+	$ztime .= ' hetero:' . ( abs( time - $t ) );
+	print $ztime;
 
 };
 
@@ -881,6 +876,7 @@ sub refine_heterozygote_composite_score_fork {
 	#TODO: essayer d'integrer XLS Store variant ici pour le forker
 	
 	$project->buffer->dbh_deconnect();
+	$project->disconnect;
 	
 	#delete $project->{validations_query1};
 	while ( my @tmp = $iter->() ) {
@@ -1008,6 +1004,8 @@ sub fork_annnotations {
 	my $id   = time;
 	$project->getChromosomes();
 	$project->buffer->dbh_deconnect();
+	$project->disconnect;
+	
 	#$project->buffer->close_lmdb();
 	my $tt = time;
 	my $final_polyviewer_all ;
@@ -1759,3 +1757,4 @@ foreach my $g (keys %$hotspots){
 	$out.= $cgi->end_div();	#$out.="<!-- 3 -->";	
 	return $out;
 }
+

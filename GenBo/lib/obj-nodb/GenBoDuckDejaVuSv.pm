@@ -174,13 +174,11 @@ sub create_table_total {
 	my $file = "*.parquet";
 	my $project_id = $self->project->id;
 	my $parquet_file = $dir."$file";
-	warn "start";
 	my $query = qq{CREATE TABLE sv_call_all AS
                              SELECT project,type,patient,$colchr1 as CHROM1,$colchr2 as CHROM2,$colpos1 as POS1 ,$colpos2 as POS2,caller,sr1,sr2,pr1,pr2
                            FROM '$parquet_file'
                            WHERE $colpos1 > -1 order by type,$colchr1,$colchr2,$colpos1,$colpos2;
 	};
-	warn "end";
 	$self->dbh->do($query);
 	$self->{create_table_total} = "sv_call_all";
 	return $self->{create_table_total};

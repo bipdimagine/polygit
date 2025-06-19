@@ -351,7 +351,7 @@ sub rocks {
 #		$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
 #			warn $self->original_path_rocks." COPY---------";
 #		system("cp -r ".$self->original_path_rocks." ".$self->path_rocks);
-			warn "+++++".$self->path_rocks."++";
+#			warn "+++++".$self->path_rocks."++";
 		}
 	
 		#confess($self->json_file) if -e $self->json_file;
