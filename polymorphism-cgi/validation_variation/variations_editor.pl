@@ -267,9 +267,11 @@ if ($gene_name_filtering){
 }
 my $force;
 my $no_cache;
+$force=1 unless $project->isGenome();
 if ($cgi->param('force') == 1) {
  $dev = 2;	
 }
+$dev =2;
 $no_cache = $patient->get_lmdb_cache("w");
 my $keys = return_uniq_keys($patient,$cgi); 
 my $level_dude = 'high,medium';
@@ -280,7 +282,6 @@ my $cache_id = join( ";", @$keys );
 if ($project->isDiagnostic){
 	$cache_id.="121222";
 }
-warn @$keys;
 
 my $text = $no_cache->get_cache($cache_id);
 #$dev=1;
@@ -296,10 +297,10 @@ if($text){
 		my @toto = split("\n<!--SPLIT-->\n",$text);
 		my $t = time;
 		my $html;
-		for (my $i = 0;$i<110;$i++){
-			$html.= $toto[$i];
-		}
-
+	#	for (my $i = 0;$i<110;$i++){
+		#	$html.= $toto[$i];
+	#	}
+		$html = $text;
 		my @toto = split("\n<!--SPLIT-->\n",$text);
 		my $t = time;
 		my $html;
@@ -830,7 +831,7 @@ sub refine_heterozygote_composite_score_fork {
 	my @res_final;
 	my @toto;
 	my $wtime = 0;
-	my $maxgene =200;
+	my $maxgene =100000;
 	my $ngene =0;
 	
 	
@@ -1161,7 +1162,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 #	warn $project->rocks_directory("vector");
 #	warn "------";
 	foreach my $chr ( @{ $project->getChromosomes } ) {
-
+		warn $chr->name;
 		if ($gene) {
 			next if ( $gene->getChromosome()->name ne $chr->name );
 		}
@@ -1240,7 +1241,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		
 		#$hashVector->{ $chr->name } &= $no->get_vector_chromosome($chr);
 		$statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );
-
+		warn "+++++".$patient->countThisVariants( $hashVector->{ $chr->name }) if  $chr->name eq 'MT';
 		my $vDM = $chr->vectorDM();
 		$vDM += $chr->vectorClinvarPathogenic();
 		#TODO: ajout susceptibilité ici;
@@ -1656,7 +1657,6 @@ sub print_hotspot {
 	my ($patient) = @_;
 	my $hotspots = $patient->hotspot;
 	return "" unless $hotspots;
-
 	my $out ="";
 	
 	#$out .=  $cgi->start_div({class=>"panel-heading panel-alert alert ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
