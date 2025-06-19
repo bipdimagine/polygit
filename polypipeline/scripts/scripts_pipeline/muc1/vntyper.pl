@@ -79,13 +79,15 @@ my $image = "/software/distrib/ADVNTR/SINGLARITY/vntyper.sif";
 my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
-my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir  --extra-modules advntr --reference-assembly hg38"; 
-
+my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly hg38"; 
+warn $cmd;
 #my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 
 #system("samtools index $bam -\@2");
 my $fad = $tmp_dir."/advntr/output_adVNTR.vcf" ;
-system($cmd." && touch $dir_pipeline/$patient_name.ok") unless -e $fad;
+my $fad2 = $tmp_dir."/advntr/output_adVNTR_result.tsv" ;
+ my $fk = $tmp_dir."/kestrel/kestrel_result.tsv";
+system($cmd." && touch $dir_pipeline/$patient_name.ok") unless -e $fad2;
 
 
 unless (-e "$dir_pipeline/$patient_name.ok"){
@@ -94,16 +96,17 @@ unless (-e "$dir_pipeline/$patient_name.ok"){
  }
  
  my $dir_prod = $project->getVariationsDir("vntyper");
- my $fk = $tmp_dir."/kestrel/kestrel_result.tsv";
+
   die() unless -e $fk;
   my $kestrel = parse_tsv($fk);
   returnkestrel_hash($kestrel);
 
-  die() unless -e $fad;
- my $fad2 = $tmp_dir."/advntr/output_adVNTR_result.tsv" ;
-  my $advntr = parse_adVNTR($fad2,$fad);
-  my $json_text = encode_json {kestrel=>$kestrel,adVNTR=>$advntr};
-  my $file_json = $dir_prod."/".$patient->name.".json";
+  #die() unless -e $fad2;
+  
+# my $fad2 = $tmp_dir."/advntr/output_adVNTR_result.tsv" ;
+#  my $advntr = parse_adVNTR($fad2,$fad);
+ my $json_text = encode_json {kestrel=>$kestrel};
+ my $file_json = $dir_prod."/".$patient->name.".json";
 open(my $fh, ">", $file_json) or die "Impossible d'ouvrir le fichier $file_json: $!";
 	print $fh $json_text;
 	close($fh);
