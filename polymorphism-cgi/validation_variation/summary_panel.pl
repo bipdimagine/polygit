@@ -589,6 +589,16 @@ $header = undef if $dev or $cgi->param('force');
 $no_cache->close();
 $project->getChromosomes();
 $project->getPatients();
+
+
+my $has_MUC1 = 1;
+foreach my $p (@{$project->getPatients()}) {
+	$has_MUC1 = undef if not -e $project->getVariationsDir("vntyper").'/'.$p->name.'.json';
+}
+if (not $has_MUC1) {
+	$has_MUC1 = 1 if -e $project->getVariationsDir("vntyper") . "/muc1/";
+}
+
 my $hmendel;
 my ( $gstats, $lstats, $patient_value );
 my $cache_icon = "";
@@ -809,7 +819,32 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	}
 	##
 	my $res_muc = $p->kestrel();
-	unless ( -e $project->getVariationsDir("vntyper") . "/muc1/" ) {
+	if (-e $project->getVariationsDir("vntyper").'/'.$p->name.'.json') {
+		open (JSON, $project->getVariationsDir("vntyper").'/'.$p->name.'.json');
+		my $json = <JSON>;
+		close(JSON);
+		
+		my $hres = decode_json ($json);
+		my @lres;
+		my $isNegatif = 1;
+		my $found;
+		foreach my $caller (keys %$hres) {
+			if (exists $hres->{$caller}->{'data'}->{'Confidence'}) {
+				$found++;
+				$isNegatif = undef if (lc($hres->{$caller}->{'data'}->{'Confidence'}) ne 'negative');
+			}
+		}
+		if ($found) {
+			my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
+			$text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>} if not $isNegatif;
+			$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		}
+		else {
+			my $text = qq{ <span  class="stamp1"><span>PROBLEM !!!!!</span></span>};
+			$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		}
+	}
+	elsif (not -e $project->getVariationsDir("vntyper").'/'.$p->name.'.json' and not -e $project->getVariationsDir("vntyper") . "/muc1/" ) {
 
 	}
 	elsif ( scalar( @{ $res_muc->[0] } > 3 ) ) {
@@ -2275,7 +2310,46 @@ sub table_muc1 {
 #				next;
 #			 }
 
-			unless ( -e $patient->vntyperTsv() ) {
+			if (-e $project->getVariationsDir("vntyper").'/'.$patient->name.'.json') {
+				open (JSON, $project->getVariationsDir("vntyper").'/'.$patient->name.'.json');
+				my $json = <JSON>;
+				close(JSON);
+				
+				my $hres = decode_json ($json);
+				my @lres;
+				#"kestrel":{
+				#	"data":{"Confidence":"Negative","Motif_sequence":"None","date":"19/06/25","ALT":"None","Estimated_Depth_Variant_ActiveRegion":"None","REF":"None","Variant":"None","POS":"None","Estimated_Depth_AlternateVariant":"None","Motif":"None","Depth_Score":"None"},
+				#	"header":["Motif","Variant","POS","REF","ALT","Motif_sequence","Estimated_Depth_AlternateVariant","Estimated_Depth_Variant_ActiveRegion","Depth_Score","Confidence"]}}';
+				
+				foreach my $caller (keys %$hres) {
+					$out_table .= $cgi->start_Tr( { class => "background-color:grey" } );
+					$out_table .= $cgi->td('Patient');
+					$out_table .= $cgi->td('Family');
+					$out_table .= $cgi->td('Status');
+					
+					$out_table .= $cgi->td('Caller');
+					foreach my $cat (@{$hres->{$caller}->{'header'}}) {
+						$out_table .= $cgi->td($cat);
+					}
+					$out_table .= $cgi->end_Tr( { class => "" } );
+					$out_table .= $cgi->start_Tr( { class => "background-color:grey" } );
+					$out_table .= $cgi->td($patient->name);
+					$out_table .= $cgi->td($patient->getFamily->name);
+					$out_table .= $cgi->td($patient->return_icon);
+					$out_table .= $cgi->td($caller);
+					foreach my $cat (@{$hres->{$caller}->{'header'}}) {
+						$out_table .= $cgi->td($hres->{$caller}->{'data'}->{$cat});
+					}
+					$out_table .= $cgi->end_Tr( { class => "" } );
+					
+					$nb_k++ if ($caller eq 'kestrel' and $hres->{$caller}->{'data'}->{'Confidence'} ne 'Negative');
+					#$nb_vntr++  if ($caller eq 'TODO' and lc($hres->{$caller}->{'data'}->{'Confidence'} ne 'negative'));
+					
+				}
+				next;
+			}
+
+			elsif (not -e $project->getVariationsDir("vntyper").'/'.$patient->name.'.json' and not -e $patient->vntyperTsv() ) {
 				$out_table .=
 				  $cgi->start_Tr( { class => "background-color:grey" } );
 				$out_table .= $cgi->td(
@@ -2358,9 +2432,9 @@ sub table_muc1 {
 
 	#my $nb =  1;
 	my $run_id = $run->id;
-	$out1 =
-qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
-	unless ( -e $project->getVariationsDir("vntyper") . "/muc1/" ) {
+	
+	$out1 = qq{<div class="btn  btn-info btn-xs btn-$style" style="position:relative;bottom:1px;min-width:200px;border-color:black;background-color:#C49CDE;color:black" onClick='collapse_panel("control_muc1","$list_control_panels","$run_id")'> <img src="https://img.icons8.com/fluency-systems-filled/20/null/biotech.png"/></span>MUC1 &nbsp;&nbsp;<span class="badge badge-info">$nb_k - $nb_vntr</span></div>};
+	if (not $has_MUC1 ) {
 		return ( "", "" );
 	}
 	my $out;
@@ -3336,7 +3410,7 @@ sub table_patients {
 		 #	@title = ("fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		$isfam = undef;
 	}
-	push( @title, "MUC1" ) if ( -e $project->getVariationsDir("vntyper") . "/muc1/" );
+	push( @title, "MUC1" ) if ( $has_MUC1 );
 	$out .= $cgi->start_Tr( { style => "background-color:#1079B2;color:white" } );
 	$out .= $cgi->th({ style => "text-align: center;" }, qq{<input id="check_all" type="checkbox" aria-label="..."  onchange="select_all(this)"></input>});
 	
