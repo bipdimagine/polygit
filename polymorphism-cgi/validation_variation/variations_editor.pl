@@ -836,6 +836,8 @@ sub refine_heterozygote_composite_score_fork {
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
 	  $final_polyviewer_all->activate_cache();
 	
+	my @lOut_genes;
+	
 	$pm->run_on_finish( 
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
@@ -851,15 +853,21 @@ sub refine_heterozygote_composite_score_fork {
 			warn "==>" . abs( time - $h->{time} );# if $print;
 			$h->{genes} = [] unless $h->{genes};
 			$vres->{$id} = $h->{genes};
+			
+			
 			while (exists $vres->{$current}){
-				print qq{</div>} if $current  == 1 ;
+				if ($current  == 1) {
+					print qq{</div>};
+				}
 				 my $xtime =time;
 					foreach my $g (@{ $vres->{$current}}){
 						last if $ngene > $maxgene;
 						push(@toto,$g->{name});
 						#warn $g->{out};
-						print $g->{out};
-						print  "\n<!--SPLIT-->\n";
+						
+						push(@lOut_genes, $g->{out});
+						
+						#print  "\n<!--SPLIT-->\n";
 						$ngene ++;
 						
 					#	push(@res_final,$g->{out})
@@ -894,6 +902,7 @@ sub refine_heterozygote_composite_score_fork {
 	}
 	$pm->wait_all_children();
 	$project->buffer->dbh_reconnect();
+	
 	error("Hey it looks like you're having an error  !!! ")
 	  if scalar keys %$hrun;
 	warn "end hetero " if $print;
@@ -905,7 +914,7 @@ sub refine_heterozygote_composite_score_fork {
 				 my $xtime =time;
 					foreach my $g (@{ $vres->{$current}}){
 						last if $ngene > $maxgene;
-						print $g->{out} . "\n";
+						#print $g->{out} . "\n";
 							$ngene ++;
 					}
 					delete $vres->{$current};
@@ -913,10 +922,32 @@ sub refine_heterozygote_composite_score_fork {
 				$wtime += abs($xtime - time);	
 				
 			}
-		print "<br>". $wtime;
+		#print "<br>". $wtime;
 		warn "***** ".$wtime;
 		$final_polyviewer_all->deactivate_cache();
-	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
+	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;
+	
+	my $table_id = 'table_genes_'.$patient->name();
+	my $cmd_search = qq{enable_table_search_from_id('$table_id');};
+	
+	print '</div>';
+	print qq{<div onmouseenter="$cmd_search" style="margin-top: -15px;">};
+	print qq{<table onmouseenter="$cmd_search" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false"  data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table' style='font-size:13px;'>};
+	print "<thead>";
+	print qq{<tr style="font-size:13px;">};
+	print qq{<th style="padding:0px;margin:0px;" data-field="genes" data-filter-control="input" data-filter-control-placeholder="Gene Name / Variation / Description"></th>};
+	print qq{</tr>};
+	print "</thead>";
+	print "<tbody>";
+	foreach my $gene_out (@lOut_genes) {
+		print "<tr>";
+		print "<td style='padding:0px;'><div>".$gene_out."</div></td>";
+		print "</tr>";
+	}
+	print "</tbody>";
+	print "</table>";
+	print '</div>';
+	
 	return ;
 	exit(0);
 	print qq{</div>};

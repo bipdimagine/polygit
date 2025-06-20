@@ -57,7 +57,6 @@ warn "coucou ".scalar(@$patients);
 foreach my $patient (@$patients) {
 my $patient_name = $patient->name;
 my $bam = $patient->getBamFile();
-my $bam_dir = $patient->getProject->getAlignmentDir("bwa");
   my $tmp_dir = $project->getCallingPipelineDir("muc1-vntyper.".$patient->name);
   $dir_pipeline = $tmp_dir;
 my $fileoutx=  $project->getVariationsDir("muc1_vntyper6")."/".$patient_name.".vcf";

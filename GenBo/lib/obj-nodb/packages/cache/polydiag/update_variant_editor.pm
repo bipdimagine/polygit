@@ -2306,9 +2306,12 @@ my $string_label = join(";",@$all_label);
 	my $stylec = qq{style="font-size:10px"};
 	#'onclick=byPatientDude($pname,"high")';
 	my $pname = $patient->name();
+	
+	my $table_id = 'table_genes_'.$patient->name();
+	my $cmd_search = qq{enable_table_search_from_id('$table_id');};
 	print qq{
 		<center>
-		<div class="mydiv" style="width:99%">
+		<div onmouseover="$cmd_search" class="mydiv" style="width:99%">
 			<table style="width:100%;">
 			<td>
 	};
@@ -2343,6 +2346,7 @@ my $string_label = join(";",@$all_label);
 	my $string_url_bam = join(',', @lbam_alamut);
 	my $string_url_names = join(',', @lPatientsNames);
 	my $project_name = $patient->project->name;
+	
 	print qq{		
 			</td>
 			<td>
@@ -3190,7 +3194,7 @@ sub print_hotspot {
 	my $project = $patient->project;
 	my $pname = $patient->name();
 	my $cgi          = new CGI();
-	print $cgi->start_div({class=>"panel panel-warning ",style=>"border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
+	print $cgi->start_div({class=>"panel panel-warning ",style=>"padding:0px;border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
 	print $cgi->div({class=>"panel-heading"},qq{HOTSPOT - $fileName});
 	my $div_alert;	
 	my $s_id = $patient->{name};
@@ -3300,7 +3304,7 @@ sub print_cnv_exome {
 	}
 	my $pname = $patient->name();
 	my $cgi          = new CGI();
-	print $cgi->start_div({class=>"panel panel-danger ",style=>"border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
+	print $cgi->start_div({class=>"panel panel-danger ",style=>"padding:0px;border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
 	if ($patient->getProject->isDiagnostic()) {
 		print $cgi->div({class=>"panel-heading"},print_dude_button($patient));
 	}
