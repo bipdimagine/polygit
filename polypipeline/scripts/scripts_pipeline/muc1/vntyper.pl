@@ -79,7 +79,10 @@ my $image = "/software/distrib/ADVNTR/SINGLARITY/vntyper.sif";
 my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
-my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly hg38"; 
+my $release = 'hg19';
+$release = 'hg38' if $project->getVersion() =~ /HG38/;
+
+my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly $release"; 
 warn $cmd;
 #my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 
