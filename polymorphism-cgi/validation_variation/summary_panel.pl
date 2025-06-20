@@ -818,6 +818,12 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 		$line->{"MUC1"} =
 		  $cgi->td( { style => "vertical-align:middle" }, "$text" );
 	}
+	elsif ( (-d $project->getVariationsDir("vntyper") and -e $project->getVariationsDir("vntyper").'/'.$p->name().'.json') )
+	{
+		my $date = $res_muc->[0]->[0];
+		my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
+		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+	}
 	elsif ( -e $project->getVariationsDir("vntyper") . "/muc1/"
 		&& !( -e $p->vntyperTsv ) )
 	{
