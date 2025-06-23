@@ -271,7 +271,7 @@ $force=1 unless $project->isGenome();
 if ($cgi->param('force') == 1) {
  $dev = 2;	
 }
-$dev =2;
+
 $no_cache = $patient->get_lmdb_cache("w");
 my $keys = return_uniq_keys($patient,$cgi); 
 my $level_dude = 'high,medium';
@@ -577,8 +577,6 @@ $genes = [] unless $genes;
 
 $t = time;
 
-
-
 $ztime .= ' polycyto:' . ( abs( time - $t ) );
 $t     = time;
 my $stdout_nav_bar = tee_stdout {
@@ -587,6 +585,7 @@ my $stdout_nav_bar = tee_stdout {
 	update_variant_editor::print_hotspot( $patient, $panel );
 };
 my $stdoutcnv;
+warn "end hotspot";
 if (not $patient->isGenome() ) {
 	$stdoutcnv .= $no_cache->get_cache($cache_dude_id);
 	if ($stdoutcnv){
@@ -599,7 +598,7 @@ if (not $patient->isGenome() ) {
 		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
 	}
 }
-
+warn "end";
 	
 	
 #$myproc->kill();
@@ -612,7 +611,7 @@ my $stdout_end = tee_stdout {
 	#warn "genes:".scalar(@$genes);
 	if (@$genes){
 	$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
-	#warn "genes fin:".scalar(@$genes);
+	warn "genes fin:".scalar(@$genes);
 	}
 	else {
 		if ($gene_name_filtering ) {
@@ -1177,7 +1176,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#my $no = GenBoNoSqlRocksVector->new(chromosome=>$chr->name,dir=>"/tmp/vector",mode=>"r",name=>$chr->name); #$chr->flush_rocks_vector();
 		#my $no = $chr->flush_rocks_vector();
 		my $no = GenBoNoSqlRocksVector->new(cache=>1,chromosome=>$chr->name,dir=>$project->rocks_directory("vector"),mode=>"r",name=>$chr->name);
-		$no->activate_cache();
+		#$no->activate_cache();
 		$no->prepare_vector([$limit_ac,$limit_ac_ho,$limit_sample_dv,$limit_sample_dv_ho,"intergenic","dm",$patient->name]);
 		my $res = {};
 		my $debug;
