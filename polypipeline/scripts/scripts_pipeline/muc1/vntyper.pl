@@ -57,7 +57,6 @@ warn "coucou ".scalar(@$patients);
 foreach my $patient (@$patients) {
 my $patient_name = $patient->name;
 my $bam = $patient->getBamFile();
-my $bam_dir = $patient->getProject->getAlignmentDir("bwa");
   my $tmp_dir = $project->getCallingPipelineDir("muc1-vntyper.".$patient->name);
   $dir_pipeline = $tmp_dir;
 my $fileoutx=  $project->getVariationsDir("muc1_vntyper6")."/".$patient_name.".vcf";
@@ -79,7 +78,11 @@ my $image = "/software/distrib/ADVNTR/SINGLARITY/vntyper.sif";
 my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
-my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly hg19"; 
+
+my $release = 'hg19';
+$release = 'hg38' if $project->getVersion() =~ /HG38/;
+
+my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly $release"; 
 #my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 
 #system("samtools index $bam -\@2");

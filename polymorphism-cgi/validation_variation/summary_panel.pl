@@ -614,7 +614,10 @@ $project->getPatients();
 
 my $has_MUC1 = 1;
 foreach my $p (@{$project->getPatients()}) {
-	$has_MUC1 = undef if not -e $project->getVariationsDir("advntr").'/'.$p->name.'.vcf';
+	$has_MUC1 = undef if not -e $project->getVariationsDir("vntyper").'/'.$p->name.'.json';
+}
+if (not $has_MUC1) {
+	$has_MUC1 = 1 if -e $project->getVariationsDir("vntyper") . "/muc1/";
 }
 
 my $hmendel;
@@ -838,21 +841,54 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 	}
 	##
 	
-	if ($p->isKestrel == 1 or $p->isadVNTR() == 1)  {
-		my $date = $p->kestrel->{data}->{date};
-		my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
-		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
-	}
-	elsif ( $p->isKestrel == -1 )
-	{
-		my $text = qq{ <span  class="stamp1"><span>PROBLEM !!!!!</span></span>};
-		$line->{"MUC1"} =
-		  $cgi->td( { style => "vertical-align:middle" }, "$text" );
+	if (-e $project->getVariationsDir("vntyper").'/'.$p->name.'.json') {
+		open (JSON, $project->getVariationsDir("vntyper").'/'.$p->name.'.json');
+		my $json = <JSON>;
+		close(JSON);
+		print '.';
+		
+		my $hres = decode_json ($json);
+		my @lres;
+		my $isNegatif = 1;
+		my $found;
+		foreach my $caller (keys %$hres) {
+			if ($caller eq 'kestrel' and exists $hres->{$caller}->{'data'}->{'Confidence'}) {
+				$found++;
+				$isNegatif = undef if (lc($hres->{$caller}->{'data'}->{'Confidence'}) ne 'negative');
+			}
+			
+			if ($caller eq 'adVNTR') {
+				$found++;
+				$isNegatif = undef if (lc($hres->{$caller}->{'data'}->[0]->[2]) ne 'negative');
+			}
+		}
+		if ($found) {
+			my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
+			$text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>} if not $isNegatif;
+			$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		}
+		else {
+			my $text = qq{ <span  class="stamp1"><span>PROBLEM !!!!!</span></span>};
+			$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		}
 	}
 	else {
-		my $date = $p->kestrel->{data}->{date};
-		my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
-		$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		if ($p->isKestrel == 1 or $p->isadVNTR() == 1)  {
+			my $date = $p->kestrel->{data}->{date};
+			my $text = qq{ <span  class="stamp1"><span>MUC1</span><br></span>};
+			$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		}
+		elsif ( $p->isKestrel == -1 )
+		{
+			my $text = qq{ <span  class="stamp1"><span>PROBLEM !!!!!</span></span>};
+			$line->{"MUC1"} =
+			  $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		}
+		else {
+			my $date = $p->kestrel->{data}->{date};
+			my $text = qq{ <span  class="stamp3"><span>NONE</span></span>};
+			$line->{"MUC1"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+		}
 	}
 	
 	if (exists $hash_disomy->{patient} ){
@@ -2280,76 +2316,135 @@ sub table_muc1 {
 			'data-toggle'          => "table"
 		});
 		
-			my $t = $patient->kestrel;
-			 $out_table .=$cgi->start_Tr();
-			 my $adVNTR = $patient->adVNTR;
-			 $out_table .= $cgi->td(
-				{
-					rowspan => 4,
-					style   => "vertical-align: middle;",
-				},
-				[ $fam->name, $patient->name, $patient->return_icon ]
-			);
+		
 			
-			my $style2 = "background-color:" . $color[ $pn % 2 ];
-			if ( $patient->kestrel == -1 ) {
-				confess();
-				$out_table .=
-				$out_table .= $cgi->td(
-					[
-						$patient->name, "PROBLEM", "PROBLEM", "PROBLEM",
-						"PROBLEM",      "PROBLEM", "PROBLEM", "PROBLEM",
-						"PROBLEM",      "PROBLEM", "PROBLEM"
-					]
+
+			if (-e $project->getVariationsDir("vntyper").'/'.$patient->name.'.json') {
+				open (JSON, $project->getVariationsDir("vntyper").'/'.$patient->name.'.json');
+				my $json = <JSON>;
+				close(JSON);
+				
+				my $hres = decode_json ($json);
+				my @lres;
+				#"kestrel":{
+				#	"data":{"Confidence":"Negative","Motif_sequence":"None","date":"19/06/25","ALT":"None","Estimated_Depth_Variant_ActiveRegion":"None","REF":"None","Variant":"None","POS":"None","Estimated_Depth_AlternateVariant":"None","Motif":"None","Depth_Score":"None"},
+				#	"header":["Motif","Variant","POS","REF","ALT","Motif_sequence","Estimated_Depth_AlternateVariant","Estimated_Depth_Variant_ActiveRegion","Depth_Score","Confidence"]}}';
+				
+				my $color_k = '';
+				my $color_a = '';
+				foreach my $caller (sort keys %$hres) {
+					if ($caller eq 'kestrel' and $hres->{$caller}->{'data'}->{'Confidence'} ne 'Negative') {
+						$nb_k++;
+						$color_k = 'background-color:#f0c3fc';
+					}
+					if ($caller eq 'adVNTR' and lc($hres->{$caller}->{'data'}->[0]->[2]) ne 'negative') {
+						$nb_vntr++;
+						$color_a = 'background-color:#f0c3fc';
+					}
+					
+					$out_table .= $cgi->start_Tr();
+					$out_table .= $cgi->td('Patient');
+					$out_table .= $cgi->td('Family');
+					$out_table .= $cgi->td('Status');
+					
+					$out_table .= $cgi->td('Caller');
+					foreach my $cat (@{$hres->{$caller}->{'header'}}) {
+						$out_table .= $cgi->td($cat);
+					}
+					$out_table .= $cgi->end_Tr( { class => "" } );
+					$out_table .= $cgi->start_Tr();
+					$out_table .= $cgi->td($patient->name);
+					$out_table .= $cgi->td($patient->getFamily->name);
+					$out_table .= $cgi->td($patient->return_icon);
+					$out_table .= $cgi->td($caller);
+					
+					if ($caller eq 'kestrel') {
+						foreach my $cat (@{$hres->{$caller}->{'header'}}) {
+							$out_table .= $cgi->td({style=>"$color_k"}, $hres->{$caller}->{'data'}->{$cat});
+						}
+					}
+					if ($caller eq 'adVNTR') {
+						foreach my $cat (@{$hres->{$caller}->{'data'}->[0]}) {
+							$out_table .= $cgi->td({style=>"$color_a"}, $cat);
+						}
+					}
+					$out_table .= $cgi->end_Tr( { class => "" } );
+					
+				}
+			}
+
+			else {
+				my $t = $patient->kestrel;
+				 $out_table .=$cgi->start_Tr();
+				 my $adVNTR = $patient->adVNTR;
+				 $out_table .= $cgi->td(
+					{
+						rowspan => 4,
+						style   => "vertical-align: middle;",
+					},
+					[ $fam->name, $patient->name, $patient->return_icon ]
 				);
-				$out_table .= $cgi->end_Tr( { class => "" } );
-				next;
-			}
-			my $kestrel = $patient->kestrel;
-			
-			my $opacity = 1;
-			if ( $patient->isKestrel == 0 ) {
-				$opacity = 0.4;
-				$out_table .=$cgi->th({style=>"opacity:0.4;text-align: center; vertical-align: middle;"},$kestrel_negatif);
-			      $out_table .=$cgi->end_Tr();
-			   $out_table .=$cgi->start_Tr();
-			   my $data = ["kestrel",$kestrel->{data}->{date},$kestrel->{data}->{Confidence}];
-			  	$out_table .=$cgi->td({style=>"opacity:0.4;text-align: center; vertical-align: middle;$style2"},$data);
-				$out_table .=$cgi->end_Tr();
- 				
 				
-			}
-			else {
-				$nb_k ++;
-			
-			
-			 
-			   #caller	date	Motif	Variant	POS	REF	ALT	Motif_sequence (RevCom)	Estimated_Depth_AlternateVariant	Estimated_Depth_Variant_ActiveRegion	Depth_Score	Confidence	K
-			  
-			  $out_table .=$cgi->td({style=>"text-align: center; vertical-align: middle;background-color:#e6dced"},$kestrel_header);
-			   $out_table .=$cgi->end_Tr();
-			   $out_table .=$cgi->start_Tr();
-			   my $data = ["kestrel",$kestrel->{data}->{date},$kestrel->{data}->{Confidence},$kestrel->{data}->{REF},$kestrel->{data}->{ALT},$kestrel->{data}->{POS},$kestrel->{data}->{Motif},$kestrel->{data}->{Motif_sequence},$kestrel->{data}->{Estimated_Depth_AlternateVariant}];
-			  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black"},$data);
-			     
- 			$out_table .=$cgi->end_Tr();
- 			
-			}
-			if ($patient->isadVNTR()) {
-				$nb_vntr ++;
-				 $out_table .=$cgi->start_Tr();
-				 $out_table .=$cgi->td({style=>"background-color:#e6dced;color:black;"},$adVNTR->{header});
-				 $out_table .=$cgi->end_Tr();
-				   $out_table .=$cgi->start_Tr();
-				  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;"},$adVNTR->{data}->[0]);
-			}
-			else {
-				 $out_table .=$cgi->start_Tr();
-				 $out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{header});
-				 $out_table .=$cgi->end_Tr();
-				   $out_table .=$cgi->start_Tr();
-				  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{data}->[0]);
+				my $style2 = "background-color:" . $color[ $pn % 2 ];
+				if ( $patient->kestrel == -1 ) {
+					confess();
+					$out_table .=
+					$out_table .= $cgi->td(
+						[
+							$patient->name, "PROBLEM", "PROBLEM", "PROBLEM",
+							"PROBLEM",      "PROBLEM", "PROBLEM", "PROBLEM",
+							"PROBLEM",      "PROBLEM", "PROBLEM"
+						]
+					);
+					$out_table .= $cgi->end_Tr( { class => "" } );
+					next;
+				}
+				my $kestrel = $patient->kestrel;
 				
+				my $opacity = 1;
+				if ( $patient->isKestrel == 0 ) {
+					$opacity = 0.4;
+					$out_table .=$cgi->th({style=>"opacity:0.4;text-align: center; vertical-align: middle;"},$kestrel_negatif);
+				      $out_table .=$cgi->end_Tr();
+				   $out_table .=$cgi->start_Tr();
+				   my $data = ["kestrel",$kestrel->{data}->{date},$kestrel->{data}->{Confidence}];
+				  	$out_table .=$cgi->td({style=>"opacity:0.4;text-align: center; vertical-align: middle;$style2"},$data);
+					$out_table .=$cgi->end_Tr();
+	 				
+					
+				}
+				else {
+					$nb_k ++;
+				
+				
+				 
+				   #caller	date	Motif	Variant	POS	REF	ALT	Motif_sequence (RevCom)	Estimated_Depth_AlternateVariant	Estimated_Depth_Variant_ActiveRegion	Depth_Score	Confidence	K
+				  
+				  $out_table .=$cgi->td({style=>"text-align: center; vertical-align: middle;background-color:#e6dced"},$kestrel_header);
+				   $out_table .=$cgi->end_Tr();
+				   $out_table .=$cgi->start_Tr();
+				   my $data = ["kestrel",$kestrel->{data}->{date},$kestrel->{data}->{Confidence},$kestrel->{data}->{REF},$kestrel->{data}->{ALT},$kestrel->{data}->{POS},$kestrel->{data}->{Motif},$kestrel->{data}->{Motif_sequence},$kestrel->{data}->{Estimated_Depth_AlternateVariant}];
+				  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black"},$data);
+				     
+	 			$out_table .=$cgi->end_Tr();
+	 			
+				}
+				if ($patient->isadVNTR()) {
+					$nb_vntr ++;
+					 $out_table .=$cgi->start_Tr();
+					 $out_table .=$cgi->td({style=>"background-color:#e6dced;color:black;"},$adVNTR->{header});
+					 $out_table .=$cgi->end_Tr();
+					   $out_table .=$cgi->start_Tr();
+					  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;"},$adVNTR->{data}->[0]);
+				}
+				else {
+					 $out_table .=$cgi->start_Tr();
+					 $out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{header});
+					 $out_table .=$cgi->end_Tr();
+					   $out_table .=$cgi->start_Tr();
+					  	$out_table .=$cgi->td({style=>"background-color:#e1c9f2;color:black;opacity:$opacity;$style2"},$adVNTR->{data}->[0]);
+					
+				}
 			}
 			$out_table .=$cgi->end_table();
 			} #end for patient
