@@ -79,14 +79,15 @@ my $image = "/software/distrib/ADVNTR/SINGLARITY/vntyper.sif";
 my $db = "/data-isilon/public-data/repository/HG19/vntr/";
 system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 
-my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly hg38"; 
-warn $cmd;
+my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly hg19"; 
 #my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 
 #system("samtools index $bam -\@2");
 my $fad = $tmp_dir."/advntr/output_adVNTR.vcf" ;
 my $fad2 = $tmp_dir."/advntr/output_adVNTR_result.tsv" ;
  my $fk = $tmp_dir."/kestrel/kestrel_result.tsv";
+ warn $cmd;
+ die();
 system($cmd." && touch $dir_pipeline/$patient_name.ok") unless -e $fad2;
 
 
@@ -96,7 +97,7 @@ unless (-e "$dir_pipeline/$patient_name.ok"){
  }
  
  my $dir_prod = $project->getVariationsDir("vntyper");
-
+warn $fk;
   die() unless -e $fk;
   my $kestrel = parse_tsv($fk);
   returnkestrel_hash($kestrel);

@@ -176,10 +176,13 @@ if ($gene_id) {
 
 elsif ($vid) {
 	$project->changeAnnotationVersion($buffer->get_polybtf_default_release(), 1);
-	my $data = $buffer->queryHgmd()->getDataHGMDPro("$hid");
-	my $acc_num  =  $data->{acc_num};
+	#my $data = $buffer->queryHgmd()->getDataHGMDPro("$hid");
+	
 	my $v = $project->_newVariant($vid);
-	$v->hgmd_id($acc_num);
+	my $acc_num  =  $v->hgmd_id;
+	#$v->hgmd_id($acc_num);
+	my $data = $buffer->queryHgmd()->getDataHGMDPro($v->hgmd_id);
+	my $acc_num  =  $data->{acc_num};
 	my $d =  $data->{disease};;
 	my $tag =  $data->{tag};
 	my $date =  $data->{new_date};
