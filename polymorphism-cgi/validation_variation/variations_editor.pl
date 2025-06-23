@@ -931,8 +931,8 @@ sub refine_heterozygote_composite_score_fork {
 	my $cmd_search = qq{enable_table_search_from_id('$table_id');};
 	
 	print '</div>';
-	print qq{<div onmouseenter="$cmd_search" style="margin-top: -15px;">};
-	print qq{<table onmouseenter="$cmd_search" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false"  data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table' style='font-size:13px;'>};
+	print qq{<div style="margin-top: -15px;">};
+	print qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false"  data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table' style='font-size:13px;'>};
 	print "<thead>";
 	print qq{<tr style="font-size:13px;">};
 	print qq{<th style="padding:0px;margin:0px;" data-field="genes" data-filter-control="input" data-filter-control-placeholder="Gene Name / Variation / Description"></th>};

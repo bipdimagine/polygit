@@ -2311,7 +2311,7 @@ my $string_label = join(";",@$all_label);
 	my $cmd_search = qq{enable_table_search_from_id('$table_id');};
 	print qq{
 		<center>
-		<div onmouseover="$cmd_search" class="mydiv" style="width:99%">
+		<div class="mydiv" style="width:99%">
 			<table style="width:100%;">
 			<td>
 	};
