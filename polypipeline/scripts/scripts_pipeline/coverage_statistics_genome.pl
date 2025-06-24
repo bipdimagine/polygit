@@ -186,6 +186,7 @@ foreach my $patient (@{$patients}){
 	}
 $pm->wait_all_children();
 }
+
 foreach my $patient (@{$patients}){
 	my $name = $patient->name;
 	my $coverage_file;
@@ -211,7 +212,6 @@ foreach my $patient (@{$patients}){
 	print BED "mean_all\t99\t".$z."\n";
 	$z =  (($res->{$name}->{s100}/$res->{$name}->{nb}));
 	print BED "mean_all\t100\t".$z."\n";
-
 	close BED;
 	system("$bgzip -f $bed_coverage; $tabix -b 2 -e 2 -s 1 -f $coverage_file");
 }

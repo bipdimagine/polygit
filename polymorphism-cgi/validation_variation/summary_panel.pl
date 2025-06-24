@@ -797,12 +797,17 @@ qq{<button type="button" class ="btn btn-xs btn-primary "  $style_btn_name >$ir<
 	  if $v < 10;
 	$line->{Cov} =
 	  $cgi->td( $class, qq{<button type="button" $btn_class >$v</button>} );
-	$v = $cov->{'30x'};
-	$v = 0 unless $v;
+	$v = $cov->{'20x'};
+	my $v3 = $cov->{'30x'};
+	$v = "-" unless $v;
+	$v3 = $cov->{'15x'};
+	$line->{"15x"} =
+	  $cgi->td( $class, qq{<button type="button" $btn_class >$v3</button>} );
+	 $v3 = $cov->{'30x'};
 	$line->{"30x"} =
+	  $cgi->td( $class, qq{<button type="button" $btn_class >$v3</button>} );
+	  	$line->{"20x"} =
 	  $cgi->td( $class, qq{<button type="button" $btn_class >$v</button>} );
-	$cgi->td( $class, qq{<button type="button" $btn_class >$v %</button>} );
-
 	my $style = {};
 
 	my $hstatus = $p->getLatestValidationStatus($user);
@@ -2821,8 +2826,12 @@ qq{<i class="fa fa-child fa-1x" aria-hidden="true" style="color:red"></i>}
 		my $cov = $patient->coverage();
 		$out .=
 		  $cgi->td( { style => "border: 1px solid black;" }, $cov->{mean} );
-		$out .= $cgi->td( { style => "border: 1px solid black;" },
-			$cov->{"30x"} . "%" );
+		  if (exists $cov->{"20x"}){
+		  	$out .= $cgi->td( { style => "border: 1px solid black;" },$cov->{"20x"} . "-20%" );
+		  }
+		  else{
+		  		$out .= $cgi->td( { style => "border: 1px solid black;" },$cov->{"30x"} . "-30%" );
+		  }
 
 		my $hval = $project->validations_query->getValidationPatient($patient);
 
@@ -3439,13 +3448,13 @@ sub table_patients {
 	my $col_hgmd = 3;
 	$col_hgmd = 2 unless $hgmd == 1;
 
-	my @title = ( "Fam", "view", "Print", "Patient","control", "Cov", "30x" )
+	my @title = ( "Fam", "view", "Print", "Patient","control", "Cov","15x","20x","30x" )
 	  ;    # if ($project->isFamilial());
 
 #@title = ("Fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 	my $isfam = 1;
 	unless ( $project->isFamilial() ) {
-		@title = ( "fam", "view", "Print", "Patient","control", "Cov", "30x");    # if ($project->isFamilial());
+		@title = ( "fam", "view", "Print", "Patient","control", "Cov","15x", "20x","30x");    # if ($project->isFamilial());
 		 #	@title = ("fam","view","Print","Patient","status","Cov","30x",) unless $hgmd == 1;
 		$isfam = undef;
 	}
@@ -3683,7 +3692,6 @@ sub table_run_header {
 #	warn "===>";
 	my ( $b,  $p ) = table_sex($run);
 #	warn "-->";
-	my ( $b1, $p1 );
 	
 	#TODO: a corriger erreur getTranscript by pos
 	my ( $b1, $p1 ) = table_duplicate($run);
