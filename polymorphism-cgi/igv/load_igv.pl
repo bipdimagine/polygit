@@ -101,7 +101,7 @@ print qq{
     <title>igv.js</title>
 
     <!-- IGV JS-->
-    <script src="http://www.polyweb.fr/igv.test/igv.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/igv@3.0.2/dist/igv.min.js"></script>s
 
 </head>
 

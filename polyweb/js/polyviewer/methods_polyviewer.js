@@ -580,8 +580,8 @@ function validation_acmg (pname,vid,select,tdid,ensg){
 	
 
 function enable_table_search_from_id(table_id) {
-	$('#'+table_id).bootstrapTable();
-	enable_table_search_from_id[table_id] = 1;
+	//$('#'+table_id).bootstrapTable();
+	//enable_table_search_from_id[table_id] = 1;
 }
 
 function tabPatients(items , request ) {
@@ -676,11 +676,11 @@ function tabPatients(items , request ) {
                 	   this.ioArgs.content = this.setArgsPost; 
                 	   this.setHref(url_polyviewer);
                 	   var this_patname = this.patient;
-				       dojo.connect(this, "onLoad", function(){
-						    setTimeout(function() {
-					   			enable_table_search_from_id('table_genes_'+this_patname);
-				   			}, 500);
-						});
+//				       dojo.connect(this, "onLoad", function(){
+//						    setTimeout(function() {
+//					   			enable_table_search_from_id('table_genes_'+this_patname);
+//				   			}, 500);
+//						});
                   }
                   
            }

@@ -724,34 +724,13 @@ function launch_web_igv_add_bam_and_locus(project, name, file, locus){
 var previous_bams = new Array();
 var igv_genome;
 
-function launch_web_igv_js_HG38(bams_files, locus){ 
-	init_igv_hg38();
-	var list_bams_files = [];
-	if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
-	else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
-	else { list_bams_files.push(bams_files); }
-	for (i in list_bams_files ) {
-		var polyweb_url = window.location.origin;
-		addOneBAMIGV(polyweb_url + '/' + list_bams_files[i]);
-	}
-	var locus2 = locus.replace(':', ';');
-	locus2 = locus2.replace('-', ';');
-	var lTmp = locus2.split(';');
-	var chr = 'chr' + lTmp[0];
-	var start = lTmp[1];
-	var end = start;
-	if (lTmp.length == 3) { end = lTmp[2]; }
-	displayInIGVLocus(chr+":"+start+"-"+end);
-	return;
-}
-
-
 function launch_web_igv_js(project, patients_names, bams_files, locus){
 	const regex = /HG38/g;
 	var temp = bams_files.split('/');
 	igv_genome = temp[3];
+	var genome = 'hg19';
 	if (igv_genome.match(regex)) {
-		return launch_web_igv_js_HG38(bams_files, locus);
+		genome = 'hg38';
 	}
 	
 	var locus2 = locus.replace(':', ';');
@@ -765,10 +744,7 @@ function launch_web_igv_js(project, patients_names, bams_files, locus){
 	if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 	else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
 	else { list_bams_files.push(bams_files); }
-	// url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa";
-	if (igv_genome == undefined){
-		init_igv();
-	}
+	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names, genome);
 	
 	for (i in list_bams_files ) {
 		var file = list_bams_files[i];
@@ -782,18 +758,6 @@ function launch_web_igv_js(project, patients_names, bams_files, locus){
 		//if (previous_bams[file] )
 	}
 	displayInIGVLocus(chr+":"+start+"-"+end);
-	if (igv_js){
-		view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
-	}
-//	if (previous_bams == bams_files){
-	//	displayInIGV(chr, start, end);
-	//	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
-	//	return;
-//	}
-	//displayListBamInIgvApp(list_bams_files);
-	//displayInIGV(chr, start, end);
-	//view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
-	//previous_bams = bams_files;
 }
 
 function LoadIGVPatient_editor (patients, bams) {

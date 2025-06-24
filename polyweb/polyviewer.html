@@ -25,7 +25,6 @@
       		@import "//netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css";
       		@import "css/polycss/myMblSwitch.css";
       		@import "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css";
-      		@import "js/igv/igv-1.0.9.css";
       		@import "https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css";
 
 	html, body {
@@ -128,6 +127,10 @@
 
     </script>
 
+    	<script src="https://cdn.jsdelivr.net/npm/igv@3.0.0/dist/igv.min.js">
+    		import igv from "https://cdn.jsdelivr.net/npm/igv@3.0.0/dist/igv.esm.min.js";
+    	</script>
+    	
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
@@ -138,14 +141,10 @@
 		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
 		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		  	<script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
 		
 		         	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
-		    	<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>     	
-		    <!--     
-		    <script type="text/javascript" src="js/igv/igv-1.0.9.js" djConfig="parseOnLoad: true"></script>
-		    -->
-		    
-		    <script src="https://cdn.jsdelivr.net/npm/igv@2.11.2/dist/igv.min.js"></script>
+		    	<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>     
 		    
 			<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
 				<script type="text/javascript" src="js/polyviewer/methods_polyviewer.js"></script>
@@ -162,7 +161,6 @@
 		   	<script type="text/javascript" src="http://www.dojotoolkit-fr.org/wp-content/uploads/dojo-adapter.js"></script>
             <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
 		  	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
-			<script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
 			<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
 			<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
 		
@@ -221,9 +219,6 @@ width: 5em;
 		   var panel =  param('panel');
 		   var tsamples;
 
- 
-
-        
         var is_project_update = 'no';
  
 		  dojo.ready(function(){

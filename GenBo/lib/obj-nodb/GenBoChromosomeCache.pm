@@ -2011,7 +2011,6 @@ sub getModelVector_fam_uniparental_disomy {
 	return $var_global;
 }
 
-#TODO: a verifier;
 # applique le model no_model (variants presents chez les deux parents) (FAM)
 sub getModelVector_fam_both_parents {
 	my $self = shift;
@@ -2314,7 +2313,6 @@ sub getPrimers {
 	return $self->project->getPrimersByObjects($self);
 }
 
-#TODO: TEST pour voir ce que ca peut donner. A voir aussi avec de gros projets
 has hash_genomic_coord_vector_id => (
         is      => 'rw',
         lazy    => 1,
@@ -2593,7 +2591,8 @@ sub getVectorByPosition {
 	#$ub +=2 if $lb == $ub;
 #	warn $ub." ub $nb nb" if $debug;
 	my $no = $self->cache_lmdb_variations();
-	my $id = $no->get_varid($lb);
+	
+	my $id = $self->getVariantById($lb)->id();
 	my($chr,$pos,$a,$b) = split("_",$id);
 	my $vector_pos = $self->getNewVector();
 	
@@ -2620,14 +2619,20 @@ sub getVectorByPosition {
 	}	
 	return $vector_pos;
 }
+
+sub getVariantById {
+	my ($self,$v) = @_;
+	my $vector = $self->getNewVector();
+	$vector->Bit_On($v);
+	my $l = $self->getListVarObjects($vector);
+	return $l->[0];
+}
+
 sub getVariantPosition {
 	my ($self,$v,$startorend) = @_;
-	my $no = $self->cache_lmdb_variations();
-	my $id = $no->get_varid($v);
-	confess() if $v == -1;
-	warn $v unless $id;
+	my $l = $self->getVariantById($v);
+	my $id = $l->id();
 	my($chr,$pos,$a,$b) = split("_",$id);
-	
 	if($startorend eq "start"){
 		$pos += length($a)-1;
 	}

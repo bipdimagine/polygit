@@ -86,7 +86,7 @@ foreach my $v (@$vs){
 	# next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 10;
 	$nb_total_indels ++;
 	next if $p->meanDepth($v->getChromosome->name,$v->start+5,$v->end+5) < 15;
-	next if $v->sequencing_details($p)->{hap}->{pourcent} < 20;
+	next if $v->getPourcentAllele($p) < 20;
 	
 		 $nb ++;
 	warn $v->name;
@@ -121,7 +121,7 @@ foreach my $v (@$vs){
 	
 	 	next if $p->meanDepth($v->getChromosome->name,$v->start-2,$v->end+2) < 15;
 	#	warn Dumper ($v->sequencing_details($p))." ".$v->id if $v->sequencing_details($p)->{hap}->{pourcent} == undef;
-		next if $v->sequencing_details($p)->{hap}->{pourcent} < 1;
+		next if $v->getRatio($p) < 1;
 		#if ($v->id eq  "9_215057_T_C"){
 		#my $patients =  $v->getPatients;
 		#warn scalar(@$patients);
@@ -179,7 +179,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 		#my $f = grep {$_->name eq $giab->name} @{$v->getPatients}; 
 		#next unless $f;
 		if (scalar(@{$v->getPatients}) == 2){
-			next if $v->sequencing_details($p)->{hap}->{pourcent} < 1;
+			next if $v->getRatio($p) < 1;
 			#next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 15;
 		}
 		if($v->isVariation) {
@@ -348,7 +348,7 @@ sub print_variant {
 	$vh->{text_sequence} = $v->getChromosome()->getSequence($v->start-5,$v->start-1)."_".$seqref."[".$seqalt."]_".$v->getChromosome()->getSequence($v->start+1,$v->start+21);
 	push(@vs,$v->getChromosome()->getSequence($v->start-5,$v->start-1)."_".$seqref."[".$seqalt."]_".$v->getChromosome()->getSequence($v->start+1,$v->start+21));
 	$vh->{giab} = "./.";
-	$vh->{control} = $v->sequencing_details($p)->{hap}->{nb_ref}."/".$v->sequencing_details($p)->{hap}->{nb_alt};
+	$vh->{control} = $v->getNbAlleleRef($p)."/".$v->getNbAlleleAlt($p);
 	$vh->{control_depth} = $p->depth($v->getChromosome->name,$v->start,$v->end)->[0];
 	warn "coucou ".$v->type;
 	#unless ($v->type){
@@ -374,7 +374,7 @@ sub print_variant {
 	push(@$tab,$vh);
  	push(@vs,"./.");
  	
-	push(@vs,$v->sequencing_details($p)->{hap}->{nb_ref}."/".$v->sequencing_details($p)->{hap}->{nb_alt});
+	push(@vs,$v->getNbAlleleRef($p)."/".$v->getNbAlleleAlt($p));
 	push(@vs,$p->depth($v->getChromosome->name,$v->start,$v->end)->[0]);
 	print join("\t",@vs)."\n";
 	

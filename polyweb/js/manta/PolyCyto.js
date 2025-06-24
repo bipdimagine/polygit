@@ -2026,7 +2026,7 @@ function launch_web_igv_start_and_end(value)
 	if (fasta) { url_fasta = fasta; }
 	document.getElementById('titre').innerHTML=titre;
 	var locus = locusstart + " " + locusend;
-	view_web_igv_bam_simple('div_igv_start',locus, bamfile, patient_name);
+	view_web_igv_bam('','div_igv_start',locus, bamfile, patient_name);
 }
 
 //-------------------------
