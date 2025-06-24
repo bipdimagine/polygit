@@ -210,11 +210,15 @@ while (my $row = $sth->fetchrow_hashref) {
 		$hGroupedCNV->{$global_id}->{'PR'} = "-";
 		$hGroupedCNV->{$global_id}->{'SR'} = "-";
 		$hGroupedCNV->{$global_id}->{'SCORECALLER'} = 0;
-		$hGroupedCNV->{$global_id}->{'SCORECALLER'} = $cnv->{score_caller};
+		#$hGroupedCNV->{$global_id}->{'SCORECALLER'} = $cnv->{score_caller};
 		
+		$hGroupedCNV->{$global_id}->{'SCORECALLER'} += 1000 if  test_type($cnv,"coverage") ;
+		#$hGroupedCNV->{$global_id}->{'SCORECALLER'} += 100 if  test_type($cnv,"depth")  or ;
+		
+		$hGroupedCNV->{$global_id}->{'SCORECALLER'} += $cnv->{score_caller};
+		warn $hGroupedCNV->{$global_id}->{'SCORECALLER'};
 		$hGroupedCNV->{$global_id}->{'SCORECNV'} = 1;#$cnv->{score_caller};
 		$hGroupedCNV->{$global_id}->{'GT'}=" ";
-		
 		
 		###################################
 		# CALLER COVERAGE WISECONDOR STYLE
@@ -369,6 +373,7 @@ while (my $row = $sth->fetchrow_hashref) {
    		$hGroupedCNV->{$global_id}->{'BPManta_father'}="-";	   # manquant
 		 
 		# scoreCNV 
+		
 		$hGroupedCNV->{$global_id}->{'SCORECNV'}= getScoreCNV($cnv->{genes},$hGroupedCNV->{$global_id}->{'SCORECALLER'},$hGroupedCNV->{$global_id}->{'TRANSMISSION'},$hGroupedCNV->{$global_id}->{'DUPSEG'});
 				
 		# utile mais non affiché	
@@ -542,7 +547,6 @@ sub getScoreCNV
 			if ($f) {
 				$score += 2;
 			}
-			
 		}
 		
 		# pour remonter  ceux qui presentent un BP dans une region de 1kb autour des positions debut ou fin
