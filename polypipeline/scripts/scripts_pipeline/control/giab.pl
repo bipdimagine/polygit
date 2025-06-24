@@ -96,6 +96,7 @@ die() unless -e $fileout.".tbi";
 system("bds_cache.sh  -project=$project_name  -control=1 -force=1 -yes=1");
 warn "\n\n--------------------\n\n";
 warn "run stats ";
+warn "$Bin/control_panel_giab.pl -project=$project_name -giab=$p2name";
 system("$Bin/control_panel_giab.pl -project=$project_name -giab=$p2name");
 
 warn "\n-----------------------------\n\n";
