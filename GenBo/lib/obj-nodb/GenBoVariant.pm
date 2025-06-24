@@ -473,12 +473,14 @@ sub isClinvarPathogenic {
 
 sub clinvar_id {
 	my $self = shift;
-	return exists $self->clinvar->{clinvar_id};
+	return $self->clinvar->{clinvar_id} if exists $self->clinvar->{clinvar_id};
+	return;
 }
 
 sub score_clinvar {
 	my $self = shift;
-	return exists $self->clinvar->{score};
+	return $self->clinvar->{score} if exists $self->clinvar->{score};
+	return;
 }
 
 sub text_clinvar {
@@ -490,7 +492,8 @@ sub is_clinvar_pathogenic_for_gene {
 	my ($self, $gene) = @_;
 	my $name = $gene->external_name;
 	return unless $self->isClinvarPathogenic;
-	return exists $self->clinvar->{genes}->{$name};
+	return $self->clinvar->{genes}->{$name} if exists $self->clinvar->{genes}->{$name};
+	return;
 }
 
 sub isClinvarPathogenic_for_gene {
@@ -1561,7 +1564,8 @@ sub isFoundBySVCaller {
 
 sub isDudeCaller {
 	my ($self, $patient,$debug) = @_;
-	return exists $self->sequencing_infos->{$patient->id}->{dud};
+	return $self->sequencing_infos->{$patient->id}->{dud} if exists $self->sequencing_infos->{$patient->id}->{dud};
+	return;
 }
 
 
