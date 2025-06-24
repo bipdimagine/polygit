@@ -127,8 +127,18 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
     }, 500);
 }
 
-function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
+var browser;
+var browser_igv;
 
+function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
+	if (genome === 'undefined') {
+		const regex = /HG38/g;
+		genome = 'hg19';
+		if (file.match(regex)) {
+			genome = 'hg38';
+		}
+	}
+	
 	if (is_waiting == true) { return; } 
 	is_waiting = true;
 	
@@ -144,107 +154,50 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
 	
 	setTimeout(function() { dijit.byId(dialog_name).show(); }, 200);
 	
-	if (genome){
-		if (url_gene_bed) {}
-		else { url_gene_bed = "/public-data/"+genome+"/igv/gencode.gtf.gz"; }
-		if (url_fasta) {}
-		else { url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa"; }
-		if (url_cyto) {}
-		else { url_cyto = "/public-data/"+genome+"/igv/cytoband.txt"; }
-	} 
-	else {
-		if (url_gene_bed) {}
-		else { url_gene_bed = "/public-data/HG19/igv/gencode.gtf.gz"; }
-		if (url_fasta) {}
-		else { url_fasta = "/public-data/HG19/genome/fasta/all.fa"; }
-		if (url_cyto) {}
-		else { url_cyto = "/public-data/HG19/igv/cytoband.txt"; }
-	}
-	
-	var list_bams = [];
-	var list_tracks = [];
-	var track = {};
-	track['name'] = "Genes";
-    track['type'] = "annotation";
-    track['format'] = "gtf";
-    track['sourceType'] = "file";
-    track['url'] = url_gene_bed;
-    track['indexURL'] = url_gene_bed+".tbi";
-    track['order'] = Number.MAX_VALUE;
-    track['visibilityWindow'] = 300000000;
-    track['displayMode'] = "EXPANDED";
-	list_tracks.push(track);
-	for (var i=0;i<array_bam.length;i++){
-		var track = {};
-		track['type'] = 'alignment';
-		track['format'] = 'bam';
-		track['name'] = array_name[i] + ' BAM';
-		track['url'] = window.location.origin + array_bam[i];
-		track['indexURL'] = window.location.origin + array_bam[i] + '.bai';
-		track['autoHeight'] = true;
-    	track['samplingDepth'] = 100.;
-        track['coverageThreshold'] = 1;
-        track['coverageQualityWeight'] = true;
-        track['visibilityWindow'] = 1000000;
-        track['colorBy'] = "strand";
-		list_tracks.push(track);
-		list_bams.push(window.location.origin + array_bam[i]);
-	}
-
-	
     if (typeof locus === 'undefined') { locus = 'chr1:1-249,250,621'; }
-    var options = {
-        showNavigation: true,
-        showRuler: true,
-        showAllChromosomes:true,
-        reference: {
-            fastaURL: url_fasta,
-            cytobandURL: url_cyto,
-        },
-        locus: locus,
-        trackDefaults: {
-            bam: {
-                coverageThreshold: 0.2,
-                coverageQualityWeight: true,
-                height: 300,
-                maxHeight: 10000,
-                visibilityWindow: 1000000,
-            }
-        },
-        palette: [
-            ["#00A0B0", "#6A4A3C", "#CC333F", "#EB6841"]
-        ],
-        tracks: list_tracks,
-        trackDefaults: {
-            bam: {
-                coverageThreshold: 0.2,
-                coverageQualityWeight: true,
-                height: 3000,
-                maxHeight: 10000,
-                visibilityWindow: 1000000,
-            },
-            bed: {
-                height: 30,
-                maxHeight: 100,
-                visibilityWindow: 1000000,
-            }
+    
+    var list_tracks = [];
+    var list_names = name.split(';');
+    var list_files = file.split(';');
+	for (i=0; i<list_files.length; i++) {
+		var this_file = list_files[i];
+		
+		var index = this_file + '.bai';
+	    var type_file = 'bam';
+	    if (this_file.match(".cram")) {
+	    	type_file = 'cram';
+	    	index = this_file + '.crai';
+	    }
+	    
+	    var track = {};
+	    track['type'] = 'alignment';
+	    track['format'] = type_file;
+	    track['url'] = this_file;
+	    track['indexURL'] = index;
+	    track['name'] = list_names[i];
+	    track['height'] = 600;
+	    list_tracks.push(track);
+	}
+    
+    var options =
+        {
+            genome: genome,
+            locus: locus,
+            tracks:list_tracks
         }
-    };
     
     setTimeout(function() {
-		igv.createBrowser(div, options).then(function (browser) {
-		    browser.search(locus);
-		    is_waiting = false;
-		    var tracks = list_bams.join(',') + ',' + window.location.origin + '/' + url_gene_bed;
-		    if (url_fasta.match(/HG19/)) {
-		    	launch_igv_tool('', tracks, locus);
-		    }
-		    else if (url_fasta) {
-		    	url_fasta = window.location.origin + '/' + url_fasta;
-		    	launch_igv_tool(url_fasta, tracks, locus);
-		    }
-		    else { launch_igv_tool('', tracks, locus); }
-		});
+    	if (browser_igv == 1) {
+    		document.getElementById("div_igv").remove();
+    		div = document.createElement('div');
+    		div.setAttribute("id", "div_igv");
+			div.classList.add('container-fluid');
+			div.style.margin = '20px';
+			document.getElementById(dialog_name).appendChild(div);
+    	}
+   		browser = igv.createBrowser(div, options);
+   		browser_igv = 1;
+		is_waiting = false;
     }, 500);
 }
 
