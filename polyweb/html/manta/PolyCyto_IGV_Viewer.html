@@ -12,7 +12,9 @@
 	</script>
 	<title></title>
 	<script type="text/javascript" src="../../js/manta/PolyCyto.js" djConfig="parseOnLoad: true"></script> 
-	<script src="https://cdn.jsdelivr.net/npm/igv@2.11.2/dist/igv.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/igv@3.0.0/dist/igv.min.js">
+		import igv from "https://cdn.jsdelivr.net/npm/igv@3.0.0/dist/igv.esm.min.js";
+	</script>
 	<script type="text/javascript" src="../../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
    	<script type="text/javascript" src="../../js/polyjs/igv_methods.js" djConfig="parseOnLoad:true"></script>
    	<script type="text/javascript" src="../../js/polyjs/polyweb.js" djConfig="parseOnLoad:true"></script>
@@ -35,7 +37,9 @@
 		<td style="text-align: center;"><label style="color:red;font-weight:bold;font-size:14px; "> END </label></td>
 	</tr>
 	<tr>
-		<td colspan="2" style="padding: 10px;width:90%; height:90%;background-color:white; border: 3px solid grey;"><div id="div_igv_start" ></div></td>
+		<td colspan="2" style="padding: 10px;width:90%; height:90%;background-color:white; border: 3px solid grey;">
+			<div class="container-fluid" id="div_igv_start" style="height:99%;width:99%;"></div>
+		</td>
 	</tr>
 	</table></center>
 </body>

@@ -130,14 +130,15 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
 var browser;
 var browser_igv;
 
-function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
-	if (genome === 'undefined') {
-		const regex = /HG38/g;
-		genome = 'hg19';
-		if (file.match(regex)) {
-			genome = 'hg38';
-		}
+function view_web_igv_bam(dialog_name, div_name, locus, file, name) {
+	const regex = /HG38/g;
+	var genome = 'hg19';
+	if (file.match(regex)) {
+		genome = 'hg38';
 	}
+	
+	file = file.replaceAll(",", ";");
+	name = name.replaceAll(",", ";");
 	
 	if (is_waiting == true) { return; } 
 	is_waiting = true;
@@ -150,9 +151,11 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name, genome) {
 	
 	var div = document.getElementById(div_name);
 	div.innerHTML = "";
-	resise_div_igv(div_name);
-	
-	setTimeout(function() { dijit.byId(dialog_name).show(); }, 200);
+	if (dialog_name == '') {}
+	else {
+		resise_div_igv(div_name);
+		setTimeout(function() { dijit.byId(dialog_name).show(); }, 200);
+	}
 	
     if (typeof locus === 'undefined') { locus = 'chr1:1-249,250,621'; }
     
