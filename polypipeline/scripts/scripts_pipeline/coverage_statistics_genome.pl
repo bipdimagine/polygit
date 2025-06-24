@@ -78,6 +78,7 @@ if ($project->isGenome){
 		 $res->{$patient}->{s1} += $h->{s1};
 		 $res->{$patient}->{s30} += $h->{s30};
 		 $res->{$patient}->{s15} += $h->{s15};
+		 $res->{$patient}->{s20} += $h->{s20};
 		 $res->{$patient}->{s100} += $h->{s100};
 		 $res->{$patient}->{sum} += $h->{sum};
 		 $res->{$patient}->{nb} += $h->{nb};
@@ -101,6 +102,7 @@ foreach my $patient (@{$patients}){
 				my $s15;
 				my $s100;
 				my $s1;
+				my $s20 =0;
 				my $array = $patient->depth($chr->name,$interval->[0],$interval->[1]);
 				my $sum = sum @$array;
 				$all_sum = $sum;
@@ -109,11 +111,13 @@ foreach my $patient (@{$patients}){
 					$s1 ++ if $a >= 1;
 					$s5 ++ if $a >= 5;
 					$s15 ++ if $a >= 15;
+					$s20 ++ if $a >= 20;
 					$s30 ++ if $a >= 30;
 					$s100 ++ if $a >= 100;
 				}
 		#warn $chr->name." ".$all_sum/$nb." ".(($s5/$nb)*100)." ".(($s30/$nb)*100);
-		$pm->finish( 0, {s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,patient=>$patient->name,nb=>$nb,sum=>$sum} );
+		
+		$pm->finish( 0, {s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,s20=>$s20,patient=>$patient->name,nb=>$nb,sum=>$sum} );
 		}
 	}
 }
@@ -135,6 +139,7 @@ $pm->run_on_finish(
 		 $res->{$patient}->{s1} += $h->{s1};
 		 $res->{$patient}->{s30} += $h->{s30};
 		 $res->{$patient}->{s15} += $h->{s15};
+		  $res->{$patient}->{s20} += $h->{s20};
 		 $res->{$patient}->{s100} += $h->{s100};
 		 $res->{$patient}->{sum} += $h->{sum};
 		 $res->{$patient}->{nb} += $h->{nb};
@@ -162,19 +167,21 @@ foreach my $patient (@{$patients}){
 				my $s15;
 				my $s100;
 				my $s1;
+				my $s20;
 				my $sum = sum @$array;
 				$all_sum = $sum;
 				$nb = scalar(@$array);
 				foreach my $a (@$array){
 					$s1 ++ if $a >= 1;
 					$s5 ++ if $a >= 5;
+					$s20 ++ if $a >= 20;
 					$s15 ++ if $a >= 15;
 					$s30 ++ if $a >= 30;
 					$s100 ++ if $a >= 100;
 				}
 		#	}
 		#warn $chr->name." ".$all_sum/$nb." ".(($s5/$nb)*100)." ".(($s30/$nb)*100);
-		$pm->finish( 0, {s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,patient=>$patient->name,nb=>$nb,sum=>$sum} );
+		$pm->finish( 0, {s20=>$s20,s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,patient=>$patient->name,nb=>$nb,sum=>$sum} );
 		}
 	}
 $pm->wait_all_children();
@@ -196,6 +203,8 @@ foreach my $patient (@{$patients}){
 	print BED "mean_all\t5\t".$z."\n";
 	$z = (($res->{$name}->{s15}/$res->{$name}->{nb}));
 	print BED "mean_all\t15\t".$z."\n";
+	$z = (($res->{$name}->{s20}/$res->{$name}->{nb}));
+	print BED "mean_all\t20\t".$z."\n";
 	$z =  (($res->{$name}->{s30}/$res->{$name}->{nb}));
 	print BED "mean_all\t30\t".$z."\n";
 	$z =  ($res->{$name}->{sum}/$res->{$name}->{nb});
