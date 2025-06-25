@@ -96,15 +96,23 @@ unlink  $fileout.".tbi" if -e $fileout.".tbi";
 unlink  $fileout if -e $fileout;
 warn "$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ";
 system("$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");#&& $tabix -f -p vcf $fileout");
-#die();
-#system("$bcftools view $vcf_giab | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");
+
 system("$tabix -f -p vcf $fileout  ");
+
 die() unless -e $fileout.".tbi";
-system("$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1");
+
+
+warn "$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1";
+system("$RealBin/../../../bds_cache.pl -project=$project_name -nolimit=1 -control=1 -force=1 -yes=1");
+
+
 warn "\n\n--------------------\n\n";
 warn "run stats ";
 warn "$RealBin/control_panel_giab.pl -project=$project_name -giab=$p2name";
 system("$RealBin/control_panel_giab.pl -project=$project_name -giab=$p2name");
+
+warn "\n\n\n";
+warn $fileout;
 
 warn "\n-----------------------------\n\n";
 warn "-----------------------------\n\n";
@@ -113,8 +121,6 @@ warn "-----------------------------\n\n";
 warn "-----------------------------\n\n";
 exit(0);
 
-warn $fileout;
-warn "$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z";
 #if ($is_ucsc){
 #	open(BCF, "bcftools view $vcf_giab -R $bed|");
 #	
@@ -140,7 +146,7 @@ sub intspanToBed{
     	#warn "+".$from."-".$to if ($from<=31263320);
     	warn $from."-".$to if ($from<=31263320 && $to >= 31263320);
     	$size += abs($from-$to);
-    		push(@tt,$chr_name."\t".$from."\t".$to);
+    		push(@tt,'chr'.$chr_name."\t".$from."\t".$to);
     	
     }
     warn $chr_name." ".$size;

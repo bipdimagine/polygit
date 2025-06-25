@@ -129,7 +129,7 @@ foreach my $v (@$vs){
 	
 	 	next if $p->meanDepth($v->getChromosome->name,$v->start-2,$v->end+2) < 15;
 	#	warn Dumper ($v->sequencing_details($p))." ".$v->id if $v->sequencing_details($p)->{hap}->{pourcent} == undef;
-		next if $v->getRatio($p) < 1;
+		next if $v->getPourcentAllele($p) < 1;
 		#if ($v->id eq  "9_215057_T_C"){
 		#my $patients =  $v->getPatients;
 		#warn scalar(@$patients);
@@ -187,7 +187,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 		#my $f = grep {$_->name eq $giab->name} @{$v->getPatients}; 
 		#next unless $f;
 		if (scalar(@{$v->getPatients}) == 2){
-			next if $v->getRatio($p) < 1;
+			next if $v->getPourcentAllele($p) < 1;
 			#next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 15;
 		}
 		if($v->isVariation) {
