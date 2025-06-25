@@ -100,7 +100,7 @@ system("$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $lis
 #system("$bcftools view $vcf_giab | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");
 system("$tabix -f -p vcf $fileout  ");
 die() unless -e $fileout.".tbi";
-#system("$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1");
+system("$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1");
 warn "\n\n--------------------\n\n";
 warn "run stats ";
 warn "$RealBin/control_panel_giab.pl -project=$project_name -giab=$p2name";
