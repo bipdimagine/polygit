@@ -42,7 +42,7 @@ update_type($buffer->dbh,$project->id);
 #my $file_out = $patient->vcf_file;
 
 my $GIAB_DIR;
-my $genome = '/HG19';
+my $genome = 'HG19';
 if ($project->getVersion() =~ /HG38/) {
 	$genome = 'HG38';
 }

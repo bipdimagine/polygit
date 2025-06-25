@@ -47,7 +47,7 @@ unless ($p1name){
 my $giab =  $project->getPatient("$p2name");
 
 my $GIAB_DIR;
-my $genome = '/HG19';
+my $genome = 'HG19';
 if ($project->getVersion() =~ /HG38/) {
 	$genome = 'HG38';
 }
