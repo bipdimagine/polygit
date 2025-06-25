@@ -40,6 +40,13 @@ my $is_ucsc = undef;
 $is_ucsc = 1 if $project->getChromosome(1)->fasta_name eq "chr1";
 update_type($buffer->dbh,$project->id);
 #my $file_out = $patient->vcf_file;
+
+
+my $GIAB_DIR;
+my $genome = '/HG19';
+if ($project->getVersion() =~ /HG38/) {
+	$genome = 'HG38';
+}
 $GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB";
 if ($p2name =~ /001/){
 	$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB/HG001";
