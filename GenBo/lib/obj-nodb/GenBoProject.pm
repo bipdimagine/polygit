@@ -5655,7 +5655,7 @@ has cache_date => (
 
 sub getCacheDir {
 	my $self           = shift;
-	return "/rocks/NGS2025_08811/";
+	#return "/rocks/NGS2025_08811/";
 	return $self->{cache_dir} if (exists $self->{cache_dir} and $self->{cache_dir});
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
