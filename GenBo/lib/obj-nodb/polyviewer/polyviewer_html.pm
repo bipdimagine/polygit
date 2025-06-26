@@ -1353,8 +1353,18 @@ sub validations {
 		$data->{hgmd_text} =  $self->variant->hgmd;
 		
 		$data->{clinvar_value} = $self->variant->clinvar_value;
-		$data->{clinvar_id} = $self->variant->clinvar_id;
+		
+	
+	
 		$data->{clinvar_text} = $self->variant->clinvar;
+			if ($data->{clinvar_text}){
+			my $db = $project->getChromosome($self->variant->chromosome)->rocksdb("clinvar");
+			my $pub = $db->clinvar($self->variant->{rocksdb_id});
+			#warn Dumper $pub;
+			#warn $data->{clinvar_text};
+			$data->{clinvar_id} = $pub->{clinvar_id};
+			
+		}
 		
 		 my $output = $self->xslate->render("validations.tt", $data);
 	 	return $output;
@@ -1411,9 +1421,12 @@ sub validations_old {
 		else {
 			$html   .= $cgi->td($minus); 
 		}
+		warn $self->variant->clinvar_id."----------------------------";
+		die();
 		if ($self->variant->clinvar_id){
 			my $nb =  $self->variant->clinvar_value;
 			my $cmd ="";
+			die();
 			my $uc = qq{https://www.ncbi.nlm.nih.gov/clinvar/?term=}.$self->variant->clinvar_id."[alleleid]";
 	 		my $oc = qq{onClick='window.open("$uc")'};
 			$html   .= $cgi->td($self->printButtonWithCmd($nb,[4,5],$self->variant->clinvar,$oc ) ); 

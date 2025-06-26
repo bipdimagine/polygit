@@ -90,7 +90,7 @@ has cache => (
 sub activate_cache {
 	my ($self) = @_;
 		$self->{cache} =undef;
-#		system("vmtouch -q  -t ".$self->path_rocks)
+#	system("vmtouch -q  -t ".$self->path_rocks)
 #			if ($self->cache){
 #			my $zz = (time + rand(5000)).".".$$;
 #			$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
@@ -104,6 +104,7 @@ sub deactivate_cache {
 		my $dt = $self->tmp_dir;
 		system("rm -r ".$self->path_rocks) if $self->path_rocks =~ /$dt/;
 	}
+	delete $self->{rocks};
 }
 
 has tmp_dir => (
@@ -685,6 +686,7 @@ sub seek  {
 
 sub close {
 	my ($self) = @_;
+
 	if ( $self->mode ne "r" ) {
 		if ( $self->has_config() ) {
 			$self->write_config();
