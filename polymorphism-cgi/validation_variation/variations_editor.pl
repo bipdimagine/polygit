@@ -284,7 +284,7 @@ if ($project->isDiagnostic){
 }
 
 my $text = $no_cache->get_cache($cache_id);
-$dev=1;
+#$dev=1;
 $text = "" if $dev;
 #$text = "";
 my $html_dude = "<!--DUDE-->";
@@ -802,300 +802,297 @@ sub calculate_max_score_toto {
 }
 
 
-sub refine_heterozygote_composite_score_fork {
-	my ( $project, $genes,$hchr ) = @_;
-	$t = time;
-	$| =1;
-	print qq{<div style="display: none">};
-	print "refine";
-	my $fork      = scalar (keys %$hchr);
- 	$fork =8;	
-	$fork = 16 if $project->isGenome();
-	
-	$fork=3;
-	my $pm        = new Parallel::ForkManager($fork);
-	$pm        = new Parallel::ForkManager($fork);
-	#@$vgenes = @$vgenes[0..500];
-	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
-	my $iter      = natatime( $nb,  @$vgenes );
-	my $res_genes = [];
-	my $vid        = 0;
-	my $hrun;
-	
-	#$t = time;
-	my $current = 1;
-	my $vres;
-	my @res_final;
-	my @toto;
-	my $wtime = 0;
-	my $maxgene =100000;
-	my $ngene =0;
-	
-	
-	my $final_polyviewer_all ;
-	#if ($project->isRocks){
-		my $diro = $project->rocks_directory();
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
-	  $final_polyviewer_all->activate_cache();
-	
-	my @lOut_genes;
-	
-	$pm->run_on_finish( 
-		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
-
-			unless ( defined($h) or $exit_code > 0 ) {
-				print
-				  qq|No message received from child process $exit_code $pid!\n|;
-				die();
-				return;
-			}
-			my $id = $h->{run_id};
-			delete $hrun->{ $h->{run_id} };
-			warn "==>" . abs( time - $h->{time} );# if $print;
-			$h->{genes} = [] unless $h->{genes};
-			$vres->{$id} = $h->{genes};
-			
-			
-			while (exists $vres->{$current}){
-				if ($current  == 1) {
-					print qq{</div>};
-				}
-				 my $xtime =time;
-					foreach my $g (@{ $vres->{$current}}){
-						last if $ngene > $maxgene;
-						push(@toto,$g->{name});
-						warn $g->{score} if $g->{name} eq "ABCC8";
-						
-						push(@lOut_genes, $g->{out});
-						
-						print  "\n<!--SPLIT-->\n";
-						print $g->{out} . "\n";
-						$ngene ++;
-						delete $g->{out};
-						warn  Dumper $g if $g->{name} eq "ABCC8";
-					#	push(@res_final,$g->{out})
-					}
-					delete $vres->{$current};
-					$current ++;
-					$wtime += abs($xtime - time);
-				
-			}
-			push( @$res_genes, @{ $h->{genes} } );
-		}
-	);
-	
-	#TODO: essayer d'integrer XLS Store variant ici pour le forker
-	
-	$project->buffer->dbh_deconnect();
-	$project->disconnect;
-	
-	#delete $project->{validations_query1};
-	while ( my @tmp = $iter->() ) {
-		$vid++;
-		$hrun->{$vid}++;
-		my $pid = $pm->start and next;
-		my $t   = time;
-		my $res;
-		$res->{tmp}  = \@tmp;
-		$res->{time} = time;
-		$project->buffer->dbh_reconnect();
-		my $x = time;
-		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
-		foreach my $g (@{ $vres->{genes}}){
-			
-			
-		}
-		warn "&&&&&&&& end variations_editor_methods::refine_heterozygote_composite ".abs(time-$x);
-		$res->{run_id} = $vid;
-		
-		$pm->finish( 0, $res );
-	}
-	$pm->wait_all_children();
-	$project->buffer->dbh_reconnect();
-	
-	error("Hey it looks like you're having an error  !!! ")
-	  if scalar keys %$hrun;
-	warn "end hetero " if $print;
-	warn "....";
-	print qq{</div>};
-	warn "....";
-	while (exists $vres->{$current}){
-				print qq{</div>} if $current  == 1 ;
-				 my $xtime =time;
-					foreach my $g (@{ $vres->{$current}}){
-						last if $ngene > $maxgene;
-						print $g->{out} . "\n";
-							$ngene ++;
-					}
-					
-					delete $vres->{$current};
-					$current ++;
-				$wtime += abs($xtime - time);	
-				
-			}
-		#print "<br>". $wtime;
-		warn "***** ".$wtime;
-		$final_polyviewer_all->deactivate_cache();
-	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;
-	
-	my $table_id = 'table_genes_'.$patient->name();
-	my $cmd_search = qq{enable_table_search_from_id('$table_id');};
-	
-#	print '</div>';
-#	print qq{<div style="margin-top: -15px;">};
-##	print qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false"  data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table' style='font-size:13px;'>};
-##	print "<thead>";
-##	print qq{<tr style="font-size:13px;">};
-##	print qq{<th style="padding:0px;margin:0px;" data-field="genes" data-filter-control="input" data-filter-control-placeholder="Gene Name / Variation / Description"></th>};
-##	print qq{</tr>};
-##	print "</thead>";
-##	print "<tbody>";
-#	foreach my $gene_out (@lOut_genes) {
-#	#	print "<tr>";
-#		print "<td style='padding:0px;'><div>".$gene_out."</div></td>";
-#		#print "</tr>";
-#	}
-#	print "</tbody>";
-#	#print "</table>";
-#	print '</div>';
+#sub refine_heterozygote_composite_score_fork_3 {
+#	my ( $project, $genes,$hchr ) = @_;
+#	$t = time;
+#	$| =1;
+#	print qq{<div style="display: none">};
+#	print "refine";
+#	my $fork      = scalar (keys %$hchr);
+# 	$fork =8;	
+#	$fork = 16 if $project->isGenome();
 #	
-	return ;
-	exit(0);
-	print qq{</div>};
-	return $res_genes;
-
-}
-
-
-sub refine_heterozygote_composite_score_fork_test {
-		my ( $project, $genes,$hchr ) = @_;
-	$t = time;
-	$| =1;
-	print qq{<div style="display: none">};
-	print "refine";
-	my $fork      = scalar (keys %$hchr);
- 	$fork =8;	
-	$fork = 16 if $project->isGenome();
-	
-	$fork=1;
-	my $pm        = new Parallel::ForkManager($fork);
-	#@$vgenes = @$vgenes[0..500];
-	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
-	my $iter      = natatime( $nb,  @$vgenes );
-	my $res_genes = [];
-	my $vid        = 0;
-	my $hrun;
-	
-	#$t = time;
-	my $current = 1;
-	my $vres;
-	my @res_final;
-	my @toto;
-	my $wtime = 0;
-	my $maxgene =100;
-	my $ngene =0;
-	
-	
-	my $final_polyviewer_all ;
-	#if ($project->isRocks){
-		my $diro = $project->rocks_directory();
-	
-	
-	$pm->run_on_finish(
-		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
-
-			unless ( defined($h) or $exit_code > 0 ) {
-				print
-				  qq|No message received from child process $exit_code $pid!\n|;
-				die();
-				return;
-			}
-			my $id = $h->{run_id};
-			delete $hrun->{ $h->{run_id} };
-			warn "==>" . abs( time - $h->{time} );# if $print;
-			$h->{genes} = [] unless $h->{genes};
-			$vres->{$id} = $h->{genes};
-			while (exists $vres->{$current}){
-				print qq{</div>} if $current  == 1 ;
-				 my $xtime =time;
-					foreach my $g (@{ $vres->{$current}}){
-						last if $ngene > $maxgene;
-						warn $g->{name};
-						push(@toto,$g->{name});
-						#warn $g->{out};
-						print $g->{out};
-						print  "\n<!--SPLIT-->\n";
-						$ngene ++;
-						
-					#	push(@res_final,$g->{out})
-					}
-					delete $vres->{$current};
-					$current ++;
-					$wtime += abs($xtime - time);
-				
-			}
-			push( @$res_genes, @{ $h->{genes} } );
-		}
-	);
-	
-	#TODO: essayer d'integrer XLS Store variant ici pour le forker
-	
-	$project->buffer->dbh_deconnect();
-	
-	#delete $project->{validations_query1};
-	while ( my @tmp = $iter->() ) {
-		$vid++;
-		$hrun->{$vid}++;
-		my $pid = $pm->start and next;
-		my $t   = time;
-		my $res;
-		$res->{tmp}  = \@tmp;
-		$res->{time} = time;
-		$project->buffer->dbh_reconnect();
-		my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
-	  	$final_polyviewer_all->activate_cache();
-		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
-		$res->{run_id} = $vid;
-			$final_polyviewer_all->deactivate_cache();
-		warn "===============================";
-		$pm->finish( 0, {} );
-	}
-	$pm->wait_all_children();
-	$project->buffer->dbh_reconnect();
-	error("Hey it looks like you're having an error  !!! ")
-	  if scalar keys %$hrun;
-	warn "end hetero " if $print;
-	warn "....";
-	print qq{</div>};
-	warn "....";
-	while (exists $vres->{$current}){
-				print qq{</div>} if $current  == 1 ;
-				 my $xtime =time;
-					foreach my $g (@{ $vres->{$current}}){
-						last if $ngene > $maxgene;
-						warn $g->{name};
-						print $g->{out} . "\n";
-							$ngene ++;
-							
-					}
-					delete $vres->{$current};
-					$current ++;
-				$wtime += abs($xtime - time);	
-				
-			}
-		print "<br>". $wtime;
-		warn "***** ".$wtime;
-		$final_polyviewer_all->deactivate_cache();
-		warn "end";
-	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
-	return ;
-	exit(0);
-	print qq{</div>};
-	return $res_genes;
-}
-
+#	$fork=3;
+#	my $pm        = new Parallel::ForkManager($fork);
+#	$pm        = new Parallel::ForkManager($fork);
+#	#@$vgenes = @$vgenes[0..500];
+#	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
+#	my $iter      = natatime( $nb,  @$vgenes );
+#	my $res_genes = [];
+#	my $vid        = 0;
+#	my $hrun;
+#	
+#	#$t = time;
+#	my $current = 1;
+#	my $vres;
+#	my @res_final;
+#	my @toto;
+#	my $wtime = 0;
+#	my $maxgene =100000;
+#	my $ngene =0;
+#	
+#	
+#	my $final_polyviewer_all ;
+#	#if ($project->isRocks){
+#		my $diro = $project->rocks_directory();
+#	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
+#	  $final_polyviewer_all->activate_cache();
+#	
+#	my @lOut_genes;
+#	
+#	$pm->run_on_finish( 
+#		sub {
+#			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
+#
+#			unless ( defined($h) or $exit_code > 0 ) {
+#				print
+#				  qq|No message received from child process $exit_code $pid!\n|;
+#				die();
+#				return;
+#			}
+#			my $id = $h->{run_id};
+#			delete $hrun->{ $h->{run_id} };
+#			warn "==>" . abs( time - $h->{time} );# if $print;
+#			$h->{genes} = [] unless $h->{genes};
+#			$vres->{$id} = $h->{genes};
+#			
+#			
+#			while (exists $vres->{$current}){
+#				if ($current  == 1) {
+#					print qq{</div>};
+#				}
+#				 my $xtime =time;
+#					foreach my $g (@{ $vres->{$current}}){
+#						last if $ngene > $maxgene;
+#						push(@toto,$g->{name});
+#						warn $g->{score} if $g->{name} eq "ABCC8";
+#						
+#						push(@lOut_genes, $g->{out});
+#						
+#						print  "\n<!--SPLIT-->\n";
+#						print $g->{out} . "\n";
+#						$ngene ++;
+#						delete $g->{out};
+#						warn  Dumper $g if $g->{name} eq "ABCC8";
+#					#	push(@res_final,$g->{out})
+#					}
+#					delete $vres->{$current};
+#					$current ++;
+#					$wtime += abs($xtime - time);
+#				
+#			}
+#			push( @$res_genes, @{ $h->{genes} } );
+#		}
+#	);
+#	
+#	#TODO: essayer d'integrer XLS Store variant ici pour le forker
+#	
+#	$project->buffer->dbh_deconnect();
+#	$project->disconnect;
+#	
+#	#delete $project->{validations_query1};
+#	while ( my @tmp = $iter->() ) {
+#		$vid++;
+#		$hrun->{$vid}++;
+#		my $pid = $pm->start and next;
+#		my $t   = time;
+#		my $res;
+#		$res->{tmp}  = \@tmp;
+#		$res->{time} = time;
+#		$project->buffer->dbh_reconnect();
+#		my $x = time;
+#		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
+#	
+#		warn "&&&&&&&& end variations_editor_methods::refine_heterozygote_composite ".abs(time-$x);
+#		$res->{run_id} = $vid;
+#		
+#		$pm->finish( 0, $res );
+#	}
+#	$pm->wait_all_children();
+#	$project->buffer->dbh_reconnect();
+#	
+#	error("Hey it looks like you're having an error  !!! ")
+#	  if scalar keys %$hrun;
+#	warn "end hetero " if $print;
+#	warn "....";
+#	print qq{</div>};
+#	warn "....";
+#	while (exists $vres->{$current}){
+#				print qq{</div>} if $current  == 1 ;
+#				 my $xtime =time;
+#					foreach my $g (@{ $vres->{$current}}){
+#						last if $ngene > $maxgene;
+#						print $g->{out} . "\n";
+#							$ngene ++;
+#					}
+#					
+#					delete $vres->{$current};
+#					$current ++;
+#				$wtime += abs($xtime - time);	
+#				
+#			}
+#		#print "<br>". $wtime;
+#		warn "***** ".$wtime;
+#		$final_polyviewer_all->deactivate_cache();
+#	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;
+#	
+#	my $table_id = 'table_genes_'.$patient->name();
+#	my $cmd_search = qq{enable_table_search_from_id('$table_id');};
+#	
+##	print '</div>';
+##	print qq{<div style="margin-top: -15px;">};
+###	print qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false"  data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table' style='font-size:13px;'>};
+###	print "<thead>";
+###	print qq{<tr style="font-size:13px;">};
+###	print qq{<th style="padding:0px;margin:0px;" data-field="genes" data-filter-control="input" data-filter-control-placeholder="Gene Name / Variation / Description"></th>};
+###	print qq{</tr>};
+###	print "</thead>";
+###	print "<tbody>";
+##	foreach my $gene_out (@lOut_genes) {
+##	#	print "<tr>";
+##		print "<td style='padding:0px;'><div>".$gene_out."</div></td>";
+##		#print "</tr>";
+##	}
+##	print "</tbody>";
+##	#print "</table>";
+##	print '</div>';
+##	
+#	return ;
+#	exit(0);
+#	print qq{</div>};
+#	return $res_genes;
+#
+#}
+#
+#
+#sub refine_heterozygote_composite_score_fork_test {
+#		my ( $project, $genes,$hchr ) = @_;
+#	$t = time;
+#	$| =1;
+#	print qq{<div style="display: none">};
+#	print "refine";
+#	my $fork      = scalar (keys %$hchr);
+# 	$fork =8;	
+#	$fork = 16 if $project->isGenome();
+#	
+#	$fork=1;
+#	my $pm        = new Parallel::ForkManager($fork);
+#	#@$vgenes = @$vgenes[0..500];
+#	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
+#	my $iter      = natatime( $nb,  @$vgenes );
+#	my $res_genes = [];
+#	my $vid        = 0;
+#	my $hrun;
+#	
+#	#$t = time;
+#	my $current = 1;
+#	my $vres;
+#	my @res_final;
+#	my @toto;
+#	my $wtime = 0;
+#	my $maxgene =100;
+#	my $ngene =0;
+#	
+#	
+#	my $final_polyviewer_all ;
+#	#if ($project->isRocks){
+#		my $diro = $project->rocks_directory();
+#	
+#	
+#	$pm->run_on_finish(
+#		sub {
+#			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
+#
+#			unless ( defined($h) or $exit_code > 0 ) {
+#				print
+#				  qq|No message received from child process $exit_code $pid!\n|;
+#				die();
+#				return;
+#			}
+#			my $id = $h->{run_id};
+#			delete $hrun->{ $h->{run_id} };
+#			warn "==>" . abs( time - $h->{time} );# if $print;
+#			$h->{genes} = [] unless $h->{genes};
+#			$vres->{$id} = $h->{genes};
+#			while (exists $vres->{$current}){
+#				print qq{</div>} if $current  == 1 ;
+#				 my $xtime =time;
+#					foreach my $g (@{ $vres->{$current}}){
+#						last if $ngene > $maxgene;
+#						warn $g->{name};
+#						push(@toto,$g->{name});
+#						#warn $g->{out};
+#						print $g->{out};
+#						print  "\n<!--SPLIT-->\n";
+#						$ngene ++;
+#						
+#					#	push(@res_final,$g->{out})
+#					}
+#					delete $vres->{$current};
+#					$current ++;
+#					$wtime += abs($xtime - time);
+#				
+#			}
+#			push( @$res_genes, @{ $h->{genes} } );
+#		}
+#	);
+#	
+#	#TODO: essayer d'integrer XLS Store variant ici pour le forker
+#	
+#	$project->buffer->dbh_deconnect();
+#	
+#	#delete $project->{validations_query1};
+#	while ( my @tmp = $iter->() ) {
+#		$vid++;
+#		$hrun->{$vid}++;
+#		my $pid = $pm->start and next;
+#		my $t   = time;
+#		my $res;
+#		$res->{tmp}  = \@tmp;
+#		$res->{time} = time;
+#		$project->buffer->dbh_reconnect();
+#		my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
+#	  	$final_polyviewer_all->activate_cache();
+#		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
+#		$res->{run_id} = $vid;
+#			$final_polyviewer_all->deactivate_cache();
+#		warn "===============================";
+#		$pm->finish( 0, {} );
+#	}
+#	$pm->wait_all_children();
+#	$project->buffer->dbh_reconnect();
+#	error("Hey it looks like you're having an error  !!! ")
+#	  if scalar keys %$hrun;
+#	warn "end hetero " if $print;
+#	warn "....";
+#	print qq{</div>};
+#	warn "....";
+#	while (exists $vres->{$current}){
+#				print qq{</div>} if $current  == 1 ;
+#				 my $xtime =time;
+#					foreach my $g (@{ $vres->{$current}}){
+#						last if $ngene > $maxgene;
+#						warn $g->{name};
+#						print $g->{out} . "\n";
+#							$ngene ++;
+#							
+#					}
+#					delete $vres->{$current};
+#					$current ++;
+#				$wtime += abs($xtime - time);	
+#				
+#			}
+#		print "<br>". $wtime;
+#		warn "***** ".$wtime;
+#		$final_polyviewer_all->deactivate_cache();
+#		warn "end";
+#	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
+#	return ;
+#	exit(0);
+#	print qq{</div>};
+#	return $res_genes;
+#}
+#
 
 
 sub refine_heterozygote_composite_score_fork {
@@ -1148,13 +1145,11 @@ sub refine_heterozygote_composite_score_fork {
 	warn "....";
 	print qq{</div>};
 	warn "....";
+	my $nb_genes = scalar(@{$res->{genes}});
 	foreach my $g (@{$res->{genes}}){
 		print $g->{out} . "\n";
 		delete  $g->{out};
-		
-		warn Dumper $g  if $g->{name} eq "ABCC8";
-		warn $g->{score} if $g->{name} eq "ABCC8";
-		last if $g->{max_score} < 5;
+		last if $g->{max_score} < 5 && $nb_genes > 500;
 	}
 	
 	$final_polyviewer_all->deactivate_cache();
