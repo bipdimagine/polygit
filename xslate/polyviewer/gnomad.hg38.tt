@@ -1,0 +1,67 @@
+: if $ac == "-" {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px red;font-size: 8px;font-family:  Verdana;margin-bottom:0px;">
+		<tbody>
+		<tr style="background-color:#FFF8F8">
+:}
+:else if $ac < 5 {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px red;font-size: 8px;font-family:  Verdana;margin-bottom:0px;">
+		<tbody>
+		<tr style="background-color:#FFF8F8">
+:}
+:else if $ac < 50 {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px orange;font-size: 8px;font-family:  Verdana;margin-bottom:0px;">
+		<tbody>
+		<tr style="background-color:#FFF8E8">	
+: }
+: else  {
+		<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px blue;font-size: 8px;font-family:  Verdana;margin-bottom:0px;">
+		<tbody>
+		<tr style="background-color:#E8F8FF">
+: }
+
+<th style="text-align:center">AC</th>
+<th style="text-align:center">Ho</th>
+: if $type == "XY" {
+   <th style="text-align:center" ><i class="fa fa-mars" > </i></th>
+: }
+		
+<th style="text-align:center" >Max</th>
+<th style="text-align:center" >Min</th>
+<th style="text-align:center" >AN</th>
+</tr>
+<tr>
+<td>
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white" role="button"><: $ac :></a>
+
+</td>
+<td>
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>?' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white" role="button"><: $ho :></a>
+</td>
+: if $type == "XY" {
+<td>
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white" role="button"><: $ho_male :></a>
+</td>
+: }
+<td style="padding-bottom: 2px;padding-top: 2px;">
+: if $max_pop_name {
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white;padding-left: 2px;padding-right: 2px;" role="button"><: $max_pop_name :><br><: $max_pop :></a>
+: }
+: else {
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white;padding-left: 2px;padding-right: 2px;" role="button">-</a>
+: }
+</td> 
+<td style="padding-bottom: 2px;padding-top: 2px;">
+: if $min_pop_name {
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white;padding-left: 2px;padding-right: 2px;" role="button"><: $min_pop_name :><br><: $min_pop :></a>
+: }
+: else {
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white;padding-left: 2px;padding-right: 2px;" role="button">-</a>
+: }
+</td>
+<td>
+<a class="btn btn-xs btn-primary" href='https://gnomad.broadinstitute.org/variant/<: $gnomad_id :>' target = '_blank' style="background-color: #E0E0FF;font-size: 8px;font-family:  Verdana;color:black;border-color:white" role="button"><: $an :></a>
+</td>
+</tr>
+</tbody>
+</table>
+

@@ -976,7 +976,13 @@ sub gnomad {
 	 }
 	 $data->{max_pop_name} = $self->variant->gnomad_min_pop_name;
 	  $data->{min_pop_name} = $self->variant->gnomad_max_pop_name;
-	 my $output = $self->xslate->render("gnomad.tt", $data);
+	  my $output;
+	  if ($self->project->genome_version_generic eq "HG19"){
+	  	 $output = $self->xslate->render("gnomad.tt", $data);
+	  }
+	  else {
+	  $output = 	$self->xslate->render("gnomad.hg38.tt", $data);
+	  }
 	# warn $self->variant->name;
 	# warn Dumper $output if ($self->variant->name eq "12-89472277-TAGAAAGAAGA-T");
 	# die() if ($self->variant->name eq "12-89472277-TAGAAAGAAGA-T");

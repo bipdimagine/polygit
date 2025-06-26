@@ -304,6 +304,7 @@ if($text){
 		my @toto = split("\n<!--SPLIT-->\n",$text);
 		my $t = time;
 		my $html;
+		#
 		for (my $i = 0;$i<@toto;$i++){
 			if($project->genome_version_generic =~/HG38/){
 				$toto[$i] =~ s/\?dataset\=gnomad_r2_1//g;
