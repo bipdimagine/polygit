@@ -327,6 +327,7 @@ sub isMosaicTransmission {
 	my $var_id = $self->id();
 	my $chr = $self->getChromosome();
 	return unless ($child->isIll());
+	return unless (scalar @{$fam->getParents()} == 2);
 	return unless ($child->getHe($chr)->contains($self->vector_id()));
 	return if $self->isBothTransmission($fam,$child); 
 	my @lOk;
@@ -454,7 +455,6 @@ sub getTransmissionModelType {
 
 sub getTransmissionModel {
 		my ($self,$fam,$child,$gene,$debug) = @_;
-		#my $is_mosaic = $self->isMosaicTransmission($fam,$child);
 		if ($self->isRecessiveTransmission($fam,$child) == 1 ){
 			return "recessive";
 		}
