@@ -90,7 +90,11 @@ function httpGetLoadOnlyListBam(string_list_bam){
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request=BRCA1&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
-		list_cmds.push("http://localhost:10000/open?filetype=BAM&path=https://www.polyweb.fr/"+list_bam[i]);
+		var url = "http://localhost:10000/open"
+		if (list_bam[i].match(/\.cram/)) { url += "?filetype=cram"; }
+		else { url += "?filetype=bam"; }
+		url += "&path=https://www.polyweb.fr/"+list_bam[i];
+		list_cmds.push(url);
 	}
 	launch_alamut_visual_plus_cmds(list_cmds);
 }
