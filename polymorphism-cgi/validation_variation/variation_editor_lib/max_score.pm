@@ -37,18 +37,24 @@ sub calculate_rocks {
 	my $no_dude                    = $patient->getGenesDude();
 	$no_dude = undef if $project->isGenome();
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
+	$final_polyviewer_all->activate_cache();
 	my @ids = map{$_->{id}} @{$list};
-	
+	my $xx =time;
 	$final_polyviewer_all->prepare(\@ids);
+	warn abs($xx - time)." final polyviewer";
 	#warn "\t score :".abs(time -$t)." ".scalar(@ids);
 	my $st =0;
 	my $st2;
+	
+	warn abs($xx - time)." final polyviewer";
+
 	foreach my $hgene (@$list) {
 		my $gid = $hgene->{id};
 		my $debug ;
-		my $gene = $project->newGenes( [$gid] )->[0];
+		
+		#my $gene = $project->newGenes( [$gid] )->[0];
 		my ( $n, $chr_name ) = split( "_", $gid );
-		my $chr = $gene->getChromosome();
+		#my $chr = $gene->getChromosome();
 		$hgene->{chr_name} = $chr_name;
 		
 		if ( $no_dude && -e $no_dude->filename ) {
@@ -59,6 +65,8 @@ sub calculate_rocks {
 		}
 		my $t1 = time;
 		my $global_gene = $final_polyviewer_all->get_cached($gid); #$chr->get_polyviewer_genes($patient,$gid);
+		
+		
 		$st += abs(time-$t1);
 		$t1 = time;
 		foreach my $k ( keys %{$global_gene} ) {
@@ -66,7 +74,8 @@ sub calculate_rocks {
 			next if $k eq "denovo_rare";
 			$hgene->{$k} = $global_gene->{$k};
 		}
-		$hgene->{score} = $gene->score;
+		
+		#$hgene->{score} = $gene->score;
 		my $class;
 		$class->{biallelic} = [];
 		$class->{mother}    = [];
@@ -116,7 +125,8 @@ sub calculate_rocks {
 			$hgene->{max_score} = $hgene->{score} + $score_father + $score_mother;
 		}
 		else {
-			
+			warn $hgene->{score} ." ". $score_biallelic." ".$hgene->{penality} if $hgene->{name} eq "ABCC8";
+			#die()  if $hgene->{name} eq "ABCC8";
 			$hgene->{max_score} = $hgene->{score} + $score_biallelic + $hgene->{penality} ;
 		}
 		$st2 += abs(time -$t1);

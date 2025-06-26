@@ -1772,10 +1772,13 @@ sub panel_gene {
 	my $out;
 	my $gene_id = $hgene->{id};
 	my $gene;
-	$gene = $patient->project->newGene($gene_id) if ($patient);
-	
+	#$gene = $patient->project->newGene($gene_id) if ($patient);
+	#warn $gene ;
+	#die();
 	#my $homim;
 	#$homim = $patient->project->lmdbOmim->get($gene_id) if ($patient);
+	my $project = $patient->getProject();
+	my $is_actionable = 1 if  exists  $project->acmg_genes->{$hgene->{id}};
 	
 	#warn $omim->{phenotype}->{omim};
 	my $vval ={};
@@ -1794,8 +1797,12 @@ sub panel_gene {
 	#$out .=  $cgi->start_div({class=>" btn-group btn-xs "});
 	my $label_id = "label_".$hgene->{uid};
 	my $max_score = $hgene->{max_score};
+	# color ==> #F5DF4D
+	my $actionable_color = "#F5DF4D";
+	#D2386C
 	
-my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
+	my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
+	my $actionable_text = qq{<a class="btn btn-primary btn-xs"   style="$bgcolor2;min-width:40px;color:$actionable_color">Actionable</i></a>} ;;
 	 #panel heading
 	#$out .=  $cgi->start_div({class=>"panel-heading panel-warning warning ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
 	 #$out.="coucou";
@@ -1819,6 +1826,8 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				else { $in = $hgene->{omim_inheritance}; }
 				$in ="" if $in eq "-";
 				$in = "X-linked " if $in =~/X-linked/;
+				
+				# if $in =~/X-linked/;
 				my $pli = 	$hgene->{pLI}*1.0;
 				#$pli = $pli.;#"/".$hgene->{max_score};
 				
@@ -1854,19 +1863,23 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 					$this_b_cmd = $hgene->{specific_cmd};
 				}
 				
-				
+				my $font_color = "white";
+				$font_color = $actionable_color if $is_actionable;
 				if (exists $hgene->{collapse_with_id}) {
 					my $this_collapse_id = $hgene->{collapse_with_id};
-					$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:white;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+					$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
 				}
 				else {
-					$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:white;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+					$out .= qq{<div id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
 				}
 				
 				
-				
+				 ###
+				 
 	   			my $nbv = $hgene->{nb};
-
+	   			if ($is_actionable){
+					$out .= $actionable_text;
+	   			}
 				my $omim = $hgene->{omim_id};
 				$out .=qq{<a class="btn btn-primary btn-xs" href="http://www.omim.org/entry/$omim" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Omim</a>} if $omim ne "";
 				$out .=qq{<a class="btn btn-primary btn-xs"   style="$bgcolor2;min-width:40px"><i class="fa fa-minus"></i></a>} if $omim eq "";
@@ -1876,6 +1889,8 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 					
 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gtexportal.org/home/gene/$gid" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Gtex</a>};# if $omim ne "";
 				#ENSG00000124155
+				
+				
 			my $oid = $hgene->{name};
 				my $type ="green";
 				#$type = "default" if $pli <= 0.1;
@@ -1886,7 +1901,7 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
  				
  				
 				my $dataset = "?dataset=gnomad_r4";
-				$dataset = "?dataset=gnomad_r2_1" if $gene and $gene->getProject->getVersion() =~ /HG19/;
+				#$dataset = "?dataset=gnomad_r2_1" if $gene and $gene->getProject->getVersion() =~ /HG19/;
 				$dataset = "?dataset=gnomad_r2_1" if $patient and $patient->getProject->getVersion() =~ /HG19/;
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
@@ -1919,6 +1934,7 @@ my $bgcolor2 = "background-color:#607D8B;border-color:#607D8B";
 				$out .=qq{<a class="btn btn-primary btn-xs" href="#" role="button" style="top:-4px;$bgcolor2" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><p style="font-size:10px;text-shadow:0px 1px 1px #000;position:relative;bottom:-4px">$panel_name1</p></a>} if $panel_name1;
 
 	   		my ($pheno,$nb_other_terms);
+	   		
 	   		if ($gene) {
 	   			if ($gene->getProject->getVersion() =~ /HG/) { 
 	   				($pheno,$nb_other_terms) = $gene->polyviewer_phentotypes();

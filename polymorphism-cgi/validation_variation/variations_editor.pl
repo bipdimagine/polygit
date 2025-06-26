@@ -284,7 +284,7 @@ if ($project->isDiagnostic){
 }
 
 my $text = $no_cache->get_cache($cache_id);
-#$dev=1;
+$dev=1;
 $text = "" if $dev;
 #$text = "";
 my $html_dude = "<!--DUDE-->";
@@ -406,7 +406,6 @@ foreach my $a (@annots) {
 
 
 
-
 die() unless $patient;
 
 
@@ -458,6 +457,9 @@ my $start_vector ;
 foreach my $c (@{$project->getChromosomes}){
 		$start_vector->{$c->name} = $c->getVectorOrigin();
 }
+
+
+	
 if ($project->isDiagnostic ){
 	my @transcripts_cgi = @{$project->bundle_transcripts() } ;
 	foreach my $c (@{$project->getChromosomes}){
@@ -507,6 +509,7 @@ $t = time;
 $buffer->disconnect();
 
 #my $list_saved;
+	warn "here";
 
 ##################################
 ################## GET VECTORS 
@@ -611,7 +614,7 @@ my $stdout_end = tee_stdout {
 	#warn "genes:".scalar(@$genes);
 	if (@$genes){
 	$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
-	#warn "genes fin:".scalar(@$genes);
+	#warn "refine_heterozygote_composite_score_fork genes fin:".scalar(@$genes);
 	}
 	else {
 		if ($gene_name_filtering ) {
@@ -799,7 +802,7 @@ sub calculate_max_score_toto {
 }
 
 
-sub refine_heterozygote_composite_score_fork_marc {
+sub refine_heterozygote_composite_score_fork {
 	my ( $project, $genes,$hchr ) = @_;
 	$t = time;
 	$| =1;
@@ -809,7 +812,7 @@ sub refine_heterozygote_composite_score_fork_marc {
  	$fork =8;	
 	$fork = 16 if $project->isGenome();
 	
-	$fork=1;
+	$fork=3;
 	my $pm        = new Parallel::ForkManager($fork);
 	$pm        = new Parallel::ForkManager($fork);
 	#@$vgenes = @$vgenes[0..500];
@@ -862,14 +865,15 @@ sub refine_heterozygote_composite_score_fork_marc {
 					foreach my $g (@{ $vres->{$current}}){
 						last if $ngene > $maxgene;
 						push(@toto,$g->{name});
-						#warn $g->{out};
+						warn $g->{score} if $g->{name} eq "ABCC8";
 						
 						push(@lOut_genes, $g->{out});
 						
 						print  "\n<!--SPLIT-->\n";
 						print $g->{out} . "\n";
 						$ngene ++;
-						
+						delete $g->{out};
+						warn  Dumper $g if $g->{name} eq "ABCC8";
 					#	push(@res_final,$g->{out})
 					}
 					delete $vres->{$current};
@@ -964,7 +968,7 @@ sub refine_heterozygote_composite_score_fork_marc {
 }
 
 
-sub refine_heterozygote_composite_score_fork {
+sub refine_heterozygote_composite_score_fork_test {
 		my ( $project, $genes,$hchr ) = @_;
 	$t = time;
 	$| =1;
@@ -976,7 +980,6 @@ sub refine_heterozygote_composite_score_fork {
 	
 	$fork=1;
 	my $pm        = new Parallel::ForkManager($fork);
-	$pm        = new Parallel::ForkManager($fork);
 	#@$vgenes = @$vgenes[0..500];
 	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
 	my $iter      = natatime( $nb,  @$vgenes );
@@ -990,15 +993,14 @@ sub refine_heterozygote_composite_score_fork {
 	my @res_final;
 	my @toto;
 	my $wtime = 0;
-	my $maxgene =1000;
+	my $maxgene =100;
 	my $ngene =0;
 	
 	
 	my $final_polyviewer_all ;
 	#if ($project->isRocks){
 		my $diro = $project->rocks_directory();
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
-	  $final_polyviewer_all->activate_cache();
+	
 	
 	$pm->run_on_finish(
 		sub {
@@ -1020,6 +1022,7 @@ sub refine_heterozygote_composite_score_fork {
 				 my $xtime =time;
 					foreach my $g (@{ $vres->{$current}}){
 						last if $ngene > $maxgene;
+						warn $g->{name};
 						push(@toto,$g->{name});
 						#warn $g->{out};
 						print $g->{out};
@@ -1051,9 +1054,13 @@ sub refine_heterozygote_composite_score_fork {
 		$res->{tmp}  = \@tmp;
 		$res->{time} = time;
 		$project->buffer->dbh_reconnect();
+		my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
+	  	$final_polyviewer_all->activate_cache();
 		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
 		$res->{run_id} = $vid;
-		$pm->finish( 0, $res );
+			$final_polyviewer_all->deactivate_cache();
+		warn "===============================";
+		$pm->finish( 0, {} );
 	}
 	$pm->wait_all_children();
 	$project->buffer->dbh_reconnect();
@@ -1068,8 +1075,10 @@ sub refine_heterozygote_composite_score_fork {
 				 my $xtime =time;
 					foreach my $g (@{ $vres->{$current}}){
 						last if $ngene > $maxgene;
+						warn $g->{name};
 						print $g->{out} . "\n";
 							$ngene ++;
+							
 					}
 					delete $vres->{$current};
 					$current ++;
@@ -1079,6 +1088,7 @@ sub refine_heterozygote_composite_score_fork {
 		print "<br>". $wtime;
 		warn "***** ".$wtime;
 		$final_polyviewer_all->deactivate_cache();
+		warn "end";
 	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
 	return ;
 	exit(0);
@@ -1087,6 +1097,74 @@ sub refine_heterozygote_composite_score_fork {
 }
 
 
+
+sub refine_heterozygote_composite_score_fork {
+		my ( $project, $genes,$hchr ) = @_;
+	$t = time;
+	$| =1;
+	print qq{<div style="display: none">};
+	print "refine";
+	my $fork      = scalar (keys %$hchr);
+
+	my $res_genes = [];
+	my $vid        = 0;
+	my $hrun;
+	
+	#$t = time;
+	my $current = 1;
+	my $vres;
+	my @res_final;
+	my @toto;
+	my $wtime = 0;
+	my $maxgene =100;
+	my $ngene =0;
+	
+	my $final_polyviewer_all ;
+	#if ($project->isRocks){
+		my $diro = $project->rocks_directory();
+	
+	
+	
+	
+	#TODO: essayer d'integrer XLS Store variant ici pour le forker
+	
+	$project->buffer->dbh_deconnect();
+	
+	#delete $project->{validations_query1};
+		my $t   = time;
+		my $res;
+		$project->buffer->dbh_reconnect();
+		my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
+	  	$final_polyviewer_all->activate_cache();
+		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@$genes, $vid,$final_polyviewer_all);
+		$res->{run_id} = $vid;
+		$final_polyviewer_all->deactivate_cache();
+		warn "===============================";
+	
+	
+	$project->buffer->dbh_reconnect();
+	
+	warn "end hetero " if $print;
+	warn "....";
+	print qq{</div>};
+	warn "....";
+	foreach my $g (@{$res->{genes}}){
+		print $g->{out} . "\n";
+		delete  $g->{out};
+		
+		warn Dumper $g  if $g->{name} eq "ABCC8";
+		warn $g->{score} if $g->{name} eq "ABCC8";
+		last if $g->{max_score} < 5;
+	}
+	
+	$final_polyviewer_all->deactivate_cache();
+	warn "end";
+	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
+	return ;
+	exit(0);
+	print qq{</div>};
+	return $res_genes;
+}
 
 sub fork_annnotations {
 	my ( $list, $list_saved, $maskcoding,$vector ) = @_;
@@ -1235,6 +1313,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		print qq{<div style="display: none">};
 		print "vector";
 	}
+
 	my $filter_transmission;
 	my $xtime =time;
 	my $list_genes;
@@ -1262,6 +1341,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 	
 	my $hashVector_panel = {};
 	my $hashVector       = {};
+
 	construct_panel_vector( $panel, $hashVector_panel ) if $panel;
 	my $list_transcript;
 	my $trio = $patient->getFamily->isTrio;
@@ -1275,8 +1355,9 @@ sub constructChromosomeVectorsPolyDiagFork {
 		$gene_id_filtering = $gene->id();
 		
 	}
+
 #	my $gene_exception = $project->newGene("PCDH19");
-	my $fork = 24;
+	#my $fork = 24;
 	#my $pm   = new Parallel::ForkManager($fork);
 	my $hrun;
 #	$pm->run_on_finish(
@@ -1311,18 +1392,19 @@ sub constructChromosomeVectorsPolyDiagFork {
 #		
 #	);
 	my $id = time;
+	
 	$project->disconnect();
 	delete $project->{rocks};
+
 	my $hno;
-	foreach my $chr ( @{ $project->getChromosomes } ) {
-		#$hno->{$chr->name} = GenBoNoSqlRocksVector->new(chromosome=>$chr->name,dir=>$project->rocks_directory("vector"),mode=>"r",name=>$chr->name);
-	}
+	
 	my $finalVector = {};
 #	warn $project->rocks_directory("vector");
 #	warn "------";
 	foreach my $chr ( @{ $project->getChromosomes } ) {
 
 		if ($gene) {
+			
 			next if ( $gene->getChromosome()->name ne $chr->name );
 		}
 		if ($panel) {
@@ -1338,8 +1420,9 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#my $no = GenBoNoSqlRocksVector->new(chromosome=>$chr->name,dir=>"/tmp/vector",mode=>"r",name=>$chr->name); #$chr->flush_rocks_vector();
 		#my $no = $chr->flush_rocks_vector();
 		my $no = GenBoNoSqlRocksVector->new(cache=>1,chromosome=>$chr->name,dir=>$project->rocks_directory("vector"),mode=>"r",name=>$chr->name);
-		#$no->activate_cache();
+		$no->activate_cache();
 		$no->prepare_vector([$limit_ac,$limit_ac_ho,$limit_sample_dv,$limit_sample_dv_ho,"intergenic","dm",$patient->name]);
+		#next;
 		my $res = {};
 		my $debug;
 		my $statistics = {};
@@ -1555,6 +1638,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 		# in this run 
 		##############
 		if ($in_this_run < 100 ){
+			die();
 			print " in_this_run $in_this_run ";
 			my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
 			foreach my $id ( @{ to_array($res->{vector}, $chr->name ) } ) {
@@ -1586,10 +1670,12 @@ sub constructChromosomeVectorsPolyDiagFork {
 		###############
 		#¥¥¥ END Chromosome
 		##############
+		$no->deactivate_cache();
 		my $xxx = 0;
 		#push(@$list_variants,join($chr->name."!",split(",",$res->{vector}->to_Enum)));
 	
 		to_array($res->{vector}, $chr->name,$list_variants);
+		warn "list_variant".scalar(@{$list_variants});
 		if ($keep_pathogenic){
 			to_hash($vDM, $chr->name,$hash_variants_DM);
 		}
@@ -1600,7 +1686,10 @@ sub constructChromosomeVectorsPolyDiagFork {
 			$finalVector->{$chr->name} = $res->{vector} ;
 #			warn "end chr".$chr->name;
 			delete $project->{rocks};
-			$no->deactivate_cache();
+			$no->close();
+			
+			
+			warn "end chr";
 			$no = undef;
 		}
 	#$pm->wait_all_children();

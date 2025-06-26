@@ -661,6 +661,7 @@ has rocks_cache_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+	#return "/rocks/NGS2025_08811/";	
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
 
@@ -5654,6 +5655,7 @@ has cache_date => (
 
 sub getCacheDir {
 	my $self           = shift;
+	return "/rocks/NGS2025_08811/";
 	return $self->{cache_dir} if (exists $self->{cache_dir} and $self->{cache_dir});
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
@@ -6073,6 +6075,8 @@ has countInThisRunPatients => (
 
 	},
 );
+
+
 
 has in_this_run_patients => (
 	is      => 'ro',
@@ -6906,6 +6910,20 @@ sub calling_methods {
 	$self->{calling_methods1} = $methods;
 	return $self->{calling_methods1};
 }
+
+has acmg_genes => (
+is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		my $panel_name="ACMG-Actionable";
+		my $panel1;
+		$panel1 = $self->getPanel($panel_name) ;
+		my $acmg_genes = $panel1->genes_id();
+		return $acmg_genes;
+	},
+);
+
 
 
 1;
