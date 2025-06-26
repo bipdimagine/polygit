@@ -857,9 +857,7 @@ var tab_editor = new Array();
 	function printer(p,mode,name){
 	    var url = url_report_patient+"?project="+project_name+"&panel="+panel+"&edit_mode=0"+"&report_mode=1"+"&this="+dijit.byId("select_this").get("value")+"&impact="+dijit.byId("select_impact").get("value")+"&frequence="+dijit.byId("select_frequence").get("value");
          url+=get_alacarte();
-		 console.log(get_alacarte());
 	     url += return_options();
- 		console.log(return_options());
         
  
         var transcripts = dijit.byId("gridGenes").selection.getSelected();
@@ -894,8 +892,6 @@ var tab_editor = new Array();
   		   if (tsamples[i].fam[0] == '-') {
   		   		use_name = t;
   		   }
-  		   
-  		   console.log( use_name + ' -> ' + tsamples[i].id[0]);
   		   
   		   if( dojo.byId(use_name).checked == true){
 				window.open(url+"&patients="+tsamples[i].id[0]);

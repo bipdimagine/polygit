@@ -1091,8 +1091,10 @@ has alamut_id => (
 	lazy	=> 1,
 	default=> sub {
 		my $self = shift;
-		my @lTmp = split('/', $self->alleles()); 
-		my $alamut_id = 'chr'.$self->getChromosome->id().':'.$self->start().$lTmp[0].">".$lTmp[1];
+		my @lTmp = split('/', $self->alleles());
+		my $build = 'GRCh37';
+		$build = 'GRCh38' if ($self->project->getVersion() =~ /HG38/);
+		my $alamut_id = 'chr'.$self->getChromosome->id().':'.$build.':'.$self->start().$lTmp[0].">".$lTmp[1];
 		return $alamut_id;
 	},
 );

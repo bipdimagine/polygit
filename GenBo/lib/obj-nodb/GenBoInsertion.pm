@@ -170,7 +170,9 @@ has alamut_id => (
 		my $self = shift;
 		my $seq = $self->sequence();
 		my $len = length($seq) - 1;
-		my $alamut_id = 'chr'.$self->getChromosome->id().':'.$self->start().'_'.($self->start() + $len).'ins'.$seq;
+		my $build = 'GRCh37';
+		$build = 'GRCh38' if ($self->project->getVersion() =~ /HG38/);
+		my $alamut_id = 'chr'.$self->getChromosome->id().':'.$build.':'.$self->start().'_'.($self->start() + $len).'ins'.$seq;
 		return $alamut_id;
 	},
 );

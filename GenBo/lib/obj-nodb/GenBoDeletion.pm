@@ -107,7 +107,9 @@ has alamut_id => (
 	default=> sub {
 		my $self = shift;
 		my $len = length($self->ref_allele()) - 1;
-		my $alamut_id = 'chr'.$self->getChromosome->id().':'.$self->start().'_'.($self->start() + $len).'del';
+		my $build = 'GRCh37';
+		$build = 'GRCh38' if ($self->project->getVersion() =~ /HG38/);
+		my $alamut_id = 'chr'.$self->getChromosome->id().':'.$build.':'.$self->start().'_'.($self->start() + $len).'del';
 		return $alamut_id;
 	},
 );
