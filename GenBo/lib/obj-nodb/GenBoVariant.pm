@@ -3038,11 +3038,6 @@ sub getSequencingGenotype {
 
 
 sub getPourcentAllele {
-		my ($self,$patient,$method) = @_;
-		return $self->getRatio($patient,$method);
-}
-
-sub getRatio {
         my ($self,$patient,$method) = @_;
         my $pid = $patient->id;
         
@@ -3059,8 +3054,12 @@ sub getRatio {
 		
 		my $sum = (int($self->sequencing_infos->{$pid}->{$method}->[0])+int($self->sequencing_infos->{$pid}->{$method}->[1]));
 		return 100 if $sum == 0;
-		my $pc = sprintf("%.0f", ($self->sequencing_infos->{$pid}->{$method}->[1]/$sum)*100);
-		return $pc;
+		return (($self->sequencing_infos->{$pid}->{$method}->[1]/$sum)*100);
+}
+
+sub getRatio {
+        my ($self,$patient,$method) = @_;
+		return sprintf("%.0f", ($self->getPourcentAllele($patient,$method)));
 }
 
 sub array_sequencing_text {
