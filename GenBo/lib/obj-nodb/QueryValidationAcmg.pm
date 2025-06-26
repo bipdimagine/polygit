@@ -303,13 +303,15 @@ sub getAllValidationsForVariation {
 	return $self->hresults($sth);
 }
 
+#
 sub getAllValidationsForPatient {
 	my ($self,$patient,$user_name) = @_;
 	my $db = $self->db;
 	my $pid = $patient->id;
-	my $query = qq{select *,term from $db.validations as va ,$db.variations as v,$db.acmg   where va.variation_id=v.variation_id  and va.sample_id=$pid and idacmg=validation order by validation_id desc}; 
+	my $version = $patient->project->annotation_genome_version;
+	my $query = qq{select *,term from $db.validations as va ,$db.variations as v,$db.acmg   where  va.variation_id=v.uniq_id and v.version="$version"  and va.sample_id=$pid and idacmg=validation order by validation_id desc}; 
 	if ($user_name){
-		$query = qq{select *,term from $db.validations as va ,$db.variations as v,$db.acmg   where va.variation_id=v.variation_id  and va.sample_id=$pid and user_name="$user_name" and idacmg=validation order by validation_id desc}; 
+		$query = qq{select *,term from $db.validations as va ,$db.variations as v,$db.acmg   where  va.variation_id=v.uniq_id and v.version="$version"  and va.sample_id=$pid and user_name="$user_name" and idacmg=validation order by validation_id desc}; 
 	}
 	my $sth = $self->dbh->prepare($query) or confess();
 	
