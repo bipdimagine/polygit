@@ -46,7 +46,6 @@ sub calculate_rocks {
 	my $st =0;
 	my $st2;
 	
-	warn abs($xx - time)." final polyviewer";
 
 	foreach my $hgene (@$list) {
 		my $gid = $hgene->{id};
