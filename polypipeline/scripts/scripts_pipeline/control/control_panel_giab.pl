@@ -45,16 +45,24 @@ unless ($p1name){
 }
 #my $p = $project->getPatient("$p1name");
 my $giab =  $project->getPatient("$p2name");
-my $GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB";
+
+my $GIAB_DIR;
+my $genome = 'HG19';
+if ($project->getVersion() =~ /HG38/) {
+	$genome = 'HG38';
+}
+
+$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB";
 if ($p2name =~ /001/){
-	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG001";
+	$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB/HG001";
 }
 elsif ($p2name =~ /002/){
-	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG002";
+	$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB/HG002";
 }
 else {
 	die($p2name." not foud HG001 or HG002");
 }
+warn $GIAB_DIR;
 die() unless -e $GIAB_DIR;
 my $hintspan_giab = bed_to_intspan("$GIAB_DIR/bed.gz");
 my $hintspan_global;
@@ -121,7 +129,7 @@ foreach my $v (@$vs){
 	
 	 	next if $p->meanDepth($v->getChromosome->name,$v->start-2,$v->end+2) < 15;
 	#	warn Dumper ($v->sequencing_details($p))." ".$v->id if $v->sequencing_details($p)->{hap}->{pourcent} == undef;
-		next if $v->getRatio($p) < 1;
+		next if $v->getPourcentAllele($p) < 1;
 		#if ($v->id eq  "9_215057_T_C"){
 		#my $patients =  $v->getPatients;
 		#warn scalar(@$patients);
@@ -179,7 +187,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 		#my $f = grep {$_->name eq $giab->name} @{$v->getPatients}; 
 		#next unless $f;
 		if (scalar(@{$v->getPatients}) == 2){
-			next if $v->getRatio($p) < 1;
+			next if $v->getPourcentAllele($p) < 1;
 			#next if $p->depth($v->getChromosome->name,$v->start,$v->end)->[0] < 15;
 		}
 		if($v->isVariation) {
@@ -313,8 +321,8 @@ sub print_variant_false {
 	$vh->{text_sequence} = $v->getChromosome()->getSequence($v->start-5,$v->start-1)."_".$seqref."[".$seqalt."]_".$v->getChromosome()->getSequence($v->start+1,$v->start+21);
 	
 	push(@vs,$v->getChromosome()->getSequence($v->start-5,$v->start-1)."_".$seqref."[".$seqalt."]_".$v->getChromosome()->getSequence($v->start+1,$v->start+21));
-	$vh->{giab} = $v->sequencing_details($giab)->{hap}->{nb_ref}."/".$v->sequencing_details($giab)->{hap}->{nb_alt};
-	push(@vs,$v->sequencing_details($giab)->{hap}->{nb_ref}."/".$v->sequencing_details($giab)->{hap}->{nb_alt});
+	$vh->{giab} = $v->getNbAlleleRef($giab)."/".$v->getNbAlleleAlt($giab);
+	push(@vs,$v->getNbAlleleRef($giab)."/".$v->getNbAlleleAlt($giab));
 	$vh->{control} = "./.";
 	push(@vs,"./.");
 	$vh->{control_depth} = $p->depth($v->getChromosome->name,$v->start,$v->end)->[0];

@@ -40,17 +40,24 @@ my $is_ucsc = undef;
 $is_ucsc = 1 if $project->getChromosome(1)->fasta_name eq "chr1";
 update_type($buffer->dbh,$project->id);
 #my $file_out = $patient->vcf_file;
-my $GIAB_DIR;
 
+my $GIAB_DIR;
+my $genome = 'HG19';
+if ($project->getVersion() =~ /HG38/) {
+	$genome = 'HG38';
+}
+
+$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB";
 if ($p2name =~ /001/){
-	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG001";
+	$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB/HG001";
 }
 elsif ($p2name =~ /002/){
-	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG002";
+	$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB/HG002";
 }
 else {
 	die($p2name." not foud HG001 or HG002");
 }
+warn $GIAB_DIR;
 my $dir_pipeline = $project->getVariationsDir("bed");
 #intspanToBed
 #getIntSpanCapture
@@ -89,15 +96,23 @@ unlink  $fileout.".tbi" if -e $fileout.".tbi";
 unlink  $fileout if -e $fileout;
 warn "$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ";
 system("$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");#&& $tabix -f -p vcf $fileout");
-#die();
-#system("$bcftools view $vcf_giab | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");
+
 system("$tabix -f -p vcf $fileout  ");
+
 die() unless -e $fileout.".tbi";
-system("$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1");
+
+
+warn "$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1";
+system("$RealBin/../../../bds_cache.pl -project=$project_name -nolimit=1 -control=1 -force=1 -yes=1");
+
+
 warn "\n\n--------------------\n\n";
 warn "run stats ";
-warn "$Bin/control_panel_giab.pl -project=$project_name -giab=$p2name";
-system("$Bin/control_panel_giab.pl -project=$project_name -giab=$p2name");
+warn "$RealBin/control_panel_giab.pl -project=$project_name -giab=$p2name";
+system("$RealBin/control_panel_giab.pl -project=$project_name -giab=$p2name");
+
+warn "\n\n\n";
+warn $fileout;
 
 warn "\n-----------------------------\n\n";
 warn "-----------------------------\n\n";
@@ -106,8 +121,6 @@ warn "-----------------------------\n\n";
 warn "-----------------------------\n\n";
 exit(0);
 
-warn $fileout;
-warn "$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z";
 #if ($is_ucsc){
 #	open(BCF, "bcftools view $vcf_giab -R $bed|");
 #	
@@ -133,7 +146,7 @@ sub intspanToBed{
     	#warn "+".$from."-".$to if ($from<=31263320);
     	warn $from."-".$to if ($from<=31263320 && $to >= 31263320);
     	$size += abs($from-$to);
-    		push(@tt,$chr_name."\t".$from."\t".$to);
+    		push(@tt,'chr'.$chr_name."\t".$from."\t".$to);
     	
     }
     warn $chr_name." ".$size;
