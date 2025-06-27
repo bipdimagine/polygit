@@ -9,6 +9,7 @@ function httpGetFocusOn(url) {
 
 
 function displayInAlamut(chr, start, a){
+	dijit.byId('waiting').show();
 	var url = url_path + "json_output_nodb/get_alamut_id.pl";
 	url += "?project=" + projectName + '&var=' + chr + '_' + start + '_' + a[0] + '_' + a[1];
 	$.getJSON( url, function( data ) {
