@@ -2727,8 +2727,9 @@ sub printTableGenesXls {
 		}
 		# @infos = ("gene","trans","phenotypes","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","clinvar","freq","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 		
-		my $desc = $buffer->description_public_lmdb_database("gnomad");
-		push(@infos,grep {$_ ne "ALL"} @{$desc->{array}->{populations}});
+#		my $desc = $buffer->description_public_lmdb_database("gnomad");
+#		push(@infos,grep {$_ ne "ALL"} @{$desc->{array}->{populations}});
+		
 		my $col = 0; 
 		my $row =0;
 
