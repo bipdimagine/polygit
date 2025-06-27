@@ -28,7 +28,7 @@ if(FALSE)
 
 rmdup<-function(I)
 {	
-	write(paste("\t#\trmdup ", bams[I], sep=""), file="")
+	#write(paste("\t#\trmdup ", bams[I], sep=""), file="")
 	#	system(paste("sambamba markdup -r -t 8 --tmpdir=",rmdupBamPath, " ", bams[I], " ", rmdupBamPath, basename(bams[I]), sep=""))
 	
 	system(paste("java -jar /software/bin/picard.jar MarkDuplicates --INPUT ", bams[I], " --OUTPUT ", rmdupBamPath, basename(bams[I]), " --METRICS_FILE ", gsub(".bam$", ".txt$", basename(bams[I])), sep=""))
@@ -39,7 +39,7 @@ splitBamSamTools<-function(B)	#	splitBamSamTools(B)
 	chrs = system(paste("samtools view -@ 20 -H ", bams[B], " | perl -lne '/SN:(\\S+)/ and print $1'", sep=""), intern=TRUE)
 	if(!is.null(ReName))
 	{
-		write(paste("\t#\t => Bams Rename", sep=""), file="")
+		#write(paste("\t#\t => Bams Rename", sep=""), file="")
 		BamsReNames = as.matrix(read.table(ReName, sep="\t", header=TRUE))
 		BamName = BamsReNames[BamsReNames[,1]%in%gsub(".bam$", "", basename(bams[B])),2]
 	}else{
@@ -51,7 +51,7 @@ splitBamSamTools<-function(B)	#	splitBamSamTools(B)
 	
 	for(C in 1:length(chrs))
 	{
-		write(paste("# Split de ", BamName, " [", B, "/", length(bams), "] chr:", chrs[C], sep=""), file="")
+		#write(paste("# Split de ", BamName, " [", B, "/", length(bams), "] chr:", chrs[C], sep=""), file="")
 		system(paste("samtools view -@ 20 ", bams[B], " ", chrs[C], " -b > ", BamPartsPath, "/", chrs[C], ".bam", sep=""))
 	}
 }
@@ -65,12 +65,12 @@ selectJunc<-function(B)
 	#avant = system(paste("samtools flagstat -@ ", nCPU, " ", bams[B], sep=""), intern=TRUE)
 	#stats = rbind(stats, gsub(" .*", "", avant)[apply(as.matrix(nfo), 1, function(x) min(grep(x, avant)))])
 	#	supprime les duplicates et selectionne les reads avec N
-	write(paste("\t#\t", B, "/", length(bamsSplit), " - ", basename(dirname(bamsSplit[B])), "/", gsub(".bam", "", basename(bamsSplit[B])), sep=""), file="")
+	#write(paste("\t#\t", B, "/", length(bamsSplit), " - ", basename(dirname(bamsSplit[B])), "/", gsub(".bam", "", basename(bamsSplit[B])), sep=""), file="")
 	system(paste("samtools view -@ ", nCPU, " -h -F 0x0400 ", bamsSplit[B], " | awk '$6 ~ /N/ || $1 ~ /^@/' | samtools view -@ ", nCPU, " -bS - > ", pathBamJuncs, "/", basename(dirname(bamsSplit[B])), "_", basename(bamsSplit[B]), sep=""))
 	#apres = system(paste("samtools flagstat -@ ", nCPU, " ", pathBamJuncs, "/", basename(dirname(bamsSplit[B])), "_", basename(bamsSplit[B]), sep=""), intern=TRUE)
 	#stats = rbind(stats, gsub(" .*", "", apres)[apply(as.matrix(nfo), 1, function(x) min(grep(x, apres)))])
 	
-	write(paste("\t#\t\t=> ", basename(dirname(bamsSplit[B])), "/", gsub(".bam", ".bed", basename(bamsSplit[B])), sep=""), file="")
+	#write(paste("\t#\t\t=> ", basename(dirname(bamsSplit[B])), "/", gsub(".bam", ".bed", basename(bamsSplit[B])), sep=""), file="")
 	tmp = system(paste("samtools view -@ ", nCPU, " ", pathBamJuncs, "/", basename(dirname(bamsSplit[B])), "_", basename(bamsSplit[B]), " | cut -f3,4,6  | awk '{if ($3 ~ /N/){printf(\"%s\",$1); start=$2; end=$2; split($3,a,\"[NIMDSH]\"); 
 							split($3,b,\"[0-9]*\"); nb=length(b); for(i=2; i<=nb; i++){if(b[i] ~ /[M]/){ end=end+a[i-1];} if(b[i] ~ /N/){end=end-1; printf(\"\t%s\t%s\",start, end); 
 							start=end+a[i-1]+1; end=start;}} printf(\"\t%s\t%s\\n\", start,end-1);}}' > ", pathBed,basename(dirname(bamsSplit[B])), "_", gsub(".bam", "", basename(bamsSplit[B])), "_junctions.bed", sep=""), intern=TRUE)
@@ -82,7 +82,7 @@ selectJunc<-function(B)
 
 bed2rds<-function(S)
 {
-	write(paste("\t#\t bed2rds: ", gsub(".bed", "", basename(listBed[S])), sep=""), file="")
+	#write(paste("\t#\t bed2rds: ", gsub(".bed", "", basename(listBed[S])), sep=""), file="")
 	tmp <- try(read.table(listBed[S], sep="\t", quote="", fill=TRUE, col.names = paste0("Col",seq_len(20))))
 	tmp = tmp[,2:ncol(tmp),drop=FALSE]
 	saveRDS(tmp, file=gsub(".bed", ".rds", listBed[S]))
@@ -103,7 +103,7 @@ formatJunc<-function(x)
 
 coordsJunc<-function(P)
 {
-	write(paste("\t#\t coordsJunc: ", P, "/", length(listBedRds), " - ", gsub(".rds", "", basename(listBedRds[P])), sep=""), file="")
+	#write(paste("\t#\t coordsJunc: ", P, "/", length(listBedRds), " - ", gsub(".rds", "", basename(listBedRds[P])), sep=""), file="")
 	tmpBed = readRDS(listBedRds[P])
 	tmpRes = apply(tmpBed, 1, function(x) formatJunc(x))
 	if(is.list(tmpRes))
@@ -127,7 +127,7 @@ coordsJunc<-function(P)
 	
 	totRawJunc = nrow(coords)
 	coords = coords[as.numeric(coords[,"CountJun"])>=limCountJun,,drop=FALSE]	#	limCountJun=2
-	write(paste("Filtrage ",gsub(".rds", "", basename(listBedRds[P])),  " a limCountJun=", limCountJun, " :", totRawJunc, " => ", nrow(coords), "[", signif(100*((nrow(coords)-totRawJunc)/totRawJunc), digit=4), "%]", sep=""), file="")
+	#write(paste("Filtrage ",gsub(".rds", "", basename(listBedRds[P])),  " a limCountJun=", limCountJun, " :", totRawJunc, " => ", nrow(coords), "[", signif(100*((nrow(coords)-totRawJunc)/totRawJunc), digit=4), "%]", sep=""), file="")
 	
 	patient_name = gsub("_chr.*", "", listBedRds[P])
 	AllJuncPath_patient = paste(AllJuncPath, "/", patient_name, "/", sep="")
@@ -144,7 +144,7 @@ coordsJunc<-function(P)
 caracterizeJuncs<-function(C)	#	patient par patient
 {
 	nom = gsub(".rds", "", gsub("AllJunctionsCounts", "AllRes", basename(listCoordsBed[C])))
-	write(paste("\t#\t", C, "/", length(listCoordsBed), "-", nom, sep=""), file="")
+	#write(paste("\t#\t", C, "/", length(listCoordsBed), "-", nom, sep=""), file="")
 	
 	
 	patient_name = gsub("_chr.*", "", nom)
@@ -183,21 +183,21 @@ testanalysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MA
 	JunEch = JunEch[!is.na(as.numeric(JunEch[,"EndJun"])),,drop=FALSE]
 	Chr = geneRef[1,"chromosome_name"]
 
-	if((nrow(JunEch)==0))
-	{
-		write(paste("\n\n#######################################################################", sep=""), file="")
-		write(paste("# Analyse [", signif(100*(G/nrow(ToDoTab)), digit=4), "%] \t", G, "/", nrow(ToDoTab), "\t-\t", nom, "\t/\t", gene, sep=""), file="")
-		write(paste("#\t!!!!!! nrow(JunEch)==0 !!!!!!", sep=""), file="")
-		write(paste("#######################################################################\n", sep=""), file="")
-	}
-	#	junctions du gene
-	if(sum(grepl(Chr, JunEch[,"Chr"]))==0)
-	{
-		write(paste("\n\n#######################################################################", sep=""), file="")
-		write(paste("# Analyse [", signif(100*(G/nrow(ToDoTab)), digit=4), "%] \t", G, "/", nrow(ToDoTab), "\t-\t", nom, "\t/\t", gene, sep=""), file="")
-		write(paste("#\t!!!!!! Pas de chr ", Chr, " dans le JunEch !!!!!!", sep=""), file="")
-		write(paste("#######################################################################\n", sep=""), file="")
-	}
+#	if((nrow(JunEch)==0))
+#	{
+#		write(paste("\n\n#######################################################################", sep=""), file="")
+#		write(paste("# Analyse [", signif(100*(G/nrow(ToDoTab)), digit=4), "%] \t", G, "/", nrow(ToDoTab), "\t-\t", nom, "\t/\t", gene, sep=""), file="")
+#		write(paste("#\t!!!!!! nrow(JunEch)==0 !!!!!!", sep=""), file="")
+#		write(paste("#######################################################################\n", sep=""), file="")
+#	}
+#	#	junctions du gene
+#	if(sum(grepl(Chr, JunEch[,"Chr"]))==0)
+#	{
+#		write(paste("\n\n#######################################################################", sep=""), file="")
+#		write(paste("# Analyse [", signif(100*(G/nrow(ToDoTab)), digit=4), "%] \t", G, "/", nrow(ToDoTab), "\t-\t", nom, "\t/\t", gene, sep=""), file="")
+#		write(paste("#\t!!!!!! Pas de chr ", Chr, " dans le JunEch !!!!!!", sep=""), file="")
+#		write(paste("#######################################################################\n", sep=""), file="")
+#	}
 	#geneJunEch = JunEch[JunEch[,"Chr"]==Chr,,drop=FALSE]
 	#geneJunEch = geneJunEch[as.numeric(geneJunEch[,"EndJun"])>=Start,,drop=FALSE]
 	#geneJunEch = geneJunEch[as.numeric(geneJunEch[,"StartJun"])<=End,,drop=FALSE]
@@ -218,9 +218,9 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 	TabNFO = matrix(0, ncol=6, nrow=0)	#	Taille des annots
 	colnames(TabNFO) = c("ENSID", "nJ", "Chr", "Start", "End", "Interpretation")
 	
-	write(paste("\n\n################################################################", sep=""), file="")
-	write(paste("# Analyse [", signif(100*(G/nrow(ToDoTab)), digit=4), "%] ", G, "/", nrow(ToDoTab), " - ", nom, " /", gene, sep=""), file="")
-	write(paste("################################################################\n", sep=""), file="")
+#	write(paste("\n\n################################################################", sep=""), file="")
+#	write(paste("# Analyse [", signif(100*(G/nrow(ToDoTab)), digit=4), "%] ", G, "/", nrow(ToDoTab), " - ", nom, " /", gene, sep=""), file="")
+#	write(paste("################################################################\n", sep=""), file="")
 	
 	JunEch = readRDS(paste(AllJuncPath, "/", nom, "_junctions.rds", sep=""))
 	#	JunEch = JunEch[!is.na(as.numeric(JunEch[,"EndJun"])),,drop=FALSE]
@@ -468,8 +468,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start in 3p ET end in 3p => RI en 3p"
 						nomJ = paste(nJ, "=> RI_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -481,8 +481,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start in exon ET end in 3p => raccourci exon en 3 et RI"
 						nomJ = paste(nJ, "=> A3SS+RI", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -494,8 +494,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start avec exon 1 et fin dans exon 1 => raccourci exon 1 en 5"
 						nomJ = paste(nJ, "=> SE", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -507,8 +507,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start avec exon et fin avec intron"
 						nomJ = paste(nJ, "=> SE", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -521,8 +521,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start in premier exon et End in 3p"
 						nomJ = paste(nJ, "=>A3SS+SE+RI_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A3SS+SE+RI_3p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -535,8 +535,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start exon connu et End in 3p"
 						nomJ = paste(nJ, "=>SE+RI_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -549,8 +549,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start en 5p et End in 3p"
 						nomJ = paste(nJ, "=>RI_5p+RI_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -563,8 +563,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start en 5p et end en fin d un exon connu"
 						nomJ = paste(nJ, "=>SE+RI", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -577,8 +577,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start en 5p et end en fin d un exon connu"
 						nomJ = paste(nJ, "=>SE+RI", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -591,8 +591,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Start au debut d un exon et Retention intergenique"
 						nomJ = paste(nJ, "=>SE+RI", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -605,8 +605,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Retention intergenique en 5p"
 						nomJ = paste(nJ, "=>RI_5p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -619,8 +619,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Retention intergenique en 5p"
 						nomJ = paste(nJ, "=>RIG_5p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RIG_5p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -633,8 +633,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Exon Loss"
 						nomJ = paste(nJ, "=>EL", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", ChrgeneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("EL", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -647,8 +647,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Exon1 raccourci en aval + Exon2 raccourci en amont"
 						nomJ = paste(nJ, "=>A5SS+A3SS", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A5SS+A3SS", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -661,8 +661,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Exon2 raccourci en amont"
 						nomJ = paste(nJ, "=>A5SS", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A5SS", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -675,8 +675,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Exon1 raccourci en aval"
 						nomJ = paste(nJ, "=>A3SS", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A3SS", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -689,8 +689,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Jonction en aval de RI"
 						nomJ = paste(nJ, "=>RI_aval", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_aval", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -703,8 +703,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Jonction en amont de RI"
 						nomJ = paste(nJ, "=>RI_amont", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_amont", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -717,8 +717,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Junction entre RI"
 						nomJ = paste(nJ, "=>RIs", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RIs", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -745,8 +745,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Jonction entre RI et exon raccourci en amont + start dans exon suivant end dans intron"
 						nomJ = paste(nJ, "=>A5SS+RI_amont", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A5SS+RI_amont", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -759,8 +759,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Jonction entre RI et exon raccourci en amont avec start dans exon, end dans intron NON contigus"
 						nomJ = paste(nJ, "=>A5SS+SE+RI_amont", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A5SS+SE+RI_amont", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -773,8 +773,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Junction entre 5p et Exon raccourci en amont"
 						nomJ = paste(nJ, "=>RI_5p+A5SS", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+A5SS", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -787,8 +787,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Junction entre 5p, saut exon et Exon raccourci en amont"
 						nomJ = paste(nJ, "=>RI_5p+SE+A5SS", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+SE+A5SS", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -801,8 +801,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Exon raccourci en aval + RI + start dans exon suivant end dans intron"
 						nomJ = paste(nJ, "=>A3SS+RI_aval", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A3SS+RI_aval", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -815,8 +815,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Exon raccourci en aval + RI + start dans exon, end dans intron NON contigus"
 						nomJ = paste(nJ, "=>A3SS+SE+RI_aval", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A3SS+SE+RI_aval", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -829,8 +829,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Dernier Exon raccourci en aval + fin de junction en 5p"
 						nomJ = paste(nJ, "=>A3SS+RI_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("A3SS+RI_3p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -843,8 +843,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Jonction prolongee en 3p avec saut exon"
 						nomJ = paste(nJ, "=>SE+RI_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("SE+RI_3p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -857,8 +857,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Jonction prolongee en 5p avec saut exon"
 						nomJ = paste(nJ, "=>RI_5p+SE", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+SE", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -868,11 +868,11 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 					#	RI_5p+SE+RI
 					if(test_Jstart_in_5p&test_Jend_in_intron)	#	(Start in 5p) ET (End in intron)
 					{
-						expl = "Jonction prolongée en 5p avec saut d’exon et RI"
+						expl = "Jonction prolongée en 5p avec saut d\u2019exon et RI"
 						nomJ = paste(nJ, "=>RI_5p+SE+RI", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_5p+SE+RI", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -885,8 +885,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Retention intergenique 3p"
 						nomJ = paste(nJ, "=>RIG_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RIG_3p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -899,8 +899,8 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 						expl = "Retention intron en amont, saut exon et Retention intergenique 3p"
 						nomJ = paste(nJ, "=>RI_amont+SE+RIG_3p", sep="")
 						line = paste(nomJ, "\t", gene, "\t", nomGene, "\t", "\t", geneJunEch[J,"StartJun"], "\t", geneJunEch[J,"EndJun"], "\t", geneJunEch[nJ,"CountJun"], "\t", expl, sep="")
-						write(line, file=nfoname, append=TRUE)
-						write(line, file="")
+#						write(line, file=nfoname, append=TRUE)
+#						write(line, file="")
 						matEV_RI = rbind(matEV_RI, cbind(newRI, as.matrix(rep("RI_aval+SE+RIG_3p", nrow(newRI)))))
 						
 						if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
@@ -997,7 +997,7 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 					
 					if(sum(TabNFO[,"nJ"]%in%nomJ)==0)	#	Junc inconnue
 					{
-						write(paste("Jonction inconnue (", nomJ, ") => ajoute une ligne de ", length(c(nomJ, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6))), " elements", sep=""), file="")
+#						write(paste("Jonction inconnue (", nomJ, ") => ajoute une ligne de ", length(c(nomJ, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6))), " elements", sep=""), file="")
 						
 						TabNFO = rbind(TabNFO, c(gene, nomJ, Chr, geneJunEch[J,"StartJun"], geneJunEch[J,"EndJun"], expl, rep(0, ncol(TabNFO)-6)))
 						TabNFO[TabNFO[,"nJ"]%in%nomJ, nom] = geneJunEch[coordsJ,"CountJun",drop=FALSE]
@@ -1091,11 +1091,11 @@ analysePatGene<-function(G)	#	gene="ENSG00000002746"; nom="cDNA_Fibro_DIE_MAG"
 				#	saveRDS(TabNFO, file=paste(pathResGenePat, "tableNFOjunc.rds", sep="")
 			}
 		}else{
-			write(paste("\n################################################################################################################################", sep=""), file="")
-			write(paste("################################################################################################################################", sep=""), file="")
-			write(paste("#\t\t", nom, " / ", gene, "\t\t\t\t#", sep=""), file="")
-			write(paste("################################################################################################################################", sep=""), file="")
-			write(paste("################################################################################################################################\n", sep=""), file="")
+			#write(paste("\n################################################################################################################################", sep=""), file="")
+			#write(paste("################################################################################################################################", sep=""), file="")
+			#write(paste("#\t\t", nom, " / ", gene, "\t\t\t\t#", sep=""), file="")
+			#write(paste("################################################################################################################################", sep=""), file="")
+			#write(paste("################################################################################################################################\n", sep=""), file="")
 		}
 	}
 }
@@ -1109,7 +1109,7 @@ condenseResPat<-function(R)
 	if(length(AllResRDSfiles)>0)
 	{
 		allRes = list()
-		for(N in 1:length(AllResRDSfiles)){allRes[[length(allRes)+1]] = readRDS(AllResRDSfiles[N]); write(paste(tabResCondens[R,2], "_", tabResCondens[R,1], " (", N, "/", length(AllResRDSfiles), ")", sep=""), file="")}
+#		for(N in 1:length(AllResRDSfiles)){allRes[[length(allRes)+1]] = readRDS(AllResRDSfiles[N]); write(paste(tabResCondens[R,2], "_", tabResCondens[R,1], " (", N, "/", length(AllResRDSfiles), ")", sep=""), file="")}
 		allRes = do.call("rbind",allRes)
 		allRes = allRes[order(allRes[,min(grep("_Start", colnames(allRes)))]),,drop=FALSE]
 		allRes = allRes[order(allRes[,grep("^Chr$", colnames(allRes))]),,drop=FALSE]
@@ -1122,7 +1122,7 @@ condenseResPat<-function(R)
 		saveRDS(allRes, file=paste(AllresPath, "allRes_", tabResCondens[R,2], "_", tabResCondens[R,1], ".rds", sep=""))
 		write.table(allRes, file=paste(pathAllResAnalysis, "allRes_", tabResCondens[R,2], "_", tabResCondens[R,1], ".txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
 	}else{
-		write(paste("\n/Allres", tabResCondens[R,2], "/", tabResCondens[R,1], "/ est vide !", sep=""), file="")
+		#write(paste("\n/Allres", tabResCondens[R,2], "/", tabResCondens[R,1], "/ est vide !", sep=""), file="")
 	}
 }
 
@@ -1142,7 +1142,7 @@ Stats<-function(idprojet, esp, nCPU, align)
 	nMappedReads = NULL
 	for(B in 1:length(bams))
 	{
-		write(paste("#\t", B, "/", length(bams), "\tcomptage des Mapped reads de ", basename(bams[B]), sep=""), file="")
+		#write(paste("#\t", B, "/", length(bams), "\tcomptage des Mapped reads de ", basename(bams[B]), sep=""), file="")
 		nMappedReads = c(nMappedReads, system(paste("samtools view -@ ", nCPU, " -c -F 260 ", bams[B], sep=""), intern=TRUE))
 	}
 	if(!is.null(ReName))	names(nMappedReads) = BamsReNames[BamsReNames[,1]%in%gsub(".bam$", "", basename(bams)),2]
@@ -1155,7 +1155,7 @@ Stats<-function(idprojet, esp, nCPU, align)
 	nJuncMappedReads = NULL
 	for(B in 1:length(bamsJuncs))
 	{
-		write(paste("#\t", B, "/", length(bamsJuncs), "\tcomptage des Mapped reads de ", basename(bamsJuncs[B]), sep=""), file="")
+		#write(paste("#\t", B, "/", length(bamsJuncs), "\tcomptage des Mapped reads de ", basename(bamsJuncs[B]), sep=""), file="")
 		nJuncMappedReads = c(nJuncMappedReads, system(paste("samtools view -@ ", nCPU, " -c -F 260 ", bamsJuncs[B], sep=""), intern=TRUE))
 	}
 	names(nJuncMappedReads) = gsub(".bam$", "", basename(bamsJuncs))
@@ -1255,7 +1255,7 @@ cfgParse<-function()
 
 formatResAll<-function(pathAllResAnalysis)
 {
-  write(paste("#\tFormatage des resultats", sep=""), file="")
+  #write(paste("#\tFormatage des resultats", sep=""), file="")
   fichs = list.files(pathAllResAnalysis, full.names=TRUE, recursive=FALSE)
 	
 	fichs_resAll_SE = fichs[grepl("allResSE.rds$", fichs)]
@@ -1263,7 +1263,7 @@ formatResAll<-function(pathAllResAnalysis)
 
 	if(length(fichs_resAll_SE)>0)
 	{
-	  write(paste("#\t\t Compression et indexation du resAll SE", sep=""), file="")
+	  #write(paste("#\t\t Compression et indexation du resAll SE", sep=""), file="")
 	  allResSE = readRDS(fichs_resAll_SE)
 		allResSE[,"Junc_SE_Start"] = format(as.numeric(allResSE[,"Junc_SE_Start"]), scientific=FALSE)
 		allResSE[,"Junc_SE_End"] = format(as.numeric(allResSE[,"Junc_SE_End"]), scientific=FALSE)
@@ -1282,7 +1282,7 @@ formatResAll<-function(pathAllResAnalysis)
 	
 	if(length(fichs_resAll_RI)>0)
 	{
-	  write(paste("#\t\t Compression et indexation du resAll RI", sep=""), file="")
+	  #write(paste("#\t\t Compression et indexation du resAll RI", sep=""), file="")
 	  allResRI = readRDS(fichs_resAll_RI)
 		allResRI[,"Junc_RI_Start"] = format(as.numeric(allResRI[,"Junc_RI_Start"]), scientific=FALSE)
 		allResRI[,"Junc_RI_End"] = format(as.numeric(allResRI[,"Junc_RI_End"]), scientific=FALSE)
@@ -1302,7 +1302,7 @@ formatResAll<-function(pathAllResAnalysis)
 #	system(paste("bgzip ", pathAllResAnalysis, "allResRI.txt", sep=""))
 #	system(paste("bgzip ", pathAllResAnalysis, "allResSE.txt", sep=""))
 	
-	write(paste("#\t\t Compression et suppression res RI / SE par sample", sep=""), file="")
+	#write(paste("#\t\t Compression et suppression res RI / SE par sample", sep=""), file="")
 	resPat = list.files(pathAllResAnalysis, full.names=TRUE, recursive=FALSE, pattern="\\.txt$")
 	resPatPath = paste(pathAllResAnalysis, "/resPat/", sep="")
 	dir.create(resPatPath)
@@ -1313,9 +1313,9 @@ formatResAll<-function(pathAllResAnalysis)
 		unlink(resPat[L], recursive=TRUE)
 	}
 	
-	write(paste("#\t\t Suppression des split bams", sep=""), file="")
+	#write(paste("#\t\t Suppression des split bams", sep=""), file="")
 	unlink(splitBamPath, recursive=TRUE)
-	write(paste("#\t\t Suppression des Junc", sep=""), file="")
+	#write(paste("#\t\t Suppression des Junc", sep=""), file="")
 	unlink(AllJuncPath, recursive=TRUE)
 }
 
