@@ -3,10 +3,11 @@ use CGI qw/:standard :html3/;
 
 use strict;
 use FindBin qw($Bin);
-use lib "$Bin/../GenBo";
-use lib "$Bin/../GenBo/lib/GenBoDB";
-use lib "$Bin/../GenBo/lib/obj-nodb";
-use lib "$Bin/../GenBo/lib/kyoto";
+use lib "$Bin/";
+use lib "$Bin/../../GenBo";
+use lib "$Bin/../../GenBo/lib/obj-nodb";
+use lib "$Bin/../../GenBo/lib/obj-nodb/packages/";
+use lib "$Bin/../../GenBo/lib/obj-nodb/packages/cache/polydiag/";
 
 #use lib "/bip-d/soft/distrib/tabix/latest/perl";
 use lib "$Bin/../packages/export";
@@ -27,11 +28,11 @@ use GBuffer;
 use Storable qw/thaw/;
 use coverage;
 use validationQuery;
-use lib "$Bin/../packages/validation_variation";
+use lib "$Bin/../../../packages/validation_variation";
 use draw_cnv;
 use infos_coverage_exons;
-use lib "$Bin/../GenBo/lib/obj-nodb/packages";
-use lib "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/";
+use lib "$Bin/../../../GenBo/lib/obj-nodb/packages";
+use lib "$Bin/../../../GenBo/lib/obj-nodb/packages/cache/polydiag/";
 use preload_coverage;
 use update_variant_editor;
 use table_dude;
@@ -435,8 +436,7 @@ sub uri_image {
 			}
 		}
 	);
-
-	$project->buffer->dbh_deconnect();
+	$project->disconnect();
 	$| = 1;
 	my $t = time;
 	my $pp;
@@ -448,8 +448,6 @@ sub uri_image {
 	else { $pp = $project->getPatient($patient_name); }
 	while ( my @tmp = $iter->() ) {
 		my $pid = $pm->start and next;
-
-		$project->buffer->dbh_reconnect();
 		my $himages = {};
 		my $znb     = 0;
 		my $dj;
@@ -458,13 +456,7 @@ sub uri_image {
 		foreach my $tr1 (@tmp) {
 #			warn $tr1;
 			print "." if $znb % 20 == 0;
-			my $debug;
-
-			$debug = 1 if $tr1->name eq "ENST00000598846";
-
-			#next unless $debug;
-			#warn $tr1->ccds_name();
-			#next if $tr1->ccds_name() eq "";
+			
 			$znb++;
 			my $coverage = polyweb_dude->new(
 				patients          => [$pp],
@@ -473,11 +465,7 @@ sub uri_image {
 				selected_patients => \@selected_patients
 			);
 			$coverage->init_matrices;
-			
-			warn "\n\n";
-			warn Dumper $coverage->quality();
 
-			#warn Dumper $coverage->quality if $debug;
 			unless ($force_visualisation) {
 				if ($patient_name && $patient_name ne "all"){
 					next  unless (exists $coverage->quality()->{$patient_name}->{dup} or  exists $coverage->quality()->{$patient_name}->{del});

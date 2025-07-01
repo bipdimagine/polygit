@@ -164,18 +164,18 @@ var url_todo =  url_path+"/polydiag_old/todo_json.pl";
 
 
 
-var url_update_validations =  url_path+"/polydiag_old/update_validations.pl";
-var url_chart_transcript = url_path+"/polydiag_old/transcript_chart.pl";
-var url_chart_exon = url_path+"/polydiag_old/exon_chart.pl";
+var url_update_validations =  url_path+"/validation_variation/update_validations.pl";
+var url_chart_transcript = url_path+"/validation_variation/transcript_chart.pl";
+var url_chart_exon = url_path+"/validation_variation/exon_chart.pl";
 var url_chart_exon_hc = url_path+"/validation_variation/exon_chart_hc.pl";
-var url_chart_gene = url_path+"/polydiag_old/gene_chart.pl";
-var url_chart_primer= url_path+"/polydiag_old/primer_chart.pl";
+var url_chart_gene = url_path+"/validation_variation/gene_chart.pl";
+var url_chart_primer= url_path+"/validation_variation/primer_chart.pl";
 
 
 var url_header = url_path+"/validation_variation/header.pl";
 var url_header_polyviewer = url_path+"/validation_variation/header_polyviewer.pl";
-var url_diag_tree = url_path+"/polydiag_old/bundle_json.pl";
-var url_list_transcripts = url_path+"/polydiag_old/list_transcripts_json.pl";	
+var url_diag_tree = url_path+"/validation_variation/bundle_json.pl";
+var url_list_transcripts = url_path+"/validation_variation/list_transcripts_json.pl";	
 
 /* Project PAGE*/
 var url_summary = url_path+"/validation_variation/summary_panel.pl";
@@ -187,11 +187,11 @@ var url_coverage = url_path+"/validation_variation/coverage_exons.pl";
 var url_coverage_overview = url_path+"validation_variation/table_image_updated.pl";
 var url_coverage_overview_defidiag = url_path+"validation_variation/table_image_updated.pl";
 
-var url_coverage_json = url_path+"/polydiag_old/coverage_json.pl";  
+var url_coverage_json = url_path+"/validation_variation/coverage_json.pl";  
 var url_coverage_overview_old = url_path+"/polydiag_old/table_image.pl";
 
 
-var url_primer_coverage_overview = url_path+"/polydiag_old/table_image_primer_coverage.pl"; 
+var url_primer_coverage_overview = url_path+"/validation_variation/table_image_primer_coverage.pl"; 
 
  
 /* DUDE */
