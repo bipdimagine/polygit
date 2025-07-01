@@ -1176,7 +1176,7 @@ sub getVectorNcboost {
 	my ($self, $cat) = @_;
 	confess("\n\nERROR: category name mandatory in GenBoChromosomeCache::getVectorNcboost() method. Die.\n\n") unless ($cat);
 	confess("\n\nERROR: category name $cat doesn't exists in genbo.cfg. Die.\n\n") unless (exists $self->project->buffer->config->{scaled_score_ncboost});
-	return $self->lmdb_score_impact("r")->get('ncboost_'.$cat);
+	return $self->vector_global_categories($cat);
 }
 
 sub getVectorVariations {
@@ -2182,8 +2182,7 @@ sub get_vector_cadd_variants {
 	my $var = $self->getNewVector();
 	foreach my $filter_name (keys %{$self->project->hash_cadd_filters()}) {
 		if (exists $hToFilter->{$filter_name}) {
-			next unless (exists $self->global_categories->{$filter_name});
-			$var += $self->global_categories->{$filter_name};
+			$var +=  $self->vector_global_categories($filter_name);
 		}
 	}
 	return $var;
