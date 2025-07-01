@@ -1777,8 +1777,11 @@ sub panel_gene {
 	#die();
 	#my $homim;
 	#$homim = $patient->project->lmdbOmim->get($gene_id) if ($patient);
-	my $project = $patient->getProject();
-	my $is_actionable = 1 if  exists  $project->acmg_genes->{$hgene->{id}};
+	my $is_actionable;
+	if ($patient) {
+		my $project = $patient->getProject();
+		$is_actionable = 1 if  exists  $project->acmg_genes->{$hgene->{id}};
+	}
 	
 	#warn $omim->{phenotype}->{omim};
 	my $vval ={};

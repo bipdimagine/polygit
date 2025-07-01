@@ -316,7 +316,7 @@ sub supressCoreFilesFound {
 		$found_core = 1 if ($file =~ /core\./);
 	}
 	return if not $found_core;
-	my $cmd = "rm $Bin/core.*";
+	my $cmd = "rm -f $Bin/core.*";
 	`$cmd`;
 }
 
