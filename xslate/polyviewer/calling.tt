@@ -8,7 +8,7 @@
 <tr style="border: 1px solid black;color:black; background-color:<: $mother_color_model :>">
 <td>
 
-	<button type="button" class="btn btn-primary btn-xs" style="font-size:9px;color:black;background-color:aliceblue;border-color:pink;" onclick="view_var_from_proj_gene_pat('<: $project_name :>', '<: $gene_id :>', '<: $mother_name :>', '$var_id', 'mother')">
+	<button type="button" class="btn btn-primary btn-xs" style="font-size:9px;color:black;background-color:aliceblue;border-color:pink;" onclick="view_var_from_proj_gene_pat('<: $project_name :>', '<: $gene_id :>', '<: $mother_name :>', '<: $var_id :>', 'mother')">
 		<: $mother_name :>
 	</button>
 </td>
@@ -23,7 +23,7 @@
 : if $father > 0{ 
 <tr style="border: 1px solid black;color:black;">
 <td>
-<button type="button" class="btn btn-primary btn-xs" style="font-size:9px;color:black;background-color:aliceblue;border-color:#1BA1E2;" onclick="view_var_from_proj_gene_pat('<: $project_name :>', '<: $gene_id :>', '<: $father_name :>', '$var_id', 'father')">
+<button type="button" class="btn btn-primary btn-xs" style="font-size:9px;color:black;background-color:aliceblue;border-color:#1BA1E2;" onclick="view_var_from_proj_gene_pat('<: $project_name :>', '<: $gene_id :>', '<: $father_name :>', '<: $var_id :>', 'father')">
 <: $father_name :></button>
 </td>
 <td>
@@ -40,7 +40,7 @@
 : for $child -> $children {
 	<tr style="border: 1px solid black;color:black;color:black;background-color:<: $children.child_color_model :>;style = "vertical-align:middle;"">
 		<td>
-			<button type="button" class="btn btn-primary btn-xs" style="font-size:9px;color:black;background-color:aliceblue;border-color:#333333;" onclick="view_var_from_proj_gene_pat('<: $project_name :>', '<: $gene_id :>', '<: $father_name :>', '$var_id', '')"> <: $children.child_name :></button>
+			<button type="button" class="btn btn-primary btn-xs" style="font-size:9px;color:black;background-color:aliceblue;border-color:#333333;" onclick="view_var_from_proj_gene_pat('<: $project_name :>', '<: $gene_id :>', '<: $patient_name :>', '<: $var_id :>', '')"> <: $children.child_name :></button>
 		</td>
 		<td>
 			<img src="<: $children.child_icon :>" style="filter: drop-shadow(0px 0px 1px grey)">

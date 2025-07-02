@@ -174,7 +174,8 @@ sub view_html_variants {
 		my @lTrios;
 		$v->{isDM} = 1 if (exists $hAllVarIds->{$var_id}->{hgmd});
 		$v->{isClinvarPathogenic} = 1 if (exists $hAllVarIds->{$var_id}->{clinvar});
-		my $hvariation = update_variant_editor::construct_hash_variant( $project, $v, undef, $patient);
+		my $hvariation = update_variant_editor::construct_hash_variant_global($project, $v);
+		update_variant_editor::construct_hash_variant_patient( $project, $v, $patient, $hvariation);
 		$hvariation->{obj} = $v;
 		$hvariation->{html}->{no_css_polydiag} = 1;
 		
