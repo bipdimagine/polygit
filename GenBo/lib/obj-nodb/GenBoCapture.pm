@@ -604,7 +604,7 @@ has hotspots => (
 		 $h->{$id}->{gene} = $t[3];
 		 my $gene = $self->project->newGene($t[3]);
 		
-		 ($h->{$id}->{ref},$h->{$id}->{alt}) = split("/",$t[4]);
+		 ($h->{$id}->{ref},$h->{$id}->{alt}) = split(/[\/>]/,$t[4]);
 		 $h->{$id}->{name} = $t[5];
 		 if ($gene->strand == -1){
 			$h->{$id}->{ref} = BioTools::complement($h->{$id}->{ref});
