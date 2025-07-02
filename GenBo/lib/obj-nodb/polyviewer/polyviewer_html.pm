@@ -291,8 +291,8 @@ sub calling_variation_xslate {
 		my $data;
 		$data->{text_caller} ="";
 		$data->{var_id} = $self->variant->id;
-		$data->{gene_id} = $self->project->name;
-		$data->{project_name} = $self->variant->gene->{id};
+		$data->{gene_id} = $self->variant->gene->{id};
+		$data->{project_name} = $self->project->name;
 		$data->{table_id} = 'ti_'.$variation_id.'_'.$gene->{id}.'_'.$self->patient_id;
 		$data->{patient_name} = $patient_name;
 		 my $fam = $self->patient->getFamily();
@@ -623,23 +623,23 @@ sub calling_dude {
 	  if ($self->patient->isChild) {
 	  	if ($fam->getMother){
 	  		my $hsample = $samples->{$fam->getMother->id};
-	  	#	$hsample->{button} =  qq{<button style='color:black;' onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"mother").qq{')">}.$fam->getMother->name.qq{</button>};
-	  		my $onclick = $self->return_onclick($gene_name,$variation_id,"mother");
+#	  	#	$hsample->{button} =  qq{<button style='color:black;' onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"mother").qq{')">}.$fam->getMother->name.qq{</button>};
+	  		my $onclick = $self->return_onclick($gene_name,$variation_id,'mother');
 	  		$hsample->{button} =  $self->return_button_name("pink",$fam->getMother,$onclick);
 	  		$html.= "\n".$self->html_parent_line_variant_dude($hsample,$fam->getMother,$gene_name,undef);
 	  	}
 	  	if ($fam->getFather){
 	  		my $hsample = $samples->{$fam->getFather->id};
-	  			$hsample->{button} =  qq{<button style='color:black;' onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"father").qq{')">}.$fam->getFather->name.qq{</button>};
-	  			my $onclick = $self->return_onclick($gene_name,$variation_id,"father");
+#	  			$hsample->{button} =  qq{<button style='color:black;' onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"father").qq{')">}.$fam->getFather->name.qq{</button>};
+	  			my $onclick = $self->return_onclick($gene_name,$variation_id,'father');
 	  			$hsample->{button} =  $self->return_button_name("#1BA1E2",$fam->getFather,$onclick);
 	  			$html.= "\n".$self->html_parent_line_variant_dude($hsample,$fam->getFather,$gene_name,undef);
 	  	}
 	  	foreach my $child (@{$fam->getChildren()}){
 	  		my $hsample = $samples->{$child->id};
 	  		next unless $hsample;
-	 # 		$hsample->{button} =  qq{<button type="button" class="btn btn-primary btn-xs" style="font-size:8px;color:black;font-weight:bold;background-color:aliceblue;border-color:black;box-shadow: 1px 1px 2px black" onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"father").qq{')">}.$child->name." ".$child->small_icon.qq{</button>};
-	  		my $onclick = $self->return_onclick($gene_name,$variation_id,"");
+#	 # 		$hsample->{button} =  qq{<button type="button" class="btn btn-primary btn-xs" style="font-size:8px;color:black;font-weight:bold;background-color:aliceblue;border-color:black;box-shadow: 1px 1px 2px black" onClick="view_var_from_proj_gene_pat('}.join(qq{', '},$self->project->name,$gene_name,$self->patient_name,$variation_id,"father").qq{')">}.$child->name." ".$child->small_icon.qq{</button>};
+	  		my $onclick = $self->return_onclick($gene_name,$variation_id, '');
 	  		$hsample->{button} =  $self->return_button_name("#333333",$child,$onclick);
 	  		$html.= "\n".$self->html_parent_line_variant_dude($hsample,$child,$gene_name,undef);
 	  	}
