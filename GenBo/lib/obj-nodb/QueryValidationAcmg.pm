@@ -304,6 +304,7 @@ sub getAllValidationsForVariation {
 }
 
 #
+
 sub getAllValidationsForPatient {
 	my ($self,$patient,$user_name) = @_;
 	my $db = $self->db;

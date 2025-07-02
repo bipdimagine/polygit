@@ -50,7 +50,7 @@ my @a_excludes;
 
 #choose control by run .
 my $controls;
-my $max_controls = 7;
+my $max_controls = 9;
 foreach my $r (@$runs) {
 	#find_other_patient($r);
 	#die();
@@ -97,14 +97,14 @@ foreach my $r (@$runs) {
 			
 		}
 	}
-	#push(@{$controls->{$r->id}},@hps2);
+	push(@{$controls->{$r->id}},@hps2);
 
 	
 	#die();
 	# $max_controls = 50;
 
 	warn "\tmax control $max_controls ******************* control".scalar (@hps2);
-	if (scalar (@hps2) < 12 ) {
+	if (scalar (@hps2) < 20) {
 		find_other_patient($r,\@hps2);
 	}
 	
@@ -153,7 +153,7 @@ foreach my $r (@$runs) {
 		
 	}
 }
-
+warn Dumper $controls;
 #my $chr = $project->getChromosome("Y");
 foreach my $r (keys %$controls){
 		warn "run : ".$r. " c : ".scalar (@{$controls->{$r}});
@@ -228,15 +228,17 @@ sub find_other_patient {
 				};
 			}
 	 }
+	 warn $nv;
+	 $nv = 1 unless $nv;
 	 $mean_norm /= $nv;
 	 
 	 my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
 	my $x;
 	my $res =[];
 	my $limit = 30 - scalar(@$controls);
+	warn $limit;
 	 foreach my $project_name2 (@$query){
 	 		next if $project_name2 =~ /NGS2010/;
-	 		warn $project_name2;
 	 		next if $project_name2 =~ /7187/;
 	 		next if $project_name2 =~ /7184/;
 	 		my $buffer2 = GBuffer->new();
@@ -252,16 +254,13 @@ sub find_other_patient {
 				eval {
 				
 				next if $capture->name ne $capture2->name;
-				$bam =  $p->getBamFileName();
-				
+				$bam =  $p->getAlignFileName();
 				 my $capture = $p->getCapture;	
 				my $machine     = $p->getRun->machine;
-				warn $machine;
 				next unless  $machine =~/NOVA/i;
 
 				next unless -e $bam;
 				next unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
-			#	warn Dumper $p->nb_reads();
 				$nbx++;
 				my $hp;
 				$hp->{family} = $p->getFamily()->name;
@@ -273,11 +272,13 @@ sub find_other_patient {
 				$hp->{mother} = "";
 				my $nb_reads = $p->nb_reads();
 				$hp->{norm} =  $nb_reads->{norm};
-				$hp->{norm_c} =  abs($mean_norm - $nb_reads->{norm});
+				#$hp->{norm_c} =  abs($mean_norm - $nb_reads->{norm});
 				$hp->{project} = $project2->name;#->getFamily()->getMother->name;
+				
 				 my $nv1;
 				 my $mean_norm1 =0;
 				 my $hpp = $p->nb_reads;
+				
 				foreach my $ps (@apos){
 					
 					$mean_norm1 += ($p->maxDepth($ps->{chr},$ps->{start},$ps->{end})/$hpp->{$ps->{chr}});
@@ -293,7 +294,6 @@ sub find_other_patient {
 			}
 			last if scalar(@$res) > 2*$limit;
 	 }
-	
 	  @$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);
 	 my @toto = splice (@$res,0,$limit);
 	# warn Dumper(@toto);
