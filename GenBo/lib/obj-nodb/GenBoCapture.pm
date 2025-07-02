@@ -596,6 +596,11 @@ has hotspots => (
 #	end=>117232275,
 #	seq=>'ACAAAAAAACA',
 #} ;
+	# problem correctio n+1 or not in bed file 
+	# maintenant il faut la position excat dans le fichier bed 
+	#maid en 19 on donnait l aposition -1 du varaitn qu'on regardait
+	my $plus = 0;
+	$plus = 1 if ($self->hotspots_filename() =~/HG19/);
  	my $h;
 	while (my $line = <PLEX>){
 		chomp($line);
@@ -614,15 +619,15 @@ has hotspots => (
 			}
 		my $chr = $self->project->getChromosome($t[0],$t[0]);
 		if (length($h->{$id}->{ref})==1 && length($h->{$id}->{alt})==1){
-		$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+1)."_".$h->{$id}->{ref}."_".$h->{$id}->{alt};
+		$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+$plus)."_".$h->{$id}->{ref}."_".$h->{$id}->{alt};
 		}
 		elsif(length($h->{$id}->{ref})>1){
 			my $before = $chr->getSequence($t[1],$t[1]);
-			$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+1)."_".$before.$h->{$id}->{ref}."_".$before;
+			$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+$plus)."_".$before.$h->{$id}->{ref}."_".$before;
 		}
 		elsif(length($h->{$id}->{alt})>1){
 			my $before = $chr->getSequence($t[1],$t[1]);
-			$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+1)."_".$before."_".$before.$h->{$id}->{alt};
+			$h->{$id}->{genbo_id} = $chr->name."_".($t[1]+$plus)."_".$before."_".$before.$h->{$id}->{alt};
 		}
 		else {
 			confess();
