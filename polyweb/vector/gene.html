@@ -3703,11 +3703,8 @@ function check_slider_freq_init() {
 
 function check_slider_dejavu_init() {
 	var value_slider = dijit.byId("slider_dejavu").get("value");
-	alert('value_slider:'+value_slider);
 	dijit.byId("slider_dejavu_init").set("value", parseInt(value_slider));
-	alert('done1 -> '+parseInt(value_slider));
 	dijit.byId("slider_dejavu_2").set("value", parseInt(value_slider));
-	alert('done2 -> '+parseInt(value_slider));
 }
 
 function check_slider_dejavu(second_slider) {
