@@ -189,13 +189,13 @@ sub getVectorPatient {
 
 sub init_gene_vector {
 	my ($self) = @_;
+	$self->{compact_vector_start} = 0;
+	$self->{compact_vector_length} = 0;
 	my $numbers = $self->getChromosome->rocks_vector("r")->get_vector_gene( $self->id."_vector_characteristic" );
-	#my $enum = $self->enum->{all};
-		
-	#my @numbers = $enum =~ /(\d+)/g;
-	$self->{compact_vector_start} = $numbers->[0];
-	$self->{compact_vector_length} = $numbers->[1];
-		
+	if ($numbers) {
+		$self->{compact_vector_start} = $numbers->[0];
+		$self->{compact_vector_length} = $numbers->[1];
+	}
 }
 
 has compact_vector_start => (
@@ -239,7 +239,7 @@ sub enlarge_compact_vector{
 sub return_compact_vector {
 	my ($self,$vector) = @_;
 	 my $vsmall = Bit::Vector->new($self->compact_vector_length);
-	 
+	return $vsmall if not $self->compact_vector_start and not $self->compact_vector_length;
 	$vsmall->Interval_Copy($vector,0,$self->compact_vector_start,$self->compact_vector_length);
 	return $vsmall;
 }
@@ -260,7 +260,8 @@ has compact_vector => (
 
 sub getNewCompactVector {
 my ($self) = @_;
- return  Bit::Vector->new($self->compact_vector_length); 
+	return Bit::Vector->new($self->compact_vector_length) if $self->compact_vector_length;
+	return Bit::Vector->new(0); 
 }
 
 sub getCompactVectorPatient{
@@ -272,11 +273,13 @@ sub getVectorOriginCategory {
 	my ($self, $cat) = @_; 
 	return $self->enlarge_compact_vector($self->getCompactVectorOriginCategory($cat));
 }
+
+
+
 sub getCompactVectorOriginCategory {
 	my ($self, $cat) = @_;
-	return $self->compact_vector->{$cat} if exists $self->compact_vector->{$cat};
-	
-	$self->compact_vector->{$cat} = $self->getNewCompactVector();
+	return $self->compact_vector->{$cat} if $self->compact_vector() and exists $self->compact_vector->{$cat};
+	$self->{compact_vector}->{$cat} = $self->getNewCompactVector();
 	return $self->compact_vector->{$cat};
 }
 

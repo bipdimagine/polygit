@@ -441,7 +441,6 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	
 	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
 	if ($is_diff_hash_filters) {
-		die;
 		$chr->load_init_variants_all_patients('init');
 		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
 		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
