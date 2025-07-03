@@ -556,33 +556,12 @@ sub check_is_hgmd_dm_for_gene {
 	return;
 }
 
-sub check_is_clinvar_pathogenic_for_gene  {
-	my ($project,$hvariation,$gene) = @_;
-	return $hvariation->{value}->{clinvar_pathogenic_for_this_gene} if (exists $hvariation->{value}->{clinvar_pathogenic_for_this_gene});
-	if ($hvariation->{value}->{clinvar_pathogenic}) {
-		my $chr = $project->getChromosome($hvariation->{value}->{chromosome});
-		my $clinvar_id = $hvariation->{value}->{clinvar_id};
-		my $g = $project->newGene($gene->{id});
-		if ($chr->is_clinvar_pathogenic_for_gene($clinvar_id, $g)) {
-			$hvariation->{value}->{clinvar_pathogenic_for_this_gene} = 1;
-			return 1;
-		}
-		else {
-			$hvariation->{value}->{clinvar_pathogenic_for_this_gene} = undef;
-			$hvariation->{value}->{clinvar_pathogenic} = undef;
-			$hvariation->{value}->{clinvar} = '';
-			$hvariation->{html}->{clinvar} = '';
-		}
-	}
-	return;
-}
 
 sub table_validation_without_local {
 	my ($project, $hvariation, $gene) = @_;
 	my $cgi = new CGI();
 	my $color = "#555";
 	check_is_hgmd_dm_for_gene($project, $hvariation, $gene);
-	check_is_clinvar_pathogenic_for_gene($project, $hvariation, $gene);
 	if ($hvariation->{value}->{dm} or $hvariation->{value}->{clinvar_pathogenic}){
 		$color = "red";
 	}

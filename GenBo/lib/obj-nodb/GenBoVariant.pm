@@ -467,7 +467,8 @@ has clinvar => (
 
 sub isClinvarPathogenic {
 	my $self = shift;
-	return  $self->score_clinvar >= 5;
+	return 1 if $self->clinvar and exists $self->clinvar->{score} and $self->clinvar->{score} >= 5;
+	return;
 }
 
 

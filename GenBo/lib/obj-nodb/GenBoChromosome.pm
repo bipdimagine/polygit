@@ -2183,14 +2183,6 @@ sub is_hgmd_DM_for_gene {
 	confess("\n\nERROR GenBoChromosome::is_hgmd_DM_for_gene -> $hgmd_id not found. Die.\n\n");
 }
 
-sub is_clinvar_pathogenic_for_gene {
-	my ($self, $clinvar_id, $gene) = @_;
-	my $db =  $self->getChromosome->get_lmdb_database("clinvar",'relation_variant_gene');
-	my $pub = $db->get($clinvar_id);
-	return 1 if ($pub and exists $pub->{$gene->external_name()});
-	return if ($pub);
-	confess("\n\nERROR GenBoChromosome::is_clinvar_pathogenic_for_gene -> $clinvar_id not found. Die.\n\n");
-}
 
 sub purge_lmdb_score {
 	my ($self) = @_;
