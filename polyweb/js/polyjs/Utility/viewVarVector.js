@@ -370,13 +370,8 @@ function display_b_viewSelectedGenesVar() {
     }
     else {
     	document.getElementById("span_nb_sel_genes").innerHTML = 'View <b>ALL</b> Genes';
-    	if (global_uniq <= 500 || view_all_genes == 1) {
-    		if (json_genes == document.getElementById("stat_gene").textContent) {
-        		dijit.byId("b_viewSelectedGenesVar").set("disabled", false);
-        	}
-        	else {
-        		dijit.byId("b_viewSelectedGenesVar").set("disabled", true);
-        	}
+    	if (global_uniq <= 300) {
+        	dijit.byId("b_viewSelectedGenesVar").set("disabled", false);
     	}
     	else {
         	dijit.byId("b_viewSelectedGenesVar").set("disabled", true);
