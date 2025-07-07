@@ -467,6 +467,7 @@ print $css;
 print $css2;
 my $project_name = $cgi->param('project');
 my $user         = $cgi->param('user_name');
+my $only_gene         = $cgi->param('only_gene');
 
 
 my $patient_name = $cgi->param('patients');
@@ -514,6 +515,7 @@ my %t ;
 my $l2 = [];
 foreach my $l (@$lists){
 	#next if exists  $t{$l->{description}->{external_name}};
+	next if $only_gene and $only_gene ne $l->{description}->{external_name};
 	$t{$l->{description}->{external_name}} ++;
 	push(@$l2,$l);
 }
