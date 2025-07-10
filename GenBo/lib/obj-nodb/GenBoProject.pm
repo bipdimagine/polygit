@@ -508,6 +508,18 @@ has getStudy => (
 	},
 );
 
+has isPrenatome => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		if ( $self->validation_db() and $self->validation_db() eq 'prenatome' ) {
+			return 1;
+		}
+		return undef;
+	},
+);
+
 has isRnaSeq => (
 	is      => 'ro',
 	lazy    => 1,
