@@ -43,10 +43,16 @@ sub parse_cnv {
 		my $id = $h->{'SVTYPE'}."_".$chr->name."_".$h->{'START'}."_".$h->{'END'};
 		$h->{'ELEMENTARY'}= [$id];
 		$h->{'INFOS'} = $row->get_format($header);
+		
 		#GT:GQ:DR:DV	0/1:9:18:6
 		
-		$h->{'INFOS'}->{SR} = [$h->{'INFOS'}->{DR}->[0],$h->{'INFOS'}->{DV}->[0]];
-		$h->{'INFOS'}->{PR} =  [$h->{'INFOS'}->{DR}->[0],$h->{'INFOS'}->{DV}->[0]];
+		$h->{'INFOS'}->{sr_qual} = "0";
+		$h->{'INFOS'}->{SR} = ["0","0"];
+		$h->{'INFOS'}->{PR} = ["0","0"];
+		if (exists $h->{'INFOS'}->{DR} and $h->{'INFOS'}->{DV}) {
+			$h->{'INFOS'}->{SR} = [$h->{'INFOS'}->{DR}->[0],$h->{'INFOS'}->{DV}->[0]];
+			$h->{'INFOS'}->{PR} =  [$h->{'INFOS'}->{DR}->[0],$h->{'INFOS'}->{DV}->[0]];
+		}
 		$h->{'CN'} = $h->{'INFOS'}->{GT}->[0];
 		$h->{'GT'} = "0/1";
 		$h->{'GT'} = "1/1" if ($h->{'INFOS'}->{GT}->[0] == {'INFOS'}->{GT}->[1]);  
@@ -55,6 +61,7 @@ sub parse_cnv {
 		$h->{'REAL_CALLER'} = $caller;
 		my $type = $h->{'SVTYPE'};
 		$h->{'QUAL'} = $row->quality;;
+		$h->{'QUAL'} = "0" if $h->{'QUAL'} eq 'NaN';
 		my $num = $chr->name();
 		$res->{$id} = $h;
 		control_object($h);
