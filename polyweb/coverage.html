@@ -197,7 +197,8 @@ width: 5em;
 		   var panel =  param('panel');
 		   
 		var is_genome_project = -1;
-  var first_panel_name = 'none';	
+		var is_prenatome_project = -1;
+  		var first_panel_name = 'none';	
 
  
   var tree;
@@ -572,6 +573,56 @@ var AllTranscripts = new Array();
             dijit.byId("div_popup_coverage").setHref(url);
         
       }
+      
+      
+      function construct_content_panel_plot_foetal_fract(patient_name) {
+		require(["dojo/ready", "dijit/layout/ContentPane"], function(ready, ContentPane){
+			ready(function(){
+		     	var url = "html/manta/plotGlobalFoetalFract.html";
+		     	url += "?project=" + project_name;
+		     	url += "&plasma=" + patient_name;
+		     	
+				var tt =  new ContentPane({
+					    style:"font-size:9px;width:100%;overflow-x:auto;",
+						title:"Plot Foetal Fract",
+						id:"panel_plot_foetal_fract",
+						jsId:"panel_plot_foetal_fract",
+						preload:0,
+						ioMethod:dojo.xhrPost,
+						toto:1,
+						patient:patient_name,
+						innerHTML:"<div id='div_plot_foetal_" + patient_name + "'></div>",
+						onShow:  function() {
+							this.toto ++;
+							if(this.toto == 2) { dijit.byId('waiting').show(); }
+							var obj = this;
+							setTimeout(function () {
+								if (obj.toto == 2 ){
+					           		var lTmp = String(window.location.href.split('?')[0]).split('/');
+					           		lTmp.pop();
+					           		//var url_polycyto = lTmp.join('/') + '/html/manta/PolyCyto.html';
+									//url_polycyto += "?projectname=" + projectName + "&filename=" + patient_name + "&transloc=yes&iframe=1";
+									load_plot_foetal_url(this.patient, "div_plot_foetal_"+patient_name, url);
+									dijit.byId('waiting').hide();
+								}
+							}, 1500);
+						}
+			    });
+				tabPrincipal.addChild(tt);
+		   });
+		});
+	 }
+     
+     function load_plot_foetal_url(patient_name, tab_id, url) {
+		console.log(tab_id);
+		if (!(patient_name in hash_polycyto_loaded)) {
+			var div = document.createElement('div');
+			var html = "<iframe width='100%' height='1000px' style='' src='" + url + "' title='Plot Foetal Fract'></iframe>";
+			div.innerHTML = html;
+			document.getElementById(tab_id).appendChild(div);
+		}
+	}
+      
 		var tab_coverage = {};//new Array();
 		var first =0;
 		var panel_coverage_stack_changed = 0;
@@ -586,6 +637,21 @@ var AllTranscripts = new Array();
 		     }
 		     first ++;
 		        tsamples = storeP._arrayOfAllItems;//dijit.byId("gridPatients").selection.getSelected();
+		        
+		        
+		
+      	var prenatome_plot_patient_name;
+        for (i=0;i<tsamples.length;i++) {
+			var item = tsamples[i];
+			if (item.is_prenatome == 1) {
+				is_prenatome_project = 1;
+				prenatome_plot_patient_name = item.label;
+				break;
+			}
+        }
+		if (is_prenatome_project == 1) {
+			construct_content_panel_plot_foetal_fract(prenatome_plot_patient_name);
+		}
 				
 		    var url_cnv =    construct_url(url_cnv_overview)+"&test_cache=1";
        // document.getElementById("waiting_text").textContent = "Loading Data... [0/25]";
