@@ -6,6 +6,7 @@ use Exporter 'import';
 use Data::Dumper;
 use Moo;
 use JSON::XS;
+use Carp;
 # Déclare les fonctions exportées
 our @EXPORT_OK = qw(lift_over_variants);
 #####
@@ -124,7 +125,11 @@ sub _liftOver_regions{
 			$fileoutsort =$self->tmp_dir."/".$name.time.".sort.tmp";
 		}
 	   my $cmd = $self->project->buffer->software("liftOver")." ".$self->file_regions->filename." ". $self->chain_file." $opt ".$fileout." /dev/stderr >/dev/null 2>/dev/null";
-	   system($cmd." && sort -k1,1V -k2,2n $fileout > $fileoutsort && rm $fileout"  );
+	   system($cmd);
+	   my $cmd2 = "sort -k1,1V -k2,2n $fileout >$fileoutsort";
+	   system($cmd2);
+	   my $cmd3 = "rm $fileout";
+	   system($cmd3);
 	   return $fileoutsort;
 }
 
@@ -208,7 +213,7 @@ sub liftOver_bnd {
 
 sub parse_bed_bnd {
 	my ($self,$fileout) = @_;
-	open(my $fh, '<', $fileout) or die "Impossible d'ouvrir le fichier '$fileout' : $!";
+	open(my $fh, '<', $fileout) or confess ("Impossible d'ouvrir le fichier '$fileout' : $!");
 	# Lis le fichier ligne par ligne
 	my $tab = {};
 	my $vh;

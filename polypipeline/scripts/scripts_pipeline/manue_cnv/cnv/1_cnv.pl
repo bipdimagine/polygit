@@ -290,7 +290,9 @@ foreach my $patobj (@$listPatients)
 				$hPat_CNV->{'caller_sr'}  = parse_pbsv::parse_cnv($patient,$caller);
 			}
 			elsif (lc($caller) eq "sniffles2"){
-				warn "coucou";
+				$hPat_CNV->{'caller_sr'}  = parse_sniffles2::parse_cnv($patient,$caller);
+			}
+			elsif (lc($caller) eq "spectre"){
 				$hPat_CNV->{'caller_sr'}  = parse_sniffles2::parse_cnv($patient,$caller);
 			}
 			else {

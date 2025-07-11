@@ -277,14 +277,17 @@ sub parse_sniffles_bnd {
 		my $h1 = dclone $mate[0];
 		my $hchr;
 		my $alt_field = $h1->{alt};
-		if ($alt_field =~ /[\[\]](?:chr)?([A-Za-z0-9]+):(\d+)[\[\]]/i) {
-   		 $hchr->{chr} = $1;  # Capture le chromosome
-    	$hchr->{pos} = $2;    # Capture la position
-    	 $hchr->{chr} =~ s/chr//;
-   		  $hchr->{chr} ="MT" if $hchr->{chr} eq "M";
-		} else {
-			
- 	   die()
+		
+		if (lc($alt_field) =~ /.?[\[\]](?:chr)?([A-Za-z0-9_]+):(\d+)[\[\]]/i) {
+			$hchr->{chr} = $1;  # Capture le chromosome
+			$hchr->{pos} = $2;    # Capture la position
+ 			$hchr->{chr} =~ s/chr//;
+			$hchr->{chr} ="MT" if $hchr->{chr} eq "M";
+		}
+		else {
+			warn lc($alt_field);
+			warn Dumper $hchr;
+ 	   		die();
 	}
 	$hchr->{infos} = $h1->{infos};
 	$hchr->{qual} = $h1->{qual};
@@ -338,6 +341,8 @@ sub create_transloc_hash {
 		my @mate = values %{$hBND->{$gid}};
 		next if scalar(@mate) ne 2;
 		my ($b1,$b2) = sort {$a->{chr} <=> $b->{chr} or $a->{pos} <=> $b->{pos}} @mate;
+		$b1->{chr} =~ s/_/-/g;
+		$b2->{chr} =~ s/_/-/g;
 		my $event_id = $b1->{chr}."_".$b1->{pos}."_".$b2->{chr}."_".$b2->{pos};
 			$hTransLoc->{$event_id}->{"ID"}= $event_id;
 			$hTransLoc->{$event_id}->{"TRANSLOC"}= $b1->{chr}."to".$b2->{chr};
