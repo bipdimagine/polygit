@@ -140,9 +140,12 @@ if($trio)
 		my $vector_ratio_name_father = $father->name.$minRatio;
 		unless ($rm_noise eq "no")
 		{
-			my $vquality_father = $chr->getVectorScore($vector_ratio_name_father);
-			$vfather &= $vquality_father;
-		}		
+			foreach my $v (@{$chr->getListVarObjects($vfather)}) {
+				if ($v->getRatio($father) < $minRatio) {
+					$vfather->Bit_Off($v->vector_id());
+				}
+			}
+		}	
 
 		$nbvarFather2 += count_values($vfather,$chr->name);
 		
@@ -169,21 +172,20 @@ if($trio)
 			my $p2 = $v->getPourcentAllele($father);							# valeur ou - si le variant retrouvé dans le plasma ne vient pas du père 
 			my $value = $v->getPourcentAllele($plasma);							# la fréquence allélique du variant 
 			my $vdepth = $v->getDepth($plasma);   
-		
 	
-			next if $value eq "-";
+			next if $value eq "0";
 			
 			
 			$posP += 100;
 			#$posVariants += 100;
 			
 		
-			if ($p1 ne "-"){													# le variant est présent chez la mère
+			if ($p1 ne "0"){													# le variant est présent chez la mère
 				my $res = $posP.",".$value.",null";
 				push(@array_plasma,$res);
 			}
 
-			if ($p2 ne "-"){													# le variant n'est pas présent chez la mère et vient du père 
+			if ($p2 ne "0"){													# le variant n'est pas présent chez la mère et vient du père 
 				my $res = $posP.",null,".$value;
 				push(@array_plasma,$res);
 				
