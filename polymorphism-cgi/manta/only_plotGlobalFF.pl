@@ -40,6 +40,7 @@ my $printres = $cgi->param('printres');
 
 # pour suprimer le bruit de fond chez le père  
 my $minRatio = "_ratio_20";
+my $minRatio_value = 20;
 my $rm_noise="yes";
 
 die("\n\nNo -project option... Die...\n\n") unless ($projectname);
@@ -141,7 +142,7 @@ if($trio)
 		unless ($rm_noise eq "no")
 		{
 			foreach my $v (@{$chr->getListVarObjects($vfather)}) {
-				if ($v->getRatio($father) < $minRatio) {
+				if ($v->getRatio($father) < $minRatio_value) {
 					$vfather->Bit_Off($v->vector_id());
 				}
 			}
