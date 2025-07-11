@@ -511,7 +511,7 @@ function reload_project(force){
 function construct_content_panel_plot_foetal_fract(patient_name) {
 	require(["dojo/ready", "dijit/layout/ContentPane"], function(ready, ContentPane){
 		ready(function(){
-	     	var url = "https://www.polyweb.fr/eollivie/polyweb/html/manta/plotGlobalFoetalFract.html";
+	     	var url = "html/manta/plotGlobalFoetalFract.html";
 	     	url += "?project=" + project_name;
 	     	url += "&plasma=" + patient_name;
 	     	console.log('url: '+url);

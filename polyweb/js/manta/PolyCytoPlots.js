@@ -2752,30 +2752,7 @@ function PlotFoetalFract()
 	PlotValues_FF(project,patient,chr,small);
 	setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},5000);
  }
- 
- function plotGlobalFoetalFract()
-{
-	var parameters = location.search.split("&");
-	
-	var par0 = parameters[0].split("=");
-	var par1 = parameters[1].split("=");
-	var par2;	
-	
-	var project = par0[1];
-	var plasma = par1[1];
-	var bt = "no";
-	
-	if (parameters.length > 2)
-	{
-		par2 = parameters[2].split("=");
-		bt = par2[1];
-	}
-	
-	// plot = fraction foetal 
-	PlotValues_GFF(project,plasma,bt);
-	setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},2000);
- }
- 	
+  	
 function PlotValues_FF(project,patient,chr,small)
 {
 	var url_plotFF;
@@ -3136,7 +3113,193 @@ function PlotValues_FF(project,patient,chr,small)
   	
 }
 
-function PlotValues_GFF(project,plasma,bt)
+function plotGlobalFoetalFract()
+{
+	var parameters = location.search.split("&");
+	
+	var par0 = parameters[0].split("=");
+	var par1 = parameters[1].split("=");
+	
+	var project = par0[1];
+	var plasma = par1[1];
+		
+	if (parameters.length == 2)
+	{
+		// plot = fraction foetal 
+		PlotValues_GFF_only(project,plasma,0);
+		setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},2000);
+	}
+	else
+	{
+		if (parameters.length == 3)
+		{	
+			var par2 = parameters[2].split("=");
+			var printres = par2[1];
+			// plot = fraction foetal 
+			PlotValues_GFF_only(project,plasma,printres);
+			setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},2000);
+		}
+		else
+		{
+		
+			var par2 = parameters[2].split("=");
+			var par3 = parameters[3].split("=");	
+			var par4 = parameters[4].split("=");
+			var par5 = parameters[5].split("=");
+			var par6 = parameters[6].split("=");
+	
+			var bt = par2[1];
+			var ratio = par3[1];
+			var freq = par4[1];
+			var noise = par5[1];
+			var depth = par6[1];
+	
+			// plot = fraction foetal 
+			PlotValues_GFF_and_stats(project,plasma,bt,ratio,freq,noise,depth);
+			setTimeout(function(){document.getElementById('labw1').style.visibility = 'hidden';},2000);
+		}
+	}
+ }
+ 
+ 
+ 
+function PlotValues_GFF_only(project,plasma,printres)
+{
+	var url_plotGFF= url_path + "/manta/only_plotGlobalFF.pl";
+	
+	dataStorePlotValue = new dojo.data.ItemFileReadStore({ url: url_plotGFF + "?project=" + project + "&plasma=" + plasma + "&printres=" + printres});
+	
+	var legend = "Foetal fraction";
+	titre = '<br><b><label style="font-size:14px; color:black"> ' + project + ' : ' + plasma  + '</label></b><br><br>';
+	document.getElementById('idtitre').innerHTML = titre;
+
+	
+	var trio;
+	
+	// BA chez l'enfant
+	var tabPosBA;
+	var tabMother;
+	var tabFather;
+	var tabPatient;
+	
+	var tabplotX=[];
+   	var tabplotY=[];
+   	   	
+   	var tabBAX;
+   	var tabYM;
+   	var tabYF;
+   	
+   	var tabplotBAX=[];
+  	var tabplotYM=[];			
+  	var	tabplotYF=[];
+
+ 	
+  	var score;
+  
+  	
+  	var graphDiv = document.getElementById('plot1');	
+  	
+	dataStorePlotValue.fetch({
+			onComplete: function(items,request){
+                	var item = items[0];
+   
+   					trio = parseInt(dataStorePlotValue.getValue(item, "PLOT"));
+   					tabMean = dataStorePlotValue.getValue(item, "mean");
+   					score = dataStorePlotValue.getValue(item, "score");
+   				
+				if (trio) 			
+				{
+					
+
+						// pour l'enfant
+					
+						tabPosBA = dataStorePlotValue.getValue(item, "POSball"); 
+   						tabMother = dataStorePlotValue.getValue(item, "MOTHER");
+ 						tabFather = dataStorePlotValue.getValue(item, "FATHER");
+ 						
+   						tabBAX = tabPosBA.split(" ");
+   						tabYM = tabMother.split(" ");
+   						tabYF = tabFather.split(" ");
+   						
+   					
+   						for ( var i = 0 ; i < tabBAX.length ; i++ ) {
+   					
+  							tabplotBAX.push(tabBAX[i]);
+  							tabplotYM.push(tabYM[i]);			
+  							tabplotYF.push(tabYF[i]);
+  							
+  						}	
+
+  						var trace1 = {
+  							x:tabplotBAX,
+  							y:tabplotYM,
+  							yaxis: 'y1',
+  							mode: 'markers',
+  							showlegend:false,
+  							name:'From mother',
+  							marker: {
+      								color: 'pink',
+      								size:4
+    						}
+
+						};
+				
+						var trace2 = {
+  							x:tabplotBAX,
+  							y:tabplotYF,
+  							yaxis: 'y1',
+  							mode: 'markers',
+  							showlegend: false,
+  							name:'From father',
+  							marker: {
+      								color: 'lightblue',
+      								size:5
+    						},
+    										
+						};
+					
+
+						
+						data=[trace1,trace2];
+						
+						layout = {
+							title :   {text: "Foetal Fraction = " + tabMean + "    depthP*FF = " + score,
+							           font: {size: 14,
+							           		  color: '#B22222',
+							           		  },
+							           },
+  							yaxis1:	  {domain: [0, 1], title : 'Allelic Ballance ', tickmode: "array", tickvals: [0,25,50,100], ticktext: ['0','25','50 ','100']},
+  							//xaxis:	  {tickmode: "array", tickvals: [25000,50000,75000,100000,125000,150000,175000,200000,225000,250000,275000,300000,325000,350000,375000,400000,425000,450000,475000,500000,525000,550000,575000,600000], ticktext: ['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr21','chr22','chrX','chrY']},
+						};
+			
+			var config = { modeBarButtonsToRemove: ['lasso2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d','toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true, responsive: true};
+			
+			Plotly.newPlot('plot1', data, layout,config);
+	
+
+			graphDiv.on('plotly_selected', function(eventData)
+ 				{
+ 
+					var max = 0;
+					var min = 250000000;
+					
+ 					eventData.points.forEach(function(pt) {
+  						min = Math.min(min,pt.x);
+  						max = Math.max(max,pt.x);
+ 					});
+ 
+ 					var locus = chr+":"+min+"-"+max;
+ 					viewGenes(locus,project,patient);
+ 					
+ 					Plotly.restyle(graphDiv, data, layout,config);
+				});
+			}
+		}
+  	});		
+  	
+}
+
+function PlotValues_GFF_and_stats(project,plasma,bt,ratio,freq,noise,depth)
 {
 	var url_plotGFF= url_path + "/manta/PlotGlobalFoetalFract.pl";
 	
