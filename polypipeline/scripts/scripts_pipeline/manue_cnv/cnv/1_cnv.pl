@@ -79,6 +79,7 @@ my $type_by_caller_name = {
 	"pbsv" => "caller_sr",
 	"dragen-sv" =>"caller_sr",
 	"Sniffles2" =>"caller_sr",
+	"Spectre" =>"caller_sr",
 	"hificnv" =>"caller_depth",
 	"canvas" =>"caller_depth",
 	"dragen-cnv" =>"caller_depth",
@@ -198,6 +199,7 @@ my $type_by_caller = {
 	"pbsv" => 1,
 	"dragen-sv" =>1,
 	"Sniffles2" =>1,
+	"Spectre" =>1,
 	"hificnv" =>2,
 	"canvas" =>2,
 	"dragen-cnv" =>2,
@@ -214,6 +216,7 @@ my $cnv_callers = {
     "dragen-cnv"        => 1 << 6, 
      "cnvnator"        => 1 << 7, 
       "Sniffles2"        => 1 << 8, 
+      "Spectre"        => 1 << 9, 
 };
 
 
@@ -455,6 +458,9 @@ sub getScoreCallers {
 						$limit = 100;
 					}
 					elsif ($icnv->{callers} & $cnv_callers->{Sniffles2}){
+						$limit = 100;
+					}
+					elsif ($icnv->{callers} & $cnv_callers->{Spectre}){
 						$limit = 100;
 					}
 					elsif ($icnv->{callers} & $cnv_callers->{manta}){

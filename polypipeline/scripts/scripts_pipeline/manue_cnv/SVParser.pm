@@ -326,7 +326,7 @@ sub parse_vcf_bnd {
 	
 	
 	$vcf->close();
-	parse_sniffles_bnd($hBND) if $caller eq "Sniffles2";
+	parse_sniffles_bnd($hBND) if $caller eq "Sniffles2" or $caller eq "Spectre";
 	
 	return create_transloc_hash($hBND,$patient);
 }

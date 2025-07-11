@@ -1333,6 +1333,9 @@ sub getQueryVcf {
 	elsif ($method eq "Sniffles2"){
 		 $queryVcf = QuerySniffles->new( \%args );
 	}
+	elsif ($method eq "Spectre"){
+		 $queryVcf = QuerySniffles->new( \%args );
+	}
 	elsif ($method eq "dragen-sv"){
 		 $queryVcf = QueryDragenSv->new( \%args );
 	}
