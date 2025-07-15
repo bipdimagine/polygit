@@ -592,6 +592,7 @@ function formatColorCadd(value) {
 	if (parseInt(value) >= 30) { new_text = "<font color='red'>" + value + "</font>"; }
 	else if (parseInt(value) >= 20) { new_text = "<font color='orange'>" + value + "</font>"; }
 	else if (parseInt(value) >= 10) { new_text = "<font color='green'>" + value + "</font>"; }
+	else { new_text = "<font color='black'>" + value + "</font>"; }
 	return new_text;
 }
 
