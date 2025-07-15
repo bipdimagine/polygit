@@ -55,18 +55,10 @@ GetOptions(
 );
 my $buffer = new GBuffer;
 die ("version ?") unless $version;
-#my $dir38_sereal = $buffer->deja_vu_public_dir($version,"projects") ;
-
-#$buffer->config_path("root","dejavu_projects")."/".$version. "/"."/projects.tar/";
-#$dir38 = "/data-beegfs/tmp/projects/";
-
-#my $dir_final= $buffer->deja_vu_public_dir($version,"variations");
-# $dir_final ="/data-beegfs/rocks.dejavu/$version";
  
-my $dir_final = "/data-beegfs/dejavu/rocks/";
-#warn $dir_final;
-#die;
- 
+my $dir_final = "/data-beegfs/dejavu/rocks-".$version.'/';
+#my $dir_final = '/data-isilon/DejaVu/'.uc($version).'/variations/';
+
  $| = 1;
 my $rg38 = GenBoNoSqlRocksGenome->new(chunk_size=>10_000_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);
 my $regionss = $rg38->regions();
