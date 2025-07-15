@@ -11,6 +11,7 @@ use Data::Dumper;
 use String::ProgressBar;
 use Compress::Snappy;
 use Parallel::ForkManager;
+use Carp;
 use Storable qw/thaw freeze/;
 use File::Temp qw/ :mktemp  /;
 
