@@ -280,7 +280,7 @@ sub calling_variation_xslate {
 	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $patient = $self->patient;
-	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
+	my $text_caller = join( ", ", @{ $self->variant->text_caller } ); 
 	my $variation_id = $self->variant->id;
 	my $samples = $self->variant->patients_calling();
 	my $project = $self->project;
@@ -380,7 +380,7 @@ sub calling_cnv_xslate {
 	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $patient = $self->patient;
-	my $text_caller = join( "<br>", @{ $self->variant->text_caller } ); 
+	my $text_caller = join( ", ", @{ $self->variant->text_caller } ); 
 	my $variation_id = $self->variant->id;
 	my $samples = $self->variant->patients_calling();
 	my $project = $self->project;
