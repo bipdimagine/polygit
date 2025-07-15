@@ -411,7 +411,8 @@ sub _getVarGeneralDetails {
 	$hash->{'locus'} = 'chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
 	my $cadd_score = $var->cadd_score();
 	if ($cadd_score and $cadd_score ne '-1' and $cadd_score ne '-') {
-		$hash->{'cadd_score'} = $cadd_score;
+		if (int($cadd_score) < 10) { $hash->{'cadd_score'} = '0'.$cadd_score; }
+		else { $hash->{'cadd_score'} = $cadd_score; }
 	}
 	$hash->{'cadd_score'} = '.' unless ($hash->{'cadd_score'});
 	my @lGenesObj = @{$var->getGenes()};
