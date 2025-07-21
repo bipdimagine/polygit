@@ -91,7 +91,7 @@ sub run_cmd {
 	$myproc = Proc::Simple->new(); 
 	$myproc->kill_on_destroy(1);            # Set kill on destroy
 	$myproc->signal_on_destroy("KILL");
-	$myproc->start(qq{ssh $username\@10.1.2.9 $cmd});
+	$myproc->start(qq{ssh $username\@10.1.2.10 $cmd});
 	while ($myproc->poll()){
 		sleep 10;
 		
