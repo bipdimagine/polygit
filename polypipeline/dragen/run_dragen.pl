@@ -13,7 +13,7 @@ GetOptions(
 my $file_lock = "/data-dragen/lock";
 my $last_cmd;
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
- my $ssh = Net::SSH::Perl->new("10.1.2.9");
+ my $ssh = Net::SSH::Perl->new("10.1.2.10");
 my $myproc = Proc::Simple->new(); 
 $SIG{INT} = \&tsktsk;
 $SIG{KILL} = \&tsktsk;
