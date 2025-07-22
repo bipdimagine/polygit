@@ -117,7 +117,7 @@ sub save_regions {
 	my $sql = qq {PRAGMA threads=8;COPY (
           SELECT pos38,allele, STRING_AGG(project || ';' || he || ';' || ho, ';') AS value
           FROM read_parquet('$ff') where chr38 = '$chr' and  pos38 between '$start_string' and '$end_string' 
-          GROUP BY pos38,allele 
+          GROUP BY pos38,allele order by pos38 
       ) TO '$file1' (FORMAT 'csv', COMPRESSION 'ZSTD');
  	};
 
