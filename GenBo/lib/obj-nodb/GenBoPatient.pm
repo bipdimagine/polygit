@@ -287,6 +287,7 @@ has tabix_coverage => (
 		my $self = shift;
 		my $coverage_file;
 		$coverage_file = $self->getCoverageFile();
+		warn $coverage_file;
 		return unless -e $coverage_file;
 		return Bio::DB::HTS::Tabix->new( filename => $coverage_file );
 
