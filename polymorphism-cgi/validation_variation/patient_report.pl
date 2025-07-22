@@ -24,7 +24,6 @@ use html;
 use infos_coverage_exons;
 use JSON::XS;
 use image_coverage;
-#use Set::;
 use Carp;
 use export_data;
 use strict;
