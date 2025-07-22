@@ -16,7 +16,6 @@ extends "QueryPbsv";
 
 sub add_DP_AD {
 	my ( $self, $patient_id, $hash, $x ) = @_;
-	warn $x->{gt}->{DV};
 	$hash->{annex}->{$patient_id}->{nb_all_mut} = $x->{gt}->{DV};
 	$hash->{annex}->{$patient_id}->{nb_all_ref} = $x->{gt}->{DR};;
 	$hash->{annex}->{$patient_id}->{dp} = $x->{gt}->{DV}+$x->{gt}->{DR};

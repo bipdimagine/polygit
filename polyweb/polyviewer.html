@@ -161,6 +161,7 @@
 		   	<script type="text/javascript" src="http://www.dojotoolkit-fr.org/wp-content/uploads/dojo-adapter.js"></script>
             <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
 		  	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+			<script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
 			<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
 			<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
 		
@@ -436,6 +437,7 @@ function enable_table_search_from_id(table_id) {
 	$('#'+table_id).bootstrapTable();
 }
 
+var is_prenatome_project = 0;
 var is_genome_project = 0;
 var project_type = "genome";
 function just_reload_project(){
@@ -485,21 +487,25 @@ function reload_project(force){
 			
 		    setTimeout(function() {
 			
+				var prenatome_plot_patient_name;
         		dijit.byId("editor_stack").set("disabled", "");
         		var tsamples = storeP._arrayOfAllItems;
 	            for (i=0;i<tsamples.length;i++) {
 					var item = tsamples[i];
+					if (item.is_prenatome == 1) {
+						is_prenatome_project = 1;
+						prenatome_plot_patient_name = item.label;
+					}
 					if (item.is_genome == 1) {
 						is_genome_project = 1;
-						break;
 					}
+					
 	            }
+				if (is_prenatome_project == 1) {
+					construct_content_panel_plot_foetal_fract(prenatome_plot_patient_name);
+				}
         		if (is_genome_project == 1) {
-				//	dijit.byId('panel_polycyto').set("disabled", "");
-				construct_content_pane_polycyto();	
-				
-					//dijit.byId('popup_patients').show();
-					//dijit.byId('popup_patients').hide();
+					construct_content_pane_polycyto();	
 				}
 				else{
 					construct_content_pane_dude();
@@ -510,6 +516,54 @@ function reload_project(force){
 	    }
 	}
 	xhr.send(this_args);
+}
+
+function construct_content_panel_plot_foetal_fract(patient_name) {
+	require(["dojo/ready", "dijit/layout/ContentPane"], function(ready, ContentPane){
+		ready(function(){
+	     	var url = "html/manta/plotGlobalFoetalFract.html";
+	     	url += "?project=" + project_name;
+	     	url += "&plasma=" + patient_name;
+	     	console.log('url: '+url);
+			var tt =  new ContentPane({
+				    style:"font-size:9px;width:100%;overflow-x:auto;",
+					title:"Plot Foetal Fract",
+					id:"panel_plot_foetal_fract",
+					jsId:"panel_plot_foetal_fract",
+					preload:0,
+					ioMethod:dojo.xhrPost,
+					toto:1,
+					patient:patient_name,
+					innerHTML:"<div id='div_plot_foetal_" + patient_name + "'></div>",
+					onShow:  function() {
+						this.toto ++;
+						if(this.toto == 2) { dijit.byId('waiting').show(); }
+						var obj = this;
+						setTimeout(function () {
+							if (obj.toto == 2 ){
+				           		var lTmp = String(window.location.href.split('?')[0]).split('/');
+				           		lTmp.pop();
+				           		//var url_polycyto = lTmp.join('/') + '/html/manta/PolyCyto.html';
+								//url_polycyto += "?projectname=" + projectName + "&filename=" + patient_name + "&transloc=yes&iframe=1";
+								load_plot_foetal_url(this.patient, "div_plot_foetal_"+patient_name, url);
+								dijit.byId('waiting').hide();
+							}
+						}, 1500);
+					}
+		    });
+			tabPrincipal.addChild(tt);
+	   });
+	});
+}
+
+function load_plot_foetal_url(patient_name, tab_id, url) {
+	console.log(tab_id);
+	if (!(patient_name in hash_polycyto_loaded)) {
+		var div = document.createElement('div');
+		var html = "<iframe width='100%' height='1000px' style='' src='" + url + "' title='Plot Foetal Fract'></iframe>";
+		div.innerHTML = html;
+		document.getElementById(tab_id).appendChild(div);
+	}
 }
 
 function show_hide_all_genes_from_panel() {
@@ -1207,7 +1261,7 @@ var view_polydiag =0;
     
 	<div id="dialog_dejavu_var_infos" dojoType="dijit.Dialog" title="DejaVu Infos">
 		<center><a id="url_dejavu_var" href="polydejavu/dejavu.html" target="_blank"><i><u>Go to PolyDejaVu Interface</i></u></a></center>
-        <div  id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>	
+        <div style="width:900px;height:600px;" id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>	
 	</div>
 	
     <div id="dialog_igv_alamut_download_infos" dojoType="dijit.Dialog" title="IGV / Alamut Downloads">

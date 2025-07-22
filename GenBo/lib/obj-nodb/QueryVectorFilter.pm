@@ -629,6 +629,7 @@ sub filter_gene_model_familial_compound {
 	my ($self, $gene,$h_arguments) = @_;
 	confess("\n\nERROR: QueryVectorFilter::filter_gene_model_familial_compound need a GenBoGeneCache. Die.\n\n") unless ($gene);
 	my $vector_compound = $gene->getChromosome->getNewVector;
+	return $vector_compound if not $gene->getPatients();
 	foreach my $fam (@{$gene->getFamilies()}) {
 		my $vector_fam_gene_compound = $fam->getModelVector_fam_compound($gene);
 #		if ($h_arguments->{'filters_2'}) {

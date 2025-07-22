@@ -834,6 +834,7 @@ sub update_list_variants_from_dejavu {
 	}
 #	die;
 	($hVariantsDetails) = check_variants($h_dv_rocks_ids, $gene_dejavu);
+	
 	$buffer_dejavu = undef;
 	$project_dejavu->buffer->dbh_deconnect();
 	print '@time:'.abs(time) - $time;
@@ -942,6 +943,7 @@ sub check_variants {
 	my $iter = natatime($nb, @lVar);
 	while( my @tmp = $iter->() ){
  	 	my $pid = $pm->start and next;
+		$project_init->disconnect();
  	 	my $hres;
  	 	$hres->{start_job} = 1;
 		my $nb_i;
@@ -1316,7 +1318,8 @@ sub get_table_project_patients_infos {
 		$i++;
 		if ($i == 1) { $h_infos_patients->{$nb_pat}->{dp} = $info; }
 		elsif ($i == 2) {
-			my $ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100;
+			my $ratio = '?';
+			my $ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100 if ($h_infos_patients->{$nb_pat}->{dp});
 			my $text = 'AC:'.$info.' ('.int($ratio).'%)';
 			$h_infos_patients->{$nb_pat}->{ratio} = $text;
 		}

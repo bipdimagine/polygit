@@ -3422,25 +3422,29 @@ foreach my $g (keys %$hotspots){
 		$out.=$cgi->td($text);
 		foreach my $h (@header){
 			if ($h eq  $hotspot->{A_ALT}){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10  if $hotspot->{COV} > 0;
 				my $color = "#f2dedc";
 				$color = "#F7BFB9" if $pc>2;
 				$color = "#E9897E" if $pc>5;
 				$out.=$cgi->td({style=>"background-color:$color;color:black"},"$pc% (".$hotspot->{$h}.")");
 			}
 			elsif ($h eq  $hotspot->{A_REF}){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10  if $hotspot->{COV} > 0;
 				$out.=$cgi->td({style=>"background-color:#c7eadd;color:black"},"$pc% (".$hotspot->{$h}.")");
 			}
 			elsif ($h eq  "DEL" && $hotspot->{A_ALT} eq "-"){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10  if $hotspot->{COV} > 0;
 				my $color = "#f2dedc";
 				$color = "#F7BFB9" if $pc>2;
 				$color = "#E9897E" if $pc>5;
 				$out.=$cgi->td({style=>"background-color:#F7BFB9;color:black"},"$pc% (".$hotspot->{$h}.")");
 			}
 			else {
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10 if $hotspot->{COV} > 0;
 				$out .= $cgi->td($hotspot->{$h});
 			}
 			#push(@td, $hotspot->{$h});

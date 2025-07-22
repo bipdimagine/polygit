@@ -441,7 +441,6 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	
 	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
 	if ($is_diff_hash_filters) {
-		die;
 		$chr->load_init_variants_all_patients('init');
 		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
 		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
@@ -644,7 +643,7 @@ sub launch_filters_bed {
 
 sub is_differents_hash_filters {
 	my ($h1, $h2, $dejavu, $dejavu_2) = @_;
-	return 1 if $dejavu != $dejavu_2 and $dejavu_2;
+	return 1 if $dejavu_2;
 	my $h3 = $h2;
 	foreach my $cat (keys %$h1) {
 		delete $h3->{$cat};

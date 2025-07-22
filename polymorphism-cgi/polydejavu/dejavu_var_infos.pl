@@ -29,9 +29,7 @@ my $project_name = $cgi->param('project');
 my $export_html_bootstrap = $cgi->param('export_html_bootstrap');
 my $in_this_run = $cgi->param('in_this_run');
 
-$build_use = 'HG19' unless ($build_use);
-
-$build_use = 'HG38';
+$build_use = 'HG38' unless ($build_use);
 
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
@@ -54,6 +52,10 @@ elsif ($varId =~ /;/) {
 }
 if ($project_name and $project_name =~ /NGS/){
 	$projectTmp = $buffer->newProjectCache(-name => $project_name);
+	
+	if ($projectTmp->getVersion() =~ /HG38/) { $build_use = 'HG38'; }
+	else { $build_use = 'HG19'; }
+	
 	$var = $projectTmp->_newVariant($varId);
 	if($projectTmp->isDefidiagSolo){
 		$solo =1 ;
@@ -202,7 +204,7 @@ sub printHtml_bootstrap {
 	my $hash;
 	my @lHeaders = ('Acc', 'Project', 'Family', 'Patient', 'Sex/Status', 'He/Ho', "Ratio", "Model", 'Run Id', 'Machine', 'Capture', 'Contacts', 'IGV');
 	my @lCat = ('implicated', 'project', 'family', 'name', 'sex_status', 'ho_he', 'ratio', 'model', 'run_id', 'machine', 'captures', 'contacts', 'igv');
-	my $out = "<table class='table table-bordered' style='font-size:11px;'>";
+	my $out = "<u><b>Release $build_use</u></b><br><table class='table table-bordered' style='font-size:11px;'>";
 	$out .= "<thead>";
 	$out .= $cgi->start_Tr();
 	foreach my $header (@lHeaders){

@@ -2145,8 +2145,7 @@ sub get_vector_type_variants {
 	my $var = $self->getNewVector();
 	foreach my $filter_name (keys %{$self->project->hash_var_type_filters()}) {
 		if (exists $hToFilter->{$filter_name}) {
-			next unless (exists $self->global_categories->{$filter_name});
-			$var += $self->global_categories->{$filter_name};
+			$var += $self->vector_global_categories($filter_name);
 		}
 	}
 	return $var;

@@ -49,6 +49,18 @@ foreach my $p (sort {  $a->name cmp $b->name  or  $a->getFamily->name cmp $b->ge
 	
 	$item->{label} = $p->name();
 	$item->{is_genome} = $is_genome_project;
+	
+	my $is_prenatome_project = 0;
+	if ($project->isPrenatome()) {
+		if ($p->getSomaticGroup() and uc($p->getSomaticGroup->name()) eq 'PLA') {
+			$is_prenatome_project = 1;
+		}
+	}
+	else {
+		$is_prenatome_project = 0;
+	}
+	
+	$item->{is_prenatome} = $is_prenatome_project;
 	$item->{sex} = "M";
 	$item->{sex} = "F" if $p->sex == 2;	
 	#$item->{sex} = $p->return_icon;	

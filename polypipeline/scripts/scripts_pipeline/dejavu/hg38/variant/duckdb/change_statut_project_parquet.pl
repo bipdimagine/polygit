@@ -28,7 +28,10 @@ foreach my $file (@files ) {
 	my @ltmp = split('\.', $file_short);
 	next if $ltmp[-1] ne 'parquet' and $ltmp[-1] ne 'no_dejavu';
 	
-	if ($ltmp[0] =~ /^NGS20[0-9][0-9]_[0-9]+$/) {
+	if (-z $file) {
+		empty_dejavu($file);
+	}
+	elsif ($ltmp[0] =~ /^NGS20[0-9][0-9]_[0-9]+$/) {
 		if (exists $h_projects_no_dv->{$ltmp[0]}) {
 			next if ($ltmp[-1] eq 'no_dejavu');
 			del_dejavu($file);
@@ -44,6 +47,14 @@ foreach my $file (@files ) {
 	}
 }
 
+
+sub empty_dejavu {
+	my ($file) = @_;
+	my $file_out = $file.'.empty';
+	my $cmd = "mv $file $file_out";
+	print $cmd."\n";
+	`$cmd`;
+}
 
 sub del_dejavu {
 	my ($file) = @_;

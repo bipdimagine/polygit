@@ -11,6 +11,7 @@ use Data::Dumper;
 use String::ProgressBar;
 use Compress::Snappy;
 use Parallel::ForkManager;
+use Carp;
 use Storable qw/thaw freeze/;
 use File::Temp qw/ :mktemp  /;
 
@@ -49,6 +50,10 @@ GetOptions(
 );
 die "\n\nNo -file or -f option... Die...\n\n" unless ($fileName);
 die "\n\nNeed -tab_outfile option... Die...\n\n" unless ($tab_outfile);
+
+confess("\n\nFile $fileName not found ! Die\n\n") if not -e $fileName;
+confess("\n\nINDEX File $fileName not found ! Die\n\n") if not -e $fileName.'.tbi';
+confess("\n\nFile $fileName not zip ! Use bgzip + tabix -p vcf. Die,\n\n") if not $fileName =~ /\.gz/;
 
 my $buffer = new GBuffer;
 my $genecode = $buffer->getQuery->getMaxGencodeVersion();

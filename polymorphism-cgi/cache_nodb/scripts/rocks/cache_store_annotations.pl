@@ -480,7 +480,7 @@ sub get_annotations {
 	my $tree_ratio = Set::IntervalTree->new;
 	foreach my $c ( keys %{ $project_tmp->buffer->config->{scaled_score_ratio} } ) {
 		 	my $value = $project_tmp->buffer->config->{scaled_score_ratio}->{$c};
-			$tree_ratio->insert("ratio_".$value,0,($value*100)+1);
+			$tree_ratio->insert("ratio_".$value,$value,101);
 			foreach my $p (@{$project_tmp->getPatients}){
 				$hpatients->{$p->name}->{"ratio_".$value} = Set::IntSpan::Fast::XS->new();
 			}
@@ -489,7 +489,7 @@ sub get_annotations {
 	my $tree_ratio_lower = Set::IntervalTree->new;
 	foreach my $c ( keys %{ $project_tmp->buffer->config->{lower_scaled_score_ratio} } ) {
 		 	my $value = $project_tmp->buffer->config->{lower_scaled_score_ratio}->{$c};
-			$tree_ratio_lower->insert("lower_ratio_".$value,$value,101);
+			$tree_ratio_lower->insert("lower_ratio_".$value,0,$value);
 			foreach my $p (@{$project_tmp->getPatients}){
 					$hpatients->{$p->name}->{"lower_ratio_".$value} = Set::IntSpan::Fast::XS->new();
 			}
@@ -620,7 +620,7 @@ sub get_annotations {
 			$hpatients->{$p->name}->{all}->add($lmdb_index);
 			$hpatients->{$p->name}->{$type}->add($lmdb_index);
 			my $r = $variation->getRatio($p);
-			my $results = $tree_ratio->fetch(0,($r*100)+1);
+			my $results = $tree_ratio->fetch(0,($r)+1);
 			foreach my $cat (@$results){
 				$hpatients->{$p->name}->{$cat}->add($lmdb_index);
 			}

@@ -730,6 +730,9 @@ function tabPatients(items , request ) {
 					else {
 						this.setArgsPost = load_polydude_args();
                    	   this.setArgsPost.patients=this.patient;
+   						var gene_name = document.getElementById('gene_name_dude').value;
+   						if (gene_name) { this.setArgsPost.only_gene=gene_name; }
+   						else { this.setArgsPost.only_gene=''; }
                 	   this.ioArgs.content = this.setArgsPost; 
                 	   this.setHref(url_dude);
 					}

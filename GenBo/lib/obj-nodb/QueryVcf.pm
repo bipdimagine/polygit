@@ -199,7 +199,7 @@ sub parseVcfFileForReference {
 	if ( $self->method() eq "melt" ) {
 		return $self->parseVcfFileForReference_melt( $reference, $useFilter );
 	}
-	if ( $self->method() eq "manta" or $self->method() eq "dragen-sv" or  $self->method() eq "Sniffles2") {
+	if ( $self->method() eq "manta" or $self->method() eq "dragen-sv" or  $self->method() eq "Sniffles2" or  $self->method() eq "Spectre") {
 		return $self->parseVcfFileForReference_manta( $reference, $useFilter );
 	}
 	
@@ -1871,7 +1871,7 @@ sub parseVcfFileForReference_gatk {
 #	foreach my $allele (map{thaw(decompress($_))} shift @{$hash_alleles->{deletion}} ){
 		$allele->{type} = 'del';
 		$allele->{obj}  = 'deletions';
-		if ( $self->method() eq 'manta' or $self->method() eq 'dragen-sv' or $self->method() eq 'Sniffles2' ) {
+		if ( $self->method() eq 'manta' or $self->method() eq 'dragen-sv' or $self->method() eq 'Sniffles2'  or  $self->method() eq "Spectre") {
 			$allele->{method} = 'manta';
 			
 			if ( abs( $allele->{len} ) >= 50 ) {

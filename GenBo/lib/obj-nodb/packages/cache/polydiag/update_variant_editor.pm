@@ -556,33 +556,12 @@ sub check_is_hgmd_dm_for_gene {
 	return;
 }
 
-sub check_is_clinvar_pathogenic_for_gene  {
-	my ($project,$hvariation,$gene) = @_;
-	return $hvariation->{value}->{clinvar_pathogenic_for_this_gene} if (exists $hvariation->{value}->{clinvar_pathogenic_for_this_gene});
-	if ($hvariation->{value}->{clinvar_pathogenic}) {
-		my $chr = $project->getChromosome($hvariation->{value}->{chromosome});
-		my $clinvar_id = $hvariation->{value}->{clinvar_id};
-		my $g = $project->newGene($gene->{id});
-		if ($chr->is_clinvar_pathogenic_for_gene($clinvar_id, $g)) {
-			$hvariation->{value}->{clinvar_pathogenic_for_this_gene} = 1;
-			return 1;
-		}
-		else {
-			$hvariation->{value}->{clinvar_pathogenic_for_this_gene} = undef;
-			$hvariation->{value}->{clinvar_pathogenic} = undef;
-			$hvariation->{value}->{clinvar} = '';
-			$hvariation->{html}->{clinvar} = '';
-		}
-	}
-	return;
-}
 
 sub table_validation_without_local {
 	my ($project, $hvariation, $gene) = @_;
 	my $cgi = new CGI();
 	my $color = "#555";
 	check_is_hgmd_dm_for_gene($project, $hvariation, $gene);
-	check_is_clinvar_pathogenic_for_gene($project, $hvariation, $gene);
 	if ($hvariation->{value}->{dm} or $hvariation->{value}->{clinvar_pathogenic}){
 		$color = "red";
 	}
@@ -3282,25 +3261,29 @@ foreach my $g (keys %$hotspots){
 				$out.=$cgi->td({style=>"background-color:#217DBB;color:white;font-size:12px"},$g);
 			}
 			elsif ($h eq  $hotspot->{A_ALT}){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10 if $hotspot->{COV} > 0;
 				my $color = "#f2dedc";
 				$color = "#F7BFB9" if $pc>2;
 				$color = "#E9897E" if $pc>5;
 				$out.=$cgi->td({style=>"background-color:$color;color:black"},"$pc% (".$hotspot->{$h}.")");
 			}
 			elsif ($h eq  $hotspot->{A_REF}){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10  if $hotspot->{COV} > 0;
 				$out.=$cgi->td({style=>"background-color:#c7eadd;color:black"},"$pc% (".$hotspot->{$h}.")");
 			}
 			elsif ($h eq  "DEL" && $hotspot->{A_ALT} eq "-"){
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10  if $hotspot->{COV} > 0;
 				my $color = "#f2dedc";
 				$color = "#F7BFB9" if $pc>2;
 				$color = "#E9897E" if $pc>5;
 				$out.=$cgi->td({style=>"background-color:#F7BFB9;color:black"},"$pc% (".$hotspot->{$h}.")");
 			}
 			else {
-				my $pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10;
+				my $pc = 0;
+				$pc = int(($hotspot->{$h}/$hotspot->{COV})*1000)/10  if $hotspot->{COV} > 0;
 				$out .= $cgi->td($hotspot->{$h});
 			}
 			#push(@td, $hotspot->{$h});

@@ -2437,13 +2437,12 @@ function construct_url_filter_data (chr_id) {
 	    
 		genetic_model_compound_multi = genetic_model_compound_multi.toLowerCase();
 		if (genetic_model_compound_multi != 'none') { filter_args += "&model_2=" + genetic_model_compound_multi; }
-		//alert ('FILTER ARGS: '+filter_args);
-	//}
-	//if (genetic_model == 'compound' && document.getElementById("fam_compound_multi_filters").checked == true) { 
+		
 	    var dejavu_value_2 = get_value_slider_dejavu('second_slider');
-	    if (dejavu_value_2 < max_project) {
-	        if      (dejavu_value_2 == 0)  { filter_args += "&dejavu_2=uniq"; }
-	        else if (dejavu_value_2 < 100) { filter_args += "&dejavu_2=" + dejavu_value_2; }
+	    if (dejavu_value_2 == 'all')  { filter_args += "&dejavu_2=all"; }
+		else if (dejavu_value_2 < max_project) {
+	        if (dejavu_value_2 == 0)  { filter_args += "&dejavu_2=uniq"; }
+	        else if (dejavu_value_2 <= 500) { filter_args += "&dejavu_2=" + dejavu_value_2; }
 	    }
 	    
     }
@@ -3704,24 +3703,15 @@ function check_slider_freq_init() {
 
 function check_slider_dejavu_init() {
 	var value_slider = dijit.byId("slider_dejavu").get("value");
-	//dijit.byId("slider_dejavu_init").set("value", parseInt(value_slider));
+	dijit.byId("slider_dejavu_init").set("value", parseInt(value_slider));
 	dijit.byId("slider_dejavu_2").set("value", parseInt(value_slider));
-	if (parseInt(value_slider) < 100) { document.getElementById('nb_dejavu_init').innerHTML = parseInt(value_slider); }
-	else { document.getElementById('nb_dejavu_init').innerHTML = parseInt(max_project); }
 }
 
 function check_slider_dejavu(second_slider) {
-	var nb_dejavu;
-	if (second_slider) { nb_dejavu = document.getElementById('nb_dejavu_2'); }
-	else { nb_dejavu = document.getElementById('nb_dejavu'); }
-		
 	var widget;
 	if (second_slider) { widget = document.getElementById('slider_dejavu_2'); }
 	else { widget = document.getElementById('slider_dejavu'); }
 
-	var text_dejavu;
-	if (second_slider) { text_dejavu = document.getElementById('text_dejavu_2'); }
-	else { text_dejavu = document.getElementById('text_dejavu'); }
 
     var value_slider = get_value_slider_dejavu(second_slider);
     
@@ -3729,34 +3719,16 @@ function check_slider_dejavu(second_slider) {
     	var first_value_slider = get_value_slider_dejavu();
     	if (value_slider < first_value_slider) {
     		value_slider = first_value_slider;
-    		if (value_slider <= 100) { dijit.byId("slider_dejavu_2").set("value", parseInt(value_slider)); }
-    		else { dijit.byId("slider_dejavu_2").set("value", 100); }
+    		if (value_slider <= 11) { dijit.byId("slider_dejavu_2").set("value", parseInt(value_slider)); }
+    		else { dijit.byId("slider_dejavu_2").set("value", 11); }
     	}
     }
     
     if (value_slider > max_project) {
-        if (value_slider <= 100) {
-            widget.set('value', max_project);
-            nb_dejavu.innerHTML = '<font color="#28A24C">' + max_project + ' max</font>';
-        }
-        else { nb_dejavu.innerHTML = '<font color="#28A24C">' + max_project + '</font>'; }
-    }
-    text_dejavu.innerHTML = '<i><b>Others</b> Projects: </i>';
-    if (value_slider == max_project) {
-        if (value_slider < 100) { nb_dejavu.innerHTML = '<font color="#28A24C">' + max_project + ' max</font>'; }
-        else {
-            nb_dejavu.innerHTML = '<font color="#28A24C">' + max_project + '</font>';
+        if (value_slider <= 11) {
+            widget.set('value', value_slider);
         }
     }
-    else if (value_slider == 0)  {
-        text_dejavu.innerHTML = '<i><b><font color="#EA3434">In this Project ONLY !</font></i></b>';
-        nb_dejavu.innerHTML = '';
-    }
-    else if (value_slider <= 10) { nb_dejavu.innerHTML = '<font color="#EA3434">' + value_slider + '</font>'; }
-    else if (value_slider <= 30) { nb_dejavu.innerHTML = '<font color="#EAA134">' + value_slider + '</font>'; }
-    else if (value_slider <= 50) { nb_dejavu.innerHTML = '<font color="#EACC34">' + value_slider + '</font>'; }
-    else                         { nb_dejavu.innerHTML = '<font color="#28A24C">' + value_slider + '</font>'; }
-    
     if (second_slider) {}
     else {
     	check_slider_dejavu('second_silder');
@@ -3771,24 +3743,20 @@ function get_value_slider_dejavu(second_slider) {
 	}
     else {
     	widget = dijit.byId("slider_dejavu");
-		var value = widget.get("value");
-		if (value == 1 ) {return 0 };
-		 if (value == 2 ) {return 1 };
-		 if (value == 3 ) {return 3 };
-		 if (value == 4 ) {return 5 };
-		 if (value == 5 ) {return 10 };
-		 if (value == 6 ) {return 20 };
-		 if (value == 7 ) {return 30 };
-		 if (value == 8 ) {return 50 };
-		 if (value == 9 ) {return 100 };
-		 if (value == 10 ) {return 500 };
-		 if (value == 11 ) {return 'all'; };
-		return "all" ;
-	}
-    var value = widget.get("value");
-    var new_value = value | 0;
-    if (new_value == 100) { new_value = nb_proj_span.textContent; }
-    return new_value;
+    }
+	var value = widget.get("value");
+	if (value == 1 ) {return 0 };
+	if (value == 2 ) {return 1 };
+	if (value == 3 ) {return 3 };
+	if (value == 4 ) {return 5 };
+	if (value == 5 ) {return 10 };
+	if (value == 6 ) {return 20 };
+	if (value == 7 ) {return 30 };
+	if (value == 8 ) {return 50 };
+	if (value == 9 ) {return 100 };
+	if (value == 10 ) {return 500 };
+	if (value == 11 ) {return 'all'; };
+	return "all" ;
 }
 
 
@@ -9076,7 +9044,7 @@ function selectFamilies_recregion(value) {
 	                        <div><span class="filterLabelActif2">Check Deja Vu</span></div>
 	                  	</td>
 	                   <td>
-	                        <div id="slider_dejavu_init" jsId="slider_dejavu_init" onChange="check_slider_dejavu_init()" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:0,value:8,maximum:11,discreteValues:11,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:230px; height: 25px;margin-left:20px;"' disabled>
+	                        <div id="slider_dejavu_init" jsId="slider_dejavu_init" onChange="check_slider_dejavu_init()" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:8,maximum:11,discreteValues:11,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:230px; height: 25px;margin-left:20px;"' disabled>
 	                            <div>
 	                                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:11, style:{height:"5px"}'> </div>
 	                                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
@@ -9094,7 +9062,7 @@ function selectFamilies_recregion(value) {
 	                                </ol>
 	                                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
 	                                    <li><font color="#EA3434"><span><i>None</i></span></font></li>
-	                                    <li><span id="text_dejavu_init"><i><b>Others</b> Projects: </i></span><span style="font-weight: bold;color: #28A24C" id ="nb_dejavu_init"></li>
+	                                    <li><span id="text_dejavu"><i>Max Samples</i></span></li>
 	                                    <li><font color="#28A24C"><span><i>All</i></span></font></li>
 	                                </ol>
 	                            </div>
@@ -9274,7 +9242,6 @@ function selectFamilies_recregion(value) {
 	                                </ol>
 	                                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">
 	                                    <li><font color="#EA3434"><span><i>None</i></span></font></li>
-	                                    <li><span id="text_dejavu_2"><i>Max Samples</i></span></li>
 	                                    <li><font color="#28A24C"><span><i>All</i></span></font></li>
 	                                </ol>
 	                            </div>
