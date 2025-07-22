@@ -21,7 +21,7 @@ use Logfile::Rotate;
 use File::Basename;
 use Net::SSH::Perl;
  
-
+my $ip_dragen = "10.1.2.10";
 
 my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
 my $bin_script_pipeline = qq{$Bin/scripts/scripts_pipeline};
@@ -64,7 +64,7 @@ GetOptions(
 	#'low_calling=s' => \$low_calling,
 );
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
- my $ssh = Net::SSH::Perl->new("10.1.2.9");
+ my $ssh = Net::SSH::Perl->new($ip_dragen);
 $ssh->login("$username");
 
 
@@ -90,7 +90,7 @@ my ($out, $err, $exit) = $ssh->cmd($cmd_dir);
 my $prefix = $patient->name;
 my $bam_prod = $patient->getBamFileName("dragen-align");
 
-my $url = qq{$username\@10.200.27.109:};
+my $url = qq{$username\@}.{$ip_dragen:};
 $url ="";
 #exit(0) if -e $bam_prod;
 #warn "coucou";
