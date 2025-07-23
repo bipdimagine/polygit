@@ -90,7 +90,7 @@ my ($out, $err, $exit) = $ssh->cmd($cmd_dir);
 my $prefix = $patient->name;
 my $bam_prod = $patient->getBamFileName("dragen-align");
 
-my $url = qq{$username\@}.{$ip_dragen:};
+my $url = qq{$username\@}.qq{$ip_dragen:};
 $url ="";
 #exit(0) if -e $bam_prod;
 #warn "coucou";
