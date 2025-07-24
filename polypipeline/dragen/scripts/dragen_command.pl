@@ -99,7 +99,7 @@ my($version_str, $stderr, $exit2) = $ssh->cmd("dragen --version");
 my @a = split("\n",$version_str);
 my @b = split(" ",@a[0]);
 
-my ($dragen_version) =$b[-1];
+my $dragen_version =$b[-1];
 
 
 my $tm = "/staging/tmp/";
@@ -380,7 +380,7 @@ $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." 
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 
 
-$patient->update_software_version("dragen",$cmd_dragen,$version_dragen);
+$patient->update_software_version("dragen",$cmd_dragen,$dragen_version);
 
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;
