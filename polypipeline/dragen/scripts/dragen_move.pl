@@ -116,7 +116,12 @@ if (exists $pipeline->{gvcf}){
 if (exists $pipeline->{vcf}){
 	my $vcf_pipeline = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
 	($out, $err, $exit)=  $ssh->cmd("test -f $vcf_pipeline");
-	move_vcf($vcf_pipeline,$patient);
+	my $bcftools = $buffer->software("bcftools");
+	my $tabix = $buffer->software("tabix");
+	my $vcf2 = "$dir_pipeline/".$prefix.".soft-filtered.vcf.gz";
+	system(qq{$bcftools view   -c 1  -i ' (QUAL<10 && (FORMAT/AF<0.3 || FORMAT/DP<10)) || (QUAL<20 && (FORMAT/AF<0.25 || FORMAT/DP<5)) || (QUAL<50 && FORMAT/DP<3 )' $vcf_pipeline -o $vcf2 -O z && $tabix -f -p vcf $vcf2});
+	 ($out, $err, $exit)=  $ssh->cmd("test -f $vcf2.tbi");
+	move_vcf($vcf2,$patient);
 }
 if (exists $pipeline->{cnv}){
 	my $target_pipeline  ="$dir_pipeline/".$prefix.".target.counts.gz";
