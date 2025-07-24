@@ -47,7 +47,7 @@ GetOptions(
 	'run=s' => \$run_name_option,
 	'mismatch=s' => \$mismatch,
 );
- 
+#
 my $bcl_dir;
 my $aoa;
 my $dir_out;
