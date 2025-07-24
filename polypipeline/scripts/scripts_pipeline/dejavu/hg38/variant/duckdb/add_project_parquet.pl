@@ -299,6 +299,7 @@ sub save_and_lift_rocks {
 		my $bit_models = 0 ;
 		foreach my $pid (keys %{$v->{patients_calling}}){
 			my @values;
+			next if not exists $v->{patients_calling}->{$pid}->{array_text_calling};
 			my $dp = $v->{patients_calling}->{$pid}->{dp};
 			my $ratio = $v->{patients_calling}->{$pid}->{pc};
 			my $alt = int($dp*($ratio/100));

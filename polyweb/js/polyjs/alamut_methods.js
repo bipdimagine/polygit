@@ -9,18 +9,14 @@ function httpGetFocusOn(url) {
 
 
 function displayInAlamut(chr, start, a){
-	dijit.byId('waiting').show();
-	var url = url_path + "json_output_nodb/get_alamut_id.pl";
-	url += "?project=" + projectName + '&var=' + chr + '_' + start + '_' + a[0] + '_' + a[1];
-	$.getJSON( url, function( data ) {
-		dijit.byId('waiting').hide();
-		if (data.alamut) {
-			var licence = data.licence_alamut;
-			var list_cmds = [];
-			list_cmds.push("http://localhost:10000/search?request="+data.alamut);
-			launch_alamut_visual_plus_cmds(list_cmds);
-		}
-    });
+	chr = chr.replace('-', '');
+	var locus;
+	if (a[0] == '-') { locus = chr+":"+start; }
+	else if (a[1] == '-') { locus = chr+":"+start; }
+	else { locus = chr+":"+start+a[0]+">"+a[1]; }
+	var list_cmds = [];
+	list_cmds.push("http://localhost:10000/search?request="+locus);
+	launch_alamut_visual_plus_cmds(list_cmds);
 	return;
 }
 
@@ -94,11 +90,7 @@ function httpGetLoadOnlyListBam(string_list_bam){
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request=BRCA1&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
-		var url = "http://localhost:10000/open"
-		if (list_bam[i].match(/\.cram/)) { url += "?filetype=cram"; }
-		else { url += "?filetype=bam"; }
-		url += "&path=https://www.polyweb.fr/"+list_bam[i];
-		list_cmds.push(url);
+		list_cmds.push("http://localhost:10000/open?filetype=BAM&path=https://www.polyweb.fr/"+list_bam[i]);
 	}
 	launch_alamut_visual_plus_cmds(list_cmds);
 }
@@ -108,11 +100,7 @@ function httpGetLoadOnlyListBamInGene(gene_name, string_list_bam){
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+gene_name+"&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
-		var url = "http://localhost:10000/open"
-		if (list_bam[i].match(/\.cram/)) { url += "?filetype=cram"; }
-		else { url += "?filetype=bam"; }
-		url += "&path=https://www.polyweb.fr/"+list_bam[i];
-		list_cmds.push(url);
+		list_cmds.push("http://localhost:10000/open?filetype=BAM&path=https://www.polyweb.fr/"+list_bam[i]);
 	}
 	launch_alamut_visual_plus_cmds(list_cmds);
 }
