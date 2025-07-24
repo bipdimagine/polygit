@@ -200,6 +200,7 @@ sub move_cram {
 	 system("$samtools idxstats $physical_name  -\@ 20  > $filename");
 }
 
+
 sub move_bam {
 	my ($bam,$patient) = @_;
 	my $prod = $patient->getBamFileName("dragen-align");
@@ -207,7 +208,7 @@ sub move_bam {
 		move_cram($bam,$patient);
 		return;
 	}
-	my $physical_name = move_file($bam,$patient,"bam","bai");
+	my $physical_name = move_file($bam,$patient,"dragen-align","bam","bai");
 	system("ln -sf  $physical_name $prod");
 	system("ln -sf  $physical_name.bai $prod.bai");
 }
