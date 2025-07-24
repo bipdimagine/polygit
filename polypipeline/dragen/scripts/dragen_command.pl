@@ -92,6 +92,16 @@ my $user = system("whoami");
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version =>$version);
 
+ my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
+ my $ssh = Net::SSH::Perl->new($buffer->config->{dragen}->{ip});
+ $ssh->login("$username");
+my($version_str, $stderr, $exit2) = $ssh->cmd("dragen --version");
+my @a = split("\n",$version_str);
+my @b = split(" ",@a[0]);
+
+my ($dragen_version) =$b[-1];
+
+
 my $tm = "/staging/tmp/";
 
 if ($project->isGenome){
@@ -124,8 +134,9 @@ if ($rna == 1) {
 	$spipeline.=",sj";
 }
 warn "move";
-warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version && touch $ok_move";
-system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version && touch $ok_move");
+
+warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version -dragen_version=$dragen_version && touch $ok_move";
+system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move");
 exit(0);
 
 ################################################
@@ -261,9 +272,8 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	
 }	
 elsif (exists $pipeline->{align}){
-warn "start";
- ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline) unless -e $fastq1;
-	warn "end";
+my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+	
 #	confess() unless $fastq1;
 	if ($fastq1) {
 	my $runid = $patient->getRun()->id;
@@ -368,7 +378,10 @@ $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
-$patient->update_software_version("dragen",$cmd_dragen);
+
+
+$patient->update_software_version("dragen",$cmd_dragen,$version_dragen);
+
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;
 
