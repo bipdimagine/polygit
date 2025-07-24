@@ -19,7 +19,7 @@ dragen_pipeline:/data-dragen/pipeline/
 software:/software/bin/
 dejavu-sv:/data-beegfs/projects.sv.parquet/
 dejavu-cnv:/data-beegfs/projects.cnv.parquet.2/
-
+bcl:/data-isilon/raw-data/
 [dejavu]
 variations:variations/rocks/
 projects:variations/projects.lmdb/

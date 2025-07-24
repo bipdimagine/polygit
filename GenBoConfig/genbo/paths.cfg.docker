@@ -9,6 +9,7 @@ global_search:/poly-disk/polycache/global_search/
 btf:/poly-disk/polycache/polybtf/
 cache:/poly-disk/polycache/rocks/
 project_pipeline:/poly-disk/pipeline/
+bcl:/poly-disk/raw-data/
 tmp:/tmp
 bds:/poly-disk/bds/
 dragen_pipeline:/data-dragen/pipeline/

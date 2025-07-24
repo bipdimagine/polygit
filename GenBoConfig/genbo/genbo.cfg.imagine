@@ -11,6 +11,8 @@ pw:mypolyweb
 polyweb_root://www.polyweb.fr/
 polyweb_NGS://www.polyweb.fr/NGS/
 polyweb_ROCKS://www.polyweb.fr/HG38/
+[dragen]
+ip:10.1.2.10
 
 [polysplice]
 version:1.00
