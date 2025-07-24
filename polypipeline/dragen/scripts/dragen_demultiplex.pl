@@ -48,6 +48,7 @@ GetOptions(
 	'mismatch=s' => \$mismatch,
 );
 #
+
 my $bcl_dir;
 my $aoa;
 my $dir_out;
