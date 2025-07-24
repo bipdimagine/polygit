@@ -261,7 +261,7 @@ $pm->run_on_finish(
 		}
 		$pm->wait_all_children();
 			print "check file =>".elapsed(abs(time - $now))."\n";
-
+			
 			if (@$delete_file){
 				print "error detected !!!!! ".$patient->name."\n";
 				
@@ -275,7 +275,7 @@ $pm->run_on_finish(
 		}
 			$now = time;
 			
-			my $dir_gvcf_out= $project->pipeline_tmp_dir();
+			my $dir_gvcf_out= $project->getCallingPipelineDir("join-".$patient->name);();
 		my $final_gvcf = $dir_gvcf_out."/".$patient->name.".g.vcf";
 		my $gz = $final_gvcf.".gz";
 		my $tbi = $final_gvcf.".gz.tbi";

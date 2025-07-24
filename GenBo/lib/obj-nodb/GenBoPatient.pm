@@ -1770,6 +1770,22 @@ sub getAlignmentFile {
 		return $self->bamFiles()->{$method_name};
 }
 
+sub getBamFileForPipeline {
+	my ($self,$text,$fork) = @_;
+	 $fork= 5 unless $fork;
+	$text =time unless $text;
+	if ($self->isCram){
+		my $bam_tmp = $self->project->getCallingPipelineDir("$text-".$self->name)."/".$self->name."-".time.".$text.bam";
+		my $samtools = $self->buffer->software("samtools");
+		my $ref = $self->project->genomeFasta();
+		my $cram_prod = $self->getBamFile();
+		system("$samtools view -@ $fork  -T $ref  $cram_prod  -o $bam_tmp --write-index && $samtools index $bam_tmp -@ $fork ");
+		return $bam_tmp;
+	}
+	else {
+		return $self->getBamFile();
+	}
+}
 sub isCram {
 	my ($self,$method) = @_;
 	my $file = $self->getAlignmentFile($method);

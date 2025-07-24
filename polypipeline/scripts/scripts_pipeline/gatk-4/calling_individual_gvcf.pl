@@ -225,13 +225,13 @@ foreach my $chr (@{$project->getChromosomes()}){
 					my $frun_id= $dir_out_gvcf."/$run_id.log";
 					my $cmd = qq{$gatk  HaplotypeCaller -R $reference -I $bam -L $bed_file  $recal_string  -O $outfile -ERC GVCF   --verbosity ERROR && date > $frun_id };
 					
-				#	warn $cmd;
-					my $cmd2 = qq{$cmd };
+					warn $cmd;
+					my $cmd2 = qq{$cmd } ;
 					#my $cmd2 = qq{$cmd && mv $tmpoutfile $outfile;rm $bed_file};
 					#warn "start region";
 					#warn $cmd;
 					#sleep(5);
-					system($cmd2);
+					system($cmd2) unless -e $outfile;
 					
 					my $h ={};
 					if (-e $frun_id){
