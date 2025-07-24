@@ -50,7 +50,7 @@ my @a_excludes;
 
 #choose control by run .
 my $controls;
-my $max_controls = 9;
+my $max_controls = 50;
 foreach my $r (@$runs) {
 	#find_other_patient($r);
 	#die();
@@ -113,7 +113,6 @@ foreach my $r (@$runs) {
 	warn "\t*******************".scalar (@hps2);
 	#warn Dumper @hps2;
 
-
 	foreach my $pr (keys %contr_projects){
 		next if $pr =~ /5409/; 
 		my $buffer1 = new GBuffer;
@@ -122,7 +121,7 @@ foreach my $r (@$runs) {
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
 			eval {
 			my $patient = $project1->getPatient($p->{patient});
-			my $b = $patient->getBamFileName();
+			my $b = $patient->getAlignFileName();
 			next unless -e $b;		
 			my $scompute = &compute_sex($patient);
 			my $cov_file = $patient->fileNoSqlDepth;
@@ -134,6 +133,7 @@ foreach my $r (@$runs) {
 			}
 			warn $patient->name." ".$pr  unless -e $cov_file;
 			next unless -e $cov_file;
+			warn $cov_file;
 			$p->{file_depth} = $cov_file;
 			$p->{dir_depth} = $project1->getCoverageDir()."/lmdb_depth";
 			$p->{bam} = $patient->getBamFile();

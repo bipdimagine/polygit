@@ -44,23 +44,22 @@ my $runs = $project->getRuns();
 
 my $no =  $project->noSqlCnvs("w");
 my $control = $no->get("raw_data","controls");
-
-my $hprojects;
-my $no;
+warn Dumper $control;
 my $list_controls; 
 my $patient_runs;
 foreach my $run (keys %{$control}) {
+	warn Dumper $run;
 	foreach my $hp (@{$control->{$run}}) {
 		my $name = $hp->{patient};
 		$list_controls->{$hp->{id}}++;
 		$patient_runs->{$hp->{id}} = $run;
 		my $dir = $hp->{file_depth};
+		warn $dir;
+#		
 		$hp->{no} = GenBoBinaryFile->new(name=>$name.".depth.lmdb",dir=>$hp->{dir_depth},mode=>"r");
 		my $pr =$hp->{$run}->{project};
-		push(@{$hprojects->{$run}->{$pr}},$hp);			
 	}
 }
-
 
 
 foreach my $patient (@{$project->getPatients}){
@@ -68,7 +67,9 @@ foreach my $patient (@{$project->getPatients}){
 			my $cov_file = $patient->fileNoSqlDepth;
 			my $p;
 			die($patient->name." ".$cov_file) unless -e $cov_file;
+			
 			next if exists $list_controls->{$patient->id};
+			$list_controls->{$patient->id}++;
 			$patient_runs->{$patient->id} = $r->id;
 			$p->{file_depth} = $cov_file;
 			$p->{dir_depth} = $project->getCoverageDir()."/lmdb_depth";
@@ -82,19 +83,20 @@ foreach my $patient (@{$project->getPatients}){
 			
 	
 }
+
  my $pm2 = new Parallel::ForkManager($fork);
   my $cai_count;
   my $plexi_count;
   my $can_count;
   my $plexn_count;
   my $error;
-  
  $pm2->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
 			$error ++  if $exit_code ne 0;
 			warn "end process";
 			my $count;
+			
 			my $cai = $data->{cai};
 			my $no =  $project->noSqlCnvs("w");
 			 #cai count
@@ -126,6 +128,7 @@ foreach my $patient (@{$project->getPatients}){
 					shift(@covs);
 					pop(@covs);
 				}
+				
 					my $sum = sum(@covs);
 					$can_count->{$primer_id}->{$rid}  += $sum;
 					$plexn_count->{$rid} +=  $sum;
@@ -153,11 +156,11 @@ foreach my $chr (@{$project->getChromosomes}){
 		
 			foreach my $run (@$runs){
 				my $run_id =  $run->id;
+				
 				foreach my $hp (@{$control->{$run_id}}) {
 						my $name = $hp->{patient};
 						my $dir = $hp->{dir_depth};
 						$hdepth->{$name} =  GenBoBinaryFile->new(name=>$name.".depth.lmdb",dir=>$dir,mode=>"r") unless exists $hdepth->{$name};
-						#warn $primer->start." ".$primer->end;
 						my $array = $hdepth->{$name}->getDepth($chr->name,$primer->start,$primer->end);
 						my $cov = sum(@$array)/scalar(@$array);
 						if ($chr->name eq "X"){
@@ -168,9 +171,7 @@ foreach my $chr (@{$project->getChromosomes}){
 						 	} 
 						
 						}
-						warn $cov." ".$name if $cov ==0;
 						$res->{cai_count}->{$primer->id}->{$hp->{id}} = $cov;
-						#warn $cov;	
 				}
 				
 				

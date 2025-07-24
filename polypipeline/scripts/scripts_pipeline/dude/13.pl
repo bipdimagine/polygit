@@ -31,7 +31,7 @@ my $plexn_count = $no->get("raw_data","plexn_count");
 #my $cai_count = $no->get("raw_data","cai_count");;
 
 my $can_count = $no->get("raw_data","can_count");
-
+$project->getPatients;
 my $plexi_count = $no->get("raw_data","plexi_count");
 my $controls = $no->get("raw_data","controls");
 warn "end";
@@ -44,7 +44,7 @@ my $chromosomes = $project->getChromosomes();
  		#next if $chr->name ne "X";
  	   my $pid      = $pm2->start() and next;	
  	   my $cai_count;
- 	 $project->buffer->dbh_reconnect();
+ 	# $project->buffer->dbh_reconnect();
  	#warn $chr->name;
  	my $nb =0;
  	my $no = $chr->get_lmdb_cnvs("w");
@@ -56,12 +56,10 @@ my $chromosomes = $project->getChromosomes();
  		 my $runs = $primer->getRuns();
 		
 		foreach my $run (@$runs) {
-	
+			
 			my $run_id = $run->id;
 			my $debug;
-			if ($primer->id =~ /chr12_22089390/){
-				$debug =1;
-		}
+
 		#next unless $debug;
 		my $patients = $primer->getPatientsByRun($run);
 			
@@ -75,10 +73,10 @@ my $chromosomes = $project->getChromosomes();
 				$primer->{zscore_data}->{$run->id} = [];
 			}
 			next if ($chr->name eq "Y");
-		
+			warn $can_count->{$primer->id}->{$run_id};
 			my $m1 = $can_count->{$primer->id}->{$run_id} / scalar(@$patients);
 			my $limit_m = 5 ;
-			 $limit_m = 10 if $project->isDiagnostic;
+			$limit_m = 10 if $project->isDiagnostic;
 			warn  $can_count->{$primer->id}->{$run_id}  if $debug;
 			warn $m1 ." ==>  ".$limit_m if $debug;
 			next if $m1 < $limit_m; ##

@@ -16,7 +16,7 @@ use Carp;
  use Statistics::Descriptive;
  
  my $buffer = new GBuffer;
-my $project_name= "NGS2017_1534";
+my $project_name= "";
 my $max_length_event = 3;
 my $fork;
 GetOptions(
@@ -35,7 +35,7 @@ my $all_tab;
 my $dir_out= $project->getVariationsDir("dude");
 $project->getCaptures();
 foreach my $patient (@{$project->getPatients}){
-	my $files = $patient->getVariationsFiles();
+	#my $files = $patient->getVariationsFiles();
 	my $file = $dir_out."/".$patient->name.".dude.lid";
 	my $filegz = $dir_out."/".$patient->name.".dude.lid.gz";
 
@@ -76,6 +76,7 @@ my $no =  $project->noSqlCnvs("r");
 my $control = $no->get("raw_data","controls");
 my $cai_count = $no->get("raw_data","cai_count");
 $project->getPatients();
+	$project->preload();
 $project->buffer->dbh_deconnect();
 my $bcftools = $buffer->software("bcftools");
 foreach my $patient (@{$project->getPatients}){
@@ -110,7 +111,7 @@ foreach my $patient (@{$project->getPatients}){
 	 	#$htree->{$chr->name} = $chr->getTreeVariants($patient);
 	 }
 	 
-	
+
 #	warn $file;
 	my $nb_genes;
 	my @beds;
@@ -118,7 +119,7 @@ foreach my $patient (@{$project->getPatients}){
 	foreach my $chr (@{$project->getChromosomes}){
 	#	next if $chr->name ne "1";
 		 my $pid      = $pm2->start() and next;	
-	   	$project->buffer->dbh_reconnect();
+	   	#$project->buffer->dbh_reconnect();
 		#next if $chr->name ne "21";
 		 	my %hgenes;
 			delete $chr->{natatime};
