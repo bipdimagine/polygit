@@ -52,6 +52,7 @@ my $rna;
 my $limit;
 my $version;
 my $cram;
+my $dragen_version;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -61,6 +62,7 @@ GetOptions(
 	'version=s' =>\$version,
 	'rna=s' =>\$rna,
 	'cram=s' =>\$cram,
+	'dragen_version' =>\$dragen_version,
 	#'low_calling=s' => \$low_calling,
 );
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
@@ -78,6 +80,7 @@ foreach my $l (split(",",$spipeline)){
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version =>$version);
 $version = $project->genome_version unless $version;
+
 my $tm = "/staging/tmp/";
 
 #system ("mkdir -p $dir_dragen/".$project->name );
@@ -157,7 +160,6 @@ if ( $rna ==1){
 
 #die($target_pipeline_gc ." probleme no target gc") unless  $exit ==0;
 #die() unless -e $target_pipeline;
-
 
 
 
