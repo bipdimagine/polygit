@@ -95,7 +95,6 @@ foreach my $chr (@{$project->getChromosomes()}) {
 
 my $diag;
 
-
 my $samtools = $buffer->config->{software}->{samtools};
 my $bgzip = $buffer->config->{software}->{bgzip};
 my $tabix = $buffer->config->{software}->{tabix};
@@ -113,6 +112,7 @@ $| = 1;
 my $res;
 my $nb_5;
 my $nb_15;
+my $nb_20;
 my $nb_30;
 my $nb_50;
 my $nb_100;
@@ -123,6 +123,7 @@ $pm->run_on_finish(
   	$nb_all += $h->{nb};
 	$nb_5 += $h->{5}; 
 	$nb_15 +=$h->{15};
+	$nb_20 +=$h->{20};
 	$nb_30 +=$h->{30};
 	$nb_50 +=$h->{50};
 	$nb_100 +=$h->{100};
@@ -140,11 +141,12 @@ foreach my $chr (@chrs){
 	
 }   
    
-
+$filein = $patient->getBamFile() unless $filein;
   
   $project->disconnect();
  foreach my $chr (@chrs){
  		my $pid = $pm->start and next;
+ 		
 	my $h;
 	if ($use_samtools){
 		by_chr_samtools($chr,$span, $span_extended, $name, $filein,  $temp_file{$chr} );
@@ -156,18 +158,18 @@ foreach my $chr (@chrs){
 	$pm->finish(0,$h);
 }
 $pm->wait_all_children();
-
 colored::stabilo('magenta',"  ---- end phase 1  $patient_name ----");
 
 warn " --------- END RAW COVERAGE------------";
 $project->buffer->dbh_reconnect();
 
 my $nb;
+$dir = $project->getCoverageDir() unless $dir;
 my $output   = $dir. "/$name.cov";
 my $outputgz = $output . ".gz";
 open( TOTO, ">$output" ) or die("can't open $output") ;
 system("chmod a+w $output");
-my @limit = ( 1, 5, 10, 15, 50 );
+my @limit = ( 1, 5, 10, 15, 20, 50 );
 
 #
 
@@ -209,6 +211,7 @@ if ($diag){
 	$nb_all =0;
 	$nb_5 =0;
 	$nb_15 =0;
+	$nb_20 =0;
 	$nb_50=0;
 	$nb_30 =0;
 	$nb_100 =0;
@@ -242,13 +245,15 @@ $pm->run_on_finish(
 	 		$tot += $h->{tot} ;
 	 		$nb_5+=$h->{nb_5};
 	 		$nb_15+=$h->{nb_15};
+	 		$nb_20+=$h->{nb_20};
 	 		$nb_30+=$h->{nb_30};
 	 		$nb_50+=$h->{nb_50};
 	 		$nb_100+=$h->{nb_100};
     }
     );
 
-
+$patient->project->disconnect;
+warn "disconnect -----------";
 foreach my $g (keys %$hrequest){
 	my $gene_id = $g;
 	my $pid = $pm->start and next;
@@ -273,6 +278,7 @@ foreach my $g (keys %$hrequest){
 	 		$h->{tot} += $z;
 	 		$h->{nb_5}++ if $z>5;
 	 		$h->{nb_15}++ if $z>15;
+	 		$h->{nb_20}++ if $z>20;
 	 		$h->{nb_30} ++ if $z>30;
 	 		$h->{nb_50} ++ if $z>50;
 	 		$h->{nb_100} ++ if $z>100;
@@ -292,12 +298,14 @@ $nb_all =1 if $nb_all == 0;
 my $mean    = $tot / $nb_all;
 my $mean_5  = $nb_5 / $nb_all;
 my $mean_15 = $nb_15 / $nb_all;
+my $mean_20 = $nb_20 / $nb_all;
 my $mean_30 = $nb_30 / $nb_all;
 my $mean_50 = $nb_50 / $nb_all;
 my $mean_100 = $nb_100 / $nb_all;
 print TOTO "mean_all\t1\t$nb_all\n";
 print TOTO "mean_all\t5\t$mean_5\n";
 print TOTO "mean_all\t15\t$mean_15\n";
+print TOTO "mean_all\t20\t$mean_20\n";
 print TOTO "mean_all\t30\t$mean_30\n";
 print TOTO "mean_all\t50\t$mean_50\n";
 print TOTO "mean_all\t99\t$mean\n";
@@ -448,6 +456,7 @@ my $sam = Bio::DB::Sam->new(-bam  =>$bam_file,
 	my $tot;
 	my $nb_5;
 	my $nb_15;
+	my $nb_20;
 	my $nb_30;
 	my $nb_100;
 	return unless exists $span_extended->{$chr_ucsc};
@@ -501,6 +510,9 @@ foreach my $pos (split(",",$span_extended->{$chr_ucsc}->as_string)){
    		}
    		if ($score >= 15){
    			$nb_15++;
+   		}  
+   		if ($score >= 20){
+   			$nb_20++;
    		}  	 
    		if ($score >= 5){
    			$nb_5++;
@@ -512,6 +524,7 @@ foreach my $pos (split(",",$span_extended->{$chr_ucsc}->as_string)){
 	print TITI "mean_$chr_ucsc\t1\t$nb\n";
 	print TITI "mean_$chr_ucsc\t5\t$nb_5\n";
 	print TITI "mean_$chr_ucsc\t15\t$nb_15\n";
+	print TITI "mean_$chr_ucsc\t20\t$nb_20\n";
 	print TITI "mean_$chr_ucsc\t30\t$nb_30\n";
 	print TITI "mean_$chr_ucsc\t50\t$nb_50\n";
 	print TITI "mean_$chr_ucsc\t99\t$tot\n";
@@ -577,6 +590,7 @@ my $bam_file = $filein;
 	my $tot=0;
 	my $nb_5=0;
 	my $nb_15=0;
+	my $nb_20 =0;
 	my $nb_30=0;
 	my $nb_100=0;
 	my $window = 100;
@@ -614,6 +628,9 @@ my $bam_file = $filein;
    			if ($depth >= 15){
    				$nb_15++;
    			}  	 
+   			if ($depth >= 20){
+   				$nb_20++;
+   			}  
    			if ($depth >= 5){
    				$nb_5++;
    			}  	 	
@@ -625,6 +642,7 @@ my $bam_file = $filein;
 	print TITI "mean_$chr_ucsc\t1\t$nb\n";
 	print TITI "mean_$chr_ucsc\t5\t$nb_5\n";
 	print TITI "mean_$chr_ucsc\t15\t$nb_15\n";
+		print TITI "mean_$chr_ucsc\t20\t$nb_20\n";
 	print TITI "mean_$chr_ucsc\t30\t$nb_30\n";
 	print TITI "mean_$chr_ucsc\t50\t$nb_50\n";	
 	print TITI "mean_$chr_ucsc\t99\t$tot\n";
@@ -636,13 +654,11 @@ my $bam_file = $filein;
 
 sub by_chr_samtoolsfast {
 my ($project,$chr_num,$span,$span_extended,$name,$filein,$filetemp) = @_;
-
 $project->buffer->dbh_reconnect();
 my $chr = $project->getChromosome($chr_num);
 
 my $t = time;
 my $bam_file = $filein;
-
 	return unless $span_extended;
 	
       my $is_ucsc; 
@@ -661,6 +677,7 @@ my $bam_file = $filein;
 	my $tot=0;
 	my $nb_5=0;
 	my $nb_15=0;
+	my $nb_20=0;
 	my $nb_30=0;
 	my $nb_50=0;
 	my $nb_100=0;
@@ -697,7 +714,10 @@ my $bam_file = $filein;
    			}   
    			if ($depth >= 15){
    				$nb_15++;
-   			}  	 
+   			}  	
+   			if ($depth >= 20){
+   				$nb_20++;
+   			}  
    			if ($depth >= 5){
    				$nb_5++;
    			} 
@@ -715,6 +735,7 @@ my $bam_file = $filein;
 	$h->{nb} = $nb;
 	$h->{5} =  $nb_5;
 	$h->{15} =  $nb_15;
+	$h->{20} =  $nb_20;
 	$h->{30} =  $nb_30;
 	$h->{50} =  $nb_50;
 	$h->{100} =  $nb_100;
@@ -723,6 +744,7 @@ my $bam_file = $filein;
 	print TITI "mean_$fasta_name\t1\t$nb\n";
 	print TITI "mean_$fasta_name\t5\t$nb_5\n";
 	print TITI "mean_$fasta_name\t15\t$nb_15\n";
+	print TITI "mean_$fasta_name\t20\t$nb_20\n";
 	print TITI "mean_$fasta_name\t30\t$nb_30\n";
 	print TITI "mean_$fasta_name\t50\t$nb_50\n";
 	print TITI "mean_$fasta_name\t99\t$tot\n";

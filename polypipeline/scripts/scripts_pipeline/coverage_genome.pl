@@ -99,7 +99,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 	$process->{$id} = 1;
 	my $pid = $pm->start and next;
 	
-	$project->buffer->dbh_reconnect();
+	#$project->buffer->dbh_reconnect();
 	my $intspan = $chr->getExtentedGenomicSpan(5000);
 	my $regions = $chr->chunk(50_000);
 	my $nb;
