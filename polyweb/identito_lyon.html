@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IV Barcoding tools</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1em;
+      max-width: 1200px;
+      margin: auto;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      font-family: monospace;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 1em;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1></h1>
+  <p>Collez votre tableau en-têtes avec les rsID puis sample :</p>
+  <textarea id="inputTable"></textarea>
+  <button onclick="convertCompressed()">Convertir</button>
+  <h2>Résultat</h2>
+  <pre id="output">IV Barcoding tools  Lyon</pre>
+
+  <script>
+    // Ref/Alt fixés manuellement d'après correspondance fournie
+    const refAltMap = {
+      "rs11702450": { ref: "A", alt: "G" },
+      "rs843345": { ref: "T", alt: "C" },
+      "rs1058018": { ref: "C", alt: "T" },
+      "rs8017": { ref: "C", alt: "T" },
+      "rs3738494": { ref: "C", alt: "T" },
+      "rs1065483": { ref: "G", alt: "A" },
+      "rs2839181": { ref: "A", alt: "G" },
+      "rs11059924": { ref: "C", alt: "T" },
+      "rs2075144": { ref: "G", alt: "A" },
+      "rs6795772": { ref: "C", alt: "T" },
+      "rs456261": { ref: "G", alt: "A" },
+      "rs1131620": { ref: "A", alt: "G" },
+      "rs2231926": { ref: "A", alt: "G" },
+      "rs352169": { ref: "G", alt: "A" },
+      "rs3739160": { ref: "C", alt: "T" }
+    };
+
+    function convertGenotype(geno, ref, alt) {
+      if (!geno) return "";
+      if (geno === ref + ref) return "1";
+      if (geno === alt + alt) return "2";
+      if ((geno === ref + alt) || (geno === alt + ref)) return "3";
+      return ""; // ignore autres valeurs (XY, XX, etc.)
+    }
+
+    function convertCompressed() {
+      const input = document.getElementById("inputTable").value.trim();
+      const lines = input.split("\n").map(l => l.trim());
+
+      const headers = lines[0].split(/\t|\s{2,}/);
+
+      const outputLines = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(/\t|\s{2,}/);
+        let sample = cols[cols.length - 1];
+        let compressed = "";
+
+        for (let j = 0; j < cols.length - 1; j++) {
+          const header = headers[j];
+          const meta = refAltMap[header];
+          if (meta) {
+            compressed += convertGenotype(cols[j], meta.ref, meta.alt);
+
+          }
+        }
+
+        outputLines.push(`${sample}\t${compressed}`);
+      }
+
+      document.getElementById("output").textContent = outputLines.join("\n");
+    }
+  </script>
+</body>
+</html>
