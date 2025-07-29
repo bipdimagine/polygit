@@ -184,7 +184,6 @@ sub move_file {
 		backup($physical_name);
 	}
 	#--remove-source-files
-	warn "rsync -rav  $url"."$file $physical_name ";
 	system("rsync -rav  $url"."$file $physical_name ");
 	system ("rsync -rav  $url"."$file.".$idxtype." $physical_name.".$idxtype);
 	return $physical_name;
@@ -211,6 +210,7 @@ sub move_bam {
 		return;
 	}
 	my $physical_name = move_file($bam,$patient,"dragen-align","bam","bai");
+	
 	system("ln -sf  $physical_name $prod");
 	system("ln -sf  $physical_name.bai $prod.bai");
 }
