@@ -47,8 +47,7 @@ GetOptions(
 	'run=s' => \$run_name_option,
 	'mismatch=s' => \$mismatch,
 );
-#
-
+ 
 my $bcl_dir;
 my $aoa;
 my $dir_out;
@@ -56,7 +55,7 @@ my %patients ;
 my $dir_fastq;
 my $run_name;
 my $umi_name;
-
+my $dir_bcl_tmp;
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
 	my $project = $buffer->newProject( -name 			=> $project_name );
@@ -97,6 +96,7 @@ foreach my $project_name (split(",",$project_names)){
 		die("problem different bcl dir : $bcl_dir ".$run->bcl_dir);
 	}
 	$bcl_dir = $run->bcl_dir;
+	 $dir_bcl_tmp = "/data-dragen/bcl/".$project->getRun->run_name()."/";
 	next if $aoa;
 	my $csv_tmp = $bcl_dir."/SP.".time.".csv";
 		die("no sample sheet in database ") unless ($run->sample_sheet);
@@ -375,15 +375,15 @@ while($checkComplete == 1){
 	sleep(3600);
 	$checkComplete = 0 if (-f $complete);
 }
-
-my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $bcl_dir --output-directory $dir_out --sample-sheet $ss --force  };
-warn $cmd;
+system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
+my $exit2 = system("rsync -rav $bcl_dir $dir_bcl_tmp && touch -r $dir_bcl_tmp");
+die() if $exit2 ne 0;
+my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
 
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
 
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
-
 die() if $exit ne 0;
 #exit(0);
 warn "END DEMULTIPEX \n let's copy ";

@@ -509,9 +509,11 @@ has files =>(
 		my $return = {};
 		my $files;
 		my $file = $dir . "/" . $self->type . "/" . $self->file_name . ".gz";
+		 $file = $dir . "/" . $self->type . "/" . "genome.bed.gz" if $project->isGenome;
 		confess("Unable to find capture file :" .$file."\n") unless -e $file;
 		$files->{gz} = $file;
 		my $file2 = $dir . "/" . $self->type . "/" . $self->file_name;
+		 $file2 = $dir . "/" . $self->type . "/" . "genome.bed" if $project->isGenome;
 		$files->{bed} = $file2;
 		#warn $files->{bed};
 		$files->{hotspot} = $dir . "/hotspot/" .lc($self->analyse) . ".bed";
