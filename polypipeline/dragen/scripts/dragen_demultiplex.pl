@@ -376,8 +376,8 @@ while($checkComplete == 1){
 	$checkComplete = 0 if (-f $complete);
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
-my $exit2 = system("rsync -rav $bcl_dir $dir_bcl_tmp && touch -r $dir_bcl_tmp");
-die() if $exit2 ne 0;
+my $exit2 = system("rsync -rav $bcl_dir  $dir_bcl_tmp && find $dir_bcl_tmp -type f -exec touch {} +");
+
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
 
 my $exit = 0;
