@@ -656,7 +656,7 @@ sub getVector_family_dominant() {
 	my $key = "family_dominant";
 	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
 	my @lPatIll = @{$self->getPatientsIll()};
-	
+	$self->{vector_transmission}->{$key}->{$chr->id} = $chr->getNewVector();
 	
 	foreach my $child (@{$self->getChildrenIll()}) {
 		unless ($self->{vector_transmission}->{$key}->{$chr->id}){
@@ -668,6 +668,8 @@ sub getVector_family_dominant() {
 	}
 	
 	foreach my $patient (@{$self->getChildrenHealthy()}) {
+		warn $patient->getVectorOrigin($chr);
+		warn $self->{vector_transmission}->{$key}->{$chr->id};
 		$self->{vector_transmission}->{$key}->{$chr->id} -= $patient->getVectorOrigin($chr);
 	}
 	
