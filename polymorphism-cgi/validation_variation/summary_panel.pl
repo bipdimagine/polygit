@@ -1994,7 +1994,7 @@ sub construct_identito_vigilence {
 	elsif ( scalar(@iv_vcf) > scalar(@iv) ) {
 		$level = pop(@iv_vcf);
 	}
-	my $url = "https://defidiag.polyweb.fr/cgi-bin//polymorphism-cgi//validation_variation/explain_identito_error.pl?project=".$project->name."&patient=".$p->name;
+	my $url = "https://defidiag.polyweb.fr/HG38/cgi-bin/HG38/polymorphism-cgi/validation_variation/explain_identito_error.pl?project=".$project->name."&patient=".$p->name;
 	my $out =qq{<a href="$url" target="_blank">};
 	my $error = 0;
 
