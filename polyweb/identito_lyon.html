@@ -50,7 +50,6 @@
       "rs352169": { ref: "G", alt: "A" },
       "rs3739160": { ref: "C", alt: "T" }
     };
-#
     function convertGenotype(geno, ref, alt) {
       if (!geno) return "4";
       if (geno === ref + ref) return "1";
@@ -64,7 +63,7 @@
       const lines = input.split("\n").map(l => l.trim());
 
       const headers = lines[0].split(/\t|\s{2,}/);
-
+ 
       const outputLines = [];
 
       for (let i = 1; i < lines.length; i++) {
