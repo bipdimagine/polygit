@@ -52,11 +52,11 @@
     };
 
     function convertGenotype(geno, ref, alt) {
-      if (!geno) return "";
+      if (!geno) return "4";
       if (geno === ref + ref) return "1";
       if (geno === alt + alt) return "2";
       if ((geno === ref + alt) || (geno === alt + ref)) return "3";
-      return ""; // ignore autres valeurs (XY, XX, etc.)
+      return "4"; // ignore autres valeurs (XY, XX, etc.)
     }
 
     function convertCompressed() {
