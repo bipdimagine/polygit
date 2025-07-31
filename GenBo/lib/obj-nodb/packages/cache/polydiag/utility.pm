@@ -89,7 +89,6 @@ sub return_hash_variant {
 	#my $id = $patient->name()."_".$tr1->id."_".$v->id;
 	my $z;
 	return undef unless $project->noSqlPolydiag()->exists_db($patient->name);
-	warn $project->noSqlPolydiag()->dir();
 	$z = $project->noSqlPolydiag()->get($patient->name,$id);
 	unless ($z) {
 		return undef;
