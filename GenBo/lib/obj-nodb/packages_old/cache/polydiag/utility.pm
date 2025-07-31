@@ -90,7 +90,7 @@ sub return_list_variants {
 	return \@vars;
 	
 }
-
+ #
 sub return_hash_variant {
 	my ($project,$vid,$tr_id,$patient,$vquery) = @_;
 	my $project_name= $project->name;
