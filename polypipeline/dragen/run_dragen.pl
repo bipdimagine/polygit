@@ -59,7 +59,7 @@ warn "end";
 
 sub run_cmd {
 	my ($cmd) = @_;
-	die() if $cmd !~ /^dragen/;
+	die() if $cmd !~ /dragen/;
 	my $f =0;
 	my $sleep = 5;
 	my $unlock;

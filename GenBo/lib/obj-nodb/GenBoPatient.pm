@@ -2772,7 +2772,7 @@ foreach my $id (keys %{$h}) {
        		if ($p->is_del) {
             	$hash->{'DEL'}++;
         	} elsif ($p->indel > 0) {
-            	$$hash->{'INS'}++;
+            	$hash->{'INS'}++;
         	} else {
         		my $aln = $p->alignment;
 				my $qpos = $p->qpos;

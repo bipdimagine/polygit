@@ -84,7 +84,7 @@ GetOptions(
 );
 my $pipeline = {};
 
-
+my $dragen = "dragen";
 foreach my $l (split(",",$spipeline)){
 	$pipeline->{$l} ++;
 }
@@ -95,11 +95,7 @@ my $project = $buffer->newProject( -name => $projectName , -version =>$version);
  my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
  my $ssh = Net::SSH::Perl->new($buffer->config->{dragen}->{ip});
  $ssh->login("$username");
-my($version_str, $stderr, $exit2) = $ssh->cmd("dragen --version");
-my @a = split("\n",$version_str);
-my @b = split(" ",@a[0]);
 
-my $dragen_version =$b[-1];
 
 
 my $tm = "/staging/tmp/";
@@ -122,6 +118,17 @@ my $dir_pipeline_log = $patient->getDragenDir("pipeline.log");
 my $ok_pipeline = $dir_pipeline_log."/".$prefix.".ok.pipeline.".time; 
 my $ok_move = $dir_pipeline_log."/".$prefix.".ok.move.".time;
 my $log_pipeline = $dir_pipeline_log."/".$prefix.".pipeline.".time.".log"; 
+my $pangenome ="";
+ #$pangenome = "--validate-pangenome-reference=false" 
+ 
+ $dragen = "/opt/dragen/4.3.16/bin/dragen" if $project->genome_version =~ /HG19/;
+ 
+ my($version_str, $stderr, $exit2) = $ssh->cmd("$dragen --version");
+my @a = split("\n",$version_str);
+my @b = split(" ",@a[0]);
+
+my $dragen_version =$b[-1];
+
 my $log_error_pipeline = $log_pipeline.".err"; 
 if ($rna){
 	run_pipeline_rna($pipeline);
@@ -149,7 +156,7 @@ my $param_align = "";
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $param_umi = "";
 my $tmp = "/staging/tmp";
-my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
+my $cmd_dragen = qq{$dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 my $runid = $patient->getRun()->id;
 my $bam   = $dir_pipeline."/".$patient->name.".bam";
 my ($fastq1,$fastq2);
@@ -171,6 +178,7 @@ if ($version && exists $pipeline->{align} ){
 	#$param_align .= "--output-format CRAM " if $version =~/HG38/;
 	
 }	
+
 elsif (-e $patient->getBamFileName()) {
 	my $opt = "--bam-input";
 	$bam = $patient_ori->getBamFile();
@@ -264,7 +272,7 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $patient_ori = $project_ori->getPatient($patients_name);
 	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true -" unless $cram;
 	$param_align .= "--output-format CRAM " if $cram;
 	if ($umi){
 		confess();
@@ -314,7 +322,7 @@ else {
 my $param_gvcf = "";
 my $tmp = "/staging/tmp";
 
-my $cmd_dragen = qq{dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
+my $cmd_dragen = qq{$dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
 if (exists $pipeline->{gvcf}){
 	
 	$param_gvcf = qq{--vc-emit-ref-confidence GVCF } ;
@@ -376,11 +384,11 @@ $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 
 
-$patient->update_software_version("dragen",$cmd_dragen,$dragen_version);
+$patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
 
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;
