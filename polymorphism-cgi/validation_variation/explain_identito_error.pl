@@ -111,7 +111,7 @@ print <<'HTML';
   <style>
     table { border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #999; padding: 5px 10px; text-align: center; }
-    th { background-color: #f2f2f2; }
+    th { background-color: #DADaff; }
     caption { font-weight: bold; margin-bottom: 10px; }
   </style>
 </head>
@@ -123,17 +123,34 @@ print <<'HTML';
 HTML
 
 print $patient->identity_vigilance()." ->". $patient->identity_vigilance_vcf()."<br>";
+
+my %error;
+for (my$i=0;$i<@iv;$i++){
+	$error{$i} ++ if $iv[$i] ne $iv_vcf[$i];
+}
+my $i =0;
 foreach my $snp (@snps) {
 	my $n = $snp->{rs} ." ".$snp->{chr}.":".$snp->{start};
-    print "<th>$n</th>";
+	my $style = qq{};
+	if (exists $error{$i}){
+		$style = qq{style="background-color:tomato";};
+	}
+    print "<th $style >$n</th>";
+    $i++;
 }
 print "</tr>\n<tr>";
 
 for (my $i=0;$i<@snps;$i++){
 	my $n = return_text($snps[$i],$iv[$i]);
-	print "<td>$n</td>";
+	my$n2 = return_text($snps[$i],$iv_vcf[$i]);
+	my $style = qq{style="background-color:#f8f8f8";};
+	if (exists $error{$i}){
+		$style = qq{style="background-color:tomato";};
+	}
+	print "<td $style>$n-$n2</td>";
 }
 print "</tr>\n<tr>";
+
 
 for (my $i=0;$i<@snps;$i++){
 	my $h = return_pileup($snps[$i],$bam_obj);
@@ -143,7 +160,11 @@ for (my $i=0;$i<@snps;$i++){
 		my $v4 = $h->{G};
 		
 	my $n = "A($v1) T ($v2) C($v3) G($v4)";
-	print "<td>$n</td>";
+	my $style = qq{style="background-color:white";};
+	if (exists $error{$i}){
+		$style = qq{style="background-color:tomato";};
+	}
+	print "<td $style >$n</td>";
 }
 
 print "</tr>\n</table>";

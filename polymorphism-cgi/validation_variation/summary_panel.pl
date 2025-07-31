@@ -765,7 +765,6 @@ qq{<button type="button" class ="btn btn-xs btn-primary "  $style_btn_name >$ir<
 	#$line->{Patient}  = $cgi->td($class,$p->return_icon."&nbsp;".$p->name);
 
 	my $cov = $p->coverage();
-
 	#global value
 
 	my $sex = $p->sex();
@@ -844,7 +843,6 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 		}
 
 	}
-	##
 	
 	if (-e $project->getVariationsDir("vntyper").'/'.$p->name.'.json') {
 		open (JSON, $project->getVariationsDir("vntyper").'/'.$p->name.'.json');
@@ -1996,7 +1994,8 @@ sub construct_identito_vigilence {
 	elsif ( scalar(@iv_vcf) > scalar(@iv) ) {
 		$level = pop(@iv_vcf);
 	}
-	my $out;
+	my $url = "https://defidiag.polyweb.fr/cgi-bin//polymorphism-cgi//validation_variation/explain_identito_error.pl?project=".$project->name."&patient=".$p->name;
+	my $out =qq{<a href="$url" target="_blank">};
 	my $error = 0;
 
 	for ( my $i = 0 ; $i < @iv ; $i++ ) {
@@ -2037,6 +2036,7 @@ sub construct_identito_vigilence {
 		}
 
 	}
+	$out.="</a>";
 	if ($level) {
 		$error = 0;
 		$error = 2 if $level eq "e";
@@ -2322,7 +2322,7 @@ sub table_muc1 {
 		});
 		
 		
-			
+			warn  $project->getVariationsDir("vntyper").'/'.$patient->name.'.json';
 
 			if (-e $project->getVariationsDir("vntyper").'/'.$patient->name.'.json') {
 				open (JSON, $project->getVariationsDir("vntyper").'/'.$patient->name.'.json');
@@ -2391,7 +2391,7 @@ sub table_muc1 {
 				);
 				
 				my $style2 = "background-color:" . $color[ $pn % 2 ];
-				if ( $patient->kestrel == -1 ) {
+				if ( $patient->kestrel && $patient->kestrel == -1 ) {
 					confess();
 					$out_table .=
 					$out_table .= $cgi->td(
