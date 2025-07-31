@@ -98,7 +98,6 @@ foreach my $l (split("\n",$l1)){
 }
 my @iv = split( "", $patient->identity_vigilance() );
 my @iv_vcf = split( "", $patient->identity_vigilance_vcf() );
-$iv_vcf[5] = 4;
 
 print $cgi->header('text/html; charset=utf-8');
 
