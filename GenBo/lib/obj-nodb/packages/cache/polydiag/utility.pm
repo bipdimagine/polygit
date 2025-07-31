@@ -56,7 +56,7 @@ sub get_date {
 			
            return ($date,$days_difference);
 }
-
+#
 
 sub return_list_variants {
 	my ($project,$patient,$tr_id) = @_;
@@ -81,7 +81,6 @@ sub return_list_variants {
 my $tm = 0;
 sub return_hash_variant {
 	my ($project,$vid,$tr_id,$patient,$vquery) = @_;
-	die();
 	my $d = $project->getCacheDir();
 	my $project_name= $project->name;
 	my $patient_name = $patient->name();
