@@ -6088,6 +6088,27 @@ has countInThisRunPatients => (
 	},
 );
 
+has in_this_run_patients2 => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h;
+	my $res;
+	my $total = 0;
+	my $inthisrunp;
+	foreach my $run (@{$self->getRuns}){
+		my $patients = $run->getAllPatientsInfos();
+			foreach my $p (@$patients){
+				$inthisrunp->{$p->{project} }->{$p->{id}} ++;
+				$total ++;
+			}
+		}
+		$inthisrunp->{nb_patients} = $total;
+		return $inthisrunp;
+	},
+);
+
 
 
 has in_this_run_patients => (
@@ -6152,7 +6173,7 @@ sub getDejaVuThisProject {
 sub getDejaVuInfos {
 	my ( $self, $id ) = @_;
 	my ( $chr, @t ) = split( "_", $id );
-	confess();
+	#confess();
 	my $hres;
 	my $no = $self->lite_deja_vu2();
 	my $string_infos = $no->get( $chr, $id );

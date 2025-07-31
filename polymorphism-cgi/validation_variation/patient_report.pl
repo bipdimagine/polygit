@@ -323,7 +323,7 @@ my $buffer = GBuffer->new();
 my $polyweb_url = $buffer->config->{polyweb_url}->{polyweb_ROCKS};
 my $deja_vu_url = "$polyweb_url/polyweb/polydejavu/dejavu.html?input=";
 #my $lcdb_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
-my $deja_vu_light_url = "http://$server/$variation_script";
+my $deja_vu_light_url = $ENV{HTTP_REFERER}."/$variation_script";
 my $lcdb_url = $deja_vu_light_url;
 $lcdb_url =~s/variation_/lcdb_/;
 #"http://$server/$variation_script";
@@ -797,6 +797,7 @@ sub construct_htranscripts {
 					$href .= qq{?project=$project_name&transcript=$tr_id&variation_id=$var" target="_blank" style="color:black;font-weight:bold">};
 					 }
 				if ($edit_mode == 1){
+					
 					my $vv = $href.$hvariation->{in_this_run}."</a>" ;
 					$hvariation->{in_this_run} =$vv;
 				}
@@ -825,7 +826,7 @@ sub construct_data {
 	my $version ="2.3";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
-	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version");
+	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version.1");
 	#warn $cache_id;
 	my $text = $no_cache->get_cache($cache_id);
 	
@@ -2233,9 +2234,7 @@ sub print_variation_td_edit{
 					
 				}	
 				if ( $cat eq "in_this_run"){
-
 					$text =~ s/white/black/; 
-
 					 $text = update::printSimpleBadge(qq{$text},3);
 				}
 		if (exists $variation->{dup}){

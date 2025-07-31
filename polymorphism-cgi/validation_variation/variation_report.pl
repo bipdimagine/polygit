@@ -88,8 +88,9 @@ my @header = ("ngs","ratio");
 my $samtools = $buffer->software('samtools');
 my $region = $variation->getChromosome->ucsc_name.":".$variation->start."-".$variation->end;	
 my @letters = ("A","T","C","G","\\*");
-my $ps = $project->in_this_run_patients();
+my $ps = $project->in_this_run_patients2();
 delete $ps->{total};
+delete $ps->{nb_patients};
 unless (exists $ps->{$project_name}){
 my $i=0;
 foreach my $patient (@{$project->getPatients}){
@@ -97,14 +98,15 @@ foreach my $patient (@{$project->getPatients}){
 	$i++;
 }
 }
+warn Dumper $ps;
 foreach my $pr2 (keys %$ps){
 	
 	my @listp = map{$ps->{$pr2}->{$_}} keys %{$ps->{$pr2}};
-	
 	my $buffer2 = GBuffer->new();
 	my $project2 = $buffer->newProject(-name=>$pr2);
-	my $patients2 = $project2->get_list_patients(join(",",@listp),",");
+	my $patients2 = $project2->getPatients();
 	foreach my $p (@$patients2){
+		next unless exists $ps->{$pr2}->{$p->id};
 		my $d = $p->depth($variation->getChromosome->name,$variation->start,$variation->start)->[0];
 		#my $bam = $p->getBamFile;
 		#my ($res) = `$samtools depth -d 50000   $bam -r $region  | cut -f 3`;
@@ -138,6 +140,7 @@ foreach my $pr2 (keys %$ps){
 }
 print $cgi->end_table();
 print $cgi->end_div();
+exit(0);
 my $similar = $project->similarProjects();
 my $hres = $project->getDejaVuInfos($vid);
 
