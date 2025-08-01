@@ -319,11 +319,11 @@ $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "www.polyweb.fr" if $server =~/10\.200\.27/;
 
 my $buffer = GBuffer->new();
-
+my $project_name = $cgi->param('project');
 my $polyweb_url = $buffer->config->{polyweb_url}->{polyweb_ROCKS};
 my $deja_vu_url = "$polyweb_url/polyweb/polydejavu/dejavu.html?input=";
 #my $lcdb_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
-my $deja_vu_light_url = $ENV{HTTP_REFERER}."/$variation_script";
+my $deja_vu_light_url = "https://www.polyweb.fr/cgi-bin/HG38/polymorphism-cgi/validation_variation/variation_report.pl";
 my $lcdb_url = $deja_vu_light_url;
 $lcdb_url =~s/variation_/lcdb_/;
 #"http://$server/$variation_script";
@@ -331,7 +331,7 @@ my $nb_gene_by_patient = 3;
 my $nb_exon_by_genes = 10;
 
 
-my $project_name = $cgi->param('project');
+
 my $force_cache =  $cgi->param('force_cache');
 my $pipeline =  $cgi->param('pipeline');
 #my $project = $buffer->newProject(-name=>$project_name);
@@ -831,7 +831,7 @@ sub construct_data {
 	my $text = $no_cache->get_cache($cache_id);
 	
 	#TODO: here enlever cache
-	#$text = undef;
+	$text = undef;
 	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
