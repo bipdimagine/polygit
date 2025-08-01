@@ -218,7 +218,12 @@ sub compute_coverage_diagnostic4 {
 	my $project  = $buffer->newProject( -name => $project_name, -verbose => 1 );
 	$project->disconnect();
 	my $patients  = $project->getPatients();
-	my $no       = $project->noSqlCoverage();
+	my $no       = $project->noSqlCoverage("w");
+	$no->close;
+	delete $project->{noSqlCoverage};
+	$no       = $project->noSqlCoverage("w");
+	warn $no->dir;
+	
 	my @paddings = ( 0, 5, 10, 15, 20, 30 );
 	my @utrs     = ( 0, 1 );
 	my @transcripts =
@@ -226,10 +231,14 @@ sub compute_coverage_diagnostic4 {
 	my $utr     = 0;
 	my $padding = 20;
 	my $intronic = 0;
+	my $hash;
 	foreach my $padding (@paddings){
-		my $list_transcripts2 = preload_coverage::computeLowTranscripts($project,\@transcripts,$no,$intronic,$utr,$padding);
+		my $list_transcripts2 = preload_coverage::computeLowTranscripts($project,\@transcripts,undef,$intronic,$utr,$padding);
+		warn $padding;
+		$hash->{$project->name,"minimum-".$padding."-".$utr."-".$intronic};
 		$no->put($project->name,"minimum-".$padding."-".$utr."-".$intronic,$list_transcripts2) ;
 	}
+	warn "end";
 	$no->close();
 	undef($no);
 	return;
@@ -756,6 +765,7 @@ sub cache_cnv {
 	}
 	preload_coverage::load_cnv_score( $projectP, $projectP->getPatients,
 		\@transcripts );
+		$projectP->noSqlCoverage->close;
 
 }
 

@@ -11,8 +11,8 @@ sub computeLowTranscripts{
  	
 	foreach my $t (@$transcripts){
 		my $tutr = $utr;
-		warn $t->id." ".$t->isncRNA();
 		my $capture_intspan = $t->getChromosome->getIntSpanCapture();
+		$tutr = 0;
 		$tutr = 1 if ($t->getChromosome->name eq "MT");  
 		my $debug;
 	#	$debug = 1 if $t->name eq "ENST00000339618";
@@ -36,24 +36,20 @@ sub computeLowTranscripts{
 		}
 			
 	my @ids = map{$_->id} sort{$a->{start}*$a->strand <=> $b->{start}*$b->strand }	@$exons;
-	
-	foreach my $p (@{$project->getPatients}){
+	foreach my $eid (@$exons){
 		my $found;
-		my @array_min;
-		foreach my $eid (@ids){
-		 	my $h = $no->get($p->name,$eid."_".$padding."_".$utr);
-		 	push(@array_min,$h->{min});
+		my ($start,$end) = $eid->start_end({padding=>$padding,utr=>$utr});
+		 foreach my $p (@{$project->getPatients}){
+			
+			my $min = $p->minDepth($eid->getChromosome->name,$start,$end);
+		 	$hp->{$t->id}->{$p->id} = $min unless exists $hp->{$t->id}->{$p->id};
+		 	$hp->{$t->id}->{$p->id} = $min if $min < $hp->{$t->id}->{$p->id};
 		}
-		#my $min = min(@array_min);
-		$hp->{$t->id}->{$p->id} = min(@array_min);
-		#$toto->{$t->id}->{$p->id} ++;#  if $found ==1;
 	}
-	
 }
 
 
 print "</div>" if $print;
-return $hp;
 return $hp;
 	
 }

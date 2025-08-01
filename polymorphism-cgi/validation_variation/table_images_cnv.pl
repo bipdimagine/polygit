@@ -69,6 +69,7 @@ my $version = 1;
 my $key = return_uniq_keys($cgi);	
 my $cache_id = md5_hex("polydiag_cnv_".join(";",@$key).".$version");
 my $text = $no_cache->get_cache($cache_id);
+$text= undef;
 if ($text){
 	$| =1;
 	print $text;
@@ -107,7 +108,7 @@ if ( $cgi_transcript eq "all" ) {
 else {
 	@transcripts_cgi = split( ",", $cgi_transcript );
 }
-
+warn Dumper @transcripts_cgi;
 my $capture = $project->getCaptures()->[0];
 my $vquery;
 
@@ -122,6 +123,7 @@ foreach my $run (@$runs) {
 
 if ( $project->isDude ) {
 	@transcripts_cgi = select_transcripts( $project, \@transcripts_cgi );
+	warn Dumper @transcripts_cgi;
 }
 else {
 	$out .= html::print_cadre( $cgi, "CNV" );
@@ -140,8 +142,12 @@ else {
 	print $out;
 	exit(0);
 }
-my @transcripts = sort{$a->getGene->external_name cmp $b->getGene->external_name} @{ $project->newTranscripts( \@transcripts_cgi ) };
-
+my @transcripts;
+warn Dumper @transcripts_cgi;
+foreach my $tid (@transcripts_cgi  ){
+	push(@transcripts,$project->newTranscript("$tid"));
+}
+#my @transcripts = sort{$a->getGene->external_name cmp $b->getGene->external_name} @{ $project->newTranscripts( \@transcripts_cgi ) };
 
 
 $out .= html::print_cadre( $cgi, "CNV" );

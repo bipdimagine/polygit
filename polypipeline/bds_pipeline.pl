@@ -68,40 +68,14 @@ my $define_steps;
 my $yes =0;
 
 
-#$define_steps->{pipeline}->{all} = ["alignment","elprep","move_bam","coverage","gvcf4","callable_regions","binary_depth"];
-#$define_steps->{pipeline}->{all_genome} = ["alignment","elprep","move_bam","gvcf4","callable_regions","binary_depth","breakdancer","manta","canvas","wisecondor","calling_wisecondor"];
-#$define_steps->{pipeline}->{cnv} = ["breakdancer","manta","canvas","wisecondor","calling_wisecondor"];#,"manta","canvas","wisecondor","calling_wisecondor"];
-#
-#$define_steps->{pipeline}->{diag_capture} = ["alignment","elprep","move_bam","coverage","gvcf4","calling_panel","binary_depth"];
-#$define_steps->{pipeline}->{diag_primer} = ["alignment","mask_primer","bam_sort","readgroup","realign_recal","move_bam","coverage","gvcf4","calling_panel","binary_depth"];
-#$define_steps->{pipeline}->{diag_pcr} = ["alignment","readgroup","realign_recal","move_bam","coverage",'gvcf4',"calling_panel","binary_depth"];
-#$define_steps->{pipeline}->{picard_stat} = ["stats"];
-#$define_steps->{pipeline}->{diag_mito} = ["alignment","rmdup","readgroup","move_bam","coverage","calling_panel","binary_depth"];
-#$define_steps->{pipeline}->{just_alignement} = ["alignment","elprep","move_bam"];
-#$define_steps->{pipeline}->{gvcf_binary_depth} = ["gvcf4","binary_depth"];
-#$define_steps->{pipeline}->{rna_seq} =["alignment","rmdup","move_bam","rnaseq_metrics","binary_depth"];
-#$define_steps->{pipeline}->{rnaseq_umi} =["alignment","rmdup_nudup","move_bam","rnaseq_metrics","binary_depth"];
-#$define_steps->{pipeline}->{exome_umi} =["concat_fastq_umi","fastq_to_bam","annotate_with_umi","run_alignment_umi","merge_bam_ubam","group_reads_by_umi","call_consensus_reads","filter_consensus_read","bam_to_fastq_umi","move_bam","calling_panel","coverage","binary_depth"];
-#$define_steps->{pipeline}->{qiagen} =["reorder_picard","readgroup","move_bam","coverage","binary_depth"];
-#
-#
-#$define_steps->{calling}->{all} = ["genotype_gvcf4","correct_vcf","move_vcf_hc4","dude"];
-#$define_steps->{calling}->{genotype_and_move} = ["genotype_gvcf4","correct_vcf","move_vcf_hc4"];
-#$define_steps->{calling}->{dude} = ["dude"];
-#$define_steps->{transcripts}->{all} = ["transcripts_dude","genes_dude","transcripts_coverage"];
-#$define_steps->{pipeline_diag} = ["alignment","elprep","move_bam","coverage","gvcf4","callable_regions","binary_depth"];
 $predef_steps->{getFastqFromBam}=["bam_to_fastq"];
-
-
-
-#$predef_steps->{exome_umi} =["concat_fastq_umi","fastq_to_bam","annotate_with_umi","run_alignment_umi","merge_bam_ubam","group_reads_by_umi","call_consensus_reads","filter_consensus_read","bam_to_fastq_umi","move_bam","calling_panel","coverage",binary_depth"];
-#$predef_steps->{calling_rna_seq} =["alignment", "rmdup","splitntrim","covariate","move_bam","gvcf4","callable_regions"];
 my $filename_cfg;
 my $limit;
 my $version;
 my $arg_steps;
 my $pipeline_name;
 my $pad;
+my $secret;
 
 GetOptions(
 	'project=s' => \$projectName,
@@ -118,13 +92,16 @@ GetOptions(
 	'version=s' => \$version,
 	'pipeline=s' =>\$pipeline_name,
 	'yes=s' =>\$yes,
-	#'low_calling=s' => \$low_calling,
 	'padding=s' =>\$pad,
+	'nolimit=s' =>\$secret,
 );
 $patients_name = "all" unless $patients_name;
 my $report;
 my $buffer = GBuffer->new();
-
+if ($pipeline_name eq "dragen"){
+$filename_cfg = $buffer->config_directory()."/pipeline/after_dragen_pipeline.cfg";
+$pipeline_name ="";
+}
 unless ($filename_cfg) {
  $filename_cfg = $buffer->config_directory()."/pipeline/pipeline.cfg";
 }
@@ -274,6 +251,7 @@ my $steps = {
 				"star_align" => sub {$pipeline->star_align(@_)},
 				"deepvariant" => sub {$pipeline->deepvariant(@_)},
 				"rnaseqsea_capture" => sub {$pipeline->rnaseqsea_capture(@_)},
+				"hificnv" => sub {$pipeline->hificnv(@_)},	
 				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
 				"specie_contaminant_check" => sub {$pipeline->check_specie_contaminant(@_)},
 				"regtools" => sub {$pipeline->regtools_splices(@_)},
@@ -315,6 +293,7 @@ foreach  my $type (@types_steps){
 }
 }
 $pipeline->priority_name($list_steps_types);
+$pipeline->queue("-q pipeline") unless $secret;
 my $dir_bds =$pipeline->dir_bds();
 #$pipeline->fastq_extend($fastq_ext) if $fastq_ext;
 $pipeline->max_cpu($max_cpu) if $max_cpu ;
@@ -407,10 +386,10 @@ my $nb_type = 0;
 warn Dumper $list_steps;
 
 foreach my $list_requests (@{$list_steps}) {
-	warn  Dumper $list_requests;
+
 	
 	my $type_objects = $list_steps_types->[$nb_type];
-	warn $type_objects;
+
 	$nb_type ++;
 	if ($type_objects eq 'calling') {
 		$pipeline->add_sample_with_priority($project, $priority);

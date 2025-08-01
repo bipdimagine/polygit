@@ -122,25 +122,32 @@ has is_noncoding =>(
 sub return_start_end {
 	 my ($self,%args ) =@_;
 	 my $padding = $args{padding};
+	 return $self->{start_end}->{$padding} if exists   $self->{start_end}->{$padding};
 	 my $sstart = $self->start;
 	my $send = $self->end;
 	$sstart -= $padding; #unless $self->$self->start ;
 	$send += $padding; #unless $self->$self->start ;
 	$sstart =1 if $sstart <=0;
 	#$send = $self->getChromosome->length -1 if $send > $self->getChromosome->length ;
-	return {start=>$sstart,end=>$send};
+	$self->{start_end}->{$padding}->{start} = $sstart;
+	$self->{start_end}->{$padding}->{end} = $send;
+	return $self->{start_end}->{$padding};
 }
 
-#method return_start_end ( Int :$padding){
-#	my $sstart = $self->start;
-#	my $send = $self->end;
-#	$sstart -= $padding; #unless $self->$self->start ;
-#	$send += $padding; #unless $self->$self->start ;
-#	$sstart =1 if $sstart <=0;
-#	#$send = $self->getChromosome->length -1 if $send > $self->getChromosome->length ;
-#	return {start=>$sstart,end=>$send};
-#}
 
+sub start_end {
+	my ($self,$args ) =@_;
+	 my $padding = 0;
+	 $padding = $args->{padding} if exists $args->{padding};
+	 my $h;
+	   if  ($args->{utr}){
+		$h = $self->return_start_end(padding=>$padding);
+	   }
+	   else {
+		$h = $self->return_start_end_no_utr(padding=>$padding);
+	   }
+	   return ($h->{start},$h->{end});
+}
 sub return_start_end_no_utr {
 	my ($self,%args ) =@_;
 	 my $padding = $args{padding};
