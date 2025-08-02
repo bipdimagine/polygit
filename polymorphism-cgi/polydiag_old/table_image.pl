@@ -57,9 +57,11 @@ my $only_low;
  $only_low = 1 if $cgi->param('only_low') ==1;
 my $project = $buffer->newProject(-name=>$project_name);
 my $utr =$cgi->param('utr')+0;
+ $utr = 1 if $project->validation_db() eq 'glucogen' ;
 my $intronic = $cgi->param('intronic')+0;
 
 my $limit = $cgi->param('limit');
+$limit= 15 if $project->validation_db() eq 'glucogen' ;
 my $padding = $cgi->param('span');
 
 my @transcripts_cgi;
@@ -95,7 +97,7 @@ my $transcripts_exons_validated = {};
 
 foreach my $patient (@{$project->getPatients}){
 	my $exons_todo = {};
-	 $exons_todo = $vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name}) if $vquery;
+#	 $exons_todo = $vquery->get_exons(project_name=>$project_name,sample_name=>$patient->{name}) if $vquery;
 	foreach my $v (values %$exons_todo){
 	
 		if  ($v->{done} == 0){
@@ -229,9 +231,10 @@ exit(0);
 
 sub getLowTranscripts {
 	my $list_transcripts2 = $no->get($project->name,"minimum-".$padding."-".$utr) ;
+	#$list_transcripts2 = undef;
 	unless ($list_transcripts2){
-		$list_transcripts2 = preload_coverage::computeLowTranscripts($project,\@transcripts,$no,$intronic,$utr,$padding,1);
-		$no->put($project->name,"minimum-".$padding."-".$utr,$list_transcripts2) ;
+		#$list_transcripts2 = preload_coverage::computeLowTranscripts($project,\@transcripts,$no,$intronic,$utr,$padding,1);
+		#$no->put($project->name,"minimum-".$padding."-".$utr,$list_transcripts2) ;
 	}
 	my $patients =  $project->get_list_patients($patient_names,",");
 my $list_transcripts;
@@ -246,6 +249,7 @@ foreach my $t (@transcripts){
 	next if $min >= $limit;
 	$list_transcripts->{$t->id} ++; 
 }
+warn "====";
 return $list_transcripts;
 }
 

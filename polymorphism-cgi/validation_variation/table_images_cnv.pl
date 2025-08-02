@@ -69,7 +69,7 @@ my $version = 1;
 my $key = return_uniq_keys($cgi);	
 my $cache_id = md5_hex("polydiag_cnv_".join(";",@$key).".$version");
 my $text = $no_cache->get_cache($cache_id);
-$text= undef;
+#$text= undef;
 if ($text){
 	$| =1;
 	print $text;

@@ -170,6 +170,7 @@ sub compute_coverage_diagnostic1 {
 	my $no      = $project->noSqlCoverage();
 	$no->clear( $patient->name );
 	$no->clear( $patient->name . "_cnv" );
+	$no->close();
 	#map {warn $_ } @{ $project->bundle_transcripts() };
 	my @trs =
 	  map { $project->newTranscript($_) } @{ $project->bundle_transcripts() };

@@ -171,6 +171,7 @@ polydiag::cache_cnv( $project_name, $fork );
 change_table_status($steps++);
 
 $projectP->disconnect();
+
 polydiag::compute_coverage_diagnostic4( $project_name, $fork );
 change_table_status($steps++);
 my $no_cache = $projectP->get_lmdb_cache_cnv("c");
