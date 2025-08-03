@@ -219,12 +219,7 @@ sub compute_coverage_diagnostic4 {
 	my $project  = $buffer->newProject( -name => $project_name, -verbose => 1 );
 	$project->disconnect();
 	my $patients  = $project->getPatients();
-	my $no       = $project->noSqlCoverage("w");
-	$no->close;
 	delete $project->{noSqlCoverage};
-	$no       = $project->noSqlCoverage("w");
-	warn $no->dir;
-	
 	my @paddings = ( 0, 5, 10, 15, 20, 30 );
 	my @utrs     = ( 0, 1 );
 	my @transcripts =
@@ -235,17 +230,20 @@ sub compute_coverage_diagnostic4 {
 	my $hash;
 	foreach my $padding (@paddings){
 		my $list_transcripts2 = preload_coverage::computeLowTranscripts($project,\@transcripts,undef,$intronic,$utr,$padding);
-		warn $padding;
-		$hash->{$project->name,"minimum-".$padding."-".$utr."-".$intronic};
-		$no->put($project->name,"minimum-".$padding."-".$utr."-".$intronic,$list_transcripts2) ;
+		$hash->{"minimum-".$padding."-".$utr."-".$intronic} = $list_transcripts2;
+		warn "minimum-".$padding."-".$utr."-".$intronic;
 	}
 	warn "end";
+	my $no       = $project->noSqlCoverage("w");
+	foreach my $k (keys %$hash){
+		warn $k;
+		$no->put($project->name,$k,$hash->{$k});
+	}
+	
 	$no->close();
 	undef($no);
 	return;
 }
-
-
 sub run_cache_polydiag_cache {
 	my ( $project_name, $patient_name, $tbundle ) = @_;
 	my $buffer1 = new GBuffer;
