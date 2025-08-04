@@ -130,6 +130,7 @@ foreach my $pname (split(",",$project_name)){
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
+#$cram =undef;
  $project_name =~ s/\,/\./g ;
 my $dir_log = $projects->[0]->buffer->config_path("root","bds")."/".$project_name.".dragen.".time;
 system("mkdir $dir_log && chmod a+rwx $dir_log");
@@ -150,7 +151,8 @@ if ($test_umi && !($umi)){
 system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
-my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
+#my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
+my $steps = ["align","gvcf","sv","cnv","vcf"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
 my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
 
@@ -177,7 +179,8 @@ if ($rna){
 	$hsteps = {"align"=>0,"vcf"=>1, "featurecount"=>2};
 }
 if($genome ==1){
-	$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","str"];
+	#$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","str"];
+	$steps = ["align","gvcf","sv","cnv","vcf"];
 	$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5,"str"=>6};
 	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"str"=>7};
 	
