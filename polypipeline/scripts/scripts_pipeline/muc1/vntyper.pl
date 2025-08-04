@@ -90,7 +90,6 @@ my $fad = $tmp_dir."/advntr/output_adVNTR.vcf" ;
 my $fad2 = $tmp_dir."/advntr/output_adVNTR_result.tsv" ;
  my $fk = $tmp_dir."/kestrel/kestrel_result.tsv";
  warn $cmd;
- die();
 system($cmd." && touch $dir_pipeline/$patient_name.ok") unless -e $fad2;
 
 
