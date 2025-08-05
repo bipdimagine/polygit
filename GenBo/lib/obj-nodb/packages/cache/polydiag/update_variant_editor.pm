@@ -596,7 +596,7 @@ sub table_validation {
 		my $cgi = new CGI();
 		my $color = "#555";
 		#check_is_hgmd_dm_for_gene($patient->getProject(), $hvariation, $gene);
-		check_is_clinvar_pathogenic_for_gene($patient->getProject(), $hvariation, $gene);
+		#check_is_clinvar_pathogenic_for_gene($patient->getProject(), $hvariation, $gene);
 		if ($hvariation->{value}->{dm} or $hvariation->{value}->{clinvar_pathogenic}){
 			$color = "red";
 		}
