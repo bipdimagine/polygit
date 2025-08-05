@@ -144,22 +144,21 @@ if ($trio) {
 		my $p1    = $v->getPourcentAllele($mother);
 		my $p2    = $v->getPourcentAllele($father);
 		my $value = $v->getPourcentAllele($patient);
-		next if $value eq "-";
+		
+		next if $value == 0;
 
-		if ( $p1 ne "-" ) {
+		if ( $p1 > 0 ) {
 			my $res = $v->start . "," . $value . ",null";
 			push( @array, $res );
 		}
-		$p1 = "" if $p1 eq "-";
+		$p1 = "" if $p1  == 0;
 
-		if ( $p2 ne "-" ) {
+		if ( $p2> 0 ) {
 			my $res = $v->start . ",null," . $value;
 			push( @array, $res );
 		}
-		next if $p2 eq "-";
-		$p2 = "" if $p2 eq "-";
+		next if $p2 == "0";
 	}
-
 	my $lpos    = "";
 	my $lmother = "";
 	my $lfather = "";
@@ -197,12 +196,11 @@ if ($trio) {
 		$x++;
 		my $value    = $v->getPourcentAllele($father);
 		my $transmis = 0;
-
-		next unless $v->getPourcentAllele($mother) eq "-";
+		next unless $v->getPourcentAllele($mother) == 0;
 		$transmis = 1
-		  if ( ( $v->getPourcentAllele($patient) ne "-" )
-			&& ( $v->getPourcentAllele($mother) eq "-" ) );
-		next if $value eq "-";
+		  if ( ( $v->getPourcentAllele($patient) >  0)
+			&& ( $v->getPourcentAllele($mother)== 0 ) );
+		next if $value == 0;
 
 		my $res = $v->start . "," . $value . "," . $transmis;
 		push( @array, $res );
@@ -240,11 +238,11 @@ if ($trio) {
 		my $value    = $v->getPourcentAllele($mother);
 		my $transmis = 0;
 
-		next unless $v->getPourcentAllele($father) eq "-";
+		next unless $v->getPourcentAllele($father)  == 0;
 		$transmis = 1
-		  if ( ( $v->getPourcentAllele($patient) ne "-" )
-			&& ( $v->getPourcentAllele($father) eq "-" ) );
-		next if $value eq "-";
+		  if ( ( $v->getPourcentAllele($patient) > 0 )
+			&& ( $v->getPourcentAllele($father) == 0 ) );
+		next if $value  == 0;
 
 		my $res = $v->start . "," . $value . "," . $transmis;
 		push( @array, $res );
@@ -283,7 +281,7 @@ else {
 	while ( my $v = $project->nextVariant ) {
 		$x++;
 		my $value = $v->getPourcentAllele($patient);
-		next if $value eq "-";
+		next if $value == 0;
 
 		my $res = $v->start . "," . $value;
 		push( @array, $res );
