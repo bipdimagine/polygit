@@ -2379,7 +2379,7 @@ has vectorClinvarPathogenic => (
         	my $vector ;
         	if ($self->project->isRocks){
         		return $self->getNewVector() if $self->size_vector == 0;
-        		return $self->rocks_vector->get_vector_chromosome("dm");
+        		return $self->rocks_vector->get_vector_chromosome("clinvar_pathogenic");
         	}
         	if ($self->lmdb_score_impact->exists_db){
         		

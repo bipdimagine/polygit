@@ -282,6 +282,9 @@ my $cache_id = join( ";", @$keys );
 if ($project->isDiagnostic){
 	$cache_id.="121222";
 }
+if ($cgi->param('only_DM')){
+	$cache_id.="o";
+}
 
 my $text = $no_cache->get_cache($cache_id);
 #$dev=1;
@@ -520,6 +523,8 @@ $buffer->disconnect();
 ##################################
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
 	my ( $vectors, $list, $hash_variants_DM,$list_genes) = constructChromosomeVectorsPolyDiagFork( $project, $patient,$start_vector,$statistics);
+	
+	
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 	warn $ztime if $print;
 $t = time;
@@ -1587,6 +1592,9 @@ sub constructChromosomeVectorsPolyDiagFork {
 		  $statistics->{variations} += $patient->countThisVariants( $hashVector->{ $chr->name } );
 		if($only_DM){
 				#keep only pathogenic variation if cgi with option $only_DM
+				 $vDM = $chr->vectorDM();
+				$vDM += $chr->vectorClinvarPathogenic();
+				warn $vDM;
 				$hashVector->{ $chr->name } = $vDM;
 		}
 		if ($keep_pathogenic) {
@@ -1674,7 +1682,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 		#push(@$list_variants,join($chr->name."!",split(",",$res->{vector}->to_Enum)));
 	
 		to_array($res->{vector}, $chr->name,$list_variants);
-		warn "list_variant".scalar(@{$list_variants});
 		if ($keep_pathogenic){
 			to_hash($vDM, $chr->name,$hash_variants_DM);
 		}
@@ -1688,7 +1695,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 			$no->close();
 			
 			
-			warn "end chr";
 			$no = undef;
 		}
 	#$pm->wait_all_children();
