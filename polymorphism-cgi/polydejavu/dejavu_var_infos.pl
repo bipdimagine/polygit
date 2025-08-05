@@ -80,7 +80,6 @@ else {
 	$projectTmp = $buffer->newProject(-name => $project_init_name);
 	$var = $projectTmp->_newVariant($varId);
 }
-
 unless ($build_use) {
 	die();
 	my $hash;
@@ -92,12 +91,13 @@ unless ($build_use) {
 my $hProjAuthorized;
 foreach my $hash (@{$query->getProjectListForUser($user, $pass)}) { $hProjAuthorized->{$hash->{'name'}} = undef; }
 
+warn $var->id;
 my $id = 0;
 my $hDejaVuGlobal = $var->dejavu_hash_projects_patients();
-
+warn Dumper $hDejaVuGlobal;
 foreach my $projName (sort keys %$hDejaVuGlobal) {
 	next if ($in_this_run and not exists $h_this_run_patients->{$projName});
-
+	warn $projName;
 	print '.';
 	my $thisProject = $buffer->newProject(-name => $projName);
 	delete $thisProject->{version};
@@ -106,7 +106,7 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 	#delete $thisProject->{dirGenome};
 	#delete $thisProject->{genome_version};
 	#warn $build_use;
-	$thisProject->version($build_use);
+	#$thisProject->version($build_use);
 	my @lPheno;
 	foreach my $pheno_obj (@{$thisProject->getPhenotypes()}) {
 		push(@lPheno, $pheno_obj->name());
@@ -118,7 +118,6 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 		my $h = $var->infos_dejavu_parquet($thisProject);
 		$hDejaVuGlobal->{$projName}->{patients} = $h->{patients_infos} if $h and exists $h->{patients_infos};
 	}
-	
 	foreach my $patName (sort keys %{$hDejaVuGlobal->{$projName}->{patients}}) {
 		next if ($in_this_run and not exists $h_this_run_patients->{$projName}->{$patName});
 		my $pp = $thisProject->getPatient($patName);
@@ -131,6 +130,7 @@ foreach my $projName (sort keys %$hDejaVuGlobal) {
 		if (@lPheno and not $export_html_bootstrap) {
 			$hash->{project} .= ';'.join(' ', sort @lPheno);
 		}
+		warn $patName;
 		$hash->{name} = $patName;
 		$hash->{contacts} = ' ';
 		$hash->{contacts} = join(' - ', sort @lMails) if scalar(@lMails) > 0;
