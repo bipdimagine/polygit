@@ -33,18 +33,24 @@ sub computeLowTranscripts{
 	 		unless ($exons) {
 	 			$exons = $exons1;
 	 		}
+	 		print qq{.} if $print;
 		}
 			
 	my @ids = map{$_->id} sort{$a->{start}*$a->strand <=> $b->{start}*$b->strand }	@$exons;
+	my $z=0;
 	foreach my $eid (@$exons){
 		my $found;
-		my ($start,$end) = $eid->start_end({padding=>$padding,utr=>$utr});
+		my $tutr = $utr;
+		$z++;
+		$tutr =1 if $eid->getChromosome()->name eq "MT";
+		my ($start,$end) = $eid->start_end({padding=>$padding,utr=>$tutr});
 		 foreach my $p (@{$project->getPatients}){
-			
+			next unless $start;
 			my $min = $p->minDepth($eid->getChromosome->name,$start,$end);
 		 	$hp->{$t->id}->{$p->id} = $min unless exists $hp->{$t->id}->{$p->id};
 		 	$hp->{$t->id}->{$p->id} = $min if $min < $hp->{$t->id}->{$p->id};
 		}
+		print qq{.} if $print && $z % 20 ==0 ;
 	}
 }
 

@@ -233,7 +233,8 @@ sub getLowTranscripts {
 	my $list_transcripts2 = $no->get($project->name,"minimum-".$padding."-".$utr."-".$intronic) ;
 	unless ($list_transcripts2){
 		$list_transcripts2 = preload_coverage::computeLowTranscripts($project,\@transcripts,$no,$intronic,$utr,$padding,1);
-		$no->put($project->name,"minimum-".$padding."-".$utr,$list_transcripts2) ;
+		
+		$no->put($project->name,"minimum-".$padding."-".$utr."-".$intronic,$list_transcripts2) ;
 	}
 	my $patients =  $project->get_list_patients($patient_names,",");
 my $list_transcripts;
