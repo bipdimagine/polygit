@@ -97,15 +97,13 @@ foreach my $exon (@exons){
 foreach my $patient (@{$run->getPatients}){
 	#next unless $patient->name eq $patient_name;
 	
-	
 		
-		my ($mean,$intspan,$min) =$exon->mean_intspan_coverage_coding(patient=>$patient,padding=>0,limit=>1);
+		my ($mean,$intspan,$min) =$exon->statistic_coverage_coding(patient=>$patient,padding=>0,limit=>1,utr=>0);
 	 #  my $data  = $exon->getTranscript()->get_coverage($patient)->coverage($exon->start,$exon->end);
 		#my $nn = $data->{nb};
 		#my $s = $data->{sum};
 		#my $mean =$data->{mean};
 		
-	
 		if ($patient->name eq $patient_name){
 				push(@pexon,int($mean));
 				$h->{meanp} = int($mean);	
