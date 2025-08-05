@@ -2208,6 +2208,7 @@ sub scaledScoreVariant{
 	elsif ($tr->isTranscript) {
 		$gene = $tr->getGene;
 	}
+	
 	my $score = $self->scoreVariant( $tr,$patient,$debug);
 	my $scaled_score = 1;
 	$scaled_score = 1;
@@ -2215,10 +2216,14 @@ sub scaledScoreVariant{
 	$scaled_score = 3 if $score >= 150;
 	$scaled_score = 4 if $score >= 200;
 	warn "\t 1- ".$score." ".$scaled_score if $debug;
+	
 	$scaled_score += $self->score_refined($patient);
 	warn "\t 2- ".$scaled_score." ".$self->score_refined($patient,$debug) if $debug;
+
+	
 	$scaled_score += $self->score_prediction_refined($patient,$gene);
 	warn "\t 3- ".$scaled_score." ".$self->score_refined($patient,$debug) if $debug;
+	
 	if ($self->isSrPr){
 	my $dp_before = $self->getNormDPBefore($patient);
 	my $dp_after = $self->getNormDPAfter($patient);
@@ -2238,9 +2243,12 @@ sub scaledScoreVariant{
 		$scaled_score -= 0.5 if $pca < 25;
 	}
 	else {
-		$scaled_score -= 0.5 if $self->pr1($patient) < 5;
-		$scaled_score -= 0.5 if $self->sr1($patient) < 5;
-		
+		 	my $sr1 = $self->sr1($patient);
+			 $sr1 = 0 if $sr1 eq "-";
+			my $pr1 = $self->pr1($patient);
+			$sr1 = 0 if $pr1 eq "-";
+			$scaled_score -= 0.5 if $self->pr1($patient) < 5;
+			$scaled_score -= 0.5 if $self->sr1($patient) < 5;
 	}
 	
 		
@@ -2618,7 +2626,6 @@ sub scoreVariant{
 	#return  $self->{score_variant}->{$tr->id}->{$patient->id}  if exists  $self->{score_variant}->{$tr->id}->{$patient->id} ;
 	my $score =-150;
 	if ($obj->isGene){
-		
 		foreach my $tr (@{$self->getTranscripts}){
 			next if $tr->getGene->id ne $obj->id;
 			my $tscore = $self->score_transcript_consequence($tr,$debug);
@@ -3397,6 +3404,7 @@ sub dejavu_hash_projects_patients {
 	my $h_dv = $self->getChromosome->rocks_dejavu->dejavu($self->rocksdb_id);
 	foreach my $proj_id (keys %{$h_dv}) {
 		my $proj_name = $self->buffer->getProjectNameFromId($proj_id);
+		
 		my $h_pat_proj;
 		foreach my $h (@{$self->buffer->getQuery->getPatients($proj_id)}) {
 			$h_pat_proj->{$h->{patient_id}} = $h->{name};
@@ -3407,6 +3415,9 @@ sub dejavu_hash_projects_patients {
 		$hres->{$proj_name}->{nb_he} = $h_dv->{$proj_id}->{he};
 		$hres->{$proj_name}->{nb_ho} = $h_dv->{$proj_id}->{ho};
 	}
+	
+	
+	warn Dumper $hres;
 	return $hres;
 }
 
@@ -3564,6 +3575,7 @@ sub pr0 {
 }
 sub pr1 {
 	my ($self, $patient) = @_;
+	confess($patient) unless $patient;
 	my $pid = $patient->id;
 	return $self->split_read_infos->{$pid}->[3];
 }
@@ -3642,17 +3654,18 @@ sub infos_dejavu_parquet {
 	return undef if not -e $parquet;
 #	confess("\n\nERROR $parquet file doesn't exist. die \n\n") if not -e $parquet;
 	
-	my $sql = "SELECT * FROM read_parquet(['".$parquet."'])";
+	my $sql = "SELECT chr38 as chr, pos38 as pos  * FROM read_parquet(['".$parquet."'])";
+
 	my $find_pos_s = $self->start() - (20 + $self->length());
 	my $find_pos_e = $self->start() + (20 + $self->length());
 	if ($self->getProject->current_genome_version() eq 'HG38') {
 		$sql .= " WHERE chr38='".$self->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 	}
 	elsif ($self->getProject->current_genome_version() eq 'HG19') {
+		$sql = "SELECT chr19 as chr ,pos19 as pos,  * FROM read_parquet(['".$parquet."'])" ;
 		$sql .= " WHERE chr19='".$self->getChromosome->id()."' and pos19 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 	}
 	else { confess("\n\nERROR VAR PARQUET DEJAVU !\n\n"); }
-	
 	my $duckdb = $project->buffer->software('duckdb');
 	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 	my $json_duckdb = `$cmd`;
@@ -3663,8 +3676,9 @@ sub infos_dejavu_parquet {
 		my ($pos, $alt) = split('!', $rocks);
 		$pos = int($pos);
 		foreach my $h (@$decode) {
-			next if $h->{'chr38'} ne $self->getChromosome->id;
-			next if $h->{'pos38'} ne $pos;
+			
+			next if $h->{'chr'} ne $self->getChromosome->id;
+			next if $h->{'pos'} ne $pos;
 			next if $h->{'allele'} ne $alt;
 			my $nb_he = $h->{he};
 			my ($h_infos_patients, $h_tmp_pat);
