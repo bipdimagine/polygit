@@ -375,6 +375,18 @@ foreach my $chr (@{$project->getChromosomes()}) {
 	$chr->not_used(1);
 }
 
+	$queryFilter->setPatients($project);
+	$queryFilter->setIntheAttic($project->getPatientsFromListNames([split(' ', $filter_attic)]));
+	
+	$queryFilter->setIntersectedPatients( $project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_patient})]));
+	$queryFilter->setIntersectedFamilies($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{fam_and})]));
+	
+	$queryFilter->setFilteredHoPatients($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{filter_ho})]));
+	$queryFilter->setFilteredHePatients($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{filter_he})]));
+	
+	$queryFilter->setExcludedPatients( $project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_not_patient})]));
+	$queryFilter->setExcludedFamilies($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{fam_not})]));
+
 foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Cas genome MT uniquement par exemple
 	
@@ -395,6 +407,9 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$chr->not_used(0);
 	$nb_chr++;
 	
+	#delete variant with in the attic
+	$queryFilter->FilterInTheAtticPatients($chr);
+	
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	if (not $export_vcf_for and not $detail_project and not $xls_by_regions_ho) { $project->cgi_object(1); }
@@ -412,8 +427,11 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	
 	foreach my $p (@{$project->getPatients()}) { $p->setOrigin($chr); }
 	
-	$queryFilter->setInTheAtticPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
+#	$queryFilter->setInTheAtticPatients($chr, $project->getPatientsFromListNames([split(' ', $filter_attic)]));
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
+	
+	#FILTERING ON VARIANTS 
+	
 	
 #	launch_intersect_excude($chr, $h_filters_intersect_exclude) if not $model =~ /compound/ and not $model_2 =~ /compound/;
 	
@@ -422,10 +440,9 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->filter_vector_ncboost($chr, $filter_ncboost);
 #	$queryFilter->filter_vector_global_gnomad_freq($chr, $filter_gnomad_test);
 #	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER getVectorGnomadCategory - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
-	
+		
 	my $h_args;	
 	if ($hFiltersChr and $hFiltersChr_var2) { $chr->save_model_variants_all_patients('init'); }
-	
 	$queryFilter->filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
 	$queryFilter->filter_vector_type_variants($chr, $hFiltersChr);
 	$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr, $keep_indels_cadd);
@@ -438,9 +455,9 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Recessif compound multi annot
 	my $vector_filtered = $chr->getVariantsVector->Clone();
 	my $vector_filtered_2;
-	
 	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
 	if ($is_diff_hash_filters) {
+		die();
 		$chr->load_init_variants_all_patients('init');
 		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
 		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
@@ -455,18 +472,45 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		$h_args->{'vector_filters_1'} = $vector_filtered;
 		$h_args->{'vector_filters_2'} = $vector_filtered_2;
 	}
+	############## FLITER VARIANTS 
+	#intersection Variants level
+	$queryFilter->intersectVariantsPatients($chr);
+	$queryFilter->intersectVariantsFamilies($chr);
+	#exclude Variants level
+	$queryFilter->excludeVariantsPatients($chr);
+	$queryFilter->excludeVariantsFamilies($chr);
 	
+	# he ho 
+	$queryFilter->filterHoVariantsPatients($chr);
+	$queryFilter->filterHeVariantsPatients($chr);
+	
+	#GENES LEVEL ?
 	
 	$queryFilter->filter_genes_from_ids($chr, $hChr->{$chr->id()}, $can_use_hgmd) if ($panel_name);
 	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
+	
+	
 	
 	if ($is_diff_hash_filters) { $queryFilter->filter_genes_annotations($chr, $hFiltersChr_var2); }
 	else { $queryFilter->filter_genes_annotations($chr, $hFiltersChr); }
 	
 	$queryFilter->filter_genetics_models($chr, $model, $h_args);
 	
+	#intersection Genes level
+	$queryFilter->intersectGenesPatients($chr);
+	$queryFilter->intersectGenesFamilies($chr);
+	
+	#exclude Genes level
+	
+	$queryFilter->excludeGenesPatients($chr);
+	$queryFilter->excludeGenesFamilies($chr);
+	
+	
+	
+	
 	if ($project->filter_text()) {
+		die();
 		foreach my $patient (@{$chr->getPatients()}) {
 			$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
 		}
@@ -676,8 +720,6 @@ sub get_infos {
 	
 	my @lVar = @{$chr->getListVarObjects( $chr->global_categories->{'large_duplication'} )};
 	foreach my $v (@lVar) {
-		warn ref($v).' -> '.$v->id();
-		warn Dumper $v->annotation();
 		foreach my $g (@{$v->getGenes()}) {
 			warn $g->external_name().': '.$v->variationType($g);
 		}
@@ -734,21 +776,20 @@ sub get_hashes_filters {
 
 sub launch_intersect_excude {
 	my ($chr, $h_filters) = @_;
-	if (not $h_filters->{filter_nbvar_regionho} or $h_filters->{filter_nbvar_regionho} == 0) {
-		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_he})]) , 'he');
-		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_ho})]), 'ho');
-		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), 'all');
-		$queryFilter->setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]));
-	}
-	if ($h_filters->{filter_nbvar_regionho} and $h_filters->{filter_nbvar_regionho} > 0) {
-		$queryFilter->setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]), $h_filters->{filter_nbvar_regionho});
-		$queryFilter->setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]), $h_filters->{filter_nbvar_regionho});
-		$queryFilter->setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), $h_filters->{filter_nbvar_regionho});
-		$queryFilter->setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]), $h_filters->{filter_nbvar_regionho});
-	}
-	$queryFilter->setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]));
-	$queryFilter->setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]));
-	$queryFilter->setIntersectExclude_PAT_FAM($chr);
+#	if (not $h_filters->{filter_nbvar_regionho} or $h_filters->{filter_nbvar_regionho} == 0) {
+#		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_he})]) , 'he');
+#		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_ho})]), 'ho');
+#		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), 'all');
+#		$queryFilter->setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]));
+#	}
+#	if ($h_filters->{filter_nbvar_regionho} and $h_filters->{filter_nbvar_regionho} > 0) {
+#		$queryFilter->setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]), $h_filters->{filter_nbvar_regionho});
+#		$queryFilter->setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]), $h_filters->{filter_nbvar_regionho});
+#		$queryFilter->setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), $h_filters->{filter_nbvar_regionho});
+#		$queryFilter->setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]), $h_filters->{filter_nbvar_regionho});
+#	}
+#	$queryFilter->setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]));
+#	$queryFilter->setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]));
 }
 
 sub launch_filters_region {
@@ -844,12 +885,15 @@ my $hfamillies_genes = {};
 sub launchStatsProjectAll {
 	my $hash_stats;
 	warn "\n\n" if ($debug);
-	warn "\n# launchStatsProjectAll_chromosomes" if ($debug);
-	$hash_stats->{chromosomes} 	= launchStatsProjectAll_chromosomes();
-	warn "\n# launchStatsProjectAll_genes" if ($debug);
-	my $t =time;
+		my $t =time;
+	$hash_stats->{genes} 		= launchStatsProjectAll_genes();
+	warn "-".abs(time -$t) if ($debug);	my $t =time;
 	$hash_stats->{genes} 		= launchStatsProjectAll_genes();
 	warn "-".abs(time -$t) if ($debug);
+	warn "\n# launchStatsProjectAll_chromosomes" if ($debug);
+	$hash_stats->{chromosomes} 	= launchStatsProjectAll_chromosomes($hash_stats->{genes});
+	warn "\n# launchStatsProjectAll_genes" if ($debug);
+
 	$t =time;
 	warn "\n# launchStatsProjectAll_families" if ($debug);
 	$hash_stats->{families} 	= launchStatsProjectAll_families();
@@ -908,7 +952,6 @@ sub export_regions_ho_xls {
 		my $chr = $project->getChromosome($chr_id);
 		next if ($chr->not_used());
 		foreach my $h (@{launchStastChr_regionsHoRec($chr)}) {
-			warn Dumper $h;
 			my $start = $h->{'start'};
 			my $patient_name = $h->{'name'};
 			foreach my $key (keys %$h) {
@@ -1120,16 +1163,20 @@ sub launchStatsProjectAll_genes {
 		}
 		warn '-> all genes DONE' if ($debug);
 	}
-#	warn scalar @lStats;
 	return \@lStats;
 }
 		
 sub launchStatsProjectAll_chromosomes {
+	my ($stat_genes) = @_;
+	my $nb_genes = scalar(@$stat_genes);
 	my @lStats;
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
+		
 		next if ($chr->not_used());
-		my $hashChr = launchStatsChr($chr);
+		my (@ag) = grep {$_->{chromosome} eq $chr->name} @$stat_genes;
+		my $nb_genes = scalar(@ag);
+		my $hashChr = launchStatsChr($chr,$nb_genes);
 		if ($hashChr->{'variations'} == 0) { $hashChr = launchStatsChr_null($chr); }
 		else { push(@lStats, $hashChr); }
 	}
@@ -1492,7 +1539,7 @@ sub launchStatsChr_TEST {
 }
 
 sub launchStatsChr {
-	my $chr = shift;
+	my ($chr,$nb_gene) = @_; ;
 	my $hash;
 	my $name = $chr->id();
 	if ($name eq 'X')     { $name = 23; }
@@ -1500,7 +1547,7 @@ sub launchStatsChr {
 	elsif ($name eq 'MT') { $name = 25; }
 	$hash->{id}         = $chr->id();
 	$hash->{name}       = int($name);
-	$hash->{genes}      = $chr->getNbGenes();
+	$hash->{genes}      = $nb_gene;
 	$hash->{variations}	= 0;
 	
 	my $v_sub = $chr->vector_global_categories('substitution')->Clone();
@@ -1545,15 +1592,24 @@ sub launchStatsChr_null {
 my %global_hcat;
 sub launchStatsGene {
 	my ($gene) = @_;
+	
+	my $vv = $gene->getCurrentVector() & $gene->getChromosome->getVariantsVector();
+	$gene->setCurrentVector($vv);
+	my $t1 = $gene->compact_vector;
+	my $va = $gene->getCurrentCompactVector();
+	return if $va->is_empty;
+	
 	my $lNbPatForEachVar;
 	my $hashStats;
 	$hashStats->{'query_score'} = 0;
 	my $gene_id = $gene->id();
 	my $hashKyoto;
 	if ($gene->is_intergenic()) {
+		
 		$hashStats->{'id'} = $gene->id();
 	}
 	else {
+		
 		$hashStats->{'id'} = $gene->id();
 		warn '  -> stats $gene->transcripts()' if ($debug);
 		my @lTrIds;
@@ -1742,6 +1798,7 @@ sub launchStatsPatient {
 	return launchStatsPatient_null($patient) if ($chr->getVariantsVector->is_empty());
 	#2018_06_28: Choix de patrick, on met artificiellement toutes les valeures a 0 si on exclu des regions ho dun patient (comme in the attic)
 	return launchStatsPatient_null($patient) if ($patient->excluded() eq 'ho_reg');
+	return launchStatsPatient_null($patient) if ($patient->in_the_attic);
 	my $hStats;
 	my $patName = $patient->name();
 	$hStats->{name} 		= $patName;
