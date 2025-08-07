@@ -4452,7 +4452,7 @@ sub getVariationsDir {
 	my ( $self, $method_name ) = @_;
 	my $path = $self->project_path . "/variations/";
 	$self->makedir($path);
-	$path .= $method_name . '/';
+	$path .= $method_name . '/' if $method_name;
 	return $self->makedir($path);
 }
 sub getJunctionsDir {

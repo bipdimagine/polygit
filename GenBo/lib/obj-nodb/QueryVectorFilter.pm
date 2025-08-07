@@ -264,11 +264,7 @@ sub filter_vector_dejavu {
 sub atLeastFilter_var_ind {
 	my ($self, $chr, $atLeast) = @_;
 	my (@lOk, $hVectPat);
-	my @lPat;
-	foreach my $patient (@{$chr->getPatients()}) {
-		next if ($patient->in_the_attic());
-		push(@lPat, $patient);
-	}
+	my @lPat = $self->patients;
 	if ($atLeast <= scalar(@lPat)) {
 		foreach my $patient (@lPat) {
 			$hVectPat->{$patient->name()} = $patient->getVariantsVector($chr);
@@ -300,13 +296,10 @@ sub atLeastFilter_var_fam {
 		next if ($family->in_the_attic());
 		push(@lFam, $family);
 	}
+	my $vo = $chr->getVariantsVector();
 	if ($atLeast <= scalar(@lFam)) {
 		foreach my $family (@lFam) {
-			$hVectFam->{$family->name()} = $chr->getNewVector();
-			foreach my $patient (@{$family->getPatients()}) {
-				next if ($patient->in_the_attic());
-				$hVectFam->{$family->name()} += $patient->getVariantsVector($chr);
-			}
+			$hVectFam->{$family->name()} = $family->getVectorOrigin & $vo; 
 		}
 		foreach my $index (@{$chr->getIdsBitOn($chr->getVariantsVector())}) {
 			$chr->project->print_dot(50);
@@ -367,17 +360,19 @@ sub atLeastFilter_genes_ind {
 	my $var_tmp_atleast = $chr->getNewVector();
 	foreach my $gene (@{$chr->getGenes()}) {
 		my $nb_ok = 0;
-		foreach my $patient (@{$chr->getPatients()}) {
+		foreach my $patient ($self->getPatients) {
 			$var_tmp_atleast->Intersection($gene->getVariantsVector(), $patient->getVariantsVector($chr));
 			unless ($var_tmp_atleast->is_empty()) {
 				$nb_ok++;
 				last if ($nb_ok == $atLeast);
 			}
 		}
-		if ($nb_ok < $atLeast) { $chr->supressGene($gene);  }
-		else { $variants_genes += $gene->getVariantsVector(); }
+		if ($nb_ok < $atLeast) { delete $chr->{genes_object}->{$gene->id}; }
+		else { $variants_genes += $gene->getVariantsVector();}
 	}
-	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
+	my $v = $chr->getVariantsVector() & $variants_genes;
+	$chr->setVariantsVector($v);
+		
 	foreach my $patient (@{$chr->getPatients()}) {
 		$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
 	}
@@ -400,10 +395,9 @@ sub atLeastFilter_genes_fam {
 		if ($nb_ok < $atLeast) { $chr->supressGene($gene); }
 		else { $variants_genes += $gene->getVariantsVector(); }
 	}
-	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
-	foreach my $patient (@{$chr->getPatients()}) {
-		$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
-	}
+	my $v = $chr->getVariantsVector() & $variants_genes;
+	$chr->setVariantsVector($v);
+	
 }
 
 sub atLeastFilter_genes_som{
@@ -424,7 +418,9 @@ sub atLeastFilter_genes_som{
 		if ($nb_ok < $atLeast) { $chr->supressGene($gene); }
 		else { $variants_genes += $gene->getVariantsVector(); }
 	}
-	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
+	my $v = $chr->getVariantsVector() & $variants_genes;
+	$chr->setVariantsVector($v);
+	
 	foreach my $patient (@{$chr->getPatients()}) {
 		$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
 	}
@@ -885,56 +881,53 @@ sub filter_gene_model_somatic_dbl_evt {
 
 my $has_intersected_or_excuded_patients;
 
+sub setPatients {
+	my ($self,$project) = @_;
+	foreach my $p (@{$project->getPatients}){
+		$self->{patients}->{$p->id} = $p;
+	}
+}
+
+sub patients {
+	my ($self,$project) = @_;
+	confess unless $self->{patients};
+	return values %{$self->{patients}};
+}
+sub delPatient {
+	my ($self,$patient) = @_;
+	delete $self->{patients}->{$patient->id};
+	
+	return values %{$self->{patients}};
+}
+
 # method in the attic pour un patient 
-sub setInTheAtticPatients {
-	my ($self, $chr, $patients) = @_;
+
+sub setIntheAttic {
+	my ($self, $patients) = @_;
 	return if (scalar(@$patients) == 0);
 	foreach my $patient (@$patients) {
+		$self->delPatient($patient);
 		$patient->in_the_attic(1);
+		push(@{$self->{in_the_attic}->{patients}},$patient);
 	}
+}
+
+sub FilterInTheAtticPatients {
+	my ($self, $chr) = @_;
+	return if exists $self->{in_the_attic}->{patients};
+	
+	my $v1 = $chr->getVariantsVector();
+	my $vfinal = $chr->getNewVector(); ;
+	foreach my $patient ($self->patients) {
+		my $v = $patient->getVectorOrigin($chr);
+		$vfinal += $v;
+	}
+	$chr->setVariantsVector($vfinal);
+	
 	return;
 }
 
-sub setIntersectPatients {
-	my ($self, $chr, $patients) = @_;
-	return if (scalar(@$patients) == 0);
-	foreach my $patient (@$patients) {
-		$patient->intersected(1);
-	}
-	$has_intersected_or_excuded_patients++;
-	return;
-}
 
-sub setExcludePatients {
-	my ($self, $chr, $patients, $status) = @_;
-	return if (scalar(@$patients) == 0);
-	return if ($status ne 'all' and $status ne 'he' and $status ne 'ho');
-	foreach my $patient (@$patients) {
-		$patient->excluded($status);
-	}
-	$has_intersected_or_excuded_patients++;
-	return;
-}
-
-sub setIntersectFamilies {
-	my ($self, $chr, $families) = @_;
-	return if (scalar(@$families) == 0);
-	foreach my $family (@$families) {
-		$family->intersected(1);
-	}
-	$has_intersected_or_excuded_patients++;
-	return;
-}
-
-sub setExcludeFamilies {
-	my ($self, $chr, $families) = @_;
-	return if (scalar(@$families) == 0);
-	foreach my $family (@$families) {
-		$family->excluded('all');
-	}
-	$has_intersected_or_excuded_patients++;
-	return;
-}
 
 
 sub getVector_project {
@@ -970,6 +963,7 @@ sub getVector_project_or_fam {
 		}
 		if ($patient->intersected() and $nb_intersected == 0) {
 #			warn '-> intersected ';
+			warn $patient->name;
 			$nb_intersected++;
 			$var_intersect += $var_pat;
 			$var_ok += $var_pat;
@@ -1016,156 +1010,341 @@ sub updateVectorPatients {
 	}
 }
 
-sub setIntersectExclude_PAT_FAM {
-	my ($self,  $chr ) = @_;
-	return if not $has_intersected_or_excuded_patients;
-	return setIntersectExclude_PAT_FAM_genes($chr) if ($chr->getProject->level_ind() eq 'gene');
-	return setIntersectExclude_PAT_FAM_genes($chr) if ($chr->getProject->level_fam() eq 'gene');
-	my $var_ok = $chr->getNewVector();
-	my $var_excluded = $chr->getNewVector();
-	my $var_intersect = $chr->getNewVector();
-	my $nb_intersected = 0;
-	if ($chr->getProject->typeFilters() eq 'individual') {
-		my ($var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_project($chr, $chr->getVariantsVector());
-		$var_ok += $var_local_ok;
-		$var_ok -= $var_local_excluded;
-		$var_excluded += $var_local_excluded;
-		$var_intersect += $var_local_intersect if $var_local_intersect;
-		my @lPat = @{$chr->getProject->getPatients()};
-		$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
+#sub setIntersectExclude_PAT_FAM {
+#	my ($self,  $chr ) = @_;
+#	return if not $has_intersected_or_excuded_patients;
+#	return $self->setIntersectExclude_PAT_FAM_genes($chr) if ($chr->getProject->level_ind() eq 'gene');
+#	return $self->setIntersectExclude_PAT_FAM_genes($chr) if ($chr->getProject->level_fam() eq 'gene');
+#	my $var_ok = $chr->getNewVector();
+#	my $var_excluded = $chr->getNewVector();
+#	my $var_intersect = $chr->getNewVector();
+#	my $nb_intersected = 0;
+#	if ($chr->getProject->typeFilters() eq 'individual') {
+#		my ($var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_project($chr, $chr->getVariantsVector());
+#		$var_ok += $var_local_ok;
+#		$var_ok -= $var_local_excluded;
+#		$var_excluded += $var_local_excluded;
+#		$var_intersect += $var_local_intersect if $var_local_intersect;
+#		my @lPat = @{$chr->getProject->getPatients()};
+#		$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
+#		
+#	}
+#	else {
+#		foreach my $family (@{$chr->getProject->getFamilies()}) {
+#			my ($var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $chr->getVariantsVector(), $family);
+#			if ($family->in_the_attic()) {
+#				next;
+#			}
+#			elsif ($family->excluded()) {
+#				$var_excluded += $var_local_ok;
+#			}
+#			elsif ($family->intersected() and $nb_intersected == 0) {
+#				$nb_intersected++;
+#				$var_intersect += $var_local_ok;
+#			}
+#			elsif ($family->intersected()) {
+#				$var_intersect->Intersection($var_local_ok, $var_intersect);
+#			}
+#			$var_ok += $var_local_ok;
+#			my @lPat = @{$family->getPatients()};
+#			$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
+#		}
+#	}
+#	$var_ok -= $var_excluded;
+#	if ($nb_intersected) {
+#		$var_ok->Intersection($var_ok, $var_intersect);
+#	}
+#	$chr->setVariantsVector($var_ok);
+#}
+
+#setPatients 
+# intersect patient 
+
+
+sub setIntersectedPatients {
+	my ($self, $patients) = @_;
+	return if (scalar(@$patients) == 0);
+	foreach my $patient (@$patients) {
+		$patient->intersected(1);
+		if ($patient->project->level_ind() eq 'gene'){
+			push(@{$self->{genes}->{intersected}->{patients}},$patient);
+		}
+		else {
+			push(@{$self->{variants}->{intersected}->{patients}},$patient);
+		}
 		
 	}
-	else {
-		foreach my $family (@{$chr->getProject->getFamilies()}) {
-			my ($var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $chr->getVariantsVector(), $family);
-			if ($family->in_the_attic()) {
-				next;
-			}
-			elsif ($family->excluded()) {
-				$var_excluded += $var_local_ok;
-			}
-			elsif ($family->intersected() and $nb_intersected == 0) {
-				$nb_intersected++;
-				$var_intersect += $var_local_ok;
-			}
-			elsif ($family->intersected()) {
-				$var_intersect->Intersection($var_local_ok, $var_intersect);
-			}
-			$var_ok += $var_local_ok;
-			my @lPat = @{$family->getPatients()};
-			$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
+	return;
+}
+
+
+# excluded  patient 
+
+sub setExcludedPatients {
+	my ($self, $patients, $status) = @_;
+	return if (scalar(@$patients) == 0);
+	
+	foreach my $patient (@$patients) {
+		$patient->excluded($status);
+		if ($patient->getProject->level_ind() eq 'gene'){
+			push(@{$self->{genes}->{excluded}->{patients}},$patient);
+		}
+		else {
+			push(@{$self->{variants}->{excluded}->{patients}},$patient);
+		}
+		
+	}
+	return;
+}
+#he 
+
+sub setFilteredHoPatients {
+	
+	my ($self,  $patients ) = @_;
+	return if (scalar(@$patients) == 0);
+	
+	foreach my $patient (@$patients) {
+		$patient->excluded('ho');
+		push(@{$self->{variants}->{filtered_ho}->{patients}},$patient);
+		
+	}
+	return;
+}
+
+#ho 
+sub setFilteredHePatients {
+	
+	my ($self,  $patients ) = @_;
+	return if (scalar(@$patients) == 0);
+	
+	foreach my $patient (@$patients) {
+		$patient->excluded('he');
+		push(@{$self->{variants}->{filtered_he}->{patients}},$patient);
+		
+	}
+	return;
+}
+
+# intersect families 
+sub setIntersectedFamilies {
+	my ($self, $families) = @_;
+	return if (scalar(@$families) == 0);
+	
+	foreach my $fam (@$families) {
+		
+		$fam->intersected(1);
+		if ($fam->getProject->level_fam() eq 'gene'){
+				push(@{$self->{genes}->{intersected}->{families}},$fam);
+		}
+		elsif ($fam->getProject->level_fam() eq 'gene'){
+				push(@{$self->{variants}->{intersected}->{families}},$fam);
 		}
 	}
-	$var_ok -= $var_excluded;
-	if ($nb_intersected) {
-		$var_ok->Intersection($var_ok, $var_intersect);
+}
+
+
+sub setExcludedFamilies {
+	my ($self, $families) = @_;
+	return if (scalar(@$families) == 0);
+	
+	foreach my $fam (@$families) {
+		$fam->intersected(1);
+		if ($fam->getProject->level_fam() eq 'gene'){
+				push(@{$self->{genes}->{excluded}->{families}},$fam);
+		}
+		elsif ($fam->getProject->level_fam() eq 'gene'){
+				push(@{$self->{variants}->{excluded}->{families}},$fam);
+		}
+	}
+}
+
+
+
+
+#########
+# END SET
+###########
+
+#filter by variants 
+#    intersect Patient 
+sub intersectVariantsPatients {
+	my ($self,  $chr ) = @_;
+	return unless $self->{variants}->{intersected}->{patients};
+	my $var_ok = $chr->getVariantsVector();
+	foreach my $patient (@{$self->{variants}->{intersected}->{patients}}) {
+		$var_ok &= $patient->getVectorOrigin($chr);
+	}
+	
+	$chr->setVariantsVector($var_ok);
+}
+
+
+
+
+#    intersect Fam 
+sub intersectVariantsFamilies {
+	my ($self,  $chr ) = @_;
+	return unless $self->{variants}->{intersected}->{families};
+	my $var_ok = $chr->getVariantsVector();
+	foreach my $fam (@{$self->{variants}->{intersected}->{families}}) {
+		$var_ok &= $fam->getVectorOrigin($chr);
+	}
+	
+	$chr->setVariantsVector($var_ok);
+}
+
+
+
+
+#    exclude Patient 
+sub excludeVariantsPatients {
+	my ($self,  $chr ) = @_;
+	
+	return unless $self->{variants}->{excluded}->{patients};
+	my $var_ok = $chr->getVariantsVector();
+	foreach my $patient (@{$self->{variants}->{excluded}->{patients}}) {
+		$var_ok -= $patient->getVectorOrigin($chr);
+	}
+	
+	$chr->setVariantsVector($var_ok);
+}
+
+#ho
+
+sub filterHoVariantsPatients {
+	my ($self,  $chr ) = @_;
+	return unless $self->{variants}->{filtered_ho}->{patients};
+	my $var_ok = $chr->getVariantsVector();
+	foreach my $patient (@{$self->{variants}->{filtered_ho}->{patients}}) {
+		$var_ok -= $patient->getVectorOriginHo($chr);
 	}
 	$chr->setVariantsVector($var_ok);
 }
 
-sub setIntersectExclude_PAT_FAM_genes {
+sub filterHeVariantsPatients {
 	my ($self,  $chr ) = @_;
-	return if not $has_intersected_or_excuded_patients;
+	
+	return unless $self->{variants}->{filtered_he}->{patients};
+	my $var_ok = $chr->getVariantsVector();
+	foreach my $patient (@{$self->{variants}->{filtered_he}->{patients}}) {
+		$var_ok -= $patient->getVectorOriginHe($chr);
+	}
+	$chr->setVariantsVector($var_ok);
+}
+#    exclude Families 
+sub excludeVariantsFamilies {
+	my ($self,  $chr ) = @_;
+	return unless $self->{variants}->{excluded}->{families};
+	my $var_ok = $chr->getVariantsVector();
+	foreach my $patient (@{$self->{variants}->{excluded}->{families}}) {
+		$var_ok -= $patient->getVectorOrigin($chr);
+	}
+	$chr->setVariantsVector($var_ok);
+}
+#filter by Genes 
+#	intersect patient
+
+sub intersectGenesPatients {
+	my ($self,  $chr ) = @_;
+	return unless $self->{genes}->{intersected}->{patients};
 	my $var_ok = $chr->getNewVector();
-	my $var_excluded = $chr->getNewVector();
-	my $var_intersect = $chr->getNewVector();
-	my $nb_intersected = 0;
-	
-	my $h_genes_fam_intersect;
-	
+	my (@intersect) = @{$self->{genes}->{intersected}->{patients}};
 	foreach my $gene (@{$chr->getGenes()}) {
-		if ($chr->getProject->typeFilters() eq 'individual') {
-			my ($self, $var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_project($chr, $gene->getCurrentVector(), $chr->getProject());
-			$var_ok += $var_local_ok;
-		}
-		else {
-			foreach my $family (@{$chr->getProject->getFamilies()}) {
-				next if ($family->in_the_attic());
-				
-				my $var_gene = $gene->getCurrentVector->Clone();
-				my ($self, $var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $var_gene, $family);
-				my $var_fam = $var_local_ok;
-				my $var_to_add = $chr->getNewVector();
-				#ajoute le vecteur du gene level_fam est gene
-				
-				if ($chr->getProject->level_ind() eq 'gene' or $chr->getProject->level_fam() eq 'gene') { 
-					if ($var_local_ok->is_empty) {
-						$var_excluded += $var_gene;
-					}
-					elsif ($family->excluded()) {
-						$var_excluded += $var_gene;
-					}
-					if ($chr->getProject->level_ind() eq 'gene') {
-						my $has_pat_intersect;
-						my $has_intersect = 1;
-						foreach my $patient (@{$family->getPatients()}) {
-							next if not $patient->intersected();
-							$has_pat_intersect = 1;
-							my $var_pat = $patient->getVariantsVector($chr)->Clone();
-							$var_pat->Intersection($var_pat, $var_gene);
-							$has_intersect = undef if $var_pat->is_empty();
-							
-						}
-						if ($has_intersect) { $var_ok += $var_gene; }
-						else { $var_gene->Empty(); }
-					}
-					if ($chr->getProject->level_fam() eq 'gene') {
-						if ($family->intersected() and $nb_intersected == 0) {
-							$h_genes_fam_intersect->{$gene->id()}->{$family->name()}++;
-							$nb_intersected++;
-							$var_intersect += $var_gene;
-						}
-						elsif ($family->intersected()) {
-							$h_genes_fam_intersect->{$gene->id()}->{$family->name()}++;
-							$var_intersect->Intersection($var_to_add, $var_gene);
-						}
-					}
-					$var_ok += $var_gene;
+		my $ok;
+		foreach my $patient (@intersect) {
+				my $v = $gene->getCurrentVector() & $patient->getVectorOrigin($chr);
+				if ($v->is_empty){
+					$ok =0;
+					last;
 				}
-				else {
-					$var_to_add += $var_fam;
-					if ($family->excluded()) {
-						$var_excluded += $var_to_add;
-					}
-					elsif ($family->intersected() and $nb_intersected == 0) {
-						$nb_intersected++;
-						$var_intersect += $var_to_add;
-					}
-					elsif ($family->intersected()) {
-						$var_intersect->Intersection($var_to_add, $var_intersect);
-					}
-					$var_ok += $var_to_add;
-				}
-			}
+				$ok ++;
 		}
+		unless ($ok){
+			delete $chr->{genes_object}->{$gene->id};
+			next;
+		}
+		$var_ok += $gene->getCurrentVector();
+		
 	}
-	
-	my @lPat = @{$chr->getProject->getPatients()};
-	$var_ok -= $var_excluded;
-	if ($nb_intersected) {
-		if ($chr->getProject->level_fam() eq 'gene') {
-			foreach my $gene (@{$chr->getGenes()}) {
-				my $has_fam_intersect;
-				my $has_intersect = 1;
-				foreach my $family (@{$chr->getProject->getFamilies()}) {
-					next if not $family->intersected();
-					$has_fam_intersect = 1;
-					$has_intersect = undef if not exists $h_genes_fam_intersect->{$gene->id()};
-					$has_intersect = undef if not exists $h_genes_fam_intersect->{$gene->id()}->{$family->name()};
+	$chr->setVariantsVector($var_ok);
+}
+#	exclude patient
+sub excludeGenesPatients {
+	my ($self,  $chr ) = @_;
+	return unless $self->{genes}->{excluded}->{patients};
+	my $var_ok = $chr->getNewVector();
+	my (@intersect) = @{$self->{genes}->{excluded}->{patients}};
+	foreach my $gene (@{$chr->getGenes()}) {
+		my $ok;
+		foreach my $patient (@intersect) {
+				my $v = $gene->getCurrentVector() & $patient->getVectorOrigin($chr);
+				unless ($v->is_empty){
+					$ok =0;
+					last;
 				}
-				if ($has_fam_intersect and not $has_intersect) {
-					$var_excluded += $gene->getCurrentVector();
-					$var_ok -= $gene->getCurrentVector();
-				}
-			}
+				$ok ++;
 		}
-		else {
-			$var_ok->Intersection($var_ok, $var_intersect);
+		unless ($ok){
+			delete $chr->{genes_object}->{$gene->id};
+			next;
 		}
-		$self->updateVectorPatients(\@lPat, $chr, $var_ok, $var_excluded, $var_intersect);
+		$var_ok += $gene->getCurrentVector();
+		
 	}
-	else {
-		$self->updateVectorPatients(\@lPat, $chr, $var_ok, $var_excluded);
+	$chr->setVariantsVector($var_ok);
+}
+
+
+#	intersect Fam
+
+sub intersectGenesFamilies {
+	my ($self,  $chr ) = @_;
+	return unless $self->{genes}->{intersected}->{families};
+	my $var_ok = $chr->getNewVector();
+	my (@intersect) = @{$self->{genes}->{intersected}->{families}};
+	foreach my $gene (@{$chr->getGenes()}) {
+		my $ok;
+		foreach my $fam (@intersect) {
+				my $v = $gene->getCurrentVector() & $fam->getVectorOrigin($chr);
+				if ($v->is_empty){
+					$ok =0;
+					last;
+				}
+				$ok ++;
+		}
+		unless ($ok){
+			delete $chr->{genes_object}->{$gene->id};
+			next;
+		}
+		$var_ok += $gene->getCurrentVector();
+		
+	}
+	$chr->setVariantsVector($var_ok);
+}
+
+#	exclud  Fam
+
+
+sub excludeGenesFamilies {
+	my ($self,  $chr ) = @_;
+	return unless $self->{genes}->{excluded}->{families};
+	my $var_ok = $chr->getNewVector();
+	my (@intersect) = @{$self->{genes}->{excluded}->{families}};
+	foreach my $gene (@{$chr->getGenes()}) {
+		my $ok;
+		foreach my $fam (@intersect) {
+				my $v = $gene->getCurrentVector() & $fam->getVectorOrigin($chr);
+				unless ($v->is_empty){
+					$ok =0;
+					last;
+				}
+				$ok ++;
+		}
+		unless ($ok){
+			delete $chr->{genes_object}->{$gene->id};
+			next;
+		}
+		$var_ok += $gene->getCurrentVector();
 	}
 	$chr->setVariantsVector($var_ok);
 }
@@ -1298,10 +1477,11 @@ sub filter_genes_annotations {
 		$vsmall &= $vchr;
 		if ($vsmall->is_empty()){
 			delete $chr->project->{genes_object}->{$gene->id};
+			
 			next;
 		}
 		$gene->setCurrentVector($vsmall);
-		
+		$chr->{genes_object}->{$gene->id} ++;
 		$nb ++;
 		$id_genes->{$gene->id} ++;
 		$variants_genes += $gene->enlarge_compact_vector($vsmall);

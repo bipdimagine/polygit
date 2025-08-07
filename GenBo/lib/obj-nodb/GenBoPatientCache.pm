@@ -289,6 +289,7 @@ sub _getRocksVector {
 
 sub getVectorOrigin {
 	my ($self,$chr) = @_;
+	confess("no chr") unless $chr;
 	return $self->{origin}->{all}->{$chr->name}->Clone if exists $self->{origin}->{all}->{$chr->name};
 	if ($self->project->isRocks){
 		return $self->_getRocksVector($chr,"all");

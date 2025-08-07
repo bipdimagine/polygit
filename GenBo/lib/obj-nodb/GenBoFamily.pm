@@ -25,6 +25,18 @@ has isTrio => (
 		return 1;
 	}
 );
+has isSolo => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		
+		return 1 if scalar @{$self->getMembers} == 1;
+		return undef;
+		
+	
+	}
+);
 # hash les infos des enfants pour chaque patient
 
 has children => (

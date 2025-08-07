@@ -32,6 +32,7 @@ has excluded => (
 	default => undef,
 );
 
+
 # tag si famille intersect
 has intersected => (
 	is		=> 'rw',
@@ -666,10 +667,7 @@ sub getVector_family_dominant() {
 			$self->{vector_transmission}->{$key}->{$chr->id} &= $self->getVector_individual_dominant($chr,$child);
 		}
 	}
-	
 	foreach my $patient (@{$self->getChildrenHealthy()}) {
-		warn $patient->getVectorOrigin($chr);
-		warn $self->{vector_transmission}->{$key}->{$chr->id};
 		$self->{vector_transmission}->{$key}->{$chr->id} -= $patient->getVectorOrigin($chr);
 	}
 	
@@ -1385,7 +1383,16 @@ sub getMotherVectorHe() {
 	return $chr->getNewVector();
 }
 
-
+ sub getVectorOrigin {
+	my ($self,$chr) = @_;
+	return $self->{origin_vector}->{$chr->name} if exists $self->{origin_vector}->{$chr->name} ;
+	my $v =  $chr->getNewVector();
+	foreach my $p (@{$self->getMembers}){
+		$v += $p->getVectorOrigin($chr);
+	}
+	$self->{origin_vector}->{$chr->name} = $v;
+	return $self->{origin_vector}->{$chr->name};
+ }
 
 
 
