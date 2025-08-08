@@ -3654,7 +3654,7 @@ sub infos_dejavu_parquet {
 	return undef if not -e $parquet;
 #	confess("\n\nERROR $parquet file doesn't exist. die \n\n") if not -e $parquet;
 	
-	my $sql = "SELECT chr38 as chr, pos38 as pos  * FROM read_parquet(['".$parquet."'])";
+	my $sql = "SELECT chr38 as chr, pos38 as pos, * FROM read_parquet(['".$parquet."'])";
 
 	my $find_pos_s = $self->start() - (20 + $self->length());
 	my $find_pos_e = $self->start() + (20 + $self->length());
