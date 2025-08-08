@@ -537,7 +537,7 @@ my $project = $buffer->newProjectCache(
 	-typeFilters => 'individual',
 	-cgi_object  => 1
 );
-
+$project->hide_patients(1);
 $project->validations_query(1);
 my $user = $cgi->param('user_name');
 $project->cgi_user($user);
@@ -1659,7 +1659,8 @@ sub get_mendelian_statistics {
 	foreach my $line ( @{ $data->{data} } ) {
 		next unless $line;
 		my $name    = $line->{sample}->{text};
-		my $patient = $project->getPatient($name);
+		my $patient = $project->getPatient($name,1);
+		next unless $patient;
 		my $value   = $line->{mendelian}->{text};
 		$value =~ s/\[//;
 		$value =~ s/\]//;
@@ -1704,11 +1705,12 @@ sub statistics_projects {
 			my $project2 = $buffer2->newProject( -name => $p );
 			next unless $project2->existsnoSqlQuality;
 			my $no = $project2->noSqlQuality("r");
+			warn $no->dir;
 			foreach my $v ( "coverage_stats", "statistics_variations" ) {
 				my $data = $no->get( $project2->name, "$v" );
 
 				next unless $data;
-
+				
 				$nbpp++;
 
 				foreach my $p_value ( @{ $data->{data} } ) {

@@ -23,6 +23,7 @@ my $buffer = GBuffer->new();
 my $cgi    = new CGI();
 my $project_name = $cgi->param('project');
 my $project = $buffer->newProject(-name=>$project_name);
+$project->hide_patients(1);
 my $server =  $ENV{HTTP_HOST};
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "darwin.bipd.fr" if $server =~/10\.200\.27/;
@@ -121,7 +122,6 @@ foreach my $p (sort {  $a->name cmp $b->name  or  $a->getFamily->name cmp $b->ge
 	$item->{fam} = $p->getFamily()->name if $fam &&  $p->getFamily()->name ne $p->name or scalar(@{ $p->getFamily()->getParents})>0 ;
 	push(@$out,$item);
 	}
-	
 }
 
 my $stdout2 = tee_stdout {

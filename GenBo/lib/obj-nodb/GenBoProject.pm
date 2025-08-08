@@ -102,6 +102,11 @@ sub print_dot {
 	}
 }
 
+has hide_patients => (
+	is      => 'rw',
+	lazy    => 1,
+	default => 0,
+);
 has count_dot => (
 	is      => 'rw',
 	lazy    => 1,
@@ -3124,7 +3129,11 @@ sub setPatients {
 	my $res   = $query->getPatients( $self->id );
 	my %names;
 	my $spec;
+	
 	foreach my $h (@$res) {
+		if ($self->hide_patients){
+			next if $h->{genbo_id} == -1;
+		}
 		$h->{id} = $h->{patient_id};
 		$names{ $h->{id} } = undef;
 		unless ( $h->{family} ) { $h->{family} = 'ByDefault_' . $h->{name}; }
