@@ -1353,41 +1353,44 @@ sub samtools {
 }
 
 sub duplicate_regions {
-	my ($patient,$noforce) = @_;
-
+	my ($patient,$bam,$fork,$noforce) = @_;
 	my $project = $patient->project();
-	my $bam     = $patient->getBamFile();
+	
+	my $align = 
 	my @bams;
 	my $regions;
-	my $dir =
-	  $project->getVariationsDir("duplicate_region_calling") . "/regions";
+	my $dir = $project->getVariationsDir("duplicate_region_calling") . "/regions";
 	system("mkdir $dir && chmod a+rwx $dir") unless -e $dir;
 	my $file = "$dir/" . $patient->name() . ".dup.bed";
-#	if ($noforce && -e $file){
-#		
-#		my @res = `cat $file`;
-#		my @zz;
-#		chomp(@res);
-#		foreach my $r (@res){
-#			my ($a,$b,$c) = split(" ",$r);
-#			push(@zz,"$a:$b-$c");
-#		}
-#		return \@zz;
-#	}
-	open( REG, ">$dir/" . $patient->name() . ".dup.bed" );
+
+my @lines;
+
+my $pm = new Parallel::ForkManager($fork);
+	$pm->run_on_finish(
+		sub {
+			my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
+			push(@lines,@{$data->{lines}});
+			push(@$regions,@{$data->{regions}});
+		}
+	);
+	
+
+	
 
 	foreach my $chr ( @{ $project->getChromosomes } ) {
 		my $cn      = $chr->name();
 		my $intspan = $chr->getIntSpanCaptureForCalling(200);
 		next unless $intspan;
 		next unless $intspan->as_array();
+		my $pid = $pm->start and next;
+		
 		my $intspan_res->{$cn} = Set::IntSpan::Fast->new();
 
 		my $callback = sub {
 			my ( $seqid, $pos, $pileup ) = @_;
 			my $nb  = 0;
 			my $nbd = 0;
-			return if scalar(@$pileup) < 50;
+		#	return if scalar(@$pileup) < 50;
 			for my $p (@$pileup) {
 				my $alignment = $p->alignment;
 				$nbd++  if $alignment->qual ==0;    #&&  $alignment->get_tag_values("XA");
@@ -1406,27 +1409,45 @@ sub duplicate_regions {
 			,    #"/data-xfs/public-data/HG19//genome/fasta/all.fa",
 			-bam => $bam
 		);
-
+		my $res;
 		my $iter = $intspan->iterate_runs();
 		while ( my ( $from, $to ) = $iter->() ) {
 			$sam->fast_pileup( $chr->fasta_name . ":$from-$to", $callback );
 		}
-		push( @$regions,	map { $chr->fasta_name . ":" . $_ }   split( ",", $intspan_res->{$cn}->as_string ) );
+		push( @{$res->{regions}},	map { $chr->fasta_name . ":" . $_ }   split( ",", $intspan_res->{$cn}->as_string ) );
 		my $iter2 = $intspan_res->{$cn}->iterate_runs();
+		$res->{lines} =[];
+		
 		while ( my ( $from, $to ) = $iter2->() ) {
-			print REG $chr->fasta_name . "\t" . $from . "\t" . $to . "\n";
+#			print REG $chr->fasta_name . "\t" . $from . "\t" . $to . "\n";
+			push(@{$res->{lines}},$chr->fasta_name . "\t" . $from . "\t" . $to);
+			
 		}
+		
+		
+	 	$pm->finish(0, $res);
 	}
-
+	$pm->wait_all_children();
+	
+	
+	open( REG, ">$dir/" . $patient->name() . ".dup.bed" );
+	print REG join("\n",@lines);
+	warn Dumper @lines;
 	close(REG);
 	return $regions;
 }
 
 sub duplicate_region_calling {
 	my ( $project, $patient, $intspans,  $fork, $verbose ) = @_;
+	$project->getCaptures();
+	$project->getPatients();
+	$project->getChromosomes();
 	my $dir_out = $project->getCallingPipelineDir("duplicate_region_calling");
 	my $vcf_final =	  calling_target::getTmpFile( $dir_out, $patient->name, "dup.vcf" );
-	my $regions = duplicate_regions( $patient, $intspans );
+	my $bam = $patient->getBamFileForPipeline("duplicate_region_calling",$fork);
+	$project->disconnect;
+	my $regions = duplicate_regions( $patient, $bam,$fork,$intspans );
+	
 	unless (@$regions) {
 
 		print_empty_vcf( $vcf_final, $patient );
@@ -1451,7 +1472,6 @@ sub duplicate_region_calling {
 	my $vcf_uni =	  calling_target::getTmpFile( $dir_out, $patient->name, "dup.vcf" );
 	my $bamtmp =	  calling_target::getTmpFile( $dir_out, $patient->name, "tmp.bam" );
 	my $bed = calling_target::getTmpFile( $dir_out, $patient->name, "tmp.bed" );
-	my $bam = $patient->getBamFile();
 	my $cmd2 =qq{ | perl -lane 'if(\$_=~/^@/){print \$_} else{\@t=split(" ",\$_); \$t[4] = 30 if \$t[4] eq 0;print join("\t",\@t);}' | samtools view -bS - | samtools sort - > $bamtmp && samtools index $bamtmp};
 	my $cmd1 = qq{samtools view -h $bam };
 
@@ -1489,6 +1509,7 @@ sub duplicate_region_calling {
 	#my @res2 = `cat $vcf_final`;
 	#print @res2;
 	warn $vcf_final;
+	
 	return $vcf_final;
 }
 
