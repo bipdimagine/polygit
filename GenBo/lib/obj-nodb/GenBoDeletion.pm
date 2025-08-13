@@ -299,7 +299,7 @@ sub constructNomenclature {
 
 		if (exists $r->{type} && $r->{type} eq "exon"){
 		my $pos_transcript = $transcript->translate_position($self->start);
-		 my $seqv = $self->sequence();
+		 my $seqv = $self->delete_sequence();
 		 my $seqr = $self->getChromosome()->sequence($self->start,$self->start);
 		 die() unless  $seqr;
 		if ($transcript->strand() == -1 ){
@@ -309,7 +309,17 @@ sub constructNomenclature {
 			return "n.".$pos_transcript."+".length($seqr)."del";
 	}
 		my ($dist,$pos) = $self->getPositionForNomenclatureIntronic($transcript);
-
+		if ($transcript->strand() == 1 ){
+			my $seqv = $self->delete_sequence();
+				my $len = length($seqv);
+			my $refseq = $self->getChromosome()->sequence($self->start+$len,$self->start+1000);
+		
+			my $x =0;
+			  while (substr($refseq, $x, $len) eq $seqv) {
+            		$x += $len;
+        		}
+        		$dist+=$x;
+			}
 		 my $st_dist = $dist;
 		$st_dist="+".$dist if $dist >0;		 
 
@@ -323,6 +333,9 @@ sub constructNomenclature {
 	return;
 	#coding 
 }
+
+
+
 
 
 sub protein_nomenclature {

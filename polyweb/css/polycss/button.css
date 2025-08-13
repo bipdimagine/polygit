@@ -372,7 +372,78 @@
 		height:16px;
 		width:16px;
 	}
-		 
+
+	
+	
+	
+	
+	
+	
+	.external-viewer-button {
+	  background: #C67FAE;
+	  border-radius: 50%;
+	  width: 32px;
+	  height: 32px;
+	  border: none;
+	  cursor: pointer;
+	  color: white;
+	  font-size: 16px;
+	  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+	  transition: transform 0.2s;
+	}
+	.external-viewer-button:hover {
+	  transform: scale(1.1);
+	}
+	.external-viewer-items {
+
+	  position: relative;
+	  display: none;
+	  background: white;
+	  border: 1px solid #ddd;
+	  border-radius: 6px;
+	  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+	  padding: 5px;
+	  top:-10px;
+	  font-size:12px;
+	  z-index: 100;
+	}
+	.external-viewer-items a {
+	  display: block;
+	  padding: 4px 8px;
+	  text-decoration: none;
+	  color: #007AFF;
+	}
+	.external-viewer-items a:hover {
+	  background: #e8f0fe;
+	}
+	.igvIcon3 {
+		background-image:url(../../images/polyicons/igv_button_small.png);
+		background-repeat:no-repeat;
+		height:32px;
+		width:32px;
+		background-position: center center;
+		background-color: orange;
+		   border-radius: 50%;
+		   width: 32px;
+		   height: 32px;
+		   border: none;
+		   cursor: pointer;
+		   color: white;
+		   font-size: 16px;
+		   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+		   transition: transform 0.2s;
+	}	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	.igvIcon2 {
 		background-image:url(../../images/polyicons/igv_button_small.png);
 		background-repeat:no-repeat;

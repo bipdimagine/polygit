@@ -75,7 +75,7 @@ use Bio::DB::HTS::Faidx;
 
 sub hasHgmdAccess {
 	my ( $self, $user ) = @_;
-	return 1 if ( $self->buffer->queryHgmd->getHGMD($user) == 1 );
+	return 1 if ( $self->buffer->queryHgmd->getHGMD($user)  );
 	return;
 }
 

@@ -340,6 +340,45 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 	</style>
 };
 
+sub css3 {
+	my ($pname) = @_;
+	$pname = "#c1pv".$pname;
+ return qq{
+<script>
+document.querySelectorAll('.external-viewer-button').forEach(button => {
+button.addEventListener('click', function(e) {
+    e.stopPropagation();
+    console.log(this);
+    const menu = this.nextElementSibling;
+    const isOpen = menu.style.display === 'block';
+
+    // Ferme tous les autres menus
+    document.querySelectorAll('.external-viewer-items').forEach(m => m.style.display = 'none');
+
+    // Si le menu n'était pas ouvert, on l'affiche
+    if (!isOpen) {
+	const menu = this.nextElementSibling;
+    const rect = this.getBoundingClientRect();
+    const container = document.querySelector("$pname"); 
+    console.log(container);
+    menu.style.position = 'absolute';
+    menu.style.left = this.offsetWidth + window.scrollX +20+ 'px'; // Aligné horizontalement avec le bouton
+   // alert(window.scrollY+" "+ this.offsetHeight+" "+menu.top" );
+   console.log(this.offsetTop + " "+ container.scrollTop+" "+rect.top);
+    menu.style.top = this.offsetTop - container.scrollTop+20  + 'px'; // Juste en dessous
+    //menu.style.top = rect.top+20  + 'px'; // Juste en dessous
+        menu.style.display = 'block';
+    }
+});
+});
+
+// Ferme les menus si on clique ailleurs
+document.addEventListener('click', () => {
+  document.querySelectorAll('.external-viewer-items').forEach(menu => menu.style.display = 'none');
+});
+</script>
+	}
+};
 }
 
 1;

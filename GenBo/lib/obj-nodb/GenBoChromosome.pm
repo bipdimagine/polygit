@@ -2242,6 +2242,7 @@ sub getDejaVuInfosForDiagforVariant{
 #	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
 	#my $no1 = $self->project->lite_deja_vu2();
 	my $no = $self->rocks_dejavu();
+	
 	my $h = $no->dejavu($v->rocksdb_id);
 	#my $h = $no1->get($v->getChromosome->name,$v->id);
 	#warn Dumper $h;
@@ -2268,7 +2269,6 @@ sub getDejaVuInfosForDiagforVariant{
 	}
 	
 	return $res unless ($h);
-	
 	
 	
 	

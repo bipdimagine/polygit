@@ -138,7 +138,7 @@ my $hin_this_run = {
 	"6" =>100,
 };
 my @headers =
-  ( "varsome", "igv", "alamut", "var_name", "trio", "gnomad", "deja_vu" );
+  ( "Viewer", "igv", "var_name", "trio", "gnomad", "deja_vu" );
 
 my @header_transcripts = (
 	"consequence", "enst",     "nm",           "ccds",
@@ -442,6 +442,7 @@ my $stdout = tee_stdout {
 	html::print_cgi_header($cgi) unless $cgi->param('export_xls');
 	print polyviewer_css::css1() unless $cgi->param('export_xls');
 	print polyviewer_css::css2() unless $cgi->param('export_xls');
+	print polyviewer_css::css3($cgi->param('patients')) unless $cgi->param('export_xls');
 };
  
  #print  qq{<div> DEV MODE NO CACHE </div>} if $dev;;
@@ -1594,7 +1595,6 @@ sub constructChromosomeVectorsPolyDiagFork {
 				#keep only pathogenic variation if cgi with option $only_DM
 				 $vDM = $chr->vectorDM();
 				$vDM += $chr->vectorClinvarPathogenic();
-				warn $vDM;
 				$hashVector->{ $chr->name } = $vDM;
 		}
 		if ($keep_pathogenic) {

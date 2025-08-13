@@ -280,6 +280,7 @@ sub calling_variation_xslate {
 	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $patient = $self->patient;
+	$self->variant->{text_caller} = [] unless $self->variant->text_caller;
 	my $text_caller = join( ", ", @{ $self->variant->text_caller } ); 
 	my $variation_id = $self->variant->id;
 	my $samples = $self->variant->patients_calling();
@@ -380,6 +381,7 @@ sub calling_cnv_xslate {
 	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $patient = $self->patient;
+	$self->variant->{text_caller}  = [] unless $self->variant->text_caller;
 	my $text_caller = join( ", ", @{ $self->variant->text_caller } ); 
 	my $variation_id = $self->variant->id;
 	my $samples = $self->variant->patients_calling();
@@ -837,16 +839,62 @@ sub put_text_minus {
 	
 }
 
+sub mobidetails {
+my ($self,$debug) = @_;
+#warn  $self->variant->{id} unless $self->variant->gnomad_id;
+#warn Dumper $self->variant;
+#confess()  unless $self->variant->gnomad_id;
+#2-151706876-C-T&caller=browser&api=-ngGvTHAaJOZs6Wlg2RrWiEHKgeF33FKhmIAJr1sgeo
+my $url = qq{https://mobidetails.chu-montpellier.fr/api/variant/create_vcf_str?vcf_str=}.$self->variant->gnomad_id.qq{&caller=browser&api_key=-ngGvTHAaJOZs6Wlg2RrWiEHKgeF33FKhmIAJr1sgeo};
+if ($self->project->genome_version_generic eq "HG19"){
+	$url .= "&genome_version=hg19";
+	}
+my $text =qq{<a  type="button" class="btn btn-light btn-xs"  href="$url" target="_blank" style="background-color=white"> &#128051; Mobidetails</a>};
+return $text;
+}
+
+
+sub gnomadurl {
+	my ($self,$debug) = @_;
+	my $gnomad_id = $self->variant->gnomad_id;
+	my $url = "https://gnomad.broadinstitute.org/variant/$gnomad_id";
+	if ($self->project->genome_version_generic eq "HG19"){
+	$url = "https://gnomad.broadinstitute.org/variant/$gnomad_id"."?dataset=gnomad_r2_1";
+	}
+	my $text = qq{<a  type="button" class="btn btn-light btn-xs"  href="$url" target="_blank" style="background-color=white"><i class="fa fa-users fa-2x" style="color:coral;font-size:14px"></i> Gnomad&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+	return $text;
+}
+sub alamuturl {
+	my ($self,$debug) = @_;
+	
+	my $start = $self->variant->start;
+	my $a0 = $self->variant->ref_allele;
+	my $a1 = $self->variant->allele;
+	$a1 = "*" unless $a1;
+	my $chr_name = $self->variant->chromosome;
+	my $icon = qq{<img width="12" height="12" src="https://img.icons8.com/softteal-gradient/24/biotech.png" alt="biotech"/>};
+	my $icon = qq{<img width="12" height="12" src="/polyweb/images/polyicons/alamut_visual.png" alt="biotech"/>};
+	$icon = qq{<button class="alamutView3" ></button> };
+	
+	my $text = qq{<a  type="button" class="btn btn-light btn-xs"  onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']) style="background-color=white">}.$icon .qq{Alamut&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+	return $text;
+#	die();
+}
 
 sub varsome {
 my ($self,$debug) = @_;
 #warn  $self->variant->{id} unless $self->variant->gnomad_id;
 #warn Dumper $self->variant;
 #confess()  unless $self->variant->gnomad_id;
-my $url = qq{https://varsome.com/variant/hg19/}.$self->variant->gnomad_id;
-my $text =qq{<a  type="button" class="btn btn-primary btn-xs" href="$url" target="_blank">V</a>};
+my $url = qq{https://varsome.com/variant/hg38/}.$self->variant->gnomad_id;
+ if ($self->project->genome_version_generic eq "HG19"){
+	$url = qq{https://varsome.com/variant/hg19/}.$self->variant->gnomad_id;
+	}
+	
+my $text =qq{<a  type="button" class="btn btn-light btn-xs" href="$url" target="_blank" style="background-color=white">&#128269; Varsome&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
 return $text;
 }
+
 
 sub igv {
 	my ($self,$debug) = @_;
@@ -856,7 +904,7 @@ sub igv {
 	my $pnames = join(";",@{$self->names});
 	my $locus = $self->variant->locus;
 	my $v1 = "/";
-	return qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus","$v1","$gn")' style="color:black"></button>};
+	return qq{<button class='igvIcon3' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus","$v1","$gn")' style="color:black"></button>};
 }
 
 

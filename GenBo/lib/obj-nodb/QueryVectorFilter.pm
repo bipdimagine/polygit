@@ -12,6 +12,64 @@ has verbose_debug => (
 	is => 'rw',
 ); 
 
+
+has is_filter_gene_id => (
+	is => 'rw',
+	default	=> sub {
+		return undef;
+	},
+); 
+
+has hash_filter_gene => (
+	is => 'rw',
+	default	=> sub {
+		return {};
+	},
+); 
+
+sub getGenes {
+	my ($self,$chr) = @_;
+	confess() unless $chr;
+	my @t = values %{$self->{genes}->{$chr->name}};
+	return \@t;
+}
+
+sub setGenes {
+	my ($self,$chr) = @_;
+	unless (exists $self->{genes}->{$chr->name}){
+			my $vvv = $chr->getVariantsVector();
+		foreach my $g (@{$chr->getGenesFromVector($vvv)}){
+			$self->{genes}->{$chr->name}->{$g->id} = $g;
+		}
+	 }
+	
+}
+sub refreshGenes {
+	my ($self,$chr,$vector) = @_;
+	$vector = $chr->getVariantsVector unless $vector; 
+	foreach my $g (@{$self->getGenes($chr)}){
+		my $v1 = $g->getCurrentVector();
+		$v1 &= $vector;
+		if ($v1->is_empty){
+			$self->deleteGene($chr,$g);
+		}
+		else {
+			$g->getCurrentVector($v1);
+		}
+	}
+}
+
+sub deleteGene {
+	my ($self,$chr,$gene) = @_;
+	delete $self->{genes}->{$chr->name}->{$gene->id} ;
+	return 1;
+}
+
+sub existsGene {
+	my ($self,$chr,$gene) = @_;
+	return exists  $self->{genes}->{$chr->name}->{$gene->id} ;
+}
+
 sub filter_vector_ratio {
 	my ($self, $chr, $limit_ratio, $filter_type_ratio) = @_;
 	
@@ -19,7 +77,7 @@ sub filter_vector_ratio {
 	return unless ($limit_ratio);
 	return if ($limit_ratio eq 'all');
 	my $vector_ok = $chr->getNewVector();
-	foreach my $patient (@{$chr->getPatients()}) {
+	foreach my $patient (@{$chr->project->getPatients()}) {
 		next if ($patient->in_the_attic());
 		my $vector_ratio_name = "ratio_".$limit_ratio;
 		if ($filter_type_ratio eq 'max') { $vector_ratio_name = 'lower_'.$vector_ratio_name; }
@@ -317,6 +375,7 @@ sub atLeastFilter_var_fam {
 	}
 	my $vector_ok = Bit::Vector->new_Enum($chr->getVariantsVector->Size(), join(',', @lOk));
 	$chr->setVariantsVector($vector_ok);
+	$self->refreshGenes($vector_ok);
 }
 
 sub atLeastFilter_var_som {
@@ -358,18 +417,22 @@ sub atLeastFilter_genes_ind {
 	my ($self, $chr, $atLeast) = @_;
 	my $variants_genes  = $chr->getNewVector();
 	my $var_tmp_atleast = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
+foreach my $gene (@{$self->getGenes($chr)}) {
 		my $nb_ok = 0;
 		foreach my $patient ($self->getPatients) {
 			$var_tmp_atleast->Intersection($gene->getVariantsVector(), $patient->getVariantsVector($chr));
 			unless ($var_tmp_atleast->is_empty()) {
 				$nb_ok++;
 				last if ($nb_ok == $atLeast);
+				
 			}
 		}
-		if ($nb_ok < $atLeast) { delete $chr->{genes_object}->{$gene->id}; }
+		if ($nb_ok < $atLeast) { 
+			$self->deleteGene($chr,$gene);
+			delete $chr->{genes_object}->{$gene->id}; 
+		}
 		else { $variants_genes += $gene->getVariantsVector();}
-	}
+		}
 	my $v = $chr->getVariantsVector() & $variants_genes;
 	$chr->setVariantsVector($v);
 		
@@ -382,7 +445,7 @@ sub atLeastFilter_genes_ind {
 sub atLeastFilter_genes_fam {
 	my ($self, $chr, $atLeast) = @_;
 	my $variants_genes  = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $nb_ok = 0;
 		my $var_tmp_atleast = $chr->getNewVector();
 		foreach my $family (@{$chr->getFamilies}) {
@@ -392,7 +455,10 @@ sub atLeastFilter_genes_fam {
 				last if ($nb_ok == $atLeast);
 			}
 		}
-		if ($nb_ok < $atLeast) { $chr->supressGene($gene); }
+		if ($nb_ok < $atLeast) { 
+			$self->deleteGene($chr,$gene);
+			$chr->supressGene($gene); 
+			}
 		else { $variants_genes += $gene->getVariantsVector(); }
 	}
 	my $v = $chr->getVariantsVector() & $variants_genes;
@@ -403,7 +469,7 @@ sub atLeastFilter_genes_fam {
 sub atLeastFilter_genes_som{
 	my ($self, $chr, $atLeast) = @_;
 	my $variants_genes  = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $nb_ok = 0;
 		my $var_tmp_atleast = $chr->getNewVector();
 		foreach my $group (@{$chr->getSomaticGroups}) {
@@ -415,7 +481,10 @@ sub atLeastFilter_genes_som{
 				last if ($nb_ok == $atLeast);
 			}
 		}
-		if ($nb_ok < $atLeast) { $chr->supressGene($gene); }
+		if ($nb_ok < $atLeast){ 
+			$self->deleteGene($chr,$gene);
+			$chr->supressGene($gene); 
+			}
 		else { $variants_genes += $gene->getVariantsVector(); }
 	}
 	my $v = $chr->getVariantsVector() & $variants_genes;
@@ -752,13 +821,21 @@ sub filter_model_somatic_only_tissues_somatic {
 	return $self->filter_model_familial_common($chr, 'only_tissues_somatic');
 }
 
+
+
+#hje ne comprends rien du tout pourquoi faire ca par gene ?
+
 sub filter_model_individual_recessif {
 	my ($self, $chr) = @_;
 	my $variants_genes  = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		next if $gene->getCurrentVector->is_empty();
 		$self->filter_gene_model_individual_recessif($gene);
-		next if ($gene->getCurrentVector->is_empty());
+		
+		if ($gene->getCurrentVector->is_empty()){
+			$self->deleteGene($chr,$gene);
+			next;
+		}
 		$variants_genes += $gene->getCurrentVector();
 	}
 	$chr->setVariantsVector($variants_genes);
@@ -770,28 +847,18 @@ sub filter_model_individual_recessif {
 sub filter_model_individual_compound {
 	my ($self, $chr) = @_;
 	my $variants_genes  = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
-		next if $gene->getCurrentVector->is_empty();
+	foreach my $gene (@{$self->getGenes($chr)}) {
+		if ($gene->getCurrentVector->is_empty()){
+			$self->deleteGene($chr,$gene);
+			next;
+		}
 		$self->filter_gene_model_individual_compound($gene);
-		
+		if ($gene->getCurrentVector->is_empty()){
+			$self->deleteGene($chr,$gene);
+			next;
+		}
 		next if ($gene->getCurrentVector->is_empty());
 		
-#		if ($gene->external_name eq 'UBIAD1') {
-#			warn "\n\n";
-#			warn $gene->external_name();
-#			warn 'All: '.$gene->getCurrentVector->to_Enum();
-#			warn 'NB: '.$chr->countThisVariants($gene->getCurrentVector());
-#			die;
-#		}
-#		
-#		
-#		my $nb = $chr->countThisVariants($gene->getCurrentVector());
-#		if ($nb < 2) {
-#			$gene->getCurrentVector->Empty();
-#			next;
-#		}
-#		
-		$variants_genes += $gene->getCurrentVector();
 	}
 	$chr->setVariantsVector($variants_genes);
 	#$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
@@ -805,9 +872,10 @@ sub filter_model_individual_compound {
 sub filter_model_somatic_dbl_evt {
 	my ($self, $chr) = @_;
 	my $variants_genes  = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		filter_gene_model_somatic_dbl_evt($gene);
 		if ($gene->getVariantsVector->is_empty()) {
+			$self->deleteGene($chr,$gene);
 			$chr->supressGene($gene);
 			next;
 		}
@@ -831,8 +899,8 @@ sub filter_model_somatic_dbl_evt {
 
 
 
-########## FILTRES MODELS GENES ##########
 
+##########################################
 
 
 sub filter_genes_from_ids {
@@ -846,6 +914,10 @@ sub filter_genes_from_ids {
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_from_ids - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	return;
 }
+
+########## FILTRES MODELS GENES ##########
+## !!!!!!!!!!!!! JE NE COMPRENDS RIEN 
+########################################
 
 
 sub filter_gene_model_individual_recessif {
@@ -1249,7 +1321,8 @@ sub intersectGenesPatients {
 	return unless $self->{genes}->{intersected}->{patients};
 	my $var_ok = $chr->getNewVector();
 	my (@intersect) = @{$self->{genes}->{intersected}->{patients}};
-	foreach my $gene (@{$chr->getGenes()}) {
+	
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $ok;
 		foreach my $patient (@intersect) {
 				my $v = $gene->getCurrentVector() & $patient->getVectorOrigin($chr);
@@ -1261,6 +1334,7 @@ sub intersectGenesPatients {
 		}
 		unless ($ok){
 			delete $chr->{genes_object}->{$gene->id};
+			$self->deleteGene($chr,$gene);
 			next;
 		}
 		$var_ok += $gene->getCurrentVector();
@@ -1274,7 +1348,7 @@ sub excludeGenesPatients {
 	return unless $self->{genes}->{excluded}->{patients};
 	my $var_ok = $chr->getNewVector();
 	my (@intersect) = @{$self->{genes}->{excluded}->{patients}};
-	foreach my $gene (@{$chr->getGenes()}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $ok;
 		foreach my $patient (@intersect) {
 				my $v = $gene->getCurrentVector() & $patient->getVectorOrigin($chr);
@@ -1286,6 +1360,7 @@ sub excludeGenesPatients {
 		}
 		unless ($ok){
 			delete $chr->{genes_object}->{$gene->id};
+			$self->deleteGene($chr,$gene);
 			next;
 		}
 		$var_ok += $gene->getCurrentVector();
@@ -1302,7 +1377,7 @@ sub intersectGenesFamilies {
 	return unless $self->{genes}->{intersected}->{families};
 	my $var_ok = $chr->getNewVector();
 	my (@intersect) = @{$self->{genes}->{intersected}->{families}};
-	foreach my $gene (@{$chr->getGenes()}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $ok;
 		foreach my $fam (@intersect) {
 				my $v = $gene->getCurrentVector() & $fam->getVectorOrigin($chr);
@@ -1314,6 +1389,7 @@ sub intersectGenesFamilies {
 		}
 		unless ($ok){
 			delete $chr->{genes_object}->{$gene->id};
+			$self->deleteGene($chr,$gene);
 			next;
 		}
 		$var_ok += $gene->getCurrentVector();
@@ -1330,7 +1406,8 @@ sub excludeGenesFamilies {
 	return unless $self->{genes}->{excluded}->{families};
 	my $var_ok = $chr->getNewVector();
 	my (@intersect) = @{$self->{genes}->{excluded}->{families}};
-	foreach my $gene (@{$chr->getGenes()}) {
+	
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $ok;
 		foreach my $fam (@intersect) {
 				my $v = $gene->getCurrentVector() & $fam->getVectorOrigin($chr);
@@ -1342,6 +1419,7 @@ sub excludeGenesFamilies {
 		}
 		unless ($ok){
 			delete $chr->{genes_object}->{$gene->id};
+			$self->deleteGene($chr,$gene);
 			next;
 		}
 		$var_ok += $gene->getCurrentVector();
@@ -1350,19 +1428,20 @@ sub excludeGenesFamilies {
 }
 
 
+
 sub filter_atLeast {
 	my ($self, $chr, $atLeast, $typeFilters, $level_fam) = @_;
 	if ($atLeast and $atLeast >= 2) {
 		if ($typeFilters eq 'familial') {
-			if ($level_fam eq 'gene') { atLeastFilter_genes_fam($chr, $atLeast); }
-			else { atLeastFilter_var_fam($chr, $atLeast); }
+			if ($level_fam eq 'gene') { $self->atLeastFilter_genes_fam($chr, $atLeast); }
+			else { $self->atLeastFilter_var_fam($chr, $atLeast); }
 		}
 		if ($typeFilters eq 'somatic') {
-			if ($level_fam eq 'gene') { atLeastFilter_genes_som($chr, $atLeast); }
+			if ($level_fam eq 'gene') { $self->atLeastFilter_genes_som($chr, $atLeast); }
 			else { atLeastFilter_var_som($chr, $atLeast); }
 		}
 		else {
-			if ($level_fam eq 'gene') { atLeastFilter_genes_ind($chr, $atLeast); }
+			if ($level_fam eq 'gene') { $self->atLeastFilter_genes_ind($chr, $atLeast); }
 			else { atLeastFilter_var_ind($chr, $atLeast); }
 		}
 	}
@@ -1374,9 +1453,10 @@ sub filter_genes_text_search {
 	return unless ($filter_text);
 	$chr->getProject->filter_text($filter_text);
 	my $vector_genes = $chr->getNewVector();
-	foreach my $gene (@{$chr->getGenes()}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		$chr->getProject->print_dot(1);
 		unless ($chr->check_filter_text($gene)) {
+			$self->deleteGene($chr,$gene);
 			next;
 		}
 		$vector_genes += $gene->getVariantsVector();
@@ -1402,11 +1482,31 @@ sub filter_genes_only_genes_names {
 		}
 		else { $chr->getProject->{only_genes}->{$name} = undef; }
 	}
-	my $vector_genes = $chr->getNewVector();
+	my $vector_genes = $chr->getVariantsVector();
+	$self->{genes}->{$chr->name} ={};
+	foreach my $g (keys %{$chr->getProject->only_genes}){
+		$chr->getProject->print_dot(1);
+		
+		my $gene= $chr->project->newGene($g);
+
+		next if $gene->getChromosome->name ne $chr->name;
+#		warn $g."=====";
+		my $vgene =  $gene->getVariantsVector();
+		$vgene &=  $vector_genes;
+		next if $vgene->is_empty();
+		$vector_genes &= $gene->getVariantsVector();
+		$chr->{genes_object}->{$gene->id} ++;
+		$self->{genes}->{$chr->name}->{$gene->id} = $gene;
+	
+	}
+	$chr->setVariantsVector($vector_genes);
+	return;
+	
 	foreach my $gene (@{$chr->getGenes()}) {
 		$chr->getProject->print_dot(1);
 		next if ($chr->getProject->only_genes() and not exists $chr->getProject->only_genes->{uc($gene->external_name())});
 		$vector_genes += $gene->getVariantsVector();
+		
 	}
 	$chr->setVariantsVector($vector_genes);
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_only_genes_names - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
@@ -1442,6 +1542,7 @@ sub return_cat {
 sub filter_genes_annotations {
 	my ($self, $chr, $hFiltersChr) = @_;
 	return unless ($hFiltersChr);
+
 	my $tt =time;
 	
 
@@ -1457,27 +1558,23 @@ sub filter_genes_annotations {
 	my $id_genes = {};
 	my $t =time;
 	#$rocks->prepare([keys %$lh]);
-	foreach my $gene ( @{$chr->getGenesFromVector($vvv)}) {
-	#foreach my $gene ( @{$chr->getGenesFromVector($chr->getVariantsVector())}) {
-	#foreach my $gene ( @{$objs}) {
+	$chr->{genes_object} = {};
+	my @genes ;
+	
+	$self->setGenes($chr);
+	 	
+	
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		$nb_genes ++;
 		$chr->getProject->print_dot(1);
 		my $debug;
-#		if ($gene->external_name eq "RNF115"){
-#			$debug =1;
-#		}
 		my $vsmall = $gene->getCompactVectorOriginCategories(\@all_cat,$debug);
-#		if ($debug){
-#			warn Dumper @all_cat;
-#			warn "\t\t ".$vsmall->Norm;
-#			#die();
-#		}
 		
 		my $vchr = $gene->return_compact_vector( $chr->getVariantsVector());
 		$vsmall &= $vchr;
 		if ($vsmall->is_empty()){
 			delete $chr->project->{genes_object}->{$gene->id};
-			
+			$self->deleteGene($chr,$gene);
 			next;
 		}
 		$gene->setCurrentVector($vsmall);
@@ -1486,7 +1583,6 @@ sub filter_genes_annotations {
 		$id_genes->{$gene->id} ++;
 		$variants_genes += $gene->enlarge_compact_vector($vsmall);
 	}
-	
 	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
 	$chr->{buffer_vector} = $chr->getVariantsVector();
 #	warn "---------------- $nb/$nb_genes/".scalar(keys %{$chr->{genes_object}});

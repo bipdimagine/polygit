@@ -392,6 +392,19 @@ sub constructNomenclature {
 		#return n
 	}	
 		my ($dist,$pos) = $self->getPositionForNomenclatureIntronic($transcript);
+		
+		if ($transcript->strand() == 1 ){
+			my $seqv = $self->sequence();
+				my $len = length($seqv);
+			my $refseq = $self->getChromosome()->sequence($self->start+$len,$self->start+1000);
+		
+			my $x =0;
+			  while (substr($refseq, $x, $len) eq $seqv) {
+            		$x += $len;
+        		}
+        		$dist+=$x;
+			}
+		
 		 my $st_dist = $dist;
 		confess($dist) unless defined $dist;			 
 		 $st_dist="+".$dist if $dist >0;

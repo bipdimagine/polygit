@@ -804,6 +804,7 @@ sub getPrimersByObjects {
 		my $objs =[];
 		return $objs unless $res;
 		 while(my $line = $res->next){
+			
 				my($a,$b,$c,$pid) = split(" ",$line);
 				my $o;
 				if (exists  $self->{objects}->{primers}->{$pid}){

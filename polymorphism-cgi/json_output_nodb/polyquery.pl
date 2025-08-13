@@ -43,6 +43,7 @@ my $cgi = new CGI();
 my $infos					= $cgi->param('infos');
 my $check_genes				= $cgi->param('check_genes');
 my $only_genes				= $cgi->param('only_genes');
+$only_genes =~ s/\'//g;
 my $bundle_id				= $cgi->param('bundle_id');
 my $get_bundles				= $cgi->param('get_bundles');
 my $genes_list				= $cgi->param('genes');
@@ -374,7 +375,7 @@ my @l_genome_fai = @{$project->getGenomeFai};
 foreach my $chr (@{$project->getChromosomes()}) {
 	$chr->not_used(1);
 }
-
+	
 	$queryFilter->setPatients($project);
 	$queryFilter->setIntheAttic($project->getPatientsFromListNames([split(' ', $filter_attic)]));
 	
@@ -404,6 +405,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		exit(0);
 	}
 	my $chr = $project->getChromosome($chr_id);
+
 	$chr->not_used(0);
 	$nb_chr++;
 	
@@ -456,6 +458,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	my $vector_filtered = $chr->getVariantsVector->Clone();
 	my $vector_filtered_2;
 	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
+
 	if ($is_diff_hash_filters) {
 		die();
 		$chr->load_init_variants_all_patients('init');
@@ -484,16 +487,23 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->filterHoVariantsPatients($chr);
 	$queryFilter->filterHeVariantsPatients($chr);
 	
-	#GENES LEVEL ?
+	
+	
+	
+	#####################
+	#
+	#GENES LEVEL 
+	#######################	
 	
 	$queryFilter->filter_genes_from_ids($chr, $hChr->{$chr->id()}, $can_use_hgmd) if ($panel_name);
-	$queryFilter->filter_genes_text_search($chr, $filter_text);
-	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
 	
+	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
 	
 	
 	if ($is_diff_hash_filters) { $queryFilter->filter_genes_annotations($chr, $hFiltersChr_var2); }
 	else { $queryFilter->filter_genes_annotations($chr, $hFiltersChr); }
+	
+	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	
 	$queryFilter->filter_genetics_models($chr, $model, $h_args);
 	
@@ -502,12 +512,12 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->intersectGenesFamilies($chr);
 	
 	#exclude Genes level
+
 	
 	$queryFilter->excludeGenesPatients($chr);
 	$queryFilter->excludeGenesFamilies($chr);
 	
-	
-	
+
 	
 	if ($project->filter_text()) {
 		die();
@@ -518,6 +528,8 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 			$family->getVariantsVector($chr)->Intersection($family->getVariantsVector($chr), $chr->getVariantsVector());
 		}
 	}
+	
+	
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	my $add_filter_region = launch_filters_bed($chr, $filter_bed);
 	if ($add_filter_region ne '') {
@@ -550,7 +562,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	
 	check_variants_regions_exclude($chr);
 	if ($debug) { warn "\nAfter check_variants_regions_exclude"; }
-	
+	$queryFilter->refreshGenes($chr);
 	if ($export_vcf_for) {
 		foreach my $pat_name (split(' ', $export_vcf_for)) {
 			my $patient = $chr->getPatient( $pat_name );
@@ -887,8 +899,6 @@ sub launchStatsProjectAll {
 	warn "\n\n" if ($debug);
 		my $t =time;
 	$hash_stats->{genes} 		= launchStatsProjectAll_genes();
-	warn "-".abs(time -$t) if ($debug);	my $t =time;
-	$hash_stats->{genes} 		= launchStatsProjectAll_genes();
 	warn "-".abs(time -$t) if ($debug);
 	warn "\n# launchStatsProjectAll_chromosomes" if ($debug);
 	$hash_stats->{chromosomes} 	= launchStatsProjectAll_chromosomes($hash_stats->{genes});
@@ -1021,101 +1031,7 @@ my %vector_buffer;
 
 
 
-sub launchStatsProjectAll_genes_fork {
-	my @lStats;
-	my $fork = 3;
-	my $t = time;
-	my $pm = new Parallel::ForkManager($fork);
-	my $i = 0;
-		my $nb =0;
-		my $nbg = 0;
-	$pm->run_on_finish(
-	sub {
-		my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $res) = @_;
-		unless (defined($res) or $exit_code > 0) {
-			print qq|No message received from child process $exit_code $pid!\n|;
-			die();
-			return;
-		}
-		
-		push(@lStats,@{$res->{data}});
-		warn "end";
-		foreach my $k (keys %{$res->{genes}}){
-			$h_all_genes_name->{$k} = $res->{genes}->{$k};
-		}
-		warn "finish;"
-	}
-);	
-		my $process;
-		
-	
-		
-		$buffer->getHashTransIdWithCaptureDiag();
-		
-	foreach my $chr_id (split(',', $filter_chromosome)) {
-		my $chr = $project->getChromosome($chr_id);
-		$vector_buffer{$chr_id}->{substitution} = $chr->getVectorSubstitutions;
-		$vector_buffer{$chr_id}->{insertion} =  $chr->getVectorInsertions ;
-		$vector_buffer{$chr_id}->{deletion} =  $chr->getVectorDeletions;
-		$vector_buffer{$chr_id}->{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions unless exists $vector_buffer{$chr_id}{indel} ;
-		$vector_buffer{$chr_id}->{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions() unless exists $vector_buffer{$chr_id}{cnv} ;	
-		
-		next if ($chr->not_used());
-		#my @genes = grep {not ($_->getCurrentVector->is_empty())} @{$chr->getGenesFromVector($chr->getVariantsVector())};
-		warn "genes ";
-	
-		my @genes =   @{$chr->getGenes()};
-		$project->disconnect;
-		map{$_->enum} @genes;
-		delete $project->{rocks};
-		 #$chr->flush_rocks_vector();
-		# $chr->flush_rocks_vector();
-		 warn "purge";
-		my $nb        = int( scalar(@genes) / ($fork) +1 );
-		my $iter      = natatime( $nb,  @genes );
-		$t = time;
-		while ( my @tmp = $iter->() ) {
-			$process ++;
-		#	my $pid = $pm->start and next;
-			
-			warn "start $process";
-			my $h_all_genes_name = {};
-		foreach my $gene (@tmp) {	
-		#foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
-			$nb ++;
-			next if $gene->getCurrentVector->is_empty();
-			warn ref($gene) if ($debug);
-			$project->print_dot(50);
-			next if not $gene->getCurrentVector();
-			warn $gene->external_name() if ($debug);
-			my $hStats = launchStatsGene($gene);
-			
-			if ($hStats) {
-				push(@lStats, $hStats );
-				$h_all_genes_name->{$gene->id()}->{external_name} = uc($gene->external_name());
-				$h_all_genes_name->{$gene->id()}->{patients} = $hStats->{'patients_name'};
-				my @lFam = split(',', $hStats->{'families'});
-				if (scalar(@lFam) > 0) {
-					foreach my $famName (@lFam) {
-						$h_all_genes_name->{$gene->id()}->{families}->{$famName} = undef;
-					}
-				}
-				else { $h_all_genes_name->{$gene->id()}->{families} = undef; }
-			}
-		}
-			warn "end ".$process;
-	#	$project->disconnect();
-		
-				warn "end ".$process;
-	#	$pm->finish( 0, {data=>\@lStats,genes=>$h_all_genes_name} );
-		}
-		$pm->wait_all_children();
-		warn '-> all genes DONE';
-		warn '-> all genes DONE' if ($debug);
-	}
-	warn abs(time - $t);
-	return \@lStats;
-}
+
 
 
 sub launchStatsProjectAll_genes {
@@ -1133,12 +1049,15 @@ sub launchStatsProjectAll_genes {
 		$vector_buffer{$chr_id}{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions();
 		
 		next if ($chr->not_used());
-		foreach my $gene (@{$chr->getGenesFromVector($chr->getVariantsVector())}) {
+		foreach my $gene (@{$queryFilter->getGenes($chr)}){
+			warn "++ ".$gene->external_name;
 		#foreach my $gene (@{$chr->getGenes}) {
 #			my $vchr = $gene->return_compact_vector( $vvv);
 #			warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
 #			$vsmall &= $vchr;
+			delete $chr->{genes_object}->{$gene->id}  if $gene->getCurrentCompactVector->is_empty();
 			next if $gene->getCurrentCompactVector->is_empty();
+				warn "++ ".$gene->external_name;
 			$project->print_dot(50);
 #			my $v_to_enum = $gene->_getVectorOrigin->to_Enum();
 			#TODO: a enlever une fois vector ok
@@ -1146,7 +1065,6 @@ sub launchStatsProjectAll_genes {
 #				next;
 #			}
 			$nbg ++;
-			warn $gene->external_name() if ($debug);
 			my $hStats = launchStatsGene($gene);
 			if ($hStats) {
 				push(@lStats, $hStats );
