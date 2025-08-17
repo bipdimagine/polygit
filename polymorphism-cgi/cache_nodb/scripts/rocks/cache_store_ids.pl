@@ -154,6 +154,10 @@ $project->exomeProjects();
 $project->countExomePatients();
 $project->countSimilarPatients();
 $project->in_this_run_patients();
+$project->preload_patients();
+$project->exomeProjectsId();
+
+	$project->disconnect();
 my $t = time;
 foreach my $region (values @$regions) {
 	$cpt++;
@@ -164,12 +168,12 @@ foreach my $region (values @$regions) {
 	$process->{$cpt}  ++;
 	
 	
-	$project->disconnect();
+
 	my $pid = $pm->start and next;
 #	warn 'BEFORE '.$cpt.'/'.scalar(@$regions).'  -  '.$region->{start}." ".$region->{end};
 	my $time_start = time;
 	my $hres = {};
-	get_ids( $project_name, $region );
+	get_ids( $project, $region );
 	my $time_end   = time;
 	
 	$hres->{ttime}    = abs( $time_start - $time_end );
@@ -285,24 +289,21 @@ my $ztotal;
 	warn 'OK FILE: '.$ok_file  if ( $project->cache_verbose() );
 	$project->close_rocks();
 	
-	#$rg2->save_vector_index_region($array);
-	#warn Dumper $array;
-#	warn $project->rocks_pipeline_directory();
 	exit(0);
 
 
 
 sub get_ids {
-	my ( $project_name, $region ) = @_;
+	my ( $project, $region ) = @_;
 	my $ids = [];
-	my $buffer = new GBuffer;
+	#my $buffer = new GBuffer;
 	my $patient = $project->getPatients()->[0];
 	my @headers;
 	my $packer = HTML::Packer->init();
 	my $print_html = polyviewer_html->new( project => $project, patient => $patient,header=> \@headers,bgcolor=>"background-color:#607D8B" );
 	#$print_html->init();
-	my $project = $buffer->newProject( -name => $project_name );
-	$project->preload_patients();
+	#my $project = $buffer->newProject( -name => $project_name );
+	#$project->preload_patients();
 	#$project->buffer->disconnect();
 	
 	#$project->buffer->{dbh} ="-";
@@ -329,7 +330,6 @@ sub get_ids {
 	my $t = time;
 #	warn '   - check variants';
 	my $vs = $reference->getStructuralVariations;
-	
 	my @arocksid = map {$_->rocksdb_id} @$vs;
 	
 	if (scalar(@$vs) > 0 and @arocksid){
@@ -385,6 +385,7 @@ sub get_ids {
 		$variation->dejaVuInfosForDiag2();
 		$variation->annotation();
 		};
+		
 		if ($@){
 			warn "\n\n";
 			warn Dumper $@;
@@ -432,6 +433,7 @@ sub get_ids {
 				$vp->{patients_calling}->{$p->id} =$h; 
 			}
 		}
+		
 		# line to prepare dejavu global;
 		my $ref = ref($variation);
 		if ($ref eq 'GenBoVariation'){
@@ -469,12 +471,6 @@ sub get_ids {
 		#	$vp->{html}->{$g->id} =  $packer->minify( \$print_html->transcripts());
 			delete  $vp->{transcripts} ;
 		}
-		#$vp->{h} = compress($vp->{h});
-		#die();
-		#my $hvariant =  update_variant_editor::construct_hash_variant_global ( $project, $variation,undef,1);
-	#	delete $hvariant->{html};
-		#warn Dumper $hvariant ;
-		#die();
 		my $hh;
 		$hpolyviewer->{$variation->rocksdb_id} = $vp;
 		$hvariant->{$variation->rocksdb_id} = $variation;
@@ -487,8 +483,6 @@ sub get_ids {
 		delete $variation->{project};
 		
 		
-		#warn Dumper $variation->annex();
-		#die();
 		
 	}
 	
