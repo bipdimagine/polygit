@@ -138,8 +138,6 @@ sub refine_heterozygote_composite {
 			
 			my $vector_id = $g->{all_vector_ids}->{$vid};
 			my $vp = $final_polyviewer_all->get($g->{chr_name}."!".$g->{all_vector_ids}->{$vid},1);
-			warn Dumper $vp;
-			die();
 			$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
 			$vp->{spliceAI} = $vp->{hgenes}->{$g->{id}}->{sc}->{spliceAI};
 			
