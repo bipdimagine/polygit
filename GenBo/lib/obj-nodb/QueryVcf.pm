@@ -220,6 +220,7 @@ sub parseVcfFileForReference {
 	}
 	elsif ( $file =~ /.vcf/ ) {
 		return $self->parseVcfFileForReference_gatk( $reference, $useFilter );
+		die();
 	}
 	elsif ( $file =~ /.bcf/ ) {
 		confess( $self->getPatient()->getProject->name() );
@@ -885,7 +886,6 @@ sub genericSVDel {
 	$hash->{'var_allele'}         = $var_allele;
 	$hash->{'line_infos'}         = "-";
 	$hash->{'vcf_position'}       = $pos;
-	$hash->{'CUUCUUCU'}       = $pos;
 	#$hash->{'isCnv'}              = 1;
 	###OBJECTS
 	$hash->{'references_object'}->{ $reference->id } = undef;
@@ -915,6 +915,7 @@ sub genericSVDel {
 	  $x->{gt}->{he};
 	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{ho} =
 	  $x->{gt}->{ho};
+
 	return $hash;
 }
 
@@ -1060,8 +1061,9 @@ sub add_DP_AD {
 		$hash->{annex}->{$patient_id}->{nb_all_mut} = $aa[ $i + 1 ];
 		$hash->{annex}->{$patient_id}->{nb_all_ref} = $aa[$i];
 	}
-		warn Dumper $hash unless $hash->{annex}->{$patient_id}->{nb_all_mut};
-		warn Dumper $hash unless $hash->{annex}->{$patient_id}->{nb_all_ref};
+	#warn Dumper $hash unless $hash->{annex}->{$patient_id}->{nb_all_mut};
+	#warn "-+-+-"  unless $hash->{annex}->{$patient_id}->{nb_all_mut};
+	#warn Dumper $hash unless $hash->{annex}->{$patient_id}->{nb_all_ref};
 		$hash->{annex}->{$patient_id}->{dp} =
 	  $hash->{annex}->{$patient_id}->{nb_all_mut} +
 	  $hash->{annex}->{$patient_id}->{nb_all_ref};
@@ -1132,12 +1134,12 @@ sub parseVcfFileForReference_manta {
 		my $id = $hash->{id};
 		$hash->{'isSrPr'} = 1;
 		my $structType = $hash->{structuralType};
-		warn Dumper $hash unless $id;
+	#	warn Dumper $hash unless $id;
+	#	confess unless $id;
 		next unless $id;
 		$hashRes{$structType}->{$id} = compress( freeze($hash) );
 
 	}
-
 	return \%hashRes;
 }
 

@@ -841,10 +841,6 @@ sub put_text_minus {
 
 sub mobidetails {
 my ($self,$debug) = @_;
-#warn  $self->variant->{id} unless $self->variant->gnomad_id;
-#warn Dumper $self->variant;
-#confess()  unless $self->variant->gnomad_id;
-#2-151706876-C-T&caller=browser&api=-ngGvTHAaJOZs6Wlg2RrWiEHKgeF33FKhmIAJr1sgeo
 my $url = qq{https://mobidetails.chu-montpellier.fr/api/variant/create_vcf_str?vcf_str=}.$self->variant->gnomad_id.qq{&caller=browser&api_key=-ngGvTHAaJOZs6Wlg2RrWiEHKgeF33FKhmIAJr1sgeo};
 if ($self->project->genome_version_generic eq "HG19"){
 	$url .= "&genome_version=hg19";
@@ -884,7 +880,6 @@ sub alamuturl {
 sub varsome {
 my ($self,$debug) = @_;
 #warn  $self->variant->{id} unless $self->variant->gnomad_id;
-#warn Dumper $self->variant;
 #confess()  unless $self->variant->gnomad_id;
 my $url = qq{https://varsome.com/variant/hg38/}.$self->variant->gnomad_id;
  if ($self->project->genome_version_generic eq "HG19"){
@@ -1032,7 +1027,6 @@ sub gnomad {
 	  $output = 	$self->xslate->render("gnomad.hg38.tt", $data);
 	  }
 	# warn $self->variant->name;
-	# warn Dumper $output if ($self->variant->name eq "12-89472277-TAGAAAGAAGA-T");
 	# die() if ($self->variant->name eq "12-89472277-TAGAAAGAAGA-T");
 	 return $output;
 	
@@ -1414,7 +1408,6 @@ sub validations {
 			if ($data->{clinvar_text}){
 			my $db = $project->getChromosome($self->variant->chromosome)->rocksdb("clinvar");
 			my $pub = $db->clinvar($self->variant->{rocksdb_id});
-			#warn Dumper $pub;
 			#warn $data->{clinvar_text};
 			$data->{clinvar_id} = $pub->{clinvar_id};
 			
