@@ -67,17 +67,19 @@ sub refine_heterozygote_composite {
 		foreach my $g (@$list) {
 		foreach my $vid ( keys %{ $g->{all_variants} } ) {
 			push(@$gids,$g->{chr_name}."!".$g->{all_vector_ids}->{$vid});
-	
 		}
 		}
 	warn "prepare ".$final_polyviewer_all->dir;
 	;
+	print "@+" ;
 	$final_polyviewer_all->prepare($gids);
+	print "@+";
 	warn "end prepare";
 	foreach my $g (@$list) {
 					
 		$xp++;
 		#warn $xp;
+		print "@"  if $xp % 3 == 0 ;
 		print "*" if $xp % 10 == 0 && $id == 1;
 		my $t1 = time;
 		my ( $n, $cname ) = split( "_", $g->{id} );
