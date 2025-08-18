@@ -274,6 +274,8 @@ my $level_dude = 'high,medium';
 
 my $cache_dude_id = "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
 my $cache_id = join( ";", @$keys );
+
+
 if ($project->isDiagnostic){
 	$cache_id.="121222";
 }
@@ -281,10 +283,14 @@ if ($cgi->param('only_DM')){
 	$cache_id.="o";
 }
 warn "\n ==>".$cache_id."<==";
+#$cache_id = md5_hex($cache_id);
+warn "\n ==>".md5_hex($cache_id)."<==";
 my $text = $no_cache->get_cache($cache_id);
-#$dev=1;
+unless ($text) {
+	$cache_id = md5_hex($cache_id);
+	$text = $no_cache->get_cache($cache_id);
+}
 $text = "" if $dev;
-#$text = "";
 my $html_dude = "<!--DUDE-->";
 my $cache_icon;
 
@@ -629,8 +635,9 @@ my $stdout_end = tee_stdout {
 	print $ztime;
 
 };
-
+warn "--> $cache_id <-- put";
 $no_cache->put_cache_text($cache_id,$stdout.$stdout_nav_bar.$stdoutcnv.$stdout_end,2400) ;#unless $dev;
+warn length $no_cache->get_cache($cache_id);
 $no_cache->close();
 exit(0);
 
@@ -1455,22 +1462,29 @@ foreach my $k  (sort {$a cmp $b} keys %hkeys){
 	push(@keys,$c);
 }
 
-
 $project->validations_query(1);
 
 
-
+my @key2;
 foreach my $chr  (@{$project->getChromosomes}){
 		my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
 		my @st = (stat($no->filename));
-		 push(@keys, ($st[9].$st[11].$st[12]));
+		 push(@key2, ($st[9].$st[11].$st[12]));
 		my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
 		@st = (stat($no2->filename));
-		 push(@keys, ($st[9].$st[11].$st[12]));
+		 push(@key2, ($st[9].$st[11].$st[12]));
 }
+warn join("-",@key2);
+push(@keys,@key2);
+
 #push(@keys,file_md5_hex($Bin."/variations_editor.pl") );
-push(@keys,$VERSION);
-push(@keys,$VERSION_UPDATE_VARIANT_EDITOR );
+my @key3;
+push(@key3,$VERSION);
+push(@key3,$VERSION_UPDATE_VARIANT_EDITOR );
+warn $VERSION_UPDATE_VARIANT_EDITOR;
+push(@keys,@key3);
+
+warn join("-",@key3);
 my $stv = $patient->get_string_validations();
 unless ($patient->isGenome ) {
 	$stv .= ':::'.$patient->get_string_identification();
@@ -1479,7 +1493,9 @@ unless ($patient->isGenome ) {
 #keep compatibilty 
 if  ($stv ){
 push(@keys,"validation".":".md5_hex($stv));
-
+warn $stv;
+warn "validation".":".md5_hex($stv);
+die();
 }
 else{
 push(@keys,encode_json ({}));
