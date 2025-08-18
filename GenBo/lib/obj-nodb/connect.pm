@@ -27,7 +27,7 @@ use IO::Uncompress::Gunzip qw(gunzip  $GunzipError) ;
 use FindBin qw($Bin);
 use IO::Compress::Gzip qw(gzip $GzipError) ;
   use Sys::Hostname;
- 
+use Carp qw(cluck longmess shortmess);
 =head2 getdbh
 	Title   : getdbh
  	Usage   : connect::getdbh($ip,$user,$pwd);
@@ -39,6 +39,7 @@ use IO::Compress::Gzip qw(gzip $GzipError) ;
 
 sub getdbh{
 	my ($config,$database) = @_;
+#	cluck "here";
 	my $ip = $config->{ip};
 	my $db_user_name = $config->{user};
 	my $db_password = $config->{pw}."";
@@ -62,7 +63,6 @@ sub getdbh{
 		
 		require "DBD/MariaDB.pm";
 		my $dsn = "DBI:MariaDB::$ip;port=$port";
-		
 	 	$dbh = DBI->connect($dsn, $db_user_name, "$db_password")|| die "Database connection not made: $DBI::errstr";
 	};
 	if ( $@){
@@ -70,7 +70,7 @@ sub getdbh{
 		$dbh = DBI->connect($dsn, $db_user_name, "$db_password")|| die "Database connection not made: $DBI::errstr";
 	}
 	if ( $@){
-		die();
+		warn "connect 3" ;
 		$dsn = "DBI:mysql::$ip2;port=$port\n";
 		 $dbh = DBI->connect($dsn, $db_user_name, "$db_password")|| die "Database connection not made: $DBI::errstr";
 	}
