@@ -845,7 +845,8 @@ my $url = qq{https://mobidetails.chu-montpellier.fr/api/variant/create_vcf_str?v
 if ($self->project->genome_version_generic eq "HG19"){
 	$url .= "&genome_version=hg19";
 	}
-my $text =qq{<a  type="button" class="btn btn-light btn-xs"  href="$url" target="_blank" style="background-color=white"> &#128051; Mobidetails</a>};
+my $text =qq{ <a class="dropdown-item" href="$url"  target="_blank" style="color:black"> &nbsp &#128051; Mobidetails</a>};
+#my $text =qq{<a  type="button" class="btn btn-light btn-xs"  href="$url" target="_blank" style="background-color=white"> &#128051; Mobidetails</a>};
 return $text;
 }
 
@@ -857,7 +858,9 @@ sub gnomadurl {
 	if ($self->project->genome_version_generic eq "HG19"){
 	$url = "https://gnomad.broadinstitute.org/variant/$gnomad_id"."?dataset=gnomad_r2_1";
 	}
-	my $text = qq{<a  type="button" class="btn btn-light btn-xs"  href="$url" target="_blank" style="background-color=white"><i class="fa fa-users fa-2x" style="color:coral;font-size:14px"></i> Gnomad&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+	
+	#my $text = qq{<a  type="button" class="btn btn-light btn-xs"  href="$url" target="_blank" style="background-color=white"><i class="fa fa-users fa-2x" style="color:coral;font-size:14px"></i> Gnomad&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+	my $text =qq{ <a class="dropdown-item" href="$url"  target="_blank" style="color:black">&nbsp <i class="fa fa-users fa-2x" style="color:coral;font-size:14px"></i> Gnomad</a>};
 	return $text;
 }
 sub alamuturl {
@@ -872,7 +875,8 @@ sub alamuturl {
 	my $icon = qq{<img width="12" height="12" src="/polyweb/images/polyicons/alamut_visual.png" alt="biotech"/>};
 	$icon = qq{<button class="alamutView3" ></button> };
 	
-	my $text = qq{<a  type="button" class="btn btn-light btn-xs"  onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']) style="background-color=white">}.$icon .qq{Alamut&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+	#my $text = qq{<a  type="button" class="btn btn-light btn-xs"   onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']) style="background-color=white">}.$icon .qq{Alamut&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+		my $text =qq{ <a class="dropdown-item"  onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']) style="color:black">&nbsp$icon &nbsp Alamut</a>};
 	return $text;
 #	die();
 }
@@ -887,6 +891,7 @@ my $url = qq{https://varsome.com/variant/hg38/}.$self->variant->gnomad_id;
 	}
 	
 my $text =qq{<a  type="button" class="btn btn-light btn-xs" href="$url" target="_blank" style="background-color=white">&#128269; Varsome&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+	my $text =qq{ <a class="dropdown-item"  href="$url" target="_blank" style="color:black">&nbsp&#128269;Varsome</a>};
 return $text;
 }
 

@@ -203,21 +203,26 @@ sub print_line_variant {
 			my $icon = qq{<img width="32" height="32" src="https://img.icons8.com/external-gliphyline-royyan-wijaya/32/external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15.png" alt="external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15"/>};
 			 $icon   = qq{<img width="24" height="24" src="https://img.icons8.com/external-tal-revivo-filled-tal-revivo/24/external-live-preview-of-a-smart-class-education-school-filled-tal-revivo.png" alt="external-live-preview-of-a-smart-class-education-school-filled-tal-revivo"/>};
 			#$icon = qq{<img width="28" height="28" src="https://img.icons8.com/external-bearicons-blue-bearicons/28/external-Clipboard-clipboards-and-notepads-bearicons-blue-bearicons-30.png" alt="external-Clipboard-clipboards-and-notepads-bearicons-blue-bearicons-30"/>};
-			my $div =qq{
-			<button class="external-viewer-button">
-			$icon
-			</button>
-			<div class="external-viewer-items">
-			}.
-			$print_html->mobidetails().
-			$print_html->gnomadurl().
-			$print_html->alamuturl().
-			$print_html->varsome().
-        	qq{
-     	 		</div>
-			};
+			
+			my $dropdown = qq{
+			<div class="dropdown">
+  <button class="btn btn-primary btn-xs dropdown-toggle " type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="font-size:10px;background-color:#C67FAE">
+  $icon
+  </button>
+  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="font-size:12px;background-color:beige;color:black">
+  }.
+  "<li>".$print_html->mobidetails()."</li>".
+  	"<li>".$print_html->gnomadurl()."</li>".
+			"<li>".$print_html->alamuturl()."</li>".
+			"<li>".$print_html->varsome()."</li>"
+  
+  .qq{</div>
+</div>
+};
+
+
 				my $t1 = shift(@headers);
-			$out .= $cgi->td( $style, $div );
+			$out .= $cgi->td( $style, $dropdown );
 		
 			
 			
