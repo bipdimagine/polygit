@@ -193,14 +193,6 @@ $SIG{INT} = sub {
 
 
 my $project_name = $cgi->param('project');
-#my $no_cache = GenBoNoSqlLmdb->new(
-#			dir         => '/data-beegfs/tmp/lmdb',
-#			mode        => "w",
-#			name        => "$project_name",
-#			is_compress => 1,
-#			#vmtouch     => $self->buffer->vmtouch
-#);
-#system("chmod a+w ".$no_cache->filename);
 
 my $user         = $cgi->param('user_name');
 my $panel_name  = $cgi->param('panel');
@@ -226,6 +218,7 @@ if($version_db == 15){
 	$project->public_database_version(16);
 	
 }
+
 #if($version_db > 17){
 #	$VERSION = $VERSION."-".$version_db."clinvar.inh";
 	
@@ -233,12 +226,12 @@ if($version_db == 15){
 else {
 	$version_db = undef;
 }
-
+warn "a1";
 my $patient = $project->getPatient($patient_name);
 my $fam = $patient->getFamily();
 my $print_html = polyviewer_html->new( project => $project, patient => $patient,header=> \@headers,bgcolor=>"background-color:#607D8B" );
 $print_html->init();
-
+warn "a2";
 if ($patient->isMale){
 	$VERSION .= "11" ;#if $patient->isMale;
 }
@@ -273,7 +266,9 @@ if ($cgi->param('force') == 1) {
 }
 
 $no_cache = $patient->get_lmdb_cache("w");
+warn "1";
 my $keys = return_uniq_keys($patient,$cgi); 
+warn "2";
 my $level_dude = 'high,medium';
 
 
@@ -285,7 +280,7 @@ if ($project->isDiagnostic){
 if ($cgi->param('only_DM')){
 	$cache_id.="o";
 }
-
+warn "\n ==>".$cache_id."<==";
 my $text = $no_cache->get_cache($cache_id);
 #$dev=1;
 $text = "" if $dev;
@@ -442,7 +437,8 @@ my $stdout = tee_stdout {
 	html::print_cgi_header($cgi) unless $cgi->param('export_xls');
 	print polyviewer_css::css1() unless $cgi->param('export_xls');
 	print polyviewer_css::css2() unless $cgi->param('export_xls');
-	print polyviewer_css::css3($cgi->param('patients')) unless $cgi->param('export_xls');
+	my $t = $cgi->param('patients');
+	print polyviewer_css::css3($t) unless $cgi->param('export_xls');
 };
  
  #print  qq{<div> DEV MODE NO CACHE </div>} if $dev;;
@@ -547,8 +543,6 @@ $statistics->{genes} = scalar(@$genes);
 
 
 
-
-
 #$statistics->{variations} = $statistics->{variants};
 $project->buffer->dbh_reconnect();
 unless ( $project->buffer->getQuery->isUserMagic($user) ) {
@@ -586,7 +580,6 @@ foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
 	
 $genes = $vgenes;	
 $genes = [] unless $genes;
-	#warn $genes->[0]->{js_id};
 
 $t = time;
 
@@ -616,15 +609,12 @@ warn "end";
 	
 #$myproc->kill();
 $t     = time;
-#my $exit_status = $myproc->wait(); 
-#warn "ok *** $exit_status ";
-#exit(0);
 my $stdout_end = tee_stdout {
 	
 	#warn "genes:".scalar(@$genes);
+
 	if (@$genes){
 	$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ) ;
-	#warn "refine_heterozygote_composite_score_fork genes fin:".scalar(@$genes);
 	}
 	else {
 		if ($gene_name_filtering ) {
@@ -714,395 +704,6 @@ sub calculate_max_score {
 }
 
 
-sub calculate_max_score_toto {
-	my ( $project, $list ) = @_;
-	$project->buffer->close_lmdb();
-	
-	my $mother = $patient->getFamily->getMother();
-	my $father = $patient->getFamily->getFather();
-
-
-	my $hno;
-	my $tsum = 0;
-	my $t    = time;
-	my $xp   = 0;
-
-	my $total_time = 0;
-	my $ztotal     = 0;
-
-	my $h_all_variants_validations = $patient->getProject->validations();
-	my $no_dude                    = $patient->getGenesDude();
-	$no_dude = undef if $project->isGenome();
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(cache=>1,dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name);
-	my @ids = map{$_->{id}} @{$list};
-	$final_polyviewer_all->prepare(\@ids);
-	foreach my $hgene (@$list) {
-		my $gid = $hgene->{id};
-		my $debug ;
-		my $gene = $project->newGenes( [$gid] )->[0];
-		my ( $n, $chr_name ) = split( "_", $gid );
-		my $chr = $gene->getChromosome();
-		$hgene->{chr_name} = $chr_name;
-		
-		if ( $no_dude && -e $no_dude->filename ) {
-			$hgene->{level_dude} = $no_dude->get($gid);
-		}
-		else {
-			$hgene->{level_dude} = -1;
-		}
-		my $global_gene = $final_polyviewer_all->get($gid); #$chr->get_polyviewer_genes($patient,$gid);
-		foreach my $k ( keys %{$global_gene} ) {
-			next if $k eq "penality";
-			next if $k eq "denovo_rare";
-			$hgene->{$k} = $global_gene->{$k};
-		}
-		$hgene->{score} = $gene->score;
-		my $class;
-		$class->{biallelic} = [];
-		$class->{mother}    = [];
-		$class->{father}    = [];
-	
-		foreach my $k ( keys %{ $hgene->{all_variants} } ) {
-			if ($version_db){
-				$hgene->{score} += update_score_clinvar($k);
-			}
-			#my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
-			if ( exists $h_all_variants_validations->{ $gid . '!' . $k } ) {
-				my $score_validation = $h_all_variants_validations->{ $gid . '!' . $k }->[0]->{validation};
-				$hgene->{score} += 0.5 if ( $score_validation == 3 );
-				$hgene->{score} += 2   if ( $score_validation == 4 );
-				$hgene->{score} += 3   if ( $score_validation == 5 );
-			}
-			
-			push(@{ $class->{biallelic} },$hgene->{all_variants}->{$k}->{score}) if exists $hgene->{all_variants}->{$k}->{biallelic};
-			push( @{ $class->{mother} }, $hgene->{all_variants}->{$k}->{score} ) if exists $hgene->{all_variants}->{$k}->{mother};
-			push( @{ $class->{father} }, $hgene->{all_variants}->{$k}->{score} ) if exists $hgene->{all_variants}->{$k}->{father};
-		}
-		if (scalar( @{ $class->{mother} } ) > 0 && scalar( @{ $class->{father} } ) == 0 && exists $hgene->{father}->{id} ) {
-			my $nid = $hgene->{father}->{id};
-			$hgene->{all_variants}->{$nid}->{father} = 1;
-			$hgene->{all_variants}->{$nid}->{score} = $hgene->{father}->{score};
-			$hgene->{all_variants}->{$nid}->{added}++;
-			push( @{ $class->{father} }, ( $hgene->{father}->{score} - 2 ) );
-
-		}
-		elsif (scalar( @{ $class->{father} } ) > 0 && scalar( @{ $class->{mother} } ) == 0 && exists $hgene->{mother}->{id} )
-		{
-			my $nid = $hgene->{mother}->{id};
-			$hgene->{all_variants}->{$nid}->{mother} = 1;
-			$hgene->{all_variants}->{$nid}->{score} = $hgene->{mother}->{score};
-			push( @{ $class->{mother} }, ( $hgene->{mother}->{score} - 2 ) );
-			$hgene->{all_variants}->{$nid}->{added}++;
-		}
-
-		my $score_father    = max( @{ $class->{father} } );
-		my $score_mother    = max( @{ $class->{mother} } );
-		my $score_biallelic = max( @{ $class->{biallelic} } );
-		if ( $score_father + $score_mother > $score_biallelic && $patient->getFamily->isTrio()) {
-			$hgene->{max_score} = $hgene->{score} + $score_father + $score_mother;
-		}
-		else {
-			
-			$hgene->{max_score} = $hgene->{score} + $score_biallelic + $hgene->{penality} ;
-		}
-	}
-
-#	$project->buffer->close_lmdb();
-	
-}
-
-
-#sub refine_heterozygote_composite_score_fork_3 {
-#	my ( $project, $genes,$hchr ) = @_;
-#	$t = time;
-#	$| =1;
-#	print qq{<div style="display: none">};
-#	print "refine";
-#	my $fork      = scalar (keys %$hchr);
-# 	$fork =8;	
-#	$fork = 16 if $project->isGenome();
-#	
-#	$fork=3;
-#	my $pm        = new Parallel::ForkManager($fork);
-#	$pm        = new Parallel::ForkManager($fork);
-#	#@$vgenes = @$vgenes[0..500];
-#	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
-#	my $iter      = natatime( $nb,  @$vgenes );
-#	my $res_genes = [];
-#	my $vid        = 0;
-#	my $hrun;
-#	
-#	#$t = time;
-#	my $current = 1;
-#	my $vres;
-#	my @res_final;
-#	my @toto;
-#	my $wtime = 0;
-#	my $maxgene =100000;
-#	my $ngene =0;
-#	
-#	
-#	my $final_polyviewer_all ;
-#	#if ($project->isRocks){
-#		my $diro = $project->rocks_directory();
-#	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
-#	  $final_polyviewer_all->activate_cache();
-#	
-#	my @lOut_genes;
-#	
-#	$pm->run_on_finish( 
-#		sub {
-#			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
-#
-#			unless ( defined($h) or $exit_code > 0 ) {
-#				print
-#				  qq|No message received from child process $exit_code $pid!\n|;
-#				die();
-#				return;
-#			}
-#			my $id = $h->{run_id};
-#			delete $hrun->{ $h->{run_id} };
-#			warn "==>" . abs( time - $h->{time} );# if $print;
-#			$h->{genes} = [] unless $h->{genes};
-#			$vres->{$id} = $h->{genes};
-#			
-#			
-#			while (exists $vres->{$current}){
-#				if ($current  == 1) {
-#					print qq{</div>};
-#				}
-#				 my $xtime =time;
-#					foreach my $g (@{ $vres->{$current}}){
-#						last if $ngene > $maxgene;
-#						push(@toto,$g->{name});
-#						warn $g->{score} if $g->{name} eq "ABCC8";
-#						
-#						push(@lOut_genes, $g->{out});
-#						
-#						print  "\n<!--SPLIT-->\n";
-#						print $g->{out} . "\n";
-#						$ngene ++;
-#						delete $g->{out};
-#						warn  Dumper $g if $g->{name} eq "ABCC8";
-#					#	push(@res_final,$g->{out})
-#					}
-#					delete $vres->{$current};
-#					$current ++;
-#					$wtime += abs($xtime - time);
-#				
-#			}
-#			push( @$res_genes, @{ $h->{genes} } );
-#		}
-#	);
-#	
-#	#TODO: essayer d'integrer XLS Store variant ici pour le forker
-#	
-#	$project->buffer->dbh_deconnect();
-#	$project->disconnect;
-#	
-#	#delete $project->{validations_query1};
-#	while ( my @tmp = $iter->() ) {
-#		$vid++;
-#		$hrun->{$vid}++;
-#		my $pid = $pm->start and next;
-#		my $t   = time;
-#		my $res;
-#		$res->{tmp}  = \@tmp;
-#		$res->{time} = time;
-#		$project->buffer->dbh_reconnect();
-#		my $x = time;
-#		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
-#	
-#		warn "&&&&&&&& end variations_editor_methods::refine_heterozygote_composite ".abs(time-$x);
-#		$res->{run_id} = $vid;
-#		
-#		$pm->finish( 0, $res );
-#	}
-#	$pm->wait_all_children();
-#	$project->buffer->dbh_reconnect();
-#	
-#	error("Hey it looks like you're having an error  !!! ")
-#	  if scalar keys %$hrun;
-#	warn "end hetero " if $print;
-#	warn "....";
-#	print qq{</div>};
-#	warn "....";
-#	while (exists $vres->{$current}){
-#				print qq{</div>} if $current  == 1 ;
-#				 my $xtime =time;
-#					foreach my $g (@{ $vres->{$current}}){
-#						last if $ngene > $maxgene;
-#						print $g->{out} . "\n";
-#							$ngene ++;
-#					}
-#					
-#					delete $vres->{$current};
-#					$current ++;
-#				$wtime += abs($xtime - time);	
-#				
-#			}
-#		#print "<br>". $wtime;
-#		warn "***** ".$wtime;
-#		$final_polyviewer_all->deactivate_cache();
-#	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;
-#	
-#	my $table_id = 'table_genes_'.$patient->name();
-#	my $cmd_search = qq{enable_table_search_from_id('$table_id');};
-#	
-##	print '</div>';
-##	print qq{<div style="margin-top: -15px;">};
-###	print qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false"  data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[50, 100, 200, 300]" data-resizable='true' id='$table_id' class='table' style='font-size:13px;'>};
-###	print "<thead>";
-###	print qq{<tr style="font-size:13px;">};
-###	print qq{<th style="padding:0px;margin:0px;" data-field="genes" data-filter-control="input" data-filter-control-placeholder="Gene Name / Variation / Description"></th>};
-###	print qq{</tr>};
-###	print "</thead>";
-###	print "<tbody>";
-##	foreach my $gene_out (@lOut_genes) {
-##	#	print "<tr>";
-##		print "<td style='padding:0px;'><div>".$gene_out."</div></td>";
-##		#print "</tr>";
-##	}
-##	print "</tbody>";
-##	#print "</table>";
-##	print '</div>';
-##	
-#	return ;
-#	exit(0);
-#	print qq{</div>};
-#	return $res_genes;
-#
-#}
-#
-#
-#sub refine_heterozygote_composite_score_fork_test {
-#		my ( $project, $genes,$hchr ) = @_;
-#	$t = time;
-#	$| =1;
-#	print qq{<div style="display: none">};
-#	print "refine";
-#	my $fork      = scalar (keys %$hchr);
-# 	$fork =8;	
-#	$fork = 16 if $project->isGenome();
-#	
-#	$fork=1;
-#	my $pm        = new Parallel::ForkManager($fork);
-#	#@$vgenes = @$vgenes[0..500];
-#	my $nb        = int( scalar(@$vgenes) / ($fork) +1 );
-#	my $iter      = natatime( $nb,  @$vgenes );
-#	my $res_genes = [];
-#	my $vid        = 0;
-#	my $hrun;
-#	
-#	#$t = time;
-#	my $current = 1;
-#	my $vres;
-#	my @res_final;
-#	my @toto;
-#	my $wtime = 0;
-#	my $maxgene =100;
-#	my $ngene =0;
-#	
-#	
-#	my $final_polyviewer_all ;
-#	#if ($project->isRocks){
-#		my $diro = $project->rocks_directory();
-#	
-#	
-#	$pm->run_on_finish(
-#		sub {
-#			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
-#
-#			unless ( defined($h) or $exit_code > 0 ) {
-#				print
-#				  qq|No message received from child process $exit_code $pid!\n|;
-#				die();
-#				return;
-#			}
-#			my $id = $h->{run_id};
-#			delete $hrun->{ $h->{run_id} };
-#			warn "==>" . abs( time - $h->{time} );# if $print;
-#			$h->{genes} = [] unless $h->{genes};
-#			$vres->{$id} = $h->{genes};
-#			while (exists $vres->{$current}){
-#				print qq{</div>} if $current  == 1 ;
-#				 my $xtime =time;
-#					foreach my $g (@{ $vres->{$current}}){
-#						last if $ngene > $maxgene;
-#						warn $g->{name};
-#						push(@toto,$g->{name});
-#						#warn $g->{out};
-#						print $g->{out};
-#						print  "\n<!--SPLIT-->\n";
-#						$ngene ++;
-#						
-#					#	push(@res_final,$g->{out})
-#					}
-#					delete $vres->{$current};
-#					$current ++;
-#					$wtime += abs($xtime - time);
-#				
-#			}
-#			push( @$res_genes, @{ $h->{genes} } );
-#		}
-#	);
-#	
-#	#TODO: essayer d'integrer XLS Store variant ici pour le forker
-#	
-#	$project->buffer->dbh_deconnect();
-#	
-#	#delete $project->{validations_query1};
-#	while ( my @tmp = $iter->() ) {
-#		$vid++;
-#		$hrun->{$vid}++;
-#		my $pid = $pm->start and next;
-#		my $t   = time;
-#		my $res;
-#		$res->{tmp}  = \@tmp;
-#		$res->{time} = time;
-#		$project->buffer->dbh_reconnect();
-#		my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
-#	  	$final_polyviewer_all->activate_cache();
-#		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@tmp, $vid,$final_polyviewer_all);
-#		$res->{run_id} = $vid;
-#			$final_polyviewer_all->deactivate_cache();
-#		warn "===============================";
-#		$pm->finish( 0, {} );
-#	}
-#	$pm->wait_all_children();
-#	$project->buffer->dbh_reconnect();
-#	error("Hey it looks like you're having an error  !!! ")
-#	  if scalar keys %$hrun;
-#	warn "end hetero " if $print;
-#	warn "....";
-#	print qq{</div>};
-#	warn "....";
-#	while (exists $vres->{$current}){
-#				print qq{</div>} if $current  == 1 ;
-#				 my $xtime =time;
-#					foreach my $g (@{ $vres->{$current}}){
-#						last if $ngene > $maxgene;
-#						warn $g->{name};
-#						print $g->{out} . "\n";
-#							$ngene ++;
-#							
-#					}
-#					delete $vres->{$current};
-#					$current ++;
-#				$wtime += abs($xtime - time);	
-#				
-#			}
-#		print "<br>". $wtime;
-#		warn "***** ".$wtime;
-#		$final_polyviewer_all->deactivate_cache();
-#		warn "end";
-#	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
-#	return ;
-#	exit(0);
-#	print qq{</div>};
-#	return $res_genes;
-#}
-#
 
 
 sub refine_heterozygote_composite_score_fork {
@@ -1110,7 +711,7 @@ sub refine_heterozygote_composite_score_fork {
 	$t = time;
 	$| =1;
 	print qq{<div style="display: none">};
-	print "refine";
+	print "refine ";
 	my $fork      = scalar (keys %$hchr);
 
 	my $res_genes = [];
@@ -1156,10 +757,11 @@ sub refine_heterozygote_composite_score_fork {
 	print qq{</div>};
 	warn "....";
 	my $nb_genes = scalar(@{$res->{genes}});
+	
 	foreach my $g (@{$res->{genes}}){
 		print $g->{out} . "\n";
 		delete  $g->{out};
-		last if $g->{max_score} < 5 && $nb_genes > 500;
+		last if $g->{max_score} < 5 && $nb_genes > 300;
 	}
 	
 	$final_polyviewer_all->deactivate_cache();
