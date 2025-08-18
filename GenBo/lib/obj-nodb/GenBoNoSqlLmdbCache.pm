@@ -86,12 +86,13 @@ sub put_cache_text {
 sub get_cache {
 	my ($self,$key,$debug) = @_;
  	my $h = $self->get($key);
+ 	warn $x;
  	return undef unless $h;
+ 	warn $h->{snappy_html};
  #	if ($h->{expiration}<time && $h->{expiration} > 0){
  #		$self->del($key);
  #		return "";
  #	}
-
  	if  ( $h->{snappy_html} == 1 ){
  		return Compress::Zlib::uncompress($h->{cache});
  	}
@@ -107,12 +108,14 @@ sub get_cache {
  		my $x;
 			
  		 $x =  Compress::Zstd::uncompress($h->{cache});
- 		return $x;
+ 		 warn "ici";
+ 		 warn length($x);
+ 		return ($x);
  	}
  	else {
  		return $h->{cache};
  	}
- 	
+ 	die();
  	
  	return;
 }
