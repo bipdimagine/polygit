@@ -86,7 +86,7 @@ sub put_cache_text {
 sub get_cache {
 	my ($self,$key,$debug) = @_;
  	my $h = $self->get($key);
- 	warn $x;
+ 	warn $h;
  	return undef unless $h;
  	warn $h->{snappy_html};
  #	if ($h->{expiration}<time && $h->{expiration} > 0){
