@@ -226,12 +226,10 @@ if($version_db == 15){
 else {
 	$version_db = undef;
 }
-warn "a1";
 my $patient = $project->getPatient($patient_name);
 my $fam = $patient->getFamily();
 my $print_html = polyviewer_html->new( project => $project, patient => $patient,header=> \@headers,bgcolor=>"background-color:#607D8B" );
 $print_html->init();
-warn "a2";
 if ($patient->isMale){
 	$VERSION .= "11" ;#if $patient->isMale;
 }
@@ -266,9 +264,7 @@ if ($cgi->param('force') == 1) {
 }
 
 $no_cache = $patient->get_lmdb_cache("w");
-warn "1";
 my $keys = return_uniq_keys($patient,$cgi); 
-warn "2";
 my $level_dude = 'high,medium';
 
 
@@ -282,15 +278,13 @@ if ($project->isDiagnostic){
 if ($cgi->param('only_DM')){
 	$cache_id.="o";
 }
-warn "\n ==>".$cache_id."<==";
-#$cache_id = md5_hex($cache_id);
-warn "\n ==>".md5_hex($cache_id)."<==";
 my $text = $no_cache->get_cache($cache_id);
 unless ($text) {
 	$cache_id = md5_hex($cache_id);
 	$text = $no_cache->get_cache($cache_id);
 }
 $text = "" if $dev;
+$text= "";
 my $html_dude = "<!--DUDE-->";
 my $cache_icon;
 
@@ -1216,39 +1210,8 @@ sub constructChromosomeVectorsPolyDiagFork {
 		##############
 		if($limit_ratio>0){
 			print "XX";
-			my $vquality  =  $chr->getNewVector();
-			if ($limit_ratio1 < 100){
-				my $vector_ratio_name = $patient->name . "_ratio_" . $limit_ratio1;
-				warn $vector_ratio_name;
-				 $vquality = $no->get($vector_ratio_name);
-			}
-			
-			if ($limit_ratio2 != $limit_ratio1) {
-				die();
-				my $no = $chr->lmdb_polyviewer_variants( $patient, "r" );
-			#	my $no2 = $chr->lmdb_polyviewer_variants_genes( $patient, "r" );
-				my $vector_ratio_name = $patient->name . "_ratio_" . $limit_ratio2;
-				$vector_ratio_name = $patient->name . "_ratio_all" if $limit_ratio2 == -1;
-				 my $vquality2 = $no->get($vector_ratio_name);
-				 $vquality2 -= $vquality;
-				
-				$vquality2 &=  $res->{vector};
-				$res->{vector} &= $vquality;	
-				foreach my $id ( @{ to_array( $vquality2, $chr->name ) } ) {
-					print "!";
-					my $av = $no->get($id);
-					my ($a1,$a2)= split(":",$no->get($av->{id})->{value}->{ratio}->[0]);
-					$a2 =~ s/%//;
-					next if $a2 <  $limit_ratio;
-					my ($i1,$i2) = split("!",$id);
-					$res->{vector}->Bit_On($i2);	
-					
-		 			}
-		 		
-			}
-			else {
-				$res->{vector} &= $vquality;	
-			}
+			my $vratio = get_vector_from_duckdb($patient,$chr,$limit_ratio);
+			$res->{vector} &= $vratio;
 		}
 	
 		###############
@@ -1482,7 +1445,6 @@ push(@keys,@key2);
 my @key3;
 push(@key3,$VERSION);
 push(@key3,$VERSION_UPDATE_VARIANT_EDITOR );
-warn $VERSION_UPDATE_VARIANT_EDITOR;
 push(@keys,@key3);
 
 warn join("-",@key3);
@@ -1521,3 +1483,20 @@ my $date;
 return $date;
 }
 
+sub get_vector_from_duckdb {
+	my ($patient,$chr,$limit) =@_;
+	my $vector = $chr->getNewVector();
+	my $parquet = $chr->project->parquet_cache_variants();
+	my $col = "patient_".$patient->id."_ratio";
+	my $v2 = $chr->ucsc_name;
+	my $sql =qq{select variant_vector_id from '$parquet' where  $col > $limit and variant_chromosome='$v2'};
+ 	my $cmd = qq{duckdb   -json -c "$sql"};
+ 	my $res =`$cmd`;
+ 	return $vector unless $res;
+ 	my $array_ref  = decode_json $res;
+ 	foreach my $a (@$array_ref){
+ 		my $z = $a->{variant_vector_id};
+ 		 $vector->Bit_On($z);
+ 	}
+ 	return $vector;
+}

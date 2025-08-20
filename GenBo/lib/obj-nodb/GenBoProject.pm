@@ -691,7 +691,29 @@ has rocks_cache_dir => (
 	}
 );
 
-
+has parquet_cache_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+	my $self = shift;
+	my $name = $self->rocks_cache_dir();
+	$name.="/parquet/";
+	$self->makedir($name);
+	return $name;
+	
+	}
+);
+has parquet_cache_variants => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+	my $self = shift;
+	my $name = $self->parquet_cache_dir();
+	$name.=$self->name.".variants.parquet";
+	return $name;
+	
+	}
+);
 sub rocks_pipeline_directory {
 	my ($self,$type) = @_;
 	
