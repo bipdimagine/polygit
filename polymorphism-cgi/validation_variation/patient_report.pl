@@ -3891,7 +3891,7 @@ sub return_list_variants {
  	my $data = [split(";",$string)];
  	if (scalar(@$data)==0 ){
  		my $v = $tr->getGene->getCurrentVector & $patient->getVectorOrigin($tr->getChromosome);
- 		confess() if (scalar(@$data)==0 && $v->Norm >0); 
+ 		warn scalar(@$data)." ". $v->Norm. $tr->getGene->external_name if (scalar(@$data)==0 && $v->Norm >0); 
  	}
  	
 	return $data;

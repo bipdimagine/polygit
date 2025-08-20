@@ -57,6 +57,7 @@ $| = 1;
 	$| = 1;
 	my $error;
 	my $pm = new Parallel::ForkManager($fork);
+		my $run;
 	my $error;
 	$pm->run_on_finish(
 		sub {
@@ -66,26 +67,29 @@ $| = 1;
 			  }
 			$pr->update( $nbb++ );
 			$pr->write();
-			$error = 1 unless defined $data_structure_reference;
-			die("\npb cache_polydiag") unless defined $data_structure_reference;
+			delete $run->{$data_structure_reference->{proc}};
 		}
 	);
 
 	my $db_lite ;
 	my $project_name = $project->name();
 	$pr->write();
+	my $proc = time;
+
 	foreach my $p ( @{ $patients } ) {
 		my $pname = $p->name();
 		$project->disconnect();
-		#next if $pname ne "AS1502552";
+		#next if $pname ne "AS1502552"
+		$proc ++;
+		$run->{$proc}++;
 		my $pid = $pm->start and next;
 		#my $resp= {};
 
 		my $resp = polydiag::run_cache_polydiag_fork( $project, $p, $db_lite, $tbundle,$version );
-
-		run_cache_web_polydiag($project,$p);
+		warn Dumper $resp;
+		#run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
-		$pm->finish( 0, \$resp );
+		$pm->finish( 0, {proc=>$proc} );
 	}
 
 	$pm->wait_all_children;
@@ -97,9 +101,11 @@ $| = 1;
 	}
 	#warn Dumper $project
 	die() if $error;
-
+	confess() if keys %{$run};
+	warn "ok";
 sub run_cache_web_polydiag {
 	my ($project,$patient) = @_;
+	die();	
 	my $arg1 = "project=".$project->name." patients=".$patient->name;
 	my $args = " panel= edit_mode=1 never=1 this=6  allele_quality=5 report_mode=1 transcripts=all";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("c");
@@ -110,7 +116,7 @@ sub run_cache_web_polydiag {
 	for (my $f=2;$f<5;$f++){
 		for (my $imp=2;$imp<4;$imp++){
 			warn "$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1 fork=1";
-			system("$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1 fork=1");
+			system("$polydiag ".$arg1." $args impact=".$imp." frequence=".$f." pipeline=1 fork=1 >/dev/null");
 		}
 	}
 	
