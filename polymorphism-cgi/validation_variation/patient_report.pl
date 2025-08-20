@@ -599,7 +599,10 @@ sub construct_htranscripts {
 	foreach my $tr (@$list_transcripts) {
 		my $utr = $cgi->param('utr')+0;
 		my $debug;
-		#warn "coucou " if $tr eq "ENST00000448843_17";
+		#warn $tr;
+		#die()  if $tr eq "ENST00000328300_X";
+		$debug = 1 if $tr eq "ENST00000328300_X";
+		warn "coucou " if $tr eq "ENST00000328300_X";
 		print "+";
 	my $tr_id = $tr;
 			my $tr1;
@@ -610,6 +613,7 @@ sub construct_htranscripts {
 				 $utr =1 if $tr1->getChromosome()->name eq "MT";
 				$tr_id = $tr1->id;
 				$htranscript->{name} = $tr1->getGene->external_name();
+				warn  $tr1->getGene->external_name() if $debug;
 				$htranscript->{mean} = $tr1->mean_coding_coverage($patient);
 				$htranscript->{mean} = $tr1->mean_exonic_coverage($patient) if $htranscript->{mean} == 0;
 				
@@ -633,7 +637,7 @@ sub construct_htranscripts {
 				$htranscript->{table} = 1;
 				$htranscript->{external_name} = "intergenic";
 			}
-			my $kvars = utility::return_list_variants($project,$patient,$tr_id);
+			my $kvars = return_list_variants($project,$patient,$tr_id,$tr1,$debug);
 			if ($tr ne "intergenic"){
 		
 		
@@ -673,6 +677,7 @@ sub construct_htranscripts {
 			} #end_compute_coverage;
 		}
 	#	foreach my $var (@{$htr_vars->{$tr1->kyotoId}}){
+		warn Dumper @{$kvars} if $debug;
 		foreach my $var (@{$kvars}){   
 				my $debug;
 				$debug =1 if $var eq "17_8006708_G_A"; 
@@ -831,7 +836,7 @@ sub construct_data {
 	my $text = $no_cache->get_cache($cache_id);
 	
 	#TODO: here enlever cache
-	$text = undef;
+	#$text = undef;
 	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
@@ -3254,98 +3259,7 @@ $(document).ready(function(){
 
 my $tdid =0;
 
-#sub printTableHotspots2 {
-#	my ($patient,$hotspots,$print) = @_;
-##$out .=  $cgi->start_div({class=>"panel-group", id=>"accordion",style=>"padding:2px"});
-#	my $out ="";
-#	my $div_alert;	
-#my $s_id = $patient->{name};
-#
-#	$out  .= qq{
-#<div class="panel panel-default">
-#  <div class="panel-heading clearfix" style="min-height=30px;max-height:30px;">
-#    <h3 class="panel-title pull-left" style="padding-top: 1.5px;font-size: 15px;">Hotspots &nbsp; $s_id</h3> 
-#  </div>
-#</div>  
-#	};
-#
-#foreach my $hotspot (@$hotspots){
-#	my $panel_id = "panel_".$s_id."_".$hotspot->{sequence};
-#	my $label_id = "label_".$s_id."_".$hotspot->{sequence};
-#	my $text = $hotspot->{name}.":".$hotspot->{sequence};
-#	$out .=  $cgi->start_div({class=>"panel panel-info" });
-#	 #panel heading
-#	$out .=  $cgi->start_div({class=>"panel-heading panel-warning warning ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
-#	$out .= qq{<div class="btn  btn-success btn-xs " style="position:relative;bottom:1px;min-width:150px;" onClick='collapse("$panel_id","$label_id")'>  <span id= "$label_id" class="glyphicon glyphicon-triangle-right  "   style="float:left;"></span> $text &nbsp</div>};
-#	   		#	$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});
-#		my $nbv = scalar (keys %{$hotspot->{results}->{$s_id}});
-#		$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});	
-#				
-#	   		$out.= $cgi->end_div();
-#	#	$out.= $cgi->end_div();
-#
-#	
-#			
-#		 $out.= "<br>";
-#		 
-#	#  panel table
-#	$out .=  $cgi->start_div({class=>"panel-body panel-collapse  ",style=>"font-size: 09px;font-family:  Verdana;",id=>$panel_id});
-#	$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"font-size: 8px;font-family:  Verdana;"});
-#	$out.= $cgi->start_Tr();
-#	$out.=$cgi->th(["sequence","Forward",'Reverse','%']);
-#	$out.= $cgi->end_Tr();
-#	my $res = $hotspot->{results}->{$s_id};
-#	
-#	foreach my $motif ( sort{$res->{$b}->{pourcent} <=> $res->{$a}->{pourcent} } keys %$res){	
-#	$out.= $cgi->start_Tr();
-#	my @td;
-#	my $pout = $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"font-size: 8px;font-family:  Verdana;"});
-#	foreach my $l (@{$res->{$motif}->{table_align}}){
-#		$pout.= $cgi->start_Tr();
-#
-#			$pout.=join("\n",@$l);	
-#		$pout.= $cgi->end_Tr();
-#	}
-#	$pout.= $cgi->end_table();
-#	
-#	push(@td, $pout);
-#	push(@td,$res->{$motif}->{p});
-#	push(@td,$res->{$motif}->{m});
-#	push(@td,$res->{$motif}->{pourcent}."%");
-#	$out.=$cgi->td(\@td);	
-#	$out.= $cgi->end_Tr();
-#	}
-#	$out.= $cgi->end_table();	
-#	$out.="<!-- 1 -->";
-#	$out.= $cgi->end_div();		
-#	$out.="<!-- 2 -->";
-#	#  end panel table
-#	$out.= $cgi->end_div();	#$out.="<!-- 3 -->";	
-#	
-#	#$out.= $cgi->end_div();		
-#	#last;	
-##  end panel gene
-#}
-#
-#
-#
-#
-#
-#
-#
-#	$out.= q{
-#		<script type="text/javascript">
-#$(document).ready(function(){
-#    $('[data-toggle="tooltip"]').tooltip({
-#        placement : 'top'
-#    });
-#});
-#</script>
-#	};
-#	
-#	return $out;
-#}	
-#
+
 
 sub printTableHotspots {
 	my ($patient,$print) = @_;
@@ -3359,20 +3273,20 @@ sub printTableHotspots {
 	my $panel_id = "pa_".$patient->id;
 	$out .= qq{<div class="btn  btn-warning btn-xs " style="position:relative;bottom:1px;min-width:150px;" onClick='collapse("$panel_id","$label_id")'>  <span id= "$label_id" class="glyphicon glyphicon-triangle-right  "   style="float:left;"></span> HOTSPOT &nbsp</div>};
 	#$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >-</span>});
-	$out .=  $cgi->start_div({class=>"panel-body panel-collapse  collapse",style=>"width:50%;font-size: 09px;font-family:  Verdana;",id=>$panel_id});
+	if( scalar(keys %$hotspots) > 3){
+		$out .=  $cgi->start_div({class=>"panel-body panel-collapse collapse ",style=>"width:50%;font-size: 09px;font-family:  Verdana;",id=>$panel_id});
+	}
+	else {
+		$out .=  $cgi->start_div({class=>"panel-body panel-collapse  ",style=>"width:50%;font-size: 09px;font-family:  Verdana;",id=>$panel_id});
+	}
 	my $div_alert;	
 	my $s_id = $patient->{name};
 
 my $t = time;
 
-
-#$out .=  $cgi->start_div({class=>"panel-heading panel-warning warning ",style=>" min-height:13px;max-height:13px;padding:1px;border:1px"});
-#	$out .= qq{<div class="btn  btn-success btn-xs " style="position:relative;bottom:1px;min-width:150px;" onClick='collapse("$panel_id","$label_id")'>  <span id= "$label_id" class="glyphicon glyphicon-triangle-right  "   style="float:left;"></span> $text &nbsp</div>};
-	   		#	$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});
-#		my $nbv = scalar (keys %{$hotspot->{results}->{$s_id}});
-#		$out .=$cgi->span({class=>"label label-success"},qq{<span class='badge badge-primary badge-xs'  >$nbv</span>});	
 	my @header = ("ID","NAME","PROT","A","C","G","T","DEL","INS","COV");	 
 	$out .= $cgi->start_table({class=>"table table-striped table-condensed table-bordered table-hover table-mybordered",style=>"font-size: 9px;font-family:  Verdana;"});
+	
 foreach my $g (keys %$hotspots){
 	#$out .=  $cgi->start_div({class=>"panel panel-info" });
 	 #panel heading
@@ -3963,5 +3877,26 @@ sub construct_identito_vigilence {
 	return ( $out );
 
 }
+sub return_list_variants {
+	my ($project,$patient,$tr_id,$tr,$debug) = @_;
+	print "*";
+	my $d = $project->getCacheDir();
+	my $project_name= $project->name;
+	my $patient_name = $patient->name();
+	my @vars;
+	my $key =$tr_id;
+	my $string ="";
+	$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
+	
+ 	my $data = [split(";",$string)];
+ 	if (scalar(@$data)==0 ){
+ 		my $v = $tr->getGene->getCurrentVector & $patient->getVectorOrigin($tr->getChromosome);
+ 		confess() if (scalar(@$data)==0 && $v->Norm >0); 
+ 	}
+ 	
+	return $data;
 
+	return \@vars;
+	
+}
 #
