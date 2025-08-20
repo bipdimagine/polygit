@@ -1219,6 +1219,7 @@ sub constructChromosomeVectorsPolyDiagFork {
 			my $vquality  =  $chr->getNewVector();
 			if ($limit_ratio1 < 100){
 				my $vector_ratio_name = $patient->name . "_ratio_" . $limit_ratio1;
+				warn $vector_ratio_name;
 				 $vquality = $no->get($vector_ratio_name);
 			}
 			
@@ -1474,7 +1475,7 @@ foreach my $chr  (@{$project->getChromosomes}){
 		@st = (stat($no2->filename));
 		 push(@key2, ($st[9].$st[11].$st[12]));
 }
-warn join("-",@key2);
+#warn join("-",@key2);
 push(@keys,@key2);
 
 #push(@keys,file_md5_hex($Bin."/variations_editor.pl") );
@@ -1493,9 +1494,6 @@ unless ($patient->isGenome ) {
 #keep compatibilty 
 if  ($stv ){
 push(@keys,"validation".":".md5_hex($stv));
-warn $stv;
-warn "validation".":".md5_hex($stv);
-die();
 }
 else{
 push(@keys,encode_json ({}));
