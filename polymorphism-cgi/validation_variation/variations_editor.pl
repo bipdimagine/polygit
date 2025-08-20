@@ -278,13 +278,14 @@ if ($project->isDiagnostic){
 if ($cgi->param('only_DM')){
 	$cache_id.="o";
 }
+
 my $text = $no_cache->get_cache($cache_id);
 unless ($text) {
 	$cache_id = md5_hex($cache_id);
 	$text = $no_cache->get_cache($cache_id);
 }
 $text = "" if $dev;
-$text= "";
+#$text= "";
 my $html_dude = "<!--DUDE-->";
 my $cache_icon;
 

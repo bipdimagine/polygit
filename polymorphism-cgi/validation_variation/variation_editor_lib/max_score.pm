@@ -119,6 +119,8 @@ sub calculate_rocks {
 
 		my $score_father    = max( @{ $class->{father} } );
 		my $score_mother    = max( @{ $class->{mother} } );
+		$score_mother = 0 if $score_mother <0;
+		$score_father = 0 if $score_father <0;
 		my $score_biallelic = max( @{ $class->{biallelic} } );
 		if ( $score_father + $score_mother > $score_biallelic && $patient->getFamily->isTrio()) {
 			$hgene->{max_score} = $hgene->{score} + $score_father + $score_mother;
