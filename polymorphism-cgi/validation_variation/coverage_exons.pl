@@ -37,7 +37,6 @@ use draw_cnv;
 use infos_coverage_exons;
 use image_coverage;
 use html;
-
 	my $CSS_TABLE = <<END;
 	<style type="text/css"> 
 	body {
@@ -253,7 +252,8 @@ my $string_id ="e"+time;
 $string_id ="or" if $only_red;
 $string_id ="oo" if $only_orange;
 $limit = $cgi->param('limit');
-if ($project->isGenome() and $limit > 15) {
+$limit= 15 if $project->validation_db() eq 'glucogen' ;
+if (($project->isGenome() or $project->validation_db() eq 'glucogen') and $limit > 15 ) {
 	$limit = 15;
 }
 $splice_5 = $cgi->param('span');
@@ -324,6 +324,7 @@ foreach my $patient (sort{$a->name <=> $b->name} @{$patients}){
 		 $exons = $tr1->getExons();
 	}
 		 my $show_utr = $cgi->param('utr')+0;
+		 $show_utr = 1 if $tr1->getChromosome->name eq 'MT';
 		 my $intronic = $cgi->param('intronic')+0;
 
 			unless (exists $hcdata->{$tr} ){
