@@ -715,7 +715,7 @@ sub refine_heterozygote_composite_score_fork {
 	print qq{<div style="display: none">};
 	print "refine ";
 	my $fork      = scalar (keys %$hchr);
-
+	$fork = 1;
 	my $res_genes = [];
 	my $vid        = 0;
 	my $hrun;
@@ -784,7 +784,7 @@ sub fork_annnotations {
 	my $fork = 6;
 	$fork = 40 if $project->isGenome();
 	#ici $fork= 20;
-	$fork =2;
+	$fork =1;
 	my $nb   = int( (scalar(@$list) +1) / ($fork-1)  );
 	$nb = 1 if scalar(@$list) < $fork;
 	my $pm   = new Parallel::ForkManager($fork);
