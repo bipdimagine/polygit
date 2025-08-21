@@ -784,7 +784,7 @@ sub fork_annnotations {
 	my $fork = 6;
 	$fork = 40 if $project->isGenome();
 	#ici $fork= 20;
-	$fork =1;
+	$fork = 2;
 	my $nb   = int( (scalar(@$list) +1) / ($fork-1)  );
 	$nb = 1 if scalar(@$list) < $fork;
 	my $pm   = new Parallel::ForkManager($fork);
