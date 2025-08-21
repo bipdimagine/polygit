@@ -512,31 +512,14 @@ sub getCurrentVector {
 sub getVariants {
 	my ( $self, $patient, $filters ) = @_;
 	confess() if $filters;
-	
+	unless($patient){
+		my $vector =  $self->getCurrentCompactVector() ;
+		return $self->getChromosome->getListVarObjects($vector);
+	}
 	
 	my $vector =  $self->getCurrentCompactVector() & $self->getCompactVectorPatient($patient);
 		return $self->getChromosome->getListVarObjects($vector);
 
-#	#warn $vector if $self->getChromosome() eq "MT";
-#	
-#
-##warn $self->countThisVariants($v3)." ".$self->countThisVariants($v)." ".$self->countThisVariants($v2);
-#	my $vf;
-#	my $filter = $filters->{frequency};
-#	if ($filter) {
-#		foreach my $f ( keys %{ $self->buffer->config->{frequence_filters} } ) {
-#			my $value = $self->buffer->config->{frequence_filters}->{$f};
-#			if ( $value <= $filter ) {
-#				next unless $self->getChromosome->vector_global_categories($f);
-#				$vf = $self->getChromosome->vector_global_categories($f)
-#				  unless $vf;
-#				$vf += $self->getChromosome->vector_global_categories($f);
-#			}
-#
-#		}
-#		return [] unless $vf;
-#		$vector &= $vf;
-#	}
 
 }
 
