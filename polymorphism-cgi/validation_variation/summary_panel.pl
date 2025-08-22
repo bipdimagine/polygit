@@ -984,12 +984,12 @@ sub test_disomy {
 	$uni->{find_disomy} = 0;
 	foreach my $p (@{$project->getPatients}){
 		my $file = $p->upd_file();
-		unless (-e $file ) {
+		#unless (-e $file ) {
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
 			warn "perl $prg -project=$project_name -patient=".$p->name;
 			# if $p->isChild();
-		}
+		#}
 		my $r = exists_disomy($p,$file);
 		
 		if($r){
