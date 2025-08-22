@@ -75,12 +75,14 @@ sub refine_heterozygote_composite {
 	$final_polyviewer_all->prepare($gids);
 	print "@+";
 	warn "end prepare";
+	
 	foreach my $g (@$list) {
 					
 		$xp++;
 		#warn $xp;
 		print "@"  if $xp % 3 == 0 ;
 		print "*" if $xp % 10 == 0 && $id == 1;
+		last if $xp > 300;
 		my $t1 = time;
 		my ( $n, $cname ) = split( "_", $g->{id} );
 		my $chr = $project->getChromosome($cname);
@@ -136,6 +138,7 @@ sub refine_heterozygote_composite {
 		my $debug;
 		$debug=1 if $g->{external_name} eq "COL7A1";
 			my $ttt =  time;
+		my $color_validation = "grey";
 		foreach my $vid ( keys %{ $g->{all_variants} } ) {
 			
 			my $vector_id = $g->{all_vector_ids}->{$vid};
@@ -159,10 +162,18 @@ sub refine_heterozygote_composite {
 				$vp->{composite} = 1;
 			}
 			
-			$out .= print_line_variant($vp,$print_html,$opacity)
+			$out .= print_line_variant($vp,$print_html,$opacity);
+			if  ($vp->clinvar_value >0 or $vp->hgmd_value> 0 or $vp->{local_value}){
+				$color_validation= "warning";
+			}
+			elsif  ( exists $g->{pathogenic}){
+				$color_validation= "danger";
+		}
+			
+		
 
 		}
-
+		$out =~ s/@@@/$color_validation/;
 		$out .= $cgi->end_table();
 		$out .= "\n";
 		$out .= $cgi->end_div();

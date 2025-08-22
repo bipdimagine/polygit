@@ -590,6 +590,7 @@ sub table_validation_without_local {
 		return $hvariation->{html}->{table_validation};
 	
 }
+## test
 
 sub table_validation {
 		my ($patient,$hvariation,$gene) = @_;
@@ -731,6 +732,7 @@ sub vdejavu {
 		$hvariation->{value}->{this_run_project} = '-';
 		$hvariation->{value}->{this_run_patients} = $v->in_this_run_patients()."/".scalar(@{$project->getPatients});
 		#$v->{value}->{this_run__patients_ho} = $v->similar_patients_ho();
+		return;
 		value_html($hvariation,"deja_vu",$v->other_projects(),table_dejavu($v));
 	
 }
@@ -1952,9 +1954,10 @@ sub panel_gene {
 	   		
 				$out .=  $cgi->start_div({class=>" btn-group btn  ",style=>'position:relative;float:right;bottom:5px;'});
 			
-						my $tlabel = "label-grey";
-						$tlabel = "label-warning" if exists $hgene->{clinvar_hgmd};
-						$tlabel = "label-danger" if exists $hgene->{pathogenic};
+						my $tlabel = "label-@@@";
+#						warn  $hgene->{clinvar_hgmd};
+#						$tlabel = "label-warning" if exists $hgene->{clinvar_hgmd} && $hgene->{clinvar_hgmd};
+#						$tlabel = "label-danger" if exists $hgene->{pathogenic};
 						$out .= $cgi->span({class=>"label $tlabel" },qq{<span class="glyphicon glyphicon-alert text-alert " aria-hidden="true" ></span>});
 					
 						my $nbv = scalar(@{$hgene->{variants}});
