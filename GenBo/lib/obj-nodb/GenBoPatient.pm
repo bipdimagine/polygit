@@ -502,17 +502,17 @@ has 'coverage_SRY' => (
 		my $intSpan = Set::IntSpan::Fast::XS->new(
 			"6736370-6736371,6736442-6736443,6737844-6737845,2654896-2655740");
 		$intSpan =  Set::IntSpan::Fast::XS->new(
-			"6868329-868330,6868401-6868402,6869803-6869804,2786855-2787699") if $self->project->version =~/HG38/;
+			"6868329-6868330,6868401-6868402,6869803-6869804,2786855-2787699") if $self->project->version =~/HG38/;
 		my $zint = $intspan_capture->intersection($intSpan);
 		
 		return -1 if $zint->is_empty;
 		my $iter = $zint->iterate_runs();
 		my @tt;
 		my $chr_name = $self->project->getChromosome('Y')->fasta_name();
-		my $bam      = $self->getBamFile();
+		my $align_file      = $self->getAlignFileName();
 		my $max_mean = -50;
 		while ( my ( $from, $to ) = $iter->() ) {
-			my $cmd = qq{$samtools depth  $bam -r $chr_name:$from-$to 2>/dev/null   | cut -f 3  | awk \'NR==1 \|\| \$1 > max {max=\$1} END {print max}\'};
+			my $cmd = qq{$samtools depth  $align_file -r $chr_name:$from-$to 2>/dev/null   | cut -f 3  | awk \'NR==1 \|\| \$1 > max {max=\$1} END {print max}\'};
 			my ($res) = `$cmd`;
 			chomp($res);
 			$res = 0 unless $res;
