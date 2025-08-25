@@ -429,7 +429,6 @@ has constructor => (
 	default => sub {
 		my $self        = shift;
 		my $run         = $self->getRun();
-		warn Dumper $run->infosRun;
 		return  "short-read";
 	}
 );
@@ -1035,7 +1034,6 @@ sub setVariantsForReference {
 			}
 		}
 	}
-
 	my $o = [];
 	$o = $self->myflushobjects2( $hashRes, $cursor );
 	
@@ -1476,7 +1474,6 @@ sub getSRFile {
 sub _getFile {
 	my ( $self, $method, $hash ) = @_;
 	if ($method) {
-		warn Dumper $hash;
 		confess( "can t find vcf for $method " . $self->name ) unless exists( $hash->{$method} );
 		return $hash->{$method};
 	}
@@ -2977,7 +2974,26 @@ sub get_lmdb_cache {
 	}
 	return $no2;
 }
- 
+ sub get_rocks_cache {
+	my ( $self, $mode ) = @_;
+	
+	$mode = "r" unless $mode;
+	my $dir_out = $self->project->rocks_directory();
+	unless (-e $dir_out."/".$self->name.".cache"){
+		$mode = "c";
+	}
+	my $no2     = GenBoNoSqlRocks->new(
+		dir     => $dir_out,
+		mode    => $mode,
+		name    => $self->name.".cache",
+	);
+	if ( $mode eq "c"){
+		#confess();
+		$no2->put("cdate",time);
+		system("chmod a+w ".$no2->filename);
+	}
+	return $no2;
+}
  sub get_lmdb_cache_polydiag {
 	my ( $self, $mode ) = @_;
 	
@@ -3311,7 +3327,6 @@ sub ploidy_value2 {
 	$chr_total = int($chr_total/scalar(keys %{$infos}));
 	
 	return  ($r2/$m);
-	#warn Dumper $reads;
 	die();
 }
 
@@ -3330,16 +3345,7 @@ sub cnv_value_dude {
  	my $chr_name_control = $chr_name;
  	$chr_name_control.="_".$self->sex if $chr_name eq "X";
 	# this patient
-	#my $data = $self->getCapture->ratio_controls_dude->getDepth( $chr_name_control, $start, $end );
-	#warn "1";
-	#my $data2 = $self->getCapture->ratio_controls_dude_new->getDepth( $chr_name_control, $start, $end );
-	#for (my$i =0;$i<@$data;$i++){
-	#	next if int($data->[$i]) eq int($data2->[$i]);
-	#	next if $data2->[$i] == -1;
-	#	print $i." ".$data->[$i]." ".$data2->[$i]."\n";
-	#}
-	#warn Dumper @$data2;
-#	warn ""
+	
 	my $ratio =	int($self->getCapture->ratio_controls_dude->getMean( $chr_name_control, $start, $end ));
 	my $ratio1 = $self->cnv_region_ratio_norm($chr_name, $start, $end);
 	if ($ratio1 <=5 && $ratio <10 ){
@@ -3347,8 +3353,6 @@ sub cnv_value_dude {
 	} 
 	if ($ratio <10) {
 		my $data = $self->getCapture->ratio_controls_dude->getDepth($chr_name_control, $start, $end);
-	#	warn Dumper $data;
-	#	die();
 		my @neg = grep {$_ == -1 || $_ == 65535} @$data;
 		return -1 if scalar(@neg)> scalar(@$data)*0.5;
 	}
@@ -3371,7 +3375,6 @@ sub sr_raw {
 #	warn qq{$samtools view  -q 30 -h $bamfile $chr_name:$start-$end |  $samblaster --excludeDups --addMateTags --maxSplitCount 1 --minNonOverlap 20 --ignoreUnmated 2>/dev/null  | grep -v "^\@" | cut -f 6};
 	warn qq{$samtools view  -q 30 -h $bamfile $chr_name:$start-$end |  $samblaster --excludeDups --addMateTags --maxSplitCount 1 --minNonOverlap 20 --ignoreUnmated 2>/dev/null  | grep -v "^\@" | cut -f 6 | grep "[[:digit:]]*S"} if $debug;
 	chomp(@res);
-	warn Dumper @res if $debug;
 	my @tr = grep {$_=~/\d+S$/} @res;
 	my @tf = grep {$_=~/^\d+S/} @res;
 	my $value = scalar(@res);
@@ -3581,7 +3584,6 @@ sub getJunctionsAnalysePath {
 	opendir my ($dir), $path_analisys_root;
 	my @found_files = readdir $dir;
 	closedir $dir;
-	warn Dumper @found_files;
 	die;
 	my $pat_name = $self->name();
 	foreach my $file (@found_files) {
