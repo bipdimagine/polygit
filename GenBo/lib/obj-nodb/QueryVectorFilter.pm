@@ -1744,15 +1744,22 @@ sub filter_genetics_models_familial {
 	}
 	if ($model eq 'recessif' or $model eq 'recessif_compound' or $model eq 'uniparental_recessif_compound') {
 		foreach my $fam (@{$chr->getProject->getFamilies()}) {
-			my $v_fam = $chr->getNewVector();
-			foreach my $child (@{$fam->getChildrenIll()}) {
-				my $v_child = $fam->getVector_individual_recessive($chr, $child) & $child->getVariantsVector($chr);
-				$v_fam += $v_child;
+			next if $fam->in_the_attic();
+			my $v_fam = $fam->getVariantsVector($chr);
+			foreach my $pat (@{$fam->getPatients()}) {
+				if ($pat->isHealthy()) { $v_fam -= $pat->getVectorOriginHo($chr); }
+				else { $v_fam -= $pat->getVectorOriginHe($chr); }
 			}
-			$v_fam &= $chr->getVariantsVector();
-			if ($model eq 'recessif') { $fam->setCurrentVariantsVector($chr, $v_fam); }
-			else { $fam->addCurrentVariantsVector($chr, $v_fam); }
-			$vector_models += $v_fam;
+			my $v_fam_ok = $chr->getNewVector();
+			foreach my $child (@{$fam->getPatientsIll()}) {
+				my $v_child = $v_fam & $fam->getVector_individual_recessive($chr, $child);
+				$v_fam_ok += $v_child;
+				$v_fam_ok -= $child->getVectorOriginHe($chr);
+			}
+			$v_fam_ok &= $chr->getVariantsVector();
+			if ($model eq 'recessif') { $fam->setCurrentVariantsVector($chr, $v_fam_ok); }
+			else { $fam->addCurrentVariantsVector($chr, $v_fam_ok); }
+			$vector_models += $v_fam_ok;
 		}
 	}
 	if ($model eq 'dominant') {
