@@ -900,12 +900,6 @@ sub launchStatsChromosomes {
 	return $hash_stats;
 }
 
-
-
-
-my $hpatients_genes = {};
-my $hfamillies_genes = {};
-
 sub launchStatsProjectAll {
 	my $hash_stats;
 	warn "\n\n" if ($debug);
@@ -1618,27 +1612,7 @@ sub launchStatsGene {
 			$hAllPat->{$patient->name()} = undef;
 			$hStats->{variants}->{all} = $chr->countThisVariants($vv);
 			$hStats->{patients}->{all}->{$patient->id()} ++;
-			$hpatients_genes->{$patient->id()}++;
 		}
-	}
-	
-	
-#	foreach my $patient (@{$chr->getProject->getPatients()}) {
-#		
-#		my $vv = $va & $gene->getCompactVectorPatient($patient);
-#		next if $vv->is_empty;
-#		$hAllPat->{$patient->name()} = undef;
-#		$hStats->{variants}->{all} = $chr->countThisVariants($vv);
-#		$hStats->{patients}->{all}->{$patient->id()} ++;
-#		$hStats->{fam}->{all}->{$patient->getFamily->id()} ++;
-#		$hpatients_genes->{$patient->id()}++;
-#		
-#	}
-	
-	
-	foreach my $f   (keys %{$hStats->{fam}->{all}}){
-			$hfamillies_genes->{$f} ++;
-		
 	}
 	
 	$h_vector_type->{low}  = $gene->getCompactVector("low") &  $va  ;
@@ -1846,7 +1820,14 @@ sub launchStatsPatient {
 	$hStats->{deletions} = $chr->countThisVariants($v_deletion);
 	$hStats->{cnvs} = $chr->countThisVariants($v_cnvs);
 	$hStats->{found} = '';
-	$hStats->{genes} = $hpatients_genes->{$patient->id};
+	
+	$hStats->{genes} = 0;
+	foreach my $g (@{$chr->getGenesFromVector($v_all)}){
+		next if not exists $queryFilter->{genes}->{$chr->name}->{$g->id};
+		my $v_gene = $g->getCurrentVector() & $v_all;
+		$hStats->{genes}++ if not $v_gene->is_empty();
+	}
+	
 	if ($hStats->{all_variations} > 0) {
 		$hStats->{found} = 'yes';
 	}
@@ -1986,17 +1967,15 @@ sub launchStatsFamily {
 	$hash->{heterozygote} = $chr->countThisVariants($v_he);
 	$hash->{homozygote} = $chr->countThisVariants($v_ho);
 	$hash->{genes} = 0;
-	$hash->{genes} = $hfamillies_genes->{$family->id} if not $family->in_the_attic();
-#	my $nb = 0;
-#	foreach my $gene (@{$chr->getGenes()}) {
-#		next unless $gene->getVectorOrigin();
-#		next if ($gene->is_intergenic());
-#		my $v_gene = $gene->getCurrentVector->Clone();
-#		next if ($v_gene->is_empty());
-#		$v_gene->Intersection($v_gene, $v_all);
-#		$nb++ if (not $v_gene->is_empty()) ;
-#	}
-#	$hash->{genes} = $nb;
+	
+	if (not $family->in_the_attic()) {
+		$hash->{genes} = 0;
+		foreach my $g (@{$chr->getGenesFromVector($v_all)}){
+			next if not exists $queryFilter->{genes}->{$chr->name}->{$g->id};
+			my $v_gene = $g->getCurrentVector() & $v_all;
+			$hash->{genes}++ if not $v_gene->is_empty();
+		}
+	}
 	return $hash;
 }
 

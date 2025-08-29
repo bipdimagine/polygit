@@ -1655,9 +1655,9 @@ sub filter_genetics_models_individual {
 			my $v_ho = $chr->getVariantsVector() & $pat->getHo($chr);
 			my $v_he = $chr->getVariantsVector() & $pat->getHe($chr);
 			foreach my $gene (@{$chr->getGenes()}) {
-				my $v_gene = $gene->getVariantsVector() & $v_all;
-				my $v_gene_ho = $gene->getVariantsVector() & $v_ho;
-				my $v_gene_he = $gene->getVariantsVector() & $v_he;
+				my $v_gene = $gene->getCurrentVector() & $v_all;
+				my $v_gene_ho = $v_gene & $v_ho;
+				my $v_gene_he = $v_gene & $v_he;
 				if ($v_gene_ho->Norm() >= 1 or $v_gene_he->Norm() >= 2) {
 					$v_pat += $gene->getVariantsVector();
 				}
@@ -1672,7 +1672,7 @@ sub filter_genetics_models_individual {
 			my $v_all = $chr->getVariantsVector() & $pat->getVariantsVector($chr);
 			my $v_he = $chr->getVariantsVector() & $pat->getHe($chr);
 			foreach my $gene (@{$chr->getGenes()}) {
-				my $v_gene = $gene->getVariantsVector() & $v_all;
+				my $v_gene = $gene->getCurrentVector() & $v_all;
 				my $v_gene_he = $gene->getVariantsVector() & $v_he;
 				if ($v_gene_he->Norm() >= 2) {
 					$v_pat += $gene->getVariantsVector();
