@@ -226,19 +226,19 @@ if ($filter_patient) {
  
 if ($filter_not_patient) {
 	foreach my $pat_name (split(' ', $filter_not_patient)) {
-		$project->getPatient($pat_name)->excluded('all');
+		$project->getPatient($pat_name)->{excluded} = 'all';
 	}
 }
  
 if ($filter_he) {
 	foreach my $pat_name (split(' ', $filter_he)) {
-		$project->getPatient($pat_name)->excluded('he');
+		$project->getPatient($pat_name)->{excluded} = 'he';
 	}
 }
  
 if ($filter_ho) {
 	foreach my $pat_name (split(' ', $filter_ho)) {
-		$project->getPatient($pat_name)->excluded('ho');
+		$project->getPatient($pat_name)->{excluded} = 'ho';
 	}
 }
 
@@ -376,17 +376,14 @@ foreach my $chr (@{$project->getChromosomes()}) {
 	$chr->not_used(1);
 }
 	
-	$queryFilter->setPatients($project);
-	$queryFilter->setIntheAttic($project->getPatientsFromListNames([split(' ', $filter_attic)]));
-	
-	$queryFilter->setIntersectedPatients( $project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_patient})]));
-	$queryFilter->setIntersectedFamilies($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{fam_and})]));
-	
-	$queryFilter->setFilteredHoPatients($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{filter_ho})]));
-	$queryFilter->setFilteredHePatients($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{filter_he})]));
-	
-	$queryFilter->setExcludedPatients( $project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_not_patient})]));
-	$queryFilter->setExcludedFamilies($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{fam_not})]));
+$queryFilter->setPatients($project);
+$queryFilter->setIntheAttic($project->getPatientsFromListNames([split(' ', $filter_attic)]), $typeFilters);
+$queryFilter->setIntersectedPatients( $project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_patient})]), $typeFilters);
+$queryFilter->setIntersectedFamilies($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{fam_and})]));
+$queryFilter->setFilteredHoPatients($project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_ho})]), $typeFilters);
+$queryFilter->setFilteredHePatients($project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_he})]), $typeFilters);
+$queryFilter->setExcludedPatients( $project->getPatientsFromListNames([split(' ', $h_filters_intersect_exclude->{filter_not_patient})]), $typeFilters);
+$queryFilter->setExcludedFamilies($project->getFamiliesFromListNames([split(' ', $h_filters_intersect_exclude->{fam_not})]));
 
 foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# Cas genome MT uniquement par exemple
@@ -445,50 +442,56 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		
 	my $h_args;	
 	if ($hFiltersChr and $hFiltersChr_var2) { $chr->save_model_variants_all_patients('init'); }
+	
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_type_variants($chr, $hFiltersChr);
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr, $keep_indels_cadd);
 	if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $filter_gnomad) }
 	else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr); }
 	$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr);
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr);
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_dejavu($chr, $dejavu, $dejavu_ho, $test) if ($dejavu);
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 
 	# Recessif compound multi annot
 	my $vector_filtered = $chr->getVariantsVector->Clone();
 	my $vector_filtered_2;
 	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
 
-	if ($is_diff_hash_filters) {
-		die();
-		$chr->load_init_variants_all_patients('init');
-		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
-		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
-		if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $hFiltersChr_var2) }
-		else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2); }
-		$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr_var2);
-		$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr_var2);
-		$queryFilter->filter_vector_dejavu($chr, $dejavu_2, $dejavu_ho, $test) if ($dejavu_2);
-		$vector_filtered_2 = $chr->getVariantsVector->Clone();
-		$h_args->{'filters_1'} = $hFiltersChr;
-		$h_args->{'filters_2'} = $hFiltersChr_var2;
-		$h_args->{'vector_filters_1'} = $vector_filtered;
-		$h_args->{'vector_filters_2'} = $vector_filtered_2;
-	}
-	############## FLITER VARIANTS 
+#	if ($is_diff_hash_filters) {
+#		next if $chr->getVariantsVector->is_empty();
+#		$chr->load_init_variants_all_patients('init');
+#		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
+#		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
+#		if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $hFiltersChr_var2) }
+#		else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2); }
+#		$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr_var2);
+#		$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr_var2);
+#		$queryFilter->filter_vector_dejavu($chr, $dejavu_2, $dejavu_ho, $test) if ($dejavu_2);
+#		$vector_filtered_2 = $chr->getVariantsVector->Clone();
+#		$h_args->{'filters_1'} = $hFiltersChr;
+#		$h_args->{'filters_2'} = $hFiltersChr_var2;
+#		$h_args->{'vector_filters_1'} = $vector_filtered;
+#		$h_args->{'vector_filters_2'} = $vector_filtered_2;
+#	}
+	############## FILTER VARIANTS 
+	
 	#intersection Variants level
-	$queryFilter->intersectVariantsPatients($chr);
+	$queryFilter->intersectVariantsPatients($chr, $typeFilters);
 	$queryFilter->intersectVariantsFamilies($chr);
+	
 	#exclude Variants level
-	$queryFilter->excludeVariantsPatients($chr);
+	$queryFilter->excludeVariantsPatients($chr, $typeFilters);
 	$queryFilter->excludeVariantsFamilies($chr);
 	
 	# he ho 
-	$queryFilter->filterHoVariantsPatients($chr);
-	$queryFilter->filterHeVariantsPatients($chr);
-	
-	
-	
+	$queryFilter->filterHoVariantsPatients($chr, $typeFilters);
+	$queryFilter->filterHeVariantsPatients($chr, $typeFilters);
 	
 	#####################
 	#
@@ -499,35 +502,44 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	
 	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
 	
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	
 	if ($is_diff_hash_filters) { $queryFilter->filter_genes_annotations($chr, $hFiltersChr_var2); }
 	else { $queryFilter->filter_genes_annotations($chr, $hFiltersChr); }
 	
+	
+#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
+	
 	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	
-	$queryFilter->filter_genetics_models($chr, $model, $h_args);
+	
+#	warn 'CHR before model: '.$chr->getVariantsVector->Norm();
+	$queryFilter->filter_genetics_models($chr, $level_ind, $level_fam, $model, $h_args);
+#	warn 'CHR after model: '.$chr->getVariantsVector->Norm();
+#	die;
+
+	if ($model) {
+		#intersection Variants level
+		$queryFilter->intersectVariantsPatients($chr, $typeFilters);
+		$queryFilter->intersectVariantsFamilies($chr);
+		
+		#exclude Variants level
+		$queryFilter->excludeVariantsPatients($chr, $typeFilters);
+		$queryFilter->excludeVariantsFamilies($chr);
+		
+		# he ho 
+		$queryFilter->filterHoVariantsPatients($chr, $typeFilters);
+		$queryFilter->filterHeVariantsPatients($chr, $typeFilters);
+	}
+
 	
 	#intersection Genes level
 	$queryFilter->intersectGenesPatients($chr);
 	$queryFilter->intersectGenesFamilies($chr);
 	
 	#exclude Genes level
-
-	
 	$queryFilter->excludeGenesPatients($chr);
 	$queryFilter->excludeGenesFamilies($chr);
-	
-
-	
-	if ($project->filter_text()) {
-		die();
-		foreach my $patient (@{$chr->getPatients()}) {
-			$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
-		}
-		foreach my $family (@{$chr->getFamilies()}) {
-			$family->getVariantsVector($chr)->Intersection($family->getVariantsVector($chr), $chr->getVariantsVector());
-		}
-	}
 	
 	
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
@@ -1038,32 +1050,31 @@ sub launchStatsProjectAll_genes {
 	my @lStats;
 	
 	my $i = 0;
-		my $nbg = 0;
-		$buffer->getHashTransIdWithCaptureDiag();
+	my $nbg = 0;
+	$buffer->getHashTransIdWithCaptureDiag();
+	
+	
+	
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
-		$vector_buffer{$chr_id}{substitution} = $chr->getVectorSubstitutions;
-		$vector_buffer{$chr_id}{insertion} =  $chr->getVectorInsertions ;
-		$vector_buffer{$chr_id}{deletion} =  $chr->getVectorDeletions;
-		$vector_buffer{$chr_id}{indel} =  $chr->getVectorInsertions + $chr->getVectorDeletions ;
-		$vector_buffer{$chr_id}{cnv} =  $chr->getVectorLargeDuplications() + $chr->getVectorLargeDeletions();
+		
+		my $v_all = $chr->getNewVector();
+		foreach my $fam (@{$chr->getFamilies()}) {
+			$v_all += $fam->getCurrentVariantsVector($chr);
+		}
+		$v_all &= $chr->getVariantsVector();
 		
 		next if ($chr->not_used());
 		foreach my $gene (@{$queryFilter->getGenes($chr)}){
-			warn "++ ".$gene->external_name;
-		#foreach my $gene (@{$chr->getGenes}) {
-#			my $vchr = $gene->return_compact_vector( $vvv);
-#			warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
-#			$vsmall &= $vchr;
 			delete $chr->{genes_object}->{$gene->id}  if $gene->getCurrentCompactVector->is_empty();
-			next if $gene->getCurrentCompactVector->is_empty();
-				warn "++ ".$gene->external_name;
+			
+			my $v_gene = $gene->getCurrentVector();
+			$v_gene &= $v_all;
+			
+			next if $v_gene->is_empty();
+			#next if $gene->getCurrentCompactVector->is_empty();
+			warn "++ ".$gene->external_name  if ($debug);
 			$project->print_dot(50);
-#			my $v_to_enum = $gene->_getVectorOrigin->to_Enum();
-			#TODO: a enlever une fois vector ok
-#			if ($v_to_enum =~ /0-/) {
-#				next;
-#			}
 			$nbg ++;
 			my $hStats = launchStatsGene($gene);
 			if ($hStats) {
@@ -1094,7 +1105,9 @@ sub launchStatsProjectAll_chromosomes {
 		next if ($chr->not_used());
 		my (@ag) = grep {$_->{chromosome} eq $chr->name} @$stat_genes;
 		my $nb_genes = scalar(@ag);
-		my $hashChr = launchStatsChr($chr,$nb_genes);
+		my $hashChr;
+		if ($nb_genes == 0) { $hashChr = launchStatsChr_null($chr); }
+		else { $hashChr = launchStatsChr($chr,$nb_genes); }
 		if ($hashChr->{'variations'} == 0) { $hashChr = launchStatsChr_null($chr); }
 		else { push(@lStats, $hashChr); }
 	}
@@ -1468,23 +1481,40 @@ sub launchStatsChr {
 	$hash->{genes}      = $nb_gene;
 	$hash->{variations}	= 0;
 	
+	my $v_fam = $chr->getNewVector();
+	foreach my $fam (@{$chr->getFamilies}) {
+		my $v_pat = $chr->getNewVector();
+		foreach my $pat (@{$fam->getPatients()}) {
+			next if $pat->excluded() eq 'all';
+			next if $pat->in_the_attic();
+			my $t = $pat->getVariantsVector($chr);
+			$t &= $fam->getCurrentVariantsVector($chr);
+			$v_pat += $t;
+		}
+		$v_fam += $v_pat;
+	}
+	
+	my $v_all = $chr->getNewVector();
+	$v_all += $chr->getVariantsVector();
+	$v_all &= $v_fam;
+	
 	my $v_sub = $chr->vector_global_categories('substitution')->Clone();
-	$v_sub->Intersection($v_sub, $chr->getVariantsVector());
+	$v_sub &= $v_all;
 	my $v_ins = $chr->vector_global_categories('insertion')->Clone();
-	$v_ins->Intersection($v_ins, $chr->getVariantsVector());
+	$v_ins &= $v_all;
 	my $v_del = $chr->vector_global_categories('deletion')->Clone();
-	$v_del->Intersection($v_del, $chr->getVariantsVector());
+	$v_del &= $v_all;
 	my $v_l_dup = $chr->vector_global_categories('large_duplication')->Clone();
-	$v_l_dup->Intersection($v_l_dup, $chr->getVariantsVector());
+	$v_l_dup &= $v_all;
 	my $v_l_del = $chr->vector_global_categories('large_deletion')->Clone();
-	$v_l_del->Intersection($v_l_del, $chr->getVariantsVector());
+	$v_l_del &= $v_all;
 
-	$hash->{substitutions} = $chr->countThisVariants($v_sub);
-	$hash->{insertions} = $chr->countThisVariants($v_ins);
-	$hash->{deletions} = $chr->countThisVariants($v_del);
-	$hash->{cnvs} = $chr->countThisVariants($v_l_del);
-	$hash->{cnvs} = $chr->countThisVariants($v_l_dup);
-	$hash->{variations}	= $chr->countThisVariants( $chr->getVariantsVector() );
+	$hash->{substitutions} = $v_sub->Norm();
+	$hash->{insertions} = $v_ins->Norm();
+	$hash->{deletions} = $v_del->Norm();
+	$hash->{cnvs} = $v_l_del->Norm();
+	$hash->{cnvs} = $v_l_dup->Norm();
+	$hash->{variations}	= $v_all->Norm();
 	return $hash;
 }
 
@@ -1513,6 +1543,8 @@ sub launchStatsGene {
 	
 	my $vv = $gene->getCurrentVector() & $gene->getChromosome->getVariantsVector();
 	$gene->setCurrentVector($vv);
+	return if $model eq 'compound' and not $gene->getCurrentVector->Norm() >= 2;
+	return if $gene->getCurrentVector->is_empty;
 	my $t1 = $gene->compact_vector;
 	my $va = $gene->getCurrentCompactVector();
 	return if $va->is_empty;
@@ -1573,17 +1605,35 @@ sub launchStatsGene {
 	my $va = $gene->getCurrentCompactVector();
 	return if $va->is_empty;
 	my $djvf;
-	foreach my $patient (@{$chr->getProject->getPatients()}) {
-		
-		my $vv = $va & $gene->getCompactVectorPatient($patient);
-		next if $vv->is_empty;
-		$hAllPat->{$patient->name()} = undef;
-		$hStats->{variants}->{all} = $chr->countThisVariants($vv);
-		$hStats->{patients}->{all}->{$patient->id()} ++;
-		$hStats->{fam}->{all}->{$patient->getFamily->id()} ++;
-		$hpatients_genes->{$patient->id()}++;
-		
+	
+	foreach my $fam (@{$chr->getFamilies()}) {
+		my $v_fam_g = $fam->getCurrentVariantsVector($chr);
+		$v_fam_g &= $gene->getCurrentVector();
+		next if $v_fam_g->is_empty();
+		$hStats->{fam}->{all}->{$fam->id()} ++;
+		foreach my $patient (@{$fam->getPatients}) {
+			my $v_pat_g = $patient->getVectorOrigin($chr);
+			$v_pat_g &= $v_fam_g;
+			next if $v_pat_g->is_empty;
+			$hAllPat->{$patient->name()} = undef;
+			$hStats->{variants}->{all} = $chr->countThisVariants($vv);
+			$hStats->{patients}->{all}->{$patient->id()} ++;
+			$hpatients_genes->{$patient->id()}++;
+		}
 	}
+	
+	
+#	foreach my $patient (@{$chr->getProject->getPatients()}) {
+#		
+#		my $vv = $va & $gene->getCompactVectorPatient($patient);
+#		next if $vv->is_empty;
+#		$hAllPat->{$patient->name()} = undef;
+#		$hStats->{variants}->{all} = $chr->countThisVariants($vv);
+#		$hStats->{patients}->{all}->{$patient->id()} ++;
+#		$hStats->{fam}->{all}->{$patient->getFamily->id()} ++;
+#		$hpatients_genes->{$patient->id()}++;
+#		
+#	}
 	
 	
 	foreach my $f   (keys %{$hStats->{fam}->{all}}){
@@ -1717,6 +1767,7 @@ sub launchStatsPatient {
 	#2018_06_28: Choix de patrick, on met artificiellement toutes les valeures a 0 si on exclu des regions ho dun patient (comme in the attic)
 	return launchStatsPatient_null($patient) if ($patient->excluded() eq 'ho_reg');
 	return launchStatsPatient_null($patient) if ($patient->in_the_attic);
+	
 	my $hStats;
 	my $patName = $patient->name();
 	$hStats->{name} 		= $patName;
@@ -1743,10 +1794,12 @@ sub launchStatsPatient {
 			else { $hStats->{child}	= 'C'.$patient->sex(); }
 		}
 	}
-	$hStats->{include} 	= 1;
-	$hStats->{include} 	= 0 if ($patient->intersected());
-	$hStats->{include} 	= 2 if ($patient->in_the_attic() == 1);
-	$hStats->{include} 	= -1 if ($patient->excluded() eq 'all');
+	
+	$hStats->{include} 	= '1';
+	$hStats->{include} 	= '0' if ($patient->intersected());
+	$hStats->{include} 	= '2' if ($patient->in_the_attic() == 1);
+	$hStats->{include} 	= '-1' if ($patient->excluded() eq 'all');
+	$hStats->{include} 	= '-1' if ($patient->getFamily->excluded());
 	if (exists $project->filter_attic_genes->{$patName}) {
 		$hStats->{include} 	= 1;
 	}
@@ -1765,20 +1818,22 @@ sub launchStatsPatient {
 	$hStats->{variations} 	= 0;
 	
 	
-	my $v_all = $patient->getVectorOrigin($chr) & $chr->getVariantsVector();
-
+	my $v_all = $patient->getVectorOrigin($chr) & $patient->getFamily->getCurrentVariantsVector($chr);
 	my $v_he = $patient->getVectorOriginHe($chr) & $v_all;
 	my $v_ho = $patient->getVectorOriginHo($chr) & $v_all;
 	
-	my $v_substitution = $chr->getNewVector();
-	my $v_insertion = $chr->getNewVector();
-	my $v_deletion = $chr->getNewVector();
-	my $v_cnvs = $chr->getNewVector();
+	my $v_substitution = $chr->vector_global_categories('substitution')->Clone();
+	$v_substitution &= $v_all;
 	
-	$v_substitution = $vector_buffer{$chr->id}{substitution} & $v_all if $vector_buffer{$chr->id}{substitution};
-	$v_insertion = $vector_buffer{$chr->id}{insertion} & $v_all if $vector_buffer{$chr->id}{insertion};
-	$v_deletion = $vector_buffer{$chr->id}{deletion} & $v_all if $vector_buffer{$chr->id}{deletion};
-	$v_cnvs = $vector_buffer{$chr->id}{cnv} & $v_all if $vector_buffer{$chr->id}{cnv};
+	my $v_insertion = $chr->vector_global_categories('insertion')->Clone();
+	$v_insertion &= $v_all;
+	
+	my $v_deletion = $chr->vector_global_categories('deletion')->Clone();
+	$v_deletion &= $v_all;
+	
+	my $v_cnvs = $chr->vector_global_categories('large_deletion')->Clone();
+	$v_cnvs += $chr->vector_global_categories('large_duplication')->Clone();
+	$v_cnvs &= $v_all;
 	
 	my $nb_all = $chr->countThisVariants($v_all);
 	$hStats->{variations} = $nb_all;
@@ -1835,11 +1890,11 @@ sub launchStatsPatient_null {
 			else { $hStats->{child}	= 'C'.$patient->sex(); }
 		}
 	}
-	$hStats->{include} 	= 1;
-	$hStats->{include} 	= 0 if ($patient->intersected());
-	$hStats->{include} 	= 2 if ($patient->in_the_attic() == 1);
-	$hStats->{include} 	= -1 if ($patient->excluded() eq 'all');
-	$hStats->{include} 	= -1 if ($patient->excluded() eq 'ho_reg');
+	$hStats->{include} 	= '1';
+	$hStats->{include} 	= '0' if ($patient->intersected());
+	$hStats->{include} 	= '2' if ($patient->in_the_attic() == 1);
+	$hStats->{include} 	= '-1' if (lc($patient->excluded()) eq 'all');
+	$hStats->{include} 	= '-1' if ($patient->excluded() eq 'ho_reg');
 	my $hash_cov;
 	if ($patient->project->test()) {
 		my $freeze_file = $patient->project->getCoverageDir().$patient->name().'.freeze';
@@ -1877,13 +1932,13 @@ sub launchStatsFamily {
 	$hash->{name} 			= $family->name();
 	$hash->{id} 			= $family->name();
 	$hash->{nb} 			= $nb_pat;
-	$hash->{model} 			= $family->used_model();
+	$hash->{model} 			= $model;
 	$hash->{model} 			= undef if ($typeFilters eq 'individual' or $typeFilters eq 'somatic');
-	$hash->{include} 		= 1;
-	$hash->{include} 		= 0 if ($family->intersected());
-	$hash->{include} 		= 2 if ($family->in_the_attic());
-	$hash->{include} 		= -1 if ($family->excluded() eq 'all');
-	$hash->{include} 		= -2 if ($family->excluded() eq 'rec_reg');
+	$hash->{include} 		= '1';
+	$hash->{include} 		= '0' if ($family->intersected());
+	$hash->{include} 		= '2' if ($family->in_the_attic());
+	$hash->{include} 		= '-1' if ($family->excluded());
+	$hash->{include} 		= '-2' if ($family->excluded() eq 'rec_reg');
 	if ($family->in_the_attic()) {
 		my $need_initInclude = 1;
 		foreach my $pat (@{$family->getPatients()}) { 
@@ -1904,11 +1959,16 @@ sub launchStatsFamily {
 	my $v_large_deletion = $chr->vector_global_categories('large_deletion')->Clone();
 	my $v_large_duplication = $chr->vector_global_categories('large_duplication')->Clone();
 	foreach my $patient (@{$family->getPatients()}) {
+		next if $patient->in_the_attic();
 		$v_he += $patient->getVectorOriginHe($chr);
 		$v_ho += $patient->getVectorOriginHo($chr);
 		$v_all += $v_he;
 		$v_all += $v_ho;
 	}
+	$v_all &= $family->getCurrentVariantsVector($chr);
+	$v_he &= $family->getCurrentVariantsVector($chr);
+	$v_ho &= $family->getCurrentVariantsVector($chr);
+	
 	$v_all->Intersection($v_all, $chr->getVariantsVector());
 	$v_he->Intersection($v_he, $v_all);
 	$v_ho->Intersection($v_ho, $v_all);
@@ -1925,7 +1985,8 @@ sub launchStatsFamily {
 	$hash->{cnv} += $chr->countThisVariants($v_large_duplication);
 	$hash->{heterozygote} = $chr->countThisVariants($v_he);
 	$hash->{homozygote} = $chr->countThisVariants($v_ho);
-	$hash->{genes} = $hfamillies_genes->{$family->id};
+	$hash->{genes} = 0;
+	$hash->{genes} = $hfamillies_genes->{$family->id} if not $family->in_the_attic();
 #	my $nb = 0;
 #	foreach my $gene (@{$chr->getGenes()}) {
 #		next unless $gene->getVectorOrigin();

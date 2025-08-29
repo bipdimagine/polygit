@@ -1014,17 +1014,15 @@ sub getGenesFromVector {
 	my $tree = $self->intervaltree_vector;
 	my $start = 0;
 	my $lh;
-	while (($start < $vector->Size()) &&
-    	(my ($min,$max) = $vector->Interval_Scan_inc($start)))
-	{
+	my $min = 0;
+	my $max = 0;
+	while (($start < $vector->Size()) && (my ($min,$max) = $vector->Interval_Scan_inc($start))) {
 		$max ++;
 		 foreach my $g (@{$tree->fetch($min,$max)}){
 		 	next if $g =~ /intergenic/;
-		 	
 		 	$lh->{$g} ++;
-		 	
 		 }
-    	$start = $max + 2;
+    	$start = $max + 1;
 	}
 	return $self->getProject()->myflushobjects($lh, "genes");
 }
@@ -2032,43 +2030,43 @@ sub getModelVector_fam_both_parents {
 }
 
 
-# applique le model compound (IND)
-sub getModelGeneVector_indiv_compound {
-	my ($self, $gene, $var_gene_annot_var1, $var_gene_annot_var2) = @_;
-	my $ok;
-	my $var_tmp = $self->getNewVector();
-	my $var_global_patients = $self->getNewVector();
-	foreach my $patient (@{$self->getPatients()}) {
-		$patient->{model_indiv_compound}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_indiv_compound}->{$self->id()});
-		$var_tmp->Empty();
-		$patient->used_model('compound');
-		$var_tmp->Intersection( $patient->getVariantsVector($self), $gene->getCurrentVector() );
-		next if ($var_tmp->is_empty());
-		unless ($self->countThisVariants($var_tmp) == 1) {
-#			if ($var_gene_annot_var1 and $var_gene_annot_var2) {
-#				$var_gene_annot_var1->Intersection($var_gene_annot_var1, $var_tmp);
-#				$var_gene_annot_var2->Intersection($var_gene_annot_var2, $var_tmp);
-#				if ($self->countThisVariants($var_gene_annot_var1) >= 1 and $self->countThisVariants($var_gene_annot_var2) >= 1) {
-#					$ok = 1;
-#					$patient->{model_vector_var_ok}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_vector_var_ok}->{$self->id()});
-#					$patient->{model_vector_var_ok}->{$self->id()} += $var_gene_annot_var1;
-#					$patient->{model_vector_var_ok}->{$self->id()} += $var_gene_annot_var2;
-#					$patient->{model_indiv_compound}->{$self->id()} += $var_gene_annot_var1;
-#					$patient->{model_indiv_compound}->{$self->id()} += $var_gene_annot_var2;
-#					$var_global_patients += $patient->{model_vector_var_ok}->{$self->id()};
-#				}
-#			}
-#			else {
-				$ok = 1;
-				$patient->{model_vector_var_ok}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_vector_var_ok}->{$self->id()});
-				$patient->{model_vector_var_ok}->{$self->id()} += $var_tmp;
-				$patient->{model_indiv_compound}->{$self->id()} += $var_tmp;
-				$var_global_patients += $patient->{model_vector_var_ok}->{$self->id()};
-#			}
-		}
-	}
-	return $var_global_patients;
-}
+## applique le model compound (IND)
+#sub getModelGeneVector_indiv_compound {
+#	my ($self, $gene, $var_gene_annot_var1, $var_gene_annot_var2) = @_;
+#	my $ok;
+#	my $var_tmp = $self->getNewVector();
+#	my $var_global_patients = $self->getNewVector();
+#	foreach my $patient (@{$self->getPatients()}) {
+#		$patient->{model_indiv_compound}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_indiv_compound}->{$self->id()});
+#		$var_tmp->Empty();
+#		$patient->used_model('compound');
+#		$var_tmp->Intersection( $patient->getVariantsVector($self), $gene->getCurrentVector() );
+#		next if ($var_tmp->is_empty());
+#		unless ($self->countThisVariants($var_tmp) == 1) {
+##			if ($var_gene_annot_var1 and $var_gene_annot_var2) {
+##				$var_gene_annot_var1->Intersection($var_gene_annot_var1, $var_tmp);
+##				$var_gene_annot_var2->Intersection($var_gene_annot_var2, $var_tmp);
+##				if ($self->countThisVariants($var_gene_annot_var1) >= 1 and $self->countThisVariants($var_gene_annot_var2) >= 1) {
+##					$ok = 1;
+##					$patient->{model_vector_var_ok}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_vector_var_ok}->{$self->id()});
+##					$patient->{model_vector_var_ok}->{$self->id()} += $var_gene_annot_var1;
+##					$patient->{model_vector_var_ok}->{$self->id()} += $var_gene_annot_var2;
+##					$patient->{model_indiv_compound}->{$self->id()} += $var_gene_annot_var1;
+##					$patient->{model_indiv_compound}->{$self->id()} += $var_gene_annot_var2;
+##					$var_global_patients += $patient->{model_vector_var_ok}->{$self->id()};
+##				}
+##			}
+##			else {
+#				$ok = 1;
+#				$patient->{model_vector_var_ok}->{$self->id()} = $self->getNewVector() unless (exists $patient->{model_vector_var_ok}->{$self->id()});
+#				$patient->{model_vector_var_ok}->{$self->id()} += $var_tmp;
+#				$patient->{model_indiv_compound}->{$self->id()} += $var_tmp;
+#				$var_global_patients += $patient->{model_vector_var_ok}->{$self->id()};
+##			}
+#		}
+#	}
+#	return $var_global_patients;
+#}
 
 # applique le model recessif (IND)
 sub getModelGeneVector_indiv_recessif {
