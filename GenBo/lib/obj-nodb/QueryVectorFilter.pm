@@ -322,26 +322,29 @@ sub filter_vector_dejavu {
 sub atLeastFilter_var_ind {
 	my ($self, $chr, $atLeast) = @_;
 	my (@lOk, $hVectPat);
-	my @lPat = $self->patients;
-	if ($atLeast <= scalar(@lPat)) {
+	my @lPat = @{$chr->getPatients};
+	if ($atLeast > scalar(@lPat)) {
+		$chr->setVariantsVector($chr->getNewVector());
+		return;
+	}
+	my $vector_ok = $chr->getNewVector();
+	foreach my $patient (@lPat) {
+		$hVectPat->{$patient->name()} = $patient->getVariantsVector($chr);
+		$hVectPat->{$patient->name()} &= $chr->getVariantsVector();
+	}
+	foreach my $index (@{$chr->getIdsBitOn($chr->getVariantsVector())}) {
+		$chr->project->print_dot(50);
+		my $ok = 0;
 		foreach my $patient (@lPat) {
-			$hVectPat->{$patient->name()} = $patient->getVariantsVector($chr);
-		}
-		foreach my $index (@{$chr->getIdsBitOn($chr->getVariantsVector())}) {
-			$chr->project->print_dot(50);
-			my $ok = 0;
-			foreach my $patient (@lPat) {
-				if ($hVectPat->{$patient->name()}->contains($index)) {
-					$ok++;
-					if ($ok == $atLeast) {
-						push(@lOk, $index);
-						last;
-					}
+			if ($hVectPat->{$patient->name()}->contains($index)) {
+				$ok++;
+				if ($ok == $atLeast) {
+					$vector_ok->Bit_On($index);
+					last;
 				}
 			}
 		}
 	}
-	my $vector_ok = Bit::Vector->new_Enum($chr->getVariantsVector->Size(), join(',', @lOk));
 	$chr->setVariantsVector($vector_ok);
 }
 
@@ -354,28 +357,33 @@ sub atLeastFilter_var_fam {
 		next if ($family->in_the_attic());
 		push(@lFam, $family);
 	}
+	if ($atLeast > scalar(@lFam)) {
+		$chr->setVariantsVector($chr->getNewVector());
+		return;
+	}
+	my $vector_ok = $chr->getNewVector();
 	my $vo = $chr->getVariantsVector();
-	if ($atLeast <= scalar(@lFam)) {
-		foreach my $family (@lFam) {
-			$hVectFam->{$family->name()} = $family->getCurrentVariantsVector & $vo; 
-		}
-		foreach my $index (@{$chr->getIdsBitOn($chr->getVariantsVector())}) {
-			$chr->project->print_dot(50);
-			my $ok = 0;
-			foreach my $fam_name (keys %$hVectFam) {
-				if ($hVectFam->{$fam_name}->contains($index)) {
-					$ok++;
-					if ($ok == $atLeast) {
-						push(@lOk, $index);
-						last;
-					}
+	foreach my $family (@lFam) {
+		$hVectFam->{$family->name()} = $family->getCurrentVariantsVector($chr) & $vo; 
+	}
+	foreach my $index (@{$chr->getIdsBitOn($chr->getVariantsVector())}) {
+		$chr->project->print_dot(50);
+		my $ok = 0;
+		foreach my $fam_name (keys %$hVectFam) {
+			if ($hVectFam->{$fam_name}->contains($index)) {
+				$ok++;
+				if ($ok == $atLeast) {
+					$vector_ok->Bit_On($index);
+					last;
 				}
 			}
 		}
 	}
-	my $vector_ok = Bit::Vector->new_Enum($chr->getVariantsVector->Size(), join(',', @lOk));
+	foreach my $fam (@{$chr->getFamilies()}) {
+		my $v_fam = $fam->getCurrentVariantsVector($chr) & $vector_ok;
+		$fam->setCurrentVariantsVector($chr, $vector_ok);
+	}
 	$chr->setVariantsVector($vector_ok);
-	$self->refreshGenes($vector_ok);
 }
 
 sub atLeastFilter_var_som {
@@ -1411,11 +1419,11 @@ sub filter_atLeast {
 		}
 		if ($typeFilters eq 'somatic') {
 			if ($level_fam eq 'gene') { $self->atLeastFilter_genes_som($chr, $atLeast); }
-			else { atLeastFilter_var_som($chr, $atLeast); }
+			else { $self->atLeastFilter_var_som($chr, $atLeast); }
 		}
 		else {
 			if ($level_fam eq 'gene') { $self->atLeastFilter_genes_ind($chr, $atLeast); }
-			else { atLeastFilter_var_ind($chr, $atLeast); }
+			else { $self->atLeastFilter_var_ind($chr, $atLeast); }
 		}
 	}
 	return;
