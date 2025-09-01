@@ -445,37 +445,34 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		
 	my $h_args;	
 	if ($hFiltersChr and $hFiltersChr_var2) { $chr->save_model_variants_all_patients('init'); }
-	$queryFilter->filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
-	$queryFilter->filter_vector_type_variants($chr, $hFiltersChr);
-	$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr, $keep_indels_cadd);
+	
+	#filter variant frequence 
 	if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $filter_gnomad) }
 	else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr); }
 	$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr);
-	$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr);
 	$queryFilter->filter_vector_dejavu($chr, $dejavu, $dejavu_ho, $test) if ($dejavu);
+	#Filter type variant region 
+	$queryFilter->filter_vector_type_variants($chr, $hFiltersChr);
+	#Filter cadd  
+	$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr, $keep_indels_cadd);
+	
+	
+	$queryFilter->filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
+	
+	
+	
+	
+	#Filter confidence ?
+	
+	$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr);
+	
 
 	# Recessif compound multi annot
 	my $vector_filtered = $chr->getVariantsVector->Clone();
-	my $vector_filtered_2;
+	my $vector_filtered_2 = $chr->getVariantsVector->Clone();;
 	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
-
-	if ($is_diff_hash_filters) {
-		die();
-		$chr->load_init_variants_all_patients('init');
-		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
-		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
-		if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $hFiltersChr_var2) }
-		else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2); }
-		$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr_var2);
-		$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr_var2);
-		$queryFilter->filter_vector_dejavu($chr, $dejavu_2, $dejavu_ho, $test) if ($dejavu_2);
-		$vector_filtered_2 = $chr->getVariantsVector->Clone();
-		$h_args->{'filters_1'} = $hFiltersChr;
-		$h_args->{'filters_2'} = $hFiltersChr_var2;
-		$h_args->{'vector_filters_1'} = $vector_filtered;
-		$h_args->{'vector_filters_2'} = $vector_filtered_2;
-	}
-	############## FLITER VARIANTS 
+	
+	############## FILTER VARIANTS 
 	#intersection Variants level
 	$queryFilter->intersectVariantsPatients($chr);
 	$queryFilter->intersectVariantsFamilies($chr);
@@ -486,6 +483,24 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	# he ho 
 	$queryFilter->filterHoVariantsPatients($chr);
 	$queryFilter->filterHeVariantsPatients($chr);
+	
+	
+#	if ($is_diff_hash_filters) {
+#		$chr->load_init_variants_all_patients('init');
+#		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
+#		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
+#		if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $hFiltersChr_var2) }
+#		else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2); }
+#		$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr_var2);
+#		$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr_var2);
+#		$queryFilter->filter_vector_dejavu($chr, $dejavu_2, $dejavu_ho, $test) if ($dejavu_2);
+#		$vector_filtered_2 = $chr->getVariantsVector->Clone();
+#		$h_args->{'filters_1'} = $hFiltersChr;
+#		$h_args->{'filters_2'} = $hFiltersChr_var2;
+#		$h_args->{'vector_filters_1'} = $vector_filtered;
+#		$h_args->{'vector_filters_2'} = $vector_filtered_2;
+#	}
+	
 	
 	
 	
@@ -520,7 +535,6 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 
 	
 	if ($project->filter_text()) {
-		die();
 		foreach my $patient (@{$chr->getPatients()}) {
 			$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $chr->getVariantsVector());
 		}
@@ -1050,14 +1064,12 @@ sub launchStatsProjectAll_genes {
 		
 		next if ($chr->not_used());
 		foreach my $gene (@{$queryFilter->getGenes($chr)}){
-			warn "++ ".$gene->external_name;
 		#foreach my $gene (@{$chr->getGenes}) {
 #			my $vchr = $gene->return_compact_vector( $vvv);
 #			warn $vchr->Norm()." ** ".$vvv->Norm  if $debug;
 #			$vsmall &= $vchr;
 			delete $chr->{genes_object}->{$gene->id}  if $gene->getCurrentCompactVector->is_empty();
 			next if $gene->getCurrentCompactVector->is_empty();
-				warn "++ ".$gene->external_name;
 			$project->print_dot(50);
 #			my $v_to_enum = $gene->_getVectorOrigin->to_Enum();
 			#TODO: a enlever une fois vector ok
