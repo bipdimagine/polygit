@@ -958,7 +958,7 @@ has genes_object => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		#confess();
+		confess();
 		my $hRes = $self->setGenes();
 		unless ($hRes) { $hRes->{none} = 'none'; }
 		my $hash;
@@ -985,8 +985,51 @@ has intervaltree_vector => (
 		return $tree;
 	},
 );
+has intervaltree_vector2 => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default	=> sub {
+	my $self = shift;
+	my $array_tree = $self->rocks_vector("r")->get_vector_gene( "vector_intervaltree" );
+	my $tree = Set::IntervalTree->new;
+	return $tree unless $tree;
+	foreach my $a (@$array_tree){
+		next unless @$a;
+		$a->[0] = $a->[0].",".$a->[1].";".$a->[2];
+		$tree->insert(@$a);
+	}
+		return $tree;
+	},
+);
+sub getGenesIdFromVector2 {
+	my ($self,$vector) = @_;
+	my $tree = $self->intervaltree_vector2;
+	my $start = 0;
+	my $lh;
+	my $toto;
+	while (($start < $vector->Size()) &&
+    	(my ($min,$max) = $vector->Interval_Scan_inc($start)))
+	{
+		$max ++;
 
+		 foreach my $g (@{$tree->fetch($min,$max)}){
 
+		 	next if $g =~ /intergenic/;
+		 	next if exists $lh->{$g};
+		 	push(@$toto,"!".$g);
+		 	
+		 	$lh->{$g} ++;
+		 }
+    	$start = $max + 2;
+	}
+#	$self->project->rocksGenBo->prepare($toto);
+#	foreach my $t (@$toto){
+#		 $self->project->rocksGenBo->get($t);
+#	}
+#	warn "end";
+	
+	return [keys %$lh];
+}
 sub getGenesIdFromVector {
 	my ($self,$vector) = @_;
 	my $tree = $self->intervaltree_vector;
