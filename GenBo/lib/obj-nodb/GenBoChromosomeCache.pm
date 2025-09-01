@@ -958,9 +958,14 @@ has genes_object => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
+		#confess();
 		my $hRes = $self->setGenes();
 		unless ($hRes) { $hRes->{none} = 'none'; }
-		return $hRes;	
+		my $hash;
+		foreach my  $g (@$hRes){
+			$hash->{$g->id} = $g;
+		}
+		return $hash;	
 	}
 );
 
@@ -974,12 +979,13 @@ has intervaltree_vector => (
 	return $tree unless $tree;
 	foreach my $a (@$array_tree){
 		next unless @$a;
-		
+		#$a->[0] = $a->[0].","."a->[1"
 		$tree->insert(@$a);
 	}
 		return $tree;
 	},
 );
+
 
 sub getGenesIdFromVector {
 	my ($self,$vector) = @_;
@@ -1875,7 +1881,9 @@ sub save_model_variants_all_patients {
 sub load_init_variants_all_patients {
 	my ($self, $model_name) = @_;
 	$self->setVariantsVector( $self->{saved_model}->{$model_name}->{chromosome} );
+	warn $self->getVariantsVector();
 	foreach my $patient (@{$self->getPatients()}) {
+		warn $self->{saved_model}->{$model_name}->{$patient->name()}; 
 		$self->patients_categories->{$patient->name()} = dclone $self->{saved_model}->{$model_name}->{$patient->name()};
 		$self->patients_categories->{$patient->name().'_he'} =  dclone $self->{saved_model}->{$model_name}->{$patient->name().'_he'};
 		$self->patients_categories->{$patient->name().'_ho'} =  dclone $self->{saved_model}->{$model_name}->{$patient->name().'_ho'};
