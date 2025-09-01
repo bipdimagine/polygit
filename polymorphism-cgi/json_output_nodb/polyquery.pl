@@ -101,6 +101,7 @@ my $user_name				= $cgi->param('user_name');
 my $without_stats			= $cgi->param('without_stats');
 my $delete_models			= $cgi->param('delete_models');
 my $filter_gnomad			= $cgi->param('gnomad');
+my $filter_gnomad_2			= $cgi->param('gnomad_2');
 my $filter_ratio_min		= $cgi->param('min_ratio');
 my $filter_ratio_max		= $cgi->param('max_ratio');
 my $filter_ncboost			= $cgi->param('ncboost');
@@ -440,45 +441,31 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 #	$queryFilter->filter_vector_global_gnomad_freq($chr, $filter_gnomad_test);
 #	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER getVectorGnomadCategory - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 		
-	my $h_args;	
-	if ($hFiltersChr and $hFiltersChr_var2) { $chr->save_model_variants_all_patients('init'); }
 	
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_region_ho($chr, $filter_nbvar_regionho, $filter_regionho_sub_only, $project->typeFilters());
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_type_variants($chr, $hFiltersChr);
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr, $keep_indels_cadd);
 	if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $filter_gnomad) }
 	else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr); }
 	$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr);
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr);
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	$queryFilter->filter_vector_dejavu($chr, $dejavu, $dejavu_ho, $test) if ($dejavu);
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 
 	# Recessif compound multi annot
-	my $vector_filtered = $chr->getVariantsVector->Clone();
-	my $vector_filtered_2;
 	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
 
-#	if ($is_diff_hash_filters) {
-#		next if $chr->getVariantsVector->is_empty();
-#		$chr->load_init_variants_all_patients('init');
-#		$queryFilter->filter_vector_type_variants($chr, $hFiltersChr_var2);
-#		$queryFilter->filter_vector_cadd_variants($chr, $hFiltersChr_var2, $keep_indels_cadd);
-#		if ($filter_gnomad) { $queryFilter->filter_vector_gnomad_ac($chr, $hFiltersChr_var2) }
-#		else { $queryFilter->filter_vector_freq_variants($chr, $hFiltersChr_var2); }
-#		$queryFilter->filter_vector_gnomad_ho_ac_variants($chr, $hFiltersChr_var2);
-#		$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr_var2);
-#		$queryFilter->filter_vector_dejavu($chr, $dejavu_2, $dejavu_ho, $test) if ($dejavu_2);
-#		$vector_filtered_2 = $chr->getVariantsVector->Clone();
-#		$h_args->{'filters_1'} = $hFiltersChr;
-#		$h_args->{'filters_2'} = $hFiltersChr_var2;
-#		$h_args->{'vector_filters_1'} = $vector_filtered;
-#		$h_args->{'vector_filters_2'} = $vector_filtered_2;
-#	}
+	my $h_args_compound_second_variant;	
+	if ($is_diff_hash_filters) {
+#		foreach my $cat_name (keys %{$hFiltersChr}) {
+#			next if exists $hFiltersChr_var2->{$cat_name};
+#			$h_args_compound_second_variant->{$cat_name} = undef;
+#		}
+		$h_args_compound_second_variant = $hFiltersChr_var2;
+		$h_args_compound_second_variant->{gnomad_ac_2} = $filter_gnomad_2;
+		$h_args_compound_second_variant->{dejavu_2} = $dejavu_2;
+#		warn Dumper $h_args_compound_second_variant;
+#		die;
+	}
 	############## FILTER VARIANTS 
 	
 	#intersection Variants level
@@ -499,24 +486,14 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	#######################	
 	
 	$queryFilter->filter_genes_from_ids($chr, $hChr->{$chr->id()}, $can_use_hgmd) if ($panel_name);
-	
 	$queryFilter->filter_genes_only_genes_names($chr, $only_genes);
-	
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
 	
 	if ($is_diff_hash_filters) { $queryFilter->filter_genes_annotations($chr, $hFiltersChr_var2); }
 	else { $queryFilter->filter_genes_annotations($chr, $hFiltersChr); }
 	
-	
-#	warn 'chr -> '.$chr->getVariantsVector()->Norm().' -> contains var: '.$chr->getVariantsVector()->contains('4455');
-	
 	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	
-	
-#	warn 'CHR before model: '.$chr->getVariantsVector->Norm();
-	$queryFilter->filter_genetics_models($chr, $level_ind, $level_fam, $model, $h_args);
-#	warn 'CHR after model: '.$chr->getVariantsVector->Norm();
-#	die;
+	$queryFilter->filter_genetics_models($chr, $level_ind, $level_fam, $model, $h_args_compound_second_variant);
 
 	if ($model) {
 		#intersection Variants level
@@ -1047,14 +1024,18 @@ sub launchStatsProjectAll_genes {
 	my $nbg = 0;
 	$buffer->getHashTransIdWithCaptureDiag();
 	
-	
-	
 	foreach my $chr_id (split(',', $filter_chromosome)) {
 		my $chr = $project->getChromosome($chr_id);
 		
 		my $v_all = $chr->getNewVector();
 		foreach my $fam (@{$chr->getFamilies()}) {
-			$v_all += $fam->getCurrentVariantsVector($chr);
+			my $v_fam = $fam->getCurrentVariantsVector($chr);
+			foreach my $pat (@{$fam->getPatients()}) {
+				next if $pat->in_the_attic();
+				my $v_pat = $pat->getVariantsVector($chr);
+				$v_pat &= $v_fam;
+				$v_all += $v_pat;
+			}
 		}
 		$v_all &= $chr->getVariantsVector();
 		
