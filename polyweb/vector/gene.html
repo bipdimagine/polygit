@@ -2449,10 +2449,9 @@ function construct_url_filter_data (chr_id) {
 	if (use_db_freq_or_gnomad_ac == 'gnomad_ac') {
 	    if      (dijit.byId("slider_gnomad_ac").get("value") == 1)    { filter_args += "&gnomad=gnomad_ac_5"; }
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 2)    { filter_args += "&gnomad=gnomad_ac_10"; }
-	    else if (dijit.byId("slider_gnomad_ac").get("value") == 3)    { filter_args += "&gnomad=gnomad_ac_20"; }
-	    else if (dijit.byId("slider_gnomad_ac").get("value") == 4)    { filter_args += "&gnomad=gnomad_ac_50"; }
-	    else if (dijit.byId("slider_gnomad_ac").get("value") == 5)    { filter_args += "&gnomad=gnomad_ac_100"; }
-	    else if (dijit.byId("slider_gnomad_ac").get("value") == 6)    { filter_args += "&gnomad=gnomad_ac_1000"; }
+	    else if (dijit.byId("slider_gnomad_ac").get("value") == 3)    { filter_args += "&gnomad=gnomad_ac_50"; }
+	    else if (dijit.byId("slider_gnomad_ac").get("value") == 4)    { filter_args += "&gnomad=gnomad_ac_100"; }
+	    else if (dijit.byId("slider_gnomad_ac").get("value") == 5)    { filter_args += "&gnomad=gnomad_ac_1000"; }
     }
     filter_args +=url_filter_regions(chr_id);
     //model genetique
@@ -3990,37 +3989,21 @@ function(all, Deferred, dom, on, JSON) {
             }).then(function(results) {} );
         }
         else {
-        	maxRunning = 8;
-        	var dejavu_value = get_value_slider_dejavu();
-        	if (dejavu_value == 0) { maxRunning = 4; }
-        	else { maxRunning = 8; }
+        	maxRunning = 6;
             all({
             	tree:  checkAndSubmit( 'tree' ),
-                chr1:  checkAndSubmit( '1' ),
-                chr2:  checkAndSubmit( '2' ),
-                chr3:  checkAndSubmit( '3' ),
-                chr4:  checkAndSubmit( '4' ),
-                chr5:  checkAndSubmit( '5' ),
-                chr6:  checkAndSubmit( '6' ),
-                chr7:  checkAndSubmit( '7' ),
-                chr8:  checkAndSubmit( '8' ),
-                chr9:  checkAndSubmit( '9' ),
-                chr10: checkAndSubmit( '10' ),
-                chr11: checkAndSubmit( '11' ),
-                chr12: checkAndSubmit( '12' ),
-                chr13: checkAndSubmit( '13' ),
-                chr14: checkAndSubmit( '14' ),
-                chr15: checkAndSubmit( '15' ),
-                chr16: checkAndSubmit( '16' ),
-                chr17: checkAndSubmit( '17' ),
-                chr18: checkAndSubmit( '18' ),
-                chr19: checkAndSubmit( '19' ),
-                chr20: checkAndSubmit( '20' ),
-                chr21: checkAndSubmit( '21' ),
-                chr22: checkAndSubmit( '22' ),
-                chrX:  checkAndSubmit( 'X' ),
-                chrY:  checkAndSubmit( 'Y' ),
-                chrMT: checkAndSubmit( 'MT' ),
+                A:  checkAndSubmit( '1,19' ),
+                B:  checkAndSubmit( '2,20' ),
+                C:  checkAndSubmit( '3,21' ),
+                D:  checkAndSubmit( '4,22' ),
+                E:  checkAndSubmit( '5,X' ),
+                F:  checkAndSubmit( '6,Y,MT' ),
+                G:  checkAndSubmit( '7,13' ),
+                H:  checkAndSubmit( '8,14' ),
+                I:  checkAndSubmit( '9,15' ),
+                J:  checkAndSubmit( '10,16' ),
+                K:  checkAndSubmit( '11,17' ),
+                L:  checkAndSubmit( '12,18' ),
             }).then(function(results) {} );
         }
     });
@@ -6509,12 +6492,11 @@ function selectFamilies_recregion(value) {
                                     </div>
                                 </td>
                                 <td id="td_slider_gnomad_ac" hidden>
-                                	<div id="slider_gnomad_ac" jsId="slider_gnomad_ac" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:6,maximum:7,discreteValues:7,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
-						                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:7, style:{height:"5px"}'> </div>
+                                	<div id="slider_gnomad_ac" jsId="slider_gnomad_ac" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:6,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
+						                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
 						                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
 						                    <li>5</li>
 						                    <li>10</li>
-						                    <li>20</li>
 						                    <li>50</li>
 						                    <li>100</li>
 						                    <li>1000</li>

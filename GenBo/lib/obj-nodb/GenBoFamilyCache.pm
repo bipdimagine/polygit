@@ -145,6 +145,27 @@ sub getVariantsVector {
 	return $self->{variants}->{$chr_obj->id()};
 }
 
+# for polyquery
+sub setCurrentVariantsVector {
+	my ($self, $chr_obj, $vector) = @_;
+	$self->{current_variants}->{$chr_obj->id()} = $vector;
+}
+
+# for polyquery
+sub addCurrentVariantsVector {
+	my ($self, $chr_obj, $vector) = @_;
+	$self->{current_variants}->{$chr_obj->id()} += $vector;
+}
+
+# for polyquery
+sub getCurrentVariantsVector {
+	my ($self, $chr_obj) = @_;
+	if (not exists $self->{current_variants} or not exists $self->{current_variants}->{$chr_obj->id()}) {
+		$self->{current_variants}->{$chr_obj->id()} = $self->getVariantsVector($chr_obj);
+	}
+	return $self->{current_variants}->{$chr_obj->id()};
+}
+
 # renvoie le vector MAJ pour l'annotation demandee
 sub getTypeVariants {
 	my ($self, $chr, $type) = @_;
@@ -1260,7 +1281,7 @@ sub getModelVector_fam_mosaique() {
 			}
 			foreach my $id (@{$self->getListVarVectorIds($var_inter_child_parent)}) {
 				$self->project->print_dot(100);
-				my $var_id = $chr->getVarId($id);
+				my $var_id = $chr->getVarObject($id)->id();
 				my $sample_var_1 = $chr->get_lmdb_variations()->get($var_id)->{patients_details}->{$child->name()}->{he_ho_details};
 				unless ($sample_var_1) {
 					warn "\n\nERROR: pb with $var_id and patient ".$child->name()."... Die\n\n";

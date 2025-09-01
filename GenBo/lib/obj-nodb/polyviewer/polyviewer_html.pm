@@ -797,7 +797,7 @@ sub init_fam {
 			push(@names,$p->name());
 		 }
 		 $self->names(\@names);
-		  $self->bam_files(\@bams);
+		 $self->bam_files(\@bams);
 }
 
 
@@ -840,8 +840,9 @@ sub put_text_minus {
 }
 
 sub mobidetails {
-my ($self,$debug) = @_;
-my $url = qq{https://mobidetails.chu-montpellier.fr/api/variant/create_vcf_str?vcf_str=}.$self->variant->gnomad_id.qq{&caller=browser&api_key=-ngGvTHAaJOZs6Wlg2RrWiEHKgeF33FKhmIAJr1sgeo};
+my ($self,$gnomad_id,$debug) = @_;
+$gnomad_id = $self->variant->gnomad_id unless $gnomad_id;
+my $url = qq{https://mobidetails.chu-montpellier.fr/api/variant/create_vcf_str?vcf_str=}.$gnomad_id.qq{&caller=browser&api_key=-ngGvTHAaJOZs6Wlg2RrWiEHKgeF33FKhmIAJr1sgeo};
 if ($self->project->genome_version_generic eq "HG19"){
 	$url .= "&genome_version=hg19";
 	}
@@ -852,8 +853,8 @@ return $text;
 
 
 sub gnomadurl {
-	my ($self,$debug) = @_;
-	my $gnomad_id = $self->variant->gnomad_id;
+my ($self,$gnomad_id,$debug) = @_;
+	$gnomad_id = $self->variant->gnomad_id unless $gnomad_id;
 	my $url = "https://gnomad.broadinstitute.org/variant/$gnomad_id";
 	if ($self->project->genome_version_generic eq "HG19"){
 	$url = "https://gnomad.broadinstitute.org/variant/$gnomad_id"."?dataset=gnomad_r2_1";
@@ -875,8 +876,8 @@ sub alamuturl {
 	my $icon = qq{<img width="12" height="12" src="/polyweb/images/polyicons/alamut_visual.png" alt="biotech"/>};
 	$icon = qq{<button class="alamutView3" ></button> };
 	
-	#my $text = qq{<a  type="button" class="btn btn-light btn-xs"   onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']) style="background-color=white">}.$icon .qq{Alamut&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
-		my $text =qq{ <a class="dropdown-item"  onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']) style="color:black">&nbsp$icon &nbsp Alamut</a>};
+	#my $text = qq{<a  type="button" class="btn btn-light btn-xs"   onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1'])" style="background-color=white">}.$icon .qq{Alamut&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+		my $text =qq{ <a class="dropdown-item"  onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1'])" style="color:black">&nbsp$icon &nbsp Alamut</a>};
 	return $text;
 #	die();
 }
@@ -1390,6 +1391,8 @@ sub validations {
 #			}
 			$data->{local_value}  = $local_validation->{validation};
 			$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}};
+			$self->{local_value} = $data->{local_text};
+			$self->variant->{local_value} = $data->{local_value};
 		}
 		my $h_var_forced_viewing = $project->buffer->config_variants_forced_viewing->{lc($self->project->current_genome_version())};
 		if (exists $h_var_forced_viewing->{$self->variant->gene->{name}}) {

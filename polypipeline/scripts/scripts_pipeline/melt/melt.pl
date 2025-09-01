@@ -145,6 +145,7 @@ close LIST;
 		#system qq{cat gencode.v43.annotation.gtf |  awk 'OFS="\t" {if ($3=="gene") {print \$1,\$4-1,\$5,\$10,\$16,\$7}}' | tr -d '";'" > $bed};
 		warn "$melt -h $ref -bamfile $bam_tmp  -w $dir_out -t $list  -n /data-isilon/software/distrib/centos/MELTv2.2.2/add_bed_files/1KGP_Hg19/hg19.genes.bed -b hs37d5/NC_007605 && touch $done" ;
 		system("$melt -h $ref -bamfile $bam_tmp  -w $dir_out -t $list  -n /data-isilon/software/distrib/centos/MELTv2.2.2/add_bed_files/1KGP_Hg19/hg19.genes.bed -b hs37d5/NC_007605 && touch $done");
+
 		#system("$melt -h $ref -bamfile $bam_tmp  -w $dir_out -t $list  -n /data-isilon/software/distrib/centos/MELTv2.2.2/add_bed_files/1KGP_Hg19/hg19.genes.bed -b hs37d5/NC_007605 && touch $done") unless -e $done;
 		
 	}
