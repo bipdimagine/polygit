@@ -786,7 +786,7 @@ qq{<button type="button" class ="btn btn-xs btn-primary "  $style_btn_name >$ir<
 	$line->{Sex}  = $cgi->td( $class, $p->return_icon );
 	$line->{Sex2} = $cgi->td( $class,
 		$hsex->{$sex_eval} . "<small>(" . $cov_sry . ")</small>" );
-
+	my $cc;
 	my $v = $cov->{mean};
 	$v = 0 unless $v;
 	my $btn_class = qq{class= "btn btn-xs btn-success " style = "$fsize" };
@@ -800,13 +800,23 @@ qq{<button type="button" class ="btn btn-xs btn-primary "  $style_btn_name >$ir<
 	my $v3 = $cov->{'30x'};
 	$v = "-" unless $v;
 	$v3 = $cov->{'15x'};
+	 $cc ="";
+	$cc ="-warning" if $v3 < 90;
+	$cc ="-alert" if $v3 < 75;
 	$line->{"15x"} =
-	  $cgi->td( $class, qq{<button type="button" $btn_class >$v3</button>} );
+	  $cgi->td( $class, qq{<button type="button$cc" $btn_class >$v3</button>} );
+	  
 	 $v3 = $cov->{'30x'};
+	  $cc ="";
+	$cc ="-warning" if $v3 < 75;
+	$cc ="-alert" if $v3 < 60;
 	$line->{"30x"} =
-	  $cgi->td( $class, qq{<button type="button" $btn_class >$v3</button>} );
+	  $cgi->td( $class, qq{<button type="button$cc" $btn_class >$v3</button>} );
+	   $cc ="";
+	$cc ="-warning" if $v < 85;
+	$cc ="-alert" if $v < 70;
 	  	$line->{"20x"} =
-	  $cgi->td( $class, qq{<button type="button" $btn_class >$v</button>} );
+	  $cgi->td( $class, qq{<button type="button$cc" $btn_class >$v</button>} );
 	my $style = {};
 
 	my $hstatus = $p->getLatestValidationStatus($user);
@@ -987,7 +997,6 @@ sub test_disomy {
 		#unless (-e $file ) {
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
-			warn "perl $prg -project=$project_name -patient=".$p->name;
 			# if $p->isChild();
 		#}
 		my $r = exists_disomy($p,$file);
@@ -1091,9 +1100,8 @@ sub header_run {
 	$version->{hgmd} = "";#$buffer->description_public_lmdb_database("hgmd")->{version};
 	$version->{cadd} = ""; #$buffer->description_public_lmdb_database("cadd")->{version};
 	$version->{clinvar} = "";#$buffer->description_public_lmdb_database("clinvar")->{version};
-
-	my $date_cache = utility::return_date_from_file( $cno->path_rocks );
-
+	my $diro = $project->rocks_directory();
+	my $date_cache = utility::return_date_from_file( $diro."/genbo/1.genbo.rocks.rocksdb/configuration.db.json" );
 	#
 	my $captures;
 	foreach my $c ( @{ $run->getPatients } ) {
@@ -1182,7 +1190,7 @@ qq{<span class="label " style="font-size: 12px;$bcolor">$name <span class="badge
 				 <i class="fa fa-calendar"></i>&nbsp;$date
 				 </div>
 				 <div class="col-sm msg msg-green" > 
-				 <i class="fa fa-laptop"></i> &nbsp;$date
+				 <i class="fa fa-laptop"></i> &nbsp;$date_cache
 				 </div>
 				 <div class="col-sm msg msg-violet" > 
 				 <i class="fa fa-line-chart"></i>&nbsp;$textmean
@@ -2324,7 +2332,6 @@ sub table_muc1 {
 		});
 		
 		
-			warn  $project->getVariationsDir("vntyper").'/'.$patient->name.'.json';
 
 			if (-e $project->getVariationsDir("vntyper").'/'.$patient->name.'.json') {
 				open (JSON, $project->getVariationsDir("vntyper").'/'.$patient->name.'.json');
