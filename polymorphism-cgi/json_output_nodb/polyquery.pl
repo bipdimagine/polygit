@@ -376,6 +376,22 @@ my @l_genome_fai = @{$project->getGenomeFai};
 foreach my $chr (@{$project->getChromosomes()}) {
 	$chr->not_used(1);
 }
+
+# Recessif compound multi annot
+my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
+my $h_args_compound_second_variant;	
+if ($is_diff_hash_filters) {
+	$h_args_compound_second_variant = $hFiltersChr;
+	$hFiltersChr = $hFiltersChr_var2;
+}
+if ($dejavu_2) {
+	$h_args_compound_second_variant->{dejavu_2} = $dejavu;
+	$dejavu = $dejavu_2;
+}
+if ($filter_gnomad_2) {
+	$h_args_compound_second_variant->{gnomad_ac_2} = $filter_gnomad;
+	$filter_gnomad = $filter_gnomad_2;
+}
 	
 $queryFilter->setPatients($project);
 $queryFilter->setIntheAttic($project->getPatientsFromListNames([split(' ', $filter_attic)]), $typeFilters);
@@ -433,8 +449,6 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	#FILTERING ON VARIANTS 
 	
 	
-#	launch_intersect_excude($chr, $h_filters_intersect_exclude) if not $model =~ /compound/ and not $model_2 =~ /compound/;
-	
 	$queryFilter->filter_vector_ratio($chr, $filter_ratio_min, 'min');
 	$queryFilter->filter_vector_ratio($chr, $filter_ratio_max, 'max');
 	$queryFilter->filter_vector_ncboost($chr, $filter_ncboost);
@@ -451,21 +465,6 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->filter_vector_confidence_variants($chr, $hFiltersChr);
 	$queryFilter->filter_vector_dejavu($chr, $dejavu, $dejavu_ho, $test) if ($dejavu);
 
-	# Recessif compound multi annot
-	my $is_diff_hash_filters = is_differents_hash_filters($hFiltersChr, $hFiltersChr_var2, $dejavu, $dejavu_2);
-
-	my $h_args_compound_second_variant;	
-	if ($is_diff_hash_filters) {
-#		foreach my $cat_name (keys %{$hFiltersChr}) {
-#			next if exists $hFiltersChr_var2->{$cat_name};
-#			$h_args_compound_second_variant->{$cat_name} = undef;
-#		}
-		$h_args_compound_second_variant = $hFiltersChr_var2;
-		$h_args_compound_second_variant->{gnomad_ac_2} = $filter_gnomad_2;
-		$h_args_compound_second_variant->{dejavu_2} = $dejavu_2;
-#		warn Dumper $h_args_compound_second_variant;
-#		die;
-	}
 	############## FILTER VARIANTS 
 	
 	#intersection Variants level
@@ -494,6 +493,9 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	
 	$queryFilter->filter_genetics_models($chr, $level_ind, $level_fam, $model, $h_args_compound_second_variant);
+	
+	next if $chr->getVariantsVector->is_empty();
+	#die;
 
 	if ($model) {
 		#intersection Variants level
@@ -533,9 +535,6 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	}
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
-#	launch_intersect_excude($chr, $h_filters_intersect_exclude) if $model =~ /compound/ or $model_2 =~ /compound/;
-	launch_intersect_excude($chr, $h_filters_intersect_exclude);
-
 	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER exclude / intersect - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	if ($project->typeFilters() eq 'individual') {
@@ -773,25 +772,6 @@ sub get_hashes_filters {
 	return ($hFiltersChr, $hFiltersChr_var2);
 }
 
-
-
-sub launch_intersect_excude {
-	my ($chr, $h_filters) = @_;
-#	if (not $h_filters->{filter_nbvar_regionho} or $h_filters->{filter_nbvar_regionho} == 0) {
-#		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_he})]) , 'he');
-#		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_ho})]), 'ho');
-#		$queryFilter->setExcludePatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), 'all');
-#		$queryFilter->setExcludeFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]));
-#	}
-#	if ($h_filters->{filter_nbvar_regionho} and $h_filters->{filter_nbvar_regionho} > 0) {
-#		$queryFilter->setIntersectPatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]), $h_filters->{filter_nbvar_regionho});
-#		$queryFilter->setIntersectFamily_REC_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]), $h_filters->{filter_nbvar_regionho});
-#		$queryFilter->setExcludePatient_HO_REGIONS($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_not_patient})]), $h_filters->{filter_nbvar_regionho});
-#		$queryFilter->setExcludeFamily_HO_REGIONS($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_not})]), $h_filters->{filter_nbvar_regionho});
-#	}
-#	$queryFilter->setIntersectPatients($chr, $project->getPatientsFromListNames([split(' ', $h_filters->{filter_patient})]));
-#	$queryFilter->setIntersectFamilies($chr, $project->getFamiliesFromListNames([split(' ', $h_filters->{fam_and})]));
-}
 
 sub launch_filters_region {
 	my ($chr, $filter_region, $first_launch) = @_;
@@ -1047,7 +1027,6 @@ sub launchStatsProjectAll_genes {
 			$v_gene &= $v_all;
 			
 			next if $v_gene->is_empty();
-			#next if $gene->getCurrentCompactVector->is_empty();
 			warn "++ ".$gene->external_name  if ($debug);
 			$project->print_dot(50);
 			$nbg ++;
