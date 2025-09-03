@@ -480,7 +480,6 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	$queryFilter->filterHeVariantsPatients($chr, $typeFilters);
 	
 	#####################
-	#
 	#GENES LEVEL 
 	#######################	
 	
@@ -492,10 +491,9 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	
 	$queryFilter->filter_genes_text_search($chr, $filter_text);
 	
-	$queryFilter->filter_genetics_models($chr, $level_ind, $level_fam, $model, $h_args_compound_second_variant);
+	$queryFilter->filter_genetics_models($chr, $model, $h_args_compound_second_variant);
 	
 	next if $chr->getVariantsVector->is_empty();
-	#die;
 
 	if ($model) {
 		#intersection Variants level

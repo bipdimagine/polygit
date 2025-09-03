@@ -44,6 +44,7 @@ sub setGenes {
 	 }
 	
 }
+
 sub refreshGenes {
 	my ($self,$chr,$vector) = @_;
 	$vector = $chr->getVariantsVector unless $vector; 
@@ -504,321 +505,6 @@ sub atLeastFilter_genes_som{
 }
 
 
-######### FILTRES MODELS CHR ##########
-
-#our $hModelsMethodsNames_familial = {
-#   'denovo' => 'isDenovoTransmission',
-#   'strict-denovo' => 'isStrictDenovoTransmission',
-#   'dominant' => 'isDominantTransmission',
-#   'mosaic' => 'isMosaicTransmission',
-#   'recessif' => 'isRecessiveTransmission',
-##   'incomplete_penetrance' => 'getModelVector_fam_incomplete_penetrance',
-#   'uniparental_disomy' => 'isUniparentalDisomyTransmission',
-#   
-#   'only_tissues_somatic' => 'getModelVector_som_only_tissues_somatic',
-#   
-#   
-#   'recessif_vector' => 'getVector_individual_recessive',
-#   'dominant_vector' => 'getVector_individual_dominant',
-#   'denovo_vector' => 'getVector_individual_denovo',
-#   'uniparental_disomy_vector' => 'getVector_individual_uniparental_disomy',
-#};
-#
-#sub filter_models_familial_union {
-#	my ($self, $chr, $list_models, $h_arguments) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_models_familial_union need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	confess("\n\nERROR: QueryVectorFilter::filter_models_familial_union need a list of models. Die.\n\n") unless ($list_models);
-#	my $vector_models = $self->get_models_familial_union($chr, $list_models, $h_arguments);
-##	foreach my $patient (@{$chr->getPatients()}) {
-##		my $vector_patient = $chr->getNewVector();
-##		foreach my $model (@$list_models) {
-##			confess("\n\nERROR: $model model not used for patient ".$patient->name()." for CHR".$chr->id()."... Die.\n\n") unless (exists $patient->hash_models_genetics_used->{$model}->{$chr->id()});
-##			$vector_patient += $patient->hash_models_genetics_used->{$model}->{$chr->id()};
-##		}
-##		$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $vector_patient);
-##	}
-#	$chr->setVariantsVector($vector_models);
-#}
-#
-#sub get_models_familial_union {
-#	my ($self, $chr, $list_models, $h_arguments) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::get_models_familial_union need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	confess("\n\nERROR: QueryVectorFilter::get_models_familial_union need a list of models. Die.\n\n") unless ($list_models);
-#	my $vector_models = $chr->getNewVector();
-#	foreach my $model (@$list_models) {
-#		#isMosaicTransmission
-#		if ($model eq 'compound') {
-#			$vector_models += $self->get_model_familial_compound($chr, $h_arguments);
-#		}
-#		else {
-#			my $model_method_name = $hModelsMethodsNames_familial->{$model};
-#			my $model_method_vector_name;
-#			$model_method_vector_name = $hModelsMethodsNames_familial->{$model.'_vector'} if exists $hModelsMethodsNames_familial->{$model.'_vector'};
-#			foreach my $family (@{$chr->getProject->getFamilies()}) {
-#				next if $family->in_the_attic();
-#				if ($model eq 'dominant') { $family->{isDominant} = 1; }
-#				foreach my $child (@{$family->getChildrenIll()}) {
-#					next if $child->in_the_attic();
-#					my $var_pat = $child->getVectorOrigin($chr);
-#					$var_pat->Intersection($var_pat, $chr->getVariantsVector());
-#					if ($model_method_vector_name) {
-#						$var_pat->Intersection($var_pat, $family->$model_method_vector_name($chr, $child));
-#						$vector_models += $var_pat;
-#					}
-#					else {
-#						foreach my $var (@{$chr->getListVarObjects($var_pat)}) {
-#							$vector_models->Bit_On($var->vector_id()) if $var->$model_method_name($family, $child);
-#						}
-#					}
-#				}
-#			}
-#		}
-#	}
-#	$chr->setVariantsVector($vector_models);
-#	return $vector_models;
-#}
-#
-#sub filter_model_familial_denovo {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_denovo need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return filter_model_familial_common($chr, 'denovo');
-#}
-#
-#sub get_model_familial_denovo {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::get_model_familial_denovo need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return get_model_familial_common($chr, 'denovo');
-#}
-#
-#sub filter_model_familial_strict_denovo {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_strict_denovo need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return filter_model_familial_common($chr, 'strict-denovo');
-#}
-#		
-#sub get_model_familial_strict_denovo {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::get_model_familial_strict_denovo need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return get_model_familial_common($chr, 'strict-denovo');
-#}
-#
-#sub filter_model_familial_dominant {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_dominant need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return filter_model_familial_common($chr, 'dominant');
-#}
-#		
-#sub get_model_familial_dominant {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::get_model_familial_dominant need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return get_model_familial_common($chr, 'dominant');
-#}
-#
-#sub filter_model_familial_mosaic {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_mosaic need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return filter_model_familial_common($chr, 'mosaic');
-#}
-#		
-#sub get_model_familial_mosaic {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::get_model_familial_mosaic need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return get_model_familial_common($chr, 'mosaic');
-#}
-#
-#sub filter_model_familial_recessif {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_recessif need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return filter_model_familial_common($chr, 'recessif');
-#}
-#		
-#sub get_model_familial_recessif {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::get_model_familial_recessif need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return get_model_familial_common($chr, 'recessif');
-#}
-#
-#sub filter_model_familial_uniparental_disomy {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_uniparental_disomy need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return filter_model_familial_common($chr, 'uniparental_disomy');
-#}
-#		
-#sub get_model_familial_uniparental_disomy {
-#	my ($self, $chr) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::get_model_familial_uniparental_disomy need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	return get_model_familial_common($chr, 'uniparental_disomy');
-#}
-#
-#sub filter_model_familial_compound {
-#	my ($self, $chr, $h_arguments) = @_;
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_compound need a GenBoChromosomeCache. Die.\n\n") unless ($chr);
-#	confess("\n\nERROR: QueryVectorFilter::filter_model_familial_compound need a Hash of Arguments. Die.\n\n") unless ($h_arguments);
-#	return filter_model_familial_common($chr, 'compound');
-#}
-#
-#sub get_model_familial_compound {
-#	my ($self, $chr, $h_arguments) = @_;
-#	my $variants_genes  = $chr->getNewVector();
-#	foreach my $gene (@{$chr->getGenes()}) {
-#		my $vector_gene = $self->filter_gene_model_familial_compound($gene, $h_arguments);
-#		$variants_genes += $vector_gene;
-#	}
-#	$variants_genes->Intersection($chr->getVariantsVector(), $variants_genes);
-#	my $vector_chr = $chr->getNewVector();
-#	foreach my $family (@{$chr->getFamilies()}) {
-#		my $vector_fam = $family->get_vector_keep_var_compound($chr)->Clone();
-#		$vector_fam->Intersection($vector_fam, $variants_genes);
-#		foreach my $patient (@{$family->getPatients}) {
-#			my $vector_patient = $patient->getVariantsVector($chr)->Clone();
-#			$vector_patient->Intersection($vector_patient, $vector_fam);
-#			$vector_chr += $vector_patient;
-#			$patient->{hash_models_genetics_used}->{'compound'}->{$chr->id()} = $vector_patient->Clone();
-#		}
-#		$family->{hash_models_genetics_used}->{'compound'}->{$chr->id()} = $vector_fam->Clone();
-#	}
-#	return $vector_chr;
-#}
-
-#sub get_gene_model_familial_compound_prepare_multi_annot {
-#	my ($self, $gene, $h_arguments) = @_;
-#	my $hFiltersChr = $h_arguments->{'filters_1'};
-#	my $hFiltersChr_var2 = $h_arguments->{'filters_2'};
-#	my $vector_filtered = $h_arguments->{'vector_filters_1'};
-#	my $vector_filtered_2 = $h_arguments->{'vector_filters_2'};
-#	my $var_gene_annot = $gene->getChromosome->getNewVector();
-#	my $var_gene_annot_1 = $self->get_vector_filter_gene_annotations($gene, $hFiltersChr);
-#	$var_gene_annot_1->Intersection($var_gene_annot_1, $vector_filtered) if ($vector_filtered);
-#	if ($var_gene_annot_1->is_empty()) { return; }
-#	$var_gene_annot += $var_gene_annot_1;
-#	my $var_gene_annot_2 = $self->get_vector_filter_gene_annotations($gene, $hFiltersChr_var2);
-#	$var_gene_annot_2->Intersection($var_gene_annot_2, $vector_filtered_2) if ($vector_filtered_2);
-#	if ($var_gene_annot_2->is_empty()) { return; }
-#	$var_gene_annot += $var_gene_annot_2;
-#	return ($var_gene_annot_1, $var_gene_annot_2);
-#}
-
-sub filter_gene_model_familial_compound {
-	my ($self, $gene,$h_arguments) = @_;
-	confess("\n\nERROR: QueryVectorFilter::filter_gene_model_familial_compound need a GenBoGeneCache. Die.\n\n") unless ($gene);
-	my $vector_compound = $gene->getChromosome->getNewVector;
-	return $vector_compound if not $gene->getPatients();
-	foreach my $fam (@{$gene->getFamilies()}) {
-		my $vector_fam_gene_compound = $fam->getModelVector_fam_compound($gene);
-#		if ($h_arguments->{'filters_2'}) {
-#			my ($self, $var_gene_annot_1, $var_gene_annot_2) = $self->get_gene_model_familial_compound_prepare_multi_annot($gene, $h_arguments);
-#			if ($var_gene_annot_1 and $var_gene_annot_2) {
-#				$var_gene_annot_1->Intersection($var_gene_annot_1, $vector_fam_gene_compound);
-#				$vector_fam_gene_compound->Empty() if ($var_gene_annot_1->is_empty());
-#				$var_gene_annot_2->Intersection($var_gene_annot_2, $vector_fam_gene_compound);
-#				$vector_fam_gene_compound->Empty() if ($var_gene_annot_2->is_empty());
-#				$vector_fam_gene_compound->Empty() if ($gene->getChromosome->countThisVariants($vector_fam_gene_compound) < 2);
-#			}
-#			else {
-#				$vector_fam_gene_compound->Empty();
-#			}
-#		}
-		$vector_compound += $vector_fam_gene_compound;
-		
-	}
-	return $vector_compound;
-	
-#	
-#	
-#	warn ' -> '.$gene->getVectorOrigin->Norm();
-#	my $vector_gene = $gene->getVectorOrigin() & $gene->getChromosome->getVariantsVector();
-#	warn ' -> '.$vector_gene->Norm();
-#	
-#	
-#	
-#	
-#	if ($vector_gene->Norm() < 2) {
-#		$vector_gene->Empty();
-#		return $vector_gene;
-#	}
-#	
-#	warn  'before comp -> '.$vector_gene->Norm();
-#	$vector_gene = $vector_gene & $gene->getModelGeneVector_fam_compound();
-#	warn ' after comp -> '.$vector_gene->Norm();
-#	
-#	my $vector_ok = $gene->getChromosome->getNewVector();
-#	foreach my $family (@{$gene->getChromosome->getFamilies()}) {
-#		my $vector_gene_tmp = $vector_gene & $family->get_vector_keep_var_compound($gene->getChromosome());
-#		$vector_ok += $vector_gene_tmp;
-#	}
-#	$vector_gene->Intersection($vector_gene, $vector_ok);
-#	
-#	
-#	warn ' after keep fam -> '.$vector_gene->Norm();
-#	
-#	die if $vector_gene > 2;
-#	
-#	if ($vector_gene->is_empty()) { return $vector_gene; }
-#	elsif ($hFiltersChr_var2) {
-#		my ($self, $var_gene_annot_1, $var_gene_annot_2) = $self->get_gene_model_familial_compound_prepare_multi_annot($gene, $hFiltersChr, $hFiltersChr_var2, $vector_filtered, $vector_filtered_2);
-#		if ($var_gene_annot_1 and $var_gene_annot_2) {
-#			
-#			warn $var_gene_annot_1->Norm();
-#			warn $var_gene_annot_2->Norm();
-#			die;
-#			
-#			$var_gene_annot_1->Intersection($var_gene_annot_1, $vector_gene);
-#			if ($var_gene_annot_1->is_empty()) {
-#				$vector_gene->Empty();
-#			}
-#			$var_gene_annot_2->Intersection($var_gene_annot_2, $vector_gene);
-#			if ($var_gene_annot_2->is_empty()) {
-#				$vector_gene->Empty();
-#			}
-#			if ($gene->getChromosome->countThisVariants($vector_gene) < 2) {
-#				$vector_gene->Empty();
-#			}
-#		}
-#		else {
-#			$vector_gene->Empty();
-#		}
-#	}
-#	return $vector_gene;
-}
-
-#sub filter_model_familial_common {
-#	my ($self, $chr, $model) = @_;
-#	return unless ($model);
-#	my $vector_model = get_model_familial_common($chr, $model);
-#	my $vector_chr = $chr->getNewVector();
-#	foreach my $patient (@{$chr->getPatients()}) {
-#		confess("\n\nERROR: $model model not used for patient ".$patient->name()." for CHR".$chr->id()."... Die.\n\n") unless (exists $patient->hash_models_genetics_used->{$model}->{$chr->id()});
-#		my $vector_patient_model = $patient->hash_models_genetics_used->{$model}->{$chr->id()};
-#		$patient->getVariantsVector($chr)->Intersection($patient->getVariantsVector($chr), $vector_patient_model);
-#		$vector_chr += $patient->getVariantsVector($chr);
-#	}
-#	$chr->setVariantsVector($vector_chr);
-#}
-#
-#sub get_model_familial_common {
-#	my ($self, $chr, $model, $h_arguments) = @_;
-#	return unless ($model);
-#	my $model_method_name = $hModelsMethodsNames_familial->{$model};
-#	return unless ($model_method_name);
-#	my $vector_update = $chr->getNewVector();
-#	foreach my $family (@{$chr->getFamilies()}) {
-#		my ($self, $has_patients, $has_parents); 
-#		$family->{hash_models_genetics_used}->{$model}->{$chr->id()} = $family->$model_method_name($chr, $h_arguments);
-#		foreach my $patient (@{$family->getPatients()}) {
-#			my $vector_patient = $patient->getVariantsVector($chr)->Clone();
-#			$vector_patient->Intersection( $vector_patient, $family->{hash_models_genetics_used}->{$model}->{$chr->id()});
-#			$vector_patient->Intersection($vector_patient, $chr->getVariantsVector());
-#			$vector_update += $vector_patient;
-#			$patient->{hash_models_genetics_used}->{$model}->{$chr->id()} = $vector_patient->Clone();
-#			$has_patients = 1;
-#		}
-#	}
-#	return $vector_update;
-#}
-
-
-
-
 ##########################################
 
 
@@ -833,10 +519,6 @@ sub filter_genes_from_ids {
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_from_ids - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	return;
 }
-
-
-
-
 
 
 ######### FILTRES PATIENTS / FAMILIES ##########
@@ -904,7 +586,6 @@ sub getVector_fam {
 
 sub getVector_project_or_fam {
 	my ($self,  $chr, $vector_chr_gene_init, $family_or_project ) = @_;
-#	warn 'NB: '.$chr->countThisVariants($vector_chr_gene_init);
 	my $var_ok = $chr->getNewVector();
 	my $var_excluded = $chr->getNewVector();
 	my $var_intersect = $chr->getNewVector();
@@ -914,37 +595,29 @@ sub getVector_project_or_fam {
 		next if ($patient->in_the_attic());
 		my $var_pat = $patient->getVariantsVector($chr)->Clone();
 		$var_pat->Intersection($var_pat, $vector_chr_gene_init);
-#		warn 'pat init '.$patient->name().': '.$chr->countThisVariants($var_pat);
 		next if $var_pat->is_empty();
 		if ($patient->excluded()) {
 			my $status = $patient->excluded();
-#			warn '-> exclude '.$status;
 			if ($status eq 'all') { $var_excluded += $patient->getVectorOrigin( $chr ); }
 			elsif ($status eq 'he') { $var_excluded += $patient->getVectorOriginHe( $chr ); }
 			elsif ($status eq 'ho') { $var_excluded += $patient->getVectorOriginHo( $chr ); }
 		}
 		if ($patient->intersected() and $nb_intersected == 0) {
-#			warn '-> intersected ';
 			warn $patient->name;
 			$nb_intersected++;
 			$var_intersect += $var_pat;
 			$var_ok += $var_pat;
 		}
 		elsif ($patient->intersected()) {
-#			warn '-> intersected ';
 			$var_intersect->Intersection($var_pat, $var_intersect);
 			$var_ok += $var_pat;
 		}
 		$var_ok += $var_pat;
-#		warn 'pat '.$patient->name().': '.$chr->countThisVariants($var_pat);
-#		warn 'all: '.$chr->countThisVariants($var_ok);
-#		warn "\n\n";
 	}
 	$var_ok -= $var_excluded;
 	if ($nb_intersected) {
 		$var_ok->Intersection($var_ok, $var_intersect);
 	}
-#	die;
 	
 	#renvoie le vector du gene current si level_ind est gene
 	return $vector_chr_gene_init if ($chr->getProject->level_ind() eq 'gene');
@@ -971,56 +644,6 @@ sub updateVectorPatients {
 		$p->{origin}->{ho}->{$chr->name}->Intersection($p->{origin}->{ho}->{$chr->name}, $var_local_ok);
 	}
 }
-
-#sub setIntersectExclude_PAT_FAM {
-#	my ($self,  $chr ) = @_;
-#	return if not $has_intersected_or_excuded_patients;
-#	return $self->setIntersectExclude_PAT_FAM_genes($chr) if ($chr->getProject->level_ind() eq 'gene');
-#	return $self->setIntersectExclude_PAT_FAM_genes($chr) if ($chr->getProject->level_fam() eq 'gene');
-#	my $var_ok = $chr->getNewVector();
-#	my $var_excluded = $chr->getNewVector();
-#	my $var_intersect = $chr->getNewVector();
-#	my $nb_intersected = 0;
-#	if ($chr->getProject->typeFilters() eq 'individual') {
-#		my ($var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_project($chr, $chr->getVariantsVector());
-#		$var_ok += $var_local_ok;
-#		$var_ok -= $var_local_excluded;
-#		$var_excluded += $var_local_excluded;
-#		$var_intersect += $var_local_intersect if $var_local_intersect;
-#		my @lPat = @{$chr->getProject->getPatients()};
-#		$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
-#		
-#	}
-#	else {
-#		foreach my $family (@{$chr->getProject->getFamilies()}) {
-#			my ($var_local_ok, $var_local_excluded, $var_local_intersect) = $self->getVector_fam($chr, $chr->getVariantsVector(), $family);
-#			if ($family->in_the_attic()) {
-#				next;
-#			}
-#			elsif ($family->excluded()) {
-#				$var_excluded += $var_local_ok;
-#			}
-#			elsif ($family->intersected() and $nb_intersected == 0) {
-#				$nb_intersected++;
-#				$var_intersect += $var_local_ok;
-#			}
-#			elsif ($family->intersected()) {
-#				$var_intersect->Intersection($var_local_ok, $var_intersect);
-#			}
-#			$var_ok += $var_local_ok;
-#			my @lPat = @{$family->getPatients()};
-#			$self->updateVectorPatients(\@lPat, $chr, $var_local_ok, $var_local_excluded, $var_local_intersect);
-#		}
-#	}
-#	$var_ok -= $var_excluded;
-#	if ($nb_intersected) {
-#		$var_ok->Intersection($var_ok, $var_intersect);
-#	}
-#	$chr->setVariantsVector($var_ok);
-#}
-
-#setPatients 
-# intersect patient 
 
 
 sub setIntersectedPatients {
@@ -1468,7 +1091,6 @@ sub filter_genes_only_genes_names {
 		my $gene= $chr->project->newGene($g);
 
 		next if $gene->getChromosome->name ne $chr->name;
-#		warn $g."=====";
 		my $vgene =  $gene->getVariantsVector();
 		$vgene &=  $vector_genes;
 		next if $vgene->is_empty();
@@ -1493,9 +1115,6 @@ sub filter_genes_only_genes_names {
 
 sub get_vector_filter_gene_annotations {
 	my ($self, $chr, $hFiltersChr, $not_set_vector_gene) = @_;
-	
-#	warn "\nCHR IN METHOD: ".$chr->id();
-	
 	my $nb = 0;
 	my $id_genes = {};
 	my @all_cat = return_cat($chr->project,keys %$hFiltersChr);
@@ -1507,12 +1126,6 @@ sub get_vector_filter_gene_annotations {
 		
 		my $vchr = $gene->return_compact_vector( $chr->getVariantsVector());
 		$vsmall &= $vchr;
-		
-		
-#		warn $gene->external_name().' -> '.$vsmall->Norm();
-#		warn Dumper @all_cat if $gene->external_name() eq 'AEN';		
-#		die if $gene->external_name() eq 'AEN';
-		#die if $gene->external_name() eq 'ACYP2';
 		
 		if ($vsmall->is_empty()){
 			delete $chr->project->{genes_object}->{$gene->id};
@@ -1590,57 +1203,36 @@ sub filter_model_individual_recessif {
 	}
 }
 
-
-
-
 sub filter_genetics_models {
-	my ($self, $chr, $level_ind, $level_fam, $model, $h_args_compound_second_variant) = @_;
+	my ($self, $chr, $model, $h_args_compound_second_variant) = @_;
 	return if $chr->getVariantsVector->is_empty();
 	return if not $model;
 	my $vector_models = $chr->getNewVector();
 	if ($model and $chr->getProject->typeFilters() eq 'individual') {
-		$vector_models += $self->filter_genetics_models_individual($chr, $level_ind, $level_fam, $model);
+		$vector_models += $self->filter_genetics_models_individual($chr, $model);
 	}
 	elsif ($model and $chr->getProject->typeFilters() eq 'familial') {
-		$vector_models += $self->filter_genetics_models_familial($chr, $level_ind, $level_fam, $model, $h_args_compound_second_variant);
+		$vector_models += $self->filter_genetics_models_familial($chr, $model, $h_args_compound_second_variant);
 	}
 	elsif ($model and $chr->getProject->typeFilters() eq 'somatic') {
-		$vector_models += $self->filter_genetics_models_somatic($chr, $level_ind, $level_fam, $model);
+		$vector_models += $self->filter_genetics_models_somatic($chr, $model);
 	}
-	
-	if ($level_ind eq 'variation' and $level_fam eq 'variation') {
-		$chr->setVariantsVector($vector_models);
-	}
-	else {
-		#TODO: voir avec en genes level_ind ou fam
-		$chr->setVariantsVector($vector_models);
-	}
-	
-	
-#		warn "\n\n";
-#		warn "END compound: ".$chr->getVariantsVector->Norm();
-#		warn "\n\n";
+	$chr->setVariantsVector($vector_models);
 	
 	my $vc = $chr->getNewVector();
 	foreach my $gene (@{$chr->getGenes()}) {
 		next if not $gene->compact_vector();
-		my $vv = $chr->getVariantsVector() & $gene->getCurrentVector();
-		$gene->setCurrentVector($vv);
-#		if ($model eq 'compound' and $vv->Norm() == 1) { $gene->setCurrentVector($chr->getNewVector()); }
-		$vc += $vv;
+			my $vv = $chr->getVariantsVector() & $gene->getCurrentVector();
+			$gene->setCurrentVector($vv);
+			$vc += $vv;
 	}
 	$chr->setVariantsVector($vc);
-	
-	
-#		warn "\n\n";
-#		warn "END compound: ".$chr->getVariantsVector->Norm();
-#		warn "\n\n";
 	
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER models - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 }
 
 sub filter_genetics_models_individual {
-	my ($self, $chr, $level_ind, $level_fam, $model, $h_args) = @_;
+	my ($self, $chr, $model, $h_args) = @_;
 	my $vector_models = $chr->getNewVector();
 	if ($model eq 'recessif') {
 		foreach my $pat (@{$chr->getPatients()}) {
@@ -1680,13 +1272,10 @@ sub filter_genetics_models_individual {
 }
 
 sub filter_genetics_models_familial {
-	my ($self, $chr, $level_ind, $level_fam, $model, $h_args_compound_second_variant) = @_;
+	my ($self, $chr, $model, $h_args_compound_second_variant) = @_;
 	my $vector_models = $chr->getNewVector();
-#				warn "\n\n";
-#				warn 'CHROM '.$chr->id();
 				
 	if ($model eq 'compound' or $model eq 'recessif_compound' or $model eq 'uniparental_recessif_compound') {
-		
 		my $no = $chr->flush_rocks_vector();
 		my $gnomad_ac_2 = $h_args_compound_second_variant->{gnomad_ac_2};
 		my $dejavu_2 = $h_args_compound_second_variant->{dejavu_2};
@@ -1839,12 +1428,6 @@ sub filter_genetics_models_familial {
 			$vector_models += $v_mosaic;
 		}
 	}
-	
-	
-#		warn "\n\n";
-#		warn "END compound: ".$vector_models->Norm();
-#		warn "\n\n";
-	
 	return $vector_models;
 }
 
