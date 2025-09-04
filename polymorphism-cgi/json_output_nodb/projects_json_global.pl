@@ -74,10 +74,7 @@ sub getProjectListsDefidiag {
 	my $vquery = QueryValidationAcmg->new(dbh=>$buffer->dbh,database=>"ACMG");
 	my @lHTML;
 	my @ids = map{$_->{id}} @$res;
-	foreach my $pro (@$res) {
-		
-		
-		
+	foreach my $pro (@$res) {	
 		print '.';
 		if($defidiag) {
 			#next if $pro->{validation_db}  ne "defidiag";
@@ -255,7 +252,7 @@ sub getProjectListsDefidiag {
 		$out .= "<td>".$pro->{'phenotype'}."</td>";
 		$out .= "<td><center>".$pro->{'genome'}."</center></td>";
 		$out .= "<td><center>".$pro->{'gencode'}.'.'.$pro->{'annotation'}."</center></td>";
-		
+		$out .= "<td><center>".$pro->{'creation_date'}."</center></td>";
 		my $base_url;
 		$base_url = '//'.$buffer->config->{polyweb_url}->{polyweb_rocks_extension} if ($pro->{'cache'} eq 'rocks');
 		
@@ -287,7 +284,7 @@ sub getProjectListsDefidiag {
 	}
 	
 	my $out2 = $cgi->start_div();
-	$out2 .= qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="top" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20]" data-resizable='true' id='table_projects' class='table table-striped' style='font-size:13px;'>};
+	$out2 .= qq{<table data-filter-control='true' data-sort-name="creation_date" data-sort-order="desc" data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="top" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20]" data-resizable='true' id='table_projects' class='table table-striped' style='font-size:13px;'>};
 	$out2 .= "<thead>";
 	$out2 .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:10px"});
 	$out2 .= qq{<th data-field="name" data-sortable="true" data-filter-control="input" data-filter-control-placeholder="NGS2022_4000">Name</th>};
@@ -298,6 +295,7 @@ sub getProjectListsDefidiag {
 	$out2 .= qq{<th data-field="phenotype" data-filter-control="input">Phenotype(s)</th>};
 	$out2 .= qq{<th data-field="genome" data-sortable="true" data-filter-control="input">Genome</th>};
 	$out2 .= qq{<th data-field="annotation" data-sortable="true" data-filter-control="input">Annotation</th>};
+	$out2 .= qq{<th data-field="creation_date" data-sortable="true" data-filter-control="input">Creation Date</th>};
 	$out2 .= qq{<th data-field="polyquery">PolyQuery</th>};
 	$out2 .= qq{<th data-field="polyviewer">PolyViewer/Diag</th>};
 	$out2 .= $cgi->end_Tr();
