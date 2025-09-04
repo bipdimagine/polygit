@@ -139,6 +139,7 @@ unshift (@$titles, "[Settings]") unless grep(/^\[Settings\]$/, @$titles);
 my $cb1_len;
 my $cb2_len;
 
+die("Missing [Data] header/section in samplesheet") unless ($lines->{"[Data]"});
 my $lheader_data = shift @{$lines->{"[Data]"}};
 if (scalar (@$lheader_data) ne  scalar (@{$lines->{"[Data]"}->[0]})){
 	my $tb = Text::Table->new(

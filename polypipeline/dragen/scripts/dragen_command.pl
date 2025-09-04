@@ -125,7 +125,7 @@ my $pangenome ="";
  
  my($version_str, $stderr, $exit2) = $ssh->cmd("$dragen --version");
 my @a = split("\n",$version_str);
-my @b = split(" ",@a[0]);
+my @b = split(" ",$a[0]);
 
 my $dragen_version =$b[-1];
 
@@ -299,7 +299,7 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	}
 	else {
 		my $bamfile = $patient->getBamFileName("bwa");
-		confess() unless -e $bamfile;
+		confess("No fastq or (bwa) bam found") unless -e $bamfile;
 		$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
 	}
 	$param_align .= " --output-format CRAM " if $cram;
