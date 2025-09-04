@@ -58,12 +58,13 @@ my $bed = $dir_pipeline."/".$patient->name.time.".bed";
 my $list = $dir_pipeline."/".$patient->name.".list";
 my $vcf1 = $dir_pipeline."/".$patient->name.".vcf";
 unlink $bed if -e $bed;
+
 open(BED,">$bed");
 open(LIST,">$list");
 foreach my $chr (@{$project->getChromosomes}){
 	my $chr_name = $chr->name;
 	#next unless $chr_name eq "18";
-	print LIST $chr->name."\t".$chr->fasta_name."\n";
+	print LIST 'chr'.$chr->name."\t".$chr->fasta_name."\n";
 	#getIntSpanCapture
 	#getIntSpanCaptureForCalling
 	my @line = intspanToBed($chr_name,$chr->getIntSpanCapture(1000) );
@@ -72,7 +73,6 @@ foreach my $chr (@{$project->getChromosomes}){
 
 close(BED);
 close (LIST);
-warn $list;
 
 
 my $vcf_giab = $GIAB_DIR."/vcf.gz";
@@ -130,12 +130,12 @@ sub intspanToBed{
 	my $size = 0;
     while (my ( $from, $to ) = $iter->()) {
     	#warn "+".$from."-".$to if ($from<=31263320);
-    	warn $from."-".$to if ($from<=31263320 && $to >= 31263320);
+ #   	warn $from."-".$to if ($from<=31263320 && $to >= 31263320);
     	$size += abs($from-$to);
-    		push(@tt,$chr_name."\t".$from."\t".$to);
+    		push(@tt,'chr'.$chr_name."\t".$from."\t".$to);
     	
     }
-    warn $chr_name." ".$size;
+#    warn $chr_name." ".$size;
 	#	my @tt = map{$_ = $chr->ucsc_name."\t".$_} split(";",$intspan->as_string({ sep => ";", range => "\t" }) );
 		return @tt;
 }
