@@ -256,7 +256,7 @@ sub return_tabix_query {
 
 sub parseLid {
 	my ( $self, $reference ) = @_;
-	confess();
+	return {};
 	#return {};
 
 #	my $project    = $self->getPatient()->getProject();
