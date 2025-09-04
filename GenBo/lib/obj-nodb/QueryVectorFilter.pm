@@ -1087,9 +1087,8 @@ sub filter_genes_only_genes_names {
 	$self->{genes}->{$chr->name} ={};
 	foreach my $g (keys %{$chr->getProject->only_genes}){
 		$chr->getProject->print_dot(1);
-		
 		my $gene= $chr->project->newGene($g);
-
+		next unless $gene;
 		next if $gene->getChromosome->name ne $chr->name;
 		my $vgene =  $gene->getVariantsVector();
 		$vgene &=  $vector_genes;
