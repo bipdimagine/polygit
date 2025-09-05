@@ -2422,11 +2422,6 @@ function construct_url_filter_data (chr_id) {
 	            }
 	        }
 		}
-	    if      (dijit.byId("slider_frequence_2").get("value") == 1)    { filter_args += "freq_001+freq_01+freq_05+freq_1+"; }
-	    else if (dijit.byId("slider_frequence_2").get("value") == 2)    { filter_args += "freq_01+freq_05+freq_1+"; }
-	    else if (dijit.byId("slider_frequence_2").get("value") == 3)    { filter_args += "freq_05+freq_1+"; }
-	    else if (dijit.byId("slider_frequence_2").get("value") == 4)    { filter_args += "freq_1+"; }
-	    
 	    
 	    if (dijit.byId("slider_cadd").get("value") == 1)       { filter_args += "cadd_25+cadd_20+cadd_15+cadd_10+cadd_5+cadd_0+cadd_not+"; }
 	    else if (dijit.byId("slider_cadd").get("value") == 2)  { filter_args += "cadd_20+cadd_15+cadd_10+cadd_5+cadd_0+cadd_not+"; }
@@ -2434,6 +2429,12 @@ function construct_url_filter_data (chr_id) {
 	    else if (dijit.byId("slider_cadd").get("value") == 4)  { filter_args += "cadd_10+cadd_5+cadd_0+cadd_not+"; }
 	    else if (dijit.byId("slider_cadd").get("value") == 5)  { filter_args += "cadd_5+cadd_0+cadd_not+"; }
 	    else if (dijit.byId("slider_cadd").get("value") == 6)  { filter_args += "cadd_0+cadd_not+"; }
+	    
+	    if      (dijit.byId("slider_gnomad_ac_2").get("value") == 1)    { filter_args += "&gnomad_2=gnomad_ac_5"; }
+	    else if (dijit.byId("slider_gnomad_ac_2").get("value") == 2)    { filter_args += "&gnomad_2=gnomad_ac_10"; }
+	    else if (dijit.byId("slider_gnomad_ac_2").get("value") == 3)    { filter_args += "&gnomad_2=gnomad_ac_50"; }
+	    else if (dijit.byId("slider_gnomad_ac_2").get("value") == 4)    { filter_args += "&gnomad_2=gnomad_ac_100"; }
+	    else if (dijit.byId("slider_gnomad_ac_2").get("value") == 5)    { filter_args += "&gnomad_2=gnomad_ac_1000"; }
 	    
 		genetic_model_compound_multi = genetic_model_compound_multi.toLowerCase();
 		if (genetic_model_compound_multi != 'none') { filter_args += "&model_2=" + genetic_model_compound_multi; }
@@ -3083,7 +3084,7 @@ function change_filtering_model(model, launch_run) {
 			if (launch_run) {}
 			else {
 				check_slider_dejavu_init();
-				check_slider_freq_init();
+				check_slider_gnomad_ac_init();
 			}
         }
     }
@@ -3694,10 +3695,10 @@ function launch_compound_multi_annot() {
 	document.getElementById('startButton').click();
 }
 
-function check_slider_freq_init() {
-	var value_slider = dijit.byId("slider_frequence").get("value");
-	dijit.byId("slider_frequence_init").set("value", parseInt(value_slider));
-	dijit.byId("slider_frequence_2").set("value", parseInt(value_slider));
+function check_slider_gnomad_ac_init() {
+	var value_slider = dijit.byId("slider_gnomad_ac").get("value");
+	dijit.byId("slider_gnomad_init").set("value", parseInt(value_slider));
+	dijit.byId("slider_gnomad_ac_2").set("value", parseInt(value_slider));
 }
 
 function check_slider_dejavu_init() {
@@ -3867,7 +3868,7 @@ function(all, Deferred, dom, on, JSON) {
     
     	if (dialog_compound_multi_annot_shown == 0 && filtering_mode == "fam" && (genetic_model == 'compound_multi' || genetic_model == 'recessif_compound_multi' || genetic_model == 'uniparental_recessif_compound_multi')) {
 			check_slider_dejavu_init();
-			check_slider_freq_init();
+			check_slider_gnomad_ac_init();
     		dijit.byId('dialog_compound_multi_annot').show();
     		return;
     	}
@@ -5159,9 +5160,9 @@ function closeAllNodes() {
     tree.collapseAll();
 }
 
-function check_slider_frequence_2() {
-	if (parseInt(dijit.byId("slider_frequence_2").get("value")) < parseInt(dijit.byId("slider_frequence").get("value"))) {
-		dijit.byId("slider_frequence_2").set("value", parseInt(dijit.byId("slider_frequence").get("value")));
+function check_slider_gnomad_ac_2() {
+	if (parseInt(dijit.byId("slider_gnomad_ac_2").get("value")) < parseInt(dijit.byId("slider_gnomad_ac").get("value"))) {
+		dijit.byId("slider_gnomad_ac_2").set("value", parseInt(dijit.byId("slider_gnomad_ac").get("value")));
 	}
 }
 
@@ -6480,7 +6481,7 @@ function selectFamilies_recregion(value) {
                         <div>
                             <table align="center" valign="center">
                                 <td id="td_slider_frequence">
-                                    <div id="slider_frequence" jsId="slider_frequence" onChange="check_slider_frequence_2" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:1,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
+                                    <div id="slider_frequence" jsId="slider_frequence" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:1,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
                                         <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
                                         <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
                                             <li><font color="#EA3434">&#10877;1&#8241;</font></li>
@@ -8958,7 +8959,7 @@ function selectFamilies_recregion(value) {
 	                <center>
 	                <table>
 	                    <td style="padding-left:10px;"> 
-	                        <div><span class="filterLabelActif2">DB Public</span></div>
+	                        <div><span class="filterLabelActif2">gnomAD AC</span></div>
 	                    </td>
 	                    <td>
 	                        <!-- DB public -->
@@ -9008,16 +9009,17 @@ function selectFamilies_recregion(value) {
 	                        <div>
 	                            <table align="center" valign="center">
 	                                <td>
-	                                    <div id="slider_frequence_init" onChange="check_slider_freq_init()" jsId="slider_frequence_init" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"' disabled>
-	                                        <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
-	                                        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
-	                                            <li><font color="#EA3434">&#10877;1&#8241;</font></li>
-	                                            <li><font color="#EA3434">&#10877;1&#8240;</font></li>
-	                                            <li><font color="#EAA134">&#10877;1&#37;</font></li>
-	                                            <li><font color="#EACC34">&#10877;5&#37;</font></li>
-	                                            <li><font color="#28A24C">All</font></li>
-	                                        </ol>
-	                                    </div>
+	                                	<div id="slider_gnomad_init" onChange="check_slider_gnomad_ac_init()" jsId="slider_gnomad_init" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:6,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"' disabled>
+							                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+							                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+							                    <li>5</li>
+							                    <li>10</li>
+							                    <li>50</li>
+							                    <li>100</li>
+							                    <li>1000</li>
+							                    <li>All</li>
+							                </ol>
+						                </div>
 	                                </td>
 	                            </table>
 	                        </div>
@@ -9138,7 +9140,7 @@ function selectFamilies_recregion(value) {
 	                <center>
 	                <table>
 	                    <td style="padding-left:10px;"> 
-	                        <div><span class="filterLabelActif2">DB Public</span></div>
+	                        <div><span class="filterLabelActif2">gnomAD AC</span></div>
 	                    </td>
 	                    <td>
 	                        <!-- DB public -->
@@ -9188,16 +9190,17 @@ function selectFamilies_recregion(value) {
 	                        <div>
 	                            <table align="center" valign="center">
 	                                <td>
-	                                    <div id="slider_frequence_2" onChange="check_slider_frequence_2()" jsId="slider_frequence_2" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
-	                                        <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
-	                                        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
-	                                            <li><font color="#EA3434">&#10877;1&#8241;</font></li>
-	                                            <li><font color="#EA3434">&#10877;1&#8240;</font></li>
-	                                            <li><font color="#EAA134">&#10877;1&#37;</font></li>
-	                                            <li><font color="#EACC34">&#10877;5&#37;</font></li>
-	                                            <li><font color="#28A24C">All</font></li>
-	                                        </ol>
-	                                    </div>
+	                                	<div id="slider_gnomad_ac_2" onChange="check_slider_gnomad_ac_2()" jsId="slider_gnomad_ac_2" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:6,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
+							                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+							                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+							                    <li>5</li>
+							                    <li>10</li>
+							                    <li>50</li>
+							                    <li>100</li>
+							                    <li>1000</li>
+							                    <li>All</li>
+							                </ol>
+						                </div>
 	                                </td>
 	                            </table>
 	                        </div>

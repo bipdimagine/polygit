@@ -952,22 +952,22 @@ sub getNbGenes {
 	return;
 }
 
-has genes_object => (
-	is		=> 'rw',
-	#isa		=> 'HashRef',
-	lazy	=> 1,
-	default	=> sub {
-		my $self = shift;
-		confess();
-		my $hRes = $self->setGenes();
-		unless ($hRes) { $hRes->{none} = 'none'; }
-		my $hash;
-		foreach my  $g (@$hRes){
-			$hash->{$g->id} = $g;
-		}
-		return $hash;	
-	}
-);
+#has genes_object => (
+#	is		=> 'rw',
+#	#isa		=> 'HashRef',
+#	lazy	=> 1,
+#	default	=> sub {
+#		my $self = shift;
+#		confess();
+#		my $hRes = $self->setGenes();
+#		unless ($hRes) { $hRes->{none} = 'none'; }
+#		my $hash;
+#		foreach my  $g (@$hRes){
+#			$hash->{$g->id} = $g;
+#		}
+#		return $hash;	
+#	}
+#);
 
 has intervaltree_vector => (
 	is		=> 'rw',

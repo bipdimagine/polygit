@@ -125,7 +125,7 @@ my $pangenome ="";
  
  my($version_str, $stderr, $exit2) = $ssh->cmd("$dragen --version");
 my @a = split("\n",$version_str);
-my @b = split(" ",@a[0]);
+my @b = split(" ",$a[0]);
 
 my $dragen_version =$b[-1];
 
@@ -284,31 +284,30 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	
 #	confess() unless $fastq1;
 	if ($fastq1) {
-	my $runid = $patient->getRun()->id;
-	$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
-
-	if ($umi){
-		$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
-	}
-	elsif($patient->getCapture->isPcr()){
-		$param_align .= qq{ --enable-duplicate-marking false} ;
-			
-	}
-	else {
-		$param_align .= qq{ --enable-duplicate-marking true };
-	 }
-	 $param_align .= " --output-format CRAM " if $cram;
+		my $runid = $patient->getRun()->id;
+		$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
+	
+		if ($umi){
+			$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
+		}
+		elsif($patient->getCapture->isPcr()){
+			$param_align .= qq{ --enable-duplicate-marking false} ;
+		}
+		else {
+			$param_align .= qq{ --enable-duplicate-marking true };
+		}
 	}
 	else {
 		my $bamfile = $patient->getBamFileName("bwa");
-		confess() unless -e $bamfile;
+		confess("No fastq or (bwa) bam found") unless -e $bamfile;
 		$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
 		 $param_align .= " --output-format CRAM " if $cram;
 	}
+	$param_align .= " --output-format CRAM " if $cram;
 }
 else {
 	my $bam = $patient->getBamFileName();
-		my $opt = "--bam-input";
+	my $opt = "--bam-input";
 	$bam = $patient->getCramFileName("dragen-align") if $cram;
 	warn $bam;
 	unless (-e $bam){

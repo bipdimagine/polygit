@@ -190,19 +190,15 @@ function igv_reset () {
 	previous_bams = new Array();
 }
 
+var rna_last_tracks = '';
 function launch_igv_tool_rna(fasta, tracks, locus) {
 	var url = "http://localhost:60151/load";
-	if (fasta) {
-		url += "?genome=" + fasta;
-		url += "&file=" + tracks;
-		url += "&locus=" + locus;
-		url += "&merge=false";
-	}
-	else {
-		url += "?file=" + tracks;
-		url += "&locus=" + locus;
-		url += "&merge=false";
-	}
+	url += "?file=" + tracks;
+	url += "&locus=" + locus;
+	if (fasta) { url += "&genome=" + fasta; }
+	if (tracks == rna_last_tracks) { url += "&merge=true"; }
+	else { url += "&merge=false"; }
+	rna_last_tracks = tracks;
     httpGetFocusOn(url);
 	return 1;
 }
