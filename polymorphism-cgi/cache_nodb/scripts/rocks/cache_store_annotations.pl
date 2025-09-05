@@ -485,7 +485,7 @@ sub get_annotations {
 				$hpatients->{$p->name}->{"ratio_".$value} = Set::IntSpan::Fast::XS->new();
 			}
 	}
-
+	
 	my $tree_ratio_lower = Set::IntervalTree->new;
 	foreach my $c ( keys %{ $project_tmp->buffer->config->{lower_scaled_score_ratio} } ) {
 		 	my $value = $project_tmp->buffer->config->{lower_scaled_score_ratio}->{$c};
@@ -622,6 +622,7 @@ sub get_annotations {
 			my $r = $variation->getRatio($p);
 			my $results = $tree_ratio->fetch(0,($r)+1);
 			foreach my $cat (@$results){
+				warn $cat;
 				$hpatients->{$p->name}->{$cat}->add($lmdb_index);
 			}
 			my $results2 = $tree_ratio_lower->fetch($r,101);
