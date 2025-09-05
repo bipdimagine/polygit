@@ -57,7 +57,7 @@ elsif ($hash->{project}->{gencode}->{release} eq 'MM39') {
 }
 $hash->{project}->{gencode}->{gtf} = $project->gtf_file();
 $hash->{project}->{gencode}->{rds} = $project->rds_gencode_file();
-$hash->{project}->{gencode}->{junctions_canoniques_rds} = $project->rds_junctions_canoniques_gencode_file();
+#$hash->{project}->{gencode}->{junctions_canoniques_rds} = $project->rds_junctions_canoniques_gencode_file();
 
 # SOFTWARES
 $hash->{softwares}->{samtools} = $project->getSoftware('samtools');
