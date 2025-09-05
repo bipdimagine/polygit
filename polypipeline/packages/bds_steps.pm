@@ -3554,6 +3554,7 @@ sub calling_generic {
 
 #my $cmd = "perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein $low_calling_string";
 	my $cmd ="perl $bin_dev/calling_panel.pl -project=$project_name  -patient=$name -fork=$ppn  -fileout=$fileout -method=$method -filein=$filein $padding_string ";
+	warn $cmd;
 	my $type = "calling-" . $method;
 
 	#	$type = "lc-".$type  if $low_calling;
@@ -4179,8 +4180,7 @@ sub coverage_samtools {
 	my $name         = $self->patient()->name();
 	my $project      = $self->patient()->getProject();
 	my $project_name = $project->name();
-	$filein = $self->patient()->getBamFileName();
-
+	$filein = $self->patient()->getAlignFileName();
 	my $coverage_dir = $project->getRootDir() . "/align/coverage/";
 	mkdir $coverage_dir unless -e $coverage_dir;
 	my $fileout = $coverage_dir . "/" . $name . ".cov.gz";
@@ -4194,6 +4194,7 @@ sub coverage_samtools {
 
 	my $cmd =
 qq{perl $bin_dev/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name };
+	warn $cmd;
 	my $type     = "coverage";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
@@ -5333,6 +5334,7 @@ sub rnaseqsea_rnaseq {
 	my $cmd = "Rscript $bin_dev/polyrnaseqsea/all/RNAseqSEA_AllTnjs.r idprojet=$project_name nCPU=$ppn config_file=$json_file";
 
 	$cmd .= " && $bin_dev/polyrnaseqsea/split_junctions_files_by_patient.pl -project=$project_name";
+	warn $cmd;
 	my $type     = "rnaseqsea_all";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
