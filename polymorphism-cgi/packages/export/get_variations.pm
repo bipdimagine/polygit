@@ -25,7 +25,7 @@ sub getIds_byCache_onlive_polyviewer {
 	
 	my $can_use_hgmd = $buffer->hasHgmdAccess($user);
 	my @headers_validations = ("varsome","igv","alamut","var_name","trio","gnomad","deja_vu","table_validation","table_transcript");
-	my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv");
+	my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel",);
 	my $fsize = "font-size:10px";
 	my $class;
 	$class->{rowspan} -= 1;
@@ -337,6 +337,10 @@ sub getIds_byCache_onlive {
 		$hash->{'cadd_score'} = $var->cadd_score();
 		$hash->{'cadd_score'} = '.' if $hash->{'cadd_score'} == -1;
 		$hash->{'ncboost'} = $var->ncboost_category().';'.$var->ncboost_score();
+		my @l_dbscsnv;
+		push(@l_dbscsnv, 'rf:'.$var->dbscsnv->{'rf'}) if exists $var->dbscsnv->{'rf'};
+		push(@l_dbscsnv, 'ada:'.$var->dbscsnv->{'ada'}) if exists $var->dbscsnv->{'ada'};
+		$hash->{'dbscsnv'} = join(' ', @l_dbscsnv);
 		
 		my $release = 'hg38';
 		$release = 'hg19' if ($var->getProject->annotation_genome_version() =~ /HG19/);
@@ -712,6 +716,12 @@ sub getIds_onlive {
 		$hash->{'homo_hetero'} += 2 if ($hash->{'heterozygote'} > 0);
 		$hash->{'polyphen_status'} = $var->polyphenStatus();
 		$hash->{'sift_status'} = $var->siftStatus();
+		$hash->{'cadd_score'} = $var->cadd_score();
+		my @l_dbscsnv;
+		push(@l_dbscsnv, 'rf:'.$var->dbscsnv->{'rf'}) if exists $var->dbscsnv->{'rf'};
+		push(@l_dbscsnv, 'ada:'.$var->dbscsnv->{'ada'}) if exists $var->dbscsnv->{'ada'};
+		$hash->{'dbscsnv'} = join(' ', @l_dbscsnv);
+		
 #		if ($var->isStop()) {
 #			$hash->{'polyphen_status'} = 5;
 #			$hash->{'sift_status'} = 5;
@@ -798,14 +808,20 @@ sub getIds_onlive {
 			}
 			else { $hash->{'consequence'} = $var->variationType($transcript); }
 			$hTrans->{'polyphen_html'} = '-';
+			$hTrans->{'revel_score'} = $var->revel_score($transcript);
+			$hTrans->{'revel_score'} = '-' if $hTrans->{'revel_score'} eq '-99';
+			$hTrans->{'amissense'} = $var->alphamissense($transcript);
+			
 			push(@{$hash->{'tab_consequences'}}, $hTrans);
+			
+			
 		}
 		#$hash->{'public'} = $var->origin_database();
 		$hash->{'filter'} = $var->getNGSScore();
 		eval { $hash->{'consequence!all'} = $var->variationType(); };
 		if ($@) { $hash->{'consequence!all'} = 'Error...'; }
 		push(@lRes, $hash);
-		#warn Dumper $hash; die;
+#		warn Dumper $hash; die;
 	}
 	return \@lRes;
 }

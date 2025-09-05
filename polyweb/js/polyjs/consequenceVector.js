@@ -141,6 +141,8 @@ function viewAnnex(item, request){
 			protein_position:item.tab_consequences[i].protein_position,
 			cds_position:item.tab_consequences[i].cds_position,
 			nomenclature:item.tab_consequences[i].nomenclature,
+			revel_score:item.tab_consequences[i].revel_score,
+			amissense:item.tab_consequences[i].amissense,
 		};
 	}
 	var jsonStore2 = new dojo.data.ItemFileWriteStore({
