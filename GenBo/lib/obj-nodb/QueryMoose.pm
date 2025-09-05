@@ -242,15 +242,15 @@ sub hashTransIdWithCaptureDiag {
 }
 
 sub listProjects {
-	my $self = shift;
+	my ($self,$project_name) = @_;
 	my $dbh = $self->getDbh();
-	
 	my $sth = $dbh->prepare($self->sql_cmd_list_projects_name);
 	$sth->execute() || die();
 	my @row;
 	my @list ;
 	while (@row = $sth->fetchrow_array) {  # retrieve one row
     		next if $row[1] !~/NGS/;
+    		
     		push(@list,$row[1]);
 	}
 		return \@list;
@@ -640,7 +640,7 @@ sub getPublicDatabaseVersion {
 sub getMaxPublicDatabaseVersion {
 	my ($self) = @_;
 	my $dbh = $self->getDbh();
-	return $dbh->selectrow_array(qq{SELECT version_id as gencode FROM PolyprojectNGS.release_public_database as rpd where rpd.default=1;});
+	return $dbh->selectrow_array(qq{SELECT version_id as gencode FROM PolyprojectNGS.release_public_database as rpd where rpd.default_rocks=1;});
 	#my $s = $sth->fetchall_hashref("$pid");
 }
 
@@ -1108,6 +1108,7 @@ sub getCaptureGenesTranscripts {
 
 sub getAllProjects {
 	my ($self) = @_;
+	
 	my $dbh = $self->getDbh;
 	my $type_db = $self->getConfig()->{type_db};
 	my $sth = $dbh->prepare($self->sql_list_all_projects());
@@ -1123,9 +1124,13 @@ sub getProjectListForUser {
 	my ($self,$login,$pwd)=@_;
 	my $dbh = $self->getDbh;
 	my $type_db = $self->getConfig()->{type_db};
+
+	
 	my $sth = $dbh->prepare($self->sql_list_project_for_user);
+	
 	$sth->execute($login,$pwd,$login,$pwd);
 	my $res = $sth->fetchall_hashref("id");
+	warn "end fetch";
 	my $res_group = $self->getProjectHashForGroup($login,$pwd);
 	if ($res_group) {
 		foreach my $project_id (keys %{$res_group}) {
@@ -1134,7 +1139,8 @@ sub getProjectListForUser {
 	}
 	
 	#my @toto = sort{$a->{type} cmp $b->{type} || $a->{name} cmp $b->{name}} values %$res;
-	my @toto =  values %$res;
+	my @toto =   values %$res;
+	
 	return \@toto; 
 }
 
