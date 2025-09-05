@@ -303,6 +303,7 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 		my $bamfile = $patient->getBamFileName("bwa");
 		confess() unless -e $bamfile;
 		$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+		 $param_align .= " --output-format CRAM " if $cram;
 	}
 }
 else {
@@ -333,6 +334,13 @@ my $param_bed ="";
 unless ($version){
 	unless ($project->isGenome ) {
 		my $capture_file  = $patient->getCapture->gzFileName();
+		confess() unless -e $capture_file;
+		if ($project->isExome){
+			my $capture_file2 = "$dir_pipeline/".$patient->name.".bed";
+			warn "zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2";
+			system ("zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2" );
+			$capture_file = $capture_file2;
+		}
 		#test prenantome 
 		$param_bed .= qq{  --vc-target-bed $capture_file};
 		if (defined($pad)){
