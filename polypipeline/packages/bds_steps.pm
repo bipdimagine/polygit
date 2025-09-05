@@ -4179,7 +4179,7 @@ sub coverage_samtools {
 	my $name         = $self->patient()->name();
 	my $project      = $self->patient()->getProject();
 	my $project_name = $project->name();
-	$filein = $self->patient()->getBamFileName();
+	$filein = $self->patient()->getAlignFileName();
 
 	my $coverage_dir = $project->getRootDir() . "/align/coverage/";
 	mkdir $coverage_dir unless -e $coverage_dir;

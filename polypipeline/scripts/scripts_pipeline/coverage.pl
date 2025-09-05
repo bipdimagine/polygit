@@ -141,7 +141,7 @@ foreach my $chr (@chrs){
 	
 }   
    
-$filein = $patient->getBamFile() unless $filein;
+$filein = $patient->getAlignFileName() unless $filein;
   
   $project->disconnect();
  foreach my $chr (@chrs){
@@ -350,7 +350,7 @@ $pm->run_on_finish(
     		
   );
 
-my $bam =  $patient2->getBamFile();
+my $bam =  $patient2->getAlignFileName();
 my %temp_bed;
 my %regions;
 foreach my $chr (@{$project2->getChromosomes}){
