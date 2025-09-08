@@ -364,7 +364,7 @@ sub annote_output_file {
 				$h->{hgmd_class} = '-' unless ($h->{hgmd_class});
 				
 				$h->{cadd_score} = $var->cadd_score();
-				$h->{cadd_score} = '-' unless ($h->{cadd_score});
+				$h->{cadd_score} = '-' if not defined ($h->{cadd_score});
 				
 				$h->{ncboost_score} = $var->ncboost_score();
 				$h->{ncboost_score} = '-' unless ($h->{ncboost_score});
