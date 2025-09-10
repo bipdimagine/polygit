@@ -2325,9 +2325,7 @@ function url_filter_regions(chr_id) {
         	else {
 	        	var id = item.chromosome+":"+item.start+":"+item.end+":"+item.include;
 	        	if (chr_id) {
-	        		if (chr_id == item.chromosome) {
-		            	if (id != ':::0' && id != ':::1' && id != ':::-1') { list_regions += id + "+"; }
-	        		}
+	            	if (id != ':::0' && id != ':::1' && id != ':::-1') { list_regions += id + "+"; }
 	        	}
 	        	else {
 	            		if (id != ':::0' && id != ':::1' && id != ':::-1') { list_regions += id + "+"; }
@@ -2454,7 +2452,12 @@ function construct_url_filter_data (chr_id) {
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 4)    { filter_args += "&gnomad=gnomad_ac_100"; }
 	    else if (dijit.byId("slider_gnomad_ac").get("value") == 5)    { filter_args += "&gnomad=gnomad_ac_1000"; }
     }
-    filter_args +=url_filter_regions(chr_id);
+    var list_chr = String(chr_id).split(',');
+    for (j=0; j<list_chr.length; j++){
+        var this_chr_id = list_chr[j];
+    	filter_args +=url_filter_regions(this_chr_id);
+    }
+    
     //model genetique
     if (genetic_model != "None") {
 		if (genetic_model == 'compound_multi') { filter_args +="&model=compound"; }
