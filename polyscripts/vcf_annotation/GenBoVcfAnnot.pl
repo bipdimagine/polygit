@@ -367,13 +367,13 @@ sub annote_output_file {
 				$h->{cadd_score} = '-' if not defined ($h->{cadd_score});
 				
 				$h->{ncboost_score} = $var->ncboost_score();
-				$h->{ncboost_score} = '-' unless ($h->{ncboost_score});
+				$h->{ncboost_score} = '-' if not defined ($h->{ncboost_score});
 				
 				$h->{class_clinvar} = '-';
 				$h->{class_clinvar} = $var->text_clinvar() if $var->text_clinvar();
 				
 				$h->{score_clinvar} = $var->score_clinvar();
-				$h->{score_clinvar} = '-' unless ($h->{score_clinvar});
+				$h->{score_clinvar} = '-' if not defined ($h->{score_clinvar});
 				
 				$h->{isClinvarPathogenic} = $var->isClinvarPathogenic();
 				$h->{isClinvarPathogenic} = '-' unless ($h->{isClinvarPathogenic});
