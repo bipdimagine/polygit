@@ -426,14 +426,12 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	#delete variant with in the attic
 	$queryFilter->FilterInTheAtticPatients($chr);
 	
+#	$queryFilter->filter_regions($chr, $filter_region);
+
 	if ($debug) { warn "\n\nCHR ".$chr->id()." -> INIT - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	
 	if (not $export_vcf_for and not $detail_project and not $xls_by_regions_ho) { $project->cgi_object(1); }
 	
-	unless (check_region_filter($chr, $filter_region)) {
-		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
-		next;
-	}
 	if ($xls_save_session) {
 		print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	}
@@ -447,8 +445,7 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
 	#FILTERING ON VARIANTS 
-	
-	
+
 	$queryFilter->filter_vector_ratio($chr, $filter_ratio_min, 'min');
 	$queryFilter->filter_vector_ratio($chr, $filter_ratio_max, 'max');
 	$queryFilter->filter_vector_ncboost($chr, $filter_ncboost);
@@ -546,9 +543,10 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	launch_filters_region($chr, $filter_region);
 	if ($debug) { warn "\nAfter launch_filters_region"; }
 	
-	check_variants_regions_exclude($chr);
+#	check_variants_regions_exclude($chr);
 	if ($debug) { warn "\nAfter check_variants_regions_exclude"; }
 	$queryFilter->refreshGenes($chr);
+	
 	if ($export_vcf_for) {
 		foreach my $pat_name (split(' ', $export_vcf_for)) {
 			my $patient = $chr->getPatient( $pat_name );
@@ -1016,7 +1014,7 @@ sub launchStatsProjectAll_genes {
 			}
 		}
 		$v_all &= $chr->getVariantsVector();
-		
+
 		next if ($chr->not_used());
 		foreach my $gene (@{$queryFilter->getGenes($chr)}){
 			delete $chr->{genes_object}->{$gene->id}  if $gene->getCurrentCompactVector->is_empty();
@@ -2068,27 +2066,6 @@ sub geneAtlasView {
 	exit(0);
 }
 
-sub check_region_filter {
-	my ($chr, $filter_region) = @_;
-	return 1 unless ($filter_region);
-	my $inutil = 1;
-	if ($filter_region) {
-		foreach my $this_filter (split(" ", $filter_region)) {
-			my ($chrId, $start, $end, $to_do) = split(":", $this_filter);
-			if ($to_do eq '-1') {
-				$inutil = 0;
-			}
-			elsif ($to_do eq '0') {
-				$inutil = 0 if ($chrId eq $chr->id());
-			}
-		}
-	}
-	if ($inutil) {
-		$chr->not_used(1);
-		return 0;
-	}
-	return 1;
-}
 
 
 

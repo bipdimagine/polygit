@@ -707,7 +707,6 @@ sub getHashTypeVariants {
 # donne le vector d'une region donnee 
 sub getFilterRegionVector {
 	my ($self, $filter) = @_;
-	confess(warn "\n\nTODO getFilterRegionVector\n\n");
 	my ($chrId_filter, $start_filter, $end_filter, $type_filter) = split(':', $filter);
 	my @lIdsOn;
 	my $found;
@@ -1579,11 +1578,11 @@ sub check_each_var_filter_region_add {
 			$self->{genes_ids_regions}->{$gene->id()} = undef;
 		}
 	}
-	my $v_sub = $self->getCategoryVariantsVector('substitution')->Clone();
+	my $v_sub = $self->vector_global_categories('substitution')->Clone();
 	$v_sub->Intersection($v_sub, $var_filter);
-	my $v_ins = $self->getCategoryVariantsVector('insertion')->Clone();
+	my $v_ins = $self->vector_global_categories('insertion')->Clone();
 	$v_ins->Intersection($v_ins, $var_filter);
-	my $v_del = $self->getCategoryVariantsVector('deletion')->Clone();
+	my $v_del = $self->vector_global_categories('deletion')->Clone();
 	$v_del->Intersection($v_del, $var_filter);
 	my $hStats = {
 		'id' => $filter,
