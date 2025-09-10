@@ -62,7 +62,8 @@ foreach my $r (@$runs) {
 #		next;
 #	}
 	@$hps = grep{$_->{type} eq "dna"} @$hps;
-	
+	#project poubelle de sylvain 
+	@$hps = grep{$_->{project} !~ /5409/} @$hps;
 	@$hps = grep{ $_->{control} == 0} @$hps;
 	my  @hps2 =  grep{$_->{project} ne $project_name && $_->{status} eq 1 && $_->{patient} =~ /GIAB/  } @$hps;
 	if ($excludes){
@@ -195,7 +196,10 @@ my %patients_captures;
 
 sub find_other_patient {
 	my ($run,$controls) = @_;
+	warn "coucou";
 	 my $capture = $run->project->getCaptures()->[0];
+	 warn $capture->id;
+	 my $machine_project = $run->machine;
 	 if (exists $patients_captures{$capture->name}){
 	 	 push(@$controls, @{$patients_captures{$capture->name}});
 	 #	 return; 
@@ -257,7 +261,9 @@ sub find_other_patient {
 				$bam =  $p->getAlignFileName();
 				 my $capture = $p->getCapture;	
 				my $machine     = $p->getRun->machine;
-				next unless  $machine =~/NOVA/i;
+				next if $machine ne $machine_project;
+				#warn $machine;
+				#next unless  $machine =~/NOVA/i;
 
 				next unless -e $bam;
 				next unless -e $p->NoSqlDepthDir()."/".$p->name . ".depth.lmdb";
