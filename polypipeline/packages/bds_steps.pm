@@ -4181,10 +4181,7 @@ sub coverage_samtools {
 	my $project      = $self->patient()->getProject();
 	my $project_name = $project->name();
 	$filein = $self->patient()->getAlignFileName();
-<<<<<<< HEAD
-=======
 
->>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 	my $coverage_dir = $project->getRootDir() . "/align/coverage/";
 	mkdir $coverage_dir unless -e $coverage_dir;
 	my $fileout = $coverage_dir . "/" . $name . ".cov.gz";
@@ -4196,8 +4193,7 @@ sub coverage_samtools {
 
 	my $bin_dev = $self->script_dir;
 
-	my $cmd =
-qq{perl $bin_dev/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name };
+	my $cmd = qq{perl $bin_dev/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name };
 	warn $cmd;
 	my $type     = "coverage";
 	my $stepname = $self->patient->name . "@" . $type;
