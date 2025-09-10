@@ -4192,8 +4192,7 @@ sub coverage_samtools {
 
 	my $bin_dev = $self->script_dir;
 
-	my $cmd =
-qq{perl $bin_dev/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name };
+	my $cmd = qq{perl $bin_dev/coverage.pl -patient=$name -filein=$filein -dir=$coverage_dir -bed=$bed -fork=$ppn -name=$name -project=$project_name };
 	warn $cmd;
 	my $type     = "coverage";
 	my $stepname = $self->patient->name . "@" . $type;
