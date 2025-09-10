@@ -122,12 +122,6 @@ $layout->{variations}->{ngs} = [
 		styles    => 'text-align:center;'
 	},
 	{
-		name      => "Cadd<br>score",
-		field     => "cadd_score",
-		width     => "5%",
-		styles    => 'text-align:center;'
-	},
-	{
 		name      => "Ncboost",
 		field     => "ncboost",
 		formatter => "formatNcboost",
@@ -163,8 +157,14 @@ $layout->{variations}->{ngs} = [
 		styles    => 'text-align:center;'
 	},
 	{
-		name      => "DB Freq",
-		field     => "freq",
+		name      => "Cadd<br>score",
+		field     => "cadd_score",
+		width     => "5%",
+		styles    => 'text-align:center;'
+	},
+	{
+		name      => "dbscsnv",
+		field     => "dbscsnv",
 		width     => "5%",
 		styles    => 'text-align:center;'
 	},
@@ -1054,6 +1054,18 @@ $layout->{consequence}->{ngs} = [
 		field     => "sift_status",
 		name      => "sift<br>status",
 		formatter => "formatSift",
+		width     => 5,
+		styles    => 'text-align:center;'
+	},
+	{
+		field     => "revel_score",
+		name      => "revel<br>score",
+		width     => 5,
+		styles    => 'text-align:center;'
+	},
+	{
+		field     => "amissense",
+		name      => "alpha<br>missense",
 		width     => 5,
 		styles    => 'text-align:center;'
 	},

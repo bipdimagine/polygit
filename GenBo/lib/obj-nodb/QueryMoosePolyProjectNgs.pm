@@ -1134,7 +1134,7 @@ has sql_cmd_get_proj_ids_genes_datatbase_version => (
                 my $self = shift;
 		        my $query = qq{
 		        	SELECT p.project_id, p.name, prg.rel_gene_id, prpd.version_id FROM PolyprojectNGS.projects as p, PolyprojectNGS.project_release_gene as prg, PolyprojectNGS.project_release_public_database as prpd, PolyprojectNGS.project_release as pr
-						where p.project_id=prg.project_id and p.project_id=prpd.project_id and pr.project_id=p.project_id and pr.release_id=938;
+						where p.project_id=prg.project_id and p.project_id=prpd.project_id and pr.project_id=p.project_id and (pr.release_id=938 or pr.release_id=952);
 		        };
 				return $query;
         },

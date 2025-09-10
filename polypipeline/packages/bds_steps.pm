@@ -4181,7 +4181,6 @@ sub coverage_samtools {
 	my $project      = $self->patient()->getProject();
 	my $project_name = $project->name();
 	$filein = $self->patient()->getAlignFileName();
-
 	my $coverage_dir = $project->getRootDir() . "/align/coverage/";
 	mkdir $coverage_dir unless -e $coverage_dir;
 	my $fileout = $coverage_dir . "/" . $name . ".cov.gz";
@@ -5015,7 +5014,7 @@ sub htlv1_insertion {
 	my $name         = $self->patient()->name();
 	my ($dirin)      = $self->patient()->getSequencesDirectory();
 	my $project_name = $self->project->name();
-	my $dirout       = $self->project->getAlignmentPipelineDir($method);
+	my $dirout       = $self->project->getCallingPipelineDir('htlv1_calling');
 
 	#$dirout .= "/".$self->patient()->name()."/";
 	system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
@@ -5024,10 +5023,6 @@ sub htlv1_insertion {
 	my $bin_dev   = $self->script_dir;
 
 #linker
-#my @linkers =  ("1:CGCTCTTCCGATCT","2:GGCACATGCGTTCT","3:CGGTGAACCGTTCT","4:GGCTGTACGGATGT","5:CGGACTTGCGAAGT","6:CGGTGTTCGCATGT","7:GGCACTACCGTACT","8:CCCTCATGGCATCT");
-#my $ln = $self->patient->barcode();
-#my $ls = $linkers[$ln];
-#my ($ln,$ls) = split(/:/,$self->patient->barcode());
 	my @linker = (
 		"1:CGCTCTTCCGATCT", "2:GGCACATGCGTTCT",
 		"3:CGGTGAACCGTTCT", "4:GGCTGTACGGATGT",
@@ -5042,7 +5037,7 @@ sub htlv1_insertion {
 	my $fileout =
 		$self->project->getVariationsDir("htlv1_calling") . "/"
 	  . $name
-	  . "-SIMPLIFIED_mergedIS.txt";
+	  . "-mergedIS.txt";
 
 	#	 my $fileout = $dirout."/".$name;
 	foreach my $cp (@$files_pe1) {
@@ -5077,7 +5072,7 @@ sub htlv1_insertion {
 		my ( $ln, $ls ) = split( /:/, $l );
 		my $out_dir = $name . "_" . $ln;
 
-		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
+#		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
 		my $cmd =
 "perl $bin_dev/htlv1.pl -project=$project_name  -patient=$name  -f1=$f1 -f2=$f2 $out_dir -ls=$ls -ln=$ln -fork=$ppn ";
 		warn $cmd;
