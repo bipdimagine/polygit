@@ -52,6 +52,7 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
     track['order'] = Number.MAX_VALUE;
     track['visibilityWindow'] = 300000000;
     track['displayMode'] = "EXPANDED";
+    track['showSoftClips'] = true;
 	list_tracks.push(track);
 	for (var i=0;i<array_bam.length;i++){
 		var track = {};
@@ -66,6 +67,7 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
         track['coverageQualityWeight'] = true;
         track['visibilityWindow'] = 1000000;
         track['colorBy'] = "pairOrientation";
+        track['showSoftClips'] = true;
 		list_tracks.push(track);
 		list_bams.push(window.location.origin + array_bam[i]);
 	}
@@ -87,6 +89,9 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
                 height: 300,
                 maxHeight: 10000,
                 visibilityWindow: 1000000,
+                showSoftClips: true,
+                
+                
             }
         },
         palette: [
@@ -100,6 +105,7 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
                 height: 3000,
                 maxHeight: 10000,
                 visibilityWindow: 1000000,
+                showSoftClips: true,
             },
             bed: {
                 height: 30,
@@ -179,6 +185,7 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name) {
 	    track['indexURL'] = index;
 	    track['name'] = list_names[i];
 	    track['height'] = 600;
+        track['showSoftClips'] = true;
 	    list_tracks.push(track);
 	}
     
@@ -215,6 +222,7 @@ function getTrackGenesAnnotations() {
 	track['order'] = Number.MAX_VALUE;
 	track['visibilityWindow'] = 300000000;
     track['displayMode'] = "EXPANDED";
+    track['showSoftClips'] = true;
     return track;
 }
 
@@ -223,6 +231,7 @@ function getTrackPhase3WgsVariants() {
 	track['type'] = 'variant';
 	track['format'] = 'vcf';
 	track['name'] = 'Phase 3 WGS Variants';
+    track['showSoftClips'] = true;
 	track['url'] = "https://s3.amazonaws.com/1000genomes/release/20130502/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz";
 	track['indexURL'] = "https://s3.amazonaws.com/1000genomes/release/20130502/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz.tbi";
     return track;
