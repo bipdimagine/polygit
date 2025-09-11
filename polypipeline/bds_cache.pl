@@ -24,6 +24,7 @@ use Text::Table;
 use colored; 
 use Term::Menus;
 use Config::Std;
+use POSIX qw(strftime);
  
 my ($projectName, $filename, $name, $patients_name, $steps_name, $force, $type, $fastq_ext, $somatic, $method, $no_cluster, $stdout, $help, $annot_version);
 my $fork = 1;
