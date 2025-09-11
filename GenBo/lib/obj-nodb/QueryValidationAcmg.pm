@@ -53,9 +53,11 @@ has 'exists_db'=>(
 
 sub getIdFromPositionSequence{
 		my ($self,$chr,$start,$end,$seq,$type,$version) = @_; 
+	my $ucsc_chr = "chr".$chr;
+	$ucsc_chr = "chrM" if ( $ucsc_chr eq "chrMT" );
 	my $db = $self->db;
 	my $query = qq{
-		select variation_id as id ,uniq_id as uid from $db.variations where chromosome = "$chr" and start=$start and end = $end and sequence = "$seq"  and type = "$type" and version = "$version";
+		select variation_id as id ,uniq_id as uid from $db.variations where (chromosome = "$chr" or chromosome = "$ucsc_chr") and start=$start and end = $end and sequence = "$seq"  and type = "$type" and version = "$version";
 	};
 	my $sth = $self->dbh->prepare($query);
 	$sth->execute();
@@ -132,6 +134,7 @@ sub insertVariationLiftOverVariant {
 sub createVariation {
 	my ($self,$v) = @_;
 	my $id = $self->getIdFromVariation($v);
+	warn "coucou :: ".$id;
 	unless ($id){
 		
 		$id = $self->insertVariation($v);
