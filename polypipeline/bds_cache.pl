@@ -251,7 +251,10 @@ unless ($yes){
 	my $choice = prompt("run this/these step(s)   (y/n) ? ");
 	die() if ($choice ne "y"); 
 }
+
 $pipeline->clean();
+delete_polyviewer_cache();
+
 $buffer->getQuery()->insertHistoryCacheVersion($project->id,$project->annotation_version);
 if ($pipeline->nocluster ne 2){
 	$SIG{'INT'} = sub {
@@ -277,7 +280,23 @@ $pipeline->launch_bds_daemon_by_priority();
 
 exit(0);
 
+sub delete_polyviewer_cache {
+	
+my $dir = $project->getCacheDir();
+# Récupère tous les fichiers *.cache
+my @files = glob("$dir/*.cache");
 
+# Supprime-les
+for my $file (@files) {
+	
+    if (-f $file) {   # vérifie que c'est bien un fichier
+     	my $date = strftime("%Y%m%d", localtime);
+    	my $rotated = "$file.$date";
+    	system ("mv $file $rotated ");
+    	system("gzip", $rotated) == 0 or warn "Impossible de compresser $rotated: $!";
+    }
+}
+} 
 
 ##### METHODS ######
 

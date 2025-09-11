@@ -502,8 +502,8 @@ sub parseVCFLine {
 
 	}
 	elsif ( $gt->{genotype}->[0] + $gt->{genotype}->[1] == 1 ) {
-		$gt->{he}    = 0;
-		$gt->{ho}    = 1;
+		$gt->{he}    = 1;
+		$gt->{ho}    = 0;
 		$gt->{isref} = 1 if $gt->{genotype}->[0] == 0;
 
 	}
