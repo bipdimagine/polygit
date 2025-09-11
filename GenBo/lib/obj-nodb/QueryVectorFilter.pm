@@ -37,12 +37,12 @@ sub getGenes {
 sub setGenes {
 	my ($self,$chr) = @_;
 	unless (exists $self->{genes}->{$chr->name}){
-			my $vvv = $chr->getVariantsVector();
+		my $vvv = $chr->getVariantsVector();
+		$vvv &= $self->{regions_filtred}->{$chr->id()} if exists $self->{regions_filtred}->{$chr->id()};
 		foreach my $g (@{$chr->getGenesFromVector($vvv)}){
 			$self->{genes}->{$chr->name}->{$g->id} = $g;
 		}
 	 }
-	
 }
 
 sub refreshGenes {
@@ -103,6 +103,59 @@ sub filter_vector_ncboost {
 	$chr->setVariantsVector($vector_ncboost);
 	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ncboost - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 	return;
+}
+
+sub filter_regions {
+	my ($self, $chr, $filter_region) = @_;
+	return unless ($filter_region);
+	my @lFilters;
+	my $isIntersect;
+	my $hFilters;
+	
+	my $use_filter;
+	my $var_del = $chr->getNewVector();
+	my $var_inter = $chr->getNewVector();
+	foreach my $this_filter (split(" ", $filter_region)) {
+		print $chr->getProject->print_dot(1000);
+		next if (exists $hFilters->{$this_filter});
+		$hFilters->{$this_filter} = undef;
+		my ($chrId, $start, $end, $include) = split(":", $this_filter);
+		next unless ($chrId eq $chr->id());
+		print 'b_r:'.$chr->getVariantsVector()->Norm();
+		#$chr->check_each_var_filter_region($this_filter, $first_launch);
+		my $var_filter = $chr->getFilterRegionVector($this_filter);
+		if ($include eq '0' or $include eq '99') {
+			$isIntersect = 1;
+			$var_inter += $var_filter;
+		}
+		elsif ($include eq '-1') {
+			$var_del += $var_filter;
+		}
+		$use_filter = 1;
+	}
+	return if not $use_filter;
+	
+	my $var_ok = $chr->getNewVector();
+#	foreach my $fam (@{$chr->getProject->getFamilies()}) {
+#		my $v_fam = $fam->getVariantsVector($chr);
+#		$v_fam &= $var_inter;
+#		$v_fam -= $var_del;
+#		$var_ok += $v_fam;
+#		$fam->setCurrentVariantsVector($chr, $v_fam);
+#	}
+	$var_ok += $chr->getVariantsVector();
+	$var_ok &= $var_inter;
+	$var_ok -= $var_del;
+	$chr->setVariantsVector($var_ok);
+	print 'a_r:'.$chr->getVariantsVector()->Norm();
+	
+	foreach my $fam (@{$chr->getFamilies()}) {
+		my $v_fam = $fam->getCurrentVariantsVector($chr);
+		$v_fam &= $var_ok;
+		$fam->setCurrentVariantsVector($chr, $v_fam);
+	}
+	
+	$self->{regions_filtred}->{$chr->id()} = $var_ok->Clone();
 }
 
 sub filter_vector_hgmd_dm {
