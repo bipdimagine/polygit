@@ -710,8 +710,15 @@ sub getFilterRegionVector {
 	my ($chrId_filter, $start_filter, $end_filter, $type_filter) = split(':', $filter);
 	my @lIdsOn;
 	my $found;
+	
+	my $from = $start_filter - 1000;
+	$from = 1 if $from < 1;
+	my $to = $end_filter + 1000;
+	$to = $self->getVariantsVector->Size() if $to < $self->getVariantsVector->Size();
+	my $v_filter = $self->getVectorByPosition($from,$to);
+	
 	my $still_ok = 1;
-	foreach my $index (@{$self->getIdsBitOn( $self->getVariantsVector() )}) {
+	foreach my $index (@{$self->getIdsBitOn( $v_filter )}) {
 		last unless ($still_ok);
 		#my $varId = $self->getVarId($index);
 		my $varId = $self->getProject->returnVariants($self->name."!".$index)->id;
@@ -1549,6 +1556,7 @@ sub check_each_var_filter_region_add {
 	if ($first_launch) {
 		$self->variants_regions_add();
 		$self->{variants_regions_add} += $var_filter;
+		
 		if ($var_filter->is_empty()) {
 			my $hStats = {
 				'id' => $filter,
@@ -1565,6 +1573,7 @@ sub check_each_var_filter_region_add {
 		}
 		return;
 	}
+	$var_filter &= $self->getVariantsVector();
 	foreach my $h (@{$self->project->stats_region()}) { return if ($h->{id} eq $filter); }
 	my $nbGenes = 0;
 	$self->{genes_ids_regions} = {} unless ($self->genes_ids_regions());
@@ -1579,11 +1588,11 @@ sub check_each_var_filter_region_add {
 		}
 	}
 	my $v_sub = $self->vector_global_categories('substitution')->Clone();
-	$v_sub->Intersection($v_sub, $var_filter);
+	$v_sub &= $var_filter;
 	my $v_ins = $self->vector_global_categories('insertion')->Clone();
-	$v_ins->Intersection($v_ins, $var_filter);
+	$v_ins &= $var_filter;
 	my $v_del = $self->vector_global_categories('deletion')->Clone();
-	$v_del->Intersection($v_del, $var_filter);
+	$v_del &= $var_filter;
 	my $hStats = {
 		'id' => $filter,
 		'chromosome' => $self->id(),
@@ -1615,11 +1624,13 @@ sub check_each_var_filter_region_exclude {
 		my $var_tmp = $self->getNewVector();
 		$var_tmp->Intersection( $gene->getVariantsVector(), $var_filter );
 	}
-	my $v_sub = $self->getCategoryVariantsVector('substitution')->Clone();
+	
+	$var_filter &= $self->getVariantsVector();
+	my $v_sub = $self->vector_global_categories('substitution')->Clone();
 	$v_sub->Intersection($v_sub, $var_filter);
-	my $v_ins = $self->getCategoryVariantsVector('insertion')->Clone();
+	my $v_ins = $self->vector_global_categories('insertion')->Clone();
 	$v_ins->Intersection($v_ins, $var_filter);
-	my $v_del = $self->getCategoryVariantsVector('deletion')->Clone();
+	my $v_del = $self->vector_global_categories('deletion')->Clone();
 	$v_del->Intersection($v_del, $var_filter);
 	my $hStats = {
 		'id' => $filter,

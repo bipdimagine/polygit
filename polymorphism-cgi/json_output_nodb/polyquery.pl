@@ -787,21 +787,21 @@ sub launch_filters_region {
 	$chr->variants_regions_add();
 	if ($chr->variants_regions_add->is_empty()) {
 		if ($isIntersect) {
+			$chr->setVariantsVector($chr->getNewVector());
 			foreach my $patient (@{$chr->getPatients()}) {
 				print $chr->getProject->print_dot(5);
 				$patient->getVariantsVector($chr)->Empty();
 			}
-			$chr->update_from_patients();
 			return;
 		}
 	}
-	if ($first_launch) {
-		print "." unless ($export_vcf_for or $detail_project);
-		$chr->{variants} = $chr->variants_regions_add() if ($chr->variants_regions_add());
-		$chr->{variants} -= $chr->variants_regions_exclude() if ($chr->variants_regions_exclude());
-		foreach my $patient (@{$chr->getPatients()}) {
-			$patient->getVariantsVector($chr)->Intersection( $patient->getVariantsVector($chr), $chr->getVariantsVector() );
-		}
+	print "." unless ($export_vcf_for or $detail_project);
+	$chr->{variants} &= $chr->variants_regions_add() if ($chr->variants_regions_add());
+	$chr->{variants} -= $chr->variants_regions_exclude() if ($chr->variants_regions_exclude());
+	foreach my $fam (@{$chr->getFamilies()}) {
+		my $v_fam = $fam->getCurrentVariantsVector($chr);
+		$v_fam -= $chr->variants_regions_exclude();
+		$fam->setCurrentVariantsVector($chr, $v_fam);
 	}
 }
 
