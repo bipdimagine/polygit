@@ -872,7 +872,7 @@ sub alamuturl {
 	my $a1 = $self->variant->allele;
 	$a1 = "*" unless $a1;
 	my $chr_name = $self->variant->chromosome;
-	my $icon = qq{<img width="12" height="12" src="https://img.icons8.com/softteal-gradient/24/biotech.png" alt="biotech"/>};
+	#my $icon = qq{<img width="12" height="12" src="https://img.icons8.com/softteal-gradient/24/biotech.png" alt="biotech"/>};
 	my $icon = qq{<img width="12" height="12" src="/polyweb/images/polyicons/alamut_visual.png" alt="biotech"/>};
 	$icon = qq{<button class="alamutView3" ></button> };
 	
@@ -891,7 +891,7 @@ my $url = qq{https://varsome.com/variant/hg38/}.$self->variant->gnomad_id;
 	$url = qq{https://varsome.com/variant/hg19/}.$self->variant->gnomad_id;
 	}
 	
-my $text =qq{<a  type="button" class="btn btn-light btn-xs" href="$url" target="_blank" style="background-color=white">&#128269; Varsome&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
+#my $text =qq{<a  type="button" class="btn btn-light btn-xs" href="$url" target="_blank" style="background-color=white">&#128269; Varsome&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
 	my $text =qq{ <a class="dropdown-item"  href="$url" target="_blank" style="color:black">&nbsp&#128269;Varsome</a>};
 return $text;
 }
@@ -1635,6 +1635,8 @@ sub transcripts_variants_xslate {
 	# revel
 	my $revel = $self->variant->revel;
 	
+	
+	
 #	 unless( $revel eq "-"){
 #	  	
 #	 	$revel = $self->printBadge($revel,[0.5,0.9]);
@@ -1701,7 +1703,6 @@ my $mane = 1;
  		$mane = 0;
  		
  }
-
 	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};
 	 my $output = $self->xslate->render("transcripts.tt", $data);
 	 return $output;
