@@ -63,7 +63,8 @@ foreach my $r (@$runs) {
 #	}
 	@$hps = grep{$_->{type} eq "dna"} @$hps;
 	#project poubelle de sylvain 
-	@$hps = grep{$_->{project} !~ /5409/} @$hps;
+	@$hps = grep{$_->{validation_db} !~ /poubelle/} @$hps; #########
+	#
 	@$hps = grep{ $_->{control} == 0} @$hps;
 	my  @hps2 =  grep{$_->{project} ne $project_name && $_->{status} eq 1 && $_->{patient} =~ /GIAB/  } @$hps;
 	if ($excludes){
@@ -115,9 +116,9 @@ foreach my $r (@$runs) {
 	#warn Dumper @hps2;
 
 	foreach my $pr (keys %contr_projects){
-		next if $pr =~ /5409/; 
 		my $buffer1 = new GBuffer;
 		my $project1 = $buffer1->newProjectCache( -name 			=> $pr );
+		next if $project1->validation_db() eq 'poubelle';
 		#next() if $project1->name() eq "NGS2018_2286";
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
 			eval {

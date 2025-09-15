@@ -518,7 +518,7 @@ sub getAllPatientsFromRunId{
 	my $dbh = $self->getDbh();
 	my $sql = qq{
 		select p.name as patient, p.control as control, pr.name  as project ,p.father,p.mother,p.status,p.patient_id as id,p.sex as sex,p.family as family, cs.name as capture  
-			,p.type as type , pr.project_id as project_id from PolyprojectNGS.patient p, PolyprojectNGS.projects pr, PolyprojectNGS.capture_systems cs 
+			,p.type as type , pr.project_id as project_id, pr.validation_db as validation_db  from PolyprojectNGS.patient p, PolyprojectNGS.projects pr, PolyprojectNGS.capture_systems cs 
 				where p.run_id=? and pr.project_id=p.project_id and p.capture_id=cs.capture_id;
 	};
 	
