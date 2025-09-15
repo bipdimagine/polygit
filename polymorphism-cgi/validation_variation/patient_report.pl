@@ -48,6 +48,8 @@ use constant mm => 25.4 / 72;
 use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
+require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
+
 use Digest::MD5::File qw(md5 md5_hex file_md5_hex url_md5_hex file_md5);
 my $cgi          = new CGI();
 
@@ -1028,20 +1030,10 @@ my $xls =  $cgi->param('xls');
 }
 
 sub print_hotspot {
-	
 	my ($data,$cgi,$print) = @_;
-	my $out1 .=printTableHotspots( $patient,$print);
-		return $out1;
-my $out1 ="" ;# = html::print_cadre($cgi,"Edition ");
-my $hotspots = $patients->getCapture()->hotspots;
-return $out1 unless scalar(@$hotspots);
-
-foreach my $hotspot (@$hotspots){
-$patient->hotspot($hotspot);
-}
-$out1 .=printTableHotspots( $patient,$hotspots,$print);
-
-
+	my $out1;
+	$out1 .= update_variant_editor::print_hotspot( $patient );
+	return $out1;
 }
 
 
@@ -3732,7 +3724,7 @@ print qq{
 </div>
 
 };
-die();			
+#die();			
 }
 ##
 sub return_uniq_keys {
