@@ -340,7 +340,7 @@ sub clean {
 		$choice = prompt(colored ['black ON_BRIGHT_CYAN'],"no regret :  $cache_directory_actual (y/n) ? ") unless $yes;
 		die() if ($choice ne "y");
 		colored::stabilo("cyan","As you wish ....");
-		system ("rm -r $cache_directory_actual/*");
+		system ("rm -rf $cache_directory_actual/*");
 		system("rmdir $cache_directory_actual");
 		
 }
