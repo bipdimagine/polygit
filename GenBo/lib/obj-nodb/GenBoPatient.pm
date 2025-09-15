@@ -22,6 +22,7 @@ use Carp;
 use QueryPbsv;
 use QuerySniffles;
 
+use List::MoreUtils qw{ natatime };
 use QueryDragenSv;
 use GenBoCapture;
 
@@ -2735,61 +2736,95 @@ sub is_multiplex_ok {
 
 
 sub hotspot {
-	my $self =shift;
-my $res;
-my $file = $self->getCapture->hotspots_filename;
-return if not -e $file;
-my $bam = $self->getAlignmentFile();
-my $bam_obj = Bio::DB::HTS->new(-bam => $bam,-fasta => $self->project->genomeFasta,);
-my $h = $self->getCapture->hotspots;
-my $t =time;
-foreach my $id (keys %{$h}) {
-		my @ltmp = split('_', $h->{$id}->{genbo_id});
-		my $chr_name = $ltmp[0];
-		my $chr = $self->getProject->getChromosome($ltmp[0]);
-		my $start = $ltmp[1];
-		
-		my $hash = {};
-		$hash->{'A'} = 0;
-		$hash->{'T'} = 0;
-		$hash->{'G'} = 0;
-		$hash->{'C'} = 0;
-		$hash->{'INS'} = 0;
-		$hash->{'DEL'} = 0;
-		
-		#ATTENTION: le start presente un decalage d une base (+1) apr rapport au BED. Samtools + bed = demarage a 0 donc decalage d une base
-		my $end = $start+1;
-		my $region = $chr->fasta_name.":".($start-1)."-".$end; 
-		$bam_obj->pileup($region, sub {
-    		my ($seqid, $pos, $pileups) = @_;
-			return if $pos != $start;
-    		foreach my $p (@$pileups) {
-        	next if $p->is_refskip;  # ignorer les sauts de type 'N' (RNA-seq)
+	my ($self, $fork) = @_;
+	$fork = 1 if not $fork;
+	my $res;
+	my $file = $self->getCapture->hotspots_filename;
+	return if not -e $file;
+	my $bam = $self->getAlignmentFile();
+	my $h = $self->getCapture->hotspots;
+	my $t =time;
+	
+	my $nb   = int( scalar(keys %{$h}) / $fork + 1 );
+	my $pm   = new Parallel::ForkManager($fork);
+	
+	my $iter = natatime( $nb, keys %{$h} );
+	my $hrun;
+	$pm->run_on_finish(
+		sub {
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
 
-       		if ($p->is_del) {
-            	$hash->{'DEL'}++;
-        	} elsif ($p->indel > 0) {
-            	$hash->{'INS'}++;
-        	} else {
-        		my $aln = $p->alignment;
-				my $qpos = $p->qpos;
-				my $base = substr($aln->qseq, $qpos, 1);
-            	$hash->{$base}++ if $base =~ /^[ATCG]$/;
-        	}
-    		}
-		});
-		$hash->{'REF'} = $chr_name;
-		$hash->{'COV'} = $hash->{'A'} + $hash->{'T'} + $hash->{'G'} + $hash->{'C'} + $hash->{'INS'} + $hash->{'DEL'};
-		$hash->{'A_REF'} = $h->{$id}->{'ref'};
-		$hash->{'A_ALT'} = $h->{$id}->{'alt'};
-		$hash->{'NAME'} = $chr_name.':'.$start;
-		$hash->{'ID'} = $h->{$id}->{'genbo_id'};
-		$hash->{'GENBO_ID'} = $h->{$id}->{'genbo_id'};
-		$hash->{'PROT'} = $h->{$id}->{'protid'};
-		push(@{$res->{$h->{$id}->{gene}}},$hash);	
-
-}
-return $res;
+			unless ( defined($h) or $exit_code > 0 ) {
+				print
+				  qq|No message received from child process $exit_code $pid!\n|;
+				die();
+				return;
+			}
+			foreach my $gid (sort keys %{$h->{res}}) {
+				foreach my $hgid (@{$h->{res}->{$gid}}) {
+					push(@{$res->{$gid}}, $hgid);
+				}
+			}
+		}
+	);
+	$self->project->buffer->dbh_deconnect();
+	
+	while ( my @tmp = $iter->() ) {
+		$self->project->disconnect();
+		my $pid = $pm->start and next;
+		my $bam_obj = Bio::DB::HTS->new(-bam => $bam,-fasta => $self->project->genomeFasta);
+		my $hres;
+		my $t   = time;
+		foreach my $id (@tmp) {
+			my @ltmp = split('_', $h->{$id}->{genbo_id});
+			my $chr_name = $ltmp[0];
+			my $chr = $self->getProject->getChromosome($ltmp[0]);
+			my $start = $ltmp[1];
+			
+			my $hash = {};
+			$hash->{'A'} = 0;
+			$hash->{'T'} = 0;
+			$hash->{'G'} = 0;
+			$hash->{'C'} = 0;
+			$hash->{'INS'} = 0;
+			$hash->{'DEL'} = 0;
+			
+			#ATTENTION: le start presente un decalage d une base (+1) apr rapport au BED. Samtools + bed = demarage a 0 donc decalage d une base
+			my $end = $start+1;
+			my $region = $chr->fasta_name.":".($start-1)."-".$end; 
+			$bam_obj->pileup($region, sub {
+	    		my ($seqid, $pos, $pileups) = @_;
+				return if $pos != $start;
+	    		foreach my $p (@$pileups) {
+	        	next if $p->is_refskip;  # ignorer les sauts de type 'N' (RNA-seq)
+	
+	       		if ($p->is_del) {
+	            	$hash->{'DEL'}++;
+	        	} elsif ($p->indel > 0) {
+	            	$hash->{'INS'}++;
+	        	} else {
+	        		my $aln = $p->alignment;
+					my $qpos = $p->qpos;
+					my $base = substr($aln->qseq, $qpos, 1);
+	            	$hash->{$base}++ if $base =~ /^[ATCG]$/;
+	        	}
+	    		}
+			});
+			$hash->{'REF'} = $chr_name;
+			$hash->{'COV'} = $hash->{'A'} + $hash->{'T'} + $hash->{'G'} + $hash->{'C'} + $hash->{'INS'} + $hash->{'DEL'};
+			$hash->{'A_REF'} = $h->{$id}->{'ref'};
+			$hash->{'A_ALT'} = $h->{$id}->{'alt'};
+			$hash->{'NAME'} = $chr_name.':'.$start;
+			$hash->{'ID'} = $h->{$id}->{'genbo_id'};
+			$hash->{'GENBO_ID'} = $h->{$id}->{'genbo_id'};
+			$hash->{'PROT'} = $h->{$id}->{'protid'};
+			my $gid = $h->{$id}->{gene};
+			push(@{$hres->{res}->{$gid}}, $hash);	
+		}
+		$pm->finish( 0, $hres );
+	}
+	$pm->wait_all_children();
+	return $res;
 }
 sub _hotspot {
 	my $self = shift;

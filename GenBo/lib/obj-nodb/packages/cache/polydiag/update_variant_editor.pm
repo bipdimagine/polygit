@@ -3185,8 +3185,8 @@ sub print_dude_button {
 
 sub print_hotspot {
 	my ($patient, $panel) = @_;
-	
-	my $hotspots = $patient->hotspot;
+	my $fork = 3;
+	my $hotspots = $patient->hotspot($fork);
 	return "" unless $hotspots;
 	
 	my @ltmp = split('/', $patient->getCapture->hotspots_filename);
