@@ -400,7 +400,7 @@ sub html_cache_polyviewer {
 	#my $cmd = qq{/$Bin/variations_editor.pl  $args allele_quality=- annot="splicing+essential_splicing+nonsynonymous+stop+phase+maturemirna+frameshift+non-frameshift+predicted_splice_site" denovo=1 dv=3 dv_ho=2 edit_mode=1 in_this_run=6 keep_pathogenic=1 never=1 patients=$name $ph project=$project_name recessive=1 report_mode=1 strict_denovo=1 user_name= xor=1 >/dev/null && date > $totofile};
 	my $no_cache = $self->patient()->get_lmdb_cache("r");
 	$fileout = $no_cache->filename.".polyviewer";
-	my $cmd = qq{perl $bin_dev/../scripts_cache/polyviewer/variations_editor_cache.pl -patient=$name  -project=$project_name && touch $fileout};
+	my $cmd = qq{perl $bin_dev/../scripts_cache/polyviewer/variations_editor_cache.pl -patient=$name  -project=$project_name};
 	my $type = "html_polyviewer";
 	 my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
