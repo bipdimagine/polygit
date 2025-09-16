@@ -418,12 +418,12 @@ my $vquery = QueryValidationAcmg->new(
 );
 warn "no cache ******************** ".$project->name." ".$patient->name unless $cgi->param('export_xls');           
 my $version;
-my $v = $project->public_database_version;
-$version->{gencode}->{version} = "45";#$project->get_public_data_version("gencode");
-$version->{gnomad}->{version} = "-";#-$project->get_public_data_version("gnomad");
-$version->{hgmd}->{version} = "-";#$project->get_public_data_version("hgmd");
-$version->{cadd}->{version} = "-";#$project->get_public_data_version("cadd");
-$version->{clinvar}->{version} = "-";#$project->get_public_data_version("clinvar");
+$version->{gencode}->{version} = $project->gencode_version();
+$version->{gnomad}->{version} = $project->getChromosome('1')->rocksdb_version('gnomad');
+$version->{hgmd}->{version} = $project->getChromosome('1')->rocksdb_version('hgmd');
+$version->{cadd}->{version} = $project->getChromosome('1')->rocksdb_version('cadd');
+$version->{clinvar}->{version} = $project->getChromosome('1')->rocksdb_version('clinvar');
+
 my $t    = time;
 $patient->getLatestValidationStatus($user);
 $project->getChromosomes();
@@ -514,7 +514,7 @@ $t = time;
 $buffer->disconnect();
 
 #my $list_saved;
-	warn "here";
+	#warn "here";
 
 ##################################
 ################## GET VECTORS 
@@ -592,7 +592,7 @@ my $stdout_nav_bar = tee_stdout {
 	update_variant_editor::print_hotspot( $patient, $panel );
 };
 my $stdoutcnv;
-warn "end hotspot";
+#warn "end hotspot";
 if (not $patient->isGenome() ) {
 	$stdoutcnv .= $no_cache->get_cache($cache_dude_id);
 	if ($stdoutcnv){
@@ -605,7 +605,7 @@ if (not $patient->isGenome() ) {
 		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
 	}
 }
-warn "end";
+#warn "end";
 	
 	
 #$myproc->kill();
@@ -630,9 +630,9 @@ my $stdout_end = tee_stdout {
 	print $ztime;
 
 };
-warn "--> $cache_id <-- put";
+#warn "--> $cache_id <-- put";
 $no_cache->put_cache_text($cache_id,$stdout.$stdout_nav_bar.$stdoutcnv.$stdout_end,2400) ;#unless $dev;
-warn length $no_cache->get_cache($cache_id);
+#$no_cache->get_cache($cache_id);
 $no_cache->close();
 exit(0);
 
@@ -1476,11 +1476,13 @@ sub  date_cache_bam {
 	
 	#my $cno = $project->getChromosomes()->[0]->lmdb_hash_variants("r");
 
-
+my $align_file = $patient->getAlignFileName;
+my $type_align = 'bam';
+$type_align = 'cram' if $patient->isCram();
 
 my $date;
-( $date->{cache} ) = "toto";#utility::return_date_from_file( $cno->filename );
-( $date->{bam} )   = "tutu";#utility::return_date_from_file( $patient->getBamFileName );
+#( $date->{'cache'} ) = "toto";#utility::return_date_from_file( $cno->filename );
+( $date->{'align-'.$type_align} )   = utility::return_date_from_file( $align_file );
 return $date;
 }
 
