@@ -192,6 +192,14 @@ has is_dragen => (
 	},
 );
 
+has isDude => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		return;
+	},
+);
+
 has is_star => (
 	is		=> 'ro',
 	lazy 	=> 1,
@@ -352,6 +360,16 @@ sub get_canonic_count {
 	return $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
 	return 0;
 	confess();
+}
+
+sub getNormDP {
+	my ($self,$patient,$method) = @_;
+	return $self->get_dp_count($patient);
+}
+
+sub getDP {
+	my ($self,$patient,$method) = @_;
+	return $self->get_dp_count($patient);
 }
 
 sub get_dp_count {
@@ -808,6 +826,7 @@ sub hash_in_this_run_patients {
 	$ratio = 0 unless $ratio;
 	return $self->{inthisrun}->{$ratio} if exists $self->{inthisrun}->{ratio};
 	$self->{inthisrun}->{$ratio} = undef;
+	$self->getProject->getFamilies();
 	foreach my $patient (@{$self->getPatients()}) {
 		my $fam_name = $patient->getFamily->name();
 		$self->{inthisrun}->{$ratio}->{$fam_name}->{$patient->name()} = $ratio  if $self->get_percent_new_count($patient) >= $ratio;
