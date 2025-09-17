@@ -118,7 +118,6 @@ my $h_chr_vectors_counts;
 
 
 my $has_regtools_vectors = 1;
->>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 my $exists_vector_ratio_10;
 foreach my $chr ( @{ $project->getChromosomes() } ) {
 #	warn $chr->id;
@@ -156,10 +155,6 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 		$has_regtools_vectors = 1 if exists $chr->global_categories->{'DA'};
 		$has_regtools_vectors = 1 if exists $chr->global_categories->{'NDA'};
 	}
-=======
-#	$exists_vector_ratio_10++ if exists $chr->patients_categories->{$patient->name().'_ratio_10'};
-	
->>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 }
 my $cache_id = 'splices_linked_' . $patient->name();
 my $no_cache = $patient->get_lmdb_cache("r");
