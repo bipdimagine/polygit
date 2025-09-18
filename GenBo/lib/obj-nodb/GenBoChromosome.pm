@@ -172,42 +172,7 @@ foreach my $id (keys %{$hash_junc} ){
 }
 return $h_ids;	
 
-# 
-#foreach my $id (keys %{} ){
-#	my $id = $hres->{sj_id};
-#	if ($hres->{canonic_count} == 0 ){
-#		next unless  exists $hSJ->{$id};
-#	}
-#	
-#	my $obj = $self->getProject->flushObject( 'junctions', $hres );
-#	$obj->{isCanonique} = 1 if (exists $hres->{isCanonique} and $hres->{isCanonique} == 1);
-#	$h_ids->{$obj->id()} = undef;
-#
-# unless  (exists $hSJ->{$id}){
-# 	warn Dumper $hres;
-# 	#die();
-# }
-# 
-#next unless  (exists $hSJ->{$id});
-#	
-#}
-#	my $path3 = $self->getProject->getJunctionsDir('star');
-#	foreach my $patient (@{$self->getProject->getPatients()}) {
-#		my $star_file = $path3.'/'.$patient->name().'.SJ.tab';
-#		my $star_file_bz = $star_file.'.gz';
-#		if (-e $star_file) {
-#			my $cmd1 = "bgzip $star_file";
-#			`$cmd1`;
-#			my $cmd2 = "tabix -p bed $star_file_bz";
-#			`$cmd2`;
-#		}
-#		next if not -e $star_file_bz;
-#		foreach my $hres (@{$self->getProject->getQueryJunction($star_file_bz,'STAR')->parse_dragen_file($patient, $self)}) {
-#			my $obj = $self->getProject->flushObject( 'junctions', $hres );
-#			$h_ids->{$obj->id()} = undef;
-#		}
-#	}
-#	return $h_ids;
+
 
 }
 
@@ -562,18 +527,9 @@ sub sequence {
 	warn $self unless $end;
 	my $l = $fai->{length_line};
 
-	#warn "problem genomic position $start $end ". $fai->{length};
 
-	#$end = $fai->{length} if $ucscName eq "chrM" && $end>$fai->{length};
-	#$end = $fai->{length} if $ucscName eq "chrM" && $end>$fai->{length};
 	$end = $self->length() if $ucscName eq "chrM" && $end > $self->length();
 
-	#	if ($self->name() eq 'MT') { warn 'Im MT !!!'; }
-	#	unless ($end) {
-	#		warn 'chr name: '.$self->name();
-	#		warn 'fai: '.$fai;
-	#		warn Dumper $fai;die;
-	#	}
 
 #confess("problem genomic position $start $end ". $fai->{length}) if $end > $fai->{length};
 	my $start_f     = $start - 1;
@@ -630,7 +586,6 @@ sub getFastGenesIds {
 	my $start = $obj->start();
 	my $end   = $obj->end();
 
-	#	warn Dumper $self->fastGenes() if $debug;
 	my $t;
 	$self->intergenic_intspan();
 	if ( $start == $end ) {
@@ -2141,7 +2096,6 @@ sub score_gene_spliceAI {
 	return undef unless exists $v->{$gene_name};
 	my @data = unpack( "W4 C4", $v->{$gene_name} );
 
-	#warn Dumper(@data);
 	my %score;
 	my @type = ( "AG", "AL", "DG", "DL" );
 	for ( my $i = 0 ; $i < 4 ; $i++ ) {
@@ -2244,9 +2198,6 @@ sub getDejaVuInfosForDiagforVariant{
 	my $no = $self->rocks_dejavu();
 	
 	my $h = $no->dejavu($v->rocksdb_id);
-	#my $h = $no1->get($v->getChromosome->name,$v->id);
-	#warn Dumper $h;
-	#die();
 	my $similar = $self->project->similarProjectsId();
 	
 	my $exomes = $self->project->exomeProjectsId();
