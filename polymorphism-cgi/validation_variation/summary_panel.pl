@@ -1096,10 +1096,18 @@ sub header_run {
 	my $version;
 	$version->{gencode} = $project->gencode_version();
 	#warn Dumper $version->{gencode};
-	$version->{gnomad} = ""; #$buffer->description_public_lmdb_database("gnomad-exome")->{version};
-	$version->{hgmd} = "";#$buffer->description_public_lmdb_database("hgmd")->{version};
-	$version->{cadd} = ""; #$buffer->description_public_lmdb_database("cadd")->{version};
-	$version->{clinvar} = "";#$buffer->description_public_lmdb_database("clinvar")->{version};
+	my $v ;
+	#warn $project->release;
+	if ($project->annotation_genome_version =~/19/){
+		$version->{gnomad} = "2.1";#$buffer->description_public_lmdb_database("gnomad")->{version};
+	}
+	else {
+		$version->{gnomad} = $buffer->description_public_lmdb_database("gnomad")->{version};
+	}
+	#$version->{gnomad} = $v;
+	$version->{hgmd} = $buffer->description_public_lmdb_database("hgmd")->{version};
+	$version->{cadd} = $buffer->description_public_lmdb_database("cadd")->{version};
+	$version->{clinvar} = $buffer->description_public_lmdb_database("clinvar")->{version};
 	my $diro = $project->rocks_directory();
 	my $date_cache = utility::return_date_from_file( $diro."/genbo/1.genbo.rocks.rocksdb/configuration.db.json" );
 	#
