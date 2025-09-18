@@ -48,12 +48,11 @@ my $gatk  = $buffer->software("gatk4");
 my $patient =  $project->getPatientOrControl($patient_name);
 my $bam_prod = $patient->getBamFile();
 my $ref = $project->genomeFasta($bam_prod);
-
 my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
 unlink $fileout.".tbi" if -e $fileout;
 unlink $fileout if -e $fileout;
 
-my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name);
+my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name.".".time);
 my $samtools = $buffer->software("samtools");
 my $dir_out = $melt_dir;
 my $bam_tmp = $dir_out."/".$patient->name.".bam";
@@ -84,6 +83,7 @@ elsif ($bam_prod =~/.cram/){
 		system("$samtools view -@ $fork  -T $ref  $bam_prod ".join(" ",@$list) ." -o $bam_tmp --write-index");
 }
 else {
+	die();
 system("ln -s $bam_prod $bam_tmp");
 system("ln -s $bam_prod.bai $bam_tmp.bai");
 }
