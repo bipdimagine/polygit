@@ -3569,9 +3569,6 @@ sub get_string_validations {
 
 sub getSJFile {
 	my ( $self, $method, $nodie ) = @_;
-	confess();
-	
-	
 	if ($method) {
 		if ($nodie) {
 			return ""

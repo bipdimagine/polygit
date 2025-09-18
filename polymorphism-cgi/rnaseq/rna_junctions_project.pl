@@ -44,11 +44,13 @@ foreach my $patient (@{$project->getPatients}) {
 		$h_resume->{$patient->name()}->{nb_junctions_all} += $nb_chr;
 		$h_resume->{$patient->name()}->{nb_junctions_ri} += $chr->countThisVariants($patient->getVectorJunctionsRI($chr));
 		$h_resume->{$patient->name()}->{nb_junctions_se} += $chr->countThisVariants($patient->getVectorJunctionsSE($chr));
-		$h_resume->{$patient->name()}->{nb_junctions_nda} += $chr->countThisVariants($patient->getVectorJunctionsNDA($chr));
-		$h_resume->{$patient->name()}->{nb_junctions_da} += $chr->countThisVariants($patient->getVectorJunctionsDA($chr));
-		$h_resume->{$patient->name()}->{nb_junctions_n} += $chr->countThisVariants($patient->getVectorJunctionsN($chr));
-		$h_resume->{$patient->name()}->{nb_junctions_d} += $chr->countThisVariants($patient->getVectorJunctionsD($chr));
-		$h_resume->{$patient->name()}->{nb_junctions_a} += $chr->countThisVariants($patient->getVectorJunctionsA($chr));
+		if ($patient->hasVectorRegtools($chr)) {
+			$h_resume->{$patient->name()}->{nb_junctions_nda} += $chr->countThisVariants($patient->getVectorJunctionsNDA($chr));
+			$h_resume->{$patient->name()}->{nb_junctions_da} += $chr->countThisVariants($patient->getVectorJunctionsDA($chr));
+			$h_resume->{$patient->name()}->{nb_junctions_n} += $chr->countThisVariants($patient->getVectorJunctionsN($chr));
+			$h_resume->{$patient->name()}->{nb_junctions_d} += $chr->countThisVariants($patient->getVectorJunctionsD($chr));
+			$h_resume->{$patient->name()}->{nb_junctions_a} += $chr->countThisVariants($patient->getVectorJunctionsA($chr));
+		}
 	}
 	
 	foreach my $cat ('ri', 'se') {

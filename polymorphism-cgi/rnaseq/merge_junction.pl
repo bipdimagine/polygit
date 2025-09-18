@@ -32,6 +32,7 @@ my $fork         = $cgi->param('fork');
 my $buffer  = GBuffer->new;
 my $project = $buffer->newProjectCache( -name => $project_name );
 $project->getChromosomes();
+$project->getFamilies();
 my $patient = $project->getPatient($patient_name);
 
 $fork =6 unless $fork;
@@ -52,7 +53,7 @@ exit(0);
 sub add_linked_hash_in_cache {
 	my ( $patient ) = @_;
 	my $h_vector;
-	
+	$patient->getProject->disconnect();
 	my $fork     =  $fork;
 my $pm       = new Parallel::ForkManager($fork);
 my $nbErrors = 0;

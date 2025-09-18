@@ -331,36 +331,55 @@ sub getVectorOriginHo {
 
 sub getVectorOriginJunctionsRI {
 	my ($self,$chr) = @_;
+	confess if not exists $chr->rocks_vector("r")->vector_type_patient->{"ri"};
+	return if not exists $chr->rocks_vector("r")->vector_type_patient->{"ri"};
 	return $self->getVectorOriginCategory($chr, 'ri');
 }
 
 sub getVectorOriginJunctionsSE {
 	my ($self,$chr) = @_;
+	confess if not exists $chr->rocks_vector("r")->vector_type_patient->{"se"};
+	return if not exists $chr->rocks_vector("r")->vector_type_patient->{"se"};
 	return $self->getVectorOriginCategory($chr, 'se');
+}
+
+sub hasVectorRegtools {
+	my ($self,$chr) = @_;
+	return 1 if exists $chr->rocks_vector("r")->vector_type_patient->{"n"};
+	return 1 if exists $chr->rocks_vector("r")->vector_type_patient->{"d"};
+	return 1 if exists $chr->rocks_vector("r")->vector_type_patient->{"a"};
+	return 1 if exists $chr->rocks_vector("r")->vector_type_patient->{"da"};
+	return 1 if exists $chr->rocks_vector("r")->vector_type_patient->{"nda"};
+	return;
 }
 
 sub getVectorOriginJunctionsN {
 	my ($self,$chr) = @_;
+	return if not $self->hasVectorRegtools($chr);
 	return $self->getVectorOriginCategory($chr, 'n');
 }
 
 sub getVectorOriginJunctionsD {
 	my ($self,$chr) = @_;
+	return if not $self->hasVectorRegtools($chr);
 	return $self->getVectorOriginCategory($chr, 'd');
 }
 
 sub getVectorOriginJunctionsA {
 	my ($self,$chr) = @_;
+	return if not $self->hasVectorRegtools($chr);
 	return $self->getVectorOriginCategory($chr, 'a');
 }
 
 sub getVectorOriginJunctionsDA {
 	my ($self,$chr) = @_;
+	return if not $self->hasVectorRegtools($chr);
 	return $self->getVectorOriginCategory($chr, 'da');
 }
 
 sub getVectorOriginJunctionsNDA {
 	my ($self,$chr) = @_;
+	return if not $self->hasVectorRegtools($chr);
 	return $self->getVectorOriginCategory($chr, 'nda');
 }
 
