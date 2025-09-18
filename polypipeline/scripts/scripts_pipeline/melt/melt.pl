@@ -53,7 +53,7 @@ my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
 unlink $fileout.".tbi" if -e $fileout;
 unlink $fileout if -e $fileout;
 
-my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name);
+my $melt_dir= $project->getCallingPipelineDir("melt-".$patient->name.".".time);
 my $samtools = $buffer->software("samtools");
 my $dir_out = $melt_dir;
 my $bam_tmp = $dir_out."/".$patient->name.".bam";
