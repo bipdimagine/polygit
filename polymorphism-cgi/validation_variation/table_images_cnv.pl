@@ -108,7 +108,6 @@ if ( $cgi_transcript eq "all" ) {
 else {
 	@transcripts_cgi = split( ",", $cgi_transcript );
 }
-warn Dumper @transcripts_cgi;
 my $capture = $project->getCaptures()->[0];
 my $vquery;
 
@@ -143,12 +142,17 @@ else {
 	exit(0);
 }
 my @transcripts;
-warn Dumper @transcripts_cgi;
+
 foreach my $tid (@transcripts_cgi  ){
 	push(@transcripts,$project->newTranscript("$tid"));
 }
-#my @transcripts = sort{$a->getGene->external_name cmp $b->getGene->external_name} @{ $project->newTranscripts( \@transcripts_cgi ) };
-
+my @transcripts;
+if ($order eq "position"){
+	@transcripts = sort{$a->getChromosome->karyotypeId <=> $b->getChromosome->karyotypeId || $a->start <=> $b->start } @{ $project->newTranscripts( \@transcripts_cgi ) };
+}
+else {
+ @transcripts = sort{$a->getGene->external_name cmp $b->getGene->external_name} @{ $project->newTranscripts( \@transcripts_cgi ) };
+}
 
 $out .= html::print_cadre( $cgi, "CNV" );
 $out .= $cgi->start_table(
