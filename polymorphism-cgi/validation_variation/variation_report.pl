@@ -112,7 +112,7 @@ foreach my $pr2 (keys %$ps){
 		#my ($res) = `$samtools depth -d 50000   $bam -r $region  | cut -f 3`;
 		#chomp($res);
 		#my $d2 =$res;;
-		my $hvariation = utility::return_hash_variant($project,$vid,$transcript,$p,$vquery);
+		my $hvariation = utility::return_hash_variant($project2,$vid,$transcript,$p,$vquery);
 		if ($hvariation){
 		print $cgi->start_Tr({class=>"infos",style=>"vertical-align:middle;background-color:yellowgreen"});
 		}
