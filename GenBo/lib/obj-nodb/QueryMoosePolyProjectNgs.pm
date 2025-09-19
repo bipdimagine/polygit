@@ -1111,7 +1111,7 @@ has sql_cmd_get_quick_projects_list_RNA => (
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
-			SELECT p.project_id as id,  p.name as name, p.description, p.creation_date as cDate, po.name as dbname, r.name as relname,
+			SELECT p.project_id as id, p.cache as cache, p.name as name, p.description, p.creation_date as cDate, po.name as dbname, r.name as relname,
 				GROUP_CONCAT(DISTINCT pp.version_id ORDER BY pp.version_id  SEPARATOR ' ') as 'ppversionid',
 				GROUP_CONCAT(DISTINCT rg.name ORDER BY rg.name  SEPARATOR ' ') as 'relGene',
 				GROUP_CONCAT(DISTINCT U.login ORDER BY U.login DESC SEPARATOR ',') as 'username'

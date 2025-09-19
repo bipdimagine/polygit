@@ -105,8 +105,23 @@ var layoutProjectDefidiag = [
 ];
 */
 
-function view_rna_junctions(prj) {
-	window.open("rna/rna_junctions.html?project="+prj, '_blank');
+function view_rna_junctions(this_value) {
+	var list = this_value.split('::');
+	var prj = list[1];
+	var genome = list[2];
+  	var url;
+	var regexp = /HG38/g;
+	var regexp2 = /rocks/g;
+	if (String(genome).match(regexp)) {
+   		url = 'https://'+window.location.hostname + "/HG38/polyweb/rna/rna_junctions.html?project="+prj;
+	}
+   	else if (String(genome).match(regexp2)) {
+   		url = 'https://'+window.location.hostname + "/HG38/polyweb/rna/rna_junctions.html?project="+prj;
+   	}
+   	else {
+		url = "rna/rna_junctions.html?project="+prj;
+	}
+	window.open(url,'_blank');
 }
 
 function view_rna_shiny(prj) {
@@ -170,7 +185,7 @@ function formaterButtonRNA(this_value) {
 		var style =" style='margin-top: 3px ;opacity: 0.25;' ";
 		// 1 for junctions analyse
 		if (list[0] == 1) {
-			tt = " onClick=view_rna_junctions('" + list[1]+"') ";
+			tt = " onClick=view_rna_junctions('" + this_value +"') ";
 			style =" style='margin-top: 3px ' ";
 			dd = ""
 			if (list[1] == 'disabled') {
