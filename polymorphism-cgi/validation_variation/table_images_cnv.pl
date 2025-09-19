@@ -390,6 +390,9 @@ my ($cgi) = @_;
 my %hkeys = $cgi->Vars;
 my @keys;
 my $string;
+my $file1 = "$Bin/../GenBo/lib/obj-nodb/packages/image_coverage.pm";
+my $script = __FILE__;;   # le script en cours
+my $md5 = file_md5_hex($file1).file_md5_hex($script);
 foreach my $k  (sort {$a cmp $b} keys %hkeys){
 	next if $k =~ /force/;
 	next if $k =~ /user/;
@@ -406,7 +409,7 @@ my @st = (stat($f2));
 push(@keys, ($st[9].$st[11].$st[12]));
 $f2 = "$dir_out/1";
 my @st2 = (stat($f2));
-push(@keys, ($st2[9].$st2[11].$st2[12]));
+push(@keys, ($st2[9].$st2[11].$st2[12],$md5));
 return \@keys;
 }
 #
