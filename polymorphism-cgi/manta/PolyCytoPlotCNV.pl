@@ -263,26 +263,30 @@ if ($trio == 3)	#both parents
 	# boucle sur les variants 
 	my $hvar;
 	#my $t =time;
-	while(my $v = $project->nextVariant) {
+while(my $v = $project->nextVariant) {
 		$hvar->{$v->id} ++;
+		$nb ++;
+	#	die() if $nb ++ > 50;
 		$x++;			
 		my $p1 = $v->getPourcentAllele($mother);			# 100 si mother Ho value si He  - sinon
+	
 		my $p2 = $v->getPourcentAllele($father);			# 100 si father Ho value si He - sinon
 		my $value = $v->getPourcentAllele($patient);		# freaquence allelique de l'enfant
 		
-		next if $value eq "-";
-		
-		if ($p1 ne "-"){									# la mere donne allele
+		next if $value == 0 ;
+		next if $p1 == 0 && $p2 ==0;
+		if ($p1  >  0 ){									# la mere donne allele
 			my $res = $v->start.",".$value.",null";			# frequence allelique de l'enfant attribue a la mere 
 			push(@array,$res);
 		}
-		$p1= "" if $p1 eq "-";
+		#$p1= "" if $p1 eq "-";
 
-		if ($p2 ne "-"){									# le pere donne allele
+		elsif ($p2 > 0 ){									# le pere donne allele
 			my $res = $v->start.",null,".$value;			# frequence allelique de l'enfant attribue au pere
 			push(@array,$res);
 		}
-		next if  $p2 eq "-";
+		
+		#next if  $p2 eq "-";
 		$p2= "" if $p2 eq "-";
 	}
 	#die($x);
