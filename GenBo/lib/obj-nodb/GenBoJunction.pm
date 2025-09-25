@@ -949,18 +949,16 @@ sub getHashSpliceAiInInterval {
 
 	my $h;
 	foreach my $pos (@lPositions) {
-		my $h2 = $chr->get_lmdb_spliceAI()->get($i);
-		foreach my $alt (keys %$h2) {
-			foreach my $gene_name (keys %{$h2->{$alt}}) {
-				my @data = unpack( "W4 C4", $h2->{$alt}->{$gene_name});
-				my @type = ( "AG", "AL", "DG", "DL" );
-				for ( my $j = 0 ; $j < 4 ; $j++ ) {
-					my $score = sprintf("%.2f", $data[$j] / 100);
-					next if $score == 0;
-					$h->{$pos}->{$alt}->{$gene_name}->{$type[$j]} = $score;
+		foreach my $alt ('A', 'T', 'G', 'C') {
+			my $rid = sprintf("%010d", $pos).'!'.$alt;
+			my $h2 =  $chr->rocksdb("spliceAI")->spliceAI($rid); ##
+			next if not $h2;
+			foreach my $gene_name (keys %{$h2}) {
+				foreach my $type ( "AG", "AL", "DG", "DL" ) {
+					my $score = $h2->{$gene_name}->{$type};
 					if ($score > $max_score) {
 						$max_score = $score;
-						$max_score_infos = $chr->id().':'.$pos.';'.$alt.';'.$type[$j].':'.$score;
+						$max_score_infos = $chr->id().':'.$pos.';'.$alt.';'.$type.':'.$score;
 					}
 				}
 			}
