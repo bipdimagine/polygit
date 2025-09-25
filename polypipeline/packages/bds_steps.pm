@@ -5006,11 +5006,11 @@ sub htlv1_insertion {
 	my ( $self, $hash ) = @_;
 	my $filein = $hash->{filein};
 
-	my $method       = $self->patient()->alignmentMethod();
+#	my $method       = $self->patient()->alignmentMethod();
 	my $name         = $self->patient()->name();
 	my ($dirin)      = $self->patient()->getSequencesDirectory();
 	my $project_name = $self->project->name();
-	my $dirout       = $self->project->getAlignmentPipelineDir($method);
+	my $dirout       = $self->project->getCallingPipelineDir('htlv1_calling');
 
 	#$dirout .= "/".$self->patient()->name()."/";
 	system("mkdir -p $dirout;chmod a+rwx $dirout") unless -e $dirout;
@@ -5072,7 +5072,7 @@ sub htlv1_insertion {
 		my ( $ln, $ls ) = split( /:/, $l );
 		my $out_dir = $name . "_" . $ln;
 
-		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
+#		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
 		my $cmd =
 "perl $bin_dev/htlv1.pl -project=$project_name  -patient=$name  -f1=$f1 -f2=$f2 $out_dir -ls=$ls -ln=$ln -fork=$ppn ";
 		warn $cmd;
@@ -5090,7 +5090,7 @@ sub htlv1_insertion {
 			dir_bds      => $self->dir_bds,
 			sample_name  => $name,
 			project_name => $project_name,
-			software     => $method
+			software     => $self->patient()->alignmentMethod(),
 		);
 		$self->current_sample->add_job( { job => $job_bds } );
 		push( @jobs, $job_bds );

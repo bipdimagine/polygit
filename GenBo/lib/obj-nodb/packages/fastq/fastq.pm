@@ -62,7 +62,7 @@ sub find_file_pe {
 		}
 	}
 	}
-	confess("NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir) unless $couple;	
+	confess("NO fastq file for : -".$patient->name()."- ".$patient->barcode." ".$dir) unless scalar @$couple;	
 	return $couple if scalar(@$couple)>0;
 	die();
 }

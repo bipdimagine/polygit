@@ -281,10 +281,9 @@ if ($step eq "aggr" or $step eq "all"){
 #	print $file."\n" if -e $file ;
 #}
 
-##commande pour copier sur /data-isilon/singleCell
 #
 if ($step eq "tar" or $step eq "all"){
-	my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/per_sample_outs/*/web_summary.html $dir*/multi/count/raw_feature_bc_matrix "
+	my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/per_sample_outs/*/web_summary.html "
 				 ."$dir*/multi/count/raw_feature_bc_matrix/* $dir*/per_sample_outs/*/count/sample_cloupe.cloupe  "
 				 ."$dir*/per_sample_outs/*/count/sample_*_feature_bc_matrix/* ";
 #	my $tar_cmd = "cd $dir && tar -cvzf $dir$projectName.tar.gz */per_sample_outs/*/web_summary.html */multi/count/raw_feature_bc_matrix "
@@ -297,6 +296,8 @@ if ($step eq "tar" or $step eq "all"){
 	print "\t $dir$projectName.tar.gz\n";
 	print "\t########################################\n";
 }
+
+##commande pour copier sur /data-isilon/singleCell
 #
 if ($step eq "cp" or $step eq "all"){
 	my $dirout = "/data-isilon/SingleCell/$projectName";

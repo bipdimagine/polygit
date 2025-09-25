@@ -13,7 +13,7 @@ GetOptions(
 my $file_lock = "/data-dragen/lock";
 my $last_cmd;
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
- my $ssh = Net::SSH::Perl->new("10.1.2.9");
+ my $ssh = Net::SSH::Perl->new("10.1.2.10");
 my $myproc = Proc::Simple->new(); 
 $SIG{INT} = \&tsktsk;
 $SIG{KILL} = \&tsktsk;
@@ -91,7 +91,7 @@ sub run_cmd {
 	$myproc = Proc::Simple->new(); 
 	$myproc->kill_on_destroy(1);            # Set kill on destroy
 	$myproc->signal_on_destroy("KILL");
-	$myproc->start(qq{ssh $username\@10.1.2.9 $cmd});
+	$myproc->start(qq{ssh $username\@10.1.2.10 $cmd});
 	while ($myproc->poll()){
 		sleep 10;
 		

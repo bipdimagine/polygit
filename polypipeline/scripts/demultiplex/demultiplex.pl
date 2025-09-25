@@ -28,6 +28,18 @@ GetOptions(
 );
 
 
+my $complete = $dir."RTAComplete.txt"; # MISEQ
+$complete = $dir."CopyComplete.txt" unless ($dir =~ m{/MISEQ/}); # 10X, ISEQ, NEXTSEQ500, NOVASEQ
+warn $complete;
+my $checkComplete = 1;
+$checkComplete = 0 if (-f $complete);
+while($checkComplete){
+	my ($sec, $min, $hour) = (localtime)[0,1,2];
+	warn "Run not complete, sleep 1h (3600 s) at $hour:$min:$sec";
+	sleep(3600);
+	$checkComplete = 0 if (-f $complete);
+}
+
 my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
 die("no basecall dir $basecall_dir") unless -e  $basecall_dir;
 exit(0) unless -e  $basecall_dir;
@@ -48,7 +60,6 @@ my $reports_dir = "/data-isilon/sequencing/ngs/demultiplex/$run";
 
 if (-d $tmp){
 	die("$tmp already exists ");
-	die();
 }
 
 my $final_dir = $root."/ILLUMINA/$hiseq/IMAGINE/$run";
@@ -61,30 +72,18 @@ if (-d $final_dir){
 
 mkdir $tmp;
 my $wtmp = "$tmp/Unaligned";
-warn $dir;
-my $complete = "$dir/RTAComplete.txt";
-warn $complete;
-my $checkComplete=1;
-$checkComplete =0 if -f $complete;
-while($checkComplete ==1){
-	warn "sleep 3300s";
-	sleep(3300);
-	$checkComplete =0 if -f $complete;
-}
-
 my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
 die($basecall_dir ." doesnt exists") unless -e $basecall_dir;
 my $cmd1 = "$cmd_cfg --input-dir $basecall_dir  --output-dir=$wtmp --ignore-missing-bcl --ignore-missing-positions --ignore-missing-filter --ignore-missing-control --minimum-trimmed-read-length 0 --mask-short-adapter-reads 0  --reports-dir $reports_dir -R $dir";
-if($hiseq eq "10X"){    
-	$cmd1= "cd $tmp ; /software/distrib/$cellranger_type/latest mkfastq --id=$run --run=$dir --csv=$sample_sheet --output-dir=$wtmp";
-	$cmd1 = $cmd1. " --barcode-mismatches=".$mismatch if $mismatch;
-	$cmd1 = $cmd1. " --barcode-mismatches=0" unless $mismatch;
+if($hiseq eq "10X"){  
+	$mismatch = 0 unless ($mismatch);
+	$cmd1= "cd $tmp ; /software/distrib/$cellranger_type/latest mkfastq --id=$run --run=$dir --csv=$sample_sheet --output-dir=$wtmp --barcode-mismatches=$mismatch";
 }
 elsif($dragen == 1){
 	my $dragen_output = "/staging/RUN/".$run;
 	$cmd1="	dragen --bcl-input-directory $dir  --output-directory $dragen_output --bcl-conversion-only true";
 	$cmd1 = $cmd1. " --sample-sheet=$sample_sheet" if $sample_sheet ;
-warn $cmd1;
+	warn $cmd1;
 }
 
 else{
@@ -108,10 +107,10 @@ else{
 	system("cd $tmp &&"."/software/bin/run_cluster.pl -cpu=40 -cmd=\"$cmd1 && touch $tmp/done.txt\"") if (-e "/software/bin/run_cluster.pl");
 	system("cd $tmp &&"."$cmd1 "." && touch done.txt") unless (-e "/software/bin/run_cluster.pl");
 	if ($? == -1) {
- 	 print "configure failed !!!!!!!! \n";
- 	 rmdir $wtmp;
- 	 rmdir $tmp;
-  	 die();
+		print "configure failed !!!!!!!! \n";
+		rmdir $wtmp;
+ 		rmdir $tmp;
+  		die();
 	}
 }
 
@@ -120,6 +119,8 @@ if (-e $tmp."/done.txt"){
 mkdir $final_dir;
 system("move_fastq.sh $wtmp  $final_dir");
 system("rm $final_dir/*Undetermined");
+my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/$run";
+system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats");
 my $fileReport= $run."_laneBarcode.html";
 system("cp $tmp/Unaligned/Reports/html/*/all/all/all/laneBarcode.html /data-isilon/sequencing/ngs/demultiplex/$run/$fileReport");
 #system("rm -rf $tmp");

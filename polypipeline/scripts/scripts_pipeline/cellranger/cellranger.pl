@@ -7,7 +7,7 @@ use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
 use Logfile::Rotate;
- use Cwd;
+use Cwd;
 use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
@@ -33,6 +33,7 @@ use Proc::Simple;
 use Storable;
 use JSON::XS;
 use XML::Simple qw(:strict);
+use Cwd 'abs_path';
 
   
 my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
@@ -53,19 +54,19 @@ my $cpu = 20;
 my $help;
 
 GetOptions(
-	'project=s'		=> \$projectName,
-	'patients=s'	=> \$patients_name,
-	'steps=s{1,}'	=> \@steps,
-	'lane=i'		=> \$lane,
-	'mismatches=i'	=> \$mismatch,
-	'create_bam!'	=> \$create_bam,
-	'feature_ref=s'	=> \$feature_ref,
-	'aggr_name=s'	=> \$aggr_name,
-	'chemistry=s'	=> \$chemistry,
-	'cpu=i'			=> \$cpu,
-	'no_exec'		=> \$no_exec,
-#	'low_calling=s'	=> \$low_calling,
-	'help'			=> \$help,
+	'project=s'					=> \$projectName,
+	'patients=s'				=> \$patients_name,
+	'steps=s{1,}'				=> \@steps,
+	'lane=i'					=> \$lane,
+	'mismatches=i'				=> \$mismatch,
+	'create_bam!'				=> \$create_bam,
+	'feature_ref|feature_csv=s'	=> \$feature_ref,
+	'aggr_name=s'				=> \$aggr_name,
+	'chemistry=s'				=> \$chemistry,
+	'cpu=i'						=> \$cpu,
+	'no_exec'					=> \$no_exec,
+#	'low_calling=s'				=> \$low_calling,
+	'help'						=> \$help,
 ) || die("Error in command line arguments\n");
 
 usage() if $help;
@@ -73,8 +74,8 @@ usage() unless ($projectName);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
-$patients_name = $project->get_only_list_patients($patients_name);
-die("No patient in project $projectName") unless ($patients_name);
+my $patients = $project->get_only_list_patients($patients_name);
+die("No patient in project $projectName") unless ($patients);
 
 my $run = $project->getRun();
 my $run_name = $run->plateform_run_name;
@@ -96,7 +97,6 @@ warn $dir;
 @steps = split(/,/, join(',',@steps));
 unless (@steps) {
 	my $liste_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summaries', 'all'];
-#	@steps = prompt("Select a step: ", -menu=>$liste_steps);
 	my %Menu_1 = (
 		Item_1 => {
 			Text   => "]Convey[",
@@ -113,10 +113,15 @@ warn 'steps='.join(',',@steps);
 die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 
 
+my @patient_names = map {$_->name} @$patients;
+my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
+die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
+
+
 ###############
 # DEMULIPLEXAGE
 ###############
-if (grep(/demultiplex|all/, @steps)){
+if (grep(/demultiplex|^all$/i, @steps)){
 	
 	warn $exec;
 	unless ($machine eq '10X') {
@@ -125,9 +130,11 @@ if (grep(/demultiplex|all/, @steps)){
 	}
 	my $bcl_dir = $run->bcl_dir;
 	warn $bcl_dir;
+	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
+	my $lane_config = $config->{Run}->{FlowcellLayout}->{LaneCount};
+	warn("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane") && sleep(3) if ($lane and $lane != $lane_config);
 	unless ($lane) {
-		my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
-		$lane = $config->{Run}->{FlowcellLayout}->{LaneCount};
+		$lane = $lane_config;
 		warn 'LaneCount=',$lane;
 	}
 	
@@ -138,7 +145,7 @@ if (grep(/demultiplex|all/, @steps)){
 	open (SAMPLESHEET,">$sampleSheet");
 	print SAMPLESHEET "Lane,Sample,Index\n";
 	
-	foreach my $patient (sort @{$patients_name}) {
+	foreach my $patient (sort @{$patients}) {
 		my $name = $patient->name();
 		my $bc = $patient->barcode();
 		my $bc2 = $patient->barcode2();
@@ -153,93 +160,12 @@ if (grep(/demultiplex|all/, @steps)){
 	my $exit = system ($cmd) unless ($no_exec);
 	exit($exit) if ($exit);
 	unless ($@ or $no_exec) {
-		print("--------------------\n");
+		print "\t##########################################\n";
 		print("Check the demultiplex stats\n");
-		system ("firefox https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html &");
 		print("https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html\n\n");
+		system ("firefox https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html &");
+		print "\t##########################################\n";
 	}
-}
-
-
-
-
-###############
-# sample sheet
-###############
-if (grep(/bcl2fastq|samplesheet/, @steps)){
-	
-	my $bcl_dir = $run->bcl_dir;
-	warn $bcl_dir;
-	unless ($lane) {
-		my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
-		$lane = $config->{Run}->{FlowcellLayout}->{LaneCount};
-		warn 'LaneCount=',$lane;
-	}
-	
-	my $tmp = $project->getAlignmentPipelineDir("cellranger_demultiplex");
-	warn $tmp;
-
-#	my $sampleSheet = $bcl_dir."/sampleSheet.csv";
-	my $sampleSheet = $tmp."sampleSheet.csv";
-	warn $sampleSheet;
-	open (SAMPLESHEET,">$sampleSheet");
-#	print SAMPLESHEET "[Settings]\n";
-#	print SAMPLESHEET "CreateFastqForIndexReads,0\n";
-#	print SAMPLESHEET "OverrideCycles,Y28;I10;I10;Y90\n";
-	print SAMPLESHEET "[Data]\n";
-	print SAMPLESHEET "Lane,Sample_ID,index,index2\n";
-
-	foreach my $patient (@{$patients_name}) {
-		my $name = $patient->name();
-		my $bc = $patient->barcode();
-		my $bc2 = $patient->barcode2();
-		if ($bc =~ /SI\-[A-Z]{2}\-[A-Z]\d{1,2}/) {
-			#Correspondance nom SI-XX -> séq
-			my @toto = split '-', $bc;
-			my $kit = $toto[1];
-			my $index_file = '/data-isilon/public-data/10X/Dual_Index_Kit_'.$kit.'_Set_A.csv';
-			die ("Index file '$index_file' is empty") unless (-s $index_file);
-			open (my $fh, '<', $index_file) or die ("Can't open file '$index_file': $!");
-			while (my $line = readline($fh)) {
-				next if ($line =~ /^(#|index_name)/);
-				chomp $line;
-				my ($bc_name, $bc_i7, $bc_i5, $bc_i5_RC) = split (',', $line);
-				if ($bc eq $bc_name) {
-					$bc = $bc_i7;
-					$bc2 = $bc_i5_RC;
-					last ;
-				}
-			}
-			die("bc index not found: $bc") unless ($bc =~ /(A|T|C|G){10}/ && $bc2 =~ /(A|T|C|G){10}/); #if ($bc =~ /SI\-[A-Z]{2}\-[A-Z]\d{1,2}/);
-			close ($fh);
-		}
-		die ("Error while reading the barcodes. Please use SI-XX name or sequences") unless ($bc =~ /(A|T|C|G){10}/ && $bc2 =~ /(A|T|C|G){10}/);
-		for (my $i=1;  $i<=$lane;$i++){
-			print SAMPLESHEET $i.','.$name.','.$bc.','.$bc2."\n";
-		}
-	}
-	close(SAMPLESHEET);
-	
-	my $cmd = "dragen_demultiplex.sh -project=$projectName";
-	warn $cmd;
-#	system ($cmd) unless ($no_exec);
-
-	
-
-##bcl2fastq
-#[Data]
-#Lane,Sample_ID,index,index2
-#1,s1,GTAACATGCG,AGGTAACACT
-	
-## BCLConvert	
-#[Header]
-#FileFormatVersion,2
-#[BCLConvert_Settings]
-#CreateFastqForIndexReads,0
-#[BCLConvert_Data]
-#Lane,Sample_ID,index,index2
-#1,test_sample,GTAACATGCG,AGGTAACACT
-	
 }
 
 
@@ -266,8 +192,8 @@ unless ($project->isSomatic) {
 }
 
 my @group;
-foreach my $patient (@{$patients_name}) {
-	my $group = $patient->somatic_group();
+foreach my $pat (@{$patients}) {
+	my $group = $pat->somatic_group();
 	push(@group,$group);
 }
 
@@ -275,11 +201,12 @@ foreach my $patient (@{$patients_name}) {
 ###############
 # COUNT
 ###############
-if (grep(/count|all/, @steps)){
+if (grep(/count|^all$/i, @steps)){
 	
 	if (grep {$_ =~ /adt/i} @group) {
 		die("feature_ref csv required\n") unless ($feature_ref);
 		die("'$feature_ref' not found") unless (-e $feature_ref);
+		$feature_ref = abs_path($feature_ref);
 	}
 	
 	$create_bam = 'false' unless ($create_bam);
@@ -288,7 +215,7 @@ if (grep(/count|all/, @steps)){
 	
 	 if ($chemistry) {
  		warn "chemistry=$chemistry";
-		my @chemistries = ('auto','threeprime','fiveprime','SC3Pv2','SC3Pv3','SC3Pv4','SC3Pv3HT','SC5P-PE','SC5P-R2','SC3Pv1','ARC-v1');
+		my @chemistries = qw/auto threeprime fiveprime SC3Pv2 SC3Pv3 SC3Pv3-polyA SC3Pv4 SC3Pv4-polyA SC3Pv3HT SC3Pv3HT SC5P-PE SC5P-PE-v3 SC5P-R2 SC5P-PE-v3 SC3Pv1 ARC-v1/;
 		die ("Chemistry option '$chemistry' not valid, should be one of: ". join(', ', @chemistries)) unless (grep { $_ eq $chemistry } @chemistries);
 	 }
 	
@@ -297,24 +224,27 @@ if (grep(/count|all/, @steps)){
 	my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
 	warn $tmp;
 	
-	sub tmpSequencesDirectory {
-		my $pat = shift @_;
-		return "/tmp/pipeline/$projectName/".$pat->name.'/';
-	}
+#	sub tmpSequencesDirectory {
+#		my $pat = shift @_;
+#		return $tmp.'fastq'.'/';
+#	}
 	sub full_cmd {
 		my ($pat, $cmd) = @_;
 		chomp $cmd;
 		my $name = $pat->name;
-		my $tmp_node = tmpSequencesDirectory($pat);
+		my $tmp_fastq = $tmp.'fastq/';
+		system("mkdir $tmp_fastq") unless (-d "$tmp_fastq");
 		my $seq_dir = $pat->getSequencesDirectory;
-		my $cmd1 = "mkdir -p $tmp_node && cp $seq_dir*$name*.fastq.gz $tmp_node && ";
+		my $cmd1 = "cp $seq_dir$name*.fastq.gz $tmp_fastq && ";
+		my $adt = 'ADT_'.$name;
+		$cmd1 = "cp $seq_dir$name*.fastq.gz $seq_dir/ADT_$name*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
 		my $cmd2 = " --localcores=$cpu ";
-		$cmd2 .= "&& mv $tmp$name/outs/* $dir$name/ ";
+		$cmd2 .= "&& cp -r $tmp$name/outs/* $tmp$name/_versions $dir$name/ ";
 		system("mkdir $dir$name") unless (-d "$dir$name");
-		$cmd2 .= "&& mv $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai $tmp$name/outs/ " if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
-		$cmd2 .= "&& if [[ \"$tmp_node\*.fastq.gz\" ]]; then rm $tmp_node\*.fastq.gz ; fi ";
-#		$cmd2 .= "&& rm $tmp_node\*.fastq.gz";
-		$cmd =~ s/$seq_dir/$tmp_node/;
+		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
+#		$cmd2 .= "&& if [[ -f \"$tmp_fastq\*.fastq.gz\" ]]; then rm $tmp_fastq\*.fastq.gz ; fi ";
+#		$cmd2 .= "&& rm $tmp_fastq\*.fastq.gz";
+		$cmd =~ s/$seq_dir/$tmp_fastq/;
 		return $cmd1.$cmd.$cmd2."\n";
 	}
 	
@@ -322,13 +252,13 @@ if (grep(/count|all/, @steps)){
 	my $type_exp = 1 if map {uc($_) =~ /(EXP|NUCLEI)/ } @group;
 	if($type_exp){
 		open (JOBS, ">$dir/jobs_count.txt");
-		my @exp = grep { uc($_->somatic_group()) eq "EXP" || uc($_->somatic_group()) eq "NUCLEI" } @{$patients_name};
+		my @exp = grep { uc($_->somatic_group()) eq "EXP" || uc($_->somatic_group()) eq "NUCLEI" } @{$patients};
 		warn "EXP/NUCLEI: ".join(', ',map($_->name,@exp));
 		foreach my $e (@exp){
 			my $name = $e->name;
 #			warn $name;
 			my $group = $e->somatic_group();
-			$fastq = tmpSequencesDirectory($e);
+			$fastq = $e->getSequencesDirectory;
 			my $prog =  $e->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$index ";
@@ -346,13 +276,13 @@ if (grep(/count|all/, @steps)){
 	my $type_vdj = 1 if map {uc($_) =~ /VDJ/ } @group;
 	if($type_vdj){
 		open (JOBS_VDJ, ">$dir/jobs_vdj.txt");
-		my @vdj = grep { uc($_->somatic_group()) eq "VDJ"} @{$patients_name};
+		my @vdj = grep { uc($_->somatic_group()) eq "VDJ"} @{$patients};
 		warn "VDJ: ".join(', ',map($_->name,@vdj));
 		foreach my $v (@vdj){
 			my $name = $v->name(); 
 #			my $vfam = $v->family();
 #			my $vgroup = uc($v->somatic_group());
-			my $fastq = tmpSequencesDirectory($v);
+			my $fastq = $v->getSequencesDirectory;
 			my $prog =  $v->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $index_vdj = $index."_vdj";
@@ -367,7 +297,7 @@ if (grep(/count|all/, @steps)){
 	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @group;
 	if ($type_adt){
 		open (JOBS_ADT, ">$dir/jobs_count.txt");
-		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients_name};
+		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients};
 		warn "EXP+ADT: ".join(', ',map($_->name,@exp));
 		foreach my $e(@exp){
 			my $ename = $e->name(); 
@@ -375,17 +305,19 @@ if (grep(/count|all/, @steps)){
 #			my $egroup = uc($e->somatic_group());
 			my $lib_file = $dir."/".$ename."_library.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @adt = grep {$_->family() eq $efam && $_->name() =~ $ename && uc($_->somatic_group()) eq "ADT"} @{$patients_name};
+			my @adt = grep {$_->family() eq $efam && $_->name() =~ $ename && uc($_->somatic_group()) eq "ADT"} @{$patients};
 			warn ("no associated ADT library") if scalar(@adt)==0 ;
 			next() if scalar(@adt)==0 ; 
 			my $adt_name = $adt[0]->name();
-			my $lib = "fastqs,sample,library_type\n".tmpSequencesDirectory($e).",".$ename.",Gene Expression\n";
-			$lib .= tmpSequencesDirectory($e).",".$adt_name.",Antibody Capture\n";
+			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/,'.",".$ename.",Gene Expression\n";
+			$lib .= $tmp.'fastq/'.",".$adt_name.",Antibody Capture\n";
 			print LIB $lib;
 			close(LIB);
 			my $prog =  $e->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
-			my $cmd = "cd $tmp && cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file --create-bam=$create_bam \n";
+			my $cmd = "cd $tmp && cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file --create-bam=$create_bam";
+			$cmd .= " --chemistry $chemistry" if ($chemistry);
+			$cmd .= "\n";
 			$cmd = full_cmd($e, $cmd);
 			print JOBS_ADT $cmd;
 		}
@@ -396,7 +328,7 @@ if (grep(/count|all/, @steps)){
 	my $type_spatial = 1 if map {uc($_) =~ /SPATIAL/ } @group;
  	if($type_spatial){
 		open (JOBS_SPATIAL, ">$dir/jobs_spatial.txt");
-		my @spatial = grep { uc($_->somatic_group()) eq "SPATIAL"} @{$patients_name};
+		my @spatial = grep { uc($_->somatic_group()) eq "SPATIAL"} @{$patients};
 		warn "SPATIAL: ".join(', ',map($_->name,@spatial));
  		my $slide_id = prompt("Visium Slide ID: ");
  		die("Visuim slide ID should start with V1, V4, V5 oh H1") unless ($slide_id =~ /^(V[145]|H1)/);
@@ -434,7 +366,7 @@ if (grep(/count|all/, @steps)){
 			my $image = $dir."/".$area."-".$sname.".tif";
 			die("Image '$image' not found") if (! -e $image && !$no_exec);
 			my $sgroup = uc($s->somatic_group());
-			my $fastq = tmpSequencesDirectory($s);
+			my $fastq = $tmp.'fastq/';
 			my $prog =  $s->alignmentMethod();
 			my $index_spatial = $project->getGenomeIndex($prog);
 			my $set = $index_spatial."/probe_sets/";
@@ -460,19 +392,19 @@ if (grep(/count|all/, @steps)){
 	if($type_atac ){
 		warn 'ATAC';
 		open (JOBS_ATAC, ">$dir/jobs_atac.txt");
-		my @atac = grep { uc($_->somatic_group()) eq "ATAC"} @{$patients_name};
+		my @atac = grep { uc($_->somatic_group()) eq "ATAC"} @{$patients};
 		warn "ATAC: ".join(', ',map($_->name,@atac));
-		foreach my $v (@atac){
-			my $vname = $v->name(); 
-			my $vfam = $v->family();
-			my $vgroup = uc($v->somatic_group());
-			my $fastq = tmpSequencesDirectory($v);
+		foreach my $a (@atac){
+			my $vname = $a->name(); 
+			my $vfam = $a->family();
+			my $vgroup = uc($a->somatic_group());
+			my $fastq = $a->getSequencesDirectory;
 			$exec = "cellranger-atac" if $type eq "atac";
-			my $prog =  $v->alignmentMethod();
+			my $prog =  $a->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $index_atac = $index."_atac" if $type eq "atac";
 			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_atac  \n";
-			$cmd = full_cmd($v, $cmd);
+			$cmd = full_cmd($a, $cmd);
 			print JOBS_ATAC $cmd;
 		}
 	}
@@ -483,7 +415,7 @@ if (grep(/count|all/, @steps)){
 	if ($type =~ /cmo/ ){
 		open (JOBS_CMO, ">$dir/jobs_cmo.txt");
 #		warn $patient->somatic_group();
-		my @cmo = grep { uc($_->somatic_group()) eq "CMO"} @{$patients_name};
+		my @cmo = grep { uc($_->somatic_group()) eq "CMO"} @{$patients};
 		warn "CMO: ".join(', ',map($_->name,@cmo));
 		foreach my $e(@cmo){
 			my $ename = $e->name(); 
@@ -496,10 +428,10 @@ if (grep(/count|all/, @steps)){
 			print LIB "[gene-expression]\nreference,".$index."\ncmo-set,/data-isilon/sequencing/ngs/NGS2022_6140/cmo_ref.csv\n";
 			
 			print LIB "[libraries]\nfastq_id,fastqs,feature_types\n";
-			print LIB "$ename,".tmpSequencesDirectory($e).$ename.",Gene Expression\n";
-			my @cmo = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "CMO"} @{$patients_name};
+			print LIB "$ename,".$tmp.'fastq/'.$ename.",Gene Expression\n";
+			my @cmo = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "CMO"} @{$patients};
 			my $cmo_name = $cmo[0]->name();
-			print LIB "$cmo_name,".tmpSequencesDirectory($cmo[0]).$ename.",Antibody Capture\n";
+			print LIB "$cmo_name,".$tmp.'fastq/'.$ename.",Antibody Capture\n";
 			print LIB "[samples]\nsample_id,cmo_ids\n";
 			print LIB $ename."_B251,B251\n";
 			print LIB $ename."_B252,B252\n";
@@ -517,7 +449,7 @@ if (grep(/count|all/, @steps)){
 	if ($type_arc ){
 		open (JOBS_ARC, ">$dir/jobs_arc.txt");
 		$exec = "cellranger-arc";
-		my @arc = grep { uc($_->somatic_group()) eq "ARC"} @{$patients_name};
+		my @arc = grep { uc($_->somatic_group()) eq "ARC"} @{$patients};
 		warn "ARC: ".join(', ',map($_->name,@arc));
 		foreach my $e(@arc){
 			my $ename = $e->name(); 
@@ -525,14 +457,14 @@ if (grep(/count|all/, @steps)){
 			my $egroup = uc($e->somatic_group());
 			my $lib_file = $dir."/".$ename."_library.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @atac = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ARC"} @{$patients_name};
+			my @atac = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ARC"} @{$patients};
 			next() if scalar(@atac == 0);
 			my $atac_name = $atac[0]->name() ;
 			my $prog =  $e->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $index_arc = $index."_arc";
-			my $lib = "fastqs,sample,library_type\n".tmpSequencesDirectory($e).",".$ename.",Gene Expression\n";
-			$lib .= tmpSequencesDirectory($atac[0]).",".$atac_name.",Chromatin Accessibility\n";
+			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/'.",".$ename.",Gene Expression\n";
+			$lib .= $tmp.'fastq/'.",".$atac_name.",Chromatin Accessibility\n";
 			print LIB $lib;
 			close(LIB);
 			my $cmd = "cd $tmp && $exec count --id=$ename --transcriptome=$index_arc  --libraries=$lib_file\n";
@@ -552,27 +484,32 @@ if (grep(/count|all/, @steps)){
 
 	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=$cpu";
 	warn $cmd2;
-	system ($cmd2) unless ($no_exec);
+	sleep(5) unless ($no_exec);
+	my $exit = system ($cmd2) unless ($no_exec);
+	exit($exit) if ($exit);
 	
 	# Open web summaries
 	my @error;
-	my $web_summaries;
-	foreach my $patient (@{$patients_name}) {
+	my $web_summaries = "";
+	foreach my $patient (@{$patients}) {
 		next if ($patient->somatic_group =~ /^ADT$/i);
 		my $file = $dir.$patient->name."/web_summary.html";
 		$web_summaries .= $file.' ' if (-e $file);
 		push(@error, $file) unless (-e $file or $no_exec);
 	}
 	my $cmd3 = "firefox ".$web_summaries;
+	$cmd3 = "google-chrome ".$web_summaries if (getpwuid($<) eq 'shanein');
 	warn $cmd3 if ($web_summaries);
 	system($cmd3.' &') if ($web_summaries and not $no_exec);
 	die("Web summaries not found: ".join(', ', @error)) if (@error and not $no_exec);
 
 	unless ($no_exec) {
-		print("--------------------\n");
+		print "\t##########################################\n";
 		print("Check the web summaries:\n");
 		print("$dir/*/web_summary.html\n\n");
+		print "\t##########################################\n\n";
 	}
+	
 }
 
 
@@ -582,7 +519,7 @@ if (grep(/count|all/, @steps)){
 # AGGREGATION
 ###############
 if (grep(/aggr/, @steps)){
-	my @groups = map {$_->somatic_group} @$patients_name;
+	my @groups = map {$_->somatic_group} @$patients;
 	warn Dumper \@group;
 	warn ("Can't aggregate gene expression and vdj librairies together") if (grep {'exp'} @groups and grep {'vdj'} @groups);
 #	die("No 'exp' sample to aggregate") unless (grep {'exp'} @groups);
@@ -595,7 +532,7 @@ if (grep(/aggr/, @steps)){
 		my $aggr_csv = $dir."/aggr.csv";
 		open (AGGR_CSV, ">$aggr_csv");
 		print AGGR_CSV "sample_id,molecule_h5\n";
-		foreach my $patient (@{$patients_name}) {
+		foreach my $patient (@{$patients}) {
 			warn 
 			my $group_type = lc($patient->somatic_group());
 			if ($group_type eq "exp") {	# ne "adt" or $_ ne "vdj"
@@ -625,7 +562,7 @@ if (grep(/aggr/, @steps)){
 		}
 		open (AGGR_CSV_VDJ, ">$aggr_csv_vdj");
 		print AGGR_CSV_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
-		foreach my $patient (@{$patients_name}) {
+		foreach my $patient (@{$patients}) {
 			my $group_type = lc($patient->somatic_group());
 			print AGGR_CSV_VDJ $patient->name().",$dir".$patient->name()."/vdj_contig_info.pb,,\n" if ($group_type eq "vdj");
 		}
@@ -652,7 +589,7 @@ if (grep(/aggr/, @steps)){
 if (grep(/aggr_vdj/, @steps)) {
 #	my $type = $project->getRun->infosRun->{method};
 #	die ("No vdj in project $projectName") if ($type !~ /vdj/);
-	my @groups = map {$_->somatic_group} @$patients_name;
+	my @groups = map {$_->somatic_group} @$patients;
 	die("No 'vdj' sample to aggregate") unless (grep {'vdj'} @groups);
 	my $id = $projectName.'_VDJ_aggregation';
 	$id = $aggr_name if $aggr_name;
@@ -666,7 +603,7 @@ if (grep(/aggr_vdj/, @steps)) {
 	}
 	open (AGGR_CSV_VDJ, ">$aggr_csv_vdj");
 	print AGGR_CSV_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
-	foreach my $patient (@{$patients_name}) {
+	foreach my $patient (@{$patients}) {
 		my $group_type = lc($patient->somatic_group());
 		if ($group_type eq "vdj") {
 			print AGGR_CSV_VDJ $patient->name().",".$dir."/".$patient->name()."/vdj_contig_info.pb,,\n";
@@ -685,12 +622,12 @@ if (grep(/aggr_vdj/, @steps)) {
 ###############
 # COPY TO /data-isilon/SingleCell/
 ###############
-if (grep(/cp|all/, @steps)){
+if (grep(/cp$|^all$/i, @steps)){
 	my $dirout = "/data-isilon/SingleCell/$projectName/";
 	my $cp_cmd = "mkdir $dirout" unless (-d $dirout);
 	warn $cp_cmd unless (-d $dirout);
 	system ($cp_cmd) unless ($no_exec or -d $dirout);
-	foreach my $patient (@{$patients_name}) {
+	foreach my $patient (@{$patients}) {
 		my $name = $patient->name();
 		next if ($name =~ /^ADT_/);
 		my $cp_cmd = "cp -ru $dir/$name $dirout";
@@ -698,6 +635,41 @@ if (grep(/cp|all/, @steps)){
 		warn $cp_cmd;
 		system ($cp_cmd) unless $no_exec;
 	}
+	
+	# csv avec infos pour Francesco
+	my $info_file = "/data-isilon/SingleCell/$projectName/$projectName-infos.txt";
+	open(my $fh, '>', $info_file);
+	print $fh $projectName.','.$project->description."\n";
+	foreach my $pat (@$patients) {
+		my $pname = $pat->name;
+		next if ($pname =~ /^ADT_/);
+		# count directory
+		my $dir_cellranger; 
+		my $dir1 = $dir.$pat->name.'/';
+		my $dir2 = $project->getProjectRootPath().$pat->name.'/';
+		if (-d $dir1) {
+			$dir_cellranger = $dir1;
+			$dir_cellranger .= 'outs/' if (-d $dir1.'outs/');
+		}
+		elsif (-d $dir2) {
+			$dir_cellranger = $dir2
+		}
+		else {
+			die("Can't find directory with cellranger data for patient $pname")
+		}
+		# cellranger version
+		my $cellranger_version = "";
+		my $file_version = $dir_cellranger.'_versions';
+		open (my $fv, '<', $file_version) || warn ("Can't open $file_version: $!");
+		while (my $line = readline($fv)) {
+			chomp $line;
+			$cellranger_version = $1 if ($line =~ /^\s*"pipelines": "(\w+ranger(-\w*)?-[\d\.]+)"$/);
+		}
+		
+		print $fh $pname.','.$pat->getSequencesDirectory.','.$dir_cellranger.','.$cellranger_version."\n";
+	}
+	close($fh);
+	
 	unless ($no_exec){
 		print "\t##########################################\n";
 		print "\tcp to $dirout \n";
@@ -717,7 +689,7 @@ if (grep(/cp_web_summar(ies|y)/, @steps)){
 		warn $cp_cmd;
 		system ($cp_cmd) unless ($no_exec);
 	}
-	foreach my $patient (@{$patients_name}) {
+	foreach my $patient (@{$patients}) {
 		my $name = $patient->name();
 		next if ($name =~ /^ADT_/);
 		confess ("$name web summary not found: '$dirout$name/web_summary.html'") unless (-e "$dirout$name/web_summary.html");
@@ -739,8 +711,10 @@ if (grep(/cp_web_summar(ies|y)/, @steps)){
 ###############
 # ARCHIVE / TAR
 ###############
-if (grep(/tar|all/, @steps)){
-	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/web_summary.html $dir/*/cloupe.cloupe $dir/*/vloupe.vloupe $dir/*/*_bc_matrix/* ";
+if (grep(/tar|^all$/i, @steps)){
+	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/web_summary.html $dir/*/cloupe.cloupe ";
+	$tar_cmd .= "$dir/*/vloupe.vloupe " if grep (/vdj/i, @group);
+	$tar_cmd .= "$dir/*/*_bc_matrix/* ";
 	$tar_cmd .= "$dir/*/ " if ($create_bam and $create_bam ne 'false');
 	warn $tar_cmd;
 	die ("archive $dir/$projectName.tar.gz already exists") if -e "$dir/$projectName.tar.gz";
@@ -749,6 +723,7 @@ if (grep(/tar|all/, @steps)){
 		print "\t##########################################\n";
 #		print "\tlink to send to the users : \n";
 #		print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
+		print "\tArchive to send to the users : \n";
 		print "\t$dir$projectName.tar.gz\n" if (-e "$dir$projectName.tar.gz");
 		print "\t##########################################\n\n";
 	}
@@ -769,7 +744,9 @@ if (grep(/cloud/, @steps)) {
 	die unless $username;
 	my $password = 'cZN5k*Rtt4Qc+B6M' if ($username eq 'melodie.perin');
 	$password  = prompt('Password: ', -e=>'') unless ($password);
-	my $upload_cmd = "curl -u $username:$password -T $archive https://cloudbox.institutimagine.org/remote.php/dav/files/$username/Archives\ single\ cell/";
+	my $remote_dir = "Archives single cell";
+	$remote_dir =~ s/ /%20/g;  # encodage des espaces
+	my $upload_cmd = "curl -u $username:$password -T $archive --progress-bar https://cloudbox.institutimagine.org/remote.php/dav/files/$username/$remote_dir/";
 	warn $upload_cmd;
 	
 }
@@ -781,18 +758,19 @@ sub usage {
 $0
 -------------
 Obligatoires:
-	project <s>			nom du projet
-	steps <s>			étape à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summaries ou all (= demultiplex, count, aggr, tar, cp)
-	feature_ref	<s>		tableau des ADT, seulement si step=count et qu'il y a des ADT
+	project <s>                nom du projet
+	steps <s>                  étape à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summaries ou all (= demultiplex, count, aggr, tar, cp)
+	feature_ref	<s>            tableau des ADT, seulement si step=count et qu'il y a des ADT
 Optionels:
-	patients <s>			noms de patients/échantillons, séparés par des virgules
-	cpu <i>				nombre de cpu à utiliser, défaut: 20
-	lane <i>			nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml
-	mismatches <i>			nombre de mismatches autorisés lors du démultiplexage, défaut: 0
-	create-bam/nocreate-bam		générer ou non les bams lors du count, défaut: nocreate-bam
-	aggr_name <s>			noms de l'aggrégation, lors de step=aggr ou aggr_vdj
-	no_exec				ne pas exécuter les commandes
-	help				affiche ce message
+	patients <s>               noms de patients/échantillons, séparés par des virgules
+	cpu <i>                    nombre de cpu à utiliser, défaut: 20
+	lane <i>                   nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml
+	mismatches <i>             nombre de mismatches autorisés lors du démultiplexage, défaut: 0
+	create-bam/nocreate-bam    générer ou non les bams lors du count, défaut: nocreate-bam
+	aggr_name <s>              noms de l'aggrégation, lors de step=aggr ou aggr_vdj
+	chemistry                  chemistry , défaut: auto (for exp and adt)
+	no_exec                    ne pas exécuter les commandes
+	help                       affiche ce message
 
 ";
 	exit(1);
