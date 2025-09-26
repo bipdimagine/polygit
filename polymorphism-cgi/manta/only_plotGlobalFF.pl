@@ -169,6 +169,7 @@ if($trio)
 		#boucle sur les variants 
 		while(my $v = $project->nextVariant)
 		{
+			next if $v->getDP($mother) < 10;
 			my $p1 = $v->getPourcentAllele($mother);							# valeur ou - si le variant n'est pas présent chez la mère
 			my $p2 = $v->getPourcentAllele($father);							# valeur ou - si le variant retrouvé dans le plasma ne vient pas du père 
 			my $value = $v->getPourcentAllele($plasma);							# la fréquence allélique du variant 
