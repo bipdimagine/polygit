@@ -2937,6 +2937,9 @@ sub table_cnv_genes_transcripts {
 
 sub get_hash_genes_dude {
 	my ($patient, $by_names_or_ids, $list_type, $panel,$noprint) = @_;
+	my $hGenes_dude = {};
+	return $hGenes_dude;
+	
 	my ($h_type_levels, $h_panels_tr);
 	#unless ($list_type) { push(@$list_type, 'high'); }
 	#push(@$list_type, 'medium');
@@ -3021,10 +3024,12 @@ sub get_hash_genes_dude {
 	    );
 		
 		$patient->getProject->buffer->dbh_deconnect();
+		$patient->getProject->disconnect();
 		my $xp = 0;
  	 	while( my @ltr_tmp = $iter->() ){
  	 		my $pid = $pm->start and next;
 			$patient->getProject->buffer->dbh_reconnect();
+			$patient->getProject->disconnect();
 			my $hGenes_dude_tmp;
 			$hGenes_dude_tmp->{'not'}++;
 		 	foreach my $t (@ltr_tmp){
@@ -3048,6 +3053,7 @@ sub get_hash_genes_dude {
 				$hGenes_dude_tmp->{$g_name_id}->{$type}->{del} += $hcov->{$patient->name()}->{del};
 				$hGenes_dude_tmp->{$g_name_id}->{$type}->{del_ho} += $hcov->{$patient->name()}->{del_ho};
 				$hGenes_dude_tmp->{$g_name_id}->{$type}->{all} += $hcov->{$patient->name()}->{all};
+				
 				foreach my $other_patient (@lPatients) {
 					next if ($other_patient->getFamily->name() eq $patient->getFamily->name());
 					$hGenes_dude_tmp->{$g_name_id}->{$type}->{grey_others} += $hcov->{$other_patient->name()}->{grey};
@@ -3055,8 +3061,6 @@ sub get_hash_genes_dude {
 					$hGenes_dude_tmp->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{del};
 					$hGenes_dude_tmp->{$g_name_id}->{$type}->{all_others} += $hcov->{$other_patient->name()}->{all};
 				}
-				
-				
 			}
  	 		$pm->finish(0,$hGenes_dude_tmp);
  	 	}
@@ -3339,6 +3343,7 @@ sub print_cnv_exome {
 	push(@ltypes, 'low') if (exists $hTypes->{'low'});
 	print qq{<div style="display: none">};
 	$patient->getProject->cgi_object(1);
+	
 	my $hGenes_dude = get_hash_genes_dude($patient, 'ids', \@ltypes, '');
 	print qq{</div>};
 	my @lGenes_ids = sort keys %{$hGenes_dude};
