@@ -3311,6 +3311,10 @@ foreach my $g (keys %$hotspots){
 
 sub print_cnv_exome {
 	my ($patient, $types, $panel) = @_;
+	return;
+	#TODO: on n'affiche plus les cnv dans viewer
+	
+	
 	if ($patient->isParent()) {
 		if ($patient->getProject->validation_db() and $patient->getProject->validation_db() eq 'defidiag') {
 			return;

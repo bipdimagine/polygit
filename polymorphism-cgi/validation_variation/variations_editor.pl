@@ -593,18 +593,20 @@ my $stdout_nav_bar = tee_stdout {
 };
 my $stdoutcnv;
 #warn "end hotspot";
-if (not $patient->isGenome() ) {
-	$stdoutcnv .= $no_cache->get_cache($cache_dude_id);
-	if ($stdoutcnv){
-		print $stdoutcnv;
-	}
-	else {
-		$stdoutcnv = tee_stdout {
-			update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
-		};
-		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
-	}
-}
+
+#TODO: on n'affiche plus les cnv dans viewer
+#if (not $patient->isGenome() ) {
+#	$stdoutcnv .= $no_cache->get_cache($cache_dude_id);
+#	if ($stdoutcnv){
+#		print $stdoutcnv;
+#	}
+#	else {
+#		$stdoutcnv = tee_stdout {
+#			update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
+#		};
+#		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400) ;#unless $dev; 
+#	}
+#}
 #warn "end";
 	
 	
