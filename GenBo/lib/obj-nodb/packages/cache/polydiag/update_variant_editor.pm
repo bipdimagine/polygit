@@ -732,7 +732,6 @@ sub vdejavu {
 		$hvariation->{value}->{this_run_project} = '-';
 		$hvariation->{value}->{this_run_patients} = $v->in_this_run_patients()."/".scalar(@{$project->getPatients});
 		#$v->{value}->{this_run__patients_ho} = $v->similar_patients_ho();
-		return;
 		value_html($hvariation,"deja_vu",$v->other_projects(),table_dejavu($v));
 	
 }
