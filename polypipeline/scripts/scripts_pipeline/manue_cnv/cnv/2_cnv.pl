@@ -73,7 +73,7 @@ my $dbh_gnomad =   DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", 
 # Pour chaque CNV la localisation chr_start_end donne accès à la liste des gènes compris dans cet interval
 ####################################################################
 
-my $fork = 5;
+my $fork = 1;
 my $dir_tmp = "/data-beegfs/tmp/";
 
 my $limit;
@@ -124,29 +124,29 @@ $buffer->hash_genes_omim_morbid();
 		}		
 		$hdupseg->{$chr}->insert($idLocation,$start,$end);		
 	}
-	warn "2";
+	print "\n# 2\n";
 	my $all_cnvs; 
 	my $hjobs;
-	my $pm = new Parallel::ForkManager($fork);
-	$pm->run_on_finish(
-    	sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
-    		my $j = $data->{job};
-    		delete $hjobs->{$j};
-    		if ($data->{array} and scalar @{$data->{array}} > 0) {
-    			push(@$all_cnvs,@{$data->{array}});
-    		}
-    }
-    );
+#	my $pm = new Parallel::ForkManager($fork);
+#	$pm->run_on_finish(
+#    	sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data)=@_;
+#    		my $j = $data->{job};
+#    		delete $hjobs->{$j};
+#    		if ($data->{array} and scalar @{$data->{array}} > 0) {
+#    			push(@$all_cnvs,@{$data->{array}});
+#    		}
+#    }
+#    );
 	
 	
-	my $job_id = time;
-	my $duck;
+		my $job_id = time;
+		my $duck;
 	 $duck = GenBoDuckDejaVuCNV->new( project => $project );
 	 my $hashP;
 	 foreach my $patient (@{$project->getPatients}){
 	 	$hashP->{$patient->id} =  $duck->get_cnvs_by_project($patient);
 	 }
-	 warn "end load";
+	 print "\n#end load\n";
 	 $duck->dbh->disconnect();
 	 $duck = undef;
 	 $project->disconnect();
@@ -154,19 +154,23 @@ $buffer->hash_genes_omim_morbid();
 	foreach my $patient (@{$project->getPatients}){
 		$job_id ++;
 		$hjobs->{$job_id} ++;
-		my $pid = $pm->start and next;
+#		my $pid = $pm->start and next;
 		
 		my $hash = $hashP->{$patient->id};
 		#$duck->dbh->disconnect();
 		#$duck = undef;
 		my $gather = gatherSV_by_Interval($patient,$hash);
-		warn "end gather";
-		$project->disconnect();
-		$pm->finish(0,{job=>$job_id,array=>$gather});
+		foreach my $g (@$gather) {
+			push(@$all_cnvs, $g);
+		}
+		
+		print "\n#end gather\n";
+#		$pm->finish(0,{job=>$job_id,array=>$gather});
 	}
-	$pm->wait_all_children();
-	warn "END STEP 1";
-	warn "start dejavu";
+#	print "\nbefore wait all\n";
+#	$pm->wait_all_children();
+	print "\n#END STEP 1\n";
+	print "\n#start dejavu\n";
 	my $nb = 0;
 	 $nb = scalar (@$all_cnvs) if $all_cnvs;
 	exit(0) if $nb == 0; 
@@ -174,14 +178,14 @@ $buffer->hash_genes_omim_morbid();
  $project->disconnect();
 	my $c =0;
 	$duck = GenBoDuckDejaVuCNV->new( project => $project );
-	warn 'nb: '.scalar(@$all_cnvs);
+	print '\n#nb: '.scalar(@$all_cnvs)."\n";
 	foreach my $cnv  (@$all_cnvs){
 		$c++;
-		warn ($c/$nb) if $nb%1000 ==0;
+		print $c.'/'.$nb."\n" if $c%100 ==0;
 		dejavu($cnv);
 	}
-	warn "end dejavu";
-	warn "start gather ";
+	print "\n#end dejavu\n";
+	print "\n#start gather \n";
 	my $final = gatherSV_by_Interval_2($all_cnvs);
 	
 	
@@ -248,7 +252,7 @@ sub gatherSV_by_Interval_2
 sub merge_hash_2 {
 	my ($type,$chr,$merged,$hcnv) = @_;
 	 my $total;
-	 warn "merge";
+	 print "merge\n";
 	foreach my  $interval (@$merged){
 			my @cnvs;
 			my $hpatients;
@@ -316,14 +320,13 @@ sub gatherSV_by_Interval
 					
 				}
 			
-				
 				annnot_sv($patient,$all);
-				warn "END ANNOT SV";
+				print "\n#END ANNOT SV\n";
 				#$nodejavu->close();
 				return $all;
 }
 
-warn "ok";
+print "\n#ok\n";
 sub merge_hash {
 	my ($patient,$type,$chr,$merged,$hcnv) = @_;
 	 my $total;
@@ -405,7 +408,7 @@ sub merge_hash {
 			
 				#dejavu($hfinal);
 				genesInfos($hfinal);
-				warn "$nb/$max" if $nb%30 == 0;
+				print "$nb/$max\n" if $nb%30 == 0;
 				getDupSeg($hfinal);
 				
 				push(@$total,$hfinal);
@@ -716,9 +719,9 @@ sub getDupSeg
 	my $opt2 = "-genomeBuild GRCh37";
 	$opt2 = "-genomeBuild GRCh38" if $project->genome_version_generic() =~/HG38/;
 	my $cmd = qq{ export ANNOTSV=/software/distrib/AnnotSV_2.0 && $load && $annotsv $opt2 -SVinputFile $file_bed -outputFile $file_tmp $opt 2>/dev/null };
-	warn $cmd;
+	print "\n# $cmd\n";
 	system($cmd);
-	warn "end ANNOTSV";
+	print "end ANNOTSV\n";
 	open(ANNOT,$file_tmp) or die("*************  open: $!  $file_tmp");
 	
 			# lecture de la première ligne
@@ -827,11 +830,11 @@ sub save_parquet_rocksdb {
         SELECT * from read_csv_auto(['$filename']) order by patient,type,chr,type,start
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE);";
-    warn $query;
+    print "\n# $query\n";
 	$dbh->do($query);
 	$dbh->disconnect;
-	warn $filename;
-	warn $parquet_file;
-	warn $project->getCacheDir();
+	print "\n# $filename\n";
+	print "\n# $parquet_file\n";
+	print "\n# $project->getCacheDir()\n";
 	
 }

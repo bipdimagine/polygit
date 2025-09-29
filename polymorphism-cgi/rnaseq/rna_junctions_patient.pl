@@ -37,6 +37,8 @@ my $only_html_cache      = $cgi->param('only_html_cache');
 my $view_polyviewer 	 = $cgi->param('view_polyviewer');
 my $export_xls			 = $cgi->param('export_xls');
 my $session_id			 = $cgi->param('session_id');
+my $fork			 	 = $cgi->param('fork');
+my $put_cache			 = $cgi->param('put_cache');
 
 my $only_junctions_NDA   = $cgi->param('only_junctions_NDA');
 my $only_junctions_DA    = $cgi->param('only_junctions_DA');
@@ -44,6 +46,7 @@ my $only_junctions_A     = $cgi->param('only_junctions_A');
 my $only_junctions_D     = $cgi->param('only_junctions_D');
 my $only_junctions_N     = $cgi->param('only_junctions_N');
 
+$fork = 5 if not $fork;
 
 if ($export_xls and $session_id) {
 	my $xls_export = new xls_export();
@@ -68,7 +71,7 @@ $patient->use_not_filtred_junction_files(1);
 my $only_gene;
 $only_gene = $project->newGene($only_gene_name) if ($only_gene_name);
 
-if ( not $only_html_cache ) {
+if ( not $only_html_cache and not $put_cache) {
 	print $cgi->header('text/json-comment-filtered');
 	if ($view_polyviewer) {
 		print "<div style='display:none;'>.";
@@ -116,8 +119,7 @@ my $j_selected = 0;
 my $h_chr_vectors;
 my $h_chr_vectors_counts;
 
-
-my $has_regtools_vectors = 1;
+my $has_regtools_vectors;
 my $exists_vector_ratio_10;
 foreach my $chr ( @{ $project->getChromosomes() } ) {
 #	warn $chr->id;
@@ -373,7 +375,7 @@ my $h_junctions_color;
 my $h_dejavu_cnv;
 $n = 0;
 my ($h_junctions_scores, $h_export_xls);
-my $fork     = 5;
+my $fork     = $fork;
 my $pm       = new Parallel::ForkManager($fork);
 my $nbErrors = 0;
 $pm->run_on_finish(
@@ -422,6 +424,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	
 	$patient->getProject->buffer->dbh_deconnect();
 	$patient->getProject->disconnect();
+	$chr->rocksdb("spliceAI");
 	$pm->start and next;
 	$patient->getProject->buffer->dbh_reconnect();
 	
@@ -549,7 +552,7 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		next if $pass_same_position;
 		
 		$n++;
-		print '.' if ( not $only_html_cache and $n % 1000 );
+		print '.' if (not $put_cache and not $only_html_cache and $n % 1000 );
 		my $is_junction_linked_filtred;
 		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 and not $only_gene);
 
@@ -648,7 +651,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		my $html_id       = get_html_id($junction, $h_same_j_description);
 		my $html_patients = get_html_patients( $junction, $patient);
 		my $html_dv       = get_html_dejavu( $junction, $patient );
-		my $html_spliceai = get_html_spliceAI( $junction );
+		my $html_spliceai = "";
+		$html_spliceai = get_html_spliceAI( $junction ) if $patient->project->is_human_genome();
 		
 				
 
@@ -682,9 +686,11 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			my $g = $project->newGene($gene_name);
 			next unless $g;
 			my $this_score = $score;
-			
-			my $gscore = int(($g->score/2)+0.5);
-			$this_score += $gscore;
+			my $gscore;
+			if ($g->getProject->is_human_genome()) {
+				$gscore = int(($g->score/2)+0.5);
+				$this_score += $gscore;
+			}
 			
 			my $ht = $junction->get_hash_exons_introns();
 			
@@ -938,7 +944,15 @@ else {
 }
 $hash->{is_partial_results} = $is_partial_results;
 
-if (not $only_gene_name and not $only_positions and not $view_polyviewer) {
+if ($put_cache or $only_html_cache) {
+#	warn $cache_html_id;
+	my $no_cache = $patient->get_lmdb_cache("w");
+	warn 'put hash with key '.$cache_html_id;
+	$no_cache->put_cache_hash( $cache_html_id, $hash );
+	$no_cache->close();
+	exit(0);
+}
+elsif (not $only_gene_name and not $only_positions and not $view_polyviewer) {
 	my $no_cache = $patient->get_lmdb_cache("w");
 	$no_cache->put_cache_hash( $cache_html_id, $hash );
 	$no_cache->close();
@@ -1044,11 +1058,7 @@ sub get_html_spliceAI {
 
 	
 	#TODO: faire splice_AI;
-	#my $h_spai = $junction->getHashSpliceAiNearStartEnd();
-	
-	my $h_spai;
-	$h_spai->{start}->{max_score} = 0;
-	$h_spai->{end}->{max_score} = 0;
+	my $h_spai = $junction->getHashSpliceAiNearStartEnd();
 	
 	my $color = 'black';
 	my $html = $cgi->start_table(

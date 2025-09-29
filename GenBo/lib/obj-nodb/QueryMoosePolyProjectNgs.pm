@@ -1328,6 +1328,16 @@ has sql_cmd_get_projects_ids_with_patients_type_rna_with_project_name => (
 	},
 );
 
+sub getUserInfos {
+	my ($self,$login) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{SELECT * FROM bipd_users.USER where LOGIN=?};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($login);
+	my $h = $sth->fetchall_hashref('LOGIN');
+	return $h;
+}
+
 sub isLoginSTAFF {
 	my ($self, $name) = @_;
 	my $dbh = $self->getDbh();

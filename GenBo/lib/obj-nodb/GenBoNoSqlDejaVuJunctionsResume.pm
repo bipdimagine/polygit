@@ -132,7 +132,7 @@ sub dejavu_by_position {
 	 	$nb ++;
 	 	push(@toto,$h);
 	}
-	die("\n\nMULTIPLE dejavu - ".$nb." ".Dumper @toto ) if $nb >1;
+	#die("\n\nMULTIPLE dejavu - ".$nb." ".Dumper @toto ) if $nb >1;
 	return $h;
 }
 sub uniq_patient {

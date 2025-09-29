@@ -6870,7 +6870,6 @@ sub get_gtf_genes_annotations_igv {
 		my $igv_dir = $self->buffer->config_path("root","public_data").'/igv/';
 		if (defined $self->gencode_version() && $self->gencode_version() ne '-1') {
 			my $file = $igv_dir.'/gencode.'.$self->gencode_version().'.gtf.gz';
-			warn $file;
 			return $file if (-e $file);
 		}
 		my $file = $igv_dir.'/gencode.gtf.gz';
