@@ -681,8 +681,7 @@ sub genericSVTransLoc {
 	  ->{nb_all_other_mut} = 0;
 	i $hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }
 	  ->{score} = $x->{qual};
-	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }
-	  ->{nb_all_mut} = $hash->{annex}->{$patient_id}->{nb_all_ref};
+	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{nb_all_mut} = $hash->{annex}->{$patient_id}->{nb_all_ref};
 	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{he} =
 	  $x->{gt}->{he};
 	$hash->{annex}->{$patient_id}->{method_calling}->{ $self->method }->{ho} =
@@ -1058,8 +1057,8 @@ sub add_DP_AD {
 	$a .= "," . $x->{gt}->{SR} if exists $x->{gt}->{SR};
 	my @aa = split( ",", $a );
 	for ( my $i = 0 ; $i < @aa ; $i += 2 ) {
-		$hash->{annex}->{$patient_id}->{nb_all_mut} = $aa[ $i + 1 ];
-		$hash->{annex}->{$patient_id}->{nb_all_ref} = $aa[$i];
+		$hash->{annex}->{$patient_id}->{nb_all_mut} += $aa[ $i + 1 ];
+		$hash->{annex}->{$patient_id}->{nb_all_ref} += $aa[$i];
 	}
 	#warn Dumper $hash unless $hash->{annex}->{$patient_id}->{nb_all_mut};
 	#warn "-+-+-"  unless $hash->{annex}->{$patient_id}->{nb_all_mut};

@@ -2246,9 +2246,9 @@ sub scaledScoreVariant{
 		 	my $sr1 = $self->sr1($patient);
 			 $sr1 = 0 if $sr1 eq "-";
 			my $pr1 = $self->pr1($patient);
-			$sr1 = 0 if $pr1 eq "-";
-			$scaled_score -= 0.5 if $self->pr1($patient) < 5;
-			$scaled_score -= 0.5 if $self->sr1($patient) < 5;
+			$pr1 = 0 if $pr1 eq "-";
+			$scaled_score -= 0.5 if $sr1 < 5;
+			$scaled_score -= 0.5 if $pr1 < 5;
 	}
 	
 		
@@ -2544,8 +2544,10 @@ sub score_patient_quality {
 		{
 					$score += 30;
 		}
-		my $nb_all_ref = $self->getNbAlleleRef($patient);	unless ($nb_all_ref){$nb_all_ref = 0;}
-		my $nb_all_mut = $self->getNbAlleleAlt($patient);	unless ($nb_all_mut){$nb_all_mut = 0;}
+		my $nb_all_ref = $self->getNbAlleleRef($patient);#	unless ($nb_all_ref){$nb_all_ref = 0;}
+		my $nb_all_mut = $self->getNbAlleleAlt($patient);#	unless ($nb_all_mut){$nb_all_mut = 0;}
+		$nb_all_ref = 0 if $nb_all_ref eq "-";
+		$nb_all_mut = 0 if $nb_all_mut eq "-";
 		my $nb_read = $nb_all_ref + $nb_all_mut;
 
 ## fonction du nbre de read
@@ -2830,9 +2832,9 @@ has dp_infos =>(
 
 			next unless $patient->isGenome;
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
-				my $norm_depth = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start, $self->end+1));
-				my $norm_depth_before = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->start-500, $self->start-10));
-				my $norm_depth_after = int($patient->cnv_region_ratio_norm($self->getChromosome->name, $self->end+10, $self->end+500));
+				my $norm_depth =  int($patient->mean_normalize_depth($self->getChromosome->name, $self->start, $self->end+1));
+				my $norm_depth_before = int($patient->mean_normalize_depth($self->getChromosome->name, $self->start-1010, $self->start-10));
+				my $norm_depth_after = int($patient->mean_normalize_depth($self->getChromosome->name, $self->end+10, $self->end+1010));
 				my $dude = "-";
 				if($self->project->isGenome){
 					$dude = "-";
@@ -2875,12 +2877,19 @@ sub getNormDPAfter {
 		return $self->dp_infos->{$pid}->[4];
 }
 
+sub getLog2Ratoio {
+		my ($self,$patient,$method) = @_;
+		my $m = int($self->getNormDPBefore($patient,$method)+ $self->getNormDPAfter($patient,$method))/2;
+		return  $self->buffer->log2($self->getNormDP($patient,$method)/$m);
+}
+
+
 sub getCNVDude {
 	my ($self,$patient) = @_;
 	my $pid = $patient->id;
 	return "??" unless exists  $self->dp_infos->{$pid};
 	return "??" if $self->dp_infos->{$pid}->[2] eq "-";
-	return sprintf("%.2f", $self->buffer->log2($self->dp_infos->{$pid}->[2]/100));
+	return  $self->buffer->log2($self->dp_infos->{$pid}->[2]/100);
 }
 
 
@@ -2982,7 +2991,7 @@ sub getNbAlleleRef {
 			$method = "max";
 		}
 		elsif ($self->project->return_calling_methods_short_name($method)) {
-			$method =$self->project->return_calling_methods_short_name($method);
+			$method = $self->project->return_calling_methods_short_name($method);
 		}
 #		warn "\n";
 #		warn Dumper  $self->sequencing_infos;
@@ -3064,6 +3073,8 @@ sub getPourcentAllele {
 		
 		my $sum = (int($self->sequencing_infos->{$pid}->{$method}->[0])+int($self->sequencing_infos->{$pid}->{$method}->[1]));
 		return 100 if $sum == 0;
+		my $v = $self->sequencing_infos->{$pid}->{$method}->[1];
+		$v = 0.00001 unless $v; 
 		return (($self->sequencing_infos->{$pid}->{$method}->[1]/$sum)*100);
 }
 
@@ -3417,22 +3428,16 @@ sub dejavu_hash_projects_patients {
 	}
 	
 	
-	warn Dumper $hres;
 	return $hres;
 }
 
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
 	unless (exists $self->{array_dejavu}) {
-		
 		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
-	
-#	unless (exists $self->{array_dejavu}) {
-#		my $hash = $self->getProject->getDejaVuInfosForDiagforVariant($self);
-#		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
-#	}
+
 	return $self->{array_dejavu} unless $key;
 	my $index = $self->buffer->index_dejavu($key);
 	return  $self->{array_dejavu}->[$index];

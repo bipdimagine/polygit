@@ -1136,7 +1136,8 @@ sub description_public_lmdb_database {
 
 	 return $self->{config}->{$database} if exists $self->{config}->{$database};
 	my $version = $self->public_data_version;
-	my $dir = $self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
+	my $dir = $self->get_index_database_directory($database);
+	#$self->public_data_root."/".$self->annotation_genome_version."/".$self->public_data->{$version}->{$database}->{config}->{directory};
 	
 	my $f ="$dir/description.json";
 	 $f  =  "$dir/version.json"  unless -e $f;
@@ -1713,7 +1714,7 @@ sub log2 {
 	 return -2 if $n <0.01;
 	 my $v = log($n)/log(2);
 	 $v =-2 if $v < -2; 
-    return $v;
+    return  sprintf("%.2f",$v);
 }
 ########
 # SEREAL 

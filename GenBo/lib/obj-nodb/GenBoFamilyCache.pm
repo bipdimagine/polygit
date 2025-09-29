@@ -45,6 +45,15 @@ has hash_models_genetics_used => (
 	default => sub { {} },
 );
 
+has static_ids => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub { 
+		my $self = shift;
+		my @ids = sort {$a->id <=> $b->ids} @{$self->getMembers} ;
+		return join("-",@ids);
+	 },
+);
 # nom du model genetique utilise sur cette famille
 sub used_model {
 	my $self = shift;
@@ -98,7 +107,6 @@ has stats_categories => (
 ##### METHODS #####
 
 
-
 sub get_vector_keep_var_compound {
 	my ($self, $chr) = @_;
 	my $vector = $chr->getNewVector();
@@ -144,6 +152,7 @@ sub getVariantsVector {
 	$self->{variants}->{$chr_obj->id()} = $var;
 	return $self->{variants}->{$chr_obj->id()};
 }
+
 
 # for polyquery
 sub setCurrentVariantsVector {

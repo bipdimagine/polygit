@@ -501,7 +501,13 @@ has variants_same_position  => (
 		return undef;
 	}		
 );
-
+has log2_ratio  => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		return 0;
+	}		
+);
 sub setCnvValues {
 	my ($self,$chr,$patient,$variant)  =@_;
 	
@@ -583,6 +589,7 @@ sub set_patient_cache {
 			$hh->{sr} = $vh->sr($p);
 			$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
 			$hh->{norm_depth_after} = $vh->getNormDPAfter($p);
+			$hh->{log2_ratio} =  $vh->getLog2Ratio($p);
 			
 		}
 		elsif ($vh->isDude){
@@ -593,6 +600,7 @@ sub set_patient_cache {
 			$hh->{gt} = $vh->getSequencingGenotype($p);
 			$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
 			$hh->{norm_after_after} = $vh->getNormDPAfter($p);
+		
 		}
 		else {
 			$hh->{name} = $p->name;
@@ -909,7 +917,112 @@ has get_genes_transcripts_details_dup_del => (
 		return $h;
 	},
 );
+sub setParquetVariant {
+	my ($self,$vh,$patient) = @_; 
+	my $project = $patient->getProject();
+	$self->id($vh->{variant_index});
+	$self->start($vh->{variant_start});
+	$self->end($vh->{variant_start});
+	
+	#$self->ref_allele($vh->ref_allele);	
+	#$self->allele($vh->alternate_allele);
+	
+#		if ($self->allele && length ($self->allele) > 50 ){
+#			my $s = "+";
+#			$s="-" if $vh->isDeletion;
+#			$self->allele($s.length($self->allele));
+#		}
 
+		#######################
+		# les IOs
+		#######################
+
+		$self->gnomad_id($vh->{variant_gnomad_id});
+		$self->rocksdb_id($vh->{variant_rocksdb_id});
+		$self->chromosome($vh->{variant_chromosome});
+		$self->name($vh->{variant_gnomad_id});
+		$self->type($vh->{variant_type});
+		#$self->{reference} = ref($vh);
+		#######################
+		#hgmd et clinvar
+		#######################
+		
+		
+		
+
+		$self->clinvar_id($vh->{variant_clinvar_id});
+		$self->clinvar($vh->{variant_clinvar_class}) ;
+		
+		
+		################
+		# Calling
+		##################
+		
+		#$self->isJunction(0);
+		#$self->isSrPr($vh->isSrPr);
+		#if ($vh->isCnv){
+		#	$self->isCnv(1);
+		#}
+		#else {
+			$self->isCnv(0);
+		#}
+
+		
+		#################
+		# gnomad
+		##################
+		
+		$self->gnomad_ac($vh->{variant_gnomad_ac});
+		$self->gnomad_an($vh->{variant_gnomad_an});
+		$self->gnomad_min_pop_name($vh->{gnomad_min_pop_name});
+		$self->gnomad_min_pop($vh->{gnomad_min_pop_freq});
+		$self->gnomad_max_pop_name($vh->{gnomad_max_pop_name});
+		$self->gnomad_max_pop($vh->{gnomad_min_pop_freq});
+		$self->gnomad_ho($vh->{variant_gnomad_ho});
+		$self->gnomad_ho_male($vh->{variant_getGnomadAC_Male});
+		
+	
+	#########
+	# DEJAVU
+	#########
+	 
+	$self->dejavu_other_projects($vh->{variant_other_projects});
+	$self->dejavu_other_patients($vh->{variant_other_patients});
+	$self->dejavu_other_patients_ho($vh->{variant_other_patients_ho});
+	$self->dejavu_similar_projects( $vh->{variant_similar_projects});
+	$self->dejavu_similar_patients($vh->{variant_similar_patients});
+	$self->dejavu_similar_patients_ho($vh->{variant_similar_patients_ho});
+	$self->dejavu_this_run_patients($vh->{in_this_run_patients});# = '-';
+	
+	$self->text_caller([]);
+
+	foreach my $p (@{$patient->getFamily()->getMembers}){
+		my $suffix = "patient_".$patient->id;
+		next unless exists $vh->{$suffix."_alt"};
+	#	next if $vh->{$suffix."_alt"} == -1;
+		
+		$self->{patients_calling}->{$patient->id}->{model} = $vh->{$suffix."_transmission"} ;
+		$self->{patients_calling}->{$patient->id}->{gt} = $vh->{$suffix."_type"} ;
+		$self->{patients_calling}->{$patient->id}->{sr} = undef ;
+		$self->{patients_calling}->{$patient->id}->{pr} = undef ;
+		$self->{patients_calling}->{$patient->id}->{id} =  $patient->id;
+		$self->{patients_calling}->{$patient->id}->{dp} = $vh->{$suffix."_alt"} +$vh->{$suffix."_ref"} ;
+		$self->{patients_calling}->{$patient->id}->{pc} = $vh->{$suffix."_ratio"} ;
+		$self->{patients_calling}->{$patient->id}->{array_text_calling} = [];	
+
+	}	
+	
+	#push(@column_patient,"patient_".$c."_ref");
+	#push(@column_patient,"patient_".$c."_alt");
+	#push(@column_patient,"patient_".$c."_ratio");
+	#push(@column_patient,"patient_".$c."_type");
+	#push(@column_patient,"patient_".$c."_transmission");
+	
+}
+sub setTranscriptFromParquet {
+	my ($self,$vh,$project) =@_;
+	$self->$self->transcripts($vh);
+}
 
 sub setLmdbVariant {
 	my ($self,$vh,$project,$gene,$patient) = @_; 

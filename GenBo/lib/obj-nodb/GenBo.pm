@@ -1266,9 +1266,9 @@ sub getPatient {
 	my ($self, $patientIdName,$notest) = @_;
 	$self->getPatients();
 	$self->patients_object;
+	return $self->getProject()->{objects}->{patients}->{$patientIdName} if exists $self->getProject()->{objects}->{patients}->{$patientIdName};
 	unless ($patientIdName) { $self->_errorMethod('getPatient'); }
 	my $p = $self->_getOneObjectByName($self->getPatients(), $patientIdName,1);
-	
 	return $p if $p;
 	if (exists($self->getProject()->{objects}->{patients}->{$patientIdName})) { 
 		warn Dumper keys %{$self->getProject()->{objects}->{patients}};

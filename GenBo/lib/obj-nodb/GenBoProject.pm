@@ -681,8 +681,9 @@ has rocks_cache_dir => (
 	#return "/rocks/NGS2025_08811/";	
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
-
-	my $name = $self->buffer->config_path("root","cache").'/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	my $root= $self->buffer->config_path("root","cache");
+	#$root ="/data-pure/polycache/rocks";
+	my $name = $root.'/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
 	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
 	$name .= "/".$self->name();
 	$self->makedir($name);

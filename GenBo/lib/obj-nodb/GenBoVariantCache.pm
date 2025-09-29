@@ -2,6 +2,7 @@ package GenBoVariantCache;
 use strict;
 use Moo;
 use Carp;
+ use List::Util qw( max min sum);
 use Data::Dumper;
 extends 'GenBoCache';
 
@@ -22,6 +23,7 @@ sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
 	if (exists $self->{dejaVuInfosForDiag2}){
 		my $hash = delete $self->{dejaVuInfosForDiag2};
+		
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
 #		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
@@ -29,8 +31,14 @@ sub dejaVuInfosForDiag2 {
 		
 	if (exists $self->{cad}){
 		my $a = delete $self->{cad}; #aka compress dejavu for diag
+		#my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
+	#	$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 		my @aa = unpack("w*",$a);
-		$self->{array_dejavu} = \@aa;
+		my $m = max (@aa);
+		confess() if $m > 1000000;
+	#	warn Dumper @aa;
+	#	die();
+	 $self->{array_dejavu} = \@aa;
 	}
 	return $self->{array_dejavu} unless $key;
 	my $index = $self->buffer->index_dejavu($key);
@@ -336,6 +344,7 @@ sub isMosaicTransmission {
 	my $sample_var_1 = $self->text_heho($child);
 	unless ($sample_var_1) {
 			warn "\n\nERROR: pb with $var_id and patient ".$child->name()."... Die\n\n";
+			warn $self->name();
 			confess ();
 		}
 	foreach my $parent (@{$fam->getParents()}) {
@@ -348,8 +357,13 @@ sub isMosaicTransmission {
 		#->{he_ho_details};
 		
 		my $sample_var_2 = $self->text_heho($parent);#->{he_ho_details};
+		#next unless  $sample_var_2 ;
 		unless ($sample_var_2) {
+			warn $self->vector_id;
+			warn "--".$parent->getHe($chr)->contains($self->vector_id());
+			warn Dumper $self->sequencing_infos();
 			warn "\n\nERROR: pb with $var_id (parent: ".$parent->name().")... Die\n\n".$self->vector_id()."\n";
+			warn $parent->id." ".$parent->name;
 			confess ($self->id);
 		}
 		

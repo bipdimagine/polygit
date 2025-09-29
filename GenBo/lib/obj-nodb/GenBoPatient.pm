@@ -2329,6 +2329,13 @@ sub normalize_depth {
 	my @array = map{int($_/$self->normalized_reads *100)/100} @{$self->getNoSqlDepth->getDepth( $chr->name, $start, $end )};
 	return \@array;
 }
+sub mean_normalize_depth {
+	my ( $self, $chr_name, $start, $end ) = @_;
+	my $chr   = $self->project->getChromosome($chr_name);
+	my $a = $self->normalize_depth($chr->name,$start,$end);
+	return  int(sum(@$a)/scalar(@$a));
+}
+	
 sub meanDepth {
 	my ( $self, $chr, $start, $end ) = @_;
 	$end = $start +1 if $start == $end;

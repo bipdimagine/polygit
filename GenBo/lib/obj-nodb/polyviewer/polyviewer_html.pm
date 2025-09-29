@@ -277,7 +277,6 @@ sub html_parent_line_variant {
 sub calling_variation_xslate {
 	my ($self) = @_;
 	my $gene = $self->variant->gene;
-	my $gene_name =  $gene->{id};
 	my $patient_name  = $self->patient->name;
 	my $patient = $self->patient;
 	$self->variant->{text_caller} = [] unless $self->variant->text_caller;
@@ -348,6 +347,9 @@ sub calling_variation_xslate {
 		  		$hchild->{$type."_model"} = "-" unless $hsample->{model};
 				$hchild->{$type."_model"}= $self->return_genetic_model($hsample->{model});
 				$hchild->{$type."_color_model"}  =$self->color_genetic_model($hsample->{model},$patient);
+				my $a = [];
+				$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
+				$text_caller .= join("<br>",@{$a});
 				push(@{$data->{child}},$hchild);
 		  	}
 		  }
@@ -382,7 +384,7 @@ sub calling_cnv_xslate {
 	my $patient_name  = $self->patient->name;
 	my $patient = $self->patient;
 	$self->variant->{text_caller}  = [] unless $self->variant->text_caller;
-	my $text_caller = join( ", ", @{ $self->variant->text_caller } ); 
+	my $text_caller = "";#join( ", ", @{ $self->variant->text_caller } ); 
 	my $variation_id = $self->variant->id;
 	my $samples = $self->variant->patients_calling();
 	my $project = $self->project;
@@ -416,9 +418,14 @@ sub calling_cnv_xslate {
 				$data->{$type."_color_model"} = $self->color_genetic_model($hsample->{model},$patient);
 				$data->{$type."_pr"} = $hsample->{pr} ;
 				$data->{$type."_sr"} =$hsample->{sr};
-	
-				$hsample->{dude} =0 unless exists  $hsample->{dude};
-				$data->{$type."_score"} = $hsample->{dude_score};
+#				$data->{$type."_score"} = $hsample->{dude_score};
+#				$data->{$type."_score"} = $hsample->{dude_score};
+#				unless ($data->{$type."_score"} ){
+#					my $mean = ($hsample->{norm_depth_after} + $hsample->{norm_depth_before})/2;
+#					$data->{$type."_score"} = int( ($hsample->{norm_depth}/$mean) *100)/100;
+#				}
+#				$hsample->{dude} =0 unless exists  $hsample->{dude};
+				
 				$data->{$type."_norm_dp"} = $hsample->{norm_depth};
 				
 				my $text_norm_dp_m = $hsample->{norm_depth}; 
@@ -446,6 +453,12 @@ sub calling_cnv_xslate {
 	
 				$hsample->{dude} =0 unless exists  $hsample->{dude};
 				$data->{$type."_score"} = $hsample->{dude_score};
+#				unless ($data->{$type."_score"} ){
+#					my $mean = ($hsample->{norm_depth_after} + $hsample->{norm_depth_before})/2;
+#					$data->{$type."_score"} = 	int( ($hsample->{norm_depth}/$mean) *100)/100;
+#				}
+				$data->{$type."_norm_dp"} = $hsample->{norm_depth};
+			
 				$data->{$type."_norm_dp"} = $hsample->{norm_depth};
 				my $text_norm_dp_m = $hsample->{norm_depth}; 
 		  	}
@@ -471,14 +484,22 @@ sub calling_cnv_xslate {
 	
 				$hchild->{dude} =0 unless exists  $hsample->{dude};
 				$hchild->{$type."_score"} = $hsample->{dude_score};
+#				unless ($hchild->{$type."_score"} ){
+#					my $mean = ($hsample->{norm_depth_after} + $hsample->{norm_depth_before})/2;
+#					$hchild->{$type."_score"} = int( ($hsample->{norm_depth}/$mean) *100)/100;
+#				}
 				$hchild->{$type."_norm_dp"} = $hsample->{norm_depth};
-				$hchild->{$type."_norm_dp_after"} = $hsample->{norm_depth_after};
-				$hchild->{$type."_norm_dp_before"} = $hsample->{norm_depth_before};
+				#$hchild->{$type."_norm_dp_after"} = $hsample->{norm_depth_after};
+				#$hchild->{$type."_norm_dp_before"} = $hsample->{norm_depth_before};
 				my $text_norm_dp_m = $hsample->{norm_depth}; 
+					my $a = [];
+					$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
+				 $text_caller = join("<br>",@{$a});
+				
 				push(@{$data->{child}},$hchild);
 		  	}
 		  }
-		  $data->{text_caller} = $text_caller;
+		$data->{text_caller} = $text_caller;
 		 my $output = $self->xslate->render("calling_sv.tt", $data);
 	
 		return $output;
@@ -1622,78 +1643,9 @@ sub transcripts_variants_xslate {
 	my ($self) =@_;
 	my $gene = $self->variant->gene;
 	my $atr = $self->variant->transcripts;
-	
 	# revel
-	my $revel = $self->variant->revel;
-	
-	
-	
-#	 unless( $revel eq "-"){
-#	  	
-#	 	$revel = $self->printBadge($revel,[0.5,0.9]);
-#	 }
-#	 else {
-#	 	$revel = $minus;
-#	 }
-#	my $dbscsnv = $self->variant->rf;
-#	 my $ada =  $self->variant->ada;
-#	  unless( $dbscsnv eq "-"){
-#	 	$dbscsnv = $self->printBadge($dbscsnv,[0.6,0.9]).$self->printBadge($ada,[0.6,0.9]);
-#	 }
-#	 else {
-#	 	$dbscsnv = $minus;
-#	 }
-
-#	 my $cadd =  $self->variant->cadd;
-#	 #warn $cadd;
-#	 $cadd = "-" unless $cadd;
-	 
-	# unless( $cadd eq "-"){
-	 #	$cadd = $self->printBadge($cadd,[20,30]);
-	 #}
-	 #else {
-	 #	$cadd = $minus;
-	 #}
-	 #warn $self->variant->cadd." ".$cadd;
-#	 my $spliceAI = $self->variant->spliceAI;
-#	 my $cat = $self->variant->spliceAI_cat;
-#	 unless ($spliceAI){
-#	 	$spliceAI = -1;
-#	 }
-#	 unless ($spliceAI == -1){
-#		my $text = $cat.':'.$spliceAI;
-#		if ($spliceAI == 0) { $text = '0'; }
-#		my $text_alert = "";
-#		$spliceAI = $self->printButtonWithAlert($spliceAI,[0.5, 0.9],$text,$text_alert);
-#	 }
-#	 else {
-#		$spliceAI = $minus;
-#	 }
-#	 
-	 
-#	 foreach my $htr (@$atr){
-#	 	$htr->{revel} = $revel;
-#	 	$htr->{cadd} = $cadd;
-#	 	$htr->{revel} = $revel;
-#	 	$htr->{dbscsnv} =$dbscsnv;
-#	 	$htr->{$spliceAI} = $b_spliceai;
-#	 	$htr->{dbscsnv} =  $self->printButton($htr->{impact_score},[3,4],$htr->{consequence});
-#	 }
-#$self->variant->spliceAI
-#	my $text_alert = "";
-#	my $var_spliceai_id = 'chr'.$self->variant->id();
-#	my $cmd_btn = qq{onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=$var_spliceai_id&hg=37&distance=1000&mask=0&precomputed=0','_blank')"};
-#	my $b_spliceai = $self->printButtonWithCmd(0,[0.5, 0.9],"<span class='glyphicon glyphicon-pencil' aria-hidden='true'/>",$cmd_btn);
-my $mane = 1;
- unless ( $self->project->isRocks){
- 		foreach my $t (@$atr){
- 			my ($a,$b) = split(":",$t->{dbscsnv});
- 			$t->{polyphen} = -99 if  $t->{polyphen} eq "-";
- 			$t->{dbscsnv} = $a ;
- 		}
- 		$mane = 0;
- 		
- }
+	my $mane = 1;
+ 	
 	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};
 	 my $output = $self->xslate->render("transcripts.tt", $data);
 	 return $output;
