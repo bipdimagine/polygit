@@ -438,8 +438,6 @@ sub dejavu {
 						
 						my $omim = 0;
 						
-						
-
 
 						# calculer le score gene max correspondant a la liste de gene associe au variant
 						$cnv->{genes} = [];

@@ -283,6 +283,7 @@ foreach my $patobj (@$listPatients)
 	
 				my $hash = parse_wisecondor::parse_cnv($patient);
 				warn "wisecondor".$patient->name;
+				warn Dumper $hash;
 				$hPat_CNV->{'caller_coverage'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
 		}
 		if ($type_by_caller->{$caller} == $type_caller->{caller_sr}){
