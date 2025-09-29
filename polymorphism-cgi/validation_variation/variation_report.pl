@@ -99,7 +99,7 @@ foreach my $patient (@{$project->getPatients}){
 }
 }
 foreach my $pr2 (keys %$ps){
-	
+	warn $pr2;
 	my @listp = map{$ps->{$pr2}->{$_}} keys %{$ps->{$pr2}};
 	my $buffer2 = GBuffer->new();
 	my $project2 = $buffer->newProject(-name=>$pr2);
