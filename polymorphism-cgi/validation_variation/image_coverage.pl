@@ -45,11 +45,12 @@ my $transcript_name = $cgi->param('transcript');
 my $utr =$cgi->param('utr')+0;
 my $intronic = $cgi->param('intronic')+0;
 my $limit = $cgi->param('limit');
+
 my $padding = $cgi->param('span');
 my $patient_names =  $cgi->param('patients');
 
 my $project = $buffer->newProject(-name=>$project_name);
-
+$limit= 15 if $project->validation_db() eq 'glucogen' ;
 #my $f = $project->coverageImagesCoverageFile;
 #my $kyoto_id = join("_",("all",$transcript_name,$utr,$intronic,$limit,$padding));
 my $tr1 = $project->newTranscript($transcript_name);

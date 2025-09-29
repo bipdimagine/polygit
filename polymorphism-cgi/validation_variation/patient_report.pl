@@ -2221,11 +2221,14 @@ sub print_variation_td_edit{
 				
 				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ) {
 					my $url = $deja_vu_url.$variation->{id};
+						my $onclick = qq{<a onclick  style="color:black;font-weight:bold">$text</a>};
 					 if (exists $variation->{dup}){
-					 	$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
+					 
+					 	$text = qq{<a $onclick  style="color:black;font-weight:bold">$text</a>};
 					 }
 					 else {
-					$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
+					 	$text = qq{<a $onclick  style="color:black;font-weight:bold">$text</a>};
+						#$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
 					 }
 					 $text = update::printSimpleBadge(qq{$text},3);
 					
