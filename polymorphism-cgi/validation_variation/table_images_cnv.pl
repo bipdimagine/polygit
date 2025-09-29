@@ -66,7 +66,8 @@ my $project = $buffer->newProject( -name => $project_name );
 ##
 my $no_cache = $project->get_lmdb_cache_cnv("w");
 my $version = 1;
-my $key = return_uniq_keys($cgi);	
+my $key = return_uniq_keys($cgi);
+my $bin = 	
 my $cache_id = md5_hex("polydiag_cnv_".join(";",@$key).".$version");
 my $text = $no_cache->get_cache($cache_id);
 #$text= undef;
@@ -100,7 +101,6 @@ my $limit   = $cgi->param('limit');
 my $padding = $cgi->param('span');
 
 my @transcripts_cgi;
-
 my $cgi_transcript = $cgi->param('transcripts');
 if ( $cgi_transcript eq "all" ) {
 	@transcripts_cgi = @{ $project->bundle_transcripts() };
@@ -108,7 +108,6 @@ if ( $cgi_transcript eq "all" ) {
 else {
 	@transcripts_cgi = split( ",", $cgi_transcript );
 }
-warn Dumper @transcripts_cgi;
 my $capture = $project->getCaptures()->[0];
 my $vquery;
 
@@ -123,7 +122,6 @@ foreach my $run (@$runs) {
 
 if ( $project->isDude ) {
 	@transcripts_cgi = select_transcripts( $project, \@transcripts_cgi );
-	warn Dumper @transcripts_cgi;
 }
 else {
 	$out .= html::print_cadre( $cgi, "CNV" );
@@ -143,12 +141,17 @@ else {
 	exit(0);
 }
 my @transcripts;
-warn Dumper @transcripts_cgi;
+
 foreach my $tid (@transcripts_cgi  ){
 	push(@transcripts,$project->newTranscript("$tid"));
 }
-#my @transcripts = sort{$a->getGene->external_name cmp $b->getGene->external_name} @{ $project->newTranscripts( \@transcripts_cgi ) };
-
+my @transcripts;
+if ($order eq "position"){
+	@transcripts = sort{$a->getChromosome->karyotypeId <=> $b->getChromosome->karyotypeId || $a->start <=> $b->start } @{ $project->newTranscripts( \@transcripts_cgi ) };
+}
+else {
+ @transcripts = sort{$a->getGene->external_name cmp $b->getGene->external_name} @{ $project->newTranscripts( \@transcripts_cgi ) };
+}
 
 $out .= html::print_cadre( $cgi, "CNV" );
 $out .= $cgi->start_table(
@@ -386,6 +389,9 @@ my ($cgi) = @_;
 my %hkeys = $cgi->Vars;
 my @keys;
 my $string;
+my $file1 = "$Bin/../GenBo/lib/obj-nodb/packages/image_coverage.pm";
+my $script = __FILE__;;   # le script en cours
+my $md5 = file_md5_hex($file1).file_md5_hex($script);
 foreach my $k  (sort {$a cmp $b} keys %hkeys){
 	next if $k =~ /force/;
 	next if $k =~ /user/;
@@ -402,7 +408,7 @@ my @st = (stat($f2));
 push(@keys, ($st[9].$st[11].$st[12]));
 $f2 = "$dir_out/1";
 my @st2 = (stat($f2));
-push(@keys, ($st2[9].$st2[11].$st2[12]));
+push(@keys, ($st2[9].$st2[11].$st2[12],$md5));
 return \@keys;
 }
 #
