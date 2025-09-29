@@ -1570,7 +1570,9 @@ function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
   									tabcnvYF.push(tabYF[i]);
   							}
   						}	
-  	
+  						console.dir(tabplotYM);
+						console.dir(tabplotYF);
+						console.dir(tabplotBAX);
   						var trace7 = {
   							x:tabplotBAX,
   							y:tabplotYM,

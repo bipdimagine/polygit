@@ -87,6 +87,7 @@ function load_polydude_args() {
 
 function load_polyviewer_args(mode,dm) {
 
+		
 	var argsPost = {project:project_name,
     		edit_mode: mode,
 			only_DM : dm,
@@ -96,13 +97,22 @@ function load_polyviewer_args(mode,dm) {
     		dv: dijit.byId("slider_dv_pv").value,
     		dv_ho: dijit.byId("slider_dv_ho_pv").value,
 			in_this_run: dijit.byId("slider_polyviewer_this").value,
-    		allele_quality: document.getElementById("htoto").value,
     		report_mode:1,
     		user_name: cookie_username,
     		annot: functional_url_filter_data(),
     	
 		
 		};
+		
+	if (document.getElementById("vratio").value  !== '-') {
+		argsPost["ratio"] =document.getElementById("vratio").value;
+		}
+		if (document.getElementById("valt").value  !== '-') {
+				argsPost["alt"] =document.getElementById("valt").value;
+		}
+		if(document.getElementById("vref").value  !== '-') {
+					argsPost["ref"] =document.getElementById("vref").value;
+		}
 	/*filtering argument*/
 	if (document.getElementById("keep_pathogenic")) {
 		if (document.getElementById("keep_pathogenic").checked == true)  argsPost["keep_pathogenic"] = 1;
