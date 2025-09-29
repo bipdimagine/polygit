@@ -2,7 +2,7 @@ package GenBoChromosome;
 
 use strict;
 use Moo;
-
+use JSON::XS;
 use Carp;
 use Data::Dumper;
 use Config::Std;
@@ -2157,7 +2157,23 @@ sub rocksdb {
 	my $dir = $self->buffer->get_index_database_directory($db);
 	$self->project->{rocks}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$self->name);
 	return $self->project->{rocks}->{$db};
-	
+}
+
+sub rocksdb_version {
+	my($self,$db) = @_;
+	confess unless $db;
+	my $dir = $self->rocksdb($db)->{dir};
+	my $json_file = $dir.'/description.json';
+	$json_file = $dir.'/version.json' if not -e $json_file;
+	if (-e $json_file) {
+		open( DESC, $json_file ) or die("$!");
+		my $json = <DESC>;
+		close(DESC);
+		my $h = decode_json($json);
+		return $h->{version} if exists $h->{version};
+		return;
+	}
+	return;
 }
 
 sub rocks_predictions {

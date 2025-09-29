@@ -192,6 +192,14 @@ has is_dragen => (
 	},
 );
 
+has isDude => (
+	is		=> 'ro',
+	lazy 	=> 1,
+	default	=> sub {
+		return;
+	},
+);
+
 has is_star => (
 	is		=> 'ro',
 	lazy 	=> 1,
@@ -354,6 +362,16 @@ sub get_canonic_count {
 	confess();
 }
 
+sub getNormDP {
+	my ($self,$patient,$method) = @_;
+	return $self->get_dp_count($patient);
+}
+
+sub getDP {
+	my ($self,$patient,$method) = @_;
+	return $self->get_dp_count($patient);
+}
+
 sub get_dp_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
@@ -428,8 +446,9 @@ sub createSashiPlot {
 	if ($junction->getProject->is_human_genome()) { $cmd .= " -c chr".$locus; }
 	else { $cmd .= " -c ".$locus; }
 	$cmd .= " -o ".$file;
-	confess("pourquoi isilon ecrit en dur");
-	$cmd .= " -P /data-isilon/bipd-src/mbras/ggsashimi/ggsashimi-master/colors/black.txt";
+#	confess("pourquoi isilon ecrit en dur");
+	my $config_file = $patient->getProject->buffer->config_directory().'/sashimi_plots/black.txt';
+	$cmd .= " -P ".$config_file;
 	$cmd .= " -C 1";
 	$cmd .= " --shrink --alpha 0.25 --base-size=20 --ann-height=4 --height=3 --width=18";
 	$cmd .= " -g ".$patient->getProject->get_gtf_genes_annotations_igv();
@@ -439,7 +458,7 @@ sub createSashiPlot {
 	elsif ($nb_new >= 50)   { $cmd .= " -M 10"; }
 	elsif ($nb_new >= 20)   { $cmd .= " -M 5"; }
 #	warn "\n";
-#	warn $cmd;
+	warn $cmd;
 	`$cmd`;
 	return $file;
 }
@@ -808,6 +827,7 @@ sub hash_in_this_run_patients {
 	$ratio = 0 unless $ratio;
 	return $self->{inthisrun}->{$ratio} if exists $self->{inthisrun}->{ratio};
 	$self->{inthisrun}->{$ratio} = undef;
+	$self->getProject->getFamilies();
 	foreach my $patient (@{$self->getPatients()}) {
 		my $fam_name = $patient->getFamily->name();
 		$self->{inthisrun}->{$ratio}->{$fam_name}->{$patient->name()} = $ratio  if $self->get_percent_new_count($patient) >= $ratio;
@@ -838,7 +858,7 @@ sub dejavu_patients {
 	my($self,$ratio,$patient) = @_;
 	
 	#TODO: a faire dejavu hg38
-	return 0;
+#	return 0;
 	
 	
 	$ratio = "all" unless $ratio;

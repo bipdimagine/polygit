@@ -1030,7 +1030,7 @@ sub exists_disomy {
 
 			my $max  = -10;
 			my $show = 0;
-		warn Dumper $hash->{$chr} if $chr eq "14";
+	#	warn Dumper $hash->{$chr} if $chr eq "14";
 		# Detection de larges deletions
 			if (( $hash->{$chr}->{"TRANSMIS_BYF"} > 10 )	&& ( $hash->{$chr}->{"TRANSMIS_BYM"} > 10 )) # pas d'unidisomie
 			{
@@ -1108,6 +1108,7 @@ sub header_run {
 	$version->{hgmd} = $buffer->description_public_lmdb_database("hgmd")->{version};
 	$version->{cadd} = $buffer->description_public_lmdb_database("cadd")->{version};
 	$version->{clinvar} = $buffer->description_public_lmdb_database("clinvar")->{version};
+
 	my $diro = $project->rocks_directory();
 	my $date_cache = utility::return_date_from_file( $diro."/genbo/1.genbo.rocks.rocksdb/configuration.db.json" );
 	#
@@ -1721,10 +1722,9 @@ sub statistics_projects {
 			my $project2 = $buffer2->newProject( -name => $p );
 			next unless $project2->existsnoSqlQuality;
 			my $no = $project2->noSqlQuality("r");
-			warn $no->dir;
+#			warn $no->dir;
 			foreach my $v ( "coverage_stats", "statistics_variations" ) {
 				my $data = $no->get( $project2->name, "$v" );
-
 				next unless $data;
 				
 				$nbpp++;
@@ -1763,6 +1763,8 @@ sub statistics_projects {
 			}
 		}
 	}
+	
+	
 	unless ($this_stats) {
 		$gstat->{"15X"}  = Statistics::Descriptive::Full->new();
 		$gstat->{"30X"}  = Statistics::Descriptive::Full->new();
@@ -2844,10 +2846,10 @@ qq{<i class="fa fa-child fa-1x" aria-hidden="true" style="color:red"></i>}
 		$out .=
 		  $cgi->td( { style => "border: 1px solid black;" }, $cov->{mean} );
 		  if (exists $cov->{"20x"}){
-		  	$out .= $cgi->td( { style => "border: 1px solid black;" },$cov->{"20x"} . "-20%" );
+		  	$out .= $cgi->td( { style => "border: 1px solid black;" },$cov->{"20x"}->{$patient->id} . "-20%" );
 		  }
 		  else{
-		  		$out .= $cgi->td( { style => "border: 1px solid black;" },$cov->{"30x"} . "-30%" );
+		  		$out .= $cgi->td( { style => "border: 1px solid black;" },$cov->{"30x"}->{$patient->id} . "-30%" );
 		  }
 
 		my $hval = $project->validations_query->getValidationPatient($patient);

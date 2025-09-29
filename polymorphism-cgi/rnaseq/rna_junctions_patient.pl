@@ -118,7 +118,6 @@ my $h_chr_vectors_counts;
 
 
 my $has_regtools_vectors = 1;
->>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 my $exists_vector_ratio_10;
 foreach my $chr ( @{ $project->getChromosomes() } ) {
 #	warn $chr->id;
@@ -149,17 +148,9 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 	$j_selected += $h_chr_vectors_counts->{ $chr->id };
 	$exists_vector_ratio_10++ if exists $chr->patients_categories->{$patient->name().'_ratio_10'};
 	
-	if ($h_chr_vectors_counts->{ $chr->id } > 0) {
-		$has_regtools_vectors = 1 if exists $chr->global_categories->{'N'};
-		$has_regtools_vectors = 1 if exists $chr->global_categories->{'D'};
-		$has_regtools_vectors = 1 if exists $chr->global_categories->{'A'};
-		$has_regtools_vectors = 1 if exists $chr->global_categories->{'DA'};
-		$has_regtools_vectors = 1 if exists $chr->global_categories->{'NDA'};
+	if ($h_chr_vectors_counts->{ $chr->id } > 0 and $patient->hasVectorRegtools($chr)) {
+		$has_regtools_vectors = 1;
 	}
-=======
-#	$exists_vector_ratio_10++ if exists $chr->patients_categories->{$patient->name().'_ratio_10'};
-	
->>>>>>> branch 'pnitschk1' of https://github.com/bipdimagine/polygit.git
 }
 my $cache_id = 'splices_linked_' . $patient->name();
 my $no_cache = $patient->get_lmdb_cache("r");
@@ -503,12 +494,13 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		if ($min_score and $min_score =~ /^[1-9]0$/) {
 			$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $patient->getVectorOriginJunctionsRatio($chr, $min_score));
 		}
-		
-		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsNDA($chr) if (not $only_junctions_NDA);
-		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsDA($chr)  if (not $only_junctions_DA);
-		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsA($chr)   if (not $only_junctions_A);
-		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsD($chr)   if (not $only_junctions_D);
-		$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsN($chr)   if (not $only_junctions_N);
+		if ($patient->hasVectorRegtools($chr)) {
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsNDA($chr) if (not $only_junctions_NDA);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsDA($chr)  if (not $only_junctions_DA);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsA($chr)   if (not $only_junctions_A);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsD($chr)   if (not $only_junctions_D);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsN($chr)   if (not $only_junctions_N);
+		}
 	}
 	
 	my @lJunctionsChr = @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };

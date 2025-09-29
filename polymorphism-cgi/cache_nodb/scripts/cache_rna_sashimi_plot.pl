@@ -50,7 +50,7 @@ my $bam_file = $patient->getBamFiles->[0];
 
 
 my $score = 0;
-my $NB_MAX_PLOTS = 300;
+my $NB_MAX_PLOTS = 250;
 
 if (not $project->is_human_genome()) {
 	print FILE 'PASS not Human release';
@@ -81,25 +81,23 @@ $pm1->run_on_finish(
 	}
 );
 
+$project->disconnect();
 foreach my $chr (@{$project->getChromosomes()}) {
 	my $pid = $pm1->start and next;
-	$buffer->dbh_deconnect();
-	$buffer->dbh_reconnect();
 	my $hres;
 	my $nb_done;
 	$hres->{toto} = undef;
 	my $vector_junctions = $patient->getJunctionsVector($chr);
-	if (exists $chr->patients_categories->{$patient->name.'_ratio_10'}) {
-		$vector_junctions &= $chr->patients_categories->{$patient->name.'_ratio_10'};
-	}
-	if (exists $chr->global_categories->{'dejavu_20_r10'}) {
-		$vector_junctions &= $chr->global_categories->{'dejavu_20_r10'};
-	}
-	if (not $vector_junctions->is_empty and exists $chr->global_categories->{'N'}) {
-		$vector_junctions -= $chr->global_categories->{'N'};
-	}
-	if (not $vector_junctions->is_empty and exists $chr->global_categories->{'DA'}) {
-		$vector_junctions -= $chr->global_categories->{'DA'};
+	$vector_junctions &= $patient->getVectorOriginJunctionsRatio($chr, 10);
+	#$vector_junctions &= $chr->vector_global_categories('dejavu_20_r10');
+	
+	if ($patient->hasVectorRegtools($chr)) {
+		if (not $vector_junctions->is_empty and exists $chr->global_categories->{'N'}) {
+			$vector_junctions -= $chr->global_categories->{'N'};
+		}
+		if (not $vector_junctions->is_empty and exists $chr->global_categories->{'DA'}) {
+			$vector_junctions -= $chr->global_categories->{'DA'};
+		}
 	}
 	foreach my $junction (@{$chr->getListVarObjects($vector_junctions)}) {
 		my $j_pos = $chr->id().'_'.$junction->start().'_'.$junction->end();
@@ -148,46 +146,46 @@ my $bam_tmp = $pipeline_dir."/".$patient_name.".tmp.bam";
 my $bam_tmp_sort = $pipeline_dir."/".$patient_name.".sort.tmp.bam";
 my $bam_rmdup = $pipeline_dir."/".$patient_name.".rmdup.bam";
 
-if (not -e $bam_tmp_sort) { 
-	chdir($pipeline_dir);
-	
-	my $bed_file = $pipeline_dir."/".$patient_name.".regions.bed";
-	open (BED, ">$bed_file");
-	foreach my $chr_id (sort keys %$h_intspan) {
-		foreach my $in (split(',', $h_intspan->{$chr_id}->as_string())) {
-			my ($s, $e) = split('-', $in);
-			print BED "$chr_id\t$s\t$e\n";
-		}
-	}
-	close (BED);
-	
-	my $bam_regions = $pipeline_dir."/".$patient_name.".regions.bam";
-	my $cmd_regions = $buffer->software('samtools')." view -@ $fork -b -M -L $bed_file $bam_file >$bam_regions";
-#	warn "\nR/\n".$cmd_regions;
-	`$cmd_regions`;
-	
-	my $bam_sort = $pipeline_dir."/".$patient_name.".sort.bam";
-	my $cmd_bam = $buffer->software('samtools')." sort -@ $fork -n $bam_regions >$bam_sort";
-#	warn "\n0/\n".$cmd_bam;
-	`$cmd_bam`;
-	
-	my $cmd_bam_1a = $buffer->software('samtools')." fixmate -@ $fork -m -O bam $bam_sort $bam_tmp";
-#	warn "\n1A/\n".$cmd_bam_1a;
-	`$cmd_bam_1a`;
-	
-	my $cmd_bam_1b = $buffer->software('samtools')." sort -@ $fork $bam_tmp >$bam_tmp_sort";
-#	warn "\n1b/\n".$cmd_bam_1b;
-	`$cmd_bam_1b`;
-}
-
-if (not -e $bam_rmdup) { 
-	my $cmd_bam_2 = $buffer->software('samtools')." markdup -@ $fork -r ".$bam_tmp_sort." ".$bam_rmdup;
-#	warn "\n2/\n".$cmd_bam_2;
-	`$cmd_bam_2`;
-	my $cmd_bam_3 = $buffer->software('samtools')." index $bam_rmdup";
-#	warn "\n3/\n".$cmd_bam_3;
-	`$cmd_bam_3`;
-}
+#if (not -e $bam_tmp_sort) { 
+#	chdir($pipeline_dir);
+#	
+#	my $bed_file = $pipeline_dir."/".$patient_name.".regions.bed";
+#	open (BED, ">$bed_file");
+#	foreach my $chr_id (sort keys %$h_intspan) {
+#		foreach my $in (split(',', $h_intspan->{$chr_id}->as_string())) {
+#			my ($s, $e) = split('-', $in);
+#			print BED "$chr_id\t$s\t$e\n";
+#		}
+#	}
+#	close (BED);
+#	
+#	my $bam_regions = $pipeline_dir."/".$patient_name.".regions.bam";
+#	my $cmd_regions = $buffer->software('samtools')." view -@ $fork -b -M -L $bed_file $bam_file >$bam_regions";
+##	warn "\nR/\n".$cmd_regions;
+#	`$cmd_regions`;
+#	
+#	my $bam_sort = $pipeline_dir."/".$patient_name.".sort.bam";
+#	my $cmd_bam = $buffer->software('samtools')." sort -@ $fork -n $bam_regions >$bam_sort";
+##	warn "\n0/\n".$cmd_bam;
+#	`$cmd_bam`;
+#	
+#	my $cmd_bam_1a = $buffer->software('samtools')." fixmate -@ $fork -m -O bam $bam_sort $bam_tmp";
+##	warn "\n1A/\n".$cmd_bam_1a;
+#	`$cmd_bam_1a`;
+#	
+#	my $cmd_bam_1b = $buffer->software('samtools')." sort -@ $fork $bam_tmp >$bam_tmp_sort";
+##	warn "\n1b/\n".$cmd_bam_1b;
+#	`$cmd_bam_1b`;
+#}
+#
+#if (not -e $bam_rmdup) { 
+#	my $cmd_bam_2 = $buffer->software('samtools')." markdup -@ $fork -r ".$bam_tmp_sort." ".$bam_rmdup;
+##	warn "\n2/\n".$cmd_bam_2;
+#	`$cmd_bam_2`;
+#	my $cmd_bam_3 = $buffer->software('samtools')." index $bam_rmdup";
+##	warn "\n3/\n".$cmd_bam_3;
+#	`$cmd_bam_3`;
+#}
 
 
 
@@ -198,7 +196,8 @@ foreach my $junction (@lJunctions) {
 	$buffer->dbh_reconnect();
 #	warn $junction->id;
 	$junction->can_create_sashimi_plots(1);
-	$junction->getListSashimiPlotsPathFiles($patient, $bam_rmdup);
+#	$junction->getListSashimiPlotsPathFiles($patient, $bam_rmdup);
+	$junction->getListSashimiPlotsPathFiles($patient, $patient->getBamFileName());
 	print FILE 'Ok junction '.$junction->id()."\n";
 	$pm->finish();
 }

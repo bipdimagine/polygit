@@ -108,7 +108,7 @@ $pm->run_on_finish(
 	}
 );
 
-
+$project->disconnect();
 foreach my $chr (@{$project->getChromosomes}) {
 	next if $chr->not_used();
 	$pm->start and next;

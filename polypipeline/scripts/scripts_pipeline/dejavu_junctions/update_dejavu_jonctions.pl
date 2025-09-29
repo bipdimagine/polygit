@@ -147,8 +147,16 @@ sub insert_all_junctions {
 		die("\n\nNot exists: $file  - DIE\n") if (not -e $file);
 		open (FILE, $file);
 		my $json = <FILE>;
-		my $h_proj_junctions = decode_json $json;
-		close (FILE);
+		my $h_proj_junctions;
+		eval {
+			$h_proj_junctions = decode_json $json;	
+			close (FILE);
+		};
+		if ($@) {
+			close (FILE);
+			warn 'pb with project '.$this_project_name;
+			next;
+		}
 		
 		my $hres;
 		my $file_tab = $dir_dv_proj.'/'.$this_project_name.'.tab';

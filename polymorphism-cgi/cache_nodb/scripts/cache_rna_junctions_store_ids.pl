@@ -49,7 +49,6 @@ warn "*_*_*_*_*_ fork :".$fork."*_*_*_*_*_";
 system("ulimit -Su unlimited");
 system("ulimit -a >/tmp/test");
 my (@z) = `ulimit -a `;
-warn Dumper @z; 
 
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
 unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
@@ -60,7 +59,6 @@ $buffer->vmtouch(1);
 #warn $buffer->config->{'public_data_annotation'}->{root};
 #my $color = $colors[ rand @colors ];
 my $project = $buffer->newProject( -name => $project_name );
-warn $project->lmdb_cache_dir();
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
 }
@@ -111,20 +109,86 @@ foreach my $hv (@{$ids}) {
 if ($nbErrors > 0) {
 	confess("\n\nERRORS: $nbErrors errors found... confess...\n\n");
 }
-if (scalar keys %{$chr->{cache_hash_get_var_ids}} == 0) {
-	my $cmd = "touch ".$project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty";
-	`touch $cmd`;
-	my $no2 = $chr->get_lmdb_variations("c");
-	$no2->create();
-	$no2->close();
-	warn "empty";
-	store( {}, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) ;  
+#if (scalar keys %{$chr->{cache_hash_get_var_ids}} == 0) {
+#	my $cmd = "touch ".$project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty";
+#	`touch $cmd`;
+#	my $no2 = $chr->get_lmdb_variations("c");
+#	$no2->create();
+#	$no2->close();
+#	warn "empty";
+#	store( {}, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) ;  
+#	
+#	open (FILE, ">$file_ok");
+#	print FILE "OK - EMPTY";
+#	close(FILE);
+#	exit(0);
+#}
+
+my $size_variants = scalar @{$all};
+
+
+
+############
+
+
+my $t = time;
+
+warn 'store 1/4: rocks variations' if ( $project->cache_verbose() );
+my $hh;
+my $h_junct_index;
+my $finalrg = GenBoNoSqlRocksVariation->new(dir=>$project->rocks_directory("genbo"),mode=>"c",name=>$chr_name.".genbo.rocks");
+foreach my $hv ( @{$all} ) {
+	my $var_id = $hv->{id};
+	my $junction = thaw( decompress( $hv->{obj} ) );
+	my $index = $finalrg->put_batch_variation($var_id, $junction);
+	$h_junct_index->{$junction->id()} = $index;
+	$hh->{$var_id} = $junction->{heho_string};
+}
+$finalrg->write_batch();
+$finalrg->close();
+
+
+
+my $rocks3 = $chr->rocks_vector("c");
+$rocks3->size($size_variants);
+
+if($size_variants == 0 ){
+	my $vnull =  Bit::Vector->new(0);
+	foreach my $patient (@{$project->getPatients}){	
+		$rocks3->put_vector_patient_batch($patient,"all",$vnull);
+		$rocks3->put_vector_patient_batch($patient,"he",$vnull);
+		$rocks3->put_vector_patient_batch($patient,"ho",$vnull);
+		$rocks3->put_vector_patient_batch($patient,"ri",$vnull);
+		$rocks3->put_vector_patient_batch($patient,"se",$vnull);
+	}
+	$rocks3->write_batch();
+	$rocks3->close();
+	warn "no variants !!!!";
+	warn "\n\nEND!\n";
 	
 	open (FILE, ">$file_ok");
-	print FILE "OK - EMPTY";
+	print FILE "OK";
 	close(FILE);
 	exit(0);
-}
+} 
+
+my $h;
+my $vector_variation_type;
+my $bitv =  Bit::Vector->new($size_variants);
+$vector_variation_type->{junctions_object} = $bitv;
+$h->{bitvector} = $bitv;
+$rocks3->put_batch_vector_chromosome('junctions_object' ,$bitv);
+
+
+my $v1 = Bit::Vector->new($size_variants);
+$v1->Fill;
+$rocks3->put_batch("all",$v1);
+$rocks3->write_batch();
+
+
+########
+	
+
 
 #end fork now I have a file with all variation and  json  it's time to sort this file and store it in lmdb database
 #construct intspan 	for patient I will store lmdb_id in intspan
@@ -132,7 +196,7 @@ my @patient_names = sort { $a cmp $b } map { $_->name } @{ $project->getPatients
 my $index_patients = 0;
 my $hpatients;
 my $categories_junctions = Cache_Commons::spec_categories_junctions();
-my @categorie_patient = ( "all", "RI", "SE");
+my @categorie_patient = ( "all", "ri", "se", 'junc_ratio_10', 'junc_ratio_20', 'junc_ratio_30', 'junc_ratio_40', 'junc_ratio_50', 'junc_ratio_60', 'junc_ratio_70', 'junc_ratio_80', 'junc_ratio_90', );
 foreach my $c ( keys %{ $categories_junctions->{patients} } ) {
 	push(@categorie_patient, $c);
 }
@@ -141,46 +205,21 @@ foreach my $pname (@patient_names) {
 	$hpatients->{$pname}->{index} = $index_patients++;
 	$hpatients->{$pname}->{name}  = $pname;
 	foreach my $c (@categorie_patient) {
-		$hpatients->{$pname}->{intspan}->{$c} = Set::IntSpan::Fast::XS->new();
+		$hpatients->{$pname}->{vector}->{$c} = Bit::Vector->new($size_variants);
 	}
 }
-
 
 
 #initialisation global categorie
 my $intspan_global_type;
 my $categories = Cache_Commons::categories();
 foreach my $g ( keys %{ $categories->{global}->{variation_type} } ) {
-	$intspan_global_type->{$g} = Set::IntSpan::Fast::XS->new();
+	$intspan_global_type->{$g} = Bit::Vector->new($size_variants);
 }
 foreach my $g ( keys %{ $categories_junctions->{global} } ) {
-	$intspan_global_type->{$g} = Set::IntSpan::Fast::XS->new();
+	$intspan_global_type->{$g} = Bit::Vector->new($size_variants);
 }
 
-
-my $t = time;
-warn 'store 1/4: lmdb variations' if ( $project->cache_verbose() );
-my $no2 = $chr->get_lmdb_variations("c");    #open lmdb database
-#ok sort and read the filewarn
-my $uniq;
-my $hh;
-my $size_variants = 0;
-
-my $h_junct_index;
-foreach my $hv ( @{$all} ) {
-	my $var_id = $hv->{id};
-	next if exists $uniq->{$var_id};
-	$uniq->{$var_id} ++;
-	my $junction = thaw( decompress( $hv->{obj} ) );
-	my $index_lmdb = $no2->put( $var_id, $junction );
-	$h_junct_index->{$junction->id()} = $index_lmdb;
-	$hh->{$var_id} = $junction->{heho_string};
-}
-
-warn "close";
-my $t2 = time;
-$no2->close();
-warn "time : ".abs($t-time)." - close ".abs($t2-time);
 	
 foreach my $hv ( @{$all} ) {
 	my $var_id = $hv->{id};
@@ -190,142 +229,177 @@ foreach my $hv ( @{$all} ) {
 	my $index_lmdb = $h_junct_index->{$junction->id()};
 	$size_variants++;
 	foreach my $patient (@{ $junction->getPatients() }) {
-		$hpatients->{$patient->name()}->{intspan}->{all}->add($index_lmdb);
-		$hpatients->{$patient->name()}->{intspan}->{RI}->add($index_lmdb) if ($junction->isRI($patient));
-		$hpatients->{$patient->name()}->{intspan}->{SE}->add($index_lmdb) if ($junction->isSE($patient));
+		$hpatients->{$patient->name()}->{vector}->{all}->Bit_On($index_lmdb);
+		$hpatients->{$patient->name()}->{vector}->{ri}->Bit_On($index_lmdb) if ($junction->isRI($patient));
+		$hpatients->{$patient->name()}->{vector}->{se}->Bit_On($index_lmdb) if ($junction->isSE($patient));
 		
 		my $junction_type_description = $junction->getTypeDescription($patient);
 		my $ratio = int($junction->get_percent_new_count($patient));
 		
-		$hpatients->{$patient->name()}->{intspan}->{ratio_10}->add($index_lmdb) if ($ratio >= 10);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_20}->add($index_lmdb) if ($ratio >= 20);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_30}->add($index_lmdb) if ($ratio >= 30);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_40}->add($index_lmdb) if ($ratio >= 40);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_50}->add($index_lmdb) if ($ratio >= 50);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_60}->add($index_lmdb) if ($ratio >= 60);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_70}->add($index_lmdb) if ($ratio >= 70);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_80}->add($index_lmdb) if ($ratio >= 80);
-		$hpatients->{$patient->name()}->{intspan}->{ratio_90}->add($index_lmdb) if ($ratio >= 90);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_10}->Bit_On($index_lmdb) if ($ratio >= 10);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_20}->Bit_On($index_lmdb) if ($ratio >= 20);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_30}->Bit_On($index_lmdb) if ($ratio >= 30);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_40}->Bit_On($index_lmdb) if ($ratio >= 40);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_50}->Bit_On($index_lmdb) if ($ratio >= 50);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_60}->Bit_On($index_lmdb) if ($ratio >= 60);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_70}->Bit_On($index_lmdb) if ($ratio >= 70);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_80}->Bit_On($index_lmdb) if ($ratio >= 80);
+		$hpatients->{$patient->name()}->{vector}->{junc_ratio_90}->Bit_On($index_lmdb) if ($ratio >= 90);
 		
 		unless (exists $intspan_global_type->{$junction_type_description}) {
-			$intspan_global_type->{$junction_type_description} = Set::IntSpan::Fast::XS->new();
+			$intspan_global_type->{$junction_type_description} = Bit::Vector->new($size_variants);
 			$categories_junctions->{global}->{$junction_type_description} = undef;
 		}
-		$intspan_global_type->{$junction_type_description}->add($index_lmdb);
+		$intspan_global_type->{$junction_type_description}->Bit_On($index_lmdb);
 	}
 	unless ( exists $intspan_global_type->{ $junction->type() } ) {
 		warn "\n\nERROR: doesn't exists \$intspan_global_type->{".$junction->type() . "}\n\n";
 		warn Dumper keys %$intspan_global_type;
 		confess;
 	}
-	$intspan_global_type->{ $junction->type }->add($index_lmdb);
+	$intspan_global_type->{ $junction->type }->Bit_On($index_lmdb);
 	
 	my $dv = $junction->dejavu_patients("all");
-	$intspan_global_type->{dejavu_5}->add($index_lmdb) if ($dv <= 5);
-	$intspan_global_type->{dejavu_10}->add($index_lmdb) if ($dv <= 10);
-	$intspan_global_type->{dejavu_15}->add($index_lmdb) if ($dv <= 15);
-	$intspan_global_type->{dejavu_20}->add($index_lmdb) if ($dv <= 20);
-	$intspan_global_type->{dejavu_25}->add($index_lmdb) if ($dv <= 25);
-	$intspan_global_type->{dejavu_30}->add($index_lmdb) if ($dv <= 30);
-	$intspan_global_type->{dejavu_40}->add($index_lmdb) if ($dv <= 40);
-	$intspan_global_type->{dejavu_50}->add($index_lmdb) if ($dv <= 50);
-	$intspan_global_type->{dejavu_60}->add($index_lmdb) if ($dv <= 60);
-	$intspan_global_type->{dejavu_70}->add($index_lmdb) if ($dv <= 70);
-	$intspan_global_type->{dejavu_80}->add($index_lmdb) if ($dv <= 80);
-	$intspan_global_type->{dejavu_90}->add($index_lmdb) if ($dv <= 90);
+	$intspan_global_type->{dejavu_5}->Bit_On($index_lmdb) if ($dv <= 5);
+	$intspan_global_type->{dejavu_10}->Bit_On($index_lmdb) if ($dv <= 10);
+	$intspan_global_type->{dejavu_15}->Bit_On($index_lmdb) if ($dv <= 15);
+	$intspan_global_type->{dejavu_20}->Bit_On($index_lmdb) if ($dv <= 20);
+	$intspan_global_type->{dejavu_25}->Bit_On($index_lmdb) if ($dv <= 25);
+	$intspan_global_type->{dejavu_30}->Bit_On($index_lmdb) if ($dv <= 30);
+	$intspan_global_type->{dejavu_40}->Bit_On($index_lmdb) if ($dv <= 40);
+	$intspan_global_type->{dejavu_50}->Bit_On($index_lmdb) if ($dv <= 50);
+	$intspan_global_type->{dejavu_60}->Bit_On($index_lmdb) if ($dv <= 60);
+	$intspan_global_type->{dejavu_70}->Bit_On($index_lmdb) if ($dv <= 70);
+	$intspan_global_type->{dejavu_80}->Bit_On($index_lmdb) if ($dv <= 80);
+	$intspan_global_type->{dejavu_90}->Bit_On($index_lmdb) if ($dv <= 90);
 	
 	my $dv_r10 =  $junction->dejavu_patients("10");
-	$intspan_global_type->{dejavu_5_r10}->add($index_lmdb) if ($dv_r10 <= 5);
-	$intspan_global_type->{dejavu_10_r10}->add($index_lmdb) if ($dv_r10 <= 10);
-	$intspan_global_type->{dejavu_15_r10}->add($index_lmdb) if ($dv_r10 <= 15);
-	$intspan_global_type->{dejavu_20_r10}->add($index_lmdb) if ($dv_r10 <= 20);
-	$intspan_global_type->{dejavu_25_r10}->add($index_lmdb) if ($dv_r10 <= 25);
-	$intspan_global_type->{dejavu_30_r10}->add($index_lmdb) if ($dv_r10 <= 30);
-	$intspan_global_type->{dejavu_40_r10}->add($index_lmdb) if ($dv_r10 <= 40);
-	$intspan_global_type->{dejavu_50_r10}->add($index_lmdb) if ($dv_r10 <= 50);
-	$intspan_global_type->{dejavu_60_r10}->add($index_lmdb) if ($dv_r10 <= 60);
-	$intspan_global_type->{dejavu_70_r10}->add($index_lmdb) if ($dv_r10 <= 70);
-	$intspan_global_type->{dejavu_80_r10}->add($index_lmdb) if ($dv_r10 <= 80);
-	$intspan_global_type->{dejavu_90_r10}->add($index_lmdb) if ($dv_r10 <= 90);
-	
-	
+	$intspan_global_type->{dejavu_5_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 5);
+	$intspan_global_type->{dejavu_10_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 10);
+	$intspan_global_type->{dejavu_15_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 15);
+	$intspan_global_type->{dejavu_20_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 20);
+	$intspan_global_type->{dejavu_25_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 25);
+	$intspan_global_type->{dejavu_30_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 30);
+	$intspan_global_type->{dejavu_40_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 40);
+	$intspan_global_type->{dejavu_50_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 50);
+	$intspan_global_type->{dejavu_60_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 60);
+	$intspan_global_type->{dejavu_70_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 70);
+	$intspan_global_type->{dejavu_80_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 80);
+	$intspan_global_type->{dejavu_90_r10}->Bit_On($index_lmdb) if ($dv_r10 <= 90);
 }
 
-my $nb_from_vcf = scalar(keys %{$chr->{cache_hash_get_var_ids}});
-my $nb_from_final = scalar(keys %{$hh});
-if ($nb_from_vcf == $nb_from_final) {
-	warn "check nb var: nb var VCF parsed = $nb_from_vcf and nb var final = $nb_from_final -> OK\n" if ( $project->cache_verbose() );
-}
-else {
-	warn "\n\nERROR:\n";
-	warn "   check nb var: nb var VCF parsed = $nb_from_vcf and nb var final = $nb_from_final -> ERROR\n";
-	warn "   DIE...\n\n";
-	die();
-}
 
-warn "time : ".abs($t-time);
-warn 'store 2/4: lmdb chr_name freeze' if ( $project->cache_verbose() );
-#store htable only fort dejavu by project purpose
-store( $hh, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) if $hh;    
-my $no3 = $chr->get_lmdb_categories("c");
-foreach my $k ( keys %{$intspan_global_type} ) {
-	my $h;
-	$h->{name}    = $k;
-	$h->{intspan} = $intspan_global_type->{$k};
-	my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $intspan_global_type->{$k}->as_array ) );
-	$h->{bitvector} = $bitv;
-	$no3->put( $k, $h );
-}
-$no3->close();
-
-warn 'store 3/4: lmdb patients' if ( $project->cache_verbose() );
-my $no4 = $chr->get_lmdb_patients("c");
-foreach my $pname (@patient_names) {
-	my $h;
-	$h->{name} = $pname;
-	foreach my $c (@categorie_patient) {
-		my $intspan = $hpatients->{$pname}->{intspan}->{$c};
-		$h->{intspan}->{$c} = $intspan;
-		my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $intspan->as_array ) );
-		$h->{bitvector}->{$c} = $bitv;
+warn 'store 2/4: rocks patients';
+my $vector_patients1;
+foreach my $patient (@{ $project->getPatients() }) {
+	foreach my $cat (keys %{$hpatients->{$patient->name()}->{vector}}) {
+		my $bitv = $hpatients->{$patient->name()}->{vector}->{$cat};
+#		warn $patient->name.' -> '.$cat.': '.$bitv->Norm;
+		$vector_patients1->{$patient->id."_".$cat} = $bitv if $cat eq "all" ;
+		$rocks3->put_vector_patient_batch($patient,$cat,$bitv);
 	}
-	$no4->put( $pname, $h );
+	my $vnull =  Bit::Vector->new($size_variants);
+	$rocks3->put_vector_patient_batch($patient,"he",$vnull);
+	$rocks3->put_vector_patient_batch($patient,"ho",$vnull);
 }
-$no4->close;
+$rocks3->write_batch();
 
-#NOISE 
-warn 'store 4/4: update methods calling' if ( $project->cache_verbose() );
-my $buffer_cache = new GBuffer;
-$buffer_cache->vmtouch(1);
-my $project_cache = $buffer_cache->newProjectCache( -name => $project_name );
-$project_cache->getPatients();
-my $chr_cache = $project_cache->getChromosome($chr_name);
-my $no5 = $chr_cache->get_lmdb_variations("w");
-my $vector_junctions = $chr_cache->getJunctionsVector();
-
-
-my $nb_elems = int($chr_cache->countThisVariants($vector_junctions) / $fork);
-$nb_elems += 20;
-
-my $pm = new Parallel::ForkManager($fork);
-my $iter = natatime $nb_elems, @{$chr_cache->getListVarObjects($vector_junctions)};
-while ( my @tmp = $iter->() ) {
-	my $pid = $pm->start and next;
-	foreach my $junction (@tmp) {
-		foreach my $patient_cache (@{$junction->getPatients()}) {
-			$junction->get_hash_noise($patient_cache);
-		}
-		my $jid = $junction->id();
-		delete $junction->{buffer};
-		delete $junction->{project};
-		$no5->put( $jid, $junction );
-	}
-	$pm->finish();
+warn 'store 3/4: rocks chr categories';
+foreach my $cat (keys %{$intspan_global_type}) {
+	my $bitv = $intspan_global_type->{$cat};
+#	warn 'chr -> '.$cat.': '.$bitv->Norm;
+	$rocks3->put_batch_vector_chromosome($cat,$bitv);
 }
-$pm->wait_all_children();
-sleep(10);
-$no5->close();
+$rocks3->write_batch();
 
+my $vall = Bit::Vector->new($size_variants);
+$vall->Fill;
+$rocks3->put_batch("all",$vall);
+$rocks3->write_batch();
+
+$rocks3->write_config();
+$project = undef;
+$buffer = undef;
+
+#die;
+#
+#
+#my $nb_from_vcf = scalar(keys %{$chr->{cache_hash_get_var_ids}});
+#my $nb_from_final = scalar(keys %{$hh});
+#if ($nb_from_vcf == $nb_from_final) {
+#	warn "check nb var: nb var VCF parsed = $nb_from_vcf and nb var final = $nb_from_final -> OK\n" if ( $project->cache_verbose() );
+#}
+#else {
+#	warn "\n\nERROR:\n";
+#	warn "   check nb var: nb var VCF parsed = $nb_from_vcf and nb var final = $nb_from_final -> ERROR\n";
+#	warn "   DIE...\n\n";
+#	die();
+#}
+#
+#warn "time : ".abs($t-time);
+#warn 'store 2/4: lmdb chr_name freeze' if ( $project->cache_verbose() );
+##store htable only fort dejavu by project purpose
+#store( $hh, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) if $hh;    
+#my $no3 = $chr->get_lmdb_categories("c");
+#foreach my $k ( keys %{$intspan_global_type} ) {
+#	my $h;
+#	$h->{name}    = $k;
+#	$h->{intspan} = $intspan_global_type->{$k};
+#	my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $intspan_global_type->{$k}->as_array ) );
+#	$h->{bitvector} = $bitv;
+#	$no3->put( $k, $h );
+#}
+#$no3->close();
+#
+#warn 'store 3/4: lmdb patients' if ( $project->cache_verbose() );
+#my $no4 = $chr->get_lmdb_patients("c");
+#foreach my $pname (@patient_names) {
+#	my $h;
+#	$h->{name} = $pname;
+#	foreach my $c (@categorie_patient) {
+#		my $intspan = $hpatients->{$pname}->{intspan}->{$c};
+#		$h->{intspan}->{$c} = $intspan;
+#		my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $intspan->as_array ) );
+#		$h->{bitvector}->{$c} = $bitv;
+#	}
+#	$no4->put( $pname, $h );
+#}
+#$no4->close;
+#
+##NOISE 
+#warn 'store 4/4: update methods calling' if ( $project->cache_verbose() );
+#my $buffer_cache = new GBuffer;
+#$buffer_cache->vmtouch(1);
+#my $project_cache = $buffer_cache->newProjectCache( -name => $project_name );
+#$project_cache->getPatients();
+#my $chr_cache = $project_cache->getChromosome($chr_name);
+#my $no5 = $chr_cache->get_lmdb_variations("w");
+#my $vector_junctions = $chr_cache->getJunctionsVector();
+#
+#
+#my $nb_elems = int($chr_cache->countThisVariants($vector_junctions) / $fork);
+#$nb_elems += 20;
+#
+#my $pm = new Parallel::ForkManager($fork);
+#my $iter = natatime $nb_elems, @{$chr_cache->getListVarObjects($vector_junctions)};
+#while ( my @tmp = $iter->() ) {
+#	my $pid = $pm->start and next;
+#	foreach my $junction (@tmp) {
+#		foreach my $patient_cache (@{$junction->getPatients()}) {
+#			$junction->get_hash_noise($patient_cache);
+#		}
+#		my $jid = $junction->id();
+#		delete $junction->{buffer};
+#		delete $junction->{project};
+#		$no5->put( $jid, $junction );
+#	}
+#	$pm->finish();
+#}
+#$pm->wait_all_children();
+#sleep(10);
+#$no5->close();
+
+warn "\n\nEND!\n";
 
 open (FILE, ">$file_ok");
 print FILE "OK";

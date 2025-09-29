@@ -170,8 +170,11 @@ $buffer->hash_genes_omim_morbid();
 	my $nb = 0;
 	 $nb = scalar (@$all_cnvs) if $all_cnvs;
 	exit(0) if $nb == 0; 
+	
+ $project->disconnect();
 	my $c =0;
 	$duck = GenBoDuckDejaVuCNV->new( project => $project );
+	warn 'nb: '.scalar(@$all_cnvs);
 	foreach my $cnv  (@$all_cnvs){
 		$c++;
 		warn ($c/$nb) if $nb%1000 ==0;
