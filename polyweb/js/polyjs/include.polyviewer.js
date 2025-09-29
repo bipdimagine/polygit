@@ -49,7 +49,7 @@ function findColumnIndex2(layout,name) {
 
 var cache_ext="";
 var href = window.location.href;
-
+alert("url2");
 var url_track_ucsc = "http%3A%2F%2Fmendel.necker.fr%2Fcgi-bin%2Fpolymorphism-cgi%2Fucsc_bed.pl%3Fproject%3D";
 if (href.indexOf("aptana", 1)>-1 ) {
 	if (href.indexOf("aptana-git", 1) > -1) {
@@ -83,6 +83,9 @@ else if (href.indexOf("polydev", 1) > -1) {
 }
 else if (href.indexOf("HG38", 1) > -1) {
 	url_path = "/cgi-bin/HG38/polymorphism-cgi/";
+}
+else if (href.indexOf("duck", 1) > -1) {
+	url_path = "/cgi-bin/duck/polymorphism-cgi/";
 }
 else if (href.indexOf("preprod_rocks", 1) > -1) {
 	url_path = "/cgi-bin/preprod_rocks/polymorphism-cgi/";
