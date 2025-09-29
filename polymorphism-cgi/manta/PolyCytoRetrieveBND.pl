@@ -90,7 +90,7 @@ $sth->execute();
 	while (my $row = $sth->fetchrow_hashref) {
 
 	 my $sv = $rocks->get($row->{id});
-	# next if $sv->{dejavu}->{nb_patients} > 10;
+	 next if $sv->{dejavu}->{nb_patients} > $dejavu;
 	 delete $sv->{score};
 	 getScoreEvent($sv);
 	  my $hash;
@@ -130,7 +130,11 @@ $sth->execute();
 	## OMIM
 	##################
 	$hash->{"OMIM2"}= $sv->{omim2};
-	$hash->{"OMIM1"}= $sv->{omim1};
+		$hash->{"OMIM1"}= $sv->{omim1};
+	if ($omim){
+		next if $sv->{omim1} + $sv->{omim2} == 0;# and $sv->{omim1};
+	}
+	
 	#IGV 
 	my $members = $thePatientFamily->getMembers();
 	my $bamNames = $patientname;
@@ -269,7 +273,6 @@ sub getScoreEvent
 	my $dpr = ($sv->{pr2}/($sv->{pr2}+$sv->{pr1}+1));
 	$score += $dsr;
 	$score += $dpr;
-	warn $score if $debug;
 	#die() if $debug;
 	$score = sprintf("%.1f", $score);
 	#pour présenter en premier les CNV denovo

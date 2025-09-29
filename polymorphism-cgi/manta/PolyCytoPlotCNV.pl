@@ -76,16 +76,16 @@ my $no_cache;
 my $text;
 #
 $no_cache = $patient->get_lmdb_cache("r");
-$text = $no_cache->get_cache($cache_id);
+#$text = $no_cache->get_cache($cache_id);
 $no_cache->close();
 
 
 $| = 1;
-if ($text){
-	warn " CACHE";
-	print $text;
-	exit(0);
-}
+#if ($text){
+#	warn " CACHE";
+#	print $text;
+#	exit(0);
+#}
 
 
 
@@ -229,12 +229,14 @@ if ($trio == 3)	#both parents
 	if ($type == 1)	# DEL on regarde tous les variants de l'enfant / au niveau de la deletion tous les variants He du parent non délété deviennent Ho
 	{
 		$v1 = $mother->getVectorOriginHe($chr);
-		$v1 &= $mother->getVectorSubstitutions($chr);
+		#$v1 &= $mother->getVectorSubstitutions($chr);
+		$v1 &= $chr->getVectorSubstitutions();
  		$v1 -= $father->getVectorOrigin($chr);
 		$v1 &= $patient->getVectorOrigin($chr);
 
 		$v2 = $father->getVectorOriginHe($chr);
-		$v2 &= $father->getVectorSubstitutions($chr);
+		$v2 &= $chr->getVectorSubstitutions();
+		#$v2 &= $father->getVectorSubstitutions($chr);
  		$v2 -= $mother->getVectorOrigin($chr);
 		$v2 &= $patient->getVectorOrigin($chr);
 	}
@@ -243,15 +245,15 @@ if ($trio == 3)	#both parents
 	{
 		$v1 = $mother->getVectorOriginHo($chr);
 		$v1 &= $mother->getVectorSubstitutions($chr);
+		
  		$v1 -= $father->getVectorOrigin($chr);
 		$v1 &= $patient->getVectorOriginHe($chr);
 
 		$v2 = $father->getVectorOriginHo($chr);
 		$v2 &= $father->getVectorSubstitutions($chr);
- 		$v2 -= $mother->getVectorOrigin($chr);
+ 		$v2 -= $father->getVectorOrigin($chr);
 		$v2 &= $patient->getVectorOriginHe($chr);
 	}
-	
 	
 	my $v3 = $v1+$v2;	
 	my $list3 = to_array($v3,$chr->name);	
@@ -263,26 +265,31 @@ if ($trio == 3)	#both parents
 	# boucle sur les variants 
 	my $hvar;
 	#my $t =time;
+	my $nb = 0;
 	while(my $v = $project->nextVariant) {
 		$hvar->{$v->id} ++;
+		$nb ++;
+	#	die() if $nb ++ > 50;
 		$x++;			
 		my $p1 = $v->getPourcentAllele($mother);			# 100 si mother Ho value si He  - sinon
+	
 		my $p2 = $v->getPourcentAllele($father);			# 100 si father Ho value si He - sinon
 		my $value = $v->getPourcentAllele($patient);		# freaquence allelique de l'enfant
 		
-		next if $value eq "-";
-		
-		if ($p1 ne "-"){									# la mere donne allele
+		next if $value == 0 ;
+		next if $p1 == 0 && $p2 ==0;
+		if ($p1  >  0 ){									# la mere donne allele
 			my $res = $v->start.",".$value.",null";			# frequence allelique de l'enfant attribue a la mere 
 			push(@array,$res);
 		}
-		$p1= "" if $p1 eq "-";
+		#$p1= "" if $p1 eq "-";
 
-		if ($p2 ne "-"){									# le pere donne allele
+		elsif ($p2 > 0 ){									# le pere donne allele
 			my $res = $v->start.",null,".$value;			# frequence allelique de l'enfant attribue au pere
 			push(@array,$res);
 		}
-		next if  $p2 eq "-";
+		
+		#next if  $p2 eq "-";
 		$p2= "" if $p2 eq "-";
 	}
 	#die($x);
@@ -341,7 +348,6 @@ else
 	$hres->{'POSball'} = $lpos;
 	$hres->{'PATIENT'} = $lpatient;
 }
-
 
 
 push( @listHashRes, { %{ $hres } } );
