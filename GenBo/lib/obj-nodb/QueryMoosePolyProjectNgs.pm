@@ -1392,6 +1392,7 @@ sub getListProjectsRnaSeq {
 	foreach my $pr_id (keys %$h2) {
 		push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});
 	}
+	
 	foreach my $project_id (sort {$b <=> $a} @l_projects_ids) {
 		next if ($project_id == 0);
 		
