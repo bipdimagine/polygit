@@ -42,7 +42,7 @@ sub return_vp {
 			);
 
 sub refine_heterozygote_composite {
-	my ( $project,$print_html,$list, $id,$final_polyviewer_all) = @_;
+	my ( $project,$print_html,$list, $id,$rocksdb_pv) = @_;
 	my $cgi = $print_html->cgi;
 	my $patient= $print_html->patient;
 
@@ -63,26 +63,12 @@ sub refine_heterozygote_composite {
 	my $total_time = time;
 	my $gids ;
 	my $print_time = 0;
-#	warn "start";
-		foreach my $g (@$list) {
-		foreach my $vid ( keys %{ $g->{all_variants} } ) {
-			push(@$gids,$g->{chr_name}."!".$g->{all_vector_ids}->{$vid});
-		}
-		}
-	warn "prepare ".$final_polyviewer_all->dir;
-	;
-	print "@+" ;
-	$final_polyviewer_all->prepare($gids);
-	print "@+";
-	warn "end prepare";
-	
+		$rocksdb_pv->load_polyviewer_variant();
 	foreach my $g (@$list) {
-					
 		$xp++;
-		#warn $xp;
 		print "@"  if $xp % 3 == 0 ;
 		print "*" if $xp % 10 == 0 && $id == 1;
-		last if $xp > 300;
+		last if $xp > 500;
 		my $t1 = time;
 		my ( $n, $cname ) = split( "_", $g->{id} );
 		my $chr = $project->getChromosome($cname);
@@ -137,21 +123,17 @@ sub refine_heterozygote_composite {
 		$time_gene += abs(time -$t1);
 		my $debug;
 		$debug=1 if $g->{external_name} eq "COL7A1";
-			my $ttt =  time;
+		my $ttt =  time;
 		my $color_validation = "grey";
+	
 		foreach my $vid ( keys %{ $g->{all_variants} } ) {
-			
-			my $vector_id = $g->{all_vector_ids}->{$vid};
-			my $vp = $final_polyviewer_all->get($g->{chr_name}."!".$g->{all_vector_ids}->{$vid},1);
+			my $id= $g->{chr_name}."!".$g->{all_vector_ids}->{$vid};
+			my $vp = $rocksdb_pv->get_polyviewer_variant($id,1);
+			#next unless $vp;
 			$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
-			$vp->{spliceAI} = $vp->{hgenes}->{$g->{id}}->{sc}->{spliceAI};
-			
-			#$vp->{hgenes}->{$g->{id}}->{spliceAI};
-			$vp->{spliceAI_cat} = $vp->{hgenes}->{$g->{id}}->{sc}->{spliceAI_cat};
-			$vp->{text_caller} =  $vp->{patients_calling}->{$patient->id}->{array_text_calling};
-			bless $vp , 'PolyviewerVariant';
-						$vp->gene($g);
+			$vp->gene($g);
 			my $opacity;
+			#warn $id if exists $g->{all_variants}->{$vid}->{added};
 			$opacity = 1 if exists $g->{all_variants}->{$vid}->{added};
 			
 			unless ($vp) {
@@ -161,14 +143,13 @@ sub refine_heterozygote_composite {
 			if ( exists $hno->{$vid} ) {
 				$vp->{composite} = 1;
 			}
-			
 			$out .= print_line_variant($vp,$print_html,$opacity);
 			if  ($vp->clinvar_value >0 or $vp->hgmd_value> 0 or $vp->{local_value}){
 				$color_validation= "warning";
 			}
 			elsif  ( exists $g->{pathogenic}){
 				$color_validation= "danger";
-		}
+			}
 			
 		
 
@@ -184,7 +165,6 @@ sub refine_heterozygote_composite {
 
 	}
 	$project->buffer->close_lmdb();
-	delete $final_polyviewer_all->{rocks};
 	warn "\t\t decode : ".$time_decode." gene : ".$time_gene." print_time : $print_time  total : ".abs(time -$total_time);
 
 	return ( $list, abs(time -$total_time) );
@@ -232,7 +212,7 @@ sub print_line_variant {
 };
 
 
-				my $t1 = shift(@headers);
+			my $t1 = shift(@headers);
 			$out .= $cgi->td( $style, $dropdown );
 		
 			
