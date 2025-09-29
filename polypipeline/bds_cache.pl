@@ -138,7 +138,10 @@ my $steps = {
 				"dejavu_rna_junctions"=>sub {$pipeline->dejavu_rna_junctions(@_)},
 				"html_rna_junctions"=>sub {$pipeline->html_rna_junctions(@_)},
 				"dejavu_parquet"=>sub {$pipeline->dejavu_parquet(@_)},
+				"tiny_rocks"=>sub {$pipeline->tiny_rocks(@_)},
+				"cache_store_duck" =>sub {$pipeline->cache_store_duck(@_)}, 
 			};
+
 
 
 

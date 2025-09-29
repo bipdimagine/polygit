@@ -4,7 +4,6 @@ use FindBin qw($Bin);
 use lib "$Bin";
 #use root_steps;
 use Moose;  
-
 use job_bds;
 use sample;
 use Data::Dumper;
@@ -20,6 +19,50 @@ sub isrocksOK{
 	}
 	return 1;
 } 
+
+
+
+sub cache_store_duck {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
+	my $projectName = $self->project->name();
+	my $ppn = $self->nproc * 2 ;
+	my $type = "duck_cache_store";
+	my $stepname = $projectName."@".$type;
+#	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
+	my $dir_parquet = $self->project->buffer->dejavu_parquet_dir();
+	my $fileout = $project->parquet_cache_variants; ;
+	if (not $self->project->infosProject->{dejavu}) { $fileout .= '.no_dejavu'; }
+	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/duck_cache_store_annotations.pl  -project=$projectName ";
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job({job=>$job_bds});
+	$job_bds->isLogging(1);
+	if ($self->unforce() && -e $fileout){
+  		$job_bds->skip();
+	}
+	return ($filein);
+}
+
+sub tiny_rocks {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
+	my $projectName = $self->project->name();
+	my $ppn = $self->nproc * 2 ;
+	my $type = "tiny_rocks";
+	my $stepname = $projectName."@".$type;
+#	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
+	# my $dir_parquet = $self->project->rocks_directory_beegfs()."/tiny_rocks/".$self->project->name.".store";;
+	my $fileout = $self->project->rocks_directory_beegfs()."/tiny_rocks/".$self->project->name.".store";
+	if (not $self->project->infosProject->{dejavu}) { $fileout .= '.no_dejavu'; }
+	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/tiny_rocks.pl  -project=$projectName ";
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job({job=>$job_bds});
+	$job_bds->isLogging(1);
+	if ($self->unforce() && -e $fileout){
+  		$job_bds->skip();
+	}
+	return ($filein);
+}
 
 
 sub store_ids {
