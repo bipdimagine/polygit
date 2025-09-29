@@ -54,7 +54,7 @@ my $phenotypes = $project->getPhenotypes();
 		$ph = "phenotype='".$phenotypes->[0]->name."'";
 	}
 	
-my $no_cache = $patient->get_lmdb_cache("w");
+my $no_cache = $patient->get_lmdb_cache_beegfs("c");
 $no_cache->put("start_polyviewer_".time,time);
 $no_cache->close();
 my $cmd = qq{$bin_dir/variations_editor.pl  ac=5 ach=2 allele_quality=- annot="splicing+essential_splicing+nonsynonymous+stop+phase+maturemirna+frameshift+non-frameshift+predicted_splice_site" denovo=1 dv=3 dv_ho=2 edit_mode=1 in_this_run=6 keep_pathogenic=1 never=1 patients=$patient_name $ph project=$project_name recessive=1 report_mode=1 strict_denovo=1 user_name= xor=1};
