@@ -56,11 +56,10 @@ my $patient = $project->getPatient($patient_name);
  	die() unless -e $bam.".bai";
  }
  
-my $dd .="$dirout/".$patient->name();
+my $dd .="$dirout/".$patient->name().".".time;
 system("mkdir -p $dirout");
-warn $dd;
-if (-e"$dd" ){
-	system("rm $dd/*");
+if (-e "$dd" ){
+	system("rm -r $dd/*");
 }
 my $dir_canvas=  $project->dirGenome()."/canvas/";
 my $genome = $project->genomeFasta();
