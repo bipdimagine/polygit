@@ -66,7 +66,6 @@ my ($umi) = grep{$_ =~ /umi-correction-scheme/} @header;
 if ($umi){
 	
 		my $cmd = qq{samtools view -h $bam_prod }.q{| perl -pe 'if (!/^@/) { @fields = split("\t"); die() if length($fields[9]) ne length($fields[10]); $fields[10] = "I" x length($fields[9]); $_ = join("\t", @fields); }' | samtools view -Sb - >}.$bam_tmp.q{ && samtools index }.$bam_tmp.' -@ 5';
-		warn $cmd;
 		system($cmd);
 		
 	die() unless -e $bam_tmp.".bai";
@@ -83,7 +82,6 @@ elsif ($bam_prod =~/.cram/){
 		system("$samtools view -@ $fork  -T $ref  $bam_prod ".join(" ",@$list) ." -o $bam_tmp --write-index");
 }
 else {
-	die();
 system("ln -s $bam_prod $bam_tmp");
 system("ln -s $bam_prod.bai $bam_tmp.bai");
 }
