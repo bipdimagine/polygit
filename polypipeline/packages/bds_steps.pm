@@ -5113,7 +5113,7 @@ sub muc1 {
 	my $dir_prod     = $project->getVariationsDir("vntyper") ;
 	system("mkdir -p $dir_prod;chmod a+rwx $dir_prod") unless -e $dir_prod;
 	my $fileout = $dir_prod . "/" . $name . ".json";
-	$filein = $self->patient()->getBamFileName();    # unless $filein;
+	$filein = $self->patient()->getAlignFileName();    # unless $filein;
 
 	my $ppn = 2;
 
