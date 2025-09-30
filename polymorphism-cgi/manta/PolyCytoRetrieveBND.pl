@@ -138,10 +138,10 @@ $sth->execute();
 	#IGV 
 	my $members = $thePatientFamily->getMembers();
 	my $bamNames = $patientname;
-	my $bamFiles = $patient->bamUrl();
+	my $bamFiles = $patient->bamUrl(); 
 		foreach my $m (@$members)		{
-			my $membername = $m->name();
-			$bamFiles .= ",".$patient->bamUrl() unless ($membername eq $patientname);
+			my $membername = $m->name(); 
+			$bamFiles .= ",".$m->bamUrl() unless ($membername eq $patientname);
 			$bamNames .= ",".$membername unless ($membername eq $patientname);
 		}
 	$hash->{'IGV'} = $bamFiles.";".$bamNames."et".$sv->{chrom1}."_".$sv->{pos1}."_".$sv->{chrom2}."_".$sv->{pos2};
