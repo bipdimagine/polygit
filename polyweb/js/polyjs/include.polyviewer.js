@@ -49,7 +49,6 @@ function findColumnIndex2(layout,name) {
 
 var cache_ext="";
 var href = window.location.href;
-alert("url2");
 var url_track_ucsc = "http%3A%2F%2Fmendel.necker.fr%2Fcgi-bin%2Fpolymorphism-cgi%2Fucsc_bed.pl%3Fproject%3D";
 if (href.indexOf("aptana", 1)>-1 ) {
 	if (href.indexOf("aptana-git", 1) > -1) {

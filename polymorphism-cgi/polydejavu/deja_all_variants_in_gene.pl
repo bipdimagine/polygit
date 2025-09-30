@@ -108,10 +108,13 @@ my $can_use_hgmd = $buffer_init->hasHgmdAccess($user_name);
 
 my $dir_parquet = $buffer_init->dejavu_parquet_dir();
 
+my $use_extend_positions = 0;
 my $h_filters_cons;
 if ($filters_cons) {
 	foreach my $cons (split(',', $filters_cons)) {
 		$h_filters_cons->{lc($cons)} = undef;
+		$use_extend_positions = 500 if lc($cons) eq 'downstream';
+		$use_extend_positions = 500 if lc($cons) eq 'upstream';
 	}
 }
 my $h_annot_categories = get_hash_annot_categories();
@@ -278,10 +281,8 @@ else {
 	print "{\"progress\":\".";
 	#($h_count, $hResVariants, $hVariantsDetails, $hResVariantsModels) = get_variants_infos_from_projects($hResVariants_loaded, $hVariantsDetails, $hResVariantsModels, $use_locus, $only_transcript);
 	#my $nb_var_after = scalar(keys %$hVariantsDetails);
-	warn "coucou :: $use_locus $only_transcript  $only_rocks_id";
-	($hResVariants) = get_variants_infos_from_projects($use_locus, $only_transcript, $only_rocks_id);
-	warn "cuicuic";
 	
+	($hResVariants) = get_variants_infos_from_projects($use_locus, $only_transcript, $only_rocks_id);
 }
 
 
@@ -691,7 +692,6 @@ sub get_variants_infos_from_projects {
 	my ($use_locus, $only_transcript, $only_rocks_id) = @_;
 	my ($h_count, $hVariantsProj);
 	print '_update_dv_';
-	
 	my ($hVariantsDetails) = update_list_variants_from_dejavu($use_locus, $only_transcript, $only_rocks_id);
 	return ($hVariantsDetails);
 }
@@ -784,20 +784,16 @@ sub update_list_variants_from_dejavu {
 	my $buffer_dejavu = new GBuffer;
 	$project_dejavu = $buffer_dejavu->newProject( -name => $buffer_init->getRandomProjectName());
 	my $gene_dejavu = $project_dejavu->newGene($gene_init_id_for_newgene);
+	
 	my $h_dv_rocks_ids;
-	warn "+++++";
 	if ($use_locus) {
 		my (@lTmp) = split('_', $use_locus);
 		$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()} = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($lTmp[1], $lTmp[2]);
 	}
 	else {
-		$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()} = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($gene_dejavu->start(), $gene_dejavu->end());
+		$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()} = $gene_dejavu->getChromosome->rocks_dejavu->dejavu_interval($gene_dejavu->start()-$use_extend_positions, $gene_dejavu->end()+$use_extend_positions);
 	}
-	my $find = 37260960; 
-	$find = 36864918;
-	warn "+++++";
-	my @t = grep {$_ =~/$find/ }keys %{$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()}};
-	$find = "0036864918!A";
+
 	if ($keep_nodv_projects) {
 		my $before = scalar(keys %{$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()}});
 		my $nb_i = 0;
@@ -835,15 +831,13 @@ sub update_list_variants_from_dejavu {
 					}
 				}
 			}
-			
 		}
 		my $after = scalar(keys %{$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()}});
 		print '._new_not_in_dv:'.($after - $before).'_.';
 	}
+#	die;
 	($hVariantsDetails) = check_variants($h_dv_rocks_ids, $gene_dejavu);
-	die();
-	warn Dumper $hVariantsDetails->{22}->{$find};
-	die();
+	
 	$buffer_dejavu = undef;
 	$project_dejavu->buffer->dbh_deconnect();
 	print '@time:'.abs(time) - $time;
@@ -889,7 +883,7 @@ sub check_variants {
 			push(@lVar, $project_init->_newVariant($var_id));
 			$h_dv_var_ids->{$var_id}->{rocks_id} = $rocks_id;
 		}
-		
+	
 		my $lift = liftOver->new(project=>$project_init, version=>$project_init->lift_genome_version);
 		$lift->lift_over_variants(\@lVar);
 	}
@@ -946,10 +940,9 @@ sub check_variants {
 			}
 		}
 	);
-	$fork=1;
+	
 	my $nb = int((scalar(@lVar)+1)/($fork));
 	$nb = 20 if $nb == 0;
-	
 	my $iter = natatime($nb, @lVar);
 	while( my @tmp = $iter->() ){
  	 	my $pid = $pm->start and next;
@@ -960,9 +953,7 @@ sub check_variants {
 		my @lOk;
 		foreach my $var (@tmp) {
 			my $var_id = $var->id;
-			my $debug;
-			$debug = 1 if $var->rocksdb_id eq "0036864918!A";
-			my $var_id_hg19 = $var->lift_over('HG19')->{id};
+			my $var_id_hg19 = $var->lift_over('HG19')->{vcf_id};
 			my $gene_variant;
 			my $is_ok_gene;
 			foreach my $gene (@{$var->getGenes()}) {
@@ -977,8 +968,6 @@ sub check_variants {
 				print '.';
 				$nb_i = 0;
 			}
-			
-			warn "coucou" if $debug;
 			my $is_ok_perc = 1;
 			if ($filter_perc_allelic_max and $hResVariantsRatioAll and exists $hResVariantsRatioAll->{$var_id}) {
 				$is_ok_perc = 0;
@@ -995,6 +984,7 @@ sub check_variants {
 				delete $hres->{$var_id};
 				next;
 			}
+			
 			warn "\n" if $debug;
 			warn $var_id if $debug;
 			warn '1 - ok perc' if $debug;
@@ -1031,7 +1021,6 @@ sub check_variants {
 				delete $hres->{$var_id};
 				next;
 			}
-	
 			warn '3 - ok cnv large' if $debug;
 			
 	#		$var->{rocksdb_id} = $h_dv_var_ids->{$var_id}->{rocks_id};
@@ -1046,15 +1035,12 @@ sub check_variants {
 			unless ($var_gnomad) {
 				$var_gnomad = $var->getGnomadAC();
 			}
-			warn $var_gnomad if $debug;
-			warn $var->name() if $debug;
-			$max_gnomad = 500;
+			
 			$not_ok++ if ($var_gnomad and $max_gnomad and $var_gnomad > $max_gnomad);
 			if ($not_ok) {
 				delete $hres->{$var_id};
 				next;
 			}
-			
 			warn '4 - ok gnomad' if $debug;
 			
 			unless ($var_gnomad_ho) {
@@ -1066,6 +1052,7 @@ sub check_variants {
 				next;
 			}
 			warn '5 - ok gnomad ho' if $debug;
+			
 			my $is_ok_annot;
 			unless ($var_annot) {
 				#$var->annotation();
@@ -1089,6 +1076,7 @@ sub check_variants {
 				$this_annot =~ s/ /_/g;
 				$is_ok_annot ++ if (exists $h_filters_cons->{lc($this_annot)});
 			}
+			
 #			warn Dumper $h_filters_cons;
 #			warn $var_annot.' -> '.$is_ok_annot;
 			
@@ -1252,17 +1240,19 @@ sub check_variants {
 			}	
 			warn '12 - ok table table_transcript' if $debug;
 			
-			my $gnomad_id_hg38 = $var->gnomad_id;
 			my $html_vname_hg38 = update_variant_editor::vname2($var, $h_var);
-			my $gnomad_id_hg19 = $var->lift_over('HG19')->{name};
-			my $html_vname_hg19 = $html_vname_hg38;
-			$html_vname_hg19 =~ s/gnomad_r4/gnomad_r2_1/g;
-			$html_vname_hg19 =~ s/$gnomad_id_hg38/$gnomad_id_hg19/g;
+			my ($a,$b,$c,$d) = split('_',$var->id);
+			
+			my $gnomad_id_hg19 = $a.'-'.$var->lift_over('HG19')->{position_vcf}.'-'.$c.'-'.$d;
+			if (length($gnomad_id_hg19) > 30) {
+				$gnomad_id_hg19 = substr($gnomad_id_hg19,0,27).'...';
+			}
+			
 			my $html_vname = qq{
 				<table>
 					<center>
 						<tr><td><b>HG38:</b></td><td style="padding-left:10px;">$html_vname_hg38</td></tr>
-						<tr><td><b>HG19:</b></td><td style="padding-left:10px;">$html_vname_hg19</td></tr>
+						<tr><td><b>HG19:</b></td><td style="padding-left:10px;font-size:9px;">$gnomad_id_hg19</td></tr>
 					</center>
 				</table>
 			};
@@ -1305,8 +1295,9 @@ sub check_variants {
 		
 	 	$pm->finish(0, $hres);
 	}
+	sleep(3); 
 	$pm->wait_all_children();
-	die();
+	
 	print 'nbVarPass:'.$total_pass;
 	print 'nbProj:'.scalar(@lProjectNames);
 	
@@ -1333,7 +1324,7 @@ sub get_table_project_patients_infos {
 		if ($i == 1) { $h_infos_patients->{$nb_pat}->{dp} = $info; }
 		elsif ($i == 2) {
 			my $ratio = '?';
-			my $ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100 if ($h_infos_patients->{$nb_pat}->{dp});
+			$ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100 if ($h_infos_patients->{$nb_pat}->{dp});
 			my $text = 'AC:'.$info.' ('.int($ratio).'%)';
 			$h_infos_patients->{$nb_pat}->{ratio} = $text;
 		}
@@ -1596,9 +1587,9 @@ sub get_from_duckdb_project_patients_infos {
 	my @list_table_trio;
 	my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
 	
+	my ($pos38, $alt38) = split('!', $var->rocksdb_id());
 	my $find_pos_s = $var->start() - 20;
 	my $find_pos_e = $var->start() + 20;
-	
 	my $h_projects_patients;
 	
 	if ($var->getProject->current_genome_version() eq 'HG38') {
@@ -1614,9 +1605,7 @@ sub get_from_duckdb_project_patients_infos {
 			my $h_by_proj;
 			foreach my $h (@$decode) {
 				#next if $h->{'chr38'} ne $var->getChromosome->id;
-				my $var_start = $var->start();
-				$var_start-- if $var->isInsertion() or $var->isDeletion();
-				next if $h->{'pos38'} ne $var_start;
+				next if $h->{'pos38'} ne int($pos38);
 				
 				my $var_all = $h->{'allele'};
 				$var_all =~ s/\+//;
