@@ -2937,7 +2937,6 @@ sub table_cnv_genes_transcripts {
 sub get_hash_genes_dude {
 	my ($patient, $by_names_or_ids, $list_type, $panel,$noprint) = @_;
 	my $hGenes_dude = {};
-	return $hGenes_dude;
 	
 	my ($h_type_levels, $h_panels_tr);
 	#unless ($list_type) { push(@$list_type, 'high'); }
@@ -2989,10 +2988,7 @@ sub get_hash_genes_dude {
 			}
 			last if ($nbg == 250 and not exists $h_type_levels->{'medium'} and not $h_type_levels->{'low'})
 		}
-		my $fork = 5;
-		$fork = 10 if (scalar (@ltr)>100);
-		$fork = 15 if (scalar (@ltr)>150);
-		$fork = 200 if (scalar (@ltr)>300);
+		my $fork = 4;
 		my $nb = int(scalar(@ltr)/($fork*2))+1;
 		my $pm = new Parallel::ForkManager($fork);
 		my $iter = natatime $nb, @ltr;
@@ -3310,9 +3306,6 @@ foreach my $g (keys %$hotspots){
 
 sub print_cnv_exome {
 	my ($patient, $types, $panel) = @_;
-	return;
-	#TODO: on n'affiche plus les cnv dans viewer
-	
 	
 	if ($patient->isParent()) {
 		if ($patient->getProject->validation_db() and $patient->getProject->validation_db() eq 'defidiag') {
