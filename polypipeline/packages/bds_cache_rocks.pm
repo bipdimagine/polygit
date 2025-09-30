@@ -31,7 +31,7 @@ sub cache_store_duck {
 	my $stepname = $projectName."@".$type;
 #	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
 	my $dir_parquet = $self->project->buffer->dejavu_parquet_dir();
-	my $fileout = $project->parquet_cache_variants; ;
+	my $fileout = $self->project->parquet_cache_variants; ;
 	if (not $self->project->infosProject->{dejavu}) { $fileout .= '.no_dejavu'; }
 	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/duck_cache_store_annotations.pl  -project=$projectName ";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
