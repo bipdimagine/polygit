@@ -95,6 +95,7 @@ my @list_lines;
 my $nb_var = 0;
 my $h_v_hgmd_ids = $buffer->queryHgmd->search_variant_for_gene($gene_name);
 my $h_v_hgmd_hg38_ids = $buffer->queryHgmd->search_variant_for_gene_hg38($gene_name);
+my $h_v_hgmd_hg19_ids = $buffer->queryHgmd->search_variant_for_gene_hg19($gene_name);
 
 my $h_new_dm = $buffer->queryHgmd->get_hash_last_released_DM();
 my $h_no_coord = $buffer->queryHgmd->search_variant_for_gene_without_coord($gene_name);
@@ -119,7 +120,7 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 		$start++;
 		$end++;
 	}
-	my $locus = '<b>HG38:</b> chr'.$chromosome.':'.$start.'-'.$end."<br><br><b>HG19:</b> chr".$h_v_hgmd_hg38_ids->{$v_hgmd_id}->{chromosome}.':'.$h_v_hgmd_hg38_ids->{$v_hgmd_id}->{coordSTART}.'-'.$h_v_hgmd_hg38_ids->{$v_hgmd_id}->{coordEND};
+	my $locus = '<b>HG38:</b> chr'.$chromosome.':'.$start.'-'.$end."<br><br><b>HG19:</b> chr".$h_v_hgmd_hg19_ids->{$v_hgmd_id}->{chromosome}.':'.$h_v_hgmd_hg19_ids->{$v_hgmd_id}->{coordSTART}.'-'.$h_v_hgmd_hg19_ids->{$v_hgmd_id}->{coordEND};
 	my $hgvs = $h_v_hgmd_ids->{$v_hgmd_id}->{hgvs};
 	my $strand = $h_v_hgmd_ids->{$v_hgmd_id}->{strand};
 	my $rs_name = $h_v_hgmd_ids->{$v_hgmd_id}->{dbsnp};
