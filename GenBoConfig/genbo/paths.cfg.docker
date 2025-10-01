@@ -4,6 +4,7 @@ dejavu:/poly-disk/DejaVu
 dejavu_projects:/poly-disk/DejaVu
 dejavu_parquet:/poly-disk/DejaVu/projects_parquet/
 project_data:/poly-disk/poly-data/
+project_files:/poly-disk/poly-data/FILES/
 sequences:/poly-disk/poly-data/sequences
 global_search:/poly-disk/polycache/global_search/
 btf:/poly-disk/polycache/polybtf/

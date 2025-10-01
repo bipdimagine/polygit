@@ -160,7 +160,6 @@ sub polyviewer  {
 	$ppn = 1 if $ppn < 1;
  
 	my $fileout =  $project->rocks_directory("logs")."/update_hash_variant_chromosome.".$chr_name.".ok";
-	warn $fileout;
 	my $cmd = "/usr/bin/perl $bin_cache/update_hash_variant_chromosome.pl -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
 	
 	
