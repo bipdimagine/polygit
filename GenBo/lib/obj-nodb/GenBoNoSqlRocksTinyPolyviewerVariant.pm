@@ -235,7 +235,6 @@ sub columns  {
 		$self->{columns}->{variants} = $self->columns_global;
 		$self->{columns}->{patients} = $self->columns_patients;
 		$self->{columns}->{patients_sv} = $self->columns_patients_sv;
-		warn $file_freeze;
 		store ($self->{columns}, $file_freeze) or die "Impossible de sauver: $!";;
 	}
 	else {

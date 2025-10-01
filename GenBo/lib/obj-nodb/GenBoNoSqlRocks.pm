@@ -7,11 +7,10 @@ use warnings;
 use Data::Dumper;
 use Storable qw/thaw freeze/;
 use JSON::XS;
-use Sereal
-  qw(sereal_encode_with_object sereal_decode_with_object write_sereal_file read_sereal_file);
+
+use Sereal qw(sereal_encode_with_object sereal_decode_with_object write_sereal_file read_sereal_file);
 use Carp qw(cluck longmess shortmess confess);
 use RocksDB;
-
 has version => (
 	is      => 'ro',
 	default => sub {
@@ -56,7 +55,7 @@ has compression => (
 	is      => 'rw',
 	default => sub {
 		
-		return "bzip2";
+		return "lz4hc";
 
 	}
 );
@@ -90,13 +89,7 @@ has cache => (
 sub activate_cache {
 	my ($self) = @_;
 		$self->{cache} =undef;
-#	system("vmtouch -q  -t ".$self->path_rocks)
-#			if ($self->cache){
-#			my $zz = (time + rand(5000)).".".$$;
-#			$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
-#			system("cp -r ".$self->original_path_rocks." ".$self->path_rocks);
-#			#system("vmtouch -q  -t ".$self->path_rocks);
-#		}
+		system("vmtouch  -t ".$self->path_rocks."/*");
 }
 sub deactivate_cache {
 	my ($self) = @_;
@@ -111,6 +104,7 @@ has tmp_dir => (
 	is      => 'rw',
 	default => sub {
 		my $dir = "/tmp/pipeline/";
+		#$dir = "/mnt/ramdisk/tmp/pipeline";
 		system("mkdir -p $dir") unless -e $dir;
 		return $dir;
 	}
@@ -339,26 +333,15 @@ sub rocks {
 	if ( $self->pipeline ) {
 		my $zz = (time + rand(5000)).".".$$;
 		$self->path_rocks(
-			$self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
+		$self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
 	}
 	if ($self->create_mode){
 		system("mkdir ".$self->dir." && chmod a+rwx ".$self->dir) unless -e $self->dir;
-		
 	}
 	confess unless $self->mode;
 	if ( $self->mode eq "r" ) {
-		if ($self->cache){
-#			my $zz = (time + rand(5000)).".".$$;
-#		$self->path_rocks($self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
-#			warn $self->original_path_rocks." COPY---------";
-#		system("cp -r ".$self->original_path_rocks." ".$self->path_rocks);
-#			warn "+++++".$self->path_rocks."++";
-		}
-	
-		#confess($self->json_file) if -e $self->json_file;
 		$self->load_config() if -e $self->json_file;
 		confess( $self->path_rocks . '/CURRENT' )
-		
 		  unless ( $self->exists_rocks() );
 		$self->{rocks} = RocksDB->new(
 			$self->path_rocks,
@@ -370,10 +353,12 @@ sub rocks {
 				allow_mmap_reads           => 1,
 				#max_background_compactions => 3,
 				IncreaseParallelism        => 1,
-				filter_policy => $policy 
+				filter_policy => $policy ,
+				block_size => 16*1024,
+				block_restart_interval => 64
 			}
 		);
-
+		system("/software/bin/vmtouch  -t ".$self->path_rocks."/*")  if $self->vmtouch;
 		return $self->{rocks};
 	}
 	elsif ( $self->mode eq "w" ) {
@@ -388,6 +373,9 @@ sub rocks {
 				keep_log_file_num     => 1,
 				create_if_missing     => 1,
 				filter_policy => $policy ,
+				disableWAL => 1,
+				sync => 1,
+				write_buffer_size => 128 * 1024 * 1024,
 				compression           => $self->compression
 			}
 			);
@@ -440,17 +428,24 @@ sub rocks {
 		}
 		RocksDB->destroy_db( $self->path_rocks ) if -e $self->path_rocks;
 		$self->delete_files( $self->path_rocks ) if -e $self->path_rocks;
-
 		#$self->write_config();
 		$self->{rocks} = RocksDB->new(
 			$self->path_rocks,
 			{
+				disableWAL => 1,
+				sync => 1,
+				write_buffer_size => 512 * 1024 * 1024,
 				log_file_time_to_roll => 1,
-				IncreaseParallelism   => 1,
+				IncreaseParallelism   => 8,
 				keep_log_file_num     => 1,
 				create_if_missing     => 1,
-				filter_policy => $policy ,
-				compression           => $self->compression
+				#filter_policy => $policy ,
+				max_write_buffer_number => 8,
+				max_background_compactions => 16,
+				max_background_flushes => 16,
+				compression           => $self->compression,
+				target_file_size_base      => 1024 * 1024 * 1024,
+				max_bytes_for_level_base   => 1024 * 1024 * 1024,
 			}
 		);
 		system( "chmod a+rwx " . $self->path_rocks );
@@ -542,8 +537,10 @@ if ($@){
 return $x;
 }
 sub get_raw {
-	my ( $self, $key ) = @_;
+	my ( $self, $key,$debug ) = @_;
 	confess() unless $self->rocks;
+	$self->{buffer} = {} unless exists $self->{buffer};
+	warn $self->{buffer}->{$key} if ($debug);
 	return  $self->{buffer}->{$key} if (exists $self->{buffer}->{$key});
 	$self->rocks->get($key);
 }
@@ -557,7 +554,6 @@ sub get {
 		$v =  $self->{buffer}->{$key};
 	}
 	else {
-	confess() if $debug;;
 	 $v = $self->get_raw($key);
 	}
 	
