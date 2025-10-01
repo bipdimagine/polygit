@@ -568,7 +568,7 @@ $t     = time;
 my $stdout_nav_bar = tee_stdout {
 	print"<br><div style='float:right;'>$cache_icon</div><br>"; 
     update_variant_editor::printNavBar( $patient, $genes, $statistics, $version,$date, $user, $ztime,update_variant_editor::compose_string_filtering($cgi) );
-	#update_variant_editor::print_hotspot( $patient, $panel );
+	update_variant_editor::print_hotspot( $patient, $panel );
 };
 my $stdoutcnv;
 
