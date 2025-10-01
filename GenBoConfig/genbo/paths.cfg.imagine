@@ -31,7 +31,8 @@ CNV:CNV/
 SVeq:SVeq/
 sv:/data-beegfs/projects.sv.parquet/
 cnv:/data-beegfs/projects.cnv.parquet.2/
+
 [polyproject_default]
-release:HG38_CNG
-genecode:43
+release:HG38_DRAGEN
+genecode:46
 annotation:20

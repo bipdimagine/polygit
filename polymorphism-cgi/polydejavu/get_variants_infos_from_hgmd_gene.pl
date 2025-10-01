@@ -86,15 +86,15 @@ my @headers_validations = ("var_name","locus","gnomad","deja_vu","table_validati
 my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my $buffer = new GBuffer;
 
-my $project_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
-my $project = $buffer->newProject( -name => $project_name);
+
+my $project_name_hg38 = $buffer->getRandomProjectName('HG38_DRAGEN');
+my $project = $buffer->newProject( -name => $project_name_hg38);
 my $gene = $project->newGene($gene_name);
 
 my @list_lines;
 my $nb_var = 0;
 my $h_v_hgmd_ids = $buffer->queryHgmd->search_variant_for_gene($gene_name);
-my $h_v_hgmd_hg19_ids = $buffer->queryHgmd->search_variant_for_gene_hg19($gene_name);
-
+my $h_v_hgmd_hg38_ids = $buffer->queryHgmd->search_variant_for_gene_hg38($gene_name);
 
 my $h_new_dm = $buffer->queryHgmd->get_hash_last_released_DM();
 my $h_no_coord = $buffer->queryHgmd->search_variant_for_gene_without_coord($gene_name);
@@ -110,24 +110,41 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	my $tag = $h_v_hgmd_ids->{$v_hgmd_id}->{tag};
 	next if ($only_dm and $tag ne 'DM');
 	
+	my $ref_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'ref'};
+	my $mut_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'alt'};
 	my $chromosome = $h_v_hgmd_ids->{$v_hgmd_id}->{chromosome};
 	my $start = $h_v_hgmd_ids->{$v_hgmd_id}->{coordSTART};
 	my $end = $h_v_hgmd_ids->{$v_hgmd_id}->{coordEND};
-	my $locus = '<b>HG38:</b> chr'.$chromosome.':'.$start.'-'.$end."<br><br><b>HG19:</b> chr".$h_v_hgmd_hg19_ids->{$v_hgmd_id}->{chromosome}.':'.$h_v_hgmd_hg19_ids->{$v_hgmd_id}->{coordSTART}.'-'.$h_v_hgmd_hg19_ids->{$v_hgmd_id}->{coordEND};
+	if (length($mut_allele) > length($ref_allele)) {
+		$start++;
+		$end++;
+	}
+	my $locus = '<b>HG38:</b> chr'.$chromosome.':'.$start.'-'.$end."<br><br><b>HG19:</b> chr".$h_v_hgmd_hg38_ids->{$v_hgmd_id}->{chromosome}.':'.$h_v_hgmd_hg38_ids->{$v_hgmd_id}->{coordSTART}.'-'.$h_v_hgmd_hg38_ids->{$v_hgmd_id}->{coordEND};
 	my $hgvs = $h_v_hgmd_ids->{$v_hgmd_id}->{hgvs};
 	my $strand = $h_v_hgmd_ids->{$v_hgmd_id}->{strand};
 	my $rs_name = $h_v_hgmd_ids->{$v_hgmd_id}->{dbsnp};
-	my $ref_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'ref'};
-	my $mut_allele = $h_v_hgmd_ids->{$v_hgmd_id}->{'alt'};
 	my $refseq = $h_v_hgmd_ids->{$v_hgmd_id}->{'refseq'};
 #	my ($ref_allele, $mut_allele) = get_ref_mut_alleles_from_hgvs($hgvs);
 	
 	my $polyweb_id = $chromosome.'_'.$start.'_'.$ref_allele.'_'.$mut_allele;
-	my $gnomad_id = $chromosome.'-'.$start.'-'.$ref_allele.'-'.$mut_allele;
-	$gnomad_id =~ s/chr//;
 
 	my $var_id = $polyweb_id;
+	
 	my $v = $project->_newVariant($var_id);
+	
+#	if ($var_id =~ /35658028/ or $var_id =~ /35658028/) {
+#		warn "\n\n";
+#		warn $var_id;
+#		warn $v->rocksdb_id;
+#		
+#		warn $ref_allele;
+#		warn $mut_allele;
+#		warn $refseq;
+#		
+#	}
+#	else {
+#		next;
+#	}
 	
 	my $not_ok;
 	my $var_gnomad = $v->getGnomadAC();
@@ -179,8 +196,8 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	$hvariation->{html}->{type} = $v->type;
 	$hvariation->{value}->{locus} = $locus;
 	$hvariation->{html}->{locus} = qq{<span style="font-size:8px;">$locus</span>};
-	$hvariation->{value}->{gnomad_id} = $gnomad_id;
-	$hvariation->{html}->{gnomad_id} = $gnomad_id;	
+	$hvariation->{value}->{gnomad_id} = $v->gnomad_id();
+	$hvariation->{html}->{gnomad_id} = $v->gnomad_id();	
 	$hvariation->{value}->{is_cnv} = 0;	
 	update_variant_editor::vgnomad($v,$hvariation);
 	update_variant_editor::vname($v,$hvariation);
@@ -209,14 +226,12 @@ foreach my $v_hgmd_id (keys %{$h_v_hgmd_ids}) {
 	if ($disease_hgmd) {
 		$hvariation->{html}->{hgmd} .= qq{<br><i><font color='green'>$disease_hgmd</font></i>};
 	}
-	
 	update_variant_editor::table_validation_without_local($project, $hvariation, $gene);
-	
-	my $nb_other_project = $hvariation->{value}->{other_project};
+	my $nb_other_patient = $hvariation->{value}->{other_patients};
 	
 	my $out;
-	if ($nb_other_project and $nb_other_project > 0) { $out = $cgi->start_Tr(); }
-	else { $out = $cgi->start_Tr({class=>"tr_hgmd_not_found"}); }
+	if (defined($nb_other_patient) and $nb_other_patient == 0) { $out = $cgi->start_Tr({class=>"tr_hgmd_not_found"});}
+	else { $out = $cgi->start_Tr(); }
 	foreach my $h (@headers_validations){
 		if ($h eq "trio" or "table_transcript"){
 			$class->{style} = "min-width:200px;max-width:450px;max-height:200px;overflow-x:auto;vertical-align:middle;padding:5px;white-space: nowrap;";
@@ -380,6 +395,7 @@ $hRes->{html_gene} = $html_gene;
 $hRes->{html_page_title} = 'HGMD '.$gene->external_name();
 $hRes->{html_source} = "HGMD DataBase $hgmd_version_used";
 $hRes->{html_title} = "Gene ".$gene->external_name();
+$hRes->{gencode_version} = $project->gencode_version;
 
 my $session_id = save_export_xls($gene, \@lVar);
 save_html($session_id, $hRes);
@@ -449,6 +465,7 @@ sub save_html {
 	$session->save( 'html_title', $hRes->{'html_title'} );
 	$session->save( 'html_gene', $hRes->{'html_gene'} );
 	$session->save( 'html_variants', $hRes->{'html_variants'} );
+	$session->save( 'gencode_version', $hRes->{'gencode_version'} );
 }
 
 sub get_ref_mut_alleles_from_hgvs {

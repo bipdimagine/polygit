@@ -367,6 +367,17 @@ sub search_variant_for_gene {
 	return $sth->fetchall_hashref("acc_num");
 }
 
+sub search_variant_for_gene_hg38 {
+	my ($self, $gene_name) = @_;
+	my $database = $self->database();
+	confess("\n\nERROR: need a gene_name for QueryMoose::search_variant_for_gene. Die.\n\n") unless ($gene_name);
+	my $dbh =  $self->getDbh;
+	my $sql = qq{ SELECT * FROM `$database`.allmut as a, `$database`.hgmd_hg38_vcf as vcf, `$database`.hg38_coords as c where a.acc_num=c.acc_num and a.gene=? and vcf.id=a.acc_num;; };
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($gene_name);
+	return $sth->fetchall_hashref("acc_num");
+}
+
 sub search_variant_for_gene_hg19 {
 	my ($self, $gene_name) = @_;
 	my $database = $self->database();
