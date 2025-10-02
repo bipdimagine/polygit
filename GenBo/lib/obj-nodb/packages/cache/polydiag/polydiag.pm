@@ -373,7 +373,10 @@ sub run_cache_polydiag_fork {
 			my $count;
 			my $db_lite = $project->noSqlPolydiag("w");
 			foreach my $t ( keys %{$data->{vtr}} ) {
-				#warn $t;
+				if ($t =~ /ENST00000328300/){
+					warn $t;
+					warn join( ";", @{ $data->{vtr}->{$t} });
+				}
 				$db_lite->put( $patient_name, "list_$t", join( ";", @{ $data->{vtr}->{$t} } ) );
 				
 			}
@@ -395,7 +398,6 @@ sub run_cache_polydiag_fork {
 		capture_name => $project->validation_db()
 	);
 		my $vector = $p->getVectorOrigin($chr)->Clone;
-		
 		my $list = to_array($vector,$chr->name);
 		$project->setListVariants($list);
 		#next unless $chr->name eq "5";
@@ -409,9 +411,12 @@ sub run_cache_polydiag_fork {
 		my $hh ;
 		while (my $v = $project->nextVariant){
 		
+			my $debug;
+		 $debug  = 1 if $v->name eq "X-108597561-G-T";
+		 warn $v->id." ".$v->name if $debug ==1;
 		#foreach my $v ( @{$variations} ) {
 			#next if $v->getChromosome->name ne $chr->name;
-			my $debug;
+		
 			my $toto=  0;
 			#
 				$dd++;
@@ -422,11 +427,11 @@ sub run_cache_polydiag_fork {
 			my $ok;
 			my $transcripts = $v->getTranscripts;
 			foreach my $tr ( @{$transcripts} ) {
+				warn $tr->id if $debug;
 				#warn $tr->id();
 				#next unless exists $tbundle->{ $tr->name };
 				$ok = 1;
-				my $h = construct_variant( $project, $v, $tr, $p,
-					$vquery );
+				my $h = construct_variant( $project, $v, $tr, $p,$vquery );
 					$h->{obj} = $v;
 					update::deja_vu($project,$tr,$h); 
 					update::annotations($project,$h); 

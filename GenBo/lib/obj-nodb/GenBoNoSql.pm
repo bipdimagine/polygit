@@ -558,7 +558,7 @@ sub put_lite {
 	$self->sth_insert_cached($chr)->bind_param( 1, "$key");
 	$self->sth_insert_cached($chr)->bind_param( 2, $self->encode($value));
 	$self->sth_insert_cached($chr)->execute();
-	$self->dbh($chr)->commit;
+	$self->dbh($chr)->commit or confess($self->dir." ".$chr." ".$key);
 	
 	#$self->sth_insert_cached($chr)->execute($key,$self->encode($value));
 	
@@ -607,7 +607,7 @@ sub sth_select_cached {
 	my ($self,$chr) = @_;
 	return $self->{sth_select}->{$chr} if exists $self->{sth_select}->{$chr};
 	 my $table_name = $self->create_table($chr);
-	$self->{sth_select}->{$chr} = $self->dbh($chr)->prepare("select _value from $table_name where _key =?")  or confess();;
+	$self->{sth_select}->{$chr} = $self->dbh($chr)->prepare("select _value from $table_name where _key =?")  or confess($self->dir);;
 	return $self->{sth_select}->{$chr};
 }
 sub sth_insert_cached {

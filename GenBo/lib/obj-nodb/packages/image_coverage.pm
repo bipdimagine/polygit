@@ -711,7 +711,7 @@ sub image_depth_lmdb {
  my ($patients,$transcript,$intronic,$utr,$padding,$limit,$all,$minimum) = @_;
 my $nb_line =15;
 my $size = 3;
-
+$limit =15;
 my $x = 0;
 my $y = 0;
 
@@ -785,7 +785,6 @@ my $hcolors;
 		$image->filledRectangle($x,$y,$x+$nb_col*($size+2),$y+$size,$grey2);
 	}
  	
-  
 	foreach my $patient (sort{$a->name cmp $b->name} @$patients){
 	 	my $spanTr = $no->get($patients->[0]->name,$transcript->id."_spandup");	
 	 	$spanTr = Set::IntSpan::Fast::XS->new() unless $spanTr; 
@@ -799,7 +798,7 @@ my $hcolors;
 		my $pid =$patient->id;
 		my ($mean,$intspan,$min);
 
-			
+		
 		my $pos = $exon->return_start_end_no_utr(padding=>$padding);
 		if ($utr) {
 			$pos = $exon->return_start_end(padding=>$padding);
@@ -811,8 +810,8 @@ my $hcolors;
 			 $xa =  $patient->depth($exon->getChromosome->name,$pos->{start},$pos->{end}) if $pos;
 
 			$min = min(@$xa);
+			
 			$mean = sum(@$xa)/scalar(@$xa);
-
 		}
 
 			$data->{$exon->id}->{$patient->id}->{mean} = $mean;

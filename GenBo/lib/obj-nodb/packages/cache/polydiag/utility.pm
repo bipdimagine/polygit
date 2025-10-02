@@ -57,7 +57,6 @@ sub get_date {
            return ($date,$days_difference);
 }
 #
-
 sub return_list_variants {
 	my ($project,$patient,$tr_id) = @_;
 	my $d = $project->getCacheDir();
@@ -68,6 +67,7 @@ sub return_list_variants {
 	my $string ="";
 	eval {
 		$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
+		warn $string;
 	};
 	if ($@) {
 		my @l;

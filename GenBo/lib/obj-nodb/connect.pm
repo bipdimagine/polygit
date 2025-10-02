@@ -39,7 +39,7 @@ use Carp qw(cluck longmess shortmess);
 
 sub getdbh{
 	my ($config,$database) = @_;
-#	cluck "here";
+	#cluck "here";
 	my $ip = $config->{ip};
 	my $db_user_name = $config->{user};
 	my $db_password = $config->{pw}."";

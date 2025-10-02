@@ -282,7 +282,7 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 }	
 elsif (exists $pipeline->{align}){
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
-	
+
 #	confess() unless $fastq1;
 	if ($fastq1) {
 		my $runid = $patient->getRun()->id;

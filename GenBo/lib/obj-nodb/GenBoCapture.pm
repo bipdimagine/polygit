@@ -711,7 +711,7 @@ has primers_lines =>(
 			if ($capture_file =~/\.gz/){
 				my $bedtools = $self->buffer->software("bedtools");
 				
-		 		@lines = `zcat $capture_file | cut -f 1-3 | $bedtools makewindows -b /dev/stdin -w 500 `;
+		 		@lines = `zcat $capture_file | cut -f 1-3 | $bedtools makewindows -b /dev/stdin -w 300 -s 150`;
 		 		confess() if $? ne 0;
 		 		
 			}

@@ -68,28 +68,7 @@ sub get_date {
 }
 
 
-sub return_list_variants {
-	my ($project,$patient,$tr_id) = @_;
-	my $d = $project->getCacheDir();
-	my $project_name= $project->name;
-	my $patient_name = $patient->name();
-	my @vars;
-	my $key =$tr_id;
-	my $string ="";
-	eval {
-		$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
-	};
-	if ($@) {
-		my @l;
-		return \@l;
-	}
-	#warn $patient->name." ".$string;
-	#confess() unless $string;
-	return [split(";",$string)];
 
-	return \@vars;
-	
-}
  #
 sub return_hash_variant {
 	my ($project,$vid,$tr_id,$patient,$vquery) = @_;

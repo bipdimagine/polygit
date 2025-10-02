@@ -68,10 +68,10 @@ sub return_list_variants {
 	my $key =$tr_id;
 	my $string ="";
 	$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
+	warn $string;
 	#warn $patient->name." ".$string;
 	#confess() unless $string;
 	return [split(";",$string)];
-
 	return \@vars;
 	
 }
@@ -85,8 +85,8 @@ sub return_hash_variant {
 	my $id = join(";",$tr_id,$vid);
 	#my $id = $patient->name()."_".$tr1->id."_".$v->id;
 	my $z;
-		return undef unless $project->noSqlPolydiag()->exists_db($patient->name);
-		$z = $project->noSqlPolydiag()->get($patient->name,$id);
+	return undef unless $project->noSqlPolydiag()->exists_db($patient->name);
+	$z = $project->noSqlPolydiag()->get($patient->name,$id);
 	unless ($z) {
 		return undef;
 		die($id."-");

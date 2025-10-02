@@ -322,6 +322,10 @@ sub lmdb_key {
 	my ($self,$key) = @_;
 	confess($key."-") unless defined $key;
 	return $key if $self->is_integer;
+	if (length($key)>500 && $key =~/!/){
+		my $m = md5_hex($key);
+		return $m;
+	}
 	  if (length($key) > 500){
      	my (@s) = split ("_",$key);
      	#warn scalar(@s);
@@ -596,7 +600,9 @@ sub put{
 	 	}
 	 	
 	 }
-	$self->lmdb($db_name)->put($self->lmdb_key($key),$self->encode($value));
+	 my $kk =  $self->lmdb_key($key);
+	  #warn $self->encode($value);
+	$self->lmdb($db_name)->put($kk,$self->encode($value));
 	return  $index;
 	#$self->_put_index($key) if ($self->is_index);
 } 
@@ -612,6 +618,7 @@ sub put_text{
 	 #	}
 	 	
 	 #}
+	
 	 
 	$self->lmdb($db_name)->put($self->lmdb_key($key),$self->encode($self->_compress($value)));
 	return  $index;

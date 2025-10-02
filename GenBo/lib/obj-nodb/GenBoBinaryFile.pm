@@ -25,7 +25,7 @@ is		=> 'rw',
 lazy=>1,
 default => sub {
 		my $self = shift;
-		confess() unless $self->dir();
+		confess( $self->dir()) unless $self->dir();
 		return $self->dir."/".$self->name;
 		
 	
@@ -300,7 +300,8 @@ sub _getSum {
 sub getDepth {
 	my($self,$chr,$start,$end) = @_;
 	die() unless $chr;
-	die('ici') unless $start;
+	
+	confess('ici ++') unless $start;
 	die() unless $end;
 	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
 	return $self->_getDepth($chr,$start,$end,$sintspan);
@@ -309,7 +310,7 @@ sub getDepth {
 sub getMean {
 	my($self,$chr,$start,$end) = @_;
 	die() unless $chr;
-	die('ici') unless $start;
+	confess('ici') unless $start;
 	die() unless $end;
 	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
 	my ($sum,$nb) = $self->_getSum($chr,$start,$end,$sintspan);

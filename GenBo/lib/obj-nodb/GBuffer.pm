@@ -158,7 +158,6 @@ has config => (
 	default	=> sub {
 		my $self = shift; 
 		my $filename =  $self->config_dir."genbo.cfg";
-		
 		my $filename2 = $self->genbo_dir."genbo-vector-filter.cfg";
 		confess($filename) unless -e $filename;
 		confess($filename2) unless -e $filename2;

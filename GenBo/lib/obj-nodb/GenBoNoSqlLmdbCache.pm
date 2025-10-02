@@ -32,6 +32,7 @@ sub put_cache {
 	$limit = 48 unless $limit;
 	$limit = $limit *60 *60;
  	my $end = time + $limit;
+ 	warn $key1;
  	$self->put($key1,{expiration=>$end,cache=>$key2,creation=>time});
  	return;
 }
@@ -86,9 +87,7 @@ sub put_cache_text {
 sub get_cache {
 	my ($self,$key,$debug) = @_;
  	my $h = $self->get($key);
- 	warn $h;
  	return undef unless $h;
- 	warn $h->{snappy_html};
  #	if ($h->{expiration}<time && $h->{expiration} > 0){
  #		$self->del($key);
  #		return "";
@@ -108,8 +107,6 @@ sub get_cache {
  		my $x;
 			
  		 $x =  Compress::Zstd::uncompress($h->{cache});
- 		 warn "ici";
- 		 warn length($x);
  		return ($x);
  	}
  	else {

@@ -316,6 +316,7 @@ sub ln_encode_json {
 
 # Sauvegarder dans un fichier
 	my $file = $physical_name.'.json';
+	#system("python /data-isilon/Remy/PROD/moove_bam_and_link.py ")
 	open my $fh, ">", $file or die "Impossible d'ouvrir $file: $!";
 	print $fh $h;
 	close $fh;

@@ -404,21 +404,7 @@ has sequencesDir => (
 		my $constructor = $run->machine_constructor();
 		my $plateform   = $run->plateform();
 		my $path        = $self->buffer()->config_path("root","sequences");
-
-		my $seq_dir =
-			$path . "/"
-		  . $constructor . "/"
-		  . $machine . "/"
-		  . $plateform
-		  . "/$run_name/";
-		my $seq_dir2 =
-			$path . "/"
-		  . $constructor . "/"
-		  . $machine . "/"
-		  . $plateform
-		  . "/$run_name.saved/";
-		return $seq_dir2 if -e $seq_dir2;
-		return $seq_dir;
+		return $self->getRun()->fastq_dir();
 
 	},
 );
@@ -1688,7 +1674,7 @@ sub getBamFileName {
 sub getPhysicalFilesDir {
 	my ( $self, $method_name,$version ) = @_;
 	return $self->{files_dir} if exists $self->{cram_dir};
-	$self->{files_dir} = $self->buffer->config_path("root","project_data")."/ngs/FILES/".$self->id."/";
+	$self->{files_dir} = $self->buffer->config_path("root","processed-data")."/".$self->id."/";
 	return $self->project->makedir($self->{files_dir});
 	return $self->{files_dir};
 }
