@@ -7,6 +7,7 @@ use Moo;
 use String::ProgressBar;
 use Data::Dumper;
 use Config::Std;
+use File::Path qw(make_path);
 extends 'GenBo';
 
 sub setPatients {
@@ -200,14 +201,9 @@ has fastq_dir => (
 		my $run_name    = $self->plateform_run_name();
 		my $constructor = $self->machine_constructor();
 		my $plateform   = $self->plateform();
-		my $path        = $self->buffer()->getDataDirectory("sequences");
-
-		my $seq_dir =
-			$path . "/"
-		  . $constructor . "/"
-		  . $machine . "/"
-		  . $plateform
-		  . "/$run_name/";
+		my $path        = $self->buffer()->getDataDirectory("sequences-old");
+	#ici c'ets just epour renviyer su rl'isilon si le projet existe sur l'isilon sinon on va sur le pure '
+		if ($path){
 		my $seq_dir2 =
 			$path . "/"
 		  . $constructor . "/"
@@ -215,10 +211,35 @@ has fastq_dir => (
 		  . $plateform
 		  . "/$run_name.saved/";
 		return $seq_dir2 if -e $seq_dir2;
+			my $seq_dir =
+			$path . "/"
+		  . $constructor . "/"
+		  . $machine . "/"
+		  . $plateform
+		  . "/$run_name/";
+		return $seq_dir if -e $seq_dir;
+		}
+		$path        = $self->buffer()->getDataDirectory("sequences");
+		my $seq_dir2 =
+			$path . "/"
+		  . $constructor . "/"
+		  . $machine . "/"
+		  . $plateform
+		  . "/$run_name.saved/";
+		return $seq_dir2 if -e $seq_dir2;
+		my $seq_dir =
+			$path . "/"
+		  . $constructor . "/"
+		  . $machine . "/"
+		  . $plateform
+		  . "/$run_name/";
 		return $seq_dir;
+		
 
 	},
 );
+
+
 
 
 has bcl_dir => (

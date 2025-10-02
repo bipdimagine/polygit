@@ -331,11 +331,25 @@ sub get_polyviewer_variant {
      			$vp->{patients_calling}->{$patient_id}->{$c} = shift @{$p};
      	  }
      	  }
+     	  $self->update_clinvar_id($chr,$vp) if $vp->{clinvar};
      	#}
      	# die() if $vp->{isSrPr};
      	return $vp;
 }
 
+sub update_clinvar_id {
+	my ($self,$chr,$vp) = @_;
+	my $pub = $self->clinvar_rocks_db($chr)->clinvar($vp->rocksdb_id);
+	$vp->{clinvar_id} = $pub->{clinvar_id};
+}
+sub clinvar_rocks_db {
+	my ($self,$chr,$vp) = @_;
+	return $self->{clinvarrocks} if exists  $self->{clinvarrocks};
+	my $chromosome = $self->project->getChromosome($chr);
+	$self->{clinvarrocks} =   $chromosome->rocksdb("clinvar");
+	 return $self->{clinvarrocks};
+	
+}
 sub load_polyviewer_variant {
 	my ($self) =@_;
 	my @chr = sort {$a cmp $b} keys %{$self->{list_index}};

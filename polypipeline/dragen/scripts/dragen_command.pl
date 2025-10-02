@@ -270,14 +270,15 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
 	my $patient_ori = $project_ori->getPatient($patients_name);
+	
 	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true -" unless $cram;
-	$param_align .= "--output-format CRAM " if $cram;
+	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";# unless $cram;
+	$param_align .= " --output-format CRAM " if $cram;
+	
 	if ($umi){
 		confess();
 	}
-	
 }	
 elsif (exists $pipeline->{align}){
 my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
@@ -304,6 +305,7 @@ my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 		 $param_align .= " --output-format CRAM " if $cram;
 	}
 	$param_align .= " --output-format CRAM " if $cram;
+	
 }
 else {
 	my $bam = $patient->getBamFileName();
@@ -386,9 +388,7 @@ if (exists $pipeline->{str}){
 	$param_str = qq{ --repeat-genotype-enable true };
 
 }
-warn $phased;
 $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
-
 
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";

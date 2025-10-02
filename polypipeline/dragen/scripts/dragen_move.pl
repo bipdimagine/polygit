@@ -20,6 +20,7 @@ use File::Temp qw/ tempfile tempdir /;;
 use Logfile::Rotate; 
 use File::Basename;
 use Net::SSH::Perl;
+use JSON::XS;
  
 my $ip_dragen = "10.1.2.10";
 
@@ -193,7 +194,7 @@ sub move_cram {
 	my ($bam,$patient,$type,$idxtype) = @_;
 	my $physical_name = move_file($bam,$patient,"dragen-align","cram","crai");
 	my $prod = $patient->getCramFileName("dragen-align",$version);
-	system("ln -sf  $physical_name $prod");
+	ln_encode_json($physical_name,$prod);
 	system("ln -sf  $physical_name.crai $prod.crai");
 	 my $filename = $prod;
 	 $filename =~ s/cram/idxstats/;
@@ -211,7 +212,7 @@ sub move_bam {
 	}
 	my $physical_name = move_file($bam,$patient,"dragen-align","bam","bai");
 	
-	system("ln -sf  $physical_name $prod");
+	ln_encode_json($physical_name,$prod);
 	system("ln -sf  $physical_name.bai $prod.bai");
 }
 
@@ -221,7 +222,7 @@ sub move_gvcf {
 	my $physical_name = move_file($gvcf,$patient,"dragen-calling","gvcf.gz","tbi","backup");
 	my $prod = $patient->gvcfFileName("dragen-calling");
 	
-	system("ln -sf  $physical_name $prod");
+	ln_encode_json($physical_name,$prod);
 	tabix($prod,"vcf");
 }
 
@@ -230,7 +231,7 @@ sub move_ploidy {
 	my $physical_name = move_file($vcf,$patient,"dragen-ploidy","vcf.gz","tbi");
 	
 	my $prod = $patient->vcfFileName("dragen-ploidy");
-	system("ln -sf  $physical_name $prod");
+	ln_encode_json($physical_name,$prod);
 	tabix($prod,"vcf");
 }
 
@@ -240,7 +241,7 @@ sub move_vcf {
 	
 	my $prod = $patient->getVariationsFileName("dragen-calling");
 	my $prod = $patient->vcfFileName("dragen-calling");
-	system("ln -sf  $physical_name $prod");
+	ln_encode_json($physical_name,$prod);
 	tabix($prod,"vcf");
 }
 sub move_count {
@@ -271,7 +272,7 @@ sub move_sv {
 	my $dir = $project->getVariationsDir("dragen-sv");
 	my $physical_name = move_file($t1,$patient,"dragen-sv","vcf.gz","tbi","backup");
 	my $prod = $dir."/".$prefix.".sv.vcf.gz";
-	system("ln -sf  $physical_name $prod");
+	ln_encode_json($physical_name,$prod);
 	tabix($prod,"vcf");
 	
 }
@@ -301,4 +302,24 @@ sub backup {
 		}
 		unlink $final_gz;
 		unlink $final_gz.".tbi" if -e $final_gz.".tbi";
+}
+
+sub ln_encode_json {
+	my ($physical_name,$prod) = @_;
+	my $h;
+	 $h->{"symlink"} = $prod;
+	 $h->{date} = localtime;
+	 my $json = JSON::XS->new->utf8->pretty->canonical;
+
+# Encoder en JSON
+	my $json_text = $json->encode($h);
+
+# Sauvegarder dans un fichier
+	my $file = $physical_name.'.json';
+	open my $fh, ">", $file or die "Impossible d'ouvrir $file: $!";
+	print $fh $h;
+	close $fh;
+	system("ln -sf  $physical_name $prod");
+	 
+	
 }
