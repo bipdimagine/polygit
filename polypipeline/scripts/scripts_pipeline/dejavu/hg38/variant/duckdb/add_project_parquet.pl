@@ -277,6 +277,7 @@ sub save_and_lift_rocks {
 	my($chr,$lift) =@_;
 	
 	my $diro = $project->rocks_directory();
+	
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects");
 	my $vectors = dejavu_duckdb::get_hash_model_variant($chr);
 	
@@ -297,6 +298,7 @@ sub save_and_lift_rocks {
 		my $max_dp = 0;
 		my $max_ratio = 0;
 		my $bit_models = 0 ;
+		warn $v->{start};
 		foreach my $pid (keys %{$v->{patients_calling}}){
 			my @values;
 			next if not exists $v->{patients_calling}->{$pid}->{array_text_calling};
