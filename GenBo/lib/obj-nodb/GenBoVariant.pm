@@ -2877,7 +2877,7 @@ sub getNormDPAfter {
 		return $self->dp_infos->{$pid}->[4];
 }
 
-sub getLog2Ratoio {
+sub getLog2Ratio {
 		my ($self,$patient,$method) = @_;
 		my $m = int($self->getNormDPBefore($patient,$method)+ $self->getNormDPAfter($patient,$method))/2;
 		return  $self->buffer->log2($self->getNormDP($patient,$method)/$m);
