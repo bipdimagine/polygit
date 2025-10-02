@@ -920,8 +920,8 @@ sub getHashSpliceAiNearStartEnd {
 	my ($self) = @_;
 	my $h;
 	return $h if $self->isCanonique();
-	my ($max_start_score, $max_start_infos, $h_start_details) = $self->getHashSpliceAiInInterval($self->start() - 10, $self->start() + 10);
-	my ($max_end_score, $max_end_infos, $h_end_details) = $self->getHashSpliceAiInInterval($self->end() - 10, $self->end() + 10);
+	my ($max_start_score, $max_start_infos, $h_start_details) = $self->getHashSpliceAiInInterval($self->start() - 5, $self->start() + 5);
+	my ($max_end_score, $max_end_infos, $h_end_details) = $self->getHashSpliceAiInInterval($self->end() - 5, $self->end() + 5);
 
 	if ($max_start_score > 0) {
 		$h->{start}->{max_score} = $max_start_score;
@@ -942,11 +942,7 @@ sub getHashSpliceAiInInterval {
 	my $i = $start;
 	my $max_score = 0;
 	my $max_score_infos = '';
-	
-	my $b = new GBuffer;
-	my $p = $b->newProject( -name => $self->getProject->name());
-	my $chr = $p->getChromosome($self->getChromosome->id());
-
+	my $chr = $self->getProject->getChromosome($self->getChromosome->id());
 	my $h;
 	foreach my $pos (@lPositions) {
 		foreach my $alt ('A', 'T', 'G', 'C') {
