@@ -902,7 +902,7 @@ my $h_transmissions = {
 	my $where = join (" and ",@$sql_where_and);
 	
 	if ($cgi->param('keep_pathogenic') == 1 ){
-		#$where .= "or (variant_keepPathogenic = 1) ";
+		$where .= "or (variant_keepPathogenic = 1) ";
 		
 	}
 	#!!!!!!!!!!!!!!!!
