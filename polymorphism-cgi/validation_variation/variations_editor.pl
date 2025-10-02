@@ -868,7 +868,7 @@ my $h_transmissions = {
 	if ($gene_name_filtering) {
 		$gene = $project->newGene($gene_name_filtering);
 		$gene_id_filtering = $gene->id();
-		$sql_gene .= "gene_name = '".$gene->id."' and gene_mask & maskcoding <> 0";
+		$sql_gene = "gene_name = '".$gene->id."' and gene_mask & $maskcoding <> 0";
 	}
 	$sql_gene = "(".$sql_gene.")";
 	
@@ -887,7 +887,7 @@ my $h_transmissions = {
 	my $sql_frequence = join(" and ",@$asql_frequence);
 	$sql_frequence = "(".$sql_frequence.")";
 	my $sql_only_dm;
-	if ($cgi->param('only_DM')){
+	if ($cgi->param('only_DM') && !($gene_name_filtering) ){
 		$sql_frequence = "";
 		$sql_gene = "";
 		$sql_only_dm = qq{(variant_isDM  = 1 or variant_isClinvarPathogenic =1)};
