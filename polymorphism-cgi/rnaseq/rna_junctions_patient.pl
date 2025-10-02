@@ -174,13 +174,11 @@ $cache_html_id .= '_onlyA' if $has_regtools_vectors and $only_junctions_A;
 $cache_html_id .= '_onlyD' if $has_regtools_vectors and $only_junctions_D;
 $cache_html_id .= '_onlyN' if $has_regtools_vectors and $only_junctions_N;
 $cache_html_id .= '_'.$j_total;
-if (not $only_gene_name and not $only_positions and not $view_polyviewer and not $export_xls) {
+if (not $only_html_cache and not $put_cache and not $only_gene_name and not $only_positions and not $view_polyviewer and not $export_xls) {
 	my $no_cache_2 = $patient->get_lmdb_cache("r");
 	my $h_html    = $no_cache_2->get_cache($cache_html_id);
-	
 	#TODO: supress cache html
 	#$h_html=undef;
-	
 	$no_cache_2->close();
 	if ($h_html) {
 		if ($view_polyviewer) {
@@ -421,14 +419,9 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 	
 	my $chr = $patient->getProject->getChromosome($chr_id);
 	next if $chr->countThisVariants( $h_chr_vectors->{$chr_id} ) == 0;
-	
-	$patient->getProject->buffer->dbh_deconnect();
 	$patient->getProject->disconnect();
 	$chr->rocksdb("spliceAI");
 	$pm->start and next;
-	$patient->getProject->buffer->dbh_reconnect();
-	
-
 	
 	#TODO: travailler ici sur les vector
 	if (not $only_gene ) {
@@ -760,9 +753,13 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		}
 	}
 	$hres->{done} = 1;
+	$patient->getProject->disconnect();
 	$pm->finish( 0, $hres );
 }
 $pm->wait_all_children();
+
+print '@';
+$patient->getProject->disconnect();
 
 die if $nbErrors > 0;
 
@@ -930,7 +927,7 @@ if ($html_table_2) {
 }
 
 #$no_cnv->close();
-$project->dejavuJunctions->close() if ( $release =~ /HG19/ );
+#$project->dejavuJunctions->close() if ( $release =~ /HG19/ );
 
 my $hash;
 $hash->{html}      = $l_html[0];
@@ -947,7 +944,7 @@ $hash->{is_partial_results} = $is_partial_results;
 if ($put_cache or $only_html_cache) {
 #	warn $cache_html_id;
 	my $no_cache = $patient->get_lmdb_cache("w");
-	warn 'put hash with key '.$cache_html_id;
+	print 'put hash with key '.$cache_html_id;
 	$no_cache->put_cache_hash( $cache_html_id, $hash );
 	$no_cache->close();
 	exit(0);

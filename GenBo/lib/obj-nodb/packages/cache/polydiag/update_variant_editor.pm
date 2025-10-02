@@ -561,7 +561,7 @@ sub table_validation_without_local {
 	my ($project, $hvariation, $gene) = @_;
 	my $cgi = new CGI();
 	my $color = "#555";
-	check_is_hgmd_dm_for_gene($project, $hvariation, $gene);
+	check_is_hgmd_dm_for_gene($project, $hvariation, $gene) if not exists $hvariation->{value}->{hgmd} and not $hvariation->{value}->{hgmd};
 	if ($hvariation->{value}->{dm} or $hvariation->{value}->{clinvar_pathogenic}){
 		$color = "red";
 	}

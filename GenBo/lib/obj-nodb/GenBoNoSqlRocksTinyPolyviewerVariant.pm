@@ -381,6 +381,7 @@ sub load_polyviewer_variant {
  	
  		#$self->set_cache($bufferpv);
 }
+
 sub transform_polyviewer_variant {
 	my ($self,$chr,$index,$vp,$sereal) = @_ ;
 	die() unless $vp;

@@ -589,7 +589,7 @@ sub set_patient_cache {
 			$hh->{sr} = $vh->sr($p);
 			$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
 			$hh->{norm_depth_after} = $vh->getNormDPAfter($p);
-			$hh->{log2_ratio} =  $vh->getLog2Ratio($p);
+			#$hh->{log2_ratio} =  $vh->getLog2Ratio($p);
 			
 		}
 		elsif ($vh->isDude){

@@ -944,6 +944,7 @@ sub check_variants {
 	my $nb = int((scalar(@lVar)+1)/($fork));
 	$nb = 20 if $nb == 0;
 	my $iter = natatime($nb, @lVar);
+	$project_init->disconnect();
 	while( my @tmp = $iter->() ){
  	 	my $pid = $pm->start and next;
 		$project_init->disconnect();
@@ -1180,19 +1181,7 @@ sub check_variants {
 				}
 			}
 			else { $h_var->{value}->{dm} = ''; }
-			
-			if ($h_var->{value}->{clinvar_pathogenic}) {
-				my $clinvar_id = $h_var->{value}->{clinvar_id};
-				if ($var->getChromosome->is_clinvar_pathogenic_for_gene($clinvar_id, $gene_variant)) {
-					$h_var->{value}->{clinvar_pathogenic_for_this_gene} = 1;
-				}
-				else {
-					$h_var->{value}->{clinvar_pathogenic_for_this_gene} = undef;
-					$h_var->{value}->{clinvar_pathogenic} = undef;
-					$h_var->{value}->{clinvar} = '';
-					$h_var->{html}->{clinvar} = '';
-				}
-			}
+
 			warn '10 - ok clinvar' if $debug;
 			
 			if ($gene_variant) {
@@ -1203,8 +1192,10 @@ sub check_variants {
 				$hres->{$var_id}->{spliceAI} = '';
 			}
 			warn '11 - ok spliceai' if $debug;
-							
+		
 			update_variant_editor::vhgmd($var, $h_var);
+			update_variant_editor::vclinvar($var, $h_var);
+			
 			$hres->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_variant);
 			
 			warn '12 - ok table validations' if $debug;
@@ -1292,12 +1283,14 @@ sub check_variants {
 		if ($fork == 1) {
 			$hres->{session} = save_export_xls(\@lOk, $hres);
 		}
+		$project_init->disconnect();
 		
 	 	$pm->finish(0, $hres);
 	}
 	sleep(3); 
 	$pm->wait_all_children();
 	
+	$project_init->disconnect();
 	print 'nbVarPass:'.$total_pass;
 	print 'nbProj:'.scalar(@lProjectNames);
 	
