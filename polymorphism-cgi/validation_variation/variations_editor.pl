@@ -902,8 +902,7 @@ my $h_transmissions = {
 	my $where = join (" and ",@$sql_where_and);
 	
 	if ($cgi->param('keep_pathogenic') == 1 ){
-		#$where .= "or (variant_keepPathogenic = 1) ";
-		
+		$where .= "or (variant_keepPathogenic = 1) ";
 	}
 	#!!!!!!!!!!!!!!!!
 	
@@ -945,7 +944,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  	 $t =time;
  	 my $id_by_genes_id;
  	 my %ids ;
- 	foreach my $a (@$array_ref){
+ 	foreach my $a (@$array_ref) {
  		my ($c,$b) = split("!",$a->{variant_rocksdb_id});
  		my $index = $a->{variant_index};
  		$rocksdb_pv->add_index($c,$index);
