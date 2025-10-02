@@ -317,7 +317,7 @@ sub get_polyviewer_variant {
      		}
      		push(@{$vp->{hgenes}->{$gene_id}->{tr}},$ht);
      	}
-     	$debug =1 if  $vp->{name} eq "1-1392838-del-29892";
+     #	$debug =1 if  $vp->{name} eq "1-1392838-del-29892";
      	my $patients = $v->[2];
      	my $key_patient = "patients";
      	$key_patient = "patients_sv" if $vp->{isSrPr};
