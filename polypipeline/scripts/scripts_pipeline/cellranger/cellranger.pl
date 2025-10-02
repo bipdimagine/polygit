@@ -7,7 +7,7 @@ use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
 use Logfile::Rotate;
- use Cwd;
+use Cwd;
 use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
@@ -27,13 +27,13 @@ use colored;
 use Config::Std;
 use Text::Table;
 use Time::Local 'timelocal';
-
 use File::Temp qw/ tempfile tempdir /;
-
 use Term::Menus;
- use Proc::Simple;
- use Storable;
+use Proc::Simple;
+use Storable;
 use JSON::XS;
+use XML::Simple qw(:strict);
+use Cwd 'abs_path';
 
   
 my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
@@ -42,152 +42,309 @@ my $bin_script_pipeline = qq{$Bin/scripts/scripts_pipeline};
 
 my $projectName;
 my $patients_name;
-my $step;
+my @steps;
+my $lane;
+my $mismatch = 0;
 my $feature_ref;
 my $no_exec;
 my $aggr_name;
-my $cmo_ref;
-my $lane;
+my $chemistry;
+my $create_bam;
+my $cpu = 20;
+my $help;
 
-
-my $limit;
 GetOptions(
-	'project=s' => \$projectName,
-	'patients=s' => \$patients_name,
-	'step=s'=> \$step,
-#	'bcl=s' => \$bcl_dir,
-#	'run=s' => \$run,
-	'feature_ref=s' =>  \$feature_ref,
-	'no_exec=s' => \$no_exec,
-	'aggr_name=s' => \$aggr_name,
-	'nb_lane=s' => \$lane,
-	#'low_calling=s' => \$low_calling,
-);
+	'project=s'					=> \$projectName,
+	'patients=s'				=> \$patients_name,
+	'steps=s{1,}'				=> \@steps,
+	'lane=i'					=> \$lane,
+	'mismatches=i'				=> \$mismatch,
+	'create_bam!'				=> \$create_bam,
+	'feature_ref|feature_csv=s'	=> \$feature_ref,
+	'aggr_name=s'				=> \$aggr_name,
+	'chemistry=s'				=> \$chemistry,
+	'cpu=i'						=> \$cpu,
+	'no_exec'					=> \$no_exec,
+#	'low_calling=s'				=> \$low_calling,
+	'help'						=> \$help,
+) || die("Error in command line arguments\n");
+
+usage() if $help;
+usage() unless ($projectName);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
-#$patients_name = "all" unless $patients_name;
-$patients_name = $project->get_only_list_patients($patients_name);
-
+my $patients = $project->get_only_list_patients($patients_name);
+die("No patient in project $projectName") unless ($patients);
 
 my $run = $project->getRun();
 my $run_name = $run->plateform_run_name;
-my $bcl_dir = $run->bcl_dir;
-warn $bcl_dir;
+my $type = $run->infosRun->{method};
+my $machine = $run->infosRun->{machine};
 
-if ($step eq "all" || $step eq "demultiplex"){
-	#die ("-bcl, -run and -nb_lane options are required") unless $bcl_dir || $run || $lane;
+my $exec = "cellranger";
+$exec .= '-atac' if ($type eq 'atac');
+$exec .= '-arc' if ($type eq 'arc');
+$exec = 'spaceranger' if  ($type eq 'spatial');
+warn $exec;
+	
 
-unless ( $lane ){
-	die(" regarde le run info vieille nouille !!!!! $bcl_dir");
+#my $dir = $project->getProjectRootPath();
+my $dir = $project->getCountingDir('cellranger');
+$dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
+warn $dir;
+
+@steps = split(/,/, join(',',@steps));
+unless (@steps) {
+	my $liste_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summaries', 'all'];
+	my %Menu_1 = (
+		Item_1 => {
+			Text   => "]Convey[",
+			Convey => $liste_steps,
+		},
+		Select => 'Many',
+		Banner => "   Select steps:"
+	);
+	@steps = &Menu( \%Menu_1 );
+	die if ( @steps eq ']quit[' );
 }
-}
-#my $cmd = "cat  /data-isilon/raw-data//ILLUMINA/10X/IMAGINE/230808_A00680_0406_BHLC3KDMXY/RunInfo.xml  \| grep LaneCount \| awk -F \'\"\' \'\{print \$2\}";
+warn 'steps='.join(',',@steps);
 
-#$lane = `$cmd`;
-#warn $step;
+die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 
 
-
-my $sampleSheet = $bcl_dir."/sampleSheet.csv";
-my $exec= "cellranger";
-
-open (SAMPLESHEET,">$sampleSheet");
-my $dir = $project->getProjectRootPath();
-print SAMPLESHEET "Lane,Sample,Index\n";
-
-my $fastq;
-my %hSamples;
-my %test;
-my $type;
-my @group;
+my @patient_names = map {$_->name} @$patients;
+my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
+die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
 
 
-foreach my $patient (@{$patients_name}) {
-	my $name=$patient->name();
-	warn $name;
-	my $bc = $patient->barcode();
-	my $bc2 = $patient->barcode2();
-	my $group = $patient->somatic_group();
-	push(@group,$group);
-	for (my $i=1;  $i<=$lane;$i++){
-		print SAMPLESHEET $i.",".$name.",".$bc."\n";
+#------------------------------
+# DEMULIPLEXAGE
+#------------------------------
+if (grep(/demultiplex|^all$/i, @steps)){
+	
+	unless ($machine eq '10X') {
+		my $continue = prompt( "Error in sequencing machine: '$machine', expected '10X'. Continue anyway ?  (y/n)  ", -yes_no );
+		die  unless ($continue);
+	}
+	my $bcl_dir = $run->bcl_dir;
+	warn $bcl_dir;
+	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
+	my $lane_config = $config->{Run}->{FlowcellLayout}->{LaneCount};
+	warn("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane") && sleep(3) if ($lane and $lane != $lane_config);
+	unless ($lane) {
+		$lane = $lane_config;
+		warn 'LaneCount=',$lane;
+	}
+	
+	my $tmp = $project->getAlignmentPipelineDir("cellranger_demultiplex");
+	warn $tmp;
+
+	my $sampleSheet = $bcl_dir."/sampleSheet.csv";
+	open (SAMPLESHEET,">$sampleSheet");
+	print SAMPLESHEET "Lane,Sample,Index\n";
+	
+	foreach my $patient (sort @{$patients}) {
+		my $name = $patient->name();
+		my $bc = $patient->barcode();
+		my $bc2 = $patient->barcode2();
+		for (my $i=1;  $i<=$lane;$i++){
+			print SAMPLESHEET $i.",".$name.",".$bc."\n";
+		}
+	}
+	close(SAMPLESHEET);
+	
+	my $cmd = "cd $tmp; $Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=$mismatch";
+	warn $cmd;
+	my $exit = system ($cmd) unless ($no_exec);
+	exit($exit) if ($exit);
+	unless ($@ or $no_exec) {
+		print "\t------------------------------------------\n";
+		print("Check the demultiplex stats\n");
+		print("https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html\n\n");
+		system ("firefox https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html &");
+		print "\t------------------------------------------\n";
 	}
 }
-close(SAMPLESHEET);
-
-
-#my $prog =  $patient->alignmentMethod();
-my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
-warn $tmp;
 
 
 
-open (JOBS, ">$dir/jobs_count.txt");
-foreach my $patient (@{$patients_name}) {
-	my $name=$patient->name();
-	my $bc = $patient->barcode();
-	my $run = $patient->getRun();
-	my $group = "EXP";
-	$group = $patient->somatic_group() if ($patient->somatic_group());
-	next() unless uc($group) eq "EXP" ;
-	#to do : à regarder dans profile
-	$type = $run->infosRun->{method};
-	next() if $type eq "arc";
-	my $prog =  $patient->alignmentMethod();
-	my $index = $project->getGenomeIndex($prog);
-	$fastq = $patient->getSequencesDirectory();
-	$exec = "cellranger-atac" if $type eq "atac";
-	$exec = "cellranger-arc" if $type eq "arc";
-	$index = $project->getGenomeIndex($prog)."_atac" if $type eq "atac";
-	$index = $project->getGenomeIndex($prog)."_arc" if $type eq "arc";
-	my $cmd = "cd $dir; $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam false --transcriptome=$index ";
-	$cmd .= " --include-introns " if $type eq "nuclei";
-	$cmd .= "\n";
-	warn $cmd;
-	print JOBS $cmd;
-}	
 
-close(JOBS);
-foreach my $patient (@{$patients_name}) {
-	my $run = $patient->getRun();
+#------------------------------
+# TELEPORT
+#------------------------------
+if (grep(/teleport/, @steps)) {
+#	my $cmd = "teleport_patient.sh -project=$projectName -force=1";
+	my $cmd = "/home/mperin/git/polygit/polypipeline/teleport_patients.pl -project=$projectName -force=1";
+	system($cmd) unless $no_exec;
+}
+
+
+
+
+unless ($project->isSomatic) {
+	my $warn = "/!\\ Project $projectName is not in somatic mode. Activate somatic mode and check that the groups have been filled in, "
+		."so that they can be taken into account in the analysis.";
+	die ($warn) unless (grep{/@steps/} ('demultiplex', 'teleport', 'tar', 'cp', 'cp_web_summaries'));
+	warn ($warn);
+	
+}
+
+my @group;
+foreach my $pat (@{$patients}) {
+	my $group = $pat->somatic_group();
+	push(@group,$group);
+}
+
+
+#------------------------------
+# COUNT
+#------------------------------
+if (grep(/count|^all$/i, @steps)){
+	
+	if (grep {$_ =~ /adt/i} @group) {
+		die("feature_ref csv required\n") unless ($feature_ref);
+		die("'$feature_ref' not found") unless (-e $feature_ref);
+		$feature_ref = abs_path($feature_ref);
+	}
+	
+	$create_bam = 'false' unless ($create_bam);
+	$create_bam = 'true' if ($create_bam ne 'false');
+	warn "create-bam=$create_bam";
+	
+	 if ($chemistry) {
+ 		warn "chemistry=$chemistry";
+		my @chemistries = qw/auto threeprime fiveprime SC3Pv2 SC3Pv3 SC3Pv3-polyA SC3Pv4 SC3Pv4-polyA SC3Pv3HT SC3Pv3HT SC5P-PE SC5P-PE-v3 SC5P-R2 SC5P-PE-v3 SC3Pv1 ARC-v1/;
+		die ("Chemistry option '$chemistry' not valid, should be one of: ". join(', ', @chemistries)) unless (grep { $_ eq $chemistry } @chemistries);
+	 }
+	
+	
+	my $fastq;
+	my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
+	warn $tmp;
+	
+#	sub tmpSequencesDirectory {
+#		my $pat = shift @_;
+#		return $tmp.'fastq'.'/';
+#	}
+	sub full_cmd {
+		my ($pat, $cmd) = @_;
+		chomp $cmd;
+		my $name = $pat->name;
+		my $tmp_fastq = $tmp.'fastq/';
+		system("mkdir $tmp_fastq") unless (-d "$tmp_fastq");
+		my $seq_dir = $pat->getSequencesDirectory;
+		my $cmd1 = "cp $seq_dir$name*.fastq.gz $tmp_fastq && ";
+		my $adt = 'ADT_'.$name;
+		$cmd1 = "cp $seq_dir$name*.fastq.gz $seq_dir/ADT_$name*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
+		my $cmd2 = " --localcores=$cpu ";
+		$cmd2 .= "&& cp -r $tmp$name/outs/* $tmp$name/_versions $dir$name/ ";
+		system("mkdir $dir$name") unless (-d "$dir$name");
+		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
+#		$cmd2 .= "&& if [[ -f \"$tmp_fastq\*.fastq.gz\" ]]; then rm $tmp_fastq\*.fastq.gz ; fi ";
+#		$cmd2 .= "&& rm $tmp_fastq\*.fastq.gz";
+		$cmd =~ s/$seq_dir/$tmp_fastq/;
+		return $cmd1.$cmd.$cmd2."\n";
+	}
+	
+	# EXP
+	my $type_exp = 1 if map {uc($_) =~ /(EXP|NUCLEI)/ } @group;
+	if($type_exp){
+		open (JOBS, ">$dir/jobs_count.txt");
+		my @exp = grep { uc($_->somatic_group()) eq "EXP" || uc($_->somatic_group()) eq "NUCLEI" } @{$patients};
+		warn "EXP/NUCLEI: ".join(', ',map($_->name,@exp));
+		foreach my $e (@exp){
+			my $name = $e->name;
+#			warn $name;
+			my $group = $e->somatic_group();
+			$fastq = $e->getSequencesDirectory;
+			my $prog =  $e->alignmentMethod();
+			my $index = $project->getGenomeIndex($prog);
+			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$index ";
+			$cmd .= " --include-introns true" if ($type eq "nuclei" or lc($group) eq "nuclei"); # true par défaut
+			$cmd .= " --chemistry $chemistry" if ($chemistry);
+			$cmd .= "\n";
+			$cmd = full_cmd($e, $cmd);
+	#		warn $cmd;
+			print JOBS $cmd;
+		}
+	}
+	
+	
+	# VDJ
 	my $type_vdj = 1 if map {uc($_) =~ /VDJ/ } @group;
-	  
-	#$run->infosRun->{method};
 	if($type_vdj){
 		open (JOBS_VDJ, ">$dir/jobs_vdj.txt");
-		my @vdj = grep { uc($_->somatic_group()) eq "VDJ"} @{$patients_name};
+		my @vdj = grep { uc($_->somatic_group()) eq "VDJ"} @{$patients};
+		warn "VDJ: ".join(', ',map($_->name,@vdj));
 		foreach my $v (@vdj){
-			my $vname = $v->name(); 
-			my $vfam = $v->family();
-			my $vgroup = uc($v->somatic_group());
-			my $fastq = $v->getSequencesDirectory();
+			my $name = $v->name(); 
+#			my $vfam = $v->family();
+#			my $vgroup = uc($v->somatic_group());
+			my $fastq = $v->getSequencesDirectory;
 			my $prog =  $v->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $index_vdj = $index."_vdj";
-		#my $vdj_file = $dir."/".$ename."_librarytest.csv";
-		#my $prog =  $e->alignmentMethod();
-			print JOBS_VDJ "cd $dir; cellranger vdj --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_vdj  \n"
+			my $cmd = "cd $tmp && cellranger vdj --sample=$name --id=$name --fastqs=$fastq --reference=$index_vdj  \n";
+			$cmd = full_cmd($v, $cmd);
+			print JOBS_VDJ $cmd;
 		}
 	}
-	close(JOBS_VDJ);
-}
 
 
-foreach my $patient (@{$patients_name}) {
-	my $run = $patient->getRun();
-	my $type = $run->infosRun->{method};
+	# ADT
+	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @group;
+	if ($type_adt){
+		open (JOBS_ADT, ">$dir/jobs_count.txt");
+		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients};
+		warn "EXP+ADT: ".join(', ',map($_->name,@exp));
+		foreach my $e(@exp){
+			my $ename = $e->name(); 
+			my $efam = $e->family();
+#			my $egroup = uc($e->somatic_group());
+			my $lib_file = $dir."/".$ename."_library.csv";
+			open(LIB,">$lib_file") or die "impossible $lib_file";
+			my @adt = grep {$_->family() eq $efam && $_->name() =~ $ename && uc($_->somatic_group()) eq "ADT"} @{$patients};
+			warn ("no associated ADT library") if scalar(@adt)==0 ;
+			next() if scalar(@adt)==0 ; 
+			my $adt_name = $adt[0]->name();
+			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/,'.",".$ename.",Gene Expression\n";
+			$lib .= $tmp.'fastq/'.",".$adt_name.",Antibody Capture\n";
+			print LIB $lib;
+			close(LIB);
+			my $prog =  $e->alignmentMethod();
+			my $index = $project->getGenomeIndex($prog);
+			my $cmd = "cd $tmp && cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file --create-bam=$create_bam";
+			$cmd .= " --chemistry $chemistry" if ($chemistry);
+			$cmd .= "\n";
+			$cmd = full_cmd($e, $cmd);
+			print JOBS_ADT $cmd;
+		}
+	}
+
 	
+	# SPATIAL
 	my $type_spatial = 1 if map {uc($_) =~ /SPATIAL/ } @group;
- 	if($type_spatial  && $step eq "count" ){
+ 	if($type_spatial){
 		open (JOBS_SPATIAL, ">$dir/jobs_spatial.txt");
-		my @spatial = grep { uc($_->somatic_group()) eq "SPATIAL"} @{$patients_name};
+		my @spatial = grep { uc($_->somatic_group()) eq "SPATIAL"} @{$patients};
+		warn "SPATIAL: ".join(', ',map($_->name,@spatial));
+ 		my $slide_id = prompt("Visium Slide ID: ");
+ 		die("Visuim slide ID should start with V1, V4, V5 oh H1") unless ($slide_id =~ /^(V[145]|H1)/);
+ 		my %image_type = {
+ 			'Brightfield image generated by the CytAssist instrument (the CytAssist image)' => 'cytaimage',
+ 			'Brightfield microscope image' => 'image',
+ 			'Dark background fluorescence microscope image' => 'darkimage',
+ 			'Composite colored fluorescence microscope image' => 'colorizedimage',
+ 		};
+ 		my $imagetype = prompt('Choose the type of image you have: ', -m=>%image_type);
+ 		die ($imagetype);
 		foreach my $s (@spatial){
 			my $sname = $s->name(); 
 			my $bc2 = $s->barcode2();
-			my ($slide,$slide2,$area) = split("-",$bc2);
-			warn $sname;
-			my $sfam = $s->family();
+			my $area = $bc2;
+#			my ($slide,$slide2,$area) = split("-",$bc2);
+
 			#my $des_file = $dir."/".$sname."_spatial_descript.csv";
 	
 			#die("file with area, slide and path to image file is mandatory \(patientName_spatial_descript.csv\)") unless -e $des_file ;
@@ -202,88 +359,64 @@ foreach my $patient (@{$patients_name}) {
 			#	($json,$slide,$area)= split(",",$_);
 			#}
 			#close(DES);
-			my $slide_final = $slide."-".$slide2;
-			my $json = $dir."/".$slide_final."-".$area."-".$sname.".json";
+#			my $slide_final = $slide."-".$slide2;
+#			my $json = $dir."/".$slide_final."-".$area."-".$sname.".json";
+			# todo: rechercher les images tif contenant le nom du sample et/ou son area
 			my $image = $dir."/".$area."-".$sname.".tif";
+			die("Image '$image' not found") if (! -e $image && !$no_exec);
 			my $sgroup = uc($s->somatic_group());
-			my $fastq = $s->getSequencesDirectory();
+			my $fastq = $tmp.'fastq/';
 			my $prog =  $s->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog);
-			my $index_spatial = $index;
-			print JOBS_SPATIAL "cd $tmp;spaceranger count --sample=$sname --image=$image --id=$sname --fastqs=$fastq --transcriptome=$index_spatial --area=$area --slide=$slide_final --loupe-alignment=$json  \n";
+			my $index_spatial = $project->getGenomeIndex($prog);
+			my $set = $index_spatial."/probe_sets/";
+#			my $set = "/software/distrib/spaceranger/spaceranger-3.1.3/probe_sets/";
+			$set .= "Visium_Human_Transcriptome_Probe_Set_v1.0_GRCh38-2020-A.csv" if ($project->getVersion() =~ /^HG/ && $slide_id =~ /^(V1)/);
+			$set .= "Visium_Human_Transcriptome_Probe_Set_v2.0_GRCh38-2020-A.csv" if ($project->getVersion() =~ /^HG/ && $slide_id =~ /^(V[45]|H1)/);
+			$set .= "Visium_Mouse_Transcriptome_Probe_Set_v1.0_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM/ && $slide_id =~ /^(V[145])/);
+			$set .= "Visium_Mouse_Transcriptome_Probe_Set_v2.0_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM/ && $slide_id =~ /^H1/);
+			
+			my $cmd = "cd $tmp && spaceranger count --id=$sname --sample=$sname --fastqs=$fastq --transcriptome=$index_spatial --create-bam=$create_bam ";
+			$cmd .= "--$imagetype=$image  ";
+			$cmd .= "--area=$area --slide=$slide_id --probe-set=$set ";
+#			$cmd .= " --loupe-alignment=$json ";
+			$cmd = full_cmd($s, $cmd);
+			print JOBS_SPATIAL $cmd;
 		}
 	}
-	close(JOBS_SPATIAL);
-}
 
-
-
-foreach my $patient (@{$patients_name}) {
-	my $run = $patient->getRun();
-	my $type = $run->infosRun->{method};
+	
+	# ATAC
 	my $type_atac = 1 if map {uc($_) =~ /ATAC/ } @group;
+#	warn $type_atac;
 	if($type_atac ){
+		warn 'ATAC';
 		open (JOBS_ATAC, ">$dir/jobs_atac.txt");
-		my @atac = grep { uc($_->somatic_group()) eq "ATAC"} @{$patients_name};
-		foreach my $v (@atac){
-			my $vname = $v->name(); 
-			my $vfam = $v->family();
-			my $vgroup = uc($v->somatic_group());
-			my $fastq = $v->getSequencesDirectory();
-			my $prog =  $v->alignmentMethod();
-			#my $index = $project->getGenomeIndex($prog);
+		my @atac = grep { uc($_->somatic_group()) eq "ATAC"} @{$patients};
+		warn "ATAC: ".join(', ',map($_->name,@atac));
+		foreach my $a (@atac){
+			my $vname = $a->name(); 
+			my $vfam = $a->family();
+			my $vgroup = uc($a->somatic_group());
+			my $fastq = $a->getSequencesDirectory;
 			$exec = "cellranger-atac" if $type eq "atac";
-			my $index = $project->getGenomeIndex($prog)."_atac" if $type eq "atac";
-			print JOBS_ATAC "cd $tmp; $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$index  \n"
-		}
-	}
-	close(JOBS_ATAC);
-}
-
-
-
-foreach my $patient (@{$patients_name}) {
-	my $run = $patient->getRun();
-	my $type = $run->infosRun->{method};
-	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @group;
-	if ($type_adt){
-		open (JOBS_ADT, ">$dir/jobs_count.txt");
-		warn $patient->somatic_group();
-		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients_name};
-		foreach my $e(@exp){
-			my $ename = $e->name(); 
-			warn $ename;
-			my $efam = $e->family();
-			my $egroup = uc($e->somatic_group());
-			my $lib_file = $dir."/".$ename."_library.csv";
-			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @adt = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ADT"} @{$patients_name};
-			warn ("no associated ADT library") if scalar(@adt)==0 ;
-			next() if scalar(@adt)==0 ; 
-			my $adt_name = $adt[0]->name();
-			my $prog =  $e->alignmentMethod();
+			my $prog =  $a->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
-			my $index_vdj = $index."_vdj";
-			my $lib = "fastqs,sample,library_type\n".$e->getSequencesDirectory().",".$ename.",Gene Expression\n";
-			$lib .= $adt[0]->getSequencesDirectory().",".$adt_name.",Antibody Capture\n";
-			print LIB $lib;
-			close(LIB);
-			print JOBS_ADT "cd $tmp ; cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file\n"
+			my $index_atac = $index."_atac" if $type eq "atac";
+			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_atac  \n";
+			$cmd = full_cmd($a, $cmd);
+			print JOBS_ATAC $cmd;
 		}
 	}
-	close(JOBS_ADT);
-}
 
-
-foreach my $patient (@{$patients_name}) {
-	my $run = $patient->getRun();
-	my $type = $run->infosRun->{method};
+	
+	# CMO
 	my $type_cmo = 1 if map {uc($_) =~ /CMO/ } @group;
 	if ($type =~ /cmo/ ){
 		open (JOBS_CMO, ">$dir/jobs_cmo.txt");
-		warn $patient->somatic_group();
-		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients_name};
-		foreach my $e(@exp){
+#		warn $patient->somatic_group();
+		my @cmo = grep { uc($_->somatic_group()) eq "CMO"} @{$patients};
+		warn "CMO: ".join(', ',map($_->name,@cmo));
+		foreach my $e(@cmo){
 			my $ename = $e->name(); 
 			my $efam = $e->family();
 			my $egroup = uc($e->somatic_group());
@@ -294,131 +427,351 @@ foreach my $patient (@{$patients_name}) {
 			print LIB "[gene-expression]\nreference,".$index."\ncmo-set,/data-isilon/sequencing/ngs/NGS2022_6140/cmo_ref.csv\n";
 			
 			print LIB "[libraries]\nfastq_id,fastqs,feature_types\n";
-			print LIB "$ename,".$e->getSequencesDirectory().$ename.",Gene Expression\n";
-			my @cmo = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "CMO"} @{$patients_name};
+			print LIB "$ename,".$tmp.'fastq/'.$ename.",Gene Expression\n";
+			my @cmo = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "CMO"} @{$patients};
 			my $cmo_name = $cmo[0]->name();
-			print LIB "$cmo_name,".$cmo[0]->getSequencesDirectory().$ename.",Antibody Capture\n";
+			print LIB "$cmo_name,".$tmp.'fastq/'.$ename.",Antibody Capture\n";
 			print LIB "[samples]\nsample_id,cmo_ids\n";
 			print LIB $ename."_B251,B251\n";
 			print LIB $ename."_B252,B252\n";
 			print LIB $ename."_B253,B253\n";
 			close(LIB);
-			print JOBS_CMO "cd $tmp ; cellranger multi --id=$ename --csv=$lib_file\n";
+			my $cmd = "cd $tmp && cellranger multi --id=$ename --csv=$lib_file\n";
+			$cmd = full_cmd($e, $cmd);
+			print JOBS_CMO $cmd;
 		}
 	}
-	close(JOBS_CMO);
-}
 
-
-
-
-foreach my $patient (@{$patients_name}) {
-	my $run = $patient->getRun();
-	my $type = $run->infosRun->{method};
+	
+	# ARC
 	my $type_arc = 1 if map {uc($_) =~ /ARC/ } @group;
 	if ($type_arc ){
 		open (JOBS_ARC, ">$dir/jobs_arc.txt");
 		$exec = "cellranger-arc";
-		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients_name};
-		foreach my $e(@exp){
+		my @arc = grep { uc($_->somatic_group()) eq "ARC"} @{$patients};
+		warn "ARC: ".join(', ',map($_->name,@arc));
+		foreach my $e(@arc){
 			my $ename = $e->name(); 
 			my $efam = $e->family();
 			my $egroup = uc($e->somatic_group());
 			my $lib_file = $dir."/".$ename."_library.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @atac = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ARC"} @{$patients_name};
+			my @atac = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ARC"} @{$patients};
 			next() if scalar(@atac == 0);
 			my $atac_name = $atac[0]->name() ;
 			my $prog =  $e->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog)."_arc";
-			my $lib = "fastqs,sample,library_type\n".$e->getSequencesDirectory().",".$ename.",Gene Expression\n";
-			$lib .= $atac[0]->getSequencesDirectory().",".$atac_name.",Chromatin Accessibility\n";
+			my $index = $project->getGenomeIndex($prog);
+			my $index_arc = $index."_arc";
+			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/'.",".$ename.",Gene Expression\n";
+			$lib .= $tmp.'fastq/'.",".$atac_name.",Chromatin Accessibility\n";
 			print LIB $lib;
 			close(LIB);
-			print JOBS_ARC "cd $tmp ; $exec count --id=$ename --transcriptome=$index  --libraries=$lib_file\n"
+			my $cmd = "cd $tmp && $exec count --id=$ename --transcriptome=$index_arc  --libraries=$lib_file\n";
+			$cmd = full_cmd($e, $cmd);
+			print JOBS_ARC $cmd;
 		}
 	}
-}
-close(JOBS_ARC);
+		
+	close(JOBS);
+	close(JOBS_VDJ);
+	close(JOBS_ADT);
+	close(JOBS_SPATIAL);
+	close(JOBS_ATAC);
+	close(JOBS_CMO);
+	close(JOBS_ARC);
 
 
-#my $cmd = "cd $tmp; /software/bin/demultiplex.pl -dir=$bcl_dir -run=$run -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec";
-warn $exec;
-my $cmd = "cd $tmp; $Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=1";
-if ($step eq "demultiplex" or $step eq "all"){
-	warn $cmd;
-	system $cmd or die "impossible $cmd" unless $no_exec==1;
-}
-#warn "cat $dir/jobs*.txt";
-#die();
-
-my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=20";
-if ($step eq "count" or $step eq "all"){
+	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=$cpu";
 	warn $cmd2;
-	system $cmd2  unless $no_exec==1;
+	sleep(5) unless ($no_exec);
+	my $exit = system ($cmd2) unless ($no_exec);
+	exit($exit) if ($exit);
+	
+	# Open web summaries
+	my @error;
+	my $web_summaries = "";
+	foreach my $patient (@{$patients}) {
+		next if ($patient->somatic_group =~ /^ADT$/i);
+		my $file = $dir.$patient->name."/web_summary.html";
+		$web_summaries .= $file.' ' if (-e $file);
+		push(@error, $file) unless (-e $file or $no_exec);
+	}
+	my $cmd3 = "firefox ".$web_summaries;
+	$cmd3 = "google-chrome ".$web_summaries if (getpwuid($<) eq 'shanein');
+	warn $cmd3 if ($web_summaries);
+	system($cmd3.' &') if ($web_summaries and not $no_exec);
+	die("Web summaries not found: ".join(', ', @error)) if (@error and not $no_exec);
+
+	unless ($no_exec) {
+		print "\t------------------------------------------\n";
+		print("Check the web summaries:\n");
+		print("$dir/*/web_summary.html\n\n");
+		print "\t------------------------------------------\n\n";
+	}
+	
 }
 
-if ($step eq "aggr" or $step eq "all"){
+
+
+
+#------------------------------
+# AGGREGATION
+#------------------------------
+if (grep(/aggr/, @steps)){
+	my @groups = map {$_->somatic_group} @$patients;
+	warn Dumper \@group;
+	warn ("Can't aggregate gene expression and vdj librairies together") if (grep {'exp'} @groups and grep {'vdj'} @groups);
+#	die("No 'exp' sample to aggregate") unless (grep {'exp'} @groups);
+	my $id = $aggr_name if $aggr_name;
 	my $aggr_file = $dir."/jobs_aggr.txt";
-	my $id = $projectName;
-	$id = $aggr_name if $aggr_name;
 	open (JOBS_AGGR, ">$aggr_file");
-	my $type = $project->getRun->infosRun->{method};
-	if ($type =~ /vdj/) {
-		print JOBS_AGGR "sample_id,vdj_contig_info,donor,origin\n" ;
-	}
-	else{
-		print JOBS_AGGR "sample_id,molecule_h5\n";
-	}	
-	foreach my $patient (@{$patients_name}) {
-		my $group_type = uc($patient->somatic_group());
-		if ($group_type eq "VDJ") {
-			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/"."outs/vdj_contig_info.pb\n";
+	
+	if (grep {'exp'} @groups) {
+		$id = 'aggregation_exp' unless ($id);
+		my $aggr_csv = $dir."/aggr.csv";
+		open (AGGR_CSV, ">$aggr_csv");
+		print AGGR_CSV "sample_id,molecule_h5\n";
+		foreach my $patient (@{$patients}) {
+			warn 
+			my $group_type = lc($patient->somatic_group());
+			if ($group_type eq "exp") {	# ne "adt" or $_ ne "vdj"
+				print AGGR_CSV $patient->name().",".$dir."/".$patient->name()."/molecule_info.h5\n";
+			}
 		}
-		else{	
-			print JOBS_AGGR $patient->name().",".$dir."/".$patient->name()."/"."outs/molecule_info.h5\n";
+		close AGGR_CSV;
+		print JOBS_AGGR "cd $dir ; $exec aggr --id=$id --csv=$aggr_csv";
+		warn ("cat $aggr_file | run_cluster.pl -cpu=$cpu");
+		system ("cat $aggr_file | run_cluster.pl -cpu=$cpu") unless $no_exec;
+		die("Error while running cellranger aggr") unless (-d $id);
+		if (-d "$dir/$id/" and not $no_exec) {
+			print("--------------------\n");
+			print("$dir/$id/\n\n");
 		}
 	}
-	close JOBS_AGGR;
-	my $aggr_cmd = "cd $dir ; $exec aggr --id=$id --csv=$aggr_file";
-	warn $aggr_cmd;
-	die();
-	system ($aggr_cmd)  unless $no_exec==1;
+	
+	if (grep {'vdj'} @groups) {
+		$id = 'VDJ_'.$id if ($id);
+		$id = 'aggregation_vdj' unless ($id);
+		my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
+		if (-e $aggr_csv_vdj) {
+			my $overwrite = prompt("'aggr_vdj.csv' already exists. Overwrite the file ?  ",-yes);
+			print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'") unless ($overwrite);
+			print JOBS_AGGR "cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj" unless ($overwrite);
+			die("'$aggr_csv_vdj' already exists") unless ($overwrite);
+		}
+		open (AGGR_CSV_VDJ, ">$aggr_csv_vdj");
+		print AGGR_CSV_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
+		foreach my $patient (@{$patients}) {
+			my $group_type = lc($patient->somatic_group());
+			print AGGR_CSV_VDJ $patient->name().",$dir".$patient->name()."/vdj_contig_info.pb,,\n" if ($group_type eq "vdj");
+		}
+		close (AGGR_CSV_VDJ);
+		print("--------------------\n");
+		print("Fill the 'donor' and 'origin' columns for each vdj sample in '$aggr_csv_vdj'.\n");
+		print("Then run 'echo \"cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'\n");
+		print("Then make an archive: 'tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe'\n\n");
+	}
+	close (JOBS_AGGR);
+#	my $cmd_tar = "tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe\n";
+#	print("Then, you can make an archive: '$cmd_tar'\n");
+#	system($cmd_tar) if (-d $dir.'aggregation_exp/' and not $no_exec);
+#	print("Archive of aggragation : $dir/$projectName\_aggr.tar.gz\n") if (-d "$dir/$projectName\_aggr.tar.gz" and not $no_exec);
+
 }
 
 
-#foreach my $patient (@{$patients_name}) {
-#	my $name = $patient->name();
-#	my $file = $dir."/".$name."/outs/web_summary.html";
-#	print $file."\n" if -e $file ;
-#}
 
-##commande pour copier sur /data-isilon/singleCell
 
-#my $RefDateActuelle = date();
-#my $date = $RefDateActuelle->{date};
-
-if ($step eq "tar" or $step eq "all"){
-	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
-	warn $tar_cmd;
-	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
-	system ($tar_cmd)  unless $no_exec==1;
-	#or die "impossible $tar_cmd";
-	print "\t#########################################\n";
-	print "\t  link to send to the users : \n";
-	print "\t www.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
-	print "\t#########################################\n";
+#------------------------------
+# AGGREGATION VDJ
+#------------------------------
+if (grep(/aggr_vdj/, @steps)) {
+#	my $type = $project->getRun->infosRun->{method};
+#	die ("No vdj in project $projectName") if ($type !~ /vdj/);
+	my @groups = map {$_->somatic_group} @$patients;
+	die("No 'vdj' sample to aggregate") unless (grep {'vdj'} @groups);
+	my $id = $projectName.'_VDJ_aggregation';
+	$id = $aggr_name if $aggr_name;
+#	my $aggr_file_vdj = $dir."/jobs_aggr_vdj.txt";
+#	open (JOBS_AGGR_VDJ, ">$aggr_file_vdj");
+	my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
+	if (-e $aggr_csv_vdj) {
+		my $overwrite = prompt("'aggr_vdj.csv' already exists. Overwrite the file ?  ",-yes);
+		print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'") unless ($overwrite);
+		die("'$aggr_csv_vdj' already exists") unless ($overwrite);
+	}
+	open (AGGR_CSV_VDJ, ">$aggr_csv_vdj");
+	print AGGR_CSV_VDJ "sample_id,vdj_contig_info,donor,origin\n" ;
+	foreach my $patient (@{$patients}) {
+		my $group_type = lc($patient->somatic_group());
+		if ($group_type eq "vdj") {
+			print AGGR_CSV_VDJ $patient->name().",".$dir."/".$patient->name()."/vdj_contig_info.pb,,\n";
+		}
+	}
+	close (AGGR_CSV_VDJ);
+	print "--------------------\n";
+	print "Fill the 'donor' and 'origin' columns for each vdj sample in '$dir$aggr_csv_vdj'.\n";
+	print "Then run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'";
+	print "Then make an archive: 'tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe'";
 }
 
-if ($step eq "cp" or $step eq "all"){
-	foreach my $patient (@{$patients_name}) {
+
+
+
+#------------------------------
+# COPY TO /data-isilon/SingleCell/
+#------------------------------
+if (grep(/cp$|^all$/i, @steps)){
+	my $dirout = "/data-isilon/SingleCell/$projectName/";
+	my $cp_cmd = "mkdir $dirout" unless (-d $dirout);
+	warn $cp_cmd unless (-d $dirout);
+	system ($cp_cmd) unless ($no_exec or -d $dirout);
+	foreach my $patient (@{$patients}) {
 		my $name = $patient->name();
-		my $dirout = "/data-isilon/SingleCell/$projectName";
-		my $cp_cmd = "mkdir $dirout ; cp -r $dir/$name $dirout/. ; cp -r $dir/$name $dirout/. ";
-		#die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
-		system ($cp_cmd) ;# unless $no_exec==1;
-		print "\t#########################################\n";
-		print "\t  cp to /data-isilon/SingleCell/$projectName  \n";
-		print "\t#########################################\n";
+		next if ($name =~ /^ADT_/);
+		my $cp_cmd = "cp -ru $dir/$name $dirout";
+#		my $cp_cmd = "rsync -ra  $dir/$name $dirout";
+		warn $cp_cmd;
+		system ($cp_cmd) unless $no_exec;
+	}
+	
+	# csv avec infos pour Francesco
+	my $info_file = "/data-isilon/SingleCell/$projectName/$projectName-infos.txt";
+	open(my $fh, '>', $info_file);
+	print $fh $projectName.','.$project->description."\n";
+	foreach my $pat (@$patients) {
+		my $pname = $pat->name;
+		next if ($pname =~ /^ADT_/);
+		# count directory
+		my $dir_cellranger; 
+		my $dir1 = $dir.$pat->name.'/';
+		my $dir2 = $project->getProjectRootPath().$pat->name.'/';
+		if (-d $dir1) {
+			$dir_cellranger = $dir1;
+			$dir_cellranger .= 'outs/' if (-d $dir1.'outs/');
+		}
+		elsif (-d $dir2) {
+			$dir_cellranger = $dir2
+		}
+		else {
+			die("Can't find directory with cellranger data for patient $pname")
+		}
+		# cellranger version
+		my $cellranger_version = "";
+		my $file_version = $dir_cellranger.'_versions';
+		open (my $fv, '<', $file_version) || warn ("Can't open $file_version: $!");
+		while (my $line = readline($fv)) {
+			chomp $line;
+			$cellranger_version = $1 if ($line =~ /^\s*"pipelines": "(\w+ranger(-\w*)?-[\d\.]+)"$/);
+		}
+		
+		print $fh $pname.','.$pat->getSequencesDirectory.','.$dir_cellranger.','.$cellranger_version."\n";
+	}
+	close($fh);
+	
+	unless ($no_exec){
+		print "\t------------------------------------------\n";
+		print "\tcp to $dirout \n";
+		print "\t------------------------------------------\n\n";
 	}
 }
+
+
+
+#------------------------------
+# COPY ONLY web_summary.html
+#------------------------------
+if (grep(/cp_web_summar(ies|y)/, @steps)){
+	my $dirout = "/data-isilon/SingleCell/$projectName/";
+	unless (-d $dirout) {
+		my $cp_cmd = "mkdir $dirout";
+		warn $cp_cmd;
+		system ($cp_cmd) unless ($no_exec);
+	}
+	foreach my $patient (@{$patients}) {
+		my $name = $patient->name();
+		next if ($name =~ /^ADT_/);
+		confess ("$name web summary not found: '$dirout$name/web_summary.html'") unless (-e "$dirout$name/web_summary.html");
+		my $cp_cmd = "mkdir $name ; " unless (-d $dirout.$name);
+#		$cp_cmd .= "mkdir $name/outs ; " unless (-d $dirout.$name.'/outs');
+		$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html";
+		warn $cp_cmd;
+		system ($cp_cmd) unless ($no_exec);
+	}
+	unless ($no_exec){
+		print "\t------------------------------------------\n\n";
+		print "\tWeb summaries copied to $dirout \n";
+		print "\t------------------------------------------\n";
+	}
+}
+
+
+
+#------------------------------
+# ARCHIVE / TAR
+#------------------------------
+if (grep(/tar|^all$/i, @steps)){
+	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/web_summary.html $dir/*/cloupe.cloupe ";
+	$tar_cmd .= "$dir/*/vloupe.vloupe " if grep (/vdj/i, @group);
+	$tar_cmd .= "$dir/*/*_bc_matrix/* ";
+	$tar_cmd .= "$dir/*/ " if ($create_bam and $create_bam ne 'false');
+	warn $tar_cmd;
+	die ("archive $dir/$projectName.tar.gz already exists") if -e "$dir/$projectName.tar.gz";
+	unless ($no_exec){
+		system ($tar_cmd);
+		print "\t------------------------------------------\n";
+#		print "\tlink to send to the users : \n";
+#		print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
+		print "\tArchive to send to the users : \n";
+		print "\t$dir$projectName.tar.gz\n" if (-e "$dir$projectName.tar.gz");
+		print "\t------------------------------------------\n\n";
+	}
+}
+
+
+
+
+#------------------------------
+# Upload Imagine CloudBOX
+#------------------------------
+if (grep(/cloud/, @steps)) {
+	my $archive = "$dir/$projectName.tar.gz";
+#	my $archive = "test.txt";
+	die ("No archive found: $archive") unless (-e $archive);
+	my $username = 'melodie.perin' if (getpwuid($<) eq 'mperin');
+	$username = prompt('Username: ') unless $username;
+	die unless $username;
+	my $password = 'cZN5k*Rtt4Qc+B6M' if ($username eq 'melodie.perin');
+	$password  = prompt('Password: ', -e=>'') unless ($password);
+	my $remote_dir = "Archives single cell";
+	$remote_dir =~ s/ /%20/g;  # encodage des espaces
+	my $upload_cmd = "curl -u $username:$password -T $archive --progress-bar https://cloudbox.institutimagine.org/remote.php/dav/files/$username/$remote_dir/";
+	warn $upload_cmd;
+	
+}
+
+
+
+sub usage {
+	print "
+$0
+-------------
+Obligatoires:
+	project <s>                nom du projet
+	steps <s>                  étape à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summaries ou all (= demultiplex, count, aggr, tar, cp)
+	feature_ref	<s>            tableau des ADT, seulement si step=count et qu'il y a des ADT
+Optionels:
+	patients <s>               noms de patients/échantillons, séparés par des virgules
+	cpu <i>                    nombre de cpu à utiliser, défaut: 20
+	lane <i>                   nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml
+	mismatches <i>             nombre de mismatches autorisés lors du démultiplexage, défaut: 0
+	create-bam/nocreate-bam    générer ou non les bams lors du count, défaut: nocreate-bam
+	aggr_name <s>              noms de l'aggrégation, lors de step=aggr ou aggr_vdj
+	chemistry                  chemistry , défaut: auto (for exp and adt)
+	no_exec                    ne pas exécuter les commandes
+	help                       affiche ce message
+
+";
+	exit(1);
+}
+
