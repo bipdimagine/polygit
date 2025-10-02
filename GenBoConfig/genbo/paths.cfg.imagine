@@ -34,5 +34,5 @@ cnv:/data-beegfs/projects.cnv.parquet.2/
 
 [polyproject_default]
 release:HG38_DRAGEN
-genecode:46
-annotation:20
+genecode:43
+annotation:21
