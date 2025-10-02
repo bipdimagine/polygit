@@ -322,10 +322,13 @@ sub save_and_lift_rocks {
 				$nbho ++;
 			}
 		}
+		next if not exists $v->{id};
 		my  $rocksdb_id = chunks::return_rocks_id_from_genbo_id($v->{id});
 		if ($rocksdb_id =~ /0000000000/){
-			warn "********* ".$rocksdb_id." ********* ".$v->{id};
-			die();
+			warn "********* ".$rocksdb_id." ********* var_id:".$v->{id}.'.';
+			warn Dumper $v;
+			die;
+			next();
 		}
 
 		my ($s,$all) = split("!",$rocksdb_id);
