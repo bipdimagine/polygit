@@ -120,6 +120,8 @@ my $query = "
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);";
 #    warn $query;
 $dbh->do($query);
+warn $parquet_file;
+warn $filename;
 $filename =~s/,/ /g;
 system("rm $filename");
 exit(0);
