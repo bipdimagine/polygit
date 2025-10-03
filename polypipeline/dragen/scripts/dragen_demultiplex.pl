@@ -328,13 +328,13 @@ if (keys %$ok) {
 if (keys %patients) {
 	print colored(['bright_red on_black']," SAMPLES IN PROJECT NOT IN SAMPLE SHEET :".scalar(keys %patients))."\n";
 	map {print $_."\t".$patients{$_}."\n"} keys %patients;
-	if ($run_name_option) {
+#	if ($run_name_option) {
 		my $choice = prompt("continue anyway  (y/n) ? ");
 		die() if ($choice ne "y"); 
-	}
-	else {
-		$error =1;
-	}
+#	}
+#	else {
+#		$error =1;
+#	}
 }
 
 if (keys %$error_not_in_project) {
@@ -347,11 +347,11 @@ if (keys %$error_not_in_project) {
 		
 }
 
-if ($error && $run_name_option) {
-		my $choice = prompt("continue anyway  (y/n) ? ");
-		die() if ($choice ne "y"); 
-}
-elsif  ($error) {die();}
+#if ($error && $run_name_option) {
+#		my $choice = prompt("continue anyway  (y/n) ? ");
+#		die() if ($choice ne "y"); 
+#}
+#elsif  ($error) {die();}
 
 unshift( @{$lines->{"[Data]"}},$lheader_data);
 my $outcsv;
