@@ -317,7 +317,7 @@ foreach my $data (@{$lines->{"[Data]"}}){
 	$ok->{$name} ++;
  	delete $patients{$name};
  	$dj->{$name}++;
- 	
+ 	#
 	
 }
 
