@@ -37,7 +37,7 @@ $fork =1 unless $fork;
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
 my $patient = $project->getPatient($patient_name);
-my $bam_prod = $patient->getBamFileName();
+my $bam_prod = $patient->getAlignFileName();
 
 my $stat_dir = $project->getMetricsDir();
 mkdir $stat_dir unless -e $stat_dir;
