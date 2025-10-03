@@ -1,0 +1,9 @@
+Names	total	elements
+Dragen-calling Freebayes Haplotypecaller4 Samtools Unifiedgenotyper	1	16_2185584_G_T
+Dragen-calling Freebayes Samtools	1	9_152143_T_A
+Freebayes Samtools Unifiedgenotyper	1	21_38739846_C_T
+Dragen-calling Samtools	1	9_152107_A_C
+Freebayes Samtools	2	7_77708129_G_A
+		9_123132_A_C
+Samtools	2	3_189712089_G_A
+		3_189712090_G_A

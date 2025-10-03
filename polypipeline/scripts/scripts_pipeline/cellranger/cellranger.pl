@@ -118,12 +118,11 @@ my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
 die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
 
 
-###############
+#------------------------------
 # DEMULIPLEXAGE
-###############
+#------------------------------
 if (grep(/demultiplex|^all$/i, @steps)){
 	
-	warn $exec;
 	unless ($machine eq '10X') {
 		my $continue = prompt( "Error in sequencing machine: '$machine', expected '10X'. Continue anyway ?  (y/n)  ", -yes_no );
 		die  unless ($continue);
@@ -160,20 +159,20 @@ if (grep(/demultiplex|^all$/i, @steps)){
 	my $exit = system ($cmd) unless ($no_exec);
 	exit($exit) if ($exit);
 	unless ($@ or $no_exec) {
-		print "\t##########################################\n";
+		print "\t------------------------------------------\n";
 		print("Check the demultiplex stats\n");
 		print("https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html\n\n");
 		system ("firefox https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html &");
-		print "\t##########################################\n";
+		print "\t------------------------------------------\n";
 	}
 }
 
 
 
 
-###############
+#------------------------------
 # TELEPORT
-###############
+#------------------------------
 if (grep(/teleport/, @steps)) {
 #	my $cmd = "teleport_patient.sh -project=$projectName -force=1";
 	my $cmd = "/home/mperin/git/polygit/polypipeline/teleport_patients.pl -project=$projectName -force=1";
@@ -198,9 +197,9 @@ foreach my $pat (@{$patients}) {
 }
 
 
-###############
+#------------------------------
 # COUNT
-###############
+#------------------------------
 if (grep(/count|^all$/i, @steps)){
 	
 	if (grep {$_ =~ /adt/i} @group) {
@@ -504,10 +503,10 @@ if (grep(/count|^all$/i, @steps)){
 	die("Web summaries not found: ".join(', ', @error)) if (@error and not $no_exec);
 
 	unless ($no_exec) {
-		print "\t##########################################\n";
+		print "\t------------------------------------------\n";
 		print("Check the web summaries:\n");
 		print("$dir/*/web_summary.html\n\n");
-		print "\t##########################################\n\n";
+		print "\t------------------------------------------\n\n";
 	}
 	
 }
@@ -515,9 +514,9 @@ if (grep(/count|^all$/i, @steps)){
 
 
 
-###############
+#------------------------------
 # AGGREGATION
-###############
+#------------------------------
 if (grep(/aggr/, @steps)){
 	my @groups = map {$_->somatic_group} @$patients;
 	warn Dumper \@group;
@@ -583,9 +582,9 @@ if (grep(/aggr/, @steps)){
 
 
 
-###############
+#------------------------------
 # AGGREGATION VDJ
-###############
+#------------------------------
 if (grep(/aggr_vdj/, @steps)) {
 #	my $type = $project->getRun->infosRun->{method};
 #	die ("No vdj in project $projectName") if ($type !~ /vdj/);
@@ -619,9 +618,9 @@ if (grep(/aggr_vdj/, @steps)) {
 
 
 
-###############
+#------------------------------
 # COPY TO /data-isilon/SingleCell/
-###############
+#------------------------------
 if (grep(/cp$|^all$/i, @steps)){
 	my $dirout = "/data-isilon/SingleCell/$projectName/";
 	my $cp_cmd = "mkdir $dirout" unless (-d $dirout);
@@ -671,17 +670,17 @@ if (grep(/cp$|^all$/i, @steps)){
 	close($fh);
 	
 	unless ($no_exec){
-		print "\t##########################################\n";
+		print "\t------------------------------------------\n";
 		print "\tcp to $dirout \n";
-		print "\t##########################################\n\n";
+		print "\t------------------------------------------\n\n";
 	}
 }
 
 
 
-###############
+#------------------------------
 # COPY ONLY web_summary.html
-###############
+#------------------------------
 if (grep(/cp_web_summar(ies|y)/, @steps)){
 	my $dirout = "/data-isilon/SingleCell/$projectName/";
 	unless (-d $dirout) {
@@ -700,17 +699,17 @@ if (grep(/cp_web_summar(ies|y)/, @steps)){
 		system ($cp_cmd) unless ($no_exec);
 	}
 	unless ($no_exec){
-		print "\t##########################################\n\n";
+		print "\t------------------------------------------\n\n";
 		print "\tWeb summaries copied to $dirout \n";
-		print "\t##########################################\n";
+		print "\t------------------------------------------\n";
 	}
 }
 
 
 
-###############
+#------------------------------
 # ARCHIVE / TAR
-###############
+#------------------------------
 if (grep(/tar|^all$/i, @steps)){
 	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/web_summary.html $dir/*/cloupe.cloupe ";
 	$tar_cmd .= "$dir/*/vloupe.vloupe " if grep (/vdj/i, @group);
@@ -720,21 +719,21 @@ if (grep(/tar|^all$/i, @steps)){
 	die ("archive $dir/$projectName.tar.gz already exists") if -e "$dir/$projectName.tar.gz";
 	unless ($no_exec){
 		system ($tar_cmd);
-		print "\t##########################################\n";
+		print "\t------------------------------------------\n";
 #		print "\tlink to send to the users : \n";
 #		print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
 		print "\tArchive to send to the users : \n";
 		print "\t$dir$projectName.tar.gz\n" if (-e "$dir$projectName.tar.gz");
-		print "\t##########################################\n\n";
+		print "\t------------------------------------------\n\n";
 	}
 }
 
 
 
 
-###############
+#------------------------------
 # Upload Imagine CloudBOX
-###############
+#------------------------------
 if (grep(/cloud/, @steps)) {
 	my $archive = "$dir/$projectName.tar.gz";
 #	my $archive = "test.txt";

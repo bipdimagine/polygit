@@ -1,0 +1,12 @@
+##NGS2025_08679
+##capture: Rapid_V4_TubeF_UMI
+##alignment method: dragen-align
+##depth >= 30
+#caller	SNP	indel	total	TP	FP	FN	Accuracy	Sensitivity
+dragen-calling	648	77	725	648			1	1
+freebayes	657	73	730	647	10	4	0.984779299847793	0.993855606758833
+haplotypecaller4	649	88	737	647	2	1	0.996918335901387	0.998456790123457
+samtools	647	41	688	644	3	5	0.995363214837713	0.992295839753467
+at least 1 caller	663	112	775	648	15		0.97737556561086	1
+all 4 callers	644	24	668	644		7	1	0.989247311827957
+nist giab	651	73	724					

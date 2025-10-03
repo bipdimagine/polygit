@@ -65,7 +65,7 @@ warn $project->name;
 # test
 $test_patient_name = 'GIAB_V5' if ($project_name =~ /^NGS2025_086(59|60)$/ and not $test_patient_name);
 $test_patient_name = 'GIA_HG0_6123GM002954_STB' if ($project_name =~ /^NGS2025_08(679|680|964)$/ and not $test_patient_name);
-die ("--test_patient_name argument required") unless ($test_patient_name);
+die ("--test_patient argument required") unless ($test_patient_name);
 my $test = $project->getPatient($test_patient_name) || confess ("Can't find patient '$test_patient_name' in project '$project_name': $!");
 warn 'Test patient: '.$test->name."  id:".$test->id;
 my $methods = $test->alignmentMethods();
@@ -76,7 +76,7 @@ warn "Capture: ".$capture;
 
 
 # GIAB NIST
-my $control = $project->getPatient($control_patient_name) || confess ("Can't find patient '$control_patient_name' in project '$project_name': $!");
+my $control = $project->getPatient($control_patient_name) || confess ("Can't find patient '$control_patient_name' in project '$project_name': $! You can specify the control patient with --control_patient argument");
 warn 'Control patient: '.$control->name."  id:".$control->id;
 
 

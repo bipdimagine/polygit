@@ -1,0 +1,1 @@
+project;family;child;(CADD > 25 OR spliceAI > 0,5) AND freq < 0,01% AND gnomAD He < 5 AND gnomAD Ho = 0 AND in gene list AND the 3 DéjàVu others phenotypes;id, gene(s), nb all ref, nb all alt, depth;link(s);& cov >= 30

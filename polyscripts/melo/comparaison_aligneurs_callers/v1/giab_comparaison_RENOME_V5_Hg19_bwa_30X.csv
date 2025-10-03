@@ -1,0 +1,13 @@
+#capture: RENOME_V5_Hg19
+#alignment method: bwa
+#depth >= 30
+caller;SNP;indel;total;TP;FP;FN
+dragen-calling;1106;172;1278;793;485;408
+freebayes;1140;176;1316;775;541;426
+haplotypecaller4;1129;271;1400;801;599;400
+unifiedgenotyper;1180;256;1436;800;636;401
+samtools;1110;97;1207;748;459;453
+melt;;;;;;1200
+at least 1 caller;1197;352;1561;804;745;397
+all 5 callers;1092;48;1140;730;410;471
+nist giab;1065;135;1201;;;

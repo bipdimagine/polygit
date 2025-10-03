@@ -1,0 +1,646 @@
+project;family;child;(CADD > 25 OR spliceAI > 0,5) AND freq < 0,01% AND gnomAD He < 5 AND gnomAD Ho = 0 AND in gene list AND the 3 DéjàVu others phenotypes;id, gene(s), nb all ref, nb all alt, depth;link(s);& cov >= 30
+NGS2023_7037 pEvans-2023;COS_FER_Rod;COS_FER_Rod;2;"3_39172482_G_A,TTC21A,44,54,98
+9_139959218_G_T,SAPCD2,60,79,139";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_7037&chromosome=3&genename=TTC21A&type=ngs&vector_ids=1042&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_7037&chromosome=9&genename=SAPCD2&type=ngs&vector_ids=4293&type_cache=undefined
+";"2";
+NGS2025_08938 PTIc-2025;FLI;FLI_Ime;1;"4_3176740_C_G,HTT,81,70,151";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08938&chromosome=4&genename=HTT&type=ngs&vector_ids=610&type_cache=undefined";"1";
+NGS2023_7181 pES2023;BENA_NAI;BENA_NAI;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;DEB_CHR;DEB_CHR;1;"1_156814337_T_C,NTRK1,101,108,209";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=1&genename=NTRK1&type=ngs&vector_ids=16747&type_cache=undefined";"1";
+NGS2025_08849 exome pEVANS-2025;FRI;FRI_KHA;1;"22_36745209_C_T,MYH9,63,62,125";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=22&genename=MYH9&type=ngs&vector_ids=4553&type_cache=undefined";"1";
+NGS2025_08938 PTIc-2025;MAR;MAR_Ale;2;"3_47890986_A_T,MAP4,70,73,143
+5_169309633_G_T,DOCK2,90,95,185";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08938&chromosome=3&genename=MAP4&type=ngs&vector_ids=2673&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08938&chromosome=5&genename=DOCK2&type=ngs&vector_ids=7048&type_cache=undefined
+";"2";
+NGS2023_7181 pES2023;ESS_PE_MOU;ESS_PE_MOU;1;"17_79988214_A_G,RAC3,44,41,85";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_7181&chromosome=17&genename=RAC3&type=ngs&vector_ids=12880&type_cache=undefined";"1";
+NGS2022_5906 NEW Evans-adulte-2022;Deb_Mat;Deb_Mat;1;"1_156814337_T_C,NTRK1,67,65,132";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=1&genename=NTRK1&type=ngs&vector_ids=16747&type_cache=undefined";"1";
+NGS2025_08938 PTIc-2025;RIE;RIE_Sta;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_16_FA_AN_14_A;ACT_16_FA_AN_14_A;0;"";"";"0";
+NGS2025_08849 exome pEVANS-2025;LEF;LEF_Nel;0;"";"";"0";
+NGS2023_7181 pES2023;COS_FE_ROD;COS_FE_ROD;2;"3_39172482_G_A,TTC21A,31,19,50
+9_139959218_G_T,SAPCD2,41,50,91";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_7181&chromosome=3&genename=TTC21A&type=ngs&vector_ids=2653&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_7181&chromosome=9&genename=SAPCD2&type=ngs&vector_ids=9702&type_cache=undefined
+";"2";
+NGS2025_08849 exome pEVANS-2025;MAR;MAR_ROM;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;YOU_MOH;YOU_MOH;4;"1_158650486_C_T,SPTA1,63,80,143
+3_111637979_C_T,PHLDB2,73,82,155
+8_30034722_T_C,DCTN6,53,53,106
+17_27963167_C_T,SSH2,98,86,184";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=1&genename=SPTA1&type=ngs&vector_ids=17176&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=3&genename=PHLDB2&type=ngs&vector_ids=7497&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=8&genename=DCTN6&type=ngs&vector_ids=3346&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=17&genename=SSH2&type=ngs&vector_ids=5479&type_cache=undefined
+";"4";
+NGS2023_6920 ACTION2023;ByDefault_ACT_02_CO_CU_06_A;ACT_02_CO_CU_06_A;1;"1_118583467_TAGA_T,SPAG17,29,19,48";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=1&genename=SPAG17&type=ngs&vector_ids=22867&type_cache=undefined";"1";
+NGS2023_7181 pES2023;ZEK_GIS;ZEK_GIS;0;"";"";"0";
+NGS2025_08849 exome pEVANS-2025;DIN;DIN_Mus;2;"1_211842449_A_G,NEK2,18,27,45
+4_156269058_C_A,MAP9,28,23,51";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=1&genename=NEK2&type=ngs&vector_ids=32243&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=4&genename=MAP9&type=ngs&vector_ids=13106&type_cache=undefined
+";"2";
+NGS2022_5906 NEW Evans-adulte-2022;SCI_ALD;SCI_ALD;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;BEL_Chr;BEL_Chr;1;"14_67857457_T_C,PLEK2,36,47,83";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=14&genename=PLEK2&type=ngs&vector_ids=9404&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_XX_CO_VI_05_A;ACT_XX_CO_VI_05_A;1;"11_73019849_C_T,ARHGEF17,3,2,5";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=11&genename=ARHGEF17&type=ngs&vector_ids=15736&type_cache=undefined";"0";
+NGS2025_08849 exome pEVANS-2025;LAM;LAM_MON;1;"2_210594611_T_G,MAP2,27,22,49";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=2&genename=MAP2&type=ngs&vector_ids=21680&type_cache=undefined";"1";
+NGS2022_5906 NEW Evans-adulte-2022;CLE_NAT;CLE_NAT;1;"4_124323329_C_G,SPRY1,97,81,178";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=4&genename=SPRY1&type=ngs&vector_ids=8556&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_18_GH_MA_03_A;ACT_18_GH_MA_03_A;2;"5_61688060_A_G,KIF2A,1,45,46
+12_57921729_C_T,DCTN2,30,31,61";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=5&genename=KIF2A&type=ngs&vector_ids=5385&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=12&genename=DCTN2&type=ngs&vector_ids=12213&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;SA_Abd;SA_Abd;2;"10_70775586_G_A,KIFBP,50,60,110
+14_91763703_C_A,CCDC88C,58,50,108";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=10&genename=KIFBP&type=ngs&vector_ids=10090&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=14&genename=CCDC88C&type=ngs&vector_ids=13748&type_cache=undefined
+";"2";
+NGS2025_08849 exome pEVANS-2025;LAV;LAV_ALI;2;"1_3551777_C_T,WRAP73,45,52,97
+3_47163973_G_A,SETD2,49,41,90";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=1&genename=WRAP73&type=ngs&vector_ids=1741&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=3&genename=SETD2&type=ngs&vector_ids=5187&type_cache=undefined
+";"2";
+NGS2022_5906 NEW Evans-adulte-2022;MIL_AUR;MIL_AUR;1;"2_228736408_G_A,DAW1,41,46,87";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=2&genename=DAW1&type=ngs&vector_ids=16789&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_21_VA_LE_03_A;ACT_21_VA_LE_03_A;1;"3_113187023_A_G,SPICE1,43,36,79";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=3&genename=SPICE1&type=ngs&vector_ids=12979&type_cache=undefined";"1";
+NGS2025_08849 exome pEVANS-2025;VIE;VIE_LOU;1;"17_27818873_A_T,TAOK1,28,19,47";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=17&genename=TAOK1&type=ngs&vector_ids=7120&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;VAL_Lea;VAL_Lea;1;"3_113187023_A_G,SPICE1,48,53,101";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=3&genename=SPICE1&type=ngs&vector_ids=17252&type_cache=undefined";"1";
+NGS2022_6060 PTI-2022;JAC_CLA;JAC_CLA;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;BES_CLA;BES_CLA;1;"12_53708596_G_C,AAAS,68,71,139";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=12&genename=AAAS&type=ngs&vector_ids=7109&type_cache=undefined";"1";
+NGS2025_08849 exome pEVANS-2025;KAN;KAN_NAB;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_15_GO_DI_05_A;ACT_15_GO_DI_05_A;0;"";"";"0";
+NGS2022_6060 PTI-2022;DER_CAT;DER_CAT;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;GAB_ALE;GAB_ALE;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;MAR_Noe;MAR_Noe;0;"";"";"0";
+NGS2025_08849 exome pEVANS-2025;ELF;ELF_Rah;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;GUI_LIO;GUI_LIO;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_18_RA_YO_02_A;ACT_18_RA_YO_02_A;1;"18_13073057_T_C,CEP192,27,32,59";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=18&genename=CEP192&type=ngs&vector_ids=1923&type_cache=undefined";"1";
+NGS2022_6060 PTI-2022;BRI_CYR;BRI_CYR;1;"1_220808889_A_G,MARK1,38,35,73";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_6060&chromosome=1&genename=MARK1&type=ngs&vector_ids=15835&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;Bas_Eli;Bas_Eli;1;"2_179458215_T_C,TTN,45,49,94";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=2&genename=TTN&type=ngs&vector_ids=28465&type_cache=undefined";"1";
+NGS2025_08849 exome pEVANS-2025;RIQ;RIQ_Ghy;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;DEB_THO;DEB_THO;1;"1_156814337_T_C,NTRK1,103,83,186";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=1&genename=NTRK1&type=ngs&vector_ids=16747&type_cache=undefined";"1";
+NGS2022_6060 PTI-2022;TAK_MAY;TAK_MAY;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_15_TH_TA_04_A;ACT_15_TH_TA_04_A;2;"5_75913606_A_T,F2RL2,32,36,68
+X_9907396_C_T,SHROOM2,0,26,26";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=5&genename=F2RL2&type=ngs&vector_ids=6860&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=X&genename=SHROOM2&type=ngs&vector_ids=1211&type_cache=undefined
+";"1";
+NGS2025_08849 exome pEVANS-2025;RIQ;RIQ_Gui;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;SET_Val;SET_Val;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;Chi_Pol;Chi_Pol;0;"";"";"0";
+NGS2025_08849 exome pEVANS-2025;CHA;CHA_MYL;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_10_CA_FA_07_A;ACT_10_CA_FA_07_A;1;"1_155935501_G_A,ARHGEF2,20,7,27";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=1&genename=ARHGEF2&type=ngs&vector_ids=27147&type_cache=undefined";"0";
+NGS2023_6443 Evans-adulte-2023;BERTI_Seb;BERTI_Seb;0;"";"";"0";
+NGS2022_5906 NEW Evans-adulte-2022;CAV_SAC;CAV_SAC;1;"16_67702124_C_A,ENKD1,81,93,174";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5906&chromosome=16&genename=ENKD1&type=ngs&vector_ids=7625&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_02_SA_DE_05_A;ACT_02_SA_DE_05_A;2;"12_53696883_C_T,AAAS,36,27,63
+18_2608697_A_T,NDC80,23,22,45";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=12&genename=AAAS&type=ngs&vector_ids=10651&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=18&genename=NDC80&type=ngs&vector_ids=304&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;LER_ALA;LER_ALA;2;"6_56456982_T_C,DST,59,38,97
+17_18145067_C_T,LLGL1,46,35,81";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=6&genename=DST&type=ngs&vector_ids=18569&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=17&genename=LLGL1&type=ngs&vector_ids=9530&type_cache=undefined
+";"2";
+NGS2025_08849 exome pEVANS-2025;SAB;SAB_Zah;6;"2_179429333_G_A,TTN,41,48,89
+5_140906033_A_T,DIAPH1,25,29,54
+9_88293313_T_C,AGTPBP1,17,15,32
+16_2147900_G_A,PKD1,56,65,121
+18_47438431_C_T,MYO5B,39,32,71
+19_45720836_C_G,BLOC1S3,47,6,53";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=2&genename=TTN&type=ngs&vector_ids=18720&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=5&genename=DIAPH1&type=ngs&vector_ids=10961&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=9&genename=AGTPBP1&type=ngs&vector_ids=6197&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=16&genename=PKD1&type=ngs&vector_ids=2207&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=18&genename=MYO5B&type=ngs&vector_ids=3864&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2025_08849&chromosome=19&genename=BLOC1S3&type=ngs&vector_ids=17027&type_cache=undefined
+";"6";
+NGS2023_6920 ACTION2023;ByDefault_ACT_16_DA_JO_13_A;ACT_16_DA_JO_13_A;1;"10_21178875_G_A,NEBL,14,16,30";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=10&genename=NEBL&type=ngs&vector_ids=3140&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;ROU_Nas;ROU_Nas;1;"5_68505553_A_G,CENPH,25,22,47";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=5&genename=CENPH&type=ngs&vector_ids=7689&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_01_LO_AN_18_A;ACT_01_LO_AN_18_A;0;"";"";"0";
+NGS2022_5903 NEW ACTION 2022;ACT_22DIME05;ACT_22DIME05;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;DAN_Arn;DAN_Arn;1;"1_1987953_A_G,PRKCZ,53,55,108";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=PRKCZ&type=ngs&vector_ids=2390&type_cache=undefined";"1";
+NGS2022_5907 pEvans-2022;LUC_BAP;LUC_BAP;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_11_TA_AS_04_A;ACT_11_TA_AS_04_A;1;"17_27229692_G_A,FLOT2,7,2,9";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=17&genename=FLOT2&type=ngs&vector_ids=8039&type_cache=undefined";"0";
+NGS2022_5903 NEW ACTION 2022;ACT_10AGPA;ACT_10AGPA;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;SBI_Moh;SBI_Moh;0;"";"";"0";
+NGS2022_5907 pEvans-2022;PRA_WIL;PRA_WIL;1;"17_8349042_C_G,NDEL1,70,51,121";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=17&genename=NDEL1&type=ngs&vector_ids=3052&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;DEL;DEL_NOA;2;"3_58132645_C_T,FLNB,50,43,93
+20_47282844_C_T,PREX1,41,30,71";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=3&genename=FLNB&type=ngs&vector_ids=9269&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=20&genename=PREX1&type=ngs&vector_ids=7624&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;CAL_Enr;CAL_Enr;0;"";"";"0";
+NGS2022_5903 NEW ACTION 2022;ACT_09JAYO11;ACT_09JAYO11;3;"2_86756367_A_G,CHMP3,65,57,122
+4_124323371_C_T,SPRY1,121,98,219
+10_127525365_T_C,BCCIP,0,169,169";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5903&chromosome=2&genename=CHMP3&type=ngs&vector_ids=5613&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5903&chromosome=4&genename=SPRY1&type=ngs&vector_ids=7223&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5903&chromosome=10&genename=BCCIP&type=ngs&vector_ids=9215&type_cache=undefined
+";"3";
+NGS2022_5907 pEvans-2022;VEL_SAM;VEL_SAM;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_15_JA_AD_03_A;ACT_15_JA_AD_03_A;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;CHA_Xav;CHA_Xav;0;"";"";"0";
+NGS2022_5907 pEvans-2022;RIB_GAB;RIB_GAB;0;"";"";"0";
+NGS2022_5903 NEW ACTION 2022;ACT_16DEVI09;ACT_16DEVI09;1;"8_9413481_A_T,TNKS,42,36,78";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5903&chromosome=8&genename=TNKS&type=ngs&vector_ids=829&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;BOU_Sar;BOU_Sar;1;"12_53703013_C_A,AAAS,23,20,43";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=12&genename=AAAS&type=ngs&vector_ids=10661&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;LOU_Adr;LOU_Adr;0;"";"";"0";
+NGS2022_5903 NEW ACTION 2022;ACT_16MA_YO08;ACT_16MA_YO08;0;"";"";"0";
+NGS2022_5907 pEvans-2022;KAR_DAL;KAR_DAL;1;"1_17945840_C_T,ARHGEF10L,86,98,184";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=1&genename=ARHGEF10L&type=ngs&vector_ids=4263&type_cache=undefined";"1";
+NGS2013_0333 EVANS;SLO_Bil;SLO_Bil;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_02_DR_CH_04_A;ACT_02_DR_CH_04_A;0;"";"";"0";
+NGS2022_5903 NEW ACTION 2022;ACT_16NIWI07;ACT_16NIWI07;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;FER_Er;FER_Er;2;"6_36995352_G_A,FGD2,30,46,76
+11_15212263_T_C,INSC,45,41,86";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=6&genename=FGD2&type=ngs&vector_ids=13834&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=11&genename=INSC&type=ngs&vector_ids=7682&type_cache=undefined
+";"2";
+NGS2022_5907 pEvans-2022;DOU_LEA;DOU_LEA;2;"1_43826806_C_A,CDC20,65,70,135
+20_57598927_A_C,TUBB1,141,91,232";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=1&genename=CDC20&type=ngs&vector_ids=8447&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=20&genename=TUBB1&type=ngs&vector_ids=5832&type_cache=undefined
+";"2";
+NGS2023_6920 ACTION2023;ByDefault_ACT_09_DU_MA_13_A;ACT_09_DU_MA_13_A;2;"11_72408168_C_T,ARAP1,56,50,106
+19_746540_C_T,MISP,48,47,95";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=11&genename=ARAP1&type=ngs&vector_ids=15640&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=19&genename=MISP&type=ngs&vector_ids=689&type_cache=undefined
+";"2";
+NGS2022_5907 pEvans-2022;IZI_SED;IZI_SED;3;"4_156274450_C_T,MAP9,58,55,113
+5_61689838_C_G,KIF2A,73,59,132
+6_31778600_C_T,HSPA1A,133,140,273";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=4&genename=MAP9&type=ngs&vector_ids=9775&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=5&genename=KIF2A&type=ngs&vector_ids=3248&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=6&genename=HSPA1A&type=ngs&vector_ids=4062&type_cache=undefined
+";"3";
+NGS2023_6443 Evans-adulte-2023;DUL_MIC;DUL_MIC;0;"";"";"0";
+NGS2021_4612 PTI;FON_Luc;FON_Luc;0;"";"";"0";
+NGS2023_6920 ACTION2023;ACT_29_AG_MI_03_A;ACT_29_AG_MI_03_A;0;"";"";"0";
+NGS2022_5907 pEvans-2022;BEL_NAB;BEL_NAB;2;"17_4908280_G_A,KIF1C,89,91,180
+X_9914872_G_T,SHROOM2,178,143,321";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=17&genename=KIF1C&type=ngs&vector_ids=1736&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5907&chromosome=X&genename=SHROOM2&type=ngs&vector_ids=775&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;CHA__Hug;CHA__Hug;1;"6_56338770_G_T,DST,28,30,58";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=DST&type=ngs&vector_ids=59480&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;COU_Lau;COU_Lau;1;"8_6335149_C_G,MCPH1,48,30,78";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=8&genename=MCPH1&type=ngs&vector_ids=1299&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_01_DO_DO_16_A;ACT_01_DO_DO_16_A;1;"17_79166621_C_T,CEP131,18,14,32";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=17&genename=CEP131&type=ngs&vector_ids=22670&type_cache=undefined";"1";
+NGS2022_5907 pEvans-2022;GUY_PYE;GUY_PYE;0;"";"";"0";
+NGS2021_4612 PTI;DES_Cle;DES_Cle;7;"3_193363403_T_C,OPA1,28,4,32
+3_193363414_AGG_A,OPA1,28,4,32
+4_128590294_G_T,INTU,26,3,29
+6_56434790_C_A,DST,19,3,22
+6_56434812_CT_C,DST,20,3,23
+X_123197885_A_C,STAG2,20,6,26
+X_123197891_T_A,STAG2,18,6,24";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=3&genename=OPA1&type=ngs&vector_ids=38663&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=4&genename=INTU&type=ngs&vector_ids=23487&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=6&genename=DST&type=ngs&vector_ids=23558&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=X&genename=STAG2&type=ngs&vector_ids=11274&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;LEN_And;LEN_And;1;"3_129155348_G_A,IFT122,61,41,102";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=3&genename=IFT122&type=ngs&vector_ids=20810&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_01_DA_AL_17_A;ACT_01_DA_AL_17_A;2;"9_72046310_T_G,APBA1,30,25,55
+15_41634606_T_C,NUSAP1,17,25,42";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=9&genename=APBA1&type=ngs&vector_ids=5221&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=15&genename=NUSAP1&type=ngs&vector_ids=3485&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;1_IZI_Sed;1_IZI_Sed;3;"4_156274450_C_T,MAP9,65,50,115
+5_61689838_C_G,KIF2A,33,41,74
+6_31778600_C_T,HSPA1A,101,91,192";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=4&genename=MAP9&type=ngs&vector_ids=79539&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=KIF2A&type=ngs&vector_ids=28208&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=HSPA1A&type=ngs&vector_ids=28622&type_cache=undefined
+";"3";
+NGS2021_4612 PTI;LAP;LAP_Luc;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;DIG_WIL;DIG_WIL;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_01_HU_DA_19_A;ACT_01_HU_DA_19_A;3;"2_241737163_C_T,KIF1A,29,27,56
+3_14863002_C_G,FGD5,34,32,66
+3_57994324_C_A,FLNB,44,44,88";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=2&genename=KIF1A&type=ngs&vector_ids=30068&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=3&genename=FLNB&type=ngs&vector_ids=9200&type_cache=undefined
+";"3";
+NGS2021_4612 PTI;LAP;LAP_Pau;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;ELA_Sfi;ELA_Sfi;0;"";"";"0";
+NGS2023_6920 ACTION2023;ByDefault_ACT_07_ME_GA_08_A_;ACT_07_ME_GA_08_A_;1;"17_40822192_A_C,TUBG2,1,1,2";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=17&genename=TUBG2&type=ngs&vector_ids=12353&type_cache=undefined";"0";
+NGS2013_0333 EVANS;MOR_Nol;MOR_Nol;0;"";"";"0";
+NGS2021_4612 PTI;AUB;AUB_Cha;3;"1_186296641_T_C,TPR,55,45,100
+11_46765707_G_A,CKAP5,69,70,139
+17_27228122_A_G,FLOT2,81,74,155";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=1&genename=TPR&type=ngs&vector_ids=54145&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=11&genename=CKAP5&type=ngs&vector_ids=13594&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=17&genename=FLOT2&type=ngs&vector_ids=13854&type_cache=undefined
+";"3";
+NGS2023_6443 Evans-adulte-2023;THA_Mar;THA_Mar;2;"6_80747747_G_A,TTK,47,24,71
+16_69390890_C_T,TERF2,40,41,81";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=6&genename=TTK&type=ngs&vector_ids=20521&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=16&genename=TERF2&type=ngs&vector_ids=18751&type_cache=undefined
+";"2";
+NGS2023_6920 ACTION2023;ByDefault_ACT_04_ZO_IR_01_A;ACT_04_ZO_IR_01_A;2;"13_73369686_A_G,PIBF1,13,10,23
+16_2157996_C_T,PKD1,25,45,70";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=13&genename=PIBF1&type=ngs&vector_ids=4513&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6920&chromosome=16&genename=PKD1&type=ngs&vector_ids=2611&type_cache=undefined
+";"1";
+NGS2022_5036 Famille EVANS;DEL;DEL_Lau;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;PER_Ser;PER_Ser;1;"14_91787499_C_G,CCDC88C,66,59,125";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=14&genename=CCDC88C&type=ngs&vector_ids=13792&type_cache=undefined";"1";
+NGS2021_4612 PTI;GUE;GUE_Char;1;"17_29623256_A_G,NF1,53,36,89";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2021_4612&chromosome=17&genename=NF1&type=ngs&vector_ids=14712&type_cache=undefined";"1";
+NGS2023_6920 ACTION2023;ByDefault_ACT_16_FO_DA_10_A;ACT_16_FO_DA_10_A;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;MEI_Arm;MEI_Arm;1;"22_31864173_G_T,DRG1,54,52,106";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=22&genename=DRG1&type=ngs&vector_ids=6237&type_cache=undefined";"1";
+NGS2013_0333 EVANS;GEL__Gui;GEL__Gui;2;"1_3563971_C_T,WRAP73,21,41,62
+19_45851915_A_C,KLC3,66,58,124";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=WRAP73&type=ngs&vector_ids=9230&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=KLC3&type=ngs&vector_ids=94902&type_cache=undefined
+";"2";
+NGS2021_4612 PTI;CAN_SAK_Ame;CAN_SAK_Ame;0;"";"";"0";
+NGS2022_5036 Famille EVANS;LAB;LABTHI;2;"2_179411933_A_T,TTN,46,45,91
+7_95434114_A_C,DYNC1I1,14,18,32";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=2&genename=TTN&type=ngs&vector_ids=67586&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=7&genename=DYNC1I1&type=ngs&vector_ids=39680&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;ZIA_Zey;ZIA_Zey;1;"4_123663112_T_C,BBS12,53,54,107";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=4&genename=BBS12&type=ngs&vector_ids=17538&type_cache=undefined";"1";
+NGS2021_4612 PTI;MAR;MAR_She;0;"";"";"0";
+NGS2022_5036 Famille EVANS;EIB;EIBHay;1;"7_130357581_A_G,COPG2,102,88,190";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=7&genename=COPG2&type=ngs&vector_ids=55423&type_cache=undefined";"1";
+NGS2021_4612 PTI;MAR;MAR__Kyl;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;ABD_Cha;ABD_Cha;2;"6_17850615_C_T,KIF13A,70,54,124
+9_124091208_G_A,GSN,63,65,128";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=6&genename=KIF13A&type=ngs&vector_ids=2700&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=9&genename=GSN&type=ngs&vector_ids=15639&type_cache=undefined
+";"2";
+NGS2022_5036 Famille EVANS;FRI;FRIFAB;0;"";"";"0";
+NGS2013_0333 EVANS;GOU_Ame;GOU_Ame;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;AN_HE_LOV;AN_HE_LOV;1;"6_32053749_G_A,TNXB,81,70,151";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=6&genename=TNXB&type=ngs&vector_ids=8438&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;NAT;NAT_Lou;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;LAMA_Mar;LAMA_Mar;1;"20_30904332_A_G,KIF3B,40,37,77";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=20&genename=KIF3B&type=ngs&vector_ids=5398&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;COM;COM_Mat;2;"2_202251199_T_C,TRAK2,18,26,44
+14_76452137_A_G,IFT43,41,33,74";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=2&genename=TRAK2&type=ngs&vector_ids=74475&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=14&genename=IFT43&type=ngs&vector_ids=24230&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;LAB_JC;LAB_JC;0;"";"";"0";
+NGS2013_0333 EVANS;GUI_Cor;GUI_Cor;1;"5_38982073_C_T,RICTOR,73,61,134";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=RICTOR&type=ngs&vector_ids=20088&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;ATT_ELO;ATT_ELO;0;"";"";"0";
+NGS2022_5036 Famille EVANS;DRA;DRA_Ami;1;"9_95792255_C_A,FGD3,19,19,38";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=9&genename=FGD3&type=ngs&vector_ids=29977&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;VIE_Ver;VIE_Ver;0;"";"";"0";
+NGS2022_5036 Famille EVANS;DIP;DIP_Oce;1;"22_30057228_A_G,NF2,128,90,218";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=22&genename=NF2&type=ngs&vector_ids=15167&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BOU_Lau;BOU_Lau;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;LEG_Val;LEG_Val;1;"1_21031060_T_A,KIF17,87,107,194";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=KIF17&type=ngs&vector_ids=11001&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;GAU;GAU_Chr;1;"X_9905229_G_A,SHROOM2,0,97,97";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=X&genename=SHROOM2&type=ngs&vector_ids=3599&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;DAD_Lau;DAD_Lau;1;"1_170024446_A_C,KIFAP3,44,31,75";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=KIFAP3&type=ngs&vector_ids=42187&type_cache=undefined";"1";
+NGS2013_0333 EVANS;PIL__Rem;PIL__Rem;1;"19_12886232_G_A,HOOK2,45,63,108";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=HOOK2&type=ngs&vector_ids=41162&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;BEN_Arn;BEN_Arn;1;"8_82665343_C_T,CHMP4C,62,50,112";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=8&genename=CHMP4C&type=ngs&vector_ids=11664&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;GAU;GAU_Fre;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;ODI_Yoh;ODI_Yoh;1;"8_74334921_A_G,STAU2,57,43,100";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=8&genename=STAU2&type=ngs&vector_ids=11129&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;DAM;DAM_Sot;3;"1_169947234_T_C,KIFAP3,4,8,12
+2_239234492_G_A,TRAF3IP1,97,85,182
+12_56113008_G_A,BLOC1S1,118,103,221";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=1&genename=KIFAP3&type=ngs&vector_ids=89519&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=2&genename=TRAF3IP1&type=ngs&vector_ids=91335&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=12&genename=BLOC1S1&type=ngs&vector_ids=32405&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;GUI_Lou;GUI_Lou;1;"1_45811077_T_C,TESK2,73,67,140";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=TESK2&type=ngs&vector_ids=19518&type_cache=undefined";"1";
+NGS2013_0333 EVANS;MAT_Mic;MAT_Mic;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;ROU_Pas;ROU_Pas;0;"";"";"0";
+NGS2022_5036 Famille EVANS;RIC;RIC_Cha;2;"8_9437750_C_T,TNKS,59,56,115
+20_30382267_G_C,TPX2,55,67,122";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=8&genename=TNKS&type=ngs&vector_ids=4705&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=20&genename=TPX2&type=ngs&vector_ids=12997&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;DUT_Cec;DUT_Cec;0;"";"";"0";
+NGS2013_0333 EVANS;CHA_Mal;CHA_Mal;0;"";"";"0";
+NGS2022_5036 Famille EVANS;RIC;RIC_Myr;1;"8_9437750_C_T,TNKS,63,59,122";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=8&genename=TNKS&type=ngs&vector_ids=4705&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;RAP_Ale;RAP_Ale;0;"";"";"0";
+NGS2022_5036 Famille EVANS;YLD;YLD_Got;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;COL_Jim;COL_Jim;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;JAB_Sof;JAB_Sof;0;"";"";"0";
+NGS2013_0333 EVANS;MAS_Jul;MAS_Jul;1;"6_33372840_G_A,KIFC1,144,145,289";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=KIFC1&type=ngs&vector_ids=39121&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;EBR;EBR_Eis;2;"17_1386236_C_A,MYO1C,80,72,152
+17_30687615_CAGAA_C,ZNF207,42,41,83";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=17&genename=ZNF207&type=ngs&vector_ids=25655&type_cache=undefined";"2";
+NGS2023_6443 Evans-adulte-2023;BER_Cec;BER_Cec;0;"";"";"0";
+NGS2022_5036 Famille EVANS;AME;AME_Jul;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;MOG_Aic;MOG_Aic;0;"";"";"0";
+NGS2013_0333 EVANS;CAL_Cel;CAL_Cel;3;"2_210518000_G_A,MAP2,90,82,172
+3_58139347_A_G,FLNB,72,71,143
+21_27372386_C_T,APP,65,89,154";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=MAP2&type=ngs&vector_ids=131164&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=FLNB&type=ngs&vector_ids=44234&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=21&genename=APP&type=ngs&vector_ids=13553&type_cache=undefined
+";"3";
+NGS2022_5036 Famille EVANS;REY;REY_Rob;3;"2_202264164_C_T,TRAK2,48,47,95
+6_31778960_G_A,HSPA1A,66,90,156
+11_101834514_A_C,CEP126,73,62,135";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=2&genename=TRAK2&type=ngs&vector_ids=74510&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=6&genename=HSPA1A&type=ngs&vector_ids=18112&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=11&genename=CEP126&type=ngs&vector_ids=50796&type_cache=undefined
+";"3";
+NGS2023_6443 Evans-adulte-2023;BAU_Dan;BAU_Dan;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;VIG_Mar;VIG_Mar;2;"14_102492992_G_A,DYNC1H1,26,38,64
+17_29687605_C_G,NF1,50,40,90";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=14&genename=DYNC1H1&type=ngs&vector_ids=16465&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=17&genename=NF1&type=ngs&vector_ids=12202&type_cache=undefined
+";"2";
+NGS2022_5036 Famille EVANS;REY;Rey_And;2;"2_202264164_C_T,TRAK2,35,49,84
+11_101834514_A_C,CEP126,78,78,156";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=2&genename=TRAK2&type=ngs&vector_ids=74510&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=11&genename=CEP126&type=ngs&vector_ids=50796&type_cache=undefined
+";"2";
+NGS2023_6443 Evans-adulte-2023;ELG_ZAK;ELG_ZAK;0;"";"";"0";
+NGS2013_0333 EVANS;MEN_Luc;MEN_Luc;1;"2_179425901_C_T,TTN,78,45,123";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=TTN&type=ngs&vector_ids=113588&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;MAR2;MAR_Aud;1;"3_196812470_C_T,DLG1,28,38,66";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=3&genename=DLG1&type=ngs&vector_ids=72570&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;LOP_Elz;LOP_Elz;1;"11_72409022_G_A,ARAP1,63,44,107";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=11&genename=ARAP1&type=ngs&vector_ids=21345&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;TAG;TAG_Sal;1;"22_43273022_GGA_G,PACSIN2,66,74,140";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=22&genename=PACSIN2&type=ngs&vector_ids=26004&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;CAU_Chr;CAU_Chr;3;"3_111638039_C_A,PHLDB2,67,69,136
+11_8118889_C_G,TUB,92,91,183
+12_50392949_C_T,RACGAP1,45,46,91";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=3&genename=PHLDB2&type=ngs&vector_ids=16484&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=11&genename=TUB&type=ngs&vector_ids=6090&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=12&genename=RACGAP1&type=ngs&vector_ids=11961&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;LAG_Moh;LAG_Moh;2;"1_158650440_T_G,SPTA1,130,94,224
+18_11851845_C_T,CHMP1B,80,69,149";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=SPTA1&type=ngs&vector_ids=141056&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=18&genename=CHMP1B&type=ngs&vector_ids=9931&type_cache=undefined
+";"2";
+NGS2022_5036 Famille EVANS;BAH;BAHVIC;2;"1_158590124_G_A,SPTA1,8,11,19
+11_46783620_T_C,CKAP5,34,25,59";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=1&genename=SPTA1&type=ngs&vector_ids=82975&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=11&genename=CKAP5&type=ngs&vector_ids=23056&type_cache=undefined
+";"1";
+NGS2023_6443 Evans-adulte-2023;BERTR_Cor;BERTR_Cor;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;AND_Pie;AND_Pie;1;"19_34687614_A_T,LSM14A,89,79,168";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=19&genename=LSM14A&type=ngs&vector_ids=20001&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;ZDI;ZDI_Nih;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;ROC_Lau;ROC_Lau;2;"6_32039797_G_A,TNXB,42,36,78
+9_131899964_T_C,PTPA,29,26,55";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=6&genename=TNXB&type=ngs&vector_ids=8419&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=9&genename=PTPA&type=ngs&vector_ids=18522&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;BEN_Fat;BEN_Fat;1;"1_9671886_C_T,TMEM201,55,53,108";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=TMEM201&type=ngs&vector_ids=15457&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;DOU;DOU_Len;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;JOS_Mar;JOS_Mar;1;"12_32458757_G_C,BICD1,32,34,66";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=12&genename=BICD1&type=ngs&vector_ids=8411&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;LED;LED_Ant;1;"12_110643296_C_T,IFT81,42,48,90";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=12&genename=IFT81&type=ngs&vector_ids=52093&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;LAMi_Tho;LAMi_Tho;0;"";"";"0";
+NGS2024_7974 Action-2024;ADO_Ile;ADO_Ile;5;"5_38944573_T_G,RICTOR,24,2,26
+6_32064744_C_T,TNXB,7,2,9
+14_102457886_T_C,DYNC1H1,21,3,24
+17_61498990_G_T,TANC2,17,2,19
+20_36031216_G_T,SRC,18,2,20";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=5&genename=RICTOR&type=ngs&vector_ids=187105&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=6&genename=TNXB&type=ngs&vector_ids=172295&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=14&genename=DYNC1H1&type=ngs&vector_ids=374308&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=17&genename=TANC2&type=ngs&vector_ids=255470&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=20&genename=SRC&type=ngs&vector_ids=144356&type_cache=undefined
+";"0";
+NGS2013_0333 EVANS;RAZ_Uza;RAZ_Uza;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;CAZ_Yan;CAZ_Yan;0;"";"";"0";
+NGS2022_5036 Famille EVANS;LED;LED_Bad;1;"19_1231113_G_C,STK11,52,76,128";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=19&genename=STK11&type=ngs&vector_ids=3569&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;LIP_Jea;LIP_Jea;1;"9_123210274_A_G,CDK5RAP2,65,69,134";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=9&genename=CDK5RAP2&type=ngs&vector_ids=15268&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;LED;LED_Ers;0;"";"";"0";
+NGS2013_0333 EVANS;BRA_Que;BRA_Que;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;DUA_Cla;DUA_Cla;2;"1_205273642_C_G,NUAK2,58,67,125
+16_2161177_C_T,PKD1,86,97,183";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=NUAK2&type=ngs&vector_ids=48810&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=16&genename=PKD1&type=ngs&vector_ids=3766&type_cache=undefined
+";"2";
+NGS2022_5036 Famille EVANS;ABO;Abofa;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;CON_Cat;CON_Cat;1;"1_156821500_G_T,NTRK1,69,84,153";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=NTRK1&type=ngs&vector_ids=37885&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;ABO;Aboya;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;CON_Cat;GRA_Yvo;1;"1_156821500_G_T,NTRK1,56,54,110";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=NTRK1&type=ngs&vector_ids=37885&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BAL_Nai;BAL_Nai;1;"10_24896707_G_C,ARHGAP21,88,110,198";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=10&genename=ARHGAP21&type=ngs&vector_ids=17228&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;DJA;DJA_Zya;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;COH_Vic;COH_Vic;1;"2_27706803_C_T,IFT172,47,39,86";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=2&genename=IFT172&type=ngs&vector_ids=4583&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;PIC_Fra;PIC_Fra;2;"9_124073052_C_G,GSN,56,53,109
+19_45682732_G_A,BLOC1S3,44,49,93";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=9&genename=GSN&type=ngs&vector_ids=15606&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=19&genename=BLOC1S3&type=ngs&vector_ids=27958&type_cache=undefined
+";"2";
+NGS2022_5036 Famille EVANS;HER2;HER_Emm;1;"1_100602450_C_T,SASS6,27,12,39";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=1&genename=SASS6&type=ngs&vector_ids=57291&type_cache=undefined";"1";
+NGS2013_0333 EVANS;DOM_Cam;DOM_Cam;1;"18_47404132_C_T,MYO5B,47,43,90";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=18&genename=MYO5B&type=ngs&vector_ids=26804&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;SCH_Ant;SCH_Ant;1;"X_53436138_T_G,SMC1A,0,105,105";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=X&genename=SMC1A&type=ngs&vector_ids=10401&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;PAV;PAV_Eva;1;"17_57742218_A_T,CLTC,88,73,161";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=17&genename=CLTC&type=ngs&vector_ids=45594&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;TOU_Syl;TOU_Syl;0;"";"";"0";
+NGS2022_5036 Famille EVANS;PAV;PAV_Nad;1;"11_64604492_C_G,CDC42BPG,99,82,181";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=11&genename=CDC42BPG&type=ngs&vector_ids=34057&type_cache=undefined";"1";
+NGS2024_7974 Action-2024;PRE_Vit;PRE_Vit;1;"20_47259012_C_A,PREX1,16,2,18";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=20&genename=PREX1&type=ngs&vector_ids=191567&type_cache=undefined";"0";
+NGS2023_6443 Evans-adulte-2023;REM_Uwe;REM_Uwe;0;"";"";"0";
+NGS2013_0333 EVANS;GIL_Ale;GIL_Ale;0;"";"";"0";
+NGS2022_5036 Famille EVANS;PAV;PAV_Ver;1;"17_57742218_A_T,CLTC,85,73,158";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=17&genename=CLTC&type=ngs&vector_ids=45594&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;BON_Tho;BON_Tho;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;DOS_Abi;DOS_Abi;1;"1_47717320_C_T,STIL,65,70,135";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=STIL&type=ngs&vector_ids=20289&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;YOU;YOU_Oph;1;"11_73020843_C_T,ARHGEF17,240,225,465";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=11&genename=ARHGEF17&type=ngs&vector_ids=42006&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;BUG_Jea;BUG_Jea;0;"";"";"0";
+NGS2022_5036 Famille EVANS;MIR;MIR_Chi;1;"11_61908488_G_C,INCENP,65,48,113";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=11&genename=INCENP&type=ngs&vector_ids=31237&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BEK_FRI_Man;BEK_FRI_Man;1;"12_95507454_C_A,FGD6,26,36,62";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=FGD6&type=ngs&vector_ids=74245&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;SCH_Jea;SCH_Jea;1;"14_100405557_G_A,EML1,37,34,71";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=14&genename=EML1&type=ngs&vector_ids=16033&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;SAL;SAL_Ced;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;ROU_Gis;ROU_Gis;0;"";"";"0";
+NGS2022_5036 Famille EVANS;VAY;VAY_Hug;1;"11_61919293_C_T,INCENP,38,28,66";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=11&genename=INCENP&type=ngs&vector_ids=31303&type_cache=undefined";"1";
+NGS2013_0333 EVANS;DOU_Lah;DOU_Lah;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;BEL_Pie;BEL_Pie;1;"3_33877623_C_G,PDCD6IP,32,31,63";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=3&genename=PDCD6IP&type=ngs&vector_ids=4995&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;SUC_Flo;SUC_Flo;1;"16_2156868_G_A,PKD1,67,21,88";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=16&genename=PKD1&type=ngs&vector_ids=3734&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;GLO_BAU;GLO_BAU_Ant;1;"16_2653729_G_A,PDPK1,26,13,39";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=16&genename=PDPK1&type=ngs&vector_ids=7121&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;ANG_Max;ANG_Max;0;"";"";"0";
+NGS2013_0333 EVANS;ROU_Cle;ROU_Cle;0;"";"";"0";
+NGS2022_5036 Famille EVANS;GLO_BAU;GLO_BAU_Elo;1;"9_131022811_C_T,GOLGA2,97,87,184";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=9&genename=GOLGA2&type=ngs&vector_ids=45010&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;PET_Cle;PET_Cle;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;HEV_Ann;HEV_Ann;1;"17_44039716_C_T,MAPT,18,28,46";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=17&genename=MAPT&type=ngs&vector_ids=19186&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;KUL_LEF;KUL_LEF_The;1;"16_2160234_G_A,PKD1,80,79,159";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2022_5036&chromosome=16&genename=PKD1&type=ngs&vector_ids=6252&type_cache=undefined";"1";
+NGS2013_0333 EVANS;ZHO_Seb;ZHO_Seb;1;"19_4902708_G_A,UHRF1,67,63,130";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=UHRF1&type=ngs&vector_ids=18226&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;TUR;TUR_Ben;1;"1_1273756_G_A,DVL1,49,67,116";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=1&genename=DVL1&type=ngs&vector_ids=1151&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;CUV_JE_CH;CUV_JE_CH;0;"";"";"0";
+NGS2024_7974 Action-2024;BOU_Eli;BOU_Eli;4;"1_21043986_C_T,KIF17,6,3,9
+1_45811129_T_G,TESK2,13,12,25
+12_53714347_A_C,AAAS,22,2,24
+X_153578519_T_C,FLNA,9,2,11";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=1&genename=TESK2&type=ngs&vector_ids=202590&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=12&genename=AAAS&type=ngs&vector_ids=245822&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=X&genename=FLNA&type=ngs&vector_ids=432908&type_cache=undefined
+";"0";
+NGS2022_5036 Famille EVANS;EUR;LER_Oce;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;CIS_Naf;CIS_Naf;2;"2_44200964_G_T,LRPPRC,52,46,98
+X_48682691_A_G,HDAC6,65,55,120";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=2&genename=LRPPRC&type=ngs&vector_ids=7926&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=X&genename=HDAC6&type=ngs&vector_ids=8891&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;RAB_Val;RAB_Val;1;"11_73071492_G_A,ARHGEF17,82,70,152";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=ARHGEF17&type=ngs&vector_ids=70694&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;EUR;LER_Soh;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;KAP_Que;KAP_Que;1;"7_12675684_C_T,SCIN,24,15,39";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=7&genename=SCIN&type=ngs&vector_ids=4194&type_cache=undefined";"1";
+NGS2022_5036 Famille EVANS;GUI;GUI_Lau;0;"";"";"0";
+NGS2023_6443 Evans-adulte-2023;TOR_Jav;TOR_Jav;2;"5_112179441_G_A,APC,60,44,104
+16_3558353_A_T,CLUAP1,53,52,105";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=5&genename=APC&type=ngs&vector_ids=12473&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=16&genename=CLUAP1&type=ngs&vector_ids=4982&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;CAL_Leo;CAL_Leo;3;"3_196842808_C_A,DLG1,26,45,71
+4_1719334_A_C,TACC3,84,86,170
+14_102516881_C_G,DYNC1H1,47,34,81";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=DLG1&type=ngs&vector_ids=124168&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=4&genename=TACC3&type=ngs&vector_ids=3599&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=14&genename=DYNC1H1&type=ngs&vector_ids=59236&type_cache=undefined
+";"3";
+NGS2023_6443 Evans-adulte-2023;LOZ_Fra;LOZ_Fra;1;"14_100402374_T_A,EML1,31,35,66";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2023_6443&chromosome=14&genename=EML1&type=ngs&vector_ids=16027&type_cache=undefined";"1";
+NGS2023_6443 Evans-adulte-2023;ZUM_Arl;ZUM_Arl;0;"";"";"0";
+NGS2013_0333 EVANS;MAG__Cle;MAG__Cle;0;"";"";"0";
+NGS2024_7974 Action-2024;OBI_Enz;OBI_Enz;1;"2_241723229_C_T,KIF1A,15,3,18";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=2&genename=KIF1A&type=ngs&vector_ids=1006512&type_cache=undefined";"0";
+NGS2013_0333 EVANS;RAT_Jul;RAT_Jul;1;"2_179540482_C_T,TTN,50,54,104";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=TTN&type=ngs&vector_ids=114237&type_cache=undefined";"1";
+NGS2013_0333 EVANS;VIL_Dap;VIL_Dap;1;"9_133729570_G_A,ABL1,36,32,68";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=9&genename=ABL1&type=ngs&vector_ids=81150&type_cache=undefined";"1";
+NGS2013_0333 EVANS;DIE_Chl;DIE_Chl;0;"";"";"0";
+NGS2024_7974 Action-2024;GIR_Cor;GIR_Cor;0;"";"";"0";
+NGS2013_0333 EVANS;HOU_Oph;HOU_Oph;0;"";"";"0";
+NGS2013_0333 EVANS;DAS__San;DAS__San;0;"";"";"0";
+NGS2013_0333 EVANS;GAU_Fab;GAU_Fab;5;"1_109472383_G_C,GPSM2,52,55,107
+4_104072530_A_G,CENPE,31,41,72
+15_43803232_G_A,MAP1A,24,23,47
+15_88799514_C_T,NTRK3,9,10,19
+19_45849812_C_A,KLC3,37,29,66";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=GPSM2&type=ngs&vector_ids=100109&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=4&genename=CENPE&type=ngs&vector_ids=59054&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=15&genename=NTRK3&type=ngs&vector_ids=69808&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=KLC3&type=ngs&vector_ids=94870&type_cache=undefined
+";"4";
+NGS2024_7974 Action-2024;BON_Cap;BON_Cap;4;"2_71206995_G_T,ANKRD53,15,2,17
+2_179480219_A_C,TTN,21,2,23
+2_241697829_T_G,KIF1A,19,2,21
+17_18151317_G_A,LLGL1,11,9,20";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=2&genename=KIF1A&type=ngs&vector_ids=1006355&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=17&genename=LLGL1&type=ngs&vector_ids=94000&type_cache=undefined
+";"0";
+NGS2013_0333 EVANS;fam15;BasGoe;4;"3_9852385_G_T,ARPC4,10,6,16
+3_107941019_G_T,IFT57,34,5,39
+8_82667705_G_A,CHMP4C,0,393,393
+14_64408437_G_A,SYNE2,204,184,388";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=IFT57&type=ngs&vector_ids=66252&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=8&genename=CHMP4C&type=ngs&vector_ids=47432&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=14&genename=SYNE2&type=ngs&vector_ids=30360&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;PAG_Ode;PAG_Ode;2;"1_202097541_T_C,ARL8A,75,92,167
+5_57750426_A_G,PLK2,52,50,102";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=ARL8A&type=ngs&vector_ids=170351&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=PLK2&type=ngs&vector_ids=26692&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;LEB_Est;LEB_Est;0;"";"";"0";
+NGS2024_7974 Action-2024;HOD_Len;HOD_Len;3;"3_47098687_G_T,SETD2,11,2,13
+7_98957289_G_A,ARPC1A,7,9,16
+19_54974271_C_A,CDC42EP5,4,9,13";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=3&genename=SETD2&type=ngs&vector_ids=217666&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=7&genename=ARPC1A&type=ngs&vector_ids=464040&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=19&genename=CDC42EP5&type=ngs&vector_ids=276358&type_cache=undefined
+";"0";
+NGS2013_0333 EVANS;OUA_Myr;OUA_Myr;1;"17_18139977_T_A,LLGL1,95,118,213";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=LLGL1&type=ngs&vector_ids=29652&type_cache=undefined";"1";
+NGS2013_0333 EVANS;HUA_Pau;HUA_Pau;0;"";"";"0";
+NGS2024_7974 Action-2024;GOU_Far;GOU_Far;2;"2_241659238_C_A,KIF1A,14,2,16
+3_45963306_T_A,FYCO1,7,12,19";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=2&genename=KIF1A&type=ngs&vector_ids=1006218&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2024_7974&chromosome=3&genename=FYCO1&type=ngs&vector_ids=212611&type_cache=undefined
+";"0";
+NGS2013_0333 EVANS;DUP_Que;DUP_Que;0;"";"";"0";
+NGS2013_0333 EVANS;SAL_Sol;SAL_Sol;2;"2_27702904_G_A,IFT172,107,74,181
+10_123970295_A_G,TACC2,110,98,208";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=IFT172&type=ngs&vector_ids=16695&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=10&genename=TACC2&type=ngs&vector_ids=83474&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;JEA_Ben;JEA_Ben;0;"";"";"0";
+NGS2013_0333 EVANS;LAR_Jea_Mar;LAR_Jea_Mar;0;"";"";"0";
+NGS2013_0333 EVANS;BOU_Kho;BOU_Kho;1;"12_72149044_C_A,RAB21,65,69,134";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=RAB21&type=ngs&vector_ids=65952&type_cache=undefined";"1";
+NGS2013_0333 EVANS;MOR__The;MOR__The;0;"";"";"0";
+NGS2013_0333 EVANS;ELA_Moh;ELA_Moh;3;"5_16675226_T_C,MYO10,56,75,131
+20_57599372_G_A,TUBB1,106,114,220
+X_13753090_G_T,OFD1,0,42,42";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=MYO10&type=ngs&vector_ids=10576&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=20&genename=TUBB1&type=ngs&vector_ids=44626&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=X&genename=OFD1&type=ngs&vector_ids=7991&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;ROU_Osc;ROU_Osc;2;"14_64610544_T_C,SYNE2,66,42,108
+19_34718272_A_G,LSM14A,34,37,71";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=14&genename=SYNE2&type=ngs&vector_ids=30924&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=LSM14A&type=ngs&vector_ids=69539&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;JES_Loh;JES_Loh;0;"";"";"0";
+NGS2013_0333 EVANS;MOT_Leo;MOT_Leo;0;"";"";"0";
+NGS2013_0333 EVANS;BOU_Moh;BOU_Moh;2;"2_55523395_T_C,CCDC88A,21,31,52
+22_36688106_C_T,MYH9,55,62,117";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=CCDC88A&type=ngs&vector_ids=36391&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=22&genename=MYH9&type=ngs&vector_ids=32081&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;ROS__Axe;ROS__Axe;0;"";"";"0";
+NGS2013_0333 EVANS;CHA_Vic2;CHA_Vic2;2;"13_73352343_C_T,PIBF1,73,30,103
+20_47305238_G_A,PREX1,42,44,86";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=13&genename=PIBF1&type=ngs&vector_ids=28219&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=20&genename=PREX1&type=ngs&vector_ids=38160&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;NEN_Jor;NEN_Jor;1;"10_70748959_T_G,KIFBP,70,97,167";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=10&genename=KIFBP&type=ngs&vector_ids=43164&type_cache=undefined";"1";
+NGS2013_0333 EVANS;DRU_Thy;DRU_Thy;3;"1_60299186_C_T,HOOK1,53,42,95
+6_56327927_C_T,DST,38,26,64
+7_98951548_A_T,ARPC1A,38,40,78";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=HOOK1&type=ngs&vector_ids=76951&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=DST&type=ngs&vector_ids=59431&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=7&genename=ARPC1A&type=ngs&vector_ids=69018&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;9_CHA_Oli;9_CHA_Oli;0;"";"";"0";
+NGS2013_0333 EVANS;MED_Jos;MED_Jos;2;"2_172604373_G_C,DYNC1I2,41,36,77
+15_38786588_C_G,RASGRP1,15,25,40";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=DYNC1I2&type=ngs&vector_ids=109150&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=15&genename=RASGRP1&type=ngs&vector_ids=19833&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;BOU_Jul;BOU_Jul;1;"8_125568114_A_C,MTSS1,124,101,225";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=8&genename=MTSS1&type=ngs&vector_ids=65440&type_cache=undefined";"1";
+NGS2013_0333 EVANS;SRA_Mou;SRA_Mou;2;"11_75379152_C_T,MAP6,8,11,19
+21_47766734_G_C,PCNT,78,62,140";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=MAP6&type=ngs&vector_ids=73356&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=21&genename=PCNT&type=ngs&vector_ids=34834&type_cache=undefined
+";"1";
+NGS2013_0333 EVANS;BAL_Jul;BAL_Jul;2;"2_239237343_C_T,TRAF3IP1,39,46,85
+12_42853748_G_A,PRICKLE1,83,82,165";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=TRAF3IP1&type=ngs&vector_ids=153953&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=PRICKLE1&type=ngs&vector_ids=38744&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;LAM_Lah;LAM_Lah;2;"11_64120862_C_T,CCDC88B,55,44,99
+13_113980331_G_A,LAMP1,64,70,134";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=CCDC88B&type=ngs&vector_ids=56048&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=13&genename=LAMP1&type=ngs&vector_ids=44162&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;PAY_Lue;PAY_Lue;0;"";"";"0";
+NGS2013_0333 EVANS;EXA_Alb;EXA_Alb;0;"";"";"0";
+NGS2013_0333 EVANS;GUE_Sim;GUE_Sim;0;"";"";"0";
+NGS2013_0333 EVANS;BAV_Ala;BAV_Ala;0;"";"";"0";
+NGS2013_0333 EVANS;GUE_Gab;GUE_Gab;2;"3_58134022_G_T,FLNB,51,49,100
+7_905656_T_G,SUN1,34,26,60";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=FLNB&type=ngs&vector_ids=44215&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=7&genename=SUN1&type=ngs&vector_ids=1442&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;FOR__Cla;FOR__Cla;1;"12_50392924_C_T,RACGAP1,35,24,59";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=RACGAP1&type=ngs&vector_ids=44756&type_cache=undefined";"1";
+NGS2013_0333 EVANS;DEG__Jul;DEG__Jul;2;"4_123664663_G_A,BBS12,72,67,139
+17_40821630_G_A,TUBG2,50,40,90";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=4&genename=BBS12&type=ngs&vector_ids=67998&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=TUBG2&type=ngs&vector_ids=60548&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;SEN_Nei;SEN_Nei;2;"10_115910880_G_A,CCDC186,47,36,83
+17_27963167_C_T,SSH2,74,86,160";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=10&genename=CCDC186&type=ngs&vector_ids=77735&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=SSH2&type=ngs&vector_ids=41398&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;ROZ_Man;ROZ_Man;0;"";"";"0";
+NGS2013_0333 EVANS;LE_PAN_Art;LE_PAN_Art;1;"11_73019802_G_A,ARHGEF17,32,42,74";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=ARHGEF17&type=ngs&vector_ids=70619&type_cache=undefined";"1";
+NGS2013_0333 EVANS;CAL_CAS_Her_Dia;CAL_CAS_Her_Dia;0;"";"";"0";
+NGS2013_0333 EVANS;GON_Ele;GON_Ele;0;"";"";"0";
+NGS2013_0333 EVANS;SER_Ewa;SER_Ewa;0;"";"";"0";
+NGS2013_0333 EVANS;RIC_Edd;RIC_Edd;1;"20_30382267_G_C,TPX2,94,82,176";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=20&genename=TPX2&type=ngs&vector_ids=21726&type_cache=undefined";"1";
+NGS2013_0333 EVANS;HER;HER_Tho;1;"5_110730475_G_C,CAMK4,44,51,95";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=CAMK4&type=ngs&vector_ids=48865&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BRE_Emi;BRE_Emi;1;"X_54496565_G_A,FGD1,112,111,223";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=X&genename=FGD1&type=ngs&vector_ids=25569&type_cache=undefined";"1";
+NGS2013_0333 EVANS;NOE_Ver;NOE_Ver;1;"6_56362202_G_A,DST,31,32,63";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=DST&type=ngs&vector_ids=59536&type_cache=undefined";"1";
+NGS2013_0333 EVANS;PER_Mic;PER_Mic;0;"";"";"0";
+NGS2013_0333 EVANS;FAR_Mer;FAR_Mer;0;"";"";"0";
+NGS2013_0333 EVANS;ROY_Lou;ROY_Lou;1;"6_33372840_G_A,KIFC1,252,227,479";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=KIFC1&type=ngs&vector_ids=39121&type_cache=undefined";"1";
+NGS2013_0333 EVANS;GER_Ali_Mar;GER_Ali_Mar;0;"";"";"0";
+NGS2013_0333 EVANS;BRA_The;BRA_The;0;"";"";"0";
+NGS2013_0333 EVANS;LOP__Mar;LOP__Mar;3;"3_129227810_C_G,IFT122,18,15,33
+12_53700576_T_C,AAAS,58,48,106
+16_2169119_C_T,PKD1,25,32,57";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=IFT122&type=ngs&vector_ids=83031&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=AAAS&type=ngs&vector_ids=51398&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=16&genename=PKD1&type=ngs&vector_ids=9781&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;AAD_Abd;AAD_Abd;0;"";"";"0";
+NGS2013_0333 EVANS;BEL_Sas;BEL_Sas;1;"14_64610544_T_C,SYNE2,58,82,140";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=14&genename=SYNE2&type=ngs&vector_ids=30924&type_cache=undefined";"1";
+NGS2013_0333 EVANS;CUR_Lou;CUR_Lou;0;"";"";"0";
+NGS2013_0333 EVANS;HOU_Kaw;HOU_Kaw;0;"";"";"0";
+NGS2013_0333 EVANS;LIP_Jea_Mar;LIP_Jea_Mar;1;"9_123210274_A_G,CDK5RAP2,60,53,113";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=9&genename=CDK5RAP2&type=ngs&vector_ids=67725&type_cache=undefined";"1";
+NGS2013_0333 EVANS;PEI_Ale;PEI_Ale;1;"5_38959929_C_A,RICTOR,56,57,113";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=RICTOR&type=ngs&vector_ids=20033&type_cache=undefined";"1";
+NGS2013_0333 EVANS;NAV_Mel;NAV_Mel;2;"1_20987479_C_T,KIF17,61,46,107
+9_72071287_A_G,APBA1,119,121,240";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=KIF17&type=ngs&vector_ids=37475&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=9&genename=APBA1&type=ngs&vector_ids=37626&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;DJE_Ilo;DJE_Ilo;2;"1_156812857_C_T,NTRK1,58,41,99
+4_3107136_C_T,HTT,55,63,118";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=NTRK1&type=ngs&vector_ids=138363&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=4&genename=HTT&type=ngs&vector_ids=6219&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;OUD_Ama;OUD_Ama;1;"15_38818557_A_G,RASGRP1,52,68,120";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=15&genename=RASGRP1&type=ngs&vector_ids=19939&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BUR_Ach;BUR_Ach;0;"";"";"0";
+NGS2013_0333 EVANS;GES_Syl;GES_Syl;3;"2_179445328_C_T,TTN,39,34,73
+2_228762908_G_A,DAW1,30,22,52
+6_51612678_G_C,PKHD1,51,55,106";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=DAW1&type=ngs&vector_ids=143916&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=PKHD1&type=ngs&vector_ids=56091&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;PAV2;PAV_Chl;1;"20_47261031_A_G,PREX1,95,91,186";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=20&genename=PREX1&type=ngs&vector_ids=38050&type_cache=undefined";"1";
+NGS2013_0333 EVANS;PAV2;PAV_Mar;1;"20_47261031_A_G,PREX1,176,140,316";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=20&genename=PREX1&type=ngs&vector_ids=38050&type_cache=undefined";"1";
+NGS2013_0333 EVANS;PAV2;PAV_Tho;1;"20_47261031_A_G,PREX1,87,101,188";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=20&genename=PREX1&type=ngs&vector_ids=38050&type_cache=undefined";"1";
+NGS2013_0333 EVANS;FON_Que;FON_Que;3;"9_133730200_G_A,ABL1,89,73,162
+18_18539805_T_C,ROCK1,46,51,97
+19_759927_C_T,MISP,70,57,127";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=9&genename=ABL1&type=ngs&vector_ids=81154&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=18&genename=ROCK1&type=ngs&vector_ids=14271&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=MISP&type=ngs&vector_ids=2607&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;LOU_Kam;LOU_Kam;1;"1_227216383_C_T,CDC42BPA,71,62,133";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=CDC42BPA&type=ngs&vector_ids=190270&type_cache=undefined";"1";
+NGS2013_0333 EVANS;MIL__Man;MIL__Man;1;"1_186296618_C_T,TPR,36,33,69";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=TPR&type=ngs&vector_ids=163379&type_cache=undefined";"1";
+NGS2013_0333 EVANS;GUE_Art;GUE_Art;0;"";"";"0";
+NGS2013_0333 EVANS;ACH_Nai;ACH_Nai;0;"";"";"0";
+NGS2013_0333 EVANS;DUM;DUM_Gab;1;"22_37154451_T_C,IFT27,41,44,85";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=22&genename=IFT27&type=ngs&vector_ids=32810&type_cache=undefined";"1";
+NGS2013_0333 EVANS;SOU_Ken;SOU_Ken;1;"11_64127784_C_T,CCDC88B,76,78,154";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=CCDC88B&type=ngs&vector_ids=56094&type_cache=undefined";"1";
+NGS2013_0333 EVANS;ARR_Luc;ARR_Luc;0;"";"";"0";
+NGS2013_0333 EVANS;IMB_Ann;IMB_Ann;2;"6_52268664_G_A,EFHC1,108,131,239
+7_933433_G_A,SUN1,85,92,177";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=EFHC1&type=ngs&vector_ids=56709&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=7&genename=SUN1&type=ngs&vector_ids=1627&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;GRO_Vin;GRO_Vin;1;"15_52488672_A_T,MYO5C,30,37,67";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=15&genename=MYO5C&type=ngs&vector_ids=35937&type_cache=undefined";"1";
+NGS2013_0333 EVANS;Del_Rom;Del_Rom;0;"";"";"0";
+NGS2013_0333 EVANS;DAF_Chr;DAF_Chr;2;"3_49450540_C_T,RHOA,49,40,89
+8_17794698_A_G,PCM1,42,46,88";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=RHOA&type=ngs&vector_ids=33865&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=8&genename=PCM1&type=ngs&vector_ids=15746&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;CHA_MAB_Yan;CHA_MAB_Yan;1;"2_179458768_C_T,TTN,99,89,188";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=TTN&type=ngs&vector_ids=113775&type_cache=undefined";"1";
+NGS2013_0333 EVANS;SAI__Moh;SAI__Moh;0;"";"";"0";
+NGS2013_0333 EVANS;fam37;MylMyr;2;"7_123332696_G_T,WASL,2,15,17
+13_25466840_A_C,CENPJ,35,11,46";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=7&genename=WASL&type=ngs&vector_ids=87748&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=13&genename=CENPJ&type=ngs&vector_ids=7820&type_cache=undefined
+";"1";
+NGS2013_0333 EVANS;LAG__Pie;LAG__Pie;0;"";"";"0";
+NGS2013_0333 EVANS;BER_Ale;BER_Ale;1;"4_156289919_G_A,MAP9,48,69,117";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=4&genename=MAP9&type=ngs&vector_ids=79591&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BEN;Ben_Sim;1;"19_4327116_C_T,FSD1,143,162,305";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=FSD1&type=ngs&vector_ids=16358&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BEN;Benad;0;"";"";"0";
+NGS2013_0333 EVANS;ARA_Ine;ARA_Ine;0;"";"";"0";
+NGS2013_0333 EVANS;NIT;NIT_Div;0;"";"";"0";
+NGS2013_0333 EVANS;GUE_Son;GUE_Son;4;"10_97111061_C_T,SORBS1,85,79,164
+12_53671680_G_A,ESPL1,93,109,202
+14_105239808_A_G,AKT1,118,94,212
+15_52689492_C_T,MYO5A,69,87,156";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=10&genename=SORBS1&type=ngs&vector_ids=62740&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=ESPL1&type=ngs&vector_ids=51258&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=14&genename=AKT1&type=ngs&vector_ids=63286&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=15&genename=MYO5A&type=ngs&vector_ids=36386&type_cache=undefined
+";"4";
+NGS2013_0333 EVANS;SUN__Sam;SUN__Sam;0;"";"";"0";
+NGS2013_0333 EVANS;AGB_Tre;AGB_Tre;1;"17_29685605_A_C,NF1,74,58,132";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=NF1&type=ngs&vector_ids=43565&type_cache=undefined";"1";
+NGS2013_0333 EVANS;TAV_Key;TAV_Key;2;"5_112174257_A_G,APC,83,91,174
+16_29993051_C_T,TAOK2,94,74,168";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=APC&type=ngs&vector_ids=49557&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=16&genename=TAOK2&type=ngs&vector_ids=43877&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;SAY;SAY_Bri;2;"14_35182490_G_A,CFL2,76,70,146
+17_72998274_C_T,CDR2L,123,93,216";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=14&genename=CFL2&type=ngs&vector_ids=15172&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=CDR2L&type=ngs&vector_ids=95298&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;SAY;SAY_Kim;1;"17_72998274_C_T,CDR2L,72,64,136";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=CDR2L&type=ngs&vector_ids=95298&type_cache=undefined";"1";
+NGS2013_0333 EVANS;KAR_Ray;KAR_Ray;0;"";"";"0";
+NGS2013_0333 EVANS;DEZ_Cha;DEZ_Cha;0;"";"";"0";
+NGS2013_0333 EVANS;MAR_Ana;MAR_Ana;1;"9_133729507_G_T,ABL1,62,53,115";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=9&genename=ABL1&type=ngs&vector_ids=81149&type_cache=undefined";"1";
+NGS2013_0333 EVANS;Dav__The;Dav__The;0;"";"";"0";
+NGS2013_0333 EVANS;NEA_Lau;NEA_Lau;1;"3_129207091_A_G,IFT122,25,45,70";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=IFT122&type=ngs&vector_ids=82982&type_cache=undefined";"1";
+NGS2013_0333 EVANS;HIR_Myr;HIR_Myr;0;"";"";"0";
+NGS2013_0333 EVANS;NAG_Alh;NAG_Alh;1;"16_2147934_C_A,PKD1,65,50,115";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=16&genename=PKD1&type=ngs&vector_ids=9460&type_cache=undefined";"1";
+NGS2013_0333 EVANS;LAR_Del;LAR_Del;0;"";"";"0";
+NGS2013_0333 EVANS;LAR_Jea_Cha;LAR_Jea_Cha;0;"";"";"0";
+NGS2013_0333 EVANS;OLL_Lea;OLL_Lea;1;"6_56334702_C_G,DST,50,43,93";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=6&genename=DST&type=ngs&vector_ids=59458&type_cache=undefined";"1";
+NGS2013_0333 EVANS;IBR_Yas;IBR_Yas;0;"";"";"0";
+NGS2013_0333 EVANS;BMZ_Moh;BMZ_Moh;0;"";"";"0";
+NGS2013_0333 EVANS;LAS_Mat;LAS_Mat;3;"11_65632005_A_G,CFL1,63,43,106
+11_73020431_T_C,ARHGEF17,80,57,137
+21_27484387_A_C,APP,84,58,142";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=ARHGEF17&type=ngs&vector_ids=70628&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=21&genename=APP&type=ngs&vector_ids=13609&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;LAC_UHL_Erw;LAC_UHL_Erw;0;"";"";"0";
+NGS2013_0333 EVANS;PER_Luc;PER_Luc;0;"";"";"0";
+NGS2013_0333 EVANS;ADA_Mah;ADA_Mah;0;"";"";"0";
+NGS2013_0333 EVANS;JAC_Jul;JAC_Jul;0;"";"";"0";
+NGS2013_0333 EVANS;SAM_Ana;SAM_Ana;0;"";"";"0";
+NGS2013_0333 EVANS;LAR_Lou;LAR_Lou;1;"3_129247707_T_C,RHO,48,37,85";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=RHO&type=ngs&vector_ids=83090&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BED;BED_Max;3;"1_9667806_G_A,TMEM201,45,32,77
+17_54431402_C_T,ANKFN1,31,26,57
+18_18534854_G_C,ROCK1,72,29,101";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=TMEM201&type=ngs&vector_ids=15424&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=ANKFN1&type=ngs&vector_ids=77025&type_cache=undefined
+https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=18&genename=ROCK1&type=ngs&vector_ids=14261&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;AIT_MED_You;AIT_MED_You;1;"2_122120864_C_T,CLASP1,46,44,90";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=CLASP1&type=ngs&vector_ids=81200&type_cache=undefined";"1";
+NGS2013_0333 EVANS;MAD_Ine;MAD_Ine;0;"";"";"0";
+NGS2013_0333 EVANS;ROC_Kaw;ROC_Kaw;0;"";"";"0";
+NGS2013_0333 EVANS;ASC__Ays;ASC__Ays;2;"18_13124653_C_T,CEP192,52,48,100
+19_50436276_G_A,NUP62,71,68,139";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=18&genename=CEP192&type=ngs&vector_ids=11827&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=NUP62&type=ngs&vector_ids=108716&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;LAV_Lou;LAV_Lou;1;"1_170015919_T_C,KIFAP3,37,42,79";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=KIFAP3&type=ngs&vector_ids=151703&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BOU_Sam;BOU_Sam;0;"";"";"0";
+NGS2013_0333 EVANS;CHA_Vic;CHA_Vic;1;"20_47305238_G_A,PREX1,75,58,133";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=20&genename=PREX1&type=ngs&vector_ids=38160&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BOU__Ray;BOU__Ray;2;"11_73022253_T_C,ARHGEF17,93,100,193
+12_122825391_T_C,CLIP1,48,53,101";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=ARHGEF17&type=ngs&vector_ids=70639&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=CLIP1&type=ngs&vector_ids=99155&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;NEI_Mia;NEI_Mia;2;"3_172166088_G_T,GHSR,70,98,168
+10_124001509_G_C,TACC2,86,58,144";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=GHSR&type=ngs&vector_ids=105170&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=10&genename=TACC2&type=ngs&vector_ids=83569&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;KIB_Eri;KIB_Eri;0;"";"";"0";
+NGS2013_0333 EVANS;COU_Rap;COU_Rap;1;"7_158716322_G_A,DYNC2I1,82,72,154";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=7&genename=DYNC2I1&type=ngs&vector_ids=120954&type_cache=undefined";"1";
+NGS2013_0333 EVANS;NAT_DEL_Lyl;NAT_DEL_Lyl;1;"21_27264137_A_G,APP,106,88,194";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=21&genename=APP&type=ngs&vector_ids=13427&type_cache=undefined";"1";
+NGS2013_0333 EVANS;CIR_Lea;CIR_Lea;0;"";"";"0";
+NGS2013_0333 EVANS;SZA_Rob;SZA_Rob;0;"";"";"0";
+NGS2013_0333 EVANS;VAN_Yon;VAN_Yon;1;"3_47913421_G_A,MAP4,29,34,63";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=MAP4&type=ngs&vector_ids=31445&type_cache=undefined";"1";
+NGS2013_0333 EVANS;SAL_Rom;SAL_Rom;0;"";"";"0";
+NGS2013_0333 EVANS;MBO_Noa;MBO_Noa;1;"1_247004114_C_G,KIF28P,52,47,99";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=KIF28P&type=ngs&vector_ids=206468&type_cache=undefined";"1";
+NGS2013_0333 EVANS;CO_Kes;CO_Kes;1;"11_64112396_G_A,CCDC88B,170,187,357";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=CCDC88B&type=ngs&vector_ids=55985&type_cache=undefined";"1";
+NGS2013_0333 EVANS;AHM_Zar;AHM_Zar;3;"2_27666874_T_C,IFT172,54,64,118
+2_241712602_C_T,KIF1A,64,72,136
+8_17822130_A_G,PCM1,44,53,97";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=2&genename=KIF1A&type=ngs&vector_ids=156157&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=8&genename=PCM1&type=ngs&vector_ids=15928&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;ROM_Jus;ROM_Jus;0;"";"";"0";
+NGS2013_0333 EVANS;8_RHA_IMA;8_RHA_IMA;1;"21_27462267_C_T,APP,39,41,80";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=21&genename=APP&type=ngs&vector_ids=13603&type_cache=undefined";"1";
+NGS2013_0333 EVANS;SAU__Luc;SAU__Luc;1;"11_72423585_C_T,ARAP1,82,72,154";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=ARAP1&type=ngs&vector_ids=70163&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BER_Lal;BER_Lal;1;"3_160083863_T_G,IFT80,48,42,90";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=3&genename=IFT80&type=ngs&vector_ids=100536&type_cache=undefined";"1";
+NGS2013_0333 EVANS;BOU_Ray;BOU_Ray;1;"5_171303318_C_T,FBXW11,27,36,63";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=5&genename=FBXW11&type=ngs&vector_ids=83753&type_cache=undefined";"1";
+NGS2013_0333 EVANS;ELZ;ELZ_KAR_SHE_Mon;2;"11_61896297_C_T,INCENP,39,40,79
+12_42860058_A_G,PRICKLE1,62,57,119";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=11&genename=INCENP&type=ngs&vector_ids=51965&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=PRICKLE1&type=ngs&vector_ids=38769&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;HEN_Mar;HEN_Mar;3;"4_39207356_TGG_T,WDR19,26,7,33
+X_123197885_A_C,STAG2,35,3,38
+X_123197891_T_A,STAG2,28,3,31";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=4&genename=WDR19&type=ngs&vector_ids=25821&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=X&genename=STAG2&type=ngs&vector_ids=44032&type_cache=undefined
+";"3";
+NGS2013_0333 EVANS;SOB_Mae;SOB_Mae;1;"14_64458023_A_G,SYNE2,5,5,10";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=14&genename=SYNE2&type=ngs&vector_ids=30487&type_cache=undefined";"0";
+NGS2013_0333 EVANS;ROB_Luc;ROB_Luc;2;"12_32260407_C_T,BICD1,75,63,138
+16_2167909_C_T,PKD1,55,52,107";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=12&genename=BICD1&type=ngs&vector_ids=33106&type_cache=undefinedhttps://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=16&genename=PKD1&type=ngs&vector_ids=9767&type_cache=undefined
+";"2";
+NGS2013_0333 EVANS;MAT_Bla;MAT_Bla;1;"19_7685893_C_T,CAMSAP3,52,49,101";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=19&genename=CAMSAP3&type=ngs&vector_ids=25385&type_cache=undefined";"1";
+NGS2013_0333 EVANS;HER3;HER_Wil;1;"1_17934377_A_G,ARHGEF10L,109,98,207";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=1&genename=ARHGEF10L&type=ngs&vector_ids=33878&type_cache=undefined";"1";
+NGS2013_0333 EVANS;AMR_Sou;AMR_Sou;1;"7_73521514_G_C,LIMK1,37,24,61";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=7&genename=LIMK1&type=ngs&vector_ids=53676&type_cache=undefined";"1";
+NGS2013_0333 EVANS;EL_HAF_Nad;EL_HAF_Nad;0;"";"";"0";
+NGS2013_0333 EVANS;UCH_Den;UCH_Den;0;"";"";"0";
+NGS2013_0333 EVANS;BAR_Vic;BAR_Vic;1;"17_61499258_G_A,TANC2,51,52,103";"https://www.polyweb.fr/polyweb/vector/detailProject.html?project=NGS2013_0333&chromosome=17&genename=TANC2&type=ngs&vector_ids=83993&type_cache=undefined";"1";
+NGS2013_0333 EVANS;PHI_Sha;PHI_Sha;0;"";"";"0";

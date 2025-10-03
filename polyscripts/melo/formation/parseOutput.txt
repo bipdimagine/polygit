@@ -1,0 +1,7 @@
+LEF_MEL, fille, malade
+LEF_JER, garçon, sain
+BOU_CHR, fille, sain
+GUI_NAT, garçon, sain
+GUI_REF, garçon, malade
+GUI_YOS, garçon, sain
+GUI_YAE, fille, sain

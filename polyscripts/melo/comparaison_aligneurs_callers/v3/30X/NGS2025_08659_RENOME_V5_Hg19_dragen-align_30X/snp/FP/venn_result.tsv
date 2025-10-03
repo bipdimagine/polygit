@@ -1,0 +1,47 @@
+Names	total	elements
+Dragen-calling Freebayes Haplotypecaller4 Samtools	1	21_44296934_T_A
+Dragen-calling Freebayes Haplotypecaller4	1	21_44299324_G_C
+Freebayes Haplotypecaller4 Unifiedgenotyper	2	9_140127615_A_C
+		16_1576597_A_C
+Freebayes Samtools Unifiedgenotyper	2	4_5712879_T_G
+		2_228029579_A_C
+Haplotypecaller4 Samtools Unifiedgenotyper	1	22_36722180_T_G
+Freebayes Unifiedgenotyper	13	3_186288811_T_G
+		3_186288815_A_G
+		11_125761378_G_A
+		12_69119617_G_T
+		3_186288821_T_G
+		16_15892492_C_A
+		7_158697831_C_T
+		16_1576593_A_C
+		16_4387132_T_G
+		16_15892497_G_A
+		16_4748612_T_G
+		1_200639028_A_G
+		7_78119221_G_A
+Samtools Unifiedgenotyper	1	19_46272061_A_C
+Freebayes	5	16_15892494_G_A
+		1_200639047_T_G
+		7_42185213_G_T
+		21_44296935_T_A
+		1_200639050_A_C
+Haplotypecaller4	3	16_4387117_T_G
+		11_117206314_C_A
+		12_88481521_C_A
+Unifiedgenotyper	16	1_200623523_A_G
+		7_135304693_G_A
+		2_166810161_G_A
+		20_60908575_A_C
+		9_140127421_T_G
+		17_36091861_C_G
+		20_35173241_A_C
+		3_93768353_A_C
+		14_57072263_A_T
+		11_32456502_T_G
+		20_60885701_T_G
+		6_135727013_G_A
+		2_239242719_G_T
+		1_47904668_T_C
+		7_42185221_G_A
+		3_159976432_G_A
+Samtools	1	2_45236288_A_C

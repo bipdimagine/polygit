@@ -1,0 +1,13 @@
+#capture: Rapid_V4_TubeF_UMI
+#alignment method: bwa
+#depth >= 30
+caller;SNP;indel;total;TP;FP;FN
+dragen-calling;668;106;774;431;343;252
+freebayes;695;96;791;420;371;263
+haplotypecaller4;680;128;808;429;379;252
+unifiedgenotyper;729;128;857;432;425;250
+samtools;674;53;727;413;314;270
+melt;;;;;;679
+at least 1 caller;740;183;951;434;489;248
+all 5 callers;659;25;684;402;282;282
+nist giab;608;71;687;;;

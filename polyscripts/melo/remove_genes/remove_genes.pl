@@ -36,14 +36,15 @@ GetOptions(
 	'extend=i'		=> \$extend,
 	'no_exec'		=> \$no_exec,
 	'help'			=> \$help,		
-);
+) || die("Error in command line arguments");
 
 usage() unless ($project_name and $bed);
 usage() if ($help);
 
-my $project = $buffer->newProject(-name=>$project_name, -version=>$version);
+my $project = $buffer->newProject(-name=>$project_name) unless ($version);
+my $project = $buffer->newProject(-name=>$project_name, -version=>$version) if ($version);
 $version = $project->version unless ($version);
-warn $version;
+warn 'version='.$version;
 my $patients = $project->get_only_list_patients($patient_names);
 warn("No patient in project ".$project->name."\n") unless $patients;
 
@@ -55,6 +56,7 @@ unless($extend==0){
 	while (my $line = <BED>) {
 	    chomp $line;
 	    my ($chr, $start, $end, $name) = split("\t", $line);
+	    $chr =~ s/^chrM/MT/ if ($version eq 'HG19_CNG');
 	    $chr =~ s/^chr// if ($version eq 'HG19_CNG');
 	    print EXT_BED join("\t", ($chr, $start-$extend, $end+$extend, $name)) ."\n";
 	}
@@ -94,6 +96,16 @@ foreach my $pat (@$patients) {
 	push (@all_bam, @bam_files);
 	print scalar(@bam_files)." bam file(s):\n";
 	print join("\n",@bam_files)."\n" if (scalar @bam_files);
+	
+	# cram
+	my @cram_files;
+	my $find_cram = sub {
+		push (@cram_files, $File::Find::name) if (/$pname\.cram$/);
+	};
+	find($find_cram, $dir);
+	push (@all_bam, @cram_files);
+	print scalar(@cram_files)." cram file(s):\n";
+	print join("\n",@cram_files)."\n" if (scalar @cram_files);
 	
 	# vcf
 	my @vcf_files;
@@ -154,18 +166,18 @@ print("######\nDone !\n######\n") unless ($errors or $no_exec);
 
 sub usage {
 	print "
-remove_genes.pl
+$0
 -----------------	
 Mandatory arguments
-	-project <s>		project name containing the complementary bam
-	-patients <s>		samples names separated with a comma
-	-bed <s>		bed file with genes to remove
+	-project <s>        project name containing the complementary bam
+	-patients <s>       samples names separated with a comma
+	-bed <s>            bed file with genes to remove
 	
 Optional arguments
-	-extend <i>		size of the bed extension, default 300
-	-version <s>		project version
-	-no_exec		do not run the commands
-	-help				
+	-extend <i>         size of the bed extension, default 300
+	-version <s>        project version
+	-no_exec            do not run the commands
+	-help
 
 ";
 	exit(1);

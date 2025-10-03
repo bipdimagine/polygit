@@ -1,0 +1,13 @@
+#capture: RENOME_V5_Hg19
+#alignment method: dragen-align
+#depth >= 0
+caller;SNP;indel;total;TP;FP;FN
+dragen-calling;1120;177;1297;795;502;406
+freebayes;1148;181;1329;776;553;425
+haplotypecaller4;1126;269;1395;802;593;399
+unifiedgenotyper;1164;260;1424;800;624;401
+samtools;1116;97;1213;748;465;453
+melt;;1;1;;1;1201
+at least 1 caller;1182;361;1543;804;739;397
+all 5 callers;1101;50;1151;733;418;468
+nist giab;1066;135;1201;;;

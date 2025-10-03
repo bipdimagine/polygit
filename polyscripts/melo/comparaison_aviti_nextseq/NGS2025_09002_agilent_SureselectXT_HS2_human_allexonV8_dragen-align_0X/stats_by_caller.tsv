@@ -1,0 +1,19 @@
+##NGS2025_09002
+##capture: agilent_SureselectXT_HS2_human_allexonV8
+##alignment method: dragen-align
+##depth >= 0
+#caller	"SNP"	"indel"	"total"	"SNP
+TP"	"SNP
+FP"	"SNP
+FN"	"SNP
+Accuracy"	"SNP
+Sensitivity"	"indel
+TP"	"indel
+FP"	"indel
+FN"	"indel
+Accuracy"	"indel
+Sensitivity"
+dragen-calling	42589	4302	46891	38454	4135	81170	0.902909201906596	0.321457232662342	1163	494	9328	0.701870850935425	0.110856924983319
+at least 1 caller	42589	4302	46891	38454	4135		0.902909201906596	1	1163	494		0.701870850935425	1
+all 1 callers	42589	4302	46891	38454	4135	81170	0.902909201906596	0.321457232662342	1163	494	9328	0.701870850935425	0.110856924983319
+nist giab	119624	27483	147107										

@@ -1,0 +1,2 @@
+# (CADD > 25 OR spliceAI > 0,5) AND freq < 0,01% AND gnomAD He < 5 AND gnomAD Ho = 0 AND in gene list AND DéjàVu other project < 1 AND DéjàVu other patients < 5 AND DéjàVu other patients ho < 0
+genes;nb de patients trouvés
