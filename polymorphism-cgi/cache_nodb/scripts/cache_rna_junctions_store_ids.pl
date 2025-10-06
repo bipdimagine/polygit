@@ -449,6 +449,18 @@ sub get_junctions_ids {
 		$junction->annex();
 		$junction->setPatients();
 		$junction->get_hash_exons_introns();
+		foreach my $p (@{$junction->getPatients()}) {
+#			$junction->get_nb_new_count($p);
+#			$junction->get_dp_count($p);
+#			$junction->get_percent_new_count($p);
+#			$junction->get_dp_count($p);
+#			$junction->junction_score_penality_ratio($p);
+#			$junction->junction_score_penality_dp($p);
+#			$junction->junction_score_penality_new_junction($p);
+#			$junction->junction_score_penality_noise($p);
+#			$junction->junction_score_penality_dejavu_inthisrun($p);
+			$junction->junction_score_without_dejavu_global($p);
+		}
 	}
 	
 	
@@ -492,8 +504,20 @@ sub get_junctions_ids {
 		}
 		delete $junction->{buffer};
 		delete $junction->{project};
+		delete $junction->{patients_object};
+		delete $junction->{genes_object};
+		delete $junction->{coverage_obj};
 		
-		$hv->{obj}   = compress( freeze($junction) );
+		eval {
+			$hv->{obj}   = compress( freeze($junction) );
+		};
+		if ($@) {
+			warn "\n\n";
+			warn ref ($junction);
+			warn $junction->{id};
+			warn Dumper sort keys %$junction;
+		}
+		
 		$hv->{start} = $junction->start;
 		$hv->{end}   = $junction->end;
 		$hv->{id}    = $junction->id;

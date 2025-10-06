@@ -325,10 +325,18 @@ sub get_score {
 	return;
 }
 
+has hash_nb_new_count => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		return {};
+	}
+);
+
 sub get_nb_new_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	return $self->{nb_new_count}->{$patient->name()} if (exists $self->{nb_new_count}->{$patient->name()});
+	return $self->hash_nb_new_count->{$patient->name()} if (exists $self->hash_nb_new_count->{$patient->name()});
 	my $count = 0;
 	if (exists $self->annex->{$patient->name()}->{junc_new_count}) {
 		$count  = $self->annex->{$patient->name()}->{junc_new_count};
@@ -340,26 +348,40 @@ sub get_nb_new_count {
 		$count += $self->annex->{$patient->name()}->{junc_ri_count} if ($self->isRI($patient) and exists $self->annex->{$patient->name()}->{junc_ri_count});
 		$count += $self->annex->{$patient->name()}->{junc_se_count} if ($self->isSE($patient) and exists $self->annex->{$patient->name()}->{junc_se_count});
 	}
-	$self->{nb_new_count}->{$patient->name()} = $count;
+	$self->hash_nb_new_count->{$patient->name()} = $count;
 	return $count;
 }
+
+has hash_nb_normal_count => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		return {};
+	}
+);
 
 sub get_canonic_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
+	return $self->hash_nb_normal_count->{$patient->name()} if (exists $self->hash_nb_normal_count->{$patient->name()});
 	if ($self->isCanonique()) { 
-		$self->{nb_new_count}->{$patient->name()} = 0;
+		$self->hash_nb_new_count->{$patient->name()} = 0;
 		return 0;
 	} 
 	if ($self->isRI($patient) or $self->isSE($patient)) {
 		my $nb;
 		$nb = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
-		return $nb if $nb and $nb > 0;
-		return $self->getCoverageInInterval($patient);
+		if ($nb and $nb > 0) {
+			$self->hash_nb_normal_count->{$patient->name()} = $nb;
+		}
+		else { 
+			$self->hash_nb_normal_count->{$patient->name()} = $self->getCoverageInInterval($patient);
+		}
+		return $self->hash_nb_normal_count->{$patient->name()};
 	}
-	return $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
-	return 0;
-	confess();
+	$self->hash_nb_normal_count->{$patient->name()} = 0;
+	$self->hash_nb_normal_count->{$patient->name()} = $self->{annex}->{$patient->name}->{canonic_count} if (exists $self->annex->{$patient->name()}->{canonic_count});
+	return $self->hash_nb_normal_count->{$patient->name()};
 }
 
 sub getNormDP {
@@ -372,10 +394,18 @@ sub getDP {
 	return $self->get_dp_count($patient);
 }
 
+has hash_dp_count => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		return {};
+	}
+);
+
 sub get_dp_count {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	return $self->{dp_count}->{$patient->name()} if (exists $self->{dp_count}->{$patient->name()});
+	return $self->hash_dp_count->{$patient->name()} if (exists $self->hash_dp_count->{$patient->name()});
 	my $new_count = $self->get_nb_new_count($patient);
 	$new_count = 0 if $self->get_nb_new_count($patient) eq '---';
 	
@@ -383,16 +413,24 @@ sub get_dp_count {
 	$normal_count = 0 if $self->get_canonic_count($patient) eq '---';
 	
 #	warn $new_count." ".$normal_count." ".$self->id;
-	$self->{dp_count}->{$patient->name()} = ($new_count + $normal_count);
-	return $self->{dp_count}->{$patient->name()};
+	$self->hash_dp_count->{$patient->name()} = ($new_count + $normal_count);
+	return $self->hash_dp_count->{$patient->name()};
 }
+
+has hash_ratio => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		return {};
+	}
+);
 
 sub ratio {
 	my ($self, $patient) = @_;
 	confess() unless $patient;
-	return $self->{ratio}->{$patient->name()} if (exists $self->{ratio}->{$patient->name()});
+	return $self->hash_ratio->{$patient->name()} if (exists $self->hash_ratio->{$patient->name()});
 	if ($self->isCanonique()) { 
-		$self->{ratio}->{$patient->name()} = 0;
+		$self->hash_ratio->{$patient->name()} = 0;
 		return 0;
 	} 
 	if ($self->get_dp_count($patient) == 0){
@@ -407,7 +445,7 @@ sub ratio {
 	
 	
 	my $ratio  = $self->get_nb_new_count($patient) / $self->get_dp_count($patient);
-	$self->{ratio}->{$patient->name()} = $ratio;
+	$self->hash_ratio->{$patient->name()} = $ratio;
 	return $ratio;
 }
 sub get_ratio_new_count {
@@ -599,8 +637,19 @@ sub get_noise_score {
 	return ($max_noise_in_tr, $noise_all);
 }
 
+has hash_scores_penality => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		return {};
+	},
+);
+
 sub junction_score_penality_ratio {
 	my ($self, $patient) = @_;
+#	warn Dumper $self->hash_scores_penality;
+#	die;
+	return $self->hash_scores_penality->{ratio}->{$patient->name()} if exists $self->hash_scores_penality->{ratio}->{$patient->name()};
 	my $score_penality = 0;
 	my $ratio = $self->get_percent_new_count($patient);
 	if ($ratio <= 1) { $score_penality += 8; }
@@ -609,13 +658,13 @@ sub junction_score_penality_ratio {
 	elsif ($ratio <= 15) { $score_penality += 2.5; }
 	elsif ($ratio <= 20) { $score_penality += 2; }
 	elsif ($ratio <= 30) { $score_penality += 1; }
-	return $score_penality;
+	$self->{hash_scores_penality}->{ratio}->{$patient->name()} = $score_penality;
+	return $self->hash_scores_penality->{ratio}->{$patient->name()};
 }
 
 sub junction_score_penality_dp {
 	my ($self, $patient) = @_;
-	return 0;
-	
+	return $self->hash_scores_penality->{dp}->{$patient->name()} if exists $self->hash_scores_penality->{dp}->{$patient->name()}; 
 	my $score_penality = 0;
 	my $dp = $self->get_dp_count($patient);
 	if ($self->get_percent_new_count($patient) == 100) {
@@ -630,7 +679,8 @@ sub junction_score_penality_dp {
 		elsif ($dp <= 20) { $score_penality += 1.5; }
 		elsif ($dp <= 30) { $score_penality += 0.5; }
 	}
-	return $score_penality;
+	$self->{hash_scores_penality}->{dp}->{$patient->name()} = $score_penality;
+	return $self->hash_scores_penality->{dp}->{$patient->name()};
 }
 
 
@@ -646,6 +696,7 @@ sub is_sj {
 }
 sub junction_score_penality_new_junction {
 	my ($self, $patient) = @_;
+	return $self->hash_scores_penality->{new_junction}->{$patient->name()} if exists $self->hash_scores_penality->{new_junction}->{$patient->name()};
 	my $score_penality = 0;
 	my $nb_new = $self->get_nb_new_count($patient);
 	$nb_new -= $self->multiple_align_count($patient);
@@ -654,11 +705,15 @@ sub junction_score_penality_new_junction {
 	elsif ($nb_new <= 3) { $score_penality += 5; }
 	elsif ($nb_new < 5) { $score_penality += 2; }
 	elsif ($nb_new < 10) { $score_penality += 1; }
-	return $score_penality;
+	$self->{hash_scores_penality}->{new_junction}->{$patient->name()} = $score_penality;
+	return $self->hash_scores_penality->{new_junction}->{$patient->name()};
 }
 
 sub junction_score_penality_noise {
 	my ($self, $patient) = @_;
+	return 0;
+	
+	#TODO: here
 	my ($max_noise_in_tr, $noise_global) = $self->get_noise_score($patient);
 	my ($penality_1, $penality_2, $penality_3, $penality_4, $penality_5) = (8, 6, 5, 3, 2);
 	my $length = $self->length();
@@ -727,6 +782,7 @@ sub junction_score_penality_dejavu_high_ratio {
 
 sub junction_score_penality_dejavu_inthisrun {
 	my ($self, $patient) = @_;
+	return $self->hash_scores_penality->{dejavu_inthisrun}->{$patient->name()} if exists $self->hash_scores_penality->{dejavu_inthisrun}->{$patient->name()};
 	my $score_penality = 0;
 	my $dv_run_max_30 = $self->in_this_run_patients(30,$patient);
 	if ($dv_run_max_30 >= 1) { $score_penality += (1 * ($dv_run_max_30)); }
@@ -736,7 +792,8 @@ sub junction_score_penality_dejavu_inthisrun {
 	if ($dv_run_max_15 > 1) { $score_penality += 0.5; }
 	my $dv_run_max_10 = $self->in_this_run_patients( 10,$patient);
 	if ($dv_run_max_10 > 1) { $score_penality += 0.5; }
-	return $score_penality;
+	$self->{hash_scores_penality}->{dejavu_inthisrun}->{$patient->name()} = $score_penality;
+	return $self->hash_scores_penality->{dejavu_inthisrun}->{$patient->name()};
 }
 
 sub is_junction_with_known_coordinates {
@@ -760,8 +817,19 @@ sub junction_score_penality_known_coordinates {
 	return 0;
 }
 
+
+
+has hash_score_without_dejavu_global => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		return {};
+	},
+);
+
 sub junction_score_without_dejavu_global {
 	my ($self, $patient) = @_;
+	return $self->hash_score_without_dejavu_global->{$patient->name()} if exists $self->hash_score_without_dejavu_global->{$patient->name()};
 	my $score = 10;
 	$score = 0 if ($self->isCanonique());
 	$score = 0 if ($self->getTypeDescription($patient) eq 'DA');
@@ -798,7 +866,8 @@ sub junction_score_without_dejavu_global {
 		}
 		$score = $score - 8  if not $short_j_interesting;
 	}
-	return $score;
+	$self->hash_score_without_dejavu_global->{$patient->name()} = $score;
+	return $self->hash_score_without_dejavu_global->{$patient->name()};
 }
 
 sub junction_score {
@@ -822,24 +891,33 @@ sub dejavu_nb_int_this_run_patients {
 	confess();
 }
 
-sub hash_in_this_run_patients {
-	my($self,$ratio) = @_;
-	$ratio = 0 unless $ratio;
-	return $self->{inthisrun}->{$ratio} if exists $self->{inthisrun}->{ratio};
-	$self->{inthisrun}->{$ratio} = undef;
-	$self->getProject->getFamilies();
-	foreach my $patient (@{$self->getPatients()}) {
-		my $fam_name = $patient->getFamily->name();
-		$self->{inthisrun}->{$ratio}->{$fam_name}->{$patient->name()} = $ratio  if $self->get_percent_new_count($patient) >= $ratio;
-	}
-	die($ratio) unless exists $self->{inthisrun}->{$ratio};
-	return $self->{inthisrun}->{$ratio};
-}
+has hash_in_this_run_patients => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		my $self = shift;
+		my $h;
+		$self->getProject->getFamilies();
+		$h->{10} = undef;
+		$h->{15} = undef;
+		$h->{20} = undef;
+		$h->{30} = undef;
+		foreach my $patient (@{$self->getPatients()}) {
+			my $fam_name = $patient->getFamily->name();
+			my $ratio_pat = $self->get_percent_new_count($patient);
+			$h->{10}->{$fam_name}->{$patient->name()} = $ratio_pat if ($ratio_pat >= 10);
+			$h->{15}->{$fam_name}->{$patient->name()} = $ratio_pat if ($ratio_pat >= 15);
+			$h->{20}->{$fam_name}->{$patient->name()} = $ratio_pat if ($ratio_pat >= 20);
+			$h->{30}->{$fam_name}->{$patient->name()} = $ratio_pat if ($ratio_pat >= 30);
+		}
+		return $h;
+	},
+);
 
 sub in_this_run_patients {
 	my($self,$ratio,$patient) = @_;
 	$ratio =0 unless $ratio;
-	my $hash = $self->hash_in_this_run_patients($ratio);
+	my $hash = $self->hash_in_this_run_patients->{$ratio};
 	if ($patient){
 		delete $hash->{$patient->getFamily->name()} if exists $hash->{$patient->getFamily->name()};
 	}
@@ -856,11 +934,8 @@ sub in_this_run_ratio {
 
 sub dejavu_patients {
 	my($self,$ratio,$patient) = @_;
-	
 	#TODO: a faire dejavu hg38
 #	return 0;
-	
-	
 	$ratio = "all" unless $ratio;
 	return 0 unless exists $self->dejavu->{$ratio};
 	my $nb = 0;

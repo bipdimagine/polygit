@@ -125,6 +125,8 @@ foreach my $chr ( @{ $project->getChromosomes() } ) {
 #	warn $chr->id;
 #	$chr->global_categories;
 	
+#	next if $chr->id ne '13';
+	
 	#next if $chr->id ne '1' and $patient_name eq 'KUCerc';
 	my $vector_patient = $patient->getJunctionsVector($chr);
 	$j_total += $chr->countThisVariants($vector_patient);
@@ -415,7 +417,9 @@ $pm->run_on_finish(
 print '_save_xls_' if ($export_xls);
 
 foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
-	#next if $chr_id ne '20';
+	#next if $chr_id ne '13';
+	
+	
 	
 	my $chr = $patient->getProject->getChromosome($chr_id);
 	next if $chr->countThisVariants( $h_chr_vectors->{$chr_id} ) == 0;
@@ -507,6 +511,40 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 #	my $h_last_j;
 	my $h_same_j_description;
 	foreach my $junction (@lJunctionsChr) {
+		
+		next if $junction->start == $junction->end();
+		next if ( not $only_gene and $junction->get_percent_new_count($patient) < $min_score );
+		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 and not $only_gene);
+		print '.';
+#		next;
+		
+		my @lGenesNames;
+		foreach my $gene ( @{ $junction->getGenes() } ) {
+			if ($only_gene) {
+				push( @lGenesNames, $gene->id() ) if $only_gene->id() eq $gene->id();
+			}
+			else  { push( @lGenesNames, $gene->id() ); }
+		}
+		next unless @lGenesNames;
+		print '.';
+#		next;
+		
+		
+		if ( not $only_gene ) {
+
+			my $nb_dejavu_pat = 0;
+			$use_percent_dejavu = $junction->dejavu_percent_coordinate_similar() unless ($use_percent_dejavu);
+		
+			if ($only_dejavu_ratio_10) {
+				$nb_dejavu_pat =  $junction->dejavu_patients(10,$patient);
+			}
+			else {
+				 $nb_dejavu_pat =  $junction->dejavu_patients("all",$patient);
+				#$project->dejavuJunctionsResume->get_nb_junctions($junction->getChromosome->id(), $junction->start(),$junction->end(), $use_percent_dejavu, $patient_name);
+			}
+			next if ( $nb_dejavu_pat > $max_dejavu_value );
+		}
+		
 		my $pass_same_position;
 		my $short_id = $junction->getChromosome->id().'_'.$junction->start().'_'.$junction->end();
 		my $min_vid = $junction->vector_id() - 2;
@@ -547,34 +585,6 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		$n++;
 		print '.' if (not $put_cache and not $only_html_cache and $n % 1000 );
 		my $is_junction_linked_filtred;
-		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 and not $only_gene);
-
-		next if $junction->start == $junction->end();
-		
-		my @lGenesNames;
-		foreach my $gene ( @{ $junction->getGenes() } ) {
-			if ($only_gene) {
-				push( @lGenesNames, $gene->id() ) if $only_gene->id() eq $gene->id();
-			}
-			else  { push( @lGenesNames, $gene->id() ); }
-		}
-		next unless @lGenesNames;
-		
-		if ( not $only_gene ) {
-			next if ( $junction->get_percent_new_count($patient) < $min_score );
-
-			my $nb_dejavu_pat = 0;
-			$use_percent_dejavu = $junction->dejavu_percent_coordinate_similar() unless ($use_percent_dejavu);
-		
-			if ($only_dejavu_ratio_10) {
-				$nb_dejavu_pat =  $junction->dejavu_patients(10,$patient);
-			}
-			else {
-				 $nb_dejavu_pat =  $junction->dejavu_patients("all",$patient);
-				#$project->dejavuJunctionsResume->get_nb_junctions($junction->getChromosome->id(), $junction->start(),$junction->end(), $use_percent_dejavu, $patient_name);
-			}
-			next if ( $nb_dejavu_pat > $max_dejavu_value );
-		}
 
 		my $html_validation  = '';
 		my $html_to_validate = '';
@@ -751,6 +761,8 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 #			$h_last_j->{$short_id}->{genes}->{$gene_name} = undef;
 			$html_push_this_j++;
 		}
+		
+		$junction = undef;
 	}
 	$hres->{done} = 1;
 	$patient->getProject->disconnect();
@@ -760,6 +772,9 @@ $pm->wait_all_children();
 
 print '@';
 $patient->getProject->disconnect();
+
+
+#die;
 
 die if $nbErrors > 0;
 
