@@ -101,6 +101,7 @@ foreach my $project_name (split(",",$project_names)){
 	my $csv_tmp = $bcl_dir."/SP.".time.".csv";
 		die("no sample sheet in database ") unless ($run->sample_sheet);
 	my $toto = $run->sample_sheet;
+	warn $csv_tmp;
 	#$run->sample_sheet =~ s/;/,/g;	
 	$toto  =~ s/;/,/g;
 	open(TOTO,">$csv_tmp");
@@ -360,7 +361,8 @@ foreach my $title (@{$titles}){
 	push(@$outcsv,[$title]);
 	push(@$outcsv,@{$lines->{$title}});
 }
-my $ss = $bcl_dir."/file".time.".csv";
+my $samp_name = "file".time.".csv";
+my $ss = $bcl_dir."/".$samp_name;
 csv (in => $outcsv, out => $ss, sep_char=> ",");
 
 sleep(1);
@@ -378,8 +380,8 @@ while($checkComplete == 1){
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $exit2 = system("rsync -rav --no-times $bcl_dir  $dir_bcl_tmp ");
-
-my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
+my $ss1 = $dir_bcl_tmp."/".$samp_name;
+my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
 
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
