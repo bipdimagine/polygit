@@ -978,7 +978,8 @@
 				if (without_filters == 1) { url += "&view_not_filtred_junctions=1"; }
 				url += "&patient=" + patient_name;
 				url_last_launch_patient = url;
-				url += "&dejavu=" + used_dejavu_value;
+				if (used_dejavu_value == '51') {}
+				else { url += "&dejavu=" + used_dejavu_value; } 
 				url += "&dejavu_percent=" + used_dejavu_percent_value;
 				url += "&min_score=" + used_score_value;
 				if (is_first_launch == 1) {
@@ -1221,7 +1222,7 @@
 			function launch_dejavu_span_value() {
 				var only_gene_positions = document.getElementById('input_gene_positions').value;
 				if (only_gene_positions == '') {
-					if (value_dejavu == 101) { show_waiting("Filter DejaVu - ALL patients"); }
+					if (value_dejavu == 51) { show_waiting("Filter DejaVu - ALL patients"); }
 					else { show_waiting("Filter DejaVu max " + value_dejavu + " patients (" + value_dejavu_percent_similar + "% coord similar)"); }
 				}
 				else {
@@ -1229,7 +1230,7 @@
 					show_waiting(text_loading);
 				}
 				var url = url_last_launch_patient; 
-				if (value_dejavu < 101) { url += "&dejavu=" + value_dejavu; }
+				if (value_dejavu < 51) { url += "&dejavu=" + value_dejavu; }
 				url += "&dejavu_percent=" + value_dejavu_percent_similar;
 				url += "&min_score=" + value_score;
 				if (is_first_launch == 1) {
