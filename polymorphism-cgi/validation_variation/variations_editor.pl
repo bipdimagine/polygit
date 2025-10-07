@@ -543,7 +543,7 @@ warn "end max_score :".abs(time -$sct);
 	my $nb2 = 0;
 	my $limit =3000; 
 	my $hchr; 
-
+$sct = time;
 foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
 		if ($gene_name_filtering) {
 			if ($gene_name_filtering eq $g->{name} or $gene_id_filtering eq $g->{id}) { 
@@ -560,7 +560,7 @@ foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
 	}
 $genes = $vgenes;	
 $genes = [] unless $genes;
-
+warn "end sort  :".abs(time -$sct);
 $t = time;
 
 $ztime .= ' polycyto:' . ( abs( time - $t ) );
@@ -570,11 +570,12 @@ my $stdout_nav_bar = tee_stdout {
     update_variant_editor::printNavBar( $patient, $genes, $statistics, $version,$date, $user, $ztime,update_variant_editor::compose_string_filtering($cgi) );
 	update_variant_editor::print_hotspot( $patient, $panel );
 };
+warn "end hotspot  :".abs(time -$t);
 my $stdoutcnv;
 
 if (not $patient->isGenome() ) {
 	$stdoutcnv = tee_stdout {
-		update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
+	update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
 	};
 }
 
@@ -877,15 +878,18 @@ my $h_transmissions = {
 	#######################
 	#my @column_frequences_gnomad = ("gnomad_ac","gnomad_an","gnomad_min_pop_name","gnomad_min_pop_freq","gnomad_max_pop_name","gnomad_max_pop_freq","gnomad_ho","getGnomadAC_Male");
 	#my @column_frequences_dejavu = ("other_projects","other_patients","other_patients_ho","similar_projects","similar_patients","similar_patients_ho","in_this_run_patients");
-	my $asql_frequence;
+	my $asql_frequence =[];
 
 
 	push(@{$asql_frequence}, "variant_gnomad_ac < $limit_ac ") if $limit_ac > 0 ;
 	push(@{$asql_frequence}, "variant_gnomad_ho < $limit_ac_ho ")  if $limit_ac_ho >0 ;;
 	push(@{$asql_frequence}, "variant_other_patients < $limit_sample_dv ") if $limit_sample_dv > 0;
 	push(@{$asql_frequence}, "variant_other_patients_ho < $limit_sample_dv_ho ") if $limit_sample_dv_ho > 0; 
-	my $sql_frequence = join(" and ",@$asql_frequence);
-	$sql_frequence = "(".$sql_frequence.")";
+	my $sql_frequence = "";
+	if (@$asql_frequence) {
+		$sql_frequence = join(" and ",@$asql_frequence) ;
+		$sql_frequence = "(".$sql_frequence.")";
+	}
 	my $sql_only_dm;
 	if ($cgi->param('only_DM') && !($gene_name_filtering) ){
 		$sql_frequence = "";
@@ -930,12 +934,12 @@ sub get_rocksdb_mce_polyviewer_variant {
 	my $diro = $project->rocks_directory();
 	
 	my $sql =qq{select variant_index,variant_rocksdb_id,gene_name from '$parquet' where  $where ; };
-
+	warn $sql;
 	my $cmd = qq{duckdb -json -c "$sql"};
-	warn $cmd;
  	my $t = time;
  	my $res =`$cmd`;
-	my $array_ref  = decode_json $res;
+	my $array_ref = [];
+	$array_ref  = decode_json $res if $res;
 	my	$list_variants = [];
  	my	$hash_variants_DM = {};
  	

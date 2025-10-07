@@ -293,13 +293,11 @@ sub _close {
 sub get_polyviewer_variant {
 	my ($self,$id,$debug) =@_;
 	return $self->{rcache}->{$id} if exists $self->{rcache}->{$id};
-	
 	#warn "00"  if $debug;;
 	#return if $debug;
 	my $test = "1!75318";
 	my ($chr,$a)  =split("!",$id);
 	my $v = $self->rocksdb($chr,$self->patient->getFamily->id)->get($id);
-	
 	my $vp = PolyviewerVariant->new() ;
      	foreach my $c (@{$self->columns("variants")}){
      		$vp->{$c} = shift @{$v->[0]};
@@ -332,6 +330,9 @@ sub get_polyviewer_variant {
      	  }
      	  }
      	  $self->update_clinvar_id($chr,$vp) if $vp->{clinvar};
+     	  confess() unless $vp->name;
+     	  
+     	 #
      	#}
      	# die() if $vp->{isSrPr};
      	return $vp;
