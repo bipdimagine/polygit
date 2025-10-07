@@ -112,7 +112,7 @@ $default_filter_score = "data-filter-default='>=1'";
 my $n            = 0;
 my $score_slider = 0;
 $score_slider = $min_score / 10 if ( $min_score and $min_score > 0 );
-my ( @lJunctions, $h_var_linked_ids );
+my $h_var_linked_ids;
 
 my $j_total    = 0;
 my $j_selected = 0;
@@ -121,6 +121,39 @@ my $h_chr_vectors_counts;
 
 my $has_regtools_vectors;
 my $exists_vector_ratio_10;
+
+
+
+my $cache_html_id = 'splices_HTML_' . $patient->name();
+$cache_html_id .= '_maxdv'.$max_dejavu if $max_dejavu;
+$cache_html_id .= '_mins'.$min_score if $min_score;
+$cache_html_id .= '_only'.$only_gene_name if $only_gene_name;
+$cache_html_id .= '_only'.$only_positions if $only_positions;
+$cache_html_id .= '_onlydvra10' if $only_dejavu_ratio_10;
+$cache_html_id .= '_onlyNDA' if $has_regtools_vectors and $only_junctions_NDA;
+$cache_html_id .= '_onlyDA' if $has_regtools_vectors and $only_junctions_DA;
+$cache_html_id .= '_onlyA' if $has_regtools_vectors and $only_junctions_A;
+$cache_html_id .= '_onlyD' if $has_regtools_vectors and $only_junctions_D;
+$cache_html_id .= '_onlyN' if $has_regtools_vectors and $only_junctions_N;
+$cache_html_id .= '_'.$j_total;
+if (not $only_html_cache and not $put_cache and not $only_gene_name and not $only_positions and not $view_polyviewer and not $export_xls) {
+	my $no_cache_2 = $patient->get_lmdb_cache("r");
+	my $h_html    = $no_cache_2->get_cache($cache_html_id);
+	#TODO: supress cache html
+	#$h_html=undef;
+	$no_cache_2->close();
+	if ($h_html) {
+		if ($view_polyviewer) {
+			print qq{</div>};
+			print $h_html->{html};
+			exit(0);
+		}
+		printJson($h_html);
+		exit(0);
+	}
+}
+
+
 foreach my $chr ( @{ $project->getChromosomes() } ) {
 #	warn $chr->id;
 #	$chr->global_categories;
@@ -164,35 +197,6 @@ unless ($h_res) {
 	$h_var_linked_ids = $h_res;
 }
 
-my $cache_html_id = 'splices_HTML_' . $patient->name();
-$cache_html_id .= '_maxdv'.$max_dejavu if $max_dejavu;
-$cache_html_id .= '_mins'.$min_score if $min_score;
-$cache_html_id .= '_only'.$only_gene_name if $only_gene_name;
-$cache_html_id .= '_only'.$only_positions if $only_positions;
-$cache_html_id .= '_onlydvra10' if $only_dejavu_ratio_10;
-$cache_html_id .= '_onlyNDA' if $has_regtools_vectors and $only_junctions_NDA;
-$cache_html_id .= '_onlyDA' if $has_regtools_vectors and $only_junctions_DA;
-$cache_html_id .= '_onlyA' if $has_regtools_vectors and $only_junctions_A;
-$cache_html_id .= '_onlyD' if $has_regtools_vectors and $only_junctions_D;
-$cache_html_id .= '_onlyN' if $has_regtools_vectors and $only_junctions_N;
-$cache_html_id .= '_'.$j_total;
-if (not $only_html_cache and not $put_cache and not $only_gene_name and not $only_positions and not $view_polyviewer and not $export_xls) {
-	my $no_cache_2 = $patient->get_lmdb_cache("r");
-	my $h_html    = $no_cache_2->get_cache($cache_html_id);
-	#TODO: supress cache html
-	#$h_html=undef;
-	$no_cache_2->close();
-	if ($h_html) {
-		if ($view_polyviewer) {
-			print qq{</div>};
-			print $h_html->{html};
-			exit(0);
-		}
-		printJson($h_html);
-		exit(0);
-	}
-}
-
 my ( $is_partial_results, $use_cat, $min_partial_score );
 my $no_cache = $patient->get_lmdb_cache("r");
 my $cache_vectors_enum_id = $patient->name() . '_' . '_chr_vectors_enum';
@@ -221,8 +225,6 @@ if ( defined($use_percent_dejavu) ) {
 	$percent_dejavu = $use_percent_dejavu - 90;
 }
 my $nb_percent_dejavu_value = 90 + $percent_dejavu;
-my $nbErrors = 0;
-
 
 my ($checked_only_dejavu_ratio_10, $checked_regtools_nda, $checked_regtools_d, $checked_regtools_a, $checked_regtools_n, $checked_regtools_da);
 $checked_only_dejavu_ratio_10 = qq{checked="checked"} if $only_dejavu_ratio_10;
@@ -375,7 +377,52 @@ my $h_junctions_color;
 my $h_dejavu_cnv;
 $n = 0;
 my ($h_junctions_scores, $h_export_xls);
-my $fork     = $fork;
+
+
+print '_save_xls_' if ($export_xls);
+
+my @lJunctions;
+foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
+	#next if $chr_id ne '13';
+	my $chr = $patient->getProject->getChromosome($chr_id);
+	next if $chr->countThisVariants( $h_chr_vectors->{$chr_id} ) == 0;
+	if (not $only_gene ) {
+		#DV vector
+		my $type_vector_dv = 'dejavu';
+		if ($max_dejavu_value >= 90)    { $type_vector_dv .= '_90'; }
+		elsif ($max_dejavu_value >= 80) { $type_vector_dv .= '_80'; }
+		elsif ($max_dejavu_value >= 70) { $type_vector_dv .= '_70'; }
+		elsif ($max_dejavu_value >= 60) { $type_vector_dv .= '_60'; }
+		elsif ($max_dejavu_value >= 50) { $type_vector_dv .= '_50'; }
+		elsif ($max_dejavu_value >= 40) { $type_vector_dv .= '_40'; }
+		elsif ($max_dejavu_value >= 30) { $type_vector_dv .= '_30'; }
+		elsif ($max_dejavu_value >= 25) { $type_vector_dv .= '_25'; }
+		elsif ($max_dejavu_value >= 20) { $type_vector_dv .= '_20'; }
+		elsif ($max_dejavu_value >= 15) { $type_vector_dv .= '_15'; }
+		elsif ($max_dejavu_value >= 10) { $type_vector_dv .= '_10'; }
+		else { $type_vector_dv .= '_5'; }
+		$type_vector_dv .= '_r10' if ($only_dejavu_ratio_10);
+		$h_chr_vectors->{$chr_id} &= $chr->vector_global_categories($type_vector_dv);
+		
+		# RATIO
+		if ($min_score and $min_score =~ /^[1-9]0$/) {
+			$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $patient->getVectorOriginJunctionsRatio($chr, $min_score));
+		}
+		if ($patient->hasVectorRegtools($chr)) {
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsNDA($chr) if (not $only_junctions_NDA);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsDA($chr)  if (not $only_junctions_DA);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsA($chr)   if (not $only_junctions_A);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsD($chr)   if (not $only_junctions_D);
+			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsN($chr)   if (not $only_junctions_N);
+		}
+	}
+	foreach my $j (@{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) }) {
+		push(@lJunctions, $j);
+	}
+}
+	
+######
+
 my $pm       = new Parallel::ForkManager($fork);
 my $nbErrors = 0;
 $pm->run_on_finish(
@@ -386,8 +433,6 @@ $pm->run_on_finish(
 			print qq|No message received from child process $exit_code $pid!\n|;
 			return;
 		}
-		
-		
 		if ($export_xls) {
 			my $chr_id = $hres->{chr_id}; 
 			delete $hres->{done};
@@ -413,110 +458,23 @@ $pm->run_on_finish(
 	}
 );
 
+my $nb = int(scalar(@lJunctions)/($fork) +1);
+print '@'.$nb.'@';
+my $iter = natatime($nb, @lJunctions);
 
-print '_save_xls_' if ($export_xls);
-
-foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
-	#next if $chr_id ne '13';
-	
-	
-	
-	my $chr = $patient->getProject->getChromosome($chr_id);
-	next if $chr->countThisVariants( $h_chr_vectors->{$chr_id} ) == 0;
-	$patient->getProject->disconnect();
-	$chr->rocksdb("spliceAI");
-	$pm->start and next;
-	
-	#TODO: travailler ici sur les vector
-	if (not $only_gene ) {
-		#DV vector
-#		my $type_vector_dv = 'dejavu';
-#		my $type_vector_dv_sup = 'dejavu';
-#		if ($max_dejavu_value >= 90)    {
-#			$type_vector_dv .= '_90';
-#		}
-#		elsif ($max_dejavu_value >= 80) {
-#			$type_vector_dv .= '_80';
-#			$type_vector_dv_sup .= '_90';
-#		}
-#		elsif ($max_dejavu_value >= 70) {
-#			$type_vector_dv .= '_70';
-#			$type_vector_dv_sup .= '_80';
-#		}
-#		elsif ($max_dejavu_value >= 60) {
-#			$type_vector_dv .= '_60';
-#			$type_vector_dv_sup .= '_70';
-#		}
-#		elsif ($max_dejavu_value >= 50) {
-#			$type_vector_dv .= '_50';
-#			$type_vector_dv_sup .= '_60';
-#		}
-#		elsif ($max_dejavu_value >= 40) {
-#			$type_vector_dv .= '_40';
-#			$type_vector_dv_sup .= '_50';
-#		}
-#		elsif ($max_dejavu_value >= 30) {
-#			$type_vector_dv .= '_30';
-#			$type_vector_dv_sup .= '_40';
-#		}
-#		elsif ($max_dejavu_value >= 25) {
-#			$type_vector_dv .= '_25';
-#			$type_vector_dv_sup .= '_30';
-#		}
-#		elsif ($max_dejavu_value >= 20) {
-#			$type_vector_dv .= '_20';
-#			$type_vector_dv_sup .= '_25';
-#		}
-#		elsif ($max_dejavu_value >= 15) {
-#			$type_vector_dv .= '_15';
-#			$type_vector_dv_sup .= '_20';
-#		}
-#		elsif ($max_dejavu_value >= 10) {
-#			$type_vector_dv .= '_10';
-#			$type_vector_dv_sup .= '_15';
-#		}
-#		else {
-#			$type_vector_dv .= '_5';
-#			$type_vector_dv_sup .= '_105';
-#		}
-#		$type_vector_dv .= '_r10' if ($only_dejavu_ratio_10);
-#		$type_vector_dv_sup .= '_r10' if ($only_dejavu_ratio_10);
-#		if (exists $chr->global_categories->{$type_vector_dv}) {
-#			$h_chr_vectors->{$chr_id} &= $chr->global_categories->{$type_vector_dv};
-##			if ($type_vector_dv_sup and exists $chr->global_categories->{$type_vector_dv_sup}) {
-##				my $v_sup = $chr->global_categories->{$type_vector_dv_sup}->Clone();
-##				$v_sup -= $chr->global_categories->{$type_vector_dv};
-##				$h_chr_vectors->{$chr_id} -= $v_sup;
-##			}
-#		}
-	
-		# RATIO
-		if ($min_score and $min_score =~ /^[1-9]0$/) {
-			$h_chr_vectors->{$chr_id}->Intersection($h_chr_vectors->{$chr_id}, $patient->getVectorOriginJunctionsRatio($chr, $min_score));
-		}
-		if ($patient->hasVectorRegtools($chr)) {
-			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsNDA($chr) if (not $only_junctions_NDA);
-			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsDA($chr)  if (not $only_junctions_DA);
-			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsA($chr)   if (not $only_junctions_A);
-			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsD($chr)   if (not $only_junctions_D);
-			$h_chr_vectors->{$chr_id} -= $patient->getVectorJunctionsN($chr)   if (not $only_junctions_N);
-		}
-	}
-	
-	my @lJunctionsChr = @{ $chr->getListVarObjects( $h_chr_vectors->{$chr_id} ) };
-	my $size_vector = $h_chr_vectors->{$chr_id}->Size();
+$patient->getProject->disconnect();
+while( my @tmp = $iter->() ){
 	my $hres;
 	my $h_td_line;
+	$pm->start and next;
 	
-#	my $h_last_j;
 	my $h_same_j_description;
-	foreach my $junction (@lJunctionsChr) {
+	foreach my $junction (@tmp) {
 		
 		next if $junction->start == $junction->end();
 		next if ( not $only_gene and $junction->get_percent_new_count($patient) < $min_score );
-		next if ( $junction->junction_score_without_dejavu_global($patient) < 0 and not $only_gene);
+		#next if ( $junction->junction_score_without_dejavu_global($patient) < 0 and not $only_gene);
 		print '.';
-#		next;
 		
 		my @lGenesNames;
 		foreach my $gene ( @{ $junction->getGenes() } ) {
@@ -527,7 +485,6 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 		}
 		next unless @lGenesNames;
 		print '.';
-#		next;
 		
 		
 		if ( not $only_gene ) {
@@ -545,15 +502,18 @@ foreach my $chr_id ( sort keys %{$h_chr_vectors} ) {
 			next if ( $nb_dejavu_pat > $max_dejavu_value );
 		}
 		
+		my $chr_id = $junction->getChromosome->id();
 		my $pass_same_position;
 		my $short_id = $junction->getChromosome->id().'_'.$junction->start().'_'.$junction->end();
 		my $min_vid = $junction->vector_id() - 2;
 		my $max_vid = $junction->vector_id() + 2;
 		foreach my $this_vector_id ($min_vid..$max_vid) {
+			
+			my $size_vector = $h_chr_vectors->{$chr_id}->Size();
 			next if $this_vector_id < 0;
 			next if $this_vector_id >= $size_vector;
 			next if $this_vector_id == $junction->vector_id();
-			my $this_j = $chr->getVarObject($this_vector_id);
+			my $this_j = $junction->getChromosome->getVarObject($this_vector_id);
 			my $this_short_id = $this_j->getChromosome->id().'_'.$this_j->start().'_'.$this_j->end();
 			next if $this_short_id ne $short_id;
 			next if $junction->get_nb_new_count($patient) != $this_j->get_nb_new_count($patient);
