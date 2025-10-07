@@ -336,12 +336,13 @@ unless ($version){
 	unless ($project->isGenome ) {
 		my $capture_file  = $patient->getCapture->gzFileName();
 		confess() unless -e $capture_file;
-		if ($project->isExome){
-			my $capture_file2 = "$dir_pipeline/".$patient->name.".bed";
-			warn "zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2";
-			system ("zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2" );
-			$capture_file = $capture_file2;
-		}
+		#if ($project->isExome){
+		#	my $capture_file2 = "$dir_pipeline/".$patient->name.".bed";
+		#	warn "zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2";
+		#	die();
+		#	system ("zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2" );
+		#	$capture_file = $capture_file2;
+		#}
 		#test prenantome 
 		$param_bed .= qq{  --vc-target-bed $capture_file};
 		if (defined($pad)){
@@ -396,7 +397,6 @@ warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 
 
 $patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
-
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;
 
