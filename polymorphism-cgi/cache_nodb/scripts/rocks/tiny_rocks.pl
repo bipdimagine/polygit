@@ -138,7 +138,7 @@ mce_loop {
    # my $chr = $chra->[0];
 	my $hash = compute_chr($chr, $chra->[0], $chra->[-1]+1);
 	 MCE->gather($chunk_id,$hash);
-}(1..$size);
+}(0..$size);
 #$rocks->close();
 
 warn "------->".$chr->name." end";
