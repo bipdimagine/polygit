@@ -40,7 +40,7 @@ my $patient = $project->getPatientOrControl($patient_name);
 my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
-my $dir_gvcf_out= $project->getCallingPipelineDir($patient->name.".deepvariant");
+my $dir_gvcf_out= $project->getCallingPipelineDir($patient->name.time.".deepvariant");
 my $bed = $dir_gvcf_out."/".$patient->name.".bed";
 unless ($project->isGenome){
 my @zbed;
@@ -59,7 +59,7 @@ my $dir_gvcf_tmp = $dir_gvcf_out."/tmp.".time;
 mkdir $dir_gvcf_tmp;
 my $cmd;
 if ($project->isGenome) {
- $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /data-beegfs/software/sif/deepvariant1.8.0.sif /opt/deepvariant/bin/run_deepvariant  --num_shards=$fork --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out};
+ $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /data-beegfs/software/sif/deepvariant1.8.0.sif /opt/deepvariant/bin/run_deepvariant  --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out};
 }
 else {
  $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /data-beegfs/software/sif/deepvariant1.8.0.sif /opt/deepvariant/bin/run_deepvariant  --num_shards=$fork --model_type=WES --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out};
@@ -68,8 +68,7 @@ system($cmd);
 warn $cmd;
 die() unless -e $vcf_out;
 my $vcf = $patient->getVariationsFileName("deepvariant");
-my $cmd2 =qq{bcftools view   -c 1  -e 'QUAL<10 && FORMAT/VAF<0.01 || DP < 2' $vcf_out -o $vcf -O z && tabix -f -p vcf $vcf};
-my $cmd2 =qq{bcftools view  $vcf_out -o $vcf -O z && tabix -f -p vcf $vcf};
-warn $cmd2;
+my $cmd2 =qq{bcftools view   -c 1  -e '(QUAL<30 && FORMAT/VAF<0.15 && FORMAT/DP < 10)' $vcf_out -o $vcf -O z && tabix -f -p vcf $vcf};
+#my $cmd2 =qq{bcftools view  $vcf_out -o $vcf -O z && tabix -f -p vcf $vcf};
 system($cmd2);
 die() unless -e $vcf.".tbi";

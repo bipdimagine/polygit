@@ -501,11 +501,8 @@ sub list_same_cnv {
 
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
-	warn $self->name;
 	delete $self->{project};
 	delete $self->{buffer};
-	warn Dumper $self;
-	die();
 	unless (exists $self->{array_dejavu}) {
 		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
 		$self->{array_dejavu} = $self->return_dejavu;
