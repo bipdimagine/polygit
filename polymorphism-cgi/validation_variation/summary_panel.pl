@@ -813,8 +813,9 @@ qq{<button type="button" class ="btn btn-xs btn-primary "  $style_btn_name >$ir<
 	$line->{"30x"} =
 	  $cgi->td( $class, qq{<button type="button$cc" $btn_class >$v3</button>} );
 	   $cc ="";
-	$cc ="-warning" if $v < 85;
-	$cc ="-alert" if $v < 70;
+	   $v = 0 if $v eq "-";
+		$cc ="-warning" if $v < 85;
+		$cc ="-alert" if $v < 70;
 	  	$line->{"20x"} =
 	  $cgi->td( $class, qq{<button type="button$cc" $btn_class >$v</button>} );
 	my $style = {};

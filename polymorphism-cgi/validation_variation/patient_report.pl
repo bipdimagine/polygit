@@ -830,7 +830,7 @@ sub construct_data {
 	my $htr_vars;
 	my $cpt =0;
 	my $key = return_uniq_keys($patient,$cgi);
-	my $version ="2.3";
+	my $version ="2.4";
 	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
 	
 	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version.1");
@@ -2221,7 +2221,9 @@ sub print_variation_td_edit{
 				
 				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ) {
 					my $url = $deja_vu_url.$variation->{id};
-						my $onclick = qq{<a onclick  style="color:black;font-weight:bold">$text</a>};
+					
+					
+						my $onclick = qq{ onclick  style="color:black;font-weight:bold">$text</a>};
 					 if (exists $variation->{dup}){
 					 
 					 	$text = qq{<a $onclick  style="color:black;font-weight:bold">$text</a>};
@@ -3787,10 +3789,14 @@ my $stv = $patient->get_string_validations();
 unless ($patient->isGenome ) {
 	$stv .= ':::'.$patient->get_string_identification();
 }
+warn $0;
+	push(@keys,file_md5($0));
 if  ($stv ){
 push(@keys,"validation".":".md5_hex($stv));
 }
 else{
+	
+
 push(@keys,encode_json ({}));
 push(@keys,encode_json ({}));
 push(@keys,encode_json ({}));
@@ -3886,7 +3892,7 @@ sub return_list_variants {
  	my $data = [split(";",$string)];
  	if (scalar(@$data)==0 ){
  		my $v = $tr->getGene->getCurrentVector & $patient->getVectorOrigin($tr->getChromosome);
- 		warn scalar(@$data)." ". $v->Norm. $tr->getGene->external_name if (scalar(@$data)==0 && $v->Norm >0); 
+ 		#warn scalar(@$data)." ". $v->Norm. $tr->getGene->external_name if (scalar(@$data)==0 && $v->Norm >0); 
  	}
  	
 	return $data;
