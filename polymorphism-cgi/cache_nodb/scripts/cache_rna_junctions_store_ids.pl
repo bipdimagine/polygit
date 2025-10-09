@@ -109,24 +109,8 @@ foreach my $hv (@{$ids}) {
 if ($nbErrors > 0) {
 	confess("\n\nERRORS: $nbErrors errors found... confess...\n\n");
 }
-#if (scalar keys %{$chr->{cache_hash_get_var_ids}} == 0) {
-#	my $cmd = "touch ".$project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty";
-#	`touch $cmd`;
-#	my $no2 = $chr->get_lmdb_variations("c");
-#	$no2->create();
-#	$no2->close();
-#	warn "empty";
-#	store( {}, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) ;  
-#	
-#	open (FILE, ">$file_ok");
-#	print FILE "OK - EMPTY";
-#	close(FILE);
-#	exit(0);
-#}
 
 my $size_variants = scalar @{$all};
-
-
 
 ############
 
@@ -321,84 +305,6 @@ $rocks3->write_config();
 $project = undef;
 $buffer = undef;
 
-#die;
-#
-#
-#my $nb_from_vcf = scalar(keys %{$chr->{cache_hash_get_var_ids}});
-#my $nb_from_final = scalar(keys %{$hh});
-#if ($nb_from_vcf == $nb_from_final) {
-#	warn "check nb var: nb var VCF parsed = $nb_from_vcf and nb var final = $nb_from_final -> OK\n" if ( $project->cache_verbose() );
-#}
-#else {
-#	warn "\n\nERROR:\n";
-#	warn "   check nb var: nb var VCF parsed = $nb_from_vcf and nb var final = $nb_from_final -> ERROR\n";
-#	warn "   DIE...\n\n";
-#	die();
-#}
-#
-#warn "time : ".abs($t-time);
-#warn 'store 2/4: lmdb chr_name freeze' if ( $project->cache_verbose() );
-##store htable only fort dejavu by project purpose
-#store( $hh, $project->lmdb_cache_dir . "/$chr_name.dv.freeze" ) if $hh;    
-#my $no3 = $chr->get_lmdb_categories("c");
-#foreach my $k ( keys %{$intspan_global_type} ) {
-#	my $h;
-#	$h->{name}    = $k;
-#	$h->{intspan} = $intspan_global_type->{$k};
-#	my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $intspan_global_type->{$k}->as_array ) );
-#	$h->{bitvector} = $bitv;
-#	$no3->put( $k, $h );
-#}
-#$no3->close();
-#
-#warn 'store 3/4: lmdb patients' if ( $project->cache_verbose() );
-#my $no4 = $chr->get_lmdb_patients("c");
-#foreach my $pname (@patient_names) {
-#	my $h;
-#	$h->{name} = $pname;
-#	foreach my $c (@categorie_patient) {
-#		my $intspan = $hpatients->{$pname}->{intspan}->{$c};
-#		$h->{intspan}->{$c} = $intspan;
-#		my $bitv = Bit::Vector->new_Enum( $size_variants, join( ',', $intspan->as_array ) );
-#		$h->{bitvector}->{$c} = $bitv;
-#	}
-#	$no4->put( $pname, $h );
-#}
-#$no4->close;
-#
-##NOISE 
-#warn 'store 4/4: update methods calling' if ( $project->cache_verbose() );
-#my $buffer_cache = new GBuffer;
-#$buffer_cache->vmtouch(1);
-#my $project_cache = $buffer_cache->newProjectCache( -name => $project_name );
-#$project_cache->getPatients();
-#my $chr_cache = $project_cache->getChromosome($chr_name);
-#my $no5 = $chr_cache->get_lmdb_variations("w");
-#my $vector_junctions = $chr_cache->getJunctionsVector();
-#
-#
-#my $nb_elems = int($chr_cache->countThisVariants($vector_junctions) / $fork);
-#$nb_elems += 20;
-#
-#my $pm = new Parallel::ForkManager($fork);
-#my $iter = natatime $nb_elems, @{$chr_cache->getListVarObjects($vector_junctions)};
-#while ( my @tmp = $iter->() ) {
-#	my $pid = $pm->start and next;
-#	foreach my $junction (@tmp) {
-#		foreach my $patient_cache (@{$junction->getPatients()}) {
-#			$junction->get_hash_noise($patient_cache);
-#		}
-#		my $jid = $junction->id();
-#		delete $junction->{buffer};
-#		delete $junction->{project};
-#		$no5->put( $jid, $junction );
-#	}
-#	$pm->finish();
-#}
-#$pm->wait_all_children();
-#sleep(10);
-#$no5->close();
-
 warn "\n\nEND!\n";
 
 open (FILE, ">$file_ok");
@@ -420,55 +326,55 @@ sub get_junctions_ids {
 		$hpatients->{ $patient_names[$i] } = $i;
 	}
 	my $vs = $chr->getJunctions();
+	my $vs_sorted = sort_list_junctions_by_positions($vs);
 	
+	
+	
+	my $i = 0;
+	my $max = scalar(@$vs_sorted)-1;
 	my $h_ri_aval_amont;
-	#search common ri_aval ri_amont
-	foreach my $junction ( @{$vs } ) {
-		my $h_exons_introns;
-		my @lPatients = @{ $junction->getPatients() };
-		foreach my $patient (@lPatients) {
-			next if (not $junction->is_ri_aval($patient) and not $junction->is_ri_amont($patient));
-			$h_exons_introns = $junction->get_hash_exons_introns() unless ($h_exons_introns);
-			my $type_ri;
-			$type_ri = 'ri_aval'  if ($junction->is_ri_aval($patient));
-			$type_ri = 'ri_amont' if ($junction->is_ri_amont($patient));
-			foreach my $tid (sort keys %{$h_exons_introns}) {
-				my @lPos = (sort keys %{$h_exons_introns->{$tid}->{by_pos}});
-				my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[0]};
-				my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[-1]};
-				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$type_ri} = $junction->id(); 
-				$h_ri_aval_amont->{$patient->name()}->{$tid}->{$last_exon_intron}->{$type_ri} = $junction->id(); 
-			} 
-		}
-	}
-	
-	foreach my $junction ( @{$vs } ) {
+	foreach my $junction ( @{$vs_sorted} ) {
+		my $debug ;
 		next if ($junction->getChromosome->id() ne $chr->id());
 		$junction->id();
 		$junction->name();
 		$junction->annex();
 		$junction->setPatients();
-		$junction->get_hash_exons_introns();
-		foreach my $p (@{$junction->getPatients()}) {
-#			$junction->get_nb_new_count($p);
-#			$junction->get_dp_count($p);
-#			$junction->get_percent_new_count($p);
-#			$junction->get_dp_count($p);
-#			$junction->junction_score_penality_ratio($p);
-#			$junction->junction_score_penality_dp($p);
-#			$junction->junction_score_penality_new_junction($p);
-#			$junction->junction_score_penality_noise($p);
-#			$junction->junction_score_penality_dejavu_inthisrun($p);
-			$junction->junction_score_without_dejavu_global($p);
+		my $h_exons_introns = $junction->get_hash_exons_introns();
+		foreach my $patient (@{ $junction->getPatients() }) {
+			my $is_ri_aval = $junction->is_ri_aval($patient);
+			my $is_ri_amont = $junction->is_ri_amont($patient);
+			if ($is_ri_aval or $is_ri_amont) {
+				my $to_check;
+				$to_check = 'ri_amont' if $is_ri_amont;
+				$to_check = 'ri_aval' if $is_ri_aval;
+				foreach my $tid (sort keys %{$h_exons_introns}) {
+					my @lPos = (sort keys %{$h_exons_introns->{$tid}->{by_pos}});
+					my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[0]};
+					my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[-1]};
+					$h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$to_check} = $junction->id();
+				} 
+			}
+			
+			my @lJunctions_to_check;
+			my $start_search = 0;
+			$start_search = $i-100 if ($i-100) >= 0;
+			my $end_search = $i+100;
+			$end_search = $max if ($i+100) > $max;
+			while ($start_search <= $end_search) {
+				push(@lJunctions_to_check, $vs_sorted->[$start_search]) if $start_search != $i;
+				$start_search++;
+			} 
+			$junction->{hash_noise_by_patient}->{$patient->name()} = get_hash_noise($junction, $patient, \@lJunctions_to_check);
+			$junction->get_noise_score($patient);
+			$junction->junction_score_without_dejavu_global($patient);
+			$junction->getHashSpliceAiNearStartEnd();
 		}
+		$i++;
 	}
 	
-	
-	foreach my $junction ( @{$vs } ) {
-		my $debug ;
-		next if ($junction->getChromosome->id() ne $chr->id());
+	foreach my $junction (@$vs_sorted) {
 		foreach my $patient (@{ $junction->getPatients() }) {
-			#check linked junctions - ri aval amont -
 			my $is_ri_aval = $junction->is_ri_aval($patient);
 			my $is_ri_amont = $junction->is_ri_amont($patient);
 			if ($is_ri_aval or $is_ri_amont) {
@@ -476,10 +382,12 @@ sub get_junctions_ids {
 				$to_check = 'ri_amont' if $is_ri_aval;
 				$to_check = 'ri_aval' if $is_ri_amont;
 				my $h_exons_introns = $junction->get_hash_exons_introns();
+				
 				foreach my $tid (sort keys %{$h_exons_introns}) {
 					my @lPos = (sort keys %{$h_exons_introns->{$tid}->{by_pos}});
 					my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[0]};
 					my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{$lPos[-1]};
+					
 					if (exists $h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$to_check}) {
 						my $other_junction_id = $h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron}->{$to_check};
 						$junction->{get_hash_junctions_linked_to_me}->{$patient->name()}->{$other_junction_id}->{$tid}->{$first_exon_intron} = $h_ri_aval_amont->{$patient->name()}->{$tid}->{$first_exon_intron};
@@ -493,11 +401,6 @@ sub get_junctions_ids {
 		}
 		
 		my $hv;
-		my $array_patients;
-		my $aho = [];
-		my $ap  = [];
-		
-		# line to prepare dejavu global;
 		my $ref = ref($junction);
 		if ($ref eq 'GenBoJunction'){
 			bless $junction , 'GenBoJunctionCache';
@@ -507,7 +410,6 @@ sub get_junctions_ids {
 		delete $junction->{patients_object};
 		delete $junction->{genes_object};
 		delete $junction->{coverage_obj};
-		
 		eval {
 			$hv->{obj}   = compress( freeze($junction) );
 		};
@@ -526,4 +428,62 @@ sub get_junctions_ids {
 	}
 	my @sort = sort { $a->{start} <=> $b->{start} or $a->{end} <=> $b->{end} } @all;
 	return (\@sort),$ids;
+}
+
+sub sort_list_junctions_by_positions {
+	my ($vs) = @_;
+	my (@vs_sorted, $h_junctions_list_ids);
+	my $i = 0;
+	foreach my $junction ( @{$vs } ) {
+		my $pos = $junction->start();
+		$h_junctions_list_ids->{$pos}->{$i} = undef;
+		$i++;
+	}
+	foreach my $pos (sort {$a <=> $b} keys %$h_junctions_list_ids) {
+		foreach my $id (keys %{$h_junctions_list_ids->{$pos}}) {
+			push(@vs_sorted, $vs->[$id]);
+		}
+	}
+	return \@vs_sorted;
+}
+
+sub get_hash_noise {
+	my ($junction, $patient, $list_junctions_to_check) = @_;
+	my $h_noise;
+	my $intspan_self = $junction->getStrictGenomicSpan();
+	my $h_exons_introns = $junction->get_hash_exons_introns;
+	foreach my $junction2 (@$list_junctions_to_check) {
+		my $has_this_patient;
+		foreach my $pat (@{$junction2->getPatients()}) {
+			$has_this_patient = 1 if $pat->name() eq $patient->name();
+		}
+		next if not $has_this_patient;
+		my $h_exons_introns_2 = $junction2->get_hash_exons_introns;
+		if ($h_exons_introns_2) {
+			foreach my $tid (keys %{$h_exons_introns_2}) {
+				next if $tid eq 'by_pos';
+				next unless (exists $h_exons_introns->{$tid});
+				my @lPos = (sort keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}});
+				next if (@lPos == 0);
+				foreach my $pos (keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}}) {
+					if (exists $h_exons_introns->{$tid}->{by_pos}->{$pos}) {
+						my $jid2 = $junction2->id();
+						$jid2 =~ s/_RI//;
+						$jid2 =~ s/_SE//;
+						$h_noise->{$tid}->{$pos}->{$jid2} = undef;
+						$h_noise->{all}->{$jid2} = undef;
+					}
+				}
+			}
+		}
+		my $intspan_this = $junction2->getStrictGenomicSpan();
+		my $inter1 = $intspan_self->intersection( $intspan_this );
+		if (not $inter1->is_empty()) {
+			my $jid2 = $junction2->id();
+			$jid2 =~ s/_RI//;
+			$jid2 =~ s/_SE//;
+			$h_noise->{all}->{$jid2} = undef;
+		}
+	}
+	return 	$h_noise;
 }

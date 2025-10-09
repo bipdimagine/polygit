@@ -39,6 +39,7 @@ my $export_xls			 = $cgi->param('export_xls');
 my $session_id			 = $cgi->param('session_id');
 my $fork			 	 = $cgi->param('fork');
 my $put_cache			 = $cgi->param('put_cache');
+my $force				 = $cgi->param('force');
 
 my $only_junctions_NDA   = $cgi->param('only_junctions_NDA');
 my $only_junctions_DA    = $cgi->param('only_junctions_DA');
@@ -140,7 +141,7 @@ if (not $only_html_cache and not $put_cache and not $only_gene_name and not $onl
 	my $no_cache_2 = $patient->get_lmdb_cache("r");
 	my $h_html    = $no_cache_2->get_cache($cache_html_id);
 	#TODO: supress cache html
-	#$h_html=undef;
+	$h_html=undef if $force;
 	$no_cache_2->close();
 	if ($h_html) {
 		if ($view_polyviewer) {
@@ -1002,11 +1003,12 @@ sub get_html_spliceAI_cmd_button {
 				my @lValues;
 				foreach my $this_type (sort keys %{$h->{$this_pos}->{$this_alt}->{$this_gname}}) {
 					my $value = $h->{$this_pos}->{$this_alt}->{$this_gname}->{$this_type};
-					my $this_color = 'black';
+					my $this_color = 'white';
 					$this_color = 'green' if ($value*100) >= 20;
 					$this_color = 'orange' if ($value*100) >= 50;
 					$this_color = '#e74c3c' if ($value*100) >= 80;
-					if ($value > 0) { push(@lValues, '<button><span style=\"color:'.$this_color.'\">'.$hTypes->{$this_type}.':'.$value.'</span></button>'); }
+					if ($value*100 >= 20) { push(@lValues, '<button style=\"background-color:'.$this_color.'\"><span style=\"color:white\">'.$hTypes->{$this_type}.':'.$value.'</span></button>'); }
+					else { push(@lValues, '<button><span>'.$hTypes->{$this_type}.':'.$value.'</span></button>'); }
 				}
 				if (scalar @lValues > 0) {
 					my @ltmp;
@@ -1027,11 +1029,7 @@ sub get_html_spliceAI_cmd_button {
 
 sub get_html_spliceAI {
 	my ($junction) = @_;
-
-	
-	#TODO: faire splice_AI;
 	my $h_spai = $junction->getHashSpliceAiNearStartEnd();
-	
 	my $color = 'black';
 	my $html = $cgi->start_table(
 		{
@@ -1201,41 +1199,23 @@ sub get_html_transcripts {
 		$this_html_tr .= $cgi->td( "<center>" . $t->ccds_name() . "</center>" );
 		$this_html_tr .= $cgi->td( "<center>" . $t->appris_type() . "</center>" );
 		my @lPos = ( sort keys %{ $h_exons_introns->{$tid}->{by_pos} } );
-		my $first_exon_intron =
-		  $h_exons_introns->{$tid}->{by_pos}->{ $lPos[0] };
-		my $last_exon_intron =
-		  $h_exons_introns->{$tid}->{by_pos}->{ $lPos[-1] };
+		my $first_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{ $lPos[0] };
+		my $last_exon_intron = $h_exons_introns->{$tid}->{by_pos}->{ $lPos[-1] };
 		my ( $first_style_color, $last_style_color );
 
 		if ($is_junction_linked) {
 			foreach my $other_j_id (@junctions_ids_linked) {
-				$first_style_color = "style='background-color:$bcolor;'"
-				  if (
-					exists $junction->get_hash_junctions_linked_to_me
-					->{ $patient->name() }->{$other_j_id}->{$tid}
-					->{$first_exon_intron} );
-				$last_style_color = "style='background-color:$bcolor;'"
-				  if (
-					exists $junction->get_hash_junctions_linked_to_me
-					->{ $patient->name() }->{$other_j_id}->{$tid}
-					->{$last_exon_intron} );
+				$first_style_color = "style='background-color:$bcolor;'" if ( exists $junction->get_hash_junctions_linked_to_me->{ $patient->name() }->{$other_j_id}->{$tid}->{$first_exon_intron} );
+				$last_style_color = "style='background-color:$bcolor;'" if ( exists $junction->get_hash_junctions_linked_to_me->{ $patient->name() }->{$other_j_id}->{$tid}->{$last_exon_intron} );
 				if ( $first_style_color or $last_style_color ) {
-
 					#NEW
-					$h_junctions_linked->{ $junction->id() } =
-					  $h_var_linked_ids->{ $junction->id() }->{vector_id};
-					foreach my $other_id (
-						keys
-						%{ $h_var_linked_ids->{ $junction->id() }->{linked_to} }
-					  )
-					{
+					$h_junctions_linked->{ $junction->id() } = $h_var_linked_ids->{ $junction->id() }->{vector_id};
+					foreach my $other_id ( keys %{ $h_var_linked_ids->{ $junction->id() }->{linked_to} } ) {
 						$h_junctions_linked->{$other_j_id} =
-						  $h_var_linked_ids->{$other_j_id}->{vector_id};
+						$h_var_linked_ids->{$other_j_id}->{vector_id};
 					}
-					$h_junctions_exons_introns->{$tid}->{$first_exon_intron} =
-					  undef;
-					$h_junctions_exons_introns->{$tid}->{$last_style_color} =
-					  undef;
+					$h_junctions_exons_introns->{$tid}->{$first_exon_intron} = undef;
+					$h_junctions_exons_introns->{$tid}->{$last_style_color} = undef;
 
 					my $this_chr = $junction->getChromosome();
 					my $i        = $junction->vector_id();
@@ -1244,42 +1224,18 @@ sub get_html_transcripts {
 					while ( $i >= $min ) {
 						my $junction2 = $this_chr->getVarObject($i);
 						$i--;
-						next
-						  if (
-							not $junction2->get_hash_junctions_linked_to_me() );
+						next if (not $junction2->get_hash_junctions_linked_to_me() );
 
-						my @lPos = (
-							sort keys %{
-								$junction2->get_hash_exons_introns->{$tid}
-								  ->{by_pos}
-							}
-						);
-						my $first_exon_intron_2 =
-						  $junction2->get_hash_exons_introns->{$tid}->{by_pos}
-						  ->{ $lPos[0] };
-						my $last_exon_intron_2 =
-						  $junction2->get_hash_exons_introns->{$tid}->{by_pos}
-						  ->{ $lPos[-1] };
-						next
-						  if (
-							not exists $h_junctions_exons_introns->{$tid}
-							->{$first_exon_intron_2}
-							and not exists $h_junctions_exons_introns->{$tid}
-							->{$last_exon_intron_2} );
+						my @lPos = (sort keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}});
+						my $first_exon_intron_2 = $junction2->get_hash_exons_introns->{$tid}->{by_pos}->{ $lPos[0] };
+						my $last_exon_intron_2 = $junction2->get_hash_exons_introns->{$tid}->{by_pos}->{ $lPos[-1] };
+						next if (not exists $h_junctions_exons_introns->{$tid}->{$first_exon_intron_2} and not exists $h_junctions_exons_introns->{$tid}->{$last_exon_intron_2} );
 
 						foreach my $other_jid ( keys %$h_junctions_linked ) {
-							if (
-								exists
-								$junction2->get_hash_junctions_linked_to_me
-								->{ $patient->name() }->{$other_jid}->{$tid} )
-							{
-								$h_junctions_linked->{ $junction2->id() } =
-									$this_chr->id() . '-'
-								  . $junction2->vector_id();
-								$h_junctions_exons_introns->{$tid}
-								  ->{$first_exon_intron_2} = undef;
-								$h_junctions_exons_introns->{$tid}
-								  ->{$last_exon_intron_2} = undef;
+							if (exists $junction2->get_hash_junctions_linked_to_me->{ $patient->name() }->{$other_jid}->{$tid} ) {
+								$h_junctions_linked->{ $junction2->id() } =$this_chr->id() .'-'. $junction2->vector_id();
+								$h_junctions_exons_introns->{$tid}->{$first_exon_intron_2} = undef;
+								$h_junctions_exons_introns->{$tid}->{$last_exon_intron_2} = undef;
 								$min -= 5;
 								$min = 0 if ( $min < 0 );
 							}
@@ -1287,60 +1243,25 @@ sub get_html_transcripts {
 					}
 					$i = $junction->vector_id();
 					my $max = $junction->vector_id() + 15;
-					$max = $this_chr->size_vector()
-					  if ( $max >= $this_chr->size_vector() );
+					$max = $this_chr->size_vector() if ( $max >= $this_chr->size_vector() );
 					while ( $i < $max ) {
 						my $junction2 = $this_chr->getVarObject($i);
 						$i++;
-						next
-						  if (
-							not $junction2->get_hash_junctions_linked_to_me() );
+						next if ( not $junction2->get_hash_junctions_linked_to_me() );
 
-						my @lPos = (
-							sort keys %{
-								$junction2->get_hash_exons_introns->{$tid}
-								  ->{by_pos}
-							}
-						);
-						my $first_exon_intron_2 =
-						  $junction2->get_hash_exons_introns->{$tid}->{by_pos}
-						  ->{ $lPos[0] };
-						my $last_exon_intron_2 =
-						  $junction2->get_hash_exons_introns->{$tid}->{by_pos}
-						  ->{ $lPos[-1] };
-
-						next
-						  if (
-							not exists $h_junctions_exons_introns->{$tid}
-							->{$first_exon_intron_2}
-							and not exists $h_junctions_exons_introns->{$tid}
-							->{$last_exon_intron_2} );
+						my @lPos = ( sort keys %{$junction2->get_hash_exons_introns->{$tid}->{by_pos}} );
+						my $first_exon_intron_2 = $junction2->get_hash_exons_introns->{$tid}->{by_pos}->{ $lPos[0] };
+						my $last_exon_intron_2 = $junction2->get_hash_exons_introns->{$tid}->{by_pos}->{ $lPos[-1] };
+						next if (not exists $h_junctions_exons_introns->{$tid}->{$first_exon_intron_2} and not exists $h_junctions_exons_introns->{$tid}->{$last_exon_intron_2} );
 
 						foreach my $other_jid ( keys %$h_junctions_linked ) {
-							if (
-								exists
-								$junction2->get_hash_junctions_linked_to_me
-								->{ $patient->name() }->{$other_jid}->{$tid} )
-							{
-								next
-								  if (
-									scalar keys %{
-										$junction2
-										  ->get_hash_junctions_linked_to_me
-										  ->{ $patient->name() }->{$other_jid}
-										  ->{$tid}
-									} == 0
-								  );
-								$h_junctions_linked->{ $junction2->id() } =
-									$this_chr->id() . '-'
-								  . $junction2->vector_id();
-								$h_junctions_exons_introns->{$tid}
-								  ->{$first_exon_intron_2} = undef;
-								$h_junctions_exons_introns->{$tid}
-								  ->{$last_exon_intron_2} = undef;
+							if ( exists $junction2->get_hash_junctions_linked_to_me->{ $patient->name() }->{$other_jid}->{$tid} ) {
+								next if (scalar keys %{$junction2->get_hash_junctions_linked_to_me->{ $patient->name() }->{$other_jid}->{$tid}} == 0);
+								$h_junctions_linked->{ $junction2->id() } = $this_chr->id() . '-'. $junction2->vector_id();
+								$h_junctions_exons_introns->{$tid}->{$first_exon_intron_2} = undef;
+								$h_junctions_exons_introns->{$tid}->{$last_exon_intron_2} = undef;
 								$max += 5;
-								$max = $this_chr->size_vector()
-								  if ( $max >= $this_chr->size_vector() );
+								$max = $this_chr->size_vector() if ( $max >= $this_chr->size_vector() );
 							}
 						}
 					}
@@ -1351,10 +1272,24 @@ sub get_html_transcripts {
 			$h_junctions_color->{$jid} = $bcolor;
 		}
 		my $j_linked = join( ',', sort values %$h_junctions_linked );
-		$h_junctions_linked = undef;
+		#$h_junctions_linked = undef;
 		my $my_junction_id = $junction->id();
-		my $cmd_linked =
-qq{view_linked_junctions(\"$patient_name\",\"$tid\",\"$j_linked\",\"$my_junction_id\",\"$min_score\")};
+		
+#		if (scalar keys %$h_junctions_linked > 0) {
+#			warn "\n\n";
+#			foreach my $g (@{$junction->getGenes()}) {
+#				warn $g->external_name();
+#			}
+#			warn $my_junction_id;
+#			warn $patient_name;
+#			warn $tid;
+#			warn $min_score;
+#			warn $j_linked;
+#			warn Dumper $h_junctions_linked;
+#			die;
+#		}
+		
+		my $cmd_linked = qq{view_linked_junctions(\"$patient_name\",\"$tid\",\"$j_linked\",\"$my_junction_id\",\"$min_score\")};
 		if ( scalar(@lPos) == 1 ) {
 			if ($first_style_color) {
 				$this_html_tr .= "<td colspan='2' $first_style_color>"
