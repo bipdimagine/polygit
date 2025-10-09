@@ -616,16 +616,43 @@ sub getGenes {
 	return \@lGenes_default;
 }
 
+has hash_noise_by_patient => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		return {};
+	},
+);
+
 sub get_hash_noise {
 	my ($self, $patient) = @_;
+	return $self->hash_noise_by_patient->{$patient->name()} if exists $self->hash_noise_by_patient->{$patient->name()};
 	return;
 }
 
+has hash_noise_score_by_patient => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		return {};
+	}
+);
+
 sub get_noise_score {
 	my ($self, $patient) = @_;
-	my $h_noise = $self->get_hash_noise($patient);
+	if (exists $self->hash_noise_score_by_patient->{$patient->name()}) {
+		my $max = $self->hash_noise_score_by_patient->{$patient->name()}->{max};
+		my $all = $self->hash_noise_score_by_patient->{$patient->name()}->{all};
+		return ($max, $all);
+	}
 	my $max_noise_in_tr = 0;
-	return $max_noise_in_tr unless $h_noise;
+	my $noise_all = 0;
+	my $h_noise = $self->get_hash_noise($patient);
+	unless ($h_noise) {
+		$self->{hash_noise_score_by_patient}->{$patient->name()}->{max} = 0;
+		$self->{hash_noise_score_by_patient}->{$patient->name()}->{all} = 0;
+		return ($max_noise_in_tr, $noise_all);
+	}
 	foreach my $enst (keys %{$h_noise}) {
 		next if $enst eq 'all';
 		foreach my $pos (keys %{$h_noise->{$enst}}) {
@@ -633,7 +660,9 @@ sub get_noise_score {
 			$max_noise_in_tr = $this_noise if $this_noise > $max_noise_in_tr;
 		}
 	}
-	my $noise_all = scalar keys %{$h_noise->{all}};
+	$noise_all = scalar keys %{$h_noise->{all}};
+	$self->{hash_noise_score_by_patient}->{$patient->name()}->{max} = $max_noise_in_tr;
+	$self->{hash_noise_score_by_patient}->{$patient->name()}->{all} = $noise_all;
 	return ($max_noise_in_tr, $noise_all);
 }
 
@@ -709,40 +738,47 @@ sub junction_score_penality_new_junction {
 	return $self->hash_scores_penality->{new_junction}->{$patient->name()};
 }
 
+
+has hash_scores_penality_noise => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		return {};
+	},
+);
+
 sub junction_score_penality_noise {
 	my ($self, $patient) = @_;
-	return 0;
-	
-	#TODO: here
+	return $self->hash_scores_penality_noise->{$patient->name()} if exists $self->hash_scores_penality_noise->{$patient->name()};
 	my ($max_noise_in_tr, $noise_global) = $self->get_noise_score($patient);
-	my ($penality_1, $penality_2, $penality_3, $penality_4, $penality_5) = (8, 6, 5, 3, 2);
 	my $length = $self->length();
+	my $score = 0;
 	if ($length >= 10000) {
-		if ($max_noise_in_tr >= 30) { return 3; }
-		elsif ($max_noise_in_tr >= 20) { return 2; }
-		elsif ($max_noise_in_tr >= 15) { return 1; }
+		if ($max_noise_in_tr >= 30) { $score = 3; }
+		elsif ($max_noise_in_tr >= 20) { $score = 2; }
+		elsif ($max_noise_in_tr >= 15) { $score = 1; }
 	}
 	elsif ($length >= 1000) {
-		if ($max_noise_in_tr >= 30) { return 4; }
-		elsif ($max_noise_in_tr >= 25) { return 3; }
-		elsif ($max_noise_in_tr >= 20) { return 2.5; }
-		elsif ($max_noise_in_tr >= 15) { return 1.5; }
-		elsif ($max_noise_in_tr >= 10) { return 1; }
+		if ($max_noise_in_tr >= 30) { $score = 4; }
+		elsif ($max_noise_in_tr >= 25) { $score = 3; }
+		elsif ($max_noise_in_tr >= 20) { $score = 2.5; }
+		elsif ($max_noise_in_tr >= 15) { $score = 1.5; }
+		elsif ($max_noise_in_tr >= 10) { $score = 1; }
 	}
 	else {
-		if ($max_noise_in_tr >= 30) { return 8; }
-		elsif ($max_noise_in_tr >= 25) { return 6; }
-		elsif ($max_noise_in_tr >= 20) { return 5; }
-		elsif ($max_noise_in_tr >= 15) { return 6; }
-		elsif ($max_noise_in_tr >= 10) { return 2; }
-		elsif (defined($noise_global) and $noise_global >= 30) { return 4; }
-		elsif (defined($noise_global) and $noise_global >= 25) { return 3; }
-		elsif (defined($noise_global) and $noise_global >= 20) { return 2; }
-		elsif (defined($noise_global) and $noise_global >= 15) { return 1.5; }
-		elsif (defined($noise_global) and $noise_global >= 10) { return 1; }
+		if ($max_noise_in_tr >= 30) { $score = 8; }
+		elsif ($max_noise_in_tr >= 25) { $score = 6; }
+		elsif ($max_noise_in_tr >= 20) { $score = 5; }
+		elsif ($max_noise_in_tr >= 15) { $score = 6; }
+		elsif ($max_noise_in_tr >= 10) { $score = 2; }
+		elsif (defined($noise_global) and $noise_global >= 30) { $score = 4; }
+		elsif (defined($noise_global) and $noise_global >= 25) { $score = 3; }
+		elsif (defined($noise_global) and $noise_global >= 20) { $score = 2; }
+		elsif (defined($noise_global) and $noise_global >= 15) { $score = 1.5; }
+		elsif (defined($noise_global) and $noise_global >= 10) { $score = 1; }
 	}
-	
-	return 0;
+	$self->{hash_scores_penality_noise}->{$patient->name()} = $score;
+	return $score;
 }
 
 sub junction_score_penality_dejavu {
@@ -916,7 +952,7 @@ has hash_in_this_run_patients => (
 
 sub in_this_run_patients {
 	my($self,$ratio,$patient) = @_;
-	$ratio =0 unless $ratio;
+	$ratio = 0 if not defined($ratio);
 	my $hash = $self->hash_in_this_run_patients->{$ratio};
 	if ($patient){
 		delete $hash->{$patient->getFamily->name()} if exists $hash->{$patient->getFamily->name()};
@@ -995,8 +1031,11 @@ sub getHashSpliceAiNearStartEnd {
 	my ($self) = @_;
 	my $h;
 	return $h if $self->isCanonique();
-	my ($max_start_score, $max_start_infos, $h_start_details) = $self->getHashSpliceAiInInterval($self->start() - 5, $self->start() + 5);
-	my ($max_end_score, $max_end_infos, $h_end_details) = $self->getHashSpliceAiInInterval($self->end() - 5, $self->end() + 5);
+	
+	
+	
+	my ($max_start_score, $max_start_infos, $h_start_details) = $self->getHashSpliceAiInInterval($self->start() - 10, $self->start() + 10);
+	my ($max_end_score, $max_end_infos, $h_end_details) = $self->getHashSpliceAiInInterval($self->end() - 10, $self->end() + 10);
 
 	if ($max_start_score > 0) {
 		$h->{start}->{max_score} = $max_start_score;
@@ -1011,8 +1050,21 @@ sub getHashSpliceAiNearStartEnd {
 	return $h;
 }
 
+has hash_spliceaI_values => (
+	is		=> 'rw',
+	lazy 	=> 1,
+	default	=> sub {
+		return {};
+	},
+);
+
 sub getHashSpliceAiInInterval {
 	my ($self, $start, $end) = @_;
+	if (exists $self->hash_spliceaI_values->{$start.'-'.$end}) {
+		my $max_score = $self->hash_spliceaI_values->{$start.'-'.$end}->{max_score};
+		my $max_score_infos = $self->hash_spliceaI_values->{$start.'-'.$end}->{max_score_infos};
+		return ($max_score, $max_score_infos, $self->hash_spliceaI_values->{$start.'-'.$end}->{all});
+	}
 	my @lPositions = ($start..$end);
 	my $i = $start;
 	my $max_score = 0;
@@ -1022,11 +1074,12 @@ sub getHashSpliceAiInInterval {
 	foreach my $pos (@lPositions) {
 		foreach my $alt ('A', 'T', 'G', 'C') {
 			my $rid = sprintf("%010d", $pos).'!'.$alt;
-			my $h2 =  $chr->rocksdb("spliceAI")->spliceAI($rid); ##
+			my $h2 = $chr->rocksdb("spliceAI")->spliceAI($rid);
 			next if not $h2;
 			foreach my $gene_name (keys %{$h2}) {
 				foreach my $type ( "AG", "AL", "DG", "DL" ) {
 					my $score = $h2->{$gene_name}->{$type};
+					$self->{hash_spliceaI_values}->{$start.'-'.$end}->{all}->{$pos}->{$alt}->{$gene_name}->{$type} = $score;
 					if ($score > $max_score) {
 						$max_score = $score;
 						$max_score_infos = $chr->id().':'.$pos.';'.$alt.';'.$type.':'.$score;
@@ -1035,7 +1088,9 @@ sub getHashSpliceAiInInterval {
 			}
 		}
 	}
-	return ($max_score, $max_score_infos, $h);
+	$self->{hash_spliceaI_values}->{$start.'-'.$end}->{max_score} = $max_score;
+	$self->{hash_spliceaI_values}->{$start.'-'.$end}->{max_score_infos} = $max_score_infos;
+	return ($max_score, $max_score_infos, $self->hash_spliceaI_values->{$start.'-'.$end}->{all});
 }
 
 
