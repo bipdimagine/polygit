@@ -4844,6 +4844,23 @@ sub transcriptsCoverageLite {
 	return $self->{transcriptsCoverageSqlite};
 }
 
+
+sub hotspot_rocks {
+	my ( $self,$mode ) = @_;
+	if ($mode eq "close"){
+		
+		$self->{rocks}->{"hotspot_rocks"}->close();
+		delete $self->{rocks}->{"hotspot_rocks"};
+	}
+	return $self->{rocks}->{"hotspot_rocks"} if exists $self->{rocks}->{"hotspot_rocks"};
+	my $rocks_dir = $self->getCoverageDir() . "/hotspot/";
+	
+	$self->{rocks}->{"hotspot_rocks"} =  GenBoNoSqlRocks->new(dir=>$rocks_dir,mode=>$mode,name=>$self->name);
+	warn $self->{rocks}->{"hotspot_rocks"};
+	return $self->{rocks}->{"hotspot_rocks"} ;
+}
+
+
 has lmdbGenBo => (
 	is      => 'rw',
 	lazy    => 1,
