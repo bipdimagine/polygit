@@ -157,8 +157,18 @@ $project->in_this_run_patients();
 $project->preload_patients();
 $project->exomeProjectsId();
 
-	$project->disconnect();
 my $t = time;
+
+
+foreach my $patient (@{$project->getPatients()}) {
+	next unless $patient->isGenome;
+	$patient->nb_reads();
+	$patient->normalized_reads();
+}
+warn "end nbreads => time:".abs(time - $t);
+
+$project->disconnect();
+
 foreach my $region (values @$regions) {
 	$cpt++;
 	unless ( exists $region->{chromosome} ) {
@@ -170,6 +180,7 @@ foreach my $region (values @$regions) {
 	
 
 	my $pid = $pm->start and next;
+	$project->disconnect();
 #	warn 'BEFORE '.$cpt.'/'.scalar(@$regions).'  -  '.$region->{start}." ".$region->{end};
 	my $time_start = time;
 	my $hres = {};
@@ -330,6 +341,11 @@ sub get_ids {
 	my $t = time;
 #	warn '   - check variants';
 	my $vs = $reference->getStructuralVariations;
+	
+	warn "end ".abs(time - $t).$reference->name;
+	$t = time;
+	
+	
 	my @arocksid = map {$_->rocksdb_id} @$vs;
 	
 	if (scalar(@$vs) > 0 and @arocksid){
@@ -352,6 +368,8 @@ sub get_ids {
 		}
 	}
 	
+	warn "end prepare => time:".abs(time - $t).' - '.$reference->name." ==> ".scalar(@{$vs });
+	my $tloop =time;
 	
 	$t =time;
 	my $nb = 0;
@@ -366,7 +384,8 @@ sub get_ids {
 		
 		my $debug ;
 		$nb ++;
-		warn $nb."/".scalar @{$vs } if $nb %5000 == 0; 
+		#warn $nb."/".scalar @{$vs } if $nb %5000 == 0;
+		warn $nb."/".scalar @{$vs }." time: ".abs(time - $tloop) if $nb %5000 == 0; 
 		
 		if ($variation->type =~ /inversion/ ){
 		 $debug =1;
@@ -423,6 +442,9 @@ sub get_ids {
 		$vp->{hpatients} ={};
 		$vp->{patients_id} = [];
 		my $dvp;
+		
+		
+		warn " before setPatients - time: ".abs(time - $tloop) if $nb %5000 == 0; 
 		foreach my $pat (@{$variation->getPatients}){
 			
 			foreach my $p (@{$pat->getFamily()->getMembers}){
@@ -433,6 +455,9 @@ sub get_ids {
 				$vp->{patients_calling}->{$p->id} =$h; 
 			}
 		}
+		warn " after setPatients - time: ".abs(time - $tloop) if $nb %5000 == 0; 
+		
+		warn $nb."/".scalar @{$vs }." time: ".abs(time - $tloop) if $nb %5000 == 0; 
 		
 		# line to prepare dejavu global;
 		my $ref = ref($variation);
@@ -486,77 +511,80 @@ sub get_ids {
 		
 	}
 	
-#	warn '   - check junctions';
-	my $js = $reference->getJunctions;
+	warn "end loop => time:".abs(time - $tloop)." - ".$reference->name." ==> ".scalar(@{$vs });
 	
-	my $h_ri_aval_amont;
-	foreach my $junction ( @{$js } ) {
-		next if (not $junction->type =~ /junction/ );
-		my $debug ;
-		$nb ++;
-#		warn $nb."/".scalar @{$js } if $nb %30000 == 0; 
-		$junction->id();
-		$junction->name();
-		$junction->annex();
-		$junction->setPatients();
-		#$junction->get_hash_exons_introns();
-		
-		my $vp =  PolyviewerVariant->new();
-		$vp->setLmdbJunction($junction);
-		$vp->{hgenes} = {};
-		$vp->{genes_id} = [];
-		my $code =0;
-		foreach my $g (@{$junction->getGenes}){
-			my $h = $vp->set_gene_junction($junction,$g);
-			$h->{code} = $code;
-			$vp->{hgenes}->{$g->{id}} = $h;
-			
-			push(@{$vp->{genes_id}},$g->{id});
-			$code ++;
-		}
-		##############
-		#	next;
-		##############0
-		$vp->{hpatients} ={};
-		$vp->{patients_id} = [];
-		my $dvp;
-		foreach my $pat (@{$junction->getPatients}){
-			
-			foreach my $p (@{$pat->getFamily()->getMembers}){
-				
-				next if exists $dvp->{$p->id};
-				$dvp->{$p->id} ++;
-				my $h = $vp->set_patient_cache($junction,$p);
-				$vp->{patients_calling}->{$p->id} =$h; 
-			}
-		}
-		bless $junction , 'GenBoJunctionCache';
-		my $t = 0;
-		
-		$hpolyviewer->{$junction->rocksdb_id} = $vp;
-#		delete $junction->{annex};
-		delete $junction->{array_dejavu};
-		delete $junction->{references_object};
-		delete $junction->{dejaVuInfosForDiag2};
-		delete $junction->{coverage_obj};
-		delete $junction->{buffer};
-		delete $junction->{project};
-		
-		$hvariant->{$junction->rocksdb_id} = $junction;
-		
-		warn $junction->id;
-		
-		
-
-
-
-	}
+#	warn '   - check junctions';
+#	my $js = $reference->getJunctions;
+#	
+#	my $h_ri_aval_amont;
+#	foreach my $junction ( @{$js } ) {
+#		next if (not $junction->type =~ /junction/ );
+#		my $debug ;
+#		$nb ++;
+##		warn $nb."/".scalar @{$js } if $nb %30000 == 0; 
+#		$junction->id();
+#		$junction->name();
+#		$junction->annex();
+#		$junction->setPatients();
+#		#$junction->get_hash_exons_introns();
+#		
+#		my $vp =  PolyviewerVariant->new();
+#		$vp->setLmdbJunction($junction);
+#		$vp->{hgenes} = {};
+#		$vp->{genes_id} = [];
+#		my $code =0;
+#		foreach my $g (@{$junction->getGenes}){
+#			my $h = $vp->set_gene_junction($junction,$g);
+#			$h->{code} = $code;
+#			$vp->{hgenes}->{$g->{id}} = $h;
+#			
+#			push(@{$vp->{genes_id}},$g->{id});
+#			$code ++;
+#		}
+#		##############
+#		#	next;
+#		##############0
+#		$vp->{hpatients} ={};
+#		$vp->{patients_id} = [];
+#		my $dvp;
+#		foreach my $pat (@{$junction->getPatients}){
+#			
+#			foreach my $p (@{$pat->getFamily()->getMembers}){
+#				
+#				next if exists $dvp->{$p->id};
+#				$dvp->{$p->id} ++;
+#				my $h = $vp->set_patient_cache($junction,$p);
+#				$vp->{patients_calling}->{$p->id} =$h; 
+#			}
+#		}
+#		bless $junction , 'GenBoJunctionCache';
+#		my $t = 0;
+#		
+#		$hpolyviewer->{$junction->rocksdb_id} = $vp;
+##		delete $junction->{annex};
+#		delete $junction->{array_dejavu};
+#		delete $junction->{references_object};
+#		delete $junction->{dejaVuInfosForDiag2};
+#		delete $junction->{coverage_obj};
+#		delete $junction->{buffer};
+#		delete $junction->{project};
+#		
+#		$hvariant->{$junction->rocksdb_id} = $junction;
+#		
+#		warn $junction->id;
+#		
+#		
+#
+#
+#
+#	}
 #	warn "   - end objs  ". $region->{start}." ".$region->{end};
 	
 #	warn "   - before save  ". $region->{start}." ".$region->{end};
 	$project->disconnect();
 	
 	
+	warn "  begin add rocks => time:".abs(time - $tloop)." - ".$reference->name." ==> ".scalar(@{$vs });
 	my $no_polyviewer = $rg_polyviewer->nosql_rocks($region);
 	my $no = $rg->nosql_rocks($region);
 	foreach my $k (keys %$hpolyviewer){
@@ -565,6 +593,7 @@ sub get_ids {
 	}
 	$no_polyviewer->close;
 	$no->close;
+	warn "  end add rocks => time:".abs(time - $tloop)." - ".$reference->name." ==> ".scalar(@{$vs });
 #	warn "   - end variant  ". $region->{start}." ".$region->{end};
 	return;
 }

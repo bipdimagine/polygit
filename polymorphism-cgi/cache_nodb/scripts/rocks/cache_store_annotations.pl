@@ -622,7 +622,6 @@ sub get_annotations {
 			my $r = $variation->getRatio($p);
 			my $results = $tree_ratio->fetch(0,($r)+1);
 			foreach my $cat (@$results){
-				warn $cat;
 				$hpatients->{$p->name}->{$cat}->add($lmdb_index);
 			}
 			my $results2 = $tree_ratio_lower->fetch($r,101);
