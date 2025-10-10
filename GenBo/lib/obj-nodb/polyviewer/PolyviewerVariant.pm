@@ -585,12 +585,12 @@ sub set_patient_cache {
 			$hh->{gt} = $vh->getSequencingGenotype($p);
 			$hh->{norm_depth} = $vh->getNormDP($p);
 			$hh->{dude_score} = $vh->getCNVDude($p);
-			$hh->{pr} = $vh->pr($p);
-			$hh->{sr} = $vh->sr($p);
+			#TODO: ne semble plus utile 
+#			$hh->{pr} = $vh->pr($p);
+#			$hh->{sr} = $vh->sr($p);
 			$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
 			$hh->{norm_depth_after} = $vh->getNormDPAfter($p);
 			#$hh->{log2_ratio} =  $vh->getLog2Ratio($p);
-			
 		}
 		elsif ($vh->isDude){
 			my $primers = $p->getProject->getPrimersByPosition($vh->getChromosome,$vh->start,$vh->end);

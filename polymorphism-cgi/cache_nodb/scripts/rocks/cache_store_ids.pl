@@ -442,6 +442,9 @@ sub get_ids {
 		$vp->{hpatients} ={};
 		$vp->{patients_id} = [];
 		my $dvp;
+		
+		
+		warn " before setPatients - time: ".abs(time - $tloop) if $nb %5000 == 0; 
 		foreach my $pat (@{$variation->getPatients}){
 			
 			foreach my $p (@{$pat->getFamily()->getMembers}){
@@ -452,6 +455,9 @@ sub get_ids {
 				$vp->{patients_calling}->{$p->id} =$h; 
 			}
 		}
+		warn " after setPatients - time: ".abs(time - $tloop) if $nb %5000 == 0; 
+		
+		warn $nb."/".scalar @{$vs }." time: ".abs(time - $tloop) if $nb %5000 == 0; 
 		
 		# line to prepare dejavu global;
 		my $ref = ref($variation);
@@ -578,6 +584,7 @@ sub get_ids {
 	$project->disconnect();
 	
 	
+	warn "  begin add rocks => time:".abs(time - $tloop)." - ".$reference->name." ==> ".scalar(@{$vs });
 	my $no_polyviewer = $rg_polyviewer->nosql_rocks($region);
 	my $no = $rg->nosql_rocks($region);
 	foreach my $k (keys %$hpolyviewer){
@@ -586,6 +593,7 @@ sub get_ids {
 	}
 	$no_polyviewer->close;
 	$no->close;
+	warn "  end add rocks => time:".abs(time - $tloop)." - ".$reference->name." ==> ".scalar(@{$vs });
 #	warn "   - end variant  ". $region->{start}." ".$region->{end};
 	return;
 }
