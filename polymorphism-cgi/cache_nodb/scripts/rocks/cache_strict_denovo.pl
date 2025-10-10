@@ -55,6 +55,7 @@ my $nbErrors = 0;
 my $buffer = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name, -cache => '1', -typeFilters => 'familial' );
+$project->getFamilies();
 my $limit = 5;
 if ($project->isGenome){
 	$limit = 3;
@@ -108,6 +109,8 @@ my $tall = time;
 my $fork_samtools = 10;
 my $fm_fork = int($fork/$fork_samtools);
 $fm_fork = 1 if $fm_fork == 0;
+$project->getPatients();
+$project->disconnect();
 my $pm = new Parallel::ForkManager($fm_fork);
 
 foreach my $family (@{$project->getFamilies()}) {
@@ -275,13 +278,20 @@ warn "--------------------------------------------------------";
 $tall = time ;
 #my $no = $chr->flush_rocks_vector("r");
 my $rocks4 = $chr->rocks_vector("w");
+warn $project;
 foreach my $family (@{$project->getFamilies()}) {
+	warn $family->name;
+	warn $family->project;
 	foreach my $children  (@{$family->getChildren}){
+		warn "\t".$children->name();
 		my $vector_denovo =  $rocks4->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
 		my @bits = $vector_denovo->Index_List_Read();
-			my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
-			 $rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vdenovo);
+		warn "\t".$children->name();
+		my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
+		warn "\t end".$children->name();
+		 $rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vdenovo);
 	}
+	warn "denf ".$family->name;;
 }
 
 warn "--------------------------------------------------------";
@@ -312,8 +322,8 @@ sub construct_strict_denovo {
 				my $var = $no->get_index($vector_id);
 				my $debug;
 				$debug =1 if $var ->start  == 61190109;
-				
-				
+				#next if $var->name =~/dup/;
+				warn $var->name ;
 				my $percent;
 				my $r = $var->getRatio($children);
 				if ($r > 40 ) {
@@ -324,12 +334,15 @@ sub construct_strict_denovo {
 					$local_limit = 3;
 				}
 				if ($var->isCnv && $var->isSrPr){
+					warn "coucou";
 					my $to_keep  = 0;
 						foreach my $parent (@{$family->getParents()}) {
+							warn "\t\t toto";
 								 $to_keep += check_cnv($var,$children,$parent,$chr);	
 									last  if ($to_keep == 0 );
 								}
 							$vdenovo->Bit_On($vector_id) if $to_keep == 2;
+					warn "end";		
 						}
 					elsif ($var->isSrPr){
 						my $to_keep = 0 ;
@@ -385,15 +398,16 @@ sub construct_strict_denovo {
 
 sub check_cnv {
 	my ($var,$children,$parent) = @_;
-	my $debug;
+	my $debug =1;
 	$debug =1 if $var->gnomad_id eq '17-78064045-del-187';
 	$debug =1 if $var->name eq '17-78064045-del-187';
+	warn "xxx";
 	my $dp = $var->getNormDP($parent);
 	my $dpc = $var->getNormDP($children);
 	warn " dp parent ".$dp." ".$dpc if $debug == 1; 
-	return 0 if $var->getMeanDP($parent) < 5;
+	return 0 if $parent->meanDepth($chr->name,$var->start,$var->end) < 5;
 	return 0 if $dp < 5; 
-	
+	warn "yyy";
 	$dpc = 0.00000001 if $dpc == 0; 
 	
 	my $pc = int((($dpc-$dp)/$dpc)*100);
