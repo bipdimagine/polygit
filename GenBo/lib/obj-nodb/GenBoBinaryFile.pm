@@ -224,7 +224,7 @@ sub _unpacksum {
 }
 
 sub _getSum {
-		my($self,$chr,$start,$end,$sintspan) = @_;
+		my($self,$chr,$start,$end,$sintspan,$patient) = @_;
 		confess() if $end <= $start;
 		my $z = $self->tree($chr)->fetch($start,$end);
 		my $sum =0;
@@ -267,6 +267,11 @@ sub _getSum {
 			}
 		
 			my ($s1,$n1) = $self->_unpacksum($forward,$sid->{type},$c,$l);
+			
+			if ($patient) {
+				$s1 = int($s1/$patient->normalized_reads *100)/100;
+			}
+			
 			$sum += $s1;
 			$nb += $n1;
 			#@t = unpack($forward.$sid->{type}."$l",$c);
@@ -307,6 +312,19 @@ sub getDepth {
 	return $self->_getDepth($chr,$start,$end,$sintspan);
 #	die() unless exists $self->index->{$name};
 }
+
+sub getMeanNormalize {
+	my($self,$chr,$start,$end,$patient) = @_;
+	die() unless $chr;
+	die() unless $patient;
+	confess('ici') unless $start;
+	die() unless $end;
+	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
+	my ($sum,$nb) = $self->_getSum($chr,$start,$end,$sintspan,$patient);
+	return $sum/(abs($start-$end)+1);
+#	die() unless exists $self->index->{$name};
+}
+
 sub getMean {
 	my($self,$chr,$start,$end) = @_;
 	die() unless $chr;
@@ -317,6 +335,7 @@ sub getMean {
 	return $sum/(abs($start-$end)+1);
 #	die() unless exists $self->index->{$name};
 }
+
 sub getSum {
 	my($self,$chr,$start,$end) = @_;
 	confess() unless $chr;

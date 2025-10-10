@@ -557,9 +557,9 @@ sub set_patient_cache {
 		$hh->{pr} = undef;
 		$hh->{sr} = undef;
 		unless ($vh->existsPatient($p)){
-			$hh->{norm_depth} = $vh->getNormDP($p);
 			$hh->{dp} = $vh->getDP($p);
 			if ($vh->isSrPr or $vh->isDude){
+				$hh->{norm_depth} = $vh->getNormDP($p);
 				$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
 				$hh->{norm_depth_after} = $vh->getNormDPAfter($p);
 			}
