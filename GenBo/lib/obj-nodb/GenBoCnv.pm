@@ -499,18 +499,18 @@ sub list_same_cnv {
 }
 
 
-sub dejaVuInfosForDiag2 {
-	my ($self,$key) = @_;
-	delete $self->{project};
-	delete $self->{buffer};
-	unless (exists $self->{array_dejavu}) {
-		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
-		$self->{array_dejavu} = $self->return_dejavu;
-	}
-	return $self->{array_dejavu} unless $key;
-	my $index = $self->buffer->index_dejavu($key);
-	return  $self->{array_dejavu}->[$index];
-}
+#sub dejaVuInfosForDiag2 {
+#	my ($self,$key) = @_;
+#	delete $self->{project};
+#	delete $self->{buffer};
+#	unless (exists $self->{array_dejavu}) {
+#		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
+#		$self->{array_dejavu} = $self->return_dejavu;
+#	}
+#	return $self->{array_dejavu} unless $key;
+#	my $index = $self->buffer->index_dejavu($key);
+#	return  $self->{array_dejavu}->[$index];
+#}
 sub return_dejavu {
 	my $self = shift;
 	my $project = $self->project;	
