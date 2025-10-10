@@ -2728,6 +2728,7 @@ sub is_multiplex_ok {
 #}
 
 
+
 sub hotspot {
 	my ($self, $fork) = @_;
 	$fork = 1 if not $fork;
@@ -2736,6 +2737,8 @@ sub hotspot {
 	return if not -e $file;
 	my $bam = $self->getAlignmentFile();
 	my $h = $self->getCapture->hotspots;
+	
+	my $tmp = "/data-beegfs/tmp/";
 	my $t =time;
 	
 	my $nb   = int( scalar(keys %{$h}) / $fork + 1 );
@@ -2761,13 +2764,17 @@ sub hotspot {
 		}
 	);
 	$self->project->buffer->dbh_deconnect();
+	my $bam_obj = Bio::DB::HTS->new(-bam => $bam,-fasta => $self->project->genomeFasta);
 	
+	
+	
+			my $t1   = time;
 	while ( my @tmp = $iter->() ) {
 		$self->project->disconnect();
-		my $pid = $pm->start and next;
-		my $bam_obj = Bio::DB::HTS->new(-bam => $bam,-fasta => $self->project->genomeFasta);
+	#	my $pid = $pm->start and next;
+		
 		my $hres;
-		my $t   = time;
+
 		foreach my $id (@tmp) {
 			my @ltmp = split('_', $h->{$id}->{genbo_id});
 			my $chr_name = $ltmp[0];
@@ -2782,12 +2789,18 @@ sub hotspot {
 			$hash->{'INS'} = 0;
 			$hash->{'DEL'} = 0;
 			
+			
+			
+			
+			
 			#ATTENTION: le start presente un decalage d une base (+1) apr rapport au BED. Samtools + bed = demarage a 0 donc decalage d une base
 			my $end = $start+1;
 			my $region = $chr->fasta_name.":".($start-1)."-".$end; 
+			my $t = time;
 			$bam_obj->pileup($region, sub {
 	    		my ($seqid, $pos, $pileups) = @_;
 				return if $pos != $start;
+				warn $pos;
 	    		foreach my $p (@$pileups) {
 	        	next if $p->is_refskip;  # ignorer les sauts de type 'N' (RNA-seq)
 	
@@ -2812,12 +2825,12 @@ sub hotspot {
 			$hash->{'GENBO_ID'} = $h->{$id}->{'genbo_id'};
 			$hash->{'PROT'} = $h->{$id}->{'protid'};
 			my $gid = $h->{$id}->{gene};
-			push(@{$hres->{res}->{$gid}}, $hash);	
+			push(@{$res->{res}->{$gid}}, $hash);	
 		}
-		$pm->finish( 0, $hres );
+		#$pm->finish( 0, $hres );
 	}
-	$pm->wait_all_children();
-	return $res;
+	#$pm->wait_all_children();
+	return $res->{res};
 }
 sub _hotspot {
 	my $self = shift;
