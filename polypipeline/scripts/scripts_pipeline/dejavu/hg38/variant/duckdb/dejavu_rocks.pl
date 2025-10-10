@@ -56,11 +56,12 @@ GetOptions(
 my $buffer = new GBuffer;
 die ("version ?") unless $version;
  
-my $dir_final = "/data-beegfs/dejavu/rocks-".$version.'/';
+my $dir_final = "/data-beegfs/tmp/rocks-".$version.'.pn/';
 #my $dir_final = '/data-isilon/DejaVu/'.uc($version).'/variations/';
 
  $| = 1;
 my $rg38 = GenBoNoSqlRocksGenome->new(chunk_size=>10_000_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);
+my $rg38_1 = GenBoNoSqlRocksGenome->new(chunk_size=>10_000_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);
 my $regionss = $rg38->regions();
 #save_regions($regionss->[0]);
 #die();
@@ -106,7 +107,7 @@ sub save_regions {
  	my $end_string =$end;
  	my $sql_file = "/tmp/".$region->{id}."sql";
  	my $string_chr = $chr."!";
-	my $sql = qq {PRAGMA threads=8;COPY (
+	my $sql = qq {PRAGMA threads=4;COPY (
           SELECT pos38,allele, STRING_AGG(project || ';' || he || ';' || ho, ';') AS value
           FROM read_parquet('$ff') where chr38 = '$chr' and  pos38 between '$start_string' and '$end_string' 
           GROUP BY pos38,allele order by pos38 
@@ -126,30 +127,83 @@ sub save_regions {
 print $fh $sql;
 close($fh);
 # Exécuter DuckDB avec le fichier SQL
-system("duckdb < $sql_file");
+system("/software/bin/duckdb < $sql_file");
 unlink $sql_file;
+
 #unlink $file1;
 #return;
 my $rocks =  $rg38->nosql_rocks_tmp($region);
 open(CSV ,"zstdcat $file1 | ")  or die "Impossible d'ouvrir $file1 : $!";;
 my $xx;
 $rocks->put_batch_raw("xx","zz");
+
+
+
+my $sql = q{
+    SELECT p2.phenotype_id, p2.project_id
+    FROM PolyPhenotypeDB.phenotype AS p1
+    JOIN PolyPhenotypeDB.phenotype_project AS p2
+      ON p1.phenotype_id = p2.phenotype_id
+};
+
+# Préparation et exécution
+my $dbh = $buffer->dbh;
+my $sth = $dbh->prepare($sql);
+$sth->execute();
+
+# Création de la table de hash : project_id ? [ phenotype_id list ]
+my $project_to_pheno;
+my $pheno;
+while (my $row = $sth->fetchrow_hashref) {
+    my $project_id   = $row->{project_id};
+    my $phenotype_id = $row->{phenotype_id};
+    
+   # $project_to_pheno->{$project_id}->{$phenotype_id} = 0;
+    push @{ $project_to_pheno->{$project_id} }, $phenotype_id;
+}
+
+$sth->finish;
+$dbh->disconnect;
+
+
+
 while(my $line = <CSV>){
 	$xx++;
 	chomp($line);
 	my($a,$c,$b) = split(",",$line);
 	next if $c eq "allele";
-	my @z= split(";",$b);
-	if (scalar(@z)%3 >0 ){
-		warn $b;
+	my @z = split(";",$b);
+		my $pheno_final;
+	for (my $i = 0; $i < @z; $i += 3) {
+	 unless (exists $project_to_pheno->{$z[$i]}) {
+	 		$pheno_final->{-1}->{project} ++;
+			$pheno_final->{-1}->{he} += $z[$i+1];
+			$pheno_final->{-1}->{h0} += $z[$i+2];
+			next;
+	 	}
+	
+		foreach my $pheno (@{$project_to_pheno->{$z[$i]}} ){
+			$pheno_final->{$pheno}->{project} ++;
+			$pheno_final->{$pheno}->{he} += $z[$i+1];
+			$pheno_final->{$pheno}->{h0} += $z[$i+2];
+		}
 	}
-	my $v = pack("w*",split(";",$b));
+	my @vs ; 
+	foreach my $k (keys %$pheno_final){
+		$pheno_final->{$k}->{ho} += 0;
+		$k +=0;
+		push(@vs,($k,$pheno_final->{$k}->{project},$pheno_final->{$k}->{he},$pheno_final->{$k}->{ho}));
+	}
+	#warn  $b unless @vs;
+	my $v = pack("w*",@z);
+	my $v2 = pack("w*",@vs);
 	my ($chr,$pos) = split("!",$a);
 	$rocks->put_batch_raw(sprintf("%010d", $a)."!".$c,$v);
 }
 close (CSV);
 $rocks->close();
 warn "end $xx ".$region->{id};
+warn $file1;
 unlink $file1;
 return;
 
