@@ -2888,6 +2888,7 @@ sub getCNVDude {
 	my ($self,$patient) = @_;
 	my $pid = $patient->id;
 	return "??" unless exists  $self->dp_infos->{$pid};
+	return "??" if scalar @{$self->dp_infos->{$pid}} == 0;
 	return "??" if $self->dp_infos->{$pid}->[2] eq "-";
 	return  $self->buffer->log2($self->dp_infos->{$pid}->[2]/100);
 }

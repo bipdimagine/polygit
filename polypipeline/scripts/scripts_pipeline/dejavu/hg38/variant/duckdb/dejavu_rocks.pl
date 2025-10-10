@@ -55,9 +55,14 @@ GetOptions(
 );
 my $buffer = new GBuffer;
 die ("version ?") unless $version;
+<<<<<<< HEAD
  
 my $dir_final = "/data-beegfs/tmp/rocks-".$version.'.pn/';
 #my $dir_final = '/data-isilon/DejaVu/'.uc($version).'/variations/';
+=======
+
+my $dir_final = $buffer->config_path("root","dejavu").'/'.uc($version).'/variations/rocks/';
+>>>>>>> branch 'duckdb' of https://github.com/bipdimagine/polygit.git
 
  $| = 1;
 my $rg38 = GenBoNoSqlRocksGenome->new(chunk_size=>10_000_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);

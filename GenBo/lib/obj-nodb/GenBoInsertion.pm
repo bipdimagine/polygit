@@ -346,10 +346,8 @@ has isDuplication => (
 	default=> sub {
 	my ($self) = @_;
 	my $seq1 = $self->sequence();
-	return if $seq1 =~ /\+/;
+	return if $seq1 =~ /[^ACTGactg]/;
 	my $seq2 = $self->getChromosome()->getSequence($self->start-2,$self->start+$self->length+5);
-		
-	 #warn "dup".$self->id." ".$seq1." ".$self->length.$seq2  if $seq2 =~ /$seq1/;
 	return 1 if $seq2 =~ /$seq1/;
 	return ;
 	},
