@@ -1,7 +1,7 @@
 
 [root]
 public_data:/data-isilon/public-data/
-dejavu:/data-isilon/DejaVu/
+dejavu:/data-pure/public-data/dejavu//
 dejavu_projects:/data-isilon/DejaVu/
 dejavu_parquet:/data-isilon/DejaVu/projects_parquet/
 singularity:/data-beegfs/software/sif/
