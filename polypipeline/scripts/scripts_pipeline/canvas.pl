@@ -59,12 +59,9 @@ if ($bam =~ /\.cram/){
 
 my $dd .="$dirout/".$patient->name().".".time;
 system("mkdir -p $dirout");
-<<<<<<< HEAD
-if (-e "$dd" ){
-=======
+
 warn $dd;
 if (-e"$dd" ){
->>>>>>> refs/remotes/origin/pnitschk1
 	system("rm -r $dd/*");
 }
 my $dir_canvas=  $project->dirGenome()."/canvas/";
