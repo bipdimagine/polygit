@@ -26,19 +26,13 @@ sub dejaVuInfosForDiag2 {
 		
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
-#		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
-#		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 		
 	if (exists $self->{cad}){
 		my $a = delete $self->{cad}; #aka compress dejavu for diag
-		#my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
-	#	$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 		my @aa = unpack("w*",$a);
 		my $m = max (@aa);
 		confess() if $m > 1000000;
-	#	warn Dumper @aa;
-	#	die();
-	 $self->{array_dejavu} = \@aa;
+	 	$self->{array_dejavu} = \@aa;
 	}
 	return $self->{array_dejavu} unless $key;
 	my $index = $self->buffer->index_dejavu($key);

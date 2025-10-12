@@ -55,42 +55,78 @@ GetOptions(
 );
 my $buffer = new GBuffer;
 die ("version ?") unless $version;
-<<<<<<< HEAD
+
+
+
+
+my $sql = q{
+    SELECT p2.phenotype_id, p2.project_id
+    FROM PolyPhenotypeDB.phenotype AS p1
+    JOIN PolyPhenotypeDB.phenotype_project AS p2
+      ON p1.phenotype_id = p2.phenotype_id
+};
+
+# Préparation et exécution
+my $dbh = $buffer->dbh;
+my $sth = $dbh->prepare($sql);
+$sth->execute();
+
+# Création de la table de hash : project_id ? [ phenotype_id list ]
+my $project_to_pheno;
+my $pheno;
+while (my $row = $sth->fetchrow_hashref) {
+    my $project_id   = $row->{project_id};
+    my $phenotype_id = $row->{phenotype_id};
+    
+   # $project_to_pheno->{$project_id}->{$phenotype_id} = 0;
+    push @{ $project_to_pheno->{$project_id} }, $phenotype_id;
+}
+
+$sth->finish;
+$dbh->disconnect;
  
-my $dir_final = "/data-beegfs/tmp/rocks-".$version.'.pn/';
 #my $dir_final = '/data-isilon/DejaVu/'.uc($version).'/variations/';
-=======
 
 my $dir_final = $buffer->config_path("root","dejavu").'/'.uc($version).'/variations/rocks/';
->>>>>>> branch 'duckdb' of https://github.com/bipdimagine/polygit.git
-
+my $dir_final_pheno = $buffer->config_path("root","dejavu").'/'.uc($version).'/variations.phentotype/rocks/';
  $| = 1;
 my $rg38 = GenBoNoSqlRocksGenome->new(chunk_size=>10_000_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);
-my $rg38_1 = GenBoNoSqlRocksGenome->new(chunk_size=>10_000_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);
+my  $r_pheno = GenBoNoSqlRocks->new(mode=>"c",pipeline=>1,dir=>$dir_final_pheno, name=>$chr);
+
 my $regionss = $rg38->regions();
 #save_regions($regionss->[0]);
 #die();
 MCE::Loop->init(
-   max_workers => $fork, chunk_size => 'auto'
+   max_workers => 'auto', chunk_size => 1,
+    gather => sub {
+        my ($mce, $data) = @_;
+        foreach my $id (keys %$data){
+        	$r_pheno->put_batch_raw($id,$data->{$id});
+		}
+    }
 );
 if (scalar(@$regionss) ==1){
 		save_regions($regionss->[0]);
 		exit(0);
 }
+
 mce_loop {
    my ($mce, $chunk_ref, $chunk_id) = @_;
    if (ref($chunk_ref) ne "ARRAY") {
-   	save_regions($chunk_ref);
+   my $hash = 	save_regions($chunk_ref);
+    MCE->gather($chunk_id,$hash);
    }
    else {
    foreach my $region (@$chunk_ref){
-		save_regions($region)
+		my $hash =save_regions($region);
+		  MCE->gather($chunk_id,$hash);
 	}
    }
    	
 } sort{$a->{start} <=> $b->{start}} @{$regionss};
-
-
+$r_pheno->close();
+warn $dir_final;
+warn $dir_final_pheno;
 exit(0);
 
 
@@ -142,35 +178,7 @@ open(CSV ,"zstdcat $file1 | ")  or die "Impossible d'ouvrir $file1 : $!";;
 my $xx;
 $rocks->put_batch_raw("xx","zz");
 
-
-
-my $sql = q{
-    SELECT p2.phenotype_id, p2.project_id
-    FROM PolyPhenotypeDB.phenotype AS p1
-    JOIN PolyPhenotypeDB.phenotype_project AS p2
-      ON p1.phenotype_id = p2.phenotype_id
-};
-
-# Préparation et exécution
-my $dbh = $buffer->dbh;
-my $sth = $dbh->prepare($sql);
-$sth->execute();
-
-# Création de la table de hash : project_id ? [ phenotype_id list ]
-my $project_to_pheno;
-my $pheno;
-while (my $row = $sth->fetchrow_hashref) {
-    my $project_id   = $row->{project_id};
-    my $phenotype_id = $row->{phenotype_id};
-    
-   # $project_to_pheno->{$project_id}->{$phenotype_id} = 0;
-    push @{ $project_to_pheno->{$project_id} }, $phenotype_id;
-}
-
-$sth->finish;
-$dbh->disconnect;
-
-
+my $hh;
 
 while(my $line = <CSV>){
 	$xx++;
@@ -179,21 +187,27 @@ while(my $line = <CSV>){
 	next if $c eq "allele";
 	my @z = split(";",$b);
 		my $pheno_final;
+		my $ptotal;
 	for (my $i = 0; $i < @z; $i += 3) {
+		$ptotal->{project} ++;
+		$ptotal->{he} += $z[$i+1];
+		$ptotal->{ho} += $z[$i+2];
 	 unless (exists $project_to_pheno->{$z[$i]}) {
-	 		$pheno_final->{-1}->{project} ++;
-			$pheno_final->{-1}->{he} += $z[$i+1];
-			$pheno_final->{-1}->{h0} += $z[$i+2];
+	 		$pheno_final->{0}->{project} ++;
+			$pheno_final->{0}->{he} += $z[$i+1];
+			$pheno_final->{0}->{h0} += $z[$i+2];
 			next;
 	 	}
 	
 		foreach my $pheno (@{$project_to_pheno->{$z[$i]}} ){
+			$hh->{$z[$i]} = 1; 
 			$pheno_final->{$pheno}->{project} ++;
 			$pheno_final->{$pheno}->{he} += $z[$i+1];
 			$pheno_final->{$pheno}->{h0} += $z[$i+2];
 		}
 	}
 	my @vs ; 
+	push(@vs,(99,$ptotal->{project},$ptotal->{he},$ptotal->{ho}));
 	foreach my $k (keys %$pheno_final){
 		$pheno_final->{$k}->{ho} += 0;
 		$k +=0;
@@ -203,6 +217,8 @@ while(my $line = <CSV>){
 	my $v = pack("w*",@z);
 	my $v2 = pack("w*",@vs);
 	my ($chr,$pos) = split("!",$a);
+	$hh->{sprintf("%010d", $a)."!".$c} = $v2;
+	
 	$rocks->put_batch_raw(sprintf("%010d", $a)."!".$c,$v);
 }
 close (CSV);
@@ -210,7 +226,7 @@ $rocks->close();
 warn "end $xx ".$region->{id};
 warn $file1;
 unlink $file1;
-return;
+return $hh; 
 
 		
 }

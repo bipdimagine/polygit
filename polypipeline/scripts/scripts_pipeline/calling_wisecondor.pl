@@ -71,10 +71,19 @@ my $patient = $project->getPatient($patient_name);
  my $npz =  $patient->fileWiseCondor();
  
  my $ref = $project->get_wisecondor_reference;
+ #warn $ref;
+ #die();
+ #5kb.nova.npz
+ #$ref = "/data-isilon/public-data/repository/HG38/wisecondor/novaseqx/5kb/5kb.npz";
+ my $blfile = $project->public_data_root . "/". $project->annotation_genome_version . "/wisecondor/blacklist.bed";
+ my $blacklist = "";
+ $blacklist = "--blacklist ".$blfile if -e $blfile;
+ warn $blacklist;
  #'"/data-beegfs/npz/reference/ref5Kb.npz";
+ #$ref = "/data-beegfs/wisecondor-ref/ref.5000.def.npz";
  my $out = $project->getCallingPipelineDir("wiseCondor")."/".$patient->name;
- warn $out;
- my $cmd = "$wise predict  $npz $ref $out --beta 1 --bed";
+ my $cmd = "$wise predict  $npz $ref $out --beta 1  --bed ".$blacklist;
+ warn $cmd;
  system("$cmd");
  
  my $bgzip = $buffer->software("bgzip");
