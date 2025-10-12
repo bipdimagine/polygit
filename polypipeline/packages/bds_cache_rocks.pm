@@ -24,7 +24,8 @@ sub isrocksOK{
 
 sub cache_store_duck {
 	my ($self,$hash) = @_;
-	my $filein = $hash->{filein};
+	#$hash->{filein};
+	my $filein =  $self->patient->project->rocks_directory("genbo")."1.genbo.rocks.rocksdb";
 	my $projectName = $self->project->name();
 	my $ppn = $self->nproc * 2 ;
 	my $type = "duck_cache_store";
@@ -44,7 +45,7 @@ sub cache_store_duck {
 
 sub tiny_rocks {
 	my ($self,$hash) = @_;
-	my $filein = $hash->{filein};
+	my $filein = $self->patient->project->rocks_directory()."/polyviewer_objects.rocksdb/CURRENT";
 	my $projectName = $self->project->name();
 	my $ppn = $self->nproc * 2 ;
 	my $type = "tiny_rocks";
@@ -174,7 +175,7 @@ sub polyviewer  {
 }
 
 sub merge_objects {
-		my ($self,$hash) = @_;
+	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
 	my $ppn = 5;
 	my $project = $self->project;
