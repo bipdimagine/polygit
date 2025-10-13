@@ -42,7 +42,6 @@ foreach my $chr ( @{$project->getChromosomes()} )
 	#next  if ($chr->not_used());
 	
 	my $chrname = $chr->name();
-	warn $chrname;
 	next if $chrname eq "MT";
 	
 	my $id = $chrname;

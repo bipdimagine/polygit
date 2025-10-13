@@ -1318,26 +1318,17 @@ has project_root_path => (
 	default => sub {
 		my $self     = shift;
 		my $dirNgs   = $self->buffer->config->{project_data}->{ngs};
-		my $pathRoot = $self->buffer->config_path("root","project_data");
+		my $pathRoot = $self->buffer->config_path("root","project_data-isilon");
 		my $path1    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
-		$self->makedir($path1);
-
-		# LN -S vers XFS
-		if ( exists $self->buffer->config->{project_data}->{alias}
-			and $self->buffer->config->{project_data}->{alias} ne '' )
-		{
-			my $pathAliasRoot = $self->buffer->config->{project_data}->{alias};
-			my $path2 = $pathAliasRoot . "/" . $dirNgs . "/" . $self->name();
-			unless ( -l $path2 ) {
-				if ( -d $path2 ) {
-					confess( $self->name
-						  . " \n\nERROR: [GenBoProject -> getProjectRootPath] Directory found but symbolic link expected... Die...\n\n  $path2 $pathAliasRoot\n\n"
-					);
-					die;
-				}
-				#system("ln -s $path1 $path2");
-			}
+		unless (-e $path1){
+			
+			$pathRoot = $self->buffer->config_path("root","project_data");
+			my $path2    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
+			$self->makedir($path2);
+			system("ln -s $path2 $path1") if $path2 ne $path1;
+			return $path2;
 		}
+		#$self->makedir($path1);
 		return $path1;
 	},
 );
@@ -6089,6 +6080,8 @@ has deja_vu_public_projects_parquet  => (
 	},
 );
 
+
+
 has lite_deja_vu_projects => (
 	is      => 'ro',
 	lazy    => 1,
@@ -6155,14 +6148,23 @@ has in_this_run_patients2 => (
 	},
 );
 
-
+has dejavu_parquet_file => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->buffer->dejavu_parquet_dir();
+		my $parquet = $dir."/".$self->name.".".$self->id.".parquet";
+		return $parquet;
+	},
+);
 
 has in_this_run_patients => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
-		my $self = shift;
-		my $h;
+	my $self = shift;
+	my $h;
 	my $res;
 	my $total = 0;
 	my $inthisrunp;
@@ -6302,6 +6304,7 @@ sub deja_vu_rocks_public_dir {
 	my ($self,$version,$type)= @_;
 	$type = "variations" unless $type;
 	$version = $self->genome_version_generic unless $version;
+	
 	my $root =  $self->buffer->deja_vu_public_dir($version,$type);
 	return $root;
 }

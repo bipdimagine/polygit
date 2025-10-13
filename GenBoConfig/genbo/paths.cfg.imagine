@@ -5,7 +5,8 @@ dejavu:/data-pure/public-data/dejavu/
 dejavu_projects:/data-isilon/DejaVu/
 dejavu_parquet:/data-pure/public-data/dejavu/projects_parquet/
 singularity:/data-beegfs/software/sif/
-project_data:/data-isilon/sequencing/
+project_data:/data-pure/sequencing/
+project_data-isilon:/data-isilon/sequencing/
 processed-data:/data-pure/processed-data/
 sequences-old:/data-isilon/data/sequences
 sequences:/data-pure/data/sequences
@@ -25,6 +26,7 @@ dejavu-cnv:/data-beegfs/projects.cnv.parquet.2/
 bcl:/data-pure/raw-data/
 [dejavu]
 variations:variations/rocks/
+phenotype:variations.phentotype/rocks/
 projects:variations/projects.lmdb/
 projects_lite:variations/projects/
 CNV:CNV/

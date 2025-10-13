@@ -4,6 +4,7 @@ dejavu:/poly-disk/DejaVu
 dejavu_projects:/poly-disk/DejaVu
 dejavu_parquet:/poly-disk/DejaVu/projects_parquet/
 project_data:/poly-disk/poly-data/
+project_data-isilon:/poly-disk/poly-data/
 project_files:/poly-disk/poly-data/FILES/
 sequences:/poly-disk/poly-data/sequences
 global_search:/poly-disk/polycache/global_search/
@@ -20,6 +21,7 @@ singularity:/data-beegfs/software/sif/
 
 [dejavu]
 variations:variations/rocks/
+phenotype:variations.phentotype/rocks/
 projects:variations/projects.lmdb/
 projects_lite:variations/projects/
 CNV:CNV/
