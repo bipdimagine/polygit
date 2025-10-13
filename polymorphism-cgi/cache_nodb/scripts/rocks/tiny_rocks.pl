@@ -33,7 +33,6 @@ use Scalar::Util qw(looks_like_number);
 use lib "$RealBin/../../../GenBo/lib/obj-nodb/polyviewer/";
 use PolyviewerVariant;
 use File::Slurp;
-use JSON::XS;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Storable qw(nstore store_fd nstore_fd freeze thaw dclone store);
 use List::Util qw(sum);

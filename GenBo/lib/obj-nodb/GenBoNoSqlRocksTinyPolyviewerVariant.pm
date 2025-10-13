@@ -330,6 +330,7 @@ sub get_polyviewer_variant {
      	  }
      	  }
      	  $self->update_clinvar_id($chr,$vp) if $vp->{clinvar};
+     	  warn Dumper $vp unless $vp->name;
      	  confess() unless $vp->name;
      	  
      	 #
@@ -437,12 +438,12 @@ sub transform_polyviewer_variant {
 			push(@{$res},$patient->getFamily->name);
 			push(@{$res},$p);
 			if (defined $vp->{isSrPr} && !(exists $vp->{level})) {
-			my $a = $patient->normalize_depth($chr->name,$vp->start,$vp->end);
-			$hash->{norm_depth} = int(sum(@$a)/scalar(@$a));
-			$a = $patient->normalize_depth($chr->name,$vp->start-5050,$vp->start-50);
-			$hash->{norm_depth_before} =  int(sum(@$a)/scalar(@$a));
-			$a = $patient->normalize_depth($chr->name,$vp->end+50,$vp->end+5050);
-			$hash->{norm_depth_after} =  int(sum(@$a)/scalar(@$a));
+			my $a = $patient->mean_normalize_depth($chr->name,$vp->start,$vp->end);
+			$hash->{norm_depth} = $a;#int(sum(@$a)/scalar(@$a));
+			$a = $patient->mean_normalize_depth($chr->name,$vp->start-5050,$vp->start-50);
+			$hash->{norm_depth_before} = $a;# int(sum(@$a)/scalar(@$a));
+			$a = $patient->mean_normalize_depth($chr->name,$vp->end+50,$vp->end+5050);
+			$hash->{norm_depth_after} =  $a;#int(sum(@$a)/scalar(@$a));
 			my $m =  int(($hash->{norm_depth_before} + $hash->{norm_depth_after})/2);
 			$hash->{norm_depth} += 0.001;
 			$m += 0.001;

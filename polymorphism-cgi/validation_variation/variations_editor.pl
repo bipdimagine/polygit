@@ -891,10 +891,11 @@ my $h_transmissions = {
 		$sql_frequence = "(".$sql_frequence.")";
 	}
 	my $sql_only_dm;
+	my $and = $suffix."_alt >-1";
 	if ($cgi->param('only_DM') && !($gene_name_filtering) ){
 		$sql_frequence = "";
 		$sql_gene = "";
-		$sql_only_dm = qq{(variant_isDM  = 1 or variant_isClinvarPathogenic =1)};
+		$sql_only_dm = qq{( $and and (variant_isDM  = 1 or variant_isClinvarPathogenic =1))};
 	}
 	
 	my $sql_where_and;
@@ -906,7 +907,8 @@ my $h_transmissions = {
 	my $where = join (" and ",@$sql_where_and);
 	
 	if ($cgi->param('keep_pathogenic') == 1 ){
-		$where .= "or (variant_keepPathogenic = 1) ";
+	
+		$where .= "or (variant_keepPathogenic = 1 and $and) ";
 	}
 	#!!!!!!!!!!!!!!!!
 	
