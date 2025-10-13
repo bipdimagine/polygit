@@ -3185,7 +3185,17 @@ sub print_dude_button {
 sub print_hotspot {
 	my ($patient, $panel) = @_;
 	my $fork = 3;
-	my $hotspots = $patient->hotspot($fork);
+	my $t =time ;
+	my $hotspots;
+	if (-e $patient->project->getCoverageDir() . "/hotspot/"){
+		my $r = $patient->project->hotspot_rocks("r");
+		$hotspots = $r->get($patient->id);
+	}
+	else {
+		$hotspots = $patient->hotspot($fork);
+	}
+	#my $hotspots = $patient->hotspot($fork);
+	warn "--hotspot -- ".abs(time -$t);
 	return "" unless $hotspots;
 	
 	my @ltmp = split('/', $patient->getCapture->hotspots_filename);

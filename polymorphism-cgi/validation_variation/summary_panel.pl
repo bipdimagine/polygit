@@ -807,6 +807,7 @@ qq{<button type="button" class ="btn btn-xs btn-primary "  $style_btn_name >$ir<
 	  $cgi->td( $class, qq{<button type="button$cc" $btn_class >$v3</button>} );
 	  
 	 $v3 = $cov->{'30x'};
+	 $v3 =0 unless $v3;
 	  $cc ="";
 	$cc ="-warning" if $v3 < 75;
 	$cc ="-alert" if $v3 < 60;
@@ -3906,9 +3907,7 @@ sub validation_table_new {
 		$color = "coral"   if $val->{validation} == 4;
 		$color = "#217DBB" if $val->{validation} == -3;
 		$color = "orange"  if $val->{validation} == 3;
-		warn $val->{polyid};
 		my $v = $project->_newVariant( $val->{polyid} );
-		warn $v->name;
 		#			 		 foreach my $g (@{$v->getGenes}){
 		#			 		 	warn $g->id." ".$k;
 		#			 		 }
