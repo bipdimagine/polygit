@@ -3398,6 +3398,7 @@ sub cnv_value_dude {
 
 sub sr_raw {
 	my ( $self, $chr, $start,$debug ) = @_;
+	confess();
 	my $samblaster = $self->buffer->software("samblaster");
 	my $extractSplitReads_BwaMem =  $self->buffer->software("extractSplitReads_BwaMem");
 	my $samtools = $self->buffer->software("samtools");
@@ -3421,6 +3422,7 @@ sub sr_raw {
 
 sub mean_align_quality {
 	my ( $self, $chr, $start, $end ) = @_;
+	confess();
 	#my $samblaster = $self->buffer->software("samblaster");
 	#my $extractSplitReads_BwaMem =  $self->buffer->software("extractSplitReads_BwaMem");
 

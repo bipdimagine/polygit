@@ -699,6 +699,8 @@ sub close {
 		if ( exists $self->{batch} ) {
 
 			#warn "write ".$self->path_rocks;
+			warn $self->name;
+			confess() unless $self->rocks;
 			$self->rocks->write( $self->batch );
 
 			#warn "end ".$self->path_rocks;
@@ -853,6 +855,24 @@ sub compress_vcf_position {
 sub stringify_pos {
 	my ($self,$pos) = @_;
 	return ($pos,sprintf("%010d", $pos));
+}
+
+sub dejavu_phenotype {
+	my($self,$id) = @_;
+	my $value = $self->get_raw($id);
+	my @tab = unpack("w*",$value);
+	my $hash;
+	my $nb = 0;
+	confess() if (scalar(@tab)%4) > 0;
+	my $x;
+	($x,$hash->{all}->{projects},$hash->{all}->{patients},$hash->{all}->{patients_ho})=  splice(@tab, 0, 4);
+	while (@tab){
+		my ($pid,$prj,$he,$ho)=  splice(@tab, 0, 4);
+		$hash->{$pid}->{projects} = $prj;
+		$hash->{$pid}->{patients} = $he;
+		$hash->{$pid}->{patients_ho} = $ho;
+	} 
+	return $hash;
 }
 
 sub DESTROY {

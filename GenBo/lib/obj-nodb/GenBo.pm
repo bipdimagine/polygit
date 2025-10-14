@@ -403,6 +403,7 @@ sub setChromosomes {
 
 sub getChromosomes {
 	my $self = shift;
+	warn Dumper $self unless $self->getProject();
 	confess($self->id) unless $self->getProject();
 	#warn $self->project->name;
 	#my @toto = grep {$_->karyotypeId =~ /KI/}   @{$self->getProject()->myflushobjects($self->chromosomes_object(), "chromosomes")};

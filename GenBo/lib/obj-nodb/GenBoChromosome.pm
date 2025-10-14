@@ -2196,13 +2196,99 @@ sub rocks_dejavu {
 	 return $self->project->{rocks}->{$name};
 }
 
-
+sub rocks_dejavu_phenotype {
+	my ( $self, $mode ) = @_;
+	$mode = "r" unless $mode;
+	my $name = "dejavu-".$mode.'-'.$self->name();
+	return $self->project->{rocks_phenotype}->{$name} if exists $self->project->{rocks_phenotype}->{$name};
+	my $dir = $self->project->deja_vu_rocks_public_dir(undef,"phenotype");
+	 $self->project->{rocks_phenotype}->{$name} = GenBoNoSqlRocks->new(dir=>$dir,mode=>$mode,name=>$self->name);
+	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
+	 return $self->project->{rocks_phenotype}->{$name};
+}
 
 sub getShortResumeDejaVuInfosForDiagforRocksId {
 	my ($self, $rocks_id) = @_;
 	
 }
+has already_in_dejavu => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $rocks = $self->rocks_dejavu_phenotype();
+		return $rocks->get($self->project->id);
+	},
+);
+sub old_already_in_dejavu {
+	my ($self, $project_id,$v) = @_;
+	return $self->{p_old_dejavu} if exists $self->{p_old_dejavu};
+	$self->{p_old_dejavu} ={};
+	my $parquet = $self->project->dejavu_parquet_file();
+	my $name = $self->name();
+	my $sql =qq{select pos38 as position ,allele,he,ho from '$parquet' where chr38=$name; };
+	if ($self->project->annotation_genome_version  eq 'HG19') {
+		$sql =qq{select pos19 as position ,allele,he,ho from '$parquet' where chr19=$name ; };
+	}
+	
+	my $cmd = qq{duckdb -json -c "$sql"};
+	my $res =`$cmd`;
+	my $array_ref = [];
+	$array_ref  = decode_json $res if $res;
+	
+	foreach my $d (@$array_ref){
+		my $id = sprintf("%010d", $d->{position})."!".$d->{allele};
+		$self->{p_old_dejavu}->{$id}->[0] = $d->{he};
+		$self->{p_old_dejavu}->{$id}->[1] = $d->{ho};
+	}
+	return $self->{p_old_dejavu};
+#	project │  chr38  │   pos38   │  chr19  │   pos19   │ allele  │ max_ratio │ max_dp │ transmissions │  he   │  ho   │       patients       │      dp_ratios       │
+#│  int64  │ varchar │   int64   │ varchar │   int64   │ varchar │   int64   │ int64  │    varchar    │ int64 │ int64 │       varchar        │       varchar
+}
 
+sub getDejaVuPhenotypeInfosForDiagforVariant{
+	my ($self, $v) = @_;
+	my $chr = $self;
+	my $phenotypes = $self->project->getPhenotypes();
+	my $rocks = $self->rocks_dejavu_phenotype();
+	my $hpheno = $rocks->dejavu_phenotype($v->rocksdb_id);
+	my $in_this_run_patients =  $self->project->in_this_run_patients;
+	my $nb_patients = 0;
+	my $nb_patients_ho = 0;
+	if ($self->already_in_dejavu){
+		my $aa = $self->old_already_in_dejavu->{$v->rocksdb_id};
+		$nb_patients = $aa->[0];
+		$nb_patients_ho = $aa->[1];
+	}
+	my $res;
+	unless ($hpheno){
+	$res->{similar_projects} = 0;
+	$res->{other_projects} = 0;
+	$res->{exome_projects} = 0;
+	$res->{other_patients} = 0;
+	$res->{exome_patients} = 0;
+	$res->{similar_patients} = 0;
+	$res->{other_patients_ho} = 0;
+	$res->{exome_patients_ho} = 0;
+	$res->{similar_patients_ho} = 0;
+	$res->{total_in_this_run_patients} = $in_this_run_patients->{nb_patients};
+	return $res;
+	}
+	
+	foreach my $p (@$phenotypes){
+		if (exists $hpheno->{$p->id}){
+			$res->{similar_patients} += ($hpheno->{$p->id}->{patients} - $nb_patients);
+			$res->{similar_patients_ho} += ($hpheno->{$p->id}->{patients_ho}- $nb_patients_ho);
+			$res->{similar_projects} += ($hpheno->{$p->id}->{projects} -1);
+		}
+	}
+	$res->{other_patients} += ($hpheno->{all}->{patients} - $res->{similar_patients}) ;
+	$res->{similar_patients_ho} += ($hpheno->{all}->{patients_ho} - $res->{similar_patients_ho});
+	$res->{similar_projects} += ($hpheno->{all}->{projects} - $res->{similar_project}); 
+	#$res->{total_similar_projects} =  scalar(keys %{$self->project->similarProjects()});
+	#$res->{total_similar_patients} =  $self->project->countSimilarPatients();
+	return $res;
+	}
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
 	my $chr = $self;

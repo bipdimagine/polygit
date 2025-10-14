@@ -357,8 +357,9 @@ sub deja_vu_public_dir {
 	confess() unless $version;
 	$type ="variations" unless $type;
 	return $self->{dj_pub_dir}->{$version}->{$type} if exists $self->{dj_pub_dir}->{$version}->{$type};
-	$self->{dj_pub_dir}->{$version}->{$type} =  $self->config_path("root","dejavu")."/".$version.'/'. "/".$self->config_path("dejavu",$type);
+	$self->{dj_pub_dir}->{$version}->{$type} =  $self->config_path("root","dejavu")."/".$version."/".$self->config_path("dejavu",$type);
 	return $self->{dj_pub_dir}->{$version}->{$type}  if -e $self->{dj_pub_dir}->{$version}->{$type};
+	
 	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_pub_dir}->{$version}->{$type} );
 }
 sub deja_vu_project_dir {

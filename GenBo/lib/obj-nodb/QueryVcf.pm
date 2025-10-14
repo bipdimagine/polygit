@@ -1289,7 +1289,6 @@ sub parseVcfFileForReference_gatk {
 		$vcf =
 		  Vcf->new( file => $file, tabix => $self->buffer->software("tabix") );
 	}
-
 	$vcf->parse_header();
 	my $type;
 	my ($find) =
@@ -1601,6 +1600,7 @@ sub parseVcfFileForReference_gatk {
 			my $freebayes_cigar = $cigars[$index] . "";
 			$allele->{cigar} = $freebayes_cigar;
 			$allele->{start} = $x->{'POS'};
+			warn $allele->{start}." ".$self->file if $allele->{start} == 110855123;
 			$allele->{alt}   = $vcfVarAllele;
 
 			$allele->{is_imprecise} = undef;

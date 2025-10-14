@@ -966,41 +966,6 @@ has patients_object => (
 );
 
 
-#sub deja_vu {
-#	my ($self) = @_;
-#	 return $self->getProject->getDejaVuInfos($self->id);
-#}
-#
-#has nb_deja_vu_projects =>(
-#	is		=> 'ro',
-#	lazy	=> 1,
-#	default => sub {
-#		my $self = shift;
-#		my $h = $self->getProject->getDejaVuInfos($self->id);
-#		my $nb = 0;
-#		foreach my $k (keys %$h){
-#			$nb += $h->{$k}->{nb};
-#		}
-#		$self->{nb_deja_vu_samples} = $nb;
-#		return scalar (keys %{$h});
-#	},
-#);
-#
-#has nb_deja_vu_samples=>(
-#	is		=> 'ro',
-#	lazy	=> 1,
-#	default => sub {
-#		my $self = shift;
-#		my $h = $self->getProject->getDejaVuInfos($self->id);
-#		$self->{nb_deja_vu_projects} = scalar (keys %{$h});
-#		my $nb = 0;
-#		foreach my $k (keys %$h){
-#			$nb += $h->{$k}->{nb};
-#		}
-#		return $nb;
-#	},
-#);
-
 
 has kyoto_id => (
 	is		=> 'rw',
@@ -1022,18 +987,7 @@ has gnomad_id => (
 	}
 	);
 
-#has vcf_first_base => (
-#	is		=> 'rw',
-#	lazy=> 1,
-#	default=> sub {
-#	my $self = shift;
-#	my $vn=$self->vcf_id;
-#	my ($pos,$a,$b) = split("_",$self->vcf_id);
-#	my @z = split($a);
-#	die() unless @z;
-#	return $z[0];
-#	}
-#);
+
 
 
 has vcf_id => (
@@ -2227,20 +2181,23 @@ sub scaledScoreVariant{
 	if ($self->isSrPr){
 	my $dp_before = $self->getNormDPBefore($patient);
 	my $dp_after = $self->getNormDPAfter($patient);
+	my $mean = ($dp_before+$dp_after)/2;
+	
 	my $dp = $self->getNormDP($patient);
 	$dp = 0,000001 if $dp == 0;
-	$scaled_score -= 0.5 if ($dp_before < 5 or $dp_after < 5);
+	my $ratio = $dp/$mean;
+	my $logratio = $self->buffer->log2($ratio);
+	$scaled_score -= 0.5 if ($mean < 10 );
 	$dp += 0.0001;
-	my $pcb = int((abs($dp_before-$dp)/$dp)*100);
-	my $pca = int((abs($dp_after-$dp)/$dp)*100);
-	$scaled_score -= 0.5 if $self->event_align_quality($patient) < 20;
+	#warn $dp_after." ".$dp_before." ".$dp." ".$logratio;
+	#$scaled_score -= 0.5 if $self->event_align_quality($patient) < 20;
 	if ($self->isDeletion) {
-		$scaled_score -= 0.5 if $pcb > -25;
-		$scaled_score -= 0.5 if $pca > -25;
+		$scaled_score -= 0.5 if $logratio < 0.2 ;
+		$scaled_score -= 0.5 if $logratio < 0.6 ;
 	}
 	elsif ($self->isLargeDuplication) {
-		$scaled_score -= 0.5 if $pcb < 25;
-		$scaled_score -= 0.5 if $pca < 25;
+		$scaled_score -= 0.5 if $logratio > -0.1 ;
+		$scaled_score -= 0.5 if $logratio > -0.25 ;
 	}
 	else {
 		 	my $sr1 = $self->sr1($patient);
@@ -2854,6 +2811,7 @@ sub getMeanDP {
 		my ($self,$patient,$method) = @_;
 		my $pid = $patient->id;
 		if ($self->isSrPr){
+			warn "cuicui";
 			return $self->split_read_infos->{$pid}->[6];
 		}
 		else {
@@ -3435,7 +3393,9 @@ sub dejavu_hash_projects_patients {
 sub dejaVuInfosForDiag2 {
 	my ($self,$key) = @_;
 	unless (exists $self->{array_dejavu}) {
+		#my $hash = $self->getChromosome->getDejaVuPhenotypeInfosForDiagforVariant($self);
 		my $hash = $self->getChromosome->getDejaVuInfosForDiagforVariant($self);
+		
 		$self->{array_dejavu} = $self->buffer->hash_to_array_dejavu($hash);
 	}
 

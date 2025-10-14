@@ -298,6 +298,7 @@ sub get_polyviewer_variant {
 	my $test = "1!75318";
 	my ($chr,$a)  =split("!",$id);
 	my $v = $self->rocksdb($chr,$self->patient->getFamily->id)->get($id);
+	die($id) unless $v;
 	my $vp = PolyviewerVariant->new() ;
      	foreach my $c (@{$self->columns("variants")}){
      		$vp->{$c} = shift @{$v->[0]};
@@ -331,7 +332,8 @@ sub get_polyviewer_variant {
      	  }
      	  $self->update_clinvar_id($chr,$vp) if $vp->{clinvar};
      	  warn Dumper $vp unless $vp->name;
-     	  confess() unless $vp->name;
+     	  warn $id  unless $vp->name;;
+     	  die() unless $vp->name;
      	  
      	 #
      	#}
@@ -356,6 +358,7 @@ sub load_polyviewer_variant {
 	my ($self) =@_;
 	my @chr = sort {$a cmp $b} keys %{$self->{list_index}};
  	$self->{rcache} = {};
+ 	my $error;
  	MCE::Loop::init {
     chunk_size => 'auto',
     max_workers => 'auto',
@@ -363,6 +366,15 @@ sub load_polyviewer_variant {
         my ($mce,$data) = @_;
         	@{$self->{rcache}}{keys %$data} = values %$data;
     	},
+    	   on_post_exit => sub {
+        my ($mce, $pid, $exit_code, $ident) = @_;
+        if ($exit_code != 0) {
+            warn "?? Worker $pid (ident=$ident) exited with error $exit_code\n";
+            $error ++;
+        } else {
+            print "? Worker $pid (ident=$ident) exited normally\n";
+        }
+    }
 	};
 
 	 mce_loop {
@@ -380,7 +392,7 @@ sub load_polyviewer_variant {
 	
 		} @chr;
  		MCE::Loop->finish;
- 	
+ 		confess() if $error;
  		#$self->set_cache($bufferpv);
 }
 
@@ -396,7 +408,6 @@ sub transform_polyviewer_variant {
 				
 		}
 		$array->[0] = $res1;
-	
 		#1-153043318-del-22892
         foreach my $g (keys %{$vp->{hgenes}}){
 			
@@ -432,7 +443,6 @@ sub transform_polyviewer_variant {
 			$hash->{name} = $patient->name;
 			#next unless $name;
 		#	my $patient= $project->getPatient($name);
-			
 			my $f = $patient->getFamily->id;
 			my $res;
 			push(@{$res},$patient->getFamily->name);

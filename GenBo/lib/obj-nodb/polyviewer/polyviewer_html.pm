@@ -1224,6 +1224,7 @@ sub dejavu {
 	 		pheno_name=>$self->short_phenotype,
 	 		genome=>$self->project->isGenome
 	 	};
+	 	
 	 my $output = $self->xslate->render("dejavu.tt", $data);
 	 return $output;
 		

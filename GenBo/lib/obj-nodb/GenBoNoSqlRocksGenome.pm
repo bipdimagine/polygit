@@ -214,7 +214,7 @@ sub nosql_rocks_read {
 sub _pile {
 	my ($self,$id) = @_;
 	$self->{array_rocksdb} = [] unless exists $self->{array_rocksdb};
-	if (scalar(@{$self->{array_rocksdb}} > 1)){
+	if (scalar(@{$self->{array_rocksdb}} > 10000)){
 		my $sid = shift(@{$self->{array_rocksdb}});
 		$self->chunks->{$sid}->{rocksdb}->close();
 		$self->chunks->{$sid}->{rocksdb} = undef;

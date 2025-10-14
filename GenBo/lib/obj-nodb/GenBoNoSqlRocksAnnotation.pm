@@ -289,6 +289,7 @@ sub prediction_score {
 	my $vraw = $self->get($id);
 	return  {sift=>"-",polyphen=>"-"} unless $vraw;
 	my $i = $self->AA->{$aa};
+	return  {sift=>"-",polyphen=>"-"}  unless $i;
 	return ({sift=>$vraw->[0]->[$i]*0.001,polyphen=>$vraw->[1]->[$i]*0.001});
 
 
