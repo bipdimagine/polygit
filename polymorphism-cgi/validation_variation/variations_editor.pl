@@ -952,6 +952,9 @@ sub get_rocksdb_mce_polyviewer_variant {
  	 my %ids ;
  	foreach my $a (@$array_ref) {
  		my ($c,$b) = split("!",$a->{variant_rocksdb_id});
+ 		if ($hash_genes_panel) {
+ 			next unless exists $hash_genes_panel->{$a->{gene_name}};
+ 		}
  		my $index = $a->{variant_index};
  		$rocksdb_pv->add_index($c,$index);
  		$id_by_genes_id->{$a->{gene_name}}->{$a->{variant_index}} ++;
