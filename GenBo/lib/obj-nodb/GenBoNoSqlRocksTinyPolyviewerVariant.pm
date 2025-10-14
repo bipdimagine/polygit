@@ -172,7 +172,8 @@ has dir =>(
 	default => sub {
 		my ($self) = @_;
 		
-		my $diro2 = $self->project->rocks_directory_beegfs()."/tiny_rocks/";
+		my $diro2 = $self->project->tiny_rocks_cache_dir;
+		
 		system("mkdir $diro2") unless -d $diro2;
 		return $diro2;
 	}

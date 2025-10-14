@@ -678,6 +678,19 @@ has rocks_cache_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+	#return "/rocks/NGS2025_08811/";
+	my $name = $self->rocks_cache_root_dir."/".$self->name();
+	$self->makedir($name);
+	return $name;
+	
+	}
+);
+
+has rocks_cache_root_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
 	#return "/rocks/NGS2025_08811/";	
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
@@ -685,7 +698,37 @@ has rocks_cache_dir => (
 	#$root ="/data-pure/polycache/rocks";
 	my $name = $root.'/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
 	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
-	$name .= "/".$self->name();
+	$self->makedir($name);
+	return $name;
+	
+	}
+);
+has rocks_cache_2_root_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+	#return "/rocks/NGS2025_08811/";	
+	my $genome_version = $self->genome_version();
+	my $annot_version = $self->annotation_version();
+	my $root= $self->buffer->config_path("root","cache_2");
+	#$root ="/data-pure/polycache/rocks";
+	my $name = $root.'/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
+	$self->makedir($name);
+	return $name;
+	
+	}
+);
+
+
+has tiny_rocks_cache_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+	my $self = shift;
+	my $name = $self->rocks_cache_2_root_dir();
+	$name.="/".$self->name."/tiny_rocks/";
 	$self->makedir($name);
 	return $name;
 	
@@ -697,7 +740,7 @@ has parquet_cache_dir => (
 	lazy    => 1,
 	default => sub {
 	my $self = shift;
-	my $name = $self->rocks_cache_dir();
+	my $name = $self->rocks_cache_2_root_dir();
 	$name.="/parquet/";
 	$self->makedir($name);
 	return $name;
@@ -729,15 +772,7 @@ sub rocks_directory_path {
 	return $path;
 	
 }
-sub rocks_directory_beegfs {
-	my ($self,$type,$create) = @_;
-	my $genome_version = $self->genome_version();
-	my $annot_version = $self->annotation_version();
-	my $name = '/data-beegfs/polycache.polyviewer/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
-	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
-	$name .= "/".$self->name();
-	return $self->makedir($name);
-}
+
 sub rocks_directory {
 	my ($self,$type,$create) = @_;
 	my $path =  $self->rocks_directory_path($type);

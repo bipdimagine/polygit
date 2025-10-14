@@ -14,6 +14,7 @@ global_search:/data-isilon/polycache/global_search/
 btf:/data-isilon/polycache/polybtf/
 archives:/data-isilon/polycache/archives
 cache:/data-pure/polycache/rocks/
+cache_2:/data-beegfs/polycache.polyviewer/
 cache_lmdb:/data-isilon/polycache/
 project_pipeline:/data-beegfs/sequencing/pipeline/
 tmp:/data-beegfs/tmp/
