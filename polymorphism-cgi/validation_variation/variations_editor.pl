@@ -257,7 +257,7 @@ if ($cgi->param('force') == 1) {
 }
 
 $no_cache = $patient->get_lmdb_cache("w");
-my $keys = return_uniq_keys($patient,$cgi); 
+my $keys = [];#return_uniq_keys($patient,$cgi); 
 my $level_dude = 'high,medium';
 
 
@@ -273,10 +273,11 @@ if ($cgi->param('only_DM')){
 }
 
 
-my $text = $no_cache->get_cache($cache_id."====");
+#
+my $text = "";#$no_cache->get_cache($cache_id."====");
 unless ($text) {
 	$cache_id = md5_hex($cache_id);
-	$text = $no_cache->get_cache($cache_id);
+#	$text = $no_cache->get_cache($cache_id);
 }
 $text = "" if $dev;
 $text= "";
@@ -1127,6 +1128,7 @@ sub get_vector_from_duckdb {
 	my $v2 = $chr->ucsc_name;
 	my $sql =qq{select variant_vector_id from '$parquet' where  $col > $limit and variant_chromosome='$v2'};
  	my $cmd = qq{duckdb   -json -c "$sql"};
+ 	warn $cmd;
  	my $res =`$cmd`;
  	return $vector unless $res;
  	my $array_ref  = decode_json $res;
