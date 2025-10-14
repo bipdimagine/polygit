@@ -6760,7 +6760,7 @@ has get_path_rna_seq_junctions_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->config_path("root","project_data")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
+		my $path = $self->project_root_path."/".$self->version()."/analysis/";
 		return $path;
 	},
 );
