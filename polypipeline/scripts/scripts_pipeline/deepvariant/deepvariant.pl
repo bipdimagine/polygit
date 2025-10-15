@@ -63,7 +63,7 @@ if ($project->isGenome) {
  $cmd = qq{singularity run --bind /data-pure:/data-pure --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /data-beegfs/software/sif/deepvariant1.8.0.sif /opt/deepvariant/bin/run_deepvariant  --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out -num_shards=$fork};
 }
 else {
- $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /data-beegfs/software/sif/deepvariant1.8.0.sif /opt/deepvariant/bin/run_deepvariant   --model_type=WES --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out -num_shards=$fork};
+ $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-pure:/data-pure --bind /data-beegfs:/data-beegfs  /data-beegfs/software/sif/deepvariant1.8.0.sif /opt/deepvariant/bin/run_deepvariant   --model_type=WES --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out -num_shards=$fork};
 }
 system($cmd);
 warn $cmd;
