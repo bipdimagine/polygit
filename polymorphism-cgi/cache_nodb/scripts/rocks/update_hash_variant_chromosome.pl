@@ -73,8 +73,9 @@ foreach my $chr (@{$project->getChromosomes} ){
 }
 
 
-
+warn $ok_file;
 system("date > $ok_file") if $ok_file;
+warn "coucou";
 exit(0);
 #}
 #catch {
@@ -349,7 +350,7 @@ my @files ;
 			 		
 			#push(@$agenes,$hgenes);
 		}#end Genes 
-		 #	$no->put($v->global_vector_id."-genes@".$patient->name,{array=>$agenes,patient=>$patient->name,id1=>$v->global_vector_id,type=>"genes"}) if $agenes;
+		 	$no->put($v->global_vector_id."-genes@".$patient->name,{array=>$agenes,patient=>$patient->name,id1=>$v->global_vector_id,type=>"genes"}) if $agenes;
 		  	delete $v->{genes};
 		 	$no->put($v->global_vector_id."@".$patient->name,{id=>$v->id,id1=>$v->global_vector_id,patient=>$patient->name,type=>"variants",});
 		 	push(@{$zh->{$patient->name}},$v->global_vector_id);
@@ -406,22 +407,22 @@ warn "create";
   warn "ile2";
 
 
-
-my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
-#$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
-foreach my $k (keys %htansmission){
-	
-	my $a = $final_polyviewer->get($k);
-	# 'patients_calling' => {
-     #                                    '55661' => {
-	foreach my $pid (keys %{$htansmission{$k}} ){
-		die() unless exists $a->{patients_calling}->{$pid};
-		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
-	}
-	$final_polyviewer->put_batch($k,$a);
-}
-$final_polyviewer->write_batch();
-$final_polyviewer->close();
+#
+#my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
+##$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
+#foreach my $k (keys %htansmission){
+#	
+#	my $a = $final_polyviewer->get($k);
+#	# 'patients_calling' => {
+#     #                                    '55661' => {
+#	foreach my $pid (keys %{$htansmission{$k}} ){
+#		die() unless exists $a->{patients_calling}->{$pid};
+#		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
+#	}
+#	$final_polyviewer->put_batch($k,$a);
+#}
+#$final_polyviewer->write_batch();
+#$final_polyviewer->close();
 warn " end transmission ";
 my $dir_pipeline = $project->rocks_pipeline_directory("patients");
 
@@ -434,6 +435,7 @@ my $no_p = {};
 			 $project->buffer->dbh_reconnect();
 			my $no_v = undef;
 			foreach my $f (@files){
+				warn $f;
 				my $noin = GenBoNoSqlLmdb->new(dir=>$dir_tmp,mode=>"r",name=>$f,is_compress=>1);
 				save_patient($chr,$noin,$patient, $no_p->{$patient->id});
 				
@@ -474,7 +476,9 @@ my $dir = $project->rocks_cache_dir();
 my $file = "$dir/lmdb".$chr->name.".ok";
 
 warn "date >$dir/lmdb.ok && chmod a+rw $dir/lmdb.ok";
+warn "date >$file && chmod a+rw $file";
 system ("date >$file && chmod a+rw $file") ;
+
 warn "$dir/lmdb.ok";
 $dir_tmp = undef;
 return ("$dir/$file");
