@@ -3483,12 +3483,12 @@ has split_read_infos =>(
 				my $pr1 ="-";
 				my $sr0;
 				my $sr1;
-				my $srq_end;
-				my $srq_start;
-				my $equality;
-				$srq_end = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
-				$srq_start = $patient->mean_align_quality($self->getChromosome, $self->start, $self->start);
-				$equality = $patient->mean_align_quality($self->getChromosome, $self->start, $self->end);
+				my $srq_end = -1 ;
+				my $srq_start = -1 ;
+				my $equality = -1;
+				#$srq_end = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
+				#$srq_start = $patient->mean_align_quality($self->getChromosome, $self->start, $self->start);
+				#$equality = $patient->mean_align_quality($self->getChromosome, $self->start, $self->end);
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				#$self->{seq}->{$pid}->{sr_quality_end} = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
 				unless ($self->existsPatient($patient)){
@@ -3548,12 +3548,14 @@ sub pr1 {
 
 sub sr_align_quality {
 	my ($self, $patient) = @_;
+	confess();
 	my $pid = $patient->id;
 	return int(($self->split_read_infos->{$pid}->[4]+$self->split_read_infos->[5])/2);
 }
 
 sub event_align_quality {
 	my ($self, $patient) = @_;
+		confess();
 	my $pid = $patient->id;
 	return $self->split_read_infos->{$pid}->[6];
 }
