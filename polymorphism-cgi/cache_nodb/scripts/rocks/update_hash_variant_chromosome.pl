@@ -177,6 +177,7 @@ my @files ;
 	my $max = $range->[1] - $range->[0];
 	my @tmp;
 	my $prints;
+	my $vtime = time;
 	for (my $aid=$range->[0];$aid <= $range->[1];$aid++){
 		push(@tmp,$aid);
 	#while(my $v = $project->nextVariant){
@@ -186,10 +187,12 @@ my @files ;
 		$v->{project} = $project;
 		#warn $v->name;
 		$nb++;
-		if ($nb%1000 ==0){
+		if ($nb%3000 ==0){
 		#	$no->close();
 		#	$no  = GenBoNoSqlLmdb->new(dir=>$dir_tmp,mode=>"w",name=>$f,is_compress=>1);
 			print "$nb/$max \n" ;
+			warn "$nb/$max ".abs(time - $vtime); 
+			$vtime = time;
 		}
 		my $hvariant = {};
 		# update_variant_editor::construct_hash_variant_global ( $project, $v,undef,1);
@@ -344,10 +347,9 @@ my @files ;
 			$hgenes->{mask} = $mask;
 			push(@{$vmask->{$mask}},$g->id);
 			 		
-			push(@$agenes,$hgenes);
+			#push(@$agenes,$hgenes);
 		}#end Genes 
-		 	$no->put($v->global_vector_id."-mask@".$patient->name,{value=>$vmask,patient=>$patient->name,id1=>$v->vector_id,type=>"mask"}) if $vmask;
-		 	$no->put($v->global_vector_id."-genes@".$patient->name,{array=>$agenes,patient=>$patient->name,id1=>$v->global_vector_id,type=>"genes"}) if $agenes;
+		 #	$no->put($v->global_vector_id."-genes@".$patient->name,{array=>$agenes,patient=>$patient->name,id1=>$v->global_vector_id,type=>"genes"}) if $agenes;
 		  	delete $v->{genes};
 		 	$no->put($v->global_vector_id."@".$patient->name,{id=>$v->id,id1=>$v->global_vector_id,patient=>$patient->name,type=>"variants",});
 		 	push(@{$zh->{$patient->name}},$v->global_vector_id);
@@ -472,7 +474,7 @@ my $dir = $project->rocks_cache_dir();
 my $file = "$dir/lmdb".$chr->name.".ok";
 
 warn "date >$dir/lmdb.ok && chmod a+rw $dir/lmdb.ok";
-system ("date >$dir/$file && chmod a+rw $dir/$file");
+system ("date >$file && chmod a+rw $file") ;
 warn "$dir/lmdb.ok";
 $dir_tmp = undef;
 return ("$dir/$file");
