@@ -147,9 +147,10 @@ my $index = 0;
 my @files ;
 
 	my $javascript_id = time + int(rand(10000));
-	$project->preload_patients();
-	
-	$project->buffer->dbh_deconnect();
+	#$project->preload_patients();
+	$project->preload();
+	#$project->buffer->dbh_deconnect();
+	$project->disconnect;
 	foreach my $range (@$ranges){	
 	$part ++;
 	warn $part;
@@ -161,7 +162,7 @@ my @files ;
 
 	warn "start ".$proc->{$index};
 	my $nb =0;
-	$project->buffer->dbh_reconnect();
+	#$project->buffer->dbh_reconnect();
 	
 	#$project->buffer->{dbh} = "-";
 	
