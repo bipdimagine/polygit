@@ -3527,23 +3527,35 @@ has split_read_infos =>(
 sub sr0 {
 	my ($self, $patient) = @_;
 	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[0];
+		my $v = $self->split_read_infos->{$pid}->[0];
+	$v = 0 unless $v ;
+	$v = "-1" if $v eq "-";
+	return $v;
 }
 sub sr1 {
 	my ($self, $patient,$debug) = @_;
 	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[1];
+	my $v = $self->split_read_infos->{$pid}->[1];
+	$v = 0 unless $v ;
+	$v = "-1" if $v eq "-";
+	return $v;
 }
 sub pr0 {
 	my ($self, $patient) = @_;
 	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[2];
+		my $v = $self->split_read_infos->{$pid}->[2];
+	$v = 0 unless $v ;
+	$v = "-1" if $v eq "-";
+	return $v;
 }
 sub pr1 {
 	my ($self, $patient) = @_;
 	confess($patient) unless $patient;
 	my $pid = $patient->id;
-	return $self->split_read_infos->{$pid}->[3];
+		my $v = $self->split_read_infos->{$pid}->[3];
+	$v = 0 unless $v ;
+	$v = "-1" if $v eq "-";
+	return $v;
 }
 
 sub sr_align_quality {
