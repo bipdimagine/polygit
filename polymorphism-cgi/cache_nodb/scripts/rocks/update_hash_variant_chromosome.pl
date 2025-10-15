@@ -73,7 +73,7 @@ foreach my $chr (@{$project->getChromosomes} ){
 }
 
 
-
+warn "OK";
 system("date > $ok_file") if $ok_file;
 exit(0);
 #}
@@ -346,9 +346,10 @@ my @files ;
 			$hgenes->{mask} = $mask;
 			push(@{$vmask->{$mask}},$g->id);
 			 		
-			#push(@$agenes,$hgenes);
+			push(@$agenes,$hgenes);
 		}#end Genes 
-		 #	$no->put($v->global_vector_id."-genes@".$patient->name,{array=>$agenes,patient=>$patient->name,id1=>$v->global_vector_id,type=>"genes"}) if $agenes;
+		 	$no->put($v->global_vector_id."-mask@".$patient->name,{value=>$vmask,patient=>$patient->name,id1=>$v->vector_id,type=>"mask"}) if $vmask;
+		 	$no->put($v->global_vector_id."-genes@".$patient->name,{array=>$agenes,patient=>$patient->name,id1=>$v->global_vector_id,type=>"genes"}) if $agenes;
 		  	delete $v->{genes};
 		 	$no->put($v->global_vector_id."@".$patient->name,{id=>$v->id,id1=>$v->global_vector_id,patient=>$patient->name,type=>"variants",});
 		 	push(@{$zh->{$patient->name}},$v->global_vector_id);
@@ -375,7 +376,7 @@ my @files ;
 
 $pm->wait_all_children();
 warn "++++ end children";
-
+warn "OKkkkkk";
 #die();
 ######## END STEP 1 
 ######### NOW SAVING DATA
@@ -405,21 +406,21 @@ warn "create";
 
 
 
-my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
-#$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
-foreach my $k (keys %htansmission){
-	
-	my $a = $final_polyviewer->get($k);
-	# 'patients_calling' => {
-     #                                    '55661' => {
-	foreach my $pid (keys %{$htansmission{$k}} ){
-		die() unless exists $a->{patients_calling}->{$pid};
-		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
-	}
-	$final_polyviewer->put_batch($k,$a);
-}
-$final_polyviewer->write_batch();
-$final_polyviewer->close();
+#my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
+##$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
+#foreach my $k (keys %htansmission){
+#	
+#	my $a = $final_polyviewer->get($k);
+#	# 'patients_calling' => {
+#     #                                    '55661' => {
+#	foreach my $pid (keys %{$htansmission{$k}} ){
+#		die() unless exists $a->{patients_calling}->{$pid};
+#		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
+#	}
+#	$final_polyviewer->put_batch($k,$a);
+#}
+#$final_polyviewer->write_batch();
+#$final_polyviewer->close();
 warn " end transmission ";
 my $dir_pipeline = $project->rocks_pipeline_directory("patients");
 
