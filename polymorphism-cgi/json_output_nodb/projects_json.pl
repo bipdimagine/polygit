@@ -200,6 +200,9 @@ sub getProjectLists {
 		if (-e $dir_polyviewer_rocks or $gencode >= 46) {
 			$project->{genome} .= '-rocks';
 		}
+		elsif ($project->{cache} eq 'rocks') {
+			$project->{genome} .= '-rocks';
+		}
 		
 		
 		my $nb_p = 0;
