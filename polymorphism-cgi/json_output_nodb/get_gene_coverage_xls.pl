@@ -32,12 +32,7 @@ confess("\n\nOption -gene mandatory. Die\n\n") unless $gene_name;
 
 my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name);
-$project->cgi_object(1);
 my $gene = $project->newGene($gene_name);
-
-
-#print "\n# PROJECT: ".ref($project).' - '.$project->name()."\n";
-#print "# GENE: ".ref($gene).' - '.$gene->external_name().' ('.$gene->id().")\n";
 
 my @lPatients = @{$project->getPatients()};
 my $h_patients;
