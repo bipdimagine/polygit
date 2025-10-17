@@ -2955,6 +2955,8 @@ sub get_hash_genes_dude {
  	my @selected_patients;
  	push(@selected_patients, $patient);
  	my $nb_genes_done = 0;
+ 	
+	my (@ltr, $hGenesToDo, $nbg);
 	foreach my $type (@$list_type) {
 		my $list_tr_high;
 		eval { $list_tr_high = $no->get($type); };
@@ -2971,23 +2973,26 @@ sub get_hash_genes_dude {
 		}
 		if (scalar(@$list_tr_high) >= 250 and scalar keys %$h_type_levels == 1) {
 			$hGenes_dude->{too_much} = 1;
-			return $hGenes_dude;
+			last;
+#			return $hGenes_dude;
 		}
 		if ($list_tr_high && scalar(@$list_tr_high) > 5000) {
 			$hGenes_dude->{too_much} = 1;
-			return $hGenes_dude;
+			last;
+#			return $hGenes_dude;
 		}
-		my (@ltr, $hGenesToDo, $nbg);
 		foreach my $t (@{$patient->getProject->newTranscripts($list_tr_high)}) {
 			my $gene_external_name = $t->gene_external_name;
 #			die() if $gene_external_name eq "GPC3";
 			unless (exists $hGenesToDo->{$gene_external_name}) {
-				$hGenesToDo->{$gene_external_name} = undef;
+				$hGenesToDo->{$gene_external_name} = $type;
 				push(@ltr, $t);
 				$nbg++;
 			}
 			last if ($nbg == 250 and not exists $h_type_levels->{'medium'} and not $h_type_levels->{'low'})
 		}
+	}
+	
 		my $fork = 4;
 		my $nb = int(scalar(@ltr)/($fork*2))+1;
 		my $pm = new Parallel::ForkManager($fork);
@@ -3037,6 +3042,7 @@ sub get_hash_genes_dude {
 		 		$g_name_id = $t->gene_external_name() if ($by_names_or_ids eq 'names');
 		 		$g_name_id = $t->getGene->id() if ($by_names_or_ids eq 'ids');
 		 		
+				my $type = $hGenesToDo->{$t->gene_external_name};
 		 		next if (exists $hGenes_dude->{$g_name_id});
 		 		
 	 	 		# FILTRE TRANSCRIPTS HIGH DUDE
@@ -3061,7 +3067,7 @@ sub get_hash_genes_dude {
  	 	}
 		$pm->wait_all_children();
 		$patient->getProject->buffer->dbh_reconnect();
-	}
+
 	$no->close();
 	if (not $hGenes_dude  or scalar keys %{$hGenes_dude} == 0) {
 		$hGenes_dude->{no_result} = 1;
