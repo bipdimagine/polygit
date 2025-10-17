@@ -124,7 +124,6 @@ my $has_regtools_vectors;
 my $exists_vector_ratio_10;
 
 
-
 my $cache_html_id = 'splices_HTML_' . $patient->name();
 $cache_html_id .= '_maxdv'.$max_dejavu if $max_dejavu;
 $cache_html_id .= '_mins'.$min_score if $min_score;
@@ -156,12 +155,7 @@ if (not $only_html_cache and not $put_cache and not $only_gene_name and not $onl
 
 
 foreach my $chr ( @{ $project->getChromosomes() } ) {
-#	warn $chr->id;
-#	$chr->global_categories;
-	
-#	next if $chr->id ne '13';
-	
-	#next if $chr->id ne '1' and $patient_name eq 'KUCerc';
+	print '.';
 	my $vector_patient = $patient->getJunctionsVector($chr);
 	$j_total += $chr->countThisVariants($vector_patient);
 	if ($only_positions) {
