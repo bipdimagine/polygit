@@ -115,13 +115,13 @@ eval {
 				$vector_patient->Intersection($vector_patient, $vector_gene);
 				if ($only_type eq 'cnv') {
 					my $v_cnv = $chr->getNewVector();
-					$v_cnv += $chr->global_categories->{'large_deletion'} if (exists $chr->global_categories->{'large_deletion'});
-					$v_cnv += $chr->global_categories->{'large_duplication'} if (exists $chr->global_categories->{'large_duplication'});
+					$v_cnv += $chr->getVectorLargeDeletions();
+					$v_cnv += $chr->getVectorLargeDuplications();
 					$vector_patient->Intersection($vector_patient, $v_cnv);
 				}
 				elsif ($only_type eq 'nocnv') {
-					$vector_patient -= $chr->global_categories->{'large_deletion'} if (exists $chr->global_categories->{'large_deletion'});
-					$vector_patient -= $chr->global_categories->{'large_duplication'} if (exists $chr->global_categories->{'large_duplication'});
+					$vector_patient -= $chr->getVectorLargeDeletions();
+					$vector_patient -= $chr->getVectorLargeDuplications();
 				}
 				@lVar = @{$chr->getListVarObjects($vector_patient)};
 			}
