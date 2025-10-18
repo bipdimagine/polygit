@@ -60,7 +60,6 @@ if ($gene_transcript) {
 confess("\n\nERROR: -gene option mandatory. Die.\n\n") unless ($gene_name);
 #confess("\n\nERROR: -keep option mandatory. Die.\n\n") unless ($keep_var_id);
 
-
 my $class;
 my $fsize = "font-size:10px";
 
@@ -72,18 +71,10 @@ my $value_yellow = 5;
 my @headers_validations = ("igv","alamut","var_name","trio","gnomad","deja_vu","table_validation","table_transcript");
 my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my @header_transcripts_cnv = ("consequence", "enst", "nm", "ccds", "appris", "start", "end");
-#my @headers =
- # ( "varsome", "igv", "alamut", "var_name", "trio", "gnomad", "deja_vu" );
+
 my $buffer = new GBuffer;
 my $project = $buffer->newProjectCache( -name => $project_name );
 my $patient = $project->getPatient($patient_name);
-#my $print_html = polyviewer_html->new( project => $project, patient => $patient,header=> \@headers,bgcolor=>"background-color:#607D8B" );
-#$print_html->init();
-#my $diro = $project->rocks_directory();
-	
-
-#my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
-
 
 my $h_new = $buffer->queryHgmd->get_hash_last_released_DM();
 my $hAllVarIds;
@@ -124,13 +115,13 @@ eval {
 				$vector_patient->Intersection($vector_patient, $vector_gene);
 				if ($only_type eq 'cnv') {
 					my $v_cnv = $chr->getNewVector();
-					$v_cnv += $chr->global_categories->{'large_deletion'} if (exists $chr->global_categories->{'large_deletion'});
-					$v_cnv += $chr->global_categories->{'large_duplication'} if (exists $chr->global_categories->{'large_duplication'});
+					$v_cnv += $chr->getVectorLargeDeletions();
+					$v_cnv += $chr->getVectorLargeDuplications();
 					$vector_patient->Intersection($vector_patient, $v_cnv);
 				}
 				elsif ($only_type eq 'nocnv') {
-					$vector_patient -= $chr->global_categories->{'large_deletion'} if (exists $chr->global_categories->{'large_deletion'});
-					$vector_patient -= $chr->global_categories->{'large_duplication'} if (exists $chr->global_categories->{'large_duplication'});
+					$vector_patient -= $chr->getVectorLargeDeletions();
+					$vector_patient -= $chr->getVectorLargeDuplications();
 				}
 				@lVar = @{$chr->getListVarObjects($vector_patient)};
 			}
@@ -150,28 +141,6 @@ if($@) {
 	print $json_encode;
 	exit(0);
 }
-
-sub view_html_variants2 {
-	my ($patient, $g, $lVar) = @_;
-	my $out;
-	foreach my $v (@$lVar){
-		my $vid = $v->getChromosome->name."!".$v->vector_id;
-		my $vp = $final_polyviewer_all->get($vid,1);
-	
-			$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
-			$vp->{spliceAI} = $vp->{hgenes}->{$g->{id}}->{sc}->{spliceAI};
-			
-			#$vp->{hgenes}->{$g->{id}}->{spliceAI};
-			$vp->{spliceAI_cat} = $vp->{hgenes}->{$g->{id}}->{sc}->{spliceAI_cat};
-			$vp->{text_caller} =  $vp->{patients_calling}->{$patient->id}->{array_text_calling};
-			bless $vp , 'PolyviewerVariant';
-						$vp->gene($g);
-						
-		$out.= 	variations_editor_methods::print_line_variant($vp,$print_html,0); 
-	}
-	return $out;
-}
-
 
 sub view_html_variants {
 	my ($patient, $g, $lVar) = @_;
