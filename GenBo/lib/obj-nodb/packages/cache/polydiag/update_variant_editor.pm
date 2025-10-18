@@ -3066,7 +3066,6 @@ sub get_hash_genes_dude {
  	 		$pm->finish(0,$hGenes_dude_tmp);
  	 	}
 		$pm->wait_all_children();
-		warn " -----> ".abs(time -$ti);
 		$patient->getProject->buffer->dbh_reconnect();
 
 	$no->close();
