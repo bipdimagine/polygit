@@ -3005,7 +3005,7 @@ sub get_hash_genes_dude {
 					foreach my $t (keys %{$h->{$g}}){
 						next unless (exists $h_type_levels->{$t});
 						$hGenes_dude->{$g}->{$t}->{dup} = $h->{$g}->{$t}->{dup};
-						$hGenes_dude->{$g}->{$t}->{del} = $h->{$g}->{$t}->{del};
+						$hGenes_dude->{$g}->{$t}->{del} = $h->{$g}->{$t}->{del};queryVali
 						$hGenes_dude->{$g}->{$t}->{del_ho} += $h->{$g}->{$t}->{del_ho};
 						$hGenes_dude->{$g}->{$t}->{all} = $h->{$g}->{$t}->{all};
 						$hGenes_dude->{$g}->{$t}->{all_others} = $h->{$g}->{$t}->{all_others};
