@@ -66,7 +66,7 @@ if ($patient->isChild){
 }
 
 
-my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+#my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 my $parquet_file = $project->getCacheSV()."/".$project->name.".".$project->id.".parquet";
 my $dir = $project->getCacheSV(). "/rocks/";
 my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"sv");
@@ -83,13 +83,20 @@ my $query = qq{CREATE TABLE SV  AS
                            WHERE pos1 > -1  and patient = $patient_id  ;
 	};
 	
-$dbh->do($query);
-my $sql = qq{select * from SV ;};			
-my $sth = $dbh->prepare($sql);
-$sth->execute();
-	while (my $row = $sth->fetchrow_hashref) {
-
+#$dbh->do($query);
+my $sql =qq{select * from '$parquet_file'  ; };
+my $cmd = qq{duckdb -json -c "$sql"};
+my $res =`$cmd`;
+my $array_ref = [];
+$array_ref  = decode_json $res if $res;
+	
+#my $sth = $dbh->prepare($sql);
+#$sth->execute();
+$dejavu =20;
+#	while (my $row = @{$array_ref}) {
+	foreach my $row ( @{$array_ref}) {
 	 my $sv = $rocks->get($row->{id});
+	next unless $sv;
 	 next if $sv->{dejavu}->{nb_patients} > $dejavu;
 	 delete $sv->{score};
 	 getScoreEvent($sv);

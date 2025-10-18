@@ -27,7 +27,7 @@ use layout;
 use export_excel;
 use export_data;
 use Capture::Tiny ':all';
-
+use JSON::XS;
 
 
 
@@ -78,7 +78,7 @@ my $force= $cgi->param( 'force' ) == 1 ;
 # pour récupérer les objets project et patient
 my $buffer = GBuffer->new();
 my $project = $buffer->newProjectCache( -name => $projectname);
-my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+#my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 my $parquet_file = $project->getCacheCNV()."/".$project->name.".".$project->id.".parquet";
 my $dir = $project->getCacheCNV(). "/rocks/";
 my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"cnv");
@@ -94,7 +94,7 @@ my $query = qq{CREATE TABLE cnvs  AS
                            FROM '$parquet_file'
                            WHERE start > -1  and patient = $patient_id  order by start;
 	};
-$dbh->do($query);
+#$dbh->do($query);
 my $nb;
 my $hGroupedCNV;
 my @Filtered_listHashRes;
@@ -116,15 +116,19 @@ if ($patient->isChild){
 }
 
 
+my $sql =qq{select id from '$parquet_file' where nb_dejavu_patients <= 20 and len > 1000; };
+warn $sql;
+my $cmd = qq{duckdb -json -c "$sql"};
+my $res =`$cmd`;
+my $array_ref = [];
+$array_ref  = decode_json $res if $res;
 
+my $sql = qq{};			
 
-my $sql = qq{select id from cnvs where nb_dejavu_patients <= 20 and len > 1000;};			
-
-my $sth = $dbh->prepare($sql);
-$sth->execute();
+#my $sth = $dbh->prepare($sql);
+#$sth->execute();
 my $nb = 0;
-while (my $row = $sth->fetchrow_hashref) {
-
+	foreach my $row (@$array_ref) {
 	 my $cnv = $rocks->get($row->{id});
 
 		my $global_id = $cnv->{id};
@@ -345,7 +349,6 @@ while (my $row = $sth->fetchrow_hashref) {
 		$viewer->{igv}->{locus_start} = $chr->ucsc_name  . ':' . ($cnv->{'start'} -500). '-' . ($cnv->{'start'}+500);
 		$viewer->{igv}->{locus_end} = $chr->ucsc_name   . ':' . ($cnv->{'end'} -500). '-' . ($cnv->{'end'}+500);
 		
-		
 	 		
 		$viewer->{igv}->{l} = $taille ;
 		$hGroupedCNV->{$global_id}->{"VIEWERS"} = encode_json $viewer;
@@ -363,8 +366,15 @@ while (my $row = $sth->fetchrow_hashref) {
 		$locus->{cytoband} = $cyto[0]."..".$cyto[-1] if (@cyto>1);
 		$locus->{viewers} = $viewer;
 		$hGroupedCNV->{$global_id}->{'LOCUS'} =  encode_json $locus;
-		
-		
+		my $thePatientFamily = $patient->getFamily();
+		my $members = $thePatientFamily->getMembers();
+		my $bamNames = $patientname;
+		my $bamFiles = $patient->bamUrl(); 
+		foreach my $m (@$members)		{
+			my $membername = $m->name(); 
+			$bamFiles .= ",".$m->bamUrl() unless ($membername eq $patientname);
+			$bamNames .= ",".$membername unless ($membername eq $patientname);
+		}
 		
 		
 		$hGroupedCNV->{$global_id}->{"IGV"} = $bamNames.";".$bamFiles.";".$hGroupedCNV->{$global_id}->{"id"};
