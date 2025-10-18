@@ -538,13 +538,14 @@ $project->buffer->dbh_reconnect();
 
 #warn $genes->[0]->{js_id};
 my $sct = time;
-
+	warn "genes:".scalar(@$genes);
 warn "end max_score :".abs(time -$sct);
 	my $vgenes =[];
 	my $nb2 = 0;
 	my $limit =3000; 
 	my $hchr; 
 $sct = time;
+
 foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
 		if ($gene_name_filtering) {
 			if ($gene_name_filtering eq $g->{name} or $gene_id_filtering eq $g->{id}) { 
@@ -947,7 +948,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  	my	$hash_variants_DM = {};
  	
  	my $nbv = 0;
- 	 warn "sql ".abs(time -$t);
+ 	 warn "sql ".abs(time -$t)." ".scalar(@$array_ref);
  	 $t =time;
  	 my $id_by_genes_id;
  	 my %ids ;
@@ -963,6 +964,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  		$nbv ++;
  	
  	}
+ 	warn $nbv;
 	return ($rocksdb_pv->indexes,$id_by_genes_id);
 }
 
