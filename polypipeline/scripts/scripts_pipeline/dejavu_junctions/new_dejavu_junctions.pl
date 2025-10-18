@@ -30,11 +30,6 @@ use GenBoNoSqlIntervalTree;
 #  4) freeze de la table de hash gllobale
 ########################################################################
 
-my $cgi = new CGI;
-my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => 'NGS2023_7217' );
-$project->getChromosomes();
-
 my $nbok;
 my $nbSV;
 my $halldejavu;
@@ -51,12 +46,20 @@ GetOptions(
 	'fork=s'    => \$fork,
 );
 
+my $cgi = new CGI;
+my $buffer = GBuffer->new();
+
+my $project_name;
+if ($release eq 'HG38') { $project_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
+else { $project_name = $buffer->getRandomProjectName('HG19_MT'); }
+
+my $project = $buffer->newProject( -name => $project_name );
+$project->getChromosomes();
+
 my $dv_dir_path = $project->DejaVuJunction_path();
 if ($release =~ /HG19/) { $release = 'HG19'; }
 elsif ($release =~ /HG38/) { $release = 'HG38'; }
 else { $dv_dir_path =~ s/HG19/$release/; }
-
-
 
 my $dv_dir_projects_path = $dv_dir_path.'/projects/';
 print "\n# Checking RNA-Projects Junctions";

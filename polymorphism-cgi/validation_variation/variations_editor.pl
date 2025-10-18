@@ -259,9 +259,6 @@ if ($cgi->param('force') == 1) {
 $no_cache = $patient->get_lmdb_cache("w");
 my $keys = [];#return_uniq_keys($patient,$cgi); 
 my $level_dude = 'high,medium';
-
-
-my $cache_dude_id = "$level_dude::" . $project_name . "-" . $patient->name . "-" . $VERSION;
 my $cache_id = join( ";", @$keys );
 
 
@@ -576,13 +573,17 @@ warn "end hotspot  :".abs(time -$t);
 my $stdoutcnv;
 
 if (not $patient->isGenome() ) {
-	$stdoutcnv = tee_stdout {
-	update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel );
-	};
+	my $cache_dude_id = "cnv-html-exome::" . $project_name . "-" . $patient->name . "-";
+	my $text = $no_cache->get_cache($cache_dude_id);
+	if ($text) {
+		print $text;
+	}
+	else {
+		$stdoutcnv = tee_stdout { update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel ); };
+		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400);
+	}
 }
-
-#warn "end";
-	
+warn "end cnv";
 	
 $t     = time;
 my $stdout_end = tee_stdout {
@@ -605,7 +606,7 @@ my $stdout_end = tee_stdout {
 
 };
 #warn "--> $cache_id <-- put";
-$no_cache->put_cache_text($cache_id,$stdout.$stdout_nav_bar.$stdoutcnv.$stdout_end,2400) ;#unless $dev;
+#$no_cache->put_cache_text($cache_id,$stdout.$stdout_nav_bar.$stdoutcnv.$stdout_end,2400) ;#unless $dev;
 #$no_cache->get_cache($cache_id);
 $no_cache->close();
 exit(0);
