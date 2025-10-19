@@ -3372,6 +3372,8 @@ sub dejavu_hash_projects_patients {
 	my ($self) = @_;
 	my $hres;
 	my $h_dv = $self->getChromosome->rocks_dejavu->dejavu($self->rocksdb_id);
+	warn $self->getChromosome->rocks_dejavu->dir();
+	warn Dumper $h_dv;
 	foreach my $proj_id (keys %{$h_dv}) {
 		my $proj_name = $self->buffer->getProjectNameFromId($proj_id);
 		
@@ -3492,10 +3494,11 @@ has split_read_infos =>(
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				#$self->{seq}->{$pid}->{sr_quality_end} = $patient->mean_align_quality($self->getChromosome, $self->start+$self->length,$self->start+$self->length);
 				unless ($self->existsPatient($patient)){
-					my ($a,$b,$c) = $patient->sr_raw($self->getChromosome, $self->start);
+					
+					my ($a,$b,$c) = (0,0,0);#$patient->sr_raw($self->getChromosome, $self->start);
 					$sr0  =  $a;
 					$sr1 = int(($b+$c)/2); 
-		 			($a,$b,$c) = $patient->sr_raw($self->getChromosome, $self->end);
+		 			($a,$b,$c) = (0,0,0);#$patient->sr_raw($self->getChromosome, $self->end);
 					$sr0  +=  $a;
 					$sr1 += int(($b+$c)/2); 
 					$sr0  = int($sr0/2);
