@@ -2182,7 +2182,7 @@ sub scaledScoreVariant{
 	my $dp_before = $self->getNormDPBefore($patient);
 	my $dp_after = $self->getNormDPAfter($patient);
 	my $mean = ($dp_before+$dp_after)/2;
-	
+	$mean +=0.01 if $mean == 0;
 	my $dp = $self->getNormDP($patient);
 	$dp = 0,000001 if $dp == 0;
 	my $ratio = $dp/$mean;
