@@ -123,11 +123,11 @@ foreach my $family (@{$project->getFamilies()}) {
 		$project->disconnect();
 		$pm->start() and next;
 		warn "---> start ".$parent->name;
-		my $cram =  $parent->getBamFile;
+		my $cram =  $parent->getAlignmentFile;
 		my $chra = $chr->fasta_name();
 		my $t =time;
 		system("samtools view -T /data-isilon/public-data/genome/HG38_CNG/fasta/all.fa -b $cram $chra -@ $fork_samtools >".$hfile->{$parent->name});
-	
+		warn "samtools view -T /data-isilon/public-data/genome/HG38_CNG/fasta/all.fa -b $cram $chra -@ $fork_samtools >".$hfile->{$parent->name};
 		system("samtools index ".$hfile->{$parent->name}." -@ $fork_samtools");
 		die($hfile->{$parent->name}) unless -e $hfile->{$parent->name}.".bai";
 		warn "\t\t ++ ".$parent->name." ".abs(time-$t);
@@ -432,6 +432,7 @@ sub check_cnv {
 
 sub check_srpr {
 	my ($var,$children,$parent,$chr) = @_;
+	return 1;
 	my @v1 =  $parent->sr_raw($chr,$var->start);
 	return 0  if ($v1[0] < 5 or $v1[1]>5 or  $v1[2]>5);
 	@v1 =  $parent->sr_raw($chr,$var->end);
