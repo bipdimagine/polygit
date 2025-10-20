@@ -134,7 +134,6 @@ sub insertVariationLiftOverVariant {
 sub createVariation {
 	my ($self,$v) = @_;
 	my $id = $self->getIdFromVariation($v);
-	warn "coucou :: ".$id;
 	unless ($id){
 		
 		$id = $self->insertVariation($v);
@@ -301,7 +300,6 @@ sub getAllValidationsForVariation {
 	my ($self,$vid) = @_;
 	my $db = $self->db;
 	my $query = qq{select *,UNIX_TIMESTAMP(va.modification_date) as unix_time from $db.validations as va ,$db.variations as v,$db.acmg     where v.polyid= "$vid" and va.variation_id=v.uniq_id and idacmg=validation order by unix_time desc}; 
-	warn $query;
 	my $sth = $self->dbh->prepare($query) ;
 	$sth->execute() || die();
 	return $self->hresults($sth);

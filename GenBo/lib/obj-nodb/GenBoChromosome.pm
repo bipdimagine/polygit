@@ -2191,6 +2191,9 @@ sub rocks_dejavu {
 	my $name = "dejavu-".$mode.'-'.$self->name();
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
 	my $dir = $self->project->deja_vu_rocks_public_dir();
+	#$dir  = "/data-pure/public-data/dejavu/HG38//variations/rocks.test/";
+	#warn $dir;
+	#my $dir = "/data-beegfs/dejavu/rocks-HG38/";
 	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->project->{rocks}->{$name};

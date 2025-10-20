@@ -96,6 +96,9 @@ has columns_patients_sv  =>(
                                                        'dp' => 'INTEGER',
                                                        'array_text_calling' => "VARCHAR",#[
 													   'log2_ratio' => "VARCHAR",#[
+														'norm_depth' => "INTEGER",
+														'norm_depth_after' => "INTEGER",
+														'norm_depth_before' => "INTEGER",
 	};
 	
 my @columns_patients_sv = ();
@@ -448,6 +451,7 @@ sub transform_polyviewer_variant {
 			my $res;
 			push(@{$res},$patient->getFamily->name);
 			push(@{$res},$p);
+			
 			if (defined $vp->{isSrPr} && !(exists $vp->{level})) {
 			my $a = $patient->mean_normalize_depth($chr->name,$vp->start,$vp->end);
 			$hash->{norm_depth} = $a;#int(sum(@$a)/scalar(@$a));

@@ -566,6 +566,7 @@ has infosProject => (
 	default => sub {
 		my $self  = shift;
 		my $query = $self->buffer->getQuery();
+		confess() unless $self->name ;
 		my $res   = $query->getProjectByName( $self->name() );
 		return $res;
 	},
@@ -957,6 +958,8 @@ has bundle_infos => (
 							}
 						}
 					}
+					warn $tr;
+					warn $self->getProject->rocksGenBo->synonym($tr);
 					push(
 						@{
 							$res->{transcripts}->{$self->getProject->rocksGenBo->synonym($tr)}

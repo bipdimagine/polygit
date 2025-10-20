@@ -499,6 +499,7 @@ has 'coverage_SRY' => (
 		my $max_mean = -50;
 		while ( my ( $from, $to ) = $iter->() ) {
 			my $cmd = qq{$samtools depth  $align_file -r $chr_name:$from-$to 2>/dev/null   | cut -f 3  | awk \'NR==1 \|\| \$1 > max {max=\$1} END {print max}\'};
+			warn $cmd;
 			my ($res) = `$cmd`;
 			chomp($res);
 			$res = 0 unless $res;
@@ -523,6 +524,7 @@ has 'compute_sex' => (
 		my $self = shift;
 #		warn "start";
 		my $covm = $self->coverage_SRY();
+		warn  $covm;
 #		warn $covm;
 		return 1 if $covm > 30;
 		return -1 if $covm == -1;

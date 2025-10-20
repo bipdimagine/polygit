@@ -260,16 +260,19 @@ has array_phenotypes  => (
 		my $self = shift;
 		my @lPhen;
 		if (exists $self->omim->{version}){
-			push(@lPhen, @{$self->hgmd_disease} ) if ($self->hgmd and $self->hgmd_disease);
 			push(@lPhen, @{$self->omim->{phenotypes}->{omim}} ) if (exists $self->omim->{phenotypes}->{omim});
-			push(@lPhen, @{$self->omim->{phenotypes}->{ddg2p}} ) if (exists $self->omim->{phenotypes}->{ddg2p});
 			push(@lPhen, @{$self->omim->{phenotypes}->{orphanet}}) if (exists $self->omim->{phenotypes}->{orphanet});
+			push(@lPhen, @{$self->omim->{phenotypes}->{ddg2p}} ) if (exists $self->omim->{phenotypes}->{ddg2p});
+			push(@lPhen, @{$self->hgmd_disease} ) if ($self->hgmd and $self->hgmd_disease);
 			push(@lPhen,  sort @{$self->hpo_phenotypes_names()}) if ($self->hpo());
 		}
 		else {
-			push(@lPhen,  @{$self->hgmd_disease}) if ($self->hgmd and $self->hgmd_disease);
 			push(@lPhen, split(";",$self->omim->{phenotype}->{omim}) )   if (exists $self->omim->{phenotype}->{omim} and $self->omim->{phenotype}->{omim});
-		
+			push(@lPhen, @{$self->omim->{phenotypes}->{orphanet}}) if (exists $self->omim->{phenotypes}->{orphanet});
+			push(@lPhen, @{$self->omim->{phenotypes}->{ddg2p}} ) if (exists $self->omim->{phenotypes}->{ddg2p});
+
+			push(@lPhen,  @{$self->hgmd_disease}) if ($self->hgmd and $self->hgmd_disease);
+					
 			push(@lPhen,   split(";",$self->omim->{phenotype}->{ensembl})) if (exists   $self->omim->{phenotype}->{ensembl});
 			push(@lPhen,  sort @{$self->hpo_phenotypes_names()}) if ($self->hpo());
 		}

@@ -389,7 +389,6 @@ sub calling_cnv_xslate {
 	my $samples = $self->variant->patients_calling();
 	my $project = $self->project;
 		my $all_validations = $project->validations;
-		
 		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
 		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
 		my $data;
@@ -953,6 +952,7 @@ sub var_name {
 	my @genes = ();#split(";",$hvariation->{text}->{genes_name});
 	my $type = $self->variant->type;
 	my $name = $self->variant->name;
+	#warn $name if $name =~ /ins/;
 	my $gnomad_id = $self->variant->gnomad_id;
 	my $is_gnomad = $self->variant->gnomad_id;
 	my $html ="";

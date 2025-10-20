@@ -46,7 +46,6 @@ sub getdbh{
 	$ip=$ENV{POLY_DB_IP} if exists $ENV{POLY_DB_IP};
 	my $port = $config->{port};
 	$port = 3306 unless $port;
-
 	confess unless exists $config->{user};
 	my $dbh;
 	my $host =  hostname;

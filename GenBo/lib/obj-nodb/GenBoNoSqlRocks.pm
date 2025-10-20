@@ -605,6 +605,7 @@ sub put_batch_compress {
 
 sub put_batch {
 	my ( $self, $key, $value, $debug ) = @_;
+	confess() unless $self->rocks;;
 	return $self->batch->put( $key, $self->encode($value) );
 }
 
