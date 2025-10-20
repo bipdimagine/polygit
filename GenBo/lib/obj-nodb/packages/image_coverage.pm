@@ -711,7 +711,7 @@ sub image_depth_lmdb {
  my ($patients,$transcript,$intronic,$utr,$padding,$limit,$all,$minimum) = @_;
 my $nb_line =15;
 my $size = 3;
-$limit =15;
+#$limit =15;
 my $x = 0;
 my $y = 0;
 
@@ -906,7 +906,7 @@ return $re;
 sub image {
  my ($patients,$transcript,$intronic,$utr,$padding,$limit,$all) = @_;
 # die();
- $limit = 15;
+ #$limit = 15;
 my $nb_line =15;
 my $size = 3;
 my $alert;
