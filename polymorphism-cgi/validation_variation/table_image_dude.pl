@@ -134,7 +134,8 @@ if ($value_quality and not $genes_arg) {
 	my $this_types = join(', ', @lTypes);
 	if ($project->isDiagnostic()) { @lTypes = ('high','medium', 'low'); }
 	my $hRes = update_variant_editor::get_hash_genes_dude($pat, 'ids', \@lTypes,undef,1);
-
+	warn Dumper $hRes;
+	die();
 	if ($project->isDiagnostic()) { 
 		foreach my $g_id (keys %{$hRes}) {
 			if ($value_quality == 1 and not exists $hRes->{$g_id}->{'high'}) {
