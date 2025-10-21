@@ -499,9 +499,13 @@ has 'coverage_SRY' => (
 		my $max_mean = -50;
 		while ( my ( $from, $to ) = $iter->() ) {
 			my $cmd = qq{$samtools depth  $align_file -r $chr_name:$from-$to 2>/dev/null   | cut -f 3  | awk \'NR==1 \|\| \$1 > max {max=\$1} END {print max}\'};
-			warn $cmd;
+			#my $chr = $self->project->getChromosome('Y');
+			#warn Dumper $self->depth("Y",$from,$to);
+			#warn $from." ".$to;
+			#warn $self->meanDepth($self->project->getChromosome('Y'),$from,$to);
 			my ($res) = `$cmd`;
 			chomp($res);
+			#my $res = $self->meanDepth($self->project->getChromosome('Y'),$from,$to);
 			$res = 0 unless $res;
 			
 
@@ -2318,6 +2322,16 @@ sub mean_normalize_depth {
 	return $self->getNoSqlDepth->getMeanNormalize( $chr_name, $start, $end, $self );
 }
 	
+sub normalize_depth {
+	my ( $self, $chr_name, $start, $end ) = @_;
+	my $chr   = $self->project->getChromosome($chr_name);
+	my $array = $self->getNoSqlDepth->getDepth( $chr->name, $start, $end );
+	my $res;
+	foreach my $s1 (@$array){
+		push(@$res, int($s1/$self->normalized_reads));# *100)/100);
+	}
+	return $res;
+}	
 sub meanDepth {
 	my ( $self, $chr, $start, $end ) = @_;
 	$end = $start +1 if $start == $end;
