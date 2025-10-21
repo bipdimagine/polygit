@@ -630,6 +630,7 @@ unless ($header) {
 	$hmendel = get_mendelian_statistics($project);
 	foreach my $run ( @{ $project->getRuns() } ) {
 		$header->{ $run->id } = table_run_header($run);
+		
 	}
 	print qq{\n</div>};
 	$no_cache = $project->get_lmdb_cache_summary("w");
@@ -656,8 +657,10 @@ unless ($htable) {
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
 	$hmendel = get_mendelian_statistics($project) unless $hmendel;
 	foreach my $run ( @{ $project->getRuns() } ) {
+		warn $run->id;
 		$htable->{ $run->id } = table_patients($run);
 	}
+	die();
 	$no_cache = $project->get_lmdb_cache_summary("w");
 	$no_cache->put_cache_hash( $table_id, $htable, 2400 );
 	$no_cache->close();
@@ -721,7 +724,6 @@ sub check_level {
 
 sub print_line_patient {
 	my ( $p, $nb_row,$hash_disomy) = @_;
-
 #@title = ("Fam","Patient","Sex","mendelian error","Cov","30x","Sub","Indels","%He","validation");
 	my $line;
 	my $sex_eval;
@@ -997,11 +999,11 @@ sub test_disomy {
 	$uni->{find_disomy} = 0;
 	foreach my $p (@{$project->getPatients}){
 		my $file = $p->upd_file();
-		#unless (-e $file ) {
+		unless (-e $file ) {
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
 			# if $p->isChild();
-		#}
+		}
 		my $r = exists_disomy($p,$file);
 		
 		if($r){
@@ -2760,7 +2762,6 @@ sub table_patients_printer2 {
 	my $ver1    = $project->genome_version;
 	my $ver     = $project->annotation_version;
 	my $machine = $project->getRuns->[0]->machine();
-
 	$out    .= $cgi->start_Tr();
 	my $div .= $cgi->start_div();
 	$div    .= $cgi->h3( $project->name . ":" . $project->description );
@@ -2792,6 +2793,7 @@ sub table_patients_printer2 {
 	foreach
 	  my $patient ( sort { $a->name cmp $b->name } @{ $project->getPatients } )
 	{
+		warn $patient->name();
 		$out .= $cgi->start_Tr();
 		# FAMILLY
 		$out .= $cgi->td( { style => "border: 1px solid black;" },
@@ -3479,6 +3481,7 @@ sub table_patients {
 	my $error = 0;
 	my $has_identito;
 	foreach my $p ( @{$project->getPatients} ) {
+		
 		$error += column_control($p,$control);
 		$has_identito = 1 if $p->identity_vigilance;
 	}
@@ -3519,7 +3522,6 @@ sub table_patients {
 			$out .= $cgi->th( { style => "text-align: center;min-width:70%" }, "Unidisomy" );
 		}
 	}
-	
 	
 	
 	push( @title, "validation" );
