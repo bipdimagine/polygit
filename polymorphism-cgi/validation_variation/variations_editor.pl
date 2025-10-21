@@ -199,6 +199,7 @@ my $project = $buffer->newProjectCache(
 	-typeFilters => 'individual',
 	-cgi_object  => 1
 );
+$project->preload();
 #my $clinvar_lmdb =  $project->getChromosome->get_lmdb_database("clinvar",$project->type_public_db);
 
 my $version_db =  $project->public_database_version;

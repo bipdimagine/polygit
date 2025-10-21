@@ -958,8 +958,8 @@ has bundle_infos => (
 							}
 						}
 					}
-					warn $tr;
-					warn $self->getProject->rocksGenBo->synonym($tr);
+					warn $tr." ".$self->getProject->rocksGenBo->synonym($tr) unless $self->getProject->rocksGenBo->synonym($tr);
+					next unless $self->getProject->rocksGenBo->synonym($tr);
 					push(
 						@{
 							$res->{transcripts}->{$self->getProject->rocksGenBo->synonym($tr)}

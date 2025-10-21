@@ -539,6 +539,7 @@ my $project = $buffer->newProjectCache(
 );
 $project->hide_patients(1);
 $project->validations_query(1);
+$project->preload();
 my $user = $cgi->param('user_name');
 $project->cgi_user($user);
 
@@ -1097,9 +1098,7 @@ sub header_run {
 
 	my $version;
 	$version->{gencode} = $project->gencode_version();
-	#warn Dumper $version->{gencode};
 	my $v ;
-	#warn $project->release;
 	if ($project->annotation_genome_version =~/19/){
 		$version->{gnomad} = "2.1";#$buffer->description_public_lmdb_database("gnomad")->{version};
 	}
@@ -1152,7 +1151,6 @@ qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC }
 
 #$btn_class = qq{class= "label  label-xs label-warning " style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 95;
 #$btn_class = qq{class= "label  label-xs label-alert "  style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 90;
-#warn $nb;
 #die();
 	my $text30 = ''
 	  ; # = "30X :" .$format_number->round($lstats->{"30X"}->{$run->id}->mean,1)."% <i>(".$format_number->round($gstats->{"30X"}->mean,1).")</i>";;
@@ -1440,7 +1438,6 @@ sub table_design {
 		foreach my $chr_name ( keys %{$capture_intspan_keep} ) {
 			my $iter = $capture_intspan_keep->{$chr_name}->iterate_runs();
 	
-			#	 	warn $capture_intspan_keep->{$chr_name}->as_string();
 			my $chr = $project->getChromosome($chr_name);
 			my @tt;
 			while ( my ( $from, $to ) = $iter->() ) {
@@ -1724,7 +1721,6 @@ sub statistics_projects {
 			my $project2 = $buffer2->newProject( -name => $p );
 			next unless $project2->existsnoSqlQuality;
 			my $no = $project2->noSqlQuality("r");
-#			warn $no->dir;
 			foreach my $v ( "coverage_stats", "statistics_variations" ) {
 				my $data = $no->get( $project2->name, "$v" );
 				next unless $data;
@@ -1748,7 +1744,6 @@ sub statistics_projects {
 
 						push( @{ $stats->{$k} }, $p_value->{$k}->{text} );
 
-						#	warn  $p." ".$project->name;
 						if ( $p eq $project->name ) {
 
 							push(
@@ -1844,7 +1839,6 @@ sub table_quality {
 		  if ( $patient_value->{ $p->id }->{"15X"}
 			and ( $patient_value->{ $p->id }->{"15X"} * 1.0 < 95 ) );
 
-		#warn " red $red" if $p->name eq "GEF1800528";
 		foreach my $v ( "mean", "15X", "30X", "100X", "snp", "indel", "%he",
 			"%public" )
 		{
@@ -1883,7 +1877,6 @@ sub table_quality {
 				or $v eq "mean"
 				or $v eq "%public" )
 			{
-#warn $v." $value $mean ::  $std". ($mean - 3*$std)." $red" if $p->name eq "GEF1800528";
 				if ( $value < ( $mean - 3 * $std ) && $red == 1 ) {
 					$color = "#DD4132";
 					$level = 3 if $level < 3;
@@ -1915,8 +1908,6 @@ sub table_quality {
 				if (   $value < ( $mean - 4 * $std )
 					|| $value > ( 4 * $std + $mean ) )
 				{
-					#warn $value ." ".$std." ".$mean;
-					#$p1 = "p1danger";
 					$color = "#DD4132";
 					$level = 3 if $level < 3;
 				}
@@ -2095,7 +2086,6 @@ my $t = time;
 	foreach my $p ( sort { $a->name cmp $b->name } @{ $run->getPatients } ) {
 		print ".";
 		next if $p->alignmentMethod() eq 'no_align';
-#		warn "Patient sex";
 		my $icon = $p->return_icon;
 		my $name = $p->name;
 		my $c1   = "pink";
@@ -2107,8 +2097,7 @@ my $t = time;
 		
 		my $sex_eval = $p->compute_sex();
 		
-#		warn "coucou";
-		# warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
+		warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
 		my $color = "#009B77";
 		if ( $sex_eval ne $p->sex() && $sex_eval ne -1 ) {
 
