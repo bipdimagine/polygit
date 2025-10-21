@@ -112,7 +112,6 @@ sub return_array_depth {
 
 sub return_coverage{
 	my ($start,$end) =@_;
-	warn $start." ".$end;
 	my %data_coverage;
 	my @res;
 	my $nb_patient_in_run = 0;
