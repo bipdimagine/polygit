@@ -2936,244 +2936,189 @@ sub table_cnv_genes_transcripts {
 
 sub get_hash_genes_dude {
 	my ($patient, $by_names_or_ids, $list_type, $panel,$noprint) = @_;
-	my $hGenes_dude = {};
+	return if $patient->isGenome();
 	
+	my $limit_genes = 1000;
+	my $hGenes_dude = {};
 	my ($h_type_levels, $h_panels_tr);
-	#unless ($list_type) { push(@$list_type, 'high'); }
-	#push(@$list_type, 'medium');
-	#die();
 	foreach my $type (@$list_type) {
 		$h_type_levels->{$type} = undef;
 	}
-	#$h_type_levels->{medium} = 1;
 	if ($panel) { $h_panels_tr = $panel->genes_id(); }
 
 	$by_names_or_ids = 'names' unless ($by_names_or_ids);
-	my $hGenes_dude = {};
 	my $no = $patient->getTranscriptsDude("r");
 	my @lPatients = @{$patient->getProject->getPatients()};
  	my @selected_patients;
  	push(@selected_patients, $patient);
  	my $nb_genes_done = 0;
- 	
+ 	my $max_genes_selected;
 	my (@ltr, $hGenesToDo, $nbg);
 	foreach my $type (@$list_type) {
 		my $list_tr_high;
 		eval { $list_tr_high = $no->get($type); };
 		if($@) {}
-#		warn $type;
-#		warn Dumper $list_tr_high;
-		#ENST00000631057
-#		my ($toto) = grep {$_ =~/ENST/ } @$list_tr_high;
-	#	warn Dumper $list_tr_high;
-	#	die();
 		unless ($list_tr_high) {
 			$no->close();
 			next;
 		}
-		if (scalar(@$list_tr_high) >= 250 and scalar keys %$h_type_levels == 1) {
-			$hGenes_dude->{too_much} = 1;
-			last;
-#			return $hGenes_dude;
-		}
-		if ($list_tr_high && scalar(@$list_tr_high) > 5000) {
-			$hGenes_dude->{too_much} = 1;
-			last;
-#			return $hGenes_dude;
-		}
 		foreach my $t (@{$patient->getProject->newTranscripts($list_tr_high)}) {
 			my $gene_external_name = $t->gene_external_name;
-#			die() if $gene_external_name eq "GPC3";
 			unless (exists $hGenesToDo->{$gene_external_name}) {
 				$hGenesToDo->{$gene_external_name} = $type;
 				push(@ltr, $t);
 				$nbg++;
 			}
-			last if ($nbg == 250 and not exists $h_type_levels->{'medium'} and not $h_type_levels->{'low'})
 		}
 	}
 	
-		my $fork = 4;
-		my $nb = int(scalar(@ltr)/($fork*2))+1;
-		my $pm = new Parallel::ForkManager($fork);
-		my $iter = natatime $nb, @ltr;
-		$pm->run_on_finish(
-		    sub { 
-		    	my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$h)=@_;
-		    	unless (defined($h) or $exit_code > 0) {
-					print qq|No message received from child process $exit_code $pid!\n|;
-					return;
-				}
-				foreach my $g (keys %{$h}){
-#					warn $g;
-					next if ($g eq 'not');
-					foreach my $t (keys %{$h->{$g}}){
-						next unless (exists $h_type_levels->{$t});
-						$hGenes_dude->{$g}->{$t}->{dup} = $h->{$g}->{$t}->{dup};
-						$hGenes_dude->{$g}->{$t}->{del} = $h->{$g}->{$t}->{del};
-						$hGenes_dude->{$g}->{$t}->{del_ho} += $h->{$g}->{$t}->{del_ho};
-						$hGenes_dude->{$g}->{$t}->{all} = $h->{$g}->{$t}->{all};
-						$hGenes_dude->{$g}->{$t}->{all_others} = $h->{$g}->{$t}->{all_others};
-						$hGenes_dude->{$g}->{$t}->{grey_others} = $h->{$g}->{$t}->{grey_others};
-						$hGenes_dude->{$g}->{$t}->{noise} = $h->{$g}->{$t}->{noise};
-						$hGenes_dude->{$g}->{$t}->{perc_noise} = $h->{$g}->{$t}->{perc_noise};
-						$hGenes_dude->{$g}->{$t}->{perc_grey} = $h->{$g}->{$t}->{perc_grey};
-					}
-				}
-		    }
-	    );
-		
-		$patient->getProject->buffer->dbh_deconnect();
-		$patient->getProject->disconnect();
-		my $xp = 0;
- 	 	while( my @ltr_tmp = $iter->() ){
- 	 		my $pid = $pm->start and next;
-			$patient->getProject->buffer->dbh_reconnect();
-			$patient->getProject->disconnect();
-			my $hGenes_dude_tmp;
-			$hGenes_dude_tmp->{'not'}++;
-		 	foreach my $t (@ltr_tmp){
-		 		$xp++;
-		 		unless ($noprint){
-				print "." if ($xp % 20 == 0 and $patient->getProject->cgi_object());
-				$patient->getProject->print_dot(50);
-		 		}
-		 		my $g_name_id;
-		 		$g_name_id = $t->gene_external_name() if ($by_names_or_ids eq 'names');
-		 		$g_name_id = $t->getGene->id() if ($by_names_or_ids eq 'ids');
-		 		
-				my $type = $hGenesToDo->{$t->gene_external_name};
-		 		next if (exists $hGenes_dude->{$g_name_id});
-		 		
-	 	 		# FILTRE TRANSCRIPTS HIGH DUDE
-				my $coverage = polyweb_dude->new(patients=>\@lPatients,transcript=>$t,limit=>undef,selected_patients=>\@selected_patients);
-				$coverage->init_matrices();
-				my $hcov = $coverage->quality;
-				
-				$hGenes_dude_tmp->{$g_name_id}->{$type}->{dup} += $hcov->{$patient->name()}->{dup};
-				$hGenes_dude_tmp->{$g_name_id}->{$type}->{del} += $hcov->{$patient->name()}->{del};
-				$hGenes_dude_tmp->{$g_name_id}->{$type}->{del_ho} += $hcov->{$patient->name()}->{del_ho};
-				$hGenes_dude_tmp->{$g_name_id}->{$type}->{all} += $hcov->{$patient->name()}->{all};
-				
-				foreach my $other_patient (@lPatients) {
-					next if ($other_patient->getFamily->name() eq $patient->getFamily->name());
-					$hGenes_dude_tmp->{$g_name_id}->{$type}->{grey_others} += $hcov->{$other_patient->name()}->{grey};
-					$hGenes_dude_tmp->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{dup};
-					$hGenes_dude_tmp->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{del};
-					$hGenes_dude_tmp->{$g_name_id}->{$type}->{all_others} += $hcov->{$other_patient->name()}->{all};
-				}
-			}
- 	 		$pm->finish(0,$hGenes_dude_tmp);
- 	 	}
-		$pm->wait_all_children();
-		$patient->getProject->buffer->dbh_reconnect();
+	$patient->getProject->buffer->dbh_deconnect();
+	$patient->getProject->disconnect();
+	my $xp = 0;
+ 	foreach my $t (@ltr){
+ 		$xp++;
+ 		unless ($noprint){
+			print "." if ($xp % 20 == 0 and $patient->getProject->cgi_object());
+ 		}
+ 		my $g_name_id;
+ 		$g_name_id = $t->gene_external_name() if ($by_names_or_ids eq 'names');
+ 		$g_name_id = $t->getGene->id() if ($by_names_or_ids eq 'ids');
+	 		
+		my $type = $hGenesToDo->{$t->gene_external_name};
+ 		next if (exists $hGenes_dude->{$g_name_id});
+	 		
+ 		# FILTRE TRANSCRIPTS HIGH DUDE
+		my $coverage = polyweb_dude->new(patients=>\@lPatients,transcript=>$t,limit=>undef,selected_patients=>\@selected_patients);
+		$coverage->init_matrices();
+		my $hcov = $coverage->quality;
+			
+		$hGenes_dude->{$g_name_id}->{$type}->{dup} += $hcov->{$patient->name()}->{dup};
+		$hGenes_dude->{$g_name_id}->{$type}->{del} += $hcov->{$patient->name()}->{del};
+		$hGenes_dude->{$g_name_id}->{$type}->{del_ho} += $hcov->{$patient->name()}->{del_ho};
+		$hGenes_dude->{$g_name_id}->{$type}->{all} += $hcov->{$patient->name()}->{all};
+			
+		foreach my $other_patient (@lPatients) {
+			next if ($other_patient->getFamily->name() eq $patient->getFamily->name());
+			$hGenes_dude->{$g_name_id}->{$type}->{grey_others} += $hcov->{$other_patient->name()}->{grey};
+			$hGenes_dude->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{dup};
+			$hGenes_dude->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{del};
+			$hGenes_dude->{$g_name_id}->{$type}->{all_others} += $hcov->{$other_patient->name()}->{all};
+		}
+	}
 
 	$no->close();
 	if (not $hGenes_dude  or scalar keys %{$hGenes_dude} == 0) {
 		$hGenes_dude->{no_result} = 1;
 		return $hGenes_dude;
 	}
-	#warn Dumper $hGenes_dude->{ENSG00000147257_X};
-	#warn Dumper $hGenes_dude;
-	#die();
-	unless ($patient->isGenome()) {
-			foreach my $g_name_id (keys %{$hGenes_dude}) {
-				foreach my $type (keys %{$hGenes_dude->{$g_name_id}}) {
-					#next unless (exists $hGenes_dude->{$g_name_id}->{$type});
-					my $nb_grey_others = $hGenes_dude->{$g_name_id}->{$type}->{grey_others};
-					my $nb_all_others = $hGenes_dude->{$g_name_id}->{$type}->{all_others};
-					my $perc_grey = 0;
-					$perc_grey = ($nb_grey_others / $nb_all_others) * 100 if ($nb_all_others > 0);
-					my $nb_noise = $hGenes_dude->{$g_name_id}->{$type}->{noise};
-					my $perc = 0;
-					$perc = ($nb_noise / $nb_all_others) * 100 if ($nb_all_others > 0);
-					$hGenes_dude->{$g_name_id}->{$type}->{'perc_noise'} = $perc;
-					$hGenes_dude->{$g_name_id}->{$type}->{'perc_grey'} = $perc_grey;
-				}
-				if (exists $hGenes_dude->{$g_name_id}->{'high'} and $hGenes_dude->{$g_name_id}->{'high'}->{noise} > 0) {
-					my $perc_noise = $hGenes_dude->{$g_name_id}->{'high'}->{'perc_noise'};
-					my $nb_del = $hGenes_dude->{$g_name_id}->{'high'}->{del};
-					my $nb_del_ho = $hGenes_dude->{$g_name_id}->{'high'}->{del_ho};
-					$nb_del += $nb_del_ho;
-					my $nb_dup = $hGenes_dude->{$g_name_id}->{'high'}->{dup};
-					my $nb_all = $hGenes_dude->{$g_name_id}->{'high'}->{all};
-					my $perc_gene_dup = ($nb_dup / $nb_all) * 100;
-					my $perc_gene_del = ($nb_del / $nb_all) * 100;
-					
-					#CAS majorite exons concernes mais 
-					if ($nb_del_ho) {
-						
-					}
-					elsif ($nb_dup == $nb_del) {
-						if ($perc_noise >= 20) {
-							$hGenes_dude->{$g_name_id}->{'low'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'low'});
-							delete $hGenes_dude->{$g_name_id}->{'high'};
-						}
-						else {
-							$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
-							delete $hGenes_dude->{$g_name_id}->{'high'};
-						}
-					}
-					#CAS majorite exons concernes mais 
-					elsif ($perc_gene_dup >= 60 or $perc_gene_del >= 60) {
-						if ($perc_noise >= 20) {
-							$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
-							delete $hGenes_dude->{$g_name_id}->{'high'};
-						}
-					}
-					#CAS baisse si BCP TROP bruit
-					elsif ($perc_noise >= 40) {
-						$hGenes_dude->{$g_name_id}->{'low'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'low'});
-						delete $hGenes_dude->{$g_name_id}->{'high'};
-					}
-					#CAS baisse si TROP bruit avec DEL HO
-					elsif ($perc_noise >= 10 and $nb_del_ho > 0) {
-						$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
-						delete $hGenes_dude->{$g_name_id}->{'high'};
-					}
-					#CAS baisse si TROP bruit sans DEL HO
-					elsif ($perc_noise >= 5 and $nb_del_ho == 0) {
-						$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
-						delete $hGenes_dude->{$g_name_id}->{'high'};
-					}
-				}
+
+	my $nb_ok = 0;
+	my $hGenes_dude_ok;
+	foreach my $g_name_id (keys %{$hGenes_dude}) {
+		if ($nb_ok == $limit_genes) {
+			$max_genes_selected = $nb_ok;
+			last;
+		}
+		foreach my $type (keys %{$hGenes_dude->{$g_name_id}}) {
+			#next unless (exists $hGenes_dude->{$g_name_id}->{$type});
+			my $nb_grey_others = $hGenes_dude->{$g_name_id}->{$type}->{grey_others};
+			my $nb_all_others = $hGenes_dude->{$g_name_id}->{$type}->{all_others};
+			my $perc_grey = 0;
+			$perc_grey = ($nb_grey_others / $nb_all_others) * 100 if ($nb_all_others > 0);
+			my $nb_noise = $hGenes_dude->{$g_name_id}->{$type}->{noise};
+			my $perc = 0;
+			$perc = ($nb_noise / $nb_all_others) * 100 if ($nb_all_others > 0);
+			$hGenes_dude->{$g_name_id}->{$type}->{'perc_noise'} = $perc;
+			$hGenes_dude->{$g_name_id}->{$type}->{'perc_grey'} = $perc_grey;
+		}
+		
+		if (exists $hGenes_dude->{$g_name_id}->{'high'} and $hGenes_dude->{$g_name_id}->{'high'}->{noise} > 0) {
+			my $perc_noise = $hGenes_dude->{$g_name_id}->{'high'}->{'perc_noise'};
+			my $nb_del = $hGenes_dude->{$g_name_id}->{'high'}->{del};
+			my $nb_del_ho = $hGenes_dude->{$g_name_id}->{'high'}->{del_ho};
+			$nb_del += $nb_del_ho;
+			my $nb_dup = $hGenes_dude->{$g_name_id}->{'high'}->{dup};
+			my $nb_all = $hGenes_dude->{$g_name_id}->{'high'}->{all};
+			my $perc_gene_dup = ($nb_dup / $nb_all) * 100;
+			my $perc_gene_del = ($nb_del / $nb_all) * 100;
+			
+			#CAS majorite exons concernes mais 
+			if ($nb_del_ho) {
 				
-				#CAS rattrapage MEDIUM DEL HO et peu NOISE
-				elsif (exists $hGenes_dude->{$g_name_id}->{'medium'}) {
-				
-					my $nb_del = $hGenes_dude->{$g_name_id}->{'medium'}->{del};
-					my $nb_del_ho = $hGenes_dude->{$g_name_id}->{'medium'}->{del_ho};
-					$nb_del += $nb_del_ho;
-					my $nb_dup = $hGenes_dude->{$g_name_id}->{'medium'}->{dup};
-					my $perc_noise = $hGenes_dude->{$g_name_id}->{'medium'}->{perc_noise};
-					if ($nb_del_ho > 0) {
-					#if ($nb_dup != $nb_del and $perc_noise < 10 and $nb_del_ho > 0) {
-						$hGenes_dude->{$g_name_id}->{'high'} = $hGenes_dude->{$g_name_id}->{'medium'};
-						delete $hGenes_dude->{$g_name_id}->{'medium'};
-					}
-					elsif ($nb_dup != $nb_del and $perc_noise < 1) {
-						$hGenes_dude->{$g_name_id}->{'high'} = $hGenes_dude->{$g_name_id}->{'medium'};
-						delete $hGenes_dude->{$g_name_id}->{'medium'};
-					}
-				}
-				
-				#CAS rattrapage LOW  et peu NOISE
-				elsif (exists $hGenes_dude->{$g_name_id}->{'low'}) {
-					if ($hGenes_dude->{$g_name_id}->{'low'}->{perc_noise} < 1) {
-						$hGenes_dude->{$g_name_id}->{'high'} = $hGenes_dude->{$g_name_id}->{'low'};
-						delete $hGenes_dude->{$g_name_id}->{'low'};
-					}
-					elsif ($hGenes_dude->{$g_name_id}->{'low'}->{perc_noise} < 2) {
-						$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'low'};
-						delete $hGenes_dude->{$g_name_id}->{'low'};
-					}
-				}
-				delete $hGenes_dude->{$g_name_id}->{'low'} unless (exists $h_type_levels->{'low'});
-				delete $hGenes_dude->{$g_name_id}->{'medium'} unless (exists $h_type_levels->{'medium'});
-				delete $hGenes_dude->{$g_name_id} if (scalar keys %{$hGenes_dude->{$g_name_id}} == 0);
 			}
- 	 }
-	return $hGenes_dude;
+			elsif ($nb_dup == $nb_del) {
+				if ($perc_noise >= 20) {
+					$hGenes_dude->{$g_name_id}->{'low'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'low'});
+					delete $hGenes_dude->{$g_name_id}->{'high'};
+				}
+				else {
+					$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
+					delete $hGenes_dude->{$g_name_id}->{'high'};
+				}
+			}
+			#CAS majorite exons concernes mais 
+			elsif ($perc_gene_dup >= 60 or $perc_gene_del >= 60) {
+				if ($perc_noise >= 20) {
+					$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
+					delete $hGenes_dude->{$g_name_id}->{'high'};
+				}
+			}
+			#CAS baisse si BCP TROP bruit
+			elsif ($perc_noise >= 40) {
+				$hGenes_dude->{$g_name_id}->{'low'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'low'});
+				delete $hGenes_dude->{$g_name_id}->{'high'};
+			}
+			#CAS baisse si TROP bruit avec DEL HO
+			elsif ($perc_noise >= 10 and $nb_del_ho > 0) {
+				$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
+				delete $hGenes_dude->{$g_name_id}->{'high'};
+			}
+			#CAS baisse si TROP bruit sans DEL HO
+			elsif ($perc_noise >= 5 and $nb_del_ho == 0) {
+				$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'high'} if (exists $h_type_levels->{'medium'});
+				delete $hGenes_dude->{$g_name_id}->{'high'};
+			}
+		}
+				
+		#CAS rattrapage MEDIUM DEL HO et peu NOISE
+		elsif (exists $hGenes_dude->{$g_name_id}->{'medium'}) {
+			my $nb_del = $hGenes_dude->{$g_name_id}->{'medium'}->{del};
+			my $nb_del_ho = $hGenes_dude->{$g_name_id}->{'medium'}->{del_ho};
+			$nb_del += $nb_del_ho;
+			my $nb_dup = $hGenes_dude->{$g_name_id}->{'medium'}->{dup};
+			my $perc_noise = $hGenes_dude->{$g_name_id}->{'medium'}->{perc_noise};
+			if ($nb_del_ho > 0) {
+				$hGenes_dude->{$g_name_id}->{'high'} = $hGenes_dude->{$g_name_id}->{'medium'};
+				delete $hGenes_dude->{$g_name_id}->{'medium'};
+			}
+			elsif ($nb_dup != $nb_del and $perc_noise < 1) {
+				$hGenes_dude->{$g_name_id}->{'high'} = $hGenes_dude->{$g_name_id}->{'medium'};
+				delete $hGenes_dude->{$g_name_id}->{'medium'};
+			}
+		}
+				
+		#CAS rattrapage LOW  et peu NOISE
+		elsif (exists $hGenes_dude->{$g_name_id}->{'low'}) {
+			if ($hGenes_dude->{$g_name_id}->{'low'}->{perc_noise} < 1) {
+				$hGenes_dude->{$g_name_id}->{'high'} = $hGenes_dude->{$g_name_id}->{'low'};
+				delete $hGenes_dude->{$g_name_id}->{'low'};
+			}
+			elsif ($hGenes_dude->{$g_name_id}->{'low'}->{perc_noise} < 2) {
+				$hGenes_dude->{$g_name_id}->{'medium'} = $hGenes_dude->{$g_name_id}->{'low'};
+				delete $hGenes_dude->{$g_name_id}->{'low'};
+			}
+		}
+			
+		delete $hGenes_dude->{$g_name_id}->{'low'} unless (exists $h_type_levels->{'low'});
+		delete $hGenes_dude->{$g_name_id}->{'medium'} unless (exists $h_type_levels->{'medium'});
+		delete $hGenes_dude->{$g_name_id} if (scalar keys %{$hGenes_dude->{$g_name_id}} == 0);
+		
+		if (exists $hGenes_dude->{$g_name_id}) {
+			$nb_ok++;
+			$hGenes_dude_ok->{$g_name_id} = $hGenes_dude->{$g_name_id};
+		}
+ 	}
+	return ($hGenes_dude_ok, $max_genes_selected);
 }
 
 sub print_dude_button {
