@@ -120,6 +120,8 @@ my $genes_arg       = $cgi->param('genes');
 my $filter;
 my @selected_patients;
 
+my $max_genes_selected;
+
 if ($value_quality and not $genes_arg) {
 	my $p   = $cgi->param('patients');
 	my $pat = $project->getPatient($p);
@@ -132,8 +134,9 @@ if ($value_quality and not $genes_arg) {
 	if ($value_quality == 4) { @lTypes = ('high','medium', 'low'); }
 	my $this_types = join(', ', @lTypes);
 	if ($project->isDiagnostic()) { @lTypes = ('high','medium', 'low'); }
-	my $hRes = update_variant_editor::get_hash_genes_dude($pat, 'ids', \@lTypes,undef,1);
-#	warn Dumper $hRes;
+	my $hRes;
+	($hRes, $max_genes_selected) = update_variant_editor::get_hash_genes_dude($pat, 'ids', \@lTypes,undef,1);
+
 	if ($project->isDiagnostic()) { 
 		foreach my $g_id (keys %{$hRes}) {
 			if ($value_quality == 1 and not exists $hRes->{$g_id}->{'high'}) {
@@ -298,6 +301,11 @@ my $patients = $project->getPatients();
 my $nb       = 0;
 my @problem_transcripts;
 
+if ($max_genes_selected) {
+	$out .= "<center><span style='color:red;font-size:24px;'>--- Only the first $max_genes_selected genes displayed ---</span></center><br><br>";
+}
+
+
 @transcripts = grep { exists $images->{ $_->id } } @transcripts;
 my $nbc = 0;
 for ( my $i = 0 ; $i < @transcripts ; $i++ ) {
@@ -393,7 +401,7 @@ exit(0);
 sub uri_image {
 	my ( $projects, $transcripts, $force_visualisation) = @_;
 	my $patients = $project->getPatients();
-	my $fork     = 16;
+	my $fork     = 10;
 	my $nb       = int( scalar(@$transcripts) / ( $fork * 2 ) ) + 1;
 	print qq{<div style="visibility: hidden">};
 	#	warn $nb;
