@@ -657,10 +657,8 @@ unless ($htable) {
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
 	$hmendel = get_mendelian_statistics($project) unless $hmendel;
 	foreach my $run ( @{ $project->getRuns() } ) {
-		warn $run->id;
 		$htable->{ $run->id } = table_patients($run);
 	}
-	die();
 	$no_cache = $project->get_lmdb_cache_summary("w");
 	$no_cache->put_cache_hash( $table_id, $htable, 2400 );
 	$no_cache->close();
