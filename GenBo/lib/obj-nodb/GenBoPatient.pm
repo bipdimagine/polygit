@@ -528,7 +528,6 @@ has 'compute_sex' => (
 		my $self = shift;
 #		warn "start";
 		my $covm = $self->coverage_SRY();
-		warn  $covm;
 #		warn $covm;
 		return 1 if $covm > 30;
 		return -1 if $covm == -1;
