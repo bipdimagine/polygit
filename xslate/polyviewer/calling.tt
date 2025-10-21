@@ -58,6 +58,9 @@
 			: else if ($children.child_model == "?"){
 				<span class="glyphicon glyphicon-question-sign" style = "font-size="12px"></span>
 			:}
+			: else if ($children.child_model == "minus"){
+				<span class="glyphicon glyphicon-minus" style = "font-size="12px"></span>
+			:}
 			: else {
 				<: $children.child_model :>
 			:}
