@@ -42,12 +42,15 @@ use POSIX;
 use validationQuery;
 use Date::Tiny;
 use List::MoreUtils qw{part};
+use lib "$Bin/../GenBo/lib/obj-nodb/polyviewer";
+use PolyviewerVariant;
 #use PDF::API2;
 #use PDF::Table;
 use constant mm => 25.4 / 72;
 use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
+use GenBoNoSqlRocksTinyPolyviewerVariant;
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
 
 use Digest::MD5::File qw(md5 md5_hex file_md5_hex url_md5_hex file_md5);
@@ -640,6 +643,7 @@ sub construct_htranscripts {
 				$htranscript->{external_name} = "intergenic";
 			}
 			my $kvars = return_list_variants($project,$patient,$tr_id,$tr1,$debug);
+			warn Dumper $kvars if $debug;
 			if ($tr ne "intergenic"){
 		
 		
@@ -838,7 +842,7 @@ sub construct_data {
 	my $text = $no_cache->get_cache($cache_id);
 	
 	#TODO: here enlever cache
-	#$text = undef;
+	$text = undef;
 	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
@@ -3882,18 +3886,31 @@ sub return_list_variants {
 	my ($project,$patient,$tr_id,$tr,$debug) = @_;
 	print "*";
 	my $d = $project->getCacheDir();
+	#$d = "/data-pure/polycache/rocks/HG38_DRAGEN.43.21/NGS2025_09121.bad/";
 	my $project_name= $project->name;
 	my $patient_name = $patient->name();
 	my @vars;
 	my $key =$tr_id;
 	my $string ="";
 	$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
-	
  	my $data = [split(";",$string)];
  	if (scalar(@$data)==0 ){
  		my $v = $tr->getGene->getCurrentVector & $patient->getVectorOrigin($tr->getChromosome);
- 		#warn scalar(@$data)." ". $v->Norm. $tr->getGene->external_name if (scalar(@$data)==0 && $v->Norm >0); 
- 	}
+ 		if ($v->Norm > 0) {
+ 			my $array = $tr->transformBitVectorToList($v);
+ 			my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$patient,project=>$project);
+ 			foreach my $a  (@$array){
+ 				my $vp =  $rocksdb_pv->get_polyviewer_variant($tr->getChromosome->name."!".$a);
+ 				confess() unless $vp;
+ 				my $htr = $vp->{hgenes}->{$tr->getGene->id}->{tr};
+ 				if (exists $vp->{hgenes}->{$tr->getGene->id} ){
+ 					my @t = grep {$tr->name eq $_->{name}} @{$vp->{hgenes}->{$tr->getGene->id}->{tr}};
+ 					confess() if (@t) ;
+ 				}
+ 			}
+ 		}
+ 		}
+ 			
  	
 	return $data;
 

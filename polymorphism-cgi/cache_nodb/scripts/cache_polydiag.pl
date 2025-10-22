@@ -75,24 +75,26 @@ $| = 1;
 	my $project_name = $project->name();
 	$pr->write();
 	my $proc = time;
-
+	$project->preload();
 	foreach my $p ( @{ $patients } ) {
 		my $pname = $p->name();
 		$project->disconnect();
 		#next if $pname ne "AS1502552"
 		$proc ++;
 		$run->{$proc}++;
-		my $pid = $pm->start and next;
+	#	my $pid = $pm->start and next;
 		#my $resp= {};
 
 		my $resp = polydiag::run_cache_polydiag_fork( $project, $p, $db_lite, $tbundle,$version );
 		warn Dumper $resp;
 		#run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
-		$pm->finish( 0, {proc=>$proc} );
+		
+	#	$pm->finish( 0, {proc=>$proc} );
 	}
 
-	$pm->wait_all_children;
+	#$pm->wait_all_children;
+	
 	$project->buffer->dbh->disconnect();
 	
 	#$project->buffer->dbh->disconnect();
@@ -101,7 +103,7 @@ $| = 1;
 	}
 	#warn Dumper $project
 	die() if $error;
-	confess() if keys %{$run};
+	#confess() if keys %{$run};
 	warn "ok";
 sub run_cache_web_polydiag {
 	my ($project,$patient) = @_;

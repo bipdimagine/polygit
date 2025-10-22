@@ -21,6 +21,8 @@ use POSIX qw(strftime);
 use JSON;
 use Compress::Snappy;
 use preload_coverage;
+use Data::Dumper;
+use Carp;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 use update;
 #use update;
@@ -297,7 +299,7 @@ sub run_cache_polydiag_cache {
 				$th{"intergenic"}++;
 
 			}
-			
+			$buffer1->dbh->disconnect();
 			
 		}
 	}#end foreach chromosome
@@ -364,19 +366,18 @@ sub run_cache_polydiag_fork {
 	my %th;
 	
 	#my $variations = $p->getStructuralVariations();
-	 my $pm = new Parallel::ForkManager(15);
-	
-	 $pm->run_on_finish(
+	 my $pm = new Parallel::ForkManager(10);
+	my $run;
+	my $proc = time;
+ 	 $pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
 			die()  if $exit_code ne 0;
 			my $count;
+			my $p = delete $data->{run};
+			delete $run->{$p};
 			my $db_lite = $project->noSqlPolydiag("w");
 			foreach my $t ( keys %{$data->{vtr}} ) {
-				if ($t =~ /ENST00000328300/){
-					warn $t;
-					warn join( ";", @{ $data->{vtr}->{$t} });
-				}
 				$db_lite->put( $patient_name, "list_$t", join( ";", @{ $data->{vtr}->{$t} } ) );
 				
 			}
@@ -392,6 +393,9 @@ sub run_cache_polydiag_fork {
 	
 	
 	foreach my $chr ( @{ $project->getChromosomes } ) {
+		$proc ++;
+		$run->{$proc} = 1;
+		$project->disconnect();
 		 my $pid      = $pm->start() and next;	
 		 my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
@@ -475,16 +479,18 @@ sub run_cache_polydiag_fork {
 		 $res->{vtr} = $vtr;
 		$res->{th}= \%th;
 		$res->{hv}= $hh;
+		$res->{run} = $proc;
+		
 	#	warn "end ".$chr->name;
+		$buffer1->disconnect();
 		$pm->finish(0,$res);
 		#$project->purge_memory( $chr->length );
 	}    #end chromosome
 	
 	
 		$pm->wait_all_children;
-	$project->buffer->dbh_reconnect();
-
-
+	warn Dumper $run;
+confess() if keys %{$run};
 
 #	$db_lite->close();
 #	$project->buffer->dbh->disconnect();
