@@ -3301,7 +3301,7 @@ sub print_cnv_exome {
 	print qq{<div style="display: none">};
 	$patient->getProject->cgi_object(1);
 	
-	my $hGenes_dude = get_hash_genes_dude($patient, 'ids', \@ltypes, '');
+	my ($hGenes_dude, $max) = get_hash_genes_dude($patient, 'ids', \@ltypes, '');
 	print qq{</div>};
 	my @lGenes_ids = sort keys %{$hGenes_dude};
 	if ($lGenes_ids[0] eq 'too_much' or $lGenes_ids[-1] eq 'too_much') {
