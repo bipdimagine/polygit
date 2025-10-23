@@ -1974,7 +1974,7 @@ sub launch_check_genes_request {
 	print "{\"progress\":\".";
 	my $hash_ok;
 	foreach my $name (split(' ', $check_genes)) {
-		$project->{only_genes}->{$name} = undef;
+		$project->{only_genes}->{uc($name)} = undef;
 	}
 	my $hashRes;
 	$hashRes->{'label'} = 'name';

@@ -590,6 +590,7 @@ sub patients {
 	confess unless $self->{patients};
 	return values %{$self->{patients}};
 }
+
 sub delPatient {
 	my ($self,$patient) = @_;
 	delete $self->{patients}->{$patient->id};
@@ -1136,32 +1137,7 @@ sub filter_genes_only_genes_names {
 		}
 		else { $chr->getProject->{only_genes}->{$name} = undef; }
 	}
-	my $vector_genes = $chr->getVariantsVector();
-	$self->{genes}->{$chr->name} ={};
-	foreach my $g (keys %{$chr->getProject->only_genes}){
-		$chr->getProject->print_dot(1);
-		my $gene= $chr->project->newGene($g);
-		next unless $gene;
-		next if $gene->getChromosome->name ne $chr->name;
-		my $vgene =  $gene->getVariantsVector();
-		$vgene &=  $vector_genes;
-		next if $vgene->is_empty();
-		$vector_genes &= $gene->getVariantsVector();
-		$chr->{genes_object}->{$gene->id} ++;
-		$self->{genes}->{$chr->name}->{$gene->id} = $gene;
-	
-	}
-	$chr->setVariantsVector($vector_genes);
 	return;
-	
-	foreach my $gene (@{$chr->getGenes()}) {
-		$chr->getProject->print_dot(1);
-		next if ($chr->getProject->only_genes() and not exists $chr->getProject->only_genes->{uc($gene->external_name())});
-		$vector_genes += $gene->getVariantsVector();
-		
-	}
-	$chr->setVariantsVector($vector_genes);
-	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_genes_only_genes_names - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
 }
 
 
@@ -1172,6 +1148,17 @@ sub get_vector_filter_gene_annotations {
 	my @all_cat = return_cat($chr->project,keys %$hFiltersChr);
 	my $variants_genes  = $chr->getNewVector();
 	foreach my $gene (@{$self->getGenes($chr)}) {
+		if (exists $chr->getProject->{only_genes}) {
+			my $found;
+			$found = 1 if exists $chr->getProject->{only_genes}->{$gene->id()};
+			$found = 1 if exists $chr->getProject->{only_genes}->{$gene->external_name()};
+			if (not $found) {
+				delete $chr->project->{genes_object}->{$gene->id};
+				$self->deleteGene($chr,$gene);
+				next;
+			}
+		}
+		
 		$chr->getProject->print_dot(1);
 		my $debug;
 		my $vsmall = $gene->getCompactVectorOriginCategories(\@all_cat,$debug);
@@ -1228,7 +1215,6 @@ sub filter_genes_annotations {
 	$chr->getVariantsVector->Intersection($chr->getVariantsVector(), $variants_genes);
 	$chr->{buffer_vector} = $chr->getVariantsVector();
 	
-#	die;
 	
 #	warn "---------------- $nb/$nb_genes/".scalar(keys %{$chr->{genes_object}});
 #	warn abs(time - $t);
