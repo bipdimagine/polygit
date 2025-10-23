@@ -2934,11 +2934,11 @@ sub table_cnv_genes_transcripts {
 
 
 
+my $limit_genes_dude = 1000;
 sub get_hash_genes_dude {
 	my ($patient, $by_names_or_ids, $list_type, $panel,$noprint) = @_;
 	return if $patient->isGenome();
 	
-	my $limit_genes = 1000;
 	my $hGenes_dude = {};
 	my ($h_type_levels, $h_panels_tr);
 	foreach my $type (@$list_type) {
@@ -3015,7 +3015,7 @@ sub get_hash_genes_dude {
 	my $nb_ok = 0;
 	my $hGenes_dude_ok;
 	foreach my $g_name_id (keys %{$hGenes_dude}) {
-		if ($nb_ok == $limit_genes) {
+		if ($nb_ok == $limit_genes_dude) {
 			$max_genes_selected = $nb_ok;
 			last;
 		}
@@ -3267,7 +3267,7 @@ foreach my $g (keys %$hotspots){
 
 sub print_cnv_exome {
 	my ($patient, $types, $panel) = @_;
-	
+	#$limit_genes_dude = 250;
 	if ($patient->isParent()) {
 		if ($patient->getProject->validation_db() and $patient->getProject->validation_db() eq 'defidiag') {
 			return;

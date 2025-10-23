@@ -53,28 +53,13 @@ my $phenotypes = $project->getPhenotypes();
 	if (@$phenotypes){
 		$ph = "phenotype='".$phenotypes->[0]->name."'";
 	}
+
+
+my $fileout =  $project->rocks_directory("logs")."/$patient_name.polyviewer";
 	
-my $no_cache = $patient->get_lmdb_cache_beegfs("c");
-$no_cache->put("start_polyviewer_".time,time);
-$no_cache->close();
 my $cmd1 = qq{$bin_dir/variations_editor.pl  ac=5 ach=2 allele_quality=- annot="splicing+essential_splicing+nonsynonymous+stop+phase+maturemirna+frameshift+non-frameshift+predicted_splice_site" denovo=1 dv=3 dv_ho=2 edit_mode=1 in_this_run=6 keep_pathogenic=1 never=1 patients=$patient_name $ph project=$project_name recessive=1 report_mode=1 strict_denovo=1 user_name= xor=1};
-system($cmd1." >/dev/null");
+system($cmd1." 1>$fileout 2>>$fileout");
 sleep(3);
-
-my $cmd2 = qq{$bin_dir/variations_editor.pl  ac=5 ach=2 allele_quality=- annot="splicing+essential_splicing+nonsynonymous+stop+phase+ncrna+maturemirna+frameshift+non-frameshift+predicted_splice_site" denovo=1 dv=3 dv_ho=2 edit_mode=1 in_this_run=6 keep_pathogenic=1 never=1 patients=$patient_name $ph project=$project_name recessive=1 report_mode=1 strict_denovo=1 user_name= xor=1};
-system($cmd2." >/dev/null");
-sleep(3);
-
-my $cmd3 = qq{$bin_dir/variations_editor.pl  ac=5 ach=2 allele_quality=- annot="splicing+essential_splicing+nonsynonymous+stop+phase+maturemirna+frameshift+non-frameshift+predicted_splice_site" denovo=1 dv=4 dv_ho=2 edit_mode=1 in_this_run=6 keep_pathogenic=1 never=1 patients=$patient_name $ph project=$project_name recessive=1 report_mode=1 strict_denovo=1 user_name= xor=1};
-system($cmd3." >/dev/null");
-sleep(3);
-
-my $cmd4 = qq{$bin_dir/variations_editor.pl  ac=5 ach=2 allele_quality=- annot="splicing+essential_splicing+nonsynonymous+stop+phase+ncrna+maturemirna+frameshift+non-frameshift+predicted_splice_site" denovo=1 dv=4 dv_ho=2 edit_mode=1 in_this_run=6 keep_pathogenic=1 never=1 patients=$patient_name $ph project=$project_name recessive=1 report_mode=1 strict_denovo=1 user_name= xor=1};
-system($cmd4." >/dev/null");
-sleep(3);
-
-my $fileout = $no_cache->filename.".polyviewer";
-system("touch $fileout");
 
 exit(0);
 
