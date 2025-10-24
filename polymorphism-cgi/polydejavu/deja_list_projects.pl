@@ -72,7 +72,7 @@ my $path_dv_date_test =  $buffer_init->deja_vu_public_dir('HG38',"variations").'
 my $date_res = `ls -ltrh $path_dv_date_test`;
 chomp($date_res);
 my @ltmp = split(' ', $date_res);
-my $date_dejavu = 'LAST '.$ltmp[-3].' '.$ltmp[-4].': '.$ltmp[-2];
+my $date_dejavu = 'Last DV update: '.$ltmp[-3].' '.$ltmp[-4];
 
 
 
