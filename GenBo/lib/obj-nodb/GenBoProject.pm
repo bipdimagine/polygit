@@ -1228,26 +1228,17 @@ has project_root_path => (
 	default => sub {
 		my $self     = shift;
 		my $dirNgs   = $self->buffer->config->{project_data}->{ngs};
-		my $pathRoot = $self->buffer->config->{project_data}->{root};
+		my $pathRoot = $self->buffer->config_path("project_data","root-isilon");
 		my $path1    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
-		$self->makedir($path1);
-
-		# LN -S vers XFS
-		if ( exists $self->buffer->config->{project_data}->{alias}
-			and $self->buffer->config->{project_data}->{alias} ne '' )
-		{
-			my $pathAliasRoot = $self->buffer->config->{project_data}->{alias};
-			my $path2 = $pathAliasRoot . "/" . $dirNgs . "/" . $self->name();
-			unless ( -l $path2 ) {
-				if ( -d $path2 ) {
-					confess( $self->name
-						  . " \n\nERROR: [GenBoProject -> getProjectRootPath] Directory found but symbolic link expected... Die...\n\n  $path2 $pathAliasRoot\n\n"
-					);
-					die;
-				}
-				#system("ln -s $path1 $path2");
-			}
+		unless (-e $path1){
+			
+			$pathRoot = $self->buffer->config_path("project_data","root");
+			my $path2    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
+			$self->makedir($path2);
+			system("ln -s $path2 $path1") if $path2 ne $path1;
+			return $path2;
 		}
+		#$self->makedir($path1);
 		return $path1;
 	},
 );
