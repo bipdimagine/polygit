@@ -67,6 +67,15 @@ my $query_init = $buffer_init->getQuery();
 my $sql_prepare;
 my $project_init;
 
+
+my $path_dv_date_test =  $buffer_init->deja_vu_public_dir('HG38',"variations").'/1.g.rocks/chunk.json';
+my $date_res = `ls -ltrh $path_dv_date_test`;
+chomp($date_res);
+my @ltmp = split(' ', $date_res);
+my $date_dejavu = $ltmp[-3].' '.$ltmp[-4].': '.$ltmp[-2];
+
+
+
 my $out =  $cgi->start_div({style=>"font-size:10px"});
 $out .= qq{<center>};
 $out .= qq{<button type="button" onClick="get_lists_projects('sort_by_projects')" class="btn">SORT by names</button> };
@@ -197,6 +206,7 @@ $out_phenos .= qq{</div>};
 
 
 
+$hRes->{date_dejavu} = $date_dejavu;
 $hRes->{html_projects} = $out;
 $hRes->{list_projects}= \@lProjectNames;
 $hRes->{list_captures}= \@lCapturesNames;

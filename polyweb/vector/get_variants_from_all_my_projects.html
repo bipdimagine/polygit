@@ -631,6 +631,9 @@
 							document.getElementById("content_res_projects").style.display = "block";
 							dijit.byId('waiting').hide();
 			    		}
+			    		if (key == 'date_dejavu') {
+			    			document.getElementById("span_date_dejavu").innerHTML = val;
+			    		}
 			    		if (key == 'list_projects') {
 			    			list_projects_names = $(val);
 			    		}
@@ -1753,6 +1756,7 @@
 					<li><a><span id="resume_f_panel" style="color:#60b6f5;"></span></a></li>
 				</ul>
 					<ul class="nav navbar-nav navbar-right">
+					<li><a href="#"><div><span class="glyphicon glyphicon-time" style="color:#449D44"></span><span style="margin-left: 5px;color:#449D44;" id="span_date_dejavu"></span></div></a></li>
 					<li><a href="#"><div onClick="dijit.byId('dialog_projects').show();"><span class="glyphicon glyphicon-user" style="color:#449D44"></span><span style="margin-left: 5px;color:#449D44;" id="span_nb_projects"></span></div></a></li>
 					<li>
 						<button class=" btn btn-success  " onClick='relogin();' style="float:right;margin-top: 9px;margin-left: 2px;margin-right: 10px;" >
