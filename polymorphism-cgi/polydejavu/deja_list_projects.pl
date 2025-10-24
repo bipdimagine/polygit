@@ -74,23 +74,19 @@ chomp($date_res);
 my @ltmp = split(' ', $date_res);
 my $date_dejavu = 'Last DV update: '.$ltmp[-3].' '.$ltmp[-4];
 
-
-
-my $out =  $cgi->start_div({style=>"font-size:10px"});
+my $out =  $cgi->start_div({style=>"font-size:10px;"});
 $out .= qq{<center>};
-$out .= qq{<button type="button" onClick="get_lists_projects('sort_by_projects')" class="btn">SORT by names</button> };
-$out .= qq{<button type="button" onClick="get_lists_projects('sort_by_captures')" class="btn">SORT by captures</button> };
-$out .= qq{<button type="button" onClick="ckeck_list_all_projects()" class="btn btn-success">Select ALL</button> };
-$out .= qq{<button type="button" onClick="unckeck_list_all_projects()" class="btn btn-danger">Unselect ALL</button> };
-$out .= qq{</center><br>};
+$out .= qq{<br>};
 $out .=  $cgi->end_div();
 $out .=  $cgi->start_div();
 $out .= "<table class='table table-striped' style='font-size:13px;'>";
 $out .= "<thead>";
-$out .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:10px"});
+$out .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:10px;"});
 #$out .=  $cgi->th("<center>#</center>");
-$out .=  $cgi->th("<center>Select</center>");
+$out .=  $cgi->th("<center>Found DV Parquet</center>");
+$out .=  $cgi->th("<center>Status</center>");
 $out .=  $cgi->th("<center>Name</center>");
+$out .=  $cgi->th("<center>Id</center>");
 $out .=  $cgi->th("<center>Description</center>");
 $out .=  $cgi->th("<center>Capture(s)</center>");
 $out .=  $cgi->th("<center>Nb Patients</center>");
@@ -103,17 +99,25 @@ my $hCapturesNamesProject;
 my @lProjectNames = reverse sort keys %{$hProjects};
 my $i_p = 0;
 foreach my $project_name (@lProjectNames) {
-	$i_p++;
-	my $description = $hProjects->{$project_name}->{description};
 	my $id = $hProjects->{$project_name}->{id};
+	my $dv_parquet = $buffer_init->config_path("root","dejavu").'/projects_parquet/'.$project_name.'.'.$id.'.parquet';
+	next if -e $dv_parquet.'.no_dejavu';
+	my $description = $hProjects->{$project_name}->{description};
 
 	my $nb_pat = 0;
 	my $patients = 	$query_init->getPatients($id);
+	
+	
 	my %captures_id;
 	foreach my $p (@$patients){
+		next if $p->{type} eq 'rna';
 		$captures_id{$p->{capture_id}} ++;
 		$nb_pat++;
 	}
+	next if $nb_pat == 0;
+	
+	$i_p++;
+	
 	my $hCaptures;
 	foreach my $cid (keys %captures_id){
 		my $capt =  $query_init->getCaptureInfos($cid);
@@ -125,7 +129,6 @@ foreach my $project_name (@lProjectNames) {
 	
 	my $captures = join("<br>", sort keys %$hCaptures);
 	my $button_id = "b_proj_$project_name";
-	my $button_html = qq{<input type="checkbox" dojoType="dijit.form.CheckBox" id="$button_id" checked/>};
 	
 	my $captures_id = join(",", sort keys %$hCaptures);
 	$h_c->{$captures_id}->{$project_name} = undef;
@@ -133,12 +136,31 @@ foreach my $project_name (@lProjectNames) {
 	$h_p->{$project_name} = '';
 	$h_p->{$project_name} .=  $cgi->start_Tr();
 	#$h_p->{$project_name} .=  $cgi->td("<center>$i_p</center>");
-	$h_p->{$project_name} .=  $cgi->td("<center>$button_html</center>");
-	$h_p->{$project_name} .=  $cgi->td("<center>$project_name</center>");
-	$h_p->{$project_name} .=  $cgi->td("<center>$description</center>");
-	$h_p->{$project_name} .=  $cgi->td("<center>$captures</center>");
-	$h_p->{$project_name} .=  $cgi->td("<center>$nb_pat</center>");
-	$h_p->{$project_name} .=  $cgi->end_Tr();
+	my ($html_glyph, $status, $style);
+	if (-e $dv_parquet) {
+		if (-M $dv_parquet < -M $path_dv_date_test) {
+			$html_glyph = qq{<span style='color:orange;' class='glyphicon glyphicon-exclamation-bell'></span>};
+			$status = 'Wait next update';
+			$style = qq{style="color:orange;"};
+		}
+		else {
+			$html_glyph = qq{<span style='color:green;' class='glyphicon glyphicon-ok'></span>};
+			$status = 'OK';
+		}
+	}
+	else {
+		$html_glyph = qq{<span style='color:red;' class='glyphicon glyphicon-exclamation-sign'></span>};
+		$status = 'Not in DV';
+		$style = qq{style="color:red;"};
+	}
+	$h_p->{$project_name} .=  $cgi->td("<center>$html_glyph</center>");
+	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$status</span></center>");
+	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$project_name</span></center>");
+	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$id</span></center>");
+	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$description</span></center>");
+	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$captures</span></center>");
+	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$nb_pat</span></center>");
+	$h_p->{$project_name} .= $cgi->end_Tr();
 }
 
 if ($sort_by_captures) {
@@ -153,15 +175,11 @@ else {
 		$out .= $h_p->{$project_name};
 	}
 }
-
 $out .= "</tbody>";
-$out .= "</table>";
-
+$out .= "</table></center>";
 
 my $hCapturesNames_for_sort;
-foreach my $c_name (keys %$hCapturesNames) {
-	$hCapturesNames_for_sort->{lc($c_name)} = $c_name;
-}
+foreach my $c_name (keys %$hCapturesNames) { $hCapturesNames_for_sort->{lc($c_name)} = $c_name; }
 my @lCapturesNames = sort keys %$hCapturesNames_for_sort;
 
 my $out_captures;
@@ -203,7 +221,6 @@ foreach my $phenotype (sort keys %$h_pheno) {
 }
 $out_phenos .= qq{</select>};
 $out_phenos .= qq{</div>};
-
 
 
 $hRes->{date_dejavu} = $date_dejavu;
