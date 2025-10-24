@@ -2935,11 +2935,11 @@ sub table_cnv_genes_transcripts {
 
 
 
+my $limit_genes_dude = 1000;
 sub get_hash_genes_dude {
 	my ($patient, $by_names_or_ids, $list_type, $panel,$noprint) = @_;
 	return if $patient->isGenome();
 	
-	my $limit_genes = 1000;
 	my $hGenes_dude = {};
 	my ($h_type_levels, $h_panels_tr);
 	foreach my $type (@$list_type) {
@@ -3086,7 +3086,7 @@ sub get_hash_genes_dude {
 	my $nb_ok = 0;
 	my $hGenes_dude_ok;
 	foreach my $g_name_id (keys %{$hGenes_dude}) {
-		if ($nb_ok == $limit_genes) {
+		if ($nb_ok == $limit_genes_dude) {
 			$max_genes_selected = $nb_ok;
 			last;
 		}
@@ -3338,7 +3338,7 @@ foreach my $g (keys %$hotspots){
 
 sub print_cnv_exome {
 	my ($patient, $types, $panel) = @_;
-	
+	#$limit_genes_dude = 250;
 	if ($patient->isParent()) {
 		if ($patient->getProject->validation_db() and $patient->getProject->validation_db() eq 'defidiag') {
 			return;
@@ -3371,9 +3371,10 @@ sub print_cnv_exome {
 	push(@ltypes, 'low') if (exists $hTypes->{'low'});
 	print qq{<div style="display: none">};
 	$patient->getProject->cgi_object(1);
-	my $t = time;
-	my ($hGenes_dude, $value) = get_hash_genes_dude($patient, 'ids', \@ltypes, '');
-	warn "hash_gene ".abs(time-$t);
+
+
+	
+	my ($hGenes_dude, $max) = get_hash_genes_dude($patient, 'ids', \@ltypes, '');
 	print qq{</div>};
 	my @lGenes_ids = sort keys %{$hGenes_dude};
 	if ($lGenes_ids[0] eq 'too_much' or $lGenes_ids[-1] eq 'too_much') {
