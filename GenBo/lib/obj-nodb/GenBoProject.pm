@@ -1227,12 +1227,12 @@ has project_root_path => (
 	reader  => 'getProjectRootPath',
 	default => sub {
 		my $self     = shift;
-		my $dirNgs   = $self->buffer->config->{project_data}->{ngs};
-		my $pathRoot = $self->buffer->config_path("project_data","root-isilon");
+		my $dirNgs   = $self->buffer->config->{project_data}->{'ngs'};
+		my $pathRoot = $self->buffer->config->{project_data}->{'root-isilon'};
 		my $path1    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
 		unless (-e $path1){
 			
-			$pathRoot = $self->buffer->config_path("project_data","root");
+			$pathRoot = $self->buffer->config->{project_data}->{'root'};
 			my $path2    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
 			$self->makedir($path2);
 			system("ln -s $path2 $path1") if $path2 ne $path1;
