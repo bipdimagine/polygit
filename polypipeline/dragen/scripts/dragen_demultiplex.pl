@@ -39,14 +39,18 @@ my $mask = undef;
 my $l2;
 my $force;
 my $run_name_option;
-my $mismatch; 
+my $mismatch;
+my $noTrimUMI;
+my $fastq_index;
 
 GetOptions(
-	'project=s' => \$project_names,
-	'l2=s' => \$l2,
-	'run=s' => \$run_name_option,
-	'mismatch=s' => \$mismatch,
-);
+	'project=s'     => \$project_names,
+	'l2=s'          => \$l2,
+	'run=s'         => \$run_name_option,
+	'mismatch=i'    => \$mismatch,
+	'keep_umi'      => \$noTrimUMI,		# keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
+	'fastq_index'   => \$fastq_index,	# generate I1/I2 fastq
+) || die("Error in command line arguments");
  
 my $bcl_dir;
 my $aoa;
@@ -99,7 +103,7 @@ foreach my $project_name (split(",",$project_names)){
 	 $dir_bcl_tmp = "/data-dragen/bcl/".$project->getRun->run_name()."/";
 	next if $aoa;
 	my $csv_tmp = $bcl_dir."/SP.".time.".csv";
-		die("no sample sheet in database ") unless ($run->sample_sheet);
+	die("no sample sheet in database ") unless ($run->sample_sheet);
 	my $toto = $run->sample_sheet;
 	warn $csv_tmp;
 	#$run->sample_sheet =~ s/;/,/g;	
@@ -279,11 +283,12 @@ my @amask = split(";",$mask);
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
 
 
+my @bc = grep(/I/,@amask);
 
-if(scalar(@index) == 1){
+if(scalar(@bc) == 1){
 	splice(@$lheader_data, $pos_cb2, 1);
 	foreach my $data (@{$lines->{"[Data]"}}){
-	if(scalar(@index) == 1){
+	if(scalar(@bc) == 1){
 
 		splice(@$data, $pos_cb2, 1);
 		#my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
@@ -295,9 +300,10 @@ if(scalar(@index) == 1){
 
 $lines->{"[Settings]"} = [];
 my $nb_mis = 0;
-$nb_mis= $mismatch if $mismatch;
+$nb_mis = $mismatch if $mismatch;
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",$nb_mis]);
-push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",$nb_mis]) if scalar(@index) == 2;
+push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",$nb_mis]) if scalar(@bc) == 2;
+push(@{$lines->{"[Settings]"}},["TrimUMI",0]) if $noTrimUMI;
 push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask; 
 
 my $dj;
@@ -318,7 +324,6 @@ foreach my $data (@{$lines->{"[Data]"}}){
 	$ok->{$name} ++;
  	delete $patients{$name};
  	$dj->{$name}++;
- 	#
 	
 }
 
@@ -374,7 +379,8 @@ warn $complete;
 my $checkComplete = 1;
 $checkComplete = 0 if -f $complete;
 while($checkComplete == 1){
-	warn "Run not complete, sleep 1h";
+	my ($sec, $min, $hour) = (localtime)[0,1,2];
+	warn "Run not complete, sleep 1h (3600 s) at $hour:$min:$sec";
 	sleep(3600);
 	$checkComplete = 0 if (-f $complete);
 }
@@ -382,6 +388,9 @@ system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $exit2 = system("rsync -rav --no-times $bcl_dir  $dir_bcl_tmp ");
 my $ss1 = $dir_bcl_tmp."/".$samp_name;
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
+$cmd .= "--strict-mode true "; # abort if any files are missing or corrupt
+$cmd .= "--create-fastq-for-index-reads true " if $fastq_index;
+warn $cmd;
 
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
@@ -433,6 +442,9 @@ system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/
 
 report($dir_stats."/Demultiplex_Stats.csv");
 
+
+print("!! Don't forget to copy the index fastq files !! (from '$dir_out')") if ($fastq_index);
+
 exit(0);
 ###
 
@@ -452,56 +464,56 @@ sub report {
 		$bypatient->{$p} += $line->[3];;
 	}
 	
-print "-- BY LINES : --\n";	
-my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# read") ) ; # if ($type == 1);
-my @l ;
-my @rows;
-my $stat = Statistics::Descriptive::Full->new();
-$stat->add_data(values %$byline);
-my $mean = $stat->mean();
-my $sd = $stat->standard_deviation();
-foreach my $l (keys %$byline){
+	print "-- BY LINES : --\n";	
+	my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# read") ) ; # if ($type == 1);
+	my @l ;
+	my @rows;
+	my $stat = Statistics::Descriptive::Full->new();
+	$stat->add_data(values %$byline);
+	my $mean = $stat->mean();
+	my $sd = $stat->standard_deviation();
+	foreach my $l (keys %$byline){
 		my @row;
-			push(@row,colored::stabilo("blue",$l,1));
-			
-			if ($byline->{$l} < 100){
-				push(@row,colored::stabilo("red",$byline->{$l},1)) ;
-			}
-			elsif ($byline->{$l} < (3*$sd) + $mean){
-				push(@row,colored::stabilo("red",$byline->{$l},1)) ;
-			}
-			elsif ($byline->{$l} < $sd + $mean){
-				push(@row,colored::stabilo("orange",$byline->{$l},1)) ;
-			}
-			
-			else {
-					push(@row,colored::stabilo("green",$byline->{$l},1)) ;
-			}
-			push(@rows,\@row);
+		push(@row,colored::stabilo("blue",$l,1));
+		
+		if ($byline->{$l} < 100){
+			push(@row,colored::stabilo("red",$byline->{$l},1)) ;
+		}
+		elsif ($byline->{$l} < (3*$sd) + $mean){
+			push(@row,colored::stabilo("red",$byline->{$l},1)) ;
+		}
+		elsif ($byline->{$l} < $sd + $mean){
+			push(@row,colored::stabilo("orange",$byline->{$l},1)) ;
 		}
 		
-		$tb->load(@rows);
-		print $tb;
-		print "\n ------------------------------\n";
-
-print "-- By Sample : --\n";	
-my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
- @rows = ();
-foreach my $l (keys %$bypatient){
-		my @row;
-			push(@row,colored::stabilo("blue",$l,1));
-			if ($byline->{$l} > 1000){
-				push(@row,colored::stabilo("green",$bypatient->{$l},1)) ;
-			}
-			else {
-					push(@row,colored::stabilo("red",$bypatient->{$l},1)) ;
-			}
-			push(@rows,\@row);
+		else {
+			push(@row,colored::stabilo("green",$byline->{$l},1)) ;
 		}
+		push(@rows,\@row);
+	}
+	
+	$tb->load(@rows);
+	print $tb;
+	print "\n ------------------------------\n";
+	
+	print "-- By Sample : --\n";	
+	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
+	@rows = ();
+	foreach my $l (keys %$bypatient){
+		my @row;
+		push(@row,colored::stabilo("blue",$l,1));
+		if ($byline->{$l} > 1000){
+			push(@row,colored::stabilo("green",$bypatient->{$l},1)) ;
+		}
+		else {
+				push(@row,colored::stabilo("red",$bypatient->{$l},1)) ;
+		}
+		push(@rows,\@row);
+	}
 		
-		$tb2->load(@rows);
-		print $tb2;
-		print "\n ------------------------------\n";
+	$tb2->load(@rows);
+	print $tb2;
+	print "\n ------------------------------\n";
 }
 
 	
