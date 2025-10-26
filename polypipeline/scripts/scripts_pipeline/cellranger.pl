@@ -19,7 +19,7 @@ use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
 use Moo;
-# 
+
 #use bds_steps;   
 use file_util;
 use Class::Inspector;
@@ -41,7 +41,7 @@ use JSON::XS;
 my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
 my $bin_script_pipeline = qq{$Bin/scripts/scripts_pipeline};
 
-###
+
 my $projectName;
 my $patients_name;
 my $step;
