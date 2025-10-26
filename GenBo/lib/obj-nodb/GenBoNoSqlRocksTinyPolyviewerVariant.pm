@@ -399,10 +399,8 @@ sub load_polyviewer_variant {
 	
 		} @chr;
  		MCE::Loop->finish;
- 		error("Argh,  Something went wrong !!! ") if $error;
- 		error("Argh,  Something went wrong !!! ") if scalar (keys %$jobs) != scalar(@chr);
- 		
- 		#$self->set_cache($bufferpv);
+ 		confess("Argh,  Something went wrong !!! ") if $error;
+ 		confess("Argh,  Something went wrong !!! ") if scalar (keys %$jobs) != scalar(@chr);
 }
 
 sub transform_polyviewer_variant {

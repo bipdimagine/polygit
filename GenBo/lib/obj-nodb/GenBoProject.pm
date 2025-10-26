@@ -680,7 +680,9 @@ has rocks_cache_dir => (
 	default => sub {
 		my $self = shift;
 	#return "/rocks/NGS2025_08811/";
+	
 	my $name = $self->rocks_cache_root_dir."/".$self->name();
+	# return "/data-pure/polycache/rocks/HG38_DRAGEN.43.20/NGS2025_09121.bad/" ;
 	$self->makedir($name);
 	return $name;
 	
@@ -714,7 +716,7 @@ has rocks_cache_2_root_dir => (
 	my $annot_version = $self->annotation_version();
 	my $root= $self->buffer->config_path("root","cache_2");
 	#$root ="/data-pure/polycache/rocks";
-	my $name = $root.'/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/rocks/".$genome_version;
+	my $name = $root.'/'.$genome_version;#$self->buffer()->getDataDirectory("cache")."/".$genome_version;
 	$name .= '.'.$annot_version if ($annot_version and $annot_version ne '.');
 	$self->makedir($name);
 	return $name;
@@ -1356,18 +1358,24 @@ has project_root_path => (
 	default => sub {
 		my $self     = shift;
 		my $dirNgs   = $self->buffer->config->{project_data}->{ngs};
+		my $pathRoot2 = $self->buffer->config_path("root","project_data");
+		my $path2    = $pathRoot2 . "/" . $dirNgs . "/" . $self->name() . '/';
+		return $path2 if -e $path2;
+		 
 		my $pathRoot = $self->buffer->config_path("root","project_data-isilon");
 		my $path1    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
-		unless (-e $path1){
-			
-			$pathRoot = $self->buffer->config_path("root","project_data");
-			my $path2    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
-			$self->makedir($path2);
-			system("ln -s $path2 $path1") if $path2 ne $path1;
-			return $path2;
-		}
-		#$self->makedir($path1);
-		return $path1;
+		return $path1 if -e $path1;
+		$self->makedir($path2);
+		return $path2;
+#		unless (-e $path1){
+#			my $path2    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
+#			$self->makedir($path2);
+#			warn "ln -s $path2 $path1";
+#			system("ln -s $path2 $path1") if $path2 ne $path1;
+#			return $path2;
+#		}
+#		#$self->makedir($path1);
+#		return $path1;
 	},
 );
 
@@ -5741,6 +5749,7 @@ has cache_date => (
 sub getCacheDir {
 	my $self           = shift;
 	#return "/rocks/NGS2025_08811/";
+	# return "/data-pure/polycache/rocks/HG38_DRAGEN.43.20/NGS2025_09121.bad/" ;
 	return $self->{cache_dir} if (exists $self->{cache_dir} and $self->{cache_dir});
 	my $genome_version = $self->genome_version();
 	my $annot_version = $self->annotation_version();
@@ -6547,6 +6556,9 @@ sub noSqlPolydiag {
 	return $self->{nosqlpolydiag} if exists $self->{nosqlpolydiag};
 	$param = "r" unless $param;
 	my $output = $self->getCacheDir() . "/polydiag_lite";
+	
+	# $output = "/data-pure/polycache/rocks/HG38_DRAGEN.43.20/NGS2025_09121.bad/" . "/polydiag_lite";
+	
 	$self->{nosqlpolydiag} = GenBoNoSql->new( dir => $output, mode => $param );
 	return $self->{nosqlpolydiag};
 }
@@ -6735,12 +6747,15 @@ $self->in_this_run_patients();
 $self->exomeProjects();
 $self->countSimilarPatients();
 $self->countExomePatients();
-
+$self->getChromosomes();
 
 }
 sub preload{
 	my $self = shift;
 	$self->preload_patients;
+	if ($self->isDiagnostic){
+		$self->bundle_infos();
+	}
 	
 }
 
