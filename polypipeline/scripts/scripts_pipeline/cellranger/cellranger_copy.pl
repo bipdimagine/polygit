@@ -7,7 +7,7 @@ use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
 use Logfile::Rotate;
- use Cwd;
+use Cwd;
 use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
@@ -16,8 +16,6 @@ use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
 use Moo;
-
-#use bds_steps;   
 use file_util;
 use Class::Inspector;
 use Digest::MD5::File ;
@@ -26,45 +24,71 @@ use GenBoProject;
 use colored; 
 use Config::Std;
 use Text::Table;
-
 use File::Temp qw/ tempfile tempdir /;
-
 use Term::Menus;
- use Proc::Simple;
- use Storable;
+use Proc::Simple;
+use Storable;
 use JSON::XS;
 
 
 my $projectName;
 my $patients_name;
-my $step;
-my $bcl_dir;
-my $feature_ref;
+my $all_outs;
 my $no_exec;
-my $aggr_name;
-my $lane;
-my $limit;
+
 GetOptions(
-	'project=s' => \$projectName,
-	'patients=s' => \$patients_name,
-);
+	'project=s'		=> \$projectName,
+	'patients=s'	=> \$patients_name,
+	'all_outs!'		=> \$all_outs,
+	'no_exec'		=> \$no_exec,
+) || die("Error in command line arguments\n");
+
+die("--project argument is mandatory") unless ($projectName);
+
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
 my $patients = $project->get_only_list_patients($patients_name);
 my $run = $project->getRun();
-my $dir = $project->getCallingPipelineDir("cellranger");
-my $dir_prod = $project->getCellRangerRootDir();
+my $type = $run->infosRun->{method};
+
+my $dir = $project->getCountingDir('cellranger');
+$dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
+warn $dir;
+
+my $dirout = "/data-pure/SingleCell/$projectName/";
+unless (-d $dirout) {
+	my $cp_cmd = "mkdir $dirout";
+	warn $cp_cmd;
+	system ($cp_cmd) unless ($no_exec);
+}
 
 foreach my $patient (@{$patients}) {
-		my $name = $patient->name();
-		my $run_name = $run->plateform_run_name;
-		my $dirout = "/data-isilon/SingleCell/$projectName";
-		my $cp_cmd = "mkdir $dirout ; rsync -rav  $dir/$name $dirout/ && rsync -rav  $dir/$name $dir_prod/ ; ";
-		system(qq{echo "$cp_cmd" | run_cluster.pl -cpu=5 });
-		#die ("archive $dir/$run_name.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
-		system ($cp_cmd)  unless $no_exec==1;
-		#or die "impossible $tar_cmd";
-		print "\t#########################################\n";
-		print "\t  cp to /data-isilon/SingleCell/$projectName  \n";
-		print "\t#########################################\n";
+	my $name = $patient->name();
+	next if ($name =~ /^ADT_/);
+	my $cp_cmd;
+	
+	warn ("$name web summary not found: '$dir$name/web_summary.html'\nAre you sure the counting finished successfully ?")
+		unless (-e "$dir$name/web_summary.html");
+
+	# Copy ALL outs
+	if ($all_outs){
+		$cp_cmd = "cp -ru $dir/$name $dirout";
 	}
+	
+	# Copy ONLY web_summary.html
+	else {
+		$cp_cmd = "mkdir $dirout$name ; " unless (-d $dirout.$name);
+		$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html" unless (-e "$dir$name/web_summary.html");
+		
+	}
+	warn $cp_cmd;
+	system ($cp_cmd) unless $no_exec;
+}
+
+unless ($no_exec){
+	print "\t------------------------------------------\n";
+	print "\tAll outs copied to $dirout \n" if ($all_outs);
+	print "\tWeb summaries copied to $dirout \n" unless ($all_outs);
+	print "\t------------------------------------------\n";
+}
+	
