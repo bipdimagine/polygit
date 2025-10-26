@@ -33,5 +33,5 @@ foreach my $patient (@{$project->getPatients()}){
 my $hotspot = $patient->hotspot();
 $rocks->put($patient->id,$hotspot);
 }
- $project->hotspot_rocks("close");
+$rocks->close();
 exit(0);

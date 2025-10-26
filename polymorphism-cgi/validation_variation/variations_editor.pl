@@ -191,7 +191,6 @@ my $project_name = $cgi->param('project');
 my $user         = $cgi->param('user_name');
 my $panel_name  = $cgi->param('panel');
 my $patient_name = $cgi->param('patients');
-my $TEST = $cgi->param('TEST');
 my $buffer       = GBuffer->new();
 
 my $project = $buffer->newProjectCache(
@@ -251,65 +250,13 @@ if ($gene_name_filtering){
 	}
 }
 my $force;
-my $no_cache;
-$force=1 unless $project->isGenome();
-if ($cgi->param('force') == 1) {
- $dev = 2;	
-}
-
-$no_cache = $patient->get_lmdb_cache("w");
-my $keys = [];#return_uniq_keys($patient,$cgi); 
 my $level_dude = 'high,medium';
-my $cache_id = join( ";", @$keys );
 
-
-if ($project->isDiagnostic){
-	$cache_id.="121222";
-}
-if ($cgi->param('only_DM')){
-	$cache_id.="o";
-}
-
-
-#
-my $text = "";#$no_cache->get_cache($cache_id."====");
-unless ($text) {
-	$cache_id = md5_hex($cache_id);
-#	$text = $no_cache->get_cache($cache_id);
-}
-$text = "" if $dev;
-$text= "";
 my $html_dude = "<!--DUDE-->";
 my $cache_icon;
 
  $cache_icon = qq{<span class="glyphicon glyphicon-floppy-remove" aria-hidden="true" style="text-align:right;font-size:10px;color:red"></span>};
-if($text){
 
-		$|= 1;
-		my @toto = split("\n<!--SPLIT-->\n",$text);
-		my $t = time;
-		my $html;
-	#	for (my $i = 0;$i<110;$i++){
-		#	$html.= $toto[$i];
-	#	}
-		$html = $text;
-		my @toto = split("\n<!--SPLIT-->\n",$text);
-		my $t = time;
-		my $html;
-		#
-		for (my $i = 0;$i<@toto;$i++){
-			if($project->genome_version_generic =~/HG38/){
-				$toto[$i] =~ s/\?dataset\=gnomad_r2_1//g;
-			}
-			$html.= $toto[$i];
-		}
-		
-		print $html;
-		print"<br>".abs(time-$t)."<br>";
-		print"<br><div style='float:right;'><small>$cache_icon</small></div><br>"; 
-	  	$no_cache->close();
-	  	exit(0);
-}
 
 $project->cgi_user($user);
 $cgi->param(-name=>'user_name',-value=>'');
@@ -513,7 +460,7 @@ my (  $list, $id_by_genes_id) =  getListVariantsFromDuckDB($project,$patient,$st
 ##################################
 
 my ($genes) = run_annnotations( $list, $id_by_genes_id);
-
+warn "annotations end : ".abs(time - $t);
 export_xls($patient, $genes) if $cgi->param('export_xls');
 
 $ztime .= ' ' . scalar(@$genes) . '_genes:' . ( abs( time - $t ) );
@@ -565,17 +512,21 @@ $t = time;
 
 $ztime .= ' polycyto:' . ( abs( time - $t ) );
 $t     = time;
-my $stdout_nav_bar = tee_stdout {
+
+#my $stdout_nav_bar = tee_stdout {
 	print"<br><div style='float:right;'>$cache_icon</div><br>"; 
     update_variant_editor::printNavBar( $patient, $genes, $statistics, $version,$date, $user, $ztime,update_variant_editor::compose_string_filtering($cgi) );
 	update_variant_editor::print_hotspot( $patient, $panel );
-};
+#};
 warn "end hotspot  :".abs(time -$t);
 my $stdoutcnv;
 
 if (not $patient->isGenome() ) {
+	my $no_cache;
+	$no_cache = $patient->get_lmdb_cache("w");
 	my $cache_dude_id = "cnv-html-exome::" . $project_name . "-" . $patient->name . "-";
 	my $text = $no_cache->get_cache($cache_dude_id);
+	$text= "";
 	if ($text) {
 		print $text;
 	}
@@ -583,15 +534,16 @@ if (not $patient->isGenome() ) {
 		$stdoutcnv = tee_stdout { update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel ); };
 		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400);
 	}
+	$no_cache->close();
 }
-warn "end cnv";
 	
 $t     = time;
-my $stdout_end = tee_stdout {
+#my $stdout_end = tee_stdout {
 	
 	warn "genes:".scalar(@$genes);
 	if (@$genes){
-	$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ,$buffer_polyviewer) ;
+		$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ,$buffer_polyviewer) ;
+		error("coucou") unless $genes;# == undef;
 	}
 	else {
 		if ($gene_name_filtering ) {
@@ -605,11 +557,7 @@ my $stdout_end = tee_stdout {
 	$ztime .= ' hetero:' . ( abs( time - $t ) );
 	print $ztime;
 
-};
-#warn "--> $cache_id <-- put";
-#$no_cache->put_cache_text($cache_id,$stdout.$stdout_nav_bar.$stdoutcnv.$stdout_end,2400) ;#unless $dev;
-#$no_cache->get_cache($cache_id);
-$no_cache->close();
+
 exit(0);
 
 
@@ -621,9 +569,6 @@ sub error {
 	print
 	  qq{<div id ="logo" > contact : bioinformatique\@users-imagine.fr</div>}
 	  ;    # if scalar(@$genes) == 0;
-	warn "error !!!!!!!!! $text";
-	warn $TEST;
-	die() if $TEST;
 	exit(0);
 }
 
@@ -666,13 +611,8 @@ sub refine_heterozygote_composite_score_fork {
 	my $ngene =0;
 	
 	my $final_polyviewer_all ;
-	#if ($project->isRocks){
 		my $diro = $project->rocks_directory();
 	
-	
-	
-	
-	#TODO: essayer d'integrer XLS Store variant ici pour le forker
 	
 	$project->buffer->dbh_deconnect();
 	
@@ -681,6 +621,7 @@ sub refine_heterozygote_composite_score_fork {
 		my $res;
 		$project->buffer->dbh_reconnect();
 		( $res->{genes}, $res->{total_time} ) = variations_editor_methods::refine_heterozygote_composite( $project,$print_html, \@$genes, $vid,$rocksdb_pv);
+		error("Argh,  Something went wrong !!! ") unless $res->{genes};
 		$res->{run_id} = $vid;
 		warn "===============================";
 	
@@ -690,7 +631,7 @@ sub refine_heterozygote_composite_score_fork {
 	warn "end hetero " if $print;
 	warn "....";
 	print qq{</div>};
-	warn "....";
+	
 	my $nb_genes = scalar(@{$res->{genes}});
 	
 	foreach my $g (@{$res->{genes}}){
@@ -699,13 +640,7 @@ sub refine_heterozygote_composite_score_fork {
 		#last if $g->{max_score} < 5 && $nb_genes > 300;
 	}
 	
-	#$final_polyviewer_all->deactivate_cache();
-	warn "end";
-	error("Hey it looks like you're having an error  !!! ") if scalar keys %$vres;	
 	return ;
-	exit(0);
-	print qq{</div>};
-	return $res_genes;
 }
 
 
@@ -938,10 +873,10 @@ sub get_rocksdb_mce_polyviewer_variant {
 	#$parquet = "/data-beegfs/tmp/new/NGS2025_09289.variants.parquet";
 	my $dir_parquet = $project->parquet_cache_dir;
 	my $diro = $project->rocks_directory();
-	
-	my $sql =qq{select variant_index,variant_rocksdb_id,gene_name from '$parquet' where  $where ; };
-	warn $sql;
+	error("Oops! that's unexpected !!! ") unless -e $parquet;
+	my $sql =qq{select variant_index,gene_name from '$parquet' where  $where ; };
 	my $cmd = qq{duckdb -json -c "$sql"};
+	warn $cmd;
  	my $t = time;
  	my $res =`$cmd`;
 	my $array_ref = [];
@@ -955,7 +890,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  	 my $id_by_genes_id;
  	 my %ids ;
  	foreach my $a (@$array_ref) {
- 		my ($c,$b) = split("!",$a->{variant_rocksdb_id});
+ 		my ($c,$b) = split("!",$a->{variant_index});
  		if ($hash_genes_panel) {
  			next unless exists $hash_genes_panel->{$a->{gene_name}};
  		}

@@ -667,7 +667,6 @@ unless ($htable) {
 }
 else {
 	$cache_icon .= qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
-
 }
 
 $| = 1;

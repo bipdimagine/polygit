@@ -23,6 +23,7 @@ has columns_file =>(
 		return $file_freeze;
 	}
 ); 
+##  
 
 
 my $htr = {
@@ -339,12 +340,9 @@ sub get_polyviewer_variant {
      	  warn $id  unless $vp->name;;
      	  die() unless $vp->name;
      	  
-     	 #
-     	#}
-     	# die() if $vp->{isSrPr};
      	return $vp;
 }
-
+#
 sub update_clinvar_id {
 	my ($self,$chr,$vp) = @_;
 	my $pub = $self->clinvar_rocks_db($chr)->clinvar($vp->rocksdb_id);
@@ -363,11 +361,15 @@ sub load_polyviewer_variant {
 	my @chr = sort {$a cmp $b} keys %{$self->{list_index}};
  	$self->{rcache} = {};
  	my $error;
+ 	my $jobs;
  	MCE::Loop::init {
     chunk_size => 'auto',
     max_workers => 'auto',
     gather => sub {
-        my ($mce,$data) = @_;
+        my ($mce,$data,$chrs) = @_;
+       		foreach my $c (@$chrs){
+				$jobs->{$c} ++;
+			}
         	@{$self->{rcache}}{keys %$data} = values %$data;
     	},
     	   on_post_exit => sub {
@@ -388,15 +390,18 @@ sub load_polyviewer_variant {
   		my $hash_vp;
   		warn "start ".MCE->chunk_id;
   	  foreach my $chr (@$chra){
+		warn $chr." ";
     	 my $nbv =0;
  	   	$self->cache_polyviewer_variant($chr,[keys %{$self->{list_index}->{$chr}}]);
   	  }
-  	   MCE->gather(MCE->chunk_id,$self->clean);
+  	   MCE->gather(MCE->chunk_id,$self->clean,$chra);
    	  $self->close();
 	
 		} @chr;
  		MCE::Loop->finish;
- 		confess() if $error;
+ 		error("Argh,  Something went wrong !!! ") if $error;
+ 		error("Argh,  Something went wrong !!! ") if scalar (keys %$jobs) != scalar(@chr);
+ 		
  		#$self->set_cache($bufferpv);
 }
 
