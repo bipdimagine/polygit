@@ -8,9 +8,9 @@ status:prod
 pw:mypolyweb
 
 [polyweb_url]
-polyweb_root://www.polyweb.fr/
+polyweb_OLD://www.polyweb.fr/
 polyweb_NGS://www.polyweb.fr/NGS/
-polyweb_ROCKS://www.polyweb.fr/HG38/
+
 [dragen]
 ip:10.1.2.10
 
