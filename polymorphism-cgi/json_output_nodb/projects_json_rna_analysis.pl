@@ -89,12 +89,14 @@ sub getProjectListsRNA {
 		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
 		my (@lbuttons_splices, @lbuttons_rna);
 		
+		my $type_cache = $h->{'cache'};
+		
 		if (-d $path or -d $p1->getJunctionsDir('regtools')) {
 			my $ok;
 			foreach my $patient (@{$p1->getPatients()}) { 
 				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
 				$ok = 1 if (-e $dragen_file);
-				$ok = 1 if ($patient->regtools_file() and -e $patient->regtools_file());
+#				$ok = 1 if ($patient->regtools_file() and -e $patient->regtools_file());
 			}
 			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
 			$se_file = $path.'/allResSE.txt.gz' if (-e $path.'/allResSE.txt.gz');
@@ -103,18 +105,18 @@ sub getProjectListsRNA {
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
 			$ok = 1 if (-e $path.'/regtools/'.$p1->name().'_regtools.tsv.gz');
-			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok);
+			push(@lbuttons_splices, '1::'.$h->{name}.'::'.$type_cache) if ($ok);
 			$hDone->{$name} = undef if $ok;
 		}
-		else {
-			my $ok_dragen;
-			foreach my $patient (@{$p1->getPatients()}) { 
-				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
-				$ok_dragen = 1 if (-e $dragen_file);
-			}
-			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok_dragen);
-			$hDone->{$name} = undef if $ok_dragen;
-		}
+#		else {
+#			my $ok_dragen;
+#			foreach my $patient (@{$p1->getPatients()}) { 
+#				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
+#				$ok_dragen = 1 if (-e $dragen_file);
+#			}
+#			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok_dragen);
+#			$hDone->{$name} = undef if $ok_dragen;
+#		}
 		
 		my $path_polyrna = $p1->get_path_rna_seq_polyrna_root();
 		$path_polyrna =~ s/HG19_MT/HG19/;
