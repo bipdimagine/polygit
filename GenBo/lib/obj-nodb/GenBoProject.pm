@@ -1358,24 +1358,19 @@ has project_root_path => (
 	default => sub {
 		my $self     = shift;
 		my $dirNgs   = $self->buffer->config->{project_data}->{ngs};
-		my $pathRoot2 = $self->buffer->config_path("root","project_data");
-		my $path2    = $pathRoot2 . "/" . $dirNgs . "/" . $self->name() . '/';
-		return $path2 if -e $path2;
-		 
-		my $pathRoot = $self->buffer->config_path("root","project_data-isilon");
-		my $path1    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
+		my $pathRoot2 = $self->buffer->config_path("root","project_data")."/".$dirNgs;
+		my $path2    = $pathRoot2."/".$self->name().'/';
+		my $pathRoot = $self->buffer->config_path("root","project_data-isilon")."/".$dirNgs;
+		my $path1    = $pathRoot."/".$self->name().'/';
+		my $cmd_ln = qq{ln -s $path2 $pathRoot/.};
+		if (-e $path2) {
+			system($cmd_ln) if not -e $path1;
+			return $path2;
+		}
 		return $path1 if -e $path1;
 		$self->makedir($path2);
+		system($cmd_ln);
 		return $path2;
-#		unless (-e $path1){
-#			my $path2    = $pathRoot . "/" . $dirNgs . "/" . $self->name() . '/';
-#			$self->makedir($path2);
-#			warn "ln -s $path2 $path1";
-#			system("ln -s $path2 $path1") if $path2 ne $path1;
-#			return $path2;
-#		}
-#		#$self->makedir($path1);
-#		return $path1;
 	},
 );
 
