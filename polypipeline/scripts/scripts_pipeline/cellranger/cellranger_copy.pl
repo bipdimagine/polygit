@@ -53,7 +53,7 @@ my $type = $run->infosRun->{method};
 
 my $dir = $project->getCountingDir('cellranger');
 $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
-warn $dir;
+#warn $dir;
 
 my $dirout = "/data-pure/SingleCell/$projectName/";
 unless (-d $dirout) {
@@ -78,7 +78,7 @@ foreach my $patient (@{$patients}) {
 	# Copy ONLY web_summary.html
 	else {
 		$cp_cmd = "mkdir $dirout$name ; " unless (-d $dirout.$name);
-		$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html" unless (-e "$dir$name/web_summary.html");
+		$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html";
 		
 	}
 	warn $cp_cmd;

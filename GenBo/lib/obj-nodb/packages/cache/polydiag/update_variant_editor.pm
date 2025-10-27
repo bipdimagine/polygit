@@ -653,7 +653,7 @@ sub vclinvar {
 	   #  $hvariation->{clinvar_alert}  = 0 ;
 	 if ($v1){
 	 	 $hvariation->{value}->{clinvar_id} = $v->clinvar->{id};
-	 	my $uc = qq{https://www.ncbi.nlm.nih.gov/clinvar/?term=}.$v->clinvar->{id}."[alleleid]";
+	 	my $uc = qq{https://www.ncbi.nlm.nih.gov/clinvar/?term=}.$v->clinvar_id()."[alleleid]";
 	 	my $a = qq{<a href="$uc" target="_blank" style="color:white">}.$v->text_clinvar()."</a>"; 
 	 	my $oc = qq{onClick='window.open("$uc")'};
 	 	value_html($hvariation,"clinvar",$v->text_clinvar(),  printButton($v,[1,4],$v->text_clinvar(),$oc));

@@ -126,7 +126,8 @@ if (grep(/demultiplex|^all$/i, @steps)){
 	warn $bcl_dir;
 	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
 	my $lane_config = $config->{Run}->{FlowcellLayout}->{LaneCount};
-	warn("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane") && sleep(3) if ($lane and $lane != $lane_config);
+	my $prompt = prompt("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane. Continue ? (y/n)  ", -yes) if ($lane and $lane != $lane_config);
+	die if ($prompt);
 	unless ($lane) {
 		$lane = $lane_config;
 		warn 'LaneCount=',$lane;
@@ -643,7 +644,7 @@ if (grep(/infos/i, @steps)){
 if (grep(/^cp|^all$/i, @steps)){
 	my $cmd_cp = "$Bin/cellranger_copy.pl -project=$projectName ";
 	$cmd_cp .= "-patients=$patients_name " if ($patients_name);
-	$cmd_cp .= "-all_outs " if (grep(/cp_web_summar(ies|y)|^all$/i, @steps));
+	$cmd_cp .= "-all_outs " if (grep(/^cp$/i, @steps));
 	$cmd_cp .= "-no_exec " if ($no_exec);
 	system($cmd_cp);
 }
@@ -700,8 +701,8 @@ Optionels:
 	lane <i>                   nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml
 	mismatches <i>             nombre de mismatches autorisés lors du démultiplexage, défaut: 0
 	create-bam/nocreate-bam    générer ou non les bams lors du count, défaut: nocreate-bam
-	aggr_name <s>              noms de l'aggrégation, lors de step=aggr ou aggr_vdj
-	chemistry                  chemistry , défaut: auto (for exp and adt)
+	aggr_name <s>              nom de l'aggrégation, lors de step=aggr ou aggr_vdj
+	chemistry                  chemistry , défaut: auto (pour librairies exp et adt)
 	no_exec                    ne pas exécuter les commandes
 	help                       affiche ce message
 
