@@ -1130,7 +1130,6 @@ sub getProjectListForUser {
 	
 	$sth->execute($login,$pwd,$login,$pwd);
 	my $res = $sth->fetchall_hashref("id");
-	warn "end fetch";
 	my $res_group = $self->getProjectHashForGroup($login,$pwd);
 	if ($res_group) {
 		foreach my $project_id (keys %{$res_group}) {

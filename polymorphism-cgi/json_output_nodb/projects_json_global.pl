@@ -59,6 +59,8 @@ checkAuthentification($buffer,$login,$pwd,$cgi->param('project')) if $action eq 
  
 sub getProjectListsDefidiag {
 	my ( $buffer, $login, $pwd ) = @_;
+	
+	my $type_projects = $cgi->param('type_projects');
 	print $cgi->header('text/json-comment-filtered');
 	print "{\"progress\":\".";
 	
@@ -71,67 +73,49 @@ sub getProjectListsDefidiag {
 	else {
 		@$res = grep{$_->{validation_db}  ne "defidiag"} @$res2;
 	}
-	my $vquery = QueryValidationAcmg->new(dbh=>$buffer->dbh,database=>"ACMG");
 	my @lHTML;
 	my @ids = map{$_->{id}} @$res;
 	foreach my $pro (@$res) {	
 		print '.';
-		if($defidiag) {
-			#next if $pro->{validation_db}  ne "defidiag";
-		}
 		my $debug;
-		$debug=1 if $pro->{name} eq "NGS2020_3165";
+		
+		next if not $pro->{name} =~ /NGS20[0-9][0-9]_[0-9]+/;
+		
+		my @samples =  @{$buffer->getQuery->getPatients($pro->{id})};
+		my %captures_id;
+		foreach my $p (@samples){
+			$captures_id{$p->{capture_id}} ++;
+		}
+		
+		my $find;
+		my (@c, $h_type);
+		foreach my $cid (keys %captures_id){
+			my $capt =  $buffer->getQuery()->getCaptureInfos($cid);
+			push(@c,$capt->{name});
+			$h_type->{$capt->{analyse}} = undef;
+		}
+		$pro->{capture_name} = join(",",@c);
+
+		$pro->{'type_analyse'} = join(', ', sort keys %$h_type);
+		next if $pro->{'type_analyse'} eq 'rnaseq';
+		next if $pro->{'type_analyse'} eq 'singlecell';
+		$pro->{'type_analyse'} = 'target' if $pro->{'type_analyse'} ne "exome" && $pro->{'type_analyse'} ne "genome";
+		
+		next if $type_projects and $type_projects eq 'polydiag' and $pro->{'type_analyse'} ne 'target';
+		
 		my $pheno = $buffer->queryPhenotype->getPhenotypeInfosForProject($pro->{id});
 		$pro->{gencode} = $buffer->getQuery->getGencodeVersion($pro->{id});
 		$pro->{genome} = $buffer->getQuery->getReleaseGenome($pro->{id});
 		$pro->{annotation} = $buffer->getQuery->getPublicDatabaseVersion($pro->{id});
-	 	$pro->{build} = $buffer->getQuery()->getBuildFromProjectName($pro->{name});
-		my $husers = $buffer->getQuery()->getOwnerProject($pro->{id});
-		my $hstatus = $vquery->getLatestStatusProject($pro->{id});
-		my $nb_validation = scalar(keys %$hstatus);
-		
-	#	die() if $hstatus;
-	
 		if ($pheno){
 			$pro->{phenotype} = join(";",keys %$pheno);
 		}
 		else {
 			$pro->{phenotype} = "-";
 		}
-		if (exists $pro->{group}){
-			$pro->{sites} = lc($pro->{group});
-		}
-		else{
-		my $usites;
-		foreach my $u (@$husers) {
-			foreach my $k (keys %$site){
-				if ($u->{email} =~ /$k/) {
-					$usites->{$site->{$k}}++;
-				}
-			}
-		}
-			$pro->{sites} = join(";",keys %$usites);
-		}
-	
-		my ($latest_view,$since) = $buffer->getQuery->getLastConnectionUserProject($login,$pro->{id});
-		my $gencode = $buffer->getQuery->getGencodeVersion($pro->{id});
-
-		my @samples =  @{$buffer->getQuery->getPatients($pro->{id})};
-		
 		$pro->{samples} = scalar(@samples);
-		$pro->{validations} = $nb_validation;
 		my @trio = grep{$_->{status} == 2 && ($_->{mother} or $_->{father})} @samples;
-		my $dir = $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
-		my $dir_polyviewer =   $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
-		my $dir_polyviewer_rocks =   $buffer->getDataDirectory("cache")."/rocks/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/polyviewer_objects.rocksdb/IDENTITY";
-		if ($pro->{genome} eq 'MT') {
-			$dir_polyviewer =   $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$gencode.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/MT";
-		}
-		$pro->{polyviewer} = 2;
-		$pro->{polyviewer} = 1 if @samples && -e "$dir_polyviewer/".$samples[0]->{name}.".variants-genes.polyviewer";
-		$pro->{polyviewer} = 1 if @samples && -e $dir_polyviewer_rocks;
-		
-#		warn $pro->{polyviewer} if $pro->{name} eq "NGS2020_3165";
+		my $dir = $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$pro->{gencode}.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
 		my $t = (stat $dir )[9];
 		my ($dc,$h) = split(" ", $pro->{creation_date});
 		my $date = POSIX::strftime( 
@@ -142,18 +126,13 @@ sub getProjectListsDefidiag {
              );
              
 		my $days_difference = int((time - $t) / 86400);
-		
-		
 		my $vtrio;
 		if (@trio){
 		$pro->{child} = $trio[0]->{name};
 		if (scalar(@trio) > 1){
 		$pro->{child} = scalar @trio;
 		}
-		my $hv = $vquery->getValidationPatientName($pro->{child},$pro->{name});
-		
 		map {$pro->{patient_name}.=$_->{name}.";".$_->{family}.";"} @samples;
-		
 		$pro->{child_sex} = $trio[0]->{sex};
 		$pro->{trio} = "trio";
 		$vtrio = scalar(@trio);
@@ -170,10 +149,6 @@ sub getProjectListsDefidiag {
 
 		my @t = sort{$a <=> $b} keys %{$buffer->public_data};
 		my $latest = $t[-1]; 
-		$pro->{users} = join("\n",map{$_->{email}} @$husers);
-		$pro->{users} = scalar(@$husers)." users " if scalar(@$husers) > 6;	
-		
-		
 		$pro->{version} = abs($latest-$pro->{annotation})."::".$pro->{gencode}."-".$pro->{annotation};
 		$pro->{creation_date} = $dc;
 		$pro->{description} =$pro->{description};
@@ -183,64 +158,7 @@ sub getProjectListsDefidiag {
 		$pro->{trio} = $pro->{trio};
 		$pro->{b1} = $pro->{name};
 		$pro->{b2} = $pro->{name};
-		#if ($pro->{child}){
-			my $hv = $vquery->getValidationProjectName($pro->{name});
-			$pro->{acmg} = "*";
-			if (scalar(@$hv)) {
-			   my $text = $buffer->getValidationTerm($hv->[0]->{validation});
-			   my $toto;
-			   ($hv->[0]->{modification_date},$toto) = split(" ",$hv->[0]->{modification_date});
-			   
-			   $pro->{acmg} = "$text"."_".$hv->[0]->{modification_date}."_".$hv->[0]->{user_name}."_".$hv->[0]->{validation};
-			}
-			
-		#}
-		if ($latest_view){
-		my $h;
-		($pro->{latest_view},$h) =split(" ",$latest_view);
-		$pro->{latest_view} = $pro->{latest_view};
 		
-		$pro->{since} =$since;
-		}
-	
-		$pro->{new_pathogenic} ="";
-			my $list_resume = get_values_new_hgmd($buffer, $pro->{name});
-		my $versions = $buffer->config->{polybtf_default_releases}->{default};
-		my @lVersions = (split(',', $versions));
-		my $i = 0;
-	 	foreach my $resume_new_pathogenic (@$list_resume) {
-	 		if ( $pro->{new_pathogenic}) { $pro->{new_pathogenic} .= ';'; }
-			my ($nb_red, $nb_coral, $nb_orange, $nb_yellow, $nb_grey) = split(';', $resume_new_pathogenic);
-			if ($resume_new_pathogenic eq '?') { $pro->{new_pathogenic} .= 'F'; }
-			elsif ($nb_red)    { $pro->{new_pathogenic} .= 'A::'.$pro->{name}.'::New+++'; }
-			elsif ($nb_coral)  { $pro->{new_pathogenic} .= 'B::'.$pro->{name}.'::New++'; }
-			elsif ($nb_orange) { $pro->{new_pathogenic} .= 'C::'.$pro->{name}.'::New+'; }
-			elsif ($nb_yellow) { $pro->{new_pathogenic} .= 'D::'.$pro->{name}.'::New+'; }
-			elsif ($nb_grey)   { $pro->{new_pathogenic} .= 'E::'.$pro->{name}.'::New'; }
-			else               { $pro->{new_pathogenic} .= 'F'; }
-			$pro->{new_pathogenic} .= '::'.$lVersions[$i];
-			$i++;
-	 	}
-		
-		my $patients = 	$buffer->getQuery()->getPatients($pro->{id});
-		my %captures_id;
-		foreach my $p (@$patients){
-			$captures_id{$p->{capture_id}} ++;
-		}
-		my $find;
-		my (@c, $h_type);
-		foreach my $cid (keys %captures_id){
-			my $capt =  $buffer->getQuery()->getCaptureInfos($cid);
-			push(@c,$capt->{name});
-			$h_type->{$capt->{analyse}} = undef;
-		}
-		$pro->{capture_name} = join(",",@c);
-		$pro->{button} = $pro->{polyviewer}."::".$pro->{name}.'::'.$pro->{genome};
-
-		$pro->{'type_analyse'} = join(', ', sort keys %$h_type);
-		next if $pro->{'type_analyse'} eq 'rnaseq';
-		next if $pro->{'type_analyse'} eq 'singlecell';
-		$pro->{'type_analyse'} = 'target' if $pro->{'type_analyse'} ne "exome" && $pro->{'type_analyse'} ne "genome";
 
 		my $out = "<td>".$pro->{'b1'}."</td>";
 		$out .= "<td>".$pro->{'description'}."</td>";
@@ -253,31 +171,28 @@ sub getProjectListsDefidiag {
 		$out .= "<td><center>".$pro->{'genome'}."</center></td>";
 		$out .= "<td><center>".$pro->{'gencode'}.'.'.$pro->{'annotation'}."</center></td>";
 		$out .= "<td><center>".$pro->{'creation_date'}."</center></td>";
-		my $base_url;
-		$base_url = '//'.$buffer->config->{polyweb_url}->{polyweb_rocks_extension} if ($pro->{'cache'} eq 'rocks');
-		
-		my $url_query = $base_url.'/polyweb/vector/gene.html?project='.$pro->{'name'};
-		$url_query =~ s/\/\//\//g;
-		$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
-		
-		if ($pro->{'type_analyse'} eq 'target') {
-			my $url_diag = $base_url.'/polyweb/coverage.html?project='.$pro->{'name'};
-			$url_diag =~ s/\/\//\//g;
-			$out .= qq{<td><center><button onclick="window.open('$url_diag', '_blank')" class='btn btn-warning btn-sm'>PolyDiag</button></center></td>};
+		$out .= "<td>".$pro->{'cache'}."</td>";
+		my ($url_query, $url_diag, $url_viewer);
+		if ($pro->{'cache'} eq 'rocks') {
+			$url_query = 'vector/gene.html?project='.$pro->{'name'};
+			$url_diag = 'coverage.html?project='.$pro->{'name'};
+			$url_viewer = 'polyviewer.html?project='.$pro->{'name'};
 		}
 		else {
-			if ($pro->{'cache'} eq 'rocks') {
-				my $url_viewer = $base_url.'/polyweb/polyviewer.html?project='.$pro->{'name'};
-				$url_viewer =~ s/\/\//\//g;
-				$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
-			}
-			elsif (@samples && -e "$dir_polyviewer/".$samples[0]->{name}.".variants-genes.polyviewer") {
-				my $url_viewer = $base_url.'/polyweb/polyviewer.html?project='.$pro->{'name'};
-				$url_viewer =~ s/\/\//\//g;
-				$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
+			$url_query = $buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/vector/gene.html?project='.$pro->{'name'};
+			$url_diag = $buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/coverage.html?project='.$pro->{'name'};
+			$url_viewer = $buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/polyviewer.html?project='.$pro->{'name'};
+		}
+		$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
+		if ($type_projects eq 'polyviewer') {
+			$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
+		}
+		if ($type_projects eq 'polydiag') {
+			if ($pro->{'type_analyse'} eq 'target') {
+				$out .= qq{<td><center><button onclick="window.open('$url_diag', '_blank')" class='btn btn-warning btn-sm'>PolyDiag</button></center></td>};
 			}
 			else {
-				$out .= "<td></td>";
+				next;
 			}
 		}
 		push(@lHTML, $out);
@@ -296,8 +211,10 @@ sub getProjectListsDefidiag {
 	$out2 .= qq{<th data-field="genome" data-sortable="true" data-filter-control="input">Genome</th>};
 	$out2 .= qq{<th data-field="annotation" data-sortable="true" data-filter-control="input">Annotation</th>};
 	$out2 .= qq{<th data-field="creation_date" data-sortable="true" data-filter-control="input">Creation Date</th>};
+	$out2 .= qq{<th data-field="db_cache_type" data-sortable="true" data-filter-control="select">DB Cache Type</th>};
 	$out2 .= qq{<th data-field="polyquery">PolyQuery</th>};
-	$out2 .= qq{<th data-field="polyviewer">PolyViewer/Diag</th>};
+	$out2 .= qq{<th data-field="polyviewer">PolyViewer</th>} if ($type_projects eq 'polyviewer');
+	$out2 .= qq{<th data-field="polydiag">PolyDiag</th>} if ($type_projects eq 'polydiag');
 	$out2 .= $cgi->end_Tr();
 	$out2 .= "</thead>";
 	$out2 .= "<tbody>";
