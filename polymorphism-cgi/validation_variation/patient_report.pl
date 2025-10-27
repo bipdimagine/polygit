@@ -606,10 +606,10 @@ sub construct_htranscripts {
 		my $debug;
 		#warn $tr;
 		#die()  if $tr eq "ENST00000328300_X";
-		$debug = 1 if $tr eq "ENST00000328300_X";
+		#$debug = 1 if $tr eq "ENST00000328300_X";
 		warn "coucou " if $tr eq "ENST00000328300_X";
 		print "+";
-	my $tr_id = $tr;
+		my $tr_id = $tr;
 			my $tr1;
 				my $htranscript;
 
@@ -643,7 +643,6 @@ sub construct_htranscripts {
 				$htranscript->{external_name} = "intergenic";
 			}
 			my $kvars = return_list_variants($project,$patient,$tr_id,$tr1,$debug);
-			warn Dumper $kvars if $debug;
 			if ($tr ne "intergenic"){
 		
 		
@@ -683,7 +682,6 @@ sub construct_htranscripts {
 			} #end_compute_coverage;
 		}
 	#	foreach my $var (@{$htr_vars->{$tr1->kyotoId}}){
-		warn Dumper @{$kvars} if $debug;
 		foreach my $var (@{$kvars}){   
 				my $debug;
 				$debug =1 if $var eq "17_8006708_G_A"; 
@@ -842,7 +840,7 @@ sub construct_data {
 	my $text = $no_cache->get_cache($cache_id);
 	
 	#TODO: here enlever cache
-	$text = undef;
+	#$text = undef;
 	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
@@ -3799,8 +3797,6 @@ if  ($stv ){
 push(@keys,"validation".":".md5_hex($stv));
 }
 else{
-	
-
 push(@keys,encode_json ({}));
 push(@keys,encode_json ({}));
 push(@keys,encode_json ({}));

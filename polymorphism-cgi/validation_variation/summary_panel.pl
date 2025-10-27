@@ -667,7 +667,6 @@ unless ($htable) {
 }
 else {
 	$cache_icon .= qq{<span class="glyphicon glyphicon-floppy-saved" aria-hidden="true" style="text-align:right;font-size:10px;color:green"></span>};
-
 }
 
 $| = 1;
@@ -2096,8 +2095,6 @@ my $t = time;
 		my $cov_sry  = $p->coverage_SRY();
 		
 		my $sex_eval = $p->compute_sex();
-		
-		warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
 		my $color = "#009B77";
 		if ( $sex_eval ne $p->sex() && $sex_eval ne -1 ) {
 
