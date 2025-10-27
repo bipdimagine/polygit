@@ -644,7 +644,7 @@ if (grep(/infos/i, @steps)){
 if (grep(/^cp|^all$/i, @steps)){
 	my $cmd_cp = "$Bin/cellranger_copy.pl -project=$projectName ";
 	$cmd_cp .= "-patients=$patients_name " if ($patients_name);
-	$cmd_cp .= "-all_outs " if (grep(/cp$/i, @steps)); # /cp_web_summar(ies|y)|^all$/i
+	$cmd_cp .= "-all_outs " if (grep(/^cp$/i, @steps));
 	$cmd_cp .= "-no_exec " if ($no_exec);
 	system($cmd_cp);
 }
