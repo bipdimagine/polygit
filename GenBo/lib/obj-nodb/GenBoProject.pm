@@ -1357,19 +1357,20 @@ has project_root_path => (
 	reader  => 'getProjectRootPath',
 	default => sub {
 		my $self     = shift;
+		my $name = $self->name();
 		my $dirNgs   = $self->buffer->config->{project_data}->{ngs};
 		my $pathRoot2 = $self->buffer->config_path("root","project_data")."/".$dirNgs;
-		my $path2    = $pathRoot2."/".$self->name().'/';
+		my $path2    = $pathRoot2."/".$name.'/';
 		my $pathRoot = $self->buffer->config_path("root","project_data-isilon")."/".$dirNgs;
-		my $path1    = $pathRoot."/".$self->name().'/';
-		my $cmd_ln = qq{ln -s $path2 $pathRoot/.};
+		my $path1    = $pathRoot."/".$name.'/';
+		my $cmd_ln = qq{ln -s $path2 $pathRoot/$name};
 		if (-e $path2) {
 			system($cmd_ln) if not -e $path1;
 			return $path2;
 		}
 		return $path1 if -e $path1;
 		$self->makedir($path2);
-		system($cmd_ln);
+		system($cmd_ln) if not -e $path1;
 		return $path2;
 	},
 );
