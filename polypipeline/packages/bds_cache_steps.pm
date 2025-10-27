@@ -897,7 +897,7 @@ sub quality_check {
 	my $output   = $self->project->quality_dir;#$self->getCacheDir() . "/check_quality";
 	my $fileout = "$output/".$self->project->name.".lite";
 	
-	my $cmd = "perl $bin_dev/quality_check.pl -project=$projectName -fork=$ppn -cache=1>$fileout";
+	my $cmd = "perl $bin_dev/quality_check.pl -project=$projectName -fork=$ppn -cache=1>$fileout ";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
@@ -915,6 +915,39 @@ sub quality_check {
 			$error =1 unless exists $quality_patients->{$p->name};
 		}
 		
+  		$job_bds->skip() unless $error;
+	}
+	return ($filein);
+}
+
+sub hotspot {
+	my ($self,$hash) = @_;
+	my $filein = $hash->{filein};
+	
+	my $projectName = $self->project->name();
+	my $fileout = $self->getCoverageDir() . "/hotspot/$projectName.rocksdb/CURRENT";
+	my $ppn = 1;
+	my $type = "hotspot";
+	my $stepname = $projectName."@".$type;
+	my $dir = $self->project->project_log();
+	
+	my $cmd = "perl $bin_dev/hotspot/hotspot.pl -project=$projectName ";
+	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
+	$self->current_sample->add_job({job=>$job_bds});
+	$job_bds->isLogging(1);
+	if ($self->unforce() && -e $fileout){
+		my $no = $self->project->noSqlQuality("r");
+		my $data = $no->get($self->project->name,"mendelian");
+		my $quality_patients;
+		foreach my $line (@{$data->{data}}){
+			my $name = $line->{sample}->{text};
+			$quality_patients->{$name} ++;
+		}
+		my $error;
+		foreach my $p (@{$self->project->getPatients}){
+#			warn $p->name unless exists $quality_patients->{$p->name};
+			$error =1 unless exists $quality_patients->{$p->name};
+		}
   		$job_bds->skip() unless $error;
 	}
 	return ($filein);

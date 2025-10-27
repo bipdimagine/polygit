@@ -140,6 +140,7 @@ my $steps = {
 				"dejavu_parquet"=>sub {$pipeline->dejavu_parquet(@_)},
 				"tiny_rocks"=>sub {$pipeline->tiny_rocks(@_)},
 				"cache_store_duck" =>sub {$pipeline->cache_store_duck(@_)}, 
+				"hotspot" =>sub {$pipeline->hotspot(@_)},
 			};
 
 
@@ -308,7 +309,9 @@ sub prepare_calling_jobs {
 	my ($running_steps,$steps) = @_;
 	
 	my $next_file = "";
+	warn Dumper $running_steps;
 	foreach my $step (@$running_steps){
+		warn $step;
 		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;
