@@ -702,7 +702,7 @@ Optionels:
 	mismatches <i>             nombre de mismatches autorisés lors du démultiplexage, défaut: 0
 	create-bam/nocreate-bam    générer ou non les bams lors du count, défaut: nocreate-bam
 	aggr_name <s>              nom de l'aggrégation, lors de step=aggr ou aggr_vdj
-	chemistry                  chemistry , défaut: auto (for exp and adt)
+	chemistry                  chemistry , défaut: auto (pour librairies exp et adt)
 	no_exec                    ne pas exécuter les commandes
 	help                       affiche ce message
 
