@@ -74,6 +74,7 @@ use session_export_test;
 use HTML::Packer;
 use Proc::Simple;
 use GenBoNoSqlRocksTinyPolyviewerVariant;
+use Carp qw(cluck);
 ##########################################
 #VAriaable definition 
 
@@ -180,6 +181,7 @@ close LOG;
 $| = 1;
 
 $SIG{INT} = sub {
+	cluck "here";
 	warn "I'll die\n";
 	exit 1;
 };
@@ -451,16 +453,16 @@ my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$
 $t = time;
 my (  $list, $id_by_genes_id) =  getListVariantsFromDuckDB($project,$patient,$statistics);
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
-	warn "duckdb :: ".$ztime if $print;
+warn ":: duckdb :: ".$ztime if $print;
 	
-	$t = time;
+$t = time;
 
 ##################################
 ################## GET GENES 
 ##################################
-
+warn "start annotations ";
 my ($genes) = run_annnotations( $list, $id_by_genes_id);
-warn "annotations end : ".abs(time - $t);
+warn " ++ annotations end ++  ".abs(time - $t);
 export_xls($patient, $genes) if $cgi->param('export_xls');
 
 $ztime .= ' ' . scalar(@$genes) . '_genes:' . ( abs( time - $t ) );
@@ -526,13 +528,13 @@ if (not $patient->isGenome() ) {
 	$no_cache = $patient->get_lmdb_cache("w");
 	my $cache_dude_id = "cnv-html-exome::" . $project_name . "-" . $patient->name . "-";
 	my $text = $no_cache->get_cache($cache_dude_id);
-	$text= "";
 	if ($text) {
 		print $text;
 	}
 	else {
 		$stdoutcnv = tee_stdout { update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel ); };
 		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400);
+		warn ""
 	}
 	$no_cache->close();
 }
@@ -543,7 +545,8 @@ $t     = time;
 	warn "genes:".scalar(@$genes);
 	if (@$genes){
 		$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ,$buffer_polyviewer) ;
-		error("coucou") unless $genes;# == undef;
+	#	warn "dsdssd " unless $genes;
+	#	error("coucou") unless $genes;# == undef;
 	}
 	else {
 		if ($gene_name_filtering ) {
@@ -580,7 +583,7 @@ sub calculate_max_score {
 	my $nb        = int( scalar(@$list) / ($fork) +1 );
 	my $iter      = natatime( $nb,  @$list );
 	my $vid        = time;
-		my $genes  = max_score::calculate($project,$patient,$list,$no,$rocksdb_pv);
+	my $genes  = max_score::calculate($project,$patient,$list,$no,$rocksdb_pv);
 
 	return $genes;
 	
@@ -901,7 +904,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  		$nbv ++;
  	
  	}
- 	warn $nbv;
+ 	warn "end list nb variant ". $nbv." genes : ".scalar(keys  %$id_by_genes_id);
 	return ($rocksdb_pv->indexes,$id_by_genes_id);
 }
 
