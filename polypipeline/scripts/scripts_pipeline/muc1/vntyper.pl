@@ -82,7 +82,7 @@ system ("mkdir $dir_pipeline/temp") unless -e "$dir_pipeline/temp";
 my $release = 'hg19';
 $release = 'hg38' if $project->getVersion() =~ /HG38/;
 
-my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly $release"; 
+my $cmd = "$singularity run --pwd /opt/vntyper -B /data-isilon:/data-isilon -B /data-pure:/data-pure  -B /data-beegfs/:/data-beegfs /data-beegfs/software/sif/vntyper_main.sif vntyper   pipeline --bam $bam -o $tmp_dir   --reference-assembly $release"; 
 #my $cmd = qq{$singularity run --pwd /DATA/adVNTR/ -B /data-isilon:/data-isilon -B /tmp/:/tmp/ -H $tmp_dir  $image $scommand};
 
 #system("samtools index $bam -\@2");

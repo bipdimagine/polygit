@@ -30,6 +30,7 @@ my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
 my $rocks = $project->hotspot_rocks("c");
 foreach my $patient (@{$project->getPatients()}){
+	warn $patient->name();
 my $hotspot = $patient->hotspot();
 $rocks->put($patient->id,$hotspot);
 }
