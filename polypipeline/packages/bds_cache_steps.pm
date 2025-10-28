@@ -925,7 +925,7 @@ sub hotspot {
 	my $filein = $hash->{filein};
 	
 	my $projectName = $self->project->name();
-	my $fileout = $self->getCoverageDir() . "/hotspot/$projectName.rocksdb/CURRENT";
+	my $fileout = $self->project->getCoverageDir() . "/hotspot/$projectName.rocksdb/CURRENT";
 	my $ppn = 1;
 	my $type = "hotspot";
 	my $stepname = $projectName."@".$type;
