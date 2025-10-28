@@ -29,6 +29,11 @@ use GBuffer;
 # uniquement les patients (pas de parents si trios)
 
 
+my $splice_AI = 0.5;
+my $dv_projects = 1;
+my $dv_pat = 5;
+my $dv_pat_ho = 0;
+
 my $projects_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Liste_projets_Polyweb.csv';
 my $projects_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Projets_polyweb_PTI_cytosquelette_round_2.csv';
 my $projects_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Projets_polyweb_PTI_cytosquelette_09_2025.txt';
@@ -88,31 +93,16 @@ close($fh_genes);
 warn scalar @genes_list.' gene(s) in list';
 #warn Dumper \@genes_list;
 
-my $nb_var;
-my $count_genes;
-
-my $dv_projects = 1;
-my $dv_pat = 5;
-my $dv_pat_ho = 0;
 
 # Ecrit le header des résultats
 my $file = "/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/variants.csv";
 warn $file;
 open(my $fh, ">$file") or confess("Can't open '$file'");
 print {$fh} "project;family;child;";
-#print {$fh} "CADD > 25;freq < 0,01%;gnomAD He < 5;gnomAD Ho = 0;in gene list;spliceAI > 0,5 AND in gene list;";
-#print {$fh} "Union = (CADD > 20 OR spliceAI >= 0,5 OR freq < 0,01% OR gnomAD He < 10 OR gnomAD Ho = 0)  AND in gene list;";
-#print {$fh} "(CADD > 25 OR spliceAI > 0,5) AND (freq < 0,01% OR gnomAD He < 5 OR gnomAD Ho = 0) AND in gene list;";
-#print {$fh} "AND dejavu other projects < $dv_projects;";
-#print {$fh} "id, gene(s), nb all ref, nb all alt, depth;";
-#print {$fh} "intersection = (CADD > 25 OR spliceAI > 0,5) AND freq < 0,01% AND gnomAD He < 5 AND gnomAD Ho = 0 AND in gene list;";
-#print {$fh} "intersection AND dejavu other projects < $dv_projects;intersection AND DéjàVu other patients < $dv_pat;intersection AND DéjàVu other patients ho < $dv_pat_ho;intersection AND the 3 DéjàVu others;";
-#print {$fh} "intersection AND the 3 DéjàVu others phenotypes;";
-print {$fh} "(CADD > 25 OR spliceAI > 0,5) AND freq < 0,01% AND gnomAD He < 5 AND gnomAD Ho = 0 AND in gene list AND the 3 DéjàVu others phenotypes;";
+print {$fh} "(CADD > 25 OR spliceAI > $splice_AI) AND freq < 0.01% AND gnomAD He < 5 AND gnomAD Ho = 0 AND in gene list AND dejavu other projects < $dv_projects AND DejaVu other patients < $dv_pat AND DejaVu other patients ho < $dv_pat_ho;";
 print {$fh} "id, gene(s), nb all ref, nb all alt, depth;";
 print {$fh} "link(s)";
 print {$fh} ";& cov >= 30";
-#print {$fh} "Comment";
 print {$fh} "\n";
 close ($fh);
 
@@ -122,15 +112,20 @@ open(my $stats_genes, ">$file_genes") or confess("Can't open '$file_genes'");
 print {$stats_genes} "project;gene;number of patients;patients\n";
 close ($stats_genes);
 
+
 # log file
 my $file_err = $file =~ s/variants.csv$/log.error/r;
 warn $file_err;
 system ("rm $file_err") if (-e $file_err);
 
+
+
+my $nb_var;
+my $count_genes;
 my $pm = new Parallel::ForkManager($fork);
 foreach my $project_name (@projects_list) {
 	
-	my $pid = $pm->start and next unless ($fork <= 1);
+	my $pid = $pm->start and next;# unless ($fork <= 1);
 	my $buffer = new GBuffer;
 	my $project = $buffer->newProjectCache(-name=>$project_name) or confess ("can\'t open project cache '$project_name'");
 	warn $project->name;
@@ -195,7 +190,7 @@ foreach my $project_name (@projects_list) {
 			warn $nb_var->{$project_name}->{$pat_name}->{'commentaire'} if (exists $nb_var->{$project_name}->{$pat_name}->{'commentaire'});
 			foreach my $chr (@{$project->getChromosomes}) {
 				
-				warn $chr->name;
+				warn 'chr '.$chr->name;
 				next unless ($chr->getNewVector()->Size);
 	
 				my $v0 = $pat->getVectorVariants($chr)->Clone();
@@ -204,7 +199,6 @@ foreach my $project_name (@projects_list) {
 				my $var_genomad_ac = $v0 & $chr->getVectorScore('gnomad_ac_5');
 				my $var_genomad_ho = $v0 & $chr->getVectorScore('gnomad_ho_ac_0');
 				
-#				warn "\n\n";
 #				warn $v0->Norm();
 #				warn $var_cadd->Norm();
 #				warn $var_genomad_ac->Norm();
@@ -215,13 +209,11 @@ foreach my $project_name (@projects_list) {
 				    $var_freq += $chr->vector_global_categories->{$filter_name};
 				}
 				$var_freq &= $v0;
-#				warn "\n\n";
 #				warn $var_freq->Norm();
 				
 				my $v_genes = $chr->getNewVector();
 				foreach my $gene (@$genes) {
 					next unless ($gene->getChromosome->name eq $chr->name);
-					
 					$h_genes_ok->{$gene->external_name} = $gene->id;
 					
 #					warn $gene->external_name .' -> from '.$gene->start.' to '.$gene->end;
@@ -236,7 +228,6 @@ foreach my $project_name (@projects_list) {
 					$v_genes += $this_v;
 				}
 				$v_genes &= $v0;
-#				warn "\n\n";
 #				warn $v_genes->Norm();
 				
 				my $var_spliceAI_in_genes = $chr->getNewVector();
@@ -245,19 +236,14 @@ foreach my $project_name (@projects_list) {
 						my @ensg = split(/_/, $gene->id);
 						my $motif = '^'.$ensg[0].'$|^'.$gene->external_name.'$';
 #						warn $motif;
-#						warn grep (/$motif/, @genes_list);
-						if (grep (/$motif/, @genes_list) and $var->max_spliceAI_score($gene) >= 0.5) {
+#						warn grep (/$motif/i, @genes_list);
+						if (grep (/$motif/i, @genes_list) and $var->max_spliceAI_score($gene) >= $splice_AI) {
 							$var_spliceAI_in_genes->Bit_On($var->vector_id);
 						}
 					}
 				}
-				my $v_f = $var_genomad_ac + $var_genomad_ho + $var_freq;
-				my $v_ensemble = $var_cadd & $v_genes;
-				$v_ensemble += $var_spliceAI_in_genes;
-				$v_ensemble &= $v_f;
 				
 				my $v_intersection = $var_cadd & $var_genomad_ac & $var_genomad_ho & $var_freq & $v_genes;
-#				warn "\n\n";
 #				warn $v_intersection->Norm();
 				$v_intersection += $var_spliceAI_in_genes & $var_genomad_ac & $var_genomad_ho & $var_freq & $v_genes;
 #				warn $v_intersection->Norm();
@@ -272,71 +258,34 @@ foreach my $project_name (@projects_list) {
 				
 				$nb_var->{$project_name}->{$pat_name}->{'CADD'} += $var_cadd->Norm;
 				$nb_var->{$project_name}->{$pat_name}->{'spliceAI'} += $var_spliceAI_in_genes->Norm;
-				$nb_var->{$project_name}->{$pat_name}->{'freq'} += ($var_freq)->Norm;
-				$nb_var->{$project_name}->{$pat_name}->{'genomAD he'} += ($var_genomad_ac)->Norm;
-				$nb_var->{$project_name}->{$pat_name}->{'genomAD ho'} += ($var_genomad_ho)->Norm;
-				$nb_var->{$project_name}->{$pat_name}->{'in genes list'} += ($v_genes)->Norm;
-				$nb_var->{$project_name}->{$pat_name}->{'ensemble'} += ($v_ensemble)->Norm;
-				$nb_var->{$project_name}->{$pat_name}->{'intersection'} += ($v_intersection)->Norm;
+				$nb_var->{$project_name}->{$pat_name}->{'freq'} += $var_freq->Norm;
+				$nb_var->{$project_name}->{$pat_name}->{'genomAD he'} += $var_genomad_ac->Norm;
+				$nb_var->{$project_name}->{$pat_name}->{'genomAD ho'} += $var_genomad_ho->Norm;
+				$nb_var->{$project_name}->{$pat_name}->{'in genes list'} += $v_genes->Norm;
+				$nb_var->{$project_name}->{$pat_name}->{'intersection'} += $v_intersection->Norm;
+				warn $v_intersection->Norm.' variants';
 				
 				
 				my $infos;
-#				foreach my $var (@{$chr->getListVarObjects($v_ensemble)}) {
-#					$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other projects'} ++ if ($var->other_projects <= $dv_projects);
-##					next unless ($var->other_projects <= $dv_projects);
-#					
-#					$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other patients'} ++ if ($var->other_patients <= $dv_pat);
-##					next unless ($var->other_patients <= $dv_pat);
-#					
-#					$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other patients ho'} ++ if ($var->other_patients_ho <= $dv_pat_ho);
-##					next unless ($var->other_patients_ho <= $dv_pat_ho);
-#					next unless ($var->other_projects <= $dv_projects && $var->other_patients <= $dv_pat && $var->other_patients_ho <= $dv_pat_ho);
-#					$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other'} ++;
-#					
-#					$infos .= ' ; ' if ($nb_var->{$project_name}->{$pat_name}->{'ensemble details'});
-#					$infos .= $var->id.',';
-#					foreach my $g (@{$var->getGenes}) {
-#						my @ensg = split(/_/, $g->id);
-#						my $motif = '^'.$ensg[0].'$|^'.$g->external_name.'$';
-#						if (grep (/$motif/, @genes_list)) {
-#							$infos .= $g->external_name.',';
-#							$count_genes->{'ensemble'}->{$project_name}->{$g->external_name} ++;
-#						};
-#					}
-#					$infos .= $var->getNbAlleleRef($pat).',';
-#					$infos .= $var->getNbAlleleAlt($pat).',';
-#					$infos .= $var->getDepth($pat);
-#				}
-#				$nb_var->{$project_name}->{$pat_name}->{'ensemble details'} .= $infos;
-				
-				
-				$infos = undef;
 				my $link;
 				foreach my $var (@{$chr->getListVarObjects($v_intersection)}) {
 					warn $var->id;
-					warn $infos;
+#					warn $infos;
 #					warn $var->vector_id;
 					$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other projects'} ++ if ($var->other_projects <= $dv_projects);
-#					next unless ($var->other_projects <= $dv_projects);
-					
 					$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients'} ++ if ($var->other_patients <= $dv_pat);
-#					next unless ($var->other_patients <= $dv_pat);
-					
 					$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients ho'} ++ if ($var->other_patients_ho <= $dv_pat_ho);
-#					next unless ($var->other_patients_ho <= $dv_pat_ho);
-					
 					next unless ($var->other_projects <= $dv_projects && $var->other_patients <= $dv_pat && $var->other_patients_ho <= $dv_pat_ho);
 					$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other'} ++;
 					
 					$infos .= "\n" if ($infos or $nb_var->{$project_name}->{$pat_name}->{'intersection details'});
 					$infos .= $var->id.',';
 					my $gname;
-					my $gene_in_list;
 					foreach my $g (@{$var->getGenes}) {
 						my @ensg = split(/_/, $g->id);
 						my $motif = '^'.$ensg[0].'$|^'.$g->external_name.'$';
-#						$gene_in_list = grep (/$motif/, @genes_list);
-						if (grep (/$motif/, @genes_list)) {
+#						warn grep (/$motif/i, @genes_list);
+						if (grep (/$motif/i, @genes_list)) {
 							$gname = $g->external_name;
 							$infos .= $gname.',';
 							$count_genes->{'intersection'}->{$project_name}->{$gname}->{$pat_name} = undef;
@@ -356,24 +305,24 @@ foreach my $project_name (@projects_list) {
 						warn $v_genes->to_Enum();
 						print {$err} $project_name.' '.$pat->name.': '.$var->id.' '.$var->vector_id.":\nGene(s) ".join( ', ', map {$_->name.' '.$_->external_name} @{$var->getGenes}) ." not in gene list\n\n";
 						die("Gene(s) ".join( ', ', map {$_->name.' '.$_->external_name} @{$var->getGenes}) ." not in gene list");
+						warn ("\n\n");
 					}
 					
 					$infos .= $var->getNbAlleleRef($pat).',';
 					$infos .= $var->getNbAlleleAlt($pat).',';
 					$infos .= $var->getDepth($pat);
 					$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu cov'} ++ if ($var->getDepth($pat) >= 30);
-					$link = 'https://www.polyweb.fr/polyweb/vector/detailProject.html?'
+					$link .= "\n" if ($nb_var->{$project_name}->{$pat_name}->{'intersection links'} or $link);
+					$link .= 'https://www.polyweb.fr/polyweb/vector/detailProject.html?'
 						.'project='.$project_name.'&chromosome='.$chr->name.'&genename='.$gname
 						.'&type=ngs&vector_ids='.$var->vector_id.'&type_cache=undefined';
-					$link .= "\n" if ($nb_var->{$project_name}->{$pat_name}->{'intersection links'} and $link);
 				}
+#				warn $infos if ($infos);
 				$nb_var->{$project_name}->{$pat_name}->{'intersection details'} .= $infos;
 				$nb_var->{$project_name}->{$pat_name}->{'intersection links'} .= $link;
-				warn $infos;
-				warn $nb_var->{$project_name}->{$pat_name}->{'intersection details'};
+#				warn $nb_var->{$project_name}->{$pat_name}->{'intersection details'};
 				$chr->disconnect;
 			}
-			$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other projects'} = 0 unless (exists $nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other projects'});
 			$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other projects'} = 0 unless (exists $nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other projects'});
 			$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients'} = 0 unless (exists $nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients'});
 			$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients ho'} = 0 unless (exists $nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients ho'});
@@ -381,26 +330,10 @@ foreach my $project_name (@projects_list) {
 			$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu cov'} = 0 unless (exists $nb_var->{$project_name}->{$pat_name}->{'intersection dejavu cov'});
 			
 			print {$fh} $project_name.' '.$project->description.';'.$fam->name.';'.$pat_name.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'CADD'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'freq'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'genomAD he'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'genomAD ho'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'in genes list'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'spliceAI'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'ensemble'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other projects'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other patients'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'ensemble dejavu other patients ho'}.';'
-#				.'"'.$nb_var->{$project_name}->{$pat_name}->{'ensemble details'}.'";'
-#				.$nb_var->{$project_name}->{$pat_name}->{'intersection'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other projects'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients'}.';'
-#				.$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other patients ho'}.';'
 				.$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu other'}.';'
 				.'"'.$nb_var->{$project_name}->{$pat_name}->{'intersection details'}.'";'
 				.'"'.$nb_var->{$project_name}->{$pat_name}->{'intersection links'}.'";'
 				.'"'.$nb_var->{$project_name}->{$pat_name}->{'intersection dejavu cov'}.'";';
-#				.$nb_var->{$project_name}->{$pat_name}->{'commentaire'};
 			print {$fh} "\n";
 		}
 	}
@@ -414,7 +347,6 @@ foreach my $project_name (@projects_list) {
 	close ($err);
 	warn Dumper $nb_var->{$project_name};
 	warn Dumper $count_genes->{'intersection'}->{$project_name};
-#	last;
 	
 	$project->disconnect;
 	$project = undef;

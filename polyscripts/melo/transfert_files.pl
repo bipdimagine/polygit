@@ -23,7 +23,7 @@ my $buffer = new GBuffer;
 my $project_names;
 my $patient_names;
 my $file_types;
-my $archive_dir = "/data-isilon/download/transfert_sftp/";
+my $archive_dir = "/data-pure/workspace/downloads/transfert_file/";
 my $archive_name;
 my $transfert_sftp;
 my $no_die;
@@ -42,8 +42,8 @@ GetOptions(
 	'help'				=> \$help,
 ) || die("Error in command line arguments\n");
 
-die("-project is required") unless ($project_names);
 usage() if ($help);
+die("-project is required") unless ($project_names);
 $archive_dir .= '/' unless ($archive_dir =~ /\/$/);
 confess("Directory \"$archive_dir\" does not exit") unless ( -d $archive_dir );
 
@@ -329,7 +329,7 @@ Mandatory arguments
 Optional arguments
 	-files <s>		file types separated with a comma (fastq, bam, vcf, htlv1 or all (all=fastq,bam,vcf))
 	-patients <s>		patient names separated with a comma
-	-archive_dir <s>	path to create the archive before putting it on the sftp, default '/data-isilon/download/transfert_sftp/'
+	-archive_dir <s>	path to create the archive before putting it on the sftp, default '/data-pure/download/transfert_file/'
 	-archive_name <s>	archive name
 	-sftp / nosftp		whether to put or not the archive on the sftp
 	-no_die			do not die if file(s) or patient(s) are not found

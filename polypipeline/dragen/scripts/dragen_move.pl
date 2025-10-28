@@ -129,6 +129,10 @@ if (exists $pipeline->{sv}){
 	my $sv_file = $dir_pipeline."/".$prefix.".sv.vcf.gz";
 	move_sv($sv_file,$patient);
 }
+if (exists $pipeline->{str}){
+	my $sv_file = $dir_pipeline."/".$prefix.".repeats.vcf.gz";
+	move_sv($sv_file,$patient);
+}
 if ( $rna ==1){
 	my $sv_file = $dir_pipeline."/".$prefix.".SJ.out.tab";
 	move_sj($sv_file,$patient);
@@ -216,6 +220,14 @@ sub move_sv {
 	system("rsync -rav  $url"."$t1.tbi $dir/");
 	
 }
+
+sub move_str {
+	my ($t1,$patient) = @_;
+	my $dir = $patient->project->getVariationsDir("dragen-str");
+	system("rsync -rav  $url"."$t1 $dir/");
+	system("rsync -rav  $url"."$t1.tbi $dir/");
+}
+
 sub move_sj {
 	my ($t1,$patient) = @_;
 	my $dir = $project->getJunctionsDir("dragen-sj");

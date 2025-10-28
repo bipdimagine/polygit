@@ -3,9 +3,9 @@
 #echo $pad &&samtools bedcov -H -d 30 RENOME_V5_Hg19.padding_regions_$pad.bed align/dragen-align/GIAB_V5.bam > align/coverage/GIAB_V5.padding_regions_$pad.bed.cov
 
 
-pad=50
+pad=0
 echo "pad=$pad"
-for project in NGS2020_2975 #NGS2025_08659 NGS2025_08660 NGS2025_08679 NGS2025_08680 NGS2025_08964 NGS2025_09282 NGS2025_09277
+for project in NGS2020_2975 NGS2025_09282 #NGS2025_08659 NGS2025_08660 NGS2025_08679 NGS2025_08680 NGS2025_08964 NGS2025_09282 NGS2025_09277
   do
 	echo "$project"
 	dir="/data-isilon/sequencing/ngs/$project/HG19/variations/"
@@ -28,7 +28,7 @@ for project in NGS2020_2975 #NGS2025_08659 NGS2025_08660 NGS2025_08679 NGS2025_0
 	# Rapid_TubeF_V4_UMI
 	elif [[ "$project" == "NGS2025_08679" || "$project" == "NGS2025_08680" || "$project" == "NGS2025_08964"  || "$project" == "NGS2025_09277" ]]; then
 		patient="GIA_HG0_6123GM002954_STB"
-		if [[ "$project" == "NGS2025_09277" ]]; then patient="GIA_HG0_6123GM002954_STB-rep1" fi
+		if [[ "$project" == "NGS2025_09277" ]]; then patient="GIA_HG0_6123GM002954_STB-rep1"; fi
 #		bedA="/data-isilon/sequencing/ngs/NGS2025_08679/HG19_MT/Rapid_V4_TubeF_UMI.no_chr.bed"
 		bedA="/data-isilon/public-data/capture/HG19/agilent/Rapid_V4_TubeF_UMI.bed"
 		bed_intersect="/data-isilon/sequencing/ngs/NGS2025_08679/HG19_MT/intersect_tubeF_giab.bed"
@@ -36,9 +36,9 @@ for project in NGS2020_2975 #NGS2025_08659 NGS2025_08660 NGS2025_08679 NGS2025_0
 	# Exome agilent_50_V5
 	elif [[ "$project" == "NGS2020_2975"  || "$project" == "NGS2025_09282" ]]; then
 		patient="AJ_SON_base"
-		if [[ "$project" == "NGS2025_09282" ]]; then patient="AJ_SON_CTRL_dragen_rep1" fi
+		if [[ "$project" == "NGS2025_09282" ]]; then patient="AJ_SON_CTRL_dragen_rep1"; fi
 		bedA="/data-isilon/public-data/capture/HG19/agilent/agilent.50.v5.bed"
-		bed_intersect="/data-isilon/sequencing/ngs/$project/HG19/intersect_agilentV5_giab.bed"
+		bed_intersect="$dir../intersect_agilentV5_giab.bed"
 		if [[ ! -e "$bed_intersect" ]] ; then
 			bedtools intersect -a "$bedA" -b "$bedB" > "$bed_intersect"
 		fi
@@ -83,6 +83,7 @@ for project in NGS2020_2975 #NGS2025_08659 NGS2025_08660 NGS2025_08679 NGS2025_0
 			if [[  ! -d "$dir""giab" ]]; then
 				mkdir "$dir""giab" && chmod a+wrx "$dir""giab"
 			fi
+			if [[ -e "$dir""giab/HG002.original.vcf.gz" ]]; then rm "$dir""giab/HG002.original.vcf.gz" ; fi
 			ln -s "/data-isilon/sequencing/ngs/NGS2025_08659/HG19_MT/variations/giab/HG002_GRCh37_1_22_v4.2.1_benchmark.vcf.gz" "$dir""giab/HG002.original.vcf.gz"
 #			ln -s "/data-isilon/public-data/repository/HG19/GIAB/HG002/vcf.gz" "$dir""giab/HG002.original.vcf.gz"
 #			ln -s "/data-isilon/public-data/repository/HG19/GIAB/HG002/vcf.gz.tbi" "$dir""giab/HG002.original.vcf.gz.tbi"
@@ -95,27 +96,29 @@ for project in NGS2020_2975 #NGS2025_08659 NGS2025_08660 NGS2025_08679 NGS2025_0
 		if [[ -L "$link"".tbi" ]]; then rm "$link"".tbi" ; fi
 		ln -s "$dir""giab/HG002.restricted.vcf.gz.tbi" "$link"".tbi"
 #	fi
-	ls -lh "$dir""giab/HG002.vcf.gz"
+	ls -lh "$dir""giab/HG002.vcf.gz" "$dir""giab/HG002.restricted.vcf.gz"
 	
 	cd "$dir"
-	for caller in  freebayes haplotypecaller4 samtools unifiedgenotyper # deepvariant dragen-calling duplicate_region_calling freebayes haplotypecaller4 melt samtools unifiedgenotyper 
+	for caller in  dragen-calling deepvariant freebayes haplotypecaller4 samtools unifiedgenotyper # deepvariant dragen-calling duplicate_region_calling freebayes haplotypecaller4 melt samtools unifiedgenotyper 
 	  do
 		vcf_original="$dir$caller/$patient.original.vcf.gz"
 		vcf_restreint="$(echo $vcf_original | sed s/\.original\.vcf\.gz$/\.restreint\.vcf\.gz/)"
-#		if [[ ! -f "$vcf_restreint" ]]; then
-			if [[ ! -f "$vcf_original" ]]; then
-				mv "$dir$caller/$patient.vcf.gz" "$vcf_original"
-				mv "$dir$caller/$patient.vcf.gz.tbi" "$vcf_original"".tbi"
-			fi
-			bcftools view "$vcf_original" -T "$bed_extended" -O z -o "$vcf_restreint" 
-			bcftools index -ft "$vcf_restreint"
-			
-			if [[ -L "$dir$caller/$patient.vcf.gz" ]]; then rm "$dir$caller/$patient.vcf.gz"; fi
-			ln -s "$vcf_restreint" "$caller/$patient.vcf.gz"
-			if [[ -L "$dir$caller/$patient.vcf.gz.tbi" ]]; then rm "$dir$caller/$patient.vcf.gz.tbi"; fi
-			ln -s "$vcf_restreint.tbi" "$caller/$patient.vcf.gz.tbi"
+#		if [[ -e "$$dir$caller/$patient.vcf.gz" && ! -L "$$dir$caller/$patient.vcf.gz" ]]; then
+	#		if [[ ! -f "$vcf_restreint" ]]; then
+				if [[ ! -f "$vcf_original" ]]; then
+					mv "$dir$caller/$patient.vcf.gz" "$vcf_original"
+					mv "$dir$caller/$patient.vcf.gz.tbi" "$vcf_original"".tbi"
+				fi
+				bcftools view "$vcf_original" -T "$bed_extended" -O z -o "$vcf_restreint" 
+				bcftools index -ft "$vcf_restreint"
+				
+				if [[ -L "$dir$caller/$patient.vcf.gz" ]]; then rm "$dir$caller/$patient.vcf.gz"; fi
+				ln -s "$vcf_restreint" "$caller/$patient.vcf.gz"
+				if [[ -L "$dir$caller/$patient.vcf.gz.tbi" ]]; then rm "$dir$caller/$patient.vcf.gz.tbi"; fi
+				ln -s "$vcf_restreint.tbi" "$caller/$patient.vcf.gz.tbi"
+	#		fi
+			ls -lh "$caller/$patient"*
 #		fi
-		ls -lh "$caller/$patient"*
 #		zgrep -E '^##bcftools_viewCommand=view -T ' "$vcf_restreint"
 	  done
 	echo
