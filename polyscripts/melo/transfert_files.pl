@@ -20,6 +20,11 @@ use file_util;
 use GBuffer;
 my $buffer = new GBuffer;
 
+my $sftp_host = "192.168.2.111";
+my $sftp_user = "bioinfo";
+my $sftp_key_path = "/home/masson/.ssh/known_hosts";
+
+
 my $project_names;
 my $patient_names;
 my $file_types;
@@ -57,9 +62,9 @@ if ($transfert_sftp) {
 	my $current_user = getpwuid($<);
 	confess("You must be logged in under Cécile user ID: run 'su masson' before running the command line. Current user: '$current_user'") if ( $current_user ne "masson" );
 	$sftp = Net::SFTP->new(
-		"192.168.2.111",
-		user     => "bioinfo",
-		key_path => "/home/masson/.ssh/known_hosts"
+		$sftp_host,
+		user     => $sftp_user,
+		key_path => $sftp_key_path
 	);
 
 	# Liste les fichiers dans le répertoire distant
@@ -71,6 +76,7 @@ if ($transfert_sftp) {
 	$dir_sftp = prompt( "Select a directory to put the files: ", -menu => \@file_names );
 	$sftp = undef;
 	$dir_sftp .= '/filetransfer/' unless $dir_sftp =~ /filetransfer$/;
+	$dir_sftp =~ s/^/\// unless ($dir_sftp =~ /^\//);
 	print "\n";
 }
 
@@ -230,86 +236,101 @@ print "Total: " . scalar @$files . " files\n\n" if ($files);
 
 die("No file to copy\n") unless $files;
 
+
+
 # todo: vérifier qu'il n'y ait pas déjà un fichier de ce nom dans le sftp ?
 
-# Create the archive
-$archive_name = join( '_', @$project_names ) . '-' . join( '_', @file_types ) . '.tar' unless ($archive_name);
-$archive_name =~ s/\.tar\.gz$/\.tar/;
-$archive_name .= '.tar' unless ( $archive_name && $archive_name =~ /.tar$/ );
-$archive_name .= '.gz' if ( grep { $_ =~ /htlv1/i } @file_types );
-
-my $question = "Make an archive '$archive_name' of these files in '". abs_path($archive_dir) . "/'";
-$question .= " then put it on the sftp in '$dir_sftp'" if ($transfert_sftp);
-$question = "Put these files on the sftp in '$dir_sftp'" if ( $transfert_sftp and $no_archive );
-$question .= " ?  (y/n) ";
-my $choice = prompt($question);
-die("") if ( $choice ne "y" );
-
-my $cmd = "tar -cvf $archive_dir$archive_name " . join( " \\\n", @$files );
-$cmd =~ s/-cvf/-cvzf/ if ( grep { $_ =~ /htlv1/i } @file_types );
-print "\n";
-
-#warn $cmd;
-system $cmd;
-confess('Error while making the archive. The archive was not created') unless ( -e "$archive_dir$archive_name" );
-
-unless ($transfert_sftp) {
-	colored::stabilo( 'white', "--------DONE--------" );
-	colored::stabilo( 'white', "Archive created: '$archive_dir$archive_name'" );
-	exit;
-}
-
-if ($transfert_sftp and not $no_archive) {
-
-	# Put the archive on the sftp
-	$sftp = Net::SFTP->new(
-		"192.168.2.111",
-		user     => "bioinfo",
-		key_path => "/home/masson/.ssh/known_hosts"
-	);
-	print "Putting the archive '$archive_name' on the sftp:\n";
-	$sftp->put( "$archive_dir$archive_name", "/$dir_sftp$archive_name", \&callback ) || confess( "Could not transfer the archive on the sftp: " . $sftp->error );
-	print "Putting the files on the sftp...\t100%\n";
-
-	# Checks that the archive has been put on sftp
-	my @ls = $sftp->ls("/$dir_sftp");
-	@ls = map { $_->{filename} } @ls;
-	if ( grep { $_ eq $archive_name } @ls ) {
-		system("rm $archive_dir$archive_name");
+unless ($no_archive) {
+	# Create the archive
+	$archive_name = join( '_', @$project_names ) . '-' . join( '_', @file_types ) . '.tar' unless ($archive_name);
+	$archive_name =~ s/\.tar\.gz$/\.tar/;
+	$archive_name .= '.tar' unless ( $archive_name && $archive_name =~ /.tar$/ );
+	$archive_name .= '.gz' if ( grep { $_ =~ /htlv1/i } @file_types );
+	
+	my $question = "Make an archive '$archive_name' of these files in '". abs_path($archive_dir) . "/'";
+	$question .= " then put it on the sftp in '$dir_sftp'" if ($transfert_sftp);
+	$question .= " ?  (y/n) ";
+	my $choice = prompt($question);
+	die("") if ( $choice ne "y" );
+	
+	my $cmd = "tar -cvf $archive_dir$archive_name " . join( " \\\n", @$files );
+	$cmd =~ s/-cvf/-cvzf/ if ( grep { $_ =~ /htlv1/i } @file_types );
+	print "\n";
+	
+	#warn $cmd;
+	system $cmd;
+	confess('Error while making the archive. The archive was not created.'."\n".$cmd) unless ( -e "$archive_dir$archive_name" );
+	
+	unless ($transfert_sftp) {
 		colored::stabilo( 'white', "--------DONE--------" );
-		colored::stabilo( 'white', "Archive '$archive_name' put on the sftp in '$dir_sftp'" );
+		colored::stabilo( 'white', "Archive created: '$archive_dir$archive_name'" );
 		exit;
 	}
-	else {
-		colored::stabilo( 'red', 'ERROR' );
-		confess("Archive '$archive_name' not put on the sftp");
+	
+	if ($transfert_sftp) {
+	
+		# Put the archive on the sftp
+		$sftp = Net::SFTP->new(
+			$sftp_host,
+			user     => $sftp_user,
+			key_path => $sftp_key_path
+		);
+		print "Putting the archive '$archive_name' on the sftp:\n";
+		$sftp->put( "$archive_dir$archive_name", "/$dir_sftp$archive_name", \&callback ) || confess( "Could not transfer the archive on the sftp: " . $sftp->error );
+		print "Putting the files on the sftp...\t100%\n";
+	
+		# Checks that the archive has been put on sftp
+		my @ls = $sftp->ls("/$dir_sftp");
+		@ls = map { $_->{filename} } @ls;
+		if ( grep { $_ eq $archive_name } @ls ) {
+			system("rm $archive_dir$archive_name");
+			colored::stabilo( 'white', "--------DONE--------" );
+			colored::stabilo( 'white', "Archive '$archive_name' put on the sftp in '$dir_sftp'" );
+			exit;
+		}
+		else {
+			colored::stabilo( 'red', 'ERROR' );
+			confess("Archive '$archive_name' not put on the sftp");
+		}
 	}
+	
 }
 
-if ( $transfert_sftp and $no_archive ) {
+
+if ($transfert_sftp and $no_archive ) {
+	$archive_name = join( '_', @$project_names ) unless ($archive_name);
 	$archive_name =~ s/\.tar\.gz$//;
 	$archive_name =~ s/\.tar$//;
+	$archive_name .= '/' unless ($archive_name =~ /\/$/ and $archive_name);
+	
+	my $question = "Put these files on the sftp in '$dir_sftp$archive_name'";
+	$question .= " ?  (y/n) ";
+	my $choice = prompt($question);
+	die if ( $choice ne "y" );
+	
 	$sftp = Net::SFTP->new(
-		"192.168.2.111",
-		user     => "bioinfo",
-		key_path => "/home/masson/.ssh/known_hosts"
+		$sftp_host,
+		user     => $sftp_user,
+		key_path => $sftp_key_path,
+		debug => 1,
 	);
-	$sftp->do_mkdir("$archive_dir$archive_name");
+	$sftp->do_mkdir("$archive_dir$archive_name") or confess("Impossible 'mkdir $archive_dir$archive_name' on sftp: ".$sftp->error);
 
 	my $i = 0;
 	for my $file (@$files) {
 		printf( "%d / %d", $i, scalar @$files );
-		$sftp->put( "$archive_dir$archive_name/", $file ) or confess("Could not transfer file '$file' on the sftp: " . $sftp->error );
+		$sftp->put( "$archive_dir$archive_name", $file ) or confess("Could not transfer file '$file' on the sftp: " . $sftp->error );
 	}
 	print "\n";
 
 	# Checks that the files have been put on sftp
 	my @ls = $sftp->ls("/$dir_sftp$archive_name");
 	@ls = map { $_->{filename} } @ls;
-	if ( scalar @ls >= scalar @$files ) {
+	my $search = '('.join('$|',@$files).')$';
+	my $nb_ok = grep ( /$search/, @ls );
+	if ( $nb_ok == scalar @$files ) {
 		colored::stabilo( 'white', "--------DONE--------" );
-		colored::stabilo( 'white',
-			"Files put on the sftp in '$dir_sftp$archive_name'" );
+		colored::stabilo( 'white', "Files put on the sftp in '$dir_sftp$archive_name'" );
 		exit;
 	}
 	else {
