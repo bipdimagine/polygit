@@ -64,6 +64,8 @@ sub getProjectListsRNA {
 	my $is_BIPD_login = $buffer->getQuery->isLoginSTAFF($login);
 	my $list_proj = $buffer->getQuery->getListProjectsRnaSeqFromLoginPwd($login, $pwd, $project_name);
 	my ($hDone, $h_ok);
+	
+	my $b1 = GBuffer->new;
 	foreach my $h (@$list_proj) {
 		print '.';
 		my $h_users;
@@ -74,8 +76,6 @@ sub getProjectListsRNA {
 		my $name = $h->{name};
 		next if exists $hDone->{name};
 		
-		my $b1 = GBuffer->new;
-		my $p1 = $b1->newProject( -name => $name );
 		$h->{button_splices} = '';
 		$h->{button_rna} = '';
 		$h->{link_analyse} = '';
@@ -86,72 +86,92 @@ sub getProjectListsRNA {
 #			$h->{button} = '1::'.$project_name;
 #		}
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
-		my $path = $p1->get_path_rna_seq_junctions_analyse_all_res();
+
+
+		$h->{genome} = $buffer->getQuery->getReleaseGenome($h->{id});
+		my $pathRoot1 = $buffer->config_path("root","project_data-isilon")."/ngs/".$name.'/';
+		my ($old_new_path, $pathRoot, $path);
+		if (-d $pathRoot1) {
+			$pathRoot = $pathRoot1;
+			$path = $pathRoot1.'/'.$h->{genome}.'/analysis/AllRes/'; 
+		}
+		else {
+			my $pathRoot2 = $buffer->config_path("root","project_data")."/ngs/".$name.'/';
+			$pathRoot = $pathRoot2;
+			$path = $pathRoot2.'/'.$h->{genome}.'/analysis/AllRes/';
+		}
+		
+		
 		my (@lbuttons_splices, @lbuttons_rna);
 		
-		if (-d $path or -d $p1->getJunctionsDir('regtools')) {
+		my $type_cache = $h->{'cache'};
+		
+		if (-d $path or -d $pathRoot.'/variations/regtools/') {
 			my $ok;
-			foreach my $patient (@{$p1->getPatients()}) { 
-				warn $patient->name;
-				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
+
+			my @samples =  @{$buffer->getQuery->getPatients($h->{id})};
+			foreach my $patient (@samples) { 
+				my $dragen_file = $pathRoot.'/variations/dragen-sj/'.$patient->{name}.'.SJ.out.tab.gz';
 				$ok = 1 if (-e $dragen_file);
-				$ok = 1 if ($patient->regtools_file() and -e $patient->regtools_file());
+#				$ok = 1 if ($patient->regtools_file() and -e $patient->regtools_file());
 			}
 			my $se_file = $path.'/allResSE.txt' if (-e $path.'/allResSE.txt');
 			$se_file = $path.'/allResSE.txt.gz' if (-e $path.'/allResSE.txt.gz');
 			my $ri_file = $path.'/allResRI.txt' if (-e $path.'/allResRI.txt');
 			$ri_file = $path.'/allResRI.txt.gz' if (-e $path.'/allResRI.txt.gz');
+			
 			$ok = 1 if (-e $se_file);
 			$ok = 1 if (-e $ri_file);
-			$ok = 1 if (-e $path.'/regtools/'.$p1->name().'_regtools.tsv.gz');
-			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok);
+			$ok = 1 if (-e $pathRoot.'/variations/regtools/'.$name.'_regtools.tsv.gz');
+			push(@lbuttons_splices, '1::'.$h->{name}.'::'.$type_cache) if ($ok);
 			$hDone->{$name} = undef if $ok;
 		}
-		else {
-			my $ok_dragen;
-			foreach my $patient (@{$p1->getPatients()}) { 
-				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
-				$ok_dragen = 1 if (-e $dragen_file);
-			}
-			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok_dragen);
-			$hDone->{$name} = undef if $ok_dragen;
-		}
+#		else {
+#			my $ok_dragen;
+#			foreach my $patient (@{$p1->getPatients()}) { 
+#				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->{name}.'.SJ.out.tab.gz';
+#				$ok_dragen = 1 if (-e $dragen_file);
+#			}
+#			push(@lbuttons_splices, '1::'.$h->{name}) if ($ok_dragen);
+#			$hDone->{$name} = undef if $ok_dragen;
+#		}
 		
-		my $path_polyrna = $p1->get_path_rna_seq_polyrna_root();
-		$path_polyrna =~ s/HG19_MT/HG19/;
-		$path_polyrna =~ s/HG19_CNG/HG19/;
-		$path_polyrna =~ s/HG19/HG38/;
-		my $path_polyrna_HG38 = $path_polyrna;
-		$path_polyrna_HG38 =~ s/HG38/HG38_CNG/;
-		my $path_polyrna_HG38_CNG = $path_polyrna_HG38;
-		if (-d $p1->get_path_rna_seq_polyrna_root() or -d $path_polyrna_HG38 or -d $path_polyrna_HG38_CNG) {
+		my $path_polyrna = $pathRoot.'/HG38_CNG/polyRNA/';
+		if (-d $path_polyrna) {
 			push(@lbuttons_rna, '2::'.$h->{name});			
 			$hDone->{$name} = undef;
 		}
 		
 		my @lAnalysis;
-		if (-d $p1->get_path_rna_seq_junctions_root()) {
+		my $path_DB = $pathRoot.'/'.$h->{genome}.'/analysis/';
+		if (-d $path_DB) {
 			$hDone->{$name} = undef;
 			
-			my $path_DB = $p1->get_path_rna_seq_junctions_root();
 			my @lPotentialPath;
 			push(@lPotentialPath, $path_DB);
 			
 			
 			if ($path_DB =~ /HG19/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG38/analysis/");
-				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG38_CNG/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data-isilon')."/ngs/".$name."/HG38/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data-isilon')."/ngs/".$name."/HG38_CNG/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data')."/ngs/".$name."/HG38/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data')."/ngs/".$name."/HG38_CNG/analysis/");
 			}
 			elsif ($path_DB =~ /HG38/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19/analysis/");
-				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19_MT/analysis/");
-				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/HG19_CNG/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data-isilon')."/ngs/".$name."/HG19/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data-isilon')."/ngs/".$name."/HG19_MT/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data-isilon')."/ngs/".$name."/HG19_CNG/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data')."/ngs/".$name."/HG19/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data')."/ngs/".$name."/HG19_MT/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data')."/ngs/".$name."/HG19_CNG/analysis/");
 			}
 			elsif ($path_DB =~ /MM38/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/MM39/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data-isilon')."/ngs/".$name."/MM39/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data')."/ngs/".$name."/MM39/analysis/");
 			}
 			elsif ($path_DB =~ /MM39/) {
-				push(@lPotentialPath, $p1->buffer()->config_path("root","project_data")."/".$p1->getProjectType()."/".$p1->name()."/MM38/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data-isilon')."/ngs/".$name."/MM38/analysis/");
+				push(@lPotentialPath, $buffer->config_path("root",'project_data')."/ngs/".$name."/MM38/analysis/");
 			}
 			foreach my $path (@lPotentialPath) {
 				next unless -d $path;

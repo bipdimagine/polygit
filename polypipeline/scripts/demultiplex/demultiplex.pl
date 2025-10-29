@@ -6,7 +6,6 @@ use Data::Dumper;
 use File::Path qw(make_path);
 my $dir ="";
 my $run;
-my $file2;
 my $hiseq;
 my $sample_sheet;
 my $mask;
@@ -62,8 +61,10 @@ if (-d $tmp){
 	die("$tmp already exists ");
 }
 
-#my $final_dir = $root."/ILLUMINA/$hiseq/IMAGINE/$run";
-my $final_dir = $run->fastq_dir;
+my $final_dir = $root."/ILLUMINA/$hiseq/IMAGINE/$run";
+$final_dir = $root."/ILLUMINA/NOVASEQ/IMAGINE/$run" if $hiseq eq '10X';
+$final_dir = $root."/ILLUMINA/$hiseq/LAVOISIER/$run" if $hiseq eq 'NEXTSEQ500';
+$final_dir = $root."/ILLUMINA/$hiseq/HEMATO/$run" if $hiseq eq 'MISEQ';
 warn $final_dir;
 if (-d $final_dir){
 	die($final_dir. " already exists "); 
@@ -71,10 +72,6 @@ if (-d $final_dir){
 make_path($final_dir, { mode => 0775 }) 
     or die "Impossible de créer $final_dir: $!";
     
-$final_dir = $root."/ILLUMINA/$hiseq/LAVOISIER/$run" if $hiseq eq 'NEXTSEQ500';
-$final_dir = $root."/ILLUMINA/$hiseq/HEMATO/$run" if $hiseq eq 'MISEQ';
-
-
 
 mkdir $tmp;
 my $wtmp = "$tmp/Unaligned";

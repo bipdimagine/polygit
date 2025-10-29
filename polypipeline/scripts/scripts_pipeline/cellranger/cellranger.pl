@@ -245,7 +245,7 @@ if (grep(/count|^all$/i, @steps)){
 		my $adt = 'ADT_'.$name;
 		$cmd1 = "cp $seq_dir$name*.fastq.gz $seq_dir/ADT_$name*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
 #		my $cmd2 = " --localcores=$cpu ";
-		my $cmd2 = "&& cp -r $tmp$name/outs/* $tmp$name/_versions $dir$name/ ";
+		my $cmd2 = "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
 		system("mkdir $dir$name") unless (-d "$dir$name");
 		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
 #		$cmd2 .= "&& if [[ -f \"$tmp_fastq\*.fastq.gz\" ]]; then rm $tmp_fastq\*.fastq.gz ; fi ";
@@ -632,7 +632,7 @@ if (grep(/aggr_vdj/, @steps)) {
 #------------------------------
 # CSV with infos/paths for Francesco
 #------------------------------
-if (grep(/infos/i, @steps)){
+if (grep(/info/i, @steps)){
 	system("$Bin/cellranger_infos.pl -project=$projectName -out_dir=$dir");
 }
 
@@ -641,7 +641,7 @@ if (grep(/infos/i, @steps)){
 #------------------------------
 # COPY to SingleCell shared directory
 #------------------------------
-if (grep(/^cp|^all$/i, @steps)){
+if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
 	my $cmd_cp = "$Bin/cellranger_copy.pl -project=$projectName ";
 	$cmd_cp .= "-patients=$patients_name " if ($patients_name);
 	$cmd_cp .= "-all_outs " if (grep(/^cp$/i, @steps));
