@@ -1171,26 +1171,14 @@ has sql_cmd_get_quick_projects_list_RNA => (
 	lazy => 1,
 	default	=> sub {
 		my $sql = qq{
-			SELECT p.project_id as id, p.cache as cache, p.name as name, p.description, p.creation_date as cDate, po.name as dbname, r.name as relname,
-				GROUP_CONCAT(DISTINCT pp.version_id ORDER BY pp.version_id  SEPARATOR ' ') as 'ppversionid',
-				GROUP_CONCAT(DISTINCT rg.name ORDER BY rg.name  SEPARATOR ' ') as 'relGene',
+			SELECT p.project_id as id, p.cache as cache, p.name as name, p.description, p.creation_date as cDate,
 				GROUP_CONCAT(DISTINCT U.login ORDER BY U.login DESC SEPARATOR ',') as 'username'
 				FROM
 					PolyprojectNGS.projects p 
 					LEFT JOIN PolyprojectNGS.databases_projects dp
 					ON p.project_id =dp.project_id
-					LEFT JOIN PolyprojectNGS.polydb po
-					ON dp.db_id = po.db_id
 					LEFT JOIN PolyprojectNGS.project_release pr
 					ON p.project_id=pr.project_id
-					LEFT JOIN PolyprojectNGS.releases r
-					ON pr.release_id=r.release_id
-			        LEFT JOIN PolyprojectNGS.project_release_public_database pp
-			        ON p.project_id = pp.project_id
-			        LEFT JOIN PolyprojectNGS.project_release_gene pg
-			        ON p.project_id = pg.project_id
-			        LEFT JOIN PolyprojectNGS.release_gene rg
-			        ON rg.rel_gene_id=pg.rel_gene_id
 			        LEFT JOIN PolyprojectNGS.user_projects up
 					ON p.project_id = up.project_id
 					LEFT JOIN bipd_users.`USER` U
@@ -1419,11 +1407,6 @@ sub getListProjectsRnaSeq {
 		}
 		next unless ($is_rna);
 		
-		
-		my @l_versions = split(' ', $h->{$project_id}->{ppversionid});
-		@l_versions = sort {$a <=> $b} @l_versions;
-		my $max_annot = $self->getMaxPublicDatabaseVersion();
-		$h->{$project_id}->{version} = abs($max_annot - $l_versions[-1]).'::'.$h->{$project_id}->{relGene}.'-'.$l_versions[-1];
 		$h->{$project_id}->{samples} = scalar(keys %$h_patients);
 		$h->{$project_id}->{patient_name} = join(';', keys %$h_patients);
 		$h->{$project_id}->{capture_name} = join(';', keys %$h_captures);
