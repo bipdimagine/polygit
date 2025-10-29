@@ -46,7 +46,7 @@ my $project = $buffer->newProjectCache( -name 			=> $project_name );
 my $runs = $project->getRuns();
 my @a_excludes;
 @a_excludes = split(",",$excludes);
- my $sambamba = $buffer->software("sambamba");
+my $sambamba = $buffer->software("sambamba");
 
 #choose control by run .
 my $controls;
@@ -124,7 +124,9 @@ foreach my $r (@$runs) {
 			eval {
 			my $patient = $project1->getPatient($p->{patient});
 			my $b = $patient->getAlignFileName();
+			
 			next unless -e $b;		
+			#next unless $patient->alignmentMethod() ne "dragen-align";
 			my $scompute = &compute_sex($patient);
 			my $cov_file = $patient->fileNoSqlDepth;
 			if ($project1->name eq $project_name && !( -e $cov_file) ){
@@ -253,6 +255,7 @@ sub find_other_patient {
 			warn scalar(@{$project2->getPatients});
 			foreach my $p (@{$project2->getPatients}){
 				next if $p->isRna();
+				next if $p->name() =~/cdna/i;
 				my $capture2  = $p->getCapture();
 				next if $p->status == 1;
 				my $bam; 

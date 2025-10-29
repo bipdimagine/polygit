@@ -73,7 +73,6 @@ my $chromosomes = $project->getChromosomes();
 				$primer->{zscore_data}->{$run->id} = [];
 			}
 			next if ($chr->name eq "Y");
-			warn $can_count->{$primer->id}->{$run_id};
 			my $m1 = $can_count->{$primer->id}->{$run_id} / scalar(@$patients);
 			my $limit_m = 5 ;
 			$limit_m = 10 if $project->isDiagnostic;
