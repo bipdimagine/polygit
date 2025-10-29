@@ -92,6 +92,7 @@ sub getProjectListsRNA {
 		if (-d $path or -d $p1->getJunctionsDir('regtools')) {
 			my $ok;
 			foreach my $patient (@{$p1->getPatients()}) { 
+				warn $patient->name;
 				my $dragen_file = $p1->getVariationsDir('dragen-sj').'/'.$patient->name().'.SJ.out.tab.gz';
 				$ok = 1 if (-e $dragen_file);
 				$ok = 1 if ($patient->regtools_file() and -e $patient->regtools_file());
