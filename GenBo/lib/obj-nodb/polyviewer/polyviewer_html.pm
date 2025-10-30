@@ -1431,8 +1431,8 @@ sub validations {
 		$data->{hgmd_text} =  $self->variant->hgmd;
 		$data->{clinvar_value} = $self->variant->clinvar_value;
 		$data->{clinvar_text} = $self->variant->clinvar;
-		
-		if ($data->{clinvar_text}){
+		if ($data->{clinvar_value} > 0){
+		#	warn $self->variant->clinvar_id;
 			$data->{clinvar_id} = $self->variant->clinvar_id;
 		}
 		 my $output = $self->xslate->render("validations.tt", $data);

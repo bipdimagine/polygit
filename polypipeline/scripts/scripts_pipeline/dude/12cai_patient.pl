@@ -88,7 +88,7 @@ foreach my $patient (@{$project->getPatients}){
   my $can_count;
   my $plexn_count;
   my $error;
-  
+ # 6680 => NGS2022_5409
  $pm2->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;

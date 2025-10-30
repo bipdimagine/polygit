@@ -731,7 +731,7 @@ my $h_transmissions = {
     mother        => 1 << 2,  # 2^2 = 4
     both          => 1 << 3,  # 2^3 = 8
     is_parent     => 1 << 4,  # 2^4 = 16
-    recessif      => 1 << 5,  # 2^5 = 32
+    recessive      => 1 << 5,  # 2^5 = 32
     dominant      => 1 << 6,  # 2^6 = 64
     denovo        => 1 << 7,  # 2^7 = 128
     strict_denovo => 1 << 8,  # 2^8 = 256

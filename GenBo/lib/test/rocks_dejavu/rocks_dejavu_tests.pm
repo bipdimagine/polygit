@@ -138,7 +138,7 @@ sub launch_test_all_chromosomes {
 			$h_part_files->{$part_path} = $chr_name;
 		}
 	}
-	
+	warn Dumper @files_ok;
 	my $h_res_by_chr;
 	my $nb_total_path1 = 0;
 	my $nb_total_path2 = 0;

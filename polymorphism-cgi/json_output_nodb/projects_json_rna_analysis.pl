@@ -108,6 +108,7 @@ sub getProjectListsRNA {
 		
 		if (-d $path or -d $pathRoot.'/variations/regtools/') {
 			my $ok;
+
 			my @samples =  @{$buffer->getQuery->getPatients($h->{id})};
 			foreach my $patient (@samples) { 
 				my $dragen_file = $pathRoot.'/variations/dragen-sj/'.$patient->{name}.'.SJ.out.tab.gz';

@@ -109,7 +109,9 @@ my $pm2 = new Parallel::ForkManager($fork);
 		$pm2->finish( 0, $res );
 	}
 	$pm2->wait_all_children;
-	
+	foreach my $chr ( @{ $project->getChromosomes } ) {
+		confess() unless exists $total->{$chr->name};
+	}
 	my $no  = $project->noSqlCnvs("c");
 	$no->put_bulk( "primers", $total );
 	$no->close();

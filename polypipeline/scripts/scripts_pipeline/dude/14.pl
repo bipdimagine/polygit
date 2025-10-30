@@ -153,7 +153,6 @@ foreach my $patient (@{$project->getPatients}){
 				my $level = $primer->level($patient);
 				
 				my $score = $primer->cnv_score($patient);
-				warn $level." ".$score;
 				next if $level ne  2 and $level ne 1;
 				next if $score == -1;
 				
@@ -232,7 +231,6 @@ foreach my $patient (@{$project->getPatients}){
 				push(@$end_primers,@{select_primers($patient,$chr,$genes_dup_ho,"dup",1)});
 #				warn $intspan_dup_he->as_string;
 				my $genes_dup_he = get_genes($intspan_dup_he,$res,$chr,2);
-					warn Dumper $genes_dup_he;
 				#warn scalar @{select_primers($patient,$chr,$genes_dup_he,"dup",1)};
 					
 				push(@$end_primers,@{select_primers($patient,$chr,$genes_dup_he,"dup",undef,1)});
@@ -281,7 +279,7 @@ foreach my $patient (@{$project->getPatients}){
 	foreach my $patient (@{$project->getPatients}){
 		my $file = $dir_out."/".$patient->name.".dude.lid";
 		my $filegz = $dir_out."/".$patient->name.".dude.lid.gz";
-		system("$bgzip $file && $tabix -p bed $file.gz ");
+		system("$bgzip -f $file && $tabix -p bed $file.gz ");
 	}
 	
 sub get_genes {
