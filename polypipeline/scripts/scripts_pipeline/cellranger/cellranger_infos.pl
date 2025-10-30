@@ -43,11 +43,12 @@ my $help;
 GetOptions(
 	'project=s'		=> \$projectName,
 #	'patients=s'	=> \$patients_name,
-	'out_dir=s'		=> \ $out_dir,
+	'out_dir=s'		=> \$out_dir,
+	'help'			=> \$help,
 ) || die("Error in command line arguments\n");
 
 usage() if $help;
-usage() unless ($projectName);
+die("-project is required") unless ($projectName);
 die("'$out_dir' does not exist or is not a directory") unless (-d $out_dir);
 $out_dir .= '/' unless ($out_dir =~ /\/$/);
 

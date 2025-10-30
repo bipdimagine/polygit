@@ -231,7 +231,7 @@ if (grep(/count|^all$/i, @steps)){
 		my $fastq_files = $patient->fastqFiles();
 		my @fastq_files = map {values %$_} @$fastq_files;
 		die ("Fastq file names (sample $pname) must follow the following naming convention: [Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz")
-			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][12]_001.fastq.gz$/} @fastq_files) == scalar @fastq_files);
+			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][123]_001\.fastq\.gz$/} @fastq_files) == scalar @fastq_files);
 	}
 	
 	sub full_cmd {
@@ -247,9 +247,9 @@ if (grep(/count|^all$/i, @steps)){
 #		my $cmd2 = " --localcores=$cpu ";
 		my $cmd2 = "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
 		system("mkdir $dir$name") unless (-d "$dir$name");
-		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
+#		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
 #		$cmd2 .= "&& if [[ -f \"$tmp_fastq\*.fastq.gz\" ]]; then rm $tmp_fastq\*.fastq.gz ; fi ";
-#		$cmd2 .= "&& rm $tmp_fastq\*.fastq.gz";
+#		$cmd2 .= "&& rm $tmp_fastq\*$name*.fastq.gz";
 		$cmd =~ s/$seq_dir/$tmp_fastq/;
 		return $cmd1.$cmd.$cmd2."\n";
 	}
@@ -655,7 +655,7 @@ if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
 # ARCHIVE / TAR
 #------------------------------
 if (grep(/tar|^all$/i, @steps)){
-	my $cmd_tar = "$Bin/cellranger_copy.pl -project=$projectName ";
+	my $cmd_tar = "$Bin/cellranger_tar.pl -project=$projectName ";
 	$cmd_tar .= "-patients=$patients_name " if ($patients_name);
 	$cmd_tar .= "-create_bam " if ($create_bam and $create_bam ne 'false');
 	$cmd_tar .= "-no_exec " if ($no_exec);
