@@ -67,6 +67,10 @@ else if (href.indexOf("mbras", 1) > -1) {
 	url_path = "/cgi-bin/mbras/polymorphism-cgi/";
 }
 
+else if (href.indexOf("archive", 1) > -1) {
+	url_path = "/cgi-bin/archive/polymorphism-cgi/";
+}
+
 else if (href.indexOf("eollivie", 1) > -1) {
 	url_path = "/cgi-bin/eollivie/polymorphism-cgi/";
 }
