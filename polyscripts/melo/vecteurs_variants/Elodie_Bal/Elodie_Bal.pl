@@ -155,7 +155,7 @@ foreach my $child (sort @list_children) {
 		## Frequence
 		my $v_freq = $chr->getNewVector()->Clone();
 #		warn Dumper $chr->vector_global_categories;
-		foreach my $filter_name ('freq_0001', 'freq_none') {	# prendre la freq en question + tous celles en dessous
+		foreach my $filter_name ('freq_0001', 'freq_none') {	# prendre la freq en question + toutes celles en dessous
 			$v_freq += $chr->vector_global_categories->{$filter_name};
 		}
 		$v_freq &= $v0;

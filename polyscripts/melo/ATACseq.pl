@@ -131,7 +131,7 @@ if (grep(/dragen_align/i, @steps)){
 
 
 if (grep(/preprocessing/i, @steps)){
-	my $cmd_cluster;
+	my $cmd_preprocessing;
 	my $output_dir = $project->getAlignmentDir('dragen-align/preprocessed');
 	warn $output_dir;
 	open(my $fh, ">$output_dir/jobs_preprocessing.txt");
@@ -147,20 +147,23 @@ if (grep(/preprocessing/i, @steps)){
 		# Remove non-uniquely/low quality mapped reads, not properly mapped reads, mitochondiral reads
 		my $cmd_samtools = "samtools view $inbam -q 10 -f 0x2 -e 'rname != \"chrM\"' -o $tmp_bam -@ $cpu ";
 		# Remove PCR duplicates (already done by dragen)
-		my $cmd_rmdup = $buffer->getSoftware('java').' '.$buffer->getSoftware('picard')." MarkDuplicates I=$tmp_bam O=$outbam M=$metrics_file REMOVE_DUPLICATES=true ";
+		my $cmd_rmdup = $buffer->getSoftware('java').' -jar '.$buffer->getSoftware('picard')." MarkDuplicates I=$tmp_bam O=$outbam M=$metrics_file REMOVE_DUPLICATES=true ";
 		my $cmd_bai = "samtools index $outbam -@ $cpu ";
 		print {$fh} "$cmd_samtools && $cmd_rmdup && $cmd_bai\n";
+		$cmd_preprocessing .= "$cmd_samtools && $cmd_rmdup && $cmd_bai\n";
 		
 		# Remove alignements within problematic regions ?
 	}
+	chomp $cmd_preprocessing;
+#	system("echo \"$cmd_preprocessing\" | run_cluster.pl -cpu=$cpu") unless ($no_exec);
 	system("cat $output_dir/jobs_preprocessing.txt | run_cluster.pl -cpu=$cpu") unless ($no_exec);
 }
 
 
-if (grep(/^qc$/i, @steps)){
+if (grep(/^general_qc$/i, @steps)){
 	my $bam_files = join( ' ', map {$_->getBamFileName('dragen-align/preprocessed')} @$patients );
 #	$bam_files =~ s/bam$/cram/;
-	my $dir_bam = $project->getAlignmentDir('dragen-align/preprocessed');
+	my $dir_bam = $project->getAlignmentDir('dragen-align/preprocessed/QC');
 	my $singularity_deeptools = "singularity exec -B $dir_bam /software/distrib/deeptools/deeptools.sif ";
 	my $cmd1 = $singularity_deeptools." plotFingerprint --bamfiles $bam_files --binSize=1000 "
 		."--plotFile $dir_bam/fingerprint.svg --outQualityMetrics $dir_bam/metrics.tsv --smartLabels -p $cpu";
@@ -180,7 +183,27 @@ if (grep(/^qc$/i, @steps)){
 		
 }
 
-
+if (grep(/^atac_qc$/i, @steps)){
+	my $cmd;
+	foreach my $pat (@$patients) {
+		my $pname = $pat->name;
+		my $bam = $pat->getBamFileName('dragen-align/preprocessed');
+		die("No bam '$bam'") unless (-e $bam);
+		my $dir_out = $project->getAlignmentDir('dragen-align/preprocessed/QC');
+		
+		# java -Xmx31G -jar $PICARD CollectInsertSizeMetrics \
+		#-I SRR17296554.blstMT_filt.dedup.bam \
+		#-O SRR17296554.chr1.proc.fraglen.stats \
+		#-H SRR17296554.chr1.proc.fraglen.pdf -M 0.5
+		my $cmd_picard = $buffer->getSoftware('java').' -jar '.$buffer->getSoftware('picard')." CollectInsertSizeMetrics I=$bam O=$dir_out$pname.insert_size_metrics.txt H=$dir_out$pname.insert_size_histogram.pdf M=0.5";
+		warn $cmd_picard;
+		$cmd .= $cmd_picard."\n";
+		
+	}
+	chomp $cmd;
+	warn $cmd;
+	system("echo \"$cmd\" | run_cluster.pl -cpu=$cpu") unless ($no_exec);
+}
 
 
 

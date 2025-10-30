@@ -40,13 +40,18 @@ my $is_ucsc = undef;
 $is_ucsc = 1 if $project->getChromosome(1)->fasta_name eq "chr1";
 update_type($buffer->dbh,$project->id);
 #my $file_out = $patient->vcf_file;
-my $GIAB_DIR;
+my $GIAB_DIR = "/data-isilon/public-data/repository/";
+
+my $release = $project->version;
+$GIAB_DIR .= "HG38/GIAB/" if ($release =~ /^HG38/);
+$GIAB_DIR .= "HG19/GIAB/" if ($release =~ /^HG19/);
+die("Project '$project_name' must be in HG19 or HG38") unless ($release =~ /^HG(19|38)/);
 
 if ($p2name =~ /001/){
-	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG001";
+	$GIAB_DIR .= "HG001";
 }
 elsif ($p2name =~ /002/){
-	$GIAB_DIR = "/data-isilon/public-data/repository/HG19/GIAB/HG002";
+	$GIAB_DIR .= "HG002";
 }
 else {
 	die($p2name." not foud HG001 or HG002");
