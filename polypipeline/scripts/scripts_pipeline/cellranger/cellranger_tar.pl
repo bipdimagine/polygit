@@ -61,14 +61,20 @@ foreach my $pat (@{$patients}) {
 	push(@group,$group);
 }
 
-my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/web_summary.html $dir/*/cloupe.cloupe ";
-$tar_cmd .= "$dir/*/vloupe.vloupe " if grep (/vdj/i, @group);
-$tar_cmd .= "$dir/*/*_bc_matrix/* ";
-$tar_cmd .= "$dir/*/*.bam* " if ($create_bam and $create_bam ne 'false');
+my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/web_summary.html $dir*/cloupe.cloupe ";
+$tar_cmd .= "$dir*/vloupe.vloupe " if grep (/vdj/i, @group);
+$tar_cmd .= "$dir*/*_bc_matrix/* ";
+$tar_cmd .= "$dir*/*.bam* " if ($create_bam and $create_bam ne 'false');
+$tar_cmd .= "$dir*/fragments.tsv.gz $dir*/peak_annotation.tsv " if (grep {/ATAC/i} @group);
+warn grep {/ATAC/i} @group;
+# scRNAseq: GEX (+ADT): cloupe.cloupe, web_summary.html, filtered and raw_feature_bc_matrix
+#			VDJ: vloupe.vloupe, web_summary.html
+# scATAseq : cloupe.cloupe, web_summary.html, filtered and raw_peak_bc_matrix, possibly filtered_tf_bc_matrix, fragments.tsv.gz, peak_annotation.tsv
+
 warn $tar_cmd;
-if (-e "$dir/$projectName.tar.gz") {
-	my $overwrite = prompt("'archive $dir/$projectName.tar.gz' already exists. Overwrite ?  (y/n)", -yes);
-	die("'archive $dir/$projectName.tar.gz' already exists") unless ($overwrite);
+if (-e "$dir/$projectName.tar.gz" and !$no_exec) {
+	my $overwrite = prompt("'archive $dir/$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes);
+	die("archive '$dir/$projectName.tar.gz' already exists") unless ($overwrite);
 }
 unless ($no_exec){
 	system ($tar_cmd);
