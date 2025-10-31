@@ -601,13 +601,14 @@
 						});
 			    	}
 			    });
-				var urlpasswd = url_listProject + "?type=login&pwd=" + this_pwd + "&login=" + this_username + "&action=list";
+				var urlpasswd = url_listProject + "?type=login&pwd=" + this_pwd + "&login=" + this_username + "&action=check_have_projects";
 			    $.getJSON( urlpasswd, function( data ) {
 			    	var i = 0;
 			    	$.each( data.items, function( key, val ) { i++; });
 			    	//dijit.byId('waiting').hide();
 			    	if (i > 0) {
 			    		ok_login(this_username, this_pwd);
+			    		dijit.byId('waiting').hide();
 			    		get_lists_projects();
 			    	}
 			    	else { error_login(); }
