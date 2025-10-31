@@ -85,7 +85,7 @@ sub checkHgmdAccess {
 sub getProjectLists {
 	my ( $buffer, $login, $pwd ) = @_;
 	#renvoit tous les origin associés au login et au mdp spécifié
-	
+	warn "start";
 	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
 	if ($res->[0]->{otp} == 1 ) {
 		#$res->[0]->{otp_qr_code} = $buffer->google_auth_qr_code();
@@ -94,10 +94,16 @@ sub getProjectLists {
 		
 	}
 	$res->[0]->{otp_need} = $buffer->use_otp_for_login($login);
+	if ($project_query){
+		my @z = grep {$_->{name} eq $project_query} @$res;
+		$res = \@z;
+	}
+	
+	
 	my $db_name = $buffer->{config}->{server}->{status};
-	
-	my $nb_project = scalar(@{$buffer->listProjects()});
-	
+	#warn "1";
+	my $nb_project = 0;#scalar(@{$buffer->listProjects()});
+	#warn "2";
 	my $h_proj_user;
 	foreach my $project ( @$res) {
 		$h_proj_user->{$project->{name}}->{high} = 0;
@@ -108,8 +114,8 @@ sub getProjectLists {
 	#pour chacun des id de projet 
 	if ($project_query){
 	 foreach my $project ( @$res) {
-	 	next if ($project_query && $project_query ne $project->{name}); 		
-	 	
+	 	next if ($project_query && $project_query ne $project->{name}); 	
+	 	warn 	$project->{name};
 	 	my $buffer2 = GBuffer->new;
 	 	my $project2 = $buffer2->newProject( -name => $project->{name} );
 	 	 	
@@ -272,7 +278,7 @@ sub getProjectLists {
  		export_xls($res);
  		exit(0);
 	}
-	
+	warn "end";
 	export_data::print_simpleJson($cgi,\@res2);
 	
 	exit(0);
