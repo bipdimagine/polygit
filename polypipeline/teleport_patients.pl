@@ -141,7 +141,6 @@ sub move_patient{
 	my $pn = $patient->name();
  	my $dir1 = $project->getProjectPath();
  	my $dir2 = $newProject->getProjectPath();
- 	my $dir3 = $project->getSequencesRootDir();
 
 
  	my $pn = $patient->name();
@@ -166,18 +165,7 @@ sub move_patient{
  	
  }
  
-my @files2 = File::Find::Rule->file()
-                                  ->name( "$pn.*" )
-                                  ->in( $dir3);
 
-
-push(@files,@files2);
-#my @files3 = File::Find::Rule->file()
-#                                  ->name( $pn."_*" )
-#                                  ->in( $dir1);
-#
-#
-#push(@files,@files3);
 my $bam =0;
 my $vcf =0;
 my @cmd;
