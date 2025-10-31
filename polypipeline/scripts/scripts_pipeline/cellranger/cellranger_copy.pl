@@ -67,22 +67,24 @@ foreach my $patient (@{$patients}) {
 	next if ($name =~ /^ADT_/);
 	my $cp_cmd;
 	
-	warn ("$name web summary not found: '$dir$name/web_summary.html'\nAre you sure the counting finished successfully ?")
-		unless (-e "$dir$name/web_summary.html");
-
-	# Copy ALL outs
-	if ($all_outs){
-		$cp_cmd = "cp -ru $dir/$name $dirout";
-	}
-	
-	# Copy ONLY web_summary.html
-	else {
-		$cp_cmd = "mkdir $dirout$name ; " unless (-d $dirout.$name);
-		$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html";
+	if (-e "$dir$name/web_summary.html") {
+		# Copy ALL outs
+		if ($all_outs){
+			$cp_cmd = "cp -ru $dir/$name $dirout";
+		}
 		
+		# Copy ONLY web_summary.html
+		else {
+			$cp_cmd = "mkdir $dirout$name ; " unless (-d $dirout.$name);
+			$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html";
+		}
+		
+		warn $cp_cmd;
+		system ($cp_cmd) unless $no_exec;
 	}
-	warn $cp_cmd;
-	system ($cp_cmd) unless $no_exec;
+	else {
+		warn ("$name web summary not found: '$dir$name/web_summary.html'\nAre you sure the counting finished successfully ?");
+	}
 }
 
 unless ($no_exec){
