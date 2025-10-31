@@ -96,6 +96,10 @@ else if (href.indexOf("preprod", 1) > -1) {
 }
 else if (href.indexOf("dev", 1) > -1) {
 	url_path = "/cgi-bin/dev/polymorphism-cgi/";
+	
+}
+else if (href.indexOf("archive", 1) > -1) {
+	url_path = "/cgi-bin/archive/polymorphism-cgi/";
 }
 // db or not
 //var json_out = "/json_output";
