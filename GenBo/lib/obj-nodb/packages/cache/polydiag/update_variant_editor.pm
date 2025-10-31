@@ -20,7 +20,6 @@ use Number::Format qw(:subs);
 use List::MoreUtils qw{ natatime };
 use CGI qw/:standard :html3/;
 use Number::Format qw(:subs);
-use MCE::Loop;
 sub init_bundle_infos{
 my $self = shift;
 #
@@ -653,7 +652,7 @@ sub vclinvar {
 	   #  $hvariation->{clinvar_alert}  = 0 ;
 	 if ($v1){
 	 	 $hvariation->{value}->{clinvar_id} = $v->clinvar->{id};
-	 	my $uc = qq{https://www.ncbi.nlm.nih.gov/clinvar/?term=}.$v->clinvar_id()."[alleleid]";
+	 	my $uc = qq{https://www.ncbi.nlm.nih.gov/clinvar/?term=}.$v->clinvar->{id}."[alleleid]";
 	 	my $a = qq{<a href="$uc" target="_blank" style="color:white">}.$v->text_clinvar()."</a>"; 
 	 	my $oc = qq{onClick='window.open("$uc")'};
 	 	value_html($hvariation,"clinvar",$v->text_clinvar(),  printButton($v,[1,4],$v->text_clinvar(),$oc));
@@ -2935,11 +2934,11 @@ sub table_cnv_genes_transcripts {
 
 
 
-my $limit_genes_dude = 1000;
 sub get_hash_genes_dude {
 	my ($patient, $by_names_or_ids, $list_type, $panel,$noprint) = @_;
 	return if $patient->isGenome();
 	
+	my $limit_genes = 1000;
 	my $hGenes_dude = {};
 	my ($h_type_levels, $h_panels_tr);
 	foreach my $type (@$list_type) {
@@ -2958,7 +2957,6 @@ sub get_hash_genes_dude {
 	foreach my $type (@$list_type) {
 		my $list_tr_high;
 		eval { $list_tr_high = $no->get($type); };
-		warn $type;
 		if($@) {}
 		unless ($list_tr_high) {
 			$no->close();
@@ -2977,38 +2975,12 @@ sub get_hash_genes_dude {
 	$patient->getProject->buffer->dbh_deconnect();
 	$patient->getProject->disconnect();
 	my $xp = 0;
-	#return {"too_much"=>scalar @ltr} if scalar(@ltr) > 300;
-	my $hGenes_dude;
-	MCE::Loop::init {
-    chunk_size => 'auto',
-    max_workers => 'auto',
-    gather => sub {
-        my ($mce,$data) = @_;
-        foreach my $k (keys %$data){
-			$hGenes_dude->{$k} = $data->{$k};
-		}
-        	#@{$hGenes_dude}{keys %$data} = values %$data;
-    	},
-#    	   on_post_exit => sub {
-#        my ($mce, $pid, $exit_code, $ident) = @_;
-#        if ($exit_code != 0) {
-#            warn "?? Worker $pid (ident=$ident) exited with error $exit_code\n";
-#            $error ++;
-#        } else {
-#            print "? Worker $pid (ident=$ident) exited normally\n";
-#        }
-#    }
-	};
-	$patient->project->disconnect();
-	 mce_loop {
-  	  my ($mce, $ltra) = @_;
-  	  
-  	  my $x;
-  		my $hash_vp;
-  		warn "start ".MCE->chunk_id;
-  		my $hGenes_dude;
-  	  foreach my $t (@$ltra){
- 	   	my $g_name_id;
+ 	foreach my $t (@ltr){
+ 		$xp++;
+ 		unless ($noprint){
+			print "." if ($xp % 20 == 0 and $patient->getProject->cgi_object());
+ 		}
+ 		my $g_name_id;
  		$g_name_id = $t->gene_external_name() if ($by_names_or_ids eq 'names');
  		$g_name_id = $t->getGene->id() if ($by_names_or_ids eq 'ids');
 	 		
@@ -3019,6 +2991,7 @@ sub get_hash_genes_dude {
 		my $coverage = polyweb_dude->new(patients=>\@lPatients,transcript=>$t,limit=>undef,selected_patients=>\@selected_patients);
 		$coverage->init_matrices();
 		my $hcov = $coverage->quality;
+			
 		$hGenes_dude->{$g_name_id}->{$type}->{dup} += $hcov->{$patient->name()}->{dup};
 		$hGenes_dude->{$g_name_id}->{$type}->{del} += $hcov->{$patient->name()}->{del};
 		$hGenes_dude->{$g_name_id}->{$type}->{del_ho} += $hcov->{$patient->name()}->{del_ho};
@@ -3031,53 +3004,9 @@ sub get_hash_genes_dude {
 			$hGenes_dude->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{del};
 			$hGenes_dude->{$g_name_id}->{$type}->{all_others} += $hcov->{$other_patient->name()}->{all};
 		}
- 	   	
- 	   	$patient->project->disconnect();
-  	  }
-  	   MCE->gather(MCE->chunk_id,$hGenes_dude);
-   	#  $t->close();
-	
-		} @ltr;
- 		MCE::Loop->finish;
-	
-	
-#	die();
-#	
-#		
-#		
-# 	foreach my $t (@ltr){
-# 		$xp++;
-# 		unless ($noprint){
-#			print "." if ($xp % 20 == 0 and $patient->getProject->cgi_object());
-# 		}
-# 		my $g_name_id;
-# 		$g_name_id = $t->gene_external_name() if ($by_names_or_ids eq 'names');
-# 		$g_name_id = $t->getGene->id() if ($by_names_or_ids eq 'ids');
-#	 		
-#		my $type = $hGenesToDo->{$t->gene_external_name};
-# 		next if (exists $hGenes_dude->{$g_name_id});
-#	 		
-# 		# FILTRE TRANSCRIPTS HIGH DUDE
-#		my $coverage = polyweb_dude->new(patients=>\@lPatients,transcript=>$t,limit=>undef,selected_patients=>\@selected_patients);
-#		$coverage->init_matrices();
-#		my $hcov = $coverage->quality;
-#			
-#		$hGenes_dude->{$g_name_id}->{$type}->{dup} += $hcov->{$patient->name()}->{dup};
-#		$hGenes_dude->{$g_name_id}->{$type}->{del} += $hcov->{$patient->name()}->{del};
-#		$hGenes_dude->{$g_name_id}->{$type}->{del_ho} += $hcov->{$patient->name()}->{del_ho};
-#		$hGenes_dude->{$g_name_id}->{$type}->{all} += $hcov->{$patient->name()}->{all};
-#			
-#		foreach my $other_patient (@lPatients) {
-#			next if ($other_patient->getFamily->name() eq $patient->getFamily->name());
-#			$hGenes_dude->{$g_name_id}->{$type}->{grey_others} += $hcov->{$other_patient->name()}->{grey};
-#			$hGenes_dude->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{dup};
-#			$hGenes_dude->{$g_name_id}->{$type}->{noise} += $hcov->{$other_patient->name()}->{del};
-#			$hGenes_dude->{$g_name_id}->{$type}->{all_others} += $hcov->{$other_patient->name()}->{all};
-#		}
-#	}
-#
-#	$no->close();
+	}
 
+	$no->close();
 	if (not $hGenes_dude  or scalar keys %{$hGenes_dude} == 0) {
 		$hGenes_dude->{no_result} = 1;
 		return $hGenes_dude;
@@ -3086,7 +3015,7 @@ sub get_hash_genes_dude {
 	my $nb_ok = 0;
 	my $hGenes_dude_ok;
 	foreach my $g_name_id (keys %{$hGenes_dude}) {
-		if ($nb_ok == $limit_genes_dude) {
+		if ($nb_ok == $limit_genes) {
 			$max_genes_selected = $nb_ok;
 			last;
 		}
@@ -3338,7 +3267,7 @@ foreach my $g (keys %$hotspots){
 
 sub print_cnv_exome {
 	my ($patient, $types, $panel) = @_;
-	#$limit_genes_dude = 250;
+	
 	if ($patient->isParent()) {
 		if ($patient->getProject->validation_db() and $patient->getProject->validation_db() eq 'defidiag') {
 			return;
@@ -3371,8 +3300,6 @@ sub print_cnv_exome {
 	push(@ltypes, 'low') if (exists $hTypes->{'low'});
 	print qq{<div style="display: none">};
 	$patient->getProject->cgi_object(1);
-
-
 	
 	my ($hGenes_dude, $max) = get_hash_genes_dude($patient, 'ids', \@ltypes, '');
 	print qq{</div>};
