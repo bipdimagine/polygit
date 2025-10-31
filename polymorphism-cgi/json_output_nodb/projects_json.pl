@@ -43,6 +43,7 @@ my $viewer = $cgi->param('viewer');
 my $mycode   = $cgi->param('mycode');
 checkOtpAuth($buffer, $mycode, $login) if $action eq "otp";
 getProjectLists($buffer,$login,$pwd) if $action eq "list";
+check_login_have_projects($buffer,$login,$pwd) if $action eq "check_have_projects";
 checkAuthentification($buffer,$login,$pwd,$cgi->param('project')) if $action eq "check";
 checkHgmdAccess($buffer,$login,$pwd) if $action eq "check_hgmd_access";
 
@@ -80,6 +81,15 @@ sub checkHgmdAccess {
 	print $cgi->header('text/json-comment-filtered');
 	print $json_encode;
 	exit(0);
+}
+
+sub check_login_have_projects {
+	my ( $buffer, $login, $pwd ) = @_;
+	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
+	export_data::print_simpleJson($cgi,$res);
+	exit(0);
+	warn Dumper $res;
+	die;
 }
 
 sub getProjectLists {
@@ -131,6 +141,7 @@ sub getProjectLists {
 		$project->{genome_version} = $ph->{version};#join(",",map{$_->{name}}@$release);
 		$project->{db_name} = $db_name; 
 		my ($t,$h) = split("_",$project->{dbname});
+		my $nb_project = scalar(@$res);
 		$project->{nb_total} = $nb_project; 
 		$project->{pedigree} = 0;
 		$project->{somatic} = 0;

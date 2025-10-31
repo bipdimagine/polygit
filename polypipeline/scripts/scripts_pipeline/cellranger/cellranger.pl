@@ -54,7 +54,7 @@ GetOptions(
 	'project=s'					=> \$projectName,
 	'patients=s'				=> \$patients_name,
 	'steps=s{1,}'				=> \@steps,
-	'lane=i'					=> \$lane,
+	'lane|nb_lane=i'			=> \$lane,
 	'mismatches=i'				=> \$mismatch,
 	'create_bam!'				=> \$create_bam,
 	'feature_ref|feature_csv=s'	=> \$feature_ref,
@@ -67,7 +67,7 @@ GetOptions(
 ) || die("Error in command line arguments\n");
 
 usage() if $help;
-usage() unless ($projectName);
+die("-project argument is mandatory") unless ($projectName);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
@@ -216,7 +216,7 @@ if (grep(/count|^all$/i, @steps)){
 	
 	 if ($chemistry) {
  		warn "chemistry=$chemistry";
-		my @chemistries = qw/auto threeprime fiveprime SC3Pv2 SC3Pv3 SC3Pv3-polyA SC3Pv4 SC3Pv4-polyA SC3Pv3HT SC3Pv3HT SC5P-PE SC5P-PE-v3 SC5P-R2 SC5P-PE-v3 SC3Pv1 ARC-v1/;
+		my @chemistries = qw/auto threeprime fiveprime SC3Pv2 SC3Pv3 SC3Pv3-polyA SC3Pv4 SC3Pv4-polyA SC3Pv3HT SC5P-PE SC5P-PE-v3 SC5P-R2 SC3Pv1 ARC-v1/;
 		die ("Chemistry option '$chemistry' not valid, should be one of: ". join(', ', @chemistries)) unless (grep { $_ eq $chemistry } @chemistries);
 	 }
 	
@@ -231,7 +231,7 @@ if (grep(/count|^all$/i, @steps)){
 		my $fastq_files = $patient->fastqFiles();
 		my @fastq_files = map {values %$_} @$fastq_files;
 		die ("Fastq file names (sample $pname) must follow the following naming convention: [Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz")
-			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][12]_001.fastq.gz$/} @fastq_files) == scalar @fastq_files);
+			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][123]_001\.fastq\.gz$/} @fastq_files) == scalar @fastq_files);
 	}
 	
 	sub full_cmd {
@@ -247,9 +247,8 @@ if (grep(/count|^all$/i, @steps)){
 #		my $cmd2 = " --localcores=$cpu ";
 		my $cmd2 = "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
 		system("mkdir $dir$name") unless (-d "$dir$name");
-		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
-#		$cmd2 .= "&& if [[ -f \"$tmp_fastq\*.fastq.gz\" ]]; then rm $tmp_fastq\*.fastq.gz ; fi ";
-#		$cmd2 .= "&& rm $tmp_fastq\*.fastq.gz";
+#		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
+#		$cmd2 .= "&& rm $tmp_fastq\*$name*.fastq.gz";
 		$cmd =~ s/$seq_dir/$tmp_fastq/;
 		return $cmd1.$cmd.$cmd2."\n";
 	}
@@ -580,7 +579,7 @@ if (grep(/aggr/, @steps)){
 		close (AGGR_CSV_VDJ);
 		print("--------------------\n");
 		print("Fill the 'donor' and 'origin' columns for each vdj sample in '$aggr_csv_vdj'.\n");
-		print("Then run 'echo \"cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'\n");
+		print("Then run 'echo \"cd $dir && $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'\n");
 		print("Then make an archive: 'tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe'\n\n");
 	}
 	close (JOBS_AGGR);
@@ -654,8 +653,8 @@ if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
 #------------------------------
 # ARCHIVE / TAR
 #------------------------------
-if (grep(/tar|^all$/i, @steps)){
-	my $cmd_tar = "$Bin/cellranger_copy.pl -project=$projectName ";
+if (grep(/tar|archive|^all$/i, @steps)){
+	my $cmd_tar = "$Bin/cellranger_tar.pl -project=$projectName ";
 	$cmd_tar .= "-patients=$patients_name " if ($patients_name);
 	$cmd_tar .= "-create_bam " if ($create_bam and $create_bam ne 'false');
 	$cmd_tar .= "-no_exec " if ($no_exec);

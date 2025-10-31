@@ -83,6 +83,9 @@ else if (href.indexOf("polydev", 1) > -1) {
 else if (href.indexOf("HG38", 1) > -1) {
 	url_path = "/cgi-bin/HG38/polymorphism-cgi/";
 }
+else if (href.indexOf("archive", 1) > -1) {
+	url_path = "/cgi-bin/archive/polymorphism-cgi/";
+}
 else if (href.indexOf("duck", 1) > -1) {
 	url_path = "/cgi-bin/duck/polymorphism-cgi/";
 }

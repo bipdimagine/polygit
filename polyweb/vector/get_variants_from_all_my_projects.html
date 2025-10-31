@@ -601,13 +601,14 @@
 						});
 			    	}
 			    });
-				var urlpasswd = url_listProject + "?type=login&pwd=" + this_pwd + "&login=" + this_username + "&action=list";
+				var urlpasswd = url_listProject + "?type=login&pwd=" + this_pwd + "&login=" + this_username + "&action=check_have_projects";
 			    $.getJSON( urlpasswd, function( data ) {
 			    	var i = 0;
 			    	$.each( data.items, function( key, val ) { i++; });
 			    	//dijit.byId('waiting').hide();
 			    	if (i > 0) {
 			    		ok_login(this_username, this_pwd);
+			    		dijit.byId('waiting').hide();
 			    		get_lists_projects();
 			    	}
 			    	else { error_login(); }
@@ -1308,16 +1309,6 @@
 					}
 					url += "&only_pat_with_var=" + document.getElementById('value_only_if_variant').value;
 				}
-				
-				var l_proj_excluded = [];
-    			for(i=0; i<list_projects_names.length; i++) {
-		    		var proj_name = list_projects_names[i];
-		    		var b_id = "b_proj_" + proj_name;
-		    		if (document.getElementById(b_id).checked == false) { l_proj_excluded.push(proj_name); }
-		    	}
-		    	if (l_proj_excluded.length > 0) {
-		    		url += "&proj_excluded=" + l_proj_excluded.join(',');
-		    	}
 				
 				if (l_models.length == 0) {
 					alert ("Please select one or multiple model(s) in filters first...");

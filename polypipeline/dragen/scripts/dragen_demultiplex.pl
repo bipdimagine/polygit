@@ -385,7 +385,8 @@ while($checkComplete == 1){
 	$checkComplete = 0 if (-f $complete);
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
-my $exit2 = system("rsync -rav --no-times $bcl_dir  $dir_bcl_tmp ");
+my $exit2 = system("rsync -rav --no-times --size-only $bcl_dir  $dir_bcl_tmp ");
+die("Rsync error") if ($exit2);
 my $ss1 = $dir_bcl_tmp."/".$samp_name;
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
 $cmd .= "--strict-mode true "; # abort if any files are missing or corrupt
