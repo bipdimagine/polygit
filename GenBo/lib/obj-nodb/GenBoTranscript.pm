@@ -1,5 +1,6 @@
 package GenBoTranscript;
 use strict;
+use Carp;
 use Moo;
 use GenBoCoverage;
 use Data::Dumper;
@@ -261,8 +262,10 @@ sub getOrfSequence {
 		my $new_id = $self->id();
 		if ($self->getChromosome->id() eq 'Y') { $new_id =~ s/_Y/_X/; }
 		elsif ($self->getChromosome->id() eq 'X') { $new_id =~ s/_X/_Y/; }
-		return $self->getProject->lmdbGenBo->get($new_id)->{coding_sequence};
+		my $h = $self->getProject->lmdbGenBo->get($new_id);
+		return $h->{coding_sequence} if $h and exists $h->{coding_sequence};
 	}
+	return;
 }
 
 has coding_sequence => (
@@ -634,7 +637,7 @@ sub codonsConsequenceForSubstitution {
 	my $pos_orf = ($pos_transcript - $self->orf_start()) + 1;
 	my $codon1 = $self->getCodon($pos_orf);
 	#warn $codon1." ".$pos_orf." ".$self->name." ".length($self->getOrfSequence);
-	my $seq_orf = substr($self->getOrfSequence,$pos_orf-1,1);
+	my $seq_orf = substr($self->getOrfSequence,$pos_orf-1,1) if $self->getOrfSequence;
 	
 	my $seq= $var->getSequence();
 	
@@ -643,7 +646,7 @@ sub codonsConsequenceForSubstitution {
 	my $codon2 = $codon1;
 	my $splice = ($pos_orf+2) % 3;
 	
-	substr($codon2,$splice,1,$seq);
+	substr($codon2,$splice,1,$seq) if $codon2 and $seq;
 	my $results = {
 		transcript_position => $pos_transcript,
 		orf_position => $pos_orf,

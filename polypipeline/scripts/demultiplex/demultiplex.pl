@@ -74,8 +74,10 @@ my $wtmp = "$tmp/Unaligned";
 my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
 die($basecall_dir ." doesnt exists") unless -e $basecall_dir;
 my $cmd1 = "$cmd_cfg --input-dir $basecall_dir  --output-dir=$wtmp --ignore-missing-bcl --ignore-missing-positions --ignore-missing-filter --ignore-missing-control --minimum-trimmed-read-length 0 --mask-short-adapter-reads 0  --reports-dir $reports_dir -R $dir";
-if($hiseq eq "10X"){	
-	$cmd1= "cd $tmp ; /software/distrib/$cellranger_type/latest mkfastq --id=$run --run=$dir --csv=$sample_sheet --barcode-mismatches=0 --output-dir=$wtmp";
+if($hiseq eq "10X"){    
+	$cmd1= "cd $tmp ; /software/distrib/$cellranger_type/latest mkfastq --id=$run --run=$dir --csv=$sample_sheet --output-dir=$wtmp";
+	$cmd1 = $cmd1. " --barcode-mismatches=".$mismatch if $mismatch;
+	$cmd1 = $cmd1. " --barcode-mismatches=0" unless $mismatch;
 }
 elsif($dragen == 1){
 	my $dragen_output = "/staging/RUN/".$run;

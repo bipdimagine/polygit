@@ -1313,8 +1313,7 @@ sub getListProjectsRnaSeq {
 	}
 	my $h = $sth->fetchall_hashref('id');
 	my $h2 = $sth2->fetchall_hashref('project_id');
-	
-	
+
 	my @l_projects_ids = keys %$h;
 	foreach my $pr_id (keys %$h2) {
 		push(@l_projects_ids, $pr_id) unless (exists $h->{$pr_id});
@@ -1328,11 +1327,14 @@ sub getListProjectsRnaSeq {
 		my $h_patients = $sth2->fetchall_hashref('name');
 		my ($is_rna, $h_captures);
 		foreach my $patient_name (keys %$h_patients) {
+			next if ($h_patients->{$patient_name}->{capAnalyse} eq 'singlecell');
 			$is_rna = 1 if ($h_patients->{$patient_name}->{type} eq 'rna');
 			$is_rna = 1 if ($h_patients->{$patient_name}->{capAnalyse} eq 'rnaseq');
 			$h_captures->{$h_patients->{$patient_name}->{capName}} = undef;
 		}
 		next unless ($is_rna);
+		
+		
 		my @l_versions = split(' ', $h->{$project_id}->{ppversionid});
 		@l_versions = sort {$a <=> $b} @l_versions;
 		my $max_annot = $self->getMaxPublicDatabaseVersion();
@@ -1516,6 +1518,41 @@ sub getPersonInfos {
 	$sth->execute($person_id);
 	my $h = $sth->fetchall_hashref('person_id');
 	return $h->{$person_id};
+}
+
+sub getInfosFromRunName {
+	my ($self, $run_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT p.name as "patient_name", r.run_id, r.plateform_run_name as "plateform_run_name", r.name as "run_name", pr.name as "project_name", pr.description, sp.name  as "specie"
+			FROM PolyprojectNGS.run as r, PolyprojectNGS.patient as p, PolyprojectNGS.projects as pr, PolyprojectNGS.species as sp
+				where r.name=?
+					and r.run_id=p.run_id
+					and p.project_id=pr.project_id
+					and p.species_id=sp.species_id;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($run_name);
+	my $h = $sth->fetchall_hashref('patient_name');
+	return $h;
+	
+}
+
+sub getInfosFromRunMachineId {
+	my ($self, $run_machine_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT p.name as "patient_name", r.run_id, r.plateform_run_name as "plateform_run_name", r.name as "run_name", pr.name as "project_name", pr.description, sp.name  as "specie"
+			FROM PolyprojectNGS.run as r, PolyprojectNGS.patient as p, PolyprojectNGS.projects as pr, PolyprojectNGS.species as sp
+				where r.plateform_run_name=?
+					and r.run_id=p.run_id
+					and p.project_id=pr.project_id
+					and p.species_id=sp.species_id;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($run_machine_name);
+	my $h = $sth->fetchall_hashref('patient_name');
+	return $h;
 }
 
 1;

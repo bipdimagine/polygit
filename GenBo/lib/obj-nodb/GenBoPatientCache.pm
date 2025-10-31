@@ -905,9 +905,59 @@ sub getVectorJunctionsRI {
 }
 
 sub getVectorJunctionsSE {
-	my ($self, $chr, ) = @_;
+	my ($self, $chr) = @_;
 	my $vector = $chr->patients_categories->{$self->name().'_SE'};
 	return $vector;
+}
+
+sub getVectorJunctionsNDA {
+	my ($self, $chr) = @_;
+	if (exists $chr->global_categories->{'NDA'}) {
+		my $vector = $self->getJunctionsVector($chr)->Clone();
+		$vector &= $chr->global_categories->{'NDA'};
+		return $vector;
+	}
+	return $chr->getNewVector();
+}
+
+sub getVectorJunctionsDA {
+	my ($self, $chr) = @_;
+	if (exists $chr->global_categories->{'DA'}) {
+		my $vector = $self->getJunctionsVector($chr)->Clone();
+		$vector &= $chr->global_categories->{'DA'};
+		return $vector;
+	}
+	return $chr->getNewVector();
+}
+
+sub getVectorJunctionsN {
+	my ($self, $chr) = @_;
+	if (exists $chr->global_categories->{'N'}) {
+		my $vector = $self->getJunctionsVector($chr)->Clone();
+		$vector &= $chr->global_categories->{'N'};
+		return $vector;
+	}
+	return $chr->getNewVector();
+}
+
+sub getVectorJunctionsD {
+	my ($self, $chr) = @_;
+	if (exists $chr->global_categories->{'D'}) {
+		my $vector = $self->getJunctionsVector($chr)->Clone();
+		$vector &= $chr->global_categories->{'D'};
+		return $vector;
+	}
+	return $chr->getNewVector();
+}
+
+sub getVectorJunctionsA {
+	my ($self, $chr) = @_;
+	if (exists $chr->global_categories->{'A'}) {
+		my $vector = $self->getJunctionsVector($chr)->Clone();
+		$vector &= $chr->global_categories->{'A'};
+		return $vector;
+	}
+	return $chr->getNewVector();
 }
 
 sub setJunctions {

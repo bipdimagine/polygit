@@ -114,10 +114,12 @@ has statistic_genes =>(
 	default => sub {
 		my $self = shift;
 			my $hids = {};
+			#
 		foreach my $panel (@{$self->getPanels}){
-		my $genes =  $panel->getGenes();
-			foreach my $g (@{$genes}){
-				$hids->{$g->id} ++;
+		my $genes =  $panel->genes_name();
+		next unless $genes;
+			foreach my $g (keys %{$genes}){
+				$hids->{$g} ++;
 				}
 		}
 	return $hids;

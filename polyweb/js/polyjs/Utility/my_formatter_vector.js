@@ -581,6 +581,9 @@ function formatInclude(value){
 		case 0: {
 			return "<img src='/icons/Polyicons/add.png'>";	
 		}
+		case 99: {
+			return "<img src='/icons/Polyicons/add.png'> BED";	
+		}
 		case 3: {
 			return "<img src='/icons/Polyicons/12-em-check.png'>";
 		}
