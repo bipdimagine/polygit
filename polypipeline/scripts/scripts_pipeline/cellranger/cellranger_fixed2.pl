@@ -129,8 +129,6 @@ foreach my $patient (@{$patients}) {
 	push(@{$hfamily->{$sbc}},$hpatient);
 #	$prog = $patient->alignmentMethod();
 }
-warn Dumper $hfamily;
-die;
 
 
 
