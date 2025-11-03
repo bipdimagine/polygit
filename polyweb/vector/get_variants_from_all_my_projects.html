@@ -659,8 +659,11 @@
 							myPanel.appendTo(myNode);
 							document.getElementById("div_b_view_genes_phenotypes").classList.remove("disabled");
 			    		}
+			    		if (key == 'nb_projects_ok') {
+			    		console.log($(val));
+			    			document.getElementById("span_nb_projects").innerHTML = 'Found ' + $(val)[0] + ' Projects';
+			    		}
   					});
-    				document.getElementById("span_nb_projects").innerHTML = 'Found Projects';
 			    });
 			}
 			

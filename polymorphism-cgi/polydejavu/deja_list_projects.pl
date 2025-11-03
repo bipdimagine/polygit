@@ -102,6 +102,7 @@ my $i_p = 0;
 my $dir_pr = $buffer_init->config_path("root","dejavu")."/HG38/variations/rocks/";
 my $ro_projects = GenBoNoSqlRocks->new(mode=>"r",dir=>$dir_pr, name=>"projects");
 
+my $nb_proj_ok = 0;
 foreach my $project_name (@lProjectNames) {
 	my $id = $hProjects->{$project_name}->{id};
 	my $description = $hProjects->{$project_name}->{description};
@@ -113,9 +114,13 @@ foreach my $project_name (@lProjectNames) {
 	if ($ro_projects->get_raw($project_name)) {
 		$html_glyph = qq{<span style='color:green;' class='glyphicon glyphicon-ok'></span>};
 		$status = 'OK';
+		$nb_proj_ok++;
 	}
 	else {
 		my $h_this_proj = $buffer_init->getQuery()->getProjectByName($project_name);
+		next if not $h_this_proj->{version} =~ /HG/;
+		next if $h_this_proj->{version} eq 'HG18';
+		
 		if ($h_this_proj->{is_somatic} == 1 or $h_this_proj->{dejavu} != 1) {
 			$html_glyph = qq{<span style='color:orange;' class='glyphicon glyphicon-ok'></span>};
 			$status = 'Excluded';
@@ -124,6 +129,14 @@ foreach my $project_name (@lProjectNames) {
 			$style = qq{style="color:orange;"};
 		}
 		else {
+			my ($type_dna, $type_rna);
+			my @samples =  @{$buffer_init->getQuery->getPatients($id)};
+			foreach my $h_sample (@samples) {
+				$type_dna++ if $h_sample->{type} eq 'dna';
+				$type_rna++ if $h_sample->{type} eq 'rna';
+			}
+			next if $type_rna and not $type_dna;
+#			warn Dumper $h_this_proj;
 			$html_glyph = qq{<span style='color:red;' class='glyphicon glyphicon-exclamation-sign'></span>};
 			$status = 'Not in DV';
 			$style = qq{style="color:red;"};
@@ -204,6 +217,8 @@ $hRes->{html_projects} = $out;
 $hRes->{list_projects}= \@lProjectNames;
 $hRes->{html_list_captures}=$out_captures;
 $hRes->{html_list_phenotypes}=$out_phenos;
+$hRes->{nb_projects_ok} = $nb_proj_ok;
+
 print $cgi->header('text/json-comment-filtered');
 my $json_encode = encode_json $hRes;
 print $json_encode;
