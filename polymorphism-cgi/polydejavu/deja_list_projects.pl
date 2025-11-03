@@ -51,6 +51,8 @@ $user_name = lc($user_name);
 my $buffer_init = new GBuffer;
 my $can_use_hgmd = $buffer_init->hasHgmdAccess($user_name);
 
+
+
 my $hRes;
 $hRes->{ok} = 1;
 my @lItemsProjects;
@@ -88,8 +90,6 @@ $out .=  $cgi->th("<center>Status</center>");
 $out .=  $cgi->th("<center>Name</center>");
 $out .=  $cgi->th("<center>Id</center>");
 $out .=  $cgi->th("<center>Description</center>");
-$out .=  $cgi->th("<center>Capture(s)</center>");
-$out .=  $cgi->th("<center>Nb Patients</center>");
 $out .= $cgi->end_Tr();
 $out .= "</thead>";
 $out .= "<tbody>";
@@ -98,68 +98,42 @@ my $hCapturesNames;
 my $hCapturesNamesProject;
 my @lProjectNames = reverse sort keys %{$hProjects};
 my $i_p = 0;
+
+my $dir_pr = $buffer_init->config_path("root","dejavu")."/HG38/variations/rocks/";
+my $ro_projects = GenBoNoSqlRocks->new(mode=>"r",dir=>$dir_pr, name=>"projects");
+
 foreach my $project_name (@lProjectNames) {
 	my $id = $hProjects->{$project_name}->{id};
-	my $dv_parquet = $buffer_init->config_path("root","dejavu").'/projects_parquet/'.$project_name.'.'.$id.'.parquet';
-	next if -e $dv_parquet.'.no_dejavu';
 	my $description = $hProjects->{$project_name}->{description};
-
-	my $nb_pat = 0;
-	my $patients = 	$query_init->getPatients($id);
-	
-	
-	my %captures_id;
-	foreach my $p (@$patients){
-		next if $p->{type} eq 'rna';
-		$captures_id{$p->{capture_id}} ++;
-		$nb_pat++;
-	}
-	next if $nb_pat == 0;
-	
 	$i_p++;
-	
-	my $hCaptures;
-	foreach my $cid (keys %captures_id){
-		my $capt =  $query_init->getCaptureInfos($cid);
-		my $validation_db = $capt->{'validation_db'};
-		$hCapturesNamesProject->{$capt->{name}}->{$project_name} = undef;
-		$hCapturesNames->{$capt->{name}}++ if ($validation_db and not $validation_db eq '');
-		$hCaptures->{lc($capt->{name})}++;
-	}
-	
-	my $captures = join("<br>", sort keys %$hCaptures);
-	my $button_id = "b_proj_$project_name";
-	
-	my $captures_id = join(",", sort keys %$hCaptures);
-	$h_c->{$captures_id}->{$project_name} = undef;
 	
 	$h_p->{$project_name} = '';
 	$h_p->{$project_name} .=  $cgi->start_Tr();
-	#$h_p->{$project_name} .=  $cgi->td("<center>$i_p</center>");
 	my ($html_glyph, $status, $style);
-	if (-e $dv_parquet) {
-		if (-M $dv_parquet < -M $path_dv_date_test) {
-			$html_glyph = qq{<span style='color:orange;' class='glyphicon glyphicon-exclamation-bell'></span>};
-			$status = 'Wait next update';
+	if ($ro_projects->get_raw($project_name)) {
+		$html_glyph = qq{<span style='color:green;' class='glyphicon glyphicon-ok'></span>};
+		$status = 'OK';
+	}
+	else {
+		my $h_this_proj = $buffer_init->getQuery()->getProjectByName($project_name);
+		if ($h_this_proj->{is_somatic} == 1 or $h_this_proj->{dejavu} != 1) {
+			$html_glyph = qq{<span style='color:orange;' class='glyphicon glyphicon-ok'></span>};
+			$status = 'Excluded';
+			$status .= ' Project' if $h_this_proj->{dejavu} != 1;
+			$status .= ' (somatic)' if $h_this_proj->{is_somatic} == 1;
 			$style = qq{style="color:orange;"};
 		}
 		else {
-			$html_glyph = qq{<span style='color:green;' class='glyphicon glyphicon-ok'></span>};
-			$status = 'OK';
+			$html_glyph = qq{<span style='color:red;' class='glyphicon glyphicon-exclamation-sign'></span>};
+			$status = 'Not in DV';
+			$style = qq{style="color:red;"};
 		}
-	}
-	else {
-		$html_glyph = qq{<span style='color:red;' class='glyphicon glyphicon-exclamation-sign'></span>};
-		$status = 'Not in DV';
-		$style = qq{style="color:red;"};
 	}
 	$h_p->{$project_name} .=  $cgi->td("<center>$html_glyph</center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$status</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$project_name</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$id</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$description</span></center>");
-	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$captures</span></center>");
-	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$nb_pat</span></center>");
 	$h_p->{$project_name} .= $cgi->end_Tr();
 }
 
@@ -177,6 +151,8 @@ else {
 }
 $out .= "</tbody>";
 $out .= "</table></center>";
+
+$ro_projects->close();
 
 my $hCapturesNames_for_sort;
 foreach my $c_name (keys %$hCapturesNames) { $hCapturesNames_for_sort->{lc($c_name)} = $c_name; }
@@ -226,8 +202,6 @@ $out_phenos .= qq{</div>};
 $hRes->{date_dejavu} = $date_dejavu;
 $hRes->{html_projects} = $out;
 $hRes->{list_projects}= \@lProjectNames;
-$hRes->{list_captures}= \@lCapturesNames;
-#$hRes->{list_panels}= \@lCapturesNames;
 $hRes->{html_list_captures}=$out_captures;
 $hRes->{html_list_phenotypes}=$out_phenos;
 print $cgi->header('text/json-comment-filtered');
