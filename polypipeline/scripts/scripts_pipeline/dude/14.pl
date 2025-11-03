@@ -52,11 +52,9 @@ foreach my $patient (@{$project->getPatients}){
 }
 $pm2->run_on_finish(
 		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) =
-			  @_;
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
 			 if ($data) {
 			 	my $id = $data->{job};
-#			 	warn $id;
 			 	delete $jobs->{$id};
 			 	my $patient_name = $data->{patient};
 			 	
@@ -115,11 +113,13 @@ foreach my $patient (@{$project->getPatients}){
 #	warn $file;
 	my $nb_genes;
 	my @beds;
-	
+	warn "cocuou";
+		 $project->disconnect();
 	foreach my $chr (@{$project->getChromosomes}){
 	#	next if $chr->name ne "1";
+	warn $patient->name." ".$chr->name;
 		 my $pid      = $pm2->start() and next;	
-	   	#$project->buffer->dbh_reconnect();
+	   	$project->buffer->dbh_reconnect();
 		#next if $chr->name ne "21";
 		 	my %hgenes;
 			delete $chr->{natatime};
@@ -141,7 +141,7 @@ foreach my $patient (@{$project->getPatients}){
 			my $res;
 			my $end_primers;
 			while (my $primer = $chr->next_primer){
-#				warn $primer->start." ".$primer->end()." ".$primer->id;
+				#warn $primer->start." ".$primer->end()." ".$primer->id;
 				$index_primer ++;
 				my $debug;
 				my $genes = $primer->getGenes();
@@ -254,7 +254,8 @@ foreach my $patient (@{$project->getPatients}){
 				 $hres->{patient} = $patient->name;
 				 $hres->{chromosome} = $chr->name;
 				$hres->{lines} = $lines;
-				 $hres->{job} = $id;			  
+				 $hres->{job} = $id;
+				 $project->disconnect();			  
 				$pm2->finish(0,$hres);
 				
 	}#end chromoseome
