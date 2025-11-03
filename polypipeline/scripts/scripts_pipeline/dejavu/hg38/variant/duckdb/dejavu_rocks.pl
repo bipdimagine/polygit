@@ -48,15 +48,19 @@ my $fork = 10;
 my $project_name;
 my $chr;
 my $version;
+my $file;
+my $dir1;
 GetOptions(
 	'chr=s'		   => \$chr,
 	'fork=s'		   => \$fork,
 	'version=s'   => \$version,
+	'file=s' => \$file,
+	'dir=s' => \$dir1,
 );
 my $buffer = new GBuffer;
 die ("version ?") unless $version;
 
-
+my $dir_final = $dir1."/$file/";
 
 
 my $sql = q{
@@ -87,17 +91,32 @@ $dbh->disconnect;
  
 #my $dir_final = '/data-isilon/DejaVu/'.uc($version).'/variations/';
 
-my $dir_final = $buffer->config_path("root","dejavu").'/'.uc($version).'/variations/rocks/';
-my $dir_final_pheno = $buffer->config_path("root","dejavu").'/'.uc($version).'/variations.phentotype/rocks/';
+system("mkdir -p $dir_final" ) unless -e $dir_final;
+my $dir_final_pheno = $dir1."/$file.phenotype/";
+system("mkdir -p $dir_final_pheno" ) unless -e $dir_final_pheno;
+warn $dir_final_pheno;
  $| = 1;
 my $rg38 = GenBoNoSqlRocksGenome->new(chunk_size=>10_000_000,dir=>$dir_final,mode=>"c",index=>"genomic",chromosome=>$chr,genome=>$version,pack=>"",description=>[]);
 my  $r_pheno = GenBoNoSqlRocks->new(mode=>"c",pipeline=>1,dir=>$dir_final_pheno, name=>$chr);
 
 my $regionss = $rg38->regions();
+
+#copie la liste des projets dans le dejavu au temps T
+my $dir = $buffer->dejavu_parquet_dir();
+
+opendir(my $dh, $dir) or die "Impossible d'ouvrir $dir: $!";
+
+while (my $file = readdir($dh)) {
+    next unless $file =~ /\.([0-9]+)\.parquet/;  # cherche le motif
+    $r_pheno->put_batch_raw($1,1);
+}
+
+closedir($dh);
 #save_regions($regionss->[0]);
 #die();
+my $jobs = 0;
 MCE::Loop->init(
-   max_workers => 'auto', chunk_size => 1,
+   max_workers => $fork, chunk_size => 'auto',
     gather => sub {
         my ($mce, $data) = @_;
         foreach my $id (keys %$data){
@@ -105,26 +124,31 @@ MCE::Loop->init(
 		}
     }
 );
-if (scalar(@$regionss) ==1){
-		save_regions($regionss->[0]);
-		exit(0);
-}
+push (@{$regionss},  {none=>1});
+
 
 mce_loop {
    my ($mce, $chunk_ref, $chunk_id) = @_;
+   	warn "start ".$mce;
    if (ref($chunk_ref) ne "ARRAY") {
-   my $hash = 	save_regions($chunk_ref);
-    MCE->gather($chunk_id,$hash);
+   	confess();
    }
    else {
+   
    foreach my $region (@$chunk_ref){
-		my $hash =save_regions($region);
-		  MCE->gather($chunk_id,$hash);
+   		next if exists $region->{none};
+		my $hash = save_regions($region);
+		MCE->gather($chunk_id,$hash);
 	}
    }
    	
 } sort{$a->{start} <=> $b->{start}} @{$regionss};
+
+MCE::Loop->finish;
 $r_pheno->close();
+confess($jobs." ".scalar(@{$regionss})) if $jobs != scalar(@{$regionss});
+
+confess() if ($jobs < scalar(@{$regionss}));
 warn $dir_final;
 warn $dir_final_pheno;
 exit(0);
@@ -134,13 +158,11 @@ exit(0);
 sub save_regions {
 	my ($region) = @_;
 	my $dir = $buffer->dejavu_parquet_dir();
-#	my $dir = "/data-beegfs/projects.parquet/";#$buffer->deja_vu_project_dir($version);
  	my %hash;
  	my $start = $region->{start};
  	my $end = $region->{end};
  	my %pr;
  	my $nb ;
- 	my $file1  = "/tmp/pipeline/".$chr.".".$region->{id}.".csv";
  	
  	my $ff= "$dir/NGS*.parquet";
  	
@@ -148,40 +170,35 @@ sub save_regions {
  	my $end_string =$end;
  	my $sql_file = "/tmp/".$region->{id}."sql";
  	my $string_chr = $chr."!";
-	my $sql = qq {PRAGMA threads=4;COPY (
+	my $sql = qq {PRAGMA threads=5;
           SELECT pos38,allele, STRING_AGG(project || ';' || he || ';' || ho, ';') AS value
           FROM read_parquet('$ff') where chr38 = '$chr' and  pos38 between '$start_string' and '$end_string' 
-          GROUP BY pos38,allele order by pos38 
-      ) TO '$file1' (FORMAT 'csv', COMPRESSION 'ZSTD');
+          GROUP BY pos38,allele order by pos38 ;
  	};
 
 	if ($version eq "HG19"){
-		$sql = qq {PRAGMA threads=8;COPY (
+		$sql = qq {PRAGMA threads=5;
           SELECT pos19,allele, STRING_AGG(project || ';' || he || ';' || ho, ';') AS value
           FROM read_parquet('$ff') where chr19 = '$chr' and  pos19 between '$start_string' and '$end_string'
-          GROUP BY pos19,allele  
-      ) TO '$file1' (FORMAT 'csv', COMPRESSION 'ZSTD');
+          GROUP BY pos19,allele; }; 
  	}
-	}
+	
+	
 
- open(my $fh, '>', $sql_file) or die "Impossible d'ouvrir $sql_file: $!";
-print $fh $sql;
-close($fh);
-# Exécuter DuckDB avec le fichier SQL
-system("/software/bin/duckdb < $sql_file");
-unlink $sql_file;
 
-#unlink $file1;
-#return;
+
+my $cmd = qq{duckdb -csv -noheader -c "$sql"};
 my $rocks =  $rg38->nosql_rocks_tmp($region);
-open(CSV ,"zstdcat $file1 | ")  or die "Impossible d'ouvrir $file1 : $!";;
+open(CSV ,"-|", $cmd)  or die "Impossible d'ouvrir  : $!";;
 my $xx;
 $rocks->put_batch_raw("xx","zz");
 
 my $hh;
+my $nb_rocks=0;
 
 while(my $line = <CSV>){
 	$xx++;
+	$nb_rocks ++;
 	chomp($line);
 	my($a,$c,$b) = split(",",$line);
 	next if $c eq "allele";
@@ -214,21 +231,26 @@ while(my $line = <CSV>){
 		push(@vs,($k,$pheno_final->{$k}->{project},$pheno_final->{$k}->{he},$pheno_final->{$k}->{ho}));
 	}
 	#warn  $b unless @vs;
+	
 	my $v = pack("w*",@z);
 	my $v2 = pack("w*",@vs);
 	my ($chr,$pos) = split("!",$a);
+	my $rid = sprintf("%010d", $a)."!".$c;
+	#warn $rid;
+	#19_2110764_G_A
+	
+
+
 	$hh->{sprintf("%010d", $a)."!".$c} = $v2;
 	
 	$rocks->put_batch_raw(sprintf("%010d", $a)."!".$c,$v);
+	$rocks->write_batch() if $nb_rocks % 10000 == 0;
 }
 close (CSV);
+$rocks->write_batch();
 $rocks->close();
-warn "end $xx ".$region->{id};
-warn $file1;
-unlink $file1;
-return $hh; 
-
-		
+warn "end $xx ".$region->{id}." ".scalar keys %$hh;
+return ($hh); 
 }
 
  

@@ -1,8 +1,9 @@
 
 [root]
 public_data:/data-isilon/public-data/
-dejavu:/data-isilon/DejaVu/
-#/data-pure/public-data/dejavu/
+#dejavu:/data-isilon/DejaVu/
+
+dejavu:/data-pure/public-data/dejavu/
 dejavu_projects:/data-isilon/DejaVu/
 dejavu_parquet:/data-pure/public-data/dejavu/projects_parquet/
 singularity:/data-beegfs/software/sif/
