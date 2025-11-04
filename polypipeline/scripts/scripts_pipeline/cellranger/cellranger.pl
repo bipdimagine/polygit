@@ -34,6 +34,7 @@ use Storable;
 use JSON::XS;
 use XML::Simple qw(:strict);
 use Cwd 'abs_path';
+use File::Path qw(make_path);
 
 
 my $projectName;
@@ -186,12 +187,7 @@ unless ($project->isSomatic) {
 }
 
 
-my @group;
-foreach my $pat (@{$patients}) {
-	my $group = $pat->somatic_group();
-	push(@group,$group);
-}
-
+my @groups = map {$_->somatic_group} @$patients;
 
 
 #------------------------------
@@ -199,12 +195,12 @@ foreach my $pat (@{$patients}) {
 #------------------------------
 if (grep(/count|^all$/i, @steps)){
 	
-	if (grep {$_ =~ /adt/i} @group) {
+	if (grep {$_ =~ /adt/i} @groups) {
 		die("feature_ref csv required\n") unless ($feature_ref);
 		die("'$feature_ref' not found") unless (-e $feature_ref);
 		$feature_ref = abs_path($feature_ref);
 	}
-	if (grep {$_ =~ /cmo/i} @group) {
+	if (grep {$_ =~ /cmo/i} @groups) {
 		die("cmo_ref csv required\n") unless ($cmo_ref);
 		die("'$cmo_ref' not found") unless (-e $cmo_ref);
 		$feature_ref = abs_path($feature_ref);
@@ -234,19 +230,23 @@ if (grep(/count|^all$/i, @steps)){
 			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][123]_001\.fastq\.gz$/} @fastq_files) == scalar @fastq_files);
 	}
 	
+	# todo: vérifier que le pipeline n'ait pas déjà tourné : check si web_summary existe
+	# todo: vérifier qu'il n'y ait pas déjà un répertoire patient dans le $tmp
+	# todo: vérifier qu'il n'y ait pas des adt oubliés: si pat exp prendre aussi pat adt
+	
 	sub full_cmd {
 		my ($pat, $cmd) = @_;
 		chomp $cmd;
 		my $name = $pat->name;
 		my $tmp_fastq = $tmp.'fastq/';
-		system("mkdir $tmp_fastq") unless (-d "$tmp_fastq");
+		make_path($tmp_fastq, { mode => 0775 }) unless (-d "$tmp_fastq");
 		my $seq_dir = $pat->getSequencesDirectory;
 		my $cmd1 = "cp $seq_dir$name*.fastq.gz $tmp_fastq && ";
 		my $adt = 'ADT_'.$name;
 		$cmd1 = "cp $seq_dir$name*.fastq.gz $seq_dir/ADT_$name*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
 #		my $cmd2 = " --localcores=$cpu ";
 		my $cmd2 = "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
-		system("mkdir $dir$name") unless (-d "$dir$name");
+		make_path("$dir$name", { mode => 0775 }) unless (-d "$dir$name");
 #		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
 #		$cmd2 .= "&& rm $tmp_fastq\*$name*.fastq.gz";
 		$cmd =~ s/$seq_dir/$tmp_fastq/;
@@ -254,7 +254,7 @@ if (grep(/count|^all$/i, @steps)){
 	}
 	
 	# EXP
-	my $type_exp = 1 if map {uc($_) =~ /(EXP|NUCLEI)/ } @group;
+	my $type_exp = 1 if map {uc($_) =~ /(EXP|NUCLEI)/ } @groups;
 	system("rm $dir/jobs_count.txt") if (-f "$dir/jobs_count.txt");
 	if($type_exp){
 		open (JOBS, ">$dir/jobs_count.txt");
@@ -279,7 +279,7 @@ if (grep(/count|^all$/i, @steps)){
 	
 	
 	# VDJ
-	my $type_vdj = 1 if map {uc($_) =~ /VDJ/ } @group;
+	my $type_vdj = 1 if map {uc($_) =~ /VDJ/ } @groups;
 	system("rm $dir/jobs_vdj.txt") if (-f "$dir/jobs_vdj.txt");
 	if($type_vdj){
 		open (JOBS_VDJ, ">$dir/jobs_vdj.txt");
@@ -301,7 +301,7 @@ if (grep(/count|^all$/i, @steps)){
 
 
 	# ADT
-	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @group;
+	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @groups;
 	if ($type_adt){
 		open (JOBS_ADT, ">$dir/jobs_count.txt");
 		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients};
@@ -322,7 +322,7 @@ if (grep(/count|^all$/i, @steps)){
 			close(LIB);
 			my $prog =  $e->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
-			my $cmd = "cd $tmp && cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file --create-bam=$create_bam";
+			my $cmd = "cd $tmp && cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file --create-bam=$create_bam ";
 			$cmd .= " --chemistry $chemistry" if ($chemistry);
 			$cmd .= "\n";
 			$cmd = full_cmd($e, $cmd);
@@ -332,7 +332,7 @@ if (grep(/count|^all$/i, @steps)){
 
 	
 	# SPATIAL
-	my $type_spatial = 1 if map {uc($_) =~ /SPATIAL/ } @group;
+	my $type_spatial = 1 if map {uc($_) =~ /SPATIAL/ } @groups;
 	system("rm $dir/jobs_spatial.txt") if (-f "$dir/jobs_spatial.txt");
  	if($type_spatial){
 		open (JOBS_SPATIAL, ">$dir/jobs_spatial.txt");
@@ -395,7 +395,7 @@ if (grep(/count|^all$/i, @steps)){
 
 	
 	# ATAC
-	my $type_atac = 1 if map {uc($_) =~ /ATAC/ } @group;
+	my $type_atac = 1 if map {uc($_) =~ /ATAC/ } @groups;
 	system("rm $dir/jobs_atac.txt") if (-f "$dir/jobs_atac.txt");
 	if($type_atac ){
 		warn 'ATAC';
@@ -419,7 +419,7 @@ if (grep(/count|^all$/i, @steps)){
 
 	
 	# CMO
-	my $type_cmo = 1 if map {uc($_) =~ /CMO/ } @group;
+	my $type_cmo = 1 if map {uc($_) =~ /CMO/ } @groups;
 	system("rm $dir/jobs_cmo.txt") if (-f "$dir/jobs_cmo.txt");
 	if ($type =~ /cmo/ ){
 		open (JOBS_CMO, ">$dir/jobs_cmo.txt");
@@ -454,7 +454,7 @@ if (grep(/count|^all$/i, @steps)){
 
 	
 	# ARC
-	my $type_arc = 1 if map {uc($_) =~ /ARC/ } @group;
+	my $type_arc = 1 if map {uc($_) =~ /ARC/ } @groups;
 	system("rm $dir/jobs_arc.txt") if (-f "$dir/jobs_arc.txt");
 	if ($type_arc ){
 		open (JOBS_ARC, ">$dir/jobs_arc.txt");
@@ -529,8 +529,6 @@ if (grep(/count|^all$/i, @steps)){
 # AGGREGATION
 #------------------------------
 if (grep(/aggr/, @steps)){
-	my @groups = map {$_->somatic_group} @$patients;
-	warn Dumper \@group;
 	warn ("Can't aggregate gene expression and vdj librairies together") if (grep {'exp'} @groups and grep {'vdj'} @groups);
 #	die("No 'exp' sample to aggregate") unless (grep {'exp'} @groups);
 	my $id = $aggr_name if $aggr_name;
@@ -599,7 +597,6 @@ if (grep(/aggr/, @steps)){
 if (grep(/aggr_vdj/, @steps)) {
 #	my $type = $project->getRun->infosRun->{method};
 #	die ("No vdj in project $projectName") if ($type !~ /vdj/);
-	my @groups = map {$_->somatic_group} @$patients;
 	die("No 'vdj' sample to aggregate") unless (grep {'vdj'} @groups);
 	my $id = $projectName.'_VDJ_aggregation';
 	$id = $aggr_name if $aggr_name;

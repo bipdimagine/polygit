@@ -33,6 +33,7 @@ use Storable;
 use JSON::XS;
 use XML::Simple qw(:strict);
 use Cwd 'abs_path';
+use File::Path qw(make_path);
 
   
 
@@ -127,7 +128,7 @@ foreach my $patient (@{$patients}) {
 	$hpatient->{bc} = $pbc;
 	$hpatient->{objet} = $patient;
 	push(@{$hfamily->{$sbc}},$hpatient);
-#	$prog = $patient->alignmentMethod();
+	$prog = $patient->alignmentMethod();
 }
 
 
@@ -206,34 +207,34 @@ if (grep(/count|^all$/i, @steps)){
 	foreach my $k (keys(%$hfamily)){
 		my @pat = @{$hfamily->{$k}};
 		my $poolName = $pat[0]->{group};
-		system("mkdir $dir$poolName") unless (-d "$dir$poolName");
-		system("mkdir $dir$poolName") unless (-d "$dir$poolName");
+		make_path("$dir$poolName", { mode => 0775 }) unless (-d "$dir$poolName");
 		my $pobj=$pat[0]->{objet};
 		my $seq_dir = $pobj->getSequencesDirectory();
 		my $tmp_fastq = $tmp.'fastq/';
-		my $cmd_multi = "cp $seq_dir$poolName*.fastq.gz $tmp_fastq && ";
+		make_path("$tmp_fastq", { mode => 0775 }) unless (-d $tmp_fastq);
+		my $cmd_multi = "cp -u $seq_dir$poolName*.fastq.gz $tmp_fastq && ";
 		
 		my $config_csv = "$dir$poolName.csv";
 		open (CSV,">$config_csv") or confess ("Can't open '$config_csv': $@");
 		print CSV "[gene-expression]\n";
 		print CSV "reference,".$index."\n";
 		print CSV "probe-set,".$set."\n";
-		print CSV "no-bam,true\n" unless ($create_bam);
-		print CSV "chemistry,$chemistry\n" unless ($create_bam);
+		print CSV "create-bam,true\n" if ($create_bam);
+		print CSV "create-bam,false\n" unless ($create_bam);
+		print CSV "chemistry,$chemistry\n" unless ($chemistry);
 		print CSV "\n";
 		print CSV "[libraries]\n";
 		print CSV "fastq_id,fastqs,feature_types\n";
 		print CSV $poolName.",".$tmp_fastq.",Gene Expression\n";
 		print CSV "\n";
 		print CSV "[samples]\n";
-		print CSV "sample_id,probe_barcode_ids,description\n";
-		foreach my $p (sort { $a->name cmp $b->name } @pat){
+		print CSV "sample_id,probe_barcode_ids\n";
+		foreach my $p (sort { $a->{name} cmp $b->{name} } @pat){
 			print CSV $p->{name}.",".$p->{bc}."\n";
-#			system("mkdir $dir$pname") unless (-d "$dir$pname");
 		}
 		close CSV;
 		$cmd_multi .= "cd $tmp && cellranger multi --id=$poolName --csv=$config_csv ";
-		$cmd_multi .= "&& cp -r $tmp$poolName/outs/* $tmp$poolName/_versions $tmp$poolName/_cmdline $dir$poolName/ ";
+		$cmd_multi .= "&& cp -r $tmp$poolName/outs/per_sample_outs/* $tmp$poolName/_versions $tmp$poolName/_cmdline $dir$poolName/ ";
 		print JOBS $cmd_multi."\n";
 	}
 	close JOBS;
@@ -244,6 +245,29 @@ if (grep(/count|^all$/i, @steps)){
 		warn $cmd2;
 		system $cmd2  unless $no_exec==1;
 	}
+	
+	# Open web summaries
+	my @error;
+	my $web_summaries = "";
+	foreach my $patient (@{$patients}) {
+		next if ($patient->somatic_group =~ /^ADT$/i);
+		my $file = $dir.$patient->somatic_group.'/'.$patient->name."/web_summary.html";
+		$web_summaries .= $file.' ' if (-e $file);
+		push(@error, $file) unless (-e $file or $no_exec);
+	}
+	my $cmd3 = "firefox ".$web_summaries;
+	$cmd3 = "google-chrome ".$web_summaries if (getpwuid($<) eq 'shanein');
+	warn $cmd3 if ($web_summaries);
+	system($cmd3.' &') if ($web_summaries and not $no_exec);
+	die("Web summaries not found: ".join(', ', @error)) if (@error and not $no_exec);
+
+	unless ($no_exec) {
+		print "\t------------------------------------------\n";
+		print("Check the web summaries:\n");
+		print("$dir/*/*/web_summary.html\n\n");
+		print "\t------------------------------------------\n\n";
+	}
+	
 }
 
 
@@ -258,7 +282,7 @@ if (grep(/aggr/, @steps)){
 	my $type = $project->getRun->infosRun->{method};
 	print JOBS_AGGR "sample_id,molecule_h5\n";
 	foreach my $patient (sort {$a->name cmp $b->name} @$patients) {
-		print JOBS_AGGR $patient->name().",".$dir."per_sample_outs/".$patient->name()."/molecule_info.h5\n";
+		print JOBS_AGGR $patient->name().",".$dir."/".$patient->somatic_group.'/'.$patient->name."/molecule_info.h5\n";
 	}
 	close JOBS_AGGR;
 	my $aggr_cmd = "cd $dir && $exec aggr --id=$id --csv=$aggr_file";
@@ -272,17 +296,18 @@ if (grep(/aggr/, @steps)){
 # ARCHIVE / TAR
 #------------------------------
 if (grep(/tar|archive|^all$/i, @steps)){
-	my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/outs/per_sample_outs/*/web_summary.html "
-		."$dir*/outs/per_sample_outs/*/count/sample_cloupe.cloupe "
-		."$dir*/outs/per_sample_outs/*/count/*_bc_matrix/* ";
-	$tar_cmd .= "$dir*/outs/per_sample_outs/*/count/*.bam* " if ($create_bam and $create_bam ne 'false');
+	my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/*/web_summary.html "
+		."$dir*/*/count/sample_cloupe.cloupe "
+		."$dir*/*/count/*_bc_matrix/* ";
+	$tar_cmd .= "$dir*/*/count/*.bam* " if ($create_bam and $create_bam ne 'false');
 	warn $tar_cmd;
 	if (-e "$dir$projectName.tar.gz" and !$no_exec) {
 		my $overwrite = prompt("'archive $dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes);
 		die("archive '$dir$projectName.tar.gz' already exists") unless ($overwrite);
 	}
 	unless ($no_exec){
-		system ($tar_cmd);
+		my $exit = system ($tar_cmd);
+		die("Error while creating the archive") if ($exit);
 		print "\t------------------------------------------\n";
 	#	print "\tlink to send to the users : \n";
 	#	print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
@@ -299,31 +324,12 @@ if (grep(/tar|archive|^all$/i, @steps)){
 #------------------------------
 if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
 	my $dirout = "/data-pure/SingleCell/$projectName/";
-	unless (-d $dirout) {
-		my $cp_cmd = "mkdir $dirout";
-		warn $cp_cmd;
-		system ($cp_cmd) unless ($no_exec);
-	}
+	make_path($dirout, { mode => 0775 }) unless (-d $dirout or $no_exec);
 
-#	my $hgroups ;
-#	foreach my $patient (@{$patients}) {
-#		$hgroups->{$patient->somatic_group}++;
-#		my $cmd_cp = "mkdir $dir$pool_name"
-#	}
-#	if (grep(/^cp$/i, @steps)) {
-#		foreach my $pool_name (sort keys %$hgroups){
-#			warn  "$dir$pool_name";
-#			my $cmd= qq{rsync -rav  $dir/$group_name $dirout && cp $dir/$group_name.csv $dirout };
-#			warn $cmd;
-#			system($cmd);
-#			
-#		}
-#	}
-	
 	foreach my $patient (@{$patients}) {
 		my $pool_name = $patient->somatic_group;
 		my $pat_name = $patient->name;
-		my $web_summary = "$dir$pool_name/per_sample_outs/$pat_name/web_summary.html";
+		my $web_summary = "$dir$pool_name/$pat_name/web_summary.html";
 		
 		if (-e $web_summary or $no_exec) {
 			my $cmd_cp;
@@ -335,8 +341,9 @@ if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
 			
 			# Copy ONLY web_summary.html
 			else {
-				$cmd_cp = "mkdir -p $dirout$pool_name/per_sample_outs/$pat_name " unless (-d "$dirout$pool_name/per_sample_outs/$pat_name");
-				$cmd_cp .= " && cp $web_summary $dirout$pool_name/per_sample_outs/$pat_name/";
+#				$cmd_cp = "mkdir -p $dirout$pool_name/per_sample_outs/$pat_name && " unless (-d "$dirout$pool_name/per_sample_outs/$pat_name");
+				make_path("$dirout$pool_name/per_sample_outs/$pat_name", { mode => 0775 }) unless (-d "$dirout$pool_name/per_sample_outs/$pat_name");
+				$cmd_cp = "cp $web_summary $dirout$pool_name/per_sample_outs/$pat_name/";
 			}
 			
 			warn $cmd_cp;
