@@ -593,18 +593,30 @@ sub getSimilarProjectsIdByAnalyse {
 
 sub getSimilarProjectsByPhenotype {
 	my ($self,$pheno) = @_;
+	confess();
 	return [] unless ($pheno);
 	my $dbh = $self->getDbh();
 	my $sth = $dbh->prepare(qq{select pr.name as name   FROM PolyprojectNGS.projects as pr ,PolyprojectNGS.phenotype as p , PolyprojectNGS.phenotype_project as pp where pp.project_id=pr.project_id and pp.phenotype_id= p.phenotype_id and p.name=?;});
+	warn qq{select pr.name as name   FROM PolyprojectNGS.projects as pr ,PolyprojectNGS.phenotype as p , PolyprojectNGS.phenotype_project as pp where pp.project_id=pr.project_id and pp.phenotype_id= p.phenotype_id and p.name=?;};
+	warn $pheno;
 	$sth->execute($pheno) or confess();
 	return [keys %{$sth->fetchall_hashref("name")} ];
 }
 
 sub getSimilarProjectsIdByPhenotype {
 	my ($self,$pheno) = @_;
+	confess();
 	return [] unless ($pheno);
 	my $dbh = $self->getDbh();
 	my $sth = $dbh->prepare(qq{select pr.project_id as id   FROM PolyprojectNGS.projects as pr ,PolyprojectNGS.phenotype as p , PolyprojectNGS.phenotype_project as pp where pp.project_id=pr.project_id and pp.phenotype_id= p.phenotype_id and p.name=?;});
+	$sth->execute($pheno) or confess();
+	return [keys %{$sth->fetchall_hashref("id")} ];
+}
+sub getSimilarProjectsIdByPhenotypeId {
+	my ($self,$pheno) = @_;
+	return [] unless ($pheno);
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare(qq{select p.project_id as id   FROM PolyPhenotypeDB.phenotype_project as p  where  p.phenotype_id=?;});
 	$sth->execute($pheno) or confess();
 	return [keys %{$sth->fetchall_hashref("id")} ];
 }

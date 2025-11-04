@@ -1089,9 +1089,9 @@ has similarProjectsId => (
 			return {} unless @$phenotypes;
 			
 			foreach my $ph (@$phenotypes){
-				map { $results->{$_}++ } @{ $query->getSimilarProjectsIdByPhenotype($ph)};
+				map { $results->{$_}++ } @{ $query->getSimilarProjectsIdByPhenotypeId($ph->id)};
 			}
-			 
+		
 		if ( $self->isExome or $self->isGenome() ) { 
 			return {} unless $results;
 			return $results;
@@ -1135,9 +1135,10 @@ has similarProjects => (
 			my $phenotypes = $self->getPhenotypes();
 			return {} unless $phenotypes;
 			return {} unless @$phenotypes;
-			map { $results->{$_}++ } @{ $phenotypes->[0]->projects_name } if $phenotypes;
-			 # warn Dumper $results;
-			 
+			foreach my $ph (@$phenotypes){
+				map { $results->{$_}++ } @{ $query->getSimilarProjectsIdByPhenotypeId($ph->name)};
+			}
+		
 		if ( $self->isExome or $self->isGenome() ) { 
 			return {} unless $results;
 			return $results;
@@ -1147,14 +1148,15 @@ has similarProjects => (
 			my $vdb     = $c->validation_db;
 			if ( $self->isExome or $self->isGenome() ) {
 				my $phenotypes = $self->phenotypes();
-				map { $results->{$_}++ }
-				  @{ $query->getSimilarProjectsByPhenotype( $phenotypes->[0] )
+				foreach my $ph (@$phenotypes){
+					map { $results->{$_}++ }
+				  @{ $query->getSimilarProjectsByPhenotype( $ph )
 				  };
+				}
 			}
 			elsif ($analyse) {
 				map { $results->{$_}++ }
 				  @{ $query->getSimilarProjectsByAnalyse($analyse) };
-
 				#next;
 			}
 			else {
@@ -4890,6 +4892,29 @@ sub hotspot_rocks {
 	$self->{rocks}->{"hotspot_rocks"} =  GenBoNoSqlRocks->new(dir=>$rocks_dir,mode=>$mode,name=>$self->name);
 	return $self->{rocks}->{"hotspot_rocks"} ;
 }
+has dude_level_sereal => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self      = shift;
+		my $rocks_dir  = $self->getVariationsDir("dude") . "/dude_level_cache/";
+		return $self->makedir($rocks_dir);
+	}
+);
+
+sub dude_rocks {
+	my ( $self,$mode ) = @_;
+	if ($mode eq "close"){
+		
+		$self->{rocks}->{"dude_rocks"}->close();
+		delete $self->{rocks}->{"dude_rocks"};
+	}
+	return $self->{rocks}->{"dude_rocks"} if exists $self->{rocks}->{"dude_rocks"};
+	my $rocks_dir  = $self->getVariationsDir("dude") . "/rocks_cache/";
+	$self->{rocks}->{"dude_rocks"} =  GenBoNoSqlRocks->new(dir=>$rocks_dir,mode=>$mode,name=>$self->name);
+	return $self->{rocks}->{"dude_rocks"} ;
+}
+
 
 
 has lmdbGenBo => (
@@ -6774,16 +6799,7 @@ has get_polybtf_resume => (
 	},
 );
 
-has dir_controls_dude => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
-		my $self = shift;
-		my $dir =
-"/data-xfs/dev/pnitschk/svn-genbo/polypipeline/scripts/scripts_pipeline/dude//genome//novaseq/";
-		return $dir;
-	},
-);
+
 
 has get_path_rna_seq_polyrna_root  => (
 	is      => 'rw',
