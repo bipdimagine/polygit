@@ -1395,7 +1395,7 @@ has sequenceRootDir => (
 	reader  => 'getSequencesRootDir',
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->getDataDirectory("root");
+		my $path = $self->getProjectRootPath;
 		$path =
 			$path . "/"
 		  . $self->getProjectType() . "/"
@@ -4177,7 +4177,7 @@ sub makePath {
 	my $self = shift;
 	$self->allPath unless exists $self->{dir};
 
-	my $dir = $self->buffer()->getDataDirectory("root");
+	my $dir = $self->getProjectRootPath;
 	my $dd =
 		$dir . ""
 	  . $self->buffer()->getDataDirectory( $self->getProjectType ) . "/"
@@ -6533,11 +6533,11 @@ has get_path_rna_seq_polyrna_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/polyRNA/";
+		my $path = $self->getProjectRootPath."/".$self->version()."/polyRNA/";
 		return $path if -d $path;
 		my @lPotentialRelease = ('HG19', 'HG19_CNG', 'HG19_MT', 'HG38', 'HG38-ERCC', 'MM38', 'MM39');
 		foreach my $rel2 (@lPotentialRelease) {
-			my $alt_path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$rel2."/polyRNA/";
+			my $alt_path = $self->getProjectRootPath."/".$rel2."/polyRNA/";
 			return $alt_path if -d $alt_path;
 			
 		}
@@ -6550,7 +6550,7 @@ has get_path_rna_seq_junctions_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/analysis/";
+		my $path = $self->getProjectRootPath."/".$self->version()."/analysis/";
 		return $path;
 	},
 );
@@ -6627,7 +6627,7 @@ has get_path_rna_seq_junctions_analyse_description_root  => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $path = $self->buffer()->getDataDirectory("root")."/".$self->getProjectType()."/".$self->name()."/".$self->version()."/RNAseqSEA/";
+		my $path = $self->getProjectRootPath."/".$self->version()."/RNAseqSEA/";
 		return $path;
 	},
 );
