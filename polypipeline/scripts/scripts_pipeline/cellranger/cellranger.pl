@@ -316,7 +316,7 @@ if (grep(/count|^all$/i, @steps)){
 			warn ("no associated ADT library") if scalar(@adt)==0 ;
 			next() if scalar(@adt)==0 ; 
 			my $adt_name = $adt[0]->name();
-			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/,'.",".$ename.",Gene Expression\n";
+			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/,'.$ename.",Gene Expression\n";
 			$lib .= $tmp.'fastq/'.",".$adt_name.",Antibody Capture\n";
 			print LIB $lib;
 			close(LIB);
