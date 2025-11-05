@@ -54,9 +54,9 @@ $out_dir .= '/' unless ($out_dir =~ /\/$/);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
-#$patients_name = $project->get_only_list_patients($patients_name);
-$patients_name = $project->getPatients;
-die("No patient in project $projectName") unless ($patients_name);
+#my $patients = $project->get_only_list_patients($patients_name);
+my $patients = $project->getPatients;
+die("No patient in project $projectName") unless ($patients);
 
 
 
@@ -65,7 +65,7 @@ my $dir = $project->getCountingDir('cellranger');
 my $info_file = "$out_dir$projectName-infos.txt";
 open(my $fh, '>', $info_file);
 print $fh $projectName.','.$project->description."\n";
-foreach my $pat (@$patients_name) {
+foreach my $pat (sort {$a->name cmp $b->name} @$patients) {
 	my $pname = $pat->name;
 	next if ($pname =~ /^ADT_/);
 	
@@ -143,8 +143,27 @@ foreach my $pat (@$patients_name) {
 	$transcriptome .= '-'.$reference_json->{'version'} if (exists $reference_json->{'version'});
 	die("Different transcriptomes from current reference.json ($release --> $transcriptome) and web_summary ($transcriptome_version) for patient '$pname'.") unless ($transcriptome eq $transcriptome_version or $methSeq eq 'atac');
 	
+	# type
+	my $type = $pat->somatic_group();
+	my @patient_names = map{$_->name} @$patients;
+	my $metrics_csv = $dir_cellranger.'metrics_summary.csv';
+	my $grep_antibody;
+	open (my $f, '<', $metrics_csv) || warn ("Can't open file '$metrics_csv': $!");
+	while (my $line = readline($f)) {
+		chomp $line;
+		if ($line =~ /Antibody/i) {
+			$grep_antibody = 1 ;
+			last;
+		}
+	}
+	close($f);
+	$type .= '+adt' if ($type =~ /^exp$/i and grep(/^(ADT|adt)_$pname/, @patient_names) and $grep_antibody);
+	warn "ADT found: 'ADT_$pname', but not included in the cellranger analysis "
+#		."(no antibody metrics found in '$dir_cellranger/metrics_summary.csv')" 
+		if ($type =~ /^exp$/i and grep(/^(ADT|adt)_$pname/, @patient_names) and not $grep_antibody);
+	
 			# sample,    fastq path,					 cellranger out dir, cellranger version	   transcriptome
-	print $fh $pname.','.$pat->getSequencesDirectory.','.$dir_cellranger.','.$pipeline_version.','.$transcriptome_version."\n";
+	print $fh $pname.','.$pat->getSequencesDirectory.','.$dir_cellranger.','.$pipeline_version.','.$transcriptome_version.','.$type."\n";
 }
 close($fh);
 
