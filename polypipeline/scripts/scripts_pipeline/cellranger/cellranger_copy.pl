@@ -29,6 +29,7 @@ use Term::Menus;
 use Proc::Simple;
 use Storable;
 use JSON::XS;
+use File::Path qw(make_path);
 
 
 my $projectName;
@@ -56,11 +57,7 @@ $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 #warn $dir;
 
 my $dirout = "/data-pure/SingleCell/$projectName/";
-unless (-d $dirout) {
-	my $cp_cmd = "mkdir $dirout";
-	warn $cp_cmd;
-	system ($cp_cmd) unless ($no_exec);
-}
+make_path($dirout, { mode => 0775 }) unless (-d $dirout);
 
 foreach my $patient (@{$patients}) {
 	my $name = $patient->name();
@@ -75,7 +72,7 @@ foreach my $patient (@{$patients}) {
 		
 		# Copy ONLY web_summary.html
 		else {
-			$cp_cmd = "mkdir $dirout$name ; " unless (-d $dirout.$name);
+			make_path("$dirout$name", { mode => 0775 }) unless (-d $dirout.$name);
 			$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html";
 		}
 		
