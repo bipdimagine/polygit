@@ -56,11 +56,11 @@ foreach my $projectname (@lProjects) {
 			elsif ($patient->status() == 2) {
 				$hurl->{$fam_name}->{$pat_name}->{status} = "<img src='/icons/Polyicons/pill2.png'>";
 			}
-			$hurl->{$fam_name}->{$pat_name}->{url_single} = "http://www.polyweb.fr/polyweb/html/manta/Url_allSVEditor_project.html?projectname=$projectname&filename=$pat_name&trio=0";
+			$hurl->{$fam_name}->{$pat_name}->{url_single} = 'https://'.$ENV{HTTP_HOST}."/polyweb/html/manta/Url_allSVEditor_project.html?projectname=$projectname&filename=$pat_name&trio=0";
 			if ($patient->isChild()) {
 				next unless ($fam->father());
 				next unless ($fam->mother());
-				$hurl->{$fam_name}->{$pat_name}->{url_trio} = "http://www.polyweb.fr/polyweb/html/manta/Url_allSVEditor_project.html?projectname=$projectname&filename=$pat_name&trio=1";
+				$hurl->{$fam_name}->{$pat_name}->{url_trio} = 'https://'.$ENV{HTTP_HOST}."/polyweb/html/manta/Url_allSVEditor_project.html?projectname=$projectname&filename=$pat_name&trio=1";
 			}
 		}
 	}

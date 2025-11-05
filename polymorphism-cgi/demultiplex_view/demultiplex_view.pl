@@ -74,7 +74,7 @@ foreach my $this_path (@$list_paths_found) {
 			next if ($name eq 'test_xths');
 			next if ($name =~ /run1[0-9]+/);
 			my $h_run_infos;
-			my $cmd = 'https://www.polyweb.fr/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file;
+			my $cmd = 'https://'.$ENV{HTTP_HOST}.'/polyweb/demultiplex_view/demultiplex_view_run.html?name='.$name.'&json='.$json_file;
 			$cmd .= '&force=1' if ($use_force);
 			add_file_json($cmd, $json_path, $name);
 		}
@@ -124,7 +124,6 @@ my $last_tag;
 foreach my $date (reverse sort keys %$h_files_date) {
 	print ".";
 	my $file = $h_files_date->{$date};
-	my $path_file_origin = $h_files->{$file};
 	
 	my $file_to_date = $origin_path.'/'.$file;
 	my $found_file;
@@ -136,7 +135,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 		$file_to_date = $origin_path;
 	}
 	
-	$path_file_origin =~ s/$origin_path/https:\/\/www.polyweb.fr\/NGS\/demultiplex/;
+	my $path_file_origin = 'https://'.$ENV{HTTP_HOST}.'/NGS/demultiplex/';
 	my $path_file = $h_files->{$file};
 	
 	my ($substring, $color, $date_text);
@@ -209,8 +208,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	my (@l_FastqScreen, @l_FastqScreen_patfilename, $run_name, $run_name_db);
 	
 	#CAS demultiplex RUN
-	my $path_run = $path_file_origin;
-	$path_run =~ s/https:\/\/www.polyweb.fr\/NGS/\/data-isilon\/sequencing\/ngs/g;
+	my $path_run = 'https://'.$ENV{HTTP_HOST}.'/sequencing/ngs/';
 #	warn "\n";
 	if ($path_run =~ /&json=/) {
 	#	warn $path_file_origin;

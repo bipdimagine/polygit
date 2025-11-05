@@ -36,7 +36,7 @@ my $project_name = $cgi->param('project');
 my $project = $buffer->newProject( -name => $project_name );
 die( "unknown project" . $project_name ) unless $project;
 
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 #warn Dumper $ENV;
 
 my $root_dir = $project->getRootDir();

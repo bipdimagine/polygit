@@ -547,7 +547,7 @@ qq{<button type="button" class= "btn btn-xs btn-primary " style="background-colo
 
 	my @lbam_alamut;
 	foreach my $p ( @{ $patient->getFamily->getPatients() } ) {
-		push( @lbam_alamut, 'https://www.polyweb.fr/' . $p->bamUrl() );
+		push( @lbam_alamut, $p->bamUrl() );
 	}
 	my $string_url_bam = join( ',', @lbam_alamut );
 	my $b_igv =

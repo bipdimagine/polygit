@@ -63,7 +63,7 @@ function httpGetLoadBam(){
 				xmlHttp.onreadystatechange=function(){
 					if (xmlHttp.readyState==4){
 						if (alamut_api_key) {
-							bamXmlHttp.open("GET", "http://localhost:10000/open?apikey="+alamut_api_key+"&filetype=BAM&path=https://polyweb.fr/"+url_bam, true);
+							bamXmlHttp.open("GET", "http://localhost:10000/open?apikey="+alamut_api_key+"&filetype=BAM&path="+url_bam, true);
 						}
 						bamXmlHttp.send(null);
 					}
@@ -80,7 +80,7 @@ function httpGetLoadListBam(string_list_bam){
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+gene+"&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
-		list_cmds.push("http://localhost:10000/open?filetype=BAM&path=https://www.polyweb.fr/"+list_bam[i]);
+		list_cmds.push("http://localhost:10000/open?filetype=BAM&path="+list_bam[i]);
 	}
 	launch_alamut_visual_plus_cmds(list_cmds);
 }
@@ -90,7 +90,7 @@ function httpGetLoadOnlyListBam(string_list_bam){
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request=BRCA1&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
-		list_cmds.push("http://localhost:10000/open?filetype=BAM&path=https://www.polyweb.fr/"+list_bam[i]);
+		list_cmds.push("http://localhost:10000/open?filetype=BAM&path="+list_bam[i]);
 	}
 	launch_alamut_visual_plus_cmds(list_cmds);
 }
@@ -100,7 +100,7 @@ function httpGetLoadOnlyListBamInGene(gene_name, string_list_bam){
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+gene_name+"&synchronous=true");
 	for(var i = 0; i < list_bam.length; i++){
-		list_cmds.push("http://localhost:10000/open?filetype=BAM&path=https://www.polyweb.fr/"+list_bam[i]);
+		list_cmds.push("http://localhost:10000/open?filetype=BAM&path="+list_bam[i]);
 	}
 	launch_alamut_visual_plus_cmds(list_cmds);
 }

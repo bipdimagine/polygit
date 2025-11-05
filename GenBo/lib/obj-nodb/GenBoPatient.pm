@@ -483,12 +483,9 @@ has 'coverage_SRY' => (
 		return -1 unless $find;
 	
 		my $samtools = $self->buffer->software("samtools");
-		my $intspan_capture =
-		  $self->project->getChromosome('Y')->getCapturesGenomicSpan();
-		my $intSpan = Set::IntSpan::Fast::XS->new(
-			"6736370-6736371,6736442-6736443,6737844-6737845,2654896-2655740");
-		$intSpan =  Set::IntSpan::Fast::XS->new(
-			"6868329-6868330,6868401-6868402,6869803-6869804,2786855-2787699") if $self->project->version =~/HG38/;
+		my $intspan_capture = $self->project->getChromosome('Y')->getCapturesGenomicSpan();
+		my $intSpan = Set::IntSpan::Fast::XS->new("6736370-6736371,6736442-6736443,6737844-6737845,2654896-2655740");
+		$intSpan =  Set::IntSpan::Fast::XS->new("6868329-6868330,6868401-6868402,6869803-6869804,2786855-2787699") if $self->project->version =~/HG38/;
 		my $zint = $intspan_capture->intersection($intSpan);
 		
 		return -1 if $zint->is_empty;
@@ -504,13 +501,19 @@ has 'coverage_SRY' => (
 			#warn $from." ".$to;
 			#warn $self->meanDepth($self->project->getChromosome('Y'),$from,$to);
 			my ($res) = `$cmd`;
+			
+			warn "\n";
+			warn $cmd;
+			warn $res;
+			warn "\n";
+			
 			chomp($res);
 			#my $res = $self->meanDepth($self->project->getChromosome('Y'),$from,$to);
 			$res = 0 unless $res;
 			
 
 			#$res = 0 unless $res;
-
+#			warn $res;
 			$max_mean = $res if $res > $max_mean;
 			last if $max_mean > 20;
 		}
@@ -3843,7 +3846,7 @@ has fastq_screen_file_html_url => (
 		return if not $fastq_screen_html or not -e $fastq_screen_html;
 		$fastq_screen_html =~ s/\/\//\//g;
 		$fastq_screen_html =~ s/\/data-isilon\/sequencing\/ngs\///g;
-		my $polyweb_url = $self->getProject->buffer->config->{polyweb_url}->{polyweb_NGS};
+		my $polyweb_url = 'https://'.$ENV{HTTP_HOST}."/".$self->getProject->buffer->config->{polyweb_url}->{polyweb_NGS};
 		return $polyweb_url.'/'.$fastq_screen_html;
 	},
 );

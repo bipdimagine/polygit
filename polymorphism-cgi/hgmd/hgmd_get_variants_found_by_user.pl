@@ -359,7 +359,8 @@ sub draw_interface_by_variants {
 				
 				my $dejavu = $hVarInfos->{$var_id}->{dejavu};
 				$dejavu =~ s/\//<br>/;
-				my $dejavu_url = "http://www.polyweb.fr/polyweb/polydejavu/dejavu.html?input=".$var_id;
+				
+				my $dejavu_url = 'https://'.$ENV{HTTP_HOST}."/polyweb/polydejavu/dejavu.html?input=".$var_id;
 				my $dejavu_href = "<a href='".$dejavu_url."' target='_blank'>".$dejavu."</a>";
 				
 				my $omim_href = "<a href='https://www.omim.org/entry/".$hVarInfos->{$var_id}->{omimid}."' target='_blank'>".$hVarInfos->{$var_id}->{omimid}."</a>";
@@ -652,7 +653,7 @@ sub draw_interface_by_captures_genes {
 					my $hgmd_new = $hRes->{$analyse}->{$gene_name}->{$hgmd_phen}->{$var_id}->{infos}->{hgmd_new};
 					
 					
-					my $dejavu_url = "http://www.polyweb.fr/polyweb/polydejavu/dejavu.html?input=".$var_id;
+					my $dejavu_url = 'https://'.$ENV{HTTP_HOST}."/polyweb/polydejavu/dejavu.html?input=".$var_id;
 					my $dejavu_href = "<a href='".$dejavu_url."' target='_blank'>".$dejavu."</a>";
 			
 			
@@ -669,15 +670,15 @@ sub draw_interface_by_captures_genes {
 							my ($chr_id, $pos, $ref, $all) = split('_', $var_id);
 							#my $this_genes = $hRes->{$analyse}->{$gene_name}->{$hgmd_phen}->{$var_id}->{infos}->{gene};
 							my $url_filters = "?project=".$project_name."&chromosome=".$chr_id."&gene=".$gene_name."&patients=".join(',', keys %{$hRes->{$analyse}->{$gene_name}->{$hgmd_phen}->{$var_id}->{projects}->{$project_name}});
-							my $interface_url = "http://www.polyweb.fr/polyweb/vector/detailProject.html".$url_filters;
+							my $interface_url = 'https://'.$ENV{HTTP_HOST}."/polyweb/vector/detailProject.html".$url_filters;
 							
 							#my $patients_attic = $hPatAtticByVarPhen->{$var_id}->{$project_name};
 							#my $url_filters = "?project=".$project_name."&type=ngs&use_args=filter_type_variation=;only_genes=".$this_genes.";mode=ind;level_ind=variation;level_fam=variation;filter_attic=".$patients_attic."+"; 
-							#my $interface_url = "http://www.polyweb.fr/polyweb/vector/gene.html".$url_filters;
+							#my $interface_url = 'https://'.$ENV{HTTP_HOST}."/polyweb/vector/gene.html".$url_filters;
 							$text_project_name = "<a href='".$interface_url."' target='_blank'>".$project_name."</a>";
 						}
 						else {
-							my $interface_url = "http://www.polyweb.fr/polyweb/coverage.html?project=".$project_name.'&type=ngs';
+							my $interface_url = 'https://'.$ENV{HTTP_HOST}."/polyweb/coverage.html?project=".$project_name.'&type=ngs';
 							$text_project_name = "<a href='".$interface_url."' target='_blank'>".$project_name."</a>";
 						}
 						my $row_span_proj = get_row_span_project_td($hRes->{$analyse}->{$gene_name}->{$hgmd_phen}->{$var_id}->{projects}->{$project_name});
@@ -836,15 +837,16 @@ sub get_var_informations {
 					$hProjDejavu_user->{$analyse}->{$project_name}->{$pat_name}->{status} = $h->{status};
 					$hProjDejavu_user->{$analyse}->{$project_name}->{$pat_name}->{family} = $h->{family};
 					my $image;
+					my $url_polyweb = 'https://'.$ENV{HTTP_HOST};
 					if (exists $hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{father} and $hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{father} eq $pat_name) {
-						$image = "<img src='http://www.polyweb.fr/icons/Polyicons/male.png'>";
+						$image = "<img src='$url_polyweb/icons/Polyicons/male.png'>";
 					}
 					elsif (exists $hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{mother} and $hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{mother} eq $pat_name) {
-						$image = "<img src='http://www.polyweb.fr/icons/Polyicons/female.png'>";
+						$image = "<img src='$url_polyweb/icons/Polyicons/female.png'>";
 					}
 					else {
-						if   ($hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{all}->{$pat_name}->{sex} == 1) { $image = "<img src='http://www.polyweb.fr/icons/Polyicons/baby-boy.png'>"; }
-						elsif($hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{all}->{$pat_name}->{sex} == 2) { $image = "<img src='http://www.polyweb.fr/icons/Polyicons/baby-girl.png'>"; }
+						if   ($hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{all}->{$pat_name}->{sex} == 1) { $image = "<img src='$url_polyweb/icons/Polyicons/baby-boy.png'>"; }
+						elsif($hProjectUser->{$project_name}->{ped}->{hash_ped}->{$h->{family}}->{all}->{$pat_name}->{sex} == 2) { $image = "<img src='$url_polyweb/icons/Polyicons/baby-girl.png'>"; }
 					}
 					$hProjDejavu_user->{$analyse}->{$project_name}->{$pat_name}->{img_child_mother_father} = $image;
 				}

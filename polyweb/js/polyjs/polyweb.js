@@ -750,7 +750,7 @@ function launch_web_igv_js(project, patients_names, bams_files, locus){
 		var file = list_bams_files[i];
 		if (!(file in previous_bams)){
 			previous_bams[file] = 1;
-			displayOneBAMIGV(window.location.origin+file);
+			displayOneBAMIGV(file);
 		}
 		else {
 			previous_bams[file] +=1;
@@ -774,14 +774,14 @@ function getGencodeTrackForProject(project_name) {
 
 function displayListBamInIgvApp(list_bams) {
 	for(var i = 0; i < list_bams.length; i++) {
-		var bam = window.location.origin + list_bams[i];
+		var bam = list_bams[i];
 		displayOneBAMIGV(bam);
     }
 }
 
 function addListBamInIgvApp(list_bams) {
 	for(var i = 0; i < list_bams.length; i++) {
-		var bam = window.location.origin + list_bams[i];
+		var bam = list_bams[i];
 		addOneBAMIGV(bam);
     }
 }

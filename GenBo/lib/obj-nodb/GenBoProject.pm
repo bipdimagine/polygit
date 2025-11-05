@@ -4369,11 +4369,7 @@ sub makePath {
 
 sub getAlignmentUrl {
 	my ( $self, $method_name ) = @_;
-	my $path = "/NGS/"
-	  . $self->name . "/"
-	  . $self->genome_version
-	  . "/align/"
-	  . $method_name . '/';
+	my $path = 'https://'.$ENV{HTTP_HOST}."/NGS/".$self->name."/".$self->genome_version."/align/".$method_name.'/';
 	return $path;
 }
 

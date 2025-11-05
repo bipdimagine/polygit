@@ -59,8 +59,8 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
 		track['type'] = 'alignment';
 		track['format'] = 'bam';
 		track['name'] = array_name[i] + ' BAM';
-		track['url'] = window.location.origin + array_bam[i];
-		track['indexURL'] = window.location.origin + array_bam[i] + '.bai';
+		track['url'] = array_bam[i];
+		track['indexURL'] = array_bam[i] + '.bai';
 		track['autoHeight'] = true;
     	track['samplingDepth'] = 100.;
         track['coverageThreshold'] = 1;
@@ -69,7 +69,7 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
         track['colorBy'] = "pairOrientation";
         track['showSoftClips'] = true;
 		list_tracks.push(track);
-		list_bams.push(window.location.origin + array_bam[i]);
+		list_bams.push(array_bam[i]);
 	}
 
     if (typeof locus === 'undefined') { locus = 'chr1:1-249,250,621'; }

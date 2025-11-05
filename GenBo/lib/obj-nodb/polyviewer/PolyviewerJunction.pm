@@ -133,6 +133,12 @@ has score_penality_dejavu => (is => 'rw');
 
 has score_penality_dejavu_inthisrun => (is => 'rw');
 
+has junction_score_without_dejavu_global => (
+	is		=> 'rw',
+);
+has hash_scores_penality => (
+	is		=> 'rw',
+);
 
 
 sub setJunction {
@@ -155,9 +161,11 @@ sub setJunction {
 	$self->type($junction->type());
 	$self->name($junction->id());
 	$self->list_sashimi_plots($junction->getListSashimiPlotsPathFiles($patient));
-	$self->bam_url("https://www.polyweb.fr/".$patient->bamUrl());
+	$self->bam_url($patient->bamUrl());
 	$self->bam_controls_urls( join(',', @{$self->get_list_bam_controls_urls($junction, $patient)}) );
 	$self->gtf_url($self->get_gtf_url($junction->getProject()));
+	
+	
 	
 	foreach my $patient_family (@{$patient->getFamily->getPatients()}) {
 		$self->{hash_by_pat_family_name}->{$patient_family->name()} = $patient_family->getFamily->name();
@@ -195,6 +203,11 @@ sub setJunction {
 	$self->hash_exons_introns($junction->get_hash_exons_introns());
 	my $h_junctions_linked_to_me = $junction->get_hash_junctions_linked_to_me->{$patient->name()} if ($junction->get_hash_junctions_linked_to_me() and exists $junction->get_hash_junctions_linked_to_me->{$patient->name()});
 	$self->hash_junctions_linked_to_me($h_junctions_linked_to_me) if $h_junctions_linked_to_me;
+	
+	foreach my $pat (@{$self->getPatients()}) {
+		$self->{junction_score_without_dejavu_global} = $junction->junction_score_without_dejavu_global($pat);
+	}
+	$self->{hash_scores_penality} = $junction->hash_scores_penality();
 	
 	if ($self->hash_exons_introns()) {
 		foreach my $tid (keys %{$self->hash_exons_introns()}) {
@@ -348,7 +361,7 @@ sub get_gtf_url {
 	my ($self, $project) = @_; 
 	my $gtf = $project->get_gtf_genes_annotations_igv();
 	$gtf =~ s/\/data-isilon//;
-	$gtf = "https://www.polyweb.fr/".$gtf;
+	$gtf = 'https://'.$ENV{HTTP_HOST}.'/'.$gtf;
 	return $gtf;
 }
 
@@ -359,7 +372,7 @@ sub get_list_bam_controls_urls {
 	if ($list_patients_ctrl) {
 		my $nb_control;
 		foreach my $other_pat (@$list_patients_ctrl) {
-			push (@lBams, 'https://www.polyweb.fr/'.$other_pat->bamUrl());
+			push (@lBams, $other_pat->bamUrl());
 			$nb_control++;
 			last if $nb_control == 3;
 		}
@@ -368,7 +381,7 @@ sub get_list_bam_controls_urls {
 		my $np = 0;
 		foreach my $other_pat (@{$patient->getProject->getPatients()}) {
 			next if ($other_pat->name() eq $patient->name());
-			push (@lBams, 'https://www.polyweb.fr/'.$other_pat->bamUrl());
+			push (@lBams, $other_pat->bamUrl());
 			$np++;
 			last if $np == 3;
 		}

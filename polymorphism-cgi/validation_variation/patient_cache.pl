@@ -311,7 +311,7 @@ my $style_td ={
 		4=> {class=>"danger",style=>"background-color:#FF4136"},#E43725#FF4136
 };
 
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 my $variation_script = $ENV{SCRIPT_NAME};
 $variation_script =~s/patient_/variation_/;
 
@@ -1482,7 +1482,7 @@ foreach my $transcript (sort {$a->{name} cmp $b->{name}} @{$patient->{transcript
 		$out.= $cgi->end_Tr();
 		my @tds; 
 		my @ths; 
-		my$url = "//www.polyweb.fr/polyweb/images/polyicons/";
+		my $url = 'https://'.$ENV{HTTP_HOST}."/polyweb/images/polyicons/";
 		my $nbe =0;
 		foreach my $exon ( @{$transcript->{exons}}){
 		
