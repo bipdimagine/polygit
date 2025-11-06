@@ -2809,7 +2809,6 @@ sub hotspot {
 			$bam_obj->pileup($region, sub {
 	    		my ($seqid, $pos, $pileups) = @_;
 				return if $pos != $start;
-				warn $pos;
 	    		foreach my $p (@$pileups) {
 	        	next if $p->is_refskip;  # ignorer les sauts de type 'N' (RNA-seq)
 	
