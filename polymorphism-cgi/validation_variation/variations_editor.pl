@@ -671,6 +671,7 @@ sub run_annnotations {
 				print "." if $nb % 100 == 0;
 			}
 			my $hg = $final_polyviewer_all->get($id);
+			
 				foreach my $gene ( @{$hg->{array}}) {
 					my $gid = $gene->{id};					
 					next unless exists $id_by_genes_id->{$gid}->{$id};
@@ -691,7 +692,7 @@ sub run_annnotations {
 				}
 			}
 			
-
+	warn "     rocks   ".$project->rocks_directory."/patients/"." ".abs(time-$t);
 	print qq{</div>} unless ($cgi->param('export_xls'));
 	$project->buffer->dbh_reconnect();
 	return calculate_max_score($project,[ values %$hgenes ],$final_polyviewer_all);
@@ -756,6 +757,7 @@ my $h_transmissions = {
 	$mask_transmission   |= $h_transmissions->{mother} if $cgi->param('xor');
 	$mask_transmission   |= $h_transmissions->{father} if $cgi->param('xor');
 	
+	warn $mask_transmission;
 	
 	my $hashVector_panel = {};
 	my $hashVector       = {};
@@ -785,6 +787,7 @@ my $h_transmissions = {
 	}
 	
 	push(@$asql_patient ,$suffix."_alt >".$alt);#." and ".$suffix."_transmission  & $mask_transmission <> 0" ;
+	push(@$asql_patient ,$suffix."_alt >".$alt);#." and ".$suffix."_transmission  & $mask_transmission <> 0" ;
 	if($cgi->param('ratio') ){
 		push(@$asql_patient ,$suffix."_ratio > ".$cgi->param('ratio'));
 	}
@@ -792,7 +795,7 @@ my $h_transmissions = {
 	if($cgi->param('ref') ){
 		push(@$asql_patient ,$suffix."_ref > ".$cgi->param('ref'));
 	}
-	push(@$asql_patient ,$suffix."_transmission  & $mask_transmission <> 0");
+	#push(@$asql_patient ,$suffix."_transmission  & $mask_transmission <> 0");
 	
 	my $sql_patient = "(".join(" and ",@$asql_patient).")";
 	#push(@column_patient,"patient_".$c."_ref");
