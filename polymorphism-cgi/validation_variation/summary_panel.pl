@@ -3913,6 +3913,7 @@ qq{class= "btn btn-xs  btn-primary" style="background-color: $color;$fsize"};
 				die();
 			}
 		}
+		warn $v->name;
 		my $hvariation =
 		  update::construct_variant( $project, $v, $gene->getTranscripts->[0],
 			$p, undef );
