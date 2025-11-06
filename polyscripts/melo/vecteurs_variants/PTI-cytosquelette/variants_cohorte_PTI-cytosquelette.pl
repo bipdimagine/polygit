@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 use strict;
-use FindBin qw($RealBin);
-#print "$RealBin\n";
-use lib "$RealBin";
-use lib "$RealBin/../../../../GenBo/lib/obj-nodb/";
-use lib "$RealBin/../../../../polypipeline/dragen/scripts/";
-use lib "$RealBin/../../../../polypipeline/packages/";
+use FindBin qw($Bin);
+$Bin .= '/';
+use lib "$Bin";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../../../../polypipeline/dragen/scripts/";
+use lib "$Bin/../../../../polypipeline/packages/";
 use dragen_util; 
 use file_util; 
 use Data::Dumper;
@@ -34,12 +34,12 @@ my $dv_projects = 1;
 my $dv_pat = 5;
 my $dv_pat_ho = 0;
 
-my $projects_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Liste_projets_Polyweb.csv';
-my $projects_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Projets_polyweb_PTI_cytosquelette_round_2.csv';
-my $projects_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Projets_polyweb_PTI_cytosquelette_09_2025.txt';
-my $genes_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Gènes_cytosquelette.csv';
-my $genes_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/Liste_complète_gènes_cytosquelette.txt';
-my $genes_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/All_genes_final_list_01_10_25.csv';
+my $projects_file = $Bin.'Liste_projets_Polyweb.csv';
+my $projects_file = $Bin.'Projets_polyweb_PTI_cytosquelette_round_2.csv';
+my $projects_file = $Bin.'Projets_polyweb_PTI_cytosquelette_09_2025.txt';
+my $genes_file = $Bin.'Gènes_cytosquelette.csv';
+my $genes_file = $Bin.'Liste_complète_gènes_cytosquelette.txt';
+my $genes_file = $Bin.'All_genes_final_list_01_10_25.csv';
 my $fork = 1;
 GetOptions(
 	'projects_file=s'		=> \$projects_file,
@@ -50,27 +50,39 @@ GetOptions(
 die ("fork should be [1;40], given $fork") if ($fork > 40 or $fork <= 0);
 warn 'fork='.$fork;
 
+# log file
+my $file_err = $Bin.'/log.error';
+warn $file_err;
+system ("rm $file_err") if (-e $file_err);
+
 # Charge la liste des noms de projets
 die ("Can't find file '$projects_file'") unless (-e $projects_file);
 warn $projects_file;
 my @projects_list;
 open(my $fh_projects, "<", "$projects_file") || confess("Can't open '$projects_file': $!");
+open(my $err, ">>$file_err") or confess("Can't open '$file_err'");
 while (my $l = readline($fh_projects)) {
+	next if ($l =~ /^#/);
 	chomp $l;
 	next unless ($l);
-	push(@projects_list, $l);
+	$l =~ s/-/_/g;
+	print {$err} "Error in project name syntax: $l\n\n" unless ($l =~ /^NGS20\d{2}_\d{4,5}$/);
+	die "Error in project name syntax: $l\n\n" unless ($l =~ /^NGS20\d{2}_\d{4,5}$/);
+	push(@projects_list, uc($l));
 }
+close($err);
 close($fh_projects);
 warn scalar @projects_list.' project(s) in list';
 #warn Dumper \@projects_list;
 
 # Charge la liste des correctifs de noms de gènes
-my $correction_file = '/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/correction_gene_names.tsv';
+my $correction_file = $Bin.'correction_gene_names.tsv';
 open(my $fh_correction, "<", "$correction_file") || confess("Can't open '$correction_file': $!");
 my $correction;
 while (my $l = readline($fh_correction)) {
 	next if ($l =~ /^#/);
 	chomp $l;
+	next unless ($l);
 	my @l = split("\t",$l);
 	$correction->{$l[0]} = $l[1];
 }
@@ -83,6 +95,7 @@ warn $genes_file;
 my @genes_list;
 open(my $fh_genes, "<", "$genes_file") || confess("Can't open '$genes_file': $!");
 while (my $l = readline($fh_genes)) {
+	next if ($l =~ /^#/);
 	chomp $l;
 	next unless ($l);
 	my @grep = grep{/^$l$/i} keys %$correction;
@@ -95,7 +108,7 @@ warn scalar @genes_list.' gene(s) in list';
 
 
 # Ecrit le header des résultats
-my $file = "/home/mperin/git/polygit/polyscripts/melo/vecteurs_variants/PTI-cytosquelette/variants.csv";
+my $file = "$Bin/variants.csv";
 warn $file;
 open(my $fh, ">$file") or confess("Can't open '$file'");
 print {$fh} "project;family;child;";
@@ -113,17 +126,20 @@ print {$stats_genes} "project;gene;number of patients;patients\n";
 close ($stats_genes);
 
 
-# log file
-my $file_err = $file =~ s/variants.csv$/log.error/r;
-warn $file_err;
-system ("rm $file_err") if (-e $file_err);
 
+my $pm = Parallel::ForkManager->new($fork);
+my $erreur_fork = 0;
+$pm->run_on_finish(sub {
+    my ($pid, $exit_code, $ident, $signal) = @_;
+    if ($signal || $exit_code != 0) {
+        $erreur_fork = 1;
+    }
+});
 
 
 my $nb_var;
 my $count_genes;
-my $pm = new Parallel::ForkManager($fork);
-foreach my $project_name (@projects_list) {
+foreach my $project_name (sort @projects_list) {
 	
 	my $pid = $pm->start and next;# unless ($fork <= 1);
 	my $buffer = new GBuffer;
@@ -164,8 +180,9 @@ foreach my $project_name (@projects_list) {
 #		warn $gene->external_name."\t".$gene->getChromosome->name;
 		push(@$genes, $gene);
 	}
-	warn "Genes not found:\n". Dumper $genes_not_found if ($genes_not_found); 
+	warn scalar @$genes_not_found." genes not found:\n". Dumper $genes_not_found if ($genes_not_found); 
 #	warn Dumper map {$_->external_name} @$genes;
+	warn scalar @$genes." genes found\n" if ($genes);
 	
 	warn "Phenotypes $project_name: ". join(', ', @{$project->phenotypes});
 	print {$err} "No phenotype for $project_name\n\n" unless (scalar @{$project->phenotypes});
@@ -204,6 +221,8 @@ foreach my $project_name (@projects_list) {
 #				warn $var_genomad_ac->Norm();
 #				warn $var_genomad_ho->Norm();
 				
+#				warn Dumper $project->hash_frequence_filters();
+				# 'pheno_snp' => '1', 'freq_01' => '0.01', 'freq_001' => '0.001', 'freq_05' => '0.05', 'freq_0001' => '0.0001', 'freq_none' => '0', 'freq_1' => '1'
 				my $var_freq = $chr->getNewVector();
 				foreach my $filter_name ('freq_0001', 'freq_none') {
 				    $var_freq += $chr->vector_global_categories->{$filter_name};
@@ -354,8 +373,9 @@ foreach my $project_name (@projects_list) {
 	$pm->finish;
 }
 $pm->wait_all_children();
+die "Arrêt du script : une erreur a été détectée\n" if ($erreur_fork);
 
-warn Dumper $nb_var;
+#warn Dumper $nb_var;
 
 
 
