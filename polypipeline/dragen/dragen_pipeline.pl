@@ -99,7 +99,7 @@ GetOptions(
 	"neb=s" => \$neb,
 	"padding=s" => \$pad,
 	#'low_calling=s' => \$low_calling,
-);
+) or die ("Error in command line arguments");
 
 
 
@@ -141,9 +141,9 @@ if ($test_umi && !($umi)){
 system("clear") unless $dry;
 my $start_time = time;
 my $jobs =[];
-my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
+my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target","check_sex"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
-my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
+my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>7,"check_sex"=>8};
 
 #create_list_steps;
 unless ($rna){
@@ -167,9 +167,9 @@ if ($rna){
 	$hsteps = {"align"=>0,"vcf"=>1, "featurecount"=>2};
 }
 if($genome ==1){
-	$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","str"];
+	$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","str","check_sex"];
 	$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5,"str"=>6};
-	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"str"=>7};
+	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"str"=>7,"check_sex"=>8};
 	
 }
 
@@ -180,7 +180,7 @@ unless ($step_name){
 	my $tdna = "DNA";
 	$tdna = "RNA" if $rna == 1;
 	my $tumi = "NO UMI ";
-	my $tumi = " UMI " if $umi==1;
+	$tumi = " UMI " if $umi==1;
 	my $banner=colored::stabilo("Green  ","  it's a $tdna  project with $tumi  bu twhat can I do for you    ", 1);
 	my %menu1 = (
 	Item_1 => {
@@ -256,6 +256,11 @@ run_calling_target($ppd,$jobs_cluster);
 }
 if (exists $hsteps->{featurecount}){
 run_featurecount($ppd,$jobs_cluster);
+exit(0);
+}
+if (exists $hsteps->{check_sex}){
+warn Dumper $jobs_cluster;
+run_check_sex_control($ppd,$jobs_cluster);
 exit(0);
 }
 
@@ -364,7 +369,7 @@ foreach my $project (@$projects){
 	 $dir_log = $project->buffer->config->{project_pipeline}->{bds}."/".$project_name.".dragen.".time unless $dir_log;
 	$project->isGenome;
 	$project->get_only_list_patients($apatients_name[0]);
-	foreach my $patient (@{$project->getPatients}){
+	foreach my $patient (@{$project->getPatientsAndControl}){
 		if ($version =~ /HG38/){
 			my ($m) = grep{$_ eq "bwa" or $_ eq "dragen-align" } @{$patient->alignmentMethods};
 			next unless $m;
@@ -466,6 +471,17 @@ foreach my $project (@$projects){
 		$h->{prod}->{melt} = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";	 	
 	 	$h->{exists_file}->{melt} = 1 if -e $h->{prod}->{melt};
 		}
+		
+	 	#####  
+		#####  check_sex
+		#####  
+		if (exists $hsteps->{check_sex}){
+#			my $dir_out= $project->project_path."sex_control/";
+			my $dir_out= $project->getAlignmentPipelineDir("dragen-align")."sex_control/";
+			$h->{prod}->{check_sex} = $dir_out.$patient->name().".sex_control.ok";		 	
+		 	$h->{exists_file}->{check_sex} = 1 if -e $h->{prod}->{check_sex};
+		}
+	 	
 		if (exists $hsteps->{featurecount}){
 		my $dir_out= $project->getCountingDir("featureCounts");
 		$h->{prod}->{featurecount} = $dir_out."/".$project_name.".count.genes.txt";		 	
@@ -489,8 +505,8 @@ foreach my $project (@$projects){
 	 		$h->{prod}->{$m} = $patient->getVariationsFileName($m);
 	 		$h->{exists_file}->{$m} = 1 if -e $h->{prod}->{$m};
 	 		}
-	 		
 	 	}
+	 	
 		}
 		push(@{$patients_jobs},$h);
 	}
@@ -847,7 +863,7 @@ foreach my $project (@$projects){
 	
 	my $ppn = 20;
 	my $project_name = $project->name;
-	my $patients = $project->getPatients($patients_name);
+	my $patients = $project->getPatientsAndControl($patients_name);
 	 	my	 $cmd = qq{perl $script_pipeline/dude/dude.pl -fork=$ppn  -project=$project_name  };
 	 	my $final_dir = $project->getVariationsDir("dude");
 		my $fileout = $final_dir."/".$project->name.".dude";
@@ -861,6 +877,33 @@ foreach my $project (@$projects){
 	steps_cluster("DUDE ",$jobs);
 }
 
+
+
+sub run_check_sex_control {
+	my ($patients_jobs,$jobs) = @_;
+	push(@all_list,"check_sex");
+	
+	foreach my $hp (@$patients_jobs) {
+		my $project_name = $hp->{project};
+		my $ppn = 1;
+		my $job;
+		my $nname  = $hp->{name}."_".$hp->{project};
+		my $name = $hp->{name};
+		$job->{patient} = $nname;
+		$status_jobs->{$nname}->{progress} = "failed" unless -e $hp->{prod}->{align};
+		next if $status_jobs->{$nname}->{progress} eq "failed";
+		my $fileout = $hp->{prod}->{check_sex};
+		$lims->{$nname}->{check_sex} = "SKIP" if -e $fileout; 
+		next if -e $fileout;
+		my $cmd = "perl $script_pipeline/check_sex_after_dragen.pl -project=$project_name  -patient=$name ";
+		$job->{name} = $name.".check_sex";
+		$job->{cmd} = $cmd;
+		$job->{cpus} = $ppn;
+		$job->{jobs_type} ="check_sex";
+		push(@$jobs,$job);
+	}		
+	return;
+}
 
 
 ########################################################################################################
@@ -881,7 +924,7 @@ my ($projects,$force) = @_;
 foreach my $project (@$projects){
 	my $projectName = $project->name;
  my @ps;
- my $patients = $project->getPatients();
+ my $patients = $project->getPatientsAndControl();
  my @ps1;
  foreach my $p (@$patients) {
  	my $nname = $p->name."_".$project_name;
@@ -919,7 +962,7 @@ sub run_pon {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $dir_prod = $project->getVariationsDir("dragen-pon");
-	my $patients = $project->getPatients($patients_name);
+	my $patients = $project->getPatientsAndControl($patients_name);
 	my $cmd = qq{perl $script_perl/dragen_cnv.pl -project=$projectName};
 	foreach my $patient (@$patients){
 		my $fileout = $dir_prod."/".$patient->name.".cnv.vcf.gz";
@@ -940,7 +983,7 @@ sub run_target {
 foreach my $project (@$projects){
 	my $projectName = $project->name;
 	my $dir_prod = $project->getVariationsDir("dragen-target");
-	my $patients = $project->getPatients($patients_name);
+	my $patients = $project->getPatientsAndControl($patients_name);
 	 foreach my $patient (@$patients){
 	 	#	push(@$jobs,{name=>$patient->name.".target", cmd=>"sleep 3",out=> $patient->targetGCFile()});
 	 	next if -e $patient->targetGCFile();
