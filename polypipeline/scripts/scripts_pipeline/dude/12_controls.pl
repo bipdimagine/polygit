@@ -146,6 +146,7 @@ foreach my $r (@$runs) {
 			}
 			
 			push(@{$controls->{$r->id}},$p) ;
+			};
 		} 
 		
 	}
@@ -227,7 +228,7 @@ sub find_other_patient {
 	 }
 	 $mean_norm /= $nv;
 	 
-	my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
+	 my $query = $project->buffer->getQuery->listAllProjectsNameByCaptureId($capture->id());
 	my $x;
 	my $res =[];
 	my $limit = 12 - scalar(@$controls);
@@ -238,7 +239,6 @@ sub find_other_patient {
 	 		next if $project_name2 =~ /7184/;
 	 		my $buffer2 = GBuffer->new();
 	 	
-
 			my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
 			my $nbx = 0;
 			warn scalar(@{$project2->getPatients});
@@ -268,19 +268,20 @@ sub find_other_patient {
 				$hp->{norm} =  $nb_reads->{norm};
 				$hp->{norm_c} =  abs($mean_norm - $nb_reads->{norm});
 				$hp->{project} = $project2->name;#->getFamily()->getMother->name;
-				my $nv1;
-				my $mean_norm1 =0;
-				my $hpp = $p->nb_reads;
+				 my $nv1;
+				 my $mean_norm1 =0;
+				 my $hpp = $p->nb_reads;
 				foreach my $ps (@apos){
+					
 					$mean_norm1 += ($p->maxDepth($ps->{chr},$ps->{start},$ps->{end})/$hpp->{$ps->{chr}});
 					$nv1 ++;
 				}
-				$mean_norm1 /= $nv1;
-				$hp->{mean_max} = $mean_norm1;
-				$hp->{mean_sort} = abs($mean_norm1-$mean_norm);
+				 $mean_norm1 /= $nv1;
+				 $hp->{mean_max} = $mean_norm1;
+				 $hp->{mean_sort} = abs($mean_norm1-$mean_norm);
 				push(@$res,$hp);
-			};
-			last if $nbx > 3;
+				};
+				last if $nbx > 3;
 		
 			}
 			last if scalar(@$res) > 50;
@@ -289,11 +290,11 @@ sub find_other_patient {
 	  @$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);
 	 my @toto = splice (@$res,0,$limit);
 	# warn Dumper(@toto);
-	# die();
+	 # die();
 #	warn Dumper $res;
 	#die();
 	$patients_captures{$capture->name} = \@toto;
-	push(@$controls, @toto ); 
+	 push(@$controls, @toto ); 
 	
 }
 	
