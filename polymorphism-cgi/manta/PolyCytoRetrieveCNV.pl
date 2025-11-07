@@ -116,7 +116,7 @@ if ($patient->isChild){
 }
 
 
-my $sql =qq{select id from '$parquet_file' where nb_dejavu_patients <= 20 and len > 1000; };
+my $sql =qq{select id from '$parquet_file' where nb_dejavu_patients <= 20 and len > 1000 and patient=$patient_id; };
 warn $sql;
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
