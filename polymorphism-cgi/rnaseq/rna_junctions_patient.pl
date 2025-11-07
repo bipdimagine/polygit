@@ -1470,13 +1470,13 @@ sub get_html_patients {
 sub get_igv_button {
 	my ( $junction, $patient ) = @_;
 	my $color    = 'lightgrey';
-	my $bam_file = "https://www.polyweb.fr/" . $patient->bamUrl();
+	my $bam_file = $patient->bamUrl();
 	my $list_patients_ctrl =
 	  $patient->getPatients_used_control_rna_seq_junctions_analyse();
 	if ($list_patients_ctrl) {
 		my $nb_control;
 		foreach my $other_pat (@$list_patients_ctrl) {
-			$bam_file .= ',https://www.polyweb.fr/' . $other_pat->bamUrl();
+			$bam_file .= ',' . $other_pat->bamUrl();
 			$nb_control++;
 			last if $nb_control == 3;
 		}
@@ -1485,14 +1485,14 @@ sub get_igv_button {
 		my $np = 0;
 		foreach my $other_pat ( @{ $project->getPatients() } ) {
 			next if ( $other_pat->name() eq $patient->name() );
-			$bam_file .= ',https://www.polyweb.fr/' . $other_pat->bamUrl();
+			$bam_file .= ',' . $other_pat->bamUrl();
 			$np++;
 			last if $np == 3;
 		}
 	}
 	my $gtf = $patient->getProject->get_gtf_genes_annotations_igv();
 	$gtf =~ s/\/data-isilon//;
-	$gtf = "https://www.polyweb.fr/" . $gtf;
+	$gtf = 'https://'.$ENV{HTTP_HOST}.'/'. $gtf;
 	my $locus =
 		$junction->getChromosome->id() . ':'
 	  . ( $junction->start() - 100 ) . '-'
@@ -1506,7 +1506,7 @@ sub get_igv_button {
 		$fasta_named =~ s/all/$release/;
 		if ( -e $fasta_named ) { $fasta = $fasta_named; }
 		$fasta =~ s/\/data-isilon//;
-		$fasta = "https://www.polyweb.fr/" . $fasta;
+		$fasta = 'https://'.$ENV{HTTP_HOST}."/" . $fasta;
 	}
 
 	my $igv_link =

@@ -321,12 +321,12 @@ exit(0);
 sub get_igv_button {
 	my ($gene, $patient) = @_;
 	my $color = 'lightgrey';
-	my $bam_file = "https://www.polyweb.fr/".$patient->bamUrl();
+	my $bam_file = $patient->bamUrl();
 	my $list_patients_ctrl = $patient->getPatients_used_control_rna_seq_junctions_analyse();
 	if ($list_patients_ctrl) {
 		my $nb_control;
 		foreach my $other_pat (@$list_patients_ctrl) {
-			$bam_file .= ',https://www.polyweb.fr/'.$other_pat->bamUrl();
+			$bam_file .= ','.$other_pat->bamUrl();
 			$nb_control++;
 			last if $nb_control == 3;
 		}
@@ -335,14 +335,14 @@ sub get_igv_button {
 		my $np = 0;
 		foreach my $other_pat (@{$project->getPatients()}) {
 			next if ($other_pat->name() eq $patient->name());
-			$bam_file .= ',https://www.polyweb.fr/'.$other_pat->bamUrl();
+			$bam_file .= ','.$other_pat->bamUrl();
 			$np++;
 			last if $np == 3;
 		}
 	}
 	my $gtf = $patient->getProject->get_gtf_genes_annotations_igv();
 	$gtf =~ s/\/data-isilon//;
-	$gtf = "https://www.polyweb.fr/".$gtf;
+	$gtf = 'https://'.$ENV{HTTP_HOST}.'/'.$gtf;
 	my $locus = $gene->getChromosome->id().':'.($gene->start()-100).'-'.($gene->end()+100);
 	my $igv_link = qq{<button class='igvIcon2' onclick='launch_igv_tool_rna("", "$bam_file,$gtf","$locus")' style="color:black"></button>};
 	return $igv_link;

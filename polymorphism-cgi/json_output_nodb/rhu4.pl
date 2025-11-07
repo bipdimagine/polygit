@@ -55,14 +55,14 @@ foreach my $project_name (reverse sort @list_projects) {
 		my $csv = $path."/".$patient->name."/outs/summary.csv";
 		my $aoa = csv (in => "$csv"); 
 		my $date_cache =  utility::return_date_from_file($path1);
-		my $url = qq{https://www.polyweb.fr/NGS/}.$project->name."/".$patient->name."/outs/web_summary.html";
+		my $url = 'https://'.$ENV{HTTP_HOST}.'/NGS/'.$project->name."/".$patient->name."/outs/web_summary.html";
 		$hash->{$id}->{$profile}->{date} = $date_cache;
 		#$hash->{$id}->{$profile}->{stats}->[0] = $aoa->[1]->[2];
 		$hash->{$id}->{$profile}->{stats}->[1] = $aoa->[1]->[3];
 		$hash->{$id}->{$profile}->{stats}->[2] = int($aoa->[1]->[14]);
 		$hash->{$id}->{$profile}->{stats}->[3] = ($aoa->[1]->[9]*100);
 		$hash->{$id}->{$profile}->{summary_url} = qq{<a href="$url" target="_blank">summary</a>};
-		my $url2 = qq{https://www.polyweb.fr/NGS/}.$project->name."/".$patient->name."/outs/cloupe.cloupe";
+		my $url2 = 'https://'.$ENV{HTTP_HOST}.'/NGS/'.$project->name."/".$patient->name."/outs/cloupe.cloupe";
 		$hash->{$id}->{$profile}->{cloupe_url} = qq{<a href="$url2" target="_blank">cloupe</a>};
 		}
 		elsif  ($profile =~ /expression/){
@@ -70,7 +70,7 @@ foreach my $project_name (reverse sort @list_projects) {
 		my $csv = $path."/".$patient->name."/outs/metrics_summary.csv";
 		next unless -e $csv;
 		my $aoa = csv (in => "$csv"); 
-		my $url = qq{https://www.polyweb.fr/NGS/}.$project->name."/".$patient->name."/outs/web_summary.html";
+		my $url = 'https://'.$ENV{HTTP_HOST}.'/NGS/'.$project->name."/".$patient->name."/outs/web_summary.html";
 		my $date_cache =  utility::return_date_from_file($path1);
 		$hash->{$id}->{$profile}->{date} = $date_cache;
 		$hash->{$id}->{$profile}->{stats}->[0] = $aoa->[1]->[0];
@@ -79,7 +79,7 @@ foreach my $project_name (reverse sort @list_projects) {
 		
 		$hash->{$id}->{$profile}->{date} = $date_cache;
 		$hash->{$id}->{$profile}->{summary_url} = qq{<a href="$url" target="_blank">summary</a>};
-		my $url2 = qq{https://www.polyweb.fr/NGS/}.$project->name."/".$patient->name."/outs/cloupe.cloupe";
+		my $url2 = 'https://'.$ENV{HTTP_HOST}.'/NGS/'.$project->name."/".$patient->name."/outs/cloupe.cloupe";
 		$hash->{$id}->{$profile}->{cloupe_url} = qq{<a href="$url2" target="_blank">cloupe</a>};
 		}
 		elsif  ($profile =~ /genome/){

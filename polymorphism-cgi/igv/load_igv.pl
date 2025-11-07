@@ -57,7 +57,7 @@ my $project = $buffer->newProject(-name=>$project_name);;
 my $patients = $project->get_only_list_patients($patient_name);
 #my $patients = $project->getPatients();
 my @bams;
-my $server = $ENV{HTTP_HOST};
+my $server = 'https://'.$ENV{HTTP_HOST};
 if ($server eq "10.200.27.108:8010") {
 	$server = "defidiag.polyweb.fr"
 }

@@ -104,7 +104,7 @@ sub getProjectLists {
 		
 	}
 	$res->[0]->{otp_need} = $buffer->use_otp_for_login($login);
-	if ($project_query){
+	if ($project_query and $project_query ne '*'){
 		my @z = grep {$_->{name} eq $project_query} @$res;
 		$res = \@z;
 	}

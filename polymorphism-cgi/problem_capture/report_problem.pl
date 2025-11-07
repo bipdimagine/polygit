@@ -350,12 +350,12 @@ border-radius: 8px;
 
 my $buffer = GBuffer->new();
 my $cgi          = new CGI();
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 my $variation_script = $ENV{SCRIPT_NAME};
 $variation_script =~s/patient_/variation_/;
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "www.polyweb.fr" if $server =~/10\.200\.27/;
-my $deja_vu_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
+my $deja_vu_url = "$server//polyweb/polydejavu/dejavu.html?input=";
 #html::print_cgi_header($cgi,$CSS.$out_global,$print,$patient_name." - PolyDiag");
 html::print_cgi_header($cgi,$CSS,0,"  PolyDiag");
 

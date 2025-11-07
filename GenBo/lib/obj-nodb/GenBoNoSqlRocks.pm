@@ -707,7 +707,6 @@ sub close {
 		if ( exists $self->{batch} ) {
 
 			#warn "write ".$self->path_rocks;
-			warn $self->name;
 			confess() unless $self->rocks;
 			$self->rocks->write( $self->batch );
 

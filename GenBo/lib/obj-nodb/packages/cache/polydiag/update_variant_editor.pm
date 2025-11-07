@@ -703,11 +703,12 @@ sub vfreq_level {
 		  value_html($hvariation,"freq_score",$scaled->{freq_score},$scaled->{freq_score});
 }
 
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 my $variation_script = $ENV{SCRIPT_NAME};
 $variation_script =~s/patient_/variation_/;
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "www.polyweb.fr" if $server =~/10\.200\.27/;
+
 my $deja_vu_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
 
 sub abutton {
@@ -773,7 +774,7 @@ sub correct_table_dejavu {
 		#problem avec l'url du dejavu 
 		my $z = $v->{html}->{deja_vu};
 		my $x1 = 'href="http:////polyweb';
-		my $server =  $ENV{HTTP_HOST};
+		my $server =  'https://'.$ENV{HTTP_HOST};
 		my $variation_script = $ENV{SCRIPT_NAME};
 		$variation_script =~s/patient_/variation_/;
 		$server = "darwin.bipd.fr" if $server eq "bipd";
@@ -2877,7 +2878,7 @@ sub table_cnv_genes_transcripts {
 	 		
 			my @lbam_alamut;
 			foreach my $p (@{$patient->getFamily->getPatients()}) {
-				push(@lbam_alamut, 'https://www.polyweb.fr/'.$p->bamUrl());
+				push(@lbam_alamut, $p->bamUrl());
 			}
 			my $string_url_bam = join(',', @lbam_alamut);
 	 		my $b_igv = qq{<button type="button" class="btn btn-info btn-xs" style="background-color:white;font-size:8px;" onClick="displayInIGV('$chr_id', '$gene_start', '$gene_end');"><img style="width:16px;height:16px;" src="images/polyicons/igv_logo_32.png"></img></button>};
@@ -3392,8 +3393,7 @@ sub getNbVarInRegion {
 sub print_polyCyto_button {
 		my ($patient,$style) = @_;
 		my $project = $patient->project;
-		my $u1  = qq{https://www.polyweb.fr/polyweb//html/manta/PolyCyto.html};
-		# $u1 = qq{https://www.polyweb.fr//polyweb/html/manta/Patient_CNV_Editor.html};
+		my $u1 = 'https://'.$ENV{HTTP_HOST}."/polyweb//html/manta/PolyCyto.html";
 		my $url = "$u1?projectname=".$project->name."&filename=".$patient->name."&transloc=yes";
 		unless($style){
 		return qq{<a type="button" class= "btn btn-xs  btn-primary" href="$url" role="button" target="_blank"><img src="https://img.icons8.com/color/30/000000/biotech.png">&nbspPolyCyto</a>};

@@ -162,7 +162,8 @@ foreach my $chr (@{$project->getChromosomes}) {
 $pm->wait_all_children();
 die if $nbErrors > 0;
 
-my $json_encode = encode_json $h_proj_junctions;
+my $json_encode;
+$json_encode = encode_json $h_proj_junctions if $h_proj_junctions;
 open (JSON1, '>'.$dir_dv_proj.'/'.$name.'.json');
 print JSON1 $json_encode;
 close (JSON1);

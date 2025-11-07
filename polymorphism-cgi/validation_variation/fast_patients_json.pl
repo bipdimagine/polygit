@@ -24,7 +24,7 @@ my $cgi    = new CGI();
 my $project_name = $cgi->param('project');
 my $project = $buffer->newProject(-name=>$project_name);
 $project->hide_patients(1);
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "darwin.bipd.fr" if $server =~/10\.200\.27/;
 my $user = $cgi->param('user_name');

@@ -179,9 +179,9 @@ sub getProjectListsDefidiag {
 			$url_viewer = 'polyviewer.html?project='.$pro->{'name'};
 		}
 		else {
-			$url_query = $buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/vector/gene.html?project='.$pro->{'name'};
-			$url_diag = $buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/coverage.html?project='.$pro->{'name'};
-			$url_viewer = $buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/polyviewer.html?project='.$pro->{'name'};
+			$url_query = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/vector/gene.html?project='.$pro->{'name'};
+			$url_diag = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/coverage.html?project='.$pro->{'name'};
+			$url_viewer = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/polyviewer.html?project='.$pro->{'name'};
 		}
 		$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
 		if ($type_projects eq 'polyviewer') {

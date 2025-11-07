@@ -315,7 +315,7 @@ my $style_td ={
 		4=> {class=>"danger",style=>"background-color:#FF4136"},#E43725#FF4136
 };
 
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 
 my $variation_script = $ENV{SCRIPT_NAME};
 $variation_script =~s/patient_/variation_/;
@@ -1279,7 +1279,7 @@ foreach my $transcript (sort {$a->{name} cmp $b->{name}} @{$patient->{transcript
 		$out.= $cgi->end_Tr();
 		my @tds; 
 		my @ths; 
-		my$url = "//www.polyweb.fr/polyweb/images/polyicons/";
+		my$url = 'https://'.$ENV{HTTP_HOST}."/polyweb/images/polyicons/";
 		my $nbe =0;
 		foreach my $exon ( @{$transcript->{exons}}){
 		
@@ -2231,11 +2231,8 @@ sub print_variation_td_edit{
 					 	$text = qq{<a onclick  style="color:black;font-weight:bold">$text</a>};
 					 }
 					 else {
-					 	$text = qq{<a onclick  style="color:black;font-weight:bold">$text</a>};
-						#$text = qq{<a href="$url" target="_blank" style="color:black;font-weight:bold">$text</a>};
+						$text = qq{<a href="$url" target="_blank" class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:black;font-size :8px;">$text</a>};
 					 }
-					 $text = update::printSimpleBadge(qq{$text},3);
-					
 				}	
 				if ( $cat eq "in_this_run"){
 					$text =~ s/white/black/; 

@@ -304,7 +304,7 @@ my $style_td ={
 		4=> {class=>"danger",style=>"background-color:#FF4136"},#E43725#FF4136
 };
 
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 my $variation_script = $ENV{SCRIPT_NAME};
 $variation_script =~s/patient_/variation_/;
 

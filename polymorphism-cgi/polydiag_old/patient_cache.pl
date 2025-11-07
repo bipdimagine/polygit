@@ -311,16 +311,16 @@ my $style_td ={
 		4=> {class=>"danger",style=>"background-color:#FF4136"},#E43725#FF4136
 };
 
-my $server =  $ENV{HTTP_HOST};
+my $server =  'https://'.$ENV{HTTP_HOST};
 my $variation_script = $ENV{SCRIPT_NAME};
 $variation_script =~s/patient_/variation_/;
 
  
 $server = "darwin.bipd.fr" if $server eq "bipd";
 $server = "www.polyweb.fr" if $server =~/10\.200\.27/;
-my $deja_vu_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
+my $deja_vu_url = "$server//polyweb/polydejavu/dejavu.html?input=";
 #my $lcdb_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
-my $deja_vu_light_url = "http://$server/$variation_script";
+my $deja_vu_light_url = "$server/$variation_script";
 my $lcdb_url = $deja_vu_light_url;
 $lcdb_url =~s/variation_/lcdb_/;
 #"http://$server/$variation_script";
