@@ -502,11 +502,6 @@ has 'coverage_SRY' => (
 			#warn $self->meanDepth($self->project->getChromosome('Y'),$from,$to);
 			my ($res) = `$cmd`;
 			
-			warn "\n";
-			warn $cmd;
-			warn $res;
-			warn "\n";
-			
 			chomp($res);
 			#my $res = $self->meanDepth($self->project->getChromosome('Y'),$from,$to);
 			$res = 0 unless $res;

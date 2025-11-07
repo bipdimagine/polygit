@@ -335,12 +335,8 @@ sub isMosaicTransmission {
 	my @lOk;
 	my $pc = $self->getPourcentAllele($child);
 	return if $pc eq "-";
+	return if $pc eq "0";
 	my $sample_var_1 = $self->text_heho($child);
-	unless ($sample_var_1) {
-			warn "\n\nERROR: pb with $var_id and patient ".$child->name()."... Die\n\n";
-			warn $self->name();
-			confess ();
-		}
 	foreach my $parent (@{$fam->getParents()}) {
 		#if ($chr->ploidy()
 		next unless ($parent->getHe($chr)->contains($self->vector_id()));
