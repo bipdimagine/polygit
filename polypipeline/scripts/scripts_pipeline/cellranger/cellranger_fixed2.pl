@@ -7,7 +7,7 @@ use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
 use Logfile::Rotate;
-use Cwd;
+ use Cwd;
 use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
@@ -30,8 +30,8 @@ use Text::Table;
 use File::Temp qw/ tempfile tempdir /;
 
 use Term::Menus;
-use Proc::Simple;
-use Storable;
+ use Proc::Simple;
+ use Storable;
 use JSON::XS;
 
   
@@ -121,7 +121,7 @@ close(SAMPLESHEET);
 
 my $index = $project->getGenomeIndex($prog);
 my $set = $index."/probe_sets/";
-$set .= "Chromium_Human_Transcriptome_Probe_Set_v1.0.1_GRCh38-2020-A.csv" if ($project->getVersion() =~ /^HG/);
+$set .= "Chromium_Human_Transcriptome_Probe_Set_v1.0.1_GRCh38-2020-A.csv";
 $set .= "Chromium_Mouse_Transcriptome_Probe_Set_v1.0.1_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM/);
 my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
 
@@ -141,7 +141,7 @@ foreach my $k (keys(%$hfamily)){
 	print CSV "[gene-expression]\n";
 	print CSV "reference,".$index."\n";
 	print CSV "probe-set,".$set."\n";
-	print CSV "create-bam,true\n";
+	print CSV "\#no-bam,true \#do not generate BAM file\n";
 	print CSV "\n";
 	print CSV "[libraries]\n";
 	my $pobj=$pat[0]->{objet};
@@ -420,13 +420,13 @@ if ($step eq "aggr" or $step eq "all"){
 ##commande pour copier sur /data-isilon/singleCell
 #
 if ($step eq "tar" or $step eq "all"){
-	my $tar_cmd = "tar -cvzf $dir/$projectName.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
-	die ("archive $dir/$projectName.tar.gz already exists") if -e $dir."/".$projectName.".tar.gz";
+	my $tar_cmd = "tar -cvzf $dir/$run.tar.gz $dir/*/outs/web_summary.html $dir/*/outs/cloupe.cloupe $dir/*/outs/vloupe.vloupe $dir/*/outs/*_bc_matrix/* ";
+	die ("archive $dir/$run.tar.gz already exists") if -e $dir."/".$run.".tar.gz";
 	system ($tar_cmd)  unless $no_exec==1;
 	#or die "impossible $tar_cmd";
 	print "\t#########################################\n";
 	print "\t  link to send to the users : \n";
-	print "\t www.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
+	print "\t www.polyweb.fr/NGS/$projectName/$run.tar.gz \n";
 	print "\t#########################################\n";
 }
 #

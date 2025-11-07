@@ -74,7 +74,7 @@ foreach my $pdes (keys %$moove){
 		colored::stabilo("green",$p->name); 
 		
 	}
-	die() unless  (prompt(" still sure for this one (y/n) ",-yes));
+	die() unless  (prompt(" still sure for this one (y/n)",-yes));
 	my $buffer2 = GBuffer->new();
 	my $newProject = $buffer2->newProject(-name=>$pdes);
 	my $new_project_id = $newProject->id();
@@ -103,7 +103,7 @@ foreach my $p (@{$moove->{$pdes}}){
 	}
 }
 IO::Prompt::hand_print("Commit database change ?");
-unless (prompt(" (yes/no) ",-yes)){
+unless (prompt("(yes/no)",-yes)){
 	die(" back to the future");
 }
 colored::stabilo("magenta"," beam me up scotty "); 
@@ -122,9 +122,9 @@ colored::stabilo("green","------------------------------------");
 IO::Prompt::hand_print(" Done \n");
 colored::stabilo("green","------------------------------------"); 
 print "\n";
-colored::stabilo("yellow","you can now run the count :".join(",", keys %$moove));
-colored::stabilo("yellow","lists of projects : ".join(",",keys %$moove));
-#colored::stabilo("green","$Bin/after_all.pl -projects=".join(",",keys %$moove));
+colored::stabilo("yellow","you can now run the cache and the quality  :".join(",", keys %$moove));
+colored::stabilo("yellow","lists of projects :".join(",",keys %$moove));
+colored::stabilo("green","$Bin/after_all.pl -projects=".join(",",keys %$moove));
 exit(0);
 	
 
@@ -144,53 +144,53 @@ sub move_patient{
 
 
 
-	my @files = File::Find::Rule->file()
+  my @files = File::Find::Rule->file()
                                   ->name( "$pn.*" )
                                   ->in( $dir1);
-	
-	my (@bam) = grep {/bam$/} @files;
-	my (@vcf) = grep {/vcf.gz$/} @files;
+                                  
+  my (@bam) = grep {/bam$/} @files;
+   my (@vcf) = grep {/vcf.gz$/} @files;
 
-
-	my @files2 = File::Find::Rule->file()
+ 
+my @files2 = File::Find::Rule->file()
                                   ->name( "$pn.*" )
                                   ->in( $dir3);
 
 
-	push(@files,@files2);
-	my @files3 = File::Find::Rule->file()
-	                                  ->name( $pn."_*" )
-	                                  ->in( $dir1);
+push(@files,@files2);
+my @files3 = File::Find::Rule->file()
+                                  ->name( $pn."_*" )
+                                  ->in( $dir1);
+
+
+push(@files,@files3);
+my $bam;
+my $vcf;
+my @cmd;
+my %dv;
+foreach my $f (@files){
+	next if exists $dv{$f};
+	$dv{$f} ++;
+	my $f2 = $f;
+	$bam ++ if $f2 =~ /bam$/;
+	$vcf ++ if $f2 =~ /vcf.gz$/;
+	$f2 =~   s/$project_in/$projectName/;
+	warn ("file exists $f2") if -e $f2;
+	die ("file exists $f2 $f") if -e $f2;
+	my @dir = split("/",$f2);
+	pop(@dir);
+	
+	my $dir_out = join("/",@dir);
+	system("mkdir -p $dir_out") unless -e $dir_out;
+	
+	die("no directory  $dir_out") unless -e $dir_out;
+	push(@cmd,"mv $f $f2");
+	
+} 
+
+
 	
 	
-	push(@files,@files3);
-	my $bam;
-	my $vcf;
-	my @cmd;
-	my %dv;
-	foreach my $f (@files){
-		next if exists $dv{$f};
-		$dv{$f} ++;
-		my $f2 = $f;
-		$bam ++ if $f2 =~ /bam$/;
-		$vcf ++ if $f2 =~ /vcf.gz$/;
-		$f2 =~   s/$project_in/$projectName/;
-		warn ("file exists $f2") if -e $f2;
-		die ("file exists $f2 $f") if -e $f2;
-		my @dir = split("/",$f2);
-		pop(@dir);
-		
-		my $dir_out = join("/",@dir);
-		system("mkdir -p $dir_out") unless -e $dir_out;
-		
-		die("no directory  $dir_out") unless -e $dir_out;
-		push(@cmd,"mv $f $f2");
-		
-	} 
-	
-	
-		
-		
-	 return @cmd;
+ return @cmd;
 }
 exit(0);

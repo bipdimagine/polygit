@@ -5072,7 +5072,7 @@ sub htlv1_insertion {
 		my ( $ln, $ls ) = split( /:/, $l );
 		my $out_dir = $name . "_" . $ln;
 
-#		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
+		my $fileout = $dirout . "/" . $name . "-SIMPLIFIED_mergedIS.txt";
 		my $cmd =
 "perl $bin_dev/htlv1.pl -project=$project_name  -patient=$name  -f1=$f1 -f2=$f2 $out_dir -ls=$ls -ln=$ln -fork=$ppn ";
 		warn $cmd;

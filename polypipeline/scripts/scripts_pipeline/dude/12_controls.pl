@@ -119,36 +119,33 @@ foreach my $r (@$runs) {
 		#next() if $project1->name() eq "NGS2018_2286";
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
 			eval {
-				my $patient = $project1->getPatient($p->{patient});
-				warn $patient->project->name();
-				warn $patient->name();
-				my $b = $patient->getBamFileName();
-				next unless -e $b;		
-				my $scompute = &compute_sex($patient);
-				my $cov_file = $patient->fileNoSqlDepth;
-				if ($project1->name eq $project_name && !( -e $cov_file) ){
-					warn "coverage"; 
-					warn "$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name;
-					system("$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name);
-					die($cov_file) unless -e $cov_file;
-				}
-				warn $patient->name." ".$pr  unless -e $cov_file;
-				next unless -e $cov_file;
-				$p->{file_depth} = $cov_file;
-				$p->{dir_depth} = $project1->getCoverageDir()."/lmdb_depth";
-				$p->{bam} = $patient->getBamFile();
-				$p->{compute_sex} = compute_sex($patient);
-				$p->{bd_sex} = $patient->sex;
-				if($p->{compute_sex} ne $p->{bd_sex}){
-					#warn ("--> pb sexe patient : " .$patient->name."\n compute sex : ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex}) ;
-					warn ("pb sexe patient : " .$patient->name."\n compute sex : ". $patient->project->name()." ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex});# if $patient->project->name eq $project_name ;
-					$p->{bd_sex} = $p->{compute_sex};
-	#				die();
-					#next;
-				}
-				
-				push(@{$controls->{$r->id}},$p) ;
-			};
+			my $patient = $project1->getPatient($p->{patient});
+			my $b = $patient->getBamFileName();
+			next unless -e $b;		
+			my $scompute = &compute_sex($patient);
+			my $cov_file = $patient->fileNoSqlDepth;
+			if ($project1->name eq $project_name && !( -e $cov_file) ){
+				warn "coverage"; 
+				warn "$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name;
+				system("$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name);
+				die($cov_file) unless -e $cov_file;
+			}
+			warn $patient->name." ".$pr  unless -e $cov_file;
+			next unless -e $cov_file;
+			$p->{file_depth} = $cov_file;
+			$p->{dir_depth} = $project1->getCoverageDir()."/lmdb_depth";
+			$p->{bam} = $patient->getBamFile();
+			$p->{compute_sex} = compute_sex($patient);
+			$p->{bd_sex} = $patient->sex;
+			if($p->{compute_sex} ne $p->{bd_sex}){
+				#warn ("--> pb sexe patient : " .$patient->name."\n compute sex : ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex}) ;
+				warn ("pb sexe patient : " .$patient->name."\n compute sex : ".$p->{compute_sex}."\n bd sex : ".$p->{bd_sex});# if $patient->project->name eq $project_name ;
+				$p->{bd_sex} = $p->{compute_sex};
+#				die();
+				#next;
+			}
+			
+			push(@{$controls->{$r->id}},$p) ;
 		} 
 		
 	}
@@ -234,24 +231,24 @@ sub find_other_patient {
 	my $x;
 	my $res =[];
 	my $limit = 12 - scalar(@$controls);
-	foreach my $project_name2 (@$query){
-		next if $project_name2 =~ /NGS2010/;
-		warn $project_name2;
-		next if $project_name2 =~ /7187/;
-		next if $project_name2 =~ /7184/;
-		my $buffer2 = GBuffer->new();
+	 foreach my $project_name2 (@$query){
+	 		next if $project_name2 =~ /NGS2010/;
+	 		warn $project_name2;
+	 		next if $project_name2 =~ /7187/;
+	 		next if $project_name2 =~ /7184/;
+	 		my $buffer2 = GBuffer->new();
 	 	
-		my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
-		my $nbx = 0;
-		warn scalar(@{$project2->getPatients});
-		foreach my $p (@{$project2->getPatients}){
-			warn $p->name;
-			next if $p->isRna();
-			my $capture2  = $p->getCapture();
-			next if $p->status == 1;
-			my $bam; 
-			eval {
-			
+
+			my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
+			my $nbx = 0;
+			warn scalar(@{$project2->getPatients});
+			foreach my $p (@{$project2->getPatients}){
+				next if $p->isRna();
+				my $capture2  = $p->getCapture();
+				next if $p->status == 1;
+				my $bam; 
+				eval {
+				
 				next if $capture->name ne $capture2->name;
 				$bam =  $p->getBamFileName();
 				
@@ -285,12 +282,12 @@ sub find_other_patient {
 			};
 			last if $nbx > 3;
 		
-		}
-		last if scalar(@$res) > 50;
-	}
+			}
+			last if scalar(@$res) > 50;
+	 }
 	
-	@$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);
-	my @toto = splice (@$res,0,$limit);
+	  @$res = sort {$a->{mean_sort} <=> $b->{mean_sort}} (@$res);
+	 my @toto = splice (@$res,0,$limit);
 	# warn Dumper(@toto);
 	# die();
 #	warn Dumper $res;
