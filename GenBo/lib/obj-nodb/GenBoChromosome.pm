@@ -2375,9 +2375,9 @@ sub getDejaVuInfosForDiagforVariant{
 	$res->{total_exome_patients} =  $self->project->countExomePatients();
 	$res->{total_similar_projects} =  scalar(keys %{$similar});
 	$res->{total_similar_patients} =  $self->project->countSimilarPatients();
-	if ($self->project->isLongread){
+	if ($self->project->isLongRead){
 	my $colorsdb = $self->rocksdb('colorsdb');
-	my $hash = $colorsdb->get($v->rocksdb_id);
+	my $hash = $colorsdb->colorsdb($v->rocksdb_id);
 		if($hash){
 			$res->{other_projects} ++;
 			$res->{other_patients}   += $hash->{patient};
