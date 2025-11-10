@@ -285,6 +285,18 @@ has year => (
 	},
 );
 
+has isLongRead => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		foreach my $r ( @{ $self->getRuns } ) {
+			return 1 if $r->sequencing_method =~ /long/i;
+		}
+		return 0;
+	},
+);
+
 has isDiagnostic => (
 	is      => 'ro',
 	lazy    => 1,
@@ -6773,6 +6785,7 @@ sub preload{
 	if ($self->isDiagnostic){
 		$self->bundle_infos();
 	}
+	$self->isLongRead();
 	
 }
 

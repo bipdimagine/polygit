@@ -115,7 +115,18 @@ has infosRun => (
 		my $self = shift;
 		my $query = $self->getProject->buffer->getQuery();
 		my $res = $query->getRunInfosById( $self->id );
+		warn Dumper $res;
 		return $res->[0];
+	},
+);
+has sequencing_method => (
+	is		=> 'ro',
+	#isa		=> 'HashRef[Str]',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $query = $self->getProject->buffer->getQuery();
+		return $query->getSequencingMethodFromRunId($self->id);
 	},
 );
 
