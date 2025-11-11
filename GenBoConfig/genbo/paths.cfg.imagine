@@ -30,7 +30,7 @@ dejavu-cnv:/data-beegfs/projects.cnv.parquet.2/
 bcl:/data-pure/raw-data/
 [dejavu]
 variations:variations/rocks/
-phenotype:variations.phentotype/rocks/
+phenotype:variations/rocks.phenotype/
 projects:variations/projects.lmdb/
 projects_lite:variations/projects/
 CNV:CNV/
