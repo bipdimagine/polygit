@@ -2378,7 +2378,7 @@ sub getDejaVuInfosForDiagforVariant{
 	if ($self->project->isLongRead){
 	my $colorsdb = $self->rocksdb('colorsdb');
 	my $hash = $colorsdb->colorsdb($v->rocksdb_id);
-		if($hash){
+		if (exists $hash->{patient}){
 			$res->{other_projects} ++;
 			$res->{other_patients}   += $hash->{patient};
 			$res->{other_patients_ho}+= $hash->{patient_ho};
