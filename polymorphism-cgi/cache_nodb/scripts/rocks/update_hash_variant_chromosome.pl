@@ -406,21 +406,21 @@ warn "create";
 
 
 
-#my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
-##$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
-#foreach my $k (keys %htansmission){
-#	
-#	my $a = $final_polyviewer->get($k);
-#	# 'patients_calling' => {
-#     #                                    '55661' => {
-#	foreach my $pid (keys %{$htansmission{$k}} ){
-#		die() unless exists $a->{patients_calling}->{$pid};
-#		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
-#	}
-#	$final_polyviewer->put_batch($k,$a);
-#}
-#$final_polyviewer->write_batch();
-#$final_polyviewer->close();
+my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
+#$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
+foreach my $k (keys %htansmission){
+	
+	my $a = $final_polyviewer->get($k);
+	# 'patients_calling' => {
+     #                                    '55661' => {
+	foreach my $pid (keys %{$htansmission{$k}} ){
+		die() unless exists $a->{patients_calling}->{$pid};
+		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
+	}
+	$final_polyviewer->put_batch($k,$a);
+}
+$final_polyviewer->write_batch();
+$final_polyviewer->close();
 warn " end transmission ";
 my $dir_pipeline = $project->rocks_pipeline_directory("patients");
 
