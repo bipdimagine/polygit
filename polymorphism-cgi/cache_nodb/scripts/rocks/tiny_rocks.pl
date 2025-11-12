@@ -139,6 +139,7 @@ mce_loop {
 	 MCE->gather($chunk_id,$hash);
 }(0..$size);
 #$rocks->close();
+MCE::Loop->finish;
 
 warn "------->".$chr->name." end";
 foreach my $f (@{$project->getFamilies}){
