@@ -415,7 +415,21 @@ where r.run_id=? and r.run_id=rp.run_id and rp.plateform_id=p.plateform_id and r
 	my $s = $sth->fetchall_hashref('id');
 	return [values %$s];
 }
-
+sub getSequencingMethodFromRunId {
+		my ($self,$run_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare(q{
+    SELECT name
+    FROM PolyprojectNGS.run_method_seq rs
+    LEFT JOIN PolyprojectNGS.method_seq ms
+        ON rs.method_seq_id = ms.method_seq_id
+    WHERE rs.run_id = ?
+});
+$sth->execute($run_id);
+my ($name) = $sth->fetchrow_array;  # une seule valeur
+return $name;
+	
+}
 sub getProjectNameFromId{
 	my ($self, $project_id) = @_;
 	my $dbh = $self->getDbh();

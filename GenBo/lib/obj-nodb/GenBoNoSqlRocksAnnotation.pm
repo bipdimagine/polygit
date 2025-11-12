@@ -140,12 +140,16 @@ sub value {
 
 sub cadd_score_gnomad_id {
 	my ($self,$id) = @_;
-	
 	 my $v =  $self->_get_no_sereal_pack($self->get_raw($self->return_rocks_id_from_gnomad_id($id)));
 	 return undef unless $v;
 	 return $v->{cadd_score};
 }
-
+sub colorsdb {
+	my ($self,$id) = @_;
+	 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));
+	 return {} unless $v;
+	 return $v;
+	}
 sub dbscSNV_score {
 	my ($self,$id) = @_;
 	 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));

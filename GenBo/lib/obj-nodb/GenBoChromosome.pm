@@ -2191,10 +2191,10 @@ sub rocks_dejavu {
 	my $name = "dejavu-".$mode.'-'.$self->name();
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
 	my $dir = $self->project->deja_vu_rocks_public_dir();
-	#$dir  = "/data-pure/public-data/dejavu/HG38//variations/rocks.test/";
+	#$dir  = "/data-pure/public-data/dejavu/HG38//variations/rocks/";
 	#warn $dir;
 	#my $dir = "/data-beegfs/dejavu/rocks-HG38/";
-	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
+	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$dir,mode=>$mode,genome=>$self->project->genome_version_generic,chromosome=>$self->name);
 	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
 	 return $self->project->{rocks}->{$name};
 }
@@ -2202,12 +2202,13 @@ sub rocks_dejavu {
 sub rocks_dejavu_phenotype {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
-	my $name = "dejavu-".$mode.'-'.$self->name();
+	my $name = "dejavu-pheno-".$mode.'-'.$self->name();
 	return $self->project->{rocks_phenotype}->{$name} if exists $self->project->{rocks_phenotype}->{$name};
 	my $dir = $self->project->deja_vu_rocks_public_dir(undef,"phenotype");
-	 $self->project->{rocks_phenotype}->{$name} = GenBoNoSqlRocks->new(dir=>$dir,mode=>$mode,name=>$self->name);
+	 $self->project->{rocks}->{$name} = GenBoNoSqlRocks->new(dir=>$dir,mode=>$mode,name=>$self->name);
+	 #$self->project->{rocks_phenotype}->{$name} = GenBoNoSqlRocks->new(dir=>$dir,mode=>$mode,name=>$self->name);
 	 #$self->project->{rocks}->{$name} = GenBoNoSqlRocksGenome->new(dir=>$self->project->deja_vu_rocks_dir,mode=>$mode,genome=>$self->project->genome_version_generic,index=>"genomic",chromosome=>$self->name);
-	 return $self->project->{rocks_phenotype}->{$name};
+	 return $self->project->{rocks}->{$name};
 }
 
 sub getShortResumeDejaVuInfosForDiagforRocksId {
@@ -2255,14 +2256,11 @@ sub getDejaVuPhenotypeInfosForDiagforVariant{
 	my $phenotypes = $self->project->getPhenotypes();
 	my $rocks = $self->rocks_dejavu_phenotype();
 	my $hpheno = $rocks->dejavu_phenotype($v->rocksdb_id);
+	warn Dumper $hpheno;
 	my $in_this_run_patients =  $self->project->in_this_run_patients;
+	
 	my $nb_patients = 0;
 	my $nb_patients_ho = 0;
-	if ($self->already_in_dejavu){
-		my $aa = $self->old_already_in_dejavu->{$v->rocksdb_id};
-		$nb_patients = $aa->[0];
-		$nb_patients_ho = $aa->[1];
-	}
 	my $res;
 	unless ($hpheno){
 	$res->{similar_projects} = 0;
@@ -2277,17 +2275,20 @@ sub getDejaVuPhenotypeInfosForDiagforVariant{
 	$res->{total_in_this_run_patients} = $in_this_run_patients->{nb_patients};
 	return $res;
 	}
-	
+	$res->{other_patients} = $hpheno->{all}->{patients}  ;
+	$res->{other_patients_ho} = $hpheno->{all}->{patients_ho} ;
+	$res->{other_projects} = $hpheno->{all}->{projects}; 
 	foreach my $p (@$phenotypes){
+		warn "**** ".$p->name." ".$p->id;
 		if (exists $hpheno->{$p->id}){
 			$res->{similar_patients} += ($hpheno->{$p->id}->{patients} - $nb_patients);
 			$res->{similar_patients_ho} += ($hpheno->{$p->id}->{patients_ho}- $nb_patients_ho);
 			$res->{similar_projects} += ($hpheno->{$p->id}->{projects} -1);
+			$res->{other_projects}  -= $hpheno->{$p->id}->{projects};
+			$res->{other_patients}  -= $hpheno->{$p->id}->{patients};
+			$res->{other_patients_ho}  -= $hpheno->{$p->id}->{patients_ho};
 		}
 	}
-	$res->{other_patients} += ($hpheno->{all}->{patients} - $res->{similar_patients}) ;
-	$res->{similar_patients_ho} += ($hpheno->{all}->{patients_ho} - $res->{similar_patients_ho});
-	$res->{similar_projects} += ($hpheno->{all}->{projects} - $res->{similar_project}); 
 	#$res->{total_similar_projects} =  scalar(keys %{$self->project->similarProjects()});
 	#$res->{total_similar_patients} =  $self->project->countSimilarPatients();
 	return $res;
@@ -2304,7 +2305,6 @@ sub getDejaVuInfosForDiagforVariant{
 	
 	my $h = $no->dejavu($v->rocksdb_id);
 	my $similar = $self->project->similarProjectsId();
-	
 	my $exomes = $self->project->exomeProjectsId();
 	my $pe =  $self->project->countExomePatients();
 	my $ps =  $self->project->countSimilarPatients();
@@ -2373,8 +2373,17 @@ sub getDejaVuInfosForDiagforVariant{
 	}	
 	$res->{total_exome_projects} =  scalar(keys %{$self->project->exomeProjects()});
 	$res->{total_exome_patients} =  $self->project->countExomePatients();
-	$res->{total_similar_projects} =  scalar(keys %{$self->project->similarProjects()});
+	$res->{total_similar_projects} =  scalar(keys %{$similar});
 	$res->{total_similar_patients} =  $self->project->countSimilarPatients();
+	if ($self->project->isLongRead){
+	my $colorsdb = $self->rocksdb('colorsdb');
+	my $hash = $colorsdb->colorsdb($v->rocksdb_id);
+		if (exists $hash->{patient}){
+			$res->{other_projects} ++;
+			$res->{other_patients}   += $hash->{patient};
+			$res->{other_patients_ho}+= $hash->{patient_ho};
+		}
+	}
 	return $res;
 	
 }

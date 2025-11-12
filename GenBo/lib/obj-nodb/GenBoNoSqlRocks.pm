@@ -355,9 +355,13 @@ sub rocks {
 				IncreaseParallelism        => 1,
 				filter_policy => $policy ,
 				block_size => 16*1024,
-				block_restart_interval => 64
+				block_restart_interval => 64,
+				keep_log_file_num =>1,
+				db_log_dir => "/dev/null",
+				
 			}
 		);
+		#$opts->set_db_log_dir("/dev/null");
 		system("/software/bin/vmtouch  -t ".$self->path_rocks."/*")  if $self->vmtouch;
 		return $self->{rocks};
 	}
@@ -376,7 +380,8 @@ sub rocks {
 				disableWAL => 1,
 				sync => 1,
 				write_buffer_size => 128 * 1024 * 1024,
-				compression           => $self->compression
+				compression           => $self->compression,
+				db_log_dir => "/dev/null",
 			}
 			);
 		 }
@@ -392,7 +397,8 @@ sub rocks {
 				allow_mmap_reads           => 1,
 				max_background_compactions => 0,
 				IncreaseParallelism        => 1,
-				filter_policy => $policy 
+				filter_policy => $policy ,
+				db_log_dir => "/dev/null",
 			}
 			);
 		}
@@ -415,7 +421,8 @@ sub rocks {
 				allow_mmap_reads           => 1,
 				max_background_compactions => 0,
 				IncreaseParallelism        => 1,
-				filter_policy => $policy 
+				filter_policy => $policy ,
+				db_log_dir => "/dev/null",
 			}
 		);
 		return $self->{rocks};
@@ -878,7 +885,7 @@ sub dejavu_phenotype {
 sub DESTROY {
 	my ($self) = @_;
 #	warn "DESTROY ".$self->dir." ".$self->name;
-	system( "rm -f " . $self->path_rocks() . "/LOG*" );
+	system( "/usr/bin/rm -f " . $self->path_rocks() . "/LOG*" );
 	system( "rm -f " . $self->path_rocks() . "/LOCK" );
 	if ( $self->temporary && -e $self->path_rocks ) {
 		$self->delete_files( $self->path_rocks );

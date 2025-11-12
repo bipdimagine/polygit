@@ -745,7 +745,7 @@ sub construct_htranscripts {
 						$hvariation->{freq_score} = 1; 
 				}
 				
-				
+				die();
 				
 				my $href = qq{<a  href = "$deja_vu_light_url};
 					 if (exists $hvariation->{dup}){
@@ -1110,6 +1110,8 @@ sub construct_data1 {
 					 else {
 					$href .= qq{?project=$project_name&transcript=$tr_id&variation_id=$var" target="_blank" style="color:black;font-weight:bold">};
 					 }
+				warn $href;
+				die();	 
 				if ($edit_mode == 1){
 					my $vv = $href.$hvariation->{in_this_run}."</a>" ;
 					$hvariation->{in_this_run} =$vv;
@@ -2335,6 +2337,8 @@ sub print_variation_td_edit{
 				}
 				elsif ($cat eq "deja_vu" or $cat eq "similar_projects"){
 					my $url = $deja_vu_url.$variation->{id};
+					warn $url;
+					die();
 					 if (exists $variation->{dup}){
 					 	$text = qq{<a href="$url" target="_blank" style="color:white;font-weight:bold">$text</a>};
 					 }

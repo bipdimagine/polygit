@@ -9,6 +9,7 @@ function httpGetFocusOn(url) {
 
 
 function displayInAlamut(chr, start, a){
+	alert("coucou");
 	chr = chr.replace('-', '');
 	var locus;
 	if (a[0] == '-') { locus = chr+":"+start; }
