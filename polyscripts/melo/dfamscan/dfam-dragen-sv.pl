@@ -63,15 +63,10 @@ warn $fasta_path;
 open(my $fasta_ins, '>', $fasta_path);
 while (my $x=$vcf->next_data_hash) {
 	if ($x->{'INFO'}->{'SVTYPE'} eq 'INS') {
-		warn $x->{'ID'};
 		my $lsvinsseq = $x->{'INFO'}->{'LEFT_SVINSSEQ'};
 		my $rsvinsseq = $x->{'INFO'}->{'RIGHT_SVINSSEQ'};
 		my $alt_svinsseq = $x->{'ALT'}[0];
-		warn $lsvinsseq;
-		warn $rsvinsseq;
-		warn $alt_svinsseq;
-		die;
-		
+				
 		# Récupère les séquences des insertions (si >= 10 nt)
 		# todo: est-ce qu'on impose un taille min de la seq pour faire la recherche Dfam ? sur le site seq min = 50 nt
 		print $fasta_ins '>'.$x->{'ID'}."-ALT\n$alt_svinsseq\n" if ($alt_svinsseq ne '<INS>'); # && length $alt_svinsseq >= 50);

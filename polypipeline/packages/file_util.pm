@@ -123,9 +123,9 @@ sub find_paired_files {
 			}
 			if ($error == 1){ # &&  scalar(@$adif) ==1 ){
 				foreach my $d (@$adif){
-				$associated->{$d->{R1}} ++;
-				$associated->{$d->{R2}} ++;
-				push(@{$couple->{$d->{pos}}},$d);
+					$associated->{$d->{R1}} ++;
+					$associated->{$d->{R2}} ++;
+					push(@{$couple->{$d->{pos}}},$d);
 				}
 			}
 			

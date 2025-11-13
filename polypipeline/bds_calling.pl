@@ -22,7 +22,7 @@ use Class::Inspector;
 use check_utils;
 use Text::Table;
 use colored; 
- use Term::Menus;
+use Term::Menus;
 my $projectName;
 my $filename;
 
@@ -57,7 +57,7 @@ GetOptions(
 
 
 unless ($projectName) { usage(); }
-usage() unless $patients_name;
+$patients_name = 'all' unless $patients_name;
 
 
 

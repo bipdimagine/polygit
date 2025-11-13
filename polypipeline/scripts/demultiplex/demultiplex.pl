@@ -28,6 +28,7 @@ GetOptions(
 );
 
 
+<<<<<<< HEAD
 my $complete = $dir."RTAComplete.txt"; # MISEQ
 $complete = $dir."CopyComplete.txt" unless ($dir =~ m{/MISEQ/}); # 10X, ISEQ, NEXTSEQ500, NOVASEQ
 warn $complete;
@@ -39,6 +40,18 @@ while($checkComplete){
 	sleep(3600);
 	$checkComplete = 0 if (-f $complete);
 }
+=======
+my $complete = $dir.'CopyComplete.txt'; # "$dir/RTAComplete.txt";
+warn $complete;
+my $checkComplete = 1;
+$checkComplete = 0 if -f $complete;
+while($checkComplete == 1){
+	warn "Run not complete, sleep 30 min (1800 s)";
+	sleep(1800);
+	$checkComplete = 0 if -f $complete;
+}
+
+>>>>>>> branch 'dev-mperin' of https://github.com/bipdimagine/polygit.git
 
 my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
 die("no basecall dir $basecall_dir") unless -e  $basecall_dir;

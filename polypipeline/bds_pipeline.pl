@@ -114,7 +114,7 @@ GetOptions(
 	'bds=s' => \$bds,
 	'nocluster=s' => \$nocluster,
 	'config=s' => \$filename_cfg,
-	'limit=s' => \$limit,
+	'limit=i' => \$limit,
 	'version=s' => \$version,
 	'pipeline=s' =>\$pipeline_name,
 	'yes=s' =>\$yes,

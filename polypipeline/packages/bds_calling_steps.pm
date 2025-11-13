@@ -315,7 +315,9 @@ method count_featureCounts  (Str :$filein! ){
 		$align_method = $patient->alignmentMethod();
 		$profile = $patient->getSampleProfile();
 		push(@sed_cmd,qq{sed -i "2s/$bam/$name/" $fileout} );
+		push(@sed_cmd,qq{sed -i "1s/$bam/$name/" $fileout.summary} );
 		push(@sed_cmd2,qq{sed -i "2s/$bam/$name/" $fileout2} );
+		push(@sed_cmd2,qq{sed -i "1s/$bam/$name/" $fileout2.summary} );
 	}
 	my $ppn =16;
 	my $gtf = $project->gtf_file();
