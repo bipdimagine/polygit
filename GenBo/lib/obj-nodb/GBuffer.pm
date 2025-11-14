@@ -200,6 +200,7 @@ sub config_path {
 		$key = "root";
 	} 
 	unless (exists $self->hash_config_path->{$key}->{$type}){
+		warn "ocuouou";
 		my ($type,$a) = split("-",$type);
 		warn $type;
 	}
