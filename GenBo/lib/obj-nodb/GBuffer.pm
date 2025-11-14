@@ -199,6 +199,9 @@ sub config_path {
 		$type = $key;
 		$key = "root";
 	} 
+	unless (exists $self->hash_config_path->{$key}->{$type}){
+		$type = s/\-isilon//g;
+	}
 	confess($type." $key ".$self->hash_config_path->{$key}->{$type}) unless exists $self->hash_config_path->{$key}->{$type};
 	return $self->hash_config_path->{$key}->{$type};
 }
@@ -302,7 +305,6 @@ has public_data => (
 				}
 			}
 			$previous = $v;
-			
 			foreach my $name (keys %{$public_data->{$v}}) {
 				die($name) unless $config1{$name};
 				$public_data->{$v}->{$name}->{config} = dclone $config1{$name} unless exists $public_data->{$v}->{$name}->{config};

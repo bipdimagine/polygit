@@ -192,6 +192,7 @@ mce_loop {
    
     warn "end ".$region->{nb}."/".$nb ." ".$region->{chromosome}->ucsc_name;
 } @batches;
+MCE::Loop->finish;
 
 my $filename = $dir_tmp_cvs."/*.csv";# join(",",map{"\'".$_->{filename}."\'"} @batches);
 
@@ -210,96 +211,7 @@ system($cmd) == 0 or die "Erreur DuckDB : $?";
 die() unless -e $parquet_file_final;
 warn "ok";
 exit(0);
-#
-#foreach my $chr (@{$project->getChromosomes}){
-#	#next unless $chr->name eq "Y";
-#my $parquet_file = $dir_tmp_cvs.$project->name.".".$chr->name.".parquet";
-#push(@$parquets,$parquet_file);
-##next if -e $parquet_file;
-#my $diro = $project->rocks_directory();
-#my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
-#my @chromosomes = @{$project->getChromosomes};
-## verrou pour l'écriture synchronisée dans le fichier
-#$project->getChromosomes;
-#$project->disconnect;
-# my $no = $chr->get_rocks_variations("r");
-#   
-#my $N = $no->size;
-# $no->close;
-# my $nproc = 20;
-# 
-#my $chunk_size = int($N / $nproc);
-#my $remainder  = $N % $nproc;
-#
-#
-#my $index = 0;
-#
-#for my $i (0 .. $nproc-1) {
-#    my $extra = ($i < $remainder) ? 1 : 0;
-#    my $size  = $chunk_size + $extra;
-#    my $filename = $dir_tmp_cvs."/".$chr->name.".$index.".$project->name.".csv";#$dir_tmp_cvs/".$project->name."_".$chr->name.".csv";
-#    
-#    push @batches, {start=>$index,end=>$index+$size,filename=>$filename,chromosome=>$chr};
-#    $index += $size;
-#}
-#MCE::Loop::init {
-#    chunk_size => 1,  # chaque worker recevra un seul élément
-#    max_workers => 15, 
-#};
-#mce_loop {
-#    my ($mce, $chra) = @_;
-#    my $region = $chra->[0];
-#	#$project->reconnect;
-#    # si $project est global, attention : à cloner ici pour éviter effets de bord
-#    # mon conseil : isoler les infos utiles dans une version allégée
-#    compute($region,$chr);
-#}@batches;
-#
-#
-#my $files ;
-#
-#foreach my $chr (@chromosomes) {
-#	push(@$files,"\'$dir_tmp_cvs".$chr->name.".csv"."\'");
-#}
-#
-#
-#my $filename = join(",",map{"\'".$_->{filename}."\'"} @batches);
-##my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
-#my $parquet_file = $dir_tmp_cvs.$project->name.".".$chr->name.".parquet";
-#push(@$parquets,$parquet_file);
-#my $filename = 
-#my $query = qq{
-#	COPY (
-#        SELECT $select from read_csv_auto([$filename]) order by variant_gnomad_ac 
-#    )
-#    TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);};
-#my $cmd = "duckdb  -c \"$query\"";
-#warn $cmd;
-#
-#system($cmd) == 0 or die "Erreur DuckDB : $?";
-#warn $parquet_file;
-##$dbh->do($query);
-#
-##$dbh->disconnect;
-#foreach my $b (@batches){
-#	unlink $b->{filename};
-#}
-#}
-#my $parquet_file = $dir_tmp_cvs.$project->name.".*.parquet";
-#my $parquet_file_final = $project->parquet_cache_variants; 
-#unlink $parquet_file_final if -e $parquet_file_final;
-#my $query = qq{
-#	COPY (
-#        SELECT $select from '$parquet_file'  order by variant_gnomad_ac 
-#    )
-#    TO '$parquet_file_final' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);};
-#  my $cmd = "duckdb  -c \"$query\"";
-#warn $cmd;
-#
-#system($cmd) == 0 or die "Erreur DuckDB : $?";  
-#warn $parquet_file_final;
-#die() unless -e $parquet_file_final;
-#exit (0);
+
 
 sub compute {
 	my ($region,$chr) =@_;
@@ -313,7 +225,7 @@ sub compute {
 	
 		my $t   = time;
 		my $res;
-		my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
+	#	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects",cache=>1);
 	my @col = (@column_variant_names,@column_patient,@column_gene);
 	$csv->print($fh, \@col); 
     my $nb = 0;
@@ -371,8 +283,8 @@ sub compute {
         #les frequences  GNOMAD
         #@column_frequences_gnomad = ("gnomad_ac","gnomad_an","gnomad_min_pop_name","gnomad_min_pop_freq","gnomad_max_pop_name","gnomad_max_pop_freq","gnomad_ho","getGnomadAC_Male");
         
-         my $vp = $final_polyviewer_all->get($index,1);
-         bless $vp , 'PolyviewerVariant';
+         #my $vp = $final_polyviewer_all->get($index,1);
+         #bless $vp , 'PolyviewerVariant';
         # dejavu_other_projects
         $vh->{gnomad_ac}           = $variation->getGnomadAC;
         $vh->{gnomad_an}        = $variation->getGnomadAN;
@@ -396,15 +308,15 @@ sub compute {
         die() if keys %$vh;
         #les frequences  DEJAVU
         #my @column_frequences_dejavu = ("other_projects","other_patients","other_patients_ho","similar_projects","similar_patients","similar_patients_ho","in_this_run_patients");
-         $vh->{other_projects}   = $vp->dejavu_other_projects;
-         warn $vp->dejavu_other_projects ." ".$vp->dejavu_other_patients_ho if $vp->dejavu_other_projects > 20000;
-         die() if $vp->dejavu_other_projects > 20000;
-        $vh->{other_patients}        = $vp->dejavu_other_patients;
-       	$vh->{other_patients_ho}        = $vp->dejavu_other_patients_ho;
-        $vh->{similar_projects}        = $vp->dejavu_similar_projects;
-       	$vh->{similar_patients}        = $vp->dejavu_similar_patients;
-        $vh->{similar_patients_ho}        = $vp->dejavu_similar_patients_ho;
-       	$vh->{in_this_run_patients}   =  $vp->dejavu_this_run_patients;
+         $vh->{other_projects}   = $variation->other_projects;
+#         warn $vp->dejavu_other_projects ." ".$vp->dejavu_other_patients_ho if $vp->dejavu_other_projects > 20000;
+         die() if $variation->other_projects > 20000;
+        $vh->{other_patients}        = $variation->other_patients;
+       	$vh->{other_patients_ho}        = $variation->other_patients_ho;
+        $vh->{similar_projects}        = $variation->similar_projects;
+       	$vh->{similar_patients}        = $variation->similar_patients;
+        $vh->{similar_patients_ho}        = $variation->similar_patients_ho;
+       	$vh->{in_this_run_patients}   =  $variation->in_this_run_patients;
         foreach my $k (@column_frequences_dejavu) {
         	die("die :".$k) unless exists $vh->{$k};
         	 $vh->{$k} = -1 unless defined $vh->{$k};
@@ -437,6 +349,7 @@ sub compute {
         		my $v =2 ;
         		$v =1 if $variation->{sequencing_infos}->{$pid}->{max}->[2] eq "he";
         		push(@$duck_patients,$v);#type
+        		#warn return_transmissions($project->{objects}->{patients}->{ $pid },$variation);
         		push(@$duck_patients,return_transmissions($project->{objects}->{patients}->{ $pid },$variation));#transmission
         		}
         	}
@@ -522,8 +435,7 @@ sub return_transmissions {
 	$model |= $h_models_ids->{father} if  $variant->isFatherTransmission($fam,$patient);
 	$model |= $h_models_ids->{mother} if $variant->isMotherTransmission($fam,$patient);
 	
-	$model |= $h_models_ids->{recessif} if$variant->isRecessiveTransmission($fam,$patient);
-	
+	$model |= $h_models_ids->{recessif} if $variant->isRecessiveTransmission($fam,$patient);
 	$model |= $h_models_ids->{denovo} if $variant->isDenovoTransmission($fam,$patient);
 	$model |= $h_models_ids->{strict_denovo} if $variant->isStrictDenovoTransmission($fam,$patient);
 	$model |= $h_models_ids->{mosaic} if $variant->isMosaicTransmission($fam,$patient);
