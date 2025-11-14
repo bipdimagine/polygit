@@ -92,13 +92,15 @@ foreach my $g (@groups){
 my  $tiny = GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"c",pipeline=>1,project=>$project);
  $tiny->columns("");
 my $data_final ;
-my $chr = $project->getChromosome(1);
+#my $chr = $project->getChromosome(1);
 my @chroms =  @{$project->getChromosomes};
 my $rocks_all;
 
-foreach my $chr (@chroms){	
-my $rocks;# = $tiny->rocksdb($chr);
 
+foreach my $chr (@chroms) {	
+	my $rocks;
+#my $rocks = $tiny->rocksdb($chr);
+#next if $chr->name ne "22";
 #foreach my $id (keys %$gh){
 #	 $rocks->{$id}->{tiny} = $tiny->rocksdb($chr,$id);
 #	  $rocks->{$id}->{vector} = $chr->getNewVector();
@@ -109,13 +111,14 @@ my $rocks;# = $tiny->rocksdb($chr);
 foreach my $f (@{$project->getFamilies}){
 	$rocks->{$f->id} =  $tiny->rocksdb($chr,$f->id);
 }
-
+my $error = 0;
 MCE::Loop::init {
     chunk_size => 'auto',  # chaque worker recevra un seul élément
     max_workers => 'auto', 
      gather => sub {
-        my ($mce, $data) = @_;
+        my ($mce, $data,$a,$b) = @_;
         foreach my $id (keys %$data){
+        	
         	foreach my $fid (keys %{$data->{$id}}){
         		$rocks->{$fid}->put_batch_raw($id,$data->{$id}->{$fid});
         	}
@@ -125,6 +128,15 @@ MCE::Loop::init {
 		}
 		#$rocks->write_batch();
     },
+    on_post_exit => sub {
+        my ($mce, $pid, $exit_code, $ident) = @_;
+        if ($exit_code != 0) {
+            warn "?? Worker $pid (ident=$ident) exited with error $exit_code\n";
+            $error ++;
+        } else {
+            print "? Worker $pid (ident=$ident) exited normally\n";
+        }
+    }
 };
 
  my $no = $chr->get_rocks_variations("r");
@@ -133,13 +145,16 @@ $no->close();
 $project->disconnect();
 mce_loop {
     my ($mce, $chra,$chunk_id) = @_;
-   warn $chunk_id;
    # my $chr = $chra->[0];
 	my $hash = compute_chr($chr, $chra->[0], $chra->[-1]+1);
-	 MCE->gather($chunk_id,$hash);
+	
+	 MCE->gather($chunk_id,$hash,$chra->[0], $chra->[-1]);
 }(0..$size);
+MCE::Loop->finish;
 #$rocks->close();
-
+if ($error){
+	die("erreur");
+}
 warn "------->".$chr->name." end";
 foreach my $f (@{$project->getFamilies}){
 			warn $f->id;
@@ -154,6 +169,10 @@ foreach my $f (@{$project->getFamilies}){
 warn $tiny->dir;
 exit(0);
 
+sub compute_chr {
+	my ($chr,$start,$end) =@_;
+	
+}
 
 
 
@@ -163,17 +182,16 @@ sub compute_chr {
   #  my $no = $chr->get_rocks_variations("r");
 	my $res;
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"r",name=>"polyviewer_objects",cache=>1);
-
+	#my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"r",name=>$chr->name);
+	
     my $nb = 0;
    	my $N ;
 	my $hash_final;
     for (my $i = $start; $i < $end; $i++) {
         my $index= $chr->name."!".$i;
         my $vp = $final_polyviewer_all->get($index,1);
-        
         warn $i unless $vp;
         next unless $vp;
-		
 		$hash_final->{$index} = $tiny->transform_polyviewer_variant($chr,$index,$vp,"encode");
 		
 #		$rocks_all->put($index,$array);
