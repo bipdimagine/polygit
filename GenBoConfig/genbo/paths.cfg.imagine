@@ -10,7 +10,7 @@ singularity:/data-beegfs/software/sif/
 project_data:/data-pure/sequencing/
 project_data-isilon:/data-isilon/sequencing/
 processed-data:/data-pure/processed-data/
-sequences-old:/data-isilon/data/sequences
+sequences-isilon:/data-isilon/data/sequences
 sequences:/data-pure/data/sequences
 global_search:/data-isilon/polycache/global_search/
 btf:/data-isilon/polycache/polybtf/

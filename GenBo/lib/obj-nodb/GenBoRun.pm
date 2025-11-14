@@ -212,7 +212,7 @@ has fastq_dir => (
 		my $run_name    = $self->plateform_run_name();
 		my $constructor = $self->machine_constructor();
 		my $plateform   = $self->plateform();
-		my $path        = $self->buffer()->getDataDirectory("sequences-old");
+		my $path        = $self->buffer()->getDataDirectory("sequences-isilon");
 	#ici c'ets just epour renviyer su rl'isilon si le projet existe sur l'isilon sinon on va sur le pure '
 		if ($path){
 		my $seq_dir2 =
