@@ -192,8 +192,6 @@ mce_loop {
    
     warn "end ".$region->{nb}."/".$nb ." ".$region->{chromosome}->ucsc_name;
 } @batches;
-MCE::Loop->finish;
-
 my $filename = $dir_tmp_cvs."/*.csv";# join(",",map{"\'".$_->{filename}."\'"} @batches);
 
 my $parquet_file_final = $project->parquet_cache_variants; 
