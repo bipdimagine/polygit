@@ -3,8 +3,10 @@ package GenBoDuckDejaVuCNV;
 use Moo;
 
 use strict;
+use Carp;
 use warnings;
 use Data::Dumper;
+use JSON::XS;
 use List::Util qw[min max];
 	
 has project =>(
@@ -27,6 +29,9 @@ has dir =>(
 	lazy=>1,
 default => sub {
 		my ($self)= @_;
+		
+		warn $self->project->buffer->config_path("dejavu","cnv");;
+		
 		return $self->project->buffer->config_path("dejavu","cnv");;
 }	
 );
@@ -58,14 +63,6 @@ has colchr =>(
 		return "chr".$self->version;
 }
 );
-
-has dbh =>  (
-	is		=> 'rw',
-	lazy=>1,
-default => sub {
-	my $dbh =   DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
-	return $dbh;
-});
 
 has rawcol =>  (
 	is		=> 'rw',
@@ -130,13 +127,16 @@ default => sub {
 	my $table = $self->create_table_project();
 	my $project_id = $self->project->id;
 	 my $sql = qq{
-	 SELECT *
+		PRAGMA threads=4; SELECT *
 		FROM $table 
 		WHERE project=? and patient = ?;
 	 };
 	 
-	 my $sth = $self->dbh->prepare($sql);
-	 return $sth;
+	my $duckdb = $self->project->buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
+	my $json_duckdb = `$cmd`;
+	my $h = decode_json $json_duckdb;
+	return $h;
 }
 );
 sub create_table_project {
@@ -149,12 +149,14 @@ sub create_table_project {
 	my $dir = $self->dir;
 	my $file = $self->project->name."*.parquet";
 	my $parquet_file = $dir."$file";
-	my $query = qq{CREATE TABLE $uid AS
-                           SELECT *, abs($colend - $colstart) AS length,
+	my $query = qq{
+		PRAGMA threads=4; CREATE TABLE $uid AS SELECT *, abs($colend - $colstart) AS length,
                            FROM '$parquet_file'
                            WHERE $colstart > -1  order by $colchr,$colstart,$colend;
 	};
-	$self->dbh->do($query);
+	my $duckdb = $self->project->buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$query"};
+	my $json_duckdb = `$cmd`;
 	$self->{$uid} = $uid;
 	return $self->{$uid};
 }
@@ -180,49 +182,25 @@ sub get_cnvs_by_project {
 
 
 
-sub create_table_total {
-	my ($self) =@_;
-	return $self->{create_table_total} if exists  $self->{create_table_total};
-	my $colchr = $self->colchr;
-	my $colstart = $self->colstart;
-	my $colend = $self->colend;
-	my $dir = $self->dir;
-	my $file = "*.parquet";
-	my $parquet_file = $dir."$file";
-	my $query = qq{CREATE TABLE cnv_call_project AS
-                           SELECT *, abs($colend - $colstart) AS length,
-                           FROM '$parquet_file'
-                           WHERE $colstart > -1  order by $colchr,$colstart,$colend;
-	};
-	$self->dbh->do($query);
-	$self->{create_table_total} = "cnv_call_project";
-	return $self->{create_table_total};
-}
-
-has sth_query_identity =>(
-	is		=> 'rw',
-	lazy=>1,
-default => sub {
-	my ($self) =@_;
-	my $colchr = $self->colchr;
-	my $colstart = $self->colstart;
-	my $colend = $self->colend;
-	$self->create_table_total;
-	 my $sql = qq{
-	 SELECT $colstart as start ,$colend as end ,project,patient,callers,caller_type_flag,
-		FROM cnv_call_project 
-		WHERE type = ? AND $colchr = ?
-		AND $colstart BETWEEN ? AND ?
-  		AND $colend   BETWEEN ? AND ?
-  		AND length  BETWEEN ? AND ?
-  		AND  project != ?;
-	 };
-	 
-	 my $sth = $self->dbh->prepare($sql);
-	 
-	 return $sth;
-}
-);
+#sub create_table_total {
+#	my ($self) =@_;
+#	return $self->{create_table_total} if exists  $self->{create_table_total};
+#	my $colchr = $self->colchr;
+#	my $colstart = $self->colstart;
+#	my $colend = $self->colend;
+#	my $dir = $self->dir;
+#	my $file = "*.parquet";
+#	my $parquet_file = $dir."$file";
+#	my $query = qq{ CREATE TABLE cnv_call_project AS SELECT *, abs($colend - $colstart) AS length,
+#                           FROM '$parquet_file'
+#                           WHERE $colstart > -1  order by $colchr,$colstart,$colend;
+#	};
+#	my $duckdb = $self->project->buffer->software('duckdb');
+#	my $cmd = qq{set +H | $duckdb -json -c "$query"};
+#	my $json_duckdb = `$cmd`;
+#	$self->{create_table_total} = "cnv_call_project";
+#	return $self->{create_table_total};
+#}
 
 
 sub create_table_partial {
@@ -235,17 +213,23 @@ sub create_table_partial {
 	my $parquet_file = $dir."$file";
 	my $query = qq{
 		PRAGMA threads=4;
-		CREATE TABLE cnv_call_project AS
-                           SELECT *, abs($colend - $colstart) AS length,
-                           FROM '$parquet_file'
-                           WHERE $colchr = $chr
-                           AND $colstart BETWEEN $minx AND $maxx
-                           AND $colend   BETWEEN $miny AND $maxy
-                           order by $colchr,$colstart,$colend;
+		SELECT *, abs($colend - $colstart) AS length,
+		FROM '$parquet_file'
+		WHERE $colchr = $chr
+		AND $colstart BETWEEN $minx AND $maxx
+		AND $colend   BETWEEN $miny AND $maxy
+		order by $colchr,$colstart,$colend;
 	};
-	$self->dbh->do($query);
-	$self->{create_table_total} = "cnv_call_project";
-	return $self->{create_table_total};
+	
+	
+	my $duckdb = $self->project->buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$query"};
+	my $json_duckdb = `$cmd`;
+	if ($json_duckdb) {
+		$self->{create_table_project} = decode_json $json_duckdb;
+		return $self->{create_table_project};
+	}
+	return \{};
 }
 
 
@@ -262,8 +246,31 @@ sub dejavu_details {
 	my $maxx = $start + $vv;
 	my $miny = $end - $vv;
 	my $maxy = $end + $vv;
-	$self->create_table_partial($chr, $minx, $maxx, $miny, $maxy);
-	$self->sth_query_identity->execute($type,$chr, $minx, $maxx, $miny, $maxy, $minl, $maxl,$project_id);
+	#$self->create_table_partial($chr, $minx, $maxx, $miny, $maxy);
+	my $colchr = $self->colchr;
+	my $colstart = $self->colstart;
+	my $colend = $self->colend;
+	#$self->create_table_total;
+	my $dir = $self->dir;
+	my $file = "*.parquet";
+	my $parquet_file = $dir."$file";
+	 my $sql = qq{
+		PRAGMA threads=20;
+	 SELECT $colstart as start ,$colend as end ,project,patient,callers,caller_type_flag, abs($colend - $colstart) AS length,
+		FROM '$parquet_file' 
+		WHERE type = '$type' AND $colchr = '$chr'
+		AND $colstart > -1 
+		AND $colstart BETWEEN $minx AND $maxx
+  		AND $colend   BETWEEN $miny AND $maxy
+  		AND length  BETWEEN $minl AND $maxl
+  		AND  project != $project_id
+  		order by $colchr,$colstart,$colend;
+	 };
+	my $duckdb = $self->project->buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$sql"};
+	my $json_duckdb = `$cmd`;
+	my $list = decode_json $json_duckdb;
+	
 	# Récupération des résultats dans un tableau de hash
 	my @results;
 	my $nb;
@@ -271,7 +278,7 @@ sub dejavu_details {
 	my %pp;
 	my @dj;
 	
-	while (my $row = $self->sth_query_identity->fetchrow_hashref) {
+	foreach my $row (@$list) {
  		my $start1 = $row->{start};
  		my $end1 = $row->{end};	
  		my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
