@@ -245,9 +245,9 @@ $pm->run_on_finish(
 my $total_cnvs;
 foreach my $patobj (@$listPatients)
 {
-	warn "------------";
-	warn $patobj->name;
-	warn "---------------";
+#	warn "------------";
+#	warn $patobj->name;
+#	warn "---------------";
 	my $listCallers = $patobj->callingSVMethods();
 	#or $patobj->name ne "dl-2-E-sg-A";
 	#next unless $patobj->name =~ /short/;
@@ -263,12 +263,12 @@ foreach my $patobj (@$listPatients)
 	#next if (-e $file_out);
 	my $patient = $patobj;
 	my $hPat_elementaryCNV;  # tous les CNV du vcf  (élémentaires = avant regroupement)
-	warn Dumper @$listCallers;
+#	warn Dumper @$listCallers;
 	$hPat_CNV ={};
 	foreach my $caller (@$listCallers)
 	{
 		confess() unless exists $type_by_caller->{$caller};
-		warn "+++".$caller;
+#		warn "+++".$caller;
 		
 		my $dir = $project->getVariationsDir($caller);
 	
@@ -282,8 +282,8 @@ foreach my $patobj (@$listPatients)
 		{
 	
 				my $hash = parse_wisecondor::parse_cnv($patient);
-				warn "wisecondor".$patient->name;
-				warn Dumper $hash;
+#				warn "wisecondor".$patient->name;
+#				warn Dumper $hash;
 				$hPat_CNV->{'caller_coverage'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
 		}
 		if ($type_by_caller->{$caller} == $type_caller->{caller_sr}){

@@ -160,9 +160,9 @@ sub liftover_sv {
 			$global->{$id}->{pr2} = -1;
 			$global->{$id}->{gq} = -1;
 			}
-			warn  $hdejavu->{$id}->{QUAL};
+#			warn  $hdejavu->{$id}->{QUAL};
 			$global->{$id}->{qual} = $hdejavu->{$id}->{QUAL};
-			warn $global->{$id}->{qual};
+#			warn $global->{$id}->{qual};
 		}
 	my $lift = liftOverRegions->new(project=>$project,version=>$project->lift_genome_version);
 	foreach my $id (keys %$global){
