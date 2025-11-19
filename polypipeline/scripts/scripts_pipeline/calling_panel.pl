@@ -120,7 +120,13 @@ system("$bgzip $vcf");
 warn "ok";
 $vcf = $vcf.".gz";
 warn $vcf;
-system("rsync -v $vcf $fileout && rm $vcf");
+my $bcftools = $buffer->software("bcftools");
+warn "$bcftools sort $vcf -o $vcf.sorted -O z";
+system("$bcftools sort $vcf -o $vcf.sorted -O z");
+warn "rsync -v $vcf $fileout.sorted && rm $vcf $vcf.sorted";
+system("rsync -v $vcf.sorted $fileout && rm $vcf $vcf.sorted");
+warn $fileout;
+die("'$fileout' does not exists") unless -e $fileout;
 
 my $tabix =  $buffer->software("tabix");
 
