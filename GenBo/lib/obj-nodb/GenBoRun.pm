@@ -115,7 +115,6 @@ has infosRun => (
 		my $self = shift;
 		my $query = $self->getProject->buffer->getQuery();
 		my $res = $query->getRunInfosById( $self->id );
-		warn Dumper $res;
 		return $res->[0];
 	},
 );
