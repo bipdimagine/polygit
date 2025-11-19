@@ -59,10 +59,10 @@ my $dir_gvcf_tmp = $dir_gvcf_out."/tmp.".time;
 mkdir $dir_gvcf_tmp;
 my $cmd;
 if ($project->isGenome) {
- $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /software/distrib/deepvariant/deepvariant.sif /opt/deepvariant/bin/run_deepvariant  --num_shards=$fork --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out};
+ $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  --bind /data-pure:/data-pure  /software/distrib/deepvariant/deepvariant.sif /opt/deepvariant/bin/run_deepvariant  --num_shards=$fork --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out};
 }
 else {
- $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /software/distrib/deepvariant/deepvariant.sif /opt/deepvariant/bin/run_deepvariant  --num_shards=$fork --model_type=WES --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out};
+ $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  --bind /data-pure:/data-pure /software/distrib/deepvariant/deepvariant.sif /opt/deepvariant/bin/run_deepvariant  --num_shards=$fork --model_type=WES --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out};
 }
 system($cmd);
 die() unless -e $vcf_out;
