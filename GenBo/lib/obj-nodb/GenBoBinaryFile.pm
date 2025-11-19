@@ -7,7 +7,7 @@ use IO::File;
 use List::Util qw(max sum min);
 use Storable qw(store retrieve freeze thaw);
 use Carp qw(cluck longmess shortmess);
-
+use Data::Dumper;
 
 has dir => (
 	is		=> 'ro',
@@ -65,6 +65,7 @@ sub tree {
 	return $self->{tree}->{$chr} if exists $self->{tree}->{$chr} ;
 	$self->{tree}->{$chr} = Set::IntervalTree->new();
 
+	
 	foreach my $a (@{$self->array_index($chr)}){
 		$self->{tree}->{$chr}->insert(@$a);
 	}
@@ -77,7 +78,7 @@ sub array_index {
 	my ($self,$chr) = @_;
 	return $self->{tree_array}->{$chr} if exists $self->{tree_array}->{$chr};
 	$self->{tree_array}->{$chr} = $self->no->get("index_".$chr);
-
+	 $self->{tree_array}->{$chr} = [] unless $self->{tree_array}->{$chr};
 	unless ($self->{tree_array}->{$chr}) {
 		warn "\n\n###\nPB with file ".$self->dir().'/'.$self->name()."\nGenBoBinaryFile::array_index->get('index_'.$chr) == UNDEF...\n###\n\n";
 	}
