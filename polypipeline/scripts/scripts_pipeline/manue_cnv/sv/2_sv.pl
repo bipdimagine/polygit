@@ -71,13 +71,15 @@ my $dir_tmp = $buffer->config_path("root","tmp");
 # boucle sur les patients du projets
 my @all_sv;
 my @listPatients = grep {$_->isGenome} @{$project->getPatients()};
-my $duck = GenBoDuckDejaVuSv->new( project => $project );
+my $duck = GenBoDuckDejaVuSv->new( project => $project,parallel=>1 );
 foreach my $patient(@listPatients){
 	my $psv = $duck->get_sv_project($patient);
+	warn $patient->name;
 	 annot_bnd($psv,$project,$patient);
 	
 	push(@all_sv,@$psv);
 }
+
 save_parquet_rocksdb($project,\@all_sv);
 #save($project,\@all_sv);
 
@@ -97,8 +99,8 @@ sub annot_bnd {
 		$sv->{patient} = $patient->id;
 		$sv->{id} = $patient->id."!".$sv->{type}."_".$sv->{chrom1}."_".$sv->{pos1}."_".$sv->{chrom2}."_".$sv->{pos2};
 		genesInfos($sv,$project,$distance);
-		
 		dejavu($sv,$project,$distance);
+		
 		getScoreEvent($sv,$patient);
 	}
 	return $aSV
@@ -137,12 +139,13 @@ sub getGenesList {
 									$max = $g->score unless $max;
 									$omim++;
 									$h->{phenotypes} = $g->array_phenotypes;
-									my $study = $g->project->getStudy();
+									$h->{panels} = $g->array_phenotypes;
+										$h->{panels} = [];
 									foreach my $p (@{$g->getPanels()}){
-									if ($study eq "glucogen") {
-										$h->{score} = 8 if ($p->name =~ /glucogen/i);
+										push(@{$h->{panels}},$p->name);
 									}
-									}
+									my $study = $g->project->getStudy();
+									
 									push(@{$agenes},$h);	
 			}
 		my @t= sort {$b->{score} <=> $a->{score}} @{$agenes};
