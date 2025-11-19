@@ -95,7 +95,12 @@ sub return_chr_name {
 sub annot_bnd {
 	my ($aSV,$project,$patient) = @_;
 	my $distance = 100;
+	print "\n".$patient->name.' | annot_bndb nb sv: '.scalar(@$aSV)."\n";
+	my $i = 0; 
 	for my $sv (@$aSV) {
+		$i++;
+		print '.' if $i == 100;
+		$i = 0 if $i == 100;
 		$sv->{patient} = $patient->id;
 		$sv->{id} = $patient->id."!".$sv->{type}."_".$sv->{chrom1}."_".$sv->{pos1}."_".$sv->{chrom2}."_".$sv->{pos2};
 		genesInfos($sv,$project,$distance);

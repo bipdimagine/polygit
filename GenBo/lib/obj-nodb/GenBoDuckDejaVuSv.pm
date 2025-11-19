@@ -2,10 +2,11 @@ package GenBoDuckDejaVuSv;
 
 
 use Moo;
-
+use Carp;
 use strict;
 use warnings;
 use Data::Dumper;
+use JSON::XS;
 use List::Util qw[min max];
 	
 has project =>(
@@ -82,6 +83,9 @@ has colpos2 =>(
 		return "position2_".$self->version;
 }
 );
+
+
+
 has dbh =>  (
 	is		=> 'rw',
 	lazy=>1,
@@ -149,19 +153,6 @@ sub get_sv_project {
 		return \@results;
 }
 
-sub return_sv_hash {
-	my ($self,$row) = @_;
-	my $h;
-		$h->{CHROM1} = $row->{CHROM1};
-		
-			$h->{infos}->{sr} = [$row->{sr1},$row->{sr2}];
-			$h->{infos}->{pr} = [$row->{pr1},$row->{pr2}];
-			$h->{PATIENT_ID} = $row->{patient};
-			$h->{TYPE} = $row->{type};
-			
-			$h->{ID} = join("_",$row->{CHROM1},$row->{POS1},$row->{CHROM2},$row->{POS2});
-			return $h;
-}
 
 sub create_table_total {
 	my ($self) =@_;
@@ -174,75 +165,30 @@ sub create_table_total {
 	my $file = "*.parquet";
 	my $project_id = $self->project->id;
 	my $parquet_file = $dir."$file";
+	warn "start";
 	my $query = qq{CREATE TABLE sv_call_all AS
                              SELECT project,type,patient,$colchr1 as CHROM1,$colchr2 as CHROM2,$colpos1 as POS1 ,$colpos2 as POS2,caller,sr1,sr2,pr1,pr2
                            FROM '$parquet_file'
                            WHERE $colpos1 > -1 order by type,$colchr1,$colchr2,$colpos1,$colpos2;
 	};
+	warn "end";
 	$self->dbh->do($query);
 	$self->{create_table_total} = "sv_call_all";
 	return $self->{create_table_total};
 }
 
-sub create_table_partial {
-	my ($self,$chr1,$start1,$chr2,$start2,$limit) = @_;
-	
-	
-	my $a = $start1-$limit;
-	my $b = $start1+$limit;
-	my $c = $start2-$limit;
-	my $d = $start2+$limit;
-	
-	my $colpos1 = $self->colpos1;
-	my $colpos2 = $self->colpos2;
-	my $colchr1 = $self->colchr1;
-	my $colchr2 = $self->colchr2;
-	my $dir = $self->dir;
-	my $file = "*.parquet";
-	my $project_id = $self->project->id;
-	my $parquet_file = $dir."$file";
-	my $query = qq{
-		PRAGMA threads=4;
-		CREATE TABLE sv_call_all AS
-                             SELECT project,type,patient,$colchr1 as CHROM1,$colchr2 as CHROM2,$colpos1 as POS1 ,$colpos2 as POS2,caller,sr1,sr2,pr1,pr2
-                           FROM '$parquet_file'
-                           where   CHROM1=$chr1 and CHROM2=$chr2 and POS1 > $a and   POS1 < $b  and POS2>$c and  POS2 < $d
-                           order by type,$colchr1,$colchr2,$colpos1,$colpos2;
-	};
-	$self->dbh->do($query);
-	$self->{create_table_total} = "sv_call_all";
-	return $self->{create_table_total};
-}
-
-
-
-sub prepare_sv_details{
-	my ($self) = @_;
-
-	return $self->{prepare_sv} if exists $self->{prepare_sv};
-	my $colpos1 = $self->colpos1;
-	my $colpos2 = $self->colpos2;
-	my $colchr1 = $self->colchr1;
-	my $colchr2 = $self->colchr2;
-	my $table = $self->create_table_total;
-	$self->{prepare_sv} = $self->dbh->prepare(qq{SELECT patient,project,CHROM1 as chr1,POS1 as pos1,CHROM2 as chr2,POS2 as pos2,caller from $table
-	  where   CHROM1=? and CHROM2=? and POS1 > ? and   POS1 < ?  and POS2>? and  POS2 < ?});
-	
-	return $self->{prepare_sv};
-}
-
-sub prepare_sv{
-	my ($self) = @_;
-	return $self->{prepare_sv} if exists $self->{prepare_sv};
-	my $colpos1 = $self->colpos1;
-	my $colpos2 = $self->colpos2;
-	my $colchr1 = $self->colchr1;
-	my $colchr2 = $self->colchr2;
-	my $table = $self->create_table_total;
-	$self->{prepare_sv} = $self->dbh->prepare(qq{SELECT patient,project from $table
-	  where   CHROM1=? and CHROM2=? and POS1 > ? and   POS1 < ?  and POS2>? and  POS2 < ?});
-	
-	return $self->{prepare_sv};
+sub return_sv_hash {
+	my ($self,$row) = @_;
+	my $h;
+		$h->{CHROM1} = $row->{CHROM1};
+		
+			$h->{infos}->{sr} = [$row->{sr1},$row->{sr2}];
+			$h->{infos}->{pr} = [$row->{pr1},$row->{pr2}];
+			$h->{PATIENT_ID} = $row->{patient};
+			$h->{TYPE} = $row->{type};
+			
+			$h->{ID} = join("_",$row->{CHROM1},$row->{POS1},$row->{CHROM2},$row->{POS2});
+			return $h;
 }
 
 has caller_type_flag =>  (
@@ -259,10 +205,42 @@ has caller_type_flag =>  (
 
 sub get_dejavu_details {
 	my ($self,$chr1,$start1,$chr2,$start2,$limit) = @_;
-	my $table = $self->create_table_partial($chr1,$start1,$chr2,$start2,$limit);
-	$self->prepare_sv_details("SV")->execute($chr1,$chr2,$start1-$limit,$start1+$limit,$start2-$limit,$start2+$limit);
+	
+	my $a = $start1-$limit;
+	my $b = $start1+$limit;
+	my $c = $start2-$limit;
+	my $d = $start2+$limit;
+	
+	my $colpos1 = $self->colpos1;
+	my $colpos2 = $self->colpos2;
+	my $colchr1 = $self->colchr1;
+	my $colchr2 = $self->colchr2;
+	
+	my $dir = $self->dir;
+	my $file = "*.parquet";
+	my $project_id = $self->project->id;
+	my $parquet_file = $dir."$file";
+	
+	my $query = qq{
+		PRAGMA threads=20;
+		SELECT patient,project,$colchr1 as chr1,$colpos1 as pos1,$colchr2 as chr2,$colpos2 as pos2,caller
+		FROM '$parquet_file'
+	  	WHERE
+	  		chr1=$chr1
+	  		and chr2=$chr2
+	  		and pos1 > $a
+	  		and pos1 < $b 
+	  		and pos2 > $c 
+	  		and pos2 < $d
+		ORDER BY type,$colchr1,$colchr2,$colpos1,$colpos2;
+	};
+	my $duckdb = $self->project->buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$query"};
+	my $json_duckdb = `$cmd`;
+	my $list = decode_json $json_duckdb;
+	
 	my $x;
-	while (my $row = $self->prepare_sv("SV")->fetchrow_hashref){ 
+	foreach my $row (@$list) {
 		my $chr1 = $row->{chr1};
 		my $pos1 = $row->{pos1};
 		my $chr2 = $row->{chr2};
@@ -281,6 +259,46 @@ sub get_dejavu_details {
 	}
 	return $x;
 }
+
+sub prepare_sv{
+	my ($self) = @_;
+	return $self->{prepare_sv} if exists $self->{prepare_sv};
+	my $colpos1 = $self->colpos1;
+	my $colpos2 = $self->colpos2;
+	my $colchr1 = $self->colchr1;
+	my $colchr2 = $self->colchr2;
+	my $table = $self->create_table_total;
+	$self->{prepare_sv} = $self->dbh->prepare(qq{SELECT patient,project from $table
+	  where   CHROM1=? and CHROM2=? and POS1 > ? and   POS1 < ?  and POS2>? and  POS2 < ?});
+	
+	return $self->{prepare_sv};
+}
+
+sub run_duckdb_query {
+    my ($self, $sql) = @_;
+	my $dbfile = $self->dbfile;
+	my $duckdb = $self->project->buffer->software('duckdb');
+    my $cmd = qq{$duckdb -json $dbfile "$sql"};
+    open my $fh, "-|", $cmd or die "Impossible d'exécuter '$sql': $!";
+    my $json;
+    while (my $line = <$fh>) {
+        chomp $line;
+        $json .= $line;
+    }
+    my $list = decode_json $json;
+    return $list;
+}
+
+has dbfile =>  (
+	is		=> 'rw',
+	lazy=>1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->project->rocks_pipeline_directory().'sv.mydb.duckdb';
+		warn $dir;
+		return $dir
+	}
+);
 
 
 sub get_dejavu {
@@ -303,7 +321,6 @@ sub get_dejavu {
 	  
 	return $x;
 }
-
 
 
 1;
