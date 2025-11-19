@@ -41,7 +41,7 @@ if ($type eq "pipeline"){
 	my $cmd = "$path//polypipeline/bds_pipeline.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
 }
-else ($type eq "cache"){
+elsif ($type eq "cache"){
 	my $cmd = "$path//polypipeline/bds_cache.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
 	}
