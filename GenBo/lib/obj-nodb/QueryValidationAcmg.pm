@@ -278,7 +278,6 @@ sub getAllValidations {
 	my $db = $self->db;
 	$validation = -100 unless $validation;
 	my $query = qq{select *,UNIX_TIMESTAMP(va.modification_date) as unix_time from $db.validations as va ,$db.variations as v,$db.acmg     where va.variation_id=v.uniq_id and idacmg=validation and validation >= $validation order by unix_time desc}; 
-	warn $query;
 	my $sth = $self->dbh->prepare($query) ;
 	$sth->execute() || die();
 	return $self->hresults($sth);
