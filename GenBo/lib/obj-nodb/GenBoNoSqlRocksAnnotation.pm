@@ -116,9 +116,6 @@ sub _get_no_sereal_pack {
 				$i++;
 				$res->{$k} = $t[$i];
 				unless (defined $res->{$k}){
-				warn scalar(@t);
-				warn $value;
-					
 				
 				 warn Dumper(@t)." :: ".$value unless defined 
 				warn $i." - $k -  ".$res->{$k}." - ".$self->factor->[$i];
@@ -263,6 +260,7 @@ sub genbo {
 	my $obj = $self->get("!".$rocksid);
 	return $obj if $obj;
 		my $syno = $self->synonym($rocksid);
+		$syno ="" unless $syno;
 		$obj = $self->get("!".$syno);
 		return $obj if $obj;
 		if    ( $rocksid =~ /_X/ ) { $rocksid =~ s/_X/_Y/; }
