@@ -1724,7 +1724,6 @@ sub edit {
    
 
 		}
-		warn $hvariation->{type}
 	
 }
  sub tclinical_local {
