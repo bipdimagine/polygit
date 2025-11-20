@@ -2779,6 +2779,7 @@ has dp_infos =>(
 	default=> sub {
 		my $self = shift;
 		 my $hash = {}; 
+		 return {} unless $self->isSrPr();
 		foreach my $pat (@{$self->getPatients}){
 			foreach my $patient (@{$pat->getFamily()->getMembers}){
 					my $pid = $patient->id;
@@ -2787,15 +2788,16 @@ has dp_infos =>(
 					next;
 				}
 
-			next unless $patient->isGenome;
+			#next unless $patient->isGenome;
 				my $mean_dp =  int($patient->meanDepth($self->getChromosome->name, $self->start, $self->end));
 				my $norm_depth =  int($patient->mean_normalize_depth($self->getChromosome->name, $self->start, $self->end+1));
-				my $norm_depth_before = int($patient->mean_normalize_depth($self->getChromosome->name, $self->start-1010, $self->start-10));
-				my $norm_depth_after = int($patient->mean_normalize_depth($self->getChromosome->name, $self->end+10, $self->end+1010));
+				my $norm_depth_before = int($patient->mean_normalize_depth($self->getChromosome->name, $self->start-510, $self->start-10));
+				my $norm_depth_after = int($patient->mean_normalize_depth($self->getChromosome->name, $self->end+10, $self->end+510));
+				
 				my $dude = "-";
 				if($self->project->isGenome){
 					$dude = "-";
-					#$dude = int($patient->cnv_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length)*100);
+					$dude = int($patient->cnv_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length)*100);
 				}
 				$hash->{$pid} = [$mean_dp,$norm_depth,$dude,$norm_depth_before,$norm_depth_after];
 			}
@@ -2838,6 +2840,7 @@ sub getNormDPAfter {
 sub getLog2Ratio {
 		my ($self,$patient,$method) = @_;
 		my $m = int($self->getNormDPBefore($patient,$method)+ $self->getNormDPAfter($patient,$method))/2;
+		return "-1" if $m ==0;
 		return  $self->buffer->log2($self->getNormDP($patient,$method)/$m);
 }
 
@@ -2848,6 +2851,7 @@ sub getCNVDude {
 	return "??" unless exists  $self->dp_infos->{$pid};
 	return "??" if scalar @{$self->dp_infos->{$pid}} == 0;
 	return "??" if $self->dp_infos->{$pid}->[2] eq "-";
+
 	return  $self->buffer->log2($self->dp_infos->{$pid}->[2]/100);
 }
 
@@ -3029,8 +3033,9 @@ sub getPourcentAllele {
 			$method =$self->project->return_calling_methods_short_name($method);
 		}
 		confess() unless exists $self->sequencing_infos->{$pid};
-		
-		my $sum = (int($self->sequencing_infos->{$pid}->{$method}->[0])+int($self->sequencing_infos->{$pid}->{$method}->[1]));
+		my $alt =$self->sequencing_infos->{$pid}->{$method}->[1];
+		$alt = 0 unless $alt;
+		my $sum = (int($self->sequencing_infos->{$pid}->{$method}->[0])+int($alt));
 		return 100 if $sum == 0;
 		my $v = $self->sequencing_infos->{$pid}->{$method}->[1];
 		$v = 0.00001 unless $v; 
@@ -3507,6 +3512,7 @@ has split_read_infos =>(
 					unless ( exists $self->{annex}->{$patient->id()}->{sr}) {
 					#	warn "ATTENTION PAS  DE SR "." ".$self->start." ".$self->getChromosome->name." ".Dumper( $self->annex()->{$patient->id()});
 					#	die();
+					
 						$hash->{$pid} = ["-1","-1","-1","-1",$srq_end,$srq_start,$equality];
 						
 					}
@@ -3522,7 +3528,6 @@ has split_read_infos =>(
 			}
 						
 		}
-			
 			return $hash;
 	},
 );
@@ -3546,7 +3551,7 @@ sub sr1 {
 sub pr0 {
 	my ($self, $patient) = @_;
 	my $pid = $patient->id;
-		my $v = $self->split_read_infos->{$pid}->[2];
+	my $v = $self->split_read_infos->{$pid}->[2];
 	$v = 0 unless $v ;
 	$v = "-1" if $v eq "-";
 	return $v;

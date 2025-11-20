@@ -51,6 +51,8 @@ use constant in => 1 / 72;
 use constant pt => 1;
 use Time::HiRes qw ( time alarm sleep );
 use GenBoNoSqlRocksTinyPolyviewerVariant;
+use MCE::Loop;
+use MCE::Shared;
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
 
 use Digest::MD5::File qw(md5 md5_hex file_md5_hex url_md5_hex file_md5);
@@ -348,7 +350,6 @@ if($print){
 }
 my $user = $cgi->param('user_name');
 my $hgmd = $buffer->queryHgmd()->getHGMD($user);
-
 my $project;
 #if ($cgi->param('cnv_coverage') ne 1){
 	$project = $buffer->newProjectCache( -name 			=> $project_name, -typeFilters=>'individual' ,-cgi_object=>1);
@@ -528,7 +529,6 @@ my $hthisrun ={
 
 
 my $patients = $project->get_list_patients($patient_name,",");
-
 my $freq = 9999;
 my @transcripts_cgi ;
 
@@ -545,11 +545,12 @@ my $table_id = "hor-minimalist-b";
 
 $| =1;
 my $out_global ="";
-my $data;
+my $data = [];
 if ($edit_mode){
 	my $xls =  $cgi->param('xls');
 	if ($xls){
 		$data = construct_data();
+		die() unless $data;
 		$out_global .= edit_mode($data,$cgi);
 		html::print_cgi($cgi,$CSS.$out_global,$print,$patient_name." - PolyDiag");
 		exit(0);
@@ -561,6 +562,7 @@ if ($edit_mode){
 	print qq{<div style="visibility: hidden">};
  	$data = construct_data(1);
  	print qq{</div>};
+ 	die() unless $data;
 	$out_global .= print_hotspot($data,$cgi);
 	$out_global .= edit_mode($data,$cgi);
 	print $out_global;
@@ -574,6 +576,7 @@ else {
 	
 	 $data = construct_data(1);
 	 print qq{</div>};
+	 die() unless $data;
 	if ($mode_report == 1){
 		$out_global = alacarte($data,$cgi);
 		exit(0);
@@ -607,7 +610,6 @@ sub construct_htranscripts {
 		#warn $tr;
 		#die()  if $tr eq "ENST00000328300_X";
 		#$debug = 1 if $tr eq "ENST00000328300_X";
-		warn "coucou " if $tr eq "ENST00000328300_X";
 		print "+";
 		my $tr_id = $tr;
 			my $tr1;
@@ -825,6 +827,8 @@ sub construct_htranscripts {
 	return \@res;
 }
 ##
+
+
 sub construct_data {
 	my ($print_dot) = @_; 
 	my $t =time;
@@ -840,7 +844,7 @@ sub construct_data {
 	my $text = $no_cache->get_cache($cache_id);
 	
 	#TODO: here enlever cache
-	#$text = undef;
+	$text = undef;
 	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
@@ -870,11 +874,111 @@ sub construct_data {
 		$list_transcript = utility::return_list_all_transcripts($project,$patient);
 	
 	}
-	#die();
+	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
+		die () if scalar(@$list_transcript) == 0;
+	my $error = 0;
+	my $shared_hash = MCE::Shared->hash();
+	MCE::Loop::init {
+    chunk_size => 'auto',
+    max_workers => 'auto',
+    gather => sub {
+        my ($mce,$data) = @_;
+        delete  $shared_hash->{$mce};
+       	foreach my $htranscript (@$data){
+				my $hvariations = $htranscript->{all};
+					foreach my $hvariation (@$hvariations){
+						push(@{$hpatient->{variations}->{$hvariation->{id}}},$hvariation );
+						push(@{$htranscript->{$hvariation->{type}}},$hvariation);
+					}
+					push(@{$hpatient->{transcripts_not_sorted}},$htranscript);
+				}
+    	}
+    
+	};
+	$project->disconnect();
+	 mce_loop {
+  	  my ($mce, $trs) = @_;
+  	  my $chr = $trs->[0];
+  	  my $x;
+  		my $hash_vp;
+  		$shared_hash->{MCE->chunk_id} ++;
+  	 	my $res = construct_htranscripts( $trs, $patient);
+  	   	MCE->gather(MCE->chunk_id,$res);
+  # 	  	$self->close();
+		} @$list_transcript;
+ 		MCE::Loop->finish;
+ 	return 	if %$shared_hash;
+ 	
+ 	#exit(1) 	if %$shared_hash;
+		
+ 	
+	@{$hpatient->{transcripts}}  =();
+	@{$hpatient->{transcripts}} = sort {$a->{name} cmp $b->{name}}  @{$hpatient->{transcripts_not_sorted}} if $hpatient->{transcripts_not_sorted};
+	delete 	$hpatient->{transcripts_not_sorted};
+	delete $hpatient->{obj};
+	$no_cache->put_cache_hash($cache_id,{data=>$data,patient=>$hpatient}) if $version;
+	$no_cache->close();
+	#die(1) if $pipeline;
+	#delete $hpatient->{obj};# = $patient;
+	push(@$data,$hpatient);
+	return $data;
+	
+	exit(0);
+	
+}
+
+
+
+
+sub construct_data2 {
+	my ($print_dot) = @_; 
+	my $t =time;
+	my $sum_time = 0;
+	my $htr_vars;
+	my $cpt =0;
+	my $key = return_uniq_keys($patient,$cgi);
+	my $version ="2.4";
+	my $no_cache = $patient->get_lmdb_cache_polydiag("w");
+	
+	my $cache_id = md5_hex("polydiag_".join(";",@$key).".$version.1");
+	#warn $cache_id;
+	my $text = $no_cache->get_cache($cache_id);
+	
+	#TODO: here enlever cache
+	$text = undef;
+	
+	$text = undef if $pipeline;
+	$compute_coverage = 1;
+
+	if ($text){
+		my $data= $text->{data};
+		push(@$data,$text->{patient});
+		return  $data;
+	}
+	
+	my $hpatient;
+	$hpatient->{name} = $patient->name();
+	#$hpatient->{obj} = $patient;
+	#$hpatient->{obj} = $patient;
+	
+	$hpatient->{machine} = $patient->getRuns->[0]->machine();
+	$hpatient->{capture_type} = $patient->getCapture()->type;
+	$hpatient->{capture_description} = $patient->getCapture()->description;
+	$hpatient->{capture_version}  = $patient->getCapture()->version;
+	
+	my $nbv = scalar(@transcripts_cgi);
+	
+	
+	my $list_transcript = \@transcripts_cgi;
+
+	if ($all){
+		$list_transcript = utility::return_list_all_transcripts($project,$patient);
+	
+	}
 	push(@$list_transcript,"intergenic")  if $cgi->param('all') == 1;
 	die () if scalar(@$list_transcript) == 0;
-	my $fork      =  5;
-	$fork = 2 if $pipeline;
+	my $fork      =  15;
+	#$fork = 2 if $pipeline;
 	my $nb        = int( scalar(@$list_transcript) / $fork + 1 );
 	my $pm        = new Parallel::ForkManager($fork);
 	my $iter      = natatime( $nb, @$list_transcript );
@@ -940,11 +1044,6 @@ sub construct_data {
 	exit(0);
 	
 }
-
-
-
-
-
 
 
 
@@ -3878,6 +3977,7 @@ sub construct_identito_vigilence {
 sub return_list_variants {
 	my ($project,$patient,$tr_id,$tr,$debug) = @_;
 	print "*";
+ 	my $t = time;
 	my $d = $project->getCacheDir();
 	#$d = "/data-pure/polycache/rocks/HG38_DRAGEN.43.21/NGS2025_09121.bad/";
 	my $project_name= $project->name;
@@ -3901,10 +4001,10 @@ sub return_list_variants {
  					confess() if (@t) ;
  				}
  			}
+ 			$rocksdb_pv->close();
  		}
  		}
  			
- 	
 	return $data;
 
 	return \@vars;
