@@ -9,6 +9,7 @@ use Carp;
 use File::Basename;
 use GenBoNoSqlRocks;
 use MCE::Loop;
+use MCE::Shared;
 use Storable qw/thaw freeze retrieve store/;
 use Sereal qw(sereal_encode_with_object sereal_decode_with_object write_sereal_file read_sereal_file);
 use List::Util qw(sum);
@@ -156,6 +157,9 @@ has columns_global  =>(
 }
 );
 
+has print_html =>(
+	is		=> 'rw',
+);
 
 has mode =>(
 	is		=> 'ro',
@@ -215,6 +219,7 @@ sub rocksdb1 {
 
 sub rocksdb {
 	my ($self,$chr,$id) = @_;
+	confess() unless $id;
 	confess() if $self->mode eq "temp";
 	return $self->{db}->{$chr}->{$id} if exists $self->{db}->{$chr}->{$id};
 	my $dir = $self->dir."/".$id;
@@ -254,9 +259,9 @@ sub cache_polyviewer_variant {
 	my ($self,$chr,$ids) =@_;
 	$self->rocksdb($chr,$self->patient->getFamily->id)->prepare($ids);
 	foreach my $id (@$ids){
-		$self->{rcache}->{$id} = $self->get_polyviewer_variant($id)
+		$self->{rcache}->{$id} = $self->get_polyviewer_variant($id);
+		#$self->{print_cache}->{$id} = $self->print_line_variant($self->{rcache}->{$id});
 	} 
-	#$self->close($chr);
 }
 
 sub clean {
@@ -362,11 +367,13 @@ sub load_polyviewer_variant {
  	$self->{rcache} = {};
  	my $error;
  	my $jobs;
+ 	my $shared_hash = MCE::Shared->hash();
  	MCE::Loop::init {
     chunk_size => 'auto',
     max_workers => 'auto',
     gather => sub {
         my ($mce,$data,$chrs) = @_;
+        delete $shared_hash->{$mce};
        		foreach my $c (@$chrs){
 				$jobs->{$c} ++;
 			}
@@ -389,8 +396,8 @@ sub load_polyviewer_variant {
   	  my $x;
   		my $hash_vp;
   		warn "start ".MCE->chunk_id;
+  		$shared_hash->{MCE->chunk_id} ++;
   	  foreach my $chr (@$chra){
-		warn $chr." ";
     	 my $nbv =0;
  	   	$self->cache_polyviewer_variant($chr,[keys %{$self->{list_index}->{$chr}}]);
   	  }
@@ -399,6 +406,7 @@ sub load_polyviewer_variant {
 	
 		} @chr;
  		MCE::Loop->finish;
+ 		confess()  if %$shared_hash;
  		confess("Argh,  Something went wrong !!! ") if $error;
  		confess("Argh,  Something went wrong !!! ") if scalar (keys %$jobs) != scalar(@chr);
 }
@@ -443,7 +451,8 @@ sub transform_polyviewer_variant {
 		$debug = 1  if  $vp->name eq "11-68282943-del-128811";
 	  	warn "OK" if  $vp->name eq "1-144896379-del-10338";
 	  	my $fam ={};
-		foreach my $p (keys %{$vp->{patients_calling}}){
+		foreach my $p (keys %{$vp->{patients_calling}}) {
+			
 			my $hash = $vp->{patients_calling}->{$p};
 			my $patient= $chr->project->getPatient($p);
 			#my $name =  $vp->{patients_calling}->{$p}->{name};
@@ -503,6 +512,111 @@ has sereal_encoder => (
 	},
 );
 
+
+sub print_line_variant {
+	my ($self,$vp,$opacity) = @_;
+		my $print_html = $self->print_html();
+		 my $cgi = $print_html->cgi;
+			my @headers = (
+				"mobidetails","varsome", "igv",    "alamut", "var_name",
+				"trio",    "gnomad", "deja_vu"
+			);
+			my $style = {};
+			$style = { style => "background-color: #DAEEED;opacity:0.5" }  if $opacity;
+
+	my $out;
+
+		
+			my $hpatients;
+		
+		
+			#my $is_gnomad = exists $v->{value}->{ac};
+			
+
+			
+			$print_html->variant($vp);
+
+			my $icon = qq{<img width="32" height="32" src="https://img.icons8.com/external-gliphyline-royyan-wijaya/32/external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15.png" alt="external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15"/>};
+			 $icon   = qq{<img width="24" height="24" src="https://img.icons8.com/external-tal-revivo-filled-tal-revivo/24/external-live-preview-of-a-smart-class-education-school-filled-tal-revivo.png" alt="external-live-preview-of-a-smart-class-education-school-filled-tal-revivo"/>};
+			#$icon = qq{<img width="28" height="28" src="https://img.icons8.com/external-bearicons-blue-bearicons/28/external-Clipboard-clipboards-and-notepads-bearicons-blue-bearicons-30.png" alt="external-Clipboard-clipboards-and-notepads-bearicons-blue-bearicons-30"/>};
+			
+			my $dropdown = qq{
+			<div class="dropdown">
+  <button class="btn btn-primary btn-xs dropdown-toggle " type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="font-size:10px;background-color:#C67FAE">
+  $icon
+  </button>
+  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="font-size:12px;background-color:beige;color:black">
+  }.
+  "<li>".$print_html->mobidetails()."</li>".
+  	"<li>".$print_html->gnomadurl()."</li>".
+			"<li>".$print_html->alamuturl()."</li>".
+			"<li>".$print_html->varsome()."</li>"
+  
+  .qq{</div>
+</div>
+};
+
+			my $t1 = shift(@headers);
+			$out .= $cgi->td( $style, $dropdown );
+		
+			
+			
+			$out .= "\n";
+			##############
+			# IGV CELL
+			###############
+
+			my $t = shift(@headers);
+
+			#write locus
+			$out .= $cgi->td( $style, $print_html->igv);
+
+			##############
+			
+			
+			##############
+			# NAME CELL
+			#
+			###############
+			$t = shift(@headers);
+
+			#$name =  $v->{var_name} if exists $v->{var_name};
+		
+			$out .= $cgi->td($style,$print_html->var_name());
+			$out .= "\n";
+			##############
+			# CELL CALLING INFOS
+			###############
+
+	
+			$out .= $cgi->td( $style, $print_html->calling()) ;
+
+			$out .= "\n";
+			
+			return;
+		
+			
+			$t = shift(@headers);
+			$out .= $cgi->td( $style, $print_html->gnomad() );
+			$out .= "\n";
+
+
+			$t = shift(@headers);
+			$out .= $cgi->td( $style, $print_html->dejavu() );
+			$out .= "\n";
+			$t = shift(@headers);
+			$out .= $cgi->td( $style, $print_html->validations );
+			
+			$t = shift(@headers);
+		
+			$out .= "\n";
+			$out .= $cgi->td( $style, $print_html->transcripts() );
+			$out .= "\n";
+
+			$out .= $cgi->td( $style, $print_html->validation_select() );
+			$out .= $cgi->end_Tr();
+			$out .= "\n";
+}
 
 
 1;
