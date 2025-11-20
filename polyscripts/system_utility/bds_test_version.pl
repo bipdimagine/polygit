@@ -55,4 +55,11 @@ elsif ($type eq "dragen_pipeline") {
 	system($cmd);
 	 
 }	
+elsif ($type eq "dragen_demultiplex") {
+	
+	my $cmd = "$path/polypipeline/dragen/scripts/dragen_demultiplex.pl -project=$project_name ".join(" ",@ARGV);
+	system($cmd);
+	 
+}	
+
 
