@@ -46,7 +46,7 @@ elsif ($type eq "cache"){
 	my $cmd = "$path//polypipeline/bds_cache.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
 	}
-elsif ($type eq "dragen-pipeline") {
+elsif ($type eq "dragen_pipeline") {
 	my $cmd = "$path/polypipeline/dragen/scripts/dragen_pipeline.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
 	 
