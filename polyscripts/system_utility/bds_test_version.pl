@@ -26,18 +26,21 @@ my @extra_args = @ARGV;
 
 
 my $path;
-$path = "/software/polyweb/poly-disk/poly-src/polygit/";
+ $path = "/data-pure/software/poly-src/duckdb/polygit/";
+
 
 if ($type eq "pipeline" or $type eq "cache"){
 	my $buffer = new GBuffer;
 my $project = $buffer->newProjectCache( -name => $project_name);
- if( $project->gencode_version > 42 ){
- $path = "/data-pure/software/poly-src/duckdb/polygit/";
+ if( $project->gencode_version < 43 ){
+	$path = "/software/polyweb/poly-disk/poly-src/polygit/";
 
 }
 
 
 }
+warn $type;
+
 if ($type eq "pipeline"){
 	my $cmd = "$path//polypipeline/bds_pipeline.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
@@ -47,7 +50,8 @@ elsif ($type eq "cache"){
 	system($cmd);
 	}
 elsif ($type eq "dragen_pipeline") {
-	my $cmd = "$path/polypipeline/dragen/scripts/dragen_pipeline.pl -project=$project_name ".join(" ",@ARGV);
+	
+	my $cmd = "$path/polypipeline/dragen/dragen_pipeline.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
 	 
 }	
