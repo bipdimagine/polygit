@@ -108,6 +108,26 @@ foreach my $project_name (@lProjectNames) {
 	my $id = $hProjects->{$project_name}->{id};
 	my $description = $hProjects->{$project_name}->{description};
 	$i_p++;
+
+	my $nb_pat = 0;
+	my $patients = 	$query_init->getPatients($id);
+	my %captures_id;
+	foreach my $p (@$patients){
+		$captures_id{$p->{capture_id}} ++;
+		$nb_pat++;
+	}
+	my $hCaptures;
+	foreach my $cid (keys %captures_id){
+		my $capt =  $query_init->getCaptureInfos($cid);
+		my $validation_db = $capt->{'validation_db'};
+		$hCapturesNamesProject->{$capt->{name}}->{$project_name} = undef;
+		$hCapturesNames->{$capt->{name}}++ if ($validation_db and not $validation_db eq '');
+		$hCaptures->{lc($capt->{name})}++;
+	}
+	
+	my $captures = join("<br>", sort keys %$hCaptures);
+	my $captures_id = join(",", sort keys %$hCaptures);
+	$h_c->{$captures_id}->{$project_name} = undef;
 	
 	$h_p->{$project_name} = '';
 	$h_p->{$project_name} .=  $cgi->start_Tr();
@@ -216,6 +236,7 @@ $out_phenos .= qq{</div>};
 $hRes->{date_dejavu} = $date_dejavu;
 $hRes->{html_projects} = $out;
 $hRes->{list_projects}= \@lProjectNames;
+$hRes->{list_captures}= \@lCapturesNames;
 $hRes->{html_list_captures}=$out_captures;
 $hRes->{html_list_phenotypes}=$out_phenos;
 $hRes->{nb_projects_ok} = $nb_proj_ok;
