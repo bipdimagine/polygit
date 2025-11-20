@@ -21,22 +21,23 @@ GetOptions(
 	'project=s'    => \$project_name,
 	'type=s'    => \$type,
 );
-my $buffer = new GBuffer;
-my $project = $buffer->newProjectCache( -name => $project_name);
+
 my @extra_args = @ARGV;
-warn Dumper @ARGV;
+
 
 my $path;
+$path = "/software/polyweb/poly-disk/poly-src/polygit/";
+
+if ($type eq "pipeline" or $type eq "cache"){
+	my $buffer = new GBuffer;
+my $project = $buffer->newProjectCache( -name => $project_name);
  if( $project->gencode_version > 42 ){
  $path = "/data-pure/software/poly-src/duckdb/polygit/";
-warn "coucou";
 
 }
 
-else {
-	$path = "/software/polyweb/poly-disk/poly-src/polygit/";
-}
 
+}
 if ($type eq "pipeline"){
 	my $cmd = "$path//polypipeline/bds_pipeline.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
@@ -45,4 +46,9 @@ elsif ($type eq "cache"){
 	my $cmd = "$path//polypipeline/bds_cache.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
 	}
+elsif ($type eq "dragen-pipeline") {
+	my $cmd = "$path/polypipeline/dragen/scripts/dragen_pipeline.pl -project=$project_name ".join(" ",@ARGV);
+	system($cmd);
+	 
+}	
 
