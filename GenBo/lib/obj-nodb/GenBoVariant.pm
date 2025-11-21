@@ -2797,7 +2797,7 @@ has dp_infos =>(
 				my $dude = "-";
 				if($self->project->isGenome){
 					$dude = "-";
-					$dude = int($patient->cnv_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length)*100);
+					#$dude = int($patient->cnv_value_dude($self->getChromosome->name,$self->start,$self->start+$self->length)*100);
 				}
 				$hash->{$pid} = [$mean_dp,$norm_depth,$dude,$norm_depth_before,$norm_depth_after];
 			}
