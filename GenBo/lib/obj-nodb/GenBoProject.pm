@@ -3710,6 +3710,29 @@ sub _newVariantFromRockdbId {
 	return $self->_newVariant($var_id, $patient);
 }
 
+sub _newJunction {
+	my ( $self, $id ) = @_;
+	my $hash;
+	my $type = 'junctions';
+	my $strucType;
+	$id =~ s/-/_/g;
+	my ( $chr_name, $start, $end, $alt ) = split( '_', $id );
+	$alt ="" unless $alt;
+	$hash->{id}         = $id;
+	$hash->{annex}      = undef;
+	#$hash->{line_infos} = "";
+
+	$hash->{start}  = $start;
+	$hash->{end}    = $end;
+	$hash->{strand} = 1;
+	$hash->{vcf_id} = $id;
+	$hash->{structuralTypeObject} = "junctions";
+	$hash->{structuralType}       = "junction";
+	my $chr = $self->getChromosome($chr_name);
+	$hash->{chromosomes_object} = { $chr->id() => undef };
+	my $obj = $self->flushObject( $type, $hash );
+}
+
 sub _newVariant {
 	my ( $self, $id, $patient ) = @_;
 	my $hash;
