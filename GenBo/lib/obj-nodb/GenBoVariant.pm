@@ -2851,7 +2851,8 @@ sub getCNVDude {
 	return "??" unless exists  $self->dp_infos->{$pid};
 	return "??" if scalar @{$self->dp_infos->{$pid}} == 0;
 	return "??" if $self->dp_infos->{$pid}->[2] eq "-";
-
+	warn  $self->id;
+	confess();
 	return  $self->buffer->log2($self->dp_infos->{$pid}->[2]/100);
 }
 

@@ -31,19 +31,37 @@ use Storable qw(dclone);
  my $host = hostname();
 use Scalar::Util qw(looks_like_number);
 use lib "$RealBin/../../../GenBo/lib/obj-nodb/polyviewer/";
-use PolyviewerVariant;
-use File::Slurp;
-use Digest::MD5 qw(md5 md5_hex md5_base64);
-use Storable qw(nstore store_fd nstore_fd freeze thaw dclone store);
-use List::Util qw(sum);
-use strict;
-use warnings;
-use RocksDB;
 use GenBoNoSqlRocksTinyPolyviewerVariant;
-# Ouvrir la DB avec options
+use PolyviewerVariant;
+use MCE::Shared;
 
-
-# Forker plusieurs process qui écrivent en parallèle
+my $htr = {
+	 
+                      'mane' => -99,
+                      'end' => '-',
+                      'spliceAI_cat' => '-',
+                      'appris' => '-',
+                      'codons_AA' => '-',
+                      'name' => '-',
+                      'spliceAI' => -99,
+                      'dbscsnv' => -99,
+                      'impact_score_text' => '-',
+                      'consequence' => '-',
+                      'polyphen' => -99,
+                      'start' => '-',
+                      'codons' => '-',
+                      'alphamissense' => -99,
+                      'sift' => -99,
+                      'prot' => '-',
+                      'nomenclature' => 'c.-1--07dupT',
+                      'impact_score' => -99,
+                      'cadd' => -99,
+                      'nm' => "-",
+                      'exon' => '-',
+                      'revel' => -99,
+                      'ccds' => "-",
+                      'main' => -99
+}; 
 
 
 warn "*_*_*_*_*_".$host."*_*_*_*_*_";
@@ -72,51 +90,52 @@ unless ($project_name) { confess("\n\nERROR: -project option missing... confess.
 
 my $buffer  = new GBuffer;
 $buffer->vmtouch(1);
-
 my $project = $buffer->newProjectCache( -name => $project_name );
+my $dir_tmp_cvs =  $project->getCallingPipelineDir($project->name.".parquet.".time);
 
-my $chunk_size = 3;
-my @groups;
-my @data = @{$project->getPatients};
-while (@data) {
-    push @groups, [ splice(@data, 0, $chunk_size) ];
-}
-my $ph;
-my $gh;
-foreach my $g (@groups){
-	my $id =  join("-",map{$_->id} @$g);
-	$gh->{$id}->{patients} = $g;
-}
 
-#
+##################
+#construct_sql 
+##################
+$project->preload();
+
 my  $tiny = GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"c",pipeline=>1,project=>$project);
  $tiny->columns("");
-my $data_final ;
-#my $chr = $project->getChromosome(1);
-my @chroms =  @{$project->getChromosomes};
-my $rocks_all;
 
 
-foreach my $chr (@chroms) {	
-	my $rocks;
-#my $rocks = $tiny->rocksdb($chr);
-#next if $chr->name ne "22";
-#foreach my $id (keys %$gh){
-#	 $rocks->{$id}->{tiny} = $tiny->rocksdb($chr,$id);
-#	  $rocks->{$id}->{vector} = $chr->getNewVector();
-#	  foreach my $p (@{$gh->{$id}->{patients}}) {
-#	  	$rocks->{$id}->{vector} |= $p->getVectorOrigin($chr);
-#	  }
-#}
-foreach my $f (@{$project->getFamilies}){
-	$rocks->{$f->id} =  $tiny->rocksdb($chr,$f->id);
+#	
+my $tume = time;
+my $diro = $project->rocks_directory();
+my $nb = 0;
+foreach my $chr (@{$project->getChromosomes}) {
+		my $rocks;
+		my $error;
+	my @batches;
+	foreach my $f (@{$project->getFamilies}){
+		$rocks->{$f->id} =  $tiny->rocksdb($chr,$f->id);
+		warn $f->id;
+	}
+	#next if $chr->name ne "21";
+	my $no =  GenBoNoSqlRocksVariation->new(dir=>$chr->project->rocks_directory("genbo"),mode=>"r",name=>$chr->name.".genbo.rocks");
+   	my $nproc = 10;	
+	my $size = $no->size;
+ 	$no->close;
+ 
+
+$project->disconnect();
+delete $project->{rocks};
+foreach my $pat (@{$project->getPatients}){
+	 $chr->rocks_vector("r")->cache_memory_patient($pat);
 }
-my $error = 0;
+delete $chr->rocks_vector("r")->{rocks};
+my $shared_hash = MCE::Shared->hash();
 MCE::Loop::init {
     chunk_size => 'auto',  # chaque worker recevra un seul élément
     max_workers => 'auto', 
      gather => sub {
         my ($mce, $data,$a,$b) = @_;
+        die unless exists $shared_hash->{$mce};
+        delete $shared_hash->{$mce};
         foreach my $id (keys %$data){
         	
         	foreach my $fid (keys %{$data->{$id}}){
@@ -126,7 +145,7 @@ MCE::Loop::init {
 		foreach my $f (@{$project->getFamilies}){
  			$rocks->{$f->id}->write_batch();
 		}
-		#$rocks->write_batch();
+#		$rocks->write_batch();
     },
     on_post_exit => sub {
         my ($mce, $pid, $exit_code, $ident) = @_;
@@ -139,66 +158,98 @@ MCE::Loop::init {
     }
 };
 
- my $no = $chr->get_rocks_variations("r");
-my $size =$no->size;
-$no->close();
-$project->disconnect();
+
 mce_loop {
     my ($mce, $chra,$chunk_id) = @_;
    # my $chr = $chra->[0];
-	my $hash = compute_chr($chr, $chra->[0], $chra->[-1]+1);
-	
-	 MCE->gather($chunk_id,$hash,$chra->[0], $chra->[-1]);
-}(0..$size);
-MCE::Loop->finish;
-#$rocks->close();
-if ($error){
-	die("erreur");
-}
-warn "------->".$chr->name." end";
-foreach my $f (@{$project->getFamilies}){
-			warn $f->id;
- 			$rocks->{$f->id}->close();
-	}
-#foreach my $id (keys %$gh){
-#			 $rocks->{$id}->{tiny}->close();
-#			 delete $rocks->{$id}->{vector};
-#	}
-}
+   	$shared_hash->{$chunk_id} ++;
+	my $hash = compute($chr, $chra->[0], $chra->[-1]+1);
+	#$project->disconnect(1);
+	#delete $project->{rocks};
 
-warn $tiny->dir;
+	 MCE->gather($chunk_id,$hash,$chra->[0], $chra->[-1]);
+	 #$project->disconnect(1);
+}(0..$size);
+$project->disconnect();
+delete $project->{rocks};
+MCE::Loop->finish;
+confess()  if %$shared_hash;
+warn "end chromosome ".$chr->name;
+foreach my $f (@{$project->getFamilies}){
+ 			$rocks->{$f->id}->close();
+}	
+$project->disconnect();
+delete $project->{rocks};
+$rocks = undef;
+}
 exit(0);
 
-sub compute_chr {
+
+sub compute {
 	my ($chr,$start,$end) =@_;
-	
-}
-
-
-
-#warn "start  write ";
-sub compute_chr {
-	my ($chr,$start,$end) =@_;
-  #  my $no = $chr->get_rocks_variations("r");
-	my $res;
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"r",name=>"polyviewer_objects",cache=>1);
-	#my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"r",name=>$chr->name);
-	
-    my $nb = 0;
-   	my $N ;
-	my $hash_final;
+    my $no = GenBoNoSqlRocksVariation->new(dir=>$chr->project->rocks_directory("genbo"),mode=>"r",name=>$chr->name.".genbo.rocks");
+# $chr->get_rocks_variations("r");
+    	my $hash_final;
     for (my $i = $start; $i < $end; $i++) {
-        my $index= $chr->name."!".$i;
-        my $vp = $final_polyviewer_all->get($index,1);
-        warn $i unless $vp;
-        next unless $vp;
-		$hash_final->{$index} = $tiny->transform_polyviewer_variant($chr,$index,$vp,"encode");
+        my $variation = $no->get_index($i);
+        next unless $variation;
+        $variation->{buffer}  = $buffer;
+        $variation->{project} = $project;
+         my $index= $chr->name."!".$i;
+       my $vp =  PolyviewerVariant->new();
+		$vp->setLmdbVariant($variation);
+		$vp->{hgenes} = {};
+		$vp->{genes_id} = [];
+		my $code =0;
+		foreach my $g (@{$variation->getGenes}){
+			my $h = $vp->set_gene($variation,$g);
+			$h->{code} = $code;
+			$vp->{hgenes}->{$g->{id}} = $h;
+			
+			push(@{$vp->{genes_id}},$g->{id});
+			$code ++;
+		}
+		##############
+		#	next;
+		##############0
+		$vp->{hpatients} ={};
+		$vp->{patients_id} = [];
+		my $dvp;
 		
-#		$rocks_all->put($index,$array);
+		
+##		warn " before setPatients - time: ".abs(time - $tloop) if $nb %5000 == 0; 
+		foreach my $pat (@{$variation->getPatients}){
+			
+		foreach my $p (@{$pat->getFamily()->getMembers}){
+#				
+				next if exists $dvp->{$p->id};
+				$dvp->{$p->id} ++;
+				my $h = $vp->set_patient_cache($variation,$p);
+				$vp->{patients_calling}->{$p->id} =$h; 
+				#$chr->rocks_vector("r")->get_vector_transmission($p,"ind_recessive") if $p->isChild; 
+				#warn  $variation->getTransmissionModelType($p->getFamily(),$p);
+				$vp->{patients_calling}->{$p->id}->{model} = $variation->getTransmissionModelType($p->getFamily(),$p);
+			}
+		}
+		
+		$hash_final->{$index} = $tiny->transform_polyviewer_variant($chr,$index,$vp,"encode");
+	
+	
+     
+	
+ 	delete $variation->{project};
+ 	delete $variation->{buffer};
+ 	$variation = undef;
+			
     }
-    
- #   $rocks_all->close();
-	$final_polyviewer_all->close();
-	delete $project->{rocks};
+   # $chr->rocks_vector("close");
+    #->close();
+	$no->close();
+
 	return $hash_final;
+   # warn "FIN ".$chr->name." ".$region->{start}."-".$region->{end};
+
+	
 } 
+
+

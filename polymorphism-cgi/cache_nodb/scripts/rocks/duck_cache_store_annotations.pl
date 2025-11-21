@@ -32,7 +32,7 @@ use Storable qw(dclone);
 use Scalar::Util qw(looks_like_number);
 use lib "$RealBin/../../../GenBo/lib/obj-nodb/polyviewer/";
 use PolyviewerVariant;
-
+use MCE::Shared;
 
 my $htr = {
 	 
@@ -97,13 +97,19 @@ my $dir_tmp_cvs =  $project->getCallingPipelineDir($project->name.".parquet.".ti
 #construct_sql 
 ##################
 $project->preload_patients();
+$project->validations();
 my @pids =  map {$_->id} @{$project->getPatients};
 
 my %cast;
 
 
 my @column_variant = ("start","end","chromosome","index","vector_id","rocksdb_id","type","gnomad_id","name","hgmd_id","clinvar_id","hgmd_class","clinvar_class","isDM","isClinvarPathogenic","keepPathogenic");
+my $position_keepPathogenic;
+for (my $i=0;$i<@column_variant;$i++){
+	$position_keepPathogenic = $i if $column_variant[$i] eq "keepPathogenic";
+}
 
+die() unless $position_keepPathogenic;
 my @column_frequences_gnomad = ("gnomad_ac","gnomad_an","gnomad_min_pop_name","gnomad_min_pop_freq","gnomad_max_pop_name","gnomad_max_pop_freq","gnomad_ho","getGnomadAC_Male");
 my @column_frequences_dejavu = ("other_projects","other_patients","other_patients_ho","similar_projects","similar_patients","similar_patients_ho","in_this_run_patients");
 
@@ -179,19 +185,27 @@ foreach my $chr (@{$project->getChromosomes}){
 }
 $project->disconnect();
 delete $project->{rocks};
+my $shared_hash = MCE::Shared->hash();
 MCE::Loop::init {
     chunk_size => 1,  # chaque worker recevra un seul élément
     max_workers => 20, 
-    
+     gather => sub {
+        my ($mce) = @_;
+        delete $shared_hash->{$mce};
+     }
 };
 mce_loop {
     my ($mce, $chra,$chunk_id) = @_;
+      $shared_hash->{$chunk_id} ++;
     my $region = $chra->[0];
     warn "start ".$region->{nb}."/".$nb ." ".$region->{chromosome}->ucsc_name;
-   compute($region,$region->{chromosome});
-   
-    warn "end ".$region->{nb}."/".$nb ." ".$region->{chromosome}->ucsc_name;
+     warn "end ".$region->{nb}."/".$nb ." ".$region->{chromosome}->ucsc_name;
+   	compute($region,$region->{chromosome});
+  	MCE->gather($chunk_id);
+  
 } @batches;
+MCE::Loop->finish;
+confess()  if %$shared_hash;
 my $filename = $dir_tmp_cvs."/*.csv";# join(",",map{"\'".$_->{filename}."\'"} @batches);
 
 my $parquet_file_final = $project->parquet_cache_variants; 
@@ -267,8 +281,9 @@ sub compute {
         	 $vh->{isClinvarPathogenic} = 0;
         }
         $vh->{keepPathogenic} = 0;
-         if ($vh->{isDM} ==1  or $vh->{isClinvarPathogenic} == 1){
+         if ($vh->{isDM} ==1  or $vh->{isClinvarPathogenic} == 1 ){
          	$vh->{keepPathogenic} = 1 if $variation->getGnomadHO < 100;
+         	
          }
          foreach my $k (@column_variant) {
         	die($k) unless exists $vh->{$k};
@@ -353,7 +368,15 @@ sub compute {
         	}
         	if (@{$variation->{genes_object}}){
 				foreach my $gid (@{$variation->{genes_object}}){
+					
 					my $g = $project->newGene($gid);
+					    if ($variation->score_validations($g) > 0){
+							#petite astuce pour changer le keep pathogenic dans le tableau 					    	
+					    	$duck_variants->[$position_keepPathogenic]  = 1;
+					    	
+         					#$vh->{keepPathogenic} = 1 ;
+		         	
+		        		}
 						my $duck_gene;
 						push(@$duck_gene,$gid);
 						push(@$duck_gene,$variation->{annotation}->{$gid}->{mask});

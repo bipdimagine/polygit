@@ -71,7 +71,7 @@ use Time::HiRes qw (time);
 use Sys::Hostname;
 use File::Temp;
 use Bio::DB::HTS::Faidx;
-
+use Carp qw(cluck longmess shortmess);
 
 sub hasHgmdAccess {
 	my ( $self, $user ) = @_;
@@ -6736,22 +6736,26 @@ sub need_update {
 }
 
 sub disconnect {
-	my $self = shift;
+	my ($self,$debug) = @_;
 	$self->buffer->dbh_deconnect();
 	delete $self->{liteAnnotations};
 	delete $self->{cosmic_db};
 	delete $self->{transcriptsCoverageSqlite};
 	delete $self->{lmdbGenBo};
 	delete $self->{lmdbMainTranscripts};
-	$self->close_rocks;
+	$self->close_rocks($debug);
 	
 	#foreach my $c (values %{$self->{rocks}}){
 	#	$c->close() if $c;
 	#}
 }
 sub close_rocks {
-	my $self = shift;
+	my ($self,$debug) = @_;
+#	foreach my $k (keys %{$self->{rocks}}){
+#		cluck $k if  $k =~ /vec/;
+#		}
 	foreach my $c (values %{$self->{rocks}}){
+		
 		#warn $c;
 		#$c->close() if $c;
 		delete $self->{rocks}->{$c}

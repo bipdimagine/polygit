@@ -458,7 +458,7 @@ sub calling_cnv_xslate {
 #				}
 				$data->{$type."_norm_dp"} = $hsample->{norm_depth};
 			
-				$data->{$type."_norm_dp"} = $hsample->{norm_depth};
+				$data->{$type."_norm_dp"} = int($hsample->{norm_depth});
 				my $text_norm_dp_m = $hsample->{norm_depth}; 
 		  	}
 		  
@@ -483,14 +483,18 @@ sub calling_cnv_xslate {
 	
 				$hchild->{dude} =0 unless exists  $hsample->{dude};
 				$hchild->{$type."_score"} = $hsample->{dude_score};
+				
+				
 #				unless ($hchild->{$type."_score"} ){
 #					my $mean = ($hsample->{norm_depth_after} + $hsample->{norm_depth_before})/2;
 #					$hchild->{$type."_score"} = int( ($hsample->{norm_depth}/$mean) *100)/100;
 #				}
-				$hchild->{$type."_norm_dp"} = $hsample->{norm_depth};
-				#$hchild->{$type."_norm_dp_after"} = $hsample->{norm_depth_after};
-				#$hchild->{$type."_norm_dp_before"} = $hsample->{norm_depth_before};
-				my $text_norm_dp_m = $hsample->{norm_depth}; 
+				$hchild->{$type."_norm_dp"} = int($hsample->{norm_depth});
+				$hchild->{$type."_norm_dp_after"} = int($hsample->{norm_depth_after});
+				$hchild->{$type."_norm_dp_before"} = int($hsample->{norm_depth_before});
+				warn int($hsample->{norm_depth_after})." ".int($hsample->{norm_depth_before})." ". int($hsample->{norm_depth});
+				die();
+				my $text_norm_dp_m = int($hsample->{norm_depth}); 
 					my $a = [];
 					$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
 				 $text_caller = join("<br>",@{$a});

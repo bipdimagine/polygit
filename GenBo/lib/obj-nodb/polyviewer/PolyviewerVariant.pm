@@ -551,7 +551,7 @@ sub init {
 
 sub set_patient_cache {
 		my ($self,$vh,$p) =@_;
-		
+		# 
 		my $hh = $self->init();
 		$hh->{id} = $p->id;
 		$hh->{pr} = undef;
@@ -586,11 +586,11 @@ sub set_patient_cache {
 			$hh->{norm_depth} = $vh->getNormDP($p);
 			$hh->{dude_score} = $vh->getCNVDude($p);
 			#TODO: ne semble plus utile 
-#			$hh->{pr} = $vh->pr($p);
-#			$hh->{sr} = $vh->sr($p);
+			$hh->{pr} = $vh->pr($p);
+			$hh->{sr} = $vh->sr($p);
 			$hh->{norm_depth_before} =  $vh->getNormDPBefore($p);
 			$hh->{norm_depth_after} = $vh->getNormDPAfter($p);
-			#$hh->{log2_ratio} =  $vh->getLog2Ratio($p);
+			$hh->{log2_ratio} =  $vh->getLog2Ratio($p);
 		}
 		elsif ($vh->isDude){
 			my $primers = $p->getProject->getPrimersByPosition($vh->getChromosome,$vh->start,$vh->end);
