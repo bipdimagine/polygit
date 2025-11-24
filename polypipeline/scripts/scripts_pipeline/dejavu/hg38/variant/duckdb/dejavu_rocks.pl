@@ -78,13 +78,19 @@ $sth->execute();
 # Création de la table de hash : project_id ? [ phenotype_id list ]
 my $project_to_pheno;
 my $pheno;
+my $x;
 while (my $row = $sth->fetchrow_hashref) {
     my $project_id   = $row->{project_id};
     my $phenotype_id = $row->{phenotype_id};
-    
+    $pheno->{$row->{phenotype_id}}++;
    # $project_to_pheno->{$project_id}->{$phenotype_id} = 0;
     push @{ $project_to_pheno->{$project_id} }, $phenotype_id;
+    $x++ if $phenotype_id ==22;
 }
+
+#warn Dumper $pheno;
+#warn scalar keys (%$pheno);
+#die();
 
 $sth->finish;
 $dbh->disconnect;
@@ -129,12 +135,11 @@ push (@{$regionss},  {none=>1});
 
 mce_loop {
    my ($mce, $chunk_ref, $chunk_id) = @_;
-   	warn "start ".$mce;
+   	warn "start ".$chunk_id;
    if (ref($chunk_ref) ne "ARRAY") {
    	confess();
    }
    else {
-   
    foreach my $region (@$chunk_ref){
    		next if exists $region->{none};
 		my $hash = save_regions($region);
@@ -184,10 +189,10 @@ sub save_regions {
  	}
 	
 	
+my $duckdb = $buffer->software("duckdb");
 
 
-
-my $cmd = qq{duckdb -csv -noheader -c "$sql"};
+my $cmd = qq{$duckdb -csv -noheader -c "$sql"};
 my $rocks =  $rg38->nosql_rocks_tmp($region);
 open(CSV ,"-|", $cmd)  or die "Impossible d'ouvrir  : $!";;
 my $xx;
@@ -215,13 +220,14 @@ while(my $line = <CSV>){
 			$pheno_final->{0}->{h0} += $z[$i+2];
 			next;
 	 	}
+	else {
+		my $pheno = join (";",@{$project_to_pheno->{$z[$i]}});;
+		$hh->{$z[$i]} = 1; 
+		$pheno_final->{$pheno}->{project} ++;
+		$pheno_final->{$pheno}->{he} += $z[$i+1];
+		$pheno_final->{$pheno}->{h0} += $z[$i+2];	
 	
-		foreach my $pheno (@{$project_to_pheno->{$z[$i]}} ){
-			$hh->{$z[$i]} = 1; 
-			$pheno_final->{$pheno}->{project} ++;
-			$pheno_final->{$pheno}->{he} += $z[$i+1];
-			$pheno_final->{$pheno}->{h0} += $z[$i+2];
-		}
+	}
 	}
 	my @vs ; 
 	push(@vs,(99,$ptotal->{project},$ptotal->{he},$ptotal->{ho}));
@@ -233,6 +239,7 @@ while(my $line = <CSV>){
 	#warn  $b unless @vs;
 	
 	my $v = pack("w*",@z);
+	my $pheno = shift (@vs);
 	my $v2 = pack("w*",@vs);
 	my ($chr,$pos) = split("!",$a);
 	my $rid = sprintf("%010d", $a)."!".$c;
@@ -240,7 +247,7 @@ while(my $line = <CSV>){
 	#19_2110764_G_A
 	
 
-
+	
 	$hh->{sprintf("%010d", $a)."!".$c} = $v2;
 	
 	$rocks->put_batch_raw(sprintf("%010d", $a)."!".$c,$v);

@@ -279,15 +279,18 @@ sub save_and_lift_rocks {
 	my($chr,$lift) =@_;
 	
 	my $diro = $project->rocks_directory();
+	#my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$patient,project=>$project,print_html=>$print_html);
 	
-	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects");
+	#my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$diro,mode=>"r",name=>"polyviewer_objects");
 	my $vectors = dejavu_duckdb::get_hash_model_variant($chr);
 	
 	my $snps;
 	my $cpt;
 	my $time = time;
+	 my $no = GenBoNoSqlRocksVariation->new(dir=>$chr->project->rocks_directory("genbo"),mode=>"r",name=>$chr->name.".genbo.rocks");
+# $chr->get_rocks_variations("r");
 	for (my $i =0;$i<$chr->size_vector();$i++) {
-	my $v = $final_polyviewer_all->get( $chr->name."!".$i);
+	my $v   = $no->get_index($i);;#$rocksdb_pv->get( $chr->name."!".$i);
 		my @ho;
 		my @he;
 		my @ho_ratio;
@@ -300,22 +303,30 @@ sub save_and_lift_rocks {
 		my $max_dp = 0;
 		my $max_ratio = 0;
 		my $bit_models = 0 ;
-		warn $v->{start};
-		foreach my $pid (keys %{$v->{patients_calling}}){
+		
+		foreach my $pid (keys %{$v->{sequencing_infos}}){
 			my @values;
-			next if not exists $v->{patients_calling}->{$pid}->{array_text_calling};
-			my $dp = $v->{patients_calling}->{$pid}->{dp};
-			my $ratio = $v->{patients_calling}->{$pid}->{pc};
-			my $alt = int($dp*($ratio/100));
+			next if not exists $v->{sequencing_infos}->{$pid}->{max};
+			my $hseq =  $v->{sequencing_infos}->{$pid}->{max};
+			my $ref = $hseq->[0] ;
+			my $alt = $hseq->[1] ;
+			my $dp = $ref + $alt;
+			next if $dp == 0;
+			
+			#my $dp = $v->{patients_calling}->{$pid}->{dp};
+			my  $ratio = sprintf("%.2f", ($alt / $dp));
+			
+			#my $ratio = $v->{patients_calling}->{$pid}->{pc};
+			#my $alt = int($dp*($ratio/100));
 			$max_dp = $dp if $dp > $max_dp;
 			$max_ratio = int($ratio) if int($ratio) > $max_ratio;
 			my $model= dejavu_duckdb::find_variant_model($vectors, int($i), $pid);
 			$bit_models = $bit_models | $model;
-
 			push(@values,$dp);
 			push(@values,$alt);
 			push(@values,$model);
-			if ( $v->{patients_calling}->{$pid}->{gt} eq 'he'){
+			my $gt = $hseq->[2];
+			if ( $gt eq 'he'){
 				push(@he,$pid);		
 				push(@he_ratio,@values);
 				$nbhe ++;
@@ -326,8 +337,7 @@ sub save_and_lift_rocks {
 				$nbho ++;
 			}
 		}
-		next if not exists $v->{id};
-		my  $rocksdb_id = chunks::return_rocks_id_from_genbo_id($v->{id});
+		my  $rocksdb_id = chunks::return_rocks_id_from_genbo_id($v->id);
 		if ($rocksdb_id =~ /0000000000/){
 			warn "********* ".$rocksdb_id." ********* var_id:".$v->{id}.'.';
 			warn Dumper $v;
@@ -368,7 +378,7 @@ sub save_and_lift_rocks {
 		}
 	}
 	my $file = dejavu_duckdb::save_csv($chr,$snps,$dir_tmp);
-	$final_polyviewer_all->close();
+#	$final_polyviewer_all->close();
 	return $file;
 }
 	

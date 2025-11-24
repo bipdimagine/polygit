@@ -42,12 +42,8 @@ my @parquets = grep { -f "$dir/$_" && /\.parquet$/ } readdir($dh);
 my  $no = GenBoNoSqlRocks->new(mode=>"c",dir=>$dir1, name=>"projects");
 foreach my $l (@parquets){
 	my @t = split(/\./,$l);
-	warn $t[0];
 	$no->put_raw($t[0],1);
 	$no->put_raw($t[1],1);
-	
 }
 $no->close();
-
-
 

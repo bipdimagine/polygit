@@ -31,19 +31,18 @@ open(CMD,">$filetmp");
  		my $file = "rocks-".$version."-$date.$time";
  		my $dir = $test_obj->{$version}->path_root_prod();
  		$filename->{$version} = $file;
- 		print CMD "$Bin/dejavu_rocks.pl -chr=$chr -fork=5 -version=$version -file=$file -dir=$dir\n"; 
+ 		print CMD "/usr/bin/perl $Bin/dejavu_rocks.pl -chr=$chr -fork=5 -version=$version -file=$file -dir=$dir\n"; 
  	}
  }
- 
- system("cd /data-beegfs/tmp/ ; cat $filetmp | /software/bin/run_cluster.pl -cpu=20 -limit=40 -noprint=1 && touch $filetmp.ok");
- #warn  $filetmp;
- die() unless "$filetmp.ok";
+ system("cd /data-beegfs/tmp/ ; cat $filetmp | /data-pure/workspace/pnitschk/dev/git-polyweb/polygit/polyscripts/system_utility/run_cluster.pl -cpu=20 -limit=40 -noprint=1 && touch $filetmp.ok");
+ die("problem ") unless "$filetmp.ok";
 
-
+warn "end cluster ok next ";
  my @chrs = (1..22, 'X', 'Y','MT' );
  #die() unless -e "$filetmp.ok";
  	foreach my $version (("HG19","HG38")){
  	 	my $dir_final = $test_obj->{$version}->path_root_prod."/".$filename->{$version};
+ 	 	warn $dir_final;
 		$test_obj->{$version}->set_directory_path_new($dir_final);
 		foreach my $chr (@chrs){
 			warn "START ".$chr; 
@@ -54,7 +53,7 @@ open(CMD,">$filetmp");
 	}
 foreach my $version (("HG19","HG38")){
 	my $dir = $test_obj->{$version}->path_root_prod()."/".$filename->{$version} ;
-	system("$Bin/list_project.pl -dir=$dir");
+	system("$Bin/list_project_parquet.pl -dir=$dir");
 }
 foreach my $version (("HG19","HG38")){
 my $prod_path = $test_obj->{$version}->path_origin;
@@ -70,7 +69,7 @@ if ( -l $prod_path ) {  # -l = is symlink
     system("ln -s $dir_final $prod_path");
     unlink $prod_path.".phenotype" or warn "cannot unlink $prod_path: $!";
      system("ln -s $dir_final.phenotype $prod_path.phenotype");
-    system("zstd -T20 --rm $real.tar && rm -r $real");
+    system("zstd -T20 --rm $real.tar && rm -rf $real");
 }
 else {
 	confess();
