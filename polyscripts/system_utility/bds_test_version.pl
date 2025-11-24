@@ -28,7 +28,7 @@ my @extra_args = @ARGV;
 my $path;
  $path = "/data-pure/software/poly-src/duckdb/polygit/";
 
-
+if ($project_name){
 if ($type eq "pipeline" or $type eq "cache"){
 	my $buffer = new GBuffer;
 my $project = $buffer->newProjectCache( -name => $project_name);
@@ -38,6 +38,7 @@ my $project = $buffer->newProjectCache( -name => $project_name);
 }
 
 
+}
 }
 warn $type;
 
