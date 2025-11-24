@@ -7,7 +7,9 @@ use POSIX;
 use Data::Dumper;
 use String::ProgressBar;
 use Term::StatusBar;
- use Digest::MD5 qw(md5 md5_hex md5_base64);
+use Time::Seconds;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
+use Term::ANSIColor;
 #$qsub .= "-n 1 --ntasks-per-node=1 --cpus-per-task=$cpus " if( $cpus > 0 );
 
 
@@ -21,13 +23,18 @@ $| =1;
 my $limit;
 my $noprint;
 my $row =0;
+my $nodelete;
 GetOptions(
 	'cpu=s' => \$cpus,
 	'cmd=s' => \$cmd,
 	'fork=s' => \$fork,
 	'limit=s' => \$limit,
 	'row=s' => \$row,
+	'nodelete=s' => \$nodelete,
+	'noprint=s' => \$noprint,
 );
+chdir '/data-beegfs/tmp/' 
+  or die "Impossible de changer de répertoire: $!";
 unless ($noprint){
 for  (my $i=$row;$i<($row+5);$i++){
 	print "\033[$i;0H\033[2K";
@@ -150,7 +157,7 @@ while (keys %$runnings_jobs ){
 		}
 		if (lc($stat) eq "completed"){
 			delete $runnings_jobs->{$jobid};
-			unlink "slurm-".$jobid.".out";
+			unlink "slurm-".$jobid.".out" unless $nodelete;
 			$completed->{$jobid} ++;
 			unlink "slurm-".$jobid."out";
 			if (@$commands){
@@ -169,10 +176,9 @@ while (keys %$runnings_jobs ){
 		elsif (lc($stat) eq "cancel"){
 			delete $runnings_jobs->{$jobid};
 			$cancel->{$jobid} ++;
-			unlink "slurm-".$jobid."out";
+			unlink "slurm-".$jobid."out" unless $nodelete;;
 			$status->update()  ;
 		}
-		
 		else {
 			delete $runnings_jobs->{$jobid};
 			if (@$commands){
@@ -185,8 +191,7 @@ while (keys %$runnings_jobs ){
 		my $failed = scalar(keys %$failed) +scalar(keys %$cancel);
 		my $ok = scalar(keys %$completed);
 		my $ttt = Time::Seconds->new( time -$start_time );
-			
-			#warn
+		#warn
 		#$status->subText("Job OK :".colored(['bright_green on_black'],$ok)."     Job Failed: ".colored(['bright_red on_black'],$failed) ) unless $noprint;
 		$status->subText(colored(['bright_yellow on_black'],$ttt->pretty));
 		

@@ -34,7 +34,13 @@ open(CMD,">$filetmp");
  		print CMD "/usr/bin/perl $Bin/dejavu_rocks.pl -chr=$chr -fork=5 -version=$version -file=$file -dir=$dir\n"; 
  	}
  }
- system("cd /data-beegfs/tmp/ ; cat $filetmp | /data-pure/workspace/pnitschk/dev/git-polyweb/polygit/polyscripts/system_utility/run_cluster.pl -cpu=20 -limit=40 -noprint=1 && touch $filetmp.ok");
+ my $run;
+ 
+if ($Bin =~ m|(.*?/polygit)/|) {
+     $run = $1;
+}
+ 
+ system("cd /data-beegfs/tmp/ ; cat $filetmp | $run/polyscripts/system_utility/run_cluster.pl -cpu=20 -limit=20 -noprint=1 && touch $filetmp.ok");
  die("problem ") unless "$filetmp.ok";
 
 warn "end cluster ok next ";

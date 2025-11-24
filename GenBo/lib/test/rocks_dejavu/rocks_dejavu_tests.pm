@@ -12,7 +12,7 @@ use GenBoNoSqlRocksGenome;
 use Term::ANSIColor;
 use MCE::Loop;
 use MCE::Flow;
-
+use Cwd 'abs_path';
 use Test::Simple tests => 27;
 
 
@@ -37,16 +37,31 @@ has use_chromosomes => (
 	},
 );
 
-has path_origin => (
-	is      => 'rw',
-	lazy    => 1,
-	default => sub {
+sub path_root_prod{
 		my $self = shift;
+		my $key = "root".$self->release;
+		return $self->{$key} if exists $self->{$key};
 		my $buffer = new GBuffer;
 		confess("\n\nERROR: release version not defined. Die\n\n") if not $self->release();
-		return $buffer->config_path("root","dejavu").'/'.$self->release()."/variations/rocks/";
-	},
-);
+		$self->{$key} = $buffer->config_path("root","dejavu").'/'.$self->release()."/variations/";
+		return $self->{$key};
+}
+
+sub path_origin{
+		my $self = shift;
+		return $self->path_root_prod."/rocks";
+		return $self->{"path".$self->release} if exists $self->{"path".$self->release};
+		#my $buffer = new GBuffer;
+		#confess("\n\nERROR: release version not defined. Die\n\n") if not $self->release();
+		#$self->{"path".$self->release} = $buffer->config_path("root","dejavu").'/'.$self->release()."/variations/rocks/";
+		#return $self->{"path".$self->release};
+}
+
+
+sub  path_real { 
+	my $self = shift;
+	return abs_path($self->path_origin);  
+}
 
 has path_new => (
 	is      => 'rw',
@@ -108,7 +123,7 @@ sub set_directory_path_origin {
 
 sub set_directory_path_new {
 	my ($self, $path) = @_;
-	confess("\n\nERROR: $path doesn't exists. Die\n\n") if not -d $path;
+	confess("\n\nERROR: $path doesn't exists. Die") if not -d $path;
 	$self->{path_new} = $path;
 }
 
@@ -138,14 +153,14 @@ sub launch_test_all_chromosomes {
 			$h_part_files->{$part_path} = $chr_name;
 		}
 	}
-	warn Dumper @files_ok;
 	my $h_res_by_chr;
 	my $nb_total_path1 = 0;
 	my $nb_total_path2 = 0;
 	my $nb_total_lost = 0;
 	my $nb_total_new = 0;
+	my $error;
 	MCE::Loop->init(
-		max_workers => 'auto', chunk_size => 1,
+		max_workers => 'auto', chunk_size => 'auto',
 		gather => sub {
 	        my ($mce, $data) = @_;
 	        my $chr_name = $data->{chr};
@@ -158,11 +173,12 @@ sub launch_test_all_chromosomes {
 			$h_res_by_chr->{$chr_name}->{nb2} += $data->{nb2};
 			$h_res_by_chr->{$chr_name}->{nb_lost} += $data->{nb_lost};
 			$h_res_by_chr->{$chr_name}->{nb_new} += $data->{nb_new};
+			$error ++ if ($data->{in_error});
 			if ($data->{in_error}) {
 				$h_res_by_chr->{$chr_name}->{errors}->{$part_name} = $data;
 				$h_res_by_chr->{$chr_name}->{errors}->{$part_name}->{ratio_lost} = $self->get_ratio_lost_variants($data->{nb1}, $data->{nb2}, $data->{nb_lost});
 				$h_res_by_chr->{$chr_name}->{errors}->{$part_name}->{ratio_new_var} = $self->get_ratio_new_variants($data->{nb1}, $data->{nb2}, $data->{nb_new});
-				confess ("\n\nERROR for $part_name\n\n") if $self->confess_as_soon_as_possible();
+			#	confess ("\n\nERROR for $part_name\n\n") if $self->confess_as_soon_as_possible();
 			}
 	    }
 	);
@@ -245,7 +261,7 @@ sub launch_test_all_chromosomes {
 	ok( $is_all_ok == 1, "GLOBAL DEJAVU - nb_old:$nb_total_path1 - nb_new:$nb_total_path2 - LOST:$nb_total_lost ($ratio_lost%) - NEW:$nb_total_new ($ratio_new_var%)") or do {
 		confess("\n\nERROR founds $nb_errors part(s) chromosome(s) with problem(s) !! \n\n");
 	};
-		
+	return if $error ;	
 	return 1;
 }
 
