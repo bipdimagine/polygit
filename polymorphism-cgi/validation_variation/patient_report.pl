@@ -903,6 +903,8 @@ sub construct_data {
   		my $hash_vp;
   		$shared_hash->{MCE->chunk_id} ++;
   	 	my $res = construct_htranscripts( $trs, $patient);
+  	 	print " MCE->chunk_id" ;
+  	 	warn MCE->chunk_id;
   	   	MCE->gather(MCE->chunk_id,$res);
   # 	  	$self->close();
 		} @$list_transcript;
