@@ -844,7 +844,7 @@ sub construct_data {
 	my $text = $no_cache->get_cache($cache_id);
 	
 	#TODO: here enlever cache
-	$text = undef;
+	#$text = undef;
 	
 	$text = undef if $pipeline;
 	$compute_coverage = 1;
@@ -904,7 +904,6 @@ sub construct_data {
   		$shared_hash->{MCE->chunk_id} ++;
   	 	my $res = construct_htranscripts( $trs, $patient);
   	 	print " MCE->chunk_id" ;
-  	 	warn MCE->chunk_id;
   	   	MCE->gather(MCE->chunk_id,$res);
   # 	  	$self->close();
 		} @$list_transcript;
