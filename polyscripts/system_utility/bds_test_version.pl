@@ -62,4 +62,16 @@ elsif ($type eq "dragen_demultiplex") {
 	 
 }	
 
-
+elsif ($type eq "run_cluster") {
+	my $cmd = "$path/polypipeline/polyscripts/system_utility/run_cluster.pl -project=$project_name ".join(" ",@ARGV);
+	system($cmd);
+	 
+}	
+elsif ($type eq "launch_dejavu") {
+	my $cmd = "$path/polypipeline/scripts/scripts_pipeline/dejavu/hg38/variant/duckdb/launch_dejavu_rocks_duck.pl -project=$project_name ".join(" ",@ARGV);
+	system($cmd);
+	 
+}
+else {
+	die("unkown option $type");
+}
