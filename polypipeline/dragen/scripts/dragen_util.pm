@@ -7,7 +7,6 @@ sub get_fastq_file {
 	
 	my $name=$patient->name();
 	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
-	warn $patient->name;
 	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq,1);
 	return unless @$files_pe1;
 	my $cmd;
@@ -32,33 +31,32 @@ sub get_fastq_file {
 	#if ($step eq "align"){
 		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
 		system "cat $cmd2 > $fastq2";# unless -e $fastq2;
+	#}
 	
 	if ($find_I1){
 		
-			my @r1;
-	my @r2;
+		my @r1;
+		my @r2;
 		foreach my $cp (@$files_pe1) {
-		next if $cp->{R1} =~ /_R1_/;
-		die() if $cp->{R2} !~ /_I2_/;
-		my $file1 = $dir_fastq."/".$cp->{R1};
-		die($file1) unless -e  $file1;
-		my $file2 = $dir_fastq."/".$cp->{R2};
-		die($file2) unless -e  $file1;
-		push(@r1,$file1);
-		push(@r2,$file2);##
+			next if $cp->{R1} =~ /_R1_/;
+			die() if $cp->{R2} !~ /_I2_/;
+			my $file1 = $dir_fastq."/".$cp->{R1};
+			die($file1) unless -e  $file1;
+			my $file2 = $dir_fastq."/".$cp->{R2};
+			die($file2) unless -e  $file1;
+			push(@r1,$file1);
+			push(@r2,$file2);##
+		}
+		my $cmd1 = join(" ",@r1);
+		my $cmd2 = join(" ",@r2);
+		my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_I1_001.fastq.gz";
+		my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_I2_001.fastq.gz";
+		#if ($step eq "align"){
+			system "cat $cmd1 > $fastq1";# unless -e $fastq1;
+			system "cat $cmd2 > $fastq2";# unless -e $fastq2;
+		#}	
+	
 	}
-	my $cmd1 = join(" ",@r1);
-	my $cmd2 = join(" ",@r2);
-	my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_I1_001.fastq.gz";
-	my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_I2_001.fastq.gz";
-	#if ($step eq "align"){
-		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
-		system "cat $cmd2 > $fastq2";# unless -e $fastq2;
-		
-	}	
-		
-	#}
-	die();
 	return  ($fastq1,$fastq2);
 }
 
