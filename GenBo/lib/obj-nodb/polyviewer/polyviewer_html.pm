@@ -492,8 +492,8 @@ sub calling_cnv_xslate {
 				$hchild->{$type."_norm_dp"} = int($hsample->{norm_depth});
 				$hchild->{$type."_norm_dp_after"} = int($hsample->{norm_depth_after});
 				$hchild->{$type."_norm_dp_before"} = int($hsample->{norm_depth_before});
-				warn int($hsample->{norm_depth_after})." ".int($hsample->{norm_depth_before})." ". int($hsample->{norm_depth});
-				die();
+			#	warn int($hsample->{norm_depth_after})." ".int($hsample->{norm_depth_before})." ". int($hsample->{norm_depth});
+			#	die();
 				my $text_norm_dp_m = int($hsample->{norm_depth}); 
 					my $a = [];
 					$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
