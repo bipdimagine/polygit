@@ -83,6 +83,5 @@ sub get_capture_file {
 	die() unless -e "$capture_file.gz.tbi";
 	return "$capture_file.gz";
 	
-	
 }
 1;
