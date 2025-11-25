@@ -160,9 +160,15 @@ close LIST;
 				if ($line =~ /MELT likely did not find any mobile elements during/) { $no_results_found = 1; }
 			}
 			close (LOG);
+			warn $no_results_found;
+			
 			if ($no_results_found) {
+				warn "cuicui";
 				print "\n\nExiting no mobile elements found\n\n";
+				warn $done;
 				system("touch $done");
+				my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf";
+				print_empty_vcf($patient,$fileout);
 				exit(0);
 			}
 			die();
