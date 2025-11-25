@@ -957,11 +957,8 @@ sub store_variants_infos {
 		if ($list_patients) {
 			foreach my $patient (@$list_patients) {
 				if (exists ($var->sequencing_infos->{$patient->id()})) {
-					foreach my $caller (keys %{$var->sequencing_infos->{$patient->id()}->{'method_calling'}}) {
-						my $h_caller = $var->sequencing_infos->{$patient->id()}->{'method_calling'}->{$caller};
-						$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'nb_all_ref'} = $h_caller->{'nb_all_ref'};
-						$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{$caller}->{'nb_all_mut'} = $h_caller->{'nb_all_mut'};
-					}
+					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{'max'}->{'nb_all_ref'} = $var->getNbAlleleRef($patient);
+					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{method_calling}->{'max'}->{'nb_all_mut'} = $var->getNbAlleleAlt($patient);
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'he' if $var->isHeterozygote($patient);
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'he_ho'} = 'ho' if $var->isHomozygote($patient);
 					$self->{hash_variants_global}->{$chr_h_id}->{$var_id}->{'patients'}->{$patient->name()}->{'model'} ='';
