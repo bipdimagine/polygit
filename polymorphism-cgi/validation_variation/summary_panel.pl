@@ -530,6 +530,10 @@ my $buffer = GBuffer->new();
 
 my $fsize        = "font-size:10px";
 my $cgi          = new CGI();
+
+
+my $http = "" ;
+
 my $project_name = $cgi->param('project');
 
 my $project = $buffer->newProjectCache(
@@ -626,6 +630,7 @@ my ( $gstats, $lstats, $patient_value );
 my $cache_icon = "";
 unless ($header) {
 	print qq{<div style="display: none">};
+	
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project);
 	$hmendel = get_mendelian_statistics($project);
 	foreach my $run ( @{ $project->getRuns() } ) {
@@ -654,6 +659,7 @@ $htable = undef if $dev or $cgi->param('force');
 #warn "here";
 unless ($htable) {
 	print qq{<div style="display: none">};
+	
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
 	$hmendel = get_mendelian_statistics($project) unless $hmendel;
 	foreach my $run ( @{ $project->getRuns() } ) {
@@ -996,11 +1002,11 @@ sub test_disomy {
 	$uni->{find_disomy} = 0;
 	foreach my $p (@{$project->getPatients}){
 		my $file = $p->upd_file();
-		unless (-e $file ) {
+		#unless (-e $file ) {
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
 			# if $p->isChild();
-		}
+		#}
 		my $r = exists_disomy($p,$file);
 		
 		if($r){
@@ -1151,9 +1157,9 @@ qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC }
 #$btn_class = qq{class= "label  label-xs label-warning " style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 95;
 #$btn_class = qq{class= "label  label-xs label-alert "  style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 90;
 #die();
-	my $text30 = ''
-	  ; # = "30X :" .$format_number->round($lstats->{"30X"}->{$run->id}->mean,1)."% <i>(".$format_number->round($gstats->{"30X"}->mean,1).")</i>";;
-
+warn Dumper ($gstats->{"30x"}->mean);
+warn $run->id;
+	my $text30  = "30X :" .$format_number->round($lstats->{"30x"}->{$run->id}->{mean},1)."% <i>(".$format_number->round($gstats->{"30x"}->{mean},1).")</i>";
 	my $text100 = ''
 	  ; # = "100X :".$format_number->round($lstats->{"100X"}->{$run->id}->mean,1)."%<i>(".$format_number->round($gstats->{"100X"}->mean,1).")</i>" if  $lstats->{"100X"}->{$run->id} ;
 
@@ -1734,7 +1740,7 @@ sub statistics_projects {
 						$p_value->{patients}->{text} );
 					next if $patient->is_control;
 					foreach my $k ( keys %$p_value ) {
-
+						$k =~ s/X/x/i;
 						next if $k eq "patients";
 						next unless $p_value->{$k}->{text};
 						$p_value->{$k}->{text} =~ s/%//;
@@ -1759,7 +1765,6 @@ sub statistics_projects {
 			}
 		}
 	}
-	
 	
 	unless ($this_stats) {
 		$gstat->{"15X"}  = Statistics::Descriptive::Full->new();
@@ -1835,10 +1840,10 @@ sub table_quality {
 		my $level = 0;
 		my $red   = 0;
 		$red = 1
-		  if ( $patient_value->{ $p->id }->{"15X"}
-			and ( $patient_value->{ $p->id }->{"15X"} * 1.0 < 95 ) );
+		  if ( $patient_value->{ $p->id }->{"15x"}
+			and ( $patient_value->{ $p->id }->{"15x"} * 1.0 < 95 ) );
 
-		foreach my $v ( "mean", "15X", "30X", "100X", "snp", "indel", "%he",
+		foreach my $v ( "mean", "15x", "30x", "100x", "snp", "indel", "%he",
 			"%public" )
 		{
 			next unless $lstats->{$v}->{ $run->id };
@@ -1870,9 +1875,9 @@ sub table_quality {
 					$level = 3;           # if $level<3;
 				}
 			}
-			elsif ($v eq "15X"
-				or $v eq "30X"
-				or $v eq "100X"
+			elsif ($v eq "15x"
+				or $v eq "30x"
+				or $v eq "100x"
 				or $v eq "mean"
 				or $v eq "%public" )
 			{
