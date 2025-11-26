@@ -744,7 +744,12 @@ my $h_transmissions = {
 	my $filter_transmission;
 	my $xtime =time;
 	my $list_genes;
-	my $mask_transmission  |= $h_transmissions->{solo};
+	
+	my $mask_transmission = 0;
+	if ($patient->getFamily()->isSolo()){
+		$mask_transmission = $h_transmissions->{solo};
+	}
+	else {
 	$mask_transmission   |= $h_transmissions->{is_parent};
 	$mask_transmission   |= $h_transmissions->{denovo} if $cgi->param('denovo');	
 	$mask_transmission   |= $h_transmissions->{strict_denovo} if $cgi->param('strict_denovo');
@@ -756,9 +761,9 @@ my $h_transmissions = {
 	$mask_transmission   |= $h_transmissions->{father} if $cgi->param('xor_father');
 	$mask_transmission   |= $h_transmissions->{mother} if $cgi->param('xor');
 	$mask_transmission   |= $h_transmissions->{father} if $cgi->param('xor');
+	 }
 	
 	warn $mask_transmission;
-	
 	my $hashVector_panel = {};
 	my $hashVector       = {};
 
@@ -795,7 +800,7 @@ my $h_transmissions = {
 	if($cgi->param('ref') ){
 		push(@$asql_patient ,$suffix."_ref > ".$cgi->param('ref'));
 	}
-	#push(@$asql_patient ,$suffix."_transmission  & $mask_transmission <> 0");
+	push(@$asql_patient ,$suffix."_transmission  & $mask_transmission <> 0");
 	
 	my $sql_patient = "(".join(" and ",@$asql_patient).")";
 	#push(@column_patient,"patient_".$c."_ref");
@@ -882,7 +887,6 @@ sub get_rocksdb_mce_polyviewer_variant {
 	error("Oops! that's unexpected !!! ") unless -e $parquet;
 	my $sql =qq{select variant_index,gene_name from '$parquet' where  $where ; };
 	my $cmd = qq{duckdb -json -c "$sql"};
-	warn $cmd;
  	my $t = time;
  	my $res =`$cmd`;
 	my $array_ref = [];
@@ -1073,7 +1077,6 @@ sub get_vector_from_duckdb {
 	my $v2 = $chr->ucsc_name;
 	my $sql =qq{select variant_vector_id from '$parquet' where  $col > $limit and variant_chromosome='$v2'};
  	my $cmd = qq{duckdb   -json -c "$sql"};
- 	warn $cmd;
  	my $res =`$cmd`;
  	return $vector unless $res;
  	my $array_ref  = decode_json $res;

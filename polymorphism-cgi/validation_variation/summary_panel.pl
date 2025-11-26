@@ -1002,6 +1002,7 @@ sub test_disomy {
 	$uni->{find_disomy} = 0;
 	foreach my $p (@{$project->getPatients}){
 		my $file = $p->upd_file();
+		unlink $file  if $cgi->param('force');
 		#unless (-e $file ) {
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
