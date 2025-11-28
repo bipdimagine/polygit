@@ -678,7 +678,7 @@ sub getIds_onlive {
 				push(@{$hash->{'patient_unifiedgenotyper3'} }, $nb_all_mut);
 				
 				push(@{$hash->{'patient_unifiedgenotyper'}  }, '.');
-				my $thisCov = $var->getMeanDP($patient);
+				my $thisCov = $patient->meanDepth($var->getChromosome->name, $var->start, $var->end);
 				#	push(@{$hash->{'patient_unifiedgenotyper4'} }, );
 				if ($thisCov) { push(@{$hash->{'patient_unifiedgenotyper4'} }, int($thisCov)); }
 				else { push(@{$hash->{'patient_unifiedgenotyper4'} }, '.'); }

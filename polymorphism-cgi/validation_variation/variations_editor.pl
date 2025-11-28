@@ -763,7 +763,7 @@ my $h_transmissions = {
 	$mask_transmission   |= $h_transmissions->{father} if $cgi->param('xor');
 	 }
 	
-	warn $mask_transmission;
+#	warn $mask_transmission;
 	my $hashVector_panel = {};
 	my $hashVector       = {};
 
