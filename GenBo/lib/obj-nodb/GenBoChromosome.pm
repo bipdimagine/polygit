@@ -1486,7 +1486,7 @@ sub rocks_polyviewer_variants {
 
 sub rocks_polyviewer_variants_genes {
 	my ( $self,$mode ) = @_;
-	my $hname = "variants_genes".$mode.$self->name
+	my $hname = "variants_genes".$mode.$self->name;
 	return $self->project->{rocks}->{$hname} if exists $self->project->{rocks}->{$hname};
 	 $self->project->{rocks}->{$hname} = GenBoNoSqlRocks->new(dir=>$self->rocks_polyviewer_directory,mode=>$mode,name=>$self->name.".polyviewer_variant_genes");
 	 return $self->project->{rocks}->{$hname};
