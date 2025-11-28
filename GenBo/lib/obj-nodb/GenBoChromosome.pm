@@ -15,7 +15,7 @@ use GenBoNoSqlRocksVector;
 use GenBoNoSqlRocksGenome;
 use GenBoNoSqlRocksPolyviewerVariant;
 use Carp;
-
+use Carp qw(cluck longmess shortmess);
 #use GenBoNoSqlRocksVariation;
 #use GenBoNoSqlRocksPolyviewerVariant;
 extends "GenBoGenomic";
@@ -1400,10 +1400,20 @@ sub lmdb_polyviewer_variants {
 sub rocks_vector {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
-	my $name = $self->name."-vector-".$mode.$$;
+	
+	
+	if ($mode eq "close") {
+		my $name = $self->name."-vector-r";
+		$self->project->{rocks}->{$name}->close();
+		delete $self->project->{rocks}->{$name};
+		return;
+	}
+	my $name = $self->name."-vector-".$mode;
 	
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
-	 $self->project->{rocks}->{$name} = $self->flush_rocks_vector($mode);
+	
+	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksVector->new(chromosome=>$self->name,dir=>$self->project->rocks_directory("vector"),mode=>$mode,name=>$self->name);
+#$self->flush_rocks_vector($mode);
 	 return $self->project->{rocks}->{$name};
 
 }
@@ -1476,9 +1486,10 @@ sub rocks_polyviewer_variants {
 
 sub rocks_polyviewer_variants_genes {
 	my ( $self,$mode ) = @_;
-	return $self->project->{rocks}->{"variants_genes".$mode} if exists $self->project->{rocks}->{"variants_genes".$mode};
-	 $self->project->{rocks}->{"variants_genes".$mode} = GenBoNoSqlRocks->new(dir=>$self->rocks_polyviewer_directory,mode=>$mode,name=>$self->name.".polyviewer_variant_genes");
-	 return $self->project->{rocks}->{"variants_genes".$mode};
+	my $hname = "variants_genes".$mode.$self->name
+	return $self->project->{rocks}->{$hname} if exists $self->project->{rocks}->{$hname};
+	 $self->project->{rocks}->{$hname} = GenBoNoSqlRocks->new(dir=>$self->rocks_polyviewer_directory,mode=>$mode,name=>$self->name.".polyviewer_variant_genes");
+	 return $self->project->{rocks}->{$hname};
 
 }
 
@@ -1679,7 +1690,7 @@ sub get_rocks_variations_index {
 	my ( $self, $modefull,$rocks) = @_;
 	my $hindex = "variations_";
 	$hindex = "variations_".$modefull if ($modefull);
-	$hindex .= $$;
+	$hindex .= $$.$self->id;
 	return $self->project->{rocks}->{$hindex} if exists $self->project->{rocks}->{$hindex};
 	my $rg;
 	$self->project->{rocks}->{$hindex} = GenBoNoSqlRocksVariation->new(dir=>$self->project->rocks_directory("index"),mode=>"r",name=>$self->name);
@@ -2153,10 +2164,11 @@ sub purge_lmdb_score {
 sub rocksdb {
 	my($self,$db) = @_;
 	confess unless $db;
-	return $self->project->{rocks}->{$db} if exists $self->project->{rocks}->{$db};
+	my $hash_name = $db.$self->id.$$;
+	return $self->project->{rocks}->{$hash_name} if exists $self->project->{rocks}->{$hash_name};
 	my $dir = $self->buffer->get_index_database_directory($db);
-	$self->project->{rocks}->{$db} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$self->name);
-	return $self->project->{rocks}->{$db};
+	$self->project->{rocks}->{$hash_name} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$self->name);
+	return $self->project->{rocks}->{$hash_name};
 }
 
 sub rocksdb_version {
@@ -2179,7 +2191,7 @@ sub rocksdb_version {
 sub rocks_predictions {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
-	my $name = "prediction-".$mode.$$;
+	my $name = "prediction-".$mode.$$." ".$self->id;
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
 	 $self->project->{rocks}->{$name} =  GenBoNoSqlRocksAnnotation->new(dir=>$self->get_public_data_directory("prediction_matrix"),mode=>$mode,name=>$self->name);
 	 return $self->project->{rocks}->{$name};
@@ -2296,7 +2308,6 @@ sub getDejaVuPhenotypeInfosForDiagforVariant{
 sub getDejaVuInfosForDiagforVariant{
 	my ($self, $v) = @_;
 	my $chr = $self;
-	
 #	my $in_this_run_patients =  $self->project->{in_this_run_patients};
 	my $in_this_run_patients =  $self->project->in_this_run_patients;
 #	$in_this_run_patients->{total} =0 unless $in_this_run_patients->{total};
