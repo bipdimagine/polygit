@@ -49,6 +49,7 @@ my $aggr_name;
 my $chemistry;
 my $create_bam;
 my $cpu = 20;
+my $force;
 my $help;
 
 GetOptions(
@@ -64,6 +65,7 @@ GetOptions(
 	'chemistry=s'				=> \$chemistry,
 	'cpu=i'						=> \$cpu,
 	'no_exec'					=> \$no_exec,
+	'force'						=> \$force,
 	'help'						=> \$help,
 ) || die("Error in command line arguments\n");
 
@@ -93,7 +95,7 @@ $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 warn $dir;
 
 @steps = split(/,/, join(',',@steps));
-my $list_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'all'];
+my $list_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'velocyto', 'all'];
 #my @correct_steps = grep{/@steps/} @$list_steps;
 #undef @steps if (@steps and scalar @correct_steps == 0);
 unless (@steps) {
@@ -116,6 +118,8 @@ die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 my @patient_names = map {$_->name} @$patients;
 my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
 die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
+
+$create_bam = 1 if (grep(/velocyto/i, @steps));
 
 
 #------------------------------
@@ -219,7 +223,7 @@ if (grep(/count|^all$/i, @steps)){
 	
 	
 	my $fastq;
-	my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
+	my $tmp = $project->getAlignmentPipelineDir("cellranger");
 	warn $tmp;
 	
 	# Vérifie que les fastq sont bien nommés
@@ -232,9 +236,17 @@ if (grep(/count|^all$/i, @steps)){
 			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][123]_001\.fastq\.gz$/} @fastq_files) == scalar @fastq_files);
 	}
 	
-	# todo: vérifier que le pipeline n'ait pas déjà tourné : check si web_summary existe
 	# todo: vérifier qu'il n'y ait pas déjà un répertoire patient dans le $tmp
 	# todo: vérifier qu'il n'y ait pas des adt oubliés: si pat exp prendre aussi pat adt
+	
+	# Vérifie que le pipeline n'ait pas déjà tourné : check si web_summary existe
+	foreach my $patient (@{$patients}) {
+		my $pname = $patient->name;
+		if ((-e  "$dir$pname/web_summary.html" or -e "$dir$pname/outs/web_summary.html" or -e "$tmp$pname/outs/web_summary.html") and not $force) {
+			warn "NEXT: $pname pipeline already completed: web_summary already exists";
+			next;
+		}
+	}
 	
 	sub full_cmd {
 		my ($pat, $cmd) = @_;
@@ -518,7 +530,7 @@ if (grep(/count|^all$/i, @steps)){
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
 		print("Check the web summaries:\n");
-		print("$dir/*/web_summary.html\n\n");
+		print("$dir/*/web_summary.html\n");
 		print "\t------------------------------------------\n\n";
 	}
 	
@@ -664,22 +676,14 @@ if (grep(/tar|archive|^all$/i, @steps)){
 
 
 #------------------------------
-# Upload Imagine CloudBOX ??
+# Velocyto
 #------------------------------
-if (grep(/cloud/, @steps)) {
-	my $archive = "$dir/$projectName.tar.gz";
-#	my $archive = "test.txt";
-	die ("No archive found: $archive") unless (-e $archive);
-	my $username = 'melodie.perin' if (getpwuid($<) eq 'mperin');
-	$username = prompt('Username: ') unless $username;
-	die unless $username;
-	my $password = 'cZN5k*Rtt4Qc+B6M' if ($username eq 'melodie.perin');
-	$password  = prompt('Password: ', -e=>'') unless ($password);
-	my $remote_dir = "Archives single cell";
-	$remote_dir =~ s/ /%20/g;  # encodage des espaces
-	my $upload_cmd = "curl -u $username:$password -T $archive --progress-bar https://cloudbox.institutimagine.org/remote.php/dav/files/$username/$remote_dir/";
-	warn $upload_cmd;
-	
+if (grep(/velocyto/, @steps)) {
+	my $cmd_velocyto = "$Bin/velocyto.pl -project=$projectName ";
+	$cmd_velocyto .= "-patients=$patients_name " if ($patients_name);
+	$cmd_velocyto .= "-cpu=$cpu ";
+	$cmd_velocyto .= "-no_exec " if ($no_exec);
+	system($cmd_velocyto);
 }
 
 
@@ -693,7 +697,7 @@ Obligatoires:
 	feature_ref	<s>            tableau des ADT, obligatoire seulement si step=count et qu'il y a des ADT
 	cmo_ref	<s>                tableau des CMO, obligatoire seulement si step=count et qu'il y a des CMO
 Optionels:
-	steps <s>                  étape à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summary ou all (= demultiplex, count, cp_web_summary, tar)
+	steps <s>                  étape(s) à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summary, velocyto, infos ou all (= demultiplex, count, cp_web_summary, tar)
 	patients <s>               noms de patients/échantillons, séparés par des virgules
 	cpu <i>                    nombre de cpu à utiliser, défaut: 20
 	lane <i>                   nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml
@@ -702,6 +706,7 @@ Optionels:
 	aggr_name <s>              nom de l'aggrégation, lors de step=aggr ou aggr_vdj
 	chemistry                  chemistry , défaut: auto (pour librairies exp et adt)
 	no_exec                    ne pas exécuter les commandes
+	force                      relance le pipeline même s'il a déjà tourné
 	help                       affiche ce message
 
 ";
