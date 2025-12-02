@@ -750,12 +750,10 @@ sub  loh {
 	$ppn = int($ppn/4);
 	$ppn = 1 if $ppn < 1;
 	
-	my $fileout = $project->getCacheBitVectorDir()."/somatic_loh/$chr_name.lite";
-	my $fileout2 = $project->getCacheBitVectorDir()."/log/check_loh.$chr_name.ok";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_loh.pl  -project=$project_name -chr=$chr_name -fork=$ppn";
-	
-	$cmd .= " && test $fileout  && perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -project=$project_name -step=loh -chr=$chr_name -fork=$ppn";
-	
+	my $fileout = $self->project->project_log()."/check_loh.$chr_name.ok";
+	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_loh.pl  -project=$project_name -chr=$chr_name -fork=$ppn && touch $fileout";
+#	$cmd .= " && test $fileout";
+#	$cmd .= " && test $fileout  && perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -project=$project_name -step=loh -chr=$chr_name -fork=$ppn";
 	my $type = "loh";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);

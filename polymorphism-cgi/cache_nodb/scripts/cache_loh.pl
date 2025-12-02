@@ -56,15 +56,6 @@ unless ($project->isSomaticStudy()) {
 $project->getPatients();
 my $chr = $project->getChromosome($chr_name);
 mkdir ($project->getCacheBitVectorDir().'/somatic_loh') unless (-d $project->getCacheBitVectorDir().'/somatic_loh');
-my $freeze = $project->getCacheBitVectorDir()."/lmdb_cache/$chr_name.dv.freeze";
-my $hAllVar = retrieve $freeze;
-if (scalar keys %{$hAllVar} == 0) {
-	my $nosql = GenBoNoSql->new(dir => $project->getCacheBitVectorDir().'/somatic_loh', mode => 'c');
-	my $t = time;
-	$nosql->put($chr->id(), "$t");
-	$nosql->close();
-	exit();
-}
 my $fasta_file = $project->getGenomeFasta();
 my $hResults;
 my $var_tmp = $chr->getNewVector();
@@ -73,7 +64,6 @@ my $var_somatic_he  = $chr->getNewVector();
 my $var_patient = $chr->getNewVector();
 my $var_group = $chr->getNewVector();
 my $var_global = $chr->getNewVector();
-my $no_var_infos = $chr->get_lmdb_variations();
 foreach my $group (@{$chr->getSomaticGroups()}) {
 	$var_tmp->Empty();
 	$var_group->Empty();
@@ -95,24 +85,21 @@ foreach my $group (@{$chr->getSomaticGroups()}) {
 		$var_patient -= $patient->getHo($chr);
 		$var_tmp->Intersection( $var_somatic_he, $patient->getHe($chr) );
 		foreach my $id (@{$chr->getListVarVectorIds($var_tmp)}) {
-			my $var_id = $chr->getVarId($id);
-			my $sample_var_1 = $no_var_infos->get($var_id)->{patients_details}->{$patient->name()}->{he_ho_details};
-			unless ($sample_var_1) {
-				warn "\n\nERROR: pb with $var_id and patient ".$patient->name()."... confess\n\n";
-				confess ();
-			}
-			my ($t,$a,$c)  = split(":", $sample_var_1);
-			my ($t1,$b,$d);
+			my $var = $chr->getVarObject($id);
+			my $var_id = $var->id();
+			
+			my $t = 'he';
+			$t = 'ho' if $var->isHomozygote($patient);
+			my $a = $var->getNbAlleleRef($patient);#	unless ($nb_all_ref){$nb_all_ref = 0;}
+			my $c = $var->getNbAlleleAlt($patient);#	unless ($nb_all_mut){$nb_all_mut = 0;}
 			my $already;
 			foreach my $pat_somatic (@lPatSomatic) {
 				next if ($already);
 				next unless ($pat_somatic->getHe($chr)->contains($id));
-				my $sample_var_2 = $no_var_infos->get($var_id)->{patients_details}->{$pat_somatic->name()}->{he_ho_details};
-				unless ($sample_var_2) {
-					warn "\n\nERROR: pb with $var_id (somatic patients: ".join(', ', @lPatSomatic).")... confess\n\n";
-					confess ();
-				}
-				($t1,$b,$d) = split(":", $sample_var_2);
+				my $t1 = 'he';
+				$t1 = 'ho' if $var->isHomozygote($pat_somatic);
+				my $b = $var->getNbAlleleRef($pat_somatic);#	unless ($nb_all_ref){$nb_all_ref = 0;}
+				my $d = $var->getNbAlleleAlt($pat_somatic);#	unless ($nb_all_mut){$nb_all_mut = 0;}
 				$a = 0 unless ($a);
 				$b = 0 unless ($b);
 				$c = 0 unless ($c);
@@ -132,12 +119,18 @@ foreach my $group (@{$chr->getSomaticGroups()}) {
 		$hResults->{$patient->name()} = $patient->getVariantsVector($chr);
 	}
 }
-$no_var_infos->close();
 
-warn 'store 1/1: nosql loh';
-my $nosql = GenBoNoSql->new(dir => $ project->getCacheBitVectorDir().'/somatic_loh', mode => 'c');
-$nosql->put_bulk($chr->id(), $hResults);
-$nosql->close();
+my $rocks4 = $chr->rocks_vector("w");
+foreach my $patient (@{$project->getPatients()}) {
+	my $vloh_pat = $chr->getNewVector();
+	$vloh_pat += $hResults->{$patient->name} if exists $hResults->{$patient->name};
+	warn $patient->name().': '.$vloh_pat->Norm().'/'.$vloh_pat->Size();
+	$rocks4->put_batch_vector_transmission($patient,"som_loh",$vloh_pat);	
+}
+$rocks4->close();
+
+exit(0);
+
 
 
 
