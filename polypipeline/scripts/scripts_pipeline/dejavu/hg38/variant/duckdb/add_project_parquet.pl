@@ -112,14 +112,20 @@ my $filename = join(",",grep {$_}@files);
 
 exit(0) if $filename eq "";
 
-my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+#my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 my $query = "
 	COPY (
         SELECT * from read_csv_auto([$filename]) order by chr38,pos38,chr19,pos19,allele
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);";
 #    warn $query;
-$dbh->do($query);
+#$dbh->do($query);
+
+my $cmd = "duckdb  -c \"$query\"";
+
+system($cmd) == 0 or die "Erreur DuckDB : $?";  
+die() unless -e $parquet_file;
+
 warn $parquet_file;
 warn $filename;
 $filename =~s/,/ /g;
