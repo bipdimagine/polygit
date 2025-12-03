@@ -27,13 +27,15 @@ sub cache_store_duck {
 	#$hash->{filein};
 	my $filein =  $self->patient->project->rocks_directory("genbo")."1.genbo.rocks.rocksdb";
 	my $projectName = $self->project->name();
-	my $ppn = $self->nproc * 2 ;
+	my $ppn = $self->define_ppn();
 	my $type = "duck_cache_store";
 	my $stepname = $projectName."@".$type;
 #	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
 	my $dir_parquet = $self->project->buffer->dejavu_parquet_dir();
-	my $fileout = $self->project->parquet_cache_variants; ;
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/duck_cache_store_annotations.pl  -project=$projectName ";
+	
+	my $fileout = $self->project->parquet_cache_variants;
+	my $cmd = "/usr/bin/perl $bin_cache/duck_cache_store_annotations.pl -project=$projectName";
+	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
@@ -47,14 +49,14 @@ sub tiny_rocks {
 	my ($self,$hash) = @_;
 	my $filein = $self->patient->project->rocks_directory()."/polyviewer_objects.rocksdb/CURRENT";
 	my $projectName = $self->project->name();
-	my $ppn = $self->nproc * 2 ;
+	my $ppn = $self->define_ppn();
 	my $type = "tiny_rocks";
 	my $stepname = $projectName."@".$type;
 #	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
 	# my $dir_parquet = $self->project->rocks_directory_beegfs()."/tiny_rocks/".$self->project->name.".store";;
 	my $fileout = $self->project->tiny_rocks_cache_dir()."/".$self->project->name.".store";
 	warn $fileout;
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/tiny_rocks.pl  -project=$projectName ";
+	my $cmd = "/usr/bin/perl $bin_cache/tiny_rocks.pl  -project=$projectName ";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
