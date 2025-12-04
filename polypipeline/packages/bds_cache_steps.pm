@@ -388,6 +388,7 @@ sub html_cache_polyviewer {
 	
 	
 	my $no = $self->patient()->getGenesDude();
+	
 	my $ppn =$self->nproc;
 	$ppn = int($self->nproc/2) if $self->nocluster;
 	
@@ -397,8 +398,9 @@ sub html_cache_polyviewer {
 	my $bin_dev = $self->script_dir;
 
 	#my $cmd = qq{/$Bin/variations_editor.pl  $args allele_quality=- annot="splicing+essential_splicing+nonsynonymous+stop+phase+maturemirna+frameshift+non-frameshift+predicted_splice_site" denovo=1 dv=3 dv_ho=2 edit_mode=1 in_this_run=6 keep_pathogenic=1 never=1 patients=$name $ph project=$project_name recessive=1 report_mode=1 strict_denovo=1 user_name= xor=1 >/dev/null && date > $totofile};
+	warn "cuicui";
 	my $no_cache = $self->patient()->get_lmdb_cache("r");
-	
+	warn " coucou";
 	my $fileout =  $project->rocks_directory("logs")."/$name.polyviewer";
 	my $cmd = qq{perl $bin_dev/../scripts_cache/polyviewer/variations_editor_cache.pl -patient=$name  -project=$project_name  &&  test -e  $fileout};
 	my $type = "html_polyviewer";
@@ -409,6 +411,7 @@ sub html_cache_polyviewer {
 		 		$job_bds->skip();
 	}
 	$no->close();
+	warn "coucou";
 	return ($fileout);
 }
 
