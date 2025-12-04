@@ -1158,8 +1158,8 @@ qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC }
 #$btn_class = qq{class= "label  label-xs label-warning " style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 95;
 #$btn_class = qq{class= "label  label-xs label-alert "  style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 90;
 #die();
-warn Dumper ($gstats->{"30x"}->mean);
-warn $run->id;
+#warn Dumper ($gstats->{"30x"}->mean);
+#warn $run->id;
 	my $text30  = "30X :" .$format_number->round($lstats->{"30x"}->{$run->id}->{mean},1)."% <i>(".$format_number->round($gstats->{"30x"}->{mean},1).")</i>";
 	my $text100 = ''
 	  ; # = "100X :".$format_number->round($lstats->{"100X"}->{$run->id}->mean,1)."%<i>(".$format_number->round($gstats->{"100X"}->mean,1).")</i>" if  $lstats->{"100X"}->{$run->id} ;
