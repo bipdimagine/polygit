@@ -54,7 +54,7 @@ sub tiny_rocks {
 	# my $dir_parquet = $self->project->rocks_directory_beegfs()."/tiny_rocks/".$self->project->name.".store";;
 	my $fileout = $self->project->tiny_rocks_cache_dir()."/".$self->project->name.".store";
 	warn $fileout;
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/tiny_rocks.pl  -project=$projectName ";
+	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/rocks/tiny_rocks_genbo.pl  -project=$projectName ";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
