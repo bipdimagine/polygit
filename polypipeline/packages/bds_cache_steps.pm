@@ -600,13 +600,17 @@ sub transcripts_dude {
 	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
+	$project->preload_patients();
 	my $project_name = $project->name();
  	my $no = $project->noSqlCnvs("r");
-	$filein =  $no->dir."/raw_data.lite";
+	$filein =  $no->dir."/raw_data.lite";		
 	#my $dir_out= $project->getVariationsDir("dude");
 	#$filein = $dir_out."/".$name.".dude.lid.gz";
 	my $no1 = $self->patient()->getTranscriptsDude();
 	my $fileout = $no1->filename();
+	my $nb_keys = $no1->nb_keys;
+	$no1->close();
+	$no->close();
 	my $ppn =$self->nproc;
 	$ppn = int($self->nproc/2) if $self->nocluster;
 	
@@ -623,11 +627,9 @@ sub transcripts_dude {
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	
 	$self->current_sample->add_job({job=>$job_bds});
-	if ($self->unforce() &&  $no1->nb_keys >10 ){
+	if ($self->unforce() &&  $nb_keys >10 ){
 		 		$job_bds->skip();
 	}
-		
-	$no->close();
 	return ($fileout);
 }
 
