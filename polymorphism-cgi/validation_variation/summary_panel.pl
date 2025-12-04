@@ -1003,11 +1003,11 @@ sub test_disomy {
 	foreach my $p (@{$project->getPatients}){
 		my $file = $p->upd_file();
 		unlink $file  if $cgi->param('force');
-		#unless (-e $file ) {
+		unless (-e $file ) {
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
 			# if $p->isChild();
-		#}
+		}
 		my $r = exists_disomy($p,$file);
 		
 		if($r){
@@ -1158,8 +1158,7 @@ qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC }
 #$btn_class = qq{class= "label  label-xs label-warning " style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 95;
 #$btn_class = qq{class= "label  label-xs label-alert "  style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 90;
 #die();
-warn Dumper ($gstats->{"30x"}->mean);
-warn $run->id;
+
 	my $text30  = "30X :" .$format_number->round($lstats->{"30x"}->{$run->id}->{mean},1)."% <i>(".$format_number->round($gstats->{"30x"}->{mean},1).")</i>";
 	my $text100 = ''
 	  ; # = "100X :".$format_number->round($lstats->{"100X"}->{$run->id}->mean,1)."%<i>(".$format_number->round($gstats->{"100X"}->mean,1).")</i>" if  $lstats->{"100X"}->{$run->id} ;
@@ -1838,6 +1837,7 @@ sub table_quality {
   </div>
   <div class="bottom" style="text-align:left">
 	  	};
+	  	warn $p->name;
 		my $level = 0;
 		my $red   = 0;
 		$red = 1
@@ -1850,9 +1850,11 @@ sub table_quality {
 			next unless $lstats->{$v}->{ $run->id };
 			my $value = $patient_value->{ $p->id }->{$v};
 			$value = 0 unless $value;
-			my $mean = int( $gstats->{$v}->mean );
+			my $mean =  0;
+			$mean = int( $gstats->{$v}->mean ) if $gstats->{$v};
 			$mean = 0 unless $mean;
-			my $std = $gstats->{$v}->standard_deviation;
+			my $std = 0  ;
+			 $std = $gstats->{$v}->standard_deviation if $gstats->{$v};
 			my $p1;
 			$p1 = "p1";
 			my $color = "#009B77";
@@ -1882,6 +1884,7 @@ sub table_quality {
 				or $v eq "mean"
 				or $v eq "%public" )
 			{
+				warn $v;
 				if ( $value < ( $mean - 3 * $std ) && $red == 1 ) {
 					$color = "#DD4132";
 					$level = 3 if $level < 3;
@@ -1926,10 +1929,9 @@ sub table_quality {
 				}
 
 			}
-
-			my $lmean =
-			  $format_number->round( $lstats->{$v}->{ $run->id }->mean * 1.0,
-				1 );
+			my $value1 = 0;
+			$value1 = $lstats->{$v}->{ $run->id }->mean if $lstats->{$v}->{ $run->id };
+			my $lmean =$format_number->round( $value1 * 1.0,1 );
 			$out .=
 qq{<p class="$p1"><i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2px; "></i>$v <span> $value <span> <span><i>($lmean)</i> </span>};
 
