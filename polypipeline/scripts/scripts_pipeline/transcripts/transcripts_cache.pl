@@ -119,7 +119,8 @@ my $p = $project->getPatient($patient_name);
  		$hgene->{low} = {};
  		uri_image($lists,$p->name,$tmp);
 
-system("rm -r $tmp") if $tmp=~/tmp/;
+$project->disconnect();
+system("rm -r $tmp") if $tmp=~/tmp/ and (-e $tmp or -d $tmp);
 
 #warn abs(time-$globaltime);
 exit(0);
@@ -243,7 +244,7 @@ sub uri_image {
 		delete $process->{$h->{end_process}};
     }
     );
-	
+	$project->preload();
 	$project->disconnect;
 	$project->getRuns();
 	$project->getCaptures();
@@ -304,6 +305,7 @@ sub uri_image {
 	}
 	$pm->wait_all_children();
 	
+	$project->disconnect;
 	$project->buffer->dbh_reconnect();
 	die(Dumper $process) if scalar %$process;
 	warn "end fork !!!!";
@@ -352,8 +354,13 @@ sub end_dude {
 	my $no2 = $patient->getTranscriptsDude("c");
 	my $f2 = $no2->filename();
 	$no2->close();
-	warn "rsync -rav $f1 $f2; rm $f1;";
-	system("rsync -rav $f1 $f2; rm $f1;rmdir $tmp");
+	warn "rsync -rav $f1 $f2";
+	system("rsync -rav $f1 $f2;");
+	warn "rm $f1";
+	system("rm $f1") if -e $f1;
+#	warn "rm -r $tmp";
+#	system("rm -r $tmp") if -e $tmp or -d $tmp;
+	warn 'ok end dude';
 }
 
 sub matrix_data_coverage {
