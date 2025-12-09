@@ -317,7 +317,10 @@ method count_featureCounts  (Str :$filein! ){
 		
 		my $aoa = csv (in => $metrics, sep => "\t");
 		my $pct_r1 = $aoa->[7]->[13] if ($aoa->[6]->[13] eq 'PCT_R1_TRANSCRIPT_STRAND_READS');
-		die("ERROR parsing '$metrics': no 'PCT_R1_TRANSCRIPT_STRAND_READS' found") unless ($pct_r1);
+		my $pct_r2 = $aoa->[7]->[14] if ($aoa->[6]->[14] eq 'PCT_R2_TRANSCRIPT_STRAND_READS');
+		die("ERROR parsing '$metrics': no 'PCT_R1_TRANSCRIPT_STRAND_READS' found: ".$aoa->[6]->[13].' -> '.$aoa->[7]->[13]) unless (defined $pct_r1);
+		die("ERROR parsing '$metrics': no 'PCT_R1_TRANSCRIPT_STRAND_READS' found: ".$aoa->[6]->[14].' -> '.$aoa->[7]->[14]) unless (defined $pct_r2);
+		die("ERROR pct R1 and R2 transcript strand reads are both zero / anormal for '$name': R1 = $pct_r1\tR2 = $pct_r2\n$metrics") if ($pct_r1 + $pct_r2 != 1);
 		warn "$name\tR1 = $pct_r1";
 		$strands{'-s 1 '} ++ if ($pct_r1 >= 0.9);
 		$strands{'-s 2 '} ++ if ($pct_r1 <= 0.1);
@@ -326,7 +329,7 @@ method count_featureCounts  (Str :$filein! ){
 		$align_method = $patient->alignmentMethod();
 		$profile = $patient->getSampleProfile();
 	}
-	warn Dumper \%strands;
+	warn 'Strands'.Dumper \%strands;
 	my @strands = keys %strands;
 	die("Error: pct R1 transcript strand reads:\n".Dumper \%strands) if (grep{/error/} @strands);
 	die("More than one strand for the ".scalar @$patients." patients in project $project_name:\n".Dumper \%strands) unless (scalar @strands);
