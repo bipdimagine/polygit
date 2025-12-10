@@ -47,7 +47,9 @@ my $gatk  = $buffer->software("gatk4");
 
 my $patient =  $project->getPatientOrControl($patient_name);
 my $bam_prod = $patient->getBamFile();
-my $ref = $project->genomeFasta($bam_prod);
+#modif de genomeFasta -> exemple projet HG19_MT qui renvoi ref HG19_DRAGEN car pangenome
+#my $ref = $project->genomeFasta($bam_prod);
+my $ref = $project->getGenomeFasta();
 my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf.gz";
 unlink $fileout.".tbi" if -e $fileout;
 unlink $fileout if -e $fileout;
@@ -168,7 +170,7 @@ close LIST;
 				warn $done;
 				system("touch $done");
 				my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf";
-				print_empty_vcf($patient,$fileout);
+				print_empty_vcf($fileout,$patient);
 				exit(0);
 			}
 			die();
