@@ -1837,7 +1837,6 @@ sub table_quality {
   </div>
   <div class="bottom" style="text-align:left">
 	  	};
-	  	warn $p->name;
 		my $level = 0;
 		my $red   = 0;
 		$red = 1
@@ -1884,7 +1883,6 @@ sub table_quality {
 				or $v eq "mean"
 				or $v eq "%public" )
 			{
-				warn $v;
 				if ( $value < ( $mean - 3 * $std ) && $red == 1 ) {
 					$color = "#DD4132";
 					$level = 3 if $level < 3;
