@@ -47,7 +47,6 @@ die("\n\nNo -project option... Die...\n\n") unless ($project_name);
 my $chr_name =  $chr_name_cgi;
 $chr_name = "X" if ($chr_name_cgi == 23);
 $chr_name = "Y" if ($chr_name_cgi == 24);
-warn $chr_name;
 #  instanciation d'un objet project_cache et des objets patient et chromosome
 my $project = $buffer->newProjectCache( -name => $project_name, -typeFilters=>"");
 $coef = 0.15 if $project->isDiagnostic;
@@ -98,7 +97,6 @@ sub get_dude_tab {
 			my $st;
 			my $stats= new Statistics::Descriptive::Full;
 			my $score =0;
-			warn $p->start." :: $v :: ".$p->sd($patient)." ". $p->statistics->quantile(1);
 			next if $p->sd($patient) > 0.6;
 			next if $p->statistics->quantile(1)< 0.7;
 			 next if $p->statistics->quantile(3)> 1.3;
