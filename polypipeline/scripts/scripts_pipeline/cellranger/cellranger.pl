@@ -40,7 +40,7 @@ use File::Path qw(make_path);
 my $projectName;
 my $patients_name;
 my @steps;
-my $lane;
+#my $lane;
 my $mismatch = 0;
 my $feature_ref;
 my $cmo_ref;
@@ -49,13 +49,14 @@ my $aggr_name;
 my $chemistry;
 my $create_bam;
 my $cpu = 20;
+my $force;
 my $help;
 
 GetOptions(
 	'project=s'					=> \$projectName,
 	'patients=s'				=> \$patients_name,
 	'steps=s{1,}'				=> \@steps,
-	'lane|nb_lane=i'			=> \$lane,
+#	'lane|nb_lane=i'			=> \$lane,
 	'mismatches=i'				=> \$mismatch,
 	'create_bam!'				=> \$create_bam,
 	'feature_ref|feature_csv=s'	=> \$feature_ref,
@@ -64,6 +65,7 @@ GetOptions(
 	'chemistry=s'				=> \$chemistry,
 	'cpu=i'						=> \$cpu,
 	'no_exec'					=> \$no_exec,
+	'force'						=> \$force,
 	'help'						=> \$help,
 ) || die("Error in command line arguments\n");
 
@@ -93,7 +95,7 @@ $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 warn $dir;
 
 @steps = split(/,/, join(',',@steps));
-my $list_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'all'];
+my $list_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'velocyto', 'all'];
 #my @correct_steps = grep{/@steps/} @$list_steps;
 #undef @steps if (@steps and scalar @correct_steps == 0);
 unless (@steps) {
@@ -117,26 +119,29 @@ my @patient_names = map {$_->name} @$patients;
 my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
 die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
 
+$create_bam = 1 if (grep(/velocyto/i, @steps));
+
 
 #------------------------------
 # DEMULIPLEXAGE
 #------------------------------
 if (grep(/demultiplex|^all$/i, @steps)){
 	
+	die("-mismatch can be 0, 1, 2. Two entries, comma delimited, allowed for dual index.") unless ($mismatch =~ /[012](,[012])?/);
+	warn 'mismatch(es)=$mismatch';
+	
 	my $bcl_dir = $run->bcl_dir;
 	warn $bcl_dir;
-	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
-	my $lane_config = $config->{Run}->{FlowcellLayout}->{LaneCount};
-	my $prompt = prompt("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane. Continue ? (y/n)  ", -yes) if ($lane and $lane != $lane_config);
-	die if ($prompt);
-	unless ($lane) {
-		$lane = $lane_config;
-		warn 'LaneCount=',$lane;
-	}
+#	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
+#	my $lane_config = $config->{Run}->{FlowcellLayout}->{LaneCount};
+#	if ($lane and $lane != $lane_config) {
+#		die unless prompt("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane. Continue anyway ? (y/n)  ", -yes_no);
+#	}
+#	unless ($lane) {
+#		$lane = $lane_config;
+#		warn 'LaneCount=$lane';
+#	}
 	
-	my $tmp = $project->getAlignmentPipelineDir("cellranger_demultiplex");
-	warn $tmp;
-
 	my $sampleSheet = $bcl_dir."/sampleSheet.csv";
 	open (SAMPLESHEET,">$sampleSheet");
 	print SAMPLESHEET "Lane,Sample,Index\n";
@@ -144,22 +149,22 @@ if (grep(/demultiplex|^all$/i, @steps)){
 	foreach my $patient (sort @{$patients}) {
 		my $name = $patient->name();
 		my $bc = $patient->barcode();
-		my $bc2 = $patient->barcode2();
-		for (my $i=1;  $i<=$lane;$i++){
-			print SAMPLESHEET $i.",".$name.",".$bc."\n";
-		}
+		print SAMPLESHEET "*,$name,$bc"."\n";
+#		for (my $i=1;  $i<=$lane;$i++){
+#			print SAMPLESHEET $i.",".$name.",".$bc."\n";
+#		}
 	}
 	close(SAMPLESHEET);
 	
-	my $cmd = "cd $tmp; $Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=$mismatch";
+	my $cmd = "$Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=$mismatch";
 	warn $cmd;
 	my $exit = system ($cmd) unless ($no_exec);
 	exit($exit) if ($exit);
 	unless ($@ or $no_exec) {
 		print "\t------------------------------------------\n";
 		print("Check the demultiplex stats\n");
-		print("https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html\n\n");
-		system ("firefox https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html &");
+		print("https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html\n");
+		system("firefox https://www.polyweb.fr/NGS/demultiplex/$run_name/$run_name\_laneBarcode.html &");
 		print "\t------------------------------------------\n";
 	}
 }
@@ -218,7 +223,7 @@ if (grep(/count|^all$/i, @steps)){
 	
 	
 	my $fastq;
-	my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
+	my $tmp = $project->getAlignmentPipelineDir("cellranger");
 	warn $tmp;
 	
 	# Vérifie que les fastq sont bien nommés
@@ -226,13 +231,22 @@ if (grep(/count|^all$/i, @steps)){
 		my $pname = $patient->name;
 		my $fastq_files = $patient->fastqFiles();
 		my @fastq_files = map {values %$_} @$fastq_files;
-		die ("Fastq file names (sample $pname) must follow the following naming convention: [Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz")
+		die ("Fastq file names (sample $pname) must follow the following naming convention: [Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz"
+			 ."\n".Dumper \@fastq_files)
 			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][123]_001\.fastq\.gz$/} @fastq_files) == scalar @fastq_files);
 	}
 	
-	# todo: vérifier que le pipeline n'ait pas déjà tourné : check si web_summary existe
 	# todo: vérifier qu'il n'y ait pas déjà un répertoire patient dans le $tmp
 	# todo: vérifier qu'il n'y ait pas des adt oubliés: si pat exp prendre aussi pat adt
+	
+	# Vérifie que le pipeline n'ait pas déjà tourné : check si web_summary existe
+	foreach my $patient (@{$patients}) {
+		my $pname = $patient->name;
+		if ((-e  "$dir$pname/web_summary.html" or -e "$dir$pname/outs/web_summary.html" or -e "$tmp$pname/outs/web_summary.html") and not $force) {
+			warn "NEXT: $pname pipeline already completed: web_summary already exists";
+			next;
+		}
+	}
 	
 	sub full_cmd {
 		my ($pat, $cmd) = @_;
@@ -268,8 +282,8 @@ if (grep(/count|^all$/i, @steps)){
 			my $prog =  $e->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$index ";
-			$cmd .= " --include-introns true" if ($type eq "nuclei" or lc($group) eq "nuclei"); # true par défaut
-			$cmd .= " --chemistry $chemistry" if ($chemistry);
+			$cmd .= " --include-introns true " if ($type eq "nuclei" or lc($group) eq "nuclei"); # true par défaut
+			$cmd .= " --chemistry $chemistry " if ($chemistry);
 			$cmd .= "\n";
 			$cmd = full_cmd($e, $cmd);
 	#		warn $cmd;
@@ -293,7 +307,7 @@ if (grep(/count|^all$/i, @steps)){
 			my $prog =  $v->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $index_vdj = $index."_vdj";
-			my $cmd = "cd $tmp && cellranger vdj --sample=$name --id=$name --fastqs=$fastq --reference=$index_vdj  \n";
+			my $cmd = "cd $tmp && cellranger vdj --sample=$name --id=$name --fastqs=$fastq --reference=$index_vdj ";
 			$cmd = full_cmd($v, $cmd);
 			print JOBS_VDJ $cmd;
 		}
@@ -310,7 +324,7 @@ if (grep(/count|^all$/i, @steps)){
 			my $ename = $e->name(); 
 			my $efam = $e->family();
 #			my $egroup = uc($e->somatic_group());
-			my $lib_file = $dir."/".$ename."_library.csv";
+			my $lib_file = $dir.$ename."_library.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
 			my @adt = grep {$_->family() eq $efam && $_->name() =~ $ename && uc($_->somatic_group()) eq "ADT"} @{$patients};
 			warn ("no associated ADT library") if scalar(@adt)==0 ;
@@ -323,7 +337,7 @@ if (grep(/count|^all$/i, @steps)){
 			my $prog =  $e->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $cmd = "cd $tmp && cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file --create-bam=$create_bam ";
-			$cmd .= " --chemistry $chemistry" if ($chemistry);
+			$cmd .= " --chemistry $chemistry " if ($chemistry);
 			$cmd .= "\n";
 			$cmd = full_cmd($e, $cmd);
 			print JOBS_ADT $cmd;
@@ -385,7 +399,7 @@ if (grep(/count|^all$/i, @steps)){
 			$set .= "Visium_Mouse_Transcriptome_Probe_Set_v2.0_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM/ && $slide_id =~ /^H1/);
 			
 			my $cmd = "cd $tmp && spaceranger count --id=$sname --sample=$sname --fastqs=$fastq --transcriptome=$index_spatial --create-bam=$create_bam ";
-			$cmd .= "--$imagetype=$image  ";
+			$cmd .= "--$imagetype=$image ";
 			$cmd .= "--area=$area --slide=$slide_id --probe-set=$set ";
 #			$cmd .= " --loupe-alignment=$json ";
 			$cmd = full_cmd($s, $cmd);
@@ -411,7 +425,7 @@ if (grep(/count|^all$/i, @steps)){
 			my $prog =  $a->alignmentMethod();
 			my $index = $project->getGenomeIndex($prog);
 			my $index_atac = $index."_atac" if $type eq "atac";
-			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_atac  \n";
+			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_atac ";
 			$cmd = full_cmd($a, $cmd);
 			print JOBS_ATAC $cmd;
 		}
@@ -446,7 +460,7 @@ if (grep(/count|^all$/i, @steps)){
 			print LIB $ename."_B252,B252\n";
 			print LIB $ename."_B253,B253\n";
 			close(LIB);
-			my $cmd = "cd $tmp && cellranger multi --id=$ename --csv=$lib_file\n";
+			my $cmd = "cd $tmp && cellranger multi --id=$ename --csv=$lib_file ";
 			$cmd = full_cmd($e, $cmd);
 			print JOBS_CMO $cmd;
 		}
@@ -477,7 +491,7 @@ if (grep(/count|^all$/i, @steps)){
 			$lib .= $tmp.'fastq/'.",".$atac_name.",Chromatin Accessibility\n";
 			print LIB $lib;
 			close(LIB);
-			my $cmd = "cd $tmp && $exec count --id=$ename --transcriptome=$index_arc  --libraries=$lib_file\n";
+			my $cmd = "cd $tmp && $exec count --id=$ename --transcriptome=$index_arc  --libraries=$lib_file ";
 			$cmd = full_cmd($e, $cmd);
 			print JOBS_ARC $cmd;
 		}
@@ -516,7 +530,7 @@ if (grep(/count|^all$/i, @steps)){
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
 		print("Check the web summaries:\n");
-		print("$dir/*/web_summary.html\n\n");
+		print("$dir/*/web_summary.html\n");
 		print "\t------------------------------------------\n\n";
 	}
 	
@@ -662,22 +676,14 @@ if (grep(/tar|archive|^all$/i, @steps)){
 
 
 #------------------------------
-# Upload Imagine CloudBOX ??
+# Velocyto
 #------------------------------
-if (grep(/cloud/, @steps)) {
-	my $archive = "$dir/$projectName.tar.gz";
-#	my $archive = "test.txt";
-	die ("No archive found: $archive") unless (-e $archive);
-	my $username = 'melodie.perin' if (getpwuid($<) eq 'mperin');
-	$username = prompt('Username: ') unless $username;
-	die unless $username;
-	my $password = 'cZN5k*Rtt4Qc+B6M' if ($username eq 'melodie.perin');
-	$password  = prompt('Password: ', -e=>'') unless ($password);
-	my $remote_dir = "Archives single cell";
-	$remote_dir =~ s/ /%20/g;  # encodage des espaces
-	my $upload_cmd = "curl -u $username:$password -T $archive --progress-bar https://cloudbox.institutimagine.org/remote.php/dav/files/$username/$remote_dir/";
-	warn $upload_cmd;
-	
+if (grep(/velocyto/, @steps)) {
+	my $cmd_velocyto = "$Bin/velocyto.pl -project=$projectName ";
+	$cmd_velocyto .= "-patients=$patients_name " if ($patients_name);
+	$cmd_velocyto .= "-cpu=$cpu ";
+	$cmd_velocyto .= "-no_exec " if ($no_exec);
+	system($cmd_velocyto);
 }
 
 
@@ -691,7 +697,7 @@ Obligatoires:
 	feature_ref	<s>            tableau des ADT, obligatoire seulement si step=count et qu'il y a des ADT
 	cmo_ref	<s>                tableau des CMO, obligatoire seulement si step=count et qu'il y a des CMO
 Optionels:
-	steps <s>                  étape à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summary ou all (= demultiplex, count, cp_web_summary, tar)
+	steps <s>                  étape(s) à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summary, velocyto, infos ou all (= demultiplex, count, cp_web_summary, tar)
 	patients <s>               noms de patients/échantillons, séparés par des virgules
 	cpu <i>                    nombre de cpu à utiliser, défaut: 20
 	lane <i>                   nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml
@@ -700,6 +706,7 @@ Optionels:
 	aggr_name <s>              nom de l'aggrégation, lors de step=aggr ou aggr_vdj
 	chemistry                  chemistry , défaut: auto (pour librairies exp et adt)
 	no_exec                    ne pas exécuter les commandes
+	force                      relance le pipeline même s'il a déjà tourné
 	help                       affiche ce message
 
 ";

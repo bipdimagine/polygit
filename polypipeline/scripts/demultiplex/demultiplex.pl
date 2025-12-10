@@ -53,7 +53,7 @@ my $cmd_cfg = qq{ /software/bin/bcl2fastq };
 die($dir. "not exists") unless -e $dir;
 die() unless  $run;
 die("hiseq: HISEQ2500-1 or HISEQ2500-2 or NOVASEQ or ISEQ or NEXTSEQ500 or NOVASEQ-Abel or 10X or MISEQ") if ($hiseq ne "HISEQ2500-1" && $hiseq ne 'HISEQ2500-2' && $hiseq ne 'NOVASEQ' && $hiseq ne 'ISEQ' && $hiseq ne 'NEXTSEQ500' && $hiseq ne 'NOVASEQ-Abel' && $hiseq ne '10X' && $hiseq ne 'MISEQ');
-my $root= "/data-pure/data/sequences";
+my $root = "/data-pure/data/sequences";
 my $tmp = "/data-beegfs/tmp/$run";
 my $reports_dir = "/data-isilon/sequencing/ngs/demultiplex/$run";
 
@@ -62,7 +62,7 @@ if (-d $tmp){
 }
 
 my $final_dir = $root."/ILLUMINA/$hiseq/IMAGINE/$run";
-$final_dir = $root."/ILLUMINA/NOVASEQ/IMAGINE/$run" if $hiseq eq '10X';
+$final_dir = $root."/ILLUMINA/NOVASEQX/CURIE/$run" if $hiseq eq '10X';
 $final_dir = $root."/ILLUMINA/$hiseq/LAVOISIER/$run" if $hiseq eq 'NEXTSEQ500';
 $final_dir = $root."/ILLUMINA/$hiseq/HEMATO/$run" if $hiseq eq 'MISEQ';
 warn $final_dir;
@@ -75,12 +75,10 @@ make_path($final_dir, { mode => 0775 })
 
 mkdir $tmp;
 my $wtmp = "$tmp/Unaligned";
-my $basecall_dir =  "$dir/Data/Intensities/BaseCalls/";
-die($basecall_dir ." doesnt exists") unless -e $basecall_dir;
-my $cmd1 = "$cmd_cfg --input-dir $basecall_dir  --output-dir=$wtmp --ignore-missing-bcl --ignore-missing-positions --ignore-missing-filter --ignore-missing-control --minimum-trimmed-read-length 0 --mask-short-adapter-reads 0  --reports-dir $reports_dir -R $dir";
+my $cmd1 = "$cmd_cfg --input-dir $basecall_dir  --output-dir=$wtmp --minimum-trimmed-read-length 0 --mask-short-adapter-reads 0  --reports-dir $reports_dir -R $dir";
 if($hiseq eq "10X"){  
 	$mismatch = 0 unless ($mismatch);
-	$cmd1= "cd $tmp ; /software/distrib/$cellranger_type/latest mkfastq --id=$run --run=$dir --csv=$sample_sheet --output-dir=$wtmp --barcode-mismatches=$mismatch";
+	$cmd1 = "cd $tmp ; /software/distrib/$cellranger_type/latest mkfastq --id=$run --run=$dir --csv=$sample_sheet --output-dir=$wtmp --barcode-mismatches=$mismatch";
 }
 elsif($dragen == 1){
 	my $dragen_output = "/staging/RUN/".$run;
@@ -125,6 +123,7 @@ system("mv $final_dir/Undetermined* $wtmp");
 #system("rm $final_dir/Undetermined*");
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/$run";
 system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats");
+system("cp $tmp/Unaligned/Stats/* /data-isilon/sequencing/ngs/demultiplex/$run/") if($hiseq eq "10X");
 my $fileReport= $run."_laneBarcode.html";
 system("cp $tmp/Unaligned/Reports/html/*/all/all/all/laneBarcode.html /data-isilon/sequencing/ngs/demultiplex/$run/$fileReport");
 #system("rm -rf $tmp");

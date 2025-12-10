@@ -603,13 +603,17 @@ sub transcripts_dude {
 	my $filein = $hash->{filein};
 	my $name = $self->patient()->name();
 	my $project = $self->patient()->getProject();
+	$project->preload_patients();
 	my $project_name = $project->name();
  	my $no = $project->noSqlCnvs("r");
-	$filein =  $no->dir."/raw_data.lite";
+	$filein =  $no->dir."/raw_data.lite";		
 	#my $dir_out= $project->getVariationsDir("dude");
 	#$filein = $dir_out."/".$name.".dude.lid.gz";
 	my $no1 = $self->patient()->getTranscriptsDude();
 	my $fileout = $no1->filename();
+	my $nb_keys = $no1->nb_keys;
+	$no1->close();
+	$no->close();
 	my $ppn =$self->nproc;
 	$ppn = int($self->nproc/2) if $self->nocluster;
 	
@@ -626,11 +630,9 @@ sub transcripts_dude {
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	
 	$self->current_sample->add_job({job=>$job_bds});
-	if ($self->unforce() &&  $no1->nb_keys >10 ){
+	if ($self->unforce() &&  $nb_keys >10 ){
 		 		$job_bds->skip();
 	}
-		
-	$no->close();
 	return ($fileout);
 }
 
@@ -753,12 +755,10 @@ sub  loh {
 	$ppn = int($ppn/4);
 	$ppn = 1 if $ppn < 1;
 	
-	my $fileout = $project->getCacheBitVectorDir()."/somatic_loh/$chr_name.lite";
-	my $fileout2 = $project->getCacheBitVectorDir()."/log/check_loh.$chr_name.ok";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_loh.pl  -project=$project_name -chr=$chr_name -fork=$ppn";
-	
-	$cmd .= " && test $fileout  && perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -project=$project_name -step=loh -chr=$chr_name -fork=$ppn";
-	
+	my $fileout = $self->project->project_log()."/check_loh.$chr_name.ok";
+	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_loh.pl  -project=$project_name -chr=$chr_name -fork=$ppn && touch $fileout";
+#	$cmd .= " && test $fileout";
+#	$cmd .= " && test $fileout  && perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -project=$project_name -step=loh -chr=$chr_name -fork=$ppn";
 	my $type = "loh";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);

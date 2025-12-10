@@ -1023,9 +1023,10 @@ sub test_disomy {
 
 sub exists_disomy {
 	my ($p,$file) = @_;
+	print '.';
 	open(JSON,$file);
 	my $tt = <JSON>;
-	chomp($tt);
+	chomp($tt) if $tt;
 	my $hash = decode_json $tt;
 	my $type;
 	foreach my $chr (keys %$hash)

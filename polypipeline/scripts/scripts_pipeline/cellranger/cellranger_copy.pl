@@ -58,7 +58,7 @@ $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 
 my $dirout = "/data-pure/SingleCell/$projectName/";
 make_path($dirout, { mode => 0775 }) unless (-d $dirout);
-
+my $error;
 foreach my $patient (@{$patients}) {
 	my $name = $patient->name();
 	next if ($name =~ /^ADT_/);
@@ -80,11 +80,15 @@ foreach my $patient (@{$patients}) {
 		system ($cp_cmd) unless $no_exec;
 	}
 	else {
+		$error->{$name} ++;
 		warn ("$name web summary not found: '$dir$name/web_summary.html'\nAre you sure the counting finished successfully ?");
 	}
 }
 
-unless ($no_exec){
+if ($error){
+	die("ERROR: Patient(s) not copied to $dirout:\n".Dumper $error);
+}
+unless ($no_exec or $error){
 	print "\t------------------------------------------\n";
 	print "\tAll outs copied to $dirout \n" if ($all_outs);
 	print "\tWeb summaries copied to $dirout \n" unless ($all_outs);

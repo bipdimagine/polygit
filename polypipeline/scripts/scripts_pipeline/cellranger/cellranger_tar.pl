@@ -61,9 +61,9 @@ foreach my $pat (@{$patients}) {
 	push(@group,$group);
 }
 
-my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/web_summary.html $dir*/cloupe.cloupe ";
+my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/web_summary.html ";
+$tar_cmd .= "$dir*/cloupe.cloupe $dir*/*_bc_matrix/* " if (grep (! /vdj/i, @group));
 $tar_cmd .= "$dir*/vloupe.vloupe " if grep (/vdj/i, @group);
-$tar_cmd .= "$dir*/*_bc_matrix/* ";
 $tar_cmd .= "$dir*/*.bam* " if ($create_bam and $create_bam ne 'false');
 $tar_cmd .= "$dir*/fragments.tsv.gz $dir*/peak_annotation.tsv " if (grep {/ATAC/i} @group);
 # scRNAseq: GEX (+ADT): cloupe.cloupe, web_summary.html, filtered and raw_feature_bc_matrix

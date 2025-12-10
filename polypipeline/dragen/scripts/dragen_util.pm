@@ -13,10 +13,11 @@ sub get_fastq_file {
 	my @r1;
 	my @r2;
 	my $find_I1;
+	
 	foreach my $cp (@$files_pe1) {
 		$find_I1 ++ if $cp->{R1} =~ /_I1_0/;;
 		next if $cp->{R1} =~ /_I1_0/;
-		die() if $cp->{R2} !~ /_R2_/;
+		die() if ($cp->{R2} !~ /_R2_/ and $cp->{R2} !~ /_R2./);
 		my $file1 = $dir_fastq."/".$cp->{R1};
 		die($file1) unless -e  $file1;
 		my $file2 = $dir_fastq."/".$cp->{R2};

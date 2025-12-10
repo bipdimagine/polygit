@@ -504,7 +504,7 @@ sub convert_csv_to_json {
 		while (<IN>) {
 			chomp($_);
 			my $line = $_;
-			if ($line =~ /,Sample_Project,/) {
+			if ($line =~ /,Sample_Project(,|$)/) {
 				@l_header = split (',', $line);
 				$start_parsing = 1;
 			}
