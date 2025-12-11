@@ -94,6 +94,7 @@ GetOptions(
 	'yes=s' =>\$yes,
 	'padding=s' =>\$pad,
 	'nolimit=s' =>\$secret,
+	'imagine'
 );
 $patients_name = "all" unless $patients_name;
 my $report;
@@ -339,6 +340,7 @@ print "\n";
 
 foreach my $p (@$patients) {
 		my $file = $p->trackingFile().".lock";
+		warn $file;
 		unlink $file if -e $file;
 		if (-e $p->trackingFile()){
 			my $backup_dir = $project->getPipelineTrackingDir()."/backup";
@@ -355,7 +357,8 @@ foreach my $p (@$patients) {
 		}
 
 my $file2 = $p->trackingFile();
-next if -e "$file2.lite";
+warn $file2;
+next if -s "$file2.lite";
 my $dbh = DBI->connect("dbi:SQLite:dbname=$file2.lite","","");
 $dbh->{AutoCommit} = 0;
 my $sql_create = qq{CREATE TABLE IF NOT EXISTS `steps` (
@@ -378,7 +381,6 @@ $dbh->commit();
 system("chmod a+rw $file2.lite");
 		
 }
-
 my $priority = 0;
 my $n = 0;
 my $end_files;
