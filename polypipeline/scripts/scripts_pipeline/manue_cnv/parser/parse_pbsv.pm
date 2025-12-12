@@ -92,7 +92,11 @@ sub parse_cnv {
 		my $pval = p_value_binomial_ge($dp, $dp_alt, $error_rate);
 		my $pval1 =  p_value_binomial_ge(4, 2, $error_rate);
 		# Calcul Phred
-		my $phred = -10 * log($pval) / log(10);
+		$pval = 1e-23 if $pval == 0;
+		my $phred =999;
+		if ($pval > 0){
+		 $phred = -10 * log($pval) / log(10);
+		}
 		$phred = 999 if ($phred eq "NaN");
 		$h->{id}=$id;
 		$h->{'REAL_CALLER'} = $caller;
