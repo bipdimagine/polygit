@@ -119,11 +119,7 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
 		igv.createBrowser(div, options).then(function (browser) {
 		    browser.search(locus);
 		    var tracks = list_bams.join(',');
-		    if (url_fasta.match(/HG19/)) {
-		    	tracks = tracks + ',' + window.location.origin + '/' + url_gene_bed;
-		    	launch_igv_tool('', tracks, locus);
-		    }
-		    else if (url_fasta) {
+		    if (url_fasta) {
 		    	url_fasta = window.location.origin + '/' + url_fasta;
 		    	launch_igv_tool(url_fasta, tracks, locus);
 		    }
