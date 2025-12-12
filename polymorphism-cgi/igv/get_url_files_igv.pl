@@ -14,15 +14,22 @@ my $buffer = GBuffer->new();
 my $project = $buffer->newProject(-name=>$project_name);
 
 my $url_gene_bed = $project->get_gtf_genes_annotations_igv();
-$url_gene_bed =~ s/\/data-isilon//;
+
+if (-e $url_gene_bed) {
+	$url_gene_bed =~ s/\/data-isilon//;
+}
+else {
+	$url_gene_bed = undef;
+}
+
 
 my $url_genome_fasta = $project->getGenomeFasta();
 $url_genome_fasta =~ s/\/data-isilon//;
+$url_genome_fasta =~ s/\/\//\//g;
 
 my $hash;
-$hash->{'url_gene_bed'} = $url_gene_bed;
-$hash->{'url_genome_fasta'} = $url_genome_fasta if (not $url_genome_fasta =~ /HG19/);
-$hash->{'url_genome_fasta'} = $url_genome_fasta if ($url_genome_fasta =~ /HG19_MT/);
+$hash->{'url_gene_bed'} = $url_gene_bed if ($url_gene_bed);
+$hash->{'url_genome_fasta'} = $url_genome_fasta;# if (not $url_genome_fasta eq 'HG19' and not $url_genome_fasta eq 'HG38');
 
 print $cgi->header('text/json-comment-filtered');
 print encode_json $hash;
