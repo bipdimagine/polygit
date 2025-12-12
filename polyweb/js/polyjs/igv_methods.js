@@ -137,7 +137,13 @@ function getUrlLoadingGenome(file) {
 	var re_hg38 = new RegExp('HG38*');
 	var re_mm38 = new RegExp('MM38*');
 	var re_mm39 = new RegExp('MM39*');
-	if (re_hg19.test(file)) {
+	if (url_fasta) {
+		url += "&genome=" + window.location.origin + '/' + url_fasta;
+		if (url_gene_bed) {
+			url += "&file=" + window.location.origin + '/' + url_gene_bed;
+		}
+	}
+	else if (re_hg19.test(file)) {
 	    url += "&genome=hg19";
 	}
 	else if (re_hg38.test(file)) {

@@ -725,14 +725,6 @@ var previous_bams = new Array();
 var igv_genome;
 
 function launch_web_igv_js(project, patients_names, bams_files, locus){
-	const regex = /HG38/g;
-	var temp = bams_files.split('/');
-	igv_genome = temp[3];
-	var genome = 'hg19';
-	if (igv_genome.match(regex)) {
-		genome = 'hg38';
-	}
-	
 	var locus2 = locus.replace(':', ';');
 	locus2 = locus2.replace('-', ';');
 	var lTmp = locus2.split(';');
@@ -744,18 +736,20 @@ function launch_web_igv_js(project, patients_names, bams_files, locus){
 	if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 	else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
 	else { list_bams_files.push(bams_files); }
-	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names, genome);
+	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
 	
+	var i_bam = 0;
 	for (i in list_bams_files ) {
 		var file = list_bams_files[i];
 		if (!(file in previous_bams)){
 			previous_bams[file] = 1;
-			displayOneBAMIGV(file);
+			if (i_bam == 0) { displayOneBAMIGV(file); }
+			else { addOneBAMIGV(file); }
 		}
 		else {
 			previous_bams[file] +=1;
 		}
-		//if (previous_bams[file] )
+		i_bam++;
 	}
 	displayInIGVLocus(chr+":"+start+"-"+end);
 }
@@ -774,6 +768,7 @@ function getGencodeTrackForProject(project_name) {
 
 function displayListBamInIgvApp(list_bams) {
 	for(var i = 0; i < list_bams.length; i++) {
+		var first
 		var bam = list_bams[i];
 		displayOneBAMIGV(bam);
     }
