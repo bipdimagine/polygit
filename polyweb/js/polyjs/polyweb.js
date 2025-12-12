@@ -761,8 +761,8 @@ var url_gene_bed, url_fasta, url_cyto;
 function getGencodeTrackForProject(project_name) {
 	var url = url_path + "igv/get_url_files_igv.pl?project=" + project_name;
 	$.getJSON( url, function( data ) {
-		url_gene_bed = data.url_gene_bed;
-		url_fasta = data.url_genome_fasta;
+		if (data.url_gene_bed != null) { url_gene_bed = data.url_gene_bed; }
+		if (data.url_genome_fasta != null) { url_fasta = data.url_genome_fasta; }
     })
 }
 
