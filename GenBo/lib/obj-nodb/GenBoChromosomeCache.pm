@@ -1161,15 +1161,16 @@ has public_hgmd_dm_tree => (
 
 sub getVectorLmdbDm {
 	my $self = shift;
-	if ($self->project->isUpdate()) { 
-		return $self->getVectorScore('dm');
-	}
-	my $vector_dm = $self->getNewVector();
-	foreach my $var (@{$self->getListVarObjects($self->getVariantsVector())}) {
-		next unless ($var->isDM());
-		$vector_dm->Bit_On($var->vector_id()); 
-	}
-	return $vector_dm;
+	confess();
+#	if ($self->project->isUpdate()) { 
+#		return $self->getVectorScore('dm');
+#	}
+#	my $vector_dm = $self->getNewVector();
+#	foreach my $var (@{$self->getListVarObjects($self->getVariantsVector())}) {
+#		next unless ($var->isDM());
+#		$vector_dm->Bit_On($var->vector_id()); 
+#	}
+#	return $vector_dm;
 }
 
 has getVectorLmdbDm_newVersion => (
@@ -1177,16 +1178,17 @@ has getVectorLmdbDm_newVersion => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $vector_new_dm = $self->getNewVector();
-		my @lVar;
-		if ($self->project->isUpdate()) { @lVar = @{$self->getListVarObjects($self->getVectorLmdbDm())}; }
-		else { @lVar = @{$self->getListVarObjects($self->getVariantsVector())}; }
-		foreach my $var (@lVar) {
-			next unless ($var->isDM());
-			next unless ($var->isNewHgmd());
-			$vector_new_dm->Bit_On($var->vector_id); 
-		}
-		return $vector_new_dm;
+		confess();
+#		my $vector_new_dm = $self->getNewVector();
+#		my @lVar;
+#		if ($self->project->isUpdate()) { @lVar = @{$self->getListVarObjects($self->getVectorLmdbDm())}; }
+#		else { @lVar = @{$self->getListVarObjects($self->getVariantsVector())}; }
+#		foreach my $var (@lVar) {
+#			next unless ($var->isDM());
+#			next unless ($var->isNewHgmd());
+#			$vector_new_dm->Bit_On($var->vector_id); 
+#		}
+#		return $vector_new_dm;
 	},
 );
 
@@ -2465,6 +2467,7 @@ has vectorDM => (
         lazy    => 1,
         default => sub {
         	my $self = shift;
+        	return $self->getNewVector() unless $self->project->isHGMD;
         	if ($self->project->isRocks){
         		return $self->getNewVector() if $self->size_vector == 0;
         		return $self->rocks_vector->get_vector_chromosome("dm");
