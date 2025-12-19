@@ -253,6 +253,7 @@ has hgmd => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return unless $self->project->isHGMD;
 		my $db =  $self->getChromosome->rocksdb("hgmd");
 		return $db->hgmd($self->rocksdb_id);
 		my $pub = $db->get_with_sequence($self->start,$self->alternate_allele);
@@ -313,6 +314,7 @@ has isDM => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
+		return 	unless $self->project->isHGMD;
 		return unless $self->hgmd_id();
 		return 1 if ($self->hgmd_class() eq 'DM');
 		return;
@@ -329,7 +331,7 @@ has genes_pathogenic_DM => (
 		foreach my $gene (@{$self->getGenes}){
 			 $hash->{$gene->id}->{DM} = undef;
 			 $hash->{$gene->id}->{pathogenic} = undef;
-			 if ($self->isDM){
+			 if ($self->isDM && !($self->project->isHGMD)){
 				eval { $hash->{$gene->id}->{DM} = $chr->is_hgmd_DM_for_gene($self->hgmd_id(), $gene); };
 				if ($@) { $hash->{$gene->id}->{DM} = 1; }
 			 }
@@ -2232,8 +2234,14 @@ sub scaledScoreVariant{
 		my $gac  = $self->getGnomadAC ;
 		$gac = 0 unless $gac;
 		$scaled_score ++;
+		if ($self->project->isHGMD){
 		$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $self->isDM_for_gene($gene));
 		$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $self->isDM_for_gene($gene) && $gac < 1000);
+		}
+		else {
+				$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($gene) );
+				$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $gac < 1000);
+		}
 		$scaled_score +=0.5 	if  $gac < 100 ;
 		$scaled_score ++ 	if  $gac < 30;
 	}
@@ -2284,8 +2292,15 @@ sub scaledScoreVariantPolydiag{
 		my $gac  = $self->getGnomadAC ;
 		$gac = 0 unless $gac;
 		$scaled_score ++;
-		$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($tr->getGene()) && $self->isDM_for_gene($tr->getGene()));
-		$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($tr->getGene()) && $self->isDM_for_gene($tr->getGene()) && $gac < 100);
+		my $gene = $tr->getGene();
+		if ($self->project->isHGMD){
+		$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $self->isDM_for_gene($gene));
+		$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $self->isDM_for_gene($gene) && $gac < 1000);
+		}
+		else {
+				$scaled_score += 0.5 	if ($self->is_clinvar_pathogenic_for_gene($gene) );
+				$scaled_score += 0.2 	if ($self->is_clinvar_pathogenic_for_gene($gene) && $gac < 1000);
+		}
 		$scaled_score +=0.5 	if  $gac < 500 ;
 		$scaled_score ++ 	if  $gac < 80;
 		

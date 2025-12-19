@@ -489,7 +489,17 @@ has isGenome => (
 has cgi_user => (
 	is      => 'rw',
 );
-
+has isGlucogen => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		if ( $self->validation_db() and $self->validation_db() eq 'glucogen' ) {
+			return 1;
+		}
+		return undef;
+	},
+);
 has isDefidiag => (
 	is      => 'ro',
 	lazy    => 1,
@@ -499,6 +509,14 @@ has isDefidiag => (
 			return 1;
 		}
 		return undef;
+	},
+);
+has isHGMD => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->isGlucogen;
 	},
 );
 has isDefidiagSolo => (

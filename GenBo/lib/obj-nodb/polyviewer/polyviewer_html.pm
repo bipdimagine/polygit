@@ -1439,7 +1439,13 @@ sub validations {
 		#	warn $self->variant->clinvar_id;
 			$data->{clinvar_id} = $self->variant->clinvar_id;
 		}
-		 my $output = $self->xslate->render("validations.tt", $data);
+		my $output;
+		if ( $project->isHGMD){
+		  $output = $self->xslate->render("validations.tt", $data);
+		 }
+		 else {
+			  $output = $self->xslate->render("validations_without_hgmd.tt", $data);
+		 }
 	 	return $output;
 		
 }
@@ -1649,7 +1655,6 @@ sub transcripts_variants_xslate {
 	my ($self) =@_;
 	my $gene = $self->variant->gene;
 	my $atr = $self->variant->transcripts;
-	# revel
 	my $mane = 1;
  	
 	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};

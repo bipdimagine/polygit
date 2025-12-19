@@ -1,0 +1,60 @@
+ : if  $hgmd_value >= 4 or $clinvar_value >= 4 or $local_value >= 4 {
+<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="max-width:300px;box-shadow: 1px 1px 6px red;font-size: 7px;font-family:  Verdana;margin-bottom:0px">
+<tbody><tr style="background-color:#FFF8F8">
+:}
+: else {
+<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="max-width:300px;box-shadow: 1px 1px 6px orange;font-size: 7px;font-family:  Verdana;margin-bottom:0px">
+<tbody><tr style="background-color:#FFF8E8">
+: }
+
+ <th style="text-align:center">Clinvar</th>
+ <th style="text-align:center">Local</th>
+</tr>
+<tr>
+<td>
+: if  $clinvar_value >= 4 {
+<button onclick="window.open('https://www.ncbi.nlm.nih.gov/clinvar/?term=<: $clinvar_id :>[alleleid]')" "type="button" class="btn btn-xs btn-primary " style="background-color: #e74c3c;font-size: 7px;font-family:  Verdana;color:white"> <: $clinvar_text :></button>
+
+:}
+: else if  $clinvar_value >= 3 {
+<button onclick="window.open('https://www.ncbi.nlm.nih.gov/clinvar/?term=<: $clinvar_id :>[alleleid]')" "type="button" class="btn btn-xs btn-primary " style="background-color:  #FF8800;font-size: 7px;font-family:  Verdana;color:white"> <: $clinvar_text :></button>
+
+:}
+: else if  $clinvar_value >= 1 {
+<button onclick="window.open('https://www.ncbi.nlm.nih.gov/clinvar/?term=<: $clinvar_id :>[alleleid]')" "type="button" class="btn btn-xs btn-primary " style="background-color:#EFC051;font-size: 7px;font-family:  Verdana;color:black"> <: $clinvar_text :></button>
+
+:}
+: else if  $clinvar_value >= 0 {
+<button onclick="window.open('https://www.ncbi.nlm.nih.gov/clinvar/?term=<: $clinvar_id :>[alleleid]')" "type="button" class="btn btn-xs btn-primary " style="color:white;background-color:#D0D0D0;font-size: 7px;font-family:  Verdana;color:black"> <: $clinvar_text :></button>
+
+:}
+: else if  $clinvar_value == -5 {
+<span class="glyphicon glyphicon-minus"></span>
+:}
+: else {
+<span class="glyphicon glyphicon-minus"></span>
+:}
+</td>
+
+<td>
+: if  $local_value >= 4 {
+<button onclick="view_variation_validation('<: $var_id :>', '<: $gene_id :>')" "type="button" class="btn btn-xs  btn-primary" style="background-color: #e74c3c;font-size: 7px;font-family:  Verdana;color:white"><: $local_text :></button>
+
+:}
+: else if  $local_value >= 3 {
+<button onclick="view_variation_validation('<: $var_id :>', '<: $gene_id :>')" "type="button" class="btn btn-xs  btn-primary" style="background-color: #FF8800;font-size: 7px;font-family:  Verdana;color:white"><: $local_text :></button>
+
+:}
+: else if  $local_value >= -3 {
+<button onclick="view_variation_validation('<: $var_id :>', '<: $gene_id :>')" "type="button" class="btn btn-xs  btn-primary" style="color:black;background-color: #EFC051;font-size: 7px;font-family:  Verdana;color:white"><: $local_text :></button>
+
+:}
+: else {
+<span class="glyphicon glyphicon-minus"></span>
+:}
+
+
+</td>
+</tr>
+</tbody></table>
+ 
