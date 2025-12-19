@@ -400,6 +400,7 @@ sub get_ids {
 		$variation->score_clinvar();
 		$variation->text_clinvar();
 		$variation->hgmd_id();		
+		$variation->promoterAI();
 		$variation->getChromosome();	
 		$variation->dejaVuInfosForDiag2();
 		$variation->annotation();

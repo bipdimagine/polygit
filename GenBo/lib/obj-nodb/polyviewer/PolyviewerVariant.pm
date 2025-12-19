@@ -739,6 +739,12 @@ sub set_gene {
 				$htr->{spliceAI} = $self->return_specific_value($v->max_spliceAI_score($gene));
 				 
 				$htr->{spliceAI_cat} = $v->max_spliceAI_categorie($gene);
+
+				$htr->{promoterAI} = '-';
+				if ($v->promoterAI_score($tr1)) {
+					$htr->{promoterAI} = $v->promoterAI_score($tr1).' (tss_pos:'.$v->promoterAI_tss_score($tr1).')';
+				}
+				
 				
 				$htr->{sift} = -99;
 				$htr->{polyphen} = -99;
@@ -805,6 +811,8 @@ sub set_gene {
 		
 		$score->{spliceAI_cat} = $v->max_spliceAI_categorie($gene);
 		
+#		warn Dumper @$all_transcripts;
+#		die;
 		
 		return {sc=>$score,tr=>$all_transcripts};
 }

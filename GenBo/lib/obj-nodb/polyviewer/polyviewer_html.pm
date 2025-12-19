@@ -1526,7 +1526,7 @@ sub validations_old {
 		return $html;
 		
 }
-my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","cadd","revel","dbscsnv",'spliceAI');
+my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","cadd","revel","dbscsnv",'spliceAI','promoterAI');
 my @header_transcripts_cnv = ( "consequence", "enst", "nm", "ccds", "appris", "start", "end" );
 sub href {
 	my ($url,$name) = @_;
@@ -1649,10 +1649,14 @@ sub transcripts_variants_xslate {
 	my ($self) =@_;
 	my $gene = $self->variant->gene;
 	my $atr = $self->variant->transcripts;
+	
+	
 	# revel
 	my $mane = 1;
  	
 	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};
+	 
+	 
 	 my $output = $self->xslate->render("transcripts.tt", $data);
 	 return $output;
 	 
@@ -1739,6 +1743,10 @@ sub transcripts_variants {
 	my $hhide;
 	my $compact_table;
 	foreach my $htr (@$atr){
+		
+		warn Dumper $htr; die;
+		
+		
 			my $template = $self->template_transcripts_variant("row");
 			#$html.= $template;
 			# next;
@@ -1798,6 +1806,8 @@ sub transcripts_variants {
 		   my $codons_AA = $htr->{codons_AA};
 
 		 my $polyphen = $self->printBadge($htr->{polyphen},[0.446,0.908]);
+		 my $promoterai = $htr->{promoterAI};
+		 
 		
 		 my $sift = $self->printInvBadge($htr->{sift},[0,1,0,05]);
 		 $template =~s/%CODONS_AA%/$codons_AA/;
@@ -1817,6 +1827,8 @@ sub transcripts_variants {
 		   $template =~s/%NM%/$nm/;
 		    $template =~s/%CONSEQUENCE%/$cons/;
 		    $template =~s/%RID%/$rid/;
+		    $template =~s/%PROMOTERAI%/$promoterai/;
+		    
 		   
 		 $html.=$template;
 	}
