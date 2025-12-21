@@ -355,10 +355,10 @@ sub update_clinvar_id {
 }
 sub clinvar_rocks_db {
 	my ($self,$chr,$vp) = @_;
-	return $self->{clinvarrocks} if exists  $self->{clinvarrocks};
+	return $self->{"clinvarrocks".$chr} if exists  $self->{"clinvarrocks".$chr};
 	my $chromosome = $self->project->getChromosome($chr);
-	$self->{clinvarrocks} =   $chromosome->rocksdb("clinvar");
-	 return $self->{clinvarrocks};
+	$self->{"clinvarrocks".$chr} =   $chromosome->rocksdb("clinvar");
+	 return $self->{"clinvarrocks".$chr};
 	
 }
 sub load_polyviewer_variant {
