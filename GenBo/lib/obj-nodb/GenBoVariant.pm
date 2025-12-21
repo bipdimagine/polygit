@@ -817,6 +817,7 @@ has promoterAI => (
 	default => sub {
 		my $self = shift;
 		return if $self->project->getVersion() =~ /HG19/;
+		return if $self->getChromosome->name() eq "MT";
 		my $rocksid = $self->getChromosome->id().'!'.$self->rocksdb_id;
 	 	my $res = $self->getChromosome->rocksdb("promoterAI")->get_raw($rocksid);
 	 	return if not $res;
