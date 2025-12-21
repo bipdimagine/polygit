@@ -49,6 +49,7 @@ my $htr = {
  'prot' => 'VARCHAR',
  'appris' =>'VARCHAR',
  'spliceAI' => "INTEGER",
+ 'promoterAI' => "VARCHAR",
  'codons_AA' => 'VARCHAR',
  'nm' => 'VARCHAR'
 };

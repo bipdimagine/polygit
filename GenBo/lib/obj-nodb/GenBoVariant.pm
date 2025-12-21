@@ -810,6 +810,28 @@ has cadd_score => (
 	 	return "-";
 	 	},
 );
+
+has promoterAI => (
+	is		=> 'ro',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+		return if $self->project->getVersion() =~ /HG19/;
+		my $rocksid = $self->getChromosome->id().'!'.$self->rocksdb_id;
+	 	my $res = $self->getChromosome->rocksdb("promoterAI")->get_raw($rocksid);
+	 	return if not $res;
+	 	my $h;
+	 	foreach my $r (split(',', $res)) {
+		 	my @l = split(';', $r);
+		 	$h->{$l[0]}->{transcript_id} = $l[0];
+		 	$h->{$l[0]}->{strand} = $l[1];
+		 	$h->{$l[0]}->{tss_score} = $l[2];
+		 	$h->{$l[0]}->{score} = $l[3];
+	 	}
+	 	return $h;
+	 },
+);
+
 has rocksdb_id => (
 	is		=> 'ro',
 	lazy => 1,
@@ -844,6 +866,24 @@ has ncboost_category => (
         lazy    => 1,
         default => sub { return "-" ; },
 );
+
+sub promoterAI_tss_score {
+	my ($self, $transcript) = @_;
+	confess("\n\nERROR: transcript object mandatory. Die \n\n") if not $transcript;
+	return if not $self->promoterAI();
+	my ($tr_id, $chr_id) = split('_', $transcript->id());
+	return if not exists $self->promoterAI->{$tr_id};
+	return $self->promoterAI->{$tr_id}->{tss_score};
+}
+
+sub promoterAI_score {
+	my ($self, $transcript) = @_;
+	confess("\n\nERROR: transcript object mandatory. Die \n\n") if not $transcript;
+	return if not $self->promoterAI();
+	my ($tr_id, $chr_id) = split('_', $transcript->id());
+	return if not exists $self->promoterAI->{$tr_id};
+	return $self->promoterAI->{$tr_id}->{score};
+}
 
 sub revel_score {
 	return "-" ;
