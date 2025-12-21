@@ -346,20 +346,21 @@ sub rocks {
 		$self->{rocks} = RocksDB->new(
 			$self->path_rocks,
 			{
-				cache_index_and_filter_blocks => 1,
+				#cache_index_and_filter_blocks => 1,
 				user_key_len               => 10,
 				verify_checksums              => 0,
 				read_only                     => 1,
 				allow_mmap_reads           => 1,
 				#max_background_compactions => 3,
 				IncreaseParallelism        => 1,
-				filter_policy => $policy ,
-				block_size => 16*1024,
-				block_restart_interval => 64,
-				keep_log_file_num =>1,
+				#filter_policy => $policy ,
+				#block_size => 16*1024,
+				#lock_restart_interval => 64,
+				#keep_log_file_num =>1,
 				db_log_dir => "/dev/null",
 				
 			}
+			
 		);
 		#$opts->set_db_log_dir("/dev/null");
 		system("/software/bin/vmtouch  -t ".$self->path_rocks."/*")  if $self->vmtouch;
@@ -388,14 +389,13 @@ sub rocks {
 		else {
 		#my $options = RocksDB::Options->new();
 		my $bits_per_key = 10;
-
 		#my $policy = RocksDB::BloomFilterPolicy->new($bits_per_key);
 		$self->{rocks} = RocksDB->new(
 			$self->path_rocks,
 			{
 				user_key_len               => 10,
 				allow_mmap_reads           => 1,
-				max_background_compactions => 0,
+				max_background_compactions => 3,
 				IncreaseParallelism        => 1,
 				filter_policy => $policy ,
 				db_log_dir => "/dev/null",
@@ -629,7 +629,6 @@ sub put {
 	confess() unless $self->rocks;
 	confess() unless $key;
 	$self->rocks->put( $key, $self->encode($value) );
-
 	#$self->_put_index($key) if ($self->is_index);
 }
 
@@ -692,6 +691,7 @@ sub close {
 	my ($self) = @_;
 
 	if ( $self->mode ne "r" ) {
+		
 		if ( $self->has_config() ) {
 			$self->write_config();
 
@@ -738,11 +738,12 @@ sub close {
 
 		$self->temporary(undef);
 	}
-
+	$self->rocks->compact_range() if $self->{rocks};
 	#$self->DESTROY();
 	#$self->rocks->close();
 	delete $self->{rocks};
 	$self->{rocks} = undef;
+	#$self->DESTROY;
 	#$self = undef;
 }
 
@@ -806,7 +807,6 @@ sub return_rocks_id {
 	
 	
 	if ($l1 ==1 && $l2 > 1){
-		
 		$seqid = "+".substr($alt, 1);
 		return  ($self->stringify_pos($pos)."!".$seqid);
 	}
