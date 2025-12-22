@@ -64,19 +64,26 @@ my $done = $dir_out."melt.done";
 warn $bam_prod;
 my @header = `$samtools view -H  $bam_prod`;
 chomp(@header);
+warn Dumper @header;
 my ($umi) = grep{$_ =~ /umi-correction-scheme/} @header;
+my $list;
+		foreach my $chr (@{$project->getChromosomes}){
+			push(@$list,$chr->fasta_name);
+		} 
 if ($umi){
-	
 		my $cmd = qq{samtools view -h $bam_prod }.q{| perl -pe 'if (!/^@/) { @fields = split("\t"); die() if length($fields[9]) ne length($fields[10]); $fields[10] = "I" x length($fields[9]); $_ = join("\t", @fields); }' | samtools view -Sb - >}.$bam_tmp.q{ && samtools index }.$bam_tmp.' -@ 5';
+		if ($bam_prod =~/.cram/) {
+			$cmd = qq{samtools view  -T $ref -h $bam_prod -@ $fork  }.join(" ",@$list).q{| perl -pe 'if (!/^@/) { @fields = split("\t"); die() if length($fields[9]) ne length($fields[10]); $fields[10] = "I" x length($fields[9]); $_ = join("\t", @fields); }' | samtools view -Sb - >}.$bam_tmp.q{ && samtools index }.$bam_tmp.' -@ 5';
+			
+		}
+		warn $cmd;
 		system($cmd);
 		
 	die() unless -e $bam_tmp.".bai";
 }
 elsif ($bam_prod =~/.cram/){
-		my $list;
-		foreach my $chr (@{$project->getChromosomes}){
-			push(@$list,$chr->fasta_name);
-		} 
+	warn "cuicuic";
+		
 	
 		$bam_tmp = $dir_out."/".$patient->name.".cram2bam.bam";
 		my $samtools = $buffer->software("samtools");
@@ -87,7 +94,7 @@ else {
 system("ln -s $bam_prod $bam_tmp");
 system("ln -s $bam_prod.bai $bam_tmp.bai");
 }
-
+warn "end";
 my $bam_tmp2 = $bam_tmp;
 if ($bam_prod =~/.cram/){
 	
@@ -171,6 +178,9 @@ close LIST;
 				system("touch $done");
 				my $fileout = $project->getVariationsDir("melt")."/".$patient->name.".vcf";
 				print_empty_vcf($fileout,$patient);
+				system("$bgzip -f $fileout");
+				$fileout .= ".gz";
+				system("$tabix -f -p vcf $fileout");
 				exit(0);
 			}
 			die();
