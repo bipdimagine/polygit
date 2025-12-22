@@ -49,7 +49,7 @@ GetOptions(
 
 my $hresume;
 $fork = 1 unless $fork;
-
+$cache = 1;
 my $buffer = GBuffer->new();
 
 my $samtools = $buffer->software("samtools");
@@ -57,7 +57,7 @@ my $samtools = $buffer->software("samtools");
 my @types = ();
 #@types =  ("files","mendelian","duplicate_regions","coverage_stats","bam_stats","coverage_transcripts","statistics_variations");
 #@types =  ("identity","statistics_variations");
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProjectCache( -name => $projectName );
 unless($steps){
 	 @types = ("files","mendelian","statistics_variations","coverage_stats","bam_stats","duplicate_regions","coverage_transcripts");
 	 if ($project->isGenome){
@@ -68,8 +68,6 @@ unless($steps){
 else {
 	 @types = split(",",$steps);
 }
-warn Dumper @types;
-
 #warn $patients_name;
 
 if ($patients_name){
@@ -79,12 +77,13 @@ if ($patients_name){
 my( @selected_patient) = map {$_->name } @{$project->getPatients()};
 die() unless @selected_patient;
 $project->disconnect();
+#unless ($steps){
 my $no = $project->noSqlQuality("c");
 $no->put($project->name,"timestamp",time);
 $no->close;
+#}
 my $steps = {
 	"statistics_variations" => sub{
-		warn "statistics_variations" ;
 		my $buffer = GBuffer->new();
 		my $project;
 
@@ -96,7 +95,7 @@ my $steps = {
 			 
 		}
 		else {
-		 $project = $buffer->newProject( -name => $projectName );
+		 $project = $buffer->newProjectCache( -name => $projectName );
 		}
 	
 		$project->get_only_list_patients(join(",",@selected_patient));
@@ -137,6 +136,7 @@ my $steps = {
 	},
 	"mendelian" =>  sub{
 		warn "mendelian" ;
+		$project->disconnect();
 		my $buffer = GBuffer->new();
 		my $project;
 		if ($cache == 1){
@@ -148,6 +148,7 @@ my $steps = {
 		}
 		$project->get_only_list_patients(join(",",@selected_patient));
 		$project->disconnect();
+		warn "start compute";
 		my $res = quality_check::mendelian_statistics($project,$fork);
 		my $no = $project->noSqlQuality("w");
 		$no->put($project->name, "mendelian", $res);
@@ -196,15 +197,15 @@ my $steps = {
 			$no->close();
 	},
 	"coverage_stats" => sub{
-		warn "coverage_stats" ;
 			my $buffer = GBuffer->new();
 			my $project = $buffer->newProject( -name => $projectName );
 			$project->get_only_list_patients(join(",",@selected_patient));
 			$project->disconnect();
-			my $res = quality_check::coverage_stats($project);
+			my ($res) = quality_check::coverage_stats($project,$fork);
 			my $no = $project->noSqlQuality("w");
 			$no->put($project->name,"coverage_stats",$res);
 			$no->close();
+			
 	},
 	
 };

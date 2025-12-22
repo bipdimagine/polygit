@@ -26,13 +26,14 @@ sub mendelian_statistics {
 				return;
 			}
 			die( Dumper $hres) unless $hres->{data};
+			warn "fork";
 			push( @{ $results->{data} }, @{ $hres->{data} } );
 
 		}
 	);
 	map { $_->getMembers } @{ $project->getFamilies };
 	$project->buffer->dbh_deconnect();
-
+	$project->preload();
 	my $pid;
 	foreach my $f ( @{ $project->getFamilies } ) {
 		$f->getMembers();
@@ -46,10 +47,11 @@ sub mendelian_statistics {
 			$has_no_bam = 1 if $patient->alignmentMethod() eq 'no_align';
 		}
 		if ($has_no_bam) {
+			warn "cuicui";
 			$pm->finish();
 			next;
 		}
-		$project->buffer->dbh_reconnect();
+		#$project->buffer->dbh_reconnect();
 
 		#my $ps = $f->getMembers();
 		#	next if scalar(@$ps) > 1;
@@ -57,6 +59,13 @@ sub mendelian_statistics {
 
 		my $hres;
 		$hres->{data} = fast_plink( $project, $vcf, $f );
+		warn "end fast";
+		$project->disconnect();
+		$project->{buffer} = undef;
+		
+		warn Dumper keys %$project;
+		$project = undef;
+		warn "end fast 2";
 		
 		#warn Dumper $hres->{data};
 		$pm->finish( 0, $hres );
@@ -179,6 +188,7 @@ sub fast_plink {
 	my $AD;
 	my $GT;
 	my %max_chr;
+	warn "start";
 	while ( my $line = <VCF> ) {
 		next if $line =~ /##/;
 		chomp($line);
@@ -316,6 +326,7 @@ sub fast_plink {
 	mkdir $dir unless -e $dir;
 	my $ped_file = $dir . "/" . $fam->name . ".ped";
 	my @samples_name;
+	warn "ped";
 	open( PED, ">$ped_file" );
 
 	foreach my $p ( @{ $fam->getMembers } ) {
@@ -348,7 +359,7 @@ sub fast_plink {
 	if ( @{ $fam->getParents } ) {
 		my $cmd2 = "$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
 
-		#	warn $cmd2;
+			warn $cmd2;
 		my @log   = `$cmd2`;
 		my $file1 = "$dir/" . $fam->name();
 		open( MENDEL, "$file1.imendel" )
@@ -420,7 +431,8 @@ sub fast_plink {
 		}
 	}
 	warn "end";
-	return ( table_json_mendelian( $project, $statistics, $fam ) );
+	my $tt = table_json_mendelian( $project, $statistics, $fam );
+	return  $tt;
 }
 
 sub add_columns {
@@ -1612,9 +1624,6 @@ sub duplicate_regions {
 	$resume->{title} = "Looking For Duplicate Regions ";
 
 	my @bams;
-	warn $project->getChromosome("1")->genesIntervalTree();
-	 warn $project->getChromosome("1")->transcriptsIntervalTree;
-	die();
 	$resume->{header} = [ "Genes", "transcript", "exon", "% dup", "position" ];
 	my $hash_dup;
 	my $htr;
@@ -1917,7 +1926,9 @@ qq{<i class="fa fa-male fa-2x" aria-hidden="true" style="color:blue"></i>}
 qq{<i class="fa fa-child fa-2x" aria-hidden="true" style="color:black"></i> }
 		};
 		my $name1 = $p->name;
+		warn "---->";
 		my ( $color_s2, $text2 ) = return_sex_color( $p->sex, $p->compute_sex );
+		warn "****";
 		$hline->{SRY} = { type => "$color_s2", text => $text2 };
 		my ( $color_s1, $text1 ) =
 		  return_sex_color( $p->sex,
@@ -1930,13 +1941,14 @@ qq{<i class="fa fa-child fa-2x" aria-hidden="true" style="color:black"></i> }
 		};
 		$hline->{mendelian} =
 		  { type => "$color", text => "$text [$value% $value2]" };
-
+	
 		#return $hline;
 		push( @{ $resume->{data} }, $hline );
 	}
 
 	#}
 	#return $hline;
+	warn "end here ";
 	return $resume->{data};
 }
 
