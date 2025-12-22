@@ -7,7 +7,7 @@ use Data::Dumper;
 use colored;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
-
+use JSON::XS;
 sub mendelian_statistics {
 	my ( $project, $fork ) = @_;
 	$fork = 1 unless $fork;
@@ -472,7 +472,7 @@ sub files {
 			$hline->{"bam"} = $col_bam;
 		}
 		else {
-			my $bam       = $p->getBamFile();
+			my $bam       = $p->getAlignmentFile();
 			my $timestamp = ctime( stat($bam)->mtime );
 			my $col_bam = { text => "NONE", type => "error" };
 			if ( -e $bam ) {
@@ -1202,20 +1202,31 @@ sub identity2 {
 
 }
 
+sub compute_coverage_stats {
+	my ($project,$fork ) = @_;
+	my $cmd = "$Bin/coverage_statistics_genome.pl -project=".$project->name." -fork=$fork -json=1";
+	my $toto = `$cmd`;
+	
+	my $h = decode_json $toto;
+	warn $cmd;
+	return $h;
+}
+
+
 sub coverage_stats {
-	my ($project) = @_;
+	my ($project,$fork) = @_;
 	my $patients = $project->getPatients();
 	my $resume;
 	my $bam_stats;
 	$resume->{title} = "Global Coverage Statistics  : ";
-	my $samtools = $project->buffer->software("samtools");
+	my $hstat = compute_coverage_stats($project,$fork);
 	my $mean_cov;
 	foreach my $p (@$patients) {
 		next if $p->alignmentMethod() eq 'no_align';
-		my $bam = $p->getBamFile();
-		my $cov = $p->coverage();
-		$mean_cov += $cov->{mean};
+		my $pstat = $hstat->{$p->id};
+		$mean_cov += $pstat->{mean};
 	}
+	
 	$mean_cov = $mean_cov / scalar(@$patients);
 	my $limit_cov;
 	$limit_cov->{danger}  = $mean_cov * 0.5;
@@ -1231,8 +1242,9 @@ sub coverage_stats {
 		my @line;
 		my $hline;
 		push( @$hline, { text => $patients->[$i]->name, type => "default" } );
-		my $cov   = $patients->[$i]->coverage();
+		my $pid = $patients->[$i]->id;
 		
+		my $cov = $hstat->{$pid};
 		my $color = "success";
 		$color = "warning" if $cov->{mean} < $limit_cov->{warning};
 		$color = "danger"  if $cov->{mean} < $limit_cov->{danger};
@@ -1254,6 +1266,7 @@ sub coverage_stats {
 		push( @$hline, { text => $cov->{"100x"}, type => "$color" } );
 		push( @{ $resume->{lines} }, $hline );
 	}
+	warn Dumper $resume;
 
 	return ( transform_array_to_json_like($resume) );
 
@@ -1599,7 +1612,9 @@ sub duplicate_regions {
 	$resume->{title} = "Looking For Duplicate Regions ";
 
 	my @bams;
-
+	warn $project->getChromosome("1")->genesIntervalTree();
+	 warn $project->getChromosome("1")->transcriptsIntervalTree;
+	die();
 	$resume->{header} = [ "Genes", "transcript", "exon", "% dup", "position" ];
 	my $hash_dup;
 	my $htr;
@@ -1617,6 +1632,7 @@ sub duplicate_regions {
 
 		#system("mkdir $dir && chmod a+rwx $dir" ) unless -e $dir;
 		return unless -e $filebed;
+		return;
 		if ( -e $filebed ) {
 			open( BED, $filebed );
 			while (<BED>) {

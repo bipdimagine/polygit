@@ -881,6 +881,7 @@ sub genericSVDel {
 	$hash->{'start'}              = $genbo_pos;
 	$hash->{'end'}                = $x->{infos}->{END};
 	$hash->{'length'}             = abs( $x->{infos}->{SVLEN} );
+	return if exists $x->{infos}->{IMPRECISE};
 	$hash->{'ref_allele'}         = $ref;
 	$hash->{'var_allele'}         = $var_allele;
 	$hash->{'line_infos'}         = "-";
@@ -894,6 +895,8 @@ sub genericSVDel {
 	$hash->{annex}->{$patient_id}->{'var_allele'} = $var_allele;
 	$self->add_DP_AD( $patient_id, $hash, $x );
 	$self->add_SR_PR( $patient_id, $hash, $x );
+	return {} if $hash->{annex}->{$patient_id}->{sr} eq "-1,-1";
+	return {} if $hash->{annex}->{$patient_id}->{pr} eq "-1,-1";
 	$hash->{annex}->{$patient_id}->{score}  = $x->{qual};
 	$hash->{annex}->{$patient_id}->{he}     = $x->{gt}->{he};
 	$hash->{annex}->{$patient_id}->{ho}     = $x->{gt}->{ho};

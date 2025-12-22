@@ -33,7 +33,7 @@ use IO::File ;
 use Array::Diff;
 #use File::Binary qw($BIG_ENDIAN $LITTLE_ENDIAN $NATIVE_ENDIAN);
 use List::MoreUtils qw{ natatime };
-
+use JSON::XS;
 #use DB_File ;
 
 my $filein;
@@ -47,12 +47,14 @@ my $verbose;
 my $use_samtools;
 my $log_file;
 my $version;
+my $json;
 GetOptions(
 	"fork=s"   => \$fork,
 	"project=s" =>\$project_name,
 	"patient=s" =>\$patient_name,
 	"verbose=i" =>\$verbose,
 	"version=s" =>\$version,
+	"json=s" =>\$json,
 );
 
 my $buffer = new GBuffer;
@@ -61,7 +63,7 @@ my $pm   = new Parallel::ForkManager($fork);
 my $tabix = $buffer->software("tabix");
 my $bgzip = $buffer->software("bgzip");
 my $res;
-my $patients = $project->get_list__controls_patients($patient_name);
+my $patients = $project->getPatients();
 if ($project->isGenome){
 	$pm->run_on_finish(
 		sub {
@@ -147,7 +149,6 @@ $pm->run_on_finish(
 		}
 	);
 $patient_name="all" unless $patient_name;	
-
 foreach my $patient (@{$patients}){
 	my $all_sum;
 	
@@ -187,8 +188,12 @@ foreach my $patient (@{$patients}){
 $pm->wait_all_children();
 }
 
+my $hjson; 
+
 foreach my $patient (@{$patients}){
 	my $name = $patient->name;
+	my $pid = $patient->id; 
+	
 	my $coverage_file;
 	$coverage_file = $patient->getCoverageFile();
 	my $bed_coverage = $patient->getCoverageFile();
@@ -197,21 +202,35 @@ foreach my $patient (@{$patients}){
 	warn $coverage_file;
 	#die if -e $coverage_file;
 	#die();
-	print $name."\n";
+	warn $name."\n";
 	my $z =  $res->{$name}->{nb};#/$res->{$name}->{nb}));
+	 $hjson->{$pid}->{"nb"} = $z; 
 	print BED "mean_all\t1\t".$z."\n";
 	 $z= (($res->{$name}->{s5}/$res->{$name}->{nb}));
+	 $hjson->{$pid}->{"5x"} = int($z*1000)/10;  
 	print BED "mean_all\t5\t".$z."\n";
 	$z = (($res->{$name}->{s15}/$res->{$name}->{nb}));
+	 $hjson->{$pid}->{"15x"} = int($z*1000)/10; ; 
 	print BED "mean_all\t15\t".$z."\n";
 	$z = (($res->{$name}->{s20}/$res->{$name}->{nb}));
+	 $hjson->{$pid}->{"20x"} = int($z*1000)/10; ; 
 	print BED "mean_all\t20\t".$z."\n";
 	$z =  (($res->{$name}->{s30}/$res->{$name}->{nb}));
+	 $hjson->{$pid}->{"30x"} = int($z*1000)/10; ; 
 	print BED "mean_all\t30\t".$z."\n";
 	$z =  ($res->{$name}->{sum}/$res->{$name}->{nb});
+	 $hjson->{$pid}->{"mean"} = int($z*10)/10; 
 	print BED "mean_all\t99\t".$z."\n";
 	$z =  (($res->{$name}->{s100}/$res->{$name}->{nb}));
+	 $hjson->{$pid}->{"100x"} = int($z*1000)/10; 
 	print BED "mean_all\t100\t".$z."\n";
 	close BED;
 	system("$bgzip -f $bed_coverage; $tabix -b 2 -e 2 -s 1 -f $coverage_file");
 }
+
+if ($json) {
+	print encode_json  $hjson;
+}
+exit(0);
+
+
