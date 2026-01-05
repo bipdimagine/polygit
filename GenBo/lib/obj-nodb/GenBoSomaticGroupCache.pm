@@ -69,6 +69,41 @@ has list_stats_patients => (
 
 
 
+
+
+sub getVariantsVector {
+	my ($self, $chr_obj) = @_;
+	confess("\n\nERROR: GenBoFamilyCache->getVariantsVector() method need a GenBoChromosomeCache object in argument. Die.\n\n") unless($chr_obj);
+	my $var = $chr_obj->getNewVector();
+	foreach my $patient (@{$self->getPatients()}) {
+		$var += $patient->getVariantsVector($chr_obj);
+	}
+	$var->Intersection( $var, $chr_obj->getVariantsVector() );
+	$self->{variants}->{$chr_obj->id()} = $var;
+	return $self->{variants}->{$chr_obj->id()};
+}
+
+# for polyquery
+sub setCurrentVariantsVector {
+	my ($self, $chr_obj, $vector) = @_;
+	$self->{current_variants}->{$chr_obj->id()} = $vector;
+}
+
+# for polyquery
+sub addCurrentVariantsVector {
+	my ($self, $chr_obj, $vector) = @_;
+	$self->{current_variants}->{$chr_obj->id()} += $vector;
+}
+
+# for polyquery
+sub getCurrentVariantsVector {
+	my ($self, $chr_obj) = @_;
+	if (not exists $self->{current_variants} or not exists $self->{current_variants}->{$chr_obj->id()}) {
+		$self->{current_variants}->{$chr_obj->id()} = $self->getVariantsVector($chr_obj);
+	}
+	return $self->{current_variants}->{$chr_obj->id()};
+}
+
 sub countVariantsByType {
 	my ($self, $type) = @_;
 	my $var = $self->getNewVector();
@@ -139,6 +174,18 @@ sub getHe {
 	my $var_he = $self->getNewVector();
 	$var_he = $self->getVariantsVector() - $var_ho;
 	return $var_he;
+}
+
+
+sub getVector_individual_loh {
+	my ($self, $chr,$child,$compute) = @_;
+	my $key = "som_loh_".$child->name;
+	return $self->{vector_transmission}->{$key}->{$chr->id} if exists $self->{vector_transmission}->{$key}->{$chr->id};
+	if ($self->project->isRocks && (! defined $compute)){
+		$self->{vector_transmission}->{$key}->{$chr->id} = $chr->rocks_vector->get_vector_transmission($child,"som_loh");
+		return $self->{vector_transmission}->{$key}->{$chr->id};
+	}
+	confess();
 }
 
 # methode pour intersecter les patients en mode SOMATIC

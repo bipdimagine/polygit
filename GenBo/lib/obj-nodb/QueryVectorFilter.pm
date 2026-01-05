@@ -1470,10 +1470,14 @@ sub filter_genetics_models_familial {
 }
 
 sub filter_genetics_models_somatic {
-	my ($self, $chr, $level_ind, $level_fam, $model, $h_args) = @_;
+	my ($self, $chr, $model) = @_;
 	my $vector_models = $chr->getNewVector();
 	if ($model eq 'loh') {
-		$vector_models += $chr->getModelVector_som_loh();
+		foreach my $group (@{$chr->getProject->getSomaticGroups}) {
+			foreach my $pat (@{$group->getPatients()}) {
+				$vector_models += $group->getVector_individual_loh($chr, $pat);
+			}
+		}
 	}
 	if ($model eq 'dbl_evt') {
 		my $variants_genes  = $chr->getNewVector();
