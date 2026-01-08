@@ -1203,6 +1203,7 @@ sub check_variants {
 			$hres->{$var_id}->{table_gnomad} = update_variant_editor::table_gnomad($var);
 			$hres->{$var_id}->{table_gnomad} =~ s/gnomad_r2_1/gnomad_r4/;
 			
+			$h_var->{value}->{gnomad_id} = $var->gnomad_id();
 			$hres->{$var_id}->{table_varsome} = update_variant_editor::vvarsome($h_var);
 			
 			$hres->{$var_id}->{table_dejavu} = update_variant_editor::vdejavu($var, $h_var);
