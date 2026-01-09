@@ -29,6 +29,7 @@ use Term::Menus;
 use Proc::Simple;
 use Storable;
 use JSON::XS;
+use Carp;
 
 
 my $projectName;
@@ -41,7 +42,7 @@ GetOptions(
 	'patients=s'	=> \$patients_name,
 	'create_bam!'	=> \$create_bam,
 	'no_exec'		=> \$no_exec,
-) || die("Error in command line arguments\n");
+) || confess("Error in command line arguments\n");
 
 die("--project argument is mandatory") unless ($projectName);
 
@@ -61,19 +62,29 @@ foreach my $pat (@{$patients}) {
 	push(@group,$group);
 }
 
-my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/web_summary.html ";
-$tar_cmd .= "$dir*/cloupe.cloupe $dir*/*_bc_matrix/* " if (grep (! /vdj/i, @group));
-$tar_cmd .= "$dir*/vloupe.vloupe " if grep (/vdj/i, @group);
-$tar_cmd .= "$dir*/*.bam* " if ($create_bam and $create_bam ne 'false');
-$tar_cmd .= "$dir*/fragments.tsv.gz $dir*/peak_annotation.tsv " if (grep {/ATAC/i} @group);
-# scRNAseq: GEX (+ADT): cloupe.cloupe, web_summary.html, filtered and raw_feature_bc_matrix
-#			VDJ: vloupe.vloupe, web_summary.html
-# scATAseq : cloupe.cloupe, web_summary.html, filtered and raw_peak_bc_matrix, possibly filtered_tf_bc_matrix, fragments.tsv.gz, peak_annotation.tsv
+my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz ";
+if (-d $dir.$group[0]) {
+	# cellranger multi
+	$tar_cmd .= "$dir*/*/web_summary.html  $dir*/qc_report.html ";
+	$tar_cmd .= "$dir*/*/sample_cloupe.cloupe $dir*/*/sample_*_bc_matrix/* " if (grep (! /vdj/i, @group));
+	$tar_cmd .= "$dir*/vloupe.vloupe " if grep (/vdj/i, @group);
+}
+else {
+	$tar_cmd .= "$dir*/web_summary.html  ";
+	$tar_cmd .= "$dir*/cloupe.cloupe $dir*/*_bc_matrix/* " if (grep (! /vdj/i, @group));
+	$tar_cmd .= "$dir*/vloupe.vloupe " if grep (/vdj/i, @group);
+	$tar_cmd .= "$dir*/*.bam* " if ($create_bam and $create_bam ne 'false');
+	$tar_cmd .= "$dir*/fragments.tsv.gz $dir*/peak_annotation.tsv " if (grep {/ATAC/i} @group);
+	# scRNAseq: GEX (+ADT): cloupe.cloupe, web_summary.html, filtered and raw_feature_bc_matrix
+	#			VDJ: vloupe.vloupe, web_summary.html
+	# scATAseq : cloupe.cloupe, web_summary.html, filtered and raw_peak_bc_matrix, possibly filtered_tf_bc_matrix, fragments.tsv.gz, peak_annotation.tsv
+}
 
 warn $tar_cmd;
 if (-e "$dir$projectName.tar.gz" and !$no_exec) {
-	my $overwrite = prompt("'archive $dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes);
-	die("archive '$dir$projectName.tar.gz' already exists") unless ($overwrite);
+	die("archive '$dir$projectName.tar.gz' already exists") unless (prompt("archive '$dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes_no));
+	my $exit = system("ls -lh $dir$projectName.tar.gz");
+	die("Error while making the archive") if ($exit);
 }
 unless ($no_exec){
 	system ($tar_cmd);
