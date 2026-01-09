@@ -41,10 +41,10 @@ my $out_dir = cwd;
 my $help;
 
 GetOptions(
-	'project=s'		=> \$projectName,
-#	'patients=s'	=> \$patients_name,
-	'out_dir=s'		=> \$out_dir,
-	'help'			=> \$help,
+	'project=s'			=> \$projectName,
+	'patients=s'		=> \$patients_name,
+	'out_dir|outdir=s'	=> \$out_dir,
+	'help'				=> \$help,
 ) || die("Error in command line arguments\n");
 
 usage() if $help;
@@ -54,11 +54,11 @@ $out_dir .= '/' unless ($out_dir =~ /\/$/);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
-#my $patients = $project->get_only_list_patients($patients_name);
-my $patients = $project->getPatients;
+my $patients = $project->get_only_list_patients($patients_name);
+#my $patients = $project->getPatients;
 die("No patient in project $projectName") unless ($patients);
 
-
+warn (colored('/!\\', 'bold')." Project $projectName is not in somatic mode.") and sleep(2) unless ($project->isSomatic);
 
 my $dir = $project->getCountingDir('cellranger');
 
@@ -71,8 +71,9 @@ foreach my $pat (sort {$a->name cmp $b->name} @$patients) {
 	
 	# count directory
 	my $dir_cellranger; 
-	my $dir1 = $project->getProjectRootPath().$pat->name.'/';
-	my $dir2 = $dir.$pat->name.'/';
+	my $dir1 = $dir.$pat->name.'/';
+	my $dir2 = $project->getProjectRootPath().$pat->name.'/';
+	my $dir3 = $project->getProjectPath().$pat->name.'/';
 	if (-d $dir1) {
 		$dir_cellranger = $dir1;
 		$dir_cellranger .= 'outs/' if (-d $dir_cellranger.'outs/');
@@ -81,21 +82,24 @@ foreach my $pat (sort {$a->name cmp $b->name} @$patients) {
 		$dir_cellranger = $dir2;
 		$dir_cellranger .= 'outs/' if (-d $dir_cellranger.'outs/');
 	}
-	else {
-		die("Can't find directory with cellranger data for patient $pname")
+	elsif (-d $dir3) {
+		$dir_cellranger = $dir3;
+		$dir_cellranger .= 'outs/' if (-d $dir_cellranger.'outs/');
 	}
+	else {
+		die("Can't find directory with cellranger data for patient '$pname': '$dir1' or '$dir2'")
+	}
+#	warn $dir_cellranger;
 	
 	# Read from web_summary
 	my $pipeline_version = "";
 	my $transcriptome_version = "";
 	my $transcriptome_path = "";
-	die("Web summary for patient '$pname' not found: '$dir_cellranger/web_summary.html'") unless (-e $dir_cellranger.'web_summary.html') ;
-#	warn $dir_cellranger.'web_summary.html';
-	# ["Pipeline Version",;"cellranger-9.0.1"] ["Transcriptome","MM39-Notch3-rat-"] ["V(D)J Reference","vdj_GRCh38_alts_ensembl-5.0.0"]
 	my $web_summary = $dir_cellranger.'web_summary.html';
+	die("Web summary for patient '$pname' not found: '$dir_cellranger/web_summary.html'") unless (-e $dir_cellranger.'web_summary.html') ;
+	# ["Pipeline Version",;"cellranger-9.0.1"] ["Transcriptome","MM39-Notch3-rat-"] ["V(D)J Reference","vdj_GRCh38_alts_ensembl-5.0.0"]
 	my $regex_pipeline = qr/\[\"Pipeline [Vv]ersion\",\"((cellranger(-\w*)?|spaceranger)-\d+\.\d+\.\d+)\"\]/;
 	my $regex_transciptome = qr/\[\"(Transcriptome|V\(D\)J Reference)\",\"([a-zA-Z0-9_\-.]*)\"\]/;
-#	my $regex_vdj_reference = qr/\[\"V\(D\)J Reference\",\"([\w-]*)\"\]/;
 	my $regex_transciptome_atac = qr/\[\"Reference path\",\"([\w\/-]*)\"\]/;
 	open(my $ws, '<', $web_summary) || warn ("Can't open file '$web_summary' : $!");
 	while (my $line = <$ws>) {
@@ -125,7 +129,7 @@ foreach my $pat (sort {$a->name cmp $b->name} @$patients) {
 	# transcriptome
 	my $release = $project->annotation_genome_version;
 	my $index = $project->getGenomeIndex($pat->alignmentMethod()) =~ s/\/\//\//gr;
-	#$index =~ s/\/\//\//;
+	$index =~ s/-$//;
 	my $methSeq = $project->getRun->infosRun->{method};
 	if($methSeq eq 'atac') {
 		$index .= '_atac';
@@ -133,14 +137,13 @@ foreach my $pat (sort {$a->name cmp $b->name} @$patients) {
 	}
 	$index .= '_vdj' if (lc($pat->somatic_group()) eq 'vdj');
 	my $json_file = $index.'/reference.json';
-#	warn $json_file;
 	open(my $json, '<', $json_file) || warn ("Can't open file '$json_file' : $!");
 	my $json_string = do { local $/; <$json> };
 	my $reference_json = decode_json($json_string);
 	close($json);
-	my $transcriptome = join('-', @{$reference_json->{'genomes'}}) if (ref $reference_json->{'genomes'} eq 'ARRAY');
-	$transcriptome = $reference_json->{'genomes'} unless (ref $reference_json->{'genomes'} eq 'ARRAY');
-	$transcriptome .= '-'.$reference_json->{'version'} if (exists $reference_json->{'version'});
+	my $transcriptome = join('-', @{$reference_json->{'genomes'}}); #if (ref $reference_json->{'genomes'} eq 'ARRAY');
+#	$transcriptome = $reference_json->{'genomes'} unless (ref $reference_json->{'genomes'} eq 'ARRAY');
+	$transcriptome .= '-'.$reference_json->{'version'} if (exists $reference_json->{'version'} and $reference_json->{'version'});
 	die("Different transcriptomes from current reference.json ($release --> $transcriptome) and web_summary ($transcriptome_version) for patient '$pname'.") unless ($transcriptome eq $transcriptome_version or $methSeq eq 'atac');
 	
 	# type
@@ -177,6 +180,7 @@ $0
 Mandatory:
 	project <s>                project name
 Optional:
+	patients <s>               sample names
 	out_dir <s>                output directory
 	help                       display this message
 
