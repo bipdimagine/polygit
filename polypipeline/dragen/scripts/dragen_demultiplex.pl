@@ -99,7 +99,7 @@ foreach my $project_name (split(",",$project_names)){
 	$dir_bcl_tmp = "/data-dragen/bcl/".$project->getRun->run_name()."/";
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
-	if ($project->getCapture->name =~ /^transcriptome_10X/) {
+	if ($project->getCaptures->[0]->name =~ /^transcriptome_10X/) {
 		die("No SampleSheet10X.csv") unless (-f $bcl_dir.'SampleSheet10X.csv');
 		$aoa = csv (in => $bcl_dir.'SampleSheet10X.csv');
 	}
