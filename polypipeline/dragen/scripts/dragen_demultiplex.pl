@@ -11,7 +11,6 @@ use lib "$Bin/../../../GenBo/lib/GenBoDB/writeDB";
 use lib "$Bin/../../packages";
 use Text::CSV qw( csv );
 use Getopt::Long;
-use GBuffer;
 use Data::Dumper;
 use List::MoreUtils qw(firstidx);
 use colored; 
@@ -21,16 +20,13 @@ use Term::ANSIColor;
 use Moo;
 use GBuffer;
 use GenBoProject;
-use colored; 
 use Text::Table;
 use file_util;
 use File::Temp qw/ tempfile tempdir /;; 
 use Term::Menus;
 use Proc::Simple;
-use Text::Table;
 use dragen_util;
 use XML::Simple qw(:strict);
-use IO::Prompt;
 use Statistics::Descriptive;
 
 my $project_names;
@@ -50,7 +46,7 @@ GetOptions(
 	'mismatch=i'    => \$mismatch,
 	'keep_umi'      => \$noTrimUMI,		# keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
 	'fastq_index'   => \$fastq_index,	# generate I1/I2 fastq
-) || die("Error in command line arguments");
+) || confess("Error in command line arguments");
  
 my $bcl_dir;
 my $aoa;
@@ -100,10 +96,16 @@ foreach my $project_name (split(",",$project_names)){
 		die("problem different bcl dir : $bcl_dir ".$run->bcl_dir);
 	}
 	$bcl_dir = $run->bcl_dir;
-	 $dir_bcl_tmp = "/data-dragen/bcl/".$project->getRun->run_name()."/";
+	$dir_bcl_tmp = "/data-dragen/bcl/".$project->getRun->run_name()."/";
+	$dir_out = $project->project_dragen_demultiplex_path();
+	$dir_fastq = $project->dragen_fastq;
+	if ($project->getCapture->name =~ /^transcriptome_10X/) {
+		die("No SampleSheet10X.csv") unless (-f $bcl_dir.'SampleSheet10X.csv');
+		$aoa = csv (in => $bcl_dir.'SampleSheet10X.csv');
+	}
 	next if $aoa;
 	my $csv_tmp = $bcl_dir."/SP.".time.".csv";
-	die("no sample sheet in database ") unless ($run->sample_sheet);
+	die("no sample sheet in database ") unless ($run->sample_sheet or -e $bcl_dir.'SampleSheet10X.csv');
 	my $toto = $run->sample_sheet;
 	warn $csv_tmp;
 	#$run->sample_sheet =~ s/;/,/g;	
@@ -112,8 +114,6 @@ foreach my $project_name (split(",",$project_names)){
 	print TOTO $toto;
 	close TOTO;
 	$aoa = csv (in => $csv_tmp); 
-	$dir_out = $project->project_dragen_demultiplex_path();
-	$dir_fastq = $project->dragen_fastq;
 }
 
 
@@ -166,9 +166,9 @@ my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
 my $pos_cb1 = firstidx{ $_ eq "index" } @$lheader_data;
 my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
 my $len_cb;
- $len_cb->[0] = length($lines->{"[Data]"}->[0]->[$pos_cb1]);
- $len_cb->[1] = length($lines->{"[Data]"}->[0]->[$pos_cb2]); ;
- 
+$len_cb->[0] = length($lines->{"[Data]"}->[0]->[$pos_cb1]);
+$len_cb->[1] = length($lines->{"[Data]"}->[0]->[$pos_cb2]) unless ($pos_cb2 eq '-1');
+
 foreach my $data (@{$lines->{"[Data]"}}){
 	next unless  $data->[$pos_cb1];
 	die($len_cb->[0]." ::  ".$data->[$pos_cb1]) if  $len_cb->[0] ne length($data->[$pos_cb1]);
@@ -374,19 +374,20 @@ sleep(1);
 
 # sleep tant que le run n'est pas fini
 my $complete = $bcl_dir.'RTAComplete.txt'; # MISEQ
-$complete = $bcl_dir.'CopyComplete.txt' if ($bcl_dir =~ m{/(10X|ISEQ|NEXTSEQ500|NOVASEQ)/}); # 10X, ISEQ, NEXTSEQ500, NOVASEQ
+$complete = $bcl_dir.'CopyComplete.txt' if ($bcl_dir =~ m{/(10X|ISEQ|NEXTSEQ500|NOVASEQ|NOVASEQX)/}); # 10X, ISEQ, NEXTSEQ500, NOVASEQ, NOVASEQX
 warn $complete;
 my $checkComplete = 1;
 $checkComplete = 0 if -f $complete;
 while($checkComplete == 1){
 	my ($sec, $min, $hour) = (localtime)[0,1,2];
-	warn "Run not complete, sleep 1h (3600 s) at $hour:$min:$sec";
+	my $time = sprintf("%02d:%02d:%02d", $hour, $min, $sec);
+	warn "Run not complete, sleep 1h (3600 s) at $time";
 	sleep(3600);
 	$checkComplete = 0 if (-f $complete);
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
-my $exit2 = system("rsync -rav --no-times --size-only $bcl_dir  $dir_bcl_tmp ");
-die("Rsync error") if ($exit2);
+my $exit_rsync = system("rsync -rav --no-times --size-only $bcl_dir  $dir_bcl_tmp ");
+die("Rsync error, retry") if ($exit_rsync);
 my $ss1 = $dir_bcl_tmp."/".$samp_name;
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
 $cmd .= "--strict-mode true "; # abort if any files are missing or corrupt
@@ -415,19 +416,16 @@ foreach my $project_name (split(",",$project_names)){
 		$run = $runs->[0];
 	}
 	my $out_fastq = $run->fastq_dir();
-	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ");
+	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ") unless (-d $out_fastq);
 	
 	foreach my $p (@{$project->getPatients}){
 
 		my $pid = $pm->start and next;
 
 		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$dir_out);
-			warn $fastq1." ".$fastq2;
-
-
-
+		warn $fastq1." ".$fastq2;
 		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
-
+		
 		$pm->finish( 0, {});
 	}
 
@@ -443,8 +441,6 @@ system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav ".$dir_out."/
 
 report($dir_stats."/Demultiplex_Stats.csv");
 
-
-print("!! Don't forget to copy the index fastq files !! (from '$dir_out')") if ($fastq_index);
 
 exit(0);
 ###
@@ -473,20 +469,19 @@ sub report {
 	$stat->add_data(values %$byline);
 	my $mean = $stat->mean();
 	my $sd = $stat->standard_deviation();
-	foreach my $l (keys %$byline){
+	foreach my $l (sort keys %$byline){
 		my @row;
 		push(@row,colored::stabilo("blue",$l,1));
 		
 		if ($byline->{$l} < 100){
 			push(@row,colored::stabilo("red",$byline->{$l},1)) ;
 		}
-		elsif ($byline->{$l} < (3*$sd) + $mean){
+		elsif (abs( $byline->{$l} - $mean ) > 3*$sd){
 			push(@row,colored::stabilo("red",$byline->{$l},1)) ;
 		}
-		elsif ($byline->{$l} < $sd + $mean){
-			push(@row,colored::stabilo("orange",$byline->{$l},1)) ;
+		elsif (abs($byline->{$l} - $mean) > $sd){
+			push(@row,colored::stabilo("yellow",$byline->{$l},1)) ;
 		}
-		
 		else {
 			push(@row,colored::stabilo("green",$byline->{$l},1)) ;
 		}
@@ -500,14 +495,20 @@ sub report {
 	print "-- By Sample : --\n";	
 	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
 	@rows = ();
-	foreach my $l (keys %$bypatient){
+	foreach my $p (sort keys %$bypatient){
 		my @row;
-		push(@row,colored::stabilo("blue",$l,1));
-		if ($byline->{$l} > 1000){
-			push(@row,colored::stabilo("green",$bypatient->{$l},1)) ;
+		push(@row,colored::stabilo("blue",$p,1));
+		if ($bypatient->{$p} < 1000000){
+			push(@row,colored::stabilo("red",$bypatient->{$p},1)) ;
 		}
+#		elsif (abs( $bypatient->{$p} - $mean ) > 3*$sd){
+#			push(@row,colored::stabilo("red",$bypatient->{$p},1)) ;
+#		}
+#		elsif (abs( $bypatient->{$p} - $mean ) > $sd){
+#			push(@row,colored::stabilo("yellow",$bypatient->{$p},1)) ;
+#		}
 		else {
-				push(@row,colored::stabilo("red",$bypatient->{$l},1)) ;
+			push(@row,colored::stabilo("green",$bypatient->{$p},1)) ;
 		}
 		push(@rows,\@row);
 	}
