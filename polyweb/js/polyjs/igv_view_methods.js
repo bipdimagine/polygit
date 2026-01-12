@@ -136,7 +136,7 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name) {
 	const regex = /HG38/g;
 	var genome = 'hg19';
 	if (file.match(regex)) {
-		genome = 'hg38';
+		genome = 'hg38_1kg';
 	}
 	
 	file = file.replaceAll(",", ";");
