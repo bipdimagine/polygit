@@ -408,7 +408,7 @@ warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 
 
 $patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
-#my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 confess("Error:\n$log_error_pipeline") unless -e $ok_pipeline;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
