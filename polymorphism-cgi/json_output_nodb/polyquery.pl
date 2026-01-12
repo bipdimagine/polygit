@@ -1026,6 +1026,7 @@ sub launchStatsProjectAll_genes {
 			warn "++ ".$gene->external_name  if ($debug);
 			$project->print_dot(50);
 			$nbg ++;
+			$gene->setCurrentVector($v_gene);
 			my $hStats = launchStatsGene($gene);
 			if ($hStats) {
 				push(@lStats, $hStats );
@@ -1490,9 +1491,6 @@ sub launchStatsChr_null {
 my %global_hcat;
 sub launchStatsGene {
 	my ($gene) = @_;
-	
-	my $vv = $gene->getCurrentVector() & $gene->getChromosome->getVariantsVector();
-	$gene->setCurrentVector($vv);
 	return if $model eq 'compound' and not $gene->getCurrentVector->Norm() >= 2;
 	return if $gene->getCurrentVector->is_empty;
 	my $t1 = $gene->compact_vector;
