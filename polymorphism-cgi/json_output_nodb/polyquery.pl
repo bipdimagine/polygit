@@ -559,14 +559,22 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 		}
 	}
 	elsif ($xls_save_session or $xls_by_variants or $export_list_var_ids) {
-		foreach my $v_id (@{$chr->getListVarVectorIds($chr->getVariantsVector())}) {
-#			my $var_id = $chr->getVarId($v_id);
-#			my $var = $chr->get_lmdb_variations("r")->get($var_id);
+		my $v_all = $chr->getNewVector();
+		foreach my $fam (@{$chr->getFamilies()}) {
+			my $v_fam = $fam->getCurrentVariantsVector($chr);
+			foreach my $pat (@{$fam->getPatients()}) {
+				next if $pat->in_the_attic();
+				my $v_pat = $pat->getVariantsVector($chr);
+				$v_pat &= $v_fam;
+				$v_all += $v_pat;
+			}
+		}
+		$v_all &= $chr->getVariantsVector();
+		foreach my $v_id (@{$chr->getListVarVectorIds($v_all)}) {
 			my $var = $chr->getProject->returnVariants($chr->name."!".$v_id);
 			$var->{project} = $project;
 			$var->{buffer} = $buffer;
 			$var->{vector_id} = $v_id;
-
 			push( @lVarObj, $var );
 		}
 		if ($debug) { warn "\nAfter chr->getStructuralVariations()"; }
