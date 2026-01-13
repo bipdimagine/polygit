@@ -14,8 +14,8 @@ use GBuffer;
 my $project_name;
 my $patient_name;
 my $version;
-my $max_dup = 20; # %
-my $min_map = 95; # %
+my $max_dup; # 0-100%
+my $min_map; # 0-100%
 GetOptions(
 	'project=s'			=> \$project_name,
 	'patient=s'			=> \$patient_name,
@@ -33,6 +33,13 @@ confess("ERROR: -min_mapping must be between 0 and 100.\n") if ($min_map > 100 o
 my $buffer = new GBuffer;
 my $project = $buffer->newProject(-name => $project_name, -version =>$version);
 my $patient = $project->getPatient($patient_name);
+unless ($max_dup) {
+	$max_dup = 20;
+	$max_dup = 40 if ($project->isDiagnostic);
+}
+unless ($min_map) {
+	$min_map = 95;
+}
 
 # Mapping stats
 my $dir_dragen_pipeline = $patient->getDragenDirName("pipeline");
