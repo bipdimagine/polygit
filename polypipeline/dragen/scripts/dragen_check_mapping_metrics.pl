@@ -13,11 +13,13 @@ use GBuffer;
 
 my $project_name;
 my $patient_name;
+my $version;
 my $max_dup = 20; # %
 my $min_map = 95; # %
 GetOptions(
 	'project=s'			=> \$project_name,
 	'patient=s'			=> \$patient_name,
+	'version=s'			=> \$version,
 	'max_duplicates=i'	=> \$max_dup,
 	'min_mapping=i'		=> \$min_map,
 ) || confess("Error in command line arguments");
@@ -29,7 +31,7 @@ confess("ERROR: -min_mapping must be between 0 and 100.\n") if ($min_map > 100 o
 # todo: Ajuster $max_dup et $min_map en fonction du type de projet ?
 
 my $buffer = new GBuffer;
-my $project = $buffer->newProject(-name => $project_name);
+my $project = $buffer->newProject(-name => $project_name, -version =>$version);
 my $patient = $project->getPatient($patient_name);
 
 # Mapping stats
