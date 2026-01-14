@@ -331,7 +331,7 @@ sub get_polyviewer_variant {
 			if (not exists $ht->{promoterAI_score}) {
 				$ht->{promoterAI_score} = '-';
 				if ($self->project->getVersion() =~ /HG38/) {
-					if (not $hPromoterAI) {
+					if (not $hPromoterAI and $chr ne 'MT') {
 						my $res = $self->project->getChromosome($chr)->rocksdb("promoterAI")->get_raw($genomic_rocksid);
 						if ($res) {
 							foreach my $infos (split(',', $res)) {
