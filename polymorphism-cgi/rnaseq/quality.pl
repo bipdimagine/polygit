@@ -57,9 +57,6 @@ my $file = $project->getCountingDir("featureCounts")."$project_name.count.genes.
 
 next unless -e $file;
 print $cgi->start_div({class=>"panel panel-primary",style=>"font-size: 11px;font-family:  Verdana;"});
-my $malign = $project->alignmentMethods();
-
-
 print $cgi->div({class=>"panel-heading"},'<i class="fa fa-flag fa-lg" style="text-align: center;font-color: white;"></i> &nbsp'. $project_name." &nbsp ".$project->description."&nbsp".$project->getVersion);
 	
 print $cgi->start_table({class=>"table table-striped table-bordered table-hover",style=>"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;", 'data-click-to-select'=>"true",'data-toggle'=>"table"});
@@ -70,24 +67,32 @@ my $header = shift(@lines);
 my @files = split(" ",$header);
 
 my $stats;
+my $f;
 
-foreach my $patient (@{$project->getPatients}){
-	my $bam = $patient->getBamFileName();
-	next unless -e $bam;
-	
-	my $idx = firstidx {$_ eq $bam } @files;
-	warn $idx;
-	my %stat_patient;
-	foreach my $line (@lines){
-		warn $line;
-		my @t = split(" ",$line);
-		
-			$stat_patient{$t[0]} = $t[$idx] ;
+my @idxs;
+
+for (my $i =0;$i<@files;$i++){
+my $found;
+	foreach my $patient (@{$project->getPatients}){
+		my $pname = "/".$patient->name.".(bam|cram)";
+		if ($files[$i] =~/$pname/){
+			push(@idxs,$patient->name);
 		}
-		
-		$stats->{$patient->name} = \%stat_patient;
-		
+
 	}
+}
+next unless @idxs;
+foreach my $line (@lines){
+	my @t = split(" ",$line);
+	
+	
+	my $stat_name = shift(@t);
+	for (my $i =0;$i<@t;$i++){
+	my $pname = $idxs[$i];
+	$stats->{$pname}->{$stat_name} = $t[$i];
+	}
+ }
+
 	
 my $type = {
 	aligned => ["Assigned",""]
@@ -119,21 +124,20 @@ foreach my $n (keys %{$stats}){
 	$stat_project->{global}->{nofeature} += 	$stat_project->{sample}->{$n}->{nofeature};
 }
 
-
 	
 print qq{<thead>};
 		print $cgi->start_Tr({class=>"success"});
 my @header = ("patient",@stats_name);
+
 print $cgi->th( \@header);
 #print join("\t",@header)."\n";
 	print $cgi->end_Tr();
 print qq{</thead>};
-
 foreach my $s (keys %{$stat_project->{sample}} ){
 		print $cgi->start_Tr();
 	my @line;
 	push(@line,$s);
-	foreach my $stat (@stats_name){
+	foreach my $stat (@stats_name) {
 		push(@line,$stat_project->{sample}->{$s}->{$stat});
 	}
 	
@@ -142,9 +146,10 @@ foreach my $s (keys %{$stat_project->{sample}} ){
 		print $cgi->end_Tr();
 	
 }
+
 #
 my @line;
-	push(@line,$project_name);
+push(@line,$project_name);
 
 	my $nb = scalar(keys %{$stat_project->{sample}} );
 #	warn $nb;
@@ -176,6 +181,5 @@ print $cgi->end_div();
 
 
 	
-
 
 
