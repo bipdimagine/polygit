@@ -145,6 +145,16 @@ sub lift_over_variant {
 	   my $cmd = $self->lift_over_variants([$variation],$key);
 }
 
+has can_except_errors => (
+	is		=> 'rw',
+	lazy	=> 1,
+);
+
+has liftover_variants_errors => (
+	is		=> 'rw',
+	lazy	=> 1,
+	default	=> sub { {} },
+);
 
 # Fonction exportable pour effectuer le lift-over d'un variant
 sub lift_over_variants {
@@ -183,7 +193,11 @@ sub lift_over_variants {
    run_liftOver($self,$bed_input,$res);
    foreach my $v (@$variations){
    	my $id = $v->id;
-   	die() unless exists $res->{$id};
+   	if (not exists $res->{$id}) {
+   		confess() if not $self->can_except_errors();
+   		$self->{liftover_variants_errors}->{$id}++;
+   		next;
+   	}
    	$v->{$key} = delete $res->{$id};
    	my $pvcf = $v->{$key}->{position_vcf} ;
 	$v->{$key}->{position} = $v->{$key}->{position_vcf} ;
