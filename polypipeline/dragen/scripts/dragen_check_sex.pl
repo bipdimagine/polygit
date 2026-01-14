@@ -16,9 +16,11 @@ use GBuffer;
 
 my $project_name;
 my $patient_name;
+my $version;
 GetOptions(
 	'project=s'	=> \$project_name,
 	'patient=s'	=> \$patient_name,
+	'version=s'	=> \$version,
 ) || confess("Error in command line arguments");
 
 confess("ERROR: -project mandatory.\n") unless ($project_name);
@@ -26,7 +28,7 @@ confess("ERROR: -patient mandatory.\n") unless ($patient_name);
 
 
 my $buffer = new GBuffer;
-my $project = $buffer->newProject(-name => $project_name);
+my $project = $buffer->newProject(-name => $project_name, -version =>$version);
 my $project_id = $project->id;
 my $patient = $project->getPatient($patient_name);
 

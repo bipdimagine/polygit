@@ -140,8 +140,8 @@ else {
 }
 #die() unless  -e $bam_pipeline;
 
-warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version -dragen_version=$dragen_version && touch $ok_move";
-my $exit = system("$Bin/dragen_check_mapping_metrics.pl -project=$projectName -patient=$patients_name && touch $ok_check_mapping_metrics");
+warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
+my $exit = system("$Bin/dragen_check_mapping_metrics.pl -project=$projectName -patient=$patients_name -version=$version && touch $ok_check_mapping_metrics");
 confess("Error check mapping metrics") if $exit;
 
 if ($rna == 1) {
@@ -149,10 +149,10 @@ if ($rna == 1) {
 }
 
 warn "move";
-warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version -dragen_version=$dragen_version && touch $ok_move";
-#system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move");
+warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
+system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move");
 
-$exit = system("$Bin/dragen_check_sex.pl -project=$projectName -patient=$patients_name && touch $ok_check_sex") if ($project->isGenome or $project->isExome);
+$exit = system("$Bin/dragen_check_sex.pl -project=$projectName -patient=$patients_name -version=$version && touch $ok_check_sex") if ($project->isGenome or $project->isExome);
 confess("Error check sex") if $exit;
 
 exit(0);
@@ -248,7 +248,7 @@ if (exists $pipeline->{vcf} ){
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling;
 $patient->update_software_version("dragen",$cmd_dragen);
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
-#my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 unlink $fastq1 if  $fastq1 =~ /pipeline/;
 unlink $fastq2 if $fastq2 =~ /pipeline/;;
 die if $exit != 0;
