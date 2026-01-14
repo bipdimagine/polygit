@@ -578,7 +578,9 @@ sub getVector_family_dominant() {
 	foreach my $patient (@{$self->getChildrenHealthy()}) {
 		unless ($self->{vector_transmission}->{$key}->{$chr->id}){
 			$self->{vector_transmission}->{$key}->{$chr->id} = $chr->getNewVector();
-		} 
+		}
+
+
 		$self->{vector_transmission}->{$key}->{$chr->id} -= $patient->getVectorOrigin($chr);
 	}
 	
