@@ -54,6 +54,7 @@ foreach my $project_name (sort {$b cmp $a} @$list){
 my $project = $buffer->newProject(-name=>$project_name);
 
 my $file = $project->getCountingDir("featureCounts")."$project_name.count.genes.txt.summary";
+
 next unless -e $file;
 print $cgi->start_div({class=>"panel panel-primary",style=>"font-size: 11px;font-family:  Verdana;"});
 print $cgi->div({class=>"panel-heading"},'<i class="fa fa-flag fa-lg" style="text-align: center;font-color: white;"></i> &nbsp'. $project_name." &nbsp ".$project->description."&nbsp".$project->getVersion);
@@ -72,8 +73,10 @@ foreach my $patient (@{$project->getPatients}){
 	next unless -e $bam;
 	
 	my $idx = firstidx {$_ eq $bam } @files;
+	warn $idx;
 	my %stat_patient;
 	foreach my $line (@lines){
+		warn $line;
 		my @t = split(" ",$line);
 		
 			$stat_patient{$t[0]} = $t[$idx] ;
