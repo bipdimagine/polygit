@@ -57,6 +57,9 @@ my $file = $project->getCountingDir("featureCounts")."$project_name.count.genes.
 
 next unless -e $file;
 print $cgi->start_div({class=>"panel panel-primary",style=>"font-size: 11px;font-family:  Verdana;"});
+my $malign = $project->alignmentMethods();
+
+
 print $cgi->div({class=>"panel-heading"},'<i class="fa fa-flag fa-lg" style="text-align: center;font-color: white;"></i> &nbsp'. $project_name." &nbsp ".$project->description."&nbsp".$project->getVersion);
 	
 print $cgi->start_table({class=>"table table-striped table-bordered table-hover",style=>"text-align: center;vertical-align:middle;font-size: 10px;font-family:  Verdana;", 'data-click-to-select'=>"true",'data-toggle'=>"table"});
