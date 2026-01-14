@@ -1183,9 +1183,11 @@ sub get_vector_filter_gene_annotations {
 sub return_cat {
 	my ($project,@unselect) = @_;
 	my %hcat = %{$project->buffer->config->{'genbo_annotations_names'}};
-
 	foreach my $c (@unselect){
 		delete $hcat{$c};
+		if ($c eq 'predicted_splice_site') {
+			delete $hcat{'predicted_promoter_ai'} if exists $hcat{'predicted_promoter_ai'};
+		}
 	}
 	return keys %hcat;
 }

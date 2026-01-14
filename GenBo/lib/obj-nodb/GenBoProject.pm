@@ -4422,7 +4422,9 @@ sub makePath {
 
 sub getAlignmentUrl {
 	my ( $self, $method_name ) = @_;
-	my $path = 'https://'.$ENV{HTTP_HOST}."/NGS/".$self->name."/".$self->genome_version."/align/".$method_name.'/';
+	my $path;
+	$path .= 'https://'.$ENV{HTTP_HOST} if $ENV{HTTP_HOST};
+	$path .= "/NGS/".$self->name."/".$self->genome_version."/align/".$method_name.'/';
 	return $path;
 }
 
@@ -5507,7 +5509,8 @@ my $maskCoding = {
 	maturemirna           => 8192,
 	upstream              => 16384,
 	downstream            => 32768,
-	predicted_splice_site => 65536
+	predicted_splice_site => 65536,
+	predicted_promoter_ai => 131072
 };
 
 
@@ -5532,7 +5535,8 @@ has maskImpact => (
 			maturemirna           => 8192,
 			upstream              => 16384,
 			downstream            => 32768,
-			predicted_splice_site => 65536,
+			predicted_splice_site => 65536,,
+			predicted_promoter_ai => 131072
 	#		duplication           => 131072,
 	#		deletion           => 262144,
 		};
@@ -5561,6 +5565,7 @@ has maskImpactTextForLegend => (
 			upstream              => "upstream",
 			downstream            => "downstream",
 			predicted_splice_site => "predicted splice region",
+			predicted_promoter_ai => "predicted promoterAI"
 		#	duplication           => "predicted splice region",
 		#	deletion           	  => "predicted splice region",
 		};
@@ -5584,7 +5589,7 @@ has maskImpactText => (
 			'phase',              'frameshift',
 			'essential_splicing', 'nonsynonymous',
 			'nonframeshift',      'splice_site',
-			'predicted_splice_site'
+			'predicted_splice_site', 'predicted_promoter_ai'
 		];
 
 		#$maskCodingText->{moderate} = $maskCodingText->{medium};
@@ -5593,7 +5598,7 @@ has maskImpactText => (
 			'phase',               'frameshift',
 			'essential_splicing',  'ncrna',
 			'nonsynonymous',       'nonframeshift',
-			'splice_site',         'predicted_splice_site',
+			'splice_site',         'predicted_splice_site', 'predicted_promoter_ai',
 			'pseudogene',          'intronic',
 			'silent',              'utr',
 			'upstream_downstream', 'upstream',
@@ -5618,7 +5623,7 @@ $maskCoding->{high} =
 $maskCoding->{moderate} =
   $maskCoding->{high} | $maskCoding->{nonsynonymous} |
   $maskCoding->{nonframeshift} | $maskCoding->{splice_site} |
-  $maskCoding->{predicted_splice_site};
+  $maskCoding->{predicted_splice_site} | $maskCoding->{predicted_promoter_ai};
 $maskCoding->{medium} = $maskCoding->{moderate};
 $maskCoding->{low} =
   $maskCoding->{moderate} | $maskCoding->{ncrna} | $maskCoding->{pseudogene} |

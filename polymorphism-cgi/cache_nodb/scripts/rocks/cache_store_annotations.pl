@@ -852,6 +852,26 @@ sub get_annotations {
 				}
 			}
 			
+			foreach my $tr (@{$g->getTranscripts()}) {
+				my $score_promoterAI = $variation->promoterAI_score($tr);
+				if ($score_promoterAI && $score_promoterAI ne "-") {
+					if (abs($score_promoterAI) >= $variation->project->buffer->config->{promoterAI}->{low}) {
+						$intspan_global_categories->{predicted_promoter_ai_low}->add($lmdb_index);
+						$intspan_genes_categories->{ $g->id }->{predicted_promoter_ai_low}->add($lmdb_index);
+						if (abs($score_promoterAI) >= $variation->project->buffer->config->{promoterAI}->{medium}) {
+							$intspan_global_categories->{predicted_promoter_ai}->add($lmdb_index);
+							$intspan_genes_categories->{ $g->id }->{predicted_promoter_ai}->add($lmdb_index);
+							$intspan_global_categories->{predicted_promoter_ai_medium}->add($lmdb_index);
+							$intspan_genes_categories->{ $g->id }->{predicted_promoter_ai_medium}->add($lmdb_index);
+							if (abs($score_promoterAI) >= $variation->project->buffer->config->{promoterAI}->{high}) {
+								$intspan_global_categories->{predicted_promoter_ai_high}->add($lmdb_index);
+								$intspan_genes_categories->{ $g->id }->{predicted_promoter_ai_high}->add($lmdb_index);
+							}
+						}
+					}
+				}
+			}
+			
 			#$debug =1 if $g->id eq  "ENSG00000253317_8";
 			my $cons_text = $variation->variationType($g);
 			#die() if $variation->name eq "rs747758472";

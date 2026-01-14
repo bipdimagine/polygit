@@ -122,6 +122,13 @@ $layout->{variations}->{ngs} = [
 		styles    => 'text-align:center;'
 	},
 	{
+		name      => "PromoterAI",
+		field     => "promoterAI",
+		formatter => "formatPromoterAI",
+		width     => "5%",
+		styles    => 'text-align:center;'
+	},
+	{
 		name      => "Ncboost",
 		field     => "ncboost",
 		formatter => "formatNcboost",

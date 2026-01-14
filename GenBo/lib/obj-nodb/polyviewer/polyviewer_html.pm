@@ -1661,7 +1661,6 @@ sub transcripts_variants_xslate {
  	
 	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};
 	 
-	 
 	 my $output = $self->xslate->render("transcripts.tt", $data);
 	 return $output;
 	 
@@ -1748,10 +1747,6 @@ sub transcripts_variants {
 	my $hhide;
 	my $compact_table;
 	foreach my $htr (@$atr){
-		
-		warn Dumper $htr; die;
-		
-		
 			my $template = $self->template_transcripts_variant("row");
 			#$html.= $template;
 			# next;
@@ -1809,9 +1804,21 @@ sub transcripts_variants {
 		 $codons = "-" unless $codons;
 		
 		   my $codons_AA = $htr->{codons_AA};
+		   
+		 my $genome_version_predicted_link = $htr->{genome_version_predicted_link};
 
 		 my $polyphen = $self->printBadge($htr->{polyphen},[0.446,0.908]);
-		 my $promoterai = $htr->{promoterAI};
+		 my $promoterai = '-';
+		 my $promoterAI_score = '-';
+		 if (exists $htr->{promoterAI_score} and $htr->{promoterAI_score} ne '-') {
+		 	$promoterAI_score = $htr->{promoterAI_score};
+		 }
+		 if (exists $htr->{promoterAI_score} and $htr->{promoterAI_score} eq '-') {
+		 	$promoterAI_score = '-';
+		 }
+		 else {
+		 	$promoterAI_score = 'N.A.';
+		 }
 		 
 		
 		 my $sift = $self->printInvBadge($htr->{sift},[0,1,0,05]);
@@ -1820,20 +1827,20 @@ sub transcripts_variants {
 		 $template =~s/%REVEL%/$revel/;
 		 $template =~s/%DBSCNV%/$dbscsnv/;
 		 $template =~s/%SPLICEAI%/$b_spliceai/;
-		  $template =~s/%POLYPHEN%/$polyphen/;
-		  $template =~s/%SIFT%/$sift/;
-		  $template =~s/%HIDE%/$hide/;
-		$template =~s/%COLOR%/$c/;	
+		 $template =~s/%POLYPHEN%/$polyphen/;
+		 $template =~s/%SIFT%/$sift/;
+		 $template =~s/%HIDE%/$hide/;
+		 $template =~s/%COLOR%/$c/;	
 		 $template =~s/%CODONS%/$codons/;
-		  $template =~s/%NOMENCLATURE%/$n/;
-		   $template =~s/%EXON%/$exon/;
-		    $template =~s/%APPRIS%/$appris/;
-		    $template =~s/%CCDS%/$ccds/;
-		   $template =~s/%NM%/$nm/;
-		    $template =~s/%CONSEQUENCE%/$cons/;
-		    $template =~s/%RID%/$rid/;
-		    $template =~s/%PROMOTERAI%/$promoterai/;
-		    
+		 $template =~s/%NOMENCLATURE%/$n/;
+		 $template =~s/%EXON%/$exon/;
+		 $template =~s/%APPRIS%/$appris/;
+		 $template =~s/%CCDS%/$ccds/;
+		 $template =~s/%NM%/$nm/;
+		 $template =~s/%CONSEQUENCE%/$cons/;
+		 $template =~s/%RID%/$rid/;
+	     $template =~s/%PROMOTERAI_SCORE%/$promoterAI_score/;
+		 $template =~s/%GENOME_VERSION_PREDICTED_LINK%/$genome_version_predicted_link/;
 		   
 		 $html.=$template;
 	}

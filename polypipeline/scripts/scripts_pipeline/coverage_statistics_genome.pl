@@ -145,7 +145,7 @@ $pm->run_on_finish(
 		 $res->{$patient}->{s100} += $h->{s100};
 		 $res->{$patient}->{sum} += $h->{sum};
 		 $res->{$patient}->{nb} += $h->{nb};
-		 warn  $patient." ".$res->{$patient}->{sum};
+#		 warn  $patient." ".$res->{$patient}->{sum};
 		}
 	);
 $patient_name="all" unless $patient_name;	

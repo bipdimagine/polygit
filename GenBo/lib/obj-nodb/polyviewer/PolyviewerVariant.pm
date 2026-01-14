@@ -735,17 +735,14 @@ sub set_gene {
 				$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_rf);
 				$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_ada) if $self->return_specific_value($v->dbscsnv_ada) > $htr->{dbscsnv} ;
 				$htr->{revel} = $self->return_specific_value($v->revel_score($tr1));
-				
 				$htr->{spliceAI} = $self->return_specific_value($v->max_spliceAI_score($gene));
-				 
 				$htr->{spliceAI_cat} = $v->max_spliceAI_categorie($gene);
-
-				$htr->{promoterAI} = '-';
+				$htr->{promoterAI_score} = '-';
 				if ($v->promoterAI_score($tr1)) {
-					$htr->{promoterAI} = $v->promoterAI_score($tr1).' (tss_pos:'.$v->promoterAI_tss_score($tr1).')';
+					$htr->{promoterAI_score} = $v->promoterAI_score($tr1);
 				}
-				
-				
+				$htr->{genome_version_predicted_link} = '38';
+				$htr->{genome_version_predicted_link} = '37' if $v->project->getVersion() =~ /HG19/;
 				$htr->{sift} = -99;
 				$htr->{polyphen} = -99;
 				$htr->{alphamissense} = -99;

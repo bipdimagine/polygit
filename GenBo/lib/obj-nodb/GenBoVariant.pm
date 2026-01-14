@@ -816,17 +816,24 @@ has promoterAI => (
 	lazy =>1,
 	default => sub {
 		my $self = shift;
-		return if $self->project->getVersion() =~ /HG19/;
 		return if $self->getChromosome->name() eq "MT";
-		my $rocksid = $self->getChromosome->id().'!'.$self->rocksdb_id;
-	 	my $res = $self->getChromosome->rocksdb("promoterAI")->get_raw($rocksid);
+		my $rocksid;
+		if ($self->project->getVersion() =~ /HG19/) {
+			my @ltmp_r = split('!',$self->genomic_rocksdb_id);
+			eval { $rocksid = $self->lift_over('HG38')->{'chromosome'}.'!'.sprintf("%010d", $self->lift_over('HG38')->{'position'}).'!'.$ltmp_r[-1]; };
+			if($@) { return; }
+		}
+		else {
+			$rocksid = $self->genomic_rocksdb_id;
+		}
+		my $res = $self->getChromosome->rocksdb("promoterAI")->get_raw($rocksid); 
 	 	return if not $res;
 	 	my $h;
 	 	foreach my $r (split(',', $res)) {
 		 	my @l = split(';', $r);
 		 	$h->{$l[0]}->{transcript_id} = $l[0];
 		 	$h->{$l[0]}->{strand} = $l[1];
-		 	$h->{$l[0]}->{tss_score} = $l[2];
+		 	$h->{$l[0]}->{tss_pos} = $l[2];
 		 	$h->{$l[0]}->{score} = $l[3];
 	 	}
 	 	return $h;
@@ -868,22 +875,13 @@ has ncboost_category => (
         default => sub { return "-" ; },
 );
 
-sub promoterAI_tss_score {
-	my ($self, $transcript) = @_;
-	confess("\n\nERROR: transcript object mandatory. Die \n\n") if not $transcript;
-	return if not $self->promoterAI();
-	my ($tr_id, $chr_id) = split('_', $transcript->id());
-	return if not exists $self->promoterAI->{$tr_id};
-	return $self->promoterAI->{$tr_id}->{tss_score};
-}
-
 sub promoterAI_score {
 	my ($self, $transcript) = @_;
 	confess("\n\nERROR: transcript object mandatory. Die \n\n") if not $transcript;
 	return if not $self->promoterAI();
 	my ($tr_id, $chr_id) = split('_', $transcript->id());
 	return if not exists $self->promoterAI->{$tr_id};
-	return $self->promoterAI->{$tr_id}->{score};
+	return sprintf("%.2f", $self->promoterAI->{$tr_id}->{score});
 }
 
 sub revel_score {
@@ -1268,6 +1266,11 @@ sub isConsequence {
 	return ($mask & $self->project->getMaskCoding($cat));
 }
 
+sub isPredictedPromoterAI {
+	my ($self, $tr) = @_;
+	return $self->return_mask_testing($tr,"predicted_promoter_ai");
+}
+
 ############# 
 # ANNEX
 #############
@@ -1379,8 +1382,14 @@ sub init_annotation {
 		###
 		my $score_spliceAI = $self->max_spliceAI_score($tr->getGene());
 		if ($score_spliceAI && $score_spliceAI ne "-" && $score_spliceAI >= $self->project->buffer->config->{spliceAI}->{medium}) {
-							$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $project->getMaskCoding("predicted_splice_site");
-							#last;
+			$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $project->getMaskCoding("predicted_splice_site");
+			#last;
+		}
+		my $score_promoterAI = $self->promoterAI_score($tr);
+		if ($score_promoterAI && $score_promoterAI ne "-") {
+			if (abs($score_promoterAI) >= $self->project->buffer->config->{promoterAI}->{medium}) {
+				$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $project->getMaskCoding("predicted_promoter_ai");
+			} 
 		}
 		
 		
@@ -1790,6 +1799,9 @@ sub variationType {
 	if ( $mask & $self->getProject()->getMaskCoding("predicted_splice_site") ){
 		$text = $text.",predicted_splice_site";
 	}
+	if ( $mask & $self->getProject()->getMaskCoding("predicted_promoter_ai") ){
+		$text = $text.",predicted_promoter_ai";
+	}
 	#$text = "essential_splicing,".$text if $mask &  $maskCoding->{exonic} && $mask & $maskCoding->{essential_splicing};
 	return $text;
 }
@@ -2098,6 +2110,25 @@ sub score_prediction_refined {
 		elsif ($scoreAI>0.5  && !($self->isEssentialSplicing($gene))){
 			$score += 0.1;
 		}
+		
+		my $score_promoter_ai = 0;
+		foreach my $tr (@{$gene->getTranscripts()}) {
+			my $score_promoterAI = $self->promoterAI_score($tr);
+			if ($score_promoterAI && $score_promoterAI ne "-") {
+				if (abs($score_promoterAI) >= $self->project->buffer->config->{promoterAI}->{high}) {
+					$score_promoter_ai = 0.3;
+				}
+				elsif (abs($score_promoterAI) >= $self->project->buffer->config->{promoterAI}->{medium}) {
+					$score_promoter_ai = 0.2;
+				}
+				elsif (abs($score_promoterAI) >= $self->project->buffer->config->{promoterAI}->{low}) {
+					$score_promoter_ai = 0.1;
+				}
+			}
+			last if $score_promoter_ai > 0;
+		}
+		$score += $score_promoter_ai;
+
 		return $score;
 }
 
