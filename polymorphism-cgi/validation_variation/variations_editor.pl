@@ -88,8 +88,13 @@ my $dev;
 $dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
 my $cgi = new CGI();
 
-my $buffer_polyviewer ={};
+my $OLDOUT;
+if ($cgi->param('export_xls')) {
+	open $OLDOUT, ">&STDOUT";
+	open STDOUT, ">", "/dev/null";
+}
 
+my $buffer_polyviewer ={};
 
 my $hgnomad_ac_ho = {
 	"1" => "0",
@@ -460,9 +465,9 @@ $t = time;
 ##################################
 ################## GET GENES 
 ##################################
-warn "start annotations ";
+warn "start annotations " if (not $cgi->param('export_xls'));
 my ($genes) = run_annnotations( $list, $id_by_genes_id);
-warn " ++ annotations end ++  ".abs(time - $t);
+warn " ++ annotations end ++  ".abs(time - $t) if (not $cgi->param('export_xls'));
 export_xls($patient, $genes) if $cgi->param('export_xls');
 
 $ztime .= ' ' . scalar(@$genes) . '_genes:' . ( abs( time - $t ) );
@@ -692,7 +697,7 @@ sub run_annnotations {
 				}
 			}
 			
-	warn "     rocks   ".$project->rocks_directory."/patients/"." ".abs(time-$t);
+	warn "     rocks   ".$project->rocks_directory."/patients/"." ".abs(time-$t)  if (not $cgi->param('export_xls'));
 	print qq{</div>} unless ($cgi->param('export_xls'));
 	$project->buffer->dbh_reconnect();
 	return calculate_max_score($project,[ values %$hgenes ],$final_polyviewer_all);
@@ -871,21 +876,20 @@ my $h_transmissions = {
 	#!!!!!!!!!!!!!!!!
 	#get_join_parquet($project,$sql_frequence,$sql_patient,$sql_gene,$suffix);
 	return get_rocksdb_mce_polyviewer_variant($project,$where,$suffix);
-#
- 	
 	return ( $finalVector, $list_variants, $hash_variants_DM,$list_genes);
 }
 
 
 sub get_rocksdb_mce_polyviewer_variant {
 	my ($project,$where,$suffix) = @_;
-	warn "rocksdb  ";
+	warn "rocksdb  "  if (not $cgi->param('export_xls'));
 	my $parquet = $project->parquet_cache_variants();
 	#$parquet = "/data-beegfs/tmp/new/NGS2025_09289.variants.parquet";
 	my $dir_parquet = $project->parquet_cache_dir;
 	my $diro = $project->rocks_directory();
 	error("Oops! that's unexpected !!! ") unless -e $parquet;
 	my $sql =qq{select variant_index,gene_name from '$parquet' where  $where ; };
+	
 	my $cmd = qq{duckdb -json -c "$sql"};
  	my $t = time;
  	my $res =`$cmd`;
@@ -895,7 +899,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  	my	$hash_variants_DM = {};
  	
  	my $nbv = 0;
- 	 warn "sql ".abs(time -$t)." ".scalar(@$array_ref);
+ 	 warn "sql ".abs(time -$t)." ".scalar(@$array_ref)  if (not $cgi->param('export_xls'));
  	 $t =time;
  	 my $id_by_genes_id;
  	 my %ids ;
@@ -911,7 +915,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  		$nbv ++;
  	
  	}
- 	warn "end list nb variant ". $nbv." genes : ".scalar(keys  %$id_by_genes_id);
+ 	warn "end list nb variant ". $nbv." genes : ".scalar(keys  %$id_by_genes_id)  if (not $cgi->param('export_xls'));
 	return ($rocksdb_pv->indexes,$id_by_genes_id);
 }
 
@@ -934,7 +938,9 @@ sub export_xls {
 	my @lVarObj;
 	my $project = $patient->getProject();
 	foreach my $h_gene (@$genes) {
+		print '.';
 		foreach my $var_id (keys %{$h_gene->{all_variants}}) {
+			print '.';
 			my $var = $project->_newVariant($var_id);
 			push(@lVarObj, $var);
 		}
@@ -949,6 +955,7 @@ sub export_xls {
 	if (scalar @$list_datas_annotations_cnvs > 0) {
 		$xls_export->add_page('Cnvs', $xls_export->list_generic_header_cnvs(), $list_datas_annotations_cnvs);
 	}
+	open STDOUT, ">&", $OLDOUT;
 	$xls_export->export();
 	exit(0);
 }
