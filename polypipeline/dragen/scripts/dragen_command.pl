@@ -141,7 +141,9 @@ else {
 #die() unless  -e $bam_pipeline;
 
 warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
-my $exit = system("$Bin/dragen_check_mapping_metrics.pl -project=$projectName -patient=$patients_name -version=$version && touch $ok_check_mapping_metrics");
+my $cmd_check_mapping = "$Bin/dragen_check_mapping_metrics.pl -project=$projectName -patient=$patients_name ";
+$cmd_check_mapping .= "-version=$version " if ($version);
+my $exit = system($cmd_check_mapping."&& touch $ok_check_mapping_metrics");
 confess("Error check mapping metrics") if $exit;
 
 if ($rna == 1) {
@@ -152,7 +154,9 @@ warn "move";
 warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
 system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move");
 
-$exit = system("$Bin/dragen_check_sex.pl -project=$projectName -patient=$patients_name -version=$version && touch $ok_check_sex") if ($project->isGenome or $project->isExome);
+my $cmd_check_sex = "$Bin/dragen_check_sex.pl -project=$projectName -patient=$patients_name ";
+$cmd_check_sex .= "-version=$version " if ($version);
+$exit = system($cmd_check_sex."&& touch $ok_check_sex");
 confess("Error check sex") if $exit;
 
 exit(0);
