@@ -498,6 +498,17 @@ warn "end max_score :".abs(time -$sct);
 	my $hchr; 
 $sct = time;
 
+
+if ($cgi->param('phenotype')) {
+	my $new_phenotype = $cgi->param('phenotype');
+	foreach my $g (@$genes) {
+		my $init_score_gene = $g->{'score'};
+		my $init_score_max = $g->{'max_score'};
+		$g->{'score'} = $project->newGene($g->{id})->score($new_phenotype);
+		$g->{'max_score'} = $init_score_max - $init_score_gene + $g->{'score'};
+	}
+}
+
 foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
 		if ($gene_name_filtering) {
 			if ($gene_name_filtering eq $g->{name} or $gene_id_filtering eq $g->{id}) { 
