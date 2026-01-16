@@ -149,7 +149,7 @@ sub vcosmic {
 
 sub vname2 {
 	my ($v,$hvariation) = @_;
-	my $vn = $v->vcf_id;
+	my $vn = $v->gnomad_id;
 	my $vclinvar_text = '';
 #	$vclinvar_text = "<br><span style='color:red'>clinvar:".$v->clinvar_id()."</span>" if ($v->clinvar_id());
 	my $vt = 'SNP' if ($v->isVariation());
@@ -173,41 +173,10 @@ sub vname2 {
 		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;">style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });;
 		$hvariation->{html}->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;" style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });
 	}
-	elsif ($v->name() =~ m/rs/) {
-		my $vname = $v->name();
-		my $vname2;
-		if ($v->isVariation) {
-			$vname2 = $vn;
-		}
-		else {
-			$vname2 = $v->getChromosome->id().'-'.$v->start().'-'.$v->end();
-		}
-		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"><i class="fa fa-users fa-2x" style="color:coral;padding-bottom:3px;"></i><div>$vname2<br><span style='color:red;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;#qq{<a href='http://www.ncbi.nlm.nih.gov/snp/?term=$vn' target = '_blank'>$vn</a> };	
-		$hvariation->{html}->{var_name}  = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"><i class="fa fa-users fa-2x" style="color:coral;padding-bottom:3px;"></i><div>&nbsp$vname2<br><span style='color:red;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;
-	}
-	elsif ($v->name() =~ m/del|ins|dup/ or $v->isInsertion() or $v->isDeletion()) {
-		my $vname = $v->name();
-		if ($v->isDeletion() and $v->length() > 20) {
-			$vn = $v->getChromosome->id().'-'.$v->start().'-del-'.$v->length();
-		}
-		my $len = length($v->var_allele())-1;
-		if ($v->isInsertion() and $len > 20) {
-			$vn = $v->getChromosome->id().'-'.$v->start().'-ins-'.$len;
-		}
-		my $pp = $v->getChromosome->name."-".$v->start."-".$v->end;
-		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });;
-		$hvariation->{html}->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });
-	}
-	elsif ($v->isVariation()) {
+	else {
 		my $vname = $v->name();
 		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"></i><div><span style='color:black;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;#qq{<a href='http://www.ncbi.nlm.nih.gov/snp/?term=$vn' target = '_blank'>$vn</a> };	
 		$hvariation->{html}->{var_name}  = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div><span style='color:black;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;
-	}
-	else {
-		my $pp = $v->getChromosome->name."-".$v->start;
-		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });;
-		#$hvariation->{value}->{var_name} = $vn;
-		$hvariation->{html}->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });
 	}
 }
 
@@ -447,7 +416,7 @@ sub table_gnomad {
 	my $dataset = "?dataset=gnomad_r2_1";
 	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $href = qq{https://gnomad.broadinstitute.org/region/$pp$dataset};
-	my $vn=$v->vcf_id;
+	my $vn=$v->gnomad_id;
 	$vn =~ s/_/-/g;
 	$vn=~ s/chr//;
 

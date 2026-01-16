@@ -951,9 +951,9 @@ sub check_variants {
 			}
 			else {
 				$h_liftover = $var->{lift_over_HG19};
-				$var_id_hg19 = $h_liftover->{vcf_id};
-				my ($a,$b,$c,$d) = split('_',$var->id);
-				$gnomad_id_hg19 = $a.'-'.$h_liftover->{position_vcf}.'-'.$c.'-'.$d;
+				$var_id_hg19 = $h_liftover->{id};
+				$gnomad_id_hg19 = $h_liftover->{vcf_id};
+				$gnomad_id_hg19 =~ s/_/-/g;
 				if (length($gnomad_id_hg19) > 30) {
 					$gnomad_id_hg19 = substr($gnomad_id_hg19,0,27).'...';
 				}
@@ -1207,10 +1207,10 @@ sub check_variants {
 			
 			warn '12 - ok table validations' if $debug;
 			
+			$h_var->{value}->{gnomad_id} = $var->gnomad_id();
 			$hres->{$var_id}->{table_gnomad} = update_variant_editor::table_gnomad($var);
 			$hres->{$var_id}->{table_gnomad} =~ s/gnomad_r2_1/gnomad_r4/;
 			
-			$h_var->{value}->{gnomad_id} = $var->gnomad_id();
 			$hres->{$var_id}->{table_varsome} = update_variant_editor::vvarsome($h_var);
 			
 			$hres->{$var_id}->{table_dejavu} = update_variant_editor::vdejavu($var, $h_var);
