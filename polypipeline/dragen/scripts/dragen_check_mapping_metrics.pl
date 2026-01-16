@@ -35,7 +35,7 @@ my $project = $buffer->newProject(-name => $project_name, -version =>$version);
 my $patient = $project->getPatient($patient_name);
 unless ($max_dup) {
 	$max_dup = 20;
-	$max_dup = 40 if ($project->isDiagnostic);
+	$max_dup = 60 if ($project->isDiagnostic);
 }
 unless ($min_map) {
 	$min_map = 95;
