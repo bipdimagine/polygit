@@ -552,8 +552,9 @@
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
 							document.getElementById("b_export_xls").classList.remove("disabled");
+							document.getElementById("b_export_json").classList.remove("disabled");
 							//document.getElementById("b_export_xls_merged").classList.remove("disabled");
-							document.getElementById("b_export_pdf").classList.remove("disabled");
+							//document.getElementById("b_export_pdf").classList.remove("disabled");
 							html_variants_done = 1;
 							if (html_variants_done == 1 && html_gene_done == 1) {
 								enable_table_search();
@@ -620,6 +621,21 @@
 			    var iframe = dojo.io.iframe.create(downloadPdfIframeName);
 			    dojo.io.iframe.setSrc(iframe, url_xls_2, true);
 			    alert("XLS export is launching. Please wait your file :)");
+			    return;
+			}
+			
+			function exportJson() {
+				var url_json = url_path + "json_output_nodb/load_job_id.pl?export_json=1&session_id=" + input_session_id;
+    			console.log(url_json);
+    			$.getJSON( url_json, function( data ) {
+    				console.log(data);
+    				var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+					var dlAnchorElem = document.getElementById('downloadAnchorElem');
+					dlAnchorElem.setAttribute("href",     dataStr     );
+					dlAnchorElem.setAttribute("download", "polygenescout_"+input_session_id+".json");
+					dlAnchorElem.click();
+    				
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			    return;
 			}
 			
@@ -691,9 +707,14 @@
 								<button id="b_export_xls" class="btn btn-default disabled" type="submit" onclick="exportXls()" style="font-size:9px;background-color:#38B392;">
 									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">XLS</span></b>
 								</button>
+								<button id="b_export_json" class="btn btn-default disabled" type="submit" onclick="exportJson()" style="font-size:9px;background-color:blue;">
+									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">JSON</span></b>
+								</button>
+								<!--
 								<button id="b_export_pdf" class="btn btn-default disabled" type="submit" onclick="exportPdf()" style="font-size:9px;background-color:#BD3D3A;margin-right:20px;">
 									<span class="glyphicon glyphicon-print" style="color:white;"></span><b> <span style="color:white;">PRINT</span></b>
 								</button>
+								-->
 							</span>
 						</div>
 					</li>
@@ -791,5 +812,6 @@
 	        <div  id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>
 		</div>
 		
+		<a id="downloadAnchorElem" style="display:none"></a>
 	</body>
 </html>

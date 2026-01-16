@@ -74,6 +74,8 @@ my $filter_perc_allelic_min = $cgi->param('min_perc_all');
 my $filter_perc_allelic_max = $cgi->param('max_perc_all');
 my $only_interval = $cgi->param('only_interval');
 my $export_xls = $cgi->param('export_xls');
+my $export_json = $cgi->param('export_json');
+my $out_json = $cgi->param('out_json');
 my $only_pat_with_var = $cgi->param('only_pat_with_var');
 my $only_pat_with_var_he = $cgi->param('only_pat_with_var_he');
 my $only_pat_with_var_ho = $cgi->param('only_pat_with_var_ho');
@@ -643,11 +645,21 @@ sub export_html {
 	$h_annot_categories->{"patient_has_variant <b><span style='color:red'>".$only_pat_with_var."</span></b> (".join('+', @lHeHo).")"} = 1 if ($only_pat_with_var);
 	
 	$hRes->{hash_filters} = $h_annot_categories;
-	
 	save_html($session_id, $hRes);
+	
+	save_json($session_id) if ($cgi->param('export_json'));
+	
 	my $hRes2;
 	$hRes2->{session_id} = $session_id;
 	printJson($hRes2);
+}
+
+sub save_json {
+	my ($session_id) = @_;
+	print '.|.export_json';
+	my $cmd = "$Bin/../json_output_nodb/load_job_id.pl export_json=1 session_id=".$session_id." outfile=".$export_json;
+	system($cmd);
+	exit(0);	
 }
 
 sub save_html {
