@@ -1156,18 +1156,12 @@ qq{<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>SOMATIC }
 	  if $project->isSomatic;
 	my $nb = scalar( @{ $run->getPatients } );
 
-#$btn_class = qq{class= "label  label-xs label-warning " style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 95;
-#$btn_class = qq{class= "label  label-xs label-alert "  style="font-size: 12px;" } if int($stats->{"30x"}/$nb)  < 90;
-#die();
 
 	my $text30  = "30X :" .$format_number->round($lstats->{"30x"}->{$run->id}->{mean},1)."% <i>(".$format_number->round($gstats->{"30x"}->{mean},1).")</i>";
-	my $text100 = ''
-	  ; # = "100X :".$format_number->round($lstats->{"100X"}->{$run->id}->mean,1)."%<i>(".$format_number->round($gstats->{"100X"}->mean,1).")</i>" if  $lstats->{"100X"}->{$run->id} ;
+	my $text100 = ''; # = "100X :".$format_number->round($lstats->{"100X"}->{$run->id}->mean,1)."%<i>(".$format_number->round($gstats->{"100X"}->mean,1).")</i>" if  $lstats->{"100X"}->{$run->id} ;
 
-	my $text15 = ''
-	  ; # = "15X :" .$format_number->round($lstats->{"15X"}->{$run->id}->mean,1)."%<i>(".$format_number->round($gstats->{"15X"}->mean,1).")</i>";;
-	my $textmean = ''
-	  ; # = "Cov :" .$format_number->round($lstats->{"mean"}->{$run->id}->mean,1)." <i>(".$format_number->round($gstats->{mean}->mean,1)."&nbsp;&#177;&nbsp;". $format_number->round($gstats->{mean}->standard_deviation,0).")</i>";
+	my $text15 = ''; # = "15X :" .$format_number->round($lstats->{"15X"}->{$run->id}->mean,1)."%<i>(".$format_number->round($gstats->{"15X"}->mean,1).")</i>";;
+	my $textmean = ''; # = "Cov :" .$format_number->round($lstats->{"mean"}->{$run->id}->mean,1)." <i>(".$format_number->round($gstats->{mean}->mean,1)."&nbsp;&#177;&nbsp;". $format_number->round($gstats->{mean}->standard_deviation,0).")</i>";
 
 	my $capture = $project->getCaptures()->[0];
 	my $ver1    = $project->genome_version;
@@ -1730,20 +1724,19 @@ sub statistics_projects {
 			foreach my $v ( "coverage_stats", "statistics_variations" ) {
 				my $data = $no->get( $project2->name, "$v" );
 				next unless $data;
-				
 				$nbpp++;
-
+				warn "**** ".$v;
 				foreach my $p_value ( @{ $data->{data} } ) {
 					$nb++;
 
 					#my $patient = $p_value->{patients}->{text};
-					my $patient = $project2->getPatientOrControl(
-						$p_value->{patients}->{text} );
+					my $patient = $project2->getPatientOrControl($p_value->{patients}->{text} );
 					next if $patient->is_control;
 					foreach my $k ( keys %$p_value ) {
 						$k =~ s/X/x/i;
 						next if $k eq "patients";
-						next unless $p_value->{$k}->{text};
+						
+						$p_value->{$k}->{text} = 0  unless $p_value->{$k}->{text};
 						$p_value->{$k}->{text} =~ s/%//;
 						$patient_value->{ $patient->id }->{$k} =
 						  $p_value->{$k}->{text};
@@ -1774,7 +1767,6 @@ sub statistics_projects {
 		return ( $gstat, $lstat, $patient_value );
 
 	}
-
 	foreach my $k ( keys %$stats ) {
 
 		my $stat = Statistics::Descriptive::Full->new();
@@ -1800,7 +1792,6 @@ sub statistics_projects {
 sub table_quality {
 
 	my ($run) = @_;
-
 	my $out;
 	my $error = 0;
 
@@ -1849,6 +1840,7 @@ sub table_quality {
 		{
 			next unless $lstats->{$v}->{ $run->id };
 			my $value = $patient_value->{ $p->id }->{$v};
+			warn Dumper $patient_value->{ $p->id };
 			$value = 0 unless $value;
 			my $mean =  0;
 			$mean = int( $gstats->{$v}->mean ) if $gstats->{$v};
