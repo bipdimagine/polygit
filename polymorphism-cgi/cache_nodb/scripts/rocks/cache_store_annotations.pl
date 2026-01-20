@@ -289,7 +289,6 @@ confess("problem store process") if ( keys %$process );
 my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
 my $size_variants = $no->size();
 warn $size_variants;
-sleep(5);
 #########################
 #GLOBAL CATEGORIES
 # ok now all part is finished I can store the global intspan and construct bitvector for each global categories
@@ -308,14 +307,29 @@ if($size_variants == 0 ){
 		$rocks3->put_vector_patient_batch($patient,"all",$vnull);
 		$rocks3->put_vector_patient_batch($patient,"ho",$vnull);
 		$rocks3->put_vector_patient_batch($patient,"he",$vnull);
+		foreach my $c ( keys %{ $project->buffer->config->{scaled_score_ratio} } ) {
+		 	my $value = $project->buffer->config->{scaled_score_ratio}->{$c};
+		 	warn $c;
+		 	$rocks3->put_vector_patient_batch($patient,"ratio_".$value,$vnull);
+		 	$rocks3->put_vector_patient_batch($patient,"lower_ratio_".$value,$vnull);
+		}
+		
+		
+		foreach my $c ( keys %{ $project->buffer->config->{lower_scaled_score_ratio} } ) {
+			
+				my $value = $project->buffer->config->{lower_scaled_score_ratio}->{$c};
+			$rocks3->put_vector_patient_batch($patient,"ratio_".$value,$vnull);	
+			$rocks3->put_vector_patient_batch($patient,"lower_ratio_".$value,$vnull);
+		}
 	}
-
+	warn "end";
 	$rocks3->write_batch();
 	$rocks3->close();
 	warn "no variants !!!!";
 	system("date > $ok_file") if $ok_file;
 	exit(0);
 } 
+warn "start";
 my $vector_variation_type;
 foreach my $k ( keys %{$intspan_global_categories} ) {
 	my $h;
