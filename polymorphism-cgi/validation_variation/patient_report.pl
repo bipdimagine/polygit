@@ -2324,7 +2324,7 @@ sub print_variation_td_edit{
 				elsif ($cat eq "deja_vu" or $cat eq "similar_projects" ) {
 					my $url = $deja_vu_url.$variation->{id};
 					
-					
+						my $vid = $variation->{id};
 						my $onclick = qq{   onclick="goto_dejavu('22_50720284_CGCAGA_C')" style="color:black;font-weight:bold">$text</a>};
 					 if (exists $variation->{dup}){
 					 
@@ -2332,7 +2332,7 @@ sub print_variation_td_edit{
 					 }
 					 else {
 						#$text = qq{<a href="$url" target="_blank" class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:black;font-size :8px;">$text</a>};
-						my $vid = $variation->{id};
+					
 							$text = qq{<a onclick="goto_dejavu('$vid')" target="_blank" class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:black;font-size :8px;">$text</a>};
 					 }
 				}	
