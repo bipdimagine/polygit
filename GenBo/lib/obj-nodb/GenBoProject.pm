@@ -316,7 +316,22 @@ has isDiagnostic => (
 		return 1;
 	},
 );
+has isCapture => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return undef if $self->isGenome();
+		foreach my $c ( @{ $self->getCaptures } ) {
+			return $c->analyse if lc( $c->analyse ) !~ /genome/ && lc( $c->analyse ) !~ /rna/;
 
+			#			return "diagnostic" if $c->analyse eq "diagnostic";
+			#			return "ciliome" if $c->analyse eq "ciliome";
+			#			return "callosome" if $c->analyse eq "callosome";
+		}
+		return 1;
+	},
+);
 has validations => (
 	is      => 'ro',
 	lazy    => 1,
@@ -4988,8 +5003,10 @@ sub rocksGenBo {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
 	my $name = "genbo-".$mode.$$;
-	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
+	#$name = "genbo-".$mode;
 	
+	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
+	warn $name;
 	$self->{rocks}->{$name}  = GenBoNoSqlRocksAnnotation->new(
 			name        => "genbo",
 			dir         => $self->get_gencode_directory,
@@ -5210,14 +5227,17 @@ sub noSqlCoverage {
 	my ( $self, $mode ) = @_;
 
 	#confess();
-	return $self->{noSqlCoverage} if exists $self->{noSqlCoverage};
+	
+	return $self->{nosql}->{noSqlCoverage} if exists $self->{nosql}->{noSqlCoverage};
 	$mode = "w" unless $mode;
 
 	#	my $output   =$self->getCacheDir() . "/coverage_lite_test";
 	my $output = $self->getCacheDir() . "/coverage_lite";
-	$self->{noSqlCoverage} = GenBoNoSql->new( dir => $output, mode => "$mode" );
+	warn $output;
 	
-	return $self->{noSqlCoverage};
+	$self->{nosql}->{noSqlCoverage} = GenBoNoSql->new( dir => $output, mode => "$mode" );
+	
+	return $self->{nosql}->{noSqlCoverage};
 
 }
 
@@ -6785,7 +6805,10 @@ sub disconnect {
 	delete $self->{lmdbGenBo};
 	delete $self->{lmdbMainTranscripts};
 	$self->close_rocks($debug);
-	
+	foreach my $c (values %{$self->{nosql}}){
+		$c->close;
+	}
+	delete $self->{nosql};
 	#foreach my $c (values %{$self->{rocks}}){
 	#	$c->close() if $c;
 	#}
@@ -6799,7 +6822,8 @@ sub close_rocks {
 		
 		#warn $c;
 		#$c->close() if $c;
-		delete $self->{rocks}->{$c}
+		$self->{rocks}->{$c} = undef;
+		delete $self->{rocks}->{$c};
 	}
 	delete $self->{rocks};
 }

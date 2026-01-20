@@ -643,12 +643,18 @@ sub newProject {
 	if (exists $args->{-test}){ $test = 1; }
 	if (exists $args->{-name}){ $name = $args->{-name}; }
 	if (exists $args->{-release}){ $release = $args->{-release}; }
+	if (exists $args->{-version}){ $release = $args->{-version}; }
 	my $project = GenBoProject -> new ( name	=> $name,
 										release	=> $release,
+										#version=>$release,
 										test	=> $test,
 										buffer	=> $self );
+	
+	
+	
 	$self->genome_version($project->genome_version);	
-	$self->annotation_genome_version($project->annotation_genome_version);
+	
+	
 	if ($project->gencode_version =~ /M/) {
 		$self->annotation_version($project->annotation_version);
 	 	$self->public_data_version($project->public_database_version);	
@@ -661,6 +667,7 @@ sub newProject {
  			$project->genome_version( $args->{-version});
  			$project->version( $args->{-version});
 	}	
+	$self->annotation_genome_version($project->annotation_genome_version);
 	#if ($project->annotation_version) { $self->lmdb_public_dir($project->annotation_public_path); }	
 	return $project;
 }

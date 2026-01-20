@@ -464,6 +464,14 @@ sub getReleaseGenome {
 	return $list[0];
 }
 
+sub getReleaseGenomeFromRelaseId {
+	my ($self, $release_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sth = $dbh->prepare("SELECT name FROM PolyprojectNGS.releases r  where r.release_id = ?;");
+	$sth->execute($release_id);
+	my @list = keys %{$sth->fetchall_hashref("name")};
+	return $list[0];
+}
 sub getReleaseGeneFromBundle {
 	my ($self, $capture_id) = @_;
 	my $dbh = $self->getDbh();

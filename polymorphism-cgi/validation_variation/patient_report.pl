@@ -2325,13 +2325,15 @@ sub print_variation_td_edit{
 					my $url = $deja_vu_url.$variation->{id};
 					
 					
-						my $onclick = qq{ onclick  style="color:black;font-weight:bold">$text</a>};
+						my $onclick = qq{   onclick="goto_dejavu('22_50720284_CGCAGA_C')" style="color:black;font-weight:bold">$text</a>};
 					 if (exists $variation->{dup}){
 					 
-					 	$text = qq{<a onclick  style="color:black;font-weight:bold">$text</a>};
+					 	$text = qq{<a onclick="goto_dejavu('$vid')"  style="color:black;font-weight:bold">$text</a>};
 					 }
 					 else {
-						$text = qq{<a href="$url" target="_blank" class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:black;font-size :8px;">$text</a>};
+						#$text = qq{<a href="$url" target="_blank" class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:black;font-size :8px;">$text</a>};
+						my $vid = $variation->{id};
+							$text = qq{<a onclick="goto_dejavu('$vid')" target="_blank" class="badge badge-success badge-xs" style="border-color:black;background-color:#FFFFFF;color:black;font-size :8px;">$text</a>};
 					 }
 				}	
 				if ( $cat eq "in_this_run"){

@@ -393,6 +393,18 @@ sub getIntSpanForChromosome {
 	return $intSpan;
 }
 
+has genome_version => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default => sub {
+		my $self = shift;
+		my $release_id = $self->{infos}->{release_id};
+		my $query = $self->getProject->buffer->getQuery();
+		my $g = $query->getReleaseGenomeFromRelaseId($release_id);
+		return $g;
+	}
+);
+
 sub getIntSpanForChromosome_extended {
 	my ($self, $GenBoChrom) = @_;
 	return $self->getIntSpanForChromosome($GenBoChrom, 100);
@@ -508,8 +520,20 @@ has files =>(
 		my $return = {};
 		my $files;
 		my $file = $dir . "/" . $self->type . "/" . $self->file_name . ".gz";
-		 $file = $dir . "/" . $self->type . "/" . "genome.bed.gz" if $project->isGenome;
+		$file = $dir . "/" . $self->type . "/" . "genome.bed.gz" if $project->isGenome;
+		unless (-e $file ){
+			warn  $project->isExome();
+			confess("Unable to find capture file :" .$file."\n") unless $project->isExome();
+			
+			#confess("Unable to find capture file :" .$file."\n")  
+			# if ($version =~/HG19/){
+			 	$file = $dir . "/generic/all_exon.bed.gz";
+			# }
+			 
+			 warn "use generic bed file ";
+		}
 		confess("Unable to find capture file :" .$file."\n") unless -e $file;
+		
 		$files->{gz} = $file;
 		my $file2 = $dir . "/" . $self->type . "/" . $self->file_name;
 		 $file2 = $dir . "/" . $self->type . "/" . "genome.bed" if $project->isGenome;
@@ -535,6 +559,8 @@ has files =>(
 	}
 );
 
+
+
 has dude_bed =>(
 	is		=> 'ro',
 	lazy	=> 1,
@@ -552,7 +578,23 @@ has dude_bed =>(
 		return $file;
 	}
 );
-
+#sub gzFileName {
+#	my ($self,$version) = @_;
+#	return $self->files()->{gz} unless $version; 
+#		if ($version =~ /HG38/){
+#			my $f = $self->files()->{gz};
+#			$f =~ s/HG19/HG38/;
+#			#$f =~ s/HG19//;
+#			unless (-e $f){
+#				
+#			}
+#			die("problem with your capture in HG38 $f ") unless -e $f;
+#			return $f;
+#		}
+#		else { 
+#			die();
+#		}
+#	}
 has gzFileName => (
 	is		=> 'ro',
 	lazy	=> 1,

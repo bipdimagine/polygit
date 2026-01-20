@@ -116,8 +116,8 @@ if ($patient->isChild){
 }
 
 
-my $sql =qq{select id from '$parquet_file' where nb_dejavu_patients <= 20 and len > 1000 and patient=$patient_id; };
-warn $sql;
+my $sql =qq{select id from '$parquet_file' where nb_dejavu_patients <= $dejavu and len > $minlength and patient=$patient_id; };
+
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
 my $array_ref = [];
@@ -221,6 +221,7 @@ my $nb = 0;
 		#$hGroupedCNV->{$global_id}->{'SCORECALLER'} += 100 if  test_type($cnv,"depth")  or ;
 		
 		$hGroupedCNV->{$global_id}->{'SCORECALLER'} += $cnv->{score_caller};
+		warn  $cnv->{score_caller};
 		$hGroupedCNV->{$global_id}->{'SCORECNV'} = 1;#$cnv->{score_caller};
 		$hGroupedCNV->{$global_id}->{'GT'}=" ";
 		
@@ -573,8 +574,8 @@ sub printJson {
 	my @t;
 
 	#@t = sort { $a->{SVTYPE} cmp $b->{SVTYPE} } @$listHash;
-	@t = sort {$b->{SCORECNV} <=> $a->{SCORECNV}or $b->{SCORE_GENES} <=> $a->{SCORE_GENES}or $a->{SVTYPE} cmp $b->{SVTYPE}} @$listHash;
-			
+	@t = sort {$b->{SCORECNV} <=> $a->{SCORECNV} or $b->{SCORE_GENES} <=> $a->{SCORE_GENES}or $a->{SVTYPE} cmp $b->{SVTYPE}} @$listHash;
+		@t = sort {$b->{SCORECNV} <=> $a->{SCORECNV} } @$listHash;	
 	my $nb=1;
 	foreach my $h (@t)
 	{

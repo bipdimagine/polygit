@@ -153,8 +153,6 @@ sub _getDepth {
 #		die();
 		my @final;
 		foreach my $sid (sort{$a->{start} <=> $b->{start}} @$z){
-			warn "-------" if $debug;
-			warn Dumper $sid if $debug;
 			my $intspan = $sid->{intspan}->intersection($sintspan);
 			my $iter = $intspan->iterate_runs();
 			warn $intspan->as_string if $debug;
@@ -332,8 +330,10 @@ sub getMean {
 	confess('ici') unless $start;
 	die() unless $end;
 	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
-	my ($sum,$nb) = $self->_getSum($chr,$start,$end,$sintspan);
-	return $sum/(abs($start-$end)+1);
+	my $a  = $self->_getDepth($chr,$start,$end,$sintspan);
+	my $sum = sum(@$a);
+	my $nb = scalar(@$a);
+	return $sum/($nb);
 #	die() unless exists $self->index->{$name};
 }
 
@@ -343,10 +343,10 @@ sub getSum {
 	die('ici') unless $start;
 	die() unless $end;
 	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
-	my ($sum,$nb) = $self->_getSum($chr,$start,$end,$sintspan);
+	my $a  = $self->_getDepth($chr,$start,$end,$sintspan);
+	my $sum = sum(@$a);
+	#my ($sum,$nb) = $self->_getSum($chr,$start,$end,$sintspan);
 	return $sum;
-	warn $sum.' '.abs($start-$end);
-	return $sum/abs($start-$end);
 #	die() unless exists $self->index->{$name};
 }
 sub no_index {

@@ -48,13 +48,19 @@ my @a_excludes;
 @a_excludes = split(",",$excludes);
 my $sambamba = $buffer->software("sambamba");
 
+my $genome_version = $project->genome_version();
+
 #choose control by run .
 my $controls;
 my $max_controls = 50;
 foreach my $r (@$runs) {
 	#find_other_patient($r);
 	#die();
+	warn $r->id;
+}
+foreach my $r (@$runs) {
 	my $hps =  $r->getAllPatientsInfos();
+
 	#warn Dumper($hps) if $r->id() eq 982;
 	#only control
 #	if (scalar(@$hps) < 8){
@@ -100,7 +106,6 @@ foreach my $r (@$runs) {
 		}
 	}
 	push(@{$controls->{$r->id}},@hps2);
-
 	
 	#die();
 	# $max_controls = 50;
@@ -118,6 +123,7 @@ foreach my $r (@$runs) {
 	foreach my $pr (keys %contr_projects){
 		my $buffer1 = new GBuffer;
 		my $project1 = $buffer1->newProjectCache( -name 			=> $pr );
+		next if $genome_version ne $project1->genome_version();
 		next if $project1->validation_db() eq 'poubelle';
 		#next() if $project1->name() eq "NGS2018_2286";
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
@@ -157,6 +163,7 @@ foreach my $r (@$runs) {
 		
 	}
 }
+
 warn Dumper $controls;
 #my $chr = $project->getChromosome("Y");
 foreach my $r (keys %$controls){
@@ -251,6 +258,9 @@ sub find_other_patient {
 	 		my $buffer2 = GBuffer->new();
 	 	
 			my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
+			next if $genome_version ne $project2->genome_version();
+			warn $genome_version;
+			warn  $project2->genome_version();
 			my $nbx = 0;
 			warn scalar(@{$project2->getPatients});
 			foreach my $p (@{$project2->getPatients}){

@@ -4,7 +4,6 @@ use Data::Dumper;
 
 sub get_fastq_file {
 	my ($patient,$dir_pipeline, $dir_fastq) = @_;
-	
 	my $name=$patient->name();
 	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
 	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq,1);
@@ -13,14 +12,20 @@ sub get_fastq_file {
 	my @r1;
 	my @r2;
 	my $find_I1;
-	
+	my $indice2 = "R2";
+	#if exists 
+	my $r2 = "R2";
 	foreach my $cp (@$files_pe1) {
+		
+		if (exists $cp->{R3}){
+			$r2 = "R3";
+		}
 		$find_I1 ++ if $cp->{R1} =~ /_I1_0/;;
 		next if $cp->{R1} =~ /_I1_0/;
-		die() if ($cp->{R2} !~ /_R2_/ and $cp->{R2} !~ /_R2./);
+		die($dir_fastq." ".Dumper $cp) if ($cp->{R2} !~ /_R2_/ and $cp->{R2} !~ /_R2./);
 		my $file1 = $dir_fastq."/".$cp->{R1};
 		die($file1) unless -e  $file1;
-		my $file2 = $dir_fastq."/".$cp->{R2};
+		my $file2 = $dir_fastq."/".$cp->{$r2};
 		die($file2) unless -e  $file1;
 		push(@r1,$file1);
 		push(@r2,$file2);##
@@ -52,6 +57,7 @@ sub get_fastq_file {
 		my $cmd2 = join(" ",@r2);
 		my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_I1_001.fastq.gz";
 		my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_I2_001.fastq.gz";
+		
 		#if ($step eq "align"){
 			system "cat $cmd1 > $fastq1";# unless -e $fastq1;
 			system "cat $cmd2 > $fastq2";# unless -e $fastq2;

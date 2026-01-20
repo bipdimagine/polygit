@@ -84,7 +84,7 @@ my $query = qq{CREATE TABLE SV  AS
 	};
 	
 #$dbh->do($query);
-my $sql =qq{select * from '$parquet_file' where patient = $patient_id  ; };
+my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu ; };
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
 my $array_ref = [];

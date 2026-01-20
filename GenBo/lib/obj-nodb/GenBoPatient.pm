@@ -2316,9 +2316,21 @@ sub depth {
 sub mean_normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	$end = $start +1 if $start == $end;
+	my $a = $self->normalize_depth($chr_name, $start, $end );
+	my $t = sum(@$a);
+	return $t/scalar(@$a);
 	return $self->getNoSqlDepth->getMeanNormalize( $chr_name, $start, $end, $self );
 }
-	
+sub mean_normalize_depth2 {
+	my ( $self, $chr_name, $start, $end ) = @_;
+	$end = $start +1 if $start == $end;
+	my $mean = $self->meanDepth($chr_name, $start, $end );
+	return $mean/$self->normalized_reads;
+	my $a = $self->normalize_depth($chr_name, $start, $end );
+	my $t = sum(@$a);
+	return $t/scalar(@$a);
+	return $self->getNoSqlDepth->getMeanNormalize( $chr_name, $start, $end, $self );
+}	
 sub normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	my $chr   = $self->project->getChromosome($chr_name);
@@ -2958,7 +2970,6 @@ sub getEpi2meDir {
 		system("mkdir -p ".$dir." && chmod a+rw ".$dir);
 	}
 	return $dir; 
-	
 }
 sub get_lmdb_primers {
 	my ( $self, $mode ) = @_;
@@ -3004,6 +3015,7 @@ sub get_lmdb_cache {
 	
 	$mode = "r" unless $mode;
 	my $dir_out = $self->project->rocks_directory();
+	warn $dir_out;
 	unless (-e $dir_out."/".$self->name.".cache"){
 		$mode = "c";
 	}
@@ -3780,7 +3792,7 @@ sub update_software_version {
 	my $query    = $self->getProject()->buffer->getQuery();
 	my ($vid,$v) = $query->getLatestSoftwareVersion($name);
 	if (lc($name) eq "dragen"){
-		die("problem version $name $real_version vs $v")if ($v ne $real_version);
+		die("problem version $name :  $real_version vs $v")if ($v ne $real_version);
 	}
 	confess() unless $vid;
 	#my ($svid,$sv) = $query->getLatestSoftwareVersionByPatient($name,$self->id);

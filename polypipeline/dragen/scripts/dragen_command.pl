@@ -91,7 +91,6 @@ foreach my $l (split(",",$spipeline)){
 my $user = system("whoami");
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version =>$version);
-
  my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
  my $ssh = Net::SSH::Perl->new($buffer->config->{dragen}->{ip});
  $ssh->login("$username");
@@ -124,11 +123,11 @@ my $pangenome ="";
  $dragen = "/opt/dragen/4.3.16/bin/dragen" if $project->genome_version =~ /HG19/;
  
  my($version_str, $stderr, $exit2) = $ssh->cmd("$dragen --version");
+ die() unless $version_str;
 my @a = split("\n",$version_str);
 my @b = split(" ",$a[0]);
 
 my $dragen_version =$b[-1];
-
 my $log_error_pipeline = $log_pipeline.".err"; 
 if ($rna){
 	run_pipeline_rna($pipeline);
@@ -255,13 +254,30 @@ my $param_align;
 my $ref_dragen = $project->getGenomeIndex("dragen");
 my $param_umi = "";
 my $param_phased = ""; 
+
+my $param_bed ="";
+if ($project->isCapture) {
+	my $capture_file  = $patient->getCapture->gzFileName();# if $version =~/HG38/;
+	$param_bed .= qq{  --vc-target-bed $capture_file};
+	if (defined($pad)){
+			$param_bed .= qq{ --vc-target-bed-padding $pad };
+		}
+		else{
+			$param_bed .= qq{  --vc-target-bed-padding 150  };
+		}
+}
 my ($fastq1,$fastq2);
+
+
 if (exists $pipeline->{align}){
 	warn "1";
 	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 	 warn "2";
 	 
 }
+
+
+
 if (!($fastq1)) {
 	my $bamfile = $patient->getBamFileName("bwa");
 	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
@@ -330,19 +346,19 @@ if (exists $pipeline->{gvcf}){
 	$param_gvcf = qq{--vc-emit-ref-confidence GVCF } ;
 	
 }
-my $param_bed ="";
 
 unless ($version){
 	unless ($project->isGenome ) {
 		my $capture_file  = $patient->getCapture->gzFileName();
 		confess() unless -e $capture_file;
-		#if ($project->isExome){
+		if ($project->isExome && ($version eq "HG38" or $project->annotation_genome_version eq "HG38")){
+			confess($capture_file) if $capture_file =~ /HG19/;
 		#	my $capture_file2 = "$dir_pipeline/".$patient->name.".bed";
 		#	warn "zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2";
 		#	die();
 		#	system ("zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2" );
 		#	$capture_file = $capture_file2;
-		#}
+		}
 		#test prenantome 
 		$param_bed .= qq{  --vc-target-bed $capture_file};
 		if (defined($pad)){
@@ -358,6 +374,7 @@ unless ($version){
 #		}
 	}
 }
+
 my $param_vcf ="";
 if (exists $pipeline->{vcf} && exists $pipeline->{gvcf}){
 	
@@ -392,10 +409,7 @@ if (exists $pipeline->{str}){
 $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
-warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
-
-
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." --enable-targeted=false $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 $patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 die() unless -e $ok_pipeline;
