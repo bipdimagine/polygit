@@ -49,9 +49,10 @@ my $htr = {
  'prot' => 'VARCHAR',
  'appris' =>'VARCHAR',
  'spliceAI' => "INTEGER",
- 'promoterAI' => "VARCHAR",
+ 'promoterAI_score' => "VARCHAR",
  'codons_AA' => 'VARCHAR',
- 'nm' => 'VARCHAR'
+ 'nm' => 'VARCHAR',
+ 'genome_version_predicted_link' => 'VARCHAR'
 };
 
 has columns_transcripts  =>(
@@ -314,19 +315,42 @@ sub get_polyviewer_variant {
      	foreach my $c (@{$self->columns("variants")}){
      		$vp->{$c} = shift @{$v->[0]};
      	}
-     	
-     
+     	my $genomic_rocksid = $vp->{'chromosome'}.'!'.$vp->{'rocksdb_id'};
      	#1-215853720-T-C
      	my $genes = $v->[1];
+     	my $hPromoterAI;
      	foreach my $g (@$genes){
-     		
      		my $gene_id= shift @$g;
      		my $ht ;
      		foreach my $c (@{$self->columns("genes")}){
      			$ht->{$c} = shift @{$g};
      		}
+			$ht->{genome_version_predicted_link} = '38';
+			$ht->{genome_version_predicted_link} = '37' if $self->project->getVersion() =~ /HG19/;
+			
+			if (not exists $ht->{promoterAI_score}) {
+				$ht->{promoterAI_score} = '-';
+				if ($self->project->getVersion() =~ /HG38/) {
+					if (not $hPromoterAI and $chr ne 'MT') {
+						my $res = $self->project->getChromosome($chr)->rocksdb("promoterAI")->get_raw($genomic_rocksid);
+						if ($res) {
+							foreach my $infos (split(',', $res)) {
+								my @lCol = split(';', $infos);
+								$hPromoterAI->{$lCol[0]} = $lCol[-1];
+							}
+						}
+					}
+					$ht->{promoterAI_score} = sprintf("%.2f", $hPromoterAI->{$ht->{'name'}}) if $hPromoterAI and exists $hPromoterAI->{$ht->{'name'}};
+				}
+				else {
+					my $v = $self->project->_newVariant($vp->{'id'});
+					my $hPromoterAI = $v->promoterAI();
+					$ht->{promoterAI_score} = sprintf("%.2f", $hPromoterAI->{$ht->{'name'}}->{'score'}) if $hPromoterAI and exists $hPromoterAI->{$ht->{'name'}};
+				}
+			}
      		push(@{$vp->{hgenes}->{$gene_id}->{tr}},$ht);
      	}
+     	
      #	$debug =1 if  $vp->{name} eq "1-1392838-del-29892";
      	my $patients = $v->[2];
      	my $key_patient = "patients";
@@ -348,7 +372,7 @@ sub get_polyviewer_variant {
      	  
      	return $vp;
 }
-#
+
 sub update_clinvar_id {
 	my ($self,$chr,$vp) = @_;
 	my $pub = $self->clinvar_rocks_db($chr)->clinvar($vp->rocksdb_id);

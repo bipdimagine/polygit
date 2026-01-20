@@ -13,9 +13,11 @@ my $single;
 my $mismatch;
 my $dragen;
 my $cellranger_type;
+my $final_dir;
 
 GetOptions(
 	'dir=s' => \$dir,
+	'fastq_dir=s' => \$final_dir,
 	'run=s' => \$run,
 	'hiseq=s' => \$hiseq,
 	'sample_sheet=s' => \$sample_sheet,
@@ -61,10 +63,11 @@ if (-d $tmp){
 	die("$tmp already exists ");
 }
 
-my $final_dir = $root."/ILLUMINA/$hiseq/IMAGINE/$run";
-$final_dir = $root."/ILLUMINA/NOVASEQX/CURIE/$run" if $hiseq eq '10X';
-$final_dir = $root."/ILLUMINA/$hiseq/LAVOISIER/$run" if $hiseq eq 'NEXTSEQ500';
-$final_dir = $root."/ILLUMINA/$hiseq/HEMATO/$run" if $hiseq eq 'MISEQ';
+#my $final_dir = $root."/ILLUMINA/$hiseq/IMAGINE/$run";
+#$final_dir = $root."/ILLUMINA/NOVASEQX/CURIE/$run" if $hiseq eq '10X';
+#$final_dir = $root."/ILLUMINA/NOVASEQ/IMAGINE/$run" if $hiseq eq '10X';
+#$final_dir = $root."/ILLUMINA/$hiseq/LAVOISIER/$run" if $hiseq eq 'NEXTSEQ500';
+#$final_dir = $root."/ILLUMINA/$hiseq/HEMATO/$run" if $hiseq eq 'MISEQ';
 warn $final_dir;
 if (-d $final_dir){
 	die($final_dir. " already exists "); 
@@ -117,19 +120,19 @@ else{
 
 
 if (-e $tmp."/done.txt"){
-mkdir $final_dir unless -d $final_dir;
-system("move_fastq.sh $wtmp  $final_dir");
-system("mv $final_dir/Undetermined* $wtmp");
-#system("rm $final_dir/Undetermined*");
-my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/$run";
-system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats");
-system("cp $tmp/Unaligned/Stats/* /data-isilon/sequencing/ngs/demultiplex/$run/") if($hiseq eq "10X");
-my $fileReport= $run."_laneBarcode.html";
-system("cp $tmp/Unaligned/Reports/html/*/all/all/all/laneBarcode.html /data-isilon/sequencing/ngs/demultiplex/$run/$fileReport");
-#system("rm -rf $tmp");
-
-warn "count_sequence.pl -dir=$final_dir";
-system("count_sequence.pl -dir=$final_dir");
+	mkdir $final_dir unless -d $final_dir;
+	system("move_fastq.sh $wtmp  $final_dir");
+	system("mv $final_dir/Undetermined* $wtmp");
+	#system("rm $final_dir/Undetermined*");
+	my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/$run";
+	system("mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats");
+	system("cp $tmp/Unaligned/Stats/* /data-isilon/sequencing/ngs/demultiplex/$run/") if($hiseq eq "10X");
+	my $fileReport= $run."_laneBarcode.html";
+	system("cp $tmp/Unaligned/Reports/html/*/all/all/all/laneBarcode.html /data-isilon/sequencing/ngs/demultiplex/$run/$fileReport");
+	#system("rm -rf $tmp");
+	
+	warn "count_sequence.pl -dir=$final_dir";
+	system("count_sequence.pl -dir=$final_dir");
 }
 else {
 	exit (1);

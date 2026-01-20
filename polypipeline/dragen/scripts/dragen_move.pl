@@ -106,7 +106,7 @@ if (exists $pipeline->{align}){
 	$bam_prod =~ s/bam/cram/;
 	
 	}
-#warn $bam_pipeline;
+	#warn $bam_pipeline;
 	($out, $err, $exit)=  $ssh->cmd("test -f $bam_pipeline");
 	move_bam($bam_pipeline,$patient);# if ($version );
 	my $dir_out = $patient->project->getAlignmentStatsDir("dragen-align");
@@ -140,6 +140,11 @@ if (exists $pipeline->{cnv}){
 if (exists $pipeline->{sv}){
 	my $sv_file = $dir_pipeline."/".$prefix.".sv.vcf.gz";
 	move_sv($sv_file,$patient);
+}
+if (exists $pipeline->{str} && $project->isGenome){
+	my $str_file = $dir_pipeline."/".$prefix.".repeats.vcf.gz";
+	($out, $err, $exit)=  $ssh->cmd("test -f $str_file");
+	move_str($str_file,$patient);
 }
 my $ploidy_file = $dir_pipeline."/".$prefix."ploidy.vcf.gz";
 if (-e $ploidy_file){
@@ -283,6 +288,15 @@ sub move_sj {
 	#system("rsync -rav  $url"."$t1.tbi $dir/");
 	
 }
+sub move_str {
+	my ($vcf,$patient) = @_;
+	my $dir = $project->getVariationsDir("dragen-str");
+	my $physical_name = move_file($vcf,$patient,"dragen-str","vcf.gz","tbi","backup");
+	my $prod = $dir."/".$prefix.".repeats.vcf.gz";
+	ln_encode_json($physical_name,$prod);
+	tabix($prod,"vcf");
+}
+
 sub backup {
 	my ($final_gz) = @_;
 	my $dir =  dirname($final_gz);

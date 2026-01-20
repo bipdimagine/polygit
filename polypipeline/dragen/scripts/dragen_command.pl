@@ -115,6 +115,8 @@ my $bam_pipeline = $dir_pipeline."/".$prefix.".bam";
 
 my $dir_pipeline_log = $patient->getDragenDir("pipeline.log");
 my $ok_pipeline = $dir_pipeline_log."/".$prefix.".ok.pipeline.".time; 
+my $ok_check_mapping_metrics = $dir_pipeline_log."/".$prefix.".ok.check_mapping_metrics.".time;
+my $ok_check_sex = $dir_pipeline_log."/".$prefix.".ok.check_sex.".time;
 my $ok_move = $dir_pipeline_log."/".$prefix.".ok.move.".time;
 my $log_pipeline = $dir_pipeline_log."/".$prefix.".pipeline.".time.".log"; 
 my $pangenome ="";
@@ -136,13 +138,26 @@ else {
 	run_pipeline($pipeline);# unless -e $bam_pipeline;
 }
 #die() unless  -e $bam_pipeline;
+
+warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
+my $cmd_check_mapping = "$Bin/dragen_check_mapping_metrics.pl -project=$projectName -patient=$patients_name ";
+$cmd_check_mapping .= "-version=$version " if ($version);
+my $exit = system($cmd_check_mapping."&& touch $ok_check_mapping_metrics");
+confess("Error check mapping metrics") if $exit;
+
 if ($rna == 1) {
 	$spipeline.=",sj";
 }
-warn "move";
 
-warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -version=$version -dragen_version=$dragen_version && touch $ok_move";
+warn "move";
+warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
 system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move");
+
+my $cmd_check_sex = "$Bin/dragen_check_sex.pl -project=$projectName -patient=$patients_name ";
+$cmd_check_sex .= "-version=$version " if ($version);
+$exit = system($cmd_check_sex."&& touch $ok_check_sex");
+confess("Error check sex") if $exit;
+
 exit(0);
 
 ################################################
@@ -412,7 +427,7 @@ $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." --enable-targeted=false $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 $patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
-die() unless -e $ok_pipeline;
+confess("Error:\n$log_error_pipeline") unless -e $ok_pipeline;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
 #system("ssh pnitschk\@10.200.27.109 rm $fastq1 $fastq2");

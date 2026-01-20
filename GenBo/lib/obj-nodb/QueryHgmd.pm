@@ -242,17 +242,16 @@ sub getDataHGMDPro_genes_for_class {
 sub getHGMD {
 	my ($self,$login)=@_;
 	my $dbh = $self->getDbh;
-	
-		my $sql = qq{	  	
-			select BU.hgmd as hmd
-			from   bipd_users.USER BU 
-			  where 
-			  BU.LOGIN= ? ;
+	my $sql = qq{	  	
+		SELECT distinct g.NAME FROM bipd_users.USER as u, bipd_users.UGROUP_USER as ug, bipd_users.UGROUP as g
+			WHERE u.LOGIN = ? and u.USER_ID = ug.USER_ID and ug.UGROUP_ID = g.UGROUP_ID;
 	};
-my $sth = $dbh->prepare($sql);
+	my $sth = $dbh->prepare($sql);
 	$sth->execute($login);
-	my $toto = $sth->fetchall_arrayref();
-	return  $toto->[0]->[0] if $toto;
+	my $h = $sth->fetchall_hashref("NAME");
+	foreach my $name (keys %$h) {
+		return 1 if lc($name) =~ /glucogen/;
+	}
 	return 0;
 }
 

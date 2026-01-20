@@ -596,6 +596,7 @@ function defineArrayButton() {
 	array_button["frameshift"] = "filter_frameshift";
 	array_button["non-frameshift"] = "filter_nonframeshift";
 	array_button["predicted_splice_site"] = "filter_predicted_splice_site";
+	array_button["predicted_promoter_ai"] = "filter_predicted_splice_site";
 	return (array_button);
 }
 

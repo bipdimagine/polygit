@@ -35,6 +35,7 @@ use JSON::XS;
 use XML::Simple qw(:strict);
 use Cwd 'abs_path';
 use File::Path qw(make_path);
+use Carp;
 
 
 my $projectName;
@@ -67,35 +68,24 @@ GetOptions(
 	'no_exec'					=> \$no_exec,
 	'force'						=> \$force,
 	'help'						=> \$help,
-) || die("Error in command line arguments\n");
+) || confess("Error in command line arguments\n");
 
 usage() if $help;
 die("-project argument is mandatory") unless ($projectName);
+die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient in project $projectName") unless ($patients);
 
-my $run = $project->getRun();
-my $run_name = $run->plateform_run_name;
-my $type = $run->infosRun->{method};
-my $machine = $run->infosRun->{machine};
+my @patient_names = map {$_->name} @$patients;
+my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
+die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
 
-my $exec = "cellranger";
-$exec .= '-atac' if ($type eq 'atac');
-$exec .= '-arc' if ($type eq 'arc');
-$exec = 'spaceranger' if  ($type eq 'spatial');
-warn $exec;
-	
-
-#my $dir = $project->getProjectRootPath();
-my $dir = $project->getCountingDir('cellranger');
-$dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
-warn $dir;
 
 @steps = split(/,/, join(',',@steps));
-my $list_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'velocyto', 'all'];
+my $list_steps = ['dragen_demultiplex', 'demultiplex_old', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'velocyto', 'all'];
 #my @correct_steps = grep{/@steps/} @$list_steps;
 #undef @steps if (@steps and scalar @correct_steps == 0);
 unless (@steps) {
@@ -112,26 +102,50 @@ unless (@steps) {
 }
 warn 'steps='.join(',',@steps);
 
-die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
-
-
-my @patient_names = map {$_->name} @$patients;
-my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
-die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
-
 $create_bam = 1 if (grep(/velocyto/i, @steps));
 
 
+my $run = $project->getRun();
+my $run_name = $run->plateform_run_name;
+my $type = $run->infosRun->{method};
+my $machine = $run->infosRun->{machine};
+
+my $exec = "cellranger";
+$exec .= '-atac' if ($type eq 'atac');
+$exec .= '-arc' if ($type eq 'arc');
+$exec = 'spaceranger' if  ($type eq 'spatial');
+warn $exec;
+
+#my $dir = $project->getProjectRootPath();
+my $dir = $project->getCountingDir('cellranger');
+$dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
+warn $dir;
+
+
+
 #------------------------------
-# DEMULIPLEXAGE
+# DRAGEN DEMULIPLEXAGE
 #------------------------------
-if (grep(/demultiplex|^all$/i, @steps)){
+if (grep(/dragen_demultiplex|^all$/i, @steps)){
+	my $cmd_demultiplex = "$Bin/cellranger_samplesheet.pl -project=$projectName -mismatch=$mismatch ";
+	$cmd_demultiplex .= "-no_exec " if ($no_exec);
+	system($cmd_demultiplex);
+}
+
+
+
+#------------------------------
+# OLD DEMULIPLEXAGE
+#------------------------------
+if (grep(/^demultiplex_old$/i, @steps)){
 	
 	die("-mismatch can be 0, 1, 2. Two entries, comma delimited, allowed for dual index.") unless ($mismatch =~ /[012](,[012])?/);
 	warn 'mismatch(es)=$mismatch';
 	
 	my $bcl_dir = $run->bcl_dir;
 	warn $bcl_dir;
+	my $fastq_dir = $run->fastq_dir;
+	warn $fastq_dir;
 #	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
 #	my $lane_config = $config->{Run}->{FlowcellLayout}->{LaneCount};
 #	if ($lane and $lane != $lane_config) {
@@ -146,7 +160,7 @@ if (grep(/demultiplex|^all$/i, @steps)){
 	open (SAMPLESHEET,">$sampleSheet");
 	print SAMPLESHEET "Lane,Sample,Index\n";
 	
-	foreach my $patient (sort @{$patients}) {
+	foreach my $patient (sort {$a->name cmp $b->name} @{$patients}) {
 		my $name = $patient->name();
 		my $bc = $patient->barcode();
 		print SAMPLESHEET "*,$name,$bc"."\n";
@@ -156,7 +170,7 @@ if (grep(/demultiplex|^all$/i, @steps)){
 	}
 	close(SAMPLESHEET);
 	
-	my $cmd = "$Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=$mismatch";
+	my $cmd = "$Bin/../../demultiplex/demultiplex.pl -dir=$bcl_dir -fastq_dir=$fastq_dir -run=$run_name -hiseq=10X -sample_sheet=$sampleSheet -cellranger_type=$exec -mismatch=$mismatch";
 	warn $cmd;
 	my $exit = system ($cmd) unless ($no_exec);
 	exit($exit) if ($exit);
@@ -184,9 +198,9 @@ if (grep(/teleport/, @steps)) {
 
 
 unless ($project->isSomatic) {
-	my $warn = "/!\\ Project $projectName is not in somatic mode. Activate somatic mode and check that the groups have been filled in, "
+	my $warn = colored('/!\\', 'bold')." Project $projectName is not in somatic mode. Activate somatic mode and check that the groups have been filled in, "
 		."so that they can be taken into account in the analysis.";
-	die ($warn) unless (grep{/@steps/} ('demultiplex', 'teleport', 'tar', 'cp', 'cp_web_summaries'));
+	die ($warn) if (grep{/@steps/} ('count', 'aggr'));
 	warn ($warn);
 	
 }
@@ -242,7 +256,11 @@ if (grep(/count|^all$/i, @steps)){
 	# Vérifie que le pipeline n'ait pas déjà tourné : check si web_summary existe
 	foreach my $patient (@{$patients}) {
 		my $pname = $patient->name;
+#		if (-d $tmp.$pname) {
+#			die("'$tmp$pname' already exists") unless (prompt("'$tmp$pname' already exists.\nContinue anyway ? (y/n) ", -yes_no));
+#		}
 		if ((-e  "$dir$pname/web_summary.html" or -e "$dir$pname/outs/web_summary.html" or -e "$tmp$pname/outs/web_summary.html") and not $force) {
+			@$patients = grep{$_->name ne $pname and $_->name ne $pname =~ s/^EXP/ADT/ir} @$patients;
 			warn "NEXT: $pname pipeline already completed: web_summary already exists";
 			next;
 		}

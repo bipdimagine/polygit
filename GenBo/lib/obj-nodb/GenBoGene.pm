@@ -672,8 +672,8 @@ has  hpanels => (
 ); 
 
 sub score {
-	my ($self) = @_;
-	return $self->{score} if exists $self->{score};
+	my ($self, $use_phenotype) = @_;
+	return $self->{score} if exists $self->{score} and not $use_phenotype;
 	my $score =0;
 	$score += 0.5 if $self->pLI ne "-" && $self->pLI > 0.95;
 	$score += 1 if $self->is_omim_morbid();
@@ -683,7 +683,12 @@ sub score {
 	my $phenotypes = $self->getProject->getPhenotypes();
 	
 	my @pscore;
-	if ($phenotypes){
+	if ($use_phenotype) {
+		my $h_pheno_infos = $self->getProject->buffer->queryPhenotype->getPhenotypeInfosFromName($use_phenotype);
+		my $ph_id = $h_pheno_infos->{$use_phenotype}->{phenotype_id};
+		push(@pscore,($polyScore->{$ph_id}->{score})) if exists $polyScore->{$ph_id}->{score};
+	}
+	elsif ($phenotypes){
 		foreach my $ph (@$phenotypes){
 			my $add = 0;
 			# $add = 0.5 if $self->pLI ne "-" && $self->pLI ==1;
@@ -696,6 +701,7 @@ sub score {
 	#warn Dumper(@pscore);
 	
 	$score += max(@pscore) if @pscore;
+	return $score if ($use_phenotype);
 	$self->{score} = $score;
 	return $score;
 }

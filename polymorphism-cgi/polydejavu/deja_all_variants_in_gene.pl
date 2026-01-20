@@ -74,6 +74,8 @@ my $filter_perc_allelic_min = $cgi->param('min_perc_all');
 my $filter_perc_allelic_max = $cgi->param('max_perc_all');
 my $only_interval = $cgi->param('only_interval');
 my $export_xls = $cgi->param('export_xls');
+my $export_json = $cgi->param('export_json');
+my $out_json = $cgi->param('out_json');
 my $only_pat_with_var = $cgi->param('only_pat_with_var');
 my $only_pat_with_var_he = $cgi->param('only_pat_with_var_he');
 my $only_pat_with_var_ho = $cgi->param('only_pat_with_var_ho');
@@ -99,8 +101,6 @@ foreach my $model (split(',', $models)) {
 	$h_models->{$model} = undef;
 }
 exit(0) unless $h_models;
-
-supressCoreFilesFound();
 
 $user_name = lc($user_name);
 my $buffer_init = new GBuffer;
@@ -135,7 +135,7 @@ my $session_id;
 my $nb_variants_before_filters;
 my @headers_validations = ("#", "varsome","alamut variant","var_name","projects / patients","gnomad","deja_vu","table_validation","table_transcript");
 #my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
-my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift",'alphamissense',"cadd","revel","dbscsnv",'spliceAI');
+my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift",'alphamissense',"cadd","revel","dbscsnv",'spliceAI','promoterAI');
 my ($hVariantsIdsDejavu, $hVariantsDetails);
 my ($hResGene, $hResVariants, $hResVariantsIds, $hResVariantsListPatients, $hResProjectProblem, $hResVariants_byScores, $hResVariantsRatioAll, $hResVariantsModels);
 my $project_init_name;
@@ -199,7 +199,6 @@ if ($gene_id) {
 	eval { $gene_init = $project_init->newGene($gene_id); };
 	if ($@) {
 		$gene_init = $project_init->newGene($gene_id_alt);
-		supressCoreFilesFound();
 	}
 	$gene_init_id_for_newgene = $gene_id;
 	eval { ($gene_ensg, $gene_chr_id) = split('_', $gene_init->id()); };
@@ -207,7 +206,6 @@ if ($gene_id) {
 		$gene_init_id_for_newgene = $gene_id_alt;
 		$gene_init = $project_init->newGene($gene_id_alt);
 		($gene_ensg, $gene_chr_id) = split('_', $gene_init->id());
-		supressCoreFilesFound();
 	}
 }
 #TODO: here
@@ -299,7 +297,6 @@ my $color_yellow = 'yellow';
 print "|";
 $session_id = save_export_xls() if not $session_id;
 export_html($hResVariants, $session_id);
-supressCoreFilesFound();
 exit(0);
 
 
@@ -309,19 +306,6 @@ exit(0);
 ####################
 
 
-
-sub supressCoreFilesFound {
-	my $found_core;
-	opendir my $dir, "$Bin/" or die "Cannot open directory: $!";
-	my @files = readdir $dir;
-	closedir $dir;
-	foreach my $file (@files) {
-		$found_core = 1 if ($file =~ /core\./);
-	}
-	return if not $found_core;
-	my $cmd = "rm -f $Bin/core.*";
-	`$cmd`;
-}
 
 sub save_export_xls {
 	my ($list_var, $hres) = @_;
@@ -351,7 +335,7 @@ sub save_export_xls {
 	if ($hres) { $hResVariants = $hres; }
 	
 	foreach my $v (@lVarObj) {
-		if ($v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
+		if ($can_use_hgmd and $v->hgmd_details() and not exists $h_pubmed->{$v->id}) {
 			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{url} = "https://www.ncbi.nlm.nih.gov/pubmed/".$v->hgmd_details->{pmid};
 			$h_pubmed->{$v->id()}->{$v->hgmd_details->{pmid}}->{title} = $v->hgmd_details->{title};
 			foreach my $pubmed_id (keys %{$v->hgmd_details->{pubmed}}) {
@@ -452,7 +436,8 @@ sub export_html {
 				$out2 .= qq{<th data-field="$h" data-sortable="true">$cat</th>};
 			}
 			elsif (lc($cat) eq 'table_validation') {
-				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="DM / Pathogenic">HGMD / Clinvar / Local</th>};
+				if ($can_use_hgmd) { $out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="DM / Pathogenic">HGMD / Clinvar / Local</th>}; }
+				else { $out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="Pathogenic">Clinvar / Local</th>}; }
 			}
 			elsif (lc($cat) eq 'table_transcript') {
 				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="Stop / c.73A>C / exon2 / ENST00000145855">Annotations</th>};
@@ -660,11 +645,21 @@ sub export_html {
 	$h_annot_categories->{"patient_has_variant <b><span style='color:red'>".$only_pat_with_var."</span></b> (".join('+', @lHeHo).")"} = 1 if ($only_pat_with_var);
 	
 	$hRes->{hash_filters} = $h_annot_categories;
-	
 	save_html($session_id, $hRes);
+	
+	save_json($session_id) if ($cgi->param('export_json'));
+	
 	my $hRes2;
 	$hRes2->{session_id} = $session_id;
 	printJson($hRes2);
+}
+
+sub save_json {
+	my ($session_id) = @_;
+	print '.|.export_json';
+	my $cmd = "$Bin/../json_output_nodb/load_job_id.pl export_json=1 session_id=".$session_id." outfile=".$export_json;
+	system($cmd);
+	exit(0);	
 }
 
 sub save_html {
@@ -853,7 +848,7 @@ sub check_variants {
 	$project_init = $buffer_init->newProject( -name => $project_name_hg38 );
 	print '!';
 	my $ii = 0;
-	my ($h_dv_var_ids, @lVarIds, @lVar);
+	my ($h_dv_var_ids, @lVarIds, @lVar, $h_dv_var_ids_erros_lift);
 	my ($total, $total_pass);
 	foreach my $chr_id (sort keys %{$h_dv_rocks_ids}) {
 		print '.';
@@ -884,14 +879,17 @@ sub check_variants {
 			$h_dv_var_ids->{$var_id}->{rocks_id} = $rocks_id;
 		}
 	
-		my $lift = liftOver->new(project=>$project_init, version=>$project_init->lift_genome_version);
+		my $lift = liftOver->new(project=>$project_init, version=>$project_init->lift_genome_version, can_except_errors=>1);
 		$lift->lift_over_variants(\@lVar);
+		$h_dv_var_ids_erros_lift = $lift->liftover_variants_errors();
 	}
 	
 #	warn Dumper $h_dv_var_ids;
+#	warn Dumper $h_dv_var_ids_erros_lift;
 #	die;
 	
 	$nb_variants_before_filters = scalar(keys %{$h_dv_var_ids});
+	$fork = 10 if $nb_variants_before_filters >= 1000;
 	print '.!nbRocksIds:'.$nb_variants_before_filters.'!.';
 	my $h_projects_filters_he_comp;
 	if ($only_pat_with_var) {
@@ -904,6 +902,7 @@ sub check_variants {
 			}
 		}
 	}
+	
 	print '.use_fork'.$fork.'.';
 	
 	$project_init->disconnect();
@@ -954,7 +953,24 @@ sub check_variants {
 		my @lOk;
 		foreach my $var (@tmp) {
 			my $var_id = $var->id;
-			my $var_id_hg19 = $var->lift_over('HG19')->{vcf_id};
+			my ($var_id_hg19, $gnomad_id_hg19, $h_liftover);
+			if (exists $h_dv_var_ids_erros_lift->{$var_id}) {
+				$var_id_hg19 = 'not found in liftover';
+				$gnomad_id_hg19 = '-';
+				$h_liftover->{vcf_id} = '-';
+				$h_liftover->{position_vcf} = '-';
+				$h_liftover->{position} = '-';
+			}
+			else {
+				$h_liftover = $var->{lift_over_HG19};
+				$var_id_hg19 = $h_liftover->{id};
+				$gnomad_id_hg19 = $h_liftover->{vcf_id};
+				$gnomad_id_hg19 =~ s/_/-/g;
+				if (length($gnomad_id_hg19) > 30) {
+					$gnomad_id_hg19 = substr($gnomad_id_hg19,0,27).'...';
+				}
+			}
+			
 			my $gene_variant;
 			my $is_ok_gene;
 			foreach my $gene (@{$var->getGenes()}) {
@@ -1069,7 +1085,6 @@ sub check_variants {
 				};
 				if ($@) {
 					$var_annot = 'error';
-					supressCoreFilesFound();
 				}
 			}
 			warn $var_annot if $debug;
@@ -1157,30 +1172,33 @@ sub check_variants {
 			my $vn = $var->id();
 			$vn =~ s/_/-/g;
 			$vn =~ s/chr//;
-			update_variant_editor::vhgmd($var,$h_var);
-			warn '9 - ok hgmd' if $debug;
 			
-			$h_var->{'html'}->{'no_css_polydiag'} = 1;
-			my $val1 = 'onClick="zoomHgmd';
-			my $Val2 = 'onClick="zoomHgmdWithoutCss';
-			$h_var->{'html'}->{'hgmd'} =~ s/$val1/$Val2/;
-			
-			if ($var->hgmd) {
-				$h_var->{value}->{hgmd_id} = $var->hgmd_id;
-				my $n1 = $project_init_name;
-			 	my $n2 = $var->hgmd_id;
-			 	my $n3 = $var->id;
-				my $cmd_hgmd = qq{zoomHgmdWithoutCss(\'$n1\',\'$n2\',\'$n3\')}; 
-				$h_var->{html}->{hgmd} = update_variant_editor::printButton(4,[3,4], $var->hgmd->{class},qq{onClick="$cmd_hgmd"});
-				if ($var->isDM()) {
-					$h_var->{value}->{dm} = 1;
-					$h_var->{value}->{dm_for_this_gene} = undef;
-					$h_var->{value}->{dm} = undef;
-					$h_var->{value}->{hgmd} = '';
-					$h_var->{html}->{hgmd} = '';
+			if ($can_use_hgmd) {
+				update_variant_editor::vhgmd($var,$h_var);
+				warn '9 - ok hgmd' if $debug;
+				
+				$h_var->{'html'}->{'no_css_polydiag'} = 1;
+				my $val1 = 'onClick="zoomHgmd';
+				my $Val2 = 'onClick="zoomHgmdWithoutCss';
+				$h_var->{'html'}->{'hgmd'} =~ s/$val1/$Val2/;
+				
+				if ($var->hgmd) {
+					$h_var->{value}->{hgmd_id} = $var->hgmd_id;
+					my $n1 = $project_init_name;
+				 	my $n2 = $var->hgmd_id;
+				 	my $n3 = $var->id;
+					my $cmd_hgmd = qq{zoomHgmdWithoutCss(\'$n1\',\'$n2\',\'$n3\')}; 
+					$h_var->{html}->{hgmd} = update_variant_editor::printButton(4,[3,4], $var->hgmd->{class},qq{onClick="$cmd_hgmd"});
+					if ($var->isDM()) {
+						$h_var->{value}->{dm} = 1;
+						$h_var->{value}->{dm_for_this_gene} = undef;
+						$h_var->{value}->{dm} = undef;
+						$h_var->{value}->{hgmd} = '';
+						$h_var->{html}->{hgmd} = '';
+					}
 				}
+				else { $h_var->{value}->{dm} = ''; }
 			}
-			else { $h_var->{value}->{dm} = ''; }
 
 			warn '10 - ok clinvar' if $debug;
 			
@@ -1196,10 +1214,12 @@ sub check_variants {
 			update_variant_editor::vhgmd($var, $h_var);
 			update_variant_editor::vclinvar($var, $h_var);
 			
-			$hres->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_variant);
+			$hres->{$var_id}->{table_validation} = update_variant_editor::table_validation_without_local($var->getProject, $h_var, $gene_variant, $can_use_hgmd);
+			
 			
 			warn '12 - ok table validations' if $debug;
 			
+			$h_var->{value}->{gnomad_id} = $var->gnomad_id();
 			$hres->{$var_id}->{table_gnomad} = update_variant_editor::table_gnomad($var);
 			$hres->{$var_id}->{table_gnomad} =~ s/gnomad_r2_1/gnomad_r4/;
 			
@@ -1232,12 +1252,6 @@ sub check_variants {
 			warn '12 - ok table table_transcript' if $debug;
 			
 			my $html_vname_hg38 = update_variant_editor::vname2($var, $h_var);
-			my ($a,$b,$c,$d) = split('_',$var->id);
-			
-			my $gnomad_id_hg19 = $a.'-'.$var->lift_over('HG19')->{position_vcf}.'-'.$c.'-'.$d;
-			if (length($gnomad_id_hg19) > 30) {
-				$gnomad_id_hg19 = substr($gnomad_id_hg19,0,27).'...';
-			}
 			
 			my $html_vname = qq{
 				<table>
@@ -1268,7 +1282,7 @@ sub check_variants {
 			
 			warn 'Nb parquet: '.scalar(@list_parquets) if $debug;
 			
-			my ($h_projects_patients, $table_projects_patients) = get_from_duckdb_project_patients_infos($var, \@list_parquets);
+			my ($h_projects_patients, $table_projects_patients) = get_from_duckdb_project_patients_infos($var, $h_liftover, \@list_parquets);
 			if ($table_projects_patients) {
 				$hres->{$var_id}->{projects} = $h_projects_patients;
 				$hres->{$var_id}->{table_projects_patients} = $table_projects_patients;
@@ -1575,7 +1589,7 @@ sub get_from_duckdb_project_patients_no_dejavu_variants {
 }
 
 sub get_from_duckdb_project_patients_infos {
-	my ($var, $list_files) = @_;
+	my ($var, $h_liftover, $list_files) = @_;
 	return if scalar(@$list_files) == 0;
 	my @list_table_trio;
 	my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
@@ -1613,9 +1627,9 @@ sub get_from_duckdb_project_patients_infos {
 			}
 			
 			my $hVar_infos;
-			$hVar_infos->{locus_hg19} = $var->getChromosome->id().":".$var->lift_over('HG19')->{position}."-".$var->lift_over('HG19')->{position};;
+			$hVar_infos->{locus_hg19} = $var->getChromosome->id().":".$h_liftover->{position}."-".$h_liftover->{position};
+			$hVar_infos->{start_hg19} = $h_liftover->{position};
 			$hVar_infos->{locus_hg38} = $var->getChromosome->id().":".$var->start."-".$var->end;
-			$hVar_infos->{start_hg19} = $var->lift_over('HG19')->{position};
 			$hVar_infos->{start_hg38} = $var->start;
 			$hVar_infos->{chr_id} = $var->getChromosome->id();
 			$hVar_infos->{ref_all} = $var->ref_allele();

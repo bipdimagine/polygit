@@ -34,6 +34,7 @@ use JSON::XS;
 use XML::Simple qw(:strict);
 use Cwd 'abs_path';
 use File::Path qw(make_path);
+use Carp;
 
   
 
@@ -48,6 +49,7 @@ my $no_exec;
 my $aggr_name;
 my $chemistry;
 my $create_bam;
+my $multi_meth;
 my $cpu = 20;
 my $help;
 
@@ -55,7 +57,8 @@ GetOptions(
 	'project=s'					=> \$projectName,
 	'patients=s'				=> \$patients_name,
 	'steps=s{1,}'				=> \@steps,
-	'lane|nb_lane=i'			=> \$lane,
+	'multi_meth=s'				=> \$multi_meth,
+#	'lane|nb_lane=i'			=> \$lane,
 	'mismatches=i'				=> \$mismatch,
 	'create_bam!'				=> \$create_bam,
 	'feature_ref|feature_csv=s'	=> \$feature_ref,
@@ -65,35 +68,24 @@ GetOptions(
 	'cpu=i'						=> \$cpu,
 	'no_exec'					=> \$no_exec,
 	'help'						=> \$help,
-) || die("Error in command line arguments\n");
+) || confess("Error in command line arguments\n");
 
 usage() if $help;
 die("-project argument is mandatory") unless ($projectName);
+die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient in project $projectName") unless ($patients);
 
-my $run = $project->getRun();
-my $run_name = $run->plateform_run_name;
-my $type = $run->infosRun->{method};
-my $machine = $run->infosRun->{machine};
+my @patient_names = map {$_->name} @$patients;
+my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
+die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
 
-my $exec = "cellranger";
-$exec .= '-atac' if ($type eq 'atac');
-$exec .= '-arc' if ($type eq 'arc');
-$exec = 'spaceranger' if  ($type eq 'spatial');
-warn $exec;
-	
-
-#my $dir = $project->getProjectRootPath();
-my $dir = $project->getCountingDir('cellranger');
-$dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
-warn $dir;
 
 @steps = split(/,/, join(',',@steps));
-my $list_steps = ['demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'all'];
+my $list_steps = ['dragen_demultiplex', 'demultiplex_old', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'all'];
 #my @correct_steps = grep{/@steps/} @$list_steps;
 #undef @steps if (@steps and scalar @correct_steps == 0);
 unless (@steps) {
@@ -110,12 +102,33 @@ unless (@steps) {
 }
 warn 'steps='.join(',',@steps);
 
-die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
+if (grep(/^count$/i, @steps)) {
+	unless (grep{/^$multi_meth$/} ('flex', 'ocm', 'hash')) {
+		$multi_meth = prompt("Choose a sample multiplexing method for project $projectName ".$project->description.':',
+				-menu=>['flex', 'ocm', 'hash']);
+	}
+	warn 'multiplexing method: '.$multi_meth;
+}
+
+$create_bam = 1 if (grep(/velocyto/i, @steps));
 
 
-my @patient_names = map {$_->name} @$patients;
-my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
-die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
+my $run = $project->getRun();
+my $run_name = $run->plateform_run_name;
+my $type = $run->infosRun->{method};
+my $machine = $run->infosRun->{machine};
+
+my $exec = "cellranger";
+$exec .= '-atac' if ($type eq 'atac');
+$exec .= '-arc' if ($type eq 'arc');
+$exec = 'spaceranger' if  ($type eq 'spatial');
+warn $exec;
+
+#my $dir = $project->getProjectRootPath();
+my $dir = $project->getCountingDir('cellranger');
+$dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
+warn $dir;
+
 
 my $hfamily;
 my $prog;
@@ -134,20 +147,32 @@ foreach my $patient (@{$patients}) {
 
 
 #------------------------------
+# DRAGEN DEMULIPLEXAGE
+#------------------------------
+if (grep(/dragen_demultiplex|^all$/i, @steps)){
+	my $cmd_demultiplex = "$Bin/cellranger_samplesheet.pl -project=$projectName -mismatch=$mismatch -multi";
+	$cmd_demultiplex .= "-no_exec " if ($no_exec);
+	system($cmd_demultiplex);
+}
+
+
+
+
+#------------------------------
 # DEMULIPLEXAGE
 #------------------------------
-if (grep(/demultiplex|^all$/i, @steps)){
+if (grep(/^demultiplex_old$/i, @steps)){
 	
 	my $bcl_dir = $run->bcl_dir;
 	warn $bcl_dir;
 	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
 	my $lane_config = $config->{Run}->{FlowcellLayout}->{LaneCount};
-	my $prompt = prompt("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane. Continue ? (y/n)  ", -yes) if ($lane and $lane != $lane_config);
-	die if ($prompt);
-	unless ($lane) {
-		$lane = $lane_config;
-		warn 'LaneCount=',$lane;
-	}
+#	my $prompt = prompt("$lane_config lanes found in the RunInfo.xml. You entered -lane=$lane. Continue ? (y/n)  ", -yes) if ($lane and $lane != $lane_config);
+#	die if ($prompt);
+#	unless ($lane) {
+#		$lane = $lane_config;
+#		warn 'LaneCount=',$lane;
+#	}
 	
 	my $tmp = $project->getAlignmentPipelineDir("cellranger_demultiplex");
 	warn $tmp;
@@ -194,11 +219,30 @@ if (grep(/count|^all$/i, @steps)){
 		my @chemistries = qw/auto threeprime SC3Pv1 SC3Pv2 SC3Pv3 SC3Pv3HT SC3Pv4 fiveprime SC5P-PE SC5P-R2 SC5P-R2-v3 SC5PHT SC-FB SFRP MFRP MFRP-R1/;
 		die ("Chemistry option '$chemistry' not valid, should be one of: ". join(', ', @chemistries)) unless (grep { $_ eq $chemistry } @chemistries);
 	 }
-
+	
 	my $index = $project->getGenomeIndex($prog);
-	my $set = $index."/probe_sets/";
-	$set .= "Chromium_Human_Transcriptome_Probe_Set_v1.0.1_GRCh38-2020-A.csv";
-	$set .= "Chromium_Mouse_Transcriptome_Probe_Set_v1.0.1_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM/);
+	my $probe_set;
+	if ($multi_meth eq 'flex') {
+		$probe_set = $index."/probe_sets/Chromium_Mouse_Transcriptome_Probe_Set_v1.0.1_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM38/);
+		my $sets;
+		if ($project->getVersion() =~ /^HG38/) {
+			$sets = [
+				'Chromium_Human_Transcriptome_Probe_Set_v1.0.1_GRCh38-2020-A.csv',
+				'Chromium_Human_Transcriptome_Probe_Set_v1.1.0_GRCh38-2024-A.csv',
+				'Chromium_Human_Transcriptome_Probe_Set_v2.0.0_GRCh38-2024-A.csv'
+			];
+		}
+		elsif ($project->getVersion() =~ /^MM39/) {
+			$sets = [
+				'Chromium_Mouse_Transcriptome_Probe_Set_v1.1.1_GRCm39-2024-A.csv',
+				'Chromium_Mouse_Transcriptome_Probe_Set_v2.0.0_GRCm39-2024-A.csv'
+			]
+		}
+		else {
+			die("No probe set for release ".$project->getVersion().'. See https://www.10xgenomics.com/support/software/cell-ranger/downloads');
+		}
+		$probe_set = $index.prompt("Choose a probe set for project ".$projectName.':', -menu=>$sets);
+	}
 	my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
 	warn $tmp;
 	
@@ -207,6 +251,9 @@ if (grep(/count|^all$/i, @steps)){
 	foreach my $k (keys(%$hfamily)){
 		my @pat = @{$hfamily->{$k}};
 		my $poolName = $pat[0]->{group};
+		if (-d $tmp.$poolName) {
+			die("'$tmp$poolName/' already exists") unless (prompt("'$tmp$poolName' already exists.\nContinue anyway ? (y/n)", -yes_no));
+		}
 		make_path("$dir$poolName", { mode => 0775 }) unless (-d "$dir$poolName");
 		my $pobj=$pat[0]->{objet};
 		my $seq_dir = $pobj->getSequencesDirectory();
@@ -218,23 +265,24 @@ if (grep(/count|^all$/i, @steps)){
 		open (CSV,">$config_csv") or confess ("Can't open '$config_csv': $@");
 		print CSV "[gene-expression]\n";
 		print CSV "reference,".$index."\n";
-		print CSV "probe-set,".$set."\n";
-		print CSV "create-bam,true\n" if ($create_bam);
-		print CSV "create-bam,false\n" unless ($create_bam);
-		print CSV "chemistry,$chemistry\n" unless ($chemistry);
+		print CSV "probe-set,".$probe_set."\n" if ($multi_meth eq 'flex');
+		print CSV "create-bam,$create_bam\n";
+		print CSV "chemistry,$chemistry\n" if ($chemistry);
 		print CSV "\n";
 		print CSV "[libraries]\n";
 		print CSV "fastq_id,fastqs,feature_types\n";
 		print CSV $poolName.",".$tmp_fastq.",Gene Expression\n";
 		print CSV "\n";
 		print CSV "[samples]\n";
-		print CSV "sample_id,probe_barcode_ids\n";
+		print CSV "sample_id,probe_barcode_ids\n" if ($multi_meth eq 'flex');
+		print CSV "sample_id,ocm_barcode_ids\n" if ($multi_meth eq 'ocm');
+		print CSV "sample_id,hashtag_ids\n" if ($multi_meth eq 'hastag');
 		foreach my $p (sort { $a->{name} cmp $b->{name} } @pat){
 			print CSV $p->{name}.",".$p->{bc}."\n";
 		}
 		close CSV;
 		$cmd_multi .= "cd $tmp && cellranger multi --id=$poolName --csv=$config_csv ";
-		$cmd_multi .= "&& cp -r $tmp$poolName/outs/per_sample_outs/* $tmp$poolName/_versions $tmp$poolName/_cmdline $dir$poolName/ ";
+		$cmd_multi .= "&& cp -r $tmp$poolName/outs/per_sample_outs/* $tmp$poolName/outs/qc_report.html $tmp$poolName/_versions $tmp$poolName/_cmdline $dir$poolName/ ";
 		print JOBS $cmd_multi."\n";
 	}
 	close JOBS;
@@ -293,66 +341,79 @@ if (grep(/aggr/, @steps)){
 
 
 #------------------------------
-# ARCHIVE / TAR
+# COPY to SingleCell shared directory
 #------------------------------
-if (grep(/tar|archive|^all$/i, @steps)){
-	my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/*/web_summary.html "
-		."$dir*/*/count/sample_cloupe.cloupe "
-		."$dir*/*/count/*_bc_matrix/* ";
-	$tar_cmd .= "$dir*/*/count/*.bam* " if ($create_bam and $create_bam ne 'false');
-	warn $tar_cmd;
-	if (-e "$dir$projectName.tar.gz" and !$no_exec) {
-		my $overwrite = prompt("'archive $dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes);
-		die("archive '$dir$projectName.tar.gz' already exists") unless ($overwrite);
-	}
-	unless ($no_exec){
-		my $exit = system ($tar_cmd);
-		die("Error while creating the archive") if ($exit);
-		print "\t------------------------------------------\n";
-	#	print "\tlink to send to the users : \n";
-	#	print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
-		print "\tArchive to send to the users : \n";
-		print "\t$dir$projectName.tar.gz\n" if (-e "$dir$projectName.tar.gz");
-		print "\t------------------------------------------\n\n";
-	}
+if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
+	my $cmd_cp = "$Bin/cellranger_copy.pl -project=$projectName ";
+	$cmd_cp .= "-patients=$patients_name " if ($patients_name);
+	$cmd_cp .= "-all_outs " if (grep(/^cp$/i, @steps));
+	$cmd_cp .= "-no_exec " if ($no_exec);
+	system($cmd_cp);
+	
+	
+#	my $dirout = "/data-pure/SingleCell/$projectName/";
+#	make_path($dirout, { mode => 0775 }) unless (-d $dirout or $no_exec);
+#
+#	foreach my $patient (@{$patients}) {
+#		my $pool_name = $patient->somatic_group;
+#		my $pat_name = $patient->name;
+#		my $web_summary = "$dir$pool_name/$pat_name/web_summary.html";
+#		
+#		if (-e $web_summary or $no_exec) {
+#			my $cmd_cp;
+#			
+#			# Copy ALL outs
+#			if (grep(/^cp$/i, @steps)) { # cp all outs
+#				$cmd_cp = "cp -ru $dir/$pool_name $dirout";
+#			}
+#			
+#			# Copy ONLY web_summary.html
+#			else {
+##				$cmd_cp = "mkdir -p $dirout$pool_name/per_sample_outs/$pat_name && " unless (-d "$dirout$pool_name/per_sample_outs/$pat_name");
+#				make_path("$dirout$pool_name/per_sample_outs/$pat_name", { mode => 0775 }) unless (-d "$dirout$pool_name/per_sample_outs/$pat_name");
+#				$cmd_cp = "cp $web_summary $dirout$pool_name/per_sample_outs/$pat_name/";
+#			}
+#			
+#			warn $cmd_cp;
+#			system ($cmd_cp) unless $no_exec;
+#		}
+#		else {
+#			warn ("$pool_name $pat_name web summary not found: '$web_summary'\nAre you sure the counting finished successfully ?");
+#		}
+#	}
 }
 
 
 
 #------------------------------
-# COPY to SingleCell shared directory
+# ARCHIVE / TAR
 #------------------------------
-if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
-	my $dirout = "/data-pure/SingleCell/$projectName/";
-	make_path($dirout, { mode => 0775 }) unless (-d $dirout or $no_exec);
+if (grep(/tar|archive|^all$/i, @steps)){
+	my $cmd_tar = "$Bin/cellranger_tar.pl -project=$projectName ";
+	$cmd_tar .= "-patients=$patients_name " if ($patients_name);
+	$cmd_tar .= "-create_bam " if ($create_bam and $create_bam ne 'false');
+	$cmd_tar .= "-no_exec " if ($no_exec);
+	system($cmd_tar);
 
-	foreach my $patient (@{$patients}) {
-		my $pool_name = $patient->somatic_group;
-		my $pat_name = $patient->name;
-		my $web_summary = "$dir$pool_name/$pat_name/web_summary.html";
-		
-		if (-e $web_summary or $no_exec) {
-			my $cmd_cp;
-			
-			# Copy ALL outs
-			if (grep(/^cp$/i, @steps)) { # cp all outs
-				$cmd_cp = "cp -ru $dir/$pool_name $dirout";
-			}
-			
-			# Copy ONLY web_summary.html
-			else {
-#				$cmd_cp = "mkdir -p $dirout$pool_name/per_sample_outs/$pat_name && " unless (-d "$dirout$pool_name/per_sample_outs/$pat_name");
-				make_path("$dirout$pool_name/per_sample_outs/$pat_name", { mode => 0775 }) unless (-d "$dirout$pool_name/per_sample_outs/$pat_name");
-				$cmd_cp = "cp $web_summary $dirout$pool_name/per_sample_outs/$pat_name/";
-			}
-			
-			warn $cmd_cp;
-			system ($cmd_cp) unless $no_exec;
-		}
-		else {
-			warn ("$pool_name $pat_name web summary not found: '$web_summary'\nAre you sure the counting finished successfully ?");
-		}
-	}
+#	my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz $dir*/*/web_summary.html "
+#		."$dir*/*/count/sample_cloupe.cloupe "
+#		."$dir*/*/count/*_bc_matrix/* ";
+#	$tar_cmd .= "$dir*/*/count/*.bam* " if ($create_bam and $create_bam ne 'false');
+#	warn $tar_cmd;
+#	if (-e "$dir$projectName.tar.gz" and !$no_exec) {
+#		my $overwrite = prompt("'archive $dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes);
+#		die("archive '$dir$projectName.tar.gz' already exists") unless ($overwrite);
+#	}
+#	unless ($no_exec){
+#		my $exit = system ($tar_cmd);
+#		die("Error while creating the archive") if ($exit);
+#		print "\t------------------------------------------\n";
+#	#	print "\tlink to send to the users : \n";
+#	#	print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
+#		print "\tArchive to send to the users : \n";
+#		print "\t$dir$projectName.tar.gz\n" if (-e "$dir$projectName.tar.gz");
+#		print "\t------------------------------------------\n\n";
+#	}
 }
 
 
@@ -369,7 +430,7 @@ Obligatoires:
 	project <s>                nom du projet
 	feature_ref	<s>            tableau des ADT, obligatoire seulement si step=count et qu'il y a des ADT
 Optionels:
-	steps <s>                  étape à réaliser: demultiplex, count, tar, aggr, aggr_vdj, cp, cp_web_summary ou all (= demultiplex, count, cp_web_summary, tar)
+	steps <s>                  étape à réaliser: dragedemultiplex, demultiplex_old, count, tar, aggr, aggr_vdj, cp, cp_web_summary ou all (= demultiplex, count, cp_web_summary, tar)
 	patients <s>               noms de patients/échantillons, séparés par des virgules
 	cpu <i>                    nombre de cpu à utiliser, défaut: 20
 	lane <i>                   nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml

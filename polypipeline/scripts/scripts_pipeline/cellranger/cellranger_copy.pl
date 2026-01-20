@@ -30,6 +30,7 @@ use Proc::Simple;
 use Storable;
 use JSON::XS;
 use File::Path qw(make_path);
+use Carp;
 
 
 my $projectName;
@@ -42,7 +43,7 @@ GetOptions(
 	'patients=s'	=> \$patients_name,
 	'all_outs!'		=> \$all_outs,
 	'no_exec'		=> \$no_exec,
-) || die("Error in command line arguments\n");
+) || confess("Error in command line arguments\n");
 
 die("--project argument is mandatory") unless ($projectName);
 
@@ -62,6 +63,7 @@ my $error;
 foreach my $patient (@{$patients}) {
 	my $name = $patient->name();
 	next if ($name =~ /^ADT_/);
+	my $pool_name = $patient->somatic_group;
 	my $cp_cmd;
 	
 	if (-e "$dir$name/web_summary.html") {
@@ -73,15 +75,37 @@ foreach my $patient (@{$patients}) {
 		# Copy ONLY web_summary.html
 		else {
 			make_path("$dirout$name", { mode => 0775 }) unless (-d $dirout.$name);
-			$cp_cmd .= "cp $dir$name/web_summary.html $dirout$name/web_summary.html";
+			$cp_cmd = "cp $dir$name/web_summary.html $dirout$name/web_summary.html";
 		}
 		
 		warn $cp_cmd;
 		system ($cp_cmd) unless $no_exec;
 	}
+	
+	# multi outs
+	elsif (-e "$dir$pool_name/$name/web_summary.html") {
+		make_path("$dirout$pool_name/per_sample_outs/", { mode => 0775 }) unless (-d $dirout.$name);
+		# Copy ALL outs
+		if ($all_outs){
+			$cp_cmd = "cp -ru $dir$pool_name/$name $dirout$pool_name//per_sample_outs/";
+			$cp_cmd .= " && cp $dir$pool_name/qc_report.html $dirout$pool_name/" if (-f "$dir$pool_name/qc_report.html");
+		}
+		
+		# Copy ONLY web_summary.html
+		else {
+			make_path("$dirout$pool_name/per_sample_outs/$name", { mode => 0775 }) unless (-d $dirout.$name);
+			$cp_cmd = "cp $dir$pool_name/$name/web_summary.html $dirout$pool_name/per_sample_outs/$name/web_summary.html";
+			$cp_cmd .= " && cp $dir$pool_name/qc_report.html $dirout$pool_name/" if (-f "$dir$pool_name/qc_report.html");
+		}
+		
+		warn $cp_cmd;
+		system ($cp_cmd) unless $no_exec;
+		
+	}
+	
 	else {
 		$error->{$name} ++;
-		warn ("$name web summary not found: '$dir$name/web_summary.html'\nAre you sure the counting finished successfully ?");
+		warn ("$name web summary not found: '$dir$name/web_summary.html' or '$dir$pool_name/$name/web_summary.html'\nAre you sure the counting finished successfully ?");
 	}
 }
 

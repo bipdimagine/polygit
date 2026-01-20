@@ -598,9 +598,9 @@
 									document.getElementById("span_b_view_genes_hgmd").innerHTML = "GET List Genes";
 								}
 							});
-						});
+			    		}).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			    	}
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 				var urlpasswd = url_listProject + "?type=login&pwd=" + this_pwd + "&login=" + this_username + "&action=check_have_projects";
 			    $.getJSON( urlpasswd, function( data ) {
 			    	var i = 0;
@@ -612,7 +612,7 @@
 			    		get_lists_projects();
 			    	}
 			    	else { error_login(); }
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
 			
 			function get_lists_projects(sort_by) {
@@ -631,7 +631,7 @@
 							myPanel.appendTo(myNode);
 							document.getElementById("content_res_projects").style.display = "block";
 	    					$('#table_projects_found').bootstrapTable();
-							dijit.byId('waiting').hide();
+							//dijit.byId('waiting').hide();
 			    		}
 			    		if (key == 'date_dejavu') {
 			    			document.getElementById("span_date_dejavu").innerHTML = val;
@@ -664,7 +664,7 @@
 			    			document.getElementById("span_nb_projects").innerHTML = 'Found ' + $(val)[0] + ' Projects';
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
 			
 			var init_nb_tr = 0;
@@ -733,7 +733,7 @@
 			    			else if (val > 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; }
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
 			
 			function reload_and_sort(type) {
@@ -774,7 +774,7 @@
 			    			else if (val > 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; }
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
 	    	
 	    	function get_search_args(value) {
@@ -843,8 +843,7 @@
 			    			window.open(window_url, '_blank').focus();
 			    		}
   					});
-			    });
-	    		
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 	    	}
 	    	
 	    	function on_write_input() {
@@ -946,7 +945,7 @@
 				    			gencode_version = value;
 				    		}
 	  					});
-				    });
+			  	  }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			    }
 	    	}
 	    	var gencode_version = '';
@@ -968,7 +967,7 @@
 	    					dijit.byId('waiting').hide();
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 	    	}
 	    	
 	    	function launch_genes_hgmd(filters_args) {
@@ -1021,7 +1020,7 @@
 			    			else if (val > 1) { document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found'; }
 			    		}
 	    			});
-	    		});
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
     		}
     		
     		var hgmd_gene_name_selected = '';
@@ -1101,7 +1100,10 @@
 					if (document.getElementById('filter_hgmd_nonsynonymous').checked == true) { l_filters.push('missense'); }
 					if (document.getElementById('filter_hgmd_nonframeshift').checked == true) { l_filters.push('no-frameshift'); }
 					if (document.getElementById('filter_hgmd_splice_site').checked == true) { l_filters.push('splice_region'); }
-					if (document.getElementById('filter_hgmd_predicted_splice_site').checked == true) { l_filters.push('predicted_splice_region'); }
+					if (document.getElementById('filter_hgmd_predicted_splice_site').checked == true) {
+						l_filters.push('predicted_splice_region');
+						l_filters.push('predicted_promoter_ai');
+					}
 					
 					if (document.getElementById('filter_hgmd_pseudogene').checked == true) { l_filters.push('pseudogene'); }
 					if (document.getElementById('filter_hgmd_utr').checked == true) { l_filters.push('utr'); }
@@ -1130,7 +1132,7 @@
 			    			
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
     		}
     		
     		var hash_transcripts_locus;
@@ -1176,7 +1178,7 @@
 			    			return;
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 	    	}
 	    	
 	    	function launch_for_gene_project_patient(gene_id, use_this_project_name, use_this_patient_name) {
@@ -1202,7 +1204,8 @@
 			    			window.open(window_url, '_blank').focus();
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
+			    
 	    	}
 	    	
 	    	function launch_for_gene_filters() {
@@ -1214,7 +1217,7 @@
     			show_waiting('Checking... variants gene!<br><i>-> A new page will open...</i>');
 		    	//var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&gene=" + gene_id + "&gene_alt=" + gene_id_alt;
 		    	var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&gene=" + gene_id;
-		    	
+				
 		    	document.getElementById("span_gene_dialog_dejavu_filters").innerHTML = ""; 
 		    	if (use_project_name && use_patient_name) {
 		    		url += "&project=" + use_project_name;
@@ -1261,8 +1264,10 @@
 				if (document.getElementById('filter_nonsynonymous').checked == true) { l_filters.push('missense'); }
 				if (document.getElementById('filter_nonframeshift').checked == true) { l_filters.push('no-frameshift'); }
 				if (document.getElementById('filter_splice_site').checked == true) { l_filters.push('splice_region'); }
-				if (document.getElementById('filter_predicted_splice_site').checked == true) { l_filters.push('predicted_splice_region'); }
-				
+				if (document.getElementById('filter_predicted_splice_site').checked == true) {
+					l_filters.push('predicted_splice_region');
+					l_filters.push('predicted_promoter_ai');	
+				}
 				if (document.getElementById('filter_pseudogene').checked == true) { l_filters.push('pseudogene'); }
 				if (document.getElementById('filter_utr').checked == true) { l_filters.push('utr'); }
 				if (document.getElementById('filter_silent').checked == true) { l_filters.push('synonymous'); }
@@ -1356,7 +1361,7 @@
 			    			window.open(window_url, '_blank').focus();
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
     		}
             
 		    function launch() {
@@ -1419,7 +1424,7 @@
 					var nb_total = nb_ok + nb_not;
 					document.getElementById("span_ok").innerHTML  = "<font color='#00CC00'>OK: " + nb_ok + " / " + nb_total + "</font>";
 					document.getElementById("span_not").innerHTML = "<font color='red'>ERROR: " + nb_not + " / " + nb_total + "</font>";
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 		    }
 		    
 		    function change_annotation(annot) {
@@ -1521,7 +1526,7 @@
 						if (only_model == 'father') { select_tr('table_variants', 'tr_variant', 'tr_father') }
 			        }, 1000);
 					launch_new_var_proj_gene_pat = 0;
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
 			
 			function update_grid_gene_phenotypes(gene_id) {
@@ -1579,7 +1584,7 @@
     						document.getElementById("span_nb_genes_errors").innerHTML = val + ' genes not found';
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
 						
 			function launch_genes_capture() {
@@ -1619,7 +1624,7 @@
 	    					dijit.byId('waiting').hide();
 			    		}
   					});
-			    });
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
 			
 			function check_slider_cat_hgmd_annotations() {

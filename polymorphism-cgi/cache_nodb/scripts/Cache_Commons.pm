@@ -63,6 +63,10 @@ has categories => (
 					spliceAI_high      => 1,
 					spliceAI_medium    => 1,
 					predicted_splice_site => 1,
+					predicted_promoter_ai => 1,
+					predicted_promoter_ai_high => 1,
+					predicted_promoter_ai_medium => 1,
+					predicted_promoter_ai_low => 1,
 		
 				},
 				variation_type => {
@@ -100,6 +104,10 @@ has categories => (
 					spliceAI_high      => 1,
 					spliceAI_medium    => 1,
 					predicted_splice_site => 1,
+					predicted_promoter_ai => 1,
+					predicted_promoter_ai_high => 1,
+					predicted_promoter_ai_medium => 1,
+					predicted_promoter_ai_low => 1,
 				},
 			},
 			patients => {

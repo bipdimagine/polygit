@@ -62,6 +62,7 @@ formatters["formatNcboost"] = formatNcboost;
 formatters["formatGeneMaxScoreVariant"] = formatGeneMaxScoreVariant;
 formatters["formatPolywebScoreDetailProject"] = formatPolywebScoreDetailProject;
 formatters["formatSpliceAI"] = formatSpliceAI;
+formatters["formatPromoterAI"] = formatPromoterAI;
 formatters["formatVarsome"] = formatVarsome;
 formatters["formatColorPhenotypes"] = formatColorPhenotypes;
 formatters["formatColorProjectAndPhenotypes"] = formatColorProjectAndPhenotypes;
@@ -82,7 +83,21 @@ function formatGnomadLink(value) {
 
 function formatVarsome(value) {
 	return "<a href='"+value+"' target='_blank'>Varsome</a>";
-} 
+}
+
+function formatPromoterAI(value) {
+	if (value == '-') { return value; }
+	if (value == 'N.A.') { return value; }
+	var btn_class = "class='btn btn-xs btn-primary' style='border-radius:10px;background-color:#D0D0D0;font-size:7px;font-family:Verdana;color:black'";;
+	if (value >= 0.1 ) { btn_class = "class='btn btn-xs btn-primary' style='border-radius:10px;background-color:#188c52;font-size:7px;font-family:Verdana;color:white'"; }
+	if (value >= 0.2 ) { btn_class = "class='btn btn-xs btn-primary' style='border-radius:10px;background-color:#ff9800;font-size:7px;font-family:Verdana;color:white'"; }
+	if (value >= 0.5 ) { btn_class = "class='btn btn-xs btn-primary' style='border-radius:10px;background-color:#e74c3c;font-size:7px;font-family:Verdana;color:white'"; }
+	if (value <= -0.1 ) { btn_class = "class='btn btn-xs btn-primary' style='border-radius:10px;background-color:#188c52;font-size:7px;font-family:Verdana;color:white'"; }
+	if (value <= -0.2 ) { btn_class = "class='btn btn-xs btn-primary' style='border-radius:10px;background-color:#ff9800;font-size:7px;font-family:Verdana;color:white'"; }
+	if (value <= -0.5 ) { btn_class = "class='btn btn-xs btn-primary' style='border-radius:10px;background-color:#e74c3c;font-size:7px;font-family:Verdana;color:white'"; }
+	var btn = "<button type='button' " + btn_class + ">" + value + "</button>";
+	return btn;
+}
 
 function formatSpliceAI(value) {
 	if (value == '-') { return value; }

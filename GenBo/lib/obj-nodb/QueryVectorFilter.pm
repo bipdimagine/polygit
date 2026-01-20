@@ -1183,9 +1183,11 @@ sub get_vector_filter_gene_annotations {
 sub return_cat {
 	my ($project,@unselect) = @_;
 	my %hcat = %{$project->buffer->config->{'genbo_annotations_names'}};
-
 	foreach my $c (@unselect){
 		delete $hcat{$c};
+		if ($c eq 'predicted_splice_site') {
+			delete $hcat{'predicted_promoter_ai'} if exists $hcat{'predicted_promoter_ai'};
+		}
 	}
 	return keys %hcat;
 }
@@ -1470,10 +1472,14 @@ sub filter_genetics_models_familial {
 }
 
 sub filter_genetics_models_somatic {
-	my ($self, $chr, $level_ind, $level_fam, $model, $h_args) = @_;
+	my ($self, $chr, $model) = @_;
 	my $vector_models = $chr->getNewVector();
 	if ($model eq 'loh') {
-		$vector_models += $chr->getModelVector_som_loh();
+		foreach my $group (@{$chr->getProject->getSomaticGroups}) {
+			foreach my $pat (@{$group->getPatients()}) {
+				$vector_models += $group->getVector_individual_loh($chr, $pat);
+			}
+		}
 	}
 	if ($model eq 'dbl_evt') {
 		my $variants_genes  = $chr->getNewVector();

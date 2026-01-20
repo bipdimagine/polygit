@@ -41,13 +41,15 @@ use session_export;
 my $cgi = new CGI();
 my $use_session_id = $cgi->param('session_id');
 my $export_xls = $cgi->param('export_xls');
+my $export_json = $cgi->param('export_json');
+my $outfile = $cgi->param('outfile');
 my $merged = $cgi->param('merged');
 my $only_transcript = $cgi->param('only_transcript');
 
 
 if ($only_transcript) { $only_transcript =~ s/_.+//; }
 
-return load_xls($use_session_id) if ($export_xls);
+return export_xls_json($use_session_id) if ($export_xls or $export_json);
 
 my $session = new session_export();
 $session->load_session( $use_session_id );
@@ -85,8 +87,9 @@ exit(0);
 
 
 
-sub load_xls() {
-	my $use_session_id = shift;
+sub export_xls_json {
+	my ($use_session_id) = @_;
+	my $h_json;
 	my $xls_export = new xls_export();
 	$xls_export->load($use_session_id);
 	my ($list_datas_annotations) = $xls_export->prepare_generic_datas_variants();
@@ -169,27 +172,57 @@ sub load_xls() {
 		$xls_export->add_page_merged('Variants Merged', $xls_export->list_generic_header(), \@list_datas_annotations_with_patients);
 	}
 	else {
-		my @lHeaderWithPat = @{$xls_export->list_generic_header()};
-		push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'He_Ho', 'Model') if (not $isHGMD_export);
-		if (not $only_transcript and $nb_v > 5000) {
-			$xls_export->add_page('ALL TRANSCRIPTS', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+		if ($export_xls) {
+			my @lHeaderWithPat = @{$xls_export->list_generic_header()};
+			push (@lHeaderWithPat, 'Project', 'Patient', 'Sex', 'Status', 'Perc', 'He_Ho', 'Model') if (not $isHGMD_export);
+			if (not $only_transcript and $nb_v > 5000) {
+				$xls_export->add_page('ALL TRANSCRIPTS', \@lHeaderWithPat, \@list_datas_annotations_with_patients);
+			}
+			foreach my $enst (sort keys %$h_by_tr) {
+				next if ($only_transcript and not $enst =~ /$only_transcript/);
+				next if $nb_v > 5000;
+				$xls_export->add_page($enst, \@lHeaderWithPat, $h_by_tr->{$enst});
+			}
 		}
-		foreach my $enst (sort keys %$h_by_tr) {
-			next if ($only_transcript and not $enst =~ /$only_transcript/);
-			next if $nb_v > 5000;
-			$xls_export->add_page($enst, \@lHeaderWithPat, $h_by_tr->{$enst});
+		if ($export_json) {
+			foreach my $enst (keys %$h_by_tr) {
+				$h_json->{'by_transcripts'}->{$enst} = $h_by_tr->{$enst};
+			}
 		}
 	}
 	if (scalar @$list_datas_annotations_cnvs > 0) {
-		$xls_export->add_page('Cnvs', $xls_export->list_generic_header_cnvs(), $list_datas_annotations_cnvs);
+		if ($export_xls) {
+			$xls_export->add_page('Cnvs', $xls_export->list_generic_header_cnvs(), $list_datas_annotations_cnvs);
+		}
+		if ($export_json) {
+			$h_json->{'by_cnvs'} = $list_datas_annotations_cnvs;
+		}
 	}
 	
 	my @lLinesHeaderPatients = ('Variation', 'Project', 'Description', 'Family', 'Patient', 'Parent_child', 'Sex', 'Status', 'Perc', 'He_Ho', 'Model', 'Phenotypes');
-	$xls_export->add_page('Patients', \@lLinesHeaderPatients, \@list_datas_patients) if @list_datas_patients;
+	if ($export_xls) {
+		$xls_export->add_page('Patients', \@lLinesHeaderPatients, \@list_datas_patients) if @list_datas_patients;
+		my @lLinesHeaderPubmed = ('Variation', 'Url', 'Title');
+		$xls_export->add_page('Pubmed', \@lLinesHeaderPubmed, \@list_datas_pubmed) if @list_datas_pubmed;
+		$xls_export->export();
+	}
+	if ($export_json) {
+		$h_json->{'by_patients'} = \@list_datas_patients;
+		my $json_encode = encode_json $h_json;
+		if ($outfile) {
+			open(FILE, ">".$outfile);
+			print FILE $json_encode;
+			close (FILE);
+			print "\n\n";
+			print 'done at '.$outfile;
+			print "\n\n";
+		}
+		else {
+			print $cgi->header('text/json-comment-filtered');
+			print $json_encode;
+		}
+	}
 	
-	my @lLinesHeaderPubmed = ('Variation', 'Url', 'Title');
-	$xls_export->add_page('Pubmed', \@lLinesHeaderPubmed, \@list_datas_pubmed) if @list_datas_pubmed;
 	
-	$xls_export->export();
 	exit(0);
 }

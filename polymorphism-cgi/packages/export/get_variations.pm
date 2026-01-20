@@ -347,58 +347,43 @@ sub getIds_byCache_onlive {
 		my $varsome_url = qq{https://varsome.com/variant/$release/}.$var->gnomad_id();
 		$hash->{'varsome'} = $varsome_url;
 		
+		$hash->{'promoterAI'} = '-';
 		$hash->{'spliceAI'} = '-';
+		
 		my (@lGenesIds, @GenesNames, @lGenesCons, @lGenesOmim, @lGenesPolywebScore);
-#		if ($var->isCnv() or $var->isLarge()) {
-#				foreach my $gene (@lGenesObj) {
-#					warn ref($gene).' -> '.$gene->external_name();
-#				}
-#				die;
-#				push (@lGenesCons, 'Intergenic');
-#				push (@GenesNames, 'intergenic_'.$hash->{'chromosome'}.'_'.$var->start().'_'.$var->end());
-#				push (@lGenesIds, 'intergenic_'.$hash->{'chromosome'}.'_'.$var->start().'_'.$var->end());
-#				push (@lGenesPolywebScore, '.');
-#			
-#		}
-#		else {
-			foreach my $gene (@lGenesObj) {
-				if ($gene->omim_id()) { push(@lGenesOmim, $gene->omim_id()); }
-				else { push(@lGenesOmim, undef); }
-				my ($gene_id, $id_chr) = split('_', $gene->id());
-				push (@lGenesIds, $gene_id);
-				push (@GenesNames, $gene->external_name()); 
-				push (@lGenesCons, $var->variationTypeInterface($gene));
-				#TODO: PolyScore
-	#			my $max_score = -999;
-	#			foreach my $fam (@{$project->getFamilies()}) {
-	#				foreach my $pat (@{$fam->getChildrenIll()}) {
-	#					next unless ($pat->getVariantsVector($chr)->contains($v_id));
-	#					my $score = $var->scaledScoreVariant($gene, $pat);
-	#					$max_score = $score if ($score > $max_score);
-	#				}
-	#			}
-	#			$max_score = '.' if ($max_score == -999);
-	#			push (@lGenesPolywebScore, $max_score);
-	
-				my @l_score_spliceAI;
-				my $h_score_spliceAI = $var->spliceAI_score($gene);
-				if ($h_score_spliceAI) {
-					foreach my $cat (sort keys %$h_score_spliceAI) {
-						push(@l_score_spliceAI, $cat.'='.$h_score_spliceAI->{$cat});
-					}
+		foreach my $gene (@lGenesObj) {
+			if ($gene->omim_id()) { push(@lGenesOmim, $gene->omim_id()); }
+			else { push(@lGenesOmim, undef); }
+			my ($gene_id, $id_chr) = split('_', $gene->id());
+			push (@lGenesIds, $gene_id);
+			push (@GenesNames, $gene->external_name()); 
+			push (@lGenesCons, $var->variationTypeInterface($gene));
+
+			my @l_score_spliceAI;
+			my $h_score_spliceAI = $var->spliceAI_score($gene);
+			if ($h_score_spliceAI) {
+				foreach my $cat (sort keys %$h_score_spliceAI) {
+					push(@l_score_spliceAI, $cat.'='.$h_score_spliceAI->{$cat});
 				}
-				else {
-					push(@l_score_spliceAI, '-');
+			}
+			else {
+				push(@l_score_spliceAI, '-');
+			}
+			$hash->{'spliceAI'} = join(' ', @l_score_spliceAI);
+			if ($var->promoterAI) {
+				foreach my $tr (@{$gene->getTranscripts()}) {
+					my $score_promoterAI = $var->promoterAI_score($tr);
+					$hash->{'promoterAI'} = $score_promoterAI if $score_promoterAI;
+					last if $hash->{'promoterAI'} ne '-';
 				}
-				$hash->{'spliceAI'} = join(' ', @l_score_spliceAI);
 			}
-			unless (@lGenesIds) {
-				push (@lGenesCons, 'Intergenic');
-				push (@GenesNames, 'intergenic_'.$hash->{'chromosome'}.'_'.$var->start().'_'.$var->end());
-				push (@lGenesIds, 'intergenic_'.$hash->{'chromosome'}.'_'.$var->start().'_'.$var->end());
-				push (@lGenesPolywebScore, '.');
-			}
-#		}
+		}
+		unless (@lGenesIds) {
+			push (@lGenesCons, 'Intergenic');
+			push (@GenesNames, 'intergenic_'.$hash->{'chromosome'}.'_'.$var->start().'_'.$var->end());
+			push (@lGenesIds, 'intergenic_'.$hash->{'chromosome'}.'_'.$var->start().'_'.$var->end());
+			push (@lGenesPolywebScore, '.');
+		}
 		$hash->{genes_name} = join(";", @lGenesIds);
 		$hash->{external_names} = join(";", @GenesNames);
 		$hash->{'gene_in_omim'} = join(';', @lGenesOmim);

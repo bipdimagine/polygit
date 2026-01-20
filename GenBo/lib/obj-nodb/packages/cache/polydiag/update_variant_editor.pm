@@ -149,7 +149,7 @@ sub vcosmic {
 
 sub vname2 {
 	my ($v,$hvariation) = @_;
-	my $vn = $v->vcf_id;
+	my $vn = $v->gnomad_id;
 	my $vclinvar_text = '';
 #	$vclinvar_text = "<br><span style='color:red'>clinvar:".$v->clinvar_id()."</span>" if ($v->clinvar_id());
 	my $vt = 'SNP' if ($v->isVariation());
@@ -173,41 +173,10 @@ sub vname2 {
 		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;">style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });;
 		$hvariation->{html}->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;" style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });
 	}
-	elsif ($v->name() =~ m/rs/) {
-		my $vname = $v->name();
-		my $vname2;
-		if ($v->isVariation) {
-			$vname2 = $vn;
-		}
-		else {
-			$vname2 = $v->getChromosome->id().'-'.$v->start().'-'.$v->end();
-		}
-		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"><i class="fa fa-users fa-2x" style="color:coral;padding-bottom:3px;"></i><div>$vname2<br><span style='color:red;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;#qq{<a href='http://www.ncbi.nlm.nih.gov/snp/?term=$vn' target = '_blank'>$vn</a> };	
-		$hvariation->{html}->{var_name}  = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"><i class="fa fa-users fa-2x" style="color:coral;padding-bottom:3px;"></i><div>&nbsp$vname2<br><span style='color:red;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;
-	}
-	elsif ($v->name() =~ m/del|ins|dup/ or $v->isInsertion() or $v->isDeletion()) {
-		my $vname = $v->name();
-		if ($v->isDeletion() and $v->length() > 20) {
-			$vn = $v->getChromosome->id().'-'.$v->start().'-del-'.$v->length();
-		}
-		my $len = length($v->var_allele())-1;
-		if ($v->isInsertion() and $len > 20) {
-			$vn = $v->getChromosome->id().'-'.$v->start().'-ins-'.$len;
-		}
-		my $pp = $v->getChromosome->name."-".$v->start."-".$v->end;
-		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });;
-		$hvariation->{html}->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });
-	}
-	elsif ($v->isVariation()) {
+	else {
 		my $vname = $v->name();
 		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"></i><div><span style='color:black;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;#qq{<a href='http://www.ncbi.nlm.nih.gov/snp/?term=$vn' target = '_blank'>$vn</a> };	
 		$hvariation->{html}->{var_name}  = printSimpleBadge(qq{<a href='$url_gnomad/variant/$vn$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div><span style='color:black;'>$vname</span>$vclinvar_text<br><small>$vt</small></div></a> });	;
-	}
-	else {
-		my $pp = $v->getChromosome->name."-".$v->start;
-		$hvariation->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });;
-		#$hvariation->{value}->{var_name} = $vn;
-		$hvariation->{html}->{var_name} = printSimpleBadge(qq{<a href='$url_gnomad/region/$pp$dataset' target = '_blank' style="color:black;vertical-align:middle;"><div>$vn$vclinvar_text<br><small>$vt</small></div></a> });
 	}
 }
 
@@ -447,7 +416,7 @@ sub table_gnomad {
 	my $dataset = "?dataset=gnomad_r2_1";
 	$dataset = "?dataset=gnomad_r4" if $v->getProject->getVersion() =~ /HG38/;
 	my $href = qq{https://gnomad.broadinstitute.org/region/$pp$dataset};
-	my $vn=$v->vcf_id;
+	my $vn=$v->gnomad_id;
 	$vn =~ s/_/-/g;
 	$vn=~ s/chr//;
 
@@ -558,7 +527,7 @@ sub check_is_hgmd_dm_for_gene {
 
 
 sub table_validation_without_local {
-	my ($project, $hvariation, $gene) = @_;
+	my ($project, $hvariation, $gene, $can_use_hgmd) = @_;
 	my $cgi = new CGI();
 	my $color = "#555";
 	check_is_hgmd_dm_for_gene($project, $hvariation, $gene) if not exists $hvariation->{value}->{hgmd} and not $hvariation->{value}->{hgmd};
@@ -569,26 +538,26 @@ sub table_validation_without_local {
 		$color = "orange";
 	}
 	my $html= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"max-width:300px;box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
-	$html .= $cgi->start_Tr().$cgi->th(["HGMD","Clinvar"]).$cgi->end_Tr();
+	if ($can_use_hgmd) { $html .= $cgi->start_Tr().$cgi->th(["HGMD","Clinvar"]).$cgi->end_Tr(); }
+	else { $html .= $cgi->start_Tr().$cgi->th(["Clinvar"]).$cgi->end_Tr(); }
 	$html .= $cgi->start_Tr();
 		$hvariation->{html}->{table_validation} = $html;
 		$hvariation->{html}->{table_validation} .= $cgi->td([$hvariation->{html}->{hgmd},$hvariation->{html}->{clinvar}]);
 		
-		my $hgmd_no_access = qq{<span class="glyphicon glyphicon-ban-circle" aria-hidden="true" style='font-size:12px;color:black;'></span>};
 		$hvariation->{html}->{table_validation_hgmd_no_access} = $html;
-		$hvariation->{html}->{table_validation_hgmd_no_access} .= $cgi->td([$hgmd_no_access,$hvariation->{html}->{clinvar}]);
+		$hvariation->{html}->{table_validation_hgmd_no_access} .= $cgi->td([$hvariation->{html}->{clinvar}]);
 		
 		my $v_phen = ' ';
    		if (exists $hvariation->{hgmd_phenotype}) {
    			$v_phen = $hvariation->{hgmd_phenotype};
    			$v_phen =~ s/"//g;
 			$hvariation->{html}->{table_validation} .= qq{<tr><td  colspan='3' style='color:#4CAF50;'>$v_phen</td></tr>};
-			$hvariation->{html}->{table_validation_hgmd_no_access} .= qq{<tr><td  colspan='3' style='color:#4CAF50;'>$v_phen</td></tr>};
+			$hvariation->{html}->{table_validation_hgmd_no_access} .= qq{<tr><td  colspan='2' style='color:#4CAF50;'>$v_phen</td></tr>};
    		}
 		$hvariation->{html}->{table_validation} .= $cgi->end_Tr().$cgi->end_table;
 		$hvariation->{html}->{table_validation_hgmd_no_access} .= $cgi->end_Tr().$cgi->end_table;
-		return $hvariation->{html}->{table_validation};
-	
+		return $hvariation->{html}->{table_validation} if $can_use_hgmd;
+		$hvariation->{html}->{table_validation_hgmd_no_access};
 }
 ## test
 
@@ -1051,6 +1020,12 @@ sub construct_hash_transcript {
 		
 		my $alphamissense = $v->alphamissense($tr1);
 		value_html($htr,"alphamissense",$alphamissense,printBadge($alphamissense,[0.34, 0.564]));
+		
+		my $promoter_ai = '-';
+		$promoter_ai = $v->promoterAI_score($tr1) if $v->promoterAI_score($tr1);
+		if ($promoter_ai ne '-' and $promoter_ai >= 0 ) { value_html($htr,"promoterAI",$promoter_ai,printBadge($promoter_ai,[0.2, 0.5])); }
+		else { value_html($htr,"promoterAI",$promoter_ai,printInvBadge($promoter_ai,[-0.2, -0.5])); }
+		
 		
 	#	my $text_alert = 'SpliceAI values - '.join(', ', @l_score_spliceAI);
 			#$htr->{html}->{spliceAI} = printButton($max_ai,[0.5, 0.9],$max_cat,undef,$max_cat);
