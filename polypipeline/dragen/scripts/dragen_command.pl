@@ -273,7 +273,11 @@ my $param_phased = "";
 my $param_bed ="";
 if ($project->isCapture) {
 	my $capture_file  = $patient->getCapture->gzFileName();# if $version =~/HG38/;
-	$param_bed .= qq{  --vc-target-bed $capture_file};
+		confess() unless -e $capture_file;
+		if ($project->isExome && ($version eq "HG38" or $project->annotation_genome_version eq "HG38")){
+			confess($capture_file) if $capture_file =~ /HG19/;
+		}
+	$param_bed = qq{  --vc-target-bed $capture_file};
 	if (defined($pad)){
 			$param_bed .= qq{ --vc-target-bed-padding $pad };
 		}
@@ -360,34 +364,6 @@ if (exists $pipeline->{gvcf}){
 	
 	$param_gvcf = qq{--vc-emit-ref-confidence GVCF } ;
 	
-}
-
-unless ($version){
-	unless ($project->isGenome ) {
-		my $capture_file  = $patient->getCapture->gzFileName();
-		confess() unless -e $capture_file;
-		if ($project->isExome && ($version eq "HG38" or $project->annotation_genome_version eq "HG38")){
-			confess($capture_file) if $capture_file =~ /HG19/;
-		#	my $capture_file2 = "$dir_pipeline/".$patient->name.".bed";
-		#	warn "zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2";
-		#	die();
-		#	system ("zcat $capture_file /data-isilon/public-data/capture/HG38/exons.HG38.bed.gz | sort -k1,1V -k2,2n | bedtools merge >$capture_file2" );
-		#	$capture_file = $capture_file2;
-		}
-		#test prenantome 
-		$param_bed .= qq{  --vc-target-bed $capture_file};
-		if (defined($pad)){
-			$param_bed .= qq{ --vc-target-bed-padding $pad };
-		}
-		else{
-			$param_bed .= qq{  --vc-target-bed-padding 150  };
-		}
-		
-#		if($patient->getCapture->isPcr()){
-#			$param_bed .= qq{--enable-dna-amplicon true --amplicon-target-bed $capture_file} ;
-#			
-#		}
-	}
 }
 
 my $param_vcf ="";
