@@ -802,6 +802,7 @@ my $h_transmissions = {
 	my $suffix = "patient_".$patient->id;
 	#CAST(patient_55661_transmission AS INTEGER)
 	my $asql_patient = [];
+	my $asql_patient_only_transmission = [];
 	my $alt = 0;
 	if($cgi->param('alt') ){
 		$alt = $cgi->param('alt');
@@ -818,7 +819,11 @@ my $h_transmissions = {
 	}
 	push(@$asql_patient ,$suffix."_transmission  & $mask_transmission <> 0");
 	
+	push(@$asql_patient_only_transmission ,$suffix."_transmission  & $mask_transmission <> 0");
+	
+	
 	my $sql_patient = "(".join(" and ",@$asql_patient).")";
+	my $sql_patient_only_transmission = "(".join(" and ",@$asql_patient_only_transmission).")";
 	#push(@column_patient,"patient_".$c."_ref");
 	#push(@column_patient,"patient_".$c."_alt");
 	#push(@column_patient,"patient_".$c."_ratio");
@@ -864,18 +869,31 @@ my $h_transmissions = {
 		$sql_only_dm = qq{( $and and (variant_isDM  = 1 or variant_isClinvarPathogenic =1))};
 	}
 	
-	my $sql_where_and;
+	my ($sql_where_and, $sql_where_and_2);
 	
 	push(@$sql_where_and,$sql_frequence) if $sql_frequence;
 	push(@$sql_where_and,$sql_gene) if $sql_gene;
 	push(@$sql_where_and,$sql_patient) if $sql_patient;
 	push(@$sql_where_and,$sql_only_dm) if $sql_only_dm;
 	my $where = join (" and ",@$sql_where_and);
-	
 	if ($cgi->param('keep_pathogenic') == 1 ){
-	
 		$where .= "or (variant_keepPathogenic = 1 and $and) ";
 	}
+	
+	
+	push(@$sql_where_and_2,$sql_frequence) if $sql_frequence;
+	push(@$sql_where_and_2,$sql_patient_only_transmission) if $sql_patient;
+	my $where_nopat = join (" and ",@$sql_where_and_2);
+	
+	
+	
+	
+#	warn "\n\n\n";
+#	warn $where;
+#	warn "\n\n\n";
+#	die;
+	
+	
 	#!!!!!!!!!!!!!!!!
 	
 	#!!!!!!!!!!!!!!!!
@@ -886,20 +904,21 @@ my $h_transmissions = {
 	#!!!!!!!!!!!!!!!!
 	#!!!!!!!!!!!!!!!!
 	#get_join_parquet($project,$sql_frequence,$sql_patient,$sql_gene,$suffix);
-	return get_rocksdb_mce_polyviewer_variant($project,$where,$suffix);
+	return get_rocksdb_mce_polyviewer_variant($project,$where,$where_nopat,$suffix);
 	return ( $finalVector, $list_variants, $hash_variants_DM,$list_genes);
 }
 
 
 sub get_rocksdb_mce_polyviewer_variant {
-	my ($project,$where,$suffix) = @_;
+	my ($project,$where,$where_nopat,$suffix) = @_;
 	warn "rocksdb  "  if (not $cgi->param('export_xls'));
 	my $parquet = $project->parquet_cache_variants();
 	#$parquet = "/data-beegfs/tmp/new/NGS2025_09289.variants.parquet";
 	my $dir_parquet = $project->parquet_cache_dir;
 	my $diro = $project->rocks_directory();
 	error("Oops! that's unexpected !!! ") unless -e $parquet;
-	my $sql =qq{select variant_index,gene_name from '$parquet' where  $where ; };
+	
+	my $sql = qq{select variant_index,gene_name from '$parquet' where  $where ; };
 	
 	my $cmd = qq{duckdb -json -c "$sql"};
  	my $t = time;
@@ -914,6 +933,10 @@ sub get_rocksdb_mce_polyviewer_variant {
  	 $t =time;
  	 my $id_by_genes_id;
  	 my %ids ;
+ 
+ 	my $array_ref_2 = get_variants_promoterAI_filtred_update($project, $parquet, $where_nopat);
+	foreach my $a (@$array_ref_2) { push(@$array_ref, $a); }
+	
  	foreach my $a (@$array_ref) {
  		my ($c,$b) = split("!",$a->{variant_index});
  		if ($hash_genes_panel) {
@@ -926,11 +949,38 @@ sub get_rocksdb_mce_polyviewer_variant {
  		$nbv ++;
  	
  	}
- 	warn "end list nb variant ". $nbv." genes : ".scalar(keys  %$id_by_genes_id)  if (not $cgi->param('export_xls'));
+
+ 	warn "end list nb variants: ". $nbv." - nb genes : ".scalar(keys  %$id_by_genes_id)  if (not $cgi->param('export_xls'));
 	return ($rocksdb_pv->indexes,$id_by_genes_id);
 }
 
+sub check_if_columns_exists_in_parquet {
+	my ($parquet, $col_name) = @_;
+	my $sql = qq{SELECT 1 as found FROM parquet_schema('$parquet') WHERE name = '$col_name'};
+ 	my $cmd = qq{duckdb -json -c "$sql"};
+ 	my $res =`$cmd`;
+	my $array_ref  = decode_json $res if $res;
+	return 1 if $array_ref;
+	return;
+}
 
+#TODO: here filter promoterAI
+sub get_variants_promoterAI_filtred_update {
+	my ($project, $parquet, $where_nopat) = @_;
+	my $array_ref_2 = [];
+	my $parquet_promoter = $project->get_promoterAI_filtred_parquet();
+	my $has_predicted;
+	foreach my $a (@annots) { $has_predicted = 1 if $a eq 'predicted_splice_site' or $a eq 'predicted_promoter_ai'; }
+	return $array_ref_2 if not $has_predicted;
+	return $array_ref_2 if not $parquet_promoter; # project HG19 par exemple
+	return $array_ref_2 if check_if_columns_exists_in_parquet($parquet, 'variant_promoterAI'); # project HG19 par exemple
+ 	my $sql2 = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid WHERE $where_nopat };
+ 	my $cmd2 = qq{duckdb -json -c "$sql2"};
+ 	my $res2 =`$cmd2`;
+	$array_ref_2  = decode_json $res2 if $res2;
+ 	warn "end list nb variants promoterAI: ".scalar(@$array_ref_2) if (not $cgi->param('export_xls'));
+	return $array_ref_2;
+}
 
 sub  date_cache_bam {
 	my($project) = @_;

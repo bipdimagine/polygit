@@ -312,6 +312,9 @@ sub calling_variation_xslate {
 		  		$data->{$type."_model"} = "minus" unless $hsample->{model};
 				$data->{$type."_model"}= $self->return_genetic_model($hsample->{model});
 				$data->{$type."_color_model"} = $self->color_genetic_model($hsample->{model},$patient);
+				my $a = [];
+				$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
+				$text_caller .= join("<br>",@{$a});
 		  	}
 		  	
 		  	if ($fam->getFather){
@@ -329,6 +332,9 @@ sub calling_variation_xslate {
 		  		$data->{$type."_model"} = "minus" unless $hsample->{model};
 				$data->{$type."_model"}= $self->return_genetic_model($hsample->{model});
 				$data->{$type."_color_model"}  = $self->color_genetic_model($hsample->{model},$patient);
+				my $a = [];
+				$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
+				$text_caller .= join("<br>",@{$a});
 		  	}
 		  
 		  my $achild =  [];
@@ -367,6 +373,9 @@ sub calling_variation_xslate {
 		  		$hchild->{$type."_dp"} = $hsample->{dp};
 		  		$hchild->{$type."_model"} = "?";
 				$hchild->{$type."_color_model"}  = "#E0E0E0";
+				my $a = [];
+				$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
+				$text_caller .= join("<br>",@{$a});
 				push(@{$data->{child}},$hchild);
 		  }
 		  $data->{text_caller} = $text_caller;
