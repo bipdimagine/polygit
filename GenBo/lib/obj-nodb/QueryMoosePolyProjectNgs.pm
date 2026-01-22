@@ -1346,7 +1346,6 @@ sub getListProjectsRnaSeqFromLoginPwd {
 	foreach my $hpr (@lProj) {
 		$h_found->{$hpr->{id}} = undef;
 	}
-	
 	if (not $is_BIPD_login) {
 		@lProj = ();
 		my $res_group = $self->getProjectHashForGroup($login,$pwd);
@@ -1355,7 +1354,14 @@ sub getListProjectsRnaSeqFromLoginPwd {
 				next unless exists $h_found->{$project_id};
 				$res_group->{$project_id}->{username} = $login;
 				push(@lProj, $res_group->{$project_id}) if  exists $h_found->{$project_id};
+				delete $h_found->{$project_id};
 			}
+		}
+		
+		foreach my $h (@{$self->getProjectListForUser($login, $pwd)}) {
+			$h->{username} = $login;
+			push(@lProj, $h) if  exists $h_found->{$h->{id}};
+			delete $h_found->{$h->{id}};
 		}
 	}
 	return \@lProj;
