@@ -92,7 +92,11 @@ foreach my $thePatient (@listPatients)
 {
 	my $patientname = $thePatient->name;
 	my $htransloc ={};
-	foreach my $caller (@{$thePatient->callingSRMethods}){
+	
+	my @lCallers = @{$thePatient->callingSRMethods};
+	confess("\n\nERROR: no SR calling methods found for $patientname. DIE.\n\n") if scalar(@lCallers) == 0;
+	
+	foreach my $caller (@lCallers){
 		my ($htransloc1) = SVParser::parse_vcf_bnd($thePatient,$caller);
 		$htransloc = merge $htransloc, $htransloc1;
 	
