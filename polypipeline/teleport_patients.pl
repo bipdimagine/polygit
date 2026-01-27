@@ -176,7 +176,7 @@ foreach my $f (@files){
 	my $f2 = $f;
 	$bam ++ if $f2 =~ /\.(bam|cram)$/;
 	$vcf ++ if $f2 =~ /vcf.gz$/;
-	$f2 =~   s/$project_in/$projectName/;
+	$f2 =~   s/$dir1/$dir2/;
 	warn ("file exists $f2") if -e $f2;
 	die ("file exists $f2 $f") if -e $f2;
 	my @dir = split("/",$f2);

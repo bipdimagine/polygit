@@ -832,7 +832,6 @@ function LoadIGVPatient_diag () {
 function collapse_all(names,labels){
     var ps = names.split(";"); 
     var ls = labels.split(";"); 
-	console.dir(ps);
     for (i=0;i<ps.length;i++){
         collapse(ps[i],ls[i]);
     }

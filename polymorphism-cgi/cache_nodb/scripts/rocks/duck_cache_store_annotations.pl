@@ -92,7 +92,6 @@ $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name );
 my $dir_tmp_cvs =  $project->getCallingPipelineDir($project->name.".parquet.".time);
 
-
 ##################
 #construct_sql 
 ##################
@@ -103,7 +102,7 @@ my @pids =  map {$_->id} @{$project->getPatients};
 my %cast;
 
 
-my @column_variant = ("start","end","chromosome","index","vector_id","rocksdb_id","type","gnomad_id","name","hgmd_id","clinvar_id","hgmd_class","clinvar_class","isDM","isClinvarPathogenic","keepPathogenic");
+my @column_variant = ("start","end","chromosome","index","vector_id","rocksdb_id","type","gnomad_id","name","hgmd_id","clinvar_id","hgmd_class","clinvar_class","isDM","promoterAI","isClinvarPathogenic","keepPathogenic");
 my $position_keepPathogenic;
 for (my $i=0;$i<@column_variant;$i++){
 	$position_keepPathogenic = $i if $column_variant[$i] eq "keepPathogenic";
@@ -116,7 +115,7 @@ my @column_frequences_dejavu = ("other_projects","other_patients","other_patient
 my @integer = ("variant_start","variant_end","variant_gnomad_ac","variant_gnomad_an","variant_gnomad_ho","variant_getGnomadAC_Male","variant_other_projects","variant_other_patients","variant_other_patients_ho","variant_similar_projects","variant_similar_patients","variant_similar_patients_ho","variant_in_this_run_patients");
 my @varchar = ("variant_chromosome","variant_index","variant_vector_id","variant_rocksdb_id","variant_type","variant_gnomad_id","variant_name","variant_hgmd_id","variant_clinvar_id","variant_hgmd_class","variant_clinvar_class","variant_gnomad_max_pop_name","variant_gnomad_min_pop_name"); 
 my @boolean = ("variant_isDM","variant_isClinvarPathogenic","variant_keepPathogenic");
-my @float = ("variant_gnomad_min_pop_freq","variant_gnomad_max_pop_freq");
+my @float = ("variant_gnomad_min_pop_freq","variant_gnomad_max_pop_freq","variant_promoterAI");
 
 my @column_variant_names  = map{"variant_".$_} (@column_variant,@column_frequences_gnomad,@column_frequences_dejavu);
 my @column_patient;
@@ -285,6 +284,14 @@ sub compute {
          	$vh->{keepPathogenic} = 1 if $variation->getGnomadHO < 100;
          	
          }
+         
+         $vh->{promoterAI} = -99;
+         my $h_promoterAI = $variation->promoterAI();
+         if ($h_promoterAI) {
+         	my @list_tr = keys %$h_promoterAI;
+         	$vh->{promoterAI} = $h_promoterAI->{$list_tr[0]}->{score};
+         }
+         
          foreach my $k (@column_variant) {
         	die($k) unless exists $vh->{$k};
         	 $vh->{$k} = -1 unless defined $vh->{$k};

@@ -664,7 +664,40 @@ sub delete_lmdb_pipeline_dir {
 	}
 }
 
+has get_promoterAI_parquet_dir => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return if not $self->annotation_genome_version() eq 'HG38';
+		my $dir = $self->buffer->get_index_database_directory('promoterAI').'/../parquet/';
+		return $dir;
+	}
+);
 
+has get_promoterAI_parquet => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return if not $self->annotation_genome_version() eq 'HG38';
+		my $path = $self->get_promoterAI_parquet_dir().'/promoterAI.parquet';
+		return $path if -e $path;
+		return;
+	}
+);
+
+has get_promoterAI_filtred_parquet => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return if not $self->annotation_genome_version() eq 'HG38';
+		my $path = $self->get_promoterAI_parquet_dir().'/promoterAI.only_promoter.parquet';
+		return $path if -e $path;
+		return;
+	}
+);
 
 sub get_lmdb_cache_summary {
 	my ( $self, $mode ) = @_;

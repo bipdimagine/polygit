@@ -258,8 +258,7 @@ dojo.addOnLoad(function() {
                     dijit.byId('waiting').show();
                 }   
 			checkPassword(project_name,okfunction);
-			
-				
+			dijit.byId('dialog_dejavu_var_infos').on("show", function () { this._position(); });
 		});
 	
 var hideorshow =0;	
@@ -1849,8 +1848,10 @@ function show_low(){
 	  <div id="gridDivPatients" style="font-size: 10px;font-family:Verdana;width:700px;height:600px">
  </div> 
 </div>
-	<div id="dialog_dejavu_var_infos" dojoType="dijit.Dialog" title="DejaVu Infos">
+	<div id="dialog_dejavu_var_infos" dojoType="dijit.Dialog" title="DejaVu Infos" style="position: top: 50% !important; left: 50% !important;" >
+		<!--
 		<center><a id="url_dejavu_var" href="polydejavu/dejavu.html" target="_blank"><i><u>Go to PolyDejaVu Interface</i></u></a></center>
+		-->
         <div  id="content_dejavu_var_infos" jsId="content_dejavu_var_infos" data-dojo-type="dijit/layout/ContentPane"></div>	
 	</div>
 

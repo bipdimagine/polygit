@@ -252,6 +252,10 @@ foreach my $patobj (@$listPatients)
 	#or $patobj->name ne "dl-2-E-sg-A";
 	#next unless $patobj->name =~ /short/;
 	next unless $patobj->isGenome;
+	
+	my $patientname = $patobj->name();
+	confess("\n\nERROR: no SV calling methods found for $patientname. DIE.\n\n") if scalar(@$listCallers) == 0;
+	
 	$job_id ++;
 	$hjobs->{$job_id} ++;
 	#my $pid = $pm->start and next;

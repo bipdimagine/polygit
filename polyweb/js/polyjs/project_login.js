@@ -109,6 +109,11 @@ function view_rna_junctions(prj) {
 	window.open("rna/rna_junctions.html?project="+prj, '_blank');
 }
 
+function view_old_rna_junctions(prj) {
+	var url = 'https://'+window.location.hostname + "/polyweb/rna/rna_junctions.html?project="+prj;
+	window.open(url, '_blank');
+}
+
 function view_rna_shiny(prj) {
 	dijit.byId('waiting').show();
 	var url = url_path + "/polyrnaseq/launch_shiny_polyrna.pl";
@@ -162,7 +167,13 @@ function formaterButtonRNA(this_value) {
 		var style =" style='margin-top: 3px ;opacity: 0.25;' ";
 		// 1 for junctions analyse
 		if (list[0] == 1) {
-			tt = " onClick=view_rna_junctions('" + list[1]+"') ";
+		
+			if (list[2] == 'rocks') {
+				tt = " onClick=view_rna_junctions('" + list[1]+"') ";
+			}
+			else {
+				tt = " onClick=view_old_rna_junctions('" + list[1]+"') ";
+			}
 			style =" style='margin-top: 3px ' ";
 			dd = ""
 			if (list[1] == 'disabled') {

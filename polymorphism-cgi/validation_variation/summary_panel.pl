@@ -1725,7 +1725,7 @@ sub statistics_projects {
 				my $data = $no->get( $project2->name, "$v" );
 				next unless $data;
 				$nbpp++;
-				warn "**** ".$v;
+#				warn "**** ".$v;
 				foreach my $p_value ( @{ $data->{data} } ) {
 					$nb++;
 
@@ -1840,6 +1840,7 @@ sub table_quality {
 		{
 			next unless $lstats->{$v}->{ $run->id };
 			my $value = $patient_value->{ $p->id }->{$v};
+
 			$value = 0 unless $value;
 			my $mean =  0;
 			$mean = int( $gstats->{$v}->mean ) if $gstats->{$v};
@@ -2110,7 +2111,9 @@ qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2p
 		my $iv      = "";
 		my $iverror = 0;
 #		warn "id";
-		( $iv, $iverror ) = (0,0);#construct_identito_vigilence($p) if $p->identity_vigilance;
+		
+		( $iv, $iverror ) = (0,0);
+		if ($p->identity_vigilance()) { ( $iv, $iverror ) = construct_identito_vigilence($p); }
 #		warn "end";
 		if ( $iverror == 2 ) {
 			$c1 = "danger";
