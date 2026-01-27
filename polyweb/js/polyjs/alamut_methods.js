@@ -9,12 +9,21 @@ function httpGetFocusOn(url) {
 
 
 function displayInAlamut(chr, start, a){
-	alert("coucou");
 	chr = chr.replace('-', '');
 	var locus;
-	if (a[0] == '-') { locus = chr+":"+start; }
-	else if (a[1] == '-') { locus = chr+":"+start; }
+	if (a[0] == '-') {
+		start = start - 1;
+		var end = start + String(a[1].length); 
+		locus = chr + ":" + start + '_' + end + 'ins' + a[1];
+	}
+	else if (a[1] == '-') { locus = chr + ":" + start + 'del'; }
+	else if (a[0] == a[1]) {
+		var end = start + String(a[1]).length;
+		end = end -1
+		locus = chr + ":" + start + '_' + end + 'del';
+	}
 	else { locus = chr+":"+start+a[0]+">"+a[1]; }
+	console.log('alamut_id:'+locus);
 	var list_cmds = [];
 	list_cmds.push("http://localhost:10000/search?request="+locus);
 	launch_alamut_visual_plus_cmds(list_cmds);

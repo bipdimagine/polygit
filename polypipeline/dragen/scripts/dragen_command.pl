@@ -393,7 +393,7 @@ if (exists $pipeline->{sv}){
 
 my $param_str = "";
 if (exists $pipeline->{str}){
-	$param_str = qq{ --repeat-genotype-enable true };
+#	$param_str = qq{ --repeat-genotype-enable true };
 
 }
 $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
