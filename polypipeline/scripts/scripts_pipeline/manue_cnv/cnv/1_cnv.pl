@@ -445,7 +445,7 @@ sub getScoreCallers {
 				$icnv->{score_caller_coverage} =  $icnv->{score_caller_depth} = $icnv->{score_caller_sr} = 0;
 				if (test_type($icnv->{caller_type_flag},"caller_coverage")) {
 					$icnv->{score_callers}->{nb} ++;
-					$icnv->{score_caller_coverage} = 0.75;
+					$icnv->{score_caller_coverage} = 2;
 					$icnv->{score_caller_coverage} += 0.25 if abs($icnv->{coverage_zscore}) > 40;
 				}
 				if (test_type($icnv->{caller_type_flag},"caller_depth")){
@@ -455,10 +455,11 @@ sub getScoreCallers {
 				}
 				if (test_type($icnv->{caller_type_flag},"caller_sr")){
 					$icnv->{score_callers}->{nb} ++;
-					$icnv->{score_caller_sr} = 0.50;
+					$icnv->{score_caller_sr} = 1;
 					my $limit = 400;
 					if ($icnv->{callers} & $cnv_callers->{pbsv}){
 						$limit = 100;
+						
 					}
 					elsif ($icnv->{callers} & $cnv_callers->{Sniffles2}){
 						$limit = 100;
@@ -470,8 +471,8 @@ sub getScoreCallers {
 						$limit = 400;
 						
 					}
-					$icnv->{score_caller_sr} = 0.25 if $icnv->{sr2} > 10;
-					$icnv->{score_caller_sr} = 0.25 if $icnv->{pr2} > 7;
+					$icnv->{score_caller_sr} += 0.25 if $icnv->{sr2} > 10;
+					$icnv->{score_caller_sr} += 0.25 if $icnv->{pr2} > 7;
 					$icnv->{score_caller_sr} += 0.25 if abs($icnv->{sr_qual}) > $limit;
 				}
 }
@@ -542,16 +543,19 @@ sub save_csv {
 	close($fh);
 	warn $filename;
 	my $txt_filename =  "\'".$filename."\'";
-	my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+	#my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 	my $parquet_file = $project->buffer->config_path("dejavu","cnv").$project->name.".".$project->id.".parquet";
+	
 	my $query = "
 	COPY (
         SELECT * from read_csv_auto([$txt_filename]) order by type,chr38,end38,chr19,end19
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);";
     warn $query;
-	$dbh->do($query);
-	$dbh->disconnect;
+ 	 system("duckdb :memory: -c \"$query \"");
+		warn "duckdb :memory: -c \" $query \" ";
+	#$dbh->do($query);
+	#$dbh->disconnect;
 	
 	
 }

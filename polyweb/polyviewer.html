@@ -1010,9 +1010,36 @@ function send_print(p,mode){
 
 var view_polydiag =0;
 
+function setupAutoClearInputs() {
+    const inputs = document.querySelectorAll('#vratio, #valt, #vref');
+    
+    inputs.forEach(input => {
+        // Quand on focus sur l'input
+        input.addEventListener('focus', function() {
+            if (this.value === '-') {
+                this.value = '';
+            }
+        });
+        
+        // Quand on commence à taper
+        input.addEventListener('input', function() {
+            // Si l'utilisateur tape quelque chose qui contient encore le "-" au début
+            if (this.value.startsWith('-') && this.value.length > 1) {
+                this.value = this.value.substring(1);
+            }
+        });
+        
+        // Si on quitte l'input vide, remettre le "-"
+        input.addEventListener('blur', function() {
+            if (this.value.trim() === '') {
+                this.value = '-';
+            }
+        });
+    });
+}
 
 
-		  </script>
+  </script>
 	</head>
 	
     <body class="claro" style ="font-size : 90%;">

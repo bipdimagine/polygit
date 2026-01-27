@@ -182,9 +182,9 @@ if ($rna){
 if($genome ==1){
 	#$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","str"];
 	$steps = ["align","gvcf","sv","cnv","vcf"];
-	$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5,"str"=>6};
+	$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
 	#$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"str"=>7};
-	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"str"=>7};
+	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4};
 
 	
 }
@@ -237,7 +237,6 @@ if($step_name) {
 ####### Alignement
  my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
-warn Dumper $ppd;
 	my $index = firstidx { $_ eq "calling_target" } @$steps;
 	if ($index >= 0){
 		splice(@$steps,$index,1);
@@ -333,7 +332,7 @@ my $job = 0;
 		exit(0);
 	}
 	my $key = prompt("y","Running this steps (y/n) ? ");
-	die() if ($key ne "y"); 
+	die($key) if ($key ne "y"); 
 	
 	#}
 }
@@ -382,7 +381,9 @@ foreach my $project (@$projects){
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatientsAndControl}){
 		if ($cram){
+			warn Dumper @{$patient->alignmentMethods};
 			my ($m) = grep{$_ eq "bwa" or $_ eq "dragen-align" } @{$patient->alignmentMethods};
+			warn $m;
 			next unless $m;
 		}
 		$status_jobs->{$patient->name."_".$project->name}->{progress} ="waiting" ;
@@ -400,7 +401,7 @@ foreach my $project (@$projects){
 		$h->{rna} = 1 if $rna;
 		
 		my $tsteps = $steps;
-	#	$tsteps = $steps_rna if $h->{rna} ==1;
+	#	$tsteps = $steps_rna if $h->{rna} == 1;
 		my @jobs = grep{exists $hpipeline_dragen_steps->{$_}} @$tsteps;
 		$h->{dragen_jobs} = \@jobs;
 
@@ -575,8 +576,9 @@ sub purge_files {
 	print "\n";
 	print "\n";
 	#unless ($self->yes){
-	print "delete or backup all these files   (y/n) ? ";
-	my $key = key();
+	#print "delete or backup all these files   (y/n) ? ";
+	#my $key = key();
+	my $key = prompt('y',"delete or backup all these files   (y/n) ? ");
 	print "\n";
 	die() if ($key ne "y"); 
 	foreach  my $hp (@$patients_jobs) {

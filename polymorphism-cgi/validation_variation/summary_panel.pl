@@ -1840,7 +1840,6 @@ sub table_quality {
 		{
 			next unless $lstats->{$v}->{ $run->id };
 			my $value = $patient_value->{ $p->id }->{$v};
-			warn Dumper $patient_value->{ $p->id };
 			$value = 0 unless $value;
 			my $mean =  0;
 			$mean = int( $gstats->{$v}->mean ) if $gstats->{$v};

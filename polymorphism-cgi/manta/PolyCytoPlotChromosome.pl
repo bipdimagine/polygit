@@ -238,19 +238,21 @@ if($trio)
 
 	# boucle sur les variants 
 	while(my $v = $project->nextVariant){
-		$x++;		
+		$x++;	
+		next if $x%3 == 0;	
 		my $p1 = $v->getPourcentAllele($mother);
 		my $p2 = $v->getPourcentAllele($father);
 		my $value = $v->getPourcentAllele($patient);
-		next if $value eq "-";
+	#	warn $p1." ".$p2." ".$value;
+		next if $value == 0;
 		
-		if ($p1 ne "-"){
+		if ($p1 > 0){
 			my $res = $v->start.",".$value.",null";
 			push(@array,$res);
 		}
 		$p1= "" if $p1 eq "-";
 
-		if ($p2 ne "-"){
+		if ($p2 >0 ){
 			my $res = $v->start.",null,".$value;
 			push(@array,$res);
 		}
@@ -271,7 +273,7 @@ if($trio)
 		$lfather .= $f." ";
 		
 	}
-
+	#warn $lmother;
 	$hres->{'POSball'} = $lpos;
 	$hres->{'MOTHERball'} = $lmother;
 	$hres->{'FATHERball'} = $lfather;

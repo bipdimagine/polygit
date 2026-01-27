@@ -252,7 +252,7 @@ sub compute {
         $vh->{end}           = $variation->end;
       	$vh->{chromosome}           = $chr->ucsc_name;	
       	$vh->{index} = $chr->name."!".$i;
-      	my $index = $chr->name."!".$i;;
+      	my $index = $chr->name."!".$i;
       	$vh->{vector_id} = $i;
         $vh->{rocksdb_id}  = $variation->genomic_rocksdb_id;
          
