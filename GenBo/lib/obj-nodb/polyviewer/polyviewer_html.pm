@@ -908,9 +908,11 @@ sub alamuturl {
 	#my $icon = qq{<img width="12" height="12" src="https://img.icons8.com/softteal-gradient/24/biotech.png" alt="biotech"/>};
 	my $icon = qq{<img width="12" height="12" src="/polyweb/images/polyicons/alamut_visual.png" alt="biotech"/>};
 	$icon = qq{<button class="alamutView3" ></button> };
-	
-	#my $text = qq{<a  type="button" class="btn btn-light btn-xs"   onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1'])" style="background-color=white">}.$icon .qq{Alamut&nbsp&nbsp&nbsp&nbsp&nbsp</a>};
-		my $text =qq{ <a class="dropdown-item"  onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1'])" style="color:black">&nbsp$icon &nbsp Alamut</a>};
+	my $build = 'GRCh38';
+	if ($self->project->genome_version_generic eq "HG19"){
+		$build = 'GRCh37';
+	}
+	my $text =qq{ <a class="dropdown-item"  onClick ="displayInAlamut('$chr_name($build)',$start,['$a0','$a1'])" style="color:black">&nbsp$icon &nbsp Alamut</a>};
 	return $text;
 #	die();
 }
@@ -951,8 +953,12 @@ sub alamut {
 	my $a0 = $self->variant->ref_allele;
 	my $a1 = $self->variant->allele;
 	$a1 = "*" unless $a1;
+	my $build = 'GRCh38';
+	if ($self->project->genome_version_generic eq "HG19"){
+		$build = 'GRCh37';
+	}
 	my $chr_name = $self->variant->chromosome;
-	my $qq5 = qq{	<button    class="alamutView3" onClick ="displayInAlamut('$chr_name',$start,['$a0','$a1']);"></button>};
+	my $qq5 = qq{	<button    class="alamutView3" onClick ="displayInAlamut('$build:$chr_name',$start,['$a0','$a1']);"></button>};
 	return $qq5;
 #	die();
 }
