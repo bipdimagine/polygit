@@ -139,12 +139,6 @@ else {
 }
 #die() unless  -e $bam_pipeline;
 
-#warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
-#my $cmd_check_mapping = "$Bin/dragen_check_mapping_metrics.pl -project=$projectName -patient=$patients_name ";
-#$cmd_check_mapping .= "-version=$version " if ($version);
-#my $exit = system($cmd_check_mapping.">>$log_pipeline 2>>$log_error_pipeline && touch $ok_check_mapping_metrics");
-#confess("Error check mapping metrics") if $exit;
-
 if ($rna == 1) {
 	$spipeline.=",sj";
 }
@@ -152,11 +146,6 @@ if ($rna == 1) {
 warn "move";
 warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
 system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move");
-
-#my $cmd_check_sex = "$Bin/dragen_check_sex.pl -project=$projectName -patient=$patients_name ";
-#$cmd_check_sex .= "-version=$version " if ($version);
-#$exit = system($cmd_check_sex.">>$log_pipeline 2>>$log_error_pipeline && touch $ok_check_sex");
-#confess("Error check sex") if $exit;
 
 exit(0);
 

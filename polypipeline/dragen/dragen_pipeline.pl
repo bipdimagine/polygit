@@ -99,7 +99,7 @@ GetOptions(
 	"neb=s" => \$neb,
 	"padding=s" => \$pad,
 	#'low_calling=s' => \$low_calling,
-);
+) or confess ("Error in command line arguments");
 
 
 
@@ -154,7 +154,7 @@ my $jobs =[];
 #my $steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","calling_target"];
 my $steps = ["align","gvcf","sv","cnv","vcf"];
 my $hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
-#my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
+#my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>7};
 my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4};
 
 #create_list_steps;
@@ -184,7 +184,7 @@ if($genome ==1){
 	$steps = ["align","gvcf","sv","cnv","vcf"];
 	$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5,"str"=>6};
 	#$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"str"=>7};
-	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"str"=>7};
+	$hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"str"=>5};
 
 	
 }
@@ -229,7 +229,7 @@ if($step_name) {
 	my @tt = sort {$hsteps->{$a} <=> $hsteps->{$b}} keys %$hsteps;
 	$steps = \@tt;
 	
-	confess() unless @$steps
+	confess("No valid step") unless @$steps
 }
 
 
@@ -237,7 +237,7 @@ if($step_name) {
 ####### Alignement
  my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
-warn Dumper $ppd;
+#warn Dumper $ppd;
 	my $index = firstidx { $_ eq "calling_target" } @$steps;
 	if ($index >= 0){
 		splice(@$steps,$index,1);
@@ -282,6 +282,10 @@ steps_cluster("LMDBDepth+Melt ",$jobs_cluster) if @$jobs_cluster;
 #run_genotype($projects);
 #run_dude($projects) if $dude;
 end_report($projects,$ppd);
+
+if (exists $hsteps->{align}) {
+	report_check_mapping_sex($projects,$ppd);
+}
 
 exit(0);
 
@@ -464,7 +468,7 @@ foreach my $project (@$projects){
 		#####  
 		#####  SV
 		#####  
-		my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>6};
+#		my $hsteps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"lmdb"=>5,"melt"=>6,"calling_target"=>7};
 		if (exists $hsteps->{sv}){
 		my $dir_prod2 = $project->getVariationsDir("dragen-sv");
 	 	$h->{prod}->{sv}  =  $dir_prod2."/".$patient->name.".sv.vcf.gz";
@@ -491,6 +495,8 @@ foreach my $project (@$projects){
 		$h->{prod}->{featurecount} = $dir_out."/".$project_name.".count.genes.txt";		 	
 	 	$h->{exists_file}->{featurecount} = 1 if -e $h->{prod}->{melt};
 		}
+		
+		
 	 	if ($project->isDiagnostic) {
 	 	foreach my $m (@{$patient->getCallingMethods()}){
         	next if $m eq "seqnext";
@@ -642,8 +648,8 @@ sub run_command {
 #	else {
 	#$lims->{$pname}->{$t} = "PLANNED"; 
 	$pad.="";
-	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}})." -padding=".$pad;
-	
+	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});
+	$job->{cmd} .= " -padding=$pad" if $pad;
 	$job->{cmd} .= " -umi=1 " if $umi;
 	$job->{cmd} .= " -rna=1 " if $rna;
 	$job->{cmd} .= " -version=$version " if $version;
@@ -811,7 +817,7 @@ foreach my $hp (@$patients_jobs) {
 	my $fileout = $hp->{prod}->{melt};
 	$lims->{$nname}->{melt} = "SKIP" if -e $fileout; 
 	next if -e $fileout;
-	my $cmd1 = "perl $script_pipeline//melt/melt.pl -project=$project_name  -patient=$name -fork=$ppn ";
+	my $cmd1 = "perl $script_pipeline/melt/melt.pl -project=$project_name  -patient=$name -fork=$ppn ";
 	$cmd1 .= qq{ -version=$version  } if $version;
 	$job->{name} = $name.".melt";
 	$job->{cmd} =$cmd1;
@@ -1334,7 +1340,7 @@ sub end_report {
 	foreach my $project (@$projects){
 		my @rows = ();
 		my $tb = Text::Table->new( (colored::stabilo("blue", $project->name , 1),  @all_list) ) ; # if ($type == 1);
-		foreach my $hp ( grep{$_->{project} eq $project->name} @$patients_jobs) {
+		foreach my $hp ( sort {$a->{name} cmp $b->{name}} grep{$_->{project} eq $project->name} @$patients_jobs) {
 		
 			my @row;
 			my $pname = $hp->{name}."_".$hp->{project};
@@ -1372,6 +1378,34 @@ sub end_report {
 	}
 	}
 		
+}
+
+sub report_check_mapping_sex {
+	my ($projects,$patients_jobs) = @_;
+	foreach my $project (@$projects){
+		my @rows = ();
+		my $tb = Text::Table->new( $project->name,'Mapping','Sex' ) ; # if ($type == 1);
+		foreach my $hp ( sort {$a->{name} cmp $b->{name}} grep{$_->{project} eq $project->name} @$patients_jobs) {
+			my $project_name = $hp->{project};
+			my $patient_name = $hp->{name};
+			my @row = ($patient_name);
+			my $cmd_check_mapping = "$Bin/scripts/dragen_check_mapping_metrics.pl -project=$project_name -patient=$patient_name ";
+			$cmd_check_mapping .= "-version=$version " if ($version);
+			my $exit_mapping = system($cmd_check_mapping);
+			push(@row,colored::print_color('red','error',1)) if ($exit_mapping);
+			push(@row,colored::print_color('green','ok',1)) unless ($exit_mapping);
+			
+			my $cmd_check_sex = "$Bin/scripts/dragen_check_sex.pl -project=$project_name -patient=$patient_name ";
+			$cmd_check_sex .= "-version=$version " if ($version);
+			my $exit_sex = system($cmd_check_sex);
+			push(@row,colored::print_color('red','error',1)) if ($exit_sex);
+			push(@row,colored::print_color('green','ok',1)) unless ($exit_sex);
+			push(@rows,\@row);
+		}
+		$tb->load(@rows);
+		print "\n";
+		print $tb;
+	}
 }
 
 sub yesorno {
