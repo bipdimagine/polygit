@@ -17,6 +17,11 @@ function displayInAlamut(chr, start, a){
 		locus = chr + ":" + start + '_' + end + 'ins' + a[1];
 	}
 	else if (a[1] == '-') { locus = chr + ":" + start + 'del'; }
+	else if (a[0] == a[1]) {
+		var end = start + String(a[1]).length;
+		end = end -1
+		locus = chr + ":" + start + '_' + end + 'del';
+	}
 	else { locus = chr+":"+start+a[0]+">"+a[1]; }
 	console.log('alamut_id:'+locus);
 	var list_cmds = [];
