@@ -65,6 +65,20 @@ if ($patient->isChild){
 	
 }
 
+my $hintpsan = {};
+warn $listOfGenes;
+if ($listOfGenes ne "all"){
+	foreach my $chr (@{$project->getChromosomes}){
+		$hintpsan->{$chr->name} = Set::IntSpan::Fast::XS->new();
+	}
+	Set::IntSpan::Fast::XS->new();
+	foreach my $gname (split(",",$listOfGenes)){
+		my $g = $project->newGene($gname);
+		my $chr = $g->getChromosome();
+		$hintpsan->{$chr->name}->add_range($g->start,$g->end);
+		
+	}
+}
 
 #my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 my $parquet_file = $project->getCacheSV()."/".$project->name.".".$project->id.".parquet";
@@ -106,6 +120,26 @@ $dejavu =20;
 	 if ($sv->{type} eq "INV") {
 	 	$name = "inv(".$sv->{chrom1}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";
 	 	$hash->{"LENGTH"}=  $sv->{type}.";".abs($sv->{pos1}  -$sv->{pos2});
+	 	 if (exists $hintpsan->{$sv->{chrom1}}){
+	 	 	next if  $hintpsan->{$sv->{chrom1}}->is_empty;
+	 		my $intspan = Set::IntSpan::Fast::XS->new($sv->{pos1}."-".$sv->{pos2});
+	 		my $ai = $hintpsan->{$sv->{chrom1}}->intersection($intspan);
+	 		next if $ai->is_empty;
+		 }
+
+	 }
+	 else {
+	 	
+	 	my @chr1 = ($sv->{chrom1},$sv->{chrom2});
+	 	my @pos = ($sv->{pos1},$sv->{pos2});
+	 	my $found;
+	 	for (my $i=0;$i< @chr1;$i++ ){
+	 		next unless exists  $hintpsan->{$chr1[$i]};
+	 		my $intspan = Set::IntSpan::Fast::XS->new(($pos[$i]-2000)."-".($pos[$i]+2000));
+	 		my $ai = $hintpsan->{$chr1[$i]}->intersection($intspan);
+	 		$found ++ unless  $ai->is_empty;
+	 	}
+	 	next unless $found;
 	 }
 		#$name = "INV(".$sv->{chrom1}."[".$sv->{pos1}."-".$sv->{pos2}."])" if ($sv->{type} eq "INV");
 	 

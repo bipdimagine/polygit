@@ -238,11 +238,12 @@ function formaterScoreDude(value)
 function formaterDUPSEG(value)
 {
 	var color;
-	value = value +0;
-	if (value == "-")
+	
+	if (value === "-")
 	{
 			return "-";
 	}
+	value = value +0;
 	var val = parseInt(value);
 	
 	if (val == 0 ){
@@ -473,6 +474,10 @@ function string_length(value) {
 
 function formaterLocus(value)
 {
+	if (value === "-")
+		{
+			return "-"
+		}	
 	let obj = JSON.parse(value);
 
 	var color = return_color_by_type(obj.type); 
@@ -686,6 +691,10 @@ function formater_infoPATIENTIGV(value)
 
 function formaterInfoCallerCoverage(value) {
 	var color= "#8D71B4";
+	
+	if (value == null){
+		value ="-";
+	}
 	if (value === "-")
 	{
 	var out = '<div style ="opacity:0.2"> wisecondor';
@@ -733,6 +742,9 @@ function formaterInfoCallerCoverage(value) {
 }
 
 function formaterInfoCallerSr(value) {
+	if (value == null){
+		value ="-";
+	}
 	if (value === "-")
 	{
 		var out = "manta";
@@ -785,7 +797,9 @@ var th_style = 'style="padding:1px;border: none;text-align: center;"';
 	
 }
 function formaterInfoCallerDepth(value) {
-	
+	if (value == null){
+		value ="-";
+	}
 	
 	if (value === "-")
 	{
@@ -1363,11 +1377,14 @@ function formaterCHROM_BND2(value)
 }
 
 function formaterGENES_SV(value) {
-	
+	if (value == "-"){
+		return "-";
+	}
 	let obj = JSON.parse(value);
+	console.log(value);
 	if  (obj.genes.length == 0) {return "-";}
 	//unless  (obj.genes) {return "-";}
-		
+	alert(obj.genes.length);	
 	var tid = obj.table_id;
 	var hcolor = "#E8FFF8";
 var th_style = 'style="padding:1px;border: none;text-align: center;"';
@@ -2235,7 +2252,9 @@ function show_lines (value){
 function formaterDejavuSVeq(value)
 {
 	//console.log(value);
-	
+	if (value == "-"){
+		return "-";
+		}
 	let obj = JSON.parse(value);
 	var dejavu_seuil;
 

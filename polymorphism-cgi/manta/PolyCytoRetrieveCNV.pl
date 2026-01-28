@@ -87,6 +87,7 @@ my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"cnv");
 
 #my $patient = $project->getPatients()->[0];
 my $patient = $project->getPatient($patientname);
+
 my $patient_id = $patient->id;
 my $colpatient = "p".$patient->id;
 my $query = qq{CREATE TABLE cnvs  AS
@@ -122,15 +123,30 @@ my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
 my $array_ref = [];
 $array_ref  = decode_json $res if $res;
-
-my $sql = qq{};			
+my $hintpsan = {};
+if ($listOfGenes ne "all"){
+	foreach my $chr (@{$project->getChromosomes}){
+		$hintpsan->{$chr->name} = Set::IntSpan::Fast::XS->new();
+	}
+	Set::IntSpan::Fast::XS->new();
+	foreach my $gname (split(",",$listOfGenes)){
+		my $g = $project->newGene($gname);
+		my $chr = $g->getChromosome();
+		$hintpsan->{$chr->name}->add_range($g->start,$g->end);
+		
+	}
+}
 
 #my $sth = $dbh->prepare($sql);
 #$sth->execute();
 my $nb = 0;
 	foreach my $row (@$array_ref) {
 	 my $cnv = $rocks->get($row->{id});
-
+	 if (exists $hintpsan->{$cnv->{chromosome}}){
+	 	my $intspan = Set::IntSpan::Fast::XS->new($cnv->{start}."-".$cnv->{end});
+	 	my $ai = $hintpsan->{$cnv->{chromosome}}->intersection($intspan);
+	 	next if $ai->is_empty;
+	 }
 		my $global_id = $cnv->{id};
 		# pour les colonnes de l'interface
 		
@@ -221,7 +237,6 @@ my $nb = 0;
 		#$hGroupedCNV->{$global_id}->{'SCORECALLER'} += 100 if  test_type($cnv,"depth")  or ;
 		
 		$hGroupedCNV->{$global_id}->{'SCORECALLER'} += $cnv->{score_caller};
-		warn  $cnv->{score_caller};
 		$hGroupedCNV->{$global_id}->{'SCORECNV'} = 1;#$cnv->{score_caller};
 		$hGroupedCNV->{$global_id}->{'GT'}=" ";
 		
