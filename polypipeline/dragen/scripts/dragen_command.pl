@@ -383,16 +383,9 @@ if (exists $pipeline->{sv}){
 }
 
 my $param_str = "";
-<<<<<<< HEAD
 #if (exists $pipeline->{str}){
 #	$param_str = qq{ --repeat-genotype-enable true };
 #}
-=======
-if (exists $pipeline->{str}){
-#	$param_str = qq{ --repeat-genotype-enable true };
-
-}
->>>>>>> branch 'duckdb' of https://github.com/bipdimagine/polygit.git
 $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 

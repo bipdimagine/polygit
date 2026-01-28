@@ -110,6 +110,7 @@ foreach my $project_name (split(",",$project_names)){
 	my @profiles = map {$_->getSampleProfile} @{$project->getPatients};
 	$neb = 1 if (grep{/neb/i} @profiles);
 	if ($neb) {
+		undef $adaptors;
 		my $illuminaAdaptors = Bio::SeqIO->new(-file => $project->getIlluminaAdaptors, '-format' => 'Fasta');
 		my $tsoAdaptors = Bio::SeqIO->new(-file => $project->getTsoAdaptors, '-format' => 'Fasta');
 		foreach my $fasta ($illuminaAdaptors,$tsoAdaptors) {
@@ -140,7 +141,7 @@ foreach my $project_name (split(",",$project_names)){
 	my $csv_tmp = $bcl_dir."/RunManifest.tmp.csv";
 	my $sp = $run->sample_sheet;
 	if (not $sp and -e $bcl_dir."/RunManifest.csv") {
-		my $prompt = prompt("No RunManifest in database. Use '$bcl_dir/RunManifest.csv' instead ? (y/n) ", -yes_no, -1);
+		my $prompt = prompt("No RunManifest in database. Use '$bcl_dir/RunManifest.csv' instead ? (y/n) ", -yes_no);
 		$aoa = csv (in => $bcl_dir."/RunManifest.csv" ) if ($prompt);
 		next
 	}
@@ -300,7 +301,7 @@ if ($umi_mask){
 warn 'Mask:'.Dumper $mask;
 
 
-unless ( prompt( "Use - " . colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask)) . " - for demultipexing  (y/n) ? ", -yes_no, -1) ) {
+unless ( prompt( "Use - " . colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask)) . " - for demultipexing  (y/n) ? ", -yes_no) ) {
 	undef $mask;
 	my $new_mask = uc(prompt("Enter your mask: "));
 	$new_mask =~ s/ //;
@@ -372,13 +373,13 @@ if (keys %patients) {
 	print colored(['bright_red on_black']," Samples OK in project(s) NOT in RunManifest:".scalar(keys %patients))."\n";
 	map {print $_."\t".$patients{$_}."\n"} keys %patients;
 	print "nb error: ".scalar (keys %patients)."\n";
-	die() unless (prompt("continue anyway ? (y/n)  ", -yes_no, -1));
+	die() unless (prompt("continue anyway ? (y/n)  ", -yes_no));
 }
 if (keys %$error_not_in_project) {
 	print colored(['bright_yellow on_black']," Samples in RunManifest NOT in project: ".scalar(keys %$error_not_in_project) )."\n";
 	map {print $_."\n"} keys %$error_not_in_project;
 	print " nb error: ".scalar (keys %$error_not_in_project)."\n";
-	die() unless (prompt("continue anyway ? (y/n)  ", -yes_no, -1));
+	die() unless (prompt("continue anyway ? (y/n)  ", -yes_no));
 		
 }
 
@@ -412,23 +413,23 @@ while($checkComplete == 1){
 }
 
 # Copy bcl
-my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
-warn $cmd_rsync;
-my $exit_rsync = system($cmd_rsync);
-die("Rsync error, please retry") if ($exit_rsync);
-my $ss1 = $bcl_tmp.$runm_name;
+#my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
+#warn $cmd_rsync;
+#my $exit_rsync = system($cmd_rsync);
+#die("Rsync error, please retry") if ($exit_rsync);
+#my $ss1 = $bcl_tmp.$runm_name;
 
 # Demultiplex command
-my $cmd = "singularity run -B $dir_tmp /software/distrib/BASE2FASTQ/bases2fastq.2.2.sif bases2fastq ";
+my $cmd = "singularity run -B $bcl_dir -B $dir_tmp /software/distrib/BASE2FASTQ/bases2fastq.2.2.sif bases2fastq ";
 $cmd .= "--error-on-missing ";
 #$cmd .= "--r2-cycles 58 " if (getpwuid($<) eq 'mperin'); # si le run n'est pas fini
 #$cmd .= "--settings 'I1MismatchThreshold,$mismatch' --settings 'I2MismatchThreshold,$mismatch' ";
 #$cmd .= "--settings 'I1Mask,".$mask->{'I1'}."' --settings 'I2Mask,".$mask->{'I2'}."' ";
 #$cmd .= "--settings 'R1FastQMask,".$mask->{'R1'}."' --settings 'R2FastQMask,".$mask->{'R2'}."' ";
 #$cmd .= "--settings 'UmiMask,".$mask->{'Umi'}."' ";
-$cmd .= "--run-manifest $ss1 --num-unassigned 500 --num-threads 40 ";
+$cmd .= "--run-manifest $ss --num-unassigned 500 --num-threads 40 "; # $ss1
 $cmd .= "--group-fastq --no-projects ";
-$cmd .= "$bcl_tmp $dir_out";
+$cmd .= "$bcl_dir $dir_out"; # bcl_tmp
 
 # Demux only
 unless ($no_demux_only) {
@@ -439,7 +440,7 @@ unless ($no_demux_only) {
 	$cmd_demux_only =~ s/$dir_out/$out_demux_only/;
 	warn $cmd_demux_only;
 	my $exit = system('time '.$cmd_demux_only);
-	confess ("Error while demux only: $cmd_demux_only") if ($exit);
+	confess ("Error while demux only") if ($exit);
 	
 	# Open demutiplex stats
 	opendir(my $dh, $out_demux_only) || die ("Can't opendir '$out_demux_only': $!");
@@ -450,7 +451,7 @@ unless ($no_demux_only) {
 	close ($dh);
 	system("firefox $demux_qc_html &") unless (getpwuid($<) eq 'shanein');
 	system("google-chrome $demux_qc_html &") if (getpwuid($<) eq 'shanein');
-	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -1, -w=>'q'));
+	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -w=>'q'));
 	print "\n";
 }
 
@@ -477,7 +478,7 @@ foreach my $project_name (sort split(",",$project_names)){
 		$run = $runs->[0];
 	}
 	my $out_fastq = $run->fastq_dir();
-	make_path($out_fastq, {mode => 774}) unless (-d $out_fastq);
+	make_path($out_fastq, {mode => 0774}) unless (-d $out_fastq);
 	
 	foreach my $p (@{$project->getPatients}){
 		my $pid = $pm->start and next;
@@ -503,8 +504,10 @@ $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name.".".$pr.'/';
-make_path($dir_stats,{mode=>777}) unless (-d $dir_stats);
+make_path($dir_stats,{mode=>0777}) unless (-d $dir_stats);
 system("rsync -a $dir_out $dir_stats ; chmod -R a+rwx $dir_stats");
+warn("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
+system("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
 
 report($dir_stats."/IndexAssignment.csv");
 
@@ -558,16 +561,16 @@ sub report {
 		push(@row,colored::stabilo("blue",$l,1));
 		
 		if ($byline->{$l} < 100){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.$byline->{$l}->{'percent'}.'%)',1)) ;
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
 		}
 		elsif (abs( $byline->{$l} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.$byline->{$l}->{'percent'}.'%)',1)) ;
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
 		}
 		elsif (abs($byline->{$l} - $mean) > $sd){
-			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'}.' ('.$byline->{$l}->{'percent'}.'%)',1)) ;
+			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$byline->{$l}->{'count'}.' ('.$byline->{$l}->{'percent'}.'%)',1)) ;
+			push(@row,colored::stabilo("green",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
 		}
 		push(@rows,\@row);
 	}
@@ -582,16 +585,16 @@ sub report {
 		my @row;
 		push(@row,colored::stabilo("blue",$p,1));
 		if ($bypatient->{$p} < 1000000){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'}.' ('.$bypatient->{$p}->{'percent'}.'%)',1)) ;
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
 		}
 		elsif (abs( $bypatient->{$p} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1)) ;
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
 		}
 		elsif (abs( $bypatient->{$p} - $mean ) > $sd){
-			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'},1)) ;
+			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'}.' ('.$bypatient->{$p}->{'percent'}.'%)',1)) ;
+			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
 		}
 		push(@rows,\@row);
 	}
