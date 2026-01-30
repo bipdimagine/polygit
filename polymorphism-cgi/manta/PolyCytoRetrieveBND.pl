@@ -66,7 +66,6 @@ if ($patient->isChild){
 }
 
 my $hintpsan = {};
-warn $listOfGenes;
 if ($listOfGenes ne "all"){
 	foreach my $chr (@{$project->getChromosomes}){
 		$hintpsan->{$chr->name} = Set::IntSpan::Fast::XS->new();
@@ -98,6 +97,7 @@ my $query = qq{CREATE TABLE SV  AS
 	};
 	
 #$dbh->do($query);
+$dejavu = 1_0000_000 if $dejavu eq 'all';
 my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu ; };
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
@@ -111,7 +111,7 @@ $dejavu =20;
 	foreach my $row ( @{$array_ref}) {
 	 my $sv = $rocks->get($row->{id});
 	next unless $sv;
-	 next if $sv->{dejavu}->{nb_patients} > $dejavu;
+	# next if $sv->{dejavu}->{nb_patients} > $dejavu;
 	 delete $sv->{score};
 	 getScoreEvent($sv);
 	  my $hash;
@@ -120,7 +120,7 @@ $dejavu =20;
 	 if ($sv->{type} eq "INV") {
 	 	$name = "inv(".$sv->{chrom1}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";
 	 	$hash->{"LENGTH"}=  $sv->{type}.";".abs($sv->{pos1}  -$sv->{pos2});
-	 	 if (exists $hintpsan->{$sv->{chrom1}}){
+	 	 if ($listOfGenes ne "all"){
 	 	 	next if  $hintpsan->{$sv->{chrom1}}->is_empty;
 	 		my $intspan = Set::IntSpan::Fast::XS->new($sv->{pos1}."-".$sv->{pos2});
 	 		my $ai = $hintpsan->{$sv->{chrom1}}->intersection($intspan);
@@ -128,7 +128,7 @@ $dejavu =20;
 		 }
 
 	 }
-	 else {
+	 elsif  ($listOfGenes ne "all"){ 
 	 	
 	 	my @chr1 = ($sv->{chrom1},$sv->{chrom2});
 	 	my @pos = ($sv->{pos1},$sv->{pos2});
@@ -138,9 +138,9 @@ $dejavu =20;
 	 		my $intspan = Set::IntSpan::Fast::XS->new(($pos[$i]-2000)."-".($pos[$i]+2000));
 	 		my $ai = $hintpsan->{$chr1[$i]}->intersection($intspan);
 	 		$found ++ unless  $ai->is_empty;
+ 			}
+ 		 	next unless $found;
 	 	}
-	 	next unless $found;
-	 }
 		#$name = "INV(".$sv->{chrom1}."[".$sv->{pos1}."-".$sv->{pos2}."])" if ($sv->{type} eq "INV");
 	 
 	
