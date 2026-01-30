@@ -1381,7 +1381,6 @@ function formaterGENES_SV(value) {
 		return "-";
 	}
 	let obj = JSON.parse(value);
-	console.log(value);
 	if  (obj.genes.length == 0) {return "-";}
 	//unless  (obj.genes) {return "-";}
 	alert(obj.genes.length);	
