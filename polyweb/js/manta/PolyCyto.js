@@ -1320,7 +1320,6 @@ function refresh_grids() {
 //
 function formaterPosBND(value)
 {
-	//alert('posbnd'+value);
 	if (value=="-")
 	{
 		return(value);
@@ -1332,7 +1331,6 @@ function formaterPosBND(value)
 
 function formaterCHROM_BND1(value)
 {
-	//alert('chr1 = '+value);
 	if (value=="-")
 	{
 		return(value);
@@ -1355,7 +1353,6 @@ function formaterCHROM_BND1(value)
 
 function formaterCHROM_BND2(value)
 {
-	//alert('chr2 = '+value);
 	if (value=="-")
 	{
 		return(value);
@@ -1499,7 +1496,6 @@ function return_color_by_score_gene(value){
 }
 function formaterGENES(value)
 {
-	//alert("genes =" + value);
 	var parameters = location.search.split("&");
 	var par0 = parameters[0].split("=");
 	var par1 = parameters[1].split("=");
@@ -1646,7 +1642,6 @@ function formaterOMIM(value)
 
 function formaterFreqBND(value)
 {	
-	//alert('freqbnd'+value);
 	if (value=="-")
 	{
 		return(value);
@@ -1659,7 +1654,6 @@ function formaterFreqBND(value)
 
 function formaterTransloc(value)
 {
-	//alert('transloc'+value);
 	
 	if (value=="-")
 	{
@@ -1723,7 +1717,6 @@ function formaterTypeInv(value)
 
  function formaterREFALT(value) 
 {
-	//alert('refalt'+value);
 	if (value=="-")
 	{
 		return(value);
@@ -1973,14 +1966,12 @@ function GetTriplets_Post()
 
 function formaterTriplet(value)
 {
-	alert(value);
 	return value;
 
 }
 
 function formaterGeneTriplet(value)
 {
-	alert('gene = '+value);
 	
 	return value;
 }

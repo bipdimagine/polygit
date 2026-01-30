@@ -115,10 +115,11 @@ if ($patient->isChild){
 	 $father = $patient->getFamily->getFather();
 	
 }
+$dejavu = 1_0000_000 if $dejavu eq 'all';
 
 
 my $sql =qq{select id from '$parquet_file' where nb_dejavu_patients <= $dejavu and len > $minlength and patient=$patient_id; };
-
+#my $sql =qq{select id from '$parquet_file' where  len > $minlength and patient=$patient_id; };
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
 my $array_ref = [];
