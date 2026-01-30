@@ -76,7 +76,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'splice_ai', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'Splice_ai', 'Promoter_ai', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -123,11 +123,12 @@ has hash_except_category_rowspan => (
 		$h->{'appris'}			= undef;
 		$h->{'polyphen'}		= undef;
 		$h->{'sift'}			= undef;
+		$h->{'polyphen_score'}	= undef;
+		$h->{'sift_score'}		= undef;
 		$h->{'exon'}			= undef;
 		$h->{'cdna_pos'}		= undef;
 		$h->{'cds_pos'}			= undef;
 		$h->{'protein'}			= undef;
-		$h->{'protein_xref'}	= undef;
 		$h->{'nomenclature'}	= undef;
 		$h->{'prot_nomenclature'}= undef;
 		$h->{'aa'}				= undef;
@@ -139,6 +140,8 @@ has hash_except_category_rowspan => (
 		$h->{'sex_status_icon'}	= undef;
 		$h->{'perc'}			= undef;
 		$h->{'model'}			= undef;
+		$h->{'promoter_ai'}		= undef;
+		$h->{'splice_ai'}		= undef;
 		return $h;
 	}
 );
@@ -877,6 +880,12 @@ sub store_variants_infos {
 					}
 					next if ( scalar(@ok) == 0 );
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'splice_ai'} = $splice_ai_txt;
+					if ($var->promoterAI_score($t)) {
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'promoter_ai'} = $var->promoterAI_score($t);
+					}
+					else {
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'promoter_ai'} = '-';
+					}
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'external_name'} = $t->external_name();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'appris'} = $t->appris_type();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'consequence'} = join( ',', @ok );
@@ -888,67 +897,43 @@ sub store_variants_infos {
 					if ( $hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'exon'} == -1 ) {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'exon'} = $t->findNearestExon( $var->start(), $var->end() );
 					}
-					if ( $var->isCoding($t) ) {
-						my $prot = $t->getProtein();
-						if ($prot) {
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = $prot->id();
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = $t->{'external_protein_name'};
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'nomenclature'} = $var->getNomenclature($t);
-							my $aa_text = '-';
-							if ($var->type() eq 'substitution') {
-								my $hcc = $t->codonsConsequenceForVariations($var);
-								if ($hcc) {
-									$aa_text = 'p.'.$hcc->{aa}.$hcc->{prot_position}.$hcc->{aa_mut};
-								}
-							}
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = $aa_text;
-							my $cds_pos = $var->getOrfPosition($prot);
-							$cds_pos = '-' if (not $cds_pos or $cds_pos eq '.');
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = $cds_pos;
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_position'} = $var->getProteinPosition($prot);
-							if ($var->isCnv() or $var->isLarge()) {
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_status'} = '-';
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_status'} = '-';
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = '-';
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = '-';
-							}
-							else {
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_status'} = $var->polyphenStatusText($prot);
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_status'} = $var->siftStatusText($prot);
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = $var->polyphenScore($prot);
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = $var->siftScore($prot);
-							}
-							my $protAA = $var->getProteinAA($prot);
-							my $chanAA = $var->changeAA($prot);
-							if ( $protAA and $chanAA ) {
-								$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'aa'} = $protAA . '/' . $chanAA;
-							}
-						}
-						else {
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = '-';
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = '-';
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'nomenclature'} = '-';
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = '-';
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = '-';
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_position'} = '-';
+					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'nomenclature'} = $var->getNomenclature($t);
+					my $prot = $t->getProtein();
+					if ($prot) {
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = $prot->id();
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = $var->protein_nomenclature($prot);
+						my $cds_pos = $var->getOrfPosition($prot);
+						$cds_pos = '-' if (not $cds_pos or $cds_pos eq '.');
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = $cds_pos;
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_position'} = $var->getProteinPosition($prot);
+						if ($var->isCnv() or $var->isLarge()) {
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_status'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_status'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = '-';
-							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'aa'} = '-';
+						}
+						else {
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_status'} = $var->polyphenStatusText($prot);
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_status'} = $var->siftStatusText($prot);
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = $var->polyphenScore($prot);
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = $var->siftScore($prot);
+						}
+						my $protAA = $var->getProteinAA($prot);
+						my $chanAA = $var->changeAA($prot);
+						if ( $protAA and $chanAA ) {
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'aa'} = $protAA . '/' . $chanAA;
 						}
 					}
 					else {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = '-';
-						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = '-';
-						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'nomenclature'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = '-';
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_position'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_status'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_status'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = '-';
-						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() } ->{'aa'} = '-';
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'aa'} = '-';
 					}
 				}
 			}
@@ -1208,7 +1193,7 @@ sub prepare_generic_datas_variants {
 				$h->{'ho'} = int($nb_pat_ho) if ($nb_pat_ho);
 			}
 			
-			if (exists $h_var->{genes}) {
+#			if (exists $h_var->{genes}) {
 				foreach my $gene_id ( sort %{ $h_var->{genes} } ) {
 					my $h_gene      = $h_var->{genes}->{$gene_id};
 					my $gene_name   = $h_gene->{'external_name'};
@@ -1227,7 +1212,6 @@ sub prepare_generic_datas_variants {
 						$h2->{'cdna_pos'}        = $h_tr->{'cdna_position'};
 						$h2->{'cds_Pos'}         = $h_tr->{'cds_position'};
 						$h2->{'protein'}         = $h_tr->{'protein'};
-						$h2->{'protein_xref'}    = $h_tr->{'protein_xref'};
 						$h2->{'nomenclature'}    = $h_tr->{'nomenclature'};
 						$h2->{'prot_nomenclature'}= $h_tr->{'prot_nomenclature'};
 						$h2->{'polyphen'}        = $h_tr->{'polyphen_status'};
@@ -1235,17 +1219,18 @@ sub prepare_generic_datas_variants {
 						$h2->{'polyphen_score'}  = $h_tr->{'polyphen_score'};
 						$h2->{'sift_score'}      = $h_tr->{'sift_score'};
 						$h2->{'splice_ai'}       = $h_tr->{'splice_ai'};
+						$h2->{'promoter_ai'}     = $h_tr->{'promoter_ai'};
 						$h2->{'aa'}              = $h_tr->{'aa'};
 						$h2->{'appris'}          = $h_tr->{'appris'};
 						push( @lDatas, $h2 );
 					}
 				}
-			}
-			else {
-				my $h2 = dclone(\%$h);
-				$h2->{'consequence'}   = $h_var->{'consequence'};
-				push( @lDatas, $h2 );
-			}
+#			}
+#			else {
+#				my $h2 = dclone(\%$h);
+#				$h2->{'consequence'}   = $h_var->{'consequence'};
+#				push( @lDatas, $h2 );
+#			}
 		}
 	}
 	if ($h_patients_found) {
