@@ -1383,7 +1383,6 @@ function formaterGENES_SV(value) {
 	let obj = JSON.parse(value);
 	if  (obj.genes.length == 0) {return "-";}
 	//unless  (obj.genes) {return "-";}
-	alert(obj.genes.length);	
 	var tid = obj.table_id;
 	var hcolor = "#E8FFF8";
 var th_style = 'style="padding:1px;border: none;text-align: center;"';
