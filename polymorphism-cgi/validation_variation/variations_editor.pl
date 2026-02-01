@@ -676,6 +676,8 @@ sub run_annnotations {
 	my $final_polyviewer_all;
 	 $final_polyviewer_all = GenBoNoSqlRocks->new(cache=>1,dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name,vmtouch=>1);
 	 my $t   = time;
+	 
+	 
 		$final_polyviewer_all->prepare($list);
 		my $nb = 0;
 		my $res,
