@@ -325,18 +325,17 @@ my $maskcoding = 0;
 confess() unless $annot;
 
 my $annotation_filer =[];
+
+my $promoter_ai_flag;
 foreach my $a (@annots) {
+	$promoter_ai_flag = 1 if $a =~ /promoter/;
+	
 	foreach my $this_a ( split( ',', $buffer->get_genbo_annotation_name($a) ) )
 	{
-#		warn $this_a;
 		$maskcoding = $maskcoding | $project->getMaskCoding($this_a);
 		push( @tconsequences, $this_a );
 	}
 }
-
-
-
-
 
 
 
@@ -457,6 +456,7 @@ $buffer->disconnect();
 my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$patient,project=>$project,print_html=>$print_html);
 $t = time;
 my (  $list, $id_by_genes_id) =  getListVariantsFromDuckDB($project,$patient,$statistics);
+
 	$ztime .= ' vectors:' . ( abs( time - $t ) );
 warn ":: duckdb :: ".$ztime if $print;
 	
@@ -687,7 +687,7 @@ sub run_annnotations {
 				print "." if $nb % 100 == 0;
 			}
 			my $hg = $final_polyviewer_all->get($id);
-			
+			confess($id." ".$patient->id."  problem with updatehashvariaant  + global annotaiotn !!!!!!!!!!!!!!")  unless $hg;
 				foreach my $gene ( @{$hg->{array}}) {
 					my $gid = $gene->{id};					
 					next unless exists $id_by_genes_id->{$gid}->{$id};
@@ -808,8 +808,8 @@ my $h_transmissions = {
 		$alt = $cgi->param('alt');
 	}
 	
-	push(@$asql_patient ,$suffix."_alt >".$alt);#." and ".$suffix."_transmission  & $mask_transmission <> 0" ;
-	push(@$asql_patient ,$suffix."_alt >".$alt);#." and ".$suffix."_transmission  & $mask_transmission <> 0" ;
+	push(@$asql_patient ,$suffix."_type <> 0");#." and ".$suffix."_transmission  & $mask_transmission <> 0" ;
+	#push(@$asql_patient ,$suffix."_type <> 0");#." and ".$suffix."_transmission  & $mask_transmission <> 0" ;
 	if($cgi->param('ratio') ){
 		push(@$asql_patient ,$suffix."_ratio > ".$cgi->param('ratio'));
 	}
@@ -834,14 +834,24 @@ my $h_transmissions = {
 	# FILERING Genes
 	#######################
 	#my @column_gene = ("gene_name","gene_mask");
-	
-	my $sql_gene = "gene_name != '-' "."and gene_mask & $maskcoding <> 0";
+	my $sql_gene = "gene_name != '-' ";
 	my $gene;
 	if ($gene_name_filtering) {
 		$gene = $project->newGene($gene_name_filtering);
 		$gene_id_filtering = $gene->id();
-		$sql_gene = "gene_name = '".$gene->id."' and gene_mask & $maskcoding <> 0";
+		$sql_gene = "gene_name = '".$gene->id."'";
 	}
+		
+	
+	if ($promoter_ai_flag){
+		$sql_gene .= "and (gene_mask & $maskcoding <> 0 or ABS(promoterAI) >= 0.2) ";
+	}
+	else {
+		$sql_gene .= "and gene_mask & $maskcoding <> 0 ";
+	}
+	
+	
+
 	$sql_gene = "(".$sql_gene.")";
 	
 	#######################
@@ -886,8 +896,6 @@ my $h_transmissions = {
 	my $where_nopat = join (" and ",@$sql_where_and_2);
 	
 	
-	
-	
 #	warn "\n\n\n";
 #	warn $where;
 #	warn "\n\n\n";
@@ -917,10 +925,14 @@ sub get_rocksdb_mce_polyviewer_variant {
 	my $dir_parquet = $project->parquet_cache_dir;
 	my $diro = $project->rocks_directory();
 	error("Oops! that's unexpected !!! ") unless -e $parquet;
-	
 	my $sql = qq{select variant_index,gene_name from '$parquet' where  $where ; };
+	if ($promoter_ai_flag){
+		my $parquet_promoter = $project->get_promoterAI_filtred_parquet();
+		 $sql = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a LEFT JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid WHERE $where };
+	}
 	
 	my $cmd = qq{duckdb -json -c "$sql"};
+
  	my $t = time;
  	my $res =`$cmd`;
 	my $array_ref = [];
@@ -934,11 +946,14 @@ sub get_rocksdb_mce_polyviewer_variant {
  	 my $id_by_genes_id;
  	 my %ids ;
  
- 	my $array_ref_2 = get_variants_promoterAI_filtred_update($project, $parquet, $where_nopat);
-	foreach my $a (@$array_ref_2) { push(@$array_ref, $a); }
-	
+ 	#
+ 	#my $array_ref_2 = get_variants_promoterAI_filtred_update($project, $parquet, $where_nopat);
+ 	#die();
+ 	#warn $parquet;
+	#foreach my $a (@$array_ref_2) { push(@$array_ref, $a); }
  	foreach my $a (@$array_ref) {
  		my ($c,$b) = split("!",$a->{variant_index});
+ 		
  		if ($hash_genes_panel) {
  			next unless exists $hash_genes_panel->{$a->{gene_name}};
  		}
@@ -949,7 +964,6 @@ sub get_rocksdb_mce_polyviewer_variant {
  		$nbv ++;
  	
  	}
-
  	warn "end list nb variants: ". $nbv." - nb genes : ".scalar(keys  %$id_by_genes_id)  if (not $cgi->param('export_xls'));
 	return ($rocksdb_pv->indexes,$id_by_genes_id);
 }
@@ -975,6 +989,8 @@ sub get_variants_promoterAI_filtred_update {
 	return $array_ref_2 if not $parquet_promoter; # project HG19 par exemple
 	return $array_ref_2 if check_if_columns_exists_in_parquet($parquet, 'variant_promoterAI'); # project HG19 par exemple
  	my $sql2 = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid WHERE $where_nopat };
+ 	warn $sql2;
+ 	die();
  	my $cmd2 = qq{duckdb -json -c "$sql2"};
  	my $res2 =`$cmd2`;
 	$array_ref_2  = decode_json $res2 if $res2;
