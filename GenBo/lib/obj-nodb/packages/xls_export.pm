@@ -15,6 +15,11 @@ use Storable qw(store retrieve freeze dclone thaw);
 use session_export;
 
 
+has only_main_transcripts => (
+	is      => 'rw',
+	default => undef,
+);
+
 has output_dir => (
 	is      => 'rw',
 	default => undef,
@@ -866,7 +871,19 @@ sub store_variants_infos {
 					$splice_ai_txt = $max_cat.':'.$max_value if $max_cat and $max_value;
 				}
 				
-				foreach my $t ( @{ $gene->getTranscripts() } ) {
+				
+				my @list_transcripts;
+				if ($self->only_main_transcripts()) {
+					foreach my $tr (@{$gene->getTranscripts()}) { push(@list_transcripts, $tr) if $tr->isMane(); }
+					if (scalar(@list_transcripts) == 0) {
+						@list_transcripts = @{$gene->getTranscripts()};
+					} 
+				}
+				else {
+					@list_transcripts = @{$gene->getTranscripts()};
+				}
+				
+				foreach my $t (@list_transcripts) {
 					
 					next unless ( exists $var->annotation->{ $t->id() } );
 					my @ok;

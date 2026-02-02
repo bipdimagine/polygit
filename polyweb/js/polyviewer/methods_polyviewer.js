@@ -206,8 +206,10 @@ function cgh(){
 }
 
 
-function load_polyviewer_export_xls(mode) {
+function load_polyviewer_export_xls_method(mode) {
+	dijit.byId('dialog_xls_export_choice').hide();
 	dijit.byId('waiting').show();
+	document.getElementById("keep_pathogenic").checked == true
 	var url;
     var argsPost = load_polyviewer_args(mode);
 	var tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
@@ -223,12 +225,19 @@ function load_polyviewer_export_xls(mode) {
 			else { args += "&" + key + "=" + value; }
 		}
 	}
+	if (document.getElementById("xls_export_mane_tr").checked == true) {
+		args += "&only_mane_transcripts=1";
+	}
 	var url_xls_2 = url_polyviewer + args;
 	console.log(url_xls_2);
     var downloadPdfIframeName = "downloadPdfIframe"; 
     var iframe = dojo.io.iframe.create(downloadPdfIframeName);
     dojo.io.iframe.setSrc(iframe, url_xls_2, true);
     return;
+}
+
+function load_polyviewer_export_xls(mode) {
+	dijit.byId('dialog_xls_export_choice').show();
 }
 
 function load_polyviewer(mode, only_dude,dm){
