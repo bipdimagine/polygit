@@ -71,7 +71,7 @@ has list_generic_header_cnvs => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Start', 'End', 'Gene', 'Description', 'Phenotypes', 'Transcript', 'Transcript_xref', 'Exon_intron', 'Locus', 'Overlap');
+		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Start', 'End', 'Gene', 'Description', 'Phenotypes', 'Transcript', 'Transcript_xref', 'Exon_intron', 'Locus', 'Overlap');
 		return \@lLinesHeader;
 	}
 );
@@ -81,7 +81,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen_Score', 'Sift_Score', 'Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen_Score', 'Sift_Score', 'Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -636,6 +636,7 @@ sub store_cnvs_infos {
 		}
 		else {
 			$hash->{$chr_h_id}->{$var_id}->{'var_id'} = $var->name();
+			$hash->{$chr_h_id}->{$var_id}->{'rsname'} = '';
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'cnv' if ( $var->isCnv() );
 			my $h_dejavu   = $var->deja_vu();
 			my $nb_project = 0;
@@ -684,12 +685,12 @@ sub store_cnvs_infos {
 			my $min_pop = '-';
 			if ( $var->min_pop_name() ) {
 				$min_pop = $var->min_pop_name();
-				$min_pop .= ':' . $var->min_pop_freq() if ( defined $var->min_pop_freq() );
+				$min_pop .= ':' . sprintf("%.3f", $var->min_pop_freq()) if ( defined $var->min_pop_freq() );
 			}
 			my $max_pop = '-';
 			if ( $var->max_pop_name() ) {
 				$max_pop = $var->max_pop_name();
-				$max_pop .= ':' . $var->max_pop_freq() if ( defined $var->max_pop_freq() );
+				$max_pop .= ':' . sprintf("%.3f", $var->max_pop_freq()) if ( defined $var->max_pop_freq() );
 			}
 			if (defined $var->frequency()) {
 				if ($var->frequency()) { $hash->{$chr_h_id}->{$var_id}->{'freq'} = $var->percent(); }
@@ -781,7 +782,7 @@ sub store_variants_infos {
 		}
 		else {
 			$hash->{$chr_h_id}->{$var_id}->{'var_id'} = $var_id;
-			$hash->{$chr_h_id}->{$var_id}->{'var_id'} .= ' (' . $var->rs_name() . ')' if ( $var->rs_name() );
+			$hash->{$chr_h_id}->{$var_id}->{'rsname'} = $var->rs_name();
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'snp' if ( $var->isVariation() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'ins' if ( $var->isInsertion() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'del' if ( $var->isDeletion() );
@@ -819,12 +820,12 @@ sub store_variants_infos {
 			my $min_pop = '-';
 			if ( $var->min_pop_name() ) {
 				$min_pop = $var->min_pop_name();
-				$min_pop .= ':' . $var->min_pop_freq() if ( defined $var->min_pop_freq() );
+				$min_pop .= ':' . sprintf("%.3f", $var->min_pop_freq()) if ( defined $var->min_pop_freq() );
 			}
 			my $max_pop = '-';
 			if ( $var->max_pop_name() ) {
 				$max_pop = $var->max_pop_name();
-				$max_pop .= ':' . $var->max_pop_freq() if ( defined $var->max_pop_freq() );
+				$max_pop .= ':' . sprintf("%.3f", $var->max_pop_freq()) if ( defined $var->max_pop_freq() );
 			}
 			if (defined $var->frequency()) {
 				if ($var->frequency()) { $hash->{$chr_h_id}->{$var_id}->{'freq'} = $var->percent(); }
@@ -1050,6 +1051,7 @@ sub prepare_generic_datas_cnvs {
 			my $h_var = $self->hash_cnvs_global->{$chr_id}->{$var_id};
 			my $h;
 			$h->{'variation'}    = $h_var->{'var_id'};
+			$h->{'rsname'}   	 = $h_var->{'rsname'};
 			$h->{'type'}         = $h_var->{'type'};
 			$h->{'dejavu'}       = $h_var->{'dejavu'};
 			$h->{'chr'}          = $h_var->{'chr'};
@@ -1159,6 +1161,7 @@ sub prepare_generic_datas_variants {
 				my @lCol = split('_', $h->{'variation'});
 				$h->{'variation'} = $lCol[1].$lCol[3];
 			}
+			$h->{'rsname'}  	 = $h_var->{'rsname'};
 			$h->{'type'}         = $h_var->{'type'};
 			$h->{'dejavu'}       = $h_var->{'dejavu'};
 			$h->{'chr'}          = $h_var->{'chr'};
