@@ -213,6 +213,7 @@ function launch_igv_tool_rna(fasta, tracks, locus) {
 			var this_track = list_tracks[i];
 			this_track = this_track.replace(/https:\/\/\/\/public-data\//, hostname_public);
 			this_track = this_track.replace(/\/NGS/, hostname_ngs);
+			this_track = this_track.replace(/https:\/\/https:\/\//, 'https://');
 			list_done.push(this_track);
 		}
 		tracks = list_done.join(',');
