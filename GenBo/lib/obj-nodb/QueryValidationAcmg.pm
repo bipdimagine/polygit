@@ -310,7 +310,6 @@ sub getAllValidationsForPatient {
 	if ($user_name){
 		$query = qq{select *,term from $db.validations as va ,$db.variations as v,$db.acmg   where  va.variation_id=v.uniq_id and v.version="$version"  and va.sample_id=$pid and user_name="$user_name" and idacmg=validation order by validation_id desc}; 
 	}
-	warn $query;
 	my $sth = $self->dbh->prepare($query) or confess();
 	
 	$sth->execute() || die();
