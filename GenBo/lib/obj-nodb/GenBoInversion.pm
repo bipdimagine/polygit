@@ -166,7 +166,7 @@ sub protein_nomenclature {
 	my ( $self, $prot ) = @_;
 		confess() unless $prot->isProtein();
 		my $pos = $self->getProteinPosition($prot);
-		return "p.inv".$self->lengthe;
+		return "p.inv".$self->length;
 }
 
 sub annotation_coding {

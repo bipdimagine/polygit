@@ -33,6 +33,7 @@ use Carp;
 use Cache_Commons;
 use List::MoreUtils qw{ natatime };
 use xls_export;
+#use xls_export_nadine_nicolas;
 use session_export;
 use threads;
 
@@ -77,6 +78,7 @@ my $dejavu					= $cgi->param('dejavu');
 my $dejavu_2				= $cgi->param('dejavu_2');
 my $dejavu_ho				= $cgi->param('dejavu_ho');
 my $getPatientsCgi			= $cgi->param('get_patients');
+my $xls_only_mane_tr		= $cgi->param('only_mane_transcripts');
 my $xls_by_genes			= $cgi->param('xls_by_genes');
 my $xls_by_variants			= $cgi->param('xls_by_variants');
 my $xls_by_regions_ho		= $cgi->param('xls_by_regions_ho');
@@ -325,6 +327,8 @@ if ($xls_by_variants or $xls_by_genes or $xls_load_session) {
 	$hResumeFilters->{dejavu} = $dejavu;
 	$hResumeFilters->{dejavu} .= ' only HO' if ($dejavu_ho);
 	$hResumeFilters->{atLeast} = $atLeast;
+	$hResumeFilters->{only_mane_transcripts} = 1 if $xls_only_mane_tr;
+	
 	@{$hResumeFilters->{filter_region}} = split(' ', $filter_region);
 	@{$hResumeFilters->{filter_attic}} = split(' ', $filter_attic);
 	@{$hResumeFilters->{filter_patient}} = split(' ', $filter_patient);
@@ -3016,8 +3020,11 @@ sub saveSessionXLS {
 sub export_xls {
 	my ($project, $lVar, $hResumeFilters) = @_;
 	my $xls_export = new xls_export();
+	#my $xls_export = new xls_export_nadine_nicolas();
+	$xls_export->only_main_transcripts(1) if $xls_only_mane_tr;
 	$xls_export->title_page('PolyQuery_'.$project->name().'.xls');
 	$xls_export->store_variants_infos($lVar, $project, $project->getPatients());
+	#$xls_export->store_variants_specific_somatic_infos($lVar, $project, $project->getPatients());
 	if ($xls_save_session) {
 		my $session_id = $xls_export->save();
 	    print '@@@';
@@ -3038,6 +3045,7 @@ sub loadSessionsXLS {
 		return loadSessionsXLS_byGenes($project, $sid, $hResumeFilters);
 	}
 	my $xls_export = new xls_export();
+#	my $xls_export = new xls_export_nadine_nicolas();
 	$xls_export->load($sid);
 	
 	create_xls_variants($xls_export, $hResumeFilters);
