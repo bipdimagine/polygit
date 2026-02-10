@@ -888,9 +888,9 @@ my $h_transmissions = {
 	push(@$sql_where_and,$sql_patient) if $sql_patient;
 	push(@$sql_where_and,$sql_only_dm) if $sql_only_dm;
 	my $where = join (" and ",@$sql_where_and);
-#	if ($cgi->param('keep_pathogenic') == 1 ){
-#		$where .= "or (variant_keepPathogenic = 1 and $and) ";
-#	}
+	if ($cgi->param('keep_pathogenic') == 1 ){
+		$where .= "or (variant_keepPathogenic = 1 and $and) ";
+	}
 	
 	
 	push(@$sql_where_and_2,$sql_frequence) if $sql_frequence;
