@@ -3271,6 +3271,11 @@ sub setPatients {
 			next if $h->{genbo_id} == -1;
 		}
 		$h->{id} = $h->{patient_id};
+		$h->{origin_patient_id} = $h->{origin_patient_id};
+		if ($h->{origin_patient_id} > 0){
+			my $res = $query->getPatientName($h->{origin_patient_id} );
+			$h->{origin_patient_name} = $res;
+		}
 		$names{ $h->{id} } = undef;
 		unless ( $h->{family} ) { $h->{family} = 'ByDefault_' . $h->{name}; }
 		$h->{vstatus} = $h->{status} ;
@@ -3278,6 +3283,7 @@ sub setPatients {
 		if ( not $h->{sex}    or $h->{sex} eq '0' )    { $h->{sex}    = 1; }
 		$h->{project} = $self;
 		$spec->{$h->{species_id}} ++;
+		
 		next if exists $self->{objects}->{patients}->{ $h->{id} };
 		
 		$self->{objects}->{patients}->{ $h->{id} } =
@@ -5268,7 +5274,6 @@ sub noSqlCoverage {
 
 	#	my $output   =$self->getCacheDir() . "/coverage_lite_test";
 	my $output = $self->getCacheDir() . "/coverage_lite";
-	warn $output;
 	
 	$self->{nosql}->{noSqlCoverage} = GenBoNoSql->new( dir => $output, mode => "$mode" );
 	
@@ -7156,7 +7161,9 @@ sub calling_methods {
 	my $methods = [];
 			foreach my $method_name (@{$self->callingSVMethods()}) {
 				my $method;
+				
 				$method->{short_name} = substr $method_name,0,3;
+
 				$method->{name} = $method_name;
 				$method->{sv} = 1;
 				push(@$methods,$method);
@@ -7164,6 +7171,9 @@ sub calling_methods {
 			foreach my $method_name (@{$self->getCallingMethods()}) {
 					my $method;
 				$method->{short_name} = substr $method_name,0,3;
+				if (lc($method_name) eq "deepsomatic"){
+					$method->{short_name} = "deeS";
+				}
 				$method->{name} = $method_name;
 				push(@$methods,$method);
 				
