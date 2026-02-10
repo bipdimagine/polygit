@@ -660,7 +660,7 @@ function okfunction (items, request){
         dijit.byId('login').show();
         return;
     };
-	//error_vcf_md5 = 0;
+	error_vcf_md5 = 0;
     if (error_vcf_md5 == 1) {
         document.getElementById("image_info_details").src = "../images/menu/info_details_error.png";
         setInterval('flashImage("image_info_details")', 500);
