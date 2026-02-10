@@ -654,7 +654,6 @@ has lmdb_pipeline_dir => (
 sub delete_lmdb_pipeline_dir {
 	my $self = shift;
 	if ( $self->is_pipeline_dir ) {
-		warn "coucou " . $self->lmdb_pipeline_dir;
 		if ( -e $self->lmdb_pipeline_dir
 			&& $self->lmdb_pipeline_dir =~ /temporary/ )
 		{
