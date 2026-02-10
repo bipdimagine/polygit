@@ -15,6 +15,11 @@ use Storable qw(store retrieve freeze dclone thaw);
 use session_export;
 
 
+has only_main_transcripts => (
+	is      => 'rw',
+	default => undef,
+);
+
 has output_dir => (
 	is      => 'rw',
 	default => undef,
@@ -66,7 +71,7 @@ has list_generic_header_cnvs => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Start', 'End', 'Gene', 'Description', 'Phenotypes', 'Transcript', 'Transcript_xref', 'Exon_intron', 'Locus', 'Overlap');
+		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Start', 'End', 'Gene', 'Description', 'Phenotypes', 'Transcript', 'Transcript_xref', 'Exon_intron', 'Locus', 'Overlap');
 		return \@lLinesHeader;
 	}
 );
@@ -76,7 +81,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen_Score', 'Sift_Score', 'Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen_Score', 'Sift_Score', 'Max_Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -140,7 +145,7 @@ has hash_except_category_rowspan => (
 		$h->{'model'}			= undef;
 		$h->{'promoter_ai'}		= undef;
 		$h->{'alphamissense'}	= undef;
-		$h->{'splice_ai'}		= undef;
+		$h->{'max_splice_ai'}	= undef;
 		return $h;
 	}
 );
@@ -631,6 +636,7 @@ sub store_cnvs_infos {
 		}
 		else {
 			$hash->{$chr_h_id}->{$var_id}->{'var_id'} = $var->name();
+			$hash->{$chr_h_id}->{$var_id}->{'rsname'} = '';
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'cnv' if ( $var->isCnv() );
 			my $h_dejavu   = $var->deja_vu();
 			my $nb_project = 0;
@@ -679,12 +685,12 @@ sub store_cnvs_infos {
 			my $min_pop = '-';
 			if ( $var->min_pop_name() ) {
 				$min_pop = $var->min_pop_name();
-				$min_pop .= ':' . $var->min_pop_freq() if ( defined $var->min_pop_freq() );
+				$min_pop .= ':' . sprintf("%.3f", $var->min_pop_freq()) if ( defined $var->min_pop_freq() );
 			}
 			my $max_pop = '-';
 			if ( $var->max_pop_name() ) {
 				$max_pop = $var->max_pop_name();
-				$max_pop .= ':' . $var->max_pop_freq() if ( defined $var->max_pop_freq() );
+				$max_pop .= ':' . sprintf("%.3f", $var->max_pop_freq()) if ( defined $var->max_pop_freq() );
 			}
 			if (defined $var->frequency()) {
 				if ($var->frequency()) { $hash->{$chr_h_id}->{$var_id}->{'freq'} = $var->percent(); }
@@ -717,7 +723,7 @@ sub store_cnvs_infos {
 					my $t = $project->newTranscript($tr_id);
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'external_name'} = $t->external_name();
 					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'appris'} = $t->appris_type();
-					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'splice_ai'} = '-';
+					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'max_splice_ai'} = '-';
 					
 					foreach my $exon_intron_id (keys %{$h_genes->{$gene_id}->{$tr_id}->{'exons_introns'}}) {
 						my $h_exon_intron = $h_genes->{$gene_id}->{$tr_id}->{'exons_introns'}->{$exon_intron_id};
@@ -776,7 +782,7 @@ sub store_variants_infos {
 		}
 		else {
 			$hash->{$chr_h_id}->{$var_id}->{'var_id'} = $var_id;
-			$hash->{$chr_h_id}->{$var_id}->{'var_id'} .= ' (' . $var->rs_name() . ')' if ( $var->rs_name() );
+			$hash->{$chr_h_id}->{$var_id}->{'rsname'} = $var->rs_name();
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'snp' if ( $var->isVariation() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'ins' if ( $var->isInsertion() );
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'del' if ( $var->isDeletion() );
@@ -814,12 +820,12 @@ sub store_variants_infos {
 			my $min_pop = '-';
 			if ( $var->min_pop_name() ) {
 				$min_pop = $var->min_pop_name();
-				$min_pop .= ':' . $var->min_pop_freq() if ( defined $var->min_pop_freq() );
+				$min_pop .= ':' . sprintf("%.3f", $var->min_pop_freq()) if ( defined $var->min_pop_freq() );
 			}
 			my $max_pop = '-';
 			if ( $var->max_pop_name() ) {
 				$max_pop = $var->max_pop_name();
-				$max_pop .= ':' . $var->max_pop_freq() if ( defined $var->max_pop_freq() );
+				$max_pop .= ':' . sprintf("%.3f", $var->max_pop_freq()) if ( defined $var->max_pop_freq() );
 			}
 			if (defined $var->frequency()) {
 				if ($var->frequency()) { $hash->{$chr_h_id}->{$var_id}->{'freq'} = $var->percent(); }
@@ -855,18 +861,20 @@ sub store_variants_infos {
 				my ($max_value, $max_cat);
 				$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'spliceAI'} = '-';
 				my $h_score_spliceAI = $var->spliceAI_score($gene);
-				my $splice_ai_txt = '-';
-				if ($h_score_spliceAI) {
-					foreach my $cat (sort keys %$h_score_spliceAI) {
-						if (not $max_value or $h_score_spliceAI->{$cat} > $max_value) {
-							$max_value = $h_score_spliceAI->{$cat};
-							$max_cat = $cat;
-						}
-					}
-					$splice_ai_txt = $max_cat.':'.$max_value if $max_cat and $max_value;
+				my $splice_ai_txt = $var->text_max_spliceAI($gene);
+				
+				my @list_transcripts;
+				if ($self->only_main_transcripts()) {
+					foreach my $tr (@{$gene->getTranscripts()}) { push(@list_transcripts, $tr) if $tr->isMane(); }
+					if (scalar(@list_transcripts) == 0) {
+						@list_transcripts = @{$gene->getTranscripts()};
+					} 
+				}
+				else {
+					@list_transcripts = @{$gene->getTranscripts()};
 				}
 				
-				foreach my $t ( @{ $gene->getTranscripts() } ) {
+				foreach my $t (@list_transcripts) {
 					
 					next unless ( exists $var->annotation->{ $t->id() } );
 					my @ok;
@@ -878,7 +886,7 @@ sub store_variants_infos {
 						push( @ok, $lTmp[1] );
 					}
 					next if ( scalar(@ok) == 0 );
-					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'splice_ai'} = $splice_ai_txt;
+					$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'max_splice_ai'} = $splice_ai_txt;
 					if ($var->promoterAI_score($t)) {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'promoter_ai'} = $var->promoterAI_score($t);
 					}
@@ -1033,6 +1041,7 @@ sub prepare_generic_datas_cnvs {
 			my $h_var = $self->hash_cnvs_global->{$chr_id}->{$var_id};
 			my $h;
 			$h->{'variation'}    = $h_var->{'var_id'};
+			$h->{'rsname'}   	 = $h_var->{'rsname'};
 			$h->{'type'}         = $h_var->{'type'};
 			$h->{'dejavu'}       = $h_var->{'dejavu'};
 			$h->{'chr'}          = $h_var->{'chr'};
@@ -1142,6 +1151,7 @@ sub prepare_generic_datas_variants {
 				my @lCol = split('_', $h->{'variation'});
 				$h->{'variation'} = $lCol[1].$lCol[3];
 			}
+			$h->{'rsname'}  	 = $h_var->{'rsname'};
 			$h->{'type'}         = $h_var->{'type'};
 			$h->{'dejavu'}       = $h_var->{'dejavu'};
 			$h->{'chr'}          = $h_var->{'chr'};
@@ -1211,7 +1221,7 @@ sub prepare_generic_datas_variants {
 						$h2->{'prot_nomenclature'}= $h_tr->{'prot_nomenclature'};
 						$h2->{'polyphen_score'}  = $h_tr->{'polyphen_score'};
 						$h2->{'sift_score'}      = $h_tr->{'sift_score'};
-						$h2->{'splice_ai'}       = $h_tr->{'splice_ai'};
+						$h2->{'max_splice_ai'}   = $h_tr->{'max_splice_ai'};
 						$h2->{'alphamissense'}   = $h_tr->{'alphamissense'};
 						$h2->{'promoter_ai'}     = $h_tr->{'promoter_ai'};
 						$h2->{'aa'}              = $h_tr->{'aa'};

@@ -201,6 +201,23 @@ function igv_reset () {
 
 var rna_last_tracks = '';
 function launch_igv_tool_rna(fasta, tracks, locus) {
+	var hostname = window.location.host;
+	const found_host = tracks.match(hostname);
+	if (found_host) {}
+	else {
+		var list_done = [];
+		var hostname_public = 'https://' + hostname + "/public-data/";
+		var hostname_ngs = 'https://' + hostname + "/NGS/";
+		var list_tracks = tracks.split(',');
+		for (var i = 0; i < list_tracks.length; i++) {
+			var this_track = list_tracks[i];
+			this_track = this_track.replace(/https:\/\/\/\/public-data\//, hostname_public);
+			this_track = this_track.replace(/\/NGS/, hostname_ngs);
+			this_track = this_track.replace(/https:\/\/https:\/\//, 'https://');
+			list_done.push(this_track);
+		}
+		tracks = list_done.join(',');
+	}
 	var url = "http://localhost:60151/load";
 	url += "?file=" + tracks;
 	url += "&locus=" + locus;

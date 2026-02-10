@@ -2233,7 +2233,12 @@ function export_filter_by_genes(){
     }, 1000);
 }
 
+function choice_export_filter_by_variations() {
+	dijit.byId('dialog_xls_export_choice').show();
+}
+
 function export_filter_by_variations(){
+	dijit.byId('dialog_xls_export_choice').hide();
     document.getElementById("wait2").src="../images/polyicons/wait18trans.gif";
     setTimeout(function () {
 	    dijit.byId('waiting_xls_progress').set('title', 'Export XLS by Variations'); 
@@ -2256,6 +2261,9 @@ function export_filter_by_variations(){
 	    
 	    var list_chr = lOk.join(",");
 	    var hurl = get_args_vector(list_chr);
+	    if (document.getElementById("xls_export_mane_tr").checked == true) {
+			hurl += "&only_mane_transcripts=1";
+		}
 	    hurl += "&view_all_genes=1";
 	    hurl += "&xls_by_variants=1";
 	    hurl += "&user=" + dojo.cookie("username");
@@ -4223,6 +4231,9 @@ function(all, Deferred, dom, on, JSON) {
         var hurl = get_args_vector(chr_id);
         hurl += "&filter_chromosome=" +chr_id;
         hurl += "&view_all_genes=1";
+	    if (document.getElementById("xls_export_mane_tr").checked == true) {
+			hurl += "&only_mane_transcripts=1";
+		}
         if (is_export_xls_var == 1)   { hurl += "&xls_by_variants=1"; }
         if (is_export_xls_genes == 1) { hurl += "&xls_by_genes=1"; }
         hurl += "&xls_save_session=1";
@@ -5929,7 +5940,7 @@ function selectFamilies_recregion(value) {
                         <b>XLS</b> genes
                     </button>
                     <span dojoType="dijit.ToolbarSeparator"></span>
-                    <button id="b_export_xls_var" dojoType="dijit.form.Button" onClick='export_filter_by_variations()' iconClass="exportIcon" style="padding-left:3px" disabled>
+                    <button id="b_export_xls_var" dojoType="dijit.form.Button" onClick='choice_export_filter_by_variations()' iconClass="exportIcon" style="padding-left:3px" disabled>
                         <b>XLS</b> variants
                     </button>  
              </div>
@@ -8954,6 +8965,19 @@ function selectFamilies_recregion(value) {
     </div>
 </div>
     
+    <div id="dialog_xls_export_choice" dojoType="dijit.Dialog" title="Choice XLS export" style="width:300px;">
+    	<div>
+		  <input type="radio" name="xls_tr_choice" id="xls_export_all_tr" checked />
+		  <label class="btn" for="xls_export_all_tr"><nobr>ALL Transcripts</nobr></label>
+    	<div>
+		</div>
+		  <input type="radio" name="xls_tr_choice" id="xls_export_mane_tr"/>
+		  <label class="btn" for="xls_export_mane_tr"><nobr>Only MANE Transcripts</nobr></label>
+		</div>
+		<br>
+		<button onclick="export_filter_by_variations()"><span style="font-size:14px;"><b>Export XLS</b></span></button>
+	</div>
+	
     <div dojoType="dijit.Dialog" jsId="dialog_compound_multi_annot" id="dialog_compound_multi_annot" title="Familial Compound Model - Multi Annotation" style="width:auto;height:auto;" >
 			<div dojoType="dijit.layout.ContentPane" region="top">
 				<br><br>

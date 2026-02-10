@@ -5046,7 +5046,7 @@ sub rocksGenBo {
 	#$name = "genbo-".$mode;
 	
 	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};
-	warn $name;
+	#warn $name;
 	$self->{rocks}->{$name}  = GenBoNoSqlRocksAnnotation->new(
 			name        => "genbo",
 			dir         => $self->get_gencode_directory,

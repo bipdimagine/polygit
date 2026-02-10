@@ -1281,6 +1281,19 @@ function setupAutoClearInputs() {
         <div  id="content_genes_in_panel" jsId="content_genes_in_panel" data-dojo-type="dijit/layout/ContentPane"></div>	
 	</div>
     
+    <div id="dialog_xls_export_choice" dojoType="dijit.Dialog" title="Choice XLS export" style="width:300px;">
+    	<div>
+		  <input type="radio" name="xls_tr_choice" id="xls_export_all_tr" checked />
+		  <label class="btn" for="xls_export_all_tr"><nobr>ALL Transcripts</nobr></label>
+    	<div>
+		</div>
+		  <input type="radio" name="xls_tr_choice" id="xls_export_mane_tr"/>
+		  <label class="btn" for="xls_export_mane_tr"><nobr>Only MANE Transcripts</nobr></label>
+		</div>
+		<br>
+		<button onclick="load_polyviewer_export_xls_method('1')"><span style="font-size:14px;"><b>Export XLS</b></span></button>
+	</div>
+    
 	<div id="dialog_dejavu_polycyto" dojoType="dijit.Dialog" title="DejaVu PolyCyto">
         <div  id="content_dejavu_polycyto" jsId="content_dejavu_polycyto" data-dojo-type="dijit/layout/ContentPane"></div>	
 	</div>
