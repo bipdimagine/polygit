@@ -1224,13 +1224,9 @@ has intspan_pseudo_autosomal => (
 
 sub isAutosomal {
 	my ( $self, $start, $end ) = @_;
-
-	#return 1 unless $self->name ne "X" or $self->name ne "Y";
-	my $intspan = $self->intspan_pseudo_autosomal;
-	return 1 if $intspan->is_empty;
-	my $intspan2 = Set::IntSpan::Fast::XS->new( $start, $end );
-	my $intspan3 = $intspan->intersection($intspan2);
-	return $intspan3->is_empty;
+	return 1 if $self->name ne "X" && $self->name ne "Y";
+	return $self->isPseudoAutosomal($start,$end);
+	
 }
 
 sub ploidy {
