@@ -264,6 +264,7 @@ function load_polyviewer(mode, only_dude,dm){
    }
  	if (tab_editor_polyviewer){
      tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
+	 
      tab_editor_polyviewer[tab_selected_patient].onShow();
    }
    return;
@@ -673,15 +674,29 @@ function tabPatients(items , request ) {
          tab_editor_polyviewer[tsamples[i].label] = new dojox.layout.ContentPane({ // new dijit.layout.ContentPane({
             title:title1,
             content: " ",
-             closable: true,
+             closable: false,
              id:"c1pv"+n,
              ioMethod:dojo.xhrPost,
 			 toto:1,
 			patient:tsamples[i].label,
 			
            onShow:  function() {
-        	   		
+			    
 				
+				setTimeout(dojo.hitch(this, function () {
+					console.log("Exécuté après 100 ms");
+				    var tc = this.getParent();
+				    if (!tc) return;
+
+				    var selected = tc.selectedChildWidget;
+				    if (selected !== this) {
+				        console.warn("onShow avant sélection finale", this.patient);
+				        return;
+				    }
+
+				    // code sûr ici
+				
+			   
 				if (!(dijit.byId("check_never_pv"))){
 					return;
 				}
@@ -695,12 +710,10 @@ function tabPatients(items , request ) {
                 	   this.ioArgs.content = this.setArgsPost; 
                 	   this.setHref(url_polyviewer);
                 	   var this_patname = this.patient;
-//				       dojo.connect(this, "onLoad", function(){
-//						    setTimeout(function() {
-//					   			enable_table_search_from_id('table_genes_'+this_patname);
-//				   			}, 500);
-//						});
+					  
+
                   }
+				  }), 100);
                   
            }
         });
