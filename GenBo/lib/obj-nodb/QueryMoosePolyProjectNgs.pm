@@ -667,6 +667,17 @@ sub getGenboIdPatient {
 	my @tmp = keys(%$s);
 	return int($tmp[0]);
 }
+has sql_get_patient_name =>(
+	is		=> 'ro',
+	
+	lazy =>1,
+	default	=> sub {
+	my $sql = qq{
+		select name from PolyprojectNGS.patient where patient_id= ?
+	};
+	return $sql
+	},
+);
 
 has sql_get_origin_methods =>(
 	is		=> 'ro',

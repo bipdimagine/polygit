@@ -943,7 +943,17 @@ sub getCaptureId {
 	my $res = $sth->fetchall_arrayref({});
 	return $res->[0]->{capture_id};
 }	
+
+sub getPatientName {
+	my ($self, $pid) = @_;
+	my $dbh = $self->getDbh();
+	my $config = $self->getConfig();
 	
+	my $sth = $dbh->prepare($self->sql_get_patient_name);
+	$sth->execute($pid);
+	my $res = $sth->fetchall_arrayref({});
+	return $res->[0]->{name};
+}	
 
 sub getPatients {
 	my ($self, $project_id) = @_;
