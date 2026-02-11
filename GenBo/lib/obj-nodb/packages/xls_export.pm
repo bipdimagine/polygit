@@ -910,7 +910,10 @@ sub store_variants_infos {
 					my $prot = $t->getProtein();
 					if ($prot) {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = $prot->id();
-						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = $var->protein_nomenclature($prot);
+						my $prot_nom;
+						eval { $prot_nom = $var->protein_nomenclature($prot); };
+						if ($@) { $prot_nom = '-'; }
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = $prot_nom;
 						my $cds_pos = $var->getOrfPosition($prot);
 						$cds_pos = '-' if (not $cds_pos or $cds_pos eq '.');
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = $cds_pos;
