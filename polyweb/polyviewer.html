@@ -794,14 +794,40 @@ var tab_editor = new Array();
 
  
 
-
+function getParentFromTab(tab){
+    for (var p in tab){
+        if (tab[p] && tab[p].getParent){
+            return tab[p].getParent();
+        }
+    }
+    return null;
+}
     
 		
 
 	function return_selected_patient(tab){
-		for (var p in tab ){
-			if (tab[p].get('selected')) { return p; }
+		var parent = getParentFromTab(tab);
+		if (!parent) {
+			alert("problem with TAB");
+		    console.warn("Parent null ou non défini");
+		    return;
 		}
+		
+		console.log(container_editor_polyviewer);
+		var pane = parent.selectedChildWidget;
+		var pname = pane.patient[0];
+		var pname2;
+		
+		  //  return pane ? pane.patient : "";
+		
+		for (var p in tab ){
+			if (tab[p].get('selected')) { pname2 = p; }
+		}
+		
+		if (pname === pname2) {
+			return pname;
+		}
+		alert("problem with TAB");
 		return "";
 	}	
 	
@@ -958,7 +984,6 @@ function send_print(p,mode){
 	return text;
 }   
 	function printer(p,mode,name){
-
 	    var url = url_report_patient_polydiag+"?project="+project_name+"&panel="+panel+"&edit_mode=0"+"&report_mode=1"+"&this="+dijit.byId("select_this").get("value")+"&impact="+dijit.byId("select_impact").get("value")+"&frequence="+dijit.byId("select_frequence").get("value");
          url+=get_alacarte();
 	     url += return_options();
