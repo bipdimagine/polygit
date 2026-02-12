@@ -187,6 +187,7 @@ my $nb = 0;
 		#les bornes du CNV
 		my $gdeb = $cnv->{start};
 		my $gend = $cnv->{end};
+		warn Dumper $cnv;
 		my $chr = $project->getChromosome($cnv->{chromosome});
 		
 		my $chrnum = $chr->name;

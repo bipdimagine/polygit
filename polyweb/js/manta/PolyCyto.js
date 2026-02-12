@@ -1179,10 +1179,15 @@ function formaterdbvarStatus(value)
 	{
 			return value;
 	}
-	
+
+	if (!value)
+	{
+			return "?";
+	}
+
 	var eurl=value;
 	var out=" ";
-	
+		
 	var status = value.split(" ");
 	var len = status.length;
 	

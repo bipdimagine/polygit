@@ -502,6 +502,7 @@ my $name =  $cgi->param('name');
 $project->getPatients();
 
 $patient_name ="all" unless $patient_name;
+warn $patient_name;
 my $patients = $project->get_list_patients($patient_name,",");
 
 my $patient = $patients->[0];
@@ -552,6 +553,7 @@ if ($edit_mode){
 		$data = construct_data();
 		die() unless $data;
 		$out_global .= edit_mode($data,$cgi);
+		die();
 		html::print_cgi($cgi,$CSS.$out_global,$print,$patient_name." - PolyDiag");
 		exit(0);
 	}
@@ -2821,16 +2823,17 @@ sub printTableGenesXls {
 		
 		my $s_id=$patient->{name};
 		my $total_variations = $patient->{variations};
+		@headers = ("gene","var_name","ngs","ratio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 		my ($z) =shift @headers;
 		my @infos = ($z,"trans","phenotypes",@headers);
 		if ($project->isSomatic){
 		 @infos = ("gene","trans","phenotypes","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","cosmic","clinvar","freq","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 		}
+	
 		# @infos = ("gene","trans","phenotypes","var_name","sanger","ngs","ratio","caller","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","clinvar","freq","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 		
 #		my $desc = $buffer->description_public_lmdb_database("gnomad");
 #		push(@infos,grep {$_ ne "ALL"} @{$desc->{array}->{populations}});
-		
 		my $col = 0; 
 		my $row =0;
 
@@ -2844,6 +2847,8 @@ sub printTableGenesXls {
 	foreach my $tvariations (values %$total_variations) {
 				my %htemp;
 		foreach my $v (@$tvariations){
+			
+
 				my $gene=$v->{gene};
 			push(@{$htemp{$gene}},$v);
 			
@@ -2934,13 +2939,29 @@ sub printTableGenesXls {
 				if ($ind == 1){
 					
 				}
-				my $cat = $infos[$ind];
-					my $text = $variation->{$cat};
-					
+				my $cat = $infos[$ind];				
+				my $text = $variation->{$cat};
 				if (lc($cat) eq 'var_name') {
 					my @lCol = split('-', $text);
 					$text = $lCol[1].$lCol[3];
 				}
+				
+				if (lc($cat) =~/_pop/) {
+					$text = uc($variation->{$cat});
+				}
+				
+#				if (lc($cat) eq 'ratio') {
+#					my @values = ($variation->{$cat} =~ /([\d.]+)%/g);
+#					
+#					my $sum = 0;
+#					$sum += $_ for @values;
+#
+#					my $mean = @values ? $sum / @values : undef;
+#					warn $mean;
+#					$text =  $mean;
+#				}
+					
+					
 					
 				$text =~ s|<.+?>||g;
 				$worksheet->write($row,$ind,$text);
