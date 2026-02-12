@@ -813,21 +813,28 @@ function getParentFromTab(tab){
 		    return;
 		}
 		
-		console.log(container_editor_polyviewer);
 		var pane = parent.selectedChildWidget;
 		var pname = pane.patient[0];
 		var pname2;
 		
 		  //  return pane ? pane.patient : "";
-		
+		var nb =0;
 		for (var p in tab ){
-			if (tab[p].get('selected')) { pname2 = p; }
+			if (tab[p].get('selected')) { pname2 = p; nb ++;
+			 }
 		}
 		
-		if (pname === pname2) {
+		if (nb > 1 ){
+			nb =0;
+				for (var p in tab ){
+					if (tab[p].get('selected')) { pname2 = p; nb ++;
+					 }
+				}
+		}
+		if (pname === pname2 ) {
 			return pname;
 		}
-		alert("problem with TAB");
+		alert("problem with TAB ");
 		return "";
 	}	
 	
