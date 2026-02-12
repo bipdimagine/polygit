@@ -328,16 +328,15 @@ function hideShowWait(){
 			}
 			
 			
-			
-			
+			var genome_version_project;
 			function okfunction(items, request) {
-				
-				  
 				if (items.length == 0) {
 				     dijit.byId('waiting').hide();
 					dijit.byId('login').show();
 					return;
 					};
+				
+				genome_version_project = items[0].genome_version; 
 					
 				getGencodeTrackForProject(projectName);
            change_loading_button("pwaiting","#336699");

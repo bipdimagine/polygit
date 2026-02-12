@@ -1168,10 +1168,7 @@ sub getProjectListForUser {
 	my ($self,$login,$pwd)=@_;
 	my $dbh = $self->getDbh;
 	my $type_db = $self->getConfig()->{type_db};
-
-	
 	my $sth = $dbh->prepare($self->sql_list_project_for_user);
-	
 	$sth->execute($login,$pwd,$login,$pwd);
 	my $res = $sth->fetchall_hashref("id");
 	my $res_group = $self->getProjectHashForGroup($login,$pwd);
@@ -1180,10 +1177,8 @@ sub getProjectListForUser {
 			$res->{$project_id} = $res_group->{$project_id} unless (exists $res->{$project_id});
 		}
 	}
-	
 	#my @toto = sort{$a->{type} cmp $b->{type} || $a->{name} cmp $b->{name}} values %$res;
 	my @toto =   values %$res;
-	
 	return \@toto; 
 }
 
