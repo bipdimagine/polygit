@@ -684,7 +684,7 @@ function tabPatients(items , request ) {
 			    
 				
 				setTimeout(dojo.hitch(this, function () {
-					console.log("Exécuté après 100 ms");
+//					console.log("Exécuté après 100 ms");
 				    var tc = this.getParent();
 				    if (!tc) return;
 

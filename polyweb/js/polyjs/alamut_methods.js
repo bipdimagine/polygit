@@ -10,6 +10,16 @@ function httpGetFocusOn(url) {
 
 function displayInAlamut(chr, start, a){
 	chr = chr.replace('-', '');
+	var regexp_GRCh = 'GRCh';
+	if (chr.match(regexp_GRCh)) {}
+	else {
+		if (typeof genome_version_project !== 'undefined') {
+			var regexp_genome_version = 'HG38';
+			if (String(genome_version_project).match(regexp_genome_version)) { chr += '(GRCh38)'; }
+			else { chr += '(GRCh37)'; }
+		}
+	}
+	
 	var locus;
 	if (a[0] == '-') {
 		start = start - 1;
