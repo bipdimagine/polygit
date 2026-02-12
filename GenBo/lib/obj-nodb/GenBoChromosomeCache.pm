@@ -777,16 +777,13 @@ sub flushObjectVariantCache {
 	elsif  ($ref eq 'GenBoLargeInsertion'){
 		bless $var_obj , 'GenBoLargeInsertionCache';
 	}
-	elsif  ($ref eq 'GenBoInversion'){
-		bless $var_obj , 'GenBoInversionnCache';
-	}
 	elsif  ($ref eq 'GenBoInsertion'){
 		bless $var_obj , 'GenBoInsertionCache';
 	}
 	elsif  ($ref eq 'GenBoMei'){
 		bless $var_obj , 'GenBoMeiCache';
 	}
-	elsif  ($ref ne 'GenBoLargeInsertionCache' && $ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoMeiCache') {
+	elsif  ($ref ne 'GenBoLargeInsertionCache' && $ref ne 'GenBoVariationCache' &&  $ref ne 'GenBoInversionCache' &&  $ref ne 'GenBoInsertionCache' && $ref ne 'GenBoDeletionCache' && $ref ne 'GenBoLargeDuplicationCache' && $ref ne 'GenBoLargeDeletionCache' && $ref ne 'GenBoMeiCache') {
 		confess("\n\nERROR: $vid not found in cache project. Die.\n\n") unless ($can_create_variant);
 		#Si l'objet n a pas ete stocke correctement pendant le cache, je construit a la volee sa verion NON cache avec GenBoProject
 		my $this_project = $self->getProject();
