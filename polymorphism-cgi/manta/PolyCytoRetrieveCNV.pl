@@ -79,7 +79,14 @@ my $force= $cgi->param( 'force' ) == 1 ;
 my $buffer = GBuffer->new();
 my $project = $buffer->newProjectCache( -name => $projectname);
 #my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+
 my $parquet_file = $project->getCacheCNV()."/".$project->name.".".$project->id.".parquet";
+my $parquet_file_quality = $project->getCacheCNV()."/".$project->name.".".$project->id.".cnv_quality.parquet";
+my $quality;
+if (-e $parquet_file_quality){
+	 $parquet_file = $parquet_file_quality;
+	 $quality = 1;
+}
 my $dir = $project->getCacheCNV(). "/rocks/";
 my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"cnv");
 
@@ -118,7 +125,7 @@ if ($patient->isChild){
 $dejavu = 1_0000_000 if $dejavu eq 'all';
 
 
-my $sql =qq{select id from '$parquet_file' where nb_dejavu_patients <= $dejavu and len > $minlength and patient=$patient_id; };
+my $sql =qq{select * from '$parquet_file' where nb_dejavu_patients <= $dejavu and len > $minlength and patient=$patient_id; };
 #my $sql =qq{select id from '$parquet_file' where  len > $minlength and patient=$patient_id; };
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
@@ -142,6 +149,30 @@ if ($listOfGenes ne "all"){
 #$sth->execute();
 my $nb = 0;
 	foreach my $row (@$array_ref) {
+	if ($quality){
+		if ($row->{caller_sr} && $row->{nb_caller} == 1  ){
+			next if $row->{mr} < 0.1;
+			next if $row->{na} > 0.6 && $row->{nr} < 10;
+#			
+#			$row->{mz} = $mz;
+#		$row->{mr} = $mr;
+#		$row->{na} = $na;
+#		$row->{nr} = $nr;
+#		$row->{pa} = $pa;
+#		 = scalar(@t);
+#		$row->{caller_sr} = 0;
+#		$row->{caller_depth} = 0;
+#		$row->{caller_coverage} = 0;
+#		
+#		$row->{caller_sr} = 1 if exists $cnv->{score}->{score_caller_sr};
+#		$row->{caller_depth}= 1 if exists $cnv->{score}->{score_caller_depth};
+#		$row->{caller_coverage} = 1 if exists $cnv->{score}->{score_caller_coverage};
+		}
+		if ($row->{caller_depth} && $row->{nb_caller} == 1  ){
+			#next if $row->{mr} < 0.1;
+			next if $row->{na} > 0.75;# && $row->{nr} < 10;
+		}
+	}
 	 my $cnv = $rocks->get($row->{id});
 	 if (exists $hintpsan->{$cnv->{chromosome}}){
 	 	my $intspan = Set::IntSpan::Fast::XS->new($cnv->{start}."-".$cnv->{end});
@@ -233,7 +264,7 @@ my $nb = 0;
 		$hGroupedCNV->{$global_id}->{'SCORECALLER'} = 0;
 		#$hGroupedCNV->{$global_id}->{'SCORECALLER'} = $cnv->{score_caller};
 		
-		$hGroupedCNV->{$global_id}->{'SCORECALLER'} += 1000 if  test_type($cnv,"coverage");
+		#$hGroupedCNV->{$global_id}->{'SCORECALLER'} += 1000 if  test_type($cnv,"coverage");
 		
 		#$hGroupedCNV->{$global_id}->{'SCORECALLER'} += 100 if  test_type($cnv,"depth")  or ;
 		
@@ -248,6 +279,7 @@ my $nb = 0;
 		$hGroupedCNV->{$global_id}->{'caller_coverage'} = "-";
 		
 		if (test_type($cnv,"coverage")){
+			$hGroupedCNV->{$global_id}->{caller_type} ++;
 			$hGroupedCNV->{$global_id}->{'QUAL'} =  "";
 			$hGroupedCNV->{$global_id}->{'QUAL'} =   $cnv->{coverage_zscore};
 			my ($ratio) = map {$_->{coverage_ratio}} grep{test_type($_,"coverage")} @{$cnv->{cnv_origin}};
@@ -269,6 +301,7 @@ my $nb = 0;
 		
 		$hGroupedCNV->{$global_id}->{'caller_depth'} = "-";
 		if (test_type($cnv,"depth")){
+			$hGroupedCNV->{$global_id}->{caller_type} ++;
 			$hGroupedCNV->{$global_id}->{'QUAL'} =  "";
 			$hGroupedCNV->{$global_id}->{'GT'}= $cnv->{gt};
 			$hGroupedCNV->{$global_id}->{'QUAL'} =   $cnv->{sr_qual};
@@ -287,6 +320,7 @@ my $nb = 0;
 		###################################
 		$hGroupedCNV->{$global_id}->{'caller_sr'} = "-";
 		if (test_type($cnv,"sr")){
+			$hGroupedCNV->{$global_id}->{caller_type} ++;
 			$hGroupedCNV->{$global_id}->{'QUAL'} =  "";
 			$hGroupedCNV->{$global_id}->{'GT'}= $cnv->{gt};
 			$hGroupedCNV->{$global_id}->{'QUAL'} =   $cnv->{sr_qual};
@@ -401,7 +435,7 @@ my $nb = 0;
 		 
 		# scoreCNV 
 		
-		$hGroupedCNV->{$global_id}->{'SCORECNV'}= getScoreCNV($cnv->{genes},$hGroupedCNV->{$global_id}->{'SCORECALLER'},$hGroupedCNV->{$global_id}->{'TRANSMISSION'},$hGroupedCNV->{$global_id}->{'DUPSEG'});
+		$hGroupedCNV->{$global_id}->{'SCORECNV'}= getScoreCNV($cnv->{genes},$hGroupedCNV->{$global_id}->{'SCORECALLER'},$hGroupedCNV->{$global_id}->{'TRANSMISSION'},$hGroupedCNV->{$global_id}->{'DUPSEG'},$hGroupedCNV->{$global_id}->{caller_type});
 				
 		# utile mais non affiché	
 		$hGroupedCNV->{$global_id}->{'START'} = $cnv->{'START'};
@@ -548,9 +582,8 @@ sub getTransmission
 
 sub getScoreCNV
 {
-	my ($listgenes,$score_caller,$transmission,$dupseg) = @_;
+	my ($listgenes,$score_caller,$transmission,$dupseg,$nb_caller) = @_;
 		my $score;
-	
 		$score = $score_caller;
 		
 		#pour présenter en premier les CNV denovo
@@ -565,8 +598,13 @@ sub getScoreCNV
 			my $sd_score= int($dupseg/40); 
 			$score -= $sd_score;		#	(de -1 à -2,5 )
 		}
+		if ($nb_caller < 3 ){
+			$score  = -10 unless @$listgenes;
+		}
+		else{
+			 $score +=100;
+		}
 		
-		$score  = -10 unless @$listgenes;
 		my $nb = 0;
 ;		foreach my $g (@$listgenes){
 			$nb ++ if $g->{name};
@@ -588,9 +626,17 @@ sub printJson {
 	my ($listHash) = @_;
 	my $hash;
 	my @t;
-
+	my @l1 = grep {$_->{SCORECNV} > 0} @$listHash;
+	foreach my $a (@$listHash){
+		if ($a->{id} =~ /8153171/){
+						warn Dumper $a;
+						warn $a->{SCORECNV};
+				#		die();
+					}
+	}
 	#@t = sort { $a->{SVTYPE} cmp $b->{SVTYPE} } @$listHash;
-	@t = sort {$b->{SCORECNV} <=> $a->{SCORECNV} or $b->{SCORE_GENES} <=> $a->{SCORE_GENES}or $a->{SVTYPE} cmp $b->{SVTYPE}} @$listHash;
+#	@t = sort {$b->{SCORECNV} <=> $a->{SCORECNV}} @$listHash;
+	@t = sort {$b->{SCORECNV} <=> $a->{SCORECNV} or $b->{SCORE_GENES} <=> $a->{SCORE_GENES} or $a->{SVTYPE} cmp $b->{SVTYPE}} @l1;
 		@t = sort {$b->{SCORECNV} <=> $a->{SCORECNV} } @$listHash;	
 	my $nb=1;
 	foreach my $h (@t)
