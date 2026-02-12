@@ -174,6 +174,7 @@ my $nb = 0;
 		}
 	}
 	 my $cnv = $rocks->get($row->{id});
+	next  unless defined $cnv->{genes}->[0]->{name};
 	 if (exists $hintpsan->{$cnv->{chromosome}}){
 	 	my $intspan = Set::IntSpan::Fast::XS->new($cnv->{start}."-".$cnv->{end});
 	 	my $ai = $hintpsan->{$cnv->{chromosome}}->intersection($intspan);
@@ -187,7 +188,6 @@ my $nb = 0;
 		#les bornes du CNV
 		my $gdeb = $cnv->{start};
 		my $gend = $cnv->{end};
-		warn Dumper $cnv;
 		my $chr = $project->getChromosome($cnv->{chromosome});
 		
 		my $chrnum = $chr->name;
