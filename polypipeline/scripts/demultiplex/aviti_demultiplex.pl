@@ -37,7 +37,7 @@ use Pod::Usage;
 
 my $project_names;
 my $run_name_option;
-my $mismatch = 0;
+my $mismatch = 1;
 my $create_fastq_umi;
 my $no_demux_only;
 
@@ -206,7 +206,7 @@ $len_cb->[1] = length($lines->{"[SAMPLES]"}->[0]->[$pos_cb2]) unless ($pos_cb2 e
 
 foreach my $data (@{$lines->{"[SAMPLES]"}}){
 	next unless ($data->[$pos_cb1]);
-	die("CB1 de tailles differentes: ".$len_cb->[0]." :: ".$data->[$pos_sample_name].' '..$data->[$pos_cb1]) if  ($pos_cb1 ne '-1') and ($len_cb->[0] ne length($data->[$pos_cb1]));
+	die("CB1 de tailles differentes: ".$len_cb->[0]." :: ".$data->[$pos_sample_name].' '.$data->[$pos_cb1]) if  ($pos_cb1 ne '-1') and ($len_cb->[0] ne length($data->[$pos_cb1]));
 	die("CB2 de tailles differentes: ".$len_cb->[1].' :: '.$data->[$pos_sample_name].' '.$data->[$pos_cb2]) if  ($pos_cb2 ne '-1') and ($len_cb->[1] ne length($data->[$pos_cb2]));
 }
 
@@ -363,11 +363,11 @@ foreach my $data (@{$lines->{"[SAMPLES]"}}){
  	$dj->{$name}++;
 }
 
+if (keys %$ok_in_runmanifest) {
+	print colored(['bright_green on_black']," Samples in RunManifest: ".scalar(keys %$ok_in_runmanifest) )."\n";
+}
 if (keys %$ok_in_project) {
 	print colored(['bright_green on_black']," Samples OK in project(s) and RunManifest: ".scalar(keys %$ok_in_project) )."\n";
-}
-if (keys %$ok_in_runmanifest) {
-	print colored(['bright_green on_black']," Samples OK in RunManifest: ".scalar(keys %$ok_in_runmanifest) )."\n";
 }
 if (keys %patients) {
 	print colored(['bright_red on_black']," Samples OK in project(s) NOT in RunManifest:".scalar(keys %patients))."\n";
@@ -451,7 +451,7 @@ unless ($no_demux_only) {
 	close ($dh);
 	system("firefox $demux_qc_html &") unless (getpwuid($<) eq 'shanein');
 	system("google-chrome $demux_qc_html &") if (getpwuid($<) eq 'shanein');
-	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -w=>'q'));
+	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -w=>'q', -1));
 	print "\n";
 }
 
@@ -478,7 +478,8 @@ foreach my $project_name (sort split(",",$project_names)){
 		$run = $runs->[0];
 	}
 	my $out_fastq = $run->fastq_dir();
-	make_path($out_fastq, {mode => 0774}) unless (-d $out_fastq);
+#	system("mkdir $out_fastq --mode 777") unless (-d $out_fastq);
+	make_path($out_fastq, {chmod => 0774}) unless (-d $out_fastq);
 	
 	foreach my $p (@{$project->getPatients}){
 		my $pid = $pm->start and next;
@@ -504,8 +505,8 @@ $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name.".".$pr.'/';
-make_path($dir_stats,{mode=>0777}) unless (-d $dir_stats);
-system("rsync -a $dir_out $dir_stats ; chmod -R a+rwx $dir_stats");
+system("mkdir $dir_stats --mode 777") unless (-d $dir_stats);
+make_path($dir_stats,{chmod=>0777}) unless (-d $dir_stats);
 warn("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
 system("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
 
@@ -518,8 +519,8 @@ while (my $file = readdir($dh)) {
 	$demux_qc_html = $dir_stats.$file if ($file =~ /_QC\.html$/);
 }
 close ($dh);
-system("firefox $demux_qc_html") unless (getpwuid($<) eq 'shanein');
-system("google-chrome $demux_qc_html") if (getpwuid($<) eq 'shanein');
+system("firefox $demux_qc_html &") unless (getpwuid($<) eq 'shanein');
+system("google-chrome $demux_qc_html &") if (getpwuid($<) eq 'shanein');
 
 
 exit(0);
@@ -529,27 +530,26 @@ exit(0);
 sub report {
 	my ($csv) = @_;
 	confess("No '$csv'") unless (-e $csv);
-	my $aoa = csv (in => $csv); 
-	my $header = shift @$aoa;
+	my $aoh = csv (in => $csv, headers => "auto", filter => "not_empty"); 
 	
 	my $byline;
 	my $bypatient;
 	
 	# read csv
-	foreach my $line (@$aoa){
+	foreach my $line (@$aoh){
 		# SampleNumber,SampleName,I1,I2,NumPoloniesAssigned,PercentPoloniesAssigned,Yield(Gb),Lane
-		my $l = $line->[7];
-		$byline->{$l}->{'count'} += $line->[4];
-		$byline->{$l}->{'percent'} += $line->[5];
-		my $p = $line->[1];
+		my $l = $line->{'Lane'};
+		$byline->{$l}->{'count'} += $line->{'NumPoloniesAssigned'};
+		$byline->{$l}->{'percent'} += $line->{'PercentPoloniesAssigned'};
+		my $p = $line->{'SampleName'};
 		unless ($l eq '1+2') {
-			$bypatient->{$p}->{'count'} += $line->[4];
-			$bypatient->{$p}->{'percent'} += $line->[5];
+			$bypatient->{$p}->{'count'} += $line->{'NumPoloniesAssigned'};
+			$bypatient->{$p}->{'percent'} += $line->{'PercentPoloniesAssigned'};
 		}
 	}
 	
 	print "-- By Lines : --\n";	
-	my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# read") ) ; # if ($type == 1);
+	my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# Polonies", "% Polonies") ) ; # if ($type == 1);
 	my @l ;
 	my @rows;
 	my $stat = Statistics::Descriptive::Full->new();
@@ -560,17 +560,17 @@ sub report {
 		my @row;
 		push(@row,colored::stabilo("blue",$l,1));
 		
-		if ($byline->{$l} < 100){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+		if ($byline->{$l}->{'count'} < 1000000){
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
-		elsif (abs( $byline->{$l} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+		elsif (abs( $byline->{$l}->{'count'} - $mean ) > 3*$sd){
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
-		elsif (abs($byline->{$l} - $mean) > $sd){
-			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+		elsif (abs($byline->{$l}->{'count'} - $mean) > $sd){
+			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+			push(@row,colored::stabilo("green",$byline->{$l}->{'count'},1),colored::stabilo("green",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
 		push(@rows,\@row);
 	}
@@ -579,22 +579,22 @@ sub report {
 	print "\n ------------------------------\n";
 	
 	print "-- By Samples : --\n";	
-	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
+	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# Polonies", "% Polonies") ) ; # if ($type == 1);
 	@rows = ();
 	foreach my $p (sort keys %$bypatient){
 		my @row;
 		push(@row,colored::stabilo("blue",$p,1));
-		if ($bypatient->{$p} < 1000000){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+		if ($bypatient->{$p}->{'count'} < 1000000){
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
-		elsif (abs( $bypatient->{$p} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > 3*$sd){
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
-		elsif (abs( $bypatient->{$p} - $mean ) > $sd){
-			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > $sd){
+			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'},1),colored::stabilo("green",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
 		push(@rows,\@row);
 	}
@@ -613,7 +613,7 @@ Obligatoires:
 Optionels:
 	run <s>                    nom du run à démultiplexer si un projet est sur plusieurs runs
 	mismatches <i>             nombre de mismatch(es) à autoriser,
-	                           valeurs possibles: 0,1,2, défaut: 0
+	                           valeurs possibles: 0,1,2, défaut: 1
 	no_demux_only              ne pas faire l'étape demux only, lancer directement le démultiplexage complet
 	create_fastq_umi           générer des fastq pour les UMI.
 	help                       affiche un message d'aide détaillé
@@ -669,8 +669,8 @@ Nom du run à démultiplexer.
 
 Nombre de mismatches autorisés pour l'index.
 
-Valeurs possibles : 0, 1, 2  
-Valeur par défaut : 0
+Valeurs possibles : 0, 1, 2.  
+Valeur par défaut : 1
 
 =item B<--no_demux_only>
 
