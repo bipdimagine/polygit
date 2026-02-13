@@ -10,6 +10,7 @@ use Bio::DB::HTS;
 use Bio::DB::HTS::VCF ;
 use List::Util qw(max);
 use Text::CSV qw(csv);
+use List::MoreUtils qw(firstidx);
 
 
 my $project_name;
@@ -47,17 +48,29 @@ $fileout = $dir_out."/".$project_name.".count.exons.txt" if ($exons);
 	foreach my $patient (@$patients){
 		my $bam = $patient->getBamFile;
 		my $name = $patient->name;
-		my $metrics = $project->getCountingDir("featureCounts") . "/metrics/$name.metrics";
-		die("Can't find '$metrics'") unless (-e $metrics);
+		my $metrics_file = $project->getCountingDir("featureCounts") . "/metrics/$name.metrics";
+		die("Can't find '$metrics_file'") unless (-e $metrics_file);
 		push(@bams,$bam);
 		$bam =~ s/\//\\\//g;
 		push(@sed_cmd,qq{sed -i "2s/$bam/$name/" $fileout} );
-		my $aoa = csv (in => $metrics, sep => "\t");
-		my $pct_r1 = $aoa->[7]->[13] if ($aoa->[6]->[13] eq 'PCT_R1_TRANSCRIPT_STRAND_READS');
-		my $pct_r2 = $aoa->[7]->[14] if ($aoa->[6]->[14] eq 'PCT_R2_TRANSCRIPT_STRAND_READS');
-		die("ERROR parsing '$metrics': no 'PCT_R1_TRANSCRIPT_STRAND_READS' found: ".$aoa->[6]->[13].' -> '.$aoa->[7]->[13]) unless (defined $pct_r1);
-		die("ERROR parsing '$metrics': no 'PCT_R1_TRANSCRIPT_STRAND_READS' found: ".$aoa->[6]->[14].' -> '.$aoa->[7]->[14]) unless (defined $pct_r2);
-		die("ERROR pct R1 and R2 transcript strand reads are both zero / anormal for '$name': R1 = $pct_r1\tR2 = $pct_r2\n$metrics") if ($pct_r1 + $pct_r2 != 1);
+		my $aoa = csv (in => $metrics_file, sep => "\t");
+		my $metrics;
+		for my $metric (qw {PF_ALIGNED_BASES PF_BASES PCT_CODING_BASES PCT_MRNA_BASES PCT_USABLE_BASES PCT_R1_TRANSCRIPT_STRAND_READS PCT_R2_TRANSCRIPT_STRAND_READS}) {
+			my $index = firstidx{ $_ eq $metric } @{$aoa->[6]};
+			$metrics->{$metric} = $aoa->[7]->[$index];
+			die("ERROR parsing '$metrics_file': no '$metric' found: ".join("\t",$aoa->[6])) if ($index == -1);
+		}
+		#warn $name.": ". Dumper $metrics;
+		die ("ERROR $name aligned bases too low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)
+			."\nCheck release (current = ".$project->getVersion().") or contaminations") if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.4);
+		die ("ERROR $name mRNA bases too low: ".sprintf("%.2f%%",$metrics->{PCT_MRNA_BASES} *100)) if ($metrics->{PCT_MRNA_BASES} < 0.2); # (UTR_BASES + CODING_BASES)/PF_ALIGNED_BASES
+		die ("ERROR $name usable bases too low: ".sprintf("%.2f%%",$metrics->{PCT_USABLE_BASES} *100)) if ($metrics->{PCT_USABLE_BASES} < 0.2); # (CODING_BASES + UTR_BASES)/PF_BASES
+		warn ("$name aligned bases low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)) and sleep(1) if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.6);
+		warn ("$name mRNA bases low: ".sprintf("%.2f%%",$metrics->{PCT_MRNA_BASES} *100)) if ($metrics->{PCT_MRNA_BASES} < 0.5); # (UTR_BASES + CODING_BASES)/PF_ALIGNED_BASES
+		warn ("$name usable bases low: ".sprintf("%.2f%%",$metrics->{PCT_USABLE_BASES} *100)) if ($metrics->{PCT_USABLE_BASES} < 0.5); # (CODING_BASES + UTR_BASES)/PF_BASES
+		my $pct_r1 = $metrics->{PCT_R1_TRANSCRIPT_STRAND_READS};
+		my $pct_r2 = $metrics->{PCT_R2_TRANSCRIPT_STRAND_READS};
+		die("ERROR pct R1 and R2 transcript strand reads are anormal for '$name': R1 = $pct_r1\tR2 = $pct_r2\n$metrics_file") if ($pct_r1 + $pct_r2 != 1);
 		warn "$name\tR1 = $pct_r1";
 		$strands{'-s 1 '} ++ if ($pct_r1 >= 0.9);
 		$strands{'-s 2 '} ++ if ($pct_r1 <= 0.1);
