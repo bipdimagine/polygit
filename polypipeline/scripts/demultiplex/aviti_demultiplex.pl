@@ -40,6 +40,7 @@ my $run_name_option;
 my $mismatch = 1;
 my $create_fastq_umi;
 my $no_demux_only;
+my $input_mask;
 
 GetOptions(
 	'projects=s'			=> \$project_names,
@@ -47,8 +48,9 @@ GetOptions(
 	'mismatches=i'			=> \$mismatch,
 	'no_demux_only'			=> \$no_demux_only,
 	'create_fastq_umi'		=> \$create_fastq_umi,
+	'mask=s'				=> \$input_mask,
 	'help|?'				=> sub {pod2usage(-verbose => 2,-noperldoc=>1)},
-) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, help.
+) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, no_demux_only, mask, help.
 Use $0 --help to see the full documentation.\n");
 
 # Vérifications options
@@ -224,7 +226,7 @@ my $config = decode_json $json;
 my $cycles = $config->{"Cycles"};
 my $lanes = $config->{"AnalysisLanes"};
 warn 'Lanes: '.$lanes; 
-warn 'Cycles:'.Dumper $cycles;
+warn 'Cycles: '.Dumper $cycles;
 
 my $mask;
 my $i_index = 0;
@@ -298,19 +300,20 @@ if ($umi_mask){
 		}
 	}
 }
-warn 'Mask:'.Dumper $mask;
+warn 'Guessed mask: '.Dumper $mask;
 
 
-unless ( prompt( "Use - " . colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask)) . " - for demultipexing  (y/n) ? ", -yes_no) ) {
+if ($input_mask or not prompt( "Use - " . colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask)) . " - for demultipexing  (y/n) ? ", -yes_no) ) {
 	undef $mask;
-	my $new_mask = uc(prompt("Enter your mask: "));
-	$new_mask =~ s/ //;
-#	warn "Use this mask: ".$new_mask;
+	$input_mask = prompt("Enter your mask: ") unless ($input_mask);
+	$input_mask =~ s/ //g;
+#	warn "Use this mask: ".$input_mask;
 	my $motif_mask = '([RI][12]):([YN](?:\d+|\*))+';
 	my $motif_mask_umi = '(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)';
-	my $re = qr{^(?:$motif_mask|$motif_mask_umi)(?:,(?:$motif_mask|$motif_mask_umi))*$};
-	die("Error in mask entered") unless ($new_mask =~ $re);
-	$mask->{$1} = $2 while ($new_mask =~ /([RI][12]|Umi):((?:[YN](?:\d+|\*))+)/g);
+	my $re = qr{^(?:$motif_mask|$motif_mask_umi)(?:[,;](?:$motif_mask|$motif_mask_umi))*$};
+#	/^(?:([RI][12]):([YN](?:\d+|\*))+|(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*))(?:[,;](?:([RI][12]):([YN](?:\d+|\*))+|(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)))*$/
+	die("Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$input_mask') does not match the required syntax.\nMore informations in the documentation: aviti_demultiplex.pl --help") unless ($input_mask =~ $re);
+	$mask->{$1} = $2 while ($input_mask =~ /([RI][12]|Umi):((?:[RI][12]:)?(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)/g);
 	warn "Using this mask: ".colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask) );
 	sleep(2);
 }
@@ -615,7 +618,8 @@ Optionels:
 	mismatches <i>             nombre de mismatch(es) à autoriser,
 	                           valeurs possibles: 0,1,2, défaut: 1
 	no_demux_only              ne pas faire l'étape demux only, lancer directement le démultiplexage complet
-	create_fastq_umi           générer des fastq pour les UMI.
+	create_fastq_umi           générer des fastq pour les UMI
+	mask <s>                   masque de démultiplexage, détail de la syntaxe dans la documentation complète
 	help                       affiche un message d'aide détaillé
 
 ";
@@ -680,7 +684,171 @@ Désactive l'étape demux only, et lance directement le démultiplexage complet.
 
 Active la génération de fichiers FASTQ pour les UMI.
 
+=item B<--mask>
+
+Spécifie le masque de démultiplexage à utiliser.
+Plus d'informations sur la syntaxe dans la section DEMULTIPLEXING MASK SYNTAX.
+
 =back
+
+=head1 DEMULTIPLEXING MASK SYNTAX
+
+Le script permet de définir un masque de démultiplexage personnalisé.
+Ce masque suit la syntaxe attendue par l'outil B<bases2fastq> et doit
+respecter strictement les règles ci-dessous.
+
+=head2 Quick Syntax Reference (NGS Mask Grammar)
+
+Le masque de démultiplexage suit la grammaire simplifiée suivante :
+
+  MASK        := TAG[,TAG...]
+  TAG         := STANDARD_TAG | UMI_TAG
+
+  STANDARD_TAG := ID ":" CYCLES
+  UMI_TAG      := "Umi:" UMI_SEGMENT["-"UMI_SEGMENT...]
+
+  UMI_SEGMENT := ID ":" CYCLES
+
+  ID          := R1 | R2 | I1 | I2
+  CYCLES      := (Y|N)(NUMBER | "*")
+
+=head3 Meaning
+
+=over 4
+
+=item Y
+
+Bases conservées (read).
+
+=item N
+
+Bases ignorées (skip).
+
+=item NUMBER
+
+Nombre fixe de cycles (ex : Y150, N5).
+
+=item *
+
+Tous les cycles restants.
+
+=item , ou ;
+
+Sépare les blocs principaux.
+
+=item -
+
+Relie plusieurs segments UMI.
+
+=back
+
+=head3 Valid Example
+
+  I1:Y8N2,I2:Y8N2,R1:N5Y*,R2:N5Y*,Umi:R1:Y3N*-R2:Y3N*
+
+=head3 Invalid Examples
+
+=over 4
+
+=item Identifiant invalide
+
+  R3:Y150               (incorrect)
+
+=item Cycle mal formé
+
+  Y                     (incorrect)
+
+=back
+
+=head2 General Format
+
+Le masque de séquençage doit être constitué d'un ou plusieurs blocs
+(tags) séparés par des virgules.
+
+Deux types de tags existent :
+
+=over 4
+
+=item * Standard Tag
+
+Format :
+
+  ID:Cycles
+
+Exemples :
+
+  I1:Y8N2
+  R1:N5Y*
+
+=item * UMI Tag
+
+Format :
+
+  Umi:ID:Cycles
+
+Exemple :
+
+  Umi:R1:Y3N*-R2:Y3N*
+
+=back
+
+=head2 Detailed Syntax Rules
+
+=over 4
+
+=item 1. Identifiers (ID)
+
+Les identifiants autorisés sont :
+
+  R1   Read 1
+  R2   Read 2
+  I1   Index 1
+  I2   Index 2
+
+=item 2. Cycles
+
+Les cycles doivent commencer par :
+
+  Y  lecture des bases (Yes/Read)
+  N  bases ignorées (No/Skip)
+
+suivi soit :
+- d'un nombre (ex : Y150)
+- d'un astérisque (*) indiquant tous les cycles restants.
+
+Exemples valides :
+
+  Y150
+  N12
+  Y*
+
+=item 3. UMI Specifics
+
+Les segments UMI multiples doivent être reliés par un tiret (-).
+
+Exemple :
+
+  Umi:R1:Y12N*-R2:Y12N*
+
+=item 4. Separators
+
+Les blocs doivent être séparés par une virgule (,) ou un point-virgule (;).
+
+Aucun espace n'est autorisé dans le masque.
+
+=back
+
+=head2 Example
+
+Exemple complet de masque valide :
+
+  I1:Y8N2,I2:Y8N2,R1:N12Y*,R2:N12Y*,Umi:R1:Y12N*-R2:Y12N*
+
+=head2 Notes
+
+Un masque invalide entraînera une erreur lors du lancement du
+démultiplexage par B<bases2fastq>. Il est recommandé de vérifier
+attentivement la syntaxe avant exécution.
 
 =head1 EXAMPLES
 
