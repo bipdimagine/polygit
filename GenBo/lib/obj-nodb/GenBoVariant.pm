@@ -817,15 +817,16 @@ has promoterAI => (
 	default => sub {
 		my $self = shift;
 		return if $self->getChromosome->name() eq "MT";
-		my $rocksid;
-		if ($self->project->getVersion() =~ /HG19/) {
-			my @ltmp_r = split('!',$self->genomic_rocksdb_id);
-			eval { $rocksid = $self->lift_over('HG38')->{'chromosome'}.'!'.sprintf("%010d", $self->lift_over('HG38')->{'position'}).'!'.$ltmp_r[-1]; };
-			if($@) { return; }
-		}
-		else {
-			$rocksid = $self->genomic_rocksdb_id;
-		}
+		return if $self->project->getVersion() =~ /HG19/;
+#		if ($self->project->getVersion() =~ /HG19/) {
+#			my @ltmp_r = split('!',$self->genomic_rocksdb_id);
+#			eval { $rocksid = $self->lift_over('HG38')->{'chromosome'}.'!'.sprintf("%010d", $self->lift_over('HG38')->{'position'}).'!'.$ltmp_r[-1]; };
+#			if($@) { return; }
+#		}
+#		else {
+#			$rocksid = $self->genomic_rocksdb_id;
+#		}
+		my $rocksid = $self->genomic_rocksdb_id;
 		my $res = $self->getChromosome->rocksdb("promoterAI")->get_raw($rocksid); 
 	 	return if not $res;
 	 	my $h;
@@ -884,6 +885,16 @@ sub promoterAI_score {
 	return sprintf("%.2f", $self->promoterAI->{$tr_id}->{score});
 }
 
+sub promoterAI_score_max {
+	my ($self) = @_;
+	return if not $self->promoterAI();
+	my $max = 0;
+	foreach my $tr_id (keys %{$self->promoterAI}) {
+		$max = $self->promoterAI->{$tr_id}->{score} if abs($self->promoterAI->{$tr_id}->{score}) > $max;
+	}
+	return $max;
+}
+
 sub revel_score {
 	return "-" ;
 }
@@ -920,6 +931,12 @@ has cosmic =>(
 	default=> sub {
 		my $self = shift;
 		my $cosmic =  $self->getChromosome->rocksdb("cosmic")->cosmic($self->rocksdb_id);
+		
+		if ($cosmic) {
+			warn $self->rocksdb_id;
+			warn $cosmic;
+			warn Dumper $cosmic; die;
+		}
 		return $cosmic;
 		my $hash = $self->getChromosome()->get_lmdb_database("cosmic",$self->type_public_db)->get_with_sequence($self->start,$self->alternate_allele);
 		return undef unless $hash;
@@ -3466,7 +3483,6 @@ sub dejavu_hash_projects_patients {
 	my $hres;
 	my $h_dv = $self->getChromosome->rocks_dejavu->dejavu($self->rocksdb_id);
 	warn $self->getChromosome->rocks_dejavu->dir();
-	warn Dumper $h_dv;
 	foreach my $proj_id (keys %{$h_dv}) {
 		my $proj_name = $self->buffer->getProjectNameFromId($proj_id);
 		
