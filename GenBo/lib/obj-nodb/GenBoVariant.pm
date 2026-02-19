@@ -931,12 +931,6 @@ has cosmic =>(
 	default=> sub {
 		my $self = shift;
 		my $cosmic =  $self->getChromosome->rocksdb("cosmic")->cosmic($self->rocksdb_id);
-		
-		if ($cosmic) {
-			warn $self->rocksdb_id;
-			warn $cosmic;
-			warn Dumper $cosmic; die;
-		}
 		return $cosmic;
 		my $hash = $self->getChromosome()->get_lmdb_database("cosmic",$self->type_public_db)->get_with_sequence($self->start,$self->alternate_allele);
 		return undef unless $hash;
