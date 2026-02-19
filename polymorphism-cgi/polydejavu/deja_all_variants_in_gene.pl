@@ -297,7 +297,7 @@ my $color_yellow = 'yellow';
 print "|";
 $session_id = save_export_xls() if not $session_id;
 export_html($hResVariants, $session_id);
-exit(0);
+POSIX::_exit(0);
 
 
 
@@ -659,7 +659,7 @@ sub save_json {
 	print '.|.export_json';
 	my $cmd = "$Bin/../json_output_nodb/load_job_id.pl export_json=1 session_id=".$session_id." outfile=".$export_json;
 	system($cmd);
-	exit(0);	
+	POSIX::_exit(0);	
 }
 
 sub save_html {

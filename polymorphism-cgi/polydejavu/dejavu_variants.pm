@@ -123,7 +123,7 @@ sub check_variants_from_gene {
 	my ($total, $total_pass);
 	my @list_var;
 	foreach my $chr_id (sort keys %{$h_dv_rocks_ids}) {
-		print '.';
+		print '@';
 		my $chr = $self->project->getChromosome($chr_id);
 		foreach my $rocks_id (sort keys %{$h_dv_rocks_ids->{$chr_id}}) {
 			$ii++;
@@ -172,10 +172,11 @@ sub check_variants_from_gene {
 	$self->project->disconnect();
 	while( my @tmp = $iter->() ){
  	 	my $pid = $pm->start and next;
+		$ii = 0;
 		my $hres;
 		foreach my $var (@tmp) {
 			$ii++;
-			if ($ii == 50) {
+			if ($ii == 10) {
 				print '.';
 				$ii = 0;
 			}
