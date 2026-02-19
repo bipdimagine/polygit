@@ -1,0 +1,65 @@
+<center>
+	<div class='row no-gutters' style="height:100px;width:99%;background-color:#F0F0F0;border: 2px double black;">
+		<div class='col-sm-5' style="height:95px;padding-top:5px;border-right: 1px dashed grey;display:none;" id="div_search_control">
+			<div class="form-group row" style="vertical-align:center;">
+				
+				<div class="col-sm-8" style="margin-right:0px;margin-top:0px;text-align:middle;">
+			    	<div class="form-group row" style="text-align:middle;vertical-align:center;">
+			    		<div class="col-sm-1" style="margin-right:0px;margin-top:0px;"> </div>
+			    		<div class="col-sm-10" style="margin-right:0px;margin-top:0px;" id="div_select_promoter_ai">
+			    			<table>
+			    				<tr><td><center><span style="font-size:13px;"><b>Promoter AI</b></span></center><br></td></tr>
+			    				<tr><td>
+			                    	<div id="slider_promoter_ai" jsId="slider_promoter_ai" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:300px; height: 25px;"'>
+						                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
+						                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+						                    <li><span style='font-size:11px;'><b>Medium</b></span><br>0.4</li>
+						                    <li><span style='font-size:11px;'><b>High</b></span><br>0.6</li>
+						                    <li><span style='font-size:11px;'><b><nobr>Very High</nobr></b></span><br>0.9</li>
+						                </ol>
+					                </div>
+				                </td></tr>
+			                </table>
+						</div>
+			    		<div class="col-sm-1" style="margin-right:0px;margin-top:0px;"> </div>
+					</div> 
+			    </div>
+			    
+			    <div class="col-sm-4" style="margin-left:0px;text-align:middle;">
+			    	<div class="form-group row" style="vertical-align:center;">
+			    		<div class="col-sm-12" style="margin-right:0px;margin-top:0px;" id="div_select_without_release">
+					    	<div class="input-group" style="width:100%;padding-top:35px;">
+					    		<center>
+									<button class="btn btn-default" id="div_b_search_icon" type="submit" onclick="launch_variants_search()" style="border:solid 1px black;font-size:9px;">
+								      	<b>RUN</b>
+									</button>
+								</center>
+							</div>
+						</div>
+					</div>
+			    </div>
+			</div>
+		</div>
+		
+		
+		<div class='col-sm-3' style="height:95px;padding-top:5px;border-right: 1px dashed grey;display:none;" id="div_search_control_2">
+	    	<div class="form-group row" style="text-align:left;vertical-align:center;">
+	    		<div class="col-sm-1" style="margin-right:0px;margin-top:0px;"> </div>
+	    		<div class="col-sm-10" style="margin-right:0px;margin-top:0px;" id="div_select_promoter_ai">
+	    			<table>
+	    				<tr><td><span style="font-size:12px;padding-top:12px;"><span class="glyphicon glyphicon-warning-sign" style="color:red;"></span> <b>Only ill patients</b></span></td></tr>
+	    				<tr><td><span style="font-size:12px;"><span class="glyphicon glyphicon-warning-sign" style="color:red;"></span> <b>Max gnomAD AC:</b> 30</span></td></tr>
+	    				<tr><td><span style="font-size:12px;"><span class="glyphicon glyphicon-warning-sign" style="color:red;"></span> <b>Max gnomAD HO:</b> 10</span></td></tr>
+	    				<tr><td><span style="font-size:12px;"><span class="glyphicon glyphicon-warning-sign" style="color:red;"></span> <b>Max DejaVu:</b> 30</span></td></tr>
+	                </table>
+				</div>
+	    		<div class="col-sm-1" style="margin-right:0px;margin-top:0px;"> </div>
+			</div> 
+		
+		</div>
+		
+</center>
+
+<br>
+
+<div jsId="container_editor_polyviewer" data-dojo-type="dijit/layout/TabContainer" data-dojo-props="splitter:false, region:'center'" style="width:100%;height:80%;"></div>
