@@ -168,7 +168,8 @@ my $json_encode = encode_json $hRes;
 print ".\",";
 $json_encode =~ s/{//;
 print $json_encode;
-exit(0);
+
+POSIX::_exit(0);
 
 
 
