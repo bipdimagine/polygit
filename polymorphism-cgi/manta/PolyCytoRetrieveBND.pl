@@ -99,6 +99,7 @@ my $query = qq{CREATE TABLE SV  AS
 #$dbh->do($query);
 $dejavu = 1_0000_000 if $dejavu eq 'all';
 my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu ; };
+warn $sql;
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
 my $array_ref = [];
@@ -109,14 +110,24 @@ $array_ref  = decode_json $res if $res;
 $dejavu =20;
 #	while (my $row = @{$array_ref}) {
 	foreach my $row ( @{$array_ref}) {
+	
 	 my $sv = $rocks->get($row->{id});
 	next unless $sv;
+	next if $sv->{sr2} == 0;
+	my $r1 = ($sv->{pr2})/($sv->{pr2}+$sv->{pr1});
+	my $r2 = ($sv->{sr2})/($sv->{sr2}+$sv->{sr1});
+	next if $r1 < 0.15;
+	next if $r2 < 0.15;
+	my $ratio = ( $sv->{pr2}+$sv->{sr2}) /( $sv->{pr2}+$sv->{sr2}+$sv->{pr1}+$sv->{sr1});
+	next if $ratio < 0.2;
+	 #$sv->{sr1}."/".$sv->{sr2};
 	# next if $sv->{dejavu}->{nb_patients} > $dejavu;
 	 delete $sv->{score};
 	 getScoreEvent($sv);
 	  my $hash;
 	my $name = "t(".$sv->{chrom1}.",".$sv->{chrom2}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";
 	 $hash->{"LENGTH"}=  "-";
+	# next if $sv->{chrom1} ne "2";
 	 if ($sv->{type} eq "INV") {
 	 	$name = "inv(".$sv->{chrom1}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";
 	 	$hash->{"LENGTH"}=  $sv->{type}.";".abs($sv->{pos1}  -$sv->{pos2});
@@ -129,7 +140,6 @@ $dejavu =20;
 
 	 }
 	 elsif  ($listOfGenes ne "all"){ 
-	 	
 	 	my @chr1 = ($sv->{chrom1},$sv->{chrom2});
 	 	my @pos = ($sv->{pos1},$sv->{pos2});
 	 	my $found;
@@ -143,7 +153,6 @@ $dejavu =20;
 	 	}
 		#$name = "INV(".$sv->{chrom1}."[".$sv->{pos1}."-".$sv->{pos2}."])" if ($sv->{type} eq "INV");
 	 
-	
 	
 	$hash->{TRANSLOC} = $sv->{type}.";".$name;
 	$hash->{"id"}= $sv->{id};

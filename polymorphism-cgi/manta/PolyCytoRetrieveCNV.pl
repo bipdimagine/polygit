@@ -150,9 +150,13 @@ if ($listOfGenes ne "all"){
 my $nb = 0;
 	foreach my $row (@$array_ref) {
 	if ($quality){
+		if ($select_best < 2){
+		next if $row->{blacklist} > 80 && $select_best == 0;
+		next if $row->{blacklist} > 65;
 		if ($row->{caller_sr} && $row->{nb_caller} == 1  ){
-			next if $row->{mr} < 0.1;
-			next if $row->{na} > 0.6 && $row->{nr} < 10;
+			next if $row->{mr} < 0.01 ;
+			next if $row->{mr} < 0.1 && $select_best == 0;
+			next if $row->{na} > 0.6 && $row->{nr} < 10 && $select_best == 0;
 #			
 #			$row->{mz} = $mz;
 #		$row->{mr} = $mr;
@@ -170,7 +174,9 @@ my $nb = 0;
 		}
 		if ($row->{caller_depth} && $row->{nb_caller} == 1  ){
 			#next if $row->{mr} < 0.1;
-			next if $row->{na} > 0.75;# && $row->{nr} < 10;
+			#next if $row->{na} > 0.90;
+			next if $row->{na} > 0.75   && $select_best == 0;;
+		}
 		}
 	}
 	 my $cnv = $rocks->get($row->{id});
