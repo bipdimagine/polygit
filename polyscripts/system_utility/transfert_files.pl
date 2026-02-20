@@ -28,7 +28,7 @@ my $sftp_key_path = "/home/masson/.ssh/known_hosts";
 my $project_names;
 my $patient_names;
 my $file_types;
-my $archive_dir = "/data-pure/workspace/download/transfert_file/";
+my $archive_dir = "/data-pure/workspace/download/";
 my $archive_name;
 my $transfert_sftp;
 my $no_die;
@@ -290,7 +290,7 @@ unless ($no_archive) {
 		$start_time = time();
 		$last_time  = $start_time;
 		$last_offset = 0;
-		$sftp->put( "$archive_dir$archive_name", "/$dir_sftp$archive_name", \&callback ) || confess( "Could not transfer the archive on the sftp: " . $sftp->error );
+		$sftp->put( "$archive_dir$archive_name", "/$dir_sftp$archive_name", \&callback ) || confess( "Could not transfer the archive on the sftp: " . $sftp->status );
 		print "Putting the files on the sftp...\t100%\n";
 	
 		# Checks that the archive has been put on sftp

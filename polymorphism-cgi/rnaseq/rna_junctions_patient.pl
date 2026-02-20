@@ -1522,7 +1522,7 @@ sub get_sashimi_plot {
 	my @lFiles;
 	foreach my $sashimi_plot_file (@$list_sashimi_plot_files) {
 		$sashimi_plot_file =~ s/\/\//\//g;
-		$sashimi_plot_file =~ s/\/data-isilon\/sequencing\/ngs/\/NGS/;
+		$sashimi_plot_file =~ s/.+\/ngs/\/NGS/;
 		push( @lFiles, $sashimi_plot_file );
 	}
 	my $files = join( ';', @lFiles );

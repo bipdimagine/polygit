@@ -175,7 +175,6 @@ sub refine_heterozygote_composite {
 	warn "\t\t decode : ".$time_decode." gene : ".$time_gene." print_time : $print_time  total : ".abs(time -$total_time);
 
 	return ( $list, abs(time -$total_time) );
-
 }
 
 sub print_line_variant {
@@ -283,6 +282,217 @@ sub print_line_variant {
 }
 
 
+sub print_line_variant_all_patients {
+	my ($list_vp,$list_print_html,$opacity) = @_;
+	my $cgi = $list_print_html->[0]->cgi;
+	my $style = {};
+	$style = { style => "background-color: #DAEEED;opacity:0.5" }  if $opacity;
+	my $out;
+	my $hpatients;
+	my $i = 0;
+	foreach my $print_html (@$list_print_html) {
+		$print_html->variant($list_vp->[$i]);
+		$i++;
+	}
+	my $icon = qq{<img width="32" height="32" src="https://img.icons8.com/external-gliphyline-royyan-wijaya/32/external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15.png" alt="external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15"/>};
+	$icon   = qq{<img width="24" height="24" src="https://img.icons8.com/external-tal-revivo-filled-tal-revivo/24/external-live-preview-of-a-smart-class-education-school-filled-tal-revivo.png" alt="external-live-preview-of-a-smart-class-education-school-filled-tal-revivo"/>};
+	my $dropdown = qq{
+		<div class="dropdown">
+		<button class="btn btn-primary btn-xs dropdown-toggle " type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="font-size:10px;background-color:#C67FAE">
+		$icon
+		</button>
+		<div class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="font-size:12px;background-color:beige;color:black">
+	};
+	$dropdown .= "<li>".$list_print_html->[0]->mobidetails()."</li>";
+  	$dropdown .= "<li>".$list_print_html->[0]->gnomadurl()."</li>";
+	$dropdown .= "<li>".$list_print_html->[0]->alamuturl()."</li>";
+	$dropdown .= "<li>".$list_print_html->[0]->varsome()."</li>";
+	$dropdown .= qq{</div></div>};
+	my $t1 = shift(@headers);
+	$out .= $cgi->td( $style, $dropdown );
+	$out .= "\n";
+	my $t = shift(@headers);
+	$out .= $cgi->td( $style, $list_print_html->[0]->igv);
+	$t = shift(@headers);
+	$out .= $cgi->td($style,$list_print_html->[0]->var_name());
+	$out .= "\n";
+	
+	my @l_html_calling;
+	foreach my $print_html (@$list_print_html) {
+		#push(@l_html_calling, "<tr style='padding:3px;'><td colspan='6'><center><span style='font-size:13px;'>fam ".$print_html->patient->getFamily->name()."</span></center></td></tr>");
+		push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;'><center><b>".$print_html->patient->getFamily->name()."</b></center></td><td>".$print_html->calling()."</td></tr>");
+		push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
+	}
+	
+	my $out_calling = qq{<center><table style='width:98%;'>};
+	$out_calling .= join('', @l_html_calling);
+	$out_calling .= qq{</table></center>};
+	
+	$out .= $cgi->td( $style, $out_calling) ;
+	$out .= "\n";
+	$t = shift(@headers);
+	$out .= $cgi->td( $style, $list_print_html->[0]->gnomad() );
+	$out .= "\n";
+	$t = shift(@headers);
+	$out .= $cgi->td( $style, $list_print_html->[0]->dejavu() );
+	$out .= "\n";
+	$t = shift(@headers);
+	$out .= $cgi->td( $style, $list_print_html->[0]->validations );
+	$t = shift(@headers);
+	$out .= "\n";
+	$out .= $cgi->td( $style, $list_print_html->[0]->transcripts() );
+	$out .= $cgi->end_Tr();
+	$out .= "\n";
+}
 
+
+
+sub print_results_by_genes_for_patients {
+	my ($project, $list, $h_rocksdb_pv_patients,$h_genes_search) = @_;
+	
+	my ($print_html, $patient);
+	foreach my $project_name (keys %$h_rocksdb_pv_patients) {
+		foreach my $patient_name (keys %{$h_rocksdb_pv_patients->{$project_name}}) {
+			$h_rocksdb_pv_patients->{$project_name}->{$patient_name}->load_polyviewer_variant();
+			$h_rocksdb_pv_patients->{$project_name}->{$patient_name}->print_html();
+			$print_html = $h_rocksdb_pv_patients->{$project_name}->{$patient_name}->print_html() if not $print_html;
+			$patient = $h_rocksdb_pv_patients->{$project_name}->{$patient_name}->patient() if not $patient;
+		}
+	}
+	
+	my $cgi = $print_html->cgi;
+	my $diro = $project->rocks_directory();
+	my $out_header;
+	$out_header = $print_html->print_header("background-color:aliceblue;color:black");
+	my $hno;
+	my $tsum = 0;
+	my $t    = time;
+	my $xp   = 0;
+	my $time_decode =0;
+	my $time_gene =0;
+	#$t = time;
+	my $current;
+	my $rtime = time;
+	my $total_time = time;
+	my $gids ;
+	my $print_time = 0;
+	
+	foreach my $g (sort {$a->{external_name} <=> $b->{external_name}} @$list) {
+		my $t1 = time;
+		my ( $n, $cname ) = split( "_", $g->{id} );
+		my $chr = $project->getChromosome($cname);
+		$cname = $current;
+		next unless scalar( keys %{ $g->{all_variants} } );
+
+		my $out;
+		$out .= $cgi->start_div(
+			{
+				class => "panel panel-primary",
+				style => "border-color:white;width:100%;margin-right:5px;"
+			}
+		);
+		
+		my ($opacity_html, $opacity);
+		if (not exists $h_genes_search->{$g->{id}} and not exists $h_genes_search->{'ALL'}) {
+			$opacity_html = 'opacity:0.5;';
+			$opacity = 1;
+		}
+		$out .= $cgi->start_div(
+			{
+				class => "panel-heading panel-face panel-grey",
+				style => "background-color:#607D8B;height:45px;padding:10px;border:0px;$opacity_html"
+			}
+		);
+		my $panel_id = "panel_" . $g->{uid};
+		
+		my $html_panel_gene = update_variant_editor::panel_gene($g, $panel_id, $project->name, $patient);
+		$out .= $html_panel_gene;
+		$out .= $cgi->end_div();
+
+		$out .= "\n";
+		$out .= $cgi->start_div(
+			{
+				class => "panel-body panel-collapse collapse",
+				style => "font-size: 09px;font-family: Verdana;",
+				id    => "$panel_id"
+			}
+		);
+		$out .= "\n";
+		$out .= $cgi->start_table(
+			{
+				class => "table table-striped table-condensed table-bordered table-hover table-mybordered",
+				style => "vertical-align:middle;text-align: center;font-size: 8px;font-family:Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;"
+			}
+		);
+		$out .= "\n";
+		$out .= $out_header;
+		$time_gene += abs(time -$t1);
+		my $ttt =  time;
+		my $color_validation = "grey";
+		foreach my $vid (sort keys %{ $g->{all_variants} } ) {
+			my $id= $g->{chr_name}."!".$g->{all_vector_ids}->{$vid};
+			my ($h_fam_found, $rocksdb_pv);
+			foreach my $project_name (keys %$h_rocksdb_pv_patients) {
+				foreach my $patient_name (keys %{$h_rocksdb_pv_patients->{$project_name}}) {
+					next if not ($h_rocksdb_pv_patients->{$project_name}->{$patient_name}->has_index($g->{chr_name}, $vid));
+					$h_rocksdb_pv_patients->{$project_name}->{$patient_name}->get_polyviewer_variant($id,1);
+					$rocksdb_pv = $h_rocksdb_pv_patients->{$project_name}->{$patient_name};
+					my $patient = $rocksdb_pv->print_html->patient();
+					if ($patient->isChild()) {
+						$h_fam_found->{$project_name}->{$patient->getFamily->name}->{children}->{$patient->name} = undef;
+					}
+					else {
+						$h_fam_found->{$project_name}->{$patient->getFamily->name}->{parents}->{$patient->name} = undef;
+					}
+				}
+			}
+			my (@list_print_html, @list_vp);
+			foreach my $project_name (sort keys %$h_fam_found) {
+				foreach my $fam_name (sort keys %{$h_fam_found->{$project_name}}) {
+					if (exists $h_fam_found->{$project_name}->{$fam_name}->{children}) {
+						my @lChilds = sort keys %{$h_fam_found->{$project_name}->{$fam_name}->{children}};
+						push(@list_vp, $h_rocksdb_pv_patients->{$project_name}->{$lChilds[0]}->get_polyviewer_variant($id,1));
+						push(@list_print_html, $h_rocksdb_pv_patients->{$project_name}->{$lChilds[0]}->print_html());
+					}
+					else {
+						foreach my $parent_name (sort keys %{$h_fam_found->{$project_name}->{$fam_name}->{parents}}) {
+							push(@list_vp, $h_rocksdb_pv_patients->{$project_name}->{$parent_name}->get_polyviewer_variant($id,1));
+							push(@list_print_html, $h_rocksdb_pv_patients->{$project_name}->{$parent_name}->print_html());
+						}
+					}
+				}
+			}
+			
+			foreach my $vp (@list_vp) {
+				$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
+				$vp->{gene} = $g;
+				$opacity = 1 if exists $g->{all_variants}->{$vid}->{added};
+				unless ($vp) {
+					confess();
+				}
+				if ( exists $hno->{$vid} ) {
+					$vp->{composite} = 1;
+				}
+			}
+			$out .= print_line_variant_all_patients(\@list_vp, \@list_print_html, $opacity);
+			if ($list_vp[0]->clinvar_value >0 or $list_vp[0]->hgmd_value> 0 or $list_vp[0]->{local_value}){
+				$color_validation= "warning";
+			}
+			elsif (exists $g->{pathogenic}){
+				$color_validation= "danger";
+			}
+		}
+		$out =~ s/@@@/$color_validation/;
+		$out .= $cgi->end_table();
+		$out .= $cgi->end_div();
+		$out .= $cgi->end_div();
+		$g->{out} = $out;
+		$print_time += abs(time -$ttt);
+	}
+	$project->buffer->close_lmdb();
+	warn "\t\t decode : ".$time_decode." gene : ".$time_gene." print_time : $print_time  total : ".abs(time -$total_time);
+
+	return ( $list, abs(time -$total_time) );
+}
 
 1;

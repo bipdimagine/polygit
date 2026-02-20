@@ -1688,4 +1688,24 @@ sub getHashProjectWithReleaseGencodeAnnotation {
 	
 }
 
+sub getProjectTypeCache {
+	my ($self, $project_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{ SELECT o.cache as cache  from PolyprojectNGS.projects o where  o.name=?; };
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($project_name);
+	my $res = $sth->fetchall_arrayref({});
+	return $res->[0]->{'cache'};
+}
+
+sub getPatientName {
+	my ($self, $patient_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{ SELECT name FROM PolyprojectNGS.patient where patient_id=?; };
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($patient_id);
+	my $res = $sth->fetchall_arrayref({});
+	return $res->[0]->{'name'};
+}
+
 1;

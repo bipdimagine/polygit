@@ -9,6 +9,7 @@ use job_bds;
 use sample;
 use Data::Dumper;
 use Text::CSV qw( csv );
+use List::MoreUtils qw(firstidx);
 extends (qw(bds_root));
 my $bin_dev = qq{$Bin/scripts/scripts_pipeline/};
 
@@ -308,20 +309,32 @@ method count_featureCounts  (Str :$filein! ){
 		my $type = $run->infosRun->{method};
 		my $bam = $patient->getBamFile;
 		my $name = $patient->name;
-		my $metrics = $project->getCountingDir("featureCounts") . "/metrics/$name.metrics";
-		die("Can't find '$metrics'") unless (-e $metrics);
+		my $metrics_file = $project->getCountingDir("featureCounts") . "/metrics/$name.metrics";
+		die("Can't find '$metrics_file'") unless (-e $metrics_file);
 		push(@bams,$bam);
 		$bam =~ s/\//\\\//g;
 		push(@sed_cmd,qq{sed -i "2s/$bam/$name/" $fileout} );
 		push(@sed_cmd2,qq{sed -i "2s/$bam/$name/" $fileout2} );
 		
-		my $aoa = csv (in => $metrics, sep => "\t");
-		my $pct_r1 = $aoa->[7]->[13] if ($aoa->[6]->[13] eq 'PCT_R1_TRANSCRIPT_STRAND_READS');
-		my $pct_r2 = $aoa->[7]->[14] if ($aoa->[6]->[14] eq 'PCT_R2_TRANSCRIPT_STRAND_READS');
-		die("ERROR parsing '$metrics': no 'PCT_R1_TRANSCRIPT_STRAND_READS' found: ".$aoa->[6]->[13].' -> '.$aoa->[7]->[13]) unless (defined $pct_r1);
-		die("ERROR parsing '$metrics': no 'PCT_R1_TRANSCRIPT_STRAND_READS' found: ".$aoa->[6]->[14].' -> '.$aoa->[7]->[14]) unless (defined $pct_r2);
-		die("ERROR pct R1 and R2 transcript strand reads are both zero / anormal for '$name': R1 = $pct_r1\tR2 = $pct_r2\n$metrics") if ($pct_r1 + $pct_r2 != 1);
-		warn "$name\tR1 = $pct_r1";
+		my $aoa = csv (in => $metrics_file, sep => "\t");
+		my $metrics;
+		for my $metric (qw {PF_ALIGNED_BASES PF_BASES PCT_CODING_BASES PCT_MRNA_BASES PCT_USABLE_BASES PCT_R1_TRANSCRIPT_STRAND_READS PCT_R2_TRANSCRIPT_STRAND_READS}) {
+			my $index = firstidx{ $_ eq $metric } @{$aoa->[6]};
+			$metrics->{$metric} = $aoa->[7]->[$index];
+			die("ERROR parsing '$metrics_file': no '$metric' found: ".join("\t",$aoa->[6])) if ($index == -1);
+		}
+		#warn $name.": ". Dumper $metrics;
+		die ("ERROR $name aligned bases too low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)
+			."\nCheck release (current = ".$project->getVersion().") or contaminations") if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.4);
+		die ("ERROR $name mRNA bases too low: ".sprintf("%.2f%%",$metrics->{PCT_MRNA_BASES} *100)) if ($metrics->{PCT_MRNA_BASES} < 0.2); # (UTR_BASES + CODING_BASES)/PF_ALIGNED_BASES
+		die ("ERROR $name usable bases too low: ".sprintf("%.2f%%",$metrics->{PCT_USABLE_BASES} *100)) if ($metrics->{PCT_USABLE_BASES} < 0.2); # (CODING_BASES + UTR_BASES)/PF_BASES
+		warn ("$name aligned bases low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)) and sleep(1) if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.6);
+		warn ("$name mRNA bases low: ".sprintf("%.2f%%",$metrics->{PCT_MRNA_BASES} *100)) if ($metrics->{PCT_MRNA_BASES} < 0.5); # (UTR_BASES + CODING_BASES)/PF_ALIGNED_BASES
+		warn ("$name usable bases low: ".sprintf("%.2f%%",$metrics->{PCT_USABLE_BASES} *100)) if ($metrics->{PCT_USABLE_BASES} < 0.5); # (CODING_BASES + UTR_BASES)/PF_BASES
+		my $pct_r1 = $metrics->{PCT_R1_TRANSCRIPT_STRAND_READS};
+		my $pct_r2 = $metrics->{PCT_R2_TRANSCRIPT_STRAND_READS};
+		die("ERROR $name pct R1 and R2 transcript strand reads are anormal for '$name': R1 = $pct_r1\tR2 = $pct_r2\n$metrics_file") if ($pct_r1 + $pct_r2 != 1);
+#		warn "$name\tR1 = ".sprintf("%.2f%%",$pct_r1);
 		$strands{'-s 1 '} ++ if ($pct_r1 >= 0.9);
 		$strands{'-s 2 '} ++ if ($pct_r1 <= 0.1);
 		$strands{'-s 0 '} ++ if ($pct_r1 >= 0.4 and $pct_r1 <= 0.6);
@@ -329,21 +342,24 @@ method count_featureCounts  (Str :$filein! ){
 		$align_method = $patient->alignmentMethod();
 		$profile = $patient->getSampleProfile();
 	}
-	warn 'Strands'.Dumper \%strands;
+	warn 'Strands: '.Dumper \%strands;
 	my @strands = keys %strands;
 	die("Error: pct R1 transcript strand reads:\n".Dumper \%strands) if (grep{/error/} @strands);
 	die("More than one strand for the ".scalar @$patients." patients in project $project_name:\n".Dumper \%strands) unless (scalar @strands);
-
+	
 	my $ppn = 16;
 	my $gtf = $project->gtf_file();
 	#$gtf = $project->gtf_file_dragen() if $align_method eq "star" || $align_method eq "dragen-align";
+	$gtf = $project->buffer()->config_path("root","public_data").'repository/'.$project->annotation_genome_version.'/annotations/'.'/gencode.v'.$project->gencode_version."/tabix/gencode.v".$project->gencode_version.".annotation.gff3.gz" unless (-e $gtf);	
+	confess("GTF file does not exist") unless (-e $gtf);
+
 	
 	my $featureCounts = $project->buffer->software("featureCounts");
 	my $strand = "-s 1 ";
 	$strand = "-s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free" or $profile eq "bulk NEB-directional pcr-free" or $profile eq "bulk watchmaker pcr-free";
 	$strand = "-s 0 " if $profile eq "bulk neb pcr-free" ;
 	die("Strands from metrics (".$strands[0].") and from profile ($strand) don't match") unless ($strand eq $strands[0]);
-	my $strand = $strands[0];
+	$strand = $strands[0];
 	
 	my $sed = join(" && ",@sed_cmd);
 	my $cmd = "$featureCounts -T $ppn   -a $gtf --ignoreDup -o $fileout -p -t exon  $strand ".join(" ",@bams)." && $sed";

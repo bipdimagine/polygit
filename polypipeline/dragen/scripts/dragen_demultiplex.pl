@@ -28,6 +28,8 @@ use Proc::Simple;
 use dragen_util;
 use XML::Simple qw(:strict);
 use Statistics::Descriptive;
+use Bio::SeqIO;
+use Carp;
 
 my $project_names;
 my $sample_sheet;
@@ -38,14 +40,18 @@ my $run_name_option;
 my $mismatch;
 my $noTrimUMI;
 my $fastq_index;
+my $big_run;
+my $sc;
 
 GetOptions(
-	'project=s'     => \$project_names,
-	'l2=s'          => \$l2,
-	'run=s'         => \$run_name_option,
-	'mismatch=i'    => \$mismatch,
-	'keep_umi'      => \$noTrimUMI,		# keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
-	'fastq_index'   => \$fastq_index,	# generate I1/I2 fastq
+	'project=s'			=> \$project_names,
+	'l2=s'				=> \$l2,
+	'run=s'				=> \$run_name_option,
+	'mismatch=i'		=> \$mismatch,
+	'keep_umi'			=> \$noTrimUMI,		# keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
+	'fastq_index' 	 	=> \$fastq_index,	# generate I1/I2 fastq
+	'singlecell|sc'		=> \$sc,
+	'big_run'			=> \$big_run,
 ) || confess("Error in command line arguments");
  
 my $bcl_dir;
@@ -56,9 +62,11 @@ my $dir_fastq;
 my $run_name;
 my $umi_name;
 my $dir_bcl_tmp;
+my $neb;
+my $adaptors;
 foreach my $project_name (split(",",$project_names)){
 	my $buffer = GBuffer->new();
-	my $project = $buffer->newProject( -name 			=> $project_name );
+	my $project = $buffer->newProject( -name => $project_name );
 	my $runs = $project->getRuns;
 	my $run;
 	if (scalar(@$runs)> 1){
@@ -86,6 +94,22 @@ foreach my $project_name (split(",",$project_names)){
 		}
 	}
 	map {$patients{$_->name}= $project->name} @{$project->getPatients};
+	
+	# RNAseq NEB: récupère les adaptateurs à trimmer
+	my @profiles = map {$_->getSampleProfile} @{$project->getPatients};
+	$neb = 1 if (grep{/neb/i} @profiles);
+	if ($neb) {
+		undef $adaptors;
+		my $illuminaAdaptors = Bio::SeqIO->new(-file => $project->getIlluminaAdaptors, '-format' => 'Fasta');
+		my $tsoAdaptors = Bio::SeqIO->new(-file => $project->getTsoAdaptors, '-format' => 'Fasta');
+		foreach my $fasta ($illuminaAdaptors,$tsoAdaptors) {
+			while ( my $seq = $fasta->next_seq() ) {
+				#warn $seq->seq;
+				push(@$adaptors,$seq->seq);
+			}
+		}
+	}
+	
 	#my $run = $project->getRun();
 	
 	$run_name = $run->run_name;
@@ -97,10 +121,15 @@ foreach my $project_name (split(",",$project_names)){
 	}
 	$bcl_dir = $run->bcl_dir;
 	$dir_bcl_tmp = "/data-dragen/bcl/".$project->getRun->run_name()."/";
+	$dir_bcl_tmp = "/data-dragen/bcl2/".$project->getRun->run_name()."/" if ($big_run);
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
-	if ($project->getCaptures->[0]->name =~ /^transcriptome_10X/) {
-		die("No SampleSheet10X.csv") unless (-f $bcl_dir.'SampleSheet10X.csv');
+	if ($project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc) {
+		$sc = 1 if (prompt("Is this project SC 10X ? Use SampleSheet10X.csv and not document in database ?"));
+	}
+	if ($sc) {
+		die("No SampleSheet10X.csv: '$bcl_dir/SampleSheet10X.csv'."
+		."Have you run '$Bin/../../../scripts/scripts_pipeline/cellranger/cellranger_samplesheet.pl' ?") unless (-f $bcl_dir.'SampleSheet10X.csv');
 		$aoa = csv (in => $bcl_dir.'SampleSheet10X.csv');
 	}
 	next if $aoa;
@@ -114,6 +143,7 @@ foreach my $project_name (split(",",$project_names)){
 	print TOTO $toto;
 	close TOTO;
 	$aoa = csv (in => $csv_tmp); 
+	system("rm $csv_tmp") if (-e $csv_tmp);
 }
 
 
@@ -139,7 +169,6 @@ foreach my $line(@$aoa){
 		}	
 }
 unshift (@$titles, "[Settings]") unless grep(/^\[Settings\]$/, @$titles);
-# todo: faire pareil avec [Header] et [Reads] ?
 
 my $cb1_len;
 my $cb2_len;
@@ -184,7 +213,10 @@ my $guess_mask;
 
 	my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read']);
 	$reads = $config->{Run}->{Reads}->{Read};
-	my $i_index =0;
+	my $rc = 1 if (grep{$_->{Number} == 3 and $_->{IsIndexedRead} eq 'Y' and $_->{IsReverseComplement} eq 'Y'} @$reads);
+#	warn colored(['on_red'],"Index2 IsReverseComplement='Y' in RunInfo. The **I2** mask will be interpreted in reverse !!!") if ($rc);
+	warn "Index2 IsReverseComplement='Y' in RunInfo." if ($rc);
+	my $i_index = 0;
 
 	foreach  my $read (@$reads){
 		if ($read->{IsIndexedRead} eq 'N'){
@@ -259,8 +291,14 @@ if ($choice ne "y") {
 	warn "use this mask $mask";
 	#die($mask);
 }
-
-#die() unless -e $dir_in;
+if ($rc) {
+	#todo inverser mask I2
+	my @mask = split(';', $mask);
+	my @mask_i2 = ($mask[2] =~ /[A-Za-z]\d+/g);
+	$mask[2] = reverse @mask_i2;
+	$mask = join(';', @mask);
+	warn('Mask after reverse I2 mask: '.$mask);
+}
 
 
 #change setting
@@ -304,7 +342,15 @@ $nb_mis = $mismatch if $mismatch;
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex1",$nb_mis]);
 push(@{$lines->{"[Settings]"}},["BarcodeMismatchesIndex2",$nb_mis]) if scalar(@bc) == 2;
 push(@{$lines->{"[Settings]"}},["TrimUMI",0]) if $noTrimUMI;
-push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask; 
+push(@{$lines->{"[Settings]"}},["CreateFastqForIndexReads",1]) if $fastq_index;
+push(@{$lines->{"[Settings]"}},["OverrideCycles",$mask]) if $mask;
+if ($neb) {
+	# RNAseq NEB: Trim les adaptateurs
+	die("[Settings] AdapterRead1 already in samplesheet") if (grep {/AdapterRead1/}  @{$lines->{"[Settings]"}});
+	push(@{$lines->{"[Settings]"}},["AdapterRead1", join('+',@$adaptors) ]);
+	push(@{$lines->{"[Settings]"}},["AdapterRead2", join('+',@$adaptors) ]);
+	warn 'Adapters to trim: '.join('+',@$adaptors);
+}
 
 my $dj;
 my $ok_in_project;
@@ -386,10 +432,22 @@ while($checkComplete == 1){
 	$checkComplete = 0 if (-f $complete);
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
-my $exit_rsync = system("rsync -rav --no-times --size-only $bcl_dir  $dir_bcl_tmp ");
-die("Rsync error, retry") if ($exit_rsync);
+my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp ";# --temp-dir=/data-pure/testfs-bipd/tmpDemul
+warn $rsync_cmd;
+my $exit_rsync = system($rsync_cmd);
+my $retry = 0;
+#while($exit_rsync >> 8 == 23 and $retry < 3) {
+while($exit_rsync != 0 and $retry < 3) {
+	warn $?;
+	warn $exit_rsync.' >> 8 = '.$exit_rsync>>8;
+	$retry ++;
+	warn $exit_rsync;
+	warn ("rsync error, new try $retry/3");
+	$exit_rsync = system($rsync_cmd);
+}
+die("Rsync error ($exit_rsync), please retry") if ($exit_rsync);
 my $ss1 = $dir_bcl_tmp."/".$samp_name;
-my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4   --bcl-num-conversion-threads 4   --bcl-num-compression-threads 4   --bcl-num-decompression-threads 4 };
+my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4 --bcl-num-conversion-threads 4 --bcl-num-compression-threads 4 --bcl-num-decompression-threads 4 };
 $cmd .= "--strict-mode true "; # abort if any files are missing or corrupt
 $cmd .= "--create-fastq-for-index-reads true " if $fastq_index;
 warn $cmd;

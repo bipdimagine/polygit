@@ -284,16 +284,15 @@ sub calling_variation_xslate {
 	my $variation_id = $self->variant->id;
 	my $samples = $self->variant->patients_calling();
 	my $project = $self->project;
-		my $all_validations = $project->validations;
-		
+#		my $all_validations = $project->validations;
 		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
-		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
+#		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
 		my $data;
 		$data->{text_caller} ="";
 		$data->{var_id} = $self->variant->id;
 		$data->{gene_id} = $self->variant->gene->{id};
 		$data->{project_name} = $self->project->name;
-		$data->{table_id} = 'ti_'.$variation_id.'_'.$gene->{id}.'_'.$self->patient_id;
+		$data->{table_id} = 'ti_'.$variation_id.'_'.$gene->{id}.'_'.$self->patient_id.'_random_'.int(rand(10000));
 		$data->{patient_name} = $patient_name;
 		 my $fam = $self->patient->getFamily();
 		  if ($self->patient->isChild) {
@@ -379,6 +378,11 @@ sub calling_variation_xslate {
 				push(@{$data->{child}},$hchild);
 		  }
 		  $data->{text_caller} = $text_caller;
+		  
+#			warn "\n\n";
+#		  warn $data->{text_caller};
+#		  die;
+		  
 		 my $output = $self->xslate->render("calling.tt", $data);
 	
 		return $output;

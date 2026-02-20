@@ -196,6 +196,12 @@ sub add_index {
 	$self->{list_index}->{$chr}->{$id} ++
 }
 
+sub has_index {
+	my ($self,$chr,$id) = @_;
+	return 1 if exists $self->{list_index}->{$chr}->{$id};
+	return;
+}
+
 sub indexes{
 	my ($self) = @_;
 	my @all_variants;

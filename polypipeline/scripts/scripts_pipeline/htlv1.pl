@@ -69,7 +69,7 @@ my $singularity = $buffer->software("singularity");
 my $image = "/software/distrib/Clonality/SINGULARITY_R4/clonality_R4.sif";
 my $script = "/software/distrib/Clonality/fred_app.sh";
 
-my $cmd = qq{$singularity run --pwd /DATA/htlv1/ -B /software:/software -B /data-isilon/:/data-isilon -B $dir_working:/TMP -B $dirout:/OUT  $image  $script $f1 $f2 $patient_name $ls $ln $fork /TMP --working_directory  /TMP/ };
+my $cmd = qq{$singularity run --pwd /DATA/htlv1/ -B /software:/software -B /data-isilon/:/data-isilon -B /data-pure/:/data-pure -B $dir_working:/TMP -B $dirout:/OUT  $image  $script $f1 $f2 $patient_name $ls $ln $fork /TMP --working_directory  /TMP/ };
 
 warn $cmd;
 

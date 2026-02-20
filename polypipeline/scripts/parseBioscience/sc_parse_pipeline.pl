@@ -59,11 +59,11 @@ unless ($analysis) {
 	warn ("--kit option is mandatory except for TCR/BCR analysis\n") && usage() unless ($kit);
 	my @possible_kits = qw(WT_mini WT WT_mega WT_mega_384 WT_penta WT_penta_384);
 	warn ("--kit should be one of '".join("','",@possible_kits)."' , given '$chem'\n") && usage() unless ( grep($kit, @possible_kits));
-	$chem = 'v3' if (grep($kit, @possible_kits[-3..-1]));
+#	$chem = 'v3' if (grep(/$kit/, qw(WT_mega_384 WT_penta WT_penta_384)));
 }
 warn ("--chemistry option is mandatory\n") && usage() unless ($chem);
 warn ("--chemistry should be one of ('v1','v2','v3'), given '$chem'\n") && usage() unless ( grep($chem, ('v1','v2','v3')) );
-warn ("Sample list '$sample_list' doesn't exist\n") && usage() unless ( $sample_list and not -e $sample_list );
+warn ("Sample list '$sample_list' doesn't exist\n") && usage() if ( $sample_list and not -e $sample_list );
 warn ("--parent_project option is mandatory for BCR/TCR analysis\n") && usage() if ($analysis =~ /^bcr|tcr$/i and not $parent_project_name);
 @steps = qw{all comb} unless (scalar @steps);
 
@@ -106,8 +106,24 @@ die("No patient $patients_name in project $projectName") unless $patients;
 if (grep {/all/} @steps) {
 	my ($fastq1,$fastq2,$dirf);
 	foreach my $p (sort {$a->name cmp $b->name} @$patients){
-	warn "cp fastq ".$p->name;
-		($fastq1,$fastq2,$dirf) = dragen_util::get_fastq_file($p,$dir_pipeline);
+		my $fastq = $p->fastqFiles;
+		my $fastq_dir = $p->getSequencesDirectory;
+		if (scalar @$fastq > 1) {
+			warn "cp fastq ".$p->name;
+			($fastq1,$fastq2,$dirf) = dragen_util::get_fastq_file($p,$dir_pipeline);
+		}
+		elsif (scalar @$fastq == 1) {
+			warn "rsync fastq ".$p->name;
+			$fastq1 = $fastq->[0]->{R1};
+			$fastq2 = $fastq->[0]->{R2};
+			system("rsync -a $fastq1 $fastq2 $dir_pipeline");
+			$fastq1=~ s/^$fastq_dir/$dir_pipeline/;
+			$fastq2=~ s/^$fastq_dir/$dir_pipeline/;
+			die;
+		}
+		else {
+			confess("No fastq found for patient ".$p->name.": $fastq_dir");
+		}
 	}
 	warn "\n";
 
@@ -118,9 +134,9 @@ if (grep {/all/} @steps) {
 	foreach my $subl (sort {$a->name cmp $b->name} @$patients){
 #	warn $subl;
 		my $name = $subl->name;
-		my $subcmd = "singularity run";
+		my $subcmd = "singularity run --cleanenv";
 		# si erreur ne trouve pas la librairie libxml2: "error while loading shared libraries: libxml2.so.2"
-#		$subcmd .= ' --env LD_LIBRARY_PATH=/miniconda/lib:$LD_LIBRARY_PATH';
+		#$subcmd .= ' --env LD_LIBRARY_PATH=/miniconda/lib:$LD_LIBRARY_PATH';
 		$subcmd .= " -B $dir -B $index" unless ($analysis);
 		my $parent_dir;
 		if ($parent_project and $analysis =~ /^bcr|tcr$/) {
@@ -146,13 +162,12 @@ if (grep {/all/} @steps) {
 			$subcmd .= " --genome_dir $index " ;
 			unless ($sample_list) {
 				my $plate_des = $run->sample_sheet;
-				die ("No SampleLoadingTable. Please upload the SampleLoadingTable excel file to the run document.") unless ($plate_des);
+				die ("No SampleLoadingTable. Please upload the SampleLoadingTable excel file to the run document or use a sample_list.") unless ($plate_des);
 				my $csv_tmp = $dir."SampleLoadingTable.xlsm";
 #				warn $csv_tmp;
 				open(TOTO,">$csv_tmp");
 				print TOTO $plate_des;
 				close TOTO;
-				$subcmd .= " --samp_list $dir/sample-list.txt";
 				$subcmd .= " --samp_sltab $dir/SampleLoadingTable.xlsm";
 			}
 			if ($sample_list) {
@@ -184,7 +199,7 @@ warn "\n";
 # COMB: combine the processed data from each sublibrary into a single dataset
 if (grep {/comb(ine)?/} @steps) {
 	my @names = map{ $dir."sublibraries/".$_->name()} @$all_patients;
-	my $cmd2 = "singularity run -B  $dir -B $index -B $dir_pipeline";
+	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index -B $dir_pipeline";
 	my $parent_dir;
 	if ($parent_project and $analysis =~ /^bcr|tcr$/) {
 		$parent_dir = $parent_project->getProjectRootPath if (-d $parent_project->getProjectRootPath);
@@ -216,6 +231,15 @@ if (grep {/comb(ine)?/} @steps) {
 	die if ($exit);
 }
 warn "\n";
+
+
+
+if (grep {/tar/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
+	my $cmd_tar = "cd $dir_pipeline/comb && tar -cvzf $dir_pipeline$projectName.tar.gz ".join('* ',@patient_names)."* all-sample*";
+	warn($cmd_tar);
+	system($cmd_tar);
+}
 
 
 #sub get_fastq_file {

@@ -37,9 +37,10 @@ use Pod::Usage;
 
 my $project_names;
 my $run_name_option;
-my $mismatch = 0;
+my $mismatch = 1;
 my $create_fastq_umi;
 my $no_demux_only;
+my $input_mask;
 
 GetOptions(
 	'projects=s'			=> \$project_names,
@@ -47,8 +48,9 @@ GetOptions(
 	'mismatches=i'			=> \$mismatch,
 	'no_demux_only'			=> \$no_demux_only,
 	'create_fastq_umi'		=> \$create_fastq_umi,
+	'mask=s'				=> \$input_mask,
 	'help|?'				=> sub {pod2usage(-verbose => 2,-noperldoc=>1)},
-) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, help.
+) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, no_demux_only, mask, help.
 Use $0 --help to see the full documentation.\n");
 
 # Vérifications options
@@ -206,7 +208,7 @@ $len_cb->[1] = length($lines->{"[SAMPLES]"}->[0]->[$pos_cb2]) unless ($pos_cb2 e
 
 foreach my $data (@{$lines->{"[SAMPLES]"}}){
 	next unless ($data->[$pos_cb1]);
-	die("CB1 de tailles differentes: ".$len_cb->[0]." :: ".$data->[$pos_sample_name].' '..$data->[$pos_cb1]) if  ($pos_cb1 ne '-1') and ($len_cb->[0] ne length($data->[$pos_cb1]));
+	die("CB1 de tailles differentes: ".$len_cb->[0]." :: ".$data->[$pos_sample_name].' '.$data->[$pos_cb1]) if  ($pos_cb1 ne '-1') and ($len_cb->[0] ne length($data->[$pos_cb1]));
 	die("CB2 de tailles differentes: ".$len_cb->[1].' :: '.$data->[$pos_sample_name].' '.$data->[$pos_cb2]) if  ($pos_cb2 ne '-1') and ($len_cb->[1] ne length($data->[$pos_cb2]));
 }
 
@@ -224,7 +226,7 @@ my $config = decode_json $json;
 my $cycles = $config->{"Cycles"};
 my $lanes = $config->{"AnalysisLanes"};
 warn 'Lanes: '.$lanes; 
-warn 'Cycles:'.Dumper $cycles;
+warn 'Cycles: '.Dumper $cycles;
 
 my $mask;
 my $i_index = 0;
@@ -298,19 +300,20 @@ if ($umi_mask){
 		}
 	}
 }
-warn 'Mask:'.Dumper $mask;
+warn 'Guessed mask: '.Dumper $mask;
 
 
-unless ( prompt( "Use - " . colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask)) . " - for demultipexing  (y/n) ? ", -yes_no) ) {
+if ($input_mask or not prompt( "Use - " . colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask)) . " - for demultipexing  (y/n) ? ", -yes_no) ) {
 	undef $mask;
-	my $new_mask = uc(prompt("Enter your mask: "));
-	$new_mask =~ s/ //;
-#	warn "Use this mask: ".$new_mask;
+	$input_mask = prompt("Enter your mask: ") unless ($input_mask);
+	$input_mask =~ s/ //g;
+#	warn "Use this mask: ".$input_mask;
 	my $motif_mask = '([RI][12]):([YN](?:\d+|\*))+';
 	my $motif_mask_umi = '(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)';
-	my $re = qr{^(?:$motif_mask|$motif_mask_umi)(?:,(?:$motif_mask|$motif_mask_umi))*$};
-	die("Error in mask entered") unless ($new_mask =~ $re);
-	$mask->{$1} = $2 while ($new_mask =~ /([RI][12]|Umi):((?:[YN](?:\d+|\*))+)/g);
+	my $re = qr{^(?:$motif_mask|$motif_mask_umi)(?:[,;](?:$motif_mask|$motif_mask_umi))*$};
+#	/^(?:([RI][12]):([YN](?:\d+|\*))+|(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*))(?:[,;](?:([RI][12]):([YN](?:\d+|\*))+|(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)))*$/
+	die("Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$input_mask') does not match the required syntax.\nMore informations in the documentation: aviti_demultiplex.pl --help") unless ($input_mask =~ $re);
+	$mask->{$1} = $2 while ($input_mask =~ /([RI][12]|Umi):((?:[RI][12]:)?(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)/g);
 	warn "Using this mask: ".colored(['bright_red on_black'], join(",", map {$_.':'.$mask->{$_}} sort keys %$mask) );
 	sleep(2);
 }
@@ -363,11 +366,11 @@ foreach my $data (@{$lines->{"[SAMPLES]"}}){
  	$dj->{$name}++;
 }
 
+if (keys %$ok_in_runmanifest) {
+	print colored(['bright_green on_black']," Samples in RunManifest: ".scalar(keys %$ok_in_runmanifest) )."\n";
+}
 if (keys %$ok_in_project) {
 	print colored(['bright_green on_black']," Samples OK in project(s) and RunManifest: ".scalar(keys %$ok_in_project) )."\n";
-}
-if (keys %$ok_in_runmanifest) {
-	print colored(['bright_green on_black']," Samples OK in RunManifest: ".scalar(keys %$ok_in_runmanifest) )."\n";
 }
 if (keys %patients) {
 	print colored(['bright_red on_black']," Samples OK in project(s) NOT in RunManifest:".scalar(keys %patients))."\n";
@@ -451,7 +454,7 @@ unless ($no_demux_only) {
 	close ($dh);
 	system("firefox $demux_qc_html &") unless (getpwuid($<) eq 'shanein');
 	system("google-chrome $demux_qc_html &") if (getpwuid($<) eq 'shanein');
-	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -w=>'q'));
+	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -w=>'q', -1));
 	print "\n";
 }
 
@@ -478,7 +481,8 @@ foreach my $project_name (sort split(",",$project_names)){
 		$run = $runs->[0];
 	}
 	my $out_fastq = $run->fastq_dir();
-	make_path($out_fastq, {mode => 0774}) unless (-d $out_fastq);
+#	system("mkdir $out_fastq --mode 777") unless (-d $out_fastq);
+	make_path($out_fastq, {chmod => 0774}) unless (-d $out_fastq);
 	
 	foreach my $p (@{$project->getPatients}){
 		my $pid = $pm->start and next;
@@ -504,8 +508,8 @@ $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
 my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name.".".$pr.'/';
-make_path($dir_stats,{mode=>0777}) unless (-d $dir_stats);
-system("rsync -a $dir_out $dir_stats ; chmod -R a+rwx $dir_stats");
+system("mkdir $dir_stats --mode 777") unless (-d $dir_stats);
+make_path($dir_stats,{chmod=>0777}) unless (-d $dir_stats);
 warn("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
 system("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
 
@@ -518,8 +522,8 @@ while (my $file = readdir($dh)) {
 	$demux_qc_html = $dir_stats.$file if ($file =~ /_QC\.html$/);
 }
 close ($dh);
-system("firefox $demux_qc_html") unless (getpwuid($<) eq 'shanein');
-system("google-chrome $demux_qc_html") if (getpwuid($<) eq 'shanein');
+system("firefox $demux_qc_html &") unless (getpwuid($<) eq 'shanein');
+system("google-chrome $demux_qc_html &") if (getpwuid($<) eq 'shanein');
 
 
 exit(0);
@@ -529,27 +533,26 @@ exit(0);
 sub report {
 	my ($csv) = @_;
 	confess("No '$csv'") unless (-e $csv);
-	my $aoa = csv (in => $csv); 
-	my $header = shift @$aoa;
+	my $aoh = csv (in => $csv, headers => "auto", filter => "not_empty"); 
 	
 	my $byline;
 	my $bypatient;
 	
 	# read csv
-	foreach my $line (@$aoa){
+	foreach my $line (@$aoh){
 		# SampleNumber,SampleName,I1,I2,NumPoloniesAssigned,PercentPoloniesAssigned,Yield(Gb),Lane
-		my $l = $line->[7];
-		$byline->{$l}->{'count'} += $line->[4];
-		$byline->{$l}->{'percent'} += $line->[5];
-		my $p = $line->[1];
+		my $l = $line->{'Lane'};
+		$byline->{$l}->{'count'} += $line->{'NumPoloniesAssigned'};
+		$byline->{$l}->{'percent'} += $line->{'PercentPoloniesAssigned'};
+		my $p = $line->{'SampleName'};
 		unless ($l eq '1+2') {
-			$bypatient->{$p}->{'count'} += $line->[4];
-			$bypatient->{$p}->{'percent'} += $line->[5];
+			$bypatient->{$p}->{'count'} += $line->{'NumPoloniesAssigned'};
+			$bypatient->{$p}->{'percent'} += $line->{'PercentPoloniesAssigned'};
 		}
 	}
 	
 	print "-- By Lines : --\n";	
-	my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# read") ) ; # if ($type == 1);
+	my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# Polonies", "% Polonies") ) ; # if ($type == 1);
 	my @l ;
 	my @rows;
 	my $stat = Statistics::Descriptive::Full->new();
@@ -560,17 +563,17 @@ sub report {
 		my @row;
 		push(@row,colored::stabilo("blue",$l,1));
 		
-		if ($byline->{$l} < 100){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+		if ($byline->{$l}->{'count'} < 1000000){
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
-		elsif (abs( $byline->{$l} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+		elsif (abs( $byline->{$l}->{'count'} - $mean ) > 3*$sd){
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
-		elsif (abs($byline->{$l} - $mean) > $sd){
-			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+		elsif (abs($byline->{$l}->{'count'} - $mean) > $sd){
+			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$byline->{$l}->{'count'}.' ('.sprintf("%.2f",$byline->{$l}->{'percent'}).'%)',1)) ;
+			push(@row,colored::stabilo("green",$byline->{$l}->{'count'},1),colored::stabilo("green",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
 		}
 		push(@rows,\@row);
 	}
@@ -579,22 +582,22 @@ sub report {
 	print "\n ------------------------------\n";
 	
 	print "-- By Samples : --\n";	
-	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
+	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# Polonies", "% Polonies") ) ; # if ($type == 1);
 	@rows = ();
 	foreach my $p (sort keys %$bypatient){
 		my @row;
 		push(@row,colored::stabilo("blue",$p,1));
-		if ($bypatient->{$p} < 1000000){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+		if ($bypatient->{$p}->{'count'} < 1000000){
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
-		elsif (abs( $bypatient->{$p} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > 3*$sd){
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
-		elsif (abs( $bypatient->{$p} - $mean ) > $sd){
-			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > $sd){
+			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'}.' ('.sprintf("%.2f",$bypatient->{$p}->{'percent'}).'%)',1)) ;
+			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'},1),colored::stabilo("green",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
 		}
 		push(@rows,\@row);
 	}
@@ -613,9 +616,10 @@ Obligatoires:
 Optionels:
 	run <s>                    nom du run à démultiplexer si un projet est sur plusieurs runs
 	mismatches <i>             nombre de mismatch(es) à autoriser,
-	                           valeurs possibles: 0,1,2, défaut: 0
+	                           valeurs possibles: 0,1,2, défaut: 1
 	no_demux_only              ne pas faire l'étape demux only, lancer directement le démultiplexage complet
-	create_fastq_umi           générer des fastq pour les UMI.
+	create_fastq_umi           générer des fastq pour les UMI
+	mask <s>                   masque de démultiplexage, détail de la syntaxe dans la documentation complète
 	help                       affiche un message d'aide détaillé
 
 ";
@@ -669,8 +673,8 @@ Nom du run à démultiplexer.
 
 Nombre de mismatches autorisés pour l'index.
 
-Valeurs possibles : 0, 1, 2  
-Valeur par défaut : 0
+Valeurs possibles : 0, 1, 2.  
+Valeur par défaut : 1
 
 =item B<--no_demux_only>
 
@@ -680,7 +684,171 @@ Désactive l'étape demux only, et lance directement le démultiplexage complet.
 
 Active la génération de fichiers FASTQ pour les UMI.
 
+=item B<--mask>
+
+Spécifie le masque de démultiplexage à utiliser.
+Plus d'informations sur la syntaxe dans la section DEMULTIPLEXING MASK SYNTAX.
+
 =back
+
+=head1 DEMULTIPLEXING MASK SYNTAX
+
+Le script permet de définir un masque de démultiplexage personnalisé.
+Ce masque suit la syntaxe attendue par l'outil B<bases2fastq> et doit
+respecter strictement les règles ci-dessous.
+
+=head2 Quick Syntax Reference (NGS Mask Grammar)
+
+Le masque de démultiplexage suit la grammaire simplifiée suivante :
+
+  MASK        := TAG[,TAG...]
+  TAG         := STANDARD_TAG | UMI_TAG
+
+  STANDARD_TAG := ID ":" CYCLES
+  UMI_TAG      := "Umi:" UMI_SEGMENT["-"UMI_SEGMENT...]
+
+  UMI_SEGMENT := ID ":" CYCLES
+
+  ID          := R1 | R2 | I1 | I2
+  CYCLES      := (Y|N)(NUMBER | "*")
+
+=head3 Meaning
+
+=over 4
+
+=item Y
+
+Bases conservées (read).
+
+=item N
+
+Bases ignorées (skip).
+
+=item NUMBER
+
+Nombre fixe de cycles (ex : Y150, N5).
+
+=item *
+
+Tous les cycles restants.
+
+=item , ou ;
+
+Sépare les blocs principaux.
+
+=item -
+
+Relie plusieurs segments UMI.
+
+=back
+
+=head3 Valid Example
+
+  I1:Y8N2,I2:Y8N2,R1:N5Y*,R2:N5Y*,Umi:R1:Y3N*-R2:Y3N*
+
+=head3 Invalid Examples
+
+=over 4
+
+=item Identifiant invalide
+
+  R3:Y150               (incorrect)
+
+=item Cycle mal formé
+
+  Y                     (incorrect)
+
+=back
+
+=head2 General Format
+
+Le masque de séquençage doit être constitué d'un ou plusieurs blocs
+(tags) séparés par des virgules.
+
+Deux types de tags existent :
+
+=over 4
+
+=item * Standard Tag
+
+Format :
+
+  ID:Cycles
+
+Exemples :
+
+  I1:Y8N2
+  R1:N5Y*
+
+=item * UMI Tag
+
+Format :
+
+  Umi:ID:Cycles
+
+Exemple :
+
+  Umi:R1:Y3N*-R2:Y3N*
+
+=back
+
+=head2 Detailed Syntax Rules
+
+=over 4
+
+=item 1. Identifiers (ID)
+
+Les identifiants autorisés sont :
+
+  R1   Read 1
+  R2   Read 2
+  I1   Index 1
+  I2   Index 2
+
+=item 2. Cycles
+
+Les cycles doivent commencer par :
+
+  Y  lecture des bases (Yes/Read)
+  N  bases ignorées (No/Skip)
+
+suivi soit :
+- d'un nombre (ex : Y150)
+- d'un astérisque (*) indiquant tous les cycles restants.
+
+Exemples valides :
+
+  Y150
+  N12
+  Y*
+
+=item 3. UMI Specifics
+
+Les segments UMI multiples doivent être reliés par un tiret (-).
+
+Exemple :
+
+  Umi:R1:Y12N*-R2:Y12N*
+
+=item 4. Separators
+
+Les blocs doivent être séparés par une virgule (,) ou un point-virgule (;).
+
+Aucun espace n'est autorisé dans le masque.
+
+=back
+
+=head2 Example
+
+Exemple complet de masque valide :
+
+  I1:Y8N2,I2:Y8N2,R1:N12Y*,R2:N12Y*,Umi:R1:Y12N*-R2:Y12N*
+
+=head2 Notes
+
+Un masque invalide entraînera une erreur lors du lancement du
+démultiplexage par B<bases2fastq>. Il est recommandé de vérifier
+attentivement la syntaxe avant exécution.
 
 =head1 EXAMPLES
 
