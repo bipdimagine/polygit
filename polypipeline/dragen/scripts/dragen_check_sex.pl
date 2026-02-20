@@ -57,11 +57,12 @@ my $dir_dragen_pipeline = $patient->getDragenDirName("pipeline");
 my $dir_stats_dragen = $patient->project->getAlignmentStatsDir("dragen-align");
 
 if ($project->isGenome or $project->isExome) {
-	my $ploidy_estimation_file = $dir_dragen_pipeline."/$patient_name.ploidy_estimation_metrics.csv";
-	my $ploidy_estimation_file_2 = $ploidy_estimation_file =~ s/^$dir_dragen_pipeline/$dir_stats_dragen/r;
-	$ploidy_estimation_file = $ploidy_estimation_file_2 unless (-e $ploidy_estimation_file);
+	my $ploidy_estimation_file_1 = $dir_dragen_pipeline."/$patient_name.ploidy_estimation_metrics.csv";
+	my $ploidy_estimation_file_2 = $dir_stats_dragen."/$patient_name.ploidy_estimation_metrics.csv";
+	my $ploidy_estimation_file = $ploidy_estimation_file_2 if (-e $ploidy_estimation_file_2);
+	$ploidy_estimation_file = $ploidy_estimation_file_1 if (-e $ploidy_estimation_file_1);
 #	warn $ploidy_estimation_file;
-	confess("ERROR: No ploidy estimation file found: '$ploidy_estimation_file' or '$ploidy_estimation_file_2'") unless (-e $ploidy_estimation_file);
+	confess("ERROR: No ploidy estimation file found: '$ploidy_estimation_file_1' or '$ploidy_estimation_file_2'") unless (-e $ploidy_estimation_file);
 	my $aoa = csv (in => $ploidy_estimation_file);
 	$sex_chr = $aoa->[-1]->[-1] if ($aoa->[-1]->[2] eq 'Ploidy estimation');
 	warn 'Dragen ploidy estimation = '.$sex_chr if ($verbose);
@@ -82,7 +83,7 @@ elsif ($project->isDiagnostic) {
 	my $target_cov_metrics_file = $target_cov_metrics_file_2 if (-e $target_cov_metrics_file_2);
 	$target_cov_metrics_file = $target_cov_metrics_file_1 if (-e $target_cov_metrics_file_1);
 	warn $target_cov_metrics_file if ($verbose);
-	confess("ERROR: No target bed coverage metrics file found: '$target_cov_metrics_file' or '$target_cov_metrics_file_2'") unless (-e $target_cov_metrics_file);
+	confess("ERROR: No target bed coverage metrics file found: '$target_cov_metrics_file_1' or '$target_cov_metrics_file_2'") unless (-e $target_cov_metrics_file);
 	my $aoa = csv (in => $target_cov_metrics_file);
 	
 	$cov_chrX = $aoa->[26]->[3] if ($aoa->[26]->[2] =~ /(Average|Median) chr X coverage( \(ignore 0x regions\))? over target region/);
