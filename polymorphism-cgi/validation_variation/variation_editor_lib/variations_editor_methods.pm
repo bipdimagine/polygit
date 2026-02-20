@@ -63,7 +63,13 @@ sub refine_heterozygote_composite {
 	my $total_time = time;
 	my $gids ;
 	my $print_time = 0;
+	#$rocksdb_pv->print_html($print_html);
+	eval {
 		$rocksdb_pv->load_polyviewer_variant();
+		};
+	if ($@){
+		return undef;
+	};
 	foreach my $g (@$list) {
 		$xp++;
 		print "@"  if $xp % 3 == 0 ;
@@ -126,9 +132,10 @@ sub refine_heterozygote_composite {
 		my $ttt =  time;
 		my $color_validation = "grey";
 	
-		foreach my $vid ( keys %{ $g->{all_variants} } ) {
+		foreach my $vid ( sort {$a cmp $b} keys %{ $g->{all_variants} } ) {
 			my $id= $g->{chr_name}."!".$g->{all_vector_ids}->{$vid};
 			my $vp = $rocksdb_pv->get_polyviewer_variant($id,1);
+			
 			#next unless $vp;
 			$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
 			$vp->gene($g);
