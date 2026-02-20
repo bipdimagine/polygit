@@ -154,9 +154,8 @@ my $nb = 0;
 		next if $row->{blacklist} > 80 && $select_best == 0;
 		next if $row->{blacklist} > 65;
 		if ($row->{caller_sr} && $row->{nb_caller} == 1  ){
-			next if $row->{mr} < 0.01 ;
 			next if $row->{mr} < 0.1 && $select_best == 0;
-			next if $row->{na} > 0.6 && $row->{nr} < 10 && $select_best == 0;
+			next if $row->{na} > 0.6 && $row->{nr} < 10 ;#&& $select_best == 0;
 #			
 #			$row->{mz} = $mz;
 #		$row->{mr} = $mr;
