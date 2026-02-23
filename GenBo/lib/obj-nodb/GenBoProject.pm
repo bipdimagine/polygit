@@ -668,7 +668,6 @@ has get_promoterAI_parquet_dir => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return if not $self->annotation_genome_version() eq 'HG38';
 		my $dir = $self->buffer->get_index_database_directory('promoterAI').'/../parquet/';
 		return $dir;
 	}
@@ -679,7 +678,6 @@ has get_promoterAI_parquet => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return if not $self->annotation_genome_version() eq 'HG38';
 		my $path = $self->get_promoterAI_parquet_dir().'/promoterAI.parquet';
 		return $path if -e $path;
 		return;
@@ -691,7 +689,6 @@ has get_promoterAI_filtred_parquet => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return if not $self->annotation_genome_version() eq 'HG38';
 		my $path = $self->get_promoterAI_parquet_dir().'/promoterAI.only_promoter.parquet';
 		return $path if -e $path;
 		return;

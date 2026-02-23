@@ -843,9 +843,8 @@ my $h_transmissions = {
 		$gene_id_filtering = $gene->id();
 		$sql_gene = "gene_name = '".$gene->id."'";
 	}
-		
 	
-	if ($promoter_ai_flag and $project->annotation_genome_version() eq 'HG38'){
+	if ($promoter_ai_flag){
 		$sql_gene .= "and (gene_mask & $maskcoding <> 0 or ABS(promoterAI) >= 0.2) ";
 	}
 	else {
@@ -928,7 +927,7 @@ sub get_rocksdb_mce_polyviewer_variant {
 	my $diro = $project->rocks_directory();
 	error("Oops! that's unexpected !!! ") unless -e $parquet;
 	my $sql = qq{select variant_index,gene_name from '$parquet' where  $where ; };
-	if ($promoter_ai_flag and $project->annotation_genome_version() eq 'HG38'){
+	if ($promoter_ai_flag){
 		my $parquet_promoter = $project->get_promoterAI_filtred_parquet();
 		 $sql = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a LEFT JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid WHERE $where };
 	}
