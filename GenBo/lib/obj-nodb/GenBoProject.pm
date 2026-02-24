@@ -2177,7 +2177,6 @@ sub changeAnnotationVersion {
 	}
 	my $l_annotation_version_history =
 	  join( ', ', sort @{ $self->annotation_version_history() } );
-	  warn Dumper $self->annotation_version_history();
 	confess("\n\nERROR: Project "
 		  . $self->name().join(";",@{$self->annotation_version_history() })
 		  . " never analised with annotation version $annot_version. Die.\n\nAnnotation Project History: $l_annotation_version_history\n\n"
@@ -4214,7 +4213,7 @@ sub createObject {
 	my $hashTypeObject = $self->hashTypeObject();
 	confess("\n\nERROR: No type defined to create object -$type- !! die...\n\n".Dumper $hash)  unless exists $hashTypeObject->{$type};
 	$hash->{project} = $self;
-
+	
 	my $typeObj = $hashTypeObject->{$type};
 	if ( $type eq 'captures' ) {
 		my $query = $self->buffer->getQuery();
@@ -4265,6 +4264,8 @@ sub createObject {
 		or $type eq "inversions" )
 	{
 		$object = $self->get_void_object($type);
+	
+#		die($type) if $type eq "inversions";
 		foreach my $k ( keys %$hash ) {
 			$object->{$k} = $hash->{$k};
 		}
