@@ -326,8 +326,20 @@ duckdb:/software/bin/duckdb
 
 
 ###################
-## singularity
+## singularity-run
 ################
+
+#deepvariant
+deepvariant-sif:/poly-disk/SINGULARITY/deepvariant.sif
+
+#deepsomatic
+deepsomatic-sif:/poly-disk/SINGULARITY/deepsomatic.sif
+
+#bcftools
+bcftools-sif:/poly-disk/SINGULARITY/deepsomatic.sif
+#singularity
+
+singularity-run:singularity run --bind /poly-disk:/poly-disk
 
 
 

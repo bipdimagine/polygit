@@ -42,6 +42,8 @@ my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
 my $dir_gvcf_out= $project->getCallingPipelineDir($patient->name.time.".deepvariant");
+my $deepsomatic = $buffer->software("deepsomatic");
+my $singularity = $buffer->software("singularity-run");
 my $bed = $dir_gvcf_out."/".$patient->name.".bed";
 unless ($project->isGenome){
 my @zbed;
@@ -60,27 +62,24 @@ my $dir_gvcf_tmp = $dir_gvcf_out."/tmp.".time;
 mkdir $dir_gvcf_tmp;
 my $cmd;
 $fork =20 if $fork >20;
-my $deepvariant = $buffer->software("deepvariant");
-my $singularity = $buffer->software("singularity-run");
 if ($project->isGenome) {
- $cmd = qq{$singularity $deepvariant run_deepvariant  --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out -num_shards=$fork};
+ $cmd = qq{$singularity $deepsomatic  --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out -num_shards=$fork};
 }
 else {
- $cmd = qq{$singularity $deepvariant run_deepvariant   --model_type=WES --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out -num_shards=$fork};
+ $cmd = qq{$singularity $deepsomatic run_deepsomatic   --model_type=WES_TUMOR_ONLY --ref=$ref --use_default_pon_filtering=true --reads_tumor=$bam --regions=$bed --output_vcf=$vcf_out -num_shards=$fork};
 }
 system($cmd);
-warn $cmd;
-warn $vcf_out;
 die() unless -e $vcf_out;
 
-my $vcf = $patient->getVariationsFileName("deepvariant");
-#if ($project->isExome or $patient->isGenome){
-my $cmd2 =qq{bcftools view   -c 1  -e '(QUAL<30 && FORMAT/VAF<0.15 && FORMAT/DP < 10)' $vcf_out -o $vcf -O z && tabix -f -p vcf $vcf};
-system($cmd2);
-#}
-#else {
-#	warn "cp $vcf_out $vcf && tabix -f -p vcf $vcf ";
-#	system("cp $vcf_out $vcf && tabix -f -p vcf $vcf ");
-#}
+my $vcf = $patient->getVariationsFileName("deepsomatic");
+warn $vcf_out;
 
+my $cmd2 =qq{bcftools view   -c 1  -e 'FILTER="RefCall"' $vcf_out | $Bin/fix_gt_deepvariant.pl | bgzip -c > $vcf  && tabix -f -p vcf $vcf};
+warn $cmd2;
+system($cmd2);
+
+#system(qq{$bcftools filter -e 'FILTER="RefCall"'   $vcf_out -o $vcf });
+
+#my $cmd2 =qq{bcftools view   -c 1  -e '(QUAL<30 && FORMAT/VAF<0.15 && FORMAT/DP < 10)' $vcf_out -o $vcf -O z && tabix -f -p vcf $vcf};
+#my $cmd2 =qq{bcftools view  $vcf_out -o $vcf -O z && tabix -f -p vcf $vcf};
 die() unless -e $vcf.".tbi";

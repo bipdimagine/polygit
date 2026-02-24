@@ -324,11 +324,20 @@ liftOver:/software/bin/liftOver
 #DUCKDB
 duckdb:/software/bin/duckdb
 
-
 ###################
-## singularity
+## singularity-run
 ################
 
+#deepvariant
+deepvariant-sif:/data-pure/software/SINGULARITY/deepvariant.sif
+
+#deepsomatic
+deepsomatic-sif:/data-pure/software/SINGULARITY/deepsomatic.sif
+
+#bcftools
+bcftools-sif:/data-pure/software/SINGULARITY/deepsomatic.sif
+
+singularity-run:singularity run --bind /data-pure:/data-pure --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs 
 
 
 ###########
