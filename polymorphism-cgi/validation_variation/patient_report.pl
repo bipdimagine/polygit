@@ -330,7 +330,7 @@ my $project_name = $cgi->param('project');
 my $polyweb_url = $buffer->config->{polyweb_url}->{polyweb_ROCKS};
 my $deja_vu_url = "$polyweb_url/polyweb/polydejavu/dejavu.html?input=";
 #my $lcdb_url = "http://$server//polyweb/polydejavu/dejavu.html?input=";
-my $deja_vu_light_url = "https://www.polyweb.fr/cgi-bin/HG38/polymorphism-cgi/validation_variation/variation_report.pl";
+my $deja_vu_light_url = "/cgi-bin/HG38/polymorphism-cgi/validation_variation/variation_report.pl";
 my $lcdb_url = $deja_vu_light_url;
 $lcdb_url =~s/variation_/lcdb_/;
 #"http://$server/$variation_script";
