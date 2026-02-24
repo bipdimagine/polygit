@@ -817,15 +817,6 @@ has promoterAI => (
 	default => sub {
 		my $self = shift;
 		return if $self->getChromosome->name() eq "MT";
-		return if $self->project->getVersion() =~ /HG19/;
-#		if ($self->project->getVersion() =~ /HG19/) {
-#			my @ltmp_r = split('!',$self->genomic_rocksdb_id);
-#			eval { $rocksid = $self->lift_over('HG38')->{'chromosome'}.'!'.sprintf("%010d", $self->lift_over('HG38')->{'position'}).'!'.$ltmp_r[-1]; };
-#			if($@) { return; }
-#		}
-#		else {
-#			$rocksid = $self->genomic_rocksdb_id;
-#		}
 		my $rocksid = $self->genomic_rocksdb_id;
 		my $res = $self->getChromosome->rocksdb("promoterAI")->get_raw($rocksid); 
 	 	return if not $res;

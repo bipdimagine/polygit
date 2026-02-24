@@ -295,7 +295,7 @@ if ($rc) {
 	#todo inverser mask I2
 	my @mask = split(';', $mask);
 	my @mask_i2 = ($mask[2] =~ /[A-Za-z]\d+/g);
-	$mask[2] = reverse @mask_i2;
+	$mask[2] = join('', reverse @mask_i2) if (scalar @mask_i2 > 1);
 	$mask = join(';', @mask);
 	warn('Mask after reverse I2 mask: '.$mask);
 }

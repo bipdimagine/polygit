@@ -601,10 +601,11 @@
 			
 		    function launch_variants_search() {
 		    	var promoter_ai_value;
-		    	if      (dijit.byId("slider_promoter_ai").get("value") == 1)    { promoter_ai_value = '0.6'; }
-			    else if (dijit.byId("slider_promoter_ai").get("value") == 2)    { promoter_ai_value = '0.7'; }
-			    else if (dijit.byId("slider_promoter_ai").get("value") == 3)    { promoter_ai_value = '0.9'; }
-		    	show_waiting('Search / Load datas');
+		    	if      (dijit.byId("slider_promoter_ai").get("value") == 1)    { promoter_ai_value = '0.4'; }
+		    	else if (dijit.byId("slider_promoter_ai").get("value") == 2)    { promoter_ai_value = '0.6'; }
+			    else if (dijit.byId("slider_promoter_ai").get("value") == 3)    { promoter_ai_value = '0.7'; }
+			    else if (dijit.byId("slider_promoter_ai").get("value") == 4)    { promoter_ai_value = '0.9'; }
+		    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
 				document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl?login=" + username + "&pwd=" + pwd + "&promoter_ai_value=" + promoter_ai_value;
 			    $.getJSON( url, function( data ) {

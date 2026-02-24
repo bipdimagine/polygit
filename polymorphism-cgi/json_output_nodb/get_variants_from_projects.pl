@@ -24,6 +24,7 @@ use update_variant_editor;
 use PolyviewerVariant;
 use dejavu_variants;
 use Storable qw/freeze thaw nfreeze nstore_fd nstore retrieve/;
+use List::MoreUtils qw(natatime);
 use JSON;
 
 
@@ -43,7 +44,7 @@ $dejavu_variants->hash_users_projects();
 exit(0) if not $dejavu_variants->hash_users_projects();
 
 print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
-$dejavu_variants->fork(8);
+$dejavu_variants->fork(10);
 
 my $max_gnomad_ac = 30;
 my $max_gnomad_ac_ho = 10;
@@ -62,25 +63,34 @@ my $parquet_promoter_ai = $project->get_promoterAI_filtred_parquet();
 print '.duckdb.';
 my @list_table_trio;
 #my $sql_promoter_ai = "PRAGMA threads=6; SELECT rocksdb_id FROM read_parquet(['$parquet_promoter_ai'])";
-my $sql_promoter_ai = "PRAGMA threads=6; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai']) WHERE ABS(promoterAI) >= $promoter_ai_value";
-#warn $sql_promoter_ai;
+my $sql_promoter_ai = "PRAGMA threads=10; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai']) WHERE ABS(promoterAI) >= $promoter_ai_value";
+
 
 my ($h_res_duck, $h_genes_only);
-my $duckdb = $buffer->software('duckdb');
-my $cmd = qq{set +H | $duckdb -json -c "$sql_promoter_ai"};
-my $json_duckdb = `$cmd`;
-if ($json_duckdb) {
-	my $decode = decode_json $json_duckdb;
-	my $i = 0;
-	foreach my $h (@$decode) {
-		if ($i == 1000) {
-			print '.';
-			$i = 0;
+foreach my $chr (@{$project->getChromosomes()}) {
+	my $chr_id = $chr->id();
+	next if $chr_id eq 'MT';
+	my $this_sql = $sql_promoter_ai;
+	$this_sql .= qq{ and starts_with(rocksdb_id, '$chr_id!')}; 
+	my $duckdb = $buffer->software('duckdb');
+	my $cmd = qq{set +H | $duckdb -json -c "$this_sql"};
+	my $json_duckdb = `$cmd`;
+	print '.|.';
+	if ($json_duckdb) {
+		my $decode = decode_json $json_duckdb;
+		my $i = 0;
+		foreach my $h (@$decode) {
+			$i++;
+			if ($i == 100000) {
+				print '.';
+				$i = 0;
+			}
+			$h_res_duck->{$h->{rocksdb_id}}->{geneid} = $h->{geneid};
+			$h_genes_only->{$h->{geneid}} = undef;
 		}
-		$h_res_duck->{$h->{rocksdb_id}}->{geneid} = $h->{geneid};
-		$h_genes_only->{$h->{geneid}} = undef;
 	}
-}
+} 
+print '.@.';
 
 $project->getChromosomes();
 my $h_vector;
@@ -88,7 +98,7 @@ my $n = 0;
 print '.vector.'.scalar(keys %$h_res_duck).'.';
 foreach my $rocksid (keys %$h_res_duck) {
 	$n++;
-	if ($n == 100) {
+	if ($n == 15000) {
 		print '.';
 		$n = 0;
 	}
@@ -115,7 +125,7 @@ foreach my $chr_id (sort keys %$h_vector) {
 	my $i = 0;
 	foreach my $id (@list_ids) {
 		$i++;
-		if ($i == 500) {
+		if ($i == 10000) {
 			print '.';
 			$i = 0;
 		}
@@ -144,10 +154,14 @@ foreach my $chr_id (sort keys %$h_vector) {
 print '.after_dv.'.$ok++.'.';
 
 
+$dejavu_variants->fork(3);
+if ($ok > 500) { $dejavu_variants->fork(5) }
+if ($ok > 1000) { $dejavu_variants->fork(10) }
 print '.checkvar.';
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
 print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
-print '.nbGenes:'.scalar(keys %{$hGenes}).'.';
+my $nb_genes = scalar(keys %{$hGenes});
+print '.nbGenes:'.$nb_genes.'.';
 
 my $html;
 $html .= qq{<table>};
@@ -157,7 +171,12 @@ foreach my $gene_id (sort keys %{$hGenes}) {
 	next if ($h_genes_only and not exists $h_genes_only->{$gene_id} and not exists $h_genes_only->{$l_gene_id_tmp[0]});
 	print '.';
 	my @list_variants = keys %{$hGenes->{$gene_id}};
-	$html .= $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+	eval {
+		$html .= $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+	};
+	if ($@) {
+		$html .= qq{ERROR with $gene_id};
+	}
 }
 $html .= qq{</tr>};
 $html .= qq{</table>};

@@ -2163,9 +2163,6 @@ sub rocksdb {
 	my $hash_name = $db.$self->id.$$;
 	return $self->project->{rocks}->{$hash_name} if exists $self->project->{rocks}->{$hash_name};
 	my $dir = $self->buffer->get_index_database_directory($db);
-	if ($db eq 'promoterAI' and $self->buffer->annotation_genome_version() eq 'HG19' ) {
-		$dir =~ s/HG19/HG38/;
-	}
 	$self->project->{rocks}->{$hash_name} =  GenBoNoSqlRocksAnnotation->new(dir=>$dir,mode=>"r",name=>$self->name);
 	return $self->project->{rocks}->{$hash_name};
 }

@@ -148,18 +148,34 @@ sub check_variants_from_gene {
 	my $nb_errors=0;
 	$pm->run_on_finish(
 		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
-			if ($self->fork == 1) {
-				$hGenes = $data->{genes};
-				$hVariants = $data->{variants};
-			}
-			else {
+			my $iii = 0;
+			if (exists $data->{lift}) {
 				foreach my $gid (keys %{$data->{lift}}) {
+					$iii++;
+					if ($iii == 250) {
+						print '.';
+						$iii = 0;
+					}
 					$self->{hash_lift_variants}->{$gid} = $data->{lift}->{$gid};
 				}
+			}
+			if (exists $data->{genes}) {
 				foreach my $gene_id (keys %{$data->{genes}}) {
+					$iii++;
+					if ($iii == 250) {
+						print '.';
+						$iii = 0;
+					}
 					$hGenes->{$gene_id} = $data->{genes}->{$gene_id};
 				}
+			}
+			if (exists $data->{variants}) {
 				foreach my $var_id (keys %{$data->{variants}}) {
+					$iii++;
+					if ($iii == 250) {
+						print '.';
+						$iii = 0;
+					}
 					$hVariants->{$var_id} = $data->{variants}->{$var_id};
 				}
 			}
@@ -184,6 +200,7 @@ sub check_variants_from_gene {
 			my $rocks_id = $var->rocksdb_id();
 			my $chr_id = $var->getChromosome->id();
 			
+			$hres->{start_job} = 1;
 			my @lGenes = @{$var->getGenes()};
 			foreach my $gene (@lGenes) {
 				if ($self->min_promoter_ai()) {
@@ -200,11 +217,6 @@ sub check_variants_from_gene {
 			if (scalar(@lGenes) == 0) {
 				$hres->{genes}->{intronic}->{$var_id} = undef;
 			}
-			
-			# STEP 2 - PolyviewerVariant
-#			my $vp = PolyviewerVariant->new();
-#			$vp->setLmdbVariant($var);
-			
 			my $vp = PolyviewerVariant->new();
 			$vp->setLmdbVariant($var);
 			$vp->{hgenes} = {};
@@ -239,10 +251,7 @@ sub check_variants_from_gene {
 			
 			my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos($var, \@list_parquet);
 			foreach my $project_name (keys %{$h_projects_patients}) {
-#				my $b = new GBuffer;
-#				my $pr = $b->newProject( -name => $project_name);
 				foreach my $patient_name (keys %{$h_projects_patients->{$project_name}}) {
-#					warn ref($h_projects_patients->{$project_name}->{$patient_name}->{print_html});
 					push(@{$hres->{variants}->{$var_id}->{polyviewer_html}}, $h_projects_patients->{$project_name}->{$patient_name}->{print_html});
 					my $hh;
 					$hh->{project_name} = $project_name;
@@ -250,13 +259,13 @@ sub check_variants_from_gene {
 					$hh->{ratio} = $h_projects_patients->{$project_name}->{$patient_name}->{ratio};
 					$hh->{dp} = $h_projects_patients->{$project_name}->{$patient_name}->{dp};
 					$hh->{model} = $h_projects_patients->{$project_name}->{$patient_name}->{model};
+					next if $hh->{model} eq 'father';
+					next if $hh->{model} eq 'mother';
+					next if $hh->{model} eq 'both';
+					next if $hh->{model} eq 'is_parent';
+					
 					push(@{$hres->{variants}->{$var_id}->{polyviewer_html_details_proj_pat}}, $hh);
-#					my $pat = $pr->getPatient($patient_name);
-#					my $print_html = polyviewer_html->new( project=>$pr, patient=>$pat,header=>\@headers, bgcolor=>"background-color:#607D8B" );
-#					push(@{$hVariants->{$var_id}->{polyviewer_html}}, $print_html);
 				}
-#				$pr = undef;
-#				$b = undef;
 			}
 			foreach my $gid (keys %$h_gnomadid) {
 				$hres->{lift}->{$gid} = $h_gnomadid->{$gid};
@@ -334,11 +343,6 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'ill' if $pat->status() eq '2';
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{family} = $pat->getFamily->name();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{description} = $p->description();
-	#TODO: here
-#		my $print_html = polyviewer_html->new( project=>$p, patient=>$pat,header=>\@headers, bgcolor=>"background-color:#607D8B" );
-#		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{print_html} = $print_html;
-#		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'He'; }
-#		else { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'Ho'; }
 	}
 	foreach my $id (keys %{$h_infos_patients}) {
 		my $pat_name = $h_infos_patients->{$id}->{name};
@@ -348,11 +352,6 @@ sub get_table_project_patients_infos {
 	}
 	$p = undef;
 	$b =undef;
-	
-#	warn "\n";
-#	warn "\n";
-#	warn Dumper $hres;
-	
 	return $hres;
 }
 
