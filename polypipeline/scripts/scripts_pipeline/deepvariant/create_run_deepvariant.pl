@@ -70,7 +70,7 @@ close(BED);
 foreach my $t (split(",",$type)){
 my $ref               = $project->genomeFasta();
 my $deepvariant = $buffer->software("deepvariant-sif");
-if ($type =~somatic){
+if ($type =~ /somatic/){
 	$deepvariant = $buffer->software("deepsomatic-sif");
 }
 my $singularity = $buffer->software("singularity-run");
