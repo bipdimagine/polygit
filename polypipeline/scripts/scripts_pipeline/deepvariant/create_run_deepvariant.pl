@@ -40,12 +40,15 @@ GetOptions(
 	"fork=s" =>\$fork,
 	"force=s" =>\$force,
 );
+die("please use -type=deepvariant or -type=deepsomatic or -type=deepvariant,deepsomatic") unless $type;
 foreach my $t (split(",",$type)){
-die("please use -type=deepvariant or -type=deepsomatic or -type=deepvariant,deepsomatic") if $type ne "deepvariant" or $type ne "deepsomatic";
+die("please use -type=deepvariant or -type=deepsomatic or -type=deepvariant,deepsomatic") if $t ne "deepvariant" and $t ne "deepsomatic";
+}
+
 my $date = `date`;
 chomp($date);
 print "\n" . "=" x 60 . "\n";
-	print "----  RUN  $RED $type $RESET --  \n ";
+	print "---- $RED CREATE  RUN  ".uc($type)." $RESET --  \n ";
 print "\n" . "=" x 60 . "\n";	
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
@@ -70,8 +73,10 @@ close(BED);
 foreach my $t (split(",",$type)){
 my $ref               = $project->genomeFasta();
 my $deepvariant = $buffer->software("deepvariant-sif");
+my $dcmd = "run_deepvariant   --model_type=WES";
 if ($type =~ /somatic/){
 	$deepvariant = $buffer->software("deepsomatic-sif");
+	$dcmd = "run_deepsomatic   --model_type=WES_TUMOR_ONLY";
 }
 my $singularity = $buffer->software("singularity-run");
 
@@ -90,10 +95,11 @@ $fork =20 if $fork >20;
 my $nsh = "";
 $nsh = "-num_shards=$fork" if $fork;
 if ($project->isGenome) {
- $cmd = qq{$singularity $deepvariant run_deepvariant  --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out $nsh};
+	die();
+ $cmd = qq{$singularity $deepvariant  --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out $nsh};
 }
 else {
- $cmd = qq{$singularity $deepvariant run_deepvariant   --model_type=WES --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out $nsh};
+ $cmd = qq{$singularity $deepvariant $dcmd --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out $nsh};
 }
 my $vcf = $patient->getVariationsFileName($type);
 
@@ -101,5 +107,6 @@ my $cmd2 =qq{$singularity $bcftools bcftools view   -c 1  -e '(QUAL<30 && FORMAT
 print CMD "$cmd && $cmd2 \n";
 }
 }
+
 close (CMD);
-print "your file is here : \n".$cmd_file."\n";
+print "$GREEN your file is here : $RESET\n".$cmd_file."\n";
