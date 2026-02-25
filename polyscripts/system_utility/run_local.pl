@@ -28,7 +28,9 @@ open my $log_fh, '>', '/tmp/jobs_errors.log' or die "Erreur log: $!";
 print "=" x 60 . "\n";
 print "? Jobs : $total\n";
 print "=" x 60 . "\n\n";
-
+my @jobe;
+my @joberror;
+my $nb =0;
 for my $i (0..$#commands) {
     my $cmd = $commands[$i];
     my $count = $i + 1;
@@ -49,6 +51,8 @@ for my $i (0..$#commands) {
         $success++;
         printf " ? (%.1fs)\n", $cmd_time;
     } else {
+		push(@jobe,$i);
+		push(@joberror,$cmd);
         $error++;
         printf " ?\n";
         print $log_fh "JOB $count: ERREUR\nCmd: $cmd\n\n";
@@ -64,5 +68,8 @@ print "? OK : $success/$total\n";
 print "? ERROR: $error/$total\n";
 print "??  TIME : " . sprintf("%.1f", $total_time) . "s\n";
 print "=" x 60 . "\n";
-
+print "=" x 60 . "\n" if @joberror;
+foreach my $c (@joberror){
+	print "$c.\n";
+}
 exit($error > 0 ? 1 : 0);

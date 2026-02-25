@@ -99,11 +99,11 @@ if ($project->isGenome) {
  $cmd = qq{$singularity $deepvariant  --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out $nsh};
 }
 else {
- $cmd = qq{$singularity $deepvariant $dcmd --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out $nsh};
+ $cmd = qq{$singularity $deepvariant $dcmd --ref=$ref --reads=$bam --regions=$bed --output_vcf=$vcf_out $nsh > /dev/null 2>&1};
 }
 my $vcf = $patient->getVariationsFileName($type);
 
-my $cmd2 =qq{$singularity $bcftools bcftools view   -c 1  -e '(QUAL<30 && FORMAT/VAF<0.15 && FORMAT/DP < 10)' $vcf_out -o $vcf -O z && $singularity $bcftools bcftools tabix -f -p vcf $vcf};
+my $cmd2 =qq{$singularity $bcftools bcftools view   -c 1  -e '(QUAL<30 && FORMAT/VAF<0.15 && FORMAT/DP < 10)' $vcf_out -o $vcf -O z > /dev/null 2>&1 && $singularity $bcftools bcftools tabix -f -p vcf $vcf > /dev/null 2>&1};
 print CMD "$cmd && $cmd2 \n";
 }
 }
