@@ -1304,7 +1304,11 @@
 				if (document.getElementById('denovo').checked == true) { l_models.push('denovo'); }
 				if (document.getElementById('recessive').checked == true) { l_models.push('recessive'); }
 				if (document.getElementById('both').checked == true) { l_models.push('both'); }
-				if (document.getElementById('any_parent').checked == true) { l_models.push('any_parent'); }
+				if (document.getElementById('any_parent').checked == true) {
+					l_models.push('any_parent');
+					l_models.push('mother');
+					l_models.push('father');
+				}
 				if (document.getElementById('solo').checked == true) { l_models.push('solo'); }
 		    	url += "&models=" + l_models.join(',');
 		    	
