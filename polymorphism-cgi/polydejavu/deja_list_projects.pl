@@ -52,6 +52,8 @@ my $buffer_init = new GBuffer;
 my $can_use_hgmd = $buffer_init->hasHgmdAccess($user_name);
 
 
+print $cgi->header('text/json-comment-filtered');
+print "{\"progress\":\".";
 
 my $hRes;
 $hRes->{ok} = 1;
@@ -86,8 +88,8 @@ $out .=  $cgi->start_div();
 $out .= qq{<table data-filter-control='true' data-sort-name="name" data-sort-order="desc" data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="top" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="15" data-page-list="[10, 15, 20, 50, 100]" data-resizable='true' id='table_projects_found' class='table table-striped' style='font-size:13px;'>};
 $out .= "<thead>";
 $out .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:10px;"});
-$out .= qq{<th data-field="found"></th>};
-$out .= qq{<th data-field="status" data-filter-control="input">Status</th>};
+#$out .= qq{<th data-field="found"></th>};
+#$out .= qq{<th data-field="status" data-filter-control="input">Status</th>};
 $out .= qq{<th data-field="name" data-filter-control="input" data-filter-control-placeholder="NGS2022_4000">Name</th>};
 $out .= qq{<th data-field="id" data-filter-control="input">ID</th>};
 $out .= qq{<th data-field="description" data-filter-control="input" data-filter-control-placeholder="">Description</th>};
@@ -105,6 +107,7 @@ my $ro_projects = GenBoNoSqlRocks->new(mode=>"r",dir=>$dir_pr, name=>"projects")
 
 my $nb_proj_ok = 0;
 foreach my $project_name (@lProjectNames) {
+	print '.';
 	my $id = $hProjects->{$project_name}->{id};
 	my $description = $hProjects->{$project_name}->{description};
 	$i_p++;
@@ -132,16 +135,16 @@ foreach my $project_name (@lProjectNames) {
 	$h_p->{$project_name} = '';
 	$h_p->{$project_name} .=  $cgi->start_Tr();
 	my ($html_glyph, $status, $style);
-	if ($ro_projects->get_raw($project_name)) {
-		$html_glyph = qq{<span style='color:green;' class='glyphicon glyphicon-ok'></span>};
-		$status = 'OK';
-		$nb_proj_ok++;
-	}
-	else {
+#	if ($ro_projects->get_raw($project_name)) {
+#		$html_glyph = qq{<span style='color:green;' class='glyphicon glyphicon-ok'></span>};
+#		$status = 'OK';
+#		$nb_proj_ok++;
+#	}
+#	else {
 		my $h_this_proj = $buffer_init->getQuery()->getProjectByName($project_name);
 		next if not $h_this_proj->{version} =~ /HG/;
 		next if $h_this_proj->{version} eq 'HG18';
-		
+		$nb_proj_ok++;
 		if ($h_this_proj->{is_somatic} == 1 or $h_this_proj->{dejavu} != 1) {
 			$html_glyph = qq{<span style='color:orange;' class='glyphicon glyphicon-ok'></span>};
 			$status = 'Excluded';
@@ -158,13 +161,15 @@ foreach my $project_name (@lProjectNames) {
 			}
 			next if $type_rna and not $type_dna;
 #			warn Dumper $h_this_proj;
+			
+			
 			$html_glyph = qq{<span style='color:red;' class='glyphicon glyphicon-exclamation-sign'></span>};
 			$status = 'Not in DV';
-			$style = qq{style="color:red;"};
+			#$style = qq{style="color:red;"};
 		}
-	}
-	$h_p->{$project_name} .=  $cgi->td("<center>$html_glyph</center>");
-	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$status</span></center>");
+#	}
+	#$h_p->{$project_name} .=  $cgi->td("<center>$html_glyph</center>");
+	#$h_p->{$project_name} .=  $cgi->td("<center><span $style>$status</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$project_name</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$id</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$description</span></center>");
@@ -241,10 +246,11 @@ $hRes->{html_list_captures}=$out_captures;
 $hRes->{html_list_phenotypes}=$out_phenos;
 $hRes->{nb_projects_ok} = $nb_proj_ok;
 
-print $cgi->header('text/json-comment-filtered');
 my $json_encode = encode_json $hRes;
+print ".\",";
+$json_encode =~ s/{//;
 print $json_encode;
-exit(0);
+POSIX::_exit(0);	
 
 
 

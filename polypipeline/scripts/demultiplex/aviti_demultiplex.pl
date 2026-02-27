@@ -342,7 +342,7 @@ if ($neb) {	# RNAseq NEB: Trim les adaptateurs
 	$settings->{"R1Adapter"} .= join('+',@$adaptors);
 	$settings->{"R2Adapter"} .= join('+',@$adaptors);
 	$settings->{"R1AdapterTrim"} = 'True';
-	$settings->{"R1AdapterTrim"} = 'True';
+	$settings->{"R2AdapterTrim"} = 'True';
 }
 foreach my $param (sort keys %$settings) {
 	push(@{$lines->{"[SETTINGS]"}},[$param,$settings->{$param},$lanes]);
@@ -356,7 +356,7 @@ my $ok_in_runmanifest;
 foreach my $data (@{$lines->{"[SAMPLES]"}}){
 	my $name = $data->[$pos_sample_name];
 	next if ($name =~ /_RC$/); 
-	next if ($name =~ /^PhiX$/);
+	next if ($name =~ /^PhiX/);
 	next if (exists $dj->{$name});
 	next unless ($name);
 	$error_not_in_project->{$name} = $patients{$name} unless (exists $patients{$name});
@@ -416,23 +416,27 @@ while($checkComplete == 1){
 }
 
 # Copy bcl
-#my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
-#warn $cmd_rsync;
-#my $exit_rsync = system($cmd_rsync);
-#die("Rsync error, please retry") if ($exit_rsync);
-#my $ss1 = $bcl_tmp.$runm_name;
+my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
+warn $cmd_rsync;
+my $exit_rsync = system($cmd_rsync);
+die("Rsync error, please retry") if ($exit_rsync);
+my $ss1 = $ss;
+$ss1 = $bcl_tmp.$runm_name if ($bcl_dir =~ /AVITI\/IMAGINE/);
 
 # Demultiplex command
-my $cmd = "singularity run -B $bcl_dir -B $dir_tmp /software/distrib/BASE2FASTQ/bases2fastq.2.2.sif bases2fastq ";
+my $cmd = "singularity run ";
+$cmd .= "-B $bcl_dir " unless ($bcl_dir =~ /AVITI\/IMAGINE/);
+$cmd .= "-B $dir_tmp /software/distrib/BASE2FASTQ/bases2fastq.2.2.sif bases2fastq ";
 $cmd .= "--error-on-missing ";
 #$cmd .= "--r2-cycles 58 " if (getpwuid($<) eq 'mperin'); # si le run n'est pas fini
 #$cmd .= "--settings 'I1MismatchThreshold,$mismatch' --settings 'I2MismatchThreshold,$mismatch' ";
 #$cmd .= "--settings 'I1Mask,".$mask->{'I1'}."' --settings 'I2Mask,".$mask->{'I2'}."' ";
 #$cmd .= "--settings 'R1FastQMask,".$mask->{'R1'}."' --settings 'R2FastQMask,".$mask->{'R2'}."' ";
 #$cmd .= "--settings 'UmiMask,".$mask->{'Umi'}."' ";
-$cmd .= "--run-manifest $ss --num-unassigned 500 --num-threads 40 "; # $ss1
+$cmd .= "--run-manifest $ss1 --num-unassigned 500 --num-threads 40 ";
 $cmd .= "--group-fastq --no-projects ";
-$cmd .= "$bcl_dir $dir_out"; # bcl_tmp
+$cmd .= "$bcl_dir $dir_out" unless ($bcl_dir =~ /AVITI\/IMAGINE/);
+$cmd .= "$bcl_tmp $dir_out" if ($bcl_dir =~ /AVITI\/IMAGINE/);
 
 # Demux only
 unless ($no_demux_only) {
@@ -564,16 +568,16 @@ sub report {
 		push(@row,colored::stabilo("blue",$l,1));
 		
 		if ($byline->{$l}->{'count'} < 1000000){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$byline->{$l}->{'percent'}),1)) ;
 		}
 		elsif (abs( $byline->{$l}->{'count'} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("red",$byline->{$l}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$byline->{$l}->{'percent'}),1)) ;
 		}
 		elsif (abs($byline->{$l}->{'count'} - $mean) > $sd){
-			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("yellow",$byline->{$l}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f",$byline->{$l}->{'percent'}),1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$byline->{$l}->{'count'},1),colored::stabilo("green",sprintf("%.1f%%",$byline->{$l}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("green",$byline->{$l}->{'count'},1),colored::stabilo("green",sprintf("%.1f",$byline->{$l}->{'percent'}),1)) ;
 		}
 		push(@rows,\@row);
 	}
@@ -588,16 +592,16 @@ sub report {
 		my @row;
 		push(@row,colored::stabilo("blue",$p,1));
 		if ($bypatient->{$p}->{'count'} < 1000000){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
 		}
 		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
 		}
 		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > $sd){
-			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
 		}
 		else {
-			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'},1),colored::stabilo("green",sprintf("%.1f%%",$bypatient->{$p}->{'percent'}*100),1)) ;
+			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'},1),colored::stabilo("green",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
 		}
 		push(@rows,\@row);
 	}
