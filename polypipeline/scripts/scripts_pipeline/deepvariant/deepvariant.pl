@@ -60,7 +60,7 @@ my $dir_gvcf_tmp = $dir_gvcf_out."/tmp.".time;
 mkdir $dir_gvcf_tmp;
 my $cmd;
 $fork =20 if $fork >20;
-my $deepvariant = $buffer->software("deepvariant");
+my $deepvariant = $buffer->software("deepvariant-sif");
 my $singularity = $buffer->software("singularity-run");
 if ($project->isGenome) {
  $cmd = qq{$singularity $deepvariant run_deepvariant  --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out -num_shards=$fork};

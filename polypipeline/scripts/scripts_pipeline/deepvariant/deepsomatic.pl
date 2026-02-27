@@ -31,6 +31,7 @@ GetOptions(
 	"vcf=s" => \$final_vcf,
 	"patient=s"=>\$patient_name,
 	"fork=s" =>\$fork,
+	"print=s"  =>\$fork,
 );
 my $date = `date`;
 chomp($date);
@@ -42,7 +43,7 @@ my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
 my $dir_gvcf_out= $project->getCallingPipelineDir($patient->name.time.".deepvariant");
-my $deepsomatic = $buffer->software("deepsomatic");
+my $deepsomatic = $buffer->software("deepsomatic-sif");
 my $singularity = $buffer->software("singularity-run");
 my $bed = $dir_gvcf_out."/".$patient->name.".bed";
 unless ($project->isGenome){
@@ -63,7 +64,7 @@ mkdir $dir_gvcf_tmp;
 my $cmd;
 $fork =20 if $fork >20;
 if ($project->isGenome) {
- $cmd = qq{$singularity $deepsomatic  --model_type=WGS --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out -num_shards=$fork};
+ $cmd = qq{$singularity $deepsomatic  run_deepsomatic --model_type=WGS_TUMOR_ONLY --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam --output_vcf=$vcf_out -num_shards=$fork};
 }
 else {
  $cmd = qq{$singularity $deepsomatic run_deepsomatic   --model_type=WES_TUMOR_ONLY --ref=$ref --use_default_pon_filtering=true --reads_tumor=$bam --regions=$bed --output_vcf=$vcf_out -num_shards=$fork};
