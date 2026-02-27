@@ -11,6 +11,7 @@ use Compress::Snappy;
 use MIME::Base64;
 use Storable qw(store retrieve freeze dclone thaw);
 use JSON;
+use MCE::Loop;
 
 
 #use polyviewer_html;
@@ -58,13 +59,17 @@ has hash_projects_ids_names => (
 	lazy    => 1,
 );
 
-
 has user_name => (
 	is		=> 'rw',
 	lazy    => 1,
 );
 
 has pwd => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has min_ratio => (
 	is		=> 'rw',
 	lazy    => 1,
 );
@@ -80,6 +85,21 @@ has max_gnomad_ac => (
 );
 
 has max_gnomad_ac_ho => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has only_ill_patients => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has only_strict_ill_patients => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has models => (
 	is		=> 'rw',
 	lazy    => 1,
 );
@@ -122,12 +142,15 @@ sub check_variants_from_gene {
 	my ($h_dv_var_ids, @lVarIds, @lVar, $h_dv_var_ids_erros_lift);
 	my ($total, $total_pass);
 	my @list_var;
+	$self->buffer->dbh_deconnect();
+	$self->project->disconnect();
+	$self->project->getChromosomes();
 	foreach my $chr_id (sort keys %{$h_dv_rocks_ids}) {
 		print '@';
 		my $chr = $self->project->getChromosome($chr_id);
 		foreach my $rocks_id (sort keys %{$h_dv_rocks_ids->{$chr_id}}) {
 			$ii++;
-			if ($ii == 50) {
+			if ($ii == 5) {
 				print '.';
 				$ii = 0;
 			}
@@ -148,11 +171,12 @@ sub check_variants_from_gene {
 	my $nb_errors=0;
 	$pm->run_on_finish(
 		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
+			print '.enter.';
 			my $iii = 0;
 			if (exists $data->{lift}) {
 				foreach my $gid (keys %{$data->{lift}}) {
 					$iii++;
-					if ($iii == 250) {
+					if ($iii == 50) {
 						print '.';
 						$iii = 0;
 					}
@@ -162,7 +186,7 @@ sub check_variants_from_gene {
 			if (exists $data->{genes}) {
 				foreach my $gene_id (keys %{$data->{genes}}) {
 					$iii++;
-					if ($iii == 250) {
+					if ($iii == 50) {
 						print '.';
 						$iii = 0;
 					}
@@ -172,30 +196,29 @@ sub check_variants_from_gene {
 			if (exists $data->{variants}) {
 				foreach my $var_id (keys %{$data->{variants}}) {
 					$iii++;
-					if ($iii == 250) {
+					if ($iii == 50) {
 						print '.';
 						$iii = 0;
 					}
 					$hVariants->{$var_id} = $data->{variants}->{$var_id};
 				}
 			}
+			print '.end.';
 		}
 	);
 	
 	my $nb = int((scalar(@list_var)+1)/($self->fork));
-	$nb = 20 if $nb == 0;
+#	$nb = 20 if $nb == 0;
+	$nb = 10;
+	print ".split_by_$nb.";
 	my $iter = natatime($nb, @list_var);
+	$self->buffer->dbh_deconnect();
 	$self->project->disconnect();
 	while( my @tmp = $iter->() ){
  	 	my $pid = $pm->start and next;
-		$ii = 0;
 		my $hres;
 		foreach my $var (@tmp) {
-			$ii++;
-			if ($ii == 10) {
-				print '.';
-				$ii = 0;
-			}
+			print '.';
 			my $var_id = $var->id();
 			my $rocks_id = $var->rocksdb_id();
 			my $chr_id = $var->getChromosome->id();
@@ -241,7 +264,7 @@ sub check_variants_from_gene {
 			my @list_parquet;
 			foreach my $project_id (sort keys %{$h_dv_rocks_ids->{$chr_id}->{$rocks_id}}) {
 				my $project_name = $self->buffer->getQuery->getProjectNameFromId($project_id);
-				next if not exists $self->hash_users_projects->{$project_name};
+				next if not exists $self->hash_users_projects->{all} and not exists $self->hash_users_projects->{$project_name};
 				my $project_type_cache = $self->{hash_projects_ids_names}->{$project_id}->{type};
 				$self->{hash_projects_ids_names}->{$project_id}->{name} = $project_name;
 				$self->{hash_projects_ids_names}->{$project_id}->{type} = $project_type_cache;
@@ -250,7 +273,14 @@ sub check_variants_from_gene {
 			}
 			
 			my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos($var, \@list_parquet);
+			my $ip = 0;
 			foreach my $project_name (keys %{$h_projects_patients}) {
+				$ip++;
+				if ($ip == 5) {
+					print '.';
+					$ip = 0;
+				}
+				my ($h_pat_done, $h_pat_filtred);
 				foreach my $patient_name (keys %{$h_projects_patients->{$project_name}}) {
 					push(@{$hres->{variants}->{$var_id}->{polyviewer_html}}, $h_projects_patients->{$project_name}->{$patient_name}->{print_html});
 					my $hh;
@@ -259,23 +289,33 @@ sub check_variants_from_gene {
 					$hh->{ratio} = $h_projects_patients->{$project_name}->{$patient_name}->{ratio};
 					$hh->{dp} = $h_projects_patients->{$project_name}->{$patient_name}->{dp};
 					$hh->{model} = $h_projects_patients->{$project_name}->{$patient_name}->{model};
-					next if $hh->{model} eq 'father';
-					next if $hh->{model} eq 'mother';
-					next if $hh->{model} eq 'both';
-					next if $hh->{model} eq 'is_parent';
-					
-					push(@{$hres->{variants}->{$var_id}->{polyviewer_html_details_proj_pat}}, $hh);
+					if ($self->models()) {
+						$h_pat_filtred->{$patient_name}->{$hh->{model}} = 1 if (not exists $self->{models}->{$hh->{model}});
+					}
+					if ($self->min_ratio()) {
+						my $this_ratio = $h_projects_patients->{$project_name}->{$patient_name}->{ratio_value};
+						$h_pat_filtred->{$patient_name}->{'ratio_'.$this_ratio} = 1 if ($this_ratio ne '?' and $this_ratio < $self->min_ratio());
+					}
+					$h_pat_done->{$patient_name} = $hh;
+				}
+				if (keys %$h_pat_done > keys %$h_pat_filtred) {
+					foreach my $patient_name (keys %{$h_pat_done}) {
+						push(@{$hres->{variants}->{$var_id}->{polyviewer_html_details_proj_pat}}, $h_pat_done->{$patient_name});
+					}
 				}
 			}
 			foreach my $gid (keys %$h_gnomadid) {
 				$hres->{lift}->{$gid} = $h_gnomadid->{$gid};
 			}
 		}
+		close STDOUT;
+		close STDERR;
+		print '!';
 	 	$pm->finish(0, $hres);
 	} 
-	sleep(3); 
 	$pm->wait_all_children();
-	$self->project->disconnect();
+	
+	print '._end_check_.';
 	return ($hGenes, $hVariants);
 	
 }
@@ -300,8 +340,14 @@ sub get_table_project_patients_infos {
 			my $ratio = '?';
 			$ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100 if ($h_infos_patients->{$nb_pat}->{dp});
 			my $text = 'AC:'.$info;
-			if ($ratio and $ratio eq '?') { $text .= ', Ratio: ?'; }
-			elsif ($ratio) { $text .= ', Ratio:'.int($ratio); }
+			if ($ratio and $ratio eq '?') {
+				$text .= ', Ratio: ?';
+				$h_infos_patients->{$nb_pat}->{ratio_value} = '?';
+			}
+			elsif ($ratio) {
+				$text .= ', Ratio:'.int($ratio);
+				$h_infos_patients->{$nb_pat}->{ratio_value} = int($ratio);
+			}
 			$h_infos_patients->{$nb_pat}->{ratio} = $text;
 		}
 		elsif ($i == 3) {
@@ -318,7 +364,6 @@ sub get_table_project_patients_infos {
     		elsif ($info == 512) { $model = 'error'; }
     		else { $model = 'error2'; }
 			$h_infos_patients->{$nb_pat}->{model} = $model;
-			
 			$i = 0;
 			$nb_pat++;
 		}
@@ -328,7 +373,8 @@ sub get_table_project_patients_infos {
 	my $p = $b->newProject( -name => $project_name);
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
-	my $found_healthy_patient;
+	my $found_healthy_patient = 0;
+	my $found_ill_patient = 0;
 	foreach my $pat (@lPat) {
 		next if not exists $h_tmp_pat->{$pat->id};
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
@@ -339,16 +385,32 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = 'male' if $pat->sex() eq '1';
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = 'female' if $pat->sex() eq '2';
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = '-';
-		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'healthy' if $pat->status() eq '1';
-		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'ill' if $pat->status() eq '2';
+		if ($pat->status() eq '1') {
+			$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'healthy';
+			$found_healthy_patient++;
+		}
+		if ($pat->status() eq '2') {
+			$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'ill';
+			$found_ill_patient++;
+		}
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{family} = $pat->getFamily->name();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{description} = $p->description();
 	}
-	foreach my $id (keys %{$h_infos_patients}) {
-		my $pat_name = $h_infos_patients->{$id}->{name};
-		next if not $pat_name;
-		next if $h_infos_patients->{$id}->{status_txt} ne 'ill';
-		$hres->{$pat_name} = $h_infos_patients->{$id};
+	
+	#TODO: idem, je dois garder l'info des parents avec l'option only_ill si au moins un pat malade (faire h filters ici aussi pour le faire)
+	my $ok_ill = 1;
+	if ($self->only_ill_patients()) {
+		$ok_ill = undef if $found_ill_patient == 0;
+	}
+	elsif ($self->only_strict_ill_patients()) {
+		$ok_ill = undef if $found_healthy_patient > 0;
+	}
+	if ($ok_ill) {
+		foreach my $id (keys %{$h_infos_patients}) {
+			my $pat_name = $h_infos_patients->{$id}->{name};
+			next if not $pat_name;
+			$hres->{$pat_name} = $h_infos_patients->{$id};
+		}
 	}
 	$p = undef;
 	$b =undef;
@@ -358,7 +420,7 @@ sub get_table_project_patients_infos {
 sub get_from_duckdb_project_patients_infos {
 	my ($self, $var, $list_files) = @_;
 	return if scalar(@$list_files) == 0;
-	my $sql = "PRAGMA threads=3; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
+	my $sql = "PRAGMA threads=1; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
 	
 	my ($pos38, $alt38) = split('!', $var->rocksdb_id());
 	my $find_pos_s = $var->start() - 5;
@@ -496,6 +558,9 @@ sub print_line_variant_all_patients {
 		$this_print_html->variant->{patients_calling}->{$pat->id()}->{pc} = $h_proj_pat->{ratio};
 		$this_print_html->variant->{patients_calling}->{$pat->id()}->{dp} = 'DP:'.$h_proj_pat->{dp};
 		$this_print_html->variant->{patients_calling}->{$pat->id()}->{model} = $h_proj_pat->{model};
+		
+		#TODO: grosse amelioration a faire ici pour recuperer les valeurs de tous les patients de la famille de ce projet
+		
 		push(@$list_print_html, $this_print_html);
 	}
 	my $cgi = $print_html->cgi;
