@@ -35,7 +35,7 @@ if(file.exists(configPath))
   
   # AnnotPath = "/Users/nicolas/Documents/MagicMorgan/Methode_RNAseq_DevL/Annots/AllEns.Rds"
   AnnotPath = "/data-isilon/Cagnard/MagicMorgan/Methode_RNAseq_DevL/Annots/AllEns.Rds"
-  genelistPath = "/software/polyweb/poly-disk/poly-src/polygit/polyscripts/polyrnaseq/genes_list.pl"
+  genelistPath = "/data-pure/software/poly-src/duckdb/polygit/polyscripts/polyrnaseq/genes_list.pl"
   runcluster = "/software/bin/run_cluster.pl"
   
   Annots = readRDS(AnnotPath)
