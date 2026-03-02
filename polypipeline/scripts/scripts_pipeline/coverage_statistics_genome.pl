@@ -63,7 +63,11 @@ my $pm   = new Parallel::ForkManager($fork);
 my $tabix = $buffer->software("tabix");
 my $bgzip = $buffer->software("bgzip");
 my $res;
-my $patients = $project->getPatients();
+
+my $patients;
+if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
+else { $patients = $project->getPatients(); }
+
 if ($project->isGenome){
 	$pm->run_on_finish(
 		sub {
@@ -87,7 +91,6 @@ if ($project->isGenome){
 		 warn  $patient." ".$res->{$patient}->{sum};
 		}
 	);
-$patient_name="all" unless $patient_name;	
 foreach my $patient (@{$patients}){
 	my $all_sum;
 	
@@ -148,7 +151,6 @@ $pm->run_on_finish(
 #		 warn  $patient." ".$res->{$patient}->{sum};
 		}
 	);
-$patient_name="all" unless $patient_name;	
 foreach my $patient (@{$patients}){
 	my $all_sum;
 	
