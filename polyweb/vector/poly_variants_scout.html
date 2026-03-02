@@ -745,8 +745,8 @@
 			        }
 			
 			        var job_id = startData.job_id;
-			        console.log(job_id);
-			
+					
+					let launch_date = new Date();
 					var i_check = 0;
 			        var interval = setInterval(function() {
 			            $.getJSON(url + "&job_id=" + job_id, function(data) {
@@ -756,7 +756,7 @@
 			                	i_check++;
 			                	if (i_check == 3) {
 			                		let now = new Date();
-			                		document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...<br><br>(still in progress at at <b>" + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b>)</i>";
+			                		document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...<br><br>launch at <b>" + launch_date.getHours() + ':' + launch_date.getMinutes() + ':' + launch_date.getSeconds() + "</b><br>still in progress at at <b>" + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b></i>";
 			                		i_check = 0;
 			                	}
 			                    return; // on attend
