@@ -654,6 +654,7 @@
 				}
 				
 				var l_models = [];
+				if (document.getElementById('parent').checked == true) { l_models.push('parent'); }
 				if (document.getElementById('strict_denovo').checked == true) { l_models.push('strict_denovo'); }
 				if (document.getElementById('denovo').checked == true) { l_models.push('denovo'); }
 				if (document.getElementById('recessive').checked == true) {
@@ -682,19 +683,7 @@
 		    	
 		    	console.log(url);
 		    	
-			    $.getJSON( url, function( data ) {
-			    	var html_table = "";
-			    	$.each( data, function( key, val ) {
-			    		if (key == 'html') {
-			    			html_table = val;
-			    		}
-  					});
-					document.getElementById("content_res").innerHTML = "";
-					var myNode = document.getElementById("content_res");
-			    	var myPanel = $(html_table);
-					myPanel.appendTo(myNode);
-					dijit.byId('waiting').hide();
-			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
+			    launchJob(url);
 		    }
 	    	
 	    	function enable_table_search() {
@@ -743,6 +732,62 @@
 			         l.classList.add("glyphicon-triangle-bottom");
 			        
 			    }
+			}
+			
+			function launchJob(url) {
+			    dijit.byId('waiting').show();
+			    $.getJSON(url, function(startData) {
+			
+			        if (startData.status !== "started") {
+			            alert("ERROR: job not started");
+			            dijit.byId('waiting').hide();
+			            return;
+			        }
+			
+			        var job_id = startData.job_id;
+			        console.log(job_id);
+			
+					var i_check = 0;
+			        var interval = setInterval(function() {
+			            $.getJSON(url + "&job_id=" + job_id, function(data) {
+			
+			                if (data.status === "running") {
+			                	//console.log('running');
+			                	i_check++;
+			                	if (i_check == 3) {
+			                		let now = new Date();
+			                		document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...<br><br>(still in progress at at <b>" + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b>)</i>";
+			                		i_check = 0;
+			                	}
+			                    return; // on attend
+			                }
+			
+			                if (data.status === "finished") {
+								//console.log('finished!');
+			                    clearInterval(interval);
+			
+			                    var html_table = data.html;
+			
+			                    document.getElementById("content_res").innerHTML = "";
+			                    var myNode = document.getElementById("content_res");
+			                    var myPanel = $(html_table);
+			                    myPanel.appendTo(myNode);
+			
+			                    dijit.byId('waiting').hide();
+			                }
+			
+			            }).fail(function() {
+			                clearInterval(interval);
+			                alert("ERROR during polling");
+			                dijit.byId('waiting').hide();
+			            });
+			
+			        }, 5000); // toutes les 5 secondes
+			
+			    }).fail(function() {
+			        alert("ERROR: please contact bioinformatics platform");
+			        dijit.byId('waiting').hide();
+			    });
 			}
 			
 		</script>

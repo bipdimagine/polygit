@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 $|=1;
+use POSIX qw(SIGPIPE);
+$SIG{SIGPIPE} = 'IGNORE';
+
 use CGI qw/:standard :html3/;
 use strict;
 use FindBin qw($Bin);
@@ -28,9 +31,57 @@ use List::MoreUtils qw(natatime);
 use JSON;
 use MCE::Loop;
 
+
 my $fork = 5;
 
 my $cgi = new CGI();
+
+use POSIX qw(setsid);
+use JSON;
+use File::Path qw(make_path);
+
+my $job_id = $cgi->param('job_id');
+my $job_dir = "/tmp/polyweb_jobs";
+make_path($job_dir) unless -d $job_dir;
+
+# =========================
+# MODE POLLING (attente résultat)
+# =========================
+if ($job_id) {
+    my $file = "$job_dir/$job_id.json";
+    print $cgi->header('application/json');
+
+    if (-e $file) {
+        open(my $fh, "<", $file);
+        local $/;
+        my $json = <$fh>;
+        close $fh;
+        print $json;
+    }
+    else {
+        print encode_json({ status => "running" });
+    }
+    exit(0);
+}
+
+# =========================
+# MODE LANCEMENT JOB
+# =========================
+
+$job_id = time() . "_" . $$ . "_" . int(rand(10000));
+my $outfile = "$job_dir/$job_id.json";
+
+print $cgi->header('application/json');
+print encode_json({ status => "started", job_id => $job_id });
+
+my $pid = fork();
+exit(0) if $pid;   # le parent sort immédiatement
+
+# ===== ENFANT =====
+setsid();
+open STDIN,  '<', '/dev/null';
+open STDOUT, '>', '/dev/null';
+open STDERR, '>', '/dev/null';
 
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
@@ -238,14 +289,22 @@ $html .= join('', @list_html_genes);
 $html .= qq{</tr>};
 $html .= qq{</table>};
 
+#my $hRes;
+#$hRes->{html} = $html;
+#my $json_encode = encode_json $hRes;
+#print ".\",";
+#$json_encode =~ s/{//;
+#print $json_encode;
+#
+#POSIX::_exit(0);
+
 my $hRes;
-$hRes->{html} = $html;
-my $json_encode = encode_json $hRes;
-print ".\",";
-$json_encode =~ s/{//;
-print $json_encode;
+$hRes->{status} = "finished";
+$hRes->{html}   = $html;
+
+open(my $out, ">", $outfile);
+print $out encode_json($hRes);
+close $out;
 
 POSIX::_exit(0);
-
-
 
