@@ -171,7 +171,7 @@ sub check_variants_from_gene {
 	my $nb_errors=0;
 	$pm->run_on_finish(
 		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
-			print '.enter.';
+			print '.s.';
 			my $iii = 0;
 			if (exists $data->{lift}) {
 				foreach my $gid (keys %{$data->{lift}}) {
@@ -203,7 +203,7 @@ sub check_variants_from_gene {
 					$hVariants->{$var_id} = $data->{variants}->{$var_id};
 				}
 			}
-			print '.end.';
+			print '.e.';
 		}
 	);
 	
@@ -377,6 +377,9 @@ sub get_table_project_patients_infos {
 	my $found_ill_patient = 0;
 	foreach my $pat (@lPat) {
 		next if not exists $h_tmp_pat->{$pat->id};
+		if ($pat->isParent) {
+			$h_infos_patients->{$nb_pat}->{model} = 'parent';
+		}
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
 		my $icon = $pat->small_icon();
 		$icon =~ s/"/'/g;
@@ -542,7 +545,8 @@ sub print_line_variant_all_patients {
 	my $out;
 	my $hpatients;
 	my $i = 0;
-	my $list_print_html;
+	
+	my $h_proj_pat_list_print_html;
 	foreach my $h_proj_pat (@{$list_h_details}) {
 		my $b = new GBuffer;
 		my $pr = $b->newProject(-name => $h_proj_pat->{project_name});
@@ -550,7 +554,7 @@ sub print_line_variant_all_patients {
 		$pr->getFamilies();
 		$pr->project_root_path();
 		my $pat = $pr->getPatient($h_proj_pat->{patient_name});
-		$pat->getFamily->name();
+		my $fam_name = $pat->getFamily->name();
 		foreach my $this_pat (@{$pat->getFamily->getPatients()}) { $this_pat->alignmentMethods(); }
 		my $this_print_html = polyviewer_html->new( project=>$pr, patient=>$pat,header=>\@headers, bgcolor=>"background-color:#607D8B" );
 		$this_print_html->variant($polyviewer_variant);
@@ -558,10 +562,12 @@ sub print_line_variant_all_patients {
 		$this_print_html->variant->{patients_calling}->{$pat->id()}->{pc} = $h_proj_pat->{ratio};
 		$this_print_html->variant->{patients_calling}->{$pat->id()}->{dp} = 'DP:'.$h_proj_pat->{dp};
 		$this_print_html->variant->{patients_calling}->{$pat->id()}->{model} = $h_proj_pat->{model};
-		
-		#TODO: grosse amelioration a faire ici pour recuperer les valeurs de tous les patients de la famille de ce projet
-		
-		push(@$list_print_html, $this_print_html);
+		if ($pat->isParent) {
+			push (@{$h_proj_pat_list_print_html->{$h_proj_pat->{project_name}}->{$fam_name}->{parents}}, $this_print_html);
+		}
+		else {
+			push (@{$h_proj_pat_list_print_html->{$h_proj_pat->{project_name}}->{$fam_name}->{children}}, $this_print_html);
+		}
 	}
 	my $cgi = $print_html->cgi;
 	my $icon = qq{<img width="32" height="32" src="https://img.icons8.com/external-gliphyline-royyan-wijaya/32/external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15.png" alt="external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15"/>};
@@ -587,26 +593,34 @@ sub print_line_variant_all_patients {
 	$out .= "\n";
 	
 	my (@l_html_calling, $h_fam_done);
-	foreach my $this_print_html (@$list_print_html) {
-		my $html_pat = $this_print_html->calling();
-		my $project_name = $this_print_html->patient->getProject->name();
-		next if exists $h_fam_done->{$project_name.'_'.$this_print_html->patient->getFamily->name()};
-		$h_fam_done->{$project_name.'_'.$this_print_html->patient->getFamily->name()} = undef;
-		my (@l_names, @l_bam);
-		foreach my $pat (@{$this_print_html->patient->getFamily->getPatients()}) {
-			push(@l_names, $pat->name());
-			push(@l_bam, $pat->bamUrl());
+	foreach my $proj_name (sort keys %{$h_proj_pat_list_print_html}) {
+		foreach my $fam_name (sort keys %{$h_proj_pat_list_print_html->{$proj_name}}) {
+			my $list_print_html;
+			if (exists $h_proj_pat_list_print_html->{$proj_name}->{$fam_name}->{children}) {
+				push(@$list_print_html, $h_proj_pat_list_print_html->{$proj_name}->{$fam_name}->{children}->[0]);
+			}
+			else {
+				@$list_print_html = @{$h_proj_pat_list_print_html->{$proj_name}->{$fam_name}->{parents}};
+			}
+			foreach my $this_print_html (@$list_print_html) {
+				my $html_pat = $this_print_html->calling();
+				my (@l_names, @l_bam);
+				foreach my $pat (@{$this_print_html->patient->getFamily->getPatients()}) {
+					push(@l_names, $pat->name());
+					push(@l_bam, $pat->bamUrl());
+				}
+				my $pnames = join(';', @l_names);
+				my $f = join(';', @l_bam);
+				my $gn = $this_print_html->patient->getProject->getVersion();
+				my $locus;
+				if ($gn =~ /HG19/) { $locus = $self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{chr19}.':'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}.'-'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}; }
+				else { $locus = $polyviewer_variant->locus(); }
+				my $igv_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$proj_name","$pnames","$f","$locus","/","$gn")' style="color:black"></button>};
+				my $project_description = $this_print_html->patient->getProject->name().', Description: '.$this_print_html->patient->getProject->description();
+				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;'><center><button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><td style='padding-right:5px;'>".$igv_b."</td></center></td><td>".$html_pat."</td></tr>");
+				push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
+			}
 		}
-		my $pnames = join(';', @l_names);
-		my $f = join(';', @l_bam);
-		my $gn = $this_print_html->patient->getProject->getVersion();
-		my $locus;
-		if ($gn =~ /HG19/) { $locus = $self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{chr19}.':'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}.'-'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}; }
-		else { $locus = $polyviewer_variant->locus(); }
-		my $igv_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus","/","$gn")' style="color:black"></button>};
-		my $project_description = $this_print_html->patient->getProject->name().', Description: '.$this_print_html->patient->getProject->description();
-		push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;'><center><button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><td style='padding-right:5px;'>".$igv_b."</td></center></td><td>".$html_pat."</td></tr>");
-		push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
 	}
 	
 	my $out_calling = qq{<center><table style='width:98%;max-height:200px;'>};
@@ -625,8 +639,6 @@ sub print_line_variant_all_patients {
 	$out .= $cgi->td( $style, $print_html->transcripts() );
 	$out .= $cgi->end_Tr();
 	$out .= "\n";
-	
-	$list_print_html = undef;
 	return $out;
 }
 
