@@ -318,8 +318,6 @@ if ($launch_job) {
 	open(my $out, ">", $outfile);
 	print $out encode_json($hRes);
 	close $out;
-	
-	POSIX::_exit(0);
 }
 else {
 	my $hRes;
@@ -329,7 +327,6 @@ else {
 	$json_encode =~ s/{//;
 	print $json_encode;
 	exit(0);
-	#POSIX::_exit(0);
 }
 
 
