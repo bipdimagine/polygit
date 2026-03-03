@@ -188,40 +188,73 @@ print '.convert.';
 my $ok = 0;
 my $h_rocks_to_view;
 
+my @lChr_vec = sort keys %$h_vector;
 
-foreach my $chr_id (sort keys %$h_vector) {
-	print '.';
-	my $chr = $project->getChromosome($chr_id);
-	my @list_ids = $h_vector->{$chr_id}->Index_List_Read();
-	my $i = 0;
-	foreach my $id (@list_ids) {
-		$i++;
-		if ($i == 2500) {
-			print '.';
-			$i = 0;
-		}
-		my $res = $chr->rocks_dejavu->dejavu_interval($id -1 , $id +1);
-		foreach my $dv_rocks_id (keys %{$res}) {
-			my $nb_pat_he = 0;
-			my $nb_pat_ho = 0;
-			my $has_in_my_projects;
-			foreach my $proj_id (keys %{$res->{$dv_rocks_id}}) {
-				$has_in_my_projects = 1 if $only_my_projects and exists $dejavu_variants->hash_users_projects->{$proj_id};
-				next if ($proj_id eq 'polybtf');
-				$nb_pat_he += $res->{$dv_rocks_id}->{$proj_id}->{he};
-				$nb_pat_ho += $res->{$dv_rocks_id}->{$proj_id}->{ho};
+my $chunk_size = int((scalar(@lChr_vec)+1)/($fork));
+$chunk_size = 3 if $chunk_size < 3;
+MCE::Loop->init(
+   max_workers => $fork, chunk_size => 'auto'
+);
+my @results_convert = mce_loop {
+	my ($mce, $chunk_ref, $chunk_id) = @_;
+	my $b = new GBuffer;
+	my $pr = $b->newProject(-name => $project_name);
+	my ($local_h_res, $local_h_rocks, $local_ok);
+	foreach my $chr_id (@$chunk_ref) {
+		print '.';
+		my $chr = $pr->getChromosome($chr_id);
+		my @list_ids = $h_vector->{$chr_id}->Index_List_Read();
+		my $i = 0;
+		foreach my $id (@list_ids) {
+			$i++;
+			if ($i == 2500) {
+				print '.';
+				$i = 0;
 			}
-			next if $only_my_projects and not $has_in_my_projects;
-			my $nb_total = $nb_pat_he + $nb_pat_ho;
-			next if $nb_total > $max_dejavu;
-			next if $nb_pat_ho > $max_dejavu_ho;
-			if (exists $h_res_duck->{$chr_id.'!'.$dv_rocks_id}) {
-				$h_res_duck->{$chr_id.'!'.$dv_rocks_id}->{dejavu} = $res->{$dv_rocks_id};
-				$h_rocks_to_view->{$chr_id}->{$dv_rocks_id} = $res->{$dv_rocks_id};
-				$ok++;
+			my $res = $chr->rocks_dejavu->dejavu_interval($id -1 , $id +1);
+			foreach my $dv_rocks_id (keys %{$res}) {
+				my $nb_pat_he = 0;
+				my $nb_pat_ho = 0;
+				my $has_in_my_projects;
+				foreach my $proj_id (keys %{$res->{$dv_rocks_id}}) {
+					$has_in_my_projects = 1 if $only_my_projects and exists $dejavu_variants->hash_users_projects->{$proj_id};
+					next if ($proj_id eq 'polybtf');
+					$nb_pat_he += $res->{$dv_rocks_id}->{$proj_id}->{he};
+					$nb_pat_ho += $res->{$dv_rocks_id}->{$proj_id}->{ho};
+				}
+				next if $only_my_projects and not $has_in_my_projects;
+				my $nb_total = $nb_pat_he + $nb_pat_ho;
+				next if $nb_total > $max_dejavu;
+				next if $nb_pat_ho > $max_dejavu_ho;
+				if (exists $h_res_duck->{$chr_id.'!'.$dv_rocks_id}) {
+					$local_h_res->{$chr_id.'!'.$dv_rocks_id}->{dejavu} = $res->{$dv_rocks_id};
+					$local_h_rocks->{$chr_id}->{$dv_rocks_id} = $res->{$dv_rocks_id};
+					$local_ok++;
+				}
 			}
 		}
 	}
+    MCE->gather({
+        h_res   => $local_h_res,
+        h_rocks => $local_h_rocks,
+        ok      => $local_ok
+    });
+} @lChr_vec;	
+	
+foreach my $data (@results_convert) {
+    $ok += $data->{ok};
+    if ($data->{h_res}) {
+        foreach my $k (keys %{$data->{h_res}}) {
+            $h_res_duck->{$k} = $data->{h_res}->{$k};
+        }
+    }
+    if ($data->{h_rocks}) {
+        foreach my $chr_id (keys %{$data->{h_rocks}}) {
+            foreach my $id (keys %{$data->{h_rocks}->{$chr_id}}) {
+                $h_rocks_to_view->{$chr_id}->{$id} = $data->{h_rocks}->{$chr_id}->{$id};
+            }
+        }
+    }
 }
 print '.after_dv.'.$ok++.'.';
 
