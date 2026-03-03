@@ -165,23 +165,64 @@ sub check_variants_from_gene {
 			push(@list_var, $var->id());
 		}
 	}
-	
+	$self->buffer->dbh_deconnect();
+	$self->project->disconnect();
+	print ".var.after.gad.".scalar(@list_var);
+
+	my ($hGenes, $hVariants);
+	my @list_html_genes;
 	my $chunk_size = int((scalar(@list_var)+1)/($self->fork));
 	$chunk_size = 20 if $chunk_size < 20;
+	$chunk_size = 200 if $chunk_size > 200;
 	print '.chunck_size_'.$chunk_size.'.';
 	MCE::Loop->init(
-	   max_workers => $self->fork, chunk_size => $chunk_size
+	   max_workers => $self->fork,
+	   chunk_size => $chunk_size,
+	   gather => sub {
+	        my ($data) = @_;
+	        print '|';
+			my $iii = 0;
+			if (exists $data->{lift}) {
+				foreach my $gid (keys %{$data->{lift}}) {
+					$iii++;
+					if ($iii == 50) {
+						print '.';
+						$iii = 0;
+					}
+					$self->{hash_lift_variants}->{$gid} = $data->{lift}->{$gid};
+				}
+			}
+			if (exists $data->{genes}) {
+				foreach my $gene_id (keys %{$data->{genes}}) {
+					$iii++;
+					if ($iii == 50) {
+						print '.';
+						$iii = 0;
+					}
+					$hGenes->{$gene_id} = $data->{genes}->{$gene_id};
+				}
+			}
+			if (exists $data->{variants}) {
+				foreach my $var_id (keys %{$data->{variants}}) {
+					$iii++;
+					if ($iii == 50) {
+						print '.';
+						$iii = 0;
+					}
+					$hVariants->{$var_id} = $data->{variants}->{$var_id};
+				}
+			}
+	    }
 	);
-	my @results = mce_loop {
+	mce_loop {
 		my ($mce, $chunk_ref, $chunk_id) = @_;
 		
+		print '.';
 		my $buffer_tmp = new GBuffer;
 		my $project_tmp = $buffer_tmp->newProject( -name => $self->project_name() );
 		my ($list, $hres);
 		foreach my $var_id (@$chunk_ref) {
 			my $var = $project_tmp->_newVariant($var_id);
-			print '.';
-			
 			my $var_id = $var->id();
 			my $rocks_id = $var->rocksdb_id();
 			my $chr_id = $var->getChromosome->id();
@@ -271,47 +312,14 @@ sub check_variants_from_gene {
 				$hres->{lift}->{$gid} = $h_gnomadid->{$gid};
 			}
 		}
+		$buffer_tmp->dbh_deconnect();
+		$project_tmp->disconnect();
+		$project_tmp = undef;
+		$buffer_tmp = undef;
 		MCE->gather($hres);
 	} @list_var;	
-	
+	MCE::Loop->finish();
 	print '._end_MCE_check_.';
-	my ($hGenes, $hVariants);
-	my @list_html_genes;
-	my $iii = 0;
-	foreach my $data (@results) {
-		if (exists $data->{lift}) {
-			foreach my $gid (keys %{$data->{lift}}) {
-				$iii++;
-				if ($iii == 50) {
-					print '.';
-					$iii = 0;
-				}
-				$self->{hash_lift_variants}->{$gid} = $data->{lift}->{$gid};
-			}
-		}
-		if (exists $data->{genes}) {
-			foreach my $gene_id (keys %{$data->{genes}}) {
-				$iii++;
-				if ($iii == 50) {
-					print '.';
-					$iii = 0;
-				}
-				$hGenes->{$gene_id} = $data->{genes}->{$gene_id};
-			}
-		}
-		if (exists $data->{variants}) {
-			foreach my $var_id (keys %{$data->{variants}}) {
-				$iii++;
-				if ($iii == 50) {
-					print '.';
-					$iii = 0;
-				}
-				$hVariants->{$var_id} = $data->{variants}->{$var_id};
-			}
-		}
-	}
-	
-	print '._end_check_.';
 	return ($hGenes, $hVariants);
 	
 }

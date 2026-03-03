@@ -193,7 +193,8 @@ my @lChr_vec = sort keys %$h_vector;
 my $chunk_size = int((scalar(@lChr_vec)+1)/($fork));
 $chunk_size = 3 if $chunk_size < 3;
 MCE::Loop->init(
-   max_workers => $fork, chunk_size => 'auto'
+   max_workers => $fork,
+   chunk_size => $chunk_size,
 );
 my @results_convert = mce_loop {
 	my ($mce, $chunk_ref, $chunk_id) = @_;
@@ -205,13 +206,14 @@ my @results_convert = mce_loop {
 		my $chr = $pr->getChromosome($chr_id);
 		my @list_ids = $h_vector->{$chr_id}->Index_List_Read();
 		my $i = 0;
+		my $no = $chr->rocks_dejavu();
 		foreach my $id (@list_ids) {
 			$i++;
 			if ($i == 2500) {
 				print '.';
 				$i = 0;
 			}
-			my $res = $chr->rocks_dejavu->dejavu_interval($id -1 , $id +1);
+			my $res = $no->dejavu_interval($id -1 , $id +1);
 			foreach my $dv_rocks_id (keys %{$res}) {
 				my $nb_pat_he = 0;
 				my $nb_pat_ho = 0;
@@ -233,6 +235,7 @@ my @results_convert = mce_loop {
 				}
 			}
 		}
+		$no->close();
 	}
     MCE->gather({
         h_res   => $local_h_res,
@@ -257,6 +260,7 @@ foreach my $data (@results_convert) {
     }
 }
 print '.after_dv.'.$ok++.'.';
+MCE::Loop->finish();
 
 print '.checkvar.';
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
@@ -264,33 +268,40 @@ print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
 my $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
 
+my @list_html_genes;
 MCE::Loop->init(
-   max_workers => $fork, chunk_size => 'auto'
+   max_workers => $fork,
+   chunk_size => 'auto',
+   gather => sub {
+        my ($data) = @_;
+        foreach my $gene_id (sort keys %$data) {
+        	push(@list_html_genes, $data->{$gene_id}) if $data->{$gene_id};
+        }
+   }
 );
-my @results = mce_loop {
+mce_loop {
 	my ($mce, $chunk_ref, $chunk_id) = @_;
-	my $list;
+	my $hres;
 	foreach my $gene_id (@$chunk_ref) {
 		my @l_gene_id_tmp = split('_', $gene_id);
-		next if ($h_genes_only and not exists $h_genes_only->{$gene_id} and not exists $h_genes_only->{$l_gene_id_tmp[0]});
+		if ($h_genes_only and not exists $h_genes_only->{$gene_id} and not exists $h_genes_only->{$l_gene_id_tmp[0]}) {
+			$hres->{$gene_id} = undef;
+			next;
+		}
 		print '.';
 		my @list_variants = keys %{$hGenes->{$gene_id}};
 		my $this_html;
 		eval {
 			$this_html = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+			$hres->{$gene_id} = $this_html;
 		};
 		if ($@) {
-			$this_html = qq{ERROR with $gene_id};
+			$hres->{$gene_id} = qq{ERROR with $gene_id};
 		}
-		push(@$list, $this_html);
     }
-	MCE->gather($list);
+	MCE->gather($hres);
 } sort keys %{$hGenes};	
-
-my @list_html_genes;
-foreach my $t (@results) {
-	push(@list_html_genes,@$t);
-}
+MCE::Loop->finish();
 
 my $html;
 $html .= qq{<table>};
@@ -317,8 +328,8 @@ else {
 	print ".\",";
 	$json_encode =~ s/{//;
 	print $json_encode;
-	
-	POSIX::_exit(0);
+	exit(0);
+	#POSIX::_exit(0);
 }
 
 
