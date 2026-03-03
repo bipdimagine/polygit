@@ -32,7 +32,7 @@ use JSON;
 use MCE::Loop;
 
 
-my $fork = 5;
+my $fork = 10;
 
 my $cgi = new CGI();
 
