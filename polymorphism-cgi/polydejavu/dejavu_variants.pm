@@ -166,58 +166,15 @@ sub check_variants_from_gene {
 		}
 	}
 	
-	my ($hGenes, $hVariants);
-	my $pm = new Parallel::ForkManager($self->fork());
-	my $nb_errors=0;
-	$pm->run_on_finish(
-		sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
-			print '.s.';
-			my $iii = 0;
-			if (exists $data->{lift}) {
-				foreach my $gid (keys %{$data->{lift}}) {
-					$iii++;
-					if ($iii == 50) {
-						print '.';
-						$iii = 0;
-					}
-					$self->{hash_lift_variants}->{$gid} = $data->{lift}->{$gid};
-				}
-			}
-			if (exists $data->{genes}) {
-				foreach my $gene_id (keys %{$data->{genes}}) {
-					$iii++;
-					if ($iii == 50) {
-						print '.';
-						$iii = 0;
-					}
-					$hGenes->{$gene_id} = $data->{genes}->{$gene_id};
-				}
-			}
-			if (exists $data->{variants}) {
-				foreach my $var_id (keys %{$data->{variants}}) {
-					$iii++;
-					if ($iii == 50) {
-						print '.';
-						$iii = 0;
-					}
-					$hVariants->{$var_id} = $data->{variants}->{$var_id};
-				}
-			}
-			print '.e.';
-		}
+	MCE::Loop->init(
+	   max_workers => $self->fork, chunk_size => 'auto'
 	);
-	
-	my $nb = int((scalar(@list_var)+1)/($self->fork));
-#	$nb = 20 if $nb == 0;
-	$nb = 10;
-	print ".split_by_$nb.";
-	my $iter = natatime($nb, @list_var);
-	$self->buffer->dbh_deconnect();
-	$self->project->disconnect();
-	while( my @tmp = $iter->() ){
- 	 	my $pid = $pm->start and next;
+	my @results = mce_loop {
+		my ($mce, $chunk_ref, $chunk_id) = @_;
+		my $list;
+		
 		my $hres;
-		foreach my $var (@tmp) {
+		foreach my $var (@$chunk_ref) {
 			print '.';
 			my $var_id = $var->id();
 			my $rocks_id = $var->rocksdb_id();
@@ -308,12 +265,45 @@ sub check_variants_from_gene {
 				$hres->{lift}->{$gid} = $h_gnomadid->{$gid};
 			}
 		}
-		close STDOUT;
-		close STDERR;
-		print '!';
-	 	$pm->finish(0, $hres);
-	} 
-	$pm->wait_all_children();
+		MCE->gather($hres);
+	} @list_var;	
+	
+	print '._end_MCE_check_.';
+	my ($hGenes, $hVariants);
+	my @list_html_genes;
+	my $iii = 0;
+	foreach my $data (@results) {
+		if (exists $data->{lift}) {
+			foreach my $gid (keys %{$data->{lift}}) {
+				$iii++;
+				if ($iii == 50) {
+					print '.';
+					$iii = 0;
+				}
+				$self->{hash_lift_variants}->{$gid} = $data->{lift}->{$gid};
+			}
+		}
+		if (exists $data->{genes}) {
+			foreach my $gene_id (keys %{$data->{genes}}) {
+				$iii++;
+				if ($iii == 50) {
+					print '.';
+					$iii = 0;
+				}
+				$hGenes->{$gene_id} = $data->{genes}->{$gene_id};
+			}
+		}
+		if (exists $data->{variants}) {
+			foreach my $var_id (keys %{$data->{variants}}) {
+				$iii++;
+				if ($iii == 50) {
+					print '.';
+					$iii = 0;
+				}
+				$hVariants->{$var_id} = $data->{variants}->{$var_id};
+			}
+		}
+	}
 	
 	print '._end_check_.';
 	return ($hGenes, $hVariants);

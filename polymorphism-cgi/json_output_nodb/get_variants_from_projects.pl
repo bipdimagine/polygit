@@ -36,52 +36,57 @@ my $fork = 5;
 
 my $cgi = new CGI();
 
-use POSIX qw(setsid);
-use JSON;
-use File::Path qw(make_path);
+my $outfile;
+my $launch_job = $cgi->param('launch_job');
 
-my $job_id = $cgi->param('job_id');
-my $job_dir = "/tmp/polyweb_jobs";
-make_path($job_dir) unless -d $job_dir;
+if ($launch_job) {
+	use POSIX qw(setsid);
+	use JSON;
+	use File::Path qw(make_path);
 
-# =========================
-# MODE POLLING (attente résultat)
-# =========================
-if ($job_id) {
-    my $file = "$job_dir/$job_id.json";
-    print $cgi->header('application/json');
-
-    if (-e $file) {
-        open(my $fh, "<", $file);
-        local $/;
-        my $json = <$fh>;
-        close $fh;
-        print $json;
-    }
-    else {
-        print encode_json({ status => "running" });
-    }
-    exit(0);
+	my $job_id = $cgi->param('job_id');
+	my $job_dir = "/tmp/polyweb_jobs";
+	make_path($job_dir) unless -d $job_dir;
+	
+	# =========================
+	# MODE POLLING (attente résultat)
+	# =========================
+	if ($job_id) {
+	    my $file = "$job_dir/$job_id.json";
+	    print $cgi->header('application/json');
+	
+	    if (-e $file) {
+	        open(my $fh, "<", $file);
+	        local $/;
+	        my $json = <$fh>;
+	        close $fh;
+	        print $json;
+	    }
+	    else {
+	        print encode_json({ status => "running" });
+	    }
+	    exit(0);
+	}
+	
+	# =========================
+	# MODE LANCEMENT JOB
+	# =========================
+	
+	$job_id = time() . "_" . $$ . "_" . int(rand(10000));
+	$outfile = "$job_dir/$job_id.json";
+	
+	print $cgi->header('application/json');
+	print encode_json({ status => "started", job_id => $job_id });
+	
+	my $pid = fork();
+	exit(0) if $pid;   # le parent sort immédiatement
+	
+	# ===== ENFANT =====
+	setsid();
+	open STDIN,  '<', '/dev/null';
+	open STDOUT, '>', '/dev/null';
+	open STDERR, '>', '/dev/null';
 }
-
-# =========================
-# MODE LANCEMENT JOB
-# =========================
-
-$job_id = time() . "_" . $$ . "_" . int(rand(10000));
-my $outfile = "$job_dir/$job_id.json";
-
-print $cgi->header('application/json');
-print encode_json({ status => "started", job_id => $job_id });
-
-my $pid = fork();
-exit(0) if $pid;   # le parent sort immédiatement
-
-# ===== ENFANT =====
-setsid();
-open STDIN,  '<', '/dev/null';
-open STDOUT, '>', '/dev/null';
-open STDERR, '>', '/dev/null';
 
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
@@ -138,64 +143,25 @@ my $parquet_promoter_ai = $project->get_promoterAI_filtred_parquet();
 
 print '.duckdb.';
 my @list_table_trio;
-#my $sql_promoter_ai = "PRAGMA threads=6; SELECT rocksdb_id FROM read_parquet(['$parquet_promoter_ai'])";
-my $sql_promoter_ai = "PRAGMA threads=2; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai']) WHERE ABS(promoterAI) >= $promoter_ai_value";
-
-
+my $sql_promoter_ai = "PRAGMA threads=6; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai']) WHERE ABS(promoterAI) >= $promoter_ai_value";
 my ($h_res_duck, $h_genes_only);
-my $pm1 = new Parallel::ForkManager($fork);
-my $nb_errors=0;
-$pm1->run_on_finish(
-	sub { my ($pid,$exit_code,$ident,$exit_signal,$core_dump,$data) = @_;
-		print '!';
-		if (exists $data->{duck}) {
-			foreach my $id (keys %{$data->{duck}}) {
-				$h_res_duck->{$id} = $data->{duck}->{$id};
-			}
-		}
-		if (exists $data->{genes_only}) {
-			foreach my $id (keys %{$data->{genes_only}}) {
-				$h_genes_only->{$id} = $data->{genes_only}->{$id};
-			}
-			
-		}
-	}
-);
-
-my $nb = int((scalar(@{$project->getChromosomes()})+1)/($fork));
-$nb = 20 if $nb == 0;
 my $duckdb = $buffer->software('duckdb');
-my $iter = natatime($nb, @{$project->getChromosomes()});
-while( my @tmp = $iter->() ){
-	my $pid = $pm1->start and next;
-	my $hres;
-	foreach my $chr (@tmp) {
-		my $chr_id = $chr->id();
-		next if $chr_id eq 'MT';
-		my $this_sql = $sql_promoter_ai;
-		$this_sql .= qq{ and starts_with(rocksdb_id, '$chr_id!')}; 
-		my $cmd = qq{set +H | $duckdb -json -c "$this_sql"};
-		my $json_duckdb = `$cmd`;
-		print '.|.';
-		if ($json_duckdb) {
-			my $decode = decode_json $json_duckdb;
-			my $i = 0;
-			foreach my $h (@$decode) {
-				$i++;
-				if ($i == 100000) {
-					print '.';
-					$i = 0;
-				}
-				$hres->{duck}->{$h->{rocksdb_id}}->{geneid} = $h->{geneid};
-				$hres->{genes_only}->{$h->{geneid}} = undef;
-			}
+my $cmd = qq{set +H | $duckdb -json -c "$sql_promoter_ai"};
+my $json_duckdb = `$cmd`;
+print '.|.';
+if ($json_duckdb) {
+	my $decode = decode_json $json_duckdb;
+	my $i = 0;
+	foreach my $h (@$decode) {
+		$i++;
+		if ($i == 100000) {
+			print '.';
+			$i = 0;
 		}
+		$h_res_duck->{$h->{rocksdb_id}}->{geneid} = $h->{geneid};
+		$h_genes_only->{$h->{geneid}} = undef;
 	}
-	print '!';
- 	$pm1->finish(0, $hres);
-} 
-$pm1->wait_all_children();
-$project->disconnect();
+}
 print '.@.';
 
 my $h_vector;
@@ -258,9 +224,7 @@ foreach my $chr_id (sort keys %$h_vector) {
 print '.after_dv.'.$ok++.'.';
 
 
-$dejavu_variants->fork(3);
-if ($ok > 500) { $dejavu_variants->fork(5) }
-#if ($ok > 1000) { $dejavu_variants->fork(8) }
+$dejavu_variants->fork(5);
 print '.checkvar.';
 
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
@@ -268,18 +232,33 @@ print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
 my $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
 
+
+MCE::Loop->init(
+   max_workers => $fork, chunk_size => 'auto'
+);
+my @results = mce_loop {
+	my ($mce, $chunk_ref, $chunk_id) = @_;
+	my $list;
+	foreach my $gene_id (@$chunk_ref) {
+		my @l_gene_id_tmp = split('_', $gene_id);
+		next if ($h_genes_only and not exists $h_genes_only->{$gene_id} and not exists $h_genes_only->{$l_gene_id_tmp[0]});
+		print '.';
+		my @list_variants = keys %{$hGenes->{$gene_id}};
+		my $this_html;
+		eval {
+			$this_html = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+		};
+		if ($@) {
+			$this_html = qq{ERROR with $gene_id};
+		}
+		push(@$list, $this_html);
+    }
+	MCE->gather($list);
+} sort keys %{$hGenes};	
+
 my @list_html_genes;
-foreach my $gene_id (sort keys %{$hGenes}) {
-	my @l_gene_id_tmp = split('_', $gene_id);
-	next if ($h_genes_only and not exists $h_genes_only->{$gene_id} and not exists $h_genes_only->{$l_gene_id_tmp[0]});
-	print '.';
-	my @list_variants = keys %{$hGenes->{$gene_id}};
-	eval {
-		push(@list_html_genes, $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails));
-	};
-	if ($@) {
-		push(@list_html_genes, qq{ERROR with $gene_id});
-	}
+foreach my $t (@results) {
+	push(@list_html_genes,@$t);
 }
 
 my $html;
@@ -289,22 +268,26 @@ $html .= join('', @list_html_genes);
 $html .= qq{</tr>};
 $html .= qq{</table>};
 
-#my $hRes;
-#$hRes->{html} = $html;
-#my $json_encode = encode_json $hRes;
-#print ".\",";
-#$json_encode =~ s/{//;
-#print $json_encode;
-#
-#POSIX::_exit(0);
+if ($launch_job) {
+	my $hRes;
+	$hRes->{status} = "finished";
+	$hRes->{html}   = $html;
+	
+	open(my $out, ">", $outfile);
+	print $out encode_json($hRes);
+	close $out;
+	
+	POSIX::_exit(0);
+}
+else {
+	my $hRes;
+	$hRes->{html} = $html;
+	my $json_encode = encode_json $hRes;
+	print ".\",";
+	$json_encode =~ s/{//;
+	print $json_encode;
+	
+	POSIX::_exit(0);
+}
 
-my $hRes;
-$hRes->{status} = "finished";
-$hRes->{html}   = $html;
-
-open(my $out, ">", $outfile);
-print $out encode_json($hRes);
-close $out;
-
-POSIX::_exit(0);
 

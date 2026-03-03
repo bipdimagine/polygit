@@ -607,6 +607,7 @@
 		    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
 				document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl?login=" + username + "&pwd=" + pwd + "&promoter_ai_value=" + promoter_ai_value;
+		    	url += "&launch_job=1";
 		    	
 		    	
 				if (dijit.byId("slider_dv_pv").get("value") == 1) { url += "&dejavu=5"; }
