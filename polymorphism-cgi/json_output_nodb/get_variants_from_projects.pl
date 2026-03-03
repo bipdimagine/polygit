@@ -141,6 +141,9 @@ my $project_name = $buffer->getRandomProjectName();
 my $project = $buffer->newProject( -name => $project_name );
 my $parquet_promoter_ai = $project->get_promoterAI_filtred_parquet();
 
+
+### PART 1 - Select variants with promoterAI
+
 print '.duckdb.';
 my @list_table_trio;
 my $sql_promoter_ai = "PRAGMA threads=6; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai']) WHERE ABS(promoterAI) >= $promoter_ai_value";
@@ -183,6 +186,9 @@ foreach my $rocksid (keys %$h_res_duck) {
 	}
 	$h_vector->{$chr_id}->Bit_On($pos);
 }
+
+
+### PART 2 - Intersect variants promoterAI and DejaVu
 
 print '.convert.';
 my $ok = 0;
@@ -262,11 +268,19 @@ foreach my $data (@results_convert) {
 print '.after_dv.'.$ok++.'.';
 MCE::Loop->finish();
 
+
+
+### PART 3 - check variants from calling variables
+
 print '.checkvar.';
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
 print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
 my $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
+
+
+
+### PART 4 - print HTML 
 
 my @list_html_genes;
 MCE::Loop->init(

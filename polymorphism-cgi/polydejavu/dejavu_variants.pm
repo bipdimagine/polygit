@@ -244,25 +244,6 @@ sub check_variants_from_gene {
 			if (scalar(@lGenes) == 0) {
 				$hres->{genes}->{intronic}->{$var_id} = undef;
 			}
-			my $vp = PolyviewerVariant->new();
-			$vp->setLmdbVariant($var);
-			$vp->{hgenes} = {};
-			$vp->{genes_id} = [];
-			my $code = 0;
-			foreach my $g (@{$var->getGenes}){
-				my $h = $vp->set_gene($var,$g);
-				$h->{code} = $code;
-				$vp->{hgenes}->{$g->id} = $h;
-				push(@{$vp->{genes_id}},$g->id);
-				$code ++;
-			}
-			##############
-			#	next;
-			##############0
-			$vp->{hpatients} ={};
-			$vp->{patients_id} = [];
-			
-			$hres->{variants}->{$var_id}->{polyviewer_variant} = $vp;
 			
 			# STEP 3 - printHtml patient
 			my @list_parquet;
@@ -278,6 +259,9 @@ sub check_variants_from_gene {
 			
 			my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos($var, \@list_parquet);
 			my $ip = 0;
+			
+			
+			my $can_construct;
 			foreach my $project_name (keys %{$h_projects_patients}) {
 				$ip++;
 				if ($ip == 5) {
@@ -305,11 +289,32 @@ sub check_variants_from_gene {
 				if (keys %$h_pat_done > keys %$h_pat_filtred) {
 					foreach my $patient_name (keys %{$h_pat_done}) {
 						push(@{$hres->{variants}->{$var_id}->{polyviewer_html_details_proj_pat}}, $h_pat_done->{$patient_name});
+						$can_construct = 1;
 					}
 				}
 			}
 			foreach my $gid (keys %$h_gnomadid) {
 				$hres->{lift}->{$gid} = $h_gnomadid->{$gid};
+			}
+			if ($can_construct) {
+				my $vp = PolyviewerVariant->new();
+				$vp->setLmdbVariant($var);
+				$vp->{hgenes} = {};
+				$vp->{genes_id} = [];
+				my $code = 0;
+				foreach my $g (@{$var->getGenes}){
+					my $h = $vp->set_gene($var,$g);
+					$h->{code} = $code;
+					$vp->{hgenes}->{$g->id} = $h;
+					push(@{$vp->{genes_id}},$g->id);
+					$code ++;
+				}
+				##############
+				#	next;
+				##############0
+				$vp->{hpatients} ={};
+				$vp->{patients_id} = [];
+				$hres->{variants}->{$var_id}->{polyviewer_variant} = $vp;
 			}
 		}
 		$buffer_tmp->dbh_deconnect();
@@ -321,7 +326,6 @@ sub check_variants_from_gene {
 	MCE::Loop->finish();
 	print '._end_MCE_check_.';
 	return ($hGenes, $hVariants);
-	
 }
 
 
