@@ -118,7 +118,7 @@ else {
 	print '.all_projects.';
 }
 
-$dejavu_variants->fork(10);
+$dejavu_variants->fork($fork);
 
 $dejavu_variants->max_gnomad_ac($max_gnomad_ac) if $max_gnomad_ac;
 $dejavu_variants->max_gnomad_ac_ho($max_gnomad_ac) if $max_gnomad_ac_ho;
@@ -136,9 +136,9 @@ if ($models) {
 	$dejavu_variants->{models} = $h_models
 }
 
-
 my $buffer = new GBuffer;
-my $project = $buffer->newProject( -name => $buffer->getRandomProjectName() );
+my $project_name = $buffer->getRandomProjectName();
+my $project = $buffer->newProject( -name => $project_name );
 my $parquet_promoter_ai = $project->get_promoterAI_filtred_parquet();
 
 print '.duckdb.';
@@ -187,6 +187,8 @@ foreach my $rocksid (keys %$h_res_duck) {
 print '.convert.';
 my $ok = 0;
 my $h_rocks_to_view;
+
+
 foreach my $chr_id (sort keys %$h_vector) {
 	print '.';
 	my $chr = $project->getChromosome($chr_id);
@@ -223,15 +225,11 @@ foreach my $chr_id (sort keys %$h_vector) {
 }
 print '.after_dv.'.$ok++.'.';
 
-
-$dejavu_variants->fork(5);
 print '.checkvar.';
-
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
 print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
 my $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
-
 
 MCE::Loop->init(
    max_workers => $fork, chunk_size => 'auto'

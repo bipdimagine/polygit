@@ -162,20 +162,26 @@ sub check_variants_from_gene {
 			if ($self->max_gnomad_ac_ho()) {
 				next if defined $var->getGnomadHO() and $var->getGnomadHO() > $self->max_gnomad_ac_ho();
 			}
-			push(@list_var, $var);
+			push(@list_var, $var->id());
 		}
 	}
 	
+	my $chunk_size = int((scalar(@list_var)+1)/($self->fork));
+	$chunk_size = 20 if $chunk_size < 20;
+	print '.chunck_size_'.$chunk_size.'.';
 	MCE::Loop->init(
-	   max_workers => $self->fork, chunk_size => 'auto'
+	   max_workers => $self->fork, chunk_size => $chunk_size
 	);
 	my @results = mce_loop {
 		my ($mce, $chunk_ref, $chunk_id) = @_;
-		my $list;
 		
-		my $hres;
-		foreach my $var (@$chunk_ref) {
+		my $buffer_tmp = new GBuffer;
+		my $project_tmp = $buffer_tmp->newProject( -name => $self->project_name() );
+		my ($list, $hres);
+		foreach my $var_id (@$chunk_ref) {
+			my $var = $project_tmp->_newVariant($var_id);
 			print '.';
+			
 			my $var_id = $var->id();
 			my $rocks_id = $var->rocksdb_id();
 			my $chr_id = $var->getChromosome->id();
@@ -220,12 +226,12 @@ sub check_variants_from_gene {
 			# STEP 3 - printHtml patient
 			my @list_parquet;
 			foreach my $project_id (sort keys %{$h_dv_rocks_ids->{$chr_id}->{$rocks_id}}) {
-				my $project_name = $self->buffer->getQuery->getProjectNameFromId($project_id);
+				my $project_name = $buffer_tmp->getQuery->getProjectNameFromId($project_id);
 				next if not exists $self->hash_users_projects->{all} and not exists $self->hash_users_projects->{$project_name};
 				my $project_type_cache = $self->{hash_projects_ids_names}->{$project_id}->{type};
 				$self->{hash_projects_ids_names}->{$project_id}->{name} = $project_name;
 				$self->{hash_projects_ids_names}->{$project_id}->{type} = $project_type_cache;
-				my $parquet = $self->buffer->dejavu_parquet_dir().'/'.$project_name.'.'.$project_id.'.parquet';
+				my $parquet = $buffer_tmp->dejavu_parquet_dir().'/'.$project_name.'.'.$project_id.'.parquet';
 				push(@list_parquet, "'".$parquet."'") if -e $parquet;
 			}
 			
@@ -423,7 +429,7 @@ sub get_from_duckdb_project_patients_infos {
 	if ($var->getProject->current_genome_version() eq 'HG38') {
 		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 		
-		my $duckdb = $self->buffer->software('duckdb');
+		my $duckdb = $var->buffer->software('duckdb');
 		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 		my $json_duckdb = `$cmd`;
 		
