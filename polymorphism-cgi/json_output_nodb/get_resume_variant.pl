@@ -45,12 +45,14 @@ my $buffer = new GBuffer;
 my $project_name = $buffer->getRandomProjectName($release);
 my $project = $buffer->newProject( -name => $project_name );
 
-my @lTmp = split('-', $variant);
-if (length($lTmp[-2]) == length($lTmp[-1])) {
-	$variant =~ s/-/_/g;
-}
-else {
-	$variant = $lTmp[0].'_'.($lTmp[1] + 1).'_'.$lTmp[2].'_'.$lTmp[3];
+if ($variant =~ /-/) {
+	my @lTmp = split('-', $variant);
+	if (length($lTmp[-2]) == length($lTmp[-1])) {
+		$variant =~ s/-/_/g;
+	}
+	else {
+		$variant = $lTmp[0].'_'.($lTmp[1] + 1).'_'.$lTmp[2].'_'.$lTmp[3];
+	}
 }
 my $var = $project->_newVariant($variant);
 

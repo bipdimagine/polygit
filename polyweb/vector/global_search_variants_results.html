@@ -530,6 +530,13 @@
 	    		$('#table_variants').bootstrapTable();
 			}
 			
+			function goto_dejavu(value,pname,is_in_this_run) {
+				value = value.replaceAll(" ", "");
+				var url = "poly_variants.html?variant=" + value;
+				url += '&release=HG38';
+				window.open(url);
+			}
+			
 			function get_popup_users(users) {
 				document.getElementById("content_res_users").innerHTML = "";
 				document.getElementById("content_res_users").innerHTML = users;
