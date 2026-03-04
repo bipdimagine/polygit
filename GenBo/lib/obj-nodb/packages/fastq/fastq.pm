@@ -9,7 +9,7 @@ use Data::Dumper;
 
 sub find_paired_files_umi {
 	my ($files,$dir) = @_;
-	my @r1 = grep{$_  =~ /_R1_/} @$files;
+	my @r1 = grep{$_  =~ /_R1[_\.]/} @$files;
 	my @all;
 	my @couple;
 	foreach my $r1 (@r1){
@@ -18,14 +18,14 @@ sub find_paired_files_umi {
 		
 		my $r2 = $r1;
 		if (-e $dir."/".$r2){
-			$r2 =~ s/_R1_/_R2_/;
+			$r2 =~ s/_R1([_\.])/_R2$1/;
 			$d->{R2} = $dir."/".$r2;
 		}
 		else {
 			confess($r1 ." don t find R2" );
 		}
 		my $r3 = $r1;
-		$r3 =~ s/_R1_/_R3_/;
+		$r3 =~ s/_R1([_\.])/_R3$1/;
 		if ( -e $dir."/".$r3) {
 			$d->{R3} = $dir."/".$r3;
 		}

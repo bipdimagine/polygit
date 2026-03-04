@@ -416,10 +416,12 @@ while($checkComplete == 1){
 }
 
 # Copy bcl
-my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
-warn $cmd_rsync;
-my $exit_rsync = system($cmd_rsync);
-die("Rsync error, please retry") if ($exit_rsync);
+if ($bcl_dir =~ /AVITI\/IMAGINE/) {
+	my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
+	warn $cmd_rsync;
+	my $exit_rsync = system($cmd_rsync);
+	die("Rsync error, please retry") if ($exit_rsync);
+}
 my $ss1 = $ss;
 $ss1 = $bcl_tmp.$runm_name if ($bcl_dir =~ /AVITI\/IMAGINE/);
 
