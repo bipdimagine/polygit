@@ -60,9 +60,9 @@ function view_web_igv_bam_simple(div_name, locus, file, name) {
 		    browser.search(locus);
 		    if (url_fasta) {
 		    	url_fasta = window.location.origin + '/' + url_fasta;
-		    	launch_igv_tool(url_fasta, tracks, locus);
+		    	launch_igv_tool(url_fasta, list_tracks, locus);
 		    }
-		    else { launch_igv_tool('', tracks, locus); }
+		    else { launch_igv_tool('', list_tracks, locus); }
 		    is_waiting = false;
 		});
     }, 500);

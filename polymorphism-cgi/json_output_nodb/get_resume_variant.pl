@@ -323,6 +323,10 @@ sub get_table_project_patients_infos {
 	my $hres;
 	my $b = new GBuffer;
 	my $p = $b->newProject( -name => $project_name);
+	my $this_release = $p->annotation_genome_version();
+	$this_release = 'HG19' if ($this_release =~ /HG19/);
+	$this_release = 'HG38' if ($this_release =~ /HG38/);
+	
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	my $found_healthy_patient;
@@ -332,7 +336,7 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
 		my $icon = $pat->small_icon();
 		$icon =~ s/"/'/g;
-		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{release} = $release;
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{release} = $this_release;
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = $icon;
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = '-';
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = 'male' if $pat->sex() eq '1';
