@@ -826,24 +826,17 @@
 	    	}
 	    	
 	    	function launch_variant_search() {
-    			show_waiting('Checking... your variation!<br><i>-> A new page will open...</i>');
     			var value = document.getElementById("input_search").value;
     			value = value.replaceAll(" ", "");
-		    	var url = url_path + "polydejavu/deja_all_variants_in_gene.pl?user=" + username + "&pwd=" + pwd+ "&variant=" + value;
-		    	url += "&filters_cons='mature-mirna,splice_acc/don,splice_acceptor/donor,frameshift,stop-gained,(start/stop)-lost,ncrna,missense,no-frameshift,splice_region,predicted_splice_region,pseudogene,utr,synonymous,upstream,downstream,intronic'";
-		    	url += "&models=strict_denovo,denovo,recessive,both,any_parent,solo"
-		    	if (document.getElementById("b_use_hg19").checked) { url += "&release=HG19"; }
-		    	else if (document.getElementById("b_use_hg38").checked) { url += "&release=HG38"; }
-			    $.getJSON( url, function( data ) {
-			    	$.each( data, function( key, val ) {
-			    		if (key == 'session_id') {
-							dijit.byId('waiting').hide();
-			    			use_session_id = data.session_id;
-			    			var window_url = "global_search_variants_results.html?job_id="+use_session_id;
-			    			window.open(window_url, '_blank').focus();
-			    		}
-  					});
-			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
+		    	var url = "./poly_variants.html?variant=" + value;
+	    		if (document.getElementById('b_use_hg19').checked) {
+	    			url += '&release=HG19';
+    			}
+	    		else if (document.getElementById('b_use_hg38').checked) {
+	    			url += '&release=HG38';
+    			}
+		    	window.open(url);
+		    	
 	    	}
 	    	
 	    	function on_write_input() {
