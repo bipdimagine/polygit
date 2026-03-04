@@ -8,7 +8,7 @@
 var url_gene_bed, url_fasta, url_cyto;
 var is_waiting = false;
 
-function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
+function view_web_igv_bam_simple(div_name, locus, file, name) {
 	var array_bam, array_name;
 	if   (file.match(';')) { array_bam = file.split(";"); }
 	else                   { array_bam = file.split(","); }
@@ -18,107 +18,46 @@ function view_web_igv_bam_simple(div_name, locus, file, name, genome) {
 	var div = document.getElementById(div_name);
 	div.innerHTML = "";
 
-	if (genome){
-		if (url_gene_bed) {}
-		else { url_gene_bed = "/public-data/"+genome+"/igv/gencode.gtf.gz"; }
-		if (url_fasta) {}
-		else { url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa"; }
-		if (url_cyto) {}
-		else { url_cyto = "/public-data/"+genome+"/igv/cytoband.txt"; }
-	} 
-	else {
-		genome = 'HG19';
-		const regex = /HG38/g;
-		if (file.match(regex)) {
-			genome = 'HG38';
-		}
-		if (url_gene_bed) {}
-		else { url_gene_bed = "/public-data/"+genome+"/igv/gencode.gtf.gz"; }
-		if (url_fasta) {}
-		else { url_fasta = "/public-data/"+genome+"/genome/fasta/all.fa"; }
-		if (url_cyto) {}
-		else { url_cyto = "/public-data/"+genome+"/igv/cytoband.txt"; }
+	genome = 'hg19';
+	const regex = /HG38/g;
+	if (file.match(regex)) {
+		genome = 'hg38_1kg';
 	}
 	
-	var list_bams = [];
 	var list_tracks = [];
-	var track = {};
-	track['name'] = "Genes";
-    track['type'] = "annotation";
-    track['format'] = "gtf";
-    track['sourceType'] = "file";
-    track['url'] = url_gene_bed;
-    track['indexURL'] = url_gene_bed+".tbi";
-    track['order'] = Number.MAX_VALUE;
-    track['visibilityWindow'] = 300000000;
-    track['displayMode'] = "EXPANDED";
-    track['showSoftClips'] = true;
-	list_tracks.push(track);
-	for (var i=0;i<array_bam.length;i++){
-		var track = {};
-		track['type'] = 'alignment';
-		track['format'] = 'bam';
-		track['name'] = array_name[i] + ' BAM';
-		track['url'] = array_bam[i];
-		track['indexURL'] = array_bam[i] + '.bai';
-		track['autoHeight'] = true;
-    	track['samplingDepth'] = 100.;
-        track['coverageThreshold'] = 1;
-        track['coverageQualityWeight'] = true;
-        track['visibilityWindow'] = 1000000;
-        track['colorBy'] = "pairOrientation";
+    var list_names = name.split(';');
+    var list_files = file.split(';');
+	for (i=0; i<list_files.length; i++) {
+		var this_file = list_files[i];
+		
+		var index = this_file + '.bai';
+	    var type_file = 'bam';
+	    if (this_file.match(".cram")) {
+	    	type_file = 'cram';
+	    	index = this_file + '.crai';
+	    }
+	    
+	    var track = {};
+	    track['type'] = 'alignment';
+	    track['format'] = type_file;
+	    track['url'] = this_file;
+	    track['indexURL'] = index;
+	    track['name'] = list_names[i];
+	    track['height'] = 600;
         track['showSoftClips'] = true;
-		list_tracks.push(track);
-		list_bams.push(array_bam[i]);
+	    list_tracks.push(track);
 	}
-
-    if (typeof locus === 'undefined') { locus = 'chr1:1-249,250,621'; }
-    var options = {
-        showNavigation: true,
-        showRuler: true,
-        showAllChromosomes:true,
-        reference: {
-            fastaURL: url_fasta,
-            cytobandURL: url_cyto,
-        },
-        locus: locus,
-        trackDefaults: {
-            bam: {
-                coverageThreshold: 0.2,
-                coverageQualityWeight: true,
-                height: 300,
-                maxHeight: 10000,
-                visibilityWindow: 1000000,
-                showSoftClips: true,
-                
-                
-            }
-        },
-        palette: [
-            ["#00A0B0", "#6A4A3C", "#CC333F", "#EB6841"]
-        ],
-        tracks: list_tracks,
-        trackDefaults: {
-            bam: {
-                coverageThreshold: 0.2,
-                coverageQualityWeight: true,
-                height: 3000,
-                maxHeight: 10000,
-                visibilityWindow: 1000000,
-                showSoftClips: true,
-            },
-            bed: {
-                height: 30,
-                maxHeight: 100,
-                visibilityWindow: 1000000,
-            }
+    
+    var options =
+        {
+            genome: genome,
+            locus: locus,
+            tracks:list_tracks
         }
-    };
     
     setTimeout(function() {
 		igv.createBrowser(div, options).then(function (browser) {
 		    browser.search(locus);
-		    var tracks = list_bams.join(',');
 		    if (url_fasta) {
 		    	url_fasta = window.location.origin + '/' + url_fasta;
 		    	launch_igv_tool(url_fasta, tracks, locus);
