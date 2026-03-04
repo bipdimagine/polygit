@@ -153,7 +153,9 @@ foreach my $patient (@{$patients}){
 	my $all_sum;
 	
 	foreach my $chr (@{$project->getChromosomes}){
-			my $intspan = $chr->getCapturesGenomicSpan();
+			#next if $chr->name ne "1";
+			my $intspan = $patient->getCapture->genomic_span($chr);
+			my @t = split(",",$intspan->as_string);
 			next if $intspan->is_empty();
 			my $pid = $pm->start and next;
 			my $array = $patient->depthIntspan($chr->name,$intspan);
