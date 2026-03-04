@@ -78,27 +78,28 @@ if ($listOfGenes ne "all"){
 		
 	}
 }
-
+my $patient = $project->getPatient($patientname);
+my $patient_id = $patient->id;
 #my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 my $parquet_file = $project->getCacheSV()."/".$project->name.".".$project->id.".parquet";
-my $dir = $project->getCacheSV(). "/rocks/";
+my $qualtiy_file  = $project->getCacheSV()."/".$project->name.".".$project->id.".sv_quality.parquet";;
+my $quality;
+my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu ; };
+if (-e $qualtiy_file){
+$quality =1;
+$sql = qq{select * from '$qualtiy_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu and dv1 < 5 and dv2 < 5   and bl1 < 0.95 and bl2 <0.95; };
+}
+
 my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"sv");
 
 
 
 #my $patient = $project->getPatients()->[0];
-my $patient = $project->getPatient($patientname);
-my $patient_id = $patient->id;
+
 my $colpatient = "p".$patient->id;
-my $query = qq{CREATE TABLE SV  AS
-                           SELECT * 
-                           FROM '$parquet_file'
-                           WHERE pos1 > -1  and patient = $patient_id  ;
-	};
-	
-#$dbh->do($query);
+
 $dejavu = 1_0000_000 if $dejavu eq 'all';
-my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu ; };
+
 warn $sql;
 my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
@@ -110,7 +111,7 @@ $array_ref  = decode_json $res if $res;
 $dejavu =20;
 #	while (my $row = @{$array_ref}) {
 	foreach my $row ( @{$array_ref}) {
-	
+	warn $row->{dv1}." ".$row->{dv2};
 	 my $sv = $rocks->get($row->{id});
 	next unless $sv;
 	next if $sv->{sr2} == 0;
