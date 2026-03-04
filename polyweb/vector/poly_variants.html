@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>PolyVariants</title>
+        <title>PolyVariant</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -597,7 +597,10 @@
 			    	$.each( data, function( key, val ) {
 			    		if (key == 'span_locus_hg38') { document.getElementById("span_locus_hg38").innerHTML = "<b>HG38</b> " + val; }
 			    		if (key == 'span_locus_hg19') { document.getElementById("span_locus_hg19").innerHTML = "<b>HG19</b> " + val; }
-			    		if (key == 'span_gnomad_id') { document.getElementById("span_gnomad_id").innerHTML = val; }
+			    		if (key == 'span_gnomad_id') {
+			    			document.getElementById("span_gnomad_id").innerHTML = val;
+			    			document.title = val + " PolyVariant";
+			    		}
 			    		if (key == 'span_release') {
 			    			document.getElementById("span_release").innerHTML = val;
 			    			if (val == 'HG38') { document.getElementById("span_locus_hg38").style.display = "none"; }
