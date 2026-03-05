@@ -137,21 +137,23 @@ else {
 	$locus_hg19 = $var->getChromosome->id().':'.($var->start() - 100).'-'.($var->start() + 100);
 }
 
+my $type_control = "select";
+$type_control = "input" if (scalar keys %{$h_projects_patients} > 30);
 
 my $html_dv;
 $html_dv .= "<div style='border: double 1px black;background-color:#5E8AAB;color:white;text-align:left;font-size:13px;>'><span style='padding-left:15px;'><b>DejaVu Project(s) / Sample(s)</b></span></div>";
 $html_dv .= qq{<table id="table_dejavu" data-sort-name="project" data-sort-order="desc" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="bottom" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 25, 50, 100, 200, 300]" data-resizable='true' class="table table-striped table-condensed table-bordered table-hover table-mybordered" style="height:400px;overflow-y: scroll;width:100%;vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
 $html_dv .= "<thead>";
 $html_dv .= "<tr>";
-$html_dv .= qq{<th data-field="release" data-filter-control="select" data-sortable="true">Release</th>};
-$html_dv .= qq{<th data-field="project" data-filter-control="select" data-sortable="true">Project Name</th>};
+$html_dv .= qq{<th data-field="release" data-filter-control="$type_control" data-sortable="true">Release</th>};
+$html_dv .= qq{<th data-field="project" data-filter-control="$type_control" data-sortable="true">Project Name</th>};
 $html_dv .= qq{<th data-field="family" data-filter-control="input" data-sortable="true">Family Name</th>};
 $html_dv .= qq{<th data-field="patient" data-filter-control="input" data-sortable="true">Patient Name</th>};
 $html_dv .= qq{<th data-field="status" data-filter-control="input" data-sortable="true">Status</th>};
 $html_dv .= qq{<th data-field="ac" data-filter-control="input" data-sortable="true">Allele Count</th>};
 $html_dv .= qq{<th data-field="ratio" data-filter-control="input" data-sortable="true">Ratio (%)</th>};
 $html_dv .= qq{<th data-field="dp" data-filter-control="input" data-sortable="true">DP</th>};
-$html_dv .= qq{<th data-field="model" data-filter-control="select" data-sortable="true">Transmission</th>};
+$html_dv .= qq{<th data-field="model" data-filter-control="$type_control" data-sortable="true">Transmission</th>};
 $html_dv .= qq{<th data-field="igv">IGV</th>};
 $html_dv .= "</tr>";
 $html_dv .= "</thead>";
@@ -211,70 +213,75 @@ exit(0);
 sub get_from_duckdb_project_patients_infos {
 	my ($var, $list_files) = @_;
 	return if scalar(@$list_files) == 0;
-	my $sql = "PRAGMA threads=3; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
-	
-	my ($posVar, $altVar) = split('!', $var->rocksdb_id());
-	my $find_pos_s = $var->start() - 5;
-	my $find_pos_e = $var->start() + 5;
-	my ($h_gnomadid, $h_projects_patients);
-	
-	if ($var->getProject->current_genome_version() eq 'HG38') {
-		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
-		
+	my ($h_gnomadid, $h_projects_patients, $h_by_proj);
+	my $iter = natatime(120, @$list_files);
+	while( my @tmp = $iter->() ){
+		print '|';
+		my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,allele,patients,dp_ratios FROM read_parquet([".join(', ', @tmp)."])";
+		my ($posVar, $altVar) = split('!', $var->rocksdb_id());
+		if ($var->getProject->current_genome_version() eq 'HG38') {
+			$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38=$posVar;" ;
+		}
+		else {
+			$sql .= " WHERE chr19='".$var->getChromosome->id()."' and pos19=$posVar;" ;
+		}
 		my $duckdb = $buffer->software('duckdb');
 		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 		my $json_duckdb = `$cmd`;
-		
 		if ($json_duckdb) {
+			print '|';
 			my $decode = decode_json $json_duckdb;
-			my $h_by_proj;
-			foreach my $h (@$decode) {
-				#next if $h->{'chr38'} ne $var->getChromosome->id;
-				next if $h->{'pos38'} ne int($posVar);
-				my $var_all = $h->{'allele'};
-				$var_all =~ s/\+//;
-				if (not $var->isDeletion) {
-					next if $var_all ne $var->var_allele();
+			MCE::Loop->init(
+				max_workers => 6,
+				chunk_size => 10,
+				gather => sub {
+					my ($data) = @_;
+					foreach my $proj_name (keys %{$data->{h_by_proj}}) {
+						$h_by_proj->{$proj_name} = $data->{h_by_proj}->{$proj_name};
+					}
+					foreach my $proj_name (keys %{$data->{h_projects_patients}}) {
+						$h_projects_patients->{$proj_name} = $data->{h_projects_patients}->{$proj_name};
+					}
+					foreach my $vid (keys %{$data->{h_gnomadid}}) {
+						$h_gnomadid->{$vid} = $data->{h_gnomadid}->{$vid};
+					}
 				}
-				$h_gnomadid->{$var->gnomad_id()}->{chr19} = $h->{chr19};
-				$h_gnomadid->{$var->gnomad_id()}->{pos19} = $h->{pos19};
-				$h_gnomadid->{$var->gnomad_id()}->{ref_all} = $var->ref_allele();
-				$h_gnomadid->{$var->gnomad_id()}->{var_all} = $var->var_allele();
-				my $project_id = $h->{project};
-				my $project_name = $h_projects_ids_names->{$project_id};
-				$h_by_proj->{$project_name} = $h;
-				$h_projects_patients->{$project_name} = get_table_project_patients_infos($project_name, $h);
-			}
-		}	
-	}
-	else {
-		$sql .= " WHERE chr19='".$var->getChromosome->id()."' and pos19 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
-		
-		my $duckdb = $buffer->software('duckdb');
-		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
-		my $json_duckdb = `$cmd`;
-		
-		if ($json_duckdb) {
-			my $decode = decode_json $json_duckdb;
-			my $h_by_proj;
-			foreach my $h (@$decode) {
-				#next if $h->{'chr38'} ne $var->getChromosome->id;
-				next if $h->{'pos19'} ne int($posVar);
-				my $var_all = $h->{'allele'};
-				$var_all =~ s/\+//;
-				if (not $var->isDeletion) {
-					next if $var_all ne $var->var_allele();
+			);
+			mce_loop {
+				my ($mce, $chunk_ref, $chunk_id) = @_;
+				my $hres;
+				foreach my $h (@$chunk_ref) {
+					if ($var->getProject->current_genome_version() eq 'HG38') {
+						next if $h->{'pos38'} ne int($posVar);
+					}
+					else {
+						next if $h->{'pos19'} ne int($posVar);
+					}
+					my $var_all = $h->{'allele'};
+					$var_all =~ s/\+//;
+					if (not $var->isDeletion) {
+						next if $var_all ne $var->var_allele();
+					}
+					if ($var->getProject->current_genome_version() eq 'HG38') {
+						$hres->{h_gnomadid}->{$var->gnomad_id()}->{chr19} = $h->{chr19};
+						$hres->{h_gnomadid}->{$var->gnomad_id()}->{pos19} = $h->{pos19};
+						
+					}
+					else {
+						$hres->{h_gnomadid}->{$var->gnomad_id()}->{chr38} = $h->{chr38};
+						$hres->{h_gnomadid}->{$var->gnomad_id()}->{pos38} = $h->{pos38};
+					}
+					$hres->{h_gnomadid}->{$var->gnomad_id()}->{ref_all} = $var->ref_allele();
+					$hres->{h_gnomadid}->{$var->gnomad_id()}->{var_all} = $var->var_allele();
+					my $project_id = $h->{project};
+					my $project_name = $h_projects_ids_names->{$project_id};
+					$hres->{h_by_proj}->{$project_name} = $h;
+					$hres->{h_projects_patients}->{$project_name} = get_table_project_patients_infos($project_name, $h);
 				}
-				$h_gnomadid->{$var->gnomad_id()}->{chr38} = $h->{chr38};
-				$h_gnomadid->{$var->gnomad_id()}->{pos38} = $h->{pos38};
-				$h_gnomadid->{$var->gnomad_id()}->{ref_all} = $var->ref_allele();
-				$h_gnomadid->{$var->gnomad_id()}->{var_all} = $var->var_allele();
-				my $project_id = $h->{project};
-				my $project_name = $h_projects_ids_names->{$project_id};
-				$h_by_proj->{$project_name} = $h;
-				$h_projects_patients->{$project_name} = get_table_project_patients_infos($project_name, $h);
-			}
-		}	
+				MCE->gather($hres);
+			} $decode;	
+			MCE::Loop->finish();
+		}
 	}
 	return ($h_projects_patients, $h_gnomadid);
 }
@@ -357,6 +364,5 @@ sub get_table_project_patients_infos {
 	}
 	$p = undef;
 	$b =undef;
-	print '.';
 	return $hres;
 }
