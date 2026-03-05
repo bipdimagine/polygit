@@ -690,7 +690,12 @@
 	    		$('#table_hgmd_genes').bootstrapTable();
 			}
 			
-			
+			function goto_dejavu(value,pname,is_in_this_run) {
+				value = value.replaceAll(" ", "");
+				var url = "poly_variants.html?variant=" + value;
+				url += '&release=HG38';
+				window.open(url);
+			}
 
 			function collapse_all(names,labels){
 			    var ps = names.split(";"); 
