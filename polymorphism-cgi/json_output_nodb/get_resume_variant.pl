@@ -177,7 +177,7 @@ foreach my $project_name (sort {$b <=> $a} keys %{$h_projects_patients}) {
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{model}.qq{</td>};
 		
 		my $cmd = qq{view_web_igv_bam_simple('div_igv','$this_locus','$pat_url','$patient_name')};
-		my $b_igv = qq{<button onClick="$cmd">IGV</button>};
+		my $b_igv = qq{<button class='igvIcon2' onClick="$cmd"></button>};
 		$html_dv .= qq{<td>}.$b_igv.qq{</td>};
 		$html_dv .= qq{</tr>};
 		
