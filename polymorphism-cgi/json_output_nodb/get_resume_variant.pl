@@ -138,7 +138,7 @@ else {
 }
 
 my $type_control = "select";
-$type_control = "input" if (scalar keys %{$h_projects_patients} > 30);
+$type_control = "input" if (scalar keys %{$h_projects_patients} > 100);
 
 my $html_dv;
 $html_dv .= "<div style='border: double 1px black;background-color:#5E8AAB;color:white;text-align:left;font-size:13px;>'><span style='padding-left:15px;'><b>DejaVu Project(s) / Sample(s)</b></span></div>";
@@ -146,6 +146,7 @@ $html_dv .= qq{<table id="table_dejavu" data-sort-name="project" data-sort-order
 $html_dv .= "<thead>";
 $html_dv .= "<tr>";
 $html_dv .= qq{<th data-field="release" data-filter-control="$type_control" data-sortable="true">Release</th>};
+$html_dv .= qq{<th data-field="phenotypes" data-filter-control="$type_control" data-sortable="true">Phenotype(s)</th>};
 $html_dv .= qq{<th data-field="project" data-filter-control="$type_control" data-sortable="true">Project Name</th>};
 $html_dv .= qq{<th data-field="family" data-filter-control="input" data-sortable="true">Family Name</th>};
 $html_dv .= qq{<th data-field="patient" data-filter-control="input" data-sortable="true">Patient Name</th>};
@@ -169,6 +170,7 @@ foreach my $project_name (sort {$b <=> $a} keys %{$h_projects_patients}) {
 		
 		$html_dv .= qq{<tr>};
 		$html_dv .= qq{<td>}.$this_release.qq{</td>};
+		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{phenotypes}.qq{</td>};
 		$html_dv .= qq{<td>}.$project_name.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{family}.qq{</td>};
 		$html_dv .= qq{<td>}.$patient_name.qq{</td>};
@@ -336,6 +338,7 @@ sub get_table_project_patients_infos {
 	$this_release = 'HG19' if ($this_release =~ /HG19/);
 	$this_release = 'HG38' if ($this_release =~ /HG38/);
 	
+	my $pr_phenotypes = join(', ', sort @{$p->phenotypes});
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	my $found_healthy_patient;
@@ -345,6 +348,7 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
 		my $icon = $pat->small_icon();
 		$icon =~ s/"/'/g;
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{phenotypes} = $pr_phenotypes;
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{release} = $this_release;
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status} = $icon;
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{sex} = '-';
