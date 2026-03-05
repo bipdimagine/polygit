@@ -124,11 +124,41 @@ $hRes->{ok} = 1;
 my @lItemsProjects;
 my $hProjects = get_hash_users_projects($user_name, $pwd);
 
+
+#warn 'BEFORE: '.scalar keys %{$hProjects};
+
+#TODO: ajouter une methode pour recup les patients a conserver
+
+my $h_projects_filters_he_comp;
+if ($only_pat_with_var) {
+	my $b = new GBuffer;
+	my $p = $b->newProject( -name => $b->getRandomProjectName());
+	my $var_dv = $p->_newVariant($only_pat_with_var);
+	my $hDejavu = $var_dv->dejavu_hash_projects_patients();
+	foreach my $proj_name (keys %{$hProjects}) {
+		if (not exists $hDejavu->{$proj_name}) {
+			delete $hProjects->{$proj_name};
+		}
+#		elsif (not $only_pat_with_var_he and $only_pat_with_var_ho and $hDejavu->{$proj_name}->{ho} == 0) {
+#			delete $hProjects->{$proj_name};
+#		}
+#		elsif (not $only_pat_with_var_ho and $only_pat_with_var_he and $hDejavu->{$proj_name}->{he} == 0) {
+#			delete $hProjects->{$proj_name};
+#		}
+	}
+	$p = undef;
+	$b = undef;
+}
+
 foreach my $project_name_excluded (split(',', $projects_excluded)) {
 	delete $hProjects->{$project_name_excluded};
 }
 
 my $hProjects_not_dejavu;
+
+
+#warn 'AFTER: '.scalar keys %{$hProjects};
+#die;
 
 my $session_id;
 
@@ -470,7 +500,6 @@ sub export_html {
 	else {
 		@lVarIds = sort keys %{$hResVariants};
 	}
-	
 	foreach my $var_id (@lVarIds) {
 		$nb_var++;
 					
@@ -891,17 +920,6 @@ sub check_variants {
 	$nb_variants_before_filters = scalar(keys %{$h_dv_var_ids});
 	$fork = 10 if $nb_variants_before_filters >= 1000;
 	print '.!nbRocksIds:'.$nb_variants_before_filters.'!.';
-	my $h_projects_filters_he_comp;
-	if ($only_pat_with_var) {
-		my $var_dv = $project_dejavu->_newVariant($only_pat_with_var);
-		
-		if (not $only_pat_with_var_he or not $only_pat_with_var_ho) {
-			foreach my $proj_name (keys %{$h_projects_filters_he_comp}) {
-				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_ho and $h_projects_filters_he_comp->{$proj_name}->{ho} == 0);
-				delete $h_projects_filters_he_comp->{$proj_name} if ($only_pat_with_var_he and $h_projects_filters_he_comp->{$proj_name}->{he} == 0);
-			}
-		}
-	}
 	
 	print '.use_fork'.$fork.'.';
 	
@@ -986,6 +1004,9 @@ sub check_variants {
 				$nb_i = 0;
 			}
 			my $is_ok_perc = 1;
+			
+			#TODO: le ratio ne fonctionne plus ici !!
+			
 			if ($filter_perc_allelic_max and $hResVariantsRatioAll and exists $hResVariantsRatioAll->{$var_id}) {
 				$is_ok_perc = 0;
 				foreach my $project_id (keys %{$hResVariantsRatioAll->{$var_id}}) {
@@ -1368,6 +1389,10 @@ sub get_table_project_patients_infos {
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
 			next;
 		}
+		if (not exists $h_models->{$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{model}}) {
+			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
+			next;
+		}
 		next if not exists $h_tmp_pat->{$pat->id};
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
 		my $icon = $pat->small_icon();
@@ -1565,7 +1590,7 @@ sub get_from_duckdb_project_patients_no_dejavu_variants {
 	my $find_pos_e = $gene->end();
 	my $hRes;	
 	if ($gene->getProject->current_genome_version() eq 'HG38') {
-		$sql .= " WHERE chr38='".$gene->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+		$sql .= " WHERE chr38='".$gene->getChromosome->id()."' and pos38 BETWEEN ".$find_pos_s." and ".$find_pos_e.";" ;
 		my $duckdb = $buffer_init->software('duckdb');
 		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 		my $json_duckdb = `$cmd`;
@@ -1600,7 +1625,7 @@ sub get_from_duckdb_project_patients_infos {
 	my $h_projects_patients;
 	
 	if ($var->getProject->current_genome_version() eq 'HG38') {
-		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN ".$find_pos_s." and ".$find_pos_e.";" ;
 		
 		warn $sql if $debug;
 		
@@ -1627,8 +1652,10 @@ sub get_from_duckdb_project_patients_infos {
 			}
 			
 			my $hVar_infos;
-			$hVar_infos->{locus_hg19} = $var->getChromosome->id().":".$h_liftover->{position}."-".$h_liftover->{position};
-			$hVar_infos->{start_hg19} = $h_liftover->{position};
+			if (exists $h_liftover->{position}) {
+				$hVar_infos->{locus_hg19} = $var->getChromosome->id().":".$h_liftover->{position}."-".$h_liftover->{position};
+				$hVar_infos->{start_hg19} = $h_liftover->{position};
+			}
 			$hVar_infos->{locus_hg38} = $var->getChromosome->id().":".$var->start."-".$var->end;
 			$hVar_infos->{start_hg38} = $var->start;
 			$hVar_infos->{chr_id} = $var->getChromosome->id();

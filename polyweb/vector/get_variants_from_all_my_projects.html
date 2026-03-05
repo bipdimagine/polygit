@@ -1295,7 +1295,10 @@
 				var l_models = [];
 				if (document.getElementById('strict_denovo').checked == true) { l_models.push('strict_denovo'); }
 				if (document.getElementById('denovo').checked == true) { l_models.push('denovo'); }
-				if (document.getElementById('recessive').checked == true) { l_models.push('recessive'); }
+				if (document.getElementById('recessive').checked == true) {
+					l_models.push('recessive');
+					l_models.push('recessif');
+				}
 				if (document.getElementById('both').checked == true) { l_models.push('both'); }
 				if (document.getElementById('any_parent').checked == true) {
 					l_models.push('any_parent');
