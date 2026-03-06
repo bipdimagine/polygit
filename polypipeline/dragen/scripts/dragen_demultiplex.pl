@@ -231,7 +231,7 @@ my $guess_mask;
 				push(@$guess_mask,"I". $len_cb->[$i_index]."N".($l-$len_cb->[$i_index]));
 			}
 			else {
-				die();
+				die("Cycles length < index length : $l < ".$len_cb->[$i_index]);
 			}
 			$i_index ++;
 		}
