@@ -129,6 +129,44 @@ has sequencing_method => (
 	},
 );
 
+
+has isRevio=> (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 1 if (lc($self->getRun()->machine) eq "revio" and  $self->isPacBio );
+		return;
+	},
+);
+has isPacBio=> (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 1 if  (lc($self->getRun()->machine_constructor eq "pacbio"));
+		return;
+	},
+);
+
+has isIllumina=> (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 1 if ( lc($self->getRun()->machine_constructor eq "illumina"));
+		return;
+	},
+);
+has isNanopore=> (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 1 if  (lc($self->getRun()->machine_constructor eq "nanopore"));
+		return;
+	},
+);
 has description => (
 	is		=> 'ro',
 
