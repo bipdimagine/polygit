@@ -256,6 +256,7 @@ my $steps = {
 				"rnaseqsea_rnaseq" => sub {$pipeline->rnaseqsea_rnaseq(@_)},
 				"specie_contaminant_check" => sub {$pipeline->check_specie_contaminant(@_)},
 				"regtools" => sub {$pipeline->regtools_splices(@_)},
+				"bigwig" => sub {$pipeline->bigwig(@_)},
 			};
 			
 my @types_steps = ('pipeline','calling');
