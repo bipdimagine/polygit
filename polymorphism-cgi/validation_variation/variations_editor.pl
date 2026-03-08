@@ -845,6 +845,10 @@ my $h_transmissions = {
     		my $start = $2;
     		my $end   = $3 if defined $3;
     		$start = 1 unless $start;
+    		$chr = lc($chr);
+    		$chr = "MT" if $chr eq "chrm";
+    		$chr = "MT" if $chr eq "mt";
+    		$chr = "MT" if $chr eq "chrmt";
     		my $o = $project->getChromosome(lc($chr));
     		$sql_gene = "variant_chromosome = '".$o->ucsc_name."' and variant_start >= ".$start." ";
     		$sql_gene .= "and variant_end <".$end." " if $end;
