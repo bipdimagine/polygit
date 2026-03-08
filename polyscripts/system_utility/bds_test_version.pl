@@ -51,7 +51,6 @@ elsif ($type eq "cache"){
 	system($cmd);
 	}
 elsif ($type eq "dragen_pipeline") {
-	
 	my $cmd = "$path/polypipeline/dragen/dragen_pipeline.pl -project=$project_name ".join(" ",@ARGV);
 	system($cmd);
 	 
