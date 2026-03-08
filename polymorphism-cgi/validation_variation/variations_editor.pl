@@ -240,7 +240,7 @@ unless ($cgi->param('phenotype')){
 	}
 }
 #
-if ($gene_name_filtering){
+if ($gene_name_filtering && $gene_name_filtering !~ /:/ ){
 	my $gene;
 	eval {
 	 $gene = $project->newGene($gene_name_filtering);
@@ -255,6 +255,7 @@ if ($gene_name_filtering){
 		error(" ERROR GENE NAME <HR> WHAT DO YOU MEAN BY : \"".$gene_name_filtering."\"");
 		exit(0);
 	}
+	
 }
 my $force;
 my $level_dude = 'high,medium';
@@ -839,9 +840,22 @@ my $h_transmissions = {
 	my $sql_gene = "gene_name != '-' ";
 	my $gene;
 	if ($gene_name_filtering) {
+		if ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
+    		my $chr   = $1;
+    		my $start = $2;
+    		my $end   = $3 if defined $3;
+    		$start = 1 unless $start;
+    		my $o = $project->getChromosome(lc($chr));
+    		$sql_gene = "variant_chromosome = '".$o->ucsc_name."' and variant_start >= ".$start." ";
+    		$sql_gene .= "and variant_end <".$end." " if $end;
+    		
+    		$gene_name_filtering = undef;
+		}
+		else {
 		$gene = $project->newGene($gene_name_filtering);
 		$gene_id_filtering = $gene->id();
 		$sql_gene = "gene_name = '".$gene->id."'";
+		}
 	}
 	
 	if ($promoter_ai_flag){
@@ -931,7 +945,6 @@ sub get_rocksdb_mce_polyviewer_variant {
 		my $parquet_promoter = $project->get_promoterAI_filtred_parquet();
 		 $sql = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a LEFT JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid WHERE $where };
 	}
-	
 	my $cmd = qq{duckdb -json -c "$sql"};
 
  	my $t = time;
@@ -943,6 +956,7 @@ sub get_rocksdb_mce_polyviewer_variant {
  	
  	my $nbv = 0;
  	 warn "sql ".abs(time -$t)." ".scalar(@$array_ref)  if (not $cgi->param('export_xls'));
+ 	 
  	 $t =time;
  	 my $id_by_genes_id;
  	 my %ids ;
