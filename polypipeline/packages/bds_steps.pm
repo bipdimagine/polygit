@@ -2300,7 +2300,9 @@ sub rnaseq_metrics {
 	my $opt       = "";
 	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
 	unless ( -e $refFlat ) {
-		die("can't find $refFlat $rRNA_file");
+		die("can't find $refFlat $rRNA_file\nSee https://open.bioqueue.org/home/knowledge/showKnowledge/sig/ucsc-gtftogenepred#");
+		# gtfToGenePred -genePredExt -geneNameAsName2 -ignoreGroupsWithoutExons hencode.v46.annotation.gtf /dev/stdout | \
+    	# awk 'BEGIN { OFS="\t"} {print $12, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10}' > refFlat.txt
 	}
 
 	my $java   = $project->buffer->software("java");
@@ -5419,6 +5421,45 @@ sub regtools_splices {
 		$job_bds->skip();
 	}
 	return ($log_file);
+}
+
+sub bigwig {
+	my ( $self, $hash ) = @_;
+	my $filein       = $hash->{filein};
+	my $name         = $self->patient()->name();
+	my $project      = $self->patient()->project;
+	my $m            = $self->patient->alignmentMethod();
+	my $project_name = $self->patient()->getProject->name();
+	my $dir_out = $project->getAlignmentDir($m);
+	$filein = $self->patient()->getAlignFileName();
+
+	my $singularity = $project->buffer->software("singularity-run");
+	my $deeptools = $project->buffer->software("deeptools-sif");
+	my $fileout =  $filein =~ s/(b|cr)am$/bw/r;
+	my $ppn = 20;
+	my $cmd = $singularity.' '.$deeptools." bamCoverage --bam $filein --outFileName $fileout --numberOfProcessors $ppn";
+	warn $cmd;
+	my $type = 'bigwig';
+	my $stepname = $self->patient->name . "@" . $type;
+	my $job_bds  = job_bds_tracking->new(
+		uuid         => $self->bds_uuid,
+		cmd          => ["$cmd"],
+		name         => $stepname,
+		ppn          => $ppn,
+		filein       => [$filein],
+		fileout      => $fileout,
+		type         => $type,
+		dir_bds      => $self->dir_bds,
+		software     => "deeptools",
+		sample_name  => $self->patient->name(),
+		project_name => $self->patient->getProject->name
+	);
+	$self->current_sample->add_job( { job => $job_bds } );
+
+	if ( $self->unforce() && -e $fileout ) {
+		$job_bds->skip();
+	}
+	return ($fileout);
 }
 
 1;

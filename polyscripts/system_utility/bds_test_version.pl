@@ -37,6 +37,11 @@ my $project = $buffer->newProjectCache( -name => $project_name);
 
 }
 
+if( $project->gencode_version == 34){
+	$path = "/software/polyweb/poly-disk/poly-src/polygit/";
+
+}
+
 
 }
 }
