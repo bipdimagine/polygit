@@ -3824,9 +3824,10 @@ sub lmdb_depth {
 
 	my $cmd =
 qq{perl $bin_dev/coverage_genome.pl -patient=$name  -fork=$ppn  -project=$project_name  };
-	if ( $project->isGenome ) {
+
+	if ( $project->isGenome or $project->isExome) {
 		$cmd .=
-qq{ && perl $bin_dev/coverage_statistics_genome.pl -patient=$name  -fork=$ppn  -project=$project_name};
+qq{ && perl $bin_dev/coverage_statistics_samtools.pl -patient=$name  -fork=$ppn  -project=$project_name};
 	}
 	my $type     = "lmdb_depth";
 	my $stepname = $self->patient->name . "@" . $type;
