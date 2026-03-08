@@ -849,7 +849,7 @@ my $h_transmissions = {
     		$chr = "MT" if $chr eq "chrm";
     		$chr = "MT" if $chr eq "mt";
     		$chr = "MT" if $chr eq "chrmt";
-    		my $o = $project->getChromosome(lc($chr));
+    		my $o = $project->getChromosome($chr);
     		$sql_gene = "variant_chromosome = '".$o->ucsc_name."' and variant_start >= ".$start." ";
     		$sql_gene .= "and variant_end <".$end." " if $end;
     		
