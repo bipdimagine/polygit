@@ -76,6 +76,7 @@ my $arg_steps;
 my $pipeline_name;
 my $pad;
 my $secret;
+my $change_release;
 #
 GetOptions(
 	'project=s' => \$projectName,
@@ -94,6 +95,7 @@ GetOptions(
 	'yes=s' =>\$yes,
 	'padding=s' =>\$pad,
 	'nolimit=s' =>\$secret,
+	'change_release=i' =>\$change_release,
 	'imagine'
 );
 $patients_name = "all" unless $patients_name;
@@ -113,7 +115,14 @@ unless ($projectName) {
 	usage();
 }
 my $project = $buffer->newProject( -name => $projectName, -version=>$version );
-
+if ($change_release){
+		$project->update_gencode_version();
+			delete $project->{gencode_version};
+			print colored ['green'],"\nHmmm .... it's look like your upgrade is OK ...\n".$project->gencode_version();
+			$project->update_public_database_version();
+			delete $project->{public_database_version};
+			colored::stabilo("green","\nAnd now the current Public Release is  :".$project->public_database_version()."\n");
+}
 #if($HG38) {
 #	$project->genome_version("HG38_CNG");
 #	$project->version("HG38_CNG");
