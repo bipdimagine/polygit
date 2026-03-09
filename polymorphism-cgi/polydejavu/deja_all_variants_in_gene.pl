@@ -1003,29 +1003,6 @@ sub check_variants {
 				print '.';
 				$nb_i = 0;
 			}
-			my $is_ok_perc = 1;
-			
-			#TODO: le ratio ne fonctionne plus ici !!
-			
-			if ($filter_perc_allelic_max and $hResVariantsRatioAll and exists $hResVariantsRatioAll->{$var_id}) {
-				$is_ok_perc = 0;
-				foreach my $project_id (keys %{$hResVariantsRatioAll->{$var_id}}) {
-					next if ($is_ok_perc);
-					foreach my $patient_id (keys %{$hResVariantsRatioAll->{$var_id}->{$project_id}}) {
-						next if ($is_ok_perc);
-						$is_ok_perc = 1 if ($hResVariantsRatioAll->{$var_id}->{$project_id}->{$patient_id} < $filter_perc_allelic_max);
-					}
-				}
-			}
-			next unless ($is_ok_perc);
-			if (not $is_ok_perc) {
-				delete $hres->{$var_id};
-				next;
-			}
-			
-			warn "\n" if $debug;
-			warn $var_id if $debug;
-			warn '1 - ok perc' if $debug;
 			
 			my ($var_gnomad, $var_gnomad_ho, $var_annot, $var_dejavu, $var_dejavu_ho, $var_model);
 			$var_id = uc($var_id);
@@ -1040,8 +1017,6 @@ sub check_variants {
 			}
 			warn '2 - ok id' if $debug;
 			
-			#my $var = $project_dejavu->_newVariant($var_id);
-#			warn ref($var).' -> using: '.$var->id if $debug;
 			if ($hres and exists $hres->{$var_id}) {
 				$var_gnomad = $hres->{$var_id}->{var_gnomad} if ($hres->{$var_id}->{var_gnomad});
 				$var_gnomad_ho = $hres->{$var_id}->{var_gnomad_ho} if ($hres->{$var_id}->{var_gnomad_ho});
@@ -1128,13 +1103,6 @@ sub check_variants {
 			
 			warn 'rocks: '.$var->rocksdb_id if $debug;
 			warn $h_dv_var_ids->{$var_id}->{rocks_id} if $debug;
-			
-#			if (not exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id}) {
-#				warn "\n\n";
-#				warn $var->rocksdb_id;
-#				warn $h_dv_var_ids->{$var_id}->{rocks_id};
-#				warn "\n\n";
-#			}
 			
 			next if (not exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id} and not exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$h_dv_var_ids->{$var_id}->{rocks_id}});
 			warn '7 - ok rocks id' if $debug;
@@ -1302,7 +1270,6 @@ sub check_variants {
 			$hres->{$var_id}->{id_hg19} = $var_id_hg19;
 			
 			warn 'Nb parquet: '.scalar(@list_parquets) if $debug;
-			
 			my ($h_projects_patients, $table_projects_patients) = get_from_duckdb_project_patients_infos($var, $h_liftover, \@list_parquets);
 			if ($table_projects_patients) {
 				$hres->{$var_id}->{projects} = $h_projects_patients;
@@ -1355,6 +1322,7 @@ sub get_table_project_patients_infos {
 			$ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100 if ($h_infos_patients->{$nb_pat}->{dp});
 			my $text = 'AC:'.$info.' ('.int($ratio).'%)';
 			$h_infos_patients->{$nb_pat}->{ratio} = $text;
+			$h_infos_patients->{$nb_pat}->{ratio_value} = int($ratio);
 		}
 		elsif ($i == 3) {
     		my $model;
@@ -1382,7 +1350,7 @@ sub get_table_project_patients_infos {
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	
-	my $found_healthy_patient;
+	my ($found_healthy_patient, $found_min_perc);
 	foreach my $pat (@lPat) {
 		if (not $pat->isIll() and $only_ill) {
 			$found_healthy_patient = 1;
@@ -1393,6 +1361,19 @@ sub get_table_project_patients_infos {
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
 			next;
 		}
+		
+		if ($filter_perc_allelic_min) {
+			foreach my $nb (keys %{$h_infos_patients}) {
+				next if not $h_infos_patients->{$nb}->{name} eq $pat->name();
+				$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{ratio_value} = $h_infos_patients->{$nb}->{ratio_value};
+			}
+			if ($h_infos_patients->{$h_tmp_pat->{$pat->id}}->{ratio_value} < $filter_perc_allelic_min) {
+				delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
+				next;
+			}
+			else { $found_min_perc = 1; }
+		}
+		
 		next if not exists $h_tmp_pat->{$pat->id};
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
 		my $icon = $pat->small_icon();
@@ -1406,38 +1387,25 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{status_txt} = 'ill' if $pat->status() eq '2';
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{family} = $pat->getFamily->name();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{description} = $p->description();
+		
 		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'He'; }
 		else { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'Ho'; }
 	}
 	
 	return undef if not $h_infos_patients or scalar keys %$h_infos_patients == 0;
 	return undef if ($only_strict_ill and $found_healthy_patient);
+	return undef if ($filter_perc_allelic_min and not $found_min_perc);
 	
-#	my $gene_name =$gene_used->external_name();
-#	my $fam = $patient->getFamily();
 	my $is_solo_trio = 'SOLO';
-#	$is_solo_trio = 'TRIO' if $fam->isTrio();
-#	my $project_name = $patient->getProject->name();
-	
 	my $description = $p->description();
 	my @l_users = @{$p->get_list_emails()};
-#	my $patient_name = $patient->name();
-#	my $pheno = undef;
-#	$pheno = $h_var->{html}->{pheno_name} if ($h_var and exists $h_var->{html}->{pheno_name});
-	
 	my $color = "#c1c1c1";
 	my $model;
 	my $patient_heho = "-";
 	
 	my $nb_col_span = 6;
-#	$nb_col_span = 7 if ($var->getProject->isGenome() && $var->isCnv);
-#	my $hstatus = $patient->validation_status();
-#	my $hval = $patient->validations();
-	
-	
 	my $table_trio = qq{ <div> };
 	$table_trio .= $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"box-shadow: 1px 1px 6px $color;font-size: 7px;font-family:  Verdana;margin-bottom:3px"});
-	
 	
 	my @lPhenotypes = @{$p->phenotypes()};
 	my $pheno = join(', ', sort @lPhenotypes);
@@ -1665,10 +1633,12 @@ sub get_from_duckdb_project_patients_infos {
 			foreach my $project_name (reverse sort keys %$h_by_proj) {
 				my $h = $h_by_proj->{$project_name};
 				my ($h_infos_patients, $table_trio, $model) = get_table_project_patients_infos($project_name, $h, $hVar_infos);
-				push(@list_table_trio, $table_trio) if $table_trio;
-				foreach my $id (sort keys %$h_infos_patients) {
-					my $p_name = $h_infos_patients->{$id}->{'name'};
-					$h_projects_patients->{$project_name}->{$p_name} = $h_infos_patients->{$id};
+				if ($h_infos_patients) {
+					push(@list_table_trio, $table_trio) if $table_trio;
+					foreach my $id (sort keys %$h_infos_patients) {
+						my $p_name = $h_infos_patients->{$id}->{'name'};
+						$h_projects_patients->{$project_name}->{$p_name} = $h_infos_patients->{$id};
+					}
 				}
 			}
 		}	
@@ -1678,7 +1648,7 @@ sub get_from_duckdb_project_patients_infos {
 		warn $sql if $debug;
 		confesss("HG19!!");
 	}
-	if (scalar(@list_table_trio) >= 1) {
+	if ($h_projects_patients and scalar(@list_table_trio) >= 1) {
 		my $html = join("<br>",@list_table_trio);
 		return ($h_projects_patients, $html);
 	}
