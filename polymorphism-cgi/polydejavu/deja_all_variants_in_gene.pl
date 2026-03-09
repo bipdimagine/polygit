@@ -129,7 +129,7 @@ my $hProjects = get_hash_users_projects($user_name, $pwd);
 
 #TODO: ajouter une methode pour recup les patients a conserver
 
-my $h_projects_he_comp;
+my ($h_projects_he_comp, $only_pat_with_var_txt);
 if ($only_pat_with_var) {
 	$h_projects_he_comp = get_projects_patients_with_this_variant($only_pat_with_var);
 	foreach my $proj_name (keys %{$hProjects}) {
@@ -659,7 +659,9 @@ sub export_html {
 	my @lHeHo;
 	push(@lHeHo, "<span style='color:green;'>He</span>") if ($only_pat_with_var_he);
 	push(@lHeHo, "<span style='color:green;'>Ho</span>") if ($only_pat_with_var_ho);
-	$h_annot_categories->{"patient_has_variant <b><span style='color:red'>".$only_pat_with_var."</span></b> (".join('+', @lHeHo).")"} = 1 if ($only_pat_with_var);
+	if ($only_pat_with_var) {
+		$h_annot_categories->{"patient_has_variant <b><span style='color:red'>".$only_pat_with_var_txt."</span></b> (".join('+', @lHeHo).")"} = 1;
+	}
 	
 	$hRes->{hash_filters} = $h_annot_categories;
 	save_html($session_id, $hRes);
@@ -1117,20 +1119,29 @@ sub check_variants {
 				foreach my $pat_id (@{$h_dv->{$proj_id}->{patients}}) {
 					$hres->{$var_id}->{dejavu_details}->{$proj_name}->{$pat_id} = undef;
 				}
+				
 				my $parquet = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet';
-				push(@list_parquets, "'".$parquet."'") if (-e $parquet);
+				if ($only_my_projects) {
+					push(@list_parquets, "'".$parquet."'") if (-e $parquet and exists $hProjectsIds->{$proj_id});
+				}
+				elsif ($only_pat_with_var) {
+					push(@list_parquets, "'".$parquet."'") if (-e $parquet and exists $h_projects_he_comp->{$proj_name});
+				}
+				else {
+					push(@list_parquets, "'".$parquet."'") if (-e $parquet);
+				}
 				
 				if ($keep_nodv_projects) {
 					my $parquet_nodv = $dir_parquet.'/'.$proj_name.'.'.$proj_id.'.parquet.no_dejavu';
 					push(@list_parquets, "'".$parquet_nodv."'") if (-e $parquet_nodv);
 					$is_from_no_dejavu = 1 if (-e $parquet_nodv);
 				}
-				
 			}
-#			if (not @list_parquets and not $is_from_no_dejavu) {
-#				delete $hres->{$var_id};
-#				next;
-#			}
+			
+			if (not @list_parquets and not $is_from_no_dejavu) {
+				delete $hres->{$var_id};
+				next;
+			}
 			
 			#warn Dumper @list_parquets;
 
@@ -1778,6 +1789,7 @@ sub get_projects_patients_with_this_variant {
 	my $b = new GBuffer;
 	my $p = $b->newProject( -name => $b->getRandomProjectName());
 	my $var_dv = $p->_newVariant($only_pat_with_var);
+	$only_pat_with_var_txt = $var_dv->gnomad_id();
 	my $hDejavu = $var_dv->dejavu_hash_projects_patients();
 	
 	my $rocks = $var_dv->rocksdb_id();
