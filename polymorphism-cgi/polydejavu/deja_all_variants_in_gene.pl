@@ -1349,7 +1349,7 @@ sub get_table_project_patients_infos {
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	
-	my ($found_healthy_patient, $found_min_perc, $found_comp);
+	my ($found_healthy_patient, $found_min_perc, $found_comp, $found_model);
 	foreach my $pat (@lPat) {
 		next if not exists $h_tmp_pat->{$pat->id};
 		
@@ -1368,6 +1368,9 @@ sub get_table_project_patients_infos {
 		if (not exists $h_models->{$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{model}}) {
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
 			next;
+		}
+		else {
+			$found_model = 1;
 		}
 		if ($filter_perc_allelic_min) {
 			foreach my $nb (keys %{$h_infos_patients}) {
@@ -1400,6 +1403,7 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = $is_heho;
 	}
 	
+	return undef if $found_model == 0;
 	return undef if $only_pat_with_var and not $found_comp;
 	return undef if not $h_infos_patients or scalar keys %$h_infos_patients == 0;
 	return undef if ($only_strict_ill and $found_healthy_patient);
