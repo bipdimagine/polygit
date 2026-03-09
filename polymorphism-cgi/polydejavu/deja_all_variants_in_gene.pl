@@ -129,30 +129,18 @@ my $hProjects = get_hash_users_projects($user_name, $pwd);
 
 #TODO: ajouter une methode pour recup les patients a conserver
 
-my $h_projects_filters_he_comp;
+my $h_projects_he_comp;
 if ($only_pat_with_var) {
-	my $b = new GBuffer;
-	my $p = $b->newProject( -name => $b->getRandomProjectName());
-	my $var_dv = $p->_newVariant($only_pat_with_var);
-	my $hDejavu = $var_dv->dejavu_hash_projects_patients();
+	$h_projects_he_comp = get_projects_patients_with_this_variant($only_pat_with_var);
 	foreach my $proj_name (keys %{$hProjects}) {
-		if (not exists $hDejavu->{$proj_name}) {
-			delete $hProjects->{$proj_name};
-		}
-#		elsif (not $only_pat_with_var_he and $only_pat_with_var_ho and $hDejavu->{$proj_name}->{ho} == 0) {
-#			delete $hProjects->{$proj_name};
-#		}
-#		elsif (not $only_pat_with_var_ho and $only_pat_with_var_he and $hDejavu->{$proj_name}->{he} == 0) {
-#			delete $hProjects->{$proj_name};
-#		}
+		delete $hProjects->{$proj_name} if not exists $h_projects_he_comp->{$proj_name};
 	}
-	$p = undef;
-	$b = undef;
 }
 
 foreach my $project_name_excluded (split(',', $projects_excluded)) {
 	delete $hProjects->{$project_name_excluded};
 }
+
 
 my $hProjects_not_dejavu;
 
@@ -1350,8 +1338,17 @@ sub get_table_project_patients_infos {
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	
-	my ($found_healthy_patient, $found_min_perc);
+	my ($found_healthy_patient, $found_min_perc, $found_comp);
 	foreach my $pat (@lPat) {
+		next if not exists $h_tmp_pat->{$pat->id};
+		
+		if ($only_pat_with_var) {
+			if (not exists $h_projects_he_comp->{$project_name}->{$pat->name()}) {
+				delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
+				next;
+			}
+			else { $found_comp = 1; }
+		}
 		if (not $pat->isIll() and $only_ill) {
 			$found_healthy_patient = 1;
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
@@ -1361,7 +1358,6 @@ sub get_table_project_patients_infos {
 			delete $h_infos_patients->{$h_tmp_pat->{$pat->id}};
 			next;
 		}
-		
 		if ($filter_perc_allelic_min) {
 			foreach my $nb (keys %{$h_infos_patients}) {
 				next if not $h_infos_patients->{$nb}->{name} eq $pat->name();
@@ -1374,7 +1370,6 @@ sub get_table_project_patients_infos {
 			else { $found_min_perc = 1; }
 		}
 		
-		next if not exists $h_tmp_pat->{$pat->id};
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{name} = $pat->name;
 		my $icon = $pat->small_icon();
 		$icon =~ s/"/'/g;
@@ -1388,10 +1383,13 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{family} = $pat->getFamily->name();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{description} = $p->description();
 		
-		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'He'; }
-		else { $h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = 'Ho'; }
+		my $is_heho;
+		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $is_heho = 'He'; }
+		else { $is_heho = 'Ho'; }
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = $is_heho;
 	}
 	
+	return undef if $only_pat_with_var and not $found_comp;
 	return undef if not $h_infos_patients or scalar keys %$h_infos_patients == 0;
 	return undef if ($only_strict_ill and $found_healthy_patient);
 	return undef if ($filter_perc_allelic_min and not $found_min_perc);
@@ -1551,14 +1549,14 @@ sub get_table_project_patients_infos {
 }
 
 sub get_from_duckdb_project_patients_no_dejavu_variants {
-	my ($gene, $file) = @_;
+	my ($obj, $file) = @_;
 	my @list_table_trio;
 	my $sql = "PRAGMA threads=6; SELECT * FROM read_parquet(['$file'])";
-	my $find_pos_s = $gene->start();
-	my $find_pos_e = $gene->end();
+	my $find_pos_s = $obj->start();
+	my $find_pos_e = $obj->end();
 	my $hRes;	
-	if ($gene->getProject->current_genome_version() eq 'HG38') {
-		$sql .= " WHERE chr38='".$gene->getChromosome->id()."' and pos38 BETWEEN ".$find_pos_s." and ".$find_pos_e.";" ;
+	if ($obj->getProject->current_genome_version() eq 'HG38') {
+		$sql .= " WHERE chr38='".$obj->getChromosome->id()."' and pos38 BETWEEN ".$find_pos_s." and ".$find_pos_e.";" ;
 		my $duckdb = $buffer_init->software('duckdb');
 		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
 		my $json_duckdb = `$cmd`;
@@ -1774,4 +1772,67 @@ sub return_date {
 	return ($year,$amonths[$month-1],$day);
 }
 
-
+sub get_projects_patients_with_this_variant {
+	my ($only_pat_with_var) = @_;
+	my $h_projects_he_comp;
+	my $b = new GBuffer;
+	my $p = $b->newProject( -name => $b->getRandomProjectName());
+	my $var_dv = $p->_newVariant($only_pat_with_var);
+	my $hDejavu = $var_dv->dejavu_hash_projects_patients();
+	
+	my $rocks = $var_dv->rocksdb_id();
+	my ($pos, $alt) = split('!', $rocks);
+	my $h_dv = $var_dv->getChromosome->rocks_dejavu->dejavu($rocks);
+	foreach my $proj_id (keys %{$h_dv}) {
+		my $proj_name = $b->getProjectNameFromId($proj_id);
+		$hDejavu->{$proj_name} = $h_dv->{$proj_id};
+		$hDejavu->{$proj_name}->{project_id} = $proj_id;
+		foreach my $h (@{$b->getQuery->getPatients($proj_id)}) {
+			$hDejavu->{$proj_name}->{patients}->{$h->{patient_id}} = $h->{name};
+		}
+	}
+	
+	foreach my $proj_name (keys %{$hProjects}) {
+		if (not exists $hDejavu->{$proj_name}) {
+			delete $hProjects->{$proj_name};
+		}
+		else {
+			my $parquet = $dir_parquet.'/'.$proj_name.'.'.$hDejavu->{$proj_name}->{project_id}.'.parquet';
+			if (not -e $parquet) {
+				delete $hProjects->{$proj_name};
+				next;
+			}
+			my $find_pos_s = $var_dv->start() - 5;
+			my $find_pos_e = $var_dv->start() + 5;
+			my $sql = "PRAGMA threads=3; SELECT project,chr38,pos38,he,allele,patients,dp_ratios FROM read_parquet('".$parquet."') WHERE chr38='".$var_dv->getChromosome->id()."' and pos38 BETWEEN ".$find_pos_s." and ".$find_pos_e.";" ;
+			
+			my $duckdb = $buffer_init->software('duckdb');
+			my $cmd = qq{set +H | $duckdb -json -c "$sql"};
+			my $json_duckdb = `$cmd`;
+			if ($json_duckdb) {
+				my $decode = decode_json $json_duckdb;
+				foreach my $hash (@$decode) {
+					next if $hash->{'chr38'} ne $var_dv->getChromosome->id;
+					next if $hash->{'pos38'} ne int($pos);
+					next if $hash->{'allele'} ne $alt;
+					my $nb_he = $hash->{he};
+					my $nb_pat = 0;
+					foreach my $pat_id (unpack("w*",decode_base64($hash->{patients}))) {
+						$nb_pat++;
+						my $pat_name = $hDejavu->{$proj_name}->{patients}->{$pat_id};
+						if ($nb_pat <= $nb_he) {
+							$h_projects_he_comp->{$proj_name}->{$pat_name} = 'he' if $only_pat_with_var_he == 1;
+						}
+						else {
+							$h_projects_he_comp->{$proj_name}->{$pat_name} = 'ho' if $only_pat_with_var_ho == 1;
+						}
+					}
+					
+				}
+			}
+		}
+	}
+	$p = undef;
+	$b = undef;
+	return $h_projects_he_comp;
+}
