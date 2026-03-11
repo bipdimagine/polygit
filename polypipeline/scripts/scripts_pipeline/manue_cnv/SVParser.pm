@@ -59,6 +59,8 @@ sub parse_wisecondor {
 sub parse_vcf {
 	my ($patient,$caller) =@_;
 	 my $vcf_file = $patient->getSVFile($caller);
+	 warn $caller;
+	 
 	 my $project = $patient->project;
 	# ouverture du fichier manta zippé
 	my $res;
@@ -104,6 +106,11 @@ sub parse_vcf {
 		my $id = $h->{'SVTYPE'}."_".$chr->name."_".$h->{'START'}."_".$h->{'END'};
 		$h->{'ELEMENTARY'}= [$id];
 		$h->{'INFOS'} = $row->get_format($header);
+		if ($caller eq "sawfish" || $caller eq 'pbsv'){
+			$h->{'INFOS'}->{SR} = [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
+			$h->{'INFOS'}->{PR} =  [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
+		}
+		
 		$h->{id}=$id;
 		$h->{'REAL_CALLER'} = $caller;
 		$h->{'CALLER'} = $caller;
@@ -333,21 +340,117 @@ sub parse_vcf_bnd {
 	
 	return create_transloc_hash($hBND,$patient);
 }
+sub parse_vcf_bnd {
+ my ($patient,$caller) = @_;
+  my $project = $patient->project;
+	 my $vcf_file = $patient->getSVFile($caller);
+	my $vcf = Bio::DB::HTS::VCF->new( filename => "$vcf_file" );
+	my $header = $vcf->header();
+	my $hBND = {};
+	my $hINV = {};
+	while (my $row = $vcf->next){
+			
+			
+			my $type =  get_value($row->get_info($header, "SVTYPE"));
+			next  unless  $row->has_filter($header,"PASS");
+			my $chr = $project->getChromosome($row->chromosome($header),1);
+			next unless $chr; 
+			if ($type eq "INV"){
+			my $g_id = get_value($row->get_info($header, "MATEID"));
+			unless ($g_id){
+				 $g_id =  $row->id();
+			}
+			$hINV->{$g_id}->{qual} = $row->quality;
+			$hINV->{$g_id}->{qual} = 0 if  $row->quality eq "NaN";
+			$hINV->{$g_id}->{chr} = $chr->name ;
+			$hINV->{$g_id}->{alt} = $row->get_alleles()->[0];
+			$hINV->{$g_id}->{pos} = $row->position + 1;
+			$hINV->{$g_id}->{start} = $row->position + 1;
+			$hINV->{$g_id}->{end} = get_value($row->get_info($header, "END"));
+			$hINV->{$g_id}->{infos} = $row->get_format($header);
+			if ($caller eq "sawfish" || $caller eq 'pbsv'){
+			$hINV->{$g_id}->{infos}->{SR} = [$hINV->{$g_id}->{infos}->{AD}->[0],$hINV->{$g_id}->{infos}->{AD}->[1]];
+			$hINV->{$g_id}->{infos}->{PR} =  [$hINV->{$g_id}->{infos}->{AD}->[0],$hINV->{$g_id}->{infos}->{AD}->[1]];
+			}
+			}
+			elsif  ($type eq "BND") {
+			my $event_id = $row->id();
+			my $mate_id = get_value($row->get_info($header, "MATEID"));
+			my @tt =  sort($event_id,$mate_id);
+			my $g_id = join(":",@tt);
+			
+		
+			
+			
+	
+			$hBND->{$g_id}->{$event_id}->{qual} = $row->quality;
+			$hBND->{$g_id}->{$event_id}->{qual} = 0 if  $row->quality eq "NaN";
+			$hBND->{$g_id}->{$event_id}->{chr} = $chr->name ;
+			$hBND->{$g_id}->{$event_id}->{alt} = $row->get_alleles()->[0];
+			$hBND->{$g_id}->{$event_id}->{pos} = $row->position + 1;
+			$hBND->{$g_id}->{$event_id}->{infos} = $row->get_format($header);
+			if ($caller eq "sawfish" || $caller eq 'pbsv'){
+			$hBND->{$g_id}->{$event_id}->{infos}->{SR} = [$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[0],$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[1]];
+			$hBND->{$g_id}->{$event_id}->{infos}->{PR} =  [$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[0],$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[1]];
+			}
+			}
+			
+	}
+	
+	
+	$vcf->close();
+	parse_sniffles_bnd($hBND) if $caller eq "Sniffles2" or $caller eq "Spectre";
+	my $hfinal = {} ;
+	create_inversion_hash($hINV,$patient,$hfinal);
+	create_transloc_hash($hBND,$patient,$hfinal);
+	
+	return ($hfinal,$patient);
+}
+
+sub create_inversion_hash {
+	my ($hINVs,$patient,$hTransLoc) = @_;
+	
+	foreach my $hinv (values %{$hINVs}){
+			my $event_id = $hinv->{chr}."_".$hinv->{start}."_".$hinv->{chr}."_".$hinv->{end};
+			$hTransLoc->{$event_id}->{"ID"}= $event_id;
+			$hTransLoc->{$event_id}->{"TRANSLOC"}= $hinv->{chr}."to".$hinv->{chr};
+			$hTransLoc->{$event_id}->{"QUAL"}= $hinv->{qual};
+			$hTransLoc->{$event_id}->{"TYPE"}= "INV";
+			
+			# info du chromosome de départ
+			$hTransLoc->{$event_id}->{"CHROM1"}= $hinv->{chr};
+			$hTransLoc->{$event_id}->{"POS1"}= $hinv->{start};
+			#$hTransLoc->{$event_id}->{"CYTOBAND1"}= $b1->{cytoband};
+			$hTransLoc->{$event_id}->{"ALT1"} = $hinv->{alt};
+			$hTransLoc->{$event_id}->{INFOS} = delete $hinv->{infos};
+			# info du chromosome d'arrivée
+			$hTransLoc->{$event_id}->{"CHROM2"}=  $hinv->{chr};
+			$hTransLoc->{$event_id}->{"POS2"}=  $hinv->{end};
+			$hTransLoc->{$event_id}->{"ALT2"}= $hinv->{alt};
+			$hTransLoc->{$event_id}->{PATIENT_ID}= $patient->id;
+			$hTransLoc->{$event_id}->{PATIENT_NAME}= $patient->name;
+			}
+}
 
 sub create_transloc_hash {
-	my ($hBND,$patient) = @_;
-		my $hTransLoc;
+	my ($hBND,$patient,$hTransLoc) = @_;
 	foreach my $gid (keys %{$hBND}){
 		my @mate = values %{$hBND->{$gid}};
 		next if scalar(@mate) ne 2;
 		my ($b1,$b2) = sort {$a->{chr} <=> $b->{chr} or $a->{pos} <=> $b->{pos}} @mate;
+		warn $b2->{chr}." ";	
 		$b1->{chr} =~ s/_/-/g;
 		$b2->{chr} =~ s/_/-/g;
+		warn "**************".$b1->{chr}." ".$b2->{chr} if $b1->{chr} eq $b2->{chr};
+		#next  if $b1->{chr} eq $b2->{chr};
 		my $event_id = $b1->{chr}."_".$b1->{pos}."_".$b2->{chr}."_".$b2->{pos};
 			$hTransLoc->{$event_id}->{"ID"}= $event_id;
 			$hTransLoc->{$event_id}->{"TRANSLOC"}= $b1->{chr}."to".$b2->{chr};
 			$hTransLoc->{$event_id}->{"QUAL"}= $b1->{qual};
 			$hTransLoc->{$event_id}->{"TYPE"}= "TL";
+			if ($caller eq "sawfish" || $caller eq 'pbsv'){
+				next  if $b1->{chr} eq $b2->{chr};
+			}
 			$hTransLoc->{$event_id}->{"TYPE"}= "INV" if $b1->{chr} eq $b2->{chr};
 			# info du chromosome de départ
 			$hTransLoc->{$event_id}->{"CHROM1"}= $b1->{chr};
@@ -357,13 +460,14 @@ sub create_transloc_hash {
 			$hTransLoc->{$event_id}->{INFOS} = delete $b1->{infos};
 			# info du chromosome d'arrivée
 			$hTransLoc->{$event_id}->{"CHROM2"}=  $b2->{chr};
+			
 			$hTransLoc->{$event_id}->{"POS2"}=  $b2->{pos};
 			$hTransLoc->{$event_id}->{"ALT2"}= $b2->{alt};
 			$hTransLoc->{$event_id}->{PATIENT_ID}= $patient->id;
 			$hTransLoc->{$event_id}->{PATIENT_NAME}= $patient->name;
 			#push(@$transloc,$hTransLoc);
 	}
-	return ($hTransLoc);
+	#return ($hTransLoc);
 }
 
 1;

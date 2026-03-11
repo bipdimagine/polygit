@@ -49,30 +49,34 @@ sub parse_cnv {
 		my $chr = $project->getChromosome($row->chromosome($header),1);
 		
 		next unless $chr;
-	
+		next unless  $row->has_filter($header,"PASS");
 		my $h;
 		#champ infos 
 		next unless $row->has_filter($header,".");
 		my $svtype = 	$row->get_info($header, "SVTYPE");
 	
 		$h->{'SVTYPE'} = get_value($row->get_info($header, "SVTYPE"));
-		next unless ( ($h->{'SVTYPE'} eq "DUP") || ($h->{'SVTYPE'} eq "DEL") );
-	
+		
+		next unless ( ($h->{'SVTYPE'} eq "DUP") || ($h->{'SVTYPE'} eq "DEL") || ($h->{'SVTYPE'} eq "INS") );
+		
 		$h->{'CHROM'}=$chr->name;
 		$h->{"CALLER"} = $caller;
 		$h->{'END'} = $row->get_info($header, "END")->[0];
-		$h->{'START'} = $row->position();
+		$h->{'START'} = $row->position() + 1 ;
 		$h->{'SVLEN'} =  abs($h->{'END'} - $h->{'START'});
+		next if abs($h->{'SVLEN'}) < 1000;
+		
+		my $res1 = $chr->genesIntervalTree->fetch( $h->{'START'},$h->{'END'} );
+		next if scalar(@$res1) < 3;
 		$h->{'KARYOTYPE_ID'}= $chr->karyotypeId;
 		
-		
 		$h->{'GT_a'} = $row->get_format($header, "GT");
-		
+		next  if ($h->{'GT_a'}->[0] == 0  &&  $h->{'GT_a'}->[1] == 0);  
 		$h->{'GT'} = "0/1";
 		$h->{'GT'} = "1/1" if ($h->{'GT_a'}->[0] == $h->{'GT_a'}->[1]);  
 		$h->{'CN'} ="-" ;
 		$h->{'RATIO'} ="-" ;
-		if ($h->{'SVTYPE'} eq "DUP"){
+		if ($h->{'SVTYPE'} eq "DUP" or $h->{'SVTYPE'} eq "INS" ){
 		$h->{'CN'} = 3;
 		$h->{'CN'} = 4 if $h->{'GT'} eq "1/1"; 
 		}
@@ -86,11 +90,13 @@ sub parse_cnv {
 		$h->{'INFOS'}->{GT} = $h->{'GT'};
 		my $dp = $h->{'INFOS'}->{DP}->[0];
 		my $dp_alt = $h->{'INFOS'}->{AD}->[1];
+		next if exists $h->{'INFOS'}->{CNQ} && not defined $h->{'INFOS'}->{AD}->[0];
+		
 		$h->{'INFOS'}->{SR} = [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
 		$h->{'INFOS'}->{PR} =  [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
 		my $error_rate = 0.01;
 		my $pval = p_value_binomial_ge($dp, $dp_alt, $error_rate);
-		my $pval1 =  p_value_binomial_ge(4, 2, $error_rate);
+		#my $pval1 =  p_value_binomial_ge(4, 2, $error_rate);
 		# Calcul Phred
 		$pval = 1e-23 if $pval == 0;
 		my $phred =999;

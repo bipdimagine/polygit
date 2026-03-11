@@ -74,15 +74,13 @@ my @listPatients = grep {$_->isGenome} @{$project->getPatients()};
 my $duck = GenBoDuckDejaVuSv->new( project => $project,parallel=>1 );
 foreach my $patient(@listPatients){
 	my $psv = $duck->get_sv_project($patient);
-	warn $patient->name;
 	 annot_bnd($psv,$project,$patient);
 	
 	push(@all_sv,@$psv);
 }
-
 save_parquet_rocksdb($project,\@all_sv);
 #save($project,\@all_sv);
-
+system("$Bin/filter_sv.pl -project=$projectname -fork=1");
 sub return_chr_name {
 	my ($n) = @_;
 	return "X" if $n eq "23";
@@ -107,6 +105,8 @@ sub annot_bnd {
 		dejavu($sv,$project,$distance);
 		
 		getScoreEvent($sv,$patient);
+		warn "coucou " if $sv->{id}  =~ /5746009/;
+		
 	}
 	return $aSV
 }
@@ -117,6 +117,7 @@ sub dejavu {
 	
 		my $dvlite = $duck->get_dejavu($sv->{chrom1},$sv->{pos1},$sv->{chrom2},$sv->{pos2},$limit);
 		# if $dvlite->{nb_patients} <10;
+		warn $dvlite->{nb_patients};
 		$sv->{dejavu}->{nb_patients} =  $dvlite->{nb_patients};
 		$sv->{dejavu}->{nb_projects} =  $dvlite->{nb_projects};
 		$sv->{dejavu}->{this_project} =  $dvlite->{this_project};

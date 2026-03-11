@@ -44,6 +44,7 @@ my $type_by_caller = {
 	"canvas" =>2,
 	"dragen-cnv" =>2,
 	"cnvnator" =>2,
+	"sawfish" =>1,
 };
 
 my $cnv_callers = {
@@ -55,10 +56,11 @@ my $cnv_callers = {
     "hificnv"        => 1 << 5,  
     "dragen-cnv"        => 1 << 6, 
      "cnvnator"        => 1 << 7, 
+      "sawfish"        => 1 << 8, 
 };
 
 #test gnomad
-my $gnomad_file  ="/data-isilon/public-data/repository/HG38/gnomad-sv/4.1/parquet/gnomad.sv.parquet";
+#my $gnomad_file  ="/data-isilon/public-data/repository/HG38/gnomad-sv/4.1/parquet/gnomad.sv.parquet";
 my $dbh_gnomad =   DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 
 
@@ -95,7 +97,7 @@ my $col = ["project","patient","chr38","start38","end38","chr19","start19","end1
 my $buffer = GBuffer->new();
 my $project = $buffer->newProjectCache( -name => $projectname);
 $buffer->hash_genes_omim_morbid();
-
+my $dintspan  = Set::IntSpan::Fast->new("94759398-94775314");
 	my $cytodir = $project->get_cytology_directory;	
 	my $fichier_dupseg = $cytodir."/segmental_duplication.bed";
 	my $fdds;
@@ -138,19 +140,19 @@ $buffer->hash_genes_omim_morbid();
 #    }
 #    );
 	
-	
+	 my $duck = GenBoDuckDejaVuCNV->new( project => $project );
 		my $job_id = time;
-		my $duck;
-	 $duck = GenBoDuckDejaVuCNV->new( project => $project );
+	my $duck2;
+	 $duck2 = GenBoDuckDejaVuCNV->new( project => $project );
 	 my $hashP;
 	 foreach my $patient (@{$project->getPatients}){
-	 	$hashP->{$patient->id} =  $duck->get_cnvs_by_project($patient);
+	 	$hashP->{$patient->id} =  $duck2->get_cnvs_by_project($patient);
 	 }
 	 print "\n#end load\n";
-	 $duck->dbh->disconnect();
-	 $duck = undef;
+	 $duck2->dbh->disconnect();
+	 $duck2 = undef;
 	 $project->disconnect();
-	 
+	
 	foreach my $patient (@{$project->getPatients}){
 		$job_id ++;
 		$hjobs->{$job_id} ++;
@@ -159,7 +161,8 @@ $buffer->hash_genes_omim_morbid();
 		my $hash = $hashP->{$patient->id};
 		#$duck->dbh->disconnect();
 		#$duck = undef;
-		my $gather = gatherSV_by_Interval($patient,$hash);
+		my $gather = gatherSV_by_Interval($patient,$hash,$duck);
+		
 		foreach my $g (@$gather) {
 			push(@$all_cnvs, $g);
 		}
@@ -177,31 +180,72 @@ $buffer->hash_genes_omim_morbid();
 	
  $project->disconnect();
 	my $c =0;
-	$duck = GenBoDuckDejaVuCNV->new( project => $project );
+#	store $all_cnvs, "/data-beegfs//tmp/array.storable";
+#exit(0);
+#my $all_cnvs;
+#$all_cnvs = retrieve('/data-beegfs/tmp/array.storable');
 	print '\n#nb: '.scalar(@$all_cnvs)."\n";
-	foreach my $cnv  (@$all_cnvs){
-		$c++;
-		print $c.'/'.$nb."\n" if $c%100 ==0;
-		dejavu($cnv);
-	}
-	print "\n#end dejavu\n";
-	print "\n#start gather \n";
-	my $final = gatherSV_by_Interval_2($all_cnvs);
+	my @after_mce ;
 	
+MCE::Loop::init {
+    chunk_size => 1000,
+    max_workers => 3,
+    gather => sub {
+        my ($mce,$data) = @_;
+        warn "end ".$mce;
+       push(@after_mce,@$data);
+     
+
+    	},
+    	   on_post_exit => sub {
+        my ($mce, $pid, $exit_code, $ident) = @_;
+        if ($exit_code != 0) {
+            warn "?? Worker $pid (ident=$ident) exited with error $exit_code\n";
+        } else {
+            print "? Worker $pid (ident=$ident) exited normally\n";
+        }
+    }
+	};	
 	
+	mce_loop {
+  	  my ($mce, $cnvs) = @_;
+  	  my $x;
+  	  my $duck = GenBoDuckDejaVuCNV->new( project => $project );
+  	  warn "2";
+  	  foreach my $cnv (@$cnvs){
+  
+		dejavu($cnv,$duck);
+
+		}
+		#$duck->close();
+		#delete $hGenes_dude->{$g_name_id};
+ 	   
+  	   MCE->gather(MCE->chunk_id,$cnvs);
+   	#  $t->close();
+	
+		} @$all_cnvs;
+		
+ 		MCE::Loop->finish;	
+	
+#	my $duck = GenBoDuckDejaVuCNV->new( project => $project );
+#	
+#	
+#	foreach my $cnv  (@$all_cnvs){
+#		$c++;
+#		print $c.'/'.$nb."\n" if $c%100 ==0;
+#		dejavu($cnv,$duck);
+#	}
+#	print "\n#end dejavu\n";
+#	print "\n#start gather \n";
+	my $final = gatherSV_by_Interval_2(\@after_mce);
+	
+		print "\n#end gather \n start save \n";
 	
 	save_parquet_rocksdb($final);
 	
+	
 	exit(0);
-#my $all_cnv;
-#
-#	my $hash_patient = read_duckdb(); 
-#	my $gather = gatherSV_by_Interval($hash_patient,$p);
-#
-#
-#close($fh);
 
-#
 
 sub gatherSV_by_Interval_2  
 {
@@ -231,9 +275,10 @@ sub gatherSV_by_Interval_2
 				}
 				
 				foreach my $type (keys %$interval){
+					warn $type;
 					foreach my $chr_name (keys %{$interval->{$type}}){
 						my $chr = $project->getChromosome($chr_name);
-						my $merged = merge_intervals($interval->{$type}->{$chr_name},0.75);
+						my $merged = merge_intervals($interval->{$type}->{$chr_name},0.6);
 						
 						my $complete_merge = merge_hash_2($type,$chr,$merged,$hCNV);
 						foreach my $cnv (@$complete_merge){
@@ -277,11 +322,9 @@ return $total;
 
 sub gatherSV_by_Interval  
 {
-	my ($patient,$aCNV) = @_;
+	my ($patient,$aCNV,$duck) = @_;
 	 my $hGroupedCNV;
-	 
 	 my $seuilSameEvent = 0.9;
-	 
 	 my $hSVPos;
 
 	my $all;		
@@ -297,18 +340,22 @@ sub gatherSV_by_Interval
 				my $hCNV;
 				foreach my $cnv  (@$aCNV)
 				{
-					
+					my $intspan  = Set::IntSpan::Fast->new($cnv->{start}."-".$cnv->{start});
+						my $z = $dintspan->intersection($intspan);
+						
 						$hCNV->{$cnv->{uid}} = $cnv;
 						push(@{$interval->{$cnv->{type}}->{$cnv->{chromosome}}},[$cnv->{start},$cnv->{end},$cnv->{uid}]);
 				
 				}
 				
 				foreach my $type (keys %$interval){
+					#warn $type;
+					#next if $type ne "DEL";
+					#warn "OK";
 					foreach my $chr_name (keys %{$interval->{$type}}){
 						my $chr = $project->getChromosome($chr_name);
-						my $merged = merge_intervals($interval->{$type}->{$chr_name},0.75);
-						my $complete_merge = merge_hash($patient,$type,$chr,$merged,$hCNV);
-						
+						my $merged = merge_intervals($interval->{$type}->{$chr_name},0.7);
+						my $complete_merge = merge_hash($patient,$type,$chr,$merged,$hCNV,$duck);
 						foreach my $cnv (@$complete_merge){
 							push(@{$all},$cnv);
 						
@@ -328,15 +375,26 @@ sub gatherSV_by_Interval
 
 print "\n#ok\n";
 sub merge_hash {
-	my ($patient,$type,$chr,$merged,$hcnv) = @_;
+	my ($patient,$type,$chr,$merged,$hcnv,$duck) = @_;
 	 my $total;
 	 my $nb = 0;
 	 my $max = scalar @$merged;
+	
 	foreach my  $interval (@$merged) {
+		 my $debug;
+		# $debug = 1 if 
+		
+		my $intspan  = Set::IntSpan::Fast->new($interval->[0]."-".$interval->[1]);
+		my $z = $dintspan->intersection($intspan);
+		$debug= 1 unless  $z->is_empty;
+		warn Dumper $interval if $debug;
 			my @cnvs;
 			foreach my $id (split(";",$interval->[2])) {
 					push(@cnvs,$hcnv->{$id});
+					die() unless exists $hcnv->{$id};
 			}
+			warn scalar(@cnvs)  if $debug;;
+			warn Dumper @cnvs if $debug;
 			$nb ++;
 			my $real_start;
 			my $real_end;
@@ -376,7 +434,13 @@ sub merge_hash {
 				my $score = 0;
 				my $cn;
 				foreach my $cnv (@cnvs){
+					
 					push(@{$hfinal->{cnv_origin}},$cnv);
+					if ($hfinal->{id} =~ /8153171/){
+						warn $hfinal->{caller_type_flag};
+						warn $hfinal->{callers};
+						warn Dumper @cnvs;
+					}
 					$hfinal->{callers} = $hfinal->{callers} | $cnv->{callers} ;
 					my $flag = $cnv->{caller_type_flag};
 					$hfinal->{caller_type_flag} = $hfinal->{caller_type_flag} | $flag ;
@@ -402,25 +466,28 @@ sub merge_hash {
 						 	$hfinal->{cn}->{$fn} = 0.5 if $hfinal->{gt}  eq "0/1";
 						 }
 					}
-					  
+					
 					}  
-						
-			
-				#dejavu($hfinal);
+					#if ($hfinal->{id} =~ /8153171/){
+					#	warn $hfinal->{score_caller};
+					#	die();
+					#}	
+#				warn $hfinal->{score_caller};
+				dejavu($hfinal,$duck);
 				genesInfos($hfinal);
 				print "$nb/$max\n" if $nb%30 == 0;
 				getDupSeg($hfinal);
 				
 				push(@$total,$hfinal);
 	}
-	
+	warn "end ".$patient->name." ".$chr->name;;
 return $total;	
 }
 
 exit(0);
 
 sub dejavu {
-	my ($cnv) = @_;
+	my ($cnv,$duck) = @_;
 	my $nbproject=0;
 	my $nbpatient=0;
 	my $nbDJV_Wisecondor=0;
@@ -429,9 +496,11 @@ sub dejavu {
 	my $nb =0;
 	#my $duck = GenBoDuckDejaVuCNV->new( project => $project );
 	my $scorecaller_evt=0;
-	my $list_of_other_patient;
-	$cnv->{dejavu} = $duck->dejavu($cnv->{type},$cnv->{chromosome},$cnv->{start},$cnv->{end},90);
 	
+	my $list_of_other_patient;
+	$cnv->{dejavu} = $duck->dejavu($cnv->{type},$cnv->{chromosome},$cnv->{start},$cnv->{end},80);
+	
+	#warn $cnv->{dejavu};
 }
 
  sub genesInfos
@@ -583,7 +652,7 @@ sub merge_intervals {
         # Vérifier le chevauchement de 70% ou plus
         my $xc = getIdentityBetweenCNV($current->[0], $current->[1], $interval->[0], $interval->[1]);
         
-        if ($xc >= 70 ) {
+        if ($xc >= $limit ) {
             # Fusionner les intervalles
             $current->[1] = $interval->[1] if $interval->[1] > $current->[1];
             $current->[2] .= ";".$interval->[2];
@@ -592,7 +661,6 @@ sub merge_intervals {
             $current = $interval;
         }
     }
-
     push @merged, $current;
     return \@merged;
 }
@@ -696,9 +764,10 @@ sub getDupSeg
 
  sub annnot_sv {
 	my ($patient,$merged) = @_;
-	
+	return;
 	my $dir_tmp= $project->getCallingPipelineDir("annot_sv1_".$patient->id);
 	my $file_bed = $dir_tmp."/".$project->name.".".$patient->id.".bed";
+	warn "******** ".$file_bed;
 	my $load = qq{module load tcltk/8.6.9};
 	my $annotsv = qq{/software/distrib/AnnotSV_2.0/bin/AnnotSV};
 	unlink $file_bed if -e $file_bed;
@@ -783,7 +852,7 @@ sub save_parquet_rocksdb {
 	my $cnv_patients; 
 	my $dir = $project->getCacheCNV(). "/rocks/";
 	 my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"c",name=>"cnv");
-
+	warn $dir;
 
 	my @sorted_ids =  map {$_->id} sort {$a->id <=> $b->id} @{$project->getPatients};
 	
@@ -798,7 +867,9 @@ sub save_parquet_rocksdb {
 	
 	foreach my $cnv (@$cnvs) {
 		my $line;
+		warn "*";
 		$rocks->put($cnv->{id},$cnv);
+			warn "*";
 		push(@$line,$cnv->{id});
 		push(@$line,$cnv->{type});  
 		push(@$line,$cnv->{chromosome});
@@ -823,7 +894,8 @@ sub save_parquet_rocksdb {
 	}
 	$rocks->close;
 	close($fh);
-	my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+	print "dbh \n";
+	
 	my $parquet_file = $project->getCacheCNV()."/".$project->name.".".$project->id.".parquet";
 	my $query = "
 	COPY (
@@ -831,8 +903,8 @@ sub save_parquet_rocksdb {
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE);";
     print "\n# $query\n";
-	$dbh->do($query);
-	$dbh->disconnect;
+     
+     system("duckdb :memory: -c \"$query \"");
 	print "\n# $filename\n";
 	print "\n# $parquet_file\n";
 	print "\n# $project->getCacheDir()\n";

@@ -84,6 +84,7 @@ my $type_by_caller_name = {
 	"canvas" =>"caller_depth",
 	"dragen-cnv" =>"caller_depth",
 	"cnvnator" =>"caller_depth",
+	"sawfish" =>"caller_sr",
 };
 
 
@@ -170,6 +171,7 @@ $project->getChromosomes();
 my $job_id = time;
 my $hjobs ;
 my $chrs;
+my $dintspan  = Set::IntSpan::Fast->new("94759398-94775314");
 foreach my $c (@{$project->getChromosomes}){
 	next if $c->name eq "MT";
 	$chrs->{$c->name} ++;
@@ -204,6 +206,7 @@ my $type_by_caller = {
 	"canvas" =>2,
 	"dragen-cnv" =>2,
 	"cnvnator" =>2,
+	"sawfish" =>1,
 };
 
 my $cnv_callers = {
@@ -217,6 +220,7 @@ my $cnv_callers = {
      "cnvnator"        => 1 << 7, 
       "Sniffles2"        => 1 << 8, 
       "Spectre"        => 1 << 9, 
+      "sawfish"=> 1 << 10, 
 };
 
 
@@ -252,8 +256,8 @@ foreach my $patobj (@$listPatients)
 	#or $patobj->name ne "dl-2-E-sg-A";
 	#next unless $patobj->name =~ /short/;
 	next unless $patobj->isGenome;
-	
-	my $patientname = $patobj->name();
+	#next if  $patobj->name() ne "IPS_CBE_EV2";
+	my $patientname  =  $patobj->name();
 	confess("\n\nERROR: no SV calling methods found for $patientname. DIE.\n\n") if scalar(@$listCallers) == 0;
 	
 	$job_id ++;
@@ -272,13 +276,12 @@ foreach my $patobj (@$listPatients)
 	foreach my $caller (@$listCallers)
 	{
 		confess() unless exists $type_by_caller->{$caller};
-#		warn "+++".$caller;
+		warn "+++".$caller;
 		
 		my $dir = $project->getVariationsDir($caller);
 	
 		#    Lecture de la première ligne du fichier Annot 
 		#    pour recuperer le format
-
 		
 		my $fichierPatient = $patobj->getSVFile($caller);
 		my $res;	
@@ -294,6 +297,9 @@ foreach my $patobj (@$listPatients)
 			if ($caller eq "pbsv"){
 				$hPat_CNV->{'caller_sr'}  = parse_pbsv::parse_cnv($patient,$caller);
 			}
+			elsif ($caller eq "sawfish"){
+				$hPat_CNV->{'caller_sr'}  = parse_pbsv::parse_cnv($patient,$caller);
+			}
 			elsif (lc($caller) eq "sniffles2"){
 				$hPat_CNV->{'caller_sr'}  = parse_sniffles2::parse_cnv($patient,$caller);
 			}
@@ -301,6 +307,7 @@ foreach my $patobj (@$listPatients)
 				$hPat_CNV->{'caller_sr'}  = parse_sniffles2::parse_cnv($patient,$caller);
 			}
 			else {
+				
 				$hPat_CNV->{'caller_sr'}  = SVParser::parse_vcf($patient,$caller);
 			}
 		}
@@ -356,7 +363,6 @@ foreach my $hcnv1 (@{$all_hash})
 #					$hcnv->{callers} = $callers;
 					$lift->add_region_id($hcnv1);
 				}
-warn "lift";
 	my $lift =  $lift->liftOver_regions_cnv($project->name);
 	warn "end";
 	 save_csv($project,$lift);
@@ -373,7 +379,10 @@ sub gather_identical_CNV
 	{
 				foreach my $id  (keys %{$hPat_CNV->{$caller_flag}})
 				{
-					
+					my $debug;
+					$debug=1 if $id =~ /94759449/;
+					$debug = 1 if $id =~ /94759398/;
+					warn $caller_flag if $debug;
 					my $current_cnv = $hPat_CNV->{$caller_flag}->{$id};
 					$hCNV->{$id}->{"elementary_caller_sr"} = "" unless exists $hCNV->{$id}->{"elementary_caller_sr"};
 					$hCNV->{$id}->{"elementary_caller_depth"} = "" unless exists $hCNV->{$id}->{"elementary_caller_depth"};
@@ -392,7 +401,7 @@ sub gather_identical_CNV
 					 die() unless $vc; 
 					
 					$hCNV->{$id}->{callers} =  $hCNV->{$id}->{callers} | $vc;
-					
+				
 					$hCNV->{$id}->{caller_type_flag} = 0 unless exists $hCNV->{$id}->{caller_type_flag};
 					$hCNV->{$id}->{caller_type_flag} =  $hCNV->{$id}->{caller_type_flag} | $caller_type_flag->{$caller_flag};
 					$hCNV->{$id}->{sr1} = -1; 
@@ -425,6 +434,7 @@ sub gather_identical_CNV
 					}
 					$hCNV->{$id}->{patient} = $patient->id;
 					getScoreCallers($hCNV->{$id});
+					
 				}
 					
 	}
@@ -475,10 +485,23 @@ sub getScoreCallers {
 						$limit = 400;
 						
 					}
+					
 					$icnv->{score_caller_sr} += 0.25 if $icnv->{sr2} > 10;
 					$icnv->{score_caller_sr} += 0.25 if $icnv->{pr2} > 7;
 					$icnv->{score_caller_sr} += 0.25 if abs($icnv->{sr_qual}) > $limit;
+					
 				}
+			#81335182_81531711$
+			
+			if ($icnv->{id} =~ /8153171/){
+				warn $icnv->{caller_type_flag};
+				warn $icnv->{callers};
+				warn $icnv->{score_callers}->{nb};
+				die();
+			}
+			warn Dumper $icnv if $icnv->{id} =~ /8153171/;;
+			#die() if $icnv->{id} =~ /81531711/;
+			
 }
 sub save_csv {
 	my ($project,$snps) = @_;

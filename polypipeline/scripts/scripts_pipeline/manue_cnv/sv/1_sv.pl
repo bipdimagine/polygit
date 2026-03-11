@@ -98,13 +98,17 @@ foreach my $thePatient (@listPatients)
 	
 	foreach my $caller (@lCallers){
 		my ($htransloc1) = SVParser::parse_vcf_bnd($thePatient,$caller);
+	
+		
 		$htransloc = merge $htransloc, $htransloc1;
 	
 	}
 	push(@all_sv,values %$htransloc);
 	foreach my $event_id (keys %{$htransloc}){
+		warn $event_id if $event_id =~ /5746009/;
 			$hdejavu->{$event_id}->{$patientname} = 1;
 	}
+	
 	warn scalar (keys %$hdejavu)." ".$thePatient->name;
 	my $file_out = $path.$patientname.".allBND.store";
 	liftover_sv($thePatient,$htransloc);
@@ -121,9 +125,10 @@ my $query = "
         SELECT * from read_csv_auto(['$filename']) order by type
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);";
-    warn $query;
 	$dbh->do($query);
+	
 	$dbh->disconnect;
+	warn $query;
 # pour le dejavu du projet
 exit(0);
 
@@ -156,6 +161,8 @@ sub liftover_sv {
 			$global->{$id}->{pr1} = $hdejavu->{$id}->{INFOS}->{PR}->[0]+0;
 			$global->{$id}->{pr2} = $hdejavu->{$id}->{INFOS}->{PR}->[1]+0;
 			$global->{$id}->{gq} = $hdejavu->{$id}->{INFOS}->{GQ}->[0]+0;
+		
+			
 			}
 			else {
 			$global->{$id}->{sr1} = -1;
@@ -280,29 +287,29 @@ sub save {
 				$nodejavu->close();
 	
 }
-sub dejavu {
-	my ($svs ,$project,$limit) = @_;
-	my $no_sv = $project->dejavuSV();
-	my $dir_HG38 = $buffer->config_path("dejavu")."/HG38/SVeq/";
-	
-	foreach my $sv (@$svs){
-		my $dvlite = $no_sv->get_sv_dejavu($sv,$limit,$project->name);
-		$sv->{DEJAVU}->{PATIENTS} =  $dvlite->{dv_patients};
-		$sv->{DEJAVU}->{PROJECTS} =  $dvlite->{dv_projects};
-		$sv->{DEJAVU}->{DETAIL} =  dclone $dvlite->{infos};
-		my $identity1 = delete  $sv->{DEJAVU}->{DETAIL}->{identity1};
-		my $identity2 =  delete  $sv->{DEJAVU}->{DETAIL}->{identity2};
-		foreach my $p (keys %{$sv->{DEJAVU}->{DETAIL}}){
-			next unless $sv->{DEJAVU}->{DETAIL}->{$p};
-			foreach my $dejavu_patient (@{$sv->{DEJAVU}->{DETAIL}->{$p}}){
-				push(@{$sv->{DEJAVU}->{ARRAY}},$p.":".$dejavu_patient.":bp1=".$identity1."_m bp2=".$identity2."_m");
-			}
-			#push(@{$sv->{DEJAVU}->{ARRAY}},map{$p.":".$_}@{$sv->{DEJAVU}->{DETAIL}->{$p}});
-		}
-		
-	}
-	
-}
+#sub dejavu {
+#	my ($svs ,$project,$limit) = @_;
+#	my $no_sv = $project->dejavuSV();
+#	my $dir_HG38 = $buffer->config_path("dejavu")."/HG38/SVeq/";
+#	
+#	foreach my $sv (@$svs){
+#		my $dvlite = $no_sv->get_sv_dejavu($sv,$limit,$project->name);
+#		$sv->{DEJAVU}->{PATIENTS} =  $dvlite->{dv_patients};
+#		$sv->{DEJAVU}->{PROJECTS} =  $dvlite->{dv_projects};
+#		$sv->{DEJAVU}->{DETAIL} =  dclone $dvlite->{infos};
+#		my $identity1 = delete  $sv->{DEJAVU}->{DETAIL}->{identity1};
+#		my $identity2 =  delete  $sv->{DEJAVU}->{DETAIL}->{identity2};
+#		foreach my $p (keys %{$sv->{DEJAVU}->{DETAIL}}){
+#			next unless $sv->{DEJAVU}->{DETAIL}->{$p};
+#			foreach my $dejavu_patient (@{$sv->{DEJAVU}->{DETAIL}->{$p}}){
+#				push(@{$sv->{DEJAVU}->{ARRAY}},$p.":".$dejavu_patient.":bp1=".$identity1."_m bp2=".$identity2."_m");
+#			}
+#			#push(@{$sv->{DEJAVU}->{ARRAY}},map{$p.":".$_}@{$sv->{DEJAVU}->{DETAIL}->{$p}});
+#		}
+#		
+#	}
+#	
+#}
 
 
 sub getGenesList {

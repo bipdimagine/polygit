@@ -26,15 +26,19 @@ sub parse_cnv {
 		my $svtype = 	$row->get_info($header, "SVTYPE");
 	
 		$h->{'SVTYPE'} = get_value($row->get_info($header, "SVTYPE"));
+		next unless  $row->has_filter($header,"PASS");
+		#warn $row->get_info($header, "FILTER");
+		#die();
 		next unless ( ($h->{'SVTYPE'} eq "DUP") || ($h->{'SVTYPE'} eq "DEL") );
-	
 		$h->{'CHROM'}=$chr->name;
 		$h->{"CALLER"} = $caller;
 		$h->{'END'} = $row->get_info($header, "END")->[0];
 		$h->{'START'} = $row->position();
 		$h->{'SVLEN'} =  abs($h->{'END'} - $h->{'START'});
 		$h->{'KARYOTYPE_ID'}= $chr->karyotypeId;
-		
+		next if $h->{'SVLEN'} < 2000;
+		my $res1 = $chr->genesIntervalTree->fetch( $h->{'START'},$h->{'START'}+$h->{'SVLEN'} );
+		next if scalar(@$res1) < 3;
 		
 		$h->{'GT_a'} = $row->get_format($header, "GT");
 		

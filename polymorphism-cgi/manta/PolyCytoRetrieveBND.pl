@@ -84,10 +84,12 @@ my $patient_id = $patient->id;
 my $parquet_file = $project->getCacheSV()."/".$project->name.".".$project->id.".parquet";
 my $qualtiy_file  = $project->getCacheSV()."/".$project->name.".".$project->id.".sv_quality.parquet";;
 my $quality;
-my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu ; };
+my $d = $dejavu;
+$d = 10000 if ($dejavu eq 'all');
+my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $d ; };
 if (-e $qualtiy_file){
 $quality =1;
-$sql = qq{select * from '$qualtiy_file' where patient = $patient_id and nb_dejavu_patients <= $dejavu and dv1 < 5 and dv2 < 5   and bl1 < 0.95 and bl2 <0.95; };
+$sql = qq{select * from '$qualtiy_file' where patient = $patient_id and nb_dejavu_patients <= $d and dv1 < 5 and dv2 < 5   and bl1 < 0.95 and bl2 <0.95; };
 }
 
 my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"sv");
