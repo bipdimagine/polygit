@@ -312,7 +312,7 @@ function formatDejavu(value){
 		varId = tmp[0];
 	}
 	else { varId = mySplitResult[1]; }
-	var url = "../HG38/polydejavu/dejavu.html?input=" + varId + "&origin_project=" + param('project');
+	var url = "../../HG38/polyweb/polydejavu/dejavu.html?input=" + varId + "&origin_project=" + param('project');
 	return "<a href='"+url+"' target='_blank'>"+mySplitResult[0]+"</a>";
 }
 
