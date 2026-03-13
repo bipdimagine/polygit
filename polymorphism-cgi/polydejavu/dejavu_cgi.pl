@@ -64,7 +64,7 @@ my @lAuthProj = keys(%$hProjAuthorized);
 
 my $project_init_name;
 if ($build_use =~ /HG38/) { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
-elsif ($build_use =~ /HG19/) { $project_init_name = $buffer->getRandomProjectName('HG19_CNG'); }
+elsif ($build_use =~ /HG19/) { $project_init_name = $buffer->getRandomProjectName('HG19_MT'); }
 else { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
 
 my $projectTmp = $buffer->newProject(-name => $project_init_name);
