@@ -67,7 +67,11 @@ my $hProjAuthorized;
 foreach my $hash (@{$query->getProjectListForUser($user, $pass)}) { $hProjAuthorized->{$hash->{'name'}} = undef; }
 my @lAuthProj = keys(%$hProjAuthorized);
 
-my $project_init_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
+my $project_init_name;
+if ($origin_project) { $project_init_name = $origin_project; }
+elsif (not $build_use or $build_use eq 'HG38') { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
+else { $project_init_name = $buffer->getRandomProjectName('HG19_CNG'); }
+
 my $projectTmp = $buffer->newProject(-name => $project_init_name);
 
 $projectTmp->cgi_object(1);
