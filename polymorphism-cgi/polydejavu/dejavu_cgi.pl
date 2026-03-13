@@ -55,11 +55,6 @@ unless ($input) {
 	push(@listHashRes, $hash);
 	printJson(\@listHashRes);
 }
-unless ($build_use) {
-	my $hash = getHashInError();
-	push(@listHashRes, $hash);
-	printJson(\@listHashRes);
-}
 
 
 my $h_projects_phenotypes;
@@ -68,9 +63,9 @@ foreach my $hash (@{$query->getProjectListForUser($user, $pass)}) { $hProjAuthor
 my @lAuthProj = keys(%$hProjAuthorized);
 
 my $project_init_name;
-if ($origin_project) { $project_init_name = $origin_project; }
-elsif (not $build_use or $build_use eq 'HG38') { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
-else { $project_init_name = $buffer->getRandomProjectName('HG19_CNG'); }
+if ($build_use =~ /HG38/) { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
+elsif ($build_use =~ /HG19/) { $project_init_name = $buffer->getRandomProjectName('HG19_CNG'); }
+else { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
 
 my $projectTmp = $buffer->newProject(-name => $project_init_name);
 
@@ -230,8 +225,7 @@ if ( $input =~ 'geneId:' ) {
 	$input = join(',', @lOutput);
 	$originInput = join(',', @lGenesId2);
 }
-
-unless ($export_xls) {
+if (not $export_xls) {
 	print $cgi->header('text/json-comment-filtered');
 	print "{\"progress\":\".";
 }
