@@ -65,7 +65,10 @@ my @lAuthProj = keys(%$hProjAuthorized);
 my $project_init_name;
 if ($build_use =~ /HG38/) { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
 elsif ($build_use =~ /HG19/) { $project_init_name = $buffer->getRandomProjectName('HG19_MT'); }
-else { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
+else {
+	$project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN');
+	$build_use = 'HG38_DRAGEN';
+}
 
 my $projectTmp = $buffer->newProject(-name => $project_init_name);
 
@@ -437,7 +440,12 @@ sub _getVarGeneralDetails {
 	}
 	$hash->{'chr'} = $var->getChromosomes()->[0]->name();
 	$hash->{'pos'} = $var->start();
-	$hash->{'locus'} = 'HG38  chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
+	if ($build_use =~ /HG19/) {
+		$hash->{'locus'} = 'HG19  chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
+	}
+	else {
+		$hash->{'locus'} = 'HG38  chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
+	}
 	my $cadd_score = $var->cadd_score();
 	if ($cadd_score and $cadd_score ne '-1' and $cadd_score ne '-') {
 		if (int($cadd_score) < 10) { $hash->{'cadd_score'} = '0'.$cadd_score; }
