@@ -117,7 +117,7 @@ sub dejavu {
 	
 		my $dvlite = $duck->get_dejavu($sv->{chrom1},$sv->{pos1},$sv->{chrom2},$sv->{pos2},$limit);
 		# if $dvlite->{nb_patients} <10;
-		warn $dvlite->{nb_patients};
+#		warn $dvlite->{nb_patients};
 		$sv->{dejavu}->{nb_patients} =  $dvlite->{nb_patients};
 		$sv->{dejavu}->{nb_projects} =  $dvlite->{nb_projects};
 		$sv->{dejavu}->{this_project} =  $dvlite->{this_project};

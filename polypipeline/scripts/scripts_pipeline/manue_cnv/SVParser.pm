@@ -401,14 +401,14 @@ sub parse_vcf_bnd {
 	$vcf->close();
 	parse_sniffles_bnd($hBND) if $caller eq "Sniffles2" or $caller eq "Spectre";
 	my $hfinal = {} ;
-	create_inversion_hash($hINV,$patient,$hfinal);
-	create_transloc_hash($hBND,$patient,$hfinal);
+	create_inversion_hash($hINV,$patient,$hfinal,$caller);
+	create_transloc_hash($hBND,$patient,$hfinal,$caller);
 	
 	return ($hfinal,$patient);
 }
 
 sub create_inversion_hash {
-	my ($hINVs,$patient,$hTransLoc) = @_;
+	my ($hINVs,$patient,$hTransLoc,$caller) = @_;
 	
 	foreach my $hinv (values %{$hINVs}){
 			my $event_id = $hinv->{chr}."_".$hinv->{start}."_".$hinv->{chr}."_".$hinv->{end};
@@ -433,7 +433,7 @@ sub create_inversion_hash {
 }
 
 sub create_transloc_hash {
-	my ($hBND,$patient,$hTransLoc) = @_;
+	my ($hBND,$patient,$hTransLoc,$caller) = @_;
 	foreach my $gid (keys %{$hBND}){
 		my @mate = values %{$hBND->{$gid}};
 		next if scalar(@mate) ne 2;
