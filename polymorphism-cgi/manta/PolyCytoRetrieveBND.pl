@@ -113,10 +113,11 @@ $array_ref  = decode_json $res if $res;
 $dejavu =20;
 #	while (my $row = @{$array_ref}) {
 	foreach my $row ( @{$array_ref}) {
-	warn $row->{dv1}." ".$row->{dv2};
+#	warn $row->{dv1}." ".$row->{dv2};
 	 my $sv = $rocks->get($row->{id});
 	next unless $sv;
 	next if $sv->{sr2} == 0;
+	next if $sv->{pr2}+$sv->{pr1} == 0;
 	my $r1 = ($sv->{pr2})/($sv->{pr2}+$sv->{pr1});
 	my $r2 = ($sv->{sr2})/($sv->{sr2}+$sv->{sr1});
 	next if $r1 < 0.15;
