@@ -328,7 +328,7 @@ MCE::Loop->finish();
 my @lPhenos = sort keys %$h_phenos;
 my $html;
 if ($h_phenos) {
-	$html .= "<table><tr>";
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
 	$html .= "<td><b>View phenotype</b>&nbsp;&nbsp;</td>";
 	my $cmd_all = qq{show_phenotype('');};
 	$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd_all\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b>All</b></button></td>";
@@ -337,7 +337,7 @@ if ($h_phenos) {
 		my $cmd = qq{show_phenotype('$pheno_tag');};
 		$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'>$pheno <i>(<b><pan id='span_nb_".$pheno."'>?</span></b>)</i></button></td>";
 	}
-	$html .= "</tr></table><br>";
+	$html .= "</tr></table></div><br>";
 }
 $html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="50" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' class='table table-striped' style='font-size:13px;'>};
 $html .= "<thead>";
