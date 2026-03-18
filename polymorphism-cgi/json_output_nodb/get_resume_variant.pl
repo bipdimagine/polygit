@@ -154,6 +154,8 @@ $html_dv .= qq{<th data-field="users" data-filter-control="input" data-sortable=
 $html_dv .= qq{<th data-field="family" data-filter-control="input" data-sortable="true">Family Name</th>};
 $html_dv .= qq{<th data-field="patient" data-filter-control="input" data-sortable="true">Patient Name</th>};
 $html_dv .= qq{<th data-field="status" data-filter-control="input" data-sortable="true">Status</th>};
+
+$html_dv .= qq{<th data-field="heho" data-filter-control="select" data-sortable="true">He / Ho</th>};
 $html_dv .= qq{<th data-field="ac" data-filter-control="input" data-sortable="true">Allele Count</th>};
 $html_dv .= qq{<th data-field="ratio" data-filter-control="input" data-sortable="true">Ratio (%)</th>};
 $html_dv .= qq{<th data-field="dp" data-filter-control="input" data-sortable="true">DP</th>};
@@ -180,6 +182,7 @@ foreach my $project_name (sort {$b <=> $a} keys %{$h_projects_patients}) {
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{family}.qq{</td>};
 		$html_dv .= qq{<td>}.$patient_name.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{small_icon}.qq{</td>};
+		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{heho}.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{ac}.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{ratio}.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{dp}.qq{</td>};
@@ -232,7 +235,7 @@ sub get_from_duckdb_project_patients_infos {
 	my $iter = natatime(120, @$list_files);
 	while( my @tmp = $iter->() ){
 		print '|';
-		my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,allele,patients,dp_ratios FROM read_parquet([".join(', ', @tmp)."])";
+		my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @tmp)."])";
 		my ($posVar, $altVar) = split('!', $var->rocksdb_id());
 		if ($var->getProject->current_genome_version() eq 'HG38') {
 			$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38=$posVar;" ;
@@ -355,6 +358,7 @@ sub get_table_project_patients_infos {
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	my $found_healthy_patient;
+	my $found_he;
 	
 	foreach my $pat (@lPat) {
 		next if not exists $h_tmp_pat->{$pat->id};
@@ -373,6 +377,14 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{small_icon} = $pat->small_icon();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{family} = $pat->getFamily->name();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{align_url} = $pat->alignmentUrl();
+		
+		my $is_heho;
+		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) {
+			$is_heho = 'He';
+			$found_he = 1;
+		}
+		else { $is_heho = 'Ho'; }
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = $is_heho;
 	}
 	foreach my $id (keys %{$h_infos_patients}) {
 		my $pat_name = $h_infos_patients->{$id}->{name};
