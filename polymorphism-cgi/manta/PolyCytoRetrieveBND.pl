@@ -29,6 +29,7 @@ my $listOfGenes = $cgi->param('genes');
 my $omim      = $cgi->param('omim');
 my $transmis = $cgi->param('transmission');
 my $scoreEvent = $cgi->param('score_event');
+my $select_best = $cgi->param('select_best');
 #
 
 my $type;
@@ -113,16 +114,22 @@ $array_ref  = decode_json $res if $res;
 $dejavu =20;
 #	while (my $row = @{$array_ref}) {
 	foreach my $row ( @{$array_ref}) {
-	warn $row->{dv1}." ".$row->{dv2};
 	 my $sv = $rocks->get($row->{id});
 	next unless $sv;
-	next if $sv->{sr2} == 0;
+	if ($select_best < 2) {
+	my $support = $sv->{pr2} + $sv->{sr2};
+	next if $support < 8;
+	next if  $sv->{sr2} < 2;
 	my $r1 = ($sv->{pr2})/($sv->{pr2}+$sv->{pr1});
 	my $r2 = ($sv->{sr2})/($sv->{sr2}+$sv->{sr1});
-	next if $r1 < 0.15;
-	next if $r2 < 0.15;
-	my $ratio = ( $sv->{pr2}+$sv->{sr2}) /( $sv->{pr2}+$sv->{sr2}+$sv->{pr1}+$sv->{sr1});
-	next if $ratio < 0.2;
+	my $vaf = ($sv->{sr2}+$sv->{pr2})/($sv->{sr2}+$sv->{sr1}+$sv->{pr2}+$sv->{pr1});
+	next if $vaf < 0.25 || $vaf > 0.8 ;
+	next if $r1 < 0.15 || $r1 > 0.8;
+	next if $r2 < 0.15 || $r2 > 0.8;
+	if  ($sv->{gq}){
+		next if $sv->{gq} < 20  ;
+	}
+	}
 	 #$sv->{sr1}."/".$sv->{sr2};
 	# next if $sv->{dejavu}->{nb_patients} > $dejavu;
 	 delete $sv->{score};
@@ -132,6 +139,7 @@ $dejavu =20;
 	 $hash->{"LENGTH"}=  "-";
 	# next if $sv->{chrom1} ne "2";
 	 if ($sv->{type} eq "INV") {
+	 	next  unless @{$sv->{genes}};
 	 	$name = "inv(".$sv->{chrom1}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";
 	 	$hash->{"LENGTH"}=  $sv->{type}.";".abs($sv->{pos1}  -$sv->{pos2});
 	 	 if ($listOfGenes ne "all"){
