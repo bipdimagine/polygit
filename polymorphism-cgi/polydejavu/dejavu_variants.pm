@@ -510,13 +510,13 @@ sub print_html_gene {
 	$g->{variants} = $list_variants;
 	
 	my $panel_id = "panel_".$gene_id;
-	my $out;
+	my ($out, $h_phenos);
 	my $bg_color = $print_html->bgcolor;
 	$out .= qq{<div class="panel-heading panel-face panel-grey"	style="$bg_color;height:43px;padding:10px;border:0px;width:100%;">};
 	$out .= update_variant_editor::panel_gene($g, $panel_id, $self->project->name);
 	$out .= qq{</div>};
-	$out .= qq{<br>};
-	$out .= qq{<div class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;;" id="$panel_id">};
+	$out .= qq{<div style="height:3px;"></div>};
+	$out .= qq{<div class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="$panel_id">};
 	$out .= qq{<table class="table table-striped table-condensed table-bordered table-hover table-mybordered" style="vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
 	$out .= $print_html->print_header("background-color:aliceblue;color:black");
 	my $color_validation = "grey";
@@ -536,13 +536,15 @@ sub print_html_gene {
 		$polyviewer_variant->{transcripts} = $polyviewer_variant->{hgenes}->{$g->{id}}->{tr};
 		my @list_polyviewer_h_details = @{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}};
 		$print_html->variant($polyviewer_variant);
-		$out .= $self->print_line_variant_all_patients($polyviewer_variant, $print_html, \@list_polyviewer_h_details, $opacity);
+		my ($this_out, $this_h_pheno) = $self->print_line_variant_all_patients($polyviewer_variant, $print_html, \@list_polyviewer_h_details, $opacity);
+		$out .= $this_out;
+		foreach my $pheno_name (keys %$this_h_pheno) { $h_phenos->{$pheno_name} = $this_h_pheno->{$pheno_name}; }
 	}
 	$out .= qq{</table>};
 	$out .= qq{</div>};
 	
 	$gene = undef;
-	return $out;
+	return ($out, $h_phenos);
 }
 
 
@@ -550,7 +552,7 @@ sub print_line_variant_all_patients {
 	my ($self,$polyviewer_variant,$print_html,$list_h_details,$opacity) = @_;
 	my $style = { style => "max-height:180px;" };
 	$style = { style => "background-color: #DAEEED;opacity:0.5;max-height:180px;" }  if $opacity;
-	my $out;
+	my ($out, $h_phenos);
 	my $hpatients;
 	my $i = 0;
 	
@@ -561,6 +563,13 @@ sub print_line_variant_all_patients {
 		$pr->getPatients();
 		$pr->getFamilies();
 		$pr->project_root_path();
+		if (not exists $self->{hash_users_projects}->{$h_proj_pat->{project_name}}->{phenotypes}) {
+			$self->{hash_users_projects}->{$h_proj_pat->{project_name}}->{phenotypes} = join(', ', sort @{$pr->phenotypes()});
+			foreach my $pheno (@{$pr->phenotypes()}) {
+				$self->{hash_users_projects}->{$h_proj_pat->{project_name}}->{phenotypes_tags} .=  ' phenotype '.$pheno;
+				$h_phenos->{$pheno} = ' phenotype '.$pheno;
+			}
+		}
 		my $pat = $pr->getPatient($h_proj_pat->{patient_name});
 		my $fam_name = $pat->getFamily->name();
 		foreach my $this_pat (@{$pat->getFamily->getPatients()}) { $this_pat->alignmentMethods(); }
@@ -624,8 +633,13 @@ sub print_line_variant_all_patients {
 				if ($gn =~ /HG19/) { $locus = $self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{chr19}.':'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}.'-'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}; }
 				else { $locus = $polyviewer_variant->locus(); }
 				my $igv_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$proj_name","$pnames","$f","$locus","/","$gn")' style="color:black"></button>};
+				my $project_phenotypes = '';
+				if ($self->{hash_users_projects}->{$proj_name}->{phenotypes}) {
+					$project_phenotypes = qq{<span hidden>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes_tags}.qq{</span>};
+					$project_phenotypes .= qq{<span style='color:green;'><i>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes}.qq{</i></span><br>};
+				}
 				my $project_description = $this_print_html->patient->getProject->name().', Description: '.$this_print_html->patient->getProject->description();
-				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;'><center><button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><td style='padding-right:5px;'>".$igv_b."</td></center></td><td>".$html_pat."</td></tr>");
+				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;'><center>".$project_phenotypes."<button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><td style='padding-right:5px;'>".$igv_b."</td></center></td><td>".$html_pat."</td></tr>");
 				push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
 			}
 		}
@@ -647,7 +661,7 @@ sub print_line_variant_all_patients {
 	$out .= $cgi->td( $style, $print_html->transcripts() );
 	$out .= $cgi->end_Tr();
 	$out .= "\n";
-	return $out;
+	return ($out, $h_phenos);
 }
 
 

@@ -439,6 +439,16 @@
 			  background-image: -o-linear-gradient(top, #FF9872,#FF7F50);
 			  background-image: linear-gradient(to bottom, #FF7F50,#FF7061);
 			}
+			
+			.container-flex {
+			  display: flex;
+			  gap: 20px;           /* espace entre les blocs */
+			  overflow-x: auto;    /* scroll horizontal si besoin */
+			}
+			
+			.box {
+			  min-width: 300px;
+			}
         </style>
         
         <style type="text/css" media="print">
@@ -543,6 +553,26 @@
 				}, 2000);
 	    	});
 	    	
+	    	var has_div_checked = {};
+	    	has_div_checked['div_select_promoter_ai'] = false;
+	    	has_div_checked['div_select_ncboost'] = false;
+	    	function toggleDiv(divId, isChecked) {
+				const el = document.getElementById(divId);
+				el.style.display = isChecked ? "block" : "none";
+				has_div_checked[divId] = isChecked;
+				
+				const el_run = document.getElementById('div_run');
+				if (isChecked) { el_run.style.display = "block"; }
+				else {
+					el_run.style.display = "none";
+					for (id in has_div_checked) {
+						if (has_div_checked[id] == true) {
+							el_run.style.display = "block";
+						} 
+					}
+				}
+			}
+	    	
 	    	function relogin() {
 	    		dijit.byId('login').show();
 	    	}
@@ -600,15 +630,33 @@
 			}
 			
 		    function launch_variants_search() {
-		    	var promoter_ai_value;
-		    	if (dijit.byId("slider_promoter_ai").get("value") == 1)    { promoter_ai_value = '0.6'; }
-			    else if (dijit.byId("slider_promoter_ai").get("value") == 2)    { promoter_ai_value = '0.7'; }
-			    else if (dijit.byId("slider_promoter_ai").get("value") == 3)    { promoter_ai_value = '0.9'; }
-		    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
-				document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
-		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl?login=" + username + "&pwd=" + pwd + "&promoter_ai_value=" + promoter_ai_value;
+		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl?login=" + username + "&pwd=" + pwd;
 		    	url += "&launch_job=1";
-		    	
+		    
+		    	if (has_div_checked['div_select_promoter_ai'] == true) {
+			    	var promoter_ai_value;
+			    	if (dijit.byId("slider_promoter_ai").get("value") == 1)    { promoter_ai_value = '0.6'; }
+				    else if (dijit.byId("slider_promoter_ai").get("value") == 2)    { promoter_ai_value = '0.7'; }
+				    else if (dijit.byId("slider_promoter_ai").get("value") == 3)    { promoter_ai_value = '0.9'; }
+			    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
+					document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
+					url += "&promoter_ai_value=" + promoter_ai_value;
+					
+				}
+				
+				if (has_div_checked['div_select_ncboost'] == true) {
+			    	var ncboost_value;
+			    	if (dijit.byId("slider_ncboost").get("value") == 1)    { ncboost_value = '0.8'; }
+				    else if (dijit.byId("slider_ncboost").get("value") == 2)    { ncboost_value = '0.9'; }
+				    else if (dijit.byId("slider_ncboost").get("value") == 3)    { ncboost_value = '0.95'; }
+			    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
+					document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
+					url += "&ncboost_value=" + ncboost_value;
+					
+					console.log(url);
+					alert ('TODO NCBOOST');
+					return;
+				}
 		    	
 				if (dijit.byId("slider_dv_pv").get("value") == 1) { url += "&dejavu=5"; }
 				if (dijit.byId("slider_dv_pv").get("value") == 2) { url += "&dejavu=10"; }
@@ -685,11 +733,11 @@
 		    	
 			    launchJob(url);
 		    }
-	    	
+		    
 	    	function enable_table_search() {
-	    		$('#table_hgmd_genes').bootstrapTable();
+	    		$('#table_genes').bootstrapTable();
 			}
-			
+	    	
 			function goto_dejavu(value,pname,is_in_this_run) {
 				value = value.replaceAll(" ", "");
 				var url = "poly_variants.html?variant=" + value;
@@ -706,6 +754,7 @@
 			    var d = document.getElementById(name);
 			    
 			}
+			
 			function collapse(name,label){
 				var d;
 			     d = document.getElementById(name);
@@ -772,12 +821,18 @@
 			                    clearInterval(interval);
 			
 			                    var html_table = data.html;
-			
 			                    document.getElementById("content_res").innerHTML = "";
 			                    var myNode = document.getElementById("content_res");
 			                    var myPanel = $(html_table);
 			                    myPanel.appendTo(myNode);
-			
+			                    enable_table_search();
+			                    
+			                    var phenotypes = data.phenotypes;
+			                    var list_phenos = String(phenotypes).split(',');
+			                    for (var i = 0; i < list_phenos.length; i++){
+			                    	pheno = list_phenos[i];
+			                    	updateCountPhenotype(pheno);
+			                    }
 			                    dijit.byId('waiting').hide();
 			                }
 			
@@ -793,6 +848,30 @@
 			        alert("ERROR: please contact bioinformatics platform");
 			        dijit.byId('waiting').hide();
 			    });
+			}
+			
+			function countFiltered(data, filters) {
+				return data.filter(row => {
+					return Object.keys(filters).every(field => {
+						const value = row[field] ? row[field].toString().toLowerCase() : '';
+						const search = filters[field].toLowerCase();
+						return value.includes(search);
+					});
+				}).length;
+			}
+
+			function updateCountPhenotype(pheno_name) {
+				const data = $('#table_genes').bootstrapTable('getData', { useCurrentPage: false });
+				var pheno_search = 'phenotype ' + pheno_name;
+				const count = countFiltered(data, { gene: pheno_search });
+				document.getElementById("span_nb_" + pheno_name).innerHTML = count;
+			}
+
+			
+			function show_phenotype (pheno_name) {
+				var $input = $('input.bootstrap-table-filter-control-gene');
+				$input.val(pheno_name);
+				$input.trigger('keyup');
 			}
 			
 		</script>
@@ -828,7 +907,7 @@
 		<div id="editor_stack" jsid="editor_stack" data-dojo-type="dijit/layout/ContentPane" href="../include_html/diag/editor_container_dejavu_variants.html" style="font-size:9px;width:100%;overflow-x:auto;overflow-y:hidden;margin: 0 auto;" hidden></div>
 		
 		<div style="font-size:11px;" id='content_gene_selection'></div>
-		<div style="padding-top:10px;" class='container-fluid' id='content_res'></div>
+		<div style="padding-top:10px;overflow-x:auto;" class='container-fluid' id='content_res'></div>
 		
 		<div id="dialog_validation" dojoType="dojox.widget.Dialog" dimensions="[800,300]" title="USER Validation">
 	        <div id="content_validation" jsId="content_validation" data-dojo-type="dijit/layout/ContentPane"></div>	
