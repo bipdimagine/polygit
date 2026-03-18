@@ -54,7 +54,34 @@ sub parse_wisecondor {
 			return $res;
 }
 
+sub change_gt {
+	my ($infos) = @_;
+	$infos->{GT}->[0] = ($infos->{GT}->[0] >> 1) - 1;
+	$infos->{GT}->[1] = ($infos->{GT}->[1] >> 1) - 1;
+	$infos->{isref} = 1 if $infos->{GT}->[0] == 0  and  $infos->{GT}->[1] == 0;
 
+}
+
+
+sub decode_gt {
+    my (@raw_values) = @_;
+    my @alleles;
+    my $phased = 0;
+    
+    for my $val (@raw_values) {
+        if ($val == 0) {
+            push @alleles, '.';    # manquant
+        } else {
+            $phased = $val & 1;                  # bit de phasage
+            my $allele = ($val >> 1) - 1;        # index réel
+            push @alleles, $allele;
+        }
+    }
+    
+    my $sep = $phased ? '|' : '/';
+    return \@alleles;
+    return join($sep, @alleles);
+}
 
 sub parse_vcf {
 	my ($patient,$caller) =@_;
@@ -90,22 +117,40 @@ sub parse_vcf {
 		$h->{'END'} = $row->get_info($header, "END")->[0];
 		$h->{'START'} = $row->position();
 		$h->{'SVLEN'} =  abs($h->{'END'} - $h->{'START'});
+		
+		my $res1 = $chr->genesIntervalTree->fetch( $h->{'START'},$h->{'END'} );
+		next if scalar(@$res1) < 2;
+		
 		$h->{'KARYOTYPE_ID'}= $chr->karyotypeId;
 		$h->{'QUAL'} = $row->quality() ;
 		if ($caller eq "pbsv"){
 			$h->{'QUAL'} =  1;
 		}
 		$h->{'GT_a'} = $row->get_format($header, "GT");
+		my $v = decode_gt(@{$h->{'GT_a'}} );
 		
+		#warn $h->{'GT_a'}->[0]."/". $h->{'GT_a'}->[1] if  $h->{'GT_a'}->[0] eq "."  or  $h->{'GT_a'}->[1] eq ".";
+		#warn $h->{'GT_a'}->[0]."/". $h->{'GT_a'}->[1];
+		next if $v->[0] eq "."  &&  $v->[1] eq ".";
 		$h->{'GT'} = "0/1";
 		$h->{'GT'} = "1/1" if ($h->{'GT_a'}->[0] == $h->{'GT_a'}->[1]);  
 		$h->{'CN'} ="-" ;
 		$h->{'RATIO'} ="-" ;
+		
 		$h->{'CN'} = get_value($row->get_format($header, "CN")); 
 		$h->{'CN'} = 0   unless $h->{'CN'};
+		
 		my $id = $h->{'SVTYPE'}."_".$chr->name."_".$h->{'START'}."_".$h->{'END'};
 		$h->{'ELEMENTARY'}= [$id];
 		$h->{'INFOS'} = $row->get_format($header);
+		if ($caller eq "dragen-cnv"){
+			next  if $h->{'INFOS'}->{CN}->[0] == 2;
+			$h->{'CN'} = $h->{'INFOS'}->{CN}->[0];
+			warn "***".$h->{'INFOS'}->{CN}->[0] if $h->{'INFOS'}->{CN}->[0] == 2;
+		#	die()  if $h->{'INFOS'}->{CN}->[0] > 2;
+			warn join("/",@$v) if ($caller eq "dragen-cnv");
+			warn join("/",@{$h->{'GT_a'}}) if ($caller eq "dragen-cnv"); 
+		}
 		if ($caller eq "sawfish" || $caller eq 'pbsv'){
 			$h->{'INFOS'}->{SR} = [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
 			$h->{'INFOS'}->{PR} =  [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
@@ -352,7 +397,11 @@ sub parse_vcf_bnd {
 			
 			
 			my $type =  get_value($row->get_info($header, "SVTYPE"));
+			
 			next  unless  $row->has_filter($header,"PASS");
+			my $infos = $row->get_format($header);
+			change_gt($infos);
+			next if exists $infos->{isref};
 			my $chr = $project->getChromosome($row->chromosome($header),1);
 			next unless $chr; 
 			if ($type eq "INV"){
@@ -367,7 +416,7 @@ sub parse_vcf_bnd {
 			$hINV->{$g_id}->{pos} = $row->position + 1;
 			$hINV->{$g_id}->{start} = $row->position + 1;
 			$hINV->{$g_id}->{end} = get_value($row->get_info($header, "END"));
-			$hINV->{$g_id}->{infos} = $row->get_format($header);
+			$hINV->{$g_id}->{infos} = $infos;
 			if ($caller eq "sawfish" || $caller eq 'pbsv'){
 			$hINV->{$g_id}->{infos}->{SR} = [$hINV->{$g_id}->{infos}->{AD}->[0],$hINV->{$g_id}->{infos}->{AD}->[1]];
 			$hINV->{$g_id}->{infos}->{PR} =  [$hINV->{$g_id}->{infos}->{AD}->[0],$hINV->{$g_id}->{infos}->{AD}->[1]];
@@ -388,7 +437,8 @@ sub parse_vcf_bnd {
 			$hBND->{$g_id}->{$event_id}->{chr} = $chr->name ;
 			$hBND->{$g_id}->{$event_id}->{alt} = $row->get_alleles()->[0];
 			$hBND->{$g_id}->{$event_id}->{pos} = $row->position + 1;
-			$hBND->{$g_id}->{$event_id}->{infos} = $row->get_format($header);
+			$hBND->{$g_id}->{$event_id}->{infos} = $infos;
+			$hBND->{$g_id}->{$event_id}->{infos} = $infos;
 			if ($caller eq "sawfish" || $caller eq 'pbsv'){
 			$hBND->{$g_id}->{$event_id}->{infos}->{SR} = [$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[0],$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[1]];
 			$hBND->{$g_id}->{$event_id}->{infos}->{PR} =  [$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[0],$hBND->{$g_id}->{$event_id}->{infos}->{AD}->[1]];
@@ -402,7 +452,7 @@ sub parse_vcf_bnd {
 	parse_sniffles_bnd($hBND) if $caller eq "Sniffles2" or $caller eq "Spectre";
 	my $hfinal = {} ;
 	create_inversion_hash($hINV,$patient,$hfinal);
-	create_transloc_hash($hBND,$patient,$hfinal);
+	create_transloc_hash($hBND,$patient,$hfinal,$caller);
 	
 	return ($hfinal,$patient);
 }
@@ -433,25 +483,35 @@ sub create_inversion_hash {
 }
 
 sub create_transloc_hash {
-	my ($hBND,$patient,$hTransLoc) = @_;
+	my ($hBND,$patient,$hTransLoc,$caller) = @_;
 	foreach my $gid (keys %{$hBND}){
 		my @mate = values %{$hBND->{$gid}};
 		next if scalar(@mate) ne 2;
 		my ($b1,$b2) = sort {$a->{chr} <=> $b->{chr} or $a->{pos} <=> $b->{pos}} @mate;
-		warn $b2->{chr}." ";	
 		$b1->{chr} =~ s/_/-/g;
 		$b2->{chr} =~ s/_/-/g;
+		my $debug;
+		
+		# 7_74828085_7_74828217
 		warn "**************".$b1->{chr}." ".$b2->{chr} if $b1->{chr} eq $b2->{chr};
 		#next  if $b1->{chr} eq $b2->{chr};
 		my $event_id = $b1->{chr}."_".$b1->{pos}."_".$b2->{chr}."_".$b2->{pos};
+		
+			$debug = 1 if $event_id eq "20_29190320_20_29196638";
+		
 			$hTransLoc->{$event_id}->{"ID"}= $event_id;
 			$hTransLoc->{$event_id}->{"TRANSLOC"}= $b1->{chr}."to".$b2->{chr};
 			$hTransLoc->{$event_id}->{"QUAL"}= $b1->{qual};
 			$hTransLoc->{$event_id}->{"TYPE"}= "TL";
-			if ($caller eq "sawfish" || $caller eq 'pbsv'){
-				next  if $b1->{chr} eq $b2->{chr};
+			 if ($b1->{chr} eq $b2->{chr}){
+				next if ($caller eq "sawfish" || $caller eq 'pbsv');
+				warn $gid if abs($b1->{pos} - $b2->{pos})< 1000;
+					
+				delete $hTransLoc->{$event_id} if abs($b1->{pos} - $b2->{pos})< 1000;
+				next  if abs($b1->{pos} - $b2->{pos})< 1000;
+				$hTransLoc->{$event_id}->{"TYPE"}= "INV" ;
+				
 			}
-			$hTransLoc->{$event_id}->{"TYPE"}= "INV" if $b1->{chr} eq $b2->{chr};
 			# info du chromosome de départ
 			$hTransLoc->{$event_id}->{"CHROM1"}= $b1->{chr};
 			$hTransLoc->{$event_id}->{"POS1"}= $b1->{pos};
