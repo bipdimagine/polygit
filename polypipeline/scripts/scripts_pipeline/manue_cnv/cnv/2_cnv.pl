@@ -154,11 +154,13 @@ my $dintspan  = Set::IntSpan::Fast->new("94759398-94775314");
 	 $project->disconnect();
 	
 	foreach my $patient (@{$project->getPatients}){
+		warn $patient->name;
 		$job_id ++;
 		$hjobs->{$job_id} ++;
 #		my $pid = $pm->start and next;
 		
 		my $hash = $hashP->{$patient->id};
+		warn scalar @$hash;
 		#$duck->dbh->disconnect();
 		#$duck = undef;
 		my $gather = gatherSV_by_Interval($patient,$hash,$duck);
@@ -188,8 +190,8 @@ my $dintspan  = Set::IntSpan::Fast->new("94759398-94775314");
 	my @after_mce ;
 	
 MCE::Loop::init {
-    chunk_size => 1000,
-    max_workers => 3,
+    chunk_size => 200,
+    max_workers => 'auto',
     gather => sub {
         my ($mce,$data) = @_;
         warn "end ".$mce;
@@ -211,12 +213,15 @@ MCE::Loop::init {
   	  my ($mce, $cnvs) = @_;
   	  my $x;
   	  my $duck = GenBoDuckDejaVuCNV->new( project => $project );
-  	  warn "2";
+  	  warn "2 ".scalar(@$cnvs);
+  	  my $nb =0;
   	  foreach my $cnv (@$cnvs){
-  
+  	  	$nb ++;
+  	  	warn $mce."-".$nb."/".scalar(@$cnvs) if $nb % 50 ==0;
 		dejavu($cnv,$duck);
 
 		}
+		$duck->close();
 		#$duck->close();
 		#delete $hGenes_dude->{$g_name_id};
  	   
@@ -243,7 +248,7 @@ MCE::Loop::init {
 	
 	save_parquet_rocksdb($final);
 	
-	
+	system("$Bin/filter_cnv.pl -project=$projectname -fork=1");
 	exit(0);
 
 
@@ -347,25 +352,92 @@ sub gatherSV_by_Interval
 						push(@{$interval->{$cnv->{type}}->{$cnv->{chromosome}}},[$cnv->{start},$cnv->{end},$cnv->{uid}]);
 				
 				}
-				
+				my @list;
 				foreach my $type (keys %$interval){
 					#warn $type;
 					#next if $type ne "DEL";
 					#warn "OK";
+					warn $type;
 					foreach my $chr_name (keys %{$interval->{$type}}){
 						my $chr = $project->getChromosome($chr_name);
-						my $merged = merge_intervals($interval->{$type}->{$chr_name},0.7);
-						my $complete_merge = merge_hash($patient,$type,$chr,$merged,$hCNV,$duck);
-						foreach my $cnv (@$complete_merge){
+						push(@list,$type.":".$chr->name);
+					}
+				}
+				
+				
+				
+					my @after_mce ;
+	
+	MCE::Loop::init {
+    chunk_size => 'auto',
+    max_workers => 15,
+    gather => sub {
+        my ($mce,$data) = @_;
+        warn "end ".$mce;
+       	#push(@after_mce,@$data);
+     		foreach my $cnv (@$data){
 							push(@{$all},$cnv);
 						
-					}
-						
-					}
-					
-					
-					
-				}
+						}
+
+    	},
+    	   on_post_exit => sub {
+        my ($mce, $pid, $exit_code, $ident) = @_;
+        if ($exit_code != 0) {
+            warn "?? Worker $pid (ident=$ident) exited with error $exit_code\n";
+        } else {
+            print "? Worker $pid (ident=$ident) exited normally\n";
+        }
+    }
+	};	
+	
+	mce_loop {
+  	  my ($mce, $lists) = @_;
+  	  my $x;
+  	  my $duck = GenBoDuckDejaVuCNV->new( project => $project );
+  	  foreach my $l (@$lists){
+  		my ($type,$chr_name) = split(":",$l);
+  		warn $patient->name.":".$type." ".$chr_name." ".scalar @{$interval->{$type}->{$chr_name}};
+  		my $chr = $project->getChromosome($chr_name);
+		my $merged = merge_intervals($interval->{$type}->{$chr_name},0.7);
+		my $complete_merge = merge_hash($patient,$type,$chr,$merged,$hCNV,$duck);
+		#$duck->close();
+		#delete $hGenes_dude->{$g_name_id};
+ 	   
+  	   MCE->gather(MCE->chunk_id,$complete_merge);
+   	#  $t->close();
+	
+		}
+		$duck->close();
+	} @list;
+		
+ 		MCE::Loop->finish;	
+				
+				
+				
+#				
+#				
+#				
+#				foreach my $type (keys %$interval){
+#					#warn $type;
+#					#next if $type ne "DEL";
+#					#warn "OK";
+#					warn $type;
+#					foreach my $chr_name (keys %{$interval->{$type}}){
+#						
+#						my $chr = $project->getChromosome($chr_name);
+#						my $merged = merge_intervals($interval->{$type}->{$chr_name},0.7);
+#						my $complete_merge = merge_hash($patient,$type,$chr,$merged,$hCNV,$duck);
+#						foreach my $cnv (@$complete_merge){
+#							push(@{$all},$cnv);
+#						
+#						}
+#						
+#					}
+#					
+#					
+#					
+#				}
 			
 				annnot_sv($patient,$all);
 				print "\n#END ANNOT SV\n";
@@ -473,7 +545,8 @@ sub merge_hash {
 					#	die();
 					#}	
 #				warn $hfinal->{score_caller};
-				dejavu($hfinal,$duck);
+
+				#dejavu($hfinal,$duck);
 				genesInfos($hfinal);
 				print "$nb/$max\n" if $nb%30 == 0;
 				getDupSeg($hfinal);

@@ -106,6 +106,7 @@ foreach my $thePatient (@listPatients)
 	push(@all_sv,values %$htransloc);
 	foreach my $event_id (keys %{$htransloc}){
 		warn $event_id if $event_id =~ /5746009/;
+		warn  $event_id." ".Dumper $htransloc->{$event_id}  unless exists $htransloc->{$event_id}->{INFOS};
 			$hdejavu->{$event_id}->{$patientname} = 1;
 	}
 	
@@ -137,7 +138,7 @@ exit(0);
 sub liftover_sv {
 	my ($patient,$hdejavu) = @_;
 	my $global;
-	my $variationsDir = $project->getSVeqDir();();
+	my $variationsDir = $project->getSVeqDir();
 
 
 		foreach my $id (keys %$hdejavu){
@@ -165,6 +166,8 @@ sub liftover_sv {
 			
 			}
 			else {
+			warn Dumper $hdejavu->{$id};
+				die();
 			$global->{$id}->{sr1} = -1;
 			$global->{$id}->{sr2} = -1;
 			$global->{$id}->{pr1} = -1;
