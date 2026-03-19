@@ -140,6 +140,8 @@ else {
 my $type_control = "select";
 $type_control = "input" if (scalar keys %{$h_projects_patients} > 100);
 
+
+
 my $html_dv;
 $html_dv .= "<div style='border: double 1px black;background-color:#5E8AAB;color:white;text-align:left;font-size:13px;>'><span style='padding-left:15px;'><b>DejaVu Project(s) / Sample(s)</b></span></div>";
 $html_dv .= qq{<table id="table_dejavu" data-sort-name="project" data-sort-order="desc" data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="bottom" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[10, 25, 50, 100, 200, 300]" data-resizable='true' class="table table-striped table-condensed table-bordered table-hover table-mybordered" style="height:400px;overflow-y: scroll;width:100%;vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
@@ -148,9 +150,12 @@ $html_dv .= "<tr>";
 $html_dv .= qq{<th data-field="release" data-filter-control="$type_control" data-sortable="true">Release</th>};
 $html_dv .= qq{<th data-field="phenotypes" data-filter-control="$type_control" data-sortable="true">Phenotype(s)</th>};
 $html_dv .= qq{<th data-field="project" data-filter-control="$type_control" data-sortable="true">Project Name</th>};
+$html_dv .= qq{<th data-field="users" data-filter-control="input" data-sortable="true">Users</th>};
 $html_dv .= qq{<th data-field="family" data-filter-control="input" data-sortable="true">Family Name</th>};
 $html_dv .= qq{<th data-field="patient" data-filter-control="input" data-sortable="true">Patient Name</th>};
 $html_dv .= qq{<th data-field="status" data-filter-control="input" data-sortable="true">Status</th>};
+
+$html_dv .= qq{<th data-field="heho" data-filter-control="select" data-sortable="true">He / Ho</th>};
 $html_dv .= qq{<th data-field="ac" data-filter-control="input" data-sortable="true">Allele Count</th>};
 $html_dv .= qq{<th data-field="ratio" data-filter-control="input" data-sortable="true">Ratio (%)</th>};
 $html_dv .= qq{<th data-field="dp" data-filter-control="input" data-sortable="true">DP</th>};
@@ -160,6 +165,7 @@ $html_dv .= "</tr>";
 $html_dv .= "</thead>";
 $html_dv .= "<tbody>";
 foreach my $project_name (sort {$b <=> $a} keys %{$h_projects_patients}) {
+	my $users = get_list_mails($buffer, $project_name);
 	print '.';
 	foreach my $patient_name (sort keys %{$h_projects_patients->{$project_name}}) {
 		my $pat_url = $h_projects_patients->{$project_name}->{$patient_name}->{align_url};
@@ -172,9 +178,11 @@ foreach my $project_name (sort {$b <=> $a} keys %{$h_projects_patients}) {
 		$html_dv .= qq{<td>}.$this_release.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{phenotypes}.qq{</td>};
 		$html_dv .= qq{<td>}.$project_name.qq{</td>};
+		$html_dv .= qq{<td><button style="color:black;" onclick="get_popup_users('$users');">Users</button></td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{family}.qq{</td>};
 		$html_dv .= qq{<td>}.$patient_name.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{small_icon}.qq{</td>};
+		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{heho}.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{ac}.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{ratio}.qq{</td>};
 		$html_dv .= qq{<td>}.$h_projects_patients->{$project_name}->{$patient_name}->{dp}.qq{</td>};
@@ -210,7 +218,15 @@ print $json_encode;
 exit(0);
 
 
-
+sub get_list_mails {
+	my ($buffer, $project_name) = @_;
+	my $h_proj = $buffer->getQuery->getProjectByName($project_name);
+	my $proj_id = $h_proj->{id};
+	my @lUsers;
+	foreach my $h (@{ $buffer->getQuery()->getOwnerProject( $proj_id ) }) { push( @lUsers, $h->{email} ); }
+	foreach my $g (@{ $buffer->getQuery()->getGroups( $proj_id ) } ){ push( @lUsers, $g ); }
+	return join("<br>", sort @lUsers);
+}
 
 sub get_from_duckdb_project_patients_infos {
 	my ($var, $list_files) = @_;
@@ -219,7 +235,7 @@ sub get_from_duckdb_project_patients_infos {
 	my $iter = natatime(120, @$list_files);
 	while( my @tmp = $iter->() ){
 		print '|';
-		my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,allele,patients,dp_ratios FROM read_parquet([".join(', ', @tmp)."])";
+		my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @tmp)."])";
 		my ($posVar, $altVar) = split('!', $var->rocksdb_id());
 		if ($var->getProject->current_genome_version() eq 'HG38') {
 			$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38=$posVar;" ;
@@ -342,6 +358,7 @@ sub get_table_project_patients_infos {
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	my $found_healthy_patient;
+	my $found_he;
 	
 	foreach my $pat (@lPat) {
 		next if not exists $h_tmp_pat->{$pat->id};
@@ -360,6 +377,14 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{small_icon} = $pat->small_icon();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{family} = $pat->getFamily->name();
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{align_url} = $pat->alignmentUrl();
+		
+		my $is_heho;
+		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) {
+			$is_heho = 'He';
+			$found_he = 1;
+		}
+		else { $is_heho = 'Ho'; }
+		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = $is_heho;
 	}
 	foreach my $id (keys %{$h_infos_patients}) {
 		my $pat_name = $h_infos_patients->{$id}->{name};

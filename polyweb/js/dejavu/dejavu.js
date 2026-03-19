@@ -1760,6 +1760,7 @@ function project_stats(){
 	dojo.xhrGet({
 		url:url_stat_polyweb1, handleAs:"json",
 		load: function(data){
+			document.getElementById("aff_build").innerHTML = data.global.projects.build;
 			document.getElementById("span_projects").innerHTML = " "+data.user.projects.all+" / "+data.global.projects.all;
 			document.getElementById("span_samples").innerHTML = " "+data.user.patients.all+" / "+data.global.patients.all;
 			document.getElementById("span_exomes").innerHTML = " "+data.user.patients.exome+" / "+data.global.patients.exome;

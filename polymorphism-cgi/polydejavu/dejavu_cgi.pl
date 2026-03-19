@@ -55,11 +55,6 @@ unless ($input) {
 	push(@listHashRes, $hash);
 	printJson(\@listHashRes);
 }
-unless ($build_use) {
-	my $hash = getHashInError();
-	push(@listHashRes, $hash);
-	printJson(\@listHashRes);
-}
 
 
 my $h_projects_phenotypes;
@@ -67,7 +62,14 @@ my $hProjAuthorized;
 foreach my $hash (@{$query->getProjectListForUser($user, $pass)}) { $hProjAuthorized->{$hash->{'name'}} = undef; }
 my @lAuthProj = keys(%$hProjAuthorized);
 
-my $project_init_name = $buffer->get_random_project_name_with_this_annotations_and_genecode();
+my $project_init_name;
+if ($build_use =~ /HG38/) { $project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN'); }
+elsif ($build_use =~ /HG19/) { $project_init_name = $buffer->getRandomProjectName('HG19_MT'); }
+else {
+	$project_init_name = $buffer->getRandomProjectName('HG38_DRAGEN');
+	$build_use = 'HG38_DRAGEN';
+}
+
 my $projectTmp = $buffer->newProject(-name => $project_init_name);
 
 $projectTmp->cgi_object(1);
@@ -226,8 +228,7 @@ if ( $input =~ 'geneId:' ) {
 	$input = join(',', @lOutput);
 	$originInput = join(',', @lGenesId2);
 }
-
-unless ($export_xls) {
+if (not $export_xls) {
 	print $cgi->header('text/json-comment-filtered');
 	print "{\"progress\":\".";
 }
@@ -439,7 +440,12 @@ sub _getVarGeneralDetails {
 	}
 	$hash->{'chr'} = $var->getChromosomes()->[0]->name();
 	$hash->{'pos'} = $var->start();
-	$hash->{'locus'} = 'HG38  chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
+	if ($build_use =~ /HG19/) {
+		$hash->{'locus'} = 'HG19  chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
+	}
+	else {
+		$hash->{'locus'} = 'HG38  chr'.$var->getChromosomes()->[0]->name().':'.$var->start();
+	}
 	my $cadd_score = $var->cadd_score();
 	if ($cadd_score and $cadd_score ne '-1' and $cadd_score ne '-') {
 		if (int($cadd_score) < 10) { $hash->{'cadd_score'} = '0'.$cadd_score; }

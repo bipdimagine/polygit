@@ -120,6 +120,8 @@ $dejavu =20;
 	my $support = $sv->{pr2} + $sv->{sr2};
 	next if $support < 8;
 	next if  $sv->{sr2} < 2;
+	next if $sv->{sr2} == 0;
+	next if $sv->{pr2}+$sv->{pr1} == 0;
 	my $r1 = ($sv->{pr2})/($sv->{pr2}+$sv->{pr1});
 	my $r2 = ($sv->{sr2})/($sv->{sr2}+$sv->{sr1});
 	my $vaf = ($sv->{sr2}+$sv->{pr2})/($sv->{sr2}+$sv->{sr1}+$sv->{pr2}+$sv->{pr1});

@@ -65,6 +65,12 @@ $hashRes->{global}->{projects}->{last_annot_version} = $last_version_annot;
 if ($origin_project) {
 	my $projectTmp = $buffer->newProject(-name => $origin_project);
 	$hashRes->{global}->{projects}->{annot_version} = $projectTmp->annotation_version();
+	if ($projectTmp->getVersion() =~ /HG38/) {
+		$hashRes->{global}->{projects}->{build} = 'HG38_DRAGEN';
+	}
+	else {
+		$hashRes->{global}->{projects}->{build} = 'HG19_MT';
+	}
 }
 elsif ($force_annot_version) { $hashRes->{global}->{projects}->{annot_version} = $force_annot_version; }
 else { $hashRes->{global}->{projects}->{annot_version} = $last_version_annot; }

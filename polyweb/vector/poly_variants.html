@@ -635,6 +635,12 @@
   					});
 			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
 			}
+			
+			function get_popup_users(users) {
+				document.getElementById("content_res_users").innerHTML = "";
+				document.getElementById("content_res_users").innerHTML = users;
+				dijit.byId('dialog_users').show();
+			}
 	    	
 	    	function end_tasks() {
 				dijit.byId('waiting').hide();
@@ -720,6 +726,13 @@
 				</div>
 				
 			</div>
+		</div>
+		
+		<div id="dialog_users" dojoType="dojox.widget.Dialog"  dimensions="[500,500]" title="" style="text-align:center;border:solid 1px black;background-color:white;height:70%;width:98%;">
+			<b><u>List Users</b></u>
+			<br><br>
+	        <div class="container-fluid" id="content_res_users" style="height:99%;width:99%;"></div>
+			<br>
 		</div>
 				
 		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
