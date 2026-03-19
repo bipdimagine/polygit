@@ -155,7 +155,8 @@ sub export_xls_json {
 				$hvar_new->{project} = $proj_name;
 				$hvar_new->{patient} = $pat_name;
 				$hvar_new->{sex} = 'male';
-				$hvar_new->{sex} = 'female' if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{sex} == 2;
+				$hvar_new->{sex} = 'female' if $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{sex} eq '2';
+				$hvar_new->{sex} = 'female' if lc($h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{sex}) eq 'female';
 				$hvar_new->{status} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{status};
 				$hvar_new->{perc} = $h_by_patients->{$var_id}->{$proj_name}->{$pat_name}->{perc};
 				$hvar_new->{model} = '-';
@@ -167,7 +168,7 @@ sub export_xls_json {
 			}
 		}
 	}
-	
+
 	if ($merged) {
 		$xls_export->add_page_merged('Variants Merged', $xls_export->list_generic_header(), \@list_datas_annotations_with_patients);
 	}

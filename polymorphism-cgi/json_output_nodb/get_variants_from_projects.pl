@@ -282,13 +282,17 @@ print '.nbGenes:'.$nb_genes.'.';
 
 ### PART 4 - print HTML 
 
-my @list_html_genes;
+my (@list_html_genes, $h_phenos);
 MCE::Loop->init(
    max_workers => $fork,
    chunk_size => 'auto',
    gather => sub {
         my ($data) = @_;
+        foreach my $pheno_name (keys %{$data->{phenotypes}}) {
+        	$h_phenos->{$pheno_name}->{tag} = $data->{phenotypes}->{$pheno_name}->{tag};
+        }
         foreach my $gene_id (sort keys %$data) {
+        	next if $gene_id eq 'phenotypes';
         	push(@list_html_genes, $data->{$gene_id}) if $data->{$gene_id};
         }
    }
@@ -304,10 +308,13 @@ mce_loop {
 		}
 		print '.';
 		my @list_variants = keys %{$hGenes->{$gene_id}};
-		my $this_html;
+		my ($this_html, $this_h_pheno);
 		eval {
-			$this_html = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+			($this_html, $this_h_pheno) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
 			$hres->{$gene_id} = $this_html;
+			foreach my $pheno_name (keys %$this_h_pheno) {
+				$hres->{phenotypes}->{$pheno_name}->{tag} = $this_h_pheno->{$pheno_name};
+			}
 		};
 		if ($@) {
 			$hres->{$gene_id} = qq{ERROR with $gene_id};
@@ -317,17 +324,39 @@ mce_loop {
 } sort keys %{$hGenes};	
 MCE::Loop->finish();
 
+
+my @lPhenos = sort keys %$h_phenos;
 my $html;
-$html .= qq{<table>};
-$html .= qq{<tr>};
-$html .= join('', @list_html_genes);
-$html .= qq{</tr>};
-$html .= qq{</table>};
+if ($h_phenos) {
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<td><b>View phenotype</b>&nbsp;&nbsp;</td>";
+	my $cmd_all = qq{show_phenotype('');};
+	$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd_all\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b>All</b></button></td>";
+	foreach my $pheno (@lPhenos) {
+		my $pheno_tag = $h_phenos->{$pheno}->{tag};
+		my $cmd = qq{show_phenotype('$pheno_tag');};
+		$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'>$pheno <i>(<b><pan id='span_nb_".$pheno."'>?</span></b>)</i></button></td>";
+	}
+	$html .= "</tr></table></div><br>";
+}
+$html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="50" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' class='table table-striped' style='font-size:13px;'>};
+$html .= "<thead>";
+$html .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
+$html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder="Gene name, description, ..."</th>};
+$html .= $cgi->end_Tr();
+$html .= "</thead>";
+$html .= "<tbody>";
+foreach my $html_gene (@list_html_genes) {
+	$html .= "<tr><td>".$html_gene."</td></tr>";
+}
+$html .= "</tbody>";
+$html .= "</table>";
 
 if ($launch_job) {
 	my $hRes;
 	$hRes->{status} = "finished";
 	$hRes->{html}   = $html;
+	$hRes->{phenotypes} = join(',', @lPhenos);
 	
 	open(my $out, ">", $outfile);
 	print $out encode_json($hRes);

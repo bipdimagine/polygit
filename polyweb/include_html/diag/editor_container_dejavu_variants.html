@@ -1,39 +1,67 @@
 <center>
 	<div class='row no-gutters' style="height:110px;width:99%;background-color:#F0F0F0;border: 2px double black;">
-		<div class='col-sm-4' style="height:95px;padding-top:5px;border-right: 1px dashed grey;display:none;" id="div_search_control">
+		<div class='col-sm-5' style="height:95px;padding-top:5px;border-right: 1px dashed grey;display:none;" id="div_search_control">
 			<div class="form-group row" style="vertical-align:center;">
+	    		<div class="col-sm-4" style="margin-right:0px;margin-top:0px;">
+	    			<label style="font-size:13px;">Select an annotation:</label><br>
+	    			<table>
+	    				<tr>
+	    					<td>
+								<input type="checkbox" id="promoter_ai" onchange="toggleDiv('div_select_promoter_ai', this.checked)">
+								<label for="promoter_ai">use promoterAI</label>
+								<br>
+								<input type="checkbox" id="ncboost" onchange="toggleDiv('div_select_ncboost', this.checked)" disabled>
+								<label for="ncboost">use NCBoost-2</label>
+	    					</td>
+	    					<td>
+	    						<div id="div_run" style="display:none;margin-left:15px;">
+		    						<center>
+										<button class="btn btn-default" id="div_b_search_icon" type="submit" onclick="launch_variants_search()" style="border:solid 1px black;font-size:9px;">
+									      	<b>RUN</b>
+										</button>
+									</center>
+								</div>
+	    					</td>
+	    				</tr>
+    				</table>
+	    		</div>
 				
-				<div class="col-sm-9" style="margin-right:0px;margin-top:0px;text-align:middle;">
+				<div class="col-sm-8" style="margin-right:0px;margin-top:0px;text-align:middle;">
 			    	<div class="form-group row" style="text-align:middle;vertical-align:center;">
-			    		<div class="col-sm-1" style="margin-right:0px;margin-top:0px;"> </div>
-			    		<div class="col-sm-10" style="margin-right:0px;margin-top:0px;" id="div_select_promoter_ai">
-			    			<table>
-			    				<tr><td><center><span style="font-size:13px;"><b>Promoter AI</b></span></center><br></td></tr>
-			    				<tr><td>
-			                    	<div id="slider_promoter_ai" jsId="slider_promoter_ai" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:300px; height: 25px;"'>
-						                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
-						                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
-						                    <li><span style='font-size:11px;'><b>High</b></span><br>0.6</li>
-						                    <li><span style='font-size:11px;'><b>Very High</b></span><br>0.7</li>
-						                    <li><span style='font-size:11px;'><b><nobr>Extremly High</nobr></b></span><br>0.9</li>
-						                </ol>
-					                </div>
-				                </td></tr>
-			                </table>
-						</div>
-			    		<div class="col-sm-1" style="margin-right:0px;margin-top:0px;"> </div>
-					</div> 
-			    </div>
-			    
-			    <div class="col-sm-3" style="margin-left:0px;text-align:middle;">
-			    	<div class="form-group row" style="vertical-align:center;">
-			    		<div class="col-sm-12" style="margin-right:0px;margin-top:0px;" id="div_select_without_release">
-					    	<div class="input-group" style="width:100%;padding-top:35px;">
-					    		<center>
-									<button class="btn btn-default" id="div_b_search_icon" type="submit" onclick="launch_variants_search()" style="border:solid 1px black;font-size:9px;">
-								      	<b>RUN</b>
-									</button>
-								</center>
+			    		<div class="col-sm-12" style="margin-right:0px;margin-top:0px;">
+							<div class="container-flex" style="height:105px;">
+								<div id="div_select_promoter_ai" class="box" style="display:none;margin-left:15px;">
+									<table>
+					    				<tr><td><center><span style="font-size:13px;"><b>Promoter AI</b></span></center><br></td></tr>
+					    				<tr><td>
+					                    	<div id="slider_promoter_ai" jsId="slider_promoter_ai" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:250px; height: 25px;"'>
+								                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
+								                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+								                    <li><span style='font-size:11px;'><b>High</b></span><br>0.6</li>
+								                    <li><span style='font-size:11px;'><b>Very High</b></span><br>0.7</li>
+								                    <li><span style='font-size:11px;'><b><nobr>Extremly High</nobr></b></span><br>0.9</li>
+								                </ol>
+							                </div>
+						                </td></tr>
+					                </table>
+								</div>
+								
+								<div id="div_select_ncboost" class="box" style="display:none;margin-left:15px;">
+									<table>
+					    				<tr><td><center><span style="font-size:13px;"><b>NCBoost-2</b></span></center><br></td></tr>
+					    				<tr><td>
+					                    	<div id="slider_ncboost" jsId="slider_ncboost" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:250px; height: 25px;"'>
+								                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
+								                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+								                    <li><span style='font-size:11px;'><b>High</b></span><br>0.8</li>
+								                    <li><span style='font-size:11px;'><b>Very High</b></span><br>0.9</li>
+								                    <li><span style='font-size:11px;'><b><nobr>Extremly High</nobr></b></span><br>0.95</li>
+								                </ol>
+							                </div>
+						                </td></tr>
+					                </table>
+								</div>
+								
 							</div>
 						</div>
 					</div>
@@ -42,7 +70,7 @@
 		</div>
 		
 		
-		<div class='col-sm-8' style="height:95px;padding-top:5px;display:none;" id="div_search_control_2">
+		<div class='col-sm-7' style="height:95px;padding-top:5px;display:none;" id="div_search_control_2">
 			<center>
 				<div style="height:110px;overflow-x:auto;scrollbar-width:thin;padding-top:5px;">
 					<table id="table_float" style="min-width:2200px;">
@@ -75,7 +103,7 @@
 									</tr>
 									<tr>
 										<td colspan='2' style="padding-top: 5px;">
-											<input class="form-check-input" type="checkbox" value="" id="b_only_my_projects" checked disabled>
+											<input class="form-check-input" type="checkbox" value="" id="b_only_my_projects" checked>
 											<label class="form-check-label" for="b_only_my_projects" style="vertical-align:middle;">
 												<table>
 													<td>ONLY my projects</td>
