@@ -330,13 +330,13 @@ duckdb:/software/bin/duckdb
 ################
 
 #deepvariant
-deepvariant-sif:/poly-disk/SINGULARITY/deepvariant.sif
+deepvariant-sif:/poly-disk/SINGULARITY/sandbox-deepsomatic/ 
 
 #deepsomatic
-deepsomatic-sif:/poly-disk/SINGULARITY/deepsomatic.sif
+deepsomatic-sif:/poly-disk/SINGULARITY/sandbox-deepsomatic/ 
 
-#bcftools
-bcftools-sif:/poly-disk/SINGULARITY/deepsomatic.sif
+#bcftools 
+bcftools-sif:/poly-disk/SINGULARITY/sandbox-deepsomatic/
 #singularity
 
 singularity-run:singularity run --bind /poly-disk:/poly-disk

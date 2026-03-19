@@ -74,9 +74,11 @@ foreach my $t (split(",",$type)){
 my $ref               = $project->genomeFasta();
 my $deepvariant = $buffer->software("deepvariant-sif");
 my $dcmd = "run_deepvariant   --model_type=WES";
+my $opt ="--reads";
 if ($type =~ /somatic/){
 	$deepvariant = $buffer->software("deepsomatic-sif");
 	$dcmd = "run_deepsomatic   --model_type=WES_TUMOR_ONLY";
+	 $opt ="--reads_tumor";
 }
 my $singularity = $buffer->software("singularity-run");
 
