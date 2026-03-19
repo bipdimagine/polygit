@@ -192,8 +192,8 @@ my $pos_sample = firstidx{ $_ eq "Sample_ID" } @$lheader_data;
 die("no sample id in header ") if $pos_sample eq -1;
 my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
 
-my $pos_cb1 = firstidx{ $_ eq "index" } @$lheader_data;
-my $pos_cb2 = firstidx{ $_ eq "index2" } @$lheader_data;
+my $pos_cb1 = firstidx{ lc $_ eq "index" } @$lheader_data;
+my $pos_cb2 = firstidx{ lc $_ eq "index2" } @$lheader_data;
 my $len_cb;
 $len_cb->[0] = length($lines->{"[Data]"}->[0]->[$pos_cb1]);
 $len_cb->[1] = length($lines->{"[Data]"}->[0]->[$pos_cb2]) unless ($pos_cb2 eq '-1');
@@ -289,7 +289,6 @@ my $choice = prompt("use - ".colored(['bright_red on_black'],"$mask")." - for de
 if ($choice ne "y") {
 	$mask =  prompt("enter your mask  ? ");
 	warn "use this mask $mask";
-	#die($mask);
 }
 if ($rc) {
 	#todo inverser mask I2
@@ -361,7 +360,7 @@ foreach my $data (@{$lines->{"[Data]"}}){
  		$data->[$pos_cb2] = substr($index2, 0, $l2);
  	}
 	my $name = $data->[$pos_sample];
-	$data->[$pos_sample_name] = $name;
+	$data->[$pos_sample_name] = $name unless ($pos_sample_name < 0);
 	next if $name =~ /_RC$/; 
 	next if exists $dj->{$name};
 	next unless $name;
@@ -520,7 +519,7 @@ sub report {
 	}
 	
 	print "-- BY LINES : --\n";	
-	my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# read") ) ; # if ($type == 1);
+	my $tb = Text::Table->new( (colored::stabilo("blue", "Lane" , 1),  "# reads") ) ; # if ($type == 1);
 	my @l ;
 	my @rows;
 	my $stat = Statistics::Descriptive::Full->new();
@@ -551,7 +550,7 @@ sub report {
 	print "\n ------------------------------\n";
 	
 	print "-- By Sample : --\n";	
-	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# read") ) ; # if ($type == 1);
+	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# reads") ) ; # if ($type == 1);
 	@rows = ();
 	foreach my $p (sort keys %$bypatient){
 		my @row;
