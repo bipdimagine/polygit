@@ -478,6 +478,8 @@ sub getRandomInsertion {
 
 }
 
+
+
 sub parseVCFLine {
 	my ( $self, $line ) = @_;
 	my ( $chr, $pos, $id, $ref, $alt, $qual, $filter, $info, @all ) = split( "\t", $line );
@@ -495,16 +497,17 @@ sub parseVCFLine {
 	$gt->{ho}         = 0;
 	$gt->{isref}      = 0;
 	$gt->{is_cas_1_2} = 0;
-		if ( $gt->{genotype}->[0] eq $gt->{genotype}->[1] ) {
+	if ( $gt->{genotype}->[0] eq $gt->{genotype}->[1] ) {
 		$gt->{he}    = 0;
 		$gt->{ho}    = 1;
-		$gt->{isref} = 1 if $gt->{genotype}->[0] == 0;
+		$gt->{isref} = 1 if $gt->{genotype}->[0] eq 0;
+		$gt->{nocall} = 1 if $gt->{genotype}->[0] eq ".";
 
 	}
 	elsif ( $gt->{genotype}->[0] + $gt->{genotype}->[1] == 1 ) {
 		$gt->{he}    = 1;
 		$gt->{ho}    = 0; #
-		$gt->{isref} = 1 if $gt->{genotype}->[0] == 0;
+		#$gt->{isref} = 1 if $gt->{genotype}->[0] == 0;
 
 	}
 	elsif (($gt->{genotype}->[0] + $gt->{genotype}->[1] ) > 2) {
@@ -517,6 +520,7 @@ sub parseVCFLine {
 		
 		die();
 	}
+	
 	return {
 		chr    => $chr,
 		pos    => $pos,
@@ -532,8 +536,11 @@ sub parseVCFLine {
 
 sub genotype {
 	my ( $self, $val ) = @_;
+	
 	my @t = split( "", $val );
 	confess($val) if scalar(@t) ne 3;
+	
+	return [ ".", "." ] if ($t[-1]  eq "." or $t[0] eq "." );
 	return [ $t[0], $t[-1] ] if $t[0] < $t[-1];
 	return [ $t[-1], $t[0] ];    #if $t[0] < $t[-1];
 }
@@ -1105,7 +1112,7 @@ sub parseVcfFileForReference_manta {
 
 		my $x = $self->parseVCFLine($row);
 		confess( "alt " => Dumper $x) if scalar( @{ $x->{alt} } ) > 1;
-
+		next if $x->{gt}->{isref} == 1;
 		#	confess("ref =>".Dumper $x ) if scalar(@{$x->{ref}}) > 1;
 		my $hash;
 		if ( $x->{infos}->{SVTYPE} eq "INS" or $x->{infos}->{SVTYPE} eq "DUP" )
@@ -1324,8 +1331,6 @@ sub parseVcfFileForReference_gatk {
 			confess();
 
 		}
-		
-
 		if ( ( $useFilter == 1 ) and ( exists $$x{'FILTER'} ) ) {
 			die();
 			my ($find) = grep { uc($_) ne "PASS" } @{ $x->{'FILTER'} };
@@ -1361,6 +1366,21 @@ sub parseVcfFileForReference_gatk {
 		}
 		else {
 			$gtypes = $x->{gtypes}->{$pat_name} unless ( $self->noPatient() );
+		}
+		my $ff = $x->{FILTER}->[0] if $x->{FILTER};
+		
+		if (uc($ff) eq "REFCALL" && $gtypes->{GT} eq "0/0") {
+				my $dp = $gtypes->{DP};
+				my $af = $gtypes->{VAF};
+				my ($nref,$nalt) = split(",",$gtypes->{AD});
+				if ($nalt >  5 && $af > 0.2 ) {
+					if ($af < 0.8){
+						$gtypes->{GT} = "0/1"
+					}
+					else {
+						$gtypes->{GT} = "1/1";
+					}
+				}
 		}
 
 		unless ($gtypes) {
@@ -1398,8 +1418,9 @@ sub parseVcfFileForReference_gatk {
 
 		next if $gtypes->{GT} eq "./.";
 
-		my @gt = split( "/", $gtypes->{GT} );
-		if ( scalar(@gt) ne 2 ) { @gt = split( '|', $gtypes->{GT} ); }
+		my @gt = split(/[\/|]/, $gtypes->{GT});
+		
+		
 		warn " SKIP VARIANT FOUND . " if $gtypes->{GT} eq ".";
 		next                          if $gtypes->{GT} eq ".";
 		next                          if $gtypes->{GT} eq "0/0";
@@ -1420,6 +1441,7 @@ sub parseVcfFileForReference_gatk {
 			@gt = @lMyGt;
 			$gtypes->{GT} = join( '/', @gt );
 		}
+		
 
 		if ( scalar(@gt) eq 1 ) {
 			if ( $gt[0] =~ /[0-9]/ ) {
@@ -1427,7 +1449,10 @@ sub parseVcfFileForReference_gatk {
 				$gtypes->{'GT'} = join( '/', @gt );
 			}
 		}
-
+		if ( scalar(@gt) >2  and $file =~ /mutect/ ) {
+			pop(@gt);
+			$gt[1] = 1;
+			 }
 		if ( scalar(@gt) ne 2 ) {
 			warn Dumper $x;
 			warn Dumper @gt;
@@ -1536,23 +1561,17 @@ sub parseVcfFileForReference_gatk {
 		my @types_variation = ( "", "", "", "", "" );
 		my @cigars          = ( "", "", "", "", "" );
 
-		my @lTmp = split( "/", $gtypes->{'GT'} );
-		unless ( scalar(@lTmp) == 2 ) {
+
+		unless ( $gt[0] =~ /^\d+?$/ ) {
+			warn Dumper $gtypes;
+			die;
+		}
+		unless ( $gt[1] =~ /^\d+?$/ ) {
 			warn Dumper $gtypes;
 			die;
 		}
 
-		unless ( $lTmp[0] =~ /^\d+?$/ ) {
-			warn Dumper $gtypes;
-			die;
-		}
-		unless ( $lTmp[1] =~ /^\d+?$/ ) {
-			warn Dumper $gtypes;
-			die;
-		}
-
-		my @gt_allele =
-		  uniq( sort { $a <=> $b } split( "/", $gtypes->{'GT'} ) );
+		my @gt_allele =  uniq( sort { $a <=> $b } @gt);
 
 		my $max = $gt_allele[-1];
 		for ( my $i = 0 ; $i <= $max + 1 ; $i++ ) {
