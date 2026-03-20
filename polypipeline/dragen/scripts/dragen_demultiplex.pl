@@ -137,7 +137,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	my $csv_tmp = $bcl_dir . "/SP." . time . ".csv";
 	die("no sample sheet in database ") unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheet10X.csv' );
 	my $toto = $run->sample_sheet;
-	warn $csv_tmp;
+	#warn $csv_tmp;
 	$toto =~ s/;/,/g;
 	open( TOTO, ">$csv_tmp" ) || confess("Can't open '$csv_tmp': $!");
 	print TOTO $toto;
@@ -220,9 +220,12 @@ my $rc = 1 if (	grep {
 		 			and $_->{IsReverseComplement} eq 'Y'
 				} @$reads );
 
+warn "Index2 IsReverseComplement='Y' in RunInfo." if ($rc);
+my $i_index = 0;
+
 foreach my $read (@$reads) {
-	if ( $read->{IsIndexedRead} eq 'N') {
-		push( @$guess_mask,"Y" . $read->{NumCycles} );
+	if ( $read->{IsIndexedRead} eq 'N' ) {
+		push( @$guess_mask, "Y" . $read->{NumCycles} );
 	}
 	elsif ( $read->{IsIndexedRead} eq 'Y' ) {
 		my $l = $read->{NumCycles};
@@ -357,6 +360,7 @@ if ($neb) {
 		[ "AdapterRead2", join( '+', @$adaptors ) ]
 	);
 }
+push( @{ $lines->{$settings_title} }, [] );
 
 my $dj;
 my $ok_in_project;
