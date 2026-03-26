@@ -295,7 +295,7 @@ if ($input_mask or $choice ne "y") {
 	$input_mask = prompt("enter your mask  ? ") unless ($input_mask);
 	$input_mask =~ s/ //g;
 	my $motif_mask = '([YIN][0-9*]+)+(;([YIN][0-9*]+)+)+';
-	die("Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$mask') does not match the required syntax.") unless ($input_mask =~ $motif_mask);
+	die("Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$input_mask') does not match the required syntax.") unless ($input_mask =~ $motif_mask);
 	warn "Use this mask: $input_mask";
 	$mask = $input_mask;
 }
