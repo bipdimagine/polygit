@@ -125,7 +125,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 	if ( $project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc ) {
-		$sc = 1 if ( prompt( "Is this project SC 10X ? Use SampleSheet10X.csv and not document in database ?") );
+		$sc = 1 if ( prompt( "Is this project SC 10X ? Use SampleSheet10X.csv and not document in database ? ", -yes) );
 	}
 	if ($sc) {
 		die(    "No SampleSheet10X.csv: '$bcl_dir/SampleSheet10X.csv'."
