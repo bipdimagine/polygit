@@ -135,11 +135,6 @@ foreach my $project_name (split(",",$project_names)){
 	make_path($dir_out) unless (-d $dir_out);
 	
 	# Run Manifest
-#	if ($project->getCapture->name =~ /^transcriptome_10X/) {
-#		die("No SampleSheet10X.csv") unless (-f $bcl_dir.'SampleSheet10X.csv');
-#		$aoa = csv (in => $bcl_dir.'SampleSheet10X.csv');
-#		next;
-#	}
 	my $csv_tmp = $bcl_dir."/RunManifest.tmp.csv";
 	my $sp = $run->sample_sheet;
 	if (not $sp and -e $bcl_dir."/RunManifest.csv") {
@@ -442,7 +437,7 @@ $cmd .= "$bcl_tmp $dir_out" if ($bcl_dir =~ /AVITI\/IMAGINE/);
 
 # Demux only
 unless ($no_demux_only) {
-	my $out_demux_only = $dir_out.'demux_only/'.time.'/';
+	my $out_demux_only = $dir_out =~ s/\/$/.demux_only\//r . time.'/';
 	make_path($out_demux_only) unless (-d $out_demux_only);
 	my $cmd_demux_only = $cmd;
 	$cmd_demux_only =~ s/--num-threads 40/--num-threads 5 --demux-only/;
@@ -460,6 +455,7 @@ unless ($no_demux_only) {
 	close ($dh);
 	system("firefox $demux_qc_html &") unless (getpwuid($<) eq 'shanein');
 	system("google-chrome $demux_qc_html &") if (getpwuid($<) eq 'shanein');
+	sleep(1);
 	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -w=>'q', -1));
 	print "\n";
 }

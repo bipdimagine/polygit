@@ -932,16 +932,36 @@ has quality_dir => (
 	}
 );
 
-has lmdb_ncboost_path => (
+has ncboost_parquet_path => (
 	is      => 'ro',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir  = $self->annotation_public_path() . '/ncboost/';
-		return $self->makedir($dir);
-
+		my $dir = $self->buffer()->get_lmdb_database_directory('ncboost').'/global/';
+		return $dir;
 	}
 );
+
+has ncboost_parquet_dejavu_filter_path => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->buffer()->get_lmdb_database_directory('ncboost').'/dejavu_filter/';
+		return $dir;
+	}
+);
+
+#has lmdb_ncboost_path => (
+#	is      => 'ro',
+#	lazy    => 1,
+#	default => sub {
+#		my $self = shift;
+#		my $dir  = $self->annotation_public_path() . '/ncboost/';
+#		return $self->makedir($dir);
+#
+#	}
+#);
 
 has lmdb_gnomad_path => (
 	is      => 'ro',

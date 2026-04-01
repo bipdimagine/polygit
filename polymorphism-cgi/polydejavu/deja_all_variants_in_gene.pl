@@ -88,7 +88,7 @@ $fork = 6 if not $fork;
 
 $only_ill = 1 if ($only_strict_ill);
 
-
+my $h_potential_he_comp;
 my ($only_project, $only_patient, $keep_nodv_projects);
 my ($project_dejavu, $gene_with_partial_transcrit);
 
@@ -151,7 +151,7 @@ my $hProjects_not_dejavu;
 my $session_id;
 
 my $nb_variants_before_filters;
-my @headers_validations = ("#", "varsome","alamut variant","var_name","projects / patients","gnomad","deja_vu","table_validation","table_transcript");
+my @headers_validations = ("#", "varsome","alamut variant","var_name","he_comp_potential","projects / patients","gnomad","deja_vu","table_validation","table_transcript");
 #my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","ncboost","cadd","revel","dbscsnv","spliceAI");
 my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift",'alphamissense',"cadd","revel","dbscsnv",'spliceAI','promoterAI');
 my ($hVariantsIdsDejavu, $hVariantsDetails);
@@ -439,42 +439,10 @@ sub export_html {
 	$class->{rowspan} = 1 if $class->{rowspan} <=0;
 	$class->{style} = "min-width:10%;padding:1px";
 	
-	my $out2 .= $cgi->start_div();
-	
-	$out2 .= qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' id='table_variants' class='table table-striped' style='font-size:13px;'>};
-	$out2 .= "<thead>";
-	$out2 .= $cgi->start_Tr({style=>"background-color:#E9DEFF;$fsize"});
-	foreach my $h (@headers_validations){
-		my $cat = ucfirst($h);
-		if ($h eq "projects / patients") {
-			$out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="NGS2022_4000 / Denovo">$cat / IGV / Alamut BAM</th>};
-		}
-		else {
-			if (lc($cat) eq '#' or lc($cat) eq 'varsome' or lc($cat) eq 'alamut variant' or lc($cat) eq 'gnomad' or lc($cat) eq 'deja_vu') {
-				$out2 .= qq{<th data-field="$h" data-sortable="true">$cat</th>};
-			}
-			elsif (lc($cat) eq 'table_validation') {
-				if ($can_use_hgmd) { $out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="DM / Pathogenic">HGMD / Clinvar / Local</th>}; }
-				else { $out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="Pathogenic">Clinvar / Local</th>}; }
-			}
-			elsif (lc($cat) eq 'table_transcript') {
-				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="Stop / c.73A>C / exon2 / ENST00000145855">Annotations</th>};
-			}
-			elsif (lc($cat) eq 'var_name') {
-				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-sortable="true" data-filter-control-placeholder=7-15456-A-G">Var_name</th>};
-			}
-			else {
-				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-sortable="true">$cat</th>};
-			}
-		}
-	}
-	$out2 .= $cgi->end_Tr();
-	$out2 .= "</thead>";
-	$out2 .= "<tbody>";
-	
 	my @lTrLines;
 	my $nb_var = 0;
 	my $nb_var_filtred = 0;
+	my $found_he_comp;
 	
 	my @lVarIds;
 	if ($only_variant) {
@@ -488,6 +456,14 @@ sub export_html {
 	else {
 		@lVarIds = sort keys %{$hResVariants};
 	}
+	
+	foreach my $var_id (sort keys %{$hResVariants}) {
+		last if $found_he_comp;
+		if (exists $hResVariants->{$var_id}->{he_comp_potential}) {
+			$found_he_comp = 1;
+		}
+	}
+	
 	foreach my $var_id (@lVarIds) {
 		$nb_var++;
 					
@@ -561,6 +537,41 @@ sub export_html {
 			elsif ($h eq 'varsome') {
 				$out .= $cgi->td($class_default, "<center>".$hResVariants->{$var_id}->{table_varsome}."</center>");
 			}
+			elsif ($h eq 'he_comp_potential') {
+				next if not $found_he_comp;
+				if (exists $hResVariants->{$var_id}->{he_comp_potential}) {
+					my @l_he_comp_potential = keys %{$hResVariants->{$var_id}->{he_comp_potential}};
+					my $html_comp = $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"max-width:300px;box-shadow: 1px 1px 6px grey;font-size: 7px;font-family:  Verdana;margin-bottom:0px"});
+					$html_comp .= $cgi->start_Tr().$cgi->th(["<center>Project</center>","<center>Patient</center>","<center>Impacts</center>"]).$cgi->end_Tr();
+					foreach my $info (sort @l_he_comp_potential) {
+						my ($proj, $pat) = split('-', $info);
+						my $id_he_comp = "he_comp $proj;$pat";
+						my $cmd1 = qq{onClick="setFilter('he_comp_potential', 'he_comp $proj');"};
+						my $cmd2 = qq{onClick="setFilter('he_comp_potential', '$id_he_comp');"};
+						$html_comp .= "<tr style='font-size: 7px;font-family:  Verdana;'>";
+						$html_comp .= "<td><center><button $cmd1>$proj</button></center></td><td><center><button $cmd2>$pat</button></center></td>";
+						my @lbadges;
+						my @l_impacts = ('HIGH', 'MEDIUM', 'LOW', '-');
+						foreach my $impact (@l_impacts) {
+							if (exists $hResVariants->{$var_id}->{he_comp_potential}->{$info}->{$impact}) {
+								my $color = '#4CAF50';
+								$color = '#FF8800' if ($impact eq 'MEDIUM');
+								$color = '#e74c3c' if ($impact eq 'HIGH');
+								push(@lbadges, "<span class='badge badge-success badge-xs' style='border:solid 0.5px $color;background-color:#FFFFFF;color:$color;font-size :7px;'>$impact</span>");
+								last;
+							}
+						}
+						$html_comp .= "<td><center>".join(' ', @lbadges)."</center></td>";
+						$html_comp .= "</tr>";
+						$html_comp .= "<td hidden>$id_he_comp</td>";
+					}
+					$html_comp .= "</table>";
+					$out .= "<td style='max-height:200px;'><div style='max-height:170px;max-width:400px;overflow-y:auto;'><center>".$html_comp."</div></td></center>";
+				}
+				else {
+					$out .= $cgi->td($class_default, "<center></center>");
+				}
+			}
 			else {
 				$out.= $cgi->td($class_default,$hvariation->{html}->{$h});
 			}
@@ -569,6 +580,42 @@ sub export_html {
 		$out .= $cgi->end_Tr();
 		push(@lTrLines, $out);
 	}
+	
+	my $out2 .= $cgi->start_div();
+	
+	$out2 .= qq{<table data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="100" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' id='table_variants' class='table table-striped' style='font-size:13px;'>};
+	$out2 .= "<thead>";
+	$out2 .= $cgi->start_Tr({style=>"background-color:#E9DEFF;$fsize"});
+	foreach my $h (@headers_validations){
+		my $cat = ucfirst($h);
+		if ($h eq "projects / patients") {
+			$out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="NGS2022_4000 / Denovo">$cat / IGV / Alamut BAM</th>};
+		}
+		else {
+			if (lc($cat) eq '#' or lc($cat) eq 'varsome' or lc($cat) eq 'alamut variant' or lc($cat) eq 'gnomad' or lc($cat) eq 'deja_vu') {
+				$out2 .= qq{<th data-field="$h" data-sortable="true">$cat</th>};
+			}
+			elsif (lc($cat) eq 'table_validation') {
+				if ($can_use_hgmd) { $out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="DM / Pathogenic">HGMD / Clinvar / Local</th>}; }
+				else { $out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="Pathogenic">Clinvar / Local</th>}; }
+			}
+			elsif (lc($cat) eq 'table_transcript') {
+				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-filter-control-placeholder="Stop / c.73A>C / exon2 / ENST00000145855">Annotations</th>};
+			}
+			elsif (lc($cat) eq 'var_name') {
+				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-sortable="true" data-filter-control-placeholder=7-15456-A-G">Var_name</th>};
+			}
+			elsif (lc($cat) eq 'he_comp_potential') {
+				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-sortable="true">$cat</th>} if $found_he_comp;
+			}
+			else {
+				$out2 .= qq{<th data-field="$h" data-filter-control="input" data-sortable="true">$cat</th>};
+			}
+		}
+	}
+	$out2 .= $cgi->end_Tr();
+	$out2 .= "</thead>";
+	$out2 .= "<tbody>";
 #	}
 	
 #	warn Dumper @lTrLines;
@@ -935,6 +982,18 @@ sub check_variants {
 				$session_id = $data->{session};
 				delete $data->{session};
 			}
+			if (exists $data->{potential_he_comp}) {
+				foreach my $proj_name (keys %{$data->{potential_he_comp}}) {
+					foreach my $pat_name (keys %{$data->{potential_he_comp}->{$proj_name}}) {
+						foreach my $model_name (keys %{$data->{potential_he_comp}->{$proj_name}->{$pat_name}}) {
+							foreach my $var_id (keys %{$data->{potential_he_comp}->{$proj_name}->{$pat_name}->{$model_name}}) {
+								$h_potential_he_comp->{$proj_name}->{$pat_name}->{$model_name}->{$var_id} = undef;
+							}
+						}
+					}
+				}
+				delete $data->{potential_he_comp};
+			}
 			if ($fork == 1) {
 				$hVariantsDetails = $data;
 				$total_pass = scalar(keys %{$hVariantsDetails}) - 2;
@@ -1269,7 +1328,7 @@ sub check_variants {
 			$hres->{$var_id}->{id_hg19} = $var_id_hg19;
 			
 			warn 'Nb parquet: '.scalar(@list_parquets) if $debug;
-			my ($h_projects_patients, $table_projects_patients) = get_from_duckdb_project_patients_infos($var, $h_liftover, \@list_parquets);
+			my ($h_projects_patients, $table_projects_patients, $h_potential_he_comp_local) = get_from_duckdb_project_patients_infos($var, $h_liftover, \@list_parquets);
 			if ($table_projects_patients) {
 				$hres->{$var_id}->{projects} = $h_projects_patients;
 				$hres->{$var_id}->{table_projects_patients} = $table_projects_patients;
@@ -1279,6 +1338,18 @@ sub check_variants {
 			else {
 				warn '13 - NOT OK PARQUET' if $debug;
 				delete $hres->{$var_id};
+			}
+			
+			if ($h_potential_he_comp_local) {
+				foreach my $proj_name (keys %{$h_potential_he_comp_local}) {
+					foreach my $pat_name (keys %{$h_potential_he_comp_local->{$proj_name}}) {
+						foreach my $model_name (keys %{$h_potential_he_comp_local->{$proj_name}->{$pat_name}}) {
+							foreach my $var_id (keys %{$h_potential_he_comp_local->{$proj_name}->{$pat_name}->{$model_name}}) {
+								$hres->{potential_he_comp}->{$proj_name}->{$pat_name}->{$model_name}->{$var_id} = undef;
+							}
+						}
+					}
+				}
 			}
 		}
 		if ($fork == 1) {
@@ -1291,6 +1362,30 @@ sub check_variants {
 	sleep(3); 
 	$pm->wait_all_children();
 	
+	foreach my $proj_name (keys %{$h_potential_he_comp}) {
+		my $found_proj;
+		foreach my $pat_name (keys %{$h_potential_he_comp->{$proj_name}}) {
+			if (exists $h_potential_he_comp->{$proj_name}->{$pat_name}->{father} and $h_potential_he_comp->{$proj_name}->{$pat_name}->{mother}) {
+				my $h_impacts;
+				foreach my $father_mother ('father', 'mother') {
+					foreach my $var_id (keys %{$h_potential_he_comp->{$proj_name}->{$pat_name}->{$father_mother}}) {
+						my $impact = get_impact_consequence($hVariantsDetails->{$var_id}->{annotation});
+						$h_impacts->{$impact} = undef;
+					}
+				}
+				foreach my $father_mother ('father', 'mother') {
+					foreach my $var_id (keys %{$h_potential_he_comp->{$proj_name}->{$pat_name}->{$father_mother}}) {
+						$hVariantsDetails->{$var_id}->{he_comp_potential}->{$proj_name.'-'.$pat_name} = $h_impacts;
+					}
+				}
+			}
+			else {
+				delete $h_potential_he_comp->{$proj_name}->{$pat_name};
+			}
+		}
+		delete $h_potential_he_comp->{$proj_name} if not $found_proj;
+	}
+	
 	$project_init->disconnect();
 	print 'nbVarPass:'.$total_pass;
 	print 'nbProj:'.scalar(@lProjectNames);
@@ -1298,10 +1393,40 @@ sub check_variants {
 	return ($hVariantsDetails);
 }
 
+
+sub get_impact_consequence {
+	my ($annot) = @_;
+	my $h_global_impacts;
+	foreach my $impact (keys %{$project_init->impacts_ensembl_annotations()}) {
+		if (exists $project_init->impacts_ensembl_annotations->{$impact}->{$annot}) {
+			return uc($impact);
+		}
+	}
+	return 'LOW';
+}
+
+sub get_hash_potential_composite {
+	my ($h_potential_he_comp) = @_;
+	my $h_var_comp;
+	foreach my $proj_name (keys %{$h_potential_he_comp}) {
+		my $found_proj;
+		foreach my $pat_name (keys %{$h_potential_he_comp->{$proj_name}}) {
+			if (exists $h_potential_he_comp->{$proj_name}->{$pat_name}->{father} and $h_potential_he_comp->{$proj_name}->{$pat_name}->{mother}) {
+				$found_proj = 1;
+			}
+			else {
+				delete $h_potential_he_comp->{$proj_name}->{$pat_name};
+			}
+		}
+		delete $h_potential_he_comp->{$proj_name} if not $found_proj;
+	}
+}
+
 sub get_table_project_patients_infos {
 	my ($project_name, $hash, $hVar_infos) = @_;
 	my $locus_hg19 = $hVar_infos->{locus_hg19};
 	my $locus_hg38 = $hVar_infos->{locus_hg38};
+	my $h_potential_he_comp_local;
 	
 	my $nb_he = $hash->{he};
 	my ($h_infos_patients, $h_tmp_pat);
@@ -1349,7 +1474,7 @@ sub get_table_project_patients_infos {
 	my @lPat = @{$p->getPatients()};
 	return undef if scalar(@lPat) == 0;
 	
-	my ($found_healthy_patient, $found_min_perc, $found_comp, $found_model);
+	my ($found_healthy_patient, $found_min_perc, $found_comp, $found_model, $found_he);
 	foreach my $pat (@lPat) {
 		next if not exists $h_tmp_pat->{$pat->id};
 		
@@ -1398,7 +1523,10 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{description} = $p->description();
 		
 		my $is_heho;
-		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) { $is_heho = 'He'; }
+		if (int($h_tmp_pat->{$pat->id}) <= $nb_he) {
+			$is_heho = 'He';
+			$found_he = 1;
+		}
 		else { $is_heho = 'Ho'; }
 		$h_infos_patients->{$h_tmp_pat->{$pat->id}}->{heho} = $is_heho;
 	}
@@ -1413,7 +1541,6 @@ sub get_table_project_patients_infos {
 	my $description = $p->description();
 	my @l_users = @{$p->get_list_emails()};
 	my $color = "#c1c1c1";
-	my $model;
 	my $patient_heho = "-";
 	
 	my $nb_col_span = 6;
@@ -1504,11 +1631,13 @@ sub get_table_project_patients_infos {
 			$model = ucfirst($model);
 		}
 		elsif ($model eq 'father') {
+			$h_potential_he_comp_local->{$patient_name}->{father}->{$hVar_infos->{id}} = undef if $found_he == 1;
 			$color = 'background: linear-gradient(to right, white, #ddfbff);';
 			if ($p->getPatient($patient_name)->getFamily->getFather->isIll()) { $model = qq{<img src="/icons/Polyicons/male-d.png">}; }
 			else { $model = qq{<img src="/icons/Polyicons/male-s.png">}; }
 		}
 		elsif ($model eq 'mother') {
+			$h_potential_he_comp_local->{$patient_name}->{mother}->{$hVar_infos->{id}} = undef if $found_he == 1;
 			$color = 'background: linear-gradient(to right, white, #ffddfd);';
 			if ($p->getPatient($patient_name)->getFamily->getMother->isIll()) { $model = qq{<img src="/icons/Polyicons/female-d.png">}; }
 			else { $model = qq{<img src="/icons/Polyicons/female-s.png">}; }
@@ -1560,7 +1689,7 @@ sub get_table_project_patients_infos {
 	}
 	$table_trio .= "</table></div>";
 	
-	return ($h_infos_patients, $table_trio, lc($model));
+	return ($h_infos_patients, $table_trio, $h_potential_he_comp_local);
 }
 
 sub get_from_duckdb_project_patients_no_dejavu_variants {
@@ -1597,6 +1726,7 @@ sub get_from_duckdb_project_patients_no_dejavu_variants {
 sub get_from_duckdb_project_patients_infos {
 	my ($var, $h_liftover, $list_files) = @_;
 	return if scalar(@$list_files) == 0;
+	my $h_potential_he_comp_local;
 	my @list_table_trio;
 	my $sql = "PRAGMA threads=6; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
 	
@@ -1643,14 +1773,25 @@ sub get_from_duckdb_project_patients_infos {
 			$hVar_infos->{ref_all} = $var->ref_allele();
 			$hVar_infos->{alt_all} = $var->var_allele();
 			$hVar_infos->{alt_all} = '*' unless $var->var_allele();
+			$hVar_infos->{id} = $var->id();
+			
 			foreach my $project_name (reverse sort keys %$h_by_proj) {
 				my $h = $h_by_proj->{$project_name};
-				my ($h_infos_patients, $table_trio, $model) = get_table_project_patients_infos($project_name, $h, $hVar_infos);
+				my ($h_infos_patients, $table_trio, $this_h_potential_he_comp_local) = get_table_project_patients_infos($project_name, $h, $hVar_infos);
 				if ($h_infos_patients) {
 					push(@list_table_trio, $table_trio) if $table_trio;
 					foreach my $id (sort keys %$h_infos_patients) {
 						my $p_name = $h_infos_patients->{$id}->{'name'};
 						$h_projects_patients->{$project_name}->{$p_name} = $h_infos_patients->{$id};
+					}
+				}
+				if ($this_h_potential_he_comp_local) {
+					foreach my $pat_name (keys %{$this_h_potential_he_comp_local}) {
+						foreach my $model (keys %{$this_h_potential_he_comp_local->{$pat_name}}) {
+							foreach my $var_id (keys %{$this_h_potential_he_comp_local->{$pat_name}->{$model}}) {
+								$h_potential_he_comp_local->{$project_name}->{$pat_name}->{$model}->{$var_id} = undef
+							}
+						}
 					}
 				}
 			}
@@ -1663,7 +1804,7 @@ sub get_from_duckdb_project_patients_infos {
 	}
 	if ($h_projects_patients and scalar(@list_table_trio) >= 1) {
 		my $html = join("<br>",@list_table_trio);
-		return ($h_projects_patients, $html);
+		return ($h_projects_patients, $html, $h_potential_he_comp_local);
 	}
 	return undef;
 }

@@ -1551,7 +1551,17 @@ sub validations_old {
 		return $html;
 		
 }
-my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","cadd","revel","dbscsnv",'spliceAI','promoterAI');
+
+has header_transcripts => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nomenclature","codons","codons_AA", "polyphen","sift","cadd","revel","dbscsnv",'spliceAI','promoterAI','ncboost');
+		return \@header_transcripts;
+	}
+);
+
+
 my @header_transcripts_cnv = ( "consequence", "enst", "nm", "ccds", "appris", "start", "end" );
 sub href {
 	my ($url,$name) = @_;
@@ -1760,7 +1770,7 @@ sub transcripts_variants {
 	my $nb =0;
 	my $nb_skip = 0;
 	 
-	$html .=  $cgi->start_Tr({style=>"position:sticky;z-index:8;top:0;background-color:grey;color:white;"}).$cgi->th({style=>"text-align: center;"}, \@header_transcripts)."".$cgi->end_Tr();
+	$html .=  $cgi->start_Tr({style=>"position:sticky;z-index:8;top:0;background-color:grey;color:white;"}).$cgi->th({style=>"text-align: center;"}, $self->header_transcripts)."".$cgi->end_Tr();
 	 
 	my $rids = [];
 	my $hhide;
@@ -1839,6 +1849,17 @@ sub transcripts_variants {
 		 	$promoterAI_score = 'N.A.';
 		 }
 		 
+		 my $ncboost = '-';
+		 my $ncboost_score = '-';
+		 if (exists $htr->{ncboost_score} and $htr->{ncboost_score} ne '-') {
+		 	$$ncboost_score = $htr->{promoterAI_score};
+		 }
+		 if (exists $htr->{ncboost_score} and $htr->{ncboost_score} eq '-') {
+		 	$ncboost_score = '-';
+		 }
+		 else {
+		 	$ncboost_score = 'N.A.';
+		 }
 		
 		 my $sift = $self->printInvBadge($htr->{sift},[0,1,0,05]);
 		 $template =~s/%CODONS_AA%/$codons_AA/;
@@ -1871,7 +1892,7 @@ sub transcripts_variants {
 	my $za = "hide_tr_".time."_".int(rand(50000));
 	$html .=  $cgi->start_Tr({id=>$za});
 
-	$html.= $cgi->td({style=>"box-shadow: 1px 1px 2px #555;background-color:#CECFCE;",colspan=>scalar(@header_transcripts),onClick=>qq{showTranscripts($js,"$za");}},qq{<span class="glyphicon glyphicon-plus"></span> }."view $nb_skip Transcripts");
+	$html.= $cgi->td({style=>"box-shadow: 1px 1px 2px #555;background-color:#CECFCE;",colspan=>scalar(@{$self->header_transcripts}),onClick=>qq{showTranscripts($js,"$za");}},qq{<span class="glyphicon glyphicon-plus"></span> }."view $nb_skip Transcripts");
 	$html.= $cgi->end_Tr();
 	
 	$html.=$cgi->end_table();
@@ -1953,7 +1974,7 @@ sub transcripts_variants_old {
 	my $nb =0;
 	my $nb_skip = 0;
 	 
-	$html .=  $cgi->start_Tr({style=>"position:sticky;z-index:8;top:0;background-color:grey;color:white;"}).$cgi->th({style=>"text-align: center;"}, \@header_transcripts)."".$cgi->end_Tr();
+	$html .=  $cgi->start_Tr({style=>"position:sticky;z-index:8;top:0;background-color:grey;color:white;"}).$cgi->th({style=>"text-align: center;"}, $self->header_transcripts)."".$cgi->end_Tr();
 	 
 	my $rids = [];
 	my $hhide;
@@ -2015,7 +2036,7 @@ sub transcripts_variants_old {
 	my $za = "hide_tr_".time."_".int(rand(50000));
 	$html .=  $cgi->start_Tr({id=>$za});
 
-	$html.= $cgi->td({style=>"box-shadow: 1px 1px 2px #555;background-color:#CECFCE;",colspan=>scalar(@header_transcripts),onClick=>qq{showTranscripts($js,"$za");}},qq{<span class="glyphicon glyphicon-plus"></span> }."view $nb_skip Transcripts");
+	$html.= $cgi->td({style=>"box-shadow: 1px 1px 2px #555;background-color:#CECFCE;",colspan=>scalar($self->header_transcripts),onClick=>qq{showTranscripts($js,"$za");}},qq{<span class="glyphicon glyphicon-plus"></span> }."view $nb_skip Transcripts");
 	$html.= $cgi->end_Tr();
 	
 	$html.=$cgi->end_table();

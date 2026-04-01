@@ -1,24 +1,27 @@
 <div style="max-height:500px;overflow-y:auto;border:solid 1px grey;max-height:150px;">
 	<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="box-shadow: 1px 1px 6px ;font-size: 7px;font-family: Verdana;margin-bottom:0px;max-height:150px;">
 	<tr style="position:sticky;z-index:8;top:0;background-color:#E8FFF8;color:black;">
-	<th style="text-align: center;">consequence</th> <th style="text-align: center;">enst</th>
- <th style="text-align: center;">nm</th>
-<th style="text-align: center;">confidence</th>
- <th style="text-align: center;">exon</th>
- <th style="text-align: center;">nomenclature</th>
- <th style="text-align: center;">codons</th> 
-<th style="text-align: center;">codons_AA</th> 
-<th style="text-align: center;">polyphen</th> 
-<th style="text-align: center;">sift</th> 
-<th style="text-align: center;">cadd</th> 
-<th style="text-align: center;">revel</th>
-: if $mane == 1 {
-   	 	<th style="text-align: center;">&alpha;missense</th> 
-: }
- <th style="text-align: center;">dbscsnv</th>
- <th style="text-align: center;">spliceAI</th>
- <th style="text-align: center;">promoterAI</th>
-</tr>
+		<th style="text-align: center;">consequence</th> <th style="text-align: center;">enst</th>
+		<th style="text-align: center;">nm</th>
+		<th style="text-align: center;">confidence</th>
+		<th style="text-align: center;">exon</th>
+		<th style="text-align: center;">nomenclature</th>
+		<th style="text-align: center;">codons</th> 
+		<th style="text-align: center;">codons_AA</th> 
+		<th style="text-align: center;">polyphen</th> 
+		<th style="text-align: center;">sift</th> 
+		<th style="text-align: center;">cadd</th>
+		: if defined $items[0].ncboost_score {
+			<th style="text-align: center;">ncboost-2</th>
+		: }
+		<th style="text-align: center;">revel</th>
+		: if $mane == 1 {
+		   	 	<th style="text-align: center;">&alpha;missense</th> 
+		: }
+		<th style="text-align: center;">dbscsnv</th>
+		<th style="text-align: center;">spliceAI</th>
+		<th style="text-align: center;">promoterAI</th>
+	</tr>
 	
 : for $items -> $item {
 	<tr>
@@ -137,6 +140,29 @@
 		<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.cadd :></button>
 	: }
 	</td>
+	
+	: if defined $item.ncboost_score {
+		<td>
+			: if $item.ncboost_score == "-" {
+		   	 	<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+			: }
+			: else if $item.ncboost_score >= 0.8 {
+				<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.ncboost_score :></button>
+			: }
+			: else if $item.ncboost_score >= 0.5 {
+				<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#ff9800;font-size: 8px;font-family:  Verdana"><: $item.ncboost_score :></button>
+			: }
+			: else if $item.ncboost_score > 0 {
+				<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#188c52;background-color:white;color:#188c52;font-size: 8px;font-family:  Verdana"><: $item.ncboost_score :></button>
+			: }
+			: else if $item.genome_version_predicted_link == '37' {
+				<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana">N.A.</button>
+			: }
+			: else {
+		   	 	<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana">N.A.</button>
+			: }
+		</td>
+	: }
 
 	<td>
 	: if $item.revel == "-"{
@@ -258,6 +284,7 @@
 	   	 	<button onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=<: $var_id :>&hg=<: $item.genome_version_predicted_link :>&distance=500&mask=0&precomputed=0','_blank')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana">View</button>
 		: }
 	</td>
+	
 	
 	</tr>
 

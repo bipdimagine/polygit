@@ -1131,57 +1131,57 @@ has lmdb_cache_dir => (
 	}
 );
 
-sub get_lmdb_ncboost_chromosomes {
-	my ( $self, $mode ) = @_;
-	$mode = "r" unless $mode;
-	
-	my $hindex = "ncboost";
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	my $no = GenBoNoSqlLmdb->new(
-		dir         => $self->project->lmdb_ncboost_path() . '/vector/',
-		mode        => $mode,
-		name        => $self->id() . '.vector',
-		is_compress => 1,
-		vmtouch     => $self->buffer->vmtouch
-	);
-	$no->clean_files() if ( $mode eq "c" );
-	$self->{lmdb}->{$hindex} = $no;
-	return $no;
-}
-
-sub get_lmdb_ncboost_chromosomes_scores {
-	my ( $self, $mode ) = @_;
-	$mode = "r" unless $mode;
-	my $hindex = "ncboost_score";
-	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
-	my $no = GenBoNoSqlLmdbScore->new(
-		dir         => $self->project->lmdb_ncboost_path(),
-		mode        => $mode,
-		name        => $self->id() . '.uc',
-		is_compress => 1,
-		vmtouch     => $self->buffer->vmtouch
-	);
-	$no->clean_files() if ( $mode eq "c" );
-	$self->{lmdb}->{$hindex} = $no;
-	return $no;
-}
-
-sub getGenBoBitVectorNcboostCategory {
-	my ( $self, $category ) = @_;
-	confess("\n\nERROR: need category argument in method "
-		  . ref($self)
-		  . "::get_lmdb_ncboost_vector_category(). Die...\n\n" )
-	  unless ($category);
-	confess("\n\nERROR: $category not defined in genbo config in method "
-		  . ref($self)
-		  . "::get_lmdb_ncboost_vector_category(). Die...\n\n" )
-	  unless (
-		exists $self->project->buffer->config->{scaled_score_ncboost}
-		->{$category} );
-	my $no = $self->get_lmdb_ncboost_chromosomes( $self, 'r' );
-	my $v  = $no->get($category);
-	return $v;
-}
+#sub get_lmdb_ncboost_chromosomes {
+#	my ( $self, $mode ) = @_;
+#	$mode = "r" unless $mode;
+#	
+#	my $hindex = "ncboost";
+#	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+#	my $no = GenBoNoSqlLmdb->new(
+#		dir         => $self->project->lmdb_ncboost_path() . '/vector/',
+#		mode        => $mode,
+#		name        => $self->id() . '.vector',
+#		is_compress => 1,
+#		vmtouch     => $self->buffer->vmtouch
+#	);
+#	$no->clean_files() if ( $mode eq "c" );
+#	$self->{lmdb}->{$hindex} = $no;
+#	return $no;
+#}
+#
+#sub get_lmdb_ncboost_chromosomes_scores {
+#	my ( $self, $mode ) = @_;
+#	$mode = "r" unless $mode;
+#	my $hindex = "ncboost_score";
+#	return $self->{lmdb}->{$hindex} if exists $self->{lmdb}->{$hindex};
+#	my $no = GenBoNoSqlLmdbScore->new(
+#		dir         => $self->project->lmdb_ncboost_path(),
+#		mode        => $mode,
+#		name        => $self->id() . '.uc',
+#		is_compress => 1,
+#		vmtouch     => $self->buffer->vmtouch
+#	);
+#	$no->clean_files() if ( $mode eq "c" );
+#	$self->{lmdb}->{$hindex} = $no;
+#	return $no;
+#}
+#
+#sub getGenBoBitVectorNcboostCategory {
+#	my ( $self, $category ) = @_;
+#	confess("\n\nERROR: need category argument in method "
+#		  . ref($self)
+#		  . "::get_lmdb_ncboost_vector_category(). Die...\n\n" )
+#	  unless ($category);
+#	confess("\n\nERROR: $category not defined in genbo config in method "
+#		  . ref($self)
+#		  . "::get_lmdb_ncboost_vector_category(). Die...\n\n" )
+#	  unless (
+#		exists $self->project->buffer->config->{scaled_score_ncboost}
+#		->{$category} );
+#	my $no = $self->get_lmdb_ncboost_chromosomes( $self, 'r' );
+#	my $v  = $no->get($category);
+#	return $v;
+#}
 
 sub get_lmdb_hotspot {
 	my ( $self, $type ) = @_;
