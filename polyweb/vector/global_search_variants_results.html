@@ -684,7 +684,15 @@
 					    	elements[i].classList.remove("hidden");
 					    }
 					}
-				}, 200);
+				}, 500);
+			}
+			
+			function setFilter(field, value) {
+			    if (!field) return;
+			    var selector = '.bootstrap-table-filter-control-' + field;
+			    var input = $(selector);
+			    input.val(value);
+			    input.trigger('keyup');
 			}
 	    	
 	    	

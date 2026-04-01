@@ -59,6 +59,11 @@ has hash_projects_ids_names => (
 	lazy    => 1,
 );
 
+has hash_filters_cons => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 has user_name => (
 	is		=> 'rw',
 	lazy    => 1,
@@ -75,6 +80,16 @@ has min_ratio => (
 );
 
 has min_promoter_ai => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has min_ncboost => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has hash_ncboost_values => (
 	is		=> 'rw',
 	lazy    => 1,
 );
@@ -104,25 +119,33 @@ has models => (
 	lazy    => 1,
 );
 
+has hash_users_projects_parquet =>  (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 has hash_users_projects => (
 	is		=> 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my ($h_projects, @list_hash);
+		my ($h_projects, $h_projectsNames, @list_hash);
 		if ($self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
 			@list_hash = @{$self->buffer->getQuery()->getAllProjects()};
+			$h_projects->{all}->{description} = 'all';
+			$h_projects->{all}->{name} = 'all';
+			$h_projects->{all}->{id} = 'all';
 		}
 		else {
 			@list_hash = @{$self->buffer->getQuery()->getProjectListForUser($self->user_name(), $self->pwd())};
-		}
-		foreach my $hash (@list_hash) {
-			my $proj_name = $hash->{name};
-			next unless ($proj_name =~ /NGS20/);
-			$h_projects->{$proj_name}->{description} = $hash->{description};
-			$h_projects->{$proj_name}->{name} = $proj_name;
-			$h_projects->{$proj_name}->{id} = $hash->{id};
-			$h_projects->{$hash->{id}} = $h_projects->{$proj_name};
+			foreach my $hash (@list_hash) {
+				my $proj_name = $hash->{name};
+				next unless ($proj_name =~ /NGS20/);
+				$h_projects->{$proj_name}->{description} = $hash->{description};
+				$h_projects->{$proj_name}->{name} = $proj_name;
+				$h_projects->{$proj_name}->{id} = $hash->{id};
+				$h_projects->{$hash->{id}} = $h_projects->{$proj_name};
+			}
 		}
 		return $h_projects;
 	}
@@ -145,38 +168,94 @@ sub check_variants_from_gene {
 	$self->buffer->dbh_deconnect();
 	$self->project->disconnect();
 	$self->project->getChromosomes();
-	foreach my $chr_id (sort keys %{$h_dv_rocks_ids}) {
-		print '@';
-		my $chr = $self->project->getChromosome($chr_id);
-		foreach my $rocks_id (sort keys %{$h_dv_rocks_ids->{$chr_id}}) {
-			$ii++;
-			if ($ii == 5) {
-				print '.';
-				$ii = 0;
+	
+	my ($hGenes, $hVariants);
+	MCE::Loop->init(
+	   max_workers => $self->fork(),
+	   chunk_size => 'auto',
+	   gather => sub {
+	        my ($data) = @_;
+	        foreach my $var_id (keys %{$data->{variants}}) {
+	        	push(@list_var, $data->{variants}->{$var_id});
+	        }
+			if (exists $data->{genes}) {
+				foreach my $gene_id (keys %{$data->{genes}}) {
+					$hGenes->{$gene_id} = $data->{genes}->{$gene_id};
+				}
 			}
-			my $var_id = $chr->transform_rocksid_to_varid($rocks_id);
-			my $var = $self->project->_newVariant($var_id);
-			if ($self->max_gnomad_ac()) {
-				next if defined $var->getGnomadAC() and $var->getGnomadAC() > $self->max_gnomad_ac();
+	   }
+	);
+	mce_loop {
+		my ($mce, $chunk_ref, $chunk_id) = @_;
+		my $hres;
+		foreach my $chr_id (@$chunk_ref) {
+			print '@';
+			my $chr = $self->project->getChromosome($chr_id);
+			foreach my $rocks_id (sort keys %{$h_dv_rocks_ids->{$chr_id}}) {
+				$ii++;
+				if ($ii == 50) {
+					print '.';
+					$ii = 0;
+				}
+				my $var_id = $chr->transform_rocksid_to_varid($rocks_id);
+				my $var = $self->project->_newVariant($var_id);
+				
+				my @lGenes = @{$var->getGenes()};
+				next if (scalar(@lGenes) == 0);
+				foreach my $gene (@lGenes) {
+					my $is_ok_annot;
+					my $var_annot = $var->variationTypeInterface($gene);
+					foreach my $this_annot (split(',', $var_annot)) {
+						$this_annot =~ s/ /_/g;
+						$is_ok_annot ++ if (exists $self->hash_filters_cons->{lc($this_annot)});
+						
+					}
+					next if (not $is_ok_annot);
+					$hres->{genes}->{$gene->id()}->{$var_id} = undef;
+					$hres->{variants}->{$var_id} = $var;
+				}
 			}
-			if ($self->max_gnomad_ac_ho()) {
-				next if defined $var->getGnomadHO() and $var->getGnomadHO() > $self->max_gnomad_ac_ho();
-			}
-			push(@list_var, $var->id());
-		}
-	}
+	    }
+		MCE->gather($hres);
+	} keys %{$h_dv_rocks_ids};	
+	MCE::Loop->finish();
+	
 	$self->buffer->dbh_deconnect();
 	$self->project->disconnect();
+	
+	#TODO: here 
+	if (scalar (@list_var) > 5000) {
+		my @list_var_2;
+		my $j = 0;
+		foreach my $var (@list_var) {
+			push(@list_var_2, $var);
+			$j++;
+			last if $j == 5000;
+		}
+		@list_var = undef;
+		@list_var = @list_var_2;
+	}
+	
 	print ".var.after.gad.".scalar(@list_var);
 
-	my ($hGenes, $hVariants);
 	my @list_html_genes;
-	my $chunk_size = int((scalar(@list_var)+1)/($self->fork));
-	$chunk_size = 20 if $chunk_size < 20;
-	$chunk_size = 200 if $chunk_size > 200;
+	my $chunk_size_nb = int((scalar(@list_var)+1)/($self->fork));
+	my $chunk_size;
+	$chunk_size = 20 if $chunk_size_nb < 20;
+	$chunk_size = 100 if $chunk_size_nb > 20;
+	$chunk_size = 200 if $chunk_size_nb > 200;
+	$chunk_size = 300 if $chunk_size_nb > 300;
+	$chunk_size = 500 if $chunk_size_nb > 500;
 	print '.chunck_size_'.$chunk_size.'.';
+	
+	
+	my $fork = $self->fork;
+	if ($fork >= 2) {
+		$fork = int($fork/2);
+	}
+	
 	MCE::Loop->init(
-	   max_workers => $self->fork,
+	   max_workers => $fork,
 	   chunk_size => $chunk_size,
 	   gather => sub {
 	        my ($data) = @_;
@@ -190,16 +269,6 @@ sub check_variants_from_gene {
 						$iii = 0;
 					}
 					$self->{hash_lift_variants}->{$gid} = $data->{lift}->{$gid};
-				}
-			}
-			if (exists $data->{genes}) {
-				foreach my $gene_id (keys %{$data->{genes}}) {
-					$iii++;
-					if ($iii == 50) {
-						print '.';
-						$iii = 0;
-					}
-					$hGenes->{$gene_id} = $data->{genes}->{$gene_id};
 				}
 			}
 			if (exists $data->{variants}) {
@@ -218,70 +287,61 @@ sub check_variants_from_gene {
 		my ($mce, $chunk_ref, $chunk_id) = @_;
 		
 		print '.';
-		my $buffer_tmp = new GBuffer;
-		my $project_tmp = $buffer_tmp->newProject( -name => $self->project_name() );
 		my ($list, $hres);
-		foreach my $var_id (@$chunk_ref) {
-			my $var = $project_tmp->_newVariant($var_id);
-			my $var_id = $var->id();
-			my $rocks_id = $var->rocksdb_id();
+		
+		
+		my $h_parquets;
+		my ($h_var_pos, @list_var_pos);
+		foreach my $var (@$chunk_ref) {
 			my $chr_id = $var->getChromosome->id();
+			my $rocks_id = $var->rocksdb_id();
+			$h_var_pos->{$chr_id}->{$var->start()}->{$var->var_allele()}->{ref_all} = $var->ref_allele();
+			$h_var_pos->{$chr_id}->{$var->start()}->{$var->var_allele()}->{var_id} = $var->id();
+			$h_var_pos->{$chr_id}->{$var->start()}->{$var->var_allele()}->{gnomad_id} = $var->gnomad_id();
+			my $var_id = $var->id();
+			push(@list_var_pos, $var->start());
 			
-			$hres->{start_job} = 1;
-			my @lGenes = @{$var->getGenes()};
-			foreach my $gene (@lGenes) {
-				if ($self->min_promoter_ai()) {
-					my $ok;
-					foreach my $tr (@{$gene->getTranscripts()}) {
-						my $score = $var->promoterAI_score($tr);
-						$ok = 1 if $score and abs($score) >= $self->min_promoter_ai();
-						last if $ok;
-					}
-					next if not $ok;
-				}
-				$hres->{genes}->{$gene->id()}->{$var_id} = undef;
-			}
-			if (scalar(@lGenes) == 0) {
-				$hres->{genes}->{intronic}->{$var_id} = undef;
-			}
-			
-			# STEP 3 - printHtml patient
-			my @list_parquet;
 			foreach my $project_id (sort keys %{$h_dv_rocks_ids->{$chr_id}->{$rocks_id}}) {
-				my $project_name = $buffer_tmp->getQuery->getProjectNameFromId($project_id);
+				my $project_name = $self->buffer->getQuery->getProjectNameFromId($project_id);
 				next if not exists $self->hash_users_projects->{all} and not exists $self->hash_users_projects->{$project_name};
 				my $project_type_cache = $self->{hash_projects_ids_names}->{$project_id}->{type};
 				$self->{hash_projects_ids_names}->{$project_id}->{name} = $project_name;
 				$self->{hash_projects_ids_names}->{$project_id}->{type} = $project_type_cache;
-				my $parquet = $buffer_tmp->dejavu_parquet_dir().'/'.$project_name.'.'.$project_id.'.parquet';
-				push(@list_parquet, "'".$parquet."'") if -e $parquet;
+				my $parquet = $self->buffer->dejavu_parquet_dir().'/'.$project_name.'.'.$project_id.'.parquet';
+				$h_parquets->{$parquet} = undef if -e $parquet;
 			}
-			
-			my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos($var, \@list_parquet);
-			my $ip = 0;
-			
-			
-			my $can_construct;
-			foreach my $project_name (keys %{$h_projects_patients}) {
+		}
+		
+		my @list_parquet;
+		foreach my $file (keys %$h_parquets) {
+			push(@list_parquet, "'".$file."'");
+		}
+		
+		my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos_global(\@list_var_pos, \@list_parquet, $h_var_pos);
+		my $ip = 0;
+		my $can_construct;
+		foreach my $var_id (keys %{$h_projects_patients}) {
+			my $var = $self->project->_newVariant($var_id);
+			foreach my $project_name (keys %{$h_projects_patients->{$var_id}}) {
 				$ip++;
 				if ($ip == 5) {
 					print '.';
 					$ip = 0;
 				}
 				my ($h_pat_done, $h_pat_filtred);
-				foreach my $patient_name (keys %{$h_projects_patients->{$project_name}}) {
-					push(@{$hres->{variants}->{$var_id}->{polyviewer_html}}, $h_projects_patients->{$project_name}->{$patient_name}->{print_html});
+				foreach my $patient_name (keys %{$h_projects_patients->{$var_id}->{$project_name}}) {
+					push(@{$hres->{variants}->{$var_id}->{polyviewer_html}}, $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{print_html});
 					my $hh;
 					$hh->{project_name} = $project_name;
 					$hh->{patient_name} = $patient_name;
-					$hh->{ratio} = $h_projects_patients->{$project_name}->{$patient_name}->{ratio};
-					$hh->{dp} = $h_projects_patients->{$project_name}->{$patient_name}->{dp};
-					$hh->{model} = $h_projects_patients->{$project_name}->{$patient_name}->{model};
+					$hh->{ratio} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{ratio};
+					$hh->{dp} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{dp};
+					$hh->{model} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{model};
 					if ($self->models()) {
 						$h_pat_filtred->{$patient_name}->{$hh->{model}} = 1 if (not exists $self->{models}->{$hh->{model}});
 					}
 					if ($self->min_ratio()) {
-						my $this_ratio = $h_projects_patients->{$project_name}->{$patient_name}->{ratio_value};
+						my $this_ratio = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{ratio_value};
 						$h_pat_filtred->{$patient_name}->{'ratio_'.$this_ratio} = 1 if ($this_ratio ne '?' and $this_ratio < $self->min_ratio());
 					}
 					$h_pat_done->{$patient_name} = $hh;
@@ -317,10 +377,6 @@ sub check_variants_from_gene {
 				$hres->{variants}->{$var_id}->{polyviewer_variant} = $vp;
 			}
 		}
-		$buffer_tmp->dbh_deconnect();
-		$project_tmp->disconnect();
-		$project_tmp = undef;
-		$buffer_tmp = undef;
 		MCE->gather($hres);
 	} @list_var;	
 	MCE::Loop->finish();
@@ -330,18 +386,18 @@ sub check_variants_from_gene {
 
 
 sub get_table_project_patients_infos {
-	my ($self, $project_name, $hash) = @_;
-	my $nb_he = $hash->{he};
+	my ($self, $project_name, $duck_he, $duck_patients, $duck_ratios) = @_;
+	my $nb_he = $duck_he;
 	my ($h_infos_patients, $h_tmp_pat);
 	my $nb_pat = 0;
-	foreach my $pat_id (unpack("w*",decode_base64($hash->{patients}))) {
+	foreach my $pat_id (unpack("w*",decode_base64($duck_patients))) {
 		$nb_pat++;
 		$h_infos_patients->{$nb_pat}->{id} = $pat_id;
 		$h_tmp_pat->{$pat_id} = $nb_pat;
 	}
 	my $i = 0;
 	$nb_pat = 1;
-	foreach my $info (unpack("w*",decode_base64($hash->{dp_ratios}))) {
+	foreach my $info (unpack("w*",decode_base64($duck_ratios))) {
 		$i++;
 		if ($i == 1) { $h_infos_patients->{$nb_pat}->{dp} = $info; }
 		elsif ($i == 2) {
@@ -428,54 +484,74 @@ sub get_table_project_patients_infos {
 	return $hres;
 }
 
-sub get_from_duckdb_project_patients_infos {
-	my ($self, $var, $list_files) = @_;
+sub get_from_duckdb_project_patients_infos_global {
+	my ($self, $list_var_pos, $list_files, $h_var_pos) = @_;
+	print '.';	
+	return if scalar(@$list_var_pos) == 0;
 	return if scalar(@$list_files) == 0;
-	my $sql = "PRAGMA threads=1; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
-	
-	my ($pos38, $alt38) = split('!', $var->rocksdb_id());
-	my $find_pos_s = $var->start() - 5;
-	my $find_pos_e = $var->start() + 5;
+	my $text_pos = join(',', @$list_var_pos);
+	my $sql = "PRAGMA threads=3; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])
+					WHERE (allele='A' or allele='T' or allele='G' or allele='C') and pos38 IN ($text_pos)";
 	my ($h_gnomadid, $h_projects_patients);
-	
-	if ($var->getProject->current_genome_version() eq 'HG38') {
-		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
-		
-		my $duckdb = $var->buffer->software('duckdb');
-		my $cmd = qq{set +H | $duckdb -json -c "$sql"};
-		my $json_duckdb = `$cmd`;
-		
-		if ($json_duckdb) {
-			my $decode = decode_json $json_duckdb;
-			my $h_by_proj;
-			foreach my $h (@$decode) {
-				#next if $h->{'chr38'} ne $var->getChromosome->id;
-				next if $h->{'pos38'} ne int($pos38);
-				my $var_all = $h->{'allele'};
-				$var_all =~ s/\+//;
-				if (not $var->isDeletion) {
-					next if $var_all ne $var->var_allele();
-				}
-				$h_gnomadid->{$var->gnomad_id()}->{chr19} = $h->{chr19};
-				$h_gnomadid->{$var->gnomad_id()}->{pos19} = $h->{pos19};
-				$h_gnomadid->{$var->gnomad_id()}->{ref_all} = $var->ref_allele();
-				$h_gnomadid->{$var->gnomad_id()}->{var_all} = $var->var_allele();
-				my $project_id = $h->{project};
-				my $project_name = $self->{hash_projects_ids_names}->{$project_id}->{name};
-				$h_by_proj->{$project_name} = $h;
-				$h_projects_patients->{$project_name} = $self->get_table_project_patients_infos($project_name, $h);
-			}
-		}	
+	my $duckdb = $self->buffer->software('duckdb');
+	open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
+	while (my $line = <$fh>) {
+	    chomp $line;
+	    my ($project_id,$this_chr38,$this_chr19,$this_pos38,$this_pos19,$he,$var_all,$patients,$dp_ratios) = split(/,/, $line);
+    	next if $project_id eq 'project';
+    	next if not exists $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all};
+    	my $var_id = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{var_id};
+    	my $gnomad_id = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{gnomad_id};
+    	my $ref = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{ref_all};
+		$h_gnomadid->{$gnomad_id}->{chr19} = $this_chr19;
+		$h_gnomadid->{$gnomad_id}->{pos19} = $this_pos19;
+		$h_gnomadid->{$gnomad_id}->{ref_all} = $ref;
+		$h_gnomadid->{$gnomad_id}->{var_all} = $var_all;
+		my $project_name = $self->{hash_projects_ids_names}->{$project_id}->{name};
+		$h_projects_patients->{$var_id}->{$project_name} = $self->get_table_project_patients_infos($project_name, $he, $patients, $dp_ratios);
 	}
-	else {
-		warn "HG19";
-		warn $sql if $self->debug;
-		confesss("HG19!!");
-	}
+	close($fh);
+	print '.';
 	return ($h_projects_patients, $h_gnomadid);
 }
 
-
+#sub get_from_duckdb_project_patients_infos {
+#	my ($self, $var, $list_files) = @_;
+#	return if scalar(@$list_files) == 0;
+#	my $sql = "PRAGMA threads=3; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
+#	
+#	my ($pos38, $alt38) = split('!', $var->rocksdb_id());
+#	my ($h_gnomadid, $h_projects_patients);
+#	
+#	if ($var->getProject->current_genome_version() eq 'HG38') {
+#		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38=".$var->start() ;
+#		my $duckdb = $var->buffer->software('duckdb');
+#		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
+#		while (my $line = <$fh>) {
+#		    chomp $line;
+#		    my ($project_id,$this_chr38,$this_chr19,$this_pos38,$this_pos19,$he,$var_all,$patients,$dp_ratios) = split(/,/, $line);
+#	    	next if $project_id eq 'project';
+#			next if $this_pos38 ne int($pos38);
+#			$var_all =~ s/\+//;
+#			if (not $var->isDeletion) {
+#				next if $var_all ne $var->var_allele();
+#			}
+#			$h_gnomadid->{$var->gnomad_id()}->{chr19} = $this_chr19;
+#			$h_gnomadid->{$var->gnomad_id()}->{pos19} = $this_pos19;
+#			$h_gnomadid->{$var->gnomad_id()}->{ref_all} = $var->ref_allele();
+#			$h_gnomadid->{$var->gnomad_id()}->{var_all} = $var->var_allele();
+#			my $project_name = $self->{hash_projects_ids_names}->{$project_id}->{name};
+#			$h_projects_patients->{$project_name} = $self->get_table_project_patients_infos($project_name, $he, $patients, $dp_ratios);
+#		}
+#		close($fh);
+#	}
+#	else {
+#		warn "HG19";
+#		warn $sql if $self->debug;
+#		confesss("HG19!!");
+#	}
+#	return ($h_projects_patients, $h_gnomadid);
+#}
 
 sub print_html_gene {
 	my ($self, $gene_id, $list_variants, $hVariantsDetails) = @_;
@@ -519,6 +595,7 @@ sub print_html_gene {
 	$out .= qq{<div class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="$panel_id">};
 	$out .= qq{<table class="table table-striped table-condensed table-bordered table-hover table-mybordered" style="vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
 	$out .= $print_html->print_header("background-color:aliceblue;color:black");
+	
 	my $color_validation = "grey";
 	my $i = 0;
 	foreach my $var_id (sort @$list_variants) {
@@ -533,7 +610,9 @@ sub print_html_gene {
 		my $var = $self->project->_newVariant($var_id);
 		my $polyviewer_variant = $hVariantsDetails->{$var_id}->{polyviewer_variant};
 		$polyviewer_variant->{gene} = $g;
+		$polyviewer_variant->{ncboost_value} = $hVariantsDetails->{$var_id}->{ncboost};
 		$polyviewer_variant->{transcripts} = $polyviewer_variant->{hgenes}->{$g->{id}}->{tr};
+		
 		my @list_polyviewer_h_details = @{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}};
 		$print_html->variant($polyviewer_variant);
 		my ($this_out, $this_h_pheno) = $self->print_line_variant_all_patients($polyviewer_variant, $print_html, \@list_polyviewer_h_details, $opacity);
@@ -639,7 +718,7 @@ sub print_line_variant_all_patients {
 					$project_phenotypes .= qq{<span style='color:green;'><i>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes}.qq{</i></span><br>};
 				}
 				my $project_description = $this_print_html->patient->getProject->name().', Description: '.$this_print_html->patient->getProject->description();
-				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;'><center>".$project_phenotypes."<button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><td style='padding-right:5px;'>".$igv_b."</td></center></td><td>".$html_pat."</td></tr>");
+				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;width:120px;'><center>".$project_phenotypes."<button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><td style='padding-right:5px;'>".$igv_b."</td></center></td><td>".$html_pat."</td></tr>");
 				push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
 			}
 		}

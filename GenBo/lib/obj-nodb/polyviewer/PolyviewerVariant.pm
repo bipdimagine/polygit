@@ -741,6 +741,7 @@ sub set_gene {
 				if ($v->promoterAI_score($tr1)) {
 					$htr->{promoterAI_score} = $v->promoterAI_score($tr1);
 				}
+				$htr->{ncboost_score} = $v->ncboost_score();
 				$htr->{genome_version_predicted_link} = '38';
 				$htr->{genome_version_predicted_link} = '37' if $v->project->getVersion() =~ /HG19/;
 				$htr->{sift} = -99;
