@@ -240,9 +240,12 @@ unless ($cgi->param('phenotype')){
 	}
 }
 #
-if ($gene_name_filtering && $gene_name_filtering !~ /:/ ){
+ $gene_name_filtering = lc($gene_name_filtering);
+if ($gene_name_filtering && $gene_name_filtering !~ /:/ && !($project->isChromosomeName($gene_name_filtering))){
+	
 	my $gene;
 	eval {
+	 $gene_name_filtering = uc($gene_name_filtering);
 	 $gene = $project->newGene($gene_name_filtering);
 	};
 	if ($gene) {
@@ -840,7 +843,12 @@ my $h_transmissions = {
 	my $sql_gene = "gene_name != '-' ";
 	my $gene;
 	if ($gene_name_filtering) {
-		if ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
+		if ($project->isChromosomeName($gene_name_filtering)){
+				my $o = $project->getChromosome($gene_name_filtering);
+				$sql_gene = "variant_chromosome = '".$o->ucsc_name."' ";
+				$gene_name_filtering = undef;
+		}
+		elsif ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
     		my $chr   = $1;
     		my $start = $2;
     		my $end   = $3 if defined $3;
@@ -855,6 +863,8 @@ my $h_transmissions = {
     		
     		$gene_name_filtering = undef;
 		}
+		
+		
 		else {
 		$gene = $project->newGene($gene_name_filtering);
 		$gene_id_filtering = $gene->id();
