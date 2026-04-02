@@ -818,6 +818,30 @@ sub deepvariant {
 	system(qq{$bcftools filter -e 'FILTER="RefCall" || (FORMAT/DP[0]<5) || (FORMAT/DP[0]<10 && QUAL<15)  $vcf_out -o $vcf_final });
 	return $vcf_final;
 }
+sub deepsomatic {
+	my ( $project, $patient, $intspans, $fork, $verbose ) = @_;
+	my $name = $patient->name();
+	my $buffer      = $project->buffer;
+	my $gatk   = $buffer->software("gatk");
+	my $javac   = $buffer->software("java");
+	my $dir_out     = $project->getCallingPipelineDir("deepvariant");
+	my $vcf_out = calling_target::getTmpFile( $dir_out, "$name", "deep.1.vcf" );
+	my $vcf_final = calling_target::getTmpFile( $dir_out, "$name", "deep.vcf" );
+	my $beds = return_all_beds( $project, $intspans );
+	my $capture = calling_target::getTmpFile( $dir_out, "$name", ".bed" );
+	my $ref               = $project->genomeFasta();
+	my $bam                 = $patient->getBamFile();
+	open( BED, ">$capture" );
+	print BED join("\n",@$beds);
+	close BED;
+	my $cmd = qq{singularity run  --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs  /software/distrib/deepvariant/deepvariant.sif /opt/deepvariant/bin/run_deepvariant  --num_shards=$fork --model_type=WES --ref=$ref --reads=$bam --regions=$capture --output_vcf=$vcf_out};
+	system($cmd);
+	my $bcftools = $buffer->software("bcftools");
+	my $tabix = $buffer->software("tabix");
+	system(qq{$bcftools filter -e 'FILTER="RefCall" || (FORMAT/DP[0]<5) || (FORMAT/DP[0]<10 && QUAL<15)  $vcf_out -o $vcf_final });
+	return $vcf_final;
+}
+
 sub unifiedGenotyper {
 	my ( $project, $patient, $intspans, $fork, $verbose ) = @_;
 	my $name = $patient->name();
@@ -1688,7 +1712,7 @@ sub mutect2 {
 		my $mutect_out = calling_target::getTmpFile( $dir_out, "mutect.tmp.", "$nb.vcf" );
 		my $vcf_out = calling_target::getTmpFile( $dir_out, "mutect", "$nb.vcf" );
 		my $gatk_region        = "-L $bed";
-		my $cmd_mutect2 = qq{ $gatk Mutect2 --base-quality-score-threshold 25 --dont-use-soft-clipped-bases -tumor $name -R $reference $gatk_region   $bam_file_string_hc   -O $mutect_out ;  $bcftools norm -f $reference -m -any $mutect_out -o $vcf_out  };
+		my $cmd_mutect2 = qq{ $gatk Mutect2 --base-quality-score-threshold 20  -tumor $name -R $reference $gatk_region   $bam_file_string_hc   -O $mutect_out ;  $bcftools norm -f $reference -m -any $mutect_out -o $vcf_out  };
 		system($cmd_mutect2);
 		unlink $bed;
 		$res->{file} = $vcf_out;
