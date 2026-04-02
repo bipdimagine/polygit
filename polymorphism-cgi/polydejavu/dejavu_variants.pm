@@ -584,6 +584,7 @@ sub print_html_gene {
 	$g->{score} = $gene->raw_score();
 	$g->{max_score} = $g->{score};
 	$g->{variants} = $list_variants;
+	$g->{panels} = $self->buffer->queryPanel()->getPanelsForGeneName($gene->external_name);
 	
 	my $panel_id = "panel_".$gene_id;
 	my ($out, $h_phenos);
