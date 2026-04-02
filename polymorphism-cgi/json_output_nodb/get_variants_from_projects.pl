@@ -376,6 +376,18 @@ MCE::Loop->finish();
 my @lPhenos = sort keys %$h_phenos;
 my $html;
 
+if ($dejavu_variants->alert_too_much_results()) {
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Too much results... partial results !</span></b></i>&nbsp;&nbsp;</td>";
+	$html .= "</tr></table></div><br>"
+}
+
+if ($dejavu_variants->alert_ncboost_min_cadd_25()) {
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Only variants with cadd score >= 25 for ncboost filter !</span></b></i>&nbsp;&nbsp;</td>";
+	$html .= "</tr></table></div><br>"
+}
+
 $html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
 $html .= "<td><b>View phenotype</b>&nbsp;&nbsp;</td>";
 my $cmd_all = qq{show_phenotype('');};
@@ -432,6 +444,7 @@ sub launch_ncboost {
 	$dejavu_variants->min_ncboost($ncboost_value);
 	my $h_projects_parquet;
 	if (exists $dejavu_variants->hash_users_projects->{all}) {
+		$dejavu_variants->{alert_ncboost_min_cadd_25} = 1;
 		$h_projects_parquet->{all} = $project->deja_vu_public_projects_parquet()."/NGS*.parquet";
 	}
 	else {

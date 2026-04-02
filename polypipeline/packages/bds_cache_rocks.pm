@@ -34,6 +34,7 @@ sub cache_store_duck {
 	my $dir_parquet = $self->project->buffer->dejavu_parquet_dir();
 	
 	my $fileout = $self->project->parquet_cache_variants;
+	warn $fileout;
 	my $cmd = "/usr/bin/perl $bin_cache/duck_cache_store_annotations.pl -project=$projectName";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -55,6 +56,9 @@ sub tiny_rocks {
 #	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
 	# my $dir_parquet = $self->project->rocks_directory_beegfs()."/tiny_rocks/".$self->project->name.".store";;
 	my $fileout = $self->project->tiny_rocks_cache_dir()."/".$self->project->name.".store";
+	warn "\n\n";
+	warn $fileout;
+	warn "\n\n";
 	my $cmd = "/usr/bin/perl $bin_cache/tiny_rocks.pl  -project=$projectName ";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
