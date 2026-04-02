@@ -330,7 +330,7 @@ print '.nbGenes:'.$nb_genes.'.';
 
 ### PART 4 - print HTML 
 
-my (@list_html_genes, $h_phenos);
+my ($h_html_genes, $h_phenos);
 MCE::Loop->init(
    max_workers => $fork,
    chunk_size => 'auto',
@@ -339,9 +339,11 @@ MCE::Loop->init(
         foreach my $pheno_name (keys %{$data->{phenotypes}}) {
         	$h_phenos->{$pheno_name}->{tag} = $data->{phenotypes}->{$pheno_name}->{tag};
         }
-        foreach my $gene_id (sort keys %$data) {
-        	next if $gene_id eq 'phenotypes';
-        	push(@list_html_genes, $data->{$gene_id}) if $data->{$gene_id};
+        delete $data->{phenotypes};
+        foreach my $score (sort {$b <=> $a} keys %$data) {
+	        foreach my $gene_id (sort keys %{$data->{$score}}) {
+	        	$h_html_genes->{$score}->{$gene_id} = $data->{$score}->{$gene_id} if $data->{$score}->{$gene_id};
+	        }
         }
    }
 );
@@ -353,10 +355,10 @@ mce_loop {
 		my @l_gene_id_tmp = split('_', $gene_id);
 		print '.';
 		my @list_variants = keys %{$hGenes->{$gene_id}};
-		my ($this_html, $this_h_pheno);
+		my ($this_html, $this_h_pheno, $max_score_gene);
 		eval {
-			($this_html, $this_h_pheno) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
-			$hres->{$gene_id} = $this_html;
+			($this_html, $this_h_pheno, $max_score_gene) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+			$hres->{$max_score_gene}->{$gene_id} = $this_html;
 			foreach my $pheno_name (keys %$this_h_pheno) {
 				$hres->{phenotypes}->{$pheno_name}->{tag} = $this_h_pheno->{$pheno_name};
 			}
@@ -391,8 +393,11 @@ $html .= qq{<th data-field="gene" data-filter-control="input" data-filter-contro
 $html .= $cgi->end_Tr();
 $html .= "</thead>";
 $html .= "<tbody>";
-foreach my $html_gene (@list_html_genes) {
-	$html .= "<tr><td>".$html_gene."</td></tr>";
+foreach my $score (sort {$b <=> $a} keys %$h_html_genes) {
+	foreach my $gene_id (sort keys %{$h_html_genes->{$score}}) {
+		my $html_gene = $h_html_genes->{$score}->{$gene_id};
+		$html .= "<tr><td>".$html_gene."</td></tr>";
+	}
 }
 $html .= "</tbody>";
 $html .= "</table>";
