@@ -175,18 +175,19 @@ if ($promoter_ai_value) {
 		my @l_tmp = split('!', $rocksid);
 		my $chr_id = $l_tmp[0];
 		my $pos = int($l_tmp[1]);
-		if ($promoter_ai_value) {
-			my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($l_tmp[1].'!'.$l_tmp[2]);
-			if ($h_gad and $max_gnomad_ac) {
-				my $gad_score = $h_gad->{ac};
-				next if defined $gad_score and $gad_score > $max_gnomad_ac;
-			}
-			if ($h_gad and $max_gnomad_ac_ho) {
-				my $gad_score = $h_gad->{ho};
-				next if defined $gad_score and $gad_score > $max_gnomad_ac_ho;
-			}
+		if ($project->getChromosome($chr_id)->intergenic_intspan->contains($pos)) {
+			delete $h_res_duck->{$rocksid};
+			next;
 		}
-		next if $project->getChromosome($chr_id)->intergenic_intspan->contains($pos);
+		my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($l_tmp[1].'!'.$l_tmp[2]);
+		if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
+			delete $h_res_duck->{$rocksid};
+			next;
+		}
+		if ($h_gad and exists $h_gad->{ho} and $h_gad->{ho} > $max_gnomad_ac_ho) {
+			delete $h_res_duck->{$rocksid};
+			next;
+		}
 		if (not exists ($h_vector->{$chr_id})) {
 			print '|';
 			$h_vector->{$chr_id} = Set::IntSpan->new();
@@ -195,6 +196,7 @@ if ($promoter_ai_value) {
 		$n++;
 		print '.' if $n % 10000 == 0;
 	}
+	
 	
 	### PART 2 - Intersect variants filters and DejaVu
 	
