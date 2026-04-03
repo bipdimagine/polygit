@@ -62,7 +62,6 @@ unless($steps){
 	 @types = ("files","mendelian","statistics_variations","coverage_stats","bam_stats","duplicate_regions","coverage_transcripts");
 	 if ($project->isGenome){
 	 	@types = ("files","mendelian","coverage_stats","bam_stats","statistics_variations","coverage_transcripts");
-	 	
 	 }
 }
 else {
@@ -86,8 +85,6 @@ my $steps = {
 	"statistics_variations" => sub{
 		my $buffer = GBuffer->new();
 		my $project;
-
-
 		if ($cache == 1){
 			#warn "cache";
 			#die();
@@ -106,36 +103,33 @@ my $steps = {
 		$no->close();
 	},
 	"identity" => sub{
-		warn "identity" ;
-			my $buffer = GBuffer->new();
-			my $project;
-			if ($cache == 1){
-				 $project = $buffer->newProjectCache( -name => $projectName );
-			}
-			else {
-			 $project = $buffer->newProject( -name => $projectName );
-			}
-			next if $project->isGenome();
-			$project->get_only_list_patients(join(",",@selected_patient));
-			$project->disconnect();
-			my $res = quality_check::identity($project,$fork);
-			my $no = $project->noSqlQuality("w");
-			$no->put($project->name,"identity",$res);
-			$no->close();
+		my $buffer = GBuffer->new();
+		my $project;
+		if ($cache == 1){
+			 $project = $buffer->newProjectCache( -name => $projectName );
+		}
+		else {
+		 $project = $buffer->newProject( -name => $projectName );
+		}
+		next if $project->isGenome();
+		$project->get_only_list_patients(join(",",@selected_patient));
+		$project->disconnect();
+		my $res = quality_check::identity($project,$fork);
+		my $no = $project->noSqlQuality("w");
+		$no->put($project->name,"identity",$res);
+		$no->close();
 	},
 	"files" => sub{
-			warn "files" ;
-			my $buffer = GBuffer->new();
-			$project->get_only_list_patients(join(",",@selected_patient));
-			my $project = $buffer->newProject( -name => $projectName );
-			$project->disconnect();
-			my $res = quality_check::files($project);
-			my $no = $project->noSqlQuality("w");
-			$no->put($project->name,"files",$res);
-			$no->close();
+		my $buffer = GBuffer->new();
+		$project->get_only_list_patients(join(",",@selected_patient));
+		my $project = $buffer->newProject( -name => $projectName );
+		$project->disconnect();
+		my $res = quality_check::files($project);
+		my $no = $project->noSqlQuality("w");
+		$no->put($project->name,"files",$res);
+		$no->close();
 	},
 	"mendelian" =>  sub{
-		warn "mendelian" ;
 		$project->disconnect();
 		my $buffer = GBuffer->new();
 		my $project;
@@ -155,19 +149,16 @@ my $steps = {
 		$no->close();
 	},
 	"duplicate_regions" => sub{
-				warn "duplicate_regions" ;
-				
-			my $buffer = GBuffer->new();
-			my $project = $buffer->newProject( -name => $projectName );
-			$project->get_only_list_patients(join(",",@selected_patient));
-			$project->disconnect();
-			my $res = quality_check::duplicate_regions($project);
-			my $no = $project->noSqlQuality("w");
-			$no->put($project->name,"duplicate_regions",$res);
-			$no->close();
+		my $buffer = GBuffer->new();
+		my $project = $buffer->newProject( -name => $projectName );
+		$project->get_only_list_patients(join(",",@selected_patient));
+		$project->disconnect();
+		my $res = quality_check::duplicate_regions($project);
+		my $no = $project->noSqlQuality("w");
+		$no->put($project->name,"duplicate_regions",$res);
+		$no->close();
 	},
 	"coverage_transcripts" =>sub{
-		warn "coverage_transcripts" ;
 		my $buffer = GBuffer->new();
 		my $project;
 		if ($cache == 1){
@@ -186,32 +177,32 @@ my $steps = {
 	},
 	
 	"bam_stats" => sub{
-		warn "bam_stats" ;
-			my $buffer = GBuffer->new();
-			my $project = $buffer->newProject( -name => $projectName );
-			$project->get_only_list_patients(join(",",@selected_patient));
-			$project->disconnect();
-			my $res = quality_check::bam_stats($project);
-			my $no = $project->noSqlQuality("w");
-			$no->put($project->name,"bam_stats",$res);
-			$no->close();
+		my $buffer = GBuffer->new();
+		my $project = $buffer->newProject( -name => $projectName );
+		$project->get_only_list_patients(join(",",@selected_patient));
+		$project->disconnect();
+		my $res = quality_check::bam_stats($project);
+		my $no = $project->noSqlQuality("w");
+		$no->put($project->name,"bam_stats",$res);
+		$no->close();
 	},
 	"coverage_stats" => sub{
-			my $buffer = GBuffer->new();
-			my $project = $buffer->newProject( -name => $projectName );
-			$project->get_only_list_patients(join(",",@selected_patient));
-			$project->disconnect();
-			my ($res) = quality_check::coverage_stats($project,$fork);
-			my $no = $project->noSqlQuality("w");
-			$no->put($project->name,"coverage_stats",$res);
-			$no->close();
-			
+		my $buffer = GBuffer->new();
+		my $project = $buffer->newProject( -name => $projectName );
+		$project->get_only_list_patients(join(",",@selected_patient));
+		$project->disconnect();
+		my ($res) = quality_check::coverage_stats($project,$fork);
+		my $no = $project->noSqlQuality("w");
+		$no->put($project->name,"coverage_stats",$res);
+		$no->close();
 	},
 	
 };
 
 foreach my $type (@types){
+	warn "\n\n# $type START\n\n";
 	$steps->{$type}();
+	warn "\n\n# $type END\n\n";
 }
 
 exit(0);

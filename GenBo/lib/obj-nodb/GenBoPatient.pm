@@ -1737,6 +1737,8 @@ sub getBamFile {
 
 sub getAlignmentFile {
 	my ( $self, $method_name, $nodie ) = @_;
+	return undef if $method_name eq 'no_align';
+	return undef if $self->alignmentMethods->[0] eq 'no_align';
 	unless ($method_name) {
 		my $files = $self->getBamFiles();
 		return $files->[0] if scalar(@$files) == 1;
@@ -2752,6 +2754,7 @@ sub hotspot {
 	my ($self, $fork) = @_;
 	$fork = 1 if not $fork;
 	my $res;
+	return if $self->alignmentMethods->[0] eq 'no_align';
 	my $file = $self->getCapture->hotspots_filename;
 	return if not -e $file;
 	my $bam = $self->getAlignmentFile();
@@ -3251,6 +3254,9 @@ has nb_reads => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+		my $h;
+		my $methods = $self->alignmentMethods();
+		return $h if $methods->[0] eq 'no_align';
 		my $bam  = $self->getAlignmentFile();
 		my $cmd;
 		if ($self->isCram){
@@ -3298,15 +3304,17 @@ has nb_reads => (
 
 has normalized_reads => (
 	is => 'ro',
-
 	#isa		=> 'ArrayRef[Str]',
 	lazy    => 1,
 	default => sub {
 	my $self = shift;
-	my $value = $self->project->mean_amount_reads();
-	return ($self->nb_reads->{all}/$value);
+		my $methods = $self->alignmentMethods();
+		return undef if $methods->[0] eq 'no_align';
+		my $value = $self->project->mean_amount_reads();
+		return ($self->nb_reads->{all}/$value);
 	},
-	);
+);
+
 sub sd_value_dude {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	my $chr_name_control = $chr_name;
