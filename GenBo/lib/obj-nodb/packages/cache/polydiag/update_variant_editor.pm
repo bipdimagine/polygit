@@ -1021,6 +1021,10 @@ sub construct_hash_transcript {
 		my $alphamissense = $v->alphamissense($tr1);
 		value_html($htr,"alphamissense",$alphamissense,printBadge($alphamissense,[0.34, 0.564]));
 		
+		my $ncboost = '-';
+		$ncboost = $v->ncboost_score() if $v->ncboost_score();
+		value_html($htr,"ncboost-2",$ncboost,printBadge($ncboost,[0.6, 0.8]));
+		
 		my $promoter_ai = '-';
 		$promoter_ai = $v->promoterAI_score($tr1) if $v->promoterAI_score($tr1);
 		if ($promoter_ai ne '-' and $promoter_ai >= 0 ) { value_html($htr,"promoterAI",$promoter_ai,printBadge($promoter_ai,[0.2, 0.5])); }

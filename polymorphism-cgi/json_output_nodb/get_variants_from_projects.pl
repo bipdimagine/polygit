@@ -175,18 +175,19 @@ if ($promoter_ai_value) {
 		my @l_tmp = split('!', $rocksid);
 		my $chr_id = $l_tmp[0];
 		my $pos = int($l_tmp[1]);
-		if ($promoter_ai_value) {
-			my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($l_tmp[1].'!'.$l_tmp[2]);
-			if ($h_gad and $max_gnomad_ac) {
-				my $gad_score = $h_gad->{ac};
-				next if defined $gad_score and $gad_score > $max_gnomad_ac;
-			}
-			if ($h_gad and $max_gnomad_ac_ho) {
-				my $gad_score = $h_gad->{ho};
-				next if defined $gad_score and $gad_score > $max_gnomad_ac_ho;
-			}
+		if ($project->getChromosome($chr_id)->intergenic_intspan->contains($pos)) {
+			delete $h_res_duck->{$rocksid};
+			next;
 		}
-		next if $project->getChromosome($chr_id)->intergenic_intspan->contains($pos);
+		my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($l_tmp[1].'!'.$l_tmp[2]);
+		if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
+			delete $h_res_duck->{$rocksid};
+			next;
+		}
+		if ($h_gad and exists $h_gad->{ho} and $h_gad->{ho} > $max_gnomad_ac_ho) {
+			delete $h_res_duck->{$rocksid};
+			next;
+		}
 		if (not exists ($h_vector->{$chr_id})) {
 			print '|';
 			$h_vector->{$chr_id} = Set::IntSpan->new();
@@ -195,6 +196,7 @@ if ($promoter_ai_value) {
 		$n++;
 		print '.' if $n % 10000 == 0;
 	}
+	
 	
 	### PART 2 - Intersect variants filters and DejaVu
 	
@@ -330,7 +332,7 @@ print '.nbGenes:'.$nb_genes.'.';
 
 ### PART 4 - print HTML 
 
-my (@list_html_genes, $h_phenos);
+my ($h_html_genes, $h_phenos);
 MCE::Loop->init(
    max_workers => $fork,
    chunk_size => 'auto',
@@ -339,9 +341,11 @@ MCE::Loop->init(
         foreach my $pheno_name (keys %{$data->{phenotypes}}) {
         	$h_phenos->{$pheno_name}->{tag} = $data->{phenotypes}->{$pheno_name}->{tag};
         }
-        foreach my $gene_id (sort keys %$data) {
-        	next if $gene_id eq 'phenotypes';
-        	push(@list_html_genes, $data->{$gene_id}) if $data->{$gene_id};
+        delete $data->{phenotypes};
+        foreach my $score (sort {$b <=> $a} keys %$data) {
+	        foreach my $gene_id (sort keys %{$data->{$score}}) {
+	        	$h_html_genes->{$score}->{$gene_id} = $data->{$score}->{$gene_id} if $data->{$score}->{$gene_id};
+	        }
         }
    }
 );
@@ -353,10 +357,10 @@ mce_loop {
 		my @l_gene_id_tmp = split('_', $gene_id);
 		print '.';
 		my @list_variants = keys %{$hGenes->{$gene_id}};
-		my ($this_html, $this_h_pheno);
+		my ($this_html, $this_h_pheno, $max_score_gene);
 		eval {
-			($this_html, $this_h_pheno) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
-			$hres->{$gene_id} = $this_html;
+			($this_html, $this_h_pheno, $max_score_gene) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+			$hres->{$max_score_gene}->{$gene_id} = $this_html;
 			foreach my $pheno_name (keys %$this_h_pheno) {
 				$hres->{phenotypes}->{$pheno_name}->{tag} = $this_h_pheno->{$pheno_name};
 			}
@@ -371,6 +375,18 @@ MCE::Loop->finish();
 
 my @lPhenos = sort keys %$h_phenos;
 my $html;
+
+if ($dejavu_variants->alert_too_much_results()) {
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Too much results... partial results !</span></b></i>&nbsp;&nbsp;</td>";
+	$html .= "</tr></table></div><br>"
+}
+
+if ($dejavu_variants->alert_ncboost_min_cadd_25()) {
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Only variants with cadd score >= 25 for ncboost filter !</span></b></i>&nbsp;&nbsp;</td>";
+	$html .= "</tr></table></div><br>"
+}
 
 $html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
 $html .= "<td><b>View phenotype</b>&nbsp;&nbsp;</td>";
@@ -391,8 +407,11 @@ $html .= qq{<th data-field="gene" data-filter-control="input" data-filter-contro
 $html .= $cgi->end_Tr();
 $html .= "</thead>";
 $html .= "<tbody>";
-foreach my $html_gene (@list_html_genes) {
-	$html .= "<tr><td>".$html_gene."</td></tr>";
+foreach my $score (sort {$b <=> $a} keys %$h_html_genes) {
+	foreach my $gene_id (sort keys %{$h_html_genes->{$score}}) {
+		my $html_gene = $h_html_genes->{$score}->{$gene_id};
+		$html .= "<tr><td>".$html_gene."</td></tr>";
+	}
 }
 $html .= "</tbody>";
 $html .= "</table>";
@@ -425,6 +444,7 @@ sub launch_ncboost {
 	$dejavu_variants->min_ncboost($ncboost_value);
 	my $h_projects_parquet;
 	if (exists $dejavu_variants->hash_users_projects->{all}) {
+		$dejavu_variants->{alert_ncboost_min_cadd_25} = 1;
 		$h_projects_parquet->{all} = $project->deja_vu_public_projects_parquet()."/NGS*.parquet";
 	}
 	else {
