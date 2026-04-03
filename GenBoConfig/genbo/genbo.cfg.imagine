@@ -337,6 +337,9 @@ deepsomatic-sif:/data-pure/software/SINGULARITY/deepsomatic.sif
 #bcftools
 bcftools-sif:/data-pure/software/SINGULARITY/deepsomatic.sif
 
+#deeptools
+deeptools-sif:/data-pure/software/SINGULARITY/deeptools.sif
+
 singularity-run:singularity run --bind /data-pure:/data-pure --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs 
 
 

@@ -84,7 +84,9 @@ has ncboost_score => (
 		my $self = shift;
 		return '-' if $self->getProject->annotation_genome_version() eq 'HG19';
 		return '-' if ($self->getChromosome->id() eq 'MT');
+		
 		my $parquet = $self->project->ncboost_parquet_path.'/chr='.$self->getChromosome->id().'/data_0.parquet';
+		return '-' unless -e  $self->project->ncboost_parquet_path.'/chr='.$self->getChromosome->id().'/data_0.parquet';
 		my $genomic_rocks_id = $self->genomic_rocksdb_id();
 		my $ncboost_score = '-';
 		my $sql = "PRAGMA threads=1; SELECT rocksdb_id, score FROM '$parquet' WHERE rocksdb_id = '$genomic_rocks_id'";
