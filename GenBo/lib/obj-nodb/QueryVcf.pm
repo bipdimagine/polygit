@@ -147,7 +147,10 @@ has isUcsc => (
 
 		#	warn "==> no variation or indel in file :".$self->file() unless @chrs;
 		return 1 unless (@chrs);
-		return $chrs[0] =~ /chr/;
+		foreach my $id (@chrs) {
+			return 1 if $id =~ /chr/;
+		}
+		return;
 	}
 );
 

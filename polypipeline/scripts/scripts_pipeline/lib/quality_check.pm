@@ -8,6 +8,17 @@ use colored;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
 use JSON::XS;
+
+
+sub check_has_alignment_file_in_project {
+	my ($project) = @_;
+	my $has_bam_file;
+	foreach my $patient (@{$project->getPatients()}) {
+		$has_bam_file = 1 if $patient->alignmentMethods->[0] ne 'no_align';
+	}
+	return $has_bam_file;
+}
+
 sub mendelian_statistics {
 	my ( $project, $fork ) = @_;
 	$fork = 1 unless $fork;
@@ -33,6 +44,10 @@ sub mendelian_statistics {
 	);
 	map { $_->getMembers } @{ $project->getFamilies };
 	$project->buffer->dbh_deconnect();
+	
+	my $has_bam_file = check_has_alignment_file_in_project($project);
+	return if not $has_bam_file;
+	
 	$project->preload();
 	my $pid;
 	foreach my $f ( @{ $project->getFamilies } ) {
@@ -44,7 +59,7 @@ sub mendelian_statistics {
 		
 		my $has_no_bam;
 		foreach my $patient (@{$f->getPatients()}) {
-			$has_no_bam = 1 if $patient->alignmentMethod() eq 'no_align';
+			$has_no_bam = 1 if $patient->alignmentMethods->[0] eq 'no_align';
 		}
 		if ($has_no_bam) {
 			warn "cuicui";
@@ -477,7 +492,7 @@ sub files {
 		my $hline;
 		$hline->{"patients"} = { text => $p->name, type => "default" };
 		push( @$line, { text => $p->name, type => "default" } );
-		if ($p->alignmentMethod() eq 'no_align') {
+		if ($p->alignmentMethods->[0] eq 'no_align') {
 			my $col_bam = { text => "NoBam", type => "error" };
 			push( @$line, $col_bam );
 			$hline->{"bam"} = $col_bam;
@@ -520,11 +535,17 @@ sub files {
 sub statistics_variations_patient {
 	my ($p) = @_;
 	my $hnb;
+	warn '-> countHomozygote';
 	$hnb->{ho}     = $p->countHomozygote();
+	warn '-> countHeterozygote';
 	$hnb->{he}     = $p->countHeterozygote();
+	warn '-> countSubstitutions';
 	$hnb->{snp}    = $p->countSubstitutions();
+	warn '-> countIndels';
 	$hnb->{indel}  = $p->countIndels();
+	warn '-> countVariations';
 	$hnb->{total}  = $p->countVariations();
+	warn '-> countPublicVariations';
 	$hnb->{public} = $p->countPublicVariations();
 	return $hnb;
 
@@ -1163,7 +1184,7 @@ sub identity2 {
 			$nb->{$name}++;
 		}
 	}
-	warn Dumper $nb;
+#	warn Dumper $nb;
 	my $results;
 	foreach my $p ( @{ $project->getPatients } ) {
 		my $pname = $p->name();
@@ -1215,6 +1236,10 @@ sub identity2 {
 
 sub compute_coverage_stats {
 	my ($project,$fork ) = @_;
+	
+	my $has_bam_file = check_has_alignment_file_in_project($project);
+	return if not $has_bam_file;
+	
 	my $cmd = "$Bin/coverage_statistics_genome.pl -project=".$project->name." -fork=$fork -json=1";
 	my $toto = `$cmd`;
 	
@@ -1233,7 +1258,7 @@ sub coverage_stats {
 	my $hstat = compute_coverage_stats($project,$fork);
 	my $mean_cov;
 	foreach my $p (@$patients) {
-		next if $p->alignmentMethod() eq 'no_align';
+		next if $p->alignmentMethods->[0] eq 'no_align';
 		my $pstat = $hstat->{$p->id};
 		$mean_cov += $pstat->{mean};
 	}
@@ -1277,7 +1302,7 @@ sub coverage_stats {
 		push( @$hline, { text => $cov->{"100x"}, type => "$color" } );
 		push( @{ $resume->{lines} }, $hline );
 	}
-	warn Dumper $resume;
+#	warn Dumper $resume;
 
 	return ( transform_array_to_json_like($resume) );
 
@@ -1292,7 +1317,7 @@ sub bam_stats {
 	my $samtools = $project->buffer->software("samtools");
 	my $mean_cov;
 	foreach my $p (@$patients) {
-		next if $p->alignmentMethod() eq 'no_align';
+		next if $p->alignmentMethods->[0] eq 'no_align';
 		my $bam = $p->getBamFile();
 		my $cov = $p->coverage();
 		$mean_cov += $cov->{mean};

@@ -156,6 +156,17 @@ has hash_lift_variants => (
 	lazy    => 1
 );
 
+has alert_too_much_results  => (
+	is		=> 'rw',
+	lazy    => 1,
+	default => undef, 
+);
+
+has alert_ncboost_min_cadd_25  => (
+	is		=> 'rw',
+	lazy    => 1,
+	default => undef, 
+);
 
 
 sub check_variants_from_gene {
@@ -224,13 +235,14 @@ sub check_variants_from_gene {
 	$self->project->disconnect();
 	
 	#TODO: here 
-	if (scalar (@list_var) > 5000) {
+	if (scalar (@list_var) > 10000) {
 		my @list_var_2;
 		my $j = 0;
 		foreach my $var (@list_var) {
 			push(@list_var_2, $var);
 			$j++;
-			last if $j == 5000;
+			$self->{alert_too_much_results} = 1 if $j == 10000;
+			last if $j == 10000;
 		}
 		@list_var = undef;
 		@list_var = @list_var_2;
