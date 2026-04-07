@@ -2608,7 +2608,6 @@ sub get_only_list_chromosomes {
 
 sub isChromosomeName {
 	my ( $self, $name ) = @_;
-	confess() unless $name;
 	my $names;
 	foreach my $chr ( @{ $self->getChromosomes } ) {
 		$names->{ $chr->name }= $chr->name;
