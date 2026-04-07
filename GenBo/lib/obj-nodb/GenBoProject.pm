@@ -2611,10 +2611,15 @@ sub isChromosomeName {
 	confess() unless $name;
 	my $names;
 	foreach my $chr ( @{ $self->getChromosomes } ) {
-		$names->{ $chr->name }++;
-		$names->{ $chr->ucsc_name }++;
+		$names->{ $chr->name }= $chr->name;
+		$names->{ lc($chr->name) } = $chr->name;
+		$names->{ uc($chr->name) }= $chr->name;
+		$names->{ $chr->ucsc_name }= $chr->name;
+		$names->{ lc($chr->ucsc_name) }= $chr->name;
+		$names->{ uc($chr->ucsc_name) }= $chr->name;
 	}
-	return exists $names->{$name};
+	return $names->{$name} if exists $names->{$name};
+	return;
 
 }
 

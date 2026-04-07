@@ -241,8 +241,25 @@ unless ($cgi->param('phenotype')){
 }
 #
  $gene_name_filtering = lc($gene_name_filtering);
-if ($gene_name_filtering && $gene_name_filtering !~ /:/ && !($project->isChromosomeName($gene_name_filtering))){
-	
+ my $chromosome_filtering;
+ my $start_filtering;
+ my $end_filtering;
+ 
+if ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
+	$chromosome_filtering =$project->isChromosomeName($gene_name_filtering);
+	$start_filtering = $2;
+    my $start = $2;
+    my $end_filtering   = $3 if defined $3;
+    $start_filtering = 1 unless $start_filtering;
+    $gene_name_filtering = undef;
+}
+elsif ($project->isChromosomeName($gene_name_filtering)) {
+	$chromosome_filtering = $project->isChromosomeName($gene_name_filtering);
+	$gene_name_filtering = undef;
+}
+
+
+if ($gene_name_filtering){
 	my $gene;
 	eval {
 	 $gene_name_filtering = uc($gene_name_filtering);
@@ -843,33 +860,17 @@ my $h_transmissions = {
 	my $sql_gene = "gene_name != '-' ";
 	my $gene;
 	if ($gene_name_filtering) {
-		if ($project->isChromosomeName($gene_name_filtering)){
-				my $o = $project->getChromosome($gene_name_filtering);
-				$sql_gene = "variant_chromosome = '".$o->ucsc_name."' ";
-				$gene_name_filtering = undef;
-		}
-		elsif ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
-    		my $chr   = $1;
-    		my $start = $2;
-    		my $end   = $3 if defined $3;
-    		$start = 1 unless $start;
-    		$chr = lc($chr);
-    		$chr = "MT" if $chr eq "chrm";
-    		$chr = "MT" if $chr eq "mt";
-    		$chr = "MT" if $chr eq "chrmt";
-    		my $o = $project->getChromosome($chr);
-    		$sql_gene = "variant_chromosome = '".$o->ucsc_name."' and variant_start >= ".$start." ";
-    		$sql_gene .= "and variant_end <".$end." " if $end;
-    		
-    		$gene_name_filtering = undef;
-		}
-		
-		
-		else {
 		$gene = $project->newGene($gene_name_filtering);
 		$gene_id_filtering = $gene->id();
 		$sql_gene = "gene_name = '".$gene->id."'";
-		}
+	}
+	if ($chromosome_filtering){
+			my $o = $project->getChromosome($chromosome_filtering);
+			$sql_gene = "variant_chromosome = '".$o->ucsc_name."' ";
+			if ($start_filtering>0) {
+    			$sql_gene = "variant_chromosome = '".$o->ucsc_name."' and variant_start >= ".$start_filtering." ";
+    			$sql_gene .= "and variant_end <".$end_filtering." " if $end_filtering;
+			}
 	}
 	
 	if ($promoter_ai_flag){

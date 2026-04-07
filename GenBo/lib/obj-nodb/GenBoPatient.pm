@@ -3337,6 +3337,7 @@ has normalized_reads => (
 	return ($self->nb_reads->{all}/$value);
 	},
 	);
+	
 sub sd_value_dude {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	my $chr_name_control = $chr_name;
