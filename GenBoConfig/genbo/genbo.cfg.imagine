@@ -331,6 +331,9 @@ duckdb:/software/bin/duckdb
 #deepvariant
 deepvariant-sif:/data-pure/software/SINGULARITY/deepvariant.sif
 
+#deeptrio
+deeptrio-sif:/data-pure/software/SINGULARITY/deeptrio.sif
+
 #deepsomatic
 deepsomatic-sif:/data-pure/software/SINGULARITY/deepsomatic.sif
 
