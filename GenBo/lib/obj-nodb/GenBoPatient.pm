@@ -82,6 +82,22 @@ has isGenome => (
 	},
 );
 
+has origin_patient_id => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+	
+		return 0;
+	},
+);
+has origin_patient_name => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		return "";
+	},
+);
+
 has isExome => (
 	is      => 'rw',
 	lazy    => 1,
@@ -1318,6 +1334,9 @@ sub getQueryVcf {
 	if ($method eq "pbsv"){
 		 $queryVcf = QueryPbsv->new( \%args );
 	}
+	elsif  ($method eq "sawfish"){
+		 $queryVcf = QueryPbsv->new( \%args );
+	}
 	elsif ($method eq "Sniffles2"){
 		 $queryVcf = QuerySniffles->new( \%args );
 	}
@@ -1677,7 +1696,11 @@ sub getBamFileName {
 sub getPhysicalFilesDir {
 	my ( $self, $method_name,$version ) = @_;
 	return $self->{files_dir} if exists $self->{cram_dir};
-	$self->{files_dir} = $self->buffer->config_path("root","processed-data")."/".$self->id."/";
+	my $id = $self->id;
+	unless (-e  $self->buffer->config_path("root","processed-data")."/".$self->id."/"){
+		$id = $self->origin_patient_id if $self->origin_patient_id > 0;
+	}
+	$self->{files_dir} = $self->buffer->config_path("root","processed-data")."/".$id."/";
 	return $self->project->makedir($self->{files_dir});
 	return $self->{files_dir};
 }
@@ -1687,11 +1710,16 @@ sub getPhysicalFileName {
 	confess("bam or cram" ) unless $type;
 	
 	my $bam_dir = $self->getPhysicalFilesDir();
+	
 	unless ($method_name){
 		confess("miss method name ")  unless $type;
 	}
 	die() unless $bam_dir;
-	my $bam     = $bam_dir . "/" . $self->name .".$version.".$method_name.".$type";
+	my $name = $self->name;
+	unless (-e  $bam_dir . "/" . $self->name .".$version.".$method_name.".$type"){
+		$name = $self->origin_patient_name if $self->origin_patient_id > 0;
+	}
+	my $bam     = $bam_dir . "/" . $name .".$version.".$method_name.".$type";
 	return $bam;
 }
 
@@ -3269,6 +3297,8 @@ has nb_reads => (
 		my $h;
 		foreach my $l (@sums) {
 			my ( $a, $b ) = split( " ", $l );
+			warn $a." :: ".$b;
+			die($self->name) unless defined $b;
 			$h->{all} += $b;
 			next if $a eq "*";
 		
