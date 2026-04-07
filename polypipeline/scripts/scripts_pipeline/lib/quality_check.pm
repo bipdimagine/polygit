@@ -63,7 +63,6 @@ sub mendelian_statistics {
 		$project->disconnect();
 		$project->{buffer} = undef;
 		
-		warn Dumper keys %$project;
 		$project = undef;
 		warn "end fast 2";
 		
