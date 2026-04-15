@@ -41,20 +41,18 @@ use Carp;
 
 my $projectNames;
 my $patients_name;
-#my $lane;
-my $mismatch = 0;
+my $mismatch = 1;
 my $multi;
 my $no_exec;
-my $force;
+my $no_rc;
 my $help;
 
 GetOptions(
 	'projects=s'				=> \$projectNames,
-#	'lane|nb_lane=i'			=> \$lane,
 	'mismatches=i'				=> \$mismatch,
-	'multi'						=> \$multi,
+	'multi|flex'				=> \$multi,
 	'no_exec'					=> \$no_exec,
-	'force'						=> \$force,
+	'no_rc'						=> \$no_rc,
 	'help'						=> \$help,
 ) || die("Error in command line arguments\n");
 
@@ -175,11 +173,11 @@ foreach my $project (@$projects){
 				for my $lane (1 .. $lane_count) {
 					 if ($machine eq 'NOVASEQX') {
 					 	push(@$outcsv, ["$lane","$pname","$pname","$bc_name","$bc1","$bc_name","$bc2","$desc"]);
-						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2_rc","$desc"]);
+						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2_rc","$desc"]) unless ($no_rc);
 					 }
 					 else {
 					 	push(@$outcsv, ["$lane","$pname","$pname","$bc_name","$bc1","$bc_name","$bc2_rc","$desc"]);
-						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2","$desc"]);
+						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2","$desc"]) unless ($no_rc);
 					 }
 				}
 			}
@@ -189,11 +187,14 @@ foreach my $project (@$projects){
 		# BC sequence
 		elsif ($bc =~ /^[ATCG]{8,10}$/ and not $multi) {
 			my $bc2 = $pat->barcode2;
+			die("For 10X samples with several single indexes (e.g. scATACseq), please use the SI-XX barcode names") unless ($bc2);
+			$nb_index = 2;
+			die("Single and dual indexes mixed, run separately") if ($nb_index and $nb_index != 2);
 			die ("ERROR sample barcode2 for '$pname': $bc2.\nShould be barcode sequence of 8 or 10 nt. without 'N'.") if ($bc2 !~ /^[ATCG]{8,10}$/);
 			my $bc2_rc = reverse($bc2) =~ tr/ATCG/TAGC/r;
 			for my $lane (1 .. $lane_count) {
-				push(@$outcsv, ["$lane","$pname","$pname","$bc","$bc2","$desc"]);
-				push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc","$bc2_rc","$desc"]);
+				push(@$outcsv, ["$lane","$pname","$pname","$bc","$bc","$bc2","$bc2","$desc"]);
+				push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc","$bc","$bc2_rc","$bc2_rc","$desc"]) unless ($no_rc);
 			}
 		}
 		elsif ($bc =~ /^[ATCG]{8,10}$/ and not $multi) {
@@ -210,13 +211,12 @@ unshift(@$outcsv, @$outcsv_headers);
 csv (in => $outcsv, out => $samplesheet, sep_char=> ",");
 warn 'Sample Sheet: '.$samplesheet;
 
-my $cmd = "$Bin/../../../dragen/scripts/dragen_demultiplex.pl --project=$projectNames -mismatch=$mismatch";
+my $cmd = "$Bin/../../../dragen/scripts/dragen_demultiplex.pl --project=$projectNames -mismatch=$mismatch -sc";
 $cmd .= " -keep_umi -fastq_index" if ($run->sequencing_method eq 'atac');
 warn $cmd;
 if ($run->sequencing_method eq 'atac') {
-	print("For scATACseq, use mask ");
-	print colored("Y50;I8;U16;Y50", 'bold'), "\n";
-#	print colored("Y50;I8;Y16;Y50", 'bold'), "\n";
+	print colored("For scATACseq, use mask ", 'bold');
+	print colored("Y50;I8;U16;Y50", 'bold red'), "\n";
 }
 my $exit = system ($cmd) unless ($no_exec);
 confess("ERROR $cmd") if ($exit);
@@ -234,7 +234,8 @@ Optionels:
 	patients <s>               noms de patients/échantillons, séparés par des virgules
 	mismatches <i>             nombre de mismatches autorisés lors du démultiplexage, peut être 0, 1 ou 2, défaut: 0
 	no_exec                    ne pas lancer les commandes dragen_demultiplex après avoir généré la sample sheet
-	force                      relance le pipeline même s'il a déjà tourné
+	no_rc                      ne pas ajouter les reverse compléments sur la sample sheet
+	multi/flex                 pour les kits flex or multiplexed samples
 	help                       affiche ce message
 
 ";

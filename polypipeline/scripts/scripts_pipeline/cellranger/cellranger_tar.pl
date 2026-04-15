@@ -35,12 +35,16 @@ use Carp;
 my $projectName;
 my $patients_name;
 my $create_bam;
+my $multi;
+my $all_vdj;
 my $no_exec;
 
 GetOptions(
 	'project=s'		=> \$projectName,
 	'patients=s'	=> \$patients_name,
 	'create_bam!'	=> \$create_bam,
+	'multi|flex'	=> \$multi,
+	'all_vdj'		=> \$multi,
 	'no_exec'		=> \$no_exec,
 ) || confess("Error in command line arguments\n");
 
@@ -56,25 +60,27 @@ my $dir = $project->getCountingDir('cellranger');
 $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 warn $dir;
 
-my @group;
-foreach my $pat (@{$patients}) {
-	my $group = $pat->somatic_group();
-	push(@group,$group);
-}
+my @groups = map {$_->somatic_group()} @$patients;
+my @pools = map {$_->family()} @$patients;;
 
-my $tar_cmd = "tar -cvzf $dir$projectName.tar.gz ";
-if (-d $dir.$group[0]) {
-	# cellranger multi
-	$tar_cmd .= "$dir*/*/web_summary.html  $dir*/qc_report.html ";
-	$tar_cmd .= "$dir*/*/sample_cloupe.cloupe $dir*/*/sample_*_bc_matrix/* " if (grep (! /vdj/i, @group));
-	$tar_cmd .= "$dir*/vloupe.vloupe " if grep (/vdj/i, @group);
+my $tar_cmd = "cd $dir && tar -cvzf $projectName.tar.gz ";
+if ($type eq 'spatial') {
+	$tar_cmd .= join(' ',map {$_->name} @$patients).' ';
+}
+elsif ($multi) {
+	$tar_cmd .= "*/*/web_summary.html  */qc_report.html ";
+	$tar_cmd .= "*/*/sample_cloupe.cloupe */*/sample_*_bc_matrix.h5 " if (grep (! /vdj/i, @groups));
+	$tar_cmd .= "*/*/vdj_*/vloupe.vloupe " if (grep (/vdj/i, @groups) and not $all_vdj);
+	$tar_cmd .= "*/*/vdj_* " if ($all_vdj and grep (/vdj/i, @groups));
+	$tar_cmd .= "*/*/possorted_bam.bam* " if ($create_bam and $create_bam ne 'false');
 }
 else {
-	$tar_cmd .= "$dir*/web_summary.html  ";
-	$tar_cmd .= "$dir*/cloupe.cloupe $dir*/*_bc_matrix/* " if (grep (! /vdj/i, @group));
-	$tar_cmd .= "$dir*/vloupe.vloupe " if grep (/vdj/i, @group);
-	$tar_cmd .= "$dir*/*.bam* " if ($create_bam and $create_bam ne 'false');
-	$tar_cmd .= "$dir*/fragments.tsv.gz $dir*/peak_annotation.tsv " if (grep {/ATAC/i} @group);
+	$tar_cmd .= "*/web_summary.html ";
+	$tar_cmd .= "*/cloupe.cloupe */*_bc_matrix.h5 " if (grep (! /vdj/i, @groups));
+	$tar_cmd .= "VDJ_*/* " if ($all_vdj and grep (/vdj/i, @groups));
+	$tar_cmd .= "*/vloupe.vloupe " if grep (/vdj/i, @groups and not $all_vdj);
+	$tar_cmd .= "*/possorted_bam.bam* " if ($create_bam and $create_bam ne 'false');
+	$tar_cmd .= "*/fragments.tsv.gz* */peak_annotation.tsv */singlecell.csv " if (grep {/ATAC/i} @groups);
 	# scRNAseq: GEX (+ADT): cloupe.cloupe, web_summary.html, filtered and raw_feature_bc_matrix
 	#			VDJ: vloupe.vloupe, web_summary.html
 	# scATAseq : cloupe.cloupe, web_summary.html, filtered and raw_peak_bc_matrix, possibly filtered_tf_bc_matrix, fragments.tsv.gz, peak_annotation.tsv
@@ -82,12 +88,12 @@ else {
 
 warn $tar_cmd;
 if (-e "$dir$projectName.tar.gz" and !$no_exec) {
-	die("archive '$dir$projectName.tar.gz' already exists") unless (prompt("archive '$dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes_no));
-	my $exit = system("ls -lh $dir$projectName.tar.gz");
-	die("Error while making the archive") if ($exit);
+	system("ls -lh $dir$projectName.tar.gz");	
+	die("archive '$projectName.tar.gz' already exists") unless (prompt("archive '$dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes_no));
 }
 unless ($no_exec){
-	system ($tar_cmd);
+	my $exit = system ($tar_cmd);
+	die("Error while making the archive") if ($exit);
 	print "\t------------------------------------------\n";
 #	print "\tlink to send to the users : \n";
 #	print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";

@@ -81,7 +81,7 @@ my $wtmp = "$tmp/Unaligned";
 my $cmd1 = "$cmd_cfg --input-dir $basecall_dir  --output-dir=$wtmp --minimum-trimmed-read-length 0 --mask-short-adapter-reads 0  --reports-dir $reports_dir -R $dir";
 if($hiseq eq "10X"){  
 	$mismatch = 0 unless ($mismatch);
-	$cmd1 = "cd $tmp ; /software/distrib/$cellranger_type/latest mkfastq --id=$run --run=$dir --csv=$sample_sheet --output-dir=$wtmp --barcode-mismatches=$mismatch";
+	$cmd1 = "cd $tmp ; $cellranger_type mkfastq --id=$run --run=$dir --csv=$sample_sheet --output-dir=$wtmp --barcode-mismatches=$mismatch";
 }
 elsif($dragen == 1){
 	my $dragen_output = "/staging/RUN/".$run;

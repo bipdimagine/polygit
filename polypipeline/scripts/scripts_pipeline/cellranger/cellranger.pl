@@ -26,6 +26,7 @@ use GenBoProject;
 use colored; 
 use Config::Std;
 use Text::Table;
+use Text::CSV qw( csv );
 use Time::Local 'timelocal';
 use File::Temp qw/ tempfile tempdir /;
 use Term::Menus;
@@ -42,32 +43,44 @@ my $projectName;
 my $patients_name;
 my @steps;
 #my $lane;
-my $mismatch = 0;
+my $mismatch = 1;
 my $feature_ref;
 my $cmo_ref;
 my $no_exec;
 my $aggr_name;
+my $choose_exec;
+my $choose_transcriptome;
 my $chemistry;
 my $create_bam;
+my $slide_infos_csv;
+my $probe_set;
+my $add_image;
+my $loupe_alignment;
 my $cpu = 20;
 my $force;
 my $help;
 
 GetOptions(
-	'project=s'					=> \$projectName,
-	'patients=s'				=> \$patients_name,
-	'steps=s{1,}'				=> \@steps,
-#	'lane|nb_lane=i'			=> \$lane,
-	'mismatches=i'				=> \$mismatch,
-	'create_bam!'				=> \$create_bam,
-	'feature_ref|feature_csv=s'	=> \$feature_ref,
-	'cmo_ref|cmo_csv=s'			=> \$cmo_ref,
-	'aggr_name=s'				=> \$aggr_name,
-	'chemistry=s'				=> \$chemistry,
-	'cpu=i'						=> \$cpu,
-	'no_exec'					=> \$no_exec,
-	'force'						=> \$force,
-	'help'						=> \$help,
+	'project=s'										=> \$projectName,
+	'patients=s'									=> \$patients_name,
+	'steps=s{1,}'									=> \@steps,
+#	'lane|nb_lane=i'								=> \$lane,
+	'mismatches=i'									=> \$mismatch,
+	'create_bam!'									=> \$create_bam,
+	'feature_ref|feature_csv=s'						=> \$feature_ref,
+	'cmo_ref|cmo_csv=s'								=> \$cmo_ref,
+	'aggr_name=s'									=> \$aggr_name,
+	'choose_exec|choose_version|version'			=> \$choose_exec,
+	'choose_transcriptome|select_transcriptome'		=> \$choose_transcriptome,
+	'chemistry=s'									=> \$chemistry,
+	'slide_infos=s'									=> \$slide_infos_csv,
+	'probe_set=s'									=> \$probe_set,
+	'add_image'										=> \$add_image,
+	'loupe_alignment|json'							=> \$loupe_alignment,
+	'cpu=i'											=> \$cpu,
+	'no_exec'										=> \$no_exec,
+	'force'											=> \$force,
+	'help'											=> \$help,
 ) || confess("Error in command line arguments\n");
 
 usage() if $help;
@@ -76,16 +89,30 @@ die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
+my $all_patients = $project->getPatients;
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient in project $projectName") unless ($patients);
 
+# Vérifie les caractères non acceptés
 my @patient_names = map {$_->name} @$patients;
 my @invalid_names = grep { $_ !~ /^[A-Za-z0-9_-]+$/ } @patient_names;
 die ("Patient names can only contain letters, numbers, hyphens and underscores. Sample names ".join(@invalid_names, ', ')." are invalids.") if (@invalid_names);
 
+# Vérifie que le projet est en somatic et que les groupes sont correctement remplis
+unless ($project->isSomatic) {
+	my $warn = "Error: Project $projectName is not in somatic mode. "
+		."Activate somatic mode and check that the groups have been filled in, so that they can be taken into account in the analysis.";
+#	die ($warn) if (grep{/cont|aggr/} @steps);
+	die ($warn);
+}
+my @groups = map {$_->somatic_group} @$patients;
+die("Error: Check that the groups are not empty and correctly filled. Accepted groups are exp, adt, vdj, atac, spatial, cmo, arc") 
+	unless (grep{/^(exp|adt|vdj|atac|spatial|cmo|arc)$/i} @groups);
 
+
+# Steps
 @steps = split(/,/, join(',',@steps));
-my $list_steps = ['dragen_demultiplex', 'demultiplex_old', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'velocyto', 'all'];
+my $list_steps = ['dragen_demultiplex', 'teleport', 'count', 'aggr', 'aggr_vdj', 'tar', 'cp', 'cp_web_summary', 'infos', 'velocyto', 'all'];
 #my @correct_steps = grep{/@steps/} @$list_steps;
 #undef @steps if (@steps and scalar @correct_steps == 0);
 unless (@steps) {
@@ -102,7 +129,7 @@ unless (@steps) {
 }
 warn 'steps='.join(',',@steps);
 
-$create_bam = 1 if (grep(/velocyto/i, @steps));
+$create_bam = 1 if (grep(/velocyto/i, @steps) or grep (/velocyto/, map($_->getCallingMethods, @$patients)));
 
 
 my $run = $project->getRun();
@@ -110,19 +137,85 @@ my $run_name = $run->plateform_run_name;
 my $type = $run->infosRun->{method};
 my $machine = $run->infosRun->{machine};
 
+# Executable 
 my $exec = "cellranger";
 $exec .= '-atac' if ($type eq 'atac');
 $exec .= '-arc' if ($type eq 'arc');
 $exec = 'spaceranger' if  ($type eq 'spatial');
+if ($choose_exec) {
+	my $exec_type = $exec;
+	my $path_exec = "/software/distrib/$exec_type/";
+	opendir(my $dh, $path_exec) || die "Can't opendir '$path_exec': $!";
+	my @exec = reverse grep {-x "$path_exec$_/$exec_type" && ! /^\./} readdir($dh);
+	closedir ($dh);
+	confess("No directory with executable '$exec_type' found in '$path_exec'") unless (scalar @exec);
+	$exec = $path_exec.$exec[0] if (scalar @exec == 1);
+	$exec = $path_exec.prompt("Choose a $exec_type version for project ".$projectName.':', -menu=>\@exec);
+	$exec .= "/$exec_type";
+	confess("'$exec' is not an executable") unless (-x $exec);
+}
 warn $exec;
 
-#my $dir = $project->getProjectRootPath();
+my $dir_project = $project->getProjectRootPath();
 my $dir = $project->getCountingDir('cellranger');
 $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 warn $dir;
 
 
 
+#-----
+# Choose transcriptome reference (COUNT/VELOCYTO)
+#-----
+# https://www.10xgenomics.com/support/software/cell-ranger/latest/release-notes/cr-reference-release-notes
+my $htranscriptome;
+if (grep(/count|velocyto/, @steps)) {
+	if (grep(/count|^all$|velocyto/i, @steps) and $choose_transcriptome){
+		my $transcriptome_dir = '/data-isilon/public-data/10X/'.$project->genome_version.'/';
+		opendir(my $dh, $transcriptome_dir) || die "Can't opendir '$transcriptome_dir': $!";
+		# gex/spatial
+		my @transcriptomes = sort { -M $transcriptome_dir.$a <=> -M $transcriptome_dir.$b } grep {-d $transcriptome_dir.$_} readdir($dh);
+		closedir ($dh);
+		if (grep {/exp|adt/i} @groups) {
+			my @transcriptomes_gex = grep {/^refdata-(cellranger-|gex-)GRC/} @transcriptomes;
+			confess("No transcriptome reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_gex);
+			warn Dumper \@transcriptomes_gex;
+			$htranscriptome->{gex} = $transcriptome_dir.$transcriptomes_gex[0] if (scalar @transcriptomes_gex == 1);
+			if (scalar @transcriptomes_gex > 1) {
+				my $selected = prompt("Choose a transcritome reference for project ".$projectName.':', -menu=>\@transcriptomes_gex);
+				die unless ($selected and -d $transcriptome_dir.$selected);
+				$htranscriptome->{gex} = $transcriptome_dir.$selected;
+			}
+		}
+		
+		# vdj
+		if (grep {/vdj/i} @groups) {
+			my @transcriptomes_vdj = grep {/^refdata-cellranger-vdj-GRC/} @transcriptomes;
+			confess("No V(D)J reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_vdj);
+			$htranscriptome->{vdj} = $transcriptome_dir.$transcriptomes_vdj[0] if (scalar @transcriptomes_vdj == 1);
+			if (scalar @transcriptomes_vdj > 1) {
+				my $selected = prompt("Choose a V(D)J reference for project ".$projectName.':', -menu=>\@transcriptomes_vdj);
+				die unless ($selected and -d $transcriptome_dir.$selected);
+				$htranscriptome->{vdj} = $transcriptome_dir.$selected;
+			}
+		}
+		
+		# atac
+		if (grep {/atac/i} @groups) {
+			my @transcriptomes_atac = grep {/^refdata-cellranger-(arc|atac)-GRC/} @transcriptomes;
+			confess("No ATAC reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_atac);
+			$htranscriptome->{atac} = $transcriptome_dir.$transcriptomes_atac[0] if (scalar @transcriptomes_atac == 1);
+			if (scalar @transcriptomes_atac > 1) {
+				my $selected = prompt("Choose a ATAC reference for project ".$projectName.':', -menu=>\@transcriptomes_atac);
+				die unless ($selected and -d $transcriptome_dir.$selected);
+				$htranscriptome->{atac} = $transcriptome_dir.$selected;
+			}
+		}
+		warn Dumper $htranscriptome;
+	}
+}
+
+
+	
 #------------------------------
 # DRAGEN DEMULIPLEXAGE
 #------------------------------
@@ -189,24 +282,10 @@ if (grep(/^demultiplex_old$/i, @steps)){
 # TELEPORT
 #------------------------------
 if (grep(/teleport/, @steps)) {
-#	my $cmd = "teleport_patient.sh -project=$projectName -force=1";
 	my $cmd = "$Bin/../../../teleport_patients.pl -project=$projectName -force=1";
 	system($cmd) unless $no_exec;
 }
 
-
-
-
-unless ($project->isSomatic) {
-	my $warn = colored('/!\\', 'bold')." Project $projectName is not in somatic mode. Activate somatic mode and check that the groups have been filled in, "
-		."so that they can be taken into account in the analysis.";
-	die ($warn) if (grep{/@steps/} ('count', 'aggr'));
-	warn ($warn);
-	
-}
-
-
-my @groups = map {$_->somatic_group} @$patients;
 
 
 #------------------------------
@@ -229,42 +308,94 @@ if (grep(/count|^all$/i, @steps)){
 	$create_bam = 'true' if ($create_bam ne 'false');
 	warn "create-bam=$create_bam";
 	
+	# $exec version
+	qx/$exec --version/ =~ /^(?:cell|space)ranger-?(?:arc|atac)? ((?:(?:cell|space)ranger-?(?:arc|atac)?-)?(\d+\.\d+\.\d+))$/
+		|| qx/realpath \$(which $exec)/ =~ /((?:cell|space)ranger-?(?:arc|atac)?-(\d+\.\d+\.\d+))/
+		|| confess("Error determining the version");
+	my $version = $1;
+	my $version_nb = $2;
+	warn 'version: '.$version;
+	warn 'version nb: '.$version_nb;
+	
+	# Check chemistry if option provided
 	 if ($chemistry) {
  		warn "chemistry=$chemistry";
 		my @chemistries = qw/auto threeprime fiveprime SC3Pv2 SC3Pv3 SC3Pv3-polyA SC3Pv4 SC3Pv4-polyA SC3Pv3HT SC5P-PE SC5P-PE-v3 SC5P-R2 SC3Pv1 ARC-v1/;
 		die ("Chemistry option '$chemistry' not valid, should be one of: ". join(', ', @chemistries)) unless (grep { $_ eq $chemistry } @chemistries);
 	 }
 	
-	
-	my $fastq;
-	my $tmp = $project->getAlignmentPipelineDir("cellranger");
-	warn $tmp;
+	my $prog =  $patients->[0]->alignmentMethod();
+	my $index = $project->getGenomeIndex($prog);
 	
 	# Vérifie que les fastq sont bien nommés
 	foreach my $patient (@{$patients}) {
 		my $pname = $patient->name;
 		my $fastq_files = $patient->fastqFiles();
 		my @fastq_files = map {values %$_} @$fastq_files;
-		die ("Fastq file names (sample $pname) must follow the following naming convention: [Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz"
+		confess ("Fastq file names (sample $pname) must follow the following naming convention: [Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz"
 			 ."\n".Dumper \@fastq_files)
-			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][123]_001\.fastq\.gz$/} @fastq_files) == scalar @fastq_files);
+			unless (scalar (grep {/$pname\_S\d*_L\d{3}_[IR][123]_\d{3,}\.fastq\.gz$/} @fastq_files) == scalar @fastq_files);
 	}
-	
-	# todo: vérifier qu'il n'y ait pas déjà un répertoire patient dans le $tmp
-	# todo: vérifier qu'il n'y ait pas des adt oubliés: si pat exp prendre aussi pat adt
 	
 	# Vérifie que le pipeline n'ait pas déjà tourné : check si web_summary existe
-	foreach my $patient (@{$patients}) {
+	my @patients = @$patients;
+	foreach my $patient (@patients) {
 		my $pname = $patient->name;
-#		if (-d $tmp.$pname) {
-#			die("'$tmp$pname' already exists") unless (prompt("'$tmp$pname' already exists.\nContinue anyway ? (y/n) ", -yes_no));
-#		}
-		if ((-e  "$dir$pname/web_summary.html" or -e "$dir$pname/outs/web_summary.html" or -e "$tmp$pname/outs/web_summary.html") and not $force) {
-			@$patients = grep{$_->name ne $pname and $_->name ne $pname =~ s/^EXP/ADT/ir} @$patients;
-			warn "NEXT: $pname pipeline already completed: web_summary already exists";
-			next;
+		my $group = $patient->somatic_group;
+		next if ($group =~ /adt/i);
+		my $file_out = "$dir$pname/web_summary.html"; # if ($group =~ /exp|nuclei/i);
+#		$file_out = "$dir$pname/vloupe.vloupe" if ($group =~ /vdj/i);
+		if (-e  $file_out and not $force) {
+			warn "NEXT: $pname pipeline already completed: web_summary already exists"; # if ($group =~ /exp|nuclei|atac|arc/i);
+#			warn "NEXT: $pname pipeline already completed: vloupe already exists" if ($group =~ /vdj/i);
+			@$patients = grep{ $_->name ne $pname } @$patients;
 		}
 	}
+	undef @patients;
+	confess("All done ! If you want to rerun samples, use -force") unless (scalar @$patients);
+	
+	my $tmp = $project->getAlignmentPipelineDir("cellranger");
+	$tmp = $project->getAlignmentPipelineDir("spaceranger") if ($type eq 'spatial');;
+	warn $tmp;
+
+	# Vérifie qu'il n'y ait pas déjà un répertoire patient dans le $tmp
+	foreach my $patient (@$patients) {
+		my $pname = $patient->name;
+		my $pool = $patient->family;
+		my $group = $patient->somatic_group;
+		next if ($group =~ /adt/i);
+		if (-d $tmp.$pname) {
+			die("'$tmp$pname/' already exists") unless(prompt("'$tmp$pname/' already exists. Continue ? ",-yes_no, -1));
+		}
+	}
+
+	
+	# Vérifie qu'il n'y ait pas des adt oubliés
+	my @pat_to_add;
+	my %patients_id = map {$_->id => 1} @$patients;
+	my %pat_to_add_id;
+	foreach my $patient (@{$patients}) {
+	    my $pname = $patient->name;
+	    my $pfam = $patient->family;
+	    my @oublis = grep {
+	        ($_->name =~ /$pname/i or $_->family =~ /^$pfam$/i)
+	        and $_->somatic_group =~ /^(adt|exp)$/i
+	        and $_->id() ne $patient->id
+	        and !exists $patients_id{$_->id()}
+	        and !exists $pat_to_add_id{$_->id()}
+	    } @$all_patients;
+#	    warn Dumper([map {$_->name} @oublis]) if @oublis;
+	    foreach my $oubli (@oublis) {
+	        if (prompt("'".$oubli->name."' in project but not in patients list. Do you want to add it? ", -yes_no, -1)) {
+	            push(@pat_to_add, $oubli);
+	            $pat_to_add_id{$oubli->id} = 1;
+	            push(@groups,$oubli->somatic_group) unless (exists $pat_to_add_id{$oubli->id});
+	        }
+	    }
+	}
+	push(@$patients, @pat_to_add) if @pat_to_add;
+#	warn Dumper([map {$_->name} @$patients]);
+
 	
 	sub full_cmd {
 		my ($pat, $cmd) = @_;
@@ -277,10 +408,11 @@ if (grep(/count|^all$/i, @steps)){
 		my $adt = 'ADT_'.$name;
 		$cmd1 = "cp $seq_dir$name*.fastq.gz $seq_dir/ADT_$name*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
 #		my $cmd2 = " --localcores=$cpu ";
-		my $cmd2 = "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
-		make_path("$dir$name", { mode => 0775 }) unless (-d "$dir$name");
+		my $cmd2 = "&& mkdir $dir$name --mode=775 " unless (-d $dir.$name);
+		$cmd2 .= "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
+#		make_path("$dir$name", { mode => 0775 }) unless (-d "$dir$name");
 #		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
-#		$cmd2 .= "&& rm $tmp_fastq\*$name*.fastq.gz";
+		$pat->update_software_version($exec, $cmd, $version_nb) unless ($no_exec);
 		$cmd =~ s/$seq_dir/$tmp_fastq/;
 		return $cmd1.$cmd.$cmd2."\n";
 	}
@@ -289,26 +421,67 @@ if (grep(/count|^all$/i, @steps)){
 	my $type_exp = 1 if map {uc($_) =~ /(EXP|NUCLEI)/ } @groups;
 	system("rm $dir/jobs_count.txt") if (-f "$dir/jobs_count.txt");
 	if($type_exp){
-		open (JOBS, ">$dir/jobs_count.txt");
+		open (JOBS_EXP, ">$dir/jobs_count.txt");
 		my @exp = grep { uc($_->somatic_group()) eq "EXP" || uc($_->somatic_group()) eq "NUCLEI" } @{$patients};
-		warn "EXP/NUCLEI: ".join(', ',map($_->name,@exp));
+		warn "EXP/NUCLEI: ".join(',',map($_->name,@exp));
 		foreach my $e (@exp){
 			my $name = $e->name;
-#			warn $name;
+#			warn 'EXP: '.$name;
 			my $group = $e->somatic_group();
-			$fastq = $e->getSequencesDirectory;
-			my $prog =  $e->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog);
-			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$index ";
+			my $fastq = $e->getSequencesDirectory;
+			my $transcriptome = $index;
+			$transcriptome = (qx/realpath $index/) if (-l $index);
+			chomp $transcriptome;
+			$transcriptome = '/data-isilon/public-data/10X/HG38/refdata-gex-GRCh38-2020-A' if ($project->description =~ /at?traction/i);
+			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
+			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$transcriptome ";
 			$cmd .= " --include-introns true " if ($type eq "nuclei" or lc($group) eq "nuclei"); # true par défaut
 			$cmd .= " --chemistry $chemistry " if ($chemistry);
 			$cmd .= "\n";
 			$cmd = full_cmd($e, $cmd);
+			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
+			warn $cmd_cellranger[0];
 	#		warn $cmd;
-			print JOBS $cmd;
+			print JOBS_EXP $cmd;
 		}
 	}
 	
+	
+	# ADT
+	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @groups;
+	if ($type_adt){
+		open (JOBS_ADT, ">$dir/jobs_count.txt");
+		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients};
+		warn "EXP+ADT: ".join(',',map($_->name,@exp));
+		foreach my $e(@exp){
+			my $name = $e->name();
+#			warn 'ADT: '.$ename;
+			my $efam = $e->family();
+#			my $egroup = uc($e->somatic_group());
+			my $lib_file = $dir.$name."_library.csv";
+			open(LIB,">$lib_file") or die "impossible $lib_file";
+			my @adt = grep {$_->family() eq $efam && $_->name() =~ $name && uc($_->somatic_group()) eq "ADT"} @{$patients};
+			warn ("no associated ADT library") if scalar(@adt)==0 ;
+			next() if scalar(@adt)==0 ; 
+			my $adt_name = $adt[0]->name();
+			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/,'.$name.",Gene Expression\n";
+			$lib .= $tmp.'fastq/'.",".$adt_name.",Antibody Capture\n";
+			print LIB $lib;
+			close(LIB);
+			my $transcriptome = $index;
+			$transcriptome = qx/realpath $index/ if (-l $index);
+			chomp $transcriptome;
+			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
+			my $cmd = "cd $tmp && $exec count --id=$name --feature-ref=$feature_ref --transcriptome=$transcriptome  --libraries=$lib_file --create-bam=$create_bam ";
+			$cmd .= " --chemistry $chemistry " if ($chemistry);
+			$cmd .= "\n";
+			$cmd = full_cmd($e, $cmd);
+			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
+			warn $cmd_cellranger[0];
+			print JOBS_ADT $cmd;
+		}
+	}
+
 	
 	# VDJ
 	my $type_vdj = 1 if map {uc($_) =~ /VDJ/ } @groups;
@@ -316,112 +489,188 @@ if (grep(/count|^all$/i, @steps)){
 	if($type_vdj){
 		open (JOBS_VDJ, ">$dir/jobs_vdj.txt");
 		my @vdj = grep { uc($_->somatic_group()) eq "VDJ"} @{$patients};
-		warn "VDJ: ".join(', ',map($_->name,@vdj));
+		warn "VDJ: ".join(',',map($_->name,@vdj));
 		foreach my $v (@vdj){
 			my $name = $v->name(); 
 #			my $vfam = $v->family();
 #			my $vgroup = uc($v->somatic_group());
 			my $fastq = $v->getSequencesDirectory;
-			my $prog =  $v->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog);
-			my $index_vdj = $index."_vdj";
-			my $cmd = "cd $tmp && cellranger vdj --sample=$name --id=$name --fastqs=$fastq --reference=$index_vdj ";
+			my $transcriptome = $index.'_vdj';
+			$transcriptome = qx/realpath $index"_vdj"/ if (-l $index);
+			chomp $transcriptome;
+			$transcriptome = $htranscriptome->{vdj} if ($choose_transcriptome);
+			my $cmd = "cd $tmp && cellranger vdj --sample=$name --id=$name --fastqs=$fastq --reference=$transcriptome ";
 			$cmd = full_cmd($v, $cmd);
+			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
+			warn $cmd_cellranger[0];
 			print JOBS_VDJ $cmd;
 		}
 	}
 
 
-	# ADT
-	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @groups;
-	if ($type_adt){
-		open (JOBS_ADT, ">$dir/jobs_count.txt");
-		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients};
-		warn "EXP+ADT: ".join(', ',map($_->name,@exp));
-		foreach my $e(@exp){
-			my $ename = $e->name(); 
-			my $efam = $e->family();
-#			my $egroup = uc($e->somatic_group());
-			my $lib_file = $dir.$ename."_library.csv";
-			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @adt = grep {$_->family() eq $efam && $_->name() =~ $ename && uc($_->somatic_group()) eq "ADT"} @{$patients};
-			warn ("no associated ADT library") if scalar(@adt)==0 ;
-			next() if scalar(@adt)==0 ; 
-			my $adt_name = $adt[0]->name();
-			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/,'.$ename.",Gene Expression\n";
-			$lib .= $tmp.'fastq/'.",".$adt_name.",Antibody Capture\n";
-			print LIB $lib;
-			close(LIB);
-			my $prog =  $e->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog);
-			my $cmd = "cd $tmp && cellranger count --id=$ename --feature-ref=$feature_ref --transcriptome=$index  --libraries=$lib_file --create-bam=$create_bam ";
-			$cmd .= " --chemistry $chemistry " if ($chemistry);
-			$cmd .= "\n";
-			$cmd = full_cmd($e, $cmd);
-			print JOBS_ADT $cmd;
-		}
-	}
-
-	
 	# SPATIAL
 	my $type_spatial = 1 if map {uc($_) =~ /SPATIAL/ } @groups;
 	system("rm $dir/jobs_spatial.txt") if (-f "$dir/jobs_spatial.txt");
  	if($type_spatial){
+ 		confess("Error: Project release must be HG38") if ($project->getVersion() =~ /^HG19/);
 		open (JOBS_SPATIAL, ">$dir/jobs_spatial.txt");
 		my @spatial = grep { uc($_->somatic_group()) eq "SPATIAL"} @{$patients};
-		warn "SPATIAL: ".join(', ',map($_->name,@spatial));
- 		my $slide_id = prompt("Visium Slide ID: ");
- 		die("Visuim slide ID should start with V1, V4, V5 oh H1") unless ($slide_id =~ /^(V[145]|H1)/);
- 		my %image_type = {
+		warn "SPATIAL: ".join(',',map($_->name,@spatial));
+ 		my $choice_image_type = {
  			'Brightfield image generated by the CytAssist instrument (the CytAssist image)' => 'cytaimage',
  			'Brightfield microscope image' => 'image',
  			'Dark background fluorescence microscope image' => 'darkimage',
  			'Composite colored fluorescence microscope image' => 'colorizedimage',
- 		};
- 		my $imagetype = prompt('Choose the type of image you have: ', -m=>%image_type);
- 		die ($imagetype);
+		};
+		my $imagetype = prompt('Choose the type of image you have: ', -m=>$choice_image_type);
+		die ("No image type selected") unless ($imagetype);
+		my $imagetype2;
+		if ($add_image) {
+			my $choice_second_image_type = {
+			    map { $_ => $choice_image_type->{$_} }
+			    grep { $choice_image_type->{$_} ne $imagetype }
+			    keys %$choice_image_type
+			};
+			$imagetype2 = prompt('Choose the second type of image you have: ', -m=>$choice_second_image_type);
+			die ("No image type selected") unless ($imagetype2);
+		}
+		
+		my $slide_infos;
+		if ($slide_infos_csv and -f $slide_infos_csv) {
+			my $a_slide_infos = csv (in => $slide_infos_csv, headers => "auto", filter => "not_empty") or confess("Can't open '$slide_infos_csv': $!") unless ($imagetype ne 'cytaimage');
+	 		foreach my $line (@$a_slide_infos) {
+				$slide_infos->{$line->{'sample'}}->{'slide'} = $line->{'slide id'};
+				$slide_infos->{$line->{'sample'}}->{'area'} = $line->{'aera'};
+			}
+		}
 		foreach my $s (@spatial){
-			my $sname = $s->name(); 
-			my $bc2 = $s->barcode2();
-			my $area = $bc2;
-#			my ($slide,$slide2,$area) = split("-",$bc2);
-
-			#my $des_file = $dir."/".$sname."_spatial_descript.csv";
-	
-			#die("file with area, slide and path to image file is mandatory \(patientName_spatial_descript.csv\)") unless -e $des_file ;
-			#open (DES, $des_file);
-			#my $json;
-			#my $area;
-			#my $slide;
-	
-			#while(<DES>){
-			#	warn $_;
-			#	chomp($_);
-			#	($json,$slide,$area)= split(",",$_);
-			#}
-			#close(DES);
-#			my $slide_final = $slide."-".$slide2;
-#			my $json = $dir."/".$slide_final."-".$area."-".$sname.".json";
-			# todo: rechercher les images tif contenant le nom du sample et/ou son area
-			my $image = $dir."/".$area."-".$sname.".tif";
-			die("Image '$image' not found") if (! -e $image && !$no_exec);
-			my $sgroup = uc($s->somatic_group());
-			my $fastq = $tmp.'fastq/';
-			my $prog =  $s->alignmentMethod();
-			my $index_spatial = $project->getGenomeIndex($prog);
-			my $set = $index_spatial."/probe_sets/";
-#			my $set = "/software/distrib/spaceranger/spaceranger-3.1.3/probe_sets/";
-			$set .= "Visium_Human_Transcriptome_Probe_Set_v1.0_GRCh38-2020-A.csv" if ($project->getVersion() =~ /^HG/ && $slide_id =~ /^(V1)/);
-			$set .= "Visium_Human_Transcriptome_Probe_Set_v2.0_GRCh38-2020-A.csv" if ($project->getVersion() =~ /^HG/ && $slide_id =~ /^(V[45]|H1)/);
-			$set .= "Visium_Mouse_Transcriptome_Probe_Set_v1.0_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM/ && $slide_id =~ /^(V[145])/);
-			$set .= "Visium_Mouse_Transcriptome_Probe_Set_v2.0_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM/ && $slide_id =~ /^H1/);
+			my $sname = $s->name();
 			
-			my $cmd = "cd $tmp && spaceranger count --id=$sname --sample=$sname --fastqs=$fastq --transcriptome=$index_spatial --create-bam=$create_bam ";
-			$cmd .= "--$imagetype=$image ";
-			$cmd .= "--area=$area --slide=$slide_id --probe-set=$set ";
-#			$cmd .= " --loupe-alignment=$json ";
+			# Slide id and area
+			my ($slide_id, $area);
+			unless ($imagetype eq 'cytaimage') {
+				$slide_id = $slide_infos->{$sname}->{slide} if (exists $slide_infos->{$sname} and exists $slide_infos->{$sname}->{slide});
+		 		$slide_id = prompt("$sname Visium Slide ID: ") unless ($slide_id);
+		 		confess("Error: Visuim slide ID must start with V1, V4, V5 or H1") unless ($slide_id =~ /^(V[145]|H1)-/);
+		 		confess("Error: Visuim Spatial slide v1 and Visuim CytAssist Spatial slide v2 must be in MM38") if ($slide_id =~ /^V[145]/ and $project->getVersion() eq 'MM39');
+				$area = $slide_infos->{$sname}->{area} if (exists $slide_infos->{$sname} and exists $slide_infos->{$sname}->{area});
+		 		$area = uc(prompt("$sname area for Visium Slide $slide_id: ")) unless ($area);
+		 		confess("Error: Area for Visuim Spatial slide, v1, 6.5 mm (V1) can be one of A1, B1, C1, D1") if ($slide_id =~ /^V1/ and grep {$_ ne $area} qw{A1 B1 C1 D1});
+		 		confess("Error: Area for Visuim CytAssist Spatial slide, v2, 11 mm (V5) can A or B") if ($slide_id =~ /^V5/ and grep {$_ ne $area} qw{A B});
+		 		confess("Error: Area for Visuim CytAssist Spatial slide, v2, 6.5 mm (V4), and Visium HD slides, 6.5 mm (H1) can be one of A1, D1") if ($slide_id =~ /^(V4|H1)/ and grep {$_ ne $area} qw{A1 D1});
+				#my ($slide,$slide2,$area) = split("-",$bc2);
+				confess("slide id and area are required") if (not $area or not $slide_id);
+			}
+		
+			# Image
+			opendir(my $dh, $dir_project) or confess ("Can't opendir '$dir_project': $!");
+			my @all_images = grep {/$sname.*\.(tif{1,2}|jpe?g)$/} readdir($dh);
+			close($dh);
+			if (scalar @all_images < 1) {confess("No tiff/jpg image found in '$dir_project'")}
+			
+			my @images = @all_images;
+			@images = grep {/$sname.*\.tif{1,2}$/} @all_images if ($imagetype eq 'cytaimage');
+			if (scalar @images < 1) {confess("No tiff image found in '$dir_project'")}
+			
+			my $image1;
+			if (scalar @images == 1) {$image1 = $images[0]}
+			elsif (scalar @images > 1) {$image1 = prompt("Choose an image file:", -menu=>\@images)}
+#			warn "$imagetype = $image1";
+			confess("No image") unless($image1);
+			$image1 = $dir_project.$image1;
+			
+			my $image2;
+			if ($add_image) {
+				@images = grep {$image1 !~ /$_$/} @all_images;
+				if (scalar @images < 1) {confess("No other tiff/jpg image found in '$dir_project'")}
+				@images = grep {$_ =~ /$sname.*\.tif{1,2}$/} @images if ($imagetype2 eq 'cytaimage');
+				if (scalar @images < 1) {confess("No other tiff image found in '$dir_project'")}
+				elsif (scalar @images == 1) {$image2 = $images[0]}
+				elsif (scalar @images > 1) {$image2 = prompt("Choose an image file:", -menu=>\@images)}
+	#			warn "$imagetype2 = $image2";
+				confess("No image") unless($image2);
+				$image2 = $dir_project.$image2;
+			}
+			
+			# Image alignment
+			my $json;
+			if ($loupe_alignment) {
+				opendir(my $dh, $dir_project) or confess ("Can't opendir '$dir_project': $!");
+				my @json = grep {/$sname.*\.json$/} readdir($dh);
+				close($dh);
+				if (scalar @json < 1) {confess("No json loupe alignment file found in '$dir_project'")}
+				elsif (scalar @json == 1) {$json = $json[0]}
+				elsif (scalar @json > 1) {$json = prompt("Choose an image file:", -menu=>\@json)}
+	#			warn "loupe-alignment = $json";
+				confess("No json") unless($json);
+				$json = $dir_project.$json;
+				
+			}
+			
+			my $fastq = $s->getSequencesDirectory;
+			my $transcriptome = $index;
+			$transcriptome = qx/realpath $index/ if (-l $index);
+			chomp $transcriptome;
+			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
+			
+			unless($probe_set and -f $probe_set) {
+				$probe_set = "/software/distrib/$exec/$exec-$version_nb/probe_sets/";
+				opendir(my $dh, $probe_set) || die "Can't opendir '$probe_set': $!";
+				my @probe_sets;
+				@probe_sets = sort grep {-f $probe_set.$_ && /^Visium_\w+_Transcriptome_Probe_Set_v.+\.csv$/} readdir($dh);
+				close($dh);
+				@probe_sets = grep {/^Visium_Human_Transcriptome_Probe_Set_v[0-9.]+_GRCh38-20\d{2}-A\.csv$/} @probe_sets if ($project->getVersion() =~ /^HG/);
+				@probe_sets = grep {/^Visium_Mouse_Transcriptome_Probe_Set_v[0-9.]+_mm10-20\d{2}-A\.csv$/} @probe_sets if ($project->getVersion() =~ /^MM38/);
+				@probe_sets = grep {/^Visium_Mouse_Transcriptome_Probe_Set_v[0-9.]+_GRCm39-20\d{2}-A\.csv$/} @probe_sets if ($project->getVersion() =~ /^MM39/);
+				#Visium_Mouse_Transcriptome_Probe_Set_v2.1.0_GRCm39-2024-A.csv
+				my $probe_set_compatibility = "";
+				if ($slide_id) {
+					@probe_sets = grep {/^Visium_Human_Transcriptome_Probe_Set_v1[0-9.]+_GRCh38-20\d{2}-A.*\.csv$/} @probe_sets if ($project->getVersion() =~ /^HG/ && $slide_id =~ /^(V1)/);
+					@probe_sets = grep {/^Visium_Human_Transcriptome_Probe_Set_v2[0-9.]+_GRCh38-20\d{2}-A.*\.csv$/} @probe_sets if ($project->getVersion() =~ /^HG/ && $slide_id =~ /^(V[45]|H1)/);
+					@probe_sets = grep {/^Visium_Mouse_Transcriptome_Probe_Set_v1[0-9.]+_mm10-20\d{2}-A.*\.csv$/} @probe_sets if ($project->getVersion() =~ /^MM38/ && $slide_id =~ /^(V[145])/);
+					@probe_sets = grep {/^Visium_Mouse_Transcriptome_Probe_Set_v2[0-9.]+_mm10-20\d{2}-A.*\.csv$/} @probe_sets if ($project->getVersion() =~ /^MM38/ && $slide_id =~ /^H1/);
+					@probe_sets = grep {/^Visium_Mouse_Transcriptome_Probe_Set_v2[0-9.]+_GRCm39-20\d{2}-A.*\.csv$/} @probe_sets if ($project->getVersion() =~ /^MM39/ && $slide_id =~ /^H1/);
+				}
+				else {
+					$probe_set_compatibility = qq{Probe set	Compatible Assay
+	Human Probe Set v2	Visium HD Spatial Gene Expression
+	                 	Visium CytAssist Spatial Gene and Protein Expression
+	                  	Visium CytAssist Spatial Gene Expression (FFPE, Fresh Frozen)
+	Human Probe Set v1	Visium Spatial Gene Expression for FFPE\n} if ($project->getVersion() =~ /^HG/);
+					$probe_set_compatibility = qq{Mouse Probe Set v2	Visium HD Spatial Gene Expression
+	Mouse Probe Set v1	Visium CytAssist Spatial Gene Expression (FFPE, Fresh Frozen, Fixed Frozen)
+	                  	Visium Spatial Gene Expression for FFPE\n} if ($project->getVersion() =~ /^MM/);
+				}
+				confess("No probe set found at '$probe_set'") unless (scalar @probe_sets);
+				$probe_set .= $probe_sets[0] if (scalar @probe_sets == 1);
+				if (scalar @probe_sets > 1) {
+					print("Probe set compatibility:\n".$probe_set_compatibility) unless ($slide_id);
+					$probe_set .= prompt("Choose a probe set for project ".$projectName.':', -menu=>\@probe_sets);
+				}
+				confess("'$probe_set' does not exist") unless (-f $probe_set);
+			}
+			
+			my $cmd = "cd $tmp && $exec count --id=$sname --sample=$sname --fastqs=$fastq --transcriptome=$transcriptome --create-bam=$create_bam ";
+			$cmd .= " --probe-set=$probe_set ";
+			$cmd .= "--$imagetype=$image1 ";
+			$cmd .= "--$imagetype2=$image2 " if ($add_image);
+			$cmd .= "--area=$area --slide=$slide_id " if ($area and $slide_id);
+			$cmd .= " --loupe-alignment=$json " if ($loupe_alignment);
 			$cmd = full_cmd($s, $cmd);
+			my @cmd_cellranger = grep {/^spaceranger/} split (/ +&& +/, $cmd);
+			warn $cmd_cellranger[0];
 			print JOBS_SPATIAL $cmd;
+			
+# The slide serial number is the unique identifier printed on the label of each Visium slide. The serial number starts with a prefix indicating the slide type:
+# V1: Visium Spatial Gene Expression Slide (v1, 6.5 mm)
+# V4: Visium CytAssist Spatial Gene Expression Slide (v2, 6.5 mm)
+# V5: Visium CytAssist Spatial Gene Expression Slide (v2, 11 mm)
+# H1: Visium HD and Visium HD 3' Slides (6.5 mm)
+
+# Capture areas are active regions for capturing expression data on a Visium slide. Slides either have two or four capture areas. Slide areas are named consecutively from top to bottom:
+# A1, B1, C1, D1 for Visium Spatial Gene Expression slides, v1, 6.5 mm (V1)
+# A, B for Visium CytAssist Spatial Gene Expression slide, v2, 11 mm (V5)
+# A1, D1 for Visium CytAssist Spatial Gene Expression slides, v2, 6.5 mm, and Visium HD slides, 6.5 mm (V4 and H1)
 		}
 	}
 
@@ -433,18 +682,23 @@ if (grep(/count|^all$/i, @steps)){
 		warn 'ATAC';
 		open (JOBS_ATAC, ">$dir/jobs_atac.txt");
 		my @atac = grep { uc($_->somatic_group()) eq "ATAC"} @{$patients};
-		warn "ATAC: ".join(', ',map($_->name,@atac));
+		warn "ATAC: ".join(',',map($_->name,@atac));
 		foreach my $a (@atac){
 			my $vname = $a->name(); 
 			my $vfam = $a->family();
 			my $vgroup = uc($a->somatic_group());
 			my $fastq = $a->getSequencesDirectory;
-			$exec = "cellranger-atac" if $type eq "atac";
-			my $prog =  $a->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog);
-			my $index_atac = $index."_atac" if $type eq "atac";
-			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$index_atac ";
+#			$exec = "cellranger-atac" if $type eq "atac";
+			my $transcriptome = $index.'_atac';
+			$transcriptome = qx/realpath $index"_atac"/ if (-l $index);
+			chomp $transcriptome;
+			$transcriptome = $htranscriptome->{atac} if ($choose_transcriptome);
+			$transcriptome = '/data-isilon/public-data/10X/HG38/refdata-cellranger-arc-GRCh38-2020-A-2.0.0' if ($project->description =~ /at?traction/i);
+			die("No transcriptome") unless ($transcriptome);
+			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$transcriptome ";
 			$cmd = full_cmd($a, $cmd);
+			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
+			warn $cmd_cellranger[0];
 			print JOBS_ATAC $cmd;
 		}
 	}
@@ -457,16 +711,18 @@ if (grep(/count|^all$/i, @steps)){
 		open (JOBS_CMO, ">$dir/jobs_cmo.txt");
 #		warn $patient->somatic_group();
 		my @cmo = grep { uc($_->somatic_group()) eq "CMO"} @{$patients};
-		warn "CMO: ".join(', ',map($_->name,@cmo));
+		warn "CMO: ".join(',',map($_->name,@cmo));
 		foreach my $e(@cmo){
 			my $ename = $e->name(); 
 			my $efam = $e->family();
 			my $egroup = uc($e->somatic_group());
-			my $prog =  $e->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog);
+			my $transcriptome = $index;
+			$transcriptome = qx/realpath $index/ if (-l $index);
+			chomp $transcriptome;
+			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
 			my $lib_file = $dir."/".$ename."_multi.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
-			print LIB "[gene-expression]\nreference,".$index."\n$cmo_ref.csv\n";
+			print LIB "[gene-expression]\nreference,".$transcriptome."\n$cmo_ref.csv\n";
 			
 			print LIB "[libraries]\nfastq_id,fastqs,feature_types\n";
 			print LIB "$ename,".$tmp.'fastq/'.$ename.",Gene Expression\n";
@@ -478,8 +734,10 @@ if (grep(/count|^all$/i, @steps)){
 			print LIB $ename."_B252,B252\n";
 			print LIB $ename."_B253,B253\n";
 			close(LIB);
-			my $cmd = "cd $tmp && cellranger multi --id=$ename --csv=$lib_file ";
+			my $cmd = "cd $tmp && $exec multi --id=$ename --csv=$lib_file ";
 			$cmd = full_cmd($e, $cmd);
+			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
+			warn $cmd_cellranger[0];
 			print JOBS_CMO $cmd;
 		}
 	}
@@ -492,32 +750,35 @@ if (grep(/count|^all$/i, @steps)){
 		open (JOBS_ARC, ">$dir/jobs_arc.txt");
 		$exec = "cellranger-arc";
 		my @arc = grep { uc($_->somatic_group()) eq "ARC"} @{$patients};
-		warn "ARC: ".join(', ',map($_->name,@arc));
-		foreach my $e(@arc){
+		warn "ARC: ".join(',',map($_->name,@arc));
+		foreach my $e (@arc){
 			my $ename = $e->name(); 
 			my $efam = $e->family();
 			my $egroup = uc($e->somatic_group());
 			my $lib_file = $dir."/".$ename."_library.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @atac = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ARC"} @{$patients};
+			my @atac = grep {$_->family() eq $efam && $_->name() =~ $ename && uc($_->somatic_group()) eq "ARC"} @{$patients};
 			next() if scalar(@atac == 0);
 			my $atac_name = $atac[0]->name() ;
-			my $prog =  $e->alignmentMethod();
-			my $index = $project->getGenomeIndex($prog);
-			my $index_arc = $index."_arc";
+			my $transcriptome = $index.'_arc';
+			$transcriptome = qx/realpath $index"_arc"/ if (-l $index);
+			chomp $transcriptome;
+			$transcriptome = $htranscriptome->{atac} if ($choose_transcriptome);
 			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/'.",".$ename.",Gene Expression\n";
 			$lib .= $tmp.'fastq/'.",".$atac_name.",Chromatin Accessibility\n";
 			print LIB $lib;
 			close(LIB);
-			my $cmd = "cd $tmp && $exec count --id=$ename --transcriptome=$index_arc  --libraries=$lib_file ";
+			my $cmd = "cd $tmp && $exec count --id=$ename --transcriptome=$transcriptome  --libraries=$lib_file ";
 			$cmd = full_cmd($e, $cmd);
+			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
+			warn $cmd_cellranger[0];
 			print JOBS_ARC $cmd;
 		}
 	}
 		
-	close(JOBS);
-	close(JOBS_VDJ);
+	close(JOBS_EXP);
 	close(JOBS_ADT);
+	close(JOBS_VDJ);
 	close(JOBS_SPATIAL);
 	close(JOBS_ATAC);
 	close(JOBS_CMO);
@@ -543,12 +804,12 @@ if (grep(/count|^all$/i, @steps)){
 	$cmd3 = "google-chrome ".$web_summaries if (getpwuid($<) eq 'shanein');
 	warn $cmd3 if ($web_summaries);
 	system($cmd3.' &') if ($web_summaries and not $no_exec);
-	die("Web summaries not found: ".join(', ', @error)) if (@error and not $no_exec);
+	die("Web summaries not found: ".join(',', @error)) if (@error and not $no_exec);
 
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
-		print("Check the web summaries:\n");
-		print("$dir/*/web_summary.html\n");
+		print("\tCheck the web summaries:\n");
+		print("\t$dir*/web_summary.html\n");
 		print "\t------------------------------------------\n\n";
 	}
 	
@@ -699,6 +960,7 @@ if (grep(/tar|archive|^all$/i, @steps)){
 if (grep(/velocyto/, @steps)) {
 	my $cmd_velocyto = "$Bin/velocyto.pl -project=$projectName ";
 	$cmd_velocyto .= "-patients=$patients_name " if ($patients_name);
+	$cmd_velocyto .= '-transcriptome='.$htranscriptome->{gex}.' '  if ($choose_transcriptome);
 	$cmd_velocyto .= "-cpu=$cpu ";
 	$cmd_velocyto .= "-no_exec " if ($no_exec);
 	system($cmd_velocyto);
@@ -715,17 +977,23 @@ Obligatoires:
 	feature_ref	<s>            tableau des ADT, obligatoire seulement si step=count et qu'il y a des ADT
 	cmo_ref	<s>                tableau des CMO, obligatoire seulement si step=count et qu'il y a des CMO
 Optionels:
-	steps <s>                  étape(s) à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, cp_web_summary, velocyto, infos ou all (= demultiplex, count, cp_web_summary, tar)
+	steps <s>                  étape(s) à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, 
+	                           cp_web_summary, velocyto, infos ou all (= demultiplex, count, cp_web_summary, tar)
 	patients <s>               noms de patients/échantillons, séparés par des virgules
-	cpu <i>                    nombre de cpu à utiliser, défaut: 20
-	lane <i>                   nombre de lanes sur la flowcell, défaut: lit le RunInfo.xml
 	mismatches <i>             nombre de mismatches autorisés lors du démultiplexage, défaut: 0
 	create-bam/nocreate-bam    générer ou non les bams lors du count, défaut: nocreate-bam
 	aggr_name <s>              nom de l'aggrégation, lors de step=aggr ou aggr_vdj
+	choose_version|version     choisir la version de cellranger/spaceranger à executer
+	choose_transcriptome       choisir le transcriptome à utiliser pour les comptages
 	chemistry                  chemistry , défaut: auto (pour librairies exp et adt)
+	slide_infos <s>            pour spaceranger, ficher csv avec header, contenant 3 colonnes séparées par des virgules: sample, area and slide id
+	probe_set <s>              pour spaceranger, probe set à utiliser pour les comptages
+	add_image                  pour spaceranger, ajouter une seconde image
+	loupe_alignment            pour spaceranger, fichier json d'alignement loupe
 	no_exec                    ne pas exécuter les commandes
 	force                      relance le pipeline même s'il a déjà tourné
 	help                       affiche ce message
+	cpu <i>                    nombre de cpu à utiliser, défaut: 20
 
 ";
 	exit(1);

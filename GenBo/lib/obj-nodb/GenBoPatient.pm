@@ -3300,7 +3300,7 @@ has nb_reads => (
 		}
 		my @sums = `$cmd`;
 		chomp(@sums);
-		my $h;
+#		my $h;
 		foreach my $l (@sums) {
 			my ( $a, $b ) = split( " ", $l );
 			warn $a." :: ".$b;
@@ -3828,13 +3828,15 @@ sub getSampleProfile {
 sub update_software_version {
 	my ($self,$name,$cmd,$real_version) = @_;
 	my $query    = $self->getProject()->buffer->getQuery();
-	my ($vid,$v) = $query->getLatestSoftwareVersion($name);
+	my ($vid,$v);
 	if (lc($name) eq "dragen"){
+		($vid,$v) = $query->getLatestSoftwareVersion($name);
 		die("problem version $name :  $real_version vs $v")if ($v ne $real_version);
 	}
-	confess() unless $vid;
-	#my ($svid,$sv) = $query->getLatestSoftwareVersionByPatient($name,$self->id);
-	#return 1 if $svid eq $vid;
+	else {
+		$vid = $query->getSoftwareVersionID($name, $real_version);
+	}
+	confess("Error: '$name' software version $real_version not in db PolyprojectNGS.version_software") unless $vid;
 	$query->update_software_version($vid,$self->id,$cmd);
 }
 sub upd_file {

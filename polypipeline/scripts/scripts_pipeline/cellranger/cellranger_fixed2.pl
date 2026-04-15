@@ -103,9 +103,10 @@ unless (@steps) {
 warn 'steps='.join(',',@steps);
 
 if (grep(/^count$/i, @steps)) {
-	unless (grep{/^$multi_meth$/} ('flex', 'ocm', 'hash')) {
-		$multi_meth = prompt("Choose a sample multiplexing method for project $projectName ".$project->description.':',
-				-menu=>['flex', 'ocm', 'hash']);
+	my @multi_meth_availables = ('flex', 'flex_not_multiplexed', 'ocm', 'hash');
+	unless (grep{/^$multi_meth$/} @multi_meth_availables) {
+		$multi_meth = prompt("Choose a sample multiplexing method for project $projectName \"".$project->description.'":',
+				-menu=>\@multi_meth_availables);
 	}
 	warn 'multiplexing method: '.$multi_meth;
 }
@@ -149,7 +150,7 @@ foreach my $patient (@{$patients}) {
 #------------------------------
 # DRAGEN DEMULIPLEXAGE
 #------------------------------
-if (grep(/dragen_demultiplex|^all$/i, @steps)){
+if (grep(/(dragen_)?demultiplex|^all$/i, @steps)){
 	my $cmd_demultiplex = "$Bin/cellranger_samplesheet.pl -project=$projectName -mismatch=$mismatch -multi";
 	$cmd_demultiplex .= "-no_exec " if ($no_exec);
 	system($cmd_demultiplex);
@@ -214,35 +215,53 @@ if (grep(/count|^all$/i, @steps)){
 	$create_bam = 'true' if ($create_bam ne 'false');
 	warn "create-bam=$create_bam";
 	
+	# Check chemistry if option provided
 	 if ($chemistry) {
  		warn "chemistry=$chemistry";
 		my @chemistries = qw/auto threeprime SC3Pv1 SC3Pv2 SC3Pv3 SC3Pv3HT SC3Pv4 fiveprime SC5P-PE SC5P-R2 SC5P-R2-v3 SC5PHT SC-FB SFRP MFRP MFRP-R1/;
 		die ("Chemistry option '$chemistry' not valid, should be one of: ". join(', ', @chemistries)) unless (grep { $_ eq $chemistry } @chemistries);
 	 }
 	
+	# Choose the probe set
 	my $index = $project->getGenomeIndex($prog);
+	my $probe_set_dir = $index.'/probe_sets/';
+	warn $probe_set_dir;
 	my $probe_set;
-	if ($multi_meth eq 'flex') {
-		$probe_set = $index."/probe_sets/Chromium_Mouse_Transcriptome_Probe_Set_v1.0.1_mm10-2020-A.csv" if ($project->getVersion() =~ /^MM38/);
-		my $sets;
+	if ($multi_meth =~ /^flex/) {
+		opendir(my $dh, $probe_set_dir) || die "Can't opendir '$probe_set_dir': $!";
+		my @probe_sets = grep {-f $probe_set_dir.$_ && /^Chromium_\w*_Transcriptome_Probe_Set_v.*\.csv$/} readdir($dh);
+		closedir ($dh);
+		confess("No probe set found in $probe_set_dir") unless (scalar @probe_sets);
+		
+		my @sets;
+#		$probe_set = $probe_set_dir.'Chromium_Mouse_Transcriptome_Probe_Set_v1.0.1_mm10-2020-A.csv' if ($project->getVersion() =~ /^MM38/);
 		if ($project->getVersion() =~ /^HG38/) {
-			$sets = [
-				'Chromium_Human_Transcriptome_Probe_Set_v1.0.1_GRCh38-2020-A.csv',
-				'Chromium_Human_Transcriptome_Probe_Set_v1.1.0_GRCh38-2024-A.csv',
-				'Chromium_Human_Transcriptome_Probe_Set_v2.0.0_GRCh38-2024-A.csv'
-			];
+			@sets = grep{/^Chromium_Human_Transcriptome_Probe_Set_v[.0-9]*_GRCh38/} @probe_sets;
+#			@sets = (
+#				'Chromium_Human_Transcriptome_Probe_Set_v1.0.1_GRCh38-2020-A.csv',
+#				'Chromium_Human_Transcriptome_Probe_Set_v1.1.0_GRCh38-2024-A.csv',
+#				'Chromium_Human_Transcriptome_Probe_Set_v2.0.0_GRCh38-2024-A.csv'
+#			);
+		}
+		elsif ($project->getVersion() =~ /^MM38/) {
+			@sets = grep{/^Chromium_Mouse_Transcriptome_Probe_Set_v[.0-9]*_mm10/} @probe_sets;
+			
 		}
 		elsif ($project->getVersion() =~ /^MM39/) {
-			$sets = [
-				'Chromium_Mouse_Transcriptome_Probe_Set_v1.1.1_GRCm39-2024-A.csv',
-				'Chromium_Mouse_Transcriptome_Probe_Set_v2.0.0_GRCm39-2024-A.csv'
-			]
+			@sets = grep{/^Chromium_Mouse_Transcriptome_Probe_Set_v[.0-9]*_GRCm39/} @probe_sets;
+#			@sets = (
+#				'Chromium_Mouse_Transcriptome_Probe_Set_v1.1.1_GRCm39-2024-A.csv',
+#				'Chromium_Mouse_Transcriptome_Probe_Set_v2.0.0_GRCm39-2024-A.csv'
+#			);
 		}
 		else {
 			die("No probe set for release ".$project->getVersion().'. See https://www.10xgenomics.com/support/software/cell-ranger/downloads');
 		}
-		$probe_set = $index.prompt("Choose a probe set for project ".$projectName.':', -menu=>$sets);
+		confess("No probe set found for release ".$project->getVersion()." in $probe_set_dir") unless (scalar @sets);
+		$probe_set = $probe_set_dir.$sets[0] if (scalar @sets == 1);
+		$probe_set = $probe_set_dir.prompt("Choose a probe set for project ".$projectName.':', -menu=>\@sets);
 	}
+	
 	my $tmp = $project->getAlignmentPipelineDir("cellranger_count");
 	warn $tmp;
 	
@@ -264,8 +283,8 @@ if (grep(/count|^all$/i, @steps)){
 		my $config_csv = "$dir$poolName.csv";
 		open (CSV,">$config_csv") or confess ("Can't open '$config_csv': $@");
 		print CSV "[gene-expression]\n";
-		print CSV "reference,".$index."\n";
-		print CSV "probe-set,".$probe_set."\n" if ($multi_meth eq 'flex');
+		print CSV "reference,".readlink $index."\n" unless ($multi_meth =~ /^flex/);
+		print CSV "probe-set,".$probe_set."\n" if ($multi_meth =~ /^flex/);
 		print CSV "create-bam,$create_bam\n";
 		print CSV "chemistry,$chemistry\n" if ($chemistry);
 		print CSV "\n";
@@ -273,12 +292,14 @@ if (grep(/count|^all$/i, @steps)){
 		print CSV "fastq_id,fastqs,feature_types\n";
 		print CSV $poolName.",".$tmp_fastq.",Gene Expression\n";
 		print CSV "\n";
-		print CSV "[samples]\n";
-		print CSV "sample_id,probe_barcode_ids\n" if ($multi_meth eq 'flex');
-		print CSV "sample_id,ocm_barcode_ids\n" if ($multi_meth eq 'ocm');
-		print CSV "sample_id,hashtag_ids\n" if ($multi_meth eq 'hastag');
-		foreach my $p (sort { $a->{name} cmp $b->{name} } @pat){
-			print CSV $p->{name}.",".$p->{bc}."\n";
+		if ($multi_meth =~  /^(flex|ocm|hastag)$/) {
+			print CSV "[samples]\n";
+			print CSV "sample_id,probe_barcode_ids\n" if ($multi_meth eq 'flex');
+			print CSV "sample_id,ocm_barcode_ids\n" if ($multi_meth eq 'ocm');
+			print CSV "sample_id,hashtag_ids\n" if ($multi_meth eq 'hastag');
+			foreach my $p (sort { $a->{name} cmp $b->{name} } @pat){
+				print CSV $p->{name}.",".$p->{bc}."\n";
+			}
 		}
 		close CSV;
 		$cmd_multi .= "cd $tmp && cellranger multi --id=$poolName --csv=$config_csv ";
@@ -297,11 +318,15 @@ if (grep(/count|^all$/i, @steps)){
 	# Open web summaries
 	my @error;
 	my $web_summaries = "";
-	foreach my $patient (@{$patients}) {
-		next if ($patient->somatic_group =~ /^ADT$/i);
-		my $file = $dir.$patient->somatic_group.'/'.$patient->name."/web_summary.html";
-		$web_summaries .= $file.' ' if (-e $file);
-		push(@error, $file) unless (-e $file or $no_exec);
+	foreach my $pool (map {$_->somatic_group} @$patients) {
+		foreach my $patient (grep {$_->somatic_group eq $pool} @$patients) {
+			my $file = $dir.$pool.'/'.$patient->name."/web_summary.html";
+			$web_summaries .= $file.' ' if (-e $file);
+			push(@error, $file) unless (-e $file or $no_exec);
+		}
+		my $qc_report = $dir.$pool."/qc_report.html";
+		$web_summaries .= $qc_report.' ' if (-e $qc_report);
+		push(@error, $qc_report) unless (-e $qc_report or $no_exec);
 	}
 	my $cmd3 = "firefox ".$web_summaries;
 	$cmd3 = "google-chrome ".$web_summaries if (getpwuid($<) eq 'shanein');
@@ -311,8 +336,8 @@ if (grep(/count|^all$/i, @steps)){
 
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
-		print("Check the web summaries:\n");
-		print("$dir/*/*/web_summary.html\n\n");
+		print("\tCheck the web summaries:\n");
+		print("\t$dir/*/*/web_summary.html\n\n");
 		print "\t------------------------------------------\n\n";
 	}
 	
