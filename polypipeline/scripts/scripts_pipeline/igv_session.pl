@@ -62,7 +62,7 @@ print IGV "<Resources>\n";
 foreach my $patient (@{$patients_name}) {
 	my $name=$patient->name();
 	my $bam =$patient->getBamFile();
-	$bam =~ s/\data-isilon\/sequencing\/ngs/http:\/\/www.polyweb.fr\/NGS\//;
+	$bam =~ s/\data-(isilon|pure)\/sequencing\/ngs/https:\/\/www.polyweb.fr\/NGS\//;
 	
 	print IGV '<Resource path="'.$bam.'"'."/>\n";
 }

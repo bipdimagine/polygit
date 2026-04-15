@@ -709,25 +709,10 @@ sub getFilterRegionVector {
 	my ($self, $filter) = @_;
 	my ($chrId_filter, $start_filter, $end_filter, $type_filter) = split(':', $filter);
 	my @lIdsOn;
-	my $found;
-	
-	my $from = $start_filter - 1000;
-	$from = 1 if $from < 1;
-	my $to = $end_filter + 1000;
-	$to = $self->getVariantsVector->Size() if $to < $self->getVariantsVector->Size();
-	my $v_filter = $self->getVectorByPosition($from,$to);
-	
-	my $still_ok = 1;
-	foreach my $index (@{$self->getIdsBitOn( $v_filter )}) {
-		last unless ($still_ok);
-		#my $varId = $self->getVarId($index);
+	foreach my $index (@{$self->getIdsBitOn( $self->getVariantsVector() )}) {
 		my $varId = $self->getProject->returnVariants($self->name."!".$index)->id;
 		my ($chrId_var, $pos_var, $ref_var, $alt_var) = split( '_', $varId );
-		if (int($start_filter) <= int($pos_var) and int($pos_var) <= int($end_filter)) {
-			push (@lIdsOn, $index);
-			$found = 1;
-		}
-		else { $still_ok = undef if ($found); }
+		push (@lIdsOn, $index) if (int($start_filter) <= int($pos_var) and int($pos_var) <= int($end_filter));
 	}
 	my $var = Bit::Vector->new_Enum($self->getVariantsVector->Size(), join(',', @lIdsOn));
 	return $var;
@@ -1557,7 +1542,7 @@ sub convertSubPartToCompleteVector {
 sub check_each_var_filter_region {
 	my ($self, $filter, $first_launch) = @_;
 	my ($chrId, $start_filter, $end_filter, $include) = split(':', $filter);
-	if ($include eq '0' or $include eq '99') {
+	if (defined($include) and ($include eq '0' or $include eq '99')) {
 		$self->check_each_var_filter_region_add($filter, $first_launch);
 	}
 	elsif ($include eq '-1') {
@@ -1574,7 +1559,6 @@ sub check_each_var_filter_region_add {
 	if ($first_launch) {
 		$self->variants_regions_add();
 		$self->{variants_regions_add} += $var_filter;
-		
 		if ($var_filter->is_empty()) {
 			my $hStats = {
 				'id' => $filter,
