@@ -1104,6 +1104,7 @@ sub vector_global_categories {
 		return $v;
 	}
 	else {
+		die();
 		my $v = $self->hash_vector_global_categories()->{$cat};
 		return $self->getNewVector() unless $v; 
 		return $v;
@@ -1261,6 +1262,10 @@ sub getVectorDeletions {
 	my $self = shift;
 	return $self->vector_global_categories("deletion");
 }
+sub getVectorInversions{
+	my $self = shift;
+	return $self->vector_global_categories("inversion");
+}
 
 sub getVectorLargeDeletions {
 	my $self = shift;
@@ -1295,11 +1300,20 @@ sub setVariants {
 	}
 	elsif ($type eq 'large_deletions') {
 			$vector = $self->getVectorLargeDeletions();
-		$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{large_deletion} ) if (exists $self->global_categories->{large_deletion});
+			#warn $vector;
+		#$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{large_deletion} ) if (exists $self->global_categories->{large_deletion});
 	}
 	elsif ($type eq 'large_duplications') {
 		$vector = $self->getVectorDeletions();
-		$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{large_duplication} ) if (exists $self->global_categories->{large_duplication});
+		#warn $vector;
+		#$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{large_duplication} ) if (exists $self->global_categories->{large_duplication});
+	}
+	elsif ($type eq 'inversions') {
+		$vector = $self->getVectorInversions();
+		warn $vector;
+		die();
+		#warn $vector;
+		#$vector->Intersection( $self->getVariantsVector(), $self->global_categories->{large_duplication} ) if (exists $self->global_categories->{large_duplication});
 	}
 	else {
 		confess();
@@ -1341,6 +1355,7 @@ sub return_hash_from_vector{
 
 sub setVariations {
 	my $self = shift;
+	confess();
 	$self->return_hash_from_vector($self->getVectorVariations,"variations");
 	return $self->{variations_object} ;
 }
@@ -1350,7 +1365,11 @@ sub setInsertions {
 	$self->setVariants('insertions');
 	return $self->{insertions_object} ;
 }
-
+sub setInversions {
+	my $self = shift;
+	$self->setVariants('inversions');
+	return $self->{insertions_object} ;
+}
 sub setDeletions {
 	my $self = shift;
 	$self->setVariants('deletions');
