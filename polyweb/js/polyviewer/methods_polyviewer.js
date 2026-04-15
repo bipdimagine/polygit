@@ -250,22 +250,20 @@ function load_polyviewer(mode, only_dude,dm){
     else {
 		argsPost = load_polyviewer_args(mode,dm);
     }
-    
-   /*send argument to all tab*/ 
-   var tab_selected_patient;
-
    t = "all";
-   for (var i=0;i<tsamples.length;i++) {
-	   var label = tsamples[i].label;
-	   tab_editor_polyviewer[label].setArgsPost = argsPost;
-		
-	   tab_editor_polyviewer[label].transcripts = t;
-	   tab_editor_polyviewer[tsamples[i].label].toto = 1;
+	if (tab_editor_polyviewer){
+     	var tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
+     	tab_editor_polyviewer[tab_selected_patient].toto = 1;
+     	tab_editor_polyviewer[tab_selected_patient]._loaded = false;
+		tab_editor_polyviewer[tab_selected_patient].onShow();
    }
- 	if (tab_editor_polyviewer){
-     tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
-	 
-     tab_editor_polyviewer[tab_selected_patient].onShow();
+   else {
+	   for (var i=0;i<tsamples.length;i++) {
+		   var label = tsamples[i].label;
+		   tab_editor_polyviewer[label].setArgsPost = argsPost;
+		   tab_editor_polyviewer[label].transcripts = t;
+		   tab_editor_polyviewer[label].toto = 1;
+	   }
    }
    return;
 }
@@ -604,6 +602,93 @@ function enable_table_search_from_id(table_id) {
 	//enable_table_search_from_id[table_id] = 1;
 }
 
+var polyviewerActionHistory = [];
+function logPolyviewerAction(label) {
+    var now = new Date();
+    var time = now.toLocaleTimeString() + "." + String(now.getMilliseconds()).padStart(3, '0');
+    polyviewerActionHistory.push({
+        label: label,
+        time: time
+    });
+    if (polyviewerActionHistory.length > 20) {
+        polyviewerActionHistory.shift();
+    }
+}
+
+function showErrorOverlay(pane, message) {
+    if (pane._errorOverlay) return;
+    var overlay = document.createElement("div");
+    overlay.style.position = "absolute";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.background = "rgba(255,0,0,0.15)";
+    overlay.style.display = "flex";
+    overlay.style.flexDirection = "column";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "top";
+    overlay.style.zIndex = "9999";
+    overlay.innerHTML = `
+        <div style="font-size:120px;color:red;">X</div>
+        <div style="font-size:28px;font-weight:bold;color:#900;">
+            ERROR !!!
+        </div>
+        <div style="margin-top:10px;font-size:18px;color:#600;text-align:center;">
+            ${message}
+        </div>
+        <br>
+        ${renderHistoryHTML()}
+    `;
+    pane.domNode.style.position = "relative";
+    pane.domNode.appendChild(overlay);
+    pane._errorOverlay = overlay;
+}
+
+function renderHistoryHTML() {
+    var html = `
+        <div style="
+            margin-top:30px;
+            width:80%;
+            max-height:500px;
+            overflow:auto;
+            background:#fff;
+            border:1px solid #ccc;
+            padding:10px;
+            font-size:14px;
+        ">
+        <div style="font-weight:bold;margin-bottom:10px;">
+            LOG (last 20 actions)
+        </div>
+    `;
+    for (var i = polyviewerActionHistory.length - 1; i >= 0; i--) {
+        var h = polyviewerActionHistory[i];
+
+        html += `
+            <div style="border-bottom:1px solid #eee;padding:4px 0;">
+                <span style="color:#888;">${h.time}</span>
+                &nbsp;?&nbsp;
+                <span>${h.label}</span>
+            </div>
+        `;
+    }
+    html += "</div>";
+    return html;
+}
+
+function cleanupOtherPanes(activePane) {
+    allPolyviewerPanes.forEach(function(pane) {
+        if (pane === activePane) return;
+        if (pane._xhrRequest && pane._xhrRequest.cancel) {
+            pane._xhrRequest.cancel();
+            pane._xhrRequest = null;
+        }
+        pane.set("content", "");
+        pane._loaded = false;
+    });
+}
+
+var allPolyviewerPanes = [];
 function tabPatients(items , request ) {
     //var tsamples = storeP._arrayOfAllItems;//dijit.byId("gridPatients").selection.getSelected();
     var z=0;
@@ -671,19 +756,35 @@ function tabPatients(items , request ) {
 		}
 		
 		var pat_name = tsamples[i].label;
-         tab_editor_polyviewer[tsamples[i].label] = new dojox.layout.ContentPane({ // new dijit.layout.ContentPane({
+		
+         tab_editor_polyviewer[pat_name] = new dojox.layout.ContentPane({ // new dijit.layout.ContentPane({
             title:title1,
             content: " ",
              closable: false,
              id:"c1pv"+n,
              ioMethod:dojo.xhrPost,
-			 toto:1,
-			patient:tsamples[i].label,
+			 _loaded:false,
+			patient:pat_name,
+		    _xhrRequest: null,
+		    _loadToken: 0,
 			
            onShow:  function() {
-			    
 				
 				setTimeout(dojo.hitch(this, function () {
+					logPolyviewerAction("Tab:" + this.patient);
+					
+			        var tc = this.getParent();
+			        if (!tc || tc.selectedChildWidget !== this) {
+			            return;
+			        }
+			        
+			        if (this._loaded) return;
+			        cleanupOtherPanes(this);
+			        this._loaded = true;
+			
+			        // Ne charger qu'une seule fois
+			        if (this.toto == 2) return;
+				
 				    var tc = this.getParent();
 				    if (!tc) return;
 
@@ -692,34 +793,62 @@ function tabPatients(items , request ) {
 				        console.warn("onShow avant sélection finale", this.patient);
 				        return;
 				    }
-
 				    // code sûr ici
-				
 			   
-				if (!(dijit.byId("check_never_pv"))){
-					return;
-				}
-				this.toto ++;
-				
-                  if (this.toto == 2 ){	
-					if (this.setArgsPost == null ){
-						this.setArgsPost = load_polyviewer_args();
+					if (!(dijit.byId("check_never_pv"))){
+						return;
 					}
+//					this.toto ++;
+//	                  if (this.toto == 2 ){	
+						if (this.setArgsPost == null ){
+							this.setArgsPost = load_polyviewer_args();
+						}
                    	   this.setArgsPost.patients=this.patient;
                 	   this.ioArgs.content = this.setArgsPost; 
-                	   this.setHref(url_polyviewer);
-                	   var this_patname = this.patient;
-					  
-
-                  }
-				  }), 100);
-                  
+                	   // Annuler ancienne requête si existe
+				        if (this._xhrRequest && this._xhrRequest.cancel) {
+				            this._xhrRequest.cancel();
+				        }
+				        // Token anti course
+				        this._loadToken++;
+				        var currentToken = this._loadToken;
+				        // Hook AVANT chargement
+				        this.onDownloadStart = function () {
+				            return "<div><img src='images/polyicons/wait18trans.gif' align='absmiddle'/> <span style='font-size:20px;'>Loading data for " + this.patient + "...</span></div>";
+				        };
+                	   // Hook APRÈS chargement
+				        this.onLoad = function () {
+				            var tc = this.getParent();
+				            if (!tc || tc.selectedChildWidget !== this) {
+				                console.warn("Chargement Patient done mais onglet non actif :", this.patient);
+				                return;
+				            }
+				            if (this._loadToken !== currentToken) {
+				                console.warn("Reponse obsolete token :", this.patient);
+				                return;
+				            }
+				            
+				            var found_patient_name = String(document.getElementById('span_patient_id_to_check').innerHTML);
+				            var this_patient_name = String(this.patient[0]);
+				            console.log(found_patient_name);
+				            console.log(this_patient_name);
+				            if (found_patient_name == this_patient_name) {}
+				            else {
+				            	showErrorOverlay(this, "Selected Patient: " + this_patient_name + "<br>Received Patient: " + found_patient_name);
+							    return;
+				            }
+				            console.log("Chargement Patient Actif OK :", this.patient);
+				        };
+				        // Lancer requête
+				        this._xhrRequest = this.setHref(url_polyviewer);
+//	                  }
+				  }
+				), 100);
            }
         });
-        
 			
-         tab_editor_polyviewer[tsamples[i].label].patient = tsamples[i].label;
-         tab_editor_polyviewer[tsamples[i].label].toto = 0;
+         tab_editor_polyviewer[pat_name].patient = pat_name;
+         tab_editor_polyviewer[pat_name].toto = 1;
          
          tab_editor_polycyto[tsamples[i].label] = new dijit.layout.ContentPane({
             title:title1,
@@ -737,11 +866,10 @@ function tabPatients(items , request ) {
 				load_polycyto_url(this.patient, this.id, url_polycyto);
            },
         });
+		allPolyviewerPanes.push(tab_editor_polyviewer[pat_name]);
 		
-         tab_editor_polycyto[tsamples[i].label].patient = tsamples[i].label;
-         tab_editor_polycyto[tsamples[i].label].toto = 0;
-
-
+        tab_editor_polycyto[tsamples[i].label].patient = tsamples[i].label;
+        tab_editor_polycyto[tsamples[i].label].toto = 0;
 
          tab_editor_polydude[tsamples[i].label] = new dojox.layout.ContentPane({
             title:title1,

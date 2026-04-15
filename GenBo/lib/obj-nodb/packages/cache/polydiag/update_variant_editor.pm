@@ -1828,12 +1828,14 @@ sub panel_gene {
 				
 				my $font_color = "white";
 				$font_color = $actionable_color if $is_actionable;
+				my $color_background_gene = "#4A4F53";
+				#$color_background_gene = "#cee3f5" if $hgene->{id} eq 'intergenic';
 				if (exists $hgene->{collapse_with_id}) {
 					my $this_collapse_id = $hgene->{collapse_with_id};
-					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
 				}
 				else {
-					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" style="background-color:#4A4F53;border-top: 2px solid #4A4F53;border-bottom: 2px solid #4A4F53;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
 				}
 				
 				
@@ -2297,9 +2299,12 @@ my $string_label = join(";",@$all_label);
 	};
 	
 	if ($ztime) {
-		print qq{<div id="group_buttons_time_exec" class="btn-group-vertical  btn-sm clearfix pull-left" style="padding:20px;min-width:200px;">};
+		print qq{<div id="group_buttons_time_exec" class="btn-group-vertical  btn-sm clearfix pull-left" style="padding:20px;min-width:300px;">};
 		
 		my (@lButtons_times, @lButtons_times_id);
+		my $patient_name_check = $patient->name();
+		push(@lButtons_times_id, "patient_id_to_check");
+		push(@lButtons_times, qq{<button type="button" id="patient_id_to_check" class="btn btn-secondary btn-xs" style="font-size:10px;display:none;"><span style="float:left">Check Patient</span> <span style="float:right" id='span_patient_id_to_check'>$patient_name_check</span></button>});
 		foreach my $cat (sort split(' ', $ztime)) {
 			my ($cat_name, $time) = split(':', $cat);
 			my $b_id = 'b_time_exec_'.$cat_name.'_'.$patient->name();
@@ -2308,6 +2313,7 @@ my $string_label = join(";",@$all_label);
 			$time = sprintf("%.4f", $time);
 			push(@lButtons_times, qq{<button type="button" id="$b_id" class="btn btn-secondary btn-xs" style="font-size:10px;display:none;"><span style="float:left">$cat_name</span> <span class="badge badge-alert" style="font-size: 10px;float:right;">$time </span></button>});
 		}
+		
 		
 		my $cmd_b_time = "view_time_exec_buttons('". join(';', @lButtons_times_id) ."')";
 		print qq{<button type="button" onclick="$cmd_b_time" class="btn btn-secondary btn-xs" style="font-size: 10px;"><span style="float:left"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Time Execution</span></span></button>};
