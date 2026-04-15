@@ -830,8 +830,6 @@ function tabPatients(items , request ) {
 				            
 				            var found_patient_name = String(document.getElementById('span_patient_id_to_check').innerHTML);
 				            var this_patient_name = String(this.patient[0]);
-				            console.log(found_patient_name);
-				            console.log(this_patient_name);
 				            if (found_patient_name == this_patient_name) {}
 				            else {
 				            	showErrorOverlay(this, "Selected Patient: " + this_patient_name + "<br>Received Patient: " + found_patient_name);
