@@ -244,7 +244,7 @@ unless ($cgi->param('phenotype')){
  my $chromosome_filtering;
  my $start_filtering;
  my $end_filtering;
- 
+ warn "coucou";
 if ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
 	$chromosome_filtering =$project->isChromosomeName($gene_name_filtering);
 	$start_filtering = $2;

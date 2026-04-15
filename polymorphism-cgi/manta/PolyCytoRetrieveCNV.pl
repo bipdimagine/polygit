@@ -125,9 +125,14 @@ if ($patient->isChild){
 $dejavu = 1_0000_000 if $dejavu eq 'all';
 
 
-my $sql =qq{select * from '$parquet_file' where nb_dejavu_patients <= $dejavu and len > $minlength and patient=$patient_id; };
+my $sql =qq{select * from '$parquet_file' where nb_dejavu_patients <= $dejavu and len > $minlength and patient=$patient_id  };
+if ($chrom !~ /all/){
+	my $chr = $project->getChromosome($chrom);
+	$sql = $sql." and chr =\'".$chr->name."\'";
+}
 #my $sql =qq{select id from '$parquet_file' where  len > $minlength and patient=$patient_id; };
 my $cmd = qq{duckdb -json -c "$sql"};
+
 my $res =`$cmd`;
 my $array_ref = [];
 $array_ref  = decode_json $res if $res;
@@ -171,9 +176,10 @@ my $nb = 0;
 #		$row->{caller_depth}= 1 if exists $cnv->{score}->{score_caller_depth};
 #		$row->{caller_coverage} = 1 if exists $cnv->{score}->{score_caller_coverage};
 		}
-		if ($row->{caller_depth} && $row->{nb_caller} == 1  ){
-			#next if $row->{mr} < 0.1;
-			#next if $row->{na} > 0.90;
+		if ($row->{caller_depth}  && $row->{nb_caller} == 1  && $row->{len} < 100_000 ){
+			
+			next if $row->{mr} < 0.1;
+			next if $row->{na} > 0.90;
 			next if $row->{na} > 0.75   && $select_best == 0;;
 		}
 		}

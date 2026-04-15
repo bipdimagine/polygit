@@ -3689,7 +3689,9 @@ sub addPanel {
 
 sub newTranscripts {
 	my ( $self, $ids ) = @_;
+
 	$self->getChromosomes();
+	
 	return $self->myflushobjects( $ids, "transcripts" );
 }
 
