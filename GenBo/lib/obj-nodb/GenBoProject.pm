@@ -1518,7 +1518,7 @@ is      => 'rw',
 	lazy    => 1,
 	default => sub {
 		my $self     = shift;
-		my $pathRoot = $self->buffer->config_path("root","pipeline");
+		my $pathRoot = $self->buffer->config_path("root","project_pipeline");
 		my $path     = $pathRoot . "/" . $self->name() . "/";
 		$path .= $self->getVersion . "/";
 		return $path;
