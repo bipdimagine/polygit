@@ -630,7 +630,7 @@ function showErrorOverlay(pane, message) {
     overlay.style.justifyContent = "top";
     overlay.style.zIndex = "9999";
     overlay.innerHTML = `
-        <div style="font-size:120px;color:red;">X</div>
+        <div style="font-size:150px;color:red;">XXX</div>
         <div style="font-size:28px;font-weight:bold;color:#900;">
             ERROR !!!
         </div>
