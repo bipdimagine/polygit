@@ -597,6 +597,10 @@ $t     = time;
 	$ztime .= ' hetero:' . ( abs( time - $t ) );
 	print $ztime;
 
+	print " <span id='span_completed'>completed</span> ";
+	my $tag_span_patient = "span_".$patient->name."_completed";
+	print "<span id='$tag_span_patient'>".$patient->name."</span> ";
+	
 
 exit(0);
 

@@ -764,6 +764,7 @@ function tabPatients(items , request ) {
              id:"c1pv"+n,
              ioMethod:dojo.xhrPost,
 			 _loaded:false,
+			 preventCache: true,
 			patient:pat_name,
 		    _xhrRequest: null,
 		    _loadToken: 0,
@@ -779,8 +780,10 @@ function tabPatients(items , request ) {
 			        }
 			        
 			        if (this._loaded) return;
-			        cleanupOtherPanes(this);
-			        this._loaded = true;
+			        //cleanupOtherPanes(this);
+			        
+			        if (this._loading) return;
+					this._loading = true;
 			
 			        // Ne charger qu'une seule fois
 			        if (this.toto == 2) return;
@@ -806,9 +809,6 @@ function tabPatients(items , request ) {
                    	   this.setArgsPost.patients=this.patient;
                 	   this.ioArgs.content = this.setArgsPost; 
                 	   // Annuler ancienne requête si existe
-				        if (this._xhrRequest && this._xhrRequest.cancel) {
-				            this._xhrRequest.cancel();
-				        }
 				        // Token anti course
 				        this._loadToken++;
 				        var currentToken = this._loadToken;
@@ -818,24 +818,34 @@ function tabPatients(items , request ) {
 				        };
                 	   // Hook APRÈS chargement
 				        this.onLoad = function () {
+				        	this._loading = false;
+    						this._loaded = true;
+				            if (this._loadToken !== currentToken) {
+				                console.warn("Reponse obsolete token :", this.patient);
+				                return;
+				            }
+				            var this_patient_name = String(this.patient[0]);
+				            var span_id_patient = 'span_'+this.patient[0]+'_completed';
+				            var el = this.domNode.querySelector('#'+span_id_patient);
+				            if (el) {
+								var found_patient_name = String(el.innerHTML);
+				            	if (String(el.innerHTML) != this_patient_name) {
+				            		showErrorOverlay(this, "Selected Patient: " + this_patient_name + "<br>Received Patient: " + found_patient_name);
+				            		return;
+				            	}
+				            }
+				            else {
+				            	showErrorOverlay(this, "Partial Results");
+							    return;
+				            }
 				            var tc = this.getParent();
 				            if (!tc || tc.selectedChildWidget !== this) {
 				                console.warn("Chargement Patient done mais onglet non actif :", this.patient);
 				                return;
 				            }
-				            if (this._loadToken !== currentToken) {
-				                console.warn("Reponse obsolete token :", this.patient);
-				                return;
-				            }
-				            
-				            var found_patient_name = String(document.getElementById('span_patient_id_to_check').innerHTML);
-				            var this_patient_name = String(this.patient[0]);
-				            if (found_patient_name == this_patient_name) {}
 				            else {
-				            	showErrorOverlay(this, "Selected Patient: " + this_patient_name + "<br>Received Patient: " + found_patient_name);
-							    return;
-				            }
-				            console.log("Chargement Patient Actif OK :", this.patient);
+				            	console.log("Chargement Patient Actif OK :", this.patient);
+			            	}
 				        };
 				        // Lancer requête
 				        this._xhrRequest = this.setHref(url_polyviewer);
