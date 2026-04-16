@@ -676,18 +676,6 @@ function renderHistoryHTML() {
     return html;
 }
 
-function cleanupOtherPanes(activePane) {
-    allPolyviewerPanes.forEach(function(pane) {
-        if (pane === activePane) return;
-        if (pane._xhrRequest && pane._xhrRequest.cancel) {
-            pane._xhrRequest.cancel();
-            pane._xhrRequest = null;
-        }
-        pane.set("content", "");
-        pane._loaded = false;
-    });
-}
-
 var allPolyviewerPanes = [];
 function tabPatients(items , request ) {
     //var tsamples = storeP._arrayOfAllItems;//dijit.byId("gridPatients").selection.getSelected();
@@ -756,104 +744,116 @@ function tabPatients(items , request ) {
 		}
 		
 		var pat_name = tsamples[i].label;
-		
-         tab_editor_polyviewer[pat_name] = new dojox.layout.ContentPane({ // new dijit.layout.ContentPane({
-            title:title1,
-            content: " ",
-             closable: false,
-             id:"c1pv"+n,
-             ioMethod:dojo.xhrPost,
-			 _loaded:false,
-			 preventCache: true,
+		tab_editor_polyviewer[pat_name] = new dojox.layout.ContentPane({
+			title:title1,
+			content: " ",
+			closable: false,
+			id:"c1pv"+n,
+			ioMethod:dojo.xhrPost,
+			preventCache: true,
 			patient:pat_name,
 		    _xhrRequest: null,
 		    _loadToken: 0,
+			_loaded:false,
+			_loading:false,
+		    _retryCount: 0,
+			_maxRetries: 2,
 			
-           onShow:  function() {
-				
+			 _startLoad: function () {
+		        this._loadToken++;
+		        this._currentToken = this._loadToken;
+		        this.setHref(url_polyviewer);
+		    },
+    
+			onShow:  function() {
 				setTimeout(dojo.hitch(this, function () {
-					logPolyviewerAction("Tab:" + this.patient);
-					
+					logPolyviewerAction("Tab:" + this.patient + " | is loading: " + this._loading + " | is already completed: " + this._loaded);
 			        var tc = this.getParent();
-			        if (!tc || tc.selectedChildWidget !== this) {
-			            return;
-			        }
-			        
-			        if (this._loaded) return;
-			        //cleanupOtherPanes(this);
-			        
-			        if (this._loading) return;
-					this._loading = true;
-			
-			        // Ne charger qu'une seule fois
-			        if (this.toto == 2) return;
-				
+			        if (!tc || tc.selectedChildWidget !== this) { return; }
+			        if (this._loaded) { return; }
+			        if (this._loading) { return; }
 				    var tc = this.getParent();
-				    if (!tc) return;
-
+				    if (!tc) { return; }
+					this._loading = true;
 				    var selected = tc.selectedChildWidget;
 				    if (selected !== this) {
 				        console.warn("onShow avant sélection finale", this.patient);
 				        return;
 				    }
-				    // code sûr ici
-			   
-					if (!(dijit.byId("check_never_pv"))){
-						return;
+					if (!(dijit.byId("check_never_pv"))) { return; }
+					if (this.setArgsPost == null ){
+						this.setArgsPost = load_polyviewer_args();
 					}
-//					this.toto ++;
-//	                  if (this.toto == 2 ){	
-						if (this.setArgsPost == null ){
-							this.setArgsPost = load_polyviewer_args();
-						}
-                   	   this.setArgsPost.patients=this.patient;
-                	   this.ioArgs.content = this.setArgsPost; 
-                	   // Annuler ancienne requête si existe
-				        // Token anti course
-				        this._loadToken++;
-				        var currentToken = this._loadToken;
-				        // Hook AVANT chargement
-				        this.onDownloadStart = function () {
-				            return "<div><img src='images/polyicons/wait18trans.gif' align='absmiddle'/> <span style='font-size:20px;'>Loading data for " + this.patient + "...</span></div>";
-				        };
-                	   // Hook APRÈS chargement
-				        this.onLoad = function () {
-				        	this._loading = false;
-    						this._loaded = true;
-				            if (this._loadToken !== currentToken) {
-				                console.warn("Reponse obsolete token :", this.patient);
-				                return;
-				            }
-				            var this_patient_name = String(this.patient[0]);
-				            var span_id_patient = 'span_'+this.patient[0]+'_completed';
-				            var el = this.domNode.querySelector('#'+span_id_patient);
-				            if (el) {
-								var found_patient_name = String(el.innerHTML);
-				            	if (String(el.innerHTML) != this_patient_name) {
-				            		showErrorOverlay(this, "Selected Patient: " + this_patient_name + "<br>Received Patient: " + found_patient_name);
-				            		return;
-				            	}
-				            }
-				            else {
-				            	showErrorOverlay(this, "Partial Results");
-							    return;
-				            }
-				            var tc = this.getParent();
-				            if (!tc || tc.selectedChildWidget !== this) {
-				                console.warn("Chargement Patient done mais onglet non actif :", this.patient);
-				                return;
-				            }
-				            else {
-				            	console.log("Chargement Patient Actif OK :", this.patient);
+					this.setArgsPost.patients = this.patient;
+					this.ioArgs.content = this.setArgsPost; 
+			        this.onDownloadStart = function () {
+			            var text = "<div><img src='images/polyicons/wait18trans.gif' align='absmiddle'/> <span style='font-size:20px;'>Loading data for " + this.patient + "...</span></div>";
+			            if (this._retryCount > 0) {
+			            	text = text + "<br><div><span style='font-size:20px;color:red;'>Retry count: " + this._retryCount + "</span></div>";
+		            	}
+		            	return text;
+			        };
+			        this.onLoad = function () {
+			        	this._loading = false;
+			            if (this._loadToken != this._currentToken) {
+			                console.warn("Reponse obsolete token :", this.patient);
+			                return;
+			            }
+			            var isValid = false;
+			            var isErrorPatientFound = false;
+			            var isErrorPartial = false;
+			            var this_patient_name = String(this.patient[0]);
+			            var span_id_patient = 'span_'+this.patient[0]+'_completed';
+			            var el = this.domNode.querySelector('#'+span_id_patient);
+			            if (el) {
+							var found_patient_name = String(el.innerHTML);
+			            	if (String(el.innerHTML) === this_patient_name) {
+			            		isValid = true;
 			            	}
-				        };
-				        // Lancer requête
-				        this._xhrRequest = this.setHref(url_polyviewer);
-//	                  }
-				  }
-				), 100);
-           }
-        });
+			            	else {
+			            		isErrorPatientFound = true;
+			            	}
+			            }
+			            else {
+			            	isErrorPartial = true;
+			            }
+			            if (!isValid) {
+					        if (this._retryCount < this._maxRetries) {
+					            this._retryCount++;
+					            console.warn("ERROR - retry " + this._retryCount + " for ", String(this.patient[0]));
+					            this._loading = true;
+					            setTimeout(dojo.hitch(this, function () {
+				            		this._startLoad();
+								}), 250);
+					            return;
+					        }
+					        console.warn("ERROR - 3 times for ", String(this.patient[0]));
+					        if (isErrorPatientFound) {
+					        	showErrorOverlay(this, "Selected Patient: " + this_patient_name + "<br>Received Patient: " + found_patient_name);
+					        }
+					        else if (isErrorPartial) {
+					        	showErrorOverlay(this, "Partial Results");
+					        }
+					        else {
+					        	showErrorOverlay(this, "Page error");
+					        }
+					        return;
+					    }
+					    this._loaded = true;
+			            var tc = this.getParent();
+			            if (!tc || tc.selectedChildWidget !== this) {
+			                console.warn("Chargement Patient done mais onglet non actif :", this.patient);
+			                return;
+			            }
+			            else {
+			            	console.log("Chargement Patient Actif OK :", this.patient);
+		            	}
+			        };
+			        this._retryCount = 0;
+					this._startLoad();
+				}), 100);
+			}
+		});
 			
          tab_editor_polyviewer[pat_name].patient = pat_name;
          tab_editor_polyviewer[pat_name].toto = 1;
