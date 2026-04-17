@@ -3828,15 +3828,13 @@ sub getSampleProfile {
 sub update_software_version {
 	my ($self,$name,$cmd,$real_version) = @_;
 	my $query    = $self->getProject()->buffer->getQuery();
-	my ($vid,$v);
+	my ($vid,$v) = $query->getLatestSoftwareVersion($name);
 	if (lc($name) eq "dragen"){
-		($vid,$v) = $query->getLatestSoftwareVersion($name);
-		die("problem version $name :  $real_version vs $v")if ($v ne $real_version);
+		die("problem version $name $real_version vs $v")if ($v ne $real_version);
 	}
-	else {
-		$vid = $query->getSoftwareVersionID($name, $real_version);
-	}
-	confess("Error: '$name' software version $real_version not in db PolyprojectNGS.version_software") unless $vid;
+	confess() unless $vid;
+	#my ($svid,$sv) = $query->getLatestSoftwareVersionByPatient($name,$self->id);
+	#return 1 if $svid eq $vid;
 	$query->update_software_version($vid,$self->id,$cmd);
 }
 sub upd_file {
