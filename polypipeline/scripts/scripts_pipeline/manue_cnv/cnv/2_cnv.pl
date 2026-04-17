@@ -186,9 +186,13 @@ my $dintspan  = Set::IntSpan::Fast->new("94759398-94775314");
 #exit(0);
 #my $all_cnvs;
 #$all_cnvs = retrieve('/data-beegfs/tmp/array.storable');
-	print '\n#nb: '.scalar(@$all_cnvs)."\n";
-	my @after_mce ;
 	
+	print "\nstart create table dejavu cnv_call_project\n";
+	my $duck3 = GenBoDuckDejaVuCNV->new( project => $project );
+  	 $duck3->create_table_total();
+	
+	print "\n#nb: ".scalar(@$all_cnvs)."\n";
+	my @after_mce ;
 MCE::Loop::init {
     chunk_size => 200,
     max_workers => 'auto',
@@ -212,16 +216,15 @@ MCE::Loop::init {
 	mce_loop {
   	  my ($mce, $cnvs) = @_;
   	  my $x;
-  	  my $duck = GenBoDuckDejaVuCNV->new( project => $project );
   	  warn "2 ".scalar(@$cnvs);
   	  my $nb =0;
   	  foreach my $cnv (@$cnvs){
   	  	$nb ++;
   	  	warn $mce."-".$nb."/".scalar(@$cnvs) if $nb % 50 ==0;
-		dejavu($cnv,$duck);
+		dejavu($cnv,$duck3);
 
 		}
-		$duck->close();
+		#$duck->close();
 		#$duck->close();
 		#delete $hGenes_dude->{$g_name_id};
  	   
@@ -408,7 +411,6 @@ sub gatherSV_by_Interval
    	#  $t->close();
 	
 		}
-		$duck->close();
 	} @list;
 		
  		MCE::Loop->finish;	
@@ -569,10 +571,8 @@ sub dejavu {
 	my $nb =0;
 	#my $duck = GenBoDuckDejaVuCNV->new( project => $project );
 	my $scorecaller_evt=0;
-	
 	my $list_of_other_patient;
 	$cnv->{dejavu} = $duck->dejavu($cnv->{type},$cnv->{chromosome},$cnv->{start},$cnv->{end},80);
-	
 	#warn $cnv->{dejavu};
 }
 

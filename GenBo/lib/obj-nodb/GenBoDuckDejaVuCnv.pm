@@ -30,7 +30,7 @@ has dir =>(
 default => sub {
 		my ($self)= @_;
 		
-		warn $self->project->buffer->config_path("dejavu","cnv");;
+		#warn $self->project->buffer->config_path("dejavu","cnv");;
 		
 		return $self->project->buffer->config_path("dejavu","cnv");;
 }	
@@ -483,13 +483,12 @@ default => sub {
 	my $colend = $self->colend;
 	$self->create_table_total;
 	 my $sql = qq{
-	 SELECT $colstart as start ,$colend as end ,project,patient,callers,caller_type_flag,
+	 SELECT $colstart as start ,$colend as end ,project,patient,callers,caller_type_flag
 		FROM cnv_call_project 
 		WHERE type = ? AND $colchr = ?
 		AND $colstart BETWEEN ? AND ?
   		AND $colend   BETWEEN ? AND ?
-  		AND length  BETWEEN ? AND ?
-  		AND  project != ?;
+  		AND length  BETWEEN ? AND ?;
 	 };
 	 
 	 my $sth = $self->dbh->prepare($sql);
@@ -511,7 +510,8 @@ sub dejavu {
 	 my $maxx = $start + $vv;
 	  my $miny = $end - $vv;
 	 my $maxy = $end + $vv;
-	$self->sth_query_identity->execute($type,$chr, $minx, $maxx, $miny, $maxy, $minl, $maxl,$project_id);
+	 
+	$self->sth_query_identity->execute($type,$chr, $minx, $maxx, $miny, $maxy, $minl, $maxl);
 	# Récupération des résultats dans un tableau de hash
 	my @results;
 	my $nb;
@@ -521,24 +521,18 @@ sub dejavu {
 	$hash->{caller_sr} = 0 ;
 	$hash->{caller_depth} =0;
 	$hash->{caller_coverage} = 0;
-	$hash->{string} = "";
+	$hash->{string} = undef;
 		my %pp;
 		my @dj;
-		while (my $row = $self->sth_query_identity->fetchrow_hashref) {
-			
-	 		my $start1 = $row->{start};
-	 		my $end1 = $row->{end};	
+		while (my $row = $self->sth_query_identity->fetchrow_arrayref) {
+			my ($start1, $end1, $project1, $patient1, $caller1, $caller_type_flag) = @$row;
+			next if $project1 == $project_id;
 	 		my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
-	 		my $project1 = $row->{project};
-	 		my $patient1 = $row->{patient};
-	 		my $caller1 = $row->{callers};
 	 		$pp{$project1} ++;
-		
 			$hash->{nb_patients} ++;
 			$hash->{caller_coverage} ++ if $caller1 & $self->caller_type_flag->{caller_coverage};
 			$hash->{caller_depth} ++  if $caller1 & $self->caller_type_flag->{caller_depth};
 			$hash->{caller_sr} ++  if $caller1 & $self->caller_type_flag->{caller_sr};
-	 	
 	 		$identity = int($identity);
 			my $string ="$identity";
 			push(@dj,$string) if $string;
