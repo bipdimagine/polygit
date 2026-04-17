@@ -56,9 +56,9 @@ confess("\n\nINDEX File $fileName not found ! Die\n\n") if not -e $fileName.'.tb
 confess("\n\nFile $fileName not zip ! Use bgzip + tabix -p vcf. Die,\n\n") if not $fileName =~ /\.gz/;
 
 my $buffer = new GBuffer;
-my $genecode = $buffer->getQuery->getMaxGencodeVersion();
-my $annotdb = $buffer->getQuery->getMaxPublicDatabaseVersion();
-my $last_annot_version = $genecode.'.'.$annotdb;
+#my $genecode = $buffer->getQuery->getMaxGencodeVersion();
+#my $annotdb = $buffer->getQuery->getMaxPublicDatabaseVersion();
+#my $last_annot_version = $genecode.'.'.$annotdb;
 my $proj_tmp_name;
 if ($release) { $proj_tmp_name = $buffer->getRandomProjectName($release); }
 else { $proj_tmp_name = $buffer->getRandomProjectName($release); }
@@ -102,7 +102,7 @@ $getObjects = 1 if ($addAnnotVcf);
 $getObjects = 1 if ($tab_outfile);
 
 my %args;
-$args{annotation_version} = $last_annot_version;
+#$args{annotation_version} = $last_annot_version;
 $args{file}        = $fileName;
 $args{method}      = $method if ($method);
 $args{getObjects}  = $getObjects if ($getObjects);
@@ -182,6 +182,7 @@ warn "# Parsing / Annoting VCF\n";
 warn '-> File: '.$fileName."\n";
 my $queryVcf = QueryOnlyVcf -> new(\%args);
 my $gencode_version = $queryVcf->project->gencode_version();
+print "# Base project used: ".$queryVcf->project->name()."\n";
 print "# Build: ".$queryVcf->project->getVersion()."\n";
 print "# GenCode Version: $gencode_version\n";
 my $version = $queryVcf->project->annotation_version();
@@ -237,6 +238,7 @@ print "\n\n-> Parsing / Annoting Done !\n\n";
 
 
 open (FILE, '>'.$tab_outfile);
+print FILE "# Base project used: ".$queryVcf->project->name()."\n";
 print FILE "# Build: ".$queryVcf->project->getVersion()."\n";
 print FILE "# GenBo Annotation Version: $version\n";
 foreach my $cat (sort keys %{$queryVcf->buffer->public_data->{$annot_version}}) {
@@ -378,84 +380,86 @@ sub annote_output_file {
 				$h->{isClinvarPathogenic} = $var->isClinvarPathogenic();
 				$h->{isClinvarPathogenic} = '-' unless ($h->{isClinvarPathogenic});
 				
-				my $hTrIds;
-				foreach my $tr (@{$var->getTranscripts()}) {
-					next if ($use_main_transcripts and not $tr->isMain());
-					next if ($use_ccds_transcripts and not $tr->ccds_name());
-					$hTrIds->{$tr->id()} = undef;
-				}
-				
-				foreach my $gene (@{$var->getGenes()}) {
-					$h->{genes}->{$gene->id()}->{external_name} = $gene->external_name();
-					foreach my $tr (@{$gene->getTranscripts()}) {
-						next unless (exists $hTrIds->{$tr->id});
-						$h->{genes}->{$gene->id()}->{transcripts}->{$tr->id} = undef;
+				my @lGenes = @{$var->getGenes()};
+				if (scalar @lGenes > 0) {
+					my $hTrIds;
+					foreach my $tr (@{$var->getTranscripts()}) {
+						next if ($use_main_transcripts and not $tr->isMain());
+						next if ($use_ccds_transcripts and not $tr->ccds_name());
+						$hTrIds->{$tr->id()} = undef;
 					}
-					# SPLICE_AI
-					my $h_score_spliceAI = $var->spliceAI_score($gene);
-					if ($h_score_spliceAI and exists $h_score_spliceAI->{'AG'}) {
-						my @l_score_spliceAI;
-						foreach my $cat (sort keys %$h_score_spliceAI) {
-							push(@l_score_spliceAI, $cat.'='.$h_score_spliceAI->{$cat});
+					foreach my $gene (@lGenes) {
+						$h->{genes}->{$gene->id()}->{external_name} = $gene->external_name();
+						foreach my $tr (@{$gene->getTranscripts()}) {
+							next unless (exists $hTrIds->{$tr->id});
+							$h->{genes}->{$gene->id()}->{transcripts}->{$tr->id} = undef;
 						}
-						$h->{genes}->{$gene->id()}->{spliceAI_score} = join(',', @l_score_spliceAI);
+						# SPLICE_AI
+						my $h_score_spliceAI = $var->spliceAI_score($gene);
+						if ($h_score_spliceAI and exists $h_score_spliceAI->{'AG'}) {
+							my @l_score_spliceAI;
+							foreach my $cat (sort keys %$h_score_spliceAI) {
+								push(@l_score_spliceAI, $cat.'='.$h_score_spliceAI->{$cat});
+							}
+							$h->{genes}->{$gene->id()}->{spliceAI_score} = join(',', @l_score_spliceAI);
+						}
+						else { $h->{genes}->{$gene->id()}->{spliceAI_score} = '-'; }
+						# OMIM
+						if ($gene->omim_id()) {
+							$h->{genes}->{$gene->id()}->{omim_id} = $gene->omim_id();
+							$h->{genes}->{$gene->id()}->{omim_inheritance} = $gene->omim_inheritance();
+							$h->{genes}->{$gene->id()}->{pLI} = $gene->pLI();
+						}
+						else {
+							$h->{genes}->{$gene->id()}->{omim_id} = '-';
+							$h->{genes}->{$gene->id()}->{omim_inheritance} = '-';
+							$h->{genes}->{$gene->id()}->{pLI} = '-';
+						}
 					}
-					else { $h->{genes}->{$gene->id()}->{spliceAI_score} = '-'; }
-					# OMIM
-					if ($gene->omim_id()) {
-						$h->{genes}->{$gene->id()}->{omim_id} = $gene->omim_id();
-						$h->{genes}->{$gene->id()}->{omim_inheritance} = $gene->omim_inheritance();
-						$h->{genes}->{$gene->id()}->{pLI} = $gene->pLI();
-					}
-					else {
-						$h->{genes}->{$gene->id()}->{omim_id} = '-';
-						$h->{genes}->{$gene->id()}->{omim_inheritance} = '-';
-						$h->{genes}->{$gene->id()}->{pLI} = '-';
-					}
-				}
-				
-				foreach my $tr (@{$var->getTranscripts()}) {
-					next unless (exists $hTrIds->{$tr->id});
-					next if ($use_main_transcripts and not $tr->isMain());
-					next if ($use_ccds_transcripts and not $tr->ccds_name());
-					$h->{transcripts}->{$tr->id()}->{annotations} = $var->variationTypeInterface($tr);
 					
-					if ($tr->getProtein) {
-						$h->{transcripts}->{$tr->id()}->{alphamissense} = $var->alphamissense($tr);
+					foreach my $tr (@{$var->getTranscripts()}) {
+						next unless (exists $hTrIds->{$tr->id});
+						next if ($use_main_transcripts and not $tr->isMain());
+						next if ($use_ccds_transcripts and not $tr->ccds_name());
+						$h->{transcripts}->{$tr->id()}->{annotations} = $var->variationTypeInterface($tr);
 						
-#						my $polyphen_status = $var->polyphenStatus($tr);
-#						if ($polyphen_status) { $polyphen_status =~ s/ /_/g; }
-#						else { $polyphen_status = '-'; }
-#						$h->{transcripts}->{$tr->id()}->{polyphen_status} = $polyphen_status;
-						
-						
-#						my $sift_status = $var->siftStatus($tr);
-#						if ($sift_status) { $sift_status =~ s/ /_/g; }
-#						else { $sift_status = '-'; }
-#						$h->{transcripts}->{$tr->id()}->{sift_status} = $sift_status;
-						
-						my $polyphen_score = '-';
-						my $sift_score = '-';
-						if ($var->isVariation()) {
-							$polyphen_score = $var->polyphenScore($tr);
-							$h->{transcripts}->{$tr->id()}->{polyphen_score} = $polyphen_score;
-							$sift_score = $var->siftScore($tr);
-							$h->{transcripts}->{$tr->id()}->{sift_score} = $sift_score;
+						if ($tr->getProtein) {
+							$h->{transcripts}->{$tr->id()}->{alphamissense} = $var->alphamissense($tr);
+							
+							my $polyphen_score = '-';
+							my $sift_score = '-';
+							if ($var->isVariation()) {
+								$polyphen_score = $var->polyphenScore($tr);
+								$h->{transcripts}->{$tr->id()}->{polyphen_score} = $polyphen_score;
+								$sift_score = $var->siftScore($tr);
+								$h->{transcripts}->{$tr->id()}->{sift_score} = $sift_score;
+							}
+							
 						}
-						
-						
-						
-						
-						
-					}
-					else {
-						$h->{transcripts}->{$tr->id()}->{polyphen_status} = '-';
-						$h->{transcripts}->{$tr->id()}->{polyphen_score} = '-';
-						$h->{transcripts}->{$tr->id()}->{sift_status} = '-';
-						$h->{transcripts}->{$tr->id()}->{sift_score} = '-';
-						$h->{transcripts}->{$tr->id()}->{alphamissense} = '-';
+						else {
+							$h->{transcripts}->{$tr->id()}->{polyphen_status} = '-';
+							$h->{transcripts}->{$tr->id()}->{polyphen_score} = '-';
+							$h->{transcripts}->{$tr->id()}->{sift_status} = '-';
+							$h->{transcripts}->{$tr->id()}->{sift_score} = '-';
+							$h->{transcripts}->{$tr->id()}->{alphamissense} = '-';
+						}
 					}
 				}
+				else {
+					$h->{genes}->{intergenic}->{external_name} = 'intergenic';
+					$h->{genes}->{intergenic}->{transcripts}->{intergenic} = undef;
+					$h->{genes}->{intergenic}->{omim_id} = '-';
+					$h->{genes}->{intergenic}->{omim_inheritance} = '-';
+					$h->{genes}->{intergenic}->{pLI} = '-';
+					$h->{genes}->{intergenic}->{spliceAI_score} = '-';
+					$h->{transcripts}->{intergenic}->{annotations} = 'Intergenic';
+					$h->{transcripts}->{intergenic}->{polyphen_status} = '-';
+					$h->{transcripts}->{intergenic}->{polyphen_score} = '-';
+					$h->{transcripts}->{intergenic}->{sift_status} = '-';
+					$h->{transcripts}->{intergenic}->{sift_score} = '-';
+					$h->{transcripts}->{intergenic}->{alphamissense} = '-';
+				}
+				
 				$h->{id} = $var->id();
 				$h->{type} = $var->type_public_db();
 				$h->{chr} = 'chr'.$var->getChromosome->id();
@@ -512,7 +516,9 @@ sub annote_output_file {
 						}
 					}
 					else {
-						$hres->{$var->getChromosome->id()}->{$var->id().'_intronic'}  = join($join_characters, @lCol).$join_characters.'intronic';
+						$hres->{$var->getChromosome->id()}->{$var->id().'_intergenic'}  = join($join_characters, @lCol).$join_characters.'intergenic';
+						
+						
 					}
 				}
 			}
