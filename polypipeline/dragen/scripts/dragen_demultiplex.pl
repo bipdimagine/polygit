@@ -41,6 +41,7 @@ my $mismatch;
 my $input_mask;
 my $noTrimUMI;
 my $fastq_index;
+my $trim = '';
 my $big_run;
 my $sc;
 
@@ -49,9 +50,10 @@ GetOptions(
 	'l2=s'			=> \$l2,
 	'run=s'			=> \$run_name_option,
 	'mismatch=i'	=> \$mismatch,
+	'trim!'			=> \$trim,			# Trim adapters (par défaut pour RNAseq seulement)
 	'mask=s'		=> \$input_mask,
-	'keep_umi'		=> \$noTrimUMI,	# keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
-	'fastq_index'	=> \$fastq_index,    # generate I1/I2 fastq
+	'keep_umi'		=> \$noTrimUMI,		# keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
+	'fastq_index'	=> \$fastq_index,	# generate I1/I2 fastq
 	'singlecell|sc'	=> \$sc,
 	'big_run'		=> \$big_run,
 ) || confess("Error in command line arguments");
@@ -64,7 +66,6 @@ my $dir_fastq;
 my $run_name;
 my $umi_name;
 my $dir_bcl_tmp;
-my $neb;
 my $adaptors;
 
 foreach my $project_name ( split( ",", $project_names ) ) {
@@ -100,8 +101,8 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 
 	# RNAseq NEB: récupère les adaptateurs à trimmer
 	my @profiles = map { $_->getSampleProfile } @{ $project->getPatients };
-	$neb = 1 if ( grep { /neb/i } @profiles );
-	if ($neb) {
+	$trim = 1 if ($project->isRnaseq and $trim eq '');
+	if ($trim) {
 		undef $adaptors;
 		my $illuminaAdaptors = Bio::SeqIO->new( -file => $project->getIlluminaAdaptors, '-format' => 'Fasta' );
 		my $tsoAdaptors = Bio::SeqIO->new( -file => $project->getTsoAdaptors, '-format' => 'Fasta' );
@@ -125,7 +126,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 	if ( $project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc ) {
-		$sc = 1 if ( prompt( "Is this project SC 10X ? Use SampleSheet10X.csv and not document in database ? ", -yes) );
+		$sc = 1 if ( prompt( "Is this project SC 10X ? Use SampleSheet10X.csv instead of the document in database ? ", -yes) );
 	}
 	if ($sc) {
 		die(    "No SampleSheet10X.csv: '$bcl_dir/SampleSheet10X.csv'."
@@ -180,7 +181,7 @@ if ( scalar(@$lheader_data) ne scalar( @{ $lines->{$data_title}->[0] } ) ) {
 	$tb->load( $lines->{$data_title}->[0] );
 	print $tb;
 	print "\n";
-	die(scalar(@$lheader_data) . "vs" . scalar( @{ $lines->{$data_title}->[0] } ) );
+	die('Error: '.scalar(@$lheader_data) . " fields in $data_title header vs " . scalar( @{ $lines->{$data_title}->[0] } . " in $data_title first sample") );
 }
 
 my $error_not_in_project = {};
@@ -200,10 +201,6 @@ foreach my $data ( @{ $lines->{$data_title} } ) {
 	die( $len_cb->[0] . " ::  " . $data->[$pos_cb1] ) if $len_cb->[0] ne length( $data->[$pos_cb1] );
 	die("CB de taille differente") if ( ( $pos_cb2 ne '-1' ) and ( $len_cb->[1] ne length( $data->[$pos_cb2] ) ) );
 }
-
-
-
-
 
 my $guess_mask;
 #if ($mask){
@@ -297,6 +294,7 @@ if ($input_mask or $choice ne "y") {
 	my $motif_mask = '([YIN][0-9*]+)+(;([YIN][0-9*]+)+)+';
 	die("Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$input_mask') does not match the required syntax.") unless ($input_mask =~ $motif_mask);
 	warn "Use this mask: $input_mask";
+	sleep(3);
 	$mask = $input_mask;
 }
 if ($rc) {
@@ -318,8 +316,6 @@ foreach my $set ( @{ $lines->{$settings_title} } ) {
 ### read mask ;
 my @amask = split( ";", $mask );
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
-
-
 
 ### read mask ;
 #my @amask = split(";",$mask);
@@ -350,7 +346,7 @@ push( @{ $lines->{$settings_title} }, [ "CreateFastqForIndexReads", 1 ] ) if $fa
 push( @{ $lines->{$settings_title} }, $adapter_R1 ) if ($adapter_R1);
 push( @{ $lines->{$settings_title} }, $adapter_R2 ) if ($adapter_R2);
 push( @{ $lines->{$settings_title} }, [ "OverrideCycles", $mask ] ) if $mask;
-if ($neb) {
+if ($trim) {
 	# RNAseq NEB: Trim les adaptateurs
 	die("$settings_title AdapterRead1 already in samplesheet") if ( grep { /AdapterRead1/ } @{ $lines->{$settings_title} } );
 	die("$settings_title AdapterRead2 already in samplesheet") if ( grep { /AdapterRead2/ } @{ $lines->{$settings_title} } );
@@ -359,6 +355,8 @@ if ($neb) {
 		[ "AdapterRead1", join( '+', @$adaptors ) ],
 		[ "AdapterRead2", join( '+', @$adaptors ) ]
 	);
+	warn 'Trimming adapters: ' . join( '+', @$adaptors );
+	sleep(2);
 }
 push( @{ $lines->{$settings_title} }, [] );
 
@@ -487,8 +485,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 
 		my $pid = $pm->start and next;
 
-		my ( $fastq1, $fastq2 ) =
-		  dragen_util::get_fastq_file( $p, $out_fastq, $dir_out );
+		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out );
 		warn $fastq1 . " " . $fastq2;
 		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 
@@ -500,8 +497,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
-my $dir_stats =
-  "/data-isilon/sequencing/ngs/demultiplex/" . $run_name . "." . $pr;
+my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/" . $run_name . "." . $pr;
 
 system( "mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav " . $dir_out . "/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;" );
 
@@ -584,7 +580,6 @@ sub report {
 	print "\n ------------------------------\n";
 }
 
-	
 sub create_3_fastq {
 	my ( $fastq1, $fastq2, $patient ) = @_;
 	my $fastq3_prod = $fastq2;
