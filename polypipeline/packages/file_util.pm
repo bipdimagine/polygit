@@ -443,7 +443,7 @@ sub find_file_pe_umi {
 		$cached_dir{$dir} = \@allFiles;
 	}
 	NAME: foreach my $name (@names){
-	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
+	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_[IR][123]","$name");
 	foreach my $find (@pattern){
 		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
 		
@@ -477,7 +477,7 @@ sub find_file_pe {
 		$cached_dir{$dir} = \@allFiles;
 	}
 	NAME: foreach my $name (@names){
-	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
+	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_[IR][123]","$name");
 	foreach my $find (@pattern){
 		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
 	
@@ -508,7 +508,7 @@ sub find_file_in_dir {
 		$cached_dir{$dir} = \@allFiles;
 	}
 	NAME: foreach my $name (@names){
-	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_","$name");
+	my @pattern = ("^".$name."_[ATGC][ATGC][ATGC]","^".$name."_S[1-9]+","^".$name."_[IR][123]","$name");
 	#my @pattern = ("^".$name."_F");
 	foreach my $find (@pattern){
 		my (@titi) = grep { /$find/} grep { /fastq/} @{$cached_dir{$dir}} ;
