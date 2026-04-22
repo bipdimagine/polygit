@@ -84,21 +84,28 @@ has ncboost_score => (
 		my $self = shift;
 		return '-' if $self->getProject->annotation_genome_version() eq 'HG19';
 		return '-' if ($self->getChromosome->id() eq 'MT');
+		my $db = $self->getChromosome->rocksdb("ncboost");
+		my $score = $db->ncboost($self->rocksdb_id);
+		return $score if defined ($score);
+		return '-';
 		
-		my $parquet = $self->project->ncboost_parquet_path.'/chr='.$self->getChromosome->id().'/data_0.parquet';
-		return '-' unless -e  $self->project->ncboost_parquet_path.'/chr='.$self->getChromosome->id().'/data_0.parquet';
-		my $genomic_rocks_id = $self->genomic_rocksdb_id();
-		my $ncboost_score = '-';
-		my $sql = "PRAGMA threads=1; SELECT rocksdb_id, score FROM '$parquet' WHERE rocksdb_id = '$genomic_rocks_id'";
-		my $duckdb = $self->buffer->software('duckdb');
-		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
-		while (my $line = <$fh>) {
-		    chomp $line;
-		    my ($id, $score) = split(/,/, $line);
-		    $ncboost_score = $score;
-		}
-		close($fh);
-		return $ncboost_score; 
+#		my $parquet = $self->project->ncboost_parquet_path.'/chr='.$self->getChromosome->id().'/data_0.parquet';
+#		return '-' unless -e  $self->project->ncboost_parquet_path.'/chr='.$self->getChromosome->id().'/data_0.parquet';
+#		my $genomic_rocks_id = $self->genomic_rocksdb_id();
+#		my $ncboost_score = '-';
+#		
+#		#TODO: ABSLUMENT  faire en rocks
+#		
+#		my $sql = "PRAGMA threads=1; SELECT rocksdb_id, score FROM '$parquet' WHERE rocksdb_id = '$genomic_rocks_id'";
+#		my $duckdb = $self->buffer->software('duckdb');
+#		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
+#		while (my $line = <$fh>) {
+#		    chomp $line;
+#		    my ($id, $score) = split(/,/, $line);
+#		    $ncboost_score = $score;
+#		}
+#		close($fh);
+#		return $ncboost_score; 
 	}    
 );
 

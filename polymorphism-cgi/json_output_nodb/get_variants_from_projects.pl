@@ -105,6 +105,7 @@ my $only_my_projects = $cgi->param('only_my_projects');
 my $only_ill = $cgi->param('only_ill');
 my $only_strict_ill = $cgi->param('only_strict_ill');
 my $models = $cgi->param('models');
+my $region = $cgi->param('region');
 
 my $dejavu_variants = new dejavu_variants();
 $dejavu_variants->user_name($login);
@@ -175,10 +176,10 @@ if ($promoter_ai_value) {
 		my @l_tmp = split('!', $rocksid);
 		my $chr_id = $l_tmp[0];
 		my $pos = int($l_tmp[1]);
-		if ($project->getChromosome($chr_id)->intergenic_intspan->contains($pos)) {
-			delete $h_res_duck->{$rocksid};
-			next;
-		}
+#		if ($project->getChromosome($chr_id)->intergenic_intspan->contains($pos)) {
+#			delete $h_res_duck->{$rocksid};
+#			next;
+#		}
 		my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($l_tmp[1].'!'.$l_tmp[2]);
 		if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
 			delete $h_res_duck->{$rocksid};
@@ -297,32 +298,107 @@ if ($ncboost_value) {
 			$i = 0;
 		}
 		my @ltmp = split('!', $id);
-		if (exists $dejavu_variants->hash_users_projects->{all}) {
-			my $h_dv = $project->getChromosome($ltmp[0])->rocks_dejavu->dejavu($ltmp[1].'!'.$ltmp[2]);
-			my ($h_proj);
-			my $nb_he = 0;
-			my $nb_ho = 0;
-			foreach my $proj_id (keys %{$h_dv}) {
-				$h_proj->{$proj_id} = undef;
-				$nb_he += $h_dv->{$proj_id}->{he};
-				$nb_ho += $h_dv->{$proj_id}->{ho};
-			}
-			next if (($nb_he + $nb_ho) >= $max_dejavu);
-			next if ($nb_ho >= $max_dejavu_ho);
+#		if (exists $dejavu_variants->hash_users_projects->{all}) {
+#			my $h_dv = $project->getChromosome($ltmp[0])->rocks_dejavu->dejavu($ltmp[1].'!'.$ltmp[2]);
+#			my ($h_proj);
+#			my $nb_he = 0;
+#			my $nb_ho = 0;
+#			foreach my $proj_id (keys %{$h_dv}) {
+#				$h_proj->{$proj_id} = undef;
+#				$nb_he += $h_dv->{$proj_id}->{he};
+#				$nb_ho += $h_dv->{$proj_id}->{ho};
+#			}
+#			next if (($nb_he + $nb_ho) >= $max_dejavu);
+#			next if ($nb_ho >= $max_dejavu_ho);
+#			$h_rocks_to_view->{$ltmp[0]}->{$ltmp[1].'!'.$ltmp[2]} = $h_proj;
+#			$found++;
+#		}
+#		else {
 			$h_rocks_to_view->{$ltmp[0]}->{$ltmp[1].'!'.$ltmp[2]} = $h_proj;
 			$found++;
-		}
-		else {
-			$h_rocks_to_view->{$ltmp[0]}->{$ltmp[1].'!'.$ltmp[2]} = $h_proj;
-			$found++;
-		}
+#		}
 	}
 	print '.now.'.$found++.'.';
 }
 
+if ($region) {
+	if (not $promoter_ai_value and not $ncboost_value) {
+		print '.only_region.';
+		my ($chr_filter, $start_filter, $end_filter) = split('-', $region);
+		my $sql_pos;
+		if ($start_filter and $end_filter) {
+			$sql_pos = "and pos38 >= $start_filter and pos38 <= $end_filter";
+		}
+		my $i = 0;
+		my @lParquets;
+		foreach my $file (keys %{$dejavu_variants->hash_users_projects_parquet()}) {
+			next if not -e $file;
+			push(@lParquets, "'$file'");
+		}
+		my $sql = "PRAGMA threads=$fork; SELECT project,chr38,pos38,allele,he,ho FROM read_parquet([".join(', ', @lParquets)."])
+					WHERE chr38='$chr_filter' $sql_pos;";
+		my $duckdb = $dejavu_variants->buffer->software('duckdb');
+		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
+		while (my $line = <$fh>) {
+		    chomp $line;
+		    my ($project_id,$this_chr38,$this_pos38,$allele,$he,$ho) = split(/,/, $line);
+	    	next if $project_id eq 'project';
+
+	    	next if not $allele =~ /[ATGC]+/;
+
+	    	my $rocksid = sprintf("%010d", $this_pos38).'!'.$allele;
+	    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id} = undef;
+	    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{he} += $he;
+	    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{ho} += $ho;
+	    	$i++;
+	    	print '.' if ($i % 100000 == 0);
+		}
+		close($fh);
+		print '.found.'.$i.'.';
+		$i = 0;
+		my $no = $dejavu_variants->project->getChromosome($chr_filter)->rocksdb('gnomad');
+		foreach my $rocksid (keys %{$h_rocks_to_view->{$chr_filter}}) {
+			my $nb_he = $h_rocks_to_view->{$chr_filter}->{$rocksid}->{he};
+			my $nb_ho = $h_rocks_to_view->{$chr_filter}->{$rocksid}->{ho};
+			
+#			if ($rocksid =~ /106036488/) {
+#				warn "----";
+#				warn Dumper $h_rocks_to_view->{$chr_filter}->{$rocksid};
+#				warn "----";
+#				warn "$nb_he + $nb_ho";
+#				warn "$max_dejavu";
+#				warn "----";
+#			}
+			if (($nb_he + $nb_ho) > $max_dejavu) {
+				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
+				next;
+			}
+			if ($nb_ho > $max_dejavu_ho) {
+				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
+				next;
+			}
+			my $h_gad = $no->value($rocksid);
+			if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
+				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
+				next;
+			}
+			if ($h_gad and exists $h_gad->{ho} and $h_gad->{ho} > $max_gnomad_ac_ho) {
+				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
+				next;
+			}
+			
+			delete $h_rocks_to_view->{$chr_filter}->{$rocksid}->{he};
+			delete $h_rocks_to_view->{$chr_filter}->{$rocksid}->{ho};
+			$i++;
+		}
+		$no->close();
+		print '.found_filtred.'.$i.'.';
+	}
+}
+
+
 ### PART 3 - check variants from calling variables
 
-print '.checkvar.';
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
 print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
 my $nb_genes = scalar(keys %{$hGenes});
@@ -335,7 +411,7 @@ print '.nbGenes:'.$nb_genes.'.';
 my ($h_html_genes, $h_phenos);
 MCE::Loop->init(
    max_workers => $fork,
-   chunk_size => 'auto',
+   chunk_size => 1,
    gather => sub {
         my ($data) = @_;
         foreach my $pheno_name (keys %{$data->{phenotypes}}) {
@@ -478,19 +554,34 @@ sub launch_ncboost {
 	mce_loop {
 		my ($mce, $chunk_ref, $chunk_id) = @_;
 		my $hres;
+		
+		my @list_sql_annot;
+		foreach my $annot (sort keys %{$dejavu_variants->{hash_filters_cons}}) {
+			push(@list_sql_annot, "(annotation='".lc($annot)."')");
+		}
+		my $sql_annot = "(".join(' OR ', @list_sql_annot).")";
+		
+		my ($chr_filter, $start_filter, $end_filter) = split('-', $region) if $region;
+		
 		foreach my $chr_id (@$chunk_ref) {
-			my $sql = "PRAGMA threads=3;";
+			next if $chr_filter and $chr_filter ne $chr_id;
+			my $sql_region_end;
+			if ($start_filter and $end_filter) {
+				$sql_region_end = "AND a.pos >= $start_filter AND a.pos <= $end_filter";
+			}
+			
+			my $sql = "PRAGMA threads=1;";
 			if (exists $dejavu_variants->hash_users_projects->{all}) {
 				$sql .= "SELECT pos, rocksdb_id, score AS ncboost 
 						FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet')
 						WHERE
 							score >= $ncboost_value 
-							AND (he_sum + ho_sum) > 0 
-							AND (he_sum + ho_sum) <= $max_dejavu 
-							AND ho_sum <= $max_dejavu_ho
+							AND dejavu <= $max_dejavu 
+							AND dejavu_ho <= $max_dejavu_ho
 							AND gnomad_ac <= $max_gnomad_ac
 							AND gnomad_ho <= $max_gnomad_ac_ho
-							AND cadd >= 25;";
+							AND $sql_annot
+							AND (cadd >= 25);";
 			}
 			else {
 				$sql .= "WITH b_filtered AS (";
@@ -512,12 +603,13 @@ sub launch_ncboost {
 							FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet') a
 							WHERE
 								a.score >= $ncboost_value 
-								AND (a.he_sum + a.ho_sum) > 0 
-								AND (a.he_sum + a.ho_sum) <= $max_dejavu 
-								AND a.ho_sum <= $max_dejavu_ho
+								AND dejavu <= $max_dejavu 
+								AND dejavu_ho <= $max_dejavu_ho
 								AND a.gnomad_ac <= $max_gnomad_ac
 								AND a.gnomad_ho <= $max_gnomad_ac_ho
-								AND a.pos IN (SELECT pos38 FROM b_filtered);";
+								AND $sql_annot
+								AND a.pos IN (SELECT pos38 FROM b_filtered)
+								$sql_region_end;";
 			}
 			
 			my $i = 0;
@@ -528,11 +620,10 @@ sub launch_ncboost {
 			    my ($pos, $id, $ncboost) = split(',', $line);
 			    next if $id eq 'rocksdb_id';
 				$i++;
-				if ($i == 100000) {
+				if ($i == 20000) {
 					print '.';
 					$i = 0;
 				}
-				next if $project->getChromosome($chr_id)->intergenic_intspan->contains($pos);
 				$hres->{h_res_duck}->{$id}->{geneid} = $line;
 				$hres->{h_ncboost_values}->{$id} = $ncboost;
 			}
@@ -544,6 +635,7 @@ sub launch_ncboost {
 
 sub launch_promoter_ai {
 	my ($dejavu_variants, $promoter_ai_value) = @_;
+	my ($chr_filter, $start_filter, $end_filter) = split('-', $region) if $region;
 	$dejavu_variants->min_promoter_ai($promoter_ai_value);
 	my $sql_promoter_ai = "PRAGMA threads=6; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai_filtred']) WHERE ABS(promoterAI) >= $promoter_ai_value";
 	my $i = 0;
@@ -553,6 +645,14 @@ sub launch_promoter_ai {
 	    chomp $line;
 	    my ($id, $geneid) = split(/,/, $line);
 	    next if $id eq 'rocksdb_id';
+	    if ($region) {
+	    	my @ltmp = split('!', $id);
+	    	next if $chr_filter ne $ltmp[0];
+	    	if ($start_filter and $end_filter) {
+	    		next if int($ltmp[1]) < $start_filter;
+	    		next if int($ltmp[1]) > $end_filter;
+	    	}
+	    }
 		$h_res_duck->{$id} = $geneid;
 		$h_genes_only->{$geneid} = undef;
 		$i++;

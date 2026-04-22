@@ -259,6 +259,9 @@
 		: if $item.promoterAI_score == "-" {
 	   	 	<button onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=<: $var_id :>&hg=<: $item.genome_version_predicted_link :>&distance=500&mask=0&precomputed=0','_blank')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
 		: }
+		: else if $item.promoterAI_score == -99 {
+	   	 	<button onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=<: $var_id :>&hg=<: $item.genome_version_predicted_link :>&distance=500&mask=0&precomputed=0','_blank')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+		: }
 		: else if $item.promoterAI_score <= -0.5 {
 			<button onClick="window.open('https://spliceailookup.broadinstitute.org/#variant=<: $var_id :>&hg=<: $item.genome_version_predicted_link :>&distance=500&mask=0&precomputed=0','_blank')" "type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.promoterAI_score :></button>
 		: }

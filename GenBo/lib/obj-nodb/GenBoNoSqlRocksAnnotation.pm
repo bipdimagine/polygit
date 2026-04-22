@@ -129,7 +129,6 @@ sub _get_no_sereal_pack {
 
 sub value {
 		my ($self,$id) = @_;
-		
 		 my $v =  $self->_get_no_sereal_pack($self->get_raw($id));
 		 return undef unless $v;
 		  return $v;
@@ -193,6 +192,11 @@ sub alphamissense_score {
 	my $pos_aa_array = $self->hash_description->{$aa};
 	return "-" unless $pos_aa_array;
 	return $array->[$pos]->[$pos_aa_array];
+}
+
+sub ncboost {
+	my ($self,$rocksid) = @_;
+	return $self->get_raw($rocksid);
 }
 
 sub clinvar {

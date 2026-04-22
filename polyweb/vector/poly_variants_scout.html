@@ -554,6 +554,7 @@
 	    	});
 	    	
 	    	var has_div_checked = {};
+	    	has_div_checked['div_select_region'] = false;
 	    	has_div_checked['div_select_promoter_ai'] = false;
 	    	has_div_checked['div_select_ncboost'] = false;
 	    	function toggleDiv(divId, isChecked) {
@@ -633,6 +634,15 @@
 		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl?login=" + username + "&pwd=" + pwd;
 		    	url += "&launch_job=1";
 		    
+		    	if (has_div_checked['div_select_region'] == true) {
+		    		var region = document.getElementById("select_chr").value;
+		    		if (parseInt(document.getElementById("select_start").value)) {
+	    				region += '-' + parseInt(document.getElementById("select_start").value);
+	    				region += '-' + parseInt(document.getElementById("select_end").value);
+    				}
+    				url += "&region=" + region;
+				}
+		    
 		    	if (has_div_checked['div_select_promoter_ai'] == true) {
 			    	var promoter_ai_value;
 			    	if (dijit.byId("slider_promoter_ai").get("value") == 1)    { promoter_ai_value = '0.6'; }
@@ -645,9 +655,9 @@
 				
 				if (has_div_checked['div_select_ncboost'] == true) {
 			    	var ncboost_value;
-			    	if (dijit.byId("slider_ncboost").get("value") == 1)    { ncboost_value = '0.8'; }
-				    else if (dijit.byId("slider_ncboost").get("value") == 2)    { ncboost_value = '0.9'; }
-				    else if (dijit.byId("slider_ncboost").get("value") == 3)    { ncboost_value = '0.95'; }
+			    	if (dijit.byId("slider_ncboost").get("value") == 1)    { ncboost_value = '0.98'; }
+				    else if (dijit.byId("slider_ncboost").get("value") == 2)    { ncboost_value = '0.99'; }
+				    else if (dijit.byId("slider_ncboost").get("value") == 3)    { ncboost_value = '1.0'; }
 			    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
 					document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 					url += "&ncboost_value=" + ncboost_value;
@@ -710,7 +720,7 @@
 					l_filters.push('downstream');
 				}
 				if (document.getElementById('filter_intronic').checked == true) { l_filters.push('intronic'); }
-//				if (document.getElementById('filter_intergenic').checked == true) { l_filters.push('intergenic'); }
+				if (document.getElementById('filter_intergenic').checked == true) { l_filters.push('intergenic'); }
 		    	url += "&filters_cons=" + l_filters.join(',');
 		    	if (l_filters.length == 0) {
 					alert ("Please select one or multiple annotation(s) in filters first...");

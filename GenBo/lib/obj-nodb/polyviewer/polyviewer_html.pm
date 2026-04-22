@@ -1682,19 +1682,18 @@ has xslate => (
 
 sub transcripts_variants_xslate {
 	my ($self) =@_;
-	my $gene = $self->variant->gene;
 	my $atr = $self->variant->transcripts;
 	
 	# revel
 	my $mane = 1;
  	
 	 my $data = { items => $atr , mane=>$mane,var_id=>$self->variant->gnomad_id};
-	 
 	 my $output = $self->xslate->render("transcripts.tt", $data);
 	 return $output;
 	 
 	 
 }
+
 sub transcripts_variants {
 	my ($self) =@_;
 	my $gene = $self->variant->gene;
@@ -1852,7 +1851,7 @@ sub transcripts_variants {
 		 my $ncboost = '-';
 		 my $ncboost_score = '-';
 		 if (exists $htr->{ncboost_score} and $htr->{ncboost_score} ne '-') {
-		 	$$ncboost_score = $htr->{promoterAI_score};
+		 	$ncboost_score = $htr->{ncboost_score};
 		 }
 		 if (exists $htr->{ncboost_score} and $htr->{ncboost_score} eq '-') {
 		 	$ncboost_score = '-';

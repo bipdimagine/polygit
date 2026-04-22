@@ -696,32 +696,100 @@ sub return_specific_value {
 	return $value;
 }
 
+sub set_intergenic {
+	my ($self, $v) = @_;
+	my $all_transcripts;
+	my $htr;
+	$htr->{name} = '-';
+	$htr->{nm} = '-';
+	$htr->{ccds} = '-';
+	$htr->{appris} = '-';
+	$htr->{main} = 1;
+	my @coding_infos = ("sift","polyphen","prot","codons","codons_AA","impact_score_text","impact_score","consequence");
+	#initialize
+	foreach my $c (@coding_infos){
+		$htr->{$c} = "-";
+	}
+	my $sc = 'low';
+	$htr->{impact_score_text} = $sc;
+	$htr->{impact_score} = $self->impact_sorted->{$sc};	
+	$htr->{consequence} = $v->variationTypeInterface();	
+	$htr->{nomenclature} = "-";
+	$htr->{exon} = '-';
+	$htr->{start} = "-";
+	$htr->{end} = "-";
+	$htr->{cadd} = $self->return_specific_value($v->cadd_score);
+	$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_rf);
+	$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_ada) if $self->return_specific_value($v->dbscsnv_ada) > $htr->{dbscsnv} ;
+	$htr->{revel} = '-';
+	$htr->{spliceAI} = -99;
+	$htr->{spliceAI_cat} = -99;
+	$htr->{promoterAI_score} = -99;
+	
+	$htr->{ncboost_score} = 0;
+	$htr->{ncboost_score} = $v->ncboost_score();
+	$htr->{genome_version_predicted_link} = '38';
+	$htr->{genome_version_predicted_link} = '37' if $v->project->getVersion() =~ /HG19/;
+	$htr->{sift} = -99;
+	$htr->{polyphen} = -99;
+	$htr->{alphamissense} = -99;
+	push(@$all_transcripts,$htr);
+	my $score;
+	$score->{spliceAI} = -99;
+	$score->{spliceAI_cat} = -99;
+	return {sc=>$score,tr=>$all_transcripts};
+}
 
 sub set_gene {
-		my ($self,$v,$gene) =@_;
-		my  $transcripts = $v->getTranscripts();
+		my ($self,$v,$gene,$list_tr) =@_;
+		my $project_version = $v->project->getVersion();
+		my @trs;
+		if ($list_tr) { @trs = $list_tr; }
+		else {
+			@trs = map {
+			    my $impact = $v->effectImpact($_);
+			    my $score  = $self->impact_sorted->{$impact};
+			    {
+			        tr => $_,
+			        impact => $impact,
+			        score => $score,
+			        mane => $_->isMane,
+			        appris => $_->appris_level,
+			    }
+			} @{$gene->getTranscripts()};
+			
+			@trs = sort { $b->{mane} <=> $a->{mane} || $b->{score} <=> $a->{score} || $a->{appris} <=> $b->{appris} } @trs;
+		}
+		
+		my $cadd        = $self->return_specific_value($v->cadd_score);
+		my $dbsc_ada    = $self->return_specific_value($v->dbscsnv_ada);
+		my $dbsc_rf     = $self->return_specific_value($v->dbscsnv_rf);
+		my $dbsc        = $dbsc_ada > $dbsc_rf ? $dbsc_ada : $dbsc_rf;
+		my $spliceAI    = $self->return_specific_value($v->max_spliceAI_score($gene));
+		my $spliceAIcat = $v->max_spliceAI_categorie($gene);
+		my $ncboost     = $v->ncboost_score();
+		
 		my $all_transcripts = [];
-		foreach my $tr1 (sort { ( ($b->isMane <=> $a->isMane) or $self->impact_sorted->{$v->effectImpact($b)} <=>  $self->impact_sorted->{$v->effectImpact($a)})  or ($a->appris_level <=> $b->appris_level)} @$transcripts) {
-				next if $tr1->getGene->id ne $gene->id;
+		foreach my $item (@trs) {
+			    my $tr1 = $item->{tr};
+			    my $sc  = $item->{impact};
 				my $htr = {};
-	
+			    $htr->{mane} = $item->{mane};
 				my $enst = $tr1->name;
 				$htr->{name} = $tr1->name();
 				$htr->{nm} = $tr1->external_name;
 				$htr->{ccds} = $tr1->ccds_name;
 				$htr->{ccds} = "-" if ($tr1->ccds_name && length($tr1->ccds_name) <3);
 				$htr->{appris} = $tr1->appris_type;
-				$htr->{main}=  0 ;
-		 		$htr->{main}  = 1 if $tr1->isMain();
-		 		$htr->{mane}  = 0 ;
-		 		$htr->{mane}  = 1 if $tr1->isMane();
+#		 		$htr->{mane}  = 0 ;
+#		 		$htr->{mane}  = 1 if $tr1->isMane();
 				my @coding_infos = ("sift","polyphen","prot","codons","codons_AA","impact_score_text","impact_score","consequence");
 			
 				#initialize
 				foreach my $c (@coding_infos){
 					$htr->{$c} = "-";
 				}
-				my $sc = $v->effectImpact($tr1);
+#				my $sc = $v->effectImpact($tr1);
 				$htr->{impact_score_text} = $sc;
 				$htr->{impact_score} = $self->impact_sorted->{$sc};	
 				$htr->{consequence} = $v->variationTypeInterface($tr1);;	
@@ -731,24 +799,24 @@ sub set_gene {
 				$htr->{exon} = $tr1->findNearestExon($v->start, $v->end) if $htr->{exon} == -1;
 				$htr->{start} = "";
 				$htr->{end} = "";
-				$htr->{cadd} = $self->return_specific_value($v->cadd_score);
-				$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_rf);
-				$htr->{dbscsnv} = $self->return_specific_value($v->dbscsnv_ada) if $self->return_specific_value($v->dbscsnv_ada) > $htr->{dbscsnv} ;
+				$htr->{cadd} = $cadd;
+				$htr->{dbscsnv} = $dbsc;
+				$htr->{spliceAI} = $spliceAI;
+				$htr->{spliceAI_cat} = $spliceAIcat;
+				$htr->{ncboost_score} = $ncboost;
 				$htr->{revel} = $self->return_specific_value($v->revel_score($tr1));
-				$htr->{spliceAI} = $self->return_specific_value($v->max_spliceAI_score($gene));
-				$htr->{spliceAI_cat} = $v->max_spliceAI_categorie($gene);
 				$htr->{promoterAI_score} = '-';
 				if ($v->promoterAI_score($tr1)) {
 					$htr->{promoterAI_score} = $v->promoterAI_score($tr1);
 				}
-				$htr->{ncboost_score} = $v->ncboost_score();
 				$htr->{genome_version_predicted_link} = '38';
-				$htr->{genome_version_predicted_link} = '37' if $v->project->getVersion() =~ /HG19/;
+				$htr->{genome_version_predicted_link} = '37' if $project_version =~ /HG19/;
 				$htr->{sift} = -99;
 				$htr->{polyphen} = -99;
 				$htr->{alphamissense} = -99;
 				
-				my $r1 = $tr1->exons_introns_tree()->fetch($v->start,$v->start+1);
+				my $tree = $tr1->exons_introns_tree();
+				my $r1 = $tree->fetch($v->start,$v->start+1);
 				if (@$r1){
 					if ($r1->[0]->{type} eq "intron"){
 						$htr->{start} = "intron".$r1->[0]->{nb};
@@ -757,9 +825,8 @@ sub set_gene {
 						$htr->{start} = $r1->[0]->{name};
 					}
 				}
-				 $r1 = $tr1->exons_introns_tree()->fetch($v->end,$v->end+1);
-				 if (@$r1){
-					
+				$r1 = $tree->fetch($v->end,$v->end+1);
+				if (@$r1){
 					if ($r1->[0]->{type} eq "intron"){
 						$htr->{end} = "intron".$r1->[0]->{nb};
 					}

@@ -7,6 +7,9 @@
 	    			<table>
 	    				<tr>
 	    					<td>
+								<input type="checkbox" id="ncboost" onchange="toggleDiv('div_select_region', this.checked)">
+								<label for="region">only Chr/Region</label>
+								<br>
 								<input type="checkbox" id="promoter_ai" onchange="toggleDiv('div_select_promoter_ai', this.checked)">
 								<label for="promoter_ai">use promoterAI</label>
 								<br>
@@ -30,7 +33,56 @@
 			    	<div class="form-group row" style="text-align:middle;vertical-align:center;">
 			    		<div class="col-sm-12" style="margin-right:0px;margin-top:0px;">
 							<div class="container-flex" style="height:105px;">
-								<div id="div_select_promoter_ai" class="box" style="display:none;margin-left:15px;">
+								
+								<div id="div_select_region" class="box" style="display:none;">
+									<table>
+					    				<tr><td><center><span style="font-size:13px;"><b>Region</b> </span></center><br></td></tr>
+					    				<tr><td>
+					    					<center>
+						    					<form>
+												    <!-- Liste déroulante -->
+												    <label for="select_chr">Chromosome </label>
+												    <select id="select_chr" name="select_chr">
+												        <option value="">---</option>
+												        <option value="1">chr1</option>
+												        <option value="2">chr2</option>
+												        <option value="3">chr3</option>
+												        <option value="4">chr4</option>
+												        <option value="5">chr5</option>
+												        <option value="6">chr6</option>
+												        <option value="7">chr7</option>
+												        <option value="8">chr8</option>
+												        <option value="9">chr9</option>
+												        <option value="10">chr10</option>
+												        <option value="11">chr11</option>
+												        <option value="12">chr12</option>
+												        <option value="13">chr13</option>
+												        <option value="14">chr14</option>
+												        <option value="15">chr15</option>
+												        <option value="16">chr16</option>
+												        <option value="17">chr17</option>
+												        <option value="18">chr18</option>
+												        <option value="19">chr19</option>
+												        <option value="20">chr20</option>
+												        <option value="21">chr21</option>
+												        <option value="22">chr22</option>
+												        <option value="X">chrX</option>
+												        <option value="Y">chrY</option>
+												        <option value="MT">chrM</option>
+												    </select>
+												    <br>
+												    <label for="select_start">Start </label>
+												    <input style="width:70px;" type="number" id="select_start" name="select_start" step="1">
+												    <label for="select_end">&nbsp;&nbsp;End </label>
+												    <input style="width:70px;" type="number" id="select_end" name="select_end" step="1">
+												    <br>
+												</form>
+											</center>
+						                </td></tr>
+					                </table>
+								</div>
+								
+								<div id="div_select_promoter_ai" class="box" style="display:none;">
 									<table>
 					    				<tr><td><center><span style="font-size:13px;"><b>Promoter AI</b></span></center><br></td></tr>
 					    				<tr><td>
@@ -46,16 +98,16 @@
 					                </table>
 								</div>
 								
-								<div id="div_select_ncboost" class="box" style="display:none;margin-left:15px;">
+								<div id="div_select_ncboost" class="box" style="display:none;">
 									<table>
 					    				<tr><td><center><span style="font-size:13px;"><b>NCBoost-2</b> </span></center><br></td></tr>
 					    				<tr><td>
 					                    	<div id="slider_ncboost" jsId="slider_ncboost" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:250px; height: 25px;"'>
 								                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
 								                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
-								                    <li><span style='font-size:11px;'><b>High</b></span><br>0.8</li>
-								                    <li><span style='font-size:11px;'><b>Very High</b></span><br>0.9</li>
-								                    <li><span style='font-size:11px;'><b><nobr>Extremly High</nobr></b></span><br>0.95</li>
+								                    <li><span style='font-size:11px;'><b>High</b></span><br>0.98</li>
+								                    <li><span style='font-size:11px;'><b>Very High</b></span><br>0.99</li>
+								                    <li><span style='font-size:11px;'><b><nobr>Extremly High</nobr></b></span><br>1.0</li>
 								                </ol>
 							                </div>
 						                </td></tr>
@@ -286,7 +338,7 @@
 						                                <span id="span_frameshift">Frameshift  </span>
 						                            </td>
 						                            
-						                               <td style="font-size:9px;padding-left:5px;display: none">
+						                               <td style="font-size:9px;padding-left:5px;">
 						                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_maturemirna" checked>
 						                                <span id="span_maturemirna">Mature miRNA  </span>
 						                            </td>  
@@ -335,7 +387,7 @@
 						                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_intronic">
 						                                <span id="span_intronic">Intronic  </span>
 						                            </td>
-						                            <td style="font-size:9px;padding-left:5px;" hidden>
+						                            <td style="font-size:9px;padding-left:5px;">
 						                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_intergenic">
 						                                <span id="span_intergenic">Intergenic  </span>
 						                            </td>
