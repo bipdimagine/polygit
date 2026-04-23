@@ -41,6 +41,7 @@ my $mismatch = 1;
 my $create_fastq_umi;
 my $no_demux_only;
 my $input_mask;
+my $trim = '';
 
 GetOptions(
 	'projects=s'			=> \$project_names,
@@ -49,6 +50,7 @@ GetOptions(
 	'no_demux_only'			=> \$no_demux_only,
 	'create_fastq_umi'		=> \$create_fastq_umi,
 	'mask=s'				=> \$input_mask,
+	'trim!'					=> \$trim,			# Trim adapters (par défaut pour RNAseq seulement)
 	'help|?'				=> sub {pod2usage(-verbose => 2,-noperldoc=>1)},
 ) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, no_demux_only, mask, help.
 Use $0 --help to see the full documentation.\n");
@@ -69,7 +71,6 @@ if ( $mismatch !~ /^[012]$/ ) {
 my $run_name;
 my $umi_mask;
 my %patients;
-my $neb;
 my $adaptors;
 my $bcl_dir;
 my $dir_tmp;
@@ -110,8 +111,8 @@ foreach my $project_name (split(",",$project_names)){
 	
 	# RNAseq NEB: récupère les adaptateurs à trimmer
 	my @profiles = map {$_->getSampleProfile} @{$project->getPatients};
-	$neb = 1 if (grep{/neb/i} @profiles);
-	if ($neb) {
+	$trim = 1 if ($project->isRnaseq and $trim eq '');
+	if ($trim) {
 		undef $adaptors;
 		my $illuminaAdaptors = Bio::SeqIO->new(-file => $project->getIlluminaAdaptors, '-format' => 'Fasta');
 		my $tsoAdaptors = Bio::SeqIO->new(-file => $project->getTsoAdaptors, '-format' => 'Fasta');
@@ -331,13 +332,15 @@ $settings->{"R1FastQMask"} = $mask->{'R1'};
 $settings->{"R2FastQMask"} = $mask->{'R2'};
 $settings->{"UmiMask"} = $mask->{'Umi'} if (exists $mask->{'Umi'});
 $settings->{"UmiFastQ"} = 'True' if ($create_fastq_umi);
-if ($neb) {	# RNAseq NEB: Trim les adaptateurs
+if ($trim) {	# RNAseq: Trim les adaptateurs
 	$settings->{"R1Adapter"} .= '+' if (exists $settings->{"R1Adapter"} and $settings->{"R1Adapter"});
 	$settings->{"R2Adapter"} .= '+' if (exists $settings->{"R2Adapter"} and $settings->{"R2Adapter"});
 	$settings->{"R1Adapter"} .= join('+',@$adaptors);
 	$settings->{"R2Adapter"} .= join('+',@$adaptors);
 	$settings->{"R1AdapterTrim"} = 'True';
 	$settings->{"R2AdapterTrim"} = 'True';
+	warn 'Adapters will be trimmed';
+	sleep(2);
 }
 foreach my $param (sort keys %$settings) {
 	push(@{$lines->{"[SETTINGS]"}},[$param,$settings->{$param},$lanes]);
@@ -425,11 +428,6 @@ my $cmd = "singularity run ";
 $cmd .= "-B $bcl_dir " unless ($bcl_dir =~ /AVITI\/IMAGINE/);
 $cmd .= "-B $dir_tmp /software/distrib/BASE2FASTQ/bases2fastq.2.2.sif bases2fastq ";
 $cmd .= "--error-on-missing ";
-#$cmd .= "--r2-cycles 58 " if (getpwuid($<) eq 'mperin'); # si le run n'est pas fini
-#$cmd .= "--settings 'I1MismatchThreshold,$mismatch' --settings 'I2MismatchThreshold,$mismatch' ";
-#$cmd .= "--settings 'I1Mask,".$mask->{'I1'}."' --settings 'I2Mask,".$mask->{'I2'}."' ";
-#$cmd .= "--settings 'R1FastQMask,".$mask->{'R1'}."' --settings 'R2FastQMask,".$mask->{'R2'}."' ";
-#$cmd .= "--settings 'UmiMask,".$mask->{'Umi'}."' ";
 $cmd .= "--run-manifest $ss1 --num-unassigned 500 --num-threads 40 ";
 $cmd .= "--group-fastq --no-projects ";
 $cmd .= "$bcl_dir $dir_out" unless ($bcl_dir =~ /AVITI\/IMAGINE/);
@@ -453,8 +451,8 @@ unless ($no_demux_only) {
 		$demux_qc_html = $out_demux_only.$file if ($file =~ /_QC\.html$/);
 	}
 	close ($dh);
-	system("firefox $demux_qc_html &") unless (getpwuid($<) eq 'shanein');
-	system("google-chrome $demux_qc_html &") if (getpwuid($<) eq 'shanein');
+	system("firefox $demux_qc_html &") unless (getpwuid($<) =~ /shanein|masson/);
+	system("google-chrome $demux_qc_html &") if (getpwuid($<) =~ /shanein|masson/);
 	sleep(1);
 	die("\nbye") if (prompt("Check the demux only stats. Then, tap any key to continue, 'q' to quit.", -w=>'q', -1));
 	print "\n";
@@ -483,21 +481,11 @@ foreach my $project_name (sort split(",",$project_names)){
 		$run = $runs->[0];
 	}
 	my $out_fastq = $run->fastq_dir();
-#	system("mkdir $out_fastq --mode 777") unless (-d $out_fastq);
 	make_path($out_fastq, {chmod => 0774}) unless (-d $out_fastq);
 	
 	foreach my $p (@{$project->getPatients}){
 		my $pid = $pm->start and next;
 		my $tmp_fastq = $dir_out.'Samples/';
-#		if (grep (/Project/, @$lheader_data)) { # si pas --no-projects --group-fastq
-#			opendir(my $dh, $dir_out.'Samples/') || die ("Can't open '$dir_out/Samples/': $!");
-#			while (my $dir = readdir($dh)) {
-#				next if ($dir =~ /^(\.|PhiX|Unassigned$)/);
-#				next unless (-d $dir);
-#				$tmp_fastq = $dir_out.'Samples/'.$dir.'/'.$p->name.'/' if (-d $dir_out.'Samples/'.$dir.'/'.$p->name.'/');
-#			}
-#			close($dh);
-#		}
 		my ($fastq1,$fastq2) = dragen_util::get_fastq_file($p,$out_fastq,$tmp_fastq);
 		warn $fastq1." ".$fastq2;
 		$pm->finish( 0, {});
