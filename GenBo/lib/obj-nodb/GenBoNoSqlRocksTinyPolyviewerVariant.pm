@@ -49,6 +49,7 @@ my $htr = {
  'prot' => 'VARCHAR',
  'appris' =>'VARCHAR',
  'spliceAI' => "INTEGER",
+ 'ncboost_score' => "VARCHAR",
  'promoterAI_score' => "VARCHAR",
  'codons_AA' => 'VARCHAR',
  'nm' => 'VARCHAR',

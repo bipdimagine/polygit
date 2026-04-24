@@ -357,6 +357,8 @@ sub get_ids {
 			$chr->rocksdb("dbscSNV")->prepare(\@arocksid);
 			$chr->rocksdb("revel")->prepare(\@arocksid);
 			$chr->rocksdb("hgmd")->prepare(\@arocksid);
+			$chr->rocksdb("promoterAI")->prepare(\@arocksid);
+			$chr->rocksdb("ncboost")->prepare(\@arocksid);
 			my $db = $chr->rocks_dejavu()->get_db($vs->[0]->start);
 			$db->prepare(\@arocksid);
 		};
@@ -401,6 +403,7 @@ sub get_ids {
 		$variation->text_clinvar();
 		$variation->hgmd_id();		
 		$variation->promoterAI();
+		$variation->ncboost_score();
 		$variation->getChromosome();	
 		$variation->dejaVuInfosForDiag2();
 		$variation->annotation();
