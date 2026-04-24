@@ -80,8 +80,8 @@ foreach my $pat (@{$project->getPatients()}) {
 	foreach my $method (@{$pat->getCallingMethods()}) {
 		next if $method eq 'melt';
 		next if $method eq 'lifinder';
-		confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not exists $pat->callingFiles->{$method};
-		confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not -e $pat->callingFiles->{$method};
+	#	confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not exists $pat->callingFiles->{$method};
+	#	confess("\n\nERROR: $method VCF not found for ".$pat->name()."\nERRROR. DIE.") if not -e $pat->callingFiles->{$method};
 	}
 }
 
@@ -247,6 +247,7 @@ my $ztotal;
 		my $start = $index;
 		my $no = $rg_2->nosql_rocks($r);
 		my $no_polyviewer = $rg_polyviewer_2->nosql_rocks($r);
+		#$no_polyviewer->put("date",time);
 		$nb_regions ++;
 		my $iter = $no->rocks->new_iterator->seek_to_first;
 		while (my ($var_id, $value) = $iter->each) {
@@ -271,7 +272,7 @@ my $ztotal;
 		}
 		
 		$no->close();
-		$no_polyviewer->close();
+		#$no_polyviewer->close();
 		$finalrg->write_batch();
 		$fp->write_batch;
 		#$fp2->write_batch;
@@ -462,6 +463,7 @@ sub get_ids {
 		
 		# line to prepare dejavu global;
 		my $ref = ref($variation);
+		my $ddebug;
 		if ($ref eq 'GenBoVariation'){
 					bless $variation , 'GenBoVariationCache';
 		}
@@ -477,12 +479,14 @@ sub get_ids {
 		}
 		elsif  ($ref eq 'GenBoInsertion'){
 					bless $variation , 'GenBoInsertionCache';
+				
 		}
 		elsif  ($ref eq 'GenBoLargeDuplication'){
 					bless $variation , 'GenBoLargeDuplicationCache';
 		}
 		elsif  ($ref eq 'GenBoInversion'){
 					bless $variation , 'GenBoInversionCache';
+						$ddebug = 1;
 		}
 		elsif  ($ref eq 'GenBoMei'){
 					bless $variation , 'GenBoMeiCache';
@@ -491,6 +495,7 @@ sub get_ids {
 			confess($ref);
 		}
 		my $t = 0;
+		warn "----------------------------------- ------------ ---------".$variation->rocksdb_id if $ddebug;
 		foreach my $g (@{$variation->getGenes}){
 			$t++;
 			$vp->{transcripts} = $vp->{hgenes}->{$g->{id}}->{tr};
