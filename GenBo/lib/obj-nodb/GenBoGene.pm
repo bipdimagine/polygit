@@ -164,7 +164,6 @@ has main_transcripts => (
  
 
 
-
 sub getMainTranscripts{
 	my ($self) = @_;
 	return $self->project->myflushobjects($self->main_transcripts,"transcripts");

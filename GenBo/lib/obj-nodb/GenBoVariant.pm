@@ -1698,34 +1698,20 @@ sub get_codon_text {
 	}
 	return $self->{codon}->{$strand};
 }
+sub variationTypeMain {
+	my ( $self, $gene ) = @_;
+	my $trs = $gene->getMainTranscripts();
+	my $mask = 0;
+	foreach my $t (@$trs){
+		$mask |= $self->{annotation}->{$t->id}->{mask};
+	}
+	return $self->TypeFromMask($mask);
+}
 
-sub variationType {
-	my ( $self, $obj ) = @_;
-	$self->annotation() unless exists $self->{annotation};
-	my $id = "all";
-	my $text = "intergenic";
-	if ($obj){
-	if ($obj->isProtein){
-			$id = $obj->getTranscript()->id 
-		}
-		else {
-			$id= $obj->id;
-		}
-	}
-	my $mask = $self->{annotation}->{$id}->{mask};
-	unless($mask){
-		warn 'ID wanted: '.$id;
-		warn ref($obj);
-		warn $obj->id;
-		warn $self->id;
-		warn $self->name();
-		warn Dumper $self->init_annotation();
-		warn Dumper $self->{annotation};
-		confess();
-	}
-	$text = "";
-	
-	if ($mask &  $self->getProject()->getMaskCoding("exonic")) {
+sub TypeFromMask {
+		my ( $self, $mask ) = @_;
+		my $text = "";
+		if ($mask &  $self->getProject()->getMaskCoding("exonic")) {
 		if ( $mask & $self->getProject()->getMaskCoding("stop")) {
 			$text = "stop";
 			
@@ -1806,6 +1792,34 @@ sub variationType {
 	}
 	#$text = "essential_splicing,".$text if $mask &  $maskCoding->{exonic} && $mask & $maskCoding->{essential_splicing};
 	return $text;
+		
+}
+
+sub variationType {
+	my ( $self, $obj ) = @_;
+	$self->annotation() unless exists $self->{annotation};
+	my $id = "all";
+	if ($obj){
+	if ($obj->isProtein){
+			$id = $obj->getTranscript()->id 
+		}
+		else {
+			$id= $obj->id;
+		}
+	}
+	my $mask = $self->{annotation}->{$id}->{mask};
+	unless($mask){
+		warn 'ID wanted: '.$id;
+		warn ref($obj);
+		warn $obj->id;
+		warn $self->id;
+		warn $self->name();
+		warn Dumper $self->init_annotation();
+		warn Dumper $self->{annotation};
+		confess();
+	}
+	
+	return $self->TypeFromMask($mask);
 }
 
 =head2 polyphenStatus

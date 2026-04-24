@@ -1765,6 +1765,7 @@ sub getBamFile {
 
 sub getAlignmentFile {
 	my ( $self, $method_name, $nodie ) = @_;
+	
 	return undef if $method_name eq 'no_align';
 	return undef if $self->alignmentMethods->[0] eq 'no_align';
 	unless ($method_name) {
@@ -3303,7 +3304,6 @@ has nb_reads => (
 #		my $h;
 		foreach my $l (@sums) {
 			my ( $a, $b ) = split( " ", $l );
-			warn $a." :: ".$b;
 			die($self->name) unless defined $b;
 			$h->{all} += $b;
 			next if $a eq "*";

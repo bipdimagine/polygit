@@ -115,7 +115,7 @@ sub genomic_span {
 			$iter = $self->tabix->query($chr->ucsc_name);
 		}
 		$self->{gs}->{$chr->name} =  Set::IntSpan::Fast::XS->new();
-		return $self->{gs}->{$chr->name} unless $iter;
+		return $self->{gs}->{$chr->name} unless $iter; 
 		return $self->{gs}->{$chr->name} if not $iter;
 		while (my $line = $iter->next){
 			chomp($line);

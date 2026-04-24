@@ -650,6 +650,9 @@ sub setVariants {
 	elsif ($type eq 'large_deletions') { $method = 'getLargeDeletions'; }
 	elsif ($type eq 'large_duplications') { $method = 'getLargeDuplications'; }
 	elsif ($type eq 'junctions') 		{ $method = 'getJunctions'; }
+	else{
+		confess();
+	}
 	my $h;
 	foreach my $chr (@{$self->getChromosomes()}) {
 		foreach my $var (@{$chr->$method()}) {

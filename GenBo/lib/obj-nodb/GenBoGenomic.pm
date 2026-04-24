@@ -11,7 +11,8 @@ use Data::Dumper;
  #use GenBoCoverageLmdb;
  use packages::liftOver qw(lift_over_variant);
  use Storable qw(store retrieve freeze thaw);
-  use Compress::Snappy;
+ use Compress::Snappy;
+use Carp;
 
 extends "GenBo";
 

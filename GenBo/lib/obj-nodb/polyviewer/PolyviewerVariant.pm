@@ -749,6 +749,8 @@ sub set_gene {
 			@trs = map {
 			    my $impact = $v->effectImpact($_);
 			    my $score  = $self->impact_sorted->{$impact};
+			    my $order = 0;
+			 
 			    {
 			        tr => $_,
 			        impact => $impact,
@@ -756,7 +758,7 @@ sub set_gene {
 			        mane => $_->isMane,
 			        appris => $_->appris_level,
 			    }
-			} @{$gene->getTranscripts()};
+			} @{$v->getTranscripts($gene)};
 			
 			@trs = sort { $b->{mane} <=> $a->{mane} || $b->{score} <=> $a->{score} || $a->{appris} <=> $b->{appris} } @trs;
 		}
@@ -773,6 +775,11 @@ sub set_gene {
 		foreach my $item (@trs) {
 			    my $tr1 = $item->{tr};
 			    my $sc  = $item->{impact};
+				my $debug;
+		 		$debug  = 1 if $v->name eq "8-41790037-C-A";
+		
+		
+
 				my $htr = {};
 			    $htr->{mane} = $item->{mane};
 				my $enst = $tr1->name;

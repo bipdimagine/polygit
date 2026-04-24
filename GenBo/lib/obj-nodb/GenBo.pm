@@ -404,7 +404,7 @@ sub setChromosomes {
 sub getChromosomes {
 	my $self = shift;
 	warn Dumper $self unless $self->getProject();
-	confess($self->id) unless $self->getProject();
+	confess() unless $self->getProject();
 	#warn $self->project->name;
 	#my @toto = grep {$_->karyotypeId =~ /KI/}   @{$self->getProject()->myflushobjects($self->chromosomes_object(), "chromosomes")};
 	#confess($self->name) if scalar(@toto) ;
@@ -531,6 +531,7 @@ sub getSVDuplications {
 
 sub setInversions {
 	my $self = shift;
+	die();
 	$self->setVariants('inversions');
 	return $self->{inversions_object} ;
 }
