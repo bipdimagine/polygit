@@ -392,7 +392,7 @@ sub clinvar_rocks_db {
 	 return $self->{"clinvarrocks".$chr};
 	
 }
-sub load_polyviewer_variant {
+sub load_polyviewer_variant_mce {
 	my ($self) =@_;
 	my @chr = sort {$a cmp $b} keys %{$self->{list_index}};
  	$self->{rcache} = {};
@@ -440,6 +440,53 @@ sub load_polyviewer_variant {
  		confess()  if %$shared_hash;
  		confess("Argh,  Something went wrong !!! ") if $error;
  		confess("Argh,  Something went wrong !!! ") if scalar (keys %$jobs) != scalar(@chr);
+}
+
+
+
+sub load_polyviewer_variant {
+    my ($self) = @_;
+
+    my @chr = sort { $a cmp $b } keys %{$self->{list_index}};
+    $self->{rcache} = {};
+
+    my $pm = Parallel::ForkManager->new(24); # ajuste selon CPU
+    my $error;
+    my %jobs_done;
+
+    # récupération des résultats
+
+
+    foreach my $chr (@chr) {
+
+      #  $pm->start and next;
+
+        my $local_self = $self; # attention: pas thread-safe mais OK en fork
+
+        my $data;
+		warn "start ++ ==== ".$chr;
+        #eval {
+            $local_self->cache_polyviewer_variant(
+                $chr,
+                [ keys %{$local_self->{list_index}->{$chr}} ]
+            );
+		warn "+++++++".$chr;
+        if ($@) {
+            warn "Error on $chr: $@\n";
+            $pm->finish(1);
+        }
+        @{$self->{rcache}}{keys %$data} = values %$data;
+       #  $pm->finish(0,[undef,[undef]]);
+		#$pm->finish(0, [$data, [$chr]]);
+    }
+
+   # $pm->wait_all_children;
+warn "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
+    die "Argh, Something went wrong !!!" if $error;
+
+#    if (scalar(keys %jobs_done) != scalar(@chr)) {
+ #       die "Argh, Missing chromosomes processing !!!";
+  #  }
 }
 
 sub transform_polyviewer_variant {
