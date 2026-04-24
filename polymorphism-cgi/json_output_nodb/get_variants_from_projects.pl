@@ -176,10 +176,6 @@ if ($promoter_ai_value) {
 		my @l_tmp = split('!', $rocksid);
 		my $chr_id = $l_tmp[0];
 		my $pos = int($l_tmp[1]);
-#		if ($project->getChromosome($chr_id)->intergenic_intspan->contains($pos)) {
-#			delete $h_res_duck->{$rocksid};
-#			next;
-#		}
 		my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($l_tmp[1].'!'.$l_tmp[2]);
 		if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
 			delete $h_res_duck->{$rocksid};
@@ -191,9 +187,8 @@ if ($promoter_ai_value) {
 		}
 		if (not exists ($h_vector->{$chr_id})) {
 			print '|';
-			$h_vector->{$chr_id} = Set::IntSpan->new();
+			$h_vector->{$chr_id}->{$pos} = 1;
 		}
-		$h_vector->{$chr_id}->insert($pos);
 		$n++;
 		print '.' if $n % 10000 == 0;
 	}
@@ -205,11 +200,9 @@ if ($promoter_ai_value) {
 	my $ok = 0;
 	my @lChr_vec = sort keys %$h_vector;
 	
-	my $chunk_size = int((scalar(@lChr_vec)+1)/($fork));
-	$chunk_size = 3 if $chunk_size < 3;
 	MCE::Loop->init(
 	   max_workers => $fork,
-	   chunk_size => $chunk_size,
+	   chunk_size => 1,
 	);
 	my @results_convert = mce_loop {
 		my ($mce, $chunk_ref, $chunk_id) = @_;
@@ -220,7 +213,7 @@ if ($promoter_ai_value) {
 			print '.';
 			my $chr = $pr->getChromosome($chr_id);
 			#my @list_ids = $h_vector->{$chr_id}->Index_List_Read();
-			my @list_ids = $h_vector->{$chr_id}->elements;
+			my @list_ids = keys %{$h_vector->{$chr_id}};
 			my $i = 0;
 			my $no = $chr->rocks_dejavu();
 			
@@ -335,8 +328,26 @@ if ($region) {
 			next if not -e $file;
 			push(@lParquets, "'$file'");
 		}
-		my $sql = "PRAGMA threads=$fork; SELECT project,chr38,pos38,allele,he,ho FROM read_parquet([".join(', ', @lParquets)."])
-					WHERE chr38='$chr_filter' $sql_pos;";
+		my $sql ="
+			PRAGMA threads=$fork;
+			SELECT *
+			FROM (
+			    SELECT 
+			        project,
+			        chr38,
+			        pos38,
+			        allele,
+			        he,
+			        ho,
+			        SUM(he) OVER (PARTITION BY chr38, pos38, allele) AS sum_he,
+			        SUM(ho) OVER (PARTITION BY chr38, pos38, allele) AS sum_ho
+			    FROM read_parquet([".join(', ', @lParquets)."])
+			    WHERE chr38='$chr_filter' $sql_pos
+			)
+			WHERE (sum_he + sum_ho) <= $max_dejavu
+			  AND sum_ho <= $max_dejavu_ho;
+			;";
+					
 		my $duckdb = $dejavu_variants->buffer->software('duckdb');
 		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
 		while (my $line = <$fh>) {
@@ -356,27 +367,15 @@ if ($region) {
 		close($fh);
 		print '.found.'.$i.'.';
 		$i = 0;
-		my $no = $dejavu_variants->project->getChromosome($chr_filter)->rocksdb('gnomad');
-		foreach my $rocksid (keys %{$h_rocks_to_view->{$chr_filter}}) {
-			my $nb_he = $h_rocks_to_view->{$chr_filter}->{$rocksid}->{he};
-			my $nb_ho = $h_rocks_to_view->{$chr_filter}->{$rocksid}->{ho};
-			
-#			if ($rocksid =~ /106036488/) {
-#				warn "----";
-#				warn Dumper $h_rocks_to_view->{$chr_filter}->{$rocksid};
-#				warn "----";
-#				warn "$nb_he + $nb_ho";
-#				warn "$max_dejavu";
-#				warn "----";
-#			}
-			if (($nb_he + $nb_ho) > $max_dejavu) {
-				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
-				next;
-			}
-			if ($nb_ho > $max_dejavu_ho) {
-				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
-				next;
-			}
+		my $chr = $dejavu_variants->project->getChromosome($chr_filter);
+		my $no = $chr->rocksdb('gnomad');
+		
+		my @l_var_chr = keys %{$h_rocks_to_view->{$chr_filter}};
+		print ".begin_prepare_rocks.";
+		$no->prepare(\@l_var_chr);
+		print ".end_prepare_rocks.";
+		
+		foreach my $rocksid (@l_var_chr) {
 			my $h_gad = $no->value($rocksid);
 			if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
 				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
