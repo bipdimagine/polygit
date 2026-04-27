@@ -64,6 +64,11 @@ has hash_filters_cons => (
 	lazy    => 1,
 );
 
+has is_magic_user => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 has user_name => (
 	is		=> 'rw',
 	lazy    => 1,
@@ -119,6 +124,28 @@ has models => (
 	lazy    => 1,
 );
 
+has sql_projects_parquet => (
+	is		=> 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $sql;
+		if ($self->is_magic_user()) {
+			my $dir_parquets = $self->buffer->dejavu_parquet_dir();
+			$sql = "read_parquet('".$dir_parquets."/NGS20*.parquet')";
+		}
+		else {
+			my @lParquets;
+			foreach my $file (keys %{$self->hash_users_projects_parquet()}) {
+				next if not -e $file;
+				push(@lParquets, "'$file'");
+			}
+			$sql = "read_parquet([".join(', ', @lParquets)."])";
+		}
+		return $sql;
+	}
+);
+
 has hash_users_projects_parquet =>  (
 	is		=> 'rw',
 	lazy    => 1,
@@ -130,13 +157,38 @@ has hash_users_projects => (
 	default => sub {
 		my $self = shift;
 		my ($h_projects, $h_projectsNames, $h_parquets, @list_hash);
-#		if ($self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
-#			@list_hash = @{$self->buffer->getQuery()->getAllProjects()};
-#			$h_projects->{all}->{description} = 'all';
-#			$h_projects->{all}->{name} = 'all';
-#			$h_projects->{all}->{id} = 'all';
-#		}
-#		else {
+		if ($self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
+			$self->{is_magic_user} = 1;
+			my $dir_parquets = $self->buffer->dejavu_parquet_dir();
+			opendir my $dir, $dir_parquets or die "Cannot open directory: $!";
+			my @files = readdir $dir;
+			closedir $dir;
+			foreach my $file (@files) {
+				next if $file eq '.';
+				next if $file eq '..';
+				my @ltmp = split('\.', $file);
+				next if scalar(@ltmp) != 3;
+				next if $ltmp[-1] eq 'no_dejavu';
+				my $proj_name = $ltmp[0];
+				my $proj_id = $ltmp[1];
+				$h_projects->{$proj_name}->{description} = '-';
+				$h_projects->{$proj_name}->{name} = $proj_name;
+				$h_projects->{$proj_name}->{id} = $proj_id;
+				my $list_patients = $self->buffer->getQuery->getPatients($proj_id);
+				foreach my $h_pat (@$list_patients) {
+					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
+					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{name} = $h_pat->{name};
+					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{status} = $h_pat->{status};
+					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{sex} = $h_pat->{sex};
+					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{father} = $h_pat->{father};
+					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{mother} = $h_pat->{mother};
+					$h_projects->{$proj_name}->{patients}->{$h_pat->{patient_id}} = $h_projects->{$proj_name}->{patients}->{$h_pat->{name}};
+				}
+				$h_projects->{$proj_id} = $h_projects->{$proj_name};
+			}
+		}
+		else {
+			$self->{is_magic_user} = undef;
 			@list_hash = @{$self->buffer->getQuery()->getProjectListForUser($self->user_name(), $self->pwd())};
 			foreach my $hash (@list_hash) {
 				my $proj_name = $hash->{name};
@@ -144,7 +196,6 @@ has hash_users_projects => (
 				$h_projects->{$proj_name}->{description} = $hash->{description};
 				$h_projects->{$proj_name}->{name} = $proj_name;
 				$h_projects->{$proj_name}->{id} = $hash->{id};
-				$h_projects->{$hash->{id}} = $h_projects->{$proj_name};
 				my $list_patients = $self->buffer->getQuery->getPatients($hash->{id});
 				foreach my $h_pat (@$list_patients) {
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
@@ -155,11 +206,12 @@ has hash_users_projects => (
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{mother} = $h_pat->{mother};
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{patient_id}} = $h_projects->{$proj_name}->{patients}->{$h_pat->{name}};
 				}
+				$h_projects->{$hash->{id}} = $h_projects->{$proj_name};
 				
 				my $parquet = $self->buffer->dejavu_parquet_dir().'/'.$proj_name.'.'.$hash->{id}.'.parquet';
 				$h_parquets->{$parquet} = undef if -e $parquet;
 			}
-#		}
+		}
 		$self->{hash_users_projects_parquet} = $h_parquets;
 		return $h_projects;
 	}
@@ -182,6 +234,11 @@ has alert_ncboost_min_cadd_25  => (
 	default => undef, 
 );
 
+has only_chromosome  => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 
 sub check_variants_from_gene {
 	my ($self, $h_dv_rocks_ids) = @_;
@@ -202,6 +259,7 @@ sub check_variants_from_gene {
 	my ($h_variants, $hGenes);
 	
 	foreach my $chr_id (keys %$h_dv) {
+		print '.chr'.$chr_id.'.';
         my $chr = $self->project->getChromosome($chr_id);
 		my $nodv = $chr->rocks_dejavu();
 		my @l_var_chr = keys %{$h_dv->{$chr_id}};
@@ -262,15 +320,19 @@ sub check_variants_from_gene {
 		            else {
 		                my $genes = $var->getGenes();
 		                foreach my $gene (@$genes) {
-		                    my $var_annot = $var->variationTypeInterface($gene);
-		                    my $is_ok = 0;
-		                    foreach my $annot (split(',', $var_annot)) {
-		                        $annot =~ s/ /_/g;
-		                        if (exists $h_cons->{lc($annot)}) {
-		                            $is_ok = 1;
-		                            last;
-		                        }
-		                    }
+		                	my $var_annot;
+		                	my $is_ok = 0;
+		                	eval {
+			                    $var_annot = $var->variationTypeInterface($gene);
+			                    foreach my $annot (split(',', $var_annot)) {
+			                        $annot =~ s/ /_/g;
+			                        if (exists $h_cons->{lc($annot)}) {
+			                            $is_ok = 1;
+			                            last;
+			                        }
+			                    }
+		                	};
+		                	if ($@) { $is_ok = 0; }
 		                    next unless $is_ok;
 		                    $hres->{genes}->{$gene->id}->{$var_id} = 1;
 		                    $hres->{variants}->{$var_id} = 1;
@@ -309,7 +371,6 @@ sub check_variants_from_gene {
 	my $nb_var = scalar keys %$h_variants;
 	print ".var.after.gad.dv.".$nb_var;
 
-	my $h_parquets;
 	my ($h_var_pos, @list_var_pos);
 	foreach my $var_id (keys %$h_variants) {
 		my $var = $self->project->_newVariant($var_id);
@@ -324,20 +385,13 @@ sub check_variants_from_gene {
 		push(@list_var_pos, $var->start());
 		
 		foreach my $project_id (sort keys %{$h_dv_rocks_ids->{$chr_id}->{$rocks_id}}) {
+			next if not exists $self->hash_users_projects->{all} and not exists $self->hash_users_projects->{$project_id};
 			my $project_name = $self->hash_users_projects->{$project_id}->{name};
-			next if not exists $self->hash_users_projects->{all} and not exists $self->hash_users_projects->{$project_name};
 			my $project_type_cache = $self->{hash_projects_ids_names}->{$project_id}->{type};
 			$self->{hash_projects_ids_names}->{$project_id}->{name} = $project_name;
 			$self->{hash_projects_ids_names}->{$project_id}->{type} = $project_type_cache;
-			my $parquet = $self->buffer->dejavu_parquet_dir().'/'.$project_name.'.'.$project_id.'.parquet';
-			$h_parquets->{$parquet} = undef if -e $parquet;
 		}
 		$var = undef;
-	}
-	
-	my @list_parquet;
-	foreach my $file (keys %$h_parquets) {
-		push(@list_parquet, "'".$file."'");
 	}
 	
 	print '.before_duck_projects.';
@@ -348,7 +402,7 @@ sub check_variants_from_gene {
 	while( my @tmp = $iter->() ){
 		$nb_part++;
 		print '.part.'.$nb_part.'.';
-		my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos_global(\@tmp, \@list_parquet, $h_var_pos);
+		my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos_global(\@tmp, $h_var_pos);
 		my $nb_2 = scalar (keys %{$h_projects_patients});
 		print '.nb.'.$nb_2.'.';
 		print '.after_duck_projects.';
@@ -597,16 +651,21 @@ sub get_table_project_patients_infos {
 }
 
 sub get_from_duckdb_project_patients_infos_global {
-	my ($self, $list_var_pos, $list_files, $h_var_pos) = @_;
+	my ($self, $list_var_pos, $h_var_pos) = @_;
 	print '.';	
 	return if scalar(@$list_var_pos) == 0;
-	return if scalar(@$list_files) == 0;
-	my $text_pos = join(',', @$list_var_pos);
+	my $text_pos = '('.join('),(', @$list_var_pos).')';
 	my $fork = $self->fork();
-#	my $sql = "PRAGMA threads=$fork; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])
-#					WHERE (allele='A' or allele='T' or allele='G' or allele='C') and pos38 IN ($text_pos)";
-	my $sql = "PRAGMA threads=$fork; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])
-					WHERE pos38 IN ($text_pos)";
+	my $sql_parquets = $self->sql_projects_parquet();
+	my $sql_only_chr = '';
+	$sql_only_chr = "WHERE chr38='".$self->only_chromosome()."'" if $self->only_chromosome();
+	my $sql = "
+		WITH positions(pos38) AS (VALUES $text_pos),
+		filtered AS ( SELECT * FROM $sql_parquets $sql_only_chr )
+		SELECT project, chr38, chr19, pos38, pos19, he, allele, patients, dp_ratios
+		FROM filtered
+		JOIN positions USING (pos38);
+	";
 	my ($h_gnomadid, $h_projects_patients);
 	my $duckdb = $self->buffer->software('duckdb');
 	open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
@@ -630,43 +689,6 @@ sub get_from_duckdb_project_patients_infos_global {
 	return ($h_projects_patients, $h_gnomadid);
 }
 
-#sub get_from_duckdb_project_patients_infos {
-#	my ($self, $var, $list_files) = @_;
-#	return if scalar(@$list_files) == 0;
-#	my $sql = "PRAGMA threads=3; SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet([".join(', ', @$list_files)."])";
-#	
-#	my ($pos38, $alt38) = split('!', $var->rocksdb_id());
-#	my ($h_gnomadid, $h_projects_patients);
-#	
-#	if ($var->getProject->current_genome_version() eq 'HG38') {
-#		$sql .= " WHERE chr38='".$var->getChromosome->id()."' and pos38=".$var->start() ;
-#		my $duckdb = $var->buffer->software('duckdb');
-#		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
-#		while (my $line = <$fh>) {
-#		    chomp $line;
-#		    my ($project_id,$this_chr38,$this_chr19,$this_pos38,$this_pos19,$he,$var_all,$patients,$dp_ratios) = split(/,/, $line);
-#	    	next if $project_id eq 'project';
-#			next if $this_pos38 ne int($pos38);
-#			$var_all =~ s/\+//;
-#			if (not $var->isDeletion) {
-#				next if $var_all ne $var->var_allele();
-#			}
-#			$h_gnomadid->{$var->gnomad_id()}->{chr19} = $this_chr19;
-#			$h_gnomadid->{$var->gnomad_id()}->{pos19} = $this_pos19;
-#			$h_gnomadid->{$var->gnomad_id()}->{ref_all} = $var->ref_allele();
-#			$h_gnomadid->{$var->gnomad_id()}->{var_all} = $var->var_allele();
-#			my $project_name = $self->{hash_projects_ids_names}->{$project_id}->{name};
-#			$h_projects_patients->{$project_name} = $self->get_table_project_patients_infos($project_name, $he, $patients, $dp_ratios);
-#		}
-#		close($fh);
-#	}
-#	else {
-#		warn "HG19";
-#		warn $sql if $self->debug;
-#		confesss("HG19!!");
-#	}
-#	return ($h_projects_patients, $h_gnomadid);
-#}
 
 sub print_html_gene {
 	my ($self, $gene_id, $list_variants, $hVariantsDetails) = @_;

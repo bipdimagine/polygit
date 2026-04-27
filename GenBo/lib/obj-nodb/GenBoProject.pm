@@ -937,7 +937,7 @@ has ncboost_parquet_path => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir = $self->buffer()->get_lmdb_database_directory('ncboost').'/global/';
+		my $dir = $self->buffer()->get_lmdb_database_directory('ncboost').'../parquet/global/';
 		return $dir;
 	}
 );
@@ -947,7 +947,7 @@ has ncboost_parquet_dejavu_filter_path => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my $dir = $self->buffer()->get_lmdb_database_directory('ncboost').'/dejavu_filter/';
+		my $dir = $self->buffer()->get_lmdb_database_directory('ncboost').'../parquet/dejavu_filter/';
 		return $dir;
 	}
 );

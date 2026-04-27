@@ -111,13 +111,10 @@ my $dejavu_variants = new dejavu_variants();
 $dejavu_variants->user_name($login);
 $dejavu_variants->pwd($pwd);
 
-if ($only_my_projects) {
-	$dejavu_variants->hash_users_projects() if $only_my_projects;
-	exit(0) if not $dejavu_variants->hash_users_projects();
-	print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
-	
-}
-else {
+$dejavu_variants->hash_users_projects() if $only_my_projects;
+exit(0) if not $dejavu_variants->hash_users_projects();
+print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
+if (not $only_my_projects) {
 	$dejavu_variants->{hash_users_projects}->{all} = 1;
 	print '.all_projects.';
 }
@@ -185,10 +182,7 @@ if ($promoter_ai_value) {
 			delete $h_res_duck->{$rocksid};
 			next;
 		}
-		if (not exists ($h_vector->{$chr_id})) {
-			print '|';
-			$h_vector->{$chr_id}->{$pos} = 1;
-		}
+		$h_vector->{$chr_id}->{$pos} = 1;
 		$n++;
 		print '.' if $n % 10000 == 0;
 	}
@@ -213,7 +207,8 @@ if ($promoter_ai_value) {
 			print '.';
 			my $chr = $pr->getChromosome($chr_id);
 			#my @list_ids = $h_vector->{$chr_id}->Index_List_Read();
-			my @list_ids = keys %{$h_vector->{$chr_id}};
+			my @list_ids = sort keys %{$h_vector->{$chr_id}};
+			
 			my $i = 0;
 			my $no = $chr->rocks_dejavu();
 			
@@ -228,9 +223,9 @@ if ($promoter_ai_value) {
 					my $nb_pat_he = 0;
 					my $nb_pat_ho = 0;
 					my $has_in_my_projects;
-					$has_in_my_projects = 1 if (exists $dejavu_variants->hash_users_projects->{all});
+					$has_in_my_projects = 1 if not $only_my_projects;
 					foreach my $proj_id (keys %{$res->{$dv_rocks_id}}) {
-						$has_in_my_projects = 1 if $only_my_projects and exists $dejavu_variants->hash_users_projects->{$proj_id};
+						$has_in_my_projects = 1 if exists $dejavu_variants->{hash_users_projects}->{$proj_id};
 						next if ($proj_id eq 'polybtf');
 						$nb_pat_he += $res->{$dv_rocks_id}->{$proj_id}->{he};
 						$nb_pat_ho += $res->{$dv_rocks_id}->{$proj_id}->{ho};
@@ -318,36 +313,34 @@ if ($region) {
 	if (not $promoter_ai_value and not $ncboost_value) {
 		print '.only_region.';
 		my ($chr_filter, $start_filter, $end_filter) = split('-', $region);
+		$dejavu_variants->{only_chromosome} = $chr_filter;
 		my $sql_pos;
 		if ($start_filter and $end_filter) {
 			$sql_pos = "and pos38 >= $start_filter and pos38 <= $end_filter";
 		}
 		my $i = 0;
-		my @lParquets;
-		foreach my $file (keys %{$dejavu_variants->hash_users_projects_parquet()}) {
-			next if not -e $file;
-			push(@lParquets, "'$file'");
-		}
-		my $sql ="
+		my $sql_parquets = $dejavu_variants->sql_projects_parquet();
+		
+		
+		my $sql = "
 			PRAGMA threads=$fork;
-			SELECT *
-			FROM (
+			WITH base AS ( SELECT * FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos ),
+			agg AS (
 			    SELECT 
-			        project,
-			        chr38,
-			        pos38,
-			        allele,
-			        he,
-			        ho,
-			        SUM(he) OVER (PARTITION BY chr38, pos38, allele) AS sum_he,
-			        SUM(ho) OVER (PARTITION BY chr38, pos38, allele) AS sum_ho
-			    FROM read_parquet([".join(', ', @lParquets)."])
-			    WHERE chr38='$chr_filter' $sql_pos
+			        chr38, pos38, allele,
+			        SUM(he) AS sum_he,
+			        SUM(ho) AS sum_ho
+			    FROM base
+			    GROUP BY chr38, pos38, allele
+			    HAVING (SUM(he) + SUM(ho)) <= $max_dejavu AND SUM(ho) <= $max_dejavu_ho
 			)
-			WHERE (sum_he + sum_ho) <= $max_dejavu
-			  AND sum_ho <= $max_dejavu_ho;
-			;";
-					
+			SELECT 
+			    b.project, b.chr38, b.pos38, b.allele, b.he, b.ho
+			FROM base b
+			JOIN agg USING (chr38, pos38, allele);
+		";
+		
+		
 		my $duckdb = $dejavu_variants->buffer->software('duckdb');
 		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
 		while (my $line = <$fh>) {
@@ -537,8 +530,8 @@ sub launch_ncboost {
 	}
 	my @lChr = (1..22, 'X', 'Y');
 	MCE::Loop->init(
-		max_workers => $dejavu_variants->fork,
-		chunk_size => '3',
+		max_workers => 1,
+		chunk_size => '1',
 		gather => sub {
 	        my ($data) = @_;
 	        print '|';
@@ -568,48 +561,95 @@ sub launch_ncboost {
 			if ($start_filter and $end_filter) {
 				$sql_region_end = "AND a.pos >= $start_filter AND a.pos <= $end_filter";
 			}
-			
-			my $sql = "PRAGMA threads=1;";
-			if (exists $dejavu_variants->hash_users_projects->{all}) {
-				$sql .= "SELECT pos, rocksdb_id, score AS ncboost 
-						FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet')
-						WHERE
-							score >= $ncboost_value 
-							AND dejavu <= $max_dejavu 
-							AND dejavu_ho <= $max_dejavu_ho
-							AND gnomad_ac <= $max_gnomad_ac
-							AND gnomad_ho <= $max_gnomad_ac_ho
-							AND $sql_annot
-							AND (cadd >= 25);";
+			my $sql;
+			if ($dejavu_variants->is_magic_user()) {
+				$sql = "
+					PRAGMA threads=10;
+					SELECT 
+					    a.pos, a.rocksdb_id, a.score AS ncboost
+					FROM read_parquet('/data-isilon/public-data/repository/HG38/ncboost/20260301/parquet/dejavu_filter/chr=$chr_id/*.parquet') a
+					WHERE a.score >= $ncboost_value 
+					  AND dejavu <= $max_dejavu 
+					  AND dejavu_ho <= $max_dejavu_ho
+					  AND a.gnomad_ac <= $max_gnomad_ac
+					  AND a.gnomad_ho <= $max_gnomad_ac_ho
+					  AND $sql_annot
+					  $sql_region_end
+					  ;
+				 ";
 			}
 			else {
-				$sql .= "WITH b_filtered AS (";
-				my @lproj_sql;
-				my $zz = 0;
-				foreach my $file (@l_files) {
-					my $sql_part = "SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet('$file')
-						WHERE
-							chr38='$chr_id'
-							and max_ratio > 0
-							and (allele='A' or allele='T' or allele='C' or allele='G')";
-					push(@lproj_sql, $sql_part);
-				}
-				
-				$sql .= join(' UNION ALL ', @lproj_sql);
-				$sql .= ")";
-				$sql .= "SELECT 
-							a.pos, a.rocksdb_id, a.score AS ncboost 
-							FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet') a
-							WHERE
-								a.score >= $ncboost_value 
-								AND dejavu <= $max_dejavu 
-								AND dejavu_ho <= $max_dejavu_ho
-								AND a.gnomad_ac <= $max_gnomad_ac
-								AND a.gnomad_ho <= $max_gnomad_ac_ho
-								AND $sql_annot
-								AND a.pos IN (SELECT pos38 FROM b_filtered)
-								$sql_region_end;";
+				my $sql_parquets = $dejavu_variants->sql_projects_parquet();
+				$sql = "
+					PRAGMA threads=10;
+	
+					WITH b_filtered AS (
+					    SELECT pos38
+					    FROM $sql_parquets
+					    WHERE chr38 = '$chr_id'
+					      AND max_ratio > 0
+					      AND allele IN ('A','T','C','G')
+					    GROUP BY pos38
+					)
+					
+					SELECT 
+					    a.pos, a.rocksdb_id, a.score AS ncboost
+					FROM read_parquet('/data-isilon/public-data/repository/HG38/ncboost/20260301/parquet/dejavu_filter/chr=$chr_id/*.parquet') a
+					JOIN b_filtered b
+					    ON a.pos = b.pos38
+					WHERE a.score >= $ncboost_value 
+					  AND dejavu <= $max_dejavu 
+					  AND dejavu_ho <= $max_dejavu_ho
+					  AND a.gnomad_ac <= $max_gnomad_ac
+					  AND a.gnomad_ho <= $max_gnomad_ac_ho
+					  AND $sql_annot
+					  $sql_region_end
+					  ;
+				";
 			}
+			
+			
+##			if (exists $dejavu_variants->hash_users_projects->{all}) {
+##				$sql .= "SELECT pos, rocksdb_id, score AS ncboost 
+##						FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet')
+##						WHERE
+##							score >= $ncboost_value 
+##							AND dejavu <= $max_dejavu 
+##							AND dejavu_ho <= $max_dejavu_ho
+##							AND gnomad_ac <= $max_gnomad_ac
+##							AND gnomad_ho <= $max_gnomad_ac_ho
+##							AND $sql_annot
+##							AND (cadd >= 25);";
+##			}
+##			else {
+#				$sql .= "WITH b_filtered AS (";
+#				my @lproj_sql;
+#				my $zz = 0;
+#				foreach my $file (@l_files) {
+#					
+#					my $sql_part = "SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet('$file')
+#						WHERE
+#							chr38='$chr_id'
+#							and max_ratio > 0
+#							and (allele='A' or allele='T' or allele='C' or allele='G')";
+#					push(@lproj_sql, $sql_part);
+#				}
+#				
+#				$sql .= join(' UNION ALL ', @lproj_sql);
+#				$sql .= ")";
+#				$sql .= "SELECT 
+#							a.pos, a.rocksdb_id, a.score AS ncboost 
+#							FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet') a
+#							WHERE
+#								a.score >= $ncboost_value 
+#								AND dejavu <= $max_dejavu 
+#								AND dejavu_ho <= $max_dejavu_ho
+#								AND a.gnomad_ac <= $max_gnomad_ac
+#								AND a.gnomad_ho <= $max_gnomad_ac_ho
+#								AND $sql_annot
+#								AND a.pos IN (SELECT pos38 FROM b_filtered)
+#								$sql_region_end;";
+##			}
 			
 			my $i = 0;
 			my $duckdb = $buffer->software('duckdb');
@@ -636,7 +676,7 @@ sub launch_promoter_ai {
 	my ($dejavu_variants, $promoter_ai_value) = @_;
 	my ($chr_filter, $start_filter, $end_filter) = split('-', $region) if $region;
 	$dejavu_variants->min_promoter_ai($promoter_ai_value);
-	my $sql_promoter_ai = "PRAGMA threads=6; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai_filtred']) WHERE ABS(promoterAI) >= $promoter_ai_value";
+	my $sql_promoter_ai = "PRAGMA threads=10; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai_filtred']) WHERE ABS(promoterAI) >= $promoter_ai_value";
 	my $i = 0;
 	my $duckdb = $buffer->software('duckdb');
 	open(my $fh, "-|", "$duckdb -csv -c \"$sql_promoter_ai\"") or die "duckdb failed";
