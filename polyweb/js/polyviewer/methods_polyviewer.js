@@ -766,12 +766,14 @@ function tabPatients(items , request ) {
 		    },
     
 			onShow:  function() {
+
 				setTimeout(dojo.hitch(this, function () {
 					logPolyviewerAction("Tab:" + this.patient + " | is loading: " + this._loading + " | is already completed: " + this._loaded);
 			        var tc = this.getParent();
 			        if (!tc || tc.selectedChildWidget !== this) { return; }
 			        if (this._loaded) { return; }
 			        if (this._loading) { return; }
+
 				    var tc = this.getParent();
 				    if (!tc) { return; }
 					this._loading = true;
@@ -854,6 +856,7 @@ function tabPatients(items , request ) {
 				}), 100);
 			}
 		});
+
 			
          tab_editor_polyviewer[pat_name].patient = pat_name;
          tab_editor_polyviewer[pat_name].toto = 1;
