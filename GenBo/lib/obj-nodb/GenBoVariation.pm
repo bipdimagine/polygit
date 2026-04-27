@@ -85,6 +85,7 @@ has ncboost_score => (
 		return '-' if $self->getProject->annotation_genome_version() eq 'HG19';
 		return '-' if ($self->getChromosome->id() eq 'MT');
 		my $db = $self->getChromosome->rocksdb("ncboost");
+		return '-' unless $db->exists_rocks();
 		my $score = $db->ncboost($self->rocksdb_id);
 		return $score if defined ($score);
 		return '-';
