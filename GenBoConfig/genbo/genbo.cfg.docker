@@ -330,7 +330,7 @@ duckdb:/software/bin/duckdb
 ################
 
 #deepvariant
-deepvariant-sif:/poly-disk/SINGULARITY/sandbox-deepsomatic/ 
+deepvariant-sif:/poly-disk/SINGULARITY/sandbox-deepvariant/ 
 
 #deepsomatic
 deepsomatic-sif:/poly-disk/SINGULARITY/sandbox-deepsomatic/ 
