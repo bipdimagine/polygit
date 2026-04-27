@@ -59,7 +59,7 @@ function view_dejavu_polycyto(value) {
 	xhr.send(args);
 }
 
-var gene_name ;
+var gene_name ='';
 var first_view= 1;
 
 var last_load_polycyto_argsPost = {};
@@ -160,7 +160,7 @@ function load_polyviewer_args(mode,dm) {
 		if (String(phenotype_name).match(/Gene:/g)) { phenotype_name = ''; }
 	}
 	
-	if (gene_name == '') {}
+	if (gene_name === '') {}
 	else {
 		argsPost["gene_name"] = gene_name;
 	}
@@ -781,11 +781,10 @@ function tabPatients(items , request ) {
 				        return;
 				    }
 					if (!(dijit.byId("check_never_pv"))) { return; }
-					if (this.setArgsPost == null ){
-						this.setArgsPost = load_polyviewer_args();
-					}
+					this.setArgsPost = load_polyviewer_args();
 					this.setArgsPost.patients = this.patient;
-					this.ioArgs.content = this.setArgsPost; 
+					this.ioArgs.content = this.setArgsPost;
+					
 			        this.onDownloadStart = function () {
 			            var text = "<div><img src='images/polyicons/wait18trans.gif' align='absmiddle'/> <span style='font-size:20px;'>Loading data for " + this.patient + "...</span></div>";
 			            if (this._retryCount > 0) {
