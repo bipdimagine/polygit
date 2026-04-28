@@ -244,12 +244,12 @@ unless ($cgi->param('phenotype')){
  my $chromosome_filtering;
  my $start_filtering;
  my $end_filtering;
- warn "coucou";
 if ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
-	$chromosome_filtering =$project->isChromosomeName($gene_name_filtering);
+	$chromosome_filtering = $project->isChromosomeName($1);
+	
 	$start_filtering = $2;
     my $start = $2;
-    my $end_filtering   = $3 if defined $3;
+     $end_filtering   = $3 if defined $3;
     $start_filtering = 1 unless $start_filtering;
     $gene_name_filtering = undef;
 }
@@ -257,7 +257,11 @@ elsif ($project->isChromosomeName($gene_name_filtering)) {
 	$chromosome_filtering = $project->isChromosomeName($gene_name_filtering);
 	$gene_name_filtering = undef;
 }
-
+my $file_gene_prenatsafe = $project->getProjectRootPath()."/gene.txt";
+if (-e $file_gene_prenatsafe){
+	$gene_name_filtering = `cat  $file_gene_prenatsafe`;
+	chomp ($gene_name_filtering);
+}
 
 if ($gene_name_filtering){
 	my $gene;
@@ -277,6 +281,8 @@ if ($gene_name_filtering){
 	}
 	
 }
+
+
 my $force;
 my $level_dude = 'high,medium';
 
@@ -596,10 +602,10 @@ $t     = time;
 	warn "hetero " . abs( time - $t ) if $print;
 	$ztime .= ' hetero:' . ( abs( time - $t ) );
 	print $ztime;
-
 	print " <span id='span_completed'>completed</span> ";
 	my $tag_span_patient = "span_".$patient->name."_completed";
 	print "<span id='$tag_span_patient'>".$patient->name."</span> ";
+
 	
 
 exit(0);
@@ -798,7 +804,7 @@ my $h_transmissions = {
 	$mask_transmission   |= $h_transmissions->{strict_denovo} if $cgi->param('strict_denovo');
 	$mask_transmission   |= $h_transmissions->{recessive} if $cgi->param('recessive');
 	$mask_transmission   |= $h_transmissions->{uniparental} if $cgi->param('recessive');
-	$mask_transmission   |= $h_transmissions->{mosaic} if $cgi->param('mosaic');
+	$mask_transmission   |= $h_transmissions->{mosaic} ;#if $cgi->param('mosaic');
 	$mask_transmission   |= $h_transmissions->{both} if $cgi->param('both');
 	$mask_transmission   |= $h_transmissions->{mother} if $cgi->param('xor_mother');
 	$mask_transmission   |= $h_transmissions->{father} if $cgi->param('xor_father');
@@ -874,6 +880,7 @@ my $h_transmissions = {
 			if ($start_filtering>0) {
     			$sql_gene = "variant_chromosome = '".$o->ucsc_name."' and variant_start >= ".$start_filtering." ";
     			$sql_gene .= "and variant_end <".$end_filtering." " if $end_filtering;
+    			warn $sql_gene;
 			}
 	}
 	
