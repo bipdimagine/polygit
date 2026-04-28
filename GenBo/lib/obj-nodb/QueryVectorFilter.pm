@@ -62,7 +62,10 @@ sub refreshGenes {
 
 sub deleteGene {
 	my ($self,$chr,$gene) = @_;
-	delete $self->{genes}->{$chr->name}->{$gene->id} ;
+	my $v_gene = $gene->getCurrentVector();
+	$v_gene -= $v_gene;
+	$gene->setCurrentVector($v_gene);
+	delete $self->{genes}->{$chr->name}->{$gene->id};
 	return 1;
 }
 
@@ -479,9 +482,9 @@ sub atLeastFilter_genes_ind {
 	my ($self, $chr, $atLeast) = @_;
 	my $variants_genes  = $chr->getNewVector();
 	my $var_tmp_atleast = $chr->getNewVector();
-foreach my $gene (@{$self->getGenes($chr)}) {
+	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $nb_ok = 0;
-		foreach my $patient ($self->getPatients) {
+		foreach my $patient (@{$chr->getPatients}) {
 			$var_tmp_atleast->Intersection($gene->getVariantsVector(), $patient->getVariantsVector($chr));
 			unless ($var_tmp_atleast->is_empty()) {
 				$nb_ok++;
@@ -494,7 +497,7 @@ foreach my $gene (@{$self->getGenes($chr)}) {
 			delete $chr->{genes_object}->{$gene->id}; 
 		}
 		else { $variants_genes += $gene->getVariantsVector();}
-		}
+	}
 	my $v = $chr->getVariantsVector() & $variants_genes;
 	$chr->setVariantsVector($v);
 		
@@ -509,18 +512,22 @@ sub atLeastFilter_genes_fam {
 	my $variants_genes  = $chr->getNewVector();
 	foreach my $gene (@{$self->getGenes($chr)}) {
 		my $nb_ok = 0;
-		my $var_tmp_atleast = $chr->getNewVector();
 		foreach my $family (@{$chr->getFamilies}) {
-			$var_tmp_atleast->Intersection($gene->getVariantsVector(), $family->getVariantsVector($chr));
-			unless ($var_tmp_atleast->is_empty()) {
+			my $var_tmp_atleast = $chr->getNewVector();
+			$var_tmp_atleast += $family->getCurrentVariantsVector($chr);
+			$var_tmp_atleast &= $chr->getVariantsVector();
+			$var_tmp_atleast &= $gene->getCurrentVector();
+			if ($var_tmp_atleast->Norm() > 0) {
 				$nb_ok++;
 				last if ($nb_ok == $atLeast);
 			}
 		}
 		if ($nb_ok < $atLeast) { 
+			my $v_gene = $gene->getCurrentCompactVector();
+			$v_gene -= $v_gene;
+			$gene->setCurrentVector($v_gene);
 			$self->deleteGene($chr,$gene);
-			$chr->supressGene($gene); 
-			}
+		}
 		else { $variants_genes += $gene->getVariantsVector(); }
 	}
 	my $v = $chr->getVariantsVector() & $variants_genes;
@@ -545,7 +552,6 @@ sub atLeastFilter_genes_som{
 		}
 		if ($nb_ok < $atLeast){ 
 			$self->deleteGene($chr,$gene);
-			$chr->supressGene($gene); 
 			}
 		else { $variants_genes += $gene->getVariantsVector(); }
 	}
@@ -1094,7 +1100,7 @@ sub filter_atLeast {
 			if ($level_fam eq 'gene') { $self->atLeastFilter_genes_fam($chr, $atLeast); }
 			else { $self->atLeastFilter_var_fam($chr, $atLeast); }
 		}
-		if ($typeFilters eq 'somatic') {
+		elsif ($typeFilters eq 'somatic') {
 			if ($level_fam eq 'gene') { $self->atLeastFilter_genes_som($chr, $atLeast); }
 			else { $self->atLeastFilter_var_som($chr, $atLeast); }
 		}
