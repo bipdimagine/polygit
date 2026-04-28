@@ -261,10 +261,12 @@ my $file_gene_prenatsafe = $project->getProjectRootPath()."/gene.txt";
 if (-e $file_gene_prenatsafe){
 	$gene_name_filtering = `cat  $file_gene_prenatsafe`;
 	chomp ($gene_name_filtering);
+	
 }
 
 if ($gene_name_filtering){
 	my $gene;
+	$keep_pathogenic = undef;
 	eval {
 	 $gene_name_filtering = uc($gene_name_filtering);
 	 $gene = $project->newGene($gene_name_filtering);
