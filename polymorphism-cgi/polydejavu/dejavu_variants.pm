@@ -907,6 +907,7 @@ sub get_score_variant_from_gene_without_patient {
 	my $h_var_scores;
 	foreach my $var_id (@$list_variants) {
 		next if not exists $hVariantsDetails->{$var_id};
+		next if not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat} and not $self->is_magic_user();
 		my $max_score = -99;
 		my $var = $self->project->_newVariant($var_id);
 		
