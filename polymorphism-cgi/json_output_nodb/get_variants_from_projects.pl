@@ -121,6 +121,8 @@ if (not $only_my_projects) {
 
 $dejavu_variants->fork($fork);
 
+$dejavu_variants->max_dejavu($max_dejavu) if $max_dejavu;
+$dejavu_variants->max_dejavu_ho($max_dejavu_ho) if $max_dejavu_ho;
 $dejavu_variants->max_gnomad_ac($max_gnomad_ac) if $max_gnomad_ac;
 $dejavu_variants->max_gnomad_ac_ho($max_gnomad_ac_ho) if $max_gnomad_ac_ho;
 $dejavu_variants->min_ratio($min_ratio) if $min_ratio;
@@ -321,7 +323,6 @@ if ($region) {
 		my $i = 0;
 		my $sql_parquets = $dejavu_variants->sql_projects_parquet();
 		
-		
 		my $sql = "
 			PRAGMA threads=$fork;
 			WITH base AS ( SELECT * FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos ),
@@ -396,7 +397,8 @@ print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
 my $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
 
-
+#warn Dumper $hVariantsDetails;
+#die;
 
 ### PART 4 - print HTML 
 
@@ -554,7 +556,6 @@ sub launch_ncboost {
 		my $sql_annot = "(".join(' OR ', @list_sql_annot).")";
 		
 		my ($chr_filter, $start_filter, $end_filter) = split('-', $region) if $region;
-		
 		foreach my $chr_id (@$chunk_ref) {
 			next if $chr_filter and $chr_filter ne $chr_id;
 			my $sql_region_end;
@@ -564,7 +565,7 @@ sub launch_ncboost {
 			my $sql;
 			if ($dejavu_variants->is_magic_user()) {
 				$sql = "
-					PRAGMA threads=10;
+					PRAGMA threads=$fork;
 					SELECT 
 					    a.pos, a.rocksdb_id, a.score AS ncboost
 					FROM read_parquet('/data-isilon/public-data/repository/HG38/ncboost/20260301/parquet/dejavu_filter/chr=$chr_id/*.parquet') a
@@ -581,7 +582,7 @@ sub launch_ncboost {
 			else {
 				my $sql_parquets = $dejavu_variants->sql_projects_parquet();
 				$sql = "
-					PRAGMA threads=10;
+					PRAGMA threads=$fork;
 	
 					WITH b_filtered AS (
 					    SELECT pos38
@@ -676,7 +677,7 @@ sub launch_promoter_ai {
 	my ($dejavu_variants, $promoter_ai_value) = @_;
 	my ($chr_filter, $start_filter, $end_filter) = split('-', $region) if $region;
 	$dejavu_variants->min_promoter_ai($promoter_ai_value);
-	my $sql_promoter_ai = "PRAGMA threads=10; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai_filtred']) WHERE ABS(promoterAI) >= $promoter_ai_value";
+	my $sql_promoter_ai = "PRAGMA threads=$fork; SELECT rocksdb_id, geneid FROM read_parquet(['$parquet_promoter_ai_filtred']) WHERE ABS(promoterAI) >= $promoter_ai_value";
 	my $i = 0;
 	my $duckdb = $buffer->software('duckdb');
 	open(my $fh, "-|", "$duckdb -csv -c \"$sql_promoter_ai\"") or die "duckdb failed";
