@@ -643,6 +643,14 @@
     				url += "&region=" + region;
 				}
 		    
+		    	if (has_div_checked['div_select_genes'] == true) {
+		    		var genes = document.getElementById("select_genes").value;
+		    		genes = genes.replaceAll(" ", ",");
+		    		genes = genes.replaceAll(";", ",");
+		    		genes = genes.replaceAll(",,", ",");
+    				url += "&only_genes=" + genes;
+				}
+		    
 		    	if (has_div_checked['div_select_promoter_ai'] == true) {
 			    	var promoter_ai_value;
 			    	if (dijit.byId("slider_promoter_ai").get("value") == 1)    { promoter_ai_value = '0.6'; }
@@ -844,7 +852,6 @@
 					var i_check = 0;
 			        var interval = setInterval(function() {
 			            $.getJSON(url + "&job_id=" + job_id, function(data) {
-			
 			                if (data.status === "running") {
 			                	//console.log('running');
 			                	i_check++;

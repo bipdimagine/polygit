@@ -1,14 +1,17 @@
 <center>
 	<div class='row no-gutters' style="height:110px;width:99%;background-color:#F0F0F0;border: 2px double black;">
-		<div class='col-sm-5' style="height:95px;padding-top:5px;border-right: 1px dashed grey;display:none;" id="div_search_control">
+		<div class='col-sm-5' style="height:95px;padding-top:4px;border-right: 1px dashed grey;display:none;" id="div_search_control">
 			<div class="form-group row" style="vertical-align:center;">
 	    		<div class="col-sm-4" style="margin-right:0px;margin-top:0px;">
-	    			<label style="font-size:13px;">Select an annotation:</label><br>
+	    			<label style="font-size:11px;">Select an annotation:</label><br>
 	    			<table>
 	    				<tr>
 	    					<td>
-								<input type="checkbox" id="ncboost" onchange="toggleDiv('div_select_region', this.checked)">
+								<input type="checkbox" id="region" onchange="toggleDiv('div_select_region', this.checked)">
 								<label for="region">only Chr/Region</label>
+								<br>
+								<input type="checkbox" id="genes" onchange="toggleDiv('div_select_genes', this.checked)">
+								<label for="region">only Gene(s)</label>
 								<br>
 								<input type="checkbox" id="promoter_ai" onchange="toggleDiv('div_select_promoter_ai', this.checked)">
 								<label for="promoter_ai">use promoterAI</label>
@@ -81,6 +84,23 @@
 						                </td></tr>
 					                </table>
 								</div>
+								
+								<div id="div_select_genes" class="box" style="display:none;">
+									<table>
+					    				<tr><td><center><span style="font-size:13px;"><b>Gene(s)</b> </span></center><br></td></tr>
+					    				<tr><td>
+					    					<center>
+						    					<form>
+												    <label for="select_genes">Only </label>
+												    <input style="width:200px;" type="string" id="select_genes" name="select_genes">
+												    <br>
+												</form>
+											</center>
+						                </td></tr>
+					                </table>
+								</div>
+								
+								
 								
 								<div id="div_select_promoter_ai" class="box" style="display:none;">
 									<table>

@@ -106,18 +106,20 @@ my $only_ill = $cgi->param('only_ill');
 my $only_strict_ill = $cgi->param('only_strict_ill');
 my $models = $cgi->param('models');
 my $region = $cgi->param('region');
+my $only_genes = $cgi->param('only_genes');
 
 my $dejavu_variants = new dejavu_variants();
 $dejavu_variants->user_name($login);
 $dejavu_variants->pwd($pwd);
 
+if (not $only_my_projects) {
+	#TODO: faire en sorte de prendre tous les projets en hash - ne marche pas la
+	$dejavu_variants->{is_magic_user} = 1;
+	print '.all_projects.';
+}
 $dejavu_variants->hash_users_projects() if $only_my_projects;
 exit(0) if not $dejavu_variants->hash_users_projects();
 print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
-if (not $only_my_projects) {
-	$dejavu_variants->{hash_users_projects}->{all} = 1;
-	print '.all_projects.';
-}
 
 $dejavu_variants->fork($fork);
 
@@ -129,6 +131,8 @@ $dejavu_variants->min_ratio($min_ratio) if $min_ratio;
 $dejavu_variants->only_ill_patients(1) if $only_ill;
 $dejavu_variants->only_strict_ill_patients(1) if $only_strict_ill;
 
+$dejavu_variants->only_genes(1) if $only_ill;
+
 my $h_models;
 if ($models) {
 	foreach my $model_name (split(',', $models)) {
@@ -138,9 +142,38 @@ if ($models) {
 }
 
 my $buffer = new GBuffer;
-my $project_name = $buffer->getRandomProjectName();
+my $project_name = $buffer->getRandomProjectName('HG38_DRAGEN', '46', '21');
 my $project = $buffer->newProject( -name => $project_name );
 
+my $h_errors_found;
+my $h_only_genes;
+if ($only_genes) {
+	$only_genes =~ s/ //g;
+	$only_genes =~ s/[,]+/,/g;
+	foreach my $gene_id (split(',', $only_genes)) {
+		next if not $gene_id;
+		my @tests;
+		push(@tests, $gene_id);
+		push(@tests, uc($gene_id));
+		push(@tests, lc($gene_id));
+		my $found;
+		foreach my $gene_id_test (@tests) {
+			next if $found;
+			my $gene;
+			eval {
+				$gene = $project->newGene($gene_id_test);
+				$h_only_genes->{$gene->id()} = $gene->getChromosome->id().'-'.($gene->start - 500).'-'.($gene->end + 500);
+				$found = 1;
+			};
+			if($@) {
+				$found = undef;
+			}
+		}
+		if (not $found) {
+			$h_errors_found->{$gene_id} = "gene not found in gencode ".$project->gencode_version();
+		}
+	}
+}
 
 my $filters_cons = $cgi->param('filters_cons');
 my $h_filters_cons;
@@ -311,81 +344,92 @@ if ($ncboost_value) {
 	print '.now.'.$found++.'.';
 }
 
-if ($region) {
+if ($region or $only_genes) {
 	if (not $promoter_ai_value and not $ncboost_value) {
-		print '.only_region.';
-		my ($chr_filter, $start_filter, $end_filter) = split('-', $region);
-		$dejavu_variants->{only_chromosome} = $chr_filter;
-		my $sql_pos;
-		if ($start_filter and $end_filter) {
-			$sql_pos = "and pos38 >= $start_filter and pos38 <= $end_filter";
-		}
-		my $i = 0;
-		my $sql_parquets = $dejavu_variants->sql_projects_parquet();
 		
-		my $sql = "
-			PRAGMA threads=$fork;
-			WITH base AS ( SELECT * FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos ),
-			agg AS (
-			    SELECT 
-			        chr38, pos38, allele,
-			        SUM(he) AS sum_he,
-			        SUM(ho) AS sum_ho
-			    FROM base
-			    GROUP BY chr38, pos38, allele
-			    HAVING (SUM(he) + SUM(ho)) <= $max_dejavu AND SUM(ho) <= $max_dejavu_ho
-			)
-			SELECT 
-			    b.project, b.chr38, b.pos38, b.allele, b.he, b.ho
-			FROM base b
-			JOIN agg USING (chr38, pos38, allele);
-		";
-		
-		
-		my $duckdb = $dejavu_variants->buffer->software('duckdb');
-		open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
-		while (my $line = <$fh>) {
-		    chomp $line;
-		    my ($project_id,$this_chr38,$this_pos38,$allele,$he,$ho) = split(/,/, $line);
-	    	next if $project_id eq 'project';
-
-	    	next if not $allele =~ /[ATGC]+/;
-
-	    	my $rocksid = sprintf("%010d", $this_pos38).'!'.$allele;
-	    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id} = undef;
-	    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{he} += $he;
-	    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{ho} += $ho;
-	    	$i++;
-	    	print '.' if ($i % 100000 == 0);
-		}
-		close($fh);
-		print '.found.'.$i.'.';
-		$i = 0;
-		my $chr = $dejavu_variants->project->getChromosome($chr_filter);
-		my $no = $chr->rocksdb('gnomad');
-		
-		my @l_var_chr = keys %{$h_rocks_to_view->{$chr_filter}};
-		print ".begin_prepare_rocks.";
-		$no->prepare(\@l_var_chr);
-		print ".end_prepare_rocks.";
-		
-		foreach my $rocksid (@l_var_chr) {
-			my $h_gad = $no->value($rocksid);
-			if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
-				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
-				next;
+		my @l_regions;
+		if ($region) { push(@l_regions, $region); }
+		if ($only_genes) {
+			foreach my $gid (keys %{$h_only_genes}) {
+				push(@l_regions, $h_only_genes->{$gid});
 			}
-			if ($h_gad and exists $h_gad->{ho} and $h_gad->{ho} > $max_gnomad_ac_ho) {
-				delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
-				next;
+		}
+		
+		foreach my $this_region (@l_regions) {
+			print '.only_region.'.$this_region.'.';
+			my ($chr_filter, $start_filter, $end_filter) = split('-', $this_region);
+			$dejavu_variants->{only_chromosome} = $chr_filter;
+			my $sql_pos;
+			if ($start_filter and $end_filter) {
+				$sql_pos = "and pos38 >= $start_filter and pos38 <= $end_filter";
 			}
+			my $i = 0;
+			my $sql_parquets = $dejavu_variants->sql_projects_parquet();
 			
-			delete $h_rocks_to_view->{$chr_filter}->{$rocksid}->{he};
-			delete $h_rocks_to_view->{$chr_filter}->{$rocksid}->{ho};
-			$i++;
+			my $sql = "
+				PRAGMA threads=$fork;
+				WITH base AS ( SELECT * FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos ),
+				agg AS (
+				    SELECT 
+				        chr38, pos38, allele,
+				        SUM(he) AS sum_he,
+				        SUM(ho) AS sum_ho
+				    FROM base
+				    GROUP BY chr38, pos38, allele
+				    HAVING (SUM(he) + SUM(ho)) <= $max_dejavu AND SUM(ho) <= $max_dejavu_ho
+				)
+				SELECT 
+				    b.project, b.chr38, b.pos38, b.allele, b.he, b.ho
+				FROM base b
+				JOIN agg USING (chr38, pos38, allele);
+			";
+			
+			
+			my $duckdb = $dejavu_variants->buffer->software('duckdb');
+			open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
+			while (my $line = <$fh>) {
+			    chomp $line;
+			    my ($project_id,$this_chr38,$this_pos38,$allele,$he,$ho) = split(/,/, $line);
+		    	next if $project_id eq 'project';
+	
+		    	next if not $allele =~ /[ATGC]+/;
+	
+		    	my $rocksid = sprintf("%010d", $this_pos38).'!'.$allele;
+		    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id} = undef;
+		    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{he} += $he;
+		    	$h_rocks_to_view->{$this_chr38}->{$rocksid}->{ho} += $ho;
+		    	$i++;
+		    	print '.' if ($i % 100000 == 0);
+			}
+			close($fh);
+			print '.found.'.$i.'.';
+			$i = 0;
+			my $chr = $dejavu_variants->project->getChromosome($chr_filter);
+			my $no = $chr->rocksdb('gnomad');
+			
+			my @l_var_chr = keys %{$h_rocks_to_view->{$chr_filter}};
+			print ".begin_prepare_rocks.";
+			$no->prepare(\@l_var_chr);
+			print ".end_prepare_rocks.";
+			
+			foreach my $rocksid (@l_var_chr) {
+				my $h_gad = $no->value($rocksid);
+				if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
+					delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
+					next;
+				}
+				if ($h_gad and exists $h_gad->{ho} and $h_gad->{ho} > $max_gnomad_ac_ho) {
+					delete $h_rocks_to_view->{$chr_filter}->{$rocksid};
+					next;
+				}
+				
+				delete $h_rocks_to_view->{$chr_filter}->{$rocksid}->{he};
+				delete $h_rocks_to_view->{$chr_filter}->{$rocksid}->{ho};
+				$i++;
+			}
+			$no->close();
+			print '.found_filtred.'.$i.'.';
 		}
-		$no->close();
-		print '.found_filtred.'.$i.'.';
 	}
 }
 
@@ -424,6 +468,10 @@ mce_loop {
 	my $hres;
 	foreach my $gene_id (@$chunk_ref) {
 		next if $gene_id eq 'intronic';
+		if ($only_genes) {
+			next if not exists $h_only_genes->{$gene_id};
+		}
+		
 		my @l_gene_id_tmp = split('_', $gene_id);
 		print '.';
 		my @list_variants = keys %{$hGenes->{$gene_id}};
@@ -456,6 +504,15 @@ if ($dejavu_variants->alert_ncboost_min_cadd_25()) {
 	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
 	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Only variants with cadd score >= 25 for ncboost filter !</span></b></i>&nbsp;&nbsp;</td>";
 	$html .= "</tr></table></div><br>"
+}
+if ($h_errors_found) {
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<td><b><pan style='color:red;'>ERRORS: </span></b>&nbsp;&nbsp;</td>";
+	foreach my $val (keys %$h_errors_found) {
+		my $msg = $val.': '.$h_errors_found->{$val};
+		$html .= "<td><button type='button' class='btn btn-outline-primary' style='color:white;background-color:red;margin-right:5px;border: solid 0.5 black;font-size:12px;'>$msg</button></td>";
+	}
+	$html .= "</tr></table></div><br>";
 }
 
 $html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
@@ -491,7 +548,9 @@ if ($launch_job) {
 	$hRes->{status} = "finished";
 	$hRes->{html}   = $html;
 	$hRes->{phenotypes} = join(',', @lPhenos);
-	
+	if ($h_errors_found) {
+		$hRes->{errors}  = join(', ', values %$h_errors_found);
+	}
 	open(my $out, ">", $outfile);
 	print $out encode_json($hRes);
 	close $out;
@@ -499,6 +558,9 @@ if ($launch_job) {
 else {
 	my $hRes;
 	$hRes->{html} = $html;
+	if ($h_errors_found) {
+		$hRes->{errors}  = join(', ', values %$h_errors_found);
+	}
 	my $json_encode = encode_json $hRes;
 	print ".\",";
 	$json_encode =~ s/{//;

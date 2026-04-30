@@ -251,6 +251,11 @@ has only_chromosome  => (
 	lazy    => 1,
 );
 
+has only_genes  => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 
 sub check_variants_from_gene {
 	my ($self, $h_dv_rocks_ids) = @_;
