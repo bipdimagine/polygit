@@ -160,8 +160,9 @@ if($trio)
 	
 		$vplasmaFromFather = $vfather & $plasma->getVectorOriginHe($chr);					# variants du père > minRatio, absent chez la mère retrouvés dans le plasma
 	
-		my $v3 = $vmother+$vplasmaFromFather;												# liste = somme des variants de la mère non presents chez le père  + variants du plasma transmis par le père
-		my $list3 = to_array($v3,$chr->name);	
+		my $v3 = $vmother+$vplasmaFromFather;											# liste = somme des variants de la mère non presents chez le père  + variants du plasma transmis par le père
+		
+		my $list3 = to_array($v3,$chr);	
 		$project->setListVariants($list3);
 
 		my @array_plasma;
@@ -308,7 +309,10 @@ sub printJson {
 
 
 sub to_array {
-	my ( $v, $name ) = @_;
+	my ( $v,  $chr) = @_;
+	my $name = $chr->name();
+	my $is_diag_project;
+	$is_diag_project = 1 if $project->isDiagnostic();
 	my $set  = Set::IntSpan::Fast::XS->new( $v->to_Enum );
 	my $iter = $set->iterate_runs();
 	my @t;
@@ -316,7 +320,7 @@ sub to_array {
 	while ( my ( $from, $to ) = $iter->() ) {
 		for my $member ( $from .. $to ) {
 			$x++;
-			next if ($x % 20 != 0);
+			next if (not $is_diag_project and $x % 20 != 0);
 			if ($name) {
 				push( @t, $name . "!" . $member );
 			}
