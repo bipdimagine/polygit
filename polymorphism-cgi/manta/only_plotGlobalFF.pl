@@ -195,18 +195,32 @@ if($trio)
 				push(@array_variant_plasma,$v);				
 			}
 		}
-	
-	
 		foreach my $values (@array_plasma)
 		{
 			my ($p,$m,$f)=split(/,/,$values);
+			
+			push(@foetal_frac,$f) if $f ne "null";							# dans foetal_frac la balance allélique des variants du plasma provenant du père
 	
+			# pour le plot on ne garde que 1 variant sur 20
+			
+			
 			$lpos .= $p." ";
 			$lmother .= $m." ";
-			$lfather .= $f." "; 
+			$lfather .= $f." ";
 		
-			push(@foetal_frac,$f) if $f ne "null";							# dans foetal_frac la balance allélique des variants du plasma provenant du père
+			
 		}
+	
+#		foreach my $values (@array_plasma)
+#		{
+#			my ($p,$m,$f)=split(/,/,$values);
+#	
+#			$lpos .= $p." ";
+#			$lmother .= $m." ";
+#			$lfather .= $f." "; 
+#		
+#			push(@foetal_frac,$f) if $f ne "null";							# dans foetal_frac la balance allélique des variants du plasma provenant du père
+#		}
 		
 
 
@@ -243,22 +257,22 @@ if($trio)
 	printJson( \@listHashRes );
 	
 	# Sauvegarde les caractéristiques du variant
-	if ($printres)
-	{
-		foreach my $v (@array_variant_plasma)
-		{
-			my $vid = $v->id;
-			my $vdepth = $v->getDepth($plasma);
-			my $score = ($vdepth*$ff_mean)/100;
-			my $vfreq = $v->frequency*100;
-			my $djv = "-";
-			$djv = $v->nb_deja_vu_samples;
-			$vfreq = sprintf ("%.3f", $vfreq);
-			warn $vid;
-			print($fd $vid."\t".$vdepth."\t".$v->getPourcentAllele($father).";".$v->getPourcentAllele($plasma)."\t".$vfreq."%\t".$djv."\t".$score."\n");
-			
-		}
-	}
+#	if ($printres)
+#	{
+#		foreach my $v (@array_variant_plasma)
+#		{
+#			my $vid = $v->id;
+#			my $vdepth = $v->getDepth($plasma);
+#			my $score = ($vdepth*$ff_mean)/100;
+#			my $vfreq = $v->frequency*100;
+#			my $djv = "-";
+#			$djv = $v->nb_deja_vu_samples;
+#			$vfreq = sprintf ("%.3f", $vfreq);
+#			warn $vid;
+#			print($fd $vid."\t".$vdepth."\t".$v->getPourcentAllele($father).";".$v->getPourcentAllele($plasma)."\t".$vfreq."%\t".$djv."\t".$score."\n");
+#			
+#		}
+#	}
 	
 }
 else
@@ -302,6 +316,7 @@ sub to_array {
 	while ( my ( $from, $to ) = $iter->() ) {
 		for my $member ( $from .. $to ) {
 			$x++;
+			next if ($x % 20 != 0);
 			if ($name) {
 				push( @t, $name . "!" . $member );
 			}
