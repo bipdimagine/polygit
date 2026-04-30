@@ -306,7 +306,9 @@ sub check_variants_from_gene {
 			        }
 			        if ($data->{genes}) {
 			            foreach my $gene_id (keys %{$data->{genes}}) {
-			                $hGenes->{$gene_id} = $data->{genes}->{$gene_id};
+			            	foreach my $var_id (keys %{$data->{genes}->{$gene_id}}) {
+			                	$hGenes->{$gene_id}->{$var_id} = $data->{genes}->{$gene_id}->{$var_id};
+			            	}
 			            }
 			        }
 			        if ($data->{hash_projects_ids_names}) {
@@ -380,7 +382,6 @@ sub check_variants_from_gene {
 						$found++;
 					}
 					if ($found) {
-						#$h_var_pos
 						$hres->{var_pos}->{$chr_id}->{$start}->{$var_allele}->{var_id} = $var_id;
 						$hres->{var_pos}->{$chr_id}->{$start}->{$var_allele}->{ref_all} = $ref_allele;
 						$hres->{var_pos}->{$chr_id}->{$start}->{$var_allele}->{gnomad_id} = $gnomad_id;
@@ -398,9 +399,6 @@ sub check_variants_from_gene {
 	}
 	$self->buffer->dbh_deconnect();
 	$self->project->disconnect();
-	
-#	warn Dumper $h_var_pos;
-#	die;
 	
 	#TODO: detail des patients;
 	my ($h_projects_patients, $h_gnomadid);
