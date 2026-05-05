@@ -808,8 +808,11 @@ function getParentFromTab(tab){
 	function return_selected_patient(tab){
 		var parent = getParentFromTab(tab);
 		if (!parent) {
+			alert("problem with TAB");
+		    console.warn("Parent null ou non défini");
 		    return;
 		}
+		
 
 		var pane = parent.selectedChildWidget;
 		var pname = pane.patient[0];

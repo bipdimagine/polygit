@@ -252,10 +252,10 @@ function load_polyviewer(mode, only_dude,dm){
     }
    t = "all";
 	if (tab_editor_polyviewer){
-		var tab_selected_patient;
-		setTimeout(function() {
-			tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
-		}, 100);
+     	var tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
+     	tab_editor_polyviewer[tab_selected_patient].toto = 1;
+     	tab_editor_polyviewer[tab_selected_patient]._loaded = false;
+		tab_editor_polyviewer[tab_selected_patient].onShow();
    }
    else {
 	   for (var i=0;i<tsamples.length;i++) {
