@@ -60,7 +60,6 @@ my $captures = $project->getCaptures();
 my $patient_name = $cgi->param('patients');
 my $cgi_transcript =  $cgi->param('transcripts');
 my $type = $cgi->param('type');
-
 my $vp =  $project->getPatient($patient_name);
 my $run = $vp->getRun();
 
@@ -72,7 +71,6 @@ $splice_5 = $cgi->param('span');
 
 my $start_cgi = $cgi->param('start');
 my $end_cgi = $cgi->param('end');
-
 $splice_5 = 1 unless $splice_5;
 $splice_5 = 100;
 #$splice_5= 10;
@@ -83,7 +81,6 @@ my $all_htranscripts;
 my $patient_exons;
 my $tr = $project->newTranscript($cgi_transcript);
 
-my $cgi    = new CGI();
 my @res;
 my $seq;
 my $pdata;
@@ -95,7 +92,9 @@ my @names;
 my $utr;
 my $length_exon;
 push(@names,$patient_name);
-return_coverage($cgi->param('start'),$cgi->param('end'));
+my $aa = $cgi->param('start');
+my $ba = $cgi->param('end');
+return_coverage($aa,$ba);
 
 
 exit(0);
@@ -106,6 +105,8 @@ sub return_array_depth {
 		return $patient->depth($chr_name,$start,$end);
 	}
 	else {
+			delete $patient->{nb_reads};
+			warn Dumper $patient->nb_reads;
 			return $patient->normalize_depth($chr_name,$start,$end);
 	}
 }
@@ -117,6 +118,9 @@ sub return_coverage{
 	my $nb_patient_in_run = 0;
 	my $vexon;
 	my $pdata;
+	foreach my $patient (@{$run->getPatients}){
+			delete $patient->{nb_reads};
+		}
 		foreach my $exon (@{$tr->getAllGenomicsParts}){
 		next if $exon->name() ne $cgi_exon;
 		$vexon = $exon;
@@ -125,6 +129,7 @@ sub return_coverage{
 		my $genomic_start =   $start-$splice_5;
 		my $genomic_end =   $end+$splice_5;
 		$pdata = return_array_depth($vp,$tr->getChromosome->name,$genomic_start,$genomic_end) ;
+		
 		foreach my $patient (@{$run->getPatients}){
 			next if $patient->name eq $vp->name;
 			$data = return_array_depth($patient,$tr->getChromosome->name,$genomic_start,$genomic_end);
