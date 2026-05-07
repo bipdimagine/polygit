@@ -1832,10 +1832,10 @@ sub panel_gene {
 				#$color_background_gene = "#cee3f5" if $hgene->{id} eq 'intergenic';
 				if (exists $hgene->{collapse_with_id}) {
 					my $this_collapse_id = $hgene->{collapse_with_id};
-					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status btn-gene" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
 				}
 				else {
-					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status" style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status btn-gene" style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
 				}
 				
 				
@@ -1846,13 +1846,13 @@ sub panel_gene {
 					$out .= $actionable_text;
 	   			}
 				my $omim = $hgene->{omim_id};
-				$out .=qq{<a class="btn btn-primary btn-xs" href="http://www.omim.org/entry/$omim" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Omim</a>} if $omim ne "";
-				$out .=qq{<a class="btn btn-primary btn-xs"   style="$bgcolor2;min-width:40px"><i class="fa fa-minus"></i></a>} if $omim eq "";
+				$out .=qq{<a class="btn btn-primary btn-xs btn-gene" href="http://www.omim.org/entry/$omim" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Omim</a>} if $omim ne "";
+				$out .=qq{<a class="btn btn-primary btn-xs btn-gene"   style="$bgcolor2;min-width:40px"><i class="fa fa-minus"></i></a>} if $omim eq "";
 				
 				#gtex Portal
 					my ($gid,$t) = split("_",$hgene->{id});
 					
-					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gtexportal.org/home/gene/$gid" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Gtex</a>};# if $omim ne "";
+					$out .=qq{<a class="btn btn-primary btn-xs btn-gene" href="https://gtexportal.org/home/gene/$gid" role="button" target="_blank" style="min-width:40px;$bgcolor2;text-shadow:1px 1px 1px black;color:white">Gtex</a>};# if $omim ne "";
 				#ENSG00000124155
 				
 				
@@ -1872,11 +1872,11 @@ sub panel_gene {
  				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
  				if ($gene) {
  					my ($gidtmp,$gtmp) = split('_',$gene->id());
- 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 					$out .=qq{<a class="btn btn-primary btn-xs btn-gene" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
  				}
  				else {
  					my ($gidtmp,$gtmp) = split('_',$hgene->{id});
- 					$out .=qq{<a class="btn btn-primary btn-xs" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
+ 					$out .=qq{<a class="btn btn-primary btn-xs btn-gene" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
  				}
  				
  				
@@ -1896,7 +1896,7 @@ sub panel_gene {
 	   				$panel_list .= "<br>";
 	   			}
 	   			$panel_name1 = "Panel: ".scalar (keys %{$hgene->{panels}});
-				$out .=qq{<a class="btn btn-primary btn-xs" href="#" role="button" style="top:-4px;$bgcolor2" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><p style="font-size:10px;text-shadow:0px 1px 1px #000;position:relative;bottom:-4px">$panel_name1</p></a>} if $panel_name1;
+				$out .=qq{<a class="btn btn-primary btn-xs btn-gene" href="#" role="button" style="top:-4px;$bgcolor2" onclick="document.getElementById('span_list_panels').innerHTML='$panel_list';dijit.byId('dialog_list_panels').show();"><p style="font-size:10px;text-shadow:0px 1px 1px #000;position:relative;bottom:-4px">$panel_name1</p></a>} if $panel_name1;
 
 	   		my ($pheno,$nb_other_terms);
 	   		
@@ -2748,7 +2748,7 @@ sub table_cnv_genes_transcripts {
 		$type = "orange" if $pli >= 0.75;
 		$type = "red" if $pli >= 0.9;
 		
- 		my $b_pli =qq{<a class="btn btn-xs" role="button" href='https://gnomad.broadinstitute.org/gene/$gid' target='_blank' style="background-color:#EEE;color:black;border:solid 1px black;"><span style="font-size:8px;background-color:#EEE;">$pli</span></a>};
+ 		my $b_pli =qq{<a class="btn btn-xs" role="button" href='https://gnomad.broadinstitute.org/gene/$gid' target='_blank' style="background-color:white;color:black;border:solid 1px black;"><span style="font-size:8px;background-color:#EEE;">$pli</span></a>};
  		
  		#VARIANTS
 		my ($nb_dude, $nb_var);
