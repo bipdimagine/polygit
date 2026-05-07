@@ -641,8 +641,8 @@
 		    			var start = parseInt(document.getElementById("select_start").value);
 		    			var end = parseInt(document.getElementById("select_end").value);
 		    			var length = end - start;
-		    			if (end > start) {
-		    				alert("Problem with region: end > start");
+		    			if (start >= end) {
+		    				alert("Problem with region: start >= end");
 		    				return;
 		    			}
 		    			if (length > 5000000) {
