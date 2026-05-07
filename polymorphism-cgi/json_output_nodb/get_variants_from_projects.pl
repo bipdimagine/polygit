@@ -34,7 +34,7 @@ use Set::IntSpan;
 
 my $cgi = new CGI();
 
-my $fork = 10;
+my $fork = 6;
 my $launch_job = $cgi->param('launch_job');
 
 my $outfile;
@@ -495,7 +495,7 @@ my @lPhenos = sort keys %$h_phenos;
 my $html;
 
 if ($dejavu_variants->alert_too_much_results()) {
-	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<div style='width:100%;overflow-x:auto;background-color:white !important;'><table><tr>";
 	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Too much results... partial results !</span></b></i>&nbsp;&nbsp;</td>";
 	$html .= "</tr></table></div><br>"
 }
@@ -537,11 +537,12 @@ $html .= "<tbody>";
 foreach my $score (sort {$b <=> $a} keys %$h_html_genes) {
 	foreach my $gene_id (sort keys %{$h_html_genes->{$score}}) {
 		my $html_gene = $h_html_genes->{$score}->{$gene_id};
-		$html .= "<tr><td>".$html_gene."</td></tr>";
+		$html .= "<tr style='font-size:11px;'><td>".$html_gene."</td></tr>";
 	}
 }
 $html .= "</tbody>";
 $html .= "</table>";
+$html =~ s/glyphicon-minus/fa fa-minus/g;
 
 if ($launch_job) {
 	my $hRes;

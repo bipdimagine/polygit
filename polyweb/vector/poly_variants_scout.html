@@ -469,6 +469,7 @@
 		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
 		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 		
 		
         <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
@@ -637,9 +638,24 @@
 		    	if (has_div_checked['div_select_region'] == true) {
 		    		var region = document.getElementById("select_chr").value;
 		    		if (parseInt(document.getElementById("select_start").value)) {
-	    				region += '-' + parseInt(document.getElementById("select_start").value);
-	    				region += '-' + parseInt(document.getElementById("select_end").value);
+		    			var start = parseInt(document.getElementById("select_start").value);
+		    			var end = parseInt(document.getElementById("select_end").value);
+		    			var length = end - start;
+		    			if (start >= end) {
+		    				alert("Problem with region: start >= end");
+		    				return;
+		    			}
+		    			if (length > 5000000) {
+		    				alert("LENGTH MAX: 5.000.000");
+		    				return;
+		    			}
+	    				region += '-' + start;
+	    				region += '-' + end;
     				}
+    				else if (region != 'X' && region != 'Y' && region != 'MT') {
+    					alert("LENGTH MAX: 5.000.000");
+	    				return;
+					}
     				url += "&region=" + region;
 				}
 		    
