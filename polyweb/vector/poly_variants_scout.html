@@ -640,7 +640,11 @@
 		    		if (parseInt(document.getElementById("select_start").value)) {
 		    			var start = parseInt(document.getElementById("select_start").value);
 		    			var end = parseInt(document.getElementById("select_end").value);
-		    			var length = end - start + 1;
+		    			var length = end - start;
+		    			if (end > start) {
+		    				alert("Problem with region: end > start");
+		    				return;
+		    			}
 		    			if (length > 5000000) {
 		    				alert("LENGTH MAX: 5.000.000");
 		    				return;
