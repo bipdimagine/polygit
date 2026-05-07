@@ -520,7 +520,7 @@ my $lists = table_dude::getListGenes($patient,$array,$fork,1);
 my %t ;
 my $l2;
 my $gg = $project->newGene("SHISA9");
-foreach my $gene (@$genes){
+foreach my $gene (sort{$a->start <=> $b->start} @$genes){
 	if ($gene->name eq "ENSG00000134769"){
 		#warn $gene->getTranscripts->[1]->name;
 		warn $gene->getMainTranscripts()->[0]->name;
@@ -609,7 +609,7 @@ foreach my $gene (@$genes){
 my $x= table_dude::get_images($patient,$l2,$fork,1);
 print qq{</div>};
 
-table_dude::print_dude_genes($patient,$x,$fork,1);
+table_dude::print_dude_genes($patient,$x,$fork,1,"position");
 exit(0);
 
 sub select_transcripts {
