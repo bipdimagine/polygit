@@ -1148,6 +1148,7 @@ has mean_amount_reads => (
 	default => sub {
 		my $self = shift;
 		my $nb;
+	
 		foreach my $patient (@{$self->getPatients()}){
 			$nb+= $patient->nb_reads->{all};
 		}
@@ -3288,6 +3289,8 @@ sub setPatients {
 		if ($self->hide_patients){
 			next if $h->{genbo_id} == -1;
 		}
+		
+		$h->{nb_reads_expected} = delete $h->{nb_reads};
 		$h->{id} = $h->{patient_id};
 		$h->{origin_patient_id} = $h->{origin_patient_id};
 		if ($h->{origin_patient_id} > 0){
