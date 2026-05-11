@@ -616,6 +616,12 @@
 			    		if (key == 'html_transcripts') {
 			    			document.getElementById("span_html_annot").innerHTML = val;
 			    		}
+			    		if (key == 'html_error') {
+			    			document.getElementById("span_html_error").innerHTML = val;
+			    			setTimeout(function() {
+			    				end_tasks_error();
+							}, 100);
+			    		}
 			    		if (key == 'html_dejavu') {
 			    			document.getElementById("span_html_dejavu").innerHTML = val;
 			    			setTimeout(function() {
@@ -640,6 +646,11 @@
 				document.getElementById("content_res_users").innerHTML = "";
 				document.getElementById("content_res_users").innerHTML = users;
 				dijit.byId('dialog_users').show();
+			}
+	    	
+	    	function end_tasks_error() {
+				dijit.byId('waiting').hide();
+				document.getElementById("panel_error").style.display = "block";
 			}
 	    	
 	    	function end_tasks() {
@@ -681,6 +692,17 @@
 			</div>
 		</nav>
 		
+		<div data-dojo-type="dijit/layout/ContentPane" style="width:100%;overflow-x:auto;overflow-y:hidden;margin: 0 auto;" hidden id="panel_error">
+			<div class='row no-gutters' style="height:30%;width:100%;">
+				<div class='col-sm-12' style="background-color:white;padding-top:5px;">
+					<center>
+						<span id="span_html_error"></span>
+						<br><br>
+					</center>
+				</div>
+			</div>
+		</div>
+		
 		<div data-dojo-type="dijit/layout/ContentPane" style="width:100%;overflow-x:auto;overflow-y:hidden;margin: 0 auto;" hidden id="panel_results">
 			<center>
 					
@@ -696,7 +718,7 @@
 					</div>
 					
 					<div class='col-sm-8' style="background-color:white;padding-top:15px;text-align:center;">
-						<div style='border: double 1px black;background-color:orange;color:white;text-align:left;font-size:13px;>'><span style='padding-left:15px;'><b>External Ressources</b></span></div>
+						<div id='div_external_ressources' style='border: double 1px black;background-color:orange;color:white;text-align:left;font-size:13px;'><span style='padding-left:15px;'><b>External Ressources</b></span></div>
 						<table style="width:100%;border: solid 1px black;">
 							<tr>
 								<td style="border: solid 1px grey;font-size:14px;">

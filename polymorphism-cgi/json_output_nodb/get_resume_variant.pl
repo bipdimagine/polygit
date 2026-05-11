@@ -45,6 +45,7 @@ my $buffer = new GBuffer;
 my $project_name = $buffer->getRandomProjectName($release);
 my $project = $buffer->newProject( -name => $project_name );
 
+my ($chr_id, $pos, $ref_allele, $alt_allele);
 if ($variant =~ /-/) {
 	my @lTmp = split('-', $variant);
 	if (length($lTmp[-2]) == length($lTmp[-1])) {
@@ -53,13 +54,33 @@ if ($variant =~ /-/) {
 	else {
 		$variant = $lTmp[0].'_'.($lTmp[1] + 1).'_'.$lTmp[2].'_'.$lTmp[3];
 	}
+	$chr_id = $lTmp[0];
+	$pos = $lTmp[1];
+	$ref_allele = $lTmp[2],
 }
+elsif ($variant =~ /_/) {
+	($chr_id, $pos, $ref_allele, $alt_allele) = split('_', $variant);
+}
+
+my $chr = $project->getChromosome($chr_id);
 my $var = $project->_newVariant($variant);
+my $theoric_ref = $chr->getSequence($pos, $pos);
+
+
 
 my $h;
 $h->{span_release} = $release;
 $h->{id} = $var->id();
 $h->{span_gnomad_id} = $var->name();
+if (not $theoric_ref eq $ref_allele) {
+	$h->{html_error} = "<span style='font-size:20px;color:red;'><b>ERROR</b>: FOUND reference allele $theoric_ref at position $chr_id:$pos ($release)</span>";
+	$h->{html_error} .= "<br><br><span style='font-size:20px;'>Perhaps you would like the following variant: <b>$chr_id-$pos-<span style='color:green;font-size:24px;'>$theoric_ref</span>-$alt_allele</b> ?</span>";
+	my $json_encode = encode_json $h;
+	print ".\",";
+	$json_encode =~ s/{//;
+	print $json_encode;
+	exit(0);
+} 
 $h->{span_genomic_rocks_id} = $var->genomic_rocksdb_id();
 
 my $vp = PolyviewerVariant->new();
