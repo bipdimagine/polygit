@@ -472,6 +472,7 @@ my $only_gene         = $cgi->param('only_gene');
 
 my $patient_name = $cgi->param('patients');
 my $quality = $cgi->param('quality');
+my $order = $cgi->param('order');
 my $TEST = $cgi->param('TEST');
 my $buffer       = GBuffer->new();
 
@@ -522,7 +523,7 @@ foreach my $l (@$lists){
 
 my $x= table_dude::get_images($patient,$l2,$fork,1);
 print qq{</div>};
-table_dude::print_dude_genes($patient,$x,$fork,1);
+table_dude::print_dude_genes($patient,$x,$fork,1,$order);
 
 exit(0);
 

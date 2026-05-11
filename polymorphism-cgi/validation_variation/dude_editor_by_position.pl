@@ -608,7 +608,6 @@ foreach my $gene (sort{$a->start <=> $b->start} @$genes){
 
 my $x= table_dude::get_images($patient,$l2,$fork,1);
 print qq{</div>};
-
 table_dude::print_dude_genes($patient,$x,$fork,1,"position");
 exit(0);
 

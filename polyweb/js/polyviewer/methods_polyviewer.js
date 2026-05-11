@@ -82,6 +82,13 @@ function load_polydude_args() {
 	if ( dijit.byId("slider_dude_ac")){
 		argsPost.quality = dijit.byId("slider_dude_ac").value
 	}
+	if ( dijit.byId("slider_dude_ac")){
+			argsPost.quality = dijit.byId("slider_dude_ac").value
+		}
+	argsPost.order = "score";
+	if (dijit.byId("sw_order").value == "off"){
+		argsPost.order = "position"
+	}
 	return argsPost;			
 }
 

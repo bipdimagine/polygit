@@ -155,7 +155,6 @@ sub print_dude_genes {
 	
 	
 	
-	
 	print qq{<div style="display: none">} if $print;
 	
 #	foreach my $hg (@$final) {
@@ -175,16 +174,15 @@ sub print_dude_genes {
 	my @colors = ( "#F9F6FF", "#F7F7F7", "#A9A9D9" );
 	my @colors = ( "#FCFCFC", "#F6F6F6", "#A9A9D9" );
 	my @finale2;
-	if ($text){
-		 @finale2 = sort { $b->{chr} <=> $a->{chr}  or $a->{start} <=> $b->{start}} @$final ;
+	
+	#@finale2 = sort { $b->{score} <=> $a->{score} or  $b->{chr} <=> $a->{chr} or  $a->{start} <=> $b->{start}} @$final;
+	if ($order eq "position"){
+		@finale2 = sort { $project->getChromosome($a->{chromosome})->karyotypeId <=> $project->getChromosome($b->{chromosome})->karyotypeId or $a->{start} <=> $b->{start}    } @$final  ;
+		warn "***** $order *****";
 	}
 	else {
-		die();
-		@finale2 = sort { $b->{score} <=> $a->{score} } @$final;
+	 @finale2 = sort { $b->{score} <=> $a->{score} or $project->getChromosome($a->{chromosome})->karyotypeId <=> $project->getChromosome($b->{chromosome})->karyotypeId or $b->{start} <=> $a->{start} } @$final ;
 	}
-	#@finale2 = sort { $b->{score} <=> $a->{score} or  $b->{chr} <=> $a->{chr} or  $a->{start} <=> $b->{start}} @$final;
-	 @finale2 = sort { $b->{score} <=> $a->{score} or $b->{start} <=> $a->{start}  or $a->{chr} <=> $b->{chr} } @$final ;
-	@finale2 = sort { $a->{start} <=> $b->{start}  or $a->{chr} <=> $b->{chr} } @$final  if $order eq "position";
 	foreach my $hg ( @finale2 ) {
 #	foreach my $hg ( sort { $b->{score} <=> $a->{score} } @$final ) {
 		$nb++;
