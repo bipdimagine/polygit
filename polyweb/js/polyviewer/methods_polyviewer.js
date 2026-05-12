@@ -907,11 +907,8 @@ function tabPatients(items , request ) {
 					}
 					else {
 						
-						var dm = this.setArgsPost.only_DM	;
-						
 						this.setArgsPost = load_polydude_args();
                    	   this.setArgsPost.patients=this.patient;
-					   this.setArgsPost.only_DM	= dm;
    						var gene_name = document.getElementById('gene_name_dude').value;
    						if (gene_name) { this.setArgsPost.only_gene=gene_name; }
    						else { this.setArgsPost.only_gene=''; }
