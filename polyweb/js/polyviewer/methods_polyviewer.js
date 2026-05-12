@@ -93,8 +93,6 @@ function load_polydude_args() {
 }
 
 function load_polyviewer_args(mode,dm) {
-
-		
 	var argsPost = {project:project_name,
     		edit_mode: mode,
 			only_DM : dm,
@@ -250,6 +248,7 @@ function load_polyviewer_export_xls(mode) {
 function load_polyviewer(mode, only_dude,dm){
 	var url;
     var argsPost;
+	
     if (only_dude) {
     	argsPost = last_load_polyviewer_argsPost;
     	argsPost["level_dude"] = only_dude;
@@ -261,6 +260,7 @@ function load_polyviewer(mode, only_dude,dm){
 	if (tab_editor_polyviewer){
      	var tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
      	tab_editor_polyviewer[tab_selected_patient]._loaded = false;
+		tab_editor_polyviewer[tab_selected_patient].dm = dm;
 		tab_editor_polyviewer[tab_selected_patient].onShow();
    }
    else {
@@ -789,7 +789,10 @@ function tabPatients(items , request ) {
 				        return;
 				    }
 					if (!(dijit.byId("check_never_pv"))) { return; }
-					this.setArgsPost = load_polyviewer_args();
+					//var dm = this.setArgsPost?.only_DM ?? 0;	
+										
+										
+					this.setArgsPost = load_polyviewer_args(0,this.dm);
 					this.setArgsPost.patients = this.patient;
 					this.ioArgs.content = this.setArgsPost;
 					
@@ -903,8 +906,12 @@ function tabPatients(items , request ) {
 						dude_cgh(this,project_name,this.patient);
 					}
 					else {
+						
+						var dm = this.setArgsPost.only_DM	;
+						
 						this.setArgsPost = load_polydude_args();
                    	   this.setArgsPost.patients=this.patient;
+					   this.setArgsPost.only_DM	= dm;
    						var gene_name = document.getElementById('gene_name_dude').value;
    						if (gene_name) { this.setArgsPost.only_gene=gene_name; }
    						else { this.setArgsPost.only_gene=''; }
