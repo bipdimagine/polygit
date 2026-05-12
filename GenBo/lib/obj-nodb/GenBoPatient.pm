@@ -1766,8 +1766,7 @@ sub getBamFile {
 sub getAlignmentFile {
 	my ( $self, $method_name, $nodie ) = @_;
 	
-	return undef if $method_name eq 'no_align';
-	return undef if $self->alignmentMethods->[0] eq 'no_align';
+	
 	unless ($method_name) {
 		my $files = $self->getBamFiles();
 		return $files->[0] if scalar(@$files) == 1;
@@ -1778,7 +1777,8 @@ sub getAlignmentFile {
 
 	  		confess($self->getBamFileName." ".$self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
 	}
-	 
+	 return undef if $method_name eq 'no_align';
+	return undef if $self->alignmentMethods->[0] eq 'no_align';
 	confess("ERROR: no bam file with $method_name method name. Exit. "
 		  . $self->name." "
 		  . $self->project->name
@@ -2347,6 +2347,7 @@ sub depth {
 sub mean_normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	$end = $start +1 if $start == $end;
+	die();
 	my $a = $self->normalize_depth($chr_name, $start, $end );
 	my $t = sum(@$a);
 	return $t/scalar(@$a);
@@ -2367,6 +2368,7 @@ sub normalize_depth {
 	my $chr   = $self->project->getChromosome($chr_name);
 	my $array = $self->getNoSqlDepth->getDepth( $chr->name, $start, $end );
 	my $res;
+	
 	foreach my $s1 (@$array){
 		push(@$res, int($s1/$self->normalized_reads));# *100)/100);
 	}
@@ -3286,6 +3288,7 @@ has nb_reads => (
 		my $h;
 		my $methods = $self->alignmentMethods();
 		return $h if $methods->[0] eq 'no_align';
+		
 		my $bam  = $self->getAlignmentFile();
 		my $cmd;
 		if ($self->isCram){
@@ -3338,9 +3341,12 @@ has normalized_reads => (
 	lazy    => 1,
 	default => sub {
 	my $self = shift;
+	
 		my $methods = $self->alignmentMethods();
 		return undef if $methods->[0] eq 'no_align';
+	
 		my $value = $self->project->mean_amount_reads();
+	
 		return ($self->nb_reads->{all}/$value);
 	},
 	);
