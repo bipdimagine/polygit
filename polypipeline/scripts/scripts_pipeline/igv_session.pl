@@ -50,7 +50,6 @@ GetOptions(
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
-#$patients_name = "all" unless $patients_name;
 $patients_name = $project->get_only_list_patients($patients_name);
 my $out = $project->getProjectRootPath();
 my $file = $out."/".$project->name()."_igv_session.xml";
@@ -62,9 +61,14 @@ print IGV "<Resources>\n";
 foreach my $patient (@{$patients_name}) {
 	my $name=$patient->name();
 	my $bam =$patient->getBamFile();
-	$bam =~ s/\data-(isilon|pure)\/sequencing\/ngs/https:\/\/www.polyweb.fr\/NGS\//;
-	
+	my $bw = $bam =~ s/.(cr|b)am$/\.bw/r;
+	$bam =~ s/\/data-(isilon|pure)\/sequencing\/ngs/https:\/\/www.polyweb.fr\/NGS\//;
 	print IGV '<Resource path="'.$bam.'"'."/>\n";
+	
+	if (-e $bw) {
+		$bw =~ s/\/data-(isilon|pure)\/sequencing\/ngs/https:\/\/www.polyweb.fr\/NGS\//;
+		print IGV '<Resource path="'.$bw.'"'."/>\n";
+	}
 }
 print IGV "</Resources>\n";
 print IGV "</Session>\n";
