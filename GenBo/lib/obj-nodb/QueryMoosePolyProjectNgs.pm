@@ -1708,4 +1708,24 @@ sub getPatientName {
 	return $res->[0]->{'name'};
 }
 
+sub getPatientNbReads {
+	my ($self, $patient_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{ SELECT nb_reads FROM PolyprojectNGS.patient where patient_id=?; };
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($patient_id);
+	my $res = $sth->fetchall_arrayref({});
+	return $res->[0]->{'nb_reads'};
+}
+
+sub getPatientLane {
+	my ($self, $patient_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{ SELECT lane FROM PolyprojectNGS.patient where patient_id=?; };
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($patient_id);
+	my $res = $sth->fetchall_arrayref({});
+	return $res->[0]->{'lane'};
+}
+
 1;

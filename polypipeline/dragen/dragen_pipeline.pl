@@ -112,7 +112,7 @@ my $status_jobs;
 my $test_umi;
 my $genome;
 my $cram;
-$cram = 1 if $version =~/HG38/;
+$cram = 1 if $version =~/HG38|MM39/;
 
 foreach my $pname (split(",",$project_name)){
 	my $buffer = GBuffer->new();
@@ -120,18 +120,15 @@ foreach my $pname (split(",",$project_name)){
 	#my $project = $buffer->newProject( -name => $pname );
 	$genome = 1 if  $project->isGenome;
 	unless  ($version){
-		$cram = 1 if $project->genome_version =~ /HG38/;
+		$cram = 1 if $project->genome_version =~ /HG38|MM39/;
 	}
 	$project->get_only_list_patients($apatients_name[0]);
-	unless  ($version){
-		$cram = 1 if $project->genome_version =~ /HG38/;
-	}
-	 $test_umi=1 if grep{$_->umi} @{$project->getCaptures};
+	$test_umi=1 if grep{$_->umi} @{$project->getCaptures};
 	push(@$projects,$project);
 	push(@$buffers,$buffer);
 }
 #$cram =undef;
- $project_name =~ s/\,/\./g ;
+$project_name =~ s/\,/\./g ;
 my $dir_log = $projects->[0]->buffer->config_path("root","bds")."/".$project_name.".dragen.".time;
 system("mkdir $dir_log && chmod a+rwx $dir_log");
 
@@ -175,11 +172,11 @@ unless ($rna){
 
 
 if ($rna){
-	$steps = ["dragen pipeline","vcf","featurecount"] ;
+	$steps = ["align","vcf","featurecount"] ;
 	$hpipeline_dragen_steps = {"align"=>0,"vcf"=>1,"featurecount"=>2};
 	$hsteps = {"align"=>0,"vcf"=>1, "featurecount"=>2};
 }
-if($genome ==1){
+if($genome){
 	#$steps = ["align","gvcf","sv","cnv","vcf","lmdb","melt","str"];
 	$steps = ["align","gvcf","sv","cnv","vcf"];
 	$hpipeline_dragen_steps = {"align"=>0,"gvcf"=>1,"sv"=>2,"cnv"=>3,"vcf"=>4,"count"=>5};
@@ -195,10 +192,10 @@ if($genome ==1){
 
 unless ($step_name){
 	my $tdna = "DNA";
-	$tdna = "RNA" if $rna == 1;
+	$tdna = "RNA" if $rna;
 	my $tumi = "NO UMI ";
-	 $tumi = " UMI " if $umi==1;
-	my $banner=colored::stabilo("Green  ","  it's a $tdna  project with $tumi  bu twhat can I do for you    ", 1);
+	$tumi = " UMI " if $umi;
+	my $banner=colored::stabilo("Green  ","  it's a $tdna  project with $tumi but what can I do for you ?   ", 1);
 	my %menu1 = (
 	Item_1 => {
       Text    => "]Convey[",
@@ -221,7 +218,8 @@ if($step_name) {
 	my $ts = [];
 	my $ts_rna = [];
 	foreach my $s (@$steps){
-		warn $s;
+	$s=~ s/dragen pipeline/align/;
+		#warn $s;
 		 unless (exists $hh->{$s}){
 		 	delete $hsteps->{$s};
 		 	next;
@@ -229,14 +227,13 @@ if($step_name) {
 	}
 	my @tt = sort {$hsteps->{$a} <=> $hsteps->{$b}} keys %$hsteps;
 	$steps = \@tt;
-	
 	confess("No valid step") unless @$steps
 }
 
 
 ##
 ####### Alignement
- my $calling_target_methods ={};
+my $calling_target_methods ={};
 my $ppd  = patient_pipeline_dragen($projects);
 	my $index = firstidx { $_ eq "calling_target" } @$steps;
 	if ($index >= 0){
@@ -246,7 +243,6 @@ my $ppd  = patient_pipeline_dragen($projects);
 purge_files($ppd) if $force==1;
 start_report($ppd);
 
-#
 system("clear") ;
 run_command($ppd);
 #run_move($ppd);
@@ -283,7 +279,8 @@ steps_cluster("LMDBDepth+Melt ",$jobs_cluster) if @$jobs_cluster;
 #run_dude($projects) if $dude;
 end_report($projects,$ppd);
 
-if (exists $hsteps->{align}) {
+if (exists $hsteps->{align} and not $rna) {
+	print("Checking stats...\n");
 	report_check_mapping_sex($projects,$ppd);
 }
 
@@ -291,9 +288,9 @@ exit(0);
 
 sub start_report {
 	my ($patients_jobs) = @_;
-my @lines;
-my $done = 0;
-my $job = 0;
+	my @lines;
+	my $done = 0;
+	my $job = 0;
 	foreach  my $hp (@$patients_jobs) {
 		my @line;
 		push(@line, $hp->{name});
@@ -367,7 +364,7 @@ sub test_rna {
 		$answer ++ if $project->isRnaSeq;
 	}
 	if ($answer) {
-		confess("you have different king of project rna and not") if $answer ne scalar(@$projects);
+		confess("you have different kind of project rna and not") if $answer ne scalar(@$projects);
 	}
 	return $answer;
 }
@@ -386,9 +383,9 @@ foreach my $project (@$projects){
 	$project->get_only_list_patients($apatients_name[0]);
 	foreach my $patient (@{$project->getPatientsAndControl}){
 		if ($cram){
-			warn Dumper @{$patient->alignmentMethods};
-			my ($m) = grep{$_ eq "bwa" or $_ eq "dragen-align" } @{$patient->alignmentMethods};
-			warn $m;
+			#warn Dumper @{$patient->alignmentMethods};
+			my ($m) = grep{$_ eq "bwa" or $_ eq "dragen-align"  or $_ eq "star"} @{$patient->alignmentMethods};
+			#warn $m;
 			next unless $m;
 		}
 		$status_jobs->{$patient->name."_".$project->name}->{progress} ="waiting" ;
@@ -422,8 +419,8 @@ foreach my $project (@$projects){
 		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".bam";
 		$h->{pipeline}->{align}   = $dir_pipeline."/".$patient->name.".cram" if $cram;
 		if ($cram){
-		$h->{prod}->{align} = $patient->getCramFileName(); 
-		$h->{prod}->{align} = $patient->getCramFileName("dragen-align") unless -e $patient->getCramFileName; 
+			$h->{prod}->{align} = $patient->getCramFileName(); 
+			$h->{prod}->{align} = $patient->getCramFileName("dragen-align") unless -e $patient->getCramFileName;
 		}
 		else {
 			$h->{prod}->{align} = $patient->getBamFileName(); 
@@ -1384,31 +1381,72 @@ sub end_report {
 }
 
 sub report_check_mapping_sex {
-	my ($projects,$patients_jobs) = @_;
-	foreach my $project (@$projects){
-		my @rows = ();
-		my $tb = Text::Table->new( $project->name,'Mapping','Sex' ) ; # if ($type == 1);
-		foreach my $hp ( sort {$a->{name} cmp $b->{name}} grep{$_->{project} eq $project->name} @$patients_jobs) {
-			my $project_name = $hp->{project};
-			my $patient_name = $hp->{name};
-			my @row = ($patient_name);
-			my $cmd_check_mapping = "$Bin/scripts/dragen_check_mapping_metrics.pl -project=$project_name -patient=$patient_name ";
-			$cmd_check_mapping .= "-version=$version " if ($version);
-			my $exit_mapping = system($cmd_check_mapping);
-			push(@row,colored::print_color('red','error',1)) if ($exit_mapping);
-			push(@row,colored::print_color('green','ok',1)) unless ($exit_mapping);
-			
-			my $cmd_check_sex = "$Bin/scripts/dragen_check_sex.pl -project=$project_name -patient=$patient_name ";
-			$cmd_check_sex .= "-version=$version " if ($version);
-			my $exit_sex = system($cmd_check_sex);
-			push(@row,colored::print_color('red','error',1)) if ($exit_sex);
-			push(@row,colored::print_color('green','ok',1)) unless ($exit_sex);
-			push(@rows,\@row);
-		}
-		$tb->load(@rows);
-		print "\n";
-		print $tb;
-	}
+    my ($projects, $patients_jobs) = @_;
+    foreach my $project (@$projects) {
+        my @rows = ();
+        my $tb = Text::Table->new($project->name, 'Mapping', 'Duplicate', 'Sex');
+        
+        foreach my $hp (sort {$a->{name} cmp $b->{name}} grep {$_->{project} eq $project->name} @$patients_jobs) {
+            my $project_name = $hp->{project};
+            my $patient_name = $hp->{name};
+            my @row = ($patient_name);
+            
+            # Vérification du mapping
+            my $cmd_check_mapping = "$Bin/scripts/dragen_check_mapping_metrics.pl -project=$project_name -patient=$patient_name ";
+            $cmd_check_mapping .= "-version=$version " if ($version);
+            my $mapping_output = `$cmd_check_mapping 2>&1`;
+			chomp($mapping_output);
+			my @lines = split(/\n/, $mapping_output);
+			my $last_line = $lines[-1] || "Error";
+			my ($mapping_val, $dup_val) = split(/\t/, $last_line);
+			my $exit_mapping = $? >> 8;  # Récupère le vrai code de sortie
+            
+            if ($exit_mapping == 0) {
+                # Tout est OK - vert pour les deux
+                push(@row, colored::print_color('green', $mapping_val, 1), colored::print_color('green', $dup_val, 1));
+            }
+            elsif ($exit_mapping == 1) {
+                # Warning sur duplicate uniquement
+                push(@row, colored::print_color('green', $mapping_val, 1), colored::print_color('yellow', $dup_val, 1));
+            }
+            elsif ($exit_mapping == 2) {
+                # Erreur mapping - rouge pour mapping, rouge pour dup
+                push(@row, colored::print_color('red', $mapping_val, 1), colored::print_color('red', $dup_val, 1));
+            }
+            else {
+                # Erreur système
+                push(@row, colored::print_color('red', 'Error', 1), colored::print_color('red', 'Error', 1));
+            }
+            
+            # Vérification du sexe
+            my $cmd_check_sex = "$Bin/scripts/dragen_check_sex.pl -project=$project_name -patient=$patient_name ";
+            $cmd_check_sex .= "-version=$version " if ($version);
+            my $sex_output = `$cmd_check_sex 2>&1`;
+            chomp($sex_output);
+			@lines = split(/\n/, $sex_output);
+			my $sex = $lines[-1] || "Error";
+			my $exit_sex = $? >> 8;  # Récupère le vrai code de sortie
+            
+            if ($exit_sex == 0) {
+                push(@row, colored::print_color('green', $sex, 1));
+            } elsif ($exit_sex == 1) {
+            	# Warning: changement dans la db	
+                push(@row, colored::print_color('yellow', $sex, 1));
+            } elsif ($exit_sex == 2) {
+            	# Error not matching
+                push(@row, colored::print_color('red', $sex, 1));
+            }
+            else {
+                # Erreur système
+                push(@row, colored::print_color('red', 'Error', 1));
+            }
+            
+            push(@rows, \@row);
+        }
+        $tb->load(@rows);
+        print "\n";
+        print $tb;
+    }
 }
 
 sub yesorno {

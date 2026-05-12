@@ -470,6 +470,7 @@ sub check_variants_from_gene {
 						my $hh;
 						$hh->{project_name} = $project_name;
 						$hh->{patient_name} = $patient_name;
+						$hh->{heho} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{heho};
 						$hh->{ratio} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{ratio};
 						$hh->{dp} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{dp};
 						$hh->{model} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{model};
@@ -536,12 +537,19 @@ sub get_table_project_patients_infos {
 	my ($self, $project_name, $duck_he, $duck_patients, $duck_ratios) = @_;
 	my $nb_he = $duck_he;
 	my ($h_infos_patients, $h_tmp_pat);
+	my $is_heho = 'He';
 	my $nb_pat = 0;
 	foreach my $pat_id (unpack("w*",decode_base64($duck_patients))) {
 		$nb_pat++;
 		$h_infos_patients->{$nb_pat}->{id} = $pat_id;
 		$h_tmp_pat->{$pat_id} = $nb_pat;
+		if (int($nb_pat) <= $nb_he) {
+			$is_heho = 'He';
+		}
+		else { $is_heho = 'Ho'; }
+		$h_infos_patients->{$nb_pat}->{heho} = $is_heho;
 	}
+	
 	my $i = 0;
 	$nb_pat = 1;
 	foreach my $info (unpack("w*",decode_base64($duck_ratios))) {
@@ -812,7 +820,7 @@ sub print_line_variant_all_patients {
 			foreach my $this_pat (@{$pat->getFamily->getPatients()}) { $this_pat->alignmentMethods(); }
 			my $this_print_html = polyviewer_html->new( project=>$pr, patient=>$pat,header=>\@headers, bgcolor=>"background-color:#607D8B" );
 			$this_print_html->variant($polyviewer_variant);
-			#$this_print_html->variant->{patients_calling}->{$pat->id()}->{gt} = '';
+			$this_print_html->variant->{patients_calling}->{$pat->id()}->{gt} = $h_proj_pat->{heho};
 			$this_print_html->variant->{patients_calling}->{$pat->id()}->{pc} = $h_proj_pat->{ratio};
 			$this_print_html->variant->{patients_calling}->{$pat->id()}->{dp} = 'DP:'.$h_proj_pat->{dp};
 			$this_print_html->variant->{patients_calling}->{$pat->id()}->{model} = $h_proj_pat->{model};
@@ -861,6 +869,7 @@ sub print_line_variant_all_patients {
 			}
 			foreach my $this_print_html (@$list_print_html) {
 				my $html_pat = $this_print_html->calling();
+				
 				my (@l_names, @l_bam);
 				foreach my $pat (@{$this_print_html->patient->getFamily->getPatients()}) {
 					push(@l_names, $pat->name());
@@ -872,14 +881,14 @@ sub print_line_variant_all_patients {
 				my $locus;
 				if ($gn =~ /HG19/) { $locus = $self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{chr19}.':'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}.'-'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}; }
 				else { $locus = $polyviewer_variant->locus(); }
-				my $igv_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$proj_name","$pnames","$f","$locus","/","$gn")' style="color:black"></button>};
+				my $igv_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$proj_name","$pnames","$f","$locus","/","$gn")' style="color:black;padding-top:2px;"></button>};
 				my $project_phenotypes = '';
 				if ($self->{hash_users_projects}->{$proj_name}->{phenotypes}) {
 					$project_phenotypes = qq{<span hidden>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes_tags}.qq{</span>};
 					$project_phenotypes .= qq{<span style='color:green;'><i>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes}.qq{</i></span><br>};
 				}
 				my $project_description = $this_print_html->patient->getProject->name().', Description: '.$this_print_html->patient->getProject->description();
-				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;width:120px;'><center>".$project_phenotypes."<button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><td style='padding-right:5px;'>".$igv_b."</td></center></td><td>".$html_pat."</td></tr>");
+				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;width:120px;'><center>".$project_phenotypes."<button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><br>".$igv_b."</td></center></td><td><nobr>".$html_pat."</nobr></td></tr>");
 				push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
 			}
 		}

@@ -799,7 +799,17 @@ sub alignmentMethod {
 	return $methods->[0];
 }
 
+sub getExpectedReads {
+	my ($self) = shift;
+	my $query = $self->getProject()->buffer->getQuery();
+	return $query->getPatientNbReads($self->id);
+}
 
+sub getLane {
+	my ($self) = shift;
+	my $query = $self->getProject()->buffer->getQuery();
+	return $query->getPatientLane($self->id);
+}
 
 sub setRuns {
 	my $self = shift;
