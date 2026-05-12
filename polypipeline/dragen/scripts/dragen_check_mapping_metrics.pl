@@ -37,6 +37,8 @@ my $patient = $project->getPatient($patient_name);
 unless ($max_dup) {
 	$max_dup = 20;
 	$max_dup = 30 if ($project->isExome);
+	$max_dup = 40 if ($project->isRnaseq);
+	$max_dup = 50 if ($patient->getSampleProfile() =~ /epigenomic/);
 	$max_dup = 60 if ($project->isDiagnostic);
 }
 unless ($min_map) {
@@ -70,20 +72,20 @@ close($file);
 confess("Error parsing '$mapping_metrics_file':/nno number of mapped reads and/or duplicate marked reads found.") unless ($duplicate and $mapping);
 warn ("$patient_name: mapping = $mapping%, duplicates = $duplicate%") if ($verbose);
 
-# Comparaison
-#if ($duplicate > $max_dup and $mapping < $min_map) {
-#	confess("Duplicate reads too high (> $max_dup) and mapped reads too low (< $min_map) for patient '$patient_name':\n"
-#		 ."Duplicates = $duplicate\tMapping = $mapping\n");
-#	die unless (prompt("Continue anyway ?  (y/n)  ", -yes_no));
-#}
-if ($duplicate > $max_dup) {
-	warn("Duplicate reads high (> $max_dup) for patient '$patient_name': $duplicate\n");
-#	die unless (prompt("Continue anyway ?  (y/n)  ", -yes_no));
-}
+
+# Vérification de l'erreur critique (mapping trop bas) - prioritaire
 if ($mapping < $min_map) {
-	confess("Mapped reads too low (< $min_map) for patient '$patient_name': $mapping\n");
-#	die unless (prompt("Continue anyway ?  (y/n)  ", -yes_no));
+    print "$mapping%\t$duplicate%";
+    exit(2);  # Code 2 = Error (rouge)
 }
 
+# Vérification du warning (duplicates élevés)
+if ($duplicate > $max_dup) {
+    print "$mapping%\t$duplicate%";
+    exit(1);  # Code 1 = Warning (orange/jaune)
+}
 
-exit(0);
+# Tout est OK
+print "$mapping%\t$duplicate%";
+exit(0);  # Code 0 = Success (vert)
+

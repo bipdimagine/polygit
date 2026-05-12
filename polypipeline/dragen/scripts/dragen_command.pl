@@ -156,96 +156,93 @@ exit(0);
 ################################################
 
 sub run_pipeline_rna {
-my ($pipeline) = @_;
-my $param_align = "";
-my $ref_dragen = $project->getGenomeIndex("dragen");
-my $param_umi = "";
-my $tmp = "/staging/tmp";
-my $cmd_dragen = qq{$dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
-my $runid = $patient->getRun()->id;
-my $bam   = $dir_pipeline."/".$patient->name.".bam";
-my ($fastq1,$fastq2);
-my $align = "true";
-if (-e $bam){
-	$align = "false";
-	warn "## $align";
-	return;
-}
-
-my $buffer_ori = GBuffer->new();
-my $project_ori = $buffer_ori->newProject( -name => $projectName );
-my $patient_ori = $project_ori->getPatient($patients_name);
-
-if ($version && exists $pipeline->{align} ){
-	$patient_ori->{alignmentMethods} =['dragen-align','hisat2'];
-	my $bamfile = $patient_ori->getBamFile();
-	$param_align = "-b $bamfile --enable-map-align-output true  --enable-rna=true ";
-	#$param_align .= "--output-format CRAM " if $version =~/HG38/;
+	my ($pipeline) = @_;
+	my $param_align = "";
+	my $ref_dragen = $project->getGenomeIndex("dragen");
+	my $param_umi = "";
+	my $tmp = "/staging/tmp";
+	my $cmd_dragen = qq{$dragen -f -r $ref_dragen --output-directory $dir_pipeline --intermediate-results-dir $tmp --output-file-prefix $prefix };
+	my $runid = $patient->getRun()->id;
+	my $bam   = $dir_pipeline."/".$patient->name.".bam";
+	my ($fastq1,$fastq2);
+	my $align = "false";
+	$align = "true" if (exists $pipeline->{align});
 	
-}	
-
-elsif (-e $patient->getBamFileName()) {
-	my $opt = "--bam-input";
-	$bam = $patient_ori->getBamFile();
-	#$param_align = qq{ $opt $bam --enable-map-align false --enable-map-align-output false };
-	$param_align = qq{ $opt $bam };
-}
-else {
+	my $buffer_ori = GBuffer->new();
+	my $project_ori = $buffer_ori->newProject( -name => $projectName );
+	my $patient_ori = $project_ori->getPatient($patients_name);
 	
-	if($neb){
-		my $dir_fastq = $project->getAlignmentPipelineDir("dragen-align");
-		#my $dir_fastq = $dir_pipeline."/";
-		warn $dir_fastq;
-		warn "###NEB!!!!!";
-		($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline,$dir_fastq) ;
+	if ($version && exists $pipeline->{align} ){
+		$patient_ori->{alignmentMethods} =['dragen-align','hisat2'];
+		my $bamfile = $patient_ori->getBamFile();
+		$param_align = "-b $bamfile --enable-map-align-output true  --enable-rna=true ";
+		#$param_align .= "--output-format CRAM " if $version =~/HG38/;
+		
+	}	
+	
+	elsif (-e $patient->getBamFileName()) {
+		my $opt = "--bam-input";
+		$bam = $patient_ori->getBamFile();
+		#$param_align = qq{ $opt $bam --enable-map-align false --enable-map-align-output false };
+		$param_align = qq{ $opt $bam };
+	}
+	else {
+		
+		if($neb){
+			my $dir_fastq = $project->getAlignmentPipelineDir("dragen-align");
+			#my $dir_fastq = $dir_pipeline."/";
+			warn $dir_fastq;
+			warn "###NEB!!!!!";
+			($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline,$dir_fastq) ;
+		}
+		else{
+			 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+		}
+		
+		$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output $align --enable-rna=true ";
+		$param_align .= " --output-format CRAM " if ($cram and exists $pipeline->{align});
+		
+	}
+	
+	if ($umi){
+		$param_umi = "--umi-enable true ";
+	}
+	elsif(-e $patient->getBamFileName()){
+		$param_align .= "--enable-duplicate-marking false ";
 	}
 	else{
-		 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+		$param_align .= "--enable-duplicate-marking true ";
 	}
-
-
- $param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output $align --enable-rna=true ";
-
-
-}
-
-if ($umi){
-	$param_umi = "--umi-enable true ";
-}
-elsif(-e $patient->getBamFileName()){
-	$param_align .= "--enable-duplicate-marking false ";
-}
-else{
-	$param_align .= "--enable-duplicate-marking true ";
-}
-
-if (exists $pipeline->{count}) {
-	my $gtf =  $project->gtf_file();
-	die() unless -e $gtf;
-
-	$param_align .= "-a $gtf --enable-rna-quantification true";
-#PROD
-#	$gtf = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v43/gtf/gencode.v43lift37.annotation.gtf};
-#	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
-#
-#
-}
-#
-my $param_calling ="";
-if (exists $pipeline->{vcf} ){
-	$param_calling = qq{--enable-variant-caller true  } ;
 	
-}
-
-
-##
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling;
-$patient->update_software_version("dragen",$cmd_dragen);
-warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
-my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
-unlink $fastq1 if  $fastq1 =~ /pipeline/;
-unlink $fastq2 if $fastq2 =~ /pipeline/;;
-die if $exit != 0;
+	if (exists $pipeline->{vcf} or exists $pipeline->{count}) {
+		my $gtf =  $project->gtf_file();
+		die("'$gtf' does not exist") unless -e $gtf;
+		$param_align .= "-a $gtf ";
+	}
+	if (exists $pipeline->{count}) {
+		$param_align .= "--enable-rna-quantification true ";
+		#PROD
+		#	$gtf = qq{/data-isilon/public-data/repository/HG19/annotations/gencode.v43/gtf/gencode.v43lift37.annotation.gtf};
+		#	$param_align .= "-a $gtf --enable-rna-quantification true  --rna-ann-sj-min-len 4";
+		#
+		#
+	}
+	
+	my $param_calling ="";
+	if (exists $pipeline->{vcf} ){
+		$param_calling = qq{--enable-variant-caller true  } ;
+		
+	}
+	
+	
+	##
+	$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling;
+	$patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
+	warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
+	my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+	unlink $fastq1 if  $fastq1 =~ /pipeline/;
+	unlink $fastq2 if $fastq2 =~ /pipeline/;;
+	die if $exit != 0;
 
 }
 
