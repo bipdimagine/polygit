@@ -2357,9 +2357,9 @@ sub depth {
 sub mean_normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	$end = $start +1 if $start == $end;
-	die();
 	my $a = $self->normalize_depth($chr_name, $start, $end );
 	my $t = sum(@$a);
+	#
 	return $t/scalar(@$a);
 	return $self->getNoSqlDepth->getMeanNormalize( $chr_name, $start, $end, $self );
 }
