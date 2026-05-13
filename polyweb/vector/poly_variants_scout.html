@@ -19,6 +19,11 @@
                 margin: 0;
                 overflow: hidden;
             }
+            
+            .tab_results {
+            
+                font-size: 12px;
+            }
     
             #borderContainer {
                 width: 100%;
@@ -249,6 +254,41 @@
                 cursor: pointer;
             }
             
+            .glyphicon-minus {
+            	font-size: 11px !important;
+            }
+            
+            .btn {
+            	padding-top: 3px !important;
+            	padding-bottom: 3px !important;
+            }
+            
+			.btn-gene {
+				background-color:#A36F52;
+				background-color:#266590;
+				background-color:#3F51B5;
+				border-color:black;
+				background: #3d4144 url('http://files.cssflow.com/snippets/2-dark-navigation/img/bg.png') 0 0 repeat;
+				color:white;
+				border-right: 4px solid #F50057;
+				border-left: 4px solid #F50057;
+				height: 25px;
+				font-size: 11px !important;
+			}
+			
+			.btn-test {
+				background-color:#B13B51;
+				border-color:black;
+			}
+			
+			.panel-grey {
+				background-color:#E17F63
+			}
+			
+			.label-grey {
+				background-color:#607D8B;
+			}
+            
 			.collapsing{
 			 	-webkit-transition:height .01s ease;
 			  	transition:height .01s ease
@@ -449,6 +489,125 @@
 			.box {
 			  min-width: 300px;
 			}
+			
+			:root {
+			    --sidebar-width: 280px;
+			    --sidebar-width-collapsed: 80px;
+			}
+
+			body {
+			    overflow-x: hidden;
+			}
+			
+			.sidebar {
+			    width: var(--sidebar-width);
+			    height: 100vh;
+			    background: linear-gradient(135deg, #292E49 0%, #536976 100%);
+			    transition: all 0.3s ease;
+			}
+			
+			.sidebar.collapsed {
+			    width: var(--sidebar-width-collapsed);
+			}
+			
+			.sidebar-link {
+			    color: #a0a3bd;
+			    transition: all 0.2s ease;
+			    border-radius: 8px;
+			    margin: 4px 16px;
+			    white-space: nowrap;
+			    overflow: hidden;
+			}
+			
+			.sidebar-link:hover {
+			    color: #ffffff;
+			    background: rgba(255, 255, 255, 0.1);
+			    transform: translateX(5px);
+			}
+			
+			.sidebar-link.active {
+			    color: #ffffff;
+			    background: rgba(255, 255, 255, 0.1);
+			}
+			
+			.logo-text {
+			    background: linear-gradient(45deg, #6b8cff, #8b9fff);
+			    -webkit-background-clip: text;
+			    -webkit-text-fill-color: transparent;
+			    transition: opacity 0.3s ease;
+			}
+			
+			.notification-badge {
+			    background: #ff6b6b;
+			    padding: 2px 6px;
+			    border-radius: 6px;
+			    font-size: 0.7rem;
+			}
+			
+			.profile-section {
+			    border-top: 1px solid rgba(255, 255, 255, 0.1);
+			}
+			
+			.main-content {
+			    margin-left: var(--sidebar-width);
+			    min-height: 100vh;
+			    padding: 20px;
+			    transition: all 0.3s ease;
+			}
+			
+			.collapsed~.main-content {
+			    margin-left: var(--sidebar-width-collapsed);
+			}
+			
+			.toggle-btn {
+			    position: absolute;
+			    right: -15px;
+			    top: 20px;
+			    background: white;
+			    border-radius: 50%;
+			    width: 30px;
+			    height: 30px;
+			    border: none;
+			    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+			    z-index: 100;
+			    cursor: pointer;
+			    transition: transform 0.3s ease;
+			}
+			
+			.collapsed .toggle-btn {
+			    transform: rotate(180deg);
+			}
+			
+			.collapsed .hide-on-collapse {
+			    opacity: 0;
+			    visibility: hidden;
+			}
+			.collapsed .hide-on-collapse-annot {
+			    opacity: 0;
+			    visibility: hidden;
+			}
+			
+			.collapsed .logo-text {
+			    opacity: 0;
+			}
+			
+			.collapsed .profile-info {
+			    opacity: 0;
+			}
+			
+			.collapsed .sidebar-link {
+			    text-align: center;
+			    padding: 1rem !important;
+			    margin: 4px 8px;
+			}
+			
+			.collapsed .sidebar-link i {
+			    margin: 0 !important;
+			}
+			
+			.profile-info {
+			    transition: opacity 0.2s ease;
+			}
         </style>
         
         <style type="text/css" media="print">
@@ -459,10 +618,11 @@
 			}
 		</style>
 		
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
-	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
@@ -470,6 +630,14 @@
 		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+		
+		
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
 		
 		
         <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
@@ -535,14 +703,14 @@
             var list_panels = [];
             
             var username, pwd, project_name;
-            var release_annotation = '34';
+            var release_annotation = '46';
             var use_session_id = '';
             $(document).ready(function () {
 	            setTimeout(function() {
-					show_waiting('Checking User / Password / Projects');
-	    			document.getElementById("editor_stack").style.display = "block";
-	    			document.getElementById("navbar_polygenescout").style.display = "block";
-    			
+        			document.getElementById("select_pos").value = "";
+        			document.getElementById("select_genes").value = "";
+        			document.getElementById('promoter_ai').checked = false;
+        			document.getElementById('ncboost').checked = false;
 					var cookie_user = dojo.cookie("username");
 					var cookie_pwd = dojo.cookie("passwd");
 	            	if (cookie_user && cookie_pwd) {
@@ -551,7 +719,7 @@
 	            		}, 500);
 	            	}
 	            	else { relogin(); }
-				}, 2000);
+				}, 1000);
 	    	});
 	    	
 	    	var has_div_checked = {};
@@ -622,8 +790,6 @@
 				document.getElementById("span_login").innerHTML = this_username;
 				dijit.byId('login').hide();
 				init_nb_tr = ($('tr:visible').length-1);
-				document.getElementById("div_search_control").style.display = "block";
-				document.getElementById("div_search_control_2").style.display = "block";
 			}
 			
 			function error_login() {
@@ -635,31 +801,17 @@
 		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl?login=" + username + "&pwd=" + pwd;
 		    	url += "&launch_job=1";
 		    
-		    	if (has_div_checked['div_select_region'] == true) {
-		    		var region = document.getElementById("select_chr").value;
-		    		if (parseInt(document.getElementById("select_start").value)) {
-		    			var start = parseInt(document.getElementById("select_start").value);
-		    			var end = parseInt(document.getElementById("select_end").value);
-		    			var length = end - start;
-		    			if (start >= end) {
-		    				alert("Problem with region: start >= end");
-		    				return;
-		    			}
-		    			if (length > 5000000) {
-		    				alert("LENGTH MAX: 5.000.000");
-		    				return;
-		    			}
-	    				region += '-' + start;
-	    				region += '-' + end;
-    				}
-    				else if (region != 'X' && region != 'Y' && region != 'MT') {
-    					alert("LENGTH MAX: 5.000.000");
-	    				return;
-					}
+	    		if (document.getElementById("select_pos").value !== "") {
+		    		var region = document.getElementById("select_pos").value;
+		    		region = region.toUpperCase();
+		    		region = region.replaceAll(" ", "-");
+		    		region = region.replaceAll("--", "-");
+		    		region = region.replaceAll(":", "-");
+		    		region = region.replaceAll("CHR", "");
     				url += "&region=" + region;
 				}
-		    
-		    	if (has_div_checked['div_select_genes'] == true) {
+	    
+	    		if (document.getElementById("select_genes").value !== "") {
 		    		var genes = document.getElementById("select_genes").value;
 		    		genes = genes.replaceAll(" ", ",");
 		    		genes = genes.replaceAll(";", ",");
@@ -753,19 +905,19 @@
 				}
 		    	
 		    	if (document.getElementById('b_only_pat_ill').checked == true) {
-					if (document.getElementById('b_only_strict_pat_ill').checked == true) {
-						url += "&only_strict_ill=1";
-					}
-					else {
+//					if (document.getElementById('b_only_strict_pat_ill').checked == true) {
+//						url += "&only_strict_ill=1";
+//					}
+//					else {
 						url += "&only_ill=1";
-					}
+//					}
 				}
-				if (document.getElementById('b_only_my_projects').checked == true) {
-					var filter_type_project = document.getElementById("form_only_my_projects_type").value;
-					if (filter_type_project == "") { url += "&only_my_projects=1"; }
-					else if (filter_type_project == "all") { url += "&only_my_projects=1"; }
-					else { url += "&only_my_projects=" + filter_type_project; }
-				}
+//				if (document.getElementById('b_only_my_projects').checked == true) {
+//					var filter_type_project = document.getElementById("form_only_my_projects_type").value;
+//					if (filter_type_project == "") { url += "&only_my_projects=1"; }
+//					else if (filter_type_project == "all") { url += "&only_my_projects=1"; }
+//					else { url += "&only_my_projects=" + filter_type_project; }
+//				}
 				
 				var l_models = [];
 				if (document.getElementById('parent').checked == true) { l_models.push('parent'); }
@@ -820,40 +972,21 @@
 			}
 			
 			function collapse(name,label){
-				var d;
-			     d = document.getElementById(name);
+				var d = document.getElementById(name);
 			    if (d == null){
-//			    	console.log(name);
 			    	return;
 			    }
-			    	
-			    var l;
-				 l = document.getElementById(label);
-			  	if (l == null){
-			    	
-			    console.log(name);
-			    return;
-			    }
-			    if (d.classList.contains("in")) {
-			        d.classList.remove("in");
-			
-			     if (l){
-			           l.classList.remove("glyphicon-triangle-bottom");
-			           l.classList.add("glyphicon-triangle-right");
-					//   d.style.display = "none";	
-			        }
+			    if (d.classList.contains("show")) {
+			        d.classList.remove("show");
 			    }
 			    else {
-			        d.classList.add("in");
-				//	d.style.display = "block";		
-			         l.classList.remove("glyphicon-triangle-right");
-			         l.classList.add("glyphicon-triangle-bottom");
-			        
+			        d.classList.add("show");
 			    }
 			}
 			
 			function launchJob(url) {
-			    dijit.byId('waiting').show();
+				toggleSidebar();
+			    document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 			    $.getJSON(url, function(startData) {
 			
 			        if (startData.status !== "started") {
@@ -938,43 +1071,440 @@
 				$input.trigger('keyup');
 			}
 			
+			function toggleSidebar() {
+	            const sidebar = document.querySelector('.sidebar');
+	            sidebar.classList.toggle('collapsed');
+	        }
+	        
+	        var list_filters = ['div_filters_annot', 'div_sliders_frequences', 'div_select_patient', 'div_select_projects', 'div_select_pos_genes'];
+	        function show_hide_filters(div_id) {
+                for (var i = 0; i < list_filters.length; i++){
+                	if (list_filters[i] !== div_id) {
+                		document.getElementById(list_filters[i]).style.display = "none";
+            		}
+                }
+			    var el = document.getElementById(div_id);
+			    if (el.style.display === "none") { el.style.display = "block"; }
+			    else { el.style.display = "none"; }
+			}
+	        
 		</script>
     </head>
 	<body class="container-fluid" style="overflow-y:scroll;">
-		<nav id="navbar_polygenescout" class="navbar navbar-inverse" style="background-color:#363945;" hidden>
-			<div class="container-fluid">
-				<div class="navbar-header"> <table>
-					<tr><td><a class="navbar-brand" href="https://www.polyweb.fr/" style="padding-top: 5px;padding-bottom: 5px;"><img src='/icons/Polyicons/logo_polyweb_white2.png' width='170px' height='33px' ></a></td></tr>
-					<tr><td style="color:white;font-size:10px;text-align:center"> <span  style="color:#B1268B;font-size:12px;text-align:center">Imagine Institute</span> - <span>University Of Paris</span ></td></tr>
-					</table>
+		<div class="d-flex">
+		    <nav class="sidebar d-flex flex-column flex-shrink-0 position-fixed">
+		        <button class="toggle-btn" onclick="toggleSidebar()">
+		            <i class="fas fa-chevron-left"></i>
+		        </button>
+		
+		        <div class="p-4">
+		            <h4 class="logo-text fw-bold mb-0">PolyVariantsScout</h4>
+		            
+					<button class="btn btn-outline-secondary hide-on-collapse" onClick='relogin();' style="margin-top:10px;background-color:#292E49;color:white;">
+						<b><i class="fa fa-sign-in"></i> <span style="margin-left: 5px;color:white;" id="span_login"></span></b>
+					</button>
+		        </div>
+		
+		        <div class="nav flex-column overflow-auto" style="height:80vh;">
+		            
+		            <a href="#" class="sidebar-link text-decoration-none p-3">
+		                <i class="fas fa-gear me-3 hide-on-collapse" style="color:white;" onClick="show_hide_filters('div_filters_annot');"></i>
+		                <span class="hide-on-collapse" onClick="show_hide_filters('div_filters_annot');" style="color:white;">Annotations</span>
+		                <div id="div_filters_annot" style="margin-top:15px;display:none;" class="hide-on-collapse ">
+		                	<table>
+								<tr><td><span style="font-size:13px;">High Impact</span></td></tr>
+								<tr>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                               <input style="margin-top: 0px !important;" type="checkbox" dojoType="dijit.form.CheckBox" id="filter_stop" checked>
+		                               <span id="span_stop">Stop-gained </span>
+		                            </td>
+	                            
+	                                <td style="font-size:9px;padding-left:5px;">
+	                                	<input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_phase" checked>
+	                                	<span id="span_phase">Start/Stop lost  </span>
+	                            	</td>
+	                            </tr>
+	                            <tr>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_essential_splicing" checked>
+		                                <span id="span_essential_splicing">Splice Acc/Don  </span>
+		                            </td>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_frameshift" checked>
+		                                <span id="span_frameshift">Frameshift  </span>
+		                            </td>
+	                            </tr>
+	                            <tr>
+									<td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_maturemirna" checked>
+		                                <span id="span_maturemirna">Mature miRNA  </span>
+		                            </td>  
+		                            
+		                        </tr>
+								<tr><td><span style="font-size:10px;">&nbsp;</span></td></tr>
+								<tr><td><span style="font-size:13px;">Medium Impact</span></td></tr>
+		                        <tr> 
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_splice_site" checked>
+		                                <span id="span_splice_site">Splice Region  </span>
+		                            </td>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_predicted_splice_site" checked>
+		                                <span id="span_splice_site">Pred. Splice Region  </span>
+		                            </td>
+	                            </tr>
+	                            <tr>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_nonsynonymous" checked>
+		                                <span id="span_nonsynonymous">Missense  </span>
+		                            </td>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_nonframeshift" checked>
+		                                <span id="span_nonframeshift">No-frameshift  </span>
+		                            </td>
+	                            </tr>
+	                            <tr>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_ncrna">
+		                                <span id="span_ncrna">ncRNA  </span>
+		                            </td>
+		                            <td style="font-size:9px;padding-left:5px;display: none">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_pseudogene">
+		                                <span id="span_pseudogene">Pseudogene  </span>
+		                            </td>
+		                        </tr>
+								<tr><td><span style="font-size:10px;">&nbsp;</span></td></tr>
+								<tr><td><span style="font-size:13px;">Low Impact</span></td></tr>
+		                        <tr>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_utr">
+		                                <span id="span_utr">Utr  </span>
+		                            </td>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_silent">
+		                                <span id="span_silent">Synonymous  </span>
+		                            </td>
+	                            </tr>
+	                            <tr>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_upstream_downstream">
+		                                <span id="span_upstream_downstream">Up/Downstream  </span>
+		                            </td>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_intronic">
+		                                <span id="span_intronic">Intronic  </span>
+		                            </td>
+	                            </tr>
+	                            <tr>
+		                            <td style="font-size:9px;padding-left:5px;">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_intergenic">
+		                                <span id="span_intergenic">Intergenic  </span>
+		                            </td>
+		                        </tr>
+		                        
+								<tr><td><span style="font-size:11px;">&nbsp;</span></td></tr>
+		                        <tr>
+		                        	<td colspan='2'>
+					                	<div>
+						                	<input type="checkbox" id="promoter_ai" onchange="toggleDiv('div_select_promoter_ai', this.checked)">
+											<label for="promoter_ai">use promoterAI</label>
+				                		</div>
+						                
+				                		<div style="display:none;" id="div_select_promoter_ai">
+					                		<center>
+						                		<span style="font-size:11px;"><b>&nbsp;</b></span>
+						                		<span style="font-size:11px;"><b>Promoter AI</b></span>
+									    		<div id="slider_promoter_ai" jsId="slider_promoter_ai" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
+													<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
+										                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+										                    <li><span style='font-size:9px;'><b>High</b><br>0.6</span></li>
+										                    <li><span style='font-size:9px;'><b>Very High</b><br>0.7</span></li>
+										                    <li><span style='font-size:9px;'><b><nobr>Extr. High</nobr></b><br>0.9</span></li>
+										                </ol>
+									                </div>
+								                </div>
+				                			</center>
+						                </div>
+					                </td>
+				                </tr>
+				                
+								<tr><td><span style="font-size:8px;">&nbsp;</span></td></tr>
+				                <tr>
+				                	<td colspan='2'>
+				                		<div>
+						                	<input type="checkbox" id="ncboost" onchange="toggleDiv('div_select_ncboost', this.checked)">
+											<label for="ncboost">use NCBoost-2</label>
+				                		</div>
+					                	
+				                		<div style="display:none;" id="div_select_ncboost">
+				                			<center>
+						                		<span style="font-size:11px;"><b>&nbsp;</b></span>
+						                		<span style="font-size:11px;"><b>NCBoost-2</b></span>
+									    		<div id="slider_ncboost" jsId="slider_ncboost" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
+									                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
+									                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+									                    <li><span style='font-size:9px;'><b>High</b><br>0.98</span></li>
+									                    <li><span style='font-size:9px;'><b>Very High</b><br>0.99</span></li>
+									                    <li><span style='font-size:9px;'><b><nobr>Extr. High</nobr></b><br>1.0</span></li>
+									                </ol>
+								                </div>
+				                			</center>
+						                </div>
+					                </td>
+	                        	</tr>
+		                    </table>
+		                </div>
+		            </a>
+		            
+		            <a href="#" class="sidebar-link text-decoration-none p-3">
+		                <i class="fas fa-bar-chart me-3 hide-on-collapse" aria-hidden="true" style="color:white;" onClick="show_hide_filters('div_sliders_frequences');"></i>
+		                <span class="hide-on-collapse" onClick="show_hide_filters('div_sliders_frequences');" style="color:white;">Frequencies&nbsp;</span>
+		                <div id="div_sliders_frequences" class="hide-on-collapse" style="display:none;">
+		                	<table>
+								<tr><td><span style="font-size:10px;">&nbsp;</span></td><td></td></tr>
+								<tr>
+									<td><span style="font-size:13px;">gnomAD</span></td>
+									<td><span style="font-size:13px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+									<td>
+										<div id="td_slider_gnomad_ac_pv">
+											<div id="slider_gnomad_ac_pv" jsId="slider_gnomad_ac_pv" data-dojo-type="dijit/form/HorizontalSlider" onChange="check_slider_gnomad_ac" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+								                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+								                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+								                    <li>0</li>
+								                    <li>5</li>
+								                    <li>10</li>
+								                    <li>20</li>
+								                    <li>50</li>
+								                    <li>100</li>
+								                </ol>
+							                	<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 1.6em; ">
+													<li>Allele&nbsp;Count</li>
+												</ol>
+						                	</div>
+										</div>
+									
+										<span style="font-size:10px;">&nbsp;</span>
+										<div id="slider_gnomad_ac_ho_pv">
+											<div id="slider_gnomad_ac_ho_pv" jsId="slider_gnomad_ac_ho_pv" data-dojo-type="dijit/form/HorizontalSlider"  aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:2,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+												<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+								                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+								                    <li>0</li>
+								                    <li>5</li>
+								                    <li>10</li>
+								                    <li>20</li>
+								                    <li>50</li>
+								                    <li>100</li>
+								                </ol>
+								                	<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 1.6em; ">
+													<li>Ho&nbsp;Allele&nbsp;Count</li>
+												</ol>
+											</div>
+										</div>
+									</td>
+								</tr>
+								
+								<tr><td><span style="font-size:15px;">&nbsp;</span></td><td></td></tr>
+								<tr>
+									<td><span style="margin-top:15px;font-size:13px;">DejaVu</span></td>
+									<td><span style="font-size:13px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+									<td>
+										<div id="td_slider_dejavu">
+											<div id="slider_dv_pv" jsId="slider_dv_pv" data-dojo-type="dijit/form/HorizontalSlider" onChange="check_slider_gnomad_ac" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+							                	<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+								                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+							                     	<li>1</li>
+								                    <li>5</li>
+								                    <li>10</li>
+								                    <li>20</li>
+								                    <li>50</li>
+								                    <li>100</li>
+						                		</ol>
+						                		<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 2em; ">
+													<li>Samples</li>
+												</ol>
+							                </div>
+							                </center>
+										</div>
+										<span style="font-size:10px;">&nbsp;</span>
+										<div id="td_slider_dejavu">
+											<div id="slider_dv_ho_pv" jsId="slider_dv_ho_pv" data-dojo-type="dijit/form/HorizontalSlider" onChange="check_slider_gnomad_ac" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:2,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
+							                	<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:6, style:{height:"5px"}'> </div>
+						                		<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+							                     	<li>0</li>
+								                    <li>5</li>
+								                    <li>10</li>
+								                    <li>20</li>
+								                    <li>50</li>
+								                    <li>100</li>
+						                		</ol>
+						                		<ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="font-size : 9px;height: 2em; ">
+													<li>Samples Ho</li>
+												</ol>
+							                </div>
+										</div>
+									</td>
+								</tr>
+							</table>
+						</div>
+		            </a>
+		            
+		            <a href="#" class="sidebar-link text-decoration-none p-3">
+		                <i class="fas fa-users me-3 hide-on-collapse" style="color:white;" onClick="show_hide_filters('div_select_patient');"></i>
+		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_patient');" style="color:white;">Patients&nbsp;&nbsp;&nbsp;&nbsp;</span>
+		                <div class="hide-on-collapse" id="div_select_patient" style="margin-top:15px;display:none;">
+							<center>
+								<table>
+									
+									<tr><td><span style="font-size:13px;">Patients</span></td></tr>
+										<td style="padding-top: 5px;">
+											<input class="form-check-input" type="checkbox" value="" id="b_only_pat_ill" checked>
+											<label class="form-check-label" for="b_only_pat_ill" style="vertical-align:middle;font-size:9px;"> ONLY <img src='/icons/Polyicons/pill2.png'> patients	</label>
+										</td>
+									</tr>
+									
+									<tr><td><span style="font-size:8px;">&nbsp;</span></td></tr>
+									<tr><td><span style="font-size:13px;">Models</span></td></tr>
+									<tr>
+									   	<td style="padding-left:10px;white-space: nowrap;">
+							    			<div class="pretty p-default p-curve p-thick p-bigger">
+								        		<input id="any_parent" type="checkbox" checked/>
+										        <label style="font-size:9px;"> Father or Mother </label>
+							    			</div>
+							    		</td>
+							  			<td style="padding-left:10px;white-space: nowrap;">
+							    			<div class="pretty p-default p-curve p-thick p-bigger">
+							        			<input id="strict_denovo" type="checkbox" checked/>
+											   	<label style="font-size:9px;"> Strict-Denovo </label>
+							    			</div>
+							    		</td>
+						    		</tr>
+						    		<tr>
+									   	<td style="padding-left:10px;white-space: nowrap;">
+							    			<div class="pretty p-default p-curve p-thick p-bigger">
+								        		<input id="parent" type="checkbox" checked/>
+										        <label style="font-size:9px;"> Is Parent </label>
+							    			</div>
+									   	</td>
+							  			<td style="padding-left:10px;white-space: nowrap;">
+							    			<div class="pretty p-default p-curve p-thick p-bigger">
+							        			<input id="denovo" type="checkbox" checked/>
+										        <label style="font-size:9px;"> Denovo </label>
+							    			</div>
+							    		</td>
+						    		</tr>
+						    		<tr>
+									   	<td style="padding-left:10px;white-space: nowrap;">
+							    			<div class="pretty p-default p-curve p-thick p-bigger">
+								        		<input id="solo" type="checkbox" checked/>
+										        <label style="font-size:9px;"> Solo (no parent) </label>
+							    			</div>
+							    		</td>
+							  			<td style="padding-left:10px;white-space: nowrap;">
+							    			<div class="pretty p-default p-curve p-thick p-bigger">
+							        			<input id="recessive" type="checkbox" checked/>
+										        <label style="font-size:9px;"> Recessif </label>
+							    			</div>
+							    		</td>
+						    		</tr>
+						    		<tr>
+									   	<td style="padding-left:10px;white-space: nowrap;">
+							    			<div class="pretty p-default p-curve p-thick p-bigger">
+								        		<input id="both" type="checkbox"/>
+										        <label style="font-size:9px;"> Both Parents </label>
+							    			</div>
+							    		</td>
+						    		</tr>
+								
+									<tr><td><span style="font-size:8px;">&nbsp;</span></td></tr>
+									<tr><td><span style="font-size:13px;">Ratio</span></td></tr>
+									<tr>
+										<td colspan='2'>
+											<div id="td_slider_ratio">
+												<center>
+													<div id="slider_allele_quality_pv" jsId="slider_allele_quality_pv" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 4" onChange="change_slider_ratio" data-dojo-props='value:0,maximum:100,minimum:0,pageIncrement:100,showButtons:true,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
+											        	<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
+												        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+												             <li> All </li>
+															 <li> 25% </li>
+															 <li> 50% </li>
+															 <li> 75% </li>
+												            <li>100%</li>
+												        </ol>
+												        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em; ">
+												            <li>% Ratio</li>
+												        </ol>
+											        </div>
+													<label for="htoto">Ratio:</label>
+											      <input   readonly id="htoto"  size="2" value="-" style="margin-top: 10px;font-size:11px;padding-left: 10px;padding-top: 2px;"> </input>
+										        </center>
+											</div>
+										</td>
+									</tr>
+					            </table>
+				            </center>
+			            </div>
+		            </a>
+		            
+		            <a href="#" class="sidebar-link text-decoration-none p-3">
+		                <i class="fas fa-address-card me-3 hide-on-collapse" style="color:white;" onClick="show_hide_filters('div_select_projects');"></i>
+		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_projects');" style="color:white;">Projects&nbsp;&nbsp;&nbsp;&nbsp;</span>
+		                <div class="hide-on-collapse" id="div_select_projects" style="margin-top:15px;display:none;">
+		                	<center>
+		                		<table>
+		                			<tr>
+										<td>
+										
+										</td>		                			
+		                			</tr>
+		                		</table>
+		                	</center>
+		                </div>
+	                </a>
+		        
+		            <a href="#" class="sidebar-link text-decoration-none p-3">
+		                <i class="fas fa-server me-3 hide-on-collapse" style="color:white;" onClick="show_hide_filters('div_select_pos_genes');"></i>
+		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_pos_genes');" style="color:white;">Positions / Gene(s)</span>
+		                <div id="div_select_pos_genes" class="hide-on-collapse"style="display:none;" >
+		                	<table>
+		                		<tr>
+		                			<td><span style="font-size:11px;">Position&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+		                			<td>
+										<div class="hide-on-collapse" style="margin-top: 15px;">
+					    					<form>
+											    <input style="width:140px;font-size:12px;" type="string" id="select_pos" name="select_position" placeholder="MT-1000-10000">
+											</form>
+										</div>
+									</td>
+								</tr>
+		                		<tr>
+		                			<td><span style="font-size:11px;">Only Gene(s)&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+		                			<td>
+										<div class="hide-on-collapse" style="margin-top: 15px;">
+					    					<form>
+											    <input style="width:140px;font-size:12px;" type="string" id="select_genes" name="select_genes" placeholder="CDK6, BRCA2">
+											</form>
+										</div>
+									</td>
+								</tr>
+							</table>
+						</div>
+		            </a>
+		        </div>
+		
+		        <div class="profile-section mt-auto p-4 text-center">
+		            <a href="#" class="sidebar-link text-decoration-none hide-on-collapse p-3"">
+		                <button class="btn btn-success rounded-pill px-3 d-inline-flex align-items-left hide-on-collapse h1" style="color:#ACBB78;font-size:30px;" onclick="launch_variants_search()"><b>RUN</b></button>
+		            </a>
 				</div>
-				<ul class="nav navbar-nav">
-					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">PolyVariantsScout</span></a></li>
-					<li><a><span id="resume_nb_genes_selected" style="color:#5cea5c"></span></a></li>
-					<li><a><span id="span_nb_genes_filters" style="color:orange"></span></a></li>
-					<li><a><span id="span_nb_genes_errors" style="color:red"></span></a></li>
-					<li><a><span id="resume_f_concept" style="color:#60b6f5;"></span></a></li>
-					<li><a><span id="resume_f_panel" style="color:#60b6f5;"></span></a></li>
-				</ul>
-					<ul class="nav navbar-nav navbar-right">
-					<li><a href="#"><div><span class="glyphicon glyphicon-time" style="color:#449D44"></span><span style="margin-left: 5px;color:#449D44;" id="span_date_dejavu"></span></div></a></li>
-					<li>
-						<button class=" btn btn-success  " onClick='relogin();' style="float:right;margin-top: 9px;margin-left: 2px;margin-right: 10px;" >
-			 				<b><i class="fa fa-sign-in pull-left" ></i><span class="glyphicon glyphicon-log-in" style="color:#449D44"></span> <span  style="margin-left: 5px;color:#449D44;" id="span_login">Login</span></b>
-			 			</button>
-					</li>
-				</ul>
-				
-			</div>
-		</nav>
+		    </nav>
 		
-		<div id="editor_stack" jsid="editor_stack" data-dojo-type="dijit/layout/ContentPane" href="../include_html/diag/editor_container_dejavu_variants.html" style="font-size:9px;width:100%;overflow-x:auto;overflow-y:hidden;margin: 0 auto;" hidden></div>
-		
-		<div style="font-size:11px;" id='content_gene_selection'></div>
-		<div style="padding-top:10px;overflow-x:auto;" class='container-fluid' id='content_res'></div>
-		
-		<div id="dialog_validation" dojoType="dojox.widget.Dialog" dimensions="[800,300]" title="USER Validation">
-	        <div id="content_validation" jsId="content_validation" data-dojo-type="dijit/layout/ContentPane"></div>	
+		    <main class="main-content overflow-auto" style="width:100%;">
+		        <div class="container-fluid " id='content_res' style="width:100%;">
+		            <h2>Welcome to PolyVariantsScout</h2>
+		            <p class="text-muted">Choose your filters in dashboard.</p>
+		        </div>
+		    </main>
+		</div>	
 		</div>
 				
 		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
@@ -1078,5 +1608,4 @@
 		</form>
 	</body>
 </html>
-
 

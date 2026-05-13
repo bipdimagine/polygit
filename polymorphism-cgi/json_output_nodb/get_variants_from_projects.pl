@@ -237,8 +237,9 @@ if ($promoter_ai_value) {
 		my ($mce, $chunk_ref, $chunk_id) = @_;
 		my $b = new GBuffer;
 		my $pr = $b->newProject(-name => $project_name);
-		my ($local_h_res, $local_h_rocks, $local_ok);
+		my ($local_h_res, $local_h_rocks, $local_ok, $local_errors);
 		foreach my $chr_id (@$chunk_ref) {
+			#next if $chr_id eq '21';
 			print '.';
 			my $chr = $pr->getChromosome($chr_id);
 			#my @list_ids = $h_vector->{$chr_id}->Index_List_Read();
@@ -246,14 +247,21 @@ if ($promoter_ai_value) {
 			
 			my $i = 0;
 			my $no = $chr->rocks_dejavu();
-			
 			foreach my $id (@list_ids) {
 				$i++;
 				if ($i == 2500) {
 					print '.';
 					$i = 0;
 				}
-				my $res = $no->dejavu_interval($id -1 , $id +1);
+				my $res;
+				eval { $res = $no->dejavu_interval($id -1 , $id +1); };
+				if ($@) {
+					chomp($@);
+					$local_errors->{'dv-hg38-'.$no->{current_db}->{name}} = $@;
+					$local_errors->{'dv-hg38-'.$no->{current_db}->{name}} =~ s/ at .+/'/;
+					next;
+				}
+				
 				foreach my $dv_rocks_id (keys %{$res}) {
 					my $nb_pat_he = 0;
 					my $nb_pat_ho = 0;
@@ -281,6 +289,7 @@ if ($promoter_ai_value) {
 	    MCE->gather({
 	        h_res   => $local_h_res,
 	        h_rocks => $local_h_rocks,
+	        h_errors => $local_errors,
 	        ok      => $local_ok
 	    });
 	} @lChr_vec;	
@@ -298,6 +307,11 @@ if ($promoter_ai_value) {
 	                $h_rocks_to_view->{$chr_id}->{$id} = $data->{h_rocks}->{$chr_id}->{$id};
 	            }
 	        }
+	    }
+	    if ($data->{h_errors}) {
+	    	foreach my $name (keys %{$data->{h_errors}}) {
+	    		$h_errors_found->{$name} = $data->{h_errors}->{$name};
+	    	}
 	    }
 	}
 	print '.after_dv.'.$ok++.'.';
@@ -527,7 +541,7 @@ if ($h_phenos) {
 	}
 }
 $html .= "</tr></table></div><br>";
-$html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="50" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' class='table table-striped' style='font-size:13px;'>};
+$html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="50" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' class='table' style='font-size:13px;'>};
 $html .= "<thead>";
 $html .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
 $html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder="Gene name, description, ..."</th>};

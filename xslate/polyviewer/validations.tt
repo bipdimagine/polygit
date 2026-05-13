@@ -1,9 +1,9 @@
 : if  $hgmd_value >= 4 or $clinvar_value >= 4 or $local_value >= 4 {
-<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="max-width:300px;box-shadow: 1px 1px 6px red;font-size: 7px;font-family:  Verdana;margin-bottom:0px">
+<table class="table table-sm table-striped table-condensed table-bordered  " style="max-width:300px;box-shadow: 1px 1px 6px red;font-size: 7px;font-family:  Verdana;margin-bottom:0px">
 <tbody><tr style="background-color:#FFF8F8">
 :}
 : else {
-<table class="table table-sm table-striped table-condensed table-bordered table-primary " style="max-width:300px;box-shadow: 1px 1px 6px orange;font-size: 7px;font-family:  Verdana;margin-bottom:0px">
+<table class="table table-sm table-striped table-condensed table-bordered  " style="max-width:300px;box-shadow: 1px 1px 6px orange;font-size: 7px;font-family:  Verdana;margin-bottom:0px">
 <tbody><tr style="background-color:#FFF8E8">
 : }
 

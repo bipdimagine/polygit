@@ -1857,7 +1857,7 @@ sub panel_gene {
 				
 				
 			my $oid = $hgene->{name};
-				my $type ="green";
+				my $type = '#00C851';
 				#$type = "default" if $pli <= 0.1;
 				$type = "orange" if $pli >= 0.75;
 				$type = "red" if $pli >= 0.9;

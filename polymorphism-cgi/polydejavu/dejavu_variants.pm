@@ -713,7 +713,7 @@ sub print_html_gene {
 	
 	my $pr = $self->project;
 	my $pat = $self->project->getPatients->[0];
-	my $print_html = polyviewer_html->new( project=>$pr, patient=>$pat,header=>\@headers, bgcolor=>"background-color:#607D8B" );
+	my $print_html = polyviewer_html->new( project=>$pr, patient=>$pat,header=>\@headers);
 
 	my ($g, $gene, $max_gene_score, $h_var_scores);
 	if ($gene_id eq 'intergenic') {
@@ -752,11 +752,13 @@ sub print_html_gene {
 	my ($out, $h_phenos);
 	my $bg_color = $print_html->bgcolor;
 	$out .= qq{<div class="panel-heading panel-face panel-grey"	style="$bg_color;height:43px;padding:10px;border:0px;width:100%;">};
-	$out .= update_variant_editor::panel_gene($g, $panel_id, $self->project->name);
+	my $out_g = update_variant_editor::panel_gene($g, $panel_id, $self->project->name);
+	$out_g =~ s/>CNV/ hidden>CNV/;
+	$out .= $out_g;
 	$out .= qq{</div>};
 	$out .= qq{<div style="height:3px;"></div>};
-	$out .= qq{<div class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="$panel_id">};
-	$out .= qq{<table class="table table-striped table-condensed table-bordered table-hover table-mybordered" style="vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
+	$out .= qq{<div class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="$panel_id" loading="lazy">};
+	$out .= qq{<table class="table table-striped table-borderless" style="vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
 	$out .= $print_html->print_header("background-color:aliceblue;color:black");
 	
 	my $color_validation = "grey";
@@ -881,22 +883,22 @@ sub print_line_variant_all_patients {
 				my $locus;
 				if ($gn =~ /HG19/) { $locus = $self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{chr19}.':'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}.'-'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}; }
 				else { $locus = $polyviewer_variant->locus(); }
-				my $igv_b = qq{<button class='igvIcon2' onclick='launch_web_igv_js("$proj_name","$pnames","$f","$locus","/","$gn")' style="color:black;padding-top:2px;"></button>};
+				my $igv_b = qq{<button class='igvIcon2 rounded-circle p-2 lh-1' onclick='launch_web_igv_js("$proj_name","$pnames","$f","$locus","/","$gn")' style="color:black;padding-top:2px;"></button>};
 				my $project_phenotypes = '';
 				if ($self->{hash_users_projects}->{$proj_name}->{phenotypes}) {
 					$project_phenotypes = qq{<span hidden>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes_tags}.qq{</span>};
 					$project_phenotypes .= qq{<span style='color:green;'><i>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes}.qq{</i></span><br>};
 				}
 				my $project_description = $this_print_html->patient->getProject->name().', Description: '.$this_print_html->patient->getProject->description();
-				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;width:120px;'><center>".$project_phenotypes."<button onClick='alert(\"$project_description\")'>".$this_print_html->patient->getProject->name().'</button><br><b>'.$this_print_html->patient->getFamily->name()."</b><br>".$igv_b."</td></center></td><td><nobr>".$html_pat."</nobr></td></tr>");
+				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;width:120px;'><center>".$project_phenotypes."<button class='btn btn-outline-secondary d-inline-flex align-items-left' onClick='alert(\"$project_description\")' style='padding-bottom:2px;font-size:10px;'><b>".$this_print_html->patient->getProject->name().'</b></button><br>'.$igv_b.'&nbsp;&nbsp;&nbsp;<b>'.$this_print_html->patient->getFamily->name()."</b></td></center></td><td><nobr>".$html_pat."</nobr></td></tr>");
 				push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
 			}
 		}
 	}
 	
-	my $out_calling = qq{<center><table style='width:98%;max-height:200px;'>};
+	my $out_calling = qq{<center><div style='width:100%;max-height:200px;overflow-y: scroll;'><table style='width:95%;max-height:200px;'>};
 	$out_calling .= join('', @l_html_calling);
-	$out_calling .= qq{</table></center>};
+	$out_calling .= qq{</table></div></center>};
 	
 	$out .= $cgi->td( $style, $out_calling) ;
 	$out .= "\n";
