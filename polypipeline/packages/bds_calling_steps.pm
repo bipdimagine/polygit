@@ -292,6 +292,7 @@ method calling_larges_indels  (Str :$filein! ){
 method count_featureCounts  (Str :$filein! ){
 	my $project = $self->project;
 	my $project_name = $project->name();
+	warn "!! release = ".$project->getVersion()." !!" && sleep(5) unless ($project->getVersion() =~ /HG38_CNG|MM39|DR11/);
 	
 	my $dir_out= $project->getCountingDir("featureCounts");
 	my $fileout = $dir_out."/".$project_name.".count.genes.txt";
@@ -356,9 +357,9 @@ method count_featureCounts  (Str :$filein! ){
 	
 	my $featureCounts = $project->buffer->software("featureCounts");
 	my $strand = "-s 1 ";
-	$strand = "-s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free" or $profile eq "bulk NEB-directional pcr-free" or $profile eq "bulk watchmaker pcr-free";
-	$strand = "-s 0 " if $profile eq "bulk neb pcr-free" ;
-	die("Strands from metrics (".$strands[0].") and from profile ($strand) don't match") unless ($strand eq $strands[0]);
+	$strand = "-s 2 " if $profile eq "bulk illumina pcr-free" or $profile eq "bulk ribozero pcr-free" or $profile eq "bulk NEB-directional pcr-free" or $profile eq "bulk watchmaker pcr-free" or $profile eq "bulk stranded-reverse pcr-free";
+	$strand = "-s 0 " if $profile eq "bulk neb pcr-free" or $profile eq "bulk unstranded pcr-free";
+	die("Strands from metrics (".$strands[0].") and from profile ($strand) don't match. Please update samples profile.") unless ($strand eq $strands[0]);
 	$strand = $strands[0];
 	
 	my $sed = join(" && ",@sed_cmd);
