@@ -869,6 +869,21 @@ sub update_software_version {
 }
 
 
+sub getSoftwareVersionID {
+	my ($self, $name, $version) = @_;
+	confess("-".$name."-") unless $name;
+	my $dbh = $self->getDbh();
+	my $config = $self->getConfig();
+	my $sth = $self->prepare("SELECT version_id,version  FROM PolyprojectNGS.version_software where name=? and version=?");
+	$sth->execute("$name", $version);
+	my $res = $sth->fetchall_arrayref({});
+	confess("No $name version $version in DB PolyprojectNGS.version_software") if (scalar @$res < 1);
+	confess("More than 1 version_id for $name version $version in DB PolyprojectNGS.version_software") if (scalar @$res > 1);
+	return ($res->[0]->{version_id},$res->[0]->{version}) if $res;
+	return (undef,undef);
+
+}
+
 sub getLatestSoftwareVersion {
 	my ($self, $name, $verbose) = @_;
 	confess("-".$name."-") unless $name;
