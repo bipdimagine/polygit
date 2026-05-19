@@ -21,6 +21,7 @@ my $patients_name;
 my @steps;
 my $analysis;
 my $sample_list;
+my $sample_loading_table;
 my $run_name_option;
 my $kit;
 my $chem;
@@ -40,6 +41,7 @@ GetOptions(
 	'kit=s'						=> \$kit,
 	'chemistry=s'				=> \$chem,
 	'sample_list=s'				=> \$sample_list,
+	'sample_table=s'			=> \$sample_loading_table,
 	'bcr'						=> sub{ $analysis = 'bcr' },
 	'tcr'						=> sub{ $analysis = 'tcr' },
 	'parent_project=s'			=> \$parent_project_name,
@@ -64,6 +66,7 @@ unless ($analysis) {
 warn ("--chemistry option is mandatory\n") && usage() unless ($chem);
 warn ("--chemistry should be one of ('v1','v2','v3'), given '$chem'\n") && usage() unless ( grep($chem, ('v1','v2','v3')) );
 warn ("Sample list '$sample_list' doesn't exist\n") && usage() if ( $sample_list and not -e $sample_list );
+warn ("Sample loading table '$sample_loading_table' doesn't exist\n") && usage() if ( $sample_loading_table and not -e $sample_loading_table );
 warn ("--parent_project option is mandatory for BCR/TCR analysis\n") && usage() if ($analysis =~ /^bcr|tcr$/i and not $parent_project_name);
 @steps = qw{all comb} unless (scalar @steps);
 
@@ -104,35 +107,30 @@ die("No patient $patients_name in project $projectName") unless $patients;
 
 # ALL: process data from each sublibrary individually
 if (grep {/all/} @steps) {
-	my ($fastq1,$fastq2,$dirf);
-	foreach my $p (sort {$a->name cmp $b->name} @$patients){
-		my $fastq = $p->fastqFiles;
-		my $fastq_dir = $p->getSequencesDirectory;
-		if (scalar @$fastq > 1) {
-			warn "cp fastq ".$p->name;
-			($fastq1,$fastq2,$dirf) = dragen_util::get_fastq_file($p,$dir_pipeline);
-		}
-		elsif (scalar @$fastq == 1) {
-			warn "rsync fastq ".$p->name;
-			$fastq1 = $fastq->[0]->{R1};
-			$fastq2 = $fastq->[0]->{R2};
-			system("rsync -a $fastq1 $fastq2 $dir_pipeline");
-			$fastq1=~ s/^$fastq_dir/$dir_pipeline/;
-			$fastq2=~ s/^$fastq_dir/$dir_pipeline/;
-			die;
-		}
-		else {
-			confess("No fastq found for patient ".$p->name.": $fastq_dir");
-		}
-	}
-	warn "\n";
-
 	mkdir("$dir/sublibraries") unless (-d "$dir/sublibraries");
 	open(my $jobs_all, ">", $dir."jobs_all.txt") or die("Can't open '$dir/jobs_all.txt': $!");
-#	warn ("$dir/jobs_all.txt");
-#	warn sort keys(%sublib);
+#	my $pm   = new Parallel::ForkManager(5);
 	foreach my $subl (sort {$a->name cmp $b->name} @$patients){
-#	warn $subl;
+#		my $pid = $pm->start and next;
+#		open(my $jobs_all, ">>", $dir."jobs_all.txt") or die("Can't open '$dir/jobs_all.txt': $!");
+		my ($fastq1,$fastq2,$dirf);
+		my $fastq = $subl->fastqFiles;
+		my $fastq_dir = $subl->getSequencesDirectory;
+		if (scalar @$fastq > 1) {
+			warn "cp fastq ".$subl->name;
+			($fastq1,$fastq2,$dirf) = dragen_util::get_fastq_file($subl,$dir_pipeline);
+		}
+		elsif (scalar @$fastq == 1) {
+			warn "rsync fastq ".$subl->name;
+			$fastq1 = $fastq->[0]->{R1};
+			$fastq2 = $fastq->[0]->{R2};
+			system("rsync --size-only $fastq1 $fastq2 $dir_pipeline"); # --no-times
+			$fastq1=~ s/^$fastq_dir/$dir_pipeline/;
+			$fastq2=~ s/^$fastq_dir/$dir_pipeline/;
+		}
+		else {
+			confess("No fastq found for patient ".$subl->name.": $fastq_dir");
+		}
 		my $name = $subl->name;
 		my $subcmd = "singularity run --cleanenv";
 		# si erreur ne trouve pas la librairie libxml2: "error while loading shared libraries: libxml2.so.2"
@@ -160,18 +158,20 @@ if (grep {/all/} @steps) {
 		else { # WT analysis
 			$subcmd .= " --kit $kit";
 			$subcmd .= " --genome_dir $index " ;
-			unless ($sample_list) {
+			if ($sample_loading_table) {
+				$subcmd .= " --samp_sltab $sample_loading_table";
+			}
+			elsif ($sample_list) {
+				$subcmd .= " --samp_list $dir/sample-list.txt";
+			}
+			else {
 				my $plate_des = $run->sample_sheet;
 				die ("No SampleLoadingTable. Please upload the SampleLoadingTable excel file to the run document or use a sample_list.") unless ($plate_des);
 				my $csv_tmp = $dir."SampleLoadingTable.xlsm";
-#				warn $csv_tmp;
 				open(TOTO,">$csv_tmp");
 				print TOTO $plate_des;
 				close TOTO;
-				$subcmd .= " --samp_sltab $dir/SampleLoadingTable.xlsm";
-			}
-			if ($sample_list) {
-				$subcmd .= " --samp_list $dir/sample-list.txt";
+				$subcmd .= " --samp_sltab $csv_tmp";
 			}
 			$subcmd .= " --targeted_list $dir$target" if ($target);
 		}
@@ -187,19 +187,23 @@ if (grep {/all/} @steps) {
 		#	warn $csv_tmp;
 		print $subcmd."\n";
 		print {$jobs_all} $subcmd."\n";
+#		close ($jobs_all);
+#		$pm->finish( 0, {});
 	}
+#	$pm->wait_all_children();
 	close ($jobs_all);
 	my $exit = system("cat $dir/jobs_all.txt | run_cluster.pl -cpu=$cpu") unless ($no_exec);
 	die if ($exit);
+	warn "\n";
 }
-warn "\n";
 
 
 
 # COMB: combine the processed data from each sublibrary into a single dataset
 if (grep {/comb(ine)?/} @steps) {
 	my @names = map{ $dir."sublibraries/".$_->name()} @$all_patients;
-	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index -B $dir_pipeline";
+	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index ";
+#	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index -B $dir_pipeline";
 	my $parent_dir;
 	if ($parent_project and $analysis =~ /^bcr|tcr$/) {
 		$parent_dir = $parent_project->getProjectRootPath if (-d $parent_project->getProjectRootPath);
@@ -215,12 +219,13 @@ if (grep {/comb(ine)?/} @steps) {
 		$cmd2 .= ' --immune_genome mouse' if ($release =~ /^MM/);
 		$cmd2 .= " --parent_dir $parent_dir" if ($parent_project);
 	}
-	$cmd2 .= " --output_dir $dir_pipeline/comb" ;
+	$cmd2 .= " --output_dir $dir/comb" ;
+#	$cmd2 .= " --output_dir $dir_pipeline/comb" ;
 	$cmd2 .= " --sublibraries ".join (" ", sort @names) ;
 	$cmd2 .= " --reuse" if ($reuse);
 	$cmd2 .= " --dryrun" if ($dry_run);
 	$cmd2 .= ' '.$other_opt if ($other_opt);
-	$cmd2 .= " && cp -r $dir_pipeline/comb $dir" unless ($dry_run);
+#	$cmd2 .= " && cp -r $dir_pipeline/comb $dir" unless ($dry_run);
 	print $cmd2."\n";
 	
 	open(my $jobs_comb, ">$dir/jobs_comb.txt");
@@ -229,16 +234,17 @@ if (grep {/comb(ine)?/} @steps) {
 	
 	my $exit = system("cat $dir/jobs_comb.txt | run_cluster.pl -cpu=$cpu") unless ($no_exec);
 	die if ($exit);
+	warn "\n";
 }
-warn "\n";
 
 
 
 if (grep {/tar/} @steps) {
 	my @patient_names = map{$_->name} @$patients;
-	my $cmd_tar = "cd $dir_pipeline/comb && tar -cvzf $dir_pipeline$projectName.tar.gz ".join('* ',@patient_names)."* all-sample*";
+	my $cmd_tar = "cd $dir && tar -cvzf $projectName.tar.gz comb/*";
 	warn($cmd_tar);
-	system($cmd_tar);
+	system($cmd_tar) && confess("Error while creating the archive");
+	print('-'x20,"\nArchive to send:\n$dir$projectName.tar.gz\n",'-'x20,"\n");
 }
 
 
@@ -317,7 +323,8 @@ Optionels:
 					par défaut: fait les deux à la suite
 	run <s>				Numéro du run si le projet en contient plusieurs (utilisé pour récupérer la plan de plaque)
 	sample_list <s>			Liste des échantillons et de leurs puis correspondants, séparés par un espace.
-					Si omis, utilise le document dans la base de donnée comme plan de plaque
+	sample_table <s>			Fichier excel Parse contenant le plan de plaque.
+					Si sample_table et sample_list sont omis, utilise le document dans la base de donnée comme plan de plaque
 	bcr/tcr				Analyse des BCR ou TCR
 	parent_project <s>		Chemin des résultats de l'analyse whole transcriptome associée. Pour l'analyse de BCR/TCR uniquement
 	target/panel <s>		Fichier csv spécifiant la liste des gènes cibles.
