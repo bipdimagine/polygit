@@ -33,6 +33,7 @@ my $archive_name;
 my $transfert_sftp;
 my $no_die;
 my $no_archive;
+my $version;
 my $help;
 
 my $start_time;
@@ -49,6 +50,7 @@ GetOptions(
 	'no_die'			=> \$no_die,
 	'no_archive'		=> \$no_archive,
 	'help'				=> \$help,
+	'version=s' 		=> \$version,
 ) || die("Error in command line arguments\n");
 
 usage() if ($help);
@@ -72,10 +74,9 @@ if ($transfert_sftp) {
 	);
 
 	# Liste les fichiers dans le répertoire distant
-	my @ls           = $sftp->ls('.');
+	my @ls = $sftp->ls('.');
 	my @sorted_files = sort { $a->{filename} cmp $b->{filename} } @ls;
-	@sorted_files =
-	  grep { $_->{filename} !~ /^\./ } @sorted_files;    # !~ /^\.{1,2}$/
+	@sorted_files = grep { $_->{filename} !~ /^\./ } @sorted_files;    # !~ /^\.{1,2}$/
 	my @file_names = map { $_->{filename} } @sorted_files;
 	$dir_sftp = prompt( "Select a directory to put the files: ", -menu => \@file_names );
 	$sftp = undef;
@@ -96,7 +97,7 @@ unless ($file_types) {
 		Banner => "   Select file types to transfert:"
 	);
 	@file_types = &Menu( \%Menu_1 );
-	die if ( @file_types eq ']quit[' );
+	die("\nbye") if ( @file_types eq ']quit[' );
 }
 else {
 	@file_types = split( ',', $file_types );
@@ -107,7 +108,7 @@ my $files;
 my @patient_names = split( ',', $patient_names ) if ( $patient_names ne "all" );
 $project_names = [ split( ',', $project_names ) ];
 foreach my $project_name (@$project_names) {
-	my $project = $buffer->newProject( -name => $project_name );
+	my $project = $buffer->newProject( -name => $project_name, -version => $version );
 	colored::stabilo( "white", "Project " . $project->name );
 
 	my $patients = $project->get_only_list_patients($patient_names);
