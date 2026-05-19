@@ -1323,6 +1323,13 @@ sub bam_stats {
 		$mean_cov += $cov->{mean};
 		my $fsize = -s $p->getBamFile();
 		my $cmd   = qq{$samtools idxstats $bam};
+		if ($p->isCram){
+			my $f =  $p->getBamFile;
+			$f =~ s/cram/idxstats/;
+			die($f) unless -e $f;
+			$cmd = qq{cat $f }
+		 }
+		my $cmd   = qq{$samtools idxstats $bam};
 		my @t     = `$cmd`;
 		chomp(@t);
 		foreach my $l (@t) {
