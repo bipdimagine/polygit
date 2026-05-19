@@ -38,12 +38,14 @@ use Cwd qw(cwd abs_path);
 my $projectName;
 my $patients_name;
 my $out_dir = cwd;
+my $version;
 my $help;
 
 GetOptions(
 	'project=s'			=> \$projectName,
 	'patients=s'		=> \$patients_name,
 	'out_dir|outdir=s'	=> \$out_dir,
+	'version=s'			=> \$version,
 	'help'				=> \$help,
 ) || die("Error in command line arguments\n");
 
@@ -53,7 +55,7 @@ die("'$out_dir' does not exist or is not a directory") unless (-d $out_dir);
 $out_dir .= '/' unless ($out_dir =~ /\/$/);
 
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version => $version);
 my $patients = $project->get_only_list_patients($patients_name);
 #my $patients = $project->getPatients;
 die("No patient in project $projectName") unless ($patients);

@@ -37,21 +37,25 @@ my $patients_name;
 my $create_bam;
 my $multi;
 my $all_vdj;
+my $archive_name;
+my $version;
 my $no_exec;
 
 GetOptions(
-	'project=s'		=> \$projectName,
-	'patients=s'	=> \$patients_name,
-	'create_bam!'	=> \$create_bam,
-	'multi|flex'	=> \$multi,
-	'all_vdj'		=> \$multi,
-	'no_exec'		=> \$no_exec,
+	'project=s'				=> \$projectName,
+	'patients=s'			=> \$patients_name,
+	'create_bam!'			=> \$create_bam,
+	'multi|flex'			=> \$multi,
+	'all_vdj'				=> \$all_vdj,
+	'out|archive_name=s'	=> \$archive_name,
+	'version=s'				=> \$version,
+	'no_exec'				=> \$no_exec,
 ) || confess("Error in command line arguments\n");
 
 die("--project argument is mandatory") unless ($projectName);
 
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version => $version);
 my $patients = $project->getPatients($patients_name);
 my $run = $project->getRun();
 my $type = $run->infosRun->{method};
@@ -63,7 +67,15 @@ warn $dir;
 my @groups = map {$_->somatic_group()} @$patients;
 my @pools = map {$_->family()} @$patients;;
 
-my $tar_cmd = "cd $dir && tar -cvzf $projectName.tar.gz ";
+if ($archive_name) {
+#	$archive_name = $dir.$archive_name;
+	$archive_name .= '.tar.gz' unless ($archive_name =~ /\.tar\.gz$/);
+}
+else {
+	$archive_name = '$projectName.tar.gz';
+}
+
+my $tar_cmd = "cd $dir && tar -cvzf $archive_name ";
 if ($type eq 'spatial') {
 	$tar_cmd .= join(' ',map {$_->name} @$patients).' ';
 }
@@ -78,7 +90,7 @@ else {
 	$tar_cmd .= "*/web_summary.html ";
 	$tar_cmd .= "*/cloupe.cloupe */*_bc_matrix.h5 " if (grep (! /vdj/i, @groups));
 	$tar_cmd .= "VDJ_*/* " if ($all_vdj and grep (/vdj/i, @groups));
-	$tar_cmd .= "*/vloupe.vloupe " if grep (/vdj/i, @groups and not $all_vdj);
+	$tar_cmd .= "*/vloupe.vloupe " if (grep (/vdj/i, @groups) and not $all_vdj);
 	$tar_cmd .= "*/possorted_bam.bam* " if ($create_bam and $create_bam ne 'false');
 	$tar_cmd .= "*/fragments.tsv.gz* */peak_annotation.tsv */singlecell.csv " if (grep {/ATAC/i} @groups);
 	# scRNAseq: GEX (+ADT): cloupe.cloupe, web_summary.html, filtered and raw_feature_bc_matrix
@@ -87,9 +99,9 @@ else {
 }
 
 warn $tar_cmd;
-if (-e "$dir$projectName.tar.gz" and !$no_exec) {
-	system("ls -lh $dir$projectName.tar.gz");	
-	die("archive '$projectName.tar.gz' already exists") unless (prompt("archive '$dir$projectName.tar.gz' already exists. Overwrite ?  (y/n) ", -yes_no));
+if (-e $dir.$archive_name and !$no_exec) {
+	system("ls -lh $dir$archive_name");	
+	die("archive '$archive_name' already exists") unless (prompt("archive '$dir$archive_name' already exists. Overwrite ?  (y/n) ", -yes_no));
 }
 unless ($no_exec){
 	my $exit = system ($tar_cmd);
@@ -98,7 +110,7 @@ unless ($no_exec){
 #	print "\tlink to send to the users : \n";
 #	print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
 	print "\tArchive to send to the users : \n";
-	print "\t$dir$projectName.tar.gz\n" if (-e "$dir$projectName.tar.gz");
+	print "\t$dir$archive_name\n" if (-e "$dir$archive_name");
 	print "\t------------------------------------------\n\n";
 }
 

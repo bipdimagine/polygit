@@ -51,6 +51,7 @@ my $chemistry;
 my $create_bam;
 my $multi_meth;
 my $cpu = 20;
+my $version;
 my $help;
 
 GetOptions(
@@ -67,6 +68,7 @@ GetOptions(
 	'chemistry=s'				=> \$chemistry,
 	'cpu=i'						=> \$cpu,
 	'no_exec'					=> \$no_exec,
+	'version=s'					=> \$version,
 	'help'						=> \$help,
 ) || confess("Error in command line arguments\n");
 
@@ -75,7 +77,7 @@ die("-project argument is mandatory") unless ($projectName);
 die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version => $version);
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient in project $projectName") unless ($patients);
 

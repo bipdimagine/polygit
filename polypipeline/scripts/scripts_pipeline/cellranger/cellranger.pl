@@ -51,6 +51,8 @@ my $aggr_name;
 my $choose_exec;
 my $choose_transcriptome;
 my $chemistry;
+my $all_vdj;
+my $archive_name;
 my $create_bam;
 my $slide_infos_csv;
 my $probe_set;
@@ -58,6 +60,7 @@ my $add_image;
 my $loupe_alignment;
 my $cpu = 20;
 my $force;
+my $version;
 my $help;
 
 GetOptions(
@@ -70,9 +73,11 @@ GetOptions(
 	'feature_ref|feature_csv=s'						=> \$feature_ref,
 	'cmo_ref|cmo_csv=s'								=> \$cmo_ref,
 	'aggr_name=s'									=> \$aggr_name,
-	'choose_exec|choose_version|version'			=> \$choose_exec,
+	'choose_exec'									=> \$choose_exec,
 	'choose_transcriptome|select_transcriptome'		=> \$choose_transcriptome,
 	'chemistry=s'									=> \$chemistry,
+	'all_vdj'				=> \$all_vdj,
+	'out|archive_name=s'	=> \$archive_name,
 	'slide_infos=s'									=> \$slide_infos_csv,
 	'probe_set=s'									=> \$probe_set,
 	'add_image'										=> \$add_image,
@@ -80,6 +85,7 @@ GetOptions(
 	'cpu=i'											=> \$cpu,
 	'no_exec'										=> \$no_exec,
 	'force'											=> \$force,
+	'version=s'										=> \$version,
 	'help'											=> \$help,
 ) || confess("Error in command line arguments\n");
 
@@ -88,7 +94,7 @@ die("-project argument is mandatory") unless ($projectName);
 die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
 
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version => $version);
 my $all_patients = $project->getPatients;
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient in project $projectName") unless ($patients);
@@ -142,8 +148,8 @@ my $exec = "cellranger";
 $exec .= '-atac' if ($type eq 'atac');
 $exec .= '-arc' if ($type eq 'arc');
 $exec = 'spaceranger' if  ($type eq 'spatial');
+my $exec_type = $exec;
 if ($choose_exec) {
-	my $exec_type = $exec;
 	my $path_exec = "/software/distrib/$exec_type/";
 	opendir(my $dh, $path_exec) || die "Can't opendir '$path_exec': $!";
 	my @exec = reverse grep {-x "$path_exec$_/$exec_type" && ! /^\./} readdir($dh);
@@ -408,11 +414,12 @@ if (grep(/count|^all$/i, @steps)){
 		my $adt = 'ADT_'.$name;
 		$cmd1 = "cp $seq_dir$name*.fastq.gz $seq_dir/ADT_$name*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
 #		my $cmd2 = " --localcores=$cpu ";
-		my $cmd2 = "&& mkdir $dir$name --mode=775 " unless (-d $dir.$name);
+		my $cmd2;
+		$cmd2 = "&& mkdir $dir$name --mode=775 " unless (-d $dir.$name);
 		$cmd2 .= "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
 #		make_path("$dir$name", { mode => 0775 }) unless (-d "$dir$name");
 #		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
-		$pat->update_software_version($exec, $cmd, $version_nb) unless ($no_exec);
+		$pat->update_software_version($exec_type, $cmd, $version_nb) unless ($no_exec);
 		$cmd =~ s/$seq_dir/$tmp_fastq/;
 		return $cmd1.$cmd.$cmd2."\n";
 	}
@@ -922,7 +929,10 @@ if (grep(/aggr_vdj/, @steps)) {
 # CSV with infos/paths for Francesco
 #------------------------------
 if (grep(/info/i, @steps)){
-	system("$Bin/cellranger_infos.pl -project=$projectName -out_dir=$dir");
+	my $cmd_infos = "$Bin/cellranger_infos.pl -project=$projectName -out_dir=$dir";
+	$cmd_infos .= "-patients=$patients_name " if ($patients_name);
+	$cmd_infos .= "-version $version " if ($version);
+	system($cmd_infos);
 }
 
 
@@ -935,6 +945,7 @@ if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
 	$cmd_cp .= "-patients=$patients_name " if ($patients_name);
 	$cmd_cp .= "-all_outs " if (grep(/^cp$/i, @steps));
 	$cmd_cp .= "-no_exec " if ($no_exec);
+	$cmd_cp .= "-version $version " if ($version);
 	system($cmd_cp);
 }
 
@@ -947,7 +958,10 @@ if (grep(/tar|archive|^all$/i, @steps)){
 	my $cmd_tar = "$Bin/cellranger_tar.pl -project=$projectName ";
 	$cmd_tar .= "-patients=$patients_name " if ($patients_name);
 	$cmd_tar .= "-create_bam " if ($create_bam and $create_bam ne 'false');
+	$cmd_tar .= "-all_vdj " if ($all_vdj);
+	$cmd_tar .= "-archive_name $archive_name " if ($archive_name);
 	$cmd_tar .= "-no_exec " if ($no_exec);
+	$cmd_tar .= "-version $version " if ($version);
 	system($cmd_tar);
 }
 
@@ -963,6 +977,7 @@ if (grep(/velocyto/, @steps)) {
 	$cmd_velocyto .= '-transcriptome='.$htranscriptome->{gex}.' '  if ($choose_transcriptome);
 	$cmd_velocyto .= "-cpu=$cpu ";
 	$cmd_velocyto .= "-no_exec " if ($no_exec);
+	$cmd_velocyto .= "-version $version " if ($version);
 	system($cmd_velocyto);
 }
 

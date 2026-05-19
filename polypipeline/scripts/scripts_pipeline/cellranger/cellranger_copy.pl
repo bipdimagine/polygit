@@ -36,6 +36,7 @@ use Carp;
 my $projectName;
 my $patients_name;
 my $all_outs;
+my $version;
 my $no_exec;
 my $verbose;
 
@@ -44,13 +45,14 @@ GetOptions(
 	'patients=s'	=> \$patients_name,
 	'all_outs!'		=> \$all_outs,
 	'no_exec'		=> \$no_exec,
+	'version=s'		=> \$version,
 	'verbose'		=> \$verbose,
 ) || confess("Error in command line arguments\n");
 
 die("--project argument is mandatory") unless ($projectName);
 
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version => $version);
 my $patients = $project->get_only_list_patients($patients_name);
 my $run = $project->getRun();
 my $type = $run->infosRun->{method};
