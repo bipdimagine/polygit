@@ -279,7 +279,7 @@ sub check_variants_from_gene {
 		print '.chr'.$chr_id.'.';
         my $chr = $self->project->getChromosome($chr_id);
 		my $nodv = $chr->rocks_dejavu();
-		my $fork2 = $fork;
+		my $fork2 = 1;
 		my $nb_part = 0;
 		my $iter = natatime(100000, keys %{$h_dv->{$chr_id}});
 		while( my @tmp = $iter->() ){
@@ -419,15 +419,18 @@ sub check_variants_from_gene {
 	my $hVariants_ok;
 	my $h_models = $self->models();
 	my $min_ratio = $self->min_ratio();
-	my $fork2 = $fork;
+	my $fork2 = 1;
 	
-	my ($B, $P);
+	my ($B, $P, $H_intergenic);
 	MCE::Loop->init(
 	   max_workers => $fork2,
 	   chunk_size => 'auto',
 	   user_begin => sub {
 	       $B = new GBuffer;
 	       $P = $B->newProject(-name => $project_name);
+	       foreach my $chr (@{$P->getChromosomes()}) {
+				$H_intergenic->{$chr->id()} = $chr->intergenic_intspan();
+	       }
 	   },
 	   gather => sub {
 	        my ($data) = @_;
@@ -501,7 +504,8 @@ sub check_variants_from_gene {
 				$vp->{hgenes} = {};
 				$vp->{genes_id} = [];
 				my $code = 0;
-				if ($p->getChromosome($var->getChromosome->id())->intergenic_intspan->contains($var->start())) {
+				my @ltmp = split('_', $var->id);
+				if ($H_intergenic->{$ltmp[0]}->contains($var->start())) {
 					my $h = $vp->set_intergenic($var);
 					$h->{code} = $code;
 					$vp->{hgenes}->{intergenic} = $h;

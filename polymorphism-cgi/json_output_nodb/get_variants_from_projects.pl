@@ -640,12 +640,13 @@ sub launch_ncboost {
 				$sql_region_end = "AND a.pos >= $start_filter AND a.pos <= $end_filter";
 			}
 			my $sql;
+			my $ncboost_filters_dir = $project->ncboost_parquet_dejavu_filter_path();
 			if ($dejavu_variants->is_magic_user()) {
 				$sql = "
 					PRAGMA threads=$fork;
 					SELECT 
 					    a.pos, a.rocksdb_id, a.score AS ncboost
-					FROM read_parquet('/data-isilon/public-data/repository/HG38/ncboost/20260301/parquet/dejavu_filter/chr=$chr_id/*.parquet') a
+					FROM read_parquet('$ncboost_filters_dir/chr=$chr_id/*.parquet') a
 					WHERE a.score >= $ncboost_value 
 					  AND dejavu <= $max_dejavu 
 					  AND dejavu_ho <= $max_dejavu_ho
@@ -672,7 +673,7 @@ sub launch_ncboost {
 					
 					SELECT 
 					    a.pos, a.rocksdb_id, a.score AS ncboost
-					FROM read_parquet('/data-isilon/public-data/repository/HG38/ncboost/20260301/parquet/dejavu_filter/chr=$chr_id/*.parquet') a
+					FROM read_parquet('$ncboost_filters_dir/chr=$chr_id/*.parquet') a
 					JOIN b_filtered b
 					    ON a.pos = b.pos38
 					WHERE a.score >= $ncboost_value 
