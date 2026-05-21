@@ -499,15 +499,45 @@
 			    overflow-x: hidden;
 			}
 			
+			.bootstrap-table .filter-control input,
+			.bootstrap-table .filter-control select {
+			    font-size: 9px;
+			    height: 16px;
+			    min-height: 16px;
+			    padding: 0 1px;
+			    line-height: 1;
+			}
+			
+			.bootstrap-table-projects tbody td {
+			    color: white;
+			}
+			.fixed-table-pagination {
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    gap: 10px;
+			    font-size: 9px;
+			}
+			.fixed-table-pagination .pagination { white-space: nowrap; }
+			
+			.container-fluid {
+			    position: relative !important;
+			    z-index: 1 !important;
+			}
+			
 			.sidebar {
 			    width: var(--sidebar-width);
 			    height: 100vh;
+			    width: auto;
 			    background: linear-gradient(135deg, #292E49 0%, #536976 100%);
 			    transition: all 0.3s ease;
+    			z-index: 99999 !important;
 			}
 			
 			.sidebar.collapsed {
 			    width: var(--sidebar-width-collapsed);
+			    width: 60px;
+			    min-width: 60px;
 			}
 			
 			.sidebar-link {
@@ -623,21 +653,18 @@
 	    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
 	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
 	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
-		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
-		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.25.0/dist/bootstrap-table.min.css">
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.25.0/dist/bootstrap-table.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.25.0/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		
 		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
 		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
-		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 		
 		
-		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
-		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
-		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
 		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
-		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
 		
 		
         <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
@@ -790,11 +817,136 @@
 				document.getElementById("span_login").innerHTML = this_username;
 				dijit.byId('login').hide();
 				init_nb_tr = ($('tr:visible').length-1);
+				get_lists_projects();
 			}
 			
 			function error_login() {
 				alert('Login / Passwd failed...');
 				dijit.byId('login').show();
+			}
+			
+			var nb_projects_all;
+			var list_projects_names;
+			var initialized_projects = false;
+			function get_lists_projects(sort_by) {
+				document.getElementById("content_res_projects").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'> Please wait...";
+				var url2 = url_path + "polydejavu/deja_list_projects.pl?user=" + username + "&pwd=" + pwd;
+				if (sort_by == 'sort_by_captures') {
+					url2 += "&sort_by_captures=1";
+				}
+	    		$.getJSON( url2, function( data ) {
+			    	$.each( data, function( key, val ) {
+			    		if (key == 'html_projects') {
+							document.getElementById("content_res_projects").innerHTML = "";
+							var myNode = document.getElementById("content_res_projects");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							document.getElementById("content_res_projects").style.display = "block";	    					$('#table_projects_found').bootstrapTable({
+							    maintainMetaData: true,
+							    idField: 'name',
+							    showPageList: false
+							});
+							select_all_projects();
+	    					$('#table_projects_found').bootstrapTable('hideColumn', 'id');
+	    					$('#table_projects_found').on( 'page-change.bs.table',
+							    function (event, pageNumber, pageSize) {
+	            					setTimeout(function() {
+							        	updateSelectedCount();
+									}, 100);
+							    }
+							);
+			    		}
+			    		if (key == 'date_dejavu') {
+			    			document.getElementById("span_date_dejavu").innerHTML = val;
+			    		}
+			    		if (key == 'list_projects') {
+			    			list_projects_names = $(val);
+			    		}
+  					});
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
+			}
+			
+			let selectedProjects = {};
+			function select_all_projects() {
+				for (i=0; i<list_projects_names.length; i++){
+					var project_name = list_projects_names[i];
+					selectedProjects[project_name] = true;
+					var b_id = 'b_sel_'+project_name;
+					if (document.getElementById(b_id)) {
+						document.getElementById(b_id).checked = true;
+					}
+			    }
+				updateSelectedCount();
+			}
+			
+			function unselect_all_projects() {
+				for (i=0; i<list_projects_names.length; i++){
+					var project_name = list_projects_names[i];
+					selectedProjects[project_name] = false;
+					var b_id = 'b_sel_'+project_name;
+					if (document.getElementById(b_id)) {
+						document.getElementById(b_id).checked = false;
+					}
+			    }
+				updateSelectedCount();
+			}
+			function select_all_projects_in_page() {
+				for (i=0; i<list_projects_names.length; i++){
+					var project_name = list_projects_names[i];
+					var b_id = 'b_sel_'+project_name;
+					if (document.getElementById(b_id)) {
+						document.getElementById(b_id).checked = true;
+						selectedProjects[project_name] = true;
+					}
+			    }
+				updateSelectedCount();
+			}
+			
+			function unselect_all_projects_in_page() {
+				for (i=0; i<list_projects_names.length; i++){
+					var project_name = list_projects_names[i];
+					var b_id = 'b_sel_'+project_name;
+					if (document.getElementById(b_id)) {
+						document.getElementById(b_id).checked = false;
+						selectedProjects[project_name] = false;
+					}
+			    }
+				updateSelectedCount();
+			}
+			
+			function select_one_project(project_name) {
+				var b_id = 'b_sel_'+project_name;
+				if (selectedProjects[project_name] == true) {
+					selectedProjects[project_name] = false;
+					document.getElementById(b_id).checked = false;
+				}
+				else {
+					selectedProjects[project_name] = true;
+					document.getElementById(b_id).checked = true;
+				}
+				updateSelectedCount();
+			}
+			
+			function updateSelectedCount() {
+				var nb_total = 0;
+				var nb_selected = 0;
+				for (i=0; i<list_projects_names.length; i++){
+					var project_name = list_projects_names[i];
+					var b_id = 'b_sel_'+project_name;
+					nb_total++;
+					if (selectedProjects[project_name] == true) {
+						nb_selected++;
+						if (document.getElementById(b_id)) {
+							document.getElementById(b_id).checked = true;
+						} 	
+					}
+					else {
+						if (document.getElementById(b_id)) {
+							document.getElementById(b_id).checked = false;
+						} 	
+					}
+			    }
+			    document.getElementById("span_nb_projects").innerHTML = 'Projects (' + nb_selected + '/' + nb_total + ')';
 			}
 			
 		    function launch_variants_search() {
@@ -946,6 +1098,22 @@
 				if (ratio_allelic != '-' && ratio_allelic > 0) {
 					url += "&min_perc_all="+ratio_allelic;
 				}
+				
+				var found_excluded = false;
+				var listExcludedProjects = [];
+				for (i=0; i<list_projects_names.length; i++){
+					var project_name = list_projects_names[i];
+					if (selectedProjects[project_name] == false) {
+						var this_name = project_name;
+						this_name = this_name.replace('NGS20', '');
+						listExcludedProjects.push(this_name);
+						found_excluded = true;
+					}
+			    }
+			    if (found_excluded == true) {
+			    	url += "&exclude_projects='" + listExcludedProjects.join(',') + "'";
+			    }
+				
 		    	console.log(url);
 			    launchJob(url);
 		    }
@@ -1348,7 +1516,7 @@
 						</div>
 		            </a>
 		            
-		            <a href="#" class="sidebar-link text-decoration-none p-3">
+		            <a href="#" class="sidebar-link text-decoration-none p-3" style="position:relative;">
 		                <i class="fas fa-users me-3 hide-on-collapse" style="color:white;" onClick="show_hide_filters('div_select_patient');"></i>
 		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_patient');" style="color:white;">Patients&nbsp;&nbsp;&nbsp;&nbsp;</span>
 		                <div class="hide-on-collapse" id="div_select_patient" style="margin-top:15px;display:none;">
@@ -1447,14 +1615,38 @@
 		            
 		            <a href="#" class="sidebar-link text-decoration-none p-3">
 		                <i class="fas fa-address-card me-3 hide-on-collapse" style="color:white;" onClick="show_hide_filters('div_select_projects');"></i>
-		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_projects');" style="color:white;">Projects&nbsp;&nbsp;&nbsp;&nbsp;</span>
+		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_projects');" style="color:white;"><span id='span_nb_projects'>Projects</span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
 		                <div class="hide-on-collapse" id="div_select_projects" style="margin-top:15px;display:none;">
 		                	<center>
 		                		<table>
 		                			<tr>
+		                				<td>
+		                					<table>
+		                						<tr>
+		                							<td>
+			                							<span id="span_date_dejavu" style="color:yellow;font-size:10px;"></span>
+		                							</td>
+	                								<td style="padding-left:10px;padding-right:10px;text-align:right;">
+														<button style="font-size:11px;margin:3px;" onclick='select_all_projects_in_page();'>SELECT this PAGE</button>
+		                								<button style="font-size:11px;margin:3px;" onclick='unselect_all_projects_in_page();'>UNSELECT this PAGE</button>
+		                							</td>
+	                							</tr>
+                							</table>
+		                				</td>
+		                			</tr>
+		                			<tr>
 										<td>
-										
-										</td>		                			
+											<div style="height:99%;width:99%;table-layout: fixed;font-size:9px !important;" id="content_res_projects" jsId="content_res_projects" data-dojo-type="dijit/layout/ContentPane"></div>
+										</td>                			
+		                			</tr>
+		                			
+		                			<tr>
+		                				<td>
+		                					<center>
+												<button type="button" class="btn btn-success" style="font-size:11px;margin:5px;" onclick='select_all_projects();'>Add ALL Projects</button>
+		                						<button type="button" class="btn btn-danger" style="font-size:11px;margin:5px;" onclick='unselect_all_projects();'>Exclude ALL Projects</button>
+											</center>
+		                				</td>
 		                			</tr>
 		                		</table>
 		                	</center>
@@ -1553,9 +1745,6 @@
             <div class="container-fluid" id="div_igv" style="height:99%;width:99%;"></div>
         </div> 
        
-		<div dojoType="dojox.widget.Dialog" jsId="dialog_projects" id="dialog_projects" dimensions="[1000,800]" title="IGV View" style="background-color:white;overflow: auto;" >
-	        <div style="height:99%;width:99%;" id="content_res_projects" jsId="content_res_projects" data-dojo-type="dijit/layout/ContentPane"></div>	
-        </div> 
         
 		<div dojoType="dojox.widget.Dialog"  jsId="dialog_list_panels" dimensions="[700,600]" id="dialog_list_panels" title="List Phenotype(s) / Panel(s)" style="background-color:white;overflow:auto;min-width:250px;" >
 			 <span id="span_list_panels"></span>

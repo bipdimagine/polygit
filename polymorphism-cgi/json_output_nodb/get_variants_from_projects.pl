@@ -107,6 +107,7 @@ my $only_strict_ill = $cgi->param('only_strict_ill');
 my $models = $cgi->param('models');
 my $region = $cgi->param('region');
 my $only_genes = $cgi->param('only_genes');
+my $exclude_projects = $cgi->param('exclude_projects');
 
 my $dejavu_variants = new dejavu_variants();
 $dejavu_variants->user_name($login);
@@ -116,6 +117,13 @@ if (not $only_my_projects) {
 	#TODO: faire en sorte de prendre tous les projets en hash - ne marche pas la
 	$dejavu_variants->{is_magic_user} = 1;
 	print '.all_projects.';
+}
+if ($exclude_projects) {
+	my @lExcl = split(',', $exclude_projects);
+	foreach my $p_name (@lExcl) {
+		my $project_name = 'NGS20'.$p_name;
+		$dejavu_variants->{hash_exclude_projects}->{$project_name} = undef;
+	}
 }
 $dejavu_variants->hash_users_projects() if $only_my_projects;
 exit(0) if not $dejavu_variants->hash_users_projects();

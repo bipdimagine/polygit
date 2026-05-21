@@ -80,17 +80,17 @@ my $date_dejavu = 'Last DV update: '.$ltmp[-3].' '.$ltmp[-4];
 
 my $out =  $cgi->start_div({style=>"font-size:10px;"});
 $out .= qq{<center>};
-$out .= qq{<br>};
 $out .=  $cgi->end_div();
 $out .=  $cgi->start_div();
 
 
-$out .= qq{<table data-filter-control='true' data-sort-name="name" data-sort-order="desc" data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="top" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="15" data-page-list="[10, 15, 20, 50, 100]" data-resizable='true' id='table_projects_found' class='table table-striped' style='font-size:13px;'>};
+$out .= qq{<table class='table table-sm bootstrap-table-projects' data-filter-control='true' data-id-field="name" data-sort-name="name" data-sort-order="desc" data-toggle="table"  data-cache="false" data-pagination-loop="false" data-pagination-v-align="top" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-toggle="true" data-pagination="true" data-show-page-list="false" data-smart-display="true" data-page-size="10" data-page-list="[]" id='table_projects_found' class='table table-striped' style='font-size:09px;'>};
 $out .= "<thead>";
-$out .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:10px;"});
+$out .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:9px;"});
 #$out .= qq{<th data-field="found"></th>};
 #$out .= qq{<th data-field="status" data-filter-control="input">Status</th>};
-$out .= qq{<th data-field="name" data-filter-control="input" data-filter-control-placeholder="NGS2022_4000">Name</th>};
+$out .= qq{<th data-field="select"></th>};
+$out .= qq{<th data-field="name" data-filter-control="input" data-filter-control-placeholder="">Name</th>};
 $out .= qq{<th data-field="id" data-filter-control="input">ID</th>};
 $out .= qq{<th data-field="description" data-filter-control="input" data-filter-control-placeholder="">Description</th>};
 $out .= $cgi->end_Tr();
@@ -170,6 +170,12 @@ foreach my $project_name (@lProjectNames) {
 #	}
 	#$h_p->{$project_name} .=  $cgi->td("<center>$html_glyph</center>");
 	#$h_p->{$project_name} .=  $cgi->td("<center><span $style>$status</span></center>");
+	if ($status =~ /Excluded/) {
+		$h_p->{$project_name} .=  $cgi->td("<center><div><input type='checkbox' id='b_sel_$project_name' name='b_sel_$project_name' checked disabled/><label for='b_sel_$project_name'></label></div></center>");
+	}
+	else {
+		$h_p->{$project_name} .=  $cgi->td("<center><div><input onClick=\"select_one_project('$project_name')\" type='checkbox' id='b_sel_$project_name' name='b_sel_$project_name' checked/><label for='b_sel_$project_name'></label></div></center>");
+	}
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$project_name</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$id</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$description</span></center>");

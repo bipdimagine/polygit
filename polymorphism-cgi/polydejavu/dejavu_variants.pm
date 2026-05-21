@@ -205,6 +205,7 @@ has hash_users_projects => (
 			foreach my $hash (@list_hash) {
 				my $proj_name = $hash->{name};
 				next unless ($proj_name =~ /NGS20/);
+				next if $self->hash_exclude_projects() and exists $self->hash_exclude_projects->{$proj_name};
 				$h_projects->{$proj_name}->{description} = $hash->{description};
 				$h_projects->{$proj_name}->{name} = $proj_name;
 				$h_projects->{$proj_name}->{id} = $hash->{id};
@@ -227,6 +228,11 @@ has hash_users_projects => (
 		$self->{hash_users_projects_parquet} = $h_parquets;
 		return $h_projects;
 	}
+);
+
+has hash_exclude_projects=> (
+	is		=> 'rw',
+	lazy    => 1,
 );
 
 has hash_lift_variants => (
