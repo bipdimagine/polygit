@@ -575,12 +575,12 @@ sub save_csv {
 	
 	my $query = "
 	COPY (
-        SELECT * from read_csv_auto([$txt_filename]) order by type,chr38,end38,chr19,end19
+        SELECT * from read_csv_auto([$txt_filename]) order by 'type','chr38','end38','chr19','end19'
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);";
     warn $query;
  	 system("duckdb :memory: -c \"$query \"");
-		warn "duckdb :memory: -c \" $query \" ";
+	warn "duckdb :memory: -c \" $query \" ";
 	#$dbh->do($query);
 	#$dbh->disconnect;
 	

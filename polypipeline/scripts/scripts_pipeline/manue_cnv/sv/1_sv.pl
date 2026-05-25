@@ -117,7 +117,6 @@ foreach my $thePatient (@listPatients)
 close($fh);
 
 
-my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 my $dir_dejavu =  $buffer->config_path("dejavu","sv");
 die("not exists dejavu dir : -".$dir_dejavu) unless -e $dir_dejavu;
 my $parquet_file = $dir_dejavu.$project->name.".parquet";
@@ -126,9 +125,8 @@ my $query = "
         SELECT * from read_csv_auto(['$filename']) order by type
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE,ROW_GROUP_SIZE 1000000);";
-	$dbh->do($query);
-	
-	$dbh->disconnect;
+    my $exit_code = system("duckdb", ":memory:", "-c", $query);
+die("duckdb failed with exit code: $exit_code") if $exit_code != 0;
 	warn $query;
 # pour le dejavu du projet
 exit(0);
@@ -166,6 +164,7 @@ sub liftover_sv {
 			
 			}
 			else {
+				next;
 			warn Dumper $hdejavu->{$id};
 				die();
 			$global->{$id}->{sr1} = -1;

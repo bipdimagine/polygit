@@ -68,8 +68,8 @@ system($cmd);
 $cmd = qq{$singularity $gatksif gatk FilterMutectCalls -R $ref -V  $vcf_out -O  $vcf};
 system($cmd);
 my $vcf1 = $vcf.".old.gz";
-warn "mv $vcf $vcf1; mv $vcf.tbi $vcf1.tbi;$bcftools  view -f PASS $vcf1 -Oz -o $vcf;tabix -p -f $vcf";
-system ("mv $vcf $vcf1; mv $vcf.tbi $vcf1.tbi;$bcftools  view -f PASS $vcf1 -Oz -o $vcf;tabix -p -f $vcf");
+warn "mv $vcf $vcf1; mv $vcf.tbi $vcf1.tbi;$bcftools  view -f PASS $vcf1 -Oz -o $vcf;tabix -f -p vcf $vcf";
+system ("mv $vcf $vcf1; mv $vcf.tbi $vcf1.tbi;$bcftools  view -f PASS $vcf1 -Oz -o $vcf;tabix -f -p vcf $vcf");
 
 die() unless -e $vcf_out;
 exit(0);

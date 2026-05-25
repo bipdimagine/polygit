@@ -61,7 +61,7 @@ my $cnv_callers = {
 
 #test gnomad
 #my $gnomad_file  ="/data-isilon/public-data/repository/HG38/gnomad-sv/4.1/parquet/gnomad.sv.parquet";
-my $dbh_gnomad =   DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
+#my $dbh_gnomad =   DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 
 
 
@@ -972,7 +972,7 @@ sub save_parquet_rocksdb {
 	my $parquet_file = $project->getCacheCNV()."/".$project->name.".".$project->id.".parquet";
 	my $query = "
 	COPY (
-        SELECT * from read_csv_auto(['$filename']) order by patient,type,chr,type,start
+        SELECT * from read_csv_auto(['$filename']) order by 'patient','type','chr','type','start'
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE);";
     print "\n# $query\n";

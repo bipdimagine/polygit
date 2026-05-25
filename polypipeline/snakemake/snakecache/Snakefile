@@ -1,0 +1,313 @@
+import os
+
+configfile: "config.yaml"
+
+PROJECTS    = config["projects"]
+CHROMOSOMES = config["chromosomes"]
+FORK        = config["fork"]
+PERL        = config["perl"]
+ROCKS       = config["rocks_scripts"]
+PIPELINE    = config["pipeline_scripts"]
+BASE        = config["base_dir"]
+VERSION     = config.get("version", "")
+
+
+# ???????????????????????????????????????
+# RÈGLE FINALE
+# ???????????????????????????????????????
+
+rule all:
+    input:
+        expand(
+            "logs/{project}/project_done.ok",
+            project=PROJECTS
+        )
+
+
+# ???????????????????????????????????????
+# MARQUEUR FINAL PROJET
+# ???????????????????????????????????????
+rule project_done:
+    input:
+        expand("logs/{{project}}/{step}.ok", step=[
+            "cnv2",
+            "sv2",
+            "quality_check",
+            "add_project_parquet",
+            "hotspot",
+            "global_annotation_by_patient",
+            
+        ])
+    output:
+        touch("logs/{project}/project_done.ok")
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  AGRÉGATION : attend TOUS les chromosomes
+#
+# ???????????????????????????????????????????????????????????
+
+rule aggregate_chromosomes:
+    input:
+        expand(
+            "logs/{{project}}/{chrom}/tiny_rocks.ok",
+            chrom=CHROMOSOMES
+        )
+    output:
+        touch("logs/{project}/all_chromosomes.ok") 
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  PARTIE 1 : PER CHROMOSOME
+#
+# ???????????????????????????????????????????????????????????
+
+rule cache_store_ids:    
+    output:
+        touch("logs/{project}/{chrom}/store_ids.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/cache_store_ids.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/cache_store_ids.err && exit 1)
+        """
+
+
+rule cache_store_annotations:
+    input:
+        "logs/{project}/{chrom}/store_ids.ok"
+    output:
+        touch("logs/{project}/{chrom}/store_annot.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/cache_store_annotations.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/cache_store_annotations.err && exit 1)
+        """
+
+
+rule cache_strict_denovo:
+    input:
+        "logs/{project}/{chrom}/store_annot.ok"
+    output:
+        touch("logs/{project}/{chrom}/denovo.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/cache_strict_denovo.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/update_hash_variant_chromosome.err && exit 1)
+        """
+
+
+rule update_vector_score:
+    input:
+        "logs/{project}/{chrom}/denovo.ok"
+    output:
+        touch("logs/{project}/{chrom}/update_vector_score.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/update_vector_score.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/update_hash_variant_chromosome.err && exit 1)
+        """
+
+
+rule update_hash_variant_chromosome:
+    input:
+        "logs/{project}/{chrom}/update_vector_score.ok"
+    output:
+        touch("logs/{project}/{chrom}/update_hash_variant_chromosome.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/update_hash_variant_chromosome.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/update_hash_variant_chromosome.err && exit 1)
+        """
+# --- Tiny Rocks ---
+rule tiny_rocks:
+    input:
+       "logs/{project}/{chrom}/update_hash_variant_chromosome.ok"
+    output:
+        touch("logs/{project}/{chrom}/tiny_rocks.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/tiny_rocks.pl \
+            -project={wildcards.project} \
+            -fork={FORK}  -chr={wildcards.chrom}  || (touch logs/{wildcards.project}/tiny_rocks.err && exit 1)
+        """
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  PARTIE 2 : PER PROJET (après tous les chromosomes)
+#
+# ???????????????????????????????????????????????????????????
+
+
+
+# --- Merge Objects ---
+rule merge_polyviewer_db:
+    input:
+       "logs/{project}/add_project_parquet.ok"
+    output:
+        touch("logs/{project}/merge_polyviewer_db.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/merge_polyviewer_db.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/merge_polyviewer_db.err && exit 1)
+        """
+
+
+
+# --- Global Annotation by Patient ---
+rule global_annotation_by_patient:
+    input:
+        "logs/{project}/merge_polyviewer_db.ok"
+    output:
+        touch("logs/{project}/global_annotation_by_patient.ok")
+    shell:
+        """
+        {PERL} {ROCKS}/global_annotation_by_patient.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/global_annotation_by_patient.err && exit 1)
+        """
+
+
+# --- Duck Cache Store Annotations ---
+rule duck_cache_store_annotations:
+    input:
+       "logs/{project}/all_chromosomes.ok"
+    output:
+        "logs/{project}/duck_cache_store_annotations.ok"
+    shell:
+        """
+        {PERL} {ROCKS}/duck_cache_store_annotations.pl \
+            -project={wildcards.project} \
+            -fork={FORK} && touch {output} || (touch logs/{wildcards.project}/duck_cache_store_annotations.err && exit 1)
+        """
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  PARTIE 3 : ÉTAPES PARALLÈLES (après duck_cache_store)
+#
+# ???????????????????????????????????????????????????????????
+#
+#               duck_cache_store_annotations
+#                          ?
+#              ??????????????????????????????
+#              ?       ?   ?       ?        ?
+#              ?       ?   ?       ?        ?
+#           hotspot  quality parquet cnv1    sv1
+#                                   ?        ?
+#                                   ?        ?
+#                                  cnv2     sv2
+#              ?       ?   ?       ?        ?
+#              ??????????????????????????????
+#                              ?
+#                         project_done
+
+# --- Add Project Parquet ---
+rule add_project_parquet:
+    input:
+        "logs/{project}/duck_cache_store_annotations.ok"
+    output:
+        touch("logs/{project}/add_project_parquet.ok")
+    shell:
+        """
+        {PERL} {PIPELINE}/dejavu/hg38/variant/duckdb/add_project_parquet.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/add_project_parquet.err && exit 1)
+        """
+
+
+# --- Hotspot ---
+rule hotspot:
+    input:
+       "logs/{project}/all_chromosomes.ok"
+    output:
+        touch("logs/{project}/hotspot.ok")
+    shell:
+        """
+        {PERL} {PIPELINE}/hotspot/hotspot.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/hotspot.err && exit 1)
+        """
+
+
+# --- Quality Check ---
+rule quality_check:
+    input:
+        "logs/{project}/all_chromosomes.ok"
+    output:
+        touch("logs/{project}/quality_check.ok")
+    shell:
+        """
+        {PERL} {PIPELINE}/quality_check.pl \
+            -project={wildcards.project} \
+            -fork={FORK} -cache=1 || (touch logs/{wildcards.project}/quality_check.err && exit 1)
+        """
+
+
+# --- CNV 1 ---
+rule cnv1:
+    input:
+        "logs/{project}/all_chromosomes.ok"
+    output:
+        touch("logs/{project}/cnv1.ok")
+    shell:
+        """
+        {PERL} {PIPELINE}/manue_cnv/cnv/1_cnv.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/cnv1.err && exit 1)
+        """
+
+
+# --- CNV 2 ---
+rule cnv2:
+    input:
+        "logs/{project}/cnv1.ok"
+    output:
+        touch("logs/{project}/cnv2.ok")
+    shell:
+        """
+        {PERL} {PIPELINE}/manue_cnv/cnv/2_cnv.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/cnv2.err && exit 1)
+        """
+
+
+# --- SV 1 ---
+rule sv1:
+    input:
+        "logs/{project}/all_chromosomes.ok"
+    output:
+        touch("logs/{project}/sv1.ok")
+    shell:
+        """
+        {PERL} {PIPELINE}/manue_cnv/sv/1_sv.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/sv1.err && exit 1)
+        """
+
+
+# --- SV 2 ---
+rule sv2:
+    input:
+        "logs/{project}/sv1.ok"
+    output:
+        touch("logs/{project}/sv2.ok")
+    shell:
+        """
+        {PERL} {PIPELINE}/manue_cnv/sv/2_sv.pl \
+            -project={wildcards.project} \
+            -fork={FORK} || (touch logs/{wildcards.project}/sv2.err && exit 1)
+        """
