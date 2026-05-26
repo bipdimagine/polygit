@@ -169,7 +169,7 @@ has hash_users_projects => (
 	default => sub {
 		my $self = shift;
 		my ($h_projects, $h_projectsNames, $h_parquets, @list_hash);
-		if ($self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
+		if (not $self->hash_exclude_projects() and $self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
 			$self->{is_magic_user} = 1;
 			my $dir_parquets = $self->buffer->dejavu_parquet_dir();
 			opendir my $dir, $dir_parquets or die "Cannot open directory: $!";
