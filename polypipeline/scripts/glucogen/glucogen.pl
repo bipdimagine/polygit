@@ -25,6 +25,7 @@ my $project_name;
 my $patient_names;
 my $site;
 my $set;
+my $diabetome_project_name;
 my $force;
 my $checksum = 1;
 my $no_exec;
@@ -34,27 +35,63 @@ my $help;
 my @sites = qw/glucogenpitie glucogenlyon glucogentoul/;
 
 GetOptions(
-	'project=s'				=> \$project_name,
-	'patients=s'			=> \$patient_names,
-	'site|glucogen|labo=s'	=> \$site,
-	'set=i'					=> \$set,
-	'force'					=> \$force,
-	'checksum!'				=> \$checksum,
-	'no_exec'				=> \$no_exec,
-	'fork=i'				=> \$fork,
-	'help'					=> \$help,
+	'project|genome_project=s'	=> \$project_name,
+	'diabetome_project=s'		=> \$diabetome_project_name,
+	'patients=s'				=> \$patient_names,
+	'site|glucogen|labo=s'		=> \$site,
+	'set=i'						=> \$set,
+	'force'						=> \$force,
+	'checksum!'					=> \$checksum,
+	'no_exec'					=> \$no_exec,
+	'fork=i'					=> \$fork,
+	'help'						=> \$help,
 ) or (warn("\nError in command line arguments\n") && usage());
 usage() if ($help);
 die('Enter a project name') unless ($project_name);
-die('Enter a set number > 0') unless ($set > 0);
-die('Enter a site') unless ($set > 0);
 
 my $project = $buffer->newProject( -name => $project_name );
 warn $project_name;
+my $project_desc = $project->description;
+confess ('Project $project_name is not glucogen project. Check capture and description.') unless ($project_desc =~ /glucogen/i and $project->isGenome);
 my $patients = $project->get_only_list_patients($patient_names);
 die("No patient in project ".$project_name."\n") unless ($patients);
 @$patients = sort {$a->name cmp $b->name} @$patients;
+# site
+$project_desc =~ /(pitie|lyon|toul)/i;
+$site = lc($1) unless ($site);
+die('Enter a site: pitie, lyon or toul') unless ($site);
 
+# Keep only patients corresponding to the diabetome project
+if ($diabetome_project_name) {
+	my $diabetome_project = $buffer->newProject( -name => $diabetome_project_name );
+	$project_desc = $diabetome_project->description;
+	confess ('Diabetome project $diabetome_project_name is not diabetome. Check capture and description.') 
+		unless ($project_desc =~ /glucogen/i and $project_desc =~ /diabetome/i and grep {$_->name eq 'DIABETomeV1_hg38'} @{$diabetome_project->getCaptures});
+	$project_desc =~ /(pitie|lyon|toul)/i;
+	$site = lc($1) unless ($site);
+	confess("Sites not matching between project $project_name ($site) and diabetome project $diabetome_project_name ($1)") unless ($1 and $site eq lc($1));
+	my $patients_diabetome = $diabetome_project->get_only_list_patients($patient_names);
+	die("No patient in diabetome project ".$project_name."\n") unless ($patients);
+	my $patients_both;
+	foreach my $pat (@$patients) {
+		my @pat_grep = grep {$pat->name eq $_->name} @$patients_diabetome;
+		push (@$patients_both, $pat_grep[0]) if (scalar @pat_grep);
+	}
+	$patients = $patients_both;
+	warn "Keeping only patients present in both project $project_name and diabetome project $diabetome_project_name: ". scalar @$patients;
+}
+
+# site
+$site = 'toul' if ($site =~ /toulouse/i);
+my @site = grep{/$site/i} @sites;
+$site = uc(@site[0]);
+die("Choose a site in '".join(', ',@sites)."'.") unless (scalar @site == 1);
+warn $site;
+# set
+$project_desc =~ /set-?(\d+)/i;
+$set = $1 unless ($set);
+die('Enter a set number > 0') unless ($set > 0);
+warn 'Set '.$set;
 
 # Vérifie qu'il y a bien les 3 méthodes de calling SV
 my @SVmethods = map{values @{$_->callingSVMethods}} @$patients;
@@ -74,12 +111,7 @@ unless ($project->validation_db eq 'glucogen') {
 }
 
 
-my $dir_download = "/data-pure/workspace/download/glucogen/";
-$site = 'toul' if ($site =~ /toulouse/i);
-my @site = grep{/$site/i} @sites;
-$site = @site[0];
-die("Choose a site in '".join(', ',@sites)."'.") unless (scalar @site == 1);
-$dir_download .= uc($site).'/set'.$set.'/';
+my $dir_download = "/data-pure/workspace/download/glucogen/" . uc($site) . '/set' . $set . '/';
 warn $dir_download;
 confess ("No directory '$dir_download'") unless (-d $dir_download);
 
@@ -106,16 +138,17 @@ $pm->run_on_finish(sub {
     my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $block) = @_;
     if ($exit_signal || $exit_code != 0) {
         $erreur_fork = 1;
-        push @patients_in_error, $ident;
-		warn "ERROR: Patient '$ident' failed (PID: $pid, Exit: $exit_code)\n";
-	} else {
+		my ($name, $barcode) = split(/\t/, $ident);
+		push @patients_in_error, { name => $name, barcode => $barcode };
+		warn "ERROR: Patient '$name' ($barcode) failed (PID: $pid, Exit: $exit_code)\n";
+       	} else {
 		warn "OK: Patient '$ident' completed successfully\n";
 	}
 });
 
 $buffer->disconnect;
 foreach my $pat (@$patients) {
-	my $pid = $pm->start($pat->name) and next;
+	my $pid = $pm->start($pat->name."\t".$pat->barcode) and next; #unless($fork == 1);
 	my $bc = $pat->barcode;
 	warn $pat->name.' -> '.$bc;
 	my $f = File::Util->new();
@@ -226,23 +259,37 @@ $pm->wait_all_children();
 if ($erreur_fork) {
     my $err_mess = "\n========================================\n";
     $err_mess .= "ERROR: Processing failed for " . scalar(@patients_in_error) . " patient(s):\n";
-    $err_mess .= "  - " . join("\n  - ", @patients_in_error) . "\n";
+    $err_mess .= "  - " . join("\n  - ", map{$_->{name} . ' (' . $_->{barcode} . ')'} @patients_in_error ) . "\n";
     $err_mess .= "========================================\n";
     confess($err_mess);
 }
 
 
 unless ($no_exec) {
-	my $cmd_pipeline = "bds_pipeline.sh -project=$project_name -steps=coverage,binary_depth,canvas,wisecondor,calling_wisecondor ";
+	print("----------DONE----------\n");
+	my $cmd_pipeline = "$Bin/../../bds_pipeline.pl -project $project_name -steps coverage,binary_depth,canvas,wisecondor,calling_wisecondor ";
 	$cmd_pipeline .= "-patients=$patient_names " if ($patient_names);
-	print("--------DONE--------\n");
-	print("For diabetome project, run\n");
-	print("$Bin/glucogen_diabetome.pl -project=<diabetome_project> -genome_project=$project_name\n");
-	print("Now, run coverage and cnv on the project, then cache:\n");
+	$cmd_pipeline .= "-force 1 " if ($force);
+	my $cmd_cache = "$Bin/../../bds_cache.pl -project $project_name";
+	$cmd_cache .= "-force 1 " if ($force);
+	my $cmd_diabetome;
+	if ($diabetome_project_name) {
+		print("Now, run glucogen_diabetome.pl:\n");
+		print($cmd_diabetome."\n");
+		$cmd_diabetome = "$Bin/glucogen_diabetome.pl -diabetome_project $diabetome_project_name -genome_project $project_name -fork $fork ";
+		$cmd_diabetome .= "-patients $patient_names " if ($patient_names);
+		$cmd_diabetome .= "-force 1 " if ($force);
+		$cmd_pipeline = "$Bin/../../bds_pipeline.pl -project $project_name -steps coverage,binary_depth ";
+		$cmd_pipeline .= "-force 1 " if ($force);
+		$cmd_cache =~ s/$project_name/$diabetome_project_name/;
+	}
+	print("Then, run coverage (and cnv for genome), then cache:\n");
 	print($cmd_pipeline."\n");
-	print("bds_cache.sh -project=$project_name\n");
+	print($cmd_cache."\n");
 }
 print "\n";
+
+
 
 sub check_md5sum {
 	my @md5 = @_;
@@ -263,17 +310,18 @@ $0
 Move glucogen (cram and vcf) files downloaded from cnrgh in /data-pure/workspace/download/glucogen/GLUCOGEN<site>/<set>/ to the <project> directory
 -----------------	
 Mandatory arguments
-	-project <s>              project name
-	-set <i>                  set number
+	-project|genome_project <s>  project name
 	
 Optional arguments
-	-site <s>                 glucogen project, in ".join(',',@sites)."
-	-patients <s>             patient names separated with a comma
-	-checksum/nochecksum      enables or disables the md5sum check [enabled]
-	-force                    overwrite files if existing
-	-fork <i>                 number of forks to use in parallele
-	-no_exec                  do not execute the commands
-	-help                     display this help message and exit
+	-diabetome_project <s>       corresponding diabetome project name
+	-site <s>                    glucogen project, in ".join(',',@sites)."
+	-set <i>                     set number
+	-patients <s>                patient names separated with a comma
+	-checksum/nochecksum         enables or disables the md5sum check [enabled]
+	-force                       overwrite files if existing
+	-fork <i>                    number of forks to use in parallele
+	-no_exec                     do not execute the commands
+	-help                        display this help message and exit
 
 ";
 	exit(1) unless ($no_exit);
