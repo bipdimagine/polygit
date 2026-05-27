@@ -1226,11 +1226,6 @@
 			                            dijit.byId('waiting').hide();
 			                        }
 			                    },
-			                    error: function() {
-			                        clearInterval(interval);
-			                        alert("ERROR during polling");
-			                        dijit.byId('waiting').hide();
-			                    }
 			                });
 			
 			            }, 5000);
