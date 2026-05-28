@@ -711,15 +711,17 @@ sub get_from_duckdb_project_patients_infos_global {
 sub print_html_gene {
 	my ($self, $gene_id, $list_variants, $hVariantsDetails) = @_;
 	print '|';
-	my $found;
+	my $nb_ok = 0;
+	my @lVar_ok;
 	foreach my $var_id (sort @$list_variants) {
 		next if not exists $hVariantsDetails->{$var_id};
 		next if not $self->is_magic_user() and not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
-		$found = 1;
+		$nb_ok++;
+		push(@lVar_ok, $var_id);
 	}
-	return if not $found;
+	return if $nb_ok == 0;
 	
-	my @l_var_ids = keys %{$hVariantsDetails};
+#	warn "\n\n\nNB VAR: ".scalar(@$list_variants).' -> '.$nb_ok;
 	
 	my $pr = $self->project;
 	my $pat = $self->project->getPatients->[0];
@@ -732,13 +734,13 @@ sub print_html_gene {
 		$g->{name} = 'Intergenic';
 		$g->{external_name} = 'Intergenic';
 		$g->{chr_name} = 'Intergenic';
-		$g->{nb} = scalar(@$list_variants);
+		$g->{nb} = $nb_ok;
 		$g->{omim_id} = undef;
 		$g->{pLI} = undef;
 		$g->{phenotypes} = 'Intergenic';
-		$g->{variants} = $list_variants;
+		$g->{variants} = \@lVar_ok;
 		$g->{panels} = undef;
-		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient($list_variants, $hVariantsDetails);
+		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails);
 		$g->{max_score} = $max_gene_score;
 	}
 	else {
@@ -748,13 +750,13 @@ sub print_html_gene {
 		$g->{name} = $gene->external_name();
 		$g->{external_name} = $gene->external_name();
 		$g->{chr_name} = $gene->getChromosome->id();
-		$g->{nb} = scalar(@$list_variants);
+		$g->{nb} = $nb_ok;
 		$g->{omim_id} = $gene->omim_id();
 		$g->{pLI} = $gene->pLI();
 		$g->{phenotypes} = $gene->description();
-		$g->{variants} = $list_variants;
+		$g->{variants} = \@lVar_ok;
 		$g->{panels} = $self->buffer->queryPanel()->getPanelsForGeneName($gene->external_name);
-		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient($list_variants, $hVariantsDetails, $gene);
+		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails, $gene);
 		$g->{max_score} = $max_gene_score;
 	}
 	
@@ -773,7 +775,7 @@ sub print_html_gene {
 	
 	my $color_validation = "grey";
 	my $i = 0;
-	foreach my $var_id (sort @$list_variants) {
+	foreach my $var_id (sort @lVar_ok) {
 		next if not exists $hVariantsDetails->{$var_id};
 		next if not $self->is_magic_user() and not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
 		$i++;
@@ -972,8 +974,10 @@ sub get_score_variant_from_gene_without_patient {
 			$scaled_score = 4 if $this_score >= 200;
 			$max_scaled_score = $scaled_score if $max_scaled_score < $scaled_score;
 		}
-		
-		return $max_scaled_score if $self->is_magic_user();
+		if ($self->is_magic_user()) {
+			$max_gene_score = $max_scaled_score;
+			next;
+		}
 			
 		my $max_score_pat = -999;
 		my @list_polyviewer_h_details = @{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}};
