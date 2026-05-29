@@ -556,9 +556,9 @@ foreach my $cat_name (sort keys %{$buffer->public_data->{$annot_version}}) {
 	$html .= "<td>&nbsp;&nbsp;<b>$cat_name</b>&nbsp;&nbsp;</td>";
 	$html .= "<td><button type='button' class='btn btn-outline-primary' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b>$cat_version</b></button></td>";
 }
-$html .= "</tr></table></div><br>";
+$html .= "</tr></table></div>";
 
-$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+$html .= "<div style='width:100%;margin-top:10px;overflow-x:auto;'><table><tr>";
 $html .= "<td><b>View phenotype</b>&nbsp;&nbsp;</td>";
 my $cmd_all = qq{show_phenotype('');};
 $html .= "<td><button type='button' class='btn btn-outline-success' onClick=\"$cmd_all\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>All</span></b></button></td>";
@@ -569,7 +569,7 @@ if ($h_phenos) {
 		$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'>$pheno <i>(<b><span id='span_nb_".$pheno."'>?</span></b>)</i></button></td>";
 	}
 }
-$html .= "</tr></table></div><br>";
+$html .= "</tr></table></div>";
 
 
 
