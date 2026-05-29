@@ -89,35 +89,16 @@ exit(0);
  
  sub getCoverAlignment {
  	my ($poly_id) = @_;
- 	my ($chr,$pos,$all1,$all2) = split("_",$poly_id);
- 	$chr =~ s/chr//;
- 	my $chr = $project->getChromosome($chr);;
+ 	my ($chrid,$pos,$all1,$all2) = split("_",$poly_id);
+ 	$chrid =~ s/chr//;
+ 	my $chr = $project->getChromosome($chrid);
  	my $patient = $project->getPatient($patient_name);
- 	
-
-	my $bam_file = $patient->getBamFile();
-
+	my $bam_file = $patient->getAlignFileName();
 	return unless -e $bam_file;	
-	
-
-	my $ll = 10;
-	
-	my $dir_g = $project->buffer->{config}->{public_data}->{$project->{golden_path}};
-	
-	my $sam = Bio::DB::Sam->new(-bam  =>$bam_file,
-								-expand_flags => 1,
-								#-fasta => $dir_g.'/genome/fasta/all.fa.seq',
-								);
-							
-	my @alignments1 = $sam->get_features_by_location(-seq_id => $chr->ucsc_name,
-                                                 -start  => $pos,
-                                                 -end    => $pos);
-  
+	my $sam = Bio::DB::HTS->new(-bam  =>$bam_file, -expand_flags => 1);
+	my @alignments1 = $sam->get_features_by_location(-seq_id => $chr->ucsc_name, -start  => $pos, -end => $pos);
  	unless (@alignments1){
- 		
- 		@alignments1 = $sam->get_features_by_location(-seq_id => $chr->name,
-                                                 -start  => $pos,
-                                                 -end    => $pos);
+ 		@alignments1 = $sam->get_features_by_location(-seq_id => $chr->name, -start  => $pos, -end => $pos);
  	}
    
 my %aligns;
