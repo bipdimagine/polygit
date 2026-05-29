@@ -774,6 +774,14 @@
 	    		dijit.byId('login').show();
 	    	}
 	    	
+	    	function show_error(text) {
+	    		document.getElementById("dialog_error_text").innerHTML = "ERROR";
+	    		if (text) {
+	    			document.getElementById("dialog_error_text").innerHTML = text;
+	    		}
+	    		dijit.byId('dialog_error').show();
+	    	}
+	    	
 	    	function show_waiting(text) {
 	    		document.getElementById("waiting_text").innerHTML = "Loading Data...";
 	    		if (text) {
@@ -955,6 +963,7 @@
 				options['login'] = username;
 				options['pwd'] = pwd;
 				options['launch_job'] = "1";
+		    	var selected_minimum_value = false;
 		    
 	    		if (document.getElementById("select_pos").value !== "") {
 		    		var region = document.getElementById("select_pos").value;
@@ -964,6 +973,7 @@
 		    		region = region.replaceAll(":", "-");
 		    		region = region.replaceAll("CHR", "");
     				options['region'] = region;
+    				selected_minimum_value = true;
 				}
 	    
 	    		if (document.getElementById("select_genes").value !== "") {
@@ -972,6 +982,7 @@
 		    		genes = genes.replaceAll(";", ",");
 		    		genes = genes.replaceAll(",,", ",");
     				options['only_genes'] = genes;
+    				selected_minimum_value = true;
 				}
 		    
 		    	if (has_div_checked['div_select_promoter_ai'] == true) {
@@ -982,6 +993,7 @@
 			    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
 					document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 					options['promoter_ai_value'] = promoter_ai_value;
+					selected_minimum_value = true;
 				}
 				
 				if (has_div_checked['div_select_ncboost'] == true) {
@@ -992,6 +1004,12 @@
 			    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
 					document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 					options['ncboost_value'] = ncboost_value;
+					selected_minimum_value = true;
+				}
+				
+				if (selected_minimum_value === false) {
+					show_error("<center><nobr><b><h4><span style='color:orange;'>Warning.</span></b></h4> At least one of the following options must be selected.</nobr></center><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>PromoterAI</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Ncboost-2</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Region</b> <i>(ex: 1-1000000-2000000 or MT)</i><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Gene(s) name(s)</b> <i>(ex: CDK6, BRCA2)</i>");
+					return;
 				}
 		    	
 				if (dijit.byId("slider_dv_pv").get("value") == 1) { options['dejavu'] = "1"; }
@@ -1783,6 +1801,15 @@
 				<div>
 					<br><br>
 					<span id="waiting_text">Loading Data...</span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
+				</div> 
+			</div>
+		</div>
+				
+		<div id="dialog_error" dojoType="dojox.widget.Dialog" dimensions="[600,250]" title="ERROR"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br>
+					<span id="dialog_error_text">ERROR</span>
 				</div> 
 			</div>
 		</div>

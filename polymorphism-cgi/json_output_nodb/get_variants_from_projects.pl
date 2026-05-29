@@ -200,7 +200,7 @@ my ($h_res_duck, $h_genes_only, $h_ncboost_values);
 my ($h_res_duck_promoter_ai, $h_genes_only_promoter_ai);
 my ($h_res_duck_ncboost);
 
-### PART 1 - Select variants with promoterAI / NCBOOST
+### PART 1 - Select variants with promoterAI / NCBOOST / REGION
 
 
 my $h_rocks_to_view;
@@ -537,18 +537,42 @@ if ($h_errors_found) {
 	$html .= "</tr></table></div><br>";
 }
 
+
+
+$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+my $gencode_version = $project->gencode_version();
+$html .= "<td><b>Gencode</b>&nbsp;&nbsp;</td>";
+$html .= "<td><button type='button' class='btn btn-outline-success' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>$gencode_version</span></b></button></td>";
+my ($gencode, $annot_version) = split('\.', $project->annotation_version());
+foreach my $cat_name (sort keys %{$buffer->public_data->{$annot_version}}) {
+	next if lc($cat_name) eq 'polyscore';
+	next if $cat_name eq 'cldb';
+	next if $cat_name eq 'dbscsnv_rf';
+	next if $cat_name eq 'cytoband';
+	next if $cat_name eq 'hgmd';
+	next if $cat_name =~ /gnomad-.*/;
+	next if $cat_name =~ /-hg19/;
+	my $cat_version = $buffer->public_data->{$annot_version}->{$cat_name}->{version};
+	$html .= "<td>&nbsp;&nbsp;<b>$cat_name</b>&nbsp;&nbsp;</td>";
+	$html .= "<td><button type='button' class='btn btn-outline-primary' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b>$cat_version</b></button></td>";
+}
+$html .= "</tr></table></div><br>";
+
 $html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
 $html .= "<td><b>View phenotype</b>&nbsp;&nbsp;</td>";
 my $cmd_all = qq{show_phenotype('');};
-$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd_all\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>All</span></b></button></td>";
+$html .= "<td><button type='button' class='btn btn-outline-success' onClick=\"$cmd_all\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>All</span></b></button></td>";
 if ($h_phenos) {
 	foreach my $pheno (@lPhenos) {
 		my $pheno_tag = $h_phenos->{$pheno}->{tag};
 		my $cmd = qq{show_phenotype('$pheno_tag');};
-		$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'>$pheno <i>(<b><pan id='span_nb_".$pheno."'>?</span></b>)</i></button></td>";
+		$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'>$pheno <i>(<b><span id='span_nb_".$pheno."'>?</span></b>)</i></button></td>";
 	}
 }
 $html .= "</tr></table></div><br>";
+
+
+
 $html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="50" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' class='table' style='font-size:13px;'>};
 $html .= "<thead>";
 $html .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
