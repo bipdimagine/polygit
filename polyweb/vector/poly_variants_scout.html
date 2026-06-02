@@ -20,6 +20,14 @@
                 overflow: hidden;
             }
             
+            .fixed-table-container {
+			    overflow: visible !important;
+			}
+			
+			.fixed-table-body {
+			    overflow: visible !important;
+			}
+            
             .tab_results {
             
                 font-size: 12px;
@@ -1139,13 +1147,11 @@
 			    if (found_excluded == true) {
 			    	options['exclude_projects'] = listExcludedProjects.join(',');
 			    }
-				
-		    	console.log(url);
 			    launchJob(url, options);
 		    }
 		    
-	    	function enable_table_search() {
-	    		$('#table_genes').bootstrapTable();
+	    	function enable_table_search(name) {
+	    		$('#'+name).bootstrapTable();
 			}
 	    	
 			function goto_dejavu(value,pname,is_in_this_run) {
@@ -1175,9 +1181,17 @@
 			    }
 			    else {
 			        d.classList.add("show");
+		            setTimeout(function() {
+		            	const table = document.getElementById('table_'+name);
+						if (table.classList.contains("table-bootstraptable")) {
+	        				enable_table_search('table_'+name);
+        				}
+					}, 100);
+			        
 			    }
 			}
 			
+			var export_session_id;
 			function launchJob(url, options) {
     			toggleSidebar();
     			document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
@@ -1206,21 +1220,20 @@
 			                    },
 			                    success: function(data) {
 			                        if (data.status === "running") {
+			                        	const elapsed = Date.now() - launch_date.getTime();
+									    //timeout 15 minutes
+									    if (elapsed > 15 * 60 * 1000) {
+									        clearInterval(interval);
+									        document.getElementById("content_res").innerHTML = "<b>Job aborted : timeout (>15 min)</b>";
+									        dijit.byId('waiting').hide();
+									        return;
+									    }
 			                            i_check++;
 			                            if (i_check == 3) {
 			                                let now = new Date();
 			                                document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> " +
-			                                    "<i>Please wait...<br><br>" +
-			                                    "launch at <b>" +
-			                                    launch_date.getHours() + ':' +
-			                                    launch_date.getMinutes() + ':' +
-			                                    launch_date.getSeconds() +
-			                                    "</b><br>" +
-			                                    "still in progress at <b>" +
-			                                    now.getHours() + ':' +
-			                                    now.getMinutes() + ':' +
-			                                    now.getSeconds() +
-			                                    "</b></i>";
+			                                    "<i>Please wait...<br><br>" + "launch at <b>" + launch_date.getHours() + ':' + launch_date.getMinutes() + ':' + launch_date.getSeconds() + "</b><br>" +
+			                                    "still in progress at <b>" +  now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b></i><br><br><i>Limit timeout: 15 minutes</i>";
 			                                i_check = 0;
 			                            }
 			                            return;
@@ -1232,7 +1245,7 @@
 			                            var myNode = document.getElementById("content_res");
 			                            var myPanel = $(html_table);
 			                            myPanel.appendTo(myNode);
-			                            enable_table_search();
+			                            enable_table_search('table_genes');
 			                            var phenotypes = data.phenotypes;
 			                            var list_phenos = String(phenotypes).split(',');
 			                            for (var i = 0; i < list_phenos.length; i++) {
@@ -1241,6 +1254,7 @@
 			                                    updateCountPhenotype(pheno);
 			                                }
 			                            }
+			                            export_session_id = data.xls_session;
 			                            dijit.byId('waiting').hide();
 			                        }
 			                    },
@@ -1253,6 +1267,29 @@
 			            dijit.byId('waiting').hide();
 			        }
 			    });
+			}
+			
+			dojo.require("dojo.io.iframe");
+			function export_xls(export_session_id) {
+				dijit.byId('waiting_export').show();
+				var url = url_path + "json_output_nodb/get_variants_from_projects.pl?export_xls=1&session_id=" + export_session_id;
+			    fetch(url)
+					.then(response => response.blob())
+					.then(
+						blob => {
+							const url = window.URL.createObjectURL(blob);
+							const a = document.createElement("a");
+							a.href = url;
+							a.download = "results.xls";
+							document.body.appendChild(a);
+							a.click();
+							a.remove();
+							URL.revokeObjectURL(url);
+							dijit.byId('waiting_export').hide();
+						}
+					)
+					.catch(console.error);
+				return;
 			}
 			
 			function countFiltered(data, filters) {
@@ -1744,6 +1781,15 @@
 				<div>
 					<br><br>
 					<img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle"/> <span id="waiting_text">Loading Data...</span>
+				</div> 
+			</div>
+		</div>
+				
+		<div id="waiting_export" dojoType="dojox.widget.Dialog" dimensions="[350,150]" title="Export XLS"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<img src="../images/polyicons/wait18trans.gif" align="absmiddle"/> <span>Export in progress...</span>
 				</div> 
 			</div>
 		</div>

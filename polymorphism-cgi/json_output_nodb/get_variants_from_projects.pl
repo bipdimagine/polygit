@@ -31,6 +31,7 @@ use List::MoreUtils qw(natatime);
 use JSON;
 use MCE::Loop;
 use Set::IntSpan;
+use xls_export;
 
 my $cgi = new CGI();
 
@@ -89,8 +90,6 @@ if ($launch_job) {
 	open STDERR, '>', '/dev/null';
 }
 
-print $cgi->header('text/json-comment-filtered');
-print "{\"progress\":\".";
 
 my $login = $cgi->param('login');
 my $pwd   = $cgi->param('pwd');
@@ -109,9 +108,20 @@ my $region = $cgi->param('region');
 my $only_genes = $cgi->param('only_genes');
 my $exclude_projects = $cgi->param('exclude_projects');
 
+my $export_xls = $cgi->param('export_xls');
+my $session_id = $cgi->param('session_id');
+
 my $dejavu_variants = new dejavu_variants();
 $dejavu_variants->user_name($login);
 $dejavu_variants->pwd($pwd);
+
+if ($export_xls) {
+	export_xls($dejavu_variants, $session_id);
+	exit(0);
+}
+
+print $cgi->header('text/json-comment-filtered');
+print "{\"progress\":\".";
 
 if (not $only_my_projects) {
 	#TODO: faire en sorte de prendre tous les projets en hash - ne marche pas la
@@ -513,6 +523,9 @@ mce_loop {
 } sort keys %{$hGenes};	
 MCE::Loop->finish();
 
+save_variants_in_session_export($dejavu_variants, $hGenes, $hVariantsDetails);
+my $export_session_id = $dejavu_variants->xls_export_session->save();
+
 my @lPhenos = sort keys %$h_phenos;
 my $html;
 
@@ -559,7 +572,10 @@ foreach my $cat_name (sort keys %{$buffer->public_data->{$annot_version}}) {
 $html .= "</tr></table></div>";
 
 $html .= "<div style='width:100%;margin-top:10px;overflow-x:auto;'><table><tr>";
-$html .= "<td><b>View phenotype</b>&nbsp;&nbsp;</td>";
+$html .= "<td><b>Export Results</b>&nbsp;&nbsp;</td>";
+my $cmd_export_xls = qq{export_xls('$export_session_id');};
+$html .= "<td><button type='button' class='btn btn-outline-success' onClick=\"$cmd_export_xls\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>XLS</span></b></button></td>";
+$html .= "<td><b>&nbsp;&nbsp;View phenotype</b>&nbsp;&nbsp;</td>";
 my $cmd_all = qq{show_phenotype('');};
 $html .= "<td><button type='button' class='btn btn-outline-success' onClick=\"$cmd_all\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>All</span></b></button></td>";
 if ($h_phenos) {
@@ -571,9 +587,7 @@ if ($h_phenos) {
 }
 $html .= "</tr></table></div>";
 
-
-
-$html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="50" data-page-list="[25, 50, 100, 200, 300]" data-resizable='true' class='table' style='font-size:13px;'>};
+$html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[20, 50, 100, 200, 300]" data-resizable='true' class='table' style='font-size:13px;'>};
 $html .= "<thead>";
 $html .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
 $html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder="Gene name, description, ..."</th>};
@@ -590,11 +604,15 @@ $html .= "</tbody>";
 $html .= "</table>";
 $html =~ s/glyphicon-minus/fa fa-minus/g;
 
+
+
+
 if ($launch_job) {
 	my $hRes;
 	$hRes->{status} = "finished";
 	$hRes->{html}   = $html;
 	$hRes->{phenotypes} = join(',', @lPhenos);
+	$hRes->{xls_session} = $export_session_id;
 	if ($h_errors_found) {
 		$hRes->{errors}  = join(', ', values %$h_errors_found);
 	}
@@ -616,7 +634,132 @@ else {
 }
 
 
+sub export_xls {
+	my ($dejavu_variants, $session_id) = @_;
+	$dejavu_variants->xls_export_session->load($session_id);
+	my $list_datas_annotations = $dejavu_variants->xls_export_session->prepare_generic_datas_variants();
+	my $list_header = $dejavu_variants->xls_export_session->list_generic_header();
+	$dejavu_variants->xls_export_session->add_page('Results', $list_header, $list_datas_annotations);
+	my (@list_datas_patients, $h_by_patients);
+	eval { $h_by_patients = $dejavu_variants->xls_export_session->get_specific_infos_stored('projects_patients_infos'); };
+	if ($@) {}
+	else {
+		foreach my $var_id (keys %{$h_by_patients}) {
+			foreach my $h_infos (@{$h_by_patients->{$var_id}}) {
+				my $h;
+				$h->{'variation'} = $var_id;
+				$h->{'project'} = $h_infos->{project_name};
+				$h->{'patient'} = $h_infos->{patient_name};
+				$h->{'model'} = $h_infos->{model};
+				$h->{'he_ho'} = $h_infos->{heho};
+				my ($ac, $ratio) = split(', ', $h_infos->{ratio});
+				my $dp = $h_infos->{dp};
+				$ac =~ s/AC://;
+				$ratio =~ s/Ratio://;
+				$h->{'ac'} = $ac;
+				$h->{'dp'} = $dp;
+				$h->{'ratio'} = $ratio.'%';
+				push(@list_datas_patients, $h);
+			}
+		}
+		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'AC', 'Ratio');
+		$dejavu_variants->xls_export_session->add_page('Projects Patients', \@lLinesHeaderPatients, \@list_datas_patients);
+	}
+	$dejavu_variants->xls_export_session->export();
+	exit(0);
+}
 
+sub save_variants_in_session_export {
+	my ($dejavu_variants, $hgenes, $hVariantsDetails) = @_;
+	my (@lVar, $h_variants, $h_patients);
+	foreach my $gene_id (keys %{$hGenes}) {
+		foreach my $var_id (keys %{$hGenes->{$gene_id}}) {
+			my $var = $dejavu_variants->project->_newVariant($var_id);
+#			push(@lVar, $var);
+			next if not exists $hVariantsDetails->{$var_id}->{polyviewer_variant};
+			my $pv = $hVariantsDetails->{$var_id}->{polyviewer_variant};
+			my $hres = { %{$pv} };
+			my $h;
+			$h->{'chr'} = $hres->{chromosome};
+			$h->{'var_id'} = $hres->{'id'};
+			$h->{'rsname'} = $var->rs_name();
+			$h->{'position'} = $hres->{'start'};
+			$h->{'cadd_score'} = '-';
+			$h->{'cadd_score'} = $var->cadd_score() if defined $var->cadd_score();
+			$h->{'clinvar'} = '-';
+			$h->{'clinvar'} = $var->text_clinvar() if ($var->text_clinvar() and  $var->text_clinvar() ne '-5' );
+			$h->{'freq'} = '-';
+			$h->{'freq'} = $var->percent() if defined $var->frequency() and $var->frequency();
+			$h->{'gnomad ac'} = $var->getGnomadAC();
+			$h->{'gnomad an'} = $var->getGnomadAN();
+			$h->{'gnomad ho'} = $var->getGnomadHO();
+			$h->{'ncboost_score'} = '-';
+			$h->{'ncboost_score'} = $var->ncboost_score() if defined $var->ncboost_score();
+			$h->{'cosmic'} = '-';
+			$h->{'cosmic'} = $var->cosmic() if $var->cosmic();
+			$h->{'hgmd_class'} = undef;
+			$h->{'allele'} = $hres->{'allele'};
+			$h->{'sequence'} = $hres->{'ref_allele'}.'/'.$hres->{'allele'};
+			$h->{'dejavu'} = 'proj:'.$hres->{'dejavu_other_projects'}.', pat:'.$hres->{'dejavu_other_patients'}.' (ho:'.$hres->{'dejavu_other_patients_ho'}.')';
+			$h->{'cadd'} = undef;
+			$h->{'freq (%)'} = undef;
+			$h->{'max_pop_freq'} = $hres->{'gnomad_max_pop_name'}.':'.$hres->{'gnomad_max_pop'};
+			$h->{'min_pop_freq'} = $hres->{'gnomad_min_pop_name'}.':'.$hres->{'gnomad_min_pop'};
+			foreach my $g_id (keys %{$hres->{hgenes}}) {
+				my $g = $var->getProject->newGene($g_id);
+				$h->{genes}->{$g_id}->{external_name} = '-';
+				eval { $h->{genes}->{$g_id}->{external_name} = $g->external_name(); };
+				if ($@) {}
+				$h->{genes}->{$g_id}->{description} = '-';
+				eval { $h->{genes}->{$g_id}->{description} = $g->description(); };
+				if ($@) {}
+				$h->{genes}->{$g_id}->{phenotypes} = '-';
+				eval { $h->{genes}->{$g_id}->{phenotypes} = $g->phenotypes(); };
+				if ($@) {}
+				foreach my $htr (@{$hres->{hgenes}->{$g_id}->{tr}}) {
+					next if lc($htr->{consequence}) eq 'intergenic';
+					$htr->{external_name} = $htr->{name};
+					$htr->{max_splice_ai} = $htr->{spliceAI}.' '.$htr->{spliceAI_cat};
+					$htr->{promoter_ai} = $htr->{promoterAI_score};
+					$h->{genes}->{$g_id}->{transcripts}->{$htr->{name}} = $htr;
+					my $t = $var->getProject->newTranscript($htr->{name}); 
+					$htr->{cdna_position} = $t->translate_position( $var->start() );
+					$htr->{polyphen_score} = $var->polyphenScore($t);
+					$htr->{sift_score} = $var->siftScore($t);
+					my $prot = $t->getProtein();
+					if ($prot) {
+						my $cds_pos = $var->getOrfPosition($prot);
+						$cds_pos = '-' if (not $cds_pos or $cds_pos eq '.');
+						$htr->{cds_position} = $cds_pos;
+						my $prot_nom;
+						eval { $prot_nom = $var->protein_nomenclature($prot); };
+						if ($@) { $prot_nom = '-'; }
+						$htr->{'prot_nomenclature'} = $prot_nom;
+						$htr->{protein} = $prot->id();
+						my $protAA = $var->getProteinAA($prot);
+						my $chanAA = $var->changeAA($prot);
+						$htr->{aa} = $protAA.'/'.$chanAA if ( $protAA and $chanAA );
+						$htr->{protein_position} = $var->protein_nomenclature($prot);
+					}
+				}
+			}
+			my $chr_id = $h->{'chr'};
+			$chr_id = 23 if lc($chr_id) eq 'x';
+			$chr_id = 24 if lc($chr_id) eq 'y';
+			$chr_id = 25 if lc($chr_id) eq 'm';
+			$chr_id = 25 if lc($chr_id) eq 'mt';
+			$h_variants->{$chr_id}->{$var_id} = $h; 
+			if (exists $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}) {
+				$h_patients->{$var_id} = $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
+			}
+		}
+	}
+	$dejavu_variants->project->buffer->dbh_deconnect();
+#	$dejavu_variants->xls_export_session->store_variants_infos(\@lVar, $dejavu_variants->project());
+	$dejavu_variants->xls_export_session->{hash_variants_global} = $h_variants;
+	$dejavu_variants->xls_export_session->store_specific_infos('projects_patients_infos', $h_patients);
+	return;	
+}
 
 sub launch_ncboost {
 	my ($dejavu_variants, $ncboost_value, $max_dejavu, $max_dejavu_ho) = @_;
