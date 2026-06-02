@@ -393,13 +393,14 @@ sub clinvar_rocks_db {
 	 return $self->{"clinvarrocks".$chr};
 	
 }
-sub load_polyviewer_variant_mce {
+sub load_polyviewer_variant {
 	my ($self) =@_;
 	my @chr = sort {$a cmp $b} keys %{$self->{list_index}};
  	$self->{rcache} = {};
  	my $error;
  	my $jobs;
  	my $shared_hash = MCE::Shared->hash();
+ 	my $shared_hash2 = MCE::Shared->hash();
  	MCE::Loop::init {
     chunk_size => 'auto',
     max_workers => 'auto',
@@ -429,23 +430,28 @@ sub load_polyviewer_variant_mce {
   		my $hash_vp;
   		warn "start ".MCE->chunk_id;
   		$shared_hash->{MCE->chunk_id} ++;
-  	  foreach my $chr (@$chra){
-    	 my $nbv =0;
- 	   	$self->cache_polyviewer_variant($chr,[keys %{$self->{list_index}->{$chr}}]);
-  	  }
+  		$shared_hash2->{MCE->chunk_id} ++;
+  		eval {
+  	  	foreach my $chr (@$chra){
+    		 my $nbv =0;
+ 	   		$self->cache_polyviewer_variant($chr,[keys %{$self->{list_index}->{$chr}}]);
+  	  	}
+  	  	delete $shared_hash2->{MCE->chunk_id};
+  	  	};
   	   MCE->gather(MCE->chunk_id,$self->clean,$chra);
    	  $self->close();
 	
 		} @chr;
  		MCE::Loop->finish;
  		confess()  if %$shared_hash;
+ 		confess()  if %$shared_hash2;
  		confess("Argh,  Something went wrong !!! ") if $error;
  		confess("Argh,  Something went wrong !!! ") if scalar (keys %$jobs) != scalar(@chr);
 }
 
 
 
-sub load_polyviewer_variant {
+sub load_polyviewer_variant_1 {
     my ($self) = @_;
 
     my @chr = sort { $a cmp $b } keys %{$self->{list_index}};

@@ -45,7 +45,7 @@ my $tabix  = $project->getSoftware('tabix');
  my $dirout= $project->getCallingPipelineDir("hificnv");
 my $name = $patient->name;
 my $sex_k = "XX";
-$sex_k = "XX" if $patient->isMale();
+$sex_k = "XY" if $patient->compute_sex() == 1 ;
 
  my $blfile = $project->public_data_root . "/". $project->annotation_genome_version . "/wisecondor/blacklist.bed";
  my $parfile =  $project->public_data_root . "/". $project->annotation_genome_version . "/wisecondor/expected_cn.ucsc.$sex_k.bed";
@@ -64,5 +64,9 @@ system ("mv $vcf1 $prod_file && tabix -f -p  vcf $prod_file");
 #/software/distrib/ucsc_util/bigWigToBedGraph /data-beegfs/sequencing/pipeline/tmp.NGS2024_8341/HG38_CNG/calling/hificnv/MAT_EA_long_reads_pacbio.Imag_9.depth.bw toto.bedGraph
 system("/software/distrib/ucsc_util/bigWigToBedGraph $bw $prodfile_bed");
 system("bgzip $prodfile_bed && tabix -p bed $prodfile_bed.gz");
+system("cp $bw ". $project->getVariationsDir("hificnv")."/");
+my ($bg) = `ls $dirout/$name.*.bedgraph`;
+chomp($bg);
+system("cp $bg ". $project->getVariationsDir("hificnv")."/");
 exit(0);
 

@@ -3782,6 +3782,25 @@ has junction_SE_file_filtred => (
 	},
 );
 
+has isRevio => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		return $self->getRun()->isRevio;
+		return;
+	},
+);
+
+has isPacBio => (
+	is => 'ro',
+	lazy    => 1,
+	default => sub {
+		my ($self) = @_;
+		return $self->getRun()->isPacBio;
+	},
+);
+
 sub setJunctions {
 	my ($self) = @_;
 	my $h_ids;
