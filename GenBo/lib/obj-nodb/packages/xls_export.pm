@@ -53,7 +53,7 @@ has pages => (
 has can_use_hgmd => (
 	is      => 'rw',
 	lazy    => 1,
-	default => 1,
+	default => 0,
 );
 
 has list_generic_header_junctions => (

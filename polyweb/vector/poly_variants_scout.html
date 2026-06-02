@@ -20,6 +20,14 @@
                 overflow: hidden;
             }
             
+            .fixed-table-container {
+			    overflow: visible !important;
+			}
+			
+			.fixed-table-body {
+			    overflow: visible !important;
+			}
+            
             .tab_results {
             
                 font-size: 12px;
@@ -774,6 +782,14 @@
 	    		dijit.byId('login').show();
 	    	}
 	    	
+	    	function show_error(text) {
+	    		document.getElementById("dialog_error_text").innerHTML = "ERROR";
+	    		if (text) {
+	    			document.getElementById("dialog_error_text").innerHTML = text;
+	    		}
+	    		dijit.byId('dialog_error').show();
+	    	}
+	    	
 	    	function show_waiting(text) {
 	    		document.getElementById("waiting_text").innerHTML = "Loading Data...";
 	    		if (text) {
@@ -950,8 +966,12 @@
 			}
 			
 		    function launch_variants_search() {
-		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl?login=" + username + "&pwd=" + pwd;
-		    	url += "&launch_job=1";
+		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl";
+		    	var options = {};
+				options['login'] = username;
+				options['pwd'] = pwd;
+				options['launch_job'] = "1";
+		    	var selected_minimum_value = false;
 		    
 	    		if (document.getElementById("select_pos").value !== "") {
 		    		var region = document.getElementById("select_pos").value;
@@ -960,7 +980,8 @@
 		    		region = region.replaceAll("--", "-");
 		    		region = region.replaceAll(":", "-");
 		    		region = region.replaceAll("CHR", "");
-    				url += "&region=" + region;
+    				options['region'] = region;
+    				selected_minimum_value = true;
 				}
 	    
 	    		if (document.getElementById("select_genes").value !== "") {
@@ -968,7 +989,8 @@
 		    		genes = genes.replaceAll(" ", ",");
 		    		genes = genes.replaceAll(";", ",");
 		    		genes = genes.replaceAll(",,", ",");
-    				url += "&only_genes=" + genes;
+    				options['only_genes'] = genes;
+    				selected_minimum_value = true;
 				}
 		    
 		    	if (has_div_checked['div_select_promoter_ai'] == true) {
@@ -978,7 +1000,8 @@
 				    else if (dijit.byId("slider_promoter_ai").get("value") == 3)    { promoter_ai_value = '0.9'; }
 			    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
 					document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
-					url += "&promoter_ai_value=" + promoter_ai_value;
+					options['promoter_ai_value'] = promoter_ai_value;
+					selected_minimum_value = true;
 				}
 				
 				if (has_div_checked['div_select_ncboost'] == true) {
@@ -988,36 +1011,42 @@
 				    else if (dijit.byId("slider_ncboost").get("value") == 3)    { ncboost_value = '1.0'; }
 			    	show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
 					document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
-					url += "&ncboost_value=" + ncboost_value;
+					options['ncboost_value'] = ncboost_value;
+					selected_minimum_value = true;
+				}
+				
+				if (selected_minimum_value === false) {
+					show_error("<center><nobr><b><h4><span style='color:orange;'>Warning.</span></b></h4> At least one of the following options must be selected.</nobr></center><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>PromoterAI</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Ncboost-2</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Region</b> <i>(ex: 1-1000000-2000000 or MT)</i><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Gene(s) name(s)</b> <i>(ex: CDK6, BRCA2)</i>");
+					return;
 				}
 		    	
-				if (dijit.byId("slider_dv_pv").get("value") == 1) { url += "&dejavu=1"; }
-				if (dijit.byId("slider_dv_pv").get("value") == 2) { url += "&dejavu=5"; }
-				if (dijit.byId("slider_dv_pv").get("value") == 3) { url += "&dejavu=10"; }
-				if (dijit.byId("slider_dv_pv").get("value") == 4) { url += "&dejavu=20"; }
-				if (dijit.byId("slider_dv_pv").get("value") == 5) { url += "&dejavu=50"; }
-				if (dijit.byId("slider_dv_pv").get("value") == 6) { url += "&dejavu=100"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 1) { options['dejavu'] = "1"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 2) { options['dejavu'] = "5"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 3) { options['dejavu'] = "10"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 4) { options['dejavu'] = "20"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 5) { options['dejavu'] = "50"; }
+				if (dijit.byId("slider_dv_pv").get("value") == 6) { options['dejavu'] = "100"; }
 				
-				if (dijit.byId("slider_dv_ho_pv").get("value") == 1) { url += "&dejavu_ho=0"; }
-				if (dijit.byId("slider_dv_ho_pv").get("value") == 2) { url += "&dejavu_ho=5"; }
-				if (dijit.byId("slider_dv_ho_pv").get("value") == 3) { url += "&dejavu_ho=10"; }
-				if (dijit.byId("slider_dv_ho_pv").get("value") == 4) { url += "&dejavu_ho=20"; }
-				if (dijit.byId("slider_dv_ho_pv").get("value") == 5) { url += "&dejavu_ho=50"; }
-				if (dijit.byId("slider_dv_ho_pv").get("value") == 6) { url += "&dejavu_ho=100"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 1) { options['dejavu_ho'] = "0"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 2) { options['dejavu_ho'] = "5"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 3) { options['dejavu_ho'] = "10"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 4) { options['dejavu_ho'] = "20"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 5) { options['dejavu_ho'] = "50"; }
+				if (dijit.byId("slider_dv_ho_pv").get("value") == 6) { options['dejavu_ho'] = "100"; }
 		    	
-				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 1) { url += "&gnomad=0"; }
-				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 2) { url += "&gnomad=5"; }
-				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 3) { url += "&gnomad=10"; }
-				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 4) { url += "&gnomad=20"; }
-				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 5) { url += "&gnomad=50"; }
-				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 6) { url += "&gnomad=100"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 1) { options['gnomad'] = "0"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 2) { options['gnomad'] = "5"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 3) { options['gnomad'] = "10"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 4) { options['gnomad'] = "20"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 5) { options['gnomad'] = "50"; }
+				if (dijit.byId("slider_gnomad_ac_pv").get("value") == 6) { options['gnomad'] = "100"; }
 		    	
-				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 1) { url += "&gnomad_ho=0"; }
-				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 2) { url += "&gnomad_ho=5"; }
-				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 3) { url += "&gnomad_ho=10"; }
-				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 4) { url += "&gnomad_ho=20"; }
-				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 5) { url += "&gnomad_ho=50"; }
-				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 6) { url += "&gnomad_ho=100"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 1) { options['gnomad_ho'] = "0"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 2) { options['gnomad_ho'] = "5"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 3) { options['gnomad_ho'] = "10"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 4) { options['gnomad_ho'] = "20"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 5) { options['gnomad_ho'] = "50"; }
+				if (dijit.byId("slider_gnomad_ac_ho_pv").get("value") == 6) { options['gnomad_ho'] = "100"; }
 				
 		    	var l_filters = [];
 				if (document.getElementById('filter_maturemirna').checked == true) {
@@ -1049,7 +1078,7 @@
 				}
 				if (document.getElementById('filter_intronic').checked == true) { l_filters.push('intronic'); }
 				if (document.getElementById('filter_intergenic').checked == true) { l_filters.push('intergenic'); }
-		    	url += "&filters_cons=" + l_filters.join(',');
+		    	options['filters_cons'] = l_filters.join(',');
 		    	if (l_filters.length == 0) {
 					alert ("Please select one or multiple annotation(s) in filters first...");
 					dijit.byId('waiting').hide();
@@ -1058,11 +1087,14 @@
 		    	
 		    	if (document.getElementById('b_only_pat_ill').checked == true) {
 //					if (document.getElementById('b_only_strict_pat_ill').checked == true) {
-//						url += "&only_strict_ill=1";
+//						options['only_strict_ill'] = "1";
 //					}
 //					else {
-						url += "&only_ill=1";
+//		    			options['only_ill'] = "1";
 //					}
+
+					options['only_ill'] = "1";
+
 				}
 //				if (document.getElementById('b_only_my_projects').checked == true) {
 //					var filter_type_project = document.getElementById("form_only_my_projects_type").value;
@@ -1086,7 +1118,7 @@
 					l_models.push('father');
 				}
 				if (document.getElementById('solo').checked == true) { l_models.push('solo'); }
-		    	url += "&models=" + l_models.join(',');
+		    	options['models'] = l_models.join(',');
 		    	
 				if (l_models.length == 0) {
 					alert ("Please select one or multiple model(s) in filters first...");
@@ -1096,9 +1128,11 @@
 				
 				var ratio_allelic = document.getElementById('htoto').value * 1;
 				if (ratio_allelic != '-' && ratio_allelic > 0) {
-					url += "&min_perc_all="+ratio_allelic;
+			    	options['min_perc_all'] = ratio_allelic;
 				}
 				
+				var found_included = false;
+				var listOnlyProjects = [];
 				var found_excluded = false;
 				var listExcludedProjects = [];
 				for (i=0; i<list_projects_names.length; i++){
@@ -1111,15 +1145,13 @@
 					}
 			    }
 			    if (found_excluded == true) {
-			    	url += "&exclude_projects='" + listExcludedProjects.join(',') + "'";
+			    	options['exclude_projects'] = listExcludedProjects.join(',');
 			    }
-				
-		    	console.log(url);
-			    launchJob(url);
+			    launchJob(url, options);
 		    }
 		    
-	    	function enable_table_search() {
-	    		$('#table_genes').bootstrapTable();
+	    	function enable_table_search(name) {
+	    		$('#'+name).bootstrapTable();
 			}
 	    	
 			function goto_dejavu(value,pname,is_in_this_run) {
@@ -1149,70 +1181,115 @@
 			    }
 			    else {
 			        d.classList.add("show");
+		            setTimeout(function() {
+		            	const table = document.getElementById('table_'+name);
+						if (table.classList.contains("table-bootstraptable")) {
+	        				enable_table_search('table_'+name);
+        				}
+					}, 100);
+			        
 			    }
 			}
 			
-			function launchJob(url) {
-				toggleSidebar();
-			    document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
-			    $.getJSON(url, function(startData) {
-			
-			        if (startData.status !== "started") {
-			            alert("ERROR: job not started");
-			            dijit.byId('waiting').hide();
-			            return;
-			        }
-			
-			        var job_id = startData.job_id;
-					
-					let launch_date = new Date();
-					var i_check = 0;
-			        var interval = setInterval(function() {
-			            $.getJSON(url + "&job_id=" + job_id, function(data) {
-			                if (data.status === "running") {
-			                	//console.log('running');
-			                	i_check++;
-			                	if (i_check == 3) {
-			                		let now = new Date();
-			                		document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...<br><br>launch at <b>" + launch_date.getHours() + ':' + launch_date.getMinutes() + ':' + launch_date.getSeconds() + "</b><br>still in progress at at <b>" + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b></i>";
-			                		i_check = 0;
-			                	}
-			                    return; // on attend
-			                }
-			
-			                if (data.status === "finished") {
-								//console.log('finished!');
-			                    clearInterval(interval);
-			
-			                    var html_table = data.html;
-			                    document.getElementById("content_res").innerHTML = "";
-			                    var myNode = document.getElementById("content_res");
-			                    var myPanel = $(html_table);
-			                    myPanel.appendTo(myNode);
-			                    enable_table_search();
-			                    
-			                    var phenotypes = data.phenotypes;
-			                    var list_phenos = String(phenotypes).split(',');
-			                    for (var i = 0; i < list_phenos.length; i++){
-			                    	pheno = list_phenos[i];
-			                    	if (pheno == '') {}
-			                    	else { updateCountPhenotype(pheno); }
-			                    }
-			                    dijit.byId('waiting').hide();
-			                }
-			
-			            }).fail(function() {
-			                clearInterval(interval);
-			                alert("ERROR during polling");
+			var export_session_id;
+			function launchJob(url, options) {
+    			toggleSidebar();
+    			document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
+			    $.ajax({
+			        url: url,
+			        type: "POST",
+			        dataType: "json",
+			        data: options,
+			        success: function(startData) {
+			            if (startData.status !== "started") {
+			                alert("ERROR: job not started");
 			                dijit.byId('waiting').hide();
-			            });
+			                return;
+			            }
+			            var job_id = startData.job_id;
+			            let launch_date = new Date();
+			            var i_check = 0;
+			            var interval = setInterval(function() {
+			                $.ajax({
+			                    url: url,
+			                    type: "POST",
+			                    dataType: "json",
+			                    data: {
+			                        ...options,
+			                        job_id: job_id
+			                    },
+			                    success: function(data) {
+			                        if (data.status === "running") {
+			                        	const elapsed = Date.now() - launch_date.getTime();
+									    //timeout 15 minutes
+									    if (elapsed > 15 * 60 * 1000) {
+									        clearInterval(interval);
+									        document.getElementById("content_res").innerHTML = "<b>Job aborted : timeout (>15 min)</b>";
+									        dijit.byId('waiting').hide();
+									        return;
+									    }
+			                            i_check++;
+			                            if (i_check == 3) {
+			                                let now = new Date();
+			                                document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> " +
+			                                    "<i>Please wait...<br><br>" + "launch at <b>" + launch_date.getHours() + ':' + launch_date.getMinutes() + ':' + launch_date.getSeconds() + "</b><br>" +
+			                                    "still in progress at <b>" +  now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b></i><br><br><i>Limit timeout: 15 minutes</i>";
+			                                i_check = 0;
+			                            }
+			                            return;
+			                        }
+			                        if (data.status === "finished") {
+			                            clearInterval(interval);
+			                            var html_table = data.html;
+			                            document.getElementById("content_res").innerHTML = "";
+			                            var myNode = document.getElementById("content_res");
+			                            var myPanel = $(html_table);
+			                            myPanel.appendTo(myNode);
+			                            enable_table_search('table_genes');
+			                            var phenotypes = data.phenotypes;
+			                            var list_phenos = String(phenotypes).split(',');
+			                            for (var i = 0; i < list_phenos.length; i++) {
+			                                var pheno = list_phenos[i];
+			                                if (pheno != '') {
+			                                    updateCountPhenotype(pheno);
+			                                }
+			                            }
+			                            export_session_id = data.xls_session;
+			                            dijit.byId('waiting').hide();
+			                        }
+			                    },
+			                });
 			
-			        }, 5000); // toutes les 5 secondes
-			
-			    }).fail(function() {
-			        alert("ERROR: please contact bioinformatics platform");
-			        dijit.byId('waiting').hide();
+			            }, 5000);
+			        },
+			        error: function() {
+			            alert("ERROR: please contact bioinformatics platform");
+			            dijit.byId('waiting').hide();
+			        }
 			    });
+			}
+			
+			dojo.require("dojo.io.iframe");
+			function export_xls(export_session_id) {
+				dijit.byId('waiting_export').show();
+				var url = url_path + "json_output_nodb/get_variants_from_projects.pl?export_xls=1&session_id=" + export_session_id;
+			    fetch(url)
+					.then(response => response.blob())
+					.then(
+						blob => {
+							const url = window.URL.createObjectURL(blob);
+							const a = document.createElement("a");
+							a.href = url;
+							a.download = "results.xls";
+							document.body.appendChild(a);
+							a.click();
+							a.remove();
+							URL.revokeObjectURL(url);
+							dijit.byId('waiting_export').hide();
+						}
+					)
+					.catch(console.error);
+				return;
 			}
 			
 			function countFiltered(data, filters) {
@@ -1333,7 +1410,7 @@
 	                            </tr>
 	                            <tr>
 		                            <td style="font-size:9px;padding-left:5px;">
-		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_ncrna">
+		                                <input type="checkbox" dojoType="dijit.form.CheckBox" id="filter_ncrna" checked>
 		                                <span id="span_ncrna">ncRNA  </span>
 		                            </td>
 		                            <td style="font-size:9px;padding-left:5px;display: none">
@@ -1615,7 +1692,7 @@
 		            
 		            <a href="#" class="sidebar-link text-decoration-none p-3">
 		                <i class="fas fa-address-card me-3 hide-on-collapse" style="color:white;" onClick="show_hide_filters('div_select_projects');"></i>
-		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_projects');" style="color:white;"><span id='span_nb_projects'>Projects</span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+		                <span class="hide-on-collapse" onClick="show_hide_filters('div_select_projects');" style="color:white;"><span id='span_nb_projects'>Projects <img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle"/></span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
 		                <div class="hide-on-collapse" id="div_select_projects" style="margin-top:15px;display:none;">
 		                	<center>
 		                		<table>
@@ -1707,6 +1784,15 @@
 				</div> 
 			</div>
 		</div>
+				
+		<div id="waiting_export" dojoType="dojox.widget.Dialog" dimensions="[350,150]" title="Export XLS"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<img src="../images/polyicons/wait18trans.gif" align="absmiddle"/> <span>Export in progress...</span>
+				</div> 
+			</div>
+		</div>
 		
 		<div id="login" dojoType="dojox.widget.Dialog" dimensions="[265,160]" title="Login"> 
 			<div class="container" style="min-width:250px;max-width:250px;margin-left: auto ;margin-right: auto ;">
@@ -1761,6 +1847,15 @@
 				<div>
 					<br><br>
 					<span id="waiting_text">Loading Data...</span><img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle">
+				</div> 
+			</div>
+		</div>
+				
+		<div id="dialog_error" dojoType="dojox.widget.Dialog" dimensions="[600,250]" title="ERROR"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br>
+					<span id="dialog_error_text">ERROR</span>
 				</div> 
 			</div>
 		</div>

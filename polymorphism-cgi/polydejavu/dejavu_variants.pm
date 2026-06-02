@@ -38,6 +38,15 @@ has buffer => (
 	}
 );
 
+has xls_export_session => (
+	is		=> 'rw',
+	lazy    => 1,
+	default => sub {
+		my $xls_export = new xls_export();
+		return $xls_export;
+	}
+);
+
 has project => (
 	is		=> 'rw',
 	lazy    => 1,
@@ -169,7 +178,7 @@ has hash_users_projects => (
 	default => sub {
 		my $self = shift;
 		my ($h_projects, $h_projectsNames, $h_parquets, @list_hash);
-		if ($self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
+		if (not $self->hash_exclude_projects() and $self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
 			$self->{is_magic_user} = 1;
 			my $dir_parquets = $self->buffer->dejavu_parquet_dir();
 			opendir my $dir, $dir_parquets or die "Cannot open directory: $!";
@@ -599,7 +608,6 @@ sub get_table_project_patients_infos {
 	}
 	my $hres;
 	
-	#TODO: here
 	my $found_healthy_patient = 0;
 	my $found_ill_patient = 0;
 	foreach my $pat_id (keys %{$self->hash_users_projects->{$project_name}->{patients}}) {
@@ -624,7 +632,6 @@ sub get_table_project_patients_infos {
 		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{description} = $self->hash_users_projects->{$project_name}->{description};
 	}
 	
-	#TODO: idem, je dois garder l'info des parents avec l'option only_ill si au moins un pat malade (faire h filters ici aussi pour le faire)
 	my $ok_ill = 1;
 	if ($self->only_ill_patients()) {
 		$ok_ill = undef if $found_ill_patient == 0;
@@ -711,15 +718,17 @@ sub get_from_duckdb_project_patients_infos_global {
 sub print_html_gene {
 	my ($self, $gene_id, $list_variants, $hVariantsDetails) = @_;
 	print '|';
-	my $found;
+	my $nb_ok = 0;
+	my @lVar_ok;
 	foreach my $var_id (sort @$list_variants) {
 		next if not exists $hVariantsDetails->{$var_id};
 		next if not $self->is_magic_user() and not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
-		$found = 1;
+		$nb_ok++;
+		push(@lVar_ok, $var_id);
 	}
-	return if not $found;
+	return if $nb_ok == 0;
 	
-	my @l_var_ids = keys %{$hVariantsDetails};
+#	warn "\n\n\nNB VAR: ".scalar(@$list_variants).' -> '.$nb_ok;
 	
 	my $pr = $self->project;
 	my $pat = $self->project->getPatients->[0];
@@ -732,13 +741,13 @@ sub print_html_gene {
 		$g->{name} = 'Intergenic';
 		$g->{external_name} = 'Intergenic';
 		$g->{chr_name} = 'Intergenic';
-		$g->{nb} = scalar(@$list_variants);
+		$g->{nb} = $nb_ok;
 		$g->{omim_id} = undef;
 		$g->{pLI} = undef;
 		$g->{phenotypes} = 'Intergenic';
-		$g->{variants} = $list_variants;
+		$g->{variants} = \@lVar_ok;
 		$g->{panels} = undef;
-		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient($list_variants, $hVariantsDetails);
+		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails);
 		$g->{max_score} = $max_gene_score;
 	}
 	else {
@@ -748,16 +757,15 @@ sub print_html_gene {
 		$g->{name} = $gene->external_name();
 		$g->{external_name} = $gene->external_name();
 		$g->{chr_name} = $gene->getChromosome->id();
-		$g->{nb} = scalar(@$list_variants);
+		$g->{nb} = $nb_ok;
 		$g->{omim_id} = $gene->omim_id();
 		$g->{pLI} = $gene->pLI();
 		$g->{phenotypes} = $gene->description();
-		$g->{variants} = $list_variants;
+		$g->{variants} = \@lVar_ok;
 		$g->{panels} = $self->buffer->queryPanel()->getPanelsForGeneName($gene->external_name);
-		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient($list_variants, $hVariantsDetails, $gene);
+		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails, $gene);
 		$g->{max_score} = $max_gene_score;
 	}
-	
 	my $panel_id = "panel_".$gene_id;
 	my ($out, $h_phenos);
 	my $bg_color = $print_html->bgcolor;
@@ -765,15 +773,33 @@ sub print_html_gene {
 	my $out_g = update_variant_editor::panel_gene($g, $panel_id, $self->project->name);
 	$out_g =~ s/>CNV/ hidden>CNV/;
 	$out .= $out_g;
+	my $table_id = 'table_'.$panel_id;
 	$out .= qq{</div>};
-	$out .= qq{<div style="height:3px;"></div>};
-	$out .= qq{<div class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="$panel_id" loading="lazy">};
-	$out .= qq{<table class="table table-striped table-borderless" style="vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
-	$out .= $print_html->print_header("background-color:aliceblue;color:black");
+	$out .= qq{<div style="height:3px;" loading="lazy"></div>};
+	$out .= qq{<div loading="lazy" class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="$panel_id" loading="lazy">};
+	
+	if ($nb_ok >= 20) {
+		$out .= qq{<table loading="lazy" id='$table_id' data-filter-control='true' data-virtual-scroll="true" data-toggle="table" data-show-extended-pagination="false" data-cache="false" data-pagination-loop="true" data-pagination-v-align="top" data-pagination-h-align="left" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[5, 10, 20]" data-resizable='true' class='table table-striped table-borderless table-bootstraptable' style='font-size:9px;'>};
+	}
+	else {
+		$out .= qq{<table class="table table-striped table-borderless" style="vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
+	}
+	
+	
+	$out .= "<thead><tr style='background-color:aliceblue;color:black'>";
+	$out .= qq{<th data-field="1"></th>};
+	$out .= qq{<th data-field="2" data-sortable="true" data-filter-control="input" data-filter-control-placeholder="">Position</th>};
+	$out .= qq{<th data-field="3" data-filter-control="input" data-filter-control-placeholder="">Project / Patient</th>};
+	$out .= qq{<th data-field="4">gnomAD</th>};
+	$out .= qq{<th data-field="5">DejaVu</th>};
+	$out .= qq{<th data-field="6" data-filter-control="input" data-filter-control-placeholder="">Clinvar</th>};
+	$out .= qq{<th data-field="7" data-filter-control="input" data-filter-control-placeholder="">Annotation</th>};
+	$out .= "</tr></thead>";
+	$out .= "<tbody>";
 	
 	my $color_validation = "grey";
 	my $i = 0;
-	foreach my $var_id (sort @$list_variants) {
+	foreach my $var_id (sort @lVar_ok) {
 		next if not exists $hVariantsDetails->{$var_id};
 		next if not $self->is_magic_user() and not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
 		$i++;
@@ -797,6 +823,8 @@ sub print_html_gene {
 		$out .= $this_out;
 		foreach my $pheno_name (keys %$this_h_pheno) { $h_phenos->{$pheno_name} = $this_h_pheno->{$pheno_name}; }
 	}
+	
+	$out .= "</tbody>";
 	$out .= qq{</table>};
 	$out .= qq{</div>};
 	
@@ -972,8 +1000,10 @@ sub get_score_variant_from_gene_without_patient {
 			$scaled_score = 4 if $this_score >= 200;
 			$max_scaled_score = $scaled_score if $max_scaled_score < $scaled_score;
 		}
-		
-		return $max_scaled_score if $self->is_magic_user();
+		if ($self->is_magic_user()) {
+			$max_gene_score = $max_scaled_score;
+			next;
+		}
 			
 		my $max_score_pat = -999;
 		my @list_polyviewer_h_details = @{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}};
