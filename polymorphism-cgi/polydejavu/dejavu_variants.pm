@@ -577,7 +577,7 @@ sub get_table_project_patients_infos {
 		elsif ($i == 2) {
 			my $ratio = '?';
 			$ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100 if ($h_infos_patients->{$nb_pat}->{dp});
-			my $text = 'AC:'.$info;
+			my $text = 'Reads:'.$info;
 			if ($ratio and $ratio eq '?') {
 				$text .= ', Ratio: ?';
 				$h_infos_patients->{$nb_pat}->{ratio_value} = '?';

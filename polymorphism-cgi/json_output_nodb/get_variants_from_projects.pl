@@ -654,7 +654,7 @@ sub export_xls {
 				$h->{'he_ho'} = $h_infos->{heho};
 				my ($ac, $ratio) = split(', ', $h_infos->{ratio});
 				my $dp = $h_infos->{dp};
-				$ac =~ s/AC://;
+				$ac =~ s/Reads://;
 				$ratio =~ s/Ratio://;
 				$h->{'ac'} = $ac;
 				$h->{'dp'} = $dp;
