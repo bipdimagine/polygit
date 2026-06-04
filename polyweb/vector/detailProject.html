@@ -1099,7 +1099,7 @@
         	displayInIGV(item_var.chromosome, item_var.start, item_var.start);
         	var locus = item_var.chromosome + ":" + (parseInt(item_var.start)-100) + "-" + (parseInt(item_var.end)+100);
         	
-        	var url_viewer = window.location.origin + "/polyweb/html/manta/PolyCyto_IGV_Viewer.html?titre=" + locus + "&locusstart=" + locus + "&bamfile=" + array_bam.join(';') + "&patient_name=" + array_name.join(';');
+        	var url_viewer = window.location.origin + "/HG38/polyweb/html/manta/PolyCyto_IGV_Viewer.html?titre=" + locus + "&locusstart=" + locus + "&bamfile=" + array_bam.join(';') + "&patient_name=" + array_name.join(';');
 			if (url_gene_bed) { url_viewer += "&genes_bed=" + url_gene_bed; }
 			if (url_fasta) { url_viewer += "&fasta=" + url_fasta; }
 			var myWindow = window.open(url_viewer,"_blank",""); 
