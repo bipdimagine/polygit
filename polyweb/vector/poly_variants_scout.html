@@ -1274,6 +1274,12 @@
 			    });
 			}
 			
+			
+			function change_slider_reads(val){
+				var t = Math.floor(val);
+				document.getElementById("hreads").value= t;
+			}
+			
 			dojo.require("dojo.io.iframe");
 			function export_xls(export_session_id) {
 				dijit.byId('waiting_export').show();
