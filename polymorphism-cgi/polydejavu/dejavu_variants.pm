@@ -773,7 +773,7 @@ sub print_html_gene {
 		$g->{nb} = $nb_ok;
 		$g->{omim_id} = $gene->omim_id();
 		$g->{pLI} = $gene->pLI();
-		$g->{phenotypes} = $gene->polyquery_phenotypes();
+		$g->{phenotypes} = $gene->description().' '.$gene->polyquery_phenotypes();
 		$g->{variants} = \@lVar_ok;
 		$g->{panels} = $self->buffer->queryPanel()->getPanelsForGeneName($gene->external_name);
 		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails, $gene);
