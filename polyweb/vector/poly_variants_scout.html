@@ -1131,6 +1131,11 @@
 			    	options['min_perc_all'] = ratio_allelic;
 				}
 				
+				var min_reads = document.getElementById('hreads').value * 1;
+				if (min_reads != '-' && min_reads > 0) {
+			    	options['min_reads'] = min_reads;
+				}
+				
 				var found_included = false;
 				var listOnlyProjects = [];
 				var found_excluded = false;
@@ -1679,12 +1684,40 @@
 												            <li>% Ratio</li>
 												        </ol>
 											        </div>
-													<label for="htoto">Ratio:</label>
+													<label for="htoto">Min Ratio:</label>
 											      <input   readonly id="htoto"  size="2" value="-" style="margin-top: 10px;font-size:11px;padding-left: 10px;padding-top: 2px;"> </input>
 										        </center>
 											</div>
 										</td>
 									</tr>
+									
+									<tr><td><span style="font-size:8px;">&nbsp;</span></td></tr
+									<tr><td><span style="font-size:13px;">Min Reads:</span></td></tr>
+									<tr>
+										<td colspan='2'>
+											<div id="td_slider_reads">
+												<center>
+													<div id="slider_reads" jsId="slider_reads" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 4" onChange="change_slider_reads" data-dojo-props='value:0,maximum:100,minimum:0,pageIncrement:100,showButtons:true,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 10px;"'>
+											        	<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
+												        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"75%"}'>
+												             <li> All </li>
+															 <li> 25 </li>
+															 <li> 50 </li>
+															 <li> 75 </li>
+												             <li> 100 </li>
+												        </ol>
+												        <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em; ">
+												            <li>Reads</li>
+												        </ol>
+											        </div>
+													<label for="htoto">Reads:</label>
+											      <input   readonly id="hreads"  size="2" value="-" style="margin-top: 10px;font-size:11px;padding-left: 10px;padding-top: 2px;"> </input>
+										        </center>
+											</div>
+										</td>
+									</tr>
+									
+									
 					            </table>
 				            </center>
 			            </div>
@@ -1771,6 +1804,8 @@
 		        <div class="container-fluid " id='content_res' style="width:100%;">
 		            <h2>Welcome to PolyVariantsScout</h2>
 		            <p class="text-muted">Choose your filters in dashboard.</p>
+		            <br>
+		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Minimum read(s) option available in patients filters.</p>
 		        </div>
 		    </main>
 		</div>	

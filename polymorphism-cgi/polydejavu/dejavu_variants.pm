@@ -90,6 +90,11 @@ has pwd => (
 	lazy    => 1,
 );
 
+has min_reads => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 has min_ratio => (
 	is		=> 'rw',
 	lazy    => 1,
@@ -578,6 +583,7 @@ sub get_table_project_patients_infos {
 			my $ratio = '?';
 			$ratio = ($info / $h_infos_patients->{$nb_pat}->{dp}) * 100 if ($h_infos_patients->{$nb_pat}->{dp});
 			my $text = 'Reads:'.$info;
+			$h_infos_patients->{$nb_pat}->{nb_reads} = $info;
 			if ($ratio and $ratio eq '?') {
 				$text .= ', Ratio: ?';
 				$h_infos_patients->{$nb_pat}->{ratio_value} = '?';
@@ -610,12 +616,11 @@ sub get_table_project_patients_infos {
 	
 	my $found_healthy_patient = 0;
 	my $found_ill_patient = 0;
+	my $ok_nb_reads = 0;
 	foreach my $pat_id (keys %{$self->hash_users_projects->{$project_name}->{patients}}) {
 		next if not exists $h_tmp_pat->{$pat_id};
 		my $h_pat = $self->hash_users_projects->{$project_name}->{patients}->{$pat_id};
-		my $icon = 'TODO';
 		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{name} = $h_pat->{name};
-		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{status} = $icon;
 		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{sex} = '-';
 		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{sex} = 'male' if $h_pat->{sex} eq '1';
 		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{sex} = 'female' if $h_pat->{sex} eq '2';
@@ -623,14 +628,22 @@ sub get_table_project_patients_infos {
 		if ($h_pat->{status} eq '1') {
 			$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{status_txt} = 'healthy';
 			$found_healthy_patient++;
+			if ($self->min_reads() and not $self->only_ill_patients() and not $self->only_strict_ill_patients()) {
+				$ok_nb_reads = 1 if $h_infos_patients->{$h_tmp_pat->{$pat_id}}->{nb_reads} >= $self->min_reads();
+			}
 		}
 		if ($h_pat->{status} eq '2') {
 			$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{status_txt} = 'ill';
 			$found_ill_patient++;
+			if ($self->min_reads()) {
+				$ok_nb_reads = 1 if $h_infos_patients->{$h_tmp_pat->{$pat_id}}->{nb_reads} >= $self->min_reads();
+			}
 		}
 		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{family} = $h_pat->{family};
 		$h_infos_patients->{$h_tmp_pat->{$pat_id}}->{description} = $self->hash_users_projects->{$project_name}->{description};
 	}
+	$ok_nb_reads = 1 if not $self->min_reads();
+	
 	
 	my $ok_ill = 1;
 	if ($self->only_ill_patients()) {
@@ -639,7 +652,7 @@ sub get_table_project_patients_infos {
 	elsif ($self->only_strict_ill_patients()) {
 		$ok_ill = undef if $found_healthy_patient > 0;
 	}
-	if ($ok_ill) {
+	if ($ok_ill and $ok_nb_reads) {
 		foreach my $id (keys %{$h_infos_patients}) {
 			my $pat_name = $h_infos_patients->{$id}->{name};
 			next if not $pat_name;

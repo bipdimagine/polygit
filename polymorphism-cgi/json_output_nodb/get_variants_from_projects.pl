@@ -100,6 +100,7 @@ my $max_gnomad_ac_ho = $cgi->param('gnomad_ho');
 my $max_dejavu = $cgi->param('dejavu');
 my $max_dejavu_ho = $cgi->param('dejavu_ho');
 my $min_ratio = $cgi->param('min_perc_all');
+my $min_reads = $cgi->param('min_reads');
 my $only_my_projects = $cgi->param('only_my_projects');
 my $only_ill = $cgi->param('only_ill');
 my $only_strict_ill = $cgi->param('only_strict_ill');
@@ -148,6 +149,7 @@ $dejavu_variants->max_gnomad_ac_ho($max_gnomad_ac_ho) if $max_gnomad_ac_ho;
 $dejavu_variants->min_ratio($min_ratio) if $min_ratio;
 $dejavu_variants->only_ill_patients(1) if $only_ill;
 $dejavu_variants->only_strict_ill_patients(1) if $only_strict_ill;
+$dejavu_variants->min_reads($min_reads) if $min_reads;
 
 $dejavu_variants->only_genes(1) if $only_ill;
 
