@@ -1920,13 +1920,13 @@ sub panel_gene {
    			my $jtid = 'zz'.time.rand(500);
    			my $div_pheno = qq{<a aria-disabled="true" class="btn btn-primary btn-xs" href="#" role="button" style="text-align:left;font-family: proxima-nova, sans-serif;font-style:normal;text-shadow:0px 1px 1px #000000;position:relative;bottom:4px;font-size: 0.9em;color:white;$bgcolor2;">};
    			if ($pheno) {
-		   		if (length($pheno) > 70) { $pheno = substr($pheno, 0, 70).'...'; }
+#		   		if (length($pheno) > 70) { $pheno = substr($pheno, 0, 70).'...'; }
    				if ($nb_other_terms > 0) { $pheno .= " <span style='color:#5cf0d3'>+ $nb_other_terms terms</span>"; }
    				if ($project_name) {
-   					$div_pheno .= qq{<i class="fa fa-circle fa-xs" $color ></i> <span onclick="update_grid_gene_phenotypes(\'$gene_id\', \'$project_name\')";">$pheno</span>};
+   					$div_pheno .= qq{<div onclick="update_grid_gene_phenotypes(\'$gene_id\', \'$project_name\');" style="max-width:75vh;overflow-x:auto;scrollbar-width: none;"><nobr><i class="fa fa-circle fa-xs" $color ></i>&nbsp;&nbsp;$pheno</nobr></div>};
    				}
    				else {
-   					$div_pheno .= qq{<i class="fa fa-circle fa-xs" $color ></i> <span onclick="update_grid_gene_phenotypes(\'$gene_id\')";">$pheno</span>};
+   					$div_pheno .= qq{<div onclick="update_grid_gene_phenotypes(\'$gene_id\')";" style="max-width:75vh;overflow-x:auto;scrollbar-width: none;"><nobr><i class="fa fa-circle fa-xs" $color ></i>&nbsp;&nbsp;$pheno</nobr></div>};
    				}
    			}
    			$div_pheno .= qq{</a>};
