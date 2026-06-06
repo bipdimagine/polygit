@@ -1104,6 +1104,10 @@ has _getListTranscripts => (
 			return $self->bundle_transcripts();
 		}
 		else {
+			my $rocks = $self->rocksGenBo();
+			my $list = $rocks->get("main_transcripts");
+			
+			return $list if $list;
 			my @a =
 			  grep { $_ !~ /GL/ }
 			  grep { $_ =~ /ENST/ }
@@ -5068,7 +5072,7 @@ has lmdbGenBo => (
 sub rocksGenBo {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
-	my $name = "genbo-".$mode.$$;
+	my $name = "genbo-".$mode;
 	#$name = "genbo-".$mode;
 	
 	return $self->{rocks}->{$name} if exists $self->{rocks}->{$name};

@@ -1683,7 +1683,6 @@ sub variationTypeInterface {
 	return join(',', @lRes);
 }
 
-
 sub get_codon_text {
 	my ($self, $strand) = @_;
 	return $self->{codon}->{$strand} if exists $self->{codon}->{$strand};
@@ -1698,13 +1697,41 @@ sub get_codon_text {
 	}
 	return $self->{codon}->{$strand};
 }
+
 sub variationTypeMain {
 	my ( $self, $gene ) = @_;
 	my $trs = $gene->getMainTranscripts();
 	my $mask = 0;
+	#my $mask = $self->{annotation}->{$g->id}->{mask};
+	$self->annotation();
 	foreach my $t (@$trs){
-		$mask |= $self->{annotation}->{$t->id}->{mask};
+		if (exists $self->{annotation}->{$t->id}->{mask}){
+			$mask |= $self->{annotation}->{$t->id}->{mask};
+		}
+		else {
+		my $trid = $t->id;
+		my $type;
+		if ($self->start > $t->end){
+			 $type = "upstream";
+		}
+		if ($self->start> $t->end){
+			 $type = "downstream";
+		}
+		
+		if ($self->strand == -1) {
+			 if ($type eq "upstream"){
+				$type = "downstream";
+			 }
+			 else {
+				 $type = "upstream";
+			 }
+			
+		}
+		#$mask |=  $self->project->getMaskCoding($type);
+		
+		}
 	}
+	die(@$trs)  if $mask == 0;
 	return $self->TypeFromMask($mask);
 }
 
