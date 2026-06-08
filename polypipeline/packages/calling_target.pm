@@ -7,7 +7,7 @@ use Data::Dumper;
 use Data::Printer;
 use POSIX ;
 #use colored;
-use Bio::DB::Sam;
+use Bio::DB::HTS;
 use threads;
 use Thread::Queue;
 use List::MoreUtils qw(part natatime);
@@ -1429,7 +1429,7 @@ my $pm = new Parallel::ForkManager($fork);
 
 		};
 
-		my $sam = Bio::DB::Sam->new(
+		my $sam = Bio::DB::HTS->new(
 			-fasta => $project->getGenomeFasta()
 			,    #"/data-xfs/public-data/HG19//genome/fasta/all.fa",
 			-bam => $bam
@@ -1437,7 +1437,7 @@ my $pm = new Parallel::ForkManager($fork);
 		my $res;
 		my $iter = $intspan->iterate_runs();
 		while ( my ( $from, $to ) = $iter->() ) {
-			$sam->fast_pileup( $chr->fasta_name . ":$from-$to", $callback );
+			$sam->pileup( $chr->fasta_name . ":$from-$to", $callback );
 		}
 		push( @{$res->{regions}},	map { $chr->fasta_name . ":" . $_ }   split( ",", $intspan_res->{$cn}->as_string ) );
 		my $iter2 = $intspan_res->{$cn}->iterate_runs();
