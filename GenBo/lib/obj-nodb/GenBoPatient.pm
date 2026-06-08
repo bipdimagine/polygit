@@ -8,7 +8,6 @@ use GenBoPcrMultiplex;
 use QueryVcf;
 use QueryJunctionFile;
 use File::Util;
-use Bio::DB::Sam;
 use Storable;
 use validationQuery;
 use Compress::Snappy;
@@ -304,6 +303,7 @@ has tabix_coverage => (
 		my $self = shift;
 		my $coverage_file;
 		$coverage_file = $self->getCoverageFile();
+		warn $coverage_file;
 		return unless -e $coverage_file;
 		return Bio::DB::HTS::Tabix->new( filename => $coverage_file );
 
@@ -331,6 +331,7 @@ has bio_db_sam => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+		confess();
 		my $bam  = $self->getBamFile();
 		return unless -e $bam;
 		my $sam = Bio::DB::Sam->new( -bam => $bam );
@@ -387,13 +388,15 @@ has coverage => (
 		my $self = shift;
 
 		my $item;
-		eval {
+	#	eval {
 			my $tabix = $self->tabix_coverage;
 			return unless $tabix;
+			warn "coucou";
 			my $res   = $tabix->query_full( "mean_all" ) ;
 			my @data;
 
 			while ( my $line = $res->next ) {
+				warn $line;
 				my ( $a, $b, $c ) = split( " ", $line );
 				if ( $b == 99 ) {
 					$b = "mean";
@@ -401,9 +404,10 @@ has coverage => (
 				}
 				else { $b .= "x"; $c *= 100; }
 				$item->{"$b"} = int( $c * 10 ) / 10;
-
+				warn "o";
 			}
-		};
+	#	};
+		warn "END coverage";
 		return $item;
 	},
 );
@@ -811,6 +815,78 @@ sub getLane {
 	return $query->getPatientLane($self->id);
 }
 
+has 'uBams_revio' => (
+	is => 'ro',
+
+	#isa 	=> 'Int',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+	my $lane = $self->getLane();
+	warn $lane;
+	my @runs = split(";",$lane);
+	my $hash;
+	foreach my $line (@runs){
+		my ($run,$smartcells,$codebare) = split(":",$line);
+		foreach my $sc (split(",",$smartcells)){
+			$hash->{$run}->{$sc} = lc($codebare);
+		}
+		
+	}
+	my $machine     = $self->getRun->machine;
+	my $run_name    = $self->getRun->run_name();
+	my $constructor = $self->getRun->machine_constructor();
+	my $plateform   = $self->getRun->plateform();
+	my $path        = $self->buffer()->getDataDirectory("bcl");
+	my $root_dir = $path."/".$constructor."/".$machine."/".$plateform;
+	my @files;
+	foreach my $run (keys %$hash){
+		
+		foreach my $sc (keys %{$hash->{$run}}){
+			my $dir = $root_dir;
+			$dir.="/$run";
+			$dir .="/".$sc."/hifi_reads/";
+			my $cb = $hash->{$run}->{$sc};
+			my @files_tmp = `ls $dir/*$cb*.bam`;
+			
+			chomp(@files_tmp);
+			die("il est ou mon fichier ls $dir/*${cb}*.bam ") if scalar(@files_tmp) ne 1; 
+			push(@files,$files_tmp[0]);
+			
+		}
+	
+	}
+	return \@files;
+
+	},
+);
+
+has 'uBam_filename' => (
+	is => 'ro',
+
+	#isa 	=> 'Int',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $dir = $self->getSequencesDirectory();
+	
+	return $dir."/".$self->name.".bam";
+
+	},
+);
+
+has 'uBam' => (
+	is => 'ro',
+
+	#isa 	=> 'Int',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+			return $self->uBam_filename if -e $self->uBam_filename();
+			confess("probleme with ".$self->uBam_filename);
+
+	},
+);
 sub setRuns {
 	my $self = shift;
 	$self->getProject->getRuns();

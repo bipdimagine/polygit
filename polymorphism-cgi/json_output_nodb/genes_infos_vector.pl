@@ -14,7 +14,6 @@ use connect;
 use GBuffer;
 use GenBoStorable;
 use Data::Dumper;
-use Bio::DB::Sam;
 use util_file;
 use Storable qw/freeze thaw nfreeze nstore_fd nstore retrieve/;
 use export_data;

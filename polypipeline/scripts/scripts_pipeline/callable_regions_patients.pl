@@ -24,7 +24,6 @@ use Set::IntSpan::Island;
 use Set::IntSpan;
 #use Tree::R;
 #use Bio::DB::HTS;
-use Bio::DB::Sam;
 use Set::IntSpan;
 use Path::Tiny;
 require "$Bin/lib/interval_util.pm"; 

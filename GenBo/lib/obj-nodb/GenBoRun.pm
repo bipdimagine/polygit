@@ -135,8 +135,7 @@ has isRevio=> (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return 1 if (lc($self->getRun()->machine) eq "revio" and  $self->isPacBio );
-		return;
+		return  (lc($self->machine) eq "revio" );
 	},
 );
 has isPacBio=> (
@@ -144,8 +143,7 @@ has isPacBio=> (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return 1 if  (lc($self->getRun()->machine_constructor eq "pacbio"));
-		return;
+		return  (lc($self->machine_constructor) eq "pacbio");
 	},
 );
 
@@ -154,7 +152,7 @@ has isIllumina=> (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return 1 if ( lc($self->getRun()->machine_constructor eq "illumina"));
+		return 1 if ( lc($self->machine_constructor eq "illumina"));
 		return;
 	},
 );
@@ -163,7 +161,7 @@ has isNanopore=> (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		return 1 if  (lc($self->getRun()->machine_constructor eq "nanopore"));
+		return 1 if  (lc($self->machine_constructor eq "nanopore"));
 		return;
 	},
 );

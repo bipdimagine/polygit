@@ -7,7 +7,6 @@ use lib "$RealBin/../";
 use lib "$RealBin/../../cache/";
 use Data::Dumper;
 use Parallel::ForkManager;
-use Bio::DB::Sam;
 use JSON;
 #use CacheDiag;
 use Storable qw(store retrieve freeze thaw);

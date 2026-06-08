@@ -20,7 +20,6 @@ use Scalar::Util qw(looks_like_number);
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use colored;
-use Bio::DB::Sam;
 use Parallel::ForkManager;
 use String::ProgressBar;
 use Set::IntSpan::Fast::XS;

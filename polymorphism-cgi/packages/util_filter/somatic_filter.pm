@@ -2,7 +2,6 @@ package somatic_filter;
 use strict;
 use Set::Intersection;
 use Moo;
- use Bio::DB::Sam;
 use Data::Dumper;
 use base ("root_filter");
 use Storable 'dclone';

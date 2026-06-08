@@ -256,6 +256,7 @@ if ($gene_name_filtering =~ /^([^:]+):(\d+)(?:-(\d+))?$/) {
 elsif ($project->isChromosomeName($gene_name_filtering)) {
 	$chromosome_filtering = $project->isChromosomeName($gene_name_filtering);
 	$gene_name_filtering = undef;
+		$keep_pathogenic = undef;
 }
 my $file_gene_prenatsafe = $project->getProjectRootPath()."/gene.txt";
 if (-e $file_gene_prenatsafe){
@@ -283,8 +284,8 @@ if ($gene_name_filtering){
 	}
 	
 }
-
-
+my $revio_flag ;
+$revio_flag = 1 if $patient->isPacBio();
 my $force;
 my $level_dude = 'high,medium';
 
@@ -523,7 +524,7 @@ my $sct = time;
 warn "end max_score :".abs(time -$sct);
 	my $vgenes =[];
 	my $nb2 = 0;
-	my $limit =3000; 
+	my $limit =300; 
 	my $hchr; 
 $sct = time;
 
@@ -589,6 +590,7 @@ $t     = time;
 	
 	warn "genes:".scalar(@$genes);
 	if (@$genes){
+		
 		$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ,$buffer_polyviewer) ;
 	#	warn "dsdssd " unless $genes;
 	#	error("coucou") unless $genes;# == undef;
@@ -663,7 +665,7 @@ sub refine_heterozygote_composite_score_fork {
 	my $ngene =0;
 	
 	my $final_polyviewer_all ;
-		my $diro = $project->rocks_directory();
+	my $diro = $project->rocks_directory();
 	
 	
 	$project->buffer->dbh_deconnect();
@@ -689,7 +691,7 @@ sub refine_heterozygote_composite_score_fork {
 	foreach my $g (@{$res->{genes}}){
 		print $g->{out} . "\n";
 		delete  $g->{out};
-		#last if $g->{max_score} < 5 && $nb_genes > 300;
+	#	last if $g->{max_score} < 8 && $nb_genes > 300;
 	}
 	
 	return ;
@@ -882,12 +884,11 @@ my $h_transmissions = {
 			if ($start_filtering>0) {
     			$sql_gene = "variant_chromosome = '".$o->ucsc_name."' and variant_start >= ".$start_filtering." ";
     			$sql_gene .= "and variant_end <".$end_filtering." " if $end_filtering;
-    			warn $sql_gene;
 			}
 	}
 	
 	if ($promoter_ai_flag){
-		$sql_gene .= "and (gene_mask & $maskcoding <> 0 or ABS(promoterAI) >= 0.2) ";
+		$sql_gene .= "and (gene_mask & $maskcoding <> 0 or ABS(coalesce(promoterAI,0)) >= 0.2) ";
 	}
 	else {
 		$sql_gene .= "and gene_mask & $maskcoding <> 0 ";
@@ -909,6 +910,7 @@ my $h_transmissions = {
 	push(@{$asql_frequence}, "variant_gnomad_ho < $limit_ac_ho ")  if $limit_ac_ho >0 ;;
 	push(@{$asql_frequence}, "variant_other_patients < $limit_sample_dv ") if $limit_sample_dv > 0;
 	push(@{$asql_frequence}, "variant_other_patients_ho < $limit_sample_dv_ho ") if $limit_sample_dv_ho > 0; 
+	push(@{$asql_frequence}, "coalesce(c.nb,0) < 4 ") if $revio_flag ; 
 	my $sql_frequence = "";
 	if (@$asql_frequence) {
 		$sql_frequence = join(" and ",@$asql_frequence) ;
@@ -962,19 +964,26 @@ my $h_transmissions = {
 
 sub get_rocksdb_mce_polyviewer_variant {
 	my ($project,$where,$where_nopat,$suffix) = @_;
-	warn "rocksdb  "  if (not $cgi->param('export_xls'));
+#	warn "rocksdb  "  if (not $cgi->param('export_xls'));
 	my $parquet = $project->parquet_cache_variants();
 	#$parquet = "/data-beegfs/tmp/new/NGS2025_09289.variants.parquet";
 	my $dir_parquet = $project->parquet_cache_dir;
 	my $diro = $project->rocks_directory();
-	error("Oops! that's unexpected !!! ") unless -e $parquet;
-	my $sql = qq{select variant_index,gene_name from '$parquet' where  $where ; };
+	error("Oops! that's unexpected !!! $parquet") unless -e $parquet;
+	my $sql = qq{select variant_index,gene_name from '$parquet' a };
 	if ($promoter_ai_flag){
 		my $parquet_promoter = $project->get_promoterAI_filtred_parquet();
-		 $sql = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a LEFT JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid WHERE $where };
+		 $sql = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a LEFT JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid  };
 	}
+	if ($revio_flag ){
+		my $parquet_promoter = $project->get_promoterAI_filtred_parquet();
+		 $sql = $sql.qq{ LEFT JOIN '/data-pure/public-data/dejavu/HG38/revio/revio.parquet' c ON a.variant_rocksdb_id = c.rocksdb_id};
+		 
+	}
+	
+	$sql .= " WHERE $where;";
+	warn $sql;
 	my $cmd = qq{duckdb -json -c "$sql"};
-
  	my $t = time;
  	my $res =`$cmd`;
 	my $array_ref = [];

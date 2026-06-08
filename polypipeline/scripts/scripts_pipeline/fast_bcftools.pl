@@ -16,7 +16,6 @@ use Carp;
 
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
-#use Bio::DB::Sam; 
 use threads;
 use Thread::Queue;
 use Set::IntSpan::Fast::XS;

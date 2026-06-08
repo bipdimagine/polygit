@@ -16,7 +16,6 @@ use connect;
 use GBuffer;
 use GenBoStorable;
 use Data::Dumper; 
-use Bio::DB::Sam;
 use get_variations;
 #use Cache::File;
 use family_filter;  

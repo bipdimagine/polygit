@@ -8,7 +8,6 @@ use GBuffer ;
 use Data::Dumper;
 use Getopt::Long;
 use Carp;
-use Bio::DB::Sam;
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use threads;
@@ -75,6 +74,8 @@ foreach my $chr (@{$project->getChromosomes}){
 	$hintspan_global->{$chr->name} = $hintspan_project->{$chr->name}->intersection($hintspan_giab->{$chr->name});
 	my @arary = $hintspan_global->{$chr->name}->as_array();
 	$nb_bases += scalar(@arary);
+	#$chr->getVariations();
+	#$chr->getIndels();
 }
 
 
@@ -88,6 +89,7 @@ my %ids;
 
 my $vector_fale_positive;
 my $nb_total_indels;
+warn "******* ".scalar(@$vs);
 foreach my $v (@$vs){
 	next unless exists $hintspan_giab->{$v->getChromosome->name};
 	 next unless $hintspan_global->{$v->getChromosome->name}->contains($v->start);
@@ -96,8 +98,8 @@ foreach my $v (@$vs){
 	next if $p->meanDepth($v->getChromosome->name,$v->start+5,$v->end+5) < 15;
 	next if $v->getPourcentAllele($p) < 20;
 	
-		 $nb ++;
-	warn $v->name;
+	$nb ++;
+#	warn $v->name;
 	#$ids{$v->id}= $v->vector_id;
 	if (scalar(@{$v->getPatients}) == 1){
 		#next if $v->sequencing_details($p)->{hap}->{nb_ref} + $v->sequencing_details($p)->{hap}->{nb_alt} < 15;
@@ -114,8 +116,8 @@ foreach my $v (@$vs){
 my $fpi = $nbf; 
 print "false postive Indel $nbf / $nb \n";
 warn "nb_total control indels : ".$nb_total_indels;
-
  $vs = $p->getVariations();
+ warn "----> nb variations ".scalar(@$vs);
  $nb =0;
  $nbf = 0;
 my $nb_total_vars;
@@ -183,7 +185,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 	foreach my $vid (@$z){
 		my $v = $project->returnVariants($vid);
 		next unless $hintspan_global->{$v->getChromosome->name}->contains($v->start);
-		
+		next if $p->meanDepth($v->getChromosome->name,$v->start-2,$v->end+2) < 15;
 		#my $f = grep {$_->name eq $giab->name} @{$v->getPatients}; 
 		#next unless $f;
 		if (scalar(@{$v->getPatients}) == 2){
@@ -214,7 +216,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 				#delete $ids{$v->id};
 		}
 	} 
-	
+	warn $nb2fv." ".$nb2findel;
 }
 my $results;
 $results->{global}->{indels}->{fp} = $fpi;
@@ -329,7 +331,7 @@ sub print_variant_false {
 	
 	push(@vs,$p->depth($v->getChromosome->name,$v->start,$v->end)->[0]);
 	push(@$tab,$vh);
-	print join("\t",@vs)."\n";
+	#print join("\t",@vs)."\n";
 	
 }
 
@@ -358,9 +360,7 @@ sub print_variant {
 	$vh->{giab} = "./.";
 	$vh->{control} = $v->getNbAlleleRef($p)."/".$v->getNbAlleleAlt($p);
 	$vh->{control_depth} = $p->depth($v->getChromosome->name,$v->start,$v->end)->[0];
-	warn "coucou ".$v->type;
 	#unless ($v->type){
-	warn "cuicuiu ->".$v->vector_id;
 		my $chr = $v->getChromosome();
 	#	my $vid = $v->vector_id;
 	#	$vid++;
@@ -384,6 +384,6 @@ sub print_variant {
  	
 	push(@vs,$v->getNbAlleleRef($p)."/".$v->getNbAlleleAlt($p));
 	push(@vs,$p->depth($v->getChromosome->name,$v->start,$v->end)->[0]);
-	print join("\t",@vs)."\n";
+	#print join("\t",@vs)."\n";
 	
 }

@@ -20,7 +20,6 @@ use Scalar::Util qw(looks_like_number);
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use colored;
-use Bio::DB::Sam;
 use Parallel::ForkManager;
 use String::ProgressBar;
 use Set::IntSpan::Fast::XS;
@@ -68,7 +67,47 @@ my $patients;
 if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
 else { $patients = $project->getPatients(); }
 
+if ($project->isGenome && $json) {
+	my $hjson;
+	foreach my $patient (@{$patients}){
+		my $pid = $patient->id;
+			my $all_sum;
+		my $coverage_file;
+		$coverage_file = $patient->getCoverageFile();
+		my $h;
+		confess($coverage_file) unless -e $coverage_file;
+		my $tabix = $patient->tabix_coverage;
+			my $res   =  $tabix->query_full( "mean_all") ;
+			while ( my $line = $res->next ) {
+				my ( $a, $b, $c ) = split( " ", $line );
+				
+				$h->{"s".$b} = $c;
+			}
+			$h->{"nb"} = delete $h->{s1};
+			$h->{"mean"} = delete $h->{s99};
+			warn Dumper $h;
+	 my $z= (($h->{s5}/$h->{nb}));
+	 warn $z;
+	 $hjson->{$pid}->{"5x"} = int($h->{s5}*1000)/10;  
+	$z = (($h->{s15}/$h->{nb}));
+	 $hjson->{$pid}->{"15x"} = int($h->{s15}*1000)/10; ; 
+	$z = (($h->{s20}/$h->{nb}));
+	 $hjson->{$pid}->{"20x"} = int($h->{s20}*1000)/10; ; 
+	$z =  (($h->{s30}/$h->{nb}));
+	 $hjson->{$pid}->{"30x"} = int($h->{s30}*1000)/10; ; 
+	$z =  ($h->{sum}/$h->{nb});
+	 $hjson->{$pid}->{"mean"} = int($h->{"mean"}*10)/10; 
+	 $z =  (($h->{s100}/$h->{nb}));
+	 $hjson->{$pid}->{"100x"} = int($h->{"s100"}*1000)/10; 
+			
+			
+	}
+		print encode_json  $hjson;
+		exit(0);
+}
+
 if ($project->isGenome){
+	 
 	$pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
@@ -88,12 +127,10 @@ if ($project->isGenome){
 		 $res->{$patient}->{s100} += $h->{s100};
 		 $res->{$patient}->{sum} += $h->{sum};
 		 $res->{$patient}->{nb} += $h->{nb};
-		 warn  $patient." ".$res->{$patient}->{sum};
 		}
 	);
-foreach my $patient (@{$patients}){
-	my $all_sum;
 	
+	foreach my $patient (@{$patients}){
 	foreach my $chr (@{$project->getChromosomes}){
 			my $intervals = $buffer->divide_by_chunks(1,$chr->length,50_000_000);
 			#warn $from." ".$to;
@@ -101,6 +138,7 @@ foreach my $patient (@{$patients}){
 			#die();
 			foreach my $interval (@$intervals){
 				my $pid = $pm->start and next;
+				my $h;
 				my $s5;
 				my $s30;
 				my $nb;
@@ -110,7 +148,7 @@ foreach my $patient (@{$patients}){
 				my $s20 =0;
 				my $array = $patient->depth($chr->name,$interval->[0],$interval->[1]);
 				my $sum = sum @$array;
-				$all_sum = $sum;
+				#$all_sum = $sum;
 				$nb = scalar(@$array);
 				foreach my $a (@$array){
 					$s1 ++ if $a >= 1;
@@ -121,11 +159,12 @@ foreach my $patient (@{$patients}){
 					$s100 ++ if $a >= 100;
 				}
 		#warn $chr->name." ".$all_sum/$nb." ".(($s5/$nb)*100)." ".(($s30/$nb)*100);
+			 $h = {s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,s20=>$s20,patient=>$patient->name,nb=>$nb,sum=>$sum} ;
+		 	$pm->finish( 0,$h );
+		 }
 		
-		$pm->finish( 0, {s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,s20=>$s20,patient=>$patient->name,nb=>$nb,sum=>$sum} );
 		}
 	}
-}
 $pm->wait_all_children();
 }
 else {
@@ -148,6 +187,7 @@ $pm->run_on_finish(
 		 $res->{$patient}->{s100} += $h->{s100};
 		 $res->{$patient}->{sum} += $h->{sum};
 		 $res->{$patient}->{nb} += $h->{nb};
+		 
 #		 warn  $patient." ".$res->{$patient}->{sum};
 		}
 	);
@@ -191,6 +231,7 @@ foreach my $patient (@{$patients}){
 	}
 $pm->wait_all_children();
 }
+
 
 my $hjson; 
 
@@ -237,4 +278,7 @@ if ($json) {
 }
 exit(0);
 
-
+sub tabix {
+	my ($paramparam) 
+	
+}

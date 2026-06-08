@@ -8,7 +8,6 @@ use GBuffer ;
 use Data::Dumper;
 use Getopt::Long;
 use Carp;
-use Bio::DB::Sam;
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use threads;

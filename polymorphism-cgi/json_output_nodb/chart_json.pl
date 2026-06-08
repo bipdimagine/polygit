@@ -19,8 +19,8 @@ use Carp;
 use JSON::XS;
 #use util_file;
 use Storable qw/retrieve/;
-use Bio::DB::Sam;
 use Set::IntSpan::Fast::XS ;
+#
 my $cgi    = new CGI;
 
 #ce script est utilise pour tracer les electrophoregrammes des sequences pour le sequencage classique ou les histogrammes pour les puces de resequencage

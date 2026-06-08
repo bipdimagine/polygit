@@ -1376,6 +1376,30 @@ sub parseVcfFileForReference_gatk {
 				my $dp = $gtypes->{DP};
 				my $af = $gtypes->{VAF};
 				my ($nref,$nalt) = split(",",$gtypes->{AD});
+
+				
+				if (length($vcfRefAllele) >= 2 && length($varAllele->[0]) == 1 ){
+					my $a1 = $vcfRefAllele;
+					$a1 =~ s/^.//;
+					my $sequence = 	$reference->getChromosome->getSequence($varStart+length($a1),$varStart+(15*length($a1)));
+					my ($repeat) = $sequence =~ /^($a1+)/;
+					$repeat .="";
+					#warn $a1." ".$repeat if length($repeat) > 20;
+				
+					next if length($repeat) > 4;
+				} 
+				
+				if (length($vcfRefAllele) == 1 && length($varAllele->[0]) == 2 ){
+					my $a1 = $varAllele->[0];
+					$a1 =~ s/^.//;
+					my $sequence = 	$reference->getChromosome->getSequence($varStart+length($a1),$varStart+(15*length($a1)));
+					my ($repeat) = $sequence =~ /^($a1+)/;
+					$repeat .="";
+						warn $repeat if length($repeat) > 4;
+					next if length($repeat) > 4;
+				} 
+
+				
 				if ($nalt >  5 && $af > 0.2 ) {
 					if ($af < 0.8){
 						$gtypes->{GT} = "0/1"

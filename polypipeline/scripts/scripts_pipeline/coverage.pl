@@ -19,7 +19,6 @@ use Scalar::Util qw(looks_like_number);
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use colored;
-use Bio::DB::Sam;
 use Parallel::ForkManager;
 use String::ProgressBar;
 use Set::IntSpan::Fast::XS;
@@ -433,111 +432,6 @@ my @ucsc_names = map {$_->fasta_name} @{$project2->getChromosomes};
 
 
 
-sub by_chr2 {
-my ($chr_num,$span,$span_extended,$name,$filein,$filetemp) = @_;
-my $bam_file = $filein;
-my $t = time;
-my $sam = Bio::DB::Sam->new(-bam  =>$bam_file,
-                            # -fasta=>"data/ex1.fa",
-                             );
-       my @seq_ids  = $sam->seq_ids;
-      my $is_ucsc; 
-    $is_ucsc =1    if ($seq_ids[0] =~ /chr/);
-
-	my $array_intspan =  Array::IntSpan->new();
-	my $out = $filetemp->filename;
-	my $chr = $chr_num;
-	 $chr = "chr".$chr_num  if ischrornot($filein);
-	$chr="chrM" if $chr eq "chrMT";
-		my $chr_ucsc = "chr" . $chr_num;
-		$chr_ucsc ="chrM" if $chr_ucsc eq "chrMT";
-	open (TITI,">$out",) or die("can't open $out");
-	my $nb;
-	my $tot;
-	my $nb_5;
-	my $nb_15;
-	my $nb_20;
-	my $nb_30;
-	my $nb_100;
-	return unless exists $span_extended->{$chr_ucsc};
-	my $max;
-	my $t = time;
-	$sam->max_pileup_cnt([500000]) if $diag ==1;
-foreach my $pos (split(",",$span_extended->{$chr_ucsc}->as_string)){	 
-	my ($start,$end) = split("-",$pos);		
-	$max = $end;
-	my $coverage;
-	if ($is_ucsc){
-		($coverage) = $sam->features(-type=>'coverage',-seq_id=>$chr_ucsc,-start=>$start,-end=>$end-1  );
-	}
-	else {
-		($coverage) = $sam->features(-type=>'coverage',-seq_id=>$chr,-start=>$start,-end=>$end-1  );
-	}
-	my $xstart ;
-	my $val = -1;
-	my $debug;
-	$debug=1 if $chr eq "chr17";
-	for (my $i=0;$i< @{$coverage->coverage};$i++){
-		
-		my $pos = $i+$start;	
-		my $cov = 	$coverage->coverage->[$i];
-		unless ($xstart){
-			$xstart = $pos;
-			$val = $cov;
-		}
-		if ($cov ne $val) {
-	#		$array_intspan->set_range($xstart,$pos-1,$cov);
-			$val = $cov;
-			$xstart = $pos;
-		}
-		print TITI $chr_ucsc."\t".$pos."\t".$coverage->coverage->[$i]."\n";
-	#	$array_intspan->set_range($pos,$pos,$coverage->coverage->[$i]);
-			next unless $span->{$chr_ucsc}->contains($pos);
-   		$nb++;
-   		my $score = $coverage->coverage->[$i];
-   		$tot += $score;
-   		  	if ($score >= 100){
-  		
-   			$nb_100++;
-   		}   
-   		if ($score >= 30){
-  		
-   			$nb_30++;
-   		}   
-   		if ($score >= 50){
-  		
-   			$nb_50++;
-   		}
-   		if ($score >= 15){
-   			$nb_15++;
-   		}  
-   		if ($score >= 20){
-   			$nb_20++;
-   		}  	 
-   		if ($score >= 5){
-   			$nb_5++;
-   		}  	 
-		
-	}
-			
-	}  
-	print TITI "mean_$chr_ucsc\t1\t$nb\n";
-	print TITI "mean_$chr_ucsc\t5\t$nb_5\n";
-	print TITI "mean_$chr_ucsc\t15\t$nb_15\n";
-	print TITI "mean_$chr_ucsc\t20\t$nb_20\n";
-	print TITI "mean_$chr_ucsc\t30\t$nb_30\n";
-	print TITI "mean_$chr_ucsc\t50\t$nb_50\n";
-	print TITI "mean_$chr_ucsc\t99\t$tot\n";
-			print TITI "mean_$chr_ucsc\t100\t$nb_100\n";
-	print "end $chr\n" unless $verbose; 
-	close TITI; 
-	
-	#$array_intspan->consolidate(1,$max);
-	my $z = time - $t;
-	
-		colored::stabilo('white',"  ---- end   $chr_num $patient_name  ---- ".abs(time-$t));
-
-}
 
 sub get_primers_array_intspan{
 	my ($chr_name,$project_name) = @_;

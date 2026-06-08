@@ -10,7 +10,6 @@ use Carp;
 use GBuffer;
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
-use Bio::DB::Sam; 
 use threads;
 use Thread::Queue;
 use Set::IntSpan::Fast::XS;
@@ -57,7 +56,7 @@ if ($log_file){
 #	my $patient_name = $toto->{patient};
 
 my $buffer = GBuffer->new();
-my $dir_temp =  $buffer->config->{project_pipeline}->{tmp};
+my $dir_temp =  $buffer->config_path("tmp");
 my $pm = new Parallel::ForkManager($fork);
 my $project = $buffer->newProject( -name => $project_name );
 my $patient = $project->getPatient($patient_name);

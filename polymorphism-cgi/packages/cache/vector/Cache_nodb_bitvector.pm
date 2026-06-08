@@ -4,7 +4,6 @@ use FindBin qw($RealBin);
 use lib "$RealBin";
 use Data::Dumper;
 use Parallel::ForkManager;
-use Bio::DB::Sam;
 use JSON;
 use CacheGenesData_bitvector;
 use Storable qw(store retrieve freeze thaw);

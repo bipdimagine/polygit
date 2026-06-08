@@ -10,7 +10,6 @@ use Data::Dumper;
 use Getopt::Long;
 use Carp;
 use Bio::DB::HTS;
-use Bio::DB::Sam;
 use colored;
 
 

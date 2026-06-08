@@ -4,7 +4,6 @@ use strict;
 use FindBin qw($RealBin);
 use Data::Dumper;
 use Parallel::ForkManager;
- use Bio::DB::Sam;
 #use PBS::Client;
 use Storable qw(store retrieve freeze dclone thaw);
 use Time::Duration;
