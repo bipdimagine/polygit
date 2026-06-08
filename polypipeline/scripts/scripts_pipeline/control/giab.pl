@@ -8,7 +8,6 @@ use GBuffer ;
 use Data::Dumper;
 use Getopt::Long;
 use Carp;
-use Bio::DB::Sam;
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use threads;
@@ -46,7 +45,6 @@ my $genome = 'HG19';
 if ($project->getVersion() =~ /HG38/) {
 	$genome = 'HG38';
 }
-
 $GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB";
 if ($p2name =~ /001/){
 	$GIAB_DIR = "/data-isilon/public-data/repository/$genome/GIAB/HG001";
@@ -64,44 +62,44 @@ my $dir_pipeline = $project->getVariationsDir("bed");
 my $bed = $dir_pipeline."/".$patient->name.time.".bed";
 my $list = $dir_pipeline."/".$patient->name.".list";
 my $vcf1 = $dir_pipeline."/".$patient->name.".vcf";
+warn $vcf1;
+
 unlink $bed if -e $bed;
 open(BED,">$bed");
 open(LIST,">$list");
 foreach my $chr (@{$project->getChromosomes}){
 	my $chr_name = $chr->name;
+	
 	#next unless $chr_name eq "18";
 	print LIST $chr->name."\t".$chr->fasta_name."\n";
 	#getIntSpanCapture
 	#getIntSpanCaptureForCalling
-	my @line = intspanToBed($chr_name,$chr->getIntSpanCapture(1000) );
+	my @line = intspanToBed($chr->ucsc_name,$chr->getIntSpanCapture(1000) );
 	print BED join("\n",@line)."\n" if @line;
 }
 
 close(BED);
 close (LIST);
-warn $list;
-
-
+die();
 my $vcf_giab = $GIAB_DIR."/vcf.gz";
 my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
 my $fileout = $project->getVariationsDir("haplotypecaller4")."/".$patient->name.".vcf.gz";
 system("$bgzip $bed ; $tabix $bed.gz");
-
 $bed =$bed.".gz";
 die() unless -e $bed.".tbi";
 
 unlink  $fileout.".tbi" if -e $fileout.".tbi";
 unlink  $fileout if -e $fileout;
 warn "$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ";
+
 system("$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $list - -o $fileout -O z ");#&& $tabix -f -p vcf $fileout");
 
 system("$tabix -f -p vcf $fileout  ");
 
 die() unless -e $fileout.".tbi";
-
-
+die();
 warn "$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1";
 system("$RealBin/../../../bds_cache.pl -project=$project_name -nolimit=1 -control=1 -force=1 -yes=1");
 
@@ -146,7 +144,7 @@ sub intspanToBed{
     	#warn "+".$from."-".$to if ($from<=31263320);
     	warn $from."-".$to if ($from<=31263320 && $to >= 31263320);
     	$size += abs($from-$to);
-    		push(@tt,'chr'.$chr_name."\t".$from."\t".$to);
+    		push(@tt,$chr_name."\t".$from."\t".$to);
     	
     }
     warn $chr_name." ".$size;

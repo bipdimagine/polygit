@@ -5,7 +5,6 @@ use lib "$RealBin";
 use Data::Dumper;
 use Data::Printer;
 use Parallel::ForkManager;
-use Bio::DB::Sam;
 use CacheGenesData_nodb; 
 use CacheVariationsData;
 use Storable qw(store retrieve freeze thaw);

@@ -7,7 +7,6 @@ use lib "$Bin/../..";
 use lib "$Bin/../../cache/";
 use Data::Dumper;
 use Parallel::ForkManager;
-use Bio::DB::Sam;
 use JSON;
 #use CacheDiag;
 use Storable qw(store retrieve freeze thaw);
@@ -397,6 +396,7 @@ sub run_cache_polydiag_fork {
 		$run->{$proc} = 1;
 		$project->disconnect();
 		 my $pid      = $pm->start() and next;	
+		 my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$p,project=>$project);
 		 my $vquery = validationQuery->new(
 		dbh          => $buffer1->dbh,
 		capture_name => $project->validation_db()
@@ -404,6 +404,7 @@ sub run_cache_polydiag_fork {
 		my $vector = $p->getVectorOrigin($chr)->Clone;
 		my $list = to_array($vector,$chr->name);
 		$project->setListVariants($list);
+		
 		#next unless $chr->name eq "5";
 		#	my $db = $project->buffer->open_kyoto_db($file_out,'c');
 		#my $variations = $chr->getStructuralVariations();
@@ -416,8 +417,8 @@ sub run_cache_polydiag_fork {
 		while (my $v = $project->nextVariant){
 		
 			my $debug;
-		 $debug  = 1 if $v->name eq "X-108597561-G-T";
-		 warn $v->id." ".$v->name if $debug ==1;
+		 $debug  = 1 if $v->name eq "8-41790037-C-A";
+		 warn $v->id." ".$v->name if $debug == 1;
 		#foreach my $v ( @{$variations} ) {
 			#next if $v->getChromosome->name ne $chr->name;
 		
@@ -427,11 +428,30 @@ sub run_cache_polydiag_fork {
 			#$debug = 1 if $v->id eq "14_93670213_A_AT";
 			#die() if $debug;
 			#warn $ii++;
-
+			
 			my $ok;
 			my $transcripts = $v->getTranscripts;
+			if ($debug){
+				my $vp =  $rocksdb_pv->get_polyviewer_variant($v->global_vector_id);
+				my $trs = $vp->{hgenes}->{ENSG00000083168_8}->{tr};
+				foreach my $t4 (@$trs){
+					warn $t4->{name};
+				}
+				warn "------";
+				foreach my $tr ( @{$transcripts} ) {
+					warn $tr->name;
+					}
+			#	my $v1 = $project->newVariant($v->name);
+			#	warn $v1->name;
+			#	my $t3 = $v1->getTranscripts;
+			#	foreach my $tr ( @{$t3} ) {
+			#		warn $tr->name;
+			##	die();
+			}
 			foreach my $tr ( @{$transcripts} ) {
-				warn $tr->id if $debug;
+				
+				warn $v->name()." ".$tr->id." ENST00000426524" if $debug;
+				#die() if $tr->id =~ /ENST00000426524/;
 				#warn $tr->id();
 				#next unless exists $tbundle->{ $tr->name };
 				$ok = 1;
@@ -449,6 +469,7 @@ sub run_cache_polydiag_fork {
 				##############################################
 				#		$db->set($id,freeze $h );
 				push( @{ $vtr->{ $tr->id } }, $v->id );
+				#warn Dumper $h if $debug == 1;
 				push(@$hh,$h);
 				$th{ $tr->id }++;
 			}

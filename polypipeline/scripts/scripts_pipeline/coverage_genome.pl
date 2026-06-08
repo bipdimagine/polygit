@@ -20,7 +20,6 @@ use Scalar::Util qw(looks_like_number);
 use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use colored;
-use Bio::DB::Sam;
 use Parallel::ForkManager;
 use String::ProgressBar;
 use Set::IntSpan::Fast::XS;
@@ -91,20 +90,30 @@ $pm->run_on_finish(
 );
 
 $project->getChromosomes;
-	$project->buffer->dbh_deconnect();
+$project->preload();
+	#$project->buffer->dbh_deconnect();
+	$project->disconnect();
+	
 	my @tall = (0) x (50_000);
 	my $id = time;
 foreach my $chr (@{$project->getChromosomes}) {
+	warn $chr->name();
 	$id ++;
 	$process->{$id} = 1;
 	my $pid = $pm->start and next;
 	
-	#$project->buffer->dbh_reconnect();
 	my $intspan = $chr->getExtentedGenomicSpan(5000);
+#	if ($chr->name eq "Y"){
+#		my $gene = $project->newGene("SRY");
+#		warn $gene->start." ".$gene->end;
+#	}
+	warn $chr->name." ".$intspan->as_string if $chr->name eq "Y";
 	my $regions = $chr->chunk(50_000);
 	my $nb;
+	warn $dir;
 	my $fb =  GenBoBinaryFile->new(name=>$chr->name,dir=>$dir,mode=>"w");
 	foreach my $r (@$regions){
+		#warn Dumper $r if $chr->name eq "Y";
 		$nb ++;
 		my $rspan =  Set::IntSpan::Fast::XS->new();
 		$rspan->add_range($r->{start},$r->{end});
@@ -123,6 +132,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 			
 		}
 		my $gc =  GenBoCoverageSamtools->new(chromosome=>$chr, patient=>$patient, start=>$r->{start}, end=>$r->{end});
+		warn $r->{start}." ".$r->{end}.join(";",@{$gc->array} )if $chr->name eq "Y";
 		$fb->putDepth($chr->name,$r->{start},$r->{end},$gc->array);
 	}
 	$fb->save_index();
@@ -139,7 +149,7 @@ my $fbout =  $patient->getNoSqlDepth("c");#GenBoBinaryFile->new(name=>$patient->
 warn $fbout->no->filename;
 $fbout->no->put("toto","titi");
 $fbout->close();
-
+warn "END !!!!";
 $fbout =  $patient->getNoSqlDepth("c");#GenBoBinaryFile->new(name=>$patient->name,dir=>$dir,mode=>"c");
 
 foreach my $chr (@{$project->getChromosomes}){
@@ -160,7 +170,7 @@ foreach my $chr (@{$project->getChromosomes}){
 }
 
 $fbout->close();
-warn "end";
+
 exit(0);	
 
 

@@ -4,7 +4,7 @@ use Storable qw(thaw retrieve);
 use Moo;
 use Bit::Vector;
 use Bit::Vector::Overload;
-use Bio::DB::Sam;
+#
 use Data::Dumper;
 use Carp;
 extends 'GenBoFamily', 'GenBoCache';

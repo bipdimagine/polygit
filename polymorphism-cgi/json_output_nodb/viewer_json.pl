@@ -15,8 +15,8 @@ use Data::Dumper;
 use Tabix;
 use export_data;
 use Sys::Hostname;
-use Bio::DB::Sam; 
 use get_variations;
+#
 use Set::IntSpan::Fast::XS;
 use Storable qw/freeze thaw nfreeze nstore_fd nstore retrieve/;
 #use Tabix;

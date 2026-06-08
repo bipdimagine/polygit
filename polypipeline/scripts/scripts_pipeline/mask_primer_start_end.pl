@@ -12,7 +12,6 @@ use Parallel::ForkManager;
 my $bam_file;
 my $file_primer;
 my $fork;
- use Bio::DB::Sam;
  
 GetOptions(
 	'file=s'  	=> \$bam_file,

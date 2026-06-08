@@ -5,7 +5,6 @@ use lib "$RealBin";
 use Moo;
 use Data::Dumper;
 use Parallel::ForkManager;
-use Bio::DB::Sam;
 use Storable qw(store retrieve freeze thaw);
 use IO::Compress::Gzip qw(gzip $GzipError) ;
 use IO::Uncompress::Gunzip qw(gunzip $GunzipError) ;
@@ -77,6 +76,7 @@ has categories => (
 					large_duplication => 1,
 					large_insertion => 1,
 					junction => 1,
+					inversion => 1,
 				}
 			},
 			genes => {

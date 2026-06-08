@@ -8,7 +8,6 @@ use GenBoPcrMultiplex;
 use QueryVcf;
 use QueryJunctionFile;
 use File::Util;
-use Bio::DB::Sam;
 use Storable;
 use validationQuery;
 use Compress::Snappy;
@@ -332,6 +331,7 @@ has bio_db_sam => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
+		confess();
 		my $bam  = $self->getBamFile();
 		return unless -e $bam;
 		my $sam = Bio::DB::Sam->new( -bam => $bam );
