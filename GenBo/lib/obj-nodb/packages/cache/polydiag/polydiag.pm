@@ -20,6 +20,7 @@ use POSIX qw(strftime);
 use JSON;
 use Compress::Snappy;
 use preload_coverage;
+use GenBoNoSqlRocksTinyPolyviewerVariant;
 use Data::Dumper;
 use Carp;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
