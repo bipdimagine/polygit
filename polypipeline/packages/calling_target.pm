@@ -7,6 +7,7 @@ use Data::Dumper;
 use Data::Printer;
 use POSIX ;
 #use colored;
+use Bio::DB::Sam;
 use threads;
 use Thread::Queue;
 use List::MoreUtils qw(part natatime);
