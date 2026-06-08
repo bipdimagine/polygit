@@ -38,6 +38,13 @@ has buffer => (
 	}
 );
 
+has use_phenotype => (
+	is		=> 'rw',
+	lazy    => 1,
+	#default => sub { return 'intellectual disability'; }
+	default => sub { return 'heart'; }
+);
+
 has xls_export_session => (
 	is		=> 'rw',
 	lazy    => 1,
@@ -1000,6 +1007,7 @@ sub get_score_variant_from_gene_without_patient {
 					$scaled_score += 0.5 if $gac < 100 ;
 					$scaled_score ++ if $gac < 30;
 				}
+				$scaled_score += $gene->score($self->use_phenotype());
 				$max_scaled_score = $scaled_score if $max_scaled_score < $scaled_score;
 			}
 		}
@@ -1087,6 +1095,7 @@ sub get_score_variant_from_gene_without_patient {
 		if ($max_score_pat > $max_score) {
 			$max_score = $max_score_pat;
 		}
+		$max_gene_score += $gene->score();
 		$h_var_scores->{$var->id()} = $max_score;
 		$max_gene_score = $max_score if $max_gene_score < $max_score;
 	}

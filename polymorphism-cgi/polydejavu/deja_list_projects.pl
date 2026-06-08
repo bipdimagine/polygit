@@ -96,7 +96,7 @@ $out .= qq{<th data-field="description" data-filter-control="input" data-filter-
 $out .= $cgi->end_Tr();
 $out .= "</thead>";
 $out .= "<tbody>";
-my ($h_p, $h_c);
+my ($h_p, $h_c, $h_my_phenotypes);
 my $hCapturesNames;
 my $hCapturesNamesProject;
 my @lProjectNames = reverse sort keys %{$hProjects};
@@ -104,6 +104,7 @@ my $i_p = 0;
 
 my $dir_pr = $buffer_init->config_path("root","dejavu")."/HG38/variations/rocks/";
 my $ro_projects = GenBoNoSqlRocks->new(mode=>"r",dir=>$dir_pr, name=>"projects");
+my $query_phenotypes = $buffer_init->queryPhenotype();
 
 my $nb_proj_ok = 0;
 foreach my $project_name (@lProjectNames) {
@@ -180,6 +181,17 @@ foreach my $project_name (@lProjectNames) {
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$id</span></center>");
 	$h_p->{$project_name} .=  $cgi->td("<center><span $style>$description</span></center>");
 	$h_p->{$project_name} .= $cgi->end_Tr();
+	
+	foreach my $pheno_id (@{$query_phenotypes->getPhenotypesIdFromProjectId($id)}) { $h_my_phenotypes->{$pheno_id}++; }
+}
+
+my ($max_phen, $my_favorite_phenotype_id, $my_favorite_phenotype_name);
+foreach my $pheno_id (keys %$h_my_phenotypes) {
+	my $nb = $h_my_phenotypes->{$pheno_id};
+	if ($nb > $max_phen) {
+		$max_phen = $nb;
+		$my_favorite_phenotype_id = $pheno_id;
+	}
 }
 
 if ($sort_by_captures) {
@@ -228,6 +240,7 @@ foreach my $pheno_id (@{$buffer_init->queryPhenotype->getAllPhenotypes()}) {
 	my $concept = $h->{$pheno_id}->{concept};
 	$h_pheno->{$name} = $name;
 	if ($concept and $concept ne '') { $h_pheno->{$name} .= ';'.$concept; }
+	if ($my_favorite_phenotype_id eq $pheno_id) { $my_favorite_phenotype_name = $name; }
 }
 
 my $out_phenos;
@@ -237,8 +250,12 @@ $out_phenos .= qq{<option value=''><span></span></option>};
 foreach my $phenotype (sort keys %$h_pheno) {
 	my $name = lc($phenotype);
 	$name = ucfirst($name);
+	my $checked = '';
+	if (lc($phenotype) eq lc($my_favorite_phenotype_name)) {
+		$checked = 'selected';
+	}
 	my $value = $h_pheno->{$phenotype};
-	$out_phenos .= qq{<option value='$value'><span>$name</span></option>};
+	$out_phenos .= qq{<option value='$value' $checked><span>$name</span></option>};
 }
 $out_phenos .= qq{</select>};
 $out_phenos .= qq{</div>};
@@ -250,6 +267,7 @@ $hRes->{list_projects}= \@lProjectNames;
 $hRes->{list_captures}= \@lCapturesNames;
 $hRes->{html_list_captures}=$out_captures;
 $hRes->{html_list_phenotypes}=$out_phenos;
+$hRes->{favorite_phenotype_name} = $my_favorite_phenotype_name;
 $hRes->{nb_projects_ok} = $nb_proj_ok;
 
 my $json_encode = encode_json $hRes;

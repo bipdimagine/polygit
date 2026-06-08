@@ -844,6 +844,7 @@
 			var nb_projects_all;
 			var list_projects_names;
 			var initialized_projects = false;
+			var favorite_phenotype_name;
 			function get_lists_projects(sort_by) {
 				document.getElementById("content_res_projects").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'> Please wait...";
 				var url2 = url_path + "polydejavu/deja_list_projects.pl?user=" + username + "&pwd=" + pwd;
@@ -857,7 +858,8 @@
 							var myNode = document.getElementById("content_res_projects");
 					    	var myPanel = $(val);
 							myPanel.appendTo(myNode);
-							document.getElementById("content_res_projects").style.display = "block";	    					$('#table_projects_found').bootstrapTable({
+							document.getElementById("content_res_projects").style.display = "block";
+							$('#table_projects_found').bootstrapTable({
 							    maintainMetaData: true,
 							    idField: 'name',
 							    showPageList: false
@@ -877,6 +879,16 @@
 			    		}
 			    		if (key == 'list_projects') {
 			    			list_projects_names = $(val);
+			    		}
+			    		if (key == 'html_list_phenotypes') {
+							document.getElementById("content_res_phenotypes").innerHTML = "";
+							var myNode = document.getElementById("content_res_phenotypes");
+					    	var myPanel = $(val);
+							myPanel.appendTo(myNode);
+							document.getElementById("content_res_phenotypes").style.display = "block";
+			    		}
+			    		if (key == 'favorite_phenotype_name') {
+			    			favorite_phenotype_name = val;
 			    		}
   					});
 			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
@@ -1152,6 +1164,11 @@
 			    if (found_excluded == true) {
 			    	options['exclude_projects'] = listExcludedProjects.join(',');
 			    }
+			    
+			    var filter_phenotype = document.getElementById("form_phenotypes").value;
+			    var list_tmp = filter_phenotype.split(';');
+			    options['use_phenotype'] = list_tmp[0];
+			    
 			    launchJob(url, options);
 		    }
 		    
@@ -1736,7 +1753,14 @@
 		                	<center>
 		                		<table>
 		                			<tr>
-		                				<td>
+										<td><span style="font-size:13px;">Use Phenotype</span></td>
+										<td>
+											<div style="height:99%;width:99%;table-layout: fixed;font-size:9px !important;" id="content_res_phenotypes" jsId="content_res_phenotypes' data-dojo-type="dijit/layout/ContentPane"></div>
+										</td>                			
+		                			</tr>
+		                			<tr><td colspan='2'><br><br></td></tr>
+		                			<tr>
+		                				<td colspan='2'>
 		                					<table>
 		                						<tr>
 		                							<td>
@@ -1751,13 +1775,13 @@
 		                				</td>
 		                			</tr>
 		                			<tr>
-										<td>
+										<td colspan='2'>
 											<div style="height:99%;width:99%;table-layout: fixed;font-size:9px !important;" id="content_res_projects" jsId="content_res_projects" data-dojo-type="dijit/layout/ContentPane"></div>
 										</td>                			
 		                			</tr>
 		                			
 		                			<tr>
-		                				<td>
+		                				<td colspan='2'>
 		                					<center>
 												<button type="button" class="btn btn-success" style="font-size:11px;margin:5px;" onclick='select_all_projects();'>Add ALL Projects</button>
 		                						<button type="button" class="btn btn-danger" style="font-size:11px;margin:5px;" onclick='unselect_all_projects();'>Exclude ALL Projects</button>

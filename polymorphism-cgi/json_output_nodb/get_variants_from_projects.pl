@@ -107,6 +107,7 @@ my $only_strict_ill = $cgi->param('only_strict_ill');
 my $models = $cgi->param('models');
 my $region = $cgi->param('region');
 my $only_genes = $cgi->param('only_genes');
+my $use_phenotype = $cgi->param('use_phenotype');
 my $exclude_projects = $cgi->param('exclude_projects');
 
 my $export_xls = $cgi->param('export_xls');
@@ -142,6 +143,7 @@ print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
 
 $dejavu_variants->fork($fork);
 
+$dejavu_variants->use_phenotype($use_phenotype) if $use_phenotype;
 $dejavu_variants->max_dejavu($max_dejavu) if $max_dejavu;
 $dejavu_variants->max_dejavu_ho($max_dejavu_ho) if $max_dejavu_ho;
 $dejavu_variants->max_gnomad_ac($max_gnomad_ac) if $max_gnomad_ac;
@@ -555,6 +557,9 @@ if ($h_errors_found) {
 
 
 $html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+$html .= "<td><b><nobr>Score Phenotype</nobr></b>&nbsp;&nbsp;</td>";
+$html .= "<td><button type='button' class='btn btn-outline-danger' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:red;'>$use_phenotype</span></b></button></td>";
+
 my $gencode_version = $project->gencode_version();
 $html .= "<td><b>Gencode</b>&nbsp;&nbsp;</td>";
 $html .= "<td><button type='button' class='btn btn-outline-success' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>$gencode_version</span></b></button></td>";
