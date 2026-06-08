@@ -654,17 +654,20 @@ sub export_xls {
 				$h->{'patient'} = $h_infos->{patient_name};
 				$h->{'model'} = $h_infos->{model};
 				$h->{'he_ho'} = $h_infos->{heho};
+				$h->{'gnomad ac'} = $h_infos->{'gnomad ac'};
+				$h->{'gnomad ho'} = $h_infos->{'gnomad ho'};
+				$h->{'consequence'} = $h_infos->{'consequence'};
 				my ($ac, $ratio) = split(', ', $h_infos->{ratio});
 				my $dp = $h_infos->{dp};
 				$ac =~ s/Reads://;
 				$ratio =~ s/Ratio://;
-				$h->{'ac'} = $ac;
+				$h->{'nb reads'} = $ac;
 				$h->{'dp'} = $dp;
 				$h->{'ratio'} = $ratio.'%';
 				push(@list_datas_patients, $h);
 			}
 		}
-		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'AC', 'Ratio');
+		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'Nb Reads', 'Ratio', 'gnomAD AC', 'gnomAD HO', 'Consequence');
 		$dejavu_variants->xls_export_session->add_page('Projects Patients', \@lLinesHeaderPatients, \@list_datas_patients);
 	}
 	$dejavu_variants->xls_export_session->export();
@@ -752,7 +755,12 @@ sub save_variants_in_session_export {
 			$chr_id = 25 if lc($chr_id) eq 'mt';
 			$h_variants->{$chr_id}->{$var_id} = $h; 
 			if (exists $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}) {
-				$h_patients->{$var_id} = $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
+				foreach my $h_tmp (@{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}}) {
+					$h_tmp->{'gnomad ac'} = $var->getGnomadAC();
+					$h_tmp->{'gnomad ho'} = $var->getGnomadHO();
+					$h_tmp->{'consequence'} = $var->variationTypeInterface();
+					push(@{$h_patients->{$var_id}}, $h_tmp);
+				}
 			}
 		}
 	}
