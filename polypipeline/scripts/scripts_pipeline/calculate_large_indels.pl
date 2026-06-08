@@ -14,7 +14,7 @@ use threads;
 use Thread::Queue;
 use Set::IntSpan::Fast::XS;
 #use QueryMoose;
-use Tabix;
+##@@##
 use Parallel::ForkManager;
 use IO::Handle;
 use List::Util qw( shuffle sum max min);

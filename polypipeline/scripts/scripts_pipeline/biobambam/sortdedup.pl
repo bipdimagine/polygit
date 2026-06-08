@@ -12,7 +12,7 @@ use Getopt::Long;
 use Carp;
  use JSON::XS;
  use List::MoreUtils qw(natatime uniq);
- use Tabix;
+ ##@@##
  
  my $buffer = new GBuffer;
 my $project_name= "NGS2017_1534";

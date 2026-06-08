@@ -25,7 +25,6 @@ use GBuffer;
 use Getopt::Long;
 use Carp;
 use Set::Intersection;
-use Tabix;
 
 use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);

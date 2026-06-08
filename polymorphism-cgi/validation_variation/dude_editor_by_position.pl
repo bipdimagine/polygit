@@ -38,7 +38,6 @@ use List::MoreUtils qw{ natatime };
 use Getopt::Long;
 use Carp;
 use Set::Intersection;
-use Tabix;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Spreadsheet::WriteExcel;
 use POSIX;

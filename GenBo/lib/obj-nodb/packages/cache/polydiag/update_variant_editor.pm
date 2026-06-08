@@ -12,9 +12,8 @@ use List::Util qw( max min sum);
 use Carp qw(confess croak);
 use JSON::XS;
 use Data::Dumper;
-#use Bio::DB::HTS::VCF;
+#use Bio::DB::HTS::VCF;w
 #use Bio::DB::HTS::Tabix;
-use Tabix;
 use polyweb_dude;
 use Number::Format qw(:subs);
 use List::MoreUtils qw{ natatime };

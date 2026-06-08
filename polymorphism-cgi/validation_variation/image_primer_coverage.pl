@@ -20,7 +20,7 @@ use GBuffer;
 use Getopt::Long;
 use Carp;
 use Set::Intersection;
-use Tabix;
+##@@##
 use Storable qw/store thaw retrieve/;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use coverage;

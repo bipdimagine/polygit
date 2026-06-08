@@ -13,7 +13,6 @@ use GBuffer;
 use Data::Dumper;
 use Getopt::Long;
 use Parallel::ForkManager;
-use Tabix;
 use JSON;
 use export_data;
 use Math::Combinatorics;

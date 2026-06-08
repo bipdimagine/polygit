@@ -13,7 +13,7 @@ use Getopt::Long;
 use Carp;
  use JSON::XS;
  use List::MoreUtils qw(natatime uniq);
- use Tabix;
+ ##@@##
  
  my $buffer = new GBuffer;
 my $project_name= "NGS2017_1534";
@@ -52,14 +52,13 @@ die("hey man,  no fork ") unless $fork;
 
  my $rootfile;
  my $fasta = $project->getGenomeFasta();
- 
- warn $dir_out;
 # foreach my $chr (@{$project->getChromosomes}){
  #	system("mkdir $dir_out/fasta" );
  #	system("$samtools faidx $fasta ".$chr->fasta_name." >$dir_out/fasta/".$chr->fasta_name.".fa");
  #}
  my $pm = new Parallel::ForkManager($fork);
-   	my $singularity_cmd  = qq{$singularity exec --bind $dirbam:/databam --bind $dir_out:/data $cnvnator_singularity };
+   	my $singularity_cmd  = qq{$singularity exec --bind /data-isilon/:/data-isilon --bind /data-pure/:/data-pure --bind $dirbam:/databam --bind $dir_out:/data  $cnvnator_singularity };
+   	my $singularity_cmd  = qq{$singularity exec --bind /data-isilon/:/data-isilon --bind /data-pure/:/data-pure --bind $dirbam:/databam --bind $dir_out:/data --bind /data-isilon/public-data/genome/HG38_DRAGEN//fasta/:/data/fasta/ $cnvnator_singularity};
    	system("mkdir $dir_out/fasta" ) unless -e "$dir_out/fasta";
    	
   foreach my $chr (@{$project->getChromosomes}){
@@ -70,8 +69,8 @@ die("hey man,  no fork ") unless $fork;
   
  	system("$samtools faidx $fasta ".$chr->fasta_name." >$dir_out/fasta/".$chr->fasta_name.".fa");
   	my $rootfile = $patient->name.".$chrname.root";
- 	my $cmd = qq{$singularity_cmd /usr/local/bin/cnvnator -root /data/$rootfile  -tree /databam/$bamfile  -call 500   -chrom $chrname  -d /data/fasta/};
-  	system($cmd) unless -e $dir_out."/".$rootfile;
+ 	my $cmd = qq{$singularity_cmd /usr/local/bin/cnvnator -root /data/$rootfile  -tree /databam/$bamfile  -call 1000   -chrom $chrname  -d /data/fasta/};
+  	system($cmd);# unless -e $dir_out."/".$rootfile;
   		my $cmd2 = qq{$singularity_cmd /usr/local/bin/cnvnator -root /data/$rootfile  -his 1000     -chrom $chrname  -d /data/fasta/};
   		my $cmd3 = qq{$singularity_cmd /usr/local/bin/cnvnator -root /data/$rootfile  -stat 1000     -chrom $chrname  -d /data/fasta/};
   		my $cmd4 = qq{$singularity_cmd /usr/local/bin/cnvnator -root /data/$rootfile  -partition 1000     -chrom $chrname  -d /data/fasta/};

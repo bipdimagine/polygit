@@ -12,14 +12,12 @@ use lib "$Bin/../packages/layout";
 use GBuffer;
 use GenBoStorable;
 use Data::Dumper;
-use Tabix;
 use export_data;
 use Sys::Hostname;
 use get_variations;
 #
 use Set::IntSpan::Fast::XS;
 use Storable qw/freeze thaw nfreeze nstore_fd nstore retrieve/;
-#use Tabix;
 
 my %types = ( variations => "variations" );
 

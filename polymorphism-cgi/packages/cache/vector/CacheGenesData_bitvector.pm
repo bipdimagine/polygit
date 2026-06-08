@@ -12,7 +12,6 @@ use Bit::Vector;
 use Bit::Vector::Overload;
 use Set::IntRange; 
 use CacheGenesData_nodb;
-use Tabix;
 use JSON::XS;
 use POSIX qw(strftime);
 use lib "$RealBin";
@@ -21,7 +20,6 @@ use CacheDiag;
 use validationQuery;
 use GenBoNoSql;
 use String::ProgressBar;
-use Tabix;
 use GenBoNoSqlLmdb;
 
 my @lSubdata_filters = ('all', 'exome-intronic', 'exome');

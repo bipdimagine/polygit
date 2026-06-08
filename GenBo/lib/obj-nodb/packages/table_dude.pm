@@ -10,7 +10,6 @@ use Data::Dumper;
 
 #use Bio::DB::HTS::VCF;
 #use Bio::DB::HTS::Tabix;
-use Tabix;
 use polyweb_dude;
 use List::MoreUtils qw{ natatime };
 use JSON::XS;

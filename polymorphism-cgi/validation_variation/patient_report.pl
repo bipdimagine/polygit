@@ -33,7 +33,7 @@ use GBuffer;
 use Getopt::Long;
 use Carp;
 use Set::Intersection;
-use Tabix;
+##@@##
 use Storable qw/thaw/;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use coverage;
@@ -4012,17 +4012,25 @@ sub return_list_variants {
 	$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
  	my $data = [split(";",$string)];
  	if (scalar(@$data)==0 ){
+ 	
  		my $v = $tr->getGene->getCurrentVector & $patient->getVectorOrigin($tr->getChromosome);
  		if ($v->Norm > 0) {
+ 			warn $patient->name." ".$tr_id;
  			my $array = $tr->transformBitVectorToList($v);
  			my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$patient,project=>$project);
  			foreach my $a  (@$array){
  				my $vp =  $rocksdb_pv->get_polyviewer_variant($tr->getChromosome->name."!".$a);
+ 				#warn $v->name;
  				confess() unless $vp;
+ 				
  				my $htr = $vp->{hgenes}->{$tr->getGene->id}->{tr};
  				if (exists $vp->{hgenes}->{$tr->getGene->id} ){
+ 					
  					my @t = grep {$tr->name eq $_->{name}} @{$vp->{hgenes}->{$tr->getGene->id}->{tr}};
+ 					warn  $vp->name if (@t) ;
+ 					#warn Dumper  @t if (@t) ;
  					confess() if (@t) ;
+ 					
  				}
  			}
  			$rocksdb_pv->close();

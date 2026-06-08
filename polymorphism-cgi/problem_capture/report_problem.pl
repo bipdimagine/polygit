@@ -32,7 +32,6 @@ use GBuffer;
 use Getopt::Long;
 use Carp;
 use Set::Intersection;
-use Tabix;
 use coverage;
 use validationQuery;
 use Date::Tiny;

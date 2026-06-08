@@ -34,6 +34,8 @@ my $user = $cgi->param('user');
 my $gene_id = $cgi->param('gene');
 my $project = $buffer->newProjectCache(-name=>$project_name);
 die() unless $project;
+warn $project->validation_db;
+die();
 my $vquery = QueryValidationAcmg->new(dbh=>$buffer->dbh,database=>$project->validation_db());
 
 my $patient = $project->getPatient($sample);

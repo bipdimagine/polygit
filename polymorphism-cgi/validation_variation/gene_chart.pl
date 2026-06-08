@@ -22,8 +22,6 @@ use Data::Dumper;
 use GBuffer;
 use Getopt::Long;
 use Carp;
-use Set::Intersection;
-use Tabix;
 use Storable qw/thaw/;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use coverage;
@@ -85,7 +83,6 @@ foreach my $patient ( @{$patients}){
 			
 		}
 		my $data = $patient->meanDepth($exon->getChromosome->name,$exon->start,$exon->end);
-		warn $data;
 		#$exon->getTranscript()->get_coverage($patient)->coverage($exon->start,$exon->end);
 		#my $nn = $data->{nb};
 		#if ($nn >0){

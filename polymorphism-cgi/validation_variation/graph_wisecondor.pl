@@ -23,8 +23,6 @@ use Data::Dumper;
 use GBuffer;
 use Getopt::Long;
 use Carp;
-use Set::Intersection;
-use Tabix;
 use Storable qw/thaw/;
 use coverage;
 my $nb_gene_by_patient = 3;

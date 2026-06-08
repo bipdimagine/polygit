@@ -35,7 +35,7 @@ use List::MoreUtils qw{ natatime };
 use Getopt::Long;
 use Carp;
 use Set::Intersection;
-use Tabix;
+##@@##
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Spreadsheet::WriteExcel;
 use POSIX;
@@ -976,8 +976,9 @@ sub get_rocksdb_mce_polyviewer_variant {
 		 $sql = qq{ SELECT a.variant_index, a.gene_name, b.promoterAI FROM '$parquet' a LEFT JOIN '$parquet_promoter' b ON a.variant_rocksdb_id = b.rocksdb_id and a.gene_name = b.geneid  };
 	}
 	if ($revio_flag ){
-		my $parquet_promoter = $project->get_promoterAI_filtred_parquet();
-		 $sql = $sql.qq{ LEFT JOIN '/data-pure/public-data/dejavu/HG38/revio/revio.parquet' c ON a.variant_rocksdb_id = c.rocksdb_id};
+		my $revio_parquet = $project->deja_vu_revio()."/revio.parquet";
+		confess() unless -e $revio_parquet;
+		 $sql = $sql.qq{ LEFT JOIN '$revio_parquet' c ON a.variant_rocksdb_id = c.rocksdb_id};
 		 
 	}
 	

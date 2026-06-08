@@ -32,7 +32,6 @@ use Set::Intersection;
 use GenBoFilter;
 use GenBoProjectQuery;
 use Set::IntSpan::Fast::XS ;
-use Tabix;
 use Set::Intersection;
 use JSON;
 

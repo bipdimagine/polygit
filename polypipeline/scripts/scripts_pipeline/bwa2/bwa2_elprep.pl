@@ -13,7 +13,7 @@ use Getopt::Long;
 use Carp;
  use JSON::XS;
  use List::MoreUtils qw(natatime uniq);
- use Tabix;
+ ##@@##
 
  
  my $buffer = new GBuffer;
