@@ -245,6 +245,15 @@ function load_polyviewer_export_xls(mode) {
 	dijit.byId('dialog_xls_export_choice').show();
 }
 
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.click();
+            observer.unobserve(entry.target);
+        }
+    });
+});
+
 function load_polyviewer_next_page(args){
 	var url;
 	var argsPost = {};
@@ -888,6 +897,10 @@ function tabPatients(items , request ) {
 			            }
 			            else {
 			            	console.log("Chargement Patient Actif OK :", this.patient);
+				            	setTimeout(dojo.hitch(this, function () {
+								const bouton = document.getElementById("b_others_genes_"+this.patient[0]);
+							    observer.observe(bouton);
+							}), 500);
 		            	}
 			        };
 			        this._retryCount = 0;

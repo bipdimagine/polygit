@@ -1868,7 +1868,8 @@ sub panel_gene {
 				#$dataset = "?dataset=gnomad_r2_1" if $gene and $gene->getProject->getVersion() =~ /HG19/;
 				$dataset = "?dataset=gnomad_r2_1" if $patient and $patient->getProject->getVersion() =~ /HG19/;
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
- 				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
+ 				#my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
+ 				my $popup_pli = "";
  				if ($gene) {
  					my ($gidtmp,$gtmp) = split('_',$gene->id());
  					$out .=qq{<a class="btn btn-primary btn-xs btn-gene" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
