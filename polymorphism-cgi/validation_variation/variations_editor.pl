@@ -538,7 +538,7 @@ if ($cgi->param('phenotype')) {
 	}
 }
 
-my $limit = 50;
+my $limit = 75;
 foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
 	$nb2 ++;
 	next if ($cgi->param('view_others_genes') and $nb2 <= $limit);
