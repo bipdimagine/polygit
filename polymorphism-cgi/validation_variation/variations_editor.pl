@@ -524,7 +524,6 @@ my $sct = time;
 warn "end max_score :".abs(time -$sct);
 	my $vgenes =[];
 	my $nb2 = 0;
-	my $limit =300; 
 	my $hchr; 
 $sct = time;
 
@@ -539,20 +538,22 @@ if ($cgi->param('phenotype')) {
 	}
 }
 
+my $limit = 50;
 foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
-		if ($gene_name_filtering) {
-			if ($gene_name_filtering eq $g->{name} or $gene_id_filtering eq $g->{id}) { 
-				$hchr->{$g->{chr_name}} ++;
-				push(@$vgenes,$g);
-			}
-		}
-		else {
+	$nb2 ++;
+	next if ($cgi->param('view_others_genes') and $nb2 <= $limit);
+	if ($gene_name_filtering) {
+		if ($gene_name_filtering eq $g->{name} or $gene_id_filtering eq $g->{id}) { 
 			$hchr->{$g->{chr_name}} ++;
 			push(@$vgenes,$g);
 		}
-		$nb2 ++;
-		last if $nb2 > $limit;
 	}
+	else {
+		$hchr->{$g->{chr_name}} ++;
+		push(@$vgenes,$g);
+	}
+	last if not $cgi->param('view_others_genes') and $nb2 >= $limit;
+}
 $genes = $vgenes;	
 $genes = [] unless $genes;
 warn "end sort  :".abs(time -$sct);
@@ -561,28 +562,28 @@ $t = time;
 $ztime .= ' polycyto:' . ( abs( time - $t ) );
 $t     = time;
 
-#my $stdout_nav_bar = tee_stdout {
+if (not $cgi->param('view_others_genes')) {
 	print"<br><div style='float:right;'>$cache_icon</div><br>"; 
-    update_variant_editor::printNavBar( $patient, $genes, $statistics, $version,$date, $user, $ztime,update_variant_editor::compose_string_filtering($cgi) );
+	update_variant_editor::printNavBar( $patient, $genes, $statistics, $version,$date, $user, $ztime,update_variant_editor::compose_string_filtering($cgi) );
 	update_variant_editor::print_hotspot( $patient, $panel );
-#};
-warn "end hotspot  :".abs(time -$t);
-my $stdoutcnv;
+	warn "end hotspot  :".abs(time -$t);
 
-if (not $patient->isGenome() ) {
-	my $no_cache;
-	$no_cache = $patient->get_lmdb_cache("w");
-	my $cache_dude_id = "cnv-html-exome::" . $project_name . "-" . $patient->name . "-";
-	my $text = $no_cache->get_cache($cache_dude_id);
-	if ($text) {
-		print $text;
+	my $stdoutcnv;
+	if (not $patient->isGenome() ) {
+		my $no_cache;
+		$no_cache = $patient->get_lmdb_cache("w");
+		my $cache_dude_id = "cnv-html-exome::" . $project_name . "-" . $patient->name . "-";
+		my $text = $no_cache->get_cache($cache_dude_id);
+		if ($text) {
+			print $text;
+		}
+		else {
+			$stdoutcnv = tee_stdout { update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel ); };
+			$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400);
+			warn ""
+		}
+		$no_cache->close();
 	}
-	else {
-		$stdoutcnv = tee_stdout { update_variant_editor::print_cnv_exome( $patient, $level_dude, $panel ); };
-		$no_cache->put_cache_text($cache_dude_id,$stdoutcnv,2400);
-		warn ""
-	}
-	$no_cache->close();
 }
 	
 $t     = time;
@@ -594,6 +595,7 @@ $t     = time;
 		$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ,$buffer_polyviewer) ;
 	#	warn "dsdssd " unless $genes;
 	#	error("coucou") unless $genes;# == undef;
+		
 	}
 	else {
 		if ($gene_name_filtering ) {
@@ -687,13 +689,36 @@ sub refine_heterozygote_composite_score_fork {
 	print qq{</div>};
 	
 	my $nb_genes = scalar(@{$res->{genes}});
-	
 	foreach my $g (@{$res->{genes}}){
 		print $g->{out} . "\n";
 		delete  $g->{out};
-	#	last if $g->{max_score} < 8 && $nb_genes > 300;
 	}
 	
+	if (not $cgi->param('view_others_genes') and $nb_genes == $limit) {
+		my @args;
+		my @params = $cgi->param();
+		foreach my $p (@params) {
+		    my @values = $cgi->param($p);
+		    foreach my $v (@values) {
+		    	push(@args, "$p=$v");
+		    }
+		}
+		my $cmd_next = join(',', @args);
+		my $b_id_next = 'b_others_genes_'.$patient_name;
+		my $span_id_next = 'span_others_genes_'.$patient_name;
+		print qq{
+			<center>
+				<span id="$span_id_next"></span>
+				<span style="font-size:24px;">
+					<button id="$b_id_next" onClick="load_polyviewer_next_page('$cmd_next');">
+						<span style="margin:3px;">
+							<b>- View others genes -</b>
+						<span>
+					</button>
+				</span>
+			</center>
+		};
+	}
 	return ;
 }
 
@@ -1031,7 +1056,6 @@ sub check_if_columns_exists_in_parquet {
 	return;
 }
 
-#TODO: here filter promoterAI
 sub get_variants_promoterAI_filtred_update {
 	my ($project, $parquet, $where_nopat) = @_;
 	my $array_ref_2 = [];

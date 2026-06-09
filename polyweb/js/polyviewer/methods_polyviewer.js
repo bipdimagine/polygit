@@ -245,6 +245,36 @@ function load_polyviewer_export_xls(mode) {
 	dijit.byId('dialog_xls_export_choice').show();
 }
 
+function load_polyviewer_next_page(args){
+	var url;
+	var argsPost = {};
+	var ltmp = args.split(',');
+	for (var i=0;i<ltmp.length;i++) {
+		var l_this_arg = ltmp[i].split('=');
+		argsPost[l_this_arg[0]] = l_this_arg[1];
+	}
+	argsPost['view_others_genes'] = 1;
+ 	var tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
+	document.getElementById('b_others_genes_'+tab_selected_patient).style.display = 'none';
+	document.getElementById('span_others_genes_'+tab_selected_patient).innerHTML = "<img src='images/polyicons/wait18trans.gif' align='absmiddle'/> <span style='font-size:20px;'> <b><i>Loading others genes...</b></i>";
+ 	$.ajax({
+        url: url_polyviewer,
+        type: "POST",
+        dataType: "html",
+        data: argsPost,
+        success: function(data) {
+            document.getElementById('span_others_genes_'+tab_selected_patient).innerHTML = "";
+            tab_editor_polyviewer[tab_selected_patient].domNode.innerHTML += data;
+        },
+        error: function() {
+            alert("ERROR: please contact bioinformatics platform");
+            dijit.byId('waiting').hide();
+        }
+    });
+	return;
+}
+
+var last_argsPost;
 function load_polyviewer(mode, only_dude,dm){
 	var url;
     var argsPost;
@@ -256,6 +286,7 @@ function load_polyviewer(mode, only_dude,dm){
     else {
 		argsPost = load_polyviewer_args(mode,dm);
     }
+    last_argsPost = argsPost;
    t = "all";
 	if (tab_editor_polyviewer){
      	var tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
