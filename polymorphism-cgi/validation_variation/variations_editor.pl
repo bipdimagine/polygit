@@ -537,11 +537,21 @@ if ($cgi->param('phenotype')) {
 		$g->{'max_score'} = $init_score_max - $init_score_gene + $g->{'score'};
 	}
 }
+my $limit = 80;
 
-my $limit = 75;
-foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
+my @list_genes_sorted = sort{$b->{max_score} <=> $a->{max_score}} @$genes;
+if ($cgi->param('view_part')) {
+	my $nb_to_del = $limit * ($cgi->param('view_part') - 1);
+	my $nb_del = 0;
+	foreach my $g (@list_genes_sorted) {
+		shift(@list_genes_sorted);
+		$nb_del++;
+		last if $nb_del == $nb_to_del;
+	}
+}
+
+foreach my $g (@list_genes_sorted) {
 	$nb2 ++;
-	next if ($cgi->param('view_others_genes') and $nb2 <= $limit);
 	if ($gene_name_filtering) {
 		if ($gene_name_filtering eq $g->{name} or $gene_id_filtering eq $g->{id}) { 
 			$hchr->{$g->{chr_name}} ++;
@@ -552,7 +562,7 @@ foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes)	{
 		$hchr->{$g->{chr_name}} ++;
 		push(@$vgenes,$g);
 	}
-	last if not $cgi->param('view_others_genes') and $nb2 >= $limit;
+	last if $nb2 >= $limit;
 }
 $genes = $vgenes;	
 $genes = [] unless $genes;
@@ -689,33 +699,42 @@ sub refine_heterozygote_composite_score_fork {
 	print qq{</div>};
 	
 	my $nb_genes = scalar(@{$res->{genes}});
+	my $i = 0;
 	foreach my $g (@{$res->{genes}}){
+		$i++;
 		print $g->{out} . "\n";
+		if ($i == ($limit/2) and $nb_genes == $limit) {
+			my @args;
+			my @params = $cgi->param();
+			foreach my $p (@params) {
+			    my @values = $cgi->param($p);
+			    foreach my $v (@values) {
+			    	push(@args, "$p=$v");
+			    }
+			}
+			if ($cgi->param('view_part')) {
+				my $this_part = $cgi->param('view_part');
+				$this_part++;
+				push(@args, "view_part=$this_part");
+			}
+			else {
+				push(@args, "view_part=2");
+			}
+			
+			my $cmd_next = join(',', @args);
+			my $b_id_next = 'b_others_genes_'.$patient_name;
+			print qq{
+				<center><button id="$b_id_next" onClick="load_polyviewer_next_page('$cmd_next');" loading="lazy"></button></center>
+			};
+		}
 		delete  $g->{out};
 	}
 	
-	if (not $cgi->param('view_others_genes') and $nb_genes == $limit) {
-		my @args;
-		my @params = $cgi->param();
-		foreach my $p (@params) {
-		    my @values = $cgi->param($p);
-		    foreach my $v (@values) {
-		    	push(@args, "$p=$v");
-		    }
-		}
-		my $cmd_next = join(',', @args);
-		my $b_id_next = 'b_others_genes_'.$patient_name;
+	if ($nb_genes == $limit) {
 		my $span_id_next = 'span_others_genes_'.$patient_name;
 		print qq{
 			<center>
 				<span id="$span_id_next"></span>
-				<span style="font-size:24px;">
-					<button id="$b_id_next" onClick="load_polyviewer_next_page('$cmd_next');">
-						<span style="margin:3px;">
-							<b>- View others genes -</b>
-						<span>
-					</button>
-				</span>
 			</center>
 		};
 	}

@@ -249,7 +249,8 @@ const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.click();
-            observer.unobserve(entry.target);
+            //observer.unobserve(entry.target);
+            entry.target.remove();
         }
     });
 });
@@ -272,8 +273,13 @@ function load_polyviewer_next_page(args){
         dataType: "html",
         data: argsPost,
         success: function(data) {
-            document.getElementById('span_others_genes_'+tab_selected_patient).innerHTML = "";
+            document.getElementById('span_others_genes_'+tab_selected_patient).remove();
             tab_editor_polyviewer[tab_selected_patient].domNode.innerHTML += data;
+            console.log("next page for ", tab_selected_patient);
+        	setTimeout(dojo.hitch(this, function () {
+				const bouton = document.getElementById("b_others_genes_"+tab_selected_patient);
+			    observer.observe(bouton);
+			}), 200);
         },
         error: function() {
             alert("ERROR: please contact bioinformatics platform");
@@ -900,7 +906,7 @@ function tabPatients(items , request ) {
 				            	setTimeout(dojo.hitch(this, function () {
 								const bouton = document.getElementById("b_others_genes_"+this.patient[0]);
 							    observer.observe(bouton);
-							}), 500);
+							}), 200);
 		            	}
 			        };
 			        this._retryCount = 0;
