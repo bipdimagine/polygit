@@ -540,7 +540,8 @@ if ($cgi->param('phenotype')) {
 my $limit = 80;
 $limit = 120 if $project->isGenome();
 
-my @list_genes_sorted;;
+my @list_genes_sorted;
+my $nb_sort = 0;
 if ($cgi->param('view_part')) {
 	my $page = int($cgi->param('view_part'));
 	my $nb_to_del = $limit * ($page - 1);
@@ -548,10 +549,13 @@ if ($cgi->param('view_part')) {
 	foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes) {
 		$nb_sort++;
 		push (@list_genes_sorted, $g) if $nb_sort > $nb_to_del;
+		last if $nb_sort == ($nb_to_del + $limit + 5);
 	}
 }
 else {
-	@list_genes_sorted = sort{$b->{max_score} <=> $a->{max_score}} @$genes;
+	foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes) {
+		push (@list_genes_sorted, $g) if $nb_sort < $limit+5;
+	}
 }
 
 foreach my $g (@list_genes_sorted) {
@@ -597,6 +601,11 @@ if (not $cgi->param('view_others_genes')) {
 			warn ""
 		}
 		$no_cache->close();
+	}
+}
+else {
+	foreach my $gene ( @$genes){
+		$gene->{uid} = $gene->{id}."_".int(rand(time)) unless exists $gene->{uid};
 	}
 }
 	
