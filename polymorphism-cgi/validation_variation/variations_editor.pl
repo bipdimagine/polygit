@@ -538,6 +538,7 @@ if ($cgi->param('phenotype')) {
 	}
 }
 my $limit = 80;
+$limit = 120 if $project->isGenome();
 
 my @list_genes_sorted;;
 if ($cgi->param('view_part')) {
@@ -701,6 +702,8 @@ sub refine_heterozygote_composite_score_fork {
 	warn "....";
 	print qq{</div>};
 	
+	my $limit_to_check = ($limit/2);
+	$limit_to_check = ($limit/3) if $project->isGenome();
 	my $nb_genes = scalar(@{$res->{genes}});
 	my $i = 0;
 	foreach my $g (@{$res->{genes}}){
