@@ -266,7 +266,7 @@ function load_polyviewer_next_page(args){
 	argsPost['view_others_genes'] = 1;
  	var tab_selected_patient = return_selected_patient(tab_editor_polyviewer);
 	document.getElementById('b_others_genes_'+tab_selected_patient).style.display = 'none';
-	document.getElementById('span_others_genes_'+tab_selected_patient).innerHTML = "<img src='images/polyicons/wait18trans.gif' align='absmiddle'/> <span style='font-size:20px;'> <b><i>Loading others genes...</b></i>";
+	document.getElementById('span_others_genes_'+tab_selected_patient).innerHTML = "<img src='images/polyicons/wait18trans.gif' align='absmiddle'/> <span style='font-size:20px;color:red;'> <b><i>Loading others genes...</b></i>";
  	$.ajax({
         url: url_polyviewer,
         type: "POST",
