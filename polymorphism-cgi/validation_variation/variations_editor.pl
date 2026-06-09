@@ -539,15 +539,18 @@ if ($cgi->param('phenotype')) {
 }
 my $limit = 80;
 
-my @list_genes_sorted = sort{$b->{max_score} <=> $a->{max_score}} @$genes;
+my @list_genes_sorted;;
 if ($cgi->param('view_part')) {
-	my $nb_to_del = $limit * ($cgi->param('view_part') - 1);
-	my $nb_del = 0;
-	foreach my $g (@list_genes_sorted) {
-		shift(@list_genes_sorted);
-		$nb_del++;
-		last if $nb_del == $nb_to_del;
+	my $page = int($cgi->param('view_part'));
+	my $nb_to_del = $limit * ($page - 1);
+	my $nb_sort = 0;
+	foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes) {
+		$nb_sort++;
+		push (@list_genes_sorted, $g) if $nb_sort > $nb_to_del;
 	}
+}
+else {
+	@list_genes_sorted = sort{$b->{max_score} <=> $a->{max_score}} @$genes;
 }
 
 foreach my $g (@list_genes_sorted) {

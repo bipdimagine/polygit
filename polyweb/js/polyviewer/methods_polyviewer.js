@@ -275,7 +275,6 @@ function load_polyviewer_next_page(args){
         success: function(data) {
             document.getElementById('span_others_genes_'+tab_selected_patient).remove();
             tab_editor_polyviewer[tab_selected_patient].domNode.innerHTML += data;
-            console.log("next page for ", tab_selected_patient);
         	setTimeout(dojo.hitch(this, function () {
 				const bouton = document.getElementById("b_others_genes_"+tab_selected_patient);
 			    observer.observe(bouton);
