@@ -482,63 +482,75 @@ $buffer->disconnect();
 #constructChromosomeVectorsPolyDiagTest($project, $patient,$statistics );
 #
 
-
 my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$patient,project=>$project,print_html=>$print_html);
-$t = time;
-my (  $list, $id_by_genes_id) =  getListVariantsFromDuckDB($project,$patient,$statistics);
-
-	$ztime .= ' vectors:' . ( abs( time - $t ) );
-warn ":: duckdb :: ".$ztime if $print;
-	
-$t = time;
 
 ##################################
 ################## GET GENES 
 ##################################
-warn "start annotations " if (not $cgi->param('export_xls'));
-my ($genes) = run_annnotations( $list, $id_by_genes_id);
-warn " ++ annotations end ++  ".abs(time - $t) if (not $cgi->param('export_xls'));
-export_xls($patient, $genes) if $cgi->param('export_xls');
 
-$ztime .= ' ' . scalar(@$genes) . '_genes:' . ( abs( time - $t ) );
-warn "annot ++ == ++ " . abs( time - $t ) if $print;
-
-$statistics->{genes} = scalar(@$genes);
+my $genes;
+my $vgenes =[];
+my $nb2 = 0;
+my $hchr;
+my @list_genes_session_sorted;
 
 
-
-
-#$statistics->{variations} = $statistics->{variants};
-$project->buffer->dbh_reconnect();
-unless ( $project->buffer->getQuery->isUserMagic($user) ) {
-	$ztime = undef;
+my $session;
+my $session_dir_tmp = $buffer->config_path("root","global_search");
+if ($cgi->param('view_part') and $cgi->param('session_id')) {
+	my $session_id = $cgi->param('session_id');
+	$session =  new CGI::Session( undef, $session_id, { Directory => $session_dir_tmp } );
+	my $this_gene = $session->param('genes');
+	@list_genes_session_sorted = @$this_gene;
 }
-
-
-$project->buffer->dbh_reconnect();
-
-
-#warn $genes->[0]->{js_id};
-my $sct = time;
+else {
+	$t = time;
+	my ($list, $id_by_genes_id) =  getListVariantsFromDuckDB($project,$patient,$statistics);
+	$ztime .= ' vectors:' . ( abs( time - $t ) );
+	warn ":: duckdb :: ".$ztime if $print;
+	$t = time;
+	
+	warn "start annotations " if (not $cgi->param('export_xls'));
+	($genes) = run_annnotations( $list, $id_by_genes_id);
+	warn " ++ annotations end ++  ".abs(time - $t) if (not $cgi->param('export_xls'));
+	export_xls($patient, $genes) if $cgi->param('export_xls');
+	
+	$ztime .= ' ' . scalar(@$genes) . '_genes:' . ( abs( time - $t ) );
+	warn "annot ++ == ++ " . abs( time - $t ) if $print;
+	$statistics->{genes} = scalar(@$genes);
+	
+	#$statistics->{variations} = $statistics->{variants};
+	$project->buffer->dbh_reconnect();
+	unless ( $project->buffer->getQuery->isUserMagic($user) ) {
+		$ztime = undef;
+	}
+	$project->buffer->dbh_reconnect();
+	
+	if ($cgi->param('phenotype')) {
+		my $new_phenotype = $cgi->param('phenotype');
+		foreach my $g (@$genes) {
+			my $init_score_gene = $g->{'score'};
+			my $init_score_max = $g->{'max_score'};
+			$g->{'score'} = $project->newGene($g->{id})->score($new_phenotype);
+			$g->{'max_score'} = $init_score_max - $init_score_gene + $g->{'score'};
+		}
+	}
+	
+	my $sct = time;
 	warn "genes:".scalar(@$genes);
-warn "end max_score :".abs(time -$sct);
-	my $vgenes =[];
-	my $nb2 = 0;
-	my $hchr; 
-$sct = time;
-
-
-if ($cgi->param('phenotype')) {
-	my $new_phenotype = $cgi->param('phenotype');
-	foreach my $g (@$genes) {
-		my $init_score_gene = $g->{'score'};
-		my $init_score_max = $g->{'max_score'};
-		$g->{'score'} = $project->newGene($g->{id})->score($new_phenotype);
-		$g->{'max_score'} = $init_score_max - $init_score_gene + $g->{'score'};
+	warn "end max_score :".abs(time -$sct);
+	$sct = time;
+	@list_genes_session_sorted = sort{$b->{max_score} <=> $a->{max_score}} @$genes;
+	if ($project->isGenome()) {
+		$session = new CGI::Session( undef, $cgi, { Directory => $session_dir_tmp } );
+		$session->param('genes', \@list_genes_session_sorted);
 	}
 }
-my $limit = 80;
-$limit = 120 if $project->isGenome();
+
+
+my $limit = 100;
+$limit = 200 if $project->isGenome();
+
 
 my @list_genes_sorted;
 my $nb_sort = 0;
@@ -546,14 +558,14 @@ if ($cgi->param('view_part')) {
 	my $page = int($cgi->param('view_part'));
 	my $nb_to_del = $limit * ($page - 1);
 	my $nb_sort = 0;
-	foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes) {
+	foreach my $g (@list_genes_session_sorted) {
 		$nb_sort++;
 		push (@list_genes_sorted, $g) if $nb_sort > $nb_to_del;
 		last if $nb_sort == ($nb_to_del + $limit + 5);
 	}
 }
 else {
-	foreach my $g (sort{$b->{max_score} <=> $a->{max_score}} @$genes) {
+	foreach my $g (@list_genes_session_sorted) {
 		push (@list_genes_sorted, $g) if $nb_sort < $limit+5;
 	}
 }
@@ -574,7 +586,7 @@ foreach my $g (@list_genes_sorted) {
 }
 $genes = $vgenes;	
 $genes = [] unless $genes;
-warn "end sort  :".abs(time -$sct);
+#warn "end sort  :".abs(time -$sct);
 $t = time;
 
 $ztime .= ' polycyto:' . ( abs( time - $t ) );
@@ -618,7 +630,6 @@ $t     = time;
 		$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ,$buffer_polyviewer) ;
 	#	warn "dsdssd " unless $genes;
 	#	error("coucou") unless $genes;# == undef;
-		
 	}
 	else {
 		if ($gene_name_filtering ) {
@@ -711,14 +722,12 @@ sub refine_heterozygote_composite_score_fork {
 	warn "....";
 	print qq{</div>};
 	
-	my $limit_to_check = ($limit/2);
-	$limit_to_check = ($limit/3) if $project->isGenome();
 	my $nb_genes = scalar(@{$res->{genes}});
 	my $i = 0;
 	foreach my $g (@{$res->{genes}}){
 		$i++;
 		print $g->{out} . "\n";
-		if ($i == ($limit/2) and $nb_genes == $limit) {
+		if ($i == int($limit/3) and $nb_genes == $limit) {
 			my @args;
 			my @params = $cgi->param();
 			foreach my $p (@params) {
@@ -733,6 +742,7 @@ sub refine_heterozygote_composite_score_fork {
 				push(@args, "view_part=$this_part");
 			}
 			else {
+				push(@args, "session_id=".$session->id()) if ($project->isGenome());
 				push(@args, "view_part=2");
 			}
 			
