@@ -652,7 +652,7 @@ sub export_xls {
 	if ($@) {}
 	else {
 		my $h_done;
-		foreach my $var_id (keys %{$h_by_patients}) {
+		foreach my $var_id (sort keys %{$h_by_patients}) {
 			foreach my $h_infos (@{$h_by_patients->{$var_id}}) {
 				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}};
 				my $h;
