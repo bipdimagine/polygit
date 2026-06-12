@@ -651,8 +651,10 @@ sub export_xls {
 	eval { $h_by_patients = $dejavu_variants->xls_export_session->get_specific_infos_stored('projects_patients_infos'); };
 	if ($@) {}
 	else {
-		foreach my $var_id (keys %{$h_by_patients}) {
+		my $h_done;
+		foreach my $var_id (sort keys %{$h_by_patients}) {
 			foreach my $h_infos (@{$h_by_patients->{$var_id}}) {
+				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}};
 				my $h;
 				$h->{'variation'} = $var_id;
 				$h->{'project'} = $h_infos->{project_name};
@@ -669,6 +671,7 @@ sub export_xls {
 				$h->{'nb reads'} = $ac;
 				$h->{'dp'} = $dp;
 				$h->{'ratio'} = $ratio.'%';
+				$h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}} = undef;
 				push(@list_datas_patients, $h);
 			}
 		}

@@ -1821,6 +1821,7 @@ sub panel_gene {
 				}
 				#
 				my $this_b_cmd = qq{collapse("$panel_id","$label_id")};
+				
 				if (exists $hgene->{specific_cmd}) {
 					$this_b_cmd = $hgene->{specific_cmd};
 				}
@@ -1829,14 +1830,14 @@ sub panel_gene {
 				$font_color = $actionable_color if $is_actionable;
 				my $color_background_gene = "#4A4F53";
 				#$color_background_gene = "#cee3f5" if $hgene->{id} eq 'intergenic';
-				if (exists $hgene->{collapse_with_id}) {
-					my $this_collapse_id = $hgene->{collapse_with_id};
-					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status btn-gene" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
-				}
-				else {
-					$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status btn-gene" style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
-				}
+				my $this_collapse_id = $hgene->{collapse_with_id};
 				
+#				warn "\n\n\n";
+#				warn $this_b_cmd;
+#				$out= '';
+				$out .= qq{<div loading="lazy" id="$div_id_gene" class="btn btn-brown btn-xs $bcolor $cnv_status btn-gene" data-toggle='collapse' data-target="#$this_collapse_id" aria-expanded='false' aria-controls='$this_collapse_id' style="background-color:$color_background_gene;border-top: 2px solid $color_background_gene;border-bottom: 2px solid $color_background_gene;border-right: 4px solid $bcolor;border-left: 4px solid $bcolor;$astyle;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;" onClick='$this_b_cmd'>  <font style='color:$font_color;'><span id= "$label_id" class="glyphicon glyphicon-triangle-right" style="" aria-hidden="true"  style="float:left;top:4px;"></span> $gene_name<sup>&nbsp;$in</b></font></sup> $glyph}.$cgi->span({class=>"badge1 $bcolor"},$hgene->{max_score}).qq{</div>};
+#				warn $out;
+#				die;
 				
 				 ###
 				 
@@ -1868,8 +1869,8 @@ sub panel_gene {
 				#$dataset = "?dataset=gnomad_r2_1" if $gene and $gene->getProject->getVersion() =~ /HG19/;
 				$dataset = "?dataset=gnomad_r2_1" if $patient and $patient->getProject->getVersion() =~ /HG19/;
  				my $b_id_pli = 'b_pli_'.$oid.'_'.$type;
- 				#my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"><span><b>pLI</b> Score</span></div>};
- 				my $popup_pli = "";
+ 				my $popup_pli = qq{<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'$b_id_pli',position:['above']"></div>};
+ 				#my $popup_pli = "";
  				if ($gene) {
  					my ($gidtmp,$gtmp) = split('_',$gene->id());
  					$out .=qq{<a class="btn btn-primary btn-xs btn-gene" href="https://gnomad.broadinstitute.org/gene/$gidtmp$dataset" target="_blank" style="$bgcolor2;min-width:30px"><span id="$b_id_pli" class="badge" style="color:$type">$pli</span>$popup_pli</a>};
@@ -1982,6 +1983,7 @@ sub panel_gene {
 				
 				
 			 	$out.= $cgi->end_div(); # end div lavel right 
+			 return $out;
 }
 
 sub table_line_gene {
@@ -2394,6 +2396,7 @@ my $string_label = join(";",@$all_label);
 
 sub printNavBar1 {
 	my ($patient,$hgenes,$statistics) = @_;
+	die;
 	my $cgi = new CGI;
 	my $project = $patient->project;
 	my $all_panel=[];
