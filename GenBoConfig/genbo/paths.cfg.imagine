@@ -1,6 +1,6 @@
 
 [root]
-public_data:/data-pure/public-data/
+public_data:/data-isilon/public-data/
 #dejavu:/data-isilon/DejaVu/
 
 dejavu:/data-pure/public-data/dejavu/
