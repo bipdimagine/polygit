@@ -10,6 +10,7 @@ use sample;
 use Data::Dumper;
 use Text::CSV qw( csv );
 use List::MoreUtils qw(firstidx);
+use IO::Prompt;
 extends (qw(bds_root));
 my $bin_dev = qq{$Bin/scripts/scripts_pipeline/};
 
@@ -325,10 +326,19 @@ method count_featureCounts  (Str :$filein! ){
 			die("ERROR parsing '$metrics_file': no '$metric' found: ".join("\t",$aoa->[6])) if ($index == -1);
 		}
 		#warn $name.": ". Dumper $metrics;
-		die ("ERROR $name aligned bases too low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)
-			."\nCheck release (current = ".$project->getVersion().") or contaminations") if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.4);
-		die ("ERROR $name mRNA bases too low: ".sprintf("%.2f%%",$metrics->{PCT_MRNA_BASES} *100)) if ($metrics->{PCT_MRNA_BASES} < 0.2); # (UTR_BASES + CODING_BASES)/PF_ALIGNED_BASES
-		die ("ERROR $name usable bases too low: ".sprintf("%.2f%%",$metrics->{PCT_USABLE_BASES} *100)) if ($metrics->{PCT_USABLE_BASES} < 0.2); # (CODING_BASES + UTR_BASES)/PF_BASES
+		if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.4) {
+			warn ("ERROR $name aligned bases too low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)
+			."\nCheck release (current = ".$project->getVersion().") or contaminations or fastqc");
+			die() unless (prompt("Continue anyway ? (y/n)  ", -yes_no));
+		}
+		if ($metrics->{PCT_MRNA_BASES} < 0.2) {
+			warn ("ERROR $name mRNA bases too low: ".sprintf("%.2f%%",$metrics->{PCT_MRNA_BASES} *100)) ;
+			die() unless (prompt("Continue anyway ? (y/n)  ", -yes_no));
+		}
+		if ($metrics->{PCT_USABLE_BASES} < 0.2) {
+			warn ("ERROR $name usable bases too low: ".sprintf("%.2f%%",$metrics->{PCT_USABLE_BASES} *100)) ; # (CODING_BASES + UTR_BASES)/PF_BASES
+			die() unless (prompt("Continue anyway ? (y/n)  ", -yes_no));
+		}
 		warn ("$name aligned bases low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)) and sleep(1) if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.6);
 		warn ("$name mRNA bases low: ".sprintf("%.2f%%",$metrics->{PCT_MRNA_BASES} *100)) if ($metrics->{PCT_MRNA_BASES} < 0.5); # (UTR_BASES + CODING_BASES)/PF_ALIGNED_BASES
 		warn ("$name usable bases low: ".sprintf("%.2f%%",$metrics->{PCT_USABLE_BASES} *100)) if ($metrics->{PCT_USABLE_BASES} < 0.5); # (CODING_BASES + UTR_BASES)/PF_BASES
