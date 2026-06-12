@@ -90,6 +90,7 @@ my $t = time;
 	print "--";
 	
 	foreach my $patient (sort {$a->{name} cmp $b->{name}} @$lPatients){
+		$patient->getProject->disconnect();
 		#last if $patient->name() ne "GUE_Gil";
 			$hrun->{$id} ++;
 			$id ++;
