@@ -1465,7 +1465,7 @@ has project_root_path => (
 		my $path1    = $pathRoot."/".$name.'/';
 		my $cmd_ln = qq{ln -s $path2 $pathRoot/$name};
 		if (-e $path2) {
-			system($cmd_ln) if not -e $path1;
+			#system($cmd_ln) if not -e $path1;
 			return $path2;
 		}
 		return $path1 if -e $path1;
@@ -6513,6 +6513,15 @@ sub deja_vu_rocks_public_dir {
 	$version = $self->genome_version_generic unless $version;
 	
 	my $root =  $self->buffer->deja_vu_public_dir($version,$type);
+	return $root;
+}
+sub deja_vu_revio {
+	my ($self,$version,$type)= @_;
+	$type = "revio" unless $type;
+	$version = $self->genome_version_generic unless $version;
+	#/data-pure/public-data/dejavu/HG38/revio/revio.parquet
+	my $root =  $self->buffer->deja_vu_public_dir($version,$type);
+	
 	return $root;
 }
 

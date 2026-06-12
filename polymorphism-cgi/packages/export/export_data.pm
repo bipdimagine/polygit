@@ -1,7 +1,6 @@
 package export_data;
 use FindBin qw($Bin);
 use strict;
-use Data::Printer;
 use Data::Dumper;
 use JSON::XS;
 use export_excel;
