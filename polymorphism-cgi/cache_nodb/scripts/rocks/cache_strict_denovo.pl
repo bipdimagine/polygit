@@ -89,11 +89,11 @@ if ($vector_total->is_empty()) {
 	foreach my $family (@{$project->getFamilies()}) {
 		foreach my $children  (@{$family->getChildren}){
 			my $vector_denovo = $chr->getNewVector();
-			$rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vector_denovo);
+			$rocks4->put_vector_transmission($children,"ind_strict_denovo",$vector_denovo);
 			warn "save";
 		}
 	}
-	$rocks4->write_batch();
+	#$rocks4->write_batch();
 	$rocks4->close();
 	
 	system("date > $ok_file") if $ok_file;
@@ -126,8 +126,9 @@ foreach my $family (@{$project->getFamilies()}) {
 		my $cram =  $parent->getAlignmentFile;
 		my $chra = $chr->fasta_name();
 		my $t =time;
-		system("samtools view -T /data-isilon/public-data/genome/HG38_CNG/fasta/all.fa -b $cram $chra -@ $fork_samtools >".$hfile->{$parent->name});
-		warn "samtools view -T /data-isilon/public-data/genome/HG38_CNG/fasta/all.fa -b $cram $chra -@ $fork_samtools >".$hfile->{$parent->name};
+		my $fasta_file = $project->getGenomeFasta();
+		system("samtools view -T /$fasta_file -b $cram $chra -@ $fork_samtools >".$hfile->{$parent->name});
+		warn "samtools view -T $fasta_file -b $cram $chra -@ $fork_samtools >".$hfile->{$parent->name};
 		system("samtools index ".$hfile->{$parent->name}." -@ $fork_samtools");
 		die($hfile->{$parent->name}) unless -e $hfile->{$parent->name}.".bai";
 		warn "\t\t ++ ".$parent->name." ".abs(time-$t);
@@ -153,8 +154,6 @@ foreach my $family (@{$project->getFamilies()}) {
 		$hbed->{$children->id}= $tmp_dir."/".$children->name.'.'.$chr->name.".bed";
 		#next if -e $hbed->{$children->id};
 		#$pm->start() and next;
-		warn "\n";
-		warn $children->name;
 		my $vector_denovo =  $no->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
 		my @bits = $vector_denovo->Index_List_Read();
 		open (BED , ">".$hbed->{$children->id});		
@@ -170,7 +169,6 @@ foreach my $family (@{$project->getFamilies()}) {
 				print BED $chr->fasta_name."\t".($var->start-2)."\t".($var->end+2)."\n";
 		}
 		close BED;
-		warn $hbed->{$children->id};
 		#$pm->finish(0, {});
 	}
 }
@@ -259,9 +257,6 @@ foreach my $family (@{$project->getFamilies()}) {
 					push(@{$hbamba->{$tab[1]}->{T}} , $count_T);
 					push(@{$hbamba->{$tab[1]}->{DEL}} , sum(@deletions)+0);
 					push(@{$hbamba->{$tab[1]}->{INS}} , sum(@insertions)+0);
-					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 61190108);
-					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 61190108);
-					warn Dumper $hbamba->{$tab[1]} if ($tab[1] == 61190108);
 				}
 			close (BAMBA);	
 			
@@ -278,20 +273,13 @@ warn "--------------------------------------------------------";
 $tall = time ;
 #my $no = $chr->flush_rocks_vector("r");
 my $rocks4 = $chr->rocks_vector("w");
-warn $project;
 foreach my $family (@{$project->getFamilies()}) {
-	warn $family->name;
-	warn $family->project;
 	foreach my $children  (@{$family->getChildren}){
-		warn "\t".$children->name();
 		my $vector_denovo =  $rocks4->get_vector_transmission($children,"ind_denovo");#$family->getVector_individual_denovo($chr,$children)->Clone();
 		my @bits = $vector_denovo->Index_List_Read();
-		warn "\t".$children->name();
 		my $vdenovo =construct_strict_denovo(\@bits,$children,$chr->getNewVector(),$hash_pileup->{$children->id},$chr);
-		warn "\t end".$children->name();
 		 $rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vdenovo);
 	}
-	warn "denf ".$family->name;;
 }
 
 warn "--------------------------------------------------------";
