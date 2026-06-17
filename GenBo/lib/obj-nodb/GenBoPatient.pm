@@ -2432,6 +2432,7 @@ sub depth {
 
 sub mean_normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return if $self->alignmentMethods->[0] eq 'no_align';
 	$end = $start +1 if $start == $end;
 	my $a = $self->normalize_depth($chr_name, $start, $end );
 	my $t = sum(@$a);
@@ -2441,6 +2442,7 @@ sub mean_normalize_depth {
 }
 sub mean_normalize_depth2 {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return if $self->alignmentMethods->[0] eq 'no_align';
 	$end = $start +1 if $start == $end;
 	my $mean = $self->meanDepth($chr_name, $start, $end );
 	return $mean/$self->normalized_reads;
@@ -2451,6 +2453,7 @@ sub mean_normalize_depth2 {
 }	
 sub normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return if $self->alignmentMethods->[0] eq 'no_align';
 	my $chr   = $self->project->getChromosome($chr_name);
 	my $array = $self->getNoSqlDepth->getDepth( $chr->name, $start, $end );
 	my $res;
@@ -2462,18 +2465,21 @@ sub normalize_depth {
 }	
 sub meanDepth {
 	my ( $self, $chr, $start, $end ) = @_;
+	return if $self->alignmentMethods->[0] eq 'no_align';
 	$end = $start +1 if $start == $end;
 	return $self->getNoSqlDepth->getMean( $chr, $start, $end );
 }
 
 sub minDepth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return if $self->alignmentMethods->[0] eq 'no_align';
 	my @lcov = sort {$a <=> $b} @{$self->depth($chr_name, $start, $end)};
 	return $lcov[0];
 }
 
 sub maxDepth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return if $self->alignmentMethods->[0] eq 'no_align';
 	my @lcov = sort {$a <=> $b} @{$self->depth($chr_name, $start, $end)};
 	return $lcov[-1];
 }
@@ -3373,7 +3379,12 @@ has nb_reads => (
 		my $self = shift;
 		my $h;
 		my $methods = $self->alignmentMethods();
-		return $h if $methods->[0] eq 'no_align';
+		if ($methods->[0] eq 'no_align') {
+			$h->{all} = undef;
+			$h->{norm} = undef;
+			$h->{norm1} = undef;
+			return $h;
+		}
 		
 		my $bam  = $self->getAlignmentFile();
 		my $cmd;
