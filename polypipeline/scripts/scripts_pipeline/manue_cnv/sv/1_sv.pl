@@ -90,6 +90,7 @@ my @all_sv;
 my $all_transloc;
 foreach my $thePatient (@listPatients)
 {
+	next if $thePatient->alignmentMethods->[0] eq 'no_align';
 	my $patientname = $thePatient->name;
 	my $htransloc ={};
 	
