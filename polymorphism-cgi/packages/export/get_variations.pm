@@ -321,8 +321,7 @@ sub getIds_byCache_onlive {
 		$hash->{'gnomad_ho'} = '-';
 		$hash->{'gnomad_an'} = '-';
 		if ($var->getGnomadAC()) {
-			my $vn = $var->id();
-			$vn =~ s/_/-/g;
+			my $vn = $var->gnomad_id();
 			$vn =~ s/chr//;
 			my $link = "https://gnomad.broadinstitute.org/variant/$vn";
 			$hash->{'gnomad_ac'} = $var->getGnomadAC().';'.$link;
