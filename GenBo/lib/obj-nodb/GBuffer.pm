@@ -158,6 +158,9 @@ has config => (
 	default	=> sub {
 		my $self = shift; 
 		my $filename =  $self->config_dir."genbo.cfg";
+		if (exists $ENV{SPACK_ENV}) {
+			$filename = $self->config_dir."genbo.cfg.biocluster";
+		}
 		my $filename2 = $self->genbo_dir."genbo-vector-filter.cfg";
 		confess($filename) unless -e $filename;
 		confess($filename2) unless -e $filename2;
@@ -187,6 +190,10 @@ has hash_config_path => (
 		my $self = shift; 
 		my $dir = $self->config_dir;
 		my $filename = $dir."paths.cfg";
+		if (exists $ENV{SPACK_ENV}) {
+			$filename = $dir."paths.cfg.biocluster";
+		}
+		
 		confess($filename) unless -e $filename;
 		read_config $filename => my %config1;
 	
@@ -248,6 +255,7 @@ has polybtf_infos => (
 	default	=> sub {
 		my $self = shift; 
 		my $dir = $self->config_directory."/public_data/";
+		
 		my $filename = $dir."public-data.version.cfg";
 		confess($filename) unless -e $filename;
 		read_config $filename => my %config;
@@ -286,7 +294,10 @@ has public_data => (
 		my $filename = $dir."public-data.cfg";
 		confess($filename) unless -e $filename;
 		read_config $filename => my %config1;
-		my $filename2 = $dir."public-data.version.cfg";
+		my $version = $self->annotation_genome_version();
+		confess("no annotation_genome_version defined ") unless $version;
+		
+		my $filename2 = $dir."public-data.$version.cfg";
 		confess($filename2) unless -e $filename2;
 		read_config $filename2 => my %config2;
 		confess($filename2) unless -e $filename2;
@@ -607,9 +618,10 @@ sub newProjectCache {
 	$self->genome_version($project->genome_version);	
 	$self->annotation_genome_version($project->annotation_genome_version);
 	$self->annotation_version($project->annotation_version);
-	 $self->public_data_version($project->public_database_version);			
+	 $self->public_data_version($project->public_database_version);		
+		
 #	if ($project->annotation_version) { $self->lmdb_public_dir($project->annotation_public_path); }	
-	 $self->public_data_version($project->public_database_version);							
+	 $self->public_data_version($project->public_database_version);	
 	return $project;
 }
 has genome_version => (
@@ -650,11 +662,7 @@ sub newProject {
 										test	=> $test,
 										buffer	=> $self );
 	
-	
-	
 	$self->genome_version($project->genome_version);	
-	
-	
 	if ($project->gencode_version =~ /M/) {
 		$self->annotation_version($project->annotation_version);
 	 	$self->public_data_version($project->public_database_version);	

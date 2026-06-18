@@ -299,11 +299,6 @@ if (grep(/teleport/, @steps)) {
 #------------------------------
 if (grep(/count|^all$/i, @steps)){
 	
-	if (grep {$_ =~ /adt/i} @groups) {
-		die("feature_ref csv required\n") unless ($feature_ref);
-		die("'$feature_ref' not found") unless (-e $feature_ref);
-		$feature_ref = abs_path($feature_ref);
-	}
 	if (grep {$_ =~ /cmo/i} @groups) {
 		die("cmo_ref csv required\n") unless ($cmo_ref);
 		die("'$cmo_ref' not found") unless (-e $cmo_ref);
@@ -401,6 +396,13 @@ if (grep(/count|^all$/i, @steps)){
 	}
 	push(@$patients, @pat_to_add) if @pat_to_add;
 #	warn Dumper([map {$_->name} @$patients]);
+
+	# Si adt, vérifie feature_ref
+	if (grep {$_ =~ /adt/i} @groups) {
+		die("feature_ref csv required\n") unless ($feature_ref);
+		die("'$feature_ref' not found") unless (-e $feature_ref);
+		$feature_ref = abs_path($feature_ref);
+	}
 
 	
 	sub full_cmd {

@@ -196,7 +196,6 @@ sub parseVcfFileForReference {
 	my ( $self, $reference, $useFilter ) = @_;
 	my $file = $self->file();
 
-	#warn $file;
 	#	warn $file if $file =~/mpileup/;
 	die($file) unless -e $file;
 	if ( $self->method() eq "melt" ) {
@@ -1395,7 +1394,6 @@ sub parseVcfFileForReference_gatk {
 					my $sequence = 	$reference->getChromosome->getSequence($varStart+length($a1),$varStart+(15*length($a1)));
 					my ($repeat) = $sequence =~ /^($a1+)/;
 					$repeat .="";
-						warn $repeat if length($repeat) > 4;
 					next if length($repeat) > 4;
 				} 
 
