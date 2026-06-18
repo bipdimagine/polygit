@@ -1901,6 +1901,7 @@ sub getBamFileForPipeline {
 }
 sub isCram {
 	my ($self,$method) = @_;
+	return if $self->isNoAlign();
 	my $file = $self->getAlignmentFile($method);
 	return $file =~ /\.cram/;
 }
