@@ -303,7 +303,7 @@ has tabix_coverage => (
 		my $self = shift;
 		my $coverage_file;
 		$coverage_file = $self->getCoverageFile();
-		warn $coverage_file;
+#		warn $coverage_file;
 		return unless -e $coverage_file;
 		return Bio::DB::HTS::Tabix->new( filename => $coverage_file );
 
@@ -3544,9 +3544,12 @@ sub ploidy_value2 {
 sub cnv_region_ratio_norm {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	my $sum  = $self->getNoSqlDepth->getMean( $chr_name, $start, $end );
-	my $total = $self->nb_reads->{norm};
-	my $ratio1 = int($sum / $total);
-	return $ratio1;
+	if ($self->nb_reads) {
+		my $total = $self->nb_reads->{norm};
+		my $ratio1 = int($sum / $total);
+		return $ratio1;
+	}
+	return;
 }
 
 sub cnv_value_dude {

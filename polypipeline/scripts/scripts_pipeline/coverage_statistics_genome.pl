@@ -73,6 +73,7 @@ if ($project->isGenome && $json) {
 		my $pid = $patient->id;
 			my $all_sum;
 		my $coverage_file;
+		next if $patient->alignmentMethods->[0] eq 'no_align';
 		$coverage_file = $patient->getCoverageFile();
 		my $h;
 		confess($coverage_file) unless -e $coverage_file;

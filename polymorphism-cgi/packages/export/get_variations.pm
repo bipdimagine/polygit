@@ -555,7 +555,12 @@ sub getIds_onlive {
 				push(@{$hash->{'patient_unifiedgenotyper'}  }, '.');
 				my $nb_all_ref = $var->getNbAlleleRef($patient);
 				my $nb_all_mut = $var->getNbAlleleAlt($patient);
-				push(@{$hash->{'patient_unifiedgenotyper4'} }, $var->getMeanDP($patient));
+				if ($patient->alignmentMethods->[0] eq 'no_align') {
+					push(@{$hash->{'patient_unifiedgenotyper4'} }, undef);
+				}
+				else {
+					push(@{$hash->{'patient_unifiedgenotyper4'} }, $var->getMeanDP($patient));
+				}
 				push(@{$hash->{'patient_unifiedgenotyper5'} }, 'uni');
 				my @lBases;
 				if ($var->isHeterozygote($patient)) {
@@ -663,7 +668,10 @@ sub getIds_onlive {
 				push(@{$hash->{'patient_unifiedgenotyper3'} }, $nb_all_mut);
 				
 				push(@{$hash->{'patient_unifiedgenotyper'}  }, '.');
-				my $thisCov = $patient->meanDepth($var->getChromosome->name, $var->start, $var->end);
+				my $thisCov;
+				if ($patient->alignmentMethods->[0] ne 'no_align') {
+					$thisCov = $patient->meanDepth($var->getChromosome->name, $var->start, $var->end);
+				}
 				#	push(@{$hash->{'patient_unifiedgenotyper4'} }, );
 				if ($thisCov) { push(@{$hash->{'patient_unifiedgenotyper4'} }, int($thisCov)); }
 				else { push(@{$hash->{'patient_unifiedgenotyper4'} }, '.'); }

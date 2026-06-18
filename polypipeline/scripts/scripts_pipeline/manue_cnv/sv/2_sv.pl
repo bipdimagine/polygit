@@ -73,6 +73,7 @@ my @all_sv;
 my @listPatients = grep {$_->isGenome} @{$project->getPatients()};
 my $duck = GenBoDuckDejaVuSv->new( project => $project,parallel=>1 );
 foreach my $patient(@listPatients){
+	next if $patient->alignmentMethods->[0] eq 'no_align';
 	my $psv = $duck->get_sv_project($patient);
 	 annot_bnd($psv,$project,$patient);
 	
