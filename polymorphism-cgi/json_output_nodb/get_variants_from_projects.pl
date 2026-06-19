@@ -661,10 +661,15 @@ if ($h_phenos) {
 }
 $html .= "</tr></table></div>";
 
-$html .= qq{<table id='table_genes' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[20, 50, 100, 200, 300]" data-resizable='true' class='table' style='font-size:13px;'>};
+my $nb_genes = scalar keys %$h_html_genes;
+my $data_search = 'false';
+$data_search = 'true' if $nb_genes > 50;
+
+$html .= qq{<table id='table_genes' data-filter-control='$data_search' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[20, 50, 100, 200, 300]" data-resizable='true' class='table' style='font-size:13px;'>};
 $html .= "<thead>";
 $html .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
-$html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder="Gene name, description, ..."</th>};
+if ($nb_genes > 50) { $html .= qq{<th data-field="gene"</th>}; }
+else { $html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder="Gene name, description, ..."</th>}; }
 $html .= $cgi->end_Tr();
 $html .= "</thead>";
 $html .= "<tbody>";
