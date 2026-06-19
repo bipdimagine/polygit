@@ -663,7 +663,7 @@ $html .= "</tr></table></div>";
 
 my $nb_genes = scalar keys %$h_html_genes;
 my $data_search = 'false';
-$data_search = 'true' if $nb_genes > 50;
+$data_search = 'true' if $nb_genes <= 50;
 
 $html .= qq{<table id='table_genes' data-filter-control='$data_search' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[20, 50, 100, 200, 300]" data-resizable='true' class='table' style='font-size:13px;'>};
 $html .= "<thead>";
@@ -736,6 +736,7 @@ sub export_xls {
 				$h->{'he_ho'} = $h_infos->{heho};
 				$h->{'gnomad ac'} = $h_infos->{'gnomad ac'};
 				$h->{'gnomad ho'} = $h_infos->{'gnomad ho'};
+				$h->{'gene'} = $h_infos->{'gene'};
 				$h->{'consequence'} = $h_infos->{'consequence'};
 				my ($ac, $ratio) = split(', ', $h_infos->{ratio});
 				my $dp = $h_infos->{dp};
@@ -748,7 +749,7 @@ sub export_xls {
 				push(@list_datas_patients, $h);
 			}
 		}
-		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'Nb Reads', 'Ratio', 'gnomAD AC', 'gnomAD HO', 'Consequence');
+		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'Nb Reads', 'Ratio', 'gnomAD AC', 'gnomAD HO', 'Gene', 'Consequence');
 		$dejavu_variants->xls_export_session->add_page('Projects Patients', \@lLinesHeaderPatients, \@list_datas_patients);
 	}
 	$dejavu_variants->xls_export_session->export();
@@ -791,11 +792,16 @@ sub save_variants_in_session_export {
 			$h->{'freq (%)'} = undef;
 			$h->{'max_pop_freq'} = $hres->{'gnomad_max_pop_name'}.':'.$hres->{'gnomad_max_pop'};
 			$h->{'min_pop_freq'} = $hres->{'gnomad_min_pop_name'}.':'.$hres->{'gnomad_min_pop'};
+			my $h_genes_cons;
 			foreach my $g_id (keys %{$hres->{hgenes}}) {
 				my $g = $var->getProject->newGene($g_id);
+				my $cons_g = $var->variationTypeInterface($g);
 				$h->{genes}->{$g_id}->{external_name} = '-';
-				eval { $h->{genes}->{$g_id}->{external_name} = $g->external_name(); };
-				if ($@) {}
+				eval {
+					$h->{genes}->{$g_id}->{external_name} = $g->external_name();
+					$h_genes_cons->{$cons_g} = $g->external_name().' ('.$g->id().')';
+				};
+				if ($@) { $h_genes_cons->{$cons_g} = $g->id(); }
 				$h->{genes}->{$g_id}->{description} = '-';
 				eval { $h->{genes}->{$g_id}->{description} = $g->description(); };
 				if ($@) {}
@@ -840,6 +846,7 @@ sub save_variants_in_session_export {
 					$h_tmp->{'gnomad ac'} = $var->getGnomadAC();
 					$h_tmp->{'gnomad ho'} = $var->getGnomadHO();
 					$h_tmp->{'consequence'} = $var->variationTypeInterface();
+					$h_tmp->{'gene'} = $h_genes_cons->{$h_tmp->{'consequence'}};
 					push(@{$h_patients->{$var_id}}, $h_tmp);
 				}
 			}
