@@ -171,17 +171,21 @@ sub lmdb {
   			confess("not find database $filename ".$self->dir."/".$self->name ) unless -e $filename;
  	 }
 	 my $env;
+	
 	 	if ($self->mode eq "r"){
 	 		my $filename =  $self->dir."/$name";
 	 		#warn "read only ".$self->dir."/$name";
-	 		
+	 		 my $flag =LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP;
+	 		 $flag =   MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP if -d $filename;
+	 		 warn "coucou =>" . -d $filename;
 	 		if ($self->test  ){
 	 		$env = LMDB::Env->new("$filename", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
       			maxreaders => 256,
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
-      			flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
+      			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
+ 	 			flags => $flag,
  	 			});
  			system("/software/bin/vmtouch -t $filename -q  ") if -e "/software/bin/vmtouch";
 	 		}
@@ -190,8 +194,8 @@ sub lmdb {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
       			maxreaders => 256,
+      			flags => $flag,
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
-      			flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
       # More options
  			 });
 	 		}
@@ -199,14 +203,29 @@ sub lmdb {
  	   		system("/software/bin/vmtouch -t $sname -q  ") if $self->vmtouch;
 	 	}
 		else {
-			 
+			#die();
 #			    warn "**** ".$self->dir."/$name";
-	  			$env = LMDB::Env->new($self->dir."/$name", {
+				unless (-e  $self->dir."/$name"){
+						mkdir $self->dir."/$name";
+				}
+				unless (-d $self->dir."/$name"){
+					$env = LMDB::Env->new($self->dir."/$name", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
       			flags => LMDB_File::MDB_NOSUBDIR	,
-      # More options
- 	 });
+ 	 			});
+				
+				}
+				else {
+					$env = LMDB::Env->new($self->dir."/$name", {
+      					mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
+      					mode   => 0777,
+ 	 			});
+				}
+				
+					
+			
+	  			
 
 		}
 	
