@@ -318,6 +318,27 @@ sub uri_image {
 }
 
 
+sub end_coverage {
+	my ($patient,$harray) = @_;
+	my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
+	my $f1 = $no->filename;
+	foreach my $k (keys %$harray){
+		
+
+			$no->put( $k ,$harray->{$k});
+	}
+	$no->put( "toto","titi");
+	$no->close;
+	my $f2  = $project->transcriptsCoverageDir()."/".$patient->name.".transcripts";
+	unlink $f2 if -e  $f2;
+	$f1 = $tmp."/".$patient->name.".transcripts";
+	warn "$f1 $f2";
+	system("mv $f1 $f2");
+	#sleep(5);
+#	my $no1  = $patient->getTranscriptsCoverageDepth("r");
+#	$no1->close;
+}
+
 sub end_dude {
 	my ($patient) = @_;
 #	 my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
@@ -336,29 +357,6 @@ sub end_dude {
 #	system("rsync -rav $f1 $f2;");
 #	warn "rm $f1";
 #	system("rm $f1") if -e $f1;
-#	warn "rm -r $tmp";
-#	system("rm -r $tmp") if -e $tmp or -d $tmp;
-	warn 'ok end dude';
-}
-
-sub end_dude {
-	my ($patient) = @_;
-	 my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
-	my $hid = $patient->id;
-	warn Dumper $array;
-	$no->put("high",$array->{$hid."_high"});		
-	$no->put("medium",$array->{$hid."_med"});	
-	$no->put("low",$array->{$hid."_low"});
-	$no->close();
-	sleep(10);
-	my $f1 = $no->filename();
-	my $no2 = $patient->getTranscriptsDude("c");
-	my $f2 = $no2->filename();
-	$no2->close();
-	warn "rsync -rav $f1 $f2";
-	system("rsync -rav $f1 $f2;");
-	warn "rm $f1";
-	system("rm $f1") if -e $f1;
 #	warn "rm -r $tmp";
 #	system("rm -r $tmp") if -e $tmp or -d $tmp;
 	warn 'ok end dude';
