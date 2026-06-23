@@ -184,7 +184,7 @@ sub lmdb {
       			maxreaders => 256,
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
- 	 			flags => MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
+ 	 			flags => $flag,
  	 			});
  			system("/software/bin/vmtouch -t $filename -q  ") if -e "/software/bin/vmtouch";
 	 		}
@@ -193,7 +193,7 @@ sub lmdb {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
       			maxreaders => 256,
-      			flags =>  MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
+      			flags => $flag,
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
       # More options
  			 });
@@ -204,15 +204,27 @@ sub lmdb {
 		else {
 			#die();
 #			    warn "**** ".$self->dir."/$name";
-
-				warn $self->dir."/$name";
-				mkdir $self->dir."/$name";
-	  			$env = LMDB::Env->new($self->dir."/$name", {
+				unless (-e  $self->dir."/$name"){
+						mkdir $self->dir."/$name";
+				}
+				unless (-d $self->dir."/$name"){
+					$env = LMDB::Env->new($self->dir."/$name", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
-      			#flags => LMDB_File::MDB_NOSUBDIR	,
-      # More options
- 	 });
+      			flags => LMDB_File::MDB_NOSUBDIR	,
+ 	 			});
+				
+				}
+				else {
+					$env = LMDB::Env->new($self->dir."/$name", {
+      					mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
+      					mode   => 0777,
+ 	 			});
+				}
+				
+					
+			
+	  			
 
 		}
 	
