@@ -151,6 +151,14 @@ sub hasHgmdAccess {
 	return 1 if ($self->queryHgmd->getHGMD($user) == 1);
 	return;
 }
+has biocluster =>(
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub {
+		my $self = shift;
+		return exists $ENV{SPACK_ENV};
+	}
+);
 
 has config => (
 	is		=> 'ro',
@@ -158,7 +166,7 @@ has config => (
 	default	=> sub {
 		my $self = shift; 
 		my $filename =  $self->config_dir."genbo.cfg";
-		if (exists $ENV{SPACK_ENV}) {
+		if ($self->biocluster) {
 			$filename = $self->config_dir."genbo.cfg.biocluster";
 		}
 		my $filename2 = $self->genbo_dir."genbo-vector-filter.cfg";
@@ -190,7 +198,7 @@ has hash_config_path => (
 		my $self = shift; 
 		my $dir = $self->config_dir;
 		my $filename = $dir."paths.cfg";
-		if (exists $ENV{SPACK_ENV}) {
+		if ($self->biocluster) {
 			$filename = $dir."paths.cfg.biocluster";
 		}
 		
@@ -372,7 +380,6 @@ sub deja_vu_public_dir {
 	return $self->{dj_pub_dir}->{$version}->{$type} if exists $self->{dj_pub_dir}->{$version}->{$type};
 	$self->{dj_pub_dir}->{$version}->{$type} =  $self->config_path("root","dejavu")."/".$version."/".$self->config_path("dejavu",$type);
 	return $self->{dj_pub_dir}->{$version}->{$type}  if -e $self->{dj_pub_dir}->{$version}->{$type};
-	
 	confess("\n\nERROR: path dejavu not found in genbo.cfg  -> $version Die\n\n".$self->{dj_pub_dir}->{$version}->{$type} );
 }
 sub deja_vu_project_dir {

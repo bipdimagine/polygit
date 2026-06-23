@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -98,7 +98,6 @@ my $dir_tmp_cvs =  $project->getCallingPipelineDir($project->name.".parquet.".ti
 #construct_sql 
 ##################
 $project->preload();
-
 my  $tiny = GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"c",pipeline=>1,project=>$project);
  $tiny->columns("");
 
@@ -108,6 +107,9 @@ my $tume = time;
 my $diro = $project->rocks_directory();
 my $nb = 0;
 foreach my $chr (@{$project->getChromosomes}) {
+		if ($chr_name) {
+			next if $chr_name ne $chr->name;
+		}
 		my $rocks;
 		my $error;
 	my @batches;

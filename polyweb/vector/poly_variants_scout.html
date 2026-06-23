@@ -744,6 +744,8 @@
 	            setTimeout(function() {
         			document.getElementById("select_pos").value = "";
         			document.getElementById("select_genes").value = "";
+        			dijit.byId("slider_reads").set("value", 0);
+        			document.getElementById("hreads").value = 0;
         			document.getElementById('promoter_ai').checked = false;
         			document.getElementById('ncboost').checked = false;
 					var cookie_user = dojo.cookie("username");
@@ -992,12 +994,21 @@
 		    		region = region.replaceAll("--", "-");
 		    		region = region.replaceAll(":", "-");
 		    		region = region.replaceAll("CHR", "");
-    				options['region'] = region;
-    				selected_minimum_value = true;
+	    			const pattern_1 = /^\d\d?-\d+-\d+$/;
+	    			const pattern_2 = /^(?:MT|M|X|Y)-\d+-\d+$/;
+	    			if (pattern_1.test(region) || pattern_2.test(region) || region === 'MT' || region === 'X' || region === 'Y' || region === 'M') {
+	    				options['region'] = region;
+	    				selected_minimum_value = true;
+					}
+		    		else {
+						show_error("<center><nobr><b><h4><span style='color:red;'>ERROR...</span></b></h4> Positions option in error ? (Ex: 1-1000-10000 or chr3-1223-215151).</nobr></center><br>");
+						return;
+		    		}
 				}
 	    
 	    		if (document.getElementById("select_genes").value !== "") {
 		    		var genes = document.getElementById("select_genes").value;
+		    		genes = genes.replaceAll("\n", ",");
 		    		genes = genes.replaceAll(" ", ",");
 		    		genes = genes.replaceAll(";", ",");
 		    		genes = genes.replaceAll(",,", ",");
@@ -1244,9 +1255,15 @@
 			                        if (data.status === "running") {
 			                        	const elapsed = Date.now() - launch_date.getTime();
 									    //timeout 15 minutes
-									    if (elapsed > 15 * 60 * 1000) {
+									    var max_minutes = '15';
+									    var max_time = 15 * 60 * 1000;
+									    if (document.getElementById("select_genes").value !== "") {
+									    	max_time = 30 * 60 * 1000;
+									    	max_minutes = '30';
+									    }
+									    if (elapsed > max_time) {
 									        clearInterval(interval);
-									        document.getElementById("content_res").innerHTML = "<b>Job aborted : timeout (>15 min)</b>";
+									        document.getElementById("content_res").innerHTML = "<b>Job aborted : timeout (>" + max_minutes + " min)</b>";
 									        dijit.byId('waiting').hide();
 									        return;
 									    }
@@ -1255,7 +1272,7 @@
 			                                let now = new Date();
 			                                document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> " +
 			                                    "<i>Please wait...<br><br>" + "launch at <b>" + launch_date.getHours() + ':' + launch_date.getMinutes() + ':' + launch_date.getSeconds() + "</b><br>" +
-			                                    "still in progress at <b>" +  now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b></i><br><br><i>Limit timeout: 15 minutes</i>";
+			                                    "still in progress at <b>" +  now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b></i><br><br><i>Limit timeout: " + max_minutes + " minutes</i>";
 			                                i_check = 0;
 			                            }
 			                            return;

@@ -1810,7 +1810,6 @@ sub get_public_data_directory {
 	return $self->{directory}->{$database} if exists $self->{directory}->{$database} ;
 	$version = $self->public_database_version unless $version;
 	#warn $database." ".$version;
-	
 	if (exists $self->buffer->public_data->{$version}->{$database}->{config}->{semantic}){
 		
 		$self->{directory}->{$database} = $self->buffer->config_path("root","public_data")."/repository/semantic/".$self->buffer->public_data->{$version}->{$database}->{config}->{directory};

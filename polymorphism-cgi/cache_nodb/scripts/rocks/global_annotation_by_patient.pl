@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/env perl 
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -62,14 +62,17 @@ my $no_p = {};
 
 my $pm = new Parallel::ForkManager($fork);
 
-my $pm = new Parallel::ForkManager($fork);
 foreach my $patient (@{$project->getPatients}){
-
+	warn $patient->name;
+	#next unless $patient->name =~ /47AS/;
+	
+	
 	my $pid = $pm->start and next;
 	my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory."/patients/",mode=>"c",name=>$patient->name,pipeline=>1);
 	foreach my $chr (@{$project->getChromosomes} ){
 		my $no =  GenBoNoSqlRocks->new(dir=>$dir_pipeline."/".$patient->name,mode=>"r",name=>$chr->name);
 		next unless $no->exists_rocks;
+		
 		my $iter = $no->rocks->new_iterator->seek_to_first;
 		while (my ($key, $value) = $iter->each) {
     		$final_polyviewer_all->put_batch_raw($key,$value);

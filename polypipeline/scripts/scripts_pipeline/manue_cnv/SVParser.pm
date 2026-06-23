@@ -111,7 +111,6 @@ sub parse_vcf {
 			$h->{'SVTYPE'} = "DUP" if ($row->id()  =~ m/gain/i);
 		}
 		next unless ( ($h->{'SVTYPE'} eq "DUP") || ($h->{'SVTYPE'} eq "DEL") );
-	
 		$h->{'CHROM'}=$chr->name;
 		$h->{"CALLER"} = $caller;
 		$h->{'END'} = $row->get_info($header, "END")->[0];
@@ -132,6 +131,8 @@ sub parse_vcf {
 		#warn $h->{'GT_a'}->[0]."/". $h->{'GT_a'}->[1] if  $h->{'GT_a'}->[0] eq "."  or  $h->{'GT_a'}->[1] eq ".";
 		#warn $h->{'GT_a'}->[0]."/". $h->{'GT_a'}->[1];
 		next if $v->[0] eq "."  &&  $v->[1] eq ".";
+		warn "---------$caller ".$chr->name." ".$v->[0]."/".$v->[1] if $v->[1] == 0;
+		
 		$h->{'GT'} = "0/1";
 		$h->{'GT'} = "1/1" if ($h->{'GT_a'}->[0] == $h->{'GT_a'}->[1]);  
 		$h->{'CN'} ="-" ;

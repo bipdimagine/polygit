@@ -448,30 +448,16 @@ sub end_coverage {
 	$f1 = $tmp."/".$patient->name.".transcripts";
 	warn "$f1 $f2";
 	system("mv $f1 $f2");
-	#sleep(5);
-#	my $no1  = $patient->getTranscriptsCoverageDepth("r");
-#	$no1->close;
 }
 
 sub end_dude {
 	my ($patient) = @_;
-#	 my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
 	 my $no = $patient->getTranscriptsDude("c");
 	my $hid = $patient->id;
 	$no->put("high",$array->{$hid."_high"});		
 	$no->put("medium",$array->{$hid."_med"});	
 	$no->put("low",$array->{$hid."_low"});
 	$no->close();
-#	my $f1 = $no->filename();
-#	my $no2 = $patient->getTranscriptsDude("c");
-#	my $f2 = $no2->filename();
-#	$no2->close();
-#	warn "rsync -rav $f1 $f2";
-#	system("rsync -rav $f1 $f2;");
-#	warn "rm $f1";
-#	system("rm $f1") if -e $f1;
-#	warn "rm -r $tmp";
-#	system("rm -r $tmp") if -e $tmp or -d $tmp;
 	warn 'ok end dude';
 }
 

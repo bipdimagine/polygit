@@ -258,6 +258,7 @@ foreach my $patobj (@$listPatients)
 	next unless $patobj->isGenome;
 	#next if  $patobj->name() ne "IPS_CBE_EV2";
 	my $patientname  =  $patobj->name();
+	next if $patobj->alignmentMethods->[0] eq 'no_align';
 	confess("\n\nERROR: no SV calling methods found for $patientname. DIE.\n\n") if scalar(@$listCallers) == 0;
 	
 	$job_id ++;

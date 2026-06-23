@@ -60,8 +60,8 @@ sub getdbh{
 	#	my $dsn = "DBI:MariaDB::$ip;hostname=$ip;port=$port";
 	eval{
 		
-		require "DBD/MariaDB.pm";
-		my $dsn = "DBI:MariaDB::$ip;port=$port";
+	#	require "DBD/MariaDB.pm";
+		my $dsn = "$ip;port=$port";
 	 	$dbh = DBI->connect($dsn, $db_user_name, "$db_password")|| die "Database connection not made: $DBI::errstr";
 	};
 	if ( $@){
@@ -69,7 +69,6 @@ sub getdbh{
 		$dbh = DBI->connect($dsn, $db_user_name, "$db_password")|| die "Database connection not made: $DBI::errstr";
 	}
 	if ( $@){
-		warn "connect 3" ;
 		$dsn = "DBI:mysql::$ip2;port=$port\n";
 		 $dbh = DBI->connect($dsn, $db_user_name, "$db_password")|| die "Database connection not made: $DBI::errstr";
 	}

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -530,6 +530,7 @@ sub get_annotations {
 		
 		#next;
 		$variation = $no->get_index($i);
+	
 #		warn Dumper($variation) if $i == 14773;
 		if ( $lmdb_index < 0 ) {
 			confess("index out of range <0");
@@ -541,7 +542,7 @@ sub get_annotations {
 		confess() unless $variation->id;
 		$variation->{buffer}  = $buffer_tmp;
 		$variation->{project} = $project_tmp;
-		
+		warn $variation->name if $variation->isInversion();
 		
 
 		################
@@ -567,6 +568,10 @@ sub get_annotations {
 		}
 		elsif ( $variation->isJunction()) {
 			$intspan_global_categories->{'junction'}->add($lmdb_index);
+		}
+		elsif ( $variation->isInversion()) {
+			$intspan_global_categories->{'inversion'}->add($lmdb_index);
+			die();
 		}
 		else {
 			confess;

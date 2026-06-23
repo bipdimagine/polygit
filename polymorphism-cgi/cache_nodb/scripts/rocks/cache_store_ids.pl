@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/env perl 
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -21,7 +21,6 @@ use Carp;
 use GBuffer;
 use GenBoNoSqlRocksGenome;
 use GenBoNoSqlRocksVariation;
-use List::Util qw(shuffle);
 use Sys::Hostname;
 use GenBoNoSqlRocksPolyviewerVariant;
 use lib "$RealBin/../../../../GenBo/lib/obj-nodb/packages/";
@@ -61,11 +60,15 @@ if ($ok_file && -e $ok_file) {
  	system("rm $ok_file");
 }
 
+print "$^V\n";
 
 
 `ulimit -Su unlimited && echo toto`;
+
 system("ulimit -Su unlimited");
 system("ulimit -a >/tmp/test");
+system ("which perl");
+
 my (@z) = `ulimit -a `;
 
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
@@ -195,11 +198,11 @@ foreach my $region (values @$regions) {
 	$project->disconnect();
 	$project->buffer->disconnect();
 	$project->close_rocks();
+	
 	$pm->finish( 0, $hres );
 }
 $pm->wait_all_children();
-
-#warn 'AFTER WAIT CHILDREN deb';
+warn 'AFTER WAIT CHILDREN deb';
 
 if(keys %$process){
 	warn Dumper $process;
@@ -212,7 +215,6 @@ $project->disconnect();
 $project->buffer->disconnect();
 $project->buffer->dbh_deconnect();
 $project->close_rocks();
-
 #warn 'AFTER WAIT CHILDREN';
 #
 #warn "END ANNOTATION => ".abs(time-$t);
@@ -365,6 +367,7 @@ sub get_ids {
 			warn "\n\n";
 			warn "bug3 ";
 			warn "\n\n";
+			warn $@;
 			die();
 		}
 	}
@@ -381,7 +384,6 @@ sub get_ids {
 		next if ($variation->type =~ /junction/ );
 		#TODO: a ne pas oublier d'enlever apres TEST
 		#next if ($variation->isCnv() );
-		
 		
 		my $debug ;
 		$nb ++;
@@ -407,7 +409,6 @@ sub get_ids {
 		$variation->dejaVuInfosForDiag2();
 		$variation->annotation();
 		};
-		
 		if ($@){
 			warn "\n\n";
 			warn Dumper $@;
@@ -446,7 +447,6 @@ sub get_ids {
 		$vp->{patients_id} = [];
 		my $dvp;
 		
-		
 		warn " before setPatients - time: ".abs(time - $tloop) if $nb %5000 == 0; 
 		foreach my $pat (@{$variation->getPatients}){
 			
@@ -461,7 +461,6 @@ sub get_ids {
 		warn " after setPatients - time: ".abs(time - $tloop) if $nb %5000 == 0; 
 		
 		warn $nb."/".scalar @{$vs }." time: ".abs(time - $tloop) if $nb %5000 == 0; 
-		
 		# line to prepare dejavu global;
 		my $ref = ref($variation);
 		my $ddebug;

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#! /usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
 
@@ -15,6 +15,7 @@ use Thread::Queue;
 use Set::IntSpan::Fast::XS;
 use String::ProgressBar;
 use List::Util qw(sum);
+use autodie qw(system);
 
 
 
@@ -69,50 +70,50 @@ my $project = $buffer->newProject( -name => $project_name );
 
 
 
-my $singularity= "singularity run --bind /data-pure:/data-pure --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs " ;
+#my $singularity= "singularity run --bind /data-pure:/data-pure --bind /data-isilon:/data-isilon --bind /data-beegfs:/data-beegfs " ;
+my $singularity = "run_singularity.sh";# "/data-bipd/".$buffer->software("singularity-run");
 my @ds;
-my $sawfish = "/data-pure/software/SINGULARITY/sawfish.sif ";
-foreach my $patient (@{$project->getPatients}){
-next if ($patient_name && $patient->name ne $patient_name);
+my $sawfish = "sawfish.sif ";
+my $patient = $project->getPatient($patient_name);
 my $run = $patient->getRun();
 my $ref =  $project->genomeFasta();
-my $bam = $patient->getAlignFileName("pbmm2",1) ;
-next unless -e $bam;
-my $npz =  $patient->fileWiseCondor();
-my $dir_pipeline= $project->getCallingPipelineDir($patient->name.".sawfish");
-push(@ds,"--sample ".$dir_pipeline);
-my $dir_opt = $dir_pipeline."/".$patient->name;
-my $dir_opt2 = $dir_pipeline."/".$patient->name.".gentotype";
+my $dir_out= $project->getAlignmentPipelineDir($patient->name);
+my $bam_out = $dir_out."/".$patient->name.".bam";
+die() unless -e $bam_out;
 
-#mosdepth -t 8 -x -b 1000 -Q 20 "${out_path}/${sample_id}" "${bam_path}";
-my $align = $patient->getAlignmentFile();
-my $expected = "/data-pure/software/distrib/sawfish/data/expected_cn/expected_cn.hg38.XX.bed";
-my $excluded = "/data-pure/software/distrib/sawfish/data/cnv_excluded_regions/annotation_and_common_cnv.hg38.bed.gz";
+
+my $dir_pipeline = $dir_out."/sawfiwh1".time;
+mkdir $dir_pipeline;
+my $dir_opt2 = $dir_out."/sawfiwh2".time;
+mkdir $dir_opt2;
+
+
+my $expected = "/data-bipd/data-pure/software/distrib/sawfish/data/expected_cn/expected_cn.hg38.XX.bed";
+my $excluded = "/data-bipd/data-pure/software/distrib/sawfish/data/cnv_excluded_regions/annotation_and_common_cnv.hg38.bed.gz";
 if ($patient->isMale) {
-	 $expected = "/data-pure/software/distrib/sawfish/data/expected_cn/expected_cn.hg38.XY.bed";
+	 $expected = "/data-bipd/data-pure/software/distrib/sawfish/data/expected_cn/expected_cn.hg38.XY.bed";
 }
-my $vcf = $patient->vcfFileName("deepvariant");
-my $cmd = qq{$singularity $sawfish sawfish discover --threads $fork --ref $ref  --bam $align  --expected-cn $expected --cnv-excluded-regions $excluded --output-dir $dir_pipeline --maf-sample-name $vcf };
+my $vcf = $dir_out."/".$patient->name.".vcf.gz" ;
+ $vcf = $patient->vcfFileName("deepvariant") unless -e $vcf;
+
+my $cmd = qq{$singularity $sawfish sawfish discover --threads $fork --ref $ref  --bam $bam_out  --expected-cn $expected --cnv-excluded-regions $excluded --output-dir $dir_pipeline --maf-sample-name $vcf };
 
 my $cmd2 = qq{$singularity $sawfish sawfish joint-call --threads $fork --sample $dir_pipeline --output-dir $dir_opt2 };
 
  # --cnv-excluded-regions ${DISTRO_ROOT_DIR}/data/cnv_excluded_regions/annotation_and_common_cnv.hg38.bed.gz \
  # --output-dir HG002_discover_dir
 #warn $cmd;
+warn "$cmd && $cmd2";
+warn "$dir_opt2/genotyped.sv.vcf.gz";
 system("$cmd && $cmd2" ) unless -e "$dir_opt2/genotyped.sv.vcf.gz";
 #die();
-my $prod_file = $project->getVariationsDir("sawfish")."/".$patient->name.".vcf.gz";
+my $prod_file = $dir_out."/".$patient->name.".vcf.gz";
 my $cmd3 = "cp $dir_opt2/genotyped.sv.vcf.gz  $prod_file && tabix -p vcf $prod_file";
 system($cmd3);
 die() unless -e $prod_file.".tbi";
+
 #print $cmd ."\n";
 #print $cmd ." && $cmd2 && $cmd3\n";
-}
 exit(0);
-my $dir_pipeline2= $project->getCallingPipelineDir($project->name.".sawfish.calling");
-my $string =  join(" ",@ds);
-my $cmd = qq{$singularity $sawfish sawfish joint-call --threads 16 $string  --output-dir $dir_pipeline2 };
-warn $cmd;
-system($cmd);
-warn $cmd;
+
 

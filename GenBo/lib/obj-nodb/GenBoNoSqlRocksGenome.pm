@@ -86,7 +86,7 @@ has dir_db =>(
 #		warn $self->mode;
 		unless (-e $dd){
 			if ($self->mode eq "r"){
-				confess($dd)."-".$self->mode;
+				confess($dd);
 			}
 			system("mkdir -p $dd && chmod a+w $dd");
 		}

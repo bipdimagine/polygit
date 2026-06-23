@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -53,7 +53,6 @@ my @header_transcripts = ("consequence","enst","nm","ccds","appris","exon","nome
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
 #unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
 my $t = `hostname`;
-warn $t;
 my $nbErrors = 0;
 my $buffer = GBuffer->new();
 my $project = $buffer->newProjectCache( -name => $project_name, -cache => '1', -typeFilters => 'familial' );
@@ -90,7 +89,7 @@ my $a = "s:146487:ENSG00000227855_7-9802";
 
 my $pm = new Parallel::ForkManager($fork);
 
-my $dir_tmp = tempdir( CLEANUP => 1,DIR => "/tmp/" );
+my $dir_tmp = tempdir( CLEANUP => 1,DIR => "/data-bipd/data-pure/workspace/tmp/" );
 my $proc;
 my $hgenes;
 my $zh;
@@ -166,7 +165,8 @@ my @files ;
 	my $no  = GenBoNoSqlLmdb->new(dir=>$dir_tmp,mode=>"c",name=>$f,is_compress=>1);
 	my $array;
 
-	my $nb =1 ;
+	my $nb = 1;
+	
 	my $global_genes;
 	my $zh;
 	#sleep(2);
@@ -180,7 +180,19 @@ my @files ;
 	for (my $aid=$range->[0];$aid <= $range->[1];$aid++){
 		push(@tmp,$aid);
 	#while(my $v = $project->nextVariant){
+		my $debug;
+		#11!551047 183553
+		#11!475264 160916
+		$debug = 1 if $aid == 551047;# > 551047 &&  $aid < 551047;
+		
+		#warn $aid;
+		#next unless $debug;
+		#		warn $aid;
+		
 		my $v = $no_var->get_index($aid);
+		
+		warn $v->name." ".$aid if $debug;
+		
 		#next if $v->isCnv;
 		$v->{buffer} = $buffer;
 		$v->{project} = $project;
@@ -199,8 +211,8 @@ my @files ;
 	#	warn $v->id;
 		my $vmask;
 		foreach my $patient (@{$v->getPatients}) {
-			
 			my $fam = $patient->getFamily();
+			warn "\t".$patient->id if $debug;
 			#my $h = {};
 		 	#update_variant_editor::construct_hash_variant_patient( $project, $v,$patient,$h);
 		 	#$h->{vector_id} = $v->vector_id;
@@ -405,22 +417,22 @@ warn "create";
   warn "ile2";
 
 
-
-my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
-#$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
-foreach my $k (keys %htansmission){
-	
-	my $a = $final_polyviewer->get($k);
-	# 'patients_calling' => {
-     #                                    '55661' => {
-	foreach my $pid (keys %{$htansmission{$k}} ){
-		die() unless exists $a->{patients_calling}->{$pid};
-		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
-	}
-	$final_polyviewer->put_batch($k,$a);
-}
-$final_polyviewer->write_batch();
-$final_polyviewer->close();
+#
+#my $final_polyviewer = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"w",name=>$chr->name);
+##$hh->{model} = "-";#$vh->getTransmissionModelType($p->getFamily(),$p);
+#foreach my $k (keys %htansmission){
+#	
+#	my $a = $final_polyviewer->get($k);
+#	# 'patients_calling' => {
+#     #                                    '55661' => {
+#	foreach my $pid (keys %{$htansmission{$k}} ){
+#		die() unless exists $a->{patients_calling}->{$pid};
+#		$a->{patients_calling}->{$pid}->{model} = $htansmission{$k}->{$pid};
+#	}
+#	$final_polyviewer->put_batch($k,$a);
+#}
+#$final_polyviewer->write_batch();
+#$final_polyviewer->close();
 warn " end transmission ";
 my $dir_pipeline = $project->rocks_pipeline_directory("patients");
 
@@ -472,8 +484,8 @@ foreach my $f (@files){
 my $dir = $project->rocks_cache_dir();
 my $file = "$dir/lmdb".$chr->name.".ok";
 
-warn "date >$dir/lmdb.ok && chmod a+rw $dir/lmdb.ok";
-system ("date >$dir/$file && chmod a+rw $dir/$file");
+warn "date >$dir/lmdb.ok && chmod a+rw $dir/update_hash_variant.ok";
+system ("date >$dir/$file && chmod a+rw $dir/$file") ;
 warn "$dir/lmdb.ok";
 $dir_tmp = undef;
 return ("$dir/$file");

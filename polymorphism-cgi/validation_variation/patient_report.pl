@@ -2823,7 +2823,7 @@ sub printTableGenesXls {
 		
 		my $s_id=$patient->{name};
 		my $total_variations = $patient->{variations};
-		@headers = ("gene","var_name","ngs","ratio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
+		@headers = ("gene","var_name","ngs","trio","ratio","genomique","transcript","exon","nomenclature","consequence","codons","codons_AA","freq","freq_ho","max_pop","min_pop","clinvar","local","deja_vu","similar_projects","in_this_run", "polyphen","sift","cadd");
 		my ($z) =shift @headers;
 		my @infos = ($z,"trans","phenotypes",@headers);
 		if ($project->isSomatic){

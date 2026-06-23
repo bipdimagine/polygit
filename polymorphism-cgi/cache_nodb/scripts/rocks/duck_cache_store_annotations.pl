@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -163,7 +163,7 @@ my $tume = time;
 my $diro = $project->rocks_directory();
 my $nb = 0;
 foreach my $chr (@{$project->getChromosomes}){
-	#next if $chr->name ne "21";
+#	next if $chr->name ne "MT";	
 	my $no = $chr->get_rocks_variations("r");
    	my $nproc = 10;	
 	my $N = $no->size;
@@ -455,14 +455,12 @@ sub return_transmissions {
 	}
 	my $model = 0;
 	$model |= $h_models_ids->{dominant} if $variant->isDominantTransmission($fam,$patient);
-
 	if ($variant->isBothTransmission($fam,$patient)){
 		$model |= $h_models_ids->{both};
 		return $model;
 	}
 	$model |= $h_models_ids->{father} if  $variant->isFatherTransmission($fam,$patient);
 	$model |= $h_models_ids->{mother} if $variant->isMotherTransmission($fam,$patient);
-	
 	$model |= $h_models_ids->{recessif} if $variant->isRecessiveTransmission($fam,$patient);
 	$model |= $h_models_ids->{denovo} if $variant->isDenovoTransmission($fam,$patient);
 	$model |= $h_models_ids->{strict_denovo} if $variant->isStrictDenovoTransmission($fam,$patient);

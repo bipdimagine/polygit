@@ -31,6 +31,8 @@ sub parseVcfFileForReference {
 	while ( my $row = $iter->next ) {
 
 		my $x = $self->parseVCFLine($row);
+		
+		next if $x->{gt}->{isref} or $x->{gt}->{nocall};
 		confess( "alt " => Dumper $x) if scalar( @{ $x->{alt} } ) > 1;
 		my $hash;
 		if ( $x->{infos}->{SVTYPE} eq "INS" or $x->{infos}->{SVTYPE} eq "DUP" )
@@ -66,8 +68,9 @@ sub parseVcfFileForReference {
 		my $id = $hash->{id};
 		$hash->{'isSrPr'} = 1;
 		my $structType = $hash->{structuralType};
-		warn Dumper $hash unless $id;
-		next unless $id;
+		#warn Dumper $hash unless $id;
+		#die("------++==") unless $id;
+		#next unless $id;
 		$hashRes{$structType}->{$id} = compress( freeze($hash) );
 
 	}
@@ -95,7 +98,7 @@ sub PbsvINV {
 	$var_allele = BioTools::complement_sequence($var_allele);
 
 	my $len   = abs( $pos_end - $genbo_pos ) + 1;
-	my $id    = $chr->name . "_" . $genbo_pos . "_" . $ref . "_inv-" . $len;
+	my $id    = $chr->name . "_" . $genbo_pos. "_inv-" . $len;
 	my $infos = $x->{infos};
 	$hash->{'id'}                   = $id;
 	$hash->{'isInversion'}          = 1;
@@ -252,6 +255,7 @@ sub PbsvIns {
 		$ref        = substr( $ref, 0, 1 );
 		if ($alt ne "<INS>"){
 			$var_allele        = substr( $alt, length($ref) );
+			$var_allele  =  $x->{alt}->[0]  unless $var_allele;
 			$len        = length($var_allele);
 			$id         = $chr->name . "_" . $genbo_pos . "_" . $ref . "_" . $var_allele;
 			$hash->{'allele_length'} = length($var_allele);
@@ -261,7 +265,9 @@ sub PbsvIns {
 			die Dumper $x;
 		}
 	}
-		$hash->{'var_allele'}    = $var_allele;
+	$hash->{'var_allele'}    = $var_allele;
+	$hash->{'sequence'}    = $var_allele;
+	warn $var_allele." ".join( "_", $chr->name, $pos, $ref, $x->{alt}->[0] ) unless $var_allele;
 	$hash->{'start'}  = $genbo_pos;
 	$hash->{'end'}    = $genbo_pos;
 	$hash->{'id'}     = $id;

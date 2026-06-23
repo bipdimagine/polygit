@@ -303,7 +303,7 @@ has tabix_coverage => (
 		my $self = shift;
 		my $coverage_file;
 		$coverage_file = $self->getCoverageFile();
-		warn $coverage_file;
+#		warn $coverage_file;
 		return unless -e $coverage_file;
 		return Bio::DB::HTS::Tabix->new( filename => $coverage_file );
 
@@ -795,6 +795,16 @@ has alignmentMethods => (
 
 );
 
+has isNoAlign => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self  = shift;
+		return $self->alignmentMethods->[0] eq 'no_align';
+	},
+);
+
+
 sub alignmentMethod {
 	my $self    = shift;
 	my $methods = $self->alignmentMethods();
@@ -823,6 +833,7 @@ has 'uBams_revio' => (
 	default => sub {
 	my $self = shift;
 	my $lane = $self->getLane();
+
 	my @runs = split(";",$lane);
 	my $hash;
 	foreach my $line (@runs){
@@ -1864,7 +1875,7 @@ sub getAlignmentFile {
 	  		confess($self->getBamFileName." ".$self->name." :: "." \n:: ".Dumper  $self->alignmentMethods());
 	}
 	 return undef if $method_name eq 'no_align';
-	return undef if $self->alignmentMethods->[0] eq 'no_align';
+	return undef if $self->isNoAlign();
 	confess("ERROR: no bam file with $method_name method name. Exit. "
 		  . $self->name." "
 		  . $self->project->name
@@ -1891,6 +1902,7 @@ sub getBamFileForPipeline {
 }
 sub isCram {
 	my ($self,$method) = @_;
+	return if $self->isNoAlign();
 	my $file = $self->getAlignmentFile($method);
 	return $file =~ /\.cram/;
 }
@@ -2431,6 +2443,7 @@ sub getTranscriptsDude {
 
 sub depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return -1 if $self->isNoAlign();
 	my $chr   = $self->project->getChromosome($chr_name);
 	my $array = $self->getNoSqlDepth->getDepth( $chr->name, $start, $end );
 	return $array;
@@ -2438,6 +2451,7 @@ sub depth {
 
 sub mean_normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return -1 if $self->isNoAlign();
 	$end = $start +1 if $start == $end;
 	my $a = $self->normalize_depth($chr_name, $start, $end );
 	my $t = sum(@$a);
@@ -2447,6 +2461,7 @@ sub mean_normalize_depth {
 }
 sub mean_normalize_depth2 {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return -1 if $self->isNoAlign();
 	$end = $start +1 if $start == $end;
 	my $mean = $self->meanDepth($chr_name, $start, $end );
 	return $mean/$self->normalized_reads;
@@ -2457,6 +2472,7 @@ sub mean_normalize_depth2 {
 }	
 sub normalize_depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return -1 if $self->isNoAlign();
 	my $chr   = $self->project->getChromosome($chr_name);
 	my $array = $self->getNoSqlDepth->getDepth( $chr->name, $start, $end );
 	my $res;
@@ -2468,24 +2484,28 @@ sub normalize_depth {
 }	
 sub meanDepth {
 	my ( $self, $chr, $start, $end ) = @_;
+	return -1 if $self->isNoAlign();
 	$end = $start +1 if $start == $end;
 	return $self->getNoSqlDepth->getMean( $chr, $start, $end );
 }
 
 sub minDepth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return -1 if $self->isNoAlign();
 	my @lcov = sort {$a <=> $b} @{$self->depth($chr_name, $start, $end)};
 	return $lcov[0];
 }
 
 sub maxDepth {
 	my ( $self, $chr_name, $start, $end ) = @_;
+	return -1 if $self->isNoAlign();
 	my @lcov = sort {$a <=> $b} @{$self->depth($chr_name, $start, $end)};
 	return $lcov[-1];
 }
 
 sub depthIntspan {
 	my ( $self, $chr, $intspan ) = @_;
+	return [] if $self->isNoAlign();
 	my $array = $self->getNoSqlDepth->getDepthForIntspan( $chr, $intspan );
 	return $array;
 }
@@ -2877,7 +2897,7 @@ sub hotspot {
 	my ($self, $fork) = @_;
 	$fork = 1 if not $fork;
 	my $res;
-	return if $self->alignmentMethods->[0] eq 'no_align';
+	return if $self->isNoAlign();
 	my $file = $self->getCapture->hotspots_filename;
 	return if not -e $file;
 	my $bam = $self->getAlignmentFile();
@@ -3378,8 +3398,12 @@ has nb_reads => (
 	default => sub {
 		my $self = shift;
 		my $h;
-		my $methods = $self->alignmentMethods();
-		return $h if $methods->[0] eq 'no_align';
+		if ($self->isNoAlign()) {
+			$h->{all} = undef;
+			$h->{norm} = undef;
+			$h->{norm1} = undef;
+			return $h;
+		}
 		
 		my $bam  = $self->getAlignmentFile();
 		my $cmd;
@@ -3434,8 +3458,7 @@ has normalized_reads => (
 	default => sub {
 	my $self = shift;
 	
-		my $methods = $self->alignmentMethods();
-		return undef if $methods->[0] eq 'no_align';
+		return undef if $self->isNoAlign();
 	
 		my $value = $self->project->mean_amount_reads();
 	
@@ -3529,9 +3552,12 @@ sub ploidy_value2 {
 sub cnv_region_ratio_norm {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	my $sum  = $self->getNoSqlDepth->getMean( $chr_name, $start, $end );
-	my $total = $self->nb_reads->{norm};
-	my $ratio1 = int($sum / $total);
-	return $ratio1;
+	if ($self->nb_reads) {
+		my $total = $self->nb_reads->{norm};
+		my $ratio1 = int($sum / $total);
+		return $ratio1;
+	}
+	return;
 }
 
 sub cnv_value_dude {

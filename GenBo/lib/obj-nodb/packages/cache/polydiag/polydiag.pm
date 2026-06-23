@@ -418,7 +418,7 @@ sub run_cache_polydiag_fork {
 		while (my $v = $project->nextVariant){
 		
 			my $debug;
-		 $debug  = 1 if $v->name eq "8-41790037-C-A";
+#		 $debug  = 1 if $v->name eq "8-41790037-C-A";
 		 warn $v->id." ".$v->name if $debug == 1;
 		#foreach my $v ( @{$variations} ) {
 			#next if $v->getChromosome->name ne $chr->name;
@@ -432,23 +432,23 @@ sub run_cache_polydiag_fork {
 			
 			my $ok;
 			my $transcripts = $v->getTranscripts;
-			if ($debug){
-				my $vp =  $rocksdb_pv->get_polyviewer_variant($v->global_vector_id);
-				my $trs = $vp->{hgenes}->{ENSG00000083168_8}->{tr};
-				foreach my $t4 (@$trs){
-					warn $t4->{name};
-				}
-				warn "------";
-				foreach my $tr ( @{$transcripts} ) {
-					warn $tr->name;
-					}
-			#	my $v1 = $project->newVariant($v->name);
-			#	warn $v1->name;
-			#	my $t3 = $v1->getTranscripts;
-			#	foreach my $tr ( @{$t3} ) {
-			#		warn $tr->name;
-			##	die();
-			}
+#			if ($debug){
+#				my $vp =  $rocksdb_pv->get_polyviewer_variant($v->global_vector_id);
+#				my $trs = $vp->{hgenes}->{ENSG00000083168_8}->{tr};
+#				foreach my $t4 (@$trs){
+#					warn $t4->{name};
+#				}
+#				warn "------";
+#				foreach my $tr ( @{$transcripts} ) {
+#					warn $tr->name;
+#					}
+#			#	my $v1 = $project->newVariant($v->name);
+#			#	warn $v1->name;
+#			#	my $t3 = $v1->getTranscripts;
+#			#	foreach my $tr ( @{$t3} ) {
+#			#		warn $tr->name;
+#			##	die();
+#			}
 			foreach my $tr ( @{$transcripts} ) {
 				
 				warn $v->name()." ".$tr->id." ENST00000426524" if $debug;

@@ -197,10 +197,10 @@ vcftools:/software/bin/vcftools
 vcfconcat:/software/bin/vcf-concat
 
 #samtools htslib
-samtools:/software/bin/samtools
-bcftools:/software/bin/bcftools
-tabix:/software/bin/tabix
-bgzip:/software/bin/bgzip
+samtools:samtools
+bcftools:bcftools
+tabix:tabix
+bgzip:bgzip
 vcfutils:/software/bin/vcfutils.pl
 vcfutil:/software/bin/vcfutils.pl
 #seq-align

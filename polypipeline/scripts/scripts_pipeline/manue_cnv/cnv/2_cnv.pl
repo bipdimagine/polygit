@@ -146,6 +146,8 @@ my $dintspan  = Set::IntSpan::Fast->new("94759398-94775314");
 	 $duck2 = GenBoDuckDejaVuCNV->new( project => $project );
 	 my $hashP;
 	 foreach my $patient (@{$project->getPatients}){
+	 	
+		next if $patient->alignmentMethods->[0] eq 'no_align';
 	 	$hashP->{$patient->id} =  $duck2->get_cnvs_by_project($patient);
 	 }
 	 print "\n#end load\n";
@@ -154,6 +156,7 @@ my $dintspan  = Set::IntSpan::Fast->new("94759398-94775314");
 	 $project->disconnect();
 	
 	foreach my $patient (@{$project->getPatients}){
+		next if $patient->alignmentMethods->[0] eq 'no_align';
 		warn $patient->name;
 		$job_id ++;
 		$hjobs->{$job_id} ++;

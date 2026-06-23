@@ -487,12 +487,11 @@ sub launch_bds_daemon_common{
 	
 	warn "mode  $bds_exe =>  ".$self->nocluster;#  if $self->nocluster == 2;
 	my $libe = "$bds_exe  -reportYaml    pipeline.bds";
-	$libe= "$bds_exe ".$self->queue." -reportYaml    pipeline.bds" if $self->cache ==1;
+	$libe= "$bds_exe ".$self->queue." -reportYaml    pipeline.bds" if $self->cache == 1;
 	my $daemon = Proc::Daemon->new(
         work_dir => "$dir",
    		exec_command =>$libe,
     );
-	
 	
 	my $pid = $daemon->init;
 	$self->daemon($daemon);
@@ -1057,7 +1056,7 @@ sub report_final {
 	my $file_yaml = $yamlfiles[-1];
 	if (-e  "$file_yaml"){
 		$self->yaml($file_yaml);
-    	system("$Bin//scripts/scripts_pipeline/parse_bds_report.pl $file_yaml");
+    	system("/usr/bin/env perl $Bin//scripts/scripts_pipeline/parse_bds_report.pl $file_yaml");
 	}
 	my @samples = grep { $_->is_pending_jobs()} $self->samples;
 	my @job_log;
@@ -1065,10 +1064,10 @@ sub report_final {
 		push(@job_log, grep{$_->isLogging} @{$s->jobs});
 	}
 	
-	foreach my $j (@job_log){
-		warn $j->fileout;
+	#foreach my $j (@job_log){
+	#	warn $j->fileout;
 		#system("cat ".$j->fileout);
-	}
+	#}
 	return \@job_log;
 }
 
@@ -1079,7 +1078,7 @@ sub report_target{
 	 my $dir = $self->project->project_log();
 	 my $file_log = $dir."/quality_check.html";
 	  my $file_log2 = $dir."/mendelian.log";
-	   my $c = "$Bin//scripts/scripts_pipeline/quality_check.pl -project=$project_name -fork=".$self->local_cpu;
+	   my $c = "/usr/bin/env perl $Bin//scripts/scripts_pipeline/quality_check.pl -project=$project_name -fork=".$self->local_cpu;
 #	 my $c = "$Bin//scripts/scripts_pipeline/quality_check_target_gene.pl -project=$project_name > $file_log";
 	system($c);	 
 #	if ($p->isFamilial)	{
@@ -1218,13 +1217,13 @@ foreach my $s (@samples){
 		if (exists  $delete_files->{prod}->{$name}){			
 		 	my $arg = join(" ",@{ $delete_files->{prod}->{$s->name}});
 		 	my $bin_dev = $self->script_dir;
-		 			my $cmd = "$bin_dev/rm_prod.pl $arg";
+		 			my $cmd = "/usr/bin/env perl $bin_dev/rm_prod.pl $arg";
 				system($cmd);
 				foreach my $f (@{ $delete_files->{prod}->{$s->name}})
 					{
 							if (-e $f ){
 								warn "unable to delete  : $f   !!!!!!!!!!!!!! \n check permissions" ;
-								die();
+							#	die();
 							}
 					}			
 		 }	

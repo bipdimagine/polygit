@@ -283,6 +283,11 @@ has only_genes  => (
 	lazy    => 1,
 );
 
+has hash_only_genes  => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 
 sub check_variants_from_gene {
 	my ($self, $h_dv_rocks_ids) = @_;
@@ -306,7 +311,7 @@ sub check_variants_from_gene {
 		print '.chr'.$chr_id.'.';
         my $chr = $self->project->getChromosome($chr_id);
 		my $nodv = $chr->rocks_dejavu();
-		my $fork2 = 1;
+		my $fork2 = $fork;
 		my $nb_part = 0;
 		my $iter = natatime(100000, keys %{$h_dv->{$chr_id}});
 		while( my @tmp = $iter->() ){
@@ -551,12 +556,12 @@ sub check_variants_from_gene {
 				$vp->{hpatients} ={};
 				$vp->{patients_id} = [];
 				$hres->{variants}->{$var_id}->{polyviewer_variant} = $vp;
+				$hres->{variants}->{$var_id}->{can_export} = 1;
 			}
 		}
 		MCE->gather($hres);
 	} keys %{$h_projects_patients};	
 	MCE::Loop->finish();
-			
 			
 	$self->project->disconnect();
 	print '._end_MCE_check_.';
@@ -786,6 +791,9 @@ sub print_html_gene {
 		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails, $gene);
 		$g->{max_score} = $max_gene_score;
 	}
+	
+	next if ($self->only_genes() and not exists $self->{hash_only_genes}->{$g->{name}});
+	
 	my $panel_id = "panel_".$gene_id;
 	my ($out, $h_phenos);
 	my $bg_color = $print_html->bgcolor;
@@ -817,6 +825,7 @@ sub print_html_gene {
 	$out .= "</tr></thead>";
 	$out .= "<tbody>";
 	
+	#my $h_var_done;
 	my $color_validation = "grey";
 	my $i = 0;
 	foreach my $var_id (sort @lVar_ok) {
@@ -840,6 +849,7 @@ sub print_html_gene {
 		
 		$print_html->variant($polyviewer_variant);
 		my ($this_out, $this_h_pheno) = $self->print_line_variant_all_patients($polyviewer_variant, $print_html, \@list_polyviewer_h_details, $opacity);
+		#$h_var_done->{$var_id};
 		$out .= $this_out;
 		foreach my $pheno_name (keys %$this_h_pheno) { $h_phenos->{$pheno_name} = $this_h_pheno->{$pheno_name}; }
 	}
@@ -1021,83 +1031,7 @@ sub get_score_variant_from_gene_without_patient {
 			$scaled_score = 4 if $this_score >= 200;
 			$max_scaled_score = $scaled_score if $max_scaled_score < $scaled_score;
 		}
-		if ($self->is_magic_user()) {
-			$max_gene_score = $max_scaled_score;
-			next;
-		}
-			
-		my $max_score_pat = -999;
-		my @list_polyviewer_h_details = @{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}};
-		foreach my $hpat (@list_polyviewer_h_details) {
-			my $score_pat = $max_scaled_score;
-			my $pc = $hpat->{ratio};
-			$pc =~ s/.*Ratio://g;
-			my $dp = $hpat->{dp};
-			
-			if (lc($hpat->{model}) eq 'solo') {
-				$score_pat += 0.4 if $pc > 70;
-				$score_pat += 0.3 if  ($pc > 90);
-				$score_pat += 0.3 if $dp > 10;
-				my $n = $var->getGnomadHO();
-				$n = 0 unless $n;
-				$n = 0 if $n eq "-";
-				$score_pat += 0.5 if $n == 0;
-				$score_pat -= 0.4 if $n > 3;
-			}
-			
-			if (lc($hpat->{model}) eq 'both' or lc($hpat->{model}) eq 'parent') {
-				$score_pat -= 2;
-			}
-				
-			if (lc($hpat->{model}) eq 'recessif' or lc($hpat->{model}) eq 'recessive') {
-				$score_pat += 0.4 if $pc > 70;
-				$score_pat += 0.3 if  ($pc > 90);
-				$score_pat += 0.3 if $dp > 10;
-				my $n = $var->getGnomadHO();
-				$n = 0 unless $n;
-				$score_pat += 0.5 if $n == 0;
-				$score_pat -= 0.4 if $n > 3;
-				$score_pat =  $score_pat*2 ;
-			}
-			
-			if (lc($hpat->{model}) eq 'mother' or lc($hpat->{model}) eq 'father') {
-			 	$score_pat += 0.3 if $pc > 15;
-			 	$score_pat += 0.4 if $pc > 20;
-				$score_pat += 0.3 if $dp > 10;
-				my $n = $var->getGnomadHO();
-				$n = 0 unless $n;
-				$n = 0 if $n eq "-";
-				$score_pat += 0.25 if $n == 0;
-				$score_pat -= 0.4 if $n > 3;
-			}
-			
-			if (lc($hpat->{model}) eq 'denovo' or lc($hpat->{model}) eq 'strict-denovo' or lc($hpat->{model}) eq 'strict_denovo') {
-				my $n = $var->getGnomadAC();
-				$n = 0 unless $n;
-				$score_pat += 0.5 if $n == 0;
-				$score_pat -= 0.4 if $n > 30;
-				if (lc($hpat->{model}) eq 'strict-denovo' or lc($hpat->{model}) eq 'strict_denovo'){
-					$score_pat += 0.3 if $pc > 20  ;
-					$score_pat += 0.4 if $pc > 30  ;
-					$score_pat += 0.3 if $dp > 10;
-				}
-				else {
-					$score_pat += 0.1 if   $pc > 20  ;
-					$score_pat += 0.2 if   $pc > 30  ;
-					$score_pat -= 0.5;# if   $pc > 20  ;
-				}
-				$score_pat += 0.4 if ($pc > 20 && ($pc < 75 && $var->getChromosome->name ne "X"));
-				$score_pat += 0.3 if $dp > 10;
-				$score_pat =  $score_pat*2 ;
-			}
-			$max_score_pat = $score_pat if $max_score_pat < $score_pat;
-		}
-		if ($max_score_pat > $max_score) {
-			$max_score = $max_score_pat;
-		}
-		$max_gene_score += $gene->score();
-		$h_var_scores->{$var->id()} = $max_score;
-		$max_gene_score = $max_score if $max_gene_score < $max_score;
+		$max_gene_score = $max_scaled_score;
 	}
 	return ($max_gene_score, $h_var_scores);
 }

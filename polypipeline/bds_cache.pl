@@ -96,7 +96,9 @@ unless ($steps_name){
 #$predef_steps->{update_type} = ["chromosomes"];
 my $pipeline;
  $pipeline = bds_cache_rocks->new( project=>$project, nocluster=>$nocluster,cache=>1 );
-$pipeline->queue("-q pipeline") unless $secret;
+ if ($buffer->biocluster) {
+	$pipeline->queue("-q bipd");
+ }
 my $steps = {
 				"store_ids"=>  sub {$pipeline->store_ids(@_)},
 				"store_annotations"=> sub {$pipeline->store_annotations(@_)},
@@ -298,7 +300,7 @@ for my $file (@files) {
      	my $date = strftime("%Y%m%d", localtime);
     	my $rotated = "$file.$date";
     	system ("mv $file $rotated ");
-    	system("gzip", $rotated) == 0 or warn "Impossible de compresser $rotated: $!";
+    	system("gzip","-f", $rotated) == 0 or warn "Impossible de compresser $rotated: $!";
     }
 }
 } 
@@ -309,9 +311,8 @@ sub prepare_calling_jobs {
 	my ($running_steps,$steps) = @_;
 	
 	my $next_file = "";
-	warn Dumper $running_steps;
 	foreach my $step (@$running_steps){
-		warn $step;
+		warn $step." ".$next_file;
 		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;
@@ -341,14 +342,20 @@ sub clean {
 		my ($project_name) = @_;
 		my $buffer = GBuffer->new();
 		my $project = $buffer->newProject( -name => $project_name );
+			my $tr = $project->rocks_cache_2_root_dir()."/".$project->name;
 		my $cache_directory_actual = $project->getCacheDir();
-		my $choice = prompt(colored ['black ON_BRIGHT_YELLOW'],"delete  $cache_directory_actual (y/n) ? ") unless $yes;;
+		my $choice = prompt(colored ['black ON_BRIGHT_YELLOW'],"delete  $cache_directory_actual and $tr (y/n) ? ") unless $yes;;
 		die() if ($choice ne "y"); 
-		$choice = prompt(colored ['black ON_BRIGHT_CYAN'],"no regret :  $cache_directory_actual (y/n) ? ") unless $yes;
+		$choice = prompt(colored ['black ON_BRIGHT_CYAN'],"no regret :  $cache_directory_actual  and $tr (y/n) ? ") unless $yes;
 		die() if ($choice ne "y");
 		colored::stabilo("cyan","As you wish ....");
 		system ("rm -rf $cache_directory_actual/*");
 		system("rmdir $cache_directory_actual");
+		my $tr2 = $project->tiny_rocks_cache_dir();
+		system ("rm -rf $tr/*") if -e $tr2;
+		system("rmdir $cache_directory_actual");
+		system("rmdir $tr");
+		
 		
 }
 
