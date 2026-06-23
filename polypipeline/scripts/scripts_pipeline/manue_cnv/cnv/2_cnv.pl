@@ -222,36 +222,27 @@ MCE::Loop::init {
   	  	$nb ++;
   	  	warn $mce."-".$nb."/".scalar(@$cnvs) if $nb % 50 ==0;
 		dejavu($cnv,$duck3);
+		warn "end";
 
 		}
-		#$duck->close();
-		#$duck->close();
-		#delete $hGenes_dude->{$g_name_id};
  	   
   	   MCE->gather(MCE->chunk_id,$cnvs);
-   	#  $t->close();
 	
 		} @$all_cnvs;
 		
  		MCE::Loop->finish;	
 	
-#	my $duck = GenBoDuckDejaVuCNV->new( project => $project );
-#	
-#	
-#	foreach my $cnv  (@$all_cnvs){
-#		$c++;
-#		print $c.'/'.$nb."\n" if $c%100 ==0;
-#		dejavu($cnv,$duck);
-#	}
-#	print "\n#end dejavu\n";
-#	print "\n#start gather \n";
+
 	my $final = gatherSV_by_Interval_2(\@after_mce);
 	
 		print "\n#end gather \n start save \n";
 	
 	save_parquet_rocksdb($final);
-	
+	warn "====";
+	warn "$Bin/filter_cnv.pl -project=$projectname -fork=1";
+	die();
 	system("$Bin/filter_cnv.pl -project=$projectname -fork=1");
+	
 	exit(0);
 
 
@@ -449,7 +440,7 @@ sub gatherSV_by_Interval
 
 print "\n#ok\n";
 sub merge_hash {
-	my ($patient,$type,$chr,$merged,$hcnv,$duck) = @_;
+	my ($patient,$type,$chr,$merged,$hcnv) = @_;
 	 my $total;
 	 my $nb = 0;
 	 my $max = scalar @$merged;
@@ -542,13 +533,8 @@ sub merge_hash {
 					}
 					
 					}  
-					#if ($hfinal->{id} =~ /8153171/){
-					#	warn $hfinal->{score_caller};
-					#	die();
-					#}	
-#				warn $hfinal->{score_caller};
 
-				#dejavu($hfinal,$duck);
+
 				genesInfos($hfinal);
 				print "$nb/$max\n" if $nb%30 == 0;
 				getDupSeg($hfinal);
