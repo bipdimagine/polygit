@@ -89,7 +89,7 @@ if ($vector_total->is_empty()) {
 	foreach my $family (@{$project->getFamilies()}) {
 		foreach my $children  (@{$family->getChildren}){
 			my $vector_denovo = $chr->getNewVector();
-			$rocks4->put_vector_transmission($children,"ind_strict_denovo",$vector_denovo);
+			$rocks4->put_batch_vector_transmission($children,"ind_strict_denovo",$vector_denovo);
 			warn "save";
 		}
 	}
