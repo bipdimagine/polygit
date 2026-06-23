@@ -821,13 +821,14 @@ has 'uBams_revio' => (
 	#isa 	=> 'Int',
 	lazy    => 1,
 	default => sub {
-		my $self = shift;
+	my $self = shift;
 	my $lane = $self->getLane();
-	warn $lane;
 	my @runs = split(";",$lane);
 	my $hash;
 	foreach my $line (@runs){
 		my ($run,$smartcells,$codebare) = split(":",$line);
+		$run =~ s/\,/_/g;
+		warn $smartcells;
 		foreach my $sc (split(",",$smartcells)){
 			$hash->{$run}->{$sc} = lc($codebare);
 		}
@@ -841,7 +842,6 @@ has 'uBams_revio' => (
 	my $root_dir = $path."/".$constructor."/".$machine."/".$plateform;
 	my @files;
 	foreach my $run (keys %$hash){
-		
 		foreach my $sc (keys %{$hash->{$run}}){
 			my $dir = $root_dir;
 			$dir.="/$run";
@@ -2148,6 +2148,11 @@ sub getCoverageFile {
 	my $dir  = $self->getProject->getCoverageDir();
 	return $dir . $self->name() . ".cov.gz";
 }
+sub getBigWigFile {
+	my $self = shift;
+	my $dir  = $self->getProject->getCoverageDir();
+	return $dir . $self->name() . ".bw";
+}
 
 sub fileNoSqlDepth {
 	my ($self) = @_;
@@ -2339,6 +2344,7 @@ sub getNoSqlDepth {
 	unless ( -e $dir ) {
 		system("mkdir $dir;chmod a+rwx $dir");
 	}
+	warn $dir." ".$self->name . ".depth.lmdb";
 	$buffer->{lmdb_hash}->{depth}->{ $self->name } = GenBoBinaryFile->new(
 		name => $self->name . ".depth.lmdb",
 		dir  => $dir,
