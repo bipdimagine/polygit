@@ -8,7 +8,7 @@ use List::Util qw(max sum min);
 use Storable qw(store retrieve freeze thaw);
 use Carp qw(cluck longmess shortmess);
 use Data::Dumper;
-
+use Set::IntSpan::Fast;
 has dir => (
 	is		=> 'ro',
 	required=> 1,
@@ -307,7 +307,7 @@ sub getDepth {
 	
 	confess('ici ++') unless $start;
 	die() unless $end;
-	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
+	my $sintspan = Set::IntSpan::Fast->new("$start-$end" );
 	return $self->_getDepth($chr,$start,$end,$sintspan);
 #	die() unless exists $self->index->{$name};
 }
@@ -318,7 +318,7 @@ sub getMeanNormalize {
 	die() unless $patient;
 	confess('ici') unless $start;
 	die() unless $end;
-	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
+	my $sintspan = Set::IntSpan::Fast->new("$start-$end" );
 	my ($sum,$nb) = $self->_getSum($chr,$start,$end,$sintspan,$patient);
 	return $sum/(abs($start-$end)+1);
 #	die() unless exists $self->index->{$name};
@@ -329,7 +329,7 @@ sub getMean {
 	die() unless $chr;
 	confess('ici') unless $start;
 	die() unless $end;
-	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
+	my $sintspan = Set::IntSpan::Fast->new("$start-$end" );
 	my $a  = $self->_getDepth($chr,$start,$end,$sintspan);
 	my $sum = sum(@$a);
 	my $nb = scalar(@$a);
@@ -342,7 +342,7 @@ sub getSum {
 	confess() unless $chr;
 	die('ici') unless $start;
 	die() unless $end;
-	my $sintspan = Set::IntSpan::Fast::XS->new("$start-$end" );
+	my $sintspan = Set::IntSpan::Fast->new("$start-$end" );
 	my $a  = $self->_getDepth($chr,$start,$end,$sintspan);
 	my $sum = sum(@$a);
 	#my ($sum,$nb) = $self->_getSum($chr,$start,$end,$sintspan);
@@ -402,7 +402,7 @@ sub putDepth {
 	my $min = min(@$data);
 	if ($sum == 0){
 		$self->no->put($id,"0");
-		push(@{$self->{tree_array}->{$chr}},[{chr=>$chr,name=>$id,start=>$start,end=>$end,intspan=>Set::IntSpan::Fast::XS->new("$start-$end" ),type=>0},$start,$end+1]);
+		push(@{$self->{tree_array}->{$chr}},[{chr=>$chr,name=>$id,start=>$start,end=>$end,intspan=>Set::IntSpan::Fast->new("$start-$end" ),type=>0},$start,$end+1]);
 		return ;
 	}
 	

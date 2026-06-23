@@ -1,39 +1,20 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
-
-use FindBin qw($Bin);
 use lib "$Bin/../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../packages/";
-use Set::IntSpan::Island;
-use Set::IntSpan::Fast::XS;
-use Array::IntSpan;
-use lib $Bin;
  use GenBoBinaryFile;
 use GBuffer;
 #use Tie::IntegerArray;
-use IPC::Open2;
 use Data::Dumper;
 use Getopt::Long;
 use Carp;
 use Scalar::Util qw(looks_like_number);
 use Storable qw(store retrieve freeze);
-use Term::ANSIColor;
 use colored;
 use Parallel::ForkManager;
-use String::ProgressBar;
-use Set::IntSpan::Fast::XS;
-#use Bio::DB::HTS;
- use JSON::XS;
 use List::Util  qw(sum);
-use IO::Handle;
-use Fcntl 'SEEK_SET'; 
-use IO::File ;
-use Array::Diff;
-#use File::Binary qw($BIG_ENDIAN $LITTLE_ENDIAN $NATIVE_ENDIAN);
-use List::MoreUtils qw{ natatime };
 use JSON::XS;
-#use DB_File ;
 
 my $filein;
 my $dir;
@@ -74,6 +55,7 @@ if ($project->isGenome && $json) {
 			my $all_sum;
 		my $coverage_file;
 		$coverage_file = $patient->getCoverageFile();
+		warn $coverage_file;
 		my $h;
 		confess($coverage_file) unless -e $coverage_file;
 		my $tabix = $patient->tabix_coverage;
@@ -85,9 +67,7 @@ if ($project->isGenome && $json) {
 			}
 			$h->{"nb"} = delete $h->{s1};
 			$h->{"mean"} = delete $h->{s99};
-			warn Dumper $h;
 	 my $z= (($h->{s5}/$h->{nb}));
-	 warn $z;
 	 $hjson->{$pid}->{"5x"} = int($h->{s5}*1000)/10;  
 	$z = (($h->{s15}/$h->{nb}));
 	 $hjson->{$pid}->{"15x"} = int($h->{s15}*1000)/10; ; 
@@ -100,7 +80,7 @@ if ($project->isGenome && $json) {
 	 $z =  (($h->{s100}/$h->{nb}));
 	 $hjson->{$pid}->{"100x"} = int($h->{"s100"}*1000)/10; 
 			
-			
+	
 	}
 		print encode_json  $hjson;
 		exit(0);

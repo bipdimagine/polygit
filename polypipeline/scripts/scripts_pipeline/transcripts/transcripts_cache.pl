@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -27,8 +27,10 @@ use Set::IntSpan::Fast::XS;
 use image_coverage;
  use List::Util qw( min sum max);
  use Statistics::Descriptive::Smoother;
+ use Storable qw(store retrieve freeze thaw);
 #use Cache_Commons;
-
+use MCE::Loop;
+use MCE::Shared;
 my $fork = 1;
 my $force;
 my ($project_name, $patient_name);
@@ -61,12 +63,32 @@ warn "end";
 
 my $lists = $project->getListTranscripts() if not $project->isExome and not $project->isGenome;
 if ($project->isExome()) {
-	foreach my $tr (@{$project->getTranscripts()}) {
-		next if not $tr->appris_type();
-		next if $tr->appris_type() eq '-';
-#		warn $tr->id.' - appris: '.$tr->appris_type();
-		push (@{$lists}, $tr->id());
+	my $flist = $project->get_gencode_directory()."trascripts.lists";
+	
+	unless (-e $flist) {
+	my $project2 = $buffer->newProjectCache( -name => $project_name);
+	my $db = $project2->rocksGenBo();
+	$lists = [];
+	my $iter = $db->rocks->new_iterator->seek_to_first;
+	while (my ($key, $value) = $iter->each) {
+		next if $key !~ /ENST/;
+		next if $key =~ /ex/i;
+		next if $key =~ /intron/i;
+		next if $key !~ /^!/;;
+		my $o = $db->decode($value);
+		
+	  if (exists $o->{tag}->{CCDS}  or exists $o->{tag}->{MANE}  ) {
+	  	push (@{$lists}, $o->{id});
+	  }
+		
 	}
+	store $lists, $flist;
+
+	$project2->disconnect();
+	$project2 = undef;
+	}
+	
+	$lists = retrieve($flist);
 }
 warn 'nb:'.scalar(@{$lists});
 
@@ -117,7 +139,7 @@ my $p = $project->getPatient($patient_name);
  		$hgene->{high} = {};
  		$hgene->{medium} = {};
  		$hgene->{low} = {};
- 		uri_image($lists,$p->name,$tmp);
+ 		uri_image2($lists,$p->name,$tmp);
 
 $project->disconnect();
 system("rm -r $tmp") if $tmp=~/tmp/ and (-e $tmp or -d $tmp);
@@ -129,11 +151,11 @@ exit(0);
 
 sub run_on_finish_coverage {
 	my ($patient,$h,$harray) =@_;
-	
 			#$type ="c" unless $first;
 			#warn $type;
 			#$first = 1; 
 			#warn $tmp;
+			warn "************************";
 			my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"w",is_compress=>1);;#$patient->getTranscriptsCoverageDepth("w");
 			my $dir = $no->dir;
 			
@@ -169,10 +191,10 @@ sub run_on_finish_dude {
 	my ($patient,$h) = @_;
 	my $hid = $patient->id;
 	my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);#$patient->getTranscriptsDude($type);
+	
 			my $dir = $no->dir;
-			
+			warn $dir;
 			foreach my $id (keys %{$h}){
-				warn $id;
 				my $v = $h->{$id}->{event};
 
 				$no->put($id,$h->{$id});
@@ -200,12 +222,103 @@ sub run_on_finish_dude {
 }
 
 
+sub uri_image2 {
+	my ($transcripts,$patient_name,$tmp) = @_;
+	my $patients = $project->getPatients();
+	my $patient = $project->getPatient( $patient_name);
+	my $fork = 10;
+	my $nb = int(scalar(@$transcripts)/(100*1))+1;
+	#cache declaration 
+	my $no_coverage = GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"c",is_compress=>1);
+	my $f1 = $no_coverage->filename;
+	warn $f1;
+	$no_coverage-> put("date",time);
+	$no_coverage->close();
+	$patient->getTranscriptsCoverageDepth("d");		
+	
+	#dude declaration 
+	my $no_dude = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"c",is_compress=>1);
+	$no_dude-> put("date",time);
+	$no_dude->close;
+	
+	
+	my $process;
+	
+	my $shared_hash = MCE::Shared->hash();
+	
+	my $harray = {};
+	
+	MCE::Loop::init {
+    chunk_size => 'auto',
+    max_workers => 'auto',
+    gather => sub {
+        my ($mce,$data) = @_;
+        delete  $shared_hash->{$mce};
+        warn "END PROCESS start ".$mce;
+        run_on_finish_dude($patient,$data->{dude});
+		run_on_finish_coverage($patient,$data->{coverage},$harray);
+    	warn "END PROCESS ".$mce;
+    	}
+    
+	};
+	$project->disconnect();
+	
+	 mce_loop {
+  	  my ($mce, $trs) = @_;
+  		$shared_hash->{MCE->chunk_id} ++;
+  	 	
+  	 	my $himages ={};
+			my $znb =0;
+			my $dj;
+			my $res;
+			my $cpt =0;
+			my $t = time;
+			
+			my $ts = $project->newTranscripts($trs);
+			foreach my $transcript (@$ts){
+				$transcript->getExons();
+				$transcript->getIntrons();
+			}
+			my $z;
+			#delete $project->{rocksGenBo};
+			delete $project->{rocks};
+#			warn "get Transcripts :".abs($t -time)." ".scalar(@$ts); 
+			my $h;
+			 $t = time;
+			 my $xx = 0;
+			 my $t0 = time; 
+			warn "start  - ".MCE->chunk_id;
+		foreach my $transcript (@$ts){
+				$t0 = time if $xx % 1000 ==0;
+				$xx++;
+ 	 			$res->{coverage}->{$transcript->id} =  {};
+ 	 			$res->{coverage}->{$transcript->id} = matrix_data_coverage($patient,$transcript);
+ 	 			$res->{dude}->{$transcript->id} = matrix_data_dude($patient,$transcript);
+			}
+  	   	MCE->gather(MCE->chunk_id,$res);
+		} @$transcripts;
+ 		MCE::Loop->finish;
+	MCE::Loop->finish;
+confess()  if %$shared_hash;
+	
+
+	$project->buffer->dbh_reconnect();
+	warn "end fork !!!!";
+	end_coverage($patient,$harray);
+	warn "end coverage !!!!";
+	end_dude($patient);
+	warn "end dude !!!!";
+	
+	
+}
+
+
 
 sub uri_image {
 	my ($transcripts,$patient_name,$tmp) = @_;
 	my $patients = $project->getPatients();
 	my $patient = $project->getPatient( $patient_name);
-	#my $fork = 10;
+	my $fork = 10;
 	my $nb = int(scalar(@$transcripts)/(100*1))+1;
 	#cache declaration 
 	my $no_coverage = GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"c",is_compress=>1);
@@ -237,19 +350,20 @@ sub uri_image {
 				warn Dumper $process;
 				return;
 			}
-
 			run_on_finish_dude($patient,$h->{dude});
 			run_on_finish_coverage($patient,$h->{coverage},$harray);
-			warn $h->{end_process};
+			warn "END PROCESS ".$h->{end_process};
 		delete $process->{$h->{end_process}};
     }
     );
 	$project->preload();
-	$project->disconnect;
+
 	$project->getRuns();
 	$project->getCaptures();
   	$project->buffer->dbh_deconnect();
   	delete $project->{rocksGenBo};
+  	$project->disconnect;
+  	delete $project->{rocks};
   	$|=1;
   	my $t =time;
   	my $id = 0;
@@ -264,7 +378,7 @@ sub uri_image {
  	 		# my ($find) = grep {$_ =~ /ENST00000382051/} @tmp;
  	 		# next unless $find;
  	 		my $pid = $pm->start and next;
- 	 		
+	 	 		
 			#$project->buffer->dbh_reconnect();
 			my $himages ={};
 			my $znb =0;
@@ -279,9 +393,9 @@ sub uri_image {
 				$transcript->getIntrons();
 			}
 			my $z;
-			delete $project->{rocksGenBo};
+			#delete $project->{rocksGenBo};
+			delete $project->{rocks};
 #			warn "get Transcripts :".abs($t -time)." ".scalar(@$ts); 
-
 			delete $project->{lmdbGenBo};
 			my $h;
 			 $t = time;
@@ -289,7 +403,7 @@ sub uri_image {
 			 my $t0 = time; 
 			warn "start  pp$id $pid ";
 		foreach my $transcript (@$ts){
-			warn $transcript->id;
+		#	warn $transcript->id;
 			#warn $xx."/".scalar(@$ts)." ".abs($t0 -time) if $xx % 1000 ==0;
 			$t0 = time if $xx % 1000 ==0;
 			$xx++;
@@ -331,40 +445,39 @@ sub end_coverage {
 	$no->close;
 	my $f2  = $project->transcriptsCoverageDir()."/".$patient->name.".transcripts";
 	unlink $f2 if -e  $f2;
+	$f1 = $tmp."/".$patient->name.".transcripts";
 	warn "$f1 $f2";
-	system("mv $f1 $f2;");
+	system("mv $f1 $f2");
 	#sleep(5);
 #	my $no1  = $patient->getTranscriptsCoverageDepth("r");
-	#warn Dumper $no1->get("exon_no_utr_0_30");
-	#warn Dumper $no1->get("toto");
 #	$no1->close;
 }
 
 sub end_dude {
 	my ($patient) = @_;
-	 my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
+#	 my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
+	 my $no = $patient->getTranscriptsDude("c");
 	my $hid = $patient->id;
-	warn Dumper $array;
 	$no->put("high",$array->{$hid."_high"});		
 	$no->put("medium",$array->{$hid."_med"});	
 	$no->put("low",$array->{$hid."_low"});
 	$no->close();
 	sleep(10);
-	my $f1 = $no->filename();
-	my $no2 = $patient->getTranscriptsDude("c");
-	my $f2 = $no2->filename();
-	$no2->close();
-	warn "rsync -rav $f1 $f2";
-	system("rsync -rav $f1 $f2;");
-	warn "rm $f1";
-	system("rm $f1") if -e $f1;
+#	my $f1 = $no->filename();
+#	my $no2 = $patient->getTranscriptsDude("c");
+#	my $f2 = $no2->filename();
+#	$no2->close();
+#	warn "rsync -rav $f1 $f2";
+#	system("rsync -rav $f1 $f2;");
+#	warn "rm $f1";
+#	system("rm $f1") if -e $f1;
 #	warn "rm -r $tmp";
 #	system("rm -r $tmp") if -e $tmp or -d $tmp;
 	warn 'ok end dude';
 }
 
 sub matrix_data_coverage {
-	my ($patient,$transcript,$id) = @_;
+	my ($patient,$transcript) = @_;
 	
 	my $maskExons = {
 	  exon => 1,
@@ -391,7 +504,7 @@ sub matrix_data_coverage {
 	my $capture_intspan = $transcript->getChromosome->getIntSpanCapture()->intersection($transcript->getGenomicSpan());
 	 	 my $no = $transcript->project->noSqlCoverage();
 	 	my $spanTr = $no->get($patient->name,$transcript->id."_spandup");	
-
+		
 		my $data;
 		my $data2;
 		
@@ -610,7 +723,7 @@ sub between {
 
 
 sub matrix_data_dude {
-	my ($patient,$transcript,$id) = @_;
+	my ($patient,$transcript) = @_;
 	my $debug;
 	#next unless $debug;
 #	warn $transcript.' '.$transcript->id;
@@ -618,7 +731,6 @@ sub matrix_data_dude {
 	my $chr = $transcript->getChromosome();
 	my $no = $chr->get_lmdb_cnvs("r");
 	my $res = $project->tabix_primers->query($transcript->getChromosome->ucsc_name,$transcript->start,$transcript->end);
-	#warn Dumper $res;
 	#return {};
 	my $primers = $project->getPrimersByPosition($transcript->getChromosome,$transcript->start,$transcript->end);#$transcript->getPrimers();
 	#warn scalar(@$primers);
@@ -652,7 +764,6 @@ sub matrix_data_dude {
 			$primer = undef;
 		
 	}
-	#warn Dumper $scores if $debug;
 	
 	my $data_smoothed1 = smooth2($scores,$positions,$alert)	;
 	my $data_smoothed2 = smooth_data($scores);
@@ -675,7 +786,6 @@ sub matrix_data_dude {
 	#$max = 99 if ($max > 0.75 * @$levels);
 	my $h;
 	$h->{scores} = pack("w".scalar(@$scores),@$scores);
-	#warn Dumper unpack("w".scalar(@$scores),$h->{scores}) if $debug;
 	$h->{event} =$max;
 	
 	$h->{level} = pack("w".scalar(@$levels),@$levels);
@@ -685,7 +795,6 @@ sub matrix_data_dude {
 	$h->{nb} = scalar(@$scores);
 	$h->{names} =$names;
 	$h->{gene} = $transcript->gene_id;
-	#warn Dumper $h if $debug;
 	return $h;
 }
 

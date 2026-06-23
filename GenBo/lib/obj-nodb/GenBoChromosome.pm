@@ -1407,7 +1407,6 @@ sub rocks_vector {
 	my $name = $self->name."-vector-".$mode;
 	
 	return $self->project->{rocks}->{$name} if exists $self->project->{rocks}->{$name};
-	
 	 $self->project->{rocks}->{$name} = GenBoNoSqlRocksVector->new(chromosome=>$self->name,dir=>$self->project->rocks_directory("vector"),mode=>$mode,name=>$self->name);
 #$self->flush_rocks_vector($mode);
 	 return $self->project->{rocks}->{$name};
