@@ -33,7 +33,7 @@ my @run_dir_names;
 GetOptions(
 	'runs=s{1,}'	=> \@run_dir_names,
     'help|h'		=> sub {pod2usage(-verbose => 2, -noperldoc=>1)},
-) or pod2usage(-message => "Error in command line arguments\n", -exitval => 2, -noperldoc=>1);
+) or pod2usage(-message => "Error in command line arguments\n", -verbose => 2, -exitval => 2, -noperldoc=>1);
 
 
 @run_dir_names = split(/,/, join(',',@run_dir_names));
@@ -248,8 +248,7 @@ revio_metadata_parser.pl - Extraction des métadonnées de runs PacBio Revio
 
     Options :
       --runs <run_name>   Nom du répertoire de run (répétable)
-      --help             Affiche ce message d'aide
-      --man              Affiche la documentation complète
+      --help             Affiche la documentation
 
     Sans option --run : menu interactif de sélection des runs disponibles.
 
@@ -275,11 +274,7 @@ ou les runs peuvent être séparés par C<,>:
 
 =item B<--help>, B<-h>
 
-Affiche un résumé de l'aide et quitte.
-
-=item B<--man>
-
-Affiche la page de manuel complète et quitte.
+Affiche l'aide et quitte.
 
 =back
 
