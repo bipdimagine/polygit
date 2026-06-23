@@ -462,7 +462,6 @@ sub end_dude {
 	$no->put("medium",$array->{$hid."_med"});	
 	$no->put("low",$array->{$hid."_low"});
 	$no->close();
-	sleep(10);
 #	my $f1 = $no->filename();
 #	my $no2 = $patient->getTranscriptsDude("c");
 #	my $f2 = $no2->filename();
