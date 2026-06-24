@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # permet de renvoyer petit a petit les print et non pas de tout mettre en buffer et tout sortir a la fin du script
 $|=1;
 use CGI qw/:standard :html3/;

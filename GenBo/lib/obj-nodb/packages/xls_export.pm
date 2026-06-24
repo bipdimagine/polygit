@@ -81,7 +81,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen_Score', 'Sift_Score', 'Max_Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'Max_Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -919,10 +919,14 @@ sub store_variants_infos {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = $cds_pos;
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_position'} = $var->getProteinPosition($prot);
 						if ($var->isCnv() or $var->isLarge()) {
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen'} = '-';
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = '-';
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = '-';
 						}
 						else {
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen'} = $var->polyphenStatusText($t);
+							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift'} = $var->siftStatusText($t);
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = $var->polyphenScore($t);
 							$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = $var->siftScore($t);
 						}
@@ -936,6 +940,8 @@ sub store_variants_infos {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = '-';
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen'} = '-';
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_position'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen_score'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'sift_score'} = '-';
@@ -1222,6 +1228,8 @@ sub prepare_generic_datas_variants {
 						$h2->{'protein'}         = $h_tr->{'protein'};
 						$h2->{'nomenclature'}    = $h_tr->{'nomenclature'};
 						$h2->{'prot_nomenclature'}= $h_tr->{'prot_nomenclature'};
+						$h2->{'polyphen'}		 = $h_tr->{'polyphen'};
+						$h2->{'sift'}  		     = $h_tr->{'sift'};
 						$h2->{'polyphen_score'}  = $h_tr->{'polyphen_score'};
 						$h2->{'sift_score'}      = $h_tr->{'sift_score'};
 						$h2->{'max_splice_ai'}   = $h_tr->{'max_splice_ai'};
