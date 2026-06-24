@@ -227,6 +227,7 @@ has hash_users_projects => (
 				my $proj_name = $hash->{name};
 				next unless ($proj_name =~ /NGS20/);
 				next if $self->hash_exclude_projects() and exists $self->hash_exclude_projects->{$proj_name};
+				next if $self->hash_only_project() and not exists $self->hash_only_project->{$proj_name};
 				$h_projects->{$proj_name}->{description} = $hash->{description};
 				$h_projects->{$proj_name}->{name} = $proj_name;
 				$h_projects->{$proj_name}->{id} = $hash->{id};
@@ -240,6 +241,19 @@ has hash_users_projects => (
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{mother} = $h_pat->{mother};
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{patient_id}} = $h_projects->{$proj_name}->{patients}->{$h_pat->{name}};
 				}
+				
+				if ($self->hash_only_project()) {
+					my $only_patient = $self->hash_only_project->{$proj_name};
+					if ($only_patient) {
+						my $fam_name = $h_projects->{$proj_name}->{patients}->{$only_patient}->{family};
+						$self->{hash_only_patients}->{$proj_name}->{$only_patient} = undef;
+						foreach my $pat (keys %{$h_projects->{$proj_name}->{patients}}) {
+							my $this_fam_name = $h_projects->{$proj_name}->{patients}->{$pat}->{family};
+							$self->{hash_only_patients}->{$proj_name}->{$pat} = undef if ($this_fam_name eq $fam_name);
+						}
+					}
+				}
+				
 				$h_projects->{$hash->{id}} = $h_projects->{$proj_name};
 				
 				my $parquet = $self->buffer->dejavu_parquet_dir().'/'.$proj_name.'.'.$hash->{id}.'.parquet';
@@ -251,7 +265,17 @@ has hash_users_projects => (
 	}
 );
 
-has hash_exclude_projects=> (
+has hash_only_project =>  (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has hash_only_patients =>  (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
+has hash_exclude_projects => (
 	is		=> 'rw',
 	lazy    => 1,
 );
@@ -500,7 +524,9 @@ sub check_variants_from_gene {
 			else {	
 				foreach my $project_name (keys %{$h_projects_patients->{$var_id}}) {
 					my ($h_pat_done, $h_pat_filtred);
+					next if ($self->hash_only_project() and not exists $self->{hash_only_project}->{$project_name});
 					foreach my $patient_name (keys %{$h_projects_patients->{$var_id}->{$project_name}}) {
+						next if ($self->hash_only_patients() and not exists $self->{hash_only_patients}->{$project_name}->{$patient_name});
 						push(@{$hres->{variants}->{$var_id}->{polyviewer_html}}, $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{print_html});
 						my $hh;
 						$hh->{project_name} = $project_name;
@@ -510,6 +536,7 @@ sub check_variants_from_gene {
 						$hh->{dp} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{dp};
 						$hh->{model} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{model};
 						if ($h_models) {
+							next if ($self->hash_only_patients() and not exists $h_models->{$hh->{model}});
 							$h_pat_filtred->{$patient_name}->{$hh->{model}} = 1 if (not exists $h_models->{$hh->{model}});
 						}
 						if ($min_ratio) {
@@ -795,6 +822,7 @@ sub print_html_gene {
 	next if ($self->only_genes() and not exists $self->{hash_only_genes}->{$g->{name}});
 	
 	my $panel_id = "panel_".$gene_id;
+	$panel_id .= "_he_comp" if $self->only_genes() and $self->hash_only_project() and $self->hash_only_patients();
 	my ($out, $h_phenos);
 	my $bg_color = $print_html->bgcolor;
 	$out .= qq{<div class="panel-heading panel-face panel-grey"	style="$bg_color;height:43px;padding:10px;border:0px;width:100%;">};

@@ -109,6 +109,8 @@ my $region = $cgi->param('region');
 my $only_genes = $cgi->param('only_genes');
 my $use_phenotype = $cgi->param('use_phenotype');
 my $exclude_projects = $cgi->param('exclude_projects');
+my $only_project = $cgi->param('only_project');
+my $only_patient = $cgi->param('only_patient');
 
 my $export_xls = $cgi->param('export_xls');
 my $session_id = $cgi->param('session_id');
@@ -137,6 +139,12 @@ if ($exclude_projects) {
 		$dejavu_variants->{hash_exclude_projects}->{$project_name} = undef;
 	}
 }
+if ($only_project) {
+	my $patient_name = undef;
+	$patient_name = $only_patient if $only_patient;
+	$dejavu_variants->{hash_only_project}->{$only_project} = $patient_name;
+}
+
 $dejavu_variants->hash_users_projects() if $only_my_projects;
 exit(0) if not $dejavu_variants->hash_users_projects();
 print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
@@ -542,6 +550,12 @@ if ($region or $only_genes) {
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
 print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
 my $nb_genes = scalar(keys %{$hGenes});
+if ($only_genes) {
+	foreach my $gene_id (keys %$hGenes)	{
+		delete $hGenes->{$gene_id} if not exists $dejavu_variants->{hash_only_genes}->{$gene_id};
+	}
+}
+my $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
 
 #warn Dumper $hVariantsDetails;
@@ -622,28 +636,30 @@ if ($h_errors_found) {
 }
 
 
-
-$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
-$html .= "<td><b><nobr>Score Phenotype</nobr></b>&nbsp;&nbsp;</td>";
-$html .= "<td><button type='button' class='btn btn-outline-danger' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:red;'><nobr>$use_phenotype</nobr></span></b></button></td>";
-
-my $gencode_version = $project->gencode_version();
-$html .= "<td><b>Gencode</b>&nbsp;&nbsp;</td>";
-$html .= "<td><button type='button' class='btn btn-outline-success' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>$gencode_version</span></b></button></td>";
-my ($gencode, $annot_version) = split('\.', $project->annotation_version());
-foreach my $cat_name (sort keys %{$buffer->public_data->{$annot_version}}) {
-	next if lc($cat_name) eq 'polyscore';
-	next if $cat_name eq 'cldb';
-	next if $cat_name eq 'dbscsnv_rf';
-	next if $cat_name eq 'cytoband';
-	next if $cat_name eq 'hgmd';
-	next if $cat_name =~ /gnomad-.*/;
-	next if $cat_name =~ /-hg19/;
-	my $cat_version = $buffer->public_data->{$annot_version}->{$cat_name}->{version};
-	$html .= "<td>&nbsp;&nbsp;<b>$cat_name</b>&nbsp;&nbsp;</td>";
-	$html .= "<td><button type='button' class='btn btn-outline-primary' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b>$cat_version</b></button></td>";
+if ($dejavu_variants->only_genes() and $dejavu_variants->hash_only_project() and $dejavu_variants->hash_only_patients()) { $html .= "<br>"; }
+else {
+	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+	$html .= "<td><b><nobr>Score Phenotype</nobr></b>&nbsp;&nbsp;</td>";
+	$html .= "<td><button type='button' class='btn btn-outline-danger' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:red;'><nobr>$use_phenotype</nobr></span></b></button></td>";
+	
+	my $gencode_version = $project->gencode_version();
+	$html .= "<td><b>Gencode</b>&nbsp;&nbsp;</td>";
+	$html .= "<td><button type='button' class='btn btn-outline-success' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>$gencode_version</span></b></button></td>";
+	my ($gencode, $annot_version) = split('\.', $project->annotation_version());
+	foreach my $cat_name (sort keys %{$buffer->public_data->{$annot_version}}) {
+		next if lc($cat_name) eq 'polyscore';
+		next if $cat_name eq 'cldb';
+		next if $cat_name eq 'dbscsnv_rf';
+		next if $cat_name eq 'cytoband';
+		next if $cat_name eq 'hgmd';
+		next if $cat_name =~ /gnomad-.*/;
+		next if $cat_name =~ /-hg19/;
+		my $cat_version = $buffer->public_data->{$annot_version}->{$cat_name}->{version};
+		$html .= "<td>&nbsp;&nbsp;<b>$cat_name</b>&nbsp;&nbsp;</td>";
+		$html .= "<td><button type='button' class='btn btn-outline-primary' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b>$cat_version</b></button></td>";
+	}
+	$html .= "</tr></table></div>";
 }
-$html .= "</tr></table></div>";
 
 $html .= "<div style='width:100%;margin-top:10px;overflow-x:auto;'><table><tr>";
 $html .= "<td><b>Export Results</b>&nbsp;&nbsp;</td>";
