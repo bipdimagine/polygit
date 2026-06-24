@@ -253,7 +253,6 @@ sub uri_image2 {
 	my $f1 = $no_coverage->filename;
 	$no_coverage-> put("date",time);
 	$patient->getTranscriptsCoverageDepth("d");
-	$patient->getTranscriptsCoverageDepth("d");		
 	
 	#dude declaration 
 	my $no_dude = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"c",is_compress=>1);
@@ -464,7 +463,8 @@ confess()  if %$shared_hash;
 
 sub end_coverage {
 	my ($patient,$harray) = @_;
-	my $no = GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
+	my $no = $patient->getTranscriptsCoverageDepth("w");
+	# GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"w",is_compress=>1);
 	my $f1 = $no->filename;
 	foreach my $k (keys %$harray){
 		
@@ -473,11 +473,12 @@ sub end_coverage {
 	}
 	$no->put( "toto","titi");
 	$no->close;
-	my $f2  = $project->transcriptsCoverageDir()."/".$patient->name.".transcripts";
-	unlink $f2 if -e  $f2;
-	$f1 = $tmp."/".$patient->name.".transcripts";
-	warn "$f1 $f2";
-	system("rsync -rav $f1 ". $project->transcriptsCoverageDir());
+	patient->getTranscriptsCoverageDepth("d");
+#	my $f2  = $project->transcriptsCoverageDir()."/".$patient->name.".transcripts";
+#	unlink $f2 if -e  $f2;
+#	$f1 = $tmp."/".$patient->name.".transcripts";
+#	warn "$f1 $f2";
+#	system("rsync -rav $f1 ". $project->transcriptsCoverageDir());
 }
 
 sub end_dude {

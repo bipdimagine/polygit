@@ -15,7 +15,7 @@ use Moo;
 use Data::Dumper;
 use Compress::Snappy;
 use Storable qw/thaw freeze/;
-use Tie::LevelDB;
+#use Tie::LevelDB;
 use Carp;
 
 has dir => (
@@ -206,7 +206,7 @@ sub dbh {
     				"",                   
 		) or confess ($DBI::errstr);
 		if ($self->write){
-		$self->{dbh}->{$key1}->do("PRAGMA cache_size = 40000") or confess ($DBI::errstr." ".$key1);
+		$self->{dbh}->{$key1}->do("PRAGMA cache_size = 40000") or confess ($DBI::errstr." ".$key1." ".$self->dir);
 		$self->{dbh}->{$key1}->do("PRAGMA synchronous = OFF");
 		#PRAGMA journal_mode=WAL;
 		
@@ -270,7 +270,7 @@ sub create_table {
 			$self->dbh($chr)->do("CREATE TABLE if not exists $table_name (_key INTEGER PRIMARY KEY, _value BLOB) ;")  or confess($DBI::errstr);;
 	}
 	else{
-			$self->dbh($chr)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250), _value BLOB) ")  or confess($DBI::errstr." ".$table_name);;
+			$self->dbh($chr)->do("CREATE TABLE if not exists $table_name (_key VARCHAR(250), _value BLOB) ")  or confess($DBI::errstr." ".$table_name) or confess($self->dir);
 			$self->dbh($chr)->do("CREATE UNIQUE INDEX if not exists _key_idx  on $table_name (_key); ")  or confess($DBI::errstr." ".$table_name);;
 			
 	}
