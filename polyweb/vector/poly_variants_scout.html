@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>PolyVariantsScout</title>
+        <title>PolyDejaVu V2</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -994,6 +994,7 @@
 				options['gnomad_ho'] = "10000000";
 				options['filters_cons'] = "mature-mirna,splice_acc/don,splice_acceptor/donor,frameshift,stop-gained,(start/stop)-lost,ncrna,missense,no-frameshift,splice_region,predicted_splice_region,predicted_promoter_ai,utr,synonymous,upstream,downstream,intronic,intergenic";
 				options['models'] = model_name;
+				document.getElementById("span_other_project_patient_name").innerHTML = project_name + ': ' + patient_name;
 				launchJob(url, options, "content_he_comp");
 			}
 			
@@ -1244,14 +1245,16 @@
 			
 			var export_session_id;
 			function launchJob(url, options, content_id) {
-				if (!content_id) { content_id = "content_res"; }
+				if (!content_id) {
+					content_id = "content_res";
+    				toggleSidebar();
+				}
 				else {
 					var dialog_id = 'dialog_' + content_id;
 					const modal_obj = document.getElementById(dialog_id);
 					const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
 					modal.show();
 				}
-    			toggleSidebar();
     			document.getElementById(content_id).innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 			    $.ajax({
 			        url: url,
@@ -1323,9 +1326,6 @@
 			                            if (content_id) { 
 											const modal_obj = document.getElementById(dialog_id);
 											const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
-											modal_obj.style.width = '95vw';
-											document.querySelector('#' + dialog_id + ' .modal-content').style.height = '85vh';
-											document.querySelector('#' + dialog_id + ' .modal-content').style.width = '1200px';
 											document.querySelector('#' + dialog_id + ' .modal-content').style.overflow = 'visible';
 										}
 			                        }
@@ -1415,14 +1415,14 @@
 	<body class="container-fluid" style="overflow-y:scroll;">
 		
 		<div class="modal" id="dialog_content_he_comp">
-			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title">Others variants</h5>
+						<h5 class="modal-title"><center>Others variants <span id="span_other_project_patient_name"></span></center></h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						<div class="container-fluid " id='content_he_comp' style="margin:0px;padding:4px;width:95%;overflow: auto;"> </div>
+						<div class="container-fluid " id='content_he_comp' style="margin:0px;padding:4px;width:99%;overflow: auto;"></div>
 					</div>
 				</div>
 			</div>
@@ -1435,7 +1435,7 @@
 		        </button>
 		
 		        <div class="p-4">
-		            <h4 class="logo-text fw-bold mb-0">PolyVariantsScout</h4>
+		            <h4 class="logo-text fw-bold mb-0">PolyDejaVu V2</h4>
 		            
 					<button class="btn btn-outline-secondary hide-on-collapse" onClick='relogin();' style="margin-top:10px;background-color:#292E49;color:white;">
 						<b><i class="fa fa-sign-in"></i> <span style="margin-left: 5px;color:white;" id="span_login"></span></b>
@@ -1896,10 +1896,12 @@
 		
 		    <main class="main-content overflow-auto" style="width:100%;">
 		        <div class="container-fluid " id='content_res' style="width:100%;">
-		            <h2>Welcome to PolyVariantsScout</h2>
+		            <h2>Welcome to PolyDejaVu New Generation</h2>
 		            <p class="text-muted">Choose your filters in dashboard.</p>
 		            <br>
+		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Gene score from phenotype defined (by default, your favorite phenotype).</p>
 		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Minimum read(s) option available in patients filters.</p>
+		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> View other(s) variant(s) of a patient (He Comp).</p>
 		        </div>
 		    </main>
 		</div>	
