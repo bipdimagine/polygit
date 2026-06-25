@@ -80,7 +80,6 @@ sub getProjectListsDefidiag {
 		my $debug;
 		
 		next if not $pro->{name} =~ /NGS20[0-9][0-9]_[0-9]+/;
-		
 		my @samples =  @{$buffer->getQuery->getPatients($pro->{id})};
 		my %captures_id;
 		foreach my $p (@samples){
@@ -146,6 +145,10 @@ sub getProjectListsDefidiag {
 			$vtrio = 0;
 			map {$pro->{patient_name}.=$_->{name}.";".$_->{family}.";"} @samples;
 		}
+		my $genome;
+		$genome = 'HG19' if  $pro->{genome} =~ /HG19/;
+		$genome = 'HG38' if  $pro->{genome} =~ /HG38/;
+		$buffer->{annotation_genome_version} = $genome;
 
 		my @t = sort{$a <=> $b} keys %{$buffer->public_data};
 		my $latest = $t[-1]; 
