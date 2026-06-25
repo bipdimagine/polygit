@@ -5296,13 +5296,22 @@ sub noSqlCoverage {
 	my ( $self, $mode ) = @_;
 
 	#confess();
-	
+	if ($mode eq "close" or $mode eq "d") {
+		 $self->{nosql}->{noSqlCoverage}->close if exists $self->{nosql}->{noSqlCoverage};
+		 delete $self->{nosql}->{noSqlCoverage};
+		 return 1;
+	}
 	return $self->{nosql}->{noSqlCoverage} if exists $self->{nosql}->{noSqlCoverage};
 	$mode = "w" unless $mode;
 
 	#	my $output   =$self->getCacheDir() . "/coverage_lite_test";
 	my $output = $self->getCacheDir() . "/coverage_lite";
-	
+	if ($mode eq "r" ) {
+		unless  (-e $output){
+			return undef ;
+		}
+		
+	}
 	$self->{nosql}->{noSqlCoverage} = GenBoNoSql->new( dir => $output, mode => "$mode" );
 	
 	return $self->{nosql}->{noSqlCoverage};

@@ -59,6 +59,8 @@ $fork = 5 if $project->isExome() or $project->isGenome();
 warn "end";
 
 my $lists = $project->getListTranscripts() if not $project->isExome and not $project->isGenome;
+
+ 
 if ($project->isExome()) {
 	my $flist = $project->get_gencode_directory()."trascripts.lists";
 	$flist.".titit";
@@ -186,7 +188,7 @@ sub run_on_finish_coverage {
 		#	my $no = $chr->lmdb_image_transcripts_uri("w");
 			
 		
-		 $patient->getTranscriptsCoverageDepth("d");
+		 $patient->getTranscriptsCoverageDepth("close");
 		
 		
 }
@@ -225,7 +227,7 @@ sub run_on_finish_dude {
 			#warn Dumper $array;
 		#	my $no = $chr->lmdb_image_transcripts_uri("w");
 			$no->close();
-			$patient->getTranscriptsDude("d");
+			$patient->getTranscriptsDude("close");
 #			my $no = $patient->getTranscriptsDude("r");
 #			#GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"w",is_compress=>1);#$patient->getTranscriptsDude($type);
 #			
@@ -247,12 +249,17 @@ sub uri_image2 {
 	my $fork = 10;
 	my $nb = int(scalar(@$transcripts)/(100*1))+1;
 	#cache declaration 
+	
+	my $no = $project->noSqlCoverage("w");
+	 	 my $spanTr;
+		$spanTr = $no->put($patient->name,"date",time);	
+ $project->noSqlCoverage("close");
 	 my $no_coverage = $patient->getTranscriptsCoverageDepth("c");
 	 
 	# GenBoNoSqlLmdb->new(name=>$patient->name.".transcripts",dir=>$tmp,mode=>"c",is_compress=>1);
 	my $f1 = $no_coverage->filename;
 	$no_coverage-> put("date",time);
-	$patient->getTranscriptsCoverageDepth("d");
+	$patient->getTranscriptsCoverageDepth("close");
 	
 	#dude declaration 
 	my $no_dude = GenBoNoSqlLmdb->new(name=>$patient->name.".dude.transcripts",dir=>$tmp,mode=>"c",is_compress=>1);
@@ -473,7 +480,7 @@ sub end_coverage {
 	}
 	$no->put( "toto","titi");
 	$no->close;
-	patient->getTranscriptsCoverageDepth("d");
+	$patient->getTranscriptsCoverageDepth("close");
 #	my $f2  = $project->transcriptsCoverageDir()."/".$patient->name.".transcripts";
 #	unlink $f2 if -e  $f2;
 #	$f1 = $tmp."/".$patient->name.".transcripts";
@@ -518,8 +525,10 @@ sub matrix_data_coverage {
 	$exons  = $transcript->getAllGenomicsParts();
 	my $strand =1;
 	my $capture_intspan = $transcript->getChromosome->getIntSpanCapture()->intersection($transcript->getGenomicSpan());
-	 	 my $no = $transcript->project->noSqlCoverage();
-	 	my $spanTr = $no->get($patient->name,$transcript->id."_spandup");	
+	 	 my $no = $transcript->project->noSqlCoverage("r");
+	 	 my $spanTr;
+	 	 
+	 	 $spanTr = $no->get($patient->name,$transcript->id."_spandup") if $no;	
 		
 		my $data;
 		my $data2;
@@ -687,6 +696,7 @@ foreach my $exon (sort{$a->end*$strand <=> $b->end*$strand} @$exons) {
 			
 	
 	}
+	$no->close;
 	$hexons->{nb} = scalar(@$exons);
 	#return {};
 	#warn $transcript->name;
