@@ -1,37 +1,18 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use strict;
-
-use FindBin qw($Bin);
 use lib "$Bin/../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../packages/";
-use Set::IntSpan::Island;
-use Set::IntSpan::Fast::XS;
-use Array::IntSpan;
 use lib $Bin;
  use GenBoBinaryFile;
 use GBuffer;
-#use Tie::IntegerArray;
-use IPC::Open2;
-use Data::Dumper;
 use Getopt::Long;
 use Carp;
-use Scalar::Util qw(looks_like_number);
-use Storable qw(store retrieve freeze);
 use Term::ANSIColor;
 use colored;
 use Parallel::ForkManager;
-use String::ProgressBar;
-use Set::IntSpan::Fast::XS;
 #use Bio::DB::HTS;
- use JSON::XS;
 use List::Util  qw(sum);
-use IO::Handle;
-use Fcntl 'SEEK_SET'; 
-use IO::File ;
-use Array::Diff;
-#use File::Binary qw($BIG_ENDIAN $LITTLE_ENDIAN $NATIVE_ENDIAN);
-use List::MoreUtils qw{ natatime };
 
 #use DB_File ;
 
@@ -97,7 +78,6 @@ $project->preload();
 	my @tall = (0) x (50_000);
 	my $id = time;
 foreach my $chr (@{$project->getChromosomes}) {
-	warn $chr->name();
 	$id ++;
 	$process->{$id} = 1;
 	my $pid = $pm->start and next;
@@ -107,10 +87,8 @@ foreach my $chr (@{$project->getChromosomes}) {
 #		my $gene = $project->newGene("SRY");
 #		warn $gene->start." ".$gene->end;
 #	}
-	warn $chr->name." ".$intspan->as_string if $chr->name eq "Y";
 	my $regions = $chr->chunk(50_000);
 	my $nb;
-	warn $dir;
 	my $fb =  GenBoBinaryFile->new(name=>$chr->name,dir=>$dir,mode=>"w");
 	foreach my $r (@$regions){
 		#warn Dumper $r if $chr->name eq "Y";
@@ -132,7 +110,6 @@ foreach my $chr (@{$project->getChromosomes}) {
 			
 		}
 		my $gc =  GenBoCoverageSamtools->new(chromosome=>$chr, patient=>$patient, start=>$r->{start}, end=>$r->{end});
-		warn $r->{start}." ".$r->{end}.join(";",@{$gc->array} )if $chr->name eq "Y";
 		$fb->putDepth($chr->name,$r->{start},$r->{end},$gc->array);
 	}
 	$fb->save_index();
