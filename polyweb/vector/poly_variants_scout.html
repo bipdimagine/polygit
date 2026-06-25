@@ -1247,7 +1247,9 @@
 				if (!content_id) { content_id = "content_res"; }
 				else {
 					var dialog_id = 'dialog_' + content_id;
-					dijit.byId(dialog_id).show();
+					const modal_obj = document.getElementById(dialog_id);
+					const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
+					modal.show();
 				}
     			toggleSidebar();
     			document.getElementById(content_id).innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
@@ -1318,6 +1320,14 @@
 			                            }
 			                            export_session_id = data.xls_session;
 			                            dijit.byId('waiting').hide();
+			                            if (content_id) { 
+											const modal_obj = document.getElementById(dialog_id);
+											const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
+											modal_obj.style.width = '95vw';
+											document.querySelector('#' + dialog_id + ' .modal-content').style.height = '85vh';
+											document.querySelector('#' + dialog_id + ' .modal-content').style.width = '1200px';
+											document.querySelector('#' + dialog_id + ' .modal-content').style.overflow = 'visible';
+										}
 			                        }
 			                    },
 			                });
@@ -1403,6 +1413,21 @@
 		</script>
     </head>
 	<body class="container-fluid" style="overflow-y:scroll;">
+		
+		<div class="modal" id="dialog_content_he_comp">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Others variants</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<div class="container-fluid " id='content_he_comp' style="margin:0px;padding:4px;width:95%;overflow: auto;"> </div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
 		<div class="d-flex">
 		    <nav class="sidebar d-flex flex-column flex-shrink-0 position-fixed">
 		        <button class="toggle-btn" onclick="toggleSidebar()">
@@ -1880,10 +1905,6 @@
 		</div>	
 		</div>
 		
-		<div id="dialog_content_he_comp" dojoType="dojox.widget.Dialog" dimensions="[1200,900]" title="Others variants"> 
-			<div class="container-fluid " id='content_he_comp' style="width:100%;"> </div>
-		</div>
-				
 		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
 			<div class="container" style="margin-left: auto ;margin-right: auto ;">
 				<div>
