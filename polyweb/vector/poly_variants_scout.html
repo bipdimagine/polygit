@@ -769,7 +769,7 @@
 				has_div_checked[divId] = isChecked;
 				
 				const el_run = document.getElementById('div_run');
-				if (isChecked) { el_run.style.display = "block"; }
+				if (el_run && isChecked) { el_run.style.display = "block"; }
 				else {
 					el_run.style.display = "none";
 					for (id in has_div_checked) {
@@ -1235,7 +1235,7 @@
 			        d.classList.add("show");
 		            setTimeout(function() {
 		            	const table = document.getElementById('table_'+name);
-						if (table.classList.contains("table-bootstraptable")) {
+						if (table && table.classList.contains("table-bootstraptable")) {
 	        				enable_table_search('table_'+name);
         				}
 					}, 100);
@@ -1323,10 +1323,13 @@
 			                            }
 			                            export_session_id = data.xls_session;
 			                            dijit.byId('waiting').hide();
-			                            if (content_id) { 
+			                            if (content_id != "content_res") { 
 											const modal_obj = document.getElementById(dialog_id);
 											const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
-											document.querySelector('#' + dialog_id + ' .modal-content').style.overflow = 'visible';
+											modal_obj.addEventListener('hidden.bs.modal', function () {
+    											document.body.classList.remove('modal-open');
+											    document.body.style.overflow = 'auto';
+											});
 										}
 			                        }
 			                    },
