@@ -2369,7 +2369,7 @@ sub getTranscriptsCoverageDepth {
 	my ( $self, $mode ) = @_;
 	my $buffer = $self->buffer;
 	$mode = "r" unless $mode;
-	if ( $mode eq "d" ) {
+	if ( $mode eq "d" or $mode eq "close") {
 		$buffer->{lmdb_hash}->{transcripts}->{ $self->name }->close
 		  if exists $buffer->{lmdb_hash}->{transcripts}->{ $self->name };
 		delete $buffer->{lmdb_hash}->{transcripts}->{ $self->name };
@@ -2394,7 +2394,7 @@ sub getGenesDude {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
 	my $buffer = $self->buffer;
-	if ( $mode eq "d" ) {
+	if ( $mode eq "d" or $mode eq "close") {
 		$buffer->{lmdb_hash}->{genes_dude}->{ $self->name }->close
 		  if exists $buffer->{lmdb_hash}->{genes_dude}->{ $self->name };
 		delete $buffer->{lmdb_hash}->{genes_dude}->{ $self->name };
@@ -2419,7 +2419,7 @@ sub getTranscriptsDude {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
 	my $buffer = $self->buffer;
-	if ( $mode eq "d" ) {
+	if ( $mode eq "d" or $mode eq "close") {
 		$buffer->{lmdb_hash}->{transcripts_dude}->{ $self->name }->close
 		  if exists $buffer->{lmdb_hash}->{transcripts_dude}->{ $self->name };
 		delete $buffer->{lmdb_hash}->{transcripts_dude}->{ $self->name };
