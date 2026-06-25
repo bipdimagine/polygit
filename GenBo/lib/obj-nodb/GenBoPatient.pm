@@ -391,12 +391,10 @@ has coverage => (
 	#	eval {
 			my $tabix = $self->tabix_coverage;
 			return unless $tabix;
-			warn "coucou";
 			my $res   = $tabix->query_full( "mean_all" ) ;
 			my @data;
 
 			while ( my $line = $res->next ) {
-				warn $line;
 				my ( $a, $b, $c ) = split( " ", $line );
 				if ( $b == 99 ) {
 					$b = "mean";
@@ -404,10 +402,10 @@ has coverage => (
 				}
 				else { $b .= "x"; $c *= 100; }
 				$item->{"$b"} = int( $c * 10 ) / 10;
-				warn "o";
+#				warn "o";
 			}
 	#	};
-		warn "END coverage";
+#		warn "END coverage";
 		return $item;
 	},
 );

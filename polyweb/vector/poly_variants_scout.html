@@ -979,6 +979,24 @@
 			    document.getElementById("span_nb_projects").innerHTML = 'Projects (' + nb_selected + '/' + nb_total + ')';
 			}
 			
+			function view_var_from_proj_gene_pat (project_name, gene_id, patient_name, variant_id, model_name) {
+		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl";
+		    	var options = {};
+				options['login'] = username;
+				options['pwd'] = pwd;
+				options['launch_job'] = "1";
+				options['only_project'] = project_name;
+				options['only_patient'] = patient_name;
+    			options['only_genes'] = gene_id;
+				options['dejavu'] = "10000000";
+				options['dejavu_ho'] = "10000000";
+				options['gnomad'] = "10000000";
+				options['gnomad_ho'] = "10000000";
+				options['filters_cons'] = "mature-mirna,splice_acc/don,splice_acceptor/donor,frameshift,stop-gained,(start/stop)-lost,ncrna,missense,no-frameshift,splice_region,predicted_splice_region,predicted_promoter_ai,utr,synonymous,upstream,downstream,intronic,intergenic";
+				options['models'] = model_name;
+				launchJob(url, options, "content_he_comp");
+			}
+			
 		    function launch_variants_search() {
 		    	var url = url_path + "json_output_nodb/get_variants_from_projects.pl";
 		    	var options = {};
@@ -1225,9 +1243,14 @@
 			}
 			
 			var export_session_id;
-			function launchJob(url, options) {
+			function launchJob(url, options, content_id) {
+				if (!content_id) { content_id = "content_res"; }
+				else {
+					var dialog_id = 'dialog_' + content_id;
+					dijit.byId(dialog_id).show();
+				}
     			toggleSidebar();
-    			document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
+    			document.getElementById(content_id).innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 			    $.ajax({
 			        url: url,
 			        type: "POST",
@@ -1263,14 +1286,14 @@
 									    }
 									    if (elapsed > max_time) {
 									        clearInterval(interval);
-									        document.getElementById("content_res").innerHTML = "<b>Job aborted : timeout (>" + max_minutes + " min)</b>";
+									        document.getElementById(content_id).innerHTML = "<b>Job aborted : timeout (>" + max_minutes + " min)</b>";
 									        dijit.byId('waiting').hide();
 									        return;
 									    }
 			                            i_check++;
 			                            if (i_check == 3) {
 			                                let now = new Date();
-			                                document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> " +
+			                                document.getElementById(content_id).innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> " +
 			                                    "<i>Please wait...<br><br>" + "launch at <b>" + launch_date.getHours() + ':' + launch_date.getMinutes() + ':' + launch_date.getSeconds() + "</b><br>" +
 			                                    "still in progress at <b>" +  now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + "</b></i><br><br><i>Limit timeout: " + max_minutes + " minutes</i>";
 			                                i_check = 0;
@@ -1280,8 +1303,8 @@
 			                        if (data.status === "finished") {
 			                            clearInterval(interval);
 			                            var html_table = data.html;
-			                            document.getElementById("content_res").innerHTML = "";
-			                            var myNode = document.getElementById("content_res");
+			                            document.getElementById(content_id).innerHTML = "";
+			                            var myNode = document.getElementById(content_id);
 			                            var myPanel = $(html_table);
 			                            myPanel.appendTo(myNode);
 			                            enable_table_search('table_genes');
@@ -1307,7 +1330,6 @@
 			        }
 			    });
 			}
-			
 			
 			function change_slider_reads(val){
 				var t = Math.floor(val);
@@ -1856,6 +1878,10 @@
 		        </div>
 		    </main>
 		</div>	
+		</div>
+		
+		<div id="dialog_content_he_comp" dojoType="dojox.widget.Dialog" dimensions="[1200,900]" title="Others variants"> 
+			<div class="container-fluid " id='content_he_comp' style="width:100%;"> </div>
 		</div>
 				
 		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
