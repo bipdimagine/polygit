@@ -303,6 +303,7 @@ has public_data => (
 		confess($filename) unless -e $filename;
 		read_config $filename => my %config1;
 		my $version = $self->annotation_genome_version();
+		$version = "HG38" unless $version;
 		confess("no annotation_genome_version defined ") unless $version;
 		
 		my $filename2 = $dir."public-data.$version.cfg";
