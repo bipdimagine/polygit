@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>PolyVariantsScout</title>
+        <title>PolyDejaVu V2</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
         <!-- chargement des feuilles de styles necessaires a l'affichage -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -769,7 +769,7 @@
 				has_div_checked[divId] = isChecked;
 				
 				const el_run = document.getElementById('div_run');
-				if (isChecked) { el_run.style.display = "block"; }
+				if (el_run && isChecked) { el_run.style.display = "block"; }
 				else {
 					el_run.style.display = "none";
 					for (id in has_div_checked) {
@@ -994,6 +994,7 @@
 				options['gnomad_ho'] = "10000000";
 				options['filters_cons'] = "mature-mirna,splice_acc/don,splice_acceptor/donor,frameshift,stop-gained,(start/stop)-lost,ncrna,missense,no-frameshift,splice_region,predicted_splice_region,predicted_promoter_ai,utr,synonymous,upstream,downstream,intronic,intergenic";
 				options['models'] = model_name;
+				document.getElementById("span_other_project_patient_name").innerHTML = project_name + ': ' + patient_name;
 				launchJob(url, options, "content_he_comp");
 			}
 			
@@ -1234,7 +1235,7 @@
 			        d.classList.add("show");
 		            setTimeout(function() {
 		            	const table = document.getElementById('table_'+name);
-						if (table.classList.contains("table-bootstraptable")) {
+						if (table && table.classList.contains("table-bootstraptable")) {
 	        				enable_table_search('table_'+name);
         				}
 					}, 100);
@@ -1244,12 +1245,16 @@
 			
 			var export_session_id;
 			function launchJob(url, options, content_id) {
-				if (!content_id) { content_id = "content_res"; }
+				if (!content_id) {
+					content_id = "content_res";
+    				toggleSidebar();
+				}
 				else {
 					var dialog_id = 'dialog_' + content_id;
-					dijit.byId(dialog_id).show();
+					const modal_obj = document.getElementById(dialog_id);
+					const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
+					modal.show();
 				}
-    			toggleSidebar();
     			document.getElementById(content_id).innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
 			    $.ajax({
 			        url: url,
@@ -1318,6 +1323,14 @@
 			                            }
 			                            export_session_id = data.xls_session;
 			                            dijit.byId('waiting').hide();
+			                            if (content_id != "content_res") { 
+											const modal_obj = document.getElementById(dialog_id);
+											const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
+											modal_obj.addEventListener('hidden.bs.modal', function () {
+    											document.body.classList.remove('modal-open');
+											    document.body.style.overflow = 'auto';
+											});
+										}
 			                        }
 			                    },
 			                });
@@ -1403,6 +1416,21 @@
 		</script>
     </head>
 	<body class="container-fluid" style="overflow-y:scroll;">
+		
+		<div class="modal" id="dialog_content_he_comp">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title"><center>Others variants <span id="span_other_project_patient_name"></span></center></h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<div class="container-fluid " id='content_he_comp' style="margin:0px;padding:4px;width:99%;overflow: auto;"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
 		<div class="d-flex">
 		    <nav class="sidebar d-flex flex-column flex-shrink-0 position-fixed">
 		        <button class="toggle-btn" onclick="toggleSidebar()">
@@ -1410,7 +1438,7 @@
 		        </button>
 		
 		        <div class="p-4">
-		            <h4 class="logo-text fw-bold mb-0">PolyVariantsScout</h4>
+		            <h4 class="logo-text fw-bold mb-0">PolyDejaVu V2</h4>
 		            
 					<button class="btn btn-outline-secondary hide-on-collapse" onClick='relogin();' style="margin-top:10px;background-color:#292E49;color:white;">
 						<b><i class="fa fa-sign-in"></i> <span style="margin-left: 5px;color:white;" id="span_login"></span></b>
@@ -1871,19 +1899,17 @@
 		
 		    <main class="main-content overflow-auto" style="width:100%;">
 		        <div class="container-fluid " id='content_res' style="width:100%;">
-		            <h2>Welcome to PolyVariantsScout</h2>
+		            <h2>Welcome to PolyDejaVu New Generation</h2>
 		            <p class="text-muted">Choose your filters in dashboard.</p>
 		            <br>
+		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Gene score from phenotype defined (by default, your favorite phenotype).</p>
 		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Minimum read(s) option available in patients filters.</p>
+		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> View other(s) variant(s) of a patient (He Comp).</p>
 		        </div>
 		    </main>
 		</div>	
 		</div>
 		
-		<div id="dialog_content_he_comp" dojoType="dojox.widget.Dialog" dimensions="[1200,900]" title="Others variants"> 
-			<div class="container-fluid " id='content_he_comp' style="width:100%;"> </div>
-		</div>
-				
 		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
 			<div class="container" style="margin-left: auto ;margin-right: auto ;">
 				<div>
