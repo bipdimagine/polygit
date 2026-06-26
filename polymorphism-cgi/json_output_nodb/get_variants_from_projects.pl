@@ -883,7 +883,7 @@ sub save_variants_in_session_export {
 						$h_tmp->{'consequence'} = $var->variationTypeInterface();
 					}
 					$h_tmp->{'gene'} = '-';
-					$h_tmp->{'gene'} = join(' ; ', @{$h_genes_cons->{'external_name'}}) if exists $h_genes_cons->{'gene'};
+					$h_tmp->{'gene'} = join(' ; ', @{$h_genes_cons->{'external_name'}}) if exists $h_genes_cons->{'external_name'};
 					$h_tmp->{'transcript'} = '-';
 					$h_tmp->{'transcript'} = join(' ; ', @{$h_genes_cons->{'transcript'}}) if exists $h_genes_cons->{'transcript'};
 					$h_tmp->{'nomenclature'} = '-';
