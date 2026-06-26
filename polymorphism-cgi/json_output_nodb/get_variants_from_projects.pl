@@ -743,7 +743,7 @@ sub export_xls {
 		my $h_done;
 		foreach my $var_id (sort keys %{$h_by_patients}) {
 			foreach my $h_infos (@{$h_by_patients->{$var_id}}) {
-				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}};
+				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}.'-'.$h_infos->{'gene'}};
 				my $h;
 				$h->{'variation'} = $var_id;
 				$h->{'project'} = $h_infos->{project_name};
@@ -752,8 +752,9 @@ sub export_xls {
 				$h->{'he_ho'} = $h_infos->{heho};
 				$h->{'gnomad ac'} = $h_infos->{'gnomad ac'};
 				$h->{'gnomad ho'} = $h_infos->{'gnomad ho'};
-				$h->{'gene'} = $h_infos->{'gene'};
+				$h->{'gene(s)'} = $h_infos->{'gene'};
 				$h->{'consequence'} = $h_infos->{'consequence'};
+				$h->{'mane transcript'} = $h_infos->{'transcript'};
 				$h->{'nomenclature'} = $h_infos->{'nomenclature'};
 				$h->{'prot_nomenclature'} = $h_infos->{'prot_nomenclature'};
 				my ($ac, $ratio) = split(', ', $h_infos->{ratio});
@@ -763,11 +764,11 @@ sub export_xls {
 				$h->{'nb reads'} = $ac;
 				$h->{'dp'} = $dp;
 				$h->{'ratio'} = $ratio.'%';
-				$h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}} = undef;
+				$h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}.'-'.$h->{'gene'}} = undef;
 				push(@list_datas_patients, $h);
 			}
 		}
-		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'Nb Reads', 'Ratio', 'gnomAD AC', 'gnomAD HO', 'Gene', 'Consequence', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'Nb Reads', 'Ratio', 'gnomAD AC', 'gnomAD HO', 'Gene(s)', 'Mane Transcript', 'Consequence', 'Nomenclature', 'Prot_Nomenclature');
 		$dejavu_variants->xls_export_session->add_page('Projects Patients', \@lLinesHeaderPatients, \@list_datas_patients);
 	}
 	$dejavu_variants->xls_export_session->export();
@@ -817,9 +818,7 @@ sub save_variants_in_session_export {
 				$h->{genes}->{$g_id}->{external_name} = '-';
 				eval {
 					$h->{genes}->{$g_id}->{external_name} = $g->external_name();
-					$h_genes_cons->{$cons_g}->{external_name} = $g->external_name();
 				};
-				if ($@) { $h_genes_cons->{$cons_g} = $g->id(); }
 				$h->{genes}->{$g_id}->{description} = '-';
 				eval { $h->{genes}->{$g_id}->{description} = $g->description(); };
 				if ($@) {}
@@ -832,7 +831,7 @@ sub save_variants_in_session_export {
 					$htr->{max_splice_ai} = $htr->{spliceAI}.' '.$htr->{spliceAI_cat};
 					$htr->{promoter_ai} = $htr->{promoterAI_score};
 					$h->{genes}->{$g_id}->{transcripts}->{$htr->{name}} = $htr;
-					my $t = $var->getProject->newTranscript($htr->{name}); 
+					my $t = $var->getProject->newTranscript($htr->{name});
 					$htr->{cdna_position} = $t->translate_position( $var->start() );
 					$htr->{polyphen_score} = $var->polyphenScore($t);
 					$htr->{sift_score} = $var->siftScore($t);
@@ -850,10 +849,19 @@ sub save_variants_in_session_export {
 						my $chanAA = $var->changeAA($prot);
 						$htr->{aa} = $protAA.'/'.$chanAA if ( $protAA and $chanAA );
 						$htr->{protein_position} = $var->protein_nomenclature($prot);
-						if (exists $h_genes_cons->{$htr->{consequence}} and $h_genes_cons->{$htr->{consequence}}->{external_name} eq $t->gene_external_name()) {
-							$h_genes_cons->{$cons_g}->{nomenclature} = $htr->{'nomenclature'};
-							$h_genes_cons->{$cons_g}->{prot_nomenclature} = $htr->{'prot_nomenclature'};
-							$h_genes_cons->{$cons_g}->{external_name} .= ' ('.$g->id().')';
+					}
+					if ($t->isMane()) {
+						push(@{$h_genes_cons->{external_name}}, $g->external_name().' ('.$g->id.')');
+						push(@{$h_genes_cons->{transcript}}, $t->name(). ' ('.$g->external_name().')');
+						push(@{$h_genes_cons->{consequence}}, $htr->{consequence});
+						if ($prot) {
+							push(@{$h_genes_cons->{nomenclature}}, $htr->{'nomenclature'});
+							push(@{$h_genes_cons->{prot_nomenclature}}, $htr->{'prot_nomenclature'});
+						}
+						else {
+							push(@{$h_genes_cons->{nomenclature}}, '-');
+							push(@{$h_genes_cons->{prot_nomenclature}}, '-');
+							
 						}
 					}
 				}
@@ -868,10 +876,11 @@ sub save_variants_in_session_export {
 				foreach my $h_tmp (@{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}}) {
 					$h_tmp->{'gnomad ac'} = $var->getGnomadAC();
 					$h_tmp->{'gnomad ho'} = $var->getGnomadHO();
-					$h_tmp->{'consequence'} = $var->variationTypeInterface();
-					$h_tmp->{'gene'} = $h_genes_cons->{$h_tmp->{'consequence'}}->{'external_name'};
-					$h_tmp->{'nomenclature'} = $h_genes_cons->{$h_tmp->{'consequence'}}->{'nomenclature'};
-					$h_tmp->{'prot_nomenclature'} = $h_genes_cons->{$h_tmp->{'consequence'}}->{'prot_nomenclature'};
+					$h_tmp->{'consequence'} = join(' ; ', @{$h_genes_cons->{'consequence'}});
+					$h_tmp->{'gene'} = join(' ; ', @{$h_genes_cons->{'external_name'}});
+					$h_tmp->{'transcript'} = join(' ; ', @{$h_genes_cons->{'transcript'}});
+					$h_tmp->{'nomenclature'} = join(' ; ', @{$h_genes_cons->{'nomenclature'}});
+					$h_tmp->{'prot_nomenclature'} = join(' ; ', @{$h_genes_cons->{'prot_nomenclature'}});
 					push(@{$h_patients->{$var_id}}, $h_tmp);
 				}
 			}
