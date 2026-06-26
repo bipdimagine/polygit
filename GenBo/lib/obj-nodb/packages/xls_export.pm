@@ -81,7 +81,7 @@ has list_generic_header => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'Max_Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'AA', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeader = ('Variation', 'Rsname', 'Type', 'Dejavu', 'Chr', 'Position', 'Allele', 'Sequence', 'HGMD_Class', 'Cosmic', 'Cadd', 'Ncboost', 'ClinVar', 'Freq (%)', 'gnomad AC', 'gnomad HO', 'gnomad AN', 'Min_Pop_Freq', 'Max_Pop_Freq', 'Gene', 'Description', 'Phenotypes', 'Consequence', 'Transcript', 'Transcript_Xref', 'Appris', 'Polyphen', 'Polyphen_Score', 'Sift', 'Sift_Score', 'Max_Splice_ai', 'Promoter_ai', 'Alphamissense', 'Exon', 'Cdna_Pos', 'Cds_Pos', 'Protein', 'Protein_xref', 'AA', 'Nomenclature', 'Prot_Nomenclature');
 		return \@lLinesHeader;
 	}
 );
@@ -134,6 +134,7 @@ has hash_except_category_rowspan => (
 		$h->{'protein'}			= undef;
 		$h->{'nomenclature'}	= undef;
 		$h->{'prot_nomenclature'}= undef;
+		$h->{'protein_xref'}	= undef;
 		$h->{'aa'}				= undef;
 		$h->{'family'}			= undef;
 		$h->{'patient'}			= undef;
@@ -910,6 +911,7 @@ sub store_variants_infos {
 					my $prot = $t->getProtein();
 					if ($prot) {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = $prot->id();
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = $prot->external_name();
 						my $prot_nom;
 						eval { $prot_nom = $var->protein_nomenclature($prot); };
 						if ($@) { $prot_nom = '-'; }
@@ -938,6 +940,7 @@ sub store_variants_infos {
 					}
 					else {
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein'} = '-';
+						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'protein_xref'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'cds_position'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'prot_nomenclature'} = '-';
 						$hash->{$chr_h_id}->{$var_id}->{'genes'}->{ $gene->id() }->{'transcripts'}->{ $t->id() }->{'polyphen'} = '-';
@@ -1226,6 +1229,7 @@ sub prepare_generic_datas_variants {
 						$h2->{'cdna_pos'}        = $h_tr->{'cdna_position'};
 						$h2->{'cds_Pos'}         = $h_tr->{'cds_position'};
 						$h2->{'protein'}         = $h_tr->{'protein'};
+						$h2->{'protein_xref'}    = $h_tr->{'protein_xref'};
 						$h2->{'nomenclature'}    = $h_tr->{'nomenclature'};
 						$h2->{'prot_nomenclature'}= $h_tr->{'prot_nomenclature'};
 						$h2->{'polyphen'}		 = $h_tr->{'polyphen'};
