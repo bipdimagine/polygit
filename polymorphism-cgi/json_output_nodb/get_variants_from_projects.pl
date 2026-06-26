@@ -876,11 +876,20 @@ sub save_variants_in_session_export {
 				foreach my $h_tmp (@{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}}) {
 					$h_tmp->{'gnomad ac'} = $var->getGnomadAC();
 					$h_tmp->{'gnomad ho'} = $var->getGnomadHO();
-					$h_tmp->{'consequence'} = join(' ; ', @{$h_genes_cons->{'consequence'}});
-					$h_tmp->{'gene'} = join(' ; ', @{$h_genes_cons->{'external_name'}});
-					$h_tmp->{'transcript'} = join(' ; ', @{$h_genes_cons->{'transcript'}});
-					$h_tmp->{'nomenclature'} = join(' ; ', @{$h_genes_cons->{'nomenclature'}});
-					$h_tmp->{'prot_nomenclature'} = join(' ; ', @{$h_genes_cons->{'prot_nomenclature'}});
+					if (exists $h_genes_cons->{'consequence'}) {
+						$h_tmp->{'consequence'} = join(' ; ', @{$h_genes_cons->{'consequence'}}) if exists $h_genes_cons->{'consequence'};
+					}
+					else {
+						$h_tmp->{'consequence'} = $var->variationTypeInterface();
+					}
+					$h_tmp->{'gene'} = '-';
+					$h_tmp->{'gene'} = join(' ; ', @{$h_genes_cons->{'external_name'}}) if exists $h_genes_cons->{'gene'};
+					$h_tmp->{'transcript'} = '-';
+					$h_tmp->{'transcript'} = join(' ; ', @{$h_genes_cons->{'transcript'}}) if exists $h_genes_cons->{'transcript'};
+					$h_tmp->{'nomenclature'} = '-';
+					$h_tmp->{'nomenclature'} = join(' ; ', @{$h_genes_cons->{'nomenclature'}}) if exists $h_genes_cons->{'nomenclature'};
+					$h_tmp->{'prot_nomenclature'} = '-';
+					$h_tmp->{'prot_nomenclature'} = join(' ; ', @{$h_genes_cons->{'prot_nomenclature'}}) if exists $h_genes_cons->{'prot_nomenclature'};
 					push(@{$h_patients->{$var_id}}, $h_tmp);
 				}
 			}
