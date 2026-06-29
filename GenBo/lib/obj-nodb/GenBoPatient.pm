@@ -2483,8 +2483,14 @@ sub normalize_depth {
 sub meanDepth {
 	my ( $self, $chr, $start, $end ) = @_;
 	return -1 if $self->isNoAlign();
-	$end = $start +1 if $start == $end;
-	return $self->getNoSqlDepth->getMean( $chr, $start, $end );
+	my $a = $self->depth($chr,$start,$end);
+	#return -1 unless @$a;
+	my $t = sum(@$a);
+	return $t/scalar(@$a);
+	
+	#$end = $start +1 if $start == $end;
+	#warn join(";",$chr, $start, $end);
+	#return $self->getNoSqlDepth->getMean( $chr, $start, $end );
 }
 
 sub minDepth {
