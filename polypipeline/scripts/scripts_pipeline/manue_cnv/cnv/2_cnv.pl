@@ -243,7 +243,6 @@ MCE::Loop::init {
 	save_parquet_rocksdb($final);
 	warn "====";
 	warn "$Bin/filter_cnv.pl -project=$projectname -fork=1";
-	die();
 	system("$Bin/filter_cnv.pl -project=$projectname -fork=1");
 	
 	exit(0);
@@ -289,9 +288,6 @@ sub gatherSV_by_Interval_2
 					}
 						
 					}
-					
-					
-					
 				}
 				return $all;
 }
