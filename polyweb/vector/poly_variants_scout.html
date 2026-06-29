@@ -770,7 +770,7 @@
 				
 				const el_run = document.getElementById('div_run');
 				if (el_run && isChecked) { el_run.style.display = "block"; }
-				else {
+				else if (el_run) {
 					el_run.style.display = "none";
 					for (id in has_div_checked) {
 						if (has_div_checked[id] == true) {
