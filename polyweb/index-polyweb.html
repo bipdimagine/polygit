@@ -35,6 +35,23 @@
 			  .tb { border-collapse: collapse; width:700px;font-size:11px;text-align:center;background-color:white;visibility:hidden; }
 			  .tb th, .tb td { padding: 2px; border: solid 1px #777;text-align:center; }
 			  .tb th { background-color: black;color:white; }
+			  @keyframes pulse {
+
+			      0%   { transform: scale(1); }
+
+			      50%  { transform: scale(1.15); }
+
+			      100% { transform: scale(1); }
+
+			  }
+
+			  .new-icon {
+
+			      animation: pulse 1.5s infinite;
+
+			      color:#ff5722;
+
+			  }
 		</style>
         
 		<script>
@@ -199,7 +216,7 @@
 		    <br><br>
 		    <center>
 		    <table style="width=100%;">
-		        <tr style="width=100%;background-color:#F3F4F6;">
+		        <tr style="width=100%;">
                     <td style="width=100%;">
                         <div id ="title" style="visibility:hidden;">
                             <center>
@@ -278,16 +295,52 @@
 	                                        
 	                                    </a>
 	                                </li>
-	      							 <li data-hovercolor="#57e676">
+	      							 <li data-hovercolor="#57e676" style ="opacity:60%">
 	                                    <a href="./polydejavu/dejavu.html">
 	                                        <h2 data-type="mText" class="sti-item">PolyDejaVu <br><span style="font-size:24px;color:green;"></span></h2>
 	                                        <h3 data-type="sText" class="sti-item">Explore "Dejavu" database</h3>
 	                                        <span data-type="icon" class="sti-icon sti-icon-deja sti-item"></span>
 	                                    </a>
 	                                </li>
+									<li id="polydejavu_ng" data-hovercolor="#ff5722" style="position:relative;">
+
+									    <span style="
+
+									        position:absolute;
+
+									        top:8px;
+
+									        right:8px;
+
+									        background:#ff3b30;
+
+									        color:white;
+
+									        font-size:11px;
+
+									        font-weight:bold;
+
+									        padding:3px 8px;
+
+									        border-radius:10px;
+
+									        z-index:100;">
+
+									        NEW
+
+									    </span>
+							
+										<a href="./polydejavu/dejavu.html">
+										                                        <h2 data-type="mText" class="sti-item">PolyDejaVu<sup style="font-size:55%; font-weight:bold; color:#ff5722;font-family: Verdana, Geneva, sans-serif;">NG</sup><br>
+																					<span style="font-size:24px;color:green;"></span></h2>
+										                                        <h3 data-type="sText" class="sti-item">Explore "Dejavu" database</h3>
+										                                        <span data-type="icon" class="sti-icon sti-icon-deja sti-item"></span>
+										                                    </a>
+
+									</li>
 	      							 <li data-hovercolor="#57e676">
 	                                    <a href="./vector/poly_variants_scout.html">
-	                                        <h2 data-type="mText" class="sti-item">PolyDejaVu V2 <br><span style="font-size:24px;color:orange;"></span></h2>
+	                                        <h2 data-type="mText" class="sti-item">PolyDejaVu NG <br><span style="font-size:24px;color:orange;"></span></h2>
 	                                        <h3 data-type="sText" class="sti-item">Explore New "Dejavu"</h3>
 	                                        <span data-type="icon" class="sti-icon sti-icon-deja sti-item"></span>
 	                                    </a>

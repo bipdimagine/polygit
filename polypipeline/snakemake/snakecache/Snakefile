@@ -2,7 +2,7 @@ import os
 
 configfile: "config.yaml"
 
-PROJECTS    = config["projects"]
+PROJECTS    = list(config["projects"].keys())
 CHROMOSOMES = config["chromosomes"]
 FORK        = config["fork"]
 PERL        = config["perl"]
@@ -72,7 +72,7 @@ rule cache_store_ids:
         {PERL} {ROCKS}/cache_store_ids.pl \
             -project={wildcards.project} \
             -fork={FORK} \
-            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/cache_store_ids.err && exit 1)
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/store_ids.err && exit 1)
         """
 
 
@@ -86,7 +86,7 @@ rule cache_store_annotations:
         {PERL} {ROCKS}/cache_store_annotations.pl \
             -project={wildcards.project} \
             -fork={FORK} \
-            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/cache_store_annotations.err && exit 1)
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/store_annot.err && exit 1)
         """
 
 
@@ -100,7 +100,7 @@ rule cache_strict_denovo:
         {PERL} {ROCKS}/cache_strict_denovo.pl \
             -project={wildcards.project} \
             -fork={FORK} \
-            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/update_hash_variant_chromosome.err && exit 1)
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/denovo.err && exit 1)
         """
 
 
@@ -114,7 +114,7 @@ rule update_vector_score:
         {PERL} {ROCKS}/update_vector_score.pl \
             -project={wildcards.project} \
             -fork={FORK} \
-            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/update_hash_variant_chromosome.err && exit 1)
+            -chr={wildcards.chrom} || (touch logs/{wildcards.project}/{wildcards.chrom}/update_vector_score.err && exit 1)
         """
 
 
@@ -140,7 +140,7 @@ rule tiny_rocks:
         """
         {PERL} {ROCKS}/tiny_rocks.pl \
             -project={wildcards.project} \
-            -fork={FORK}  -chr={wildcards.chrom}  || (touch logs/{wildcards.project}/tiny_rocks.err && exit 1)
+            -fork={FORK}  -chr={wildcards.chrom}  || (touch logs/{wildcards.project}//{wildcards.chrom}/tiny_rocks.err && exit 1)
         """
 
 

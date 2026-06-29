@@ -1,0 +1,368 @@
+import os
+
+configfile: "config.yaml"
+
+# ???????????????????????????????????????????????????????????
+#  CONFIGURATION
+# ???????????????????????????????????????????????????????????
+
+PROJECTS    = list(config["projects"].keys())
+CHROMOSOMES = config["chromosomes"]
+FORK        = config["fork"]
+PERL        = config["perl"]
+ROCKS       = config["rocks_scripts"]
+PIPELINE    = config["pipeline_scripts"]
+BASE        = config["base_dir"]
+VERSION     = config.get("version", "")
+
+
+def get_patients(project):
+    """Renvoie la liste des patients pour un projet donné."""
+    return config["projects"][project]["patients"]
+
+
+# ???????????????????????????????????????????????????????????
+#  RÈGLE FINALE
+# ???????????????????????????????????????????????????????????
+
+rule all:
+    input:
+        expand("logs/{project}/project_done.ok", project=PROJECTS)
+
+
+# ???????????????????????????????????????????????????????????
+#  MARQUEUR FINAL PROJET
+# ???????????????????????????????????????????????????????????
+
+rule project_done:
+    input:
+        expand("logs/{{project}}/{step}.ok", step=[
+            "quality_check",
+            "add_project_parquet",
+            "hotspot",
+            "global_annotation_by_patient",
+            "polydude"
+        ])
+    output:
+        touch("logs/{project}/project_done.ok")
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  AGRÉGATIONS
+#
+#  Les chromosomes et les patients tournent en parallèle.
+#  duck_cache_store_annotations attend les DEUX avant de
+#  lancer les étapes per-projet.
+#
+#         PER CHROMOSOME          PER PATIENT
+#              ?                       ?
+#       aggregate_chromosomes   aggregate_patients
+#              ?                       ?
+#              ?????????????????????????
+#                          ?
+#            duck_cache_store_annotations
+#                          ?
+#              ????????????????????????????
+#           hotspot quality  parquet    polydude
+#                              ?
+#                         merge_poly
+#                              ?
+#                  global_annotation_by_patient
+#                              ?
+#                        project_done
+#
+# ???????????????????????????????????????????????????????????
+
+rule aggregate_chromosomes:
+    input:
+        expand(
+            "logs/{{project}}/{chrom}/tiny_rocks.ok",
+            chrom=CHROMOSOMES
+        )
+    output:
+        touch("logs/{project}/all_chromosomes.ok")
+
+
+def aggregate_patients_input(wildcards):
+    """Renvoie les .ok de tous les patients DU projet."""
+    patients = get_patients(wildcards.project)
+    return expand(
+        "logs/{project}/{patient}/genes_dude.ok",
+        project=wildcards.project,
+        patient=patients
+    )
+
+rule aggregate_patients:
+    input:
+        aggregate_patients_input
+    output:
+        touch("logs/{project}/all_patients.ok")
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  PARTIE 1a : PER CHROMOSOME
+#
+# ???????????????????????????????????????????????????????????
+
+rule cache_store_ids:
+    output:
+        touch("logs/{project}/{chrom}/store_ids.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/cache_store_ids.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} \
+        || (touch logs/{wildcards.project}/{wildcards.chrom}/store_ids.err && exit 1)
+        """
+
+
+rule cache_store_annotations:
+    input:
+        "logs/{project}/{chrom}/store_ids.ok"
+    output:
+        touch("logs/{project}/{chrom}/store_annot.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/cache_store_annotations.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} \
+        || (touch logs/{wildcards.project}/{wildcards.chrom}/store_annot.err && exit 1)
+        """
+
+
+rule cache_strict_denovo:
+    input:
+        "logs/{project}/{chrom}/store_annot.ok"
+    output:
+        touch("logs/{project}/{chrom}/denovo.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/cache_strict_denovo.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} \
+        || (touch logs/{wildcards.project}/{wildcards.chrom}/denovo.err && exit 1)
+        """
+
+
+rule update_vector_score:
+    input:
+        "logs/{project}/{chrom}/denovo.ok"
+    output:
+        touch("logs/{project}/{chrom}/update_vector_score.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/update_vector_score.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} \
+        || (touch logs/{wildcards.project}/{wildcards.chrom}/update_vector_score.err && exit 1)
+        """
+
+
+rule update_hash_variant_chromosome:
+    input:
+        "logs/{project}/{chrom}/update_vector_score.ok"
+    output:
+        touch("logs/{project}/{chrom}/update_hash_variant_chromosome.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/update_hash_variant_chromosome.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} \
+        || (touch logs/{wildcards.project}/{wildcards.chrom}/update_hash_variant_chromosome.err && exit 1)
+        """
+
+
+rule tiny_rocks:
+    input:
+        "logs/{project}/{chrom}/update_hash_variant_chromosome.ok"
+    output:
+        touch("logs/{project}/{chrom}/tiny_rocks.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/tiny_rocks.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -chr={wildcards.chrom} \
+        || (touch logs/{wildcards.project}/{wildcards.chrom}/tiny_rocks.err && exit 1)
+        """
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  PARTIE 1b : PER PATIENT
+#
+# ???????????????????????????????????????????????????????????
+#/data-pure/workspace/pnitschk/dev/git-polyweb/polygit/polypipeline/scripts/scripts_pipeline/transcripts/transcripts_dude.pl
+rule transcripts_dude:
+    output:
+        touch("logs/{project}/{patient}/transcripts_dude.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {PIPELINE}/transcripts/transcripts_dude.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -patient={wildcards.patient} \
+        || (touch logs/{wildcards.project}/{wildcards.patient}/transcripts_dude.err && exit 1)
+        """
+
+
+rule genes_dude:
+    input:
+        "logs/{project}/{patient}/transcripts_dude.ok"
+    output:
+        touch("logs/{project}/{patient}/genes_dude.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {PIPELINE}/transcripts//genes_level_dude.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -patient={wildcards.patient} \
+        || (touch logs/{wildcards.project}/{wildcards.patient}/genes_dude.err && exit 1)
+        """
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  PARTIE 2 : PORTE D'ENTRÉE PER-PROJET
+#  Attend chromosomes ET patients avant de continuer
+#
+# ???????????????????????????????????????????????????????????
+
+rule duck_cache_store_annotations:
+    input:
+        chrom="logs/{project}/all_chromosomes.ok",
+        patients="logs/{project}/all_patients.ok"
+    output:
+        touch("logs/{project}/duck_cache_store_annotations.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/duck_cache_store_annotations.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+        || (touch logs/{wildcards.project}/duck_cache_store_annotations.err && exit 1)
+        """
+
+
+# ???????????????????????????????????????????????????????????
+#
+#  PARTIE 3 : ÉTAPES PARALLÈLES PER-PROJET
+#
+#           duck_cache_store_annotations
+#                      ?
+#          ????????????????????????????
+#       hotspot quality  parquet   polydude
+#                          ?
+#                    merge_poly
+#                          ?
+#              global_annotation_by_patient
+#                          ?
+#                    project_done
+#
+# ???????????????????????????????????????????????????????????
+
+rule hotspot:
+    input:
+        "logs/{project}/duck_cache_store_annotations.ok"
+    output:
+        touch("logs/{project}/hotspot.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {PIPELINE}/hotspot/hotspot.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+        || (touch logs/{wildcards.project}/hotspot.err && exit 1)
+        """
+
+
+rule quality_check:
+    input:
+        "logs/{project}/duck_cache_store_annotations.ok"
+    output:
+        touch("logs/{project}/quality_check.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {PIPELINE}/quality_check.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -cache=1 \
+        || (touch logs/{wildcards.project}/quality_check.err && exit 1)
+        """
+
+
+rule add_project_parquet:
+    input:
+        "logs/{project}/duck_cache_store_annotations.ok"
+    output:
+        touch("logs/{project}/add_project_parquet.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {PIPELINE}/dejavu/hg38/variant/duckdb/add_project_parquet.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+        || (touch logs/{wildcards.project}/add_project_parquet.err && exit 1)
+        """
+
+
+rule polydude:
+    input:
+        "logs/{project}/duck_cache_store_annotations.ok"
+    output:
+        touch("logs/{project}/polydude.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {PIPELINE}/transcripts/update_level.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+            -cache=1 \
+        || (touch logs/{wildcards.project}/polydude.err && exit 1)
+        """
+
+
+rule merge_polyviewer_db:
+    input:
+        "logs/{project}/add_project_parquet.ok"
+    output:
+        touch("logs/{project}/merge_polyviewer_db.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/merge_polyviewer_db.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+        || (touch logs/{wildcards.project}/merge_polyviewer_db.err && exit 1)
+        """
+
+
+rule global_annotation_by_patient:
+    input:
+        "logs/{project}/merge_polyviewer_db.ok"
+    output:
+        touch("logs/{project}/global_annotation_by_patient.ok")
+    threads: FORK
+    shell:
+        """
+        {PERL} {ROCKS}/global_annotation_by_patient.pl \
+            -project={wildcards.project} \
+            -fork={FORK} \
+        || (touch logs/{wildcards.project}/global_annotation_by_patient.err && exit 1)
+        """
