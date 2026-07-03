@@ -2417,7 +2417,7 @@ has refFlat_file => (
 		 	.   '/gencode.v'.$self->gencode_version."/refFlat/refFlat.txt";
 		warn $file;
 		$file = $self->buffer()->config_path("root","public_data") . '/repository/'
-		 	. $version
+		 	. $self->annotation_genome_version
 		  	. '/refFlat/refFlat.txt' unless -e $file;
 		
 		return $file;
