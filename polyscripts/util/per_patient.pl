@@ -13,7 +13,7 @@ my ($project_name, $patient_name);
 my $file;
 my $run = 0;
 my $url;
-my $force= 1;
+my $force;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
