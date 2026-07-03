@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -11,15 +11,17 @@ my $fork = 1;
 my $cmd;
 my ($project_name, $patient_name);
 my $file;
+my $force;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
 	'cmd=s'  => \$cmd,
 	'file=s'  => \$file,
-	
+	'force=s' => \$force,
 );
-
-
+  my $stforce = "";
+$stforce = " -force=1 " if ($force); 
+# test 
 #unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
 my $t = `hostname`;
 my $nbErrors = 0;
@@ -35,7 +37,7 @@ foreach my $project_name (@pp){
 my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name);
 foreach my $chr (@{$project->getChromosomes}){
-	print $cmd." -chr=".$chr->name()." -project=$project_name -fork=$fork\n";
+	print $cmd." -chr=".$chr->name()." -project=$project_name -fork=$fork $stforce\n";
 	
 }
 }

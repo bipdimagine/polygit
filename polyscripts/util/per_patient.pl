@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
 use lib "$RealBin";
@@ -13,6 +13,7 @@ my ($project_name, $patient_name);
 my $file;
 my $run = 0;
 my $url;
+my $force= 1;
 GetOptions(
 	'fork=s'       => \$fork,
 	'project=s'    => \$project_name,
@@ -20,6 +21,7 @@ GetOptions(
 	'file=s'  => \$file,
 	'run=s'  => \$run,
 	'url=s'  => \$url,
+	'force=s' => \$force,
 );
 
 
@@ -27,6 +29,9 @@ GetOptions(
 my $t = `hostname`;
 my $nbErrors = 0;
 my @pp;
+
+my $stforce = "";
+$stforce = " -force=1 " if ($force); 
 if($file){
  @pp = `cat $file`;
 chomp(@pp);
@@ -37,6 +42,11 @@ else {
 foreach my $project_name (@pp){
 my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name);
+unless ($cmd){
+	foreach my $patient (@{$project->getPatients}){
+		print $patient->name."\n";
+	}
+}
 if ($run == 1){
 	
 foreach my $patient (@{$project->getPatients}){
@@ -49,7 +59,7 @@ foreach my $patient (@{$project->getPatients}){
 	if ($url){
 		print $cmd." patients=".$patient->name()." project=$project_name >/dev/null\n";
 	}
-	else {print $cmd." -patient=".$patient->name()." -project=$project_name -fork=$fork\n";
+	else {print $cmd." -patient=".$patient->name()." -project=$project_name -fork=$fork $stforce\n";
 	}
 	
 }
