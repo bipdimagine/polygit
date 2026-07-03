@@ -9,7 +9,7 @@ use Carp qw(confess croak);
 use Data::Dumper;
 use Moo;
 
-use Spreadsheet::WriteExcel;
+use Excel::Writer::XLSX;
 use Compress::Snappy;
 use Storable qw(store retrieve freeze dclone thaw);
 use session_export;
@@ -32,7 +32,7 @@ has workbook => (
 
 has title_page => (
 	is      => 'rw',
-	default => 'export.xls',
+	default => 'export.xlsx',
 );
 
 has header_columns => (
@@ -370,12 +370,12 @@ sub open_xls_file {
 	my $workbook;
 	my $title = $self->title_page();
 	if ( $self->output_dir() ) {
-		$workbook = Spreadsheet::WriteExcel->new( $self->output_dir() . '/' . $title );
+		$workbook = Excel::Writer::XLSX->new( $self->output_dir() . '/' . $title );
 	}
 	else {
-		print "Content-type: application/msexcel\n";
-		print "Content-Disposition: attachment;filename=$title\n\n";
-		$workbook = Spreadsheet::WriteExcel->new( \*STDOUT );
+		print "Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\n";
+		print "Content-Disposition: attachment; filename=\"$title\"\n\n";
+		$workbook = Excel::Writer::XLSX->new( \*STDOUT );
 	}
 	$self->workbook($workbook);
 }
@@ -592,7 +592,9 @@ sub get_specific_format {
 		}
 		if ( $type_compare eq '>=' ) {
 			foreach my $cat_f ( sort { $b <=> $a } keys %{ $self->hash_format_categories->{ lc($cat) }->{$type_compare} } ) {
-				return $self->hash_format_categories->{ lc($cat) }->{$type_compare}->{ lc($cat_f) } if ( int($value) >= $cat_f );
+				my $this_value = $value;
+				$this_value =~ s/\%//;
+				return $self->hash_format_categories->{ lc($cat) }->{$type_compare}->{ lc($cat_f) } if ( $this_value and int($this_value) >= $cat_f );
 			}
 		}
 		if ( $type_compare eq 'regexp' ) {
