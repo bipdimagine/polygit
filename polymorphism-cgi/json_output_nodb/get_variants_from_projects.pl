@@ -356,7 +356,6 @@ if ($region or $only_genes) {
 		
 		#$dejavu_variants->view_all_projects(1);
 		
-		#TODO: optimiser ici - 1 chromosome peut avoir plusieurs region pour ne faire qu une requete
 		
 		my $worker = sub {
 			my ($mce, $chunk_ref, $chunk_id) = @_;
@@ -667,7 +666,6 @@ if ($launch_job) {
 else {
 	my $hRes;
 	$hRes->{session_id} = $export_session_id;
-	#$hRes->{html} = $html;
 	if ($h_errors_found) {
 		$hRes->{errors}  = join(', ', values %$h_errors_found);
 	}
@@ -693,7 +691,7 @@ sub export_xls {
 		my $h_done;
 		foreach my $var_id (sort keys %{$h_by_patients}) {
 			foreach my $h_infos (@{$h_by_patients->{$var_id}}) {
-				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}};
+				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}.'-'.$h_infos->{'gene'}};
 				my $h;
 				$h->{'variation'} = $var_id;
 				$h->{'project'} = $h_infos->{project_name};
@@ -714,7 +712,7 @@ sub export_xls {
 				$h->{'nb reads'} = $ac;
 				$h->{'dp'} = $dp;
 				$h->{'ratio'} = $ratio.'%';
-				$h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}.'-'.$h->{'gene'}} = undef;
+				$h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}.'-'.$h_infos->{'gene'}} = undef;
 				push(@list_datas_patients, $h);
 			}
 		}
