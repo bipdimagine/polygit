@@ -189,16 +189,18 @@ my $bam_rmdup = $pipeline_dir."/".$patient_name.".rmdup.bam";
 
 
 
+$project->buffer->dbh_deconnect();
+$project->disconnect();
 my $pm = new Parallel::ForkManager($fork);
 foreach my $junction (@lJunctions) {
 	my $pid = $pm->start and next;
-	$buffer->dbh_deconnect();
-	$buffer->dbh_reconnect();
 #	warn $junction->id;
 	$junction->can_create_sashimi_plots(1);
 #	$junction->getListSashimiPlotsPathFiles($patient, $bam_rmdup);
 	$junction->getListSashimiPlotsPathFiles($patient, $patient->getBamFileName());
 	print FILE 'Ok junction '.$junction->id()."\n";
+	$project->buffer->dbh_deconnect();
+	$project->disconnect();
 	$pm->finish();
 }
 $pm->wait_all_children();

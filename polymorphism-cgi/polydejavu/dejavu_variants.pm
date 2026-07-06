@@ -312,6 +312,11 @@ has hash_only_genes  => (
 	lazy    => 1,
 );
 
+has hash_variant_pathogenic  => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 
 sub check_variants_from_gene {
 	my ($self, $h_dv_rocks_ids) = @_;
@@ -395,8 +400,11 @@ sub check_variants_from_gene {
 		            my $var_id = $chr->transform_rocksid_to_varid($rocks_id);
 		            my $var    = $p->_newVariant($var_id);
 					
-					next if $var->other_patients() > $self->max_dejavu();
-					next if $var->other_patients_ho() > $self->max_dejavu_ho();
+					
+					my $is_pathognic;
+					$is_pathognic = 1 if $self->hash_variant_pathogenic() and exists $self->{hash_variant_pathogenic}->{$rocks_id};
+					next if not $is_pathognic and $var->other_patients() > $self->max_dejavu();
+					next if not $is_pathognic and $var->other_patients_ho() > $self->max_dejavu_ho();
 					
 #					my $h_dv = $nodv->dejavu($rocks_id);
 #					next if not $h_dv;

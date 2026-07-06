@@ -106,12 +106,12 @@ my $only_ill = $cgi->param('only_ill');
 my $only_strict_ill = $cgi->param('only_strict_ill');
 my $models = $cgi->param('models');
 my $region = $cgi->param('region');
+my $keep_pathogenic = $cgi->param('keep_pathogenic');
 my $only_genes = $cgi->param('only_genes');
 my $use_phenotype = $cgi->param('use_phenotype');
 my $exclude_projects = $cgi->param('exclude_projects');
 my $only_project = $cgi->param('only_project');
 my $only_patient = $cgi->param('only_patient');
-
 my $export_xls = $cgi->param('export_xls');
 my $session_id = $cgi->param('session_id');
 
@@ -219,7 +219,7 @@ my $path_ncboost_dejavu = $project->ncboost_parquet_dejavu_filter_path();
 my $parquet_promoter_ai = $project->get_promoterAI_parquet();
 my $parquet_promoter_ai_filtred = $project->get_promoterAI_filtred_parquet();
 
-my ($h_res_duck, $h_genes_only, $h_ncboost_values);
+my ($h_res_duck, $h_res_duck_only_pos, $h_genes_only, $h_ncboost_values);
 my ($h_res_duck_promoter_ai, $h_genes_only_promoter_ai);
 my ($h_res_duck_ncboost);
 
@@ -227,127 +227,29 @@ my ($h_res_duck_ncboost);
 
 
 my $h_rocks_to_view;
+
 if ($promoter_ai_value) {
 	launch_promoter_ai ($dejavu_variants, $promoter_ai_value);
 	print '.promoter_ai.'.scalar(keys %{$h_res_duck});
-
 	my $h_vector;
 	my $n = 0;
 	print '.intspan.'.scalar(keys %$h_res_duck).'.';
-	
+	my $ok = 0;
 	foreach my $rocksid (keys %$h_res_duck) {
+		$n++;
+		print '.' if $n % 10000 == 0;
 		my @l_tmp = split('!', $rocksid);
 		my $chr_id = $l_tmp[0];
 		my $pos = int($l_tmp[1]);
-		my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($l_tmp[1].'!'.$l_tmp[2]);
-		if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
-			delete $h_res_duck->{$rocksid};
-			next;
-		}
-		if ($h_gad and exists $h_gad->{ho} and $h_gad->{ho} > $max_gnomad_ac_ho) {
-			delete $h_res_duck->{$rocksid};
-			next;
-		}
-		$h_vector->{$chr_id}->{$pos} = 1;
-		$n++;
-		print '.' if $n % 10000 == 0;
-	}
-	
-	
-	### PART 2 - Intersect variants filters and DejaVu
-	
-	print '.convert.'.$n.'.';
-	my $ok = 0;
-	my @lChr_vec = sort keys %$h_vector;
-	
-	MCE::Loop->init(
-	   max_workers => $fork,
-	   chunk_size => 1,
-	);
-	my @results_convert = mce_loop {
-		my ($mce, $chunk_ref, $chunk_id) = @_;
-		my $b = new GBuffer;
-		my $pr = $b->newProject(-name => $project_name);
-		my ($local_h_res, $local_h_rocks, $local_ok, $local_errors);
-		foreach my $chr_id (@$chunk_ref) {
-			#next if $chr_id eq '21';
-			print '.';
-			my $chr = $pr->getChromosome($chr_id);
-			#my @list_ids = $h_vector->{$chr_id}->Index_List_Read();
-			my @list_ids = sort keys %{$h_vector->{$chr_id}};
-			
-			my $i = 0;
-			my $no = $chr->rocks_dejavu();
-			foreach my $id (@list_ids) {
-				$i++;
-				if ($i == 2500) {
-					print '.';
-					$i = 0;
-				}
-				my $res;
-				eval { $res = $no->dejavu_interval($id -1 , $id +1); };
-				if ($@) {
-					chomp($@);
-					$local_errors->{'dv-hg38-'.$no->{current_db}->{name}} = $@;
-					$local_errors->{'dv-hg38-'.$no->{current_db}->{name}} =~ s/ at .+/'/;
-					next;
-				}
-				
-				foreach my $dv_rocks_id (keys %{$res}) {
-					my $nb_pat_he = 0;
-					my $nb_pat_ho = 0;
-					my $has_in_my_projects;
-					$has_in_my_projects = 1 if not $only_my_projects;
-					foreach my $proj_id (keys %{$res->{$dv_rocks_id}}) {
-						$has_in_my_projects = 1 if exists $dejavu_variants->{hash_users_projects}->{$proj_id};
-						next if ($proj_id eq 'polybtf');
-						$nb_pat_he += $res->{$dv_rocks_id}->{$proj_id}->{he};
-						$nb_pat_ho += $res->{$dv_rocks_id}->{$proj_id}->{ho};
-					}
-					next if $only_my_projects and not $has_in_my_projects;
-					my $nb_total = $nb_pat_he + $nb_pat_ho;
-					next if $nb_total > $max_dejavu;
-					next if $nb_pat_ho > $max_dejavu_ho;
-					if (exists $h_res_duck->{$chr_id.'!'.$dv_rocks_id}) {
-						$local_h_res->{$chr_id.'!'.$dv_rocks_id}->{dejavu} = $res->{$dv_rocks_id};
-						$local_h_rocks->{$chr_id}->{$dv_rocks_id} = $res->{$dv_rocks_id};
-						$local_ok++;
-					}
-				}
-			}
-			$no->close();
-		}
-	    MCE->gather({
-	        h_res   => $local_h_res,
-	        h_rocks => $local_h_rocks,
-	        h_errors => $local_errors,
-	        ok      => $local_ok
-	    });
-	} @lChr_vec;	
-		
-	foreach my $data (@results_convert) {
-	    $ok += $data->{ok};
-	    if ($data->{h_res}) {
-	        foreach my $k (keys %{$data->{h_res}}) {
-	            $h_res_duck->{$k} = $data->{h_res}->{$k};
-	        }
-	    }
-	    if ($data->{h_rocks}) {
-	        foreach my $chr_id (keys %{$data->{h_rocks}}) {
-	            foreach my $id (keys %{$data->{h_rocks}->{$chr_id}}) {
-	                $h_rocks_to_view->{$chr_id}->{$id} = $data->{h_rocks}->{$chr_id}->{$id};
-	            }
-	        }
-	    }
-	    if ($data->{h_errors}) {
-	    	foreach my $name (keys %{$data->{h_errors}}) {
-	    		$h_errors_found->{$name} = $data->{h_errors}->{$name};
-	    	}
-	    }
+		my $dv_rocks_id = $l_tmp[1].'!'.$l_tmp[2];
+		my $h_dv = pass_frequence_or_clinvar_pathogenic($chr_id, $dv_rocks_id);
+		next if not $h_dv;
+		$h_rocks_to_view->{$chr_id}->{$dv_rocks_id} = $h_dv->{details};
+		$ok++;
 	}
 	print '.after_dv.'.$ok++.'.';
-	MCE::Loop->finish();
 }
+
 if ($ncboost_value) {
 	launch_ncboost ($dejavu_variants, $ncboost_value, $max_dejavu, $max_dejavu_ho);
 	$dejavu_variants->hash_ncboost_values($h_ncboost_values);
@@ -366,25 +268,8 @@ if ($ncboost_value) {
 			$i = 0;
 		}
 		my @ltmp = split('!', $id);
-#		if (exists $dejavu_variants->hash_users_projects->{all}) {
-#			my $h_dv = $project->getChromosome($ltmp[0])->rocks_dejavu->dejavu($ltmp[1].'!'.$ltmp[2]);
-#			my ($h_proj);
-#			my $nb_he = 0;
-#			my $nb_ho = 0;
-#			foreach my $proj_id (keys %{$h_dv}) {
-#				$h_proj->{$proj_id} = undef;
-#				$nb_he += $h_dv->{$proj_id}->{he};
-#				$nb_ho += $h_dv->{$proj_id}->{ho};
-#			}
-#			next if (($nb_he + $nb_ho) >= $max_dejavu);
-#			next if ($nb_ho >= $max_dejavu_ho);
-#			$h_rocks_to_view->{$ltmp[0]}->{$ltmp[1].'!'.$ltmp[2]} = $h_proj;
-#			$found++;
-#		}
-#		else {
-			$h_rocks_to_view->{$ltmp[0]}->{$ltmp[1].'!'.$ltmp[2]} = $h_proj;
-			$found++;
-#		}
+		$h_rocks_to_view->{$ltmp[0]}->{$ltmp[1].'!'.$ltmp[2]} = $h_proj;
+		$found++;
 	}
 	print '.now.'.$found++.'.';
 }
@@ -440,6 +325,11 @@ if ($region or $only_genes) {
 		        		}
 		        	}
 		        }
+		        if (exists $data->{pathogenic}) {
+			        foreach my $rocksid (keys %{$data->{pathogenic}}) {
+			        	$dejavu_variants->{hash_variant_pathogenic}->{$rocksid} = undef;
+			        }
+		        }
 		    }
 		);
 		
@@ -484,7 +374,6 @@ if ($region or $only_genes) {
 					JOIN agg USING (chr38, pos38, allele);
 				";
 				
-				
 				my $duckdb = $dejavu_variants->buffer->software('duckdb');
 				open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
 				while (my $line = <$fh>) {
@@ -503,6 +392,8 @@ if ($region or $only_genes) {
 				}
 				close($fh);
 				print '.found.'.$i.'.';
+				
+				
 				$i = 0;
 				my $chr = $dejavu_variants->project->getChromosome($chr_filter);
 				my $no = $chr->rocksdb('gnomad');
@@ -534,9 +425,40 @@ if ($region or $only_genes) {
 				}
 				$no->close();
 				print '.found_filtred.'.$i.'.';
+				
+				
+				#ADD CLINVAR PATHOGENIC
+				if ($keep_pathogenic) {
+					my $sql_clinvar = "
+						WITH dejavu AS (
+							SELECT *, chr38 || '!' || LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'index', LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'rocksid' FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos
+						)
+						SELECT d.project, c.index, d.rocksid
+							FROM dejavu d
+							JOIN '/data-pure/public-data/repository/HG38/clinvar/20250824/parquet/clinvar.csv' c ON d.index = c.index
+							WHERE c.clinvar_class = 'pathogenic'
+							GROUP BY d.project, c.index, d.rocksid;
+					";
+					
+					open(my $fh2, "-|", "$duckdb -csv -c \"$sql_clinvar\"") or die "duckdb failed";
+					while (my $line = <$fh2>) {
+					    chomp $line;
+					    my ($project_id, $genomic_rocksid, $rocksid) = split(/,/, $line);
+				    	next if $project_id eq 'project';
+				    	my $res = $project->getChromosome($chr_filter)->rocks_dejavu->dejavu($rocksid);
+						my ($nb_pat_he, $nb_pat_ho) = get_dv_he_ho_from_request($res);
+				    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{$project_id} = undef;
+				    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{he} = $nb_pat_he;
+				    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{ho} = $nb_pat_ho;
+				    	
+				    	$hres->{pathogenic}->{$rocksid} = undef;
+				    	$i++;
+				    	print '.' if ($i % 100000 == 0);
+					}
+					close($fh2);
+					print '.with_clinvar.'.$i.'.';
+				}
 			}
-			
-			
 		    MCE->gather($hres);
 		};
 		MCE::Loop->run($worker, [ @l_regions ]);
@@ -601,7 +523,7 @@ mce_loop {
 			}
 		};
 		if ($@) {
-			$hres->{$gene_id} = qq{ERROR with $gene_id};
+			$hres->{'-99'}->{$gene_id} = qq{ERROR with $gene_id};
 		}
     }
 	MCE->gather($hres);
@@ -743,7 +665,7 @@ sub export_xls {
 		my $h_done;
 		foreach my $var_id (sort keys %{$h_by_patients}) {
 			foreach my $h_infos (@{$h_by_patients->{$var_id}}) {
-				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}.'-'.$h_infos->{'gene'}};
+				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}};
 				my $h;
 				$h->{'variation'} = $var_id;
 				$h->{'project'} = $h_infos->{project_name};
@@ -1109,5 +1031,94 @@ sub get_hash_annot_categories {
 		}
 	}
 	return $h_annot_categories;
+}
+
+sub pass_frequence_or_clinvar_pathogenic {
+	my ($chr_id, $rocks_id) = @_;
+	if (is_rocks_id_clinvar_pathogenic($project->getChromosome($chr_id)->rocksdb('clinvar'), $rocks_id)) {
+		my $h_dv = get_dejavu_he_ho($chr_id, $rocks_id);
+		return if not $h_dv;
+		return $h_dv;
+	}
+	return if not pass_gnomad_filter($chr_id, $rocks_id);
+	my $h_dv = get_dejavu_he_ho($chr_id, $rocks_id);
+	return if not $h_dv;
+	return if $h_dv->{total} > $max_dejavu;
+	return if $h_dv->{ho} > $max_dejavu_ho;
+	return $h_dv;
+}
+
+sub pass_gnomad_filter {
+	my ($chr_id, $rocks_id) = @_;
+	my $h_gad = $project->getChromosome($chr_id)->rocksdb('gnomad')->value($rocks_id);
+	return if $h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $dejavu_variants->max_gnomad_ac();
+	return if $h_gad and exists $h_gad->{ho} and $h_gad->{ho} > $dejavu_variants->max_gnomad_ac_ho();
+	return 1;
+}
+
+sub get_dejavu_he_ho {
+	my ($chr_id, $rocks_id) = @_;
+	my ($id, $alt) = split('!', $rocks_id);
+	my ($res, $nb_pat_he, $nb_pat_ho);
+	if ($alt eq 'A' or $alt eq 'T' or $alt eq 'G' or $alt eq 'C') {
+		$res = $project->getChromosome($chr_id)->rocks_dejavu->dejavu($rocks_id);
+		return if not $res;
+		return if $only_my_projects and not pass_dejavu_filter_only_my_projects($res);
+		($nb_pat_he, $nb_pat_ho) = get_dv_he_ho_from_request($res);
+		my $h;
+		$h->{details} = $res;
+		$h->{he} = $nb_pat_he;
+		$h->{ho} = $nb_pat_ho;
+		$h->{total} = $nb_pat_he + $nb_pat_ho;
+		return $h;
+	}
+	else {
+		$res = $project->getChromosome($chr_id)->rocks_dejavu->dejavu_interval($id -1 , $id +1);
+		return if not $res;
+		foreach my $dv_rocks_id (keys %{$res}) {
+			if (exists $h_res_duck->{$chr_id.'!'.$dv_rocks_id}) {
+				return if $only_my_projects and not pass_dejavu_filter_only_my_projects($res->{$dv_rocks_id});
+				($nb_pat_he, $nb_pat_ho) = get_dv_he_ho_from_request($res->{$dv_rocks_id});
+				my $h;
+				$h->{details} = $res->{$dv_rocks_id};
+				$h->{he} = $nb_pat_he;
+				$h->{ho} = $nb_pat_ho;
+				$h->{total} = $nb_pat_he + $nb_pat_ho;
+				die if $h->{total} == 0;
+				return $h;
+			}
+		}
+	}
+	return;
+}
+
+sub pass_dejavu_filter_only_my_projects {
+	my ($res) = @_;
+	foreach my $proj_id (keys %{$res}) {
+		return 1 if exists $dejavu_variants->{hash_users_projects}->{$proj_id};
+	}
+	return;
+}
+
+
+sub get_dv_he_ho_from_request {
+	my ($res) = @_;
+	my $nb_pat_he = 0;
+	my $nb_pat_ho = 0;
+	foreach my $proj_id (keys %{$res}) {
+		next if ($proj_id eq 'polybtf');
+		$nb_pat_he += $res->{$proj_id}->{he};
+		$nb_pat_ho += $res->{$proj_id}->{ho};
+	}
+	return ($nb_pat_he, $nb_pat_ho);
+}
+
+sub is_rocks_id_clinvar_pathogenic {
+	my ($no_clinvar_pathogenic, $rocks_id) = @_;
+	my $h_clinvar_pathogenic = $no_clinvar_pathogenic->clinvar($rocks_id);
+	return if not $h_clinvar_pathogenic;
+	return if not exists $h_clinvar_pathogenic->{score};
+	return 1 if $h_clinvar_pathogenic->{score} >= 5;
+	return;
 }
 

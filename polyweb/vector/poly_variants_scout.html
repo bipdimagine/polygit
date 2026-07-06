@@ -748,6 +748,8 @@
         			document.getElementById("hreads").value = 0;
         			document.getElementById('promoter_ai').checked = false;
         			document.getElementById('ncboost').checked = false;
+        			//document.getElementById('phylop').checked = false;
+        			document.getElementById('b_keep_pathogenic').checked = true;
 					var cookie_user = dojo.cookie("username");
 					var cookie_pwd = dojo.cookie("passwd");
 	            	if (cookie_user && cookie_pwd) {
@@ -763,6 +765,8 @@
 	    	has_div_checked['div_select_region'] = false;
 	    	has_div_checked['div_select_promoter_ai'] = false;
 	    	has_div_checked['div_select_ncboost'] = false;
+	    	//has_div_checked['div_select_phylop'] = false;
+	    	
 	    	function toggleDiv(divId, isChecked) {
 				const el = document.getElementById(divId);
 				el.style.display = isChecked ? "block" : "none";
@@ -1057,8 +1061,44 @@
 					selected_minimum_value = true;
 				}
 				
+				<!--
+				if (has_div_checked['div_select_phylop'] == true) {
+					//slider_phylop_slower
+					//slider_phylop_faster
+					var phylop_slower_value;
+					var phylop_faster_value;
+			    	if (dijit.byId("slider_phylop_slower").get("value") == 1)    {  }
+				    else if (dijit.byId("slider_phylop_slower").get("value") == 2)    { phylop_slower_value = '1'; }
+				    else if (dijit.byId("slider_phylop_slower").get("value") == 3)    { phylop_slower_value = '2'; }
+				    else if (dijit.byId("slider_phylop_slower").get("value") == 4)    { phylop_slower_value = '3'; }
+				    else if (dijit.byId("slider_phylop_slower").get("value") == 5)    { phylop_slower_value = '4'; }
+				    else if (dijit.byId("slider_phylop_slower").get("value") == 6)    { phylop_slower_value = '5'; }
+				    else if (dijit.byId("slider_phylop_slower").get("value") == 7)    { phylop_slower_value = '6'; }
+				    if (phylop_slower_value) {
+					    show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
+						document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
+						options['phylop_slower_value'] = phylop_slower_value;
+						selected_minimum_value = true;
+				    }
+				    
+			    	if (dijit.byId("slider_phylop_faster").get("value") == 1)    {  }
+				    else if (dijit.byId("slider_phylop_faster").get("value") == 2)    { phylop_faster_value = '-1'; }
+				    else if (dijit.byId("slider_phylop_faster").get("value") == 3)    { phylop_faster_value = '-2'; }
+				    else if (dijit.byId("slider_phylop_faster").get("value") == 4)    { phylop_faster_value = '-4'; }
+				    else if (dijit.byId("slider_phylop_faster").get("value") == 5)    { phylop_faster_value = '-6'; }
+				    else if (dijit.byId("slider_phylop_faster").get("value") == 6)    { phylop_faster_value = '-8'; }
+				    else if (dijit.byId("slider_phylop_faster").get("value") == 7)    { phylop_faster_value = '-10'; }
+				    if (phylop_faster_value) {
+					    show_waiting("Search / Load datas<br><br><i>This could take a few minutes...</i>");
+						document.getElementById("content_res").innerHTML = "<img id='wait1' src='../images/polyicons/wait18trans.gif' align='absmiddle'/> <i>Please wait...</i>";
+						options['phylop_faster_value'] = phylop_faster_value;
+						selected_minimum_value = true;
+				    }
+				} 
+				-->
+				
 				if (selected_minimum_value === false) {
-					show_error("<center><nobr><b><h4><span style='color:orange;'>Warning.</span></b></h4> At least one of the following options must be selected.</nobr></center><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>PromoterAI</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Ncboost-2</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Region</b> <i>(ex: 1-1000000-2000000 or MT)</i><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Gene(s) name(s)</b> <i>(ex: CDK6, BRCA2)</i>");
+					show_error("<center><nobr><b><h4><span style='color:orange;'>Warning.</span></b></h4> At least one of the following options must be selected.</nobr></center><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>PromoterAI</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Ncboost-2</b> value<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>phyloP</b> value (faster or slower evolution)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Region</b> <i>(ex: 1-1000000-2000000 or MT)</i><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <b>Gene(s) name(s)</b> <i>(ex: CDK6, BRCA2)</i>");
 					return;
 				}
 		    	
@@ -1177,6 +1217,8 @@
 				if (min_reads != '-' && min_reads > 0) {
 			    	options['min_reads'] = min_reads;
 				}
+				
+				if (document.getElementById('b_keep_pathogenic').checked == true) { options['keep_pathogenic'] = 1; }
 				
 				var found_included = false;
 				var listOnlyProjects = [];
@@ -1360,7 +1402,7 @@
 							const url = window.URL.createObjectURL(blob);
 							const a = document.createElement("a");
 							a.href = url;
-							a.download = "results.xls";
+							a.download = "polydejavu_v2.xlsx";
 							document.body.appendChild(a);
 							a.click();
 							a.remove();
@@ -1592,6 +1634,52 @@
 						                </div>
 					                </td>
 	                        	</tr>
+				                
+				                <!--
+								<tr><td><span style="font-size:8px;">&nbsp;</span></td></tr>
+				                <tr>
+				                	<td colspan='2'>
+				                		<div>
+						                	<input type="checkbox" id="phylop" onchange="toggleDiv('div_select_phylop', this.checked)">
+											<label for="phylop">use phyloP</label>
+				                		</div>
+					                	
+				                		<div style="display:none;" id="div_select_phylop">
+				                			<center>
+						                		<span style="font-size:11px;"><b>&nbsp;</b></span>
+						                		<span style="font-size:11px;"><b>Slower evolution</b></span>
+									    		<div id="slider_phylop_slower" jsId="slider_phylop_slower" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:1,maximum:7,discreteValues:7,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
+									                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:7, style:{height:"5px"}'> </div>
+									                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+									                    <li><span style='font-size:9px;'><b>0</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>+1</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>+2</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>+3</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>+4</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>+5</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>+6</b><br></span></li>
+									                </ol>
+								                </div>
+						                		<span style="font-size:11px;"><b>&nbsp;</b></span>
+						                		<span style="font-size:11px;"><b>Faster evolution</b></span>
+									    		<div id="slider_phylop_faster" jsId="slider_phylop_faster" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:1,maximum:7,discreteValues:7,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
+									                <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:7, style:{height:"5px"}'> </div>
+									                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
+									                    <li><span style='font-size:9px;'><b>0</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>-1</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>-2</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>-4</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>-6</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>-8</b><br></span></li>
+									                    <li><span style='font-size:9px;'><b>-10</b><br></span></li>
+									                </ol>
+								                </div>
+				                			</center>
+						                </div>
+					                </td>
+	                        	</tr>
+	                        	-->
+	                        	
 		                    </table>
 		                </div>
 		            </a>
@@ -1882,6 +1970,15 @@
 					    					<form>
 											    <input style="width:140px;font-size:12px;" type="string" id="select_genes" name="select_genes" placeholder="CDK6, BRCA2">
 											</form>
+										</div>
+									</td>
+								</tr>
+		                		<tr>
+		                			<td><span style="font-size:11px;">Keep variants<br>clinvar pathogenic&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+		                			<td>
+										<div class="hide-on-collapse" style="margin-top: 15px;">
+					    					<input class="form-check-input" type="checkbox" value="" id="b_keep_pathogenic" checked>
+											<label class="form-check-label" for="b_keep_pathogenic" style="vertical-align:middle;font-size:9px;"></label>
 										</div>
 									</td>
 								</tr>

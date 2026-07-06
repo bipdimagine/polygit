@@ -1156,7 +1156,7 @@ sub export_xls {
 	if ($cgi->param('only_mane_transcripts')) {
 		$xls_export->only_main_transcripts(1);
 	}
-	$xls_export->title_page('PolyViewer_'.$patient->name().'.xls');
+	$xls_export->title_page('PolyViewer_'.$patient->name().'.xlsx');
 	$xls_export->store_variants_infos(\@lVarObj, $project, $project->getPatients());
 	my ($list_datas_annotations) = $xls_export->prepare_generic_datas_variants();
 	my ($list_datas_annotations_cnvs) = $xls_export->prepare_generic_datas_cnvs();

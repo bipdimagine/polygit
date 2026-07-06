@@ -126,9 +126,9 @@ if ($delete_models) {
 
 if ($xls_outfile eq 'none') {
 	#modif temporaire pour export xls
-		$xls_outfile = $projectName.".xls";
+		$xls_outfile = $projectName.".xlsx";
 		
-		#warn "\n\nERROR: please replace value 'none' for last -xls_outfile option.\nExample: -xls_outfile=export.xls\n\n";
+		#warn "\n\nERROR: please replace value 'none' for last -xls_outfile option.\nExample: -xls_outfile=export.xlsx\n\n";
 	#die;
 }
 
@@ -947,7 +947,7 @@ sub export_regions_ho_xls {
 	}
 	else {
 		print "Content-type: application/msexcel\n";
-		print "Content-Disposition: attachment;filename=$projectName\_regions_ho.xls\n\n";
+		print "Content-Disposition: attachment;filename=$projectName\_regions_ho.xlsx\n\n";
 		$workbook = Spreadsheet::WriteExcel->new( \*STDOUT );
 	}
 	my $hFormat = getHashFormat($workbook);
@@ -2430,7 +2430,7 @@ sub getXls_byGenes {
 	}
 	else {
 		print "Content-type: application/msexcel\n";
-		print "Content-Disposition: attachment;filename=$projectName\_byGenes.xls\n\n";
+		print "Content-Disposition: attachment;filename=$projectName\_byGenes.xlsx\n\n";
 		$workbook = Spreadsheet::WriteExcel->new( \*STDOUT );
 	}
 	my $hFormat = getHashFormat($workbook);
@@ -2499,7 +2499,7 @@ sub getXls_byVar {
 	}
 	else {
 		print "Content-type: application/msexcel\n";
-		print "Content-Disposition: attachment;filename=$projectName\_byVar.xls\n\n";
+		print "Content-Disposition: attachment;filename=$projectName\_byVar.xlsx\n\n";
 		$workbook = Spreadsheet::WriteExcel->new( \*STDOUT );
 	}
 	unless ($h) {
@@ -3022,7 +3022,7 @@ sub export_xls {
 	my $xls_export = new xls_export();
 	#my $xls_export = new xls_export_nadine_nicolas();
 	$xls_export->only_main_transcripts(1) if $xls_only_mane_tr;
-	$xls_export->title_page('PolyQuery_'.$project->name().'.xls');
+	$xls_export->title_page('PolyQuery_'.$project->name().'.xlsx');
 	$xls_export->store_variants_infos($lVar, $project, $project->getPatients());
 	#$xls_export->store_variants_specific_somatic_infos($lVar, $project, $project->getPatients());
 	if ($xls_save_session) {
