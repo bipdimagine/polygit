@@ -6887,7 +6887,7 @@ sub need_update {
 
 sub disconnect {
 	my ($self,$debug) = @_;
-	$self->buffer->dbh_deconnect();
+	$self->buffer->dbh_deconnect() if $self->buffer;
 	delete $self->{liteAnnotations};
 	delete $self->{cosmic_db};
 	delete $self->{transcriptsCoverageSqlite};
