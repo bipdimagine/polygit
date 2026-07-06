@@ -2,7 +2,7 @@
 dbname:**DARWIN SSD**
 ip:10.200.27.108
 ip2:10.200.27.108
-port:3306
+port:6033
 user:polyweb
 status:prod
 pw:mypolyweb

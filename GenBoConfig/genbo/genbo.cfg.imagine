@@ -1,8 +1,10 @@
 [polyprod]
 dbname:**DARWIN SSD**
 ip:10.200.27.108
+#ip2:127.0.0.1
 ip2:10.1.2.8
-port:3306
+#port:3306
+port:6033
 user:polyweb
 status:prod
 pw:mypolyweb
