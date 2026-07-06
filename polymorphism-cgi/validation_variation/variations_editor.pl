@@ -493,7 +493,7 @@ my $vgenes =[];
 my $nb2 = 0;
 my $hchr;
 my @list_genes_session_sorted;
-
+$| = 1 ;
 
 my $session;
 my $session_dir_tmp = $buffer->config_path("root","global_search");
@@ -518,14 +518,14 @@ else {
 	$ztime .= ' ' . scalar(@$genes) . '_genes:' . ( abs( time - $t ) );
 	warn "annot ++ == ++ " . abs( time - $t ) if $print;
 	$statistics->{genes} = scalar(@$genes);
-	
+	warn "cocuocu";
 	#$statistics->{variations} = $statistics->{variants};
 	$project->buffer->dbh_reconnect();
 	unless ( $project->buffer->getQuery->isUserMagic($user) ) {
 		$ztime = undef;
 	}
 	$project->buffer->dbh_reconnect();
-	
+	warn "cocuocu";
 	if ($cgi->param('phenotype')) {
 		my $new_phenotype = $cgi->param('phenotype');
 		foreach my $g (@$genes) {
@@ -541,10 +541,13 @@ else {
 	warn "end max_score :".abs(time -$sct);
 	$sct = time;
 	@list_genes_session_sorted = sort{$b->{max_score} <=> $a->{max_score}} @$genes;
+	my $t =time;
+	
 	if ($project->isGenome()) {
 		$session = new CGI::Session( undef, $cgi, { Directory => $session_dir_tmp } );
 		$session->param('genes', \@list_genes_session_sorted);
 	}
+	warn "session : ".abs(time-$t);
 }
 
 
@@ -724,6 +727,7 @@ sub refine_heterozygote_composite_score_fork {
 	
 	my $nb_genes = scalar(@{$res->{genes}});
 	my $i = 0;
+	my $t =time;
 	foreach my $g (@{$res->{genes}}){
 		$i++;
 		print $g->{out} . "\n";
@@ -754,6 +758,7 @@ sub refine_heterozygote_composite_score_fork {
 		}
 		delete  $g->{out};
 	}
+	warn "end print ".abs(time-$t);
 	
 	if ($nb_genes == $limit) {
 		my $span_id_next = 'span_others_genes_'.$patient_name;
@@ -779,6 +784,7 @@ sub run_annnotations {
 	$project->disconnect;	
 	my $final_polyviewer_all;
 	 $final_polyviewer_all = GenBoNoSqlRocks->new(cache=>1,dir=>$project->rocks_directory."/patients/",mode=>"r",name=>$patient->name,vmtouch=>1);
+	 warn $project->rocks_directory."/patients/";
 	 my $t   = time;
 	 
 	 
@@ -793,6 +799,9 @@ sub run_annnotations {
 				print "." if $nb % 100 == 0;
 			}
 			my $hg = $final_polyviewer_all->get($id);
+			warn $id unless  $hg;;
+			#next unless  $hg;
+		
 			confess($id." ".$patient->id."  problem with updatehashvariaant  + global annotaiotn !!!!!!!!!!!!!!")  unless $hg;
 				foreach my $gene ( @{$hg->{array}}) {
 					my $gid = $gene->{id};					
