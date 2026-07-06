@@ -675,7 +675,7 @@ else {
 	print ".\",";
 	$json_encode =~ s/{//;
 	print $json_encode;
-	POSIX::_exit(0);
+	exit(0);
 }
 
 
